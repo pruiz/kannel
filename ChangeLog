@@ -1,3 +1,6 @@
+2003-07-28  Stipe Tolj  <tolj@wapme-systems.de>
+    * test/test_http_server.c: fixed memory leak.
+
 2003-07-27  Stipe Tolj  <tolj@wapme-systems.de>
     This is the new "rerouting feature" for bearerbox:
     * gw/sms.[ch]: added sms_swap() routine to swap receiver/sender number in
