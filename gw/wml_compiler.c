@@ -347,6 +347,7 @@ int wml_compile(Octstr *wml_text,
   ret = parse_document(xmlParseMemory(wml_c_text, size+1));
 
   *wml_binary = octstr_duplicate(wbxml_string);
+  *wml_scripts = octstr_create_empty();
 
   return ret;
 }
