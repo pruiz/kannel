@@ -116,7 +116,7 @@ static int socket_sender(Msg *pmsg)
     }
     mutex_unlock(socket_mutex);
 
-    info(0, "Message sent to <%s>",
+    info(0, "Message sent to bearerbox, receiver <%s>",
          octstr_get_cstr(pmsg->sms.receiver));
    
 #if 0

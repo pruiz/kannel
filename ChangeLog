@@ -1,3 +1,8 @@
+2000-11-03  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsbox.c: changed 'sent..' log event to clearly state that it
+	only means that the message was sent to bearerbox, not further
+
 2000-11-03  Lars Wirzenius  <liw@iki.fi>
 
 	* checks/check_list.c: Fixed synchronization problems that
