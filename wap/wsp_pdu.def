@@ -83,11 +83,11 @@ PDU(Resume, "...",
 	, 1)
 
 PDU(sia, "...",
-        UINT(version, "sia version", 8)
-        UINTVAR(appidlist_len, "Length of application id list")
-        OCTSTR(application_id_list, "application id list", appidlist_len)
-        UINTVAR(contactpoints_len, "Length of contact point list")
-        OCTSTR(contactpoints, "list of contact points", contactpoints_len)
-        , 1)
+    UINT(version, "sia version", 8)
+    UINTVAR(appidlist_len, "Length of application id list")
+    OCTSTR(application_id_list, "application id list", appidlist_len)
+    UINTVAR(contactpoints_len, "Length of contact point list")
+    OCTSTR(contactpoints, "list of contact points", contactpoints_len)
+    , 1)
 
 
