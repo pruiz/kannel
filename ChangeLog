@@ -1,3 +1,7 @@
+2000-03-22  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_cimd.c: Removed some bogus errno values in error messages.
+
 2000-03-22 Sanna Seppanen <sanna@wapit.com>
 	
 	* gwlib/http.c: htp_get_u: After furthed investigation,

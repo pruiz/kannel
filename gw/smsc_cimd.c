@@ -72,7 +72,7 @@ static int cimd_open_connection(SMSCenter *smsc) {
 	    if (strstr(smsc->buffer, "CIMD rel 1.37\n") != NULL)
 		break;
 	    else{
-		error(errno, "cimd_open_connection: couldn't find protocol string");
+		error(0, "cimd_open_connection: couldn't find protocol string");
 		goto logout;
 	    }
 	    if (ret < 0) goto logout;
@@ -110,7 +110,7 @@ logout:
 	cimd_close(smsc);
 	
 error:
-	error(errno, "cimd_open: could not open/handshake");
+	error(0, "cimd_open: could not open/handshake");
 	gw_free(tmpbuff);
 	return -1;
 }
@@ -143,7 +143,7 @@ SMSCenter *cimd_open(char *hostname, int port, char *username, char *password) {
 	return smsc;
 
 error:
-	error(errno, "cimd_open: could not open!");
+	error(0, "cimd_open: could not open!");
 	smscenter_destruct(smsc);
 	return NULL;
 }
