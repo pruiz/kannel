@@ -334,6 +334,7 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
 
                   default:
                        debug(0, "WTP: machine_find_or_create: unhandled event");
+                       wtp_event_dump(event);
                   break;
 	   }
 
@@ -597,9 +598,6 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
            mutex_lock(machines.lock);
 
            this_machine = machines.first;
-           debug(0, "WTP: find: start debugging");
-           debug(0, "WTP: find: search started at %ld ", machines.first->tid);
-           debug(0, "WTP: find: list stops at %ld", machines.list->tid);
           
            while (this_machine != NULL){
    
@@ -613,12 +611,10 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
                       this_machine->in_use == 1){
 
                     mutex_unlock(machines.lock);
-                    debug(0, "WTP: find: found machine %ld=%ld", this_machine->tid, 
-                              tid);
+                   
                     return this_machine;
                  
 		 } else {
-                    debug(0, "WTP: find: hit tid %ld!=%ld", this_machine->tid, tid);
                     this_machine = this_machine->next;  
                  }              
           }
