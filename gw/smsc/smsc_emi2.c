@@ -56,7 +56,6 @@ typedef struct privdata {
     int		flowcontrol;	/* 0=Windowing, 1=Stop-and-Wait */
     int		waitack;	/* Seconds to wait to ack */
     int		waitack_expire;	/* What to do on waitack expire */
-    int		throughput;	/* Messages per second */
     int		window;		/* In windowed flow-control, the window size */
     int         can_write;      /* write = 1, read = 0, for stop-and-wait flow control */
     int         priv_nexttrn;   /* next TRN, this should never be accessed directly.
@@ -852,73 +851,74 @@ static int emi2_keepalive_handling (SMSCConn *conn, Connection *server)
 /*
  * the actual send logic: Send all queued messages in a burst.
  */
-static int emi2_do_send (SMSCConn *conn, Connection *server)
+static int emi2_do_send(SMSCConn *conn, Connection *server)
 {
     struct emimsg *emimsg;
-    Msg           *msg;
-    double         delay = 0;
+    Msg *msg;
+    double delay = 0;
 
-    if (PRIVDATA(conn)->throughput) {
-	delay = 1.0 / PRIVDATA(conn)->throughput;
+    if (conn->throughput) {
+        delay = 1.0 / conn->throughput;
     }
     
     /* Send messages if there's room in the sending window */
-    while (emi2_can_send (conn) &&
-	   (msg = list_extract_first(PRIVDATA(conn)->outgoing_queue)) != NULL) {
-	int nexttrn = emi2_next_trn (conn);
+    while (emi2_can_send(conn) &&
+           (msg = list_extract_first(PRIVDATA(conn)->outgoing_queue)) != NULL) {
+        int nexttrn = emi2_next_trn(conn);
 
-	if (PRIVDATA(conn)->throughput)
-	    gwthread_sleep(delay);
+        if (conn->throughput)
+            gwthread_sleep(delay);
 
-	/* convert the generic Kannel message into an EMI type message */
-	emimsg = msg_to_emimsg(msg, nexttrn, PRIVDATA(conn));
+        /* convert the generic Kannel message into an EMI type message */
+        emimsg = msg_to_emimsg(msg, nexttrn, PRIVDATA(conn));
 
-	/* remember the message for retransmission or DLR */
-	PRIVDATA(conn)->slots[nexttrn].sendmsg = msg;
-	PRIVDATA(conn)->slots[nexttrn].sendtype = 51;
-	PRIVDATA(conn)->slots[nexttrn].sendtime = time(NULL);
+        /* remember the message for retransmission or DLR */
+        PRIVDATA(conn)->slots[nexttrn].sendmsg = msg;
+        PRIVDATA(conn)->slots[nexttrn].sendtype = 51;
+        PRIVDATA(conn)->slots[nexttrn].sendtime = time(NULL);
 
-	/* send the message */
-	if (emi2_emimsg_send(conn, server, emimsg) == -1) {
-	    emimsg_destroy(emimsg);
-	    return -1;
-	}
+        /* send the message */
+        if (emi2_emimsg_send(conn, server, emimsg) == -1) {
+            emimsg_destroy(emimsg);
+            return -1;
+        }
 
-	/* report the submission to the DLR code */
-	if (msg->sms.dlr_mask & 0x18) {
-	    Octstr *ts;
-	    ts = octstr_create("");
-	    octstr_append(ts, (conn->id ? conn->id : PRIVDATA(conn)->name));
-	    octstr_append_char(ts, '-');
-	    octstr_append_decimal(ts, nexttrn);
+        /* report the submission to the DLR code */
+        if (msg->sms.dlr_mask & 0x18) {
+            Octstr *ts;
 
-	    dlr_add((conn->id ? conn->id : PRIVDATA(conn)->name), ts, msg);
+            ts = octstr_create("");
+            octstr_append(ts, (conn->id ? conn->id : PRIVDATA(conn)->name));
+            octstr_append_char(ts, '-');
+            octstr_append_decimal(ts, nexttrn);
+
+            dlr_add((conn->id ? conn->id : PRIVDATA(conn)->name), ts, msg);
 	    
-	    octstr_destroy(ts);
-	    PRIVDATA(conn)->slots[nexttrn].dlr = 1;
-	} else {
-	    PRIVDATA(conn)->slots[nexttrn].dlr = 0;
-	}
+            octstr_destroy(ts);
+            PRIVDATA(conn)->slots[nexttrn].dlr = 1;
+        } else {
+            PRIVDATA(conn)->slots[nexttrn].dlr = 0;
+        }
 
-	/* we just sent a message */
-	PRIVDATA(conn)->unacked++;
+        /* we just sent a message */
+        PRIVDATA(conn)->unacked++;
 
-	emimsg_destroy(emimsg);
+        emimsg_destroy(emimsg);
 
-	/*
-	 * remember that there is an open request for stop-wait flow control
-	 * FIXME: couldn't this be done with the unacked field as well? After
-	 * all stop-wait is just a window of size 1.
-	 */
-	PRIVDATA(conn)->can_write = 0;
+        /*
+         * remember that there is an open request for stop-wait flow control
+         * FIXME: couldn't this be done with the unacked field as well? After
+         * all stop-wait is just a window of size 1.
+         */
+        PRIVDATA(conn)->can_write = 0;
     }
 
     return 0;
 }
 
-static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
+static int emi2_handle_smscreq(SMSCConn *conn, Connection *server)
 {
-    Octstr	  *str;
+    Octstr *str;
     struct emimsg *emimsg;
     PrivData *privdata = conn->data;
     
@@ -1511,7 +1511,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 {
     PrivData *privdata;
     Octstr *allow_ip, *deny_ip, *host, *alt_host;
-    long portno, our_port, keepalive, flowcontrol, waitack, throughput, 
+    long portno, our_port, keepalive, flowcontrol, waitack, 
          idle_timeout, alt_portno, alt_charset, waitack_expire;
     long window;
     	/* has to be long because of cfg_get_integer */
@@ -1625,11 +1625,6 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 	      octstr_get_cstr(privdata->name));
 	goto error;
     }
-
-    if (cfg_get_integer(&throughput, cfg, octstr_imm("throughput")) < 0)
-	privdata->throughput = 0;
-    else
-	privdata->throughput = throughput;
 
     if (cfg_get_integer(&window, cfg, octstr_imm("window")) < 0)
 	privdata->window = EMI2_MAX_TRN;
