@@ -211,6 +211,7 @@ static Connection *open_send_connection(SMSCConn *conn)
     Connection *server;
     Msg *msg;
     int connect_error = 0;
+    int wait_ack = 0;
 
     do_alt_host = octstr_len(privdata->alt_host) != 0 || 
 	    privdata->alt_port != 0;
@@ -271,7 +272,8 @@ static Connection *open_send_connection(SMSCConn *conn)
         emimsg = make_emi60(privdata);
         emi2_emimsg_send(conn, server, emimsg);
 	    emimsg_destroy(emimsg);
-        result = wait_for_ack(privdata, server, 60, 30);
+        wait_ack = privdata->waitack > 30 ? privdata->waitack : 30;
+        result = wait_for_ack(privdata, server, 60, wait_ack);
         if (result == -2) {
             /* 
              * Are SMSCs going to return any temporary errors? If so,
@@ -284,7 +286,8 @@ static Connection *open_send_connection(SMSCConn *conn)
             continue;
         } else if (result == 0) {
             error(0, "EMI2[%s]: Got no reply to login attempt "
-                     "within 30 seconds", octstr_get_cstr(privdata->name));
+                     "within %d seconds", octstr_get_cstr(privdata->name),
+                     wait_ack);
             conn_destroy(server);
             connect_error = 1;
             continue;
