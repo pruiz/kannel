@@ -52,9 +52,6 @@ static List *dlr_waiting_list;
 void dlr_destroy(dlr_wle *dlr);
 
 
-Mutex *dlr_mutex;
-Octstr *dlr_type;
-
 /* 
  * At startup initialize the list, use abstraction to
  * allow to add additional dlr_init_foobar() routines here.
@@ -536,5 +533,39 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
 }
 
 
+long dlr_messages(void)
+{
+    if (octstr_compare(dlr_type, octstr_imm("internal")) == 0) {
+        return list_len(dlr_waiting_list);
+    } else 
+    if (octstr_compare(dlr_type, octstr_imm("mysql")) == 0) {
+#ifdef DLR_MYSQL
+        Octstr *sql;
+        int	state;
+        long res;
+        MYSQL_RES *result;
+        
+        sql = octstr_format("SELECT * FROM %s;", octstr_get_cstr(table));
+        mutex_lock(dlr_mutex);
+        state = mysql_query(connection, octstr_get_cstr(sql));
+        octstr_destroy(sql);
+        if (state != 0) {
+            error(0, "MYSQL: %s", mysql_error(connection));
+            return -1;
+        }
+        result = mysql_store_result(connection);
+        res = mysql_num_rows(result);
+        mysql_free_result(result);
+        mutex_unlock(dlr_mutex);
+        return res;
+#endif
 
+    /*
+     * add aditional types here
+     */
+
+    } else {
+   	    panic(0, "DLR: storage type '%s' is not supported!", octstr_get_cstr(dlr_type));
+    }
+}
 

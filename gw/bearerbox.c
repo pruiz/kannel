@@ -648,7 +648,8 @@ Octstr *bb_print_status(int status_type)
 	    " <p>WDP: received %ld (%ld queued), sent %ld "
 	    "(%ld queued)</p>\n\n"
 	    " <p>SMS: received %ld (%ld queued), sent %ld "
-	    "(%ld queued), store size %ld</p>\n\n";
+	    "(%ld queued), store size %ld</p>\n\n"
+        " <p>DLR: %ld queued, using %s storage</p>\n\n";
 	footer = "<p>";
     } else if (status_type == BBSTATUS_WML) {
 	frmt = "%s</p>\n\n"
@@ -657,7 +658,9 @@ Octstr *bb_print_status(int status_type)
 	    "      WDP: sent %ld (%ld queued)</p>\n\n"
 	    "   <p>SMS: received %ld (%ld queued)<br/>\n"
 	    "      SMS: sent %ld (%ld queued)<br/>\n"
-            "      SMS: store size %ld</p>\n\n";
+        "      SMS: store size %ld</p>\n\n"
+        "   <p>DLR: %ld queued<br/>\n"
+        "      DLR: using %s storage</p>\n\n";
 	footer = "<p>";
     } else if (status_type == BBSTATUS_XML) {
 	frmt = "<version>%s</version>\n"
@@ -665,13 +668,15 @@ Octstr *bb_print_status(int status_type)
 	    "\t<wdp>\n\t\t<received><total>%ld</total><queued>%ld</queued></received>\n\t\t<sent><total>%ld"
 	    "</total><queued>%ld</queued></sent>\n\t</wdp>\n"
 	    "\t<sms>\n\t\t<received><total>%ld</total><queued>%ld</queued></received>\n\t\t<sent><total>%ld"
-	    "</total><queued>%ld</queued></sent>\n\t\t<storesize>%ld</storesize>\n\t</sms>\n";
+	    "</total><queued>%ld</queued></sent>\n\t\t<storesize>%ld</storesize>\n\t</sms>\n"
+	    "\t<dlr>\n\t\t<queued>%ld</queued>\n\t\t<storage>%s</storage>\n\t</dlr>\n";
 	footer = "";
     } else {
 	frmt = "%s\n\nStatus: %s, uptime %ldd %ldh %ldm %lds\n\n"
 	    "WDP: received %ld (%ld queued), sent %ld (%ld queued)\n\n"
 	    "SMS: received %ld (%ld queued), sent %ld (%ld queued), "
-	    "store size %ld\n\n";
+	    "store size %ld\n\n"
+        "DLR: %ld queued, using %s storage\n\n";
 	footer = "";
     }
     
@@ -686,7 +691,9 @@ Octstr *bb_print_status(int status_type)
 	    list_len(incoming_sms),
 	    counter_value(outgoing_sms_counter),
 	    list_len(outgoing_sms),
-	    store_messages());
+	    store_messages(),
+        dlr_messages(),
+        octstr_get_cstr(dlr_type));
 
     octstr_destroy(version);
     ret = octstr_create(buf);

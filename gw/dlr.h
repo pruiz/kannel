@@ -16,6 +16,10 @@
 #define	DLR_SMSC_SUCCESS    0x08
 #define	DLR_SMSC_FAIL       0x10
 
+
+Mutex *dlr_mutex;
+Octstr *dlr_type;
+
 /*
  * MySQL specific global things
  */
@@ -50,6 +54,9 @@ Msg* dlr_find(char *smsc, char *ts, char *dst, int type);
 
 void dlr_save(const char *filename);
 void dlr_load(const char *filename);
+
+/* return the number of DLR messages in the current waiting queue */
+long dlr_messages(void);
 
 #endif /* DLR_H */
 
