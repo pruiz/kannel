@@ -504,7 +504,7 @@ static Msg *dlr_find_mem(char *smsc, char *ts, char *dst, int typ)
             if ((typ & dlr_mask) > 0) {
                 /* its an entry we are interested in */
                 msg = msg_create(sms);
-                msg->sms.sms_type == report;
+                msg->sms.sms_type = report;
                 msg->sms.service = octstr_duplicate(dlr->service);
                 msg->sms.dlr_mask = typ;
                 msg->sms.sms_type = report;
