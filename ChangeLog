@@ -1,3 +1,6 @@
+2003-07-20  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bb_store.c: always set message id and timestamp.
+
 2003-07-20  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smscconn{.c,_p.h}: renamed <emi2> to <emi> and <at2> to <at>
     * gw/smsc/smsc.c: removed <at> and <emi_ip> (<emi> alias); renamed 

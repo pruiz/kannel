@@ -216,7 +216,7 @@ Octstr *store_status(int status_type)
     } else if (status_type == BBSTATUS_TEXT) {
         octstr_append_cstr(ret, "[SMS ID] [Sender] [Receiver] [SMSC ID] [UDH] [Message] [Time]\n");
     }
-   
+
     /* if there is no store-file, then don't loop in sms_store */
     if (filename == NULL)
         goto finish;
@@ -226,7 +226,7 @@ Octstr *store_status(int status_type)
         msg = list_get(sms_store, l);
 
         if (msg_type(msg) == sms) {
-            
+
             if (status_type == BBSTATUS_HTML) {
                 frmt = "<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td>"
                        "<td>%s</td><td>%s</td><td>%s</td></tr>\n";
@@ -284,16 +284,17 @@ long store_messages(void)
 int store_save(Msg *msg)
 {
     Msg *copy;
-    
+
+    /* always set msg id and timestamp */
+    if (msg_type(msg) == sms) {
+	msg->sms.id = counter_increase(msg_id);
+	msg->sms.time = time(NULL);
+    }
+
     if (filename == NULL)
         return 0;
 
     if (msg_type(msg) == sms) {
-	msg->sms.id = counter_increase(msg_id);
-	if (counter_value(msg_id) >= 1000000)   /* limit to 1,000,000
-						 * distinct msg/s */
-	    counter_set(msg_id, 1);
-
 	copy = msg_duplicate(msg);
 	list_produce(sms_store, copy);
     }
