@@ -1,10 +1,3 @@
-2000-05-08  Derry Hamilton <rasilon@tardis.ed.ac.uk>
-
-	* gwlib/gwmem-check.c: Performance improvement in compare_mem.
-	It is still the main bottleneck in wapbox, however.  I'll have
-	a look at the use of bsearch and qsort in the higher functions.
-	Efficient they are, but negligable they are not.
-			
 2000-05-08  Richard Braakman  <dark@wapit.com>
 
 	* Made all sig_atomic_t variables volatile, because there is no
