@@ -1,3 +1,10 @@
+2000-02-21  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gwlib/octstr.c: octstr_ncompare doens't anymore check whether 
+	ostr1 is bigger or smaller than ostr2. It should not anyway.
+	* gw/wml_compiler.c: Many bug fixes to the attribute encoding. Some 
+	possible memory leaks also removed.
+
 Fri Feb 18 21:20:46 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/http.c: Undid changes by Sanna, since they were crashing

@@ -230,30 +230,13 @@ char *octstr_get_cstr(Octstr *ostr) {
 
 
 int octstr_compare(Octstr *ostr1, Octstr *ostr2) {
+	int ret;
 	size_t len;
 
 	if (ostr1->len < ostr2->len)
 		len = ostr1->len;
 	else
 		len = ostr2->len;
-
-	if (len == 0)
-		return 0;
-
-	return octstr_ncompare(ostr1, ostr2, len);
-}
-
-
-int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, size_t n) {
-	int ret;
-	size_t len;
-
-	if ((ostr1->len < ostr2->len) && (ostr1->len < n))
-		len = ostr1->len;
-	else if ((ostr2->len < ostr1->len) && (ostr2->len < n))
-		len = ostr2->len;
-	else
-		len = n;
 
 	if (len == 0)
 		return 0;
@@ -266,6 +249,23 @@ int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, size_t n) {
 			ret = 1;
 	}
 	return ret;
+}
+
+
+int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, size_t n) {
+	size_t len;
+
+	if ((ostr1->len < ostr2->len) && (ostr1->len < n))
+		len = ostr1->len;
+	else if ((ostr2->len < ostr1->len) && (ostr2->len < n))
+		len = ostr2->len;
+	else
+		len = n;
+
+	if (len == 0)
+		return 0;
+
+	return memcmp(ostr1->data, ostr2->data, len);
 }
 
 

@@ -620,19 +620,22 @@ int parse_attribute(xmlAttrPtr attr)
 			      octstr_create(wml_attributes[j].attribute))
 		 == 0; j++)
 	    {
-	      val_j = octstr_create(wml_attributes[j].a_value);
-	      if (wml_attributes[j].a_value != NULL && value != NULL &&
-		  octstr_ncompare(val_j,
-				  value, 
-				  coded_length = octstr_len(val_j)) 
-		  == 0)
-		wbxml_hex = wml_attributes[j].token;
+	      if (wml_attributes[j].a_value != NULL && value != NULL)	      
+		{
+		  val_j = octstr_create(wml_attributes[j].a_value);
+
+		  if (octstr_ncompare(val_j, value, 
+				      coded_length = octstr_len(val_j)) == 0)
+		      wbxml_hex = wml_attributes[j].token;
+
+		  octstr_destroy(val_j);
+		  break;
+		}
 	      else
 		{
 		  wbxml_hex = wml_attributes[i].token;
 		  coded_length = 0;
 		}
-	      octstr_destroy(val_j);
 	    }
 	  break;
 	}
@@ -652,32 +655,21 @@ int parse_attribute(xmlAttrPtr attr)
 	      != 0)
 	    error(0, 
 		  "WML compiler: could not output attribute value as a string.");
-	  if (output_char(STR_END) == -1)
-	    {
-	      error(0, 
-		    "WML compiler: could not output attribute value end tag.");
-	      return -1;
-	    }
 	}
       else
 	{
-	  if ((status = output_octet_string(octstr_copy(value, coded_length, 
+	  if ((status = output_octet_string(octstr_copy(value, coded_length-1, 
 							octstr_len(value) -
 							coded_length))) != 0)
 	    error(0, 
 		  "WML compiler: could not output attribute value as a string.");
-	  if (output_char(STR_END) == -1)
-	    {
-	      error(0, 
-		    "WML compiler: could not output attribute value end tag.");
-	      return -1;
-	    }
 	}
     }
 
   /* Memory clean. */
   octstr_destroy(attribute);
-  octstr_destroy(value);
+  if (value != NULL)
+    octstr_destroy(value);
 
   /* Return the status. */
   if (wml_attributes[i].attribute == NULL)
@@ -792,7 +784,8 @@ int output_octet_string(Octstr *ostr)
 {
   if (output_char(STR_I) == 0)
     if ((wbxml_string = octstr_cat(wbxml_string, ostr)) != NULL)
-      return 0;
+      if (output_char(STR_END) == 0)
+	return 0;
 
   return -1;
 }
