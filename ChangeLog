@@ -1,5 +1,9 @@
 2000-11-06  Lars Wirzenius  <liw@iki.fi>
 
+	* utils/kannel-redhat.init.d: New file from Fabrice Gatille.
+
+2000-11-06  Lars Wirzenius  <liw@iki.fi>
+
 	* configure{,.in}, config.h.in: Add support for PAM enable and
 	disable.
 	
