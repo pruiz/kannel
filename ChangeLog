@@ -1,5 +1,10 @@
 2001-01-26  Lars Wirzenius  <liw@iki.fi>
 
+	* doc/userguide/userguide.xml: Documented the "phone" option in
+	EMI over modem.
+
+2001-01-26  Lars Wirzenius  <liw@iki.fi>
+
 	* The standard library function inet_ntoa is not thread safe.
 	Instead of writing a wrapper, I decided it's better to convert
 	to using the gw_netaddr_to_octstr implementation Derek Hamilton

@@ -1566,6 +1566,13 @@ smsc-password = bar
           ISDN connection only.
      </entry></row>
 
+   <row><entry><literal>phone (c)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       Phone number to dial to, when connecting over a modem to an
+       SMS center.
+     </entry></row>
+
    <row><entry><literal>our-port</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign=bottom>
