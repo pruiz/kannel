@@ -36,7 +36,7 @@ static void start_request(HTTPCaller *caller, List *reqh, long i)
     int ret;
 
     if ((i % 1000) == 0)
-	info(0, "Starting fetch %ld", i);
+	   info(0, "Starting fetch %ld", i);
     id = gw_malloc(sizeof(long));
     *id = i;
                            
@@ -66,24 +66,24 @@ static int receive_reply(HTTPCaller *caller)
     id = http_receive_result(caller, &ret, &final_url, &replyh, &replyb);
     octstr_destroy(final_url);
     if (id == NULL || ret == -1) {
-	error(0, "http GET failed");
-	return -1;
+        error(0, "http POST failed");
+        gw_free(id);
+        return -1;
     }
     debug("", 0, "Done with request %ld", *(long *) id);
     gw_free(id);
 
     http_header_get_content_type(replyh, &type, &charset);
     debug("", 0, "Content-type is <%s>, charset is <%s>",
-	  octstr_get_cstr(type), 
-	  octstr_get_cstr(charset));
+          octstr_get_cstr(type), octstr_get_cstr(charset));
     octstr_destroy(type);
     octstr_destroy(charset);
     if (verbose)
         debug("", 0, "Reply headers:");
     while ((os = list_extract_first(replyh)) != NULL) {
         if (verbose)
-	    octstr_dump(os, 1);
-	octstr_destroy(os);
+            octstr_dump(os, 1);
+        octstr_destroy(os);
     }
     list_destroy(replyh, NULL);
     if (verbose) {
@@ -108,43 +108,43 @@ static void client_thread(void *arg)
     succeeded = 0;
     failed = 0;
     reqh = list_create();
+
     sprintf(buf, "%ld", (long) gwthread_self());
     http_header_add(reqh, "X-Thread", buf);
     if (auth_username != NULL && auth_password != NULL)
-	http_add_basic_auth(reqh, auth_username, auth_password);
+        http_add_basic_auth(reqh, auth_username, auth_password);
 
     in_queue = 0;
     
     for (;;) {
-	while (in_queue < MAX_IN_QUEUE) {
-	    i = counter_increase(counter);
-	    if (i >= max_requests)
-	    	goto receive_rest;
-	    start_request(caller, reqh, i);
+        while (in_queue < MAX_IN_QUEUE) {
+            i = counter_increase(counter);
+            if (i >= max_requests)
+                goto receive_rest;
+            start_request(caller, reqh, i);
 #if 0
-	    gwthread_sleep(0.1);
+            gwthread_sleep(0.1);
 #endif
-	    ++in_queue;
-	}
-	while (in_queue >= MAX_IN_QUEUE) {
-	    if (receive_reply(caller) == -1)
-	    	++failed;
-    	    else
-	    	++succeeded;
-	    --in_queue;
-	}
+            ++in_queue;
+        }
+        while (in_queue >= MAX_IN_QUEUE) {
+            if (receive_reply(caller) == -1)
+                ++failed;
+            else
+                ++succeeded;
+            --in_queue;
+        }
     }
     
 receive_rest:
     while (in_queue > 0) {
-	if (receive_reply(caller) == -1)
-	    ++failed;
-	else
-	    ++succeeded;
-    	--in_queue;
+        if (receive_reply(caller) == -1)
+            ++failed;
+        else
+            ++succeeded;
+        --in_queue;
     }
 
-    http_destroy_headers(reqh);
     http_caller_destroy(caller);
     info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
 }
@@ -315,6 +315,7 @@ int main(int argc, char **argv)
         ((output = xmlrpc_parse_error(msg)) != NULL)) {
         /* parse failure */
         error(0, "%s", octstr_get_cstr(output));
+        octstr_destroy(output);
     }
 
     /*
@@ -333,17 +334,20 @@ int main(int argc, char **argv)
         }
         time(&end);
     
-        counter_destroy(counter);
     
         run_time = difftime(end, start);
         info(0, "%ld requests in %f seconds, %f requests/s.",
 	         max_requests, run_time, max_requests / run_time);
+        
+        octstr_destroy(url);
 
     } else {
-            output = xmlrpc_call_octstr(msg);
-            octstr_dump(output, 0);
+        output = xmlrpc_call_octstr(msg);
+        octstr_dump(output, 0);
+        octstr_destroy(output);
     }
 
+    counter_destroy(counter);
     octstr_destroy(auth_username);
     octstr_destroy(auth_password);
     octstr_destroy(ssl_client_certkey_file);
