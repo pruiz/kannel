@@ -62,3 +62,13 @@ long counter_decrease(Counter *counter) {
 	mutex_unlock(counter->lock);
 	return ret;
 }
+
+long counter_set(Counter *counter, long n) {
+	long ret;
+	
+	mutex_lock(counter->lock);
+	ret = counter->n;
+	counter->n = n;
+	mutex_unlock(counter->lock);
+	return ret;
+}

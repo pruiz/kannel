@@ -1,3 +1,6 @@
+2000-08-21  Paul Keogh <paul.keogh@anam.com>
+	* gwlib/counter.[ch]: Added counter_set method.
+
 2000-08-18  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/gwthread-pthread.c: In gwthread_shutdown, don't delete

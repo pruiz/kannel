@@ -30,4 +30,7 @@ long counter_value(Counter *counter);
 /* return the current value of the counter and decrease counter by one */
 long counter_decrease(Counter *counter);
 
+/* return the current value of the counter and set it to the supplied value */
+long counter_set(Counter *, long);
+
 #endif
