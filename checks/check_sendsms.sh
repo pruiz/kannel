@@ -104,7 +104,7 @@ if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
    [ 1 -ne `grep -c '<Authorization failed for sendsms>' \
        check_sendsms_sms.log` ]
 then
-	echo check_sendsms.sh failed with empty username 1>&2
+	echo check_sendsms.sh failed username authorisation test 1>&2
 	echo See check_sendsms*.log for info 1>&2
 	exit 1
 fi
@@ -117,7 +117,7 @@ if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
    [ 1 -ne `grep -c '<Authorization failed for sendsms>' \
        check_sendsms_sms.log` ]
 then
-	echo check_sendsms.sh failed with empty password 1>&2
+	echo check_sendsms.sh failed with password authorisation test 1>&2
 	echo See check_sendsms*.log for info 1>&2
 	exit 1
 fi

@@ -387,6 +387,7 @@ static void accept_thread(void *arg)
 	if (smsbox_thread_id == -1)
 	    smsbox_thread_id = gwthread_create(smsbox_thread, NULL);
     }
+    
     debug("test.smpp", 0, "%s terminates.", __func__);
 }
 

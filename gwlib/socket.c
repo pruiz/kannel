@@ -510,7 +510,7 @@ Octstr *get_official_ip(void)
 }
 
 
-static void setup_official_name(void)
+static int  setup_official_name(void)
 {
     struct utsname u;
     struct hostent h;
@@ -519,14 +519,15 @@ static void setup_official_name(void)
     if (uname(&u) == -1)
         panic(0, "uname failed - can't happen, unless " GW_NAME " is buggy.");
     if (gw_gethostbyname(&h, u.nodename) == -1) {
-        error(0, "Can't find out official hostname for this host, "
-              "using `%s' instead.", u.nodename);
+        /*error(0, "Can't find out official hostname for this host, "
+              "using `%s' instead.", u.nodename);*/
         official_name = octstr_create(u.nodename);
 	official_ip = octstr_create("127.0.0.1");
-    } else {
-        official_name = octstr_create(h.h_name);
-	official_ip = gw_netaddr_to_octstr(AF_INET, h.h_addr);
-    }
+        return 0;
+    } 
+        
+    official_name = octstr_create(h.h_name);
+    official_ip = gw_netaddr_to_octstr(AF_INET, h.h_addr);
 }
 
 
