@@ -1,3 +1,7 @@
+2000-10-05  Kalle Marjola  <rpr@wapit.com>
+
+	* doc/userguide/userguide.xml: language corrected.
+
 2000-10-05  Richard Braakman  <dark@wapit.com>
 
 	* Added seems_valid assertion to end of octstr_format().

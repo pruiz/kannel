@@ -69,7 +69,7 @@
 	is mind-bogglingly immense.  Even simple services find plenty of users,
 	as long as they're useful or fun. Being able to get news, send e-mail
 	or just be entertained wherever you are is extremely attractive to
-	lots of people.</para>
+	many.</para>
 
 	<para>The hottest technology for implementing mobile services is WAP,
 	short for Wireless Application Protocol. It lets the phone act
@@ -96,7 +96,7 @@
 	licenses by the merit of placing the least amount of limitations
 	on what a third party is able to do with the source code. In
 	practice this means that Kannel is going to be a fully-featured
-	WAP implementation and compatible with a maximum amount of
+	WAP implementation and compatible with the maximum number of
 	bearers with special emphasis on SMSC compatibility.
 	The Kannel project was founded by <ulink
 	url="http://www.wapit.com">Wapit Ltd.</ulink> in June,
@@ -107,7 +107,7 @@
 <title>Overview of WAP</title>
 
 	<para>WAP, short for Wireless Application Protocol, is a
-	collection of languages and tools and an infrastructure for
+	collection of various languages and tools and an infrastructure for
 	implementing services for mobile phones. Traditionally such
 	services have worked via normal phone calls or short textual
 	messages (e.g., SMS messages in GSM networks). Neither are very
@@ -118,15 +118,14 @@
 	content of the Internet directly to the phone. There are too many
 	technical and other problems for this to ever work properly. The
 	main problem is that Internet content is mainly in the form of
-	HTML pages, and they are written in such a way as to require
+	HTML pages, and they are written in such way that they require
 	fast connections, fast processors, large memories, big screens,
-	audio output, and may require fairly efficient input mechanisms.
+	audio output and often also fairly efficient input mechanisms.
 	That's OK, since they hopefully work better for traditional
 	computers and networks that way. However, portable phones have
 	very slow processors, very little memory, abysmal and intermittent
 	bandwidth, and extremely awkward input mechanisms. Most existing
-	HTML pages simply will not work on them, nor will they ever
-	do that.</para>
+	HTML pages do not work on mobiles phones, and never will.</para>
 	
 	<para>WAP defines a completely new markup language, the Wireless
 	Markup Language (WML), which is simpler and much more strictly
@@ -135,36 +134,36 @@
 	things even simpler for the phones, it even defines its own
 	bitmap format (Wireless Bitmap, or WBMP).</para>
 	
-	<para>HTTP is also too inefficient for wireless use. By using
-	a semantically equivalent, but binary and compressed format it
+	<para>HTTP is also too inefficient for wireless use. However, by using
+	a semantically similar binary and compressed format it
 	is possible to reduce the protocol overhead to a few bytes per
-	request, instead of up to hundreds of bytes. Thus, WAP defines a
+	request, instead of the usual hundreds of bytes. Thus, WAP defines a
 	new protocol stack to be used. However, to make things simpler
 	also for the people actually implementing the services, WAP
 	introduces a gateway between the phones and the servers providing
 	content to the phones.</para>
 
         <figure>
-        <title>Logical position of WAP gateway between phone and content server.</title>
+        <title>Logical position of WAP gateway between a phone and a content server.</title>
         <graphic fileref="wap-gateway&figtype;"></graphic>
         </figure>
 
 	<para>The WAP gateway talks to the phone using the WAP protocol
 	stack, and translates the requests it receives to normal
-	HTTP. Thus, the content providers can use any HTTP servers, and
-	can utilize existing know-how about HTTP service implementation
+	HTTP. Thus content providers can use any HTTP servers and
+	utilize existing know-how about HTTP service implementation
 	and administration.</para>
 	
 	<para>In addition to protocol translations, the gateway
 	also compresses the WML pages into a more compact form, to
-	save bandwidth on the air and to further reduce the phone's
+	save on-the-air bandwidth and to further reduce the phone's
 	processing requirements. It also compiles WMLScript programs
 	into a bytecode format.</para>
 	
 	<para>Kannel is not just a WAP gateway. It also works as an
 	SMS gateway.  Although WAP is the hot and technically superior
 	technology, SMS phones exist in huge numbers and SMS services are
-	thus quite useful.  Therefore, Kannel functions simultaneously
+	thus quite useful. Therefore, Kannel functions simultaneously
 	as both a WAP and an SMS gateway.</para>
 
 </sect1>
@@ -181,13 +180,13 @@
 <title>Requirements</title>
 
 	<para>Kannel is being developed on Linux systems (Red Hat 6.1 and
-	Debian potato), and should be fairly easy to port to other Unix-like
+	Debian potato), and should be fairly easy to export to other Unix-like
 	systems. However, we don't yet support other platforms, due to lack
 	of time. Kannel requires the following software environment:
 	
 	<itemizedlist>
 
-	<listitem><para>C compiler and development libraries and related
+	<listitem><para>C compiler, development libraries and related
 	tools.</para></listitem>
 
 	<listitem><para>The Gnome XML library (known as
@@ -235,11 +234,11 @@
 	<para>The source code to
 	Kannel is available for download at <ulink
 	url="http://www.kannel.org/download.shtml">http://www.kannel.org/download.shtml</ulink>.
-	It is available on various formats and you can choose to download
+	It is available in various formats and you can choose to download
 	either the latest release version or the daily snapshot of the
 	development source tree for the next release version, depending
 	on whether you want to use Kannel for production use or to
-	participate in development.</para>
+	participate in the development.</para>
 	
 	<para>If you're serious about development, you probably want to
 	use CVS, the version control system used by the Kannel project.
@@ -265,15 +264,13 @@
 		at <ulink url="http://www.kannel.org/arch.shtml">
 		http://www.kannel.org/arch.shtml</ulink></para></listitem>
 	<listitem><para>The <filename>README</filename> and various other
-		random text files in the source tree.</para></listitem>
+		text files in the source tree.</para></listitem>
 	</orderedlist>
 	
-	The goal is that everything you need to install and use Kannel
-	is in <citetitle>User's Guide</citetitle>, but that goal is
-	very far still. Similarly, the <citetitle>Architecture and
+	We intend to cover everything you need to install and use Kannel
+	is in <citetitle>User's Guide</citetitle>, but the guide is still incomplete in this respect. Similarly, the <citetitle>Architecture and
 	Design</citetitle> document should tell you everything you need
-	to know to dive into the sources and quickly be able to make
-	your own modifications. It's not a replacement for actually
+	to know to dive into the sources and quickly make your own modifications. It's not a replacement for actually
 	reading the source code, but it should work as a map to the
 	source code.  The <filename>README</filename> is not supposed
 	to be very important, nor contain much information. Instead,
@@ -321,19 +318,18 @@
 <screen><userinput>./configure</userinput>
 <userinput>make</userinput></screen>
 	
-	The <filename>configure</filename> script investigates your
-	computer for various things Kannel compilation needs, and
+	The <filename>configure</filename> script investigates various things on your computer for the Kannel compilation needs, and
 	writes out the <filename>Makefile</filename> used to compile
 	Kannel. <command>make</command> then runs the commands to
 	actually compile Kannel.</para>
 	
 	<para>If either command writes out an error message and stops
 	before it finishes its job, you have a problem, and you either
-	need the expertise to fix it yourself, or you need to report the
+	need to fix it yourself, if you can, or report the
 	problem to the Kannel project. See <xref linkend="bug-reporting">
 	for details.</para>
 	
-	<para>For detailed instruction to using the configuration
+	<para>For detailed instruction on using the configuration
 	script, see file <filename>INSTALL</filename>.</para>
 
 </sect1>
@@ -358,19 +354,19 @@
 	<member><filename>gw/wapbox</filename></member>
 	</simplelist>
 	
-	The filenames will get the version number of the gateway added
-	during installation. This makes it easier to keep several
-	versions installed, and lets you easily go back to an older
+	The version number of the gateway is added to the file names
+	during installation. This makes it easier to have several
+	versions installed, and makes it easy to go back to an older
 	version if the new version proves problematic.</para>
 	
-	<para>Kannel consists of three programs, called boxes: the
+	<para>Kannel consists of three programs called boxes: the
 	bearer box is the interface towards the phones. It accepts
 	WAP and SMS messages from the phones and sends them to the
 	other boxes. The SMS box handles SMS gateway functionality,
 	and the WAP box handles WAP gateway functionality. There can
-	be several SMS boxes and several WAP boxes running, and they
-	don't have to run all on the same host. This makes it possible
-	to handle much larger loads than one host can handle.</para>
+	be several SMS boxes and several WAP boxes running and they
+	don't have to run on the same host. This makes it possible
+	to handle much larger loads.</para>
 
 </sect1>
 
@@ -397,13 +393,13 @@
 
 	<para>This chapter explains how the gateway core, bearerbox,
         is configured and used.
-	It covers configuration file, keeping an eye on the gateway
+	It covers the configuration file, keeping an eye on the gateway
 	while it is running, and using the HTTP interface to control
 	the gateway.</para>
 
         <para>After this chapter there is distinct chapter for each
         kind of gateway use: WAP gateway, SMS gateway and combined
-        gateway. These chapters explain configuration and other
+        gateway. These chapters explain the configuration and other
         aspects of gateway of that type.</para>
 
 	<para>There is only one configuration file for all parts of
@@ -414,18 +410,18 @@
 <sect1>
 <title>Configuring the gateway</title>
 
-	<para>The configuration file practically consists of three parts:
+	<para>The configuration file can be divided into three parts:
 	bearerbox configurations, smsbox configurations and
 	wapbox configurations. Bearerbox part has one 'core' group
 	and any used SMS center groups, while wapbox part has only
 	one wapbox group. In smsbox part there is one smsbox group and
 	then number of sms-service and sendsms-user groups.</para>
 
-	<para>Details of each part is in appropriate section of this
+	<para>Details of each part are in an appropriate section of this
         documentation. The 'core' group used by the bearerbox is
-        explained in this chapter, while 'wapbox' part is in next
+        explained in this chapter, while 'wapbox' part is in the next
         chapter and 'smsbox', 'smsc' (SMS center), 'sms-service' and
-        'sendsms-user' groups are in SMS Kannel chapter.</para>
+        'sendsms-user' groups are in the SMS Kannel chapter.</para>
 
 
 <sect2>
@@ -444,8 +440,7 @@
 	except whitespace and equals. The value of the variable is a
 	string, with or without quotation marks (<literal>"</literal>)
 	around it. Quotation marks are needed if the variable needs to
-	begin or end with whitespace or contain special characters.
-	Inside quotation marks normal C escape character syntax works.</para>
+	begin or end with whitespace or contain special characters. Normal C 	escape character syntax works inside quotation marks.</para>
 	
 	<para>Perhaps an example will make things easier to comprehend:
 
@@ -492,7 +487,7 @@ admin-password = f00bar
 </programlisting>
 
    Naturally this is not sufficient for any real use, as you want to
-   use Kannel as SMS gateway, WAP gateway or as both. Thus, one or
+   use Kannel as an SMS gateway, or WAP gateway, or both. Thus, one or
    more of the optional configuration variables are used.</para>
 
 
@@ -510,7 +505,7 @@ admin-password = f00bar
    <row><entry><literal>group</literal></entry>
      <entry><literal>core</literal></entry>
      <entry valign=bottom>
-       This is mandatory variable
+       This is a mandatory variable
      </entry></row>
 
     <row><entry><literal>admin-port</literal></entry>
@@ -519,22 +514,22 @@ admin-password = f00bar
         The port number in which the bearerbox listens to HTTP
         adminstration commands. It is NOT the same as the HTTP
         port of the local www server, just invent any port, but
-        must be over 1023 unless you are running Kannel as a
+        it must be over 1023 unless you are running Kannel as a
         root process (not recommended)
      </entry></row>
 
     <row><entry><literal>admin-password</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
-         Password for HTTP adminstration commands (see below)
+         Password for HTTP administration commands (see below)
      </entry></row>
    
     <row><entry><literal>admin-deny-ip</literal></entry>
      <entry morerows=1>IP-list</entry>
      <entry morerows=1 valign=bottom>
         These lists can be used to prevent connection from given IP 
-        addresses. Each list can have several addresses, each
-        separated with semicolon (';'). An asterisk ('*') can be used
+  addresses. Each list can have several addresses, separated with    
+  semicolons (';'). An asterisk ('*') can be used
         as a wildcard in a place of any ONE number, so *.*.*.*
         matches any IP.
      </entry></row>
@@ -544,7 +539,7 @@ admin-password = f00bar
     <row><entry><literal>smsbox-port</literal></entry>
      <entry>port-number</entry>
      <entry valign=bottom>
-        This is the port number which the smsboxes, if any, connect.
+        This is the port number to which the smsboxes, if any, connect.
         As with admin-port, this can be anything you want. Must be set
         if you want to handle any SMS traffic.
      </entry></row>
@@ -560,9 +555,9 @@ admin-password = f00bar
      <entry morerows=1>IP-list</entry>
      <entry morerows=1 valign=bottom>
         These lists can be used to prevent connection from given IP 
-        addresses. Each list can have several addresses, each
-        separated with semicolon (';'). An asterisk ('*') can be used
-        as a wildcard in a place of any ONE number, so *.*.*.*
+        addresses. Each list can have several addresses, 
+        separated with semicolons (';'). An asterisk ('*') can be used
+        as a wildcard in place of any ONE number, so *.*.*.*
         matches any IP.
      </entry></row>
     <row><entry><literal>bow-allow-ip</literal></entry></row>
@@ -609,13 +604,13 @@ admin-password = f00bar
         This is applied to 'sender' number when receiving SMS
         messages from SMS Center and for 'receiver' number when
         receiving messages from SMSbox (either sendsms message or
-         reply to original message). Format is so that first is the
+         reply to original message). Format is that first comes the
         unified prefix, then all prefixes which are replaced by the
         unified prefix, separated with comma (','). For example,
         for Finland an unified-prefix "+358,00358,0;+,00" should do the trick. 
         If there are several unified prefixes, separate their rules with
         semicolon (';'), like "+35850,050;+35840,040". <emphasis>Note
-        that prefix routing is made quite useless now that there is
+        that prefix routing is next to useless now that there are
         SMSC ID entries</emphasis>
 
      </entry></row>
@@ -625,7 +620,7 @@ admin-password = f00bar
      <entry valign=bottom>
         Load a list of accepted senders of SMS messages. If a sender
         of an SMS message is not in this list, any message received
-        from SMS Center is discarded. See notes of phone number
+        from the SMS Center is discarded. See notes of phone number
         format from numhash.h header file. NOTE: the system has only
         a precision of last 9 or 18 digits of phone numbers, so
         beware!
@@ -641,7 +636,7 @@ admin-password = f00bar
     <row><entry><literal>http-proxy-host</literal></entry>
      <entry>hostname</entry>
      <entry morerows=1 valign=bottom>
-        Enable use of an HTTP proxy for all HTTP requests.
+        Enable the use of an HTTP proxy for all HTTP requests.
      </entry></row>
     <row><entry><literal>http-proxy-port</literal></entry>
      <entry>port-number</entry></row>
@@ -701,11 +696,11 @@ white-list = "http://localhost/whitelist.txt"
   <para>After you have compiled Kannel and edited configuration file
   for your taste, you can either run Kannel from command line or use
   supplied <literal>start-stop-daemon</literal> and
-  <literal>run_kannel_box</literal> programs to use it as daemon
+  <literal>run_kannel_box</literal> programs to use it as a daemon
   service (more documentation about that later).</para>
 
   <para>If you cannot or do not know how to set up daemon systems or
-  just want to test out Kannel, you probably want to start it from
+  just want to test Kannel, you probably want to start it from
   command line. This means that you probably want to have one terminal
   window for each box you want to start (xterm or screen will do
   fine). To start the bearerbox, give the following command:
@@ -741,7 +736,7 @@ white-list = "http://localhost/whitelist.txt"
 
   <para>Please note that if you using SMS Kannel, you
   <emphasis>MUST</emphasis> start up any <literal>fakesmsc</literal>
-  systems before starting the bearerbox, if there is any
+  systems before starting the bearerbox, if there are any
   <literal>fake</literal> SMSC groups in configuration file, like
   there is one in supplied <literal>smskannel.conf</literal>.</para>
 
@@ -773,7 +768,7 @@ white-list = "http://localhost/whitelist.txt"
 
    <row><entry><literal>-F &lt;file-name&gt;</literal></entry>
         <entry morerows=1 valign=bottom>
-              Log to file named file-name, too. Does not overrun nor
+              Log to file named file-name, too. Does not overrun or
               affect any logfile defined in configuration file.
         </entry></row>
    <row><entry><literal>--logfile &lt;file-name&gt;</literal></entry></row>
@@ -827,8 +822,8 @@ white-list = "http://localhost/whitelist.txt"
      </para></listitem>
      <listitem><para>
  Suspended. The gateway does not accept any new messages from SMS
-   centers nor from UDP ports. It neither does accept new sms and wapbox
-   connections and does not send any messages already in the system
+   centers nor from UDP ports. Neither does ir accept new sms and wapbox
+   connections nor sends any messages already in the system
    onward.
 
      </para></listitem>
@@ -935,10 +930,10 @@ chapter.</para>
 <sect1>
 <title>WAP Gateway Configuration</title>
 
-  <para>To set up a WAP Kannel, you have to edit 'core' group in the
-  configuration file, and define 'wapbox' group.</para>
+  <para>To set up a WAP Kannel, you have to edit the 'core' group in the
+  configuration file, and define the 'wapbox' group.</para>
 
-  <para>For 'core' group, you must set following variables:  
+  <para>You must set following variables for the 'core' group:  
     <literal>wapbox-port</literal> and
     <literal>wdp-interface-name</literal>. See previous chapter about
     details of these variables.</para>
@@ -950,9 +945,9 @@ chapter.</para>
 <sect2>
 <title>Wapbox configuration</title>
 
-  <para>If you have set <literal>wapbox-port</literal> variable in
+  <para>If you have set <literal>wapbox-port</literal> variable in the
   'core' configuration group, you <emphasis>MUST</emphasis> supply
-  'wapbox' group.</para>
+  a 'wapbox' group.</para>
 
   <para>The simplest working 'wapbox' group looks like this:
 <programlisting>
@@ -989,7 +984,7 @@ bearerbox-host = localhost
     <row><entry><literal>timer-freq</literal></entry>
      <entry>value-in-seconds</entry>
      <entry valign=bottom>
-         The frequency how often timers are checked out. Default is 1 
+         The frequency of how often timers are checked out. Default is 1 
      </entry></row>
 
     <row><entry><literal>map-url</literal></entry>
@@ -997,10 +992,9 @@ bearerbox-host = localhost
      <entry valign=bottom>
         The pair is separated with space.
         Adds a single mapping for the left side URL to the given destination.
-        If you append an asterisk `*' to the left side URL, it is prefix
-        matched against the incoming URL. Whenever that prefix matches,
-        the URL will be replaced completely by the right side. If you
-        additionally append an asterisk to the right side URL, the part
+        If you append an asterisk `*' to the left side URL, its prefix
+        Is matched against the incoming URL. Whenever the prefix matches,
+        the URL will be replaced completely by the right side. In addition, if 	  if you append an asterisk to the right side URL, the part
         of the incoming URL coming after the prefix, will be appended
         to the right side URL. Thus, for a line:
                 map-url = "http://source/* http://destination/*"
@@ -1084,25 +1078,24 @@ bearerbox-host = localhost
 <chapter id="sms-gateway">
 <title>Setting up a SMS Gateway</title>
 
-    <para>This chapter is a more detailed guide to set Kannel up as a
+    <para>This chapter is a more detailed guide on how to set up Kannel as an
     SMS gateway.</para>
 
 <sect1>
 <title>SMS Gateway Configuration</title>
 
-  <para>To set up a SMS Kannel, you have to edit 'core' group in the
-  configuration file, and define 'smsbox' group plus one or more
+  <para>To set up a SMS Kannel, you have to edit the 'core' group in the
+  configuration file, and define an 'smsbox' group plus one or more
   'sms-service' groups, plus possibly one or more 'sendsms-user' groups.</para>
 
-  <para>For 'core' group, you must set the following variable:  
+  <para>For the 'core' group, you must set the following variable:  
     <literal>smsbox-port</literal>. In addition, you may be interested
     to set <literal>unified-prefix</literal>,
     <literal>white-list</literal> and/or <literal>black-list</literal>
     variables. See above for details of these variables.</para>
 
-  <para>With standard distribution, a sample configuration file
-  <literal>smskannel.conf</literal> is supplied. You may want to take
-  a look at that when setting up a SMS Kannel.</para>
+  <para> A sample configuration file <literal>smskannel.conf</literal> is supplied with the standard distribution. You may want to take
+  a look at that when setting up an SMS Kannel.</para>
 
 <sect2>
 <title>SMS centers</title>
@@ -1123,8 +1116,8 @@ bearerbox-host = localhost
 
     <para>Common 'smsc' group variables are defined in the following
     table. The first two (<literal>group</literal> and
-    <literal>smsc</literal>) are mandatory, but rest can be used as
-    needed to.</para>
+    <literal>smsc</literal>) are mandatory, but rest can be used if
+    needed.</para>
 
  <table frame=none>
   <title>SMSC Group Variables</title>
@@ -1140,14 +1133,14 @@ bearerbox-host = localhost
    <row><entry><literal>group</literal></entry>
      <entry><literal>smsc</literal></entry>
      <entry valign=bottom>
-       This is mandatory variable
+       This is a mandatory variable
      </entry></row>
 
    <row><entry><literal>smsc</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
-       Identifies the SMS center type. See list below
-       for complete list.
+       Identifies the SMS center type. See below
+       for a complete list.
      </entry></row>
 
 
@@ -1156,27 +1149,27 @@ bearerbox-host = localhost
      <entry valign=bottom>
         An optional name or id for the smsc. Any string is
         acceptable, but semicolon ';' may cause problems, so avoid
-        it, as you should any special non-alphabet characters. 
+        it and any other special non-alphabet characters. 
         This 'id' is written into log files and can be used to
-        route SMS messages, and to specify used SMS-service. 
-        Several smsc'es can have same id. The name is case-insensitive.
+        route SMS messages, and to specify the used SMS-service. 
+        Several smsc'es can have the same id. The name is case-insensitive.
      </entry></row>
 
    <row><entry><literal>denied-smsc-id</literal></entry>
      <entry><literal>id-list</literal></entry>
      <entry valign=bottom>
-        SMS messages with SMSC ID equal to any of IDs in this list
+        SMS messages with SMSC ID equal to any of the IDs in this list
         are never routed to this SMSC. Multiple entries are separated 
-        with semicolon (';')
+        with semicolons (';')
 
      </entry></row>
 
    <row><entry><literal>preferred-smsc-id</literal></entry>
      <entry><literal>id-list</literal></entry>
      <entry valign=bottom>
-        SMS messages with SMSC ID in this list are sent to this SMSC
+        SMS messages with SMSC ID from this list are sent to this SMSC
         instead than to SMSC without that ID as preferred. Multiple
-        entries are separated with semicolon (';')
+        entries are separated with semicolons (';')
      </entry></row>
 
    <row><entry><literal>denied-prefix</literal></entry>
@@ -1184,7 +1177,7 @@ bearerbox-host = localhost
      <entry valign=bottom>
         A list of phone number prefixes which are NOT accepted to be
         sent through this SMSC. Multiple entries are separated with 
-        semicolon (';'). For example, "040;050" permits sending of
+        semicolon (';'). For example, "040;050" prevents sending of
         any SMS message with prefix of 040 or 050 through this SMSC
      </entry></row>
 
@@ -1193,9 +1186,8 @@ bearerbox-host = localhost
      <entry valign=bottom>
         As <literal>denied-prefix</literal>, but SMS messages with receiver starting
         with any of these prefixes is prefereably sent through this
-        SMSC. In a case of multiple preferred, random one is selected
-        (likewise if there is none preferred, random SMSC is selected
-         from the existing ones)
+        SMSC. In a case of multiple preferences, one is selected at random
+        (also if there are preferences, SMSC is selected randomly)
 
      </entry></row>
 
@@ -1213,7 +1205,7 @@ bearerbox-host = localhost
   </tgroup>
  </table>
 
-   <para>In addition to these common variables there is several
+   <para>In addition to these common variables there are several
    variables used by certain SMS center connections. Each currently
    supported SMS center type is explained below, with configuration
    group for each. Note that many of them use variables with same
@@ -1221,7 +1213,7 @@ bearerbox-host = localhost
 
    <para><emphasis>NOTE: SMS center configuration variables are a bit 
    incomplete, and will be updated as soon as people responsible for
-   protocols are contacted. Meanwhile, please have
+   the protocols are contacted. Meanwhile, please have
    patience.</emphasis></para>
 
 
@@ -1262,7 +1254,7 @@ keepalive = 5
    <row><entry><literal>port</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign=bottom>
-       Port number in smsc host machine
+       Port number in the smsc host machine
      </entry></row>
 
    <row><entry><literal>smsc-username</literal></entry>
@@ -1280,7 +1272,7 @@ keepalive = 5
    <row><entry><literal>keepalive</literal></entry>
      <entry><literal>number</literal></entry>
      <entry valign=bottom>
-       SMSC connection will not be left idle longer than this many
+       SMSC connection will not be left idle for longer than this many
        minutes.  The right value to use depends on how eager the SMSC
        is to close idle connections.  5 minutes is a good guess.  If you
        see many unexplained reconnects, try lowering this value.
@@ -1328,14 +1320,14 @@ smsc-password = bar
    <row><entry><literal>host</literal></entry>
      <entry><literal>hostname</literal></entry>
      <entry valign=bottom>
-        Machine that runs the SMSC. As IP (100.100.100.100) 
+        Machine that runs SMSC. As IP (100.100.100.100) 
         or hostname (their.machine.here)
      </entry></row>
 
    <row><entry><literal>port</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign=bottom>
-       Port number in smsc host machine
+       Port number in the SMSC host machine
      </entry></row>
 
    <row><entry><literal>device</literal></entry>
@@ -1355,8 +1347,8 @@ smsc-password = bar
    <row><entry><literal>receive-port</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign=bottom>
-        The port number we have to listen to and which the SMS center
-        then connects when it has messages to be sent. TCP/IP
+        The port number we have to listen to and to which the SMS center
+        connects when it has messages to send. TCP/IP
         connection only.
      </entry></row>
 
@@ -1421,7 +1413,7 @@ ois-debug-level = number 0 to 8  (extra debug, optional, see smsc_ois.c)
 <sect3>
 <title>GSM modem</title>
 
-   <para>Kannel can use a GSM modem as SMS center.</para>
+   <para>Kannel can use a GSM modem as an SMS center.</para>
 
 <programlisting>
 group = smsc
@@ -1442,7 +1434,7 @@ pin = 2345
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
         Modems from different manufacturers have slightly different
-        behaviour. So we need to know what type of modem is used.
+        behaviour. We need to know what type of modem is used.
         Supported types are: <literal>wavecom</literal>, 
         <literal>premicell</literal>, <literal>siemens</literal>.
      </entry></row>
@@ -1513,7 +1505,7 @@ port = 10000
 <title>Using multiple SMS centers</title>
 
     <para>If you have several SMS center connections (multiple
-    operators or number of GSM modems) you need to configure one smsc
+    operators or a number of GSM modems) you need to configure one smsc
     group per SMS center (or GSM modem). When doing this, you might
     want to use routing systems to rout messages to specific centers -
     for example, you have 2 operator SMS centers, and the other is
@@ -1523,7 +1515,7 @@ port = 10000
     SMS center - or if you want to treat multiple ones completely
     identical, give them identical ID. Then use 
     <literal>preferred-smsc-id</literal> and
-    <literal>denied-smsc-id</literal> to set up routing to your
+    <literal>denied-smsc-id</literal> to set up the routing to your
     taste. See also SMS PUSH settings ('sendsms-user' groups), below.</para>
 </sect3>
 </sect2>
@@ -1531,7 +1523,7 @@ port = 10000
 <sect2>
 <title>Smsbox configuration</title>
 
-  <para>You must define a 'smsbox' group into configuration file to be
+  <para>You must define an 'smsbox' group into the configuration file to be
   able to use SMS Kannel. The simplest working 'smsbox' group looks 
    like this:
 
@@ -1557,7 +1549,7 @@ bearerbox-host = localhost
    <row><entry><literal>group</literal></entry>
      <entry><literal>smsbox</literal></entry>
      <entry valign=bottom>
-       This is mandatory variable
+       This is a mandatory variable
      </entry></row>
 
    <row><entry><literal>bearerbox-host</literal></entry>
@@ -1569,7 +1561,7 @@ bearerbox-host = localhost
     <row><entry><literal>sendsms-port</literal></entry>
      <entry>port-number</entry>
      <entry valign=bottom>
-        The port in which to do any sendsms HTTP requests. As with
+        The port in which any sendsms HTTP requests are done. As with
         other ports in Kannel, can be set as anything desired.
      </entry></row>
 
@@ -1582,8 +1574,8 @@ bearerbox-host = localhost
         <emphasis>space</emphasis> character (' ') has special
         meaning: it is used to separate multiple phone numbers from
         each other in multi-send. To disable this feature, do not have
-        it on accepted characters. If this variable is
-        not set, default set <literal>"0123456789&nbsp;+-"</literal> is used.
+        it as an accepted character. If this variable is
+        not set, the default set <literal>"0123456789&nbsp;+-"</literal> is used.
      </entry></row>
 
     <row><entry><literal>global-sender</literal></entry>
@@ -1592,14 +1584,14 @@ bearerbox-host = localhost
         If set, all sendsms originators are set as these before
         proceeding. Note that in a case of most SMS centers you
         cannot set the sender number, but it is automatically set
-        as the number of the SMSC
+        as the number of SMSC
      </entry></row>
 
     <row><entry><literal>log-file</literal></entry>
      <entry>filename</entry>
      <entry morerows=2 valign=bottom>
-       As with bearerbox 'core' group. Access-log is used to store
-       information about MO and send-sms requests. Can be named same as
+       As with the bearerbox 'core' group. Access-log is used to store
+       information about MO and send-sms requests. Can be named same as the 
        'main' access-log (in 'core' group).
      </entry></row>
 
@@ -1633,19 +1625,19 @@ log-level = 0
 <sect2>
 <title>SMS-service configurations</title>
 
-    <para>Now that you have a SMS center connection to send and
+    <para>Now that you have an SMS center connection to send and
     receive SMS messages you need to define services for incoming
     messages. This is done via 'sms-service' configuration
     groups.</para>
 
-    <para>These groups define SMS services in smsbox, so they are only
+    <para>These groups define SMS services in the smsbox, so they are only
     used by the smsbox. Each service is recognized from the first word
     in an SMS message.  By adding a username and password in the URL
     in the following manner
     "http://luser:password@host.domain:port/path?query" we can perform
     HTTP Basic authentication.</para>
 
-    <para>The simplest service group is like this:
+    <para>The simplest service group looks like this:
 
 <programlisting>
 group = sms-service
@@ -1654,8 +1646,8 @@ url = "http://%S"
 </programlisting>
      
      This service grabs any SMS with 'www' as the first word, and then
-     does HTTP request to URL which is taken from the rest of the
-     message. Any result is sent back to phone (or requester), but is
+     does an HTTP request to an URL which is taken from the rest of the
+     message. Any result is sent back to the phone (or requester), but is
      truncated to 160 characters, naturally.</para>
 
  <table frame=none>
@@ -1672,7 +1664,7 @@ url = "http://%S"
    <row><entry><literal>group</literal></entry>
      <entry><literal>sms-service</literal></entry>
      <entry valign=bottom>
-       This is mandatory variable
+       This is a mandatory variable
      </entry></row>
 
    <row><entry><literal>keyword</literal></entry>
@@ -1691,16 +1683,16 @@ url = "http://%S"
    <row><entry><literal>aliases</literal></entry>
      <entry>word-list</entry>
      <entry valign=bottom>
-        If the service have aliases, they are listed as a list with 
-        each entry separated with semicolon (';')
+        If the service has aliases, they are listed as a list with 
+        each entry separated with a semicolon (';')
 
      </entry></row>
 
    <row><entry><literal>url</literal></entry>
      <entry>URL</entry>
      <entry valign=bottom>
-        Requested URL. The url can include list of parameters, which are
-        parsed before the url is fetched. See table below for these
+        Requested URL. The url can include a list of parameters, which are
+        parsed before the url is fetched. See below for these
         parameters.
 
 
@@ -1710,8 +1702,8 @@ url = "http://%S"
    <row><entry><literal>file</literal></entry>
      <entry>filename</entry>
      <entry valign=bottom>
-        File read from local disc. Use this variable only if no
-        <literal>url</literal> set. All escape codes (parameters)
+        File read from a local disc. Use this variable only if no
+        <literal>url</literal> is set. All escape codes (parameters)
         in <literal>url</literal> are supported in filename. 
         The last character of the file (usually linefeed) is removed.
 
@@ -1720,7 +1712,7 @@ url = "http://%S"
    <row><entry><literal>text</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
-        Predefined text answer. Only if no <literal>url</literal> nor 
+        Predefined text answer. Only if there is neither <literal>url</literal> nor 
         <literal>file</literal> set. Escape codes (parameters) are
         usable here, too.
 
@@ -1729,7 +1721,7 @@ url = "http://%S"
    <row><entry><literal>accepted-smsc</literal></entry>
      <entry>id-list</entry>
      <entry valign=bottom>
-        Accept ONLY SMS messages arriving from smsc with matching Id.
+        Accept ONLY SMS messages arriving from SMSC with matching ID.
         Separate multiple entries with ';'. For example, if 
          <literal>accepted-smsc</literal>
         is "RL;SON", accept messages which originate from SMSC with
@@ -1741,7 +1733,7 @@ url = "http://%S"
      <entry>phone-number</entry>
      <entry valign=bottom>
         This number is set as sender. Most SMS centers ignore this,
-        and instead use their fixed number. This option
+        and use their fixed number instead. This option
         overrides all other sender setting methods.
      </entry></row>
 
@@ -1763,7 +1755,7 @@ url = "http://%S"
    <row><entry><literal>split-chars</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
-        Allowed characters to split the message split into several messages.
+        Allowed characters to split the message into several messages.
         So, with "#!" the message is split from last '#' or '!', which is 
         included in the previous part
 
@@ -1780,15 +1772,15 @@ url = "http://%S"
      <entry>0 or 1</entry>
      <entry valign=bottom>
         If set to other than '0', 'no data' messages are not sent to receiver
-        in a case of empty reply from the service provider.
+        in case of an empty reply from the service provider.
 
      </entry></row>
 
    <row><entry><literal>header</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
-        If specified, this string is automatically added to each SMS send with
-        this service. If message is split, it is added to each part
+        If specified, this string is automatically added to each SMS sent with
+        this service. If the message is split, it is added to each part
 
      </entry></row>
 
@@ -1803,8 +1795,8 @@ url = "http://%S"
      <entry>string</entry>
      <entry morerows=1 valign=bottom>
         Stuff in answer that is cut away, only things between prefix
-        and suffix is left. In-casesensitive. Matches for the first prefix
-        and then for first suffix.
+        and suffix is left. In-casesensitive. Matches the first prefix
+        and then the first suffix.
 
      </entry></row>
 
@@ -1903,16 +1895,16 @@ text = "No action spesified"
 
     <para>The basic service system is very limited - it can only
     answer to original requester and it cannot send UDH data, for
-    example. To create more sophisticated systems, SMS Push is
+    example. To create more sophisticated systems, an SMS push is
     used.</para>
 
     <para>The idea is to get the initial request, but then send no
     reply. Instead, the reply (if any) is sent via HTTP
-    sendsms-interface, as a SMS Push (see below). This way the service
-    application has full control of return content, and can do all
+    sendsms-interface as SMS Push (see below). This way the service
+    application has full control of the return content, and can do all
     needed formatting beforehand.</para>
 
-    <para>Note that when no reply is wanted, remember to set variable
+    <para>Note that when no reply is wanted, remember to set the variable
     <literal>max-messages</literal> to zero (0) so that no reply is sent, unless an
     error occurs. Simple sample:</para>
 
@@ -1929,9 +1921,9 @@ max-messages = 0
 <title>Setting up operator specific services</title>
 
    <para>Those running Kannel with several SMS centers might need to
-   define services according to relying SMS center. To achieve this,
+   define services according to the relying SMS center. To achieve this,
    first you need to give an ID name for SMS center connections (see
-   above). Then, use 'accepted-smsc' variable to define which messages
+   above). Then use the 'accepted-smsc' variable to define which messages
    can use that service.</para>
 
 <programlisting>
@@ -1947,10 +1939,10 @@ url = "http://my.applet.machine/Servlet/weather?sender=%p&amp;operator=SOL&amp;t
 <sect2>
 <title>SendSMS-user configurations</title>
 
-   <para>To enable SMS push, you must set
-   <literal>sendsms-port</literal> in 'smsbox' group and define one or
+   <para>To enable an SMS push, you must set
+   <literal>sendsms-port</literal> into the 'smsbox' group and define one or
    more 'sendsms-user' groups. Each of these groups define one
-   account, which can be used for SMS push, via HTTP interface (see
+   account, which can be used for the SMS push, via HTTP interface (see
    below)</para>
 
  <table frame=none>
@@ -1967,7 +1959,7 @@ url = "http://my.applet.machine/Servlet/weather?sender=%p&amp;operator=SOL&amp;t
    <row><entry><literal>group</literal></entry>
      <entry><literal>sendsms-user</literal></entry>
      <entry valign=bottom>
-       This is mandatory variable
+       This is a mandatory variable
      </entry></row>
 
    <row><entry><literal>username</literal></entry>
@@ -1996,13 +1988,13 @@ url = "http://my.applet.machine/Servlet/weather?sender=%p&amp;operator=SOL&amp;t
    <row><entry><literal>forced-smsc</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
-         Force smsc id as 'string' (linked to SMS routing, see 'smsc' groups)
+         Force SMSC ID as a 'string' (linked to SMS routing, see 'smsc' groups)
      </entry></row>
 
    <row><entry><literal>default-smsc</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
-        If no smsc id given with send-sms request (see below), use
+        If no SMSC ID is given with the send-sms request (see below), use
         this one. No idea to use with forced-smsc.
      </entry></row>
 
@@ -2055,7 +2047,7 @@ concatenation = 1
 forced-smsc = SOL
 </programlisting>
 
-   The second one is a very limited only, only allowed to user from IP
+   The second one is very limited and only allows a user from IP
    "123.234.123.234". On the other hand, the user can send a longer
    message, up to 3 SMSes long, which is sent as concatenated
    SMS.</para>
@@ -2086,7 +2078,7 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
 </programlisting>
 
          Thus, technically,
-	you make a HTTP GET request. This means that all the information
+	you make an HTTP GET request. This means that all the information
 	is stuffed into the URL. If you want to use this often via a
 	browser, you probably want to make an HTML form for this.</para>
 
@@ -2097,32 +2089,32 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
    <row><entry><literal>username</literal> (or <literal>user</literal>)</entry>
    <entry valign=bottom>
         Username or account name. Must be <literal>username</literal> of the one
-        'sendsms-user' group in Kannel configuration,
+        'sendsms-user' group in the Kannel configuration,
         or results in 'Authorization failed' reply.
    </entry></row>
 
    <row><entry><literal>password</literal> (or <literal>pass</literal>)</entry>
    <entry valign=bottom>
-       Password associated to given <literal>username</literal>. Must match
- corresponding field in 'sendsms-user' group in
- Kannel configuration, or 'Authorization failed' is returned.
+       Password associated with given <literal>username</literal>. Must match
+ corresponding field in the 'sendsms-user' group of
+the Kannel configuration, or 'Authorization failed' is returned.
    </entry></row>
 
    <row><entry><literal>from</literal></entry>
    <entry valign=bottom>
         Phone number of the sender. This field is usually overridden
         by the SMS Center, or it can be overridden by
-        <literal>faked-sender</literal> variable in
+        <literal>faked-sender</literal> variable in the
         <literal>sendsms-user</literal> group. If this variable is not
         set, smsbox <literal>global-sender</literal> is used.
    </entry></row>
 
    <row><entry><literal>to</literal></entry>
    <entry valign=bottom>
-        Phone number of the receiver. To send for multiple receivers,
+        Phone number of the receiver. To send to multiple receivers,
    separate each entry with <emphasis>space</emphasis> (' ', '+'
    url-encoded) - but note that this can be deactivated via
-   <literal>sendsms-chars</literal> in 'smsbox' group.
+   <literal>sendsms-chars</literal> in the 'smsbox' group.
    </entry></row>
 
    <row><entry><literal>text</literal></entry>
@@ -2142,9 +2134,9 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
    <row><entry><literal>smsc</literal></entry>
    <entry valign=bottom>
         Optional guideline of which SMS Center is used to send the
-        message (see above). This variable can be overridden with
+        message (see above). This variable can be overridden with a
         <literal>forced-smsc</literal> configuration
-        variable. Likewise, <literal>default-smsc</literal> variable
+        variable. Likewise, the <literal>default-smsc</literal> variable
         can be used to set the SMSC if it is not set otherwise.
    </entry></row>
 
@@ -2173,7 +2165,7 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
 <title>SMS&amp;WAP Gateway Configuration</title>
 
    <para>Configuration is done as explained in previous chapters, you
-   simple have to include all the data from both chapters into
+   simply have to include all the data from both chapters into the
    configuration file.</para>
 
 </sect1>
@@ -2181,8 +2173,8 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
 <sect1>
 <title>Running SMS&amp;WAP Gateway</title>
 
-   <para>There is no special tricks in this, just launch both smsbox
-   and wapbox in addition to bearerbox, using multiple hosts as
+   <para>There are no special tricks to this, just launch both the smsbox
+   and the wapbox in addition to the bearerbox, using multiple hosts if
    needed.</para>
 
 </sect1>
@@ -2199,9 +2191,7 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
 	related to the gateway, and the preferred procedure for reporting
 	bugs and sending corrections to them.</para>
 	
-	<para>The Kannel development mailing list is at
-	devel@kannel.org.  To subscribe, send mail to <ulink
-	url="mailto:devel-subscribe@kannel.org">devel-subscribe@kannel.org</ulink>.
+	<para>The Kannel development mailing list is devel@kannel.org.  To subscribe, send mail to <ulink url="mailto:devel-subscribe@kannel.org">devel-subscribe@kannel.org</ulink>.
 	This is currently the best location for asking help and reporting
 	bugs. Please include configuration file and version number.</para>
 	
