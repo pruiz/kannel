@@ -188,7 +188,7 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	char *buf, *enc, *s, *p, *pattern, *tilde;
 	int nextarg, j;
 	size_t len, maxword;
-	struct tm *tm;
+	struct tm tm;
 	char *words[161];
 	int max_words;
 	List *word_list;
@@ -304,13 +304,13 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 			}
 			break;
 		case 't':
-			tm = gmtime(&request->smart_sms.time);
+			tm = gw_gmtime(request->smart_sms.time);
 			sprintf(s, "%04d-%02d-%02d+%02d:%02d",
-				tm->tm_year + 1900,
-				tm->tm_mon + 1,
-				tm->tm_mday,
-				tm->tm_hour,
-				tm->tm_min);
+				tm.tm_year + 1900,
+				tm.tm_mon + 1,
+				tm.tm_mday,
+				tm.tm_hour,
+				tm.tm_min);
 			break;
 		case '%':
 			*s = '%';

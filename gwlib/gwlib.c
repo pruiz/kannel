@@ -21,6 +21,7 @@ void gwlib_assert_init(void) {
 void gwlib_init(void) {
 	gw_assert(!init);
 	gw_init_mem();
+	gwlib_protected_init();
 	gwthread_init();
 	http2_init();
 	socket_init();
@@ -32,6 +33,7 @@ void gwlib_shutdown(void) {
 	http2_shutdown();
 	socket_shutdown();
 	gwthread_shutdown();
+	gwlib_protected_shutdown();
 	gw_check_leaks();
 	init = 0;
 }

@@ -1,3 +1,12 @@
+Sun Jun  4 00:52:22 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/protected.[ch]: Wrote thread-safe wrappers around 
+	standard library functions gmtime, localtime, and rand. Note
+	that this is just a beginning, we should wrap many more functions.
+	
+	* gw/urltrans.c, gwlib/gwlib.[ch], gwlib/log.c: Made use of the
+	wrappers.
+
 Sun Jun  4 00:20:19 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/numhash.c: Added typecasts to silence compiler warnings. Kalle,

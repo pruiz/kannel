@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #endif
 
+#include "protected.h"
 #include "gwstr.h"
 #include "gwmem.h"
 #include "utils.h"

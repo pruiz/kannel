@@ -5,10 +5,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "log.h"
-#include "thread.h"
-#include "gwthread.h"
-#include "gwmem.h"
+#include "gwlib.h"
 
 
 /*
@@ -124,19 +121,19 @@ static void format(char *buf, int level, const char *place, int e,
 	};
 	static int tab_size = sizeof(tab) / sizeof(tab[0]);
 	time_t t;
-	struct tm *tm;
+	struct tm tm;
 	char *p, prefix[1024];
 	
 	p = prefix;
 	time(&t);
 #if LOG_TIMESTAMP_LOCALTIME
-	tm = localtime(&t);
+	tm = gw_localtime(t);
 #else
-	tm = gmtime(&t);
+	tm = gw_gmtime(t);
 #endif
 	sprintf(p, "%04d-%02d-%02d %02d:%02d:%02d ",
-		tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
-		tm->tm_hour, tm->tm_min, tm->tm_sec);
+		tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+		tm.tm_hour, tm.tm_min, tm.tm_sec);
 
 	p = strchr(p, '\0');
 	sprintf(p, "[%ld] ", gwthread_self());
