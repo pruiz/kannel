@@ -52,9 +52,9 @@ Octstr *version_report_string(const char *boxname)
 static Connection *bb_conn;
 
 
-void connect_to_bearerbox(Octstr *host, int port)
+void connect_to_bearerbox(Octstr *host, int port, Octstr *our_host)
 {
-    bb_conn = conn_open_tcp(host, port);
+    bb_conn = conn_open_tcp(host, port, our_host);
     if (bb_conn == NULL)
     	panic(0, "Couldn't connect to the bearerbox.");
     info(0, "Connected to bearerbox at %s port %d.",

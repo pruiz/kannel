@@ -325,12 +325,13 @@ static void unlocked_register_pollout(Connection *conn, int onoff)
 
 #ifdef HAVE_LIBSSL
 
-Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile)
+Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
+		Octstr *our_host)
 {
     Connection *ret;
     int SSL_ret;
 
-    ret = conn_open_tcp(host, port);
+    ret = conn_open_tcp(host, port, our_host);
 
     ret->ssl = SSL_new(global_ssl_context);
     SSL_set_connect_state(ret->ssl);
@@ -369,18 +370,20 @@ error:
 
 #endif /* HAVE_LIBSSL */
 
-Connection *conn_open_tcp(Octstr *host, int port)
+Connection *conn_open_tcp(Octstr *host, int port, Octstr *our_host)
 {
-    return conn_open_tcp_with_port(host, port, 0);
+    return conn_open_tcp_with_port(host, port, 0, our_host);
 }
 
 
-Connection *conn_open_tcp_with_port(Octstr *host, int port, int our_port)
+Connection *conn_open_tcp_with_port(Octstr *host, int port, int our_port,
+		Octstr *our_host)
 {
     int sockfd;
 
     sockfd = tcpip_connect_to_server_with_port(octstr_get_cstr(host), port,
-					       our_port);
+					       our_port, our_host == NULL ?
+					       NULL : octstr_get_cstr(our_host));
     if (sockfd < 0)
 	return NULL;
     return conn_wrap_fd(sockfd);

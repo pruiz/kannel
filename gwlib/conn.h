@@ -53,17 +53,19 @@ typedef void conn_callback_t(Connection *conn, void *data);
  * as conn_open_tcp() below. 'certkeyfile' specifies a PEM-encoded
  * file where OpenSSL looks for a private key and a certificate. 
  */
-Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile);
+Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
+		Octstr *our_host);
 #endif /* HAVE_LIBSSL */
 
 /* Open a TCP/IP connection to the given host and port.  Return the
  * new Connection.  If the connection can not be made, return NULL
  * and log the problem. */
-Connection *conn_open_tcp(Octstr *host, int port);
+Connection *conn_open_tcp(Octstr *host, int port, Octstr *our_host);
 
 /* As above, but binds our end to 'our_port'. If 'our_port' is 0, uses
  * any port like conn_open_tcp. */
-Connection *conn_open_tcp_with_port(Octstr *host, int port, int our_port);
+Connection *conn_open_tcp_with_port(Octstr *host, int port, int our_port,
+		Octstr *our_host);
 
 /* Create a Connection structure around the given file descriptor.
  * The file descriptor must not be used for anything else after this;

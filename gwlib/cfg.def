@@ -131,6 +131,8 @@ MULTI_GROUP(smsc,
     OCTSTR(no-sender)
     OCTSTR(no-coding)
     OCTSTR(alt-dcs)
+    OCTSTR(throughput)
+    OCTSTR(window)
 )
 
 

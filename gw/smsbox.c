@@ -1973,7 +1973,8 @@ int main(int argc, char **argv)
     gwthread_create(obey_request_thread, NULL);
     gwthread_create(url_result_thread, NULL);
 
-    connect_to_bearerbox(bb_host, bb_port);
+    connect_to_bearerbox(bb_host, bb_port, NULL /* bb_our_host */);
+	/* XXX add our_host if required */
 
     heartbeat_thread = heartbeat_start(write_to_bearerbox, heartbeat_freq,
 				       outstanding_requests);

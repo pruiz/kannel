@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
     srand((unsigned int) time(NULL));
 
     info(0, "fakesmsc starting");
-    server = conn_open_tcp(host, port);
+    server = conn_open_tcp(host, port, NULL);
     if (server == NULL)
 	panic(0, "Failed to open connection");
 

@@ -314,10 +314,10 @@ static void smsbox_thread(void *arg)
     msg_destroy(msg);
 
     gwthread_sleep(1.0);
-    conn = conn_open_tcp(bearerbox_host, port_for_smsbox);
+    conn = conn_open_tcp(bearerbox_host, port_for_smsbox, NULL);
     if (conn == NULL) {
 	gwthread_sleep(2.0);
-	conn = conn_open_tcp(bearerbox_host, port_for_smsbox);
+	conn = conn_open_tcp(bearerbox_host, port_for_smsbox, NULL);
     	if (conn == NULL)
 	    panic(0, "Couldn't connect to bearerbox as smsbox");
     }
@@ -370,7 +370,7 @@ static void accept_thread(void *arg)
     long smsbox_thread_id;
     
     port = *(int *) arg;
-    fd = make_server_socket(port);
+    fd = make_server_socket(port, NULL);
     if (fd == -1)
     	panic(0, "Couldn't create SMPP listen port.");
     

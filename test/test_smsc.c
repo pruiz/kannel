@@ -393,7 +393,7 @@ static void smpp_emu(void *arg)
     /*
      * Wait for SMPP clients.
      */
-    fd = make_server_socket(smpp_port);
+    fd = make_server_socket(smpp_port, NULL);
     if (fd == -1)
     	panic(0, "Couldn't create SMPP listen port.");
     

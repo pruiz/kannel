@@ -1,4 +1,21 @@
 2001-10-08 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* gw/smsc_emi2.c, gwlib/cfg.def: Added "throughput" (messages per
+	second) variable to configuration. Delays 1/throughtput seconds 
+	between sending messages.
+	* gw/smsc_emi2.c, gwlib/cfg.def: Added "window" configuration that
+	defines the window size when using windowed flow-control (flow-
+	control=0). Defaults to 100, like before.
+	* gw/bb_boxc.c, shared.c, shared.h, smsc_cimd.c, smsbox.c, 
+	smsc_cimd2, smsc_emi.c, smsc_emi2.c, smsc_fake.c, smsc_ois.c, 
+	smsc_smpp.c, wapbox.c, gwlib/conn.c, conn.h, http.c, socket.c, 
+	socket.h, test/drive_smpp.c, drive_wapbox.c, fakesmsc.c, 
+	test_cimd2.c, test_smsc.c: Added preliminary our_host parameter to
+	later someone code our_host config parameters. Will be needed if we
+	want to fix our ip-address when we have ip aliases or to define the
+	ip we listen to (instead of ANY) to limit connections: bind bearerbox
+	to localhost only, for example.
+
+2001-10-08 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* gw/smsc_emi2.c: Support ACK without timestamp. Note that if smsc
 	doesn't send timestamp in ACK, delivery reports wouldn't work.
 

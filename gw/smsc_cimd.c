@@ -58,7 +58,10 @@ static int cimd_open_connection(SMSCenter *smsc)
     memset(tmpbuff, 0, 10*1024);
 
     /* connect */
-    smsc->socket = tcpip_connect_to_server(smsc->cimd_hostname, smsc->cimd_port);
+    smsc->socket = tcpip_connect_to_server(smsc->cimd_hostname, smsc->cimd_port,
+	NULL);
+	/* XXX add interface_name if required */
+
     if (smsc->socket == -1)
         goto error;
 
@@ -520,7 +523,9 @@ static int connect_tcpip(SMSCenter *smsc)
     /* Be sure to open a socket. */
     for (;;) {
         smsc->socket = tcpip_connect_to_server(
-                           smsc->cimd_hostname, smsc->cimd_port);
+                           smsc->cimd_hostname, smsc->cimd_port,
+			   NULL);
+	    /* XXX add interface_name if required */
 
         if (smsc->socket != -1) break;
 

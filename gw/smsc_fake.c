@@ -35,7 +35,8 @@ static int fake_open_connection(PrivData *privdata)
 {
     int s;
 
-    if ( (s = make_server_socket(privdata->port)) == -1) {
+    if ( (s = make_server_socket(privdata->port, NULL)) == -1) {
+	    /* XXX add interface_name if required */
 	error(0, "smsc_fake: could not create listening socket in port %d",
 	      privdata->port);
 	return -1;

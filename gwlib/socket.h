@@ -29,13 +29,14 @@ Octstr *get_official_name(void);
 Octstr *get_official_ip(void);
 
 /* Open a server socket. Return -1 for error, >= 0 socket number for OK.*/
-int make_server_socket(int port);
+int make_server_socket(int port, const char *interface_name);
 
 /* Open a client socket. */
-int tcpip_connect_to_server(char *hostname, int port);
+int tcpip_connect_to_server(char *hostname, int port, const char *interface_name);
 
 /* As above, but binds our end to 'our_port' */
-int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port);
+int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port,
+		const char *interface_name);
 
 /* Write string to socket. */
 int write_to_socket(int socket, char *str);

@@ -964,7 +964,7 @@ static int wait_for_client(int port) {
 	int clientfd;
 	Octstr *addr;
 
-	listenfd = make_server_socket(port);
+	listenfd = make_server_socket(port, NULL);
 	if (listenfd < 0) {
 		fprintf(stderr, "%s: failed to open socket at port %d\n",
 			progname, port);

@@ -223,7 +223,9 @@ static int emi_open_connection_ip(SMSCenter *smsc)
 {
     smsc->emi_fd =
         tcpip_connect_to_server_with_port(smsc->emi_hostname,
-                                          smsc->emi_port, smsc->emi_our_port);
+                                          smsc->emi_port, smsc->emi_our_port,
+					  NULL);
+	    /* XXX add interface_name if required */
     if (smsc->emi_fd < 0)
         return -1;
 
@@ -273,7 +275,8 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
     /* if receive-port is defined, set it ready */
 
     if (receive_port > 0) {
-        if ((smsc->emi_backup_fd = make_server_socket(receive_port)) <= 0)
+        if ((smsc->emi_backup_fd = make_server_socket(receive_port, NULL)) <= 0)
+		/* XXX add interface_name if required */
             goto error;
 
         debug("bb.sms.emi", 0, "EMI IP backup port at %d opened", receive_port);

@@ -1972,6 +1972,21 @@ smsc-password = bar
 	of n commands can be sent before a response is received. 
      </entry></row>
 
+    <row><entry><literal>window</literal></entry>
+      <entry><literal>number (messages)</literal></entry>
+      <entry valign=bottom>
+        When using <literal>flow-control=0</literal>, emi works in windowed
+        flow control mode. This variable defines the size of the window used
+        to send messages. (optional, defaults to the maximum - 100)
+     </entry></row>
+
+    <row><entry><literal>throughput</literal></entry>
+      <entry><literal>number (messages/sec)</literal></entry>
+      <entry valign=bottom>
+        If SMSC requires that kannel limits the number of messages per second, 
+        use this variable. (optional)
+     </entry></row>
+
    </tbody></tgroup></informaltable>
    
 

@@ -34,11 +34,12 @@ static const struct sockaddr_in empty_sockaddr_in;
 #endif
 
 
-int make_server_socket(int port)
+int make_server_socket(int port, const char *interface_name )
 {
     struct sockaddr_in addr;
     int s;
     int reuse;
+    struct hostent hostinfo;
 
     s = socket(PF_INET, SOCK_STREAM, 0);
     if (s == -1) {
@@ -49,7 +50,15 @@ int make_server_socket(int port)
     addr = empty_sockaddr_in;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    if (interface_name == NULL || strcmp(interface_name, "*") == 0)
+        addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    else {
+        if (gw_gethostbyname(&hostinfo, interface_name) == -1) {
+            error(errno, "gethostbyname failed");
+            goto error;
+        }
+        addr.sin_addr = *(struct in_addr *) hostinfo.h_addr;
+    }
 
     reuse = 1;
     if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &reuse,
@@ -77,18 +86,19 @@ error:
 }
 
 
-int tcpip_connect_to_server(char *hostname, int port)
+int tcpip_connect_to_server(char *hostname, int port, const char *interface_name)
 {
 
-    return tcpip_connect_to_server_with_port(hostname, port, 0);
+    return tcpip_connect_to_server_with_port(hostname, port, 0, interface_name);
 }
 
 
-int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port)
+int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port, const char *interface_name)
 {
     struct sockaddr_in addr;
     struct sockaddr_in o_addr;
     struct hostent hostinfo;
+    struct hostent o_hostinfo;
     int s;
 
     s = socket(PF_INET, SOCK_STREAM, 0);
@@ -113,7 +123,15 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port)
         o_addr = empty_sockaddr_in;
         o_addr.sin_family = AF_INET;
         o_addr.sin_port = htons(our_port);
-        o_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	if (interface_name == NULL || strcmp(interface_name, "*") == 0)
+	    o_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	else {
+	    if (gw_gethostbyname(&o_hostinfo, interface_name) == -1) {
+		error(errno, "gethostbyname failed");
+		goto error;
+	    }
+	    o_addr.sin_addr = *(struct in_addr *) o_hostinfo.h_addr;
+	}
 
         reuse = 1;
         if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &reuse,

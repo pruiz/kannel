@@ -626,7 +626,8 @@ static void smsboxc_run(void *arg)
     gwthread_wakeup(MAIN_THREAD_ID);
     port = (int)arg;
     
-    fd = make_server_socket(port);
+    fd = make_server_socket(port, NULL); 
+    	/* XXX add interface_name if required */
 
     if (fd < 0) {
 	panic(0, "Could not open smsbox port %d", port);
@@ -666,7 +667,8 @@ static void wapboxc_run(void *arg)
     gwthread_wakeup(MAIN_THREAD_ID);
     port = (int)arg;
     
-    fd = make_server_socket(port);
+    fd = make_server_socket(port, NULL);
+    	/* XXX add interface_name if required */
 
     if (fd < 0) {
 	panic(0, "Could not open wapbox port %d", port);

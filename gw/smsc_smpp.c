@@ -290,7 +290,8 @@ static Connection *open_transmitter(SMPP *smpp)
     SMPP_PDU *bind;
     Connection *conn;
 
-    conn = conn_open_tcp(smpp->host, smpp->transmit_port);
+    conn = conn_open_tcp(smpp->host, smpp->transmit_port, NULL
+		    /* smpp->our_host */);
     if (conn == NULL) {
     	error(0, "SMPP: Couldn't connect to server.");
 	return NULL;
@@ -325,7 +326,8 @@ static Connection *open_receiver(SMPP *smpp)
     SMPP_PDU *bind;
     Connection *conn;
 
-    conn = conn_open_tcp(smpp->host, smpp->receive_port);
+    conn = conn_open_tcp(smpp->host, smpp->receive_port, NULL
+		    /* smpp->our_host */);
     if (conn == NULL) {
     	error(0, "SMPP: Couldn't connect to server.");
 	return NULL;

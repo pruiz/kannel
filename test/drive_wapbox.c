@@ -175,7 +175,7 @@ static Connection *start_wapbox(void) {
 	int wap_socket;
 	int wapbox;
 
-	wap_socket = make_server_socket(wapbox_port);
+	wap_socket = make_server_socket(wapbox_port, NULL);
 	if (wap_socket < 0)
 		panic(0, "Couldn't make wapbox port\n");
 

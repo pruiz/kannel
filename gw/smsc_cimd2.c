@@ -1647,7 +1647,9 @@ static int cimd2_login(SMSCenter *smsc)
         cimd2_close_socket(smsc);
     }
 
-    smsc->socket = tcpip_connect_to_server(octstr_get_cstr(smsc->cimd2_hostname), smsc->cimd2_port);
+    smsc->socket = tcpip_connect_to_server(octstr_get_cstr(smsc->cimd2_hostname), 
+		    smsc->cimd2_port, NULL);
+    /* XXX add interface_name if required */
     if (smsc->socket == -1)
         goto error;
 

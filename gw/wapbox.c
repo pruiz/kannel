@@ -407,7 +407,8 @@ int main(int argc, char **argv)
     
     if (bearerbox_host == NULL)
     	bearerbox_host = octstr_create(BB_DEFAULT_HOST);
-    connect_to_bearerbox(bearerbox_host, bearerbox_port);
+    connect_to_bearerbox(bearerbox_host, bearerbox_port, NULL
+		    /* bearerbox_our_port */);
 
     wap_push_ota_bb_address_set(bearerbox_host);
 	    

@@ -394,7 +394,9 @@ static int ois_open_listener(SMSCenter *smsc)
 {
     SAY(2, "ois_open_listener");
 
-    smsc->ois_listening_socket = make_server_socket(smsc->receive_port);
+    smsc->ois_listening_socket = make_server_socket(smsc->receive_port, 
+		    NULL);
+	/* XXX add interface_name if required */
     if (smsc->ois_listening_socket < 0) {
 	goto error;
     }
@@ -427,7 +429,9 @@ static int ois_open_sender(SMSCenter *smsc)
 	  smsc->hostname, smsc->port);
 
     time(&beginning);
-    smsc->socket = tcpip_connect_to_server(smsc->hostname, smsc->port);
+    smsc->socket = tcpip_connect_to_server(smsc->hostname, smsc->port,
+		    NULL);
+	/* XXX add interface_name if required */
     if (smsc->socket < 0) {
 	return -1;
     } else {

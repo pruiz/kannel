@@ -45,7 +45,7 @@ void report_versions(const char *boxname);
 /*
  * Open a connection to the bearerbox.
  */
-void connect_to_bearerbox(Octstr *host, int port);
+void connect_to_bearerbox(Octstr *host, int port, Octstr *our_host);
 
 
 /*

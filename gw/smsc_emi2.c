@@ -45,6 +45,8 @@ typedef struct privdata {
     int		keepalive; 	/* Seconds to send a Keepalive Command (OT=31) */
     int		flowcontrol;	/* 0=Windowing, 1=Stop-and-Wait */
     int		waitack;	/* Seconds to wait to ack */
+    int		throughput;	/* Messages per second */
+    int		window;		/* In windowed flow-control, the window size */
 } PrivData;
 
 
@@ -160,7 +162,8 @@ static Connection *open_send_connection(SMSCConn *conn)
 	    wait = 1;
 
 	server = conn_open_tcp_with_port(privdata->host, privdata->port,
-					 privdata->our_port);
+					 privdata->our_port, NULL
+					 /* privdata->our_host */);
 	if (privdata->shutdown) {
 	    conn_destroy(server);
 	    return NULL;
@@ -606,13 +609,26 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
     Msg		*msg;
     time_t	current_time, check_time, keepalive_time=0;
     int write = 1; /* write=1, read=0, for stop-and-wait flow control */
+    double delay = 0;
+
+    if (privdata->throughput) {
+	delay = 1.0 / privdata->throughput;
+	info(0, "Limiting throughput to %d messages per second " 
+		"(delay of %d miliseconds)",
+	         privdata->throughput, delay * 1000);
+    }
 
     check_time = time(NULL);
     while (1) {
+
 	/* Send messages if there's room in the sending window */
-	while ((write || !privdata->flowcontrol) && privdata->unacked < 100
-	       && !privdata->shutdown &&
+	while ((write || !privdata->flowcontrol) && 
+	       privdata->unacked < privdata->window && !privdata->shutdown &&
 	       (msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
+
+	    if (privdata->throughput)
+		gwthread_sleep(delay);
+
 	    while (privdata->sendtime[nexttrn % 100] != 0)
 		nexttrn++; /* pick unused TRN */
 	    nexttrn %= 100;
@@ -636,7 +652,7 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 	/* Send keepalive if there's room in the sending window */
 	if ((write || !privdata->flowcontrol) && privdata->keepalive > 0 
 	    && time(NULL) > keepalive_time + privdata->keepalive &&
-	    privdata->unacked < 100 && !privdata->shutdown ) {
+	    privdata->unacked < privdata->window && !privdata->shutdown ) {
 	    while (privdata->sendtime[nexttrn % 100] != 0)
 		nexttrn++; /* pick unused TRN */
 	    nexttrn %= 100;
@@ -893,7 +909,8 @@ static int emi2_open_listening_socket(PrivData *privdata)
 {
     int s;
 
-    if ( (s = make_server_socket(privdata->rport)) == -1) {
+    if ( (s = make_server_socket(privdata->rport, NULL)) == -1) {
+	    /* XXX add interface_name if required */
 	error(0, "smsc_emi2: could not create listening socket in port %d",
 	      privdata->rport);
 	return -1;
@@ -1034,7 +1051,8 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 {
     PrivData *privdata;
     Octstr *allow_ip, *deny_ip, *host;
-    long portno, our_port, keepalive, flowcontrol, waitack; 
+    long portno, our_port, keepalive, flowcontrol, waitack, throughput; 
+    long window;
     	/* has to be long because of cfg_get_integer */
     int i;
 
@@ -1073,6 +1091,20 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     if (privdata->flowcontrol < 0 || privdata->flowcontrol > 1) {
 	error(0, "'flow-control' invalid in emi2 configuration.");
 	goto error;
+    }
+
+    if (cfg_get_integer(&throughput, cfg, octstr_imm("throughput")) < 0)
+	privdata->throughput = 0;
+    else
+	privdata->throughput = throughput;
+
+    if (cfg_get_integer(&window, cfg, octstr_imm("window")) < 0)
+	privdata->window = 100;
+    else
+	privdata->window = window;
+    if (window > 100) {
+	warning(0, "Value of 'window' should be lesser or equal to 100..");
+	privdata->window = 100;
     }
 
     if (cfg_get_integer(&waitack, cfg, octstr_imm("wait-ack")) < 0)

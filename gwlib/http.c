@@ -653,7 +653,8 @@ static Octstr *conn_pool_key(Octstr *host, int port)
 }
 
 
-static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certkeyfile)
+static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certkeyfile,
+		Octstr *our_host)
 {
     Octstr *key;
     List *list;
@@ -685,10 +686,10 @@ static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certke
 	      octstr_get_cstr(host), port);
 #ifdef HAVE_LIBSSL
 	if (ssl) 
-	    conn = conn_open_ssl(host, port, certkeyfile);
+	    conn = conn_open_ssl(host, port, certkeyfile, our_host);
 	else
 #endif /* HAVE_LIBSSL */
-	    conn = conn_open_tcp(host, port);
+	    conn = conn_open_tcp(host, port, our_host);
     }
     
     return conn;
@@ -1112,7 +1113,7 @@ static Connection *send_request(HTTPServer *trans, char *method_name)
 {
     Octstr *path, *request;
     Connection *conn;
-    Octstr *host;
+    Octstr *host, *our_host = NULL;
     int port;
 
     path = NULL;
@@ -1151,12 +1152,13 @@ static Connection *send_request(HTTPServer *trans, char *method_name)
 	      octstr_get_cstr(host), port);
 #ifdef HAVE_LIBSSL
 	if (trans->ssl) conn = 
-	    conn_open_ssl(host, port, trans->certkeyfile);
+	    conn_open_ssl(host, port, trans->certkeyfile, our_host);
 	else
 #endif /* HAVE_LIBSSL */
-	    conn = conn_open_tcp(host, port);
+	    conn = conn_open_tcp(host, port, our_host);
     } else
-        conn = conn_pool_get(host, port, trans->ssl, trans->certkeyfile);
+        conn = conn_pool_get(host, port, trans->ssl, trans->certkeyfile,
+			our_host);
     if (conn == NULL)
         goto error;
 
@@ -1766,7 +1768,8 @@ int http_open_port(int port)
     debug("gwlib.http", 0, "HTTP: Opening server at port %d.", port);
     p = gw_malloc(sizeof(*p));
     p->port = port;
-    p->fd = make_server_socket(port);
+    p->fd = make_server_socket(port, NULL);
+	/* XXX add interface_name if required */
     if (p->fd == -1) {
 	gw_free(p);
     	return -1;
