@@ -244,12 +244,12 @@ Octstr *store_status(int status_type)
 
             sprintf(buf, frmt,
                 msg->sms.id,
-                octstr_get_cstr(msg->sms.sender),
-                octstr_get_cstr(msg->sms.receiver),
-                octstr_get_cstr(msg->sms.smsc_id),
-                octstr_get_cstr(msg->sms.udhdata),
-                octstr_get_cstr(msg->sms.msgdata),
-                octstr_get_cstr(t));
+                (msg->sms.sender ? octstr_get_cstr(msg->sms.sender) : ""),
+                (msg->sms.receiver ? octstr_get_cstr(msg->sms.receiver) : ""),
+                (msg->sms.smsc_id ? octstr_get_cstr(msg->sms.smsc_id) : ""),
+                (msg->sms.udhdata ? octstr_get_cstr(msg->sms.udhdata) : ""),
+                (msg->sms.msgdata ? octstr_get_cstr(msg->sms.msgdata) : ""),
+                (t ? octstr_get_cstr(t) : ""));
             octstr_destroy(t);
             str = octstr_create(buf);
             octstr_append(ret, str);
