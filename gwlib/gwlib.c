@@ -10,8 +10,10 @@
 void gwlib_init(void) {
 	gw_init_mem();
 	http2_init();
+	socket_init();
 }
 
 void gwlib_shutdown(void) {
 	http2_shutdown();
+	socket_shutdown();
 }

@@ -43,6 +43,10 @@ static List	*smsbox_list;
 static int	smsbox_port;
 static int	wapbox_port;
 
+static char *box_allow_ip;
+static char *box_deny_ip;
+
+
 static long	boxid = 0;
 
 typedef struct _boxc {
@@ -178,7 +182,7 @@ static void *boxc_sender(void *arg)
  */
 
 
-static Boxc *boxc_create(int fd, char *ip)
+static Boxc *boxc_create(int fd, Octstr *ip)
 {
     Boxc *boxc;
     
@@ -187,7 +191,7 @@ static Boxc *boxc_create(int fd, char *ip)
     boxc->load = 0;
     boxc->fd = fd;
     boxc->id = boxid++;		/* XXX  MUTEX! fix later... */
-    boxc->client_ip = octstr_create(ip);
+    boxc->client_ip = ip;
     boxc->alive = 1;
     return boxc;
 }    
@@ -210,11 +214,11 @@ static void boxc_destroy(Boxc *boxc)
 static Boxc *accept_boxc(int fd)
 {
     Boxc *newconn;
+    Octstr *ip;
 
     int newfd;
     struct sockaddr_in client_addr;
     socklen_t client_addr_len;
-    char accept_ip[NI_MAXHOST];
 
     client_addr_len = sizeof(client_addr);
 
@@ -222,22 +226,17 @@ static Boxc *accept_boxc(int fd)
     if (newfd < 0)
 	return NULL;
 
-    /* what the heck does this do?
-     * XXX
-     */
-    
-    memset(accept_ip, 0, sizeof(accept_ip));
-    getnameinfo((struct sockaddr *)&client_addr, client_addr_len,
-		accept_ip, sizeof(accept_ip), 
-		NULL, 0, NI_NUMERICHOST);
+    ip = host_ip(client_addr);
 
-    /*
-     * XXX here we should check the IP if it is an acceptable one
-     */
+    if (is_allowed_ip(box_allow_ip, box_deny_ip, ip)==0) {
+	info(0, "Box connection tried from denied host <%s>, disconnected",
+	     octstr_get_cstr(ip));
+	octstr_destroy(ip);
+	return NULL;
+    }
+    newconn = boxc_create(newfd, ip);
     
-    newconn = boxc_create(newfd, accept_ip);
-    
-    info(0, "Client connected from <%s>", octstr_get_cstr(newconn->client_ip));
+    info(0, "Client connected from <%s>", octstr_get_cstr(ip));
 
     /* XXX TODO: do the hand-shake, baby, yeah-yeah! */
 
@@ -643,19 +642,25 @@ int smsbox_restart(Config *config)
 
 int wapbox_start(Config *config)
 {
+    ConfigGroup *grp;
     char *p;
 
     if (wapbox_running) return -1;
 
     debug("bb", 0, "starting wapbox connection module");
     
-    if ((p = config_get(config_find_first_group(config, "group", "core"),
-			"wapbox-port")) == NULL) {
+    grp = config_find_first_group(config, "group", "core");
+    
+    if ((p = config_get(grp, "wapbox-port")) == NULL) {
 	error(0, "Missing wapbox-port variable, cannot start WAP");
 	return -1;
     }
     wapbox_port = atoi(p);
-
+    box_allow_ip = config_get(grp, "box-allow-ip");
+    box_deny_ip = config_get(grp, "box-deny-ip");
+    if (box_allow_ip != NULL && box_deny_ip == NULL)
+	info(0, "Box connection allowed IPs defined without any denied...");
+    
     wapbox_list = list_create();	/* have a list of connections */
     list_add_producer(outgoing_wdp);
 

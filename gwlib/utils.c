@@ -191,6 +191,24 @@ found:
 }
 
 
+int is_allowed_ip(char *allow_ip, char *deny_ip, Octstr *ip)
+{
+    if (ip == NULL)
+	return -1;
+
+    if (deny_ip == NULL || *deny_ip == '\0')
+	return 1;
+
+    if (allow_ip != NULL && check_ip(allow_ip, octstr_get_cstr(ip), NULL) == 1)
+	return 1;
+
+    if (check_ip(deny_ip, octstr_get_cstr(ip), NULL) == 1)
+	return 0;
+
+    return 1;
+}
+
+
 int normalize_number(char *dial_prefixes, Octstr **number)
 {
     char *t, *p, *official, *start;

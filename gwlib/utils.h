@@ -79,6 +79,15 @@ int check_ip(char *accept_string, char *ip, char *match_buffer);
 
 
 /*
+ * return 0 if 'ip' is denied by deny_ip and not allowed by allow_ip
+ * return 1 otherwise (deny_ip is NULL or 'ip' is in allow_ip or is not
+ *  in deny_ip)
+ * return -1 on error ('ip' is NULL)
+ */
+int is_allowed_ip(char *allow_ip, char *deny_ip, Octstr *ip);
+
+
+/*
  * Normalize 'number', like change number "040500" to "0035840500" if
  * the dial-prefix is like "0035840,040;0035850,050"
  *

@@ -108,4 +108,21 @@ int udp_sendto(int s, Octstr *datagram, Octstr *addr);
 int udp_recvfrom(int s, Octstr **datagram, Octstr **addr);
 
 
+/*
+ * Create an Octstr of character representation of an IP
+ */
+Octstr *host_ip(struct sockaddr_in addr);
+
+
+/*
+ * This must be called before sockets are used. gwlib_init does that
+ */
+void socket_init(void);
+
+
+/*
+ * Likewise, shutdown, called by gwlib_shutdown
+ */
+void socket_shutdown(void);
+
 #endif

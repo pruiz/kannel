@@ -1,3 +1,20 @@
+2000-05-23    <Kalle Marjola <rpr@wapit.com>>
+
+	* gwlib/socket.h|c: added host_ip to get, well, host IP. That
+	needed mutex because ntoa operation is not thread-safe, so added
+	socket_init and shutdown, too
+
+	* gwlib/gwlib.c: calls to socket_init and shutdown
+	
+	* gwlib/http2.c: get client host IP
+
+	* gwlib/utils.c|h: added is_allowed_ip function
+
+	* gw/bb_core.c: options -S and -I to start new bearerbox in
+	suspended or isolated state
+
+	* gw/bb_boxc.c: check for client allowed/denied IP
+
 2000-05-23  Richard Braakman  <dark@wapit.com>
 
 	* test/drive_wapbox.c: Fix free-port-hunting code for fake httpd.

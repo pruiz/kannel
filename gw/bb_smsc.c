@@ -45,7 +45,6 @@ extern List *isolated;
 static volatile sig_atomic_t smsc_running;
 static List *smsc_list;
 
-
 typedef struct _smsc {
     List 	*outgoing_list;
     pthread_t 	receiver;
@@ -81,6 +80,10 @@ static void *sms_receiver(void *arg)
 	    msg = msg_duplicate(tmp->msg);
 	    gw_assert(msg_type(msg) == smart_sms);
 	    rqi_delete(tmp);
+
+	    /* XXX do we want to normalize receiver? it is like 1234 anyway... */
+	    // normalize_number(global_normalization, &(msg->smart_sms.sender));
+	    
 	    list_produce(incoming_sms, msg);
 	    /* number normalization? in smsc..? */
 

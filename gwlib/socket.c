@@ -19,6 +19,8 @@
 #include "gwlib.h"
 
 
+static Mutex *inet_mutex;
+
 #ifndef UDP_PACKET_MAX_SIZE
 #define UDP_PACKET_MAX_SIZE (64*1024)
 #endif
@@ -468,3 +470,27 @@ int udp_recvfrom(int s, Octstr **datagram, Octstr **addr) {
 	
 	return 0;
 }
+
+
+Octstr *host_ip(struct sockaddr_in addr)
+{
+        Octstr *ret;
+        mutex_lock(inet_mutex);
+       
+        ret = octstr_create(inet_ntoa(addr.sin_addr));
+	mutex_unlock(inet_mutex);
+	return ret;
+}
+
+
+void socket_init(void)
+{
+       inet_mutex = mutex_create();
+}
+
+void socket_shutdown(void)
+{
+       mutex_destroy(inet_mutex);
+}
+
+    

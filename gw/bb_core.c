@@ -261,6 +261,21 @@ static int check_config(Config *config)
     return 0;
 }
 
+/*
+ * check our own variables
+ */
+
+int check_args(int i, int argc, char **argv) {
+    if (strcmp(argv[i], "-S")==0)
+	bb_status = BB_SUSPENDED;
+    else if (strcmp(argv[i], "-I")==0)
+	bb_status = BB_ISOLATED;
+    else
+	return -1;
+
+    return 0;
+} 
+
 
 static int starter(Config *config)
 {
@@ -374,27 +389,36 @@ int main(int argc, char **argv)
     gwlib_init();
     start_time = time(NULL);
 
-    cf_index = get_and_set_debugs(argc, argv, NULL);
+    suspended = list_create();
+    isolated = list_create();
+    list_add_producer(suspended);
+    list_add_producer(isolated);
 
-    // setup_signal_handlers();
+    cf_index = get_and_set_debugs(argc, argv, check_args);
+
     cfg = config_from_file(argv[cf_index], "new_kannel.conf");
     if (cfg == NULL)
         panic(0, "No configuration, aborting.");
 
     flow_threads = list_create();
     core_threads = list_create();
-    suspended = list_create();
-    isolated = list_create();
     
-    list_add_producer(suspended);
     starter(cfg);
 
 
     sleep(1);	/* give time to threads to register themselves */
 
     info(0, "MAIN: Start-up done, entering mainloop");
-    list_remove_producer(suspended);
-    
+    if (bb_status == BB_SUSPENDED)
+	info(0, "Gateway is now SUSPENDED by startup arguments");
+    else if (bb_status == BB_ISOLATED) {
+	info(0, "Gateway is now ISOLATED by startup arguments");
+	list_remove_producer(suspended);
+    } else {
+	list_remove_producer(suspended);	
+	list_remove_producer(isolated);
+    }
+
     /* wait until flow threads exit */
 
     while(list_consume(flow_threads)!=NULL)

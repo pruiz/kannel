@@ -641,24 +641,25 @@ static void socket_destroy(HTTPSocket *p) {
  */
 static HTTPSocket *socket_accept(HTTPSocket *server) {
 	int s, addrlen;
-	struct sockaddr addr;
+	struct sockaddr_in addr;
 	HTTPSocket *client;
 
 	addrlen = sizeof(addr);
-	s = accept(server->socket, &addr, &addrlen);
+	s = accept(server->socket, (struct sockaddr *)&addr, &addrlen);
 	if (s == -1) {
 		error(errno, "HTTP2: Error accepting a client.");
 		return NULL;
 	}
-	debug("gwlib.http2", 0, "HTTP2: Accepted client");
-
 	client = gw_malloc(sizeof(HTTPSocket));
 	client->in_use = 1;
 	client->last_used = (time_t) -1;
 	client->socket = s;
-	client->host = octstr_create("unknown client");
+	client->host = host_ip(addr);
 	client->port = 0;
 	client->buffer = octstr_create_empty();
+
+	debug("gwlib.http2", 0, "HTTP2: Accepted client from <%s>",
+	      octstr_get_cstr(client->host));
 
 	return client;
 }
