@@ -335,10 +335,10 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
      */
     pdu->u.submit_sm.esm_class = ESM_CLASS_STORE_AND_FORWARD_MODE;
     if (octstr_len(msg->sms.udhdata)) 
-        pdu->u.submit_sm.esm_class = pdu->u.submit_sm.esm_class &
+        pdu->u.submit_sm.esm_class = pdu->u.submit_sm.esm_class |
             ESM_CLASS_UDH_INDICATOR;
     if (msg->sms.rpi) 
-        pdu->u.submit_sm.esm_class = pdu->u.submit_sm.esm_class &
+        pdu->u.submit_sm.esm_class = pdu->u.submit_sm.esm_class |
             ESM_CLASS_RPI;
 
     /*
