@@ -436,11 +436,6 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
  * <?xml version="1.0" encoding="xxx"?>
  * <!DOCTYPE ...
  * <message>
- *   <auth>
- *     <user>...</user> ( or username)
- *     <pass>...</pass> ( or password)
- *     <account>...</account>
- *   </auth>
  *   <submit>
  *     <da><number>...</number></da>
  *     <da>...
@@ -459,8 +454,12 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
  *       <dlr-mask>..</dlr-mask>
  *       <dlr-url>...</dlr-url>
  *     </statusrequest>
- *     <from>smsc</from>
- *     <to>smsc</to>
+ *     <from>
+ *       <user>...</user> ( or username)
+ *       <pass>...</pass> ( or password)
+ *       <account>...</account>
+ *     </from>
+ *     <to>smsc-id</to>
  *   </submit>
  * </message>
  */
@@ -480,7 +479,7 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
 
     if(requesttype == mt_push) {
 	/* auth */
-	get_tag(*body, octstr_imm("auth"), &tmp, 0, 0);
+	get_tag(*body, octstr_imm("from"), &tmp, 0, 0);
 	if(tmp) {
 	    /* user */
 	    get_tag(tmp, octstr_imm("user"), user, 0, 0);
@@ -1202,7 +1201,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	    OCTSTR_APPEND_XML(xml, "from", msg->sms.smsc_id);
 	}
 
-	/* smsc = from */
+	/* service = to */
 	if(octstr_len(msg->sms.service)) {
 	    OCTSTR_APPEND_XML(xml, "to", msg->sms.service);
 	}

@@ -1,4 +1,8 @@
 2002-04-29  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsbox.c: xml-post: moved auth tag to from tag
+    * doc/userguide/userguide.xml: updated
+
+2002-04-29  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gwlib/cfg.c: Yet another fix to grp->cfgfilename. Hopefully, the last 
     * gw/smsbox.c: Finished post-xml code. Someday the code will be changed
       to libxml functions, but until then, this "works for me". XML format

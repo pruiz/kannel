@@ -4340,13 +4340,6 @@ text = "No action specified"
 &#60;?xml version="1.0"?&#62;
 &#60;!DOCTYPE ...&#62;
 &#60;message&#62;
-  &#60;auth&#62;
-    &#60;user&#62;username&#60;/user&#62;
-    &#60;username&#62;username&#60;/username&#62; 
-    &#60;pass&#62;password&#60;/pass&#62;
-    &#60;password&#62;password&#60;/password&#62;
-    &#60;account&#62;account&#60;/account&#62;
-  &#60;/auth&#62;
   &#60;submit&#62;
     &#60;da&#62;&#60;number&#62;destination number (to)&#60;/number&#62;&#60;/da&#62;
     &#60;oa&#62;&#60;number&#62;originating number (from)&#60;/number&#62;&#60;/oa&#62;
@@ -4364,31 +4357,41 @@ text = "No action specified"
       &#60;dlr-mask&#62;dlr-mask&#60;/dlr-mask&#62;
       &#60;dlr-url&#62;dlr-url&#60;/dlr-url&#62;
     &#60;/statusrequest&#62;
-    &#60;from&#62;smsc-id&#60;/from&#62;
+    &#60;from&#62;
+      &#60;user&#62;username&#60;/user&#62;
+      &#60;username&#62;username&#60;/username&#62; 
+      &#60;pass&#62;password&#60;/pass&#62;
+      &#60;password&#62;password&#60;/password&#62;
+      &#60;account&#62;account&#60;/account&#62;
+    &#60;/from&#62;
     &#60;to&#62;smsc-id&#60;/to&#62;
+    &#60;from&#62;smsc-id&#60;/from&#62;
+    &#60;to&#62;service-name&#60;/to&#62;
   &#60;/submit&#62;
 &#60;/message&#62;
 </userinput></screen>
-
-	<para><literal>auth</literal> group is only used on <literal>sendsms-user</literal> 
-	service.</para>
-
-	<para><literal>user</literal> and <literal>username</literal> are equivalent and 
-	only one of them should be used. (same for <literal>pass</literal> and <literal>
-	password</literal>.</para>
 
 	<para>There could be several <literal>da</literal> entries for <literal>sendsms-user
 	</literal> to enable multi-recipient messages. <literal>da</literal> doesn't make
 	sence in <literal>sms-service</literal>.</para>
 
-	<para><literal>ud</literal>..... </para>
+	<para><literal>ud</literal><note><para>Davi: I still have to test binary and unicode
+	&#60;ud&#62; content</para></note></para>
 	
 	<para><literal>udh</literal> is the same format as <literal>X-Kannel-UDH</literal>.
 	Example: &#60;udh&#62;06050415820000&#60;/udh&#62;.</para>
 	
-	<para><literal>from</literal> is set when kannel does a post, and <literal>to</literal>
-	could be set when application posts in kannel.</para>
+	<para>On kannel->application, <literal>from</literal> is the <literal>smsc-id</literal>
+	that message arrives and <literal>to</literal> is the service name.</para>
+	<para>On application->kannel, <literal>from</literal> contains the credentials (
+	<literal>user/username</literal>, <literal>pass/password</literal> and <literal>
+	account</literal> and <literal>to</literal> corresponds to the <literal>smsc-id
+	</literal> to submit the message.</para>
 	
+	<para><literal>user</literal> and <literal>username</literal> are equivalent and 
+	only one of them should be used. (same for <literal>pass</literal> and <literal>
+	password</literal>.</para>
+
 	<para>When application POST in kannel, as in GET, only <literal>user</literal>, <literal>
 	pass</literal> and <literal>da</literal> are required. Everything else is optional. 
 	(<literal>oa</literal> could be needed too is there's no <literal>default-sender</literal>
