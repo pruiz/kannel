@@ -1,3 +1,14 @@
+Mon Apr  3 18:55:46 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/socket.c: Changed certain AF_INET constants back to
+	PF_INET. I'm stupid.
+	
+	* test/fakewap.c: Added 'c:' to getopt arguments and made -h work.
+	Thanks to Adam Kelly.
+	
+	* gwlib/list.c: list_destroy destroys the condition variable for
+	the list as well. Thanks to Paul Keogh.
+
 Mon Apr  3 18:52:48 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/gwassert.h: Remove unnecessary and disfunctional #ifndef

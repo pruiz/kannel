@@ -80,7 +80,7 @@ int make_server_socket(int port) {
 	int s;
 	int reuse;
 
-	s = socket(AF_INET, SOCK_STREAM, 0);
+	s = socket(PF_INET, SOCK_STREAM, 0);
 	if (s == -1) {
 		error(errno, "socket failed");
 		goto error;
@@ -130,7 +130,7 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
 	struct linger dontlinger;
 	int s;
 
-	s = socket(AF_INET, SOCK_STREAM, 0);
+	s = socket(PF_INET, SOCK_STREAM, 0);
 	if (s == -1)
 		goto error;
 
@@ -305,7 +305,7 @@ int read_available(int fd, long wait_usec)
 int udp_client_socket(void) {
 	int s;
 	
-	s = socket(AF_INET, SOCK_DGRAM, 0);
+	s = socket(PF_INET, SOCK_DGRAM, 0);
 	if (s == -1) {
 		error(errno, "Couldn't create a UDP socket");
 		return -1;
@@ -319,7 +319,7 @@ int udp_bind(int port) {
 	int s;
 	struct sockaddr_in sa;
 	
-	s = socket(AF_INET, SOCK_DGRAM, 0);
+	s = socket(PF_INET, SOCK_DGRAM, 0);
 	if (s == -1) {
 		error(errno, "Couldn't create a UDP socket");
 		return -1;

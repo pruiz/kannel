@@ -82,6 +82,7 @@ void list_destroy(List *list) {
 	mutex_lock(list->permanent_lock);
 	mutex_destroy(list->permanent_lock);
 	mutex_destroy(list->single_operation_lock);
+	pthread_cond_destroy(&list->nonempty);
 	gw_free(list->tab);
 	gw_free(list);
 }

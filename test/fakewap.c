@@ -552,7 +552,7 @@ int main(int argc, char **argv)
 
     hostname = octstr_create("localhost");
 
-    while ((opt = getopt(argc, argv, "hvg:p:P:m:i:t:V:T:t:nd:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hvc:g:p:P:m:i:t:V:T:t:nd:")) != EOF) {
 	switch (opt) {
 	case 'g':
 	    hostname = octstr_create(optarg);
@@ -600,6 +600,7 @@ int main(int argc, char **argv)
 	    
 	case 'h':
 	    help();
+	    exit(0);
 	    break;
 	    
 	case '?':
