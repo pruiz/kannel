@@ -1,3 +1,6 @@
+2002-04-01  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_at2.c, gwlib/http.c: fixed minor kannel-nag warnings
+
 2002-03-28  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsbox.c: Added X-Kannel-SMSC on smsbox->application. It was missing
 
