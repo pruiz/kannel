@@ -1,3 +1,12 @@
+Tue Feb 15 11:07:00 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c: Broke out wsp_http_thread function into gw/wsp_http.c
+	to make it easier to keep the code clean. The old code was rather,
+	er, kludgey.
+	
+	* gw/wsp_http.c: Moved wsp_http_thread() and dependent functions
+	here and started reorganizing it for cleanliness.
+
 Mon Feb 14 16:56:14 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/octstr.c: Added "return -1" at end, since something had
