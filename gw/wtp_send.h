@@ -39,7 +39,7 @@ void wtp_send_abort(long abort_type, long abort_reson, WTPMachine *machine,
  * aborted before calling the state machine).
  */
 void wtp_do_not_start(long abort_type, long abort_reason, Address *address, 
-     long tid);
+     int tid);
 
 /*
  * Send a message object, of wdp datagram type, having ack PDU as user 
@@ -50,10 +50,10 @@ void wtp_do_not_start(long abort_type, long abort_reason, Address *address,
 
 void wtp_send_ack(long ack_type, WTPMachine *machine, WTPEvent *event);
 
-void wtp_send_group_ack(Address *address, long tid, int retransmission_status, 
+void wtp_send_group_ack(Address *address, int tid, int retransmission_status, 
                         unsigned char packet_sequence_number); 
 
-void wtp_send_negative_ack(Address *address, long tid, 
+void wtp_send_negative_ack(Address *address, int tid, 
                            int retransmission_status, int segments_missing,
                            WTPSegment *missing_segments);
 

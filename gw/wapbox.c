@@ -181,7 +181,6 @@ void init_queue(void) {
 
 
 void put_msg_in_queue(Msg *msg) {
-        debug("wap", 0, "WAPBOX: put message in the queue");
 	list_produce(queue, msg);
 }
 
@@ -326,14 +325,16 @@ int main(int argc, char **argv) {
 			break;
                 debug("wap.msg.received", 0, "WAPBOX: message received");
                 msg_dump(msg, 0);
+                if (msg->wdp_datagram.destination_port == CONNECTIONLESS_PORT){
+                   debug("wap.msg.received", 0, "WAPBOX: connectionless mode not yet implemented");
+                   continue;
+                }
 		wtp_event = wtp_unpack_wdp_datagram(msg);
                 debug("wap.event", 0, "WAPBOX: datagram unpacked");
-                wtp_event_dump(wtp_event);
                 if (wtp_event == NULL)
                    continue;
 		wtp_machine = wtp_machine_find_or_create(msg, wtp_event);
-                debug("wap.machine", 0, "WAPBOX: machine created or found");
-                wtp_machine_dump(wtp_machine);
+                debug("wap.machine", 0, "WAPBOX: machine found or created");
                 if (wtp_machine == NULL)
                    continue;
 	        wtp_handle_event(wtp_machine, wtp_event);

@@ -39,15 +39,15 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event);
 static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason, 
        WTPEvent *event);
 
-static Msg *pack_stop(Msg *msg, long abort_type, long abort_reason, long tid);
+static Msg *pack_stop(Msg *msg, long abort_type, long abort_reason, int tid);
 
 static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine, 
                      WTPEvent *event);
 
-static Msg *pack_negative_ack(Msg *msg, long tid, int retransmission_status, 
+static Msg *pack_negative_ack(Msg *msg, int tid, int retransmission_status, 
        int segments_missing, WTPSegment *missing_segments);
 
-static Msg *pack_group_ack(Msg *msg, long tid, int retransmission_status, 
+static Msg *pack_group_ack(Msg *msg, int tid, int retransmission_status, 
                           unsigned char packet_sequence_number);
 
 static Msg *add_datagram_address(Msg *msg, WTPMachine *machine);
@@ -63,12 +63,12 @@ static unsigned char indicate_simple_message(unsigned char octet);
 /*
  * Setting resending status of this octet (are we trying again)
  */
-static unsigned char insert_rid(long attribute, unsigned char octet);
+static unsigned char insert_rid(int attribute, unsigned char octet);
 
 /*
  * Inserting transaction identifier into the message
  */
-static void insert_tid(unsigned char *pdu, long attribute);
+static void insert_tid(unsigned char *pdu, int attribute);
 
 /*
  * Setting retransmission status of a already packed message.
@@ -180,7 +180,7 @@ void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine,
  * action tid are direct inputs. (This function is used when the transaction is 
  * aborted before calling the state machine).
  */
-void wtp_do_not_start(long abort_type, long abort_reason, Address *address, long tid){
+void wtp_do_not_start(long abort_type, long abort_reason, Address *address, int tid){
 
      Msg *msg = NULL;
 
@@ -217,7 +217,7 @@ void wtp_send_ack(long ack_type, WTPMachine *machine, WTPEvent *event){
      return;
 }
 
-void wtp_send_group_ack(Address *address, long tid, int retransmission_status, 
+void wtp_send_group_ack(Address *address, int tid, int retransmission_status, 
                         unsigned char packet_sequence_number){
 
      Msg *msg = NULL;
@@ -236,7 +236,7 @@ void wtp_send_group_ack(Address *address, long tid, int retransmission_status,
      return;
 }
 
-void wtp_send_negative_ack(Address *address, long tid, int retransmission_status, 
+void wtp_send_negative_ack(Address *address, int tid, int retransmission_status, 
                            int segments_missing, WTPSegment *missing_segments){
      
      Msg *msg = NULL;
@@ -346,7 +346,7 @@ static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason,
 /*
  * As previous, expect now tid is supplied as a direct input
  */
-static Msg *pack_stop(Msg *msg, long abort_type, long abort_reason, long tid){
+static Msg *pack_stop(Msg *msg, long abort_type, long abort_reason, int tid){
 
        unsigned char octet;
        size_t pdu_len;
@@ -400,7 +400,7 @@ static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine,
     return msg;
 }
 
-static Msg *pack_negative_ack(Msg *msg, long tid, int retransmission_status, 
+static Msg *pack_negative_ack(Msg *msg, int tid, int retransmission_status, 
        int segments_missing, WTPSegment *missing_segments){
 
        unsigned char octet;
@@ -432,7 +432,7 @@ static Msg *pack_negative_ack(Msg *msg, long tid, int retransmission_status,
        return msg;
 }
 
-static Msg *pack_group_ack(Msg *msg, long tid, int retransmission_status, 
+static Msg *pack_group_ack(Msg *msg, int tid, int retransmission_status, 
                           unsigned char packet_sequence_number){
        
        unsigned char octet;
@@ -543,7 +543,7 @@ static Msg *set_rid(Msg *msg, long rid){
 /*
  * Turns on retransmission indicator flag (rid) of an octet
  */
-static unsigned char insert_rid(long attribute, unsigned char octet){
+static unsigned char insert_rid(int attribute, unsigned char octet){
 
        octet |= attribute;
        return octet;
@@ -566,7 +566,7 @@ static long message_rid(Msg *msg){
 /*
  * Insert transaction identifier octets of the header (second and third octets)
  */
-static void insert_tid(unsigned char *pdu, long attribute){
+static void insert_tid(unsigned char *pdu, int attribute){
 
        int tid;
        unsigned char first_tid,
