@@ -164,6 +164,7 @@ MULTI_GROUP(smsc,
     OCTSTR(allowed-prefix)
     OCTSTR(denied-prefix)
     OCTSTR(preferred-prefix)
+    OCTSTR(unified-prefix)
     OCTSTR(alt-charset)
     OCTSTR(host)
     OCTSTR(alt-host)
