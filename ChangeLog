@@ -1,0 +1,9 @@
+1999-11-09    <rpr@rpr.wapit.com>
+
+	* initial release. Copied several files from old smsgateway
+	project, added new protypes and commented thigns out so that
+	they cvan be compiled. This does NOT do anything, yet.
+
+	* VERSION: version 0.1 set
+	
+	

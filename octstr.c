@@ -1,0 +1,472 @@
+/*
+ * octstr.c - Octet strings
+ *
+ * See octstr.h for explanations of what public functions should do.
+ *
+ * Lars Wirzenius for WapIT Ltd.
+ */
+
+
+#include <ctype.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "octstr.h"
+#include "wapitlib.h"
+
+
+/***********************************************************************
+ * Definitions of data structures. These are not visible to the external
+ * world -- they may be accessed only via the functions declared in
+ * octstr.h. This ensures they really are abstract.
+ */
+
+/*
+ * The octet string.
+ *
+ * `data' is a pointer to dynamically allocated memory are where the 
+ * octets in the string. It may be bigger than the actual length of the
+ * string.
+ *
+ * `len' is the length of the string.
+ *
+ * `size' is the size of the memory area `data' points at.
+ *
+ * When `size' is greater than zero, it is at least `len+1', and the
+ * character at `len' is '\0'. This is so that octstr_get_cstr will
+ * always work.
+ */
+struct Octstr {
+	unsigned char *data;
+	size_t len;
+	size_t size;
+};
+
+
+/*
+ * Node in list of octet strings.
+ */
+typedef struct Node Node;
+struct Node {
+	Octstr *ostr;
+	Node *next;
+};
+
+
+/*
+ * List of octet strings.
+ */
+struct OctstrList {
+	Node *head, *tail;
+};
+
+
+/***********************************************************************
+ * Declarations of internal functions. These are defined at the end of
+ * the file.
+ */
+
+
+/***********************************************************************
+ * Implementations of the functions declared in octstr.h. See the
+ * header for explanations of what they should do.
+ */
+
+
+Octstr *octstr_create_empty(void) {
+	Octstr *ostr;
+	
+	ostr = malloc(sizeof(Octstr));
+	if (ostr == NULL)
+		error(errno, "Couldn't create empty octet string.");
+	else {
+		ostr->data = NULL;
+		ostr->size = 0;
+		ostr->len = 0;
+	}
+	return ostr;
+}
+
+
+Octstr *octstr_create(char *cstr) {
+	return octstr_create_from_data(cstr, strlen(cstr));
+}
+
+
+Octstr *octstr_create_from_data(char *data, size_t len) {
+	Octstr *ostr;
+	
+	ostr = octstr_create_empty();
+	if (ostr != NULL) {
+		ostr->len = len;
+		ostr->size = len + 1;
+		ostr->data = malloc(ostr->size);
+		if (ostr->data == NULL) {
+			error(errno, "Couldn't create octet string.");
+			octstr_destroy(ostr);
+			return NULL;
+		}
+		memcpy(ostr->data, data, len);
+		ostr->data[len] = '\0';
+	}
+	return ostr;
+}
+
+
+void octstr_destroy(Octstr *ostr) {
+	if (ostr != NULL) {
+		free(ostr->data);
+		free(ostr);
+	}
+}
+
+
+size_t octstr_len(Octstr *ostr) {
+	return ostr->len;
+}
+
+
+Octstr *octstr_copy(Octstr *ostr, size_t from, size_t len) {
+	if (from >= ostr->len)
+		return octstr_create_empty();
+	
+	if (from + len > ostr->len)
+		len = ostr->len - from;
+
+	return octstr_create_from_data(ostr->data + from, len);
+}
+
+
+Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2) {
+	Octstr *ostr;
+	
+	ostr = octstr_create_empty();
+	if (ostr == NULL)
+		return NULL;
+
+	ostr->len = ostr1->len + ostr2->len;
+	ostr->size = ostr->len + 1;
+	ostr->data = malloc(ostr->size);
+	if (ostr->data == NULL) {
+		error(errno, "Couldn't allocate memory for catenate.");
+		octstr_destroy(ostr);
+		return NULL;
+	}
+	
+	memcpy(ostr->data, ostr1->data, ostr1->len);
+	memcpy(ostr->data + ostr1->len, ostr2->data, ostr2->len);
+	ostr->data[ostr->len] = '\0';
+	
+	return ostr;
+}
+
+
+int octstr_get_char(Octstr *ostr, size_t pos) {
+	if (pos >= ostr->len)
+		return -1;
+	return ostr->data[pos];
+}
+
+
+void octstr_set_char(Octstr *ostr, size_t pos, int ch) {
+	if (pos < ostr->len)
+		ostr->data[pos] = (unsigned char) ch;
+}
+
+
+void octstr_get_many_chars(char *buf, Octstr *ostr, size_t pos, size_t len) {
+	if (pos >= ostr->len)
+		return;
+	if (pos + len > ostr->len)
+		len = ostr->len - pos;
+	memcpy(buf, ostr->data + pos, len);
+}
+
+
+char *octstr_get_cstr(Octstr *ostr) {
+	if (ostr->size == 0)
+		return "";
+	return ostr->data;
+}
+
+
+int octstr_compare(Octstr *ostr1, Octstr *ostr2) {
+	int ret;
+	size_t len;
+
+	if (ostr1->len < ostr2->len)
+		len = ostr1->len;
+	else
+		len = ostr2->len;
+
+	if (len == 0)
+		return 0;
+
+	ret = memcmp(ostr1->data, ostr2->data, len);
+	if (ret == 0) {
+		if (ostr1->len < ostr2->len)
+			ret = -1;
+		else if (ostr1->len > ostr2->len)
+			ret = 1;
+	}
+	return ret;
+}
+
+
+int octstr_print(FILE *f, Octstr *ostr) {
+	if (fwrite(ostr->data, ostr->len, 1, f) != 1) {
+		error(errno, "Couldn't write all of octet string to file.");
+		return -1;
+	}
+	return 0;
+}
+
+
+int octstr_pretty_print(FILE *f, Octstr *ostr) {
+	unsigned char *p;
+	size_t i;
+	
+	p = ostr->data;
+	for (i = 0; i < ostr->len; ++i, ++p) {
+		if (isprint(*p))
+			fprintf(f, "%c", *p);
+		else
+			fprintf(f, "\\x%02x", *p);
+	}
+	if (ferror(f))
+		return -1;
+	return 0;
+}
+
+
+int octstr_write_to_socket(int socket, Octstr *ostr) {
+	size_t len;
+	unsigned char *data;
+	int ret;
+
+	data = ostr->data;
+	len = ostr->len;
+	while (len > 0) {
+		ret = write(socket, data, len);
+		if (ret == -1) {
+			error(errno, "Writing to socket failed");
+			return -1;
+		}
+		/* ret may be less than len, if the writing was interrupted
+		   by a signal. */
+		len -= ret;
+		data += ret;
+	}
+	return 0;
+}
+
+
+int octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos) {
+	size_t needed;
+	char *p;
+	
+	needed = ostr1->len + ostr2->len + 1;
+	if (ostr1->size < needed) {
+		p = realloc(ostr1->data, needed);
+		if (p == NULL) {
+			error(errno, "octstr_insert: Out of memory");
+			return -1;
+		}
+		ostr1->size = needed;
+		ostr1->data = p;
+	}
+	
+	memmove(ostr1->data + pos + ostr2->len, ostr1->data + pos,
+		ostr1->len - pos);
+	memcpy(ostr1->data + pos, ostr2->data, ostr2->len);
+	ostr1->len += ostr2->len;
+	ostr1->data[ostr1->len] = '\0';
+	
+	return 0;
+}
+
+
+
+int octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
+	size_t needed;
+	char *p;
+	
+	needed = ostr->len + len + 1;
+	if (ostr->size < needed) {
+		p = realloc(ostr->data, needed);
+		if (p == NULL) {
+			error(errno, "octstr_insert_data: Out of memory");
+			return -1;
+		}
+		ostr->size = needed;
+		ostr->data = p;
+	}
+	
+	memmove(ostr->data + pos + len, ostr->data + pos, ostr->len - pos);
+	memcpy(ostr->data + pos, data, len);
+	ostr->len += len;
+	ostr->data[ostr->len] = '\0';
+	
+	return 0;
+}
+
+
+void octstr_delete(Octstr *ostr1, size_t pos, size_t len) {
+	if (pos > ostr1->len)
+		pos = ostr1->len;
+	if (pos + len > ostr1->len)
+		len = ostr1->len - pos;
+	if (len > 0) {
+		memmove(ostr1->data + pos, ostr1->data + pos + len,
+			ostr1->len - pos - len);
+		ostr1->len -= len;
+	}
+}
+
+
+
+OctstrList *octstr_list_create(void) {
+	OctstrList *list;
+	
+	list = malloc(sizeof(OctstrList));
+	if (list == NULL) {
+		error(errno, "Couldn't create octet string list.");
+		return NULL;
+	}
+	
+	list->head = NULL;
+	list->tail = NULL;
+
+	return list;
+}
+
+
+void octstr_list_destroy(OctstrList *list, int strings_also) {
+	while (list->head != NULL) {
+		Node *n = list->head;
+		list->head = list->head->next;
+		if (strings_also)
+			octstr_destroy(n->ostr);
+		free(n);
+	}
+	free(list);
+}
+
+
+size_t octstr_list_len(OctstrList *list) {
+	Node *n;
+	size_t len;
+	
+	for (len = 0, n = list->head; n != NULL; n = n->next, ++len)
+		;
+	return len;
+}
+
+
+int octstr_list_append(OctstrList *list, Octstr *ostr) {
+	Node *n;
+	
+	n = malloc(sizeof(Node));
+	if (n == NULL) {
+		error(errno, "Couldn't create new list node.");
+		return -1;
+	}
+
+	n->ostr = ostr;
+	n->next = NULL;
+	if (list->head == NULL) {
+		list->head = n;
+		list->tail = n;
+	} else {
+		list->tail->next = n;
+		list->tail = n;
+	}
+
+	return 0;
+}
+
+
+Octstr *octstr_list_get(OctstrList *list, size_t index) {
+	Node *n;
+	
+	for (n = list->head; index > 0 && n != NULL; n = n->next, --index)
+		;
+	if (n == NULL)
+		return NULL;
+	return n->ostr;
+}
+
+
+OctstrList *octstr_split_words(Octstr *ostr) {
+	unsigned char *p;
+	OctstrList *list;
+	Octstr *word;
+	size_t i, start, end;
+	
+	list = octstr_list_create();
+	if (list == NULL)
+		return NULL;
+
+	p = ostr->data;
+	i = 0;
+	for (;;) {
+		while (i < ostr->len && isspace(*p)) {
+			++p;
+			++i;
+		}
+		start = i;
+		
+		while (i < ostr->len && !isspace(*p)) {
+			++p;
+			++i;
+		}
+		end = i;
+		
+		if (start == end)
+			break;
+			
+		word = octstr_create_from_data(ostr->data + start, 
+						end - start);
+		if (word == NULL)
+			goto error;
+		
+		if (octstr_list_append(list, word) == -1)
+			goto error;
+	}
+	
+	return list;
+
+error:
+	octstr_list_destroy(list, 1);
+	return NULL;
+}
+
+
+void octstr_dump(Octstr *ostr) {
+	char *p, buf[40];
+	size_t pos;
+
+	debug(0, "Octet string at %p:", (void *) ostr);
+	debug(0, "  len:  %lu", (unsigned long) ostr->len);
+	debug(0, "  size: %lu", (unsigned long) ostr->size);
+
+	buf[0] = '\0';
+	p = buf;
+	for (pos = 0; pos < octstr_len(ostr); ++pos) {
+		sprintf(p, "%02x ", octstr_get_char(ostr, pos));
+		p = strchr(p, '\0');
+		if (p - buf > sizeof(buf) - 5) {
+			debug(0, "  data: %s", buf);
+			buf[0] = '\0';
+			p = buf;
+		}
+	}
+	debug(0, "  data: %s", buf);
+}
+
+
+/***********************************************************************
+ * Internal functions.
+ */
