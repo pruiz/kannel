@@ -126,7 +126,7 @@ void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine,
      Msg *msg = NULL;
      WTP_PDU *pdu;
 
-     gw_assert(event->type == TR_Abort_Req);
+     gw_assert(event->type == TR_Abort_Req || event->type == RcvErrorPDU);
      pdu = wtp_pdu_create(Abort);
      pdu->u.Abort.con = 0;
      pdu->u.Abort.abort_type = abort_type;
@@ -136,6 +136,8 @@ void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine,
      msg = msg_create(wdp_datagram);
      add_datagram_address(msg, machine);
      msg->wdp_datagram.user_data = wtp_pdu_pack(pdu);
+     debug("wap.wtp_send", 0, "WTP_SEND: sending a message");
+     msg_dump(msg, 0);
      
      wtp_pdu_destroy(pdu);
 

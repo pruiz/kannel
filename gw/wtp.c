@@ -427,9 +427,10 @@ static WTPMachine *wtp_machine_find_or_create(WAPEvent *event){
               switch (event->type){
 /*
  * When PDU with an illegal header is received, its tcl-field is irrelevant (and possibly 
- * meaningless).
+ * meaningless). In this case we must create a new machine, if there is any. There is a
+ * machine for all events handled statefull manner.
  */
-	              case RcvInvoke: 
+	              case RcvInvoke: case RcvErrorPDU:
 	                   machine = wtp_machine_create(tuple, tid,
 							event->u.RcvInvoke.tcl);
                       break;
@@ -599,18 +600,15 @@ static WAPEvent *create_rcv_error_pdu(Msg *msg){
        WAPEvent *event;
        int tid;
 
+       gw_assert(msg != NULL);
        event = wap_event_create(RcvErrorPDU);
-       tid = deduce_tid(msg->wdp_datagram.user_data);
+       event->u.RcvErrorPDU.addr_tuple = wap_addr_tuple_create(
+                                         msg->wdp_datagram.source_address,
+                                         msg->wdp_datagram.source_port,
+                                         msg->wdp_datagram.destination_address,
+                                         msg->wdp_datagram.destination_port);
 
-       event->u.RcvErrorPDU.tid = tid;
-       event->u.RcvErrorPDU.addr_tuple->client->address = 
-              octstr_duplicate(msg->wdp_datagram.source_address);
-       event->u.RcvErrorPDU.addr_tuple->client->port = 
-              msg->wdp_datagram.source_port;
-       event->u.RcvErrorPDU.addr_tuple->server->address = 
-             octstr_duplicate(msg->wdp_datagram.destination_address);
-       event->u.RcvErrorPDU.addr_tuple->server->port = 
-             msg->wdp_datagram.destination_port;
+       tid = deduce_tid(msg->wdp_datagram.user_data);
 
        return event;
 }
@@ -631,7 +629,7 @@ static int wrong_version(Octstr *user_data){
 }
 
 static int deduce_tid(Octstr *user_data){
-       int tid;
+       int tid = 0;
        int tid_array[] = {0 ,0};
 
        octstr_get_many_chars(tid_array, user_data, 1, 2);

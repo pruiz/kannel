@@ -248,6 +248,7 @@ WTP_PDU *wtp_pdu_unpack(Octstr *data) {
 		} \
 		if (!(is_valid)) { \
 			warning(0, #name " PDU failed %s", #is_valid); \
+                        return NULL; \
 		} \
 	} break;
 #define UINT(field, docstring, bits) \

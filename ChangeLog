@@ -1,3 +1,9 @@
+2000-06-15 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp.c: Bugfixes in error handlin
+
+	* wtp_pdu.c: wtp_pdu_unpack must return NULL when header is not valid
+
 2000-06-14  Richard Braakman  <dark@wapit.com>
 
 	* Filled in WSP state tables.  Defined lots of new events.
