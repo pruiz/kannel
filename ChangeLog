@@ -1,3 +1,7 @@
+2002-06-27  Stipe Tolj <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added documentation about SMPP related
+      configuration directives. Patch submitted by Alan.
+
 2002-06-25  Stipe Tolj <tolj@wapme-systems.de>
     * gw/wap_push_ppg.c: fixed a bug when service not found and username
       is not initialized octstr_destroy() will cause segmentation fault.
