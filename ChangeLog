@@ -1,3 +1,10 @@
+2000-10-25  Lars Wirzenius  <liw@iki.fi>
+
+	* configure{,.in}: Check for pthread_exit instead of
+	pthread_create, when looking for a Posix thread implementation.
+	HP-UX has trouble finding pthread_create, because it is an
+	inline function.
+
 2000-10-25  Richard Braakman  <dark@wapit.com>
 
 	* wmlscript/wsstree.[ch], wmlscript/wslexer.c: Fix parsing of
