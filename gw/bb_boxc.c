@@ -53,6 +53,7 @@ typedef struct _boxc {
     List      	*incoming;
     List      	*retry;   	/* If sending fails */
     List       	*outgoing;
+    volatile sig_atomic_t alive;
 } Boxc;
 
 
@@ -68,7 +69,7 @@ static void boxc_receiver(void *arg)
     int ret;
     
     /* remove messages from socket until it is closed */
-    while(bb_status != BB_DEAD) {
+    while(bb_status != BB_DEAD && conn->alive) {
 
 	if (read_available(conn->fd, 100000) < 1)
 	    continue;
@@ -77,9 +78,11 @@ static void boxc_receiver(void *arg)
 	
 	ret = octstr_recv(conn->fd, &pack);
 
-	if (ret < 1)
+	if (ret < 1) {
+	    debug("bb", 0, "Client <%s> closed connection",
+		  octstr_get_cstr(conn->client_ip));
 	    break;
-
+	}
 	if ((msg = msg_unpack(pack))==NULL) {
 	    debug("bb", 0, "Received garbage from <%s>, ignored",
 		  octstr_get_cstr(conn->client_ip));
@@ -134,7 +137,7 @@ static void *boxc_sender(void *arg)
     debug("bb.thread", 0, "START: boxc_sender");
     list_add_producer(flow_threads);
 
-    while(bb_status != BB_DEAD) {
+    while(bb_status != BB_DEAD && conn->alive) {
 
 	list_consume(suspended);	/* block here if suspended */
 
@@ -170,6 +173,7 @@ static Boxc *boxc_create(int fd, char *ip)
     boxc->fd = fd;
     boxc->id = boxid++;		/* XXX  MUTEX! fix later... */
     boxc->client_ip = octstr_create(ip);
+    boxc->alive = 1;
     return boxc;
 }    
 
@@ -295,32 +299,34 @@ static void *run_wapbox(void *arg)
     newconn->retry = incoming_wdp;
     newconn->outgoing = outgoing_wdp;
 
-    list_append(wapbox_list, newconn);
     
     if ((int)(sender = start_thread(0, boxc_sender, newconn, 0)) == -1) {
 	error(errno, "Failed to start a new thread, disconnecting client <%s>",
 	      octstr_get_cstr(newconn->client_ip));
 	goto cleanup;
     }
+    list_append(wapbox_list, newconn);
     list_add_producer(newconn->outgoing);
     boxc_receiver(newconn);
-    list_remove_producer(newconn->outgoing);
 
-    /* XXX remove from routing info! *
-     *
-     *
-     * list_remove_producer(newlist);
-     */
+    /* cleanup after receiver has exited */
+    
+    list_remove_producer(newconn->outgoing);
+    list_delete_equal(wapbox_list, newconn);
+
+    if (newconn->alive)
+	list_remove_producer(newlist);
+
+    newconn->alive = 0;
     
     if (pthread_join(sender, NULL) != 0)
 	error(0, "Join failed in wapbox");
 
 cleanup:    
-    list_delete_equal(wapbox_list, newconn);
     list_destroy(newlist);
     boxc_destroy(newconn);
 
-    debug("bb.thread", 0, "EXIT: run_smsbox");
+    debug("bb.thread", 0, "EXIT: run_wapbox");
     list_remove_producer(flow_threads);
     return NULL;
 }
@@ -370,17 +376,27 @@ static Boxc *route_msg(List *route_info, Msg *msg)
     
     ap = list_search(route_info, msg, cmp_route);
     if (ap == NULL) {
-route:	    
+	debug("bb.boxc", 0, "Did not find previous routing info for WDP, generating new");
+route:
 
 	ap = gw_malloc(sizeof(AddrPar));
 	ap->address = octstr_duplicate(msg->wdp_datagram.source_address);
 	ap->port = msg->wdp_datagram.source_port;
 
+
+	if (list_wait_until_nonempty(wapbox_list)==-1)
+	    return NULL;
+
 	/* XXX this SHOULD according to load levels! *
 	 * (and be thread-safe, which is NOT right now) */
-	list_wait_until_nonempty(wapbox_list);
+
 	conn = list_get(wapbox_list, 0);
+	if (conn == NULL) {
+	    warning(0, "wapbox_list empty!");
+	    return NULL;
+	}
 	ap->wapboxid = conn->id;
+	list_produce(route_info, ap);
     } else
 	conn = list_search(wapbox_list, ap, cmp_boxc);
 
@@ -388,6 +404,9 @@ route:
 	/* routing failed; wapbox has disappeared!
 	 * ..remove routing info and re-route   */
 
+	debug("bb.boxc", 0, "Old wapbox has disappeared, re-routing");
+
+	list_delete_equal(route_info, ap);
 	ap_destroy(ap);
 	goto route;
     }
@@ -406,7 +425,7 @@ static void *wdp_to_wapboxes(void *arg)
     Boxc *conn;
     Msg *msg;
 
-    debug("bb", 0, "START: wdp_to_wapboxes router");
+    debug("bb.thread", 0, "START: wdp_to_wapboxes router");
     list_add_producer(flow_threads);
 
     route_info = list_create();
@@ -422,15 +441,21 @@ static void *wdp_to_wapboxes(void *arg)
 	gw_assert(msg_type(msg) == wdp_datagram);
 
 	conn = route_msg(route_info, msg);
+	if (conn == NULL) {
+	    warning(0, "Cannot route message, exiting router");
+	    break;
+	}
 	list_produce(conn->incoming, msg);
     }
     while((ap = list_consume(route_info)) != NULL)
 	ap_destroy(ap);
     list_destroy(route_info);
-    while((conn = list_consume(wapbox_list)) != NULL)
+    while((conn = list_consume(wapbox_list)) != NULL) {
 	list_remove_producer(conn->incoming);
+	conn->alive = 0;
+    }
 
-    debug("bb", 0, "EXIT: wdp_to_wapboxes router");
+    debug("bb.thread", 0, "EXIT: wdp_to_wapboxes router");
     list_remove_producer(flow_threads);
     return NULL;
 }
@@ -505,8 +530,12 @@ static void *smsboxc_run(void *arg)
      * is completely over
      */
 
-    /* XXX wait until all smsboxes have died, then delete list */
+    /* XXX KLUDGE fix when list_wait_until_empty() exists */
+    while(list_wait_until_nonempty(smsbox_list)!= -1)
+	sleep(1);
 
+    list_destroy(smsbox_list);
+    
     debug("bb.thread", 0, "EXIT: smsboxc_run");
     list_remove_producer(flow_threads);
     return NULL;
@@ -530,7 +559,15 @@ static void *wapboxc_run(void *arg)
 
     list_remove_producer(outgoing_wdp);
 
-    /* XXX wait until all wapboxes have died, then delete list */
+
+    /* wait for all connections to die and then remove list
+     */
+    
+    /* XXX KLUDGE fix when list_wait_until_empty() exists */
+    while(list_wait_until_nonempty(wapbox_list)!= -1)
+	sleep(1);
+
+    list_destroy(wapbox_list);
 
     debug("bb.thread", 0, "EXIT: wapboxc_run");
     list_remove_producer(flow_threads);

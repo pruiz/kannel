@@ -1,3 +1,10 @@
+2000-05-15    <Kalle Marjola <rpr@wapit.com>>
+
+	* gw/bb_*.c: Now most memory leaks are fixed, the new bearerbox
+	dies quite nicely and can handle exiting wapboxes and new
+	connections. Still needs much testing and there is some mysterios
+	things not freed at the end, so back to work. 
+
 Mon May 15 16:07:00 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp_http.c: Report character set when fetch is successful.

@@ -325,10 +325,17 @@ int main(int argc, char **argv)
 
     info(0, "All flow threads have died, killing core");
     bb_status = BB_DEAD;
+
+    smsc_die();
     
     while(list_consume(core_threads)!=NULL)
 	;
 
+    list_destroy(incoming_wdp);
+    list_destroy(outgoing_wdp);
+    list_destroy(incoming_sms);
+    list_destroy(outgoing_sms);
+    
     list_destroy(flow_threads);
     list_destroy(core_threads);
     list_destroy(suspended);

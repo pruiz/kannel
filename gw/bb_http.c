@@ -186,7 +186,9 @@ static void *httpadmin_run(void *arg)
     port = (int)arg;
     
     httpd = http2_server_open(port);
-
+    if (httpd == NULL)
+	panic(0, "Cannot start without HTTP admin");
+    
     /* infinitely wait for new connections;
      */
 

@@ -196,6 +196,8 @@ static Smsc *create_new_smsc(ConfigGroup *grp)
 
 error:
     /* XXX should be own sms_destroy -thingy? */
+
+    error(0, "Failed to start a new SMSC thingy");
     
     list_destroy(si->outgoing_list);
     smsc_close(si->smsc);
