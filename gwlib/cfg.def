@@ -86,14 +86,15 @@ SINGLE_GROUP(ppg,
 )
 
 MULTI_GROUP(wap-push-user,
+    OCTSTR(wap-push-user)
     OCTSTR(ppg-username)
     OCTSTR(ppg-password)
     OCTSTR(allowed-prefix)
     OCTSTR(denied-prefix)
     OCTSTR(white-list)
     OCTSTR(black-list)
-    OCTSTR(user-deny-ip)
-    OCTSTR(user-allow-ip)
+    OCTSTR(deny-ip)
+    OCTSTR(allow-ip)
 )
 
 SINGLE_GROUP(smsbox,

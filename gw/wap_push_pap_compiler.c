@@ -395,8 +395,8 @@ static char *address_type(int type_of_address)
 
 static int event_semantically_valid(WAPEvent *e, int type_of_address)
 {
-    debug("wap.push.pap.compiler", 0, "doing semantic analysis for address"
-          " type %s", address_type(type_of_address));
+    debug("wap.push.pap.compiler", 0, "PAP COMPILER: doing semantic analysis"
+          " for address type %s", address_type(type_of_address));
     if (e->type != Push_Message) {
         return 1;
     }

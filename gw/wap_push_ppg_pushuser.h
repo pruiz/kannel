@@ -38,19 +38,21 @@ void wap_push_ppg_pushuser_list_destroy(void);
  *              response 
  *           c) enforcing various ip lists
  *
- * Try to find username and password first from the url, then form headers. If
- * both fails, try basic authentication.
- * Then check does this user allow a push from this ip, then check the pass-
+ * Check does ppg allows a connection from this at all, then try to find username 
+ * and password from headers, then from url. If both fails, try basic authentica-
+ * tion. Then check does this user allow a push from this ip, then check the pass-
  * word.
  *
- * For protection against brute force and partial protection for denial of 
- * service attacks, an exponential backup algorithm is used. Time when a 
- * specific ip  is allowed to reconnect, is stored in Dict next_try. If an ip 
- * tries to reconnect before this (because first periods are small, this means
- * the attempt cannot be manual) we drop the connection.
+ * For protection against brute force and partial protection for denial of serv-
+ * ice attacks, an exponential backup algorithm is used. Time when a specific ip  
+ * is allowed to reconnect, is stored in Dict next_try. If an ip tries to recon-
+ * nect before this (three attemps are allowed, then exponential seconds are add-
+ * ed to the limit) we make a new challenge. We do the corresponding check before
+ * testing passwords; after all, it is an authorization failure that causes a new
+ * challenge. 
  *
- * Rfc 2617, chapter 1 states that if we do not accept credentials, we must 
- * send  a new challenge.
+ * Rfc 2617, chapter 1 states that if we do not accept credentials of an user's, 
+ * we must send a new challenge to the user.
  *
  * Output an authenticated username.
  * This function should be called only when there are a push users list; the 

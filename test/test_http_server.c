@@ -57,8 +57,17 @@ static void client_thread(void *arg)
 	}
 	list_destroy(cgivars, NULL);
     
-    	if (octstr_compare(url, octstr_imm("/quit")) == 0)
+    	if (octstr_compare(url, octstr_imm("/quit")) == 0) {
 	    run = 0;
+        } else if (octstr_compare(url, octstr_imm("/whitelist")) == 0) {
+	    octstr_destroy(reply_body);
+            reply_body = octstr_imm("+358408676001;+358408676005;\n"
+                                    "+358408676006\n");
+	} else if (octstr_compare(url, octstr_imm("/blacklist")) == 0) {
+            octstr_destroy(reply_body);
+            reply_body = octstr_imm("+358408676004\n"
+                                    "+358408676002;+358408676003\n");
+        }
         
         if (verbose) {
             debug("test.http", 0, "request headers were");

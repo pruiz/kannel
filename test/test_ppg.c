@@ -25,7 +25,8 @@ static long max_pushes = 1;
 static int verbose = 1,
            use_hardcoded = 0,
            num_urls = 0,
-           wait = 0;
+           wait = 0,
+           use_headers = 0;
 static double wait_seconds = 0.0;
 static Counter *counter = NULL;
 static char **push_data = NULL;
@@ -70,13 +71,15 @@ static void add_content_type(Octstr *content_flag, Octstr **wap_content)
         *wap_content = octstr_create("");
 }
 
-static void add_content_transfer_encoding_type(Octstr *content_flag, Octstr *wap_content)
+static void add_content_transfer_encoding_type(Octstr *content_flag, 
+                                               Octstr *wap_content)
 {
     if (!content_flag)
 	return;
 
     if (octstr_compare(content_flag, octstr_imm("base64")) == 0)
-	octstr_append_cstr(wap_content, "Content-transfer-encoding: base64\r\n");
+	octstr_append_cstr(wap_content, "Content-transfer-encoding: 
+                           base64\r\n");
 }
 
 static void transfer_encode (Octstr *cte, Octstr *content)
@@ -136,30 +139,47 @@ static Octstr *make_close_delimiter(Octstr *boundary)
     return close_delimiter;
 }
 
-static void start_push(HTTPCaller *caller, long i)   
+static List *push_headers_create(size_t content_len)
 {
     List *push_headers;
-    Octstr *push_content,
-           *wap_content,
-           *wap_file_content,
+    Octstr *cos,
+           *mos;
+
+    mos = NULL;
+    push_headers  = http_create_empty_headers();
+    if (use_hardcoded)
+        http_header_add(push_headers, "Content-Type", "multipart/related;" 
+                        " boundary=asdlfkjiurwgasf; type=\"application/xml\"");
+    else
+        http_header_add(push_headers, "Content-Type", 
+                        octstr_get_cstr(mos = make_multipart_value(boundary)));
+    if (use_headers)
+        http_add_basic_auth(push_headers, octstr_imm("troo"), 
+                            octstr_imm("far"));
+    add_push_application_id(&push_headers, appid_flag);
+    http_header_add(push_headers, "Content-Length: ", 
+                    octstr_get_cstr(cos = octstr_format("%d", content_len)));
+    octstr_destroy(cos);
+    octstr_destroy(mos);
+
+    return push_headers;
+}
+
+static Octstr *push_content_create(void)
+{
+    Octstr *push_content, 
+           *wap_content;
+    Octstr *wap_file_content,
            *pap_content,
            *pap_file_content,
-           *cos,
            *bpos,
-           *bcos,
-           *mos,
-           *push_url;
-    long *id;
+           *bcos;
     char *content_file,
          *pap_file;
 
     wap_content = NULL;
-    push_headers  = http_create_empty_headers();
-    
     push_content = NULL;
     if (use_hardcoded) {
-        http_header_add(push_headers, "Content-Type", "multipart/related;" 
-                    " boundary=asdlfkjiurwgasf; type=\"application/xml\"");
         push_content = octstr_create("\r\n\r\n"
                   "--asdlfkjiurwgasf\r\n"
                   "Content-Type: application/xml\r\n\r\n"
@@ -168,7 +188,7 @@ static void start_push(HTTPCaller *caller, long i)
                              " \"http://www.wapforum.org/DTD/pap_1.0.dtd\">"
                   "<pap>"
                         "<push-message push-id=\"9fjeo39jf084@pi.com\""
-                          " deliver-before-timestamp=\"2001-12-01T06:45:00Z\""
+                          " deliver-before-timestamp=\"2002-11-01T06:45:00Z\""
                           " deliver-after-timestamp=\"2000-02-27T06:45:00Z\""
                           " progress-notes-requested=\"false\">"
 			     "<address address-value=\"WAPPUSH=+358408676001/"
@@ -201,12 +221,10 @@ static void start_push(HTTPCaller *caller, long i)
                  "--asdlfkjiurwgasf--\r\n\r\n"
                  "");
     } else {
-        http_header_add(push_headers, "Content-Type", 
-            octstr_get_cstr(mos = make_multipart_value(boundary)));
-        octstr_destroy(mos);
         content_file = push_data[1];
         add_content_type(content_flag, &wap_content);
-        add_content_transfer_encoding_type(content_transfer_encoding, wap_content);
+        add_content_transfer_encoding_type(content_transfer_encoding, 
+                                           wap_content);
         if ((wap_file_content = octstr_read_file(content_file)) == NULL)
 	    panic(0, "Stopping");
 
@@ -237,13 +255,25 @@ static void start_push(HTTPCaller *caller, long i)
         octstr_destroy(pap_content);
         octstr_destroy(wap_content);
     }
-    add_push_application_id(&push_headers, appid_flag);
-    http_header_add(push_headers, "Content-Length: ", 
-                    octstr_get_cstr(cos = octstr_format("%d", 
-                    octstr_len(push_content))));
-    octstr_destroy(cos);
-    debug("test.ppg", 0, "we have push content");
-    octstr_dump(push_content, 0);
+
+    return push_content;
+}
+
+static void start_push(HTTPCaller *caller, long i)   
+{
+    List *push_headers;
+    Octstr *push_content,
+           *push_url;
+    long *id;
+    
+    push_content = push_content_create();
+    push_headers = push_headers_create(octstr_len(push_content));
+    if (verbose) {
+       debug("test.ppg", 0, "we have push content");
+       octstr_dump(push_content, 0);
+       debug("test.ppg", 0, "and headers");
+       http_header_dump(push_headers);
+    }
 
     id = gw_malloc(sizeof(long));
     *id = i;
@@ -257,17 +287,32 @@ static void start_push(HTTPCaller *caller, long i)
     http_destroy_headers(push_headers);
 }
 
+enum {NUMBER_OF_RELOGS = 2};
+
+/*
+ * Try log in defined number of times, when got response 401 and authentica-
+ * tion info is in headers.
+ */
 static int receive_push_reply(HTTPCaller *caller)
 {
     void *id;
-    int http_status;
+    long *trid;
+    int http_status,
+        tries;
     List *reply_headers;
     Octstr *final_url,
+           *auth_url,
            *reply_body,
-           *os;
+           *os,
+           *push_content,
+           *auth_reply_body;
     WAPEvent *e;
+    List *retry_headers;
     
-    id = http_receive_result(caller, &http_status, &final_url, &reply_headers, 
+    http_status = 401;
+    tries = 0;
+
+    id = http_receive_result(caller, &http_status, &final_url, &reply_headers,
                              &reply_body);
 
     if (id == NULL || http_status == -1 || final_url == NULL) {
@@ -275,8 +320,55 @@ static int receive_push_reply(HTTPCaller *caller)
         goto push_failed;
     }
 
+    while (use_headers && http_status == 401 && tries < NUMBER_OF_RELOGS) {
+        debug("test.ppg", 0, "try number %d", tries);
+        debug("test.ppg", 0, "authentication failure, get a challenge");
+        http_destroy_headers(reply_headers);
+        push_content = push_content_create();
+        retry_headers = push_headers_create(octstr_len(push_content));
+        http_add_basic_auth(retry_headers, octstr_imm("troo"), 
+                            octstr_imm("far"));
+        trid = gw_malloc(sizeof(long));
+        *trid = tries;
+        http_start_request(caller, final_url, retry_headers, 
+                           push_content, 0, trid, NULL);
+        debug("test.ppg ", 0, "TEST_PPG: doing response to %s", 
+              octstr_get_cstr(final_url));
+
+        octstr_destroy(push_content);
+        http_destroy_headers(retry_headers);
+        
+        trid = http_receive_result(caller, &http_status, &auth_url, 
+                                   &reply_headers, &auth_reply_body);
+
+        if (trid == NULL || http_status == -1 || auth_url == NULL) {
+            error(0, "unable to send authorisation, no reason found");
+            goto push_failed;
+        }   
+
+        debug("test.ppg", 0, "TEST_PPG: send authentication to %s, retry %ld", 
+               octstr_get_cstr(auth_url), *(long *) trid);
+        gw_free(trid);
+        octstr_destroy(auth_reply_body);
+        octstr_destroy(auth_url);
+        ++tries;
+    }
+
     if (http_status == 404) {
         error(0, "push failed, service not found");
+        goto push_failed;
+    }
+
+    if (http_status == 403) {
+        error(0, "push failed, service forbidden");
+        goto push_failed;
+    }
+
+    if (http_status == 401) {
+        if (use_headers)
+            error(0, "tried %d times, stopping", NUMBER_OF_RELOGS);
+        else
+	    error(0, "push failed, authorisation failure");
         goto push_failed;
     }
         
@@ -284,11 +376,13 @@ static int receive_push_reply(HTTPCaller *caller)
           *(long *) id, octstr_get_cstr(final_url));
     gw_free(id);
     octstr_destroy(final_url);
+
     if (verbose)
         debug("test.ppg", 0, "TEST_PPG: reply headers were");
+
     while ((os = list_extract_first(reply_headers)) != NULL) {
         if (verbose)
-            octstr_dump(os, 1); 
+            octstr_dump(os, 0); 
         octstr_destroy(os);
     }
 
@@ -321,21 +415,19 @@ static int receive_push_reply(HTTPCaller *caller)
     octstr_destroy(reply_body);
     wap_event_destroy(e);
     http_destroy_headers(reply_headers);
-
     return 0;
 
 push_failed:
+    gw_free(id);
     octstr_destroy(final_url);
     octstr_destroy(reply_body);
     http_destroy_headers(reply_headers);
-    
     return -1;
 
 parse_error:
     octstr_destroy(reply_body);
     http_destroy_headers(reply_headers);
     wap_event_destroy(e);
-    
     return -1;
 }
 
@@ -406,6 +498,8 @@ static void help(void)
     info(0, "-a application id");
     info(0, "Define the client application that will handle the push. Any,"); 
     info(0, "sia, ua, mms, nil and scrap accepted, default any.");
+    info(0, "-b");
+    info(0, "If true, send username/password in headers. Default false");
     info(0, "-v number");
     info(0, "    Set log level for stderr logging. Default 0 (debug)");
     info(0, "-q");
@@ -438,7 +532,7 @@ int main(int argc, char **argv)
     gwlib_init();
     num_threads = 1;
 
-    while ((opt = getopt(argc, argv, "Hhv:qr:t:c:a:i:e:")) != EOF) {
+    while ((opt = getopt(argc, argv, "Hhbv:qr:t:c:a:i:e")) != EOF) {
         switch(opt) {
 	    case 'v':
 	        log_set_output_level(atoi(optarg));
@@ -499,9 +593,11 @@ int main(int argc, char **argv)
 
 	    case 'e':
 		content_transfer_encoding = octstr_create(optarg);
-                if (octstr_compare(content_transfer_encoding, octstr_imm("base64")) != 0) {
+                if (octstr_compare(content_transfer_encoding, 
+                                   octstr_imm("base64")) != 0) {
 		    octstr_destroy(content_transfer_encoding);
-		    error(0, "TEST_PPG: unknown content transfer encoding \"%s\"",
+		    error(0, "TEST_PPG: unknown content transfer" 
+                          " encoding \"%s\"",
 			  octstr_get_cstr(content_transfer_encoding));
 		    help();
                     exit(0);
@@ -511,6 +607,10 @@ int main(int argc, char **argv)
 	    case 'h':
 	        help();
                 exit(0);
+
+	    case 'b':
+	        use_headers = 1;
+	    break;
 
 	    case '?':
 	    default:

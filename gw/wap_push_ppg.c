@@ -118,7 +118,7 @@ static wap_dispatch_func_t *dispatch_to_appl;
  * ppg), with some default values.
  */
 
-static Octstr *ppg_url = NULL;
+static Octstr *ppg_url = NULL ;
 static long ppg_port = DEFAULT_HTTP_PORT;
 static int ppg_port_ssl = SSL_CONNECTION_OFF;
 static long number_of_pushes = DEFAULT_NUMBER_OF_PUSHES;
@@ -278,7 +278,7 @@ void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
     user_configuration = read_ppg_config(cfg);
     http_open_port(ppg_port, ppg_port_ssl);
     http_clients = dict_create(number_of_pushes, NULL);
-    urls = dict_create(number_of_pushes, octstr_destroy_item);
+    urls = dict_create(number_of_pushes, NULL);
 
     gw_assert(run_status == limbo);
     run_status = running;
@@ -291,13 +291,13 @@ void wap_push_ppg_shutdown(void)
      gw_assert(run_status == running);
      run_status = terminating;
      list_remove_producer(ppg_queue);
-
      octstr_destroy(ppg_url);
-
      http_close_all_ports();
      dict_destroy(http_clients);
      dict_destroy(urls);
      wap_push_ppg_pushuser_list_destroy();
+     octstr_destroy(ppg_deny_ip);
+     octstr_destroy(ppg_allow_ip);
 
      gwthread_join_every(http_read_thread);
      gwthread_join_every(ota_read_thread);
@@ -378,8 +378,8 @@ static int read_ppg_config(Cfg *cfg)
      cfg_get_bool(&trusted_pi, grp, octstr_imm("trusted-pi"));
      cfg_get_bool(&ppg_port_ssl, grp, octstr_imm("ppg-port-ssl"));
      cfg_get_integer(&number_of_users, grp, octstr_imm("users"));
-     ppg_deny_ip = cfg_get(grp, octstr_imm("ppg-allow-ip"));
-     ppg_allow_ip = cfg_get(grp, octstr_imm("ppg-deny-ip"));
+     ppg_deny_ip = cfg_get(grp, octstr_imm("ppg-deny-ip"));
+     ppg_allow_ip = cfg_get(grp, octstr_imm("ppg-allow-ip"));
 
      if ((list = cfg_get_multi_group(cfg, octstr_imm("wap-push-user")))
               == NULL) {
@@ -389,22 +389,24 @@ static int read_ppg_config(Cfg *cfg)
          return USER_CONFIGURATION_NOT_ADDED;
      }
     
-     if (!wap_push_ppg_pushuser_list_add(list, number_of_pushes, number_of_users)) {
+     if (!wap_push_ppg_pushuser_list_add(list, number_of_pushes, 
+                                         number_of_users)) {
          panic(0, "unable to create users configuration list, exiting");
          return USER_CONFIGURATION_NOT_ADDED;     
      }  
 
-     list_destroy(list, NULL);
      cfg_destroy(cfg); 
      return USER_CONFIGURATION_ADDED;
 }
 
 static int ip_allowed_by_ppg(Octstr *ip)
 {
+    if (trusted_pi)
+        return 1;
+
     if (ppg_deny_ip == NULL && ppg_allow_ip == NULL) {
-        if (!trusted_pi)
-            warning(0, "Your ppg core configuration lacks allowed and denied ip"
-                    " lists");
+        warning(0, "Your ppg core configuration lacks allowed and denied" 
+                   " ip lists");
         return 1;
     }
 
@@ -414,19 +416,23 @@ static int ip_allowed_by_ppg(Octstr *ip)
     }
 
     if (octstr_compare(ppg_allow_ip, octstr_imm("*.*.*.*")) == 0) {
-        if (!trusted_pi)
-            warning(0, "Your ppg core configuration allow all ips");
+        warning(0, "Your ppg core configuration allow all ips");
         return 1;
     }
 
     if (wap_push_ppg_pushuser_search_ip_from_wildcarded_list(ppg_deny_ip, ip, 
-            octstr_imm(";"), octstr_imm(".")) == 0)
+	    octstr_imm(";"), octstr_imm("."))) {
+        error(0, "ip found from denied list");
         return 0;
+    }
 
     if (wap_push_ppg_pushuser_search_ip_from_wildcarded_list(ppg_allow_ip, ip, 
-            octstr_imm(";"), octstr_imm(".")) != 0)
+	    octstr_imm(";"), octstr_imm("."))) {
+        debug("wap.push.ppg.pushuser", 0, "PPG: ip found from allowed list");
         return 1;
+    }
 
+    warning(0, "did not found ip from any of core lists, deny it");
     return 0;
 }
 
@@ -443,13 +449,16 @@ static void ota_read_thread (void *arg)
 }
 
 /*
- * Conforming with usual Kannel style, we close a client when authorisation 
- * fails.
+ * We close a client when we are unable to figure who the user was or when ip 
+ * or phone number was unacceptable. Authorization failure as such causes a 
+ * challenge to the client (a required by rfc 2617, chapter 1).
  * We store HTTPClient data structure corresponding a given push id, so that 
  * we can send responses to the rigth address.
  * Pap chapter 14.4.1 states that we must return http status 202 after we have 
  * accepted PAP message, even if it is unparsable. So only the non-existing 
- * service error and authorisation failures are handled at HTTP level. 
+ * service error and some authorisation failures are handled at HTTP level. 
+ * When a phone number was unacceptable, we return a PAP level error, because
+ * we cannot know this error before parsing the document.
  */
 
 static void http_read_thread(void *arg)
@@ -495,7 +504,6 @@ static void http_read_thread(void *arg)
         }
 
         if (!ip_allowed_by_ppg(ip)) {
-            http_status = 403;
             error(0,  "Request <%s> from <%s>: ip forbidden, closing the"
                   " client", octstr_get_cstr(url), octstr_get_cstr(ip));
             http_close_client(client);
@@ -505,9 +513,8 @@ static void http_read_thread(void *arg)
         if (!trusted_pi && user_configuration) {
 	    if (!wap_push_ppg_pushuser_authenticate(client, cgivars, ip, 
                                                     push_headers, &username)) {
-                error(0,  "Request <%s> from <%s>: authorisation failure," 
-                      "closing the client", octstr_get_cstr(url), 
-                      octstr_get_cstr(ip));
+	      error(0,  "Request <%s> from <%s>: authorisation failure",
+                    octstr_get_cstr(url), octstr_get_cstr(ip));
                 goto ferror;
             }
 	} 
@@ -534,7 +541,7 @@ static void http_read_thread(void *arg)
         http_remove_hop_headers(push_headers);
         remove_mime_headers(&push_headers);
         if (!headers_acceptable(push_headers, &content_header)) {
-	    warning(0, "PPG: Unparsable push headers, the request"
+	    warning(0,  "PPG: Unparsable push headers, the request"
                     " unacceptable");
             send_bad_message_response(client, content_header, PAP_BAD_REQUEST,
                                       http_status);
@@ -589,17 +596,17 @@ static void http_read_thread(void *arg)
                 warning(0, "PPG: duplicate push id, the request unacceptable");
 	        tell_fatal_error(client, ppg_event, url, http_status, 
                                  PAP_DUPLICATE_PUSH_ID);
-                goto no_compile;
+                goto not_acceptable;
 	    } 
 
             dict_put(urls, ppg_event->u.Push_Message.pi_push_id, url); 
  
-            if (user_configuration && 
+            if (!trusted_pi && user_configuration && 
                 !wap_push_ppg_pushuser_client_phone_number_acceptable(username, 
 		    ppg_event->u.Push_Message.address_value)) {
                 tell_fatal_error(client, ppg_event, url, http_status, 
                                  PAP_FORBIDDEN);
-	        goto no_compile;
+	        goto not_acceptable;
 	    }           
 
             debug("wap.push.ppg", 0, "PPG: http_read_thread: pap control"
@@ -614,6 +621,7 @@ static void http_read_thread(void *arg)
 
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
+        octstr_destroy(username);
         octstr_destroy(mime_content);
         octstr_destroy(pap_content);
         octstr_destroy(push_data);
@@ -624,6 +632,7 @@ static void http_read_thread(void *arg)
 no_transform:
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
+        octstr_destroy(username);
         octstr_destroy(mime_content);
         octstr_destroy(pap_content);
         octstr_destroy(push_data);
@@ -634,7 +643,20 @@ no_transform:
 no_compile:
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
+        octstr_destroy(username);
         octstr_destroy(mime_content);
+        octstr_destroy(push_data);
+        octstr_destroy(rdf_content);
+        octstr_destroy(boundary);
+        octstr_destroy(url);
+        continue;
+
+not_acceptable:
+        http_destroy_headers(push_headers);
+        http_destroy_cgiargs(cgivars);
+        octstr_destroy(username);
+        octstr_destroy(mime_content);
+        octstr_destroy(pap_content);
         octstr_destroy(push_data);
         octstr_destroy(rdf_content);
         octstr_destroy(boundary);
@@ -655,6 +677,7 @@ clean:
 ferror:
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
+        octstr_destroy(username);
         octstr_destroy(url);
         octstr_destroy(ip);
         octstr_destroy(mime_content);
@@ -662,12 +685,14 @@ ferror:
 herror:
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
+        octstr_destroy(username);
         octstr_destroy(url);
         continue;
 
 berror:
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
+        octstr_destroy(username);
         octstr_destroy(mime_content);
         octstr_destroy(content_header);
         octstr_destroy(boundary);
@@ -1593,7 +1618,7 @@ static int pap_get_content(struct content *content)
 
     for (i = 0; i < NUM_EXTRACTORS; i++) {
         if (octstr_case_compare(content->type, 
-				octstr_imm(extractors[i].transfer_encoding)) == 0) {
+	        octstr_imm(extractors[i].transfer_encoding)) == 0) {
 	    
 	    new_body = extractors[i].extract(content);
             if (new_body == NULL)
@@ -2469,7 +2494,7 @@ static int type_is(Octstr *content_header, char *name)
     quoted_type = octstr_create("");
     octstr_format_append(quoted_type, "%c", '\"');
     octstr_append(quoted_type, osname);
-    octstr_format_append(quoted_type, "%c", '"');
+    octstr_format_append(quoted_type, "%c", '\"');
 
     if (octstr_case_search(content_header, quoted_type, 0) >= 0) {
         octstr_destroy(quoted_type);
@@ -2641,7 +2666,10 @@ static void send_push_response(WAPEvent *e, int status)
 static void tell_fatal_error(HTTPClient *c, WAPEvent *e, Octstr *url, 
                              int status, int code)
 {
-    Octstr *reply_body;
+    Octstr *reply_body,
+           *dos,                      /* temporaries */
+           *tos,
+           *sos;
 
     gw_assert(e->type == Push_Message);
     reply_body = octstr_format("%s", 
@@ -2655,12 +2683,12 @@ static void tell_fatal_error(HTTPClient *c, WAPEvent *e, Octstr *url,
 
     octstr_format_append(reply_body, "%s",
                    " sender-name=\"");
-    octstr_format_append(reply_body, "%S", tell_ppg_name());
+    octstr_format_append(reply_body, "%S", tos = tell_ppg_name());
     octstr_format_append(reply_body, "%s", "\"");
 
     octstr_format_append(reply_body, "%s",
                    " reply-time=\"");
-    octstr_format_append(reply_body, "%S", set_time());
+    octstr_format_append(reply_body, "%S", sos = set_time());
     octstr_format_append(reply_body, "%s", "\"");
 
     octstr_format_append(reply_body, "%s",
@@ -2675,19 +2703,19 @@ static void tell_fatal_error(HTTPClient *c, WAPEvent *e, Octstr *url,
     octstr_format_append(reply_body, "%s", "\"");
 
     octstr_format_append(reply_body, "%s", " desc=\"");
-    octstr_format_append(reply_body, "%S", 
-        describe_code(code));
+    octstr_format_append(reply_body, "%S", dos = describe_code(code));
     octstr_format_append(reply_body, "\"");
 
     octstr_format_append(reply_body, "%s", ">"
               "</response-result>"
          "</pap>");
 
-    debug("wap.push.ppg", 0, "PPG: tell_fatal_error: %s", 
-          octstr_get_cstr(describe_code(code)));
+    debug("wap.push.ppg", 0, "PPG: tell_fatal_error: %s", octstr_get_cstr(dos));
     send_to_pi(c, reply_body, status);
 
-    octstr_destroy(url);
+    octstr_destroy(dos);
+    octstr_destroy(tos);
+    octstr_destroy(sos);
     wap_event_destroy(e);
 }
 
