@@ -17,7 +17,7 @@
 static char *connection;
 
 /*
- * Database fields, which we are use.
+ * Database fields, which we use.
  */
 static struct dlr_db_fields *fields = NULL;
 
@@ -28,6 +28,7 @@ static Mutex *dlr_mutex = NULL;
 
 enum {
     SDB_ORACLE,
+    SDB_MYSQL,
     SDB_OTHER
 };
 
@@ -39,9 +40,11 @@ static const char* sdb_get_limit_str()
     switch (sdb_conn_type) {
         case SDB_ORACLE:
             return "AND ROWNUM < 2";
+        case SDB_MYSQL:
+            return "LIMIT 1";
         case SDB_OTHER:
         default:
-            return "LIMIT 1";
+            return "";
     }
 }
 
@@ -326,6 +329,10 @@ found:
 
     if (octstr_search(sdb_url, octstr_imm("oracle:"), 0) == 0)
         sdb_conn_type = SDB_ORACLE;
+    else if (octstr_search(sdb_url, octstr_imm("mysql:"), 0) == 0) {
+        warning(0, "DLR[sdb]: Please use native MySQL support, instead of libsdb.");
+        sdb_conn_type = SDB_MYSQL;
+    }
     else
         sdb_conn_type = SDB_OTHER;
 
