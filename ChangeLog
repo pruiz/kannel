@@ -1,3 +1,11 @@
+2000-11-15  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsc_wrapper.c, gw/smscconn_p.h: Added.
+
+	* gw/smscconn.c: moved wrapping stuff into smsc_wrapper.c, and
+	private structure data into private header smscconn_p.h so that
+	caller (main bearerbox) does not need to worry about that
+
 2000-11-14  Richard Braakman  <dark@wapi.com>
 
 	* doc/CodingStyle: Document our practice of having include files

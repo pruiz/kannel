@@ -87,12 +87,12 @@ typedef struct smsc_state {
 
 
 enum {
-    SMSC_UNKNOWN_STATUS = -1,
-    SMSC_ACTIVE = 0,
-    SMSC_CONNECTING = 1,
-    SMSC_RECONNECTING = 2,
-    SMSC_DISCONNECTED = 3,
-    SMSC_KILLED = 4
+    SMSCCONN_UNKNOWN_STATUS = -1,
+    SMSCCONN_ACTIVE = 0,
+    SMSCCONN_CONNECTING = 1,
+    SMSCCONN_RECONNECTING = 2,
+    SMSCCONN_DISCONNECTED = 3,
+    SMSCCONN_KILLED = 4
 };
 
 /* return current status of the SMSC connection, filled to infotable.
