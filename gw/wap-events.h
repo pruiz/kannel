@@ -14,6 +14,7 @@ typedef struct WAPEvent WAPEvent;
 #include "gwlib/gwlib.h"
 #include "wtp.h"
 #include "wsp.h"
+#include "wapbox.h"
 
 
 /*
@@ -37,6 +38,7 @@ struct WAPEvent {
 	#define INTEGER(name) long name;
 	#define SESSION_MACHINE(name) WSPMachine *name;
 	#define HTTPHEADER(name) List *name;
+	#define ADDRTUPLE(name) WAPAddrTuple *name;
 	#include "wap-events-def.h"
 };
 

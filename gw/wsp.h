@@ -42,6 +42,7 @@ typedef struct WSPMethodMachine WSPMethodMachine;
 #include "gwlib/gwlib.h"
 #include "wtp.h"
 #include "wap-events.h"
+#include "wapbox.h"
 
 struct WSPMachine {
 	#define INTEGER(name) long name;
@@ -53,6 +54,7 @@ struct WSPMachine {
 	#define LIST(name) List *name;
 	#define SESSION_MACHINE(fields) fields
 	#define METHOD_MACHINE(fields)
+	#define ADDRTUPLE(name) WAPAddrTuple *name;
 	#include "wsp_machine-decl.h"
 };
 
@@ -67,6 +69,7 @@ struct WSPMethodMachine {
 	#define LIST(name) List *name;
 	#define SESSION_MACHINE(fields)
 	#define METHOD_MACHINE(fields) fields
+	#define ADDRTUPLE(name) WAPAddrTuple *name;
 	#include "wsp_machine-decl.h"
 };
 

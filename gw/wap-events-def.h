@@ -93,37 +93,25 @@ WAPEVENT(RcvInvoke,
       INTEGER(up_flag)
       INTEGER(exit_info_present)
       INTEGER(no_cache_supported)
-      OCTSTR(client_address)
-      INTEGER(client_port)
-      OCTSTR(server_address)
-      INTEGER(server_port)
+      ADDRTUPLE(addr_tuple)
       )
 
 WAPEVENT(RcvAbort,
       INTEGER(tid)
       INTEGER(abort_type)
       INTEGER(abort_reason)
-      OCTSTR(client_address)
-      INTEGER(client_port)
-      OCTSTR(server_address)
-      INTEGER(server_port)
+      ADDRTUPLE(addr_tuple)
       )
 
 WAPEVENT(RcvAck,
       INTEGER(tid)
       INTEGER(tid_ok)
       INTEGER(rid)
-      OCTSTR(client_address)
-      INTEGER(client_port)
-      OCTSTR(server_address)
-      INTEGER(server_port)
+      ADDRTUPLE(addr_tuple)
       )
 
 WAPEVENT(TR_Invoke_Req,
-      OCTSTR(source_address)
-      INTEGER(source_port)
-      OCTSTR(destination_address)
-      INTEGER(destination_port)
+      ADDRTUPLE(addr_tuple)
       INTEGER(ack_type)
       INTEGER(tcl)
       OCTSTR(user_data)
@@ -163,10 +151,7 @@ WAPEVENT(TimerTO_W,
 
 WAPEVENT(RcvErrorPDU,
      INTEGER(tid)
-      OCTSTR(client_address)
-      INTEGER(client_port)
-      OCTSTR(server_address)
-      INTEGER(server_port)
+     ADDRTUPLE(addr_tuple)
      )
 
 
@@ -175,3 +160,4 @@ WAPEVENT(RcvErrorPDU,
 #undef INTEGER
 #undef SESSION_MACHINE
 #undef HTTPHEADER
+#undef ADDRTUPLE

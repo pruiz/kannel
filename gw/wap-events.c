@@ -25,6 +25,7 @@ WAPEvent *wap_event_create(WAPEventName type) {
 	#define INTEGER(name) p->name = 0;
 	#define SESSION_MACHINE(name) p->name = NULL;
 	#define HTTPHEADER(name) p->name = NULL;
+	#define ADDRTUPLE(name) p->name = NULL;
 	#include "wap-events-def.h"
 	
 	return event;
@@ -45,6 +46,7 @@ void wap_event_destroy(WAPEvent *event) {
 	#define INTEGER(name) p->name = 0;
 	#define SESSION_MACHINE(name) p->name = NULL;
 	#define HTTPHEADER(name) http2_destroy_headers(p->name);
+	#define ADDRTUPLE(name) wap_addr_tuple_destroy(p->name);
 	#include "wap-events-def.h"
 	default:
 		panic(0, "Unknown WAPEvent type %d", (int) event->type);
@@ -70,6 +72,7 @@ WAPEvent *wap_event_duplicate(WAPEvent *event) {
 	#define INTEGER(name) p->name = q->name;
 	#define SESSION_MACHINE(name) p->name = q->name;
 	#define HTTPHEADER(name) p->name = http2_header_duplicate(q->name);
+	#define ADDRTUPLE(name) p->name = wap_addr_tuple_duplicate(q->name);
 	#include "wap-events-def.h"
 	
 	return new;
@@ -107,6 +110,8 @@ void wap_event_dump(WAPEvent *event) {
 				#name, (void *) p->name);
 		#define HTTPHEADER(name) \
 			http2_header_dump(p->name);
+		#define ADDRTUPLE(name) \
+			wap_addr_tuple_dump(p->name);
 		#include "wap-events-def.h"
 		default:
 			debug("wap.event", 0, "Unknown type");
@@ -121,19 +126,4 @@ void wap_event_assert(WAPEvent *event) {
 	gw_assert(event != NULL),
 	gw_assert(event->type >= 0);
 	gw_assert(event->type < WAPEventNameCount);
-
-#if 0 /* XXX the following is bogus. --liw */
-	switch (event->type) {
-	#define WAPEVENT(name, fields) \
-		case name: \
-		{ struct name *p = &event->name; fields; break; }
-	#define OCTSTR(name) octstr_len(p->name);
-	#define INTEGER(name) gw_assert(p != NULL);
-	#define HTTPHEADER(name) gw_assert(p->name != NULL);
-	#define SESSION_MACHINE(name) gw_assert(p->name != NULL);
-	#include "wap-events-def.h"
-	default:
-		gw_assert(0);
-	}
-#endif
 }

@@ -232,10 +232,11 @@ static WTPCached_tid *tid_cached(WTPMachine *machine){
        WTPCached_tid *item = NULL;
        struct profile iniator_profile;
 
-       iniator_profile.source_address = machine->source_address;
-       iniator_profile.destination_address = machine->destination_address;
-       iniator_profile.source_port = machine->source_port;
-       iniator_profile.destination_port = machine->destination_port;
+       iniator_profile.source_address = machine->addr_tuple->client->address;
+       iniator_profile.destination_address = 
+       		machine->addr_tuple->server->address;
+       iniator_profile.source_port = machine->addr_tuple->client->port;
+       iniator_profile.destination_port = machine->addr_tuple->server->port;
 
        item = list_search(tid_cache, &iniator_profile, tid_is_cached);
 
@@ -259,12 +260,13 @@ static void add_tid(WTPMachine *machine, long tid){
        
        new_item = cache_item_create_empty(); 
        octstr_destroy(new_item->source_address);
-       new_item->source_address = octstr_duplicate(machine->source_address);
-       new_item->source_port = machine->source_port;
+       new_item->source_address = 
+       	octstr_duplicate(machine->addr_tuple->client->address);
+       new_item->source_port = machine->addr_tuple->client->port;
        octstr_destroy(new_item->destination_address);
        new_item->destination_address = 
-                 octstr_duplicate(machine->destination_address);
-       new_item->destination_port = machine->destination_port;
+                 octstr_duplicate(machine->addr_tuple->server->address);
+       new_item->destination_port = machine->addr_tuple->server->port;
        new_item->tid = tid; 
 
        list_append(tid_cache, new_item);

@@ -254,13 +254,9 @@ static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
 
 	if (sm == NULL) {
 		sm = machine_create();
-		sm->client_address = octstr_duplicate(tuple->client->address);
-		sm->client_port = tuple->client->port;
-		sm->server_address = octstr_duplicate(tuple->server->address);
-		sm->server_port = tuple->server->port;
-	}
-	
-	wap_addr_tuple_destroy(tuple);
+		sm->addr_tuple = tuple;
+	} else
+		wap_addr_tuple_destroy(tuple);
 
 	return sm;
 }
@@ -279,6 +275,7 @@ static WSPMachine *machine_create(void) {
 	#define SESSION_POINTER(name) p->name = NULL;
 	#define HTTPHEADER(name) p->name = NULL;
 	#define LIST(name) p->name = list_create();
+	#define ADDRTUPLE(name) p->name = NULL;
 	#define SESSION_MACHINE(fields) fields
 	#define METHOD_MACHINE(fields)
 	#include "wsp_machine-decl.h"
@@ -315,6 +312,7 @@ static void machine_destroy(WSPMachine *p) {
 	#define SESSION_POINTER(name) p->name = NULL;
 	#define HTTPHEADER(name) http2_destroy_headers(p->name);
 	#define LIST(name) list_destroy(p->name);
+	#define ADDRTUPLE(name) wap_addr_tuple_destroy(p->name);
 	#define SESSION_MACHINE(fields) fields
 	#define METHOD_MACHINE(fields)
 	#include "wsp_machine-decl.h"
@@ -725,12 +723,7 @@ static int transaction_belongs_to_session(void *wsp_ptr, void *tuple_ptr) {
 	wsp = wsp_ptr;
 	tuple = tuple_ptr;
 
-	return
-	  !wsp->unused &&
-	  tuple->client->port == wsp->client_port &&
-	  tuple->server->port == wsp->server_port &&
-	  octstr_compare(tuple->client->address, wsp->client_address) == 0 &&
-	  octstr_compare(tuple->server->address, wsp->server_address) == 0;
+	return !wsp->unused && wap_addr_tuple_same(wsp->addr_tuple, tuple);
 }
 
 
@@ -742,8 +735,5 @@ static int same_client(void *a, void *b) {
 	sm2 = b;
 	return !sm1->unused &&
 	       !sm2->unused && 
-	       sm1->client_port == sm2->client_port &&
-	       sm1->server_port == sm2->server_port &&
-	       octstr_compare(sm1->client_address, sm2->client_address) == 0 &&
-	       octstr_compare(sm1->server_address, sm2->server_address) == 0;
+	       wap_addr_tuple_same(sm1->addr_tuple, sm2->addr_tuple);
 }

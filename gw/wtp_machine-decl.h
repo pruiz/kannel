@@ -43,31 +43,28 @@
 #if !defined(MACHINE) || !defined(INTEGER) || !defined(ENUM) || \
 	!defined(OCTSTR) || !defined(TIMER) || \
 	!defined(MSG) || \
-	!defined(WSP_EVENT) || !defined(LIST) 
+	!defined(WSP_EVENT) || !defined(LIST) || !defined(ADDRTUPLE)
 #error "wsp_machine-decl.h: Some required macro is missing."
 #endif
 
-MACHINE(INTEGER(in_use);
-        ENUM(state);
-        INTEGER(tid);              /* transaction identifier */
-        OCTSTR(source_address);    /* address four-tuple */
-        INTEGER(source_port);
-        OCTSTR(destination_address);
-        INTEGER(destination_port);
-        INTEGER(tcl);              /* transaction class */
-        INTEGER(aec);              /* counter telling how many timer periods 
+MACHINE(INTEGER(in_use)
+        ENUM(state)
+        INTEGER(tid)              /* transaction identifier */
+	ADDRTUPLE(addr_tuple)
+        INTEGER(tcl)              /* transaction class */
+        INTEGER(aec)              /* counter telling how many timer periods 
                                       we have waited for acknowledgement */
-        INTEGER(rcr);              /* retransmission counter */
-        INTEGER(tid_ve);           /* are we doing tid verification or not */
-        INTEGER(u_ack);            /* user acknowledgement flag (are user 
+        INTEGER(rcr)              /* retransmission counter */
+        INTEGER(tid_ve)           /* are we doing tid verification or not */
+        INTEGER(u_ack)            /* user acknowledgement flag (are user 
                                       acknowledgement required) */ 
-        INTEGER(rid);              /* retransmission flag, telling are we 
+        INTEGER(rid)              /* retransmission flag, telling are we 
                                       resending the result */ 
-        MSG(result);               /* packed result message - for resending */
-        INTEGER(ack_pdu_sent);     /* are we resending the acknowledgement */
-        TIMER(timer);              /* pointer to the timer of this machine timer
+        MSG(result)               /* packed result message - for resending */
+        INTEGER(ack_pdu_sent)     /* are we resending the acknowledgement */
+        TIMER(timer)              /* pointer to the timer of this machine timer
                                       in the global timers list */
-        WSP_EVENT(invoke_indication); /* packed wsp invoke indication - for tid
+        WSP_EVENT(invoke_indication) /* packed wsp invoke indication - for tid
                                          verification */
 	)
 
@@ -79,3 +76,4 @@ MACHINE(INTEGER(in_use);
 #undef MSG
 #undef WSP_EVENT
 #undef LIST
+#undef ADDRTUPLE

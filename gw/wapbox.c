@@ -318,8 +318,16 @@ WAPAddr *wap_addr_create(Octstr *address, long port) {
 
 
 void wap_addr_destroy(WAPAddr *addr) {
-	octstr_destroy(addr->address);
-	gw_free(addr);
+	if (addr != NULL) {
+		octstr_destroy(addr->address);
+		gw_free(addr);
+	}
+}
+
+
+int wap_addr_same(WAPAddr *a, WAPAddr *b) {
+	return a->port == b->port && 
+		octstr_compare(a->address, b->address) == 0;
 }
 
 
@@ -335,9 +343,35 @@ Octstr *srv_addr, long srv_port) {
 
 
 void wap_addr_tuple_destroy(WAPAddrTuple *tuple) {
-	wap_addr_destroy(tuple->client);
-	wap_addr_destroy(tuple->server);
-	gw_free(tuple);
+	if (tuple != NULL) {
+		wap_addr_destroy(tuple->client);
+		wap_addr_destroy(tuple->server);
+		gw_free(tuple);
+	}
+}
+
+
+int wap_addr_tuple_same(WAPAddrTuple *a, WAPAddrTuple *b) {
+	return wap_addr_same(a->client, b->client) &&
+		wap_addr_same(a->server, b->server);
+}
+
+
+WAPAddrTuple *wap_addr_tuple_duplicate(WAPAddrTuple *tuple) {
+	return wap_addr_tuple_create(tuple->client->address,
+				     tuple->client->port,
+				     tuple->server->address,
+				     tuple->server->port);
+}
+
+
+void wap_addr_tuple_dump(WAPAddrTuple *tuple) {
+	debug("wap", 0, "WAPAddrTuple %p = <%s:%ld> - <%s:%ld>", 
+		(void *) tuple,
+		octstr_get_cstr(tuple->client->address),
+		tuple->client->port,
+		octstr_get_cstr(tuple->server->address),
+		tuple->server->port);
 }
 
 

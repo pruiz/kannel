@@ -1,3 +1,10 @@
+Tue Jun  6 12:28:48 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wap-appl.c, gw/wap-events-def.h, gw/wap-events.c,
+	gw/wap-events.h, gw/wapbox.c, gw/wapbox.h, gw/wsp.h,
+	gw/wsp_machine-decl.h, gw/wtp.c, gw/wtp.h, gw/wtp_machine-decl.h,
+	gw/wtp_send.c, gw/wtp_tid.c: Made more use of WAPAddrTuple.
+
 Tue Jun  6 11:37:22 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wap-appl.c, gw/wap-events-def.h, gw/wap-events.[ch]: Replaced

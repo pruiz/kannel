@@ -251,14 +251,14 @@ void wtp_send_address_dump(Address *address){
 static void add_datagram_address(Msg *msg, WTPMachine *machine){
 
        msg->wdp_datagram.source_address = 
-    	    octstr_duplicate(machine->destination_address);
+    	    octstr_duplicate(machine->addr_tuple->server->address);
 
-       msg->wdp_datagram.source_port = machine->destination_port;
+       msg->wdp_datagram.source_port = machine->addr_tuple->server->port;
 
        msg->wdp_datagram.destination_address = 
-    	    octstr_duplicate(machine->source_address);
+    	    octstr_duplicate(machine->addr_tuple->client->address);
        
-       msg->wdp_datagram.destination_port = machine->source_port;
+       msg->wdp_datagram.destination_port = machine->addr_tuple->client->port;
 }
 
 /* 

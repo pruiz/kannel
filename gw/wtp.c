@@ -79,9 +79,7 @@ static void wtp_handle_event(WTPMachine *machine, WAPEvent *event);
  * Creates wtp machine having addsress quintuple and transaction class 
  * iniatilised. If machines list is busy, just waits.
  */ 
-static WTPMachine *wtp_machine_create(Octstr *srcaddr, long srcport,
-				Octstr *destaddr, long destport, long tid,
-				long tcl);
+static WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl);
 
 /*
  * Generates a new transaction handle by incrementing the previous one by one.
@@ -100,9 +98,7 @@ static unsigned char *name_state(int name);
  * ports and the transaction identifier. Return a pointer to the machine,
  * or NULL if not found.
  */
-static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
-	Octstr *destination_address, long destination_port, long tid,
-	long mid);
+static WTPMachine *wtp_machine_find(WAPAddrTuple *tuple, long tid, long mid);
 
 /*
  * Packs a wsp event. Fetches flags and user data from a wtp event. Address 
@@ -172,14 +168,11 @@ WAPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 		event->RcvInvoke.up_flag = pdu->u.Invoke.uack;
 		event->RcvInvoke.exit_info_present = 0;
 		event->RcvInvoke.no_cache_supported = 0;
-		event->RcvInvoke.client_address = 
-			octstr_duplicate(msg->wdp_datagram.source_address);
-		event->RcvInvoke.client_port = 
-			msg->wdp_datagram.source_port;
-		event->RcvInvoke.server_address =
-			octstr_duplicate(msg->wdp_datagram.destination_address);
-		event->RcvInvoke.server_port = 
-			msg->wdp_datagram.destination_port;
+		event->RcvInvoke.addr_tuple = 
+		  wap_addr_tuple_create(msg->wdp_datagram.source_address,
+					msg->wdp_datagram.source_port,
+					msg->wdp_datagram.destination_address,
+					msg->wdp_datagram.destination_port);
 		break;
 
 	case Ack:
@@ -187,14 +180,11 @@ WAPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 		event->RcvAck.tid = pdu->u.Ack.tid;
 		event->RcvAck.tid_ok = pdu->u.Ack.tidverify;
 		event->RcvAck.rid = pdu->u.Ack.rid;
-		event->RcvAck.client_address = 
-			octstr_duplicate(msg->wdp_datagram.source_address);
-		event->RcvAck.client_port = 
-			msg->wdp_datagram.source_port;
-		event->RcvAck.server_address =
-			octstr_duplicate(msg->wdp_datagram.destination_address);
-		event->RcvAck.server_port = 
-			msg->wdp_datagram.destination_port;
+		event->RcvAck.addr_tuple =
+		  wap_addr_tuple_create(msg->wdp_datagram.source_address,
+					msg->wdp_datagram.source_port,
+					msg->wdp_datagram.destination_address,
+					msg->wdp_datagram.destination_port);
 		break;
 
 	case Abort:
@@ -202,14 +192,11 @@ WAPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 		event->RcvAbort.tid = pdu->u.Abort.tid;
 		event->RcvAbort.abort_type = pdu->u.Abort.abort_type;
 		event->RcvAbort.abort_reason = pdu->u.Abort.abort_reason;
-		event->RcvAbort.client_address = 
-			octstr_duplicate(msg->wdp_datagram.source_address);
-		event->RcvAbort.client_port = 
-			msg->wdp_datagram.source_port;
-		event->RcvAbort.server_address =
-			octstr_duplicate(msg->wdp_datagram.destination_address);
-		event->RcvAbort.server_port = 
-			msg->wdp_datagram.destination_port;
+		event->RcvAbort.addr_tuple = 
+		  wap_addr_tuple_create(msg->wdp_datagram.source_address,
+					msg->wdp_datagram.source_port,
+					msg->wdp_datagram.destination_address,
+					msg->wdp_datagram.destination_port);
 		break;
 
 	default:
@@ -261,10 +248,7 @@ int wtp_get_address_tuple(long mid, WAPAddrTuple **tuple) {
 	if (sm == NULL)
 		return -1;
 
-	*tuple = wap_addr_tuple_create(sm->source_address, 
-				       sm->source_port,
-				       sm->destination_address,
-				       sm->destination_port);
+	*tuple = wap_addr_tuple_duplicate(sm->addr_tuple);
 
 	return 0;
 }
@@ -358,49 +342,33 @@ static unsigned long wtp_tid_next(void){
 static WTPMachine *wtp_machine_find_or_create(WAPEvent *event){
 
           WTPMachine *machine = NULL;
-          long tid;
-	  Octstr *src_addr, *dst_addr;
-	  long src_port, dst_port, mid;
+          long tid, mid;
+	  WAPAddrTuple *tuple;
 
 	  tid = -1;
-	  src_addr = NULL;
-	  dst_addr = NULL;
-	  src_port = -1;
-	  dst_port = -1;
+	  tuple = NULL;
 	  mid = -1;
 
           switch (event->type){
 
 	          case RcvInvoke:
                        tid = event->RcvInvoke.tid;
-		       src_addr = event->RcvInvoke.client_address;
-		       src_port = event->RcvInvoke.client_port;
-		       dst_addr = event->RcvInvoke.server_address;
-		       dst_port = event->RcvInvoke.server_port;
+		       tuple = event->RcvInvoke.addr_tuple;
                   break;
 
 	          case RcvAck:
                        tid = event->RcvAck.tid;
-		       src_addr = event->RcvAck.client_address;
-		       src_port = event->RcvAck.client_port;
-		       dst_addr = event->RcvAck.server_address;
-		       dst_port = event->RcvAck.server_port;
+		       tuple = event->RcvAck.addr_tuple;
                   break;
 
 	          case RcvAbort:
                        tid = event->RcvAbort.tid;
-		       src_addr = event->RcvAbort.client_address;
-		       src_port = event->RcvAbort.client_port;
-		       dst_addr = event->RcvAbort.server_address;
-		       dst_port = event->RcvAbort.server_port;
+		       tuple = event->RcvAbort.addr_tuple;
                   break;
 
 	          case RcvErrorPDU:
                        tid = event->RcvErrorPDU.tid;
-		       src_addr = event->RcvErrorPDU.client_address;
-		       src_port = event->RcvErrorPDU.client_port;
-		       dst_addr = event->RcvErrorPDU.server_address;
-		       dst_port = event->RcvErrorPDU.server_port;
+		       tuple = event->RcvErrorPDU.addr_tuple;
                   break;
 
 		  case TR_Invoke_Res:
@@ -418,9 +386,8 @@ static WTPMachine *wtp_machine_find_or_create(WAPEvent *event){
                   break;
 	   }
 
-	   gw_assert(src_addr != NULL || mid != -1);
-           machine = wtp_machine_find(src_addr, src_port, dst_addr, dst_port,
-                    		tid, mid);
+	   gw_assert(tuple != NULL || mid != -1);
+           machine = wtp_machine_find(tuple, tid, mid);
            
            if (machine == NULL){
 
@@ -430,10 +397,8 @@ static WTPMachine *wtp_machine_find_or_create(WAPEvent *event){
  * meaningless).
  */
 	              case RcvInvoke: 
-	                   machine = wtp_machine_create(
-                                     src_addr, src_port, 
-				     dst_addr, dst_port,
-				     tid, event->RcvInvoke.tcl);
+	                   machine = wtp_machine_create(tuple, tid,
+				     		event->RcvInvoke.tcl);
                            machine->in_use = 1;
                       break;
 
@@ -461,10 +426,7 @@ static WTPMachine *wtp_machine_find_or_create(WAPEvent *event){
  *  is identified by the address four-tuple and tid.
  */
 struct machine_pattern {
-	Octstr *source_address;
-	long source_port;
-	Octstr *destination_address;
-	long destination_port;
+	WAPAddrTuple *tuple;
 	long tid;
 	long mid;
 };
@@ -476,30 +438,24 @@ static int is_wanted_machine(void *a, void *b) {
 	m = a;
 	pat = b;
 
+	if (!m->in_use)
+		return 0;
+
 	if (m->mid == pat->mid)
 		return 1;
+
 	if (pat->mid != -1)
 		return 0;
 
-	return octstr_compare(m->source_address, pat->source_address) == 0 &&
-               m->source_port == pat->source_port && 
-               octstr_compare(m->destination_address, 
-	                      pat->destination_address) == 0 &&
-               m->destination_port == pat->destination_port &&
-	       m->tid == pat->tid && 
-	       m->in_use == 1;
+	return m->tid == pat->tid && 
+		wap_addr_tuple_same(m->addr_tuple, pat->tuple);
 }
 
-static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
-       Octstr *destination_address, long destination_port, long tid,
-       long mid){
+static WTPMachine *wtp_machine_find(WAPAddrTuple *tuple, long tid, long mid) {
 	struct machine_pattern pat;
 	WTPMachine *m;
 	
-	pat.source_address = source_address;
-	pat.source_port = source_port;
-	pat.destination_address = destination_address;
-	pat.destination_port = destination_port;
+	pat.tuple = tuple;
 	pat.tid = tid;
 	pat.mid = mid;
 	
@@ -516,14 +472,15 @@ static WTPMachine *wtp_machine_create_empty(void){
         machine = gw_malloc(sizeof(WTPMachine));
 	machine->mid = counter_increase(machine_id_counter);
         
-        #define INTEGER(name) machine->name = 0
-        #define ENUM(name) machine->name = LISTEN
-        #define MSG(name) machine->name = msg_create(wdp_datagram)
-        #define OCTSTR(name) machine->name = NULL
-        #define WSP_EVENT(name) machine->name = NULL
-        #define TIMER(name) machine->name = wtp_timer_create()
+        #define INTEGER(name) machine->name = 0;
+        #define ENUM(name) machine->name = LISTEN;
+        #define MSG(name) machine->name = msg_create(wdp_datagram);
+        #define OCTSTR(name) machine->name = NULL;
+        #define WSP_EVENT(name) machine->name = NULL;
+        #define TIMER(name) machine->name = wtp_timer_create();
+	#define LIST(name) machine->name = list_create();
+	#define ADDRTUPLE(name) machine->name = NULL;
         #define MACHINE(field) field
-	#define LIST(name) machine->name = list_create()
         #include "wtp_machine-decl.h"
 
 	list_append(machines, machine);
@@ -537,14 +494,15 @@ static WTPMachine *wtp_machine_create_empty(void){
  */
 static void wtp_machine_destroy(WTPMachine *machine){
 	list_delete_equal(machines, machine);
-        #define INTEGER(name) machine->name = 0
-        #define ENUM(name) machine->name = LISTEN
-        #define MSG(name) msg_destroy(machine->name)
-        #define OCTSTR(name) octstr_destroy(machine->name)
-        #define WSP_EVENT(name) machine->name = NULL
-        #define TIMER(name) wtp_timer_destroy(machine->name)
+        #define INTEGER(name) machine->name = 0;
+        #define ENUM(name) machine->name = LISTEN;
+        #define MSG(name) msg_destroy(machine->name);
+        #define OCTSTR(name) octstr_destroy(machine->name);
+        #define WSP_EVENT(name) machine->name = NULL;
+        #define TIMER(name) wtp_timer_destroy(machine->name);
+	#define LIST(name) list_destroy(machine->name);
+	#define ADDRTUPLE(name) wap_addr_tuple_destroy(machine->name);
         #define MACHINE(field) field
-	#define LIST(name) list_destroy(machine->name)
         #include "wtp_machine-decl.h"
 	gw_free(machine);
 }
@@ -554,22 +512,16 @@ static void wtp_machine_destroy(WTPMachine *machine){
  * in the arguments. In addition, update the transaction class field of the 
  * machine. If machines list is busy, just wait.
  */
-WTPMachine *wtp_machine_create(Octstr *source_address, 
-           long source_port, Octstr *destination_address, 
-           long destination_port, long tid, long tcl) {
-
-	   WTPMachine *machine = NULL;
-	   
-           machine = wtp_machine_create_empty();
-
-           machine->source_address = octstr_duplicate(source_address);
-           machine->source_port = source_port;
-           machine->destination_address = octstr_duplicate(destination_address);
-           machine->destination_port = destination_port;
-           machine->tid = tid;
-           machine->tcl = tcl;
-
-           return machine;
+WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl) {
+	WTPMachine *machine;
+	
+	machine = wtp_machine_create_empty();
+	
+	machine->addr_tuple = wap_addr_tuple_duplicate(tuple);
+	machine->tid = tid;
+	machine->tcl = tcl;
+	
+	return machine;
 } 
 
 /*

@@ -11,7 +11,7 @@
 	!defined(OCTSTR) || !defined(EVENT_POINTER) || \
 	!defined(METHOD_POINTER) || !defined(SESSION_POINTER) || \
 	!defined(SESSION_MACHINE) || !defined(METHOD_MACHINE) || \
-	!defined(LIST)
+	!defined(LIST) || !defined(ADDRTUPLE)
 #error "wsp_machine-decl.h: Some required macro is missing."
 #endif
 
@@ -22,10 +22,7 @@ SESSION_MACHINE(
 	INTEGER(n_methods)
 	INTEGER(session_id)
 	METHOD_POINTER(method_machine)
-	OCTSTR(client_address)
-	INTEGER(client_port)
-	OCTSTR(server_address)
-	INTEGER(server_port)
+	ADDRTUPLE(addr_tuple)
 
 	INTEGER(set_caps)
 	INTEGER(protocol_options)
@@ -54,3 +51,4 @@ METHOD_MACHINE(
 #undef METHOD_MACHINE
 #undef HTTPHEADER
 #undef LIST
+#undef ADDRTUPLE

@@ -97,15 +97,16 @@ typedef enum states states;
  */
 struct WTPMachine {
 	long mid;
-        #define INTEGER(name) long name
-        #define ENUM(name) states name
-        #define MSG(name) Msg *name
-        #define OCTSTR(name) Octstr *name
-        #define QUEUE(name) WTPEvent *name
-        #define WSP_EVENT(name) WAPEvent *name
-	#define TIMER(name) WTPTimer *name
+        #define INTEGER(name) long name;
+        #define ENUM(name) states name;
+        #define MSG(name) Msg *name;
+        #define OCTSTR(name) Octstr *name;
+        #define QUEUE(name) WTPEvent *name;
+        #define WSP_EVENT(name) WAPEvent *name;
+	#define TIMER(name) WTPTimer *name;
+	#define LIST(name) List *name;
+	#define ADDRTUPLE(name) WAPAddrTuple *name;
         #define MACHINE(field) field
-	#define LIST(name) List *name
         #include "wtp_machine-decl.h"
 };
 

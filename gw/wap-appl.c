@@ -195,9 +195,10 @@ static void fetch_thread(void *arg) {
 		http2_header_add(req_headers, 
 			"Accept", "text/vnd.wap.wmlscript");
 	}
-	if (octstr_len(sm->client_address) > 0) {
+	if (octstr_len(sm->addr_tuple->client->address) > 0) {
 		http2_header_add(req_headers, 
-			"X_Network_Info", octstr_get_cstr(sm->client_address));
+			"X_Network_Info", 
+			octstr_get_cstr(sm->addr_tuple->client->address));
 	}
 	{
 		char buf[1024];

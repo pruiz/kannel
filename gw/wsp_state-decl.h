@@ -187,7 +187,8 @@ ROW(CONNECTED,
 		wtp_event->TR_Result_Req.tid = e->tid;
 		wtp_event->TR_Result_Req.user_data = ospdu;
 		wtp_event->TR_Result_Req.mid = e->mid;
-		debug("wap.wsp", 0, "WSP: Resuming ...sending TR-Result.req event to old WTPMachine");
+		debug("wap.wsp", 0, 
+			"WSP: Resuming ...sending TR-Result.req event");
 		wtp_dispatch_event(wtp_event);
 
 		/* Release all method transactions in HOLDING state. */
