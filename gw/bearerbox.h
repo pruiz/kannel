@@ -137,7 +137,8 @@ int store_init(Octstr *fname);
 /* init shutdown (system dies when all acks have been processed) */
 void store_shutdown(void);
 
-
+/* return all containing messages in the current store */
+Octstr *store_status(int status_type);
 
 /*----------------------------------------------------------------
  * Core bearerbox public functions;

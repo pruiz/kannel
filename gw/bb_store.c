@@ -196,6 +196,74 @@ static void store_cleanup(void *arg)
 
 /*------------------------------------------------------*/
 
+Octstr *store_status(int status_type)
+{
+    char *frmt;
+    char buf[1024], p[22];
+    Octstr *ret, *str, *t;
+    unsigned long l;
+    struct tm tm;
+    Msg *msg;
+
+    ret = octstr_create("");
+
+    /* set the type based header */
+    if (status_type == BBSTATUS_HTML) {
+        octstr_append_cstr(ret, "<table border=1>\n"
+            "<tr><td>SMS ID</td><td>Sender</td><td>Receiver</td>"
+            "<td>SMSC ID</td><td>UDH</td><td>Message</td>"
+            "<td>Time</td></tr>\n");
+    } else if (status_type == BBSTATUS_TEXT) {
+        octstr_append_cstr(ret, "[SMS ID] [Sender] [Receiver] [SMSC ID] [UDH] [Message] [Time]\n");
+    }
+   
+    for (l = 0; l < list_len(sms_store); l++) {
+        msg = list_get(sms_store, l);
+
+        if (msg_type(msg) == sms) {
+            
+            if (status_type == BBSTATUS_HTML) {
+                frmt = "<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td>"
+                       "<td>%s</td><td>%s</td><td>%s</td></tr>\n";
+            } else if (status_type == BBSTATUS_XML) {
+                frmt = "<message>\n\t<id>%d</id>\n\t<sender>%s</sender>\n\t"
+                       "<receiver>%s</receiver>\n\t<smsc-id>%s</smsc-id>\n\t"
+                       "<udh-data>%s</udh-data>\n\t<msg-data>%s</msg-data>\n\t"
+                       "<time>%s</time>\n</message>\n";
+            } else if (status_type == BBSTATUS_TEXT) {
+                frmt = "[%d] [%s] [%s] [%s] [%s] [%s] [%s]\n";
+            }
+
+            /* transform the time value */
+            tm = gw_gmtime(msg->sms.time);
+            sprintf(p, "%04d-%02d-%02d %02d:%02d:%02d",
+                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                    tm.tm_hour, tm.tm_min, tm.tm_sec);
+            t = octstr_create(p);
+
+            sprintf(buf, frmt,
+                msg->sms.id,
+                octstr_get_cstr(msg->sms.sender),
+                octstr_get_cstr(msg->sms.receiver),
+                octstr_get_cstr(msg->sms.smsc_id),
+                octstr_get_cstr(msg->sms.udhdata),
+                octstr_get_cstr(msg->sms.msgdata),
+                octstr_get_cstr(t));
+            octstr_destroy(t);
+            str = octstr_create(buf);
+            octstr_append(ret, str);
+        }
+    }
+
+    /* set the type based footer */
+    if (status_type == BBSTATUS_HTML) {
+        octstr_append_cstr(ret,"</table>");
+    }
+
+    return ret;
+}
+
+
 long store_messages(void)
 {
     return list_len(sms_store);

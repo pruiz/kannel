@@ -87,6 +87,13 @@ static Octstr *httpd_status(List *cgivars, int status_type)
     return bb_print_status(status_type);
 }
 
+static Octstr *httpd_store_status(List *cgivars, int status_type)
+{
+    Octstr *reply;
+    if ((reply = httpd_check_authorization(cgivars, 1))!= NULL) return reply;
+    return store_status(status_type);
+}
+
 static Octstr *httpd_shutdown(List *cgivars)
 {
     Octstr *reply;
@@ -229,6 +236,15 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
 	status_type = BBSTATUS_XML;
 	reply = httpd_status(cgivars, status_type);
 	/* content_type = "text/x-kannelstatus"; */
+    } else if (octstr_str_compare(url, "/store-status") == 0) {
+        status_type = BBSTATUS_TEXT;
+        reply = httpd_store_status(cgivars, status_type);
+    } else if (octstr_str_compare(url, "/store-status.html") == 0) {
+        status_type = BBSTATUS_HTML;
+        reply = httpd_store_status(cgivars, status_type);
+    } else if (octstr_str_compare(url, "/store-status.xml") == 0) {
+        status_type = BBSTATUS_XML;
+        reply = httpd_store_status(cgivars, status_type);
     } else if (octstr_str_compare(url, "/cgi-bin/shutdown")==0
 	       || octstr_str_compare(url, "/shutdown")==0) {
 	reply = httpd_shutdown(cgivars);
