@@ -1,4 +1,7 @@
 2003-03-04  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smasi.c: some minor cosmetic changes.
+
+2003-03-04  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added smsc based logging directives
     * gw/wapbox.c, gw/smsbox.c, gw/bearerbox.c, test/drive_smpp.c,
       test/test_http_server.c, test/test_pap.c, test/wml_tester.c,
