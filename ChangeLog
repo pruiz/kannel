@@ -1,3 +1,9 @@
+2000-11-06  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: Variables with syntax errors are now discarded 
+	with warning instead giving up with the hole WML source. Some memory 
+	leak still exists. Also an unknown tag produces a warning in the log.
+
 2000-11-06  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/smsc_at.c: Applied fix from Paul Keogh to hex number

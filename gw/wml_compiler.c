@@ -245,6 +245,7 @@ static void hash3_destroy(void *p);
 
 static unsigned char element_check_content(xmlNodePtr node);
 static int check_do_elements(xmlNodePtr node);
+static var_esc_t check_variable_name(xmlNodePtr node);
 static Octstr *get_do_element_name(xmlNodePtr node);
 static int check_if_url(int hex);
 
@@ -560,6 +561,13 @@ static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
 			  " name in a card or template element.");
 		    break;
 		}
+	    /* A conformance patch: if variable in setvar has a bad name, it's
+	       ignored. */
+	    if (wbxml_hex == 0x3E) /* Setvar */
+		if (check_variable_name(node) == FAILED) {
+		    octstr_destroy(name);
+		    return add_end_tag;
+		}
 	    if ((status_bits = element_check_content(node)) > 0) {
 		wbxml_hex = wbxml_hex | status_bits;
 		/* If this node has children, the end tag must be added after 
@@ -584,6 +592,8 @@ static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
 	}
 	output_char(wbxml_hex, wbxml);
 	output_char(string_table_add(octstr_duplicate(name), wbxml), wbxml);
+	warning(0, "WML compiler: Unknown tag in WML source: <%s>", 
+		octstr_get_cstr(name));
     }
 
     /* Encode the attribute list for this node and add end tag after the 
@@ -912,9 +922,7 @@ static int parse_variable(Octstr *text, int start, Octstr **output,
 	else
 	    ret = octstr_len(variable) + 1;
 
-	if ((esc = check_variable_syntax(variable)) == FAILED)
-	    return -1;
-	else
+	if ((esc = check_variable_syntax(variable)) != FAILED)
 	    output_variable(variable, output, esc, wbxml);
     }
 
@@ -973,7 +981,6 @@ static Octstr *get_variable(Octstr *text, int start)
 static var_esc_t check_variable_syntax(Octstr *variable)
 {
     Octstr *escape;
-    char *buf;
     char ch;
     int pos, len, i;
     var_esc_t ret;
@@ -1005,20 +1012,14 @@ static var_esc_t check_variable_syntax(Octstr *variable)
 
     ch = octstr_get_char(variable, 0);
     if (!(isalpha((int)ch)) && ch != '_') {
-	buf = gw_malloc(70);
-	if (sprintf
-	    (buf, 
-	     "WML compiler: syntax error in variable; name starting with %c.",
-	     ch) < 1)
-	    error(0, "WML compiler: could not format error log output!");
-	error(0, buf);
-	gw_free(buf);
+	error(0, "WML compiler: syntax error in variable; name starting "
+	      "with %c.", ch);
 	return FAILED;
     } else
 	for (i = 1; i < (int) octstr_len(variable); i++)
 	    if (!isalnum((int)(ch = octstr_get_char(variable, 0))) && 
 		ch != '_') {
-		error(0, "WML compiler: syntax error in variable.");
+		warning(0, "WML compiler: syntax error in variable.");
 		return FAILED;
 	    }
 
@@ -1061,19 +1062,25 @@ static int parse_octet_string(Octstr *ostr, int cdata, wml_binary_t **wbxml)
 	    }
 	  
 	    if ((var_len = parse_variable(ostr, pos, &var, wbxml)) > 0)	{
-		if (octstr_get_char(var, 0) == '$')
-		    /*
-		     * No, it's not actually variable, but $-character escaped 
-		     * as "$$". So everything should be packed into one string. 
-		     */
-		    octstr_insert(output, var, octstr_len(output));
-		else {
-		    /* The string is output as a inline string and the variable
-		       as a string table variable reference. */
-		    if (octstr_len(output) > 0)
-			string_table_apply(output, wbxml);
-		    octstr_truncate(output, 0);
-		    output_octet_string(var, wbxml);
+		if (octstr_len(var) > 0) {
+		    if (octstr_get_char(var, 0) == '$')
+			/*
+			 * No, it's not actually variable, but $-character 
+			 * escaped as "$$". So everything should be packed 
+			 * into one string. 
+			 */
+			octstr_insert(output, var, octstr_len(output));
+		    else {
+			/*
+			 * The string is output as a inline string and the 
+			 * variable as a string table variable reference. 
+			 */
+			if (octstr_len(output) > 0)
+			    string_table_apply(output, wbxml);
+			octstr_truncate(output, 0);
+			output_octet_string(var, wbxml);
+		    }
+		    /* Variable had a syntax error, so it's skipped. */
 		}
 
 		pos = pos + var_len;
@@ -1390,6 +1397,40 @@ static int check_do_elements(xmlNodePtr node)
     list_destroy(name_list, octstr_destroy_item);
 
     return status;
+}
+
+
+
+/*
+ * check_variable_name - checks the name for variable in a setvar element.
+ * If the name has syntax error, -1 is returned, else 0.
+ */
+
+static var_esc_t check_variable_name(xmlNodePtr node)
+{
+    Octstr *name = NULL;
+    xmlAttrPtr attr; 
+    var_esc_t ret = FAILED;
+
+    if ((attr = node->properties) != NULL) {
+	while (attr != NULL) {
+	    if (strcmp(attr->name, "name") == 0) {
+		name = octstr_create(attr->children->content);
+		break;
+	    }
+	    attr = attr->next;
+	}
+    }
+
+    if (attr == NULL) {
+	error(0, "WML compiler: no name in a setvar element");
+	return FAILED;
+    }
+
+    ret = check_variable_syntax(name);
+
+    octstr_destroy(name);
+    return ret;
 }
 
 
