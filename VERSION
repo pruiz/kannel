@@ -1,7 +1,7 @@
 0.10.2
 This file contains the version number of the gateway.
 It is stored on the first line. Nothing else should
-be there.
+be there. 
 
 Note that if you get this file from CVS, it will just
 say "cvs" instead of a version number.  This is intentional,
