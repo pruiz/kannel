@@ -547,14 +547,14 @@ void smsbox_req_thread(void *arg) {
 		/* NACK should be returned here if we use such 
 		   things... future implementation! */
 
-	req_thread--;
+	req_threads--;
 	return;
     }
 
     if (octstr_compare(msg->smart_sms.sender, msg->smart_sms.receiver) == 0) {
 	info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
 	     octstr_get_cstr(msg->smart_sms.sender));
-	req_thread--;
+	req_threads--;
 	return;
     }
 
