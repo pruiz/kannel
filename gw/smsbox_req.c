@@ -599,7 +599,8 @@ void smsbox_req_thread(void *arg) {
     else if (global_sender != NULL)
 	octstr_replace(msg->sms.sender, global_sender, strlen(global_sender));
     else {
-	octstr_replace(msg->sms.sender, octstr_get_cstr(msg->sms.receiver));
+	octstr_replace(msg->sms.sender, octstr_get_cstr(msg->sms.receiver),
+		       octstr_len(msg->sms.receiver));
     }
     octstr_destroy(msg->sms.receiver);
     msg->sms.receiver = tmp;
