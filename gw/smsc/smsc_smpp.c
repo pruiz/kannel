@@ -960,8 +960,9 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                 else
                     smpp->throttling_err_time = 0;
 
-                bb_smscconn_send_failed(smpp->conn, msg, reason,
-		     octstr_create(smpp_error_to_string(pdu->u.submit_sm_resp.command_status)));
+                bb_smscconn_send_failed(smpp->conn, msg, reason, 
+                        octstr_format("%ld/%s", pdu->u.submit_sm_resp.command_status,
+                            smpp_error_to_string(pdu->u.submit_sm_resp.command_status)));
                 --(*pending_submits);
             } else {
                 Octstr *tmp;
@@ -1089,7 +1090,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 
 		reason = smpp_status_to_smscconn_failure_reason(cmd_stat);
                 bb_smscconn_send_failed(smpp->conn, msg, reason,
-		            octstr_create(smpp_error_to_string(cmd_stat)));
+		        octstr_format("%ld/%s", cmd_stat, smpp_error_to_string(cmd_stat)));
                 --(*pending_submits);
             }
             break;

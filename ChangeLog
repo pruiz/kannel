@@ -1,3 +1,7 @@
+2003-08-23  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsc/smsc_smpp.c: changed SMSC_FAIL dlr string to the form
+      'NACK/error_code/human_readable_string'
+    
 2003-08-23  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: fixed segmentation fault bug in remember_receiver() when
       trans == NULL and urltrans_name() is called.
