@@ -1,4 +1,8 @@
 2002-07-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added documentation about the
+      'allowed|denied-receiver-prefix' directives for sms-service groups.
+
+2002-07-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/urltrans.[ch], gw/smsbox.c, gwlib/cfg.def, test/test_urltrans.c:
       added 'allowed-receiver-prefix' and 'denied-receiver-prefix' for 
       sms-service groups. This is used to restrict access to service
