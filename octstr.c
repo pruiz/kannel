@@ -466,6 +466,15 @@ void octstr_dump(Octstr *ostr) {
 	debug(0, "  data: %s", buf);
 }
 
+int octstr_send(int fd, Octstr *ostr) {
+
+	return 1;
+}
+
+int octstr_recv(int fd, Octstr **ostr) {
+
+	return 1;
+}
 
 /***********************************************************************
  * Internal functions.
