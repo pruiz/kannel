@@ -1011,8 +1011,9 @@ static long queued_cb(SMSCConn *conn)
 { 
     SMPP *smpp; 
  
-    smpp = conn->data; 
-    conn->load = list_len(smpp->msgs_to_send); 
+    smpp = conn->data;
+    conn->load = (smpp ? (conn->status != SMSCCONN_DEAD ? 
+                  list_len(smpp->msgs_to_send) : 0) : 0);
     return conn->load; 
 } 
  
