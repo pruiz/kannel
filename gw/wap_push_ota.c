@@ -96,7 +96,7 @@ static Octstr *pack_appid_list(List *headers);
 /*
  * Returns bearerbox ip address. Resolve it, if the address is localhost.
  */
-static Octstr *name(char *s);
+static Octstr *name(Octstr *os);
 static BearerboxAddress *bearerbox_address_create(void);
 static void bearerbox_address_destroy(BearerboxAddress *ba);
 
@@ -141,21 +141,16 @@ void wap_push_ota_dispatch_event(WAPEvent *e)
  * Sets bearerbox address, used for push contact point. Resolve address local-
  * host before assignment.
  */
-void wap_push_ota_bb_address_set(Octstr *ba)
+void wap_push_ota_bb_address_set(Octstr *in)
 {
-    if (ba == NULL) {
-        debug("wap.ota", 0, "address being NULL");
-        return;
-    }
-
-    if (octstr_str_compare(ba, "localhost") == 0) 
-        ba = name("localhost");
+    gw_assert(in);
+    in = name(in);
 
     mutex_lock(bearerbox->mutex);
-    bearerbox->address = octstr_duplicate(ba);
+    bearerbox->address = octstr_duplicate(in);
     mutex_unlock(bearerbox->mutex);
 
-    octstr_destroy(ba);
+    octstr_destroy(in);
 }
 
 /**************************************************************************
@@ -510,43 +505,39 @@ static Octstr *pack_server_address(void)
  * Returns bearerbox ip address. Resolve it, if the address is localhost. Do 
  * not panic here. Even if we cannot do push, we still can do pull.
  */ 
-static Octstr *name(char *bbn)
+static Octstr *name(Octstr *in)
 {
     struct hostent hostinfo;
     struct utsname bb_name;
-    Octstr *bb_address;
     char *str;
     
     str = gw_malloc(INET_ADDRSTRLEN);
-    bb_address = octstr_create(bbn);
     
-    if (octstr_str_compare(bb_address, "localhost") != 0) {
-       return bb_address;
+    if (octstr_str_compare(in, "localhost") != 0) {
+       return in;
     }
 
     if (uname(&bb_name) < 0) {
         error(0, "do not know the name of the localhost");
-        octstr_destroy(bb_address);
         return NULL;
     }
     
     if (gw_gethostbyname(&hostinfo, bb_name.nodename) == -1) {
         error(errno, "gethostbyname failed in Push OTA module, when trying"
               "to resolve localhost");
-        octstr_destroy(bb_address);
         return NULL;
     }
 
     if (inet_ntop(hostinfo.h_addrtype, *hostinfo.h_addr_list, str, 
                   INET_ADDRSTRLEN) == NULL) {
         error(errno, "conversion to dotted decimal form failed in Push OTA");
-        octstr_destroy(bb_address);
         return NULL;
     }
 
+    in = octstr_create(str);
     gw_free(str);
     
-    return bb_address;
+    return in;
 }
 
 static BearerboxAddress *bearerbox_address_create(void) 
