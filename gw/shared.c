@@ -121,6 +121,24 @@ void write_to_bearerbox(Msg *pmsg)
 }
 
 
+int deliver_to_bearerbox(Msg *msg) 
+{
+     
+    Octstr *pack;
+    
+    pack = msg_pack(msg);
+    if (conn_write_withlen(bb_conn, pack) == -1) {
+    	error(0, "Couldn't deliver Msg to bearerbox.");
+        octstr_destroy(pack);
+        return -1;
+    }
+                                   
+    octstr_destroy(pack);
+    msg_destroy(msg);
+    return 0;
+}
+                                               
+
 Msg *read_from_bearerbox(void)
 {
     int ret;

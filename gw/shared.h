@@ -65,6 +65,16 @@ Msg *read_from_bearerbox(void);
  */
 void write_to_bearerbox(Msg *msg);
 
+
+/*
+ * Delivers a SMS to the bearerbox and returns an error code: 0 if
+ * successfull. -1 if transfer failed.
+ *
+ * Note: Message is only destroyed if sucessfully delivered!
+ */
+int deliver_to_bearerbox(Msg *msg);
+
+     
 /*
  * Validates an OSI date.
  */
