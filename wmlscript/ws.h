@@ -9,6 +9,8 @@
  *
  * Public header file for the WMLScript compiler library.
  *
+ * The compiler is written for WMLScript version 1.1.
+ *
  */
 
 #ifndef WS_H
