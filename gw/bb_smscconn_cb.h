@@ -31,14 +31,22 @@ void bb_smscconn_connected(SMSCConn *conn);
 void bb_smscconn_killed(void);
 
 
-/* called after successful sending of Msg 'sms'. This callback takes
- * care of 'sms' and it CAN NOT be used by caller again. */
-void bb_smscconn_sent(SMSCConn *conn, Msg *sms);
+/*
+ * Called after successful sending of Msg 'sms'. Generate dlr message if
+ * DLR_SMSC_SUCCESS mask is set. 'reply' will be passed as msgdata to
+ * generated dlr message. This callback takes
+ * care of 'sms' and 'reply' and it CAN NOT be used by caller again.
+ */
+void bb_smscconn_sent(SMSCConn *conn, Msg *sms, Octstr *reply);
 
 
-/* called after failed sending of 'sms'. Reason is set accordingly.
- * callback handles 'sms' and MAY NOT be used by caller again */
-void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason);
+/*
+ * Called after failed sending of 'sms'. Generate dlr message if
+ * DLR_SMSC_FAIL or DLR_FAIL mask is set. 'reply' will be passed as
+ * msgdata to generated dlr message.Reason is set accordingly.
+ * callback handles 'sms' and 'reply' and MAY NOT be used by caller again
+ */
+void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply);
 
 enum {
     SMSCCONN_FAILED_SHUTDOWN,

@@ -63,7 +63,7 @@ static int reconnect(SMSCConn *conn)
 	  octstr_get_cstr(conn->name));
 
     while((msg = list_extract_first(wrap->outgoing_queue))!=NULL) {
-	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY);
+	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY, NULL);
     }
     conn->status = SMSCCONN_RECONNECTING;
     
@@ -183,16 +183,17 @@ static int sms_send(SMSCConn *conn, Msg *msg)
 
     debug("bb.sms", 0, "smscconn_sender (%s): sending message",
 	  octstr_get_cstr(conn->name));
-        
+
     ret = smscenter_submit_msg(wrap->smsc, msg);
     if (ret == -1) {
-	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_REJECTED);
+	bb_smscconn_send_failed(conn, msg,
+	            SMSCCONN_FAILED_REJECTED, octstr_create("REJECTED"));
 
 	if (reconnect(conn) == -1)
 	    smscconn_shutdown(conn, 0);
         return -1;
     } else {
-	bb_smscconn_sent(conn, msg);
+	bb_smscconn_sent(conn, msg, NULL);
         return 0;
     }
 }
@@ -265,7 +266,7 @@ static void wrapper_sender(void *arg)
     conn->status = SMSCCONN_DEAD;
 
     while((msg = list_extract_first(wrap->outgoing_queue))!=NULL) {
-	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
     }
     smscwrapper_destroy(wrap);
     conn->data = NULL;
@@ -299,7 +300,7 @@ static int wrapper_shutdown(SMSCConn *conn, int finish_sending)
     if (finish_sending == 0) {
 	Msg *msg; 
 	while((msg = list_extract_first(wrap->outgoing_queue))!=NULL) {
-	    bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+	    bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
 	}
     }
     list_remove_producer(wrap->outgoing_queue);

@@ -316,7 +316,7 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 
     octstr_destroy(url);
     http_destroy_headers(headers);
-    
+
 }
 
 static void kannel_parse_reply(SMSCConn *conn, Msg *msg, int status,
@@ -326,13 +326,14 @@ static void kannel_parse_reply(SMSCConn *conn, Msg *msg, int status,
      * 1. an smsbox reply of an remote kannel instance
      * 2. an smsc_http response (if used for MT to MO looping)
      * 3. an smsbox reply of partly sucessfull sendings */
-    if ((status == HTTP_OK || status == HTTP_ACCEPTED) 
+    if ((status == HTTP_OK || status == HTTP_ACCEPTED)
         && (octstr_case_compare(body, octstr_imm("Sent.")) == 0 ||
-            octstr_case_compare(body, octstr_imm("Ok.")) == 0 || 
+            octstr_case_compare(body, octstr_imm("Ok.")) == 0 ||
             octstr_ncompare(body, octstr_imm("Result: OK"),10) == 0)) {
-        bb_smscconn_sent(conn, msg);
+        bb_smscconn_sent(conn, msg, NULL);
     } else {
-        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_MALFORMED);
+        bb_smscconn_send_failed(conn, msg,
+	            SMSCCONN_FAILED_MALFORMED, octstr_duplicate(body));
     }
 }
 
@@ -342,7 +343,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     ConnData *conndata = conn->data;
     Octstr *user, *pass, *from, *to, *text, *udh, *account, *tmp_string;
     Octstr *retmsg;
-    int	mclass, mwi, coding, validity, deferred; 
+    int	mclass, mwi, coding, validity, deferred;
     List *reply_headers;
     int ret;
 
@@ -504,16 +505,18 @@ static void brunet_parse_reply(SMSCConn *conn, Msg *msg, int status,
 {
     if (status == HTTP_OK || status == HTTP_ACCEPTED) {
         if (octstr_case_compare(body, octstr_imm("Status=0")) == 0) {
-            bb_smscconn_sent(conn, msg);
+            bb_smscconn_sent(conn, msg, NULL);
         } else {
-            error(0, "HTTP[%s]: Message was malformed. SMSC response `%s'.", 
+            error(0, "HTTP[%s]: Message was malformed. SMSC response `%s'.",
                   octstr_get_cstr(conn->id), octstr_get_cstr(body));
-            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_MALFORMED);
+            bb_smscconn_send_failed(conn, msg,
+	                SMSCCONN_FAILED_MALFORMED, octstr_duplicate(body));
         }
     } else {
-        error(0, "HTTP[%s]: Message was rejected. SMSC reponse `%s'.", 
+        error(0, "HTTP[%s]: Message was rejected. SMSC reponse `%s'.",
               octstr_get_cstr(conn->id), octstr_get_cstr(body));
-        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_REJECTED);
+        bb_smscconn_send_failed(conn, msg,
+	            SMSCCONN_FAILED_REJECTED, octstr_duplicate(body));
     }
 }
 
@@ -524,7 +527,7 @@ static void brunet_receive_sms(SMSCConn *conn, HTTPClient *client,
     ConnData *conndata = conn->data;
     Octstr *user, *from, *to, *text, *udh, *date, *type;
     Octstr *retmsg;
-    int	mclass, mwi, coding, validity, deferred; 
+    int	mclass, mwi, coding, validity, deferred;
     List *reply_headers;
     int ret;
 
@@ -698,18 +701,20 @@ static void xidris_parse_reply(SMSCConn *conn, Msg *msg, int status,
         code = parse_xml_tag(body, octstr_imm("status"));
         desc = parse_xml_tag(body, octstr_imm("description"));
         if (octstr_case_compare(code, octstr_imm("0")) == 0) {
-            bb_smscconn_sent(conn, msg);
+            bb_smscconn_sent(conn, msg, NULL);
         } else {
             error(0, "HTTP[%s]: Message not accepted. Status code <%s> "
-                  "description `%s'.", octstr_get_cstr(conn->id), 
+                  "description `%s'.", octstr_get_cstr(conn->id),
                   octstr_get_cstr(code), octstr_get_cstr(desc));
-            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_MALFORMED);
+            bb_smscconn_send_failed(conn, msg,
+	                SMSCCONN_FAILED_MALFORMED, octstr_duplicate(desc));
         }
     } else {
-        error(0, "HTTP[%s]: Message was rejected. SMSC reponse was:", 
+        error(0, "HTTP[%s]: Message was rejected. SMSC reponse was:",
               octstr_get_cstr(conn->id));
         octstr_dump(body, 0);
-        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_REJECTED);
+        bb_smscconn_send_failed(conn, msg,
+	            SMSCCONN_FAILED_REJECTED, octstr_create("REJECTED"));
     }
 }
 

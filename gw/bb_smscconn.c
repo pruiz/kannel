@@ -27,6 +27,7 @@
 #include "bearerbox.h"
 #include "numhash.h"
 #include "smscconn.h"
+#include "dlr.h"
 
 #include "bb_smscconn_cb.h"    /* callback functions for connections */
 #include "smscconn_p.h"        /* to access counters */
@@ -65,7 +66,7 @@ void route_incoming_sms(Msg *sms);
 static void log_sms(SMSCConn *conn, Msg *sms, char *message)
 {
     Octstr *text, *udh;
-    
+
     text = sms->sms.msgdata ? octstr_duplicate(sms->sms.msgdata) : octstr_create("");
     udh = sms->sms.udhdata ? octstr_duplicate(sms->sms.udhdata) : octstr_create("");
     if ((sms->sms.coding == DC_8BIT || sms->sms.coding == DC_UCS2))
@@ -120,34 +121,49 @@ void bb_smscconn_killed(void)
 }
 
 
-void bb_smscconn_sent(SMSCConn *conn, Msg *sms)
+void bb_smscconn_sent(SMSCConn *conn, Msg *sms, Octstr *reply)
 {
     Msg *mack;
-    
+
     counter_increase(outgoing_sms_counter);
     if (conn) counter_increase(conn->sent);
-    
+
     /* write ACK to store file */
 
     mack = msg_create(ack);
     mack->ack.nack = ack_success;
     mack->ack.time = sms->sms.time;
     mack->ack.id = sms->sms.id;
-    
+
     (void) store_save(mack);
     msg_destroy(mack);
-    
-    /* XXX relay confirmancy message should be generated here */
-    
+
     log_sms(conn, sms, "Sent SMS");
+
+    /* generate relay confirmancy message */
+    if (DLR_IS_SMSC_SUCCESS(sms->sms.dlr_mask)) {
+        Msg *dlrmsg;
+
+	if (reply == NULL)
+	    reply = octstr_create("");
+
+	octstr_insert_data(reply, 0, "ACK/", 4);
+        dlrmsg = create_dlr_from_msg((conn->id?conn->id:conn->name), sms,
+	                reply, DLR_SMSC_SUCCESS);
+        if (dlrmsg != NULL) {
+            bb_smscconn_receive(conn, dlrmsg);
+        }
+    }
+
     msg_destroy(sms);
+    octstr_destroy(reply);
 }
 
 
-void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason)
+void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply)
 {
     Msg *mnack;
-    
+
     switch (reason) {
 
     case SMSCCONN_FAILED_SHUTDOWN:
@@ -165,33 +181,52 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason)
 
 	(void) store_save(mnack);
 	msg_destroy(mnack);
-    
+
 	if (conn) counter_increase(conn->failed);
 	if (reason == SMSCCONN_FAILED_DISCARDED)
 	    log_sms(conn, sms, "DISCARDED SMS");
 	else
 	    log_sms(conn, sms, "FAILED Send SMS");
+
+        /* generate relay confirmancy message */
+        if (DLR_IS_SMSC_FAIL(sms->sms.dlr_mask) ||
+	    DLR_IS_FAIL(sms->sms.dlr_mask)) {
+            Msg *dlrmsg;
+
+	    if (reply == NULL)
+	        reply = octstr_create("");
+
+	    octstr_insert_data(reply, 0, "NACK/", 5);
+            dlrmsg = create_dlr_from_msg((conn->id?conn->id:conn->name), sms,
+	                                 reply, DLR_SMSC_FAIL);
+            if (dlrmsg != NULL) {
+                bb_smscconn_receive(conn, dlrmsg);
+            }
+        }
 	msg_destroy(sms);
-    } 
-}    
+    }
+
+    octstr_destroy(reply);
+}
 
 int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 {
     char *uf;
 
     /* do some queue control */
-    if (maximum_queue_length != -1 && bb_status == BB_FULL && 
+    if (maximum_queue_length != -1 && bb_status == BB_FULL &&
             list_len(incoming_sms) <= maximum_queue_length) {
         bb_status = BB_RUNNING;
         warning(0, "started to accept messages again");
     }
-    
-    if (maximum_queue_length != -1 && 
+
+    if (maximum_queue_length != -1 &&
             list_len(incoming_sms) > maximum_queue_length) {
         if (bb_status != BB_FULL)
             bb_status = BB_FULL;
         warning(0, "incoming messages queue too long, dropping a message");
         log_sms(conn, sms, "DROPPED Received SMS");
+	msg_destroy(sms);
         gwthread_sleep(0.1); /* letting the queue go down */
      	return -1;
     }
@@ -199,15 +234,15 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
     /* else if (list_len(incoming_sms) > 100)
      *	gwthread_sleep(0.5);
      */
-    
+
    /*
     * First normalize in smsc level and then on global level.
     * In outbound direction it's vise versa, hence first global then smsc.
     */
-    uf = conn->unified_prefix ? octstr_get_cstr(conn->unified_prefix) : NULL;
+    uf = (conn && conn->unified_prefix) ? octstr_get_cstr(conn->unified_prefix) : NULL;
     normalize_number(uf, &(sms->sms.sender));
 
-    uf = unified_prefix ? octstr_get_cstr(unified_prefix) : NULL; 
+    uf = unified_prefix ? octstr_get_cstr(unified_prefix) : NULL;
     normalize_number(uf, &(sms->sms.sender));
 
     if (white_list &&
@@ -229,11 +264,11 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 
     if (sms->sms.sms_type != report)
 	sms->sms.sms_type = mo;
-    
+
     /* write to store (if enabled) */
     if (store_save(sms) == -1)
 	return -1;
-    
+
     if (sms->sms.sms_type != report)
 	log_sms(conn, sms, "Receive SMS");
     else
@@ -248,7 +283,7 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
     /* list_produce(incoming_sms, sms); */
 
     counter_increase(incoming_sms_counter);
-    counter_increase(conn->received);
+    if (conn != NULL) counter_increase(conn->received);
 
     return 0;
 }
@@ -259,7 +294,7 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
  */
 
 
-    
+
 /* function to route outgoing SMS'es from delay-list
  * use some nice magics to route them to proper SMSC
  */
@@ -299,15 +334,16 @@ static void sms_router(void *arg)
 	ret = smsc2_rout(msg);
 	if (ret == -1) {
             warning(0, "No SMSCes to receive message, discarding it!");
-	    bb_smscconn_send_failed(NULL, msg, SMSCCONN_FAILED_DISCARDED);
+	    bb_smscconn_send_failed(NULL, msg, SMSCCONN_FAILED_DISCARDED,
+	                            octstr_create("DISCARDED"));
         } else if (ret == 1) {
 	    newmsg = startmsg = NULL;
 	}
-	    
-	    
+
+
     }
     /* router has died, make sure that rest die, too */
-    
+
     smsc_running = 0;
 
     list_remove_producer(flow_threads);

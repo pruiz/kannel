@@ -5,7 +5,7 @@
  * devices.
  * 4.9.2001
  * Andreas Fink <afink@smsrelay.com>
- * 
+ *
  */
 
 #include <errno.h>
@@ -623,7 +623,7 @@ void at2_read_sms_memory(PrivAT2data* privdata)
         return ;
     }
 
-    if (privdata->sms_memory_usage) { 
+    if (privdata->sms_memory_usage) {
         /*
          * that is - greater then 0, meaning there are some messages to fetch
          * now - I used to just loop over the first input_mem_sms_used locations, 
@@ -855,7 +855,7 @@ reconnect:
         if (privdata->speed == 0 && privdata->modem != NULL && 
 	    privdata->modem->speed != 0) {
 
-	    info(0, "AT2[%s]: trying to use speed <%ld> from modem definition", 
+	    info(0, "AT2[%s]: trying to use speed <%ld> from modem definition",
 	         octstr_get_cstr(privdata->name), privdata->modem->speed);
 	    if(0 == at2_test_speed(privdata, privdata->modem->speed)) { 
 		privdata->speed = privdata->modem->speed;
@@ -963,7 +963,7 @@ int at2_shutdown_cb(SMSCConn *conn, int finish_sending)
     if (finish_sending == 0) {
         Msg *msg;
         while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
-            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
         }
     }
     gwthread_wakeup(privdata->device_thread);
@@ -979,7 +979,7 @@ long at2_queued_cb(SMSCConn *conn)
 
     if (conn->status == SMSCCONN_DEAD) /* I'm dead, why would you care ? */
 	return -1;
-	
+
     ret = list_len(privdata->outgoing_queue);
 
     /* use internal queue as load, maybe something else later */
@@ -1641,80 +1641,40 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
             sprintf(command, "%s%s", sc, octstr_get_cstr(pdu));
             at2_write(privdata, command);
             at2_write_ctrlz(privdata);
-            
+
             /* wait 20 secs for modem command */
             ret = at2_wait_modem_command(privdata, 20, 0, &msg_id);
             debug("bb.smsc.at2", 0, "AT2[%s]: send command status: %d",
                   octstr_get_cstr(privdata->name), ret);
-            
+
             if (ret != 0) /* OK only */
                 continue;
-
-	    /* gen DLR_SMSC_SUCCESS */
-	    if (DLR_IS_SMSC_SUCCESS(msg->sms.dlr_mask))
-	    {
-		Msg* dlrmsg;
-
-		dlrmsg = msg_create(sms);
-		dlrmsg->sms.id = msg->sms.id;
-                dlrmsg->sms.service = octstr_duplicate(msg->sms.service);
-                dlrmsg->sms.dlr_mask = DLR_SMSC_SUCCESS;
-                dlrmsg->sms.sms_type = report;
-                dlrmsg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
-                dlrmsg->sms.sender = octstr_duplicate(msg->sms.receiver);
-                dlrmsg->sms.receiver = octstr_duplicate(msg->sms.sender);
-                dlrmsg->sms.msgdata = octstr_create("ACK");
-                dlrmsg->sms.dlr_url = octstr_duplicate(msg->sms.dlr_url);
-                time(&dlrmsg->sms.time);
-
-		debug("bb.smsc.at2",0,"AT2[%s]: sending DLR type ACK", octstr_get_cstr(privdata->name));
-		bb_smscconn_receive(privdata->conn, dlrmsg);
-
-	    }
 
 	    /* store DLR message if needed for SMSC generated delivery reports */
 	    if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask)) {
 		if (msg_id == -1)
 		    error(0,"AT2[%s]: delivery notification requested, but I have no message ID!",
 			octstr_get_cstr(privdata->name));
-		 else {
-            Octstr *dlrmsgid = octstr_format("%d", msg_id);
+		else {
+                    Octstr *dlrmsgid = octstr_format("%d", msg_id);
 
-            dlr_add(privdata->conn->id, dlrmsgid, msg);
-				
+                    dlr_add(privdata->conn->id, dlrmsgid, msg);
+
 		    O_DESTROY(dlrmsgid);
 		}
 	    }
 
-            bb_smscconn_sent(privdata->conn, msg);
+            bb_smscconn_sent(privdata->conn, msg, NULL);
         }
 
         if (ret != 0) {
-	    /* gen DLR_SMSC_FAIL */
-	    if (DLR_IS_SMSC_FAIL(msg->sms.dlr_mask)) {
-		Msg* dlrmsg;
-
-		dlrmsg = msg_create(sms);
-                dlrmsg->sms.service = octstr_duplicate(msg->sms.service);
-                dlrmsg->sms.dlr_mask = DLR_SMSC_FAIL;
-                dlrmsg->sms.sms_type = report;
-                dlrmsg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
-                dlrmsg->sms.sender = octstr_duplicate(msg->sms.receiver);
-                dlrmsg->sms.receiver = octstr_duplicate(msg->sms.sender);
-                dlrmsg->sms.msgdata = octstr_create("NACK");
-                dlrmsg->sms.dlr_url = octstr_duplicate(msg->sms.dlr_url);
-                time(&dlrmsg->sms.time);
-
-		debug("bb.smsc.at2",0,"AT2[%s]: sending DLR type NACK", octstr_get_cstr(privdata->name));
-		bb_smscconn_receive(privdata->conn, dlrmsg);
-	    }
-
             /*
-             * no need to do counter_increase(privdata->conn->failed) here, 
-             * since bb_smscconn_send_failed() will inc the counter on 
+             * no need to do counter_increase(privdata->conn->failed) here,
+             * since bb_smscconn_send_failed() will inc the counter on
              * SMSCCONN_FAILED_MALFORMED
              */
-            bb_smscconn_send_failed(privdata->conn, msg, SMSCCONN_FAILED_MALFORMED);
+            bb_smscconn_send_failed(privdata->conn, msg,
+	        SMSCCONN_FAILED_MALFORMED, octstr_create("MALFORMED"));
         }
 
         O_DESTROY(pdu);

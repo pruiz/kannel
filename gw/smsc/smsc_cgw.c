@@ -519,7 +519,7 @@ static int cgw_shutdown_cb(SMSCConn *conn, int finish_sending)
     if (finish_sending == 0) {
         Msg *msg;
         while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
-            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
         }
     }
 
@@ -603,7 +603,7 @@ static void cgw_sender(void *arg)
     conn_destroy(server);
 
     while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL)
-        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
     mutex_lock(conn->flow_mutex);
 
     conn->status = SMSCCONN_DEAD;
@@ -643,7 +643,7 @@ static Connection *cgw_open_send_connection(SMSCConn *conn)
                 mutex_unlock(conn->flow_mutex);
             }
             while ((msg = list_extract_first(privdata->outgoing_queue)))
-                bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY);
+                bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY, NULL);
             info(0, "smsc_cgw: waiting for %d minutes before trying to connect again", wait);
             gwthread_sleep(wait * 60);
             wait = wait > 5 ? 10 : wait * 2;
@@ -1133,7 +1133,8 @@ static int cgw_handle_op(SMSCConn *conn, Connection *server, struct cgwop *cgwop
             privdata->dlr[trn] = 0;
         }
 
-        bb_smscconn_sent(conn, msg);     /* mark as successfully sent */
+	/* mark as successfully sent */
+        bb_smscconn_sent(conn, msg, NULL);
 
         break;
 
@@ -1159,7 +1160,7 @@ static int cgw_handle_op(SMSCConn *conn, Connection *server, struct cgwop *cgwop
         privdata->unacked--;
 
         bb_smscconn_send_failed(conn, privdata->sendmsg[trn],
-                                SMSCCONN_FAILED_REJECTED);
+                            SMSCCONN_FAILED_REJECTED, octstr_create("REJECTED"));
 
         break;
 

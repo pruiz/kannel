@@ -1891,10 +1891,11 @@ static int cimd2_submit_msg(SMSCConn *conn, Msg *msg)
 
     packet = packet_encode_message(msg, pdata->my_number,conn);
     if (!packet) {
-      /* This is a protocol error. Does this help? I doubt..
-       * But nevermind that.
-       */
-      bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_MALFORMED);
+        /* This is a protocol error. Does this help? I doubt..
+         * But nevermind that.
+         */
+        bb_smscconn_send_failed(conn, msg,
+	            SMSCCONN_FAILED_MALFORMED, octstr_create("MALFORMED"));
         return -1;
     }
 
@@ -1906,17 +1907,18 @@ static int cimd2_submit_msg(SMSCConn *conn, Msg *msg)
     packet_destroy(packet);
     
     if (ret == -1) {
-        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_REJECTED);
+        bb_smscconn_send_failed(conn, msg,
+	            SMSCCONN_FAILED_REJECTED, octstr_create("REJECTED"));
     }
     else if (ret == -2) {
         cimd2_close_socket(pdata);
-        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY);
+        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY, NULL);
         mutex_lock(conn->flow_mutex);
         conn->status = SMSCCONN_DISCONNECTED;
         mutex_unlock(conn->flow_mutex);
     }
     else {
-        bb_smscconn_sent(conn,msg);
+        bb_smscconn_sent(conn,msg, NULL);
     }
 
     return ret;
@@ -2178,7 +2180,7 @@ static int cimd2_shutdown_cb (SMSCConn *conn, int finish_sending)
     if (finish_sending == 0) {
         Msg *msg;
         while ((msg = list_extract_first(pdata->outgoing_queue)) != NULL) {
-            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
         }
     }
 
@@ -2187,10 +2189,10 @@ static int cimd2_shutdown_cb (SMSCConn *conn, int finish_sending)
         list_remove_producer(pdata->stopped);
         conn->is_stopped = 0;
     }
-    
+
     if (pdata->io_thread != -1) {
         gwthread_wakeup(pdata->io_thread);
-        gwthread_join(pdata->io_thread); 
+        gwthread_join(pdata->io_thread);
     }
 
     cimd2_close_socket(pdata);

@@ -36,7 +36,7 @@ void dlr_init(Cfg *cfg);
 void dlr_shutdown(void);
 
 /* 
- * Add a new entry to the list 
+ * Add a new entry to the list
  */
 void dlr_add(const Octstr *smsc, const Octstr *ts, const Msg *msg);
 
@@ -59,6 +59,11 @@ void dlr_flush(void);
  * Return type of dlr storage
  */
 const char* dlr_type();
+
+/*
+ * Helper function, create DLR from given message
+ */
+Msg* create_dlr_from_msg(const Octstr *smsc, const Msg *msg, const Octstr *reply, long stat);
 
 /*
  * Yet not used functions.

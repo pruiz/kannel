@@ -558,7 +558,7 @@ static int soap_shutdown_cb(SMSCConn *conn, int finish_sending)
     if (finish_sending == 0) {
         Msg *msg;
         while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL)
-            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
     }
 
     thread = privdata->listener_thread;
@@ -735,7 +735,7 @@ static void soap_listener(void *arg)
           octstr_get_cstr(privdata->name));
 
     while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL)
-        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
 
     /* lock module public state data */
     mutex_lock(conn->flow_mutex);
@@ -927,14 +927,15 @@ static void soap_send_loop(SMSCConn* conn)
         if (!(xmldata = soap_format_xml(privdata->mt_xml_file, msg, privdata))) {
             debug("bb.soap.client",0,"SOAP[%s]: client - failed to format message for sending", 
                   octstr_get_cstr(privdata->name));
-            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_MALFORMED);
+            bb_smscconn_send_failed(conn, msg,
+	                SMSCCONN_FAILED_MALFORMED, octstr_create("MALFORMED"));
             continue;
         }
 
-        debug("bb.soap.client",0,"SOAP[%s]: client - Sending message <%s>", 
+        debug("bb.soap.client",0,"SOAP[%s]: client - Sending message <%s>",
               octstr_get_cstr(privdata->name), octstr_get_cstr(msg->sms.msgdata));
         if (xmldata)
-            debug("bb.soap.client",0,"SOAP[%s]: data dump: %s", 
+            debug("bb.soap.client",0,"SOAP[%s]: data dump: %s",
                   octstr_get_cstr(privdata->name), octstr_get_cstr(xmldata));
 
         /* send to the server */
@@ -1091,7 +1092,8 @@ static void soap_read_response(SMSCConn *conn)
     if (responseStatus == -1) {
         debug("bb.soap.read_response",0,"SOAP[%s]: HTTP connection failed - blame the server (requeing msg)",
               octstr_get_cstr(privdata->name));
-        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_MALFORMED);
+        bb_smscconn_send_failed(conn, msg,
+	            SMSCCONN_FAILED_MALFORMED, octstr_create("MALFORMED"));
         /*    bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY); */
         /*      list_append(privdata->outgoing_queue, msg); */
         return;
@@ -1114,51 +1116,16 @@ static void soap_read_response(SMSCConn *conn)
 
         dlr_add(conn->id, octstr_imm(tmpid), msg);
 
-        /* generate SMSC success DLR */
-        if (DLR_IS_SMSC_SUCCESS(msg->sms.dlr_mask)) {
-            Msg* dlrmsg;
-
-            dlrmsg = dlr_find(conn->id,octstr_imm(tmpid),
-                              msg->sms.receiver, /* destination */
-                              DLR_SMSC_SUCCESS);
-
-            if (dlrmsg) {
-                debug("bb.soap.read_response",0,"SOAP[%s]: sending DLR success", octstr_get_cstr(privdata->name));
-                octstr_destroy(dlrmsg->sms.msgdata);
-                dlrmsg->sms.msgdata = octstr_create("Success");
-                bb_smscconn_receive(conn, dlrmsg);
-            }
-            else
-                error(0,"SOAP[%s]: Got SMSC_ACK but couldnt find message", octstr_get_cstr(privdata->name));
-        }
-
         /* send msg back to bearerbox for recycling */
-        bb_smscconn_sent(conn, msg);
+        bb_smscconn_sent(conn, msg, NULL);
     }
 
     else { /* nack */
         debug("bb.soap.read_response",0,"SOAP[%s]: NACK", octstr_get_cstr(privdata->name));
 
-        if (DLR_IS_SMSC_FAIL(msg->sms.dlr_mask)) {
-            Msg* dlrmsg;
-
-            /* generate DLR_SMSC_FAIL message */
-            dlrmsg = msg_create(sms);
-            dlrmsg->sms.service = octstr_duplicate(msg->sms.service);
-            dlrmsg->sms.dlr_mask = DLR_SMSC_FAIL;
-            dlrmsg->sms.sms_type = report;
-            dlrmsg->sms.smsc_id = octstr_duplicate(conn->id);
-            dlrmsg->sms.sender = octstr_duplicate(msg->sms.receiver);
-            dlrmsg->sms.receiver = octstr_duplicate(msg->sms.sender);
-            dlrmsg->sms.dlr_url = octstr_duplicate(msg->sms.dlr_url);
-            dlrmsg->sms.msgdata = octstr_create("Failed");
-            time(&dlrmsg->sms.time);
-
-            debug("bb.soap.read_response",0,"SOAP[%s]: sending DLR failed", octstr_get_cstr(privdata->name));
-            bb_smscconn_receive(conn, dlrmsg);
-        }
         /* send msg back to bearerbox for recycling */
-        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_MALFORMED);
+        bb_smscconn_send_failed(conn, msg,
+	            SMSCCONN_FAILED_MALFORMED, octstr_create("MALFORMED"));
     }
 
     http_destroy_headers(responseHeaders);

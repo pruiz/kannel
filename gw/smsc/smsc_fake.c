@@ -193,9 +193,10 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
                  * but I suppose that doesn't matter since this interface
                  * is just for debugging anyway 
                  */
-                bb_smscconn_sent(conn, msg);
+                bb_smscconn_sent(conn, msg, NULL);
             } else {
-                bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_REJECTED);
+                bb_smscconn_send_failed(conn, msg,
+		            SMSCCONN_FAILED_REJECTED, octstr_create("REJECTED"));
                 goto error;
             }
 
@@ -295,7 +296,7 @@ static void fake_listener(void *arg)
         conn->status = SMSCCONN_RECONNECTING;
         mutex_unlock(conn->flow_mutex);
         while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
-            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY);
+            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY, NULL);
         }
     }
     if (close(privdata->listening_socket) == -1)
@@ -305,7 +306,7 @@ static void fake_listener(void *arg)
     conn->status = SMSCCONN_DEAD;
 
     while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
-        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
     }
     list_destroy(privdata->outgoing_queue, NULL);
     octstr_destroy(privdata->allow_ip);
@@ -353,7 +354,7 @@ static int shutdown_cb(SMSCConn *conn, int finish_sending)
     if (finish_sending == 0) {
         Msg *msg;
         while((msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
-            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
         }
     }
 

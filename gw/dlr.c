@@ -383,3 +383,34 @@ void dlr_flush(void)
         handles->dlr_flush();
 }
 
+
+Msg* create_dlr_from_msg(const Octstr *smsc, const Msg *msg, const Octstr *reply, long stat)
+{
+    Msg *dlrmsg;
+
+    if (msg == NULL)
+        return NULL;
+
+    /* generate DLR */
+    debug("dlr.dlr", 0,"SMSC[%s]: creating DLR message",
+                (smsc ? octstr_get_cstr(smsc) : "UNKNOWN"));
+
+    dlrmsg = msg_create(sms);
+    gw_assert(dlrmsg != NULL);
+
+    dlrmsg->sms.service = octstr_duplicate(msg->sms.service);
+    dlrmsg->sms.dlr_mask = stat;
+    dlrmsg->sms.sms_type = report;
+    dlrmsg->sms.smsc_id = octstr_duplicate(smsc ? smsc : msg->sms.smsc_id);
+    dlrmsg->sms.sender = octstr_duplicate(msg->sms.sender);
+    dlrmsg->sms.receiver = octstr_duplicate(msg->sms.receiver);
+    dlrmsg->sms.dlr_url = octstr_duplicate(msg->sms.dlr_url);
+    dlrmsg->sms.msgdata = octstr_duplicate(reply);
+    time(&dlrmsg->sms.time);
+
+    debug("dlr.dlr", 0,"SMSC[%s]: DLR = %s",
+                (smsc ? octstr_get_cstr(smsc) : "UNKNOWN"),
+                (dlrmsg->sms.dlr_url ? octstr_get_cstr(dlrmsg->sms.dlr_url) : ""));
+
+    return dlrmsg;
+}

@@ -49,7 +49,6 @@ typedef struct privdata {
 	time_t	sendtime;	/* When we sent out a message with a given
 				 * TRN. Is 0 if the TRN slot is currently free. */
 	int     sendtype;	/* OT of message, undefined if time == 0 */
-	int	dlr;            /* dlr = DLR_SMSC_SUCCESS || DLR_SMSC_FAIL */
 	Msg     *sendmsg; 	/* Corresponding message for OT == 51 */
     } slots[EMI2_MAX_TRN];
     int		keepalive; 	/* Seconds to send a Keepalive Command (OT=31) */
@@ -225,7 +224,7 @@ static Connection *open_send_connection(SMSCConn *conn)
 
     while ((msg = list_extract_first(privdata->outgoing_queue))) {
         bb_smscconn_send_failed(conn, msg,
-                                SMSCCONN_FAILED_TEMPORARILY);
+                         SMSCCONN_FAILED_TEMPORARILY, NULL);
     }
 
     /* if there is no alternative host, sleep and try to re-connect */
@@ -236,10 +235,10 @@ static Connection *open_send_connection(SMSCConn *conn)
     }
 
 	if (alt_host != 1) {
-	    info(0, "EMI2[%s]: connecting to Primary SMSC", 
+	    info(0, "EMI2[%s]: connecting to Primary SMSC",
 			    octstr_get_cstr(privdata->name));
 	    server = conn_open_tcp_with_port(privdata->host, privdata->port,
-					     privdata->our_port, 
+					     privdata->our_port,
 					     conn->our_host);
 	    if(do_alt_host)
 		alt_host=1;
@@ -417,7 +416,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
     dcs = fields_to_dcs(msg, msg->sms.alt_dcs);
     if (dcs != 0 && dcs != 4) {
    	str = octstr_create("");
-	octstr_append_char(str, 2); 
+	octstr_append_char(str, 2);
 	octstr_append_char(str, 1); /* len 01 */
 	octstr_append_char(str, dcs);
 	octstr_binary_to_hex(str, 1);
@@ -481,7 +480,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
     if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask)) {
 	emimsg->fields[E50_NRQ] = octstr_create("1");
 	emimsg->fields[E50_NT] = octstr_create("");
-	octstr_append_decimal(emimsg->fields[E50_NT], 3 + (DLR_IS_BUFFERED(msg->sms.dlr_mask) ? 4 : 0)); 
+	octstr_append_decimal(emimsg->fields[E50_NT], 3 + (DLR_IS_BUFFERED(msg->sms.dlr_mask) ? 4 : 0));
 	if (privdata->npid)
 	    emimsg->fields[E50_NPID] = octstr_duplicate(privdata->npid);
 	if (privdata->nadc)
@@ -504,7 +503,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
     int st_code;
     PrivData *privdata = conn->data;
 
-  
+
     switch(emimsg->ot) {
     case 01:
 	msg = msg_create(sms);
@@ -584,7 +583,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	while (octstr_len(xser) > 0) {
 	    tempstr = octstr_copy(xser, 0, 4);
 	    if (octstr_hex_to_binary(tempstr) == -1)
-		error(0, "EMI2[%s]: Invalid XSer", 
+		error(0, "EMI2[%s]: Invalid XSer",
 		      octstr_get_cstr(privdata->name));
 	    type = octstr_get_char(tempstr, 0);
 	    len = octstr_get_char(tempstr, 1);
@@ -595,7 +594,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 		break;
 	    }
 	    if (type != 1 && type != 2)
-		warning(0, "EMI2[%s]: Unsupported EMI XSer field %d", 
+		warning(0, "EMI2[%s]: Unsupported EMI XSer field %d",
 			octstr_get_cstr(privdata->name), type);
 	    else {
 		if (type == 1) {
@@ -698,7 +697,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	}
 	else {
 	    unitime.year += 2000; /* Conversion function expects full year */
-        unitime.month -= 1; /* conversion function expects 0-based months */
+            unitime.month -= 1; /* conversion function expects 0-based months */
 	    msg->sms.time = date_convert_universal(&unitime);
 	}
 
@@ -735,7 +734,6 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 		break;
 	}
 	if (msg != NULL) {     
-	    
 	    /*
 	     * Recode the msg structure with the given msgdata.
 	     * Note: the DLR URL is delivered in msg->sms.dlr_url already.
@@ -770,7 +768,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 static void clear_sent(PrivData *privdata)
 {
     int i;
-    debug("smsc.emi2", 0, "EMI2[%s]: clear_sent called", 
+    debug("smsc.emi2", 0, "EMI2[%s]: clear_sent called",
 	  octstr_get_cstr(privdata->name));
     for (i = 0; i < EMI2_MAX_TRN; i++) {
 	if (privdata->slots[i].sendtime && privdata->slots[i].sendtype == 51)
@@ -883,23 +881,6 @@ static int emi2_do_send(SMSCConn *conn, Connection *server)
             return -1;
         }
 
-        /* report the submission to the DLR code */
-        if (DLR_IS_FAIL(msg->sms.dlr_mask) || DLR_IS_SMSC_FAIL(msg->sms.dlr_mask)) {
-            Octstr *ts;
-
-            ts = octstr_create("");
-            octstr_append(ts, (conn->id ? conn->id : PRIVDATA(conn)->name));
-            octstr_append_char(ts, '-');
-            octstr_append_decimal(ts, nexttrn);
-
-            dlr_add((conn->id ? conn->id : PRIVDATA(conn)->name), ts, msg);
-	    
-            octstr_destroy(ts);
-            PRIVDATA(conn)->slots[nexttrn].dlr = 1;
-        } else {
-            PRIVDATA(conn)->slots[nexttrn].dlr = 0;
-        }
-
         /* we just sent a message */
         PRIVDATA(conn)->unacked++;
 
@@ -951,62 +932,21 @@ static int emi2_handle_smscreq(SMSCConn *conn, Connection *server)
 	} else {   /* Already checked to be 'O' or 'R' */
 	    if (!SLOTBUSY(conn,emimsg->trn) ||
 		emimsg->ot != PRIVDATA(conn)->slots[emimsg->trn].sendtype) {
-		error(0, "EMI2[%s]: Got ack for TRN %d, don't remember sending O?", 
+		error(0, "EMI2[%s]: Got ack for TRN %d, don't remember sending O?",
 		      octstr_get_cstr(privdata->name), emimsg->trn);
 	    } else {
 		PRIVDATA(conn)->can_write = 1;
 		PRIVDATA(conn)->slots[emimsg->trn].sendtime = 0;
 		PRIVDATA(conn)->unacked--;
-		
+
 		if (emimsg->ot == 51) {
-		    if (PRIVDATA(conn)->slots[emimsg->trn].dlr) {
-			Msg *dlrmsg;
-			Octstr *ts;
-			Msg *origmsg;
-
-			origmsg = PRIVDATA(conn)->slots[emimsg->trn].sendmsg;
-
-			ts = octstr_create("");
-			octstr_append(ts, (conn->id ? conn->id : privdata->name));
-			octstr_append_char(ts, '-');
-			octstr_append_decimal(ts, emimsg->trn);
-
-			dlrmsg = dlr_find((conn->id ? conn->id : privdata->name),
-					  ts, /* timestamp */
-					  origmsg->sms.receiver, /* destination */
-					  (octstr_get_char(emimsg->fields[0], 0) == 'A' ? 
-					   DLR_SMSC_SUCCESS : DLR_SMSC_FAIL));
-
-			octstr_destroy(ts);
-			if (dlrmsg != NULL) {
-
-                /*
-                 * Note: the DLR URL is delivered in msg->sms.dlr_url already.
-                 */
-                dlrmsg->sms.sms_type = report;
-                dlrmsg->sms.msgdata = octstr_create("");
-			    if (octstr_get_char(emimsg->fields[0], 0) == 'N') {
-                    octstr_append(dlrmsg->sms.msgdata, emimsg->fields[1]);
-                    octstr_append_char(dlrmsg->sms.msgdata, '-');
-                    /* system message is optional */
-                    if (emimsg->fields[2] != NULL)
-                        octstr_append(dlrmsg->sms.msgdata, emimsg->fields[2]);
-                    octstr_append_cstr(dlrmsg->sms.msgdata, "/NACK");
-                } else {
-                    octstr_append_cstr(dlrmsg->sms.msgdata, "/ACK");
-			    }
-
-			    bb_smscconn_receive(conn, dlrmsg);
-			}
-		    }
-
 		    if (octstr_get_char(emimsg->fields[0], 0) == 'A') {
 			/* we got an ack back. We might have to store the */
 			/* timestamp for delivery notifications now */
 			Octstr *ts, *adc;
 			int	i;
 			Msg *m;
-			  
+
 			ts = octstr_duplicate(emimsg->fields[2]);
 			if (octstr_len(ts)) {
 			    i = octstr_search_char(ts,':',0);
@@ -1014,7 +954,7 @@ static int emi2_handle_smscreq(SMSCConn *conn, Connection *server)
 				octstr_delete(ts,0,i+1);
 				adc = octstr_duplicate(emimsg->fields[2]);
 				octstr_truncate(adc,i);
-			        
+
 				m = PRIVDATA(conn)->slots[emimsg->trn].sendmsg;
 				if(m == NULL) {
 				    info(0,"EMI2[%s]: uhhh m is NULL, very bad",
@@ -1027,25 +967,34 @@ static int emi2_handle_smscreq(SMSCConn *conn, Connection *server)
 			    } else {
 				octstr_destroy(ts);
 			    }
-
-			    
 			}
 			/*
 			 * report the successful transmission to the generic bb code.
 			 */
 			bb_smscconn_sent(conn,
-					 PRIVDATA(conn)->slots[emimsg->trn].sendmsg);
+				PRIVDATA(conn)->slots[emimsg->trn].sendmsg,
+				NULL);
 		    } else {
+		        Octstr *reply;
+
+                        /* create reply message */
+                        reply = octstr_create("");
+                        octstr_append(reply, emimsg->fields[1]);
+                        octstr_append_char(reply, '-');
+                        /* system message is optional */
+                        if (emimsg->fields[2] != NULL)
+                            octstr_append(reply, emimsg->fields[2]);
+
 			/* XXX Process error code here
 			long errorcode;
 			octstr_parse_long(&errorcode, emimsg->fields[1], 0, 10);
 			... switch(errorcode) ...
-			} 
-			
+			}
+
 			else { */
 			    bb_smscconn_send_failed(conn,
-						PRIVDATA(conn)->slots[emimsg->trn].sendmsg,
-						SMSCCONN_FAILED_REJECTED);
+					PRIVDATA(conn)->slots[emimsg->trn].sendmsg,
+					SMSCCONN_FAILED_REJECTED, reply);
 			/* } */
 		    }
 		} else if (emimsg->ot == 31) {
@@ -1054,8 +1003,8 @@ static int emi2_handle_smscreq(SMSCConn *conn, Connection *server)
 			long errorcode;
 			octstr_parse_long(&errorcode, emimsg->fields[1], 0, 10);
 			... switch errorcode ...
-		    } 
-		    
+		    }
+
 		    else { */
 			;
 		    /* } */
@@ -1278,7 +1227,7 @@ static void emi2_sender(void *arg)
     }
 
     while((msg = list_extract_first(privdata->outgoing_queue)) != NULL)
-	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
     if (privdata->rport > 0)
 	gwthread_join(privdata->receiver_thread);
     mutex_lock(conn->flow_mutex);
@@ -1471,7 +1420,7 @@ static int shutdown_cb(SMSCConn *conn, int finish_sending)
     if (finish_sending == 0) {
 	Msg *msg;
 	while((msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
-	    bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+	    bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
 	}
     }
 

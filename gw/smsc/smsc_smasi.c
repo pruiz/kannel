@@ -706,7 +706,7 @@ static void handle_pdu(SMASI *smasi, Connection *conn,
                        octstr_get_cstr(pdu->u.SubmitConf.Sequence),
                        octstr_get_cstr(pdu->u.SubmitConf.MsgReference));
 
-                bb_smscconn_sent(smasi->conn, msg);
+                bb_smscconn_sent(smasi->conn, msg, NULL);
 
                 --(*pending_submits);
             }
@@ -730,7 +730,8 @@ static void handle_pdu(SMASI *smasi, Connection *conn,
                        octstr_get_cstr(smasi->conn->id));
             } else {
                 reason = SMSCCONN_FAILED_REJECTED;
-                bb_smscconn_send_failed(smasi->conn, msg, reason);
+                bb_smscconn_send_failed(smasi->conn, msg, reason,
+		            octstr_create("REJECTED"));
                 --(*pending_submits);
             }
             break;
