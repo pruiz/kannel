@@ -51,7 +51,7 @@ static Msg *pdu_decode(Octstr *data);
 static Msg *pdu_decode_deliver_sm(Octstr *data);
 static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc);
 static Octstr *convertpdu(Octstr *pdutext);
-static int hexchar(char hexc);
+static int hexchar(int hexc);
 static int encode7bituncompressed(Octstr *input, unsigned char *encoded);
 static int encode8bituncompressed(Octstr *input, unsigned char *encoded);
 static void decode7bituncompressed(Octstr *input, int len, Octstr *decoded);
@@ -495,6 +495,8 @@ static int pdu_extract(SMSCenter *smsc, Octstr **pdu) {
 	   (strcmp(smsc->at_modemtype, NOKIAPHONE) == 0) ) {
 		tmp = hexchar(octstr_get_char(buffer, pos))*16
 		    + hexchar(octstr_get_char(buffer, pos+1));
+		if (tmp < 0)
+		    goto nomsg;
 		tmp = 2 + tmp * 2;
 		pos += tmp;
 	}
@@ -900,7 +902,7 @@ static int numtext(int num) {
 /**********************************************************************
  * Get the numeric value of the text hex
  */
-static int hexchar(char hexc) {
+static int hexchar(int hexc) {
 	hexc = toupper(hexc) - 48;
 	return (hexc>9) ? hexc-7 : hexc;
 }

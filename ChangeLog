@@ -1,3 +1,10 @@
+2001-02-28  Richard Braakman <dark@wapit.com>
+
+	* gw/smsc_at.c: Made pdu_extract deal with the SMSC address field
+	possibly being bad or too short.  Also made hexchar() take an
+	int as argument, instead of char (which might be signed).
+	toupper() is defined as taking an int, anyway.
+
 2001-02-27  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/drive_smpp.c: modified to accept Msg 'admin', too
