@@ -1,5 +1,10 @@
 2000-10-19  Kalle Marjola  <rpr@wapit.com>
 
+	* doc/userguide/userguide.xml: added notes on 'required
+	components' for SMS gateways
+
+2000-10-19  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/wapbox.c: send that wakeup when bearerbox exits, too.
 	
 2000-10-19  Kalle Marjola  <rpr@wapit.com>
