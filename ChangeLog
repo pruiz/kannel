@@ -1,3 +1,9 @@
+2004-02-18  Alexander Malysh  <a.malysh@centrium.de>
+    * doc/userguide/userguide.xml: moved 'External DLR' section to sect1,
+      because DLR support doesn't belong to SMSbox configuration.
+      Moved 'Mysql connection' section to sect3 and made it belongs to
+      mysql dlr config.
+
 2004-02-16 Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_cimd2.c: added RPI (return-path-indication) support and 
       binfo support via tariff class in CIMD protocoll. 

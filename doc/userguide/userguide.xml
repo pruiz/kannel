@@ -4327,6 +4327,376 @@ marked as "not tested" because the table is still new.</para>
 </sect1>
 
 
+<sect1>
+<title>External delivery report (DLR) storage</title>
+
+   <para>Delivery reports are supported by default internaly, which
+	means all DLRs are stored in the memory of the bearerbox process.
+	This is problematic if bearerbox crashes or you take the process
+	down in a controlled way, but there are still DLRs open. Therefore
+	you may use external DLR storage places, i.e. a MySQL database.
+	</para>
+	<para>Following are the supported DLR storage types and how to use
+	them:</para>
+
+	<sect2>
+	<title>Internal DLR storage</title>
+
+   <para>This is the default way in handling DLRs and does not
+	require any special configuration. In order to configure bearerbox
+	to use internal DLR storage use <literal>dlr-storage = internal</literal>
+	in the <literal>core</literal> group.
+	</para>
+
+   </sect2>
+
+	<sect2>
+	<title>MySQL DLR storage</title>
+	<para>To store DLR information into a MySQL database you may use the
+	<literal>dlr-storage = mysql</literal> configuration directive in the
+	<literal>core</literal> group.
+	</para>
+	<para>In addition to that you must have a <literal>dlr-db</literal>
+	group defined that specifies the table field names that are used to the
+	DLR attributes and a <literal>mysql-connection</literal> group that
+	defines the connection to the MySQL server itself.
+	</para>
+	<para>Here is the example configuration from
+	<literal>doc/examples/dlr-mysql.conf</literal>:
+
+<programlisting>
+group = mysql-connection
+id = mydlr
+host = localhost
+mysql-username = foo
+mysql-password = bar
+database = dlr
+max-connections = 1
+
+group = dlr-db
+id = mydlr
+table = dlr
+field-smsc = smsc
+field-timestamp = ts
+field-destination = destination
+field-source = source
+field-service = service
+field-url = url
+field-mask = mask
+field-status = status
+field-boxc-id = boxc
+</programlisting>
+
+	</para>
+
+<sect3>
+<title>MySQL connection configuration</title>
+
+   <para>For several reasons external storage may be required to 
+	handle dynamical issues, i.e. DLRs, sms-service, sendsms-user, 
+	ota-setting, ota-bookmark definitions and so on. To define a 
+	MySQL database connection you simple need to specify a
+	<literal>mysql-connection</literal> group as follows:
+	</para>
+	
+ <table frame="none">
+  <title>MySQL Connection Group Variables</title>
+  <tgroup cols="3">
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>group</literal></entry>
+     <entry><literal>mysql-connection</literal></entry>
+     <entry valign="bottom">
+       This is a mandatory variable
+     </entry></row>
+
+   <row><entry><literal>id (m)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+	     An optional name or id to identify this MySQL connection
+		  for internal reference with other MySQL related configuration
+		  groups. Any string is acceptable, but semicolon ';' may cause
+		  problems, so avoid it and any other special non-alphabet characters.
+     </entry></row>
+
+   <row><entry><literal>host (m)</literal></entry>
+     <entry>hostname or IP</entry>
+     <entry valign="bottom">
+        Hostname or IP of a server running a MySQL database to connect to.
+     </entry></row>
+
+    <row><entry><literal>mysql-username (m)</literal></entry>
+     <entry>username</entry>
+     <entry valign="bottom">
+        User name for connecting to MySQL database.
+     </entry></row>
+
+    <row><entry><literal>mysql-password (m)</literal></entry>
+     <entry>password</entry>
+     <entry valign="bottom">
+        Password for connecting to MySQL database.
+     </entry></row>
+
+    <row><entry><literal>database (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+        Name of database in MySQL database server to connect to.
+     </entry></row>
+
+    <row><entry><literal>max-connections</literal></entry>
+     <entry>integer</entry>
+     <entry valign="bottom">
+        How many connections should be opened to the given database.
+        This is used for database pool.
+     </entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
+
+  <para>A sample 'mysql-connection' group:
+
+<programlisting>
+group = mysql-connection
+id = dlr-db
+host = localhost
+mysql-username = foo
+mysql-password = bar
+database = dlr
+max-connections = 1
+</programlisting>
+
+  </para>
+  <para>In case you use different MySQL connections for several storage
+  issues, i.e. one for DLR and another different one for sms-service you
+  may use the <literal>include</literal> configuration statement to extract
+  the MySQL related configuration groups to a seperate <literal>mysql.conf
+  </literal> file.
+  </para>
+
+</sect3>
+	</sect2>
+
+	<sect2>
+	<title>LibSDB DLR storage</title>
+	<para>To store DLR information into a LibSDB ressource (which is an
+	abstraction	of a real database) you may use the
+	<literal>dlr-storage = sdb</literal> configuration directive in the
+	<literal>core</literal> group.
+	</para>
+	<para>In addition to that you must have a <literal>dlr-db</literal>
+	group defined that specifies the table field names that are used to the
+	DLR attributes and a <literal>sdb-connection</literal> group that
+	defines the LibSDB ressource itself.
+	</para>
+	<para>Here is the example configuration from
+	<literal>doc/examples/dlr-sdb.conf</literal> using a MySQL ressource:
+
+<programlisting>
+group = sdb-connection
+id = mydlr
+url = "mysql:host=localhost:db=dlr:uid=foo:pwd=bar"
+
+group = dlr-db
+id = mydlr
+table = dlr
+field-smsc = smsc
+field-timestamp = ts
+field-destination = destination
+field-source = source
+field-service = service
+field-url = url
+field-mask = mask
+field-status = status
+field-boxc-id = boxc
+</programlisting>
+
+	</para>
+  <para>Beware that you have the DB support build in your LibSDB
+  installation when trying to use a specific DB type within the URL.
+  </para>
+
+	</sect2>
+
+	<sect2>
+	<title>Oracle 8i/9i DLR storage</title>
+	<para>To store DLR information into a Oracle database you may use the
+	<literal>dlr-storage = oracle</literal> configuration directive in the
+	<literal>core</literal> group.
+	</para>
+	<para>In addition to that you must have a <literal>dlr-db</literal>
+	group defined that specifies the table field names that are used to the
+	DLR attributes and a <literal>oracle-connection</literal> group that
+	defines the connection to the Oracle server itself.
+	</para>
+	<para>Here is the example configuration from
+	<literal>doc/examples/dlr-oracle.conf</literal>:
+
+<programlisting>
+group = oracle-connection
+id = mydlr
+username = foo
+password = bar
+tnsname = dlr
+max-connections = 1
+
+group = dlr-db
+id = mydlr
+table = dlr
+field-smsc = smsc
+field-timestamp = ts
+field-destination = destination
+field-source = source
+field-service = service
+field-url = url
+field-mask = mask
+field-status = status
+field-boxc-id = boxc
+</programlisting>
+
+	</para>
+
+	</sect2>
+
+        <sect2>
+	<title>DLR database field configuration</title>
+	<para>For external database storage of DLR information in relational
+	database management systems (RDMS) you will have tospecify which table
+	field are used to represend the stored data. This is done via the
+	<literal>dlr-db</literal> group as follows:
+	</para>
+
+ <table frame="none">
+  <title>DLR Database Field Configuration Group Variables</title>
+  <tgroup cols="3">
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>group</literal></entry>
+     <entry><literal>dlr-db</literal></entry>
+     <entry valign="bottom">
+       This is a mandatory variable
+     </entry></row>
+
+   <row><entry><literal>id (m)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+	     An id to identify which external connection should be used for
+ 		  DLR storage. Any string is acceptable, but semicolon ';' may cause
+		  problems, so avoid it and any other special non-alphabet characters.
+     </entry></row>
+
+   <row><entry><literal>table (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+        The name of the table that is used to store the DLR information.
+     </entry></row>
+
+   <row><entry><literal>field-smsc (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+        The table field that is used for the smsc data.
+     </entry></row>
+
+   <row><entry><literal>field-timestamp (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+        The table field that is used for the timestamp data.
+     </entry></row>
+
+   <row><entry><literal>field-destination (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+        The table field that is used for the destination number data.
+     </entry></row>
+
+   <row><entry><literal>field-source (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+        The table field that is used for the source number data.
+     </entry></row>
+
+   <row><entry><literal>field-service (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+        The table field that is used for the service username data.
+     </entry></row>
+
+   <row><entry><literal>field-url (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+        The table field that is used for the DLR URL which is triggered
+		  when the DLR for this message arrives from the SMSC.
+     </entry></row>
+
+   <row><entry><literal>field-mask (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+        The table field that is used for the DLR mask that has been set
+		  for a message.
+     </entry></row>
+
+   <row><entry><literal>field-status (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+        The table field that is used to reflect the status of the DLR
+		  for a specific message.
+     </entry></row>
+
+   <row><entry><literal>field-boxc-id (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+        The table field that is used to store the smsbox connection id
+		  that has passed the message for delivery. This is required in 
+		  cases you want to garantee that DLR messages are routed back to
+		  the same smsbox conn instance. This is done via the smsbox routing.
+		  If you don't use smsbox routing simply add this field to your
+		  database table and keep it empty.
+     </entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
+
+  <para>A sample 'dlr-db' group:
+
+<programlisting>
+group = dlr-db
+id = dlr-db
+table = dlr
+field-smsc = smsc
+field-timestamp = ts
+field-source = source
+field-destination = destination
+field-service = service
+field-url = url
+field-mask = mask
+field-status = status
+field-boxc-id = boxc
+</programlisting>
+
+  </para>
+  <para>Beware that all variables in this group are mandatory, so you
+  have to specify all fields to enable bearerbox to know how to store
+  and retrieve the DLR information from the external storage spaces.
+  </para>
+
+	</sect2>
+
+</sect1>	  
+
+
 
 <sect1>
 <title>SMSBox configuration</title>
@@ -5767,378 +6137,6 @@ forced-smsc = SOL
    SMS.</para>
 
 </sect2>
-
-
-<sect2>
-<title>External delivery report (DLR) storage</title>
-
-   <para>Delivery reports are supported by default internaly, which
-	means all DLRs are stored in the memory of the bearerbox process.
-	This is problematic if bearerbox crashes or you take the process
-	down in a controlled way, but there are still DLRs open. Therefore
-	you may use external DLR storage places, i.e. a MySQL database.
-	</para>
-	<para>Following are the supported DLR storage types and how to use
-	them:</para>
-
-	<sect3>
-	<title>Internal DLR storage</title>
-
-   <para>This is the default way in handling DLRs and does not
-	require any special configuration. In order to configure bearerbox
-	to use internal DLR storage use <literal>dlr-storage = internal</literal>
-	in the <literal>core</literal> group.
-	</para>
-
-   </sect3>
-
-	<sect3>
-	<title>MySQL DLR storage</title>
-	<para>To store DLR information into a MySQL database you may use the
-	<literal>dlr-storage = mysql</literal> configuration directive in the
-	<literal>core</literal> group.
-	</para>
-	<para>In addition to that you must have a <literal>dlr-db</literal>
-	group defined that specifies the table field names that are used to the
-	DLR attributes and a <literal>mysql-connection</literal> group that
-	defines the connection to the MySQL server itself.
-	</para>
-	<para>Here is the example configuration from
-	<literal>doc/examples/dlr-mysql.conf</literal>:
-
-<programlisting>
-group = mysql-connection
-id = mydlr
-host = localhost
-mysql-username = foo
-mysql-password = bar
-database = dlr
-max-connections = 1
-
-group = dlr-db
-id = mydlr
-table = dlr
-field-smsc = smsc
-field-timestamp = ts
-field-destination = destination
-field-source = source
-field-service = service
-field-url = url
-field-mask = mask
-field-status = status
-field-boxc-id = boxc
-</programlisting>
-
-	</para>
-
-	</sect3>
-
-	<sect3>
-	<title>LibSDB DLR storage</title>
-	<para>To store DLR information into a LibSDB ressource (which is an
-	abstraction	of a real database) you may use the
-	<literal>dlr-storage = sdb</literal> configuration directive in the
-	<literal>core</literal> group.
-	</para>
-	<para>In addition to that you must have a <literal>dlr-db</literal>
-	group defined that specifies the table field names that are used to the
-	DLR attributes and a <literal>sdb-connection</literal> group that
-	defines the LibSDB ressource itself.
-	</para>
-	<para>Here is the example configuration from
-	<literal>doc/examples/dlr-sdb.conf</literal> using a MySQL ressource:
-
-<programlisting>
-group = sdb-connection
-id = mydlr
-url = "mysql:host=localhost:db=dlr:uid=foo:pwd=bar"
-
-group = dlr-db
-id = mydlr
-table = dlr
-field-smsc = smsc
-field-timestamp = ts
-field-destination = destination
-field-source = source
-field-service = service
-field-url = url
-field-mask = mask
-field-status = status
-field-boxc-id = boxc
-</programlisting>
-
-	</para>
-  <para>Beware that you have the DB support build in your LibSDB
-  installation when trying to use a specific DB type within the URL.
-  </para>
-
-	</sect3>
-
-	<sect3>
-	<title>Oracle 8i/9i DLR storage</title>
-	<para>To store DLR information into a Oracle database you may use the
-	<literal>dlr-storage = oracle</literal> configuration directive in the
-	<literal>core</literal> group.
-	</para>
-	<para>In addition to that you must have a <literal>dlr-db</literal>
-	group defined that specifies the table field names that are used to the
-	DLR attributes and a <literal>oracle-connection</literal> group that
-	defines the connection to the Oracle server itself.
-	</para>
-	<para>Here is the example configuration from
-	<literal>doc/examples/dlr-oracle.conf</literal>:
-
-<programlisting>
-group = oracle-connection
-id = mydlr
-username = foo
-password = bar
-tnsname = dlr
-max-connections = 1
-
-group = dlr-db
-id = mydlr
-table = dlr
-field-smsc = smsc
-field-timestamp = ts
-field-destination = destination
-field-source = source
-field-service = service
-field-url = url
-field-mask = mask
-field-status = status
-field-boxc-id = boxc
-</programlisting>
-
-	</para>
-
-	</sect3>
-
-        <sect3>
-	<title>DLR database field configuration</title>
-	<para>For external database storage of DLR information in relational
-	database management systems (RDMS) you will have tospecify which table
-	field are used to represend the stored data. This is done via the
-	<literal>dlr-db</literal> group as follows:
-	</para>
-
- <table frame="none">
-  <title>DLR Database Field Configuration Group Variables</title>
-  <tgroup cols="3">
-  <thead>
-   <row>
-     <entry>Variable</entry>
-     <entry>Value</entry>
-     <entry>Description</entry>
-   </row>
-  </thead>
-  <tbody>
-   <row><entry><literal>group</literal></entry>
-     <entry><literal>dlr-db</literal></entry>
-     <entry valign="bottom">
-       This is a mandatory variable
-     </entry></row>
-
-   <row><entry><literal>id (m)</literal></entry>
-     <entry><literal>string</literal></entry>
-     <entry valign="bottom">
-	     An id to identify which external connection should be used for
- 		  DLR storage. Any string is acceptable, but semicolon ';' may cause
-		  problems, so avoid it and any other special non-alphabet characters.
-     </entry></row>
-
-   <row><entry><literal>table (m)</literal></entry>
-     <entry>string</entry>
-     <entry valign="bottom">
-        The name of the table that is used to store the DLR information.
-     </entry></row>
-
-   <row><entry><literal>field-smsc (m)</literal></entry>
-     <entry>string</entry>
-     <entry valign="bottom">
-        The table field that is used for the smsc data.
-     </entry></row>
-
-   <row><entry><literal>field-timestamp (m)</literal></entry>
-     <entry>string</entry>
-     <entry valign="bottom">
-        The table field that is used for the timestamp data.
-     </entry></row>
-
-   <row><entry><literal>field-destination (m)</literal></entry>
-     <entry>string</entry>
-     <entry valign="bottom">
-        The table field that is used for the destination number data.
-     </entry></row>
-
-   <row><entry><literal>field-source (m)</literal></entry>
-     <entry>string</entry>
-     <entry valign="bottom">
-        The table field that is used for the source number data.
-     </entry></row>
-
-   <row><entry><literal>field-service (m)</literal></entry>
-     <entry>string</entry>
-     <entry valign="bottom">
-        The table field that is used for the service username data.
-     </entry></row>
-
-   <row><entry><literal>field-url (m)</literal></entry>
-     <entry>string</entry>
-     <entry valign="bottom">
-        The table field that is used for the DLR URL which is triggered
-		  when the DLR for this message arrives from the SMSC.
-     </entry></row>
-
-   <row><entry><literal>field-mask (m)</literal></entry>
-     <entry>string</entry>
-     <entry valign="bottom">
-        The table field that is used for the DLR mask that has been set
-		  for a message.
-     </entry></row>
-
-   <row><entry><literal>field-status (m)</literal></entry>
-     <entry>string</entry>
-     <entry valign="bottom">
-        The table field that is used to reflect the status of the DLR
-		  for a specific message.
-     </entry></row>
-
-   <row><entry><literal>field-boxc-id (m)</literal></entry>
-     <entry>string</entry>
-     <entry valign="bottom">
-        The table field that is used to store the smsbox connection id
-		  that has passed the message for delivery. This is required in 
-		  cases you want to garantee that DLR messages are routed back to
-		  the same smsbox conn instance. This is done via the smsbox routing.
-		  If you don't use smsbox routing simply add this field to your
-		  database table and keep it empty.
-     </entry></row>
-
-  </tbody>
-  </tgroup>
- </table>
-
-  <para>A sample 'dlr-db' group:
-
-<programlisting>
-group = dlr-db
-id = dlr-db
-table = dlr
-field-smsc = smsc
-field-timestamp = ts
-field-source = source
-field-destination = destination
-field-service = service
-field-url = url
-field-mask = mask
-field-status = status
-field-boxc-id = boxc
-</programlisting>
-
-  </para>
-  <para>Beware that all variables in this group are mandatory, so you
-  have to specify all fields to enable bearerbox to know how to store
-  and retrieve the DLR information from the external storage spaces.
-  </para>
-
-	</sect3>
-
-</sect2>	  
-
-<sect2>
-<title>MySQL connection configuration</title>
-
-   <para>For several reasons external storage may be required to 
-	handle dynamical issues, i.e. DLRs, sms-service, sendsms-user, 
-	ota-setting, ota-bookmark definitions and so on. To define a 
-	MySQL database connection you simple need to specify a
-	<literal>mysql-connection</literal> group as follows:
-	</para>
-	
- <table frame="none">
-  <title>MySQL Connection Group Variables</title>
-  <tgroup cols="3">
-  <thead>
-   <row>
-     <entry>Variable</entry>
-     <entry>Value</entry>
-     <entry>Description</entry>
-   </row>
-  </thead>
-  <tbody>
-   <row><entry><literal>group</literal></entry>
-     <entry><literal>mysql-connection</literal></entry>
-     <entry valign="bottom">
-       This is a mandatory variable
-     </entry></row>
-
-   <row><entry><literal>id (m)</literal></entry>
-     <entry><literal>string</literal></entry>
-     <entry valign="bottom">
-	     An optional name or id to identify this MySQL connection
-		  for internal reference with other MySQL related configuration
-		  groups. Any string is acceptable, but semicolon ';' may cause
-		  problems, so avoid it and any other special non-alphabet characters.
-     </entry></row>
-
-   <row><entry><literal>host (m)</literal></entry>
-     <entry>hostname or IP</entry>
-     <entry valign="bottom">
-        Hostname or IP of a server running a MySQL database to connect to.
-     </entry></row>
-
-    <row><entry><literal>mysql-username (m)</literal></entry>
-     <entry>username</entry>
-     <entry valign="bottom">
-        User name for connecting to MySQL database.
-     </entry></row>
-
-    <row><entry><literal>mysql-password (m)</literal></entry>
-     <entry>password</entry>
-     <entry valign="bottom">
-        Password for connecting to MySQL database.
-     </entry></row>
-
-    <row><entry><literal>database (m)</literal></entry>
-     <entry>string</entry>
-     <entry valign="bottom">
-        Name of database in MySQL database server to connect to.
-     </entry></row>
-
-    <row><entry><literal>max-connections</literal></entry>
-     <entry>integer</entry>
-     <entry valign="bottom">
-        How many connections should be opened to the given database.
-        This is used for database pool.
-     </entry></row>
-
-  </tbody>
-  </tgroup>
- </table>
-
-  <para>A sample 'mysql-connection' group:
-
-<programlisting>
-group = mysql-connection
-id = dlr-db
-host = localhost
-mysql-username = foo
-mysql-password = bar
-database = dlr
-max-connections = 1
-</programlisting>
-
-  </para>
-  <para>In case you use different MySQL connections for several storage
-  issues, i.e. one for DLR and another different one for sms-service you
-  may use the <literal>include</literal> configuration statement to extract
-  the MySQL related configuration groups to a seperate <literal>mysql.conf
-  </literal> file.
-  </para>
-
-</sect2>
-
 
 <sect2>
 <title>Over-The-Air configurations</title>
