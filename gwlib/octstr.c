@@ -356,6 +356,7 @@ void octstr_append_from_hex(Octstr *ostr, char *hex)
     output = octstr_create(hex);
     octstr_hex_to_binary(output);
     octstr_append(ostr, output);
+    octstr_destroy(output);
 }
 
 

@@ -2454,6 +2454,12 @@ forced-smsc = SOL
        Phone number used to establish the PPP connection
      </entry></row>
 
+   <row><entry><literal>speed</literal></entry>
+     <entry><literal>number</literal></entry>
+     <entry valign=bottom>
+       Connection speed: 9600 or 14400. Defaults to 9600.
+     </entry></row>
+
    <row><entry><literal>bearer</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
@@ -2752,9 +2758,9 @@ http://smsbox.host.name:13013/cgi-bin/sendota?otaid=myconfig&amp;username=foo&am
   <tbody>
    <row><entry><literal>otaid</literal></entry>
    <entry valign=bottom>
-        Name or id of the 'otaconfig' group in Kannel configuration, that should
-        be send to the phone. This variable is optional. If no is given the
-		  first 'otaconfig' group is send.
+        Name or id of the 'otaconfig' group in Kannel configuration
+        that should be sent to the phone. This variable is optional.
+        If it is not given the first 'otaconfig' group is sent. 
    </entry></row>
 
    <row><entry><literal>username</literal></entry>
@@ -2773,6 +2779,14 @@ http://smsbox.host.name:13013/cgi-bin/sendota?otaid=myconfig&amp;username=foo&am
    <row><entry><literal>phonenumber</literal></entry>
    <entry valign=bottom>
        Number of the phone that is to receive the OTA configuration message.
+   </entry></row>
+
+   <row><entry><literal>from</literal></entry>
+   <entry valign=bottom>
+       Phone number of the sender. This field is usually overridden by
+       the SMS Center, or it can be overridden by faked-sender
+       variable in the sendsms-user group. If this variable is not
+       set, smsbox global-sender is used.
    </entry></row>
   </tbody>
   </tgroup>

@@ -955,7 +955,7 @@ error:
 #define AUTH_SECURE	0x71
 #define BEARER_DATA	0x45
 #define CALL_ISDN	0x73
-#define SPEED_9660	"6B"
+#define SPEED_9600	"6B"
 #define SPEED_14400	"6C"
 #define ENDTAG		"01"
 
@@ -968,7 +968,7 @@ error:
  */
 static char *smsbox_req_sendota(List *list, char *client_ip)
 {
-    Octstr *url, *desc, *ipaddr, *phonenum, *username, *passwd, *id;
+    Octstr *url, *desc, *ipaddr, *phonenum, *username, *passwd, *id, *from;
     char *speed;
     int bearer, calltype, connection, security, authent;
     CfgGroup *grp;
@@ -977,7 +977,7 @@ static char *smsbox_req_sendota(List *list, char *client_ip)
     Msg *msg;
     URLTranslation *t;
     int ret;
-    Octstr *phonenumber, *otaid;
+    Octstr *phonenumber;
     
     url = NULL;
     desc = NULL;
@@ -992,7 +992,6 @@ static char *smsbox_req_sendota(List *list, char *client_ip)
     security = 0;
     authent = AUTH_NORMAL;
     phonenumber = NULL;
-    otaid = NULL;
 
     /* check the username and password */
     t = authorise_user(list, client_ip);
@@ -1004,26 +1003,41 @@ static char *smsbox_req_sendota(List *list, char *client_ip)
 	error(0, "/cgi-bin/sendota needs a valid phone number.");
 	return "Wrong sendota args.";
     }
-    
+
+    if (urltrans_faked_sender(t) != NULL) {
+	from = octstr_duplicate(urltrans_faked_sender(t));
+    } else if ((from = http_cgi_variable(list, "from")) != NULL &&
+	       octstr_len(from) > 0) {
+	from = octstr_duplicate(from);
+    } else if (global_sender != NULL) {
+	from = octstr_duplicate(global_sender);
+    } else {
+	return "Sender missing and no global set, rejected";
+    }
+
     /* check if a otaconfig id has been given and decide which OTA
      * properties to be send to the client otherwise send the default */
     id = http_cgi_variable(list, "otaid");
     
     grplist = cfg_get_multi_group(cfg, octstr_imm("otaconfig"));
-    while ((grp = list_extract_first(grplist)) != NULL) {
+    while (grplist && (grp = list_extract_first(grplist)) != NULL) {
 	p = cfg_get(grp, octstr_imm("ota-id"));
-	if (p != NULL && octstr_compare(p, id) == 0)
+	if (id == NULL || (p != NULL && octstr_compare(p, id) == 0))
 	    goto found;
+	octstr_destroy(p);
     }
+
     list_destroy(grplist, NULL);
-    
-    if (otaid != NULL) {
+    if (id != NULL)
 	error(0, "/cgi-bin/sendota can't find otaconfig with ota-id '%s'.", 
 	      octstr_get_cstr(id));
-	return "Missing otaconfig group.";
-    }
-    
+    else
+	error(0, "/cgi-bin/sendota can't find any otaconfig group.");
+    octstr_destroy(from);
+    return "Missing otaconfig group.";
+
 found:
+    octstr_destroy(p);
     list_destroy(grplist, NULL);
     url = cfg_get(grp, octstr_imm("location"));
     desc = cfg_get(grp, octstr_imm("service"));
@@ -1046,11 +1060,12 @@ found:
 	octstr_destroy(p);
     }
 	
-    speed = SPEED_9660;
+    speed = SPEED_9600;
     p = cfg_get(grp, octstr_imm("speed"));
     if (p != NULL) {
 	if (octstr_compare(p, octstr_imm("14400")) == 0)
 	    speed = SPEED_14400;
+	octstr_destroy(p);
     }
 
     /* connection mode and security */
@@ -1087,8 +1102,6 @@ found:
     passwd = cfg_get(grp, octstr_imm("secret"));
 
     msg = msg_create(sms);
-    if (msg == NULL)
-    	goto error;
     
     msg->sms.udhdata = octstr_create("");
 
@@ -1167,7 +1180,8 @@ found:
     }
     /* message footer */
     octstr_append_from_hex(msg->sms.msgdata, "0101");
-    
+
+    msg->sms.sender = from;
     msg->sms.receiver = octstr_duplicate(phonenumber);
     msg->sms.flag_8bit = 1;
     msg->sms.flag_udh  = 1;
@@ -1177,19 +1191,24 @@ found:
     octstr_dump(msg->sms.msgdata, 0);
     
     info(0, "/cgi-bin/sendota <%s> <%s>", 
-    	 octstr_get_cstr(id), octstr_get_cstr(phonenumber));
+    	 id ? octstr_get_cstr(id) : "<default>", octstr_get_cstr(phonenumber));
     
     ret = send_message(t, msg); 
     msg_destroy(msg);
-    
-    if (ret == -1)
-	goto error;
-    
+
+    octstr_destroy(url);
+    octstr_destroy(desc);
+    octstr_destroy(ipaddr);
+    octstr_destroy(phonenum);
+    octstr_destroy(username);
+    octstr_destroy(passwd);
+
+    if (ret == -1) {
+	error(0, "sendota_request: failed");
+	return "Sending failed.";
+    }
+
     return "Sent.";
-    
-error:
-    error(0, "sendota_request: failed");
-    return "Sending failed.";
 }
 
 

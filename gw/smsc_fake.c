@@ -268,6 +268,9 @@ static void fake_listener(void *arg)
 	mutex_lock(conn->flow_mutex);
 	conn->status = SMSCCONN_RECONNECTING;
 	mutex_unlock(conn->flow_mutex);
+	while((msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
+	    bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY);
+	}
     }
     if (close(privdata->listening_socket) == -1)
 	warning(errno, "smsc_fake: couldn't close listening socket at shutdown");
@@ -279,7 +282,6 @@ static void fake_listener(void *arg)
 	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
     }
     list_destroy(privdata->outgoing_queue, NULL);
-    close(privdata->listening_socket);
     octstr_destroy(privdata->allow_ip);
     octstr_destroy(privdata->deny_ip);
     gw_free(privdata);
@@ -311,18 +313,19 @@ static int shutdown_cb(SMSCConn *conn, int finish_sending)
     debug("bb.sms", 0, "Shutting down SMSCConn FAKE, %s",
 	  finish_sending ? "slow" : "instant");
 
-    if (finish_sending == 0) {
-	Msg *msg;
-	while((msg = list_extract_first(privdata->outgoing_queue))!=NULL) {
-	    bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
-	}
-    }
-
     /* Documentation claims this would have been done by smscconn.c,
        but isn't when this code is being written. */
     conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
     privdata->shutdown = 1; /* Separate from why_killed to avoid locking, as
 			   why_killed may be changed from outside? */
+
+    if (finish_sending == 0) {
+	Msg *msg;
+	while((msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
+	    bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+	}
+    }
+
     gwthread_wakeup(privdata->connection_thread);
     return 0;
 }

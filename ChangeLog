@@ -1,3 +1,19 @@
+2001-02-10  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsbox.c: Fixed bugs in smsbox_req_sendota(), added 'from'
+	CGI variable to sendota requests.
+
+	* gwlib/cfg.def: Added missing 'speed' variable to otaconfig
+	group.
+
+	* doc/userguide/userguide.xml: Documented the added 'from'
+	variable. 'speed' was also missing from the documentation.
+
+	* gw/smsc_fake.c: Implemented SMSCCONN_FAILED_TEMPORARILY
+	(probably doesn't make much difference in practice).
+
+	* gwlib/octstr.c: Fixed memory leak in octstr_append_from_hex().
+
 2001-02-08  Richard Braakman  <dark@wapit.com>
 
 	* Applied Stipe Tolj's patch to cfg.def and userguide, to

@@ -159,6 +159,7 @@ MULTI_GROUP(otaconfig,
     OCTSTR(bearer)
     OCTSTR(connection)
     OCTSTR(calltype)
+    OCTSTR(speed)
     OCTSTR(pppsecurity)
     OCTSTR(authentication)
     OCTSTR(login)
