@@ -1,4 +1,15 @@
-Harrie Hazewinkel <harrie@mod-snmp.com>
+2002-08-08  Harrie Hazewinkel <harrie@mod-snmp.com>
+    * Moving the smsc code into a subdiretory gw/smsc.
+      Only the smsc.h, smsc_p.h smscconn.h and smscconn.c are
+      as API still in the gw directory.
+      files moved (into gw/smsc):
+      smsc_at2.h, smsc_cimd2.c, smsc_fake.c, smsc_sema.c, smsc.c,
+      smsc_sema.h, smsc_cgw.c, smsc_emi.c, smsc_http.c, smsc_at.c,
+      smsc_smpp.c, smsc_cimd.c, smsc_emi2.c, smsc_ois.c, smsc_at2.c,
+      smsc_wrapper.c
+      files changed: Makefile.in gw/smscconn.c, gw/smscconn_p.h
+
+2002-08-08  Harrie Hazewinkel <harrie@mod-snmp.com>
     * configure.in: Be a little less strict for the '--enable-warnings'
     * gwlib/conn.h: fixed 3 warnings.
 

@@ -73,7 +73,7 @@ LIBOBJS=@LIBOBJS@
 LIBSRCS=$(LIBOBJS:.o=.c)
 
 LIBS=@LIBS@
-CFLAGS=-D_REENTRANT=1 -I. @CFLAGS@
+CFLAGS=-D_REENTRANT=1 -I. -Igw @CFLAGS@
 LDFLAGS=@LDFLAGS@
 
 MKDEPEND=$(CC) $(CFLAGS) -MM
@@ -115,7 +115,7 @@ progs = $(progsrcs:.c=@EXE_EXT@)
 binprogs = $(binsrcs:.c=)
 sbinprogs = $(sbinsrcs:.c=)
 
-gwsrcs = $(wildcard gw/*.c)
+gwsrcs = $(wildcard gw/*.c) $(wildcard gw/smsc/*.c)
 gwobjs = $(gwsrcs:.c=.o)
 
 libsrcs = $(wildcard gwlib/*.c) $(LIBSRCS)
@@ -265,7 +265,7 @@ install-docs:
 		$(INSTALL) doc/$$docfile/*.png $(DESTDIR)$(docdir)/$$docfile ; \
 	done
 clean:
-	rm -f */*.o *.a core $(progs) $(testprogs) $(checkprogs)
+	rm -f */*.o gw/smsc/*.o *.a core $(progs) $(testprogs) $(checkprogs)
 	rm -f $(figs) $(ps) $(docs)
 	rm -f $(benchoutputs)
 

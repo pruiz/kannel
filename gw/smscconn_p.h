@@ -169,23 +169,27 @@ struct smscconn {
  */
 
 /* generic wrapper for old SMSC implementations (uses old smsc.h).
- * Responsible file: smsc_wrapper.c */
+ * Responsible file: smsc/smsc_wrapper.c */
 int smsc_wrapper_create(SMSCConn *conn, CfgGroup *cfg);
 
-/* Responsible file: smsc_fake.c */
+/* Responsible file: smsc/smsc_fake.c */
 int smsc_fake_create(SMSCConn *conn, CfgGroup *cfg);
 
-/* Responsible file: smsc_emi2.c */
+/* Responsible file: smsc/smsc_emi2.c */
 int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg);
 
-/* Responsible file: smsc_http.c */
+/* Responsible file: smsc/smsc_http.c */
 int smsc_http_create(SMSCConn *conn, CfgGroup *cfg);
 
-/* Responsible file: smsc_smpp.c */
+/* Responsible file: smsc/smsc_smpp.c */
 int smsc_smpp_create(SMSCConn *conn, CfgGroup *cfg);
 
-/* Responsible file: smsc_cgw.c */
+/* Responsible file: smsc/smsc_cgw.c */
 int smsc_cgw_create(SMSCConn *conn, CfgGroup *cfg);
+
+/* Responsible file: smsc/smsc_at2.c. */
+int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg);
+
 
 /* ADD NEW CREATE FUNCTIONS HERE
  *
