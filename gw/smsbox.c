@@ -521,6 +521,13 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	remember_receiver(id, msg, trans);
 	*result = NULL;
 	return 0;
+
+    case TRANSTYPE_SENDSMS:
+	error(0, "Got URL translation type SENDSMS for incoming message.");
+	alog("SMS request sender:%s request: '%s' FAILED bad translation",
+	     octstr_get_cstr(msg->sms.receiver),
+	     octstr_get_cstr(msg->sms.msgdata));
+	goto error;
     
     default:
 	error(0, "Unknown URL translation type %d", urltrans_type(trans));

@@ -275,13 +275,55 @@ static void *new_thread(void *arg)
     return NULL;
 }
 
-long gwthread_create_real(gwthread_func_t *func, const char *name, void *arg)
+/*
+ * Change this thread's signal mask to block user-visible signals
+ * (HUP, TERM, QUIT, INT), and store the old signal mask in
+ * *old_set_storage.
+ * Return 0 for success, or -1 if an error occurred.
+ */
+static int block_user_signals(sigset_t *old_set_storage)
 {
     int ret;
-    sigset_t old_signal_set, new_signal_set;
+    sigset_t block_signals;
+
+    ret = sigemptyset(&block_signals);
+    if (ret != 0) {
+        error(errno, "gwthread-pthread: Couldn't initialize signal set");
+	return -1;
+    }
+    ret = sigaddset(&block_signals, SIGHUP);
+    ret |= sigaddset(&block_signals, SIGTERM);
+    ret |= sigaddset(&block_signals, SIGQUIT);
+    ret |= sigaddset(&block_signals, SIGINT);
+    if (ret != 0) {
+        error(0, "gwthread-pthread: Couldn't add signal to signal set");
+	return -1;
+    }
+    ret = pthread_sigmask(SIG_BLOCK, &block_signals, old_set_storage);
+    if (ret != 0) {
+        error(errno, 
+            "gwthread-pthread: Couldn't disable signals for thread creation");
+        return -1;
+    }
+    return 0;
+}
+
+static void restore_user_signals(sigset_t *old_set)
+{
+    int ret;
+
+    ret = pthread_sigmask(SIG_SETMASK, old_set, NULL);
+    if (ret != 0) {
+        panic(errno, "gwthread-pthread: Couldn't restore signal set.");
+    }
+}
+
+static long spawn_thread(gwthread_func_t *func, const char *name, void *arg)
+{
+    int ret;
     pthread_t id;
-    struct new_thread_args *p;
-    long number;
+    struct new_thread_args *p = NULL;
+    long new_thread_id;
 
     /* We want to pass both these arguments to our wrapper function
      * new_thread, but the pthread_create interface will only let
@@ -290,37 +332,6 @@ long gwthread_create_real(gwthread_func_t *func, const char *name, void *arg)
     p->func = func;
     p->arg = arg;
     p->ti = gw_malloc(sizeof(*(p->ti)));
-
-    /* FIXME: If the spawning thread is not the main thread, then we
-     * don't need to mess with signals here and might save some system
-     * calls. */
-
-    /* We want to make sure that only the main thread handles signals,
-     * so that each signal is handled exactly once.  To do this, we
-     * make sure that each new thread has all the signals that we
-     * handle blocked.  To avoid race conditions, we block them in 
-     * the spawning thread first, then create the new thread (which
-     * inherits the settings), and then restore the old settings in
-     * the spawning thread.  This means that there is a brief period
-     * when no signals will be processed, but during that time they
-     * should be queued by the operating system.
-     */
-    ret = sigemptyset(&new_signal_set);
-    if (ret != 0) {
-	panic(ret, "gwthread-pthread: Couldn't initialize new signal set");
-    }
-    ret = sigaddset(&new_signal_set, SIGHUP);
-    ret |= sigaddset(&new_signal_set, SIGTERM);
-    ret |= sigaddset(&new_signal_set, SIGQUIT);
-    ret |= sigaddset(&new_signal_set, SIGINT);
-    if (ret != 0) {
-	panic(0, "gwthread-pthread: Couldn't add signal to signal set");
-    }
-    ret = pthread_sigmask(SIG_BLOCK, &new_signal_set, &old_signal_set);
-    if (ret != 0) {
-	panic(ret, 
-	    "gwthread-pthread: Couldn't disable signals for thread creation");
-    }
 
     /* Lock the thread table here, so that new_thread can block
      * on that lock.  That way, the new thread won't start until
@@ -346,24 +357,45 @@ long gwthread_create_real(gwthread_func_t *func, const char *name, void *arg)
         warning(ret, "Could not detach new thread.");
     }
 
-    number = fill_threadinfo(id, name, func, p->ti);
+    new_thread_id = fill_threadinfo(id, name, func, p->ti);
     unlock();
     
-    /* Restore the old signal mask.  The new thread will have
+    debug("gwlib.gwthread", 0, "Started thread %ld (%s)", new_thread_id, name);
+
+    return new_thread_id;
+}
+
+long gwthread_create_real(gwthread_func_t *func, const char *name, void *arg)
+{
+    int sigtrick = 0;
+    sigset_t old_signal_set;
+    long thread_id;
+
+    /*
+     * We want to make sure that only the main thread handles signals,
+     * so that each signal is handled exactly once.  To do this, we
+     * make sure that each new thread has all the signals that we
+     * handle blocked.  To avoid race conditions, we block them in 
+     * the spawning thread first, then create the new thread (which
+     * inherits the settings), and then restore the old settings in
+     * the spawning thread.  This means that there is a brief period
+     * when no signals will be processed, but during that time they
+     * should be queued by the operating system.
+     */
+    if (gwthread_self() == MAIN_THREAD_ID)
+	sigtrick = block_user_signals(&old_signal_set) == 0;
+
+    thread_id = spawn_thread(func, name, arg);
+
+    /*
+     * Restore the old signal mask.  The new thread will have
      * inherited the resticted one, but the main thread needs
      * the old one back.
      */
-    ret = pthread_sigmask(SIG_SETMASK, &old_signal_set, NULL);
-    /* If any signals have been queued while creating the thread,
-     * they will be handled now, be careful.
-     */
-    if (ret != 0) {
-	panic(ret, "gwthread-pthread: Couldn't restore signal set.");
-    }
-
-    debug("gwlib.gwthread", 0, "Started thread %ld (%s)", number, name);
-
-    return number;
+    if (sigtrick)
+ 	restore_user_signals(&old_signal_set);
+    
+    return thread_id;
 }
 
 void gwthread_join(long thread)

@@ -1,3 +1,14 @@
+2001-01-22  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/gwthread-pthread.c: Split gwthread_create_real() into
+	four functions to separate the signal handling code from the
+	thread code.  This way the sigmask will also be restored if
+	thread creation fails.  (Spotted by Uoti)
+
+	* gw/smsbox.c: In obey_request(), handle TRANSTYPE_SENDSMS
+	as well, to avoid the rather cryptic default error message
+	if this error occurs.  Still investigating why it occurs at all.
+
 2001-01-22  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsc_wrapper.c: fixed startup-order, to avoid segmentation
