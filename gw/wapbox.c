@@ -43,8 +43,11 @@ static Octstr *bearerbox_host;
 static long bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static int bearerbox_ssl = 0;
 static Counter *sequence_counter = NULL;
-int wsp_smart_errors = 0;
 static long timer_freq = DEFAULT_TIMER_FREQ;
+
+/* smart error messaging related globals */
+int wsp_smart_errors = 0;
+Octstr *device_home = NULL;
 
 #ifdef HAVE_WTLS_OPENSSL
 RSA* private_key = NULL;
@@ -149,9 +152,8 @@ static Cfg *init_wapbox(Cfg *cfg)
     map_url_max = -1;
     cfg_get_integer(&map_url_max, grp, octstr_imm("map-url-max"));
 	
-    if ((s = cfg_get(grp, octstr_imm("device-home"))) != NULL) {
-        wsp_http_map_url_config_device_home(octstr_get_cstr(s));
-        octstr_destroy(s);
+    if ((device_home = cfg_get(grp, octstr_imm("device-home"))) != NULL) {
+        wsp_http_map_url_config_device_home(octstr_get_cstr(device_home));
     }
     if ((s = cfg_get(grp, octstr_imm("map-url"))) != NULL) {
         wsp_http_map_url_config(octstr_get_cstr(s));
@@ -553,6 +555,7 @@ int main(int argc, char **argv)
     wml_shutdown();
     close_connection_to_bearerbox();
     wsp_http_map_destroy();
+    octstr_destroy(device_home);
     octstr_destroy(bearerbox_host);
     gwlib_shutdown();
     return 0;

@@ -97,9 +97,10 @@ struct request_data {
 
 
 /*
- * Indicator for WSP smart error messaging
+ * WSP smart error messaging
  */
 extern int wsp_smart_errors;
+extern Octstr *device_home;
 
 /*
  *
@@ -546,6 +547,15 @@ static void return_reply(int status, Octstr *content_body, List *headers,
             if ((referer_url = get_referer_url(find_session_machine_by_id(session_id)))) {
                 content.body = error_requesting_back(url, referer_url);
                 debug("wap.wsp",0,"WSP: returning smart error WML deck for referer URL");
+            } 
+            /*
+             * if there is no referer to retun to, check if we have a
+             * device-home defined and return to that, otherwise simply
+             * drop an error wml deck.
+             */
+            else if (device_home != NULL) {
+                content.body = error_requesting_back(url, device_home);
+                debug("wap.wsp",0,"WSP: returning smart error WML deck for device-home URL");
             } else {
                 content.body = error_requesting(url);
                 debug("wap.wsp",0,"WSP: returning smart error WML deck");
