@@ -1,3 +1,9 @@
+2000-06-12  Richard Braakman  <dark@wapit.com>
+
+	* Making development release 0.9.2.
+
+	* Commented-out some excessive logging.
+
 2000-06-12 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_state-decl.h: TR-Abort.ind when timer counter has expired

@@ -249,9 +249,9 @@ static void fetch_thread(void *arg) {
 		strcat (charsetname, character_sets[i].nro);
 		
 		if (http2_charset_accepted(actual_headers, charsetname)) {
-		    info(0, "WSP: charset %s already accepted.", charsetname);
+	/*	    info(0, "WSP: charset %s already accepted.", charsetname); */
 		} else {
-		    info(0, "WSP: charset %s added to accepted list.", charsetname);
+	/*	    info(0, "WSP: charset %s added to accepted list.", charsetname); */
 		    http2_header_add(actual_headers, "Accept-Charset", charsetname);
 		}
 

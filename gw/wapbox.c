@@ -137,8 +137,10 @@ static Msg *msg_receive(int s) {
 	if (msg == NULL)
 		return NULL;
 	octstr_destroy(os);
+#if 0
 	debug("wap", 0, "Received message from bearer box:");
 	msg_dump(msg, 0);
+#endif
 	return msg;
 }
 
@@ -152,10 +154,12 @@ static void msg_send(int s, Msg *msg) {
         int ret;
 #endif
 
+#if 0
 	if (msg->type != heartbeat) {
 		debug("wap", 0, "Sending message to bearer box:");
 		msg_dump(msg, 0);
 	}
+#endif
 	os = msg_pack(msg);
 	if (os == NULL)
 	   panic(0, "msg_pack failed");

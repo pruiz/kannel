@@ -1,4 +1,4 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.9.1
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.9.2
 
 This is a DEVELOPMENT version. It should be usable for experimentation
 and testing but is not intended for production use.  Please do try it
@@ -47,7 +47,7 @@ Change summary from version 0.8:
 * configure option --enable-mutex-stats added, for logging mutex sleeps.
 
 * New gwlib wrapper for sockets, to do high speed non-blocking I/O.
-  Not in use yet.
+  Not in use yet except by drive_wapbox.
 
 * New gwlib wrapper for threads, both to encapsulate them for portability
   and to provide a "wakeup" feature whereby threads that are blocked or
@@ -69,7 +69,6 @@ Change summary from version 0.8:
 	* pthread errno handling.
 	* log.c: pthread_self cast to long rather than int for printing.
 	* wtp.c: memory leak fixed in tell_about_error.
-	* wsp_http.c no longer crashes wapbox after every request.
 	* WTP layer correctly sets retransmission flag.
 	* CIMD2: handle text messages longer than 140 characters correctly.
 	* fakewap: fixed tid handling.
@@ -79,10 +78,6 @@ Change summary from version 0.8:
 * Known problems:
 
 	* Still "cannot handle TR-Invoke.ind" in the logfiles.
-	* drive_wapbox with more than 1 client crashes the wapbox
-	  for some people.
-	* "checking" memory allocator is slow; configure --with-malloc=native
-	  if you want Kannel to handle more than three requests per second.
-	* bearerbox/wapbox shutdown sometimes gets stuck and requires kill -9.
+	* wapbox shutdown sometimes gets stuck and requires kill -9.
 
 See ChangeLog for detailed information.

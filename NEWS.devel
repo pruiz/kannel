@@ -1,0 +1,42 @@
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.9.2
+
+This is a DEVELOPMENT version. It should be usable for experimentation
+and testing but is not intended for production use.  Please do try it
+out and report problems to devel@kannel.org (the development mailing list)
+or bugs@kannel.org (the bug tracking system).
+
+Change summary from version 0.9.1:
+
+* WSP Connectionless mode implemented.
+
+* WSP and WTP machines are destroyed as soon as they go back to their
+  initial state.  This is now possible because there are no
+  pointers to them floating around in other parts of the code.
+
+* WSP method state machine is explicitly separated from the session
+  state machine.  This brings them much closer to the spec, and in the
+  future will allow the client to make multiple requests simultaneously.
+
+* WML compiler supports more character sets.
+
+* "checking" memory allocator replaced with a new version, so that it's
+  no longer a speed bottleneck.
+
+* Improvements to drive_wapbox (one of the testing tools).
+
+* WAPEvent structure is now a union, uses far less memory.
+
+* Bug fixes:
+
+	* WTP was broken in 0.9.1, fixed again.
+	* fakewap works better on Solaris.
+	* Several memory leaks fixed.
+	* Wapbox longer panics when re-using headers from a previous
+	  HTTP request.
+
+* Known problems:
+
+	* Still "cannot handle TR-Invoke.ind" in the logfiles.
+	* wapbox shutdown sometimes gets stuck and requires kill -9.
+
+See ChangeLog for detailed information.
