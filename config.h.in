@@ -116,4 +116,10 @@
 /* Defined if we're using OpenSSL WTLS */
 #undef HAVE_WTLS_OPENSSL
 
+/* Define if you have and want to use the MySQL client library (-lmysqlclient) */
+#undef HAVE_MYSQL
+
+/* Define if you want to use the MySQL support for DLR (delivery reports) */
+#undef MYSQL_DLR
+
 #endif
