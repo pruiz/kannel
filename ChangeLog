@@ -23,7 +23,7 @@ Fri Mar 10 14:52:19 2000  Lars Wirzenius  <liw@wapit.com>
 	gwlib/thread.c, test/test_wml.c: Fixed int/pointer size and
 	int/size_t size differences in various places.
 
-2000-03-10    <dark@wapit.com>
+2000-03-10 Richard Braakman <dark@wapit.com>
 
 	* utils/run_kannel_box.c: New utility, a wrapper that runs as
 	a daemon and spawns a given box.  If the box dies, the wrapper
