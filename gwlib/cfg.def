@@ -51,6 +51,7 @@ SINGLE_GROUP(core,
     OCTSTR(ssl-server-key-file)
     OCTSTR(ssl-trusted-ca-file)
     OCTSTR(dlr-storage)
+    OCTSTR(maximum-queue-length)
 )
 
 
@@ -86,14 +87,15 @@ SINGLE_GROUP(wtls,
 SINGLE_GROUP(ppg,
     OCTSTR(ppg-url)
     OCTSTR(ppg-port)
+    OCTSTR(ppg-ssl-port)
     OCTSTR(trusted-pi)
     OCTSTR(concurrent-pushes)
-    OCTSTR(ppg-port-ssl)
     OCTSTR(users)
     OCTSTR(ppg-allow-ip)
     OCTSTR(ppg-deny-ip)
     OCTSTR(ssl-server-cert-file)
     OCTSTR(ssl-server-key-file)
+    OCTSTR(global-sender)
 )
 
 MULTI_GROUP(wap-push-user,
@@ -112,6 +114,7 @@ SINGLE_GROUP(test-ppg,
     OCTSTR(retries)
     OCTSTR(pi-ssl)
     OCTSTR(ssl-client-certkey-file)
+    OCTSTR(ssl-trusted-ca-file)
 )
 
 SINGLE_GROUP(configuration,
@@ -144,6 +147,7 @@ SINGLE_GROUP(smsbox,
     OCTSTR(white-list)
     OCTSTR(black-list)
     OCTSTR(mo-recode)
+    OCTSTR(xmlrpc-url)
 )
 
 
@@ -195,6 +199,8 @@ MULTI_GROUP(smsc,
     OCTSTR(idle-timeout)
     OCTSTR(no-sep)
     OCTSTR(appname)
+    OCTSTR(ussdc)
+    OCTSTR(session-length)
     OCTSTR(retry)
     OCTSTR(my-number)
     OCTSTR(sms-center)
