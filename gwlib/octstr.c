@@ -572,7 +572,7 @@ void octstr_dump(Octstr *ostr) {
 	char *p, *d, buf[1024], charbuf[256];
 	size_t pos;
 	const int octets_per_line = 8;
-	int c, i, this_line_begins_at;
+	int c, this_line_begins_at;
 
 	if (ostr == NULL)
 		return;
@@ -652,6 +652,8 @@ int octstr_recv(int fd, Octstr **ostr) {
 	Octstr *newostr = NULL;
 	int ret = 0, readlength = 0;
 
+	length = 0;
+	
 	/* How many octets in incomint Octstr. */
 	readlength = 0;
 	while(readlength < sizeof(uint32_t)) {
@@ -666,8 +668,15 @@ int octstr_recv(int fd, Octstr **ostr) {
 			readlength += ret;
 		}
 	}
-	length = ntohl(length);
-
+	if ((char)length > '\0') {
+	    warning(0, "Possible garbage received by octsr_recv, length %ld "
+		    "data %02x %02x %02x %02x ...", ntohl(length),
+		    (unsigned char)length, *((unsigned char *)&length+1),
+		    *((unsigned char *)&length+2),*((unsigned char *)&length+3));
+	    return -1;
+	} else {
+	    length = ntohl(length);
+	}
 	data = gw_malloc(length);
 
 	/* Read the real data. */

@@ -1,3 +1,12 @@
+2000-02-23    <rpr@rpr.wapit.com>
+
+	* gwlib/octstr.c: modified octstr_recv to fail if receives
+	"garbage" (first length byte something else than 0); this is a
+	hack to avoid too large allocations caused by garbage on the
+	line. Side-effect is that now the octstr length is limited to
+	16777216 bytes when transfered via TCP/IP, but I think that we can
+	accept that...
+
 2000-02-22    <rpr@rpr.wapit.com>
 
 	* gwlib/octstr.c: fixed octstr_dump to show characters in
