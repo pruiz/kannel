@@ -115,7 +115,7 @@ enum { P_INT, P_STRING, P_ADDRESS, P_TIME, P_HEX, P_SMS };
 /* Information about the parameters defined by the CIMD 2 spec.
  * Used for warning about invalid incoming messages, and for validating
  * outgoing messages. */
-const static struct
+static const struct
 {
     unsigned char *name;
     int number;
@@ -246,7 +246,7 @@ static Octstr *operation_name(int operation);
 static const int operation_can_send(int operation);
 static const int operation_can_receive(int operation);
 
-const static struct
+static const struct
 {
     unsigned char *name;
     int code;
@@ -903,7 +903,7 @@ static int packet_display_error(struct packet *packet)
 /* Table of special combinations, for convert_gsm_to_latin1. */
 /* Each cimd1, cimd2 pair is mapped to a character in the GSM default
  * character set. */
-const static struct
+static const struct
 {
     unsigned char cimd1, cimd2;
     unsigned char gsm;

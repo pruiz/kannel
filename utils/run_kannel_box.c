@@ -29,7 +29,7 @@ static char *extra_arguments[] = {
 
 static void print_usage(FILE *stream)
 {
-	fprintf(stderr,
+	fprintf(stream,
 		"Usage: %s [--pidfile PIDFILE] [--min-delay SECONDS] BOXPATH [boxoptions...]\n",
 		progname);
 }

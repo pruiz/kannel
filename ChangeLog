@@ -1,3 +1,13 @@
+2001-03-26  Richard Braakman  <dark@xs4all.nl>
+
+	* gw/smsbox.c: Converted some char * to Octstr *.
+
+	* gw/smsc_cimd2.c: Changed "const static" to "static const" in
+	variable declarations (ansification).
+
+	* utils/run_kannel_box.c: In print_usage(), actually use the
+	stream argument instead of always printing to stderr.
+
 2001-03-26  Uoti Urpala  <uau@wapit.com>
 
 	* gw/msg.c: Fixed bug when sizeof(long) != 4, removed unneeded
@@ -6,7 +16,7 @@
 2001-03-23  Richard Braakman  <dark@xs4all.nl>
 
 	* gw/smsbox.c: Fix call to alog (urltrans_username returns
-	Octstr *, not char *).  Spotted by Gildas PERROT.
+	Octstr *, not char *).  Spotted by Paul Keogh and Gildas PERROT.
 
 2001-03-23  Kalle Marjola  <rpr@wapit.com>
 

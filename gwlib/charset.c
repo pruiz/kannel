@@ -14,7 +14,7 @@
  * The escape character, at position 27, is mapped to a space,
  * though normally the function that indexes into this table will
  * treat it specially. */
-const static unsigned char gsm_to_latin1[128] = {
+static const unsigned char gsm_to_latin1[128] = {
 	 '@', 0xa3,  '$', 0xa5, 0xe8, 0xe9, 0xf9, 0xec,   /* 0 - 7 */
 	0xf2, 0xc7,   10, 0xd8, 0xf8,   13, 0xc5, 0xe5,   /* 8 - 15 */
 	 '?',  '_',  '?',  '?',  '?',  '?',  '?',  '?',   /* 16 - 23 */
@@ -38,7 +38,7 @@ const static unsigned char gsm_to_latin1[128] = {
  * not in the table, as well as characters we can't represent, will map
  * to themselves.  We cannot represent the euro symbol, which is an escaped
  * 'e', so we left it out of this table. */
-const static struct {
+static const struct {
 	int gsmesc;
 	int latin1;
 } gsm_escapes[] = {
@@ -60,7 +60,7 @@ const static struct {
 /* Map ISO-Latin-1 characters to the GSM default alphabet.  Negative
  * encoded as ESC (code 27) followed by the absolute value of the
  * number. */
-const static int latin1_to_gsm[256] = {
+static const int latin1_to_gsm[256] = {
 	NRP, NRP, NRP, NRP, NRP, NRP, NRP, NRP,       /* 0 - 7 */
 	/* TAB approximates to space */
 	/* LF and CR map to self */

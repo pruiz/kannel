@@ -803,7 +803,7 @@ static int pam_authorise_user(List *list)
  * Check for matching username and password for requests.
  * Return an URLTranslation if successful NULL otherwise.
  */
-static URLTranslation *default_authorise_user(List *list, char *client_ip) 
+static URLTranslation *default_authorise_user(List *list, Octstr *client_ip) 
 {
     URLTranslation *t = NULL;
     Octstr *val, *user = NULL;
@@ -824,22 +824,20 @@ static URLTranslation *default_authorise_user(List *list, char *client_ip)
         t = NULL;
     }
     if (t) {
-        Octstr *ip = octstr_create(client_ip);
 	Octstr *allow_ip = urltrans_allow_ip(t);
 	Octstr *deny_ip = urltrans_deny_ip(t);
 	
-        if (is_allowed_ip(allow_ip, deny_ip, ip) == 0) {
+        if (is_allowed_ip(allow_ip, deny_ip, client_ip) == 0) {
 	    warning(0, "Non-allowed connect tried by <%s> from <%s>, ignored",
 		    user ? octstr_get_cstr(user) : "default-user" ,
-		    client_ip);
+		    octstr_get_cstr(client_ip));
 	    t = NULL;
         }
-        octstr_destroy(ip);
     }
     return t;
 }
 
-static URLTranslation *authorise_user(List *list, char *client_ip) 
+static URLTranslation *authorise_user(List *list, Octstr *client_ip) 
 {
 #ifdef HAVE_SECURITY_PAM_APPL_H
     URLTranslation *t;
@@ -851,9 +849,9 @@ static URLTranslation *authorise_user(List *list, char *client_ip)
 	else 
 	    return NULL;
     } else
-	return default_authorise_user(list,client_ip);
+	return default_authorise_user(list, client_ip);
 #else
-    return default_authorise_user(list,client_ip);
+    return default_authorise_user(list, client_ip);
 #endif
 }
 
@@ -862,7 +860,7 @@ static URLTranslation *authorise_user(List *list, char *client_ip)
  * Create and send an SMS message from an HTTP request.
  * Args: list contains the CGI parameters
  */
-static char *smsbox_req_sendsms(List *list, char *client_ip)
+static Octstr *smsbox_req_sendsms(List *list, Octstr *client_ip)
 {
     Msg *msg = NULL;
     URLTranslation *t = NULL;
@@ -873,7 +871,7 @@ static char *smsbox_req_sendsms(List *list, char *client_ip)
     /* check the username and password */
     t = authorise_user(list, client_ip);
     if (t == NULL) {
-	return "Authorization failed for sendsms";
+	return octstr_create("Authorization failed for sendsms");
     }
     
     udh = http_cgi_variable(list, "udh");
@@ -883,7 +881,7 @@ static char *smsbox_req_sendsms(List *list, char *client_ip)
     if ((to = http_cgi_variable(list, "to")) == NULL ||
 	(text == NULL && udh == NULL)) {
 	error(0, "/cgi-bin/sendsms got wrong args");
-	return "Wrong sendsms args, rejected";
+	return octstr_create("Wrong sendsms args, rejected");
     }
     
     /*
@@ -892,13 +890,13 @@ static char *smsbox_req_sendsms(List *list, char *client_ip)
      */
     if (udh != NULL) {
 	if (octstr_len(udh) != (octstr_get_char(udh, 0) + 1))
-	    return "UDH field misformed, rejected";
+	    return octstr_create("UDH field misformed, rejected");
     }
     
     if (strspn(octstr_get_cstr(to), sendsms_number_chars) < octstr_len(to)) {
 	info(0,"Illegal characters in 'to' string ('%s') vs '%s'",
 	     octstr_get_cstr(to), sendsms_number_chars);
-	return "Garbage 'to' field, rejected.";
+	return octstr_create("Garbage 'to' field, rejected.");
     }
     
     if (urltrans_faked_sender(t) != NULL) {
@@ -909,13 +907,13 @@ static char *smsbox_req_sendsms(List *list, char *client_ip)
     } else if (global_sender != NULL) {
 	from = octstr_duplicate(global_sender);
     } else {
-	return "Sender missing and no global set, rejected";
+	return octstr_create("Sender missing and no global set, rejected");
     }
     
     info(0, "/cgi-bin/sendsms sender:<%s:%s> (%s) to:<%s> msg:<%s>",
 	 octstr_get_cstr(urltrans_username(t)),
 	 octstr_get_cstr(from),
-	 client_ip,
+	 octstr_get_cstr(client_ip),
 	 octstr_get_cstr(to),
 	 udh == NULL ? octstr_get_cstr(text) : "<< UDH >>");
     
@@ -965,17 +963,17 @@ static char *smsbox_req_sendsms(List *list, char *client_ip)
     
     alog("send-SMS request added - sender:%s:%s %s target:%s request: '%s'",
 	 octstr_get_cstr(urltrans_username(t)),
-         octstr_get_cstr(from), client_ip,
+         octstr_get_cstr(from), octstr_get_cstr(client_ip),
 	 octstr_get_cstr(to),
 	 udh == NULL ? octstr_get_cstr(text) : "<< UDH >>");
 
     octstr_destroy(from);
-    return "Sent.";
+    return octstr_create("Sent.");
     
 error:
     error(0, "sendsms_request: failed");
     octstr_destroy(from);
-    return "Sending failed.";
+    return octstr_create("Sending failed.");
 }
 
 
@@ -1002,7 +1000,7 @@ error:
  * 
  * This will be changed later to use an XML compiler.
  */
-static char *smsbox_req_sendota(List *list, char *client_ip)
+static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip)
 {
     Octstr *url, *desc, *ipaddr, *phonenum, *username, *passwd, *id, *from;
     char *speed;
@@ -1032,12 +1030,12 @@ static char *smsbox_req_sendota(List *list, char *client_ip)
     /* check the username and password */
     t = authorise_user(list, client_ip);
     if (t == NULL)
-	return "Authorization failed for sendota";
+	return octstr_create("Authorization failed for sendota");
     
     phonenumber = http_cgi_variable(list, "phonenumber");
     if (phonenumber == NULL) {
 	error(0, "/cgi-bin/sendota needs a valid phone number.");
-	return "Wrong sendota args.";
+	return octstr_create("Wrong sendota args.");
     }
 
     if (urltrans_faked_sender(t) != NULL) {
@@ -1048,7 +1046,7 @@ static char *smsbox_req_sendota(List *list, char *client_ip)
     } else if (global_sender != NULL) {
 	from = octstr_duplicate(global_sender);
     } else {
-	return "Sender missing and no global set, rejected";
+	return octstr_create("Sender missing and no global set, rejected");
     }
 
     /* check if a otaconfig id has been given and decide which OTA
@@ -1070,7 +1068,7 @@ static char *smsbox_req_sendota(List *list, char *client_ip)
     else
 	error(0, "/cgi-bin/sendota can't find any otaconfig group.");
     octstr_destroy(from);
-    return "Missing otaconfig group.";
+    return octstr_create("Missing otaconfig group.");
 
 found:
     octstr_destroy(p);
@@ -1241,10 +1239,10 @@ found:
 
     if (ret == -1) {
 	error(0, "sendota_request: failed");
-	return "Sending failed.";
+	return octstr_create("Sending failed.");
     }
 
-    return "Sent.";
+    return octstr_create("Sent.");
 }
 
 
@@ -1267,11 +1265,9 @@ static void sendsms_thread(void *arg)
 	    octstr_get_cstr(url), octstr_get_cstr(ip));
 
 	if (octstr_str_compare(url, "/cgi-bin/sendsms") == 0)
-	    answer = octstr_create(smsbox_req_sendsms(args, 
-	    	    	    	    	    	      octstr_get_cstr(ip)));
+	    answer = smsbox_req_sendsms(args, ip);
 	else if (octstr_str_compare(url, "/cgi-bin/sendota") == 0)
-	    answer = octstr_create(smsbox_req_sendota(args, 
-	    	    	    	    	    	      octstr_get_cstr(ip)));
+	    answer = smsbox_req_sendota(args, ip);
 	else
 	    answer = octstr_create("Unknown request.\n");
         debug("sms.http", 0, "Answer: <%s>", octstr_get_cstr(answer));
