@@ -1833,6 +1833,13 @@ bearerbox-host = localhost
          The frequency of how often timers are checked out. Default is 1 
      </entry></row>
 
+    <row><entry><literal>http-interface-name</literal></entry>
+     <entry>IP address</entry>
+     <entry valign="bottom">
+         If this is set then Kannel do outgoing http requests
+         using this interface.
+     </entry></row>
+
     <row><entry><literal>map-url</literal></entry>
      <entry>URL-pair</entry>
      <entry valign="bottom">

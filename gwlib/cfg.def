@@ -142,6 +142,7 @@ SINGLE_GROUP(wapbox,
     OCTSTR(access-log)
     OCTSTR(access-log-time)
     OCTSTR(access-log-clean)
+    OCTSTR(http-interface-name)
     OCTSTR(concatenation)
     OCTSTR(max-messages)
 )

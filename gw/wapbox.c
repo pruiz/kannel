@@ -495,6 +495,7 @@ static void config_reload(int reload) {
     long new_value;
     int new_bool;
     Octstr *http_proxy_host;
+    Octstr *http_interface_name;
     long http_proxy_port;
     List *http_proxy_exceptions;
     Octstr *http_proxy_username;
@@ -548,6 +549,13 @@ static void config_reload(int reload) {
         reload_int(reload, octstr_imm("log level"), &logfilelevel, &new_value);
         logfilelevel = new_value;
         log_set_log_level(new_value);
+    }
+
+    /* Configure interface name for http requests */
+    http_interface_name = cfg_get(grp, octstr_imm("http-interface-name"));
+    if (http_interface_name != NULL) {
+        http_set_interface(http_interface_name);
+        octstr_destroy(http_interface_name);
     }
 
     /* 

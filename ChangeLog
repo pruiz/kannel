@@ -1,3 +1,10 @@
+2004-01-08  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/http.[ch], gwlib/cfg.def, gw/wapbox.c, doc/userguide/userguide.xml:
+      Applied patch from Vjacheslav Chekushin <slava@lmt.lv> that adds new config option
+      'http-interface-name' to wapbox configuration and allow selecting of interface for
+      outgoing HTTP requests. Thanks Slava!
+      See Msg-Id: <3FE1AE9C.3020008@lmt.lv>
+
 2004-01-06  Alexander Malysh  <a.malysh@centrium.de>
     * configure.in, configure: fixed CFLAGS for pthread_spinlock support.
 

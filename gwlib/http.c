@@ -112,6 +112,12 @@ static enum {
 
 
 /*
+ * Which interface to use for outgoing HTTP requests.
+ */
+static Octstr *http_interface = NULL;
+
+
+/*
  * Read some headers, i.e., until the first empty line (read and discard
  * the empty line as well). Return -1 for error, 0 for all headers read,
  * 1 for more headers to follow.
@@ -1415,7 +1421,7 @@ static void parse2trans(HTTPURLParse *p, HTTPServer *t)
 static Connection *get_connection(HTTPServer *trans) 
 {
     Connection *conn;
-    Octstr *host, *our_host = NULL;
+    Octstr *host;
     HTTPURLParse *p;
     int port;
 
@@ -1441,15 +1447,15 @@ static Connection *get_connection(HTTPServer *trans)
 
     if (trans->retrying) {
 #ifdef HAVE_LIBSSL
-    if (trans->ssl) conn = conn_open_ssl(host, port, trans->certkeyfile, our_host);
+    if (trans->ssl) conn = conn_open_ssl(host, port, trans->certkeyfile, http_interface);
         else
 #endif /* HAVE_LIBSSL */
-      conn = conn_open_tcp_nb(host, port, our_host);
+      conn = conn_open_tcp_nb(host, port, http_interface);
             debug("gwlib.http", 0, "HTTP: Opening NEW connection to `%s:%d' (fd=%d).",
                   octstr_get_cstr(host), port, conn_get_id(conn));
     } else
     conn = conn_pool_get(host, port, trans->ssl, trans->certkeyfile,
-                         our_host);
+                         http_interface);
     if (conn == NULL)
         goto error;
 
@@ -1599,6 +1605,11 @@ static void start_client_threads(void)
     }
 }
 
+void http_set_interface(const Octstr *our_host)
+{
+  http_interface = octstr_duplicate(our_host);
+}
+
 
 void http_start_request(HTTPCaller *caller, int method, Octstr *url, List *headers,
     	    	    	Octstr *body, int follow, void *id, Octstr *certkeyfile)
@@ -1691,6 +1702,8 @@ static void client_shutdown(void)
     list_destroy(pending_requests, server_destroy);
     mutex_destroy(client_thread_lock);
     fdset_destroy(client_fdset);
+    octstr_destroy(http_interface);
+    http_interface = NULL;
 }
 
 

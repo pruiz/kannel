@@ -272,6 +272,10 @@ void http_close_proxy(void);
  * HTTP client interface.
  */
 
+/*
+ * Define interface from which all http requestes will be served
+ */
+void http_set_interface(const Octstr *our_host);
 
 /*
  * Functions for doing a GET request. The difference is that _real follows
