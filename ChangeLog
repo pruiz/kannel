@@ -1,3 +1,7 @@
+2001-10-08 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* gw/smsc_emi2.c: Support ACK without timestamp. Note that if smsc
+	doesn't send timestamp in ACK, delivery reports wouldn't work.
+
 2001-10-03 Aarno Syvänen <aarno@wiral.com>
 
 	* doc/userguide/userguide.xml: Added documentation for push proxy

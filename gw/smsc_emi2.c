@@ -693,30 +693,32 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 			    Msg *m;
 			  
 			    ts = octstr_duplicate(emimsg->fields[2]);
-			    i = octstr_search_char(ts,':',0);
-			    if (i>0)
-			    {
-			    	octstr_delete(ts,0,i+1);
-			        adc = octstr_duplicate(emimsg->fields[2]);
-			        octstr_truncate(adc,i);
+			    if (octstr_len(ts)) {
+				i = octstr_search_char(ts,':',0);
+				if (i>0)
+				{
+				    octstr_delete(ts,0,i+1);
+				    adc = octstr_duplicate(emimsg->fields[2]);
+				    octstr_truncate(adc,i);
 			        
-			        m = privdata->sendmsg[emimsg->trn];
-			        if(m == NULL)
- 				        info(0,"uhhh m is NULL, very bad");
-			        else if(m->sms.dlr_mask)
-			        {
-			    	    dlr_add(octstr_get_cstr(conn->id), 
-			            	octstr_get_cstr(ts),
-			            	octstr_get_cstr(adc),
-			             	octstr_get_cstr(m->sms.dlr_keyword),
-			             	octstr_get_cstr(m->sms.dlr_id),
-			             	m->sms.dlr_mask);
-			        }
-				octstr_destroy(ts);
-				octstr_destroy(adc);
+				    m = privdata->sendmsg[emimsg->trn];
+				    if(m == NULL)
+					info(0,"uhhh m is NULL, very bad");
+				    else if(m->sms.dlr_mask)
+				    {
+					dlr_add(octstr_get_cstr(conn->id), 
+					    octstr_get_cstr(ts),
+					    octstr_get_cstr(adc),
+					    octstr_get_cstr(m->sms.dlr_keyword),
+					    octstr_get_cstr(m->sms.dlr_id),
+					    m->sms.dlr_mask);
+				    }
+				    octstr_destroy(ts);
+				    octstr_destroy(adc);
+				}
+				else
+				    octstr_destroy(ts);
 			    }
-			    else
-			    	octstr_destroy(ts);
 			    bb_smscconn_sent(conn,
 					     privdata->sendmsg[emimsg->trn]);
 			}
