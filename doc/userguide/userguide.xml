@@ -357,8 +357,8 @@
 			<itemizedlist>
 			<listitem><para>Supports a variety of SMSC protocols, namely:</para>
 				<itemizedlist>
-				<listitem><para>CMG's UCP/EMI 4.0 and 3.5</para>
-				<listitem><para>...</para>
+				<listitem><para>CMG's UCP/EMI 4.0 and 3.5</para></listitem>
+				<listitem><para>...</para></listitem>
 				</itemizedlist>
 			</listitem>
 			<listitem><para>Full support for MO and MT messages</para></listitem>

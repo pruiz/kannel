@@ -1,3 +1,7 @@
+2003-07-20  Alexander Malysh  <a.malysh@centrium.de>
+    * configure, configure.in: added search for stylesheets version 1.77.
+      userguide.xml: fixed unclosed tags.
+
 2003-07-20  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * userguide.xml: removed chapter "Setting up wap&sms gateway" because it
       is redundant (and didn't say almost nothing at all), added note in 
