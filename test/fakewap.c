@@ -46,6 +46,21 @@
  *
  * The test terminates when all packets have been sent.
  *
+ * Tid verification uses following protocol (at WTP level only):
+ *
+ *    A)   Fakewap -> Gateway
+ *
+ *         Either WSP Connect PDU with tid_new flag set on or same PDU with a 
+ *         wrapped up tid (only WTP header affected).
+ *
+ *    B)   Gateway -> Fakewap
+ *
+ *         Ack PDU, tid verification flag set on.
+ *
+ *    C)   Fakewap -> Gateway
+ *
+ *         Ack PDU, tid verification flag set on (this means a positive 
+ *         answer). 
  *
  * Antti Saarenheimo for WapIT Ltd.
  */
