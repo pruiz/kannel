@@ -2111,6 +2111,10 @@ static void start_request_thread(void *arg)
     
     while (run_status == running && 
     	   (request = list_consume(pending_requests)) != NULL) {
+#if 0
 	gwthread_create(kludge_do_one_request, request);
+#else
+    	kludge_do_one_request(request);
+#endif
     }
 }

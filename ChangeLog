@@ -1,3 +1,8 @@
+2000-10-13  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/http.c: Disable the kludge_do_one_request thread, since
+	it isn't killed (or joined) properly.
+
 2000-10-12  Kalle Marjola  <rpr@wapit.com>
 
 	* doc/userguide/userguide.xml: added new example: multi-operator
