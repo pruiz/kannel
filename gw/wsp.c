@@ -55,6 +55,7 @@ typedef enum {
 
 
 static List *session_machines = NULL;
+static Counter *session_id_counter = NULL;
 
 
 static void append_to_event_queue(WSPMachine *machine, WSPEvent *event);
@@ -89,6 +90,7 @@ static int same_client(void *sm1, void *sm2);
 
 void wsp_init(void) {
 	session_machines = list_create();
+	session_id_counter = counter_create();
 }
 
 
@@ -646,8 +648,7 @@ static char *wsp_state_to_string(WSPState state) {
 
 /* XXX this function is not thread safe. --liw */
 static long wsp_next_session_id(void) {
-	static long next_id = 1;
-	return next_id++;
+	return counter_get(session_id_counter);
 }
 
 

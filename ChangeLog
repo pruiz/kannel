@@ -1,3 +1,7 @@
+Thu Mar 30 03:10:21 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c: Made use of Counters.
+
 Thu Mar 30 03:05:53 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/counter.[ch]: Wrote.
