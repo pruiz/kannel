@@ -1,3 +1,8 @@
+Tue Apr  4 17:55:10 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* utils/kannel-log-summary: Wrote. Requires AWK. Improvements
+	welcome.
+
 Tue Apr  4 14:57:55 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/urltrans.c: Changed to use List.
