@@ -7,7 +7,7 @@
  * there is no internal db for storing delivered and undelivered message
  * 
  * IA5 is most common line coding scheme. 
- * smsc_2k support only IA5 encoding ,hex and  binary line encoding is not
+ * smsc_sema support only IA5 encoding, hex and binary line encoding is not
  * supported.
  * 
  * smsc_sema support IA5 and GSM Data Code Scheme for delivered invoke message
@@ -62,7 +62,7 @@ SMSCenter * sema_open(char* smscnua, char* homenua,
 		      char* serialdevice, int waitreport)
 {
 	SMSCenter *smsc;
-	int fd = -1, nret = -1;
+	int nret = -1;
 
 	smsc = smscenter_construct();
 	if(smsc == NULL)
@@ -158,7 +158,7 @@ int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 {
         struct sema_msg *lmsg = NULL;
 	struct sm_submit_invoke *submit_sm = NULL;
-	int retresult, nret;
+	int nret;
 	char x28sender[2] = "A3";
         
 	/* Validate msg */
@@ -318,7 +318,6 @@ int sema_pending_smsmessage(SMSCenter *smsc)
 {
 
     char data[1024];
-    struct sema_msg *pmsg = NULL;
     int ret = 0;
     char clrbuff[]="CLR\0";
     char errbuff[]="ERR\0";
@@ -563,7 +562,7 @@ static int X28_open_send_link(int padfd, char *nua) {
     char readbuff[1024]; 
     char writebuff[129];
     char smscbuff[129];
-    int readall = 0, readonce = 0, writeonce = 0, writeall = 0, ret, i = 0;
+    int readall = 0, readonce = 0, writeonce = 0, writeall = 0, i = 0;
     char X28prompt[]="*\r\n\0";
     time_t timestart;
   
@@ -604,8 +603,8 @@ static int X28_open_send_link(int padfd, char *nua) {
     memset(writebuff,0,sizeof(writebuff));
     memset(readbuff,0,sizeof(readbuff));  
     writeall = readall = 0;
-    sprintf(writebuff, "%s\r\0", nua);
-    sprintf(smscbuff, "%s COM\0",nua);
+    sprintf(writebuff, "%s\r", nua);
+    sprintf(smscbuff, "%s COM",nua);
   
     while(writeall < strlen(writebuff)){
 	writeonce = -1;
@@ -755,9 +754,8 @@ error:
     return -1;
 }
 
-static int X28_msg_pop(char *from, char *to) {
-       
-    char* Lbuff = NULL;
+static int X28_msg_pop(char *from, char *to)
+{
     char* Rbuff =NULL;
     char* RRbuff = NULL;
     char mobuff[] ="COM\r\n\0";
@@ -1086,10 +1084,10 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 	}
     }
 
-mo_timeout:
-    info(0,"sema_mt_session: time out without receive all expected return");
-    moret = SESSION_MT_RECEIVE_TIMEOUT;
-    goto mo_return;
+/* mo_timeout: */
+      info(0,"sema_mt_session: time out without receive all expected return");
+      moret = SESSION_MT_RECEIVE_TIMEOUT;
+      goto mo_return;
 mo_success:
     moret = SESSION_MT_RECEIVE_SUCCESS;
     goto mo_return;
@@ -1189,8 +1187,8 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
     struct sm_statusreport_invoke* receive_report = NULL;
     struct sm_submit_result* submit_result = NULL;
 	
-    unsigned char tmp[1024],tmpgsm[1024],tmpoptref[4];
-    int len, multibyteInt, octetlen, iret, iusedbyte;
+    unsigned char tmp[1024],tmpgsm[1024];
+    int octetlen, iret, iusedbyte;
     int imsgtopseg = 0, imsgfollownum = 0, imsgencodetype = 0;
     unsigned char cmsgtype, cmsgcontinuebyte;
 
@@ -1470,7 +1468,6 @@ static int sema_encode_msg(sema_msg* pmsg, char* str) {
     struct sm_submit_invoke *submit_sm = NULL;
     Octstr *IA5msg = NULL;
     unsigned char oc1byte[1];
-    unsigned char cnchar;
 
     IA5msg = octstr_create_empty();	
     switch(pmsg->type)
@@ -1633,7 +1630,6 @@ static int line_scan_IA5_hex(unsigned char* from,
 
 static unsigned char internal_char_hex_to_gsm(unsigned char from)
 {
-    int ret = 0;
     switch (from){
     case 0x00: return '@';	
     case 0x01: return '£';
@@ -1811,31 +1807,31 @@ static int internal_char_IA5_to_hex(unsigned char *from, unsigned char * to){
 }
 		
 
-static void increment_counter(void){
-	
+static void increment_counter(void)
+{
     if(sema_counter[3] == 0x39)
-	sema_counter[3] == 0x30;
+	sema_counter[3] = 0x30;
     else
     {
 	sema_counter[3] += 0x01;
 	return;
     }
     if(sema_counter[2] == 0x39)
-	sema_counter[2] == 0x30;
+	sema_counter[2] = 0x30;
     else
     {
 	sema_counter[2] += 0x01;
 	return;
     }
     if(sema_counter[1] == 0x39)
-	sema_counter[1] == 0x30;
+	sema_counter[1] = 0x30;
     else
     {
 	sema_counter[1] += 0x01;
 	return;
     }	
     if(sema_counter[0] == 0x39)
-	sema_counter[0] == 0x30;
+	sema_counter[0] = 0x30;
     else
 	sema_counter[0] += 0x01;
     return;
