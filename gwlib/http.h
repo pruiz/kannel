@@ -125,6 +125,11 @@ void http_init(void);
 void http_shutdown(void);
 
 
+/***********************************************************************
+ * HTTP proxy interface.
+ */
+
+
 /*
  * Functions for controlling proxy use. http_use_proxy sets the proxy to
  * use; if another proxy was already in use, it is closed and forgotten
@@ -135,6 +140,11 @@ void http_shutdown(void);
  */
 void http_use_proxy(Octstr *hostname, int port, List *exceptions);
 void http_close_proxy(void);
+
+
+/***********************************************************************
+ * HTTP client interface.
+ */
 
 
 /*
@@ -150,13 +160,6 @@ int http_get(Octstr *url, List *request_headers,
 		List **reply_headers, Octstr **reply_body);
 int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
 		  List **reply_headers, Octstr **reply_body);
-int http_post(Octstr *url, List *request_headers, Octstr *request_body,
-		List **reply_headers, Octstr **reply_body);
-
-
-/***********************************************************************
- * HTTP client interface.
- */
 
 
 /*

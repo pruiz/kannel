@@ -1,5 +1,11 @@
 2000-11-10  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/http.[ch]: Killed http_get and http_post, since they're
+	now obsolete and unused. http_get_real remains until numhash.c
+	and smsbox_req.c are converted.
+
+2000-11-10  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/wap-appl.c: Reformatted.
 
 2000-11-10  Lars Wirzenius  <liw@iki.fi>

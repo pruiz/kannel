@@ -4,15 +4,15 @@
  * Lars Wirzenius
  */
  
-/* XXX 100 status codes. */
 /* XXX re-implement socket pools, with idle connection killing to 
     	save sockets */
 /* XXX implement http_abort */
 /* XXX give maximum input size */
-/* XXX kill http_get, http_get_real, and http_post */
+/* XXX kill http_get_real */
 /* XXX the proxy exceptions list should be a dict, I guess */
 /* XXX set maximum number of concurrent connections to same host, total? */
 /* XXX basic auth is missing */
+/* XXX 100 status codes. */
 
 #include <ctype.h>
 #include <errno.h>
@@ -895,25 +895,6 @@ long http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
 }
 
 
-int http_get(Octstr *url, List *request_headers,
-             List **reply_headers, Octstr **reply_body)
-{
-    HTTPCaller *caller;
-    int ret, status;
-    Octstr *final_url;
-    
-    caller = http_caller_create();
-    (void) http_start_request(caller, url, request_headers, NULL, 0);
-    ret = http_receive_result(caller, &status, &final_url, 
-    	    	    	      reply_headers, reply_body);
-    octstr_destroy(final_url);
-    http_caller_destroy(caller);
-    if (ret == -1)
-    	return -1;
-    return status;
-}
-
-
 int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
                   List **reply_headers, Octstr **reply_body)
 {
@@ -924,25 +905,6 @@ int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
     (void) http_start_request(caller, url, request_headers, NULL, 1);
     ret = http_receive_result(caller, &status, final_url, 
     	    	    	      reply_headers, reply_body);
-    http_caller_destroy(caller);
-    if (ret == -1)
-    	return -1;
-    return status;
-}
-
-
-int http_post(Octstr *url, List *request_headers, Octstr *request_body,
-              List **reply_headers, Octstr **reply_body)
-{
-    HTTPCaller *caller;
-    int ret, status;
-    Octstr *final_url;
-    
-    caller = http_caller_create();
-    (void) http_start_request(caller, url, request_headers, request_body, 0);
-    ret = http_receive_result(caller, &status, &final_url, 
-    	    	    	      reply_headers, reply_body);
-    octstr_destroy(final_url);
     http_caller_destroy(caller);
     if (ret == -1)
     	return -1;
