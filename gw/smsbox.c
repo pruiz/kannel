@@ -1473,6 +1473,7 @@ int main(int argc, char **argv)
     dict_destroy(receivers);
     counter_destroy(catenated_sms_counter);
     octstr_destroy(bb_host);
+    octstr_destroy(global_sender);
     cfg_destroy(cfg);
     gwlib_shutdown();
     return 0;

@@ -1,5 +1,9 @@
 2001-01-24  Uoti Urpala  <uau@wapit.com>
 
+	* gw/smsbox.c, gw/smsc.c, gw/smsc_p.h: Fixed memory leaks.
+
+2001-01-24  Uoti Urpala  <uau@wapit.com>
+
 	* gw/smscconn.c, gw/bb_smscconn.c: Fixed memory leaks
 
 2001-01-24  Lars Wirzenius  <liw@iki.fi>

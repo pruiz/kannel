@@ -61,11 +61,6 @@ SMSCenter *smscenter_construct(void)
     sprintf(smsc->name, "Unknown SMSC");
     smsc->id = next_id++;
 
-    /* SMSC ID */
-    smsc->smsc_id = NULL;
-    smsc->preferred_id = NULL;
-    smsc->denied_id = NULL;
-
     /* FAKE */
     smsc->hostname = NULL;
     smsc->port = -1;
@@ -148,11 +143,6 @@ void smscenter_destruct(SMSCenter *smsc)
 {
     if (smsc == NULL)
         return;
-
-    /* SMSC ID */
-    octstr_destroy(smsc->smsc_id);
-    octstr_destroy(smsc->preferred_id);
-    octstr_destroy(smsc->denied_id);
 
     /* FAKE */
     gw_free(smsc->hostname);
@@ -518,8 +508,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
 {
     SMSCenter *smsc;
     Octstr *type, *host, *username, *password, *phone, *device;
-    Octstr *smsc_id;
-    Octstr *preferred_id, *denied_id;
     Octstr *preferred_prefix, *denied_prefix;
     Octstr *alt_chars, *allow_ip;
     Octstr *smpp_system_id, *smpp_system_type, *smpp_address_range;
@@ -534,6 +522,34 @@ SMSCenter *smsc_open(CfgGroup *grp)
 
 
     type = cfg_get(grp, octstr_imm("smsc"));
+    if (type == NULL) {
+	error(0, "Required field 'smsc' missing for smsc group.");
+	return NULL;
+    }
+    if (octstr_compare(type, octstr_imm("fake")) == 0)
+    	typeno = SMSC_TYPE_FAKE;
+    else if (octstr_compare(type, octstr_imm("cimd")) == 0)
+    	typeno = SMSC_TYPE_CIMD;
+    else if (octstr_compare(type, octstr_imm("cimd2")) == 0)
+    	typeno = SMSC_TYPE_CIMD2;
+    else if (octstr_compare(type, octstr_imm("emi")) == 0)
+    	typeno = SMSC_TYPE_EMI;
+    else if (octstr_compare(type, octstr_imm("emi_ip")) == 0)
+    	typeno = SMSC_TYPE_EMI_IP;
+    else if (octstr_compare(type, octstr_imm("smpp")) == 0)
+    	typeno = SMSC_TYPE_SMPP_IP;
+    else if (octstr_compare(type, octstr_imm("sema")) == 0)
+    	typeno = SMSC_TYPE_SEMA_X28;
+    else if (octstr_compare(type, octstr_imm("ois")) == 0)
+    	typeno = SMSC_TYPE_OIS;
+    else if (octstr_compare(type, octstr_imm("at")) == 0)
+    	typeno = SMSC_TYPE_AT;
+    else {
+	error(0, "Unknown SMSC type '%s'", octstr_get_cstr(type));
+	octstr_destroy(type);
+	return NULL;
+    }
+
     host = cfg_get(grp, octstr_imm("host"));
     if (cfg_get_integer(&port, grp, octstr_imm("port")) == -1)
     	port = 0;
@@ -550,10 +566,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
     alt_chars = cfg_get(grp, octstr_imm("alt-charset"));
 
     allow_ip = cfg_get(grp, octstr_imm("connect-allow-ip"));
-
-    smsc_id = cfg_get(grp, octstr_imm("smsc-id"));
-    preferred_id = cfg_get(grp, octstr_imm("preferred-smsc-id"));
-    denied_id = cfg_get(grp, octstr_imm("denied-smsc-id"));
 
     smpp_system_id = cfg_get(grp, octstr_imm("system-id"));
     smpp_system_type = cfg_get(grp, octstr_imm("system-type"));
@@ -578,33 +590,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
 
     smsc = NULL;
 
-    if (type == NULL) {
-        error(0, "Required field 'smsc' missing for smsc group.");
-        return NULL;
-    }
-
-    if (octstr_compare(type, octstr_imm("fake")) == 0)
-    	typeno = SMSC_TYPE_FAKE;
-    else if (octstr_compare(type, octstr_imm("cimd")) == 0)
-    	typeno = SMSC_TYPE_CIMD;
-    else if (octstr_compare(type, octstr_imm("cimd2")) == 0)
-    	typeno = SMSC_TYPE_CIMD2;
-    else if (octstr_compare(type, octstr_imm("emi")) == 0)
-    	typeno = SMSC_TYPE_EMI;
-    else if (octstr_compare(type, octstr_imm("emi_ip")) == 0)
-    	typeno = SMSC_TYPE_EMI_IP;
-    else if (octstr_compare(type, octstr_imm("smpp")) == 0)
-    	typeno = SMSC_TYPE_SMPP_IP;
-    else if (octstr_compare(type, octstr_imm("sema")) == 0)
-    	typeno = SMSC_TYPE_SEMA_X28;
-    else if (octstr_compare(type, octstr_imm("ois")) == 0)
-    	typeno = SMSC_TYPE_OIS;
-    else if (octstr_compare(type, octstr_imm("at")) == 0)
-    	typeno = SMSC_TYPE_AT;
-    else {
-        error(0, "Unknown SMSC type '%s'", octstr_get_cstr(type));
-        return NULL;
-    }
     switch (typeno) {
     case SMSC_TYPE_FAKE:
         if (host == NULL || port == 0)
@@ -722,12 +707,26 @@ SMSCenter *smsc_open(CfgGroup *grp)
 	    smsc->denied_prefix = NULL;
 	else
 	    smsc->denied_prefix = gw_strdup(octstr_get_cstr(denied_prefix));
-
-        smsc->smsc_id = smsc_id;
-	smsc->preferred_id = preferred_id;
-	smsc->denied_id = denied_id;
     }
 
+    octstr_destroy(type);
+    octstr_destroy(host);
+    octstr_destroy(username);
+    octstr_destroy(password);
+    octstr_destroy(phone);
+    octstr_destroy(device);
+    octstr_destroy(preferred_prefix);
+    octstr_destroy(denied_prefix);
+    octstr_destroy(alt_chars);
+    octstr_destroy(allow_ip);
+    octstr_destroy(smpp_system_id);
+    octstr_destroy(smpp_system_type);
+    octstr_destroy(smpp_address_range);
+    octstr_destroy(sema_smscnua);
+    octstr_destroy(sema_homenua);
+    octstr_destroy(sema_report);
+    octstr_destroy(at_modemtype);
+    octstr_destroy(at_pin);
     return smsc;
 }
 
