@@ -1,3 +1,8 @@
+2001-06-01  Jarkko Kovala  <jarkko.kovala@iki.fi>
+
+	* gwlib/http.c, gwlib/gwthread-pthread.c: Move the OpenSSL 
+        ERR_remove_state() from the http code to the gwthread code.
+
 2001-05-31  Richard Braakman  <dark@wapit.com>
 
 	* Making release 1.1.5.

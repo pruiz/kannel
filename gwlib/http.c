@@ -25,9 +25,6 @@
 
 #include "gwlib.h"
 
-#ifdef HAVE_LIBSSL
-#include <openssl/err.h>
-#endif /* HAVE_LIBSSL */
 
 
 /***********************************************************************
@@ -1184,9 +1181,6 @@ static void write_request_thread(void *arg)
 	    	    	  trans);
 	}
     }
-#ifdef HAVE_LIBSSL
-    ERR_remove_state(0);
-#endif /* HAVE_LIBSSL */
 }
 
 
@@ -1703,9 +1697,6 @@ static void server_thread(void *dummy)
 	(void) close(tab[i].fd);
 	port_remove(ports[i]);
     }
-#ifdef HAVE_LIBSSL
-    ERR_remove_state(0);
-#endif /* HAVE_LIBSSL */
 }
 
 

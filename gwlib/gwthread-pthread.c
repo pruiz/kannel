@@ -11,6 +11,10 @@
 
 #include "gwlib/gwlib.h"
 
+#ifdef HAVE_LIBSSL
+#include <openssl/err.h>
+#endif /* HAVE_LIBSSL */
+
 /* Maximum number of live threads we can support at once.  Increasing
  * this will increase the size of the threadtable.  Use powers of two
  * for efficiency. */
@@ -282,6 +286,11 @@ static void *new_thread(void *arg)
     debug("gwlib.gwthread", 0, "Thread %ld (%s) terminates.",
           p->ti->number, p->ti->name);
     alert_joiners();
+#ifdef HAVE_LIBSSL
+    /* Clear the OpenSSL thread-specific error queue to avoid
+     * memory leaks. */
+    ERR_remove_state(gwthread_self());
+#endif /* HAVE_LIBSSL */
     /* Must free p before signaling our exit, otherwise there is
      * a race with gw_check_leaks at shutdown. */
     gw_free(p);
