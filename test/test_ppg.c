@@ -2,7 +2,7 @@
  * Very simple push initiator for testing push proxy gateway
  *
  * Read pap control content and push content from files, pack them into a PAP
- * protocol MIME message and send this content to a specified url. Use a hard-
+ * protocol MIME message and push this content to a specified url. Use a hard-
  * coded message boundary (asdlfkjiurwgasf), for simpler command line inter-
  * face.
  *
@@ -315,17 +315,26 @@ static void help(void)
 {
     info(0, "Usage: test_ppg [options] push_url [content_file pap_file]");
     info(0, "push content_file using control file pap_file to push_url");
-    info(0, "where options are:");
+    info(0, "If option -H is not used, command line has three arguments.");
+    info(0, "These are following, in this order:");
+    info(0, "      a) the url of the push proxy gateway");
+    info(0, "      b) the file containing the content to be pushed");
+    info(0, "      c) pap document controlling the pushing");
+    info(0, "Options are:");
+    info(0, "-h");
+    info(0, "print this info");
     info(0, "-v number");
-    info(0, "    set log level for stderr logging");
+    info(0, "    Set log level for stderr logging. Default 0 (debug)");
     info(0, "-q");
-    info(0, "    don't print the body nor headers of the HTTP response");
+    info(0, "    Don't print the body nor headers of the HTTP response");
+    info(0, "Default: print them");
     info(0, "-r number");
-    info(0, "    make `number' requests");
+    info(0, "    Make `number' requests. Default one request");
     info(0, "-H");
     info(0, "Use hardcoded MIME message, containing a pap control document");
+    info(0, "Default: read components from files");
     info(0, "-t");
-    info(0, "number of threads, maximum 1024");
+    info(0, "number of threads, maximum 1024, default 1");
 }
 
 int main(int argc, char **argv)
