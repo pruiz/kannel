@@ -213,6 +213,7 @@ MULTI_GROUP(smsc,
     OCTSTR(reconnect-delay)
     OCTSTR(transceiver-mode)
     OCTSTR(interface-version)
+    OCTSTR(priority)
 )
 
 

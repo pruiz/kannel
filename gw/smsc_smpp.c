@@ -25,7 +25,7 @@
  * sent and received or not. Not dumping should be the default in at least 
  * stable releases. 
  */ 
- 
+
 #ifndef DEBUG 
 /* This version doesn't dump. */ 
 static void dump_pdu(const char *msg, Octstr *id, SMPP_PDU *pdu) 
@@ -50,6 +50,7 @@ static void dump_pdu(const char *msg, Octstr *id, SMPP_PDU *pdu)
 #define SMPP_MAX_PENDING_SUBMITS    10 
 #define SMPP_RECONNECT_DELAY	    10.0 
 #define SMPP_DEFAULT_VERSION        0x34
+#define SMPP_DEFAULT_PRIORITY       0
  
  
 /*********************************************************************** 
@@ -84,6 +85,7 @@ typedef struct {
     long max_pending_submits;
     long reconnect_delay;
     int version;
+    int priority;       /* set default priority for messages */    
     SMSCConn *conn; 
 } SMPP; 
  
@@ -96,7 +98,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
                          int dest_addr_ton, int dest_addr_npi, 
                          int alt_dcs, int enquire_link_interval, 
                          int max_pending_submits, int reconnect_delay,
-                         int version, Octstr *my_number) 
+                         int version, int priority, Octstr *my_number) 
 { 
     SMPP *smpp; 
      
@@ -127,6 +129,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->reconnect_delay = reconnect_delay;
     smpp->quitting = 0; 
     smpp->version = version;
+    smpp->priority = priority;
     smpp->conn = conn; 
      
     return smpp; 
@@ -360,6 +363,14 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
         pdu->u.submit_sm.registered_delivery = 1;  
 
     octstr_destroy(relation_UTC_time);
+
+    /* set priority */
+    if (smpp->priority >= 0 && smpp->priority <= 5) {
+        pdu->u.submit_sm.priority_flag = smpp->priority;       
+    } else {      
+        /* default priority is 0 */         
+        pdu->u.submit_sm.priority_flag = 0;         
+    }              
 
     return pdu; 
 } 
@@ -985,6 +996,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     long max_pending_submits;
     long reconnect_delay;
     long version;
+    long priority;
 
  
     my_number = NULL; 
@@ -1068,12 +1080,17 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
         /* convert decimal to BCD */
         version = ((version / 10) << 4) + (version % 10);
 
+    /* check for any specified priority value in range [0-5] */
+    if (cfg_get_integer(&version, grp, octstr_imm("priority")) == -1)
+        priority = SMPP_DEFAULT_PRIORITY;
+  
+
     smpp = smpp_create(conn, host, port, receive_port, system_type,  
     	    	       username, password, address_range, our_host, 
                        source_addr_ton, source_addr_npi, dest_addr_ton,  
                        dest_addr_npi, alt_dcs, enquire_link_interval, 
                        max_pending_submits, reconnect_delay, 
-                       version, my_number); 
+                       version, priority, my_number); 
  
     conn->data = smpp; 
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S",  
