@@ -1281,6 +1281,124 @@ long octstr_get_digit_from(Octstr *ostr, long pos){
 	return ret;
 }
 
+long octstr_get_bits(Octstr *ostr, long bitpos, int numbits) {
+	long pos;
+	long result;
+	int mask;
+	int shiftwidth;
+
+	seems_valid(ostr);
+	gw_assert(bitpos >= 0);
+	gw_assert(numbits <= 32);
+	gw_assert(numbits >= 0);
+
+	pos = bitpos / 8;
+	bitpos = bitpos % 8;
+
+	/* This also takes care of the len == 0 case */
+	if (pos >= ostr->len)
+		return 0;
+
+	mask = (1 << numbits) - 1;
+
+	/* It's easy if the range fits in one octet */
+	if (bitpos + numbits <= 8) {
+		/* shiftwidth is the number of bits to ignore on the right.
+		 * bitpos 0 is the leftmost bit. */
+		shiftwidth = 8 - (bitpos + numbits);
+		return (ostr->data[pos] >> shiftwidth) & mask;
+	}
+
+	/* Otherwise... */
+	result = 0;
+	while (bitpos + numbits > 8) {
+		result = (result << 8) | ostr->data[pos];
+		numbits -= (8 - bitpos);
+		bitpos = 0;
+		pos++;
+		if (pos >= ostr->len)
+			return result << numbits;
+	}
+
+	gw_assert(bitpos == 0);
+	result <<= numbits;
+	result |= ostr->data[pos] >> (8 - numbits);
+	return result & mask;
+}
+
+void octstr_set_bits(Octstr *ostr, long bitpos, int numbits,
+		unsigned long value) {
+	long pos;
+	unsigned long mask;
+	int shiftwidth;
+	int bits;
+	int maxlen;
+	int c;
+
+	seems_valid(ostr);
+	gw_assert(bitpos >= 0);
+	gw_assert(numbits <= 32);
+	gw_assert(numbits >= 0);
+
+	maxlen = (bitpos + numbits + 7) / 8;
+	if (maxlen >= ostr->len) {
+		octstr_grow(ostr, maxlen);
+		/* Make sure the new octets start out with value 0 */
+		for (pos = ostr->len; pos < maxlen; pos++) {
+			ostr->data[pos] = 0;
+		}
+		ostr->len = maxlen;
+		ostr->data[maxlen] = 0;
+	}
+
+	mask = (1 << numbits) - 1;
+	/* mask is also the largest value that fits */
+	gw_assert(value <= mask);
+
+	pos = bitpos / 8;
+	bitpos = bitpos % 8;
+
+	/* Does the range fit in one octet? */
+	if (bitpos + numbits <= 8) {
+		/* shiftwidth is the number of bits to ignore on the right.
+		 * bitpos 0 is the leftmost bit. */
+		shiftwidth = 8 - (bitpos + numbits);
+		/* Extract the bits we don't want to affect */
+		c = ostr->data[pos] & ~(mask << shiftwidth);
+		c |= value << shiftwidth;
+		gw_assert(pos < ostr->len);
+		ostr->data[pos] = c;
+		return;
+	}
+
+	/* Otherwise... */
+	/* If speed is a problem here, we could have separate cases for
+	 * the first octet (which may have bitpos > 0), and the rest,
+	 * which don't. */
+	while (bitpos + numbits > 8) {
+		/* We want this many bits from the value */
+		bits = 8 - bitpos;
+		/* There are this many bits to their right in the value */
+		shiftwidth = numbits - bits;
+		/* Construct a mask for "bits" bits on the far right */
+		mask = (1 << bits) - 1;
+		/* Get the bits we want */
+		c = (value >> shiftwidth) & mask;
+		/* Merge them with the bits that are already there */
+		gw_assert(pos < ostr->len);
+		ostr->data[pos] = (ostr->data[pos] & ~mask) | c;
+		numbits -= (8 - bitpos);
+		bitpos = 0;
+		pos++;
+	}
+	
+	gw_assert(bitpos == 0);
+	gw_assert(pos < ostr->len);
+	mask = (1 << numbits) - 1;
+	ostr->data[pos] = (ostr->data[pos] & ~mask) | (value & mask);
+
+	seems_valid(ostr);
+}
 
 /**********************************************************************
  * Local functions.

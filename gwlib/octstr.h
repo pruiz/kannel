@@ -388,4 +388,21 @@ int octstr_url_decode(Octstr *ostr);
  */
 long octstr_get_digit_from(Octstr *ostr, long pos);
 
+/*
+ * Treat the octstr as an unsigned array of bits, most significant bit
+ * first, and return the indicated bit range as an integer.  numbits
+ * must not be larger than 32.  Bits beyond the end of the string will
+ * be read as 0.
+ */
+long octstr_get_bits(Octstr *ostr, long bitpos, int numbits);
+
+/*
+ * Treat the octstr as an unsigned array of bits, most significant bit
+ * first, and set the indicated bit range to the given value.  numbits
+ * must not be larger than 32.  The value must fit in that number of bits.
+ * The string will be extended with 0-valued octets as necessary to hold
+ * the indicated bit range.
+ */
+void octstr_set_bits(Octstr *ostr, long bitpos, int numbits, unsigned long value);
+
 #endif

@@ -1,3 +1,14 @@
+2000-05-31  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/octstr.[ch]: Added octstr_get_bits and octstr_set_bits.
+
+	* gw/wtp_pdu.[ch], gw/wtp_pdu.def: Deliberate preprocessor abuse
+	to automate PDU packing and unpacking.  First draft; works for
+	simple test cases, needs more documentation.  Not used by anything
+	else yet.
+
+	* test/test_pdu.c: Test program for above.
+
 2000-05-31  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c (string_table_add): A bug fixed. The string 
