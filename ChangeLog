@@ -1,3 +1,7 @@
+2003-09-03  Alexander Malysh  <a.malysh@centrium.de>
+    * doc/userguide/userguide.xml: spelling fix.
+      Thanks again to "Bill Brigden" <bill@baghead.co.uk> for pointing this.
+      
 2003-09-02  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/shared.c: added SQLite version in version_report_string().
 
