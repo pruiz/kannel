@@ -1,3 +1,8 @@
+2003-03-07  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
+    * Makefile.in: re-added make tests
+    * Makefile.in: clean automatic generated config.sub and config.guess in make
+      distclean
+
 2003-03-07  Stipe Tolj  <tolj@wapme-systems.de>
     * contrib/kannel-monitor/index.php: some minor changes contributed by
       Alexander.
