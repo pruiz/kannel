@@ -1,3 +1,5 @@
+#include "config.h"
+
 /* XXX The #ifdef HAVE_LIBXML is a stupid hack to make this not break things
 until libxml is installed everywhere we do development. --liw */
 

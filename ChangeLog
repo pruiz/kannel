@@ -1,3 +1,7 @@
+Tue Feb 15 11:16:18 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wml_compiler.c: #include "config.h".
+
 2000-02-15  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
 	* gw/wml_compiler.c (wml_compile): A little bug fix. (**wml_scripts 
