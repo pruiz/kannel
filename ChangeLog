@@ -1,3 +1,7 @@
+2002-11-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_emi2.c, gwlib/http.h, gwlib/charset.h: fixed some minor
+      compiler warnings.
+
 2002-11-26  Oded Arbel  <odeda@m-wise.com>
     * doc/examples/modems.conf: Fixed init string in Siemens TC35 configuration, 
       thanks to Fogarasi Andras <fogarasi@fogarasi.com>. added Siemens SL45
