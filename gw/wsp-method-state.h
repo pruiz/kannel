@@ -384,7 +384,7 @@ ROW(REPLYING,
 		/* S-MethodAbort.ind(abort reason) */
 		wsp_indicate_method_abort(msm, e->abort_code);
 	},
-	REPLYING)
+	NULL_METHOD)
 
 #undef ROW
 #undef STATE_NAME

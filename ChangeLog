@@ -1,3 +1,8 @@
+2000-10-10  Richard Braakman  <dark@wapit.com>
+
+	* gw/wsp-method-state.h: Fixed state transition for TR-Abort.Ind,
+	in state REPLYING.  Thanks to Aymerick Jéhann for noticing.
+
 2000-10-10  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/wtp_init_state-decl.h: Fixed misspelled INITIATOR_RESULT_WAIT.
