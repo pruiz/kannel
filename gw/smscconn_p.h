@@ -11,11 +11,11 @@
  ADDING AND WORKING OF NEW SMS CENTER CONNECTIONS:
 
  These are guidelines and rules for adding new SMSC Connections to
- Kannel. See file bb_smscconn.h for callback function prototypes.
+ Kannel. See file bb_smscconn_cb.h for callback function prototypes.
 
- New SMSC Connection handler is free-formed module which only have following
+ An SMSC Connection handler is free-formed module which only has the following
  rules:
- 
+
  1) Each new SMSC Connection MUST implement function
     smsc_xxx_create(SMSCConn *conn, ConfigGrp *cfg), which:
 
@@ -30,7 +30,7 @@
     e) SHOULD set private function to return number of queued messages
        to-be-sent inside the driver
     f) MUST set SMSCConn->name
-       
+
  2) Each SMSC Connection MUST call certain BB callback functions when
     certain things occur:
 
@@ -40,7 +40,7 @@
        up (wrong password etc. When killed,
        SMSC Connection MUST release all memory it has taken EXCEPT for
        the basic SMSCConn struct, which is laterwards released by the
-       bearerbox. 
+       bearerbox.
 
     b) When SMSC Connection receives a message from SMSC, it must
        create a new Msg from it and call bb_smscconn_received
@@ -77,7 +77,7 @@
     appropriate function calls. When connection is stopped, it is not
     allowed to receive any new messages
 */
- 
+
 #include <signal.h>
 #include "gwlib/gwlib.h"
 
@@ -110,8 +110,8 @@ struct smscconn {
 
     Octstr *denied_prefix;
     Octstr *preferred_prefix;
-    
-    
+
+
     /* XXX: move rest global data from Smsc here
      */
 
@@ -120,7 +120,7 @@ struct smscconn {
     /* pointers set by specific driver, but initiated to NULL by smscconn.
      * Note that flow_mutex is always locked before these functions are
      * called, and released after execution returns from them */
-    
+
     /* pointer to function called when smscconn_shutdown called.
      * Note that this function is not needed always. If set, this
      * function MUST set why_killed */
@@ -139,13 +139,12 @@ struct smscconn {
 
     /* pointers to functions called when connection started/stopped
      * (suspend/resume), if not NULL */
-    
+
     void (*start_conn) (SMSCConn *conn);
     void (*stop_conn) (SMSCConn *conn);
-    
+
 
     void *data;			/* SMSC specific stuff */
-
 };
 
 /*
@@ -166,6 +165,10 @@ struct smscconn {
 /* generic wrapper for old SMSC implementations (uses old smsc.h).
  * Responsible file: smsc_wrapper.c */
 int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg);
+
+/* Responsible file: smsc_fake2.c */
+int smsc_fake2_create(SMSCConn *conn, ConfigGroup *cfg);
+
 
 /* ADD NEW CREATE FUNCTIONS HERE
  *

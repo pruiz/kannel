@@ -1,3 +1,10 @@
+2001-01-16  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsc_fake2.c: new fake SMSC connection module.
+	* test/fakesmsc2.c: client to use with the new module.
+	* gw/smscconn.c, gw/smscconn_p.h: Added references to the new
+	module.
+
 2001-01-15  Lars Wirzenius  <liw@iki.fi>
 
 	* wap/wtp_pdu.c: Bugfix from Aymerick Jéhanne. When unpacking

@@ -60,15 +60,16 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
 		"automatically ignored");
     
     smsc_type = config_get(grp, "smsc");
-    if (smsc_type == NULL)
+    if (smsc_type == NULL) {
+	error(0, "Required field 'smsc' missing for smsc group.");
+	smscconn_destroy(conn);
 	return NULL;
-    
-    /*
-     * if (strcmp(smsc_type, "xxx")==0)
-     *	ret = smsc_xxx_create(conn, grp);
-     * else
-     */
-    ret = smsc_wrapper_create(conn, grp);
+    }
+
+    if (strcmp(smsc_type, "fake2") == 0)
+	ret = smsc_fake2_create(conn, grp);
+    else
+	ret = smsc_wrapper_create(conn, grp);
     if (ret == -1) {
 	smscconn_destroy(conn);
 	return NULL;
