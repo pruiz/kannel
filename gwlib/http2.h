@@ -241,8 +241,18 @@ int http2_server_get_request(HTTPSocket *client_socket, Octstr **url,
 int http2_server_send_reply(HTTPSocket *client_socket, int status, 
 	List *headers, Octstr *body);
 int http2_socket_fd(HTTPSocket *socket);
+/* return reference to IP of the client */
 Octstr *http2_socket_ip(HTTPSocket *socket);
 
+/*
+ * destroy args given up by the get_request. Non-thread safe
+ */
+void http2_destroy_cgiargs(List *args);
+
+/*
+ * return reference to cgi argument 'name', or NULL if not matching
+ */
+Octstr *http2_cgi_variable(List *list, char *name);
 
 /*
  * Functions for manipulating a list of headers. You can use a list of

@@ -159,7 +159,6 @@ static void *http_request_thread(void *arg)
     char *client_ip;
     Octstr *os, *url, *body, *answer;
     List *hdrs, *args, *reply_hdrs;
-    HTTPCGIVar *v;
 
     reply_hdrs = list_create();
     list_append(reply_hdrs, octstr_create("Content-type: text/html"));
@@ -189,16 +188,9 @@ static void *http_request_thread(void *arg)
         debug("sms.http", 0, "Answer: <%s>", octstr_get_cstr(answer));
 
 	octstr_destroy(url);
-	while ((os = list_extract_first(hdrs)) != NULL)
-		octstr_destroy(os);
-	list_destroy(hdrs);
+	http2_destroy_headers(hdrs);
 	octstr_destroy(body);
-	while ((v = list_extract_first(args)) != NULL) {
-		octstr_destroy(v->name);
-		octstr_destroy(v->value);
-		gw_free(v);
-	}
-	list_destroy(args);
+	http2_destroy_cgiargs(args);
 	
 	if (http2_server_send_reply(client, HTTP_OK, reply_hdrs, answer) == -1)
 		goto done;

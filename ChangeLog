@@ -1,5 +1,15 @@
 2000-05-23    <Kalle Marjola <rpr@wapit.com>>
 
+	* gwlib/http2.c|h: moved destroying functions here, and changed so
+	that http2_socket_host does not duplicate the octstr but returns
+	reference
+
+	* gw/bb_http.c: check for password of the admin
+
+	* gw/smsbox*.c moved cgi and destroy functions to http2
+	
+2000-05-23    <Kalle Marjola <rpr@wapit.com>>
+
 	* gw/bb_http.c: check for allow/deny IP for http admin
 	
 2000-05-23    <Kalle Marjola <rpr@wapit.com>>

@@ -44,22 +44,14 @@ static Octstr *httpd_check_authorization(List *cgivars)
     Octstr *password;
     Octstr *reply;
 
-    
-    /* XXX this is WRONG, headers and cgiargs are not of the same
-     *   type, but while they are not, ignore password
-     */
-    /* password = http2_header_find_first(cgivars, "password"); */
-
-    return NULL;
+    password = http2_cgi_variable(cgivars, "password");
 
     if ((ha_password && password == NULL) ||
 	(ha_password && octstr_str_compare(password, ha_password)!=0))
-
+    {
 	reply = octstr_create("Denied");
-    else
+    } else
 	reply = NULL;
-
-    octstr_destroy(password);
 
     return reply;
 }
@@ -140,6 +132,7 @@ static void *httpd_serve(void *arg)
     
     debug("bb.thread", 0, "START: httpd_serve");
     list_add_producer(core_threads);
+
     http2_server_get_request(client, &url, &headers, &body, &cgivars);
     
     if (octstr_str_compare(url, "/cgi-bin/status")==0)
@@ -155,7 +148,7 @@ static void *httpd_serve(void *arg)
     /*
      * reconfig? restart?
      */
-    else
+    else 
 	reply = octstr_create("Unknown command %s"); /* ,url */
 
     gw_assert(reply != NULL);
@@ -171,10 +164,8 @@ static void *httpd_serve(void *arg)
     octstr_destroy(body);
     octstr_destroy(reply);
     http2_destroy_headers(headers);
-    
-    // http2_destroy_headers(cgivars);
-    list_destroy(cgivars);
-    
+    http2_destroy_cgiargs(cgivars);
+
     http2_server_close_client(client);
     debug("bb.thread", 0, "EXIT: httpd_serve");
     list_remove_producer(core_threads);

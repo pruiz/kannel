@@ -230,7 +230,7 @@ int http2_socket_fd(HTTPSocket *socket) {
 
 
 Octstr *http2_socket_ip(HTTPSocket *socket) {
-        return octstr_duplicate(socket->host);
+        return socket->host;
 }
 
 
@@ -323,6 +323,32 @@ Octstr *body) {
 	ret = socket_write(socket, response);
 	octstr_destroy(response);
 	return ret;
+}
+
+
+void http2_destroy_cgiargs(List *args) {
+        HTTPCGIVar *v;
+
+	while ((v = list_extract_first(args)) != NULL) {
+		octstr_destroy(v->name);
+		octstr_destroy(v->value);
+		gw_free(v);
+	}
+	list_destroy(args);
+}
+
+
+Octstr *http2_cgi_variable(List *list, char *name) 
+{
+	int i;
+	HTTPCGIVar *v;
+	
+	for (i = 0; i < list_len(list); ++i) {
+		v = list_get(list, i);
+		if (octstr_str_compare(v->name, name) == 0)
+			return v->value;
+	}
+	return NULL;
 }
 
 
