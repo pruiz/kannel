@@ -1373,6 +1373,13 @@ smsc-password = bar
         connection only.
      </entry></row>
 
+   <row><entry><literal>connect-allow-ip</literal></entry>
+     <entry><literal>IP-list</literal></entry>
+     <entry valign=bottom>
+       If set, only connections from these IP addresses are accepted
+       to receiver-port. TCP/IP connection only.
+     </entry></row>
+
    </tbody></tgroup></informaltable>
    
 

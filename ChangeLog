@@ -1,3 +1,7 @@
+2000-10-23  Kalle Marjola  <rpr@wapit.com>
+
+	* doc/userguide/userguide.xml: added missing EMI variable connect-allow-ip
+
 2000-10-23 Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wtp_resp_state-decl.h: Spec does not say what to do when state is
