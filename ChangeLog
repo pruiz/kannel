@@ -1,4 +1,11 @@
 2005-03-01  Stipe Tolj  <stolj@wapme.de> 
+    * configure[.in], gw-config.h.in, gwlib/http.c: added option to make
+      HTTP/1.1 keep-alive support disabled via optional configure switch 
+      --disable-keepalive. Thanks to Jonathan Hauser 
+      <jhouser@wirelessonenet.com> for this patch.
+      [Msg-ID: <421B8103.7070301@wirelessonenet.com>]
+
+2005-03-01  Stipe Tolj  <stolj@wapme.de> 
     Portability enhancement for non-gcc compilers, no logic change.
     * gw/smsc/smsc_smpp.c: changed gcc specific magic macro __PRETTY_FUNCTION_
       to __func__ that is more generic, because of gw-config.h.in macro

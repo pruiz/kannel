@@ -670,7 +670,7 @@ AC_ARG_ENABLE(mutex-stats,
 dnl --disable-cookies option.
 
 AC_ARG_ENABLE(cookies,
-[  --disable-cookies        disable cookie support for WSP [enable]], [
+[  --disable-cookies       disable cookie support for WSP [enabled]], [
   if test "$enableval" = yes; then
     echo enabling cookies
     AC_DEFINE(ENABLE_COOKIES)
@@ -680,6 +680,22 @@ AC_ARG_ENABLE(cookies,
 ],[
   echo enabling cookies
   AC_DEFINE(ENABLE_COOKIES)
+])
+
+
+dnl --disable-keepalive option.
+
+AC_ARG_ENABLE(keepalive,
+[  --disable-keepalive     disable HTTP/1.1 keep-alive support [enabled]], [
+  if test "$enableval" = yes; then
+    echo enabling HTTP/1.1 keep-alive
+    AC_DEFINE(USE_KEEPALIVE)
+  else
+    echo disabling HTTP/1.1 keep-alive
+  fi
+],[
+  echo enabling HTTP/1.1 keep-alive
+  AC_DEFINE(USE_KEEPALIVE)
 ])
 
 
@@ -719,7 +735,7 @@ dnl Implement the --with-ssl option.
 
 AC_CONFIG_SECTION([Configuring OpenSSL support])
 AC_ARG_WITH(ssl,
-[  --with-ssl[=DIR]          where to look for OpenSSL libs and header files
+[  --with-ssl[=DIR]        where to look for OpenSSL libs and header files
                           DIR points to the installation [/usr/local/ssl]],
 [ if test -d "$withval"; then
     ssllib="$withval/lib";
@@ -835,7 +851,7 @@ else
     dnl Implement the --with-mysql-dir option.
     AC_ARG_WITH(mysql-dir,
     [  --with-mysql-dir=DIR    where to look for MySQL libs and header files
-                            DIR points to the installation [/usr/local/mysql] ],
+                          DIR points to the installation [/usr/local/mysql] ],
     [
         mysqlloc=""
         if test -d "$withval" ; then
@@ -1025,7 +1041,7 @@ else
     dnl Implement the --with-pgsql-dir option.
     AC_ARG_WITH(pgsql-dir,
     [  --with-pgsql-dir=DIR    where to look for PostgreSQL libs and header files
-                            DIR points to the installation [/usr/local/pgsql] ],
+                          DIR points to the installation [/usr/local/pgsql] ],
     [
     pgsqlloc=""
     if test -d "$withval" ; then

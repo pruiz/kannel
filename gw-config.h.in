@@ -229,6 +229,9 @@
 /* Define if you want to have cookie support for the WSP */
 #undef ENABLE_COOKIES
 
+/* Define if you want to have HTTP/1.1 keep-alive support */
+#undef USE_KEEPALIVE
+
 /* Define not to include the WAP gateway parts */
 #undef NO_WAP
 

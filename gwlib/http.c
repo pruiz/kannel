@@ -83,9 +83,6 @@
 
 #include "gwlib.h"
 
-/* comment this out if you don't want Keep-Alive HTTP requests */
-#define USE_KEEPALIVE 1
-
 /* comment this out if you don't want HTTP responses to be dumped */
 #define DUMP_RESPONSE 1
 
