@@ -1,3 +1,24 @@
+2000-01-04 Aarno Syvänen <syvanen@wapit.com>
+
+	* wap/wap_events.def: Added Push OTA events
+
+	* wap/wsp_pdu.def: Added sia, a spesific content type for trans-
+	mitting data bearerbox addresses, etc.
+
+	* gw/wap_push_ppg.c|h: Added module to implement PPG main logic.
+	It does not do anything, yet.
+
+	* gw/wap_push_ota.c|h: Wrote requirements part of Push OTA 
+	protocol.
+
+	* gw/wapbox.c: Send bearerbox address to OTA module. Initialize 
+	and shutdown ppg.
+
+	* wap/wsp_strings.def: Added conversion tables for bearer types 
+	and push application ids.
+
+	* wap/wsp_headers.c: Added packing and unpacking of OTA headers
+
 2001-01-03  Lars Wirzenius  <liw@iki.fi>
 
 	* checks/check_fakesmsc.sh, checks/check_fakewap.sh: Modified to
