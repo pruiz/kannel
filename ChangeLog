@@ -1,4 +1,8 @@
 2002-06-02  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsbox.c: memory leak fixes, provided by Angel
+      [Msg-ID: <NCEOLLKPFAEAOBBMHNHECEFGCGAA.afradejas@mediafusion.es>]
+
+2002-06-02  Stipe Tolj <tolj@wapme-systems.de>
     * wap/wsp_strings.def: added required MIME types for the content type 
       assignment table 40. Thanks to Paul for indicating this.
 
