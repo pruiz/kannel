@@ -156,9 +156,18 @@ void *list_consume(List *list);
 /*
  * Search the list for a particular item. If not found, return NULL. If found,
  * return the list element. Compare items to search pattern with 
- * `cmp(item, pattern)'. If the function returns 0, the items are equal.
+ * `cmp(item, pattern)'. If the function returns non-zero, the items are equal.
  */
 void *list_search(List *list, void *pattern, int (*cmp)(void *, void *));
+
+
+/*
+ * Search the list for all items matching a pattern. If not found, return 
+ * NULL. If found, return a list with the matching elements. Compare items
+ * to search pattern with `cmp(item, pattern)'. If the function returns 
+ * non-zero, the items are equal.
+ */
+List *list_search_all(List *list, void *pattern, int (*cmp)(void *, void *));
 
 
 

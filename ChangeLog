@@ -1,3 +1,13 @@
+Tue Mar 21 12:38:52 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c, gw/wsp_machine-decl.h, gw/wsp_state-decl.h: Converted
+	more lists to use gw/list.h. While debugging this (hey, 0 is
+	not true, is it?) also implemented wsp_machine_dump.
+	
+	* gw/list.[ch]: NOTE: Changed interface to list_search (comparison
+	function must now return true (non-zero) for item). Also wrote
+	list_search_all.
+
 2000-03-20  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.h: Minor code review fixes. The third argument of 

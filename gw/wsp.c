@@ -55,8 +55,7 @@ typedef enum {
 } WSPState;
 
 
-static WSPMachine *session_machines = NULL;
-static Mutex *session_mutex = NULL;
+static List *session_machines = NULL;
 
 
 static void append_to_event_queue(WSPMachine *machine, WSPEvent *event);
@@ -84,12 +83,13 @@ static Octstr *make_reply_pdu(long status, long type, Octstr *body);
 static long convert_http_status_to_wsp_status(long http_status);
 
 static long new_server_transaction_id(void);
-static int transaction_belongs_to_session(WTPMachine *wtp, WSPMachine *session);
+static int transaction_belongs_to_session(void *session, void *wtp);
+static int same_client(void *sm1, void *sm2);
 
 
 
 void wsp_init(void) {
-	session_mutex = mutex_create();
+	session_machines = list_create();
 }
 
 
@@ -175,11 +175,8 @@ void wsp_dispatch_event(WTPMachine *wtp_sm, WSPEvent *event) {
 		   machines. */
 		sm = NULL;
 	} else {
-		mutex_lock(session_mutex);
-		for (sm = session_machines; sm != NULL; sm = sm->next)
-			if (transaction_belongs_to_session(wtp_sm, sm))
-				break;
-		mutex_unlock(session_mutex);
+		sm = list_search(session_machines, wtp_sm,
+				 transaction_belongs_to_session);
 	}
 
 	if (sm == NULL) {
@@ -222,11 +219,9 @@ WSPMachine *wsp_machine_create(void) {
 	p->MOR_method = 1;
 	p->MOR_push = 1;
 	
-	mutex_lock(session_mutex);
-	p->next = session_machines;
-	session_machines = p;
-	mutex_unlock(session_mutex);
-	
+	list_append(session_machines, p);
+
+	debug("wap.wsp", 0, "WSP: Created machine %p.", (void *) p);
 	return p;
 }
 
@@ -237,7 +232,29 @@ void wsp_machine_destroy(WSPMachine *machine) {
 
 
 void wsp_machine_dump(WSPMachine *machine) {
-	debug("wap.wsp", 0, "Dumping WSPMachine not yet implemented.");
+	WSPMachine *p;
+
+	p = machine;
+	debug("wap.wsp", 0, "WSPMachine %p dump starts:", (void *) p);
+	#define MUTEX(name) 
+	#define INTEGER(name) debug("wap.wsp", 0, "  %s: %ld", #name, p->name)
+	#define OCTSTR(name) \
+		debug("wap.wsp", 0, "  %s:", #name); \
+		octstr_dump(p->name)
+	#define METHOD_POINTER(name) \
+		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name)
+	#define EVENT_POINTER(name) \
+		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name)
+	#define SESSION_POINTER(name) \
+		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name)
+	#define SESSION_MACHINE(fields) fields
+	#define METHOD_MACHINE(fields)
+	#define HTTPHEADER(name) \
+		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name)
+	#define LIST(name) \
+		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name)
+	#include "wsp_machine-decl.h"
+	debug("wap.wsp", 0, "WSPMachine dump ends.");
 }
 
 
@@ -790,11 +807,29 @@ static long new_server_transaction_id(void) {
 }
 
 
-static int transaction_belongs_to_session(WTPMachine *wtp, WSPMachine *session)
-{
+static int transaction_belongs_to_session(void *wsp_ptr, void *wtp_ptr) {
+	WSPMachine *wsp;
+	WTPMachine *wtp;
+	
+	wsp = wsp_ptr;
+	wtp = wtp_ptr;
+
 	return
-	  octstr_compare(wtp->source_address, session->client_address) == 0 &&
-	  wtp->source_port == session->client_port &&
-	  octstr_compare(wtp->destination_address, session->server_address) == 0 && 
-	  wtp->destination_port == session->server_port;
+	  octstr_compare(wtp->source_address, wsp->client_address) == 0 &&
+	  wtp->source_port == wsp->client_port &&
+	  octstr_compare(wtp->destination_address, wsp->server_address) == 0 && 
+	  wtp->destination_port == wsp->server_port;
+}
+
+
+
+static int same_client(void *a, void *b) {
+	WSPMachine *sm1, *sm2;
+	
+	sm1 = a;
+	sm2 = b;
+	return octstr_compare(sm1->client_address, sm2->client_address) == 0 &&
+	       sm1->client_port == sm2->client_port &&
+	       octstr_compare(sm1->server_address, sm2->server_address) == 0 &&
+	       sm1->server_port == sm2->server_port;
 }

@@ -261,9 +261,10 @@ void *list_search(List *list, void *pattern, int (*cmp)(void *, void *)) {
 	long i;
 	
 	list_lock(list);
+	item = NULL;
 	for (i = 0; i < list->len; ++i) {
 		item = GET(list, i);
-		if (cmp(item, pattern) == 0)
+		if (cmp(item, pattern))
 			break;
 	}
 	if (i == list->len)
@@ -271,6 +272,32 @@ void *list_search(List *list, void *pattern, int (*cmp)(void *, void *)) {
 	list_unlock(list);
 	
 	return item;
+}
+
+
+
+List *list_search_all(List *list, void *pattern, int (*cmp)(void *, void *)) {
+	List *new_list;
+	void *item;
+	long i;
+	
+	new_list = list_create();
+
+	list_lock(list);
+	item = NULL;
+	for (i = 0; i < list->len; ++i) {
+		item = GET(list, i);
+		if (cmp(item, pattern))
+			list_append(new_list, item);
+	}
+	list_unlock(list);
+	
+	if (list_len(new_list) == 0) {
+		list_destroy(new_list);
+		new_list = NULL;
+	}
+	
+	return new_list;
 }
 
 

@@ -27,7 +27,6 @@ SESSION_MACHINE({
 	INTEGER(client_port);
 	OCTSTR(server_address);
 	INTEGER(server_port);
-	SESSION_POINTER(next);
 
 	INTEGER(set_caps);
 	INTEGER(protocol_options);
