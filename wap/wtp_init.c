@@ -81,6 +81,16 @@ static WAPEvent *create_tr_invoke_cnf(WTPInitMachine *machine);
 static int tid_wrapped(unsigned short new_tid, unsigned short old_tid);
 
 /*
+ * Create a datagram with an Abort PDU and send it to the WDP layer.
+ */
+static void send_abort(WTPInitMachine *machine, long type, long reason);
+
+/*
+ * Create a datagram with an Ack PDU and send it to the WDP layer.
+ */
+static void send_ack(WTPInitMachine *machine, long ack_type, int rid_flag);
+
+/*
  * We use RcvTID consistently as a internal tid representation. So newly 
  * created tids are converted. SendTID = RcvTID ^ 0x8000 (WTP 10.4.3) and for 
  * an initiator, GenTID = SendTID (WTP 10.5). 
@@ -490,4 +500,20 @@ static void stop_initiator_timer(Timer *timer)
     debug("wap.wtp_init", 0, "stopping timer");
     gw_assert(timer);
     gwtimer_stop(timer);
+}
+
+static void send_abort(WTPInitMachine *machine, long type, long reason)
+{
+    WAPEvent *e;
+
+    e = wtp_pack_abort(type, reason, machine->tid, machine->addr_tuple);
+    dispatch_to_wdp(e);
+}
+
+static void send_ack(WTPInitMachine *machine, long ack_type, int rid_flag)
+{
+    WAPEvent *e;
+
+    e = wtp_pack_ack(ack_type, rid_flag, machine->tid, machine->addr_tuple);
+    dispatch_to_wdp(e);
 }

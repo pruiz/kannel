@@ -96,8 +96,7 @@ ROW(INITIATOR_RESULT_WAIT,
     TR_Abort_Req, 
     1,
     {
-     dispatch_to_wdp(wtp_pack_abort(USER, event->u.TR_Abort_Req.abort_reason, 
-                           init_machine->tid, init_machine->addr_tuple));
+     send_abort(init_machine, USER, event->u.TR_Abort_Req.abort_reason);
     },
     INITIATOR_NULL_STATE)
 
@@ -124,8 +123,7 @@ ROW(INITIATOR_RESULT_WAIT,
     RcvAck,
     event->u.RcvAck.tid_ok == 1 && init_machine->rcr < MAX_RCR,
     {
-     dispatch_to_wdp(wtp_pack_ack(TID_VERIFICATION, init_machine->rid,
-                                  init_machine->tid, init_machine->addr_tuple));
+     send_ack(init_machine, TID_VERIFICATION, init_machine->rid);
      init_machine->tidok_sent = 1;
 
      ++init_machine->rcr;
@@ -157,8 +155,7 @@ ROW(INITIATOR_RESULT_WAIT,
     RcvErrorPDU,
     1,
     {
-     dispatch_to_wdp(wtp_pack_abort(USER, PROTOERR, init_machine->tid, 
-                                    init_machine->addr_tuple)); 
+     send_abort(init_machine, USER, PROTOERR);
 
      wsp_event = create_tr_abort_ind(init_machine, PROTOERR);
      dispatch_to_wsp(wsp_event);
@@ -189,8 +186,7 @@ ROW(INITIATOR_RESULT_WAIT,
 
      start_initiator_timer_R(init_machine);
 
-     dispatch_to_wdp(wtp_pack_ack(TID_VERIFICATION, init_machine->tidok_sent, 
-                                  init_machine->tid, init_machine->addr_tuple));
+     send_ack(init_machine, TID_VERIFICATION, init_machine->tidok_sent);
     },
     INITIATOR_RESULT_WAIT)
 

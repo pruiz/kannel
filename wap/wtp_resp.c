@@ -119,6 +119,17 @@ static int erroneous_field_in(WAPEvent *event);
 static void handle_no_sar(WAPEvent *event);
 static void handle_wrong_version(WAPEvent *event);
 
+/*
+ * Create a datagram with an Abort PDU and send it to the WDP layer.
+ */
+static void send_abort(WTPRespMachine *machine, long type, long reason);
+
+/*
+ * Create a datagram with an Ack PDU and send it to the WDP layer.
+ */
+static void send_ack(WTPRespMachine *machine, long ack_type, int rid_flag);
+
+
 /******************************************************************************
  *
  * EXTERNAL FUNCTIONS:
@@ -605,4 +616,20 @@ static void start_timer_W(WTPRespMachine *machine)
     timer_event = wap_event_create(TimerTO_W);
     timer_event->u.TimerTO_W.handle = machine->mid;
     gwtimer_start(machine->timer, W_WITH_USER_ACK, timer_event);
+}
+
+static void send_abort(WTPRespMachine *machine, long type, long reason)
+{
+    WAPEvent *e;
+
+    e = wtp_pack_abort(type, reason, machine->tid, machine->addr_tuple);
+    dispatch_to_wdp(e);
+}
+
+static void send_ack(WTPRespMachine *machine, long ack_type, int rid_flag)
+{
+    WAPEvent *e;
+
+    e = wtp_pack_ack(ack_type, rid_flag, machine->tid, machine->addr_tuple);
+    dispatch_to_wdp(e);
 }

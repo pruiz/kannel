@@ -1,3 +1,10 @@
+2000-11-23  Richard Braakman  <dark@wapi.com>
+
+	* wap/wtp_init.c, wap/wtp_init_states.def, wap/wtp_resp.c,
+	wap/wtp_resp_states.def: Added static send_abort() and 
+	send_ack() functions, to simplify the state machine
+	definitions.
+
 2000-11-23  Kalle Marjola  <rpr@wapit.com>
 
 	* doc/userguide/userguide.xml: some corrections to just written
