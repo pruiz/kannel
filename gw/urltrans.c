@@ -213,13 +213,13 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	len += count_occurences(pattern, "%r") * 
 			(maxword + 1) * n * ENCODED_LEN;
 	len += count_occurences(pattern, "%p") * 
-			octstr_len(request->sms.sender) * ENCODED_LEN;
+			octstr_len(request->sms.receiver) * ENCODED_LEN;
 	len += count_occurences(pattern, "%P") * 
-			octstr_len(request->sms.receiver) * ENCODED_LEN;
-	len += count_occurences(pattern, "%q") * 
 			octstr_len(request->sms.sender) * ENCODED_LEN;
-	len += count_occurences(pattern, "%Q") * 
+	len += count_occurences(pattern, "%q") * 
 			octstr_len(request->sms.receiver) * ENCODED_LEN;
+	len += count_occurences(pattern, "%Q") * 
+			octstr_len(request->sms.sender) * ENCODED_LEN;
 	len += count_occurences(pattern, "%t") * strlen("YYYY-MM-DD+HH:MM");
 
 	buf = gw_malloc(len + 1);
