@@ -583,11 +583,13 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
      */
     if (msg->sms.coding == DC_7BIT || (msg->sms.coding == DC_UNDEF && octstr_len(msg->sms.udhdata))) {
         /* 
-         * consider 2 cases: 
+         * consider 3 cases: 
          *  a) data_coding 0xFX: encoding should always be GSM 03.38 charset 
          *  b) data_coding 0x00: encoding may be converted according to alt-charset 
+         *  c) data_coding 0x00: assume GSM 03.38 charset if alt-charset is not defined
          */
-        if (pdu->u.submit_sm.data_coding & 0xF0) {
+        if ((pdu->u.submit_sm.data_coding & 0xF0) ||
+            (!smpp->alt_charset && pdu->u.submit_sm.data_coding == 0)) {
             charset_latin1_to_gsm(pdu->u.submit_sm.short_message);
         }
         else if (pdu->u.submit_sm.data_coding == 0 && smpp->alt_charset) {
