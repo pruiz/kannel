@@ -1,4 +1,8 @@
 2003-03-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/log.c: fixing possible seg fault bug while re-opening "shared"
+      log files. Thanks to Alexander for this patch.
+      
+2003-03-27  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added CIMD2 specific documentation for 
       Angel's latest CIMD2 re-design patch.
     * gw/smsc/smsc_cimd2.c: Angel's fix for CPU load consume while idle and
