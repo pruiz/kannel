@@ -98,15 +98,9 @@ static void add_push_application_id(List **push_headers, Octstr *appid_flag)
     else if (octstr_compare(appid_flag, octstr_imm("ua")) == 0)
         http_header_add(*push_headers, "X-WAP-Application-Id", 
                         "http://www.wiral.com:wml.ua");
-    /*
     else if (octstr_compare(appid_flag, octstr_imm("mms")) == 0)
         http_header_add(*push_headers, "X-WAP-Application-Id", 
                         "mms.ua");
-    */
-    else if (octstr_compare(appid_flag, octstr_imm("mms")) == 0)
-        http_header_add(*push_headers, "X-WAP-Application-Id", 
-                        "3
-                        ");
     else if (octstr_compare(appid_flag, octstr_imm("scrap")) == 0)
         http_header_add(*push_headers, "X-WAP-Application-Id", 
                         "no appid at all");
