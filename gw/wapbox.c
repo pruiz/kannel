@@ -22,39 +22,27 @@
 #include "bb.h"
 
 
-static Cfg *cfg = NULL;
 static Octstr *bearerbox_host;
 static long bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static long heartbeat_freq = BB_DEFAULT_HEARTBEAT;
 static long heartbeat_thread;
-static Octstr *logfile = NULL;
-static long logfilelevel = 0;
-static Octstr *http_proxy_host = NULL;
-static long http_proxy_port = -1;
-static List *http_proxy_exceptions = NULL;
-static Octstr *http_proxy_username = NULL;
-static Octstr *http_proxy_password = NULL;
 
-
-/*
- * NOTE: the following variable belongs to a kludge, and will go away
- * when the configuration parsing is reworked. Right now cfg_get()
- * returns the last appearance of a given configuration variable, only.
- * We want to be able to configure several URL mappings at once.
- * To do so, you write a line "map-url-max = somenumber" in the config
- * file, and then write "map-url-0 = ...", "map-url-1 = ...", etc.
- * The mappings will be added in numerical sequence, which is a feature
- * to keep when reworking the configuration parsing, because the mapping
- * operation is order-sensitive
- */
-static long map_url_max = 9;
 
 static void read_config(Octstr *filename) 
 {
     CfgGroup *grp;
     Octstr *s;
     long i;
-    
+    Cfg *cfg;
+    Octstr *logfile;
+    long logfilelevel;
+    Octstr *http_proxy_host;
+    long http_proxy_port;
+    List *http_proxy_exceptions;
+    Octstr *http_proxy_username;
+    Octstr *http_proxy_password;
+    long map_url_max;
+
     cfg = cfg_create(filename);
     if (cfg_read(cfg) == -1)
 	panic(0, "Couldn't read configuration from `%s'.", 
@@ -62,8 +50,7 @@ static void read_config(Octstr *filename)
     cfg_dump(cfg);
     
     /*
-     * first we take the port number in bearerbox from the main
-     * core group in configuration file
+     * Extract info from the core group.
      */
 
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
@@ -74,17 +61,28 @@ static void read_config(Octstr *filename)
 	panic(0, "No 'wapbox-port' in core group");
     
     http_proxy_host = cfg_get(grp, octstr_imm("http-proxy-host"));
+    http_proxy_port = -1;
     cfg_get_integer(&http_proxy_port, grp, octstr_imm("http-proxy-port"));
     http_proxy_username = cfg_get(grp, octstr_imm("http-proxy-username"));
     http_proxy_password = cfg_get(grp, octstr_imm("http-proxy-password"));
     http_proxy_exceptions = 
     	cfg_get_list(grp, octstr_imm("http-proxy-exceptions"));
+    if (http_proxy_host != NULL && http_proxy_port > 0) {
+	http_use_proxy(http_proxy_host, http_proxy_port, 
+	    	       http_proxy_exceptions, http_proxy_username, 
+		       http_proxy_password);
+    }
+    octstr_destroy(http_proxy_host);
+    octstr_destroy(http_proxy_username);
+    octstr_destroy(http_proxy_password);
+    list_destroy(http_proxy_exceptions, octstr_destroy_item);
+
     
     /*
-     * get the remaining values from the wapbox group
+     * And the rest of the info comes from the wapbox group.
      */
 
-    grp = cfg_get_single_group(cfg, octstr_imm("core"));
+    grp = cfg_get_single_group(cfg, octstr_imm("wapbox"));
     if (grp == NULL)
 	panic(0, "No 'wapbox' group in configuration.");
     
@@ -92,8 +90,31 @@ static void read_config(Octstr *filename)
     cfg_get_integer(&heartbeat_freq, grp, octstr_imm("heartbeat-freq"));
     
     logfile = cfg_get(grp, octstr_imm("log-file"));
-    cfg_get_integer(&logfilelevel, grp, octstr_imm("log-level"));
+    if (cfg_get_integer(&logfilelevel, grp, octstr_imm("log-level")) == -1)
+    	logfilelevel = 0;
+    if (logfile != NULL) {
+	log_open(octstr_get_cstr(logfile), logfilelevel);
+	info(0, "Starting to log to file %s level %ld", 
+	     octstr_get_cstr(logfile), logfilelevel);
+    }
+    octstr_destroy(logfile);
 
+    if ((s = cfg_get(grp, octstr_imm("syslog-level"))) != NULL) {
+    	long level;
+	
+	if (octstr_compare(s, octstr_imm("none")) == 0) {
+	    log_set_syslog(NULL, 0);
+	    debug("wap", 0, "syslog parameter is none");
+	} else if (octstr_parse_long(&level, s, 0, 0) == -1) {
+	    log_set_syslog("wapbox", level);
+	    debug("wap", 0, "syslog parameter is %ld", level);
+	}
+	octstr_destroy(s);
+    } else {
+	log_set_syslog(NULL, 0);
+	debug("wap", 0, "no syslog parameter");
+    }
+    
     /* configure URL mappings */
     cfg_get_integer(&map_url_max, grp, octstr_imm("map-url-max"));
     if ((s = cfg_get(grp, octstr_imm("device-home"))) != NULL) {
@@ -112,37 +133,9 @@ static void read_config(Octstr *filename)
 	    wsp_http_map_url_config(octstr_get_cstr(s));
 	octstr_destroy(name);
     }
-
-    /* Get syslog parameters */
-    if ((s = cfg_get(grp, octstr_imm("syslog-level"))) != NULL) {
-    	long level;
-	
-	if (octstr_compare(s, octstr_imm("none")) == 0) {
-	    log_set_syslog(NULL, 0);
-	    debug("wap", 0, "syslog parameter is none");
-	} else if (octstr_parse_long(&level, s, 0, 0) == -1) {
-	    log_set_syslog("wapbox", level);
-	    debug("wap", 0, "syslog parameter is %ld", level);
-	}
-	octstr_destroy(s);
-    } else {
-	log_set_syslog(NULL, 0);
-	debug("wap", 0, "no syslog parameter");
-    }
-    
-    
-    if (logfile != NULL) {
-	log_open(octstr_get_cstr(logfile), logfilelevel);
-	info(0, "Starting to log to file %s level %ld", 
-	     octstr_get_cstr(logfile), logfilelevel);
-    }
     wsp_http_map_url_config_info();	/* debugging aid */
     
-    if (http_proxy_host != NULL && http_proxy_port > 0) {
-	http_use_proxy(http_proxy_host, http_proxy_port, 
-	    	       http_proxy_exceptions, http_proxy_username, 
-		       http_proxy_password);
-    }
+    cfg_destroy(cfg);
 }
 
 
@@ -306,7 +299,6 @@ int main(int argc, char **argv)
     wml_shutdown();
     close_connection_to_bearerbox();
     wsp_http_map_destroy();
-    cfg_destroy(cfg);
     octstr_destroy(bearerbox_host);
     gwlib_shutdown();
     return 0;

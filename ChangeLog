@@ -1,3 +1,14 @@
+2001-01-22  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/wap-appl.c: Fixed memory leak (a Mutex was not being
+	destroyed) and related whitespace usage and made the Mutex static.
+	Also removed a spurious editorial comment with an "I" referring
+	to me, even though I didn't write it.
+	
+	* gw/wapbox.c: Made some global-but-static variables with
+	configuration information local to the function that reads and
+	processes the config.
+	
 2001-01-22  Richard Braakman  <dark@wapit.com>
 
         * gwlib/gwthread-pthread.c: In function gwthread_create_real(),

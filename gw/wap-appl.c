@@ -65,7 +65,7 @@ static Counter *fetches = NULL;
  * has added to it.  This mutex prevents id_to_request_data being read
  * until the updates have completed on both lists.
  */
-Mutex* http_reply_update;
+static Mutex *http_reply_update;
 
 /*
  * Charsets supported by WML compiler, queried from wml_compiler.
@@ -152,7 +152,7 @@ void wap_appl_init(void)
     id_to_request_data = dict_create(1024, NULL);
     gwthread_create(main_thread, NULL);
     gwthread_create(return_replies_thread, NULL);
-    http_reply_update=mutex_create();
+    http_reply_update = mutex_create();
 }
 
 
@@ -171,6 +171,7 @@ void wap_appl_shutdown(void)
     dict_destroy(id_to_request_data);
     list_destroy(queue, wap_event_destroy_item);
     list_destroy(charsets, octstr_destroy_item);
+    mutex_destroy(http_reply_update);
     counter_destroy(fetches);
 }
 
@@ -581,9 +582,7 @@ static void return_replies_thread(void *arg)
 	
 	
 	mutex_lock(http_reply_update);
-
 	p = dict_remove(id_to_request_data, idstr);
-	
 	mutex_unlock(http_reply_update);
 
 	gw_assert(p != NULL);
@@ -702,9 +701,7 @@ static void start_fetch(WAPEvent *event)
 	    octstr_destroy(request_body);
 	    request_body = NULL;
 	}
-	/* We need to update caller AND id_to_request_data before
-	 * another thread can process it.  I hate race conditions.
-	 */
+
 	mutex_lock(http_reply_update);
 	id = http_start_request(caller, url, actual_headers, request_body, 0);
 	http_destroy_headers(actual_headers);
