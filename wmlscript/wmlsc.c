@@ -11,8 +11,6 @@
  *
  */
 
-#include "config.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,8 +23,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "ws.h"
 #include "gwlib/gwlib.h"
+#include "ws.h"
 
 
 /* XXX This module, as well, should use the gwmem wrappers. We'll change
