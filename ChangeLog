@@ -1,5 +1,13 @@
 2000-06-15  Richard Braakman  <dark@wapit.com>
 
+	* gw/wsp-strings.*: Interface for tables of constant strings defined
+	in WSP.  Not used yet.
+
+	* gw/wsp-session.c: Got rid of append_uint8 and append_octstr; use
+	basic octstr functions instead.
+
+2000-06-15  Richard Braakman  <dark@wapit.com>
+
 	* gw/wap-appl.c: In fetch_thread(), explicitly set content.charset
 	to an empty octstr if the http fetch failed, otherwise it remains
 	uninitialized and causes a crash when octstr_destroy is called on it.

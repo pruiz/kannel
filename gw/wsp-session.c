@@ -79,9 +79,6 @@ static int unpack_uintvar(unsigned long *u, Octstr *os, int *off);
 static char *wsp_state_to_string(WSPState state);
 static long wsp_next_session_id(void);
 
-static void append_uint8(Octstr *pdu, long n);
-static void append_octstr(Octstr *pdu, Octstr *os);
-
 static Octstr *make_connectreply_pdu(WSPMachine *m, long session_id);
 
 static int transaction_belongs_to_session(void *session, void *tuple);
@@ -759,19 +756,6 @@ static long wsp_next_session_id(void) {
 }
 
 
-static void append_uint8(Octstr *pdu, long n) {
-	unsigned char c;
-	
-	c = (unsigned char) n;
-	octstr_insert_data(pdu, octstr_len(pdu), &c, 1);
-}
-
-
-static void append_octstr(Octstr *pdu, Octstr *os) {
-	octstr_insert(pdu, os, octstr_len(pdu));
-}
-
-
 static Octstr *make_connectreply_pdu(WSPMachine *m, long session_id) {
 	WSP_PDU *pdu;
 	Octstr *os, *caps, *tmp;
@@ -789,30 +773,30 @@ static Octstr *make_connectreply_pdu(WSPMachine *m, long session_id) {
 		
 		if (m->set_caps & WSP_CSDU_SET) {
 			octstr_truncate(tmp, 0);
-			append_uint8(tmp, WSP_CAPS_SERVER_SDU_SIZE);
+			octstr_append_char(tmp, WSP_CAPS_SERVER_SDU_SIZE);
 			octstr_append_uintvar(tmp, m->client_SDU_size);
-		
+
 			octstr_append_uintvar(caps, octstr_len(tmp));
-			append_octstr(caps, tmp);
+			octstr_append(caps, tmp);
 		}
 		if (m->set_caps & WSP_SSDU_SET) {
 			octstr_truncate(tmp, 0);
-			append_uint8(tmp, WSP_CAPS_SERVER_SDU_SIZE);
+			octstr_append_char(tmp, WSP_CAPS_SERVER_SDU_SIZE);
 			octstr_append_uintvar(tmp, m->server_SDU_size);
-		
+
 			octstr_append_uintvar(caps, octstr_len(tmp));
-			append_octstr(caps, tmp);
+			octstr_append(caps, tmp);
 		}
 		
 		if (m->set_caps & WSP_MMOR_SET) {
 			octstr_append_uintvar(caps, 2);
-			append_uint8(caps, WSP_CAPS_METHOD_MOR);
-			append_uint8(caps, m->MOR_method);
+			octstr_append_char(caps, WSP_CAPS_METHOD_MOR);
+			octstr_append_char(caps, m->MOR_method);
 		}
 		if (m->set_caps & WSP_PMOR_SET) {
 			octstr_append_uintvar(caps, 2);
-			append_uint8(caps, WSP_CAPS_PUSH_MOR);
-			append_uint8(caps, m->MOR_push);
+			octstr_append_char(caps, WSP_CAPS_PUSH_MOR);
+			octstr_append_char(caps, m->MOR_push);
 		}
 		/* rest are not supported, yet */
 		
