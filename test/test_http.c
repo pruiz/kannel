@@ -141,6 +141,11 @@ int main(int argc, char **argv) {
 		}
 	}
 
+    	if (optind == argc) {
+	    help();
+	    exit(0);
+	}
+
 	if (proxy != NULL && proxy_port > 0)
 		http_use_proxy(proxy, proxy_port, exceptions);
 	octstr_destroy(proxy);

@@ -1,5 +1,11 @@
 2000-11-03  Lars Wirzenius  <liw@iki.fi>
 
+	* test/test_http.c: Change the error message when there are
+	no command line arguments from "Floating point exception (core
+	dumped)" to the standard help text.
+
+2000-11-03  Lars Wirzenius  <liw@iki.fi>
+
 	* test/test_http_server.c: Converted to use the new HTTP server
 	interface. This displayed bugs in shutdown situations for the
 	new HTTP code.
