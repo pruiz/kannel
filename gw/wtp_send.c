@@ -148,7 +148,7 @@ void wtp_resend_result(Msg *result, long rid){
         result = set_rid(result, rid);
      }
 
-     put_msg_in_queue(result);
+     put_msg_in_queue(msg_duplicate(result));
 }
 
 /*

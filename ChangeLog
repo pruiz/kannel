@@ -1,3 +1,8 @@
+Sun Apr 23 22:38:18 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wtp_send.c: When re-sending a message, create a duplicate of
+	the message to be sent. Related to PR¤44 by Paul Keogh.
+
 Sun Apr 23 21:45:36 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* test/wapbox_feeder.c: Obsolete, thus removed.
