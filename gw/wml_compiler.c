@@ -188,7 +188,6 @@ Hash *wml_URL_values_hash;
  * definitions.
  */
 
-
 static int parse_document(xmlDocPtr document, Octstr *charset, 
 			  wml_binary_t **wbxml);
 
@@ -202,6 +201,7 @@ static int parse_charset(Octstr *charset, wml_binary_t **wbxml);
 static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml);
 
 static void parse_end(wml_binary_t **wbxml);
+static void parse_entities(Octstr *wml_source);
 
 /*
  * Variable functions. These functions are used to find and parse variables.
@@ -306,7 +306,10 @@ int wml_compile(Octstr *wml_text,
 
     octstr_strip_blanks(wml_text);
 
-    /* Check the WML-code for \0-characters. */
+    /* Check the WML-code for \0-characters and for WML entities. Fast patch.
+       -- tuo */
+
+    parse_entities(wml_text);
 
     size = octstr_len(wml_text);
     wml_c_text = octstr_get_cstr(wml_text);
@@ -1051,6 +1054,45 @@ static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
     octstr_destroy(var);
   
     return 0;
+}
+
+
+
+
+/*
+ * parse_entities - replaces WML entites in the WML source with equivalent
+ * numerical entities. A fast patch for WAP 1.1 compliance.
+ */
+
+static void parse_entities(Octstr *wml_source)
+{
+    static char entity_nbsp[] = "&nbsp;";
+    static char entity_shy[] = "&shy;";
+    static char nbsp[] = "&#160;";
+    static char shy[] = "&#173;";
+    int pos = 0;
+    Octstr *temp;
+
+    if ((pos = octstr_search_cstr(wml_source, entity_nbsp, pos)) >= 0) {
+	temp = octstr_create(nbsp);
+	while (pos >= 0) {
+	    octstr_delete(wml_source, pos, strlen(entity_nbsp));
+	    octstr_insert(wml_source, temp, pos);
+	    pos = octstr_search_cstr(wml_source, entity_nbsp, pos);
+	}
+	octstr_destroy(temp);
+    }
+
+    pos = 0;
+    if ((pos = octstr_search_cstr(wml_source, entity_shy, pos)) >= 0) {
+	temp = octstr_create(shy);
+	while (pos >= 0) {
+	    octstr_delete(wml_source, pos, strlen(entity_shy));
+	    octstr_insert(wml_source, temp, pos);
+	    pos = octstr_search_cstr(wml_source, entity_shy, pos);
+	}
+	octstr_destroy(temp);
+    }	
 }
 
 
