@@ -15,7 +15,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 # USA #
 #
-# Revision $Id: kannel.monitor,v 1.2 2002-08-06 09:03:50 stolj Exp $
+# Revision $Id: kannel.monitor,v 1.3 2003-04-08 08:51:34 stolj Exp $
 #
 # Ingo Brombach <brombach@wapme-systems.de>
 
@@ -68,8 +68,8 @@ else{
         my $response=$ua->get($url)||
         do { &err($host);&info("GET request to $host failed \n");next};
         &info("OK\n");
-        if ((%{$response}->{'_content'})){
-            my $doc=%{$response}->{'_content'};
+        if ((${$response}{'_content'})){
+            my $doc=${$response}{'_content'};
             $p->parse($doc);
         } # end if
         else{do { &err($host);&info("GET request to $host failed \n");next}}
@@ -183,20 +183,20 @@ sub analyze{
     #==============================
     for ($count=1;$count>=0;$count++){
 
-	if ($count==1 && ! %{"box".$count}->{'status'}){
+	if ($count==1 && ! ${"box".$count}{'status'}){
     	    info "No SMS- or WAP-Box is running!!\n";
 	    push @failures, "No SMS- or WAP-Box is running!!\n";
 	} #end if
 
-	elsif ((%{"box".$count}->{'status'}
-	       &&(split /\s+/,%{"box".$count}->{'status'})[0] ne 'on-line')){
-	    info %{"box".$count}->{'type'}." is not running!!\n";
-	    push @failures, hostname().": ".%{"box".$count}->{'type'}." is not running!!\n";
+	elsif ((${"box".$count}{'status'}
+	       &&(split /\s+/,${"box".$count}{'status'})[0] ne 'on-line')){
+	    info ${"box".$count}{'type'}." is not running!!\n";
+	    push @failures, hostname().": ".${"box".$count}{'type'}." is not running!!\n";
 	} # end elsif
 
-    	last unless (%{"box".$count}->{'type'}
-		     &&((%{"box".$count}->{'type'} eq 'smsbox')
-		     || (%{"box".$count}->{'type'} eq 'wapbox')));
+    	last unless (${"box".$count}{'type'}
+		     &&((${"box".$count}{'type'} eq 'smsbox')
+		     || (${"box".$count}{'type'} eq 'wapbox')));
     } # end for count (SMS-Box)
     
     # SMSC does not run:
@@ -204,7 +204,7 @@ sub analyze{
     for ($count=1;$count>=0;$count++){
         last unless (exists ${"smsc".$count}{id});
         if (${"smsc".$count}{id}){          
-            %exists->{${"smsc".$count}{id}}=1;
+            $exists{${"smsc".$count}{id}}=1;
             if ((split /\s+/,${"smsc".$count}{status})[0] ne 'online'){
             local $smsc_not;
                 if ($opts{n}){
@@ -226,7 +226,7 @@ sub analyze{
     #==============================
     if ($opts{n}){
         foreach $arg (split /\s+/, $opts{n}){
-            unless (exists %exists->{$arg}){
+            unless (exists $exists{$arg}){
                 info "$arg does not exist\n";
                 push @failures, $arg;
             } #end unless
@@ -244,7 +244,7 @@ sub analyze{
         ($field,$value,$time)=split /\|/, $_,3;
         $diffmin=(time - $time)/60;
         
-        if ((%{"sms"}->{$field} - $value)/$diffmin >= $qlimit){
+        if ((${"sms"}{$field} - $value)/$diffmin >= $qlimit){
             $warncount+=1;
         } # end if
     } # end while STATUSFILE
@@ -261,7 +261,7 @@ sub analyze{
          if ((split /_/,$field)[1]
              &&(split /_/,$field)[1] eq 'queued'){
              printf(STATUSFILE "%s|%s|%d\n", 
-                    $field,%{"sms"}->{$field},time);
+                    $field,${"sms"}{$field},time);
          } # end if
      } # end foreach
 
@@ -281,7 +281,7 @@ sub show{
 
      printf("============SMS Overall==================\n");
      foreach $field (keys %{"sms"}){
-         printf("%s -> %s\n", $field,%{"sms"}->{$field});
+         printf("%s -> %s\n", $field,${"sms"}{$field});
      }
      printf("=========================================\n");
 
@@ -289,7 +289,7 @@ sub show{
          if (exists ${"box".$bcount}{type});
     while (exists ${"box".$bcount}{type}){
         foreach $field (keys %{"box".$bcount}){
-            printf("%s -> %s\n", $field,%{"box".$bcount}->{$field});
+            printf("%s -> %s\n", $field,${"box".$bcount}{$field});
         } # end foreach
         ++$bcount;
         printf("=========================================\n");
@@ -301,7 +301,7 @@ sub show{
     }
     while (exists ${"smsc".$count}{id}){
         foreach $field (keys %{"smsc".$count}){
-            printf("%s -> %s\n", $field,%{"smsc".$count}->{$field});
+            printf("%s -> %s\n", $field,${"smsc".$count}{$field});
         } # end foreach
         printf("=========================================\n");
         ++$count;
@@ -325,7 +325,7 @@ sub chrhndl {
 
   if ($value!~/^\s+$/){
 
-        while($level=%parent->{$level}){
+        while($level=$parent{$level}){
             unshift @level, $level;
         }
            
