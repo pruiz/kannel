@@ -1,7 +1,13 @@
+2004-08-12 Alexander Malysh <olek2002 at hotmail.com>
+    * gwlib/gwthread-pthread.c: declared 'tsd_key' and 'threadtable_lock' static,
+      because those are local symbols and don't exported to the world.
+    * gwlib/gwthread.h: added 'gw-config.h' and 'sys/poll.h' to includes, so we can
+      include 'gwlib/gwthread.h' alone.
+
 2004-08-11  Stipe Tolj  <stolj@wapme.de>
     * various files: a generic spellchecking patch to fix mis-spelling.
       Mainly this fixes bad-english comments in source files.
-      Thanks a lot to Pedro for the provided patch. NO LOGIC CHHANGE!
+      Thanks a lot to Pedro for the provided patch. NO LOGIC CHANGE!
       [Msg-ID: <411A3291.4090906@netcabo.pt>]
 
 2004-08-11  Stipe Tolj  <stolj@wapme.de>

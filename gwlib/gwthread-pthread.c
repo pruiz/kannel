@@ -122,9 +122,9 @@ static struct threadinfo mainthread;
 /* Our key for accessing the (struct gwthread *) we stash in the
  * thread-specific-data area.  This is much more efficient than
  * accessing a global table, which we would have to lock. */
-pthread_key_t tsd_key;
+static pthread_key_t tsd_key;
 
-pthread_mutex_t threadtable_lock;
+static pthread_mutex_t threadtable_lock;
 
 static void lock(void)
 {

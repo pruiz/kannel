@@ -68,6 +68,9 @@
 #ifndef GWTHREAD_H
 #define GWTHREAD_H
 
+#include "gw-config.h"
+#include <sys/poll.h>
+
 /* gwthread_self() must return this value for the main thread. */
 #define MAIN_THREAD_ID 0
 
