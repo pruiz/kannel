@@ -195,6 +195,7 @@ MULTI_GROUP(sms-service,
     OCTSTR(post-url)
     OCTSTR(file)
     OCTSTR(text)
+    OCTSTR(exec)
     OCTSTR(accepted-smsc)
     OCTSTR(faked-sender)
     OCTSTR(max-messages)
