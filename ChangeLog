@@ -1,4 +1,8 @@
 2002-12-02  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/conn.c: added openssl free'ing stuff reported by Paul in 
+      conn_shutdown_ssl() and server_shutdown_ssl().
+
+2002-12-02  Stipe Tolj  <tolj@wapme-systems.de>
     * test/wapproxy.c: added our wap packet proxy debugging tool to kannel
 
 2002-12-02  Stipe Tolj  <tolj@wapme-systems.de>
