@@ -3577,7 +3577,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>y?</entry>
@@ -3596,7 +3596,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>y?</entry>
     <entry>n</entry>
     <entry>?</entry>
@@ -3615,7 +3615,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>?</entry>
@@ -3634,7 +3634,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>n</entry>
     <entry>n</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>y?<footnote><para>However, it looks like the <literal>sema</literal> driver can't receive <emphasis>text</emphasis> data.</para></footnote></entry>
     <entry>y?</entry>
@@ -3672,7 +3672,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>n</entry>
     <entry>n</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>N</entry>
@@ -3691,7 +3691,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>n</entry>
     <entry>n</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>N</entry>
@@ -3710,7 +3710,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>y?</entry>
@@ -3729,7 +3729,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>y?</entry>
@@ -3748,7 +3748,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>n</entry>
@@ -3767,7 +3767,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>y?</entry>
@@ -3786,7 +3786,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>y?</entry>
@@ -3805,7 +3805,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>n</entry>
