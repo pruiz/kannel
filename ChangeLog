@@ -1,3 +1,7 @@
+1999-30-11 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp_state-decl.h: added event receive abort pdu
+
 Tue Nov 30 17:37:58 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: Replaced call to malloc with call to gw_malloc.

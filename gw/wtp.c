@@ -508,11 +508,6 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 	  append_to_event_queue(machine, event);
 	  return;
      }
-	
-     /* XXX er, what is the point of this timer? --liw */
-     timer=wtp_timer_create();
-     if (timer == NULL)
-        goto mem_error;
 
      do {
 	  debug(0,"handle_event: current state=%s.",name_state(machine->state));
@@ -539,6 +534,8 @@ mem_error:
      debug(0, "handle_event: out of memory");
      if (timer != NULL)
         wtp_timer_destroy(timer);
+     if (wsp_event != NULL)
+        wsp_event_destroy(wsp_event);
      free(timer);
      free(wsp_event);
      mutex_unlock(&machine->mutex);
@@ -792,3 +789,7 @@ static WTPEvent *remove_from_event_queue(WTPMachine *machine) {
 
 
 /*****************************************************************************/
+
+
+
+

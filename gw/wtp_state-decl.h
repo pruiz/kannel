@@ -22,8 +22,13 @@ ROW(LISTEN,
      current_primitive=TRInvokeIndication;
      machine->rid=0;
      machine->result_pdu_sent=1;
+
      wsp_event=pack_wsp_event(current_primitive, event, machine);
      if (wsp_event == NULL)
+        goto mem_error;
+
+     timer=wtp_timer_create();
+     if (timer == NULL)
         goto mem_error;
      wtp_timer_start(timer, L_A_WITH_USER_ACK, machine, event); 
     },
@@ -42,7 +47,9 @@ ROW(INVOKE_RESP_WAIT,
     TRInvoke,
     machine->tcl == 2,
     { 
-     wtp_timer_stop(timer);
+     timer=wtp_timer_create();
+     if (timer == NULL)
+        goto mem_error;
      wtp_timer_start(timer, L_A_WITH_USER_ACK, machine, event); 
     },
     RESULT_WAIT)
@@ -62,7 +69,12 @@ ROW(RESULT_WAIT,
     1,
     {
      machine->rcr=0;
+
+     timer=wtp_timer_create();
+     if (timer == NULL)
+        goto mem_error;
      wtp_timer_start(timer, L_R_WITH_USER_ACK, machine, event);
+
      wtp_send_result(machine, event); 
     },
     RESULT_RESP_WAIT)
