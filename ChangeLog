@@ -1,3 +1,16 @@
+2000-11-23  Richard Braakman  <dark@wapi.com>
+
+	* gw/smsc_at.c, gw/smsbox_req.c: Replaced some strcpys with
+	pointer assignments.
+
+	* doc/userguide/userguide.xml: Replaced an & with &amp; so that
+	it compiles.
+
+	* checks/check_sendsms.sh: Reduced sleep after starting bearerbox,
+	because it starts up faster now.  Added "sleep 5" before killing
+	bearerbox, because smsbox segfaults if it's still busy when the
+	bearerbox goes away.
+
 2000-11-23  Yann Muller  <ymuller@3glab.com>
 
 	* doc/userguide/userguide.xml: Added Stipe Tolj's explanations

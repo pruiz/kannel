@@ -17,7 +17,7 @@ test/fakesmsc -i $interval -m $times '123 234 nop' \
 gw/bearerbox -v $loglevel gw/smskannel.conf > check_sendsms_bb.log 2>&1 &
 bbpid=$!
 
-sleep 5
+sleep 2
 gw/smsbox -v $loglevel gw/smskannel.conf > check_sendsms_sms.log 2>&1 &
 
 i=0
@@ -27,6 +27,8 @@ do
     	>> check_sendsms.log 2>&1
     i=`expr $i + 1`
 done
+
+sleep 5
 
 kill -INT $bbpid
 wait
@@ -39,4 +41,4 @@ then
 	exit 1
 fi
 
-rm check_sendsms*.log
+# rm check_sendsms*.log
