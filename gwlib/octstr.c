@@ -1892,6 +1892,7 @@ Octstr *octstr_format_valist(const char *fmt, va_list args)
         convert(os, &format, &fmt, &args);
     }
 
+    seems_valid(os);
     return os;
 }
 

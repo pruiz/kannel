@@ -1,5 +1,9 @@
 2000-10-05  Richard Braakman  <dark@wapit.com>
 
+	* Added seems_valid assertion to end of octstr_format().
+
+2000-10-05  Richard Braakman  <dark@wapit.com>
+
 	* gw/wap-appl.c: Bugfix, don't panic if resp_headers is NULL
 	(i.e. the HTTP request failed).
 
