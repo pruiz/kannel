@@ -1,3 +1,6 @@
+2002-10-15 Andreas Fink <afink@gni.ch>
+    * gw/dlr.c gw/smsc/smsc_smpp.c: fixed DLR reports if message ID was hex or alpha
+
 2002-10-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smasi.c: added enquire_link feature to pass a newline
       throught this connection to keep the TCP session up.

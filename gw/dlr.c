@@ -27,10 +27,9 @@
 #include "sms.h"
 #include "dlr.h"
 
-/* 
+/*
 #define DLR_TRACE 1 
 */
-
 /* 
  * We use memory based DLR
  * the structure of a delivery report waiting list entry 
@@ -413,6 +412,10 @@ static void dlr_add_mysql(char *smsc, char *ts, char *src, char *dst,
 #ifdef DLR_MYSQL
     Octstr *sql;
     int	state;
+#if defined(DLR_TRACE)
+        debug("dlr.dlr", 0, "Adding DLR smsc=%s, ts=%s, src=%s, dst=%s, mask=%d",
+              smsc, ts, src, dst, mask);
+#endif
 
     sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s) VALUES "
                         "('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d');",
@@ -428,8 +431,12 @@ static void dlr_add_mysql(char *smsc, char *ts, char *src, char *dst,
     state = mysql_query(connection, octstr_get_cstr(sql));
     if (state != 0)
         error(0, "MYSQL: %s", mysql_error(connection));
-    
-    octstr_destroy(sql);
+
+#if defined(DLR_TRACE)
+        debug("dlr.dlr", 0, "sql: %s", octstr_get_cstr(sql));
+#endif
+
+octstr_destroy(sql);
     mutex_unlock(dlr_mutex);
 #endif
 }
@@ -567,6 +574,10 @@ static Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
     mutex_lock(dlr_mutex);
     
     state = mysql_query(connection, octstr_get_cstr(sql));
+#if defined(DLR_TRACE)
+        debug("dlr.dlr", 0, "sql: %s", octstr_get_cstr(sql));
+#endif        
+
     octstr_destroy(sql);
     if (state != 0) {
         error(0, "MYSQL: %s", mysql_error(connection));
