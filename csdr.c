@@ -172,7 +172,7 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 no_msg:
 	return NULL;
 error:
-	error(errno, "csdr_get_message: could not get message");
+	error(errno, "csdr_get_message: could not receive UDP datagram");
 	return NULL;
 }
 
@@ -204,6 +204,7 @@ int csdr_send_message(CSDRouter *router, RQueueItem *item)
 
 	return 0;
 error:
+	error(errno, "csdr_get_message: could not send UDP datagram");
 	return -1;
 }
 
