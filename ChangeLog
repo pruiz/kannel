@@ -1,3 +1,6 @@
+2004-02-16 Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wml_compiler.c: fixed compiler warnings.
+
 2004-02-10  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_smscconn.c: got rid of 'List *incoming_wdp'.
       No sense to be there.

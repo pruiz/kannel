@@ -819,7 +819,7 @@ static int parse_attr_value(Octstr *attr_value, List *tokens,
     int i, pos, wbxml_hex;
     wml_hash_t *temp = NULL;
     Octstr *cut_text = NULL;
-    char* tmp;
+    char *tmp;
 
     /*
      * Beware that libxml2 does internal encoding in UTF-8 while parsing.
@@ -827,7 +827,7 @@ static int parse_attr_value(Octstr *attr_value, List *tokens,
      * to transcode at least here. Only transcode if target encoding differs
      * from libxml2's internal encoding (UTF-8).
      */
-    tmp = xmlGetCharEncodingName(charset);
+    tmp = (char*) xmlGetCharEncodingName(charset);
     if (charset != XML_CHAR_ENCODING_UTF8 && 
         charset_convert(attr_value, "UTF-8", 
                         tmp) != 0) {
@@ -933,7 +933,7 @@ static int parse_text(xmlNodePtr node, wml_binary_t **wbxml)
      * to transcode at least here. Only transcode if target encoding differs
      * from libxml2's internal encoding (UTF-8).
      */
-    tmp = xmlGetCharEncodingName(node->doc->charset);
+    tmp = (char*) xmlGetCharEncodingName(node->doc->charset);
     if (node->doc->charset != XML_CHAR_ENCODING_UTF8 && 
         charset_convert(temp, "UTF-8", 
                         tmp) != 0) {
