@@ -197,7 +197,7 @@ static int become_daemon(void)
 
 #define PANIC_SCRIPT_MAX_LEN 4096
 
-static void execute_panic_script(const char *panic_script, const char *format, ...)
+static PRINTFLIKE(2,3) void execute_panic_script(const char *panic_script, const char *format, ...)
 {
     char *args[3];
     char buf[PANIC_SCRIPT_MAX_LEN + 1];
