@@ -1,4 +1,8 @@
 2003-08-07  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bearerbox.c: store_shutdown() _must_ be called after all services
+      that make use of it are down.
+
+2003-08-07  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_boxc.c: do not use NULL values in debug log.
     * gw/bb_store.c: Fixed segfault if bearerbox going down.
 

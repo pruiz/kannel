@@ -562,7 +562,6 @@ int bb_shutdown(void)
 
     called = 1;
     set_shutdown_status();
-    store_shutdown();
     mutex_unlock(status_mutex);
 
 #ifndef NO_SMS
@@ -573,6 +572,7 @@ int bb_shutdown(void)
     debug("bb", 0, "shutting down udp");
     udp_shutdown();
 #endif
+    store_shutdown();
     
     return 0;
 }
