@@ -1,3 +1,8 @@
+2003-10-09  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.[ch]: changed http_something_accepted() routine in order to
+      use Octstr compare and upcase functions rather then istrdup() which is
+      deprecated now.
+
 2003-10-08  Stipe Tolj  <tolj@wapme-systems.de>
     * utils/foobar-config.sh: added generic foobar-config shell script 
       generator script to generate gw-config which may be used by 3rd
