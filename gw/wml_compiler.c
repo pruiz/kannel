@@ -1241,6 +1241,7 @@ static void string_table_build(xmlNodePtr node, wml_binary_t **wbxml)
   List *list = NULL;
 
   list = list_create();
+  gw_assert(list);
 
   string_table_collect_strings(node, list);
 
@@ -1248,7 +1249,11 @@ static void string_table_build(xmlNodePtr node, wml_binary_t **wbxml)
 
   list =  string_table_collect_words(list);
 
-  list = string_table_add_many(string_table_sort_list(list), wbxml);
+  /* Don't add strings if there aren't any. (no NULLs please) */
+  if (list) {
+    list = 
+      string_table_add_many(string_table_sort_list(list), wbxml);
+  }
 
   /* Memory cleanup. */
   while (list_len(list))

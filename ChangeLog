@@ -2,6 +2,8 @@
 
 	* gwlib/list.c: Added a test for NULL list to list_len since some
 	things want the length of NULL lists.
+	* gw/wml_compiler.c: No longer tries to add strings to the string
+	table if the list is NULL.
 
 2000-08-31  Lars Wirzenius  <liw@iki.fi>
 
