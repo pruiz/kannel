@@ -1,3 +1,8 @@
+2004-03-17  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/smsc/smsc_sema.[ch]: fixed annoying compiler warning. Changed
+      msgbody from (void**) to (void*). I don't know why in hell (void**)
+      was needed?
+
 2004-03-10  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/smsc/smsc_smpp.c: applied patch that removes unneeded setting
       of online time to -1. Thanks to Nisan Bloch <nisof@amagoblin.co.za>.

@@ -287,7 +287,7 @@ int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 	
 	memset(submit_sm->smscrefnum,0,sizeof(submit_sm->smscrefnum));	
         /*pack the message body in 2kmsg*/
-	lmsg->msgbody = (void**)(&submit_sm);
+	lmsg->msgbody = submit_sm;
 	nret = sema_msg_session_mt(smsc, lmsg);
 
 	gw_free(submit_sm);
@@ -331,7 +331,7 @@ int sema_receive_msg(SMSCenter *smsc, Msg **msg)
 	*msg = msg_create(sms);
 	if(*msg==NULL) goto error;
     
-	recieve_sm = (struct sm_deliver_invoke*) (*(rmsg->msgbody));
+	recieve_sm = (struct sm_deliver_invoke*) rmsg->msgbody;
 	if(recieve_sm==NULL) goto error;
           
 	/* as IA5(8 bit character) is the default line encoding used by X28
@@ -953,7 +953,7 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
     int isrcved = 0, iTrcved = 0, decoderesult = 0;
     time_t tstart;
 
-    submit_invoke=(struct sm_submit_invoke*)(*(pmsg->msgbody));
+    submit_invoke = (struct sm_submit_invoke*) pmsg->msgbody;
     if(submit_invoke == NULL) goto error;
 
     /*encode first*/
@@ -1054,7 +1054,7 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 		if(decoderesult >= 0){
 		    if(mtrmsg->type == 's'){ /*submit result*/
 	 
-			submit_result = (struct sm_submit_result*)(*mtrmsg->msgbody);
+			submit_result = (struct sm_submit_result*) mtrmsg->msgbody;
 			if(submit_result == NULL) goto error;
 			/* check result operation number is what we send */
 			memset(tmp1,0,5); memset(tmp2,0,5);
@@ -1074,7 +1074,7 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 		    } 
 		    else if(mtrmsg->type == 'T'){ /*report invoke*/
 		
-			report_invoke=(struct sm_statusreport_invoke*)(*mtrmsg->msgbody);
+			report_invoke = (struct sm_statusreport_invoke*) mtrmsg->msgbody;
 			if(report_invoke == NULL) goto error;
 			/*check if report reference number is what we expect*/
 			memset(tmp1,0,sizeof(tmp1)); memset(tmp2,0,sizeof(tmp2));
@@ -1101,7 +1101,7 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 			decoderesult = 0;
 			iret = sema_submit_result(smsc, mtrmsg, decoderesult);
 			if(iret == -1) goto error;
-			deliver_invoke =(struct sm_deliver_invoke*)(*mtrmsg->msgbody);
+			deliver_invoke = (struct sm_deliver_invoke*) mtrmsg->msgbody;
 			if(deliver_invoke != NULL){
 			    gw_free(deliver_invoke);
 			    /*append buffer back to  smsc->buffer*/
@@ -1200,7 +1200,7 @@ static int sema_msg_session_mo(SMSCenter *smsc, char* cbuff){
 	retresult = 0;  	/* deliver invoke */  
 	iret = sema_submit_result(smsc, rmsg, retresult); 
 	if(iret == -1) goto error;
-	deliver_invoke= (struct sm_deliver_invoke*) (*rmsg->msgbody);
+	deliver_invoke = (struct sm_deliver_invoke*) rmsg->msgbody;
 	if(deliver_invoke == NULL) goto msg_error;
 	sema_msglist_push(smsc->sema_mo, rmsg);  
 	return 1;
@@ -1209,7 +1209,7 @@ static int sema_msg_session_mo(SMSCenter *smsc, char* cbuff){
 	retresult = 0; 		/* let msg through */
 	sema_submit_result(smsc, rmsg, retresult);
 	if(iret == -1) goto error;
-	report_invoke = (struct sm_statusreport_invoke*)(*rmsg->msgbody);
+	report_invoke = (struct sm_statusreport_invoke*) rmsg->msgbody;
 	if(report_invoke != NULL)  
 	    gw_free(report_invoke);
     }
@@ -1303,7 +1303,7 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
 	    if(iusedbyte < 1) goto error_submit;	
 	    memcpy(submit_result->accepttime, tmp, 4);
 	}
-	(*desmsg)->msgbody = (void**)&submit_result;
+	(*desmsg)->msgbody = submit_result;
 	break;
     case 'M': 
 	/* deliver invoke*/
@@ -1404,7 +1404,7 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
 	iusedbyte = line_scan_IA5_hex(octsrc,14,tmp);
 	if(iusedbyte < 1) goto error_deliver;
 	memcpy(receive_sm->invoketime, tmp,14);
-	(*desmsg)->msgbody = (void**)&receive_sm;
+	(*desmsg)->msgbody = receive_sm;
 	break;
     case 'T': 
 	/* status report invoke */
@@ -1486,7 +1486,7 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
 	    goto error_receive;
 	}
 	memcpy(receive_report->invoketime ,tmp, 14);
-	(*desmsg)->msgbody = (void**)&receive_report;
+	(*desmsg)->msgbody = receive_report;
 	break;
     }
     return 1;
@@ -1518,7 +1518,7 @@ static int sema_encode_msg(sema_msg* pmsg, char* str) {
     switch(pmsg->type)
     {
     case 'S':
-	submit_sm = (struct sm_submit_invoke *)(*(pmsg->msgbody)); 
+	submit_sm = (struct sm_submit_invoke *) pmsg->msgbody; 
 	write_variable_value(submit_sm->msisdnlen, oc1byte); /*msisdn len*/
 	line_append_hex_IA5(IA5msg, oc1byte,1);
 	line_append_hex_IA5(IA5msg, 

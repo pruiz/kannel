@@ -121,7 +121,7 @@ typedef struct sema_msg{
   int encodetype; /* 1 byte ,0 is IA5, 1 is hex, 2 is bin */
   time_t logtime;
 
-  void** msgbody; /* the actual message structure */ 
+  void *msgbody; /* the actual message structure */ 
  
   struct sema_msg *prev, *next; 
 } sema_msg;
