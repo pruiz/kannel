@@ -568,7 +568,6 @@ static void return_reply(int status, Octstr *content_body, List *headers,
     octstr_destroy(content.type); /* body was re-used above */
     octstr_destroy(content.charset);
     octstr_destroy(url);          /* same as content.url */
-    wap_event_destroy(orig_event);
 
     counter_decrease(fetches);
 }
@@ -595,6 +594,8 @@ static void return_replies_thread(void *arg)
 	return_reply(status, body, headers, p->client_SDU_size,
 		     p->event, p->session_id, p->url, p->x_wap_tod,
 		     p->request_headers);
+	wap_event_destroy(p->event);
+	http_destroy_headers(p->request_headers);
     	gw_free(p);
     	octstr_destroy(final_url);
     }
@@ -695,6 +696,7 @@ static void start_fetch(WAPEvent *event)
 	octstr_destroy(request_body);
 	return_reply(ret, content_body, resp_headers, client_SDU_size,
 		     event, session_id, url, x_wap_tod, actual_headers);
+	wap_event_destroy(event);
 	http_destroy_headers(actual_headers);
     } else if (octstr_str_compare(method, "GET") == 0 ||
                octstr_str_compare(method, "POST") == 0) {
@@ -720,6 +722,7 @@ static void start_fetch(WAPEvent *event)
 	octstr_destroy(request_body);
 	return_reply(ret, content_body, resp_headers, client_SDU_size,
 		     event, session_id, url, x_wap_tod, actual_headers);
+	wap_event_destroy(event);
 	http_destroy_headers(actual_headers);
     }
 }

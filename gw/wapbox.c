@@ -293,13 +293,12 @@ int main(int argc, char **argv)
 		msg->wdp_datagram.destination_port);
 	    dgram->u.T_DUnitdata_Ind.user_data = msg->wdp_datagram.user_data;
 	    msg->wdp_datagram.user_data = NULL;
-	    msg_destroy(msg);
 
 	    wap_dispatch_datagram(dgram);
 	} else {
 	    warning(0, "Received other message than wdp/admin, ignoring!");
-	    msg_destroy(msg);
 	}
+	msg_destroy(msg);
     }
 
     info(0, "Kannel wapbox terminating.");

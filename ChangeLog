@@ -1,3 +1,12 @@
+2001-03-16  Richard Braakman  <dark@wapit.com>
+
+	* gw/wap-appl.c: Fixed memory leak of request_headers in request_data.
+	Made return_result not destroy the WAP event passed to it (caller
+	should do that).  Memory management in this file is still icky.
+
+	* gw/wapbox.c: Always destroy a msg after processing it, this fixes
+	a memory leak handling admin messages.
+
 2001-03-16  Kalle Marjola  <rpr@wapit.com>
 
 	* gwlib/octstr.h|c: added %E to octstr_format, which takes an
