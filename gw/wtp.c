@@ -783,13 +783,13 @@ void wsp_event_dump(WSPEvent *event){
 
         debug(0, "WSP event %p:", (void *) event);
         debug(0, "The TYPE of the wsp event = %s", name_event(event->name));
-        #define INTEGER(name) debug(0, "Integer field %s,%ld:", #name, p->name)
-        #define OCTSTR(name) debug(0, "Octstr field %s:", #name);\
+        #define INTEGER(name) debug(0, "Int %s.%s,%ld:", t, #name, p->name)
+        #define OCTSTR(name) debug(0, "Octstr field %s.%s:", t, #name);\
                              octstr_dump(p->name)
-        #define MACHINE(name) debug(0, "Machine %p", (void *) p->name);\
+        #define MACHINE(name) debug(0, "Machine %p.%s", (void *) p->name, t);\
                               wtp_machine_dump(p->name)
         #define WSP_EVENT(type, field) \
-                              { struct type *p=&event->type; field }
+                { char *t =#type; struct type *p=&event->type; field }
         #include "wsp_events-decl.h"
 }
 
