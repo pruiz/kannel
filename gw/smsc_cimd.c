@@ -71,10 +71,11 @@ static int cimd_open_connection(SMSCenter *smsc) {
 	    ret = smscenter_read_into_buffer(smsc);
 	    if (strstr(smsc->buffer, "CIMD rel 1.37\n") != NULL)
 		break;
-	    else{
-		error(0, "cimd_open_connection: couldn't find protocol string");
-		goto logout;
-	    }
+/*	    else{
+ *		error(0, "cimd_open_connection: couldn't find protocol string '%s'",
+ *		      smsc->buffer);
+ *		goto logout;
+ *	    } */
 	    if (ret < 0) goto logout;
 	}
 	

@@ -5,7 +5,7 @@
  * variables.  For example, a configuration file for SMS services might
  * look like this:
  * 
- * 	smsc = idefix.radiolinja.fi
+ * 	smsc = smsc.provider.com
  * 	protocol = cimd
  * 	port = 12345
  * 	username = foo

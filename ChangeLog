@@ -1,3 +1,22 @@
+2000-03-27    <Kalle Marjola <rpr@wapit.com>>
+
+	* gw/bearerbox.c: changed 'http-port' into 'http-admin-port', to
+	lessen confusion. Old name still works, too.
+
+	* gw/bb.h: modified default http-admin-port to 13000 and
+	wapbox-port to 13002 to keep ports close to each other
+
+	* */*.conf: changed that name and port in configuration files
+
+	* doc/userguide/userguide.xml: renamed variables updated in
+	userguide.
+	
+	* gw/smsc_cimd_c: commented out that the connection dies if the
+	expected string is not received, as this caused problems with
+	slower link
+
+	* gwlib/utils.h: added -D option in output
+	
 2000-03-25 Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	* Makefile.in: Added -Iutils to CFLAGS
 	* utils/start-stop-daemon.c: Added short option only stuff.

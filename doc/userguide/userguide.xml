@@ -454,7 +454,7 @@
 	is open, and each SMS and WAP box that is connected uses up a thread.
 	</para></listitem>
 
-	<listitem><para><literal>http-port</literal>: Port number for
+	<listitem><para><literal>http-admin-port</literal>: Port number for
 	HTTP administration tool. Since Kannel is usually not run as
 	<literal>root</literal>, it can't use the normal HTTP port
 	(80), so you have to specify a number larger than 1024. It does
@@ -472,11 +472,11 @@
 	requests to work.
 	</para></listitem>
 
-	<listitem><para><literal>wap-port</literal>: Port number to which
+	<listitem><para><literal>wapbox-port</literal>: Port number to which
 	WAP boxes connect.
 	</para></listitem>
 
-	<listitem><para><literal>sms-port</literal>: Port number to which
+	<listitem><para><literal>smsbox-port</literal>: Port number to which
 	SMS boxes connect.
 	</para></listitem>
 
@@ -559,9 +559,10 @@
 	accept connections from a specific port.
 	</para></listitem>
 
-	<listitem><para><literal>backup-port</literal>: The secondary
-	port for EMI/IP connections. When the SMS center initiates a
-	connection, it will connect to this port number of the bearer box.
+	<listitem><para><literal>receive-port</literal>: The secondary
+	port for EMI/IP and (some) SMPP connections. When the SMS
+	center initiates a connection, it will connect to this port
+	number of the bearerbox.
 	</para></listitem>
 
 	<listitem><para><literal>smsc-username</literal>: Username for

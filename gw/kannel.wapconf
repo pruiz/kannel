@@ -64,7 +64,7 @@
 # (read from file bb.h, check that, too)
 #
 bearerbox-host = localhost
-bearerbox-port = 13000
+bearerbox-port = 13002
 #heartbeat-freq = 30
 # this is here to prevent people from using this without editing
 heartbeat-freq = -600   

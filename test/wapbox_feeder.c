@@ -12,7 +12,7 @@ int main(void) {
 	Msg *msg;
 	Octstr *os;
 	
-	s = make_server_socket(13000);
+	s = make_server_socket(13002);
 	if (s == -1)
 		panic(0, "no server socket");
 	ss = accept(s, &addr, &addrlen);

@@ -143,6 +143,7 @@ void print_std_args_usage(FILE *stream)
 	   " -v <level>     set stderr output level. 0 = DEBUG, 4 = PANIC\n"
 	   " -F <logfile>   set logfile name\n"
 	   " -V <level>     set logfile output level. Defaults to DEBUG\n"
+	   " -D <places>    set DEBUG places, like \"wap.* -wap.wsp.*\"\n"
 	   " --verbosity, --logfile, --fileverbosity   aliased arguments\n");
 }
 
