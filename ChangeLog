@@ -1,4 +1,8 @@
 2004-06-28  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/bb_store.c, gw/bearerbox.h: added 'store_save_ack' in order to avoid code
+      duplication.
+
+2004-06-28  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/dlr_mem.c: fixed locking issues. Don't use 'list_[lock|unlock]', use
       rwlock instead.
 

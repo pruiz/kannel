@@ -184,6 +184,12 @@ long store_messages(void);
 /* assign ID and save given message to store. Return -1 if save failed */
 int store_save(Msg *msg);
 
+/*
+ * Store ack/nack to the store file for a given message with a given status.
+ * @return: -1 if save failed ; 0 otherwise.
+ */
+int store_save_ack(Msg *msg, ack_status_t status);
+
 /* load store from file; delete any messages that have been relayed,
  * and create a new store file from remaining. Calling this function
  * might take a while, depending on store size

@@ -396,6 +396,37 @@ int store_save(Msg *msg)
 
 
 
+int store_save_ack(Msg *msg, ack_status_t status)
+{
+    Msg *mack;
+
+    /* only sms are handled */
+    if (!msg || msg_type(msg) != sms)
+        return -1;
+
+    if (filename == NULL)
+        return 0;
+
+    mack = msg_create(ack);
+    if (!mack)
+        return -1;
+
+    mack->ack.time = msg->sms.time;
+    uuid_copy(mack->ack.id, msg->sms.id);
+    mack->ack.nack = status;
+
+    /* write to file */
+    mutex_lock(file_mutex);
+    write_msg(mack);
+    mutex_unlock(file_mutex);
+
+    list_produce(ack_store, mack);
+
+    return 0;
+}
+
+
+
 int store_load(void)
 {
     List *keys;
