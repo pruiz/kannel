@@ -1972,8 +1972,10 @@ int http_open_port_if(int port, int ssl, Octstr *interface)
 {
     struct server *p;
 
-    if (ssl) debug("gwlib.http", 0, "HTTP: Opening SSL server at port %d.", port);
-    else debug("gwlib.http", 0, "HTTP: Opening server at port %d.", port);
+    if (ssl) 
+        info(0, "HTTP: Opening SSL server at port %d.", port);
+    else 
+        info(0, "HTTP: Opening server at port %d.", port);
     p = gw_malloc(sizeof(*p));
     p->port = port;
     p->ssl = ssl;
