@@ -1,3 +1,8 @@
+Fri May 26 16:59:03 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/http2.c: Destroy temporary header list in
+	http2_type_accepted.
+
 Thu May 25 21:46:04 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/http.[ch], test/test_http.c: Removed.

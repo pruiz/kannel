@@ -427,7 +427,7 @@ void http2_destroy_headers(List *headers) {
 		return;
 
 	while ((h = list_extract_first(headers)) != NULL)
-	    octstr_destroy(h);
+		octstr_destroy(h);
 
 	list_destroy(headers);
 }
@@ -610,6 +610,7 @@ int http2_type_accepted(List *headers, char *type) {
 		if (strstr(octstr_get_cstr(list_get(accepts, i)), type) != NULL)
 			found = 1;
 	}
+	http2_destroy_headers(accepts);
 	return found;
 }
 
