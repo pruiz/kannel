@@ -198,11 +198,8 @@ void *wsp_http_thread(void *arg) {
 	WSPMachine *sm;
 	HTTPHeader *h;
 	int wml_ok, wmlc_ok, wmlscript_ok, wmlscriptc_ok;
-	Octstr *url, *final_url, *resp_body, *body, *os, *type, *charset;
-#if 1
-        Octstr *key_os = NULL,
-               *value_os = NULL;
-#endif
+	Octstr *url, *final_url, *resp_body, *body, *os, *key_os, *value_os, *type,               *charset;
+
 	List *req_headers, *resp_headers;
 	
 	static struct {
@@ -255,25 +252,10 @@ void *wsp_http_thread(void *arg) {
 		os = octstr_create(h->key);
                 key_os = octstr_create(h->key);
 		octstr_append_cstr(os, ": ");
-#if 0
-                octstr_append_cstr(os, h->value);
-#else
 		value_os = octstr_create(h->value);
                 octstr_append(os, value_os);
-#endif
 		list_append(req_headers, os);
-#if 0
-		if (strstr(h->key, "Accept")) != NULL) {
-		        if (strstr(h->value, "text/vnd.wap.wml") != NULL)
-				wml_ok = 1;
-			if (strstr(h->value, "text/vnd.wap.wmlscript") != NULL)
-				wmlscript_ok = 1;
-			if (strstr(h->value, "application/vnd.wap.wmlc") != NULL)
-				wmlc_ok = 1;
-			if (strstr(h->value, "application/vnd.wap.wmlscriptc") != NULL)
-				wmlscriptc_ok = 1;
-		}
-#else
+
                 if (octstr_str_compare(key_os, "Accept") == 0){
                         if (octstr_str_compare(value_os, "text/vnd.wap.wml") == 0)
                            wml_ok = 1;
@@ -284,12 +266,11 @@ void *wsp_http_thread(void *arg) {
                         if (octstr_str_compare(value_os, "application/vnd.wap.wmlscriptc") == 0)
                            wmlscriptc_ok = 1;
                 }
-#endif
 	}
-#if 1
+
         octstr_destroy(key_os);
         octstr_destroy(value_os);
-#endif
+
 	if (wmlc_ok && !wml_ok) {
 		list_append(req_headers, 
 			octstr_create("Accept: text/vnd.wap.wml"));
