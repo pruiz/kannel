@@ -558,12 +558,8 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 		strncat(deliver_sm->source_addr, newnum, sizeof(deliver_sm->source_addr)-2);
 		free(newnum);
 
-		*msg = NULL;
 		*msg = msg_create(smart_sms);
-
 		if(*msg==NULL) goto error;
-
-		debug(0, "3: deliver_sm->source_addr = <%s>", deliver_sm->source_addr);
 
 		if( (deliver_sm->esm_class == 67) || (deliver_sm->data_coding == 245) ) {
 			(*msg)->smart_sms.flag_8bit = 1;
@@ -582,8 +578,10 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 		(*msg)->smart_sms.msgdata = octstr_create(deliver_sm->short_message);
 		(*msg)->smart_sms.udhdata = octstr_create_empty();
 
+/*
 		debug(0, "smpp_receive_mgs: dumping msg:");
 		msg_dump(*msg);
+*/
 
 		return 1;
 	}
