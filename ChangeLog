@@ -1,3 +1,9 @@
+2000-08-04  Richard Braakman  <dark@wapit.com>
+
+	* gw/wap-appl.c: In X-WAP-Gateway header, use "Kannel/0.11"
+	instead of "Kannel 0.11", to comply with HTTP/1.1 recommendations
+	for version strings.
+
 2000-08-02  Richard Braakman  <dark@wapit.com>
 
 	* Making development release 0.11.
