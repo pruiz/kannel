@@ -6,6 +6,8 @@
  *
  * Changelog:
  *
+ * 16/01/2002: Some code cleanup
+ * 10/01/2002: Fixed a bug in trn handling
  * 16/11/2001: Some minor fixes (Thanks to Tuomas Luttinen)
  * 12/11/2001: Delivery reports, better acking and numerous other small fixes
  * 05/11/2001: Initial release. Based heavily on smsc_emi2 and smsc_at2.						
@@ -62,7 +64,7 @@
 
 #define CGW_DEFPORT 	21772
 #define	CGW_EOL     	0x0A
-#define CGW_TRN_MAX 	1000	/* Size of our internal message buffer. Increase */
+#define CGW_TRN_MAX 	500	/* Size of our internal message buffer. */
 
 #define CGWOP_MAXARGS	10     	/* max. number of name:value pairs in cgwop */
 
@@ -115,7 +117,7 @@ typedef struct privdata
 PrivData;
 
 
-
+int smsc_cgw_create(SMSCConn *conn, CfgGroup *cfg);
 static int cgw_add_msg_cb(SMSCConn *conn, Msg *sms);
 static int cgw_shutdown_cb(SMSCConn *conn, int finish_sending);
 static void cgw_start_cb(SMSCConn *conn);
@@ -124,6 +126,7 @@ static void cgw_sender(void *arg);
 static Connection *cgw_open_send_connection(SMSCConn *conn);
 static void cgw_send_loop(SMSCConn *conn, Connection *server);
 void cgw_check_acks(PrivData *privdata);
+int cgw_wait_command(PrivData *privdata, SMSCConn *conn, Connection *server, int timeout);
 static int cgw_open_listening_socket(PrivData *privdata);
 static void cgw_listener(void *arg);
 static void cgw_receiver(SMSCConn *conn, Connection *server);
@@ -199,6 +202,7 @@ static Octstr *cgwop_get(struct cgwop *cgwop, Octstr *name)
     while (--len >= 0)
         if (octstr_compare(name, cgwop->name[len]) == 0)
             return cgwop->value[len];
+    return NULL;
 }
 
 static Octstr *cgwop_tostr(struct cgwop *cgwop)
@@ -305,7 +309,6 @@ static Octstr *cgw_decode_msg(Octstr* str)
 
 static struct cgwop *msg_to_cgwop(PrivData *privdata, Msg *msg, int trn)
 {
-    Octstr *str;
     struct cgwop *cgwop;
     Octstr *sender, *udh, *dta;
 
@@ -544,8 +547,8 @@ static void cgw_sender(void *arg)
 {
     SMSCConn *conn = arg;
     PrivData *privdata = conn->data;
-    Msg *msg;
-    Connection *server;
+    Msg *msg = NULL;
+    Connection *server = NULL;
     int l = 0;
 
     conn->status = SMSCCONN_CONNECTING;
@@ -597,16 +600,14 @@ static void cgw_sender(void *arg)
 static Connection *cgw_open_send_connection(SMSCConn *conn)
 {
     PrivData *privdata = conn->data;
-    Octstr *hello = NULL;
-    int result, wait;
-    struct emimsg *emimsg;
+    int wait;
     Connection *server;
     Msg *msg;
 
     wait = 0;
     while (!privdata->shutdown) {
 
-    /* Change status only if the first attempt to form a
+        /* Change status only if the first attempt to form a
 	 * connection fails, as it's possible that the SMSC closed the
 	 * connection because of idle timeout and a new one will be
 	 * created quickly. */
@@ -657,24 +658,20 @@ static Connection *cgw_open_send_connection(SMSCConn *conn)
 static void cgw_send_loop(SMSCConn *conn, Connection *server)
 {
     PrivData *privdata = conn->data;
-    int i = 0;
     struct cgwop *cgwop;
-    Octstr	*str;
     Msg	*msg;
-    double delay = 0;
     int firsttrn;
-
 
     /* Send messages in queue */
     while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
         firsttrn = privdata->nexttrn;
         while (privdata->sendtime[privdata->nexttrn] != 0) { 
-            if (privdata->nexttrn++ == CGW_TRN_MAX) privdata->nexttrn = 0;    
-            if (privdata->nexttrn == firsttrn) { /* no available trn /*
+            if (++privdata->nexttrn >= CGW_TRN_MAX) privdata->nexttrn = 0;    
+            if (privdata->nexttrn == firsttrn) { /* no available trn */
 	        /* this happens too many messages are sent, and old messages
 		 * haven't been acked. In this case, increase size of 
                  * CGW_TRN_MAX */
-                info(0, "cgw: saturated");
+                info(0, "cgw: Saturated, increase size of CGW_TRN_MAX!");
                 list_produce(privdata->outgoing_queue, msg);
                 return ;     /* re-insert, and go check for acks */
             }
@@ -696,7 +693,6 @@ static void cgw_send_loop(SMSCConn *conn, Connection *server)
             return ;
         }
 
-        privdata->nexttrn++;
         privdata->unacked++;
 
         cgwop_destroy(cgwop);
@@ -734,8 +730,6 @@ void cgw_check_acks(PrivData *privdata)
 int cgw_wait_command(PrivData *privdata, SMSCConn *conn, Connection *server, int timeout)
 {
     int ret;
-    Msg	*msg;
-    int len;
     struct cgwop *cgwop;
 
     /* is there data to be read? */
@@ -780,8 +774,6 @@ int cgw_wait_command(PrivData *privdata, SMSCConn *conn, Connection *server, int
 
 struct cgwop *cgw_read_op(PrivData *privdata, SMSCConn *conn, Connection *server, time_t timeout)
 {
-    time_t end_time;
-    time_t cur_time;
     Octstr *line, *name, *value;
     int finished = 0;
     int c = 0;
@@ -803,8 +795,8 @@ struct cgwop *cgw_read_op(PrivData *privdata, SMSCConn *conn, Connection *server
             value = octstr_copy(line, c + 1, octstr_len(line) - (c + 1));
 
             if (octstr_compare(name, octstr_imm("hello")) == 0) {
-                /* A connection is started by CGW by sending a
-                 * "hello: Provider Server..." line. */
+                /* A connection is started by CGW by sending a 
+		 * "hello: Provider Server..." line. */
 
                 cgwop = cgwop_create(CGW_OP_HELLO, 0);
                 cgwop_add(cgwop, octstr_imm("hello"), value);
@@ -992,14 +984,13 @@ static void cgw_receiver(SMSCConn *conn, Connection *server)
 static int cgw_handle_op(SMSCConn *conn, Connection *server, struct cgwop *cgwop)
 {
     PrivData *privdata = conn->data;
-    int len;
     Msg *msg = NULL;
     Octstr *from, *app, *sid, *to, *msgtype, *msgdata; /* for messages */
     Octstr *msid, *status, *txt;    		       /* delivery reports */
     Octstr *clid;    		       		       /* for acks */
     struct cgwop *reply = NULL;
     long trn, stat;                          /* transaction number for ack */
-    Msg *dlrmsg, *origmsg;
+    Msg *dlrmsg = NULL, *origmsg = NULL;
     Octstr *ts;
 
     if (cgwop == NULL) return 0;
@@ -1019,9 +1010,10 @@ static int cgw_handle_op(SMSCConn *conn, Connection *server, struct cgwop *cgwop
     if (clid != NULL)
     {
         octstr_parse_long(&trn, clid, 0, 10);
-        if ((trn < 0) || (trn > CGW_TRN_MAX)) { /* invalid transaction number */
-            trn = -1;
-            info(0, "cgw: Invalid transaction number: %d", trn);
+        if ((trn < 0) || (trn >= CGW_TRN_MAX)) { /* invalid transaction number */
+	    info(0, "cgw: Invalid transaction number: %d", (int) trn);
+            trn = -1;            
+	    return 0;
         }
     }
 
