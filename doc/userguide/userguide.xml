@@ -7583,6 +7583,34 @@ smsbox-id = dlrbox
      send-url to point to sendsms service.</para>
 </sect1>
 <sect1>
+<title>An example SI document</title>
+     <para> Service indication (SI) should work with all types of
+     phones, service loading does not. URL to be loaded is the
+     main in both cases, however. Here an example:</para>
+<programlisting>
+&#60;?xml version="1.0"?&#62;
+&#60;!DOCTYPE si PUBLIC "-//WAPFORUM//DTD SI 1.0//EN"
+"http://www.wapforum.org/DTD/si.dtd"&#62;
+&#60;si&#62;
+    &#60;indication href="http://www.gni.ch"
+        si-id="1@gni.ch"
+        action="signal-high"
+        created="1999-06-25T15:23:15Z"
+        si-expires="2005-06-30T00:00:00Z"&#62;
+            You have 4 new emails
+    &#60;/indication&#62;
+&#60;/si&#62;
+</programlisting>
+      <para>Note following points:
+            a) Every SI must have different si-id. So when testing,
+               remember to remove SI from push inbox before retrying.
+            b) "signal-high" is here for testing purposes. This
+               means that when the phone receives SI, it stops
+               whatever it is doing and displays SI.
+            c) si-expires must be a future data, of course.
+      </para>
+</sect1>
+<sect1>
 <title>An example push (tokenized SI) document</title>
        <para>HTTP SMSC generates a HTTP get request when it get a send-message 
        event, expressed in Unicode. The content gateway, or the sendsms 
