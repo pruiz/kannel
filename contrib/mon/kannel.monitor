@@ -15,11 +15,11 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 # USA #
 #
-# Revision $Id: kannel.monitor,v 1.1 2002-08-03 21:53:22 stolj Exp $
+# Revision $Id: kannel.monitor,v 1.2 2002-08-06 09:03:50 stolj Exp $
 #
 # Ingo Brombach <brombach@wapme-systems.de>
 
-use warnings;
+#use warnings;
 use LWP::UserAgent; 
 use XML::Parser;
 use Sys::Hostname;
@@ -27,12 +27,12 @@ use Getopt::Std;
 getopts('P:s:p:f:n:ivhS',\%opts);
 
 my $p = new XML::Parser(ErrorContext  => 2,
-			Namespaces    => 1,
-			ParseParamEnt => 1,
-			Handlers      => {Start => \&sthndl,
-					  Char  => \&chrhndl
-					 }
-			);
+                        Namespaces    => 1,
+                        ParseParamEnt => 1,
+                        Handlers      => {Start => \&sthndl,
+                                          Char  => \&chrhndl
+                                         }
+                        );
 
 local $scount=0; # SMS-Level - Counter
 local $bcount=0; # Box-Level - Counter 
@@ -41,8 +41,9 @@ local $status_file='/tmp/kannel_monitor.status';
 local $qlimit=1; # Maximum Number of queued messages per minute
 
 local $port = ($opts{p}) ? $opts{p} : "13000";
-local $statussheet = ($opts{s}) ? $opts{s} : "/status.xml";
-local $password = ($opts{P}) ? $opts{P} : "";    
+local $statussheet = ($opts{s}) ? $opts{s} : "status.xml";
+local $password = ($opts{P}) ? $opts{P} : "";
+local $http = ($opts{S}) ? "https" : "http";
 
 local @failures;
 
@@ -57,30 +58,27 @@ if ($opts{f}){
 }
 else{
     foreach $host (@ARGV){
-    if ($opts{S}) {
-        $scheme = "https://";
-    } else { $scheme = "http://"; }
-	$url=$scheme.$host.":".$port."".$statussheet."?password=".$password;
-	 &info("# GET URL $url ... \n");
-	my $ua = LWP::UserAgent->new(env_proxy => 1,
-				  keep_alive => 1,
-				  timeout => 10,
-				  );
+	$url=$http."://".$host.":".$port."/".$statussheet."?password=".$password;
+         &info("# GET URL $url ... \n");
+        my $ua = LWP::UserAgent->new(env_proxy => 1,
+                                  keep_alive => 1,
+                                  timeout => 10,
+                                  );
 
-	my $response=$ua->get($url)||
-	do { &err($host);&info("GET request to $host failed \n");next};
-	&info("OK\n");
-	if ((%{$response}->{'_content'})){
-	    my $doc=%{$response}->{'_content'};
-	    $p->parse($doc);
-	} # end if
-	else{do { &err($host);&info("GET request to $host failed \n");next}}
+        my $response=$ua->get($url)||
+        do { &err($host);&info("GET request to $host failed \n");next};
+        &info("OK\n");
+        if ((%{$response}->{'_content'})){
+            my $doc=%{$response}->{'_content'};
+            $p->parse($doc);
+        } # end if
+        else{do { &err($host);&info("GET request to $host failed \n");next}}
 
-	&show if $opts{i};
+        &show if $opts{i};
 
-	push @failures, @{&analyze()};
+        push @failures, @{&analyze()};
     }
-	
+        
 } # end else
 
 if (@failures == 0) {
@@ -115,7 +113,7 @@ $program  --  Kannel monitoring module for 'mon'
   2002-07-31 Ingo Brombach, <brombach\@wapme-systems.de>
 
 
-USAGE:	$program [options] hosts...
+USAGE:  $program [options] hosts...
     
   where options can be any of:
 
@@ -144,10 +142,10 @@ USAGE:	$program [options] hosts...
     The same as above, but reading from a local status.xml file
 
     $program -p 13001 -P secret kannel.foobar.com
-	  
+          
     Looking for status on port 13001 with password "secret". Only failing 
     smsc-ids are displayed.
-	 
+         
     
 EOU
 
@@ -165,8 +163,8 @@ sub err {
 sub pushall{
     my @failures;
     for ($count=1;$count>=0;$count++){
-	last unless (exists ${"smsc".$count}{id});
-	push @failures, ${"smsc".$count}{id};
+        last unless (exists ${"smsc".$count}{id});
+        push @failures, ${"smsc".$count}{id};
     } # end for
     return \@failures;
 }
@@ -177,87 +175,94 @@ sub analyze{
     # Bearerbox does not run:
     #==============================
     if (! $kannel_status || (split /,/,$kannel_status)[0] ne 'running'){
-	info "bearerbox is not running\n";
-	return &pushall; 
+        info "bearerbox is not running\n";
+        return &pushall; 
     } # end if (Bearerbox)
 
-    # SMS-Box does not run:
+    # SMS-or WAPBox does not run:
     #==============================
     for ($count=1;$count>=0;$count++){
-	if (($count==1 && ! %{"box".$count}->{'status'}) 
-	    ||(%{"box".$count}->{'status'}
+
+	if ($count==1 && ! %{"box".$count}->{'status'}){
+    	    info "No SMS- or WAP-Box is running!!\n";
+	    push @failures, "No SMS- or WAP-Box is running!!\n";
+	} #end if
+
+	elsif ((%{"box".$count}->{'status'}
 	       &&(split /\s+/,%{"box".$count}->{'status'})[0] ne 'on-line')){
-	    info "smsbox is not running\n";
-	    return &pushall;
-	} # end if
+	    info %{"box".$count}->{'type'}." is not running!!\n";
+	    push @failures, hostname().": ".%{"box".$count}->{'type'}." is not running!!\n";
+	} # end elsif
+
     	last unless (%{"box".$count}->{'type'}
-		     &&(%{"box".$count}->{'type'} eq 'smsbox'));
+		     &&((%{"box".$count}->{'type'} eq 'smsbox')
+		     || (%{"box".$count}->{'type'} eq 'wapbox')));
     } # end for count (SMS-Box)
     
     # SMSC does not run:
     #==============================    
     for ($count=1;$count>=0;$count++){
-	last unless (exists ${"smsc".$count}{id});
-	if (${"smsc".$count}{id}){	    
-	    %exists->{${"smsc".$count}{id}}=1;
-	    if ((split /\s+/,${"smsc".$count}{status})[0] ne 'online'){
-	    local $smsc_not;
-		if ($opts{n}){
-		    foreach $smsc (split /\s+/, $opts{n}){
-			$smsc_not=1 if $smsc eq ${"smsc".$count}{id};
-		    } # end foreach smsc
-		} # end if $opts{n}
-		unless ($smsc_not){
-		    info "SMSC  ".${"smsc".$count}{id}.
-			" is in status \"".
-			(split /\s+/,${"smsc".$count}{status})[0]."\"\n";
-		    push @failures, ${"smsc".$count}{id};
-		} #end unless $smsc_not
-	    } # end if split
-	} # end if smsc
+        last unless (exists ${"smsc".$count}{id});
+        if (${"smsc".$count}{id}){          
+            %exists->{${"smsc".$count}{id}}=1;
+            if ((split /\s+/,${"smsc".$count}{status})[0] ne 'online'){
+            local $smsc_not;
+                if ($opts{n}){
+                    foreach $smsc (split /\s+/, $opts{n}){
+                        $smsc_not=1 if $smsc eq ${"smsc".$count}{id};
+                    } # end foreach smsc
+                } # end if $opts{n}
+                unless ($smsc_not){
+                    info "SMSC  ".${"smsc".$count}{id}.
+                        " is in status \"".
+                        (split /\s+/,${"smsc".$count}{status})[0]."\"\n";
+                    push @failures, ${"smsc".$count}{id};
+                } #end unless $smsc_not
+            } # end if split
+        } # end if smsc
     } # end for count
 
     # SMSC does not exist:
     #==============================
     if ($opts{n}){
-	foreach $arg (split /\s+/, $opts{n}){
-	    unless (exists %exists->{$arg}){
-		info "$arg does not exist\n";
-		push @failures, $arg;
-	    } #end unless
-	} # end foreaceh
+        foreach $arg (split /\s+/, $opts{n}){
+            unless (exists %exists->{$arg}){
+                info "$arg does not exist\n";
+                push @failures, $arg;
+            } #end unless
+        } # end foreaceh
     } # end of $opts{n} 
-	    
+            
     # Kannel is queueing:
     #==============================
     open (STATUSFILE,"<$status_file") or
-	push @failures, hostname().": Could not open $status_file: $!";
+        push @failures, hostname().": Could not open $status_file: $!";
 
     local $warncount=0;
     while (<STATUSFILE>){
-	my ($field,$value,$time,$diffmin);
-	($field,$value,$time)=split /\|/, $_,3;
-	$diffmin=(time - $time)/60;
-	
-	if ((%{"sms"}->{$field} - $value)/$diffmin >= $qlimit){
-	    $warncount+=1;
-	} # end if
+        my ($field,$value,$time,$diffmin);
+        ($field,$value,$time)=split /\|/, $_,3;
+        $diffmin=(time - $time)/60;
+        
+        if ((%{"sms"}->{$field} - $value)/$diffmin >= $qlimit){
+            $warncount+=1;
+        } # end if
     } # end while STATUSFILE
     
     if ($warncount){
-	return &pushall;
-	info "Kannel is queueing - please take a look\n";
+        return &pushall;
+        info "Kannel is queueing - please take a look\n";
     }
     close(STATUSFILE);
     
     open (STATUSFILE,">$status_file") or
     push @failures, hostname().": Could not open $status_file: $!";    
      foreach $field (keys %{"sms"}){
-	 if ((split /_/,$field)[1]
-	     &&(split /_/,$field)[1] eq 'queued'){
-	     printf(STATUSFILE "%s|%s|%d\n", 
-		    $field,%{"sms"}->{$field},time);
-	 } # end if
+         if ((split /_/,$field)[1]
+             &&(split /_/,$field)[1] eq 'queued'){
+             printf(STATUSFILE "%s|%s|%d\n", 
+                    $field,%{"sms"}->{$field},time);
+         } # end if
      } # end foreach
 
     close(STATUSFILE);
@@ -269,40 +274,40 @@ sub show{
      my $bcount=1;
 
     if ($kannel_status){
-	printf("============== Status ===================\n");
-	printf("%s\n", $kannel_status);
-	printf("=========================================\n");
+        printf("============== Status ===================\n");
+        printf("%s\n", $kannel_status);
+        printf("=========================================\n");
     } # end elsif
 
      printf("============SMS Overall==================\n");
      foreach $field (keys %{"sms"}){
-	 printf("%s -> %s\n", $field,%{"sms"}->{$field});
+         printf("%s -> %s\n", $field,%{"sms"}->{$field});
      }
      printf("=========================================\n");
 
      printf("=================BOXES===================\n") 
-	 if (exists ${"box".$bcount}{type});
+         if (exists ${"box".$bcount}{type});
     while (exists ${"box".$bcount}{type}){
-	foreach $field (keys %{"box".$bcount}){
-	    printf("%s -> %s\n", $field,%{"box".$bcount}->{$field});
-	} # end foreach
-	++$bcount;
-	printf("=========================================\n");
+        foreach $field (keys %{"box".$bcount}){
+            printf("%s -> %s\n", $field,%{"box".$bcount}->{$field});
+        } # end foreach
+        ++$bcount;
+        printf("=========================================\n");
     } # end while
 
     if (exists ${"smsc".$count}{id}){
-	 printf("\n================SMSC´s===================\n");
-	 printf("=========================================\n") ;
+         printf("\n================SMSC´s===================\n");
+         printf("=========================================\n") ;
     }
     while (exists ${"smsc".$count}{id}){
-	foreach $field (keys %{"smsc".$count}){
-	    printf("%s -> %s\n", $field,%{"smsc".$count}->{$field});
-	} # end foreach
-	printf("=========================================\n");
-	++$count;
+        foreach $field (keys %{"smsc".$count}){
+            printf("%s -> %s\n", $field,%{"smsc".$count}->{$field});
+        } # end foreach
+        printf("=========================================\n");
+        ++$count;
     } # end while
 
-} # End info
+} # End show
 
 sub sthndl {
   my $xp = shift;
@@ -320,37 +325,37 @@ sub chrhndl {
 
   if ($value!~/^\s+$/){
 
-	while($level=%parent->{$level}){
-	    unshift @level, $level;
-	}
-	   
-	push @level, $xp->current_element;		
+        while($level=%parent->{$level}){
+            unshift @level, $level;
+        }
+           
+        push @level, $xp->current_element;              
 
        if (($level[0] eq 'gateway') && ($level[1] eq 'smscs') 
-	   && ($level[2] eq 'smsc')&& ($level[3])){
-	      ++$scount if $level[3] eq 'name';
-	      ${"smsc".$scount}{$level[3]}=$value;
+           && ($level[2] eq 'smsc')&& ($level[3])){
+              ++$scount if $level[3] eq 'name';
+              ${"smsc".$scount}{$level[3]}=$value;
 
-	  } # end if
+          } # end if
     
-	elsif (($level[0] eq 'gateway') && ($level[1] eq 'status')){
-	    $kannel_status=$value;
-	} # end elsif
+        elsif (($level[0] eq 'gateway') && ($level[1] eq 'status')){
+            $kannel_status=$value;
+        } # end elsif
 
-	elsif (($level[0] eq 'gateway') && ($level[1] eq 'boxes')
-	       && ($level[2] eq 'box')&& ($level[3])){
-	      ++$bcount if $level[3] eq 'type';
-	      ${"box".$bcount}{$level[3]}=$value;	    
-	} # end elsif	
+        elsif (($level[0] eq 'gateway') && ($level[1] eq 'boxes')
+               && ($level[2] eq 'box')&& ($level[3])){
+              ++$bcount if $level[3] eq 'type';
+              ${"box".$bcount}{$level[3]}=$value;           
+        } # end elsif   
 
-	elsif (($level[0] eq 'gateway') && ($level[1] eq 'sms')){
-	    if (($level[2] eq 'sent'||$level[2] eq 'received') && $level[3]){
-		${'sms'}{$level[2].'_'.$level[3]}=$value;
-	    } # end if 
-	    else{
-		${'sms'}{$level[2]}=$value;
-	    } # end else
-	} # end elsif	
+        elsif (($level[0] eq 'gateway') && ($level[1] eq 'sms')){
+            if (($level[2] eq 'sent'||$level[2] eq 'received') && $level[3]){
+                ${'sms'}{$level[2].'_'.$level[3]}=$value;
+            } # end if 
+            else{
+                ${'sms'}{$level[2]}=$value;
+            } # end else
+        } # end elsif   
     }
 
 }  # End chrhndl
