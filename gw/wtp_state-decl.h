@@ -15,7 +15,7 @@ STATE_NAME(WAIT_TIMEOUT)
 ROW(LISTEN,
     RcvInvoke,
     (event->RcvInvoke.tcl == 2 || event->RcvInvoke.tcl == 1) &&
-    event->RcvInvoke.up_flag == 1 && wtp_tid_is_valid(event),
+    event->RcvInvoke.up_flag == 1 && wtp_tid_is_valid(event, machine) == ok,
     {
      machine->u_ack = event->RcvInvoke.up_flag;
      machine->tcl = event->RcvInvoke.tcl;
@@ -33,10 +33,19 @@ ROW(LISTEN,
 ROW(LISTEN,
     RcvInvoke,
     (event->RcvInvoke.tcl == 2 || event->RcvInvoke.tcl == 1) &&
-    event->RcvInvoke.up_flag == 1 && !wtp_tid_is_valid(event),
+    event->RcvInvoke.up_flag == 1 && 
+    (wtp_tid_is_valid(event, machine) == fail || 
+     wtp_tid_is_valid(event, machine) == no_cached_tid),
     { 
      machine->tid_ve = 1;
      wtp_send_ack(machine->tid_ve, machine, event);
+    
+     machine->u_ack = event->RcvInvoke.up_flag;
+     machine->tcl = event->RcvInvoke.tcl;
+     current_primitive = TRInvokeIndication;
+     wsp_event = pack_wsp_event(current_primitive, event, machine);
+     machine->invoke_indication = wsp_event;
+
      machine->ack_pdu_sent = 1;
     },
     TIDOK_WAIT)
@@ -55,16 +64,28 @@ ROW(LISTEN,
 ROW(LISTEN,
     RcvErrorPDU,
     1,
-    { wtp_send_abort(PROVIDER, PROTOERR, machine, event);},
+    { 
+     wtp_machine_mark_unused(machine);
+     wtp_send_abort(PROVIDER, PROTOERR, machine, event);
+    },
+    LISTEN)
+
+ROW(LISTEN,
+    TRAbort,
+    1,
+    {
+     wtp_machine_mark_unused(machine);
+     wtp_send_abort(USER, PROTOERR, machine, event);
+    },
     LISTEN)
 
 ROW(TIDOK_WAIT,
     RcvAck,
     (machine->tcl == 2 || machine->tcl == 1) && event->RcvAck.tid_ok == 1,
     { 
-     current_primitive = TRInvokeIndication;
-     wsp_event = pack_wsp_event(current_primitive, event, machine);
+     wsp_event = machine->invoke_indication;
      debug(0, "RcvAck: generated TR-Invoke.ind for WSP");
+     wsp_event_dump(wsp_event);
      wsp_dispatch_event(machine, wsp_event);
      
      timer = wtp_timer_create();

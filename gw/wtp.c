@@ -44,7 +44,9 @@ enum {
 };
 
 /*
- * Global data structures:
+ * Global data structure:
+ *
+ * wtp machines list
  */
 
 struct Machines {
@@ -122,8 +124,6 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
  */
 static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event, 
          WTPMachine *machine);
-
-static int wtp_tid_is_valid(WTPEvent *event);
 
 static void append_to_event_queue(WTPMachine *machine, WTPEvent *event);
  
@@ -285,6 +285,9 @@ void wtp_machine_dump(WTPMachine *machine){
            #define MSG(name) \
                    debug(0, "Result field %s: ", #name); \
                    msg_dump(machine->name)
+           #define WSP_EVENT(name) \
+                   debug(0, "WSP event %s:", #name); \
+                   wsp_event_dump(machine->name)
            #define ENUM(name) debug(0, "  state = %s.", name_state(machine->name))
 	   #define OCTSTR(name)  debug(0, "  Octstr field %s :", #name); \
                                  octstr_dump(machine->name)
@@ -348,7 +351,9 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
            if (machine == NULL){
 
               switch (event->type){
-
+/*
+ * When PDU with an illegal header is received, its tcl-field is irrelevant.
+ */
 	              case RcvInvoke: case RcvErrorPDU:
 	                   machine = wtp_machine_create(
                                      msg->wdp_datagram.source_address,
@@ -357,16 +362,15 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
 				     msg->wdp_datagram.destination_port,
 				     tid, event->RcvInvoke.tcl);
                            machine->in_use = 1;
+                           debug(0, "WTP: machine_find_or_create: invoke or error received, a new machine created");
                       break;
 
 	              case RcvAck: 
-			   error(0, "WTP: machine_find_or_create: ack received, 
-                                 yet having no machine");
+			   info(0, "WTP: machine_find_or_create: ack received, yet having no machine");
                       break;
 
                       case RcvAbort: 
-			   error(0, "WTP: machine_find_or_create: abort received, 
-                                yet having no machine");
+			   info(0, "WTP: machine_find_or_create: abort received, yet having no machine");
                       break;
                  
 	              default:
@@ -455,8 +459,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
                     if (fourth_octet == -1){
                        event = tell_about_error(pdu_too_short_error, event, msg, tid);
-                       debug(0, "WTP: unpack_datagram; missing fourth octet 
-                            (abort)");
+                       debug(0, "WTP: unpack_datagram; missing fourth octet (abort)");
                          msg_dump(msg);
                        return event;
                     }
@@ -493,8 +496,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                    return NULL;
               break;
          } /* switch */
-         panic(0, "Following return is unnecessary but are required by the 
-               compiler");
+         panic(0, "Following return is unnecessary but are required by the compiler");
          return NULL;
 } /* function */
 
@@ -554,9 +556,8 @@ unsigned long wtp_tid_next(void){
 
 
 void wtp_init(void) {
-	machines.lock = mutex_create();
+     machines.lock = mutex_create();
 }
-
 
 /*****************************************************************************
  *
@@ -597,12 +598,13 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
 
            WTPMachine *this_machine;
 
+           mutex_lock(machines.lock);           
+
            if (machines.list == NULL){
               debug(0, "WTP: machine_find: list is empty");
+              mutex_unlock(machines.lock);
               return NULL;
            }
-
-           mutex_lock(machines.lock);
 
            this_machine = machines.first;
           
@@ -644,6 +646,7 @@ static WTPMachine *wtp_machine_create_empty(void){
         #define MSG(name) machine->name = msg_create(wdp_datagram)
         #define OCTSTR(name) machine->name = octstr_create_empty()
         #define QUEUE(name) machine->name = NULL
+        #define WSP_EVENT(name) machine->name = wsp_event_create(TRInvokeIndication)
         #define MUTEX(name) machine->name = mutex_create()
         #define TIMER(name) machine->name = wtp_timer_create()
         #define NEXT(name) machine->name = NULL
@@ -652,10 +655,12 @@ static WTPMachine *wtp_machine_create_empty(void){
 
 	mutex_lock(machines.lock);
 
-	if (machines.list == NULL)
-		machines.first = machine;
-	else
-		machines.list->next = machine;
+	if (machines.list == NULL){
+	   machines.first = machine;
+           machines.list = machines.first;
+	} else
+	   machines.list->next = machine;
+
         machines.list = machine;
 
 	mutex_unlock(machines.lock);
@@ -767,11 +772,6 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
 
          return event;
 } 
-
-static int wtp_tid_is_valid(WTPEvent *event){
- 
-    return 1;
-}
 
 /*
  * Append an event to the event queue of a WTPMachine.
@@ -1183,8 +1183,7 @@ static WTPSegment *add_segment_to_message(long tid, Octstr *data, char position)
           return insert_segment(previous, next, segments_list);
        }
 
-       panic(0, "Following return is not necessary but is required by the 
-             compiler");
+       panic(0, "Following return is not necessary but is required by the compiler");
        return NULL;      
 }
 
@@ -1244,8 +1243,7 @@ static WTPSegment *find_previous_segment(long tid, char packet_sequence_number,
        }
 
        if (current == NULL)
-          debug(0, "WTP: find_previous_segment: tid not found from the segments 
-                    list");
+          debug(0, "WTP: find_previous_segment: tid not found from the segments list");
        else
           if (current->next == NULL)
              next = current;
@@ -1296,7 +1294,8 @@ static void destroy_machine(WTPMachine *machine, WTPMachine *previous){
 
      #define INTEGER(name)
      #define ENUM(name)  
-     #define MSG(name) msg_destroy(machine->name)     
+     #define MSG(name) msg_destroy(machine->name)
+     #define WSP_EVENT(name) wsp_event_destroy(machine->name)  
      #define OCTSTR(name) octstr_destroy(machine->name)
      #define TIMER(name) wtp_timer_destroy(machine->name)
      #define QUEUE(name) if (machine->name != NULL) \

@@ -9,6 +9,7 @@ typedef struct WTPMachine WTPMachine;
 typedef struct WTPEvent WTPEvent;
 typedef struct Address Address;
 typedef struct WTPSegment WTPSegment;
+typedef struct Tid_cache Tid_cache;
 
 #include <errno.h>
 #include <sys/types.h>
@@ -20,6 +21,7 @@ typedef struct WTPSegment WTPSegment;
 #include "wsp.h"
 #include "wtp_timer.h"
 #include "wtp_send.h"
+#include "wtp_tid.h"
 
 #define NUMBER_OF_ABORT_REASONS 9
 /*
@@ -90,6 +92,7 @@ struct WTPMachine {
         #define MSG(name) Msg *name
         #define OCTSTR(name) Octstr *name
         #define QUEUE(name) WTPEvent *name
+        #define WSP_EVENT(name) WSPEvent *name
 	#define TIMER(name) WTPTimer *name
         #define MUTEX(name) Mutex *name
         #define NEXT(name) struct WTPMachine *name
@@ -122,13 +125,11 @@ struct WTPSegment {
    struct WTPSegment *next;
 };
 
-
 /*
  * Initialize the WTP subsystem. MUST be called before any other calls
  * to this module.
  */
 void wtp_init(void);
-
 
 /*
  * Create a WTPEvent structure and initialize it to be empty. Return a
@@ -171,7 +172,7 @@ WTPMachine *wtp_machine_create(Octstr *srcaddr, long srcport,
  * address and port and tid. Address information is fetched from message
  * fields, tid from an field of the event. If the machine does not exist and
  * the event is RcvInvoke, a new machine is created and added in the machines
- * data structure. If the event was RcvAck or RcvAbort, the function panics.
+ * data structure. If the event was RcvAck or RcvAbort, the event is ignored.
  * If the event is RcvErrorPDU, new machine is created.
  */
 WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event);

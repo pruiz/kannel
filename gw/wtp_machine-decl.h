@@ -27,6 +27,7 @@ MACHINE(INTEGER(in_use);
 	MUTEX(queue_lock);
         QUEUE(event_queue_head);
         QUEUE(event_queue_tail);
+        WSP_EVENT(invoke_indication);
         NEXT(next);
         )
 
@@ -39,4 +40,5 @@ MACHINE(INTEGER(in_use);
 #undef MUTEX
 #undef NEXT
 #undef MSG
+#undef WSP_EVENT
 

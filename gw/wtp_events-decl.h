@@ -15,6 +15,7 @@ EVENT(RcvInvoke,
       INTEGER(rid);
       INTEGER(up_flag);
       INTEGER(exit_info_present);
+      INTEGER(no_cache_supported);
       })
 
 EVENT(RcvAbort,
