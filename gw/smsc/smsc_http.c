@@ -754,8 +754,9 @@ static void brunet_receive_sms(SMSCConn *conn, HTTPClient *client,
 
 
 /*----------------------------------------------------------------
- * Xidris - An austrian aggregator 
- * Implementing version 1.3, 06.05.2003
+ * 3united.com (formerly Xidris) - An austrian (AT) SMS aggregator 
+ * Implementing version 1.3, 2003-05-06
+ * Updating to version 1.9.1, 2004-09-28
  *
  * Stipe Tolj <stolj@wapme.de>
  */
@@ -764,15 +765,21 @@ static void brunet_receive_sms(SMSCConn *conn, HTTPClient *client,
 static void xidris_send_sms(SMSCConn *conn, Msg *sms)
 {
     ConnData *conndata = conn->data;
-    Octstr *url, *raw, *new_msg;
+    Octstr *url, *new_msg;
     List *headers;
     int dcs, esm_class;
 
-    url = raw = new_msg = NULL;
+    url = new_msg = NULL;
     dcs = esm_class = 0;
 
-    /* RAW additions to called URL */
+    /* format the URL for call */
+    url = octstr_format("%S?"
+        "app_id=%E&key=%E&dest_addr=%E&source_addr=%E",
+        conndata->send_url, conndata->username, 
+        conndata->password, sms->sms.receiver, sms->sms.sender);
+
     if (octstr_len(sms->sms.udhdata)) {
+        /* RAW additions for binary (8bit) msgs  */
 
         /* set the data coding scheme (DCS) and ESM class fields */
         dcs = fields_to_dcs(sms, sms->sms.alt_dcs);
@@ -784,20 +791,14 @@ static void xidris_send_sms(SMSCConn *conn, Msg *sms)
         new_msg = octstr_duplicate(sms->sms.udhdata);
         octstr_append(new_msg, sms->sms.msgdata);
 
-        raw = octstr_format("&dcs=%d&esm=%d", dcs, esm_class);
-    }
+        octstr_format_append(url, "&type=200&dcs=%d&esm=%d&message=%H",
+                             dcs, esm_class, new_msg);
+    }  else {
+        /* additions for text (7bit) msgs */
 
-    /* format the URL for call */
-    url = octstr_format("%S?"
-        "app_id=%E&key=%E&dest_addr=%E&source_addr=%E"
-        "&type=%E&message=%E",
-        conndata->send_url,
-        conndata->username, conndata->password, sms->sms.receiver, sms->sms.sender,
-        (raw ? octstr_imm("200") : (sms->sms.mclass ? octstr_imm("1") : octstr_imm("0"))), 
-        (raw ? new_msg : sms->sms.msgdata));
-
-    if (raw) {
-        octstr_append(url, raw);
+        octstr_format_append(url, "&type=%E&message=%E",
+                            (sms->sms.mclass ? octstr_imm("1") : octstr_imm("0")),
+                            sms->sms.msgdata);
     }
 
     /* 
@@ -817,10 +818,10 @@ static void xidris_send_sms(SMSCConn *conn, Msg *sms)
                        NULL, 0, sms, NULL);
 
     octstr_destroy(url);
-    octstr_destroy(raw);
     octstr_destroy(new_msg);
     http_destroy_headers(headers);
 }
+
 
 /* 
  * Parse for an parameter of an given XML tag and return it as Octstr
@@ -884,7 +885,7 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
                                List *headers, Octstr *body, List *cgivars)
 {
     ConnData *conndata = conn->data;
-    Octstr *user, *pass, *from, *to, *text, *account;
+    Octstr *user, *pass, *from, *to, *text, *account, *binfo;
     Octstr *retmsg;
     int	mclass, mwi, coding, validity, deferred; 
     List *reply_headers;
@@ -899,6 +900,7 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
     to = http_cgi_variable(cgivars, "dest_addr");
     text = http_cgi_variable(cgivars, "message");
     account = http_cgi_variable(cgivars, "operator");
+    binfo = http_cgi_variable(cgivars, "tariff");
 
     debug("smsc.http.xidris", 0, "HTTP[%s]: Received a request",
           octstr_get_cstr(conn->id));
@@ -928,6 +930,7 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
         msg->sms.receiver = octstr_duplicate(to);
         msg->sms.msgdata = octstr_duplicate(text);
         msg->sms.account = octstr_duplicate(account);
+        msg->sms.binfo = octstr_duplicate(binfo);
 
         msg->sms.smsc_id = octstr_duplicate(conn->id);
         msg->sms.time = time(NULL);

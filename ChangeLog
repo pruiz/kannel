@@ -1,4 +1,9 @@
 2004-09-28  Stipe Tolj  <stolj@wapme.de>
+    * gw/smsc/smsc_http.c: fixing 3united (formerly Xidris) HTTP interface for
+      binary MT messages. We passed URL-encoced binary string, but server side 
+      expected HEX encoded (2 char per byte) version.
+
+2004-09-28  Stipe Tolj  <stolj@wapme.de>
     * gw/urltrans.c: added a fix by Alex that prevents panic'ing while msg text
       is NULL and adding '%o' as escape code for MO msgs representing the 
       msg->sms.account field. Which is interpreted as the operator ID for 
