@@ -1919,14 +1919,11 @@ static long parse_ipv4_fragment(Octstr **address, long pos)
               " address unacceptable");
         return -2;
     }
-    debug("wap.push.pap.compiler", 0, "starting main loop, got character %c,"
-          " position %ld", c, pos);
+    
     while (i <= 3 && ((c = octstr_get_char(*address, pos)) != '.' &&  c != '=')
             && pos >= 0) {
         if (isdigit(c)) {
             --pos;
-            debug("wap.push.pap.compiler", 0, "got character %c, new position"
-                 " is %ld", c, pos);
             ++i;
         } else {
 	    debug("wap.push.pap.compiler", 0, "parse_ipv4_fragment: non-digit"

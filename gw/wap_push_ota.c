@@ -16,7 +16,7 @@
  * into WSP format and unpacking them from WSP format. This module contains
  * decoding part.
  *
- * By Aarno Syvänen for Wapit Ltd
+ * By Aarno Syvänen for Wapit Ltd and Global Networks Inc.
  */
 
 #include <errno.h>
@@ -266,7 +266,7 @@ static void make_confirmed_push_request(WAPEvent *e)
 
     if (e->u.Po_ConfirmedPush_Req.push_body != NULL)
         wsp_event->u.S_ConfirmedPush_Req.push_body =
-	  octstr_duplicate(e->u.Po_ConfirmedPush_Req.push_body);
+	        octstr_duplicate(e->u.Po_ConfirmedPush_Req.push_body);
     else
         wsp_event->u.S_ConfirmedPush_Req.push_body = NULL;
      
@@ -447,11 +447,10 @@ static Octstr *pack_sia(List *headers)
 }
 
 /*
- * Turns list of X-Wap-Application-Id headers into the numeric form.
- *
- * Input: List of headers containing only X-Wap-Application-Id headers
- * Output: Octstr containing them in a numeric format. (Ppg module does coding
- * of the header value part of the X-WAP-Application-Id header).
+ * Input: List of headers containing only X-Wap-Application-Id headers, values
+ * being numeric application id codes. (Ppg module does coding of the header 
+ * value part of the X-WAP-Application-Id header).
+ * Output: Octstr containing them in a byte list (one id per byte). 
  *
  * Returns: Octstr containing headers, if succesfull, otherwise an empty 
  * octstr.
@@ -461,15 +460,16 @@ static Octstr *pack_appid_list(List *headers)
     Octstr *appid_os,
            *header_name,
            *header_value;
-    long i,
-         j;
+    long i;
+    size_t len;
 
-    i = j = 0;
+    i = 0;
     appid_os = octstr_create("");
+    len = (size_t) list_len(headers);
 
-    gw_assert(list_len(headers));
+    gw_assert(len);
 
-    while (i < list_len(headers)) {
+    while (i < len) {
         http_header_get(headers, i, &header_name, &header_value);
         gw_assert(octstr_compare(header_name, 
                   octstr_imm("X-WAP-Application-Id")) == 0);
@@ -521,9 +521,9 @@ static Octstr *pack_server_address(void)
 static Octstr *name(Octstr *in)
 {
     if (octstr_compare(in, octstr_imm("localhost")) != 0)
-	return octstr_duplicate(in);
+    	return octstr_duplicate(in);
     else
-	return octstr_duplicate(get_official_ip());
+	    return octstr_duplicate(get_official_ip());
 }
 
 static BearerboxAddress *bearerbox_address_create(void) 
