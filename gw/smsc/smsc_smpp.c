@@ -813,11 +813,17 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                 /*
                  * we get the following status:
                  * DELIVRD, ACCEPTD, EXPIRED, DELETED, UNDELIV, UNKNOWN, REJECTD
+                 *
+                 * Note: some buggy SMSC's send us immediately delivery notifications although
+                 *          we doesn't requested these.
                  */
 
-                if ((stat != NULL) && ((octstr_compare(stat, octstr_imm("DELIVRD")) == 0) ||
-                    (octstr_compare(stat, octstr_imm("ACCEPTD")) == 0)))
+                if (stat != NULL && octstr_compare(stat, octstr_imm("DELIVRD")) == 0)
                     dlrstat = DLR_SUCCESS;
+                else if (stat != NULL && (octstr_compare(stat, octstr_imm("ACKED")) == 0 ||
+                             octstr_compare(stat, octstr_imm("ENROUTE")) == 0 ||
+                             octstr_compare(stat, octstr_imm("ACCEPTD")) == 0))
+                    dlrstat = DLR_BUFFERED;
                 else
                     dlrstat = DLR_FAIL;
 

@@ -1,3 +1,7 @@
+2003-08-27  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsc/smsc_smpp.c: added handling of intermediately delivery notifications
+      (although we doesn't requested these).
+
 2003-08-24  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/shared.[ch]: changed read_from_bearerbox() to pass double value that
       is passed to conn_wait() to have the call unblocked on pending connection
