@@ -1,3 +1,25 @@
+2003-02-13 Aarno Syvänen <as@gni.ch>
+    * PPG SMSC routing patch:
+    * gw/wap_ppg_push_machine.def: Added a field for smsc id.
+    * gw/wap_push_ota.c: Forward smsc id to wsp.
+    * gw/wap_push_ppg.c: Read smsc id from config or from cgi variable
+      and forward it to ota. Formatted.
+    * gw/wap_push_ppg_pushuser.[c|h]: Read smsc id from config file.
+      Added a public function wap_push_ppg_pushuser_smsc_id_get for 
+      this purpose.
+    * gw/wapbox.c: Forward smsc id to bearerbox.
+    * gwlib/cfg.def: Configuration variables forced_smsc_id and default_
+      smsc_id.
+    * wap/wap_events.def: Smsc id to all relevant wap events. Formatted.
+    * wap/wsp_unit.c: Forward smsc id to wdp.
+
+    * Make check bugfix:
+    * checks/check_sendsms.sh: Better echoing when a failure occurs.
+    * checks/check_smpp.sh: Ditto. Test will end, changed log item to
+    be grepped.
+    * gwlib/socket.c: Removed an error message. Caller can log this.
+    * test/drive_smpp.c: Formatted. 
+
 2003-02-07  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_cimd2.c: missed the 'ts = NULL' for the sake of the
       for() loop.
