@@ -54,19 +54,24 @@
 
 static char usage[] =
 "Usage: \n\
-fakewap [-v] <my port> <host> <port> <max> <interval> <thrds> <url1> <url2>...\n\
-\n\
+fakewap [-v] <my port> <host> <port> <max> <interval> <thrds> <version> <pdu_type> <tcl> <tid_new> <tid_increase> <url1> <url2>... \n\\n\
 where [-v] enables optional verbose mode, \n\
 <my port> is the first port used in this machine, each thread has own port\n\
 <host> and <port> is the host and the port to connect to, \n\
 <max> is the maximum number of messages to send (0 means infinitum), \n\
 <interval>, is the interval in seconds (floating point allowed), \n\
 between automatically generated messages,\n\
-<thrds> is the number of simultaneous client sessions\n\
+<thrds> is the number of simultaneous client sessions,\n\
+<version> protocol version field, as an integer,\n\
+<pdu_type> pdu type, as an integer,\n\
+<tcl> transaction class, as an integer, \n\
+<tid_new> means that tid_new flag is set. This will force clearing of \n\
+tid cache of the responder, \n\
+<tid_increase> the difference between two tids,\n\
 <url> is the url to be requested. If there are several urls, they are \n\
 sent in random order.\n\
 \n\
-For example: fakewap -v 10008 my_host 9201 10 0 1 http://www.wapit.com/~liw/hello.wml\n";
+For example: fakewap -v 10008 my_host 9201 10 0 1 0 1 2 0 1 http://www.wapit.com/~liw/hello.wml\n";
 
 #include <errno.h>
 #include <math.h>
@@ -81,8 +86,8 @@ For example: fakewap -v 10008 my_host 9201 10 0 1 http://www.wapit.com/~liw/hell
 #include <netinet/in.h>
 #include <netdb.h>
 #include <netinet/tcp.h>
-
 #include <sys/param.h>
+#include <math.h>
 
 #ifdef _WINDOWS_
 #undef DEBUG
@@ -113,6 +118,7 @@ char * hostname;
 double interval;
 unsigned short port;
 int max_send;
+unsigned short tid_addition; 
 Mutex *mutex;
 int threads = 1;
 int num_sent = 0;
@@ -120,9 +126,13 @@ time_t start_time, end_time;
 double totaltime = 0, besttime = 1000000L,  worsttime = 0;
 int verbose = 0;
 
-unsigned char WSP_Connect[] = {0x0E, 0x00, 0x00, 0x02, 0x01, 0x10, 0x00, 0x00 };
+/*
+ * PDU type, version number and transaction class are supplied by a command line argument.
+ */
+unsigned char WSP_Connect[] = {0x06, 0x00, 0x00, 0x00, 0x01, 0x10, 0x00, 0x00 };
 unsigned char WSP_ConnectReply[] = {0x16, 0x80, 0x00, 0x02 };
 unsigned char WTP_Ack[] =          {0x18, 0x00, 0x00 };
+unsigned char WTP_TidVe[] =        {0x1C, 0x00, 0x00};
 unsigned char WTP_Abort[] =        {0x20, 0x00, 0x00, 0x00 };
 unsigned char WSP_Get[] =          {0x0E, 0x00, 0x00, 0x02, 0x40 };
 unsigned char WSP_Reply[] =        {0x16, 0x80, 0x00, 0x04, 0x20, 0x01, 0x94 };
@@ -151,8 +161,11 @@ static char *choose_message(char **urls, int num_urls) {
 }
 /* returns TID */
 static unsigned short get_tid() {
-    static  unsigned tid = 0;
-    return tid++ & 0x7fff;
+    static unsigned short tid = 0;
+    tid += tid_addition;
+    tid %= (unsigned short)pow(2,15);
+    debug(0, "FAKEWAP: get_tid: tid is %d", tid);
+    return tid;
 }
 
 /*
@@ -231,7 +244,6 @@ wap_msg_send( unsigned short port, SOCKET fd, const unsigned char * hdr,
         if (GET_WTP_PDU_TYPE(msg) == WTP_PDU_INVOKE)
         {
             msg[3] |= 0x10; /* request ack every time */
-            if (*tid == 0) msg[3] |= 0x20; /* set newtid flag */
         }
     }
     if (data != NULL) {
@@ -307,12 +319,13 @@ wap_msg_recv( unsigned short port, SOCKET fd, const char * hdr, int hdr_len,
             }
             /*
             **  Handle TID test, the answer is: Yes, we have an outstanding
-            **  transaction with this tid
+            **  transaction with this tid. We must turn on TID_OK-flag, too.
+            **  We have a separate tid verification PDU.
             */
             else if (GET_WTP_PDU_TYPE(msg) == WTP_PDU_ACK &&
                      GET_TID(msg) == tid) {
                 print_msg( port, "Received tid verification", msg, msg_len );
-                wap_msg_send( port, fd, WTP_Ack, sizeof(WTP_Ack), &tid,
+                wap_msg_send( port, fd, WTP_TidVe, sizeof(WTP_TidVe), &tid,
                               NULL, 0 );
             }
             else if (GET_WTP_PDU_TYPE(msg) == WTP_PDU_ABORT) {
@@ -475,10 +488,10 @@ int get_next_transaction() {
 **  Connect, Get a url and Disconnect until all requests are have been done.
 */
 void *
-client_session( void * arg )
+client_session( void * arg)
 {
     SOCKET fd;
-    unsigned short  our_port = 0;
+    unsigned short our_port = 0;
     int ret;
     int url_len = 0, url_off = 0;
     double nowsec, lastsec, tmp;
@@ -618,7 +631,7 @@ client_session( void * arg )
 int main(int argc, char **argv)
 {
     unsigned short our_port;
-    int     i, org_threads;
+    int i, org_threads;
     double delta;
 
     if (argc > 2 && argv[1][0] == '-' && argv[1][1] == 'v') {
@@ -626,7 +639,7 @@ int main(int argc, char **argv)
         argv++;
         argc--;
     }
-    if (argc < 8)
+    if (argc < 12)
         panic(0, "%s", usage);
 
 #ifdef _WINDOWS_
@@ -652,9 +665,13 @@ int main(int argc, char **argv)
     max_send = atoi(argv[4]);
     interval = atof(argv[5]);
     threads = atoi(argv[6]);
-
-    urls = argv + 7;
-    num_urls = argc - 7;
+    WSP_Connect[3] += (atoi(argv[7])&3)<<6;
+    WSP_Connect[0] += (atoi(argv[8])&15)<<3;
+    WSP_Connect[3] += atoi(argv[9])&3;
+    WSP_Connect[3] += (atoi(argv[10])&1)<<5;
+    tid_addition = (unsigned short)atof(argv[11]);
+    urls = argv + 12;
+    num_urls = argc - 12;
     srand((unsigned int) time(NULL));
 
     mutex = mutex_create();
@@ -669,10 +686,10 @@ int main(int argc, char **argv)
     **  session of main thread
     */
     for (i = 1; i < threads; i++) {
-        start_thread( 0, client_session, (void *)(unsigned)our_port, 0 );
+        start_thread( 0, client_session, (void *)(unsigned)our_port, 0);
         our_port++;
     }
-    client_session( (void *)(unsigned)our_port );
+    client_session((void *)(unsigned)our_port);
 
     /*
     **  Wait the other sessions to complete
@@ -680,7 +697,7 @@ int main(int argc, char **argv)
     while (threads > 0) usleep( 1000 );
 
     info(0, "\nfakewap complete.");
-    info( 0, "fakewap: %d client threads made total %d transactions.", org_threads, num_sent );
+    info( 0, "fakewap: %d client threads made total %d transactions.", org_threads, num_sent);
     delta = difftime(end_time, start_time);
     info( 0, "fakewap: total running time %.1f seconds", delta);
     info( 0, "fakewap: %.1f messages/seconds on average", num_sent / delta);
