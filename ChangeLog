@@ -1,3 +1,9 @@
+2000-04-07 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp.c, wtp_state-decl.h: Included wtp_timer_destroy call in function
+	machine_mark_unused, so that a timer created is allways destroyed when
+	a transaction ends.
+
 Fri Apr  7 15:08:50 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/gwassert.h: Made gw_assert_place also report the actual

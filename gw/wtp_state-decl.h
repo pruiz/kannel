@@ -73,6 +73,7 @@ ROW(LISTEN,
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      debug("wap.wtp", 0, "RcvInvoke: generated TR-Invoke.ind for WSP");
      wsp_dispatch_event(machine, wsp_event);
+     wtp_machine_mark_unused(machine);
     },
     LISTEN)
 
@@ -134,7 +135,6 @@ ROW(TIDOK_WAIT,
     1,
     {
      wtp_send_abort(PROVIDER, PROTOERR, machine, event);
-     wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -166,7 +166,6 @@ ROW(INVOKE_RESP_WAIT,
      current_primitive = TR_Abort_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      /*wsp_dispatch_event(machine, wsp_event);*/
-     wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -175,7 +174,6 @@ ROW(INVOKE_RESP_WAIT,
     TR_Abort_Req,
     1,
     { 
-     wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
      wtp_send_abort(event->TR_Abort_Req.abort_type, event->TR_Abort_Req.abort_reason,
                     machine, event); 
@@ -216,7 +214,6 @@ ROW(INVOKE_RESP_WAIT,
     TimerTO_A,
     machine->aec == AEC_MAX,
     {
-     wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
      wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
     },
@@ -232,7 +229,6 @@ ROW(INVOKE_RESP_WAIT,
     RcvErrorPDU,
     1,
     {
-     wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
      wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
      
@@ -268,7 +264,6 @@ ROW(RESULT_WAIT,
      current_primitive = TR_Abort_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      /*wsp_dispatch_event(machine, wsp_event);*/
-     wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -299,7 +294,6 @@ ROW(RESULT_WAIT,
     TR_Abort_Req,
     1,
     { 
-     wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
      wtp_send_abort(event->TR_Abort_Req.abort_type, event->TR_Abort_Req.abort_reason,
                     machine, event); 
@@ -310,7 +304,6 @@ ROW(RESULT_WAIT,
     RcvErrorPDU,
     1,
     {
-     wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
      wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
      
@@ -333,7 +326,6 @@ ROW(RESULT_RESP_WAIT,
      current_primitive = TR_Result_Cnf;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      wsp_dispatch_event(machine, wsp_event);
-     wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -345,7 +337,6 @@ ROW(RESULT_RESP_WAIT,
      current_primitive = TR_Abort_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      /*wsp_dispatch_event(machine, wsp_event);*/
-     wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -354,7 +345,6 @@ ROW(RESULT_RESP_WAIT,
     TR_Abort_Req,
     1,
     { 
-     wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
      wtp_send_abort(event->TR_Abort_Req.abort_type, event->TR_Abort_Req.abort_reason,
                     machine, event); 
@@ -421,7 +411,6 @@ ROW(RESULT_RESP_WAIT,
      current_primitive = TR_Abort_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      /*wsp_dispatch_event(machine, wsp_event);*/
-     wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -431,7 +420,6 @@ ROW(RESULT_RESP_WAIT,
     RcvErrorPDU,
     1,
     {
-     wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
      wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
      

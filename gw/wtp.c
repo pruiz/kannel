@@ -266,12 +266,12 @@ void wtp_event_dump(WTPEvent *event) {
 
 /*
  * Mark a WTP state machine unused. Normal functions do not remove machines, just 
- * set a flag. If the machines list is busy, just wait (fetching the page is the most 
- * time-consuming task).
+ * set a flag. In addition, destroys the timer.
  */
 void wtp_machine_mark_unused(WTPMachine *machine){
 
      machine->in_use = 0;
+     wtp_timer_destroy(machine->timer);
 }
 
 /* 
@@ -414,6 +414,7 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
  * Transfers data from fields of a message to fields of WTP event. User data has
  * the host byte order. Updates the log and sends protocol error messages. Reassembles 
  * segmented messages, too.
+ *
  * First empty instance of segment_lists is created by wapbox.c. This function allocates 
  * and deallocates memory for its member lists. After deallocation a new instance of an 
  * empty segments data structure is creted. For result, an wtp event is created, if 
