@@ -1,3 +1,6 @@
+2005-03-28  Alexander Malysh <amalysh at kannel.org>
+    * gwlib/dbpool.h: fixed compiler warnings.
+
 2005-03-22  Stipe Tolj  <stolj@wapme.de> 
     * wmlscript/wsstdlib.[ch]: updated and added latest WTAI functions as 
       defined in WAP-268-WTAI, WAP-269-WTAIIS136, WAP-270-WTAIPDC, 
