@@ -36,6 +36,10 @@ struct WTPTimer {
 	WTPEvent *event;
 };
 
+/*
+ * Initialize timers data structure. This function MUST be called before others.
+ */
+void wtp_timer_init(void);
 
 /*
  * Create and initialize a WTPTimer object.
@@ -67,7 +71,11 @@ void wtp_timer_stop(WTPTimer *timer);
  * send the event. (The timer is then stopped, of course.)
  */
 void wtp_timer_check(void);
-	
+
+/*
+ * Print all fields of a timer, using the project debugging function
+ */
+void wtp_timer_dump(WTPTimer *timer);
 
 #endif
 

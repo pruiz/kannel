@@ -7,6 +7,7 @@
 #ifndef WTP_SEND_H
 #define WTP_SEND_H
 
+#include <assert.h>
 #include "wtp.h"
 
 
@@ -51,7 +52,7 @@ void wtp_do_not_start(long abort_type, long abort_reason, Address *address,
 void wtp_send_ack(long ack_type, WTPMachine *machine, WTPEvent *event);
 
 void wtp_send_group_ack(Address *address, long tid, int retransmission_status, 
-                        char packet_sequence_number); 
+                        unsigned char packet_sequence_number); 
 
 void wtp_send_negative_ack(Address *address, long tid, 
                            int retransmission_status, int segments_missing,

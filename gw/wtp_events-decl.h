@@ -3,6 +3,20 @@
  * architecture document how to use and update these.
  *
  * By Aarno Syvänen for WapIT Ltd.
+ *
+ * WTPEvent data structure contains events WTP must handle. This means incoming 
+ * messages, WSP primitives and timer expirations. Messages incoming are invoke, 
+ * acknowledgement and abort. Receiving a message having an illegal PDU (PDU WTP
+ * does not understand) is a separate event. 
+ *
+ * WSP primitives are TRInvoke.require ans response, TRResult.require and TRAbort. * require. 
+ *
+ * Fields of an incoming message event corresponds directly with fields of the 
+ * message itself. Same apply to the fields of events generates by WSP, they are
+ * ones required by specification. However, timer events have a meaningless 
+ * dummy field.
+ *
+ * Data stored in an event is distroyed immediately after the event is handled.
  */
 
 EVENT(RcvInvoke,
@@ -65,17 +79,17 @@ EVENT(TRAbort,
 
 EVENT(TimerTO_A,
      {
-     INTEGER(tid);
+     INTEGER(dummy);
      })
 
 EVENT(TimerTO_R,
      {
-     INTEGER(tid);
+     INTEGER(dummy);
      })
 
 EVENT(TimerTO_W,
      {
-     INTEGER(tid);
+     INTEGER(dummy);
      })
 
 EVENT(RcvErrorPDU,

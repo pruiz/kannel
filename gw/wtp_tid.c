@@ -112,7 +112,9 @@ int wtp_tid_is_valid(WTPEvent *event, WTPMachine *machine){
      
       return fail;
     }
-    panic(0, "This return is unnecessary but our compiler demands it");
+/*
+ * This return is unnecessary but our compiler demands it
+ */
     return fail;
 }
 
@@ -148,7 +150,9 @@ static int tid_in_window(long rcv_tid, long last_tid){
           }
        }
 
-       panic(0, "following return is unnecessary but our compiler demands it");
+/*
+ * Following return is unnecessary but our compiler demands it");
+ */
        return 0;
 }
 
@@ -234,7 +238,7 @@ static void set_tid(long tid){
 
 /*
  * Adds an item to the tid cache, one item per every iniator. Iniator is 
- * identified by the address quadruplet, fetched from wtp machine.
+ * identified by the address four-tuple, fetched from wtp machine.
  */ 
 static void add_tid(WTPMachine *machine, long tid){
 
@@ -244,9 +248,10 @@ static void add_tid(WTPMachine *machine, long tid){
        new_item->source_address = octstr_duplicate(machine->source_address);
        new_item->source_port = machine->source_port;
        new_item->destination_address = 
-               octstr_duplicate(machine->destination_address);
+                 octstr_duplicate(machine->destination_address);
        new_item->destination_port = machine->destination_port;
        new_item->tid = tid; 
+
        mutex_lock(tid_cache.lock);
 
        if (tid_cache.item == NULL) {

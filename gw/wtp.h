@@ -23,7 +23,12 @@ typedef struct Tid_cache Tid_cache;
 #include "wtp_send.h"
 #include "wtp_tid.h"
 
+/*
+ * For removing the magic
+ */
+#define NUMBER_OF_ABORT_TYPES 2
 #define NUMBER_OF_ABORT_REASONS 9
+#define NUMBER_OF_TRANSACTION_CLASSES 3
 /*
  * For now, timers are defined. They will depend on bearer information fetched
  * from address (or from a header field of the protocol speaking with the
@@ -34,10 +39,11 @@ typedef struct Tid_cache Tid_cache;
 #define L_R_WITH_USER_ACK 7
 
 /*
- * Maximum values for counters
+ * Maximum values for counters (for retransmissions and acknowledgement waiting 
+ * periods)
  */
-#define AEC_MAX 4
-#define MAX_RCR  4
+#define AEC_MAX 6
+#define MAX_RCR  8
 
 /*
  * Types of WTP PDUs and numbers assigned for them
@@ -56,7 +62,7 @@ enum {
 };
 
 /*
- * Types of acknowledgements
+ * Types of acknowledgement PDU (normal acknowledgement or tid verification)
  */
 
 enum {
@@ -65,19 +71,26 @@ enum {
 };
 
 /*
- * Types of aborts
+ * Who is aborting (WTP or WTP user)
  */
 enum {
      PROVIDER = 0x00,
      USER = 0x01
 };
 
+/*
+ * See file wtp_events-decl.h for comments. 
+ */
 enum event_name {
      #define EVENT(name, field) name,
      #include "wtp_events-decl.h"
      event_name_count
 };
 
+/*
+ * See file wtp_state-decl.h for comments. Note that in this case macro ROW is 
+ * defined to produce an empty string.
+ */
 enum states {
     #define STATE_NAME(state) state,
     #define ROW(state, event, condition, action, next_state)
@@ -87,7 +100,9 @@ enum states {
 
 typedef enum states states;
 
-
+/*
+ * See file wtp_machine-decl.h for comments. We define one macro for every type.
+ */
 struct WTPMachine {
         #define INTEGER(name) long name
         #define ENUM(name) states name
@@ -103,7 +118,10 @@ struct WTPMachine {
         #include "wtp_machine-decl.h"
 };
 
-
+/*
+ * See file wtp_events-decl.h for comments. Again, we define one macro for every
+ * type.
+ */
 struct WTPEvent {
     enum event_name type;
     WTPEvent *next;
@@ -114,6 +132,9 @@ struct WTPEvent {
     #include "wtp_events-decl.h"
 };
 
+/*
+ * A separate data structure for storing an address four-tuple of a message.
+ */
 struct Address {
    Octstr *source_address;
    long source_port;
@@ -121,6 +142,9 @@ struct Address {
    long destination_port;
 };
 
+/*
+ * An ordered linked list for storing received segments.
+ */
 struct WTPSegment {
    long tid;
    char packet_sequence_number;
@@ -148,8 +172,7 @@ void wtp_event_destroy(WTPEvent *event);
 
 
 /*
- * Output (with `debug' in log.h) the type of an event and all
- * the fields of that type.
+ * Output the type of an event and all the fields of that type.
  */
 void wtp_event_dump(WTPEvent *event);
 
@@ -165,6 +188,10 @@ void wtp_event_dump(WTPEvent *event);
 WTPEvent *wtp_unpack_wdp_datagram(Msg *msg);
 
 
+/*
+ * Creates wtp machine having addsress quintuple and transaction class 
+ * iniatilised. If machines list is busy, just waits.
+ */ 
 WTPMachine *wtp_machine_create(Octstr *srcaddr, long srcport,
 				Octstr *destaddr, long destport, long tid,
 				long tcl);
@@ -182,32 +209,30 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event);
 
 
 /*
- * Mark a WTP state machine unused. Normally, removing a state machine from the
- * state machines list means marking turning off a flag. Panics when there is
- * no machines to mark unused.
+ * Mark a WTP state machine unused. Normally, removing a state machine from the state 
+ * machines list means marking turning off a flag.  If machines list is busy, just wait.
  */
 void wtp_machine_mark_unused(WTPMachine *machine);
 
 
 /* 
- * Removes from the machines list all machines having in_use-flag cleared. Panics  if 
- * machines list is empty. If machines list is busy, does nothing (garbage collection 
- * will eventually start again).
+ * Removes from the machines list all machines having in_use-flag cleared. Panics 
+ * if machines list is empty. If machines list is busy, does nothing (garbage 
+ * collection will eventually start again).
  */
 void wtp_machines_list_clear(void);
 
 
 /*
- * Output (with `debug' in gwlib/log.h) the state of the machine  and all
- * its fields.
+ * Output the state of the machine and all its fields.
  */
 void wtp_machine_dump(WTPMachine  *machine);
 
 
 /*
- * Feed an event to a WTP state machine. Handle all errors yourself,
- * and report them to the caller. Generate a pointer to WSP event, if an
- * indication or a confirmation is required.
+ * Feed an event to a WTP state machine. Handle all errors by itself, do not 
+ * report them to the caller. Generate a pointer to WSP event, if an indication 
+ * or a confirmation is required.
  */
 void wtp_handle_event(WTPMachine *machine, WTPEvent *event);
 
