@@ -1,3 +1,10 @@
+2000-11-16  Yann Muller  <ymuller@3glab.com>
+	* gw/smsc_at.c: In function at_open_connection() added parity
+	line for this modem type. In function at_open() adding sleep
+	period only for this modem type, may be expanded. In function
+	pdu_extract() changed skipping of 00 sequence for the specific
+	modem types. (patch by Stipe Tolj)
+
 2000-11-15  Richard Braakman  <dark@wapi.com>
 
 	* gw/wsp-session.c: Address tuples are now included in events
