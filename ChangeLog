@@ -1,3 +1,20 @@
+1999-12-22 Aarno Syvänen <syvanen@wapit.com>
+
+	* spaces around assignment operators added
+
+	* wtp.c: function machine_find_or_create rewritten. We should not
+	create a new machine when we are not receiving an invoke pdu.
+
+	* wtp.c, wtp_events-decl.h: TRResult has now wsp_tid amongst its 
+	attributes
+
+	* wsp_events-decl.h: Superflous events removed
+
+	* wtp_send.c: Internal function wtp_add_datagram_address added, pack*
+	functions changed respectively. Added functions pack_ack and 
+	pack_abort
+	
+
 1999-12-22    <rpr@rpr.wapit.com>
 
 	* gw/smsc.c, conf-files: changed SMSC configuration vairable
@@ -5,7 +22,7 @@
 	future HTTP adminstration in mind.
 
 1999-12-22    <rpr@rpr.wapit.com>
-
+	
 	* gw/smsbox_req.c (do_split_send): returned old code until Mikael
 	fixes his new one.
 
