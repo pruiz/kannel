@@ -576,7 +576,7 @@ char *smsbox_req_sendsms(List *list)
 	Msg *msg = NULL;
 	URLTranslation *t = NULL;
 	Octstr *user = NULL, *from = NULL, *to;
-	Octstr *text = NULL, *udh = NULL;
+	Octstr *text = NULL, *udh = NULL, *smsc = NULL;
 	int ret;
 
 	/* check the username and password */
@@ -587,6 +587,7 @@ char *smsbox_req_sendsms(List *list)
 
 	udh = http_cgi_variable(list, "udh");
 	text = http_cgi_variable(list, "text");
+	smsc = http_cgi_variable(list, "smsc");
 
 	if ((to = http_cgi_variable(list, "to")) == NULL ||
 	    (text == NULL && udh == NULL))
@@ -612,12 +613,14 @@ char *smsbox_req_sendsms(List *list)
 	     text ? octstr_get_cstr(text) : "<< UDH >>");
   
 	msg = msg_create(smart_sms);
-	if (msg == NULL) goto error;
 
 	msg->smart_sms.receiver = octstr_duplicate(to);
 	msg->smart_sms.sender = from;  	/* duplication */
 	msg->smart_sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
 	msg->smart_sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
+	/* new smsc-id argument - we should check this one, if able,
+	   but that's advanced logics -- Kalle */
+	msg->smart_sms.smsc_id = smsc ? octstr_duplicate(smsc) : NULL;
 
 	if(udh==NULL) {
 		msg->smart_sms.flag_8bit = 0;

@@ -1,7 +1,7 @@
 /*
  * smsc_p.h - private interface to SMS center subsystem
  *
- * Lars Wirzenius for WapIT Ltd.
+ * Lars Wirzenius
  *
  * New API by Kalle Marjola 1999
  */
@@ -45,6 +45,9 @@ struct SMSCenter {
 	
 	char name[1024];
 	int id;
+
+        /* For log files/message-routing */
+        Octstr *smsc_id;
     	
 	/* Routing prefixes. */
 	char *preferred_prefix;

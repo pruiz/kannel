@@ -497,6 +497,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 {
 	SMSCenter *smsc;
         char *type, *host, *port, *username, *password, *phone, *device;
+	char *smsc_id;
         char *preferred_prefix, *denied_prefix;
         char *backup_port, *receive_port, *our_port; 
         char *alt_chars;
@@ -524,6 +525,8 @@ SMSCenter *smsc_open(ConfigGroup *grp)
         denied_prefix = config_get(grp, "denied-prefix");
         alt_chars = config_get(grp, "alt-charset");
 
+	smsc_id = config_get(grp, "smsc-id");
+	    
         smpp_system_id = config_get(grp, "system-id");
         smpp_system_type = config_get(grp, "system-type");
         smpp_address_range = config_get(grp, "address-range");
@@ -663,6 +666,11 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 	    smsc->alt_charset = (alt_chars != NULL ? atoi(alt_chars) : 0);
 	    smsc->preferred_prefix = preferred_prefix;
 	    smsc->denied_prefix = denied_prefix;
+
+	    if (smsc_id) 
+		smsc->smsc_id = octstr_create(smsc_id);
+	    else 
+		smsc->smsc_id = NULL; 
 	}
 	
 	return smsc;
@@ -702,6 +710,14 @@ int smsc_reopen(SMSCenter *smsc) {
 char *smsc_name(SMSCenter *smsc)
 {
     return smsc->name;
+}
+
+char *smsc_id(SMSCenter *smsc)
+{
+    if (smsc->smsc_id != NULL)
+	return octstr_get_cstr(smsc->smsc_id);
+    else
+	return smsc->name;
 }
 
 
@@ -859,8 +875,11 @@ int smsc_get_message(SMSCenter *smsc, Msg **new)
 
 		ret = smscenter_receive_msg(smsc, &newmsg);
 		if( ret == 1 ) {
-			/* OK */
-		    ;
+		    /* OK */
+
+		    /* if any smsc_id available, use it */
+		    newmsg->smart_sms.smsc_id = octstr_duplicate(smsc->smsc_id);
+		    
 		} else if (ret == 0) { /* "NEVER" happens */
 		    warning(0, "SMSC: Pending message returned '1', "
 			    "but nothing to receive!");

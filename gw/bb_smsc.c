@@ -101,6 +101,10 @@ static void sms_receiver(void *arg)
 
 	    counter_increase(incoming_sms_counter);
 	    debug("bb.sms", 0, "smsc: new message received");
+	    alog("Received a message - SMSC:%s sender:%s msg: '%s'",
+		 smsc_id(conn->smsc),
+		 octstr_get_cstr(msg->smart_sms.sender),
+		 octstr_get_cstr(msg->smart_sms.msgdata));
 	    sleep = 1000;
 	}
 	else {
@@ -136,6 +140,11 @@ static void sms_sender(void *arg)
 	    break;
 
 	debug("bb.sms", 0, "sms_sender: sending message");
+	
+	alog("Sending a message - SMSC:%s receiver:%s msg: '%s'",
+	     smsc_id(conn->smsc),
+	     octstr_get_cstr(msg->smart_sms.receiver),
+	     octstr_get_cstr(msg->smart_sms.msgdata));
 	
 	ret = smsc_send_message(conn->smsc, msg);
 	if (ret == -1) {

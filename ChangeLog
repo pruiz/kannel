@@ -1,3 +1,17 @@
+2000-09-21  Kalle Marjola  <rpr@wapit.com>
+
+	* gwlib/accesslog.c|h: added first version of access log system
+
+	* smsc.c|h: added SMSC Id (a bit like name but user defined)
+
+	* gw/msg-decl.h: added SMSC Id to SMS messages 
+	
+	* gw/bb_smsc.c, gw/bearerbox.c: added access log entries for
+	incoming/outgoing SMS messages
+
+	* gw/smsbox_req.c: added 'smsc' entry for send-sms interface, but
+	not yet supported.
+
 2000-09-21  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/http.c: Use octstr_case_search instead of

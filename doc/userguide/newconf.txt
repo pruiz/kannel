@@ -155,6 +155,12 @@ Mandatory variables in smsc group are following ones:
 
 Message routing can be used to route SMS messages to be sent:
 
+ smsc-id = <id>
+ #       An optional name or id for the smsc. Any string is
+ #       acceptable, but semicolon ';' may cause problems, so avoid
+ #	 it. This 'id' is written into log files and can be used to
+ #	 route SMS messages. Several smsc'es can have same id. 
+ #
  denied-prefix = <prefix-list>
  #       A list of phone number prefixes which are NOT accepted to be
  #       sent through this SMSC. Multiple entries are separated with 
@@ -168,7 +174,7 @@ Message routing can be used to route SMS messages to be sent:
  #       (likewise if there is none preferred, random SMSC is selected
  #        from the existing ones)
  
-Remaining variables are smsc-dependant. FILL THESE LATER
+Remaining variables are smsc-dependant.
 
  host = <address>
  #       machine that runs the SMSC. As IP (100.100.100.100) 

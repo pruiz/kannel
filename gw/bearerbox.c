@@ -284,6 +284,10 @@ static int starter(Config *config)
     if (check_config(config) == -1)
 	panic(0, "Cannot start with corrupted configuration");
 
+    if ((log = config_get(grp, "access-log")) != NULL)
+	alog_open(log, 1);	/* use localtime; XXX let user choose that */
+    
+	
     /* if all seems to be OK by the first glimpse, real start-up */
     
     outgoing_sms = list_create();
@@ -431,6 +435,7 @@ int main(int argc, char **argv)
     list_destroy(isolated, NULL);
     mutex_destroy(status_mutex);
 
+    alog_close();		/* if we have any */
     config_destroy(cfg);
     gwlib_shutdown();
 

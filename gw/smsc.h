@@ -50,9 +50,15 @@ int smsc_reopen(SMSCenter *smsc);
    cannot fail. */
 char *smsc_name(SMSCenter *smsc);
 
+
+/* As smsc_name, but returns optional ID if that is set, or name otherwise */
+char *smsc_id(SMSCenter *smsc);
+
+
 /* Return 1 if match found, 0 otherwise */
 int smsc_preferred(SMSCenter *smsc, char *number);
 int smsc_denied(SMSCenter *smsc, char *number);
+
 
 /* Close the connection to an SMS center. Return -1 for error
    (the connection will be closed anyway, but there was some error

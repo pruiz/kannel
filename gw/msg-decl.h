@@ -24,6 +24,7 @@ MSG(smart_sms,
 		OCTSTR(udhdata);
 		OCTSTR(msgdata);
 		INTEGER(time);
+		OCTSTR(smsc_id);
 	})
 
 MSG(wdp_datagram,
