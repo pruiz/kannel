@@ -393,7 +393,7 @@ int smpp_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg) {
 		strlen(submit_sm->schedule_delivery_time) + 1 +
 		strlen(submit_sm->validity_period) + 1 +
 		1 + 1 + 1 + 1 + 1 +
-		strlen(submit_sm->short_message) + 1;
+		submit_sm->sm_length + 1;
 
 	fifo_push(smsc->fifo_t_out, pdu);
 
@@ -1450,7 +1450,7 @@ static int pdu_act_bind_transmitter_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 			strlen(submit_sm->schedule_delivery_time) + 1 +
 			strlen(submit_sm->validity_period) + 1 +
 			1 + 1 + 1 + 1 + 1 +
-			strlen(submit_sm->short_message) + 1;
+			submit_sm->sm_length + 1;
 
 		fifo_push(smsc->fifo_t_out, newpdu);
 
@@ -1525,7 +1525,7 @@ static int pdu_encode_submit_sm(smpp_pdu* pdu, Octstr** str) {
 		 strlen(submit_sm->schedule_delivery_time) + 1 +
 		 strlen(submit_sm->validity_period) + 1 +
 		 1 + 1 + 1 + 1 + 1 +
-		 strlen(submit_sm->short_message) + 1;
+		 submit_sm->sm_length + 1;
 
 	data = malloc(length);
 	if(data == NULL) goto error;
@@ -1549,7 +1549,11 @@ static int pdu_encode_submit_sm(smpp_pdu* pdu, Octstr** str) {
 	smpp_append_oct(&where, &left, submit_sm->data_coding);
 	smpp_append_oct(&where, &left, submit_sm->sm_default_msg_id);
 	smpp_append_oct(&where, &left, submit_sm->sm_length);
-	smpp_append_cstr(&where, &left, submit_sm->short_message);
+	/* To preserver 8bit do memcpy... don't care about &where since
+	   this is the last variable... */
+	memcpy(where, submit_sm->short_message, submit_sm->sm_length);
+
+/*	smpp_append_cstr(&where, &left, submit_sm->short_message); */
 
 	newstr = octstr_create_from_data(data, length);
 
