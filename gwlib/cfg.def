@@ -50,10 +50,7 @@ SINGLE_GROUP(core,
     OCTSTR(ssl-server-cert-file)
     OCTSTR(ssl-server-key-file)
     OCTSTR(ssl-trusted-ca-file)
-    OCTSTR(mysql-host)
-    OCTSTR(mysql-username)
-    OCTSTR(mysql-password)
-    OCTSTR(mysql-dbname)
+    OCTSTR(dlr-storage)
 )
 
 
@@ -318,6 +315,26 @@ MULTI_GROUP(modems,
     OCTSTR(keepalive-cmd)
     OCTSTR(broken)
     OCTSTR(message-storage)
+)
+
+MULTI_GROUP(mysql-connection,
+    OCTSTR(id)
+    OCTSTR(host)
+    OCTSTR(mysql-username)
+    OCTSTR(mysql-password)
+    OCTSTR(database)
+)
+
+SINGLE_GROUP(dlr-mysql,
+    OCTSTR(mysql-id)
+    OCTSTR(table)
+    OCTSTR(field-smsc)
+    OCTSTR(field-timestamp)
+    OCTSTR(field-destination)
+    OCTSTR(field-service)
+    OCTSTR(field-url)
+    OCTSTR(field-mask)
+    OCTSTR(field-status)
 )
 
 #undef OCTSTR
