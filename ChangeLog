@@ -1,3 +1,8 @@
+Thu Jan 27 16:19:35 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wtp.c: Fixed check for length of Abort PDU. Two equals
+	signs were missing, probably a typo.
+
 Thu Jan 27 15:37:14 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c, gw/wsp_state-decl.h: If client sends new Connect PDU,

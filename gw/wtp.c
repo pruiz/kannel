@@ -447,7 +447,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 	       case ABORT:
                     fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 3);
 
-                    if (fourth_octet  -1){
+                    if (fourth_octet == -1){
                        tell_about_error(pdu_too_short_error, event);
                        debug(0, "WTP: unpack_datagram; missing fourth octet 
                             (abort)");
