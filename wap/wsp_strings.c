@@ -27,31 +27,42 @@ struct table
     long size;          /* Nr of entries in each of the tables below */
     Octstr **strings;   /* Immutable octstrs */
     long *numbers;      /* Assigned numbers, or NULL for linear tables */
-    int linear;	    /* True for tables defined as LINEAR */
+    int *versions;      /* WSP Encoding-versions, or NULL if non-versioned */
+    int linear;	        /* True for tables defined as LINEAR */
 };
 
-struct element
+struct numbered_element
 {
     unsigned char *str;
     long number;
+    int version;    
+};
+
+struct linear_element
+{
+    unsigned char *str;
+    int version;    
 };
 
 /* Local functions */
 static Octstr *number_to_string(long number, struct table *table);
 static unsigned char *number_to_cstr(long number, struct table *table);
 static long string_to_number(Octstr *ostr, struct table *table);
+static long string_to_versioned_number(Octstr *ostr, struct table *table, int version);
 
 
 /* Declare the data.  For each table "foo", create a foo_strings array
  * to hold the data, and a (still empty) foo_table structure. */
 #define LINEAR(name, strings) \
-    static const unsigned char *name##_strings[] = { strings }; \
+    static const struct linear_element name##_strings[] = { strings }; \
     static struct table name##_table;
-#define STRING(string) string,
+#define STRING(string) { string, 0 },
+#define VSTRING(version, string) { string, version }, 
 #define NUMBERED(name, strings) \
-    static const struct element name##_strings[] = { strings }; \
+    static const struct numbered_element name##_strings[] = { strings }; \
     static struct table name##_table;
-#define ASSIGN(string, number) { string, number },
+#define ASSIGN(string, number) { string, number, 0 },
+#define VASSIGN(version, string, number) { string, number, version },
 #include "wsp_strings.def"
 
 /* Define the functions for translating number to Octstr */
@@ -74,6 +85,12 @@ long wsp_string_to_##name(Octstr *ostr) { \
 }
 #include "wsp_strings.def"
 
+#define LINEAR(name, strings) \
+long wsp_string_to_versioned_##name(Octstr *ostr, int version) { \
+     return string_to_versioned_number(ostr, &name##_table, version); \
+}
+#include "wsp_strings.def"
+
 static Octstr *number_to_string(long number, struct table *table)
 {
     long i;
@@ -81,13 +98,13 @@ static Octstr *number_to_string(long number, struct table *table)
     gw_assert(initialized);
 
     if (table->linear) {
-	if (number >= 0 && number < table->size)
-	    return octstr_duplicate(table->strings[number]);
+        if (number >= 0 && number < table->size)
+            return octstr_duplicate(table->strings[number]);
     } else {
-	for (i = 0; i < table->size; i++) {
-   	     if (table->numbers[i] == number)
-		return octstr_duplicate(table->strings[i]);
-	}
+        for (i = 0; i < table->size; i++) {
+            if (table->numbers[i] == number)
+                return octstr_duplicate(table->strings[i]);
+        }
     }
     return NULL;
 }
@@ -126,34 +143,61 @@ static long string_to_number(Octstr *ostr, struct table *table)
     return -1;
 }
 
-static void construct_linear_table(struct table *table,
-const unsigned char **strings, long size)
+/* Case-insensitive string lookup according to passed WSP encoding version */
+static long string_to_versioned_number(Octstr *ostr, struct table *table, 
+                                       int version)
+{
+    long i, ret;
+
+    gw_assert(initialized);
+
+    /* walk the whole table and pick the highest versioned token */
+    ret = -1;
+    for (i = 0; i < table->size; i++) {
+        if (octstr_case_compare(ostr, table->strings[i]) == 0 &&
+            table->versions[i] <= version) {
+                ret = table->linear ? i : table->numbers[i];
+        }
+    }
+
+    debug("wsp.strings",0,"WSP: Mapping string `%s', WSP version 1.%d to binary " 
+          "representation `0x%04x'.", octstr_get_cstr(ostr), version, ret);
+
+    return ret;
+}
+
+static void construct_linear_table(struct table *table, const struct linear_element *strings, 
+                                   long size)
 {
     long i;
 
     table->size = size;
     table->strings = gw_malloc(size * (sizeof table->strings[0]));
     table->numbers = NULL;
+    table->versions = gw_malloc(size * (sizeof table->versions[0]));
     table->linear = 1;
 
     for (i = 0; i < size; i++) {
-	table->strings[i] = octstr_imm(strings[i]);
+        table->strings[i] = octstr_imm(strings[i].str);
+        table->versions[i] = strings[i].version;
     }
 }
 
-static void construct_numbered_table(struct table *table,
-const struct element *strings, long size)
+static void construct_numbered_table(struct table *table, const struct numbered_element *strings, 
+                                     long size)
 {
     long i;
 
     table->size = size;
     table->strings = gw_malloc(size * (sizeof table->strings[0]));
     table->numbers = gw_malloc(size * (sizeof table->numbers[0]));
+    table->versions = gw_malloc(size * (sizeof table->versions[0]));
     table->linear = 0;
 
     for (i = 0; i < size; i++) {
-	table->strings[i] = octstr_imm(strings[i].str);
-	table->numbers[i] = strings[i].number;
+        table->strings[i] = octstr_imm(strings[i].str);
+        table->numbers[i] = strings[i].number;
+        table->versions[i] = strings[i].version;
     }
 }
 
@@ -163,6 +207,7 @@ static void destroy_table(struct table *table)
 
     gw_free(table->strings);
     gw_free(table->numbers);
+    gw_free(table->versions);
 }
 
 void wsp_strings_init(void)

@@ -1819,7 +1819,10 @@ static void pack_parameter(Octstr *packed, Parameter *parm)
     start = octstr_len(packed);
 
     /* Parameter = Typed-parameter | Untyped-parameter */
-    keytoken = wsp_string_to_parameter(parm->key);
+    /* keytoken = wsp_string_to_parameter(parm->key); */
+    /* XXX this should obey what kind of WSP Encoding-Version the client is using */
+    keytoken = wsp_string_to_versioned_parameter(parm->key, WSP_1_2);
+   
     if (keytoken >= 0) {
         /* Typed-parameter = Well-known-parameter-token Typed-value */
         /* Well-known-parameter-token = Integer-value */
@@ -2134,8 +2137,11 @@ static int pack_encoding(Octstr *packed, Octstr *value)
 
 static int pack_field_name(Octstr *packed, Octstr *value)
 {
+    /* XXX we need to obey which WSP encoding-version to use */
+    /* return pack_constrained_value(packed, value,
+                                  wsp_string_to_header(value)); */
     return pack_constrained_value(packed, value,
-                                  wsp_string_to_header(value));
+                                  wsp_string_to_versioned_header(value, WSP_1_2));
 }
 
 static int pack_language(Octstr *packed, Octstr *value)
@@ -2243,7 +2249,9 @@ static int pack_accept(Octstr *packed, Octstr *value)
     long media;
 
     parms = strip_parameters(value);
-    media = wsp_string_to_content_type(value);
+    /* XXX we need to obey which WSP encoding-version to use */
+    /* media = wsp_string_to_content_type(value); */
+    media = wsp_string_to_versioned_content_type(value, WSP_1_2);
 
     /* See if we can fit this in a Constrained-media encoding */
     if (parms == NULL && media <= MAX_SHORT_INTEGER) {
@@ -2871,7 +2879,7 @@ static int pack_application_header(Octstr *packed,
     return 0;
 }
 
-Octstr *wsp_headers_pack(List *headers, int separate_content_type)
+Octstr *wsp_headers_pack(List *headers, int separate_content_type, int wsp_version)
 {
     Octstr *packed;
     long i, len;
@@ -2888,7 +2896,9 @@ Octstr *wsp_headers_pack(List *headers, int separate_content_type)
         long fieldnum;
 
         http_header_get(headers, i, &fieldname, &value);
-        fieldnum = wsp_string_to_header(fieldname);
+        /* XXX we need to obey which WSP encoding-version to use */
+        /* fieldnum = wsp_string_to_header(fieldname); */
+        fieldnum = wsp_string_to_versioned_header(fieldname, wsp_version);
 
         errors = 0;
 

@@ -119,7 +119,7 @@ int main(int argc, char **argv)
     filename = octstr_create(argv[1]);
     headers = octstr_read_file(octstr_get_cstr(filename));
     split_headers(headers, &split, &expected);
-    packed = wsp_headers_pack(split, 0);
+    packed = wsp_headers_pack(split, 0, WSP_1_2);
     unpacked = wsp_headers_unpack(packed, 0);
 
     if (list_len(unpacked) != list_len(expected)) {

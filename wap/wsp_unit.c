@@ -209,11 +209,11 @@ static WAPEvent *pack_into_result_datagram(WAPEvent *event) {
 	gw_assert(event->type == S_Unit_MethodResult_Req);
 	p = &event->u.S_Unit_MethodResult_Req;
 
-        http_header_add(p->response_headers, "Encoding-Version", "1.3");
+    http_header_add(p->response_headers, "Encoding-Version", "1.3");
 
 	pdu = wsp_pdu_create(Reply);
 	pdu->u.Reply.status = wsp_convert_http_status_to_wsp_status(p->status);
-	pdu->u.Reply.headers = wsp_headers_pack(p->response_headers, 1);
+	pdu->u.Reply.headers = wsp_headers_pack(p->response_headers, 1, WSP_1_3);
 	pdu->u.Reply.data = octstr_duplicate(p->response_body);
 	ospdu = wsp_pdu_pack(pdu);
 	wsp_pdu_destroy(pdu);
@@ -249,7 +249,7 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
 
         pdu = wsp_pdu_create(Push);
 	pdu->u.Push.headers = wsp_headers_pack(
-            event->u.S_Unit_Push_Req.push_headers, 1);
+            event->u.S_Unit_Push_Req.push_headers, 1, WSP_1_3);
 	pdu->u.Push.data = octstr_duplicate(
             event->u.S_Unit_Push_Req.push_body);
         ospdu = wsp_pdu_pack(pdu);

@@ -99,6 +99,6 @@ List *wsp_headers_unpack(Octstr *headers, int content_type);
  * and return the encoded headers as an Octstr. 
  * The second argument is true if the encoded headers should have
  * a leading content-type field.  See the note for wsp_headers_unpack. */
-Octstr *wsp_headers_pack(List *headers, int separate_content_type);
+Octstr *wsp_headers_pack(List *headers, int separate_content_type, int wsp_version);
 
 #endif

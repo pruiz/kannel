@@ -19,23 +19,24 @@
 
 
 MACHINE(
-	INTEGER(state)
-	INTEGER(connect_handle)
-	INTEGER(resume_handle)
-	INTEGER(session_id)
-	ADDRTUPLE(addr_tuple)
+    INTEGER(state)
+    INTEGER(connect_handle)
+    INTEGER(resume_handle)
+    INTEGER(session_id)
+    ADDRTUPLE(addr_tuple)
 
-	CAPABILITIES(request_caps)
-	CAPABILITIES(reply_caps)
+    CAPABILITIES(request_caps)
+    CAPABILITIES(reply_caps)
 
-	INTEGER(MOR_push)
-	INTEGER(client_SDU_size)
+    INTEGER(MOR_push)
+    INTEGER(client_SDU_size)
+    INTEGER(encoding_version)
 	
-	HTTPHEADERS(http_headers)
-	COOKIES(cookies)
-        REFERER(referer_url)
-	MACHINESLIST(methodmachines)
-        MACHINESLIST(pushmachines)
+    HTTPHEADERS(http_headers)
+    COOKIES(cookies)
+    REFERER(referer_url)
+    MACHINESLIST(methodmachines)
+    MACHINESLIST(pushmachines)
 )
 
 #undef INTEGER

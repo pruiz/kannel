@@ -11,7 +11,11 @@
  */
 
 typedef enum {
-	WSP_1_1, WSP_1_2, WSP_1_3, WSP_1_4
+    WSP_1_1 = 1, 
+    WSP_1_2 = 2, 
+    WSP_1_3 = 3, 
+    WSP_1_4 = 4,
+    WSP_1_5 = 5,
 } wsp_encoding;
 
 /* See Table 35 of the WSP standard */

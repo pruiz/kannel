@@ -1,3 +1,22 @@
+2003-08-28  Stipe Tolj  <tolj@wapme-systems.de>
+    * wap/wsp.h: added WSP_1_x enumeration values to identify which WSP 
+      Encoding-Version is used within a session.
+    * wap/wsp_headers.[ch]: re-declare wsp_headers_pack() function to add 
+      required WSP version.
+    * wap/wsp_server_session_machine.def: added INTEGER(encoding_version) to 
+      hold the version within the WSPMachine.
+    * wap/wsp_server_session_states.def: populates the above 
+      sm->encoding_version with the appropriate version parsed our of the 
+      request WSP headers.
+    * wap/wsp_session.c: added WSP encoding-version mapping functions
+      wsp_encoding_string_to_version(Octstr *enc) and
+      wsp_encoding_version_to_string(int version)
+    * wap/wsp_strings.[ch]: added VSTRING() define for "versioned STRING" and 
+      VASSIGN() for "versioned ASSIGN" of the .def values.
+    * wap/wsp_strings.def: added WSP enumeration values to the definition tables
+    * wap/wsp_server_method_states.def, test/test_headers.c: addopted calling 
+      to wsp_headers_pack() with the version.
+
 2003-08-27  Alexander Malysh  <a.malysh@centrium.de>
     * gw/smsc/smsc_smpp.c: added handling of intermediately delivery notifications
       (although we doesn't requested these).

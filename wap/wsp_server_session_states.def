@@ -49,12 +49,31 @@ ROW(NULL_SESSION,
 		}
 
 		if (pdu->u.Connect.headers_len > 0) {
-			List *hdrs;
+            List *hdrs;
+            Octstr *encoding;
 			
-			hdrs = wsp_headers_unpack(pdu->u.Connect.headers, 0);
-			http_header_pack(hdrs);
-			gw_assert(sm->http_headers == NULL);
-			sm->http_headers = hdrs;
+            hdrs = wsp_headers_unpack(pdu->u.Connect.headers, 0);
+            http_header_pack(hdrs);
+            gw_assert(sm->http_headers == NULL);
+            sm->http_headers = hdrs;
+
+            /*
+             * Get WSP encoding version if provided by device and remember in
+             * session machine for later use in encoding tokenized values.
+             */
+            encoding = http_header_value(sm->http_headers, octstr_imm("Encoding-Version"));
+            if (encoding != NULL) {
+                debug("wsp",0,"WSP: Session machine: Encoding-Version: %s", 
+                      octstr_get_cstr(encoding));
+                sm->encoding_version = wsp_encoding_string_to_version(encoding);
+            } else {
+                /* WAP-230-WSP-20010705-a, section 8.4.2.70, page 97 defines
+                 * by a MUST argument that a non-present Encoding-Version header 
+                 * should be interpreted as WSP 1.2 compliant.
+                 */
+                sm->encoding_version = WSP_1_2; 
+            }
+            octstr_destroy(encoding);
 		}
 
 		/* Send S-Connect.ind to application layer */

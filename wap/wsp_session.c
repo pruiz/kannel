@@ -2,6 +2,7 @@
  * wsp_session.c - Implement WSP session oriented service
  *
  * Lars Wirzenius
+ * Stipe Tolj
  */
 
 
@@ -127,7 +128,8 @@ static void confirm_push(WSPPushMachine *machine);
 
 static void main_thread(void *);
 static int id_belongs_to_session (void *, void *);
-
+static int wsp_encoding_string_to_version(Octstr *enc);
+static Octstr *wsp_encoding_version_to_string(int version);
 
 
 /***********************************************************************
@@ -1011,6 +1013,8 @@ static List *make_reply_headers(WSPMachine *m)
     /* First the case that we have no Encoding-Version header at all. 
      * This case we must assume that the client supports version 1.2
      * or lower. */
+
+    /*
     if (is_default_version(m)) {
         encoding_version = octstr_create("1.2");
     } else if (is_higher_version(m)) {
@@ -1022,60 +1026,65 @@ static List *make_reply_headers(WSPMachine *m)
     }  else {   
         encoding_version = octstr_create("1.3");
     }
+    */
 
     headers = http_create_empty_headers();
+    encoding_version = wsp_encoding_version_to_string(m->encoding_version);
     http_header_add(headers, "Encoding-Version", octstr_get_cstr(encoding_version));
     octstr_destroy(encoding_version);
 
     return headers;
 }
 
-static Octstr *make_connectreply_pdu(WSPMachine *m) {
-	WSP_PDU *pdu;
-	Octstr *os;
-	List *caps;
-        List *reply_headers;
+static Octstr *make_connectreply_pdu(WSPMachine *m) 
+{
+    WSP_PDU *pdu;
+    Octstr *os;
+    List *caps;
+    List *reply_headers;
 	
-	pdu = wsp_pdu_create(ConnectReply);
+    pdu = wsp_pdu_create(ConnectReply);
 
-	pdu->u.ConnectReply.sessionid = m->session_id;
+    pdu->u.ConnectReply.sessionid = m->session_id;
 
-	caps = make_capabilities_reply(m);
-	pdu->u.ConnectReply.capabilities = wsp_cap_pack_list(caps);
-	wsp_cap_destroy_list(caps);
+    caps = make_capabilities_reply(m);
+    pdu->u.ConnectReply.capabilities = wsp_cap_pack_list(caps);
+    wsp_cap_destroy_list(caps);
 
-        reply_headers = make_reply_headers(m);
-	pdu->u.ConnectReply.headers = wsp_headers_pack(reply_headers, 0);
-        http_destroy_headers(reply_headers);
+    reply_headers = make_reply_headers(m);
+    pdu->u.ConnectReply.headers = 
+        wsp_headers_pack(reply_headers, 0, m->encoding_version);
+    http_destroy_headers(reply_headers);
 	
-	os = wsp_pdu_pack(pdu);
-	wsp_pdu_destroy(pdu);
+    os = wsp_pdu_pack(pdu);
+    wsp_pdu_destroy(pdu);
 
-	return os;
+    return os;
 }
 
 
-static Octstr *make_resume_reply_pdu(WSPMachine *m, List *headers) {
-	WSP_PDU *pdu;
-	Octstr *os;
+static Octstr *make_resume_reply_pdu(WSPMachine *m, List *headers) 
+{
+    WSP_PDU *pdu;
+    Octstr *os;
 
-	pdu = wsp_pdu_create(Reply);
+    pdu = wsp_pdu_create(Reply);
 
-	/* Not specified for Resume replies */
-	pdu->u.Reply.status = wsp_convert_http_status_to_wsp_status(HTTP_OK);
-	if (headers == NULL) {
-		headers = http_create_empty_headers();
-		pdu->u.Reply.headers = wsp_headers_pack(headers, 1);
-		http_destroy_headers(headers);
-	} else {
-		pdu->u.Reply.headers = wsp_headers_pack(headers, 1);
-	}
-	pdu->u.Reply.data = octstr_create("");
+    /* Not specified for Resume replies */
+    pdu->u.Reply.status = wsp_convert_http_status_to_wsp_status(HTTP_OK);
+    if (headers == NULL) {
+        headers = http_create_empty_headers();
+        pdu->u.Reply.headers = wsp_headers_pack(headers, 1, m->encoding_version);
+        http_destroy_headers(headers);
+    } else {
+        pdu->u.Reply.headers = wsp_headers_pack(headers, 1, m->encoding_version);
+    }
+    pdu->u.Reply.data = octstr_create("");
 
-	os = wsp_pdu_pack(pdu);
-	wsp_pdu_destroy(pdu);
+    os = wsp_pdu_pack(pdu);
+    wsp_pdu_destroy(pdu);
 
-	return os;
+    return os;
 }
 
 static WSP_PDU *make_confirmedpush_pdu(WAPEvent *e)
@@ -1089,11 +1098,11 @@ static WSP_PDU *make_confirmedpush_pdu(WAPEvent *e)
  */
         if (e->u.S_ConfirmedPush_Req.push_headers == NULL) {
 	    headers = http_create_empty_headers();
-            pdu->u.ConfirmedPush.headers = wsp_headers_pack(headers, 1);
+            pdu->u.ConfirmedPush.headers = wsp_headers_pack(headers, 1, WSP_1_2);
             http_destroy_headers(headers);
         } else
             pdu->u.ConfirmedPush.headers = 
-                wsp_headers_pack(e->u.S_ConfirmedPush_Req.push_headers, 1);
+                wsp_headers_pack(e->u.S_ConfirmedPush_Req.push_headers, 1, WSP_1_2);
    
         if (e->u.S_ConfirmedPush_Req.push_body == NULL)
 	    pdu->u.ConfirmedPush.data = octstr_create("");
@@ -1115,11 +1124,11 @@ static WSP_PDU *make_push_pdu(WAPEvent *e)
  */
         if (e->u.S_Push_Req.push_headers == NULL) {
 	    headers = http_create_empty_headers();
-            pdu->u.Push.headers = wsp_headers_pack(headers, 1);
+            pdu->u.Push.headers = wsp_headers_pack(headers, 1, WSP_1_2);
             http_destroy_headers(headers);
         } else
             pdu->u.Push.headers = 
-                wsp_headers_pack(e->u.S_Push_Req.push_headers, 1);
+                wsp_headers_pack(e->u.S_Push_Req.push_headers, 1, WSP_1_2);
    
         if (e->u.S_Push_Req.push_body == NULL)
 	    pdu->u.Push.data = octstr_create("");
@@ -1407,6 +1416,7 @@ static void abort_methods(WSPMachine *sm, long reason) {
 	wap_event_destroy(ab);
 }
 
+
 static void abort_pushes(WSPMachine *sm, long reason)
 {
         WAPEvent *ab;
@@ -1431,6 +1441,7 @@ WSPMachine *find_session_machine_by_id (int id) {
 	return list_search(session_machines, &id, id_belongs_to_session);
 }
 
+
 static int id_belongs_to_session (void *wsp_ptr, void *pid) {
 	WSPMachine *wsp;
 	int *id;
@@ -1443,10 +1454,57 @@ static int id_belongs_to_session (void *wsp_ptr, void *pid) {
 }
 
 
+static int wsp_encoding_string_to_version(Octstr *enc) 
+{
+    int v;
+    
+    /* default will be WSP 1.2, as defined by WAPWSP */
+    v = WSP_1_2;    
 
+    if (octstr_compare(enc, octstr_imm("1.1")) == 0) {
+        v = WSP_1_1;
+    }
+    else if (octstr_compare(enc, octstr_imm("1.2")) == 0) {
+        v = WSP_1_2;
+    }
+    else if (octstr_compare(enc, octstr_imm("1.3")) == 0) {
+        v = WSP_1_3;
+    }
+    else if (octstr_compare(enc, octstr_imm("1.4")) == 0) {
+        v = WSP_1_4;
+    }
+    else if (octstr_compare(enc, octstr_imm("1.5")) == 0) {
+        v = WSP_1_5;
+    }
 
+    return v;
+}
 
-
-
-
+static Octstr *wsp_encoding_version_to_string(int version) 
+{
+    Octstr *os;
+    
+    switch (version) {
+        case WSP_1_1:
+            os = octstr_create("1.1");
+            break;
+        case WSP_1_2:
+            os = octstr_create("1.2");
+            break;
+        case WSP_1_3:
+            os = octstr_create("1.3");
+            break;
+        case WSP_1_4:
+            os = octstr_create("1.4");
+            break;
+        case WSP_1_5:
+            os = octstr_create("1.5");
+            break;
+        default:
+            os = octstr_create("1.2");
+            break;
+    }
+    
+    return os;
+}
 

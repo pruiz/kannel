@@ -28,6 +28,7 @@
 #define WSP_STRINGS_H
 
 #include "gwlib/gwlib.h"
+#include "wap/wsp.h"
 
 /* Must be called before any of the other functions in this file.
  * Can be called more than once, in which case multiple shutdowns
@@ -50,6 +51,7 @@ long wsp_string_to_##name(Octstr *ostr);
 #define STRING(string)
 #define NAMED(name, strings) enum name##_enum { strings name##_dummy };
 #define NSTRING(string, name) name,
+#define VNSTRING(version, string, name) name,
 #include "wsp_strings.def"
 
 #endif
