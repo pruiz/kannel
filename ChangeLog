@@ -1,4 +1,9 @@
-2003-04-05  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
+2003-04-14  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smpp_pdu.c: removed gw_assert() checking within smpp_pdu_pack() 
+      in order not to crash bearerbox. Thanks to <Jason.Pell@Callista.com.au>
+      for point this out again.
+
+2003-04-08  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
     * debian/*: more updates - update Standards to 3.5.9; build "-docs"
       packages as arch independent to have debian build system generate only
       one -docs package and kannel* and kannel-extra* packages for every
