@@ -10,7 +10,9 @@
 Thu Nov 11 19:41:40 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* msg.c: Fixed warning of unused variable and erroneous packing of
-	of strings.
+	of strings. Wrote msg_dump.
+
+	* octstr.c: octstr_dump can be called with a NULl argument.
 
 1999-11-11    <rpr@rpr.wapit.com>
 

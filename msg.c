@@ -54,25 +54,30 @@ error:
 }
 
 void msg_destroy(Msg *msg) {
+	if (msg == NULL)
+		return;
 
-    if (msg == NULL)
-	return;
+	#define INTEGER(name) p->name = 0
+	#define OCTSTR(name) octstr_destroy(p->name)
+	#define MSG(type, stmt) { struct type *p = &msg->type; stmt }
+	#include "msg-decl.h"
 
-    return;
+	free(msg);
+}
 
-    #define INTEGER(name) p = NULL
-    #define OCTSTR(name) octstr_destroy(p->name)
-    #define MSG(type, stmt) { struct type *p = &msg->type; stmt }
-    #include "msg-decl.h"
-
-    free(msg);
+void msg_dump(Msg *msg) {
+	debug(0, "Msg object at %p:", (void *) msg);
+	#define INTEGER(name) debug(0, "  %s: %ld", #name, (long) p->name)
+	#define OCTSTR(name) debug(0, "  %s:", #name); octstr_dump(p->name)
+	#define MSG(type, stmt) { struct type *p = &msg->type; stmt }
+	#include "msg-decl.h"
+	debug(0, "Msg object ends.");
 }
 
 
 enum msg_type msg_type(Msg *msg) {
-    return msg->type;
+	return msg->type;
 }
-
 
 Octstr *msg_pack(Msg *msg) {
 	Octstr *os;

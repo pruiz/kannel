@@ -466,6 +466,11 @@ void octstr_dump(Octstr *ostr) {
 	char *p, buf[40];
 	size_t pos;
 
+	if (ostr == NULL) {
+		debug(0, "Not dumping NULL octet string.");
+		return;
+	}
+
 	debug(0, "Octet string at %p:", (void *) ostr);
 	debug(0, "  len:  %lu", (unsigned long) ostr->len);
 	debug(0, "  size: %lu", (unsigned long) ostr->size);

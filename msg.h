@@ -49,6 +49,13 @@ void msg_destroy(Msg *msg);
 
 
 /*
+ * For debugging: Output with `debug' (in wapitlib.h) the contents of
+ * an Msg object.
+ */
+void msg_dump(Msg *msg);
+
+
+/*
  * Pack an Msg into an Octstr. Return NULL for failure, otherwise a pointer
  * to the Octstr.
  */
