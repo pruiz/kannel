@@ -1,3 +1,8 @@
+2001-05-16  Uoti Urpala  <uau@wapit.com>
+
+	* gw/bb_boxc.c: In boxc_sender(), flush outgoing data before
+	doing list_consume()s than can block indefinitely.
+
 2001-05-14  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/smsc_smpp.c: Made system-id variable obsolete (i.e., if used,

@@ -202,6 +202,10 @@ static void boxc_sender(void *arg)
 
     while(bb_status != BB_DEAD && conn->alive) {
 
+	/* Make sure there's no data left in the outgoing connection before
+	 * doing the potentially blocking list_consume()s */
+	conn_flush(conn->conn);
+
 	list_consume(suspended);	/* block here if suspended */
 
 	if ((msg = list_consume(conn->incoming)) == NULL) {
