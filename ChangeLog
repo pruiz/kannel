@@ -1,5 +1,10 @@
 2000-06-09  Richard Braakman  <dark@wapit.com>
 
+	* gw/wsp-session.c: Fixed one of the memory leaks, still hunting
+	for others.
+
+2000-06-09  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/http2.c: Fixed header_is_called() to return 0 for no match
 	and 1 for match; simplified it in the process.  I think this was
 	the original intent, and it matches the function name.

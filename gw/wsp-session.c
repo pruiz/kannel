@@ -268,8 +268,10 @@ static WSPMachine *find_session_machine(WAPEvent *event, WSP_PDU *pdu) {
 				 transaction_belongs_to_session);
 		if (sm != NULL &&
 		    event->type == TR_Result_Cnf && 
-		    event->u.TR_Result_Cnf.tid != sm->connect_tid)
+		    event->u.TR_Result_Cnf.tid != sm->connect_tid) {
+			wap_addr_tuple_destroy(tuple);
 			return NULL; /* Must be for a method machine, then */
+		}
 	}
 
 	if (sm == NULL) {
