@@ -58,40 +58,50 @@ static void read_config(char *filename) {
 	if (config_read(cfg) == -1)
 		panic(0, "Couldn't read configuration from `%s'.", filename);
 	config_dump(cfg);
-	
-	grp = config_first_group(cfg);
-	while (grp != NULL) {
-		if ((s = config_get(grp, "bearerbox-host")) != NULL)
-			bearerbox_host = s;
-		if ((s = config_get(grp, "bearerbox-port")) != NULL)
-			bearerbox_port = atoi(s);
-		if ((s = config_get(grp, "heartbeat-freq")) != NULL)
-		        heartbeat_freq = atoi(s);
-                if ((s = config_get(grp, "timer-freq")) != NULL)
-                        timer_freq = atoi(s);
-		if ((s = config_get(grp, "log-file")) != NULL)
-		        logfile = s;
-		if ((s = config_get(grp, "log-level")) != NULL)
-		        logfilelevel = atoi(s);
-		/* configure URL mappings */
-		if ((s = config_get(grp, "map-url-max")) != NULL)
-			map_url_max = atoi(s);
-		if ((s = config_get(grp, "device-home")) != NULL)
-			wsp_http_map_url_config_device_home(s);
-		if ((s = config_get(grp, "map-url")) != NULL)
-			wsp_http_map_url_config(s);
-		for (i=0; i<=map_url_max; i++) {
-			char buf[32];
-			sprintf(buf, "map-url-%d", i);
-			if ((s = config_get(grp, buf)) != NULL)
-				wsp_http_map_url_config(s);
-		}
-		grp = config_next_group(grp);
-	}
-	if (heartbeat_freq == -600)
-	    panic(0, "Apparently someone is using SAMPLE configuration without "
-		  "editing it first - well, hopefully he or she now reads it");
 
+	/*
+	 * first we take the port number in bearerbox from the main
+	 * core group in configuration file
+	 */
+	if ((grp = config_find_first_group(cfg, "group", "core")) == NULL)
+	    panic(0, "No 'core' group in configuration");
+
+	if ((s = config_get(grp, "wapbox-port")) == NULL)
+	    panic(0, "No 'wapbox-port' in core group");
+
+	bearerbox_port = atoi(s);
+
+	/*
+	 * get the remaining values from the wapbox group
+	 */
+
+	if ((grp = config_find_first_group(cfg, "group", "wapbox")) == NULL)
+	    panic(0, "No 'wapbox' group in configuration");
+
+	if ((s = config_get(grp, "bearerbox-host")) != NULL)
+	    bearerbox_host = s;
+	/* if ((s = config_get(grp, "heartbeat-freq")) != NULL)
+	 *  heartbeat_freq = atoi(s);
+	 */
+	if ((s = config_get(grp, "timer-freq")) != NULL)
+	    timer_freq = atoi(s);
+	if ((s = config_get(grp, "log-file")) != NULL)
+	    logfile = s;
+	if ((s = config_get(grp, "log-level")) != NULL)
+	    logfilelevel = atoi(s);
+	/* configure URL mappings */
+	if ((s = config_get(grp, "map-url-max")) != NULL)
+	    map_url_max = atoi(s);
+	if ((s = config_get(grp, "device-home")) != NULL)
+	    wsp_http_map_url_config_device_home(s);
+	if ((s = config_get(grp, "map-url")) != NULL)
+	    wsp_http_map_url_config(s);
+	for (i=0; i<=map_url_max; i++) {
+	    char buf[32];
+	    sprintf(buf, "map-url-%d", i);
+	    if ((s = config_get(grp, buf)) != NULL)
+		wsp_http_map_url_config(s);
+	}
 	if (logfile != NULL) {
 		open_logfile(logfile, logfilelevel);
 	        info(0, "Starting to log to file %s level %d", logfile, logfilelevel);

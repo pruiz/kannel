@@ -273,47 +273,53 @@ static void init_smsbox(Config *cfg)
     bb_host = BB_DEFAULT_HOST;
     heartbeat_freq = BB_DEFAULT_HEARTBEAT;
 
-    grp = config_first_group(cfg);
-    while(grp != NULL) {
-	if ((p = config_get(grp, "bearerbox-port")) != NULL)
-	    bb_port = atoi(p);
-	if ((p = config_get(grp, "bearerbox-host")) != NULL)
-	    bb_host = p;
-	if ((p = config_get(grp, "sendsms-port")) != NULL)
-	    sendsms_port = atoi(p);
-	if ((p = config_get(grp, "sms-length")) != NULL)
-	    sms_len = atoi(p);
-        if ((p = config_get(grp, "http-allowed-hosts")) != NULL)
-            http_allow_ip = p;
-        if ((p = config_get(grp, "http-denied-hosts")) != NULL)
-            http_deny_ip = p;
-	if ((p = config_get(grp, "heartbeat-freq")) != NULL)
-	    heartbeat_freq = atoi(p);
-	if ((p = config_get(grp, "pid-file")) != NULL)
-	    pid_file = p;
-	if ((p = config_get(grp, "global-sender")) != NULL)
-	    global_sender = p;
-	if ((p = config_get(grp, "log-file")) != NULL)
-	    logfile = p;
-	if ((p = config_get(grp, "log-level")) != NULL)
-	    lvl = atoi(p);
-	grp = config_next_group(grp);
-    }
-
-    if (heartbeat_freq == -600)
-	panic(0, "Apparently someone is using SAMPLE configuration without "
-		"editing it first - well, hopefully he or she now reads it");
-
-    if (http_allow_ip != NULL && http_deny_ip == NULL)
-	warning(0, "Allow IP-string set without any IPs denied!");
-
-    if (global_sender != NULL)
-	info(0, "Service global sender set as '%s'", global_sender);
+    /*
+     * first we take the port number in bearerbox from the main
+     * core group in configuration file
+     */
+    if ((grp = config_find_first_group(cfg, "group", "core")) == NULL)
+	panic(0, "No 'core' group in configuration");
     
+    if ((p = config_get(grp, "smsbox-port")) == NULL)
+	panic(0, "No 'smsbox-port' in core group");
+
+    bb_port = atoi(p);
+
+    /*
+     * get the remaining values from the smsbox group
+     */
+    if ((grp = config_find_first_group(cfg, "group", "smsbox")) == NULL)
+	panic(0, "No 'smsbox' group in configuration");
+
+    if ((p = config_get(grp, "bearerbox-host")) != NULL)
+	bb_host = p;
+    if ((p = config_get(grp, "sendsms-port")) != NULL)
+	sendsms_port = atoi(p);
+    if ((p = config_get(grp, "sms-length")) != NULL)
+	sms_len = atoi(p);
+    /*
+     * if ((p = config_get(grp, "http-allowed-hosts")) != NULL)
+     *	http_allow_ip = p;
+     *if ((p = config_get(grp, "http-denied-hosts")) != NULL)
+     *http_deny_ip = p;
+     *if ((p = config_get(grp, "heartbeat-freq")) != NULL)
+     *	heartbeat_freq = atoi(p);
+     *if ((p = config_get(grp, "pid-file")) != NULL)
+     *	pid_file = p; */
+    if ((p = config_get(grp, "global-sender")) != NULL)
+	global_sender = p;
+    if ((p = config_get(grp, "log-file")) != NULL)
+	logfile = p;
+    if ((p = config_get(grp, "log-level")) != NULL)
+	lvl = atoi(p);
+
     if (logfile != NULL) {
 	info(0, "Starting to log to file %s level %d", logfile, lvl);
 	open_logfile(logfile, lvl);
     }
+    if (global_sender != NULL)
+	info(0, "Service global sender set as '%s'", global_sender);
+    
     if (sendsms_port > 0) {
 	http_server_socket = http2_server_open(sendsms_port);
 	if (http_server_socket == NULL)

@@ -13,7 +13,7 @@
 #include <unistd.h>
 
 #include "gwlib/gwlib.h"
-#include "new_bb.h"
+#include "bearerbox.h"
 
 /* passed from bearerbox core */
 

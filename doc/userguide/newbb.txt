@@ -1,0 +1,128 @@
+RUNNING NEW KANNEL
+------------------
+This is a draft which is written in plain text. The xml version will
+come later. --Kalle
+
+
+OVERVIEW
+
+The new bearerbox is run as the old one, except that:
+ a) there are some new command line arguments
+ b) configuration file has changed a bit
+ c) there is no internal smsbox 
+
+Any differences in configuration file can be checked out
+from newconf.txt file
+
+
+RUNNING KANNEL
+
+So, after compiling and editing the configuration file, new
+Kannel is run like:
+
+ 1% gw/bearerbox test/my_conf.conf
+
+ 2% gw/smsbox test/my_conf.conf (or gw/wapbox test/my_conf.conf)
+
+Note that if using any fakesmsc, that must be started up before
+starting the bearerbox.
+
+
+COMMAND LINE OPTIONS
+
+Bearerbox, smsbox and wapbox each accept certain command line options
+and arguments when they are launched. These arguments are:
+
+ -v <level>       Set verbosity level for stdout logging. Default is 0,
+ --verbosity	  which means 'debug'. 1 is 'info, 2 'warning', 3
+		   'error' and 4 'panic'
+
+ -D <places>	  Set debug-places for debug-level logging output.
+ --debug
+
+ -F <file-name>   Log to file named file-name, too. Does not overrun nor
+ --logfile	  affect any extra logfile defined in configuration
+		  file.
+ 
+ -V <level>	  Set verbosity level for that extra logfile (default 0)
+ --fileverbosity
+
+ -S		  Start the system initially at SUSPENDED state
+		  (Bearerbox only)
+
+ -I		  Start the system initially at ISOLATED state
+		  (Bearerbox only)
+
+
+KANNEL STATUSES
+
+In new Kannel, there are four states for the program:
+
+a) Running. The gateway accepts, proceeds and relies messages
+   normally.
+
+b) Suspended. The gateway does not accept any new messages from SMS
+   centers nor from UDP ports. It neither does accept new sms and wapbox
+   connections and does not send any messages already in the system
+   onward.
+
+c) Isolated. In this state, the gateway does not accept any messages
+   from external message providers, which means SMS Centers and UDP
+   ports. It still processes any messages in the system and can
+   accept new messages from sendsms interface in smsbox.
+
+d) Shutdown. When the gateway is brought down, it does not accept any
+   new messages from SMS centers and UDP ports, but processes all
+   systems already in the system. As soon as any queues are emptied,
+   the system exits
+
+The state can be changed via HTTP adminstration interface (see below),
+and shutdown can also be initiated via TERM or INT signal from
+terminal. In addition, the bearerbox can be started already in
+suspended or isolated state with -S or -I command line option.
+
+
+HTTP ADMINSTRATION
+
+Kannel can be controlled via an HTTP adminstration interface. All
+commands are done as normal HTTP queries, so they can be easily done
+from command line like this:
+
+ % lynx -dump "http://localhost:12345/cgi-bin/shutdown?password=bar"
+
+..in which the '12345' is the configured admin-port in Kannel
+configuration file. For most commands, admin-password is required as a
+cgi-bin argument as shown above. In addition, HTTP adminstration can
+be denied from certain IP addresses, as explained in newconf.txt file.
+
+HTTP adminstration commands for Kannel are:
+
+status
+	Get the current status of the gateway. Tells the current state
+	(see above) and total number of messages relied and queuing in
+	the system right now. Also lists the total number of smsbox
+	and wapbox connections.
+
+suspend
+	Set Kannel state as 'suspended' (see above). Password
+	required.
+
+isolate
+	Set Kannel state as 'isolated' (see above). Password required.
+
+resume
+	Set Kannel state as 'running' if it is suspended or isolated.
+	Password required.
+
+shutdown
+	Bring down the gateway, by setting state to 'shutdown'. After
+	a shutdown is initiated, there is no other chance to resume
+	normal operation. However, 'status' command still works.
+	Password required. If shutdown is sent for a second time, the
+	gateway is forced down, even if it has still messages in
+	queue.
+
+
+
+
+

@@ -21,7 +21,7 @@
 
 #include "gwlib/gwlib.h"
 #include "msg.h"
-#include "new_bb.h"
+#include "bearerbox.h"
 
 /* passed from bearerbox core */
 

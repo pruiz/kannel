@@ -123,12 +123,21 @@ int urltrans_add_one(URLTranslationList *trans, ConfigGroup *grp)
 
 int urltrans_add_cfg(URLTranslationList *trans, Config *cfg) {
 	ConfigGroup *grp;
-	
-	grp = config_first_group(cfg);
+
+	/*
+	 * XXX this is KLUDGE. Should rewrite these one day --Kalle
+	 */
+	grp = config_find_first_group(cfg, "group", "sms-service");
 	while (grp != NULL) {
 	    if (urltrans_add_one(trans, grp) == -1)
 		return -1;
-	    grp = config_next_group(grp);
+	    grp = config_find_next_group(grp, "group", "sms-service");
+	}
+	grp = config_find_first_group(cfg, "group", "sendsms-user");
+	while (grp != NULL) {
+	    if (urltrans_add_one(trans, grp) == -1)
+		return -1;
+	    grp = config_find_next_group(grp, "group", "sendsms-user");
 	}
 	return 0;
 }

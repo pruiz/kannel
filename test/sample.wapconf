@@ -1,9 +1,0 @@
-#
-# SAMPLE configuration for WAP gateway use
-#
-# For futher configuration variables etc. see the file
-# gw/kannel.wapconf
-#
-bearerbox-host = "localhost"
-bearerbox-port = 13002
-log-file = "/tmp/wap_kannel.log"

@@ -1,3 +1,26 @@
+2000-05-24    <Kalle Marjola <rpr@wapit.com>>
+
+	* doc/userguide/newconf.txt: added documentation about new
+	configuration file
+
+	* doc/userguide/newbb.txt: added documentation about new
+	bearerbox
+
+	* gw/bearerbox.c: moved new bearerbox into final name, old
+	bearerbox removed from the project
+
+	* gw/smskannel.conf, gw/wapkannel.conf: added new sample
+	configurations
+
+	* gw/kannel.*conf: removed old configuration defination files
+
+	* test/sample.*conf: removed old sample configurations
+
+	* gw/smsbox.c, gw/urltrans.c, gw/wapbox.c: edited to use new 
+	configuration file
+
+	* README: updated
+
 2000-05-24  Richard Braakman  <dark@wapit.com>
 
 	* test/test_cimd2.c: Written a while ago, added to CVS today.

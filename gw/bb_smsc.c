@@ -20,7 +20,7 @@
 
 #include "gwlib/gwlib.h"
 #include "msg.h"
-#include "new_bb.h"
+#include "bearerbox.h"
 #include "smsc.h"
 
 #include "bb_msg.h"   /* XXX until smsc interface changed */

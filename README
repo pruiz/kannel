@@ -100,19 +100,20 @@ For developers only: adding new SMS Center protocol support
 	including support to use mobile phones as SMSCes.
 
 	When doing this, use file gw/smsc_interface.def as guideline on 
-	how to do it. 
+	how to do it. Note that we will change this interface a bit now 
+	that we have a new bearerbox which can accept a better interface.
 
 Configuring and running the gateway
 
 	See the user guide in doc/userguide or on the web at
 	http://www.kannel.org/doc.shtml.
 	
-	The gw/kannel.conf, gw/kannel.smsconf, and gw/kannel.wapconf
-	files configure the gateway. The defination configuration files
-	contain explanations for changing them. As sample configuration 
-	files, there is files test/sample.conf, test/sample.wapconf and 
-	test/sample.smsconf, which require only minimal editing before
-	using them.
+	Kannel configuration is defined in doc/userguide/newconf.txt.
+	For test use, you can see sample configurations
+	gw/smskannel.conf and gw/wapkannel.conf.
+
+	See file doc/userguide/newbb.txt for further instructions for
+	running the Kannel
 
 Using the gateway with a Nokia 7110
 

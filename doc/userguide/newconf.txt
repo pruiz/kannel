@@ -1,0 +1,464 @@
+CONFIGURING NEW KANNEL
+----------------------
+This is a draft which is written in plain text. The xml version will
+come later. --Kalle
+
+
+OVERVIEW
+
+The new bearerbox has some modifications to configuration file,
+althought is is mainly identical to the old one. The main difference
+is that 
+ a) every group is distinguished by group = type variable
+ b) smsbox and wapbox configuration is included in the same 
+    configuration file, instead of seperate files
+
+The point b) is prelude for upcoming dynamic loading of the
+configuration. Until it is done, however, smsbox and wapbox can use a
+separate configuration file, too, but there is no need to do that.
+
+
+CONFIGURATION GROUPS
+
+As in old configuration file, variables are divided into groups which
+are separated with one or more blank lines. So, there is two groups in
+the following configuration:
+
+   smsc = fake
+
+   username = foo
+
+All lines starting with '#' are comments, and are ignored and not
+counted as blank linkes.
+
+As a modification to old configuration, each group MUST now be started 
+with 'group = identifier' variable, to identify it. Althought it is
+not mandatory, it is a good practise to put the group-variable as the
+first one in the group.
+
+Currently used groups are: core, smsc, wapbox, smsbox, sms-service and
+sendsms-user, of which core, wapbox and smsbox whould appear only once
+in configuration file.
+
+
+
+
+CORE GROUP
+
+Core group consists of the main Kannel (bearerbox) configuration
+variables. It must have following variables defined:
+
+ group = core
+ #       This is always required
+ # 
+ admin-port = <port-number>
+ #	 The port number in which the bearerbox listens to HTTP
+ #	 adminstration commands. It is NOT the same as the HTTP
+ #	 port of the local www server, just invent any port, but
+ #	 must be over 1023 unless you are running Kannel as a
+ #       root process (not recommended)
+
+To start certain modules of the Kannel, following configuration
+variables can be set:
+
+ smsbox-port = <port-number>
+ #	 This is the port number which the smsboxes, if any, connect.
+ #	 As with admin-port, this can be anything you want
+ # 
+ wapbox-port = <port-number>
+ #	 Like smsbox-port, but for wapbox-connections. If not set,
+ #       Kannel cannot handle WAP traffic
+ # 
+ wdp-interface-name = <IP>
+ #       If this is set, Kannel listens to WAP UDP packets incoming to
+ #	 ports 9200-9208, bound to given IP. If no spesific IP is
+ #       needed, use just an asterisk ("*"). If UDP messages are
+ #       listened to, wapbox-port variable MUST be set.
+
+For logging and security issues, following optional variables can be
+used:
+
+ log-file = <file-name>
+ #       A file in which to write a log. This in addition to stdout
+ #       and any log file defined in command line
+ #
+ log-level = <number 0..5>
+ #	 Minimum level of logfile events logged. 0 is for debug, 1
+ #       info etc.
+ #
+ box-deny-ip = <IP-list>
+ box-allow-ip = <IP-list>
+ #       These lists can be used to prevent connection from given IP 
+ #       addresses. Each list can have several addresses, each
+ #       separated with semicolon (';'). An asterisk ('*') can be used
+ #       as a wildcard in a place of any ONE number, so *.*.*.*
+ #       matches any IP
+ #
+ admin-deny-ip = <IP-list>
+ admin-deny-ip = <IP-list>
+ #       As above, but for adminstration HTTP requests
+
+No other configuration variables for core group are currently
+supported. A sample simple core group is shown at the end of the file.
+
+
+
+
+SMSC GROUPS
+
+If Kannel listens to one or more SMS Centers, a separate group must be
+defined for each of the SMS Centers. In addition, if any SMSC is
+connected, the smsbox-port variable in core group MUST be set.
+
+Mandatory variables in smsc group are following ones:
+
+ group = smsc
+ #       Mandatory
+ #  
+ smsc = <smsc-type>
+ #       Identifies the smsc type. Currently supported ones are:
+ #       fake, emi, emi_ip, cimd, cimd2, smpp and sema
+ 
+Remaining variables are smsc-dependant. FILL THESE LATER
+
+ host = <address>
+ #       machine that runs the SMSC. As IP (100.100.100.100) 
+ #       or hostname (their.machine.here)
+ #
+ port = <port-number>
+ #       port number in smsc host machine
+ #
+ # our-port = <port-number>
+ #       if we need to bind our end of the connection to some port
+ #       number. Currently supported only in EMI IP smsc.
+ #
+ receive-port = <port-number>
+ #       the other port for receiving messages from the SMSC. In a case of
+ #       EMI IP, this is the port we listen to. In a case of SMPP, this is
+ #       the other port which we connect.
+ #
+ smsc-username = <login-account>
+ #       username in the SMSC machine
+ #
+ smsc-password = <login-password>
+ #       password in the SMSC machine needed to contact SMSC
+ #
+ device = <device-name>
+ #       the device like /dev/ttyS0. Used with EMI accessed via modem
+ #
+ smsc_nua = (X121 smsc address)
+ #       address of smsc for sms2000 protocal using x28
+ #
+ home_nua = (x121 radio pad address)
+ #       radio pad implement sms2000 using x28 
+ #
+ wait_report = 0/1 (0 means false, 1 means true)
+ #       used by sms2000 protocol 
+ #
+ dial-prefix = (dial-prefix string)
+ #       dial prefixs normalization string. 
+ #       The SMSC may accept several prefixes, which are seperated by ';'
+ #       Each 'official prefix' is followed by expected prefix
+ #       which is then replaced by the official prefix. NOTE: NOT
+ #       SUPPORTED RIGHT NOW
+ #
+ route-prefix = (accepted prefixes)
+ #       The SMS is routed to this SMS Center if the reciever number matches
+ #       one of the prefixes given here. Use ';' to separate entries, and
+ #       'default' to identify the SMS Center used if no SMSC is found.
+ #       'backup' is as 'default' but is is only used if default receiver
+ #       is not available currently (temporarily down)
+ #       If default is not set, SMS Message with no suitable SMSC is
+ #	 ignored. NOTE: NOT SUPPORTED RIGHT NOW
+ #
+ alt-charset = (number)
+ #       As some SMS Centers do not follow the standards in character
+ #       coding, an 'alt-charset' kludge is presented. Currently implemented
+ #       alternative charsets are defined in "alt_charsets.h" and new ones
+ #       can be added to appropriate smsc-code.
+ #
+
+CIMD centers are accessed via TCP/IP, so we need the hostname (or IP
+number) and port number to which we should connect. Similarly, old EMI
+centers are accessed via ISDN/modems, so we need the phone number to
+call and the Unix device file (e.g., /dev/ttyS0) where the modem is
+connected to the computer. We need both a username and a password for
+logging in to most of the SMS centers (fake smsc does not need
+ username nor password, nor does require some other centers which are
+ accessed via TCP/IP)
+        
+
+
+
+WAPBOX GROUP
+
+If Kannel is supporting WAP, it must define wapbox connections.
+They rae defined with following fields, of which some are optional:
+
+ group = wapbox
+ #       Mandatory identifier
+ #
+ bearerbox-host = <host>
+ #	 The machine in which the bearerbox is. THIS IS TEMPORARY
+ #       VARIABLE, but mandatory right now
+ #
+ log-file = <file-name>
+ log-level = <number 0..5>
+ #       As with bearerbox (core) logfile
+ #
+ timer-freq = <value-in-seconds>
+ #	 the frequency how often timers are checked out. Default is 1 
+ #
+ map-url = "http://from.here/ http://some.where/"
+ #       adds a single mapping for the left side URL to the given destination.
+ #       If you append an asterisk `*' to the left side URL, it is prefix
+ #       matched against the incoming URL. Whenever that prefix matches,
+ #       the URL will be replaced completely by the right side. If you
+ #       additionally append an asterisk to the right side URL, the part
+ #       of the incoming URL coming after the prefix, will be appended
+ #       to the right side URL. Thus, for a line:
+ #               map-url = "http://source/* http://destination/*"
+ #       and an incoming URL of "http://source/some/path", the result
+ #       will be "http://destination/some/path"
+ #
+ map-url-max = <number>
+ #       if you need more than one mapping, set this to the highest number
+ #       mapping you need. The default gives you 10 mappings, numbered
+ #       from 0 to 9. default: 9
+ #
+ map-url-0 = "http://from.here/ http://some.where/"
+ #       adds a mapping for the left side URL to the given destination URL.
+ #       Repeat these lines, with 0 replaced by a number up to map-url-max,
+ #       if you need several mappings.
+ #
+ device-home = "http://some.where/"
+ #       adds a mapping for the URL DEVICE:home (as sent by Phone.com browsers)
+ #       to the given destination URL. There is no default mapping.
+ #       NOTE: the mapping is added with both asterisks, as described above
+ #       for the "map-url" setting. Thus, the above example line is
+ #       equivalent to writing
+ #               map-url = "DEVICE:home* http://some.where/*"
+ #
+
+Note that as new bearerbox is not yet supporting dynamic
+configurations nor uploading them into sms and wapboxes, sms and
+wapboxes should use the same configuration file as bearerbox when
+starting them up.
+
+
+
+SMSBOX GROUP
+
+If Kannel handles any SMS messages, it must have defined smsbox group,
+with one or more of the following variables:
+
+ group = smsbox
+ #       Mandatory identifier
+ #
+ bearerbox-host = <host>
+ #	 The machine in which the bearerbox is. THIS IS TEMPORARY
+ #       VARIABLE, but mandatory right now
+ #
+ sendsms-port = <port-number>
+ #       The port in which to do any sendsms HTTP requests. As with
+ #       other ports in Kannel, can be set as anything desired.
+ #
+ global-sender = <phone-number>
+ #       If set, all sendsms originators are set as these before
+ #       proceeding. Note that in a case of most SMS centers you
+ #       cannot set the sender number, but it is automatically set
+ #       as the number of the SMSC
+ #
+ log-file = <file-name>
+ log-level = <number 0..5>
+ #       As with bearerbox (core) logfile
+ #
+
+
+
+SMS-SERVICE GROUP
+
+These groups define SMS services in smsbox, so they are only used by
+the smsbox. Each service is recognized from the first word in an SMS
+message.  By adding a username and password in the URL in the
+following manner `http://luser:password@host.domain:port/path?query'
+we can perform HTTP Basic authentication.
+
+ group = sms-service
+ #       Mandatory identifier
+ #
+ keyword = <word>
+ #	 Services are identified by the first word in the SMS Each
+ #	 `%s' in the URL corresponds to one word in the SMS message.
+ #	 Words are separated with spaces. A keyword is matched only if
+ #	 the number of words in the SMS message is the same as the
+ #	 number of `%s' fields in the URL. This allows you to
+ #	 configure the gateway to use different URLs for the same
+ #	 keyword depending on the number of words the SMS message
+ #	 contains.
+ #
+ aliases = <list>
+ #	 If the service have aliases, they are listed as a list with 
+ #	 each entry separated with semicolon (';')
+ #
+ url = <url>
+ #       requested URL. The url can include list of parameters, which are
+ #       parsed before the url is fetched. Parameters are:
+ #       
+ #                %s      next word from the SMS message, starting with
+ #                        the second one (i.e., the first word, the
+ #                        keyword, is not included); problematic characters
+ #                        for URLs are encoded (e.g., '+' becomes '%2B')
+ #                
+ #                %S      same as %s, but '*' is converted to '~' (useful
+ #                        when user enters a URL) and URL encoding isn't done
+ #                        (all others do URL encode)
+ #
+ #                %r      words not yet used by %s; e.g., if the message
+ #                        is "FOO BAR FOOBAR BAZ", and the has been one %s,
+ #                        %r will mean "FOOBAR BAZ"
+ #                
+ #                %a      all words of the SMS message, including the first
+ #                        one
+ #                
+ #                %t      the time the message was sent, formatted as
+ #                        "YYYY-MM-DD HH:MM", e.g., "1999-09-21 14:18"
+ #                 
+ #                %p      the phone number of the sender of the SMS message
+ #                
+ #                %P      the phone number of the receiver of the SMS message
+ #                
+ #                %q      like %p, but a leading `00' is replaced with `+'
+ #
+ #                %Q      like %P, but a leading `00' is replaced with `+'
+ #                
+ #
+ file = <file-name>
+ #       file read from local disc. Only if not url set. All escape codes
+ #       in url-fetch are supported here also. The last character of the file
+ #       (usually linefeed) is removed.
+ #
+ text = <text>
+ #       predefined text answer. Only if not url or file set. Escape codes are
+ #       usable here, too.
+ #
+ prefix = <prefix>
+ suffix = <suffix> 
+ #       stuff in answer that is cut away, only things between prefix
+ #       and suffix is left. In-casesensitive. Matches for the first prefix
+ #       and then for first suffix.
+ #
+ faked-sender = <phone-number>
+ #       this number is set as sender. Some SMSCs ignore this. This option
+ #       overrides all other Gateway sender setting methods.
+ #
+ max-messages = <number>
+ #       the total maximum of SMSes in reply. Default is 1. If the max-messages
+ #       is set to 0, no reply is sent, except for error messages. Note that
+ #       'max-messages' do not support the real concanated messages, yet.
+ #
+ split-chars = <character-list>
+ #       allowed characters to split the message split into several messages.
+ #       So, with "#!" the message is split from last '#' or '!', which is 
+ #       included in the previous part
+ #
+ split-suffix = <string>
+ #       if the message is split into several ones, this string is appended to 
+ #       each message except the last one
+ #
+ omit-empty = <number>
+ #       if set to other than '0', 'no data' messages are not sent to receiver
+ #       in a case of empty reply from the service provider.
+ #       
+ header = <string>
+ #       if specified, this string is automatically added to each SMS send with
+ #       this service. If message is split, it is added to each part
+ #
+ footer = <string>
+ #       as header, but not inserted into head but appended to end
+ #
+
+
+
+SENDSMS-USER GROUP
+
+For smsbox, if any sendsms-services are used, there must be one or
+more accounts to use it.
+
+ group = sendsms-user
+ #       Mandatory identifier
+ #
+ username = <string>
+ password = <string>
+ #       For HTTP cgi-bin arguments
+ #
+ user-deny-ip = <IP-list>
+ user-allow-ip = <IP-list>
+ #       As other deny/allow lists, but for this user. NOT SUPPORTED YET.
+ #
+ faked-sender = <phone-number>
+ max-messages = <number>
+ split-chars = <character-list>
+ split-suffix = <string>
+ omit-empty = <number>
+ header = <string>
+ footer = <string>
+ #       As in sms-services
+ 
+
+
+
+
+
+SAMPLE SIMPLE CONFIGURATION
+
+-------------------
+# bearerbox things
+
+group = core
+admin-port = 13000
+smsbox-port = 13001
+wapbox-port = 13002
+admin-password = bar
+wdp-interface-name = "*"
+log-file = "/tmp/kannel.log"
+log-level = 0
+box-deny-ip = "*.*.*.*"
+box-allow-ip = "127.0.0.1"
+admin-deny-ip = "*.*.*.*"
+admin-allow-ip = "127.0.0.1"
+
+
+group = smsc
+smsc = fake
+host = localhost
+port = 10000
+
+# wapbox things
+
+group = wapbox
+bearerbox-host = localhost
+
+# smsbox things
+
+group = smsbox
+bearerbox-host = localhost
+sendsms-port = 13013
+
+
+group = sms-service
+keyword = nop
+text = "You asked nothing and I did it!"
+
+group = sms-service
+keyword = default
+text = "No action spesified"
+
+
+group = sendsms-user
+username = foo
+password = buz
+#user-deny-ip = "*.*.*.*"
+#user-allow-ip = "127.0.0.1"
+
+-------------------
