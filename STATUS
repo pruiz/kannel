@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.3 2002-02-07 18:12:01 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.4 2002-02-19 23:15:01 stolj Exp $]
 
 Release:
 
@@ -25,6 +25,10 @@ RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
     
 Available Patches:
 
+    * changing list_search() in gw/smsc_at2.c:at2_init_device()
+    Posted by: "Nektarios K. Papadopoulos" <npapadop@inaccessnetworks.com>
+    Message-ID: <3C72B61A.1BC22DD7@inaccessnetworks.com>
+
     * fixing timestamp issue in smsc_at2.c
     Posted by: "Oded Arbel" <oded@m-wise.com>
     Message-ID: <2CFC21DAF860CC49AF57333C4459DD4B166D43@exchange.m-wise.com>
@@ -40,9 +44,10 @@ Available Patches:
     Message-ID: <20011228013937.25092.qmail@web13805.mail.yahoo.com>
     Status:
 
-    * SMSC specific sender number configuration
+    * SMSC specific default-sender and forced-sender 
     Posted by: "Angel Fradejas" <afradejas@mediafusion.es>
     Message-ID: <FMEKKCFKIGBADHGIJKPJGENPCKAA.afradejas@mediafusion.es>
+    Updated: <FMEKKCFKIGBADHGIJKPJAEFECPAA.afradejas@mediafusion.es>
     Status: Stipe -1 (conceptual clash to global-sender?!)
 
 Open issues:
