@@ -248,7 +248,6 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     /* .. the common headers... */
     httprequest_add_header(request, "Host", request->url->host);
     httprequest_add_header(request, "Connection", "close");
-    httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
 
     /* ..the user defined headers */
     for(;;){

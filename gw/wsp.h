@@ -42,9 +42,14 @@ typedef struct WSPEvent WSPEvent;
 
 #include "octstr.h"
 #include "wtp.h"
+#include "gwlib.h"
 
 typedef enum {
 	#define WSP_EVENT(name, fields) name,
+	#define INTEGER
+	#define OCTSTR
+	#define WTP_MACHINE
+	#define SESSION_MACHINE
 	#include "wsp_events-decl.h"
 } WSPEventType;
 
@@ -69,6 +74,7 @@ struct WSPMachine
 	#define SESSION_POINTER(name) WSPMachine *name
 	#define SESSION_MACHINE(fields) fields
 	#define METHOD_MACHINE(fields)
+	#define HTTPHEADER(name) HTTPHeader *name
 	#include "wsp_machine-decl.h"
 ;
 
@@ -76,10 +82,13 @@ struct WSPMachine
 struct WSPMethodMachine
 	#define MUTEX(name) Mutex *name
 	#define INTEGER(name) long name
+	#define OCTSTR(name) Octstr *name
+	#define EVENT_POINTER(name) WSPEvent *name
 	#define METHOD_POINTER(name) WSPMethodMachine *name
 	#define SESSION_POINTER(name) WSPMethodMachine *name
 	#define SESSION_MACHINE(fields)
 	#define METHOD_MACHINE(fields) fields
+	#define HTTPHEADER(name) HTTPHeader *name
 	#include "wsp_machine-decl.h"
 ;
 

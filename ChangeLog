@@ -1,3 +1,18 @@
+Fri Jan 28 13:14:52 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wapbox.c: Only dump non-heartbeat messages.
+	
+	* gw/wsp_events-decl.h, gw/wsp_machine-decl.h: Now these headers
+	check at top of file that the required macros are defined and
+	complain with #error otherwise. Related changes to files that
+	include the headers.
+	
+	* gw/wsp.c: Headers from Connect PDU are stored in the WSPMachine,
+	and used in the HTTP request.
+	
+	* gwlib/http.c: Removed User-Agent header from those we add to
+	the request.
+
 2000-01-27 Sanna Seppanen <sanna@wapit.com>
 
 	*gwlib/http.c, gwlib/http.h implementation of http_post. all bzero 

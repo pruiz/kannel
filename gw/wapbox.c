@@ -110,8 +110,10 @@ static void msg_send(int s, Msg *msg) {
 	if (octstr_send(s, os) == -1)
 		error(0, "wapbox: octstr_send failed");
 	octstr_destroy(os);
-	debug(0, "WAPBOX: Sent message:");
-	msg_dump(msg);
+	if (msg->type != heartbeat) {
+		debug(0, "WAPBOX: Sent message:");
+		msg_dump(msg);
+	}
 }
 
 
@@ -149,9 +151,6 @@ Msg *remove_msg_from_queue(void) {
 		msg = queue_tab[queue_start];
 		queue_start = (queue_start + 1) % MAX_MSGS_IN_QUEUE;
 		--queue_len;
-#if 0
-		debug(0, "wapbox: removed msg %p in queue", (void *) msg);
-#endif
 	}
 	mutex_unlock(queue_mutex);
 	return msg;

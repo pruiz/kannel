@@ -130,6 +130,10 @@ void wsp_event_destroy(WSPEvent *event) {
 char *wsp_event_name(WSPEventType type) {
 	switch (type) {
 	#define WSP_EVENT(name, fields) case name: return #name;
+	#define INTEGER
+	#define OCTSTR
+	#define WTP_MACHINE
+	#define SESSION_MACHINE
 	#include "wsp_events-decl.h"
 	default:
 		return "unknown WSPEvent type";
@@ -199,6 +203,7 @@ WSPMachine *wsp_machine_create(void) {
 	#define SESSION_POINTER(name) p->name = NULL
 	#define SESSION_MACHINE(fields) fields
 	#define METHOD_MACHINE(fields)
+	#define HTTPHEADER(name) p->name = NULL
 	#include "wsp_machine-decl.h"
 	
 	p->state = NULL_STATE;
@@ -485,8 +490,7 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 	    debug(0, "(packed) Unpacked headers:");
 	    header_dump(hdrs);
 
-	    /* we should put them into WSPMachine and use them in future */
-	    header_destroy(hdrs);
+	    m->http_headers = hdrs;
 	}
 	return 0;
 }
@@ -819,25 +823,28 @@ static void *wsp_http_thread(void *arg) {
 	Octstr *body;
 	WSPEvent *e;
 	int status;
-#if 0
-	struct wmlc *wmlc_data;
-#endif
+	int ret;
 	char *url;
 	WSPEvent *event;
 	unsigned long body_size, client_SDU_size;
+	WTPMachine *wtp_sm;
+	WSPMachine *sm;
 
 	debug(0, "WSP: wsp_http_thread starts");
 
 	event = arg;
+	wtp_sm = event->SMethodInvokeResult.machine;
+	sm = event->SMethodInvokeResult.session;
 	debug(0, "WSP: Sending S-MethodInvoke.Res to WSP");
-	wsp_dispatch_event(event->SMethodInvokeResult.machine, event);
+	wsp_dispatch_event(wtp_sm, event);
 
 	url = octstr_get_cstr(event->SMethodInvokeResult.url);
 	debug(0, "WSP: url is <%s>", url);
 
 	body = NULL;
 
-	if (http_get(url, &type, &data, &size) == -1) {
+	ret = http_get_u(url, &type, &data, &size, sm->http_headers);
+	if (ret == -1) {
 		error(0, "WSP: http_get failed, oops.");
 		status = 500; /* Internal server error; XXX should be 503 */
 		type = "text/plain";

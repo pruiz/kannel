@@ -7,6 +7,14 @@
  * Lars Wirzenius <liw@wapit.com>
  */
 
+#if !defined(HTTPHEADER) || !defined(INTEGER) || !defined(MUTEX) || \
+	!defined(OCTSTR) || !defined(EVENT_POINTER) || \
+	!defined(METHOD_POINTER) || !defined(SESSION_POINTER) || \
+	!defined(SESSION_MACHINE) || !defined(METHOD_MACHINE)
+#error "wsp_machine-decl.h: Some required macro is missing."
+#endif
+
+
 SESSION_MACHINE({
 	INTEGER(state);
 	MUTEX(mutex);
@@ -31,6 +39,8 @@ SESSION_MACHINE({
 	OCTSTR(header_code_pages);
 	INTEGER(client_SDU_size);
 	INTEGER(server_SDU_size);
+	
+	HTTPHEADER(http_headers);
 })
 
 METHOD_MACHINE({
@@ -47,3 +57,4 @@ METHOD_MACHINE({
 #undef SESSION_POINTER
 #undef SESSION_MACHINE
 #undef METHOD_MACHINE
+#undef HTTPHEADER

@@ -8,6 +8,13 @@
  * By Aarno Syvänen and Lars Wirzenius for WapIt Ltd.
  */
 
+#if !defined(INTEGER) || !defined(OCTSTR) || !defined(WTP_MACHINE) || \
+	!defined(SESSION_MACHINE)
+#error "wsp_events-decl.h: Some of the required macros not defined."
+#endif
+
+
+
 WSP_EVENT(TRInvokeIndication,
           {
           INTEGER(ack_type);

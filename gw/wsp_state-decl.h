@@ -37,6 +37,7 @@ ROW(NULL_STATE,
 
                 if (unpack_connect_pdu(sm, e->user_data) == -1)
 		         error(0, "Unpacking Connect PDU failed, oops.");
+
 		/*
 		 * Send S-Connect.res to ourselves. NOTE: The spec says
 		 * S-Connect.ind to the layer above WSP, but since we
