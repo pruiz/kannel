@@ -586,6 +586,7 @@ static void destroy_onetrans(void *p) {
 		gw_free(ot->accepted_smsc);
 		gw_free(ot->forced_smsc);
 		gw_free(ot->default_smsc);
+		gw_free(ot->deny_ip);
 		gw_free(ot);
 	}
 }

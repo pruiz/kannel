@@ -12,6 +12,8 @@
 
 #include "urltrans.h"
 
+extern List *smsbox_requests;
+
 /*
  * Initialization routine. MUST be called first
  *

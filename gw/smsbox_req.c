@@ -58,26 +58,148 @@ static char *global_sender = NULL;
 static void (*sender) (Msg *msg) = NULL;
 static Config 	*cfg = NULL;
 
-static volatile sig_atomic_t req_threads = 0;
-
 #define SENDSMS_DEFAULT_CHARS "0123456789 +-"
+
+
+List *smsbox_requests = NULL;
 
 
 /*-------------------------------------------------------------------*
  * STATIC FUNCTIONS
  */
 
+static int send_message(URLTranslation *trans, Msg *msg);
+
+static HTTPCaller *caller;
+static Dict *receivers;
+
+struct receiver {
+    Msg *msg;
+    URLTranslation *trans;
+};
+
+static void destroy_receiver(void *p)
+{
+    struct receiver *r;
+    
+    r = p;
+    msg_destroy(r->msg);
+    gw_free(r);
+}
+
+static void remember_receiver(long id, Msg *msg, URLTranslation *trans)
+{
+    Octstr *idstr;
+    struct receiver *receiver;
+    
+    receiver = gw_malloc(sizeof(*receiver));
+
+    receiver->msg = msg_create(sms);
+    receiver->msg->sms.sender = octstr_duplicate(msg->sms.sender);
+    receiver->msg->sms.receiver = octstr_duplicate(msg->sms.receiver);
+    receiver->msg->sms.flag_8bit = 0;
+    receiver->msg->sms.flag_udh = 0;
+    receiver->msg->sms.udhdata = NULL;
+    receiver->msg->sms.msgdata = NULL;
+    receiver->msg->sms.time = (time_t) -1;
+    receiver->msg->sms.smsc_id = octstr_duplicate(msg->sms.smsc_id);
+    
+    receiver->trans = trans;
+
+    idstr = octstr_format("%ld", id);
+    dict_put(receivers, idstr, receiver);
+    octstr_destroy(idstr);
+}
+
+
+static void get_receiver(long id, Msg **msg, URLTranslation **trans)
+{
+    Octstr *idstr;
+    struct receiver *receiver;
+    
+    idstr = octstr_format("%ld", id);
+    receiver = dict_remove(receivers, idstr);
+    octstr_destroy(idstr);
+    *msg = receiver->msg;
+    *trans = receiver->trans;
+    gw_free(receiver);
+}
+
+
+static void url_result_thread(void *arg)
+{
+    Octstr *final_url, *reply_body, *type, *charset,
+	    *temp, *replytext;
+    List *reply_headers;
+    int status;
+    long id;
+    Msg *msg;
+    URLTranslation *trans;
+
+    for (;;) {
+    	id = http_receive_result(caller, &status, &final_url, &reply_headers,
+	    	    	    	 &reply_body);
+    	if (id == -1)
+	    break;
+    	
+    	get_receiver(id, &msg, &trans);
+
+	http_header_get_content_type(reply_headers, &type, &charset);
+	if (octstr_str_compare(type, "text/html") == 0) {
+		if (urltrans_prefix(trans) != NULL &&
+		    urltrans_suffix(trans) != NULL) {
+		    temp = html_strip_prefix_and_suffix(reply_body,
+			       urltrans_prefix(trans), 
+			       urltrans_suffix(trans));
+		    octstr_destroy(reply_body);
+		    reply_body = temp;
+		}
+		replytext = html_to_sms(reply_body);
+	} else if (octstr_str_compare(type, "text/plain") == 0) {
+		replytext = reply_body;
+		reply_body = NULL;
+	} else {
+		replytext = octstr_create("Result could not be represented "
+					  "as an SMS message.");
+	}
+    
+	octstr_destroy(type);
+	octstr_destroy(charset);
+	http_destroy_headers(reply_headers);
+	octstr_destroy(reply_body);
+    
+	octstr_strip_blanks(replytext);
+	
+	msg->sms.msgdata = replytext;
+	msg->sms.time = time(NULL);	/* set current time */
+    
+	alog("SMS HTTP-request sender:%s request: '%s' url: '%s' reply: %d '%s'",
+	     octstr_get_cstr(msg->sms.receiver),
+	     octstr_get_cstr(msg->sms.msgdata),
+	     octstr_get_cstr(final_url), status,
+	     (status == 200) ? "<< successful >>"
+	     : (reply_body != NULL) ? octstr_get_cstr(reply_body) : "");
+		
+	/* send_message frees the 'msg' */
+	if(send_message(trans, msg) < 0)
+		    error(0, "request_thread: failed");
+    }
+}
+
+
 /* Perform the service requested by the user: translate the request into
  * a pattern, if it is an URL, fetch it, and return a string, which must
- * be free'ed by the caller
+ * be free'ed by the caller.
  */
+
+static char HTTP_RESULT[] = "http_result";
+
 static char *obey_request(URLTranslation *trans, Msg *msg)
 {
 	char *pattern, *ret;
-	Octstr *url, *final_url, *reply_body, *type, *charset,
-		*temp, *replytext;
-	List *request_headers, *reply_headers;
-	int status;
+	Octstr *url, *replytext;
+	List *request_headers;
+	long id;
 
 	gw_assert(msg != NULL);
 	gw_assert(msg_type(msg) == sms);
@@ -109,58 +231,20 @@ static char *obey_request(URLTranslation *trans, Msg *msg)
 	case TRANSTYPE_URL:
 		url = octstr_create(pattern);
 		request_headers = list_create();
-		status = http_get_real(url, request_headers, &final_url,
-					&reply_headers, &reply_body);
-		alog("SMS HTTP-request sender:%s request: '%s' url: '%s' reply: %d '%s'",
-		     octstr_get_cstr(msg->sms.receiver),
-		     octstr_get_cstr(msg->sms.msgdata),
-		     pattern, status,
-		     (status == 200) ? "<< successful >>"
-		     : (reply_body != NULL) ? octstr_get_cstr(reply_body) : "");
-		
-		gw_free(pattern);		/* no longer needed */
-
-		octstr_destroy(url);
-		octstr_destroy(final_url);
-		list_destroy(request_headers, NULL);
-		if (status != HTTP_OK) {
-		    list_destroy(reply_headers, octstr_destroy_item);
-		    octstr_destroy(reply_body);
+    	    	id = http_start_request(caller, url, request_headers, 
+		    	    	    	NULL, 1);
+    	    	if (id == -1)
 		    goto error;
-		}
+
+		gw_free(pattern);		/* no longer needed */
+		octstr_destroy(url);
+		http_destroy_headers(request_headers);
+
+		if (id == -1)
+		    goto error;
 		
-		http_header_get_content_type(reply_headers, &type, &charset);
-		if (octstr_str_compare(type, "text/html") == 0) {
-			if (urltrans_prefix(trans) != NULL &&
-			    urltrans_suffix(trans) != NULL) {
-			    temp = html_strip_prefix_and_suffix(reply_body,
-				       urltrans_prefix(trans), 
-				       urltrans_suffix(trans));
-			    octstr_destroy(reply_body);
-			    reply_body = temp;
-			}
-			replytext = html_to_sms(reply_body);
-		} else if (octstr_str_compare(type, "text/plain") == 0) {
-			replytext = reply_body;
-			reply_body = NULL;
-		} else {
-			replytext = octstr_create("Result could not be represented "
-						  "as an SMS message.");
-		}
-	
-		octstr_destroy(type);
-		octstr_destroy(charset);
-		list_destroy(reply_headers, octstr_destroy_item);
-		octstr_destroy(reply_body);
-	
-		if (octstr_len(replytext) == 0)
-			ret = gw_strdup("");
-		else {
-			octstr_strip_blanks(replytext);
-			ret = gw_strdup(octstr_get_cstr(replytext));
-		}
-		octstr_destroy(replytext);
-	
+    	    	remember_receiver(id, msg, trans);
+		ret = HTTP_RESULT;
 		break;
 
 	default:
@@ -624,16 +708,31 @@ void smsbox_req_init(URLTranslationList *transls,
 
 	if (global != NULL)
 		global_sender = gw_strdup(global);
+
+    	caller = http_caller_create();
+    	smsbox_requests = list_create();
+	list_add_producer(smsbox_requests);
+	receivers = dict_create(1024, destroy_receiver);
+	gwthread_create(smsbox_req_thread, NULL);
+	gwthread_create(url_result_thread, NULL);
 }
 
 void smsbox_req_shutdown(void)
 {
+    list_remove_producer(smsbox_requests);
+    gwthread_join_every(smsbox_req_thread);
+    http_caller_signal_shutdown(caller);
+    gwthread_join_every(url_result_thread);
+    gw_assert(list_len(smsbox_requests) == 0);
+    list_destroy(smsbox_requests, NULL);
     gw_free(global_sender);
+    http_caller_destroy(caller);
+    dict_destroy(receivers);
 }
 
 long smsbox_req_count(void)
 {
-	return req_threads;
+	return 0; /* XXX should check number of pending http requests */
 }
 
 void smsbox_req_thread(void *arg) {
@@ -642,90 +741,87 @@ void smsbox_req_thread(void *arg) {
     URLTranslation *trans;
     char *reply = NULL, *p;
     
-    msg = arg;
-    req_threads++;	/* possible overflow */
+    while ((msg = list_consume(smsbox_requests)) != NULL) {
+	if (octstr_len(msg->sms.sender) == 0 || octstr_len(msg->sms.receiver) == 0) 
+	{
     
-    if (octstr_len(msg->sms.sender) == 0 || octstr_len(msg->sms.receiver) == 0) 
-    {
-
-	error(0, "smsbox_req_thread: no sender/receiver, dump follows:");
-	msg_dump(msg, 0);
-		/* NACK should be returned here if we use such 
-		   things... future implementation! */
-
-	req_threads--;
-	return;
-    }
-
-    if (octstr_compare(msg->sms.sender, msg->sms.receiver) == 0) {
-	info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
-	     octstr_get_cstr(msg->sms.sender));
-	req_threads--;
-	return;
-    }
-
-    trans = urltrans_find(translations, msg->sms.msgdata, msg->sms.smsc_id);
-    if (trans == NULL) {
-	Octstr *t;
-	warning(0, "No translation found for <%s> from <%s> to <%s>",
-		octstr_get_cstr(msg->sms.msgdata),
-		octstr_get_cstr(msg->sms.sender),
-		octstr_get_cstr(msg->sms.receiver));
-	t = msg->sms.sender;
-	msg->sms.sender = msg->sms.receiver;
-	msg->sms.receiver = t;
-	goto error;
-    }
-
-    info(0, "Starting to service <%s> from <%s> to <%s>",
-	 octstr_get_cstr(msg->sms.msgdata),
-	 octstr_get_cstr(msg->sms.sender),
-	 octstr_get_cstr(msg->sms.receiver));
-
-    /*
-     * now, we change the sender (receiver now 'cause we swap them later)
-     * if faked-sender or similar set. Note that we ignore if the replacement
-     * fails.
-     */
-    tmp = octstr_duplicate(msg->sms.sender);
+	    error(0, "smsbox_req_thread: no sender/receiver, dump follows:");
+	    msg_dump(msg, 0);
+		    /* NACK should be returned here if we use such 
+		       things... future implementation! */
+	    continue;
+	}
+    
+	if (octstr_compare(msg->sms.sender, msg->sms.receiver) == 0) {
+	    info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
+		 octstr_get_cstr(msg->sms.sender));
+	    continue;
+	}
+    
+	trans = urltrans_find(translations, msg->sms.msgdata, 
+	    	    	      msg->sms.smsc_id);
+	if (trans == NULL) {
+	    Octstr *t;
+	    warning(0, "No translation found for <%s> from <%s> to <%s>",
+		    octstr_get_cstr(msg->sms.msgdata),
+		    octstr_get_cstr(msg->sms.sender),
+		    octstr_get_cstr(msg->sms.receiver));
+	    t = msg->sms.sender;
+	    msg->sms.sender = msg->sms.receiver;
+	    msg->sms.receiver = t;
+	    goto error;
+	}
+    
+	info(0, "Starting to service <%s> from <%s> to <%s>",
+	     octstr_get_cstr(msg->sms.msgdata),
+	     octstr_get_cstr(msg->sms.sender),
+	     octstr_get_cstr(msg->sms.receiver));
+    
+	/*
+	 * now, we change the sender (receiver now 'cause we swap them later)
+	 * if faked-sender or similar set. Note that we ignore if the 
+	 * replacement fails.
+	 */
+	tmp = octstr_duplicate(msg->sms.sender);
+	    
+	p = urltrans_faked_sender(trans);
+	if (p != NULL)
+	    octstr_replace(msg->sms.sender, p, strlen(p));
+	else if (global_sender != NULL)
+	    octstr_replace(msg->sms.sender, global_sender, strlen(global_sender));
+	else {
+	    octstr_replace(msg->sms.sender, octstr_get_cstr(msg->sms.receiver),
+			   octstr_len(msg->sms.receiver));
+	}
+	octstr_destroy(msg->sms.receiver);
+	msg->sms.receiver = tmp;
+    
+	/* TODO: check if the sender is approved to use this service */
+    
+	reply = obey_request(trans, msg);
+	if (reply == NULL) {
+    error:
+	    error(0, "request failed");
+	    /* XXX this can be something different, according to urltranslation */
+	    reply = gw_strdup("Request failed");
+	    trans = NULL;	/* do not use any special translation */
+	}
+    
+    	if (reply != HTTP_RESULT) {
+	    octstr_replace(msg->sms.msgdata, reply, strlen(reply));
 	
-    p = urltrans_faked_sender(trans);
-    if (p != NULL)
-	octstr_replace(msg->sms.sender, p, strlen(p));
-    else if (global_sender != NULL)
-	octstr_replace(msg->sms.sender, global_sender, strlen(global_sender));
-    else {
-	octstr_replace(msg->sms.sender, octstr_get_cstr(msg->sms.receiver),
-		       octstr_len(msg->sms.receiver));
+	    msg->sms.flag_8bit = 0;
+	    msg->sms.flag_udh  = 0;
+	    msg->sms.time = time(NULL);	/* set current time */
+	
+		/* send_message frees the 'msg' */
+	    if(send_message(trans, msg) < 0)
+			error(0, "request_thread: failed");
+	    
+	    gw_free(reply);
+	} else
+	    msg_destroy(msg);
     }
-    octstr_destroy(msg->sms.receiver);
-    msg->sms.receiver = tmp;
-
-    /* TODO: check if the sender is approved to use this service */
-
-    reply = obey_request(trans, msg);
-    if (reply == NULL) {
-error:
-	error(0, "request failed");
-	/* XXX this can be something different, according to urltranslation */
-	reply = gw_strdup("Request failed");
-	trans = NULL;	/* do not use any special translation */
-    }
-
-    octstr_replace(msg->sms.msgdata, reply, strlen(reply));
-
-    msg->sms.flag_8bit = 0;
-    msg->sms.flag_udh  = 0;
-    msg->sms.time = time(NULL);	/* set current time */
-
-	/* send_message frees the 'msg' */
-    if(send_message(trans, msg) < 0)
-		error(0, "request_thread: failed");
-    
-    gw_free(reply);
-    req_threads--;
-    return;
-
 }
 
 /*****************************************************************************

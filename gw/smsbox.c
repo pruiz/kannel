@@ -131,7 +131,7 @@ static void new_request(Octstr *pack)
 	warning(0, "Received other message than sms, ignoring!");
 	msg_destroy(msg);
     } else
-	gwthread_create(smsbox_req_thread, msg);
+    	list_produce(smsbox_requests, msg);
 }
 
 
