@@ -1,3 +1,8 @@
+2000-07-03  Richard Braakman  <dark@wapit.com>
+
+	* gw/wml_definitions.h: Applied patch by brennon loh york hong
+	to fix compilation of pages with multiselect.
+
 2000-07-03 Paul Keogh <paul.keogh@anam.ie>
 
 	* gwlib/http.c,gwlib/http.h,gw/wsp_headers.h,gw/wsp_headers.c,
