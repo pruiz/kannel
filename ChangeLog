@@ -1,3 +1,8 @@
+2003-07-02  Alexander Malysh  <a.malysh@centrium.de>
+    * configure.in,configure: added ability to biuld in more as one DLR storage type.
+      Just call: ./configure --enable-mysql --enable-sdb --with-dlr="mysql sdb"
+      in this case we have mysql and sdb support build in.
+
 2003-07-02  Stipe Tolj  <tolj@wapme-systems.de>
     * wmscript/wsstdlib.c: added support for EFI inside WMLScript. 
       Thanks to "Guido Meyer" <guido.meyer@robot.de> for this patch.

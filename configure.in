@@ -749,32 +749,36 @@ dnl Implement the --with-dlr option.
 dnl Checks which external DLR storage should be used. 
 
 AC_ARG_WITH(dlr,
-[  --with-dlr[=TYPE]       select DLR storage to use: internal/mysql/sdb (default: internal)], 
+[  --with-dlr[=TYPE TYPE]  select DLR storage to use: internal/mysql/sdb (default: internal)], 
 [ AC_CONFIG_SECTION([Configuring DLR support]) 
-  AC_MSG_CHECKING([for DLR storage type])
-  AC_MSG_RESULT($withval)
-  case "$withval" in
-  internal)
-    ;;
-  mysql)
-    if test "$MYSQL" != "yes"; then
-      AC_MSG_ERROR(Option --with-dlr=mysql requires MySQL client support)
-    else
-      AC_DEFINE(DLR_MYSQL)
-    fi
-    ;;
-  sdb)
-    if test "$SDB" != "yes"; then
-      AC_MSG_ERROR(Option --with-dlr=sdb requires SDB support)
-    else
-      AC_DEFINE(DLR_SDB)
-    fi
-    ;;
-  *) 
-    AC_MSG_ERROR(Unknown DLR storage support!)
-    exit 1 
-    ;;
-  esac
+  for myval in $withval
+  do
+      AC_MSG_CHECKING([for DLR storage type $myval])
+      case "$myval" in
+      internal)
+          ;;
+      mysql)
+        if test "$MYSQL" != "yes"; then
+          AC_MSG_ERROR(Option --with-dlr=mysql requires MySQL client support)
+        else
+          AC_MSG_RESULT(enabled)
+          AC_DEFINE(DLR_MYSQL)
+        fi
+        ;;
+      sdb)
+        if test "$SDB" != "yes"; then
+          AC_MSG_ERROR(Option --with-dlr=sdb requires SDB support)
+        else
+          AC_DEFINE(DLR_SDB)
+          AC_MSG_RESULT(enabled)
+        fi
+        ;;
+      *) 
+        AC_MSG_ERROR(Unknown DLR storage support!)
+        exit 1 
+        ;;
+      esac
+  done
 ])
 
 
