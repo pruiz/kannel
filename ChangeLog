@@ -1,5 +1,10 @@
 2000-09-18  Kalle Marjola  <rpr@wapit.com>
 
+	* gwlib/utils.c (get_and_set_debugs): PANIC if unknown option is
+	encountered, to avoid misuse of options.
+
+2000-09-18  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bb_http.c (httpd_serve): when receiving an unknown command,
 	tells the received url back to caller
 

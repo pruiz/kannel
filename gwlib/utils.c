@@ -118,8 +118,10 @@ int get_and_set_debugs(int argc, char **argv,
 	    if (find_own != NULL) {
 		ret = find_own(i, argc, argv);
 	    }
-	    if (ret < 0)
-		fprintf(stderr, "Unknown option %s, ignoring\n", argv[i]);
+	    if (ret < 0) {
+		fprintf(stderr, "Unknown option %s, exiting.\n", argv[i]);
+		panic(0, "Option paring failed");
+	    }
 	    else
 		i += ret;	/* advance additional args */
 	}
