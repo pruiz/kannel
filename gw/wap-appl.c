@@ -41,6 +41,8 @@
 #include "radius/radius_acct.h"
 #include "wap-error.h"
 
+#define ENABLE_NOT_ACCEPTED 
+
 /*
  * Give the status the module:
  *
@@ -837,6 +839,23 @@ static void return_reply(int status, Octstr *content_body, List *headers,
         content.type = octstr_create("text/plain");
         http_header_mark_transformation(headers, content.body, content.type);
     }
+
+#ifdef ENABLE_NOT_ACCEPTED 
+    /* Returns 406 is content-type is not supported by device */
+    if(request_headers && content.type &&
+       !http_type_accepted(request_headers, octstr_get_cstr(content.type))) {
+        warning(0, "WSP: content-type %s not supported", 
+                octstr_get_cstr(content.type));
+        status = HTTP_NOT_ACCEPTABLE;
+	octstr_destroy(content.type);
+        content.type = octstr_create("text/plain");
+	if(content.charset) { octstr_destroy(content.charset); }
+        content.charset = octstr_create("");
+        if(content.body) { octstr_destroy(content.body); }
+	content.body = octstr_create("");
+        http_header_mark_transformation(headers, content.body, content.type);
+    }
+#endif
 
     /*
      * If the response is too large to be sent to the client,

@@ -82,25 +82,26 @@
  */
 
 enum {
-	HTTP_OK				= 200,
-	HTTP_CREATED			= 201,
-	HTTP_ACCEPTED			= 202,
-	HTTP_NO_CONTENT			= 204,
-	HTTP_RESET_CONTENT		= 205,
-	HTTP_MOVED_PERMANENTLY		= 301,
-	HTTP_FOUND			= 302,
-	HTTP_SEE_OTHER			= 303,
-	HTTP_NOT_MODIFIED		= 304,
-	HTTP_TEMPORARY_REDIRECT 	= 307,
-    HTTP_BAD_REQUEST        = 400,
-    HTTP_UNAUTHORIZED       = 401,
-    HTTP_FORBIDDEN          = 403,
-	HTTP_NOT_FOUND			= 404,
-	HTTP_REQUEST_ENTITY_TOO_LARGE   = 413,
-    HTTP_UNSUPPORTED_MEDIA_TYPE     = 415,
-	HTTP_INTERNAL_SERVER_ERROR	= 500,
-	HTTP_NOT_IMPLEMENTED		= 501,
-	HTTP_BAD_GATEWAY		= 502
+    HTTP_OK                        = 200,
+    HTTP_CREATED                   = 201,
+    HTTP_ACCEPTED                  = 202,
+    HTTP_NO_CONTENT                = 204,
+    HTTP_RESET_CONTENT             = 205,
+    HTTP_MOVED_PERMANENTLY         = 301,
+    HTTP_FOUND                     = 302,
+    HTTP_SEE_OTHER                 = 303,
+    HTTP_NOT_MODIFIED              = 304,
+    HTTP_TEMPORARY_REDIRECT        = 307,
+    HTTP_BAD_REQUEST               = 400,
+    HTTP_UNAUTHORIZED              = 401,
+    HTTP_FORBIDDEN                 = 403,
+    HTTP_NOT_FOUND                 = 404,
+    HTTP_NOT_ACCEPTABLE            = 406,
+    HTTP_REQUEST_ENTITY_TOO_LARGE  = 413,
+    HTTP_UNSUPPORTED_MEDIA_TYPE    = 415,
+    HTTP_INTERNAL_SERVER_ERROR     = 500,
+    HTTP_NOT_IMPLEMENTED           = 501,
+    HTTP_BAD_GATEWAY               = 502
 };
 
 /*
