@@ -664,17 +664,17 @@ error:
 }
 
 int octstr_recv(int fd, Octstr **ostr) {
-	long length;
+	long length, nlength;
 	char *data = NULL;
 	Octstr *newostr = NULL;
 	int ret = 0, readlength = 0;
 
-	length = 0;
+	nlength = 0;
 	
 	/* How many octets in incomint Octstr. */
 	readlength = 0;
 	while(readlength < sizeof(uint32_t)) {
-		ret = recv(fd, (&length)+readlength, sizeof(uint32_t)-readlength, 0);
+		ret = recv(fd, (&nlength)+readlength, sizeof(uint32_t)-readlength, 0);
 		if(ret == 0)
 			goto eof;
 		else if(ret == -1) {
@@ -685,15 +685,14 @@ int octstr_recv(int fd, Octstr **ostr) {
 			readlength += ret;
 		}
 	}
-	if ((char)length > '\0') {
+	length = ntohl(nlength);
+	if (length > 256*256*256) {
 	    unsigned char *u;
-	    u = (unsigned char *) &length;
+	    u = (unsigned char *) &nlength;
 	    warning(0, "Possible garbage received by octsr_recv, length %ld "
-		    "data %02x %02x %02x %02x ...", (long) ntohl(length),
+		    "data %02x %02x %02x %02x ...", length,
 		    u[0], u[1], u[2], u[3]);
 	    return -1;
-	} else {
-	    length = ntohl(length);
 	}
 	data = gw_malloc(length);
 
