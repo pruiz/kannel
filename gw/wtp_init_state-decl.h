@@ -106,7 +106,7 @@ ROW(INIATOR_RESULT_WAIT,
      stop_iniator_timer(init_machine->timer);
 
      wsp_event = create_tr_invoke_cnf(init_machine);
-     push_dispatch_event(wsp_event);     
+     wsp_dispatch_event(wsp_event);     
     },
     INIATOR_NULL_STATE)
 
@@ -135,7 +135,7 @@ ROW(INIATOR_RESULT_WAIT,
     {
      wsp_event = create_tr_abort_ind(init_machine, 
                  event->u.RcvAbort.abort_reason);
-     push_dispatch_event(wsp_event);
+     wsp_dispatch_event(wsp_event);
     },
     INIATOR_NULL_STATE)
 
@@ -147,7 +147,7 @@ ROW(INIATOR_RESULT_WAIT,
                     init_machine->addr_tuple); 
 
      wsp_event = create_tr_abort_ind(init_machine, PROTOERR);
-     push_dispatch_event(wsp_event);
+     wsp_dispatch_event(wsp_event);
     },
     INIATOR_NULL_STATE)
 
@@ -181,7 +181,7 @@ ROW(INIATOR_RESULT_WAIT,
     init_machine->rcr == MAX_RCR, 
     {
      wsp_event = create_tr_abort_ind(init_machine, NORESPONSE);
-     push_dispatch_event(wsp_event);
+     wsp_dispatch_event(wsp_event);
     },
     INIATOR_NULL_STATE)
 

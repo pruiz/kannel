@@ -29,7 +29,7 @@ enum {
 };
 
 /*
- * Tid cache item consists of iniator identifier and cached tid.
+ * Tid cache item consists of initiator identifier and cached tid.
  */
 struct WTPCached_tid {
        Octstr *source_address;
