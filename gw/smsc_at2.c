@@ -692,6 +692,8 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
 			msg = at2_pdu_decode(pdu);
                     	if(msg != NULL)
                     	{
+			    msg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
+			    counter_increase(privdata->conn->received);
                     	    bb_smscconn_receive(privdata->conn, msg);
                     	}
                     	if(privdata->phase2plus)
@@ -1297,7 +1299,13 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 		debug("bb.at", 0, "send command status: %d", ret);
 		retries--;
 	    }
+	    if(ret >= 0)
+	    	counter_increase(privdata->conn->received);
+	    else
+	    	counter_increase(privdata->conn->failed);
         }
+        else
+	    counter_increase(privdata->conn->failed);
     }
 }
 

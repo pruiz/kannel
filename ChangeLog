@@ -1,3 +1,8 @@
+2001-09-10 Andreas Fink <andreas@fink.org>
+	* gw/smsc_at2.c
+	made the counters really count
+	the SMSC ID is now set on incoming
+
 2001-09-07 Andreas Fink <andreas@fink.org>
 	* gw/smsc_at2.c
 	some systems dont have SSIZE_MAX defined
