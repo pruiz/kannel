@@ -1,5 +1,9 @@
 2000-11-28  Aarno Syvänen <syvanen@wapit.com>
 
+	* gw/wapbox.c: Initialize and shutdown the push client.
+
+2000-11-28  Aarno Syvänen <syvanen@wapit.com>
+
 	* wap/wsp_push_client*: Added client push machine. Wtp responder 
 	will send class 1 transaction messages to this as long as wsp client
 	session machine is not implemented.
