@@ -837,7 +837,7 @@ static void start_fetch(WAPEvent *event)
     } else {
         error(0, "WSP: Method %s not supported.", octstr_get_cstr(method));
         content_body = octstr_create("");
-        resp_headers = NULL;
+        resp_headers = http_create_empty_headers();
         ret = HTTP_NOT_IMPLEMENTED;
         octstr_destroy(request_body);
         return_reply(ret, content_body, resp_headers, client_SDU_size,
