@@ -1,3 +1,8 @@
+2001-02-28  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_udp.c: 'bugfix': modified so that all errors just make
+	receiver to continue, instead of exiting loop
+
 2001-02-28  Richard Braakman <dark@wapit.com>
 
 	* gw/smsc_at.c: Made pdu_extract deal with the SMSC address field

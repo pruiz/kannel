@@ -90,12 +90,13 @@ static void udp_receiver(void *arg)
 		/* No datagram available, don't block. */
 		continue;
 
-	    if (errno == EINTR || errno == ECONNREFUSED) {
-		error(errno, "Failed to receive an UDP");
-		continue;
-	    }
-	    error(errno, "Failed to receive an UDP - Fatal");
-	    break;
+	    error(errno, "Failed to receive an UDP");
+	    /*
+	     * just continue, or is there ANY error that would result
+	     * in situation where it would be better to break; or even
+	     * die off?     - Kalle 28.2
+	     */
+	    continue;
 	}
 
 	/* discard the message if the client is not allowed */
