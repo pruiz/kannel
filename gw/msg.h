@@ -81,6 +81,7 @@ typedef struct {
 
 	#define INTEGER(name) long name
 	#define OCTSTR(name) Octstr *name
+	#define UUID(name) uuid_t name
 	#define MSG(type, stmt) struct type stmt type;
 	#include "msg-decl.h"
 } Msg;

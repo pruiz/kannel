@@ -181,8 +181,7 @@ static int cmp_msgs(void *item, void *pattern) {
     ackm = pattern;
     smsm = item;
 
-    if (   ackm->ack.time == smsm->sms.time
-	&& ackm->ack.id == smsm->sms.id)
+    if (uuid_compare(ackm->ack.id, smsm->sms.id) == 0)
 	return 1;
     else
 	return 0;
@@ -256,7 +255,7 @@ static void store_cleanup(void *arg)
 Octstr *store_status(int status_type)
 {
     char *frmt;
-    char buf[1024], p[22];
+    char buf[1024], p[22], id[UUID_STR_LEN + 1];
     Octstr *ret, *str, *t;
     unsigned long l;
     struct tm tm;
@@ -285,15 +284,15 @@ Octstr *store_status(int status_type)
         if (msg_type(msg) == sms) {
 
             if (status_type == BBSTATUS_HTML) {
-                frmt = "<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td>"
+                frmt = "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
                        "<td>%s</td><td>%s</td><td>%s</td></tr>\n";
             } else if (status_type == BBSTATUS_XML) {
-                frmt = "<message>\n\t<id>%d</id>\n\t<sender>%s</sender>\n\t"
+                frmt = "<message>\n\t<id>%s</id>\n\t<sender>%s</sender>\n\t"
                        "<receiver>%s</receiver>\n\t<smsc-id>%s</smsc-id>\n\t"
                        "<udh-data>%s</udh-data>\n\t<msg-data>%s</msg-data>\n\t"
                        "<time>%s</time>\n</message>\n";
             } else {
-                frmt = "[%d] [%s] [%s] [%s] [%s] [%s] [%s]\n";
+                frmt = "[%s] [%s] [%s] [%s] [%s] [%s] [%s]\n";
             }
 
             /* transform the time value */
@@ -306,9 +305,10 @@ Octstr *store_status(int status_type)
                     tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
                     tm.tm_hour, tm.tm_min, tm.tm_sec);
             t = octstr_create(p);
+            uuid_unparse(msg->sms.id, id);
 
             sprintf(buf, frmt,
-                msg->sms.id,
+                id,
                 (msg->sms.sender ? octstr_get_cstr(msg->sms.sender) : ""),
                 (msg->sms.receiver ? octstr_get_cstr(msg->sms.receiver) : ""),
                 (msg->sms.smsc_id ? octstr_get_cstr(msg->sms.smsc_id) : ""),
@@ -343,10 +343,11 @@ int store_save(Msg *msg)
     Msg *copy;
 
     /* always set msg id and timestamp */
-    if (msg_type(msg) == sms) {
-	msg->sms.id = counter_increase(msg_id);
+    if (msg_type(msg) == sms && uuid_is_null(msg->sms.id))
+	uuid_generate(msg->sms.id);
+
+    if (msg_type(msg) == sms && msg->sms.time == MSG_PARAM_UNDEFINED)
 	msg->sms.time = time(NULL);
-    }
 
     if (filename == NULL)
         return 0;
@@ -382,6 +383,7 @@ int store_load(void)
     int retval, msgs;
     long end, pos;
     long store_size;
+    char buf[UUID_STR_LEN + 1];
     
     if (filename == NULL)
 	return 0;
@@ -451,13 +453,15 @@ int store_load(void)
                 msg_destroy(msg);
 		continue;
 	    }
-	    key = octstr_format("%d-%d", msg->sms.time, msg->sms.id);
+            uuid_unparse(msg->sms.id, buf);
+	    key = octstr_format("%s", buf);
 	    dict_put(msg_hash, key, msg);
 	    octstr_destroy(key);
 	    msgs++;
 	}
 	else if (msg_type(msg) == ack) {
-	    key = octstr_format("%d-%d", msg->ack.time, msg->ack.id);
+            uuid_unparse(msg->ack.id, buf);
+	    key = octstr_format("%s", buf);
 	    dmsg = dict_remove(msg_hash, key);
 	    if (dmsg != NULL) 
 		msg_destroy(dmsg);

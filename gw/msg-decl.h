@@ -87,7 +87,7 @@ MSG(sms,
 		OCTSTR(smsc_id);
 		OCTSTR(service);
 		OCTSTR(account);
-		INTEGER(id);
+		UUID(id);
 		INTEGER(sms_type);
 		INTEGER(mclass);
 		INTEGER(mwi);
@@ -109,7 +109,7 @@ MSG(ack,
 	{
 		INTEGER(nack);
 		INTEGER(time);
-		INTEGER(id);
+		UUID(id);
 	})
     
 MSG(wdp_datagram,
@@ -124,3 +124,4 @@ MSG(wdp_datagram,
 #undef MSG
 #undef INTEGER
 #undef OCTSTR
+#undef UUID

@@ -115,6 +115,7 @@ static int sms_to_client(Connection *client, Msg *msg)
     int len;
 
     debug("bb.sms", 0, "smsc_fake: sending message to client");
+    msg_dump(msg, 0);
 
     line = octstr_duplicate(msg->sms.sender);
     octstr_append_char(line, ' ');
@@ -185,7 +186,7 @@ static void msg_to_bb(SMSCConn *conn, Octstr *line)
         msg->sms.msgdata = octstr_copy(line, p + 1, LONG_MAX);
         if (octstr_url_decode(msg->sms.msgdata) == -1)
             warning(0, "smsc_fake: urlcoded data from client looks malformed");
-    } 
+    }
     else if (!octstr_compare(type, octstr_imm("route"))) {
         p2 = octstr_search_char(line, ' ', p + 1);
         if (p2 == -1)
@@ -204,7 +205,18 @@ static void msg_to_bb(SMSCConn *conn, Octstr *line)
         if (octstr_url_decode(msg->sms.msgdata) == -1 ||
             octstr_url_decode(msg->sms.udhdata) == -1)
             warning(0, "smsc_fake: urlcoded data from client looks malformed");
-    } else
+    }
+    else if (!octstr_compare(type, octstr_imm("dlr-mask"))) {
+        Octstr *tmp;
+        p2 = octstr_search_char(line, ' ', p + 1);
+        if (p2 == -1)
+            goto error;
+        tmp = octstr_copy(line, p + 1, p2 - p - 1);
+        msg->sms.dlr_mask = atoi(octstr_get_cstr(tmp));
+        octstr_destroy(tmp);
+        msg->sms.msgdata = octstr_copy(line, p2 + 1, LONG_MAX);
+    }
+    else
         goto error;
     octstr_destroy(line);
     octstr_destroy(type);
@@ -212,6 +224,7 @@ static void msg_to_bb(SMSCConn *conn, Octstr *line)
     msg->sms.smsc_id = octstr_duplicate(conn->id);
 
     debug("bb.sms", 0, "smsc_fake: new message received");
+    msg_dump(msg, 0);
     bb_smscconn_receive(conn, msg);
     return;
 error:
@@ -254,8 +267,10 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
                     Msg *dlrmsg;
                     Octstr *tmp;
                     int dlrstat = DLR_SUCCESS;
+                    char id[UUID_STR_LEN + 1];
 
-                    tmp = octstr_format("%ld", msg->sms.id);
+                    uuid_unparse(msg->sms.id, id);
+                    tmp = octstr_create(id);
                     dlrmsg = dlr_find(conn->id,
                                       tmp, /* smsc message id */
                                       msg->sms.receiver, /* destination */
@@ -416,7 +431,9 @@ static int add_msg_cb(SMSCConn *conn, Msg *sms)
      */
     if (DLR_IS_ENABLED_DEVICE(sms->sms.dlr_mask)) {
         Octstr *tmp;
-        tmp = octstr_format("%ld", sms->sms.id);
+        char id[UUID_STR_LEN + 1];
+        uuid_unparse(sms->sms.id, id);
+        tmp = octstr_format("%s", id);
         dlr_add(conn->id, tmp, sms);
         octstr_destroy(tmp);
     }

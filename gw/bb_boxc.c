@@ -208,7 +208,7 @@ static void deliver_sms_to_queue(Msg *msg, Boxc *conn)
      */
     mack = msg_create(ack);
     gw_assert(mack != NULL);
-    mack->ack.id = msg->sms.id;
+    uuid_copy(mack->ack.id, msg->sms.id);
     mack->ack.time = msg->sms.time;
 
     store_save(msg);
@@ -229,7 +229,7 @@ static void deliver_sms_to_queue(Msg *msg, Boxc *conn)
             */
            mack_store = msg_create(ack);
            gw_assert(mack_store != NULL);
-           mack_store->ack.id = msg->sms.id;
+           uuid_copy(mack_store->ack.id, msg->sms.id);
            mack_store->ack.time = msg->sms.time;
            mack->ack.nack = mack_store->ack.nack = ack_failed;
            store_save(mack_store);
@@ -266,7 +266,7 @@ static void boxc_receiver(void *arg)
         /* we don't accept new messages in shutdown phase */
         if ((bb_status == BB_SHUTDOWN || bb_status == BB_DEAD) && msg_type(msg) == sms) {
             mack = msg_create(ack);
-            mack->ack.id = msg->sms.id;
+            uuid_copy(mack->ack.id, msg->sms.id);
             mack->ack.time = msg->sms.time;
             mack->ack.nack = ack_failed_tmp;
             msg_destroy(msg);

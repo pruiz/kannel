@@ -1,4 +1,23 @@
 2003-12-08  Stipe Tolj  <tolj@wapme-systems.de>
+    Universal Unique Identifier (UUID) Patch by Alexander.
+    * configure[.in]: adding word size, srandom() and various header checks 
+      needed for gwlib/gw_uuid.[ch].
+    * gw-config.h.in: some additional #undef's
+    * gw/bb_[alog|smscconn|store].c, gw/smsbox.c, gw/urltrans.c, 
+      gw/smsc/smsc_[fake|http|soap].c: changing ID handling to UUID routines.
+    * gw/msg-decl.h, gw/msg.[ch]: exchanged INTEGER(id) to UUID(id) and added
+      adequate handling of UUID in msg_foobar() routines.
+    * gw/smsc/smsc_fake.c: added 'dlr-mask' msg type handling. 
+    * gwlib/gw_uuid.[ch]: UIID implementation (taken from libuuid), see 
+      prefix comment block for author information and acknowledgement.
+    * gwlib/gw_uuid_types.h.in: autoconf header file for handling UUID required
+      types that have been detected while configure run.
+    * gwlib/gwlib.h: added "gw_uuid.h" header inclusion.
+    * test/test_dict.c: using UUID as unique key for the "huge" test.
+    Thanks a lot to Alexander for working this out.
+    [Msg-ID: <200311302210.18110.a.malysh@centrium.de>]
+
+2003-12-08  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/conn.c: fixed compiler warning, commenting out function 
       tmp_rsa_callback().
 

@@ -161,7 +161,7 @@ void bb_smscconn_sent(SMSCConn *conn, Msg *sms, Octstr *reply)
     mack = msg_create(ack);
     mack->ack.nack = ack_success;
     mack->ack.time = sms->sms.time;
-    mack->ack.id = sms->sms.id;
+    uuid_copy(mack->ack.id, sms->sms.id);
 
     (void) store_save(mack);
     msg_destroy(mack);
@@ -205,7 +205,7 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply
 	mnack = msg_create(ack);
 	mnack->ack.nack = ack_failed;
 	mnack->ack.time = sms->sms.time;
-	mnack->ack.id = sms->sms.id;
+	uuid_copy(mnack->ack.id, sms->sms.id);
 
 	(void) store_save(mnack);
 	msg_destroy(mnack);
@@ -301,7 +301,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
             msg_destroy(copy);
             /* put nack into store-file */
             copy = msg_create(ack);
-            copy->ack.id = sms->sms.id;
+            uuid_copy(copy->ack.id, sms->sms.id);
             copy->ack.time = sms->sms.time;
             copy->ack.nack = ack_failed;
             store_save(copy);

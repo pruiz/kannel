@@ -80,6 +80,21 @@ AC_PROG_LEX
 AC_PATH_PROG(CONVERT, convert)
 AC_PATH_PROG(PERL, perl)
 
+dnl Check for word sizes.
+
+AC_CHECK_SIZEOF(short, 2)
+AC_CHECK_SIZEOF(int, 4)
+AC_CHECK_SIZEOF(long, 4)
+AC_CHECK_SIZEOF(long long, 8)
+SIZEOF_SHORT=$ac_cv_sizeof_short
+SIZEOF_INT=$ac_cv_sizeof_int
+SIZEOF_LONG=$ac_cv_sizeof_long
+SIZEOF_LONG_LONG=$ac_cv_sizeof_long_long
+AC_SUBST(SIZEOF_SHORT)
+AC_SUBST(SIZEOF_INT)
+AC_SUBST(SIZEOF_LONG)
+AC_SUBST(SIZEOF_LONG_LONG)
+
 dnl Checks for libraries.
 
 AC_CHECK_LIB(m, log)
@@ -97,7 +112,8 @@ dnl Checks for header files.
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/ioctl.h sys/time.h sys/types.h unistd.h sys/poll.h)
-AC_CHECK_HEADERS(pthread.h getopt.h syslog.h iconv.h execinfo.h)
+AC_CHECK_HEADERS(pthread.h getopt.h syslog.h iconv.h zlib.h execinfo.h stdlib.h)
+AC_CHECK_HEADERS(sys/socket.h sys/sockio.h net/if.h netinet/in.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 
@@ -109,7 +125,7 @@ AC_TRY_COMPILE(, [char *func = __func__;],
 
 dnl Checks for library functions.
 
-AC_CHECK_FUNCS(gettimeofday select socket strdup getopt_long localtime_r gmtime_r backtrace)
+AC_CHECK_FUNCS(gettimeofday select socket strdup getopt_long localtime_r gmtime_r backtrace srandom)
 AC_CHECK_FUNC(getopt, , LIBOBJS="$LIBOBJS utils/attgetopt.o")
 AC_SUBST(LIBOBJS)
 
@@ -962,7 +978,7 @@ AC_ARG_WITH(wtls,
 dnl Final Output
 
 AC_CONFIG_SECTION([Generating output files]) 
-AC_OUTPUT(Makefile)
+AC_OUTPUT(gwlib/gw_uuid_types.h Makefile)
 
 
 dnl LICENSE notice

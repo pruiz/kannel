@@ -535,7 +535,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    break;
 
 	case 'T':
-	    if (request->sms.time == -1)
+	    if (request->sms.time == MSG_PARAM_UNDEFINED)
 		break;
 	    octstr_format_append(result, "%ld", request->sms.time);
 	    break;
@@ -550,9 +550,11 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    break;
 
 	case 'I':
-	    if (request->sms.id == -1)
-		break;
-	    octstr_format_append(result, "%ld", request->sms.id);
+	    if (!uuid_is_null(request->sms.id)) {
+                char id[UUID_STR_LEN + 1];
+                uuid_unparse(request->sms.id, id);
+	        octstr_append_cstr(result, id);
+            }
 	    break;
 
 	case 'n':

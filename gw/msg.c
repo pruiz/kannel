@@ -77,9 +77,11 @@
 
 static void append_integer(Octstr *os, long i);
 static void append_string(Octstr *os, Octstr *field);
+static void append_uuid(Octstr *os, uuid_t id);
 
 static int parse_integer(long *i, Octstr *packed, int *off);
 static int parse_string(Octstr **os, Octstr *packed, int *off);
+static int parse_uuid(uuid_t id, Octstr *packed, int *off);
 
 static char *type_as_str(Msg *msg);
 
@@ -96,8 +98,9 @@ Msg *msg_create_real(enum msg_type type, const char *file, long line,
     msg = gw_malloc_trace(sizeof(Msg), file, line, func);
 
     msg->type = type;
-#define INTEGER(name) p->name = MSG_PARAM_UNDEFINED;
+#define INTEGER(name) p->name = MSG_PARAM_UNDEFINED
 #define OCTSTR(name) p->name = NULL
+#define UUID(name) uuid_generate(p->name)
 #define MSG(type, stmt) { struct type *p = &msg->type; stmt }
 #include "msg-decl.h"
 
@@ -114,6 +117,7 @@ Msg *msg_duplicate(Msg *msg)
 #define OCTSTR(name) \
     if (q->name == NULL) p->name = NULL; \
     else p->name = octstr_duplicate(q->name);
+#define UUID(name) uuid_copy(p->name, q->name)
 #define MSG(type, stmt) { \
     struct type *p = &new->type; \
     struct type *q = &msg->type; \
@@ -130,6 +134,7 @@ void msg_destroy(Msg *msg)
 
 #define INTEGER(name) p->name = 0
 #define OCTSTR(name) octstr_destroy(p->name)
+#define UUID(name) uuid_clear(p->name)
 #define MSG(type, stmt) { struct type *p = &msg->type; stmt }
 #include "msg-decl.h"
 
@@ -143,6 +148,8 @@ void msg_destroy_item(void *msg)
 
 void msg_dump(Msg *msg, int level)
 {
+    char buf[UUID_STR_LEN + 1];
+
     debug("gw.msg", 0, "%*sMsg object at %p:", level, "", (void *) msg);
     debug("gw.msg", 0, "%*s type: %s", level, "", type_as_str(msg));
 #define INTEGER(name) \
@@ -150,6 +157,9 @@ void msg_dump(Msg *msg, int level)
 #define OCTSTR(name) \
     debug("gw.msg", 0, "%*s %s.%s:", level, "", t, #name); \
     octstr_dump(p->name, level + 1)
+#define UUID(name) \
+    uuid_unparse(p->name, buf); \
+    debug("gw.msg", 0 , "%*s %s.%s: %s", level, "", t, #name, buf)
 #define MSG(tt, stmt) \
     if (tt == msg->type) \
         { char *t = #tt; struct tt *p = &msg->tt; stmt }
@@ -172,6 +182,7 @@ Octstr *msg_pack(Msg *msg)
 
 #define INTEGER(name) append_integer(os, p->name)
 #define OCTSTR(name) append_string(os, p->name)
+#define UUID(name) append_uuid(os, p->name)
 #define MSG(type, stmt) \
     case type: { struct type *p = &msg->type; stmt } break;
 
@@ -206,6 +217,8 @@ Msg *msg_unpack_real(Octstr *os, const char *file, long line, const char *func)
     if (parse_integer(&(p->name), os, &off) == -1) goto error
 #define OCTSTR(name) \
     if (parse_string(&(p->name), os, &off) == -1) goto error
+#define UUID(name) \
+    if (parse_uuid(p->name, os, &off) == -1) goto error
 #define MSG(type, stmt) \
     case type: { struct type *p = &(msg->type); stmt } break;
 
@@ -219,6 +232,7 @@ Msg *msg_unpack_real(Octstr *os, const char *file, long line, const char *func)
     return msg;
 
 error:
+    if (msg != NULL) msg_destroy(msg);
     error(0, "Msg packet was invalid.");
     msg_destroy(msg);
     return NULL;
@@ -248,6 +262,14 @@ static void append_string(Octstr *os, Octstr *field)
     }
 }
 
+static void append_uuid(Octstr *os, uuid_t id)
+{
+    char buf[UUID_STR_LEN + 1];
+
+    uuid_unparse(id, buf);
+    append_integer(os, UUID_STR_LEN);
+    octstr_append_cstr(os, buf);
+}
 
 static int parse_integer(long *i, Octstr *packed, int *off)
 {
@@ -288,6 +310,25 @@ static int parse_string(Octstr **os, Octstr *packed, int *off)
     return 0;
 }
 
+
+static int parse_uuid(uuid_t id, Octstr *packed, int *off)
+{
+   Octstr *tmp = NULL;
+
+   if (parse_string(&tmp, packed, off) == -1) {
+       octstr_destroy(tmp);
+       return -1;
+   }
+
+   if (uuid_parse(octstr_get_cstr(tmp), id) == -1) {
+       octstr_destroy(tmp);
+       return -1;
+   }
+
+   octstr_destroy(tmp);
+
+   return 0;
+}
 
 static char *type_as_str(Msg *msg)
 {

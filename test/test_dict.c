@@ -89,11 +89,14 @@ int main(void)
     debug("",0,"Dict extended/huge test.");
     dict = dict_create(HUGE_SIZE, (void (*)(void *))octstr_destroy);
     for (i = 1; i <= HUGE_SIZE; i++) {
-        unsigned long key, val;
+        unsigned long val;
         Octstr *okey, *oval;
-        key = gw_rand();
+        uuid_t id;
+        char key[UUID_STR_LEN + 1];
+        uuid_generate(id);
+        uuid_unparse(id, key);
         val = gw_rand();
-        okey = octstr_format("%ld", key);
+        okey = octstr_create(key);
         oval = octstr_format("%ld", val);
         dict_put(dict, okey, oval);
     }

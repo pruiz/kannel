@@ -127,8 +127,11 @@
 /* Define if you have the gmtime_r function.  */
 #undef HAVE_GMTIME_R
 
-/* define if you have the backtrace function. */
+/* Define if you have the backtrace function. */
 #undef HAVE_BACKTRACE
+
+/* Define if you have the srandom function. */
+#undef HAVE_SRANDOM
 
 /* Define if you have the <fcntl.h> header file.  */
 #undef HAVE_FCNTL_H
@@ -147,6 +150,21 @@
 
 /* Define if you have the <sys/poll.h> header file.  */
 #undef HAVE_SYS_POLL_H
+
+/* Define if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define if you have the <sys/socket.h> header file. */
+#undef HAVE_SYS_SOCKET_H
+
+/* Define if you have the <sys/sockio.h> header file. */
+#undef HAVE_SYS_SOCKIO_H
+
+/* Define if you have the <net/if.h> header file. */
+#undef HAVE_NET_IF_H
+
+/* Define if you have the <netinet/in.h> header file. */
+#undef HAVE_NETINET_IN_H
 
 /* Define if you have the m library (-lm).  */
 #undef HAVE_LIBM

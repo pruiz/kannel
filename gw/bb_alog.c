@@ -161,7 +161,7 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
 	    octstr_append(result, list_get(word_list, 0));
 	    break;
 
-    case 's':
+	case 's':
 	    if (nextarg >= num_words)
             break;
 	    octstr_append(result, list_get(word_list, nextarg));
@@ -203,11 +203,11 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
 
 	case 'a':
 	    for (j = 0; j < num_words; ++j) {
-            if (j > 0)
-                octstr_append_char(result, ' ');
-            octstr_append(result, list_get(word_list, j));
-        }
-        break;
+                if (j > 0)
+                    octstr_append_char(result, ' ');
+                octstr_append(result, list_get(word_list, j));
+            }
+            break;
 
 	case 'b':
 	    octstr_append(result, text);
@@ -229,7 +229,7 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
 	    break;
 
 	case 'T':
-	    if (msg->sms.time == -1)
+	    if (msg->sms.time == MSG_PARAM_UNDEFINED)
             break;
 	    octstr_format_append(result, "%ld", msg->sms.time);
 	    break;
@@ -241,9 +241,11 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
 	    break;
 
 	case 'I':
-	    if (msg->sms.id == -1)
-            break;
-	    octstr_format_append(result, "%ld", msg->sms.id);
+	    if (!uuid_is_null(msg->sms.id)) {
+                char id[UUID_STR_LEN + 1];
+                uuid_unparse(msg->sms.id, id);
+	        octstr_append_cstr(result, id);
+            }
 	    break;
 
 	case 'n':
@@ -274,7 +276,7 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
 
 	case 'u':
 	    if (octstr_len(udh)) {
-            octstr_append(result, udh);
+                octstr_append(result, udh);
 	    }
 	    break;
 
@@ -284,15 +286,15 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
 
 	case 'B':  /* billing identifier/information */
 	    if (octstr_len(msg->sms.binfo)) {
-            octstr_append(result, msg->sms.binfo);
-        }
-        break;
+                octstr_append(result, msg->sms.binfo);
+            }
+            break;
 
 	case 'A':  /* account */
 	    if (octstr_len(msg->sms.account)) {
-            octstr_append(result, msg->sms.account);
-        }
-        break;
+                octstr_append(result, msg->sms.account);
+            }
+            break;
 
     /* XXX add more here if needed */
 
@@ -304,10 +306,10 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
 	    octstr_format_append(result, "%%%c",
 	    	    	    	 octstr_get_char(pattern, pos + 1));
 	    break;
-	}
+    } /* switch(...) */
 
 	pos += 2;
-    }
+    } /* for ... */
 
     list_destroy(word_list, octstr_destroy_item);
 

@@ -100,6 +100,7 @@
 #include "semaphore.h"
 #include "xmlrpc.h"
 #include "md5.h"
+#include "gw_uuid.h"
 
 void gwlib_assert_init(void);
 void gwlib_init(void);

@@ -148,7 +148,7 @@ static long get_tag(Octstr *body, Octstr *tag, Octstr **value, long pos, int nos
 static void identify_to_bearerbox(void)
 {
     Msg *msg;
-    
+
     msg = msg_create(admin);
     msg->admin.command = cmd_identify;
     msg->admin.boxc_id = octstr_duplicate(smsbox_id);
@@ -1601,7 +1601,7 @@ static void obey_request_thread(void *arg)
             mack = msg_create(ack);
             mack->ack.nack = ack_failed;
             mack->ack.time = msg->sms.time;
-            mack->ack.id = msg->sms.id;
+            uuid_copy(mack->ack.id, msg->sms.id);
             write_to_bearerbox(mack);
 
 	    msg_destroy(msg);
@@ -1612,7 +1612,7 @@ static void obey_request_thread(void *arg)
 	mack = msg_create(ack);
 	mack->ack.nack = ack_success;
 	mack->ack.time = msg->sms.time;
-	mack->ack.id = msg->sms.id;
+	uuid_copy(mack->ack.id, msg->sms.id);
 
         /*
          * no smsbox services when we are doing ppg dlr - so trans would be

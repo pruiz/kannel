@@ -520,15 +520,15 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 static void brunet_send_sms(SMSCConn *conn, Msg *sms)
 {
     ConnData *conndata = conn->data;
-    Octstr *url, *id, *tid;
+    Octstr *url, *tid;
     List *headers;
+    char id[UUID_STR_LEN + 1];
 
     /* 
-     * Construct TransactionId like this: <timestamp>-<receiver msisdn>-<msg.id> 
-     * and then run md5 hash function to garantee uniqueness. 
+     * Construct TransactionId.
      */
-    id = octstr_format("%d%S%d", time(NULL), sms->sms.receiver, sms->sms.id);
-    tid = md5(id);
+    uuid_unparse(sms->sms.id, id);
+    tid = octstr_create(id);
 
     /* format the URL for call */
     url = octstr_format("%S?"
@@ -567,7 +567,6 @@ static void brunet_send_sms(SMSCConn *conn, Msg *sms)
                        NULL, 0, sms, NULL);
 
     octstr_destroy(url);
-    octstr_destroy(id);
     octstr_destroy(tid);
     http_destroy_headers(headers);
 }
