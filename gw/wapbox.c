@@ -294,8 +294,11 @@ static Octstr *pack_udhdata(WAPAddrTuple *tuple)
 }
 
 /*
- * We send a normal 8-bit unconcatenated unicode message with an udh. Caller 
+ * We send a normal 8-bit unconcatenated binary  message with an udh. Caller 
  * must do segmentation before calling this function.
+ *
+ * Note: we have hardcoded validity period here. We must eventually use push
+ * control document to fill this field. 
  */
 static Msg *pack_sms_datagram(WAPEvent *dgram)
 {
@@ -326,9 +329,10 @@ static Msg *pack_sms_datagram(WAPEvent *dgram)
     msg->sms.mwi = MWI_UNDEF;
     msg->sms.coding = DC_8BIT;
     msg->sms.mclass = MC_UNDEF;
-    msg->sms.validity = -1;
+    msg->sms.validity = 1440;
     msg->sms.deferred = -1;
-    msg->sms.service = octstr_duplicate(dgram->u.T_DUnitdata_Req.service_name);
+    if (dgram->u.T_DUnitdata_Req.service_name != NULL)
+        msg->sms.service = octstr_duplicate(dgram->u.T_DUnitdata_Req.service_name);
     
     return msg;   
 }
@@ -359,7 +363,7 @@ static void dispatch_datagram(WAPEvent *dgram)
 
     gw_assert(dgram);
     sms_datagrams = NULL;
-
+      
     if (dgram->type != T_DUnitdata_Req) {
         warning(0, "dispatch_datagram received event of unexpected type.");
         wap_event_dump(dgram);
@@ -368,12 +372,8 @@ static void dispatch_datagram(WAPEvent *dgram)
 	    msg = pack_ip_datagram(dgram);
             write_to_bearerbox(msg);
         } else {
-	    msg = pack_sms_datagram(dgram);
             msg_sequence = counter_increase(sequence_counter) & 0xff;
-            /*
-            msg_len = octstr_len(msg->sms.msgdata);
-            max_msgs = (msg_len / MAX_SMS_OCTETS) + 1;
-            */ 
+            msg = pack_sms_datagram(dgram);
             sms_datagrams = sms_split(msg, NULL, NULL, NULL, NULL, concatenation, 
                                       msg_sequence, max_messages, MAX_SMS_OCTETS);
             debug("wap",0,"WDP (wapbox): delivering %ld segments to bearerbox",
