@@ -619,11 +619,14 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
     }
 
     /* text */
+    text = NULL;
     get_tag(*body, octstr_imm("ud"), &text, 0, 0);
     get_tag(*body, octstr_imm("ud-raw"), &text, 0, 1);
 
     octstr_truncate(*body, 0);
-    octstr_append(*body, text);
+    if(text) {
+	octstr_append(*body, text);
+    }
     O_DESTROY(text);
     
     O_DESTROY(*type);

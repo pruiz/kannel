@@ -1,4 +1,10 @@
-2002-05-01  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+2002-05-03  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * : The "I don't like empty variables" patch
+    * gw/smsbox.c: fixed empty text messages panic in post-xml code
+    * gw/smsc_emi2.c: fixed deliver reports with undefined smsc-id. It
+      uses smsc "name" field if smsc-id is not present
+
+2002-05-03  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * : The "I want my cvs date" patch
     * configure.in, Makefile.in: configure now creates a VERSION var with
       cvs-20020501 based on ChangeLog date on cvs (or simply first line of
@@ -11,7 +17,7 @@
       the module using it and passed through headers list. Fixes Wapbox
       sending "kannel/$version" instead of mobile user-agent
 
-2002-05-01  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+2002-05-03  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * : The "where was my head at that day" patch
     * gw/smsbox.c: reverted octstr_destroy(udh) but replaced original one
       with O_DESTROY;
