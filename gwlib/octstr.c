@@ -325,7 +325,8 @@ long octstr_len(const Octstr *ostr)
 }
 
 
-Octstr *octstr_copy_real(Octstr *ostr, long from, long len)
+Octstr *octstr_copy_real(Octstr *ostr, long from, long len, const char *file, long line,
+                         const char *func)
 {
     seems_valid(ostr);
     gw_assert(from >= 0);
@@ -337,7 +338,8 @@ Octstr *octstr_copy_real(Octstr *ostr, long from, long len)
     if (len > ostr->len - from)
         len = ostr->len - from;
 
-    return octstr_create_from_data(ostr->data + from, len);
+    return octstr_create_from_data_trace(ostr->data + from, len, file,
+                                         line, func);
 }
 
 

@@ -102,7 +102,10 @@ struct WAPEvent {
 
 
 
-WAPEvent *wap_event_create(WAPEventName type);
+WAPEvent *wap_event_create_real(WAPEventName type, const char *file, long line,
+                                const char *func);
+#define wap_event_create(type) \
+    gw_claim_area(wap_event_create_real((type), __FILE__, __LINE__, __func__))
 void wap_event_destroy(WAPEvent *event);
 void wap_event_destroy_item(void *event);
 WAPEvent *wap_event_duplicate(WAPEvent *event);

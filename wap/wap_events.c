@@ -67,13 +67,14 @@
 #include "wap_events.h"
 #include "wtls_pdu.h"
 
-WAPEvent *wap_event_create(WAPEventName type) {
+WAPEvent *wap_event_create_real(WAPEventName type, const char *file, long line,
+                                const char *func) {
 	WAPEvent *event;
 	
 	gw_assert(type >= 0);
 	gw_assert(type < WAPEventNameCount);
 
-	event = gw_malloc(sizeof(WAPEvent));
+	event = gw_malloc_trace(sizeof(WAPEvent), file, line, func);
 	event->type = type;
 
 	switch (event->type) {

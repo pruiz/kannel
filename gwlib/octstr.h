@@ -173,9 +173,10 @@ long octstr_len(const Octstr *ostr);
  * octet string is created. If `from+len' is after the end of `ostr', 
  * `len' is reduced appropriately.
  */
-Octstr *octstr_copy_real(Octstr *ostr, long from, long len);
+Octstr *octstr_copy_real(Octstr *ostr, long from, long len, const char *file,
+                         long line, const char *func);
 #define octstr_copy(ostr, from, len) \
-    gw_claim_area(octstr_copy_real((ostr), (from), (len)))
+    gw_claim_area(octstr_copy_real((ostr), (from), (len), __FILE__, __LINE__, __func__))
 
 
 /*

@@ -539,7 +539,10 @@ void http_header_mark_transformation(List *headers, Octstr *new_body,
  * as a new Octet string, which the caller must free. Return NULL for
  * not found.
  */
-Octstr *http_header_find_first(List *headers, char *name);
+Octstr *http_header_find_first_real(List *headers, char *name, 
+                                    const char *file, long line, const char *func);
+#define http_header_find_first(headers, name) \
+    gw_claim_area(http_header_find_first_real((headers), (name), __FILE__, __LINE__, __func__))
 List *http_header_find_all(List *headers, char *name);
 
 

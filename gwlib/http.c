@@ -2702,7 +2702,8 @@ void http_header_combine(List *old_headers, List *new_headers)
 }
 
 
-Octstr *http_header_find_first(List *headers, char *name)
+Octstr *http_header_find_first_real(List *headers, char *name, const char *file, long line,
+                                    const char *func)
 {
     long i, name_len;
     Octstr *h, *value;
@@ -2716,7 +2717,8 @@ Octstr *http_header_find_first(List *headers, char *name)
     for (i = 0; i < list_len(headers); ++i) {
         h = list_get(headers, i);
         if (header_is_called(h, name)) {
-            value = octstr_copy(h, name_len + 1, octstr_len(h));
+            value = octstr_copy_real(h, name_len + 1, octstr_len(h),
+                                     file, line, func);
 	    octstr_strip_blanks(value);
 	    return value;
 	}
