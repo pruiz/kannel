@@ -170,7 +170,7 @@ static int emi_open_connection_ip(SMSCenter *smsc)
 * Open the connection and log in
 */
 SMSCenter *emi_open_ip(char *hostname, int port, char *username,
-		       char *password, int backup_port, int our_port) {
+		       char *password, int receive_port, int our_port) {
 
 	SMSCenter *smsc;
 
@@ -186,7 +186,7 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
 	smsc->emi_port = port;
 	smsc->emi_username = gw_strdup(username);
 	smsc->emi_password = gw_strdup(password);
-	smsc->emi_backup_port = backup_port;
+	smsc->emi_backup_port = receive_port;
 	smsc->emi_our_port = our_port;
 
 	if (emi_open_connection_ip(smsc) < 0)
@@ -197,11 +197,11 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
 
 	/* if backup-port is defined, set it ready */
 	
-	if (backup_port > 0) {
-	    if ((smsc->emi_backup_fd = make_server_socket(backup_port)) <= 0)
+	if (receive_port > 0) {
+	    if ((smsc->emi_backup_fd = make_server_socket(receive_port)) <= 0)
 		goto error;
 
-	    debug("bb.sms.emi", 0, "EMI IP backup port at %d opened", backup_port);
+	    debug("bb.sms.emi", 0, "EMI IP backup port at %d opened", receive_port);
 	}	
 	return smsc;
 

@@ -18,7 +18,8 @@
 #include "smsc.h"
 #include "smsc_smpp.h"
 
-SMSCenter *smpp_open(char *host, int port, char *system_id, char *password, char* system_type, char *address_range) {
+SMSCenter *smpp_open(char *host, int port, char *system_id, char *password,
+		     char* system_type, char *address_range, int receive_port) {
 
 	SMSCenter *smsc = NULL;
 	struct smpp_pdu *pdu = NULL;
@@ -29,11 +30,13 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password, char
 	if(smsc==NULL) goto error;
 
 	smsc->type = SMSC_TYPE_SMPP_IP;
-	sprintf(smsc->name, "SMPP:%s:%i:%s:%s", host, port, system_id, system_type);
+	sprintf(smsc->name, "SMPP:%s:%i/%i:%s:%s", host, port,
+		(receive_port ? receive_port : port), system_id, system_type);
 	smsc->latency = 100*1000;
 
 	smsc->hostname = gw_strdup(host);
 	smsc->port = port;
+	smsc->receive_port = (receive_port ? receive_port : port);
 
 	smsc->smpp_system_id = (system_id != NULL) ? gw_strdup(system_id) : NULL;
 	smsc->smpp_system_type = (system_type != NULL) ? gw_strdup(system_type) : NULL;
@@ -78,7 +81,7 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password, char
 	smsc->smpp_t_state = SMPP_STATE_CONNECTED;
 
 	/* Open the receiver connection */
-	smsc->fd_r = tcpip_connect_to_server(smsc->hostname, smsc->port);
+	smsc->fd_r = tcpip_connect_to_server(smsc->hostname, smsc->receive_port);
 	if(smsc->fd_r == -1) goto error;
 	smsc->smpp_r_state = SMPP_STATE_CONNECTED;
 

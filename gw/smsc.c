@@ -359,17 +359,18 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 	SMSCenter *smsc;
         char *type, *host, *port, *username, *password, *phone, *device;
         char *dial_prefix, *route_prefix;
-        char *backup_port, *our_port;      /* EMI IP */
+        char *backup_port, *receive_port, *our_port; 
         char *alt_chars;
         char *smpp_system_id, *smpp_system_type, *smpp_address_range;
 
-        int typeno, portno, backportno, ourportno;
+        int typeno, portno, backportno, ourportno, receiveportno;
 
 
         type = config_get(grp, "smsc");
         host = config_get(grp, "host");
         port = config_get(grp, "port");
         backup_port = config_get(grp, "backup-port");
+        receive_port = config_get(grp, "receive-port");
         our_port = config_get(grp, "our-port");
         username = config_get(grp, "smsc-username");
         password = config_get(grp, "smsc-password");
@@ -383,8 +384,20 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
         smpp_system_type = config_get(grp, "system-type");
         smpp_address_range = config_get(grp, "address-range");
 
+	if (backup_port)
+	    warning(0, "Depricated SMSC config variable 'backup-port' used, "
+		    "'receive-port' recommended (but backup-port functions"); 
+	
 	portno = (port != NULL ? atoi(port) : 0);
 	backportno = (backup_port != NULL ? atoi(backup_port) : 0);
+	receiveportno = (receive_port != NULL ? atoi(receive_port) : 0);
+
+	/* Use either, but prefer receive-port */
+	
+	if (!receiveportno && backportno)
+	    receiveportno = backportno;
+
+	
 	ourportno = (our_port != NULL ? atoi(our_port) : 0);
 
 	smsc = NULL;
@@ -429,7 +442,7 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 		error(0, "Required field missing for EMI IP center.");
             else
 		smsc = emi_open_ip(host, portno, username, password,
-				   backportno, ourportno);
+				   receiveportno, ourportno);
 	    break;
 
 	case SMSC_TYPE_SMPP_IP:
@@ -439,7 +452,7 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 	    else
 		smsc = smpp_open(host, portno, smpp_system_id,
 				 password, smpp_system_type,
-				 smpp_address_range);
+				 smpp_address_range, receiveportno);
 	    break;
 
 	 /* add new SMSCes here */

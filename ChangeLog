@@ -1,3 +1,13 @@
+2000-02-21    <rpr@rpr.wapit.com>
+
+	* gw/smsc_smpp.c: added receive-port, so that transmit/receive
+	ports can be different ones.
+
+	* gw/bearerbox.conf, gw/smsc.c: renamed 'backup-port' as
+	'receive-port', old name still functions in the config files, but
+	causes warning message. smsc_emi.c still uses 'backup-port' name,
+	but life is hard.
+
 2000-02-21  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
 	* gwlib/octstr.c: octstr_ncompare doens't anymore check whether 

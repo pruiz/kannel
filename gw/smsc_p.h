@@ -65,6 +65,7 @@ struct SMSCenter {
 	/* TCP/IP */
 	char *hostname;
 	int port;
+        int receive_port; /* if used, with EMI 2.0/SMPP 3.3 */
 	
 	/* PSTN/ISDN */
 	char *phonenum;
@@ -98,7 +99,7 @@ struct SMSCenter {
 	time_t emi_last_spoke;
 
 	int emi_backup_fd;
-        int emi_backup_port;	/* different one! */
+        int emi_backup_port;	/* different one! rename! */
         int emi_our_port;	/* port to bind us when connecting smsc */
 
 	/* SMPP */
@@ -174,7 +175,7 @@ SMSCenter *emi_open(char *phonenum, char *serialdevice, char *username, char *pa
 int emi_reopen(SMSCenter *smsc);
 int emi_close(SMSCenter *smsc);
 SMSCenter *emi_open_ip(char *hostname, int port, char *username, char *password,
-		       int backup_port, int our_port);
+		       int receive_port, int our_port);
 int emi_reopen_ip(SMSCenter *smsc);
 int emi_close_ip(SMSCenter *smsc);
 int emi_pending_smsmessage(SMSCenter *smsc);
@@ -184,7 +185,7 @@ int emi_receive_msg(SMSCenter *smsc, Msg **msg);
 /*
  * Interface to Aldiscon SMS centers using SMPP 3.3.
  */
-SMSCenter *smpp_open(char *hostname, int port, char*, char*, char*, char*);
+SMSCenter *smpp_open(char *hostname, int port, char*, char*, char*, char*,int receiveport);
 int smpp_reopen(SMSCenter *smsc);
 int smpp_close(SMSCenter *smsc);
 int smpp_pending_smsmessage(SMSCenter *smsc);
