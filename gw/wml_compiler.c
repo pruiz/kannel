@@ -384,11 +384,11 @@ int parse_node(xmlNodePtr node)
     break;
     /* ignored at this state of development 
   case XML_DOCUMENT_NODE:
-    debug(0, "WML compiler: Parsing document node.");
+    debug("wap.wml", 0, "WML compiler: Parsing document node.");
     status = parse_document(node);
     break;
   case XML_ATTRIBUTE_NODE:
-    debug(0, "WML compiler: Parsing attribute node.");
+    debug("wap.wml", 0, "WML compiler: Parsing attribute node.");
     status = parse_attribute(node);
     break;
   case XML_CDATA_SECTION_NODE:
@@ -626,7 +626,10 @@ int parse_attribute(xmlAttrPtr attr)
 		== 0)
 	      wbxml_hex = wml_attributes[j].token;
 	    else
-	      wbxml_hex = wml_attributes[i].token;
+	      {
+		wbxml_hex = wml_attributes[i].token;
+		coded_length = 0;
+	      }
 	  break;
 	}
     }
@@ -705,10 +708,16 @@ int parse_text(xmlNodePtr node)
   temp1 = octstr_create(node->content);
 
   text_shrink_blank(temp1);
+  text_strip_blank(temp1);
+
+  if (octstr_len(temp1) == 0)
+    return 0;
 
   if (octstr_search_char(temp1, '$') > -1)
     return -1;
 
+  if (output_char(STR_I) == -1)
+      error(0, "WML compiler: couldn't output STR_I before a text field.");
   temp2 = octstr_duplicate(wbxml_string);
   wbxml_string = octstr_cat(temp2, temp1);
   if (output_char(STR_END) == -1)

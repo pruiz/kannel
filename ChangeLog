@@ -1,3 +1,8 @@
+2000-02-18  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gw/wml_compiler.c (parse_text): Empty strings are no more coded.
+	* gw/wml_compiler.c (parse_attribute): Fixed bug with the coded_length.
+	
 Thu Feb 17 20:27:54 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile.in: Removed superfluous libtest.a, which was causing
