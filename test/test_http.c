@@ -23,11 +23,29 @@ static int verbose = 1;
 static Octstr *auth_username = NULL;
 static Octstr *auth_password = NULL;
 static Octstr *msg_text = NULL;
+static Octstr *ssl_client_certkey_file = NULL;
+static Octstr *extra_headers = NULL;
+static Octstr *content_file = NULL;
 static int file = 0;
+static List *split = NULL;
+static use_post = 0; /* defaults to GET method */
+
+
+static Octstr *post_content_create(void)
+{
+    Octstr *content;
+
+    if ((content = octstr_read_file(octstr_get_cstr(content_file))) == NULL)
+        panic(0, "Cannot read content text");
+    debug("", 0, "body content is");
+    octstr_dump(content, 0);
+
+    return content;
+}
 
 static void start_request(HTTPCaller *caller, List *reqh, long i)
 {
-    Octstr *url;
+    Octstr *url, *content;
     long *id;
 
     if ((i % 1000) == 0)
@@ -39,12 +57,26 @@ static void start_request(HTTPCaller *caller, List *reqh, long i)
         octstr_append(url, octstr_imm("&text="));
         octstr_append(url, msg_text);
     }
-    http_start_request(caller, url, reqh, NULL, 0, id, NULL);
+
+    /* add the extra headers that have been read from the file */
+    if (split != NULL)
+        http_header_combine(reqh, split);
+
+    content = post_content_create();
+                           
+    /*
+     * if this is a POST request then pass the required content as body to
+     * the HTTP server, otherwise skip the body, the arguments will be
+     * urlencoded in the URL itself.
+     */
+    http_start_request(caller, url, reqh, content, 0, id, ssl_client_certkey_file);
+
     debug("", 0, "Started request %ld with url:", *id);
     octstr_url_decode(url);
     octstr_dump(url, 0);
     octstr_destroy(url);
     octstr_destroy(msg_text);
+    octstr_destroy(content);
 }
 
 
@@ -145,6 +177,31 @@ receive_rest:
     info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
 }
 
+
+static void split_headers(Octstr *headers, List **split)
+{
+    long start;
+    long pos;
+
+    *split = list_create();
+    start = 0;
+    for (pos = 0; pos < octstr_len(headers); pos++) {
+        if (octstr_get_char(headers, pos) == '\n') {
+            Octstr *line;
+
+            if (pos == start) {
+                /* Skip empty lines */
+                start = pos + 1;
+                continue;
+            }
+            line = octstr_copy(headers, start, pos - start);
+            start = pos + 1;
+            list_append(*split, line);
+        }
+    }
+}
+
+
 static void help(void) 
 {
     info(0, "Usage: test_http [options] url ...");
@@ -164,6 +221,18 @@ static void help(void)
     info(0, "-u filename");
     info(0, "    read request's &text= string from file 'filename'. It is"); 
     info(0, "    url encoded before it is added to the request");
+    info(0, "-x");
+    info(0, "    use POST method for the request (default: GET)");
+    info(0, "-H filename");
+    info(0, "    read HTTP headers from file 'filename' and add them to");
+    info(0, "    the request for url 'url'");
+    info(0, "-b filename");
+    info(0, "    read POST request content from file 'filename' and send");
+    info(0, "    it as body of the request");
+    info(0, "-s");
+    info(0, "    use HTTPS scheme to access SSL-enabled HTTP server");
+    info(0, "-c ssl_client_cert_key_file");
+    info(0, "    use this file as the SSL certificate and key file");
 }
 
 int main(int argc, char **argv) 
@@ -179,6 +248,7 @@ int main(int argc, char **argv)
     time_t start, end;
     double run_time;
     FILE *fp;
+    int ssl = 0;
     
     gwlib_init();
     
@@ -191,7 +261,7 @@ int main(int argc, char **argv)
     file = 0;
     fp = NULL;
     
-    while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:a:u:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:a:u:sc:H:xb:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
@@ -211,18 +281,19 @@ int main(int argc, char **argv)
 		num_threads = MAX_THREADS;
 	    break;
 
-        case 'u':
-            file = 1;
-            fp = fopen(optarg, "a");
-            if (fp == NULL)
-                panic(0, "Cannot open message text file %s", optarg);
-            msg_text = octstr_read_file(optarg);
-            if (msg_text == NULL)
-                panic(0, "Cannot read message text");
-            debug("", 0, "message text is");
-            octstr_dump(msg_text, 0);
-            octstr_url_encode(msg_text);
-            break;
+    case 'u':
+        file = 1;
+        fp = fopen(optarg, "a");
+        if (fp == NULL)
+            panic(0, "Cannot open message text file %s", optarg);
+        msg_text = octstr_read_file(optarg);
+        if (msg_text == NULL)
+            panic(0, "Cannot read message text");
+        debug("", 0, "message text is");
+        octstr_dump(msg_text, 0);
+        octstr_url_encode(msg_text);
+        fclose(fp);
+        break;
 	
 	case 'h':
 	    help();
@@ -253,7 +324,37 @@ int main(int argc, char **argv)
 		    auth_password = octstr_create(p);
 	    }
 	    break;
-	
+
+    case 's':
+        ssl = 1;
+        break;
+
+    case 'c':
+	    octstr_destroy(ssl_client_certkey_file);
+	    ssl_client_certkey_file = octstr_create(optarg);
+        break;
+
+    case 'x':
+        use_post = 1;
+        break;
+
+    case 'H':
+        fp = fopen(optarg, "a");
+        if (fp == NULL)
+            panic(0, "Cannot open header text file %s", optarg);
+        extra_headers = octstr_read_file(optarg);
+        if (extra_headers == NULL)
+            panic(0, "Cannot read header text");
+        debug("", 0, "headers are");
+        octstr_dump(extra_headers, 0);
+        split_headers(extra_headers, &split);
+        fclose(fp);
+        break;
+
+    case 'b':
+        content_file = octstr_create(optarg);
+        break;
+
 	case '?':
 	default:
 	    error(0, "Invalid option %c", opt);
@@ -266,6 +367,20 @@ int main(int argc, char **argv)
 	help();
 	exit(0);
     }
+
+#ifdef HAVE_LIBSSL
+    /*
+     * check if we are doing a SSL-enabled client version here
+     * load the required cert and key file
+     */
+    if (ssl) {
+        if (ssl_client_certkey_file != NULL) {
+            use_global_client_certkey_file(ssl_client_certkey_file);
+        } else {
+            panic(0, "client certkey file need to be given!");
+        }
+    }
+#endif
     
     if (proxy != NULL && proxy_port > 0) {
 	http_use_proxy(proxy, proxy_port, exceptions,
@@ -299,11 +414,12 @@ int main(int argc, char **argv)
     
     octstr_destroy(auth_username);
     octstr_destroy(auth_password);
+    octstr_destroy(ssl_client_certkey_file);
+    octstr_destroy(extra_headers);
+    octstr_destroy(content_file);
+    list_destroy(split, octstr_destroy_item);
     
     gwlib_shutdown();
-    if (file) {
-        fclose(fp);
-    }
     
     return 0;
 }
