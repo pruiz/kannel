@@ -185,6 +185,9 @@ int smsc_wrapper_create(SMSCConn *conn, CfgGroup *cfg);
 /* Responsible file: smsc/smsc_fake.c */
 int smsc_fake_create(SMSCConn *conn, CfgGroup *cfg);
 
+/* Responsible file: smsc/smsc_cimd2.c */
+int smsc_cimd2_create(SMSCConn *conn, CfgGroup *cfg);
+
 /* Responsible file: smsc/smsc_emi2.c */
 int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg);
 

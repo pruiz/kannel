@@ -91,6 +91,8 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
 
     if (octstr_compare(smsc_type, octstr_imm("fake")) == 0)
 	ret = smsc_fake_create(conn, grp);
+    else if (octstr_compare(smsc_type, octstr_imm("cimd2")) == 0)
+	ret = smsc_cimd2_create(conn, grp);
     else if (octstr_compare(smsc_type, octstr_imm("emi2")) == 0)
 	ret = smsc_emi2_create(conn, grp);
     else if (octstr_compare(smsc_type, octstr_imm("http")) == 0)

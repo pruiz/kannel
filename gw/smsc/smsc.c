@@ -73,18 +73,6 @@ SMSCenter *smscenter_construct(void)
     smsc->cimd_username = NULL;
     smsc->cimd_password = NULL;
 
-    /* CIMD 2 */
-    smsc->cimd2_hostname = NULL;
-    smsc->cimd2_port = -1;
-    smsc->cimd2_username = NULL;
-    smsc->cimd2_password = NULL;
-    smsc->cimd2_send_seq = 1;
-    smsc->cimd2_receive_seq = 0;
-    smsc->cimd2_inbuffer = NULL;
-    smsc->cimd2_received = NULL;
-    smsc->cimd2_error = 0;
-    smsc->cimd2_next_ping = 0;
-
     /* EMI */
     smsc->emi_phonenum = NULL;
     smsc->emi_serialdevice = NULL;
@@ -164,14 +152,6 @@ void smscenter_destruct(SMSCenter *smsc)
     gw_free(smsc->cimd_username);
     gw_free(smsc->cimd_password);
 
-    /* CIMD 2 */
-    octstr_destroy(smsc->cimd2_hostname);
-    octstr_destroy(smsc->cimd2_username);
-    octstr_destroy(smsc->cimd2_password);
-    octstr_destroy(smsc->cimd2_inbuffer);
-    octstr_destroy(smsc->sender_prefix);
-    list_destroy(smsc->cimd2_received, NULL);
-
     /* EMI */
     gw_free(smsc->emi_phonenum);
     gw_free(smsc->emi_serialdevice);
@@ -228,11 +208,6 @@ int smscenter_submit_msg(SMSCenter *smsc, Msg *msg)
             goto error;
         break;
 
-    case SMSC_TYPE_CIMD2:
-        if (cimd2_submit_msg(smsc, msg) == -1)
-            goto error;
-        break;
-
     case SMSC_TYPE_EMI:
     case SMSC_TYPE_EMI_IP:
         if (emi_submit_msg(smsc, msg) == -1)
@@ -285,12 +260,6 @@ int smscenter_receive_msg(SMSCenter *smsc, Msg **msg)
 
     case SMSC_TYPE_CIMD:
         ret = cimd_receive_msg(smsc, msg);
-        if (ret == -1)
-            goto error;
-        break;
-
-    case SMSC_TYPE_CIMD2:
-        ret = cimd2_receive_msg(smsc, msg);
         if (ret == -1)
             goto error;
         break;
@@ -355,12 +324,6 @@ int smscenter_pending_smsmessage(SMSCenter *smsc)
 
     case SMSC_TYPE_CIMD:
         ret = cimd_pending_smsmessage(smsc);
-        if (ret == -1)
-            goto error;
-        break;
-
-    case SMSC_TYPE_CIMD2:
-        ret = cimd2_pending_smsmessage(smsc);
         if (ret == -1)
             goto error;
         break;
@@ -532,8 +495,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
     }
     if (octstr_compare(type, octstr_imm("cimd")) == 0)
     	typeno = SMSC_TYPE_CIMD;
-    else if (octstr_compare(type, octstr_imm("cimd2")) == 0)
-    	typeno = SMSC_TYPE_CIMD2;
     else if (octstr_compare(type, octstr_imm("emi")) == 0)
     	typeno = SMSC_TYPE_EMI;
     else if (octstr_compare(type, octstr_imm("emi_ip")) == 0)
@@ -608,18 +569,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
 	    	    	     port, 
 	    	    	     octstr_get_cstr(username), 
 			     octstr_get_cstr(password));
-        break;
-
-    case SMSC_TYPE_CIMD2:
-        if (host == NULL || port == 0 || username == NULL || password == NULL)
-            error(0, "Required field missing for CIMD 2 center.");
-        else
-            smsc = cimd2_open(host,
-	    	    	      port, 
-			      username, 
-			      password, 
-			      keepalive,
-                              sender_prefix);
         break;
 
     case SMSC_TYPE_EMI:
@@ -746,9 +695,6 @@ int smsc_reopen(SMSCenter *smsc)
     case SMSC_TYPE_CIMD:
         ret = cimd_reopen(smsc);
 	break;
-    case SMSC_TYPE_CIMD2:
-        ret = cimd2_reopen(smsc);
-	break;
     case SMSC_TYPE_EMI_IP:
         ret = emi_reopen_ip(smsc);
 	break;
@@ -795,11 +741,6 @@ int smsc_close(SMSCenter *smsc)
     switch (smsc->type) {
     case SMSC_TYPE_CIMD:
         if (cimd_close(smsc) == -1)
-            errors = 1;
-        break;
-
-    case SMSC_TYPE_CIMD2:
-        if (cimd2_close(smsc) == -1)
             errors = 1;
         break;
 
