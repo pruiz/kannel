@@ -31,6 +31,7 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	char *interface_name;
 	char *wap_service;
 	int fl;
+	int i = 0;
 
 	struct sockaddr_in servaddr;
 	struct in_addr bindaddr;
@@ -88,6 +89,10 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	while( bind(router->fd, &servaddr, sizeof(servaddr)) != 0 ) {
 		error(errno, "Could not bind to UDP port <%i> service <%s>.", 
 			ntohs(servaddr.sin_port), wap_service);
+		if(i++==10) {
+			error(0, "csdr_open: could not bind to the interface");
+			goto error;
+		}
 		sleep(1);
 	}
 
