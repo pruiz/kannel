@@ -695,24 +695,29 @@ List *http_header_find_all(List *headers, char *name)
 }
 
 
-void http_header_remove_all(List *headers, char *name)
+long http_header_remove_all(List *headers, char *name)
 {
     long i;
     Octstr *h;
+    long count;
 
     gwlib_assert_init();
     gw_assert(headers != NULL);
     gw_assert(name != NULL);
 
     i = 0;
+    count = 0;
     while (i < list_len(headers)) {
 	h = list_get(headers, i);
 	if (header_is_called(h, name)) {
 	    list_delete(headers, i, 1);
 	    octstr_destroy(h);
+	    count++;
 	} else
 	    i++;
     }
+
+    return count;
 }
 
 

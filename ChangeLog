@@ -1,3 +1,16 @@
+2000-10-30  Richard Braakman  <dark@wapit.com>
+
+	* gw/wap-appl.c: Support for X-WAP.TOD header, needed for WAP 1.1
+	conformance.  (requirement UACache-0010)
+
+	* gw/wsp_headers.c: Special encoding for X-WAP.TOD, which is
+	an application-specific header with a field encoding that does
+	not match the application-specific-value rule.  (This is a
+	contradiction in the spec).
+
+	* gwlib/http.[ch]: Make http_header_remove_all report how many
+	headers it removed.
+
 2000-10-30 Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wtp_resp_state-decl.h: Added timeout to state RESULT_WAIT: Now

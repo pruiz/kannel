@@ -312,6 +312,25 @@ static void add_via(List *headers) {
 }
 
 
+/*
+ * Add an X-WAP.TOD header to the response headers.  It is defined in
+ * the "WAP Caching Model" specification.
+ * We generate it in textual form and let WSP header packing convert it
+ * to binary form.
+ */
+static void add_x_wap_tod(List *headers) {
+	Octstr *gateway_time;
+
+  	gateway_time = date_format_http(time(NULL));
+	if (gateway_time == NULL) {
+		warning(0, "Could not add X-WAP.TOD response header.");
+		return;
+	}
+
+	http_header_add(headers, "X-WAP.TOD", octstr_get_cstr(gateway_time));
+	octstr_destroy(gateway_time);
+}
+
 static void fetch_thread(void *arg) {
 	int status;
 	int ret;
@@ -328,6 +347,7 @@ static void fetch_thread(void *arg) {
 	static struct content empty_content;
 	int method;		/* type of request, normally a get or a post */
 	Octstr *request_body;
+	int x_wap_tod;          /* X-WAP.TOD header was present in request */
 	
     	counter_increase(fetches);
 
@@ -370,6 +390,7 @@ static void fetch_thread(void *arg) {
 		http_header_combine(actual_headers, request_headers);
 
         http_remove_hop_headers(actual_headers);
+        x_wap_tod = http_header_remove_all(actual_headers, "X-WAP.TOD");
 	add_accept_headers(actual_headers);
 	add_charset_headers(actual_headers);
 	add_network_info(actual_headers, addr_tuple);
@@ -457,6 +478,9 @@ static void fetch_thread(void *arg) {
 	    resp_headers = http_create_empty_headers();
 
 	http_remove_hop_headers(resp_headers);
+	http_header_remove_all(resp_headers, "X-WAP.TOD");
+	if (x_wap_tod)
+		add_x_wap_tod(resp_headers);
 		
 	if (octstr_len(content.body) > client_SDU_size) {
 		/* XXX: This is the wrong status.  It says that the

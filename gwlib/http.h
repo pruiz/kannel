@@ -330,7 +330,11 @@ List *http_parse_header_string(Octstr *headers_as_string);
 Octstr *http_generate_header_string(List *headers_as_list);
 #endif
 
-void http_header_remove_all(List *headers, char *name);
+/*
+ * Remove all headers with name 'name' from the list.  Return the
+ * number of headers removed.
+ */
+long http_header_remove_all(List *headers, char *name);
 
 /*
  * Remove the hop-by-hop headers from a header list.  These are the

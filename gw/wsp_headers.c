@@ -2779,6 +2779,17 @@ static int pack_application_header(Octstr *packed,
         return -1;
     }
 
+    /* We have to deal specially with the X-WAP.TOD header, because it
+     * is the only case of a text-format header defined with a non-text
+     * field value. */
+    /* Normally this should be a case-insensitive comparison, but this
+     * header will only be present if we generated it ourselves in the
+     * application layer. */
+    if (octstr_str_compare(fieldname, "X-WAP.TOD") == 0) {
+	pack_text(packed, fieldname);
+	return pack_date(packed, value);
+    }
+
     pack_text(packed, fieldname);
     pack_text(packed, value);
     return 0;
