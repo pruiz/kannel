@@ -86,12 +86,11 @@ typedef struct WTPSARData {
     Octstr *data;
 } WTPSARData;
 
-
 /* 
- * Nokia wap gw uses the size of 576, but mobiles use 1,5K size, 
- * I will think later what is better to use
+ * Maximum segment size. (Nokia WAP GW uses the size of 576, 
+ * but mobiles use 1,5K size).
  */
-#define	SAR_SEGM_SIZE 576
+#define	SAR_SEGM_SIZE 1400
 #define	SAR_GROUP_LEN 3
 
 

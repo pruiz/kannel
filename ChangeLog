@@ -1,3 +1,10 @@
+2005-03-08  Stipe Tolj  <stolj@wapme.de> 
+    * wap/wtp_resp.h: adding patch from Igor to support larger objects
+      via WTP SAR segments. Thanks to Igor for providing the patch and
+      production environment tests and Mindaugas Riauba <mind@bi.lt> for
+      picking this item up again for discussion.
+      [Msg-ID: <8BCBF9DB739F034B87FE7C7D30EAE55C01A0F34B@hqex2k.francoudi.com>]
+
 2005-03-07  Alexander Malysh <amalysh at kannel.org>
     * gwlib/http.c: (Client Part) fixed race condition while destroing
       Connection. In order to not trigger RC we must first explicit
