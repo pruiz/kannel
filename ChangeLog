@@ -1,3 +1,14 @@
+2000-09-26  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/wap-appl.c: Added Via header to HTTP requests.
+	
+    	* gwlib/socket.[ch]: Wrote function get_official_name.
+
+	* gwlib/octstr.c: Don't call gwlib_assert_init, instead assert
+	that octstr itself has been initialized. This is necessary because
+	socket.c now needs to use octet strings before gwlib has been
+	fully initialized.
+
 2000-09-26  Richard Braakman  <dark@wapit.com>
 
 	* Making release 0.11.2.

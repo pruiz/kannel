@@ -302,6 +302,16 @@ static void add_client_sdu_size(List *headers, long sdu_size) {
 }
 
 
+static void add_via(List *headers) {
+    	Octstr *os;
+	
+	os = octstr_format("WAP/1.1 %S (Kannel/%s)", get_official_name(),
+	    	    	   VERSION);
+    	http_header_add(headers, "Via", octstr_get_cstr(os));
+    	octstr_destroy(os);
+}
+
+
 static void fetch_thread(void *arg) {
 	int status;
 	int ret=500;
@@ -360,6 +370,7 @@ static void fetch_thread(void *arg) {
 	add_charset_headers(actual_headers);
 	add_network_info(actual_headers, addr_tuple);
 	add_client_sdu_size(actual_headers, client_SDU_size);
+	add_via(actual_headers);
 
 #ifdef COOKIE_SUPPORT
 	if (session_id != -1)

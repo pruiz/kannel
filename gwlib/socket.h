@@ -19,6 +19,10 @@ typedef int socklen_t;
 #include "gwstr.h"
 #include "octstr.h"
 
+/* Return the official and fully qualified domain name of the host. 
+   Caller should treat this as read-only. Caller MUST NOT destroy it. */
+Octstr *get_official_name(void);
+
 /* Open a server socket. Return -1 for error, >= 0 socket number for OK.*/
 int make_server_socket(int port);
 

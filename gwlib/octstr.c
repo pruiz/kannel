@@ -1915,7 +1915,7 @@ void octstr_format_append(Octstr *os, const char *fmt, ...)
 static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
                              const char *function)
 {
-    gwlib_assert_init();
+    gw_assert(immutables_init);
     gw_assert_place(ostr != NULL,
                     filename, lineno, function);
     if (!ostr->immutable)

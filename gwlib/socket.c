@@ -15,11 +15,14 @@
 #include <netdb.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
+#include <sys/utsname.h>
 
 #include "gwlib.h"
 
 
 static Mutex *inet_mutex;
+
+static Octstr *official_name = NULL;
 
 #ifndef UDP_PACKET_MAX_SIZE
 #define UDP_PACKET_MAX_SIZE (64*1024)
@@ -457,15 +460,41 @@ Octstr *host_ip(struct sockaddr_in addr)
 	return ret;
 }
 
+    
+Octstr *get_official_name(void)
+{
+    gw_assert(official_name != NULL);
+    return official_name;
+}
+
+
+static void setup_official_name(void)
+{
+    struct utsname u;
+    struct hostent h;
+
+    gw_assert(official_name == NULL);    
+    if (uname(&u) == -1)
+    	panic(0, "uname failed - can't happen, unless Kannel is buggy.");
+    if (gw_gethostbyname(&h, u.nodename) == -1) {
+    	error(0, "Can't find out official hostname for this host, "
+	      "using `%s' instead.", u.nodename);
+	official_name = octstr_create(u.nodename);
+    } else {
+	official_name = octstr_create(h.h_name);
+    }
+}
+
 
 void socket_init(void)
 {
        inet_mutex = mutex_create();
+       setup_official_name();
 }
 
 void socket_shutdown(void)
 {
        mutex_destroy(inet_mutex);
+       octstr_destroy(official_name);
+       official_name = NULL;
 }
-
-    
