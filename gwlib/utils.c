@@ -240,7 +240,6 @@ static void parachute_start(const char *myname, const char *panic_script) {
             gwthread_sleep(30.0);
         }
         if (!(child_pid = fork())) { /* child process */
-            child_pid = getpid();
             parachute_init_signals(1); /* reset sighandlers */
 	    return;
         }
@@ -261,13 +260,13 @@ static void parachute_start(const char *myname, const char *panic_script) {
                        exit(0);
                    }
                    else if (WIFEXITED(status)) {
-                       error(0, "Caught child %d which died with return code %d",
-                           child_pid, WEXITSTATUS(status));
+                       error(0, "Caught child PID (%ld) which died with return code %d",
+                           (long) child_pid, WEXITSTATUS(status));
                        child_pid = -1;
                    }
                    else if (WIFSIGNALED(status)) {
-                       error(0, "Caught child %d which died due to signal %d",
-                           child_pid, WTERMSIG(status));
+                       error(0, "Caught child PID (%ld) which died due to signal %d",
+                           (long) child_pid, WTERMSIG(status));
                        child_pid = -1;
                    }
                 }
@@ -279,8 +278,19 @@ static void parachute_start(const char *myname, const char *panic_script) {
             if (parachute_shutdown) {
                 /* may only happens if child process crashed while shutdown */
                 info(0, "Child process crashed while shutdown. Exiting due to signal...");
+                info(0, "Going into gwlib_shutdown...");
                 gwlib_shutdown();
+                info(0, "gwlib_shutdown done... Bye bye...");
                 exit(WIFEXITED(status) ? WEXITSTATUS(status) : 0);
+            }
+
+            /* check whether it's panic while start */
+            if (respawn_count == 0 && difftime(time(NULL), last_start) < 2) {
+                info(0, "Child process crashed while starting. Exiting...");
+                info(0, "Going into gwlib_shutdown...");
+                gwlib_shutdown();
+                info(0, "gwlib_shutdown done... Bye bye...");
+                exit(WIFEXITED(status) ? WEXITSTATUS(status) : 1);
             }
 
             respawn_count++;
@@ -322,7 +332,7 @@ static void remove_pid_file(void)
         return;
 
     /* ensure we don't called from child process */
-    if (child_pid != -1 && child_pid == getpid())
+    if (child_pid == 0)
         return;
 
     if (-1 == unlink(pid_file))
@@ -341,18 +351,33 @@ static int change_user(const char *user)
         error(0, "Could not find a user `%s' in system.", user);
         return -1;
     }
+    gw_claim_area(pass);
+    gw_claim_area(pass->pw_name);
+    gw_claim_area(pass->pw_passwd);
+    gw_claim_area(pass->pw_gecos);
+    gw_claim_area(pass->pw_dir);
+    gw_claim_area(pass->pw_shell);
 
     if (-1 == setgid(pass->pw_gid)) {
         error(errno, "Could not change group id %ld -> %ld.", (long) getgid(), (long) pass->pw_gid);
-        return -1;
+        goto out;
     }
 
     if (-1 == setuid(pass->pw_uid)) {
         error(errno, "Could not change user id %ld -> %ld.", (long) getuid(), (long) pass->pw_uid);
-        return -1;
+        goto out;
     }
 
     return 0;
+
+out:
+    gw_free(pass->pw_name);
+    gw_free(pass->pw_passwd);
+    gw_free(pass->pw_gecos);
+    gw_free(pass->pw_dir);
+    gw_free(pass->pw_shell);
+    gw_free(pass);
+    return -1;
 }
 
 /*
@@ -502,9 +527,8 @@ int get_and_set_debugs(int argc, char **argv,
 	}
     }
 
-    if (user && -1 == change_user(user)) {
+    if (user && -1 == change_user(user))
         panic(0, "Couldnot change to user `%s'.", user);
-    }
 
     /* deamonize */
     if (daemonize && !become_daemon())
@@ -545,7 +569,8 @@ int get_and_set_debugs(int argc, char **argv,
 	  debug_lvl, log_file ? log_file : "<none>", file_lvl);
     if (debug_places != NULL)
 	    info(0, "Debug places: `%s'", debug_places);
-    
+
+
     return i;
 }
 

@@ -78,6 +78,7 @@ struct tm gw_gmtime(time_t t);
 time_t gw_mktime(struct tm *tm);
 int gw_rand(void);
 int gw_gethostbyname(struct hostent *ret, const char *name, char **buff);
+size_t gw_strftime(char *s, size_t max, const char *format, const struct tm *tm);
 
 /*
  * Make it harder to use these by mistake.
@@ -92,11 +93,14 @@ int gw_gethostbyname(struct hostent *ret, const char *name, char **buff);
 #undef mktime
 #define mktime(t) do_not_use_mktime_directly
 
+#undef strftime
+#define strftime(a, b, c, d) do_not_use_strftime_directly
+
 #undef rand
 #define rand() do_not_use_rand_directly
 
 #undef gethostbyname
-#define gethostbyname() do_not_use_gethostbyname_directly
+#define gethostbyname(a, b, c) do_not_use_gethostbyname_directly
 
 #undef inet_ntoa
 #define inet_ntoa(in) use_gw_netaddr_to_octstr_instead_of_inet_ntoa

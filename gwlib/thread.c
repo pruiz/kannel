@@ -96,6 +96,8 @@ Mutex *mutex_init_static_real(Mutex *mutex)
 
 void mutex_destroy(Mutex *mutex)
 {
+    int ret;
+
     if (mutex == NULL)
         return;
 
@@ -107,7 +109,9 @@ void mutex_destroy(Mutex *mutex)
     }
 #endif
 
-    pthread_mutex_destroy(&mutex->mutex);
+    if ((ret = pthread_mutex_destroy(&mutex->mutex)) != 0)
+        panic(ret, "Attempt to destroy locked mutex!");
+
     if (mutex->dynamic == 0)
         return;
     gw_free(mutex);

@@ -1,4 +1,10 @@
 2004-06-14  Alexander Malysh  <a.malysh@centrium.de> 
+    * gwlib/protected.[ch]: added 'gw_strftime()' function. Fixed macro for 'gethostbyname'.
+    * gwlib/thread.c: added panic for attempt to destroy locked mutex. so we can at least
+      try to catch such cases.
+    * gwlib/utils.c: fixes for parachuting code. These bugs can only be triggered with NPTL.
+
+2004-06-14  Alexander Malysh  <a.malysh@centrium.de> 
     * configure, configure.in, gw-config.h.in: added check for <semaphore.h>
     * gwlib/semaphore.c: added support for native semaphore.
 

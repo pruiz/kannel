@@ -74,6 +74,7 @@
 #undef rand
 #undef gethostbyname
 #undef mktime
+#undef strftime
 
 
 enum {
@@ -157,6 +158,16 @@ time_t gw_mktime(struct tm *tm)
     unlock(GWTIME);
 
     return t;
+}
+
+
+size_t gw_strftime(char *s, size_t max, const char *format, const struct tm *tm)
+{
+    size_t ret;
+    lock(GWTIME);
+    ret = strftime(s, max, format, tm);
+    unlock(GWTIME);
+    return ret;
 }
 
 
