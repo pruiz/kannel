@@ -481,63 +481,80 @@ int octstr_search_char(Octstr *ostr, int ch) {
 
 
 int octstr_search_char_from(Octstr *ostr, int ch, long pos) {
-	long len;
-	int ch_at_pos;
+	unsigned char *p;
 	
 	seems_valid(ostr);
 	gw_assert(ch >= 0);
 	gw_assert(ch <= UCHAR_MAX);
+	gw_assert(pos >= 0);
+	gw_assert(pos < ostr->len);
 
-	len = octstr_len(ostr);
-	for (; pos < len; ++pos) {
-		ch_at_pos = octstr_get_char(ostr, pos);
-		gw_assert(ch_at_pos != -1);
-		if (ch == ch_at_pos)
-			return pos;
-	}
-
-	return -1;
+	p = memchr(ostr->data + pos, ch, ostr->len - pos);
+	if (!p)
+		return -1;
+	return p - ostr->data;
 }
 
 
+int octstr_search_cstr(Octstr *ostr, char *str) {
+	int first;
+	long len;
+	long pos;
 
-int octstr_search_str(Octstr *ostr, char *str) {
-	long pos_a, pos_b = 0, len_c = 0, len_o =0, a=0, b=0; 
-	Octstr *char_to_oct = NULL;
-	
 	seems_valid(ostr);
 	gw_assert(str != NULL);
 
-	len_o = octstr_len(ostr);
-	char_to_oct = octstr_create(str);
-	len_c = octstr_len(char_to_oct);
-	/* XXX the above is a memory leak --liw */
-	
-	for (pos_a = 0; pos_a < len_o; pos_a++) {
-		a=octstr_get_char(ostr, pos_a);
-		b=octstr_get_char(char_to_oct, pos_b);
-		if (a == b) {
-			pos_b++;
-			if (pos_b == octstr_len(char_to_oct)) {
-			    octstr_destroy(char_to_oct);
-			    return pos_a - len_c + 1;
-				/*returns the start of the found substring */
-			}
-		} else {
-			if (len_o - (pos_a + 1) < len_c)
-				break;
-			/* is it worth to keep looking */
-			pos_b = 0;
-		}
+	len = strlen(str);
+
+	/* Always "find" an empty string */
+	if (len == 0)
+		return 0;
+
+	/* For each occurrence of str's first character in ostr, check
+	 * if the rest of str follows.  Stop if there are no more
+	 * occurrences, or if the rest of str can't possibly fit in
+	 * the rest of the ostr. */
+	first = str[0];
+	pos = octstr_search_char(ostr, first);
+	while (pos >= 0 && ostr->len - pos >= len) {
+		if (memcmp(ostr->data + pos, str, len) == 0)
+			return pos;
+		pos = octstr_search_char_from(ostr, first, pos + 1);
 	}
-	
-	/* string wasn't there*/
-	octstr_destroy(char_to_oct);
+
 	return -1;
 }
 
 
+int octstr_search(Octstr *haystack, Octstr *needle) {
+	int first;
+	long pos;
 
+	seems_valid(haystack);
+	seems_valid(needle);
+
+	/* Always "find" an empty string */
+	if (needle->len == 0)
+		return 0;
+
+	if (needle->len == 1)
+		return octstr_search_char(haystack, needle->data[0]);
+
+	/* For each occurrence of needle's first character in ostr,
+	 * check if the rest of needle follows.  Stop if there are no
+	 * more occurrences, or if the rest of needle can't possibly
+	 * fit in the haystack. */
+	first = needle->data[0];
+	pos = octstr_search_char(haystack, first);
+	while (pos >= 0 && haystack->len - pos >= needle->len) {
+		if (memcmp(haystack->data + pos,
+				needle->data, needle->len) == 0)
+			return pos;
+		pos = octstr_search_char_from(haystack, first, pos + 1);
+	}
+
+	return -1;
+}
 
     
 int octstr_print(FILE *f, Octstr *ostr) {

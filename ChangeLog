@@ -1,3 +1,10 @@
+2000-04-10  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/octstr.c, gwlib/octstr.h: Reimplemented octstr_search_str
+	as octstr_search_cstr, removing the old one.  Added octstr_search
+	(for two Octstrs).  Reimplemented octstr_search_char_from to use
+	memchr instead of the octstr_get_char interface, for speed.
+
 2000-04-10 Sanna Seppanen <sanna@wapit.com>
 
 	* gwlib/octstr.c,h: octstr_search_str()-function memory-leak fixed.

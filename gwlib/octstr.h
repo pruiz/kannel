@@ -220,12 +220,18 @@ int octstr_search_char_from(Octstr *ostr, int ch, long pos);
 
 
 /*
- * Search the string from octet string. Returns the start position (index) of
- * the substring, -1 if not found.
+ * Search for a substring in an octet string. Return the start
+ * position (index) of the substring, -1 if not found.
  */
+int octstr_search_cstr(Octstr *ostr, char *str);
 
-int octstr_search_str(Octstr *ostr, char *str) ;
 
+/*
+ * Search for the octet string 'needle' in the octet string 'haystack'.
+ * Return the start position (index) of 'needle' in 'haystack'.
+ * Return -1 if not found.
+ */
+int octstr_search(Octstr *haystack, Octstr *needle);
 
 
 /*
