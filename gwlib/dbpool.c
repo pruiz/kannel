@@ -77,6 +77,7 @@
 #include "dbpool_oracle.c"
 #include "dbpool_sqlite.c"
 #include "dbpool_sdb.c"
+#include "dbpool_pgsql.c"
 
 
 static inline void dbpool_conn_destroy(DBPoolConn *conn)
@@ -129,6 +130,11 @@ DBPool *dbpool_create(enum db_type db_type, DBConf *conf, unsigned int connectio
         case DBPOOL_SDB:
             p->db_ops = &sdb_ops;
             break;
+#endif
+#ifdef HAVE_PGSQL
+       case DBPOOL_PGSQL:
+           p->db_ops = &pgsql_ops;
+           break;
 #endif
         default:
             panic(0, "Unknown dbpool type defined.");

@@ -65,13 +65,14 @@
 #define GWDBPOOL_H
 
 #if defined(HAVE_MYSQL) || defined(HAVE_SDB) || \
-    defined(HAVE_ORACLE) || defined(HAVE_SQLITE)
+    defined(HAVE_ORACLE) || defined(HAVE_SQLITE) || \
+    defined(HAVE_PGSQL)
 #define HAVE_DBPOOL 1
 #endif
 
 /* supported databases for connection pools */
 enum db_type {
-	DBPOOL_MYSQL, DBPOOL_SDB, DBPOOL_ORACLE, DBPOOL_SQLITE
+	DBPOOL_MYSQL, DBPOOL_SDB, DBPOOL_ORACLE, DBPOOL_SQLITE, DBPOOL_PGSQL
 };
 
 
@@ -116,11 +117,23 @@ typedef struct {
     Octstr *file;
 } SQLiteConf;
 
+typedef struct {
+    Octstr *pghost;
+    Octstr *pgport;
+    Octstr *pgoptions;
+    Octstr *pgtty;
+    Octstr *login;
+    Octstr *password;
+    Octstr *dbName;
+} PgSQLConf;
+
+
 typedef union {
     MySQLConf *mysql;
     SDBConf *sdb;
     OracleConf *oracle;
     SQLiteConf *sqlite;
+    PgSQLConf *pgsql;
 } DBConf;
 
 /*
