@@ -142,7 +142,7 @@ where options are:\n\
 -p port		port number of gateway (default: 9201)\n\
 -m max		maximum number of requests fakewap will make (default: 1)\n\
 -i interval	interval between requests (default: 1.0 seconds)\n\
--c threads	number concurrent of clients simulated (default: 1)\n\
+-c threads	number of concurrent clients simulated (default: 1)\n\
 -V protoversion	protocol version field, as an integer (default: 0)\n\
 -T pdu-type	PDU type, as an integer (default: 1)\n\
 -t tcl		transaction class, as an integer (default: 2)\n\
@@ -152,7 +152,7 @@ where options are:\n\
                 (default: off)\n\
 -d difference	difference between successive tid numbers (default: 1)\n\
 -F		Accept failure and continue rather than exiting\n\
--w		Write/print recieved data (experimental)\n\
+-w		Write/print received data (experimental)\n\
 \n\
 The urls are fetched in random order.\n\
 ";

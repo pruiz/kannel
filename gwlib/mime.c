@@ -324,7 +324,7 @@ static MIMEEntity *mime_something_to_entity(Octstr *mime, List *headers)
             Octstr *cid = NULL;
 
             /* we have still two linefeeds at the beginning and end that we 
-             * need to remove, these are from the seperator. 
+             * need to remove, these are from the separator. 
              * We check if it is \n or \r\n?! */
 	    if (octstr_get_char(entity, 0) == '\r')
 		 octstr_delete(entity, 0, 2);	      

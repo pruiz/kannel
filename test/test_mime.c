@@ -388,7 +388,7 @@ cerror:
     octstr_destroy(rdf_content);
     gwlib_shutdown();
     panic(0, "Stopping");
-/* return after panic allways required by gcc */
+/* return after panic always required by gcc */
     return 1;
 }
 

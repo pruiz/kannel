@@ -210,7 +210,7 @@ int smscenter_receive_msg(SMSCenter *smsc, Msg **msg);
 
 /* Is there an SMS message pending from an SMS center? Return -1 for
    error, 0 for no, 1 for yes. This operation won't block, but may
-   not be instantenous, if it has to read a few characters to see
+   not be instantaneous, if it has to read a few characters to see
    if there is a message. Use smscenter_receive_smsmessage to actually receive
    the message. */
 int smscenter_pending_smsmessage(SMSCenter *smsc);

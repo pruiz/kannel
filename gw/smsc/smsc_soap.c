@@ -66,7 +66,7 @@
  * 25/02/2002: implemented MT sending
  * 09/05/2002: fixed problem crash when HTTP connection fails.
  *             send message back to bearerbox on HTTP failure instead of local queue
- * 19/05/2002: strip leading + from international numbers
+ * 19/05/2002: stripped leading + from international numbers
  * 20/05/2002: fixed previous change
  *             changed Transaction Id returned to support 64 bit integers
  * 27/05/2002: changed DLR creation to store the transaction ID instead of timestamp
@@ -87,7 +87,7 @@
  * 05/09/2002: Changed dlr_add and http_start_request calls to support current CVS
  * 26/09/2002: Added soap_fetch_xml_data
  * 29/09/2002: Changed Ack/Nack to process case when Ack not return msg ID, move declaration to fix worning
- * 01/10/2002: start to change MO general
+ * 01/10/2002: started to change MO general
  * 07/10/2002: MT generalization
  * 
  * TODOs:
@@ -146,8 +146,8 @@
 #define SOAP_ERROR_NO_DLR_MESSAGE			"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Error>Sorry - no DLR for that MT</Error>"
 #define SOAP_ERROR_DLR_MESSAGE				"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Error>Fatal error while trying to parse delivery report</Error>"
 #define SOAP_ERROR_MO_MESSAGE				"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Error>Fatal error while trying to parse incoming MO</Error>"
-#define SOAP_ERROR_NO_DATA_MESSAGE			"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Error>No data recieved</Error>"
-#define SOAP_ERROR_MALFORMED_DATA_MESSAGE	        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Error>Malformed data recieved</Error>"
+#define SOAP_ERROR_NO_DATA_MESSAGE			"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Error>No data received</Error>"
+#define SOAP_ERROR_MALFORMED_DATA_MESSAGE	        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Error>Malformed data received</Error>"
 
 /* map HTTP status codes to SOAP HTTP reply codes */
 #define SOAP_ERROR_NO_DLR_CODE				HTTP_BAD_METHOD
@@ -274,11 +274,11 @@ static long soap_parse_dlr(SMSCConn *conn, Octstr *request, Octstr **response);
 /*
  * SOAP internal utility functions
  */
-/* parse an integer out of an XML node */
+/* parse an integer out of a XML node */
 int soap_xmlnode_get_long(xmlNodePtr cur, long *out);
-/* parse an int64 out of an XML node */
+/* parse an int64 out of a XML node */
 int soap_xmlnode_get_int64(xmlNodePtr cur, int64 *out);
-/* parse a string out of an XML node */
+/* parse a string out of a XML node */
 int soap_xmlnode_get_octstr(xmlNodePtr cur, Octstr **out);
 /* convert a one2one date format to epoch time */
 time_t soap_read_date(Octstr *dateString);
@@ -302,7 +302,7 @@ static Octstr *soap_convert_token(Msg *msg, Octstr *name, PrivData *privdata);
 List *soap_create_map(Octstr* spec, long count, char* keywords[], char* types[], void* storage[]);
 /* destroy a map structure */
 void soap_destroy_map(void *item);
-/* map content in an XML structure to a list of variable using a spec file */
+/* map content in a XML structure to a list of variable using a spec file */
 int soap_map_xml_data(xmlNodePtr xml, List* maps);
 /* fetch content from the XML */
 Octstr* soap_fetch_xml_data(xmlNodePtr xml, Octstr* path);
@@ -1008,7 +1008,7 @@ static void soap_send_loop(SMSCConn* conn)
 
 /*
  * function soap_format_xml()
- *	fill in the fields in an XML template with data from a message
+ *	fill in the fields in a XML template with data from a message
  * Input: Octstr containing an XML template,  Msg structure
  * Returns: Octstr xml formated data or NULL on error
  */

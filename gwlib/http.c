@@ -1287,7 +1287,7 @@ HTTPURLParse *parse_url(Octstr *url)
     p->url = octstr_duplicate(url);
     p->scheme = octstr_duplicate(prefix);
 
-    /* try to parse authentication seperator */
+    /* try to parse authentication separator */
     at = octstr_search_char(url, '@', prefix_len);
     if (at != -1) {
         if ((slash == -1 || ( slash != -1 && at < slash))) {
@@ -1355,7 +1355,7 @@ HTTPURLParse *parse_url(Octstr *url)
         return NULL;
     }
 
-    /* there was an authenticator seperator, so try to parse 
+    /* there was an authenticator separator, so try to parse 
      * the username and password credentials */
     if (at != -1) {
         int at2;
@@ -2136,7 +2136,7 @@ static void server_thread(void *dummy)
                         client = client_create(ports[i], conn, client_ip);
                         conn_register(conn, server_fdset, receive_request, client);
                     } else {
-                        error(0, "HTTP: unsuccessfull SSL handshake for client `%s'",
+                        error(0, "HTTP: unsuccessful SSL handshake for client `%s'",
                         octstr_get_cstr(client_ip));
                         octstr_destroy(client_ip);
                     }
@@ -2428,7 +2428,7 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     octstr_destroy(response);
 
     /* obey return code of conn_write() */
-    /* sending response was successfull */
+    /* sending response was successful */
     if (ret == 0) { 
         /* HTTP/1.0 or 1.1, hence keep-alive or keep-alive */
         if (!client->persistent_conn) {
@@ -2672,7 +2672,7 @@ List *http_header_duplicate(List *headers)
 
 #define MAX_HEADER_LENGHT 256
 /*
- * Aggregate header in one (or more) lines with several parameters seperated
+ * Aggregate header in one (or more) lines with several parameters separated
  * by commas, instead of one header per parameter
  */
 void http_header_pack(List *headers)

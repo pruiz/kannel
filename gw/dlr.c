@@ -393,7 +393,7 @@ Msg *dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int typ)
         /* if dlr_url was present, recode it here again */
         O_SET(msg->sms.dlr_url, dlr->url);
         /* 
-         * insert orginal message to the data segment 
+         * insert original message to the data segment 
          * later in the smsc module 
          */
         msg->sms.msgdata = NULL;

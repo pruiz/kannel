@@ -66,7 +66,7 @@
  * case of 32 bit longs, only last 9 digits are checked, otherwise
  * last 18 digits. This means that in some places several numbers
  * might map to same hash entry, and thus some caution is needed
- * especially with telephone number black lists
+ * specially with telephone number black lists
  *
  * USAGE:
  *  the system is not very dynamic; if you want to resize the table

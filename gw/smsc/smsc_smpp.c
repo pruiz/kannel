@@ -624,7 +624,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
             (msg->sms.alt_dcs != SMS_PARAM_UNDEFINED ?
              msg->sms.alt_dcs : smpp->conn->alt_dcs));
 
-    /* set protocoll id */
+    /* set protocol id */
     if(msg->sms.pid != SMS_PARAM_UNDEFINED)
         pdu->u.submit_sm.protocol_id = msg->sms.pid;
 
@@ -1134,7 +1134,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 
             /*
              * bb_smscconn_receive can fail, but we ignore that since we
-             * have no way to usefull tell the SMS center about this
+             * have no useful way to tell the SMS center about this
              * (no suitable error code for the deliver_sm_resp is defined)
              */
 

@@ -6,7 +6,7 @@
 
 <bookinfo>
 	<title>Kannel Architecture and Design</title>
-	<subtitle>$Revision: 1.19 $</subtitle>
+	<subtitle>$Revision: 1.20 $</subtitle>
 	<author>
 	<firstname>Lars</firstname>
 	<surname>Wirzenius</surname>
@@ -395,7 +395,7 @@
 	1998, but wasn't implemented in phones. The 1.1 specification
 	came out in July, 1999, and was the first one implemented in
 	publically available phones. 1.2.1 came out in June 2000, and 
-        phones implementing it (and especially push) are now available, 
+        phones implementing it (and specially push) are now available, 
         too. Work on WAP 2.0 is closing. It will converge WAP with Internet 
         protocols and W3C markup languages.</para>
 
@@ -634,7 +634,7 @@
 <title>WAP Push Architecture</title>
        <para>Previous chapters defined pull mode of operation: a phone starts 
        everything and a content server acts passively. It is, however,
-       sometimes usefull that the server can start a transaction. Email 
+       sometimes useful that the server can start a transaction. Email 
        notifications, news services and stock quotes are some examples of
        this mode of service.</para>
 
@@ -831,7 +831,7 @@
 	directly from the gateway, it made sense to create an open source
 	project to develop the gateway. This way, it would be possible
 	to get help from other companies, and to some extent individuals,
-	in developing the gateway, and especially in testing the gateway
+	in developing the gateway, and specially in testing the gateway
 	in various environment.</para>
 	
 	<para>The gateway project was launched in July, 1999, at the
@@ -1068,7 +1068,7 @@
 	
 		<footnote><para><emphasis>Box</emphasis> seemed like
 		a nice, non-technical term that should be understandable
-		for marketing people, especially if each box is run on
+		for marketing people, specially if each box is run on
 		its own host. In this case, each Kannel box corresponds
 		to a physical box, which should be clear enough.</para>
 		</footnote>
@@ -1372,7 +1372,7 @@
             https_read_thread</literal>accept pushes from the push initiator. 
             </para>
             <para><literal>pap_request_thread</literal>parses MIME content 
-            sended, compiles pap control document, implements required PPG 
+            sent, compiles pap control document, implements required PPG 
             services and converts push content to the tokenized form. It 
             informs push iniatiator, by sending relevant PAP messages to it, 
             errors happened during these processess and communicates with OTA 
@@ -1401,7 +1401,7 @@
         <itemizedlist>
 
         <listitem><para>
-        Bearerbox communication layer. This layer is allways same.
+        Bearerbox communication layer. This layer is always the same.
         </para></listitem>
         <listitem><para>
         Sessionless WSP layer. This layer exchanges messages with the 
@@ -1728,7 +1728,7 @@
         <para>Push XML languages (SI, SL, CO) are similar to WML, but their 
         compilation is even simpler (no variables here, for instance). They do
         not use a string table either, because push documents, which are 
-        sended over SMS, <emphasis> must</emphasis> be small. </para>
+        sent over SMS, <emphasis> must</emphasis> be small. </para>
 	
 	<para>The WMLScript compiler is a more traditional programming
 	language compiler. The binary output format is a bytecode,
@@ -1835,7 +1835,7 @@
     <para>Building an open source development community around Kannel
     has proved to be a much harder task. Partly this is because Kannel
     is of interest to a fairly small group of people, but mostly it is
-    because especially at the beginning the development discussions were
+    because specially at the beginning the development discussions were
     not open, in practice, to people outside Wapit. Many of the discussions
     were held face to face between Wapit developers, or on internal
     Wapit mailing lists, and this effectively shut out outside developers.
@@ -2038,7 +2038,7 @@ bad:
 
 	<highlights>
 	<para>This chapter discusses the plans for the future of the
-	gateway: implementation of missing features (especially
+	gateway: implementation of missing features (specially
 	WTLS and WCMP), more bearers, updates to new versions of WAP.
 	It also outlines needs and plans for higher reliability
 	(keeping transactions and sessions alive over box crashes) and
@@ -2058,7 +2058,7 @@ bad:
 	the software is being employed. Among the missing features are
 	the WAP security layer (WTLS), features from new versions of
 	the WAP specification (WAP 1.2 and the June 2000 versions),
-	and using other WAP bearers than UDP, especially SMS messages.</para>
+	and using other WAP bearers than UDP, specially SMS messages.</para>
 	
 	<para>Some of the work for these is already going on. There is
 	an implementation of WTLS for Kannel, provided by 3UI.COM, but

@@ -73,7 +73,7 @@ enum {
     BB_SUSPENDED = 2,	/* do not transfer any messages */
     BB_SHUTDOWN = 3,
     BB_DEAD = 4,
-    BB_FULL = 5         /* message queue to long, do not accept ne messages */
+    BB_FULL = 5         /* message queue too long, do not accept new messages */
 };
 
 
@@ -109,7 +109,7 @@ int smsbox_restart(Cfg *config);
 int wapbox_start(Cfg *config);
 
 Octstr *boxc_status(int status_type);
-/* tell total number of messages in seperate wapbox incoming queues */
+/* tell total number of messages in separate wapbox incoming queues */
 int boxc_incoming_wdp_queue(void);
 
 /* Clean up after box connections have died. */
@@ -136,7 +136,7 @@ int udp_die(void);	/* called when router dies */
 /* add outgoing WDP. If fails, return -1 and msg is untouched, so
  * caller must think of new uses for it */
 int udp_addwdp(Msg *msg);
-/* tell total number of messages in seperate UDP outgoing port queues */
+/* tell total number of messages in separate UDP outgoing port queues */
 int udp_outgoing_queue(void);
 
 

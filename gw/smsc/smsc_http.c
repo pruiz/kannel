@@ -384,7 +384,7 @@ static void kannel_parse_reply(SMSCConn *conn, Msg *msg, int status,
     /* Test on three cases:
      * 1. an smsbox reply of an remote kannel instance
      * 2. an smsc_http response (if used for MT to MO looping)
-     * 3. an smsbox reply of partly sucessfull sendings */
+     * 3. an smsbox reply of partly successful sendings */
     if ((status == HTTP_OK || status == HTTP_ACCEPTED)
         && (octstr_case_compare(body, octstr_imm("Sent.")) == 0 ||
             octstr_case_compare(body, octstr_imm("Ok.")) == 0 ||

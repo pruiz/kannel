@@ -301,11 +301,11 @@ int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 	    return 1; /*success*/
 	}
 	else if(nret == SESSION_MT_RECEIVE_TIMEOUT){
-	    info(0, "sema_submit msg: session time out without return");
+	    info(0, "sema_submit msg: session timed out without return");
 	    return 0;
 	}
 	else if(nret == SESSION_MT_RECEIVE_ERR){
-	    info(0, "sema_submit msg: smsc say submit failed!");
+	    info(0, "sema_submit msg: smsc says submit failed!");
 	    return 0;
 	}
 
@@ -524,7 +524,7 @@ static int X28_open_data_link(char* device){
 	error(errno, "sema_open_data_link: error open(2)ing the character device <%s>",
 	      device);
 	if(errno == EACCES)
-	    error(0, "sema_open_data_link: user have no right to access the serial device");
+	    error(0, "sema_open_data_link: user has no right to access the serial device");
 	return -1;
     }
 
@@ -691,14 +691,14 @@ static int X28_open_send_link(int padfd, char *nua) {
 	   readbuff[readall-2] == '\r') {
 	    if(strstr(readbuff, smscbuff)) {
 		debug("smsc.sema", 0,
-		      "sema_open send link: smsc respond, virtual link established");
+		      "sema_open send link: smsc responded, virtual link established");
 		x28_data_mode = X28_MT_DATA_MODE; 
 		return 1;	
 	    }
 	} 
 	usleep(1000);
     }
-    info(0,"sema_open_send_link: connecting time out");
+    info(0,"sema_open_send_link: connect timeout");
     return 0;
 error_overflow:
     warning(0, "sema_open_send_link: command buffer overflow");
@@ -797,7 +797,7 @@ static int X28_data_send(int padfd, char *cbuffer,int sentonce) {
     return writeall;
 
 error:
-    error(errno,"sema_send data error: device file erro");
+    error(errno,"sema_send data error: device file error");
     return -1;
 }
 
@@ -882,7 +882,7 @@ static int X28_msg_pop(char *from, char *to)
 	    memset(from,0,len);
     }
 
-    /* check rest line for link state: command mode or data mode */
+    /* check rest of line for link state: command mode or data mode */
     if(strstr(from,prompbuff) != NULL)
 	x28_data_mode = X28_COMMAND_MODE;
 
@@ -1087,7 +1087,7 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 			iret = sema_submit_result(smsc, mtrmsg, decoderesult);
 			if(iret == -1) goto error;
 			if(iTrcved == 1 &&
-			   report_invoke->status != 3){ /*3 means ,msg delivered*/
+			   report_invoke->status != 3){ /*3 means msg delivered*/
 			    info(0,"sema_mt_session: submit invoke failed with report value-%i",report_invoke->status);
 			    gw_free(report_invoke);
 			    goto smsc_say_fail;
@@ -1119,13 +1119,13 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 		memset(data,0,sizeof(data));
 		if(sema_wait_report == 0 && isrcved == 1)
 		{
-		    info(0,"sema_mt_session: submit invoke deliver successfully to smsc");
+		    info(0,"sema_mt_session: submit invoke delivered successfully to smsc");
 		    goto mo_success;
 		}
 		if(sema_wait_report > 0 &&
 		   isrcved == 1 && iTrcved == 1)
 		{
-		    info(0,"sema_mt_session: submit invoke deliver sucessfully to msisdn");
+		    info(0,"sema_mt_session: submit invoke delivered successfully to msisdn");
 		    goto mo_success;
 		}
 	    }
@@ -1133,7 +1133,7 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
     }
 
 /* mo_timeout: */
-      info(0,"sema_mt_session: time out without receive all expected return");
+      info(0,"sema_mt_session: timeout without receiving all expected returns");
       moret = SESSION_MT_RECEIVE_TIMEOUT;
       goto mo_return;
 mo_success:
@@ -1223,7 +1223,7 @@ msg_error:
     error(0,"sema_mo session: Msg decode failed");
     return 0;
 error:  
-    error(0,"sema_mo session: device file error or memory allocated problem!");
+    error(0,"sema_mo session: device file error or memory allocation problem!");
     return -1;
 }
 
@@ -1247,7 +1247,7 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
     if(cmsgtype != 's' 		/* invoke reseult */
        && cmsgtype != 'M'  	/* deliver invoke */
        && cmsgtype != 'T'){  	/* report invoke */
-	info(0,"sema_decode: msg type not support");
+	info(0,"sema_decode: msg type not supported");
 	goto error_msg;
     }
 
@@ -1257,7 +1257,7 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
 				 &imsgencodetype,&imsgtopseg, &imsgfollownum);
 
     if(iret == -1){
-	info(0,"sema_decode: msg continue bit can not be interpret");
+	info(0,"sema_decode: msg continue bit can not be interpreted");
 	goto error_msg;
     }
 
@@ -1342,7 +1342,7 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
 	octetlen = 1;
 	receive_sm->DCS = get_variable_value(tmp, &octetlen);
 	if(receive_sm->DCS != ENCODE_IA5 && receive_sm->DCS !=ENCODE_GSM){
-	    info(0, "sema_decode, Data encoding scheme not support");
+	    info(0, "sema_decode, Data encoding scheme not supported");
 	    goto error_deliver;
 	}
 	/* protocol */ 
@@ -1492,7 +1492,7 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
     return 1;
 
 no_msg:
-    info(0,"sema_decode: msg in empty");
+    info(0,"sema_decode: msg is empty");
     return 0;
 error_receive:
     gw_free(receive_report);

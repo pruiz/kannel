@@ -850,7 +850,7 @@ static int at2_read_sms_memory(PrivAT2data* privdata)
          * There are two ways we can fix this : 
          *   (a) Just read the last message location, delete it and return.
          *       It's not a complete solution since holes can still be created if messages 
-         *       are recieved between the memory check and the delete command, 
+         *       are received between the memory check and the delete command, 
          *       and anyway - it will slow us down and won't hold well under pressure
          *   (b) Just scan the entire memory each call, bottom to top. 
          *       This will be slow too, but it'll be reliable.

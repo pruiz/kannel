@@ -264,7 +264,7 @@ static void wrapper_sender(void *arg)
     /* Make sure we log into our own log-file if defined */
     log_thread_to(conn->log_idx);
 
-    /* send messages to SMSC until our putgoing_list is empty and
+    /* send messages to SMSC until our outgoing_list is empty and
      * no producer anymore (we are set to shutdown) */
     while(conn->status != SMSCCONN_DEAD) {
 
@@ -427,11 +427,11 @@ int smsc_wrapper_create(SMSCConn *conn, CfgGroup *cfg)
 	list_add_producer(wrap->stopped);
 	
 
-    /* XXX here we could fail things... especially if the second one
+    /* XXX here we could fail things... specially if the second one
      *     fails.. so fix this ASAP
      *
      * moreover, open should be in sender/receiver, so that we can continue
-     * while tyring to open... maybe move this, or just wait for new
+     * while trying to open... maybe move this, or just wait for new
      * implementations of various SMSC protocols
      */
     

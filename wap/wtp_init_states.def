@@ -83,7 +83,7 @@
  * Tid verification in the initiator means answering the question posed by the
  * responder: "Have you an outstanding transaction having this tid". If we do
  * not have it, we have already, before feeding the event into the state 
- * machine, sended an abort with reason INVALIDTID. So here we answer to  an
+ * machine, sent an abort with reason INVALIDTID. So here we answer to  an
  * ack pdu with tidve-flag set with an ack pdu with tidok-flag set. See WTP
  * 5.6, table 2; WTP 8.9; WTP 9.3.4.1.
  *

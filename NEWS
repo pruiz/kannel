@@ -19,8 +19,8 @@ Compatibility breakers:
     some more restrictions to the name "Kannel" and usage of it.
  
   * SMPP changed recoding of source_addr and destination_addr on the MO side. 
-    We will pass an prefixed '+' to the smsbox side. Otherwise there is no 
-    chance for backend applicatins, like smsbox to descide what type of number 
+    We will pass a prefixed '+' to the smsbox side. Otherwise there is no 
+    chance for backend applicatins, like smsbox to decide what type of number 
     it is. 
 
   * EMI2 login operation 60 had a hard timeout of 30 sec. Some SMSC may need 
@@ -42,7 +42,7 @@ Compatibility breakers:
     server string, cookie support is enabled now by default, added new 
     'wap-url-map' and 'wap-user-map groups to replace deprecated 'map-url' map.
 
-  * Renamed innternal SMSC module identifiers for the smsc group directive 
+  * Renamed internal SMSC module identifiers for the smsc group directive 
     'smsc', which identifies which SMSC module is to be used for the specific
     link, according to these: <emi2> to <emi>, <at2> to <at>, <emi> to 
     <emi_x25>. 
@@ -62,7 +62,7 @@ Compatibility breakers:
   * Added 'binfo' billing identifier/information element to bearerbox's 
     access.log log format.
 
-  * Changed the way how DLR storage is "defined" while configure time, accoding
+  * Changed the way how DLR storage is "defined" while configure time, according
     to this: removes '--with-dlr', --with-mysql to --with-mysql-dir,
     --enable-[mysql|oracle|sdb|sqlite] to --with-[mysql|oracle|sdb|sqlite].
  
@@ -72,7 +72,7 @@ New features:
 
   * SMPP added facility to specify SMSC service type with 
     'service-type = foo', adding handling of invaid userid and/or passwd to  
-    shutdown SMSC connection rather then retrying to reconnect, a set of 
+    shutdown SMSC connection rather than retrying to reconnect, a set of 
     optional parameters (SMPP v3.4) have been added, UDH support for MOs,
     handling of intermediately delivery notifications, added 'message_payload' 
     handling, added enhanced DLR parsing and handling of DLR's optional
@@ -84,8 +84,8 @@ New features:
 
   * CIMD2 has been rewriten to the new SMSCConn API layer, added additional 
     support features 'our-host', 'our-port' and parameter 069 (service center 
-    address), harmonzied log message formating, new 'no-dlr' config directive 
-    to indicate if DLR requests should be proceeeded, added RPI 
+    address), harmonized log message formating, new 'no-dlr' config directive 
+    to indicate if DLR requests should be proceeded, added RPI 
     (return-path-indication) support and binfo support via tariff class, allows
     setting PID for MT messages, adds "more messages to send" support.
 
@@ -103,14 +103,14 @@ New features:
 
   * AT added +CMTI support for MO messages, 2 new config options 
     'max-error-count' and 'reset-string' for hard reset of the modem when modem 
-    crashed.
+    crashes.
     
   * OISD has been rewriten to SMSCConn API, added validity support.
     
   * HTTP admin command 'restart' added to restart bearerbox, 'loglevel' to  
     change log-level of log-files while bearerbox is running.
 
-  * Added 'our-host' interface support for binding to an explicite interface 
+  * Added 'our-host' interface support for binding to an explicit interface 
     on SMSC connections. 
 
   * Added smsc specific logging capability by handling open log files in 
@@ -126,8 +126,8 @@ New features:
  
   * Added internal restarting msg command among boxes.
 
-  * Added new command line option ("-g" or "--generate") to bearebox. This 
-    option just dump all known config groups and options to stdout. 
+  * Added new command line option ("-g" or "--generate") to bearerbox. This 
+    option just dumps all known config groups and options to stdout. 
 
   * WAP added support for EFI inside WMLScript, added new application ids from 
     OMNA web page, WSP encoding-version handling, logging of upstream HTTP server 
@@ -155,13 +155,13 @@ New features:
     'reroute-smsc-id' and 'reroute-receiver' to multi-group 'smsc'. This allows
     MOs to be directly turned into MTs within bearerbox.
 
-  * ORACLE 8i/9i support added for database pools and DLR handling.
+  * ORACLE 8i/9i support added for database polls and DLR handling.
   
-  * PostgrSQL support added for database pools.
+  * PostgrSQL support added for database polls.
   
-  * SQLITE added SQLite support for database pools. 
+  * SQLITE added SQLite support for database polls. 
   
-  * Added new escape code '%I' for URL translations to allow inclussion of the 
+  * Added new escape code '%I' for URL translations to allow inclusion of the 
     internal SMS ID into the processing, new escape code '%T' for sending the 
     UNIX epoch timestamp in favor of '%t'.
 
@@ -184,7 +184,7 @@ New features:
     allow custom core access.log formatting, 'access-log-time' to indicate if
     localtime or gmt should be used within access.log.
 
-  * Added new command line parameters for deamons (all boxes): 
+  * Added new command line parameters for daemons (all boxes): 
       -P/--parachute : start watcher father process that catch and restart  
 	                   crashed child process 
       -X/--panic-script : execute this script if child process crashed 
@@ -324,7 +324,7 @@ Compatibility breakers:
 
   * Added initial SMPP v3.4 optional fields support. Still very experimental.
     Use the 'interface-version = 33' config directive if you don't want to
-    relly on this new code.
+    rely on this new code.
 
   * HTTP servers can bind to specific interfaces now.
 
@@ -343,7 +343,7 @@ New features:
     smsc-id or receiver number rules to specific smsbox instances. This may 
     be several real smsboxes or even own boxes that act to bearerbox as if 
     they are smsboxes by using the same message communication interface. This 
-    is usefull for implementing own boxes that act as EMI/UCP or SMPP proxies.
+    is useful for implementing own boxes that act as EMI/UCP or SMPP proxies.
 
   * iconv support has been added for character encoding. Adds 'alt-charset' 
     directive for the SMPP smsc group. Use iconv's type representation to 
@@ -445,7 +445,7 @@ New features:
     currently in the main queue.
 
   * Added a '--with-cflags=CFLAGS' and '--with-libs=LIBS' configuration
-    options. These are usefull when Kannel is linked again additional
+    options. These are useful when Kannel is linked against additional
     proprietary modules.
 
   * Improvements in the Siemens M20 GSM modem support.
@@ -462,7 +462,7 @@ New features:
 
   * wapbox has an own access.log facility now.
 
-  * Added the new 'smasi' SMSC type for connecting to SM/ASI protocoll SMSC, 
+  * Added the new 'smasi' SMSC type for connecting to SM/ASI protocol SMSC, 
     like the CriticalPath InVoke SMS Center.
 
   * Added HEAD method support for HTTP client module.

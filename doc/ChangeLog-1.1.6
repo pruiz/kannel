@@ -48,7 +48,7 @@
 
 2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
     * checks/check_[fakesmsc|pph].sh: need some time before trying to grep 
-      around in the logs and descide if things are doing well
+      around in the logs and decide if things are doing well
 
 2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/pushkannel.conf: adjusted log-file entries for make checking
@@ -256,7 +256,7 @@
       our_port is undef, emi2 switches to alt-host:port) (should be used with 
       retry = true)
     * gw/smsc_emi2.c: Always set status=RECONNECTING on entering 
-      open_send_connection and status=ACTIVE on sucessful connection
+      open_send_connection and status=ACTIVE on successful connection
     * gw/smsc_emi2.c: Don't set why_killed=SMSC_KILLED_PASSWORD when retry is 
       true, because emi2 won't be really killed
     * gw/smsbox.c: Added octstr_destroy to sendsms_url and sendota_url
@@ -545,7 +545,7 @@
     * test/test_ota.c: Added a test program for it
     * gw/settings.dtd: Added a DTD for OTA compiler
     * test/test_http.c: Better debugging. Added an option for reading the 
-      test message from a file; usefull when it contains lots of unsafe
+      test message from a file; useful when it contains lots of unsafe
       characters
     * gwlib/charset.c: In function charset_to_utf8:  If the original charset
       is utf8, return immediately (to still an annoying error message)

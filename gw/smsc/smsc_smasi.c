@@ -60,7 +60,7 @@
  * Stipe Tolj <tolj@wapme-systems.de>
  *
  * This module connects to a CriticalPath InVoke SMS Center which
- * uses the SM/ASI protocoll. 
+ * uses the SM/ASI protocol. 
  * The module is heavily based on the SMPP module design.
  *
  * TODO:

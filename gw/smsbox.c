@@ -2188,7 +2188,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
             /* add the receiver to the failed list */
             list_append(failed_id, receiv);
         } else {
-            /* log the sending as successfull for this particular message */
+            /* log the sending as successful for this particular message */
             alog("send-SMS request added - sender:%s:%s %s target:%s request: '%s'",
 	             octstr_get_cstr(urltrans_username(t)),
                  octstr_get_cstr(newfrom), octstr_get_cstr(client_ip),
@@ -2572,8 +2572,8 @@ error:
 
 
 /*
- * Create and send an SMS message from an XML-RPC request.
- * Answer with a valid XML-RPC response for a successfull request.
+ * Create and send an SMS message from a XML-RPC request.
+ * Answer with a valid XML-RPC response for a successful request.
  * 
  * function signature: boolean sms.send(struct)
  *

@@ -277,7 +277,7 @@ static void usage(void)
            \n\
            -a            disassemble resulting byte-code and print it to the\n\
            standard output\n\
-           -d		use ws_eval_data() function instead of ws_eval_file()\n\
+           -d		 use ws_eval_data() function instead of ws_eval_file()\n\
            -h            print this help message and exit successfully\n\
            -l            encode strings in ISO-8859/1 (ISO latin1) instead of using\n\
            UTF-8\n\

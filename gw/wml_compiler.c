@@ -369,7 +369,7 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary,
      * charset definition.
      */
     if ((encoding = find_charset_encoding(wml_text)) != NULL) {
-        /* ok, we relly on the xml preamble encoding */
+        /* ok, we rely on the xml preamble encoding */
     } else if (charset && octstr_len(charset) > 0) {
         /* we had a HTTP response charset, use this */
         encoding = octstr_duplicate(charset);
@@ -828,7 +828,7 @@ static int parse_attr_value(Octstr *attr_value, List *tokens,
 
     /*
      * Beware that libxml2 does internal encoding in UTF-8 while parsing.
-     * So if our orginal WML source had a different encoding set, we have
+     * So if our original WML source had a different encoding set, we have
      * to transcode at least here. Only transcode if target encoding differs
      * from libxml2's internal encoding (UTF-8).
      */
@@ -934,7 +934,7 @@ static int parse_text(xmlNodePtr node, wml_binary_t **wbxml)
 
     /*
      * Beware that libxml2 does internal encoding in UTF-8 while parsing.
-     * So if our orginal WML source had a different encoding set, we have
+     * So if our original WML source had a different encoding set, we have
      * to transcode at least here. Only transcode if target encoding differs
      * from libxml2's internal encoding (UTF-8).
      */
@@ -1260,7 +1260,7 @@ static void parse_entities(Octstr *wml_source)
 
 /*
  * wml_binary_create - reserves memory for the wml_binary_t and sets the 
- * fields to zeroes and NULLs.
+ * fields to zeros and NULLs.
  */
 
 static wml_binary_t *wml_binary_create(void)

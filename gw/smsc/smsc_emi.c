@@ -878,10 +878,10 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 
     /* 
      * Handle OP/31 from SMSC side. This is not "purely" spec conform since,
-     * the protocoll says "This operation can be used by a SMT to alert the SC.",
+     * the protocol says "This operation can be used by a SMT to alert the SC.",
      * which implies semantically only the opposite way. For the sake of EMI/UCP
      * server implementations that send alert messages to SMTs we handle this 
-     * without breaking any core protocoll concept.
+     * without breaking any core protocol concept.
      *
      * See [1], section 4.6, p. 19.
      */

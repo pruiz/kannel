@@ -189,7 +189,7 @@
     allows routing based upon smsc-id or receiver number rules to specific
     smsbox instances. This may be several real smsboxes or even own boxes that
     act to bearerbox as if they are smsboxes by using the same message 
-    communication interface. This is usefull for implementing own boxes that
+    communication interface. This is useful for implementing own boxes that
     act as EMI/UCP or SMPP proxies.
     [Msg-ID: <3D790901.B126AAC9@wapme-systems.de>]
 

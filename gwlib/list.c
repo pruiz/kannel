@@ -74,7 +74,7 @@
  * allocations: every time an item is added to the list, a new node would
  * need to be allocated, and when it is removed, it would need to be freed.
  * Using an array lets us reduce the number of allocations. It also lets
- * us access an arbitrary element in constant time, which is especially
+ * us access an arbitrary element in constant time, which is specially
  * useful since it lets us simplify the list API by not adding iterators
  * or an explicit list item type.
  *
@@ -637,7 +637,7 @@ static void delete_items_from_list(List *list, long pos, long count)
         list->len -= count;
     } else {
         /*
-         * This is not especially efficient, but it's simple and
+         * This is not specially efficient, but it's simple and
          * works. Faster methods would have to take more special
          * cases into account. 
          */

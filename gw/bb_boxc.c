@@ -1059,7 +1059,7 @@ static void init_smsbox_routes(Cfg *cfg)
         smsc_ids = cfg_get(grp, octstr_imm("smsc-ids"));
         shortcuts = cfg_get(grp, octstr_imm("shortcuts"));
 
-        /* now parse the smsc-ids and shortcuts semicolon seperated list */
+        /* now parse the smsc-ids and shortcuts semicolon separated list */
         if (smsc_ids) {
             items = octstr_split(smsc_ids, octstr_imm(";"));
             for (i = 0; i < list_len(items); i++) {

@@ -24,7 +24,7 @@
       break the quoted parameter parsing within revision 1.17. Reverting this
       back to the previous behaviour to make test/test_headers.c happy again.
     * test/test_header.c: fixing trivial compiler warning
-    * test/header_test: chaning the expected values to have quoted parameter
+    * test/header_test: changing the expected values to have quoted parameter
       values to make the test program happy again.
 
 2004-07-09  Stipe Tolj  <tolj@wapme-systems.de> 
@@ -86,7 +86,7 @@
     * gwlib/semaphore.[ch]: added 'semaphore_getvalue' function.
 
 2004-06-25  Alexander Malysh  <a.malysh@centrium.de> 
-    * gwlib/log.c: fixed (workarounded) endless panic loop if memcheck were enabled.
+    * gwlib/log.c: fixed (workarounded) endless panic loop if memcheck was enabled.
 
 2004-06-22  Alexander Malysh  <a.malysh@centrium.de> 
     * doc/userguide/userguide.xml: fixed typo bug#133. additionaly reviewed and fixed
@@ -104,12 +104,12 @@
 2004-06-20  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/smscconn.c, gw/smscconn_p.h: more speedup. Changed 
       [allowed|denied|preferred]_smsc_id from 'Octstr' to 'List'.
-      So we have no need allways to parse the whole string and split it
+      So we have no need to always parse the whole string and split it
       into the list. Now we just split it while starting only once.
 
 2004-06-20  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/smscconn.[ch], gw/smscconn_p.h: made status/killed enums named.
-      Teached 'struct StatusInfo' to use named enums for status/killed.
+      Taught 'struct StatusInfo' to use named enums for status/killed.
       Changed return value to 'const Octstr* for 'smscconn_name' and 'smscconn_id'
       functions, so the caller see that those _may_ _not_ be freed.
     * gw/bb_alog.c gw/bb_smscconn.c: fixed const identifier warnings.
@@ -452,7 +452,7 @@
  
 2004-02-16 Stipe Tolj  <tolj@wapme-systems.de> 
     * gw/smsc/smsc_cimd2.c: added RPI (return-path-indication) support and  
-      binfo support via tariff class in CIMD protocoll.  
+      binfo support via tariff class in CIMD protocol.  
       Thanks to "Arne K. Haaje" <haaje@eurobate.com> for the patch. 
       [Msg-ID: <200402160909.47610.haaje@eurobate.com>] 
  
@@ -486,7 +486,7 @@
       in case we couldn't connect to bearerbox. This allows the caller to 
       deside if a panic is applicable or a loop will be entered to try to 
       re-connect. Whereas connect_to_bearerbox() keeps to throw panic on 
-      unsuccessfull connect. 
+      unsuccessful connect. 
  
 2004-01-29 Aarno Syv\132nen <aarno@gni.ch> 
     * gw/wap_push_ppg_pushuser.c: Fixed a fatal bug appearing when 
@@ -575,7 +575,7 @@
  
 2004-01-20  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/bearerbox.c, gw/smsbox.c, gwlib/utils.c, doc/userguide/userguide.xml: 
-      applied parachute-daemon.patch that adds some usefull command line parameters  
+      applied parachute-daemon.patch that adds some useful command line parameters  
       for all boxes: 
 	1) -P/--parachute : start watcher father process that catch and restart  
 	   crashed child process 
@@ -798,7 +798,7 @@
     * gwlib/accesslog.c: fixed compiler warning about zero-length format string. 
       Got rid of buffer allocation, just allocate on the stack. 
 2003-11-26  Alexander Malysh  <a.malysh@centrium.de> 
-    * gwlib/http.c: fixed memory leak if conn_wrap_fd(...) failed due to unsuccessfull 
+    * gwlib/http.c: fixed memory leak if conn_wrap_fd(...) failed due to unsuccessful 
       SSL handshake. 
  
 2003-11-26  Stipe Tolj  <tolj@wapme-systems.de> 
@@ -1018,7 +1018,7 @@
  
 2003-10-30  Stipe Tolj  <tolj@wapme-systems.de> 
     * gwlib/regex.[ch]: made regex functions display calling function in case 
-      of error. This is usefully for later debugging purposes. Added functions 
+      of error. This is useful for later debugging purposes. Added functions 
       gw_regex_[match|subst]_[pre]() for simple matchin and substituion 
       operations on Octstr. Either passing the RE in plain text or as  
       pre-compiled structure. 
@@ -1285,7 +1285,7 @@
       change current behaviour and gives more flexibility for other boxes. 
     * gwlib/parse.c: fixed pasing issues in parse_get_line() and  
       parse_get_seperated_block() 
-    * gwlib/mime.c: fixed CRLF handling for headers and boundary seperators. 
+    * gwlib/mime.c: fixed CRLF handling for headers and boundary separators. 
  
 2003-09-15  Stipe Tolj  <tolj@wapme-systems.de> 
     * wap/wsp_headers.[ch]: relabeled strip_parameters() and  
@@ -1313,7 +1313,7 @@
 2003-09-10  Stipe Tolj  <tolj@wapme-systems.de> 
     * gwlib/parse.[ch]: added routines parse_get_line() to get the Octstr 
       stream up to an EOL and parse_get_seperated_block() to get an next  
-      Octstr block between two seperators.  
+      Octstr block between two separators.  
     * gwlib/mime.[ch]: added MIME multipart/related parsing routines. This 
       allows to parse an MIME document given as Octstr into our own  
       MIMEEntity representation which is a hierarchical linked structure. 
@@ -1332,9 +1332,9 @@
     * gw/smsc/smsc_smpp.c: changed pdu_to_msg() to recode source_addr and 
       destination_addr on the MO side. We will pass an prefixed '+' to the 
       smsbox side. Otherwise there is no chance for backend applicatins, like 
-      smsbox to descide what type of number it is. 
-      BEWARE: this may be an behaviour change for your individual setup, if 
-      you relly that the number is transmitted in pure TON=1 notation to the 
+      smsbox to decide what type of number it is. 
+      BEWARE: this may be a behaviour change for your individual setup, if 
+      you rely that the number is transmitted in pure TON=1 notation to the 
       smsbox. In this case please use unified-prefix on the smsc group level 
       to get rid of the prefixed '+'. 
       Thanks to Alex for providing the patch. 
@@ -1361,7 +1361,7 @@
  
 2003-09-02  Stipe Tolj  <tolj@wapme-systems.de> 
     * gwlib/socket.c: fixed a segmentation bug. If setup_official_name() 
-      did not have a successfull gw_gethostbyname() call, then  
+      did not have a successful gw_gethostbyname() call, then  
       gw_netaddr_to_octstr4() would cause to cause segmentation fault. 
        
 2003-09-01  Stipe Tolj  <tolj@wapme-systems.de> 
@@ -1467,7 +1467,7 @@
     * gw/smsbox.c: more info about deprecated fields in the warning strings. 
  
 2003-08-08  Stipe Tolj  <tolj@wapme-systems.de> 
-    * gw/wap-appl.c: major bug fixing BUG#76. We *only* pass the orginal  
+    * gw/wap-appl.c: major bug fixing BUG#76. We *only* pass the original  
       client request headers to the convert_content() routine, not the once 
       passed to the HTTP server. This broke connection-less mode. 
  
@@ -1782,7 +1782,7 @@
       you want to use delivery reports 
     * gw/dlr.c: dlr_add and dlr_find returns nothing if smsc-id is empty,  
       logging an warning asking for "smsc-id" 
-    * gw/dlr.h: added some macros to test dlr_mask values, especially now 
+    * gw/dlr.h: added some macros to test dlr_mask values, specially now 
       that it could have the value "-1" ;) 
     * gw/dlr.c, gw/shared.c: now uses dlr.h macros to test dlr_mask 
     * gw/msg.c: reset structure on msg_create(sms) to make sure that every 
@@ -2592,7 +2592,7 @@
       to register to a specific exlusive log file. 
     * gw/smsc/smsc_[at2|cgw|emi2|fake|http|smasi|smpp|wrapper].c: added  
       register calls log_thread_to() within the working threads in case the 
-      smsc-id should be logged to a seperate, exlucive log-file. 
+      smsc-id should be logged to a separate, exlucive log-file. 
  
 2003-03-04  Stipe Tolj  <tolj@wapme-systems.de> 
     * gw/smsc/smsc_smasi.c: fixed bugs in pdu_to_msg(), including the setting 
@@ -2606,7 +2606,7 @@
       [Msg-ID: <5.1.0.14.0.20030304085848.026b6020@amagoblin.ialien.co.za>] 
     * gwlib/conn.[ch], gwlib/http.c: fixed a serious pthread_mutex bug for  
       the call-back function to the openssl thread locking. We used two 
-      seperate lock array, one for the client and one for the server side. 
+      separate lock array, one for the client and one for the server side. 
       But openssl does not know about those, and you can't register two 
       different call-backs for client/server side. This should make now 
       a lot of ssl related things more cleaner. 

@@ -103,11 +103,11 @@ static Octstr *copy_until_nul(Octstr *os, long *pos, long max_octets)
 
     nul = octstr_search_char(os, '\0', *pos);
     if (nul == -1) {
-	warning(0, "SMPP: PDU NUL terminated string has no NUL.");
+	warning(0, "SMPP: PDU NULL terminated string has no NULL.");
     	return NULL;
     }
     if (*pos + max_octets < nul) {
-	error(0, "SMPP: PDU NUL terminated string longer than allowed.");
+	error(0, "SMPP: PDU NULL terminated string longer than allowed.");
     	return NULL;
     }
     data = (nul - *pos > 0) ? octstr_copy(os, *pos, nul - *pos) : NULL;
@@ -236,7 +236,7 @@ Octstr *smpp_pdu_pack(SMPP_PDU *pdu)
     #define NULTERMINATED(name, max_octets) \
         if (p->name != NULL) { \
             if (octstr_len(p->name) >= max_octets) { \
-                warning(0, "SMPP: PDU element <%s> to long " \
+                warning(0, "SMPP: PDU element <%s> too long " \
                         "(length is %ld, should be %d)", \
                         #name, octstr_len(p->name), max_octets-1); \
                 temp = octstr_copy(p->name, 0, max_octets-1); \

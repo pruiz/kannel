@@ -730,7 +730,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
      * request be obviously will not find any session machine entry. */
     sm = find_session_machine_by_id(session_id);
 
-    /* ensure we pass only the orginal headers to the convertion routine */
+    /* ensure we pass only the original headers to the convertion routine */
     device_headers = (orig_event->type == S_MethodInvoke_Ind) ?
         orig_event->u.S_MethodInvoke_Ind.request_headers :
         orig_event->u.S_Unit_MethodInvoke_Ind.request_headers;

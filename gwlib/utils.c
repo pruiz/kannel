@@ -530,7 +530,7 @@ int get_and_set_debugs(int argc, char **argv,
     if (user && -1 == change_user(user))
         panic(0, "Couldnot change to user `%s'.", user);
 
-    /* deamonize */
+    /* daemonize */
     if (daemonize && !become_daemon())
        exit(0);
 

@@ -133,7 +133,7 @@ void write_to_bearerbox(Msg *msg);
  * Delivers a SMS to the bearerbox and returns an error code: 0 if
  * successfull. -1 if transfer failed.
  *
- * Note: Message is only destroyed if sucessfully delivered!
+ * Note: Message is only destroyed if successfully delivered!
  */
 int deliver_to_bearerbox_real(Connection *conn, Msg *msg);
 int deliver_to_bearerbox(Msg *msg);

@@ -2304,7 +2304,7 @@
 	but ack_pdu_sent (this bug is pointed out out by Huang Li), when ack
 	pdu was send. Used constant ACKNOWLEDGEMENT everywhere in 
 	wtp_send_calls. Noticed invalid use of 'resent' in the specs. Rid-flag
-	is not turned when ack is sended, because the iniator does not use 
+	is not turned when ack is sent, because the iniator does not use 
 	this flag (only rid of result message is used by it. This is pointed
 	out by Huang Li, too).
 
@@ -4783,7 +4783,7 @@ Thu May 25 16:52:22 2000  Lars Wirzenius  <liw@wapit.com>
 2000-05-17  Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_state-decl.h: Two bugfixes: rid to 0, when the result is
-	sended first time (thanks to Oliver Lau), conditions checking
+	sent first time (thanks to Oliver Lau), conditions checking
 	whether u/p-flag is up corrected.
 
 2000-05-16    <Kalle Marjola <rpr@wapit.com>>
@@ -5766,7 +5766,7 @@ Fri Apr  7 17:25:39 2000  Lars Wirzenius  <liw@wapit.com>
 2000-04-07 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp.c, wtp_state-decl.h: Included wtp_timer_destroy call in function
-	machine_mark_unused, so that a timer created is allways destroyed when
+	machine_mark_unused, so that a timer created is always destroyed when
 	a transaction ends.
 
 Fri Apr  7 15:08:50 2000  Lars Wirzenius  <liw@wapit.com>
@@ -6208,7 +6208,7 @@ Tue Mar 28 16:14:49 2000  Lars Wirzenius  <liw@wapit.com>
 
 2000-03-28 Aarno Syvänen <syvanen@wapit.com>
 
-	* wtp_state-decl.h: Allocated memory for resended messages
+	* wtp_state-decl.h: Allocated memory for resent messages
 
 	* wapbox.c: Deallocate memory reserved for messages. (Based on tips 
 	from Paul Keogh) In addition, added timer mutex iniatilisation.
@@ -7215,7 +7215,7 @@ Thu Jan 27 20:09:23 2000  Lars Wirzenius  <liw@wapit.com>
 	wtp machine rewritten with the previous attribute added.
 
 	* wtp_send.c|h: function wtp_resend_result added. Function send_result
-	now returns the sended message.
+	now returns the sent message.
 
 Thu Jan 27 17:34:53 2000  Lars Wirzenius  <liw@wapit.com>
 

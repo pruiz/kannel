@@ -1,4 +1,10 @@
 2004-08-11  Stipe Tolj  <stolj@wapme.de>
+    * various files: a generic spellchecking patch to fix mis-spelling.
+      Mainly this fixes bad-english comments in source files.
+      Thanks a lot to Pedro for the provided patch. NO LOGIC CHHANGE!
+      [Msg-ID: <411A3291.4090906@netcabo.pt>]
+
+2004-08-11  Stipe Tolj  <stolj@wapme.de>
     * gw/smsc/smpp_pdu.c: fixing a warning statement, for nulterminated string
       length checking of PDU elements. This should be not confusing users.
       Thanks to Alan McNatty for pointing to this.
@@ -34,14 +40,14 @@
     * gw/sms.c: fixed whitespaces.
 
 2004-08-05 Alexander Malysh <olek2002 at hotmail.com>
-    * gw/gw/bb_smscconn.c: applied patch that that make it possible to
-      start/stop/restart of all smscconn's that have equals smsc-id's
+    * gw/gw/bb_smscconn.c: applied patch that makes it possible to
+      start/stop/restart of all smscconn's that have equal smsc-id's
       instead of only one.
       [Msg-Id: <cek0ss$5kp$1@sea.gmane.org>].
 
 2004-07-20 Alexander Malysh <olek2002 at hotmail.com>
     * gwlib/date.c: fixed 'date_parse_iso' and 'date_create_iso'.
-      date_create_iso: 'Z' at the and menas UTC time and not local time.
+      date_create_iso: 'Z' at the and means UTC time and not local time.
       date_parse_iso: never works?!
 
 2004-07-18 Alexander Malysh <olek2002 at hotmail.com>

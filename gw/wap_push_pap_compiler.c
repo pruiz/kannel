@@ -1011,7 +1011,7 @@ static int parse_push_message_value(Octstr *attr_name, Octstr *attr_value,
 
 /*
  * When there is no legal address to be stored in field (either parsing was
- * unsuccessfull or an unimplemented address format was requested by the push
+ * unsuccessful or an unimplemented address format was requested by the push
  * initiator) we use value "erroneous". This is necessary, because this a 
  * mandatory field.
  *

@@ -248,7 +248,7 @@ WsBc *ws_bc_decode(const unsigned char *data, size_t data_len);
 /* Add an integer constant `value' to the constant pool of the
    byte-code structure `bc'.  The index of the constant is returned in
    `index_return'.  The function returns WS_TRUE if the operation was
-   successfull or WS_FALSE otherwise (out of memory).  */
+   successful or WS_FALSE otherwise (out of memory).  */
 WsBool ws_bc_add_const_int(WsBc *bc, WsUInt16 *index_return,
                            WsInt32 value);
 
@@ -314,7 +314,7 @@ WsBool ws_bc_add_pragma_user_agent_property_and_scheme(
    function takes a copy of the byte-code array `code'.  The caller
    can free / modify the original array, pointed by the argument
    `code', after the function returns.  The function returns WS_TRUE
-   if the adding was successfull or WS_FALSE otherwise (out of
+   if the adding was successful or WS_FALSE otherwise (out of
    memory). */
 WsBool ws_bc_add_function(WsBc *bc, WsUInt8 *index_return,
                           char *name, WsUInt8 num_arguments,

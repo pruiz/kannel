@@ -8791,7 +8791,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 
 	<para>If Kannel is configured so that the bearerbox, wapbox and/or smsbox 
         log to file each of these log files will continue to grow unless administered
-        in some way (this is especially true if access logs are created and/or the 
+        in some way (this is specially true if access logs are created and/or the 
         log level is set to debug). </para>
 
         <para>

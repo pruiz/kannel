@@ -79,7 +79,7 @@ static Octstr *custom_log_format = NULL;
  *   %l - log message
  *   %i - smsc-id
  *   %n - service-name (for MO) or sendsms-user (for MT)
- *   %A  - account
+ *   %A - account
  *   %B - billing identifier/information
  *   %p - sender (from) 
  *   %P - receiver (to)
@@ -88,20 +88,20 @@ static Octstr *custom_log_format = NULL;
  *   %M - message waiting indicator (mwi)
  *   %C - compress indicator
  *   %d - dlr_mask
- *   %a - the orginal SMS message, spaces squeezed
+ *   %a - the original SMS message, spaces squeezed
  *   %u - UDH data (in escaped form)
  *   %U - length of UDH data
  *   %k - the keyword in the SMS request (the first word in the SMS message) 
  *   %s - next word from the SMS message, starting with the second one
  *   %S - same as %s, but '*' is converted to '~' 
  *   %r - words not yet used by %s
- *   %b - the orginal SMS message
+ *   %b - the original SMS message
  *   %L - length of SMS message
  *   %t - the time of the message, formatted as "YYYY-MM-DD HH:MM:SS"
  *   %T - the time of the message, in UNIX epoch timestamp format
  *   %I - the internal message ID
  *
- * Most escape codes should be compatibel with escape codes used in
+ * Most escape codes should be compatible with escape codes used in
  * sms-service groups.
  *
  * The default access-log-format would look like this (if access-log-clean is true):

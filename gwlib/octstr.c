@@ -185,7 +185,7 @@ static void octstr_grow(Octstr *ostr, long size)
     size++;   /* make room for the invisible terminating NUL */
 
     if (size > ostr->size) {
-        /* allways reallocate in 1kB chunks */
+        /* always reallocate in 1kB chunks */
         size += 1024 - (size % 1024);
         ostr->data = gw_realloc(ostr->data, size);
         ostr->size = size;

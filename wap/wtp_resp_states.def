@@ -121,19 +121,19 @@
  * In this case, the state changes to TIDOK_WAIT. WSP is indicated only after 
  * an acknowledgement is received. After a negative answer (Abort PDU) the 
  * transaction is teared down. Reliablity is quaranteed by resending, which 
- * happens when WTP receives a resended invoke pdu, when its state TIDOK_WAIT.
+ * happens when WTP receives a resent invoke pdu, when its state TIDOK_WAIT.
  * Abort pdu now means a negative answer to a question "have you a transaction
  * having tid included in the tid verification message". So there is no need 
  * to indicate WSP.
  *
  * Error handling is mostly done before feeding an event to the state machine. 
  * However, when a pdu with an illegal header (header WTP does not understand)
- * is received, this is an special kind of event, because its handling depends
- * of the state. WTP must allways send an abort pdu. If a transaction is 
+ * is received, this is a special kind of event, because its handling depends
+ * of the state. WTP must always send an abort pdu. If a transaction is 
  * established, it must be teared down. If WSP has been indicated about a 
  * transaction, WTP must do TR-Abort.ind.
  *
- * There is two kind of aborts: by the peer, when it send abort pdu and by the 
+ * There are two kind of aborts: by the peer, when it sends abort pdu and by the 
  * wsp, when it does a primitive TR-Abort.req. When WSP does an abort, WTP 
  * must send an abort pdu to the peer; when WTP receives an abort, WSP must be
  * indicated (note, however, the special meaning abort pdu has in tid 
