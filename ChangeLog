@@ -1,3 +1,9 @@
+2000-04-05  Richard Braakman  <dark@wapit.com>
+
+	* wmlscript/wsint.h: Restored "extern int yylex()" declaration.
+	That at least shuts up -Wall, and there is no clean solution because
+	we have to deal with Bison output.
+
 2000-04-04 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_send.c|h: Changed tid type to int
