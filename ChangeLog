@@ -1,3 +1,8 @@
+2001-03-21  Kalle Marjola  <rpr@wapit.com>
+
+	* gwlib/xmlrpc.h|c: Added. Initial code to implement XML-RPC
+	specification.
+
 2001-03-21  Lars Wirzenius  <liw@iki.fi>
 
 	* checks/check_http.sh: Kill server via HTTP, instead of via

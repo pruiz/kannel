@@ -461,7 +461,6 @@ int main(int argc, char **argv)
     httpadmin_stop();
     store_shutdown();
 
-
     boxc_cleanup();
     smsc2_cleanup();
     empty_msg_lists();
