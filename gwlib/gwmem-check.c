@@ -61,8 +61,9 @@
 
 static int initialized = 0;
 
-/* Unfortunately, we cannot use the mutex and thread wrappers here, because
- * they would in turn try to use gw_malloc. */
+/* We have to use a static mutex here, because otherwise the mutex_create
+ * call would try to allocate memory with gw_malloc before we're
+ * initialized. */
 static Mutex gwmem_lock;
 
 struct location
@@ -379,6 +380,12 @@ void gw_check_init_mem(void)
     initialized = 1;
 }
 
+void gw_check_shutdown(void)
+{
+    mutex_destroy(&gwmem_lock);
+    initialized = 0;
+}
+
 void *gw_check_malloc(size_t size, const char *filename, long lineno,
                       const char *function)
 {
@@ -550,7 +557,6 @@ void gw_check_check_leaks(void)
     }
 
     unlock();
-    mutex_destroy(&gwmem_lock);
 }
 
 int gw_check_is_allocated(void *p)

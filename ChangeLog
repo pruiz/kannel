@@ -1,3 +1,17 @@
+2000-11-10  Richard Braakman  <dark@wapi.com>
+
+	* gwlib/gwlib.c: Call gwlib_protected_shutdown() last, because
+	the protected functions are used by other shutdown functions.
+	Thanks to Paul Keogh for pointing this out.
+
+	* gwlib/gwmem.h, gwlib/gwmem-check.c, gwlib/gwlib.c:
+	Added gwmem_shutdown() function, to be called after
+	gw_check_leaks().  This makes it possible to check for
+	leaks without shutting down.
+
+	* doc/userguide/userguide.xml: Document the configure options
+	added below.
+
 2000-11-10  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/http.c: Implemented persistent connections on the

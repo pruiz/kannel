@@ -195,10 +195,10 @@ pam) echo pam authetication is enabled. ;;
 esac
 
 
-dnl Implement --enable-ws-debug option.
+dnl Implement --enable-debug option.
 
-AC_ARG_ENABLE(ws-debug,
-[  --enable-ws-debug	  enable non-reentrant debugging for wmls compiler], [
+AC_ARG_ENABLE(debug,
+[  --enable-debug	  enable non-reentrant debugging for wmls compiler], [
   echo enabling WMLScript compiler debugging
   if test -n "$GCC"; then
     CFLAGS="$CFLAGS -Wall"

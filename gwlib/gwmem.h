@@ -22,6 +22,7 @@ void *gw_native_malloc(size_t size);
 void *gw_native_realloc(void *ptr, size_t size);
 void gw_native_free(void *ptr);
 char *gw_native_strdup(const char *str);
+void gw_native_shutdown(void);
 
 
 void gw_check_init_mem(void);
@@ -38,6 +39,7 @@ int gw_check_is_allocated(void *p);
 long gw_check_area_size(void *p);
 void *gw_check_claim_area(void *p,
 	const char *filename, long line, const char *function);
+void gw_check_shutdown(void);
 
 
 #if USE_GWMEM_NATIVE
@@ -54,6 +56,7 @@ void *gw_check_claim_area(void *p,
 #define gw_strdup(str) (gw_native_strdup(str))
 #define gw_assert_allocated(ptr, file, line, function)
 #define gw_claim_area(ptr) (ptr)
+#define gwmem_shutdown()
 
 #elif USE_GWMEM_CHECK
 
@@ -75,6 +78,7 @@ void *gw_check_claim_area(void *p,
 	(gw_assert_place(gw_check_is_allocated(ptr), file, line, function))
 #define gw_claim_area(ptr) \
 	(gw_check_claim_area(ptr, __FILE__, __LINE__, __func__))
+#define gwmem_shutdown() (gw_check_shutdown())
 
 #else
 

@@ -19,7 +19,7 @@ ac_help="$ac_help
   --enable-pam	          enable pam authentication
   --disable-pam	          disable pam authentication "
 ac_help="$ac_help
-  --enable-ws-debug	  enable non-reentrant debugging for wmls compiler"
+  --enable-debug	  enable non-reentrant debugging for wmls compiler"
 ac_help="$ac_help
   --enable-localtime	  log file time stamps in local time, not GMT"
 ac_help="$ac_help
@@ -2311,9 +2311,9 @@ esac
 
 
 
-# Check whether --enable-ws-debug or --disable-ws-debug was given.
-if test "${enable_ws_debug+set}" = set; then
-  enableval="$enable_ws_debug"
+# Check whether --enable-debug or --disable-debug was given.
+if test "${enable_debug+set}" = set; then
+  enableval="$enable_debug"
   
   echo enabling WMLScript compiler debugging
   if test -n "$GCC"; then

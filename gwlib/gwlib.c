@@ -36,9 +36,10 @@ void gwlib_shutdown(void)
     gwlib_assert_init();
     http_shutdown();
     socket_shutdown();
-    gwlib_protected_shutdown();
     gwthread_shutdown();
     octstr_shutdown();
     gw_check_leaks();
+    gwmem_shutdown();
+    gwlib_protected_shutdown();
     init = 0;
 }

@@ -333,11 +333,18 @@
 	<para>For detailed instruction on using the configuration
 	script, see file <filename>INSTALL</filename>. That file is
 	a generic documentation for <command>configure</command>. Kannel
-	defines a few additional options, most of which are only useful
-	for development:
+	defines a few additional options:
 	
     	<itemizedlist>
-	
+
+        <listitem><para><literal>--with-defaults=</literal><replaceable>type</replaceable>
+
+	    Set defaults for the other options.
+	    <replaceable>type</replaceable> is either <literal>speed</literal>
+	    or <literal>debug</literal>.  The default is
+            <literal>debug</literal>.
+	    </para></listitem>
+
 	<listitem><para><literal>--enable-docs</literal>
 
 	    Build documentation, b.e., converting the User Guide and
@@ -351,12 +358,18 @@
 	<listitem><para><literal>--enable-debug</literal>
 
 	    Enable non-reentrant development time
-	    debugging.</para></listitem>
+	    debugging of WMLScript compiler.</para></listitem>
 
 	<listitem><para><literal>--enable-localtime</literal>
 
 	    Write log file time stamps in local time, not
 	    GMT.</para></listitem>
+
+	<listitem><para><literal>--disable-assertions</literal>
+
+	    Turn off runtime assertion checking.  This makes
+	    Kannel faster, but gives less information if it crashes.
+	    </para></listitem>
 
 	<listitem><para><literal>--with-malloc=</literal><replaceable>type</replaceable>
 
