@@ -567,10 +567,10 @@ int wapbox_start(Config *config)
     wapbox_list = list_create();	/* have a list of connections */
     list_add_producer(outgoing_wdp);
 
-    if (start_thread(0, wdp_to_wapboxes, NULL, 0) == -1)
+    if ((int)start_thread(0, wdp_to_wapboxes, NULL, 0) == -1)
  	panic(0, "Failed to start a new thread for wapbox routing");
  
-    if (start_thread(0, wapboxc_run, (void *)wapbox_port, 0) == -1)
+    if ((int)start_thread(0, wapboxc_run, (void *)wapbox_port, 0) == -1)
 	panic(0, "Failed to start a new thread for wapbox connections");
 
     wapbox_running = 1;

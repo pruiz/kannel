@@ -62,8 +62,10 @@ static void *sms_receiver(void *arg)
         // wait_for_status_change(&bb_status, bb_suspended);
 
 	// XXX mutexes etc are needed, I think?
-	
-	ret = smsc_get_message(conn->smsc, &msg);
+
+	/* XXX this is wrong, we had to change the interface in
+	 * SMSC or generate a new RQItem */
+	// ret = smsc_get_message(conn->smsc, &msg);
 
 	if (ret == 1)
 	    list_produce(incoming_sms, msg);
@@ -89,8 +91,9 @@ static void *sms_sender(void *arg)
 	    break;
 
 	/* XXX note that last argument! */
-	
-	ret = smsc_send_message(conn->smsc, msg, NULL);
+	/* and the second argument */
+
+	// ret = smsc_send_message(conn->smsc, msg, NULL);
 	
 	// msg_destroy(msg); implicit destroy?
     }

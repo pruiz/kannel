@@ -154,16 +154,15 @@ static int starter(Config *config)
     ConfigGroup *grp;
     char *val, *log;
     
-    if (check_config(config) == -1)
-	panic(0, "Cannot start with corrupted configuration");
 	
     grp = config_find_first_group(config, "group", "core");
 
-    
     if ((log = config_get(grp, "log-file")) != NULL) {
 	val = config_get(grp, "log-level");
 	open_logfile(log, val ? atoi(val) : 0);
     }
+    if (check_config(config) == -1)
+	panic(0, "Cannot start with corrupted configuration");
 
     outgoing_sms = list_create();
     incoming_sms = list_create();
@@ -191,9 +190,8 @@ int main(int argc, char **argv)
     int cf_index;
     Config *cfg;
         
-    gw_init_mem();
+    gwlib_init();
     start_time = time(NULL);
-    info(0, "Bearerbox version %s starting", VERSION);
 
     cf_index = get_and_set_debugs(argc, argv, NULL);
 
@@ -203,6 +201,8 @@ int main(int argc, char **argv)
         panic(0, "No configuration, aborting.");
 
     starter(cfg);
+    info(0, "----------------------------------------");
+    info(0, "Bearerbox version %s starting", VERSION);
 
     debug("bb", 0, "Start-up done, entering mainloop");
     // main_program();
@@ -211,6 +211,7 @@ int main(int argc, char **argv)
     
     config_destroy(cfg);
     gw_check_leaks();
+    gwlib_shutdown();
 
     return 0;
 }

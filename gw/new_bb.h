@@ -4,6 +4,8 @@
  * General typedefs and functions for bearerbox
  */
 
+#include "gwlib/gwlib.h"
+#include "msg.h"
 
 /* general bearerbox state */
 

@@ -1,3 +1,7 @@
+2000-05-09    <Kalle Marjola <rpr@wapit.com>>
+
+	* gw/bb_*.c: something new, many things still missing
+
 2000-05-09  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/conn.c, gwlib/conn.h: Added octstr_read_withlen and
