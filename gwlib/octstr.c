@@ -1533,7 +1533,7 @@ void octstr_set_bits(Octstr *ostr, long bitpos, int numbits,
     gw_assert(numbits >= 0);
 
     maxlen = (bitpos + numbits + 7) / 8;
-    if (maxlen >= ostr->len) {
+    if (maxlen > ostr->len) {
         octstr_grow(ostr, maxlen);
         /* Make sure the new octets start out with value 0 */
         for (pos = ostr->len; pos < maxlen; pos++) {
@@ -1586,8 +1586,13 @@ void octstr_set_bits(Octstr *ostr, long bitpos, int numbits,
 
     gw_assert(bitpos == 0);
     gw_assert(pos < ostr->len);
+    /* Set remaining bits.  This is just like the single-octet case
+     * before the loop, except that we know bitpos is 0. */
     mask = (1 << numbits) - 1;
-    ostr->data[pos] = (ostr->data[pos] & ~mask) | (value & mask);
+    shiftwidth = 8 - numbits;
+    c = ostr->data[pos] & ~(mask << shiftwidth);
+    c |= value << shiftwidth;
+    ostr->data[pos] = c;
 
     seems_valid(ostr);
 }

@@ -1,6 +1,7 @@
 2001-05-04  Richard Braakman  <dark@wapit.com>
 
-	* gwlib/octstr.c: Fix an edge case in octstr_get_bits().
+	* gwlib/octstr.c: Fix edge cases in octstr_get_bits and
+	octstr_set_bits.
 
 2001-05-04  Richard Braakman  <dark@wapit.com>
 
