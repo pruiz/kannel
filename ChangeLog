@@ -1,3 +1,9 @@
+Wed Mar 29 23:42:40 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/gwmem.c: Added some asserts. Also, gw_malloc now fills the
+	memory area with 0xbabecafe so as to make sure it is _NOT_ all bits
+	zero.
+
 Wed Mar 29 23:29:26 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/octstr.[ch]: Added gw_asserts and cleaned up formatting.
