@@ -27,13 +27,16 @@
 static enum { limbo, running, terminating } run_status = limbo;
 
 
-
 static List *queue = NULL;
 
 
 static void main_thread(void *);
 static Msg *pack_into_datagram(WAPEvent *event);
 
+
+/***********************************************************************
+ * Public functions
+ */
 
 
 void wsp_unit_init(void) {
@@ -42,7 +45,6 @@ void wsp_unit_init(void) {
 	run_status = running;
 	gwthread_create(main_thread, NULL);
 }
-
 
 
 void wsp_unit_shutdown(void) {
@@ -57,7 +59,6 @@ void wsp_unit_shutdown(void) {
 		wap_event_destroy(e);
 	list_destroy(queue);
 }
-
 
 
 void wsp_unit_dispatch_event(WAPEvent *event) {
