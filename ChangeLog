@@ -1,3 +1,11 @@
+2001-08-21 Aarno Syvänen <aarno@wiral.com>
+
+	* gw/wap_push_ppg.c: Implement response-result
+	* wap/wap_events.def, gw/wap_push_pap_compiler.c: Corresponding
+	changes
+	* gw/wap_push_ppg.c, gw/wap_push_pap.c: Merge these modules
+	* gw/wapbox.c: Corresponding changes 
+
 2001-08-15 Aarno Syvänen <aarno@wiral.com>
 
 	* test/test_mime.c: Added a program for testing the mime parser
