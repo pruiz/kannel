@@ -1,3 +1,7 @@
+2000-08-22  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+
+	* solaris/etc/kannel.conf: By default do not permit admin connections
+
 Mon Aug 21 18:39:30 2000  Lars Wirzenius  <liw@iki.fi>
 
 	* test/test_counter.c: Removed, as this is now replaced by
