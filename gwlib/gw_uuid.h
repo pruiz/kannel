@@ -29,6 +29,12 @@ typedef unsigned char uuid_t[16];
 extern "C" {
 #endif
 
+/* initialize uuid library */
+void uuid_init();
+
+/* shutdown uuid library */
+void uuid_shutdown();
+
 /* clear.c */
 void uuid_clear(uuid_t uu);
 

@@ -627,7 +627,7 @@ ac_configure=$ac_aux_dir/configure # This should be Cygnus configure.
   esac
 
 
-VERSION=`head -1 VERSION`
+VERSION=`head -n 1 VERSION`
 if test "x$VERSION" = "xcvs"; then
   echo $ac_n "checking cvs checkout date""... $ac_c" 1>&6
 echo "configure:634: checking cvs checkout date" >&5

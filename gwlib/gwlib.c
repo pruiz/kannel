@@ -79,6 +79,7 @@ void gwlib_init(void)
 {
     gw_assert(!init);
     gw_init_mem();
+    uuid_init();
     octstr_init();
     gwlib_protected_init();
     gwthread_init();
@@ -101,5 +102,6 @@ void gwlib_shutdown(void)
     gwmem_shutdown();
     gwlib_protected_shutdown();
     log_shutdown();
+    uuid_shutdown();
     init = 0;
 }

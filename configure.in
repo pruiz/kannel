@@ -14,7 +14,7 @@ AC_CONFIG_AUX_DIR(.)
 AC_SET_TERMINAL_SEQUENCES()
 
 dnl Check gateway version number.
-VERSION=`head -1 VERSION`
+VERSION=`head -n 1 VERSION`
 if test "x$VERSION" = "xcvs"; then
   AC_MSG_CHECKING([cvs checkout date])
   AC_CVS_DATE(CVS_DATE)

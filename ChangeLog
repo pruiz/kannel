@@ -1,3 +1,9 @@
+2003-12-08  Alexander Malysh  <a.malysh@centrium.de>
+    * configure.in, configure: changed 'head -1' call to propperly 'head -n 1'.
+    * gwlib/gw_uuid.[ch], gwlib/gwlib.c: added uuid_init() and uuid_shutdown()
+      functions. uuid_init() just open the random device (if any) because otherwise
+      it's possible that we open device twice (race condition).
+
 2003-12-08  Stipe Tolj  <tolj@wapme-systems.de>
     Universal Unique Identifier (UUID) Patch by Alexander.
     * configure[.in]: adding word size, srandom() and various header checks 

@@ -71,6 +71,7 @@ struct uuid {
  */
 static void uuid_pack(const struct uuid *uu, uuid_t ptr);
 static void uuid_unpack(const uuid_t in, struct uuid *uu);
+static int get_random_fd();
 
 
 #ifdef HAVE_SRANDOM
@@ -78,6 +79,26 @@ static void uuid_unpack(const uuid_t in, struct uuid *uu);
 #define rand() 		random()
 #endif
 
+
+
+void uuid_init()
+{
+    /* 
+     * open random device if any.
+     * We should do it here because otherwise it's
+     * possible that we open device twice.
+     */
+    get_random_fd();
+}
+
+
+void uuid_shutdown()
+{
+    int fd = get_random_fd();
+
+    if (fd > 0)
+        close(fd);
+}
 
 void uuid_clear(uuid_t uu)
 {
@@ -87,7 +108,9 @@ void uuid_clear(uuid_t uu)
 /*
  * compare.c --- compare whether or not two UUID's are the same
  *
- * Returns 0 if the two UUID's are different, and 1 if they are the same.
+ * Returns an integer less than, equal to, or greater than zero if
+ * uu1 respectively, to be less than, to match, or be greater than
+ * uu2.
  * 
  * Copyright (C) 1996, 1997 Theodore Ts'o.
  *
