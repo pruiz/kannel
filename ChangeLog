@@ -1,3 +1,7 @@
+Sat Apr 15 19:45:50 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* utils/daily-patch: Skip changes to gateway/configure.
+
 Sat Apr 15 19:19:08 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/log.[ch]: Added function close_all_logfiles based on
