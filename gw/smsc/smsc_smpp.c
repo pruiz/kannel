@@ -1143,7 +1143,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 	     *       only on bits 2-5 (some SMSC's send 0x44, and it's
 	     *       spec. conforme)
 	     */
-            if ((pdu->u.deliver_sm.esm_class & ~0xC3) == 0x04) {
+            if (pdu->u.deliver_sm.esm_class & (0x04|0x08)) {
 
                 debug("bb.sms.smpp",0,"SMPP[%s] handle_pdu, got DLR",
                       octstr_get_cstr(smpp->conn->id));
