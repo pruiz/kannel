@@ -1,3 +1,14 @@
+Wed Dec 29 22:06:22 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c: Three bugs in Reply PDU fixed: status code should
+	be encoded (200 is encoded as 0x20); the length of the content
+	type field should be included; and the high bit of the octet
+	that tells the content type should be set. 
+	
+	After these modifications, a trivial "Hello, world" WML page is
+	now successfully transferred to a 7110 phone. Yesh. Any year
+	now we will really have a WAP gateway.
+
 1999-12-29 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp.c, wtp_send.c: Added label WTP and function names in error 
@@ -801,5 +812,3 @@ Thu Nov 11 19:41:40 1999  Lars Wirzenius  <liw@wapit.com>
 	they cvan be compiled. This does NOT do anything, yet.
 
 	* VERSION: version 0.1 set
-	
-	

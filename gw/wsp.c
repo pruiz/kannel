@@ -61,6 +61,8 @@ static Octstr *make_connectionmode_pdu(long type);
 static Octstr *make_connectreply_pdu(long session_id);
 static Octstr *make_reply_pdu(long status, Octstr *body);
 
+static long convert_http_status_to_wsp_status(long http_status);
+
 static int transaction_belongs_to_session(WTPMachine *wtp, WSPMachine *session);
 
 static void *wsp_http_thread(void *arg);
@@ -479,11 +481,27 @@ static Octstr *make_reply_pdu(long status, Octstr *body) {
 	
 	/* XXX this is a hardcoded kludge */
 	pdu = make_connectionmode_pdu(Reply_PDU);
-	append_uint8(pdu, status);
-	append_uintvar(pdu, 0);
-	append_uint8(pdu, 0x14);
+	append_uint8(pdu, convert_http_status_to_wsp_status(status));
+	append_uintvar(pdu, 1);
+	append_uint8(pdu, 0x94); /* XXX */
 	append_octstr(pdu, body);
 	return pdu;
+}
+
+
+static long convert_http_status_to_wsp_status(long http_status) {
+	static struct {
+		long http_status;
+		long wsp_status;
+	} tab[] = {
+		{ 200, 0x20 },
+	};
+	int i;
+	
+	for (i = 0; i < sizeof(tab) / sizeof(tab[0]); ++i)
+		if (tab[i].http_status == http_status)
+			return tab[i].wsp_status;
+	return 0x60; /* Status 500, or "Internal Server Error" */
 }
 
 
