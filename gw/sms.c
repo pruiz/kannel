@@ -80,30 +80,30 @@ int dcs_to_fields(Msg **msg, int dcs) {
 
     /* Non-MWI Mode 1 */
     if ((dcs & 0xF0) == 0xF0) { 
-	dcs &= 0x07;
-	(*msg)->sms.coding = (dcs & 0x04) ? DC_8BIT : DC_7BIT; /* grab bit 2 */
-	(*msg)->sms.mclass = 1 + (dcs & 0x03); /* grab bits 1,0 */
+        dcs &= 0x07;
+        (*msg)->sms.coding = (dcs & 0x04) ? DC_8BIT : DC_7BIT; /* grab bit 2 */
+        (*msg)->sms.mclass = 1 + (dcs & 0x03); /* grab bits 1,0 */
     }
     
     /* Non-MWI Mode 0 */
     else if ((dcs & 0xC0) == 0x00) { 
-	(*msg)->sms.compress = ((dcs & 0x20) == 0x20) ? 1 : 0; /* grab bit 5 */
-	(*msg)->sms.mclass = ((dcs & 0x10) == 0x10) ? 1 + (dcs & 0x03) : 0; 
+        (*msg)->sms.compress = ((dcs & 0x20) == 0x20) ? 1 : 0; /* grab bit 5 */
+        (*msg)->sms.mclass = ((dcs & 0x10) == 0x10) ? 1 + (dcs & 0x03) : 0; 
 	    /* grab bit 0,1 if bit 4 is on */
-	(*msg)->sms.coding = 1 + ((dcs & 0x0C) >> 2); /* grab bit 3,2 */
+        (*msg)->sms.coding = 1 + ((dcs & 0x0C) >> 2); /* grab bit 3,2 */
     }
 
     /* MWI */
     else if ((dcs & 0xC0) == 0xC0) { 
-	(*msg)->sms.coding = ((dcs & 0x30) == 0x30) ? DC_UCS2 : DC_7BIT;
-	if (dcs & 0x08)
-	    dcs |= 0x04; /* if bit 3 is active, have mwi += 4 */
-	dcs &= 0x07;
- 	(*msg)->sms.mwi = 1 + dcs ; /* grab bits 1,0 */
+        (*msg)->sms.coding = ((dcs & 0x30) == 0x30) ? DC_UCS2 : DC_7BIT;
+        if (dcs & 0x08)
+            dcs |= 0x04; /* if bit 3 is active, have mwi += 4 */
+        dcs &= 0x07;
+        (*msg)->sms.mwi = 1 + dcs ; /* grab bits 1,0 */
     } 
     
     else {
-	return 0;
+        return 0;
     }
 
     return 1;

@@ -1428,7 +1428,7 @@ static void obey_request_thread(void *arg)
 
 
 	/* Recode to iso-8859-1 the MO message if possible */
-	if(mo_recode && msg->sms.coding == DC_UCS2) {
+	if (mo_recode && msg->sms.coding == DC_UCS2) {
 	    Octstr *text;
 	    text = octstr_duplicate(msg->sms.msgdata);
 
