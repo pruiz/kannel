@@ -113,7 +113,7 @@ ROW(INVOKE_RESP_WAIT,
     {
      current_primitive = TRAbortIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     wsp_dispatch_event(machine, wsp_event);
+     /*wsp_dispatch_event(machine, wsp_event);*/
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -186,7 +186,7 @@ ROW(RESULT_WAIT,
     {
      current_primitive = TRAbortIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     wsp_dispatch_event(machine, wsp_event);
+     /*wsp_dispatch_event(machine, wsp_event);*/
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -240,7 +240,7 @@ ROW(RESULT_RESP_WAIT,
     {
      current_primitive = TRAbortIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     wsp_dispatch_event(machine, wsp_event);
+     /*wsp_dispatch_event(machine, wsp_event);*/
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -252,6 +252,27 @@ ROW(RESULT_RESP_WAIT,
      wtp_machine_mark_unused(machine);
      wtp_send_abort(event->TRAbort.abort_type, event->TRAbort.abort_reason,
                     machine, event); 
+    },
+    LISTEN)
+
+/* 
+ * Specs do not spesify what to do when we get RcvInvoke event when the state
+ * is RESULT_RESP_WAIT. In our system, this event is not impossible: when 
+ * one wapbox goes down, bearerbox routes all its traffic to another wapbox,
+ * which state is indeterminable. In this case, we abort the transaction and
+ * indicate WSP.
+ */
+ROW(RESULT_RESP_WAIT,
+    RcvInvoke,
+    1,
+    {
+     wtp_machine_mark_unused(machine);
+     wtp_send_abort(event->TRAbort.abort_type, event->TRAbort.abort_reason,
+                    machine, event); 
+     
+     current_primitive = TRAbortIndication;
+     wsp_event = pack_wsp_event(current_primitive, event, machine);
+     /*wsp_dispatch_event(machine, wsp_event);*/
     },
     LISTEN)
 
@@ -272,7 +293,7 @@ ROW(RESULT_RESP_WAIT,
      wtp_machine_mark_unused(machine);
      current_primitive = TRAbortIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     wsp_dispatch_event(machine, wsp_event);
+     /*wsp_dispatch_event(machine, wsp_event);*/
     },
     LISTEN)
 
