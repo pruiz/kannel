@@ -13,8 +13,8 @@
 
 set -e
 
-addr="liw"
-#CVSROOT=":pserver:anonymoua@cvs.kannel.org:/home/cvs"
+addr=""
+CVSROOT=":pserver:anonymoua@cvs.kannel.org:/home/cvs"
 
 tagsuffix="debug"
 newtag="new_daily_patch_tag$tagsuffix"
