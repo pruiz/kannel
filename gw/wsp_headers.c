@@ -2801,13 +2801,12 @@ Octstr *wsp_headers_pack(List *headers, int separate_content_type)
         http_header_get(headers, i, &fieldname, &value);
         fieldnum = wsp_string_to_header(fieldname);
 
-        if (separate_content_type &&
-            fieldnum == WSP_HEADER_CONTENT_TYPE)
-            continue;  /* already handled */
-
         errors = 0;
 
-        if (fieldnum < 0) {
+        if (separate_content_type &&
+            fieldnum == WSP_HEADER_CONTENT_TYPE) {
+	    /* already handled */
+        } if (fieldnum < 0) {
             if (pack_application_header(packed, fieldname, value) < 0)
                 errors = 1;
         } else {

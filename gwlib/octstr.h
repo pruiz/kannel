@@ -64,14 +64,17 @@ void octstr_shutdown(void);
  * Create an octet string from a NUL-terminated C string. Return pointer to
  * the new object.
  */
-Octstr *octstr_create(const char *cstr);
+Octstr *octstr_create_real(const char *cstr);
+#define octstr_create(cstr) gw_claim_area(octstr_create_real((cstr)))
 
 
 /*
  * Create an octet string from arbitrary binary data. The length of the
  * data is given, so it can contain NUL characters.
  */
-Octstr *octstr_create_from_data(const char *data, long len);
+Octstr *octstr_create_from_data_real(const char *data, long len);
+#define octstr_create_from_data(data, len)\
+    gw_claim_area(octstr_create_from_data_real((data), (len)))
 
 
 /*
@@ -108,13 +111,16 @@ long octstr_len(Octstr *ostr);
  * octet string is created. If `from+len' is after the end of `ostr', 
  * `len' is reduced appropriately.
  */
-Octstr *octstr_copy(Octstr *ostr, long from, long len);
+Octstr *octstr_copy_real(Octstr *ostr, long from, long len);
+#define octstr_copy(ostr, from, len) \
+    gw_claim_area(octstr_copy_real((ostr), (from), (len)))
 
 
 /*
  * Copy all of an octet string.
  */
-Octstr *octstr_duplicate(Octstr *ostr);
+Octstr *octstr_duplicate_real(Octstr *ostr);
+#define octstr_duplicate(ostr) gw_claim_area(octstr_duplicate_real((ostr)))
 
 
 /*

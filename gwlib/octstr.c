@@ -132,14 +132,14 @@ void octstr_shutdown(void)
 }
 
 
-Octstr *octstr_create(const char *cstr)
+Octstr *octstr_create_real(const char *cstr)
 {
     gw_assert(cstr != NULL);
     return octstr_create_from_data(cstr, strlen(cstr));
 }
 
 
-Octstr *octstr_create_from_data(const char *data, long len)
+Octstr *octstr_create_from_data_real(const char *data, long len)
 {
     Octstr *ostr;
 
@@ -227,7 +227,7 @@ long octstr_len(Octstr *ostr)
 }
 
 
-Octstr *octstr_copy(Octstr *ostr, long from, long len)
+Octstr *octstr_copy_real(Octstr *ostr, long from, long len)
 {
     seems_valid(ostr);
     gw_assert(from >= 0);
@@ -244,7 +244,7 @@ Octstr *octstr_copy(Octstr *ostr, long from, long len)
 
 
 
-Octstr *octstr_duplicate(Octstr *ostr)
+Octstr *octstr_duplicate_real(Octstr *ostr)
 {
     if (ostr == NULL)
         return NULL;

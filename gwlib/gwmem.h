@@ -36,7 +36,7 @@ char *gw_check_strdup(const char *str,
 	const char *filename, long line, const char *function);
 int gw_check_is_allocated(void *p);
 long gw_check_area_size(void *p);
-void gw_check_claim_area(void *p,
+void *gw_check_claim_area(void *p,
 	const char *filename, long line, const char *function);
 
 
@@ -53,7 +53,7 @@ void gw_check_claim_area(void *p,
 #define gw_free(ptr) (gw_native_free(ptr))
 #define gw_strdup(str) (gw_native_strdup(str))
 #define gw_assert_allocated(ptr, file, line, function)
-#define gw_claim_area(ptr)
+#define gw_claim_area(ptr) (ptr)
 
 #elif USE_GWMEM_CHECK
 

@@ -463,9 +463,13 @@ char *gw_check_strdup(const char *str, const char *filename, long lineno,
 	return copy;
 }
 
-void gw_check_claim_area(void *p, const char *filename, long lineno,
+void *gw_check_claim_area(void *p, const char *filename, long lineno,
 		const char *function) {
 	struct area *area;
+
+	/* Allow this for the convenience of wrapper macros. */
+	if (p == NULL)
+		return NULL;
 
 	lock();
 	area = find_area(p);
@@ -478,6 +482,9 @@ void gw_check_claim_area(void *p, const char *filename, long lineno,
 	area->claimer.lineno = lineno;
 	area->claimer.function = function;
 	unlock();
+
+	/* For convenience of calling macros */
+	return p;
 }
 
 void gw_check_check_leaks(void) {

@@ -1,5 +1,19 @@
 2000-10-04  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/gwmem.h, gwlib/gwmem-check.c: Let gw_claim_area return
+	the pointer it gets, and let it accept NULL pointers.  This
+	makes it easier to use in wrapper macros.
+
+	* gwlib/octstr.[ch]: Wrap octstr_create, octstr_create_from_data,
+	octstr_copy, and octstr_duplicate so that they "claim" the Octstr
+	they return for their caller.  This information will show up in
+	the gw_check_leaks() output, making memory leaks much easier to
+	trace.
+
+	* gw/wsp_headers.c, gwlib/http.c: Fix memory leaks found this way.
+
+2000-10-04  Richard Braakman  <dark@wapit.com>
+
 	* Encode response headers and send them to the client:
 
 	* gw/wsp_headers.[ch]: Added wsp_headers_pack.  Fixed some bugs in

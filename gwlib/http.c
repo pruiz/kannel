@@ -731,9 +731,10 @@ void http_header_remove_all(List *headers, char *name)
     i = 0;
     while (i < list_len(headers)) {
 	h = list_get(headers, i);
-	if (header_is_called(h, name))
+	if (header_is_called(h, name)) {
 	    list_delete(headers, i, 1);
-	else
+	    octstr_destroy(h);
+	} else
 	    i++;
     }
 }
