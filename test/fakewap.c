@@ -438,6 +438,8 @@ int main(int argc, char **argv) {
     unsigned short tid;
     int connection_retries = 0;
 
+    sid_len = 0;
+
     if (argc > 2 && argv[1][0] == '-' && argv[1][1] == 'v') {
         verbose = 1;
         argv++;

@@ -235,9 +235,11 @@ int http_get(char *urltext, char **type, char **data, size_t *size) {
 			 (response->status == 302) || 
 			 (response->status == 303) ) 
 		{
+			if ((url = internal_url_create(httprequest_get_header_value(response, "Location"))) == NULL) {
+				error(0, "got http-redirect, but no Location: header");
+				goto error;
+			}
 
-			url = internal_url_create(httprequest_get_header_value(response, "Location"));
-			if(url==NULL) goto error;
 			httprequest_destroy(request);
 			httprequest_destroy(response);
 
