@@ -942,6 +942,14 @@ admin-password = f00bar
 	 require this.
      </entry></row>
     
+    <row><entry><literal>ssl-certkey-file</literal></entry>
+     <entry>ssl-certkey-file</entry>
+     <entry valign=bottom>
+      A PEM encoded SSL certificate and private key file to be used
+      with SSL connections.
+     </entry>
+    </row>
+
 
   </tbody>
   </tgroup>

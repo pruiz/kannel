@@ -1,3 +1,8 @@
+2001-06-17  Jarkko Kovala  <jarkko.kovala@iki.fi>
+
+	* doc/userguide/userguide.xml: Documentation for the
+	ssl-certkey-file variable.
+
 2001-05-16  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc.c, gw/smsc_p.h, gw/smsc_cimd2.c, gwlib/cfg.def:
