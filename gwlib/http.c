@@ -1607,6 +1607,7 @@ static void server_thread(void *dummy)
 		    ports[i] = -1;
 		}
 	    }
+	    gw_free(portno);
 	}
        
     	j = 0;
