@@ -1,3 +1,9 @@
+1999-11-15 Mikael Gueck <mikael.gueck@wapit.com>
+
+	* csdr.c: send and receive UDP datagrams.
+
+	* smsc_smpp.c: 8bit receive related fixes.
+
 1999-11-15    <rpr@rpr.wapit.com>
 
 	* smsbox.smsconf, simple.smsconf: renamed previous smsbox.conf as
