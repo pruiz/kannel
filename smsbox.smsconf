@@ -96,7 +96,8 @@ log-level = 0
 #
 # file = (file-name)
 #	file read from local disc. Only if not url set. All escape codes
-#	in url-fetch are supported here also.
+#	in url-fetch are supported here also. The last character of the file
+#	(usually linefeed) is removed.
 #
 # text = (text)
 #	predefined text answer. Only if not url or file set. Escape codes are

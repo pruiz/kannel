@@ -3,7 +3,12 @@
 	* bearerbox.c, boxc.c: Basic routing for WAP messages. Does not
 	work with connectioned sessions, if there are more than one WAP
 	BOX. Tough. Fixed later.
+
+	* bb_msg.c, bb_msg.h: initiated better routing systems for
+	WAP-messages, but implementation not ready
 	
+	* smsbox.c: file urltrans-request fixed.
+
 1999-11-15 Mikael Gueck <mikael.gueck@wapit.com>
 
 	* csdr.c: send and receive UDP datagrams.

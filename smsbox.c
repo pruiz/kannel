@@ -53,6 +53,9 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include "fcntl.h"
 
 #include "wapitlib.h"
 #include "config.h"
@@ -114,20 +117,19 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 	return pattern;
     }
     else if (urltrans_type(trans) == TRANSTYPE_FILE) {
-	FILE *f;
+	int fd;
 	size_t len;
 	
-	f = fopen(pattern, "r");
-	if (f == NULL) {
-	    error(errno, "Couldn't open file < %s >", pattern);
+	fd = open(pattern, O_RDONLY);
+	if (fd == -1) {
+	    error(errno, "Couldn't open file <%s>", pattern);
 	    return NULL;
 	}
 	replytext[0] = '\0';
-	len = fread( replytext, sizeof(char), 1024*10, f);
-	fclose(f);
-	replytext[len] = '\0';
+	len = read(fd, replytext, 1024*10);
+	close(fd);
+	replytext[len-1] = '\0';	/* remove trainling '\n' */
 
-	debug(0, "pattern '%s' replytext '%s'", pattern, replytext);
 	return strdup(replytext);
     }
     /* URL */
@@ -225,7 +227,7 @@ static int do_sending(Msg *msg, char *str)
     ret = pthread_mutex_unlock(&socket_mutex);
     if (ret != 0) return -1;
 
-    debug(0, "write < %s >", octstr_get_cstr(pmsg->plain_sms.text));
+    debug(0, "write <%s>", octstr_get_cstr(pmsg->plain_sms.text));
     octstr_destroy(pack);
     free(pmsg);
 

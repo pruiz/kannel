@@ -118,6 +118,66 @@ static void print_threads(char *buffer);
  * UTILITIES
  */
 
+/*
+ * routing information for (WAP) traffic
+ *
+ * note that this is a stupid linear table, we should use
+ * a sorted list so that we can use a binary search or something...
+ */
+
+typedef struct routeinfo {
+    char *route_match;
+    int receiver_id;
+} RouteInfo;
+
+static RouteInfo *route_info = NULL;
+static int route_count = 0;
+static int route_limit = 0;
+
+
+int find_receiver(RQueueItem *rqi)
+{
+    int i;
+
+    if (rqi->routing_info == NULL)
+	return -1;
+    
+    for(i=0; i < route_count; i++) {
+	if (strcmp(rqi->routing_info, route_info[i].route_match)==0)
+	    return route_info[i].receiver_id;
+    }
+    return -1;
+}
+
+
+int add_receiver(char *routing_str, int id)
+{
+    RouteInfo *new;
+    
+    if (route_count >= route_limit) {
+	route_limit += 1024;
+	new = realloc(route_info, route_limit * sizeof(RouteInfo));
+	if (new == NULL) {
+	    error(errno, "Failed to add a new receiver routing info");
+	    return -1;
+	}
+	route_info = new;
+    }
+    route_info[route_count].route_match = strdup(routing_str);
+    if (route_info[route_count].route_match == NULL) {
+	error(errno, "Failed to allocate room for router");
+	return -1;
+    }
+    route_info[route_count].receiver_id = id;
+
+    route_count++;
+    return 0;
+}
+
+
+    
+
+
 /* route received message; mainly used to find a corresponding SMSC/CSDR
  * to MT message; ACK/NACK already should know the receiver
  *
@@ -983,11 +1043,13 @@ static void update_queue_watcher()
 	goto error;
 
     c++;
-    if (c == 20) {
-	char buf[1024];
-	print_queues(buf);
-	info(0, "\n%s", buf);
-	c = 0;
+    if (c >= 20) {
+	if (c > 120 || req > 0 || rep > 0) {
+	    char buf[1024];
+	    print_queues(buf);
+	    info(0, "\n%s", buf);
+	    c = 0;
+	}
     }
     return;	      
     
@@ -1075,7 +1137,7 @@ static void main_program(void)
 	    last = now;
 
 	    c++;
-	    if (c == 10) {
+	    if (c == 60) {
 		print_threads(buf);
 		info(0, "Threads:\n%s", buf);
 		c = 0;

@@ -351,6 +351,7 @@ RQueueItem *rqi_new(int class, int type)
     nqi->time_tag = time(NULL);
     nqi->source = -1;
     nqi->destination = -1;	/* unknown */
+    nqi->routing_info = NULL;
     nqi->client_data = NULL;
     
     nqi->next = NULL;
@@ -367,6 +368,7 @@ error:
 void rqi_delete(RQueueItem *msg)
 {
     msg_destroy(msg->msg);
+    free(msg->routing_info);
     free(msg);
 }
 
