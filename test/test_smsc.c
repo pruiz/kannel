@@ -3,16 +3,6 @@
 #include "gw/smpp_pdu.h"
 
 
-/*
- * XXX Move this to date.c.
- */
-static long date_universal_now(void)
-{
-    return (long) time(NULL);
-}
-
-
-
 /***********************************************************************
  * Configurable stuff.
  */

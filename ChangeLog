@@ -1,3 +1,13 @@
+2001-05-03  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/smsc_smpp.c: Partly rewritten to use a simpler thread
+	structure and to deal with I/O errors (such as broken
+	connections). Most of the code is the same, but it has been
+	rearranged.
+	
+	* test/test_smsc.c, gwlib/date.[ch]: Moved function
+	date_universal_now from test_smsc.c to date.c.
+	
 2001-05-03  Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wap_push_pap_compiler.[ch]: A compiler for compiling pap control

@@ -166,3 +166,10 @@ error:
     octstr_destroy(monthstr);
     return -1;
 }
+
+
+/* Note that this implementation makes unportable assumptions about time_t. */
+long date_universal_now(void)
+{
+    return (long) time(NULL);
+}

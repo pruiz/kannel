@@ -44,3 +44,9 @@ Octstr *date_format_http(unsigned long unixtime);
  * White space is significant.
  */
 long date_parse_http(Octstr *date);
+
+
+/*
+ * Return the current date and time as a unix time value.
+ */
+long date_universal_now(void);
