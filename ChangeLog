@@ -1,3 +1,8 @@
+1999-11-29    <rpr@rpr.wapit.com>
+
+	* gw/smsbox_req.c: added that 'return' to smsbox request if
+	max-messages was set to '0'
+
 Mon Nov 29 17:17:44 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/bearerbox.conf: Replaced interface-name's IP number with *,

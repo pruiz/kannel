@@ -270,9 +270,11 @@ static int send_message(URLTranslation *trans, Msg *msg)
 		goto error;
 	}
     }
-    if (max_msgs == 0)
+    if (max_msgs == 0) {
 	info(0, "No reply sent, denied.");
-
+	msg_destroy(msg);
+	return 0;
+    }
     h = urltrans_header(trans);
     f = urltrans_footer(trans);
     if (h != NULL) hl = strlen(h); else hl = 0;
@@ -311,6 +313,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
 
 error:
     error(0, "send message failed");
+    msg_destroy(msg);
     return -1;
 }
 
