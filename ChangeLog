@@ -1,3 +1,10 @@
+2001-02-06  Uoti Urpala  <uau@wapit.com>
+
+	* gw/urltrans.c: Changed the %a URL parameter to mean the original
+	message as-is, to allow binary data. Previously consecutive
+	whitespace characters were changed into one space. Note that %r
+	was NOT changed, maybe it should work similarly?
+
 2001-02-06  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_smscconn_cb.h: added new failed sending status,
