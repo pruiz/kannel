@@ -1,3 +1,6 @@
+2003-09-02  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/shared.c: added SQLite version in version_report_string().
+
 2003-09-02  Alexander Malysh  <a.malysh@centrium.de>
     * doc/userguide/userguide.xml,doc/examples/dlr-*.conf: added required
       'field-source' to the documentation.
