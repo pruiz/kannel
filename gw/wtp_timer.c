@@ -192,7 +192,7 @@ void wtp_timer_check(void) {
 #endif
 		gw_free(eventp);
 	}
-	list_destroy(elapsed);
+	list_destroy(elapsed, NULL);
 }
 
 void wtp_timer_dump(WTPTimer *timer){
@@ -220,5 +220,5 @@ void wtp_timer_init(void) {
 void wtp_timer_shutdown(void) {
 	while (list_len(timers) > 0)
 		wtp_timer_destroy(list_extract_first(timers));
-	list_destroy(timers);
+	list_destroy(timers, NULL);
 }

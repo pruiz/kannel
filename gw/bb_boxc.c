@@ -332,7 +332,7 @@ static void run_wapbox(void *arg)
 
 cleanup:
     gw_assert(list_len(newlist) == 0);
-    list_destroy(newlist);
+    list_destroy(newlist, NULL);
     boxc_destroy(newconn);
 
     list_remove_producer(flow_threads);
@@ -465,7 +465,7 @@ static void wdp_to_wapboxes(void *arg)
 	ap_destroy(ap);
 
     gw_assert(list_len(route_info) == 0);
-    list_destroy(route_info);
+    list_destroy(route_info, NULL);
 
     list_lock(wapbox_list);
     for(i=0; i < list_len(wapbox_list); i++) {
@@ -555,7 +555,7 @@ static void smsboxc_run(void *arg)
     while(list_wait_until_nonempty(smsbox_list)!= -1)
 	sleep(1);
 
-    list_destroy(smsbox_list);
+    list_destroy(smsbox_list, NULL);
     smsbox_list = NULL;
     
     list_remove_producer(flow_threads);
@@ -595,7 +595,7 @@ static void wapboxc_run(void *arg)
     while(list_consume(wapbox_list)!=NULL)
 	;
     
-    list_destroy(wapbox_list);
+    list_destroy(wapbox_list, NULL);
     wapbox_list = NULL;
     
     list_remove_producer(flow_threads);

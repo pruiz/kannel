@@ -80,7 +80,7 @@ void wtp_pdu_destroy(WTP_PDU *pdu) {
 		while (list_len(pdu->options)) {
 			wtp_tpi_destroy(list_consume(pdu->options));
 		}
-		list_destroy(pdu->options);
+		list_destroy(pdu->options, NULL);
 	}
 
 	gw_free(pdu);

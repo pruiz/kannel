@@ -104,8 +104,6 @@ void wap_appl_init(void) {
 
 
 void wap_appl_shutdown(void) {
-	WAPEvent *e;
-
 	gw_assert(run_status == running);
 	list_remove_producer(queue);
 	run_status = terminating;
@@ -113,12 +111,8 @@ void wap_appl_shutdown(void) {
 	gwthread_join_every(main_thread);
 	gwthread_join_every(fetch_thread);
 	
-	while ((e = list_extract_first(queue)) != NULL)
-		wap_event_destroy(e);
-	list_destroy(queue);
-	while (list_len(charsets) > 0) 
-		octstr_destroy(list_extract_first(charsets));
-	list_destroy(charsets);
+	list_destroy(queue, wap_event_destroy_item);
+	list_destroy(charsets, octstr_destroy_item);
 }
 
 
@@ -286,12 +280,24 @@ static void add_session_id(List *headers, long session_id) {
 }
 
 
+static void add_client_sdu_size(List *headers, long sdu_size) {
+	if (sdu_size > 0) {
+		Octstr *buf;
+		
+		buf = octstr_format("%ld", sdu_size);
+		http_header_add(headers, "X-WAP-Client-SDU-Size",
+			octstr_get_cstr(buf));
+		octstr_destroy(buf);
+	}
+}
+
+
 static void fetch_thread(void *arg) {
 	int status;
 	int ret=500;
 	WAPEvent *event;
 	long client_SDU_size;
-	Octstr *url, *os;
+	Octstr *url;
 	List *session_headers;
 	List *request_headers;
 	List *actual_headers;
@@ -341,6 +347,7 @@ static void fetch_thread(void *arg) {
 	add_accept_headers(actual_headers);
 	add_charset_headers(actual_headers);
 	add_network_info(actual_headers, addr_tuple);
+	add_client_sdu_size(actual_headers, client_SDU_size);
 
 #ifdef COOKIE_SUPPORT
 	if (session_id != -1)
@@ -410,15 +417,8 @@ static void fetch_thread(void *arg) {
 	}
 
 	gw_assert(actual_headers);
-	while ((os = list_extract_first(actual_headers)) != NULL)
-		octstr_destroy(os);
-	list_destroy(actual_headers);
-
-	if (resp_headers != NULL) {
-		while ((os = list_extract_first(resp_headers)) != NULL)
-			octstr_destroy(os);
-		list_destroy(resp_headers);
-	}
+	list_destroy(actual_headers, octstr_destroy_item);
+	list_destroy(resp_headers, octstr_destroy_item);
 		
 	if (octstr_len(content.body) > client_SDU_size) {
 		status = 413; /* XXX requested entity too large */

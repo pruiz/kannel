@@ -1041,7 +1041,7 @@ static void wml_binary_destroy(wml_binary_t *wbxml)
 {
   if (wbxml != NULL)
     {
-      list_destroy(wbxml->string_table);
+      list_destroy(wbxml->string_table, NULL);
       octstr_destroy(wbxml->wbxml_string);
       gw_free(wbxml);
     }
@@ -1262,7 +1262,7 @@ static void string_table_build(xmlNodePtr node, wml_binary_t **wbxml)
       string_table_proposal_destroy(item);
     }
 
-  list_destroy(list);
+  list_destroy(list, NULL);
 }
 
 
@@ -1354,7 +1354,7 @@ static List *string_table_sort_list(List *start)
 	}
     }
 
-  list_destroy(start);
+  list_destroy(start, NULL);
 
   return sorted;
 }
@@ -1387,7 +1387,7 @@ static List *string_table_add_many(List *sorted, wml_binary_t **wbxml)
 	list_append(list, item);
     }
 
-  list_destroy(sorted);
+  list_destroy(sorted, NULL);
 
   return list;
 }
@@ -1420,7 +1420,7 @@ static List *string_table_collect_words(List *strings)
 	}
     }
 
-  list_destroy(strings);
+  list_destroy(strings, NULL);
 
   return list;
 }

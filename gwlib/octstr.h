@@ -8,11 +8,33 @@
  * length of the sequence. There are various basic operations on octet
  * strings: concatenating, comparing, printing, etc.
  *
+ * Octet strings come in two flavors: mutable and immutable. Mutable
+ * octet strings are the normal kind and they can be modified and
+ * otherwise manipulated at will. Immutable octet strings are meant to
+ * be wrappers around a C string literal. They may not be modified, though
+ * they may be destroyed.
+ *
+ * Immutable octet strings are meant to simplify usage of octet strings
+ * together with C strings by reducing the number of octstr_* functions.
+ * For example, we need a function for searching one string within another.
+ * There needs to be different flavors of this: exact search, case-insensitive
+ * search, and a search limited to the first N octets of the strings.
+ * If in each of these one of the arguments may be either an octet string
+ * or a C string, the number of functions doubles. Thus, we use immutable
+ * strings instead:
+ *
+ *	octstr_search(os, octstr_create_immutable("foo"), 0)
+ *
+ * The above looks like a memory leak, but it is not. Each immutable
+ * octet string (i.e., with the same C string literal pointer) is really 
+ * created only the first time, and octstr_destroy won't destroy it,
+ * either. The immutable octet strings are destroyed automatically when
+ * the process ends.
+ *
  * See comments below for explanations on individual functions. Note that
  * all functions use gw_malloc and friends, so they won't return if the
- * memory allocations fail.
- *
- * Lars Wirzenius for WapIT Ltd.
+ * memory allocations fail. Octet string functions are thread safe, as
+ * long as they only one thread at a time operates on each octet string.
  */
 
 #ifndef OCTSTR_H
@@ -24,6 +46,18 @@
 #include "list.h"
 
 typedef struct Octstr Octstr;
+
+
+/*
+ * Initialize the Octstr subsystem.
+ */
+void octstr_init(void);
+
+
+/*
+ * Shut down the Octstr subsystem.
+ */
+void octstr_shutdown(void);
 
 
 /*
@@ -48,10 +82,25 @@ Octstr *octstr_create_from_data(const char *data, long len);
 
 
 /*
+ * Create an immutable octet string from a C string literal. The
+ * C string literal MUST NOT be modified and it MUST exist until the
+ * octet string is destroyed.
+ */
+Octstr *octstr_create_immutable(const char *cstr);
+
+
+/*
  * Destroy an octet string, freeing all memory it uses. A NULL argument
  * is ignored.
  */
 void octstr_destroy(Octstr *ostr);
+
+
+/*
+ * Destroy an octet string. Wrapper around octstr_destroy that is callable
+ * via list_destroy.
+ */
+void octstr_destroy_item(void *os);
 
 
 /*
@@ -194,7 +243,7 @@ int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, long n);
  * Same as octstr_compare, but compares the content of the octet string to 
  * a C string.
  */
-int octstr_str_compare(Octstr *ostr1, char *str);
+int octstr_str_compare(Octstr *ostr1, const char *str);
 
 
 /*
@@ -214,7 +263,7 @@ int octstr_search_char(Octstr *ostr, int ch, long pos);
  * Search for a substring in an octet string, starting at position `pos'. 
  * Return the start position (index) of the substring, -1 if not found.
  */
-int octstr_search_cstr(Octstr *ostr, char *str, long pos);
+int octstr_search_cstr(Octstr *ostr, const char *str, long pos);
 
 
 /*
@@ -257,7 +306,7 @@ int octstr_append_from_socket(Octstr *ostr, int socket);
 /*
  * Replace current contents of the octstr with given data.
  */
-void octstr_replace(Octstr *ostr, char *data, long len);
+void octstr_replace(Octstr *ostr, const char *data, long len);
 
 
 /*
@@ -274,13 +323,13 @@ void octstr_insert(Octstr *ostr1, Octstr *ostr2, long pos);
  * If the given `pos' is greater than the length of the input octet string,
  * it is set to that length, resulting in an append.
  */
-void octstr_insert_data(Octstr *ostr, long pos, char *data, long len);
+void octstr_insert_data(Octstr *ostr, long pos, const char *data, long len);
 
 
 /*
  * Append characters from C array at the tail of an octet string.
  */
-void octstr_append_data(Octstr *ostr, char *data, long len);
+void octstr_append_data(Octstr *ostr, const char *data, long len);
 
 
 /*
@@ -292,7 +341,7 @@ void octstr_append(Octstr *ostr1, Octstr *ostr2);
 /*
  * Append a normal C string at the tail of an octet string.
  */
-void octstr_append_cstr(Octstr *ostr, char *cstr);
+void octstr_append_cstr(Octstr *ostr, const char *cstr);
 
 
 /*
@@ -401,5 +450,70 @@ long octstr_extract_uintvar(Octstr *ostr, unsigned long *value, long pos);
  * Append the decimal representation of the given value to ostr 
  */
 void octstr_append_decimal(Octstr *ostr, long value);
+
+
+/*
+ * Create a new octet string based on a printf-like (but not identical)
+ * format string, and a list of other arguments. The format string is
+ * a C string for convenience, but this may change later.
+ *
+ * The syntax for the format string is as follows:
+ *
+ *	% [-] [0] [width] [. prec] [type] conversion
+ *
+ * where [] denotes optional parts and the various parts have the
+ * following meanings:
+ *
+ *	-	add padding to the right, instead of the left of the field
+ *
+ *	0	pad with zeroes, not spaces
+ *
+ *	width	minimum output width; non-negative integer or '*', indicating
+ *		that the next argument is an int and gives the width
+ *
+ *	.	a dot to indicate that precision follows
+ *
+ *	prec	precision: maximum length of strings, maximum number of
+ *		decimals for floating point numbers; non-negative integer
+ *		or '*' indicating that the next argument is an int and
+ *		gives the precision
+ *
+ *	type	type of integer argument: either h (for short int) or 
+ *		l (for long int); may only be used with conversion 'd'
+ *
+ *	conversion
+ *		how the field is to be converted, also implicitly defines
+ *		the type of the next argument; one of
+ *
+ *			d	int (unless type says otherwise)
+ *				output as a decimal integer
+ *
+ *			e, f, g	double
+ *				output in various formats of floating
+ *				point, see printf(3) for details
+ *
+ *			s	char *
+ *				output as character string
+ *
+ *			S	Octstr *
+ *				output as character string, except '\0'
+ *				inside the string is included in the
+ *				output
+ */
+Octstr *octstr_format(const char *fmt, ...);
+
+
+/*
+ * Like octstr_format, but takes the argument list as a va_list.
+ */
+Octstr *octstr_format_valist(const char *fmt, va_list args);
+
+
+/*
+ * Like octstr_format, but appends output to an existing octet
+ * string, instead of creating a new one.
+ */
+void octstr_format_append(Octstr *os, const char *fmt, ...);
+
 
 #endif

@@ -342,8 +342,8 @@ static void empty_msg_lists(void)
     while((msg = list_extract_first(outgoing_wdp))!=NULL)
 	msg_destroy(msg);
 
-    list_destroy(incoming_wdp);
-    list_destroy(outgoing_wdp);
+    list_destroy(incoming_wdp, NULL);
+    list_destroy(outgoing_wdp, NULL);
 
     counter_destroy(incoming_wdp_counter);
     counter_destroy(outgoing_wdp_counter);
@@ -363,13 +363,8 @@ static void empty_msg_lists(void)
 
 #endif
 
-    while((msg = list_extract_first(incoming_sms))!=NULL)
-	msg_destroy(msg);
-    while((msg = list_extract_first(outgoing_sms))!=NULL)
-	msg_destroy(msg);
-    
-    list_destroy(incoming_sms);
-    list_destroy(outgoing_sms);
+    list_destroy(incoming_sms, msg_destroy_item);
+    list_destroy(outgoing_sms, msg_destroy_item);
     
     counter_destroy(incoming_sms_counter);
     counter_destroy(outgoing_sms_counter);
@@ -429,9 +424,9 @@ int main(int argc, char **argv)
     
     empty_msg_lists();
     
-    list_destroy(flow_threads);
-    list_destroy(suspended);
-    list_destroy(isolated);
+    list_destroy(flow_threads, NULL);
+    list_destroy(suspended, NULL);
+    list_destroy(isolated, NULL);
     mutex_destroy(status_mutex);
 
     config_destroy(cfg);

@@ -64,7 +64,7 @@ static WSPMachine *find_session_machine(WAPEvent *event, WSP_PDU *pdu);
 static void handle_session_event(WSPMachine *machine, WAPEvent *event, 
 				 WSP_PDU *pdu);
 static WSPMachine *machine_create(void);
-static void machine_destroy(WSPMachine *p);
+static void machine_destroy(void *p);
 #if 0
 static void machine_dump(WSPMachine *machine);
 #endif
@@ -72,7 +72,7 @@ static void machine_dump(WSPMachine *machine);
 static void handle_method_event(WSPMachine *session, WSPMethodMachine *machine, WAPEvent *event, WSP_PDU *pdu);
 static void cant_handle_event(WSPMachine *sm, WAPEvent *event);
 static WSPMethodMachine *method_machine_create(WSPMachine *, long);
-static void method_machine_destroy(WSPMethodMachine *msm);
+static void method_machine_destroy(void *msm);
 
 static char *wsp_state_to_string(WSPState state);
 static long wsp_next_session_id(void);
@@ -117,22 +117,16 @@ void wsp_session_init(void) {
 
 
 void wsp_session_shutdown(void) {
-	WAPEvent *e;
-	
 	gw_assert(run_status == running);
 	run_status = terminating;
 	list_remove_producer(queue);
 	gwthread_join_every(main_thread);
 
-	while ((e = list_extract_first(queue)) != e)
-		wap_event_destroy(e);
-	list_destroy(queue);
+	list_destroy(queue, wap_event_destroy_item);
 
 	debug("wap.wsp", 0, "WSP: %ld session machines left.",
 		list_len(session_machines));
-	while (list_len(session_machines) > 0)
-		machine_destroy(list_get(session_machines, 0));
-	list_destroy(session_machines);
+	list_destroy(session_machines, machine_destroy);
 
 	counter_destroy(session_id_counter);
 }
@@ -428,14 +422,15 @@ static void wsp_session_destroy_methods(List *machines) {
 			list_len(machines));
 	}
 
-	while (list_len(machines) > 0)
-		method_machine_destroy(list_extract_first(machines));
-	list_destroy(machines);
+	list_destroy(machines, method_machine_destroy);
 }
 
 
-static void machine_destroy(WSPMachine *p) {
-	debug("wap.wsp", 0, "Destroying WSPMachine %p", (void *) p);
+static void machine_destroy(void *pp) {
+	WSPMachine *p;
+	
+	p = pp;
+	debug("wap.wsp", 0, "Destroying WSPMachine %p", pp);
 	list_delete_equal(session_machines, p);
 
 	#define INTEGER(name) p->name = 0;
@@ -553,9 +548,13 @@ static WSPMethodMachine *method_machine_create(WSPMachine *sm,
 
 
 
-static void method_machine_destroy(WSPMethodMachine *msm) {
-	if (msm == NULL)
+static void method_machine_destroy(void *p) {
+	WSPMethodMachine *msm;
+
+	if (p == NULL)
 		return;
+
+	msm = p;
 
 	debug("wap.wsp", 0, "Destroying WSPMethodMachine %ld",
 			msm->transaction_id);
@@ -923,7 +922,7 @@ static void wsp_disconnect_other_sessions(WSPMachine *sm) {
 		}
 	}
 
-	list_destroy(old_sessions);
+	list_destroy(old_sessions, NULL);
 }
 
 
@@ -1014,7 +1013,7 @@ static void wsp_release_holding_methods(WSPMachine *sm) {
 		msm = list_get(holding, i);
 		handle_method_event(sm, msm, release, NULL);
 	}
-	list_destroy(holding);
+	list_destroy(holding, NULL);
 	wap_event_destroy(release);
 }
 

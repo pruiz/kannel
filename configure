@@ -16,7 +16,7 @@ ac_help="$ac_help
 ac_help="$ac_help
   --enable-debug	  enable non-reentrant development time debugging"
 ac_help="$ac_help
-  --enable-localtime	  enable log file time stamps in local time, not GMT"
+  --enable-localtime	  log file time stamps in local time, not GMT"
 ac_help="$ac_help
   --with-malloc	 select malloc wrapper to use: native/checking"
 ac_help="$ac_help

@@ -13,7 +13,7 @@
 
 static void client_thread(void *arg) {
 	HTTPSocket *client_socket;
-	Octstr *os, *body, *url;
+	Octstr *body, *url;
 	List *headers, *resph, *cgivars;
 	int ret;
 	HTTPCGIVar *v;
@@ -39,13 +39,11 @@ static void client_thread(void *arg) {
 			octstr_destroy(v->value);
 			gw_free(v);
 		}
-		list_destroy(cgivars);
+		list_destroy(cgivars, NULL);
 
 		octstr_destroy(url);
 		octstr_destroy(body);
-		while ((os = list_extract_first(headers)) != NULL)
-			octstr_destroy(os);
-		list_destroy(headers);
+		list_destroy(headers, octstr_destroy_item);
 
 		resph = list_create();
 		list_append(resph, octstr_create("Content-Type: text/plain; "
@@ -54,9 +52,7 @@ static void client_thread(void *arg) {
 		ret = http_server_send_reply(client_socket, HTTP_OK, 
 			resph, body);
 
-		while ((os = list_extract_first(resph)) != NULL)
-			octstr_destroy(os);
-		list_destroy(resph);
+		list_destroy(resph, octstr_destroy_item);
 		octstr_destroy(body);
 
 		if (ret == -1) {

@@ -2,7 +2,8 @@
 <title>Bibliography</title>
 
 <biblioentry id="cpp-trick.bib">
-	<title id="cpp-trick.title">C Preprocessor Trick For Implementing Similar Data Types</title>
+	<title id="cpp-trick.title">C Preprocessor Trick For 
+		Implementing Similar Data Types</title>
 	<author>
 		<firstname>Lars</firstname>
 		<surname>Wirzenius</surname>
@@ -19,7 +20,8 @@
 		protocol, is described and justified.
 		</para>
 		<para>This document is available at <ulink
-		url="http://www.iki.fi/liw/texts/index.html#cpp-trick">http://www.iki.fi/liw/texts/index.html#cpp-trick</ulink>.
+		url="http://www.iki.fi/liw/texts/index.html#cpp-trick">
+		http://www.iki.fi/liw/texts/index.html#cpp-trick</ulink>.
 		</para>
 	</abstract>
 </biblioentry>

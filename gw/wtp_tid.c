@@ -28,7 +28,7 @@ enum {
  */
 static WTPCached_tid *cache_item_create_empty(void);
 
-static void cache_item_destroy(WTPCached_tid *item);
+static void cache_item_destroy(void *item);
 /*
 static void cache_item_dump(WTPCached_tid *item);
 */
@@ -51,10 +51,7 @@ void wtp_tid_cache_init(void) {
 }
 
 void wtp_tid_cache_shutdown(void) {
-
-    while (list_len(tid_cache) > 0)
-          cache_item_destroy(list_extract_first(tid_cache));
-    list_destroy(tid_cache);
+    list_destroy(tid_cache, cache_item_destroy);
 }
 
 /*
@@ -197,11 +194,13 @@ static WTPCached_tid *cache_item_create_empty(void){
        return item;
 }
 
-static void cache_item_destroy(WTPCached_tid *item){
-
-       octstr_destroy(item->destination_address);
-       octstr_destroy(item->source_address);
-       gw_free(item);
+static void cache_item_destroy(void *p){
+	WTPCached_tid *item;
+	
+	item = p;
+	octstr_destroy(item->destination_address);
+	octstr_destroy(item->source_address);
+	gw_free(item);
 }
 
 #ifdef next

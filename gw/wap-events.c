@@ -63,6 +63,11 @@ void wap_event_destroy(WAPEvent *event) {
 }
 
 
+void wap_event_destroy_item(void *event) {
+	wap_event_destroy(event);
+}
+
+
 WAPEvent *wap_event_duplicate(WAPEvent *event) {
 	WAPEvent *new;
 	

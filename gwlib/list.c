@@ -78,9 +78,16 @@ List *list_create(void) {
 }
 
 
-void list_destroy(List *list) {
+void list_destroy(List *list, list_item_destructor_t *destructor) {
+	void *item;
+
 	if (list == NULL)
 		return;
+
+	if (destructor != NULL) {
+		while ((item = list_extract_first(list)) != NULL)
+			destructor(item);
+	}
 
 	mutex_lock(list->permanent_lock);
 	mutex_destroy(list->permanent_lock);
@@ -222,7 +229,7 @@ List *list_extract_matching(List *list, void *pat, list_item_matches_t *cmp) {
 	unlock(list);
 
 	if (list_len(new_list) == 0) {
-		list_destroy(new_list);
+		list_destroy(new_list, NULL);
 		return NULL;
 	}
 	return new_list;
@@ -349,7 +356,7 @@ List *list_search_all(List *list, void *pattern, int (*cmp)(void *, void *)) {
 	unlock(list);
 	
 	if (list_len(new_list) == 0) {
-		list_destroy(new_list);
+		list_destroy(new_list, NULL);
 		new_list = NULL;
 	}
 	
@@ -367,7 +374,7 @@ List *list_cat(List *list1, List *list2)
     while((item = list_extract_first(list2)) != NULL)
 	list_append(list1, item);
 
-    list_destroy(list2);
+    list_destroy(list2, NULL);
     
     return list1;    
 }

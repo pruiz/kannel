@@ -265,7 +265,7 @@ Numhash *numhash_create(char *seek_url)
 			    &reply_headers, &reply_body);
     octstr_destroy(url);
     octstr_destroy(final_url);
-    list_destroy(request_headers);
+    list_destroy(request_headers, NULL);
 
     if (status != HTTP_OK) {
 	http_destroy_headers(reply_headers);

@@ -33,9 +33,8 @@ void parse_context_destroy(ParseContext *context) {
 	if (context->limit_stack) {
 		while (list_len(context->limit_stack) > 0)
 			gw_free(list_extract_first(context->limit_stack));
-		list_destroy(context->limit_stack);
+		list_destroy(context->limit_stack, NULL);
 	}
-
 	gw_free(context);
 }
 

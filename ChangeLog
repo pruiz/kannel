@@ -1,3 +1,47 @@
+2000-09-11  Lars Wirzenius  <liw@iki.fi>
+
+	* README: Fixed download URL, re-formatted and removed the
+	outdated claim that it is a very raw draft.
+	
+	* doc/CodingStyle: Added note about the official formatting style,
+	as discussed on devel@kannel.org. Also added a note about memory
+	allocation policy as far as function interfaces are concerned,
+	a note to avoid #if, and something about abstract data types
+	and naming conventions related to that.
+	
+	* doc/dialup.txt, Makefile.in, configure.in,
+	doc/arch/arch-bearerbox.xml, doc/arch/arch-bib.xml,
+	doc/arch/arch.xml: Shortened long lines.
+	
+	* gwlib/list.[ch]: Changed the interface of the list_destroy
+	function by adding a second argument, which is a pointer to an
+	item destroying function.
+
+	* checks/check_list.c, gw/cookies.c, gw/bb_boxc.c, gw/bb_smsc.c,
+	gw/bearerbox.c, gw/numhash.c, gw/smsbox.c, gw/smsbox_req.c,
+	gw/smsc.c, gw/smsc_cimd2.c, gw/urltrans.c, gw/wap-appl.c,
+	gw/wapbox.c, gw/wml_compiler.c, gw/wsp-session.c, gw/wsp-unit.c,
+	gw/wsp_caps.c, gw/wtp.c, gw/wtp_pdu.c, gw/wtp_tid.c,
+	gw/wtp_timer.c, gwlib/http.c, gwlib/parse.c, test/drive_wapbox.c,
+	test/test_cimd2.c, test/test_http.c, test/test_http_server.c:
+	Updated calls to list_destroy to work with its new interface.
+	
+	* gw/msg.[ch], gw/wap-events.[ch]: Added functions *_destroy_item,
+	for use with new list_destroy.
+	
+	* gw/wap-appl.c: Add X-WAP-Client-SDU-Size header.
+	
+	* gwlib/octstr.[ch]: Added functions octstr_format and
+	octstr_format_append. Also added "immutable octet strings",
+	for wrapping around C string literals, which required adding
+	octstr_init and octstr_shutdown. See the header for more info.
+	Also added some consts here and there.
+	
+	* gwlib/gwlib.c: Call octstr_init and octstr_shutdown.
+	
+	* test/test_octstr_format.c, test/test_octstr_immutables.c: New
+	test programs.
+	
 2000-09-04  Richard Braakman  <dark@wapit.com>
 
 	* gw/wapbox.c, gw/smsbox.c, gw/bearerbox.c: Handle only signals

@@ -78,6 +78,10 @@ void msg_destroy(Msg *msg) {
 	gw_free(msg);
 }
 
+void msg_destroy_item(void *msg) {
+	msg_destroy(msg);
+}
+
 void msg_dump(Msg *msg, int level) {
 	debug("gw.msg", 0, "%*sMsg object at %p:", level, "", (void *) msg);
 	debug("gw.msg", 0, "%*s type: %s", level, "", type_as_str(msg));

@@ -1,20 +1,20 @@
 <chapter>
 <title>Bearerbox architecture</title>
 
-	<para>This chapter describes the internal workings of the bearerbox:
-	communication with SMSC's and UDP routers, internal major
-	modules and data structures, threads, routing, error handling in
-	routins, how it deals with the client box registrations and
-	errors with client connections, and queueing of messages inside
-	the bearerbox.</para>
+	<para>This chapter describes the internal workings of
+	the bearerbox: communication with SMSC's and UDP routers,
+	internal major modules and data structures, threads, routing,
+	error handling in routins, how it deals with the client box
+	registrations and errors with client connections, and queueing
+	of messages inside the bearerbox.</para>
 	
 	<para>The bearerbox connects to the SMSC's in the configuration,
-	and accepts UDP packets at a suitable port. It checks whether SMS
-	messages are normal ones or WDP packets. It routes stuff to appropriate
-	boxes, taking care of load balancing. It keeps unsent messages
-	in queues (incoming and outgoing), in case of traffic jams.
-	It keeps track of the other boxes (lets them register, notices
-	when connections break, keeps track of heartbeats).</para>
+	and accepts UDP packets at a suitable port. It checks whether
+	SMS messages are normal ones or WDP packets. It routes stuff to
+	appropriate boxes, taking care of load balancing. It keeps unsent
+	messages in queues (incoming and outgoing), in case of traffic
+	jams.  It keeps track of the other boxes (lets them register,
+	notices when connections break, keeps track of heartbeats).</para>
 
 <sect1>
 <title>Bearerbox design</title>
@@ -32,8 +32,9 @@
 	also does the required WDP assembly/disassembly when SMS is the
 	WAP bearer (this is under development)</para>
 
-	<para><emphasis>UDP sender/receiver module</emphasis> receives and sends all
-	WDP packets which are transferred via UDP packets.</para>
+	<para><emphasis>UDP sender/receiver module</emphasis> receives
+	and sends all WDP packets which are transferred via UDP
+	packets.</para>
 
 	<para><emphasis>WAPbox connection module</emphasis> acts as a
 	server for WAPboxes, allowing them to contact and

@@ -225,9 +225,7 @@ void init_queue(void) {
 
 
 static void destroy_queue(void) {
-	while (list_len(queue) > 0)
-		msg_destroy(list_extract_first(queue));
-	list_destroy(queue);
+	list_destroy(queue, msg_destroy_item);
 }
 
 
@@ -470,7 +468,7 @@ int main(int argc, char **argv) {
 	                if (event != NULL)
 				wtp_dispatch_event(event);
                   }
-                  list_destroy(events);
+                  list_destroy(events, NULL);
 		}
 	}
 	info(0, "WAP box terminating.");

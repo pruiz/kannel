@@ -207,7 +207,7 @@ static void udpc_destroy(Udpc *udpc)
 	close(udpc->fd);
     octstr_destroy(udpc->addr);
     gw_assert(list_len(udpc->outgoing_list) == 0);
-    list_destroy(udpc->outgoing_list);
+    list_destroy(udpc->outgoing_list, NULL);
 
     gw_free(udpc);
 }    
@@ -330,7 +330,7 @@ int udp_die(void)
     while((udpc = list_consume(udpc_list)) != NULL) {
 	list_remove_producer(udpc->outgoing_list);
     }
-    list_destroy(udpc_list);
+    list_destroy(udpc_list, NULL);
     udp_running = 0;
     return 0;
 }

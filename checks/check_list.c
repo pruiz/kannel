@@ -171,7 +171,7 @@ static void main_for_list_add_and_delete(void) {
 	if (list_len(list) != 0)
 		panic(0, "list is not empty after deleting everything");
 	
-	list_destroy(list);
+	list_destroy(list, NULL);
 }
 
 
@@ -211,13 +211,13 @@ static void main_for_extract(void) {
 				panic(0, 
 				  "extraction returned wrong element!");
 		}
-		list_destroy(extracted);
+		list_destroy(extracted, NULL);
 	}
 	
 	if (list_len(list) != 0)
 		panic(0, "list is not empty after extracting everything");
 	
-	list_destroy(list);
+	list_destroy(list, NULL);
 }
 
 

@@ -48,14 +48,14 @@ static void client_thread(void *arg) {
 				octstr_dump(os, 1);
 				octstr_destroy(os);
 			}
-			list_destroy(replyh);
+			list_destroy(replyh, NULL);
 			octstr_print(stdout, replyb);
 			octstr_destroy(replyb);
 			octstr_destroy(url);
 			octstr_destroy(final_url);
 		}
 	}
-	list_destroy(reqh);
+	list_destroy(reqh, NULL);
 	info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
 }
 
@@ -67,7 +67,7 @@ static void help(void) {
 
 int main(int argc, char **argv) {
 	int i, opt, num_threads;
-	Octstr *os, *proxy;
+	Octstr *proxy;
 	List *exceptions;
 	long proxy_port;
 	char *p;
@@ -129,9 +129,7 @@ int main(int argc, char **argv) {
 	if (proxy != NULL && proxy_port > 0)
 		http_use_proxy(proxy, proxy_port, exceptions);
 	octstr_destroy(proxy);
-	while ((os = list_extract_first(exceptions)) != NULL)
-		octstr_destroy(os);
-	list_destroy(exceptions);
+	list_destroy(exceptions, octstr_destroy_item);
 	
 	counter = counter_create();
 	urls = argv + optind;

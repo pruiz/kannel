@@ -136,23 +136,17 @@ static void http_thread(void *arg) {
 					&body, &cgivars) == 1) {
 			http_server_send_reply(client, 200,
 				reply_headers, reply_body);
-			while (list_len(headers) > 0)
-				octstr_destroy(list_consume(headers));
-			list_destroy(headers);
+			list_destroy(headers, octstr_destroy_item);
 			octstr_destroy(url);
 			octstr_destroy(body);
-			while (list_len(cgivars) > 0)
-				octstr_destroy(list_consume(cgivars));
-			list_destroy(cgivars);
+			list_destroy(cgivars, octstr_destroy_item);
 			
 		}
 		http_server_close_client(client);
 	}
 
 	octstr_destroy(reply_body);
-	while (list_len(reply_headers) > 0)
-		octstr_destroy(list_consume(reply_headers));
-	list_destroy(reply_headers);
+	list_destroy(reply_headers, octstr_destroy_item);
 	http_server_close(server);
 }
 	
@@ -213,7 +207,7 @@ static void initialize_clients(void) {
 
 static void destroy_clients(void) {
 	gw_free(clients);
-	list_destroy(ready_clients);
+	list_destroy(ready_clients, NULL);
 }
 
 static Client *find_client(unsigned short port) {

@@ -85,7 +85,8 @@ sms/wap boxes use heartbeat to inform their load to the bearer box
 centralized configuration? how little config can sb/wb get away with?
 add host/thread/data structure/code module legends to figure
 /cgi-bin/sendsms? which box?
-tid caching, validation, verification: esp. how this is done with many wap boxes
+tid caching, validation, verification: esp. how this is done with many 
+    wap boxes
 tid generation at gateway: needs to be monotonous even with many wb's?
 </literallayout>
 </para>

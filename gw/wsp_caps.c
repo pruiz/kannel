@@ -7,6 +7,11 @@
 #include "gw/wsp_caps.h"
 
 
+static void wsp_cap_destroy_item(void *cap) {
+	wsp_cap_destroy(cap);
+}
+
+
 Capability *wsp_cap_create(int id, Octstr *name, Octstr *data) {
 	Capability *new_cap;
 
@@ -58,14 +63,7 @@ void wsp_cap_dump_list(List *caps_list) {
 }
 
 void wsp_cap_destroy_list(List *caps_list) {
-	Capability *cap;
-
-	if (caps_list == NULL)
-		return;
-
-	while ((cap = list_extract_first(caps_list)))
-		wsp_cap_destroy(cap);
-	list_destroy(caps_list);
+	list_destroy(caps_list, wsp_cap_destroy_item);
 }
 
 List *wsp_cap_duplicate_list(List *caps_list) {

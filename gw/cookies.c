@@ -23,7 +23,7 @@ static Octstr *get_header_value (Octstr *);
 static Cookie *parse_cookie (Octstr *);
 static void add_cookie_to_cache (const WSPMachine *, Cookie *);
 static void expire_cookies (List *);
-static void cookie_destroy (Cookie *);
+static void cookie_destroy (void *);
 static int have_cookie (List *, Cookie *);
 static int parse_http_date (const char *);
 static Cookie emptyCookie;
@@ -47,17 +47,12 @@ Cookie *cookie_create (void)
 }
 
 void cookies_destroy (List *cookies) {
-	Cookie *c;
-
 	gwlib_assert_init();
 
 	if (cookies == NULL)
 		return;
 
-	while ((c = list_extract_first(cookies)) != NULL)
-		cookie_destroy(c);
-
-	list_destroy(cookies);
+	list_destroy(cookies, cookie_destroy);
 }
 
 /*
@@ -413,17 +408,20 @@ static void expire_cookies (List *cookies)
 	return;
 }
 
-static void cookie_destroy (Cookie *p)
+static void cookie_destroy (void *p)
 {
+	Cookie *cookie;
+	
 	if (p == NULL) return;
+	cookie = p;
 
-	octstr_destroy (p -> name);
-	octstr_destroy (p -> value);
-	octstr_destroy (p -> version);
-	octstr_destroy (p -> domain);
-	octstr_destroy (p -> path);
+	octstr_destroy (cookie -> name);
+	octstr_destroy (cookie -> value);
+	octstr_destroy (cookie -> version);
+	octstr_destroy (cookie -> domain);
+	octstr_destroy (cookie -> path);
 
-	gw_free (p);
+	gw_free (cookie);
 	debug ("wap.wsp.http", 0, "cookie_destroy: Destroyed cookie");
 	return;
 }

@@ -108,7 +108,7 @@ void http_init(void) {
 void http_shutdown(void) {
 	gwlib_assert_init();
 	http_close_proxy();
-	list_destroy(proxy_exceptions);
+	list_destroy(proxy_exceptions, NULL);
 	mutex_destroy(proxy_mutex);
 	proxy_mutex = NULL;
 	pool_shutdown();
@@ -234,9 +234,7 @@ List **reply_headers, Octstr **reply_body) {
 		octstr_strip_blanks(h);
 		octstr_destroy(*final_url);
 		*final_url = h;
-		while ((h = list_extract_first(*reply_headers)) != NULL)
-			octstr_destroy(h);
-		list_destroy(*reply_headers);
+		list_destroy(*reply_headers, octstr_destroy_item);
 		octstr_destroy(*reply_body);
 	}
 	if (ret == -1) {
@@ -327,8 +325,7 @@ int http_post(Octstr *url, List *request_headers, Octstr *request_body,
 		pool_free(p);
 	}
 
-	if( tmp_headers != NULL)
-		list_destroy(tmp_headers);
+	list_destroy(tmp_headers, NULL);
 
 	return status;
 
@@ -336,8 +333,7 @@ error:
 	if (p != NULL)
 		pool_free(p);
 
-	if( tmp_headers != NULL)
-		list_destroy(tmp_headers);
+	list_destroy(tmp_headers, NULL);
 
 	error(0, "Couldn't fetch <%s>", octstr_get_cstr(url));
 	return -1;
@@ -402,9 +398,7 @@ int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
 		octstr_strip_blanks(h);
 		octstr_destroy(*final_url);
 		*final_url = h;
-		while ((h = list_extract_first(*reply_headers)) != NULL)
-			octstr_destroy(h);
-		list_destroy(*reply_headers);
+		list_destroy(*reply_headers, octstr_destroy_item);
 		octstr_destroy(*reply_body);
 	}
 	if (ret == -1) {
@@ -505,16 +499,8 @@ Octstr **body, List **cgivars) {
 error:
 	octstr_destroy(line);
 	octstr_destroy(*url);
-	if (*headers != NULL) {
-		while ((line = list_extract_first(*headers)) != NULL)
-			octstr_destroy(line);
-		list_destroy(*headers);
-	}
-	if (*cgivars != NULL) {
-		while ((line = list_extract_first(*cgivars)) != NULL)
-			octstr_destroy(line);
-		list_destroy(*cgivars);
-	}
+	list_destroy(*headers, octstr_destroy_item);
+	list_destroy(*cgivars, octstr_destroy_item);
 	return -1;
 }
 
@@ -566,7 +552,7 @@ void http_destroy_cgiargs(List *args) {
 		octstr_destroy(v->value);
 		gw_free(v);
 	}
-	list_destroy(args);
+	list_destroy(args, NULL);
 }
 
 
@@ -594,17 +580,8 @@ List *http_create_empty_headers(void) {
 
 
 void http_destroy_headers(List *headers) {
-	Octstr *h;
-
 	gwlib_assert_init();
-
-	if (headers == NULL)
-		return;
-
-	while ((h = list_extract_first(headers)) != NULL)
-		octstr_destroy(h);
-
-	list_destroy(headers);
+	list_destroy(headers, octstr_destroy_item);
 }
 
 
@@ -903,7 +880,7 @@ static void pool_shutdown(void) {
 	
 	while ((p = list_extract_first(pool)) != NULL)
 		socket_destroy(p);
-	list_destroy(pool);
+	list_destroy(pool, NULL);
 }
 
 
@@ -1010,7 +987,7 @@ static void pool_kill_old_ones(void) {
 	if (list != NULL) {
 		while ((p = list_extract_first(list)) != NULL)
 			socket_destroy(p);
-		list_destroy(list);
+		list_destroy(list, NULL);
 	}
 }
 
@@ -1468,9 +1445,7 @@ static int read_headers(HTTPSocket *p, List **headers) {
 	return 0;
 
 error:
-	while ((line = list_extract_first(*headers)) != NULL)
-		octstr_destroy(line);
-	list_destroy(*headers);
+	list_destroy(*headers, octstr_destroy_item);
 	return -1;
 }
 
@@ -1564,7 +1539,7 @@ static int read_chunked_body(HTTPSocket *p, Octstr **body, List *headers) {
 		goto error;
 	while ((line = list_extract_first(trailer)) != NULL)
 		list_append(headers, line);
-	list_destroy(trailer);
+	list_destroy(trailer, NULL);
 	
 	return 0;
 

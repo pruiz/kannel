@@ -119,7 +119,7 @@ Hope this helps,
 --
 Roger
 
-------------------------------------------------------------------------------
+-----------------------------------------------------------------------------
 
 When you access a "web page" using a PC based browser, the 
 "web server" tells your PC browser what kind of document it
@@ -130,7 +130,8 @@ MIME type has to be different.
 
 The MIME types for serving WML contents are: 
 
-     Document type             MIME type                       Typicalextension
+     Document type             MIME type                       Typical ext
+
      Plain WML documents       text/vnd.wap.wml                .wml
      Wireless Bitmap Images    image/vnd.wap.wbmp              .wbmp
      Compiled WML documents    application/vnd.wap.wmlc        .wmlc

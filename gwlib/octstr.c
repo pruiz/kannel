@@ -40,13 +40,38 @@
  * When `size' is greater than zero, it is at least `len+1', and the
  * character at `len' is '\0'. This is so that octstr_get_cstr will
  * always work.
+ *
+ * `immutable' defines whether the octet string is immutable or not.
  */
 struct Octstr {
 	unsigned char *data;
 	long len;
 	long size;
+	int immutable;
 };
 
+
+/**********************************************************************
+ * Hash table of immutable octet strings.
+ */
+
+#define MAX_IMMUTABLES 1024
+
+static struct {
+	int in_use;
+	Octstr os;
+} immutables[MAX_IMMUTABLES];
+
+static Mutex immutables_mutex;
+static int immutables_init = 0;
+
+/*
+ * Convert a pointer to a C string literal to a long that can be used
+ * for hashing. This is done by converting the pointer into an integer
+ * and discarding the lowest to bits to get rid of typical alignment
+ * bits.
+ */
+#define CSTR_TO_LONG(ptr)	(((long) ptr) >> 2)
 
 /***********************************************************************
  * Declarations of internal functions. These are defined at the end of
@@ -81,6 +106,24 @@ static void octstr_grow(Octstr *ostr, long size) {
 		ostr->data = gw_realloc(ostr->data, size);
 		ostr->size = size;
 	}
+}
+
+
+void octstr_init(void) {
+	mutex_init_static(&immutables_mutex);
+	immutables_init = 1;
+}
+
+
+void octstr_shutdown(void) {
+	long i, n;
+	
+	n = 0;
+	for (i = 0; i < MAX_IMMUTABLES; ++i)
+		if (immutables[i].in_use)
+			++n;
+	debug("gwlib.octstr", 0, "Immutable octet strings: %ld.", n);
+	mutex_destroy(&immutables_mutex);
 }
 
 
@@ -123,17 +166,58 @@ Octstr *octstr_create_from_data(const char *data, long len) {
 		memcpy(ostr->data, data, len);
 		ostr->data[len] = '\0';
 	}
+	ostr->immutable = 0;
 	seems_valid(ostr);
 	return ostr;
 }
 
 
+Octstr *octstr_create_immutable(const char *cstr) {
+	Octstr *os;
+	long i, index;
+	unsigned char *data;
+	
+	gw_assert(immutables_init);
+	gw_assert(cstr != NULL);
+	
+	index = CSTR_TO_LONG(cstr) % MAX_IMMUTABLES;
+	data = (unsigned char *) cstr;
+	
+	mutex_lock(&immutables_mutex);
+	i = index;
+	for (;;) {
+		if (!immutables[i].in_use || immutables[i].os.data == data)
+			break;
+		i = (i + 1) % MAX_IMMUTABLES;
+		if (i == index)
+			panic(0, "octstr_create_immutable: Too many immutable "
+				 "strings, limit is %d.", MAX_IMMUTABLES);
+	}
+	os = &immutables[i].os;
+	if (!immutables[i].in_use) {
+		immutables[i].in_use = 1;
+		os->data = data;
+		os->len = strlen(data);
+		os->size = os->len + 1;
+		os->immutable = 1;
+	}
+	mutex_unlock(&immutables_mutex);
+
+	return os;
+}
+
+
 void octstr_destroy(Octstr *ostr) {
-	if (ostr != NULL) {
+	if (ostr != NULL && !ostr->immutable) {
 		seems_valid(ostr);
 		gw_free(ostr->data);
 		gw_free(ostr);
 	}
+}
+
+
+void octstr_destroy_item(void *os) {
+	octstr_destroy(os);
 }
 
 
@@ -174,6 +258,7 @@ Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2) {
     
 	seems_valid(ostr1);
 	seems_valid(ostr2);
+	gw_assert(!ostr1->immutable);
 
 	ostr = octstr_create("");
 	ostr->len = ostr1->len + ostr2->len;
@@ -233,6 +318,7 @@ void octstr_binary_to_hex(Octstr *ostr, int uppercase) {
 	long i;
 
 	seems_valid(ostr);
+	gw_assert(!ostr->immutable);
         if (ostr->len == 0)
                 return;
 
@@ -259,6 +345,7 @@ int octstr_hex_to_binary(Octstr *ostr) {
 	unsigned char *p;
 
 	seems_valid(ostr);
+	gw_assert(!ostr->immutable);
 
 	if (ostr->len == 0)
 		return 0;
@@ -311,6 +398,7 @@ void octstr_binary_to_base64(Octstr *ostr) {
 	int left_on_line;
 
 	seems_valid(ostr);
+	gw_assert(!ostr->immutable);
 
 	if (ostr->len == 0) {
 		/* Always terminate with CR LF */
@@ -422,6 +510,8 @@ void octstr_base64_to_binary(Octstr *ostr) {
 	unsigned char *data;
 
 	seems_valid(ostr);
+	gw_assert(!ostr->immutable);
+
 	len = ostr->len;
 	data = ostr->data;
 
@@ -550,6 +640,7 @@ void octstr_convert_range(Octstr *ostr, long pos, long len, octstr_func_t map) {
 	long end = pos + len;
 
 	seems_valid(ostr);
+	gw_assert(!ostr->immutable);
 	gw_assert(len >= 0);
 
 	if (pos >= ostr->len)
@@ -611,7 +702,7 @@ int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, long n) {
 }
 
 
-int octstr_str_compare (Octstr *ostr, char *str){
+int octstr_str_compare (Octstr *ostr, const char *str){
 	seems_valid(ostr);
 
         if (str == NULL) 
@@ -639,7 +730,7 @@ int octstr_search_char(Octstr *ostr, int ch, long pos) {
 }
 
 
-int octstr_search_cstr(Octstr *ostr, char *str, long pos) {
+int octstr_search_cstr(Octstr *ostr, const char *str, long pos) {
 	int first;
 	long len;
 
@@ -787,6 +878,9 @@ int octstr_append_from_socket(Octstr *ostr, int socket) {
 	unsigned char buf[4096];
 	int len;
 
+	seems_valid(ostr);
+	gw_assert(!ostr->immutable);
+
 again:
 	len = recv(socket, buf, sizeof(buf), 0);
 	if (len < 0 && errno == EINTR)
@@ -806,6 +900,7 @@ void octstr_insert(Octstr *ostr1, Octstr *ostr2, long pos) {
 	seems_valid(ostr1);
 	seems_valid(ostr2);
 	gw_assert(pos <= ostr1->len);
+	gw_assert(!ostr1->immutable);
 
 	if (ostr2->len == 0)
 		return;
@@ -821,8 +916,9 @@ void octstr_insert(Octstr *ostr1, Octstr *ostr2, long pos) {
 }
 
 
-void octstr_replace(Octstr *ostr, char *data, long len) {
+void octstr_replace(Octstr *ostr, const char *data, long len) {
 	seems_valid(ostr);
+	gw_assert(!ostr->immutable);
 	gw_assert(data != NULL);
 
 	octstr_grow(ostr, len);
@@ -837,7 +933,9 @@ void octstr_replace(Octstr *ostr, char *data, long len) {
 
 void octstr_truncate(Octstr *ostr, int new_len) {
 	seems_valid(ostr);
+	gw_assert(!ostr->immutable);
 	gw_assert(new_len >= 0);
+
 	if (new_len >= ostr->len)
 	    return;
 
@@ -852,6 +950,7 @@ void octstr_strip_blanks(Octstr *text) {
         int start = 0, end, len = 0;
 
 	seems_valid(text);
+	gw_assert(!text->immutable);
 
 	/* Remove white space from the beginning of the text */
 	while (isspace(octstr_get_char(text, start)))
@@ -877,6 +976,7 @@ void octstr_shrink_blanks(Octstr *text) {
 	int i, j, end;
 	
 	seems_valid(text);
+	gw_assert(!text->immutable);
 	
 	end = octstr_len(text);
 	
@@ -899,8 +999,9 @@ void octstr_shrink_blanks(Octstr *text) {
 }
 
 
-void octstr_insert_data(Octstr *ostr, long pos, char *data, long len) {
+void octstr_insert_data(Octstr *ostr, long pos, const char *data, long len) {
 	seems_valid(ostr);
+	gw_assert(!ostr->immutable);
 	gw_assert(pos <= ostr->len);
 
 	if (len == 0)
@@ -918,7 +1019,7 @@ void octstr_insert_data(Octstr *ostr, long pos, char *data, long len) {
 }
 
 
-void octstr_append_data(Octstr *ostr, char *data, long len) {
+void octstr_append_data(Octstr *ostr, const char *data, long len) {
 	octstr_insert_data(ostr, ostr->len, data, len);
 }
 
@@ -928,7 +1029,7 @@ void octstr_append(Octstr *ostr1, Octstr *ostr2) {
 }
 
 
-void octstr_append_cstr(Octstr *ostr, char *cstr) {
+void octstr_append_cstr(Octstr *ostr, const char *cstr) {
 	octstr_insert_data(ostr, ostr->len, cstr, strlen(cstr));
 }
 
@@ -944,6 +1045,7 @@ void octstr_append_char(Octstr *ostr, int ch) {
 
 void octstr_delete(Octstr *ostr1, long pos, long len) {
 	seems_valid(ostr1);
+	gw_assert(!ostr1->immutable);
 
 	if (pos > ostr1->len)
 		pos = ostr1->len;
@@ -1045,6 +1147,8 @@ void octstr_dump(Octstr *ostr, int level) {
 				  (unsigned long) ostr->len);
 	debug("gwlib.octstr", 0, "%*s  size: %lu", level, "",
 				  (unsigned long) ostr->size);
+	debug("gwlib.octstr", 0, "%*s  immutable: %d", level, "",
+				  ostr->immutable);
 
 	buf[0] = '\0';
 	p = buf;
@@ -1190,6 +1294,8 @@ int octstr_url_decode(Octstr *ostr)
     buf[2] = '\0';
 
     seems_valid(ostr);
+    gw_assert(!ostr->immutable);
+    
     if (ostr->len == 0)
 	return 0;
     
@@ -1287,6 +1393,7 @@ void octstr_set_bits(Octstr *ostr, long bitpos, int numbits,
 	int c;
 
 	seems_valid(ostr);
+	gw_assert(!ostr->immutable);
 	gw_assert(bitpos >= 0);
 	gw_assert(numbits <= 32);
 	gw_assert(numbits >= 0);
@@ -1402,6 +1509,250 @@ void octstr_append_decimal(Octstr *ostr, long value) {
 	octstr_append_cstr(ostr, tmp);
 }
 
+
+/**********************************************************************
+ * octstr_format and related private functions
+ */
+
+
+/*
+ * A parsed form of the format string. This struct has been carefully
+ * defined so that it can be initialized with {0} and it will have * the correct defaults.
+ */
+struct format {
+	int minus;
+	int zero;
+	
+	long min_width;
+
+	int has_prec;
+	long prec;
+
+	long type;
+};
+
+
+static void format_flags(struct format *format, const char **fmt)
+{
+	int done;
+	
+	done = 0;
+	do {
+		switch (**fmt) {
+		case '-':
+			format->minus = 1;
+			break;
+		
+		case '0':
+			format->zero = 1;
+			break;
+		
+		default:
+			done = 1;
+		}
+
+		if (!done)
+			++(*fmt);
+	} while (!done);
+}
+
+
+static void format_width(struct format *format, const char **fmt, 
+			 va_list *args)
+{
+	char *end;
+	
+	if (**fmt == '*') {
+		format->min_width = va_arg(*args, int);
+		++(*fmt);
+	} else if (isdigit(**fmt)) {
+		format->min_width = strtol(*fmt, &end, 10);
+		*fmt = end;
+		/* XXX error checking is missing from here */
+	}
+}
+
+
+static void format_prec(struct format *format, const char **fmt, 
+			va_list *args)
+{
+	char *end;
+
+	if (**fmt != '.')
+		return;
+	++(*fmt);
+	if (**fmt == '*') {
+		format->has_prec = 1;
+		format->prec = va_arg(*args, int);
+		++(*fmt);
+	} else if (isdigit(**fmt)) {
+		format->has_prec = 1;
+		format->prec = strtol(*fmt, &end, 10);
+		*fmt = end;
+		/* XXX error checking is missing from here */
+	}
+}
+
+
+static void format_type(struct format *format, const char **fmt)
+{
+	switch (**fmt) {
+	case 'h':
+	case 'l':
+		format->type = **fmt;
+		++(*fmt);
+		break;
+	}
+}
+
+
+static void convert(Octstr *os, struct format *format, const char **fmt, 
+va_list *args) 
+{
+	Octstr *new;
+	char *s, *pad;
+	long n;
+	char tmpfmt[1024];
+	char tmpbuf[1024];
+
+	new = NULL;
+
+	switch (**fmt) {
+	case 'd':
+		switch (format->type) {
+		case 'l':
+			n = va_arg(*args, long);
+			break;
+		case 'h':
+			n = (short) va_arg(*args, int);
+			break;
+		default:
+			n = va_arg(*args, int);
+			break;
+		}
+		new = octstr_create("");
+		octstr_append_decimal(new, n);
+		break;
+
+	case 'e':
+	case 'f':
+	case 'g':
+		sprintf(tmpfmt, "%%");
+		if (format->minus)
+			strcat(tmpfmt, "-");
+		if (format->zero)
+			strcat(tmpfmt, "0");
+		if (format->min_width > 0)
+			sprintf(strchr(tmpfmt, '\0'), 
+				"%ld", format->min_width);
+		if (format->has_prec)
+			sprintf(strchr(tmpfmt, '\0'), 
+				".%ld", format->prec);
+		if (format->type != '\0')
+			sprintf(strchr(tmpfmt, '\0'), 
+				"%c", (int) format->type);
+		sprintf(strchr(tmpfmt, '\0'), "%c", **fmt);
+		snprintf(tmpbuf, sizeof(tmpbuf), 
+			 tmpfmt, va_arg(*args, double));
+		new = octstr_create(tmpbuf);
+		break;
+
+	case 's':
+		s = va_arg(*args, char *);
+		if (format->has_prec)
+			n = format->prec;
+		else
+			n = (long) strlen(s);
+		new = octstr_create_limited(s, n);
+		break;
+	
+	case 'S':
+		new = octstr_duplicate(va_arg(*args, Octstr *));
+		if (format->has_prec)
+			octstr_truncate(new, format->prec);
+		break;
+
+	default:
+		panic(0, "octstr_format format string syntax error.");
+	}
+
+	if (format->zero)
+		pad = "0";
+	else
+		pad = " ";
+
+	if (format->minus) {
+		while (format->min_width > octstr_len(new))
+			octstr_append_data(new, pad, 1);
+	} else {
+		while (format->min_width > octstr_len(new))
+			octstr_insert_data(new, 0, pad, 1);
+	}
+
+	octstr_append(os, new);
+	octstr_destroy(new);
+
+	if (**fmt != '\0')
+		++(*fmt);
+}
+
+
+Octstr *octstr_format(const char *fmt, ...)
+{
+	va_list args;
+	Octstr *os;
+	
+	va_start(args, fmt);
+	os = octstr_format_valist(fmt, args);
+	va_end(args);
+	return os;
+}
+
+
+Octstr *octstr_format_valist(const char *fmt, va_list args)
+{
+	Octstr *os;
+	size_t n;
+	
+	os = octstr_create("");
+	
+	while (*fmt != '\0') {
+		struct format format = { 0, };
+
+		n = strcspn(fmt, "%");
+		octstr_append_data(os, fmt, n);
+		fmt += n;
+		
+		gw_assert(*fmt == '%' || *fmt == '\0');
+		if (*fmt == '\0')
+			continue;
+		
+		++fmt;
+		format_flags(&format, &fmt);
+		format_width(&format, &fmt, &args);
+		format_prec(&format, &fmt, &args);
+		format_type(&format, &fmt);
+		convert(os, &format, &fmt, &args);
+	}
+	
+	return os;
+}
+
+
+void octstr_format_append(Octstr *os, const char *fmt, ...)
+{
+	Octstr *temp;
+	va_list args;
+	
+	va_start(args, fmt);
+	temp = octstr_format_valist(fmt, args);
+	va_end(args);
+	octstr_append(os, temp);
+	octstr_destroy(temp);
+}
+
+
+
 /**********************************************************************
  * Local functions.
  */
@@ -1411,8 +1762,9 @@ const char *function) {
 	gwlib_assert_init();
 	gw_assert_place(ostr != NULL, 
 		filename, lineno, function);
-	gw_assert_allocated(ostr,
-		filename, lineno, function);
+	if (!ostr->immutable)
+		gw_assert_allocated(ostr,
+			filename, lineno, function);
 	gw_assert_place(ostr->len >= 0,
 		filename, lineno, function);
 	gw_assert_place(ostr->size >= 0,

@@ -48,6 +48,7 @@ struct WAPEvent {
 
 WAPEvent *wap_event_create(WAPEventName type);
 void wap_event_destroy(WAPEvent *event);
+void wap_event_destroy_item(void *event);
 WAPEvent *wap_event_duplicate(WAPEvent *event);
 
 const char *wap_event_name(WAPEventName type);

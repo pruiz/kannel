@@ -65,6 +65,7 @@ typedef struct List List;
  */
 typedef int list_item_matches_t(void *item, void *pattern);
 
+
 /*
  * A destructor function for list items.  Must free all memory associated
  * with the list item.
@@ -78,12 +79,13 @@ typedef void list_item_destructor_t(void *item);
 List *list_create(void);
 
 /*
- * Destroy the list. Note that the caller is responsible for destroying
- * the items in the list and for making sure that nothing else touches
- * the list (in any way) while it is being destroyed. This function only
- * frees the memory associated with the list itself.
+ * Destroy the list. If `destructor' is not NULL, first destroy all items
+ * by calling it for each item. If it is NULL, the caller is responsible
+ * for destroying items. The caller is also responsible for making sure
+ * that nothing else tries to touch the list from the time the call to
+ * list_destroy starts - this includes the item destructor function.
  */
-void list_destroy(List *list);
+void list_destroy(List *list, list_item_destructor_t *destructor);
 
 
 /*

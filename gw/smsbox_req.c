@@ -80,7 +80,7 @@ static int roundup_div(int a, int b)
 static char *obey_request(URLTranslation *trans, Msg *sms)
 {
 	char *pattern, *ret;
-	Octstr *os, *url, *final_url, *reply_body, *type, *charset,
+	Octstr *url, *final_url, *reply_body, *type, *charset,
 		*temp, *replytext;
 	List *request_headers, *reply_headers;
 	int status;
@@ -112,13 +112,9 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 		gw_free(pattern);		/* no longer needed */
 		octstr_destroy(url);
 		octstr_destroy(final_url);
-		list_destroy(request_headers);
+		list_destroy(request_headers, NULL);
 		if (status != HTTP_OK) {
-		    if (reply_headers) {
-			while ((os = list_extract_first(reply_headers)) != NULL)
-				octstr_destroy(os);
-			list_destroy(reply_headers);
-		    }
+		    list_destroy(reply_headers, octstr_destroy_item);
 		    octstr_destroy(reply_body);
 		    goto error;
 		}
@@ -144,9 +140,7 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 	
 		octstr_destroy(type);
 		octstr_destroy(charset);
-		while ((os = list_extract_first(reply_headers)) != NULL)
-			octstr_destroy(os);
-		list_destroy(reply_headers);
+		list_destroy(reply_headers, octstr_destroy_item);
 		octstr_destroy(reply_body);
 	
 		if (octstr_len(replytext) == 0)

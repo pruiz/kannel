@@ -72,7 +72,7 @@ static List *queue = NULL;
  */
 
 static WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl);
-static void wtp_machine_destroy(WTPMachine *sm);
+static void wtp_machine_destroy(void *sm);
 
 /*
  * Parse a `wdp_datagram' message object (of type Msg, see msg.h) and
@@ -316,14 +316,8 @@ void wtp_shutdown(void) {
 
      debug("wap.wtp", 0, "wtp_shutdown: %ld machines left",
      	   list_len(machines));
-     while (list_len(machines) > 0)
-	wtp_machine_destroy(list_extract_first(machines));
-     list_destroy(machines);
-
-     while (list_len(queue) > 0)
-	wap_event_destroy(list_extract_first(queue));
-     list_destroy(queue);
-
+     list_destroy(machines, wtp_machine_destroy);
+     list_destroy(queue, wap_event_destroy_item);
      counter_destroy(machine_id_counter);
 }
 
@@ -585,9 +579,13 @@ WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl) {
  * Destroys a WTPMachine. Assumes it is safe to do so. Assumes it has already
  * been deleted from the machines list.
  */
-static void wtp_machine_destroy(WTPMachine *machine){
+static void wtp_machine_destroy(void *p){
+	WTPMachine *machine;
+	
+	machine = p;
+	
 	debug("wap.wtp", 0, "WTP: Destroying WTPMachine %p (%ld)", 
-		(void *) machine, machine->mid);
+		p, machine->mid);
 	
 	list_delete_equal(machines, machine);
         #define INTEGER(name) machine->name = 0;

@@ -1,16 +1,16 @@
 CodingStyle for Kannel
-by Lars Wirzenius <liw@wapit.com>
 
 
 Code formatting
 
 	Don't make lines that are longer than 78 characters.
 	
-	Tabs are 8 characters. Indents can be discussed.
+    	Follow the coding style defined by the astyle program:
 	
-	When editing someone else's code, follow *their* formatting.
-	Don't mix formatting styles within one file.
+	    	astyle --style=linux --pad-oper -m0 -s4
 
+	Tabs are 8 characters. Indents are 4.
+	
 Commenting
 
 	Each source code file shall begin with a comment of the following
@@ -23,8 +23,6 @@ Commenting
 		 * of the functions it exports. If the file is the main
 		 * program, a short usage summary or a reference to the
 		 * manual should be included.
-		 *
-		 * Author <email@address>
 		 */
 	
 	Each function should
@@ -67,7 +65,13 @@ Memory allocation
 	gw_realloc, and gw_free instead.
 
 	Do not allocate large arrays on the stack, because there
-	are systems where the stack space per thread is quite limited.  
+	are systems where the stack space per thread is quite limited.
+	
+	If you call a function and give it a pointer, and the function
+	stores it somewhere for later use, and the caller still uses the
+	pointed area for something, the called function should make sure
+	it makes a copy of whatever the pointer points at.  This makes
+	it easier for the caller to know when it can free the area.
 
 Log messages
 
@@ -204,6 +208,20 @@ Using integer types
 		the root of the Kannel source tree should be given, thus
 		"gwlib/gwlib.h".
 
+Use of #if, #ifdef, etc
+
+	Try to avoid using the various forms of #if for portability
+	purposes. It's preferable to write the code so that it works
+	everywhere, instead of having umpteen versions for different
+	platforms. Only having a single version makes it easier to
+	test and debug things, for example.
+	
+	Don't comment things out with #if (or any other way either).
+	We use CVS, it is always possible to go back.
+	
+	Don't add new features and make them conditionally compiled.
+	Either add them completely, or don't add them at all.
+
 Typecasts
 
 	Don't use them, unless you're really certain it's needed. Almost
@@ -214,3 +232,23 @@ Typecasts
 	have been designed so that typecasts are necessary. We try to
 	make wrappers around such functions in gwlib, so that we have the
 	cast only in one place.
+
+Abstract data types, constructors and destructors
+
+	Use abstract data types whenever it makes sense. Avoid defining
+	structures that are used directly in several modules - this is
+	a maintenance headache. Instead, define an abstract data type,
+	Foo, and functions to manipulate that data type, e.g., to access
+	various fields of Foo.
+	
+	This is sort of a castrated version of object oriented
+	programming. It's a good thing.
+
+    	Use the following naming convention:
+	
+    	    typedef struct Foo Foo; 	/* The abstract data type */
+
+	    Foo *foo_create(void);  	/* Create a new Foo */
+	    void foo_destroy(Foo *);	/* Destroy a Foo */
+	    void foo_destroy_item(void *);
+	    	    	    	    	/* Wrapper, for list_destroy use */

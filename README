@@ -3,12 +3,8 @@ README for Kannel: Open Source WAP and SMS Gateway
 
 Abstract
 
-	This README describes Kannel, the WapIT Open Source WAP and SMS
-	gateway, and how it can be used and installed.
-
-Status of README
-
-	Very raw draft.
+	This README describes Kannel, the Open Source WAP and SMS gateway,
+	and how it can be used and installed.
 
 Introduction
 
@@ -34,7 +30,7 @@ Documentation
 Getting the gateway sources
 
 	You can download the sources from
-	http://www.kannel.org/sourcecode.shtml.
+	http://www.kannel.org/download.shtml.
 	
 	Note that you also need the Gnome-xml library from
 	http://xmlsoft.org/xml.html. That one probably requires zlib,
@@ -193,21 +189,22 @@ Using the gateway with a Nokia 7110
 
 Modifications to old Kannel (0.8 and older)
 
-	After release 0.8 Kannel architechture has been modified considerably, 
-	resulting changes in basic running of the standard WAP or WAP gateway.
+	After release 0.8 Kannel architechture has been modified
+	considerably, resulting changes in basic running of the standard
+	WAP or WAP gateway.
 
-	In new design, there is only one configuration file (to be more exact,
-	 you can have several of them, one for each kind of box, but that is
-	 advanced feature, which is not very usable) for bearerbox, smsboxes
-	and wapboxes. Details of that file is in doc/userguide/newconf.txt.
-	As a quick reference, you just put all your old configuration files
-	into same file, remove some rows and add 'group = xxx' variables into
-	it.
+	In new design, there is only one configuration file (to be more
+	exact, you can have several of them, one for each kind of box,
+	but that is advanced feature, which is not very usable) for
+	bearerbox, smsboxes and wapboxes. Details of that file is in
+	doc/userguide/newconf.txt.  As a quick reference, you just put
+	all your old configuration files into same file, remove some
+	rows and add 'group = xxx' variables into it.
 
-	Moreover, there is no internal smsbox in new Kannel. So, when running 
-	SMS services you MUST run separate smsbox. This is most easily done
-	with Kannel as daemon, launched with init.d. See utils/ directory
-	for any supplied systems.
+	Moreover, there is no internal smsbox in new Kannel. So, when
+	running SMS services you MUST run separate smsbox. This is most
+	easily done with Kannel as daemon, launched with init.d. See
+	utils/ directory for any supplied systems.
 
 Feedback and more information
 

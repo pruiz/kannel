@@ -1726,12 +1726,8 @@ int cimd2_close(SMSCenter *smsc) {
 	octstr_destroy(smsc->cimd2_password);
 	octstr_destroy(smsc->cimd2_inbuffer);
 
-	discarded = 0;
-	while (list_len(smsc->cimd2_received) > 0) {
-		msg_destroy(list_extract_first(smsc->cimd2_received));
-		discarded++;
-	}
-	list_destroy(smsc->cimd2_received);
+	discarded = list_len(smsc->cimd2_received);
+	list_destroy(smsc->cimd2_received, msg_destroy_item);
 
 	if (discarded > 0)
 		warning(0, "CIMD2: discarded %d received messages",

@@ -70,7 +70,7 @@ struct URLTranslationList {
  * the file.
  */
 static URLTranslation *create_onetrans(ConfigGroup *grp);
-static void destroy_onetrans(URLTranslation *ot);
+static void destroy_onetrans(void *ot);
 static URLTranslation *find_translation(URLTranslationList *trans, 
 					List *words);
 static URLTranslation *find_default_translation(URLTranslationList *trans);
@@ -92,15 +92,7 @@ URLTranslationList *urltrans_create(void) {
 
 
 void urltrans_destroy(URLTranslationList *trans) {
-	URLTranslation *ot;
-	
-	if (trans == NULL)
-		return;
-	while (list_len(trans->list) > 0) {
-		ot = list_extract_first(trans->list);
-		destroy_onetrans(ot);
-	}
-	list_destroy(trans->list);
+	list_destroy(trans->list, destroy_onetrans);
 	gw_free(trans);
 }
 
@@ -146,7 +138,6 @@ int urltrans_add_cfg(URLTranslationList *trans, Config *cfg) {
 
 URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text) {
 	List *words;
-	Octstr *word;
 	URLTranslation *t;
 	
 	words = octstr_split_words(text);
@@ -154,11 +145,7 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text) {
 	    return NULL;
 
 	t = find_translation(trans, words);
-	while (list_len(words) > 0) {
-	    word = list_extract_first(words);
-	    octstr_destroy(word);
-	}
-	list_destroy(words);
+	list_destroy(words, octstr_destroy_item);
 	if (t == NULL)
 	    t = find_default_translation(trans);
 	return t;
@@ -323,9 +310,7 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 		pattern = p + 2;
 	}
 	
-	while (list_len(word_list) > 0)
-		octstr_destroy(list_extract_first(word_list));
-	list_destroy(word_list);
+	list_destroy(word_list, octstr_destroy_item);
 	gw_free(enc);
 	return buf;
 }
@@ -519,7 +504,10 @@ error:
 /*
  * Free one URLTranslation.
  */
-static void destroy_onetrans(URLTranslation *ot) {
+static void destroy_onetrans(void *p) {
+	URLTranslation *ot;
+	
+	ot = p;
 	if (ot != NULL) {
 		gw_free(ot->keyword);
 		gw_free(ot->aliases);

@@ -166,7 +166,7 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 .y.c:
 	$(YACC) $(YFLAGS) $< && mv y.tab.c $*.c
 	if test -f y.tab.h; then \
-	if cmp -s y.tab.h $*.h; then rm -f y.tab.h; else mv y.tab.h $*.h; fi; \
+	if cmp -s y.tab.h $*.h; then rm y.tab.h; else mv y.tab.h $*.h; fi; \
 	else :; fi
 
 .c.o:
@@ -222,11 +222,13 @@ libwmlscript.a: $(wmlscriptobjs)
 wmlscript/wsgram.h: wmlscript/wsgram.c
 
 make-op-table: $(srcdir)/wmlscript/make-op-table.in
-	sed 's%@PERLPROG@%@PERL@%g' $(srcdir)/wmlscript/make-op-table.in > make-op-table
+	sed 's%@PERLPROG@%@PERL@%g' $(srcdir)/wmlscript/make-op-table.in \
+		> make-op-table
 	chmod a+x make-op-table
 
 opcodes:
-	./make-op-table $(srcdir)/wmlscript/wsasm.h > $(srcdir)/wmlscript/wsopcodes.h
+	./make-op-table $(srcdir)/wmlscript/wsasm.h \
+		> $(srcdir)/wmlscript/wsopcodes.h
 
 $(progs): $(libs) $(progobjs)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o $(libs) $(LIBS)

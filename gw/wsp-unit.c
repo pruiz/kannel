@@ -48,16 +48,11 @@ void wsp_unit_init(void) {
 
 
 void wsp_unit_shutdown(void) {
-	WAPEvent *e;
-	
 	gw_assert(run_status == running);
 	run_status = terminating;
 	list_remove_producer(queue);
 	gwthread_join_every(main_thread);
-
-	while ((e = list_extract_first(queue)) != e)
-		wap_event_destroy(e);
-	list_destroy(queue);
+	list_destroy(queue, wap_event_destroy_item);
 }
 
 

@@ -521,9 +521,7 @@ static void handle_submit(Octstr *packet, Octstr *out, int sequence) {
 	octstr_destroy(textb);
 	octstr_destroy(valid_abs);
 	octstr_destroy(delivery_abs);
-	while ((dest_addr = list_consume(other_dests)))
-		octstr_destroy(dest_addr);
-	list_destroy(other_dests);
+	list_destroy(other_dests, octstr_destroy_item);
 }
 
 static void handle_enquire(Octstr *packet, Octstr *out, int sequence) {

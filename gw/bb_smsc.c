@@ -152,13 +152,13 @@ static void sms_sender(void *arg)
     list_unlock(smsc_list);
 
     if (list_len(smsc_list) == 0)
-	list_destroy(smsc_list);
+	list_destroy(smsc_list, NULL);
 
     debug("bb", 0, "sms_sender: done, waiting in join");
     
     gwthread_join(conn->receiver);
 
-    list_destroy(conn->outgoing_list);
+    list_destroy(conn->outgoing_list, NULL);
     smsc_close(conn->smsc);
 
     gw_free(conn);
@@ -269,7 +269,7 @@ error:
 
     error(0, "Failed to start a new SMSC thingy");
     
-    list_destroy(si->outgoing_list);
+    list_destroy(si->outgoing_list, NULL);
     smsc_close(si->smsc);
     gw_free(si);
     return NULL;

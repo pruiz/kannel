@@ -159,7 +159,7 @@ static void http_request_thread(void *arg)
 {
     HTTPSocket *client;
     char *client_ip;
-    Octstr *os, *url, *body, *answer;
+    Octstr *url, *body, *answer;
     List *hdrs, *args, *reply_hdrs;
 
     reply_hdrs = list_create();
@@ -208,9 +208,7 @@ static void http_request_thread(void *arg)
 
 done:
     gw_free(client_ip);
-    while ((os = list_extract_first(reply_hdrs)) != NULL)
-	    octstr_destroy(os);
-    list_destroy(reply_hdrs);
+    list_destroy(reply_hdrs, octstr_destroy_item);
     http_server_close_client(client);
 }
 

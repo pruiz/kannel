@@ -150,7 +150,7 @@ void smscenter_destruct(SMSCenter *smsc) {
 	octstr_destroy(smsc->cimd2_username);
 	octstr_destroy(smsc->cimd2_password);
 	octstr_destroy(smsc->cimd2_inbuffer);
-	list_destroy(smsc->cimd2_received);
+	list_destroy(smsc->cimd2_received, NULL);
 
 	/* EMI */
 	gw_free(smsc->emi_phonenum);
@@ -174,7 +174,7 @@ void smscenter_destruct(SMSCenter *smsc) {
 	gw_free(smsc->at_serialdevice);
 	gw_free(smsc->at_modemtype);
 	gw_free(smsc->at_pin);
-	list_destroy(smsc->at_received);
+	list_destroy(smsc->at_received, NULL);
 	gw_free(smsc->at_inbuffer);
 	
 	 /* add new SMSCes here */
