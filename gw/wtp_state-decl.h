@@ -20,6 +20,8 @@ ROW(LISTEN,
      machine->u_ack=event->RcvInvoke.up_flag;
      machine->tcl=event->RcvInvoke.tcl;
      current_primitive=TRInvokeIndication;
+     machine->rid=0;
+     machine->result_pdu_sent=1;
      wsp_event=pack_wsp_event(current_primitive, event, machine);
      if (wsp_event == NULL)
         goto mem_error;

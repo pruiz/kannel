@@ -5,18 +5,12 @@
 #ifndef WTP_H
 #define WTP_H
 
-typedef struct WTPMachine WTPMachine;
-typedef struct WTPEvent WTPEvent;
-typedef struct WSPEvent WSPEvent;
-
 #include <errno.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 
 #include "gwlib.h"
 #include "msg.h" 
-#include "wtp_timer.h" 
-#include "wtp_send.h"
 
 #define NUMBER_OF_ABORT_REASONS 8
 /*
@@ -38,7 +32,56 @@ enum states {
     #include "wtp_state-decl.h"
 };
 
+enum wsp_event {
+      #define WSP_EVENT(name, field) name,
+      #include "wsp_events-decl.h"
+};
+
 typedef enum states states;
+typedef enum wsp_event wsp_event;
+
+typedef struct WTPTimer WTPTimer;
+typedef struct WTPMachine WTPMachine;
+typedef struct WTPEvent WTPEvent;
+typedef struct WSPEvent WSPEvent;
+
+
+struct WTPTimer {
+	struct WTPTimer *next;
+	long start_time;
+	long interval;
+	WTPMachine *machine;
+	WTPEvent *event;
+};
+
+
+struct WTPMachine {
+        #define INTEGER(name) long name
+        #define ENUM(name) states name
+        #define OCTSTR(name) Octstr *name
+        #define QUEUE(name) /* XXX event queue to be implemented later */
+	#define TIMER(name) WTPTimer *name
+/*#if HAVE_THREADS
+        #define MUTEX(name) pthread_mutex_t name
+#else*/
+        #define MUTEX(name) long name
+/*#endif*/
+        #define NEXT(name) struct WTPMachine *name
+        #define MACHINE(field) field
+        #include "wtp_machine-decl.h"
+
+};
+
+
+struct WTPEvent {
+    enum event_name type;
+
+    #define INTEGER(name) long name
+    #define OCTSTR(name) Octstr *name
+    #define EVENT(name, field) struct name field name;
+    #include "wtp_events-decl.h" 
+};
+
 
 /*
  * Create a WTPEvent structure and initialize it to be empty. Return a

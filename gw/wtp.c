@@ -8,40 +8,8 @@
  */
 
 #include "wtp.h"
-
-struct WTPMachine {
-        #define INTEGER(name) long name
-        #define ENUM(name) states name
-        #define OCTSTR(name) Octstr *name
-        #define QUEUE(name) /* XXX event queue to be implemented later */
-	#define TIMER(name) WTPTimer *name
-/*#if HAVE_THREADS
-        #define MUTEX(name) pthread_mutex_t name
-#else*/
-        #define MUTEX(name) long name
-/*#endif*/
-        #define NEXT(name) struct WTPMachine *name
-        #define MACHINE(field) field
-        #include "wtp_machine-decl.h"
-};
-
-
-struct WTPEvent {
-    enum event_name type;
-
-    #define INTEGER(name) long name
-    #define OCTSTR(name) Octstr *name
-    #define EVENT(name, field) struct name field name;
-    #include "wtp_events-decl.h" 
-};
-
-enum wsp_event {
-
-      #define WSP_EVENT(name, field) name,
-      #include "wsp_events-decl.h"
-};
-
-typedef enum wsp_event wsp_event;
+#include "wtp_send.h"
+#include "wtp_timer.h"
 
 struct WSPEvent {
        enum wsp_event name;
@@ -527,7 +495,7 @@ illegal_header:
          error(errno, "Illegal header structure");
          return NULL;
 /*
- *TBD: Another error message. 
+ *TBD: Reason to panic?
  */
 no_datagram:   
          free(event);
@@ -537,9 +505,8 @@ no_datagram:
 
 /*
  * Feed an event to a WTP state machine. Handle all errors yourself,
- * and report them to the caller. Note: first include directive, then {}s.
- * (Calling ROW macro expands everything between define and include, including
- * surplus {}s.)
+ * and report them to the caller. Note: Do not put {}s of the else block inside
+ * the macro definition (it ends with a line without a backlash.) 
  *
  * Returns: WSP event, if succeeded and an indication or a confirmation is 
  *          generated

@@ -18,16 +18,6 @@
 #include "wtp_timer.h"
 #include "gwlib.h"
 
-
-struct WTPTimer {
-	struct WTPTimer *next;
-	long start_time;
-	long interval;
-	WTPMachine *machine;
-	WTPEvent *event;
-};
-
-
 static WTPTimer *list = NULL;
 
 

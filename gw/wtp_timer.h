@@ -24,19 +24,11 @@
 #ifndef WTP_TIMER_H
 #define WTP_TIMER_H
 
-#if 0
-typedef int WTPMachine;
-typedef int WTPEvent;
-#else
 #include "wtp.h"
-#endif
 
 /*
- * The timer itself is defined in wtp_timer.c. It can only be accessed
- * via the functions declared in this header.
+ * The timer itself is defined in wtp.h.
  */
-typedef struct WTPTimer WTPTimer;
-
 
 /*
  * Create and initialize a WTPTimer object.
@@ -71,3 +63,7 @@ void wtp_timer_check(void);
 	
 
 #endif
+
+
+
+

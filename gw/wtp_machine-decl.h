@@ -20,6 +20,7 @@ MACHINE(
         INTEGER(rcr);
         INTEGER(u_ack);
         INTEGER(hold_on);
+        INTEGER(rid);
         INTEGER(ack_pdu_sent);
         INTEGER(result_pdu_sent);
         TIMER(timer_data);
@@ -41,6 +42,7 @@ MACHINE(
         INTEGER(rcr);
         INTEGER(u_ack);
         INTEGER(hold_on);
+        INTEGER(rid);
         INTEGER(ack_pdu_sent);
         INTEGER(result_pdu_sent);
         TIMER(timer_data);
