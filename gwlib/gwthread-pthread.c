@@ -437,6 +437,8 @@ int gwthread_pollfd(int fd, int events, double timeout)
     pollfd[1].events = events;
 
     milliseconds = timeout * 1000;
+    if (milliseconds < 0)
+        milliseconds = POLL_NOTIMEOUT;
 
     ret = poll(pollfd, 2, milliseconds);
     if (ret < 0) {
@@ -469,6 +471,8 @@ int gwthread_poll(struct pollfd *fds, long numfds, double timeout)
     memcpy(pollfds + 1, fds, numfds * sizeof(*pollfds));
 
     milliseconds = timeout * 1000;
+    if (milliseconds < 0)
+        milliseconds = POLL_NOTIMEOUT;
 
     ret = poll(pollfds, numfds + 1, milliseconds);
     if (ret < 0) {
@@ -501,6 +505,9 @@ void gwthread_sleep(double seconds)
     pollfd.events = POLLIN;
 
     milliseconds = seconds * 1000;
+    if (milliseconds < 0)
+        milliseconds = POLL_NOTIMEOUT;
+
     ret = poll(&pollfd, 1, milliseconds);
     if (ret < 0) {
         if (errno != EINTR && errno != EAGAIN) {
