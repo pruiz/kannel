@@ -1,3 +1,7 @@
+2001-07-27 Jörg Pommnitz <jpo@condat.de>
+	* add X-Kannel-From header to HTTP GET requests from smsbox
+	  (configurable in the config file, use the send-sender=1 option).
+
 2001-07-23 Bruno Rodrigues <bruno.rodrigues@litux.org>
 
 	* userguide.xml: in emi2 section, username and password ain't

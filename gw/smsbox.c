@@ -729,7 +729,12 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
     
     case TRANSTYPE_GET_URL:
 	request_headers = http_create_empty_headers();
-	http_header_add(request_headers, "User-Agent", "Kannel " VERSION);	
+	http_header_add(request_headers, "User-Agent", "Kannel " VERSION);
+	if (urltrans_send_sender(trans)) {
+	    http_header_add(request_headers, "X-Kannel-From",
+			    octstr_get_cstr(msg->sms.receiver));
+	}
+	
 	id = remember_receiver(msg, trans);
 	http_start_request(caller, pattern, request_headers, NULL, 1, id,
  			   NULL);
