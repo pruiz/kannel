@@ -137,11 +137,13 @@ ROW(CONNECTED,
 
 		if (unpack_get_pdu(&url, &headers, e->user_data) == -1)
 			error(0, "Unpacking Get PDU failed, oops.");
-		debug(0, "WSP: sending Release to ourselves");
-		new_event = wsp_event_create(Release);
-		new_event->Release.machine = e->machine;
-		new_event->Release.url = url;
-		wsp_handle_event(sm, new_event);
+		else {
+			debug(0, "WSP: sending Release to ourselves");
+			new_event = wsp_event_create(Release);
+			new_event->Release.machine = e->machine;
+			new_event->Release.url = url;
+			wsp_handle_event(sm, new_event);
+		}
 
 	},
 	HOLDING)
@@ -171,7 +173,8 @@ ROW(HOLDING,
 		new_event->SMethodInvokeResult.machine = e->machine;
 		new_event->SMethodInvokeResult.url = e->url;
 		new_event->SMethodInvokeResult.method = Get_PDU;
-		new_event->SMethodInvokeResult.server_transaction_id = 1;
+		new_event->SMethodInvokeResult.server_transaction_id = 
+			new_server_transaction_id();
 		(void) start_thread(1, wsp_http_thread, new_event, 0);
 	},
 	REQUESTING)
@@ -182,10 +185,11 @@ ROW(REQUESTING,
 	{
 		WTPEvent *wtp_event;
 		
+		debug(0, "WSP: Got SMethodInvokeResult, server tid=%d",
+			e->server_transaction_id);
+
 		/* Send TR-Invoke.res to WTP */
 		wtp_event = wtp_event_create(TRInvoke);
-		if (wtp_event == NULL)
-			panic(0, "wtp_event_create failed");
 		wtp_event->TRInvoke.tid = e->machine->tid;
 		wtp_event->TRInvoke.exit_info = NULL;
 		wtp_event->TRInvoke.exit_info_present = 0;
@@ -200,15 +204,17 @@ ROW(PROCESSING,
 	{
 		WTPEvent *wtp_event;
 
+		debug(0, "WSP: Got SMethodResultRequest, server tid=%d",
+			e->server_transaction_id);
+
 		/* Send TR-Result.req to WTP */
 		wtp_event = wtp_event_create(TRResult);
-		if (wtp_event == NULL)
-			panic(0, "wtp_event_create failed");
 		wtp_event->TRResult.tid = e->machine->tid;
 		wtp_event->TRResult.user_data = 
 			make_reply_pdu(e->status, e->response_type,
 					e->response_body);
 		debug(0, "WSP: sending TR-Result.req event to WTP");
+		wtp_event_dump(wtp_event);
 		wtp_handle_event(e->machine, wtp_event);
 	},
 	REPLYING)

@@ -64,6 +64,7 @@ WSP_EVENT(Release,
 	  OCTSTR(url);
 	  })
 
+#if 0
 WSP_EVENT(SMethodInvokeIndication,
 	  {
 	  MACHINE(machine);
@@ -71,6 +72,7 @@ WSP_EVENT(SMethodInvokeIndication,
 	  INTEGER(method);
 	  INTEGER(server_transaction_id);
 	  })
+#endif
 
 WSP_EVENT(SMethodInvokeResult,
 	  {

@@ -10,6 +10,7 @@
 #include "gwlib.h"
 #include "wsp.h"
 #include "wml.h"
+#include "ws.h"
 
 enum {
 	Bad_PDU = -1,
@@ -64,6 +65,7 @@ static Octstr *make_reply_pdu(long status, long type, Octstr *body);
 
 static long convert_http_status_to_wsp_status(long http_status);
 
+static long new_server_transaction_id(void);
 static int transaction_belongs_to_session(WTPMachine *wtp, WSPMachine *session);
 
 static void *wsp_http_thread(void *arg);
@@ -304,6 +306,7 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 	    unpack_octstr(&caps, caps_len, user_data, &off) == -1 ||
 	    unpack_octstr(&headers, headers_len, user_data, &off) == -1)
 		return -1;
+#if 0
 	debug(0, "Unpacked Connect PDU:");
 	debug(0, "  version=%lu", version);
 	debug(0, "  caps_len=%lu", caps_len);
@@ -313,6 +316,7 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 	debug(0, "  headers:");
 	octstr_dump(headers);
 	debug(0, "Connect PDU dump done.");
+#endif
 
 	off = 0;
 
@@ -622,6 +626,13 @@ static long convert_http_status_to_wsp_status(long http_status) {
 }
 
 
+static long new_server_transaction_id(void) {
+	static long next_id = 1;
+	
+	return next_id++;
+}
+
+
 static int transaction_belongs_to_session(WTPMachine *wtp, WSPMachine *session)
 {
 	return 
@@ -638,7 +649,10 @@ static int encode_content_type(const char *type) {
 		int shortint;
 	} tab[] = {
 		{ "text/plain", 0x03 },
+		{ "text/vnd.wap.wml", 0x08 },
+		{ "text/vnd.wap.wmlscript", 0x09 },
 		{ "application/vnd.wap.wmlc", 0x14 },
+		{ "application/vnd.wap.wmlscriptc", 0x15 },
 		{ "image/vnd.wap.wbmp", 0x21 },
 	};
 	int i;
@@ -646,7 +660,8 @@ static int encode_content_type(const char *type) {
 	for (i = 0; i < sizeof(tab) / sizeof(tab[0]); ++i)
 		if (strcmp(type, tab[i].type) == 0)
 			return tab[i].shortint;
-	return 0x03; /* Unknown type, assume text/plain */
+	error(0, "WSP: Unknown content type <%s>, assuming text/plain.", type);
+	return 0x03;
 }
 
 
@@ -731,8 +746,10 @@ static void *wsp_http_thread(void *arg) {
 	debug(0, "WSP: Read %lu bytes of compiled WMLC", (unsigned long) n);
 	fclose(f);
 	body = octstr_create_from_data(wmlc, n);
+#if 0
 	debug(0, "WML: Compiled WML:");
 	octstr_dump(body);
+#endif
 
 	if (0) {
 error:
@@ -744,8 +761,39 @@ error:
 		} else if (strcmp(type, "image/vnd.wap.wbmp") == 0) {
 			body = octstr_create_from_data(data, size);
 		} else if (strcmp(type, "text/vnd.wap.wmlscript") == 0) {
-			status = 415;
-			error(0, "WMLScript not yet implemented.");
+			WsCompilerParams params;
+			WsCompilerPtr compiler;
+			WsResult result;
+			unsigned char *result_data;
+			size_t result_size;
+
+			memset(&params, 0, sizeof(params));
+			params.use_latin1_strings = 0;
+			params.print_symbolic_assembler = 1;
+			params.print_assembler = 0;
+			params.meta_name_cb = NULL;
+			params.meta_name_cb_context = NULL;
+			params.meta_http_equiv_cb = NULL;
+			params.meta_http_equiv_cb_context = NULL;
+
+			compiler = ws_create(&params);
+			if (compiler == NULL) {
+				panic(0, "WSP: could not create WMLScript compiler");
+				exit(1);
+			}
+
+			result = ws_compile_data(compiler, url, 
+				   data, size, &result_data, &result_size);
+			if (result != WS_OK) {
+				warning(0, "WSP: WMLScript compilation failed: %s",
+					ws_result_to_string(result));
+				status = 415; /* XXX wrong code */
+			} else {
+				body = octstr_create_from_data(result_data,
+								result_size);
+				error(0, "WSP: WMLScript not supported yet.");
+				status = 415;
+			}
 		} else {
 			status = 415; /* Unsupported media type */
 			warning(0, "Unsupported content type `%s'", type);
@@ -754,7 +802,7 @@ error:
 		
 	e = wsp_event_create(SMethodResultRequest);
 	e->SMethodResultRequest.server_transaction_id = 
-		event->SMethodInvokeIndication.server_transaction_id;
+		event->SMethodInvokeResult.server_transaction_id;
 	e->SMethodResultRequest.status = status;
 	e->SMethodResultRequest.response_type = encode_content_type(type);
 	e->SMethodResultRequest.response_body = body;
