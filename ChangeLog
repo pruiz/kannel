@@ -1,4 +1,10 @@
 2003-06-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * radius/radius_acct.c: fixed a bug when NAS does not provide framed IP
+      address or caller ID (MSISDN), then discard the packet for the mapping,
+      but do forward to the remote server.
+      Thanks to "David Chkhartishvili" <datoch@magtigsm.ge> for spotting this.
+
+2003-06-20  Stipe Tolj  <tolj@wapme-systems.de>
     * Makefile.in: added compilation of RADIUS related files inside radius/.
     * doc/userguide/userguide.xml: new MSISDN provisioning section describing
       the use of the RADIUS accounting proxy thread.
