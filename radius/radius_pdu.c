@@ -107,7 +107,7 @@ void radius_pdu_destroy(RADIUS_PDU *pdu)
     	case id: { struct name *p = &pdu->u.name; fields } break;
     #include "radius_pdu.def"
     default:
-    	error(0, "Unknown SMPP_PDU type, internal error while destroying.");
+    	error(0, "Unknown RADIUS_PDU type, internal error while destroying.");
     }
 
     #define ATTR(attr, type, string, min, max)
@@ -163,7 +163,7 @@ static Octstr *radius_attr_pack(RADIUS_PDU *pdu)
             Octstr *attr_val = dict_get(p->attr, attr_str);                      \
             if (attr_str != NULL) {                                              \
                 int attr_len = octstr_len(attr_val) + 2;                         \
-                octstr_append(os, octstr_format("%02X", atype));                 \
+                octstr_format_append(os, "%02X", atype);                         \
                 octstr_append_data(os, (char*) &attr_len, 2);                    \
                 radius_type_append(&os, type, pmin, pmax, attr_val);             \
             }                                                                    \
@@ -178,7 +178,7 @@ static Octstr *radius_attr_pack(RADIUS_PDU *pdu)
 
 Octstr *radius_pdu_pack(RADIUS_PDU *pdu)
 {
-    Octstr *os;
+    Octstr *os,*oos;
     Octstr *temp;
 
     os = octstr_create("");
@@ -205,8 +205,8 @@ Octstr *radius_pdu_pack(RADIUS_PDU *pdu)
     #define OCTETS(name, field_giving_octets) \
     	octstr_append(os, p->name);
     #define PDU(name, id, fields) \
-    	case id: { struct name *p = &pdu->u.name; fields; \
-                   octstr_append(os, radius_attr_pack(pdu)); } break;
+    	case id: { struct name *p = &pdu->u.name; fields; oos = radius_attr_pack(pdu); \
+                   octstr_append(os, oos);octstr_destroy(oos); } break;
     #include "radius_pdu.def"
     default:
     	error(0, "Unknown RADIUS_PDU type, internal error while packing.");
@@ -349,6 +349,7 @@ RADIUS_PDU *radius_pdu_unpack(Octstr *data_without_len)
     }
 
     parse_context_destroy(context);
+    octstr_destroy(authenticator);
 
     return pdu;
 }
@@ -437,7 +438,7 @@ void radius_pdu_dump(RADIUS_PDU *pdu)
     	error(0, "Unknown RADIUS_PDU type, internal error.");
 	break;
     }
-    debug("sms.smpp", 0, "RADIUS PDU dump ends.");
+    debug("radius", 0, "RADIUS PDU dump ends.");
 }
 
 Octstr *radius_get_attribute(RADIUS_PDU *pdu, Octstr *attribute)

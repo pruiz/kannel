@@ -1,3 +1,8 @@
+2003-10-14  Alexander Malysh  <a.malysh@centrium.de>
+    * radius/radius_acct.c, radius/radius_pdu.c: applied Vjacheslav's memleak patch.
+      Thanks to Vjacheslav Chekushin <slava@lmt.lv>. For more details see:
+      Message-ID: <3F854566.4020704@lmt.lv>
+
 2003-10-13  Alexander Malysh  <a.malysh@centrium.de>
     * gw/msg.h: defined MSG_PARAM_UNDEFINED as -1 for init. values of all
       messages.

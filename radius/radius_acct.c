@@ -1,8 +1,8 @@
 /*
- * radius_acct.c - RADIUS accounting proxy thread
- *
- * Stipe Tolj <tolj@wapme-systems.de>
- */
+* radius_acct.c - RADIUS accounting proxy thread
+*
+* Stipe Tolj <tolj@wapme-systems.de>
+*/
 
 #include <string.h>
 #include <fcntl.h>
@@ -52,6 +52,7 @@ static int update_tables(RADIUS_PDU *pdu)
     Octstr *client_ip, *msisdn;
     Octstr *type, *session_id;
     int ret = 0;
+    Octstr *rm_item;
 
     client_ip = msisdn = type = session_id = NULL;
 
@@ -91,8 +92,10 @@ static int update_tables(RADIUS_PDU *pdu)
                 if ((old_session_id = dict_get(client_table, client_ip)) != NULL &&
                     (old_client_ip = dict_get(session_table, old_session_id)) != NULL &&
                     octstr_compare(old_session_id, session_id) != 0) {
-                    dict_remove(client_table, client_ip);
-                    dict_remove(session_table, old_session_id);
+                    rm_item = dict_remove(client_table, client_ip);
+                    octstr_destroy(rm_item);
+                    rm_item = dict_remove(session_table, old_session_id);
+                    octstr_destroy(rm_item);
                     octstr_destroy(old_session_id);
                     octstr_destroy(old_client_ip);
                 }
@@ -119,10 +122,15 @@ static int update_tables(RADIUS_PDU *pdu)
                 (comp_client_ip = dict_get(session_table, session_id)) != NULL &&
                 octstr_compare(client_ip, comp_client_ip) == 0) {
                 dict_remove(radius_table, client_ip);
+                rm_item = dict_remove(client_table, client_ip);
+                octstr_destroy(rm_item);
+                dict_remove(session_table, session_id);
                 info(0, "RADIUS: Mapping `%s <-> %s' for session id <%s> removed.",
                      octstr_get_cstr(client_ip), octstr_get_cstr(msisdn),
                      octstr_get_cstr(session_id));
                 octstr_destroy(msisdn);
+                octstr_destroy(comp_client_ip);
+
                 ret = 1;
             } else {
                 warning(0, "RADIUS: Could not find mapping for `%s' session "
@@ -150,6 +158,7 @@ static void proxy_thread(void *arg)
     int fl; /* socket flags */
     Octstr *addr = NULL;
     int forward;
+    Octstr *tmp;
 
     run_thread = 1;
     ss = cs = -1;
@@ -187,8 +196,12 @@ static void proxy_thread(void *arg)
             error(0, "RADIUS: Couldn't receive request data from NAS");
             continue;
         }
+
+
+        tmp = udp_get_ip(from_nas);
         info(0, "RADIUS: Got data from NAS <%s:%d>",
-             octstr_get_cstr(udp_get_ip(from_nas)), udp_get_port(from_nas));
+             octstr_get_cstr(tmp), udp_get_port(from_nas));
+        octstr_destroy(tmp);
         octstr_dump(data, 0);
 
         /* unpacking the RADIUS PDU */
@@ -251,6 +264,7 @@ static void proxy_thread(void *arg)
 
         octstr_destroy(rdata);
         octstr_destroy(data);
+        octstr_destroy(from_nas);
 
         debug("radius.proxy", 0, "RADIUS: Mapping table contains %ld elements",
               dict_key_count(radius_table));
@@ -258,6 +272,7 @@ static void proxy_thread(void *arg)
               dict_key_count(session_table));
         debug("radius.proxy", 0, "RADIUS: Client table contains %ld elements",
               dict_key_count(client_table));
+
     }
 
     octstr_destroy(addr);
