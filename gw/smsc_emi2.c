@@ -288,6 +288,8 @@ static Connection *open_send_connection(SMSCConn *conn)
 		conn_destroy(server);
 		continue;
 	    }
+	    privdata->last_activity_time = 0; /* to force keepalive after login */
+
 	}
 
 	mutex_lock(conn->flow_mutex);

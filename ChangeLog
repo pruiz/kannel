@@ -1,4 +1,9 @@
 2002-03-14  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsc_emi2.c: force sending a UCP-31 after login (thus reseting the
+      last_activity_time) - sometimes emi2 login and don't send keepalives,
+      specially if it can't connect at the first time
+
+2002-03-14  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsc_emi2.c: added a missing octdestroy and changed dcs encoding
       behaviour: if dcs equals to default + 8bit, we don't need to add a 
       DCS in XSER, the MCLs=1 is enough (Should fix complaint from 
