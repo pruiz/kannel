@@ -2,20 +2,16 @@
  * thread.h - thread manipulation
  */
 
-#ifndef _GW_THREAD_H
-#define _GW_THREAD_H
+#ifndef GW_THREAD_H
+#define GW_THREAD_H
 
 #include "config.h"
 
-
-#if HAVE_PTHREAD_H
-#include <pthread.h>
-#else
-typedef int pthread_t;
-typedef int pthread_mutex_t;
-typedef int pthread_attr_t;
-#define pthread_self() (0)
+#if !HAVE_PTHREAD_H
+#error "You need Posix threads and <pthread.h>"
 #endif
+
+#include <pthread.h>
 
 /*
  * Type of function for threads. See pthread.h.

@@ -1,3 +1,11 @@
+Thu Apr 13 21:01:20 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/thread.h: Removed obsolete definitions for pthread_t etc
+	on systems without <pthread.h>.
+	
+	* test/test_list.c: Fixed so it won't assume pthread_t is a long
+	or compatible with a long.
+
 Thu Apr 13 18:35:15 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Making release 0.7.1.

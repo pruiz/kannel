@@ -27,15 +27,15 @@
 #define NUM_CONSUMERS (1)
 #endif
 
-static long producers[NUM_PRODUCERS];
-static long consumers[NUM_CONSUMERS];
+static pthread_t producers[NUM_PRODUCERS];
+static pthread_t consumers[NUM_CONSUMERS];
 
 #define NUM_ITEMS_PER_PRODUCER (100*1000)
 
 
 static char received[NUM_PRODUCERS * NUM_ITEMS_PER_PRODUCER];
 
-static int producer_index_start(long producer) {
+static int producer_index_start(pthread_t producer) {
 	int i;
 	
 	for (i = 0; i < NUM_PRODUCERS; ++i) {
@@ -131,9 +131,10 @@ static void check_received(void) {
 		for (n = 0; n < NUM_ITEMS_PER_PRODUCER; ++n) {
 			index = p * NUM_ITEMS_PER_PRODUCER + n;
 			if (!received[index]) {
-				error(0, "Not received: producer=%ld "
+				error(0, "Not received: producer=%lu "
 				         "item=%ld index=%ld", 
-					 producers[p], n, index);
+					 (unsigned long) producers[p], 
+					 n, index);
 			}
 		}
 	}
@@ -183,11 +184,11 @@ static void main_for_producer_and_consumer(void) {
 	list = list_create();
 	init_received();
 	for (i = 0; i < NUM_PRODUCERS; ++i) {
-		producers[i] = (long) pthread_self();
+		producers[i] = pthread_self();
 		producer(list);
 	}
 	for (i = 0; i < NUM_PRODUCERS; ++i) {
-		consumers[i] = (long) pthread_self();
+		consumers[i] = pthread_self();
 		consumer(list);
 	}
 
