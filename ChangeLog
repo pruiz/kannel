@@ -1,3 +1,7 @@
+2002-06-03  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c: fixed memory bug in msg_to_pdu(), patch by Oded
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B296D6F@exchange.m-wise.com>]
+
 2002-06-02  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsbox.c: memory leak fixes, provided by Angel
       [Msg-ID: <NCEOLLKPFAEAOBBMHNHECEFGCGAA.afradejas@mediafusion.es>]
