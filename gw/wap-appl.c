@@ -32,10 +32,11 @@
 #include "wap_push_ppg.h"
 #include "wap/wsp_strings.h"
 #include "wap/wsp_caps.h"
-#ifdef ENABLE_COOKIES
 #include "wap/wsp.h"
+#ifdef ENABLE_COOKIES
 #include "wap/cookies.h"
 #endif
+#include "wap-error.h"
 
 /*
  * Give the status the module:
@@ -92,6 +93,12 @@ struct request_data {
     long x_wap_tod;
     List *request_headers;
 };
+
+
+/*
+ * Indicator for WSP smart error messaging
+ */
+extern int wsp_smart_errors;
 
 
 /*
@@ -436,6 +443,31 @@ static void add_x_wap_tod(List *headers)
 }
 
 
+static void add_referer_url(List *headers, Octstr *url) 
+{
+    if (octstr_len(url) > 0) {
+	   http_header_add(headers, "Referer", octstr_get_cstr(url));
+    }
+}
+
+
+static void set_referer_url(Octstr *url, WSPMachine *sm)
+{
+	gw_assert(url != NULL);
+	gw_assert(sm != NULL);
+
+    sm->referer_url = octstr_duplicate(url);
+}
+
+
+static Octstr *get_referer_url(const WSPMachine *sm)
+{
+	gw_assert(sm != NULL);
+
+    return sm->referer_url;
+}
+
+
 /*
  * Return the reply from an HTTP request to the phone via a WSP session.
  */
@@ -484,18 +516,50 @@ static void return_reply(int status, Octstr *content_body, List *headers,
                          List *request_headers)
 {
     struct content content;
+    int converted;
 
     content.url = url;
     content.body = content_body;
 
     if (status < 0) {
         error(0, "WSP: http lookup failed, oops.");
-        status = HTTP_BAD_GATEWAY;
-        content.type = octstr_create("text/plain");
         content.charset = octstr_create("");
-        content.body = octstr_create("");
+        /* smart WSP error messaging?! */
+        if (wsp_smart_errors) {
+            Octstr *referer_url;
+            status = HTTP_OK;
+            content.type = octstr_create("text/vnd.wap.wml");
+            /*
+             * check if a referer for this URL exists and 
+             * get back to the previous page in this case
+             */
+            if ((referer_url = get_referer_url(find_session_machine_by_id(session_id)))) {
+                content.body = error_requesting_back(url, referer_url);
+                debug("wap.wsp",0,"WSP: returning smart error WML deck for referer URL");
+            } else {
+                content.body = error_requesting(url);
+                debug("wap.wsp",0,"WSP: returning smart error WML deck");
+            }
+
+            /* 
+             * if we did not connect at all there is no content in 
+             * the headers list, so create for the upcoming transformation
+             */
+            if (headers == NULL)
+                headers = http_create_empty_headers();
+
+            converted = convert_content(&content);
+            if (converted == 1)
+                http_header_mark_transformation(headers, content.body, content.type);
+
+        } else {
+            status = HTTP_BAD_GATEWAY;
+            content.type = octstr_create("text/plain");
+            content.charset = octstr_create("");
+            content.body = octstr_create("");
+        }
+
     } else {
-        int converted;
 
         http_header_get_content_type(headers, &content.type, &content.charset);
         info(0, "WSP: Fetched <%s> (%s, charset='%s')", 
@@ -508,16 +572,27 @@ static void return_reply(int status, Octstr *content_body, List *headers,
         if (session_id != -1)
             if (get_cookies(headers, find_session_machine_by_id(session_id)) == -1)
                 error(0, "WSP: Failed to extract cookies");
-#endif		
-	
+#endif
+
         converted = convert_content(&content);
         if (converted < 0) {
             warning(0, "WSP: All converters for `%s' failed.",
                     octstr_get_cstr(content.type));
             /* Don't change status; just send the client what we did get. */
         }
-        if (converted == 1)
+        if (converted == 1) {
             http_header_mark_transformation(headers, content.body, content.type);
+
+            /* 
+             * set referer URL to WSPMachine, but only if this was a converted
+             * content-type, like .wml
+             */
+            if (session_id != -1) {
+                debug("wap.wsp.http",0,"WSP: Setting Referer URL to <%s>", 
+                      octstr_get_cstr(url));
+                set_referer_url(url, find_session_machine_by_id(session_id));
+            }
+        }
     }
 
     if (headers == NULL)
@@ -628,6 +703,7 @@ static void start_fetch(WAPEvent *event)
     int ret;
     long client_SDU_size; /* 0 means no limit */
     Octstr *url;
+    Octstr *referer_url;
     List *session_headers;
     List *request_headers;
     List *actual_headers;
@@ -691,6 +767,13 @@ static void start_fetch(WAPEvent *event)
         (set_cookies(actual_headers, find_session_machine_by_id(session_id)) == -1)) 
         error(0, "WSP: Failed to add cookies");
 #endif
+
+    /* set referer URL to HTTP header from WSPMachine */
+    if (session_id != -1) {
+        if ((referer_url = get_referer_url(find_session_machine_by_id(session_id))) != NULL) {
+            add_referer_url(actual_headers, referer_url);
+        }
+    }
     
     add_kannel_version(actual_headers);
     add_session_id(actual_headers, session_id);

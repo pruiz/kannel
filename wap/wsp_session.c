@@ -434,6 +434,7 @@ static WSPMachine *machine_create(void) {
 	#define MACHINESLIST(name) p->name = list_create();
 	#define CAPABILITIES(name) p->name = NULL;
 	#define COOKIES(name) p->name = NULL;
+	#define REFERER(name) p->name = NULL;
 	#define MACHINE(fields) fields
 	#include "wsp_server_session_machine.def"
 	
@@ -486,6 +487,7 @@ static void machine_destroy(void *pp) {
 	#define MACHINESLIST(name) destroy_##name(p->name);
 	#define CAPABILITIES(name) wsp_cap_destroy_list(p->name);
 	#define COOKIES(name) cookies_destroy(p->name);
+	#define REFERER(name) octstr_destroy(p->name);
 	#define MACHINE(fields) fields
 	#include "wsp_server_session_machine.def"
 	gw_free(p);

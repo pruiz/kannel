@@ -44,6 +44,7 @@ struct WSPMachine {
 	#define HTTPHEADERS(name) List *name;
 	#define ADDRTUPLE(name) WAPAddrTuple *name;
 	#define COOKIES(name) List *name;
+	#define REFERER(name) Octstr *name;
 	#define MACHINESLIST(name) List *name;
 	#define CAPABILITIES(name) List *name;
 	#define MACHINE(fields) fields
@@ -71,6 +72,7 @@ struct WSPPushMachine {
  * Shared stuff.
  */
 long wsp_convert_http_status_to_wsp_status(long http_status);
+WSPMachine *find_session_machine_by_id(int);
 
 #endif
 

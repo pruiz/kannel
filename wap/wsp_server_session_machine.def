@@ -32,6 +32,7 @@ MACHINE(
 	
 	HTTPHEADERS(http_headers)
 	COOKIES(cookies)
+    REFERER(referer_url)
 	MACHINESLIST(methodmachines)
         MACHINESLIST(pushmachines)
 )
