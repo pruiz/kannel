@@ -402,7 +402,7 @@ int main(int argc, char **argv) {
 	wsp_unit_init();
 
         wtp_tid_cache_init();
-        wtp_iniator_init();
+        wtp_initiator_init();
         wtp_resp_init();
 	wap_appl_init();
 
@@ -432,7 +432,7 @@ int main(int argc, char **argv) {
                            (ret = wtp_event_is_for_responder(event)) == 1)
 			        wtp_resp_dispatch_event(event);
                         else if (ret == 0)
-                                wtp_iniator_dispatch_event(event); 
+                                wtp_initiator_dispatch_event(event); 
                   }
                   list_destroy(events, NULL);
 		}
@@ -443,7 +443,7 @@ int main(int argc, char **argv) {
 	list_remove_producer(queue);
 	gwthread_join_every(send_heartbeat_thread);
 	gwthread_join_every(empty_queue_thread);
-        wtp_iniator_shutdown();
+        wtp_initiator_shutdown();
 	wtp_resp_shutdown();
 	wtp_tid_cache_shutdown();
 	wsp_unit_shutdown();

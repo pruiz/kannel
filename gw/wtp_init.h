@@ -1,11 +1,11 @@
 /*
- * WTP iniator header
+ * WTP initiator header
  *
  * Aarno Syvänen for Wapit Ltd
  */
 
-#ifndef WTP_INIATOR_H
-#define WTP_INIATOR_H
+#ifndef WTP_INIT_H
+#define WTP_INIT_H
 
 typedef struct WTPInitMachine WTPInitMachine;
 
@@ -17,7 +17,7 @@ typedef struct WTPInitMachine WTPInitMachine;
 #include "wtp_send.h"
 
 /*
- * Iniator machine states and iniator WTP machine
+ * Initiator machine states and initiator WTP machine
  * See file wtp_init_state-decl.h for comments. Note that we must define macro
  * ROW to produce an empty string.
  */
@@ -47,22 +47,22 @@ struct WTPInitMachine {
 
 
 /*
- * Initialize the WTP iniator. MUST be called before any other calls
+ * Initialize the WTP initiator. MUST be called before any other calls
  * to this module.
  */
-void wtp_iniator_init(void);
+void wtp_initiator_init(void);
 
 /*
- * Shut down the WTP iniator. MUST be called after the subsystem isn't
+ * Shut down the WTP initiator. MUST be called after the subsystem isn't
  * used anymore.
  */
-void wtp_iniator_shutdown(void);
+void wtp_initiator_shutdown(void);
 
 /*
- * Transfers an event to the WTP iniator
+ * Transfers an event to the WTP initiator
  */ 
-void wtp_iniator_dispatch_event(WAPEvent *event);
+void wtp_initiator_dispatch_event(WAPEvent *event);
 
-int wtp_iniator_get_address_tuple(long mid, WAPAddrTuple **tuple);
+int wtp_initiator_get_address_tuple(long mid, WAPAddrTuple **tuple);
 
 #endif

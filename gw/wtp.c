@@ -82,9 +82,9 @@ List *wtp_unpack_wdp_datagram(Msg *msg){
 
 /*
  * Responder set the first bit of the tid field. If we get a packet from the 
- * responder, we are the iniator. 
+ * responder, we are the initiator. 
  *
- * Return 1, when the event is for responder, 0 when it is for iniator and 
+ * Return 1, when the event is for responder, 0 when it is for initiator and 
  * -1 when error.
  */
 int wtp_event_is_for_responder(WAPEvent *event){
@@ -92,16 +92,16 @@ int wtp_event_is_for_responder(WAPEvent *event){
     switch(event->type){
           
           case RcvInvoke:
-	       return event->u.RcvInvoke.tid < INIATOR_TID_LIMIT;
+	       return event->u.RcvInvoke.tid < INITIATOR_TID_LIMIT;
 
           case RcvAck:
-	       return event->u.RcvAck.tid < INIATOR_TID_LIMIT;
+	       return event->u.RcvAck.tid < INITIATOR_TID_LIMIT;
 
           case RcvAbort:
-	       return event->u.RcvAbort.tid < INIATOR_TID_LIMIT;
+	       return event->u.RcvAbort.tid < INITIATOR_TID_LIMIT;
 
           case RcvErrorPDU:
-               return event->u.RcvErrorPDU.tid < INIATOR_TID_LIMIT;
+               return event->u.RcvErrorPDU.tid < INITIATOR_TID_LIMIT;
 
           default:
 	       error(1, "Received an erroneous PDU corresponding an event");
@@ -235,10 +235,10 @@ WAPEvent *unpack_wdp_datagram_real(Msg *msg){
 	case Invoke:
 	     event = unpack_invoke(pdu, msg);
 /*
- * If an iniator gets invoke, it would be an illegal pdu.
+ * If an initiator gets invoke, it would be an illegal pdu.
  */
              if (!wtp_event_is_for_responder(event)){
-                debug("wap.wtp", 0, "Invoke when iniator. Message was");
+                debug("wap.wtp", 0, "Invoke when initiator. Message was");
                 wap_event_destroy(event);
                 wap_event_create(RcvErrorPDU);
              }
@@ -267,7 +267,7 @@ WAPEvent *unpack_wdp_datagram_real(Msg *msg){
 
 /*
  * Used for debugging and when wtp unpack does not return a tid. We include
- * first bit; it tells does message received belong to the iniator or to the
+ * first bit; it tells does message received belong to the initiator or to the
  * responder.
  */
 

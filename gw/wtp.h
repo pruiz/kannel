@@ -90,10 +90,10 @@ enum {
 };    
 
 /*
- * Responder set first tid, iniator not. So all tids send by iniator are 
+ * Responder set first tid, initiaotr not. So all tids send by initiaotr are 
  * greater than 2**15.
  */
-#define INIATOR_TID_LIMIT (1 << 15)
+#define INITIATOR_TID_LIMIT (1 << 15)
 
 /*
  *  Transaction is identified by the address four-tuple and tid.
@@ -126,7 +126,7 @@ List *wtp_unpack_wdp_datagram(Msg *msg);
 
 /*
  * Responder set the first bit of the tid field. If we get a packet from the 
- * responder, we are the iniator. 
+ * responder, we are the initiator. 
  */
 int wtp_event_is_for_responder(WAPEvent *event);
 

@@ -55,7 +55,7 @@ void wtp_tid_cache_shutdown(void) {
 
 /*
  * Tid verification is invoked, when tid_new flag of the incoming message is 
- * on. It is not, if the iniator is not yet cached. If iniator is cached, the
+ * on. It is not, if the initiator is not yet cached. If initiator is cached, the
  * received tid is stored.
  */
 int wtp_tid_is_valid(WAPEvent *event, WTPRespMachine *resp_machine){
@@ -72,7 +72,7 @@ int wtp_tid_is_valid(WAPEvent *event, WTPRespMachine *resp_machine){
    
     if (!event->u.RcvInvoke.tid_new) {
 /*
- * First we check whether the current iniator has a cache item for it.
+ * First we check whether the current initiator has a cache item for it.
  */      
        if ((item = tid_cached(resp_machine)) == NULL) {
 
@@ -122,7 +122,7 @@ int wtp_tid_is_valid(WAPEvent *event, WTPRespMachine *resp_machine){
 }
 
 /*
- * Changes tid value used by an existing iniator. Input responder machine and 
+ * Changes tid value used by an existing initiator. Input responder machine and 
  * the new tid.
  */
 void wtp_tid_set_by_machine(WTPRespMachine *resp_machine, long tid){
@@ -212,9 +212,9 @@ static void cache_item_dump(WTPCached_tid *item){
 }
 */
 /*
- * Checking whether there is an item stored for a specific iniator. Receives 
+ * Checking whether there is an item stored for a specific initiator. Receives 
  * address quadruplet - the identifier it uses - from object WTPRespMachine. 
- * Ditto tid. Returns the item or NULL, if there is not one. Iniator is 
+ * Ditto tid. Returns the item or NULL, if there is not one. Initiator is 
  * identified by the address four-tuple.
  */
 struct profile {
@@ -226,40 +226,40 @@ struct profile {
 
 static int tid_is_cached(void *a, void *b){
 
-       struct profile *iniator_profile;
+       struct profile *initiator_profile;
        WTPCached_tid *item;
 
        item = a;
-       iniator_profile = b;
+       initiator_profile = b;
 
        return octstr_compare(item->source_address, 
-                             iniator_profile->source_address) == 0 &&
+                             initiator_profile->source_address) == 0 &&
               octstr_compare(item->destination_address,
-                             iniator_profile->destination_address) == 0 &&
-              item->source_port == iniator_profile->source_port &&
-              item->destination_port == iniator_profile->destination_port;             
+                             initiator_profile->destination_address) == 0 &&
+              item->source_port == initiator_profile->source_port &&
+              item->destination_port == initiator_profile->destination_port;             
 }
 
 static WTPCached_tid *tid_cached(WTPRespMachine *resp_machine){
 
        WTPCached_tid *item = NULL;
-       struct profile iniator_profile;
+       struct profile initiator_profile;
 
-       iniator_profile.source_address = 
+       initiator_profile.source_address = 
                resp_machine->addr_tuple->client->address;
-       iniator_profile.destination_address = 
+       initiator_profile.destination_address = 
        		resp_machine->addr_tuple->server->address;
-       iniator_profile.source_port = resp_machine->addr_tuple->client->port;
-       iniator_profile.destination_port = 
+       initiator_profile.source_port = resp_machine->addr_tuple->client->port;
+       initiator_profile.destination_port = 
                resp_machine->addr_tuple->server->port;
 
-       item = list_search(tid_cache, &iniator_profile, tid_is_cached);
+       item = list_search(tid_cache, &initiator_profile, tid_is_cached);
 
        return item;
 }
 
 /*
- * Adds an item to the tid cache, one item per every iniator. Iniator is 
+ * Adds an item to the tid cache, one item per every initiator. Initiator is 
  * identified by the address four-tuple, fetched from a wtp responder machine.
  */ 
 static void add_tid(WTPRespMachine *resp_machine, long tid){
@@ -281,7 +281,7 @@ static void add_tid(WTPRespMachine *resp_machine, long tid){
 }
 
 /*
- * Set tid for an existing iniator. Input a cache item and the new tid.
+ * Set tid for an existing initiator. Input a cache item and the new tid.
  */
 static void set_tid_by_item(WTPCached_tid *item, long tid){
 

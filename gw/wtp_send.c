@@ -35,7 +35,7 @@ enum {
  */
 
 static void add_datagram_address(Msg *msg, WAPAddrTuple *address);
-static void add_iniator_address(Msg *msg, WTPRespMachine *init_machine);
+static void add_initiator_address(Msg *msg, WTPRespMachine *init_machine);
 static void add_responder_address(Msg *msg, WTPInitMachine *resp_machine);
 static void add_segment_address(Msg *msg, WAPAddrTuple *address);
 
@@ -67,8 +67,8 @@ static unsigned short send_tid(unsigned short tid);
  * EXTERNAL FUNCTIONS:
  *
  * Sends a message object, having type wdp_datagram, having invoke PDU as user
- * data. Fetches address, tid and tid_new from the iniator state machine, 
- * other fields from event. Only for the wtp iniator.
+ * data. Fetches address, tid and tid_new from the initiator state machine, 
+ * other fields from event. Only for the wtp initiator.
  *
  * Return message to be sended
  */
@@ -128,7 +128,7 @@ Msg *wtp_send_result(WTPRespMachine *machine, WAPEvent *event){
      	  octstr_duplicate(event->u.TR_Result_Req.user_data);
 
      msg = msg_create(wdp_datagram);
-     add_iniator_address(msg, machine);
+     add_initiator_address(msg, machine);
      msg->wdp_datagram.user_data = wtp_pdu_pack(pdu);
      wtp_pdu_destroy(pdu);
   
@@ -154,7 +154,7 @@ void wtp_resend(Msg *msg, long rid){
 /*
  * Sends a message object, of wdp datagram type, having abort header as user 
  * data. Inputs are address four-tuple, tid , abort type and reason from 
- * direct input. Handles all errors by itself. Both wtp iniator and responder 
+ * direct input. Handles all errors by itself. Both wtp initiator and responder 
  * use this function.
  */
 
@@ -185,7 +185,7 @@ void wtp_send_abort(long abort_type, long abort_reason, long tid,
  * data. Creates SDU by itself, fetches address four-tuple and machine state
  * from WTP machine. Ack_type is a flag telling whether we are doing tid 
  * verification or not, rid_flag tells are we retransmitting. Handles all 
- * errors by itself. Both wtp iniator and responder use this function. So this
+ * errors by itself. Both wtp initiator and responder use this function. So this
  * function does not set SendTID; the caller must do this instead.
  */
 void wtp_send_ack(long ack_type, int rid_flag, long tid, 
@@ -302,11 +302,11 @@ static void add_datagram_address(Msg *msg, WAPAddrTuple *address){
 }
 
 /* 
- * And iniator address form responder state machine.
+ * And initiator address form responder state machine.
  */
-static void add_iniator_address(Msg *msg, WTPRespMachine *resp_machine){
+static void add_initiator_address(Msg *msg, WTPRespMachine *resp_machine){
 
-       debug("wap.wtp_send", 0, "WTP_SEND: add_iniator_address");
+       debug("wap.wtp_send", 0, "WTP_SEND: add_initiator_address");
        msg->wdp_datagram.source_address = 
     	    octstr_duplicate(resp_machine->addr_tuple->server->address);
        msg->wdp_datagram.source_port = resp_machine->addr_tuple->server->port;
@@ -317,7 +317,7 @@ static void add_iniator_address(Msg *msg, WTPRespMachine *resp_machine){
 }
 
 /* 
- * And responder address from iniator  state machine.
+ * And responder address from initiator  state machine.
  */
 static void add_responder_address(Msg *msg, WTPInitMachine *init_machine){
 

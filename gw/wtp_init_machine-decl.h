@@ -1,5 +1,5 @@
 /*
- * wtp_init_machine-decl.h: macro call for generating WTP iniator state 
+ * wtp_init_machine-decl.h: macro call for generating WTP initiator state 
  * machine. See the architecture document for guidance how to use and update 
  * it.
  *
@@ -10,7 +10,7 @@
  * least two incoming events of a certain transaction. Its fields can be 
  * grouped following way:
  *
- * General:      a) wtp iniator machine state 
+ * General:      a) wtp initiator machine state 
  *               b) tidnew flag, telling whether tid is wrapped up
  *
  * Fields telling the service required: 
