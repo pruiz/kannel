@@ -1,3 +1,8 @@
+2000-11-29  Aarno Syvänen <syvanen@wapit.com>
+
+	*wap/wsp_push_client_states.def: Changed names of dispatching 
+	functions to locally used ones.
+
 2000-11-29  Yann Muller  <ymuller@3glab.com>
 
 	* gw/smsc_at.c: removed the UDHL from the encoding of the PDU.
