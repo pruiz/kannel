@@ -273,6 +273,9 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 
     for(;;) {
 	
+	debug(0, "HTTP: Making request using headers:");
+	header_dump(request->baseheader);
+
 	/* Open connection, send request, get response. */
 	response = httprequest_execute(request);
 	if(response == NULL) goto error;
@@ -305,7 +308,6 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	    if(request == NULL) goto error;
 	    httprequest_add_header(request, "Host", request->url->host);
 	    httprequest_add_header(request, "Connection", "close");
-	    httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
 	    
 	    /*   ..the user defined headers */
 	    for(;;){

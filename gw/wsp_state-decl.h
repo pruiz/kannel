@@ -147,7 +147,7 @@ ROW(CONNECTED,
 	{
 		WSPEvent *new_event;
 		Octstr *url;
-		Octstr *headers;
+		HTTPHeader *headers;
 
 		++sm->n_methods;
 

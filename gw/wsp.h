@@ -50,6 +50,7 @@ typedef enum {
 	#define OCTSTR
 	#define WTP_MACHINE
 	#define SESSION_MACHINE
+	#define HTTPHEADER
 	#include "wsp_events-decl.h"
 } WSPEventType;
 
@@ -62,6 +63,7 @@ struct WSPEvent {
 	#define WTP_MACHINE(name) WTPMachine *name
 	#define SESSION_MACHINE(name) WSPMachine *name
 	#define WSP_EVENT(name, fields) struct name fields name;
+	#define HTTPHEADER(name) HTTPHeader *name
 	#include "wsp_events-decl.h"
 };
 

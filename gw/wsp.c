@@ -62,7 +62,7 @@ static void append_to_event_queue(WSPMachine *machine, WSPEvent *event);
 static WSPEvent *remove_from_event_queue(WSPMachine *machine);
 
 static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data);
-static int unpack_get_pdu(Octstr **url, Octstr **headers, Octstr *pdu);
+static int unpack_get_pdu(Octstr **url, HTTPHeader **headers, Octstr *pdu);
 static int unpack_post_pdu(Octstr **url, Octstr **headers, Octstr *pdu);
 
 static int unpack_uint8(unsigned long *u, Octstr *os, int *off);
@@ -107,6 +107,7 @@ WSPEvent *wsp_event_create(WSPEventType type) {
 	#define SESSION_MACHINE(name) p->name = NULL
 	#define WSP_EVENT(name, fields) \
 		{ struct name *p = &event->name; fields }
+	#define HTTPHEADER(name) p->name = NULL
 	#include "wsp_events-decl.h"
 
 	return event;
@@ -121,6 +122,7 @@ void wsp_event_destroy(WSPEvent *event) {
 		#define SESSION_MACHINE(name) p->name = NULL
 		#define WSP_EVENT(name, fields) \
 			{ struct name *p = &event->name; fields }
+		#define HTTPHEADER(name) p->name = NULL
 		#include "wsp_events-decl.h"
 
 		gw_free(event);
@@ -134,6 +136,7 @@ char *wsp_event_name(WSPEventType type) {
 	#define OCTSTR
 	#define WTP_MACHINE
 	#define SESSION_MACHINE
+	#define HTTPHEADER
 	#include "wsp_events-decl.h"
 	default:
 		return "unknown WSPEvent type";
@@ -153,6 +156,9 @@ void wsp_event_dump(WSPEvent *event) {
 	#define WSP_EVENT(tt, fields) \
 		if (tt == event->type) \
 			{ char *t = #tt; struct tt *p = &event->tt; fields }
+	#define HTTPHEADER(name) \
+		debug(0, "  %s.%s: HTTP headers:", t, #name); \
+		header_dump(p->name)
 	#include "wsp_events-decl.h"
 	debug(0, "Dump of WSPEvent %p ends.", (void *) event);
 }
@@ -496,20 +502,27 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 }
 
 
-static int unpack_get_pdu(Octstr **url, Octstr **headers, Octstr *pdu) {
+static int unpack_get_pdu(Octstr **url, HTTPHeader **headers, Octstr *pdu) {
 	unsigned long url_len;
 	int off;
+	Octstr *h;
 
 	off = 1; /* Offset 0 has type octet. */
 	if (unpack_uintvar(&url_len, pdu, &off) == -1 ||
 	    unpack_octstr(url, url_len, pdu, &off) == -1)
 		return -1;
-	if (off < octstr_len(pdu))
-		error(0, "unpack_get_pdu: Get PDU has headers, ignored them");
-	*headers = NULL;
+	if (off < octstr_len(pdu)) {
+		h = octstr_copy(pdu, off, octstr_len(pdu) - off);
+		*headers = unpack_headers(h);
+		octstr_destroy(h);
+		debug(0, "WSP: Get PDU had headers:");
+		header_dump(*headers);
+	} else
+		*headers = NULL;
 	debug(0, "WSP: Get PDU had URL <%s>", octstr_get_cstr(*url));
 	return 0;
 }
+
 
 static int unpack_post_pdu(Octstr **url, Octstr **headers, Octstr *pdu) {
 	unsigned long url_len;
@@ -563,7 +576,7 @@ static int unpack_post_pdu(Octstr **url, Octstr **headers, Octstr *pdu) {
 		
 	*headers = NULL;
 
-	debug(0, "WSP: Post PDU had dats <%s>", octstr_get_cstr(param));
+	debug(0, "WSP: Post PDU had data <%s>", octstr_get_cstr(param));
 
 	octstr_destroy(head);
 	/* Now we concatenante the two thingies */

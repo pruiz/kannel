@@ -9,7 +9,7 @@
  */
 
 #if !defined(INTEGER) || !defined(OCTSTR) || !defined(WTP_MACHINE) || \
-	!defined(SESSION_MACHINE)
+	!defined(SESSION_MACHINE) || !defined(HTTPHEADER)
 #error "wsp_events-decl.h: Some of the required macros not defined."
 #endif
 
@@ -69,6 +69,7 @@ WSP_EVENT(Release,
 	  {
 	  WTP_MACHINE(machine);
 	  OCTSTR(url);
+	  HTTPHEADER(http_headers);
 	  })
 
 #if 0
@@ -104,3 +105,4 @@ WSP_EVENT(SMethodResultRequest,
 #undef INTEGER
 #undef WTP_MACHINE
 #undef SESSION_MACHINE
+#undef HTTPHEADER
