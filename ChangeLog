@@ -1,3 +1,11 @@
+2000-10-31  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/http.c: Now uses FDSet, instead of explicit waits,
+	and now again does concurrent transactions as a side effect,
+	but only does one transaction per HTTP connection. The code is
+	in need of cleaning up quite a bit, but should work, except for
+	not destroying the FDSet at shutdown.
+
 2000-10-31  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/conn.c: Implement conn_unregister() too.

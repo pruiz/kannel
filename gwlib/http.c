@@ -4,8 +4,12 @@
  * Lars Wirzenius
  */
  
-/* XXX TODO: 100 status codes. */
-/* XXX TODO: Use conn. */
+/* XXX 100 status codes. */
+/* XXX make it possible to abort a transaction. */
+/* XXX re-implement socket pools, with idle connection killing to 
+    	save sockets */
+/* XXX kill transactions if they don't complete in time */
+/* XXX give maximum input size */
 
 #include <ctype.h>
 #include <errno.h>
@@ -44,7 +48,6 @@ struct HTTPSocket {
  * a request has been sent but response has not yet been read.
  */
 static List *pending_requests = NULL;
-static List *started_requests_queue = NULL;
 
 
 /*
@@ -108,7 +111,6 @@ static enum { limbo, running, terminating } run_status = limbo;
  */
 static void start_background_threads(void);
 static void write_request_thread(void *);
-static void read_response_thread(void *);
 
 
 /*
@@ -181,8 +183,6 @@ void http_init(void)
     pool_init();
     pending_requests = list_create();
     list_add_producer(pending_requests);
-    started_requests_queue = list_create();
-    list_add_producer(started_requests_queue);
     request_id_counter = counter_create();
     background_threads_lock = mutex_create();
     
@@ -197,7 +197,6 @@ void http_shutdown(void)
     run_status = terminating;
     list_remove_producer(pending_requests);
     gwthread_join_every(write_request_thread);
-    gwthread_join_every(read_response_thread);
 
     http_close_proxy();
     list_destroy(proxy_exceptions, NULL);
@@ -206,7 +205,6 @@ void http_shutdown(void)
     pool_shutdown();
     counter_destroy(request_id_counter);
     list_destroy(pending_requests, transaction_destroy);
-    list_destroy(started_requests_queue, transaction_destroy);
     mutex_destroy(background_threads_lock);
     /* XXX destroy caller ids */
 }
@@ -1862,6 +1860,116 @@ static void transaction_destroy(void *p)
 }
 
 
+static Octstr *get_redirection_location(HTTPTransaction *trans)
+{
+    if (trans->status < 0 || trans->follow_remaining <= 0)
+    	return NULL;
+    if (trans->status != HTTP_MOVED_PERMANENTLY &&
+    	trans->status != HTTP_FOUND && trans->status != HTTP_SEE_OTHER)
+	return NULL;
+    return http_header_find_first(trans->response_headers, "Location");
+}
+
+
+static void handle_transaction(Connection *conn, void *data)
+{
+    HTTPTransaction *trans;
+    int ret;
+    Octstr *h;
+    
+    trans = data;
+
+    if (run_status != running) {
+	conn_unregister(conn);
+	return;
+    }
+
+    while (trans->state != transaction_done) {
+	switch (trans->state) {
+	case reading_status:
+	    trans->status = client_read_status(trans->conn);
+	    if (trans->status < 0) {
+		/*
+		 * Couldn't read the status from the socket. This may mean that 
+		 * the socket had been closed by the server after an idle 
+		 * timeout, so we close the connection and try again, opening a 
+		 * new socket, but only once.
+		 */
+		if (trans->retrying) {
+		    goto error;
+		} else {
+		    conn_unregister(trans->conn);
+		    conn_destroy(trans->conn);
+		    trans->conn = NULL;
+		    trans->retrying = 1;
+		    trans->state = request_not_sent;
+		    list_produce(pending_requests, trans);
+		}
+	    } else if (trans->status > 0) {
+		/* Got the status, go read headers next. */
+		trans->state = reading_headers;
+	    } else
+		return;
+	    break;
+	    
+	case reading_headers:
+	    ret = client_read_headers(trans->conn, 
+				      trans->response_headers);
+	    if (ret == -1)
+		goto error;
+	    else if (ret == 0)
+		trans->state = reading_body;
+	    else
+		return;
+	    break;
+	    
+	case reading_body:
+	    ret = client_read_body(trans);
+	    if (ret == -1)
+		goto error;
+	    else if (ret == 0) {
+		conn_unregister(trans->conn);
+		conn_destroy(trans->conn);
+		trans->conn = NULL;
+		trans->state = transaction_done;
+	    } else 
+		return;
+	    break;
+    
+	default:
+	    panic(0, "Internal error: Invalid HTTPTransaction state.");
+	}
+    }
+
+    h = get_redirection_location(trans);
+    if (h != NULL) {
+	octstr_strip_blanks(h);
+	octstr_destroy(trans->url);
+	trans->url = h;
+	trans->state = request_not_sent;
+	http_destroy_headers(trans->response_headers);
+	trans->response_headers = list_create();
+	octstr_destroy(trans->response_body);
+	trans->response_body = octstr_create("");
+	--trans->follow_remaining;
+	conn_unregister(trans->conn);
+	conn_destroy(trans->conn);
+	trans->conn = NULL;
+	list_produce(pending_requests, trans);
+    } else
+	list_produce(trans->caller, trans);
+    return;
+
+error:
+    conn_unregister(trans->conn);
+    conn_destroy(trans->conn);
+    trans->conn = NULL;
+    error(0, "Couldn't fetch <%s>", octstr_get_cstr(trans->url));
+    trans->status = -1;
+    list_produce(trans->caller, trans);
+}
+
+
 /*
  * This thread starts the transaction: it connects to the server and sends
  * the request. It then sends the transaction to the read_response_thread
@@ -1872,6 +1980,9 @@ static void write_request_thread(void *arg)
     HTTPTransaction *trans;
     char *method;
     char buf[128];    
+    FDSet *fdset;
+
+    fdset = fdset_create();
 
     while (run_status == running) {
 	trans = list_consume(pending_requests);
@@ -1900,115 +2011,8 @@ static void write_request_thread(void *arg)
 	    list_produce(trans->caller, trans);
 	else {
 	    trans->state = reading_status;
-	    list_produce(started_requests_queue, trans);
+	    conn_register(trans->conn, fdset, handle_transaction, trans);
 	}
-    }
-    list_remove_producer(started_requests_queue);
-}
-
-
-static Octstr *get_redirection_location(HTTPTransaction *trans)
-{
-    if (trans->status < 0 || trans->follow_remaining <= 0)
-    	return NULL;
-    if (trans->status != HTTP_MOVED_PERMANENTLY &&
-    	trans->status != HTTP_FOUND && trans->status != HTTP_SEE_OTHER)
-	return NULL;
-    return http_header_find_first(trans->response_headers, "Location");
-}
-
-static void read_response_thread(void *arg)
-{
-    HTTPTransaction *trans;
-    int ret;
-    Octstr *h;
-    
-    while (run_status == running) {
-	trans = list_consume(started_requests_queue);
-	if (trans == NULL)
-	    break;
-	gw_assert(trans->state == reading_status);
-
-    	while (trans->state != transaction_done) {
-	    switch (trans->state) {
-	    case reading_status:
-		trans->status = client_read_status(trans->conn);
-		if (trans->status < 0) {
-		    /*
-		     * Couldn't read the status from the socket. This may mean that 
-		     * the socket had been closed by the server after an idle 
-		     * timeout, so we close the connection and try again, opening a 
-		     * new socket, but only once.
-		     */
-		    if (trans->retrying) {
-			goto error;
-		    } else {
-			conn_destroy(trans->conn);
-			trans->conn = NULL;
-			trans->retrying = 1;
-			trans->state = request_not_sent;
-			list_produce(pending_requests, trans);
-		    }
-		} else if (trans->status > 0) {
-		    /* Got the status, go read headers next. */
-		    trans->state = reading_headers;
-		} else {
-		    if (conn_wait(trans->conn, -1.0) == -1)
-			goto error;
-		}
-		break;
-		
-	    case reading_headers:
-	    	ret = client_read_headers(trans->conn, 
-		    	    	    	  trans->response_headers);
-    	    	if (ret == -1)
-		    goto error;
-		else if (ret == 0)
-		    trans->state = reading_body;
-    	    	else if (conn_wait(trans->conn, -1.0) == -1)
-		    goto error;
-		break;
-		
-	    case reading_body:
-		ret = client_read_body(trans);
-		if (ret == -1)
-		    goto error;
-		else if (ret == 0) {
-		    trans->state = transaction_done;
-		    conn_destroy(trans->conn);
-		    trans->conn = NULL;
-		} else if (conn_wait(trans->conn, -1.0) == -1)
-		    goto error;
-
-		break;
-	
-	    default:
-	    	panic(0, "Internal error: Invalid HTTPTransaction state.");
-	    }
-	}
-
-    	h = get_redirection_location(trans);
-    	if (h != NULL) {
-	    octstr_strip_blanks(h);
-	    octstr_destroy(trans->url);
-	    trans->url = h;
-	    trans->state = request_not_sent;
-	    http_destroy_headers(trans->response_headers);
-	    trans->response_headers = list_create();
-	    octstr_destroy(trans->response_body);
-	    trans->response_body = octstr_create("");
-	    --trans->follow_remaining;
-	    list_produce(pending_requests, trans);
-	} else
-	    list_produce(trans->caller, trans);
-	continue;
-    
-    error:
-    	conn_destroy(trans->conn);
-    	trans->conn = NULL;
-	error(0, "Couldn't fetch <%s>", octstr_get_cstr(trans->url));
-	trans->status = -1;
-	list_produce(trans->caller, trans);
     }
 }
 
@@ -2025,7 +2029,6 @@ static void start_background_threads(void)
 	mutex_lock(background_threads_lock);
 	if (!background_threads_are_running) {
 	    gwthread_create(write_request_thread, NULL);
-	    gwthread_create(read_response_thread, NULL);
 	    background_threads_are_running = 1;
 	}
 	mutex_unlock(background_threads_lock);
