@@ -1,5 +1,9 @@
 2000-11-03  Lars Wirzenius  <liw@iki.fi>
 
+	* test/test_http_server.c: Reformatted to coding style.
+
+2000-11-03  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/http.[ch]: First cut at changing the HTTP server side
 	interface to be more sensible about the number of threads. Doesn't
 	work quite well yet (i.e., if I change test/test_http_server.c,
