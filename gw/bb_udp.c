@@ -202,10 +202,10 @@ static int add_service(int port, char *interface_name)
     udpc = udpc_create(port, interface_name);
     list_add_producer(udpc->outgoing_list);
 
-    if ((udpc->receiver = start_thread(0, udp_receiver, udpc, 0)) == -1)
+    if ((int)(udpc->receiver = start_thread(0, udp_receiver, udpc, 0)) == -1)
 	goto error;
 
-    if (start_thread(0, udp_sender, udpc, 0) == -1)
+    if ((int)start_thread(0, udp_sender, udpc, 0) == -1)
 	goto error;
 
     list_append(udpc_list, udpc);
@@ -271,6 +271,7 @@ int udp_addwdp(Msg *msg)
     assert(msg_type(msg) == wdp_datagram);
     
     list_lock(udpc_list);
+    /* select in which list to add this */
     for (i=0; i < list_len(udpc_list); i++) {
 	udpc = list_get(udpc_list, i);
 

@@ -54,3 +54,6 @@ int smsc_addwdp(Msg *msg);
 
 /* start the avalanche */
 int smsc_shutdown(void);
+
+/* shutdown the system, call after everything else is done */
+int smsc_die(void);

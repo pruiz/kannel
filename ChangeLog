@@ -1,3 +1,11 @@
+2000-05-05    <Kalle Marjola <rpr@wapit.com>>
+
+	* gw/bb_smsc.c: Now it is half done. However, the old
+	smsc_interface should be redone, now idea to use old rq-items
+	anymore in new design. Back to work on Monday
+
+	* gw/bb_*.c: fixed some places causing warnings
+
 2000-05-05 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_tid.c|h: Module now uses list standard functions

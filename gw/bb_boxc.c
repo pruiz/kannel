@@ -14,6 +14,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <signal.h>
 #include <assert.h>
