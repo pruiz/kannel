@@ -164,13 +164,13 @@ int set_cookies(List *headers, WSPMachine *sm)
 	Octstr *cookie = NULL;
 	long pos = 0;
 
-	if (sm->cookies == NULL)
-		sm->cookies = list_create();
-
 	if (headers == NULL || sm == NULL) {
 		error (0, "set_cookies: Null argument(s) - no headers, WSPMachine or both");
 		return -1;
 	}
+
+	if (sm->cookies == NULL)
+		sm->cookies = list_create();
 
 	/* Expire cookies that have timed out */
 	expire_cookies(sm->cookies);

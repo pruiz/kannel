@@ -1,4 +1,9 @@
 2004-03-10  Alexander Malysh  <a.malysh@centrium.de>
+    * wap/cookies.c: applied patch from "Mindaugas Riauba" <mindaugas@bi.lt>
+      that fixed segfault. Thanks a lot to him.
+      Msg-Id: <02c601c40691$c9750310$f20214ac@bite.lt>.
+
+2004-03-10  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_alog.c: fixed bug introduced by last change that "%s" was not
       passed to alog(...) call. Thanks to "Robert Galach" <kanelek@tenbit.pl>
       for catching it.
