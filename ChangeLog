@@ -1,5 +1,7 @@
 1999-11-15    <rpr@rpr.wapit.com>
 
+	* control.html: added simple control tool
+
 	* bearerbox.c, bearerbox.conf, fake.conf: added simple
 	HTTP-adminstration and watching routines
 
