@@ -276,10 +276,7 @@ List **reply_headers, Octstr **reply_body) {
 	gw_assert(reply_body != NULL);
 
 	ret = -1;
-#ifdef POST_SUPPORT
-	http_header_add(request_headers, "Content-Length", "0");
-#endif
-
+	
 	*final_url = octstr_duplicate(url);
 	for (i = 0; i < HTTP_MAX_FOLLOW; ++i) {
 		ret = http_get(*final_url, request_headers, reply_headers, 
@@ -310,21 +307,11 @@ List **reply_headers, Octstr **reply_body) {
 
 #ifdef POST_SUPPORT
 
-
-	/*
-	 * 
-	 * The POST functionality is implemented by sending the request headers first with
-	 * an expect clause to wait for the http 100 response from the server before sending 
-	 * the request body on.
-	 *
-	 */
-
-
 int http_post(Octstr *url, List *request_headers, Octstr *request_body,
 			  List **reply_headers, Octstr **reply_body) {
-	int status;
+	int status,escape_ctr = 0;
 	HTTPSocket *p;
-	List *tmp_headers;
+	List *tmp_headers = NULL;
 	
 	gwlib_assert_init();
 	gw_assert(url != NULL);
@@ -336,48 +323,54 @@ int http_post(Octstr *url, List *request_headers, Octstr *request_body,
 	*reply_headers = NULL;
 	*reply_body = NULL;
 
-	p = send_request(url, request_headers, NULL, "POST");
+	p = send_request(url, request_headers, request_body, "POST");
 	
 	if (p == NULL)
 		goto error;
 	
 	status = read_status(p);
-	debug("gwlib.http", 0, "Status of Send: %d", status);
 
 	if (status < 0) {
 		pool_free_and_close(p);
 
-		p = send_request(url, request_headers, NULL, "POST");
+		p = send_request(url, request_headers,  request_body, "POST");
 		if (p == NULL)
 			goto error;
 
 		status = read_status(p);
-		debug("gwlib.http", 0, "Status of Send: %d", status);
 		if (status < 0)
 			goto error;
 
 	}
 
-	if (status == 100) {
+	/* 
+	 * The http protocol allows an origin server to return a 
+	 * status code of 100 even if we have not sent it. Therefore
+	 * we should check for this status and should ignore it if it 
+	 * arrives as we have already sent the full request.
+	 * As the RFC 2616 does not specify how many 1XXs can be received 
+	 * we will assume that if we receive more than 3 then there is
+	 * a problem with the http server.
+	 */
 
+	while (status == 100 && escape_ctr < 3) {
+
+		debug("gwlib.http", 0, "100-Continue status received: Ignoring");
 		/* 
 		 * This is to remove header information in the network buffer. 
 		 */
 		if (read_headers(p, &tmp_headers) == -1) {
 			goto error;
 		}
-		
-		/* 
-		 * send the request_body to the http server
-		 */
-		debug("gwlib.http", 0, "Dumping HTTP Request Body:");
-		octstr_dump(request_body, 0);
-		if (socket_write(p, request_body) == -1)
-			goto error;
-
 		status = read_status(p);
 		if (status < 0)
 			goto error;
+		escape_ctr++;
+	}
+
+	if (escape_ctr >= 3) {
+		error(0, "Too many 100 Continue messages");
+		goto error;
 	}
 
 	if (read_headers(p, reply_headers) == -1)
@@ -433,8 +426,6 @@ int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
 	 * The Content-Length is added to the Post request so that the
 	 * receiver will be calculate the length of the request body.
 	 *  
-	 * The Expect header is added to check whether the server can handle this 
-	 * request or not. 
 	 */
 
 	if (NULL != request_body) {
@@ -444,7 +435,6 @@ int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
 	}
 	sprintf(buf, "%ld", len);
 	http_header_add(request_headers, "Content-Length", buf);
-	http_header_add(request_headers, "Expect", "100-continue");
 
 	ret = -1;
 	
