@@ -682,6 +682,7 @@ url = "http://%S"
     'max-messages' to zero (0) so that no reply is sent, unless an
     error occurs.</para>
 
+</sect2>
 <sect2>
 <title>Setting Up Operator Specific Services</title>
 

@@ -659,7 +659,11 @@ char *smsbox_req_sendsms(List *list, char *client_ip)
 	     user ? octstr_get_cstr(user) : "default",
 	     octstr_get_cstr(from), octstr_get_cstr(to),
 	     text ? octstr_get_cstr(text) : "<< UDH >>");
-  
+
+	/*
+	 * XXX here we should validate and split the 'to' field
+	 *   to allow multi-cast. Waiting for octstr_split...
+	 */
 	msg = msg_create(smart_sms);
 
 	msg->smart_sms.receiver = octstr_duplicate(to);
