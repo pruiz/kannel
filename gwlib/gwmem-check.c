@@ -306,7 +306,7 @@ static void drop_from_free_ring(long index) {
 		error(0, "Freed area %p has been tampered with.", area->area);
 		dump_area(area);
 	}
-	free(area->area);
+	free((unsigned char *)area->area - MARKER_SIZE);
 }
 
 static void put_on_free_ring(struct area *area) {

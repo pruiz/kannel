@@ -1,3 +1,8 @@
+2000-06-30  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/gwmem-check.c: Fix call to free() in drop_from_free_ring().
+	This fixes a memory leak.
+
 2000-06-29  Paul Keogh <paul.keogh@anam.ie>
 
 	* gwlib/list.c: Removed unnecessary calls to lock() and unlock() 
