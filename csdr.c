@@ -76,7 +76,7 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	}
 
 	while( bind(router->fd, &servaddr, sizeof(servaddr)) != 0 ) {
-		error(0, "Could not bind to UDP port <%i> service <%s>.", 
+		error(errno, "Could not bind to UDP port <%i> service <%s>.", 
 			ntohs(servaddr.sin_port), wap_service);
 		sleep(1);
 	}
@@ -107,9 +107,10 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	RQueueItem *item = NULL;
 	char data[64*1024];
 	char client_ip[16], client_port[8];
+	char server_ip[16], server_port[8];
 
-	struct sockaddr_in cliaddr;
-	socklen_t len;
+	struct sockaddr_in cliaddr, servaddr;
+	socklen_t len, servlen;
 
 	FD_ZERO(&rset);
 	FD_SET(router->fd, &rset);
@@ -133,15 +134,22 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 
 	item->msg->wdp_datagram.user_data = octstr_create_from_data(data, length);
 
+	getsockname(router->fd, (struct sockaddr*)&servaddr, &servlen);
+
 	getnameinfo((struct sockaddr*)&cliaddr, len, 
 		client_ip, sizeof(client_ip), 
 		client_port, sizeof(client_port), 
 		NI_NUMERICHOST | NI_NUMERICSERV);
 
+	getnameinfo((struct sockaddr*)&servaddr, servlen, 
+		server_ip, sizeof(server_ip), 
+		server_port, sizeof(server_port), 
+		NI_NUMERICHOST | NI_NUMERICSERV);
+
 	item->msg->wdp_datagram.source_address = octstr_create(client_ip);
 	item->msg->wdp_datagram.source_port    = atoi(client_port);
-	item->msg->wdp_datagram.destination_address = octstr_create("");
-	item->msg->wdp_datagram.destination_port    = 0;
+	item->msg->wdp_datagram.destination_address = octstr_create(server_ip);
+	item->msg->wdp_datagram.destination_port    = atoi(server_port);
 
 	return item;
 
