@@ -1,5 +1,10 @@
 2000-06-14  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smsbox_req.c: fixed split-send Octstr-wise, now it should
+	work with CIMD2, too (and other new SMSC protocols?)
+
+2000-06-14  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bb_smsc.c: modified sleep in smsc receive to variable length,
 	to increase performance
 
