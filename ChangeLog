@@ -1,3 +1,9 @@
+2003-09-01  Stipe Tolj  <tolj@wapme-systems.de>
+    * configure[.in], config.h.in: added --enable-sqlite switch to enable 
+      SQLite support and #defines.
+    * gwlib/dbpool[_sqlite].[ch], test/test_dbpool.c: addd SQLite support 
+      for database pools.
+
 2003-08-29  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/log.c: fixed bug indroduced by Stipe that no system error 
       strings were shown in the logs.
