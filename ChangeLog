@@ -1,3 +1,11 @@
+2002-09-03  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: documentation for the new 'msg-id-type' 
+      directive for the SMPP module
+    * gw/smsc/smsc_smpp.c, gwlib/cfg.def: adding the 'msg-id-type' directive
+      to indicate in which number base the SMSC is returning msg ids.
+      Patch provided by Nisan Bloch <nisof@amagoblin.co.za>.
+      [Msg-ID: <5.1.0.14.0.20020819203925.020675c0@amagoblin.ialien.co.za>]
+
 2002-09-02  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/shared.[ch]: added deliver_to_bearerbox() which is identical to write_xxx
       but returns an error code which can be used for errror handling.
