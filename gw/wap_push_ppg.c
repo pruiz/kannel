@@ -144,7 +144,9 @@ static Octstr *ppg_default_smsc = NULL;
 static Octstr *ssl_server_cert_file = NULL;
 static Octstr *ssl_server_key_file = NULL;
 #endif
-
+static Octstr *ppg_dlr_url = NULL;
+static Octstr *ppg_smsbox_id = NULL; 
+static Octstr *service_name = NULL;
 
 struct PAPEvent {
     HTTPClient *client;
@@ -292,6 +294,17 @@ static Octstr *convert_si_to_sic(struct content *content);
 static Octstr *convert_sl_to_slc(struct content *content);
 
 /*
+ * Setting values for controlling sms level. (Pap control document enables 
+ * some control, but not enough.)
+ */
+
+static Octstr *set_smsc_id(List *cgivars, Octstr *username);
+static Octstr *set_dlr_url(List *cgivars, Octstr *username);
+static long set_dlr_mask(List *cgivars, Octstr *dlr_url);
+static Octstr *set_smsbox_id(List *cgivars, Octstr *username);
+static Octstr *set_service_name(void);
+
+/*
  * Various utility functions
  */
 static Octstr *set_time(void);
@@ -375,6 +388,7 @@ void wap_push_ppg_shutdown(void)
          octstr_destroy(ppg_deny_ip);
          octstr_destroy(ppg_allow_ip);
          octstr_destroy(global_sender);
+         octstr_destroy(service_name);
          octstr_destroy(ppg_default_smsc);
 
          gwthread_join_every(http_read_thread);
@@ -463,8 +477,12 @@ static int read_ppg_config(Cfg *cfg)
      ppg_deny_ip = cfg_get(grp, octstr_imm("ppg-deny-ip"));
      ppg_allow_ip = cfg_get(grp, octstr_imm("ppg-allow-ip"));
      if ((global_sender = cfg_get(grp, octstr_imm("global-sender"))) == NULL)
-         global_sender = octstr_imm("1234");
+         global_sender = octstr_format("%s", "1234");
      ppg_default_smsc = cfg_get(grp, octstr_imm("default-smsc"));
+     ppg_dlr_url = cfg_get(grp, octstr_imm("default-dlr-url"));
+     ppg_smsbox_id = cfg_get(grp, octstr_imm("ppg-smsbox-id"));
+     if ((service_name = cfg_get(grp, octstr_imm("service-name"))) == NULL)
+         service_name = octstr_format("%s", "ppg");
    
 #ifdef HAVE_LIBSSL
      cfg_get_integer(&ppg_ssl_port, grp, octstr_imm("ppg-ssl-port"));
@@ -681,8 +699,7 @@ static void pap_request_thread(void *arg)
                                           ders */
          *cgivars;
     HTTPClient *client;
-    Octstr *smsc_id = NULL;
-    Octstr *retos;
+    Octstr *dlr_url;
     
     http_status = 0;                
   
@@ -838,24 +855,16 @@ static void pap_request_thread(void *arg)
 
             debug("wap.push.ppg", 0, "PPG: http_read_thread: pap control"
                   " entity compiled ok");
-
-            /* check if we have an explicit routing information */
-            retos = http_cgi_variable(cgivars, "smsc");
-            if (retos == NULL) {
-                /* if we have a valid username, get the user specific routing */
-                if (username && octstr_len(username) > 0)
-                    smsc_id = wap_push_ppg_pushuser_smsc_id_get(username);
-                /* if there was no user specific or the user didn't exist, 
-                 * then set the ppg global */
-                smsc_id = smsc_id ? 
-                    smsc_id : (ppg_default_smsc ? octstr_duplicate(ppg_default_smsc) : NULL);
-            } else {
-                smsc_id = octstr_duplicate(retos);
-            }
             ppg_event->u.Push_Message.push_headers = 
                 http_header_duplicate(push_headers);
             ppg_event->u.Push_Message.push_data = octstr_duplicate(push_data);
-            ppg_event->u.Push_Message.smsc_id = smsc_id ? octstr_duplicate(smsc_id) : NULL;
+            ppg_event->u.Push_Message.smsc_id = set_smsc_id(cgivars, username);
+            dlr_url = set_dlr_url(cgivars, username);
+            ppg_event->u.Push_Message.dlr_url = dlr_url;
+            ppg_event->u.Push_Message.dlr_mask = set_dlr_mask(cgivars, dlr_url);
+            ppg_event->u.Push_Message.smsbox_id = set_smsbox_id(cgivars, username);
+            ppg_event->u.Push_Message.service_name = set_service_name();
+            
             if (!handle_push_message(&client, ppg_event, http_status)) {
 	        if (client == NULL)
 		    break;
@@ -872,7 +881,6 @@ static void pap_request_thread(void *arg)
         octstr_destroy(push_data);
         octstr_destroy(rdf_content);
         octstr_destroy(boundary);
-        octstr_destroy(smsc_id);
         continue;
 
 no_transform:
@@ -885,7 +893,6 @@ no_transform:
         octstr_destroy(push_data);
         octstr_destroy(rdf_content);
         octstr_destroy(boundary);
-        octstr_destroy(smsc_id);
         continue;
 
 no_compile:
@@ -1304,6 +1311,16 @@ static PPGPushMachine *push_machine_create(WAPEvent *e, WAPAddrTuple *tuple)
         m->smsc_id = octstr_duplicate(e->u.Push_Message.smsc_id);
     else
         m->smsc_id = NULL;
+    if (e->u.Push_Message.dlr_url != NULL)
+        m->dlr_url = octstr_duplicate(e->u.Push_Message.dlr_url);                                 
+    else
+        m->dlr_url = NULL;
+    m->dlr_mask = e->u.Push_Message.dlr_mask;
+    if (e->u.Push_Message.smsbox_id != NULL)
+        m->smsbox_id = octstr_duplicate(e->u.Push_Message.smsbox_id);
+    else
+        m->smsbox_id = NULL;
+    m->service_name = octstr_duplicate(e->u.Push_Message.service_name);
 
     m->progress_notes_requested = e->u.Push_Message.progress_notes_requested;
     if (e->u.Push_Message.progress_notes_requested)
@@ -1383,12 +1400,18 @@ static void create_session(WAPEvent *e, PPGPushMachine *pm)
     WAPEvent *ota_event;
     List *push_headers;
     Octstr *smsc_id;
+    Octstr *dlr_url;
+    Octstr *smsbox_id;
+    Octstr *service_name;
 
     gw_assert(e->type == Push_Message);
     push_machine_assert(pm);
     
     push_headers = http_header_duplicate(e->u.Push_Message.push_headers);
     smsc_id = octstr_duplicate(e->u.Push_Message.smsc_id);
+    dlr_url = octstr_duplicate(e->u.Push_Message.dlr_url);
+    smsbox_id = octstr_duplicate(e->u.Push_Message.smsbox_id);
+    service_name = octstr_duplicate(e->u.Push_Message.service_name);
 
     ota_event = wap_event_create(Pom_SessionRequest_Req);
     ota_event->u.Pom_SessionRequest_Req.addr_tuple =
@@ -1401,6 +1424,17 @@ static void create_session(WAPEvent *e, PPGPushMachine *pm)
         ota_event->u.Pom_SessionRequest_Req.smsc_id = smsc_id;
     else
         ota_event->u.Pom_SessionRequest_Req.smsc_id = NULL;
+    if (dlr_url != NULL)
+        ota_event->u.Pom_SessionRequest_Req.dlr_url = dlr_url;                                    
+    else
+        ota_event->u.Pom_SessionRequest_Req.smsc_id = NULL;
+    ota_event->u.Pom_SessionRequest_Req.dlr_mask = e->u.Push_Message.dlr_mask;
+    if (smsbox_id != NULL)
+        ota_event->u.Pom_SessionRequest_Req.smsbox_id = smsbox_id;
+    else
+        ota_event->u.Pom_SessionRequest_Req.smsbox_id = NULL;
+    ota_event->u.Pom_SessionRequest_Req.service_name = service_name;
+        
     dispatch_to_ota(ota_event);
 }
 
@@ -1467,6 +1501,17 @@ static void request_unit_push(long last, PPGPushMachine *pm)
         ota_event->u.Po_Unit_Push_Req.smsc_id = octstr_duplicate(pm->smsc_id);
     else
         ota_event->u.Po_Unit_Push_Req.smsc_id = NULL;
+    if (pm->dlr_url != NULL)
+        ota_event->u.Po_Unit_Push_Req.dlr_url = octstr_duplicate(pm->dlr_url);
+    else
+        ota_event->u.Po_Unit_Push_Req.dlr_url = NULL;
+    ota_event->u.Po_Unit_Push_Req.dlr_mask = pm->dlr_mask;
+    if (pm->smsbox_id != NULL)   
+        ota_event->u.Po_Unit_Push_Req.smsbox_id = octstr_duplicate(pm->smsbox_id);
+    else
+        ota_event->u.Po_Unit_Push_Req.smsbox_id = NULL;    
+    ota_event->u.Po_Unit_Push_Req.service_name = octstr_duplicate(pm->service_name);
+
     ota_event->u.Po_Unit_Push_Req.push_body = octstr_duplicate(pm->push_data);
 
     dispatch_to_ota(ota_event);
@@ -3108,15 +3153,119 @@ static void replace_octstr_char(Octstr *os1, Octstr *os2, long *pos)
     *pos += octstr_len(os2) - 1;
 }
 
+/* 
+ * Check if we have an explicit routing information 
+ *       a) first check cgi variable
+ *       b) then ppg user specific routing
+ *       c) then global ppg routing
+ *       d) if all these failed, return NULL
+ */
+static Octstr *set_smsc_id(List *cgivars, Octstr *username)
+{
+    Octstr *smscidos;
+    Octstr *smsc_id;
 
+    smscidos = http_cgi_variable(cgivars, "smsc");
+    if (smscidos != NULL) {
+        return octstr_duplicate(smscidos);
+    }
 
+    smsc_id = wap_push_ppg_pushuser_smsc_id_get(username);
+    smsc_id = smsc_id ? 
+        smsc_id : (ppg_default_smsc ? octstr_duplicate(ppg_default_smsc) : NULL);
 
+    return smsc_id;
+}
 
+/* 
+ * Checking for dlr url, using  following order:
+ *       a) first check cgi variable  
+ *       b) then ppg user specific dlr url
+ *       c) then global ppg dlr url
+ *       d) if all these failed, return NULL
+ */
+static Octstr *set_dlr_url(List *cgivars, Octstr *username)
+{
+    Octstr *dlrurlos;
+    Octstr *dlr_url;
 
+    dlrurlos = http_cgi_variable(cgivars, "dlrurl");
+    if (dlrurlos != NULL) {
+        return octstr_duplicate(dlrurlos);
+    }
 
+    dlr_url = wap_push_ppg_pushuser_dlr_url_get(username);
+    dlr_url = dlr_url ?
+        dlr_url : (ppg_dlr_url ? octstr_duplicate(ppg_dlr_url) : NULL);
 
+    return dlr_url;
+}
 
+/* 
+ * Checking for dlr mask. Mask without dlr url is of course useless.
+ * We reject (some) non-meaningfull values of dlr_mask. Value indic-
+ * ating rejection is 0.
+ */
+static long set_dlr_mask(List *cgivars, Octstr *dlr_url)
+{
+    Octstr *dlrmaskos;
+    long dlr_mask;
+    long masklen;    
 
+    if (dlr_url == NULL) {
+        debug("wap.push.ppg", 0, "no dlr url set, no dlr mask either");
+        return 0; 
+    }
+
+    dlrmaskos = http_cgi_variable(cgivars, "dlrmask");
+    if (dlrmaskos == NULL) {
+        debug("wap.push.ppg", 0, "no dlr mask from cgi vars"); 
+        return 0;
+    }
+
+    if ((masklen = octstr_parse_long(&dlr_mask, dlrmaskos, 0, 10)) != -1 &&
+             masklen == octstr_len(dlrmaskos) &&
+             dlr_mask > 0 && dlr_mask < 32) {
+         return dlr_mask;
+    }
+
+    debug("wap.push.ppg", 0, "unparsable dlr mask, rejected");
+    return 0;
+}
+
+/*
+ * Checking for dlr smsbox id, using  following order:
+ *       a) first check cgi variable
+ *       b) then ppg user specific smsbox id
+ *       c) then global ppg smsbox id
+ *       d) if all these failed, return NULL
+ */
+
+static Octstr *set_smsbox_id(List *cgivars, Octstr *username)
+{
+    Octstr *smsboxidos;
+    Octstr *smsbox_id;
+
+    smsboxidos = http_cgi_variable(cgivars, "smsbox-id");
+    if (smsboxidos != NULL) {
+        return octstr_duplicate(smsboxidos);
+    }
+
+    smsbox_id = wap_push_ppg_pushuser_smsbox_id_get(username);
+    smsbox_id = smsbox_id ?
+        smsbox_id : (ppg_smsbox_id ? octstr_duplicate(ppg_smsbox_id) : NULL);
+
+    return smsbox_id;
+
+}
+
+/*
+ * Service is ppg core group only configuration variable
+ */ 
+static Octstr *set_service_name(void)
+{
+    return octstr_duplicate(service_name);
+}
 
 
 

@@ -297,6 +297,12 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 	octstr_format_append(url, "&account=%E:%E", sms->sms.service, sms->sms.account);
     if (sms->sms.smsc_id) /* proxy the smsc-id to the next instance */
 	octstr_format_append(url, "&smsc=%S", sms->sms.smsc_id);
+    if (sms->sms.dlr_url) {
+        octstr_url_encode(sms->sms.dlr_url);
+        octstr_format_append(url, "&dlrurl=%S", sms->sms.dlr_url);
+    }
+    if (sms->sms.dlr_mask)
+        octstr_format_append(url, "&drlmask=%d", sms->sms.dlr_mask);
 
     headers = list_create();
     debug("smsc.http.kannel", 0, "HTTP[%s]: Start request",

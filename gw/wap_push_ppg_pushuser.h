@@ -7,10 +7,8 @@
  * implementors.
  * Basic authentication is defined in rfc 2617. Note that https connections
  * are handled by our http module.
- * Smsc routing is, of course, a very specific to Kannel. It is very similar
- * to sendsms group routing. 
  *
- * By Aarno Syvänen for Wiral Ltd
+ * By Aarno Syvänen for Wiral Ltd and Global Networks Inc
  */
 
 #ifndef WAP_PUSH_PPG_PUSHUSER_H
@@ -77,8 +75,17 @@ int wap_push_ppg_pushuser_search_ip_from_wildcarded_list(Octstr *haystack,
     Octstr *needle, Octstr *list_sep, Octstr *ip_sep);
 
 /*
- * Returns smsc pushes by this user must use, NULL when there was an error.
+ * Returns smsc pushes by this user must use, or NULL when error.
  */
 Octstr *wap_push_ppg_pushuser_smsc_id_get(Octstr *username);
 
+/*
+ * Returns default dlr url for this user, or NULL when error.
+ */
+Octstr *wap_push_ppg_pushuser_dlr_url_get(Octstr *username);
+
+/*
+ * Returns default dlr smsbox id for this user, or NULL when error.
+ */
+Octstr *wap_push_ppg_pushuser_smsbox_id_get(Octstr *username);
 #endif

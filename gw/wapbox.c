@@ -354,12 +354,22 @@ static Msg *pack_sms_datagram(WAPEvent *dgram)
         msg->sms.smsc_id = octstr_duplicate(dgram->u.T_DUnitdata_Req.smsc_id);
     else
         msg->sms.smsc_id = NULL;
+    msg->sms.dlr_mask = dgram->u.T_DUnitdata_Req.dlr_mask;
+    if (dgram->u.T_DUnitdata_Req.smsbox_id != NULL)
+        msg->sms.boxc_id = octstr_duplicate(dgram->u.T_DUnitdata_Req.smsbox_id);
+    else
+        msg->sms.boxc_id = NULL;
+    if (dgram->u.T_DUnitdata_Req.dlr_url != NULL)
+        msg->sms.dlr_url = octstr_duplicate(dgram->u.T_DUnitdata_Req.dlr_url);
+    else
+        msg->sms.dlr_url = NULL;
     msg->sms.sms_type = mt_push;
     msg->sms.mwi = MWI_UNDEF;
     msg->sms.coding = DC_8BIT;
     msg->sms.mclass = MC_UNDEF;
     msg->sms.validity = 0;
     msg->sms.deferred = 0;
+    msg->sms.service = octstr_duplicate(dgram->u.T_DUnitdata_Req.service_name);
     
     return msg;   
 }
@@ -401,10 +411,14 @@ static void dispatch_datagram(WAPEvent *dgram)
         } else {
 	    msg = pack_sms_datagram(dgram);
             msg_sequence = counter_increase(sequence_counter) & 0xff;
-            /*msg_len = octstr_len(msg->sms.msgdata);
-            max_msgs = (msg_len / MAX_SMS_OCTETS) + 1;*/ 
+            /*
+            msg_len = octstr_len(msg->sms.msgdata);
+            max_msgs = (msg_len / MAX_SMS_OCTETS) + 1;
+            */ 
             sms_datagrams = sms_split(msg, NULL, NULL, NULL, NULL, concatenation, 
                                       msg_sequence, max_messages, MAX_SMS_OCTETS);
+            debug("wap",0,"WDP (wapbox): delivering %ld segments to bearerbox",
+                  list_len(sms_datagrams));
             while ((part = list_extract_first(sms_datagrams)) != NULL) {
 	            write_to_bearerbox(part);
             }

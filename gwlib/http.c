@@ -2784,16 +2784,14 @@ void http_header_dump(List *headers)
 void http_cgivar_dump(List *cgiargs)
 {
     long i;
-    Octstr *arg;
+    HTTPCGIVar *v;
 
     gwlib_assert_init();
 
     debug("gwlib.http", 0, "Dumping %ld cgi variables:", list_len(cgiargs));
-    for (i = 0; cgiargs != NULL && i < list_len(cgiargs); ++i) {
-         if (octstr_len(arg = list_get(cgiargs, i)) != 0)
-             octstr_dump(arg, 0);
-         else
-	     debug("gwlib.http", 0, "Got an empty cgi arg");
+    while ((v = list_extract_first(cgiargs)) != NULL) {
+        octstr_dump(v->name, 0);
+        octstr_dump(v->value, 0);
     }
     debug("gwlib.http", 0, "End of dump.");
 }

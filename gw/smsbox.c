@@ -69,6 +69,7 @@ static Numhash *white_list;
 static Numhash *black_list;
 static unsigned long max_http_retries = HTTP_MAX_RETRIES;
 static unsigned long http_queue_delay = HTTP_RETRY_DELAY;
+static Octstr *ppg_service_name = NULL;
 
 static List *smsbox_requests = NULL;      /* the inbound request queue */
 static List *smsbox_http_requests = NULL; /* the outbound HTTP request queue */
@@ -270,7 +271,9 @@ struct receiver {
     unsigned long retries; /* number of performed retries */
 };
 
-
+/*
+ * Again no urltranslation when we got an answer to wap push - it can only be dlr.
+ */
 static void *remember_receiver(Msg *msg, URLTranslation *trans, int method, 
                                Octstr *url, List *headers, Octstr *body, 
                                unsigned int retries)
@@ -283,7 +286,10 @@ static void *remember_receiver(Msg *msg, URLTranslation *trans, int method,
     receiver->msg = msg_create(sms);
     receiver->msg->sms.sender = octstr_duplicate(msg->sms.sender);
     receiver->msg->sms.receiver = octstr_duplicate(msg->sms.receiver);
+    if (octstr_compare(msg->sms.service, ppg_service_name) != 0)
     receiver->msg->sms.service = octstr_duplicate(urltrans_name(trans));
+    else
+        receiver->msg->sms.service = octstr_duplicate(msg->sms.service);
     receiver->msg->sms.udhdata = NULL;
     receiver->msg->sms.mclass = 0;
     receiver->msg->sms.alt_dcs = 0;
@@ -1084,7 +1090,9 @@ requeued:
 /*
  * Perform the service requested by the user: translate the request into
  * a pattern, if it is an URL, start its fetch and return 0, otherwise
- * return the string in `*result' and return 1. Return -1 for errors,
+ * return the string in `*result' and return 1. Return -1 for errors.
+ * If we are translating url for ppg dlr, we do not use trans data 
+ * structure defined for sms services. This is indicated by trans = NULL.
  */
 static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 {
@@ -1147,13 +1155,18 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
         }
         break;
 
+    /*
+     * No Kannel headers when we are sending dlrs to wap push
+     */
     case TRANSTYPE_GET_URL:
 	request_headers = http_create_empty_headers();
         http_header_add(request_headers, "User-Agent", GW_NAME "/" VERSION);
+        if (trans != 0) {
 	if (urltrans_send_sender(trans)) {
 	    http_header_add(request_headers, "X-Kannel-From",
 			    octstr_get_cstr(msg->sms.receiver));
 	}
+        }
 	
 	id = remember_receiver(msg, trans, HTTP_METHOD_GET, pattern, request_headers, NULL, 0);
 	http_start_request(caller, HTTP_METHOD_GET, pattern, request_headers, 
@@ -1509,8 +1522,13 @@ static void obey_request_thread(void *arg)
 	reply_msg->ack.time = msg->sms.time;
 	reply_msg->ack.id = msg->sms.id;
     
+        /* no smsbox services when we are doing ppg dlr - so trans would be
+         * NULL in this case.*/
 	if (dreport) {
+            if (octstr_compare(msg->sms.service, ppg_service_name) != 0)
 	    trans = urltrans_find_service(translations, msg);
+            else
+                trans = NULL;
 
 	    info(0, "Starting delivery report <%s> from <%s>",
 		octstr_get_cstr(msg->sms.service),
@@ -3034,6 +3052,14 @@ static Cfg *init_smsbox(Cfg *cfg)
         }
     }
 
+/*
+ * Reading the name we are using for ppg services from ppg core group
+ */
+    if ((grp = cfg_get_single_group(cfg, octstr_imm("ppg"))) != NULL) {
+        if ((ppg_service_name = cfg_get(grp, octstr_imm("service-name"))) == NULL)
+            ppg_service_name = octstr_format("%s", "ppg");
+    }
+
     if (http_proxy_host != NULL && http_proxy_port > 0) {
     	http_use_proxy(http_proxy_host, http_proxy_port,
 		       http_proxy_exceptions, http_proxy_username,
@@ -3157,6 +3183,7 @@ int main(int argc, char **argv)
     octstr_destroy(reply_couldnotfetch);
     octstr_destroy(reply_couldnotrepresent);
     octstr_destroy(sendsms_interface);    
+    octstr_destroy(ppg_service_name);    
     numhash_destroy(black_list);
     numhash_destroy(white_list);
     cfg_destroy(cfg);

@@ -102,6 +102,9 @@ SINGLE_GROUP(ppg,
     OCTSTR(ssl-server-key-file)
     OCTSTR(global-sender)
     OCTSTR(default-smsc)
+    OCTSTR(default-dlr-url)
+    OCTSTR(ppg-smsbox-id)
+    OCTSTR(service-name)
 )
 
 
@@ -118,6 +121,8 @@ MULTI_GROUP(wap-push-user,
     OCTSTR(allow-ip)
     OCTSTR(forced-smsc)
     OCTSTR(default-smsc)
+    OCTSTR(dlr-url)
+    OCTSTR(smsbox-id)
 )
 
 

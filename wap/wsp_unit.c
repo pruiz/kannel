@@ -86,7 +86,7 @@ static WAPEvent *unpack_datagram(WAPEvent *datagram) {
 	event = NULL;
 
 	os = octstr_duplicate(datagram->u.T_DUnitdata_Ind.user_data);
-	if (octstr_len(os) == 0) {
+	if (os && octstr_len(os) == 0) {
 		warning(0, "WSP UNIT: Empty datagram.");
 		goto error;
 	}
@@ -162,6 +162,7 @@ static void main_thread(void *arg) {
 	WAPEvent *newevent;
 	
 	while (run_status == running && (e = list_consume(queue)) != NULL) {
+                debug("wap.wsp.unit", 0, "WSP (UNIT): event arrived");
 		wap_event_assert(e);
 		switch (e->type) {
 		case T_DUnitdata_Ind:
@@ -179,6 +180,7 @@ static void main_thread(void *arg) {
 		        newevent = pack_into_push_datagram(e);
                         if (newevent != NULL) 
 				dispatch_to_wdp(newevent);
+                        debug("wsp.unit", 0, "WSP (UNIT): delivering to wdp");
 		        break;
 	
 		default:
@@ -269,9 +271,21 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
                 octstr_duplicate(event->u.S_Unit_Push_Req.smsc_id);
         else
             datagram->u.T_DUnitdata_Req.smsc_id = NULL;
+        if (event->u.S_Unit_Push_Req.dlr_url != NULL)
+            datagram->u.T_DUnitdata_Req.dlr_url =
+                octstr_duplicate(event->u.S_Unit_Push_Req.dlr_url);
+        else
+            datagram->u.T_DUnitdata_Req.dlr_url = NULL;
+        datagram->u.T_DUnitdata_Req.dlr_mask = event->u.S_Unit_Push_Req.dlr_mask;
+        if (event->u.S_Unit_Push_Req.smsbox_id != NULL)
+            datagram->u.T_DUnitdata_Req.smsbox_id =
+                octstr_duplicate(event->u.S_Unit_Push_Req.smsbox_id);
+        else       
+            datagram->u.T_DUnitdata_Req.smsbox_id = NULL;
+        datagram->u.T_DUnitdata_Req.service_name =
+            octstr_duplicate(event->u.S_Unit_Push_Req.service_name);
 
 	datagram->u.T_DUnitdata_Req.user_data = ospdu;
-        debug("wap.wsp.unit", 0, "WSP_UNIT: delivering to wdp");
         
         return datagram;
 }

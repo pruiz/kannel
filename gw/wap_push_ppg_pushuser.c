@@ -30,6 +30,8 @@ struct WAPPushUser {
     Octstr *user_allow_ip;             /* and denies them from these*/
     Octstr *smsc_id;                   /* force push SMs to this smsc */
     Octstr *default_smsc_id;           /* use this smsc as a default for push SMs */
+    Octstr *dlr_url;                   /* default dlr url from this user */
+    Octstr *smsbox_id;                 /* use this smsbox for sending dlrs back*/
 };
 
 typedef struct WAPPushUser WAPPushUser;
@@ -328,6 +330,35 @@ Octstr *wap_push_ppg_pushuser_smsc_id_get(Octstr *username)
     return octstr_duplicate(smsc_id);
 }
 
+/*
+ * Returns default dlr url for this user.
+ */
+Octstr *wap_push_ppg_pushuser_dlr_url_get(Octstr *username)
+{
+    WAPPushUser *u;
+    Octstr *dlr_url;
+
+    u = user_find_by_username(username);
+    dlr_url = u->dlr_url;     
+
+    return octstr_duplicate(dlr_url);
+}
+
+/*
+ * Returns default dlr smsbox id for this user.
+ */
+Octstr *wap_push_ppg_pushuser_smsbox_id_get(Octstr *username)
+{
+    WAPPushUser *u;
+    Octstr *smsbox_id;
+
+    u = user_find_by_username(username);
+    smsbox_id = u->smsbox_id;
+
+    return octstr_duplicate(smsbox_id);
+}
+
+
 /***************************************************************************
  *
  * Implementation of internal functions
@@ -409,6 +440,8 @@ static WAPPushUser *create_oneuser(CfgGroup *grp)
     u->denied_prefix = cfg_get(grp, octstr_imm("denied-prefix"));
     u->smsc_id = cfg_get(grp, octstr_imm("forced-smsc"));
     u->default_smsc_id = cfg_get(grp, octstr_imm("default-smsc"));
+    u->dlr_url = cfg_get(grp, octstr_imm("dlr-url"));
+    u->smsbox_id = cfg_get(grp, octstr_imm("smsbox-id"));
 
     os = cfg_get(grp, octstr_imm("white-list"));
     if (os != NULL) {

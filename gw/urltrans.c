@@ -284,7 +284,10 @@ static void strip_keyword(Msg *request)
 }
 
 
-
+/*
+ * Trans being NULL means that we are servicing ppg (doing dlr, but this does not
+ * concern us here).
+ */
 Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 {
     Octstr *enc;
@@ -326,7 +329,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
         pattern = url;
         if (octstr_len(pattern) == 0) {
-            if (octstr_len(t->dlr_url)) {
+            if (t && octstr_len(t->dlr_url)) {
                 pattern = t->dlr_url;
             } else {
                 list_destroy(word_list, octstr_destroy_item);
@@ -552,7 +555,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
      * this SHOULD be done in smsbox, not here, but well,
      * much easier to do here
      */
-    if ( (t->type == TRANSTYPE_POST_URL || t->type == TRANSTYPE_POST_XML)
+    if (t && (t->type == TRANSTYPE_POST_URL || t->type == TRANSTYPE_POST_XML)
 		    && t->strip_keyword)
 	strip_keyword(request);
 

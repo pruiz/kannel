@@ -30,6 +30,9 @@
  *
  *        j) Smsc used for pushing 
  *
+ *        k) fields used for delivery reports: dlr_url, dlr_mask, smsbox_id,
+ *           service_name
+ *
  * By Aarno Syvänen for Wapit Ltd, for Wiral Ltd and for Global Networks Inc
  */
 
@@ -74,6 +77,10 @@ MACHINE(OCTSTR(pi_push_id)       /* this id is selected by PI and SHOULD
                                     PPG */
         INTEGER(trusted)  
         OPTIONAL_OCTSTR(smsc_id) /* smsc used for pushes */
+        OPTIONAL_OCTSTR(dlr_url) /* for delivery reports */
+        INTEGER(dlr_mask)
+        OPTIONAL_OCTSTR(smsbox_id)
+        OPTIONAL_OCTSTR(service_name)
        )
 
 #undef MACHINE

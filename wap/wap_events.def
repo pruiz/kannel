@@ -77,6 +77,10 @@ WAPEVENT(T_DUnitdata_Req, "T-DUnitdata.req",
 
         INTEGER(address_type)
         OPTIONAL_OCTSTR(smsc_id)
+        INTEGER(dlr_mask)
+        OPTIONAL_OCTSTR(dlr_url)
+        OPTIONAL_OCTSTR(smsbox_id)
+        OPTIONAL_OCTSTR(service_name)
 	)
 
 WAPEVENT(T_DUnitdata_Ind, "T-DUnitdata.ind",
@@ -549,6 +553,10 @@ WAPEVENT(S_Unit_Push_Req, "S-Unit-Push.req",
 
     INTEGER(address_type)
     OPTIONAL_OCTSTR(smsc_id)
+    INTEGER(dlr_mask)
+    OPTIONAL_OCTSTR(dlr_url)
+    OPTIONAL_OCTSTR(smsbox_id)
+    OPTIONAL_OCTSTR(service_name)
     )
 
 WAPEVENT(S_Unit_Push_Ind, "S-Unit-Push.ind",
@@ -569,6 +577,10 @@ WAPEVENT(Pom_SessionRequest_Req, "Pom-SessionRequest.req",
     INTEGER(push_id)
     INTEGER(address_type)
     OPTIONAL_OCTSTR(smsc_id)
+    INTEGER(dlr_mask)
+    OPTIONAL_OCTSTR(dlr_url)
+    OPTIONAL_OCTSTR(smsbox_id)
+    OPTIONAL_OCTSTR(service_name)
     )
 
 WAPEVENT(Pom_Connect_Ind, "Pom-Connect.ind",
@@ -650,6 +662,10 @@ WAPEVENT(Po_Unit_Push_Req, "Po-Unit-Push.req",
 
     INTEGER(address_type)
     OPTIONAL_OCTSTR(smsc_id)
+    INTEGER(dlr_mask)
+    OPTIONAL_OCTSTR(dlr_url)
+    OPTIONAL_OCTSTR(smsbox_id)
+    OPTIONAL_OCTSTR(service_name)
     )
 
 WAPEVENT(Po_PushAbort_Req, "Po-PushAbort.req",
@@ -698,6 +714,10 @@ WAPEVENT(Push_Message, "push-message",
     OPTIONAL_OCTSTR(push_data)
     CAPABILITIES(pi_capabilities)
     OPTIONAL_OCTSTR(smsc_id)
+    INTEGER(dlr_mask)
+    OPTIONAL_OCTSTR(dlr_url)
+    OPTIONAL_OCTSTR(smsbox_id)
+    OPTIONAL_OCTSTR(service_name)
     OPTIONAL_OCTSTR(product_name)
 )
 
