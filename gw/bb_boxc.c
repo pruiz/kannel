@@ -54,6 +54,7 @@ typedef struct _boxc {
     int		is_wap;
     long      	id;
     int		load;
+    time_t	connect_time;
     Octstr    	*client_ip;
     List      	*incoming;
     List      	*retry;   	/* If sending fails */
@@ -187,6 +188,7 @@ static Boxc *boxc_create(int fd, Octstr *ip)
     boxc->id = boxid++;		/* XXX  MUTEX! fix later... */
     boxc->client_ip = ip;
     boxc->alive = 1;
+    boxc->connect_time = time(NULL);
     return boxc;
 }    
 
@@ -683,10 +685,12 @@ int wapbox_start(Config *config)
 
 Octstr *boxc_status(void)
 {
-    char tmp[1024];
+    char tmp[1024], buf[256];
     int i;
+    time_t orig, t;
     Boxc *bi;
-    
+
+    orig = time(NULL);
     /*
      * XXX: this will cause segmentation fault if this is called
      *    between 'destroy_list and setting list to NULL calls.
@@ -699,8 +703,12 @@ Octstr *boxc_status(void)
 	list_lock(wapbox_list);
 	for(i=0; i < list_len(wapbox_list); i++) {
 	    bi = list_get(wapbox_list, i);
-	    strcat(tmp, "<br>&nbsp;&nbsp;&nbsp;&nbsp;(wapbox) ");
-	    strcat(tmp, octstr_get_cstr(bi->client_ip));
+	    t = orig - bi->connect_time;
+	    sprintf(buf, "&nbsp;&nbsp;&nbsp;&nbsp;wapbox %s "
+		    "(on-line %ldd %ldh %ldm %lds)<br>\n",
+		    octstr_get_cstr(bi->client_ip),
+		    t/3600/24, t/3600%24, t/60%60, t%60);
+	    strcat(tmp, buf);
 	}
 	list_unlock(wapbox_list);
     }
@@ -708,12 +716,15 @@ Octstr *boxc_status(void)
 	list_lock(smsbox_list);
 	for(i=0; i < list_len(smsbox_list); i++) {
 	    bi = list_get(smsbox_list, i);
-	    strcat(tmp, "<br>&nbsp;&nbsp;&nbsp;&nbsp;(smsbox) ");
-	    strcat(tmp, octstr_get_cstr(bi->client_ip));
+	    t = orig - bi->connect_time;
+	    sprintf(buf, "&nbsp;&nbsp;&nbsp;&nbsp;smsbox %s "
+		    "(on-line %ldd %ldh %ldm %lds)<br>\n",
+		    octstr_get_cstr(bi->client_ip),
+		    t/3600/24, t/3600%24, t/60%60, t%60);
+	    strcat(tmp, buf);
 	}
 	list_unlock(smsbox_list);
     }
-    strcat(tmp, "<br>\n");
     return octstr_create(tmp);
 }
 

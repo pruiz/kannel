@@ -1,3 +1,8 @@
+2000-06-21  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_boxc.c: added on-line information about connected boxes in
+	status query
+
 2000-06-20  Kalle Marjola  <rpr@wapit.com>
 
 	* README: added notes of what need to be done if Kannel version is
