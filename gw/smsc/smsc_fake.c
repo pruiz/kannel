@@ -200,8 +200,9 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
             }
 
             /* obey throughput speed limit, if any */
-            if (conn->throughput)
+            if (conn->throughput) {
                 gwthread_sleep(delay);
+            }
         }
         if (privdata->shutdown) {
             debug("bb.sms", 0, "smsc_fake shutting down, closing client socket");

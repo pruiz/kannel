@@ -156,6 +156,7 @@ static int parse_tail(Octstr **multipart, Octstr *delimiter,
 }
 
 /* But if we have no epilogue, we do not have crlf after close delimiter either.*/
+/*
 static int parse_short_tail(Octstr **multipart, Octstr *delimiter, long boundary_pos,
                             long *next_part_pos)
 {
@@ -164,6 +165,7 @@ static int parse_short_tail(Octstr **multipart, Octstr *delimiter, long boundary
 
     return 0;
 }
+*/
 
 /*
  * Boundary misses crlf here. This is intentional: Kannel header parsing pro-
