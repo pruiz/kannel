@@ -1,3 +1,9 @@
+1999-11-29 Aarno Syvänen <syvanen@wapit.cm>
+
+	*header files reorganized so that (most) types are defined in wtp.h
+
+	*wtp_send.c: added a prototype result PDU packing function
+
 1999-11-29    <rpr@rpr.wapit.com>
 
 	* gwlib/octstr.c, gw/*box.c: modified octstr_recv to return 1 for
