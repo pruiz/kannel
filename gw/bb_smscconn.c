@@ -538,12 +538,15 @@ void smsc2_cleanup(void)
 
     debug("smscconn", 0, "final clean-up for SMSCConn");
     
-    list_lock(smsc_list);
-    for (i = 0; i < list_len(smsc_list); i++) {
-        conn = list_get(smsc_list, i);
-        smscconn_destroy(conn);
+    /* do only cleanup if any smsc-ids have been defined */
+    if (smsc_list != NULL) {
+        list_lock(smsc_list);
+        for (i = 0; i < list_len(smsc_list); i++) {
+            conn = list_get(smsc_list, i);
+            smscconn_destroy(conn);
+        }
+        list_unlock(smsc_list);
     }
-    list_unlock(smsc_list);
     list_destroy(smsc_list, NULL);
     list_destroy(smsc_groups, NULL);
     octstr_destroy(unified_prefix);    
