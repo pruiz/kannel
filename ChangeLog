@@ -1,4 +1,9 @@
 2003-10-22  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/wml_compiler.c: fixed possible segfault if wml document doesn't contain
+      DTD section. Thanks to Vjacheslav Chekushin <slava@lmt.lv> for patch.
+      Msg-Id: <3F95203C.60402@lmt.lv>
+
+2003-10-22  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/http.c: applied patch from bug #78.
 
 2003-10-20  Alexander Malysh  <a.malysh@centrium.de>
