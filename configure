@@ -1357,7 +1357,7 @@ if test "$XML_CONFIG" = "no"; then
 	echo "You MUST have the gnome-xml library installed"; exit 1
 else
 		case `$XML_CONFIG --version` in 
-	*2.[2-9].[0-9]) ;;
+	*2.[2-9].[0-9]*) ;;
 	*) echo "Libxml is too old. You need at least 2.2.0." ; exit 1 ;;
 	esac
 		LIBS="$LIBS `$XML_CONFIG --libs`"
@@ -2393,10 +2393,6 @@ EOF
          echo using checking malloc
          ;;
   slow) cat >> confdefs.h <<\EOF
-#define USE_GWMEM_CHECK 1
-EOF
-
-        cat >> confdefs.h <<\EOF
 #define USE_GWMEM_SLOW 1
 EOF
 
@@ -2415,10 +2411,6 @@ EOF
           echo using native malloc
           ;;
   slow) cat >> confdefs.h <<\EOF
-#define USE_GWMEM_CHECK 1
-EOF
-
-        cat >> confdefs.h <<\EOF
 #define USE_GWMEM_SLOW 1
 EOF
 
