@@ -1,3 +1,8 @@
+2001-03-29  Uoti Urpala  <uau@wapit.com>
+
+	* gwlib/http.c: Added a test that checks whether connections in
+	the connection pool have been closed before trying to reuse them.
+
 2001-03-28  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsc_emi2.c: Wrote. New implementation of the emi_ip protocol.

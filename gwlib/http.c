@@ -654,8 +654,19 @@ static Connection *conn_pool_get(Octstr *host, int port)
     octstr_destroy(key);
     if (list == NULL)
     	conn = NULL;
-    else
-    	conn = list_extract_first(list);
+    else {
+	while (1) {
+	    conn = list_extract_first(list);
+	    if (conn == NULL)
+		break;
+	    /* Check whether the server has closed the connection while
+	     * it has been in the pool. */
+	    conn_wait(conn, 0);
+	    if (!conn_eof(conn) && !conn_read_error(conn))
+		break;
+	    conn_destroy(conn);
+	}
+    }
     mutex_unlock(conn_pool_lock);
     
     if (conn == NULL) {
