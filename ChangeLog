@@ -1,4 +1,9 @@
 2002-01-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_cgw.c: applied patch for trn bug fix and minor changed
+      send in by Anders Lindh <alindh@flyerone.com>
+      [Msg-ID: <004601c19eb0$5769f8c0$8078a8c0@alindh>]
+
+2002-01-16  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/list.h: added declaration of new function list_append_unique()
     * gwlib/list.c: added implementation of new func list_append_unique()
 
