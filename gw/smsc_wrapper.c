@@ -15,7 +15,7 @@
 #include "smsc_p.h"
 
 
-typedef struct _smsc_wrapper {
+typedef struct smsc_wrapper {
     SMSCenter	*smsc;
     List	*outgoing_queue;
     long     	receiver_thread;
@@ -93,8 +93,9 @@ static void wrapper_sender(void *arg)
     SMSCConn 	*conn = arg;
     SmscWrapper *wrap = conn->data;
 
-    /* send messages to SMSC until we are killed */
-    while(conn->is_killed == 0) {
+    /* send messages to SMSC until our putgoing_list is empty and
+     * no producer anymore (we are set to shutdown) */
+    while(1) {
 
         list_consume(conn->stopped); /* block here if suspended/isolated */
 
@@ -171,6 +172,19 @@ static int wrapper_add_msg(SMSCConn *conn, Msg *sms)
 }
 
 
+static int wrapper_shutdown(SMSCConn *conn, int finish_sending)
+{
+    SmscWrapper *wrap = conn->data;
+
+    if (finish_sending == 0) {
+	Msg *msg; 
+	while((msg = list_extract_first(wrap->outgoing_queue))!=NULL) {
+	    bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+	}
+    }
+    list_remove_producer(wrap->outgoing_queue);
+    return 0;
+}
 
 
 int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
@@ -192,6 +206,9 @@ int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
     if ((wrap->smsc = smsc_open(cfg)) == NULL)
 	goto error;
 
+    wrap->outgoing_queue = list_create();
+    list_add_producer(wrap->outgoing_queue);
+    
     conn->status = SMSCCONN_ACTIVE;
     conn->connect_time = time(NULL);
 
@@ -203,6 +220,8 @@ int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
 
     if ((wrap->sender_thread = gwthread_create(wrapper_sender, conn))==-1)
 	goto error;
+
+    conn->shutdown = wrapper_shutdown;
     
     return 0;
 

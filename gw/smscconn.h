@@ -17,10 +17,12 @@
 /*
  * Structure hierarchy:
  *
- * bearerbox has its own smsc struct, in which it helds information
- * about routing information, and then pointer to SMSCConn
+ * Bearerbox keeps list of pointers to SMSCConn structures, which
+ * include all data needed by connection, including routing data.
+ * If any extra data not linked to that SMSC Connection is needed,
+ * that is held in bearerbox 
  *
- * SMSCConn is internal structure for smscc module. It has a list
+ * SMSCConn is internal structure for smscconn module. It has a list
  * of common variables like number of sent/received messages and
  * and pointers to appropriate lists, and then it has a void pointer
  * to appropriate smsc structure defined and used by corresponding smsc
@@ -48,10 +50,12 @@ typedef struct smscconn SMSCConn;
  */
 SMSCConn *smscconn_create(ConfigGroup *cfg, int start_as_stopped);
 
-/* shutdown/destroy smscc. Call send_failed callback for all
- * message which failed to be sent, start closing connection etc.
+/* shutdown/destroy smscc. Stop receiving messages and accepting
+ * new message to-be-sent. Die when any internal queues are empty,
+ * if finish_sending != 0, or if set to 0, kill connection ASAP and
+ * call send_failed -callback for all messages still in queue
  */
-void smscconn_shutdown(SMSCConn *smscconn);
+void smscconn_shutdown(SMSCConn *smscconn, int finish_sending);
 
 /* this is final function to cleanup all memory still held by
  * SMSC Connection after it has been killed (for synchronization
@@ -71,8 +75,21 @@ int smscconn_stop(SMSCConn *smscconn);
 /* start stopped smscc. Return -1 if failed, 0 otherwise */
 void smscconn_start(SMSCConn *smscconn);
 
-/* Return name of the SMSC. The caller must destroy the octstr */
+/* Return name of the SMSC, as reference - caller may not free it! */
 Octstr *smscconn_name(SMSCConn *smscconn);
+
+/* Return ID of the SMSC, as reference - caller may not free it! */
+Octstr *smscconn_id(SMSCConn *conn);
+
+/* Check if this SMSC Connection is usable as sender for given
+ * message. The bearerbox must then select the good SMSC for sending
+ * according to load levels and conbnected/disconnected status, this
+ * function only checks preferred/denied strings and overall status
+ *
+ * Return -1 if not (denied or permanently down), 0 if okay,
+ * 1 if preferred one.
+ */
+int smscconn_usable(SMSCConn *conn, Msg *msg);
 
 /* Call SMSC specific function to handle sending of 'msg'
  * Returns immediately, with 0 if successful and -1 if failed.

@@ -52,12 +52,15 @@
     set to KILLED until the connection is really that. Use is_killed to
     make internally dead.
 
- 4) When SMSC Connection shuts down, it MUST call bb_smscconn_send_failed
-    for each message not yet sent, and must destroy all memory it has used
-    (SMSCConn struct MUST be left, but data is destroyed). Before data is
-    being destroyed, the SMSC Connection must set SMSCConn->is_killed to
-    non-zero. After everything is destroyed, it MUST set status to
-    SMSCCONN_KILLED and call callback bb_smscconn_killed with correct reason.
+ 4) When SMSC Connection shuts down (shutdown called), it MUST try to send
+    all messages so-far relied to it to be sent if 'finish_sending' is set
+    to non-zero. If set to 0, it MUST call bb_smscconn_send_failed
+    for each message not yet sent.
+
+    After everything is ready (it can happen in different thread), before
+    calling callback function bb_smscconn_killed it MUST release all memory it
+    has taken except for basic SMSCConn structure, and set status to
+    SMSCCONN_KILLED so it can be finally deleted.
 
  5) Callback bb_smscconn_ready is automatically called by main
     smscconn_create. New implementation MAY NOT call it directly
@@ -84,14 +87,22 @@ struct smscconn {
     Octstr *name;		/* Descriptive name filled from connection info */
     Octstr *id;			/* Abstract name spesified in configuration and
 				   used for logging and routing */
+
+
+    /* Routing Octstrings common to all SMSC Connections */
+    Octstr *denied_smsc_id;
+    Octstr *accepted_smsc_id;
+
+    Octstr *denied_prefix;
+    Octstr *preferred_prefix;
     
-    /* XXX: move global data from Smsc here, unless it is
-     *      moved straight to bearerbox (routing information)
+    
+    /* XXX: move rest global data from Smsc here
      */
 
     /* pointer to function called when smscconn_shutdown called.
        Note that this function is not needed always. */
-    int (*shutdown) (SMSCConn *conn);
+    int (*shutdown) (SMSCConn *conn, int finish_sending);
 
     /* pointer to function called when a new message is needed to be sent.
        MAY NOT block */

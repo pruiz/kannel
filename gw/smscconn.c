@@ -67,17 +67,17 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
 }
 
 
-void smscconn_shutdown(SMSCConn *conn)
+void smscconn_shutdown(SMSCConn *conn, int finish_sending)
 {
     gw_assert(conn != NULL);
     if (conn->status == SMSCCONN_KILLED)
 	return;
-    conn->is_killed = 1;
 
     /* Call SMSC specific destroyer */
     if (conn->shutdown)
-	conn->shutdown(conn);
+	conn->shutdown(conn, finish_sending);
     
+    conn->is_killed = 1;
     return;
 }
 

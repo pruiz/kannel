@@ -1,3 +1,13 @@
+2000-12-20  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_smscconn_cb.c: renamed as bb_smscconn.c and includes all
+	code in old bb_smsc.c - will replace the old system as soon as I
+	get last missing functions ready and the system tested
+
+	* gw/smscconn.* added that shutdown can either empty the internal
+	queue first or do a quick shutdown, putting all messages into
+	failed list
+
 2000-12-20  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	* gwlib/gwthread.h, gwlib/gwthread-pthread.c, gw/bearerbox.c,
 	config.h.in:  Combined patches from Nick Clarey and myself
