@@ -211,5 +211,10 @@ void *list_search(List *list, void *pattern, list_item_matches_t *cmp);
  */
 List *list_search_all(List *list, void *pattern, list_item_matches_t *cmp);
 
+/*
+ * Put lists one after another. List2 will be destroyed in the process. Return
+ * the united list.
+ */
+List *list_cat(List *list1, List *list2)
 
 #endif

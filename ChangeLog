@@ -1,3 +1,7 @@
+2000-04-18 Sanna Seppanan <sanna@wapit.com>
+
+	* gwlib/list.h,c Added list_cat. It joins two lists to one.
+
 Mon Apr 17 20:25:19 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* test/test_list.c: Fixed more pthread_t vs long warnings.

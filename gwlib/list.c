@@ -332,6 +332,24 @@ List *list_search_all(List *list, void *pattern, int (*cmp)(void *, void *)) {
 }
 
 
+/*
+ * list_cat - 'catenate' two lists. Destroy the latter list.
+ */
+List *list_cat(List *list1, List *list2)
+{
+    void *item;
+    
+    lock(list1);
+    lock(list2);
+    
+    while((item = list_extract_first(list2)) != NULL)
+	list_append(list1, item);
+
+    list_destroy(list2);
+    unlock(list1);
+    return list1;    
+}
+
 
 /*************************************************************************/
 
