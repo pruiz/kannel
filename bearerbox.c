@@ -6,6 +6,37 @@
  * Kalle Marjola 1999 for Wapit ltd.
  */
 
+/*
+ * Bearer box is the router/load balance part of the Gateway.
+ *
+ * It's responsibility is to connect SMS Centers, open ports for
+ * CSD Routers and accept connections from SMS and WAP Boxes.
+ *
+ * It receivers SMS Messages and WAP datagrams which it queues and
+ * sends to appropriate boxes. It receives replies from SMS and
+ * WAP Boxes and sends them via SMS Centers and CSD Router connection
+ *
+ * The bearerbox is multi-threaded application.
+ *
+ * - Main thread handles all heartbeat checks and accepts new Box and
+ *   HTTP connections.
+ *
+ * - SMSC threads connect specified SMS Center and receive and send
+ *   messages concerning it
+ *
+ * - CSDR thread listens to WAP WDP packets, and similarly sends them
+ *
+ * - SMS BOX Connection does all the required data transfer with one
+ *   sms box. On thread is started for each SMS BOX Connection.
+ *
+ * - WAP BOX Connection is similar to SMS BO Connection but handles
+ *   all the required wap messages between WAP Boxes and Bearerbox
+ *
+ * - HTTP request thread is started for each HTTP admin command
+ *
+ */
+
+
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
