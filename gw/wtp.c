@@ -293,7 +293,6 @@ static unsigned char *name_state(int s){
  * the macro definition (it ends with a line without a backlash). 
  */
 static void wtp_handle_event(WTPMachine *machine, WAPEvent *event){
-     WAPEventName current_primitive;
      WAPEvent *wsp_event = NULL;
      WAPEvent *timer_event = NULL;
 
