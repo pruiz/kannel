@@ -1,4 +1,8 @@
 2002-05-16  Stipe Tolj <tolj@wapme-systems.de>
+    * gwlib/conn.c: added Oded's non-blocking SSL_connect() patch.
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B167F62@exchange.m-wise.com>]
+
+2002-05-16  Stipe Tolj <tolj@wapme-systems.de>
     * configure[.in]: fixed --disable-ssl bug reported by Aarno.
 
 2002-05-15 Aarno Syvänen <aarno@wiral.com>
