@@ -1,4 +1,21 @@
 2003-03-04  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added smsc based logging directives
+    * gw/wapbox.c, gw/smsbox.c, gw/bearerbox.c, test/drive_smpp.c,
+      test/test_http_server.c, test/test_pap.c, test/wml_tester.c,
+      gwlibs/utils.c: added the GW_NON_EXCL flag to the new log_open() call.
+    * gw/smscconn.c, gw/smscconn_p.h, gwlib/cfg.def : added 'log-file' and 
+      'log-level' as smsc global config directives.
+    * gwlib/gwlib.c: gwlib_init() calls now log_init() too, in order to 
+      initialize the index mapping array.
+    * gwlib/log.[ch]: added smsc specific logging capability by handling 
+      open log files in exclusive or non-explusive mode within the open log
+      file array. Added log_thread_to() function to allow a working thread
+      to register to a specific exlusive log file.
+    * gw/smsc/smsc_[at2|cgw|emi2|fake|http|smasi|smpp|wrapper].c: added 
+      register calls log_thread_to() within the working threads in case the
+      smsc-id should be logged to a seperate, exlucive log-file.
+
+2003-03-04  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smasi.c: fixed bugs in pdu_to_msg(), including the setting
       of 7bit coding to have normal text logged in access.log.
     * gw/bb_boxc.c: added missing smsbox-id output to XML tree of /status.xml.
