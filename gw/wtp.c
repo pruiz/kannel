@@ -54,6 +54,9 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
 
 static int wtp_tid_is_valid(WTPEvent *event);
 
+static void append_to_event_queue(WTPMachine *machine, WTPEvent *event);
+static WTPEvent *remove_from_event_queue(WTPMachine *machine);
+
 /******************************************************************************
  *
  *EXTERNAL FUNCTIONS:
@@ -67,6 +70,7 @@ WTPEvent *wtp_event_create(enum event_name type) {
 		goto error;
 
 	event->type = type;
+	event->next = NULL;
 	
 	#define INTEGER(name) p->name=0
 	#define OCTSTR(name) p->name=octstr_create_empty();\
@@ -496,21 +500,38 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
      WSPEvent *wsp_event=NULL;
      WTPTimer *timer=NULL;
 
+     /* 
+      * If we're already handling events for this machine, add the
+      * event to the queue.
+      */
+     if (mutex_try_lock(&machine->mutex) == EBUSY) {
+	  append_to_event_queue(machine, event);
+	  return;
+     }
+	
+     /* XXX er, what is the point of this timer? --liw */
      timer=wtp_timer_create();
      if (timer == NULL)
         goto mem_error;
 
-     debug(0,"handle_event: current state=%s.",name_state(machine->state));
-     #define STATE_NAME(state)
-     #define ROW(wtp_state, event, condition, action, next_state) \
-             if (current_state == wtp_state && current_event == event &&\
-                (condition)){\
-                action\
-                machine->state=next_state;\
-             } else 
-     #include "wtp_state-decl.h"
-             {debug(0, "handle_event: out of synch error");}
-             return;
+     do {
+	  debug(0,"handle_event: current state=%s.",name_state(machine->state));
+	  #define STATE_NAME(state)
+	  #define ROW(wtp_state, event, condition, action, next_state) \
+		  if (current_state == wtp_state && current_event == event &&\
+		     (condition)){\
+		     action\
+		     machine->state=next_state;\
+		  } else 
+	  #include "wtp_state-decl.h"
+		  {panic(0, "handle_event: out of synch error");}
+
+          event = remove_from_event_queue(machine);
+     } while (event != NULL);
+
+     mutex_unlock(&machine->mutex);
+     return;
+
 /*
  *Send Abort(CAPTEMPEXCEEDED)
  */
@@ -520,6 +541,7 @@ mem_error:
         wtp_timer_destroy(timer);
      free(timer);
      free(wsp_event);
+     mutex_unlock(&machine->mutex);
 }
 
 /*****************************************************************************
@@ -609,7 +631,7 @@ static WTPMachine *wtp_machine_create_empty(void){
         #define OCTSTR(name) machine->name=octstr_create_empty();\
                              if (machine->name == NULL)\
                                 goto error
-        #define QUEUE(name) /*Queue will be implemented later*/
+        #define QUEUE(name) machine->name=NULL
         #define MUTEX(name) pthread_mutex_init(&machine->name, NULL)
         #define TIMER(name) machine->name=wtp_timer_create();\
                             if (machine->name == NULL)\
@@ -729,5 +751,44 @@ int wtp_tid_is_valid(WTPEvent *event){
 
     return 1;
 }
+
+
+/*
+ * Append an event to the event queue of a WTPMachine.
+ */
+static void append_to_event_queue(WTPMachine *machine, WTPEvent *event) {
+	mutex_lock(&machine->queue_lock);
+	if (machine->event_queue_head == NULL) {
+		machine->event_queue_head = event;
+		machine->event_queue_tail = event;
+		event->next = NULL;
+	} else {
+		machine->event_queue_tail->next = event;
+		machine->event_queue_tail = event;
+		event->next = NULL;
+	}
+	mutex_unlock(&machine->queue_lock);
+}
+
+
+/*
+ * Return the first event from the event queue of a WTPMachine, and remove
+ * it from the queue. Return NULL if the queue was empty.
+ */
+static WTPEvent *remove_from_event_queue(WTPMachine *machine) {
+	WTPEvent *event;
+	
+	mutex_lock(&machine->queue_lock);
+	if (machine->event_queue_head == NULL)
+		event = NULL;
+	else {
+		event = machine->event_queue_head;
+		machine->event_queue_head = event->next;
+		event->next = NULL;
+	}
+	mutex_unlock(&machine->queue_lock);
+	return event;
+}
+
 
 /*****************************************************************************/

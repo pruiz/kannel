@@ -22,8 +22,10 @@ MACHINE(INTEGER(in_use);
         INTEGER(ack_pdu_sent);
         INTEGER(result_pdu_sent);
         TIMER(timer_data);
-        QUEUE(event_queue)/* to be implemented later*/
         MUTEX(mutex);
+	MUTEX(queue_lock);
+        QUEUE(event_queue_head);
+        QUEUE(event_queue_tail);
         NEXT(next);
         )
 

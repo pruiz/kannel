@@ -44,7 +44,7 @@ struct WTPMachine {
         #define INTEGER(name) long name
         #define ENUM(name) states name
         #define OCTSTR(name) Octstr *name
-        #define QUEUE(name) /* XXX event queue to be implemented later */
+        #define QUEUE(name) WTPEvent *name
 	#define TIMER(name) WTPTimer *name
         #define MUTEX(name) pthread_mutex_t name
         #define NEXT(name) struct WTPMachine *name
@@ -56,6 +56,7 @@ struct WTPMachine {
 
 struct WTPEvent {
     enum event_name type;
+    WTPEvent *next;
 
     #define INTEGER(name) long name
     #define OCTSTR(name) Octstr *name

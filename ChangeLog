@@ -1,3 +1,8 @@
+Tue Nov 30 17:13:36 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wtp.c, gw/wtp.h, gw/wtp_machine-decl.h: Added event queues
+	to WTPMachine and wtp_handle_event.
+
 Tue Nov 30 16:33:29 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c, gw/wsp.h: Implemented wsp_handle_event (doesn't really
