@@ -35,7 +35,6 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 
 	struct in_addr bindaddr;
 	struct sockaddr_in servaddr;
-	socklen_t servlen;
 	char server_ip[16], server_port[8];
 
 	memset(server_ip, 0, sizeof(server_ip));
@@ -43,9 +42,7 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 
 	router = malloc(sizeof(CSDRouter));
 	if(router==NULL) goto error;
-
-	router->interface_name = NULL;	/* FILL */
-	router->ip = NULL;		/* FILL */
+	memset(router, 0, sizeof(CSDRouter));
 
         interface_name = config_get(grp, "interface-name");
         wap_service    = config_get(grp, "wap-service");
@@ -67,10 +64,13 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	memset(&servaddr, 0, sizeof(struct sockaddr_in));
 	servaddr.sin_family = AF_INET;
 
+	/* Select which network interface (IP) to bind to. */
 	if(inet_aton(interface_name, &bindaddr) != 0) {
 		servaddr.sin_addr = bindaddr;
+		router->ip = interface_name;
 	} else {
 		servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+		router->ip = "0.0.0.0";
 	}
 
 	if(strcmp(wap_service, "wsp") == 0) {
@@ -95,32 +95,31 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	}
 
 	while( bind(router->fd, &servaddr, sizeof(servaddr)) != 0 ) {
+
 		error(errno, "Could not bind to UDP port <%i> service <%s>.", 
 			ntohs(servaddr.sin_port), wap_service);
+
+		if(errno==EACCES) {
+			error(0, "csdr_open: could not bind to the interface");
+			goto error;
+		}
+		
 		if(i++==10) {
 			error(0, "csdr_open: could not bind to the interface");
 			goto error;
 		}
+
 		sleep(1);
+
 	}
-	servlen = sizeof(servaddr);
-	getsockname(router->fd, (struct sockaddr*)&servaddr, &servlen);
 
-	getnameinfo((struct sockaddr*)&servaddr, servlen, 
-		server_ip, sizeof(server_ip), 
-		server_port, sizeof(server_port), 
-		NI_NUMERICHOST | NI_NUMERICSERV);
+	router->port = ntohs(servaddr.sin_port);
 
-	router->port = atoi(server_port);
-	router->ip = strdup(server_ip);
-	if (router->ip == NULL)
-	    goto error;
-	
 	fl = fcntl(router->fd, F_GETFL);
 	fcntl(router->fd, F_SETFL, fl | O_NONBLOCK);
 
-	debug(0, "csdr_open: Bound to UDP port <%d> service <%s>.",
-	      router->port, wap_service);
+	debug(0, "csdr_open: Bound to UDP <%s:%d> service <%s>.",
+	      router->ip, router->port, wap_service);
 
 	return router;
 
@@ -137,7 +136,6 @@ int csdr_close(CSDRouter *router)
 
 	close(router->fd);
 
-	free(router->interface_name);
 	free(router->ip);
 	free(router);
 	
@@ -249,8 +247,9 @@ int csdr_is_to_us(CSDRouter *router, Msg *msg) {
     if (router->port != msg->wdp_datagram.source_port ||
 	(strcmp(router->ip,
 		octstr_get_cstr(msg->wdp_datagram.source_address)) != 0))
-
-	return 0;
+	{
+		return 0;
+	}
 
     return 1;
 
