@@ -1,3 +1,8 @@
+2000-06-13  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_boxc.c: (somehow) fixed pointer error pointed out by Paul
+	Keogh.
+
 2000-06-13  Richard Braakman  <dark@wapit.com>
 
 	* gw/wap-appl.c: Query list of charsets from the WML compiler,

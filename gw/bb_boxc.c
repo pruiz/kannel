@@ -37,8 +37,8 @@ extern List *suspended;
 
 static volatile sig_atomic_t smsbox_running;
 static volatile sig_atomic_t wapbox_running;
-static List	*wapbox_list;
-static List	*smsbox_list;
+static List	*wapbox_list = NULL;
+static List	*smsbox_list = NULL;
 
 static int	smsbox_port;
 static int	wapbox_port;
@@ -554,6 +554,7 @@ static void smsboxc_run(void *arg)
 	sleep(1);
 
     list_destroy(smsbox_list);
+    smsbox_list = NULL;
     
     list_remove_producer(flow_threads);
 }
@@ -592,7 +593,8 @@ static void wapboxc_run(void *arg)
 	;
     
     list_destroy(wapbox_list);
-
+    wapbox_list = NULL;
+    
     list_remove_producer(flow_threads);
 }
 
@@ -683,8 +685,15 @@ Octstr *boxc_status(void)
 {
     char tmp[512];
 
+    /*
+     * XXX: this will cause segmentation fault if this is called
+     *    between 'destroy_list and setting list to NULL calls.
+     *    Ok, this has to be fixed, but now I am too tired.
+     */
+    
     sprintf(tmp, "Total %ld wapbox and %ld smsbox connections",
-	    list_len(wapbox_list), list_len(smsbox_list));
+	    wapbox_list ? list_len(wapbox_list) : 0,
+	    smsbox_list ? list_len(smsbox_list) : 0);
 
     return octstr_create(tmp);
 }
