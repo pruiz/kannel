@@ -16,8 +16,4 @@ Changes since version 0.10.2:
 
 	* wapbox shutdown sometimes gets stuck and requires kill -9.
 
-* Known limitations:
-
-	* wsp: missing Push and Suspend/Resume
-
 See ChangeLog for detailed information.
