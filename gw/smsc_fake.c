@@ -250,7 +250,7 @@ static void fake_listener(void *arg)
 	    close(s);
 	    continue;
 	}
-	client = conn_wrap_fd(s);
+	client = conn_wrap_fd(s, 0);
 	if (client == NULL) {
 	    error(0, "fake_listener: conn_wrap_fd failed on accept()ed fd");
 	    octstr_destroy(ip);

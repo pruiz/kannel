@@ -1659,6 +1659,7 @@ error:
 struct server {
     int fd;
     int port;
+    int ssl;
 };
 
 
@@ -1666,6 +1667,7 @@ static void server_thread(void *dummy)
 {
     struct pollfd tab[MAX_SERVERS];
     int ports[MAX_SERVERS];
+    int ssl[MAX_SERVERS];
     long i, j, n, fd;
     int *portno;
     struct server *p;
@@ -1685,6 +1687,7 @@ static void server_thread(void *dummy)
 	    tab[n].fd = p->fd;
 	    tab[n].events = POLLIN;
 	    ports[n] = p->port;
+        ssl[n] = p->ssl;
 	    ++n;
 	    gw_free(p);
 	}
@@ -1705,9 +1708,10 @@ static void server_thread(void *dummy)
 		    port_remove(ports[i]);
 		    tab[i].fd = -1;
 		    ports[i] = -1;
+            ssl[i] = 0;
 		} else {
-		    conn = conn_wrap_fd(fd);
-    	    	    client = client_create(ports[i], conn, host_ip(addr));
+		    conn = conn_wrap_fd(fd, ssl[i]);
+    	    client = client_create(ports[i], conn, host_ip(addr));
 		    conn_register(conn, server_fdset, receive_request, 
 		    	    	  client);
 		}
@@ -1721,6 +1725,7 @@ static void server_thread(void *dummy)
 		    port_remove(ports[i]);
 		    tab[i].fd = -1;
 		    ports[i] = -1;
+            ssl[i] = 0;
 		}
 	    }
 	    gw_free(portno);
@@ -1731,6 +1736,7 @@ static void server_thread(void *dummy)
 	    if (tab[i].fd != -1) {
 	    	tab[j] = tab[i];
 		ports[j] = ports[i];
+        ssl[j] = ssl[i];
 		++j;
 	    }
 	}
@@ -1764,13 +1770,15 @@ static void start_server_thread(void)
 }
 
 
-int http_open_port(int port)
+int http_open_port(int port, int ssl)
 {
     struct server *p;
 
-    debug("gwlib.http", 0, "HTTP: Opening server at port %d.", port);
+    if (ssl) debug("gwlib.http", 0, "HTTP: Opening SSL server at port %d.", port);
+    else debug("gwlib.http", 0, "HTTP: Opening server at port %d.", port);
     p = gw_malloc(sizeof(*p));
     p->port = port;
+    p->ssl = ssl;
     p->fd = make_server_socket(port, NULL);
 	/* XXX add interface_name if required */
     if (p->fd == -1) {
@@ -2573,6 +2581,9 @@ void http_init(void)
     client_init();
     conn_pool_init();
     server_init();
+#ifdef HAVE_LIBSSL
+    server_ssl_init();
+#endif /* HAVE_LIBSSL */
     port_init();
     
     run_status = running;
@@ -2593,6 +2604,7 @@ void http_shutdown(void)
     proxy_shutdown();
 #ifdef HAVE_LIBSSL
     conn_shutdown_ssl();
+    server_shutdown_ssl();
 #endif /* HAVE_LIBSSL */
     run_status = limbo;
 }

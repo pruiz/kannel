@@ -264,8 +264,10 @@ typedef struct HTTPClient HTTPClient;
  * Open an HTTP server at a given port. Return -1 for errors (invalid
  * port number, etc), 0 for OK. This will also start a background thread
  * to listen for connections to that port and read the requests from them.
+ * Second boolean variable indicates if the HTTP server should be started 
+ * for SSL-enabled connections.
  */
-int http_open_port(int port);
+int http_open_port(int port, int ssl);
 
 
 /*

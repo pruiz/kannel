@@ -395,6 +395,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     ConnData *conndata = NULL;
     Octstr *type;
     long portno;   /* has to be long because of cfg_get_integer */
+    int ssl = 0;   /* indicate if SSL-enabled server should be used */
 
     if (cfg_get_integer(&portno, cfg, octstr_imm("port")) == -1) {
 	error(0, "'port' invalid in smsc 'http' record.");
@@ -448,7 +449,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     conn->queued = httpsmsc_queued;
     conn->send_msg = httpsmsc_send;
 
-    if (http_open_port(portno)==-1)
+    if (http_open_port(portno, ssl)==-1)
 	goto error;
 
     conndata->port = portno;

@@ -283,6 +283,11 @@ static void httpadmin_run(void *arg)
 int httpadmin_start(Cfg *cfg)
 {
     CfgGroup *grp;
+    int ssl = 0; 
+#ifdef HAVE_LIBSSL
+    Octstr *ssl_server_cert_file;
+    Octstr *ssl_server_key_file;
+#endif /* HAVE_LIBSSL */
     
     if (httpadmin_running) return -1;
 
@@ -299,8 +304,29 @@ int httpadmin_start(Cfg *cfg)
 
     ha_allow_ip = cfg_get(grp, octstr_imm("admin-allow-ip"));
     ha_deny_ip = cfg_get(grp, octstr_imm("admin-deny-ip"));
+
+#ifdef HAVE_LIBSSL
+    cfg_get_bool(&ssl, grp, octstr_imm("admin-port-ssl"));
     
-    http_open_port(ha_port);
+    /*
+     * check if SSL is desired for HTTP servers and then
+     * load SSL client and SSL server public certificates 
+     * and private keys
+     */    
+    ssl_server_cert_file = cfg_get(grp, octstr_imm("ssl-server-cert-file"));
+    ssl_server_key_file = cfg_get(grp, octstr_imm("ssl-server-key-file"));
+    if (ssl_server_cert_file != NULL && ssl_server_key_file != NULL) {
+        use_global_server_certkey_file(ssl_server_cert_file, 
+            ssl_server_key_file);
+    } else if (ssl) {
+	   panic(0, "You MUST specify cert and key files within core group for SSL!");
+    }
+
+    octstr_destroy(ssl_server_cert_file);
+    octstr_destroy(ssl_server_key_file);
+#endif /* HAVE_LIBSSL */
+
+    http_open_port(ha_port, ssl);
 
     if (gwthread_create(httpadmin_run, NULL) == -1)
 	panic(0, "Failed to start a new thread for HTTP admin");

@@ -247,6 +247,8 @@ static void read_config(Cfg *cfg);
 void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch, 
                        wap_dispatch_func_t *appl_dispatch, Cfg *cfg)
 {
+    int ssl = 0;   /* indicate if SSL-enabled server should be used */
+
     ppg_queue = list_create();
     list_add_producer(ppg_queue);
     push_id_counter = counter_create();
@@ -257,7 +259,7 @@ void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
     dispatch_to_appl = appl_dispatch;
 
     read_config(cfg);
-    http_open_port(ppg_port);
+    http_open_port(HTTP_PORT, ssl);
     http_clients = dict_create(number_of_pushes, NULL);
     urls = dict_create(number_of_pushes, octstr_destroy_item);
 

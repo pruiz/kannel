@@ -99,6 +99,7 @@ int main(int argc, char **argv) {
     char *filename;
     Octstr *log_filename;
     Octstr *file_contents;
+    int ssl = 0;   /* indicate if SSL-enabled server should be used */
 
     gwlib_init();
 
@@ -162,7 +163,7 @@ int main(int argc, char **argv) {
     else
     	file_contents = octstr_read_file(filename);
 
-    if (http_open_port(port) == -1)
+    if (http_open_port(port, ssl) == -1)
 	panic(0, "http_open_server failed");
 
     /*

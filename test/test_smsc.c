@@ -408,7 +408,7 @@ static void smpp_emu(void *arg)
 	    (void) close(new_fd);
 	} else {
 	    thread[num_threads] = gw_malloc(sizeof(*thread[0]));
-    	    thread[num_threads]->conn = conn_wrap_fd(new_fd);
+    	    thread[num_threads]->conn = conn_wrap_fd(new_fd, 0);
 	    thread[num_threads]->eq = eq;
 	    thread[num_threads]->quit = 0;
 	    thread[num_threads]->writer_id = -1;
@@ -574,8 +574,9 @@ static long httpd_emu_tid = -1;
 static void httpd_emu_create(EventQueue *eq)
 {
     struct httpd_emu_arg *arg;
+    int ssl = 0;   /* indicate if SSL-enabled server should be used */
 
-    if (http_open_port(http_port) == -1)
+    if (http_open_port(http_port, ssl) == -1)
     	panic(0, "Can't open HTTP server emulator port %ld.", http_port);
 
     gw_assert(httpd_emu_tid == -1);

@@ -1807,8 +1807,11 @@ static void init_smsbox(Cfg *cfg)
     List *http_proxy_exceptions = NULL;
     Octstr *http_proxy_username = NULL;
     Octstr *http_proxy_password = NULL;
+    int ssl = 0;
 #ifdef HAVE_LIBSSL
-    Octstr *ssl_certkey_file;
+    Octstr *ssl_client_certkey_file;
+    Octstr *ssl_server_cert_file;
+    Octstr *ssl_server_key_file;
 #endif /* HAVE_LIBSSL */
 
 
@@ -1839,10 +1842,26 @@ static void init_smsbox(Cfg *cfg)
     http_proxy_exceptions = cfg_get_list(grp,
     	    	    	    octstr_imm("http-proxy-exceptions"));
 #ifdef HAVE_LIBSSL
-    ssl_certkey_file = cfg_get(grp, octstr_imm("ssl-certkey-file"));
-    if (ssl_certkey_file != NULL) 
-        use_global_certkey_file(ssl_certkey_file);
-    octstr_destroy(ssl_certkey_file);
+    /*
+     * check if SSL is desired for HTTP servers and then
+     * load SSL client and SSL server public certificates 
+     * and private keys
+     */    
+    ssl_client_certkey_file = cfg_get(grp, octstr_imm("ssl-client-certkey-file"));
+    if (ssl_client_certkey_file != NULL) 
+        use_global_client_certkey_file(ssl_client_certkey_file);
+    ssl_server_cert_file = cfg_get(grp, octstr_imm("ssl-server-cert-file"));
+    ssl_server_key_file = cfg_get(grp, octstr_imm("ssl-server-key-file"));
+    if (ssl_server_cert_file != NULL && ssl_server_key_file != NULL) {
+        use_global_server_certkey_file(ssl_server_cert_file, 
+            ssl_server_key_file);
+    } else if (ssl) {
+	   panic(0, "You MUST specify cert and key files within core group for SSL!");
+    }
+ 
+    octstr_destroy(ssl_client_certkey_file);
+    octstr_destroy(ssl_server_cert_file);
+    octstr_destroy(ssl_server_key_file);
 #endif /* HAVE_LIBSSL */
 
     /*
@@ -1891,6 +1910,10 @@ static void init_smsbox(Cfg *cfg)
     cfg_get_integer(&sendsms_port, grp, octstr_imm("sendsms-port"));
     cfg_get_integer(&sms_max_length, grp, octstr_imm("sms-length"));
 
+#ifdef HAVE_LIBSSL
+    cfg_get_bool(&ssl, grp, octstr_imm("sendsms-port-ssl"));
+#endif /* HAVE_LIBSSL */
+
     global_sender = cfg_get(grp, octstr_imm("global-sender"));
     accepted_chars = cfg_get(grp, octstr_imm("sendsms-chars"));
     logfile = cfg_get(grp, octstr_imm("log-file"));
@@ -1917,7 +1940,7 @@ static void init_smsbox(Cfg *cfg)
     }
 
     if (sendsms_port > 0) {
-	if (http_open_port(sendsms_port) == -1) {
+	if (http_open_port(sendsms_port, ssl) == -1) {
 	    if (only_try_http)
 		error(0, "Failed to open HTTP socket, ignoring it");
 	    else

@@ -257,7 +257,7 @@ static Boxc *boxc_create(int fd, Octstr *ip)
     boxc = gw_malloc(sizeof(Boxc));
     boxc->is_wap = 0;
     boxc->load = 0;
-    boxc->conn = conn_wrap_fd(fd);
+    boxc->conn = conn_wrap_fd(fd, 0);
     boxc->id = boxid++;		/* XXX  MUTEX! fix later... */
     boxc->client_ip = ip;
     boxc->alive = 1;

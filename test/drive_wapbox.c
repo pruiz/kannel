@@ -155,9 +155,10 @@ static long http_thread_id;
 static int start_http_thread(void) {
 	unsigned short port;
 	int *port_copy;
+    int ssl = 0;   /* indicate if SSL-enabled server should be used */
 
 	for (port = 40000; port < 41000; port += 13) {
-		if (http_open_port(port) != -1)
+		if (http_open_port(port, ssl) != -1)
 		    break;
 	}
 	if (port == 41000)
@@ -185,7 +186,7 @@ static Connection *start_wapbox(void) {
 
 	close(wap_socket);
 
-	return conn_wrap_fd(wapbox);
+	return conn_wrap_fd(wapbox, 0);
 }
 
 static void initialize_clients(void) {

@@ -3,6 +3,12 @@
  * This file implements the interface defined in conn.h.
  *
  * Richard Braakman
+ *
+ * SSL client implementation contributed by
+ * Jarkko Kovala <jarkko.kovala@iki.fi>
+ *
+ * SSL server implementation contributed by
+ * Stipe Tolj <tolj@wapme-systems.de> for Wapme Systems AG
  */
 
 /* TODO: unlocked_close() on error */
@@ -22,6 +28,9 @@
 #include <openssl/ssl.h>
 
 SSL_CTX *global_ssl_context;
+SSL_CTX *global_server_ssl_context;
+X509 *ssl_public_cert;
+RSA *ssl_private_key;
 #endif /* HAVE_LIBSSL */
 
 /*
@@ -386,13 +395,14 @@ Connection *conn_open_tcp_with_port(Octstr *host, int port, int our_port,
 					       NULL : octstr_get_cstr(our_host));
     if (sockfd < 0)
 	return NULL;
-    return conn_wrap_fd(sockfd);
+    return conn_wrap_fd(sockfd, 0);
 }
 
 
-Connection *conn_wrap_fd(int fd)
+Connection *conn_wrap_fd(int fd, int ssl)
 {
     Connection *conn;
+    unsigned long err;
 
     if (socket_set_blocking(fd, 0) < 0)
         return NULL;
@@ -418,12 +428,39 @@ Connection *conn_wrap_fd(int fd)
     conn->listening_pollin = 0;
     conn->listening_pollout = 0;
 #ifdef HAVE_LIBSSL
-    conn->ssl = NULL;
-    conn->peer_certificate = NULL;
-    conn->ssl_mutex = NULL;
+    /*
+     * do all the SSL magic for this connection
+     */
+    if (ssl) {
+        conn->ssl = SSL_new(global_server_ssl_context);
+        conn->peer_certificate = NULL;
+
+        SSL_set_fd(conn->ssl, conn->fd);
+        SSL_set_verify(conn->ssl, 0, NULL);
+        BIO_set_nbio(SSL_get_rbio(conn->ssl), 0);
+        BIO_set_nbio(SSL_get_wbio(conn->ssl), 0);
+
+        conn->ssl_mutex = mutex_create();
+        if (!SSL_accept(conn->ssl)) {
+	        if ((err = ERR_get_error())) {
+                error(0, "SSL: Access failed: %.256s", ERR_error_string(err, NULL));
+    	    }
+            error(0, "SSL: disconnected.");
+            SSL_free(conn->ssl);
+            goto error;
+        }
+    } else {
+        conn->ssl = NULL;
+        conn->peer_certificate = NULL;
+        conn->ssl_mutex = NULL;
+    }
 #endif /* HAVE_LIBSSL */
 
     return conn;
+
+error:
+    conn_destroy(conn);
+    return NULL;
 }
 
 void conn_destroy(Connection *conn)
@@ -989,7 +1026,20 @@ X509 *conn_get_peer_certificate(Connection *conn)
     return(conn->peer_certificate);
 }
 
+RSA *tmp_rsa_callback(SSL *ssl, int export, int key_len) 
+{
+    static RSA *rsa = NULL; 
+    debug("gwlib.http", 0, "SSL: Generating new RSA key (export=%d, keylen=%d)", export, key_len);
+    if (export) {
+	   rsa = RSA_generate_key(key_len, RSA_F4, NULL, NULL);
+    } else {
+	   debug("gwlib.http", 0, "SSL: Export not set");
+    }
+    return rsa;
+}
+
 Mutex **ssl_static_locks = NULL;
+Mutex **ssl_server_static_locks = NULL;
 
 void openssl_locking_function(int mode, int n, const char *file, int line) 
 {
@@ -1014,6 +1064,28 @@ void conn_init_ssl(void)
     SSL_library_init();
     SSL_load_error_strings();
     global_ssl_context = SSL_CTX_new(SSLv23_method());
+    debug("gwlib.http", 0, "HTTP: SSL library for client side initialized");
+}
+
+void server_ssl_init(void) 
+{
+    int c, maxlocks = CRYPTO_num_locks();
+    
+    gw_assert(ssl_server_static_locks == NULL);
+    ssl_server_static_locks = gw_malloc(sizeof(Mutex *) * maxlocks);
+    for (c=0;c<maxlocks;c++) 
+         ssl_server_static_locks[c] = mutex_create();
+
+    CRYPTO_set_locking_callback(openssl_locking_function);
+    CRYPTO_set_id_callback(gwthread_self);
+
+    SSLeay_add_ssl_algorithms();
+    SSL_load_error_strings();
+    global_server_ssl_context = SSL_CTX_new(SSLv23_server_method());
+    if (!SSL_CTX_set_default_verify_paths(global_server_ssl_context)) {
+	   panic(0, "can not set default path for server");
+    }
+    debug("gwlib.http", 0, "HTTP: SSL library for server side initialized");
 }
 
 void conn_shutdown_ssl(void)
@@ -1027,7 +1099,18 @@ void conn_shutdown_ssl(void)
     gw_free(ssl_static_locks);
 }
 
-void use_global_certkey_file(Octstr *certkeyfile) {
+void server_shutdown_ssl(void)
+{
+    int c, maxlocks = CRYPTO_num_locks();
+
+    SSL_CTX_free(global_server_ssl_context);
+
+    for (c=0;c<maxlocks;c++) 
+        mutex_destroy(ssl_server_static_locks[c]);
+    gw_free(ssl_server_static_locks);
+}
+
+void use_global_client_certkey_file(Octstr *certkeyfile) 
     SSL_CTX_use_certificate_file(global_ssl_context, 
                                  octstr_get_cstr(certkeyfile), 
                                  SSL_FILETYPE_PEM);
@@ -1035,10 +1118,29 @@ void use_global_certkey_file(Octstr *certkeyfile) {
                                 octstr_get_cstr(certkeyfile),
                                 SSL_FILETYPE_PEM);
     if (SSL_CTX_check_private_key(global_ssl_context) != 1)
-        panic(0, "reading global certificate file %s, the certificate \
+        panic(0, "reading global client certificate file %s, the certificate \
 isn't consistent with the private key (or failed reading the file)", 
               octstr_get_cstr(certkeyfile));
     info(0, "Using global SSL certificate and key from file %s",
          octstr_get_cstr(certkeyfile));
+}
+
+void use_global_server_certkey_file(Octstr *certfile, Octstr *keyfile) 
+{
+    SSL_CTX_use_certificate_file(global_server_ssl_context, 
+                                  octstr_get_cstr(certfile), 
+                                  SSL_FILETYPE_PEM);
+    SSL_CTX_use_PrivateKey_file(global_server_ssl_context,
+                                 octstr_get_cstr(keyfile),
+                                 SSL_FILETYPE_PEM);
+    if (SSL_CTX_check_private_key(global_server_ssl_context) != 1) {
+        error(0, "SSL: %s", ERR_error_string(ERR_get_error(), NULL));
+        panic(0, "reading global server certificate file %s, the certificate \
+                  isn't consistent with the private key in file %s \
+                  (or failed reading the file)", 
+                  octstr_get_cstr(certfile), octstr_get_cstr(keyfile));
+    }
+    info(0, "Using global server SSL certificate from file %s", octstr_get_cstr(certfile));
+    info(0, "Using global server SSL key from file %s", octstr_get_cstr(keyfile));
 }
 #endif /* HAVE_LIBSSL */

@@ -1041,7 +1041,7 @@ static void emi2_listener(void *arg)
 	    close(s);
 	    continue;
 	}
-	server = conn_wrap_fd(s);
+	server = conn_wrap_fd(s, 0);
 	if (server == NULL) {
 	    error(0, "emi2_listener: conn_wrap_fd failed on accept()ed fd");
 	    octstr_destroy(ip);

@@ -20,6 +20,7 @@
 
 SINGLE_GROUP(core,
     OCTSTR(admin-port)
+    OCTSTR(admin-port-ssl)
     OCTSTR(admin-password)
     OCTSTR(status-password)
     OCTSTR(admin-deny-ip)
@@ -43,7 +44,9 @@ SINGLE_GROUP(core,
     OCTSTR(http-proxy-exceptions)
     OCTSTR(http-proxy-username)
     OCTSTR(http-proxy-password)
-    OCTSTR(ssl-certkey-file)
+    OCTSTR(ssl-client-certkey-file)
+    OCTSTR(ssl-server-cert-file)
+    OCTSTR(ssl-server-key-file)
 )
 
 
@@ -83,6 +86,7 @@ SINGLE_GROUP(ppg,
 SINGLE_GROUP(smsbox,
     OCTSTR(bearerbox-host)
     OCTSTR(sendsms-port)
+    OCTSTR(sendsms-port-ssl)
     OCTSTR(sendsms-chars)
     OCTSTR(global-sender)
     OCTSTR(log-file)

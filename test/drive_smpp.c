@@ -383,7 +383,7 @@ static void accept_thread(void *arg)
     	if (start_time == (time_t) -1)
 	    time(&start_time);
 	gwthread_create(receive_smpp_thread, 
-			esme_create(conn_wrap_fd(new_fd)));
+			esme_create(conn_wrap_fd(new_fd, 0)));
 	if (smsbox_thread_id == -1)
 	    smsbox_thread_id = gwthread_create(smsbox_thread, NULL);
     }

@@ -70,8 +70,9 @@ Connection *conn_open_tcp_with_port(Octstr *host, int port, int our_port,
 /* Create a Connection structure around the given file descriptor.
  * The file descriptor must not be used for anything else after this;
  * it must always be accessed via the Connection operations.  This
- * operation cannot fail. */
-Connection *conn_wrap_fd(int fd);
+ * operation cannot fail. Second var indicates if the is a SSL enabled
+ * connection. */
+Connection *conn_wrap_fd(int fd, int ssl);
 
 /* Close and deallocate a Connection.  Log any errors reported by
  * the close operation. */
@@ -195,16 +196,31 @@ Octstr *conn_read_packet(Connection *conn, int startmark, int endmark);
  */
 X509 *get_peer_certificate(Connection *conn);
 
+/* Sets OpenSSL locking for callback within conn.c (client SSL) and 
+ * http.c (server SSL).
+ */
+void openssl_locking_function(int mode, int n, const char *file, int line);
+
 /* These must be called if SSL is used. Currently http.c calls 
- * conn_init_ssl from http_init and conn_shutdown_ssl from http_shutdown. 
+ * conn_init_ssl and server_init_ssl from http_init and 
+ * conn_shutdown_ssl and server_shutdown_ssl from http_shutdown. 
  */
 void conn_init_ssl(void);
 void conn_shutdown_ssl(void);
+void server_init_ssl(void);
+void server_shutdown_ssl(void);
 
 /* Specifies a global PEM-encoded certificate and a private key file 
- * to be used with SSL connections. conn_init_ssl() must be called 
- * first. This checks that the private key matches with the certificate
- * and will panic if it doesn't.
+ * to be used with SSL client connections (outgoing HTTP requests). 
+ * conn_init_ssl() must be called first. This checks that the private 
+ * key matches with the certificate and will panic if it doesn't.
  */
-void use_global_certkey_file(Octstr *certkeyfile);
+void use_global_client_certkey_file(Octstr *certkeyfile);
+
+/* Specifies a global PEM-encoded certificate and a private key file 
+ * to be used with SSL server connections (incoming HTTP requests). 
+ * conn_init_ssl() must be called first. This checks that the private 
+ * key matches with the certificate and will panic if it doesn't.
+ */
+void use_global_server_certkey_file(Octstr *certfile, Octstr *keyfile); 
 #endif /* HAVE_LIBSSL */
