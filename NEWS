@@ -1,36 +1,41 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.7.1
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.8
 
-This is a development release. We're trying to make this as stable as
-possible and when we reach that, we'll call the stable version 0.8.
+This is a fairly stable beta version. It is not completely stable, but
+good enough for at least light production use. Further stabilization
+requires fairly large changes and we wanted to release this version
+before we do those.
 
-Change summary from version 0.7:
+This is now the stable branch, meaning that if any serious bug fixes
+need to be made, we will make them (and only them) and release 0.8.1.
+Actual development of new features and other large changes happen in
+the development branch, 0.9.x.
 
-* Cleanups and bug fixes, mostly.
+Change summary from version 0.7.1:
 
-* Phone's IP address and Session ID are sent with HTTP requests.
+* Bearer box returns its version in the status report.
 
-* Changes to configuration files: some configuration variables have been
-renamed to make them more descriptive.
+* Fixes to SEMA SMSC protocol implementation, from Hao Shi.
 
-* Some alpha-level and mostly untested support for User Data Headers
-(UDH) in SMS messages.
+* Memory allocation checking can be selected with configure, instead of
+  editing gwmem.c.
 
-* There is now a getopt included for systems that don't have one.
+* Log file timestamps can be configured at compile time to be written in
+  the local time zone, instead of GMT.
 
-* Initial Debian packaging files included, though they're not usable to
-build a real Debian package yet.
+* Various code cleanups and minor fixes.
 
-* fakewap has a much more user friendly command line now.
+* Portability fixes:
 
-* Log files are much less cluttered by debugging output now, which is
-good for heavy production use.
+	- Mutexes now can't be locked twice by the same thread, even
+	  on platforms (Linux) where it is the default operation.
 
-* Bug fixes:
+	- Use B38400 (highest standard value) instead of B115200 
+	  (non-standard, but common) if the latter is not available.
 
-	- libxml 1.8.6 and 1.8.7 now both work
-	- many race conditions removed by better use of mutexes in 
-	  many places
-	- lots of memory leaks plugged
-	- various minor portability fixes
+	- No longer assumes a pthread_t is compatible with long
+	  (test_list program mainly).
+
+* A new HTTP implementation, alpha version, and not yet used, but included
+  for review.
 
 See ChangeLog for detailed information.
