@@ -265,35 +265,35 @@ static Octstr *extract_msgdata_part(Octstr *msgdata, Octstr *split_chars,
 
 
 static Octstr *extract_msgdata_part_by_coding(Msg *msg, Octstr *split_chars,
-											  int max_part_len)
+        int max_part_len)
 {
-	Octstr *temp = NULL;
-	int pos, esc_count;
+    Octstr *temp = NULL;
+    int pos, esc_count;
 
-	if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
+    if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
         /* nothing to do here, just call the original extract_msgdata_part */
-		return extract_msgdata_part(msg->sms.msgdata, split_chars, max_part_len);
-	}
+        return extract_msgdata_part(msg->sms.msgdata, split_chars, max_part_len);
+    }
 
-	/* 
+    /* 
      * else we need to do something special. I'll just get charset_gsm_truncate to
      * cut the string to the required length and then count real characters. 
      */
-	temp = octstr_duplicate(msg->sms.msgdata);
-	charset_latin1_to_gsm(temp);
-	charset_gsm_truncate(temp, max_part_len);
-	
-	pos = esc_count = 0;
+     temp = octstr_duplicate(msg->sms.msgdata);
+     charset_latin1_to_gsm(temp);
+     charset_gsm_truncate(temp, max_part_len);
 
-	while ((pos = octstr_search_char(temp, 27, pos)) != -1) {
-		++pos;
-    	++esc_count;
-	}
+     pos = esc_count = 0;
 
-	octstr_destroy(temp);
+     while ((pos = octstr_search_char(temp, 27, pos)) != -1) {
+        ++pos;
+         ++esc_count;
+     }
 
-	/* now just call the original extract_msgdata_part with the new length */
-	return extract_msgdata_part(msg->sms.msgdata, split_chars, max_part_len - esc_count);
+     octstr_destroy(temp);
+
+     /* now just call the original extract_msgdata_part with the new length */
+     return extract_msgdata_part(msg->sms.msgdata, split_chars, max_part_len - esc_count);
 }
 
 

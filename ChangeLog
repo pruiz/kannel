@@ -1,3 +1,6 @@
+2004-08-07 Alexander Malysh <olek2002 at hotmail.com>
+    * gw/sms.c: fixed whitespaces.
+
 2004-08-05 Alexander Malysh <olek2002 at hotmail.com>
     * gw/gw/bb_smscconn.c: applied patch that that make it possible to
       start/stop/restart of all smscconn's that have equals smsc-id's
