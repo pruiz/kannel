@@ -15,6 +15,8 @@ Change summary from version 0.8:
 
 * New bearerbox, which is easier to expand and edit
 
+* Connectionless mode for WAP browsing
+
 * Phone-as-SMSC support, Nokia PremiCell, Siemens M20, Wavecom
 
 * CIMD2 SMS center protocol. UDH works.
