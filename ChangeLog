@@ -1,3 +1,15 @@
+2000-09-03  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/wml_compiler.c: Removed unnecessary call to gw_assert:
+	list_create is defined as always returning non-NULL, so it's not
+	necessary to check it. (Or if we do, we should check it everywhere.)
+
+	* gwlib/list.c: Removed unused variable from lock(). Also
+	re-did the change to list_len in my own coding style, just to
+	be pedantic.
+
+	* I assume these were leftovers from Derry's debugging.
+
 2000-09-01  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
 	* gwlib/list.c: Added a test for NULL list to list_len since some

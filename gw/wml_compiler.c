@@ -1241,7 +1241,6 @@ static void string_table_build(xmlNodePtr node, wml_binary_t **wbxml)
   List *list = NULL;
 
   list = list_create();
-  gw_assert(list);
 
   string_table_collect_strings(node, list);
 

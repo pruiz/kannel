@@ -93,9 +93,9 @@ void list_destroy(List *list) {
 
 long list_len(List *list) {
 	long len;
-	if (!list) {
+
+	if (list == NULL)
 		return 0;
-	}
 	lock(list);
 	len = list->len;
 	unlock(list);
@@ -376,7 +376,6 @@ List *list_cat(List *list1, List *list2)
 /*************************************************************************/
 
 static void lock(List *list) {
-	void* a;
 	gw_assert(list != NULL);
 	mutex_lock(list->single_operation_lock);
 }
