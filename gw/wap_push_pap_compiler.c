@@ -389,7 +389,7 @@ static int parse_document(xmlDocPtr doc_p, WAPEvent **e)
         warning(0, "unable to handle any values in qos");
         return -2;
     } else {
-        info(0, "using defaults instead of anys");
+        debug("wap.push.pap.compiler", 0, "using defaults instead of anys");
     }
 
     wap_event_assert(*e);
@@ -1505,7 +1505,7 @@ static long parse_client_specifier(Octstr **address, long pos,
         goto parse_error;
     }
 
-    if (octstr_compare(type_value, octstr_imm("USER")) == 0) {
+    if (octstr_case_compare(type_value, octstr_imm("USER")) == 0) {
         *type_of_address = ADDR_USER;
         goto not_implemented;
     }
@@ -1514,17 +1514,17 @@ static long parse_client_specifier(Octstr **address, long pos,
         goto parse_error;
     }
 
-    if (octstr_compare(type_value, octstr_imm("PLMN")) == 0) {
+    if (octstr_case_compare(type_value, octstr_imm("PLMN")) == 0) {
         *type_of_address = ADDR_PLMN;
         pos = parse_global_phone_number(address, pos);
     }
 
-    else if (octstr_compare(type_value, octstr_imm("IPv4")) == 0) {
+    else if (octstr_case_compare(type_value, octstr_imm("IPv4")) == 0) {
         *type_of_address = ADDR_IPV4;
         pos = parse_ipv4(address, pos);
     }
 
-    else if (octstr_compare(type_value, octstr_imm("IPv6")) == 0) {
+    else if (octstr_case_compare(type_value, octstr_imm("IPv6")) == 0) {
         *type_of_address = ADDR_IPV6;
         pos = parse_ipv6(address, pos);
     }
@@ -1769,7 +1769,8 @@ static int wina_bearer_identifier(Octstr *type_value)
 
     i = 0;
     while (i < bearer_address_size) {
-        if (octstr_compare(type_value, octstr_imm(bearer_address[i])) == 0)
+        if (octstr_case_compare(type_value, 
+                octstr_imm(bearer_address[i])) == 0)
 	    return 1;
         ++i;
     }
@@ -1839,11 +1840,11 @@ static int qualifiers(Octstr *address, long pos, Octstr *type)
     i = pos;
     c = 'E';
 
-    if (octstr_compare(type, octstr_imm("PLMN")) == 0)
+    if (octstr_case_compare(type, octstr_imm("PLMN")) == 0)
         term = '+';
-    else if (octstr_compare(type, octstr_imm("IPv4")) == 0)
+    else if (octstr_case_compare(type, octstr_imm("IPv4")) == 0)
         term = '.';
-    else if (octstr_compare(type, octstr_imm("IPv6")) == 0)
+    else if (octstr_case_compare(type, octstr_imm("IPv6")) == 0)
         term = ':';
     else
         term = 'N';
