@@ -374,7 +374,7 @@ static int parse_element(xmlNodePtr node, WAPEvent **e)
 {
     Octstr *name;
     xmlAttrPtr attribute;
-    long i;
+    size_t i;
     int ret;
 
     name = octstr_create(node->name);
@@ -430,7 +430,7 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
                            WAPEvent **e)
 {
     Octstr *attr_name, *value, *nameos;
-    long i;
+    size_t i;
     int ret;
 
     nameos = octstr_imm("erroneous");
@@ -685,7 +685,7 @@ static void wap_event_accept_or_create(Octstr *element_name, WAPEvent **e)
         *e = wap_event_create(Progress_Note);
     } else if (octstr_compare(element_name, 
             octstr_imm("badmessage-response")) == 0 && *e == NULL) {
-      *e = wap_event_create(Bad_Message_Response);
+        *e = wap_event_create(Bad_Message_Response);
     } 
 }
 
@@ -701,8 +701,8 @@ static int return_flag(Octstr *ros)
 /*
  * Validates non-enumeration attributes and stores their value to a newly
  * created wap event e. (Even when attribute value parsing was not success-
- * full.) We do not accept NULL or empty attributes (if an attribute is
- * implied, just drop it from the document)
+ * full.) We do not accept NULL or empty attributes (if this kind of an 
+ * attribute is implied, we just drop it from the tokenised document).
  * Returns 0, when success,
  *        -1, when a non-implemented feature requested.
  *        -2, when an error
@@ -783,8 +783,8 @@ static int set_attribute_value(Octstr *element_name, Octstr *attr_value,
 static int parse_code(Octstr *attr_value)
 {
     long attr_as_number,
-         len, 
-         i;
+         len;
+    size_t i;
     Octstr *ros;
 
     for (i = 0; i < NUM_CODES; i++) {
@@ -819,7 +819,7 @@ static int parse_code(Octstr *attr_value)
 
 static Octstr *parse_bearer(Octstr *attr_value)
 {
-    long i;
+    size_t i;
     Octstr *ros;
 
     for (i = 0; i < NUM_BEARER_TYPES; i++) {
@@ -834,7 +834,7 @@ static Octstr *parse_bearer(Octstr *attr_value)
 
 static Octstr *parse_network(Octstr *attr_value)
 {
-    long i;
+    size_t i;
     Octstr *ros;
 
     for (i = 0; i < NUM_NETWORK_TYPES; i++) {
@@ -1067,8 +1067,8 @@ parse_error:
 
 static long parse_constant(const char *field_name, Octstr **address, long pos)
 {
-    long i;    
-    size_t size;
+    size_t i,    
+           size;
 
     size = strlen(field_name);
     i = 0;
@@ -1153,6 +1153,10 @@ static long parse_ext_qualifiers(Octstr **address, long pos,
     return pos;
 }
 
+/*
+ * According to ppg, chapter 7.1, global phone number starts with +. However,
+ * all numbers do not conform this standard. So we must accept one without a +.
+ */
 static long parse_global_phone_number(Octstr **address, long pos)
 {
     unsigned char c;
@@ -1163,6 +1167,9 @@ static long parse_global_phone_number(Octstr **address, long pos)
         else
 	     --pos;
     }
+
+    if (pos == 0)
+        return -2;
 
     if (pos > 0)
         --pos;
@@ -1230,7 +1237,7 @@ static size_t bearer_address_size = sizeof(bearer_address) /
 
 static int wina_bearer_identifier(Octstr *type_value)
 {
-    long i;
+    size_t i;
 
     i = 0;
     while (i < bearer_address_size) {

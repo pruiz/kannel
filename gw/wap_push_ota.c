@@ -284,12 +284,28 @@ static void make_unit_push_request(WAPEvent *e)
         wap_addr_tuple_duplicate(e->u.Po_Unit_Push_Req.addr_tuple);
     wsp_event->u.S_Unit_Push_Req.push_id = e->u.Po_Unit_Push_Req.push_id;
     wsp_event->u.S_Unit_Push_Req.push_headers = push_headers;
+    if (e->u.Po_Unit_Push_Req.password)
+        wsp_event->u.S_Unit_Push_Req.password = 
+            octstr_duplicate(e->u.Po_Unit_Push_Req.password);
+    if (e->u.Po_Unit_Push_Req.username)
+        wsp_event->u.S_Unit_Push_Req.username = 
+           octstr_duplicate(e->u.Po_Unit_Push_Req.username);
+
+    wsp_event->u.S_Unit_Push_Req.network_required = 
+        e->u.Po_Unit_Push_Req.network_required;
+    wsp_event->u.S_Unit_Push_Req.bearer_required =
+        e->u.Po_Unit_Push_Req.bearer_required;
+    
+    if (e->u.Po_Unit_Push_Req.network_required)
+        wsp_event->u.S_Unit_Push_Req.network = 
+	    octstr_duplicate(e->u.Po_Unit_Push_Req.network);
+    if (e->u.Po_Unit_Push_Req.bearer_required)
+        wsp_event->u.S_Unit_Push_Req.bearer =
+	  octstr_duplicate(e->u.Po_Unit_Push_Req.bearer);
 
     if (e->u.Po_Unit_Push_Req.push_body != NULL)
         wsp_event->u.S_Unit_Push_Req.push_body =
 	    octstr_duplicate(e->u.Po_Unit_Push_Req.push_body);
-    else
-        wsp_event->u.S_Unit_Push_Req.push_body = NULL;
 
     dispatch_to_wsp_unit(wsp_event);
     debug("wap.push.ota", 0, "OTA: made connectionless session service"

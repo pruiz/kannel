@@ -28,7 +28,7 @@ running=yes
 while [ $running = yes ]
 do
     sleep 1
-    if grep "Got message $times" check_httpsmsc_kannel_fake.log >/dev/null
+    if grep -v "fakesmsc: terminating" check_httpsmsc_kannel_fake.log >/dev/null
     then
     	running=no
     fi

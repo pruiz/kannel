@@ -13,7 +13,8 @@
 #include "gwlib/http.h"
 
 static volatile sig_atomic_t run = 1;
-static int port;
+static int port,
+           verbose;
 
 static void client_thread(void *arg) 
 {
@@ -41,11 +42,15 @@ static void client_thread(void *arg)
 	if (client == NULL)
 	    break;
 
-	debug("test.http", 0, "Request for <%s>", octstr_get_cstr(url));
+	debug("test.http", 0, "Request for <%s> from <%s>", 
+              octstr_get_cstr(url), octstr_get_cstr(ip));
+        if (verbose)
+            debug("test.http", 0, "Cgivars were");
 	while ((v = list_extract_first(cgivars)) != NULL) {
-	    debug("test.http", 0, "Var: <%s>=<%s>",
-		  octstr_get_cstr(v->name), 
-		  octstr_get_cstr(v->value));
+	    if (verbose) {
+	        octstr_dump(v->name, 0);
+	        octstr_dump(v->value, 0);
+            }
 	    octstr_destroy(v->name);
 	    octstr_destroy(v->value);
 	    gw_free(v);
@@ -54,6 +59,15 @@ static void client_thread(void *arg)
     
     	if (octstr_compare(url, octstr_imm("/quit")) == 0)
 	    run = 0;
+        
+        if (verbose) {
+            debug("test.http", 0, "request headers were");
+            http_header_dump(headers);
+            if (body != NULL) {
+               debug("test.http", 0, "request body was");
+               octstr_dump(body, 0);
+            }
+        }
 
 	octstr_destroy(ip);
 	octstr_destroy(url);
@@ -70,7 +84,7 @@ static void client_thread(void *arg)
 }
 
 static void help(void) {
-    info(0, "Usage: test_http_server [-p port]\n");
+    info(0, "Usage: test_http_server [-v loglevel][-l logfile][-f file][-h][-q][-p port]\n");
 }
 
 static void sigterm(int signo) {
@@ -95,13 +109,18 @@ int main(int argc, char **argv) {
 
     port = 8080;
     use_threads = 0;
+    verbose = 1;
     filename = NULL;
     log_filename = NULL;
 
-    while ((opt = getopt(argc, argv, "hv:p:tf:l:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hqv:p:tf:l:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
+	    break;
+
+        case 'q':
+	    verbose = 0;
 	    break;
 
 	case 'h':

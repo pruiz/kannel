@@ -114,6 +114,7 @@ struct PPGSessionMachine {
 
 struct PPGPushMachine {
     #define OCTSTR(name) Octstr *name;
+    #define OPTIONAL_OCTSTR(name) Octstr *name;
     #define INTEGER(name) long name;
     #define ADDRTUPLE(name) WAPAddrTuple *name;
     #define HTTPHEADER(name) List *name;

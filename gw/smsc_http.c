@@ -81,6 +81,8 @@ typedef struct conndata {
     long	open_sends;
     Octstr	*username;	/* if needed */
     Octstr	*password;	/* as said */
+    int         no_sender;      /* ditto */
+    int         no_coding;      /* this, too */
 
     /* callback functions set by HTTP-SMSC type */
 
@@ -216,19 +218,20 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
     Octstr *url;
     List *headers;
 
-    url = octstr_format("%S/cgi-bin/sendsms?"
-			"user=%E&pass=%E&to=%E&from=%E&text=%E",
+    url = octstr_format("%S?"
+			"user=%E&pass=%E&to=%E&text=%E",
 			conndata->send_url,
 			conndata->username, conndata->password,
-			sms->sms.receiver, sms->sms.sender,
-			sms->sms.msgdata);
+			sms->sms.receiver, sms->sms.msgdata);
 
     if (octstr_len(sms->sms.udhdata))
 	octstr_format_append(url, "&udh=%E", sms->sms.udhdata);
-    
+
+    if (!conndata->no_sender)
+        octstr_format_append(url, "&from=%E", sms->sms.sender);
     if (sms->sms.mclass)
 	octstr_format_append(url, "&mclass=%d", sms->sms.mclass);
-    if (sms->sms.coding)
+    if (sms->sms.coding && !conndata->no_coding)
 	octstr_format_append(url, "&coding=%d", sms->sms.coding);
     if (sms->sms.mwi)
 	octstr_format_append(url, "&mwi=%d", sms->sms.mwi);
@@ -409,6 +412,8 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     conndata->send_url = cfg_get(cfg, octstr_imm("send-url"));
     conndata->username = cfg_get(cfg, octstr_imm("smsc-username"));
     conndata->password = cfg_get(cfg, octstr_imm("smsc-password"));
+    cfg_get_bool(&conndata->no_sender, cfg, octstr_imm("no-sender"));
+    cfg_get_bool(&conndata->no_coding, cfg, octstr_imm("no-coding"));
 
     if (conndata->send_url == NULL)
 	panic(0, "Sending not allowed");
@@ -472,6 +477,12 @@ error:
     octstr_destroy(type);
     return -1;
 }
+
+
+
+
+
+
 
 
 

@@ -1,5 +1,5 @@
 /*
- * Very simple push initiator for testing push proxy gateway
+ * A very simple push initiator for testing a push proxy gateway
  *
  * Read pap control content and push content from files, pack them into a PAP
  * protocol MIME message and invoke push services specified by an url. Use a 
@@ -24,7 +24,9 @@
 static long max_pushes = 1;
 static int verbose = 1,
            use_hardcoded = 0,
-           num_urls = 0;
+           num_urls = 0,
+           wait = 0;
+static double wait_seconds = 0.0;
 static Counter *counter = NULL;
 static char **push_data = NULL;
 static char *boundary = NULL;
@@ -229,18 +231,23 @@ static void start_push(HTTPCaller *caller, long i)
 static int receive_push_reply(HTTPCaller *caller)
 {
     void *id;
-    int ret;
+    int http_status;
     List *reply_headers;
     Octstr *final_url,
            *reply_body,
            *os;
     WAPEvent *e;
     
-    id = http_receive_result(caller, &ret, &final_url, &reply_headers, 
+    id = http_receive_result(caller, &http_status, &final_url, &reply_headers, 
                              &reply_body);
 
-    if (id == NULL || ret == -1 || final_url == NULL) {
-        error(0, "push failed");
+    if (id == NULL || http_status == -1 || final_url == NULL) {
+        error(0, "push failed, no reason found");
+        goto push_failed;
+    }
+
+    if (http_status == 404) {
+        error(0, "push failed, service not found");
         goto push_failed;
     }
         
@@ -262,7 +269,7 @@ static int receive_push_reply(HTTPCaller *caller)
     }
 
     e = NULL;
-    if ((ret = pap_compile(reply_body, &e)) < 0) {
+    if (pap_compile(reply_body, &e) < 0) {
         warning(0, "TEST_PPG: receive_push_reply: cannot compile pap message");
         goto parse_error;
     }
@@ -320,9 +327,8 @@ static void push_thread(void *arg)
             if (i >= max_pushes)
 	        goto receive_rest;
         start_push(caller, i);
-#if 0
-        gwthread_sleep(0.1);
-#endif
+        if (wait)
+            gwthread_sleep(wait_seconds);
         ++in_queue;
         }
 
@@ -378,6 +384,8 @@ static void help(void)
     info(0, "Default: print it");
     info(0, "-r number");
     info(0, "    Make `number' requests. Default one request");
+    info(0, "-i seconds");
+    info(0, "    Wait 'seconds' seconds between pushes. Default: do not wait");
     info(0, "-H");
     info(0, "Use hardcoded MIME message, containing a pap control document");
     info(0, "Default: read components from files");
@@ -398,7 +406,7 @@ int main(int argc, char **argv)
     gwlib_init();
     num_threads = 1;
 
-    while ((opt = getopt(argc, argv, "Hhv:qr:t:c:a:")) != EOF) {
+    while ((opt = getopt(argc, argv, "Hhv:qr:t:c:a:i:")) != EOF) {
         switch(opt) {
 	    case 'v':
 	        log_set_output_level(atoi(optarg));
@@ -410,7 +418,12 @@ int main(int argc, char **argv)
 
 	    case 'r':
 	        max_pushes = atoi(optarg);      
-	    break;  
+	    break; 
+            
+	    case 'i': 
+	        wait = 1;
+                wait_seconds = atof(optarg);
+	    break;
 
             case 't': 
 	        num_threads = atoi(optarg);
@@ -482,9 +495,9 @@ int main(int argc, char **argv)
         panic(0, "No ppg address specified, stopping");
 
     if (!use_hardcoded) {
-        if (push_data[1] == 0)
+        if (push_data[1] == NULL)
             panic(0, "No push content file, stopping");
-        if (push_data[2] == 0)
+        if (push_data[2] == NULL)
             panic(0, "No pap control message, stopping");
     }
 

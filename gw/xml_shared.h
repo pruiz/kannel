@@ -39,6 +39,8 @@ int only_blanks(const char *text);
  */
 int parse_charset(Octstr *charset);
 
+List *wml_charsets(void);
+
 /*
  * Macro for creating an octet string from a node content. This has two 
  * versions for different libxml node content implementation methods. 

@@ -190,7 +190,10 @@ static void main_thread(void *arg) {
 	}
 }
 
-
+/*
+ * We do not set TUnitData.ind's SMS-specific fields here, because we do not
+ * support sending results to the phone over SMS.
+ */
 static WAPEvent *pack_into_result_datagram(WAPEvent *event) {
 	WAPEvent *datagram;
 	struct S_Unit_MethodResult_Req *p;
@@ -223,7 +226,7 @@ static WAPEvent *pack_into_result_datagram(WAPEvent *event) {
 
 /*
  * According to WSP table 12, p. 63, push id and transaction id are stored 
- * into same field.  
+ * into same field. T-UnitData.ind is different for IP and SMS bearer.
  */
 static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
         WAPEvent *datagram;
@@ -234,21 +237,39 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
         gw_assert(event->type == S_Unit_Push_Req);
         pdu = wsp_pdu_create(Push);
 	pdu->u.Push.headers = wsp_headers_pack(
-               event->u.S_Unit_Push_Req.push_headers, 1);
+            event->u.S_Unit_Push_Req.push_headers, 1);
 	pdu->u.Push.data = octstr_duplicate(
-               event->u.S_Unit_Push_Req.push_body);
+            event->u.S_Unit_Push_Req.push_body);
         ospdu = wsp_pdu_pack(pdu);
 	wsp_pdu_destroy(pdu);
 	if (ospdu == NULL)
-	  return NULL;
+	    return NULL;
 
         push_id = event->u.S_Unit_Push_Req.push_id;
 	octstr_insert_data(ospdu, 0, &push_id, 1);
 
         debug("wap.wsp.unit", 0, "WSP_UNIT: Connectionless push accepted");
         datagram = wap_event_create(T_DUnitdata_Req);
+
         datagram->u.T_DUnitdata_Req.addr_tuple =
-		wap_addr_tuple_duplicate(event->u.S_Unit_Push_Req.addr_tuple);
+	    wap_addr_tuple_duplicate(event->u.S_Unit_Push_Req.addr_tuple);
+        datagram->u.T_DUnitdata_Req.network_required = 
+	    event->u.S_Unit_Push_Req.network_required;
+        datagram->u.T_DUnitdata_Req.bearer_required =
+	    event->u.S_Unit_Push_Req.bearer_required;
+
+        if (event->u.S_Unit_Push_Req.bearer_required && 
+                event->u.S_Unit_Push_Req.network_required) {
+            datagram->u.T_DUnitdata_Req.bearer = 
+  	        octstr_duplicate(event->u.S_Unit_Push_Req.bearer);
+            datagram->u.T_DUnitdata_Req.network =
+	        octstr_duplicate(event->u.S_Unit_Push_Req.network); 
+            datagram->u.T_DUnitdata_Req.password =
+	        octstr_duplicate(event->u.S_Unit_Push_Req.password);
+            datagram->u.T_DUnitdata_Req.username =
+	        octstr_duplicate(event->u.S_Unit_Push_Req.username);
+        }
+
 	datagram->u.T_DUnitdata_Req.user_data = ospdu;
 
         return datagram;

@@ -83,6 +83,42 @@ static long key_to_index(Dict *dict, Octstr *key)
     return octstr_hash_key(key) % dict->size;
 }
 
+static int handle_null_value(Dict *dict, Octstr *key, void *value)
+{
+    if (value == NULL) {
+        value = dict_remove(dict, key);
+	if (dict->destroy_value != NULL)
+	    dict->destroy_value(value);
+        return 1;
+    }
+
+    return 0;
+}
+
+static int dict_put_true(Dict *dict, Octstr *key, void *value)
+{
+    Item *p;
+    long i;
+    int item_unique;
+
+    item_unique = 0;
+    lock(dict);
+    i = key_to_index(dict, key);
+    if (dict->tab[i] == NULL) {
+	dict->tab[i] = list_create();
+	p = NULL;
+    } else
+	p = list_search(dict->tab[i], key, item_has_key);
+    if (p == NULL) {
+    	p = item_create(key, value);
+	list_append(dict->tab[i], p);
+        dict->key_count++;
+        item_unique = 1;
+    } else
+        item_unique = 0;
+
+    return item_unique;
+}
 
 /*
  * And finally, the public functions.
@@ -165,6 +201,20 @@ void dict_put(Dict *dict, Octstr *key, void *value)
     unlock(dict);
 }
 
+int dict_put_once(Dict *dict, Octstr *key, void *value)
+{
+    int ret;
+
+    ret = 1;
+    if (handle_null_value(dict, key, dict->tab))
+        return 1;
+    if (dict_put_true(dict, key, dict->tab))
+        ret = 1;
+    else 
+        ret = 0;
+    unlock(dict);
+    return ret;
+}
 
 void *dict_get(Dict *dict, Octstr *key)
 {
@@ -248,3 +298,10 @@ List *dict_keys(Dict *dict)
     
     return list;
 }
+
+
+
+
+
+
+

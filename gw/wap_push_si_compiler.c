@@ -249,7 +249,7 @@ static void si_binary_output(Octstr *os, si_binary_t *sibxml)
 static int parse_element(xmlNodePtr node, si_binary_t **sibxml)
 {
     Octstr *name;
-    long i;
+    size_t i;
     unsigned char status_bits,
              si_hex;
     int add_end_tag;
@@ -360,8 +360,8 @@ static int parse_attribute(xmlAttrPtr attr, si_binary_t **sibxml)
            *valueos,
            *tokenized_date;
     unsigned char si_hex;
-    long i;
-    size_t value_len;
+    size_t i,
+           value_len;
 
     name = octstr_create(attr->name);
 
@@ -486,9 +486,9 @@ static int date(int hex)
 static Octstr *tokenize_date(Octstr *date)
 {
     Octstr *date_token;
-    long i,
-         j;
-    size_t date_len;
+    long j;
+    size_t i,
+           date_len;
     unsigned char c;
 
     if (!parse_date(date)) {
@@ -550,8 +550,8 @@ static void flag_date_length(Octstr **token)
  */
 static void parse_url_value(Octstr *value, si_binary_t **sibxml)
 {
-    long i,
-         pos;
+    size_t i;
+    long pos;
     Octstr *urlos,
            *first_part,
 	   *last_part;

@@ -74,6 +74,13 @@ WAPEVENT(SEC_Unitdata_Req, "SEC-Unidata.req",
 WAPEVENT(T_DUnitdata_Req, "T-DUnitdata.req",
 	ADDRTUPLE(addr_tuple)
 	OCTSTR(user_data)
+
+        INTEGER(bearer_required)
+        OPTIONAL_OCTSTR(bearer)
+        INTEGER(network_required)
+        OPTIONAL_OCTSTR(network)
+        OPTIONAL_OCTSTR(password)
+        OPTIONAL_OCTSTR(username)
 	)
 
 WAPEVENT(T_DUnitdata_Ind, "T-DUnitdata.ind",
@@ -514,6 +521,13 @@ WAPEVENT(S_Unit_Push_Req, "S-Unit-Push.req",
 	INTEGER(push_id)
 	HTTPHEADER(push_headers)
 	OPTIONAL_OCTSTR(push_body)
+
+        OPTIONAL_OCTSTR(password)
+        OPTIONAL_OCTSTR(username)
+        INTEGER(bearer_required)
+        OPTIONAL_OCTSTR(bearer)
+        INTEGER(network_required)
+        OPTIONAL_OCTSTR(network)
 	)
 
 WAPEVENT(S_Unit_Push_Ind, "S-Unit-Push.ind",
@@ -610,6 +624,13 @@ WAPEVENT(Po_Unit_Push_Req, "Po-Unit-Push.req",
          INTEGER(trusted)
          INTEGER(last)
          OPTIONAL_OCTSTR(push_body)
+
+         OPTIONAL_OCTSTR(password)
+         OPTIONAL_OCTSTR(username)
+         INTEGER(bearer_required)
+         OPTIONAL_OCTSTR(bearer)
+         INTEGER(network_required)
+         OPTIONAL_OCTSTR(network)
         )
 
 WAPEVENT(Po_PushAbort_Req, "Po-PushAbort.req",
@@ -656,6 +677,8 @@ WAPEVENT(Push_Message, "push-message",
          HTTPHEADER(push_headers)
          OPTIONAL_OCTSTR(push_data)
          CAPABILITIES(pi_capabilities)
+         OPTIONAL_OCTSTR(password)
+         OPTIONAL_OCTSTR(username)
 )
 
 /*

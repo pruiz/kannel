@@ -2,7 +2,7 @@
  * Implementation of a gateway oriented mime parser for pap module. This 
  * parser follows proxy rules stated in Push Message, chapter 7.
  *
- * By  Aarno Syvänen for Wiral Ltd
+ * By Aarno Syvänen for Wiral Ltd
  */
 
 #include "wap_push_pap_mime.h"
@@ -36,6 +36,7 @@ static void octstr_split_by_pos(Octstr **mime_content, Octstr **pap_content,
                                 long boundary_pos);
 static Octstr *make_close_delimiter(Octstr *boundary);
 static Octstr *make_part_delimiter(Octstr *boundary);
+static Octstr *make_start_delimiter(Octstr *dash_boundary);
 static int pass_data_headers(Octstr **body_part, List **data_headers);
 static int check_data_content_type_header(Octstr **body_part, 
                                           List **data_headers);
@@ -151,6 +152,10 @@ static int parse_tail(Octstr **multipart, Octstr *delimiter,
     return 0;
 }
 
+/*
+ * Boundary misses crlf here. This is intentional: Kannel header parsing pro-
+ * cess drops this terminator.
+ */
 static int parse_preamble(Octstr **mime_content, Octstr *boundary)
 {
     long boundary_pos,
@@ -158,7 +163,7 @@ static int parse_preamble(Octstr **mime_content, Octstr *boundary)
     Octstr *dash_boundary;
 
     boundary_pos = next_part_pos = -1;
-    dash_boundary = make_part_delimiter(boundary);
+    dash_boundary = make_start_delimiter(boundary);
     
     if ((boundary_pos = octstr_search(*mime_content, dash_boundary, 0)) < 0)
         goto error;
@@ -334,13 +339,23 @@ static Octstr *make_part_delimiter(Octstr *dash_boundary)
     Octstr *part_delimiter;
 
     part_delimiter = octstr_create("");
-
     octstr_format_append(part_delimiter, "%c", '\r');
     octstr_format_append(part_delimiter, "%c", '\n');
     octstr_format_append(part_delimiter, "%s", "--");
     octstr_append(part_delimiter, dash_boundary);
     
     return part_delimiter;
+}
+
+static Octstr *make_start_delimiter(Octstr *dash_boundary)
+{
+    Octstr *start_delimiter;
+
+    start_delimiter = octstr_create("");
+    octstr_format_append(start_delimiter, "%s", "--");
+    octstr_append(start_delimiter, dash_boundary);
+
+    return start_delimiter;
 }
 
 /*
@@ -369,9 +384,10 @@ static int check_control_content_type_header(Octstr **body_part)
 {
     long content_pos;
 
-    if ((content_pos = octstr_search(*body_part, 
+    if ((content_pos = octstr_case_search(*body_part, 
             octstr_imm("Content-Type:"), 0)) < 0 || 
-            octstr_search(*body_part, octstr_imm("application/xml"), 0) < 0) {
+            octstr_case_search(*body_part, 
+                octstr_imm("application/xml"), 0) < 0) {
         return 0;
     }
 
@@ -405,7 +421,8 @@ static int drop_optional_header(Octstr **body_part, char *name)
     long content_pos;
          
     content_pos = -1;
-    if ((content_pos = octstr_search(*body_part, octstr_imm(name), 0)) < 0)
+    if ((content_pos = octstr_case_search(*body_part, 
+             octstr_imm(name), 0)) < 0)
         return 1;
     
     if (drop_header_true(body_part, content_pos) < 0)
@@ -422,10 +439,10 @@ static int drop_optional_header(Octstr **body_part, char *name)
 static int drop_extension_headers(Octstr **body_part)
 {
     long content_pos,
-         next_header_pos;    
+         next_header_pos;  
 
     do {
-        if ((content_pos = octstr_search(*body_part, 
+        if ((content_pos = octstr_case_search(*body_part, 
                  octstr_imm("Content"), 0)) < 0)
             return 1;
         if ((next_header_pos = parse_field_name(*body_part, content_pos)) < 0)
@@ -447,13 +464,13 @@ static long parse_field_value(Octstr *pap_content, long pos)
 {
     int c;
 
-    while ((c = octstr_get_char(pap_content, pos)) != '\r' &&
+    while (!is_cr(c = octstr_get_char(pap_content, pos)) &&
 	     pos < octstr_len(pap_content)) {
          ++pos;
     }
  
-    if (c == '\n') {
-        if (octstr_get_char(pap_content, pos) == '\n') {
+    if (is_lf(c)) {
+        if (is_lf(octstr_get_char(pap_content, pos))) {
 	    ++pos;
         } else {
 	    return -1;
@@ -528,7 +545,7 @@ static int check_data_content_type_header(Octstr **body_part,
     header_pos = next_header_pos = -1;
     content_header = octstr_create("Content-Type");
     
-    if ((header_pos = octstr_search(*body_part, content_header, 0)) < 0) {
+    if ((header_pos = octstr_case_search(*body_part, content_header, 0)) < 0) {
         goto error;
     }
     if ((next_header_pos = pass_field_value(body_part, &content_header, 
@@ -567,7 +584,7 @@ static int pass_optional_header(Octstr **body_part, char *name,
     osname = octstr_create(name);
     osvalue = octstr_create("");
 
-    if ((content_pos = octstr_search(*body_part, osname, 0)) < 0) 
+    if ((content_pos = octstr_case_search(*body_part, osname, 0)) < 0) 
         goto noheader;
     if ((next_header_pos = pass_field_value(body_part, &osvalue, 
 	     content_pos + octstr_len(osname))) < 0)
@@ -642,7 +659,7 @@ static int pass_extension_headers(Octstr **body_part, List **content_headers)
     next_field_part_pos = 0;
 
     do {
-        if ((octstr_search(*body_part, octstr_imm("Content"), 0)) < 0)
+        if ((octstr_case_search(*body_part, octstr_imm("Content"), 0)) < 0)
             goto end; 
         if ((next_field_part_pos = pass_field_name(body_part, &header_name,
                  next_field_part_pos)) < 0)
@@ -680,7 +697,7 @@ static long pass_field_value(Octstr **body_part, Octstr **header,
 {
     int c;
 
-    while (((c = octstr_get_char(*body_part, pos)) != '\r' ) &&
+    while (!is_cr(c = octstr_get_char(*body_part, pos)) &&
              pos < octstr_len(*body_part)) {
         octstr_format_append(*header, "%c", c);
         ++pos;

@@ -39,6 +39,12 @@ void dict_destroy(Dict *dict);
  */
 void dict_put(Dict *dict, Octstr *key, void *value);
 
+/*
+ * Put a new value into a Dict. Return error, if the same key existed all-
+ * ready.
+ */
+
+int dict_put_once(Dict *dict, Octstr *key, void *value);
 
 /*
  * Look up a value in a Dict. If there is no value corresponding to a 
@@ -68,3 +74,9 @@ List *dict_keys(Dict *dict);
 
 
 #endif
+
+
+
+
+
+

@@ -20,22 +20,27 @@
 #include "wap_push_ppg.h"
 #include "gw/msg.h"
 #include "bb.h"
+#include "sms.h"
 
 #if (HAVE_WTLS_OPENSSL)
 #include <openssl/x509.h>
 #include "wap/wtls.h"
 #endif
 
-#define CONNECTIONLESS_PORT 9200
-#define CONNECTION_ORIENTED_PORT 9201
-#define WTLS_CONNECTIONLESS_PORT 9202
-#define WTLS_CONNECTION_ORIENTED_PORT 9203
+enum {
+    CONNECTIONLESS_PORT = 9200,
+    CONNECTION_ORIENTED_PORT = 9201,
+    WTLS_CONNECTIONLESS_PORT = 9202,
+    WTLS_CONNECTION_ORIENTED_PORT = 9203
+};
 
+enum {MAX_SMS_OCTETS = 140};
 
 static Octstr *bearerbox_host;
 static long bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static long heartbeat_freq = BB_DEFAULT_HEARTBEAT;
 static long heartbeat_thread;
+static Counter *sequence_counter = NULL;
 
 #if (HAVE_WTLS_OPENSSL)
 RSA* private_key = NULL;
@@ -45,7 +50,7 @@ X509* x509_cert = NULL;
 static void read_config(Octstr *filename) 
 {
     CfgGroup *grp;
-    Octstr *s/*, *password=NULL*/;
+    Octstr *s;
     long i;
     Cfg *cfg;
     Octstr *logfile;
@@ -231,33 +236,123 @@ static void setup_signal_handlers(void)
     sigaction(SIGPIPE, &act, NULL);
 }
 
-
-static void dispatch_datagram(WAPEvent *dgram)
+/*
+ * We create wdp_datagram for IP traffic and sms for SMS traffic. If network_
+ * required and bearer_required are on, non-IP (now SMS) bearer is used.
+ */
+static Msg *pack_ip_datagram(WAPEvent *dgram)
 {
     Msg *msg;
-    /*WAPEvent *event = NULL;*/
+    WAPAddrTuple *tuple;
+
+    gw_assert(!dgram->u.T_DUnitdata_Req.bearer_required && 
+              !dgram->u.T_DUnitdata_Req.network_required);
+    msg = msg_create(wdp_datagram);
+    tuple = dgram->u.T_DUnitdata_Req.addr_tuple;
+    msg->wdp_datagram.source_address =
+        octstr_duplicate(tuple->local->address);
+    msg->wdp_datagram.source_port =
+        dgram->u.T_DUnitdata_Req.addr_tuple->local->port;
+    msg->wdp_datagram.destination_address =
+        octstr_duplicate(tuple->remote->address);
+    msg->wdp_datagram.destination_port =
+        dgram->u.T_DUnitdata_Req.addr_tuple->remote->port;
+    msg->wdp_datagram.user_data =
+        octstr_duplicate(dgram->u.T_DUnitdata_Req.user_data);
+
+   return msg;
+}
+
+/*
+ * Format for port UDH is defined in wdp, appendix A. It is %06%05%04
+ * %dest port high hex%dest port low%hex source port high hex%source port low
+ * hex. (Unsecure) push client port itself is 2948.
+ */
+static Octstr *pack_udhdata(WAPAddrTuple *tuple)
+{
+    int source_port,
+        dest_port;
+    Octstr *udh;
+    
+    source_port = tuple->local->port;
+    dest_port = tuple->remote->port;  
+    
+    udh = octstr_create("");
+    octstr_format_append(udh, "%c", 6);
+    octstr_format_append(udh, "%c", 5);
+    octstr_format_append(udh, "%c", 4);
+    octstr_format_append(udh, "%c", (dest_port >> 8) & 0xff);
+    octstr_format_append(udh, "%c", dest_port & 0xff);
+    octstr_format_append(udh, "%c", (source_port >> 8) & 0xff);
+    octstr_format_append(udh, "%c", source_port & 0xff);
+
+    return udh;
+}
+
+/*
+ * We send a normal 8-bit unconcatenated unicode message with an udh. Caller 
+ * must do segmentation before calling this function.
+ */
+static Msg *pack_sms_datagram(WAPEvent *dgram)
+{
+    Msg *msg;
+    WAPAddrTuple *tuple;
+
+    gw_assert(dgram->u.T_DUnitdata_Req.bearer_required && 
+              dgram->u.T_DUnitdata_Req.network_required);
+    msg = msg_create(sms);
+    tuple = dgram->u.T_DUnitdata_Req.addr_tuple;
+    msg->sms.sender = octstr_duplicate(tuple->local->address);
+    msg->sms.receiver = octstr_duplicate(tuple->remote->address);
+    msg->sms.udhdata = pack_udhdata(tuple);
+    msg->sms.msgdata = octstr_duplicate(dgram->u.T_DUnitdata_Req.user_data);
+    msg->sms.time = time(NULL);
+    msg->sms.smsc_id = NULL;
+    msg->sms.sms_type = mt_push;
+    msg->sms.mwi = MWI_UNDEF;
+    msg->sms.coding = DC_UCS2;
+    msg->sms.mclass = MC_UNDEF;
+    msg->sms.validity = 0;
+    msg->sms.deferred = 0;
+
+    return msg;   
+}
+
+/*
+ * Send IP datagram as it is, segment SMS datagram if necessary.
+ */
+static void dispatch_datagram(WAPEvent *dgram)
+{
+    Msg *msg,
+        *part;
+    List *sms_datagrams;
+    long max_msgs,
+         msg_sequence,
+         msg_len;
 
     gw_assert(dgram != NULL);
+    sms_datagrams = NULL;
     if (dgram->type != T_DUnitdata_Req) {
         warning(0, "dispatch_datagram received event of unexpected type.");
         wap_event_dump(dgram);
     } else {
-	WAPAddrTuple *tuple;
-     
-        msg = msg_create(wdp_datagram);
-	    tuple = dgram->u.T_DUnitdata_Req.addr_tuple;
-        msg->wdp_datagram.source_address =
-            octstr_duplicate(tuple->local->address);
-        msg->wdp_datagram.source_port =
-            dgram->u.T_DUnitdata_Req.addr_tuple->local->port;
-        msg->wdp_datagram.destination_address =
-            octstr_duplicate(tuple->remote->address);
-        msg->wdp_datagram.destination_port =
-            dgram->u.T_DUnitdata_Req.addr_tuple->remote->port;
-        msg->wdp_datagram.user_data =
-	    octstr_duplicate(dgram->u.T_DUnitdata_Req.user_data);
+        if (!dgram->u.T_DUnitdata_Req.bearer_required && 
+	        !dgram->u.T_DUnitdata_Req.network_required) {
+	    msg = pack_ip_datagram(dgram);
+            write_to_bearerbox(msg);
+        } else {
+	    msg = pack_sms_datagram(dgram);
+            msg_sequence = counter_increase(sequence_counter) & 0xff;
+            msg_len = octstr_len(msg->sms.msgdata);
+            max_msgs = (msg_len / MAX_SMS_OCTETS) + 1; 
+            sms_datagrams = sms_split(msg, NULL, NULL, NULL, NULL, 1, 
+                                      msg_sequence, max_msgs, MAX_SMS_OCTETS);
+            while ((part = list_extract_first(sms_datagrams)) != NULL)
+	            write_to_bearerbox(part);
 
-        write_to_bearerbox(msg);
+            list_destroy(sms_datagrams, NULL);
+            msg_destroy(msg);
+        }
     }
 
     wap_event_destroy(dgram);
@@ -286,6 +381,7 @@ int main(int argc, char **argv)
     info(0, "------------------------------------------------------------");
     info(0, "Kannel wapbox version %s starting up.", VERSION);
     
+    sequence_counter = counter_create();
     wsp_session_init(&wtp_resp_dispatch_event,
                      &wtp_initiator_dispatch_event,
                      &wap_appl_dispatch,
@@ -370,6 +466,7 @@ int main(int argc, char **argv)
     
     program_status = shutting_down;
     heartbeat_stop(heartbeat_thread);
+    counter_destroy(sequence_counter);
     wtp_initiator_shutdown();
     wtp_resp_shutdown();
     wsp_push_client_shutdown();

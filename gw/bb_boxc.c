@@ -145,13 +145,18 @@ static void boxc_receiver(void *arg)
 		 *  should include information did it succeed, wa sit queued
 		 *  or rejected... */
 	    }
-	}
-	else if (msg_type(msg) == wdp_datagram && conn->is_wap)
-	{
-	    debug("bb.boxc", 0, "boxc_receiver: wdp received");
-
+	} else if (msg_type(msg) == wdp_datagram  && conn->is_wap) {
+	    debug("bb.boxc", 0, "boxc_receiver: got wdp from wapbox");
+            
 	    list_produce(conn->outgoing, msg);
-	} else {
+	} else if (msg_type(msg) == sms  && conn->is_wap) {
+            debug("bb.boxc", 0, "boxc_receiver: got sms from wapbox");
+
+            if (smsc2_rout(msg)== -1) {
+		warning(0, "Message rejected by bearerbox, no router!");
+		msg_destroy(msg);
+            }
+        } else {
 	    if (msg_type(msg) == heartbeat) {
 		if (msg->heartbeat.load != conn->load)
 		    debug("bb.boxc", 0, "boxc_receiver: heartbeat with "
