@@ -556,11 +556,11 @@ ws_asm_linearize(WsCompiler *compiler)
 	      break;
 	    }
 
-	  assert(ins->type == WS_ASM_P_LABEL || ins->type < 0x100);
+	  gw_assert(ins->type == WS_ASM_P_LABEL || ins->type < 0x100);
 
 	  if (ins->type != WS_ASM_P_LABEL)
 	    {
-	      assert(operands[ins->type].name != NULL);
+	      gw_assert(operands[ins->type].name != NULL);
 	      offset += operands[ins->type].size;
 	    }
 	}
@@ -572,7 +572,7 @@ ws_asm_linearize(WsCompiler *compiler)
       if (ins->type == WS_ASM_P_LABEL)
 	continue;
 
-      assert(ins->type <= 0xff);
+      gw_assert(ins->type <= 0xff);
 
       switch (ins->type)
 	{

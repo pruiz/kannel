@@ -7,7 +7,6 @@
  */
 
 
-#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -296,7 +295,7 @@ int octstr_search_char_from(Octstr *ostr, int ch, size_t pos) {
 	len = octstr_len(ostr);
 	for (; pos < len; ++pos) {
 		ch_at_pos = octstr_get_char(ostr, pos);
-		assert(ch_at_pos != -1);
+		gw_assert(ch_at_pos != -1);
 		if (ch == ch_at_pos)
 			return pos;
 	}

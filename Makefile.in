@@ -122,7 +122,7 @@ testprogs = $(testsrcs:.c=)
 srcs = $(shell echo */*.c)
 objs = $(srcs:.c=.o)
 
-libs = libgw.a libgwlib.a libwmlscript.a
+libs = libgw.a libwmlscript.a libgwlib.a
 
 srcdirs = gw gwlib test utils wmlscript
 

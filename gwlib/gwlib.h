@@ -28,6 +28,7 @@
 #include "http.h"
 #include "octstr.h"
 #include "list.h"
+#include "gwassert.h"
 
 
 #endif

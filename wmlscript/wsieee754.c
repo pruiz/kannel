@@ -88,7 +88,7 @@ ws_ieee754_encode_single(double value, unsigned char *buf)
 	{
 	  /* We managed to get the number to the normal form.  Let's
              remote the implicit 1 from the value. */
-	  assert(value >= 1.0);
+	  gw_assert(value >= 1.0);
 	  value -= 1.0;
 	}
       else
@@ -98,7 +98,7 @@ ws_ieee754_encode_single(double value, unsigned char *buf)
              fails, we fall back to 0.0.  We mark exp to -127 (after
              bias it is 0) to mark this unnormalized form. */
 	  exp--;
-	  assert(exp == -127);
+	  gw_assert(exp == -127);
 	}
     }
 

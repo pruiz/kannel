@@ -1,3 +1,18 @@
+2000-03-29  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/gwassert.h: New file, defines gw_assert() macro which
+	calls panic() when an assertion fails, instead of writing to
+	stdout.  stdout is not available when kannel runs as a daemon.
+
+	* Makefile.in: Put libgwlib.a after libwmlscript.a in the
+	libs line, because libwmlscript.a now needs the panic symbol
+	from libgwlib.a.
+
+	* gwlib/gwlib.h: Include gwassert.h by default.
+
+	* gwlib/gwmem.c, gwlib/octstr.c, wmlscript/*: Use gw_assert()
+	instead of assert().
+
 Wed Mar 29 20:44:52 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/msg.c: Cleanups. No need to check that msg_create returns
