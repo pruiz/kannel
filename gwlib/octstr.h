@@ -284,6 +284,12 @@ void octstr_append_cstr(Octstr *ostr, char *cstr);
 
 
 /*
+ * Append a single character at the tail of an octet string.
+ */
+void octstr_append_char(Octstr *ostr, int ch);
+
+
+/*
  * truncate length of octstr to 'new_len'. If new_len is same or more
  * than current, do nothing. cannot fail.
  */

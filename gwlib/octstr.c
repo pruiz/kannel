@@ -745,6 +745,13 @@ void octstr_append_cstr(Octstr *ostr, char *cstr) {
 }
 
 
+void octstr_append_char(Octstr *ostr, int ch) {
+        unsigned char cha;
+	cha = (unsigned char) ch;
+	octstr_insert_data(ostr, ostr->len, &cha, 1);
+}
+
+
 void octstr_delete(Octstr *ostr1, long pos, long len) {
 	seems_valid(ostr1);
 

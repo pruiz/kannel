@@ -1,3 +1,10 @@
+2000-04-12  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gwlib/octstr.[ch]: Function octstr_append_char added.
+
+	* gw/wml_compiler.c: Attribute values are now searched for text
+	that can be replaced with one byte value codes.
+
 Wed Apr 12 00:30:54 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* test/fakewap.c, test/test_http.c, test/test_urltrans.c,
