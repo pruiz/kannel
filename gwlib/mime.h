@@ -131,7 +131,7 @@ Octstr *mime_entity_to_octstr(MIMEEntity *m);
  * Take a MIME multipart representation and return the global header
  * for it. Return a pointer to a HTTP header List.
  */
-List *mime_entity_header(MIMEEntity *m);
+List *mime_entity_headers(MIMEEntity *m);
 
 /*
  * Take a MIME multipart representation and return the highest level

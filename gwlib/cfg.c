@@ -713,7 +713,7 @@ void cfg_dump(Cfg *cfg)
     debug("gwlib.cfg", 0, "Dump ends.");
 }
 
-void cfg_dump_all()
+void cfg_dump_all(void)
 {
     #define OCTSTR(name) \
         printf("%s = <please consult user doc>\n", #name);

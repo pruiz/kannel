@@ -114,7 +114,7 @@ void dlr_flush(void);
 /*
  * Return type of dlr storage
  */
-const char* dlr_type();
+const char* dlr_type(void);
 
 /*
  * Helper function, create DLR from given message

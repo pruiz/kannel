@@ -87,7 +87,7 @@ struct dlr_entry {
 /*
  * Create struct dlr_entry and initialize it to zero
  */
-struct dlr_entry *dlr_entry_create();
+struct dlr_entry *dlr_entry_create(void);
 
 /*
  * Destroy struct dlr_entry

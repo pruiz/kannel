@@ -65,6 +65,7 @@
 #include <errno.h>
 
 #include "gwlib/gwlib.h"
+#include "radius/radius_acct.h"
 #include "radius/radius_pdu.h"
 
 static Dict *radius_table = NULL;      /* maps client ip -> msisdn */

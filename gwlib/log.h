@@ -84,10 +84,10 @@ enum excl_state {
 };
 
 /* Initialize the log file module */
-void log_init();
+void log_init(void);
 
 /* Shutdown the log file module */
-void log_shutdown();
+void log_shutdown(void);
 
 /* Print a panicky error message and terminate the program with a failure.
  * So, this function is called when there is no other choice than to exit

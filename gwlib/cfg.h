@@ -99,6 +99,6 @@ void cfg_dump(Cfg *cfg);
 /*
  * Dump all known config groups and values to stdout.
  */
-void cfg_dump_all();
+void cfg_dump_all(void);
 
 #endif

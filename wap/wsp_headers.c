@@ -1746,7 +1746,7 @@ static int pack_qvalue(Octstr *packed, int qvalue)
 }
 
 /* Pack value as a Value-length followed by the encoded value. */
-void pack_value(Octstr *packed, Octstr *encoded)
+static void pack_value(Octstr *packed, Octstr *encoded)
 {
     long len;
 
@@ -1761,7 +1761,7 @@ void pack_value(Octstr *packed, Octstr *encoded)
     octstr_append(packed, encoded);
 }
 
-void pack_long_integer(Octstr *packed, unsigned long integer)
+static void pack_long_integer(Octstr *packed, unsigned long integer)
 {
     long oldlen = octstr_len(packed);
     unsigned char octet;
@@ -1785,7 +1785,7 @@ void pack_long_integer(Octstr *packed, unsigned long integer)
     octstr_insert_data(packed, oldlen, &octet, 1);
 }
 
-void pack_short_integer(Octstr *packed, unsigned long integer)
+static void pack_short_integer(Octstr *packed, unsigned long integer)
 {
     gw_assert(integer <= MAX_SHORT_INTEGER);
 
@@ -1857,7 +1857,7 @@ usetext:
     return 0;
 }
 
-int pack_constrained_value(Octstr *packed, Octstr *text, long value)
+static int pack_constrained_value(Octstr *packed, Octstr *text, long value)
 {
     if (value >= 0)
         pack_short_integer(packed, value);
@@ -1951,7 +1951,7 @@ static void pack_parameter(Octstr *packed, Parameter *parm)
     }
 }
 
-void pack_parameters(Octstr *packed, List *parms)
+static void pack_parameters(Octstr *packed, List *parms)
 {
     long i;
     Parameter *parm;
@@ -2825,7 +2825,7 @@ error:
     return -1;
 }
 
-void pack_separate_content_type(Octstr *packed, List *headers)
+static void pack_separate_content_type(Octstr *packed, List *headers)
 {
     Octstr *content_type;
 
@@ -2843,7 +2843,7 @@ void pack_separate_content_type(Octstr *packed, List *headers)
     octstr_destroy(content_type);
 }
 
-int pack_list(Octstr *packed, long fieldnum, List *elements, int i)
+static int pack_list(Octstr *packed, long fieldnum, List *elements, int i)
 {
     long startpos;
     Octstr *element;

@@ -161,7 +161,7 @@ static void add_stderr(void)
 }
 
 
-void log_init()
+void log_init(void)
 {
     unsigned long i;
 
@@ -177,7 +177,7 @@ void log_init()
         writers = list_create();
 }
 
-void log_shutdown()
+void log_shutdown(void)
 {
     log_close_all();
     if (writers != NULL)

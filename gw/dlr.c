@@ -97,7 +97,7 @@ static struct dlr_storage *handles = NULL;
  * Function to allocate a new struct dlr_entry entry
  * and intialize it to zero
  */
-struct dlr_entry *dlr_entry_create()
+struct dlr_entry *dlr_entry_create(void)
 {
     struct dlr_entry *dlr;
 
@@ -307,7 +307,7 @@ long dlr_messages(void)
 /*
  * Return type of used dlr storage
  */
-const char* dlr_type()
+const char* dlr_type(void)
 {
     if (handles != NULL && handles->type != NULL)
         return handles->type;
