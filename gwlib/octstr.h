@@ -66,13 +66,6 @@ void octstr_shutdown(void);
  */
 Octstr *octstr_create(const char *cstr);
 
-/*
- * Similar to octstr_create, except that the string is truncated after 
- * max_len, if it is longer.
- *
- * XXX this is used only in gwlib/utils.c, is it really useful enough?
- */
-Octstr *octstr_create_limited(const char *cstr, long max_len);
 
 /*
  * Create an octet string from arbitrary binary data. The length of the

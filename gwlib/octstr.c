@@ -133,20 +133,6 @@ Octstr *octstr_create(const char *cstr) {
 }
 
 
-Octstr *octstr_create_limited(const char *cstr, long max_len) {
-	int len;
-
-	gw_assert(cstr != NULL);
-	gw_assert(max_len >= 0);
-
-	len = strlen(cstr);
-	if (len < max_len)
-		return octstr_create_from_data(cstr, len);
-	else
-		return octstr_create_from_data(cstr, max_len);
-}
-
-
 Octstr *octstr_create_from_data(const char *data, long len) {
 	Octstr *ostr;
 	

@@ -1,5 +1,10 @@
 2000-09-14  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/octstr.[ch]: Removed the octstr_create_limited, because
+	it had so limited use.
+
+2000-09-14  Lars Wirzenius  <liw@iki.fi>
+
 	* test/test_http_server.c: Catch SIGTERM and die immediately.
 	
 	* checks/check_http.sh: Wrote.

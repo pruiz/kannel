@@ -231,7 +231,12 @@ int normalize_number(char *dial_prefixes, Octstr **number)
             if (*t == ',' || *t == ';' || *t == '\0') {
                 if (start != official) {
                     Octstr *nstr;
-                    nstr = octstr_create_limited(official, official_len);
+		    long n;
+		    
+		    n = official_len;
+		    if (strlen(official) < n)
+		    	n = strlen(official);
+                    nstr = octstr_create_from_data(official, n);
                     octstr_insert_data(nstr, official_len,
                                            octstr_get_cstr(*number) + len,
                                            octstr_len(*number) - len);
