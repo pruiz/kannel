@@ -58,7 +58,7 @@ void mutex_destroy(Mutex *mutex)
 }
 
 
-void mutex_lock_real(Mutex *mutex, char *file, int line)
+void mutex_lock_real(Mutex *mutex, char *file, int line, char *func)
 {
     int ret;
 
@@ -75,13 +75,15 @@ void mutex_lock_real(Mutex *mutex, char *file, int line)
     ret = pthread_mutex_lock(&mutex->mutex);
 #endif
     if (ret != 0)
-        panic(ret, "mutex_lock: Mutex failure! called from %s at line %d",file,line);
+        panic(0, "%s:%ld: %s: Mutex failure! (Called from %s:%ld:%s.)", \
+		         __FILE__, (long) __LINE__, __func__, file, (long) line, func);
     if (mutex->owner == gwthread_self())
-        panic(0, "mutex_lock: Managed to lock the mutex twice! called from %s at line %d",file,line);
+        panic(0, "%s:%ld: %s: Managed to lock the mutex twice! (Called from %s:%ld:%s.)", \
+		         __FILE__, (long) __LINE__, __func__, file, (long) line, func);
     mutex->owner = gwthread_self();
 }
 
-int mutex_unlock_real(Mutex *mutex, char *file, int line)
+int mutex_unlock_real(Mutex *mutex, char *file, int line, char *func)
 {
      int ret;
     
@@ -94,7 +96,9 @@ int mutex_unlock_real(Mutex *mutex, char *file, int line)
      mutex->owner = -1;
      ret = pthread_mutex_unlock(&mutex->mutex);
      if (ret != 0)
-        error(ret, "mutex_unlock: Mutex failure! called from file %s at line %d",file,line);
+        panic(0, "%s:%ld: %s: Mutex failure! (Called from %s:%ld:%s.)", \
+		         __FILE__, (long) __LINE__, __func__, file, (long) line, func);
+
      return ret;
 }
 

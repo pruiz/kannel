@@ -104,6 +104,10 @@ static void unlocked_register_pollout(Connection *conn, int onoff);
  * POLLOUT if there's not enough data waiting, which is why we have
  * unlocked_try_write. */
 
+/* Macros to get more information for debugging purposes */
+#define unlock_in(conn) unlock_in_real(conn, __FILE__, __LINE__, __func__)
+#define unlock_out(conn) unlock_out_real(conn, __FILE__, __LINE__, __func__)
+
 /* Lock a Connection's read direction, if the Connection is unclaimed */
 static void lock_in(Connection *conn)
 {
@@ -116,20 +120,17 @@ static void lock_in(Connection *conn)
 }
 
 /* Unlock a Connection's read direction, if the Connection is unclaimed */
-#define	unlock_in(conn)	unlock_in_real(conn,__FILE__,__LINE__)
-#define unlock_out(conn) unlock_out_real(conn,__FILE__,__LINE__)
-
-static void unlock_in_real(Connection *conn, char *file, int line)
+static void unlock_in_real(Connection *conn, char *file, int line, char *func)
 {
     int ret;
     gw_assert(conn != NULL);
 
-    if (!conn->claimed)
-    {
-        ret = mutex_unlock(conn->inlock);
-        if (ret !=0)
-        {
-	    panic(0,"Mutex unlock failed in unlock_in called from %s at %d",file,line);
+    if (!conn->claimed) {
+        if ((ret = mutex_unlock(conn->inlock)) != 0) {
+            panic(0, "%s:%ld: %s: Mutex unlock failed. " \
+		             "(Called from %s:%ld:%s.)", \
+			         __FILE__, (long) __LINE__, __func__, \
+			         file, (long) line, func);
         }
      }
 }
@@ -146,17 +147,17 @@ static void lock_out(Connection *conn)
 }
 
 /* Unlock a Connection's write direction, if the Connection is unclaimed */
-static void unlock_out_real(Connection *conn, char *file, int line)
+static void unlock_out_real(Connection *conn, char *file, int line, char *func)
 {
     int ret;
     gw_assert(conn != NULL);
 
-    if (!conn->claimed)
-    {
-        ret = mutex_unlock(conn->outlock);
-        if (ret !=0)
-        {
-            panic(0,"Mutex unlock failed in unlock_out_real called from %s at %d",file,line);
+    if (!conn->claimed) {
+        if ((ret = mutex_unlock(conn->outlock)) != 0) {
+            panic(0, "%s:%ld: %s: Mutex unlock failed. " \
+		             "(Called from %s:%ld:%s.)", \
+			         __FILE__, (long) __LINE__, __func__, \
+			         file, (long) line, func);
         }
      }
 }
