@@ -5007,6 +5007,16 @@ ssl-certkey-file
         /cgi-bin/sendota</literal>.
      </entry></row>
 	
+    <row><entry><literal>immediate-sendsms-reply (o)</literal></entry>
+     <entry>boolean</entry>
+     <entry valign="bottom">
+        This is a backward compatibility flag: when set, Kannel will 
+        immediately answer to any sendsms requests, without knowing if
+        the bearerbox will ever accept the message. If set to false
+       (default), smsbox will not reply to HTTP request until the bearerbox
+        has received the message.
+     </entry></row>
+
     <row><entry><literal>sendsms-chars</literal></entry>
      <entry>string</entry>
      <entry valign="bottom">

@@ -266,6 +266,7 @@ SINGLE_GROUP(smsbox,
     OCTSTR(http-queue-delay)
     OCTSTR(white-list-regex)
     OCTSTR(black-list-regex)
+    OCTSTR(immediate-sendsms-reply)
 )
 
 

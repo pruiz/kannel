@@ -130,6 +130,15 @@ static List *smsbox_http_requests = NULL; /* the outbound HTTP request queue */
 int charset_processing (Octstr *charset, Octstr *text, int coding);
 static long get_tag(Octstr *body, Octstr *tag, Octstr **value, long pos, int nostrip);
 
+/* for delayed HTTP answers.
+ * Dict key is uuid, value is HTTPClient pointer
+ * of open transaction
+ */
+
+static int immediate_sendsms_reply = 0;
+static Dict *client_dict = NULL;
+static List *sendsms_reply_hdrs = NULL;
+
 /***********************************************************************
  * Communication with the bearerbox.
  */
@@ -148,6 +157,60 @@ static void identify_to_bearerbox(void)
     msg->admin.command = cmd_identify;
     msg->admin.boxc_id = octstr_duplicate(smsbox_id);
     write_to_bearerbox(msg);
+}
+
+/*
+ * Handle delayed reply to HTTP sendsms client, if any
+ */
+static void delayed_http_reply(Msg *msg)
+{
+    HTTPClient *client;
+    Octstr *os, *answer;
+    char id[UUID_STR_LEN + 1];
+    int status;
+	  
+    uuid_unparse(msg->ack.id, id);
+    os = octstr_create(id);
+    debug("sms.http", 0, "Got ACK (%d) of %s", msg->ack.nack, octstr_get_cstr(os));
+    client = dict_remove(client_dict, os);
+    if (client == NULL) {
+        debug("sms.http", 0, "No client - multi-send or ACK to pull-reply");
+        octstr_destroy(os);
+        return;
+    }
+    /* XXX  this should be fixed so that we really wait for DLR
+     *      SMSC accept/deny before doing this - but that is far
+     *      more slower, a bit more complex, and is done later on
+     */
+
+    switch (msg->ack.nack) {
+      case ack_success:
+        status = HTTP_ACCEPTED;
+        answer = octstr_create("0: Accepted for delivery");
+        break;
+      case ack_buffered:
+        status = HTTP_ACCEPTED;
+        answer = octstr_create("3: Queued for later delivery");
+        break;
+      case ack_failed:
+        status = HTTP_FORBIDDEN;
+        answer = octstr_create("Not routable. Do not try again.");
+        break;
+      case ack_failed_tmp:
+        status = HTTP_SERVICE_UNAVAILABLE;
+        answer = octstr_create("Temporal failure, try again later.");
+        break;
+      default:
+	error(0, "Strange reply from bearerbox!");
+        status = HTTP_SERVICE_UNAVAILABLE;
+        answer = octstr_create("Temporal failure, try again later.");
+        break;
+    }
+
+    http_send_reply(client, status, sendsms_reply_hdrs, answer);
+
+    octstr_destroy(answer);
+    octstr_destroy(os);
 }
 
 
@@ -189,10 +252,9 @@ static void read_messages_from_bearerbox(void)
 	    total++;
 	    list_produce(smsbox_requests, msg);
 	} else if (msg_type(msg) == ack) {
-	    /*
-	     * do nothing for now. Later we will handle this
-	     * gracefully...
-	     */
+
+	    if (!immediate_sendsms_reply)
+		delayed_http_reply(msg);
 	    msg_destroy(msg);
 	} else {
 	    warning(0, "Received other message than sms/admin, ignoring!");
@@ -1874,9 +1936,29 @@ static int pam_authorise_user(List *list)
 
 
 
+static Octstr* store_uuid(Msg *msg)
+{
+    char id[UUID_STR_LEN + 1];
+    Octstr *stored_uuid;
+
+    gw_assert(msg != NULL);
+    gw_assert(!immediate_sendsms_reply);
+    
+    uuid_unparse(msg->sms.id, id);
+    stored_uuid = octstr_create(id);
+
+    debug("sms.http", 0, "Stored UUID %s", octstr_get_cstr(stored_uuid));
+
+    /* this octstr is then used to store the HTTP client into 
+     * client_dict, if need to, in sendsms_thread */
+
+    return stored_uuid;
+}
+
 
 
 static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
+				 Octstr **stored_uuid,
 				 Octstr *from, Octstr *to, Octstr *text, 
 				 Octstr *charset, Octstr *udh, Octstr *smsc,
 				 int mclass, int mwi, int coding, int compress, 
@@ -2231,6 +2313,14 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	             udh == NULL ? ( text == NULL ? "" : octstr_get_cstr(text) ) : "<< UDH >>");
         }
     }
+    /* Store id if needed for a delayed HTTP reply */
+
+    if (!immediate_sendsms_reply) {
+	*stored_uuid = store_uuid(msg);
+    }
+    
+
+
     msg_destroy(msg);
     list_destroy(receiver, octstr_destroy_item);
     list_destroy(allowed, octstr_destroy_item);
@@ -2379,7 +2469,8 @@ static URLTranslation *authorise_user(List *list, Octstr *client_ip)
  * Create and send an SMS message from an HTTP request.
  * Args: args contains the CGI parameters
  */
-static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
+static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status,
+				  Octstr **stored_uuid)
 {
     URLTranslation *t = NULL;
     Octstr *tmp_string;
@@ -2477,7 +2568,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
 	return octstr_create("Empty receiver number not allowed, rejected");
     }
 
-    return smsbox_req_handle(t, client_ip, from, to, text, charset, udh,
+    return smsbox_req_handle(t, client_ip, stored_uuid, from, to, text, charset, udh,
 			     smsc, mclass, mwi, coding, compress, validity, 
 			     deferred, status, dlr_mask, dlr_url, account,
 			     pid, alt_dcs, rpi, NULL, binfo, priority);
@@ -2490,7 +2581,8 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
  * Args: args contains the CGI parameters
  */
 static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
-				   Octstr *client_ip, int *status)
+				   Octstr *client_ip, int *status,
+				   Octstr **stored_uuid)
 {
     URLTranslation *t = NULL;
     Octstr *user, *pass, *ret, *type;
@@ -2586,7 +2678,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	}
 
 	if (ret == NULL)
-	    ret = smsbox_req_handle(t, client_ip, from, to, body, charset,
+	    ret = smsbox_req_handle(t, client_ip, stored_uuid, from, to, body, charset,
 				    udh, smsc, mclass, mwi, coding, compress, 
 				    validity, deferred, status, dlr_mask, 
 				    dlr_url, account, pid, alt_dcs, rpi, tolist,
@@ -2696,7 +2788,8 @@ static Octstr *smsbox_xmlrpc_post(List *headers, Octstr *body,
  * otherwise read the configuration from the configuration file.
  * Args: list contains the CGI parameters
  */
-static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
+static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status,
+				  Octstr **stored_uuid)
 {
     Octstr *id, *from, *phonenumber, *smsc, *ota_doc, *doc_type, *account;
     CfgGroup *grp;
@@ -2851,7 +2944,11 @@ send:
         *status = HTTP_INTERNAL_SERVER_ERROR;
         return octstr_create("Sending failed.");
     }
+    else if (!immediate_sendsms_reply) {
+	*stored_uuid = store_uuid(msg);
+    }
 
+    
     *status = HTTP_ACCEPTED;
     return octstr_create("Sent.");
 }
@@ -2866,7 +2963,8 @@ send:
  * parameters are not used but the POST contains the XML body itself.
  */
 static Octstr *smsbox_sendota_post(List *headers, Octstr *body,
-                                   Octstr *client_ip, int *status)
+                                   Octstr *client_ip, int *status,
+				   Octstr **stored_uuid)
 {
     Octstr *name, *val, *ret;
     Octstr *from, *to, *id, *user, *pass, *smsc;
@@ -2958,54 +3056,57 @@ static Octstr *smsbox_sendota_post(List *headers, Octstr *body,
 	    ret = octstr_create("Unsupported content-type, rejected");
 	} else {
 
-        /* 
-         * ok, this is want we expect
-         * now lets compile the whole thing 
-         */
-        ota_doc = octstr_duplicate(body);
+	    /* 
+	     * ok, this is want we expect
+	     * now lets compile the whole thing 
+	     */
+	    ota_doc = octstr_duplicate(body);
 
-        if ((r = ota_pack_message(&msg, ota_doc, doc_type, from, to)) < 0) {
-            *status = HTTP_BAD_REQUEST;
-            msg_destroy(msg);
-            if (r == -2) {
-                ret = octstr_create("Erroneous document type, cannot"
-                                     " compile\n");
-                goto error;
-            }
-            else if (r == -1) {
-	           ret = octstr_create("Erroneous ota source, cannot compile\n");
-               goto error;
-            }
-        }
+	    if ((r = ota_pack_message(&msg, ota_doc, doc_type, from, to)) < 0) {
+		*status = HTTP_BAD_REQUEST;
+		msg_destroy(msg);
+		if (r == -2) {
+		    ret = octstr_create("Erroneous document type, cannot"
+					" compile\n");
+		    goto error;
+		}
+		else if (r == -1) {
+		    ret = octstr_create("Erroneous ota source, cannot compile\n");
+		    goto error;
+		}
+	    }
 
-        /* we still need to check if smsc is forced for this */
-        if (urltrans_forced_smsc(t)) {
-            msg->sms.smsc_id = octstr_duplicate(urltrans_forced_smsc(t));
-            if (smsc)
-                info(0, "send-sms request smsc id ignored, as smsc id forced to %s",
-                     octstr_get_cstr(urltrans_forced_smsc(t)));
-        } else if (smsc) {
-            msg->sms.smsc_id = octstr_duplicate(smsc);
-        } else if (urltrans_default_smsc(t)) {
-            msg->sms.smsc_id = octstr_duplicate(urltrans_default_smsc(t));
-        } else
-            msg->sms.smsc_id = NULL;
+	    /* we still need to check if smsc is forced for this */
+	    if (urltrans_forced_smsc(t)) {
+		msg->sms.smsc_id = octstr_duplicate(urltrans_forced_smsc(t));
+		if (smsc)
+		    info(0, "send-sms request smsc id ignored, as smsc id forced to %s",
+			 octstr_get_cstr(urltrans_forced_smsc(t)));
+	    } else if (smsc) {
+		msg->sms.smsc_id = octstr_duplicate(smsc);
+	    } else if (urltrans_default_smsc(t)) {
+		msg->sms.smsc_id = octstr_duplicate(urltrans_default_smsc(t));
+	    } else
+		msg->sms.smsc_id = NULL;
 
-        info(0, "%s <%s> <%s>", octstr_get_cstr(sendota_url), 
-             id ? octstr_get_cstr(id) : "XML", octstr_get_cstr(to));
+	    info(0, "%s <%s> <%s>", octstr_get_cstr(sendota_url), 
+		 id ? octstr_get_cstr(id) : "XML", octstr_get_cstr(to));
     
-        r = send_message(t, msg); 
-        msg_destroy(msg);
+	    r = send_message(t, msg); 
+	    msg_destroy(msg);
 
-        if (r == -1) {
-            error(0, "sendota_request: failed");
-            *status = HTTP_INTERNAL_SERVER_ERROR;
-            ret = octstr_create("Sending failed.");
-        }
+	    if (r == -1) {
+		error(0, "sendota_request: failed");
+		*status = HTTP_INTERNAL_SERVER_ERROR;
+		ret = octstr_create("Sending failed.");
+	    }
+	    else if (!immediate_sendsms_reply) {
+		*stored_uuid = store_uuid(msg);
+	    }
 
-        *status = HTTP_ACCEPTED;
-        ret = octstr_create("Sent.");
-    }
+	    *status = HTTP_ACCEPTED;
+	    ret = octstr_create("Sent.");
+	}
     }    
     
 error:
@@ -3018,17 +3119,15 @@ error:
 
 
 static void sendsms_thread(void *arg)
-{
+ {
     HTTPClient *client;
     Octstr *ip, *url, *body, *answer;
-    List *hdrs, *args, *reply_hdrs;
+    List *hdrs, *args;
     int status;
+    Octstr *stored_uuid;
 
-    reply_hdrs = http_create_empty_headers();
-    http_header_add(reply_hdrs, "Content-type", "text/html");
-    http_header_add(reply_hdrs, "Pragma", "no-cache");
-    http_header_add(reply_hdrs, "Cache-Control", "no-cache");
-
+    stored_uuid = NULL;
+    
     for (;;) {
     	client = http_accept_request(sendsms_port, &ip, &url, &hdrs, &body, 
 	    	    	    	     &args);
@@ -3051,9 +3150,9 @@ static void sendsms_thread(void *arg)
 	 * related routine handle the checking
 	 */
 	if (body == NULL)
-	    answer = smsbox_req_sendsms(args, ip, &status);
+	    answer = smsbox_req_sendsms(args, ip, &status, &stored_uuid);
 	else
-	    answer = smsbox_sendsms_post(hdrs, body, ip, &status);
+	    answer = smsbox_sendsms_post(hdrs, body, ip, &status, &stored_uuid);
     }
     /* XML-RPC */
     else if (octstr_compare(url, xmlrpc_url) == 0)
@@ -3071,9 +3170,9 @@ static void sendsms_thread(void *arg)
     else if (octstr_compare(url, sendota_url) == 0)
     {
 	if (body == NULL)
-            answer = smsbox_req_sendota(args, ip, &status);
+            answer = smsbox_req_sendota(args, ip, &status, &stored_uuid);
         else
-            answer = smsbox_sendota_post(hdrs, body, ip, &status);
+            answer = smsbox_sendota_post(hdrs, body, ip, &status, &stored_uuid);
     }
     /* add aditional URI compares here */
     else {
@@ -3084,18 +3183,22 @@ static void sendsms_thread(void *arg)
 	debug("sms.http", 0, "Status: %d Answer: <%s>", status,
           octstr_get_cstr(answer));
 
-    octstr_destroy(ip);
-    octstr_destroy(url);
-    http_destroy_headers(hdrs);
-    octstr_destroy(body);
-    http_destroy_cgiargs(args);
-	
-    http_send_reply(client, status, reply_hdrs, answer);
+	octstr_destroy(ip);
+	octstr_destroy(url);
+	http_destroy_headers(hdrs);
+	octstr_destroy(body);
+	http_destroy_cgiargs(args);
 
-    octstr_destroy(answer);
+	if (immediate_sendsms_reply || status != HTTP_ACCEPTED || stored_uuid == NULL)
+	  http_send_reply(client, status, sendsms_reply_hdrs, answer);
+	else {
+	  debug("sms.http", 0, "Delayed reply - wait for bearerbox");
+	  dict_put(client_dict, stored_uuid, client);
+	  octstr_destroy(stored_uuid);
+	}
+	octstr_destroy(answer);
     }
 
-    http_destroy_headers(reply_hdrs);
 }
 
 
@@ -3306,6 +3409,9 @@ static Cfg *init_smsbox(Cfg *cfg)
 	     octstr_get_cstr(global_sender));
     }
     
+    /* should smsbox reply to sendsms immediate or wait for bearerbox ack */
+    cfg_get_bool(&immediate_sendsms_reply, grp, octstr_imm("immediate-sendsms-reply"));
+
     /* determine which timezone we use for access logging */
     if ((p = cfg_get(grp, octstr_imm("access-log-time"))) != NULL) {
         lf = (octstr_case_compare(p, octstr_imm("gmt")) == 0) ? 0 : 1;
@@ -3411,6 +3517,13 @@ int main(int argc, char **argv)
     if (urltrans_add_cfg(translations, cfg) == -1)
 	panic(0, "urltrans_add_cfg failed");
 
+    client_dict = dict_create(32, NULL);
+    sendsms_reply_hdrs = http_create_empty_headers();
+    http_header_add(sendsms_reply_hdrs, "Content-type", "text/html");
+    http_header_add(sendsms_reply_hdrs, "Pragma", "no-cache");
+    http_header_add(sendsms_reply_hdrs, "Cache-Control", "no-cache");
+
+
     caller = http_caller_create();
     smsbox_requests = list_create();
     smsbox_http_requests = list_create();
@@ -3473,6 +3586,9 @@ int main(int argc, char **argv)
     if (white_list_regex != NULL) gw_regex_destroy(white_list_regex);
     if (black_list_regex != NULL) gw_regex_destroy(black_list_regex);
     cfg_destroy(cfg);
+
+    dict_destroy(client_dict); 
+    http_destroy_headers(sendsms_reply_hdrs);
 
     /* 
      * Just sleep for a while to get bearerbox chance to restart.

@@ -1,3 +1,13 @@
+2005-01-28  Kalle Marjola  <kmarjola@enpocket.com>
+    * gw/smsbox.c: in sendsms, wait for bearerbox reply before
+      replying to HTTP client. NOTE: compatbility breaker if the
+      HTTP client is reading the reply content, plus Kannel can now
+      return new HTTP status codes. Use 'immediate-sendsms-reply = true'
+      in the smsbox group to enable old behaviour.
+	
+    * gwlib/http.h, gwlib/cfg.def, doc/userguide/userguide.xml: 
+      relevant changes
+
 2005-01-28  Stipe Tolj  <stolj@wapme.de> 
     * doc/userguide/userguide.xml: fixed personal email reference.
 
