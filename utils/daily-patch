@@ -14,7 +14,7 @@
 set -e
 
 addr=""
-# CVSROOT=":pserver:anonymoua@cvs.kannel.org:/home/cvs"
+CVSROOT=":pserver:anonymoua@cvs.kannel.org:/home/cvs"
 
 tagsuffix="debug"
 newtag="new_daily_patch_tag$tagsuffix"
@@ -41,7 +41,7 @@ do
 		cat $temp
 	else
 		echo "No changes in $module since yesterday."
-	fi # | mail -s "Daily patch: $module" $addr
+	fi | mail -s "Daily patch: $module" $addr
 	rm -f $temp
 
 	cvs -Q -d$CVSROOT rtag -F -a -r $newtag $tag $module
