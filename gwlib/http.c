@@ -25,35 +25,44 @@
 #include "gwlib.h"
 
 
-/*****************************************************************************
-* Static Functions
-*/
-
+/*
+ * Static Functions
+ */
 static char *internal_base6t4(char *pass);
 
-/*****************************************************************************
+
+
+/***********************************************************************
 * Implementations
 */
 
-/*****************************************************************************
-* Set up a listening socket
-*/
-int httpserver_setup(int port) {
 
+/***********************************************************************
+ * Http server implementation.
+ */
+
+
+
+
+/*
+ * Set up a listening socket
+ */
+int httpserver_setup(int port) {
     return make_server_socket(port);
 }
 
-/*****************************************************************************
-* Accept a HTTP connection, analyze if and return results
-*/
 
+
+
+/*
+ * Accept a HTTP connection, analyze it and returns the client socket connection.
+ */
 int httpserver_get_request(int socket, char **client_ip, char **path, char **args) {
 
     socklen_t len;
     struct sockaddr_in cliaddr;
     int connfd = 0;
-    char accept_ip[NI_MAXHOST];
-
+    char accept_ip[NI_MAXHOST]; /* value is 1025 (from gwlib/getnameinfo.h) */
     char *eol = NULL, *ptr = NULL;
     int done_with_looping = 0;
     int done_with_status = 0, tmpint = 0;
@@ -65,29 +74,28 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 
     /* accept the connection */
     len = sizeof(cliaddr);
-    connfd = accept(socket, (struct sockaddr *) &cliaddr, &len);
-    if(connfd==-1) {
+    if( (connfd = accept(socket, (struct sockaddr *) &cliaddr, &len)) == -1){
 	error(errno, "could not accept connection to HTTP server socket");
-	goto error;
-    }
-
+	goto error;}
+    
     memset(accept_ip, 0, sizeof(accept_ip));
-    getnameinfo((struct sockaddr*)&cliaddr, len,
-		accept_ip, sizeof(accept_ip), 
-		NULL, 0, NI_NUMERICHOST);
+    getnameinfo((struct sockaddr*)&cliaddr, len, accept_ip, sizeof(accept_ip), NULL, 0, NI_NUMERICHOST);
     *client_ip = gw_strdup(accept_ip);
-
+    
     gbsize = 1024;
     growingbuff = gw_malloc(gbsize);
     memset(growingbuff, 0, gbsize);
-
+    
     errno = 0;
-
-    /* Receive the client request. */
+    
+    
+    
+    
+/* Receive the client request. */
     for(;;) {
-	    
+	
 	if(done_with_looping == 1) break;
-	    
+	
 	/* Read from socket. */
 	ptr = growingbuff + readthisfar;
 	tmpint = read(connfd, ptr, gbsize-readthisfar);
@@ -121,21 +129,25 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	    }
 			
 	} /* if */
-		
+	debug("gwlib.http", 0, "http_get_request: statusline read");
+	
 	/* see if the buffer needs enlargement */
 		
     } /* for */
 	
     if(url->abs_path != NULL)
 	*path = gw_strdup(url->abs_path);
-    else
+    else{
 	*path = NULL;
-	
+	debug("gwlib.http", 0, "http_get_request: abs_path's missing");
+    }
+
     if(url->query != NULL)
 	*args = gw_strdup(url->query);
     else
 	*args = NULL;
 
+    
     internal_url_destroy(url);
     gw_free(growingbuff);
     return connfd;
@@ -146,7 +158,10 @@ error:
 }
 
 
-/*************************************************************
+
+
+/*
+ * httpserver_answer - writes the server answer to socket
  */
 int httpserver_answer(int socket, char *text) {
 
@@ -154,9 +169,12 @@ int httpserver_answer(int socket, char *text) {
     int tmpint = 0;
     size_t bufsize = 0;
 
-    assert(socket >= 0);
-    assert(text != NULL);
+    /*assert(socket >= 0);  assert(text != NULL);*/
 
+    if( socket < 0 || text == NULL ){
+	error(errno, "httpserver_answer: faulty input");
+	goto error;}
+	
     bufsize = strlen(text) + 1024;
     bigbuff = gw_malloc(bufsize);
 
@@ -173,6 +191,9 @@ int httpserver_answer(int socket, char *text) {
 
     gw_free(bigbuff);
     return close(socket);
+
+error:
+    return -1;    
 }
 
 
@@ -183,10 +204,17 @@ int httpserver_answer(int socket, char *text) {
 
 
 
-/*****************************************************************************
-* HTTP client GET uses http_get_u with no user defined (NULL) headers
-*/
 
+
+/***********************************************************************
+ * Here starts the part which containts the client side.
+ */
+
+
+
+/*
+ * HTTP client 'get'.  http_get_u with no user defined (NULL) headers
+ */
 int http_get(char *urltext, char **type, char **data, size_t *size) {
 
     if( http_get_u(urltext, type, data, size, NULL) == 0 )
@@ -201,7 +229,7 @@ error:
 
 
 
-/**********************************************************************
+/*
  * Http client Get with (given) universal headers
  */
 
@@ -209,6 +237,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 { 
     
     URL *url = NULL;
+    HTTPHeader *tmp_hdr = NULL;
     HTTPRequest *request = NULL, *response = NULL;
     char *ptr = NULL;
     char *authorization = NULL;
@@ -216,29 +245,25 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
   
       
     /* Initializing... */
-    /* ..request */
     if( (url = internal_url_create(urltext)) == NULL) {
 	error(errno, "http_get_u: creating URL failed");
 	goto error;
     }
+/*    info(0, "url->scheme   = <%s>", request->url->scheme);
+      info(0, "url->host     = <%s>", request->url->host);
+      info(0, "url->port     = <%i>", request->url->port);
+      info(0, "url->abs_path = <%s>", request->url->abs_path);
+      info(0, "url->username = <%s>", request->url->username);
+      info(0, "url->password = <%s>", request->url->password);*/
+    
 
-    /* ..url */
     if( (request = httprequest_create(url, NULL)) == NULL) {
 	error(errno, "http_get_u: creating HTTPRequest failed");
 	goto error;
     }
     internal_url_destroy(url);    
 
-
-/*
-  info(0, "url->scheme   = <%s>", request->url->scheme);
-  info(0, "url->host     = <%s>", request->url->host);
-  info(0, "url->port     = <%i>", request->url->port);
-  info(0, "url->abs_path = <%s>", request->url->abs_path);
-  info(0, "url->username = <%s>", request->url->username);
-  info(0, "url->password = <%s>", request->url->password);
-*/
-
+    
 
 
     /* Adding... */
@@ -250,14 +275,13 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     httprequest_add_header(request, "Connection", "close");
 
     /* ..the user defined headers */
-    for(;;){
-	if(header == NULL)break;
-	httprequest_add_header(request, header->key, header->value);
-	header = header->next;
+    tmp_hdr = header;
+    while( tmp_hdr != NULL ){
+	httprequest_add_header(request, tmp_hdr->key, tmp_hdr->value );
+	tmp_hdr = tmp_hdr->next;
     }
-    
-    
-    /* ..username, although this is not used now */
+	
+    /* ..username */
     if(request->url->username != NULL) {
 	ptr = gw_malloc(1024);
 	sprintf(ptr, "%s:%s", 
@@ -272,18 +296,15 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     
 
     for(;;) {
-	
-	debug("gwlib.http", 0, "HTTP: Making request using headers:");
-	header_dump(request->baseheader);
-
 	/* Open connection, send request, get response. */
 	response = httprequest_execute(request);
-	if(response == NULL) goto error;
-    
+	
+	if( response->data_length == 0 || response->data == NULL || response == NULL ) goto error;
+	
 	/* Great, the server responded "200 OK" */
 	if(response->status == 200) break;
-
-	       
+	
+	
 	/* We are redirected to another URL */
 	else if( (response->status == 301) || 
 		 (response->status == 302) || 
@@ -298,8 +319,8 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	       an endless loop. 10 is just an arbitrary number. */
 	    if(how_many_moves > 10) {
 		error(0, "http_get_u: too many redirects");
-		goto error;
-	    }
+		goto error; }
+	    
 	    how_many_moves++;
 	    
 	    /* let's create the request all over again */
@@ -310,16 +331,14 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	    httprequest_add_header(request, "Connection", "close");
 	    
 	    /*   ..the user defined headers */
-	    for(;;){
-		if(header == NULL)break;
-		httprequest_add_header(request, header->key, header->value);
-		header = header->next;
+	    tmp_hdr = header;
+	    while( tmp_hdr != NULL ){
+		httprequest_add_header(request, tmp_hdr->key, tmp_hdr->value );
+		tmp_hdr = tmp_hdr->next;
 	    }
-	    
-	} /* else-if ends*/
+	}
 	
-	
-        /* Server returned "404 Authorization Required" */
+	/* Server returned "404 Authorization Required" */
 	else if(response->status == 401) break;
 	
 	/* Server returned "404 Not Found" */
@@ -330,7 +349,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	
 	/* If we haven't handled the response code this far, abort. */
 	else break;
-    
+	
     } /* for ends */
     
     /* Check the content of the "Content-Type" header. */
@@ -364,16 +383,15 @@ error:
     return -1;
 }
 
-
-
-
-/**********************************************************************
- * http_post. User must provide the correct data and headers
- */
-
-int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader *header)
-{ 
     
+    
+    
+/*
+ * http_post User provides the correct data and headers
+ */
+    int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader *header)
+	{ 
+	    
     URL *url = NULL;
     HTTPRequest *request = NULL, *response = NULL;
     char *ptr = NULL;
@@ -525,13 +543,112 @@ error:
 
 
 
+/*
+ * For client use. Does TCP connection and returns whatever the server sez.
+ */
+
+HTTPRequest* httprequest_execute(HTTPRequest *request) {
+    
+    char *datasend = NULL, *datareceive = NULL;
+    int s = -1;
+    size_t size = 0;
+    HTTPRequest *result = NULL;
+   
+    
+    if(request==NULL) goto error; /* PEBKaC */
+
+
+    
+/* prepare data to be sent to server */
+    request->action = HTTP_CLIENT;
+    datasend = httprequest_unwrap(request);
+
+	
+    if(datasend==NULL) goto error;
+
+    
+/* open socket */
+    s = tcpip_connect_to_server(request->url->host, request->url->port);
+    if (s == -1) {
+	error(errno, "Couldn't HTTP connect to <%s>", request->url->host);
+	goto error;
+    }
+
+/* write data to socket */
+    if (write_to_socket(s, datasend) == -1) {
+	error(errno, "Error writing request to server");
+	goto error;
+    }
+    
+/* make socket readonly */
+    if (shutdown(s, 1) == -1) {
+	error(errno, "Error closing writing end of socket");
+	goto error;
+    }
+
+
+    
+/* read from socket */
+    if (read_to_eof(s, &datareceive, &size) == -1) {
+	error(errno, "Error receiving data from HTTP server");
+	goto error;
+    }
+    
+    
+/* close socket */
+    if (close(s) == -1) {
+	error(errno, "Error closing connection to HTTP server");
+	goto error;
+    }
+
+
+/* parse the results */
+    result = httpresponse_wrap( octstr_create(datareceive), size );
+
+    /*result = httprequest_wrap(datareceive, size);*/
+    
+    
+    /* return the result */	
+    gw_free(datasend);
+    gw_free(datareceive);
+    return result;
+    
+error:
+    error(errno, "httprequest_execute: failed");
+    close(s);
+#if 0 /* XXX these cause segfaults in some situations, no idea why.
+         we'll fix this later, causing a memory leak is just a workaround.
+	 --liw */
+    gw_free(datasend);
+    /*gw_free(datareceive);*/
+    gw_free (datareceive);
+#endif
+    return NULL;   
+}
+
+
+
+
+
+
+
+
+
+
+
 
 /*********************************************************************
-* Create a URL structure (see RFC2616/3.2.2)
-* Does NOT validate. Defaults to http://HOSTNAME:80/
-*/
-URL* internal_url_create(char *text) {
+ * URL handling
+ */
 
+
+
+/*
+ * Create a URL structure (see RFC2616/3.2.2)
+ * Does NOT validate. Defaults to http://HOSTNAME:80/
+ */
+URL* internal_url_create(char *text) {
+    
     char *mycopy = NULL;
     char *scheme_start = NULL, *scheme_end = NULL;
     char *username_start = NULL, *username_end = NULL;
@@ -672,7 +789,7 @@ error:
 }
 
 
-/*********************************************************************
+/*
 * Destroy a URL structure
 */
 int internal_url_destroy(URL *url) {
@@ -692,64 +809,73 @@ int internal_url_destroy(URL *url) {
 }
 
 
-/*********************************************************************
-* Create an exact duplicate of an URL structure
-*/
+
+
+/*
+ * Create an exact duplicate of an URL structure
+ */
 URL* url_duplicate(URL* url) {
-
+    
     URL *newurl = NULL;
-
+    
     newurl = gw_malloc(sizeof(struct URL));
     memset(newurl, 0, sizeof(struct URL));
-
-    if(url->username != NULL) {
+    
+    if(url->username != NULL)
 	newurl->username = gw_strdup(url->username);
-    }
-
-    if(url->password != NULL) {
+    
+    if(url->password != NULL)
 	newurl->password = gw_strdup(url->password);
-    }
-
-    if(url->scheme != NULL) {
+    
+    if(url->scheme != NULL) 
 	newurl->scheme = gw_strdup(url->scheme);
-    }
-
-    if(url->host != NULL) {
+    
+    if(url->host != NULL)
 	newurl->host = gw_strdup(url->host);
-    }
-
-    if(url->abs_path != NULL) {
+    
+    if(url->abs_path != NULL)
 	newurl->abs_path = gw_strdup(url->abs_path);
-    }
-
-    if(url->query != NULL) {
+    
+    if(url->query != NULL) 
 	newurl->query = gw_strdup(url->query);
-    }
-
+    
     newurl->port = url->port;
-
+    
     return newurl;
 }
 
 
-/************************************************************
+/*
+ *
  */
 URL* internal_url_relative_to_absolute(URL* baseURL, char *relativepath) {
-
+    
     return NULL;
 }
 
-/*****************************************************************************
-* Create a raw request from a URL
-*/
+
+
+
+
+
+
+/*********************************************************************
+ *  request/response handling
+ */
+
+
+
+/*
+ * Create a raw request from a URL
+ */
 HTTPRequest* httprequest_create(URL *url, char *payload) {
-
+    
     HTTPRequest *request = NULL;
-
+    
     /* initialize the variable to be returned */
     request = gw_malloc(sizeof(struct HTTPRequest));
     memset(request, 0, sizeof(struct HTTPRequest));
-
+    
     if(url == NULL)
 	request->url = NULL;
     else 
@@ -762,36 +888,34 @@ HTTPRequest* httprequest_create(URL *url, char *payload) {
     
     request->baseheader = NULL;
     
-    
     return request;
 }
 
 
-/*****************************************************************************
-* Free a HTTPRequest structure
-*/
+/*
+ * Free a HTTPRequest structure
+ */
 int httprequest_destroy(HTTPRequest *request) {
-
+    
     HTTPHeader *thisheader = NULL, *nextheader = NULL;
-
+    
+    
     if(request==NULL)
 	return 0;
-
-
+    
     if(request->url != NULL)	
 	internal_url_destroy(request->url);
-
+    
     /* free headers */
     thisheader = request->baseheader;
-    for(;;) {
-	if(thisheader == NULL) break;
+    while(thisheader != NULL){
 	nextheader = thisheader->next;
 	gw_free(thisheader->key);
 	gw_free(thisheader->value);
 	gw_free(thisheader);
 	thisheader = nextheader;
     }
-	
+    
     /* free data */
     gw_free(request->data);
 
@@ -801,45 +925,50 @@ int httprequest_destroy(HTTPRequest *request) {
     return 0;
 }
 
-/*****************************************************************************
-* Take the raw input data and turn it into a HTTPRequest structure
-*/
-HTTPRequest* httprequest_wrap(char *from, size_t size) {
 
+/*
+ * Take the raw input data and turn it into a HTTPRequest structure
+ * this should work with the server also.
+ */
+HTTPRequest* httprequest_wrap(char *from, size_t size) {
+    
     char *eol = NULL, *mycopy = NULL, *ptr = NULL, *midptr = NULL;
     char *tmpbuff = NULL;
+    
+    
     int tmpint = 0, tmpint2 = 0;
     HTTPRequest *request = NULL;
-
-    if( (from==NULL) || (size==0) ) {
+    
+    if( (from == NULL) || (size == 0) ) {
 	error(errno, "httprequest_wrap: faulty input");
 	goto error;
     }
-
+    
     mycopy = gw_malloc(size);
+    
     memcpy(mycopy, from, size);
-
+    
     request = gw_malloc(sizeof(HTTPRequest));
     tmpbuff = gw_malloc(10*1024);
-
+    
     memset(request, 0, sizeof(request));
     memset(tmpbuff, 0, 10*1024);
-
+    
     request->url = NULL;
     request->baseheader = NULL;
     request->data = NULL;
-
-    /* parse the status line */
+    
+    /* parse the status line*/
     eol = strstr(mycopy, "\r\n");
-    if(eol==NULL) { /* This ain't HTTP, mate */
+    if(eol==NULL) { /* This ain't HTTP, mate*/
 	error(0, "httprequest_wrap: no HTTP header found");
 	goto error;
     }
     /* replace the '\r\n' sequence with '\0'*/
     *eol = '\0';
     
-    /* maybe we are acting as a client? */
-
+/* maybe we are acting as a client?*/
+    
     tmpint = sscanf(mycopy, "HTTP/%i.%i %i %s", 
 		    &request->http_version_major,
 		    &request->http_version_minor, 
@@ -847,7 +976,7 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 		    tmpbuff);    
     
     
-    /* perhaps we are acting as a server? */
+/* perhaps we are acting as a server?*/
     if(tmpint < 4) {
 	tmpint = sscanf(mycopy, "GET %s HTTP/%i.%i",
 			tmpbuff,
@@ -855,14 +984,14 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 			&request->http_version_minor);
 	request->url = internal_url_create(tmpbuff);
     }
-
-    /* One way or another, parse the headers. */
+    
+    /* One way or another, parse the headers.*/
     for(;;) {
 	ptr = eol+2;
 	midptr = strchr(ptr, ':');
 	eol = strstr(ptr, "\r\n");
-		
-	/* Kludge for a stupid nonconforming HTTP server */
+	
+	/* Kludge for a stupid nonconforming HTTP server*/
 	if(eol == NULL) {
 	    eol = strstr(ptr, "\n\n");
 	    if(eol==NULL) {
@@ -870,12 +999,12 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 		break;
 	    }
 	}
-
-	if(ptr == eol) {    /* found "\r\n\r\n" - end of headers */
-	    ptr += 2; /* advance to start of data */
+	
+	if(ptr == eol) {    /* found "\r\n\r\n" - end of headers*/
+	    ptr += 2; /* advance to start of data*/
 	    break;
 	}
-
+	
 	if(eol != NULL) *eol = '\0';
 	if(midptr != NULL) *midptr = '\0';
 	midptr++;
@@ -883,89 +1012,63 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 	if( (eol!=NULL) && (midptr!=NULL) )
 	    httprequest_add_header(request, ptr, midptr);
     }
-
+    
     request->data_length = size - ((int)ptr - (int)mycopy);
-
+    
     /* The data might be chucked according to RFC2616/3.6.1, and in
        practise quite often is. We detect this by checking the value of
-       the "Transfer-Encoding" header. */
+       the "Transfer-Encoding" header.*/
     midptr = httprequest_get_header_value(request, "Transfer-Encoding");
     if(midptr == NULL) {
-	
+	/* no encoding*/
 	if(httprequest_get_header_value(request, "Content-Length") != NULL)
 	    request->data_length = atoi(httprequest_get_header_value(request, "Content-Length"));
 	
-	/* No need to check Content-Length, just read it all in. */
+	/* No need to check Content-Length, just read it all in.*/
 	request->data = gw_malloc(request->data_length+1);
 	memset(request->data, 0, request->data_length);
 	memcpy(request->data, ptr, request->data_length);
+	/* lets add the ending \0 */
 	request->data[request->data_length] = '\0';
 	
     } else if(strstr(midptr, "chunked") != NULL) {
 	
-	/* Get enough space to hold all the data. */
+	/* Get enough space to hold all the data.*/
 	request->data = gw_malloc(request->data_length);
 	memset(request->data, 0,  request->data_length);
 	
 	
-
-	/* Convert RFC2616/3.6.1 chunked data to normal. */
-	for(;;){
-	    /* 
-	       ptr = eol+2;
-	       midptr = strchr(ptr, ':');
-	       eol = strstr(ptr, "\r\n");
-	    
-	    -----Kludge for a stupid nonconforming HTTP server ------
-	    if(eol == NULL) {
-	    eol = strstr(ptr, "\n\n");
-	    if(eol==NULL) {
-	    ptr += 2;
-	    break;
-	    }
-	    }
-	    
-	    if(ptr==eol) {    ---- found "\r\n\r\n" - end of headers ----
-	    ptr += 2; --- advance to start of data ---
-	    break;
-	    } 
-	    
-	    if(eol != NULL) *eol = '\0';
-	    if(midptr != NULL) *midptr = '\0';
-	    midptr++;
-	    while(isspace((int)*midptr)) midptr++;
-	    if( (eol!=NULL) && (midptr!=NULL) )
-	    httprequest_add_header(request, ptr, midptr);
-	    }*/
-	    
-	    /* Get the chunk size. */
+	
+	/* Convert RFC2616/3.6.1 chunked data to normal.*/
+	for(;;){/* Get the chunk size.*/
+	    /* convert the hex to integer */
 	    tmpint = strtol(ptr, NULL, 16);
 	    if( (tmpint2+tmpint) > size) {
 		error(0, "httprequest_wrap: chunk size too big");
-		break;
-	    }
+		break; }
 	    
+	    /* found the last chunk */
 	    if(tmpint == 0) break;
-	    midptr = strstr(ptr, "\r\n");
-	    if(midptr == NULL) break;
+	    
+	    /* does the data have an error? */	    
+	    if( (midptr = strstr(ptr, "\r\n")) == NULL ) break;
+	    /* copy the data to request->data */
 	    memcpy(request->data+tmpint2, midptr+2, tmpint);
-	    ptr = midptr + 2 /* CRLF */ + tmpint + 2 /* CRLF */;
+	    
+	    ptr = midptr + 2 /* CRLF */ + tmpint + 27 /* CRLF */;
 	    tmpint2 += tmpint;
 	    
-	} /* for endless loop */
+	} /* for loop*/
 	
-	/* Get the real data size */
+	/* Get the real data size*/
 	request->data_length = tmpint2;
 	
-	/* Shrink the buffer to the real size */
+	/* Shrink the buffer to the real size*/
 	request->data = gw_realloc(request->data, request->data_length+1);
 	request->data[request->data_length] = '\0';
-	
-    } else { /* Transfer-Encoding set to an unknown value */
-	/* Someone at the server end seems to have botched
-	   the job of implementing HTTP/1.1. 
-	   The "Transfer-Encoding" header should hold 
-	   either "chunked" or NULL. */
+    } else { /* Transfer-Encoding set to an unknown value
+	      *The "Transfer-Encoding" header should hold 
+	      * either "chunked" or NULL.*/
 	error(0, "Broken HTTP implementation on the server side.");
     }
     
@@ -984,8 +1087,150 @@ error:
 }
 
 
-/*****************************************************************************
- * Convert a HTTPRequest structure to data writable to a socket
+
+/*
+ * httpresponse_wrap - Take the raw input data and turn it into a HTTPRequest
+ * structure. client side
+ */
+
+HTTPRequest* httpresponse_wrap(Octstr *from, size_t size) {
+    
+    Octstr *raw = NULL, *statusl = NULL, *headers = NULL, *data = NULL, *rest = NULL, *headerl = NULL;
+
+    HTTPRequest *request = NULL;
+    int pos = 0, colon = 0, eol = 0, chunk_size = 0;
+    char cstr[] = "\0\0\0\0", maj[] = "\0\0\0", min[] = "\0\0\0";
+
+    
+    if( (from == NULL) || (size == 0) ) {
+	error(errno, "httpresponse_wrap: faulty input");
+	goto error;}
+    
+    
+    request = gw_malloc(sizeof(HTTPRequest)); /* do we need memset here? */
+    request->url = NULL;
+    request->baseheader = NULL;
+    request->data = NULL;
+    
+    
+    /* cut the input to pieces */
+    raw = octstr_duplicate(from);
+    statusl = octstr_copy( raw, 0, (pos = octstr_search_str(raw, "\r\n") + 2) );
+    rest = octstr_copy( raw, pos, octstr_len(raw) - pos );
+    octstr_destroy(raw);
+    headers = octstr_copy( rest, 0, (pos = octstr_search_str(rest, "\r\n\r\n") + 4) );
+    data = octstr_copy( rest, pos, octstr_len(rest) - pos );
+    octstr_destroy(rest);
+
+    
+    /* parse the status line  */ 
+    if( (pos = octstr_search_str( statusl, "HTTP/")) == -1 ){
+	error(errno, "httpresponse_wrap: not a HTTP message");
+	goto error;}
+    
+    if( (*maj = octstr_get_char(statusl, (pos+5)) ) == -1 || (*min = octstr_get_char(statusl, (pos+7)) ) == -1 ){
+	error(errno, "httpresponse_wrap: bad version numbers");
+	goto error;}
+    else{
+	request->http_version_major = atoi(maj);
+	request->http_version_minor = atoi(min);
+    }
+    
+    if( octstr_get_char( statusl, (pos+9)) == -1 ){
+	error(errno, "httpresponse_wrap: bad status-line");
+	goto error;}
+    else{
+	octstr_get_many_chars(cstr, raw, (pos+9), 3);
+	request->status = atoi(cstr);
+    }
+    
+    
+    /* the headers */
+    while( octstr_search_char(headers, ':') != -1 ){
+	headerl  = octstr_copy( headers, 0, (eol = octstr_search_str(headers, "\r\n")) );
+	rest = octstr_copy( headers, eol+2, octstr_len(headers)-(eol+2));
+	
+	/* put the rest in headers */
+	octstr_destroy(headers);
+	headers = rest;
+	
+	if( (colon = octstr_search_char(headerl, ':')) != -1 ){
+	    httprequest_add_header(request,
+				   octstr_get_cstr(octstr_copy(headerl, 0, colon)),
+				   octstr_get_cstr(octstr_copy(headerl, colon+2, octstr_len(headerl)-(colon+2))) );
+	    octstr_destroy(headerl);
+	} else {
+	    octstr_destroy(headerl);
+	    error(errno, "httpresponse_wrap: error in headers");
+	    goto error;	}
+    }    /* while */
+    
+    
+ /* The data might be chucked according to RFC2616/3.6.1. We detect this by checking the value of the "Transfer-Encoding" header. */
+    
+    if( httprequest_get_header_value(request, "Transfer-Encoding")  == NULL ){
+	/* no encoding*/
+
+	/* let's get the size of data */
+ 	if( httprequest_get_header_value(request, "Content-Length") != NULL ){
+	    /*debug("gwlib.http", 0,"httpresponse_wrap: content length <%s>",httprequest_get_header_value(request, "Content-Length") ); */
+	    request->data_length = atoi(httprequest_get_header_value(request, "Content-Length"));
+	} else {
+	    if(data != NULL)request->data_length = octstr_len(data);
+	    else {error(errno, "httpresponse_wrap: no entity");goto error;}
+	}
+	
+	request->data = octstr_get_cstr(data);
+	return request;
+	
+	
+	
+	/* should we check it at all ?!! */
+ 	if( httprequest_get_header_value(request, "Content-Length") != NULL ){
+	    debug("gwlib.http", 0,"httpresponse_wrap: content length <%s>",httprequest_get_header_value(request, "Content-Length") );	    
+	    request->data_length = atoi(httprequest_get_header_value(request, "Content-Length"));
+	} else {
+	    /* No need to check Content-Length, just read it all in.*/
+	    request->data = octstr_get_cstr(data);
+	    
+	    
+	}
+	return request;
+    }
+    
+    
+    else if( octstr_search_str(headers, "chunked") != -1)
+	/* might be reeeeally buggy! not tested */
+	while( octstr_search_str(data, "\r\n\r\n") ){	
+	    /* take the size and convert to int */
+	    if( (pos = octstr_search_str(data, "\r\n\r\n")) == -1){
+		error(errno, "httpresponse_wrap: data corrupted: missing CRLF");
+		goto error;}
+	    
+	    chunk_size = strtol(octstr_get_cstr(octstr_copy(data, 0, pos)), NULL, 16);
+	    
+	    /* remove the size information and read the data in
+	     * 
+	     * if( (data = octstr_copy( data, pos+4, data->len-(pos+4))) == NULL ){
+	     * error(errno, "httpresponse_wrap: copying failed");
+	     * goto error;}
+	     */
+	}   
+
+    return request;
+    
+error:
+    error(errno, "httpresponse_wrap: failed");
+    httprequest_destroy(request);
+    octstr_destroy(statusl);
+    octstr_destroy(headers);
+    octstr_destroy(data);
+    return NULL;
+}
+
+
+/*
+ * httprequest_unwrap - Convert a HTTPRequest structure to data writable to a socket
  */
 char* httprequest_unwrap(HTTPRequest *request) {
     
@@ -1041,12 +1286,11 @@ char* httprequest_unwrap(HTTPRequest *request) {
     
 /* terminate headers */
     strcat(bigbuff, "\r\n");
-    
-    debug("gwlib.http", 0,"request_unwrap: preparing to put data: <%s>", request->data);
-    
+        
 /* data */
     if(request->data != NULL) 
 	strcat(bigbuff, request->data);
+
     
     /* done */
     finalbuff = gw_strdup(bigbuff);
@@ -1055,9 +1299,9 @@ char* httprequest_unwrap(HTTPRequest *request) {
     gw_free(tmpline);
     return finalbuff;
     
-    
+
 error:
-    debug("gwlib.http", errno, "httprequest_unwrap: failed");
+    error(errno, "httprequest_unwrap: failed");
     gw_free(bigbuff);
     gw_free(tmpbuff);
     gw_free(tmpline);
@@ -1065,77 +1309,17 @@ error:
 }
 
 
-/*****************************************************************************
- * For client use. Does TCP connection and returns whatever the server sez.
+
+
+
+
+
+
+
+
+/*********************************************************************
+ * HTTPHeader handling
  */
-
-HTTPRequest* httprequest_execute(HTTPRequest *request) {
-    
-    char *datasend = NULL, *datareceive = NULL;
-    int s = -1;
-    size_t size = 0;
-    HTTPRequest *result = NULL;
-    
-    if(request==NULL) goto error; /* PEBKaC */
-    
-/* prepare data to be sent to server */
-    request->action = HTTP_CLIENT;
-    datasend = httprequest_unwrap(request);
-    if(datasend==NULL) goto error;
-    
-/* open socket */
-    s = tcpip_connect_to_server(request->url->host, request->url->port);
-    if (s == -1) {
-	error(errno, "Couldn't HTTP connect to <%s>", request->url->host);
-	goto error;
-    }
-
-/* write data to socket */
-    if (write_to_socket(s, datasend) == -1) {
-	error(errno, "Error writing request to server");
-	goto error;
-    }
-
-/* make socket readonly */
-    if (shutdown(s, 1) == -1) {
-	error(errno, "Error closing writing end of socket");
-	goto error;
-    }
-
-/* read from socket */
-    if (read_to_eof(s, &datareceive, &size) == -1) {
-	error(errno, "Error receiving data from HTTP server");
-	goto error;
-    }
-
-/* close socket */
-    if (close(s) == -1) {
-	error(errno, "Error closing connection to HTTP server");
-	goto error;
-    }
-
-    
-/* parse the results */
-    result = httprequest_wrap(datareceive, size);
-    
-/* return the result */	
-    gw_free(datasend);
-    gw_free(datareceive);
-    return result;
-    
-error:
-    error(errno, "httprequest_execute: failed");
-    close(s);
-#if 0 /* XXX these cause segfaults in some situations, no idea why.
-         we'll fix this later, causing a memory leak is just a workaround.
-	 --liw */
-    gw_free(datasend);
-    gw_free(datareceive);
-#endif
-    return NULL;   
-}
-
-
 
 
 /*****************************************************************************
@@ -1193,19 +1377,23 @@ error:
 
 
 
-/************/
+/*
+ *
+ */
 
 HTTPHeader *header_create(char *key, char *value) {
-	HTTPHeader *h;
-	
-	h = gw_malloc(sizeof(HTTPHeader));
-	h->key = gw_strdup(key);
-	h->value = gw_strdup(value);
-	h->next = NULL;
-	return h;
+    HTTPHeader *h;
+    
+    h = gw_malloc(sizeof(HTTPHeader));
+    h->key = gw_strdup(key);
+    h->value = gw_strdup(value);
+    h->next = NULL;
+    return h;
 }
 
-/************/
+/*
+ *
+ */
 
 int header_dump(HTTPHeader *hdr)
 {
@@ -1217,7 +1405,9 @@ int header_dump(HTTPHeader *hdr)
 }
 
 
-/************/
+/*
+ *
+ */
 
 int header_destroy(HTTPHeader *hdr)
 {
@@ -1266,7 +1456,8 @@ int header_pack(HTTPHeader *hdr)
 
 
 
-/*************************************************************
+/*
+ *
  */
 int httprequest_remove_header(HTTPRequest *request, char *key) {
 
@@ -1297,6 +1488,9 @@ error:
     return -1;
 }
 
+
+
+
 /*
  * This value must not be meddled with.
  */
@@ -1325,6 +1519,13 @@ error:
     debug("gwlib.http", errno, "httprequest_add_header: failed");
     return NULL;
 }
+
+
+
+/*
+ *
+ */
+
 
 static char *internal_base6t4(char *pass) {
 
@@ -1385,6 +1586,5 @@ static char *internal_base6t4(char *pass) {
 
     return result;
 }
-
 
 
