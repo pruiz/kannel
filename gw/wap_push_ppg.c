@@ -3261,7 +3261,7 @@ static long set_dlr_mask(List *headers, Octstr *dlr_url)
          return dlr_mask;
     }
 
-    warning("wap.push.ppg", 0, "unparsable dlr mask, rejected");
+    warning(0, "unparsable dlr mask, rejected");
     return 0;
 }
 
