@@ -245,32 +245,33 @@ error:
  *
  */
 
-int udp_start(Config *config)
+int udp_start(Cfg *cfg)
 {
-    char *p, *interface_name;
+    Octstr *interface_name;
+    CfgGroup *grp;
     
     if (udp_running) return -1;
 
     
     debug("bb.udp", 0, "starting UDP sender/receiver module");
 
-    if ((p = config_get(config_find_first_group(config, "group", "core"),
-			"wdp-interface-name")) == NULL) {
+    grp = cfg_get_single_group(cfg, octstr_imm("core"));
+    interface_name = cfg_get(grp, octstr_imm("wdp-interface-name"));
+    if (interface_name == NULL) {
 	error(0, "Missing wdp-interface-name variable, cannot start UDP");
 	return -1;
     }
-    interface_name = p;
     
     udpc_list = list_create();	/* have a list of running systems */
 
-    add_service(9200, interface_name);		/* wsp 		*/
-    add_service(9201, interface_name);		/* wsp/wtp	*/
-    /* add_service(9202, interface_name);	 * wsp/wtls	*/
-    /* add_service(9203, interface_name);	 * wsp/wtp/wtls */
-    /* add_service(9204, interface_name);	 * vcard	*/
-    /* add_service(9205, interface_name);	 * vcal		*/
-    /* add_service(9206, interface_name);	 * vcard/wtls	*/
-    /* add_service(9207, interface_name);	 * vcal/wtls	*/
+    add_service(9200, octstr_get_cstr(interface_name));	   /* wsp 	*/
+    add_service(9201, octstr_get_cstr(interface_name));	   /* wsp/wtp	*/
+    /* add_service(9202, octstr_get_cstr(interface_name));  * wsp/wtls	*/
+    /* add_service(9203, octstr_get_cstr(interface_name));  * wsp/wtp/wtls */
+    /* add_service(9204, octstr_get_cstr(interface_name));  * vcard	*/
+    /* add_service(9205, octstr_get_cstr(interface_name));  * vcal	*/
+    /* add_service(9206, octstr_get_cstr(interface_name));  * vcard/wtls */
+    /* add_service(9207, octstr_get_cstr(interface_name));  * vcal/wtls	*/
     
     list_add_producer(incoming_wdp);
     udp_running = 1;

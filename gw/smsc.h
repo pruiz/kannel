@@ -31,7 +31,7 @@ typedef struct SMSCenter SMSCenter;
    The operation returns NULL for error and the pointer
    to the new SMSCenter structure for OK.
    */
-SMSCenter *smsc_open(ConfigGroup *grp);
+SMSCenter *smsc_open(CfgGroup *grp);
 
 /*
  * reopen once opened SMS Center connection. Close old connection if

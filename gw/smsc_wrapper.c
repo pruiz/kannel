@@ -329,7 +329,7 @@ static long wrapper_queued(SMSCConn *conn)
     return ret;
 }
 
-int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
+int smsc_wrapper_create(SMSCConn *conn, CfgGroup *cfg)
 {
     /* 1. Call smsc_open()
      * 2. create sender/receiver threads

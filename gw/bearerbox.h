@@ -31,8 +31,8 @@ enum {
  *
  * Modules implement one or more of the following interfaces:
  *
- * XXX_start(Config *config) - start the module
- * XXX_restart(Config *config) - restart the module, according to new config
+ * XXX_start(Cfg *config) - start the module
+ * XXX_restart(Cfg *config) - restart the module, according to new config
  * XXX_shutdown() - start the avalanche - started from UDP/SMSC
  * XXX_die() - final cleanup
  *
@@ -44,10 +44,10 @@ enum {
  * bb_boxc.c (SMS and WAPBOX connections)
  */
 
-int smsbox_start(Config *config);
-int smsbox_restart(Config *config);
+int smsbox_start(Cfg *config);
+int smsbox_restart(Cfg *config);
 
-int wapbox_start(Config *config);
+int wapbox_start(Cfg *config);
 
 Octstr *boxc_status(int status_type);
 /* tell total number of messages in seperate wapbox incoming queues */
@@ -57,8 +57,8 @@ int boxc_incoming_wdp_queue(void);
  * bb_udp.c (UDP receiver/sender)
  */
 
-int udp_start(Config *config);
-/* int udp_restart(Config *config); */
+int udp_start(Cfg *config);
+/* int udp_restart(Cfg *config); */
 int udp_shutdown(void);
 int udp_die(void);	/* called when router dies */
 
@@ -74,8 +74,8 @@ int udp_outgoing_queue(void);
  * bb_smscconn.c (SMS Center connections)
  */
 
-int smsc2_start(Config *config);
-int smsc2_restart(Config *config);
+int smsc2_start(Cfg *config);
+int smsc2_restart(Cfg *config);
 
 void smsc2_suspend(void);    /* suspend (can still send but not receive) */
 void smsc2_resume(void);     /* resume */
@@ -99,8 +99,8 @@ int smsc_outgoing_queue(void);
  * bb_http.c (HTTP Admin)
  */
 
-int httpadmin_start(Config *config);
-/* int http_restart(Config *config); */
+int httpadmin_start(Cfg *config);
+/* int http_restart(Cfg *config); */
 void httpadmin_stop(void);
 
 

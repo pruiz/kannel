@@ -1,5 +1,19 @@
 2001-01-23  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/bb_boxc.c, gw/bb_smscconn.c, gw/bb_udp.c, gw/bearerbox.[ch],
+	gw/smsc.[ch], gw/smsc_emi.c, gw/smsc_fake2.c, gw/smsc_p.h,
+	gw/smsc_wrapper.c, gw/smscconn.[ch], gw/smscconn_p.h: Converted
+	the bearerbox to use the new configuration file interface. This
+	resulted in large, but simple changes in many files.
+
+	* gwlib/cfg.def: Added variable 'phone' to an smsc group. Not
+	documented anywhere, it seems.
+	
+	* gwlib/gwlib.h, gwlib/conffile.[ch]: Removed the old
+	configuration file interface.
+
+2001-01-23  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/cfg.c: Implemented a check that makes sure a CfgGroup is
 	only queried for variables that it can legally contain. This 
 	showed some bugs, which have been corrected by the changes below.

@@ -61,7 +61,7 @@ struct SMSCenter {
 
 
 	/* Alternative charset */
-        int alt_charset;
+        long alt_charset;
 
 	/* For locking/unlocking. */
 	Mutex *mutex;

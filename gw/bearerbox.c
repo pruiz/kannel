@@ -146,14 +146,14 @@ static void setup_signal_handlers(void)
 
 
 
-static int start_smsc(Config *config)
+static int start_smsc(Cfg *cfg)
 {
     static int started = 0;
     if (started) return 0;
 
-    smsbox_start(config);
+    smsbox_start(cfg);
 
-    smsc2_start(config);
+    smsc2_start(cfg);
 
     started = 1;
     return 0;
@@ -185,13 +185,13 @@ static void wdp_router(void *arg)
     list_remove_producer(flow_threads);
 }
 
-static int start_wap(Config *config)
+static int start_wap(Cfg *cfg)
 {
     static int started = 0;
     if (started) return 0;
 
     
-    wapbox_start(config);
+    wapbox_start(cfg);
 
     debug("bb", 0, "starting WDP router");
     if (gwthread_create(wdp_router, NULL) == -1)
@@ -202,14 +202,14 @@ static int start_wap(Config *config)
 }
 
 
-static int start_udp(Config *config)
+static int start_udp(Cfg *cfg)
 {
     static int started = 0;
     if (started) return 0;
 
-    udp_start(config);
+    udp_start(cfg);
 
-    start_wap(config);
+    start_wap(cfg);
     started = 1;
     return 0;
 }
@@ -218,31 +218,31 @@ static int start_udp(Config *config)
 /*
  * check that there is basic thingies in configuration
  */
-static int check_config(Config *config)
+static int check_config(Cfg *cfg)
 {
-    ConfigGroup *grp;
-    char *smsp, *wapp;
+    CfgGroup *grp;
+    long smsp, wapp;
 
-    if (config_sanity_check(config)==-1)
-	return -1;
+    grp = cfg_get_single_group(cfg, octstr_imm("core"));
+    if (grp == NULL)
+    	return -1;
+
+    if (cfg_get_integer(&smsp, grp, octstr_imm("smsbox-port")) == -1)
+    	smsp = -1;
+    if (cfg_get_integer(&wapp, grp, octstr_imm("wapbox-port")) == -1)
+    	wapp = -1;
     
-    grp = config_find_first_group(config, "group", "core");
-
-    smsp = config_get(grp, "smsbox-port");
-    wapp = config_get(grp, "wapbox-port");
-    
-    grp = config_find_first_group(config, "group", "smsbox");
-
 #ifndef KANNEL_NO_SMS    
-    if (smsp && *smsp && grp == NULL) {
+    grp = cfg_get_single_group(cfg, octstr_imm("smsbox"));
+    if (smsp != -1 && grp == NULL) {
 	error(0, "No 'smsbox' group in configuration, but smsbox-port set");
 	return -1;
     }
 #endif
     
 #ifndef KANNEL_NO_WAP	
-    grp = config_find_first_group(config, "group", "wapbox");
-    if (wapp && *wapp && grp == NULL) {
+    grp = cfg_get_single_group(cfg, octstr_imm("wapbox"));
+    if (wapp != -1 && grp == NULL) {
 	error(0, "No 'wapbox' group in configuration, but wapbox-port set");
 	return -1;
     }
@@ -267,26 +267,34 @@ static int check_args(int i, int argc, char **argv) {
 } 
 
 
-static int starter(Config *config)
+static int starter(Cfg *cfg)
 {
-    ConfigGroup *grp;
-    char *val, *log;
+    CfgGroup *grp;
+    Octstr *log, *val;
+    long loglevel;
     
 	
-    grp = config_find_first_group(config, "group", "core");
+    grp = cfg_get_single_group(cfg, octstr_imm("core"));
 
-    if ((log = config_get(grp, "log-file")) != NULL) {
-	val = config_get(grp, "log-level");
-	log_open(log, val ? atoi(val) : 0);
+    log = cfg_get(grp, octstr_imm("log-file"));
+    if (log != NULL) {
+	if (cfg_get_integer(&loglevel, grp, octstr_imm("log-level")) == -1)
+	    loglevel = 0;
+	log_open(octstr_get_cstr(log), loglevel);
+	octstr_destroy(log);
     }
+
     info(0, "----------------------------------------");
     info(0, "Kannel bearerbox II version %s starting", VERSION);
 
-    if (check_config(config) == -1)
+    if (check_config(cfg) == -1)
 	panic(0, "Cannot start with corrupted configuration");
 
-    if ((log = config_get(grp, "access-log")) != NULL)
-	alog_open(log, 1);	/* use localtime; XXX let user choose that */
+    log = cfg_get(grp, octstr_imm("access-log"));
+    if (log != NULL) {
+	alog_open(octstr_get_cstr(log), 1);
+	/* use localtime; XXX let user choose that */
+    }
     
 	
     /* if all seems to be OK by the first glimpse, real start-up */
@@ -307,22 +315,28 @@ static int starter(Config *config)
 
     
     /* http-admin is REQUIRED */
-    httpadmin_start(config);
+    httpadmin_start(cfg);
 
 #ifndef KANNEL_NO_SMS    
-    if (config_find_first_group(config, "group", "smsc"))
-	start_smsc(config);
+    {
+	List *list;
+	
+	list = cfg_get_multi_group(cfg, octstr_imm("smsc"));
+	if (list != NULL) {
+	    start_smsc(cfg);
+	    list_destroy(list, NULL);
+	}
+    }
 #endif
     
-    grp = config_find_first_group(config, "group", "core");
-    
 #ifndef KANNEL_NO_WAP
-    val = config_get(grp, "wdp-interface-name");
-    if (val && *val != '\0')
-	start_udp(config);
+    grp = cfg_get_single_group(cfg, octstr_imm("core"));
+    val = cfg_get(grp, octstr_imm("wdp-interface-name"));
+    if (val != NULL && octstr_len(val) > 0)
+	start_udp(cfg);
 
-    if (config_find_first_group(config, "group", "wapbox"))
-	start_wap(config);
+    if (cfg_get_single_group(cfg, octstr_imm("wapbox")) != NULL)
+	start_wap(cfg);
 #endif
     
     return 0;
@@ -381,7 +395,8 @@ static void empty_msg_lists(void)
 int main(int argc, char **argv)
 {
     int cf_index;
-    Config *cfg;
+    Cfg *cfg;
+    Octstr *filename;
 
     bb_status = BB_RUNNING;
     
@@ -395,16 +410,20 @@ int main(int argc, char **argv)
 
     cf_index = get_and_set_debugs(argc, argv, check_args);
 
-    cfg = config_from_file(argv[cf_index], "kannel.conf");
-    if (cfg == NULL)
-        panic(0, "No configuration, aborting.");
+    if (argv[cf_index] == NULL)
+    	filename = octstr_create("kannel.conf");
+    else
+    	filename = octstr_create(argv[cf_index]);
+    cfg = cfg_create(filename);
+    octstr_destroy(filename);
+    if (cfg_read(cfg) == -1)
+        panic(0, "No configuration or bad configuration, aborting.");
 
     report_versions("bearerbox");
 
     flow_threads = list_create();
     
     starter(cfg);
-
 
     gwthread_sleep(5.0); /* give time to threads to register themselves */
 
@@ -442,7 +461,7 @@ int main(int argc, char **argv)
     mutex_destroy(status_mutex);
 
     alog_close();		/* if we have any */
-    config_destroy(cfg);
+    cfg_destroy(cfg);
     gwlib_shutdown();
 
     return 0;

@@ -514,77 +514,67 @@ static void smscenter_unlock(SMSCenter *smsc)
  */
 
 
-SMSCenter *smsc_open(ConfigGroup *grp)
+SMSCenter *smsc_open(CfgGroup *grp)
 {
     SMSCenter *smsc;
-    char *type, *host, *port, *username, *password, *phone, *device;
-    char *smsc_id;
-    char *preferred_id, *denied_id;
-    char *preferred_prefix, *denied_prefix;
-    char *backup_port, *receive_port, *our_port;
-    char *alt_chars, *allow_ip;
-    char *smpp_system_id, *smpp_system_type, *smpp_address_range;
-    char *sema_smscnua, *sema_homenua, *sema_report;
-    char *at_modemtype, *at_pin;
-    char *keepalive;
-    char *ois_debug_level;
+    Octstr *type, *host, *username, *password, *phone, *device;
+    Octstr *smsc_id;
+    Octstr *preferred_id, *denied_id;
+    Octstr *preferred_prefix, *denied_prefix;
+    Octstr *alt_chars, *allow_ip;
+    Octstr *smpp_system_id, *smpp_system_type, *smpp_address_range;
+    Octstr *sema_smscnua, *sema_homenua, *sema_report;
+    Octstr *at_modemtype, *at_pin;
 
-    int typeno, portno, backportno, ourportno, receiveportno, iwaitreport;
-    int keepalivetime, ois_debug;
-
-
-    type = config_get(grp, "smsc");
-    host = config_get(grp, "host");
-    port = config_get(grp, "port");
-    backup_port = config_get(grp, "backup-port");
-    receive_port = config_get(grp, "receive-port");
-    our_port = config_get(grp, "our-port");
-    username = config_get(grp, "smsc-username");
-    password = config_get(grp, "smsc-password");
-    phone = config_get(grp, "phone");
-    device = config_get(grp, "device");
-    preferred_prefix = config_get(grp, "preferred-prefix");
-    denied_prefix = config_get(grp, "denied-prefix");
-    alt_chars = config_get(grp, "alt-charset");
-
-    allow_ip = config_get(grp, "connect-allow-ip");
-
-    smsc_id = config_get(grp, "smsc-id");
-    preferred_id = config_get(grp, "preferred-smsc-id");
-    denied_id = config_get(grp, "denied-smsc-id");
-
-    smpp_system_id = config_get(grp, "system-id");
-    smpp_system_type = config_get(grp, "system-type");
-    smpp_address_range = config_get(grp, "address-range");
-
-    sema_smscnua = config_get(grp, "smsc_nua");
-    sema_homenua = config_get(grp, "home_nua");
-    sema_report = config_get(grp, "wait_report");
-    iwaitreport = (sema_report != NULL ? atoi(sema_report) : 1);
-    keepalive = config_get(grp, "keepalive");
-
-    ois_debug_level = config_get(grp, "ois-debug-level");
-
-    at_modemtype = config_get(grp, "modemtype");
-    at_pin = config_get(grp, "pin");
-
-    if (backup_port)
-        warning(0, "Depricated SMSC config variable 'backup-port' used, "
-                "'receive-port' recommended (but backup-port functions");
-
-    portno = (port != NULL ? atoi(port) : 0);
-    backportno = (backup_port != NULL ? atoi(backup_port) : 0);
-    receiveportno = (receive_port != NULL ? atoi(receive_port) : 0);
-    keepalivetime = (keepalive != NULL ? atoi(keepalive) : 0);
-    ois_debug = (ois_debug_level != NULL ? atoi(ois_debug_level) : 0);
-
-    /* Use either, but prefer receive-port */
-
-    if (!receiveportno && backportno)
-        receiveportno = backportno;
+    long iwaitreport;
+    long port, receive_port, our_port;
+    long keepalive;
+    long ois_debug;
+    int typeno;
 
 
-    ourportno = (our_port != NULL ? atoi(our_port) : 0);
+    type = cfg_get(grp, octstr_imm("smsc"));
+    host = cfg_get(grp, octstr_imm("host"));
+    if (cfg_get_integer(&port, grp, octstr_imm("port")) == -1)
+    	port = 0;
+    if (cfg_get_integer(&receive_port, grp, octstr_imm("receive-port")) == -1)
+    	receive_port = 0;
+    if (cfg_get_integer(&our_port, grp, octstr_imm("our-port")) == -1)
+    	our_port = 0;
+    username = cfg_get(grp, octstr_imm("smsc-username"));
+    password = cfg_get(grp, octstr_imm("smsc-password"));
+    phone = cfg_get(grp, octstr_imm("phone"));
+    device = cfg_get(grp, octstr_imm("device"));
+    preferred_prefix = cfg_get(grp, octstr_imm("preferred-prefix"));
+    denied_prefix = cfg_get(grp, octstr_imm("denied-prefix"));
+    alt_chars = cfg_get(grp, octstr_imm("alt-charset"));
+
+    allow_ip = cfg_get(grp, octstr_imm("connect-allow-ip"));
+
+    smsc_id = cfg_get(grp, octstr_imm("smsc-id"));
+    preferred_id = cfg_get(grp, octstr_imm("preferred-smsc-id"));
+    denied_id = cfg_get(grp, octstr_imm("denied-smsc-id"));
+
+    smpp_system_id = cfg_get(grp, octstr_imm("system-id"));
+    smpp_system_type = cfg_get(grp, octstr_imm("system-type"));
+    smpp_address_range = cfg_get(grp, octstr_imm("address-range"));
+
+    sema_smscnua = cfg_get(grp, octstr_imm("smsc_nua"));
+    sema_homenua = cfg_get(grp, octstr_imm("home_nua"));
+    sema_report = cfg_get(grp, octstr_imm("wait_report"));
+    if (sema_report == NULL)
+    	iwaitreport = 1;
+    else
+    	octstr_parse_long(&iwaitreport, sema_report, 0, 0);
+
+    if (cfg_get_integer(&keepalive, grp, octstr_imm("keepalive")) == -1)
+    	keepalive = 0;
+
+    if (cfg_get_integer(&ois_debug, grp, octstr_imm("ois-debug-level")) == -1)
+    	ois_debug = 0;
+
+    at_modemtype = cfg_get(grp, octstr_imm("modemtype"));
+    at_pin = cfg_get(grp, octstr_imm("pin"));
 
     smsc = NULL;
 
@@ -593,43 +583,56 @@ SMSCenter *smsc_open(ConfigGroup *grp)
         return NULL;
     }
 
-    if (strcmp(type, "fake") == 0) typeno = SMSC_TYPE_FAKE;
-    else if (strcmp(type, "cimd") == 0) typeno = SMSC_TYPE_CIMD;
-    else if (strcmp(type, "cimd2") == 0) typeno = SMSC_TYPE_CIMD2;
-    else if (strcmp(type, "emi") == 0) typeno = SMSC_TYPE_EMI;
-    else if (strcmp(type, "emi_ip") == 0) typeno = SMSC_TYPE_EMI_IP;
-    else if (strcmp(type, "smpp") == 0) typeno = SMSC_TYPE_SMPP_IP;
-    else if (strcmp(type, "sema") == 0) typeno = SMSC_TYPE_SEMA_X28;
-    else if (strcmp(type, "ois") == 0) typeno = SMSC_TYPE_OIS;
-    else if (strcmp(type, "at") == 0) typeno = SMSC_TYPE_AT;
+    if (octstr_compare(type, octstr_imm("fake")) == 0)
+    	typeno = SMSC_TYPE_FAKE;
+    else if (octstr_compare(type, octstr_imm("cimd")) == 0)
+    	typeno = SMSC_TYPE_CIMD;
+    else if (octstr_compare(type, octstr_imm("cimd2")) == 0)
+    	typeno = SMSC_TYPE_CIMD2;
+    else if (octstr_compare(type, octstr_imm("emi")) == 0)
+    	typeno = SMSC_TYPE_EMI;
+    else if (octstr_compare(type, octstr_imm("emi_ip")) == 0)
+    	typeno = SMSC_TYPE_EMI_IP;
+    else if (octstr_compare(type, octstr_imm("smpp")) == 0)
+    	typeno = SMSC_TYPE_SMPP_IP;
+    else if (octstr_compare(type, octstr_imm("sema")) == 0)
+    	typeno = SMSC_TYPE_SEMA_X28;
+    else if (octstr_compare(type, octstr_imm("ois")) == 0)
+    	typeno = SMSC_TYPE_OIS;
+    else if (octstr_compare(type, octstr_imm("at")) == 0)
+    	typeno = SMSC_TYPE_AT;
     else {
-        error(0, "Unknown SMSC type '%s'", type);
+        error(0, "Unknown SMSC type '%s'", octstr_get_cstr(type));
         return NULL;
     }
     switch (typeno) {
     case SMSC_TYPE_FAKE:
-        if (host == NULL || portno == 0)
+        if (host == NULL || port == 0)
             error(0, "'host' or 'port' invalid in 'fake' record.");
         else {
-            smsc = fake_open(host, portno);
+            smsc = fake_open(octstr_get_cstr(host), port);
             break;
         }
 
     case SMSC_TYPE_CIMD:
-        if (host == NULL || portno == 0 || username == NULL ||
-            password == NULL)
+        if (host == NULL || port == 0 || username == NULL || password == NULL)
             error(0, "Required field missing for CIMD center.");
         else
-            smsc = cimd_open(host, portno, username, password);
+            smsc = cimd_open(octstr_get_cstr(host),
+	    	    	     port, 
+	    	    	     octstr_get_cstr(username), 
+			     octstr_get_cstr(password));
         break;
 
     case SMSC_TYPE_CIMD2:
-        if (host == NULL || port == NULL || username == NULL ||
-            password == NULL)
+        if (host == NULL || port == 0 || username == NULL || password == NULL)
             error(0, "Required field missing for CIMD 2 center.");
         else
-            smsc = cimd2_open(host, portno, username, password,
-                              keepalivetime);
+            smsc = cimd2_open(octstr_get_cstr(host),
+	    	    	      port, 
+			      octstr_get_cstr(username), 
+			      octstr_get_cstr(password), 
+			      keepalive);
         break;
 
     case SMSC_TYPE_EMI:
@@ -637,49 +640,67 @@ SMSCenter *smsc_open(ConfigGroup *grp)
             password == NULL)
             error(0, "Required field missing for EMI center.");
         else
-            smsc = emi_open(phone, device, username, password);
+            smsc = emi_open(octstr_get_cstr(phone), 
+	    	    	    octstr_get_cstr(device), 
+			    octstr_get_cstr(username), 
+			    octstr_get_cstr(password));
         break;
 
     case SMSC_TYPE_EMI_IP:
-        if (host == NULL || portno == 0)
+        if (host == NULL || port == 0)
             error(0, "Required field missing for EMI IP center.");
         else
-            smsc = emi_open_ip(host, portno, username, password,
-                               receiveportno, allow_ip, ourportno);
+	    smsc = emi_open_ip(octstr_get_cstr(host), 
+	    	    	       port, 
+			       octstr_get_cstr(username), 
+			       octstr_get_cstr(password),
+                               receive_port, 
+			       octstr_get_cstr(allow_ip), 
+			       our_port);
         break;
 
     case SMSC_TYPE_SMPP_IP:
-        if (host == NULL || port == NULL || smpp_system_type == NULL ||
+        if (host == NULL || port == 0 || smpp_system_type == NULL ||
             smpp_address_range == NULL || smpp_system_id == NULL ||
             password == NULL)
             error(0, "Required field missing for SMPP center.");
         else
-            smsc = smpp_open(host, portno, smpp_system_id,
-                             password, smpp_system_type,
-                             smpp_address_range, receiveportno);
+            smsc = smpp_open(octstr_get_cstr(host), 
+	    	    	     port, 
+	    	    	     octstr_get_cstr(smpp_system_id),
+                             octstr_get_cstr(password), 
+			     octstr_get_cstr(smpp_system_type),
+                             octstr_get_cstr(smpp_address_range), 
+			     receive_port);
         break;
 
     case SMSC_TYPE_SEMA_X28:
-        if (device == NULL || sema_smscnua == NULL ||
-            sema_homenua == NULL)
+        if (device == NULL || sema_smscnua == NULL || sema_homenua == NULL)
             error(0, "Required field missing for SEMA center.");
         else
-            smsc = sema_open(sema_smscnua, sema_homenua, device,
+            smsc = sema_open(octstr_get_cstr(sema_smscnua), 
+	    	    	     octstr_get_cstr(sema_homenua), 
+			     octstr_get_cstr(device),
                              iwaitreport);
         break;
 
     case SMSC_TYPE_OIS:
-        if (host == NULL || portno == 0 || receiveportno == 0)
+        if (host == NULL || port == 0 || receive_port == 0)
             error(0, "Required field missing for OIS center.");
         else
-            smsc = ois_open(receiveportno, host, portno, ois_debug);
+            smsc = ois_open(receive_port, 
+	    	    	    octstr_get_cstr(host), 
+			    port, 
+	    	    	    ois_debug);
         break;
 
     case SMSC_TYPE_AT:
         if (device == NULL)
             error(0, "Required field missing for AT virtual center.");
         else
-            smsc = at_open(device, at_modemtype, at_pin);
+            smsc = at_open(octstr_get_cstr(device), 
+	    	    	   at_modemtype ? octstr_get_cstr(at_modemtype) : 0, 
+			   at_pin ? octstr_get_cstr(at_pin) : 0);
         break;
 
         /* add new SMSCes here */
@@ -687,17 +708,24 @@ SMSCenter *smsc_open(ConfigGroup *grp)
     default: 		/* Unknown SMSC type */
         break;
     }
-    if (smsc != NULL) {
-        smsc->alt_charset = (alt_chars != NULL ? atoi(alt_chars) : 0);
-        smsc->preferred_prefix = preferred_prefix;
-        smsc->denied_prefix = denied_prefix;
 
-        if (smsc_id)
-            smsc->smsc_id = octstr_create(smsc_id);
-        if (preferred_id)
-            smsc->preferred_id = octstr_create(preferred_id);
-        if (denied_id)
-            smsc->denied_id = octstr_create(denied_id);
+    if (smsc != NULL) {
+	if (cfg_get_integer(&smsc->alt_charset, grp, 
+	    	    	    octstr_imm("alt-charset")) == -1)
+	    smsc->alt_charset = 0;
+    	if (preferred_prefix == NULL)
+	    smsc->preferred_prefix = NULL;
+	else
+	    smsc->preferred_prefix = 
+	    	gw_strdup(octstr_get_cstr(preferred_prefix));
+    	if (denied_prefix == NULL)
+	    smsc->denied_prefix = NULL;
+	else
+	    smsc->denied_prefix = gw_strdup(octstr_get_cstr(denied_prefix));
+
+        smsc->smsc_id = smsc_id;
+	smsc->preferred_id = preferred_id;
+	smsc->denied_id = denied_id;
     }
 
     return smsc;

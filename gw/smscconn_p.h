@@ -17,7 +17,7 @@
  rules:
 
  1) Each new SMSC Connection MUST implement function
-    smsc_xxx_create(SMSCConn *conn, ConfigGrp *cfg), which:
+    smsc_xxx_create(SMSCConn *conn, CfgGrp *cfg), which:
 
     a) SHOULD NOT block   (XXX)
     b) MUST warn about any configuration group variables it does
@@ -164,15 +164,15 @@ struct smscconn {
 
 /* generic wrapper for old SMSC implementations (uses old smsc.h).
  * Responsible file: smsc_wrapper.c */
-int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg);
+int smsc_wrapper_create(SMSCConn *conn, CfgGroup *cfg);
 
 /* Responsible file: smsc_fake2.c */
-int smsc_fake2_create(SMSCConn *conn, ConfigGroup *cfg);
+int smsc_fake2_create(SMSCConn *conn, CfgGroup *cfg);
 
 
 /* ADD NEW CREATE FUNCTIONS HERE
  *
- * int smsc_xxx_create(SMSCConn *conn, ConfigGroup *cfg);
+ * int smsc_xxx_create(SMSCConn *conn, CfgGroup *cfg);
  */
 
 

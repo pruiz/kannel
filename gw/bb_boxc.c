@@ -40,11 +40,11 @@ static volatile sig_atomic_t wapbox_running;
 static List	*wapbox_list = NULL;
 static List	*smsbox_list = NULL;
 
-static int	smsbox_port;
-static int	wapbox_port;
+static long	smsbox_port;
+static long	wapbox_port;
 
-static char *box_allow_ip;
-static char *box_deny_ip;
+static Octstr *box_allow_ip;
+static Octstr *box_deny_ip;
 
 
 static long	boxid = 0;
@@ -220,6 +220,7 @@ static Boxc *accept_boxc(int fd)
 {
     Boxc *newconn;
     Octstr *ip;
+    char *allow, *deny;
 
     int newfd;
     struct sockaddr_in client_addr;
@@ -233,7 +234,15 @@ static Boxc *accept_boxc(int fd)
 
     ip = host_ip(client_addr);
 
-    if (is_allowed_ip(box_allow_ip, box_deny_ip, ip)==0) {
+    if (box_allow_ip == NULL)
+    	allow = NULL;
+    else
+    	allow = octstr_get_cstr(box_allow_ip);
+    if (box_deny_ip == NULL)
+    	deny = NULL;
+    else
+    	deny = octstr_get_cstr(box_deny_ip);
+    if (is_allowed_ip(allow, deny, ip) == 0) {
 	info(0, "Box connection tried from denied host <%s>, disconnected",
 	     octstr_get_cstr(ip));
 	octstr_destroy(ip);
@@ -644,20 +653,19 @@ static void wapboxc_run(void *arg)
  * SMSBOX
  */
 
-int smsbox_start(Config *config)
+int smsbox_start(Cfg *cfg)
 {
-    char *p;
+    CfgGroup *grp;
     
     if (smsbox_running) return -1;
 
     debug("bb", 0, "starting smsbox connection module");
 
-    if ((p = config_get(config_find_first_group(config, "group", "core"),
-			"smsbox-port")) == NULL) {
+    grp = cfg_get_single_group(cfg, octstr_imm("core"));
+    if (cfg_get_integer(&smsbox_port, grp, octstr_imm("smsbox-port")) == -1) {
 	error(0, "Missing smsbox-port variable, cannot start smsboxes");
 	return -1;
     }
-    smsbox_port = atoi(p);
     
     smsbox_list = list_create();	/* have a list of connections */
     list_add_producer(outgoing_sms);
@@ -671,7 +679,7 @@ int smsbox_start(Config *config)
 }
 
 
-int smsbox_restart(Config *config)
+int smsbox_restart(Cfg *cfg)
 {
     if (!smsbox_running) return -1;
     
@@ -684,24 +692,26 @@ int smsbox_restart(Config *config)
 
 /* WAPBOX */
 
-int wapbox_start(Config *config)
+int wapbox_start(Cfg *cfg)
 {
-    ConfigGroup *grp;
-    char *p;
+    CfgGroup *grp;
 
     if (wapbox_running) return -1;
 
     debug("bb", 0, "starting wapbox connection module");
     
-    grp = config_find_first_group(config, "group", "core");
+    grp = cfg_get_single_group(cfg, octstr_imm("core"));
     
-    if ((p = config_get(grp, "wapbox-port")) == NULL) {
+    if (cfg_get_integer(&wapbox_port, grp, octstr_imm("wapbox-port")) == -1) {
 	error(0, "Missing wapbox-port variable, cannot start WAP");
 	return -1;
     }
-    wapbox_port = atoi(p);
-    box_allow_ip = config_get(grp, "box-allow-ip");
-    box_deny_ip = config_get(grp, "box-deny-ip");
+    box_allow_ip = cfg_get(grp, octstr_imm("box-allow-ip"));
+    if (box_allow_ip == NULL)
+    	box_allow_ip = octstr_create("");
+    box_deny_ip = cfg_get(grp, octstr_imm("box-deny-ip"));
+    if (box_deny_ip == NULL)
+    	box_deny_ip = octstr_create("");
     if (box_allow_ip != NULL && box_deny_ip == NULL)
 	info(0, "Box connection allowed IPs defined without any denied...");
     

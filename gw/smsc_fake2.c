@@ -56,15 +56,13 @@ static int fake2_open_connection(PrivData *privdata)
  */
 
 
-static PrivData *fake2_smsc_open(ConfigGroup *grp)
+static PrivData *fake2_smsc_open(CfgGroup *grp)
 {
     PrivData *privdata;
-    char *port;
+    long portno;
 
-    int portno;
-
-    port = config_get(grp, "port");
-    portno = (port != NULL ? atoi(port) : 0);
+    if (cfg_get_integer(&portno, grp, octstr_imm("port")) == -1)
+    	portno = 0;
 
     if (portno == 0) {
 	error(0, "'port' invalid in 'fake2' record.");
@@ -316,7 +314,7 @@ static long queued_cb(SMSCConn *conn)
 }
 
 
-int smsc_fake2_create(SMSCConn *conn, ConfigGroup *cfg)
+int smsc_fake2_create(SMSCConn *conn, CfgGroup *cfg)
 {
     PrivData *privdata;
 

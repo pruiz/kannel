@@ -269,7 +269,7 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
     sprintf(smsc->name, "EMIIP:%s:%s", smsc->emi_hostname,
             username ? smsc->emi_username : "n/a");
 
-    /* if backup-port is defined, set it ready */
+    /* if receive-port is defined, set it ready */
 
     if (receive_port > 0) {
         if ((smsc->emi_backup_fd = make_server_socket(receive_port)) <= 0)

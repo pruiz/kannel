@@ -48,7 +48,7 @@ extern List *isolated;
 
 static volatile sig_atomic_t smsc_running;
 static List *smsc_list;
-static char *unified_prefix;
+static Octstr *unified_prefix;
 
 static Numhash *black_list;
 static Numhash *white_list;
@@ -111,8 +111,14 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason)
 
 int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 {
+    char *uf;
+    
+    if (unified_prefix == NULL)
+    	uf = NULL;
+    else
+    	uf = octstr_get_cstr(unified_prefix);
 
-    normalize_number(unified_prefix, &(sms->sms.sender));
+    normalize_number(uf, &(sms->sms.sender));
 
     if (white_list &&
 	numhash_find_number(white_list, sms->sms.sender) < 1) {
@@ -161,6 +167,7 @@ static void sms_router(void *arg)
     long bp_load, bo_load, bb_load;
     int i, s, ret;
     StatusInfo info;
+    char *uf;
 
     list_add_producer(flow_threads);
     gwthread_wakeup(MAIN_THREAD_ID);
@@ -191,7 +198,11 @@ static void sms_router(void *arg)
         /* XXX we normalize the receiver - if set, but do we want
          *     to normalize the sender, too?
          */
-        normalize_number(unified_prefix, &(msg->sms.receiver));
+    	if (unified_prefix == NULL)
+	    uf = NULL;
+	else
+	    uf = octstr_get_cstr(unified_prefix);
+        normalize_number(uf, &(msg->sms.receiver));
             
         /* select in which list to add this
          * start - from random SMSCConn, as they are all 'equal'
@@ -272,33 +283,39 @@ static void sms_router(void *arg)
  *
  */
 
-int smsc2_start(Config *config)
+int smsc2_start(Cfg *cfg)
 {
-    ConfigGroup *grp;
+    CfgGroup *grp;
+    List *groups;
     SMSCConn *conn;
-    char *ls;
+    Octstr *os;
     
     if (smsc_running) return -1;
 
     smsc_list = list_create();
 
-    grp = config_find_first_group(config, "group", "core");
-    unified_prefix = config_get(grp, "unified-prefix");
+    grp = cfg_get_single_group(cfg, octstr_imm("core"));
+    unified_prefix = cfg_get(grp, octstr_imm("unified-prefix"));
 
     white_list = black_list = NULL;
-    if ((ls = config_get(grp, "white-list")) != NULL)
-        white_list = numhash_create(ls);
-    if ((ls = config_get(grp, "black-list")) != NULL)
-        black_list = numhash_create(ls);
+    os = cfg_get(grp, octstr_imm("white-list"));
+    if (os != NULL) {
+        white_list = numhash_create(octstr_get_cstr(os));
+	octstr_destroy(os);
+    }
+    os = cfg_get(grp, octstr_imm("black-list"));
+    if (os != NULL) {
+        black_list = numhash_create(octstr_get_cstr(os));
+	octstr_destroy(os);
+    }
 
-    grp = config_find_first_group(config, "group", "smsc");
-    while(grp != NULL) {
+    groups = cfg_get_multi_group(cfg, octstr_imm("smsc"));
+    while((grp = list_extract_first(groups)) != NULL) {
         conn = smscconn_create(grp, 1); /* start as stopped */
         if (conn == NULL)
             panic(0, "Cannot start with SMSC connection failing");
         
         list_append(smsc_list, conn);
-        grp = config_find_next_group(grp, "group", "smsc");
     }
     if (gwthread_create(sms_router, NULL) == -1)
 	panic(0, "Failed to start a new thread for SMS routing");

@@ -16,10 +16,10 @@
 #include "bb_smscconn_cb.h"
 
 
-SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
+SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
 {
     SMSCConn *conn;
-    char *smsc_type, *p;
+    Octstr *smsc_type;
     int ret;
     
     if (grp == NULL)
@@ -46,7 +46,7 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
     conn->stop_conn = NULL;
     conn->start_conn = NULL;
     
-#define GET_OPTIONAL_VAL(x, n) x = (p = config_get(grp,n)) ? octstr_create(p) : NULL
+#define GET_OPTIONAL_VAL(x, n) x = cfg_get(grp, octstr_imm(n))
     
     GET_OPTIONAL_VAL(conn->id, "smsc-id");
     GET_OPTIONAL_VAL(conn->allowed_smsc_id, "allowed-smsc-id");
@@ -59,14 +59,14 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
 	warning(0, "Both 'allowed-smsc-id' and 'denied-smsc-id' set, deny-list "
 		"automatically ignored");
     
-    smsc_type = config_get(grp, "smsc");
+    smsc_type = cfg_get(grp, octstr_imm("smsc"));
     if (smsc_type == NULL) {
 	error(0, "Required field 'smsc' missing for smsc group.");
 	smscconn_destroy(conn);
 	return NULL;
     }
 
-    if (strcmp(smsc_type, "fake2") == 0)
+    if (octstr_compare(smsc_type, octstr_imm("fake2")) == 0)
 	ret = smsc_fake2_create(conn, grp);
     else
 	ret = smsc_wrapper_create(conn, grp);

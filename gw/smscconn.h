@@ -48,7 +48,7 @@ typedef struct smscconn SMSCConn;
  *   handle traffic with SMSC, and caller does not need to
  *   care about it afterwards.
  */
-SMSCConn *smscconn_create(ConfigGroup *cfg, int start_as_stopped);
+SMSCConn *smscconn_create(CfgGroup *cfg, int start_as_stopped);
 
 /* shutdown/destroy smscc. Stop receiving messages and accepting
  * new message to-be-sent. Die when any internal queues are empty,

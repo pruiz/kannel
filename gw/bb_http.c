@@ -23,11 +23,11 @@ extern volatile sig_atomic_t bb_status;
 
 static volatile sig_atomic_t httpadmin_running;
 
-static int	ha_port;
-static char	*ha_password;
-static char	*ha_status_pw;
-static char	*ha_allow_ip;
-static char	*ha_deny_ip;
+static long	ha_port;
+static Octstr	*ha_password;
+static Octstr	*ha_status_pw;
+static Octstr	*ha_allow_ip;
+static Octstr	*ha_deny_ip;
 
 
 /*---------------------------------------------------------
@@ -52,12 +52,12 @@ static Octstr *httpd_check_authorization(List *cgivars, int status)
 	if (password == NULL)
 	    goto denied;
 
-	if (octstr_str_compare(password, ha_password)!=0
-	    && octstr_str_compare(password, ha_status_pw)!=0)
+	if (octstr_compare(password, ha_password)!=0
+	    && octstr_compare(password, ha_status_pw)!=0)
 	    goto denied;
     }
     else {
-	if (password == NULL || octstr_str_compare(password, ha_password)!=0)
+	if (password == NULL || octstr_compare(password, ha_password)!=0)
 	    goto denied;
     }
     sleep = 0.0;
@@ -252,7 +252,8 @@ static void httpadmin_run(void *arg)
     	client = http_accept_request(&ip, &url, &headers, &body, &cgivars);
 	if (client == NULL)
 	    break;
-	if (is_allowed_ip(ha_allow_ip, ha_deny_ip, ip) == 0) {
+	if (is_allowed_ip(octstr_get_cstr(ha_allow_ip), 
+	    	    	  octstr_get_cstr(ha_deny_ip), ip) == 0) {
 	    info(0, "HTTP admin tried from denied host <%s>, disconnected",
 		 octstr_get_cstr(ip));
 	    http_close_client(client);
@@ -271,27 +272,25 @@ static void httpadmin_run(void *arg)
  *
  */
 
-int httpadmin_start(Config *config)
+int httpadmin_start(Cfg *cfg)
 {
-    char *p;
-    ConfigGroup *grp;
+    CfgGroup *grp;
     
     if (httpadmin_running) return -1;
 
 
-    grp = config_find_first_group(config, "group", "core");
-    if ((p = config_get(grp, "admin-port")) == NULL)
+    grp = cfg_get_single_group(cfg, octstr_imm("core"));
+    if (cfg_get_integer(&ha_port, grp, octstr_imm("admin-port")) == -1)
 	panic(0, "Missing admin-port variable, cannot start HTTP admin");
 
-    ha_password = config_get(grp, "admin-password");
+    ha_password = cfg_get(grp, octstr_imm("admin-password"));
     if (ha_password == NULL)
 	panic(0, "You MUST set HTTP admin-password");
     
-    ha_status_pw = config_get(grp, "status-password");
+    ha_status_pw = cfg_get(grp, octstr_imm("status-password"));
 
-    ha_port = atoi(p);
-    ha_allow_ip = config_get(grp, "admin-allow-ip");
-    ha_deny_ip = config_get(grp, "admin-deny-ip");
+    ha_allow_ip = cfg_get(grp, octstr_imm("admin-allow-ip"));
+    ha_deny_ip = cfg_get(grp, octstr_imm("admin-deny-ip"));
     
     http_open_server(ha_port);
 
