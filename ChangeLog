@@ -1,3 +1,7 @@
+2002-05-06  Stipe Tolj <tolj@wapme-systems.de>
+    * checks/check_http.sh: added SSL-enabled HTTP server and client checks
+    * gwlib/gwlib.h: fixed Aarno's redefinition of GW_NAME
+
 2002-05-03 Aarno Syvänen <aarno@wiral.com>
     * checks/check_fakewap.sh: Do the test may times
     * gw/wap-appl.c: Fixing no ppg configuration option: No references to
