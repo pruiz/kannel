@@ -1,4 +1,8 @@
-2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
+2002-03-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * config*, wap/cookies.[ch], gw/wap-appl.c: revised the cookie support for
+      WSP and added --enable-cookies configure option.
+
+2002-03-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/cfg.c: fixed release showstopper from previous multiple include
       fix from Bruno.
 
