@@ -26,13 +26,17 @@ case "$1" in
 	--pidfile $PIDFILES/kannel_bearerbox.pid \
 	--exec $BOXPATH/run_kannel_box \
 	-- \
-	--pidfile $PIDFILES/kannel_bearerbox.pid bearerbox -- $CONF
+	--pidfile $PIDFILES/kannel_bearerbox.pid \
+	--no-extra-args \
+	su -s /bin/sh -c "$BOXPATH/bearerbox -v 4 -- $CONF" kannel
     echo -n " wapbox"
     start-stop-daemon --start --quiet \
     	--pidfile $PIDFILES/kannel_wapbox.pid \
 	--exec $BOXPATH/run_kannel_box \
 	-- \
-	--pidfile $PIDFILES/kannel_wapbox.pid wapbox -- $CONF
+	--pidfile $PIDFILES/kannel_wapbox.pid \
+	--no-extra-args \
+	su -s /bin/sh -c "$BOXPATH/wapbox -v 4 -- $CONF" kannel
     echo "."
     ;;
 

@@ -1,3 +1,15 @@
+2000-10-10  Lars Wirzenius  <liw@iki.fi>
+
+	* debian/init: start kannel boxes as user "kannel" instead of
+	root. run_kannel_box needs to run as root to create the pid file.
+	
+	* debian/postinst: Wrote. Creates user kannel and make
+	/var/log/kannel be owned by kannel.
+	
+	* utils/run_kannel_box.c: Added --no-extra-args option, so that
+	we can run other programs than Kannel boxes (su, in this case,
+	to switch users).
+
 2000-10-10 Aarno Syvanen <syvanen@wapit.com>
 
 	* gw/wtp_init_state-decl.h: Prevent RCR growing greater than its 

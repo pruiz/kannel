@@ -19,6 +19,7 @@ static char **box_arglist;
 static int min_restart_delay = 60; /* in seconds */
 static pid_t child_box; /* used in main_loop, available to signal handlers */
 static char *pidfile; /* The name of the pidfile to use.  NULL if no pidfile */
+static int use_extra_args = 1; /* Add "extra_arguments" list to argv? */
 
 /* Extra arguments to pass to the box */
 static char *extra_arguments[] = {
@@ -57,8 +58,10 @@ static void build_box_arglist(char *boxfile, int argc, char **argv)
 	argp = box_arglist;
 
 	*argp++ = boxfile;
-	for (i = 0; i < NUM_EXTRA; i++) {
-		*argp++ = extra_arguments[i];
+    	if (use_extra_args) {
+		for (i = 0; i < NUM_EXTRA; i++) {
+			*argp++ = extra_arguments[i];
+		}
 	}
 	for (i = 0; i < argc; i++) {
 		*argp++ = argv[i];
@@ -228,7 +231,7 @@ static void main_loop(char *boxfile)
 			execvp(boxfile, box_arglist);
 			exit(127);
 		}
-
+		
 		while (waitpid(child_box, (int *)NULL, 0) != child_box) {
 			if (errno == ECHILD) {
 				/* Something went wrong... we don't know what,
@@ -275,6 +278,8 @@ int main(int argc, char *argv[])
 			}
 			min_restart_delay = atoi(argv[i+1]);
 			i++;
+		} else if (strcmp(argv[i], "--no-extra-args") == 0) {
+		    	use_extra_args = 0;
 		} else if (argv[i][0] == '-') {
 			fprintf(stderr, "Unknown option %s\n", argv[i]);
 			exit(2);
