@@ -2111,15 +2111,17 @@ address-range = ""
    <row><entry><literal>port (m)</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign=bottom>
-       The port number for the TRANSMITTER connection to the SM-SC. 
-       May be the same as receive-port.
+       The port number for the TRANSMITTER connection to the SMSC. 
+       May be the same as receive-port. 
+		 Use value 0 to disable this I/O thread.
      </entry></row>
 
    <row><entry><literal>receive-port</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign=bottom>
-       The port number for the RECEIVER connection to the SM-SC. 
+       The port number for the RECEIVER connection to the SMSC. 
        May be the same as port.
+		 Use value 0 to disable this I/O thread.
      </entry></row>
 
    <row><entry><literal>smsc-username (m)</literal></entry>
