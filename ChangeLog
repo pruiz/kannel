@@ -1,5 +1,17 @@
-2003-07-14  Alexander Malysh  <a.malysh@centrium.de>
-    * gw/smsc/smsc_smpp.c: fixed wrong esm_class cheking for deliver_sm.
+2003-07-17  Stipe Tolj  <tolj@wapme-systems.de>
+    * configure[.in]: relabeled default settings to [foobar] style.
+    * gwlib/gwmem.h: added #define gw_malloc_trace() macros to trace the caller
+      from higher level.
+    * gwlib/gwmem-check.c: some source beautification.
+    * gwlib/cfg.c: fixed memory leak. octstr_destroy(file) was missing and hence
+      for each included file we had two allocations left over in heap.
+    * gwlib/octstr.[ch]: added #define octstr_create_from_data_trace() macro to
+      trace caller from higher level. When running in assertion check mode this 
+      helps a lot in determining memory leak positions. This needs to be sync'ed
+      with the octstr.[ch].debug versions. Are they still necessary?
+
+2003-07-16  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsc/smsc_smpp.c: fixed wrong esm_class checking for deliver_sm.
       0x02 is not known value, I have not found any reference for this value.
 
 2003-07-16  Stipe Tolj  <tolj@wapme-systems.de>
