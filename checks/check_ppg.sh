@@ -82,7 +82,7 @@ for control_file in $ip_control_files;
             sleep 2
 
 # We can panic when we are going down, too
-            if [ $error != yes ]
+            if test "$error" != "yes"          
             then
                 if grep 'WARNING:|ERROR:|PANIC:' check_bb.tmp > /dev/null
                 then
@@ -156,7 +156,7 @@ for control_file in $wrong_ip_files;
             sleep 2
 
 # We can panic when we are going down, too
-            if [ $error != yes ]
+            if test "$error" != "yes"
             then
                 if grep 'ERROR:|PANIC:' check_bb.tmp > /dev/null
                 then
@@ -227,7 +227,7 @@ for control_file in $sms_control_files;
             test/test_http -qv 4 http://localhost:$server_port/quit
             sleep 1
 # We can panic when we are going down, too
-            if [ $error != yes ] 
+            if test "$error" != "yes"  
             then
                 if grep 'WARNING:|ERROR:|PANIC:' check_bb.tmp > /dev/null
                 then
@@ -311,7 +311,7 @@ for control_file in $wrong_sms_files;
             sleep 1
 
 # We can panic when we are going down, too
-            if [ $error != yes ]
+            if test "$error" != "yes" 
             then
                 if grep 'ERROR:|PANIC:' check_bb.tmp > /dev/null
                 then
@@ -349,7 +349,7 @@ done
 test/test_http -qv 4 http://localhost:$list_port/quit
 wait
 
-if [ $error == yes ]
+if test "$error" = "yes"
 then
         echo "check_ppg failed" 1>&2
 	echo "See check_bb.log, check_wap.log, check_ppg.log," 1>&2

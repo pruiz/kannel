@@ -30,7 +30,6 @@ sleep 1
 test/test_http_server -p $port_ssl -v $loglevel -s -c $ssl_cert -k $ssl_key > check_https_server.log 2>&1 & 
 serverpid_ssl=$!
  
- 
 sleep 1 
  
 test/test_http -r $times $url > check_http.log 2>&1 
@@ -45,9 +44,9 @@ then
     ssl_enabled=no
 fi
 
-if [ '$ssl_enabled' == yes ] 
+if test "$ssl_enabled" = "yes"
 then
-    echo 'checking SSL connections, too'
+    echo -n ' checking SSL connections, too...'
     test/test_http -r $times -s -c $ssl_clientcert $url_ssl > check_https.log 2>&1 ret=$?
 else
     test/test_http -r 1 -s -c $ssl_clientcert $quiturl_ssl >> check_https.log 2>&1
@@ -55,7 +54,7 @@ else
 fi
  
 test/test_http -r 1 $quiturl >> check_http.log 2>&1
-if [ $ssl_enabled == yes ]
+if test "$ssl_enabled" = "yes"
 then
      test/test_http -r 1 -s -c $ssl_clientcert $quiturl_ssl >> check_https.log 2>&1
 fi
@@ -68,7 +67,7 @@ then
 	exit 1 
 fi 
 
-if [ $ssl_enabled == yes ]
+if test "$ssl_enabled" = "yes"
 then
     if grep 'ERROR:|PANIC' check_https.log check_https_server.log > /dev/null
     then

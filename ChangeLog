@@ -1,3 +1,16 @@
+2004-07-14  Stipe Tolj  <tolj@wapme-systems.de>
+    The 'make check' happy again commits.
+    BEWARE! You need to run 'make check' _before_ commiting changes to cvs to 
+    ensure we don't break any check scripts or test programs.
+    * checks/check_[http|ppg].sh: bash doesn't like Aarno's if statements, 
+      therefore reverting this to the simple ones.
+    * checks/check_sendsms.sh: harcoded error message changed in gw/smsbox.c.
+    * test/test_http.c: fixing segmentation fault while using global client
+      cert for https calls. This broke checks/check_http.sh.
+    * test/test_http_server.c: fixing segmentation fault while using 
+      predefined reply body file. Fixing starvation while client_thread is
+      down and http ports are still open. Thread joining at termination fixed.
+
 2004-07-09  Stipe Tolj  <tolj@wapme-systems.de> 
     * gw/smsc/smsc_soap.c: changing #ifdef #warning's to commented blocks to
       get rid of the compiler warnings in the nightly build tests. This module

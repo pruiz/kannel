@@ -87,7 +87,7 @@ text=&username=$username&password=$password"
 test/test_http $url >> check_sendsms.log 2>&1
 
 if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
-   [ 1 -ne `grep -c 'got empty to cgi variable' check_sendsms_sms.log` ]
+   [ 1 -ne `grep -c 'got empty <to> cgi variable' check_sendsms_sms.log` ]
 then
 	echo check_sendsms.sh failed with empty to field 1>&2
 	echo See check_sendsms*.log for info 1>&2

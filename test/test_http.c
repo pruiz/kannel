@@ -487,7 +487,6 @@ int main(int argc, char **argv)
     
     octstr_destroy(auth_username);
     octstr_destroy(auth_password);
-    octstr_destroy(ssl_client_certkey_file);
     octstr_destroy(extra_headers);
     octstr_destroy(content_file);
     list_destroy(split, octstr_destroy_item);

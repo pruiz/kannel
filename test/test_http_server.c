@@ -114,7 +114,7 @@ static void client_thread(void *arg)
             reply_type = octstr_create("Content-Type: text/plain; "
                                        "charset=\"UTF-8\"");
         } else {
-            reply_body = arg;
+            reply_body = octstr_duplicate(arg);
             reply_type = octstr_create("Content-Type: text/vnd.wap.wml");
         }
 
@@ -203,6 +203,7 @@ static void client_thread(void *arg)
     octstr_destroy(whitelist);
     octstr_destroy(blacklist);
     debug("test.http", 0, "Working thread 'client_thread' terminates");
+    http_close_all_ports();
 }
 
 static void help(void) {
@@ -416,9 +417,8 @@ int main(int argc, char **argv) {
         threads[i] = gwthread_create(client_thread, file_contents);
 
     /* wait for all working threads */
-    gwthread_join_all();
-
-    octstr_destroy(reply_text);
+    for (i = 0; i < use_threads; ++i)
+        gwthread_join(threads[i]);
 
     debug("test.http", 0, "Program exiting normally.");
     gwlib_shutdown();
