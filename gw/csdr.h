@@ -48,5 +48,16 @@ RQueueItem *csdr_get_message(CSDRouter *csdr);
  */
 int csdr_send_message(CSDRouter *csdr, RQueueItem *msg);
 
+/*
+ * Check whether this particular instance
+ * should handle this Msg.
+ *
+ * Return:
+ *  1 if this router handles this message
+ *  0 if thie router doesn't handle this message
+ * -1 on failure
+ */
+int csdr_is_to_us(CSDRouter *csdr, Msg *msg);
+
 
 #endif

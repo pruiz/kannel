@@ -210,3 +210,37 @@ error:
 	return -1;
 }
 
+int csdr_is_to_us(CSDRouter *router, Msg *msg) {
+
+	char server_ip[16], server_port[8];
+
+	struct sockaddr_in servaddr;
+	socklen_t servlen;
+
+	if(router==NULL) goto error;
+	if(msg==NULL) goto error;
+	if(msg_type(msg) != wdp_datagram) goto error;
+
+	servlen = sizeof(servaddr);
+	getsockname(router->fd, (struct sockaddr*)&servaddr, &servlen);
+
+	getnameinfo((struct sockaddr*)&servaddr, servlen, 
+		server_ip, sizeof(server_ip), 
+		server_port, sizeof(server_port), 
+		NI_NUMERICHOST | NI_NUMERICSERV);
+
+	if( (strcmp(server_ip, octstr_get_cstr(msg->wdp_datagram.source_address)) != 0) ||
+		(atoi(server_port) != msg->wdp_datagram.source_port) ) 
+	{
+		goto not_for_us;
+	}
+
+	return 1;
+
+not_for_us:
+	return 0;
+
+error:
+	error(0, "csdr_is_to_us: returning error");
+	return -1;
+}
