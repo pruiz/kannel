@@ -1,5 +1,9 @@
 2000-09-21  Lars Wirzenius  <liw@iki.fi>
 
+	* checks/check_octstr.c: Wrote.
+
+2000-09-21  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/octstr.c: octstr_compare: Fixed behavior when either argument
 	was a zero length octet string. It used to always return zero,
 	now it returns -1 or 1 if the other argument is not a zero length
