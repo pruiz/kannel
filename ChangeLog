@@ -1,4 +1,8 @@
 2004-06-28  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/smsc/smsc_smpp.c: commited patch #3 and #4 (in a slightly modified version)
+      from bug #129. Thanks to joergent.
+
+2004-06-28  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/smsbox.c: commited patch #1 from bug #129.
       Thanks to joergent.
 

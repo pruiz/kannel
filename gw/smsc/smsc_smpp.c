@@ -722,6 +722,8 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     /* ask for the delivery reports if needed */
     if (DLR_IS_SUCCESS_OR_FAIL(msg->sms.dlr_mask))
         pdu->u.submit_sm.registered_delivery = 1;
+    else if (DLR_IS_FAIL(msg->sms.dlr_mask) && !DLR_IS_SUCCESS(msg->sms.dlr_mask))
+        pdu->u.submit_sm.registered_delivery = 2;
 
     octstr_destroy(relation_UTC_time);
 
@@ -1044,9 +1046,10 @@ static Msg *handle_dlr(SMPP *smpp, SMPP_PDU *pdu)
         if (stat != NULL)
             octstr_destroy(stat);
     }
+    Octstr *tmp;
+    tmp = octstr_format("0");
     
     if (msgid != NULL) {
-        Octstr *tmp;
 
         /*
             * Obey which SMPP msg_id type this SMSC is using, where we
@@ -1080,7 +1083,6 @@ static Msg *handle_dlr(SMPP *smpp, SMPP_PDU *pdu)
             pdu->u.deliver_sm.destination_addr, /* destination */
             dlrstat);
 
-        octstr_destroy(tmp);
         octstr_destroy(msgid);
     }
     
@@ -1093,9 +1095,12 @@ static Msg *handle_dlr(SMPP *smpp, SMPP_PDU *pdu)
         dlrmsg->sms.msgdata = octstr_duplicate(respstr);
         dlrmsg->sms.sms_type = report_mo;
     } else {
-        error(0,"SMPP[%s]: got DLR but could not find message or was not interested in it",
-                octstr_get_cstr(smpp->conn->id));
+        error(0,"SMPP[%s]: got DLR but could not find message or was not interested"
+                "in it ts<%s> dst<%s>, type<%d>",
+                octstr_get_cstr(smpp->conn->id), octstr_get_cstr(tmp),
+                octstr_get_cstr(pdu->u.deliver_sm.destination_addr), dlrstat);
     }
+    octstr_destroy(tmp);
                 
     return dlrmsg;
 }
