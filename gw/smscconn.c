@@ -25,7 +25,8 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     SMSCConn *conn;
     Octstr *smsc_type;
     int ret;
-    
+    long throughput;
+
     if (grp == NULL)
 	return NULL;
     
@@ -68,6 +69,11 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     
     if (cfg_get_integer(&conn->log_level, grp, octstr_imm("log-level")) == -1)
         conn->log_level = 0;
+
+    if (cfg_get_integer(&throughput, grp, octstr_imm("throughput")) == -1)
+        conn->throughput = 0;   /* defaults to no throughtput limitation */
+    else 
+        conn->throughput = (int) throughput;
 
     /* open a smsc-id specific log-file in exlusive mode */
     if (conn->log_file)

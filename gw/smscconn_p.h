@@ -131,6 +131,7 @@ struct smscconn {
     
     int alt_dcs; /* use alternate DCS 0xFX */
 
+    int throughput;     /* message thoughput per sec. to be delivered to SMSC */
 
     /* XXX: move rest global data from Smsc here
      */
