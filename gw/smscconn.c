@@ -54,6 +54,7 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     GET_OPTIONAL_VAL(conn->allowed_prefix, "allowed-prefix");
     GET_OPTIONAL_VAL(conn->denied_prefix, "denied-prefix");
     GET_OPTIONAL_VAL(conn->preferred_prefix, "preferred-prefix");
+    GET_OPTIONAL_VAL(conn->unified_prefix, "unified-prefix");
 
     if (conn->allowed_smsc_id && conn->denied_smsc_id)
 	warning(0, "Both 'allowed-smsc-id' and 'denied-smsc-id' set, deny-list "
@@ -136,6 +137,7 @@ int smscconn_destroy(SMSCConn *conn)
     octstr_destroy(conn->denied_prefix);
     octstr_destroy(conn->allowed_prefix);
     octstr_destroy(conn->preferred_prefix);
+    octstr_destroy(conn->unified_prefix);
     
     mutex_unlock(conn->flow_mutex);
     mutex_destroy(conn->flow_mutex);
@@ -263,13 +265,19 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
 int smscconn_send(SMSCConn *conn, Msg *msg)
 {
     int ret;
+    char *uf;
     
     gw_assert(conn != NULL);
     mutex_lock(conn->flow_mutex);
     if (conn->status == SMSCCONN_DEAD || conn->why_killed != SMSCCONN_ALIVE) {
-	mutex_unlock(conn->flow_mutex);
-	return -1;
+        mutex_unlock(conn->flow_mutex);
+        return -1;
     }
+
+    /* normalize the destination number for this smsc */
+    uf = conn->unified_prefix ? octstr_get_cstr(conn->unified_prefix) : NULL;
+    normalize_number(uf, &(msg->sms.receiver));
+
     ret = conn->send_msg(conn, msg);
 	mutex_unlock(conn->flow_mutex);
     return ret;

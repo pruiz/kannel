@@ -674,13 +674,11 @@ int smsc2_rout(Msg *msg)
 	warning(0, "No SMSCes to receive message");
 	return -1;
     }
+
     /* unify prefix of receiver, in case of it has not been
      * already done */
 
-    if (unified_prefix == NULL)
-	uf = NULL;
-    else
-	uf = octstr_get_cstr(unified_prefix);
+    uf = unified_prefix ? octstr_get_cstr(unified_prefix) : NULL;
     normalize_number(uf, &(msg->sms.receiver));
             
     /* select in which list to add this
