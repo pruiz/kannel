@@ -172,13 +172,13 @@ error:
 }
 
 
-int smscenter_submit_msg(SMSCenter *smsc, MSG *msg) {
+int smscenter_submit_msg(SMSCenter *smsc, Msg *msg) {
 	if (smscenter_lock(smsc) == -1)
 		return -1;
 
 	switch (smsc->type) {
 	case SMSC_TYPE_FAKE:
-		if (fake_submit_msg(smsc->socket, msg) == -1)
+		if (fake_submit_msg(smsc, msg) == -1)
 			goto error;
 		break;
 
@@ -254,6 +254,59 @@ int smscenter_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg) {
 	/* Fix the time if the SMSC didn't tell us it. */
 	if (ret == 1 && (*msg)->time == 0)
 		time(&(*msg)->time);
+
+	return ret;
+
+error:
+	smscenter_unlock(smsc);
+	return -1;
+}
+
+int smscenter_receive_msg(SMSCenter *smsc, Msg **msg) {
+	int ret;
+
+	if (smscenter_lock(smsc) == -1)
+		return -1;
+
+	switch (smsc->type) {
+
+	case SMSC_TYPE_FAKE:
+		ret = fake_receive_msg(smsc, msg);
+		if (ret == -1)
+			goto error;
+		break;
+
+	case SMSC_TYPE_CIMD:
+		ret = cimd_receive_msg(smsc, msg);
+		if (ret == -1)
+			goto error;
+		break;
+	
+	case SMSC_TYPE_EMI:
+	case SMSC_TYPE_EMI_IP:
+		ret = emi_receive_msg(smsc, msg);
+		if (ret == -1)
+			goto error;
+		break;
+
+	case SMSC_TYPE_SMPP_IP:
+		ret = smpp_receive_msg(smsc, msg);
+		if (ret == -1)
+			goto error;
+		break;
+
+	default:
+		goto error;
+
+	}
+
+	smscenter_unlock(smsc);
+	
+	/* Fix the time if the SMSC didn't tell us it. */
+/*
+	if (ret == 1 && (*msg)->time == 0)
+		time(&(*msg)->time);
+*/
 
 	return ret;
 
@@ -652,7 +705,9 @@ int smsc_close(SMSCenter *smsc) {
 
 int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 {
+#if 0
     SMSMessage *sms_msg;
+#endif
     int ret;
     
     if (msg->msg_class == R_MSG_CLASS_WAP) {
@@ -668,6 +723,11 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 	ret = 0;
     }  else if (msg->msg_type == R_MSG_TYPE_MT) {
 
+#if 1
+
+	ret = smscenter_submit_msg(smsc, msg->msg);
+
+#else
 	debug(0, "Send SMS Message [%d] to SMSC", msg->id);
 
 	/*
@@ -678,6 +738,7 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 				       msg->msg->plain_sms.text);
     
 	ret = smscenter_submit_smsmessage(smsc, sms_msg);
+#endif
 	if (ret == -1)
 	    /* rebuild connection? */
 	    ;
@@ -704,14 +765,30 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 
 int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
 {
-    SMSMessage *sms_msg;
-    RQueueItem *msg;
-    int ret;
+#if 0
+	SMSMessage *sms_msg;
+	int ret;
+#endif
+	RQueueItem *msg = NULL;
+	Msg *newmsg = NULL;
+   
+	*new = NULL;
     
-    *new = NULL;
-    
-    if (smscenter_pending_smsmessage(smsc) == 1) {
+	if (smscenter_pending_smsmessage(smsc) == 1) {
 
+#if 1
+	msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MO);
+	if (msg==NULL) goto error;
+
+		if( smscenter_receive_msg(smsc, &newmsg) == 1 ) {
+			/* OK */
+			msg->msg = newmsg;
+		} else {
+			/* Error */
+			goto error;
+		}
+
+#else
 	ret = smscenter_receive_smsmessage(smsc, &sms_msg);
 	if (ret < 1) {
 	    error(0, "Failed to receive the message, reconnecting...");
@@ -738,15 +815,17 @@ int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
 	msg->msg->plain_sms.time = sms_msg->time;
 	
 	msg->client_data = sms_msg;	/* keep the data for ACK/NACK */
+#endif
 	
-	*new = msg;
-	return 1;
-    }
-    return 0;
+		*new = msg;
+		return 1;
+	}
+
+	return 0;
 error:
-    error(0, "Failed to create message");
-    rqi_delete(msg);
-    return 0;
+	error(0, "smsc_get_message: Failed to create message");
+	rqi_delete(msg);
+	return 0;
 }
 
 
