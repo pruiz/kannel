@@ -31,8 +31,12 @@ sms_control_files="$prefix/*smstest*"
 wrong_ip_files="$prefix/*witest*"
 # Erroneous sms control files
 wrong_sms_files="$prefix/*wstest*"
+# File containing the blacklist
+blacklist="$prefix/blacklist"
+# File containing the whitelist
+whitelist="$prefix/whitelist"
 
-test/test_http_server -p $list_port > check_http_list.log 2>&1 & listid=$
+test/test_http_server -p $list_port -w $whitelist -b $blacklist > check_http_list.log 2>&1 & listid=$
 error=no
 
 # ok control files requesting an ip bearer. Names contain string 'ip'. Bearer-
