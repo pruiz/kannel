@@ -1,4 +1,14 @@
 2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_cimd2.c: fixed a bug inside CIMD2 module.
+      Thanks to Per Skaglund <per.skaglund@dialtone.fi> for the patch.
+      [Msg-ID: <1383.62.61.70.221.1054632009.squirrel@mail.dialtone.fi>]
+
+2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/octstr.c[.debug]: fixed a possible segmenation fault in 
+      octstr_url_encode() when passing an immutable Octstr.
+      Thanks to Paul for spotting this.
+
+2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added documentation sections for PPG DLR.
       Thanks to Aarno for providing the sections.
       [Msg-ID: <F7348DBA-9D80-11D7-86C5-0003937AE746@gni.ch>]
