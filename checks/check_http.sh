@@ -12,6 +12,8 @@ loglevel=1
 test/test_http_server -p $port -v $loglevel > check_http_server.log 2>&1 &
 serverpid=$!
 
+sleep 1
+
 test/test_http -r $times $url > check_http.log 2>&1
 ret=$?
 
