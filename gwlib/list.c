@@ -302,8 +302,10 @@ int list_wait_until_nonempty(List *list)
 
     lock(list);
     while (list->len == 0 && list->num_producers > 0) {
+        list->single_operation_lock->owner = -1;
         pthread_cond_wait(&list->nonempty,
                           &list->single_operation_lock->mutex);
+        list->single_operation_lock->owner = gwthread_self();
     }
     if (list->len > 0)
         ret = 1;
@@ -354,8 +356,10 @@ void *list_consume(List *list)
 
     lock(list);
     while (list->len == 0 && list->num_producers > 0) {
+        list->single_operation_lock->owner = -1;
         pthread_cond_wait(&list->nonempty,
                           &list->single_operation_lock->mutex);
+        list->single_operation_lock->owner = gwthread_self();
     }
     if (list->len > 0) {
         item = GET(list, 0);

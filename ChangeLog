@@ -1,3 +1,10 @@
+2003-07-13  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/list.c: fixed panic about: Managed to lock the mutex twice.
+      It occurs if list_lock(..) follows pthread_cond_wait(...) called. We lock
+      list->single_operation_lock first (through our mutex wrapper which set mutex owner
+      to gwthread_self()) and then pthread_cond_wait(...) unlock this mutex, but do not
+      set mutex owner. So now we set it self.
+
 2003-07-12  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gwlib/http.c: moved new variable declaration to function begining.
       Strange, it worked with my Debian's gcc-3.3; changed comment style 
