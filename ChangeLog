@@ -1,3 +1,9 @@
+2001-01-17  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsc_fake2.c: Added missing #include, minor fixes.
+
+	* gw/smscconn.c: Added missing #include.
+
 2001-01-16  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsc_fake2.c: new fake SMSC connection module.

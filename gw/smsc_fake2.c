@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
+#include <limits.h>
 
 #include "gwlib/gwlib.h"
 #include "smscconn.h"
@@ -137,7 +138,7 @@ static void msg_to_bb(SMSCConn *conn, Octstr *line)
 
 static void main_connection_loop(SMSCConn *conn, Connection *client)
 {
-    PrivData *privdata = conn->data;
+    PrivData	*privdata = conn->data;
     Octstr	*line;
     Msg		*msg;
 
@@ -165,8 +166,11 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
 		goto error;
 	    }
 	}
-	if (privdata->shutdown)
+	if (privdata->shutdown) {
+	    debug("bb.sms", 0, "Fake2 shutting down, closing client socket");
+	    conn_destroy(client);
 	    return;
+	}
 	conn_wait(client, -1);
 	if (conn_read_error(client))
 	    goto error;
@@ -188,7 +192,7 @@ static void fake2_connection(void *arg)
 {
     SMSCConn	*conn = arg;
     PrivData	*privdata = conn->data;
-    struct sockaddr_in client_addr;
+    struct sockaddr client_addr;
     socklen_t	client_addr_len;
     Connection	*client;
     int 	s, ret;
@@ -331,8 +335,8 @@ int smsc_fake2_create(SMSCConn *conn, ConfigGroup *cfg)
     conn->status = SMSCCONN_CONNECTING;
     conn->connect_time = time(NULL);
 
-    if ( (privdata->connection_thread = gwthread_create(fake2_connection, conn))
-	 == -1)
+    if ( (privdata->connection_thread =
+	  gwthread_create(fake2_connection, conn)) == -1)
 	goto error;
 
     conn->shutdown = shutdown_cb;

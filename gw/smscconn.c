@@ -8,7 +8,7 @@
 
 #include <signal.h>
 #include <time.h>
-
+#include <string.h>
 
 #include "gwlib/gwlib.h"
 #include "smscconn.h"
