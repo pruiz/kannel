@@ -1,6 +1,11 @@
+2000-10-23  Lars Wirzenius  <liw@iki.fi>
+
+	* ChangeLog: Formatted long lines.
+
 2000-10-23  Kalle Marjola  <rpr@wapit.com>
 
-	* doc/userguide/userguide.xml: added missing EMI variable connect-allow-ip
+	* doc/userguide/userguide.xml: added missing EMI variable
+	connect-allow-ip
 
 2000-10-23 Aarno Syvänen <syvanen@wapit.com>
 
@@ -253,9 +258,9 @@
 
 2000-10-11  Tuomas Luttinen  <tuo@wapit.com>
 
-	* gw/urltrans.c: Fixed the bug 111 by adding the unwise characters and 
-	special characters like delete (0x7f) and other between 0x00 and 0x1f
-	into the unsafe ones.
+	* gw/urltrans.c: Fixed the bug 111 by adding the unwise characters
+	and special characters like delete (0x7f) and other between 0x00
+	and 0x1f into the unsafe ones.
 
 	* gw/wml_compiler.c (string_table_apply): Fixed a bug where an extra 
 	string end was added in a case that two (or more) substrings are 
@@ -424,7 +429,8 @@
 	to octstr_grow and octstr_set_char.
 	Reformatted octstr_append_from_hex.
 
-	* test/test_http.c: Fixed memory leak in case of server not responding.
+	* test/test_http.c: Fixed memory leak in case of server not
+	responding.
 
 2000-10-09 Aarno Syvänen <syvanen@wapit.com>
 
@@ -525,12 +531,12 @@
 
 2000-10-04  Richard Braakman  <dark@wapit.com>
 
-	* gw/wap-appl.c: Pass the status code we really got from the server
-	to the client, instead of only accepting code 200 (HTTP_OK).
-	Use 502 (Bad Gateway) if the actual lookup failed.
-	Use http_get and http_post instead of http_get_real and http_post_real.
-	Together with the header encoding patch earlier today, these changes
-	allow HTTP redirection to work.
+	* gw/wap-appl.c: Pass the status code we really got from
+	the server to the client, instead of only accepting code
+	200 (HTTP_OK).	Use 502 (Bad Gateway) if the actual lookup
+	failed.  Use http_get and http_post instead of http_get_real
+	and http_post_real.  Together with the header encoding patch
+	earlier today, these changes allow HTTP redirection to work.
 
 	* gw/wap-appl.c, gwlib/http.h: Use symbolic names for HTTP status
 	codes.
