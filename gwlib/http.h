@@ -207,22 +207,26 @@ void http_caller_signal_shutdown(HTTPCaller *caller);
 
 /*
  * Start an HTTP request. It will be completed in the background, and
- * the result will eventually be received by http_receive_result. The
- * return value is the request identifier; http_receive_result will
- * return the same request identifier, and the caller can use this to
- * keep track of which request and which response belong together.
+ * the result will eventually be received by http_receive_result.
+ * http_receive_result will return the id parameter passed to this function,
+ * and the caller can use this to keep track of which request and which
+ * response belong together. If id is NULL, it is changed to a non-null
+ * value (NULL replies from http_receive_result are reserved for cases
+ * when it doesn't return a reply).
  *
  * If `body' is NULL, it is a GET request, otherwise as POST request.
  * If `follow' is true, HTTP redirections are followed, otherwise not.
  */
-long http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
-    	    	    	Octstr *body, int follow);
+void http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
+    	    	    	Octstr *body, int follow, void *id);
 
 
 /*
- * Get the result of a GET or a POST request.
+ * Get the result of a GET or a POST request. Returns either the id pointer
+ * (the one passed to http_start request if non-NULL) or NULL if
+ * http_caller_signal_shutdown has been called and there are no queued results.
  */
-long http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
+void *http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
     	    	    	 List **headers, Octstr **body);
 
 

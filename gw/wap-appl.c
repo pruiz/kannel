@@ -59,14 +59,6 @@ static HTTPCaller *caller = NULL;
 static Counter *fetches = NULL;
 
 
-/* We have a race between caller and id_to_request_data updates,
- * since one thread waits on caller being nonempty and then immediatly
- * tried to process id_to_request_data, sometimes before the first
- * has added to it.  This mutex prevents id_to_request_data being read
- * until the updates have completed on both lists.
- */
-static Mutex *http_reply_update;
-
 /*
  * Charsets supported by WML compiler, queried from wml_compiler.
  */
@@ -91,7 +83,6 @@ struct request_data {
     long x_wap_tod;
     List *request_headers;
 };
-static Dict *id_to_request_data = NULL;
 
 
 /*
@@ -150,10 +141,8 @@ void wap_appl_init(void)
     run_status = running;
     charsets = wml_charsets();
     caller = http_caller_create();
-    id_to_request_data = dict_create(1024, NULL);
     gwthread_create(main_thread, NULL);
     gwthread_create(return_replies_thread, NULL);
-    http_reply_update = mutex_create();
 }
 
 
@@ -169,10 +158,8 @@ void wap_appl_shutdown(void)
     gwthread_join_every(return_replies_thread);
     
     http_caller_destroy(caller);
-    dict_destroy(id_to_request_data);
     list_destroy(queue, wap_event_destroy_item);
     list_destroy(charsets, octstr_destroy_item);
-    mutex_destroy(http_reply_update);
     counter_destroy(fetches);
 }
 
@@ -594,8 +581,6 @@ static void return_reply(int status, Octstr *content_body, List *headers,
 static void return_replies_thread(void *arg)
 {
     Octstr *body;
-    long id;
-    Octstr *idstr;
     struct request_data *p;
     int status;
     Octstr *final_url;
@@ -603,18 +588,10 @@ static void return_replies_thread(void *arg)
 
     while (run_status == running) {
 
-	id = http_receive_result(caller, &status, &final_url, &headers, &body);
-    	if (id == -1)
+	p = http_receive_result(caller, &status, &final_url, &headers, &body);
+    	if (p == NULL)
 	    break;
-    	idstr = octstr_format("%ld", id);
-	
-	
-	mutex_lock(http_reply_update);
-	p = dict_remove(id_to_request_data, idstr);
-	mutex_unlock(http_reply_update);
 
-	gw_assert(p != NULL);
-	octstr_destroy(idstr);
 	return_reply(status, body, headers, p->client_SDU_size,
 		     p->event, p->session_id, p->url, p->x_wap_tod,
 		     p->request_headers);
@@ -650,8 +627,6 @@ static void start_fetch(WAPEvent *event)
     int x_wap_tod;          /* X-WAP.TOD header was present in request */
     Octstr *magic_url;
     struct request_data *p;
-    long id;
-    Octstr *idstr;
     
     counter_increase(fetches);
     
@@ -728,11 +703,6 @@ static void start_fetch(WAPEvent *event)
 	    request_body = NULL;
 	}
 
-	mutex_lock(http_reply_update);
-	id = http_start_request(caller, url, actual_headers, request_body, 0);
-	octstr_destroy(request_body);
-	
-	idstr = octstr_format("%ld", id);
 	p = gw_malloc(sizeof(*p));
 	p->client_SDU_size = client_SDU_size;
 	p->event = event;
@@ -740,9 +710,8 @@ static void start_fetch(WAPEvent *event)
 	p->url = url;
 	p->x_wap_tod = x_wap_tod;
 	p->request_headers = actual_headers;
-	dict_put(id_to_request_data, idstr, p);
-	octstr_destroy(idstr);
-	mutex_unlock(http_reply_update);
+	http_start_request(caller, url, actual_headers, request_body, 0, p);
+	octstr_destroy(request_body);
     } else {
 	error(0, "WSP: Method %s not supported.", octstr_get_cstr(method));
 	content_body = octstr_create("");

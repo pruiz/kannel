@@ -26,20 +26,22 @@ static Octstr *auth_password = NULL;
 static void start_request(HTTPCaller *caller, List *reqh, long i)
 {
     Octstr *url;
-    long id;
+    long *id;
 
     if ((i % 1000) == 0)
 	info(0, "Starting fetch %ld", i);
+    id = gw_malloc(sizeof(long));
+    *id = i;
     url = octstr_create(urls[i % num_urls]);
-    id = http_start_request(caller, url, reqh, NULL, 0);
-    debug("", 0, "Started request %ld", id);
+    http_start_request(caller, url, reqh, NULL, 0, id);
+    debug("", 0, "Started request %ld", *id);
     octstr_destroy(url);
 }
 
 
 static int receive_reply(HTTPCaller *caller)
 {
-    long id;
+    void *id;
     int ret;
     Octstr *final_url;
     List *replyh;
@@ -50,11 +52,12 @@ static int receive_reply(HTTPCaller *caller)
 
     id = http_receive_result(caller, &ret, &final_url, &replyh, &replyb);
     octstr_destroy(final_url);
-    if (id == -1 || ret == -1) {
+    if (id == NULL || ret == -1) {
 	error(0, "http GET failed");
 	return -1;
     }
-    debug("", 0, "Done with request %ld", id);
+    debug("", 0, "Done with request %ld", *(long *) id);
+    gw_free(id);
 
     http_header_get_content_type(replyh, &type, &charset);
     debug("", 0, "Content-type is <%s>, charset is <%s>",

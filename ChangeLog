@@ -1,3 +1,11 @@
+2001-03-15  Uoti Urpala  <uau@wapit.com>
+
+	* gwlib/http.c, gwlib/http.h: Changed http_start_request and
+	http_receive_result to identify the request with a void pointer
+	from the caller.
+
+	* gw/smsbox.c, gw/wap-appl.c, test/test_http.c: Related changes.
+
 2001-03-13  Lars Wirzenius  <liw@iki.fi>
 
 	* benchmarks/bench_sms.sh: Only plot the "submit" events; in long

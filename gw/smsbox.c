@@ -321,7 +321,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
 
 
 static HTTPCaller *caller;
-static Dict *receivers;
+static Counter *num_outstanding_requests;
 
 
 struct receiver {
@@ -330,21 +330,11 @@ struct receiver {
 };
 
 
-static void destroy_receiver(void *p)
+static void *remember_receiver(Msg *msg, URLTranslation *trans)
 {
-    struct receiver *r;
-    
-    r = p;
-    msg_destroy(r->msg);
-    gw_free(r);
-}
-
-
-static void remember_receiver(long id, Msg *msg, URLTranslation *trans)
-{
-    Octstr *idstr;
     struct receiver *receiver;
     
+    counter_increase(num_outstanding_requests);
     receiver = gw_malloc(sizeof(*receiver));
 
     receiver->msg = msg_create(sms);
@@ -359,36 +349,25 @@ static void remember_receiver(long id, Msg *msg, URLTranslation *trans)
     
     receiver->trans = trans;
 
-    idstr = octstr_format("%ld", id);
-    dict_put(receivers, idstr, receiver);
-    octstr_destroy(idstr);
+    return receiver;
 }
 
 
-static void get_receiver(long id, Msg **msg, URLTranslation **trans)
+static void get_receiver(void *id, Msg **msg, URLTranslation **trans)
 {
-    Octstr *idstr;
     struct receiver *receiver;
     
-    idstr = octstr_format("%ld", id);
-    receiver = dict_remove(receivers, idstr);
-    if (receiver == NULL) {
-	error(0, "get_receiver: Failed to get receiver, trying again");
-	sleep(1);
-	receiver = dict_remove(receivers, idstr);
-	if (receiver == NULL)
-	    panic(0, "get_receiver: Failed to get receiver");
-    }
-    octstr_destroy(idstr);
+    receiver = id;
     *msg = receiver->msg;
     *trans = receiver->trans;
     gw_free(receiver);
+    counter_decrease(num_outstanding_requests);
 }
 
 
 static long outstanding_requests(void)
 {
-    return dict_key_count(receivers);
+    return counter_value(num_outstanding_requests);
 }
 
 
@@ -438,7 +417,7 @@ static void url_result_thread(void *arg)
     Octstr *final_url, *reply_body, *type, *charset, *replytext;
     List *reply_headers;
     int status;
-    long id;
+    void *id;
     Msg *msg;
     URLTranslation *trans;
     Octstr *text_html;
@@ -455,7 +434,7 @@ static void url_result_thread(void *arg)
     for (;;) {
     	id = http_receive_result(caller, &status, &final_url, &reply_headers,
 	    	    	    	 &reply_body);
-    	if (id == -1)
+    	if (id == NULL)
 	    break;
     	
     	get_receiver(id, &msg, &trans);
@@ -538,7 +517,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 {
     Octstr *pattern;
     List *request_headers;
-    long id;
+    void *id;
     
     gw_assert(msg != NULL);
     gw_assert(msg_type(msg) == sms);
@@ -568,12 +547,10 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
     
     case TRANSTYPE_URL:
 	request_headers = list_create();
-	id = http_start_request(caller, pattern, request_headers, NULL, 1);
+	id = remember_receiver(msg, trans);
+	http_start_request(caller, pattern, request_headers, NULL, 1, id);
 	octstr_destroy(pattern);
 	http_destroy_headers(request_headers);
-	if (id == -1)
-	    goto error;
-	remember_receiver(id, msg, trans);
 	*result = NULL;
 	return 0;
 
@@ -1518,7 +1495,7 @@ int main(int argc, char **argv)
     caller = http_caller_create();
     smsbox_requests = list_create();
     list_add_producer(smsbox_requests);
-    receivers = dict_create(1024, destroy_receiver);
+    num_outstanding_requests = counter_create();
     catenated_sms_counter = counter_create();
     gwthread_create(obey_request_thread, NULL);
     gwthread_create(url_result_thread, NULL);
@@ -1546,7 +1523,7 @@ int main(int argc, char **argv)
     gw_assert(list_len(smsbox_requests) == 0);
     list_destroy(smsbox_requests, NULL);
     http_caller_destroy(caller);
-    dict_destroy(receivers);
+    counter_destroy(num_outstanding_requests);
     counter_destroy(catenated_sms_counter);
     octstr_destroy(bb_host);
     octstr_destroy(global_sender);

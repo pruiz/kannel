@@ -248,17 +248,11 @@ enum { HTTP_MAX_FOLLOW = 5 };
 
 
 /*
- * Counter for request identifiers.
- */
-static Counter *request_id_counter = NULL;
-
-
-/*
  * Information about a server we've connected to.
  */
 typedef struct {
     HTTPCaller *caller;
-    long request_id;
+    void *request_id;
     Octstr *url;
     List *request_headers;
     Octstr *request_body;   /* NULL for GET, non-NULL for POST */
@@ -297,7 +291,7 @@ static HTTPServer *server_create(HTTPCaller *caller, Octstr *url,
     
     trans = gw_malloc(sizeof(*trans));
     trans->caller = caller;
-    trans->request_id = counter_increase(request_id_counter);
+    trans->request_id = NULL;
     trans->url = octstr_duplicate(url);
     trans->request_headers = http_header_duplicate(headers);
     trans->request_body = octstr_duplicate(body);
@@ -1048,11 +1042,10 @@ static void start_client_threads(void)
 }
 
 
-long http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
-    	    	    	Octstr *body, int follow)
+void http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
+    	    	    	Octstr *body, int follow, void *id)
 {
     HTTPServer *trans;
-    long id;
     int follow_remaining;
     
     if (follow)
@@ -1061,22 +1054,26 @@ long http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
     	follow_remaining = 0;
 
     trans = server_create(caller, url, headers, body, follow_remaining);
-    id = trans->request_id;
+    if (id == NULL)
+	/* We don't leave this NULL so http_receive_request can use NULL
+	 * to signal no more requests */
+	trans->request_id = http_start_request;
+    else
+	trans->request_id = id;
     list_produce(pending_requests, trans);
     start_client_threads();
-    return id;
 }
 
 
-long http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
+void *http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
     	    	    	 List **headers, Octstr **body)
 {
     HTTPServer *trans;
-    long request_id;
+    void *request_id;
 
     trans = list_consume(caller);
     if (trans == NULL)
-    	return -1;
+    	return NULL;
 
     request_id = trans->request_id;
     *status = trans->status;
@@ -1104,14 +1101,15 @@ int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
                   List **reply_headers, Octstr **reply_body)
 {
     HTTPCaller *caller;
-    int ret, status;
+    int status;
+    void *ret;
     
     caller = http_caller_create();
-    (void) http_start_request(caller, url, request_headers, NULL, 1);
+    http_start_request(caller, url, request_headers, NULL, 1, http_get_real);
     ret = http_receive_result(caller, &status, final_url, 
     	    	    	      reply_headers, reply_body);
     http_caller_destroy(caller);
-    if (ret == -1)
+    if (ret == NULL)
     	return -1;
     return status;
 }
@@ -1121,7 +1119,6 @@ static void client_init(void)
 {
     pending_requests = list_create();
     list_add_producer(pending_requests);
-    request_id_counter = counter_create();
     client_thread_lock = mutex_create();
 }
 
@@ -1130,7 +1127,6 @@ static void client_shutdown(void)
 {
     list_remove_producer(pending_requests);
     gwthread_join_every(write_request_thread);
-    counter_destroy(request_id_counter);
     list_destroy(pending_requests, server_destroy);
     mutex_destroy(client_thread_lock);
     fdset_destroy(client_fdset);
