@@ -1,5 +1,7 @@
 2003-07-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap-appl.c: general source code cleanup, no logic change.
+    * gw/wapbox.c: cleaned up config_reload() to use reload_foobar() wrapper
+      functions for various types.
 
 2003-07-24  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/dlr.c, gwlib/cfg.def: panic if group is undefined, instead of 
