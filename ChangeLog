@@ -2,6 +2,7 @@
     * utils/mtbatch.c: added MT batch utility. This application connects to
       bearerbox via smsbox interface and sequentially sends a pulk of MT messages 
       to a speficied range of receiver numbers. Currently 7-bit only.
+    * Makefile.in: added utils/mtbatch.c to the make process.
 
 2003-04-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_http.c: harmonized smsc output to be in same style as others.
