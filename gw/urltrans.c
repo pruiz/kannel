@@ -354,7 +354,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
             break;
 
     switch (octstr_get_char(pattern, pos + 1)) {
-    case 'k':
+	case 'k':
 	    if (num_words <= 0)
 		break;
 	    enc = octstr_duplicate(list_get(word_list, 0));
@@ -518,10 +518,10 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 		switch (request->sms.coding) {
 		    case DC_UNDEF:
 		    case DC_7BIT:
-			octstr_append(result, octstr_imm("gsm"));
+			octstr_append(result, octstr_imm("ISO-8859-1"));
 			break;
 		    case DC_8BIT:
-			octstr_append(result, octstr_imm("binary"));
+			octstr_append(result, octstr_imm("8-BIT"));
 			break;
 		    case DC_UCS2:
 			octstr_append(result, octstr_imm("UTF16-BE"));
@@ -538,6 +538,26 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 		octstr_destroy(enc);
 	    }
 	    break;
+
+	case 'h':
+	    if(octstr_len(request->sms.hplmn)) {
+		enc = octstr_duplicate(request->sms.hplmn);
+		octstr_url_encode(enc);
+		octstr_append(result, enc);
+		octstr_destroy(enc);
+	    }
+	    break;
+
+	/* XXX sms.parameters not present in here:
+	 *   * pid - will we receive this ? 
+	 *   * mwi,mclass - will we receive these bits from smsc ?
+	 *   * alt-dcs - shouldn't be required unless we want to inform 
+	 *               which alt-dcs external server should use back
+	 *   * compress - if we use compression, probably kannel would 
+	 *                decompress and reset this to 0. not required
+	 *   * validity, deferred, rpi - we don't receive these from smsc
+	 *   * username, password, dlr-url, account - nonsense to send
+	 */
 
 	case '%':
 	    octstr_format_append(result, "%%");
