@@ -1,4 +1,10 @@
 2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/gwthread.h, gwlib/gwthread-pthread.c: added function 
+      gwthread_table_slot() to provide the slot integer of threadtable
+      the thread is using.
+    * gwlib/log.c: fixed Michael's reported bug for the logging functions.
+ 
+2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_emi2.c: added initialization of privdata->check_time.
     * gwlib/gwthread-pthread.c: added cleaner initalization of pollfds.
     Thanks to "Nuno Ferreira" <nuno.ferreira@graycell.biz> for these.
