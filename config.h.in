@@ -22,6 +22,15 @@
 /* Define if you have the ANSI C header files.  */
 #undef STDC_HEADERS
 
+/* Define if you have getopt.h. */
+#undef HAVE_GETOPT_H
+
+/* Define if you have getopt(3). */
+#undef HAVE_GETOPT
+
+/* Define if you have getopt_long(3). */
+#undef HAVE_GETOPT_LONG
+
 /* Define if you can safely include both <sys/time.h> and <time.h>.  */
 #undef TIME_WITH_SYS_TIME
 

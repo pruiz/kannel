@@ -1,3 +1,13 @@
+Thu Mar 30 00:57:58 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* utils/attgetopt.c: Added AT&T's public domain implementation of
+	getopt(3).
+	
+	* Makefile.in, config.h.in, configure.in,
+	utils/start-stop-daemon.c:  Modified to check for and use getopt,
+	getopt_long, and getopt_h, and to use attgetopt.c if no system
+	getopt is found.
+
 Thu Mar 30 00:24:52 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* daily-patch: Added a summary to beginning of report.

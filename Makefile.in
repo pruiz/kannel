@@ -71,6 +71,9 @@ CONFIG_CLEAN_FILES =
 
 VERSION=$(shell head -1 VERSION)
 
+LIBOBJS=@LIBOBJS@
+LIBSRCS=$(LIBOBJS:.o=.c)
+
 LIBS=@LIBS@
 CFLAGS=-D_REENTRANT=1 @CFLAGS@ -I.
 LDFLAGS=@LDFLAGS@
@@ -109,8 +112,8 @@ progs = $(progsrcs:.c=)
 gwsrcs = $(shell echo gw/*.c)
 gwobjs = $(gwsrcs:.c=.o)
 
-libsrcs = $(shell echo gwlib/*.c)
-libobjs = $(libsrcs:.c=.o)
+libsrcs = $(shell echo gwlib/*.c) $(LIBSRCS)
+libobjs = $(libsrcs:.c=.o) $(LIBOBJS)
 
 wmlscriptsrcs = $(shell echo wmlscript/*.[cy])
 wmlscriptobjs = $(wmlscriptsrcs:.c=.o) $(wmlscriptsrcs:.y=.o)

@@ -52,7 +52,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
-#ifndef OSsunos
+#if HAVE_GETOPT_H
 #include <getopt.h>
 #endif
 #include <pwd.h>
@@ -301,7 +301,7 @@ static void
 parse_options(int argc, char * const *argv)
 {
 
-	#ifndef OSsunos
+#if HAVE_GETOPT_LONG
 	static struct option longopts[] = {
 		{ "help",	  0, NULL, 'H'},
 		{ "stop",	  0, NULL, 'K'},
@@ -323,16 +323,16 @@ parse_options(int argc, char * const *argv)
 		{ "make-pidfile", 0, NULL, 'm'},
 		{ NULL,		0, NULL, 0}
 	};
-	#endif
+#endif
 	int c;
 
 	for (;;) {
-	#ifndef OSsunos
+#if HAVE_GETOPT_LONG
 		c = getopt_long(argc, argv, "HKSVa:n:op:qr:s:tu:vx:c:bm",
 				longopts, (int *) 0);
-	#else
+#else
 		c = getopt(argc, argv, "HKSVa:n:op:qr:s:tu:vx:c:bm");
-	#endif
+#endif
 		if (c == -1)
 			break;
 		switch (c) {
