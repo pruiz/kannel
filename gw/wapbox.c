@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "gwlib.h"
 #include "msg.h"
@@ -23,6 +24,15 @@ static int bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static int heartbeat_freq = BB_DEFAULT_HEARTBEAT;
 static char *logfile = NULL;
 static int logfilelevel = 0;
+
+
+static enum {
+	initializing,
+	running,
+	aborting,
+	aborting_with_prejudice,
+} run_status = initializing;
+
 
 static void read_config(char *filename) {
 	Config *cfg;
@@ -85,10 +95,6 @@ static Msg *msg_receive(int s) {
 static void msg_send(int s, Msg *msg) {
 	Octstr *os;
 
-#if 0
-	debug(0, "msg_send: sending message:");
-	msg_dump(msg);
-#endif
 	os = msg_pack(msg);
 	if (os == NULL)
 		panic(0, "msg_pack failed");
@@ -112,9 +118,6 @@ void init_queue(void) {
 
 void put_msg_in_queue(Msg *msg) {
 	mutex_lock(queue_mutex);
-#if 0
-	debug(0, "wapbox: putting msg %p in queue", (void *) msg);
-#endif
 	if (queue_len == MAX_MSGS_IN_QUEUE)
 		error(0, "wapbox: message queue full, dropping message");
 	else {
@@ -167,19 +170,74 @@ static void *empty_queue_thread(void *arg) {
 	socket = *(int *) arg;
 	stamp = time(NULL);
 	
-	for (;;) {
+	while (run_status == running) {
 		msg = remove_msg_from_queue();
 		if (msg != NULL)
 			msg_send(socket, msg);
 		else {
-		    if (time(NULL) - stamp > heartbeat_freq) {
-			/* send heartbeat */
-			send_heartbeat(socket, 0);
-			stamp = time(NULL);
-		    }
-		    usleep(BUSYLOOP_MILLISECONDS);
+			if (time(NULL) - stamp > heartbeat_freq) {
+				/* send heartbeat */
+				send_heartbeat(socket, 0);
+				stamp = time(NULL);
+			}
+			usleep(BUSYLOOP_MILLISECONDS);
 		}
 	}
+	return NULL;
+}
+
+
+static void signal_handler(int signum) {
+	/* Implement a simple timer for ignoring all but the first of each
+	   set of signals. Sigint is sent to all threads, when given from
+	   keyboard. This timer makes sure only the first thread to receive
+	   it actually does anything. Otherwise the other ones will
+	   be in aborting state when they receive the signal. */
+	static time_t previous_sigint = 0;
+
+	switch (signum) {
+	case SIGINT:
+		switch (run_status) {
+		case aborting_with_prejudice:
+			break;
+		case aborting:
+			if (time(NULL) - previous_sigint > 2) {
+				error(0, "New SIGINT received, let's die harder");
+				run_status = aborting_with_prejudice;
+			} else {
+				;
+				/* Oh man, I can't f*cking believe this. 
+				 * Another thread, another handler. How can
+				 * the same signal happen to the same guy 
+				 * twice? 
+				 */
+			}
+			break;
+		default:
+			error(0, "SIGINT received, let's die.");
+			time(&previous_sigint);
+			run_status = aborting;
+			break;
+		}
+		break;
+
+	case SIGHUP:
+		warning(0, "SIGHUP received, catching and re-opening logs");
+		reopen_log_files();
+		break;
+	}
+}
+
+
+static void setup_signal_handlers(void) {
+	struct sigaction act;
+	
+	act.sa_handler = signal_handler;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	sigaction(SIGINT, &act, NULL);
+	sigaction(SIGHUP, &act, NULL);
+	sigaction(SIGPIPE, &act, NULL);
 }
 
 
@@ -197,6 +255,8 @@ int main(int argc, char **argv) {
 	else
 		read_config("wapbox.wapconf");
 		
+	setup_signal_handlers();
+
 	info(0, "------------------------------------------------------------");
 	info(0, "WAP box starting up.");
 
@@ -205,26 +265,17 @@ int main(int argc, char **argv) {
 	
 	(void) start_thread(1, empty_queue_thread, &bbsocket, 0);
 	
-	for (;;) {
+	run_status = running;
+	while (run_status == running) {
 		msg = msg_receive(bbsocket);
 		if (msg == NULL)
 			break;
-#if 0
-		debug(0, "wapbox: received datagram, unpacking it...");
-#endif
 		wtp_event = wtp_unpack_wdp_datagram(msg);
                 if (wtp_event == NULL)
                    continue;
-#if 0
-                debug(0, "wapbox: datagram unpacked:");
-		wtp_event_dump(wtp_event);
-#endif
 		wtp_machine = wtp_machine_find_or_create(msg, wtp_event);
                 if (wtp_machine == NULL)
                    continue;
-#if 0
-                debug(0, "wapbox: returning create machine");
-#endif
 	        wtp_handle_event(wtp_machine, wtp_event);
 	}
 	

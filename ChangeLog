@@ -1,3 +1,7 @@
+Mon Jan 17 14:42:50 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* wapbox.c: Added signal handlers for SIGINT, SIGHUP, and SIGPIPE.
+
 Mon Jan 17 11:33:22 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile.in, configure.in, configure: Added support docdir and

@@ -1893,6 +1893,9 @@ static void write_pid_file(void)
 
 static void signal_handler(int signum)
 {
+    /* We get a SIGINT for each thread running; this timeout makes sure we
+       handle it only once (unless there's a huge load and handling them
+       takes longer than two seconds). */
     static time_t first_kill = -1;
     
     if (signum == SIGINT) {
