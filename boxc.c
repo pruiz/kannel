@@ -83,42 +83,49 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
 {
     int ack = 0;
     
-    if (boxc->fd == BOXC_THREAD)
+    if (boxc->fd == BOXC_THREAD) {
 	/* smsbox_add_msg(msg); */
 	;
-    else {
+    } else {
+
 	if (msg->msg_type != R_MSG_TYPE_ACK &&
-	    msg->msg_type != R_MSG_TYPE_NACK) {
+	    msg->msg_type != R_MSG_TYPE_NACK) 
+	{
 
-	    Octstr *pack;
+		Octstr *pack;
 
-	    pack = msg_pack(msg->msg);
-	    if (pack == NULL)
-		goto error;
+		pack = msg_pack(msg->msg);
+		if (pack == NULL) goto error;
 
-	    octstr_send(boxc->fd, pack);
-	    octstr_destroy(pack);
+		octstr_send(boxc->fd, pack);
+		octstr_destroy(pack);
 
-	    if (msg->msg_class == R_MSG_CLASS_SMS)
-		if(msg_type(msg->msg) == plain_sms) {
-			debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->plain_sms.text));
-		} else if(msg_type(msg->msg) == smart_sms) {
-			debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->smart_sms.msgdata));
+		if (msg->msg_class == R_MSG_CLASS_SMS) {
+
+			if(msg_type(msg->msg) == plain_sms) {
+				debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->plain_sms.text));
+			} else if(msg_type(msg->msg) == smart_sms) {
+				debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->smart_sms.msgdata));
+			}
+
+		} else {
+			debug(0, "BOXC:write < WAP >");
 		}
-	    else
-		debug(0, "BOXC:write < WAP >");		
-	    ack = 1;
+		ack = 1;
 	}
     }
-    if (msg->msg_type == R_MSG_TYPE_MO) {
-	if (ack)
-	    msg->msg_type = R_MSG_TYPE_ACK;	/* done. */
-	else
-	    msg->msg_type = R_MSG_TYPE_NACK;	/* failed. */
-	rq_push_msg_ack(reply_queue, msg);
-    }
-    else
-	rqi_delete(msg);		/* delete ACK/NACK from SMSC/CSDR */
+
+	if (msg->msg_type == R_MSG_TYPE_MO) {
+		if (ack) {
+		    msg->msg_type = R_MSG_TYPE_ACK;	/* done. */
+		} else {
+		    msg->msg_type = R_MSG_TYPE_NACK;	/* failed. */
+		}
+		rq_push_msg_ack(reply_queue, msg);
+	} else {
+		rqi_delete(msg);	/* delete ACK/NACK from SMSC/CSDR */
+	}
+
     return 0;
 error:
     error(0, "BOXC: Send message failed");
