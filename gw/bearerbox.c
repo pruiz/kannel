@@ -1462,7 +1462,7 @@ static void update_queue_watcher()
     if (c % 20 == 19)
 	check_queues();
 
-    if (c >= 120) {
+    if (c >= 30) {
 	limit = time(NULL) - 60;
 	
 	if (rq_last_mod(bbox->request_queue) > limit ||
