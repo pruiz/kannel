@@ -14,11 +14,11 @@
  * Possible address types
  */
 enum {
-    ADDR_USER,
-    ADDR_PLMN,
-    ADDR_IPV4,
-    ADDR_IPV6,
-    ADDR_WINA
+    ADDR_IPV4 = 0,
+    ADDR_PLMN = 1,
+    ADDR_USER = 2,
+    ADDR_IPV6 = 3,
+    ADDR_WINA = 4
 };
 
 /*

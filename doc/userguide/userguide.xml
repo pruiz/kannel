@@ -4496,7 +4496,7 @@ otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
 <chapter id="ppg">
 <title>Setting up Push Proxy Gateway</title>
       <para>This chapter explains how to set up a push proxy gateway (PPG). 
-		An example configuration file are given. A working push proxy gateway
+       An example configuration file are given. A working push proxy gateway
       is described. </para>
 <sect1>
 <title>Configuring ppg core group, for push initiator (PI) interface</title>
@@ -4540,7 +4540,7 @@ trusted-pi = false
              <entry valign=bottom>
              The port PPG is listening at. Default 8080.
              </entry></row>
-				 <row><entry><literal>ppg-port-ssl</literal></entry>
+             <row><entry><literal>ppg-port-ssl</literal></entry>
              <entry><emphasis>bool</emphasis></entry>
              <entry valign=bottom>
              If set to true, the PPG is using a SSL-enabled HTTP
@@ -4612,8 +4612,8 @@ ppg-password = bar
 allow-ip = 62.254.217.163
 </userinput></screen>
 
-      <para>It goes without saying that is real systems you must use more
-            complex paswords that bar.</para>
+      <para>It goes without saying that in real systems you must use more
+            complex passwords than bar.</para>
 
       <table frame=none>
       <title>PPG user group configuration variables</title>
@@ -5121,9 +5121,9 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
       Note that the date value of the si-expires attribute contains trailing
       zeroes. They are OK here, because SI tokenizer removes them. But phones
       does not accept them in the final SMS data message. You should probably
-      use <literal>action="signal-high"</literal> for testing purposes, the
-      it causes an immediate presentation of the push message. Prodcution
-      usage is quite another matter.
+      use <literal>action="signal-high"</literal> for testing purposes, for
+      it causes an immediate presentation of the push message. Production
+      usage is a quite another matter.
       </para>
 </sect1>
 <sect1>
@@ -5189,9 +5189,9 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              <entry valign=bottom>
              Use content qualifier <emphasis>string</emphasis> instead of 
              default <literal>si</literal> (service indication). Allowed 
-             values are wml, multipart, nil and scrap. Nil and scrap are used 
-             for debugging purposes. Wml does work with some older phone
-             simulators.
+             values are wml, si, sl, sia, multipart, nil and scrap. Nil and 
+             scrap are used for debugging purposes. Wml does work with some 
+             older phone simulators.
              </entry></row>
              <row><entry><literal>-a</literal></entry>
              <entry><emphasis>string</emphasis></entry>

@@ -253,18 +253,8 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
 
         datagram->u.T_DUnitdata_Req.addr_tuple =
 	    wap_addr_tuple_duplicate(event->u.S_Unit_Push_Req.addr_tuple);
-        datagram->u.T_DUnitdata_Req.network_required = 
-	    event->u.S_Unit_Push_Req.network_required;
-        datagram->u.T_DUnitdata_Req.bearer_required =
-	    event->u.S_Unit_Push_Req.bearer_required;
-
-        if (event->u.S_Unit_Push_Req.bearer_required && 
-                event->u.S_Unit_Push_Req.network_required) {
-            datagram->u.T_DUnitdata_Req.bearer = 
-  	        octstr_duplicate(event->u.S_Unit_Push_Req.bearer);
-            datagram->u.T_DUnitdata_Req.network =
-	        octstr_duplicate(event->u.S_Unit_Push_Req.network); 
-        }
+        datagram->u.T_DUnitdata_Req.address_type = 
+	    event->u.S_Unit_Push_Req.address_type;
 
 	datagram->u.T_DUnitdata_Req.user_data = ospdu;
         

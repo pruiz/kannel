@@ -545,7 +545,7 @@ static void http_read_thread(void *arg)
                     octstr_get_cstr(url), octstr_get_cstr(ip));
                 goto ferror;
             }
-	} else {
+	} else {                        /* Jörg, this wont disappear again */
 	    username = octstr_imm("");
 	}
 
@@ -1075,13 +1075,7 @@ static PPGPushMachine *push_machine_create(WAPEvent *e, WAPAddrTuple *tuple)
     m->push_headers = http_header_duplicate(e->u.Push_Message.push_headers);
     m->push_data = octstr_duplicate(e->u.Push_Message.push_data);
 
-    m->network_required = e->u.Push_Message.network_required;
-    if (e->u.Push_Message.network_required)
-        m->network = octstr_duplicate(e->u.Push_Message.network);
-
-    m->bearer_required = e->u.Push_Message.bearer_required;
-    if (e->u.Push_Message.bearer_required)
-        m->bearer = octstr_duplicate(e->u.Push_Message.bearer);
+    m->address_type = e->u.Push_Message.address_type;
 
     m->progress_notes_requested = e->u.Push_Message.progress_notes_requested;
     if (e->u.Push_Message.progress_notes_requested)
@@ -1169,9 +1163,10 @@ static void create_session(WAPEvent *e, PPGPushMachine *pm)
     ota_event = wap_event_create(Pom_SessionRequest_Req);
     ota_event->u.Pom_SessionRequest_Req.addr_tuple =
         addr_tuple_change_cliport(pm->addr_tuple,
-                               CONNECTIONLESS_PUSH_CLIPORT);
+                                  CONNECTIONLESS_PUSH_CLIPORT);
     ota_event->u.Pom_SessionRequest_Req.push_headers = push_headers;
     ota_event->u.Pom_SessionRequest_Req.push_id = pm->push_id;
+    ota_event->u.Pom_SessionRequest_Req.address_type = pm->address_type;
      
     dispatch_to_ota(ota_event);
 }
@@ -1213,7 +1208,7 @@ static void request_confirmed_push(long last, PPGPushMachine *pm,
 
 /*
  * There is to types of unit push requests: requesting ip services and sms 
- * services. Fields are different in both cases
+ * services. Address type tells the difference.
  */
 static void request_unit_push(long last, PPGPushMachine *pm)
 {
@@ -1234,13 +1229,7 @@ static void request_unit_push(long last, PPGPushMachine *pm)
     ota_event->u.Po_Unit_Push_Req.trusted = pm->trusted;
     ota_event->u.Po_Unit_Push_Req.last = last;
 
-    ota_event->u.Po_Unit_Push_Req.bearer_required = pm->bearer_required;
-    if (pm->bearer_required)
-        ota_event->u.Po_Unit_Push_Req.bearer = octstr_duplicate(pm->bearer);
-
-    ota_event->u.Po_Unit_Push_Req.network_required = pm->network_required;
-    if (pm->network_required)
-        ota_event->u.Po_Unit_Push_Req.network = octstr_duplicate(pm->network);
+    ota_event->u.Po_Unit_Push_Req.address_type = pm->address_type;
 
     ota_event->u.Po_Unit_Push_Req.push_body = 
             octstr_duplicate(pm->push_data);
@@ -1739,23 +1728,15 @@ int select_bearer_network(WAPEvent **e)
         network = (**e).u.Push_Message.network;
     
     for (i = 0; i < NUMBER_OF_NETWORKS ; ++i) {
-        if (octstr_compare(bearer, octstr_imm(bearers[i])) == 0)
+        if (octstr_case_compare(bearer, octstr_imm(bearers[i])) == 0)
 	    break;
     }
     for (j = 0; j < NUMBER_OF_BEARERS ; ++j) {
-        if (octstr_compare(bearer, octstr_imm(bearers[j])) == 0)
+        if (octstr_case_compare(bearer, octstr_imm(bearers[j])) == 0)
 	    break;
     }
     if (i == NUMBER_OF_NETWORKS || j == NUMBER_OF_BEARERS)
         return 0;
-
-    if (bearer_required && 
-        octstr_compare((**e).u.Push_Message.bearer, octstr_imm("SMS")) != 0) {
-        (**e).u.Push_Message.bearer_required = PAP_FALSE;
-        (**e).u.Push_Message.bearer = NULL;
-        (**e).u.Push_Message.network_required = PAP_FALSE;
-        (**e).u.Push_Message.network = NULL;
-    }
 
     return 1;
 }

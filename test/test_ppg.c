@@ -5,8 +5,8 @@
  * protocol MIME message and invoke push services specified by an url. Use a 
  * hardcoded message boundary (asdlfkjiurwgasf), for simpler command line 
  * interface.
- * Repetitions, using multiple threads can be requested, in addition of sett-
- * ing of some MIME headers. 
+ * Repetitions and use of multiple threads can be requested, in addition of 
+ * setting of some headers. 
  *
  * By Aarno Syvänen for Wiral Ltd
  */
@@ -26,7 +26,8 @@ static int verbose = 1,
            use_hardcoded = 0,
            num_urls = 0,
            wait = 0,
-           use_headers = 0;
+           use_headers = 0,
+           use_config = 0;
 static double wait_seconds = 0.0;
 static Counter *counter = NULL;
 static char **push_data = NULL;
@@ -34,6 +35,59 @@ static char *boundary = NULL;
 static Octstr *content_flag = NULL;
 static Octstr *appid_flag = NULL;
 static Octstr *content_transfer_encoding = NULL;
+
+enum { SSL_CONNECTION_OFF = 0,
+       DEFAULT_NUMBER_OF_RELOGS = 2};
+
+/*
+ * Configuration variables
+ */
+static int pi_ssl = SSL_CONNECTION_OFF;
+static long retries = DEFAULT_NUMBER_OF_RELOGS;
+static Octstr *ssl_client_certkey_file = NULL;
+static Octstr *push_url = NULL;
+static Octstr *pap_file = NULL;
+static Octstr *content_file = NULL;
+static Octstr *username = NULL;
+static Octstr *password = NULL;
+
+static void read_test_ppg_config(Octstr *name)
+{
+    Cfg *cfg;
+    CfgGroup *grp;
+
+    cfg = cfg_create(name);
+    if (cfg_read(cfg) == -1)
+        panic(0, "Cannot read a configuration file %s, exiting",
+              octstr_get_cstr(name));
+    cfg_dump(cfg);
+    grp = cfg_get_single_group(cfg, octstr_imm("test-ppg"));
+    cfg_get_integer(&retries, grp, octstr_imm("retries"));
+    cfg_get_bool(&pi_ssl, grp, octstr_imm("pi-ssl"));
+#ifdef HAVE_LIBSSL    
+    if (pi_ssl) {
+        ssl_client_certkey_file = cfg_get(grp, 
+            octstr_imm("ssl-client-certkey-file"));
+        if (ssl_client_certkey_file != NULL) {
+            use_global_client_certkey_file(ssl_client_certkey_file);
+        } else { 
+             error(0, "cannot set up SSL without client certkey file");
+             exit(1);
+        }
+    }
+#endif
+
+    grp = cfg_get_single_group(cfg, octstr_imm("configuration"));
+    push_url = cfg_get(grp, octstr_imm("push-url"));
+    pap_file =  cfg_get(grp, octstr_imm("pap-file"));
+    content_file =  cfg_get(grp, octstr_imm("content-file"));
+    if (!use_hardcoded) {
+        username = cfg_get(grp, octstr_imm("username"));
+        password = cfg_get(grp, octstr_imm("password"));
+    }
+
+    cfg_destroy(cfg);
+}
 
 static void add_push_application_id(List **push_headers, Octstr *appid_flag)
 {
@@ -159,8 +213,7 @@ static List *push_headers_create(size_t content_len)
         http_header_add(push_headers, "Content-Type", 
                         octstr_get_cstr(mos = make_multipart_value(boundary)));
     if (use_headers)
-        http_add_basic_auth(push_headers, octstr_imm("troo"), 
-                            octstr_imm("far"));
+        http_add_basic_auth(push_headers, username, password);
     add_push_application_id(&push_headers, appid_flag);
     http_header_add(push_headers, "Content-Length: ", 
                     octstr_get_cstr(cos = octstr_format("%d", content_len)));
@@ -179,8 +232,6 @@ static Octstr *push_content_create(void)
            *pap_file_content,
            *bpos,
            *bcos;
-    char *content_file,
-         *pap_file;
 
     wap_content = NULL;
     push_content = NULL;
@@ -226,20 +277,20 @@ static Octstr *push_content_create(void)
                  "--asdlfkjiurwgasf--\r\n\r\n"
                  "");
     } else {
-        content_file = push_data[1];
         add_content_type(content_flag, &wap_content);
         add_content_transfer_encoding_type(content_transfer_encoding, 
                                            wap_content);
-        if ((wap_file_content = octstr_read_file(content_file)) == NULL)
+        if ((wap_file_content = 
+                octstr_read_file(octstr_get_cstr(content_file))) == NULL)
 	    panic(0, "Stopping");
 
 	transfer_encode (content_transfer_encoding, wap_file_content);
         octstr_append(wap_content, wap_file_content);
         octstr_destroy(wap_file_content);
 
-        pap_file = push_data[2];
         pap_content = octstr_format("%s", "Content-Type: application/xml\r\n");
-        if ((pap_file_content = octstr_read_file(pap_file)) ==  NULL)
+        if ((pap_file_content = 
+                octstr_read_file(octstr_get_cstr(pap_file))) ==  NULL)
 	    panic(0, "Stopping");
         octstr_append(pap_content, pap_file_content);
         octstr_destroy(pap_file_content);
@@ -264,11 +315,20 @@ static Octstr *push_content_create(void)
     return push_content;
 }
 
+static void make_url(Octstr **url)
+{
+    if (use_config && !use_headers) {
+        octstr_append(*url, octstr_imm("?username="));
+        octstr_append(*url, username ? username : octstr_imm("default"));
+        octstr_append(*url, octstr_imm("&password="));
+        octstr_append(*url, password ? password: octstr_imm("default"));
+    }
+}
+
 static void start_push(HTTPCaller *caller, long i)   
 {
     List *push_headers;
-    Octstr *push_content,
-           *push_url;
+    Octstr *push_content;
     long *id;
     
     push_content = push_content_create();
@@ -282,17 +342,15 @@ static void start_push(HTTPCaller *caller, long i)
 
     id = gw_malloc(sizeof(long));
     *id = i;
-    push_url = octstr_create(push_data[0]);
+    make_url(&push_url);
     http_start_request(caller, push_url, push_headers, push_content, 0, id,
-                       NULL);
+                       ssl_client_certkey_file);
     debug("test.ppg", 0, "TEST_PPG: started pushing job %ld", i);
 
     octstr_destroy(push_url);
     octstr_destroy(push_content);
     http_destroy_headers(push_headers);
 }
-
-enum {NUMBER_OF_RELOGS = 2};
 
 /*
  * Try log in defined number of times, when got response 401 and authentica-
@@ -325,14 +383,13 @@ static int receive_push_reply(HTTPCaller *caller)
         goto push_failed;
     }
 
-    while (use_headers && http_status == 401 && tries < NUMBER_OF_RELOGS) {
+    while (use_headers && http_status == 401 && tries < retries) {
         debug("test.ppg", 0, "try number %d", tries);
         debug("test.ppg", 0, "authentication failure, get a challenge");
         http_destroy_headers(reply_headers);
         push_content = push_content_create();
         retry_headers = push_headers_create(octstr_len(push_content));
-        http_add_basic_auth(retry_headers, octstr_imm("troo"), 
-                            octstr_imm("far"));
+        http_add_basic_auth(retry_headers, username, password);
         trid = gw_malloc(sizeof(long));
         *trid = tries;
         http_start_request(caller, final_url, retry_headers, 
@@ -371,7 +428,7 @@ static int receive_push_reply(HTTPCaller *caller)
 
     if (http_status == 401) {
         if (use_headers)
-            error(0, "tried %d times, stopping", NUMBER_OF_RELOGS);
+            error(0, "tried %ld times, stopping", retries);
         else
 	    error(0, "push failed, authorisation failure");
         goto push_failed;
@@ -484,15 +541,19 @@ receive_rest:
 static void help(void) 
 {
     info(0, "Usage: test_ppg [options] push_url [content_file pap_file]");
+    info(0, "      or");
+    info(0, "Usage: test_ppg [options] [conf_file]");
     info(0, "Implements push initiator for wap push. Push services are ");
     info(0, "located in push_url, push content in the file content file.");
     info(0, "File pap_file contains pap control document that controls");
     info(0, "pushing");
-    info(0, "If option -H is not used, command line has three arguments.");
-    info(0, "These are following, in this order:");
+    info(0, "If option -H is not used, command line has either three or one");
+    info(0, "arguments:");
     info(0, "      a) the url of the push proxy gateway");
-    info(0, "      b) the file containing the content to be pushed");
-    info(0, "      c) pap document controlling the pushing");
+    info(0, "      b) a file containing the content to be pushed");
+    info(0, "      c) a pap document controlling pushing");
+    info(0, "     or");
+    info(0, "      a) a test configuration file, containing all these");
     info(0, "Options are:");
     info(0, "-h");
     info(0, "print this info");
@@ -518,7 +579,9 @@ static void help(void)
     info(0, "    use transfer encoding to send push contents.");
     info(0, "    Currently supported is base64.");
     info(0, "-H");
-    info(0, "Use hardcoded MIME message, containing a pap control document");
+    info(0, "Use hardcoded MIME message, containing a pap control document.");
+    info(0, "In addition, use hardcoded username/password in headers (if ");
+    info(0, "flag -b is set, too");
     info(0, "Default: read components from files");
     info(0, "-t");
     info(0, "number of threads, maximum 1024, default 1");
@@ -533,6 +596,7 @@ int main(int argc, char **argv)
     double run_time;
     long threads[MAX_THREADS];
     long i;
+    Octstr *fos;
 
     gwlib_init();
     num_threads = 1;
@@ -579,7 +643,7 @@ int main(int argc, char **argv)
 		    octstr_destroy(content_flag);
 		    error(0, "TEST_PPG: Content type not known");
 		    help();
-                    exit(0);
+                    exit(1);
                 }
 	    break;
 
@@ -594,7 +658,7 @@ int main(int argc, char **argv)
 		    octstr_destroy(appid_flag);
 		    error(0, "TEST_PPG: Push application id not known");
 		    help();
-                    exit(0);
+                    exit(1);
                 }
 	    break;
 
@@ -607,13 +671,13 @@ int main(int argc, char **argv)
                           " encoding \"%s\"",
 			  octstr_get_cstr(content_transfer_encoding));
 		    help();
-                    exit(0);
+                    exit(1);
 		}
 	    break;
 
 	    case 'h':
 	        help();
-                exit(0);
+                exit(1);
 
 	    case 'b':
 	        use_headers = 1;
@@ -623,13 +687,14 @@ int main(int argc, char **argv)
 	    default:
 	        error(0, "TEST_PPG: Invalid option %c", opt);
                 help();
-                panic(0, "Stopping");
+                error(0, "Stopping");
+                exit(1);
         }
     }
 
     if (optind == argc) {
         help();
-        exit(0);
+        exit(1);
     }
     
     push_data = argv + optind;
@@ -641,18 +706,46 @@ int main(int argc, char **argv)
     if (appid_flag == NULL)
         appid_flag = octstr_imm("any");
 
-    if (push_data[0] == NULL)
-        panic(0, "No ppg address specified, stopping");
-
-    if (!use_hardcoded) {
-        if (push_data[1] == NULL)
-            panic(0, "No push content file, stopping");
-        if (push_data[2] == NULL)
-            panic(0, "No pap control message, stopping");
+    if (use_hardcoded) {
+        username = octstr_imm("troo");
+        password = octstr_imm("far");
     }
+
+    if (push_data[0] == NULL) {
+        error(0, "No ppg address or config file, stopping");
+        exit(1);
+    }
+
+    use_config = 0;
+    if (!use_hardcoded) {
+        if (push_data[1] == NULL) {
+            info(0, "a configuration file input assumed");
+            use_config = 1;
+        }
+    }
+
+    if (!use_config && push_data[1] != NULL) {
+        if (push_data[2] == NULL) {
+	   error(0, "no pap control document, stopping");
+           exit(1);
+        } else {
+           info(0, "an input without a configuration file assumed");
+           push_url = octstr_create(push_data[0]);
+           content_file = octstr_create(push_data[1]);
+           pap_file = octstr_create(push_data[2]);
+        }
+    }
+
+    debug("test.ppg", 0, "using %s as a content file", push_data[1]);
+    debug("test.ppg", 0, "using %s as a control file", push_data[2]);
 
     boundary = "asdlfkjiurwghasf";
     counter = counter_create();
+    if (use_config) {
+        read_test_ppg_config(fos = octstr_format("%s", push_data[0]));
+        octstr_destroy(fos);
+    }
+
     time(&start);
     if (num_threads == 0)
         push_thread(http_caller_create());
@@ -669,11 +762,17 @@ int main(int argc, char **argv)
 
     octstr_destroy(content_flag);
     octstr_destroy(appid_flag);
+    octstr_destroy(content_file);
+    octstr_destroy(pap_file);
+    octstr_destroy(ssl_client_certkey_file);
+    octstr_destroy(username);
+    octstr_destroy(password);
     counter_destroy(counter);
     gwlib_shutdown();
 
-    return 1;
+    exit(0);
 }
+
 
 
 

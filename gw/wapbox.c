@@ -249,16 +249,13 @@ static void setup_signal_handlers(void)
 }
 
 /*
- * We create wdp_datagram for IP traffic and sms for SMS traffic. If network_
- * required and bearer_required are on, non-IP (now SMS) bearer is used.
+ * We create wdp_datagram for IP traffic and sms for SMS traffic. 
  */
 static Msg *pack_ip_datagram(WAPEvent *dgram)
 {
     Msg *msg;
     WAPAddrTuple *tuple;
 
-    gw_assert(!dgram->u.T_DUnitdata_Req.bearer_required && 
-              !dgram->u.T_DUnitdata_Req.network_required);
     msg = msg_create(wdp_datagram);
     tuple = dgram->u.T_DUnitdata_Req.addr_tuple;
     msg->wdp_datagram.source_address =
@@ -310,8 +307,6 @@ static Msg *pack_sms_datagram(WAPEvent *dgram)
     Msg *msg;
     WAPAddrTuple *tuple;
 
-    gw_assert(dgram->u.T_DUnitdata_Req.bearer_required && 
-              dgram->u.T_DUnitdata_Req.network_required);
     msg = msg_create(sms);
     tuple = dgram->u.T_DUnitdata_Req.addr_tuple;
     msg->sms.sender = octstr_duplicate(tuple->local->address);
@@ -331,6 +326,18 @@ static Msg *pack_sms_datagram(WAPEvent *dgram)
 }
 
 /*
+ * Possible address types
+ */
+
+enum {
+    ADDR_IPV4 = 0,
+    ADDR_PLMN = 1,
+    ADDR_USER = 2,
+    ADDR_IPV6 = 3,
+    ADDR_WINA = 4
+};
+
+/*
  * Send IP datagram as it is, segment SMS datagram if necessary.
  */
 static void dispatch_datagram(WAPEvent *dgram)
@@ -339,17 +346,17 @@ static void dispatch_datagram(WAPEvent *dgram)
         *part;
     List *sms_datagrams;
     long max_msgs,
-         msg_sequence,
          msg_len;
+    static long msg_sequence = 0L;   /* Used only by this function */
 
-    gw_assert(dgram != NULL);
+    gw_assert(dgram);
     sms_datagrams = NULL;
+
     if (dgram->type != T_DUnitdata_Req) {
         warning(0, "dispatch_datagram received event of unexpected type.");
         wap_event_dump(dgram);
     } else {
-        if (!dgram->u.T_DUnitdata_Req.bearer_required && 
-	        !dgram->u.T_DUnitdata_Req.network_required) {
+        if (dgram->u.T_DUnitdata_Req.address_type == ADDR_IPV4) {
 	    msg = pack_ip_datagram(dgram);
             write_to_bearerbox(msg);
         } else {
@@ -357,6 +364,8 @@ static void dispatch_datagram(WAPEvent *dgram)
             msg_sequence = counter_increase(sequence_counter) & 0xff;
             msg_len = octstr_len(msg->sms.msgdata);
             max_msgs = (msg_len / MAX_SMS_OCTETS) + 1; 
+            debug("wap", 0, "WDP (wapbox): Message length was %ld, sending"
+                  " %ld messages", msg_len, max_msgs);
             sms_datagrams = sms_split(msg, NULL, NULL, NULL, NULL, 1, 
                                       msg_sequence, max_msgs, MAX_SMS_OCTETS);
             while ((part = list_extract_first(sms_datagrams)) != NULL)

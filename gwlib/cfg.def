@@ -88,10 +88,6 @@ SINGLE_GROUP(ppg,
     OCTSTR(ssl-server-key-file)
 )
 
-SINGLE_GROUP(test_ppg,
-    OCTSTR(ssl-client-certkey-file)
-)
-
 MULTI_GROUP(wap-push-user,
     OCTSTR(wap-push-user)
     OCTSTR(ppg-username)
@@ -102,6 +98,20 @@ MULTI_GROUP(wap-push-user,
     OCTSTR(black-list)
     OCTSTR(deny-ip)
     OCTSTR(allow-ip)
+)
+
+SINGLE_GROUP(test-ppg,
+    OCTSTR(retries)
+    OCTSTR(pi-ssl)
+    OCTSTR(ssl-client-certkey-file)
+)
+
+SINGLE_GROUP(configuration,
+    OCTSTR(push-url)
+    OCTSTR(content-file)
+    OCTSTR(pap-file)
+    OCTSTR(username)
+    OCTSTR(password)
 )
 
 SINGLE_GROUP(smsbox,

@@ -19,10 +19,11 @@
  * containing lots of additional data, see ppg, 7.1. We do not yet support 
  * user defined addresses.
  *
- * After compiling, some semantic analysing of the resulted event, and setting
- * some defaults (however, relying on them is quite a  bad policy).
+ * After compiling, some semantic analysing of the resulted event, and sett-
+ * ing some defaults (however, relying on them is quite a bad policy). In 
+ * addition changing undefined values (any) to defined ones.
  *
- * By Aarno Syvänen for Wapit Ltd and for Wiral Ltd.
+ * By  Aarno Syvänen for Wapit Ltd and for Wiral Ltd.
  */
 
 #include <xmlmemory.h>
@@ -181,14 +182,15 @@ static char *pap_network_types[] = {
  */
 
 static int parse_document(xmlDocPtr doc_p, WAPEvent **e);
-static int parse_node(xmlNodePtr node, WAPEvent **e, long *type_of_address);  
+static int parse_node(xmlNodePtr node, WAPEvent **e, long *type_of_address,
+                      int *is_any);  
 static int parse_element(xmlNodePtr node, WAPEvent **e, 
-                         long *type_of_address); 
+                         long *type_of_address, int *is_any); 
 static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute, 
-                           WAPEvent **e, long *type_of_address);
+                           WAPEvent **e, long *type_of_address, int *is_any);
 static int parse_attr_value(Octstr *element_name, Octstr *attr_name, 
                             Octstr *attr_value, WAPEvent **e,
-                            long *type_of_address);
+                            long *type_of_address, int *is_any);
 static int set_attribute_value(Octstr *element_name, Octstr *attr_value, 
                                Octstr *attr_name, WAPEvent **e);
 static int return_flag(Octstr *ros);
@@ -198,7 +200,8 @@ static int parse_push_message_value(Octstr *attr_name, Octstr *attr_value,
 static int parse_address_value(Octstr *attr_name, Octstr *attr_value, 
                                WAPEvent **e, long *type_of_address);
 static int parse_quality_of_service_value(Octstr *attr_name, 
-                                          Octstr *attr_value, WAPEvent **e);
+                                          Octstr *attr_value, WAPEvent **e,
+                                          int *is_any);
 static int parse_push_response_value(Octstr *attr_name, Octstr *attr_value,
                                      WAPEvent **e);
 static int parse_progress_note_value(Octstr *attr_name, Octstr *attr_value,
@@ -245,15 +248,16 @@ static long accept_escaped(Octstr **address, long pos);
 static long handle_two_terminators (Octstr **address, long pos, 
     unsigned char comma, unsigned char point, unsigned char c, 
     long fragment_parsed, long fragment_length);
-static int uses_gsm_msisdn_address(long network_required, Octstr *network, 
-                                   long bearer_required, Octstr *bearer);
-static int uses_ipv4_address(long network_required, long bearer_required,
-                             Octstr *bearer);
-static int uses_ipv6_address(long network_required, long bearer_required,
-                             Octstr *bearer);
+static int uses_gsm_msisdn_address(long bearer_required, Octstr *bearer);
+static int uses_ipv4_address(long bearer_required, Octstr *bearer);
+static int uses_ipv6_address(long bearer_required, Octstr *bearer);
 static int event_semantically_valid(WAPEvent *e, long type_of_address);
 static char *address_type(long type_of_address);
 static void set_defaults(WAPEvent **e, long type_of_address);
+static void set_bearer_defaults(WAPEvent **e, long type_of_address);
+static void set_network_defaults(WAPEvent **e, long type_of_address);
+static int set_anys(WAPEvent **e, long type_of_address, int is_any);
+static void set_any_value(int *is_any, Octstr *attr_name, Octstr *attr_value);
 
 /*
  * Macro for creating an octet string from a node content. This has two 
@@ -329,6 +333,17 @@ error:
  *
  * Implementation of internal functions
  *
+ */
+
+enum {
+    NEITHER = 0,
+    BEARER_ANY = 1,
+    NETWORK_ANY = 2,
+    EITHER = 3,
+    ERROR_ANY = 4
+};
+
+/*
  * Parse the document node of libxml syntax tree. FIXME: Add parsing of pap
  * version.
  * After parsing, some semantic analysing of the resulted event. Then set
@@ -343,34 +358,78 @@ error:
  * a field containing address type.
  */
 
-
 static int parse_document(xmlDocPtr doc_p, WAPEvent **e)
 {
     xmlNodePtr node;
-    int ret;
+    int ret,
+        is_any;                   /* is bearer and/or network set any in qos
+                                     attribute */
     long type_of_address;
 
     gw_assert(doc_p);
     node = xmlDocGetRootElement(doc_p);
-    if ((ret = parse_node(node, e, &type_of_address)) < 0)
+    is_any = NEITHER;
+
+    if ((ret = parse_node(node, e, &type_of_address, &is_any)) < 0)
         return ret;
+
+    (*e)->u.Push_Message.address_type = type_of_address;
 
     if ((ret= event_semantically_valid(*e, type_of_address)) == 0) {
         warning(0, "wrong type of address for requested bearer");
         return -2;
     } else if (ret == -1) {
-        warning(0, "reverting to default bearer and network");
+        info(0, "reverting to default bearer and network");
         set_defaults(e, type_of_address);
         return 0;
     }
 
-    (*e)->u.Push_Message.address_type = type_of_address;
+    if (!set_anys(e, type_of_address, is_any)) {
+        warning(0, "unable to handle any values in qos");
+        return -2;
+    } else {
+        info(0, "using defaults instead of anys");
+    }
+
     wap_event_assert(*e);
 
     return 0;
 }
 
+static int set_anys(WAPEvent **e, long type_of_address, int is_any)
+{
+    switch (is_any) {
+    case NEITHER:
+    return 1;
+
+    case BEARER_ANY:
+        set_bearer_defaults(e, type_of_address);
+    return 1;
+
+    case NETWORK_ANY:
+        set_network_defaults(e, type_of_address);
+    return 1;
+
+    case EITHER:
+        set_defaults(e, type_of_address);
+    return 1;
+
+    default:
+    return 0;
+    }
+}
+
+/*
+ * We actually use address_type field of a wap event for cotrolling the bearer
+ * selection. Bearer and network filed are used for debugging purposes.
+ */
 static void set_defaults(WAPEvent **e, long type_of_address)
+{
+    set_bearer_defaults(e, type_of_address);
+    set_network_defaults(e, type_of_address);   
+}
+
+static void set_bearer_defaults(WAPEvent **e, long type_of_address)
 {
     gw_assert(type_of_address == ADDR_USER || type_of_address == ADDR_PLMN ||
               type_of_address == ADDR_IPV4 || type_of_address == ADDR_IPV6 ||
@@ -380,22 +439,44 @@ static void set_defaults(WAPEvent **e, long type_of_address)
         return;
 
     (*e)->u.Push_Message.bearer_required = PAP_TRUE;
-    (*e)->u.Push_Message.network_required = PAP_TRUE;
-    octstr_destroy((*e)->u.Push_Message.network);
     octstr_destroy((*e)->u.Push_Message.bearer);
 
     switch (type_of_address) {
     case ADDR_PLMN:
-	(*e)->u.Push_Message.network = octstr_format("%s", "GSM");
 	(*e)->u.Push_Message.bearer = octstr_format("%s", "SMS"); 
-    break;    
+    break;   
+ 
     case ADDR_IPV4:
-        (*e)->u.Push_Message.network = octstr_format("%s", "GSM");
 	(*e)->u.Push_Message.bearer = octstr_format("%s", "CSD");     
     break;
+
     case ADDR_IPV6:
-        (*e)->u.Push_Message.network = octstr_format("%s", "Any");
-	(*e)->u.Push_Message.bearer = octstr_format("%s", "Any"); 
+    break;
+    }
+}
+
+static void set_network_defaults(WAPEvent **e, long type_of_address)
+{
+    gw_assert(type_of_address == ADDR_USER || type_of_address == ADDR_PLMN ||
+              type_of_address == ADDR_IPV4 || type_of_address == ADDR_IPV6 ||
+              type_of_address == ADDR_WINA);
+
+    if ((*e)->type != Push_Message)
+        return;
+
+    (*e)->u.Push_Message.network_required = PAP_TRUE;
+    octstr_destroy((*e)->u.Push_Message.network);
+
+    switch (type_of_address) {
+    case ADDR_PLMN:
+	(*e)->u.Push_Message.network = octstr_format("%s", "GSM");
+    break;   
+ 
+    case ADDR_IPV4:
+        (*e)->u.Push_Message.network = octstr_format("%s", "GSM");   
+    break;
+
+    case ADDR_IPV6: 
     break;
     }
 }
@@ -446,12 +527,10 @@ static int event_semantically_valid(WAPEvent *e, long type_of_address)
 
     if (type_of_address == ADDR_PLMN) {
             if ((ret = uses_gsm_msisdn_address(
-                     e->u.Push_Message.network_required, 
-                     e->u.Push_Message.network, 
                      e->u.Push_Message.bearer_required,
                      e->u.Push_Message.bearer)) == 0) {
-                debug("wap.push.pap.compiler", 0, "PAP COMPILER: network or"
-                      " bearer does not accept PLMN address");
+                debug("wap.push.pap.compiler", 0, "PAP COMPILER: bearer does"
+                      " not accept PLMN address");
                 return 0;
             } else if (ret == -1) {
 	        debug("wap.push.pap.compiler", 0, "PAP COMPILER: network or"
@@ -463,11 +542,10 @@ static int event_semantically_valid(WAPEvent *e, long type_of_address)
     }
     
     if (type_of_address == ADDR_IPV4) { 
-            if ((ret = uses_ipv4_address(e->u.Push_Message.network_required,
-                    e->u.Push_Message.bearer_required,
+            if ((ret = uses_ipv4_address(e->u.Push_Message.bearer_required,
                     e->u.Push_Message.bearer)) == 0) {
-                debug("wap.push.pap.compiler", 0, "PAP COMPILER: network or"
-                      " bearer does not accept IPv4 address");
+                debug("wap.push.pap.compiler", 0, "PAP COMPILER: bearer does"
+                      " not accept IPv4 address");
                 return 0;
             } else if (ret == -1) {
                 debug("wap.push.pap.compiler", 0, "PAP COMPILER: network or"
@@ -478,8 +556,7 @@ static int event_semantically_valid(WAPEvent *e, long type_of_address)
     }
     
     if (type_of_address == ADDR_IPV6) { 
-        if ((ret = uses_ipv6_address(e->u.Push_Message.network_required,
-                 e->u.Push_Message.bearer_required,
+        if ((ret = uses_ipv6_address(e->u.Push_Message.bearer_required,
                  e->u.Push_Message.bearer)) == 0) {
              debug("wap.push.pap.compiler", 0, "PAP COMPILER: network or"
                    " bearer does not accept IPv6 address");
@@ -517,36 +594,32 @@ static char *ip4_bearers[] = {
 #define NUMBER_OF_IP4_BEARERS sizeof(ip4_bearers)/sizeof(ip4_bearers[0])
 
 /*
- * Networks and bearers accepting gsm msisdn addresses are defined in wdp,
- * appendix c.
- * Return -1, when there are no bearer or network defined
- *        0, when a network or a bearer not accepting msisdn address is found
- *        1, when a network and bearer is accepting msisdn addresesses 
+ * Bearers accepting gsm msisdn addresses are defined in wdp, appendix c. We
+ * add any, because Kannel PPG will change this to SMS.
+ * Return -1, when there are no bearer defined
+ *        0, when a bearer not accepting msisdn address is found
+ *        1, when a bearer is accepting msisdn addresesses 
  */
-static int uses_gsm_msisdn_address(long network_required, Octstr *network, 
-                                   long bearer_required, Octstr *bearer)
+static int uses_gsm_msisdn_address(long bearer_required, Octstr *bearer)
 {
-    if (!network_required || !bearer_required)
+    if (!bearer_required)
         return -1;
     
-    if (!network || !bearer)
+    if (!bearer)
         return 1;
     
-    return (octstr_case_compare(network, octstr_imm("GSM")) == 0 &&
-	   octstr_case_compare(bearer, octstr_imm("SMS")) == 0) ||
-           (octstr_case_compare(network, octstr_imm("ANSI-136")) == 0 &&
-	   octstr_case_compare(bearer, octstr_imm("GHOST/R_DATA")) == 0);
+    return (octstr_case_compare(bearer, octstr_imm("SMS")) == 0 ||
+            octstr_case_compare(bearer, octstr_imm("GHOST/R_DATA")) == 0 ||
+            octstr_case_compare(bearer, octstr_imm("Any")) == 0);
 }
 
 /*
- * Networks and bearers accepting ipv4 addresses are defined in wdp, appendix 
- * c.
- * Return -1, when there are no bearer or network defined
- *        0, when a network or a bearer not accepting ipv4  address is found
- *        1, when a network and bearer is accepting ipv4addresesses 
+ * Bearers accepting ipv4 addresses are defined in wdp, appendix c.
+ * Return -1, when there are no bearer defined
+ *        0, when a bearer not accepting ipv4  address is found
+ *        1, when a bearer is accepting ipv4 addresesses 
  */
-static int uses_ipv4_address(long network_required, long bearer_required,
-                            Octstr *bearer)
+static int uses_ipv4_address(long bearer_required, Octstr *bearer)
 {
     long i;
 
@@ -559,7 +632,7 @@ static int uses_ipv4_address(long network_required, long bearer_required,
     
     i = 0;
     while (i < NUMBER_OF_IP4_BEARERS) {
-        if (octstr_compare(bearer, octstr_imm(ip4_bearers[i])) == 0) {
+        if (octstr_case_compare(bearer, octstr_imm(ip4_bearers[i])) == 0) {
 	    return 1;
         }
         ++i;
@@ -569,14 +642,13 @@ static int uses_ipv4_address(long network_required, long bearer_required,
 }
 
 /*
- * Networks and bearers accepting ipv6 addresses are defined in wdp, appendix 
- * c.
- * Return -1, when there are no bearer or network defined
- *        0, when a network or a bearer not accepting msisdn address is found
- *        1, when a network and bearer is accepting msisdn addresesses 
+ * Bearers accepting ipv6 addresses (currently *not* accepting) are defined in
+ * wdp, appendix c.
+ * Return -1, when there are no bearer defined
+ *        0, when a bearer not accepting ipv6 address is found
+ *        1, when a bearer is accepting ipv6 addresesses 
  */
-static int uses_ipv6_address(long network_required, long bearer_required,
-                             Octstr *bearer)
+static int uses_ipv6_address(long bearer_required, Octstr *bearer)
 {
     long i;
 
@@ -588,7 +660,7 @@ static int uses_ipv6_address(long network_required, long bearer_required,
 
     i = 0;
     while (i < NUMBER_OF_IP6_BEARERS) {
-        if (octstr_compare(bearer, octstr_imm(ip6_bearers[i])) == 0) {
+        if (octstr_case_compare(bearer, octstr_imm(ip6_bearers[i])) == 0) {
 	    return 1;
         }
         ++i;
@@ -601,15 +673,18 @@ static int uses_ipv6_address(long network_required, long bearer_required,
 /*
  * Parse node of the syntax tree. DTD, as defined in pap, chapter 9, contains
  * only elements (entities are restricted to DTDs). 
+ * The caller must initialize the value of is_any to 0.
  *
  * Output: a) a newly created wap event containing attributes from pap 
  *         document node, if success; partially parsed node, if not. 
  *         b) the type of of the client address 
+ *         c) is bearer and/or network any
  * Returns 0, when success
  *        -1, when a non-implemented feature is requested
  *        -2, when error
  */
-static int parse_node(xmlNodePtr node, WAPEvent **e, long *type_of_address)
+static int parse_node(xmlNodePtr node, WAPEvent **e, long *type_of_address,
+                      int *is_any)
 {
     int ret;
 
@@ -620,7 +695,7 @@ static int parse_node(xmlNodePtr node, WAPEvent **e, long *type_of_address)
     break;
 
     case XML_ELEMENT_NODE:
-        if ((ret = parse_element(node, e, type_of_address)) < 0) {
+        if ((ret = parse_element(node, e, type_of_address, is_any)) < 0) {
 	    return ret;
         }
     break;
@@ -631,12 +706,13 @@ static int parse_node(xmlNodePtr node, WAPEvent **e, long *type_of_address)
     }
 
     if (node->children != NULL)
-        if ((ret = parse_node(node->children, e, type_of_address)) < 0) {
+        if ((ret = parse_node(node->children, e, type_of_address, 
+                is_any)) < 0) {
             return ret;
 	}
 
     if (node->next != NULL)
-        if ((ret = parse_node(node->next, e, type_of_address)) < 0) {
+        if ((ret = parse_node(node->next, e, type_of_address, is_any)) < 0) {
             return ret;
         }
     
@@ -649,12 +725,14 @@ static int parse_node(xmlNodePtr node, WAPEvent **e, long *type_of_address)
  * Output: a) a newly created wap event containing attributes from the
  *         element, if success; containing some unparsed attributes, if not.
  *         b) the type of the client address
+ *         c) is bearer and/or network any
  * Returns 0, when success
  *        -1, when a non-implemented feature is requested
  *        -2, when error
  * In addition, return 
  */
-static int parse_element(xmlNodePtr node, WAPEvent **e, long *type_of_address)
+static int parse_element(xmlNodePtr node, WAPEvent **e, long *type_of_address,
+                         int *is_any)
 {
     Octstr *name;
     xmlAttrPtr attribute;
@@ -686,7 +764,7 @@ static int parse_element(xmlNodePtr node, WAPEvent **e, long *type_of_address)
         attribute = node->properties;
         while (attribute != NULL) {
 	    if ((ret = parse_attribute(name, attribute, e,
-                    type_of_address)) < 0) {
+                    type_of_address, is_any)) < 0) {
 	        octstr_destroy(name);
                 return ret;
             }
@@ -711,12 +789,13 @@ static int parse_element(xmlNodePtr node, WAPEvent **e, long *type_of_address)
  * Output: a) a newly created wap event containing parsed attribute from pap 
  *         source, if successfull, an uncomplete wap event otherwise.
  *         b) the type of the client address 
+ *         c) is bearer and/or network set any
  * Returns 0, when success
  *        -1, when a non-implemented feature is requested
  *        -2, when error
  */
 static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute, 
-                           WAPEvent **e, long *type_of_address)
+                           WAPEvent **e, long *type_of_address, int *is_any)
 {
     Octstr *attr_name, *value, *nameos;
     size_t i;
@@ -748,7 +827,7 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
  */
     if (pap_attributes[i].value == NULL) {
         ret = parse_attr_value(element_name, attr_name, value, e, 
-                               type_of_address);
+                               type_of_address, is_any);
 	if (ret == -2) {
 	    goto error;
         } else {
@@ -865,25 +944,66 @@ static int parse_address_value(Octstr *attr_name, Octstr *attr_value,
 }
 
 static int parse_quality_of_service_value(Octstr *attr_name, 
-                                          Octstr *attr_value, WAPEvent **e)
+                                          Octstr *attr_value, WAPEvent **e,
+                                          int *is_any)
 {
     Octstr *ros;
 
     ros = octstr_imm("erroneous");
     if (octstr_compare(attr_name, octstr_imm("network")) == 0) {
 	(**e).u.Push_Message.network = (ros = parse_network(attr_value)) ? 
-            octstr_duplicate(ros) : octstr_imm("erroneous");
-            return return_flag(ros);
+            octstr_duplicate(attr_value) : octstr_imm("erroneous");
+        set_any_value(is_any, attr_name, attr_value);
+        return return_flag(ros);
     }
+
     if (octstr_compare(attr_name, octstr_imm("bearer")) == 0) {
 	(**e).u.Push_Message.bearer = (ros = parse_bearer(attr_value)) ? 
-            octstr_duplicate(ros) : octstr_imm("erroneous");
+            octstr_duplicate(attr_value) : octstr_imm("erroneous");
+        set_any_value(is_any, attr_name, attr_value);
         return return_flag(ros);
     }
 
     debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown quality of"
           " service attribute");
     return -2;
+}
+
+static void set_any_value(int *is_any, Octstr *attr_name, Octstr *attr_value)
+{
+    switch (*is_any) {
+    case NEITHER:
+        if (octstr_compare(attr_name, octstr_imm("bearer")) == 0 &&
+                octstr_case_compare(attr_value, octstr_imm("any")) == 0)
+	    *is_any = BEARER_ANY;
+        else if (octstr_compare(attr_name, octstr_imm("network")) == 0 &&
+                octstr_case_compare(attr_value, octstr_imm("any")) == 0)
+	    *is_any = NETWORK_ANY;
+    return;
+
+    case BEARER_ANY:
+        if (octstr_compare(attr_name, octstr_imm("network")) == 0 &&
+                octstr_case_compare(attr_value, octstr_imm("any")) == 0)
+	    *is_any = EITHER;
+    return;
+
+    case NETWORK_ANY:
+        if (octstr_compare(attr_name, octstr_imm("bearer")) == 0 &&
+                octstr_case_compare(attr_value, octstr_imm("any")) == 0)
+	    *is_any = EITHER;
+    return;
+
+    case EITHER:
+         debug("wap.push.pap.compiler", 0, "PAP COMPILER: problems with"
+               " setting any");
+         *is_any = ERROR_ANY;
+    return;
+
+    default:
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: wrong any value");
+        *is_any = ERROR_ANY;
+    return;
+    }
 }
 
 static int parse_push_response_value(Octstr *attr_name, Octstr *attr_value,
@@ -1024,13 +1144,14 @@ static int return_flag(Octstr *ros)
  *
  * Output: a) a wap event, as created by subroutines
  *         b) the type of the client address
+ *         c) is bearer or network set any
  * Returns 0, when success,
  *        -1, when a non-implemented feature requested.
  *        -2, when an error
  */
 static int parse_attr_value(Octstr *element_name, Octstr *attr_name, 
                             Octstr *attr_value, WAPEvent **e, 
-                            long *type_of_address)
+                            long *type_of_address, int *is_any)
 {
     if (octstr_compare(attr_value, octstr_imm("erroneous")) == 0) {
         debug("wap.push.pap.compiler", 0, "unknown value for an attribute");
@@ -1045,7 +1166,8 @@ static int parse_attr_value(Octstr *element_name, Octstr *attr_name,
         return parse_address_value(attr_name, attr_value, e, type_of_address);
     } else if (octstr_compare(element_name, 
                    octstr_imm("quality-of-service")) == 0) {
-        return parse_quality_of_service_value(attr_name, attr_value, e);
+        return parse_quality_of_service_value(attr_name, attr_value, e, 
+                                              is_any);
     } else if (octstr_compare(element_name, 
                               octstr_imm("push-response")) == 0) {
         return parse_push_response_value(attr_name, attr_value, e);
@@ -1100,7 +1222,7 @@ static int set_attribute_value(Octstr *element_name, Octstr *attr_value,
 
 /*
  * We must recognize status class and treat unrecognized codes as a x000 code,
- * see pap, 9.13, p 27.
+ * as required by pap, 9.13, p 27.
  */
 static int parse_code(Octstr *attr_value)
 {
@@ -1161,8 +1283,9 @@ static Octstr *parse_network(Octstr *attr_value)
 
     for (i = 0; i < NUM_NETWORK_TYPES; i++) {
          if (octstr_case_compare(attr_value, 
-                 ros = octstr_imm(pap_network_types[i])) == 0)
+	         ros = octstr_imm(pap_network_types[i])) == 0) {
 	     return ros;
+         }
     }
 
     warning(0, "no such network");

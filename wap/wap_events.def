@@ -75,10 +75,7 @@ WAPEVENT(T_DUnitdata_Req, "T-DUnitdata.req",
 	ADDRTUPLE(addr_tuple)
 	OCTSTR(user_data)
 
-        INTEGER(bearer_required)
-        OPTIONAL_OCTSTR(bearer)
-        INTEGER(network_required)
-        OPTIONAL_OCTSTR(network)
+        INTEGER(address_type)
 	)
 
 WAPEVENT(T_DUnitdata_Ind, "T-DUnitdata.ind",
@@ -520,10 +517,7 @@ WAPEVENT(S_Unit_Push_Req, "S-Unit-Push.req",
 	HTTPHEADER(push_headers)
 	OPTIONAL_OCTSTR(push_body)
 
-        INTEGER(bearer_required)
-        OPTIONAL_OCTSTR(bearer)
-        INTEGER(network_required)
-        OPTIONAL_OCTSTR(network)
+        INTEGER(address_type)
 	)
 
 WAPEVENT(S_Unit_Push_Ind, "S-Unit-Push.ind",
@@ -542,6 +536,7 @@ WAPEVENT(Pom_SessionRequest_Req, "Pom-SessionRequest.req",
         HTTPHEADER(push_headers)
         
         INTEGER(push_id)
+        INTEGER(address_type)
         )
 
 WAPEVENT(Pom_Connect_Ind, "Pom-Connect.ind",
@@ -621,10 +616,7 @@ WAPEVENT(Po_Unit_Push_Req, "Po-Unit-Push.req",
          INTEGER(last)
          OPTIONAL_OCTSTR(push_body)
 
-         INTEGER(bearer_required)
-         OPTIONAL_OCTSTR(bearer)
-         INTEGER(network_required)
-         OPTIONAL_OCTSTR(network)
+         INTEGER(address_type)
         )
 
 WAPEVENT(Po_PushAbort_Req, "Po-PushAbort.req",

@@ -20,17 +20,13 @@
  *        f) fields to store push message data until the session is establish-
  *           ed: push headers, push data, push capabilities.
  *
- *        g) fields to define network and bearer PI is asking: network_requir-
- *           ed, network, bearer_required, bearer.
+ *        g) field to define network and bearer PI is asking: address_type
  *
  *        h) fields to specify reporting to PI: progress_notes_requested, ppg_
  *           notify_requested_to
  *
  *        i) PI authentication fields: authentication fields for this push: 
- *           authenticared, trusted. 
- *        
- *        j) authorisation fields used when SMS is the bearer: username, pass-
- *           word.
+ *           authenticated, trusted. 
  *
  * By Aarno Syvänen for Wapit Ltd and for Wiral Ltd
  */
@@ -67,10 +63,7 @@ MACHINE(OCTSTR(pi_push_id)       /* this id is selected by PI and SHOULD
         INTEGER(priority)        /* for QoS attribute priority */
         HTTPHEADER(push_headers) 
         OPTIONAL_OCTSTR(push_data)        
-        OPTIONAL_OCTSTR(network) /* defining the network */
-        INTEGER(network_required)
-        OPTIONAL_OCTSTR(bearer)  /* defining the bearer */
-        INTEGER(bearer_required)
+        INTEGER(address_type)    /* defining the network */
         INTEGER(progress_notes_requested)/* do we send progress notes about 
                                             this push */
         OPTIONAL_OCTSTR(ppg_notify_requested_to) /* do we notify PI the 
@@ -78,8 +71,6 @@ MACHINE(OCTSTR(pi_push_id)       /* this id is selected by PI and SHOULD
         INTEGER(authenticated)   /* transferring trust from the client to
                                     PPG */
         INTEGER(trusted)  
-        OPTIONAL_OCTSTR(username) /* SMS center authentication */
-        OPTIONAL_OCTSTR(password)  
        )
 
 #undef MACHINE

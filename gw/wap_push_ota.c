@@ -213,6 +213,8 @@ static void make_session_request(WAPEvent *e)
     check_session_request_headers(push_headers);
 
     wsp_event = wap_event_create(S_Unit_Push_Req);
+    wsp_event->u.S_Unit_Push_Req.address_type =
+        e->u.Pom_SessionRequest_Req.address_type;
     wsp_event->u.S_Unit_Push_Req.push_id = 
         e->u.Pom_SessionRequest_Req.push_id;
     wsp_event->u.S_Unit_Push_Req.addr_tuple = 
@@ -289,17 +291,8 @@ static void make_unit_push_request(WAPEvent *e)
     wsp_event->u.S_Unit_Push_Req.push_id = e->u.Po_Unit_Push_Req.push_id;
     wsp_event->u.S_Unit_Push_Req.push_headers = push_headers;
 
-    wsp_event->u.S_Unit_Push_Req.network_required = 
-        e->u.Po_Unit_Push_Req.network_required;
-    wsp_event->u.S_Unit_Push_Req.bearer_required =
-        e->u.Po_Unit_Push_Req.bearer_required;
-    
-    if (e->u.Po_Unit_Push_Req.network_required)
-        wsp_event->u.S_Unit_Push_Req.network = 
-	    octstr_duplicate(e->u.Po_Unit_Push_Req.network);
-    if (e->u.Po_Unit_Push_Req.bearer_required)
-        wsp_event->u.S_Unit_Push_Req.bearer =
-	  octstr_duplicate(e->u.Po_Unit_Push_Req.bearer);
+    wsp_event->u.S_Unit_Push_Req.address_type = 
+        e->u.Po_Unit_Push_Req.address_type;
 
     if (e->u.Po_Unit_Push_Req.push_body != NULL)
         wsp_event->u.S_Unit_Push_Req.push_body =
