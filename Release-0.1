@@ -3,7 +3,8 @@
 Improvements to SMSGateway release 0.6:
 
  * New architecture, load balance between several hosts (over
-   200 msg/s can be achieved with multiple sms boxes)
+   200 msg/s can be achieved with multiple sms boxes) - also
+   includes 'internal SMS Box' for light-load use.
 
  * Logfile can be set in configuration file
 
@@ -13,6 +14,8 @@ Improvements to SMSGateway release 0.6:
    according to other rules than number normalization)
 
  * HTTP-access IP-logging
+
+ * IP access and deny -lists for both 'sendsms' and module connections
 
  * New HTTP adminstration commands: status-lookup and connection
    disabling
@@ -39,11 +42,9 @@ well tested out. SMSGateway 0.6 is much more stable system currently.
 
 Upcoming features:
 
- * WAP UDP support
+ * WAP UDP support (these are already received but not handled)
 
  * WAP SMS support (version 0.2?)
-
- * Thread SMS BOX (part of Bearerbox)
 
  * Dynamically loadable service definitions, new SMSC connections and
    other similar things
