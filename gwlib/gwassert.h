@@ -18,7 +18,7 @@
 
 #ifdef NDEBUG
 #define gw_assert(expr) ((void) 0)
-#define gw_assert_place(expr, file, line) ((void) 0)
+#define gw_assert_place(expr, file, lineno, func) ((void) 0)
 #else
 #define gw_assert(expr) \
 	((void) ((expr) ? 0 : \

@@ -1,5 +1,10 @@
 2000-04-08  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/gwassert.h: Updated NDEBUG version of gw_asswert_place
+	to match normal version.
+
+2000-04-08  Richard Braakman  <dark@wapit.com>
+
 	* gw/wtp_timer.c: Removed debugging output again for normal
 	operations.
 
