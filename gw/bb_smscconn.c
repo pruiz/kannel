@@ -531,87 +531,82 @@ Octstr *smsc2_status(int status_type)
     int i, para = 0;
     SMSCConn *conn;
     StatusInfo info;
+    Octstr *conn_id = NULL;
+    Octstr *conn_name = NULL;
 
-    if ((lb = bb_status_linebreak(status_type))==NULL)
-	return octstr_create("Un-supported format");
+    if ((lb = bb_status_linebreak(status_type)) == NULL)
+        return octstr_create("Un-supported format");
 
     if (status_type == BBSTATUS_HTML || status_type == BBSTATUS_WML)
-	para = 1;
+        para = 1;
 
     if (!smsc_running) {
-	if (status_type == BBSTATUS_XML)
-	    return octstr_create ("<smscs>\n\t<count>0</count>\n</smscs>");
-	else
-	    return octstr_format("%sNo SMSC connections%s\n\n", para ? "<p>" : "",
-			     para ? "</p>" : "");
+        if (status_type == BBSTATUS_XML)
+            return octstr_create ("<smscs>\n\t<count>0</count>\n</smscs>");
+        else
+            return octstr_format("%sNo SMSC connections%s\n\n", para ? "<p>" : "",
+                                 para ? "</p>" : "");
     }
     if (status_type != BBSTATUS_XML)
         tmp = octstr_format("%sSMSC connections:%s", para ? "<p>" : "", lb);
     else
-	tmp = octstr_format("<smscs><count>%d</count>\n\t", list_len(smsc_list));
+        tmp = octstr_format("<smscs><count>%d</count>\n\t", list_len(smsc_list));
     
-    for(i=0; i < list_len(smsc_list); i++) {
-	Octstr *connection_id = NULL;
+    for (i = 0; i < list_len(smsc_list); i++) {
         conn = list_get(smsc_list, i);
-	smscconn_info(conn, &info);
 
-	if (info.status == SMSCCONN_DEAD)
-	    /* XXX  we could delete the SMSC now */
-	    continue;
+        if ((smscconn_info(conn, &info) == -1) || (info.status == SMSCCONN_DEAD))
+            /* XXX  we could delete the SMSC now */
+            continue;
 
-	connection_id = smscconn_id(conn);
+        conn_id = conn ? smscconn_id(conn) : octstr_imm("unknown");
+        conn_name = conn ? smscconn_name(conn) : octstr_imm("unknown");
 
-	if (!connection_id)
-	    connection_id = octstr_imm ("unknown");
-
-	if (status_type == BBSTATUS_HTML) {
-	    octstr_append_cstr(tmp, "&nbsp;&nbsp;&nbsp;&nbsp;<b>");
-	    octstr_append(tmp,connection_id);
-	    octstr_append_cstr(tmp, "</b>&nbsp;&nbsp;&nbsp;&nbsp;");
-	}
-	else if (status_type == BBSTATUS_TEXT)
-	{
-	    octstr_append_cstr(tmp, "    ");
-	    octstr_append(tmp,connection_id);
-	    octstr_append_cstr(tmp, "    ");
-	}
-	if (status_type == BBSTATUS_XML) {
+        if (status_type == BBSTATUS_HTML) {
+            octstr_append_cstr(tmp, "&nbsp;&nbsp;&nbsp;&nbsp;<b>");
+            octstr_append(tmp, conn_id);
+            octstr_append_cstr(tmp, "</b>&nbsp;&nbsp;&nbsp;&nbsp;");
+        } else if (status_type == BBSTATUS_TEXT) {
+            octstr_append_cstr(tmp, "    ");
+            octstr_append(tmp, conn_id);
+            octstr_append_cstr(tmp, "    ");
+        } 
+        if (status_type == BBSTATUS_XML) {
             octstr_append_cstr(tmp, "<smsc>\n\t\t<name>");
-            octstr_append(tmp,  smscconn_name(conn));
+            octstr_append(tmp, conn_name);
             octstr_append_cstr(tmp, "</name>\n\t\t");
             octstr_append_cstr(tmp, "<id>");
-            octstr_append(tmp,  smscconn_id(conn));
+            octstr_append(tmp, conn_id);
             octstr_append_cstr(tmp, "</id>\n\t\t");
-        }
-        else
-            octstr_append(tmp, smscconn_name(conn));
+        } else
+            octstr_append(tmp, conn_name);
 
-	switch(info.status) {
-        case SMSCCONN_ACTIVE:
-        case SMSCCONN_ACTIVE_RECV:
-            sprintf(tmp3, "online %lds", info.online);
-            break;
-        case SMSCCONN_DISCONNECTED:
-            sprintf(tmp3, "disconnected");
-            break;
-        default:
-            sprintf(tmp3, "connecting");
-    }
+        switch (info.status) {
+            case SMSCCONN_ACTIVE:
+            case SMSCCONN_ACTIVE_RECV:
+                sprintf(tmp3, "online %lds", info.online);
+                break;
+            case SMSCCONN_DISCONNECTED:
+                sprintf(tmp3, "disconnected");
+                break;
+            default:
+                sprintf(tmp3, "connecting");
+        }
 	
         if (status_type == BBSTATUS_XML)
-	    octstr_format_append(tmp, "<status>%s</status>\n\t\t<received>%ld</received>"
-                             "\n\t\t<sent>%ld</sent>\n\t\t<failed>%ld</failed>\n\t\t"
-			     "<queued>%ld</queued>\n\t</smsc>\n", tmp3,
-			     info.received, info.sent, info.failed,
-			     info.queued);
+            octstr_format_append(tmp, "<status>%s</status>\n\t\t<received>%ld</received>"
+                "\n\t\t<sent>%ld</sent>\n\t\t<failed>%ld</failed>\n\t\t"
+                "<queued>%ld</queued>\n\t</smsc>\n", tmp3,
+                info.received, info.sent, info.failed,
+                info.queued);
         else
-	    octstr_format_append(tmp, " (%s, rcvd %ld, sent %ld, failed %ld, "
-			     "queued %ld msgs)%s", tmp3,
-			     info.received, info.sent, info.failed,
-			     info.queued, lb);
+            octstr_format_append(tmp, " (%s, rcvd %ld, sent %ld, failed %ld, "
+                "queued %ld msgs)%s", tmp3,
+            info.received, info.sent, info.failed,
+            info.queued, lb);
     }
     if (para)
-	octstr_append_cstr(tmp, "</p>");
+        octstr_append_cstr(tmp, "</p>");
     if (status_type == BBSTATUS_XML)
         octstr_append_cstr(tmp, "</smscs>\n");
     else
