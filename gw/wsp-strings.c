@@ -118,7 +118,7 @@ static long string_to_number(Octstr *ostr, struct table *table)
     gw_assert(initialized);
 
     for (i = 0; i < table->size; i++) {
-	if (octstr_case_compare(ostr, table->strings[i])) {
+	if (octstr_case_compare(ostr, table->strings[i]) == 0) {
 	    return table->linear ? i : table->numbers[i];
 	}
     }

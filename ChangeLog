@@ -1,3 +1,7 @@
+2000-10-03  Richard Braakman  <dark@wapit.com>
+
+	* gw/wsp-strings.c: Correct silly mistake in string_to_number.
+
 2000-10-03  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsbox.c, gw/smsbox_req.c|h: added new smsbox configuration
