@@ -217,6 +217,10 @@ Octstr *store_status(int status_type)
         octstr_append_cstr(ret, "[SMS ID] [Sender] [Receiver] [SMSC ID] [UDH] [Message] [Time]\n");
     }
    
+    /* if there is no store-file, then don't loop in sms_store */
+    if (filename == NULL)
+        goto finish;
+
     list_lock(sms_store);
     for (l = 0; l < list_len(sms_store); l++) {
         msg = list_get(sms_store, l);
@@ -261,6 +265,7 @@ Octstr *store_status(int status_type)
     }
     list_unlock(sms_store);
 
+finish:
     /* set the type based footer */
     if (status_type == BBSTATUS_HTML) {
         octstr_append_cstr(ret,"</table>");
