@@ -371,8 +371,7 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 				      int *validity, int *deferred,
 				      int *dlr_mask, Octstr **dlr_url, 
 				      Octstr **account, int *pid, int *alt_dcs, 
-				      int *rpi, Octstr **auth_code, 
-				      Octstr **hplmn)
+				      int *rpi, Octstr **binfo)
 {
     Octstr *name, *val;
     long l;
@@ -425,15 +424,6 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 	    *account = octstr_duplicate(val);
 	    octstr_strip_blanks(*account);
 	}
-	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Auth-Code")) == 0) {
-	    *auth_code = octstr_duplicate(val);
-	    octstr_strip_blanks(*auth_code);
-	}
-	/* No HPLMN on EMI's MT message
-	else if (octstr_case_compare(name, octstr_imm("X-Kannel-HPLMN")) == 0) {
-	    *hplmn = octstr_duplicate(val);
-	    octstr_strip_blanks(*hplmn);
-	} */
 	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Coding")) == 0) {
     	    sscanf(octstr_get_cstr(val),"%d", coding);
 	}
@@ -520,7 +510,7 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
                                   int *dlr_mask, Octstr **dlr_url,
                                   Octstr **account, int *pid, int *alt_dcs,
                                   int *rpi, List **tolist, Octstr **charset,
-                                  Octstr **auth_code, Octstr **hplmn)
+                                  Octstr **binfo)
 {                                    
 
     Octstr *text, *tmp, *tmp2;
@@ -546,8 +536,8 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
 	/* account */
 	get_tag(tmp, octstr_imm("account"), account, 0, 0);
 
-	/* auth-code */
-	get_tag(tmp, octstr_imm("auth-code"), auth_code, 0, 0);
+	/* binfo */
+	get_tag(tmp, octstr_imm("binfo"), binfo, 0, 0);
 
 	O_DESTROY(tmp);
     }
@@ -573,16 +563,6 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
 		}
 	    }
 	}
-    }
-
-    /* from (oa/number) and hplmn (oa/hplmn) */
-    get_tag(*body, octstr_imm("oa"), &tmp, 0, 0);
-    if(tmp) {
-	get_tag(tmp, octstr_imm("number"), from, 0, 0);
-	/* No HPLMN on EMI's MT message
-	get_tag(tmp, octstr_imm("hplmn"), hplmn, 0, 0);
-	*/
-	O_DESTROY(tmp);
     }
 
     /* udh */
@@ -736,7 +716,7 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 			 int validity, int deferred,
 			 Octstr *dlr_url, int dlr_mask, int pid, int alt_dcs,
 			 int rpi, Octstr *smsc, Octstr *account,
-			 Octstr *charset, Octstr *auth_code, Octstr *hplmn)
+			 Octstr *charset, Octstr *binfo)
 {
     msg->sms.msgdata = replytext;
     msg->sms.time = time(NULL);
@@ -878,26 +858,16 @@ static void fill_message(Msg *msg, URLTranslation *trans,
         }
     }
 
-    if (auth_code) {
+    if (binfo) {
         if (urltrans_accept_x_kannel_headers(trans)) {
-            msg->sms.auth_code = auth_code;
+            msg->sms.binfo = binfo;
         } else {
-            warning(0, "Tried to change auth_code to '%s', denied.",
-                    octstr_get_cstr(auth_code));
-            octstr_destroy(auth_code);
+            warning(0, "Tried to change billing info to '%s', denied.",
+                    octstr_get_cstr(binfo));
+            octstr_destroy(binfo);
         }
     }
 
-    /* No HPLMN on EMI's MT message
-    if (hplmn) {
-        if (urltrans_accept_x_kannel_headers(trans)) {
-            msg->sms.hplmn = hplmn;
-        } else {
-            warning(0, "Tried to change hplmn to '%s', denied.",
-                    octstr_get_cstr(hplmn));
-            octstr_destroy(hplmn);
-        }
-    } */
 }
 
 
@@ -973,7 +943,7 @@ static void url_result_thread(void *arg)
     unsigned int queued; /* indicate if processes reply is requeued */
 
     Octstr *reply_body, *charset;
-    Octstr *udh, *from, *to, *dlr_url, *account, *smsc, *auth_code, *hplmn;
+    Octstr *udh, *from, *to, *dlr_url, *account, *smsc, *binfo;
     int dlr_mask, mclass, mwi, coding, compress, pid, alt_dcs, rpi;
     int validity, deferred;
 
@@ -991,10 +961,9 @@ static void url_result_thread(void *arg)
             break;
 
 	octets = 0;
-        from = to = udh = smsc = dlr_url =
-	    account = auth_code = hplmn = charset = NULL;
-	mclass = mwi = coding = compress = pid =
-	    alt_dcs = rpi = dlr_mask = validity = deferred = -1;
+    from = to = udh = smsc = dlr_url = account = binfo = charset = NULL;
+	mclass = mwi = coding = compress = pid = alt_dcs = rpi = dlr_mask 
+        = validity = deferred = -1;
 
         get_receiver(id, &msg, &trans, &method, &req_url, &req_headers, &req_body, &retries);
 
@@ -1012,7 +981,7 @@ static void url_result_thread(void *arg)
 					  &coding, &compress, &validity,
 					  &deferred, &dlr_mask, &dlr_url,
 					  &account, &pid, &alt_dcs, &rpi,
-					  &auth_code, &hplmn);
+					  &binfo);
             } else if (octstr_case_compare(type, text_plain) == 0) {
                 replytext = octstr_duplicate(reply_body);
                 octstr_destroy(reply_body);
@@ -1022,7 +991,7 @@ static void url_result_thread(void *arg)
 					  &coding, &compress, &validity,
 					  &deferred, &dlr_mask, &dlr_url,
 					  &account, &pid, &alt_dcs, &rpi,
-					  &auth_code, &hplmn);
+					  &binfo);
             } else if (octstr_case_compare(type, text_xml) == 0) {
                 replytext = octstr_duplicate(reply_body);
                 octstr_destroy(reply_body);
@@ -1031,7 +1000,7 @@ static void url_result_thread(void *arg)
                         &from, &to, &udh, NULL, NULL, &smsc, &mclass, &mwi,
                         &coding, &compress, &validity, &deferred, &dlr_mask,
                         &dlr_url, &account, &pid, &alt_dcs, &rpi, NULL, &charset,
-			&auth_code, &hplmn);
+                        &binfo);
             } else if (octstr_case_compare(type, octet_stream) == 0) {
                 replytext = octstr_duplicate(reply_body);
                 octstr_destroy(reply_body);
@@ -1042,7 +1011,7 @@ static void url_result_thread(void *arg)
 					  &coding, &compress, &validity,
 					  &deferred, &dlr_mask, &dlr_url,
 					  &account, &pid, &alt_dcs, &rpi,
-					  &auth_code, &hplmn);
+					  &binfo);
             } else {
                 replytext = octstr_duplicate(reply_couldnotrepresent);
             }
@@ -1062,7 +1031,7 @@ static void url_result_thread(void *arg)
         fill_message(msg, trans, replytext, octets, from, to, udh, mclass,
             mwi, coding, compress, validity, deferred, dlr_url,
             dlr_mask, pid, alt_dcs, rpi, smsc, account, charset,
-            auth_code, hplmn);
+            binfo);
 
         if (final_url == NULL)
             final_url = octstr_imm("");
@@ -1315,18 +1284,10 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
-	/* No A(uth-)C(ode) in EMI's MO message
-	if (octstr_len(msg->sms.auth_code)) {
+	if (octstr_len(msg->sms.binfo)) {
 	    Octstr *os;
-	    os = octstr_duplicate(msg->sms.auth_code);
-	    http_header_add(request_headers, "X-Kannel-Auth-Code",
-	    	octstr_get_cstr(os));
-	    octstr_destroy(os);
-	} */
-	if (octstr_len(msg->sms.hplmn)) {
-	    Octstr *os;
-	    os = octstr_duplicate(msg->sms.hplmn);
-	    http_header_add(request_headers, "X-Kannel-HPLMN",
+	    os = octstr_duplicate(msg->sms.binfo);
+	    http_header_add(request_headers, "X-Kannel-BInfo",
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
@@ -1394,12 +1355,6 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	    OCTSTR_APPEND_XML(tmp, "number", msg->sms.receiver);
 	    OCTSTR_APPEND_XML(xml, "oa", tmp);
 	    octstr_destroy(tmp);
-	    if(octstr_len(msg->sms.hplmn)) {
-		tmp = octstr_create("");
-		OCTSTR_APPEND_XML(tmp, "hplmn", msg->sms.hplmn);
-		OCTSTR_APPEND_XML(xml, "oa", tmp);
-		octstr_destroy(tmp);
-	    }
 	}
 
 	/* da */
@@ -1473,15 +1428,11 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	OCTSTR_APPEND_XML(xml, "at", tmp);
 	octstr_destroy(tmp);
 
-	/* smsc and auth_code = from/smsc and from/auth-code */
-	if(octstr_len(msg->sms.smsc_id) || octstr_len(msg->sms.auth_code)) {
+	/* smsc */
+	if (octstr_len(msg->sms.smsc_id)) {
 	    tmp = octstr_create("");
 	    if(octstr_len(msg->sms.smsc_id))
 		OCTSTR_APPEND_XML(tmp, "account", msg->sms.smsc_id);
-	    /* No A(uth-)C(ode) in EMI's MO message
-	    if(octstr_len(msg->sms.auth_code))
-		OCTSTR_APPEND_XML(tmp, "auth-code", msg->sms.auth_code);
-	    */
 	    if(octstr_len(tmp))
 		OCTSTR_APPEND_XML(xml, "from", tmp);
 	    O_DESTROY(tmp);
@@ -1829,7 +1780,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 				 int validity, int deferred,
 				 int *status, int dlr_mask, Octstr *dlr_url, 
 				 Octstr *account, int pid, int alt_dcs, int rpi,
-				 List *receiver, Octstr *auth_code, Octstr *hplmn)
+				 List *receiver, Octstr *binfo)
 {				     
     Msg *msg = NULL;
     Octstr *newfrom, *returnerror, *receiv;
@@ -2005,20 +1956,6 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     } else {
 	msg->sms.dlr_url = octstr_create("");
     }
-
-    if(octstr_len(auth_code) < -1 || octstr_len(auth_code) > 16) {
-	returnerror = octstr_create("Auth-Code field misformed, rejected");
-	goto fielderror;
-    }
-    msg->sms.auth_code = auth_code ? octstr_duplicate(auth_code): NULL;
-
-    /* No HPLMN on EMI's MT message
-    if(octstr_len(hplmn) < -1 || octstr_len(hplmn) > 16) {
-	returnerror = octstr_create("HPLMN field misformed, rejected");
-	goto fielderror;
-    }
-    msg->sms.hplmn = hplmn ? octstr_duplicate(hplmn): NULL;
-    */
 
     if ( dlr_mask < -1 || dlr_mask > 31 ) { /* 00011111 */
 	returnerror = octstr_create("DLR-Mask field misformed, rejected");
@@ -2293,15 +2230,14 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
 {
     URLTranslation *t = NULL;
     Octstr *tmp_string;
-    Octstr *from, *to, *charset, *text, *udh, *smsc, *dlr_url, *account, 
-	*auth_code, *hplmn; 
-    int	dlr_mask, mclass, mwi, coding, compress, validity, deferred, pid, 
-	alt_dcs, rpi;
+    Octstr *from, *to, *charset, *text, *udh, *smsc, *dlr_url, *account;
+    Octstr *binfo;
+    int	dlr_mask, mclass, mwi, coding, compress, validity, deferred, pid;
+    int alt_dcs, rpi;
 
-    from = to = udh = text = smsc = account = 
-	dlr_url = charset = auth_code = hplmn = NULL;
-    mclass = mwi = coding = compress = validity = 
-	deferred = dlr_mask = pid = alt_dcs = rpi = -1;
+    from = to = udh = text = smsc = account = dlr_url = charset = binfo = NULL;
+    mclass = mwi = coding = compress = validity = deferred = dlr_mask = 
+        pid = alt_dcs = rpi = -1;
  
     /* check the username and password */
     t = authorise_user(args, client_ip);
@@ -2316,17 +2252,14 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     smsc = http_cgi_variable(args, "smsc");
     from = http_cgi_variable(args, "from");
     to = http_cgi_variable(args, "to");
-    account = http_cgi_variable(args,"account");
+    account = http_cgi_variable(args, "account");
+    binfo = http_cgi_variable(args, "binfo");
     dlr_url = http_cgi_variable(args, "dlr-url");
     if(dlr_url == NULL) { /* deprecated dlrurl without "-" */
 	dlr_url = http_cgi_variable(args, "dlrurl");
 	if(dlr_url != NULL)
 	    warning(0, "<dlrurl> field used and deprecated. Please use dlr-url instead.");
     }
-    auth_code = http_cgi_variable(args, "auth-code");
-    /* No HPLMN on EMI's MT message
-    hplmn = http_cgi_variable(args, "hplmn"); */
-
     tmp_string = http_cgi_variable(args, "dlr-mask");
     if(tmp_string == NULL) { /* deprecated dlrmask without "-" */
 	tmp_string = http_cgi_variable(args, "dlrmask");
@@ -2389,7 +2322,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     return smsbox_req_handle(t, client_ip, from, to, text, charset, udh,
 			     smsc, mclass, mwi, coding, compress, validity, 
 			     deferred, status, dlr_mask, dlr_url, account,
-			     pid, alt_dcs, rpi, NULL, auth_code, hplmn);
+			     pid, alt_dcs, rpi, NULL, binfo);
     
 }
 
@@ -2406,10 +2339,9 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     List *tolist;
     Octstr *text_html, *text_plain, *text_wml, *text_xml, *octet_stream;
     Octstr *text;
-    Octstr *from, *to, *udh, *smsc, *charset, *dlr_url, 
-	*account, *auth_code, *hplmn;
-    int dlr_mask, mclass, mwi, coding, compress, 
-	validity, deferred, pid, alt_dcs, rpi;
+    Octstr *from, *to, *udh, *smsc, *charset, *dlr_url, *account, *binfo;
+    int dlr_mask, mclass, mwi, coding, compress, validity, deferred;
+    int pid, alt_dcs, rpi;
  
     text_html = octstr_imm("text/html");
     text_wml = octstr_imm("text/vnd.wap.wml");
@@ -2419,10 +2351,9 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 
     user = pass = ret = type = NULL;
     tolist = NULL;
-    from = to = udh = smsc = account = 
-	dlr_url = charset = auth_code = hplmn = NULL;
-    mclass = mwi = coding = compress = validity =
-	deferred = dlr_mask = pid = alt_dcs = rpi = -1;
+    from = to = udh = smsc = account = dlr_url = charset = binfo = NULL;
+    mclass = mwi = coding = compress = validity = deferred = dlr_mask = 
+        pid = alt_dcs = rpi = -1;
  
     http_header_get_content_type(headers, &type, &charset);
     if (octstr_case_compare(type, text_html) == 0 ||
@@ -2436,7 +2367,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 				  &coding, &compress, &validity, 
 				  &deferred, &dlr_mask, &dlr_url, 
 				  &account, &pid, &alt_dcs, &rpi,
-				  &auth_code, &hplmn);
+				  &binfo);
     } else if (octstr_case_compare(type, text_plain) == 0 ||
                octstr_case_compare(type, octet_stream) == 0) {
 	get_x_kannel_from_headers(headers, &from, &to, &udh,
@@ -2444,13 +2375,13 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 				  &coding, &compress, &validity, 
 				  &deferred, &dlr_mask, &dlr_url, 
 				  &account, &pid, &alt_dcs, &rpi,
-				  &auth_code, &hplmn);
+				  &binfo);
     } else if (octstr_case_compare(type, text_xml) == 0) {
 	get_x_kannel_from_xml(mt_push, &type, &body, headers, 
                               &from, &to, &udh, &user, &pass, &smsc, &mclass, 
 			      &mwi, &coding, &compress, &validity, &deferred,
 			      &dlr_mask, &dlr_url, &account, &pid, &alt_dcs,
-			      &rpi, &tolist, &charset, &auth_code, &hplmn);
+			      &rpi, &tolist, &charset, &binfo);
     } else {
 	*status = HTTP_BAD_REQUEST;
 	ret = octstr_create("Invalid content-type");
@@ -2500,7 +2431,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 				    udh, smsc, mclass, mwi, coding, compress, 
 				    validity, deferred, status, dlr_mask, 
 				    dlr_url, account, pid, alt_dcs, rpi, tolist,
-				    auth_code, hplmn);
+				    binfo);
 
     }
 error2:
@@ -2512,8 +2443,7 @@ error2:
     octstr_destroy(smsc);
     octstr_destroy(dlr_url);
     octstr_destroy(account);
-    octstr_destroy(auth_code);
-    octstr_destroy(hplmn);
+    octstr_destroy(binfo);
 error:
     octstr_destroy(type);
     octstr_destroy(charset);
@@ -2536,8 +2466,7 @@ static Octstr *smsbox_xmlrpc_post(List *headers, Octstr *body,
                                   Octstr *client_ip, int *status)
 {
     Octstr *ret, *type, *user, *pass;
-    Octstr *from, *to, *udh, *smsc, *charset, *dlr_url, 
-	*account, *auth_code, *hplmn;
+    Octstr *from, *to, *udh, *smsc, *charset, *dlr_url, *account, *binfo;
     Octstr *output;
     Octstr *method_name;
     XMLRPCMethodCall *msg;
@@ -2545,10 +2474,9 @@ static Octstr *smsbox_xmlrpc_post(List *headers, Octstr *body,
     int	dlr_mask, mclass, mwi, coding, compress, validity, 
 	deferred, pid, alt_dcs, rpi;
 
-    from = to = udh = smsc = account = 
-	dlr_url = charset = auth_code = hplmn = NULL;
-    mclass = mwi = coding = compress = validity = 
-	deferred = dlr_mask = pid = alt_dcs = rpi = -1;
+    from = to = udh = smsc = account = dlr_url = charset = binfo = NULL;
+    mclass = mwi = coding = compress = validity = deferred = dlr_mask = 
+        pid = alt_dcs = rpi = -1;
  
     user = pass = ret = NULL;
 

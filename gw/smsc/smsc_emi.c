@@ -401,27 +401,43 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
    
     emimsg->fields[E50_XSER] = octstr_create("");
 
-    /* XSer1: UDH */
+    /* XSer 01: UDH */
     if (octstr_len(msg->sms.udhdata)) {
-	str = octstr_create("");
-	octstr_append_char(str, 1);
-	octstr_append_char(str, octstr_len(msg->sms.udhdata));
-	octstr_append(str, msg->sms.udhdata);
-	octstr_binary_to_hex(str, 1);
-	octstr_append(emimsg->fields[E50_XSER],str);
+        str = octstr_create("");
+        octstr_append_char(str, 0x01);
+        octstr_append_char(str, octstr_len(msg->sms.udhdata));
+        octstr_append(str, msg->sms.udhdata);
+        octstr_binary_to_hex(str, 1);
+        octstr_append(emimsg->fields[E50_XSER], str);
         octstr_destroy(str);
     }
 	
-    /* XSer2: DCS */
+    /* XSer 02: DCS */
     dcs = fields_to_dcs(msg, msg->sms.alt_dcs);
     if (dcs != 0 && dcs != 4) {
-   	str = octstr_create("");
-	octstr_append_char(str, 2);
-	octstr_append_char(str, 1); /* len 01 */
-	octstr_append_char(str, dcs);
-	octstr_binary_to_hex(str, 1);
-	octstr_append(emimsg->fields[E50_XSER],str);
-	octstr_destroy(str);
+        str = octstr_create("");
+        octstr_append_char(str, 0x02);
+        octstr_append_char(str, 1); /* len 01 */
+        octstr_append_char(str, dcs);
+        octstr_binary_to_hex(str, 1);
+        octstr_append(emimsg->fields[E50_XSER], str);
+        octstr_destroy(str);
+    }
+
+    /* XSer 0c: billing identifier */
+    if (octstr_len(msg->sms.binfo)) {
+        if (octstr_len(msg->sms.binfo) % 2 != 0) {
+            error(0, "EMI2[%s]: XSer 0c billing identifier `%s' has odd-length.", 
+                  octstr_get_cstr(privdata->name), 
+                  octstr_get_cstr(msg->sms.binfo));
+        } else {
+            str = octstr_create("");
+            octstr_append_char(str, 0x0c);
+            octstr_append_char(str, octstr_len(msg->sms.binfo) / 2);
+            octstr_append(str, msg->sms.binfo);
+            octstr_append(emimsg->fields[E50_XSER], str);
+            octstr_destroy(str);
+        }
     }
 
     if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
@@ -579,8 +595,10 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	    warning(0, "EMI2[%s]: Couldn't decode message text",
 		      octstr_get_cstr(privdata->name));
 
+    /* Process XSer fields */
 	xser = emimsg->fields[E50_XSER];
 	while (octstr_len(xser) > 0) {
+        int tempint;
 	    tempstr = octstr_copy(xser, 0, 4);
 	    if (octstr_hex_to_binary(tempstr) == -1)
 		error(0, "EMI2[%s]: Invalid XSer",
@@ -593,32 +611,61 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 		      octstr_get_cstr(privdata->name));
 		break;
 	    }
-	    if (type != 1 && type != 2)
-		warning(0, "EMI2[%s]: Unsupported EMI XSer field %d",
-			octstr_get_cstr(privdata->name), type);
-	    else {
-		if (type == 1) {
-		    tempstr = octstr_copy(xser, 4, len * 2);
-		    if (octstr_hex_to_binary(tempstr) == -1)
-			error(0, "EMI2[%s]: Invalid UDH contents",
-			      octstr_get_cstr(privdata->name));
-		    msg->sms.udhdata = tempstr;
-		}
-		if (type == 2) {
-		    int dcs;
-		    tempstr = octstr_copy(xser, 4, 2);
-		    octstr_hex_to_binary(tempstr);
-		    dcs = octstr_get_char(tempstr, 0);
-		    octstr_destroy(tempstr);
-		    if (! dcs_to_fields(&msg, dcs)) {
-			error(0, "EMI2[%s]: invalid dcs received",
-			      octstr_get_cstr(privdata->name));
-			/* XXX Should we discard message ? */
-			dcs_to_fields(&msg, 0);
-		    }
-		}
-	    }
-	    octstr_delete(xser, 0, 2 * len + 4);
+
+        /* Handle supported XSer fields */
+        switch (type) {
+
+            case 0x01:  /* XSer 01, GSM UDH information */
+                tempstr = octstr_copy(xser, 4, len * 2);
+                if (octstr_hex_to_binary(tempstr) == -1)
+                    error(0, "EMI2[%s]: Invalid UDH contents",
+                          octstr_get_cstr(privdata->name));
+                msg->sms.udhdata = tempstr;
+                break;
+
+            case 0x02:  /* XSer 02, GSM DCS information */
+                tempstr = octstr_copy(xser, 4, 2);
+                octstr_hex_to_binary(tempstr);
+                tempint = octstr_get_char(tempstr, 0);
+                octstr_destroy(tempstr);
+                if (!dcs_to_fields(&msg, tempint)) {
+                    error(0, "EMI2[%s]: Invalid DCS received",
+                          octstr_get_cstr(privdata->name));
+                    /* XXX Should we discard message ? */
+                    dcs_to_fields(&msg, 0);
+                }
+                break;
+
+            /* 
+             * XSer 03-0b are for TDMA information exchange and are currently
+             * not implemented in this EMI interface. See CMG EMI/UCP spec 4.0,
+             * section 5.1.2.4 for more information.
+             */
+
+            case 0x0c:  /* XSer 0c, billing identifier */
+                tempstr = octstr_copy(xser, 4, len * 2);
+                msg->sms.binfo = tempstr;
+                break;
+                
+            case 0x0d:  /* XSer 0d, single shot indicator */
+                tempstr = octstr_copy(xser, 4, 2);
+                octstr_hex_to_binary(tempstr);
+                tempint = octstr_get_char(tempstr, 0);
+                octstr_destroy(tempstr);
+                if (tempint) 
+                    info(0, "EMI2[%s]: Single shot indicator set.",
+                         octstr_get_cstr(privdata->name));
+                break;
+
+            /* XSer fields 0e-ff are reserved for future use. */
+
+            default:
+                warning(0, "EMI2[%s]: Unsupported EMI XSer field %d",
+                        octstr_get_cstr(privdata->name), type);
+                break;
+        }
+
+        octstr_delete(xser, 0, 2 * len + 4);
 	}
 
 	if (emimsg->fields[E50_MT] == NULL) {

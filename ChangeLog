@@ -1,3 +1,23 @@
+2003-10-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added sections about new sendsms CGI
+      parameter 'binfo' and sms-service escape code '%B' used for proxying
+      billing identifier/information from/to HTTP application into SMSC modules.
+    * gw/msg-decl.h: removed 'hplmn' parameter added by Bruno; by veto of Alex
+      and Stipe. This is a good thing to have, but has to be more generic and
+      not specific to EMI. This has to be re-done cleanly.
+    * gw/smsbox.c: removed 'auth_code' and 'hplmn' processing. 'auth_code' was
+      nowhere used, even not in the smsc_emi.c module?! Bruno, this is overhead.
+      Added 'binfo' processing for billing identifier/information proxying.
+    * gw/urltrans.c: removed '%h' escape code for hplmn forwarding. Added '%B'
+      escape code for billing identifier/information passing.
+    * gw/smsc/smsc_emi.c: rewrote the XSer handling sections to be more generic.
+      Added XSer 0c and 0d handling.
+    * gw/smsc/smsc_http.c: changed bruNET interface to use binfo field instead of
+      account field. This was miss-used for some time and should be cleaner now.
+    * gw/smsc/smsc_smpp.c: added 'service_type' handling of deliver_sm and 
+      submit_sm PDUs to pass information via the binfo billing identifier/
+      information field of the Msg struct.
+
 2003-10-15  Alexander Malysh  <a.malysh@centrium.de>
     * gw/smsbox.c: trivial changes.
 

@@ -555,14 +555,14 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    }
 	    break;
 
-	case 'h':
-	    if(octstr_len(request->sms.hplmn)) {
-		enc = octstr_duplicate(request->sms.hplmn);
-		octstr_url_encode(enc);
-		octstr_append(result, enc);
-		octstr_destroy(enc);
-	    }
-	    break;
+	case 'B':  /* billing identifier/information */
+	    if (octstr_len(request->sms.binfo)) {
+            enc = octstr_duplicate(request->sms.binfo);
+            octstr_url_encode(enc);
+            octstr_append(result, enc);
+            octstr_destroy(enc);
+        }
+        break;
 
 	/* XXX sms.parameters not present in here:
 	 *   * pid - will we receive this ? 

@@ -46,8 +46,7 @@ MSG(sms,
 		INTEGER(rpi);
 		OCTSTR(charset);
 		OCTSTR(boxc_id);
-		OCTSTR(auth_code);
-		OCTSTR(hplmn);
+		OCTSTR(binfo);
 	})
 
 MSG(ack,

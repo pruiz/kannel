@@ -475,12 +475,12 @@ static void brunet_send_sms(SMSCConn *conn, Msg *sms)
     }
 
     /* 
-     * We use &account=<foobar> from sendsms interface to encode any additionaly
+     * We use &binfo=<foobar> from sendsms interface to encode any additionaly
      * proxied parameters, ie. billing information.
      */
-    if (octstr_len(sms->sms.account)) {
-        octstr_url_decode(sms->sms.account);
-        octstr_format_append(url, "&%s", octstr_get_cstr(sms->sms.account));
+    if (octstr_len(sms->sms.binfo)) {
+        octstr_url_decode(sms->sms.binfo);
+        octstr_format_append(url, "&%s", octstr_get_cstr(sms->sms.binfo));
     }
 
     headers = list_create();

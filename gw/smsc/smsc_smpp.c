@@ -350,6 +350,10 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     msg->sms.receiver = pdu->u.deliver_sm.destination_addr;
     pdu->u.deliver_sm.destination_addr = NULL;
 
+    /* SMSCs use service_type for billing information */
+    msg->sms.binfo = pdu->u.deliver_sm.service_type;
+    pdu->u.deliver_sm.service_type = NULL;
+
     if (pdu->u.deliver_sm.esm_class & ESM_CLASS_SUBMIT_RPI)
         msg->sms.rpi = 1;
 
@@ -468,8 +472,10 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     pdu->u.submit_sm.source_addr = octstr_duplicate(msg->sms.sender);
     pdu->u.submit_sm.destination_addr = octstr_duplicate(msg->sms.receiver);
 
-    /* Set the service type of the outgoing message */
-    pdu->u.submit_sm.service_type = octstr_duplicate(smpp->service_type);
+    /* Set the service type of the outgoing message. We'll use the config 
+     * directive as default and 'binfo' as specific parameter. */
+    pdu->u.submit_sm.service_type = octstr_len(msg->sms.binfo) ? 
+        octstr_duplicate(msg->sms.binfo) : octstr_duplicate(smpp->service_type);
 
     /* Check for manual override of source ton and npi values */
     if(smpp->source_addr_ton > -1 && smpp->source_addr_npi > -1) {
