@@ -1,5 +1,22 @@
 2000-09-14  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/wap-appl.c, gw/wsp.h: Added function wap_appl_get_load,
+	which gives a current load average for the application layer
+	(which is essentially the only sensible place to look for load
+	averages), defined as the sum of the length of request queue
+	and number of HTTP fetches that are currently happening. The
+	old getloadavg method is deleted, but if this one proves to be
+	completely unworkable, we can always salvage the code from CVS. On
+	the other hand, this method actually works on systems that don't
+	have a getloadavg, and works even on systems where getloadavg
+	is defined differently (imagine running two different wapboxes).
+	
+	* gw/wapbox.c: Use wap_appl_get_load instead of getloadavg.
+
+	* configure{,.in}: Removed checks for getloadavg.
+
+2000-09-14  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/http.c: Ran through astyle to get formatting right.
 
 2000-09-14  Lars Wirzenius  <liw@iki.fi>

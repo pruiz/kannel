@@ -9,9 +9,6 @@
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
-#ifdef HAVE_GETLOADAVG
-#include <sys/loadavg.h>
-#endif
 
 #include "gwlib/gwlib.h"
 #include "wapbox.h"
@@ -247,25 +244,8 @@ Msg *remove_msg_from_queue(void) {
 static void send_heartbeat_thread(void *arg) {
 	list_add_producer(queue);
 	while (run_status == running) {
-	
-		#ifdef HAVE_GETLOADAVG
-		double loadavg[3]={0};
-		#endif
-	
 		Msg *msg = msg_create(heartbeat);
-		
-		#ifdef HAVE_GETLOADAVG
-		if(getloadavg(loadavg,3)==-1){
-			info(0,"getloadavg failed!\n");
-		}else{
-			info(0,"1 min load average %f\n",
-				loadavg[LOADAVG_1MIN]);
-		}
-		msg->heartbeat.load = loadavg[LOADAVG_1MIN];
-		#else
-		msg->heartbeat.load = 0;	/* XXX */
-		#endif
-
+		msg->heartbeat.load = wap_appl_get_load();
 		put_msg_in_queue(msg);
 		sleep(heartbeat_freq);
 	}

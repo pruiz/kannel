@@ -65,14 +65,6 @@ AC_CHECK_HEADERS(sys/ioctl.h sys/time.h sys/types.h unistd.h)
 AC_CHECK_HEADERS(pthread.h getopt.h)
 AC_CHECK_HEADER(sys/strsun.h, CFLAGS="$CFLAGS -DSunOS=1") 
 
-dnl Solaris appears to have issues with AC_FUNC_GETLOADAVG
-dnl work around them
-AC_CHECK_HEADER(sys/loadavg.h, CFLAGS="$CFLAGS -DHAVE_GETLOADAVG=1") 
-AC_FUNC_GETLOADAVG
-dnl We don't actually want to provide a getloadavg() for systems that
-dnl do not have one.  AC_FUNC_GETLOADAVG assumed that we do.  Zap it.
-LIBOBJS=`echo "$LIBOBJS" | sed 's/ getloadavg\.o//'`
-
 dnl Checks for typedefs, structures, and compiler characteristics.
 
 dnl Checks for library functions.

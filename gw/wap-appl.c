@@ -45,6 +45,13 @@ static enum { limbo, running, terminating } run_status = limbo;
  */
 static List *queue = NULL;
 
+
+/*
+ * Number of currently running HTTP fetching threads.
+ */
+static Counter *fetches = NULL;
+
+
 /*
  * Charsets supported by WML compiler, queried from wml_compiler.
  */
@@ -96,6 +103,7 @@ static struct {
 void wap_appl_init(void) {
 	gw_assert(run_status == limbo);
 	queue = list_create();
+	fetches = counter_create();
 	list_add_producer(queue);
 	run_status = running;
 	charsets = wml_charsets();
@@ -113,12 +121,19 @@ void wap_appl_shutdown(void) {
 	
 	list_destroy(queue, wap_event_destroy_item);
 	list_destroy(charsets, octstr_destroy_item);
+	counter_destroy(fetches);
 }
 
 
 void wap_appl_dispatch(WAPEvent *event) {
 	gw_assert(run_status == running);
 	list_produce(queue, event);
+}
+
+
+long wap_appl_get_load(void) {
+	gw_assert(run_status == running);
+    	return counter_value(fetches) + list_len(queue);
 }
 
 
@@ -303,6 +318,8 @@ static void fetch_thread(void *arg) {
 	int method;		/* type of request, normally a get or a post */
 	Octstr *request_body;
 	
+    	counter_increase(fetches);
+
 	event = arg;
 	if (event->type == S_MethodInvoke_Ind) {
 		struct S_MethodInvoke_Ind *p;
@@ -462,6 +479,8 @@ static void fetch_thread(void *arg) {
 	octstr_destroy(content.charset);
 	octstr_destroy(url);
 	octstr_destroy(request_body);
+	
+	counter_decrease(fetches);
 }
 
 
