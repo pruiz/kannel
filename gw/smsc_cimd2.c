@@ -1239,26 +1239,19 @@ static struct packet *packet_encode_message(Msg *msg)
      * with those reports anyway. */
     packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 0);
 
-    /* CIMD2 specs are not entirely clear on this, but it looks like
-     * once UDH is used, even a plaintext body can be at most 140 octets.
-     * That's why we set it to 140 if either UDH or 8bit is true. 
-            * Currently it does not matter, since they're always both true
-     * or both false. */
-    if (msg->sms.flag_udh || msg->sms.flag_8bit) {
-        spaceleft = 140;
-    } else {
-        spaceleft = 160;
-    }
     truncated = 0;
 
+    spaceleft = 140;
     if (msg->sms.flag_udh) {
         /* udhdata will be truncated and warned about if
          * it does not fit. */
         packet_add_hex_parm(packet, P_USER_DATA_HEADER, msg->sms.udhdata);
         spaceleft -= octstr_len(msg->sms.udhdata);
-        if (spaceleft < 0)
-            spaceleft = 0;
     }
+    if (!msg->sms.flag_8bit)
+        spaceleft = spaceleft * 8 / 7;
+    if (spaceleft < 0)
+        spaceleft = 0;
 
     text = octstr_duplicate(msg->sms.msgdata);
     if (octstr_len(text) > 0 && spaceleft == 0) {

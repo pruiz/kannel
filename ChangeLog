@@ -1,5 +1,12 @@
 2001-05-02  Richard Braakman  <dark@wapit.com>
 
+	* gw/smsc_cimd2.c: Fix encoding of text messages that have UDH.
+	(It got the length wrong due to a _probable_ misreading of the
+	spec.  If SMSCs implement what we thought it had said, then we
+        have a problem.)
+
+2001-05-02  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/octstr.c: Made octstr_get_char() not crash if pos < 0.
 	It now returns -1 instead.
 
