@@ -446,8 +446,8 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
  	     /* we get the following status: DELIVRD, ACCEPTD, 
  	     EXPIRED, DELETED, UNDELIV, UNKNOWN, REJECTD */
  		
- 	    if ((octstr_compare(stat,octstr_imm("DELIVRD"))==0)
- 	        || (octstr_compare(stat,octstr_imm("ACCEPTD"))==0))
+ 	    if ((stat != NULL) && ((octstr_compare(stat,octstr_imm("DELIVRD"))==0)
+ 	        || (octstr_compare(stat,octstr_imm("ACCEPTD"))==0)))
 	        dlrstat = DLR_SUCCESS;
  	    else
  	        dlrstat = DLR_FAIL;
