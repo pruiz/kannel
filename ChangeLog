@@ -1,5 +1,6 @@
 2003-07-28  Stipe Tolj  <tolj@wapme-systems.de>
-    * test/test_http_server.c: fixed memory leak.
+    * test/test_http_server.c: fixed memory leak and made shutdown process
+      now multi-thread safe via gwthread_join_all().
 
 2003-07-27  Stipe Tolj  <tolj@wapme-systems.de>
     This is the new "rerouting feature" for bearerbox:

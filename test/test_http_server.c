@@ -37,8 +37,8 @@ static void client_thread(void *arg)
         if (client == NULL)
             break;
 
-        debug("test.http", 0, "Request for <%s> from <%s>", 
-              octstr_get_cstr(url), octstr_get_cstr(ip));
+        info(0, "Request for <%s> from <%s>", 
+             octstr_get_cstr(url), octstr_get_cstr(ip));
         if (verbose)
             debug("test.http", 0, "CGI vars were");
 
@@ -146,15 +146,16 @@ static void client_thread(void *arg)
 
     octstr_destroy(whitelist);
     octstr_destroy(blacklist);
-    debug("test.http", 0, "client_thread terminates");
-    http_close_all_ports();
+    debug("test.http", 0, "Working thread 'client_thread' terminates");
 }
 
 static void help(void) {
     info(0, "Usage: test_http_server [options...]");
     info(0, "where options are:");
+    info(0, "-t number");
+    info(0, "    set number of working threads to use (default: 1)");
     info(0, "-v number");
-    info(0, "    set log level for stderr logging");
+    info(0, "    set log level for stderr logging (default: 0 - debug)");
     info(0, "-l logfile");
     info(0, "    log all output to a file");
     info(0, "-f file");
@@ -357,8 +358,9 @@ int main(int argc, char **argv) {
      */
     for (i = 0; i < use_threads; ++i) 
         threads[i] = gwthread_create(client_thread, file_contents);
-    for (i = 0; i < use_threads; ++i)
-        gwthread_join(threads[i]);
+
+    /* wait for all working threads */
+    gwthread_join_all();
 
     octstr_destroy(reply_text);
 
