@@ -6,13 +6,17 @@
 
 #include <sys/utsname.h>
 #include <xmlversion.h>
-#ifdef HAVE_LIBSSL 
-#include <openssl/opensslv.h>
-#endif
 
 #include "gwlib/gwlib.h"
 #include "shared.h"
 #include "sms.h"
+
+#ifdef HAVE_LIBSSL 
+#include <openssl/opensslv.h>
+#endif
+#ifdef HAVE_MYSQL 
+#include <mysql_version.h>
+#endif
 
 
 enum program_status program_status = starting_up;
@@ -40,6 +44,9 @@ Octstr *version_report_string(const char *boxname)
 #ifdef HAVE_LIBSSL
              "Using %s.\n"
 #endif
+#ifdef HAVE_MYSQL
+             "Using MySQL %s.\n"
+#endif
              "Using %s malloc.\n",
 			 boxname, VERSION,
 			 u.sysname, u.release, u.version, u.machine,
@@ -48,6 +55,9 @@ Octstr *version_report_string(const char *boxname)
 			 LIBXML_VERSION_STRING,
 #ifdef HAVE_LIBSSL
              OPENSSL_VERSION_TEXT,
+#endif
+#ifdef HAVE_MYSQL
+             MYSQL_SERVER_VERSION,
 #endif
              octstr_get_cstr(gwmem_type()));
 }
