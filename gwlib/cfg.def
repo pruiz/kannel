@@ -253,6 +253,24 @@ MULTI_GROUP(otaconfig,
     OCTSTR(secret)
 )
 
+SINGLE_GROUP(emibox,
+       OCTSTR(port)
+       OCTSTR(sessions)
+       OCTSTR(log-file)
+       OCTSTR(log-level)
+)
+
+SINGLE_GROUP(webbox,
+       OCTSTR(forward-host)
+       OCTSTR(forward-username)
+       OCTSTR(forward-password)
+       OCTSTR(forward-port)
+       OCTSTR(port)
+       OCTSTR(sessions)
+       OCTSTR(log-file)
+       OCTSTR(log-level)
+)
+
 
 #undef OCTSTR
 #undef SINGLE_GROUP

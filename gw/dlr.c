@@ -2,6 +2,10 @@
 ** delivery reports
 ** generic routines
 ** Andreas Fink <andreas@fink.org> ,18.8.2001
+**
+** Changes:
+** 2001-12-17: andreas@fink.org:
+**     implemented use of mutex to avoid two mysql calls to run at the same time
  */
 
 
@@ -18,10 +22,7 @@
 #include "sms.h"
 #include "dlr.h"
 
-#ifndef DLR_TRACE
-#define DLR_TRACE 0
-#endif
-
+/* #define DLR_TRACE 1 */
 
 /* if we use MySQL for delivery reports, you got 
 to define this stuff for your implementation 
@@ -38,7 +39,7 @@ CREATE TABLE DLR (
 		status int(10)
 		)
 */
-/* #define	MYSQL_DLR	1 */
+/* #define	MYSQL_DLR	0 */
 /* #define	SQL_DEBUG	1 */
 
 #if (MYSQL_DLR)
@@ -49,6 +50,7 @@ MYSQL	mysql;
 #define	DB_HOST		"localhost"
 #define	DB_USER		"username"
 #define	DB_PASSWORD	"password"
+
 #define	DB_PORT		0
 #define	DB_SOCKET	0
 #define	DB_CLIENTFLAG	0
@@ -80,18 +82,20 @@ typedef struct	dlr_wle
 /* this list is looked up once a delivery report comes in */
 
 static	List	*dlr_waiting_list;
-void	dump_dlr(dlr_wle *dlr);
 void	dlr_destroy(dlr_wle *dlr);
 
 #endif /* else MYSQL_DLR */
 
 
 
+Mutex *dlr_mutex;
 
 /* at startup initialize the list */
 
 void	dlr_init()
 {
+    dlr_mutex = mutex_create();
+
 #if (MYSQL_DLR)
    mysql_init(&mysql);
    connection = mysql_real_connect(&mysql, DB_HOST,DB_USER,DB_PASSWORD,DB_NAME,DB_PORT,DB_SOCKET,DB_CLIENTFLAG);
@@ -111,6 +115,7 @@ void	dlr_shutdown()
 #else
     list_destroy(dlr_waiting_list, (list_item_destructor_t *)dlr_destroy);
 #endif
+    mutex_destroy(dlr_mutex);
 }
 
 
@@ -157,8 +162,7 @@ void	dlr_add(char *smsc, char *ts, char *dst, char *service, char *url, int mask
 
     Octstr *sql;
     int	state;
-    
-    info(0,"Adding to DLR list smsc=%s, ts=%s, dst=%s, service=%s, url=%s mask=%d",smsc,ts,dst,service,url,mask);
+
     sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ('%s', '%s', '%s', '%s', '%s', '%d', '%d');",
 		DLR_TABLE,
 		DLR_FIELD_SMSC,
@@ -175,19 +179,19 @@ void	dlr_add(char *smsc, char *ts, char *dst, char *service, char *url, int mask
 		url,
 		mask,
 		0);
-	
-#if (SQL_DEBUG)	
-    info(0,"Executing query '%s'",octstr_get_cstr(sql));
-#endif
+   
+    mutex_lock(dlr_mutex);
+   
     state = mysql_query(connection,octstr_get_cstr(sql));
     if(state !=0)
 	error(0,"mysql_error %s",mysql_error(connection));
     octstr_destroy(sql);
+   
+    mutex_unlock(dlr_mutex);
 
 #else
    dlr_wle	*dlr;
 	
-   info(0,"Adding to DLR list smsc=%s, ts=%s, dst=%s, service=%s, url=%s mask=%d",smsc,ts,dst,service,url,mask);
    if (mask & 0x1F) 
    {
 	dlr = dlr_new(); 
@@ -199,10 +203,7 @@ void	dlr_add(char *smsc, char *ts, char *dst, char *service, char *url, int mask
 	dlr->url = octstr_create(url);
 	dlr->mask = mask;
 	list_append(dlr_waiting_list,dlr);
-	info(0,"appended");
    }
-   else
-   	info(0,"ignored");
 #endif
 }
 
@@ -231,14 +232,14 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
 	DLR_FIELD_TS,
 	ts);
 
-#if (SQL_DEBUG)	
-    info(0,"Executing query %s",octstr_get_cstr(sql));
-#endif
+    mutex_lock(dlr_mutex);
+    
     state = mysql_query(connection,octstr_get_cstr(sql));
     octstr_destroy(sql);
     if(state !=0)
     {
 	error(0,"mysql_error %s",mysql_error(connection));
+	mutex_unlock(dlr_mutex);
 	return NULL;
     }
     result = mysql_store_result(connection);
@@ -246,6 +247,7 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
     {
         debug("dlr.mysql",0,"no rows found");
 	mysql_free_result(result);
+	mutex_unlock(dlr_mutex);
 	return NULL;
     }
     row = mysql_fetch_row(result);
@@ -253,13 +255,18 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
     {
         debug("dlr.mysql",0,"rows found but coudlnt load them");
 	mysql_free_result(result);
-    	return NULL;
+    	mutex_unlock(dlr_mutex);
+	return NULL;
     }
+    
     debug("dlr.mysql",0,"Found entry, row[0]=%s, row[1]=%s, row[2]=%s",row[0],row[1],row[2]);
     dlr_mask = atoi(row[0]);
     dlr_service = octstr_create(row[1]);
     dlr_url = octstr_create(row[2]);
     mysql_free_result(result);
+    
+    mutex_unlock(dlr_mutex);
+  
     
     sql = octstr_format("UPDATE %s SET %s=%d WHERE %s='%s' AND %s='%s';",
     	DLR_TABLE,
@@ -269,21 +276,23 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
 	smsc,
 	DLR_FIELD_TS,
 	ts);
-#if (SQL_DEBUG)	
-    info(0,"Executing query %s",octstr_get_cstr(sql));
-#endif
+    
+    mutex_lock(dlr_mutex);
+    
     state = mysql_query(connection,octstr_get_cstr(sql));
     octstr_destroy(sql);
     if(state !=0)
     {
 	error(0,"mysql_error %s",mysql_error(connection));
+	mutex_unlock(dlr_mutex);
 	return NULL;
     }
+
+    mutex_unlock(dlr_mutex);
 
     if((typ & dlr_mask))
     {
 	/* its an entry we are interested in */
-	info(0,"creating DLR message");
 	msg = msg_create(sms);
 	msg->sms.service = octstr_duplicate(dlr_service);
 	msg->sms.dlr_mask = typ;
@@ -293,11 +302,11 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
         msg->sms.receiver = octstr_create("000");
 	msg->sms.msgdata = octstr_duplicate(dlr_url);
 	time(&msg->sms.time);
-	info(0,"DLR = %s",octstr_get_cstr(msg->sms.msgdata));
+    	debug("dlr.dlr",0,"created DLR message: %s",octstr_get_cstr(msg->sms.msgdata));
     }
     else
     {
-    	info(0,"ignoring DLR message because of mask");
+    	debug("dlr.dlr",0"ignoring DLR message because of mask");
     }
  
     if((typ & DLR_BUFFERED) &&
@@ -314,13 +323,18 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
 	smsc,
 	DLR_FIELD_TS,
 	ts);
-	debug("dlr.sql",0,"Executing query %s",octstr_get_cstr(sql));
+
+	mutex_lock(dlr_mutex);
+
 	state = mysql_query(connection,octstr_get_cstr(sql));
     	octstr_destroy(sql);
     	if(state !=0)
 	{
 	    error(0,"mysql_error %s",mysql_error(connection));
 	}
+
+	mutex_unlock(dlr_mutex);
+
     }
     octstr_destroy(dlr_service);
     octstr_destroy(dlr_url);
@@ -333,19 +347,16 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
     Msg *msg;
     int dlr_mask;
     
-    info(0,"Looking for DLR smsc=%s, ts=%s, dst=%s, type=%d",smsc,ts,dst,typ);
+    debug("dlr.dlr",0,"Looking for DLR smsc=%s, ts=%s, dst=%s, type=%d",smsc,ts,dst,typ);
     len = list_len(dlr_waiting_list);
     for(i=0;i<len;i++)
     {
 	dlr = list_get(dlr_waiting_list,i);
-	info(0,"checking entry %d in list",(int)i);
-	dump_dlr(dlr);
 	
 	if(    (strcmp(octstr_get_cstr(dlr->smsc),smsc) == 0) &&
 	       (strcmp(octstr_get_cstr(dlr->timestamp),ts) == 0))
 	{
 	   /* lets save the service and dump the rest of the entry */
-	   info(0,"DLR found!");
 
 	   text = octstr_len(dlr->url) ? octstr_duplicate(dlr->url) : 
 		   octstr_create("");	   
@@ -355,7 +366,6 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
 	   if((typ & dlr_mask) > 0)
 	   {
 	       	/* its an entry we are interested in */
-	      info(0,"creating DLR message");
 	      msg = msg_create(sms);
 	      msg->sms.service = octstr_duplicate(dlr->service);
 	      msg->sms.dlr_mask = typ;
@@ -365,11 +375,11 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
               msg->sms.receiver = octstr_create("000");
 	      msg->sms.msgdata = text;
 	      time(&msg->sms.time);
-	      info(0,"DLR = %s",octstr_get_cstr(text));
+    	      debug("dlr.dlr",0,"created DLR message: %s",octstr_get_cstr(msg->sms.msgdata));
 	   }
 	   else
 	   {
-	        info(0,"ignoring DLR message because of mask");
+    		debug("dlr.dlr",0,"ignoring DLR message because of mask");
 	   	/* ok that was a status report but we where not interested in having it */
 	   	octstr_destroy(text);
 		msg=NULL;
@@ -385,51 +395,10 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
 	    return msg;
 	}
     }
-    info(0,"DLR not found!");
+    debug("dlr.dlr",0,"DLR not found!");
    /* we couldnt find a matching entry */
     return NULL;
 #endif
 
 }
-
-#if !(MYSQL_DLR)
-void dump_dlr(dlr_wle *dlr)
-{
-    if(!dlr)
-    {
-    	info(0,"dlr == NULL");
-    	return;
-    }
-
-    if(!dlr->smsc)
-	info(0,"dlr->smsc = NULL");
-    else
-    	info(0,"dlr->smsc = '%s'",octstr_get_cstr(dlr->smsc));
- 
-     if(!dlr->timestamp)
-	info(0,"dlr->timestamp = NULL");
-    else
-    	info(0,"dlr->timestamp = '%s'",octstr_get_cstr(dlr->timestamp));
-   	
- 
-     if(!dlr->destination)
-	info(0,"dlr->destination = NULL");
-    else
-    	info(0,"dlr->destination = '%s'",octstr_get_cstr(dlr->destination));
-   	
- 
-     if(!dlr->service)
-	info(0,"dlr->service = NULL");
-    else
-    	info(0,"dlr->service = '%s'",octstr_get_cstr(dlr->service));
-   	
- 
-     if(!dlr->url)
-	info(0,"dlr->url = NULL");
-    else
-    	info(0,"dlr->url = '%s'",octstr_get_cstr(dlr->url));
-    info(0,"dlr->mask = %d", dlr->mask);
-
-}
-#endif
 
