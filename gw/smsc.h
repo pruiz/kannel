@@ -51,15 +51,6 @@ int smsc_reopen(SMSCenter *smsc);
 char *smsc_name(SMSCenter *smsc);
 
 
-/* As smsc_name, but returns optional ID if that is set, or name otherwise */
-char *smsc_id(SMSCenter *smsc);
-
-
-/* Return 1 if match found, 0 otherwise */
-int smsc_preferred(SMSCenter *smsc, char *number, Octstr *smsc_id);
-int smsc_denied(SMSCenter *smsc, char *number, Octstr *smsc_id);
-
-
 /* Close the connection to an SMS center. Return -1 for error
    (the connection will be closed anyway, but there was some error
    while doing so, so it wasn't closed cleanly), or 0 for OK.
@@ -67,25 +58,6 @@ int smsc_denied(SMSCenter *smsc, char *number, Octstr *smsc_id);
  */
 int smsc_close(SMSCenter *smsc);
 
-
-/* Send an SMS message via an SMS center.
- *  Return -1 for FATAL error, 0 for OK/message ignored
- */
-int smsc_send_message(SMSCenter *smsc, Msg *msg);
-
-
-/* receive a message from SMS center.
- * Return -1 if smsc fails and cannot re-connected
- * 0 if nothing new (or message creation fails) and 1 if new message,
- * which is then set to 'new', which is otherwise set as NULL
- */
-int smsc_get_message(SMSCenter *smsc, Msg **new);
-
-/*
- * this function is used to signal smsc by other thread that it must
- * now die (as smsc may spend quite a time in sleeps...)
- */
-void smsc_set_killed(SMSCenter *smsc, int kill_status);
 
 
 #endif

@@ -24,13 +24,75 @@ typedef struct smsc_wrapper {
 
 
 
+static int reconnect(SMSCConn *conn)
+{
+    SmscWrapper *wrap = conn->data;
+    int ret;
+    int wait = 1;
+
+    conn->status = SMSCCONN_RECONNECTING;
+
+    while(conn->is_killed == 0) {
+	ret = smsc_reopen(wrap->smsc);
+	if (ret == 0) {
+	    conn->status = SMSCCONN_ACTIVE;
+	    return 0;
+	}
+	else if (ret == -2) {
+	    error(0, "Re-open of %s failed permanently",
+		  octstr_get_cstr(conn->name));
+	    conn->status = SMSCCONN_DISCONNECTED;
+	    return -1;
+	}
+	else {
+	    error(0, "Re-open to <%s> failed, retrying after %d minutes...",
+		  octstr_get_cstr(conn->name), wait);
+	    gwthread_sleep(wait*60.0);
+
+	    wait = wait > 10 ? 10 : wait * 2 + 1;
+	}
+    }
+    return 0;
+}
+
+
+static Msg *sms_receive(SMSCConn *conn)
+{
+    SmscWrapper *wrap = conn->data;
+    int ret;
+    Msg *newmsg = NULL;
+
+    if (smscenter_pending_smsmessage(wrap->smsc) == 1) {
+
+        ret = smscenter_receive_msg(wrap->smsc, &newmsg);
+        if (ret == 1) {
+
+            /* if any smsc_id available, use it */
+            newmsg->sms.smsc_id = octstr_duplicate(conn->id);
+
+	    return newmsg;
+        } else if (ret == 0) { /* "NEVER" happens */
+            warning(0, "SMSC %s: Pending message returned '1', "
+                    "but nothing to receive!", octstr_get_cstr(conn->name));
+            msg_destroy(newmsg);
+            return NULL;
+        } else {
+            msg_destroy(newmsg);
+	    if (reconnect(conn) == -1)
+		smscconn_shutdown(conn, 0);
+	    return NULL;
+        }
+    }
+    return NULL;
+}
+
+
 static void wrapper_receiver(void *arg)
 {
     Msg 	*msg;
     SMSCConn 	*conn = arg;
-    SmscWrapper *wrap = conn->data;
+    /* SmscWrapper *wrap = conn->data; ** non-used */
     double 	sleep = 0.0001;
-    int 	ret;
     
     
     /* remove messages from SMSC until we are killed */
@@ -38,13 +100,8 @@ static void wrapper_receiver(void *arg)
 
         list_consume(conn->stopped); /* block here if suspended/isolated */
 
-        ret = smsc_get_message(wrap->smsc, &msg);
-        if (ret == -1) {
-	    debug("bb.sms", 0, "smscconn (%s): permanently failed",
-		  octstr_get_cstr(conn->name));
-            break;
-	}
-	if (ret == 1) {
+	msg = sms_receive(conn);
+	if (msg) {
             debug("bb.sms", 0, "smscconn (%s): new message received",
 		  octstr_get_cstr(conn->name));
             sleep = 0.0001;
@@ -52,6 +109,9 @@ static void wrapper_receiver(void *arg)
 	    bb_smscconn_receive(conn, msg);
         }
         else {
+	    /* note that this implementations means that we sleep even
+	     * when we fail connection.. but time is very short, anyway
+	     */
             gwthread_sleep(sleep);
             /* gradually sleep longer and longer times until something starts to
              * happen - this of course reduces response time, but that's better than
@@ -77,10 +137,13 @@ static int sms_send(SMSCConn *conn, Msg *msg)
     debug("bb.sms", 0, "smscconn_sender (%s): sending message",
 	  octstr_get_cstr(conn->name));
         
-    ret = smsc_send_message(wrap->smsc, msg);
+    ret = smscenter_submit_msg(wrap->smsc, msg);
     if (ret == -1) {
 	counter_increase(conn->failed);
 	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_REJECTED);
+
+	if (reconnect(conn) == -1)
+	    smscconn_shutdown(conn, 0);
         return -1;
     } else {
 	counter_increase(conn->sent);
@@ -88,7 +151,6 @@ static int sms_send(SMSCConn *conn, Msg *msg)
         return 0;
     }
 }
-
 
 
 static void wrapper_sender(void *arg)
@@ -139,7 +201,6 @@ static void wrapper_sender(void *arg)
 	  octstr_get_cstr(conn->name));
     
     conn->is_killed = 1;
-    smsc_set_killed(wrap->smsc, 1);
 
     if (conn->is_stopped) {
 	list_remove_producer(conn->stopped);
@@ -196,7 +257,8 @@ static int wrapper_shutdown(SMSCConn *conn, int finish_sending)
 	}
     }
     list_remove_producer(wrap->outgoing_queue);
-    smsc_set_killed(wrap->smsc, 1);
+    gwthread_wakeup(wrap->sender_thread);
+    gwthread_wakeup(wrap->receiver_thread);
     return 0;
 }
 

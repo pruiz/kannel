@@ -1,5 +1,14 @@
 2000-12-21  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smsc_wrapper.c: moved logistics of reconnect to this module,
+	instead than in smsc.c
+
+	* gw/smsc.*: removed lots of public functions (the old interface)
+
+	* gw/bb_smsc.c: remove depricated code
+	
+2000-12-21  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bearerbox.*: use smsc2_ functions for new bb_smscconn,
 	renaming in a near future
 	
