@@ -175,6 +175,13 @@ static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
     char *p, *suf, *sc;
     int slen = 0;
     int size, total_len, loc;
+    char *h, *f;
+    int fl, hl;
+
+    h = urltrans_header(trans);
+    f = urltrans_footer(trans);
+    if (h != NULL) hl = strlen(h); else hl = 0;
+    if (f != NULL) fl = strlen(f); else fl = 0;
 
     suf = urltrans_split_suffix(trans);
     sc = urltrans_split_chars(trans);
@@ -196,7 +203,7 @@ static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
 	    suf = NULL;
 	    sc = NULL;
 	}
-	size = sms_max_length - slen;	/* leave room to split-suffix */
+	size = sms_max_length - slen -hl -fl;	/* leave room to special parts */
 	/*
 	 * if we use split chars, find the first from starting from
 	 * the end of sms message and return partion _before_ that
@@ -211,6 +218,7 @@ static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
 	if ((split = msg_duplicate(msg))==NULL)
 	    goto error;
 
+	
 	octstr_replace(split->smart_sms.msgdata, p+loc, size);
 	if (suf != NULL)
 	    octstr_insert_data(split->smart_sms.msgdata, size, suf, slen);
@@ -237,6 +245,8 @@ error:
 static int send_message(URLTranslation *trans, Msg *msg)
 {
     int max_msgs;
+    int hl, fl;
+    char *h, *f;
     static char *empty = "<Empty reply from service provider>";
     
     max_msgs = urltrans_max_messages(trans);
@@ -256,17 +266,30 @@ static int send_message(URLTranslation *trans, Msg *msg)
     }
     if (max_msgs == 0)
 	info(0, "No reply sent, denied.");
+
+    h = urltrans_header(trans);
+    f = urltrans_footer(trans);
+    if (h != NULL) hl = strlen(h); else hl = 0;
+    if (f != NULL) fl = strlen(f); else fl = 0;
 	
-    else if (octstr_len(msg->smart_sms.msgdata) <= sms_max_length) {
-	if (do_sending(msg) < 0)
-	    goto error;
+    if (octstr_len(msg->smart_sms.msgdata) <= (sms_max_length - fl - hl)
+	|| max_msgs == 1) {
 
-    } else if (octstr_len(msg->smart_sms.msgdata) > sms_max_length &&
-	       max_msgs == 1) {
-
-	/* truncate reply */
+	if (h != NULL)	/* if header set */
+	    if (octstr_insert_data(msg->smart_sms.msgdata, 0, h, hl)== -1)
+		goto error;
+	/*
+	 * truncate if the message is too long one (this only happens if
+	 *  max_msgs == 1)
+	 */
+	if (octstr_len(msg->smart_sms.msgdata)+fl > sms_max_length)
+	    octstr_truncate(msg->smart_sms.msgdata, sms_max_length - fl);
 	    
-	octstr_truncate(msg->smart_sms.msgdata, sms_max_length);	
+	if (f != NULL)	/* if footer set */
+	    if (octstr_insert_data(msg->smart_sms.msgdata,
+				   octstr_len(msg->smart_sms.msgdata), f, fl)== -1)
+		goto error;
+	
 	if (do_sending(msg) < 0)
 	    goto error;
 

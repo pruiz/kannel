@@ -37,7 +37,10 @@ struct URLTranslation {
     char *split_chars;	/* allowed chars to be used to split message */
     char *split_suffix;	/* chars added to end after each split (not last) */
     int omit_empty;	/* if the reply is empty, is notification send */
+    char *header;	/* string to be inserted to each SMS */
+    char *footer;	/* string to be appended to each SMS */
 
+    
     char *username;	/* send sms username */
     char *password;	/* password associated */
     
@@ -349,6 +352,13 @@ int urltrans_omit_empty(URLTranslation *t) {
 	return t->omit_empty;
 }
 
+char *urltrans_header(URLTranslation *t) {
+	return t->header;
+}
+char *urltrans_footer(URLTranslation *t) {
+	return t->footer;
+}
+
 char *urltrans_password(URLTranslation *t) {
 	return t->password;
 }
@@ -372,6 +382,7 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     char *prefix, *suffix, *faked_sender, *max_msgs;
     char *split_chars, *split_suffix, *omit_empty;
     char *username, *password;
+    char *header, *footer;
     
     ot = malloc(sizeof(URLTranslation));
     if (ot == NULL)
@@ -394,6 +405,8 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     split_chars = config_get(grp, "split-chars");
     split_suffix = config_get(grp, "split-suffix");
     omit_empty = config_get(grp, "omit-empty");
+    header = config_get(grp, "header");
+    footer = config_get(grp, "footer");
     username = config_get(grp, "username");
     password = config_get(grp, "password");
 
@@ -458,7 +471,14 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     }
     else
 	ot->max_messages = 1;
-    
+
+    if (header != NULL)
+	if ((ot->header = strdup(header)) == NULL)
+	    goto error;
+    if (footer != NULL)
+	if ((ot->footer = strdup(footer)) == NULL)
+	    goto error;
+
     if (omit_empty != NULL)
 	ot->omit_empty = atoi(omit_empty);
     

@@ -626,6 +626,7 @@ int smsc_close(SMSCenter *smsc) {
 int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 {
     int ret;
+    int wait = 1;
     
     if (msg->msg_class == R_MSG_CLASS_WAP) {
 	error(0, "SMSC:WAP messages not yet supported, tough");
@@ -650,11 +651,13 @@ retry:
 		return -1;
 	    }
 	    else if (ret == -1) {
-		error(0, "Re-opening failed, retry...");
-		sleep(2);	/* wait for a while */
+		error(0, "Reopen failed, retrying after %d minutes...", wait);
+		sleep(wait*60);	/* wait for a while */
+		wait = wait > 10 ? 10 : wait*2 + 1;
 		goto retry;
 	    }
 	}
+	wait = 1;
 	/*
 	 * put ACK to queue.. in the future!
 	 *
@@ -678,6 +681,7 @@ int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
 	RQueueItem *msg = NULL;
 	Msg *newmsg = NULL;
 	int ret;
+	int wait = 1;
    
 	*new = NULL;
     
@@ -697,10 +701,12 @@ int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
 			if (ret == -2)
 			    return -1;
 			else if (ret == -1) {
-			    error(0, "Reopen failed, retrying...");
-			    sleep(2);	/* wait for a while */
+			    error(0, "Reopen failed, retrying after %d minutes...", wait);
+			    sleep(wait*60);	/* wait for a while */
+			    wait = wait > 10 ? 10 : wait*2 + 1;
 			    goto retry;
 			}
+			wait = 1;
 			return 0;		/* iterate */
 		}
 

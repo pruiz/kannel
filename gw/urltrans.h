@@ -168,6 +168,16 @@ char *urltrans_split_suffix(URLTranslation *t);
 int urltrans_omit_empty(URLTranslation *t);
 
 /*
+ * return a string that should be inserted to each SMS, if any
+ */
+char *urltrans_header(URLTranslation *t);
+
+/*
+ * return a string that should be appended to each SMS, if any
+ */
+char *urltrans_footer(URLTranslation *t);
+
+/*
  * return the password string, or NULL if not set (used only with
  *  TRANSTYPE_SENDSMS)
  */

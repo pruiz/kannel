@@ -1,3 +1,15 @@
+1999-11-24    <rpr@rpr.wapit.com>
+
+	* gw/smsc.c: delayed re-open calls
+
+	* gw/bearerbox.c: added load of mutex lockings
+
+	* gw/smsbox_req.c, gw/urltrans.*: added 'footer' and 'header'
+	service configurations, implementation not ready for split
+	messages
+
+	* utils/makedist: partial update
+
 1999-11-24 Mikael Gueck <mikael@wapit.com>
 
 	* gw/csdr.c, gw/boxc.c: Solaris compatibility hack, later

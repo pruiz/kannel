@@ -8,10 +8,10 @@ set -e
 
 version="$1"
 tag=version_`echo $version | tr .- __`
-base=smsgateway-$version
+base=gateway-$version
 
 rm -rf $base $base.tar.gz README-$version design-$version design-$version.ps
-cvs -Q export -r $tag -d $base smsgateway
+cvs -Q export -r $tag -d $base gateway
 make -C $base/doc -s
 tar -c -z -f $base.tar.gz $base
 zip -9qr $base.zip $base/*

@@ -628,9 +628,11 @@ static void *smscenter_thread(void *arg)
 	usleep(1000);
     }
     warning(0, "SMSC: Closing and dying...");
+    mutex_lock(&bbox->mutex);
     smsc_close(us->smsc);
     us->smsc = NULL;
     us->status = BB_STATUS_DEAD;
+    mutex_unlock(&bbox->mutex);
     return NULL;
 }
 
@@ -684,9 +686,13 @@ static void *csdrouter_thread(void *arg)
 	usleep(1000);
     }
     warning(0, "CSDR: Closing and dying...");
+    mutex_lock(&bbox->mutex);
+
     csdr_close(us->csdr);
     us->csdr = NULL;
     us->status = BB_STATUS_DEAD;
+
+    mutex_unlock(&bbox->mutex);
     return NULL;
 }
 
@@ -766,7 +772,6 @@ static void *wapboxconnection_thread(void *arg)
     }
 disconnect:    
     warning(0, "WAPBOXC: Closing and dying...");
-    boxc_close(us->boxc);
     /*
      * route all WAP messages routed to us to unknown receiver (-1)
      */
@@ -782,8 +787,13 @@ disconnect:
     if (ret > 0)
 	info(0, "WAPBOXC: Deleted %d WAP routing references to us", ret);
     
+    mutex_lock(&bbox->mutex);
+    
+    boxc_close(us->boxc);
     us->boxc = NULL;
     us->status = BB_STATUS_DEAD;
+
+    mutex_unlock(&bbox->mutex);
     return NULL;
 }
 
@@ -880,9 +890,13 @@ static void *smsboxconnection_thread(void *arg)
     }
 disconnect:    
     warning(0, "SMSBOXC: Closing and dying...");
+    mutex_lock(&bbox->mutex);
+
     boxc_close(us->boxc);
     us->boxc = NULL;
     us->status = BB_STATUS_DEAD;
+
+    mutex_unlock(&bbox->mutex);
     return NULL;
 }
 
@@ -1359,7 +1373,7 @@ static void check_queues(void)
     ptr = bbox->request_queue->first;
     prev = NULL;
     now = time(NULL);
-    while(ptr) {
+    while(ptr != NULL) {
 	/*
 	 * TODO:
 	 * check message type and check if there is any eligble
@@ -1387,6 +1401,8 @@ static void check_threads(void)
     int i, num, del;
     num = del = 0;
     
+    mutex_lock(&bbox->mutex);
+
     for(i=0; i < bbox->thread_limit; i++) {
 	thr = bbox->threads[i];
 	if (thr != NULL) {
@@ -1400,6 +1416,8 @@ static void check_threads(void)
 	}
     }
     bbox->num_threads = num;
+
+    mutex_unlock(&bbox->mutex);
 }
 
 
@@ -1448,8 +1466,8 @@ static void print_queues(char *buffer)
     
     mutex_lock(&bbox->mutex);
 
-    sprintf(buffer,"Request queue length %d, oldest %ds old; mean %.1f, total %d messages\n"
-	    "Reply queue length %d; oldest %ds old; mean %.1f, total %d messages",
+    sprintf(buffer,"Request queue length %d, oldest %ds old; mean %.1f, through %d messages\n"
+	    "Reply queue length %d; oldest %ds old; mean %.1f, through %d messages",
 	    rq, (int)(now-trq), bbox->mean_req_ql, totq, 
 	    rp, (int)(now-trp), bbox->mean_rep_ql, totp);
 	    
@@ -1513,7 +1531,7 @@ static void update_queue_watcher()
 	check_queues();
 
     if (c >= 30) {
-	limit = time(NULL) - 60;
+	limit = time(NULL) - 50;
 	
 	if (rq_last_mod(bbox->request_queue) > limit ||
 	    rq_last_mod(bbox->reply_queue) > limit) {
@@ -1733,6 +1751,11 @@ static void init_bb(Config *cfg)
 	
 	grp = config_next_group(grp);
     }
+    if (logfile != NULL)
+	open_logfile(logfile, lvl);
+
+    warning(0, "Gateway bearer box version %s starting", VERSION);
+
     if (bbox->allow_ip != NULL && bbox->deny_ip == NULL)
 	warning(0, "Allow IP-string set without any IPs denied!");
     
@@ -1763,10 +1786,6 @@ static void init_bb(Config *cfg)
     if(bbox->http_fd < 0 || bbox->wap_fd < 0 || bbox->sms_fd < 0) {
 	error(0, "Failed to open sockets");
 	goto error;
-    }
-    if (logfile != NULL) {
-	info(0, "Starting to log to file %s level %d", logfile, lvl);
-	open_logfile(logfile, lvl);
     }
     return;
 error:	
@@ -1946,8 +1965,6 @@ int main(int argc, char **argv)
         
     start_time = time(NULL);
     cf_index = get_and_set_debugs(argc, argv, NULL);
-
-    warning(0, "Gateway bearer box version %s starting", VERSION);
 
     setup_signal_handlers();
     cfg = config_from_file(argv[cf_index], "bearerbox.conf");
