@@ -1,3 +1,8 @@
+2002-01-31  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: applied missinc forced-smsc patch for sendota service in
+      smsbox_req_sendota(), sumbited by Indrek Mandre <indrek.mandre@trigger.ee>
+      [Msg-ID: <B9A4FDCD41EAD411B0C900D0B7A959211451D8@EXCHANGE>]
+
 2002-01-31 Andreas Fink <andreas@fink.org>
     * gwlib/gwlib.h: included string.h to avoid compilation warnings
 
