@@ -1588,8 +1588,7 @@ retransmit:
         goto io_error;
 
 next_reply:
-    /*reply = cimd2_get_packet(smsc,ts);*/
-    reply = cimd2_get_packet(smsc, NULL);
+    reply = cimd2_get_packet(smsc, ts);
     if (!reply)
         goto io_error;
 
@@ -1880,9 +1879,8 @@ int cimd2_submit_msg(SMSCenter *smsc, Msg *msg)
                 octstr_get_cstr(msg->sms.dlr_url),
                 msg->sms.dlr_mask,
                 octstr_get_cstr(msg->sms.boxc_id));
-            octstr_destroy(ts);
-            ts = NULL;		
 	}
+    octstr_destroy(ts);
 	if (ret == 0 || ret == -1)
             break;
         if (cimd2_reopen(smsc) < 0) {
