@@ -265,7 +265,7 @@ static int check_config(Config *config)
  * check our own variables
  */
 
-int check_args(int i, int argc, char **argv) {
+static int check_args(int i, int argc, char **argv) {
     if (strcmp(argv[i], "-S")==0)
 	bb_status = BB_SUSPENDED;
     else if (strcmp(argv[i], "-I")==0)
