@@ -1,3 +1,7 @@
+2000-05-24  Richard Braakman  <dark@wapit.com>
+
+	* gw/wsp_http.c: Fixed Accept header scanning in wsp_http_thread.
+
 2000-05-24    <Kalle Marjola <rpr@wapit.com>>
 
 	* doc/userguide/newconf.txt: added documentation about new

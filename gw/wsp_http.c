@@ -252,7 +252,7 @@ void *wsp_http_thread(void *arg) {
 		octstr_append_cstr(os, ": ");
 		octstr_append_cstr(os, h->value);
 		list_append(req_headers, os);
-		if (strcasecmp(h->key, "Accept")) {
+		if (strcasecmp(h->key, "Accept") == 0) {
 			if (strstr(h->value, "text/vnd.wap.wml") != NULL)
 				wml_ok = 1;
 			if (strstr(h->value, "text/vnd.wap.wmlscript") != NULL)
@@ -268,7 +268,7 @@ void *wsp_http_thread(void *arg) {
 		octstr_append_cstr(os, ": ");
 		octstr_append_cstr(os, h->value);
 		list_append(req_headers, os);
-		if (strcasecmp(h->key, "Accept")) {
+		if (strcasecmp(h->key, "Accept") == 0) {
 			if (strstr(h->value, "text/vnd.wap.wml") != NULL)
 				wml_ok = 1;
 			if (strstr(h->value, "text/vnd.wap.wmlscript") != NULL)
