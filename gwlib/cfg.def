@@ -211,6 +211,7 @@ MULTI_GROUP(smsc,
     OCTSTR(sender-prefix)
     OCTSTR(flow-control)
     OCTSTR(wait-ack)
+    OCTSTR(wait-ack-expire)
     OCTSTR(no-sender)
     OCTSTR(no-coding)
     OCTSTR(alt-dcs)

@@ -1,3 +1,7 @@
+2003-01-09 Andreas Fink <andreas@fink.org>
+    * gw/cfg.def added wait-ack-expire variable as otherwhise it wont work
+	on a clean compilation
+
 2003-01-09  Stipe Tolj  <tolj@wapme-systems.de>
 	* gw/wap-appl.c: fixed assertion panic in case HTTP method is not
 	  supported. Thanks to Vjacheslav Chekushin <slava@lmt.lv>.
