@@ -60,7 +60,7 @@
 #include "http.h"
 #include "html.h"
 #include "cgi.h"
-#include "sms_msg.h"
+#include "msg.h"
 #include "bb.h"
 
 
@@ -95,7 +95,7 @@ static URLTranslationList *translations = NULL;
  * a pattern, if it is an URL, fetch it, and return a string, which must
  * be free'ed by the caller
  */
-static char *obey_request(URLTranslation *trans, SMSMessage *sms)
+static char *obey_request(URLTranslation *trans, Msg *sms)
 {
     char *pattern;
     char *data, *tmpdata;
@@ -179,28 +179,50 @@ error:
  *
  * return -1 on failure, 0 if Ok.
  */
-static int do_sending(SMSMessage *msg, char *str)
+static int do_sending(Msg *msg, char *str)
 {
-    char buf[1024];
+    Msg *pmsg;
+    Octstr *pack;
     int ret;
-    
+
+    pmsg = msg_create(plain_sms);
+    if (pmsg == NULL) {
+	goto error;
+    }
+
     /* note the switching of sender and receiver */
+
+    pmsg->plain_sms.receiver = octstr_duplicate(msg->plain_sms.sender);
+    pmsg->plain_sms.sender = octstr_duplicate(msg->plain_sms.receiver);
+    pmsg->plain_sms.text = octstr_create_limited(str, sms_len);
     
-    sprintf(buf, "%d %s %s %.*s\n", msg->id, msg->receiver, msg->sender,
-	    sms_len, str);
+    pack = msg_pack(pmsg);
+    if (pack == NULL)
+	goto error;
 
     ret = pthread_mutex_lock(&socket_mutex);
     if (ret != 0) return -1;	
 
-    write_to_socket(socket_fd, buf);
-	
+    if (octstr_send(socket_fd, pack) < 0) {
+	error(0, "Write failed, killing us");
+	abort_program = 1;
+	goto panic;
+    }
     ret = pthread_mutex_unlock(&socket_mutex);
     if (ret != 0) return -1;
 
-    debug(0, "write < %.*s > from <%s> to <%s>", sms_len, str,
-	  msg->receiver, msg->sender);
+    debug(0, "write < %s >", octstr_get_cstr(pmsg->plain_sms.text));
+    octstr_destroy(pack);
+    free(pmsg);
 
     return 0;
+panic:
+    ret = pthread_mutex_unlock(&socket_mutex);
+    if (ret != 0) return -1;
+error:
+    free(pmsg);
+    error(0, "Memory allocation failed");
+    return -1;
 }
 
 
@@ -209,8 +231,8 @@ static int do_sending(SMSMessage *msg, char *str)
  *
  * return -1 on failure, 0 if Ok.
  */
-static int do_split_send(SMSMessage *msg, char *str,
-			 int maxmsgs, URLTranslation *trans)
+static int do_split_send(Msg *msg, char *str, int maxmsgs,
+			 URLTranslation *trans)
 {
     char *p;
     char *suf, *sc;
@@ -250,7 +272,7 @@ static int do_split_send(SMSMessage *msg, char *str,
  *
  * return -1 if failed utterly, 0 otherwise
  */
-static int send_message(URLTranslation *trans, SMSMessage *msg, char *reply)
+static int send_message(URLTranslation *trans, Msg *msg, char *reply)
 {
     char *rstr = reply;
     int max_msgs;
@@ -296,7 +318,7 @@ error:
  */
 static void *request_thread(void *arg) {
     unsigned long id;
-    SMSMessage *msg;
+    Msg *msg;
     URLTranslation *trans;
     char *reply = NULL, *p;
     
@@ -305,42 +327,50 @@ static void *request_thread(void *arg) {
 
     req_threads++;
     
-    if (octstr_len(msg->text) == 0 ||
-	strlen(msg->sender) == 0 ||
-	strlen(msg->receiver) == 0) {
+    if (octstr_len(msg->plain_sms.text) == 0 ||
+	octstr_len(msg->plain_sms.sender) == 0 ||
+	octstr_len(msg->plain_sms.receiver) == 0) {
 	error(0, "EMPTY: Text is <%s>, sender is <%s>, receiver is <%s>",
-	      octstr_get_cstr(msg->text), msg->sender, msg->receiver);
+	      octstr_get_cstr(msg->plain_sms.text),
+	      octstr_get_cstr(msg->plain_sms.sender),
+	      octstr_get_cstr(msg->plain_sms.receiver));
 
 	/* NACK should be returned here if we use such things... future
 	   implementation! */
 	   
 	return NULL;
     }
-    if (strcmp(msg->sender, msg->receiver) == 0) {
+    if (octstr_compare(msg->plain_sms.sender, msg->plain_sms.receiver) == 0) {
 	info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
-	     msg->sender);
+	     octstr_get_cstr(msg->plain_sms.sender));
 	return NULL;
     }
-    trans = urltrans_find(translations, msg);
+    trans = urltrans_find(translations, msg->plain_sms.text);
     if (trans == NULL)
 	goto error;
 
+    /*
+     * now, we change the sender (receiver now 'cause we swap them later)
+     * if faked-sender or similar set
+     */
     p = urltrans_faked_sender(trans);
     if (p != NULL) {
-	free(msg->receiver);		/* that is us, we swap these at send */
-	msg->receiver = strdup(p);
+	octstr_destroy(msg->plain_sms.receiver);
+	msg->plain_sms.receiver = octstr_create(p);
     }
     else if (global_sender != NULL) {
-	free(msg->receiver);		/* that is us, we swap these at send */
-	msg->receiver = strdup(global_sender);
+	octstr_destroy(msg->plain_sms.receiver);
+	msg->plain_sms.receiver = octstr_create(global_sender);
     }
-    if (msg->receiver == NULL)
+    if (msg->plain_sms.receiver == NULL)
 	goto error;
     
     /* TODO: check if the sender is approved to use this service */
 
     info(0, "starting to service request <%s> from <%s> to <%s>",
-	octstr_get_cstr(msg->text), msg->sender, msg->receiver);
+	      octstr_get_cstr(msg->plain_sms.text),
+	      octstr_get_cstr(msg->plain_sms.sender),
+	      octstr_get_cstr(msg->plain_sms.receiver));
     
     reply = obey_request(trans, msg);
     if (reply == NULL) {
@@ -350,13 +380,13 @@ static void *request_thread(void *arg) {
     if (reply == NULL || send_message(trans, msg, reply) < 0)
 	goto error;
 
-    smsmessage_destruct(msg);
+    msg_destroy(msg);
     free(reply);
     req_threads--;
     return NULL;
 error:
     error(errno, "request_thread: failed");
-    smsmessage_destruct(msg);
+    msg_destroy(msg);
     free(reply);
     req_threads--;
     return NULL;
@@ -364,40 +394,17 @@ error:
 }
 
 
-static void new_request(char *buf)
+static void new_request(Octstr *pack)
 {
-    SMSMessage *msg;
-    char *sender, *receiver, *text;
-    char *p;
-    int id;
+    Msg *msg;
 
-    id = atoi(buf);
-    p = strchr(buf, ' ');
-    if (p == NULL)
-	sender = receiver = text = "";
-    else {
-	*p++ = '\0';
-	sender = p;
-	p = strchr(sender, ' ');
-	if (p == NULL)
-	    receiver = text = "";
-	else {
-	    *p++ = '\0';
-	    receiver = p;
-	    p = strchr(receiver, ' ');
-	    if (p == NULL)
-		text = "";
-	    else {
-		*p++ = '\0';
-		text = p;
-	    }
-	}
-    }
-    msg = smsmessage_construct(sender, receiver, octstr_create(text));
-    if (msg != NULL) {
-	msg->id = id;
+    msg = msg_unpack(pack);
+    if (msg == NULL)
+	error(0, "Failed to unpack data!");
+    else if (msg_type(msg) != plain_sms)
+	warning(0, "Received other message than plain_sms, ignoring!");
+    else
 	(void)start_thread(1, request_thread, msg, 0);
-    }
 }
 
 
@@ -408,7 +415,7 @@ static void new_request(char *buf)
 
 static char *sendsms_request(CGIArg *list)
 {
-    SMSMessage *msg;
+    Msg *msg;
     URLTranslation *t;
     char *val, *from, *to, *text;
     int ret;
@@ -439,20 +446,26 @@ static char *sendsms_request(CGIArg *list)
     
     info(0, "/cgi-bin/sendsms <%s> <%s> <%s>", from, to, text);
     
-    msg = smsmessage_construct(to, from, octstr_create(""));
+    msg = msg_create(plain_sms);
     if (msg == NULL)
 	goto error;
+
+    msg->plain_sms.receiver = octstr_create(to);
+    msg->plain_sms.sender = octstr_create(from);
+    msg->plain_sms.text = octstr_create("");
+    msg->plain_sms.time = time(NULL);
+    
     ret = send_message(t, msg, text);
 
     if (ret == -1)
 	goto error;
 
-    smsmessage_destruct(msg);
+    msg_destroy(msg);
     return "Sent.";
     
 error:
     error(errno, "sendsms_request: failed");
-    smsmessage_destruct(msg);
+    msg_destroy(msg);
     req_threads--;
     return "Sending failed.";
 }
@@ -593,10 +606,29 @@ static void init_smsbox(Config *cfg)
 }
 
 
+int send_heartbeat()
+{
+    static Msg *msg = NULL;
+    Octstr *pack;
+    
+    if (msg == NULL)
+	if ((msg = msg_create(heartbeat)) == NULL)
+	    return -1;
+
+    msg->heartbeat.load = req_threads;
+    if ((pack = msg_pack(msg)) == NULL)
+	return -1;
+    
+    if (octstr_send(socket_fd, pack))
+	return -1;
+    octstr_destroy(pack);
+    
+    return 0;
+}
+
 
 void main_loop()
 {
-    char linebuf[1024+1], buf[32];
     time_t start, t;
     int ret, secs;
     int total = 0;
@@ -612,8 +644,7 @@ void main_loop()
     while(!abort_program) {
 
 	if (time(NULL)-t > heartbeat_freq) {
-	    sprintf(buf, "H%d\n", req_threads);
-	    if (write_to_socket(socket_fd, buf)<0)
+	    if (send_heartbeat() == -1)
 		goto error;
 	    t = time(NULL);
 	}
@@ -635,35 +666,23 @@ void main_loop()
 	    continue;
 	}
 	else if (ret > 0 && FD_ISSET(socket_fd, &rf)) {
-	    ret = read_line(socket_fd, linebuf, 1024);
-	    if (ret < 1) {
+
+	    Octstr *pack;
+
+	    ret = octstr_recv(socket_fd, &pack);
+	    if (ret < 0) {
 		error(0, "read line failed!");
 		break;
-	    }
-	    debug(0, "Read < %s > (load: %d)", linebuf, req_threads);
-
-	    /* ignore ack/nack, TODO: do not ignore
-	     */
-	    if (*linebuf == 'A' || *linebuf == 'N')
-		continue;
-
-/*	    if (write_to_socket(socket_fd, "A\n")<0)
- *		goto error;
- */
-	    if (req_threads % 10 == 9) {
-		sprintf(buf, "H%d\n", req_threads);
-		if (write_to_socket(socket_fd, buf)<0)
-		    goto error;
-		t = time(NULL);
 	    }
 	    ret = pthread_mutex_unlock(&socket_mutex);
 	    if (ret != 0) goto error;
 
 	    if (total == 0)
-		t = time(NULL);
+		start = time(NULL);
 	    total++;
-	    new_request(linebuf);
-
+	    new_request(pack);
+	    octstr_destroy(pack);
+	    
 	    ret = pthread_mutex_lock(&socket_mutex);
 	    if (ret != 0) goto error;
 	    continue;

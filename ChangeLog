@@ -1,3 +1,12 @@
+1999-11-11    <rpr@rpr.wapit.com>
+
+	* octstr.c, octstr.h: added octstr_create_limited
+
+	* many modules: changed bearerbox and smsbox to use Msg instead
+	of SMSMessage. As these are not quite perfect currently, the
+	system does not work well right now. Waiting for patches from
+	other participants.
+
 Thu Nov 11 19:41:40 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* msg.c: Fixed warning of unused variable and erroneous packing of

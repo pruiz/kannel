@@ -19,6 +19,7 @@
 #include "http.h"
 
 #include "bb_msg.h"
+#include "msg.h"
 #include "smsc.h"
 #include "csdr.h"
 #include "boxc.h"
@@ -158,7 +159,8 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 		 thr->status == BB_STATUS_CREATED)) {
 
 		if (thr->type == BB_TTYPE_SMSC)
-		    ret = smsc_receiver(thr->smsc, msg->receiver);
+		    ret = smsc_receiver(thr->smsc,
+			   octstr_get_cstr(msg->msg->plain_sms.receiver));
 		else
 		    ret = 0;
 		
@@ -179,7 +181,7 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 	    msg->destination = backup;
 	else {
 	    error(0, "Cannot route receiver <%s>, message ignored",
-		  msg->receiver);
+		  octstr_get_cstr(msg->msg->plain_sms.receiver));
 	    return -1;
 	}
     }
@@ -195,14 +197,12 @@ error:
  * normalize 'number'
  *
  * return -1 on error, 0 if no match in dial_prefixes and 1 if match found
- * If the 'number' needs normalization, the old one is freed and new
- * created
+ * If the 'number' needs normalization, it is done.
  */
 
-static int normalize_number(char *dial_prefixes, char **number)
+static int normalize_number(char *dial_prefixes, Octstr **number)
 {
     char *t, *p, *official, *start;
-    char *new;
     int len, official_len;
     
     if (dial_prefixes == NULL || dial_prefixes[0] == '\0')
@@ -211,22 +211,24 @@ static int normalize_number(char *dial_prefixes, char **number)
     t = official = dial_prefixes;
     
     while(1) {
-	for(p = *number, start = t, len = 0; ; t++, p++, len++) {
+
+	for(p = octstr_get_cstr(*number), start = t, len = 0; ; t++, p++, len++) {
 	    if (*t == ',' || *t == ';' || *t == '\0') {
 		if (start != official) {
-		    new = malloc(strlen(*number)+1+official_len-len);
-		    if (new == NULL) {
-			error(0, "Memory allocation failed");
-			return -1;
-		    }
-		    strncpy(new, official, official_len);
-		    strcpy(new + official_len, *number+len);
-		    free(*number);
-		    *number = new;
+		    Octstr *nstr;
+		    nstr = octstr_create_limited(official, official_len);
+		    if (nstr == NULL)
+			goto error;
+		    if (octstr_insert_data(nstr, official_len - len + 1,
+					   octstr_get_cstr(*number) + len,
+					   octstr_len(*number) - len) < 0)
+			goto error;
+		    octstr_destroy(*number);
+		    *number = nstr;
 		}
 		return 1;
 	    }
-	    if (*t != *p)
+	    if (*p == '\0' || *t != *p)
 		break;		/* not matching */
 	}
 	for(; *t != ',' && *t != ';' && *t != '\0'; t++, len++)
@@ -237,6 +239,9 @@ static int normalize_number(char *dial_prefixes, char **number)
 	t++;
     }
     return 0;
+error:
+    error(0, "Memory allocation failed");
+    return -1;
 }
 
 
@@ -249,15 +254,15 @@ static void normalize_numbers(RQueueItem *msg, SMSCenter *from)
     if (from != NULL) {
 	p = smsc_dial_prefix(from);
 	if (p != NULL) {
-	    sr = normalize_number(p, &(msg->sender));
-	    rr = normalize_number(p, &(msg->receiver));
+	    sr = normalize_number(p, &(msg->msg->plain_sms.sender));
+	    rr = normalize_number(p, &(msg->msg->plain_sms.receiver));
 	}
     }
     if (sr == 0)
-	sr = normalize_number(bbox->global_prefix, &(msg->sender));
+	sr = normalize_number(bbox->global_prefix, &(msg->msg->plain_sms.sender));
     if (rr == 0)
-	rr = normalize_number(bbox->global_prefix, &(msg->receiver));
-	
+	rr = normalize_number(bbox->global_prefix, &(msg->msg->plain_sms.receiver));
+
     if (sr == -1 || rr == -1)
 	error(0, "Problems during number normalization");
 }
@@ -496,7 +501,7 @@ static void *smsboxconnection_thread(void *arg)
 
 	ret = boxc_get_message(us->boxc, &msg);
 	if (ret < 0) {
-	    error(0, "SMS BOX %d get message failed, killing", us->id);
+	    error(0, "BOXC: [%d] get message failed, killing", us->id);
 	    break;
 	} else if (ret > 0) {
 	    normalize_numbers(msg, NULL);
@@ -1137,10 +1142,19 @@ static void write_pid_file(void)
 
 static void signal_handler(int signum)
 {
+    static time_t first_kill = -1;
+    
     if (signum == SIGINT) {
 	if (bbox->abort_program == 0) {
 	    error(0, "SIGINT received, emptying queues...");
 	    bbox->abort_program = 1;
+	    first_kill = time(NULL);
+	}
+	else if (bbox->abort_program == 1) {
+	    if (time(NULL) - first_kill > 2) {
+		error(0, "New SIGINT received, killing neverthless...");
+		bbox->abort_program = 2;
+	    }
 	}
     } else if (signum == SIGHUP) {
         warning(0, "SIGHUP received, catching and re-opening logs");

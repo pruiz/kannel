@@ -14,6 +14,7 @@
 
 #include "wapitlib.h"
 #include "octstr.h"
+#include "msg.h"
 
 typedef struct r_queue_item RQueueItem;
 typedef struct r_queue RQueue;
@@ -46,14 +47,12 @@ struct r_queue_item {
     int id;		/* internal number */
     int msg_class;	/* see enum above */
     int msg_type;	/* see enum above */
-    char *sender;	/* phone number or IP. */
-    char *receiver;	/* ditto */
-    Octstr *msg;     	/* parsed message (just the message) */
+    Msg *msg;		/* from msg.h */
     time_t time_tag;	/* when created (in our system) */
     int source;		/* original receiver thread id */
     int destination;	/* destination thread, if we know it */
 
-    void *client_data;	/* the original data (NOTE: not copied!) */
+    void *client_data;	/* the original data (NOTE: just a pointer) */
     
     RQueueItem *next;	/* linked list */
 };

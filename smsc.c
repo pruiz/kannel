@@ -627,8 +627,13 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
     }  else if (msg->msg_type == R_MSG_TYPE_MT) {
 
 	debug(0, "Send SMS Message [%d] to SMSC", msg->id);
-	
-	sms_msg = smsmessage_construct(msg->sender, msg->receiver, msg->msg);
+
+	/*
+	 * stupid... correct all smsmessage constructs ASAP
+	 */
+	sms_msg = smsmessage_construct(octstr_get_cstr(msg->msg->plain_sms.sender),
+				       octstr_get_cstr(msg->msg->plain_sms.receiver),
+				       msg->msg->plain_sms.text);
     
 	ret = smscenter_submit_smsmessage(smsc, sms_msg);
 	if (ret == -1)
@@ -647,7 +652,7 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 	      msg->msg_type);
 	ret = -1;
     }
-    free(msg->client_data);	
+    smsmessage_destruct(msg->client_data);
     rqi_delete(msg);
 
     return ret;
@@ -670,25 +675,29 @@ RQueueItem *smsc_get_message(SMSCenter *smsc)
 	}
 	/* hm, what about ACK/NACK? - leave that to above */
 
-	/* now we create a queryitem.. note that we just copy pointers,
-	 * not the stuff inside, so beware...
-	 */
 	msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MO);
+	msg->msg = msg_create(plain_sms);
+	if (msg->msg == NULL)
+	    goto error;
 
-	msg->receiver = sms_msg->receiver;
-	msg->sender = sms_msg->sender;
-	msg->msg = sms_msg->text;
-
-	/* delete old pointers so that no accidents happen */
-	sms_msg->receiver = NULL;
-	sms_msg->sender = NULL;
-	sms_msg->text = NULL;
-
+	/*
+	 * this is plain STUPID. But a quick hack. As soon as we have
+	 * time, remove ALL SMSMessage structures and replace them with 'msg'
+	 */
+	msg->msg->plain_sms.receiver = octstr_create(sms_msg->receiver);
+	msg->msg->plain_sms.sender = octstr_create(sms_msg->sender);
+	msg->msg->plain_sms.text = octstr_duplicate(sms_msg->text);
+	msg->msg->plain_sms.time = sms_msg->time;
+	
 	msg->client_data = sms_msg;	/* keep the data for ACK/NACK */
 	
 	
 	return msg;		/* ok, quite empty one */
     }
+    return NULL;
+error:
+    error(0, "Failed to create message");
+    rqi_delete(msg);
     return NULL;
 }
 

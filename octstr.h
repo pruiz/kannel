@@ -36,6 +36,10 @@ Octstr *octstr_create_empty(void);
  */
 Octstr *octstr_create(char *cstr);
 
+/*
+ * as above except that the string is truncated after max_len
+ */
+Octstr *octstr_create_limited(char *cstr, int max_len);
 
 /*
  * Create an octet string from arbitrary binary data. The length of the

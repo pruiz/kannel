@@ -99,6 +99,15 @@ Octstr *octstr_create(char *cstr) {
 }
 
 
+Octstr *octstr_create_limited(char *cstr, int max_len) {
+    int len = strlen(cstr);
+    if (len < max_len)
+	return octstr_create_from_data(cstr, len);
+    else
+	return octstr_create_from_data(cstr, max_len);
+}
+
+
 Octstr *octstr_create_from_data(char *data, size_t len) {
 	Octstr *ostr;
 	

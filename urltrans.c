@@ -134,11 +134,11 @@ int urltrans_add_cfg(URLTranslationList *trans, Config *cfg) {
 }
 
 
-URLTranslation *urltrans_find(URLTranslationList *trans, SMSMessage *sms) {
+URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text) {
 	OctstrList *words;
 	URLTranslation *t;
 	
-	words = octstr_split_words(sms->text);
+	words = octstr_split_words(text);
 	if (words == NULL)
 	    return NULL;
 
@@ -166,7 +166,7 @@ URLTranslation *urltrans_find_username(URLTranslationList *trans,
 
 
 
-char *urltrans_get_pattern(URLTranslation *t, SMSMessage *request)
+char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 {
 	char *buf, *enc, *s, *p, *pattern, *tilde;
 	int nextarg, j;
@@ -180,7 +180,7 @@ char *urltrans_get_pattern(URLTranslation *t, SMSMessage *request)
 	if (t->type == TRANSTYPE_SENDSMS)
 	    return strdup("");
 	
-	word_list = octstr_split_words(request->text);
+	word_list = octstr_split_words(request->plain_sms.text);
 	if (word_list == NULL)
 		return NULL;
 	n = octstr_list_len(word_list);
@@ -206,9 +206,9 @@ char *urltrans_get_pattern(URLTranslation *t, SMSMessage *request)
 	len += count_occurences(pattern, "%r") * 
 			(maxword + 1) * n * ENCODED_LEN;
 	len += count_occurences(pattern, "%p") * 
-			strlen(request->sender) * ENCODED_LEN;
+			octstr_len(request->plain_sms.sender) * ENCODED_LEN;
 	len += count_occurences(pattern, "%P") * 
-			strlen(request->receiver) * ENCODED_LEN;
+			octstr_len(request->plain_sms.receiver) * ENCODED_LEN;
 	len += count_occurences(pattern, "%t") * strlen("YYYY-MM-DD+HH:MM");
 
 	buf = malloc(len + 1);
@@ -257,28 +257,29 @@ char *urltrans_get_pattern(URLTranslation *t, SMSMessage *request)
 			}
 			break;
 		case 'p':
-			encode_for_url(enc, request->sender);
+			encode_for_url(enc, octstr_get_cstr(request->plain_sms.sender));
 			sprintf(s, "%s", enc);
 			break;
 		case 'P':
-			encode_for_url(enc, request->receiver);
+			encode_for_url(enc, octstr_get_cstr(request->plain_sms.receiver));
 			sprintf(s, "%s", enc);
 			break;
 		case 'q':
-			if (strncmp(request->sender, "00", 2) == 0) {
-				encode_for_url(enc, request->sender + 2);
+			if (strncmp(octstr_get_cstr(request->plain_sms.sender),
+				    "00", 2) == 0) {
+				encode_for_url(enc, octstr_get_cstr(request->plain_sms.sender) + 2);
 				sprintf(s, "%%2B%s", enc);
 			} else {
-				encode_for_url(enc, request->sender);
+				encode_for_url(enc, octstr_get_cstr(request->plain_sms.sender));
 				sprintf(s, "%s", enc);
 			}
 			break;
 		case 'Q':
-			if (strncmp(request->receiver, "00", 2) == 0) {
-				encode_for_url(enc, request->receiver + 2);
+			if (strncmp(octstr_get_cstr(request->plain_sms.receiver), "00", 2) == 0) {
+				encode_for_url(enc, octstr_get_cstr(request->plain_sms.receiver) + 2);
 				sprintf(s, "%%2B%s", enc);
 			} else {
-				encode_for_url(enc, request->receiver);
+				encode_for_url(enc, octstr_get_cstr(request->plain_sms.receiver));
 				sprintf(s, "%s", enc);
 			}
 			break;
@@ -293,7 +294,7 @@ char *urltrans_get_pattern(URLTranslation *t, SMSMessage *request)
 			}
 			break;
 		case 't':
-			tm = gmtime(&request->time);
+			tm = gmtime(&request->plain_sms.time);
 			sprintf(s, "%04d-%02d-%02d+%02d:%02d",
 				tm->tm_year + 1900,
 				tm->tm_mon + 1,

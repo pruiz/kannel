@@ -16,7 +16,8 @@
 #include "wapitlib.h"
 #include "boxc.h"
 #include "bb_msg.h"
-
+#include "octstr.h"
+#include "msg.h"
 
 BOXC *boxc_open(int fd)
 {
@@ -71,16 +72,20 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
 	/* smsbox_add_msg(msg); */
 	;
     else {
-	char buffer[1024];
-	    
 	if (msg->msg_type != R_MSG_TYPE_ACK &&
 	    msg->msg_type != R_MSG_TYPE_NACK) {
 
-	    sprintf(buffer, "%d %s %s %s\n", msg->id, msg->sender,
-		    msg->receiver, octstr_get_cstr(msg->msg));
-	    write_to_socket(boxc->fd, buffer);
+	    Octstr *pack;
 
-	    debug(0, "BOXC:write < %s >", buffer);
+	    pack = msg_pack(msg->msg);
+	    if (pack == NULL)
+		goto error;
+
+	    octstr_send(boxc->fd, pack);
+	    octstr_destroy(pack);
+	    
+	    debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->plain_sms.text));
+	    ack = 1;
 	}
     }
     if (msg->msg_type == R_MSG_TYPE_MO) {
@@ -93,81 +98,59 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
     else
 	rqi_delete(msg);		/* delete ACK/NACK from SMSC/CSDR */
     return 0;
+error:
+    error(0, "BOXC: Send message failed");
+    return -1;
 }
 
 
 int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 {
     RQueueItem *msg;
-    char *sender, *receiver, *text, *p;
-    int ret, id;
+    int ret;
 
     *rmsg = NULL;
     if (boxc->fd == BOXC_THREAD)
 	/* msg = smsbox_get_msg(); */
 	;
     else {
-	char buffer[1025];
-	
 	if (read_available(boxc->fd) > 0) {
-
+	    Msg *pmsg;
+	    Octstr *os;
+	    
 	    boxc->box_heartbeat = time(NULL);	/* update heartbeat */
 	    
 	    /*
 	     * Note: the following blocks the connection if there is
-	     * data without a linefeed. But that's life, smsbox would not
+	     * partial data. But that's life, smsbox would not
 	     * accept our data neither if it has blocked while writing,
 	     * or would it?
 	     */
-	    ret = read_line(boxc->fd, buffer, 1024);
-	    if (ret < 1)
+	    ret = octstr_recv(boxc->fd, &os);
+	    if (ret < 0)
 		return -1;	/* time to die */
 	    
-	    
-	    if (*buffer == 'A' || *buffer == 'N') {	/* ignore ack/nack */
-		debug(0, "BOXC: ACK/NACK read < %s >, ignore", buffer);
-		return 0;
-	    }
-	    else if (*buffer == 'H') {		/* heartbeat/load */
-		boxc->load = atoi(buffer+1);
-		debug(0, "BOXC: Load factor %d received", boxc->load);
-		return 0;
-	    }
-	    debug(0, "BOXC:read: < %s >", buffer);
-	    
-	    msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
-	    if (msg == NULL) {
-		error(0, "Failed to create new message, killing thread");
-		return -1;
-	    }
-	    id = atoi(buffer);
-	    p = strchr(buffer, ' ');
-	    if (p == NULL)
-		goto malformed;
-	    else {
-		*p++ = '\0';
-		sender = p;
-		p = strchr(sender, ' ');
-		if (p == NULL)
-		    goto malformed;
-		else {
-		    *p++ = '\0';
-		    receiver = p;
-		    p = strchr(receiver, ' ');
-		    if (p == NULL)
-			goto malformed;
-		    else {
-			*p++ = '\0';
-			text = p;
-		    }
-		}
-	    }
-	    msg->sender = strdup(sender);
-	    msg->receiver = strdup(receiver);
-	    msg->msg = octstr_create(text);
-	    if (msg->sender == NULL || msg->receiver == NULL || msg->msg == NULL) {
-		error(0, "Memory allocation failed, send NACK");
+	    pmsg = msg_unpack(os);
+	    if (pmsg == NULL)
 		goto error;
+
+	    if (msg_type(pmsg) == heartbeat) {
+		boxc->load = pmsg->heartbeat.load;
+		debug(0, "BOXC: Load factor %d received", boxc->load);
+
+		octstr_destroy(os);
+		msg_destroy(pmsg);
+		return 0;
+	    }
+	    else if (msg_type(pmsg) == plain_sms) {
+		
+		msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
+		if (msg == NULL) {
+		    error(0, "Failed to create new message, killing thread");
+		    return -1;
+		}
+		msg->msg = pmsg;
+		debug(0, "BOXC: Read < %s >", octstr_get_cstr(pmsg->plain_sms.text));
 	    }
 	}
 	else 
@@ -179,11 +162,8 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
     }
     return 0;
 
-malformed:
-    error(0, "Received a malformed message from SMS BOX, send immediate NACK");
 error:
-    write_to_socket(boxc->fd, "N\n");
     rqi_delete(msg);
-    return 0;
+    return -1;
 }
  

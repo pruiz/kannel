@@ -25,7 +25,7 @@
 #define URLTRANS_H
 
 #include "config.h"
-#include "sms_msg.h"
+#include "msg.h"
 
 /*
  * This is the data structure that holds the list of translations. It is
@@ -92,15 +92,15 @@ int urltrans_add_cfg(URLTranslationList *trans, Config *cfg);
 
 
 /*
- * Find the translation that corresponds to a given SMS request.
+ * Find the translation that corresponds to a given text string
  *
  * Use the translation with pattern whose keyword is the same as the first
- * word of the SMS message and that has the number of `%s' fields as the SMS
- * message has words after the first one. If no such pattern exists, use the
+ * word of the text and that has the number of `%s' fields as the text
+ * has words after the first one. If no such pattern exists, use the
  * pattern whose keyword is "default". If there is no such pattern, either,
  * return NULL.
  */
-URLTranslation *urltrans_find(URLTranslationList *trans, SMSMessage *sms);
+URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text);
 
 /*
  * find matching URLTranslation for the given 'username', or NULL
@@ -126,7 +126,7 @@ URLTranslation *urltrans_find_username(URLTranslationList *trans, char *name);
  *
  * The pattern is URL, fixed text or file name accorinbg to type of urltrans
  */
-char *urltrans_get_pattern(URLTranslation *t, SMSMessage *sms);
+char *urltrans_get_pattern(URLTranslation *t, Msg *sms);
 
 /*
  * Return the type of the translation, see enumeration above
