@@ -56,7 +56,8 @@ char *smsc_name(SMSCenter *smsc);
 char *smsc_dial_prefix(SMSCenter *smsc);
 
 /* Return 1 if the SMSC is router for 'number', 2 if the SMSC is
- * default router and 0 if not suitable.
+ * default router, 3 if the SMSC is backup default router and 0 if
+ * not suitable.
  * (function checks if the prefix of the number is in route_prefix)
  */
 int smsc_receiver(SMSCenter *smsc, char *number);

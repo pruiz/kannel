@@ -128,6 +128,9 @@ typedef struct bb_s {
     int http_port;		/* adminstration port */
     int wapbox_port;		/* wap box port */
     int smsbox_port;		/* sms box port */
+
+    char *allow_ip;		/* hosts allowed to connect */
+    char *deny_ip;		/* hosts denied to connect */
     
     char *admin_username;	/* for HTTP-adminstration */
     char *admin_password;	/* ditto */
@@ -144,6 +147,8 @@ typedef struct bb_s {
 
 static BearerBox *bbox = NULL;
 static int http_sendsms_fd = -1;
+static char *http_sendsms_allow_ip = NULL;
+static char *http_sendsms_deny_ip = NULL;
 
 
 
@@ -356,6 +361,8 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 {
     BBThread *thr;
     int i, ret, backup = -1;
+    int backup_backup = -1;
+    int bad_choice = -1;
 
     if (msg->source > -1)	/* if we have already routed message */
 	return 0;
@@ -398,15 +405,16 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 	thr = bbox->threads[i];
 	if (thr != NULL) {
 	    if ((thr->type == BB_TTYPE_SMSC ||
-		 thr->type == BB_TTYPE_CSDR)
+		thr->type == BB_TTYPE_CSDR)
 		&&
-		(thr->status == BB_STATUS_OK ||
-		 thr->status == BB_STATUS_CREATED)) {
+		thr->status != BB_STATUS_DEAD) {
 
 		/* Route WAP according to CSDR port and IP
 		 */
 		if (msg->msg_class == R_MSG_CLASS_WAP &&
-		    thr->type == BB_TTYPE_CSDR) {
+		    thr->type == BB_TTYPE_CSDR &&
+		    (thr->status == BB_STATUS_OK ||
+		     thr->status == BB_STATUS_CREATED)) {
 
 		    if (csdr_is_to_us(thr->csdr, msg->msg) == 1) { 
 			msg->destination = thr->id;
@@ -420,10 +428,17 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 		    ret = 0;
 		
 		if (ret == 1) {
-		    msg->destination = thr->id;
+		    if (thr->status == BB_STATUS_OK ||
+			thr->status == BB_STATUS_CREATED)
+
+			msg->destination = thr->id;
+		    else
+			bad_choice = thr->id;
 		    break;
 		} else if (ret == 2)
 		    backup = thr->id;
+		else if (ret == 3)
+		    backup_backup = thr->id;
 	    }
 	}
     }
@@ -432,8 +447,17 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
     if (msg->destination == -1) {
 	if (backup >= 0)
 	    msg->destination = backup;
+	else if (backup_backup >= 0) {
+	    info(0, "Using backup-default router because default is down"); 
+	    msg->destination = backup_backup;
+	}
+	else if (bad_choice >= 0) {
+	    info(0, "Forced to route to a suspended/non-answering receiver (%d)...",
+		 bad_choice); 
+	    msg->destination = bad_choice;
+	}
 	else {
-	    error(0, "Cannot route receiver <%s>, message ignored",
+	    error(0, "Cannot route receiver <%s>, Tough.",
 		  octstr_get_cstr(msg->msg->smart_sms.receiver));
 	    return -1;
 	}
@@ -561,7 +585,12 @@ static void *smscenter_thread(void *arg)
     info(0, "SMSCenter thread [%d] <%s>", us->id, smsc_name(us->smsc));
     
     while(bbox->abort_program < 2) {
-	if (us->status == BB_STATUS_KILLED) break;
+	if (us->status == BB_STATUS_KILLED) {
+	    warning(0, "SMSC: <%s> back in line!",
+		    smsc_name(us->smsc));
+	    us->status = BB_STATUS_OK;
+	}
+	    break;
 	HEARTBEAT_UPDATE(our_time, last_time, us);
 
 	/* check for any messages to us in reply-queue
@@ -673,8 +702,11 @@ static void *wapboxconnection_thread(void *arg)
     int 	ret;
 
     us = arg;
-    us->boxc = boxc_open(bbox->wap_fd);
+    us->boxc = boxc_open(bbox->wap_fd, bbox->allow_ip, bbox->deny_ip);
+	
     bbox->accept_pending--;
+    if (us->boxc == NULL)
+	goto disconnect;
 
     us->status = BB_STATUS_OK;
     last_time = time(NULL);
@@ -732,6 +764,7 @@ static void *wapboxconnection_thread(void *arg)
 	    continue;
 	}
     }
+disconnect:    
     warning(0, "WAPBOXC: Closing and dying...");
     boxc_close(us->boxc);
     /*
@@ -767,8 +800,10 @@ static void *smsboxconnection_thread(void *arg)
     
     us = arg;
     if (us->boxc == NULL)
-	us->boxc = boxc_open(bbox->sms_fd);
+	us->boxc = boxc_open(bbox->sms_fd, bbox->allow_ip, bbox->deny_ip);
     bbox->accept_pending--;
+    if (us->boxc == NULL)
+	goto disconnect;
 
     us->status = BB_STATUS_OK;
     last_time = time(NULL);
@@ -843,6 +878,7 @@ static void *smsboxconnection_thread(void *arg)
 	written--;
 	usleep(1000);
     }
+disconnect:    
     warning(0, "SMSBOXC: Closing and dying...");
     boxc_close(us->boxc);
     us->boxc = NULL;
@@ -1178,7 +1214,7 @@ static char *http_admin_command(char *command, CGIArg *list)
 
 static void *http_request_thread(void *arg)
 {
-    int client;
+    int client, ret;
     char *path = NULL, *args = NULL, *client_ip = NULL;
     char answerbuf[10*1024];
     char *answer = answerbuf;
@@ -1191,6 +1227,15 @@ static void *http_request_thread(void *arg)
 	return NULL;
     }
 
+    ret = 0;
+    if (http_sendsms_allow_ip != NULL)
+	ret = check_ip(http_sendsms_allow_ip, client_ip, NULL);
+    if (ret < 1 && http_sendsms_deny_ip != NULL)
+	if (check_ip(http_sendsms_deny_ip, client_ip, NULL) == 1) {
+	    warning(0, "Non-allowed connect tried from <%s>, ignored",
+		    client_ip);
+	    goto done;
+	}
     /* print client information */
 
     info(0, "Get HTTP request < %s > from < %s >", path, client_ip);
@@ -1217,7 +1262,7 @@ static void *http_request_thread(void *arg)
 	error(0, "HTTP: Error responding to client. Too bad.");
 
     /* answer closes the socket */
-
+done:
     free(path);
     free(args);
     free(client_ip);
@@ -1367,7 +1412,7 @@ static void check_heartbeats(void)
     now = time(NULL);
     for(i=0; i < bbox->thread_limit; i++) {
 	thr = bbox->threads[i];
-	if (thr != NULL) {
+	if (thr != NULL && thr->status == BB_STATUS_OK) {
 	    if (now - thr->heartbeat > 2 * bbox->heartbeat_freq) {
 		warning(0, "Thread %d (id %d) type %d has stopped beating!",
 			i, thr->id, thr->type);
@@ -1649,6 +1694,8 @@ static void init_bb(Config *cfg)
     bbox->admin_username = NULL;
     bbox->admin_password = NULL;
     bbox->global_prefix = NULL;
+    bbox->allow_ip = NULL;
+    bbox->deny_ip = NULL;
     
     grp = config_first_group(cfg);
     while(grp != NULL) {
@@ -1662,6 +1709,10 @@ static void init_bb(Config *cfg)
 	    bbox->smsbox_port = atoi(p);
 	if ((p = config_get(grp, "global-prefix")) != NULL)
 	    bbox->global_prefix = p;
+	if ((p = config_get(grp, "allowed-hosts")) != NULL)
+	    bbox->allow_ip = p;
+	if ((p = config_get(grp, "denied-hosts")) != NULL)
+	    bbox->deny_ip = p;
 	if ((p = config_get(grp, "admin-username")) != NULL)
 	    bbox->admin_username = p;
 	if ((p = config_get(grp, "admin-password")) != NULL)
@@ -1677,6 +1728,9 @@ static void init_bb(Config *cfg)
 	
 	grp = config_next_group(grp);
     }
+    if (bbox->allow_ip != NULL && bbox->deny_ip == NULL)
+	warning(0, "Allow IP-string set without any IPs denied!");
+    
     if (bbox->thread_limit < 5) {
 	error(0, "Thread limit set to less than 5 (%d), set it 5",
 	      bbox->thread_limit);
@@ -1832,8 +1886,16 @@ void create_internal_smsbox(Config *cfg)
         if ((p = config_get(grp, "global-sender")) != NULL)
             global_sender = p;
 	
+        if ((p = config_get(grp, "http-allowed-hosts")) != NULL)
+            http_sendsms_allow_ip = p;
+        if ((p = config_get(grp, "http-denied-hosts")) != NULL)
+            http_sendsms_deny_ip = p;
+	
         grp = config_next_group(grp);
     }
+    if (http_sendsms_allow_ip != NULL && http_sendsms_deny_ip == NULL)
+	warning(0, "Allow IP-string set without any IPs denied!");
+
     if (global_sender != NULL)
         info(0, "Internal SMS BOX global sender set as '%s'", global_sender);
     
@@ -1861,7 +1923,7 @@ void create_internal_smsbox(Config *cfg)
     nt = create_bbt(BB_TTYPE_SMS_BOX);
     if (nt != NULL) {
 	bbox->accept_pending++;
-	nt->boxc = boxc_open(BOXC_THREAD);
+	nt->boxc = boxc_open(BOXC_THREAD, NULL, NULL);
 	if (nt->boxc != NULL)
 	    (void)start_thread(1, smsboxconnection_thread, nt, 0);
     }

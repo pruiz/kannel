@@ -565,6 +565,8 @@ int smsc_receiver(SMSCenter *smsc, char *number)
     }
     if (strstr(smsc->route_prefix, "default") != NULL)
 	return 2;		/* default */
+    if (strstr(smsc->route_prefix, "backup") != NULL)
+	return 3;		/* backup */
 
     return 0;
 }

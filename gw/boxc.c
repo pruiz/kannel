@@ -24,12 +24,13 @@
 #include "smsbox_req.h"
 
 
-BOXC *boxc_open(int fd)
+BOXC *boxc_open(int fd, char *allow_ip, char *deny_ip)
 {
     struct sockaddr_in client_addr;
     socklen_t client_addr_len;
     BOXC *nb;
     char accept_ip[NI_MAXHOST];
+    int ret;
 
     nb = malloc(sizeof(BOXC));
     if (nb == NULL)
@@ -50,6 +51,18 @@ BOXC *boxc_open(int fd)
         getnameinfo((struct sockaddr *)&client_addr, client_addr_len,
 		    accept_ip, sizeof(accept_ip), 
 		    NULL, 0, NI_NUMERICHOST);
+
+	ret = 0;
+	if (allow_ip != NULL)
+	    ret = check_ip(allow_ip, accept_ip, NULL);
+	if (ret < 1 && deny_ip != NULL)
+	    if (check_ip(deny_ip, accept_ip, NULL) == 1) {
+		warning(0, "Non-allowed connect tried from <%s>, disconnected",
+			accept_ip);
+		free(nb);
+		return NULL;
+	    }
+	
         nb->client_ip = strdup(accept_ip);
 	if (nb->client_ip == NULL) 
 	    goto error;

@@ -1,3 +1,17 @@
+1999-11-22    <rpr@rpr.wapit.com>
+
+	* gwlib/wapitlib.*: added function check_ip
+
+	* gw/bearerbox.*, gw/boxc.*, gw/smsbox.*: added configuration
+	strings allowed-hosts, denied-hosts, http-allowed-hosts and
+	http-denied-hosts.
+
+	* gw/bearerbox.c, gw/smsc.*: added 'bacup' default router to
+	SMSCes, and set that non-answering SMSC gets back in line - in
+	time.
+
+	* gw/bb.h: changed default heartbeat-frequency to 30 seconds.
+	
 Mon Nov 22 11:37:39 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* doc/userguide: Wrote draft outline of user's guide.

@@ -18,14 +18,16 @@ typedef struct boxc {
 
 
 /*
- * create a new BOX Connection by accepting it from given 'fd'
+ * create a new BOX Connection by accepting it from given 'fd'.
+ * 'ip_allow' and 'ip_deny' are allowed hosts to connect, see
+ * documentation. NULL if not present
  *
  * do the handshake etc. and return the created new BOXC, or NULL
  * on failure
  *
  * if the fd is -1, do a thread box connection
  */ 
-BOXC *boxc_open(int fd);
+BOXC *boxc_open(int fd, char *ip_allow, char *ip_deny);
 
 /*
  * close the BOX Connection (and fd)

@@ -742,3 +742,48 @@ void mutex_unlock(pthread_mutex_t *mutex)
     if (pthread_mutex_unlock(mutex) != 0)
 	panic(errno, "Mutex failure!");
 }
+
+
+int check_ip(char *accept_string, char *ip, char *match_buffer)
+{
+    char *p, *t, *start;
+
+    t = accept_string;
+    
+    while(1) {
+	for(p = ip, start = t;;p++, t++) {
+	    if ((*t == ';' || *t == '\0') && *p == '\0')
+		goto found;
+
+	    if (*t == '*') {
+		t++;
+		while(*p != '.' && *p != ';' && *p != '\0')
+		    p++;
+
+		if (*p == '\0')
+		    goto found;
+		continue;
+	    }
+	    if (*p == '\0' || *t == '\0' || *t != *p)
+		break;		/* not matching */
+
+	}
+	for(; *t != ';'; t++)		/* seek next IP */
+	    if (*t == '\0')
+		goto failed;
+	t++;
+    }
+failed:    
+    debug(0, "Could not find match for <%s> in <%s>", ip, accept_string);
+    return 0;
+found:
+    if (match_buffer != NULL) {
+	for(p=match_buffer; *start != '\0' && *start != ';'; p++, start++)
+	    *p = *start;
+	*p = '\0';
+	debug(0, "Found and copied match <%s>", match_buffer);
+    }
+    return 1;
+}
+
+

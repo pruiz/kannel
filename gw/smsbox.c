@@ -82,6 +82,8 @@ static int	heartbeat_freq;
 
 static int 	socket_fd;
 static int 	http_fd;
+static char 	*http_allow_ip = NULL;
+static char 	*http_deny_ip = NULL;
 
 /* thread handling */
 
@@ -149,7 +151,7 @@ static void new_request(Octstr *pack)
 
 static void *http_request_thread(void *arg)
 {
-    int client;
+    int client, ret;
     char *path = NULL, *args = NULL, *client_ip = NULL;
     char *answer;
     CGIArg *arglist;
@@ -160,6 +162,16 @@ static void *http_request_thread(void *arg)
 	error(0, "Failed to get request from client, killing thread");
 	return NULL;
     }
+    ret = 0;
+    if (http_allow_ip != NULL)
+	ret = check_ip(http_allow_ip, client_ip, NULL);
+    if (ret < 1 && http_deny_ip != NULL)
+	if (check_ip(http_deny_ip, client_ip, NULL) == 1) {
+	    warning(0, "Non-allowed connect tried from <%s>, ignored",
+		    client_ip);
+	    goto done;
+	}
+
     /* print client information */
 
     info(0, "smsbox: Get HTTP request < %s > from < %s >", path, client_ip);
@@ -177,6 +189,7 @@ static void *http_request_thread(void *arg)
     if (httpserver_answer(client, answer) == -1)
 	error(0, "Error responding to client. Too bad.");
 
+done:    
     /* answer closes the socket */
     free(path);
     free(args);
@@ -252,6 +265,10 @@ static void init_smsbox(Config *cfg)
 	    sendsms_port = atoi(p);
 	if ((p = config_get(grp, "sms-length")) != NULL)
 	    sms_len = atoi(p);
+        if ((p = config_get(grp, "http-allowed-hosts")) != NULL)
+            http_allow_ip = p;
+        if ((p = config_get(grp, "http-denied-hosts")) != NULL)
+            http_deny_ip = p;
 	if ((p = config_get(grp, "heartbeat-freq")) != NULL)
 	    heartbeat_freq = atoi(p);
 	if ((p = config_get(grp, "pid-file")) != NULL)
@@ -264,6 +281,9 @@ static void init_smsbox(Config *cfg)
 	    lvl = atoi(p);
 	grp = config_next_group(grp);
     }
+    if (http_allow_ip != NULL && http_deny_ip == NULL)
+	warning(0, "Allow IP-string set without any IPs denied!");
+
     if (global_sender != NULL)
 	info(0, "Service global sender set as '%s'", global_sender);
     
@@ -388,7 +408,7 @@ int main(int argc, char **argv)
 {
     int cf_index;
     URLTranslationList *translations;
-    
+
     cf_index = get_and_set_debugs(argc, argv, NULL);
 
     warning(0, "Gateway SMS BOX version %s starting", VERSION);

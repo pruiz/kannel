@@ -18,6 +18,18 @@
 #	(the actual url is http://sms.box.host:port/cgi-bin/...)
 #	if not set or 0 or less, no HTTP sendsms supported
 #
+# http-allowed-hosts = (host IP list)
+#	this is a list of hosts which are allowed to request 'sendsms'
+#	Hosts are given in character string, each entry separated with 
+#	';'. Wild card '*' is allowed in a place of any single number, 
+#	like "*.*.*.*" or "10.20.30.*;120.30.40.50" 
+#
+# http-denied-hosts = (host IP list)
+#	as with allowed, but these hosts are denied to connect. The
+#	order of checking is: 1) allowed-hosts 2) denied-hosts. If the
+#	IP is not denied, it is allowed. So denied-hosts = "*.*.*.*" is
+#	a common choice, with allowed-hosts then used to accept users
+#
 # sms-length = (number)
 #	maximum length of one SMS message. Defaults to 160 characters
 #
@@ -50,6 +62,7 @@ bearerbox-host = localhost
 bearerbox-port = 13001
 # sendsms-port = 22022
 sms-length = 160
+heartbeat-freq = 30
 # pid-file = "/tmp/smsbox.pid"
 # log-file = "/tmp/smsbox.log"
 log-level = 0
