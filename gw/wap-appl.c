@@ -89,6 +89,7 @@ struct request_data {
     long session_id;
     Octstr *url;
     long x_wap_tod;
+    List *request_headers;
 };
 static Dict *id_to_request_data = NULL;
 
@@ -477,7 +478,8 @@ static void return_unit_reply(WAPAddrTuple *tuple, long transaction_id,
  */
 static void return_reply(int status, Octstr *content_body, List *headers,
     	    	    	 long sdu_size, WAPEvent *orig_event,
-			 long session_id, Octstr *url, int x_wap_tod)
+			 long session_id, Octstr *url, int x_wap_tod,
+			 List *request_headers)
 {
     struct content content;
 
@@ -528,6 +530,24 @@ static void return_reply(int status, Octstr *content_body, List *headers,
 
     if (content.body == NULL)
 	content.body = octstr_create("");
+
+    /*
+     * Deal with otherwise wap-aware servers that return text/html error
+     * messages if they report an error.
+     * (Normally we leave the content type alone even if the client doesn't
+     * claim to accept it, because the server might know better than the
+     * gateway.)
+     */
+    if (http_status_class(status) != HTTP_STATUS_SUCCESSFUL &&
+        !http_type_accepted(request_headers, octstr_get_cstr(content.type))) {
+        warning(0, "WSP: Content type <%s> not supported by client,"
+                   " deleting body.", octstr_get_cstr(content.type));
+	octstr_destroy(content.body);
+	content.body = octstr_create("");
+	octstr_destroy(content.type);
+	content.type = octstr_create("text/plain");
+	http_header_mark_transformation(headers, content.body, content.type);
+    }
 
     /*
      * If the response is too large to be sent to the client,
@@ -596,7 +616,8 @@ static void return_replies_thread(void *arg)
 	gw_assert(p != NULL);
 	octstr_destroy(idstr);
 	return_reply(status, body, headers, p->client_SDU_size,
-		     p->event, p->session_id, p->url, p->x_wap_tod);
+		     p->event, p->session_id, p->url, p->x_wap_tod,
+		     p->request_headers);
     	gw_free(p);
     	octstr_destroy(final_url);
     }
@@ -696,10 +717,10 @@ static void start_fetch(WAPEvent *event)
 	resp_headers = list_create();
 	http_header_add(resp_headers, "Content-Type", "text/vnd.wap.wml");
 	content_body = octstr_create(HEALTH_DECK);
-	http_destroy_headers(actual_headers);
 	octstr_destroy(request_body);
 	return_reply(ret, content_body, resp_headers, client_SDU_size,
-		     event, session_id, url, x_wap_tod);
+		     event, session_id, url, x_wap_tod, actual_headers);
+	http_destroy_headers(actual_headers);
     } else if (octstr_str_compare(method, "GET") == 0 ||
                octstr_str_compare(method, "POST") == 0) {
 	if (request_body != NULL && octstr_str_compare(method, "GET") == 0) {
@@ -709,7 +730,6 @@ static void start_fetch(WAPEvent *event)
 
 	mutex_lock(http_reply_update);
 	id = http_start_request(caller, url, actual_headers, request_body, 0);
-	http_destroy_headers(actual_headers);
 	octstr_destroy(request_body);
 	
 	idstr = octstr_format("%ld", id);
@@ -719,6 +739,7 @@ static void start_fetch(WAPEvent *event)
 	p->session_id = session_id;
 	p->url = url;
 	p->x_wap_tod = x_wap_tod;
+	p->request_headers = actual_headers;
 	dict_put(id_to_request_data, idstr, p);
 	octstr_destroy(idstr);
 	mutex_unlock(http_reply_update);
@@ -727,10 +748,10 @@ static void start_fetch(WAPEvent *event)
 	content_body = octstr_create("");
 	resp_headers = NULL;
 	ret = HTTP_NOT_IMPLEMENTED;
-	http_destroy_headers(actual_headers);
 	octstr_destroy(request_body);
 	return_reply(ret, content_body, resp_headers, client_SDU_size,
-		     event, session_id, url, x_wap_tod);
+		     event, session_id, url, x_wap_tod, actual_headers);
+	http_destroy_headers(actual_headers);
     }
 }
 
