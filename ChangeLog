@@ -1,5 +1,11 @@
 2001-01-10  Lars Wirzenius  <liw@iki.fi>
 
+    	* gwlib/octstr.c: Implemented %p in octstr_format.
+
+	* test/test_octstr_format.c: Related changes.
+
+2001-01-10  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/log.c: Made info() use octstr_format as well. All places
 	that call info() have been checked manually. In the process, found
 	a couple of bugs, see below.

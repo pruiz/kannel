@@ -1810,6 +1810,7 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     char tmpfmt[1024];
     char tmpbuf[1024];
     char c;
+    void *p;
 
     new = NULL;
 
@@ -1891,6 +1892,12 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
             n = (long) strlen(s);
         new = octstr_create_from_data(s, n);
         break;
+
+    case 'p':
+    	p = va_arg(*args, void *);
+	sprintf(tmpfmt, "%p", p);
+	new = octstr_create(tmpfmt);
+	break;
 
     case 'S':
         new = octstr_duplicate(va_arg(*args, Octstr *));
