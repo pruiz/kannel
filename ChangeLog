@@ -1,3 +1,41 @@
+Sun Apr  9 00:33:59 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Memory leak fixes.
+
+	* gw/wapbox.c: Destroy received messages after they have been
+	processed. Also destroy event created from the incoming message
+	if no WTP machine for processing it can be found.
+
+	* gw/wsp.c: Destroy handled events in wsp_handle_event. Destroy
+	temporary Octstrs for holding the binary data of capabilities and
+	headers.
+
+	* gw/wsp_http.c: One more place where the content type returned by
+	http_get_u wasn't destroyed. Also, the event wsp_http_thread gets
+	as an argument is destroyed properly, and (bugfix!) not used after
+	being destroyed.
+
+	* gw/wsp_state-decl.h: Correctly duplicate data for event to be
+	sent to wsp_http_thread.
+
+	* gw/wtp_tid.c: Removed comments from around cache_item_destroy
+	and used it to destroy the tid cache at shutdown.
+
+	* gw/wtp_timer.c: wtp_timer_destroy and wtp_timer_stop now destroy
+	the event associated with the timer.
+
+	* Also made some other changes:
+
+	* gw/wtp_send.c: Removed unnecessary error checkings for packing
+	functions.
+
+	* gw/wtp_timer.c: Made the global variable `timers' into a static.
+
+	* gwlib/http.[ch]: Wrote header_duplicate.
+
+	* gwlib/octstr.c: octstr_duplicate now returns NULL for a NULL
+	argument, instead of crashing.
+
 Sat Apr  8 22:31:45 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/smsbox.c: Added informational message that smsbox is

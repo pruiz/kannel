@@ -4,12 +4,12 @@
  * Define GWMEM_CHECK to enable memory allocation checking.
  */
 
-#ifndef GWMEM_TRACE
-#define GWMEM_TRACE 0
+#ifndef GWMEM_CHECK
+#define GWMEM_CHECK 1
 #endif
 
-#ifndef GWMEM_CHECK
-#define GWMEM_CHECK 0
+#ifndef GWMEM_TRACE
+#define GWMEM_TRACE 1
 #endif
 
 #ifndef GWMEM_FILL

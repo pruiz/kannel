@@ -20,7 +20,7 @@
 /* Wtp timers queue, contains all active timers.  The list's lock is
  * used for operations on its elements.  No list operations should be
  * done without explicit list_lock and list_unlock. */
-List *timers;
+static List *timers;
 
 /* The events triggered by elapsed timers are collected in these
  * structures, so that they can be handled in a separate loop.
@@ -83,6 +83,7 @@ void wtp_timer_destroy(WTPTimer *timer) {
 
 	list_unlock(timers);
 	
+	wtp_event_destroy(timer->event);
 	gw_free(timer);
 }
 
@@ -111,6 +112,8 @@ void wtp_timer_stop(WTPTimer *timer) {
 	list_lock(timers);
 
 	timer->interval = 0;
+	wtp_event_destroy(timer->event);
+	timer->event = NULL;
 #if 0
 	debug("wap.wtp.timer", 0, "Timer %p stopped at %ld.", (void *) timer,
 		(long) time(NULL));

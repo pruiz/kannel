@@ -478,6 +478,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                                            fourth_octet);
 
                      if (first_segment(event)) {
+			gw_assert(segments->event == NULL);
                         segments->event = duplicate_event(event);
                         wtp_event_destroy(event);
                         mutex_unlock(segments->lock);
@@ -1282,6 +1283,7 @@ static WTPEvent *unpack_invoke_flags(WTPEvent *event, Msg *msg, long tid,
 static WTPSegment *add_segment_to_message(long tid, Octstr *data, unsigned char 
                                           position){
 
+/* XXX static variable? probably not thread safe --liw */
        static WTPSegment *first = NULL;
        WTPSegment *previous = NULL,
                   *next = NULL,

@@ -362,7 +362,7 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 		}
 
 	end:
-#if 0
+#if 1
 		wsp_event_destroy(current_event);
 #endif
 		current_event = remove_from_event_queue(sm);
@@ -544,6 +544,9 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 
 	    m->http_headers = hdrs;
 	}
+
+        octstr_destroy(caps);
+	octstr_destroy(headers);
 	return 0;
 }
 

@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
 #if 0
         (void) start_thread(1, timer_thread, 0, 0);
 #endif
-	while (run_status == running) {
+	for (; run_status == running; msg_destroy(msg)) {
 		msg = msg_receive(bbsocket);
 		if (msg == NULL)
 			break;
@@ -332,8 +332,10 @@ int main(int argc, char **argv) {
                 if (wtp_event == NULL)
                    continue;
 		wtp_machine = wtp_machine_find_or_create(msg, wtp_event);
-                if (wtp_machine == NULL)
+                if (wtp_machine == NULL) {
+		   wtp_event_destroy(wtp_event);
                    continue;
+		}
 	        wtp_handle_event(wtp_machine, wtp_event);
 	}
 	list_remove_producer(queue);

@@ -258,10 +258,10 @@ ROW(HOLDING,
 		new_event = wsp_event_create(S_MethodInvoke_Res);
 		new_event->S_MethodInvoke_Res.session = sm;
 		new_event->S_MethodInvoke_Res.machine = e->machine;
-		new_event->S_MethodInvoke_Res.url = e->url;
+		new_event->S_MethodInvoke_Res.url = octstr_duplicate(e->url);
 		new_event->S_MethodInvoke_Res.method = Get_PDU;
 		new_event->S_MethodInvoke_Res.http_headers = 
-			e->http_headers;
+			header_duplicate(e->http_headers);
 		new_event->S_MethodInvoke_Res.server_transaction_id = 
 			new_server_transaction_id();
 		(void) start_thread(1, wsp_http_thread, new_event, 0);

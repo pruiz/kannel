@@ -44,9 +44,9 @@ static Tid_cache tid_cache =
  * Prototypes of internal functions
  */
 static WTPCached_tid *cache_item_create_empty(void);
-/*
 static void cache_item_destroy(WTPCached_tid *item);
 
+/*
 static void cache_item_dump(WTPCached_tid *item);
 */
 static int last_tid_exists(WTPMachine *machine);
@@ -66,6 +66,13 @@ void wtp_tid_cache_init(void) {
 }
 
 void wtp_tid_cache_shutdown(void) {
+     WTPCached_tid *p;
+
+     while (tid_cache.first != NULL) {
+         p = tid_cache.first;
+	 tid_cache.first = tid_cache.first->next;
+	 cache_item_destroy(p);
+     }
      mutex_destroy(tid_cache.lock);
 }
 
@@ -185,7 +192,6 @@ static WTPCached_tid *cache_item_create_empty(void){
 
        return item;
 }
-#ifdef next
 static void cache_item_destroy(WTPCached_tid *item){
 
        octstr_destroy(item->destination_address);
@@ -193,6 +199,7 @@ static void cache_item_destroy(WTPCached_tid *item){
        gw_free(item);
 }
 
+#ifdef next
 static void cache_item_dump(WTPCached_tid *item){
 
        debug("wap.wtp.tid", 0, "WTP_TID: dumping of a cache item starts");

@@ -246,7 +246,7 @@ void *wsp_http_thread(void *arg) {
 	event = arg;
 	wtp_sm = event->S_MethodInvoke_Res.machine;
 	sm = event->S_MethodInvoke_Res.session;
-	wsp_dispatch_event(wtp_sm, event);
+	wsp_dispatch_event(wtp_sm, wsp_event_duplicate(event));
 		/* XXX shouldn't this duplicate the event? */
 
 	wsp_http_map_url(&event->S_MethodInvoke_Res.url);
@@ -319,10 +319,14 @@ void *wsp_http_thread(void *arg) {
 	header_dump(headers);
 #endif
 
+	type = NULL;
+	data = NULL;
 	ret = http_get_u(url, &type, &data, &size, headers);
 	if (ret == -1) {
 		error(0, "WSP: http_get failed, oops.");
 		status = 500; /* Internal server error; XXX should be 503 */
+		gw_free(data);
+		gw_free(type);
 		type = gw_strdup("text/plain");
 	} else {
 		info(0, "WSP: Fetched <%s> (%s)", url, type);
@@ -350,9 +354,10 @@ void *wsp_http_thread(void *arg) {
 			}
 		}
 
-		if (i < num_converters)
+		if (i < num_converters) {
+			gw_free(type);
 			type = gw_strdup(converters[i].result_type);
-		else if (converter_failed) {
+		} else if (converter_failed) {
 			status = 500; /* XXX */
 			warning(0, "WSP: All converters for `%s' failed.",
 					type);
@@ -390,7 +395,7 @@ void *wsp_http_thread(void *arg) {
 
 	wsp_dispatch_event(event->S_MethodInvoke_Res.machine, e);
 
-#if 0
+#if 1
 	wsp_event_destroy(event);
 #endif
 	gw_free(type);

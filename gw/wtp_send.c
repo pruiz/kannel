@@ -165,10 +165,6 @@ void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine,
      msg = add_datagram_address(msg, machine);
      msg = pack_abort(msg, abort_type, abort_reason, event);
 
-     if (msg == NULL){
-        return;
-     }
-
      put_msg_in_queue(msg);
 
      return;
@@ -188,10 +184,6 @@ void wtp_do_not_start(long abort_type, long abort_reason, Address *address, int 
      debug("wap.wtp", 0, "WTP: do_not_start: address added");
      msg = pack_stop(msg, abort_type, abort_reason, tid);
 
-     if (msg == NULL){
-        return;
-     }
-
      put_msg_in_queue(msg);
      debug("wap.wtp.send", 0, "WTP: do_not_start: aborted");
 
@@ -205,10 +197,6 @@ void wtp_send_ack(long ack_type, WTPMachine *machine, WTPEvent *event){
      msg = msg_create(wdp_datagram);
      msg = add_datagram_address(msg, machine);
      msg = pack_ack(msg, ack_type, machine, event);
-
-     if (msg == NULL){
-        return;
-     }
 
      put_msg_in_queue(msg);
      debug("wap.wtp.send", 0, "WTP_SEND: message put into the queue");  
@@ -226,10 +214,6 @@ void wtp_send_group_ack(Address *address, int tid, int retransmission_status,
      msg = pack_group_ack(msg, tid, retransmission_status, 
                           packet_sequence_number);
 
-     if (msg == NULL){
-        return;
-     }
-
      put_msg_in_queue(msg); 
 
      return;
@@ -244,10 +228,6 @@ void wtp_send_negative_ack(Address *address, int tid, int retransmission_status,
      msg = add_segment_address(msg, address);
      msg = pack_negative_ack(msg, tid, retransmission_status, segments_missing,
                           missing_segments);
-
-     if (msg == NULL){
-        return;
-     }
 
      put_msg_in_queue(msg); 
 
