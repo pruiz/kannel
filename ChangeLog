@@ -1,5 +1,11 @@
 2001-02-07  Kalle Marjola  <rpr@wapit.com>
 
+	* utils/accesslog_parser.pl: added simple perl script to read
+	(SMS) access log and print statistics out of it, based on hours.
+	Uses the new format printed out by bb_smscconn.c
+
+2001-02-07  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bearerbox.c: Bugfix. Fixed memory leak caused by access log /
 	new config
 
