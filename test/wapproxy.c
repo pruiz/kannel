@@ -99,7 +99,7 @@
 
 #include "gwlib/gwlib.h"
 #include "msg.h"
-#include "bearerbox.h"
+//#include "bearerbox.h"
 #include "shared.h"
 #include "wap/wap.h"
 #include "wap/wtp.h"
@@ -475,11 +475,11 @@ error:
  
 
 /*-------------------------------------------------------------
- * public functions
+ * main calling functions
  *
  */
 
-int udp_start(Cfg *cfg)
+static int udp_start(Cfg *cfg)
 {
 
     if (udp_running) return -1;
@@ -497,7 +497,7 @@ int udp_start(Cfg *cfg)
 }
 
 
-Udpc *udpc_find_mapping(Msg *msg, int inbound)
+static Udpc *udpc_find_mapping(Msg *msg, int inbound)
 {
     int i;
     Udpc *udpc;
@@ -527,7 +527,7 @@ Udpc *udpc_find_mapping(Msg *msg, int inbound)
  * this function receives an WDP message and adds it to
  * corresponding outgoing_list.
  */
-int udp_addwdp_from_server(Msg *msg)
+static int udp_addwdp_from_server(Msg *msg)
 {
     Udpc *udpc;
     Octstr *os;
@@ -578,7 +578,7 @@ int udp_addwdp_from_server(Msg *msg)
  * this function receives an WDP message and checks if a UDP
  * service for this client has to be created
  */
-int udp_addwdp_from_client(Msg *msg)
+static int udp_addwdp_from_client(Msg *msg)
 {
     Udpc *udpc;
     Octstr *map_addr;
@@ -629,7 +629,7 @@ int udp_addwdp_from_client(Msg *msg)
 }
 
 
-int udp_shutdown(void)
+static int udp_shutdown(void)
 {
     if (!udp_running) return -1;
 
@@ -639,7 +639,7 @@ int udp_shutdown(void)
 }
 
 
-int udp_die(void)
+static int udp_die(void)
 {
     Udpc *udpc;
 
@@ -657,24 +657,6 @@ int udp_die(void)
     udp_running = 0;
     
     return 0;
-}
-
-
-int udp_outgoing_queue(void)
-{
-    int i, q = 0;
-    Udpc *udpc;
-
-    if (!udp_running || udpc_list == NULL)
-	return 0;
-
-    list_lock(udpc_list);
-    for (i=0; i < list_len(udpc_list); i++) {
-	udpc = list_get(udpc_list, i);
-	q += list_len(udpc->outgoing_list);
-    }
-    list_unlock(udpc_list);
-    return q;
 }
 
 
@@ -827,6 +809,8 @@ int main(int argc, char **argv)
 
     while (list_consume(flow_threads) != NULL)
 	;
+
+    udp_shutdown();
 
     list_remove_producer(outgoing_wdp);
 

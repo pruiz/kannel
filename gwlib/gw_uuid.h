@@ -30,10 +30,10 @@ extern "C" {
 #endif
 
 /* initialize uuid library */
-void uuid_init();
+void uuid_init(void);
 
 /* shutdown uuid library */
-void uuid_shutdown();
+void uuid_shutdown(void);
 
 /* clear.c */
 void uuid_clear(uuid_t uu);

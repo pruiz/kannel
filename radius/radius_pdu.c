@@ -174,6 +174,7 @@ void radius_pdu_destroy(RADIUS_PDU *pdu)
     gw_free(pdu);
 }
 
+/*
 static void radius_type_append(Octstr **os, int type, int pmin, int pmax, 
                                Octstr *value) 
 {
@@ -187,7 +188,6 @@ static void radius_type_append(Octstr **os, int type, int pmin, int pmax,
         case t_string:
             octstr_append(*os, value);
             break;
-        /*
         case t_ipaddr:
             ret = octstr_create("");
             for (i = 0; i < 4; i++) {
@@ -198,12 +198,12 @@ static void radius_type_append(Octstr **os, int type, int pmin, int pmax,
                 octstr_destroy(b);
             }
             break;
-        */
         default:
             panic(0, "RADIUS: Attribute type %d does not exist.", type);
             break;
     }
 }
+*/
 
 static Octstr *radius_attr_pack(RADIUS_PDU *pdu) 
 {

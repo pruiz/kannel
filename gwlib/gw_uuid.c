@@ -71,7 +71,7 @@ struct uuid {
  */
 static void uuid_pack(const struct uuid *uu, uuid_t ptr);
 static void uuid_unpack(const uuid_t in, struct uuid *uu);
-static int get_random_fd();
+static int get_random_fd(void);
 
 
 #ifdef HAVE_SRANDOM
@@ -81,7 +81,7 @@ static int get_random_fd();
 
 
 
-void uuid_init()
+void uuid_init(void)
 {
     /* 
      * open random device if any.
@@ -92,7 +92,7 @@ void uuid_init()
 }
 
 
-void uuid_shutdown()
+void uuid_shutdown(void)
 {
     int fd = get_random_fd();
 

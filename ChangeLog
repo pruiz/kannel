@@ -1,4 +1,8 @@
 2003-12-17  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_boxc.c, gwlib/gw_uuid.[ch], gwlib/utils.[ch], radius/radius_pdu.c,
+      test/wapproxy.c: fixed strict compiler warnings.
+
+2003-12-17  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smpp_pdu.c: making compiler and Alex happy again ;)
 
 2003-12-16  Stipe Tolj  <tolj@wapme-systems.de>

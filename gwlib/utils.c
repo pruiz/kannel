@@ -458,7 +458,7 @@ int roundup_div(int a, int b)
 }
 
 
-unsigned long long gw_generate_id()
+unsigned long long gw_generate_id(void)
 {
     /* create a 64 bit unique Id by putting a 32 bit epoch time value
      * and a 32 bit random value together */
