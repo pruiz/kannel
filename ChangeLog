@@ -1,3 +1,12 @@
+Wed May  3 15:04:57 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* contrib/html2wml.pl: Added script to convert WML to HTML,
+	by Taneli Leppä. This is not used yet - Kannel lacks a way to
+	add external converters (see the status page for the relevant
+	project). But I guess I should archive it in my mail inbox.
+	
+	* README.src: documented the contrib directory.
+
 2000-05-03  Richard Braakman  <dark@wapit.com>
 
 	* doc/CodingStyle: Added note about not putting large arrays on

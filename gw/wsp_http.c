@@ -306,7 +306,7 @@ void *wsp_http_thread(void *arg) {
 	octstr_destroy(final_url);
 
 	if (ret != HTTP_OK) {
-		error(0, "WSP: http_get failed, oops.");
+		error(0, "WSP: http2_get_real failed, oops.");
 		status = 500; /* Internal server error; XXX should be 503 */
 		type = octstr_create("text/plain");
 	} else {
