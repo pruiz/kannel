@@ -1,3 +1,8 @@
+2002-05-02: Aarno Syvänen <aarno@wiral.com>
+    * gw/bb_smscconn.c: Dropped outgoing sms queue test when handling para-
+    meter maximum-queue-length. 
+    * doc/userguide/userguide.xml: Documented the change.
+
 2002-05-01  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * configure.in: added --enable-mysql besides --with-mysql; added 
       date to VERSION, read from CVS/Entries instead of newest file in .;
