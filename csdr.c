@@ -122,8 +122,6 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	struct sockaddr_in cliaddr, servaddr;
 	socklen_t len, servlen;
 
-/*	debug(0, "CSDR: csdr_get_message: starting"); */
-
 	/* Initialize datasets. */
 	memset(data, 0, sizeof(data));
 	memset(client_ip, 0, sizeof(client_ip));
@@ -168,8 +166,6 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	item->msg->wdp_datagram.destination_address = octstr_create(server_ip);
 	item->msg->wdp_datagram.destination_port    = atoi(server_port);
 	item->msg->wdp_datagram.user_data = octstr_create_from_data(data, length);
-
-	debug(0, "CSDR: csdr_get_message: done");
 
 	return item;
 

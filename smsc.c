@@ -172,6 +172,45 @@ error:
 }
 
 
+int smscenter_submit_msg(SMSCenter *smsc, MSG *msg) {
+	if (smscenter_lock(smsc) == -1)
+		return -1;
+
+	switch (smsc->type) {
+	case SMSC_TYPE_FAKE:
+		if (fake_submit_msg(smsc->socket, msg) == -1)
+			goto error;
+		break;
+
+	case SMSC_TYPE_CIMD:
+		if(cimd_submit_msg(smsc, msg) == -1)
+			goto error;
+		break;
+
+	case SMSC_TYPE_EMI:
+	case SMSC_TYPE_EMI_IP:
+		if(emi_submit_msg(smsc, msg) == -1)
+			goto error;
+		break;
+
+	case SMSC_TYPE_SMPP_IP:
+		if(smpp_submit_msg(smsc, msg) == -1)
+			goto error;
+		break;
+
+	default:
+		goto error;
+	}
+
+	smscenter_unlock(smsc);
+	return 0;
+
+error:
+	smscenter_unlock(smsc);
+	return -1;
+}
+
+
 int smscenter_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg) {
 	int ret;
 

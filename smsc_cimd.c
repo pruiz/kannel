@@ -510,6 +510,15 @@ error:
 	return -1;
 }
 
+
+int cimd_submit_msg(SMSCenter *smsc, MSG *msg) {
+	return -1;
+}
+
+int cimd_receive_msg(SMSCenter *smsc, MSG **msg) {
+	return -1;
+}
+
 /******************************************************************************
 * In(f)ternal Functions
 */

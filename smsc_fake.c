@@ -157,3 +157,11 @@ int fake_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg) {
 	smscenter_remove_from_buffer(smsc, newline - smsc->buffer + 1);
 	return 1;
 }
+
+int fake_submit_msg(SMSCenter *smsc, MSG *msg) {
+	return -1;
+}
+
+int fake_receive_msg(SMSCenter *smsc, MSG **msg) {
+	return -1;
+}

@@ -353,6 +353,13 @@ error:
 	return -1;
 }
 
+int emi_submit_msg(SMSCenter *smsc, MSG *msg) {
+	return -1;
+}
+
+int emi_receive_msg(SMSCenter *smsc, MSG **msg) {
+	return -1;
+}
 
 /******************************************************************************
 * In(f)ternal functions

@@ -432,6 +432,14 @@ error:
 	return -1;
 }
 
+int smpp_submit_msg(SMSCenter *smsc, MSG *msg) {
+	return -1;
+}
+
+int smpp_receive_msg(SMSCenter *smsc, MSG **msg) {
+	return -1;
+}
+
 int smpp_pending_smsmessage(SMSCenter *smsc) {
 
 	Octstr *data = NULL;
