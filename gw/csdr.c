@@ -133,6 +133,7 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	FD_SET(router->fd, &rset);
 
 	/* Maximum size of UDP datagram == 64*1024 bytes. */
+	len = sizeof(cliaddr);
 	length = recvfrom(router->fd, data, sizeof(data), 0, &cliaddr, &len);
 	if(length==-1) {
 		if(errno==EAGAIN) {
@@ -142,7 +143,6 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 		error(errno, "Error receiving datagram.");
 		goto error;
 	}
-	debug(0, "csdr_get_message: recvfrom returned %d", length);
 
 	getsockname(router->fd, (struct sockaddr*)&servaddr, &servlen);
 
