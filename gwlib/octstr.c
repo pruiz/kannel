@@ -1202,7 +1202,7 @@ void octstr_insert_data(Octstr *ostr, long pos, const char *data, long len)
         return;
 
     octstr_grow(ostr, ostr->len + len);
-    if (ostr->len > pos) {	/* only if neccessary */
+    if (ostr->len > pos) {	/* only if neccessary*/
         memmove(ostr->data + pos + len, ostr->data + pos, ostr->len - pos);
     }
     memcpy(ostr->data + pos, data, len);
@@ -1212,6 +1212,21 @@ void octstr_insert_data(Octstr *ostr, long pos, const char *data, long len)
     seems_valid(ostr);
 }
 
+void octstr_insert_char(Octstr *ostr, long pos, const char c)
+{
+    seems_valid(ostr);
+    gw_assert(!ostr->immutable);
+    gw_assert(pos <= ostr->len);
+    
+    octstr_grow(ostr, ostr->len + 1);
+    if (ostr->len > pos)
+        memmove(ostr->data + 1, ostr->data + pos, ostr->len - pos);
+    memcpy(ostr->data + pos, &c, 1);
+    ostr->len += 1;
+    ostr->data[ostr->len] = '\0';
+    
+    seems_valid(ostr);
+}
 
 void octstr_append_data(Octstr *ostr, const char *data, long len)
 {
@@ -2024,8 +2039,8 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
 
 Octstr *octstr_format(const char *fmt, ...)
 {
-    va_list args;
     Octstr *os;
+    va_list args;
 
     va_start(args, fmt);
     os = octstr_format_valist(fmt, args);
@@ -2034,7 +2049,7 @@ Octstr *octstr_format(const char *fmt, ...)
 }
 
 
-Octstr *octstr_format_valist(const char *fmt, va_list args)
+Octstr *octstr_format_valist_real(const char *fmt, va_list args)
 {
     Octstr *os;
     size_t n;

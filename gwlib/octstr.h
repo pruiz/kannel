@@ -340,6 +340,11 @@ void octstr_insert(Octstr *ostr1, Octstr *ostr2, long pos);
  */
 void octstr_insert_data(Octstr *ostr, long pos, const char *data, long len);
 
+/*
+ * Similar as previous, expect that now a single character is inserted.
+ */
+void octstr_insert_char(Octstr *ostr, long pos, const char c);
+
 
 /*
  * Append characters from C array at the tail of an octet string.
@@ -544,20 +549,19 @@ void octstr_append_decimal(Octstr *ostr, long value);
  *				inside the string is included in the
  *				output
  *
- *                      E       Octstr *
- *                              output as character string, except that
- *                              contents are URL-encoded when need to. Note
- *                              that trunctae is done afterwards and can
- *                              cut escape '%EE' in half
+ *          E   Octstr *
+ *              output as character string, except that
+ *              contents are URL-encoded when need to. Note
+ *              that trunctae is done afterwards and can
+ *              cut escape '%EE' in half
  */
 Octstr *octstr_format(const char *fmt, ...);
-
 
 /*
  * Like octstr_format, but takes the argument list as a va_list.
  */
-Octstr *octstr_format_valist(const char *fmt, va_list args);
-
+Octstr *octstr_format_valist_real(const char *fmt, va_list args);
+#define octstr_format_valist(fmt, args) gw_claim_area(octstr_format_valist_real(fmt, args))
 
 /*
  * Like octstr_format, but appends output to an existing octet
