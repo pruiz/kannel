@@ -1,6 +1,15 @@
+2000-11-21  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/http.c: Made persistent connection detection work with
+	HTTP/1.0 responses and responses with the "Connection: close"
+	header. Also removed an extra "Using proxy" report.
+
+	* ChangeLog: Indented the first line of the previous log entry
+	properly. (8, not 4)
+
 2000-11-21  Yann Muller  <ymuller@3glab.com>
 
-    * gwlib/utils.[ch], gw/smsbox_req.c: moved roundup_div() from
+	* gwlib/utils.[ch], gw/smsbox_req.c: moved roundup_div() from
 	smsbox_req.c to utils.c so it can be used from other files.
 	
 	* gw/smsc_at.c: fix for 7 bit encoded PDU's with a UDH.

@@ -170,8 +170,6 @@ void http_use_proxy(Octstr *hostname, int port, List *exceptions,
 
     http_close_proxy();
     mutex_lock(proxy_mutex);
-    debug("gwlib.http", 0, "HTTP: Using proxy `%s:%d'.",
-    	  octstr_get_cstr(hostname), port);
 
     proxy_hostname = octstr_duplicate(hostname);
     proxy_port = port;
@@ -248,7 +246,8 @@ typedef struct {
 	invalid_body_format,
 	transaction_done
     } state;
-    int status;
+    long status;
+    int persistent;
     List *response_headers;
     Octstr *response_body;
     Connection *conn;
@@ -275,6 +274,7 @@ static HTTPServer *server_create(HTTPCaller *caller, Octstr *url,
     trans->request_body = octstr_duplicate(body);
     trans->state = request_not_sent;
     trans->status = -1;
+    trans->persistent = 0;
     trans->response_headers = list_create();
     trans->response_body = octstr_create("");
     trans->conn = NULL;
@@ -593,64 +593,57 @@ error:
 
 
 /*
- * Parse the status line returned by an HTTP server and return the
- * status code. Return -1 if the status line was unparseable.
- */
-static int parse_status(Octstr *statusline)
-{
-    static char *versions[] = {
-        "HTTP/1.1 ",
-        "HTTP/1.0 ",
-    };
-    static int num_versions = sizeof(versions) / sizeof(versions[0]);
-    long status;
-    int i;
-
-    for (i = 0; i < num_versions; ++i) {
-        if (octstr_search(statusline,
-                          octstr_create_immutable(versions[i]),
-                          0) == 0)
-            break;
-    }
-    if (i == num_versions) {
-        error(0, "HTTP: Server responds with unknown HTTP version.");
-        debug("gwlib.http", 0, "Status line: <%s>",
-              octstr_get_cstr(statusline));
-        return -1;
-    }
-
-    if (octstr_parse_long(&status, statusline,
-                          strlen(versions[i]), 10) == -1) {
-        error(0, "HTTP: Malformed status line from HTTP server: <%s>",
-              octstr_get_cstr(statusline));
-        return -1;
-    }
-
-    return status;
-}
-
-
-
-/*
  * Read and parse the status response line from an HTTP server.
- * Return the parsed status code. Return -1 for error. Return 0 for
- * status code not yet available.
+ * Fill in trans->persistent and trans->status with the findings.
+ * Return -1 for error, 0 for status line not yet available, > 0 for OK.
  */
-static int client_read_status(Connection *conn)
+static int client_read_status(HTTPServer *trans)
 {
-    Octstr *line;
-    long status;
+    Octstr *line, *version;
+    long space;
 
-    line = conn_read_line(conn);
+    line = conn_read_line(trans->conn);
     if (line == NULL) {
-	if (conn_eof(conn))
+	if (conn_eof(trans->conn) || conn_read_error(trans->conn))
 	    return -1;
     	return 0;
     }
 
-    status = parse_status(line);
+    debug("gwlib.http", 0, "HTTP: Status line: <%s>", octstr_get_cstr(line));
+
+    space = octstr_search_char(line, ' ', 0);
+    if (space == -1)
+    	goto error;
+	
+    version = octstr_copy(line, 0, space);
+    if (octstr_compare(version, octstr_create_immutable("HTTP/1.1")) == 0)
+    	trans->persistent = 1;
+    else if (octstr_search(version, 
+    	    	    	   octstr_create_immutable("HTTP/1."), 0) == 0)
+    	trans->persistent = 0;
+    else {
+	octstr_destroy(version);
+    	goto error;
+    }
+    octstr_destroy(version);
+
+    octstr_delete(line, 0, space + 1);
+    space = octstr_search_char(line, ' ', 0);
+    if (space == -1)
+    	goto error;
+    octstr_truncate(line, space);
+	
+    if (octstr_parse_long(&trans->status, line, 0, 10) == -1)
+        goto error;
+
     octstr_destroy(line);
-    return status;
+    return 1;
+
+error:
+    error(0, "HTTP: Malformed status line from HTTP server: <%s>",
+	  octstr_get_cstr(line));
+    octstr_destroy(line);
+    return -1;
 }
 
 
@@ -670,8 +663,8 @@ static void handle_transaction(Connection *conn, void *data)
     while (trans->state != transaction_done) {
 	switch (trans->state) {
 	case reading_status:
-	    trans->status = client_read_status(trans->conn);
-	    if (trans->status < 0) {
+	    ret = client_read_status(trans);
+	    if (ret < 0) {
 		/*
 		 * Couldn't read the status from the socket. This may mean that 
 		 * the socket had been closed by the server after an idle 
@@ -688,7 +681,7 @@ static void handle_transaction(Connection *conn, void *data)
 		    list_produce(pending_requests, trans);
 		    return;
 		}
-	    } else if (trans->status > 0) {
+	    } else if (ret > 0) {
 		/* Got the status, go read headers next. */
 		trans->state = reading_headers;
 	    } else
@@ -743,7 +736,17 @@ static void handle_transaction(Connection *conn, void *data)
     }
 
     conn_unregister(trans->conn);
-    conn_pool_put(trans->conn, trans->host, trans->port);
+
+    h = http_header_find_first(trans->response_headers, "Connection");
+    if (h != NULL && octstr_compare(h, octstr_create_immutable("close")) == 0)
+	trans->persistent = 0;
+    octstr_destroy(h);
+
+    if (trans->persistent)
+        conn_pool_put(trans->conn, trans->host, trans->port);
+    else
+    	conn_destroy(trans->conn);
+
     trans->conn = NULL;
 
     h = get_redirection_location(trans);
