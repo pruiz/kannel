@@ -300,10 +300,11 @@ static Boxc *accept_boxc(int fd, int ssl)
     ip = host_ip(client_addr);
 
     if (is_allowed_ip(box_allow_ip, box_deny_ip, ip) == 0) {
-	info(0, "Box connection tried from denied host <%s>, disconnected",
-	     octstr_get_cstr(ip));
-	octstr_destroy(ip);
-	return NULL;
+        info(0, "Box connection tried from denied host <%s>, disconnected",
+                octstr_get_cstr(ip));
+        octstr_destroy(ip);
+        close(newfd);
+        return NULL;
     }
     newconn = boxc_create(newfd, ip, ssl);
     
