@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.31 2003-02-05 23:26:37 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.32 2003-02-05 23:54:11 stolj Exp $]
 
 Release:
 
@@ -70,6 +70,13 @@ RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
     Posted by: Alex Judd <ajudd@skywire.co.uk>
     Message-ID: <Pine.LNX.4.44.0202270925420.23783-100000@samsara.kgbinternet.com>
     Status: Bruno Rodrigues: I've disabled http keepalive until it gets fixed
+
+    * wap-push-user specific smsc-id routing via 'forced-smsc' directive
+      This would allows to route WAP Push messages that use SMS as transport bearer
+      to pre-defined smsc-id's that are running within the scope of bearerbox
+    Posted by: Stipe Tolj <tolj@wapme-systems.de>
+    Status: minor parts have been added. Transportation of the smsc-id accross the 
+            WAP layers have to be implemented now.
  
 Available Patches:
 
