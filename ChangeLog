@@ -31,7 +31,7 @@ Wed Jan 26 15:13:25 2000  Lars Wirzenius  <liw@wapit.com>
 	* wtp_send.c: Added parameter abort_reason to parameter list of 
 	wtp_send_abort (so that function call conforms closely with specs.)
 
-	* wtp.c: lukot funktioihin wtp_machine_mark_unused, wtp_machine_
+	* wtp.c: Locks added to functions wtp_machine_mark_unused, wtp_machine_
 	destroy, wtp_machine_create_empty and wtp_machine_find. 
 
 Wed Jan 26 12:01:17 2000  Lars Wirzenius  <liw@wapit.com>
