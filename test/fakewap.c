@@ -277,6 +277,10 @@ wap_msg_send( int fd, unsigned char * hdr,
     if (data != NULL)
 	octstr_append_data(datagram, data, data_len);
     
+#if 0
+    debug("fakewap", 0, "Sending WDP datagram:");
+    octstr_dump(datagram, 0);
+#endif
     ret = udp_sendto(fd, datagram, gateway_addr);
 
     if (ret == -1) {
@@ -480,7 +484,7 @@ client_session( void * arg)
         url_off = StoreVarInt( buf, url_len );
         memcpy( buf+url_off, url, url_len );
         ret = wap_msg_send( fd, WSP_Get, sizeof(WSP_Get), &tid, buf,
-                            url_len+3 );
+                            url_len+url_off );
         if (ret == -1) break;
 
         CONSTRUCT_EXPECTED_REPLY_HDR( reply_hdr, WSP_Reply, tid );

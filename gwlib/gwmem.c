@@ -91,9 +91,7 @@ const char *filename, long lineno) {
 void  gw_free_real(void *ptr, const char *filename, long lineno) {
 	gw_assert(initialized);
 	forget(ptr, filename, lineno);
-#if 0
 	free(ptr);
-#endif
 }
 
 

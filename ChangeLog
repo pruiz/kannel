@@ -1,3 +1,11 @@
+Fri Apr  7 17:25:39 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/gwmem.c: gw_free: Removed #if 0 around call to real free.
+	
+	* test/fakewap.c: Bugfix. Length of UDP packet was computed 
+	incorrectly, causing wapbox to get rather confused. (That's
+	also a bug, but will be fixed later.)
+
 2000-04-07 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp.c, wtp_state-decl.h: Included wtp_timer_destroy call in function
