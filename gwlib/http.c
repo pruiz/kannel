@@ -1220,14 +1220,7 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path)
     prefix = octstr_create_immutable("http://");
     prefix_len = octstr_len(prefix);
 
-    /* XXX: we change http to lowercase, but is that non-wanted
-     *      operation? I mean, we could just compare it incasensitively,
-     *      but as there are no operators to that, it would need some
-     *      extra work (copying octstrs) so I put it this way, althought it
-     *      means that URL is modified...
-     */
-    octstr_convert_range(url, 0, 4, tolower);
-    if (octstr_search(url, prefix, 0) != 0) {
+    if (octstr_case_search(url, prefix, 0) != 0) {
         error(0, "URL <%s> doesn't start with `%s'",
               octstr_get_cstr(url), octstr_get_cstr(prefix));
         return -1;

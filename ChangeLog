@@ -1,5 +1,11 @@
 2000-09-21  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/http.c: Use octstr_case_search instead of
+	octstr_convert_range and octstr_search to check whether a URL
+	begins with "http://".
+
+2000-09-21  Lars Wirzenius  <liw@iki.fi>
+
 	* checks/check_octstr.c: Wrote.
 	
 	* gwlib/octstr.[ch]: Wrote new function octstr_case_search.
