@@ -34,10 +34,10 @@ typedef struct {
  * Create a Mutex.
  */
 #ifdef MUTEX_STATS
-#define mutex_create() mutex_make_measured(mutex_create_real(), \
-    	    	    	    	    	   __FILE__, __LINE__)
+#define mutex_create() gw_claim_area(mutex_make_measured(mutex_create_real(), \
+    	    	    	    	    	                 __FILE__, __LINE__))
 #else
-#define mutex_create() mutex_create_real()
+#define mutex_create() gw_claim_area(mutex_create_real())
 #endif
 
 /*

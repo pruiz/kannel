@@ -1,3 +1,12 @@
+2001-05-17  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/thread.h: Wrap gw_claim_area() around mutex_create(),
+	so that the user of the mutex shows up in the report of leaked
+	or damaged memory areas.
+
+	* checks/check_fakewap.sh, checks/check_http.sh: Use port 8040
+	instead of 8080, it's more likely to be free.
+
 2001-06-17  Jarkko Kovala  <jarkko.kovala@iki.fi>
 
 	* doc/userguide/userguide.xml: Documentation for the

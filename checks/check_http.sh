@@ -5,7 +5,7 @@
 set -e
 
 times=1000
-port="8080"
+port="8040"
 url="http://localhost:$port/foo.txt"
 quiturl="http://localhost:$port/quit"
 loglevel=0
