@@ -46,6 +46,12 @@ static int unpack_uintvar(unsigned long *u, Octstr *os, int *off);
 static int unpack_octstr(Octstr **ret, int len, Octstr *os, int *off);
 
 static char *wsp_state_to_string(WSPState state);
+static long wsp_next_session_id(void);
+
+static Octstr *make_connectionmode_pdu(long type);
+static void append_uint8(Octstr *pdu, long n);
+static void append_uintvar(Octstr *pdu, long n);
+static Octstr *make_connectreply_pdu(long session_id);
 
 
 
@@ -114,6 +120,8 @@ void wsp_dispatch_event(WTPMachine *wtp_sm, WSPEvent *event) {
 	debug(0, "wsp_dispatch_event: machine created");
 	sm->client_address = octstr_duplicate(wtp_sm->source_address);
 	sm->client_port = wtp_sm->source_port;
+	sm->server_address = octstr_duplicate(wtp_sm->destination_address);
+	sm->server_port = wtp_sm->destination_port;
 	debug(0, "wsp_dispatch_event: machine initialized");
 	wsp_handle_event(sm, event);
 	debug(0, "wsp_dispatch_event: done");
@@ -191,8 +199,10 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 		debug(0, "wsp_handle_event: current state is %s, event is %s",
 			wsp_state_to_string(sm->state), 
 			wsp_event_name(current_event->type));
+#if 0
 		debug(0, "wsp_handle_event: event is:");
 		wsp_event_dump(current_event);
+#endif
 
 		done = 0;
 		#define STATE_NAME(name)
@@ -347,4 +357,57 @@ static char *wsp_state_to_string(WSPState state) {
 	#include "wsp_state-decl.h"
 	}
 	return "unknown wsp state";
+}
+
+
+static long wsp_next_session_id(void) {
+	static long next_id = 1;
+	return next_id++;
+}
+
+
+static Octstr *make_connectionmode_pdu(long type) {
+	Octstr *pdu;
+	
+	pdu = octstr_create_empty();
+	if (pdu == NULL)
+		panic(0, "octstr_create failed, out of memory");
+	append_uint8(pdu, type);
+	return pdu;
+}
+
+
+static void append_uint8(Octstr *pdu, long n) {
+	unsigned char c;
+	
+	c = (unsigned char) n;
+	if (octstr_insert_data(pdu, octstr_len(pdu), &c, 1) == -1)
+		panic(0, "octstr_insert_data failed, out of memory");
+}
+
+
+static void append_uintvar(Octstr *pdu, long n) {
+	if (n == 0)
+		append_uint8(pdu, 0);
+	else {
+		while ((n & 0xFE000000) == 0)
+			n <<= 7;
+		while ((n & 0x01FFFFFF) != 0) {
+			append_uint8(pdu, 0x80 | ((n & 0xFE000000) >> 25));
+			n <<= 7;
+		}
+		if (n != 0)
+			append_uint8(pdu, (n & 0xFE000000) >> 25);
+	}
+}
+
+
+static Octstr *make_connectreply_pdu(long session_id) {
+	Octstr *pdu;
+	
+	pdu = make_connectionmode_pdu(ConnectReply_PDU);
+	append_uintvar(pdu, session_id);
+	append_uintvar(pdu, 0);
+	append_uintvar(pdu, 0);
+	return pdu;
 }

@@ -11,12 +11,15 @@ SESSION_MACHINE({
 	INTEGER(state);
 	MUTEX(mutex);
 	INTEGER(n_methods);
+	INTEGER(session_id);
 	METHOD_POINTER(method_machine);
 	MUTEX(queue_lock);
 	EVENT_POINTER(event_queue_head);
 	EVENT_POINTER(event_queue_tail);
 	OCTSTR(client_address);
 	INTEGER(client_port);
+	OCTSTR(server_address);
+	INTEGER(server_port);
 	SESSION_POINTER(next);
 	INTEGER(locker);
 })

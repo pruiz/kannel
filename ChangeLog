@@ -1,3 +1,36 @@
+Mon Dec 13 18:43:54 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c: WSPMachine now remembers its own address and port as
+	well as the client's; also added session_id field.
+	
+	* gw/wsp.c: Wrote code for creating WSP PDU's. Now creates a
+	trivial ConnectionReply PDU.
+	
+	* gw/wsp_events-decl.h, gw/wsp_state-decl.h: Added field `machine'
+	to SConnectResponse event to store the machine to which the
+	SConnectResponse handler should send WTP requests. This is
+	a kludge but it was (temporarily) easier to do than fixing
+	wtp_find_or_create_machine.
+	
+	* gw/wsp_state-decl.h: Implemented most of SConnectResponse.
+	
+	* gw/wtp.c, gw/wtp.h: : Wrote function wtp_machine_create, which
+	gets all relevant information via the argument list. This is
+	mostly just reorganizing and renaming the internal name_machine
+	function.  This involved changing wtp_machine_find_or_create
+	as well.
+	
+	* gw/wtp.c: Removed locking of WTPMachine list, since it was
+	incorrect and needs to be re-done in a different way. The current
+	code has no locking, but at least it works if we're really,
+	really careful.
+	
+	* gw/wtp_send.c: Commented away the calls to msg_destroy and
+	octstr_destroy, since they caused segmentation faults (free
+	called to often, or too early). This means yet another memory
+	leak, but that's OK for now. We'll have to design a sensible
+	way of dealing with memory de-allocation anyway.
+
 Mon Dec 13 16:36:34 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile: test programs are also removed by "make clean".

@@ -23,6 +23,7 @@ static long gen_tid=0;                /* tid used as transaction identifying
 
 static WTPMachine *list = NULL;       /* list of wtp state machines */
 
+
 /*****************************************************************************
  *
  * Prototypes of internal functions:
@@ -48,14 +49,6 @@ static char *name_state(int name);
  */
 static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
 	Octstr *destination_address, long destination_port, long tid);
-
-/*
- * Attach a WTP machine five-tuple (addresses, ports and tid) which are used to
- * identify it. 
- */
-static WTPMachine *name_machine(WTPMachine *machine, Octstr *source_address, 
-           long source_port, Octstr *destination_address, 
-           long destination_port, long tid);
 
 /*
  * Packs a wsp event. Fetches flags and user data from a wtp event. Address 
@@ -271,21 +264,12 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
                                     msg->wdp_datagram.destination_port,
                                     event->RcvInvoke.tid);
            if (machine == NULL){
-	      machine=wtp_machine_create_empty();
-
-              if (machine == NULL)
-                 return NULL;
-
-              else {
-                 machine=name_machine(machine, 
-                                    msg->wdp_datagram.source_address,
-                                    msg->wdp_datagram.source_port, 
-                                    msg->wdp_datagram.destination_address,
-                                    msg->wdp_datagram.destination_port,
-                                    event->RcvInvoke.tid);
-	         /* XXX is this correct? */
-		 machine->tcl = event->RcvInvoke.tcl;
-              }
+	       machine = wtp_machine_create(msg->wdp_datagram.source_address,
+				  msg->wdp_datagram.source_port, 
+				  msg->wdp_datagram.destination_address,
+				  msg->wdp_datagram.destination_port,
+				  event->RcvInvoke.tid,
+				  event->RcvInvoke.tcl);
            }
            machine->in_use=1;
            return machine;
@@ -673,13 +657,17 @@ static WTPMachine *wtp_machine_create_empty(void){
 
 	machine->locker = -1;
 
+#if 0 /* This way of locking the list is broken, we need a separate mutex */
         if (list != NULL)
            mutex_lock(&list->mutex);
+#endif
 
         machine->next=list;
         list=machine;
 
+#if 0
         mutex_unlock(&list->mutex);
+#endif
 
         return machine;
 
@@ -708,18 +696,25 @@ static WTPMachine *wtp_machine_create_empty(void){
 }
 
 /*
- * Attach a WTP machine five-tuple (addresses, ports and tid) which are used to
- * identify it. 
+ * Create a new WTPMachine for a given transaction, identified by the
+ * five-tuple in the arguments.
  */
-static WTPMachine *name_machine(WTPMachine *machine, Octstr *source_address, 
+WTPMachine *wtp_machine_create(Octstr *source_address, 
            long source_port, Octstr *destination_address, 
-           long destination_port, long tid){
+           long destination_port, long tid, long tcl) {
+
+	   WTPMachine *machine;
+	   
+	   machine = wtp_machine_create_empty();
+	   if (machine == NULL)
+	   	panic(0, "wtp_machine_create_empty failed, out of memory");
 
            machine->source_address=source_address;
            machine->source_port=source_port;
            machine->destination_address=destination_address;
            machine->destination_port=destination_port;
            machine->tid=tid;
+           machine->tcl=tcl;
 
            return machine;
 } 

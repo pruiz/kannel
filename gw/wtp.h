@@ -98,7 +98,8 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg);
 
 
 WTPMachine *wtp_machine_create(Octstr *srcaddr, long srcport, 
-				Octstr *destaddr, long destport);
+				Octstr *destaddr, long destport, long tid,
+				long tcl);
 WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event);
 
 

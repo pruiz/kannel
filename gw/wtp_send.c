@@ -32,8 +32,10 @@ void wtp_send_result(WTPMachine *machine, WTPEvent *event){
      if (msg == NULL)
         goto error;
 
+#if 0
      msg_destroy(msg);
      octstr_destroy(message_string);
+#endif
      return;
 /*
  *Abort(CAPTEMPEXCEEDED)

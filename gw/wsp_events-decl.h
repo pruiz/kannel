@@ -65,6 +65,7 @@ WSP_EVENT(TRAbortRequire,
 
 WSP_EVENT(SConnectResponse,
 	  {
+	  MACHINE(machine); /* XXX this is a kludge */
 	  OCTSTR(server_headers);
 	  OCTSTR(negotiated_capabilities);
 	  })
