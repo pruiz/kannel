@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 
 #include "config.h"
@@ -32,6 +33,7 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	int fl;
 
 	struct sockaddr_in servaddr;
+	struct in_addr bindaddr;
 
 	router = malloc(sizeof(CSDRouter));
 	if(router==NULL) goto error;
@@ -55,7 +57,12 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	/* Initialize the sockets. */
 	memset(&servaddr, 0, sizeof(struct sockaddr_in));
 	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	if(inet_aton(interface_name, &bindaddr) != 0) {
+		servaddr.sin_addr = bindaddr;
+	} else {
+		servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	}
 
 	if(strcmp(wap_service, "wsp") == 0) {
 		servaddr.sin_port = htons(9200);
