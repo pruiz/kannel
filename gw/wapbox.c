@@ -17,14 +17,9 @@
 #include "wtp.h"
 #include "bb.h"
 
-#define TEST_HEARTBEAT_THREAD
-
 static char *bearerbox_host = BB_DEFAULT_HOST;
 static int bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static int heartbeat_freq = BB_DEFAULT_HEARTBEAT;
-#ifdef TEST_HEARTBEAT_THREAD
-static int test_heartbeat_thread = 0;
-#endif
 static char *logfile = NULL;
 static int logfilelevel = 0;
 
@@ -71,10 +66,6 @@ static void read_config(char *filename) {
 		        logfile = s;
 		if ((s = config_get(grp, "log-level")) != NULL)
 		        logfilelevel = atoi(s);
-#ifdef TEST_HEARTBEAT_THREAD
-		if ((s = config_get(grp, "test-heartbeat-thread")) != NULL)
-		        test_heartbeat_thread = atoi(s);
-#endif
 		/* configure URL mappings */
 		if ((s = config_get(grp, "map-url-max")) != NULL)
 			map_url_max = atoi(s);
@@ -152,10 +143,6 @@ static void msg_send(int s, Msg *msg) {
 		 * right now; heartbeat was static, now we
 		 * need to free them.
 		 */
-#ifdef TEST_HEARTBEAT_THREAD
-		if (test_heartbeat_thread)
-			warning(0, "destroying heartbeat message");
-#endif
 		msg_destroy(msg);
 	}
 }
@@ -183,10 +170,6 @@ void put_msg_in_queue(Msg *msg) {
 	else {
 		queue_tab[(queue_start + queue_len) % MAX_MSGS_IN_QUEUE] = msg;
 		if (0 == queue_len++) {
-#ifdef TEST_HEARTBEAT_THREAD
-			if (test_heartbeat_thread)
-				warning(0, "first new msg, waking empty_queue_thread");
-#endif
 			mutex_unlock(queue_read_mutex);	/* wake reader */
 		}
 	}
@@ -197,15 +180,7 @@ void put_msg_in_queue(Msg *msg) {
 Msg *remove_msg_from_queue(void) {
 	Msg *msg;
 	
-#ifdef TEST_HEARTBEAT_THREAD
-	if (test_heartbeat_thread)
-		warning(0, "remove_msg_from_queue sleeping");
-#endif
 	mutex_lock(queue_read_mutex);	/* sleeps if queue empty */
-#ifdef TEST_HEARTBEAT_THREAD
-	if (test_heartbeat_thread)
-		warning(0, "remove_msg_from_queue awake");
-#endif
 	mutex_lock(queue_mutex);
 	if (queue_len == 0)
 		panic(0, "remove_msg_from_queue: no longer single consumer?");
@@ -213,11 +188,6 @@ Msg *remove_msg_from_queue(void) {
 	queue_start = (queue_start + 1) % MAX_MSGS_IN_QUEUE;
 	if (--queue_len > 0)
 		mutex_unlock(queue_read_mutex);
-#ifdef TEST_HEARTBEAT_THREAD
-	else
-		if (test_heartbeat_thread)
-			warning(0, "remove_msg_from_queue no more messages");
-#endif
 	mutex_unlock(queue_mutex);
 	return msg;
 }
@@ -229,10 +199,6 @@ static void *send_heartbeat_thread(void *arg) {
 		if (msg == NULL)
 			panic(0, "cannot create heartbeat message");
 		msg->heartbeat.load = 0;	/* XXX */
-#ifdef TEST_HEARTBEAT_THREAD
-		if (test_heartbeat_thread)
-			warning(0, "send_heartbeat_thread new heartbeat");
-#endif
 		put_msg_in_queue(msg);
 		sleep(heartbeat_freq);
 	}

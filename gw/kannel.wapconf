@@ -29,10 +29,6 @@
 # log-level = (verbosity level)
 #	verbosity level for this log-file. Defaults to '0' (DEBUG)
 #
-# test-heartbeat-thread = (0 or 1)
-#	temporary: log lots of output to test new heartbeat thread construct.
-#	default: 0
-#
 # map-url = "http://from.here/ http://some.where/"
 #	adds a single mapping for the left side URL to the given destination.
 #	If you append an asterisk `*' to the left side URL, it is prefix
