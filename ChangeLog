@@ -1,3 +1,7 @@
+2000-07-14  Paul Keogh <paul.keogh@anam.com>
+	* gwlib/http.c: Fixed a bug in the HTTP POST which prevented interop
+	with some versions of Apache and ultimately crashed.
+
 2000-07-13  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	* gw/wapbox.c,gw/wapkannel.conf,gwlib/log.c: first implementation of 
 	syslog support under Solaris.
