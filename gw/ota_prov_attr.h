@@ -44,6 +44,7 @@
  *          <PARM NAME="NAME" VALUE="Our company's WAP settings"/>
  *      </CHARACTERISTIC>
  *      <CHARACTERISTIC TYPE="URL" VALUE="http://wap.company.com"/>
+ *      <CHARACTERISTIC TYPE="MMSURL" VALUE="http://mms.company.com"/>
  *      <CHARACTERISTIC TYPE="BOOKMARK">
  *          <PARM NAME="NAME" VALUE="Our company's WAP site"/>
  *          <PARM NAME="URL" VALUE="http://wap.company.com"/>
@@ -75,7 +76,7 @@
 
 /*
  * This element groups the browser settings into logical different types:
- * ADDRESS, BOOKMARK, URL, NAME and ID.
+ * ADDRESS, BOOKMARK, URL, MMSURL, NAME and ID.
  */
 #define WBXML_TOK_CHARACTERISTIC        0x06
 

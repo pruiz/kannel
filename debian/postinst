@@ -33,4 +33,4 @@ update-rc.d kannel defaults >/dev/null
 # Kannel if /etc/rcX.d/S??kannel exists. I don't know how to figure out
 # the current run-level, though.
 
-/etc/init.d/kannel start
+/etc/init.d/kannel restart || true

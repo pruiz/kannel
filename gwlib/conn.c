@@ -1394,3 +1394,10 @@ void conn_config_ssl (CfgGroup *grp)
     info(0, "SSL not supported, no SSL initialization done.");
 }
 #endif /* HAVE_LIBSSL */
+
+int conn_get_id(Connection *conn) {
+    if(conn == NULL)
+	return 0;
+    else
+	return conn->fd;
+}

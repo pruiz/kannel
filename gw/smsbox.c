@@ -1135,7 +1135,8 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 
 	xml = octstr_create("");
 	octstr_append(xml, octstr_imm("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n")); 
-	octstr_append(xml, octstr_imm("<!DOCTYPE message SYSTEM \"SMSmessage.dtd\">\n")); 
+	// XXX damn windows that breaks with this :
+	// octstr_append(xml, octstr_imm("<!DOCTYPE message SYSTEM \"SMSmessage.dtd\">\n")); 
 
 	octstr_append(xml, octstr_imm("<message cid=\"1\">\n"));
 	octstr_append(xml, octstr_imm("\t<submit>\n"));
@@ -1378,6 +1379,8 @@ static void obey_request_thread(void *arg)
 
 	/* TODO: check if the sender is approved to use this service */
 
+	if(msg->sms.service == NULL && trans != NULL)
+	    msg->sms.service = octstr_duplicate(urltrans_name(trans));
 	ret = obey_request(&reply, trans, msg);
 	if (ret != 0) {
 	    if (ret == -1) {
@@ -1387,11 +1390,10 @@ static void obey_request_thread(void *arg)
 	           urltranslation */
 	        reply = octstr_duplicate(reply_requestfailed);
 	        trans = NULL;	/* do not use any special translation */
+		O_DESTROY(msg->sms.service);
 	    }
 	    octstr_destroy(msg->sms.msgdata);
 	    msg->sms.msgdata = reply;
-	    if(msg->sms.service == NULL && trans != NULL)
-		msg->sms.service = octstr_duplicate(urltrans_name(trans));
 	
 	    msg->sms.coding = 0;
 	    msg->sms.time = time(NULL);	/* set current time */

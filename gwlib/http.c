@@ -25,7 +25,7 @@
 
 #include "gwlib.h"
 
-#define USE_KEEPALIVE 0
+#define USE_KEEPALIVE 1
 
 
 /***********************************************************************
@@ -633,7 +633,6 @@ static void conn_pool_item_destroy(void *item)
     list_destroy(item, NULL);
 }
 
-
 static void conn_pool_init(void)
 {
     conn_pool = dict_create(1024, conn_pool_item_destroy);
@@ -683,14 +682,17 @@ static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certke
     mutex_unlock(conn_pool_lock);
     
     if (conn == NULL) {
-	debug("gwlib.http", 0, "HTTP: Opening connection to `%s:%d'.",
-	      octstr_get_cstr(host), port);
 #ifdef HAVE_LIBSSL
 	if (ssl) 
 	    conn = conn_open_ssl(host, port, certkeyfile, our_host);
 	else
 #endif /* HAVE_LIBSSL */
 	    conn = conn_open_tcp(host, port, our_host);
+	debug("gwlib.http", 0, "HTTP: Opening connection to `%s:%d' (fd=%d).",
+	      octstr_get_cstr(host), port, conn_get_id(conn));
+    } else {
+	debug("gwlib.http", 0, "HTTP: Reusing connection to `%s:%d' (fd=%d).",
+	      octstr_get_cstr(host), port, conn_get_id(conn)); 
     }
     
     return conn;
@@ -902,7 +904,7 @@ static void handle_transaction(Connection *conn, void *data)
 	trans->persistent = 0;
     octstr_destroy(h);
 
-#ifdef USE_KEEPALIVE /* Reuse disabled again until this gets fixed... */
+#ifdef USE_KEEPALIVE 
     if (trans->persistent)
         conn_pool_put(trans->conn, trans->host, trans->port);
     else
@@ -1152,14 +1154,14 @@ static Connection *send_request(HTTPServer *trans, char *method_name)
     }
 
     if (trans->retrying) {
-	debug("gwlib.http", 0, "HTTP: Opening NEW connection to `%s:%d'.",
-	      octstr_get_cstr(host), port);
 #ifdef HAVE_LIBSSL
 	if (trans->ssl) conn = 
 	    conn_open_ssl(host, port, trans->certkeyfile, our_host);
 	else
 #endif /* HAVE_LIBSSL */
 	    conn = conn_open_tcp(host, port, our_host);
+	debug("gwlib.http", 0, "HTTP: Opening NEW connection to `%s:%d' (fd=%d).",
+	      octstr_get_cstr(host), port, conn_get_id(conn));
     } else
         conn = conn_pool_get(host, port, trans->ssl, trans->certkeyfile,
 			our_host);

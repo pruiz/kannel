@@ -245,3 +245,5 @@ void conn_config_ssl(CfgGroup *grp);
 SSL *conn_get_ssl(Connection *conn);
   
 #endif /* HAVE_LIBSSL */
+
+int conn_get_id(Connection *conn);

@@ -85,11 +85,13 @@ AC_DEFUN(AC_CONFIG_SECTION,
 
 dnl Check which cvs checkout date this tree is any apply
 dnl the value to the given variable
+dnl day is reevaluated because `` eats the two spaces if 
+dnl   day is lesser than 10.
 
 AC_DEFUN(AC_CVS_DATE,
 [
   cvs_date=`grep ChangeLog CVS/Entries | cut -f4 -d/`
-  day=`echo $cvs_date | cut -f3 -d' '`
+  day=`grep ChangeLog CVS/Entries | cut -f4 -d/ | cut -c9-10 | tr " " "0"`
   month=`echo $cvs_date | cut -f2 -d' '`
   case $month in
     "Jan") month="01" ;;

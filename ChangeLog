@@ -1,3 +1,18 @@
+2002-06-11  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * aclocal.m4: fix date function, for days lesser than 10
+    * configure.in: defaults to native malloc but still with assertions
+    * configure.in, Makefile.in: use pdfjadetex to convert from 
+      xml->tex->pdf instead of xml->tex->ps->pdf
+    * debian/*: some fixes
+    * gw/ota_prov_attr.h: Added MMSURL comments
+    * gw/smsbox.c: removed <!doctype...> from xml-post; fix setting 
+      msg->sms.service on MO messages
+    * gw/smsc_emi2.c: removed NACK code. It didn't work either way.
+    * gwlib/conn.c, gwlib/conn.h, gwlib/http.c: Reenabled HTTP Keepalive
+      and added extra debug: http connections now print the fd used, so
+      we can try to find the bug. It looks like a reused connection that 
+      didn't timeout. 
+
 2002-06-11  Stipe Tolj <tolj@wapme-systems.de>
     * gwlib/thread.[ch], gwlib/conn.c: applied Oded's patch to make gcc 3.x 
       not complain about it's __FUNC__ macros.

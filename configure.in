@@ -189,10 +189,10 @@ dnl DocBook stuff
 AC_CONFIG_SECTION([Configuring DocBook support])
 AC_CHECK_PROG(JADE, jade, jade, :)
 AC_CHECK_PROG(JADETEX, jadetex, jadetex, :)
+AC_CHECK_PROG(PDFJADETEX, pdfjadetex, pdfjadetex, :)
 AC_CHECK_PROG(DVIPS, dvips, dvips, :)
 AC_CHECK_PROG(FIG2DEV, fig2dev, fig2dev, :)
 AC_CHECK_PROG(CONVERT, convert, convert, :)
-AC_CHECK_PROG(PS2PDF, ps2pdf, ps2pdf, :)
 AC_SUBST(HTML_DSL)
 found=""
 for loc in /usr /usr/local; do
@@ -307,8 +307,10 @@ AC_SUBST(SUFFIX)
 dnl Implement --with-defaults=speed/debug option.
 
 AC_ARG_WITH(defaults,
-[  --with-defaults         set default configure options: speed/debug (default: debug)
-                          this will set assertion checking and malloc wrapper accordingly], [
+[  --with-defaults         set default configure options: speed/debug (default: native malloc + assertions)
+                          this will set assertion checking and malloc wrapper accordingly
+			  speed = native malloc + no assertions
+			  debug = checking malloc + assertions], [
   case "$withval" in
   speed) assertiondefault=no
          mallocdefault=native
@@ -321,9 +323,9 @@ AC_ARG_WITH(defaults,
      ;;
   esac
 ], [
-  dnl Same as debug
+  dnl defaults to native malloc but with assertions
   assertiondefault=yes
-  mallocdefault=check
+  mallocdefault=native
 ])
 
 
@@ -331,7 +333,7 @@ dnl Implement --with-malloc=[native|check|slow] option.
 
 AC_MSG_CHECKING(which malloc to use)
 AC_ARG_WITH(malloc,
-[  --with-malloc           select malloc wrapper to use: native/check/slow (default: check)], [
+[  --with-malloc           select malloc wrapper to use: native/check/slow (default: native)], [
   case "$withval" in
   native) AC_DEFINE(USE_GWMEM_NATIVE)
           AC_MSG_RESULT(native malloc)
@@ -346,15 +348,15 @@ AC_ARG_WITH(malloc,
   esac
 ], [
   case "$mallocdefault" in
-  native) AC_DEFINE(USE_GWMEM_NATIVE)
-          AC_MSG_RESULT(native malloc)
-          ;;
+  check) AC_DEFINE(USE_GWMEM_CHECK)
+     AC_MSG_RESULT(checking malloc)
+     ;;
   slow) AC_DEFINE(USE_GWMEM_SLOW)
         AC_MSG_RESULT(slow malloc)
 	;;
-  *) AC_DEFINE(USE_GWMEM_CHECK)
-     AC_MSG_RESULT(checking malloc)
-     ;;
+  *) AC_DEFINE(USE_GWMEM_NATIVE)
+          AC_MSG_RESULT(native malloc)
+          ;;
   esac
 ])
 
