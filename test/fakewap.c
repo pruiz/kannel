@@ -113,6 +113,7 @@ The urls are fetched in random order.\n\
 #include <netinet/tcp.h>
 #include <sys/param.h>
 #include <math.h>
+#include <signal.h>
 
 #include "gwlib/gwlib.h"
 
@@ -569,7 +570,13 @@ int main(int argc, char **argv)
     int i, opt;
     double delta;
     int proto_version, pdu_type, tcl, tid_new;
+#ifdef SunOS
+    struct sigaction alrm;
 
+    alrm.sa_handler = SIG_IGN;
+
+    sigaction(SIGALRM,&alrm,NULL);
+#endif
     gwlib_init();
 
     proto_version = 0;
