@@ -554,13 +554,14 @@ static Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
     int dlr_mask;
     Octstr *dlr_service;
     Octstr *dlr_url;
+    Octstr *source_addr;
     MYSQL_RES *result;
     MYSQL_ROW row;
     
-    sql = octstr_format("SELECT %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s';",
+    sql = octstr_format("SELECT %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s';",
                         octstr_get_cstr(field_mask), octstr_get_cstr(field_serv), 
-                        octstr_get_cstr(field_url), octstr_get_cstr(table), 
-                        octstr_get_cstr(field_smsc),
+                        octstr_get_cstr(field_url), octstr_get_cstr(field_source),
+                        octstr_get_cstr(table), octstr_get_cstr(field_smsc),
                         smsc, octstr_get_cstr(field_ts), ts);
 
     mutex_lock(dlr_mutex);
@@ -587,10 +588,12 @@ static Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
         return NULL;
     }
     
-    debug("dlr.mysql", 0, "Found entry, row[0]=%s, row[1]=%s, row[2]=%s", row[0], row[1], row[2]);
+    debug("dlr.mysql", 0, "Found entry, row[0]=%s, row[1]=%s, row[2]=%s, row[3]=%s", 
+          row[0], row[1], row[2], row[3]);
     dlr_mask = atoi(row[0]);
     dlr_service = octstr_create(row[1]);
     dlr_url = octstr_create(row[2]);
+    source_addr = octstr_create(row[3]);
     mysql_free_result(result);
     
     mutex_unlock(dlr_mutex);
@@ -619,11 +622,22 @@ static Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
         msg->sms.dlr_mask = typ;
         msg->sms.sms_type = report;
         msg->sms.smsc_id = octstr_create(smsc);
-    	msg->sms.sender = octstr_create(dst);
-        msg->sms.receiver = octstr_create("000");
-        msg->sms.msgdata = octstr_duplicate(dlr_url);
+        msg->sms.sender = octstr_duplicate(source_addr);
+        msg->sms.receiver = octstr_create(dst);
+
+        /* if dlr_url was present, recode it here again */
+        msg->sms.dlr_url = octstr_len(dlr_url) ? 
+        octstr_duplicate(dlr_url) : NULL;	
+
+        /* 
+         * insert orginal message to the data segment 
+         * later in the smsc module 
+         */
+        msg->sms.msgdata = NULL;
+
         time(&msg->sms.time);
-        debug("dlr.dlr", 0, "created DLR message: %s", octstr_get_cstr(msg->sms.msgdata));
+        debug("dlr.dlr", 0, "created DLR message for URL <%s>", 
+              octstr_get_cstr(msg->sms.dlr_url));
     } else {
         debug("dlr.dlr", 0, "ignoring DLR message because of mask");
     }
@@ -649,6 +663,7 @@ static Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
 
     octstr_destroy(dlr_service);
     octstr_destroy(dlr_url);
+    octstr_destroy(source_addr);
 
 #endif
     return msg;
@@ -664,7 +679,7 @@ static int sdb_callback_add(int n, char **p, void *row)
 
     /* strip string into words */
     row = octstr_split(octstr_imm(p[0]), octstr_imm(" "));
-    if (list_len(row) != 3) {
+    if (list_len(row) != 4) {
         debug("dlr.sdb", 0, "Row has wrong length %ld", list_len(row));
         return 0;
     }
@@ -685,12 +700,13 @@ static Msg *dlr_find_sdb(char *smsc, char *ts, char *dst, int typ)
     int dlr_mask;
     Octstr *dlr_service;
     Octstr *dlr_url;
+    Octstr *source_addr;
     List *row;
     
-    sql = octstr_format("SELECT %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s'",
+    sql = octstr_format("SELECT %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s'",
                         octstr_get_cstr(field_mask), octstr_get_cstr(field_serv), 
-                        octstr_get_cstr(field_url), octstr_get_cstr(table), 
-                        octstr_get_cstr(field_smsc),
+                        octstr_get_cstr(field_url), octstr_get_cstr(field_source), 
+                        octstr_get_cstr(table), octstr_get_cstr(field_smsc),
                         smsc, octstr_get_cstr(field_ts), ts);
 
     mutex_lock(dlr_mutex);
@@ -703,14 +719,16 @@ static Msg *dlr_find_sdb(char *smsc, char *ts, char *dst, int typ)
         return NULL;
     }
 
-    debug("dlr.sdb", 0, "Found entry, row[0]=%s, row[1]=%s, row[2]=%s", 
+    debug("dlr.sdb", 0, "Found entry, row[0]=%s, row[1]=%s, row[2]=%s, row[3]=%s", 
           octstr_get_cstr(list_get(row, 0)), 
           octstr_get_cstr(list_get(row, 1)), 
-          octstr_get_cstr(list_get(row, 2)));
+          octstr_get_cstr(list_get(row, 2)),
+          octstr_get_cstr(list_get(row, 3)));
 
     dlr_mask = atoi(octstr_get_cstr(list_get(row, 0)));
     dlr_service = octstr_duplicate(list_get(row, 1));
     dlr_url = octstr_duplicate(list_get(row, 2));
+    source_addr = octstr_duplicate(list_get(row, 3));
     list_destroy(row, octstr_destroy_item);
     
     mutex_unlock(dlr_mutex);
@@ -739,11 +757,22 @@ static Msg *dlr_find_sdb(char *smsc, char *ts, char *dst, int typ)
         msg->sms.dlr_mask = typ;
         msg->sms.sms_type = report;
         msg->sms.smsc_id = octstr_create(smsc);
-    	msg->sms.sender = octstr_create(dst);
-        msg->sms.receiver = octstr_create("000");
-        msg->sms.msgdata = octstr_duplicate(dlr_url);
+    	msg->sms.sender = octstr_duplicate(source_addr);
+        msg->sms.receiver = octstr_create(dst);
+        
+        /* if dlr_url was present, recode it here again */
+        msg->sms.dlr_url = octstr_len(dlr_url) ? 
+        octstr_duplicate(dlr_url) : NULL;	
+
+        /* 
+         * insert orginal message to the data segment 
+         * later in the smsc module 
+         */
+        msg->sms.msgdata = NULL;
+
         time(&msg->sms.time);
-        debug("dlr.dlr", 0, "created DLR message: %s", octstr_get_cstr(msg->sms.msgdata));
+        debug("dlr.dlr", 0, "created DLR message for URL <%s>", 
+              octstr_get_cstr(msg->sms.dlr_url));
     } else {
         debug("dlr.dlr", 0, "ignoring DLR message because of mask");
     }
@@ -769,6 +798,7 @@ static Msg *dlr_find_sdb(char *smsc, char *ts, char *dst, int typ)
 
     octstr_destroy(dlr_service);
     octstr_destroy(dlr_url);
+    octstr_destroy(source_addr);
 
 #endif
     return msg;
