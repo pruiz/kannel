@@ -79,6 +79,9 @@ all: progs tests
 
 progs: $(progs)
 tests: $(testprogs)
+docs:
+	cd doc/arch && make
+	cd doc/userguide && make
 
 clean:
 	rm -f core $(progs) $(objs) *.a gateway.pid
