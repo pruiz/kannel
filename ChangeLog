@@ -1,3 +1,8 @@
+2000-03-28 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp*,  wsp*: Changed primitive names. Now they conform with ones 
+	used by the specifications. 
+
 Tue Mar 28 16:14:49 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/list.[ch]: added functions list_delete_all, list_delete_equal,
