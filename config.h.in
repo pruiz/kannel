@@ -107,4 +107,8 @@
 /* Define if you want to turn off assertion checking */
 #undef NO_GWASSERT
 
+#ifdef SunOS
+#define PTHREAD_SIGNAL_HANDLING
+#endif
+
 #endif

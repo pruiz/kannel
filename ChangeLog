@@ -1,3 +1,8 @@
+2000-12-20  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+	* gwlib/gwthread.h, gwlib/gwthread-pthread.c, gw/bearerbox.c,
+	config.h.in:  Combined patches from Nick Clarey and myself
+	that cope with POSIX-but-not-quite threads.  My head hurts.
+	
 2000-12-19  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/dict.c: Improve description of Dict fields.

@@ -89,7 +89,7 @@ static void signal_handler(int signum)
     /* Signals are normally delivered to all threads.  We only want
        to handle each signal once for the entire box, so we ignore
        all except the one sent to the main thread. */
-    if (gwthread_self() != MAIN_THREAD_ID) return;
+    if(!gwthread_shouldhandlesignal(signum)) return;
 
     if (signum == SIGINT || signum == SIGTERM) {
 

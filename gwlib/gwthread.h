@@ -76,4 +76,26 @@ int gwthread_poll(struct pollfd *fds, long numfds, double timeout);
  * calls gwthread_wakeup on us.  Fractional seconds are allowed. */
 void gwthread_sleep(double seconds);
 
+/*
+ * Check wheather this thread should handle the given signal.
+ * Since signals are thread specific, this needs to be handled
+ * by the thread code here.  This is mostly to cope with
+ * "interesting" implementations of "pthreads"
+ */
+int gwthread_shouldhandlesignal(int signal);
+
+/* Display the signal mask for this thread.
+ * Debugging purposes mostly so it can be ignored on platforms
+ * where this isn't applicable.
+ */
+int gwthread_dumpsigmask(void);
+
+
+/* Dump the current signal mask for this thread. This will print out a
+ * set of debug messages that state the signal handling status for the
+ * first 32 signals on the current system. Return -1 if something goes
+ * wrong. */
+int gwthread_dumpsigmask(void);
+
+
 #endif
