@@ -226,11 +226,11 @@ static void strip_keyword(Msg *request)
 
     pos = 0;
 
-    for (; (ch = octstr_get_char(request->sms.msgdata, pos)) != '\0'; pos++)
+    for (; (ch = octstr_get_char(request->sms.msgdata, pos)) >= 0; pos++)
         if (isspace(ch))
             break;
 
-    for (; (ch = octstr_get_char(request->sms.msgdata, pos)) != '\0'; pos++)
+    for (; (ch = octstr_get_char(request->sms.msgdata, pos)) >= 0; pos++)
         if (!isspace(ch))
             break;
 

@@ -1,3 +1,9 @@
+2001-04-17  Richard Braakman  <dark@wapit.com>
+
+	* gw/urltrans.c: In strip_keyword(), use the right test for
+	end of octstr.  This fixes handling of messages that only
+	have the keyword.
+
 2001-04-17  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/http.c: When the http module is shut down, set run_status
