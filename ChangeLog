@@ -1,3 +1,9 @@
+Sat Apr  8 01:01:00 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/smsbox.c, gw/urltrans.c, gw/wapbox.c, gw/wsp.c, gw/wsp.h,
+	gwlib/log.c, Fixed some memory leaks. smsbox now report no
+	allocated areas after serving 1000 "nop" services.
+
 Fri Apr  7 19:20:41 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/bearerbox.c, gw/boxc.c, gw/smsbox.c, gw/smsbox_req.c,

@@ -58,7 +58,6 @@
 #include <sys/stat.h>
 
 #include "gwlib/gwlib.h"
-#include "urltrans.h"
 
 #include "cgi.h"
 #include "msg.h"
@@ -287,6 +286,7 @@ static void init_smsbox(Config *cfg)
 	    lvl = atoi(p);
 	grp = config_next_group(grp);
     }
+
     if (heartbeat_freq == -600)
 	panic(0, "Apparently someone is using SAMPLE configuration without "
 		"editing it first - well, hopefully he or she now reads it");
@@ -489,6 +489,10 @@ int main(int argc, char **argv)
     info(0, "Connected to Bearer Box at %s port %d", bb_host, bb_port);
 
     main_loop();
+
+    mutex_destroy(socket_mutex);
+    urltrans_destroy(translations);
+    config_destroy(cfg);
     gw_check_leaks();
     return 0;
 }

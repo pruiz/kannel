@@ -313,6 +313,9 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 		pattern = p + 2;
 	}
 	
+	while (list_len(word_list) > 0)
+		octstr_destroy(list_extract_first(word_list));
+	list_destroy(word_list);
 	gw_free(enc);
 	return buf;
 }

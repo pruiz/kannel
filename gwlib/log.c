@@ -17,7 +17,7 @@
 static struct {
 	FILE *file;
 	int minimum_output_level;
-        char *filename;		/* to allow re-open */
+        char filename[FILENAME_MAX + 1]; /* to allow re-open */
 } logfiles[MAX_LOGFILES];
 static int num_logfiles = 0;
 
@@ -63,7 +63,8 @@ void reopen_log_files(void) {
 		fclose(logfiles[i].file);
 		logfiles[i].file = fopen(logfiles[i].filename, "a");
 		if (logfiles[i].file == NULL) {
-		    error(errno, "Couldn't re-open logfile `%s'.", logfiles[i].filename);
+		    error(errno, "Couldn't re-open logfile `%s'.",
+			logfiles[i].filename);
 		}
 	    }		
 }
@@ -77,6 +78,11 @@ void open_logfile(char *filename, int level) {
 			filename);
 		return;
 	}
+
+	if (strlen(filename) > FILENAME_MAX) {
+		error(0, "Log filename too long: `%s'.", filename);
+		return;
+	}
 	
 	f = fopen(filename, "a");
 	if (f == NULL) {
@@ -86,7 +92,7 @@ void open_logfile(char *filename, int level) {
 	
 	logfiles[num_logfiles].file = f;
 	logfiles[num_logfiles].minimum_output_level = level;
-	logfiles[num_logfiles].filename = gw_strdup(filename);
+	strcpy(logfiles[num_logfiles].filename, filename);
 	++num_logfiles;
 	info(0, "Added logfile `%s' with level `%d'.", filename, level);
 }

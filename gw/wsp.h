@@ -105,6 +105,13 @@ void wsp_init(void);
 
 
 /*
+ * Shut down the WSP subsystem. This MUST be called after nothing will
+ * need WSP anymore.
+ */
+void wsp_shutdown(void);
+
+
+/*
  * Create a WSPEvent structure and initialize it to be empty. Return a
  * pointer to the structure or NULL if there was a failure.
  */

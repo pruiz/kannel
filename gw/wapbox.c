@@ -332,5 +332,7 @@ int main(int argc, char **argv) {
 	list_remove_producer(queue);
 
 	info(0, "WAP box terminating.");
+	wsp_shutdown();
+	gw_check_leaks();
 	return 0;
 }

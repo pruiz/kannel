@@ -89,5 +89,4 @@ void open_logfile(char *filename, int level);
 /* Close and re-open all logfiles */
 void reopen_log_files(void);
 
-
 #endif

@@ -94,6 +94,15 @@ void wsp_init(void) {
 
 
 
+void wsp_shutdown(void) {
+	while (list_len(session_machines) > 0)
+		wsp_machine_destroy(list_extract_first(session_machines));
+	list_destroy(session_machines);
+	counter_destroy(session_id_counter);
+}
+
+
+
 WSPEvent *wsp_event_create(WSPEventType type) {
 	WSPEvent *event;
 	
