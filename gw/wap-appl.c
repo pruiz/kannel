@@ -468,6 +468,7 @@ static void set_referer_url(Octstr *url, WSPMachine *sm)
 	gw_assert(url != NULL);
 	gw_assert(sm != NULL);
 
+    octstr_destroy(sm->referer_url);
     sm->referer_url = octstr_duplicate(url);
 }
 
