@@ -12,7 +12,8 @@
 	!defined(COOKIES) || \
 	!defined(MACHINESLIST) || \
 	!defined(CAPABILITIES) || \
-	!defined(MACHINE)
+	!defined(MACHINE) || \
+        !defined(REFERER)
 #error "Some required macro is missing."
 #endif
 
@@ -32,7 +33,7 @@ MACHINE(
 	
 	HTTPHEADERS(http_headers)
 	COOKIES(cookies)
-    REFERER(referer_url)
+        REFERER(referer_url)
 	MACHINESLIST(methodmachines)
         MACHINESLIST(pushmachines)
 )
@@ -45,3 +46,5 @@ MACHINE(
 #undef MACHINE
 #undef COOKIES
 #undef CAPABILITIES
+#undef REFERER
+
