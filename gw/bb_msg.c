@@ -33,6 +33,7 @@ RQueue *rq_new(void)
     nr->id_max = 1;
     nr->queue_len = 0;
     nr->added = 0;
+    nr->last_mod = 0;
     return nr;
 }
 

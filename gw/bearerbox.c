@@ -150,6 +150,7 @@ static int http_sendsms_fd = -1;
 static char *http_sendsms_allow_ip = NULL;
 static char *http_sendsms_deny_ip = NULL;
 
+static time_t start_time;
 
 
 /*--------------------------------------------------------
@@ -1241,12 +1242,17 @@ static void *http_request_thread(void *arg)
     
     if (strcmp(path, "/cgi-bin/status") == 0) {
 	char buf[1024], buf2[1024];
+	int t;
+	
 	print_queues(buf);
 	print_threads(buf2);
-	sprintf(answer, "<pre>%s\n\nQUEUE STATUS:\n%s\n\nTHREAD STATUS:\n%s</pre>",
+	t = time(NULL) - start_time;
+	
+	sprintf(answer,
+		"<pre>%s (Time %dh %dm %ds)\n\nQUEUE STATUS:\n%s\n\nTHREAD STATUS:\n%s</pre>",
 		(bbox->abort_program > 0) ? "Gateway is going down..." : 
 		(bbox->suspended > 0) ? "Gateway is currently suspended" :
-		"Gateway is running",
+		"Gateway is running", t/3600, t / 60 % 60, t % 60,
 		buf, buf2);
     } else {
 
@@ -1938,6 +1944,7 @@ int main(int argc, char **argv)
     int cf_index;
     Config *cfg;
         
+    start_time = time(NULL);
     cf_index = get_and_set_debugs(argc, argv, NULL);
 
     warning(0, "Gateway bearer box version %s starting", VERSION);
