@@ -88,19 +88,27 @@ static void boxc_receiver(void *arg)
 	    info(0, "Client <%s> closed connection",
 		  octstr_get_cstr(conn->client_ip));
 	    conn->alive = 0;
+
+	    /* XXX this kludge wakes up the sender if it is sleeping
+	     *     in list_consume. However, this does not work reliably
+	     *	   for smsbox connections as many of them listen to same
+	     *     list, but this is better than nothing   -kalle
+             */
+	    msg = msg_create(heartbeat);
+	    msg->heartbeat.load = 0;
+	    list_produce(conn->incoming, msg); 
 	    break;
 	}
 	if ((msg = msg_unpack(pack))==NULL) {
-	    debug("bb.boxc", 0, "Received garbage from <%s>, ignored",
+	    debug("bb.boxc", 0, "boxc_receiver: received garbage from <%s>, ignored",
 		  octstr_get_cstr(conn->client_ip));
 	    octstr_destroy(pack);
 	    continue;
 	}
 	octstr_destroy(pack);
 
-	if ((!conn->is_wap && msg_type(msg) == sms)
-	                  ||
-	    (conn->is_wap && msg_type(msg) == wdp_datagram))
+	if ((msg_type(msg) == sms && conn->is_wap == 0)
+	    || (msg_type(msg) == wdp_datagram && conn->is_wap))
 	{
 	    debug("bb.boxc", 0, 
 		  "boxc_receiver: message from client received");
@@ -155,20 +163,21 @@ static void boxc_sender(void *arg)
 	    shutdown(conn->fd, 1);
 	    break;
 	}
+	if (msg_type(msg) == heartbeat) {
+	    debug("bb.boxc", 0, "boxc_sender: catch an heartbeat - we are alive");
+	    msg_destroy(msg);
+	    continue;
+	}
 	if (!conn->alive) {
 	    /* we got message here */
 	    list_produce(conn->retry, msg);
 	    break;
 	}
-	gw_assert((!conn->is_wap && msg_type(msg) == sms)
-		                 ||
-		  (conn->is_wap && msg_type(msg) == wdp_datagram));
-
         if (send_msg(conn->fd, msg) == -1) {
 	    /* if we fail to send, return msg to the list it came from
 	     * before dying off */
-	    debug("bb.boxc", 0, "send failed, let's assume that connection "
-	    	    	    	"had died");
+	    debug("bb.boxc", 0, "boxc_sender: send failed, let's assume that "
+		                "connection had died");
 	    list_produce(conn->retry, msg);
 	    break;
 	}
@@ -729,6 +738,7 @@ Octstr *boxc_status(int status_type)
     Boxc *bi;
 
     orig = time(NULL);
+
     /*
      * XXX: this will cause segmentation fault if this is called
      *    between 'destroy_list and setting list to NULL calls.

@@ -1,5 +1,15 @@
 2001-02-07  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/bb_boxc.c: kludged to use internal heartbeat to wakeup sender
+	from consume if other end closes the connection
+
+	* gw/bb_smscconn.c: modified failed routing access log output
+
+	* utils/accesslog_parser.pl: added failed routing to final output,
+	and change all keywords to lowercase
+
+2001-02-07  Kalle Marjola  <rpr@wapit.com>
+
 	* utils/accesslog_parser.pl: added simple perl script to read
 	(SMS) access log and print statistics out of it, based on hours.
 	Uses the new format printed out by bb_smscconn.c

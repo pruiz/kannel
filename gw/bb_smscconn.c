@@ -264,11 +264,7 @@ static void sms_router(void *arg)
 	else {
             warning(0, "Cannot find SMSCConn for message to <%s>, discarded.",
 		    octstr_get_cstr(msg->sms.receiver));
-            alog("SMS DISCARDED - SMSCID:%s receiver:%s msg: '%s'",
-                 (msg->sms.smsc_id) != NULL ?
-                 octstr_get_cstr(msg->sms.smsc_id) : "unknown",
-                 octstr_get_cstr(msg->sms.receiver),
-                 octstr_get_cstr(msg->sms.msgdata));
+	    log_sms(conn, sms, "FAILED Routing SMS");
 	    ret = 0;
 	}
 

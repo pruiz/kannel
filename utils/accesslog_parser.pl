@@ -12,7 +12,8 @@ my (%userstat_in, %userstat_out);
 my (%dailystat_in, %dailystat_out);
 my (%keywordstat_in);
 
-my $failed = 0;
+my $failed_send = 0;
+my $failed_rout = 0;
 my $rejected = 0;
 my $start = 0;
 my $ends = 0;
@@ -30,14 +31,16 @@ while ($line = <STDIN>) {
 	    $stat_in{$sender}{"$year-$month-$day $hour"}++;
 	    $userstat_in{$sender}++;
 	    $dailystat_in{"$year-$month-$day $hour"}++;
-	    $keywordstat_in{$keyword}{"$year-$month-$day $hour"}++;
+	    $keywordstat_in{lc($keyword)}{"$year-$month-$day $hour"}++;
 
 	} elsif ($msg =~ /sent sms/i) {
 	    $stat_out{$receiver}{"$year-$month-$day $hour"}++;
 	    $userstat_out{$receiver}++;
 	    $dailystat_out{"$year-$month-$day $hour"}++;
 	} elsif ($msg =~ /failed send sms/i) {
-	    $failed++;
+	    $failed_send++;
+	} elsif ($msg =~ /failed routing sms/i) {
+	    $failed_rout++;
 	} elsif ($msg =~ /rejected/i) {
 	    $rejected++;
 	} elsif ($msg =~ /log begins/i) {
@@ -115,6 +118,6 @@ foreach $key (sort keys %dailystat_out) {
 }
 print "\t\t\t\tTotal: $total_out\n\n"; 
 
-print "$failed failed sendings, $rejected rejected messages\n";
+print "$failed_send failed sendings, $failed_rout failed routing, $rejected rejected messages\n";
 my $ugly = $start - $ends;
 print "$start Kannel start-ups, $ugly crashes/ugly shutdowns\n";
