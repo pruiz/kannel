@@ -182,7 +182,7 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
 	status_type = BBSTATUS_TEXT;
 	reply = httpd_status(cgivars, status_type);
     } else if (octstr_str_compare(url, "/cgi-bin/status.xml")==0
-	       || octstr_str_compare(url, "/cgi-bin/status.xml")==0) {
+	       || octstr_str_compare(url, "/status.xml")==0) {
 	status_type = BBSTATUS_XML;
 	reply = httpd_status(cgivars, status_type);
 	/* content_type = "text/x-kannelstatus"; */
