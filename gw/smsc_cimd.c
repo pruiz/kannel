@@ -309,30 +309,19 @@ int cimd_submit_msg(SMSCenter *smsc, Msg *msg) {
 	char msgtext[1024];
 	int ret;
 	int cmd = 0, err = 0;
-	SMSMessage *sms_msg;
-
-	/* QUICK AND DIRTY, WILL FIX ASAP -MG */
-
-	sms_msg = smsmessage_construct(octstr_get_cstr(msg->smart_sms.sender),
-				       octstr_get_cstr(msg->smart_sms.receiver),
-				       msg->smart_sms.msgdata);
-
 
 	/* Fix these by implementing a could-not-send-because-
 	   protocol-does-not-allow in smsc.c or smsgateway.c */
-	if(octstr_len(sms_msg->text) < 1) {
+	if(octstr_len(msg->smart_sms.msgdata) < 1) {
 		warning(0, "cimd_submit_smsmessage: ignoring message with 0-length field");
-		warning(0, "msg->text = <%s>", octstr_get_cstr(sms_msg->text));
 		goto okay; /* THIS IS NOT OKAY!!!! XXX */
 	}
-	if(strlen(sms_msg->sender) < 1) {
+	if(octstr_len(msg->smart_sms.sender) < 1) {
 		warning(0, "cimd_submit_smsmessage: ignoring message with 0-length field");
-		warning(0, "msg->sender = <%s>", sms_msg->sender);
 		goto okay; /* THIS IS NOT OKAY!!!! XXX */
 	}
-	if(strlen(sms_msg->receiver) < 1) {
+	if(octstr_len(msg->smart_sms.receiver) < 1) {
 		warning(0, "cimd_submit_smsmessage: ignoring message with 0-length field");
-		warning(0, "msg->receiver = <%s>", sms_msg->receiver);
 		goto okay; /* THIS IS NOT OKAY!!!! XXX */
 	}
 
@@ -341,26 +330,32 @@ int cimd_submit_msg(SMSCenter *smsc, Msg *msg) {
 
 	bzero(tmpbuff, 10*1024);
 	bzero(tmptext, 10*1024);
+	bzero(msgtext, sizeof(msgtext));
+
+	if(msg->smart_sms.flag_udh == 1) {
+		octstr_get_many_chars(msgtext, msg->smart_sms.udhdata, 0, octstr_len(msg->smart_sms.udhdata));
+		octstr_get_many_chars(msgtext, msg->smart_sms.msgdata, octstr_len(msg->smart_sms.udhdata), 
+			140 - ( octstr_len(msg->smart_sms.msgdata) + octstr_len(msg->smart_sms.udhdata) ) );
+	} else {
+		octstr_get_many_chars(msgtext, msg->smart_sms.msgdata, 0, 
+			octstr_len(msg->smart_sms.msgdata));
+	}
 
 	/* XXX internal_cimd_parse_iso88591_to_cimd should use Octstr
 	 * directly, or get a char* and a length, instead of using NUL
 	 * terminated strings.
 	 */
-	octstr_get_many_chars(msgtext, sms_msg->text, 0, octstr_len(sms_msg->text));
-	msgtext[octstr_len(sms_msg->text)] = '\0';
-	internal_cimd_parse_iso88591_to_cimd( msgtext, tmptext, 10*1024,
-					      smsc->alt_charset ); 
-
+	internal_cimd_parse_iso88591_to_cimd( msgtext, tmptext, 10*1024, smsc->alt_charset ); 
 
 	/* If messages has UDHs, add the magic number 31 to the right spot */
 	sprintf(tmpbuff, "%c%s%c%s%c%s%c%s%c%s%c%s%c%s%c%c", 
 	  0x02, 
 	  "03", 0x09, 
-	  sms_msg->receiver, 0x09, 
+	  octstr_get_cstr(msg->smart_sms.receiver), 0x09, 
 	  tmptext, 0x09, 
 	  "", 0x09,
 	  "", 0x09,
-	  (sms_msg->has_udh==1) ? "31" : "", 0x09,
+	  (msg->smart_sms.flag_udh==1) ? "31" : "", 0x09,
 	  "11", 0x03, 0x0A); 
 
 	ret = write_to_socket(smsc->socket, tmpbuff);
