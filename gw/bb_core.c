@@ -513,6 +513,7 @@ Octstr *bb_print_status(void)
 {
     char *s;
     char buf[512];
+    Octstr *ret, *boxc;
     time_t t;
 
     t = time(NULL) - start_time;
@@ -530,9 +531,20 @@ Octstr *bb_print_status(void)
     default:
 	s = "going down";
     }
-    sprintf(buf, "Kannel version %s %s (up %ldd %ldh %ldm %lds), %d threads",
+    sprintf(buf, "Kannel version %s %s (up %ldd %ldh %ldm %lds), %d threads<br><br>"
+	    "Received %ld SMS and %ld WDP messages, Sent %ld SMS and %ld WDP messages<br><br>",
 	    VERSION, s, t/3600/24, t/3600%24, t/60%60, t%60,
 	    list_producer_count(flow_threads) +
-	    list_producer_count(core_threads));
-    return octstr_create(buf);
+	    list_producer_count(core_threads),
+	    counter_value(incoming_sms_counter),
+	    counter_value(incoming_wdp_counter),
+	    counter_value(outgoing_sms_counter),
+	    counter_value(outgoing_wdp_counter));
+
+    ret = octstr_create(buf);
+    boxc = boxc_status();
+    octstr_append(ret, boxc);
+    octstr_destroy(boxc);
+
+    return ret;
 }

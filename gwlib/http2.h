@@ -256,9 +256,9 @@ int http2_socket_fd(HTTPSocket *socket);
  * Once you have a list of headers, you can use http2_header_add and the
  * other functions to manipulate it.
  */
+void http2_destroy_headers(List *);
 #if LIW_TODO
 List *http2_create_empty_headers(void);
-void http2_destroy_headers(List *);
 List *http2_parse_header_string(Octstr *headers_as_string);
 Octstr *http2_generate_header_string(List *headers_as_list);
 

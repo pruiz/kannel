@@ -168,8 +168,10 @@ static void *httpd_serve(void *arg)
     octstr_destroy(url);
     octstr_destroy(body);
     octstr_destroy(reply);
-    // http2_destroy_headers(headers);
+    http2_destroy_headers(headers);
+    
     // http2_destroy_headers(cgivars);
+    list_destroy(cgivars);
     
     http2_server_close_client(client);
     debug("bb.thread", 0, "EXIT: httpd_serve");

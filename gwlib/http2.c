@@ -321,6 +321,16 @@ Octstr *body) {
 }
 
 
+void http2_destroy_headers(List *headers) {
+	Octstr *h;
+
+	while ((h = list_extract_first(headers)) != NULL)
+	    octstr_destroy(h);
+
+	list_destroy(headers);
+}
+
+
 Octstr *http2_header_find_first(List *headers, char *name) {
 	long i, name_len;
 	Octstr *h;

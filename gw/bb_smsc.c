@@ -122,7 +122,7 @@ static void *sms_sender(void *arg)
 	tmp = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
 	tmp->msg = msg;
 	ret = smsc_send_message(conn->smsc, tmp, NULL);
-	/* there should be implicit destroy in sending */
+	/* send_message destroys both the tmp and msg */
 	
 	counter_increase(outgoing_sms_counter);
     }
