@@ -372,7 +372,7 @@ static int receive_push_reply(HTTPCaller *caller)
     WAPEvent *e;
     List *retry_headers;
     
-    http_status = 401;
+    http_status = HTTP_UNAUTHORIZED;
     tries = 0;
 
     id = http_receive_result(caller, &http_status, &final_url, &reply_headers,
@@ -383,7 +383,7 @@ static int receive_push_reply(HTTPCaller *caller)
         goto push_failed;
     }
 
-    while (use_headers && http_status == 401 && tries < retries) {
+    while (use_headers && http_status == HTTP_UNAUTHORIZED && tries < retries) {
         debug("test.ppg", 0, "try number %d", tries);
         debug("test.ppg", 0, "authentication failure, get a challenge");
         http_destroy_headers(reply_headers);
@@ -416,17 +416,17 @@ static int receive_push_reply(HTTPCaller *caller)
         ++tries;
     }
 
-    if (http_status == 404) {
+    if (http_status == HTTP_NOT_FOUND) {
         error(0, "push failed, service not found");
         goto push_failed;
     }
 
-    if (http_status == 403) {
+    if (http_status == HTTP_FORBIDDEN) {
         error(0, "push failed, service forbidden");
         goto push_failed;
     }
 
-    if (http_status == 401) {
+    if (http_status == HTTP_UNAUTHORIZED) {
         if (use_headers)
             error(0, "tried %ld times, stopping", retries);
         else
