@@ -1,3 +1,10 @@
+2004-02-02 Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/shared.c: changed connect_to_bearerbox_real() to not drop panic
+      in case we couldn't connect to bearerbox. This allows the caller to
+      deside if a panic is applicable or a loop will be entered to try to
+      re-connect. Whereas connect_to_bearerbox() keeps to throw panic on
+      unsuccessfull connect.
+
 2004-01-29 Aarno Syv\132nen <aarno@gni.ch>
     * gw/wap_push_ppg_pushuser.c: Fixed a fatal bug appearing when
       no blacklist is defined

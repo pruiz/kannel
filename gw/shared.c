@@ -167,7 +167,8 @@ Connection *connect_to_bearerbox_real(Octstr *host, int port, int ssl, Octstr *o
 #endif /* HAVE_LIBSSL */
     conn = conn_open_tcp(host, port, our_host);
     if (conn == NULL)
-    	panic(0, "Couldn't connect to the bearerbox.");
+        return NULL;
+
     if (ssl)
         info(0, "Connected to bearerbox at %s port %d using SSL.",
 	         octstr_get_cstr(host), port);
@@ -182,6 +183,8 @@ Connection *connect_to_bearerbox_real(Octstr *host, int port, int ssl, Octstr *o
 void connect_to_bearerbox(Octstr *host, int port, int ssl, Octstr *our_host)
 {
     bb_conn = connect_to_bearerbox_real(host, port, ssl, our_host);
+    if (bb_conn == NULL)
+        panic(0, "Couldn't connect to the bearerbox.");
 }
 
 
