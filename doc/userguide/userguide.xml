@@ -5382,8 +5382,21 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
        <para>OTA messages can be sent to mobile phones or devices to auto-configure the  
        settings for WAP. They are actually complex SMS messages with UDH and sent as
-       concatenated messages if too long (and compiled if necessary). An example URL is 
-       like this (OTA configuration defined in the Kannel configuration file):
+       concatenated messages if too long (and compiled if necessary).</para>
+		 
+		 <para>You may either pass an HTTP request as GET method or POST method to the 
+		 HTTP interface.</para>
+
+		 <para>If you want to send a configuration that is defined within Kannel's 
+		 configuration file itself you have to pass a valid 
+		 <literal>ota-id</literal> value otherwise the content of the request will 
+		 be compiled to as OTA message.</para>
+
+<sect3>
+<title>GET method for the OTA HTTP interface</title>
+														  
+		 <para>An example URL looks like this (OTA configuration defined in the Kannel 
+		 configuration file):
 	
 <screen><userinput>
 http://smsbox.host.name:13013/cgi-bin/sendota?
@@ -5399,9 +5412,11 @@ username=foo&amp;password=bar&amp;to=0123456&amp;text=MyURLEncodedXMLdocument&am
 type=settings
 </userinput></screen>
        
-       You can send either settings or bookmark, set cgi variable type accordingly. 
+       You can send either settings or bookmark, set CGI variable type accordingly. 
        Default for this variable is settings. 
        </para>
+
+</sect3>
 
        <para>
        Here is an example XML document (this one contains CSD settings for logging
@@ -5414,9 +5429,9 @@ type=settings
 
 &#60;CHARACTERISTIC TYPE="ADDRESS"&#62;
 &#60;PARM NAME="BEARER" VALUE="GSM/CSD"/&#62;
-&#60;PARM NAME="PROXY" VALUE="213.161.40.40"/&#62;
+&#60;PARM NAME="PROXY" VALUE="10.11.12.13"/&#62;
 &#60;PARM NAME="PORT" VALUE="9201"/&#62;
-&#60;PARM NAME="CSD_DIALSTRING" VALUE="+358600505050"/&#62;
+&#60;PARM NAME="CSD_DIALSTRING" VALUE="+12345678"/&#62;
 &#60;PARM NAME="PPP_AUTHTYPE" VALUE="PAP"/&#62;
 &#60;PARM NAME="PPP_AUTHNAME" VALUE="yourusername"/&#62;
 &#60;PARM NAME="PPP_AUTHSECRET" VALUE="yourauthsecret"/&#62;
@@ -5425,10 +5440,10 @@ type=settings
 &#60;/CHARACTERISTIC&#62;
 
 &#60;CHARACTERISTIC TYPE="URL" 
-     VALUE="http://cn.wiral.com/wapwml/loginphtml"/&#62;
+     VALUE="http://wap.company.com/"/&#62;
 
 &#60;CHARACTERISTIC TYPE="NAME"&#62;
-&#60;PARM NAME="NAME" VALUE="Matrix Login CSD"/&#62;
+&#60;PARM NAME="NAME" VALUE="Your WAP Company"/&#62;
 &#60;/CHARACTERISTIC&#62;
 
 &#60;/CHARACTERISTIC-LIST&#62;
@@ -5441,9 +5456,8 @@ type=settings
 &#60;!DOCTYPE CHARACTERISTIC_LIST SYSTEM "file://gw/settings.dtd"&#62;
 &#60;CHARACTERISTIC-LIST&#62;
     &#60;CHARACTERISTIC TYPE="BOOKMARK"&#62;
-        &#60;PARM NAME="NAME" VALUE="Matrix Login"/&#62;
-        &#60;PARM NAME="URL" VALUE="http://tim.wiral.com/wapwml/login.phtml?
-                                    MID=aarno&amp;ID=myhash"/&#62;
+        &#60;PARM NAME="NAME" VALUE="WAP Company"/&#62;
+        &#60;PARM NAME="URL" VALUE="http://wap.company.com/"/&#62;
     &#60;/CHARACTERISTIC&#62;
 &#60;/CHARACTERISTIC-LIST&#62;
 </userinput></screen>
@@ -5456,9 +5470,10 @@ type=settings
 
  <table frame=none>
   <title>OTA CGI Variables</title>
-  <tgroup cols=2>
+  <tgroup cols=3>
   <tbody>
    <row><entry><literal>otaid</literal></entry>
+   <entry><literal>string</literal></entry>
    <entry valign=bottom>
         Name or ID of the 'ota-setting' group in Kannel configuration
         that should be sent to the phone. This variable is optional.
@@ -5467,12 +5482,14 @@ type=settings
    </entry></row>
 
    <row><entry><literal>username</literal></entry>
+   <entry><literal>string</literal></entry>
    <entry valign=bottom>
         Username of the 'sendsms-user' group in Kannel configuration, that has
         been configured to send OTA messages.
    </entry></row>
 
    <row><entry><literal>password</literal></entry>
+   <entry><literal>string</literal></entry>
    <entry valign=bottom>
        Password associated with given <literal>username</literal>. Must match
        corresponding field in 'sendsms-user' group in Kannel configuration, or
@@ -5480,11 +5497,13 @@ type=settings
    </entry></row>
 
    <row><entry><literal>to</literal></entry>
+   <entry><literal>number</literal></entry>
    <entry valign=bottom>
        Number of the phone that is to receive the OTA configuration message.
    </entry></row>
 
    <row><entry><literal>from</literal></entry>
+   <entry><literal>string</literal></entry>
    <entry valign=bottom>
        Phone number of the sender. This field is usually overridden by
        the SMS Center, or it can be overridden by faked-sender
@@ -5492,15 +5511,29 @@ type=settings
        set, smsbox global-sender is used.
    </entry></row>
 
-   <row><entry><literal>text</literal></entry>
+	<row><entry><literal>smsc</literal></entry>
+   <entry><literal>string</literal></entry>
    <entry valign=bottom>
-       An URL enecoded XML document, containing either settings or bookmarks.
+        Optional virtual smsc-id from which the message is supposed to 
+	have arrived. This is used for routing purposes, if any denied
+	or preferred SMS centers are set up in SMS center
+	configuration. This variable can be overridden with a
+        <literal>forced-smsc</literal> configuration
+        variable. Likewise, the <literal>default-smsc</literal> variable
+        can be used to set the SMSC if it is not set otherwise.
+   </entry></row>
+
+   <row><entry><literal>text</literal></entry>
+   <entry><literal>XML document</literal></entry>
+   <entry valign=bottom>
+       An URL encoded XML document, containing either settings or bookmarks.
    </entry></row>
 
    <row><entry><literal>type</literal></entry>
+   <entry><literal>string</literal></entry>
    <entry valign=bottom>
        Type of the XML document, either "settings" or "bookmarks". Default is 
-       "settings"
+       "settings".
    </entry></row>
 
   </tbody>

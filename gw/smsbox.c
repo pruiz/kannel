@@ -2377,7 +2377,7 @@ send:
  * We still care about passed GET variable, in case the X-Kannel-foobar
  * parameters are not used but the POST contains the XML body itself.
  */
-static Octstr *smsbox_sendota_post(List *args, List *headers, Octstr *body,
+static Octstr *smsbox_sendota_post(List *headers, Octstr *body,
                                    Octstr *client_ip, int *status)
 {
     Octstr *name, *val, *ret;
@@ -2395,7 +2395,7 @@ static Octstr *smsbox_sendota_post(List *args, List *headers, Octstr *body,
      * process all special HTTP headers 
      */
     for (l = 0; l < list_len(headers); l++) {
-	http_header_get(headers, l, &name, &val);
+    http_header_get(headers, l, &name, &val);
 
 	if (octstr_case_compare(name, octstr_imm("X-Kannel-OTA-ID")) == 0) {
 	    id = octstr_duplicate(val);
@@ -2422,17 +2422,6 @@ static Octstr *smsbox_sendota_post(List *args, List *headers, Octstr *body,
 		octstr_strip_blanks(smsc);
 	}
     }
-
-    /* 
-     * try to catch at least the GET variables if available 
-     */
-    id = !id ? http_cgi_variable(args, "otaid") : id;
-    from = !from ? http_cgi_variable(args, "from") : from;
-    to = !to ? http_cgi_variable(args, "to") : to;
-    to = !to ? http_cgi_variable(args, "phonenumber") : to;
-    user = !user ? http_cgi_variable(args, "username") : user;
-    pass = !pass ? http_cgi_variable(args, "password") : pass;
-    smsc = !smsc ? http_cgi_variable(args, "smsc") : smsc;
 
     /* check the username and password */
     t = authorise_username(user, pass, client_ip);
@@ -2515,7 +2504,7 @@ static Octstr *smsbox_sendota_post(List *args, List *headers, Octstr *body,
             msg->sms.smsc_id = NULL;
 
         info(0, "%s <%s> <%s>", octstr_get_cstr(sendota_url), 
-             id ? octstr_get_cstr(id) : "<default>", octstr_get_cstr(to));
+             id ? octstr_get_cstr(id) : "XML", octstr_get_cstr(to));
     
         r = send_message(t, msg); 
         msg_destroy(msg);
@@ -2530,7 +2519,7 @@ static Octstr *smsbox_sendota_post(List *args, List *headers, Octstr *body,
         ret = octstr_create("Sent.");
     }
     }    
-      
+    
 error:
     octstr_destroy(user);
     octstr_destroy(pass);
@@ -2596,7 +2585,7 @@ static void sendsms_thread(void *arg)
 	if (body == NULL)
             answer = smsbox_req_sendota(args, ip, &status);
         else
-            answer = smsbox_sendota_post(args, hdrs, body, ip, &status);
+            answer = smsbox_sendota_post(hdrs, body, ip, &status);
     }
     /* add aditional URI compares here */
     else {
@@ -2605,17 +2594,17 @@ static void sendsms_thread(void *arg)
     }
 
 	debug("sms.http", 0, "Status: %d Answer: <%s>", status,
-		octstr_get_cstr(answer));
+          octstr_get_cstr(answer));
 
-	octstr_destroy(ip);
-	octstr_destroy(url);
-	http_destroy_headers(hdrs);
-	octstr_destroy(body);
-	http_destroy_cgiargs(args);
+    octstr_destroy(ip);
+    octstr_destroy(url);
+    http_destroy_headers(hdrs);
+    octstr_destroy(body);
+    http_destroy_cgiargs(args);
 	
-	http_send_reply(client, status, reply_hdrs, answer);
+    http_send_reply(client, status, reply_hdrs, answer);
 
-	octstr_destroy(answer);
+    octstr_destroy(answer);
     }
 
     http_destroy_headers(reply_hdrs);

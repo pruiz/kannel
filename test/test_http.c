@@ -25,10 +25,9 @@ static Octstr *auth_password = NULL;
 static Octstr *msg_text = NULL;
 static Octstr *ssl_client_certkey_file = NULL;
 static Octstr *extra_headers = NULL;
-static Octstr *content_file = NULL;
+static Octstr *content_file = NULL; /* if set use POST method */
 static int file = 0;
 static List *split = NULL;
-static int use_post = 0; /* defaults to GET method */
 
 
 static Octstr *post_content_create(void)
@@ -62,7 +61,11 @@ static void start_request(HTTPCaller *caller, List *reqh, long i)
     if (split != NULL)
         http_header_combine(reqh, split);
 
-    if (use_post)
+    /* 
+     * if a body content file has been specified, then we
+     * assume to send a POST request.
+     */
+    if (content_file != NULL)
         content = post_content_create();
                            
     /*
@@ -223,14 +226,12 @@ static void help(void)
     info(0, "-u filename");
     info(0, "    read request's &text= string from file 'filename'. It is"); 
     info(0, "    url encoded before it is added to the request");
-    info(0, "-x");
-    info(0, "    use POST method for the request (default: GET)");
     info(0, "-H filename");
     info(0, "    read HTTP headers from file 'filename' and add them to");
     info(0, "    the request for url 'url'");
-    info(0, "-b filename");
-    info(0, "    read POST request content from file 'filename' and send");
-    info(0, "    it as body of the request");
+    info(0, "-B filename");
+    info(0, "    read content from file 'filename' and send it as body");
+    info(0, "    of a POST method request (default: GET if no -B is set)");
     info(0, "-s");
     info(0, "    use HTTPS scheme to access SSL-enabled HTTP server");
     info(0, "-c ssl_client_cert_key_file");
@@ -263,7 +264,7 @@ int main(int argc, char **argv)
     file = 0;
     fp = NULL;
     
-    while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:a:u:sc:H:xb:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:a:u:sc:H:B:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
@@ -336,10 +337,6 @@ int main(int argc, char **argv)
 	    ssl_client_certkey_file = octstr_create(optarg);
         break;
 
-    case 'x':
-        use_post = 1;
-        break;
-
     case 'H':
         fp = fopen(optarg, "a");
         if (fp == NULL)
@@ -353,7 +350,7 @@ int main(int argc, char **argv)
         fclose(fp);
         break;
 
-    case 'b':
+    case 'B':
         content_file = octstr_create(optarg);
         break;
 
@@ -366,8 +363,8 @@ int main(int argc, char **argv)
     }
     
     if (optind == argc) {
-	help();
-	exit(0);
+        help();
+        exit(0);
     }
 
 #ifdef HAVE_LIBSSL
@@ -385,8 +382,8 @@ int main(int argc, char **argv)
 #endif
     
     if (proxy != NULL && proxy_port > 0) {
-	http_use_proxy(proxy, proxy_port, exceptions,
-	proxy_username, proxy_password);
+        http_use_proxy(proxy, proxy_port, exceptions,
+        proxy_username, proxy_password);
     }
     octstr_destroy(proxy);
     octstr_destroy(proxy_username);
@@ -399,12 +396,12 @@ int main(int argc, char **argv)
     
     time(&start);
     if (num_threads == 0)
-	client_thread(http_caller_create());
+        client_thread(http_caller_create());
     else {
-	for (i = 0; i < num_threads; ++i)
-	    threads[i] = gwthread_create(client_thread, http_caller_create());
-	for (i = 0; i < num_threads; ++i)
-	    gwthread_join(threads[i]);
+        for (i = 0; i < num_threads; ++i)
+            threads[i] = gwthread_create(client_thread, http_caller_create());
+        for (i = 0; i < num_threads; ++i)
+            gwthread_join(threads[i]);
     }
     time(&end);
     
@@ -412,7 +409,7 @@ int main(int argc, char **argv)
     
     run_time = difftime(end, start);
     info(0, "%ld requests in %f seconds, %f requests/s.",
-	 max_requests, run_time, max_requests / run_time);
+         max_requests, run_time, max_requests / run_time);
     
     octstr_destroy(auth_username);
     octstr_destroy(auth_password);
