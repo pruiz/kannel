@@ -2,13 +2,13 @@
  * wtp.c - WTP implementation
  *
  * Implementation is for now very straigthforward, WTP state machines are stored
- * in an unordered linked list (this fact will change, naturally). Ditto segments
- * to be reassembled.
+ * as an unordered linked list (this fact will change, naturally). Segments to be 
+ * reassembled are stored as ordered linked list. 
  *
  * By Aarno Syvänen for WapIT Ltd.
  */
 
-#include "wtp.h"
+#include "wtp.h" 
 
 enum {
     no_datagram,
@@ -21,11 +21,6 @@ enum {
 
 enum {
    CURRENT = 0x00,
-};
-
-enum {
-   ACKNOWLEDGEMENT = 0,
-   TID_VERIFICATION = 1
 };
 
 enum {
@@ -56,10 +51,8 @@ enum {
 /*
  * Global data structures:
  */
-static Octstr *segmented_message; /* list of segments to be reassembled into a 
-                                     message */
 
-static WTPMachine *list = NULL;   /* list of wtp state machines */
+static WTPMachine *list = NULL;         /* list of wtp state machines */
 
 /*****************************************************************************
  *
@@ -70,6 +63,26 @@ static WTPMachine *list = NULL;   /* list of wtp state machines */
 
 static WTPMachine *wtp_machine_create_empty(void);
 
+/*
+ * Functions for handling segments
+ */
+
+static WTPSegment *create_segment(void);
+
+static void segment_dump(WTPSegment *segment);
+
+static void segment_destroy(WTPSegment *segment);
+
+static WTPSegment *find_previous_segment(long tid, char sequence_number,
+       WTPSegment *first, WTPSegment *next);
+
+static WTPSegment *insert_segment(WTPSegment *previous, WTPSegment *next, 
+       WTPSegment *segment);
+
+static int list_missing_segments(WTPSegment *segments_ackd, 
+       WTPSegment *segments_list, WTPSegment *missing_segments);
+
+static WTPSegment *make_missing_segments_list(Msg *msg, char number_of_missing);
 /*
  * Print a wtp event or a wtp machine state name as a string.
  */
@@ -114,13 +127,13 @@ static WTPEvent *unpack_ack(long tid, char octet);
 
 static WTPEvent *unpack_abort(long tid, char first_octet, char fourth_octet);
 
-static WTPEvent *unpack_invoke(Msg *msg, long tid, char first_octet, 
-       char fourth_octet);
+static WTPEvent *unpack_invoke(Msg *msg, WTPSegment *segment, long tid, 
+       char first_octet, char fourth_octet);
 
-static WTPEvent *unpack_segmented_invoke(Msg *msg, long tid, char first_octet, 
-       char fourth_octet);
+static Octstr *unpack_segmented_invoke(Msg *msg, WTPSegment *segment, long tid, 
+       char first_octet, char fourth_octet);
 
-static WTPEvent *unpack_negative_ack(long tid, char octet);
+static WTPSegment *unpack_negative_ack(Msg *msg, char octet);
 
 static void tell_about_error(int type, WTPEvent *event);
 #ifdef next
@@ -129,12 +142,11 @@ static int tpi_short(char octet);
 static WTPEvent *unpack_invoke_flags(WTPEvent *event, long tid, char first_octet, 
                                      char fourth_octet);
 
-static int add_segment_to_message(long tid, Octstr *data, char position,  
-                                  Octstr *segmented_message, int *missing_segments);
+static WTPSegment *add_segment_to_message(long tid, Octstr *data, char position);
 
 static int first_segment(WTPEvent *event);
 
-static Octstr *concatenate_message(long tid, Octstr *segmented_message);
+static Octstr *concatenate_message(long tid, WTPSegment *segments_list);
 
 static Address *deduce_segment_ack_address(Msg *msg);
 
@@ -393,11 +405,13 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
  * the host byte order. Updates the log and sends protocol error messages. Re-
  * assembles segmented messages, too.
  *
- * Return event, when we have a single message; NULL, when we have a segment
+ * Return event, when we have a single message; NULL, when we have a segment.
  */
 WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
          static WTPEvent *event = NULL;
+         static WTPSegment *segments_list = NULL,
+                           *missing_segments = NULL;
 
          char first_octet,
               fourth_octet,
@@ -407,6 +421,8 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
          if (octstr_len(msg->wdp_datagram.user_data) < 3){
             tell_about_error(pdu_too_short_error, event);
+            debug(0, "Got too short PDU (less than three octets)");
+            msg_dump(msg);
             return NULL;
          }
 
@@ -433,12 +449,17 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
  */       
 	        case INVOKE:
                      fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 3);
+
                      if (fourth_octet == -1){
                          tell_about_error(pdu_too_short_error, event);
+                         debug(0, "WTP: unpack_datagram; missing fourth octet
+                              (invoke)");
+                         msg_dump(msg);
                          return NULL;
                      }
 
-                     event = unpack_invoke(msg, tid, first_octet, fourth_octet);
+                     event = unpack_invoke(msg, segments_list, tid, first_octet, 
+                                           fourth_octet);
 
                      if (first_segment(event)) {
                         return NULL;
@@ -452,29 +473,47 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                break;
 
 	       case ABORT:
-                    fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 
-                                   4);
+                    fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 3);
+
                     if (fourth_octet == -1){
                        tell_about_error(pdu_too_short_error, event);
+                       debug(0, "WTP: unpack_datagram; missing fourth octet 
+                            (abort)");
+                         msg_dump(msg);
                        return NULL;
                     }
+
                     return unpack_abort(tid, first_octet, fourth_octet);
                break;
 
                case SEGMENTED_INVOKE:
-                    fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 
-                                   4);
+                    fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 3);
+
                     if (fourth_octet == -1){
                        tell_about_error(pdu_too_short_error, event);
                        return NULL;
                     }
-                    return unpack_segmented_invoke(msg, tid, first_octet, 
-                                                   fourth_octet);
+
+                    event->RcvInvoke.user_data = unpack_segmented_invoke(
+                           msg, segments_list, tid, first_octet, fourth_octet);
+
+                    if (message_type(first_octet) == transmission_trailer_segment) 
+                       return event;
+                    else
+                       return NULL;
               break;
                   
               case NEGATIVE_ACK:
-                   return unpack_negative_ack(tid, first_octet);
-             break;
+                   fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 3);
+
+                   if (fourth_octet == -1){
+                      tell_about_error(pdu_too_short_error, event);
+                      return NULL;
+                   }
+
+                   missing_segments = unpack_negative_ack(msg, fourth_octet);
+                   return NULL;
+              break;
          } /* switch */
          panic(0, "Following return is unnecessary but are required by the 
                compiler");
@@ -687,6 +726,36 @@ WTPMachine *wtp_machine_create(Octstr *source_address,
            return machine;
 } 
 
+static WTPSegment *create_segment(void){
+
+       WTPSegment *segment;
+
+       segment = gw_malloc(sizeof(WTPSegment));
+       segment->tid = 0;
+       segment->packet_sequence_number = 0;
+       segment->data = octstr_create_empty();
+       
+       segment->next = NULL;
+
+       return segment;
+}
+
+static void segment_dump(WTPSegment *segment){
+
+       debug(0, "WTP: segment was:");
+       debug(0, "tid was: %ld", segment->tid);
+       debug(0, "psn was: %d", segment->packet_sequence_number);
+       debug(0, "segment itself was:");
+       octstr_dump(segment->data);
+       debug(0, "WTP: segment dump ends");
+}
+
+static void segment_destroy(WTPSegment *segment){
+
+       octstr_destroy(segment->data);
+       gw_free(segment->next);
+       gw_free(segment);
+}
 
 /*
  * Packs a wsp event. Fetches flags and user data from a wtp event. Address 
@@ -899,11 +968,15 @@ WTPEvent *unpack_abort(long tid, char first_octet, char fourth_octet){
 }
 
 /*
+ * Fields of an unsegmented invoke are transferred to WTPEvent having type 
+ * RcvInvoke.
+ *
  * A segmented message is indicated by a cleared ttr flag. This causes the protocol
  * to add the received segment to the message identified by tid. Invoke message has 
  * an implicit sequence number 0 (it being the first segment).
  */
-WTPEvent *unpack_invoke(Msg *msg, long tid, char first_octet, char fourth_octet){
+WTPEvent *unpack_invoke(Msg *msg, WTPSegment *segments_list, long tid, 
+                        char first_octet, char fourth_octet){
 
          WTPEvent *event = NULL;
 
@@ -915,7 +988,9 @@ WTPEvent *unpack_invoke(Msg *msg, long tid, char first_octet, char fourth_octet)
          }
 /*
  * First invoke message includes all event flags, even when we are receiving a 
- * segmented message.
+ * segmented message. So we first fetch event flags, and then handle user_data 
+ * differently: if message was unsegmented, we tranfer all data to event; if it
+ * was segmented, we begin reassembly.
  */
          event = unpack_invoke_flags(event, tid, first_octet, fourth_octet);
          octstr_delete(msg->wdp_datagram.user_data, 0, 4);
@@ -925,8 +1000,8 @@ WTPEvent *unpack_invoke(Msg *msg, long tid, char first_octet, char fourth_octet)
 	        case group_trailer_segment:
                      debug(0, "WTP: Got a segmented message");
                      msg_dump(msg);
-                     add_segment_to_message(tid, msg->wdp_datagram.user_data, 0, 
-                                            segmented_message, NULL);
+                     segments_list = add_segment_to_message(tid, 
+                                     msg->wdp_datagram.user_data, 0);
                      return NULL;
 	        break;
 
@@ -988,15 +1063,16 @@ static void tell_about_error(int type, WTPEvent *event){
      }
 }
 
-static WTPEvent *unpack_segmented_invoke(Msg *msg, long tid, char first_octet, 
-       char fourth_octet){
+static Octstr *unpack_segmented_invoke(Msg *msg, WTPSegment *segments_list, 
+       long tid, char first_octet, char fourth_octet){
        
-       static WTPEvent *event = NULL;
+       Octstr *event_data = NULL;
+       static WTPSegment *segments_ackd = NULL;
+       WTPSegment *missing_segments = NULL;
        Address *address = NULL;
-       static int *missing_segments = NULL;
        
        char packet_sequence_number = 0;
-       static int segments_missing = 0;
+       int segments_missing = 0;
 
        static int negative_ack_sent = 0,
               group_ack_sent = 0;
@@ -1010,29 +1086,31 @@ static WTPEvent *unpack_segmented_invoke(Msg *msg, long tid, char first_octet,
        if (message_type(first_octet) == body_segment){
           debug(0, "WTP: Got a body segment");
           msg_dump(msg);
-          segments_missing += add_segment_to_message(tid, 
-                             msg->wdp_datagram.user_data, packet_sequence_number, 
-                             segmented_message, missing_segments);
-          
+          segments_list = add_segment_to_message(tid, 
+                          msg->wdp_datagram.user_data, packet_sequence_number);
           return NULL;
        }
 
        if (message_type(first_octet) == group_trailer_segment){
           debug(0, "WTP: Got the last segment of the group");
           msg_dump(msg);
-          segments_missing += add_segment_to_message(tid, 
-                             msg->wdp_datagram.user_data, packet_sequence_number, 
-                             segmented_message, missing_segments);
+          segments_list = add_segment_to_message(tid, 
+                          msg->wdp_datagram.user_data, packet_sequence_number);
+          segments_missing = list_missing_segments(segments_ackd, segments_list,
+                             missing_segments);
 
           if (segments_missing) {
              wtp_send_negative_ack(address, tid, negative_ack_sent,
                                    segments_missing, missing_segments);
              negative_ack_sent = 1;
+
           } else {
             wtp_send_group_ack(address, tid, group_ack_sent, 
                                packet_sequence_number);
             group_ack_sent = 1;
           }
+
+          segments_ackd = segments_list;
           return NULL;
       }
 
@@ -1040,38 +1118,47 @@ static WTPEvent *unpack_segmented_invoke(Msg *msg, long tid, char first_octet,
          debug(0, "WTP: Got last segment of a message");
          msg_dump(msg);
 
-         segments_missing += add_segment_to_message(tid, 
-                             msg->wdp_datagram.user_data, packet_sequence_number, 
-                             segmented_message, missing_segments);
+         segments_list = add_segment_to_message(tid, 
+                         msg->wdp_datagram.user_data, packet_sequence_number);
+         segments_missing = list_missing_segments(segments_ackd, segments_list,
+                            missing_segments);
 
          if (segments_missing) {
              wtp_send_negative_ack(address, tid, negative_ack_sent, 
                                    segments_missing, missing_segments);
              negative_ack_sent = 1;
+             return NULL;
+
          } else {
             wtp_send_group_ack(address, tid, group_ack_sent, 
                                packet_sequence_number);
             group_ack_sent = 1;
          }         
 
-         msg->wdp_datagram.user_data = concatenate_message(tid, segmented_message);
+         event_data = concatenate_message(tid, segments_list);
          
-         event = NULL;
          missing_segments = NULL;
          segments_missing = 0;
          group_ack_sent = 0;
          negative_ack_sent = 0;        
 
-         return event;
+         return event_data;
       }
       panic(0, "Following return is unnecessary but is required by the compiler");
       return NULL;
 }
 
-static WTPEvent *unpack_negative_ack(long tid, char octet){
+static WTPSegment *unpack_negative_ack(Msg *msg, char fourth_octet){
 
+       WTPSegment *missing_segments = NULL;
+       char number_of_missing_packets = 0;
+       
        debug(0, "WTP: got a negative ack");
-       return NULL;
+       number_of_missing_packets = fourth_octet; 
+       missing_segments = make_missing_segments_list(msg, 
+                          number_of_missing_packets);      
+
+       return missing_segments;
 }
 
 #ifdef next
@@ -1107,11 +1194,35 @@ static WTPEvent *unpack_invoke_flags(WTPEvent *event, long tid, char first_octet
          return event;
 }
 
-static int add_segment_to_message(long tid, Octstr *data, char position,  
-                                  Octstr *segmented_message, int *missing_segments){
+/*
+ * Returns: pointer to the segment added, if OK
+ */
+static WTPSegment *add_segment_to_message(long tid, Octstr *data, char position){
 
-       debug (0, "WTP: Message reassembly not yet implemented");
-       return 1;      
+       static WTPSegment *first = NULL;
+       WTPSegment *previous = NULL,
+                  *next = NULL,
+                  *segments_list = NULL;
+
+       debug (0, "WTP: Adding a segment into the segments list");
+
+       segments_list = create_segment();
+       segments_list->tid = tid;
+       segments_list->packet_sequence_number = position;
+       segments_list->data = data;
+
+       if (first == NULL){
+          first = segments_list;
+          return first;
+
+       } else {
+          previous = find_previous_segment(tid, position, first, next);
+          return insert_segment(previous, next, segments_list);
+       }
+
+       panic(0, "Following return is not necessary but is required by the 
+             compiler");
+       return NULL;      
 }
 
 static int first_segment(WTPEvent *event){
@@ -1126,9 +1237,9 @@ static int first_segment(WTPEvent *event){
        return segmented;
 }
 
-static Octstr *concatenate_message(long tid, Octstr *segmented_message){
+static Octstr *concatenate_message(long tid, WTPSegment *segments_list){
 
-       debug(0, "WTP: concatenation not supported");
+       debug(0, "WTP: concatenation not yet supported");
        
        return NULL;
 }
@@ -1151,6 +1262,63 @@ static Address *deduce_segment_ack_address(Msg *msg){
 
        return NULL;
 }
+
+static WTPSegment *find_previous_segment(long tid, char packet_sequence_number,
+       WTPSegment *first, WTPSegment *next){
+
+       WTPSegment *previous = NULL,
+                  *current = NULL;
+
+       current = first;
+       previous = first;
+
+       while (current->tid < tid){
+	     while (current->packet_sequence_number < packet_sequence_number){
+                   previous = current;
+                   if (current->next != NULL)
+                       current = current->next;
+             }
+       }
+
+       if (current == NULL)
+          debug(0, "WTP: find_previous_segment: tid not found from the segments 
+                    list");
+       else
+          if (current->next == NULL)
+             next = current;
+          else 
+             next = current->next;
+
+       return previous;
+}
+
+static WTPSegment *insert_segment(WTPSegment *previous, WTPSegment *next, 
+       WTPSegment *this_segment){
+
+       previous->next = this_segment;
+       this_segment->next = next;
+
+       return this_segment;
+}
+
+static int list_missing_segments(WTPSegment *segments_ackd, 
+       WTPSegment *segments_list, WTPSegment *missing_segments){
+
+       int segments_missing = 0;
+
+       return segments_missing;
+}
+
+/*
+ * Makes a list of missing segments based on negative ack PDU.
+ */
+static WTPSegment *make_missing_segments_list(Msg *msg, 
+       char number_of_missing_packets){
+
+       WTPSegment *missing_segments = NULL;
+
+       return missing_segments;
+} 
 
 /*****************************************************************************/
 

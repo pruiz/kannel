@@ -8,6 +8,13 @@
 #include "msg.h"
 #include "wapbox.h"
 
+enum {
+     ERROR_DATA = 0x00,
+     INFO_DATA = 0x01,
+     OPTION = 0x02,
+     PACKET_SEQUENCE_NUMBER = 0x03
+};
+
 /*****************************************************************************
  *
  * Prototypes of internal functions
@@ -22,7 +29,7 @@ static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine,
                      WTPEvent *event);
 
 static Msg *pack_negative_ack(Msg *msg, long tid, int retransmission_status, 
-       int segments_missing, int *missing_segments);
+       int segments_missing, WTPSegment *missing_segments);
 
 static Msg *pack_group_ack(Msg *msg, long tid, int retransmission_status, 
                           char packet_sequence_number);
@@ -42,6 +49,15 @@ static void insert_tid(char *pdu, long attribute);
 static char insert_abort_type(int abort_type, char octet);
 
 static char indicate_ack_type(char ack_type, char octet);
+
+static void insert_missing_segments_list(char *wtp_pdu, 
+                                         WTPSegment *missing_segments);
+
+static char indicate_variable_header(char octet);
+
+static char insert_tpi_type(int pdu_type, char octet);
+
+static char insert_tpi_length(int tpi_length, char octet);
 
 /*****************************************************************************
  *
@@ -129,7 +145,7 @@ void wtp_send_group_ack(Address *address, long tid, int retransmission_status,
 }
 
 void wtp_send_negative_ack(Address *address, long tid, int retransmission_status, 
-                           int segments_missing, int *missing_segments){
+                           int segments_missing, WTPSegment *missing_segments){
      
      Msg *msg = NULL;
 
@@ -248,16 +264,74 @@ static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine,
 }
 
 static Msg *pack_negative_ack(Msg *msg, long tid, int retransmission_status, 
-       int segments_missing, int *missing_segments){
+       int segments_missing, WTPSegment *missing_segments){
+
+       int octet;
+       size_t pdu_len;
+       char *wtp_pdu;
+/*
+ * Negative ack PDU includes a list of all missing segments. Other inputs are rid
+ * and tid.
+ */
+       pdu_len = segments_missing + 4;
+       wtp_pdu = gw_malloc(pdu_len);
+       octet = -42;
+
+       octet = insert_pdu_type(NEGATIVE_ACK, octet);
+       octet = insert_rid(retransmission_status, octet);
+       wtp_pdu[0] = octet;
+
+       insert_tid(wtp_pdu, tid);
+
+       wtp_pdu[4] = segments_missing;
+
+       insert_missing_segments_list(wtp_pdu, missing_segments);
+
+       msg->wdp_datagram.user_data = octstr_create_empty();
+       octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 
+                          segments_missing + 4);
 
        return msg;
 }
 
 static Msg *pack_group_ack(Msg *msg, long tid, int retransmission_status, 
                           char packet_sequence_number){
+       
+       char octet;
+       size_t pdu_len,
+              tpi_length;
+       char *wtp_pdu;
+/*
+ * Group acknowledgement PDU has a packet sequence tpi added in it. Its lenght 
+ * is two octets. Tpi length is one, because this number excludes first octet 
+ * (the header of aheader). 
+ */
+       pdu_len = 5;
+       wtp_pdu = gw_malloc(pdu_len);
+       tpi_length = 1;
+       octet = -42;
+
+       octet = indicate_variable_header(octet);
+       octet = insert_pdu_type(ACK, octet);
+       octet = indicate_ack_type(ACKNOWLEDGEMENT, octet);
+       octet = insert_rid(retransmission_status, octet);
+       wtp_pdu[0] = octet;
+
+       insert_tid(wtp_pdu, tid);
+
+       octet = -42;
+       octet = insert_tpi_type(PACKET_SEQUENCE_NUMBER, octet);
+       octet = insert_tpi_length(tpi_length, octet);
+       wtp_pdu[4] = octet;
+
+       wtp_pdu[5] = packet_sequence_number;
+
+       msg->wdp_datagram.user_data = octstr_create_empty();
+       octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 5);
 
        return msg;
 }
+
 /* 
  * We must swap the source and the destination, because we are answering a query.
  */
@@ -326,6 +400,36 @@ static char indicate_ack_type(char ack_type, char octet){
        tid_ve_octet = ack_type&1;
        tid_ve_octet <<= 2;
        octet += tid_ve_octet;
+
+       return octet;
+}
+
+static void insert_missing_segments_list(char *wtp_pdu, 
+       WTPSegment *missing_segments){
+
+}
+
+static char indicate_variable_header(char octet){
+
+       char this_octet;
+
+       this_octet = 1;
+
+       return octet + (this_octet<<7);
+}
+
+static char insert_tpi_type(int type, char octet){
+
+       octet = type;
+       octet <<= 3;
+
+       return octet;
+}
+
+static char insert_tpi_length(int length, char octet){
+
+       octet = length;
+       octet &= 3;
 
        return octet;
 }

@@ -40,7 +40,7 @@ void wtp_send_group_ack(Address *address, long tid, int retransmission_status,
 
 void wtp_send_negative_ack(Address *address, long tid, 
                            int retransmission_status, int segments_missing,
-                           int *missing_segments);
+                           WTPSegment *missing_segments);
 #endif
 
 

@@ -8,6 +8,7 @@
 typedef struct WTPMachine WTPMachine;
 typedef struct WTPEvent WTPEvent;
 typedef struct Address Address; 
+typedef struct WTPSegment WTPSegment;
 
 #include <errno.h>
 #include <netinet/in.h>
@@ -29,11 +30,14 @@ typedef struct Address Address;
 #define L_A_WITH_USER_ACK 4
 #define L_R_WITH_USER_ACK 7
 
+/*
+ * Maximum values for counters
+ */
 #define AEC_MAX 4
 #define MAX_RCR 4
 
 /*
- * Types of WTP PDUs
+ * Types of WTP PDUs and numbers assigned for them
  */
 
 enum {
@@ -46,6 +50,15 @@ enum {
      SEGMENTED_INVOKE = 0x05,
      SEGMENTED_RESULT = 0x06,
      NEGATIVE_ACK = 0x07
+};
+
+/*
+ * Types of acknowledgements
+ */
+
+enum {
+   ACKNOWLEDGEMENT = 0,
+   TID_VERIFICATION = 1
 };
 
 enum event_name {
@@ -72,7 +85,6 @@ struct WTPMachine {
         #define NEXT(name) struct WTPMachine *name
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
-
 };
 
 
@@ -91,6 +103,13 @@ struct Address {
    long source_port;
    Octstr *destination_address;
    long destination_port;
+};
+
+struct WTPSegment {
+   long tid;
+   char packet_sequence_number;
+   Octstr *data;
+   struct WTPSegment *next;
 };
 
 /*
