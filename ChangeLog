@@ -1,3 +1,9 @@
+2000-03-10  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gw/wml_compiler.c (parse_octet_string): bug fix with parsing 
+	$-characters. Tried to allocate a huge block and wapbox went down 
+	on it.
+
 Fri Mar 10 16:48:35 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Making release 0.6.

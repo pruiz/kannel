@@ -986,6 +986,7 @@ int parse_octet_string(Octstr *ostr)
     {
       if (octstr_len(output) != 0)
 	{
+	  temp2 = octstr_copy(ostr, start, pos - start);
 	  temp1 = octstr_cat(output, temp2);
 	  output = octstr_duplicate(temp1);
 	  octstr_destroy(temp1);
