@@ -539,6 +539,12 @@ static int parse_push_message_value(Octstr *attr_name, Octstr *attr_value,
     return -2;
 }  
 
+/*
+ * When there is no legal address to be stored in field (either parsing was
+ * unsuccessfull or an unimplemented address format was requested by the push
+ * initiator) we use value "erroneous". This is necessary, because this a 
+ * mandatory field.
+ */
 static int parse_address_value(Octstr *attr_name, Octstr *attr_value, 
                                WAPEvent **e)
 {
@@ -548,8 +554,8 @@ static int parse_address_value(Octstr *attr_name, Octstr *attr_value,
     if (octstr_compare(attr_name, octstr_imm("address-value")) == 0) {
         octstr_destroy((**e).u.Push_Message.address_value);
 	(**e).u.Push_Message.address_value = 
-             (ret = parse_address(&attr_value)) > -2 ? 
-             octstr_duplicate(attr_value) : NULL;
+             (ret = parse_address(&attr_value)) > -1 ? 
+             octstr_duplicate(attr_value) : octstr_imm("erroneous");
         return ret;
     } 
 
@@ -962,7 +968,13 @@ static int parse_address(Octstr **address)
         return -2;
     }
 
-    pos = parse_wappush_client_address(address, pos);
+    if ((pos = parse_wappush_client_address(address, pos)) == -2) {
+        warning(0, "PAP_COMPILER: parse_address: illegal client address");
+        return -2;
+    } else if (pos == -1) {
+        warning(0, "PAP_COMPILER: parse_address: unimplemented feature");
+        return -1;
+    }
     
     return pos;
 }
@@ -970,7 +982,6 @@ static int parse_address(Octstr **address)
 static long parse_wappush_client_address(Octstr **address, long pos)
 {
     if ((pos = parse_client_specifier(address, pos)) < 0) {
-        warning(0, "PAP COMPILER: illegal client specifier");
         return pos;
     }
 
@@ -1142,7 +1153,9 @@ static long parse_type(Octstr **address, Octstr **type_value, long pos)
 static long parse_ext_qualifiers(Octstr **address, long pos, 
                                  Octstr *type)
 {
-    while (qualifiers(*address, pos, type)) {
+    int ret;
+
+    while ((ret = qualifiers(*address, pos, type)) == 1) {
         if ((pos = parse_qualifier_value(address, pos)) < 0)
             return pos;
 
@@ -1150,12 +1163,17 @@ static long parse_ext_qualifiers(Octstr **address, long pos,
             return pos;
     }
 
+    if (ret == 1)
+        return -2;
+
     return pos;
 }
 
 /*
- * According to ppg, chapter 7.1, global phone number starts with +. However,
- * all numbers do not conform this standard. So we must accept one without a +.
+ * According to ppg, chapter 7.1, global phone number starts with +. Phone
+ * number is here an unique identifier, so if it does not conform the inter-
+ * national format, we return an error. (Is up to bearerbox to transform it
+ * to an usable phone number)
  */
 static long parse_global_phone_number(Octstr **address, long pos)
 {
@@ -1295,7 +1313,10 @@ static Octstr *prepend_char(Octstr *os, unsigned char c)
 /*
  * Ext qualifiers contain /, ipv4 address contains . , ipv6 address contains :.
  * phone number contains + and escaped-value contain no specific tokens. Lastly
- * mentioned are for future extansions, but we must parse them.
+ * mentioned are for future extensions, but we must parse them.
+ * Return 1, when qualifiers found
+ *        0, when not
+ *       -1, when an error was found during the process
  */
 static int qualifiers(Octstr *address, long pos, Octstr *type)
 {
@@ -1304,7 +1325,7 @@ static int qualifiers(Octstr *address, long pos, Octstr *type)
     long i;
 
     i = pos;
-    c = '+';
+    c = 'E';
 
     if (octstr_compare(type, octstr_imm("PLMN")) == 0)
         term = '+';
@@ -1315,11 +1336,14 @@ static int qualifiers(Octstr *address, long pos, Octstr *type)
     else
         term = 'N';
 
-    if (term != 'N')
-        while ((c = octstr_get_char(address, i)) != term) {
+    if (term != 'N') {
+        while ((c = octstr_get_char(address, i)) != term && i != 0) {
             if (c == '/')
                 return 1;
             --i;
+        }
+        if (i == 0)
+	    return 0;
     }
 
     if (term == 'N') {
@@ -1536,6 +1560,9 @@ static long handle_two_terminators (Octstr **address, long pos,
 
     return pos;
 }
+
+
+
 
 
 

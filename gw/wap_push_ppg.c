@@ -12,7 +12,7 @@
  *      WAP-203-WSP-20000504-a (wsp)
  *      WAP-189-PushOTA-20000217-a (ota).
  *
- * In addition, rfc 1521 and rfc 2045 are referred.
+ * In addition, rfcs 1521 and 2045 are referred.
  *
  * By Aarno Syvänen for Wapit Ltd and for Wiral Ltd.
  */
@@ -331,11 +331,8 @@ static void ota_read_thread(void *arg)
 }
 
 /*
- * We send a push response to a push initiator when we cannot parse MIME 
- * content or when our control entity was erroneous. Otherwise the response
- * is up to ppg module. In addition, we must store HTTPClient data structure
- * corresponding a given push id, so that we can send responses to the rigth
- * address.
+ * Store HTTPClient data structure corresponding a given push id, so that we 
+ * can send responses to the rigth address.
  */
 
 static void http_read_thread(void *arg)
@@ -391,7 +388,8 @@ static void http_read_thread(void *arg)
              octstr_get_cstr(ip));
         
         if (octstr_len(mime_content) == 0) {
-	    warning(0, "PPG: No MIME content received, ignoring the request");
+	    warning(0, "PPG: No MIME content received, the request"
+                    " unacceptable");
             send_bad_message_response(client, octstr_imm("No MIME content"), 
                                       PAP_BAD_REQUEST, http_status);
             goto ferror;
@@ -401,12 +399,15 @@ static void http_read_thread(void *arg)
         http_remove_hop_headers(push_headers);
         remove_mime_headers(&push_headers);
         if (!headers_acceptable(push_headers, &content_header)) {
+	    warning(0, "PPG: Unparsable push headers, the request"
+                    " unacceptable");
             send_bad_message_response(client, content_header, PAP_BAD_REQUEST,
                                       http_status);
 	    goto herror;
         }
         
         if (get_mime_boundary(push_headers, content_header, &boundary) == -1) {
+	    warning(0, "PPG: No MIME boundary, the request unacceptable");
             send_bad_message_response(client, content_header, PAP_BAD_REQUEST,
                                       http_status);
 	    goto berror;
@@ -417,7 +418,8 @@ static void http_read_thread(void *arg)
                         &content_headers, &rdf_content)) {
             send_bad_message_response(client, mime_content, PAP_BAD_REQUEST,
                                       http_status);
-            warning(0, "PPG: http_read_thread: unable to parse mime content");
+            warning(0, "PPG: unable to parse mime content, the request"
+                    " unacceptable");
             goto clean;
         } else {
 	    debug("wap.push.ppg", 0, "PPG: http_read_thread: pap multipart"
@@ -437,22 +439,22 @@ static void http_read_thread(void *arg)
         if ((compiler_status = pap_compile(pap_content, &ppg_event)) == -2) {
 	    send_bad_message_response(client, pap_content, PAP_BAD_REQUEST,
                                       http_status);
-            warning(0, "PPG: http_read_thread: pap control entity erroneous");
+            warning(0, "PPG: pap control entity erroneous, the request" 
+                    " unacceptable");
             goto no_compile;
         } else if (compiler_status == -1) {
             send_bad_message_response(client, pap_content, PAP_BAD_REQUEST,
                                       http_status);
-            warning(0, "PPG: http_read_thread: non implemented pap feature"
-                    " requested");
+            warning(0, "PPG: non implemented pap feature requested, the"
+                    " the request unacceptable");
             goto no_compile;
         } else {
-            dict_put(http_clients, 
-		     ppg_event->u.Push_Message.pi_push_id, client);
-	  /*if (!dict_put_once(http_clients, 
+	    if (!dict_put_once(http_clients, 
 		    ppg_event->u.Push_Message.pi_push_id, client)) {
+                warning(0, "PPG: duplicate push id, the request unacceptable");
 	        tell_duplicate_push_id(client, ppg_event, url, http_status);
                 goto no_compile;
-		}*/
+		} 
 
             dict_put(urls, ppg_event->u.Push_Message.pi_push_id, url); 
             debug("wap.push.ppg", 0, "PPG: http_read_thread: pap control"
@@ -672,7 +674,7 @@ no_start:
 }
 
 /*
- * These event come from OTA layer
+ * These events come from OTA layer
  */
 static void handle_internal_event(WAPEvent *e)
 {
@@ -1011,8 +1013,8 @@ static int sms_requested(PPGPushMachine *pm)
 }
 
 /*
- * There is to types of requests: requesting ip services and sms services.
- * Fields are different in both cases
+ * There is to types of unit push requests: requesting ip services and sms 
+ * services. Fields are different in both cases
  */
 static void request_unit_push(long last, PPGPushMachine *pm)
 {
@@ -1151,7 +1153,7 @@ static int check_capabilities(List *requested, List *assumed)
 }
 
 /*
- * Time of creation of the response (pap, chapter 9.3).We convert UNIX time 
+ * Time of creation of the response (pap, chapter 9.3). We convert UNIX time 
  * to ISO8601, it is, YYYY-MM-DDThh:mm:ssZ, T and Z being literal strings (we
  * use gw_gmtime to turn UNIX time to broken time).
  */
@@ -1193,8 +1195,9 @@ static void push_machine_assert(PPGPushMachine *pm)
  * chapter 6.1.1, states that we MUST reject a push having an erroneous PAP
  * push message element. So we must validate it even when we do not compile
  * it.
- * We do not do any (optional) header conversions to the binary format here, 
- * these are responsibility of our OTA module (gw/wap_push_ota.c). 
+ * We do not do any (formally optional, but phones may disagree) header 
+ * conversions to the binary format here, these are responsibility of our OTA 
+ * module (gw/wap_push_ota.c). 
  * FIXME: Remove all headers which default values are known to the client. 
  *
  * Return message, either transformed or not (if there is no-transform cache 
@@ -1835,7 +1838,7 @@ static PPGSessionMachine *update_session_data_with_headers(
 /*
  * Ppg 6.1.2.2, subchapter delivery, states that if the delivery method is not
  * confirmed or unconfirmed, PPG may select an implementation specific type of
- * the  primitive. We use an unconfirmed push, if Qos is notspecified, and 
+ * the  primitive. We use an unconfirmed push, if QoS is notspecified, and 
  * confirmed one, when it is preferconfirmed (we do support confirmed push).
  */
 static int confirmation_requested(WAPEvent *e)
@@ -1959,7 +1962,7 @@ static PPGPushMachine *update_push_data_with_attribute(PPGSessionMachine **sm,
     break;
 
     default:
-        error(0, "WAP_PUSH_PPG: update_push_data_with_attribute: Non\n"
+        error(0, "WAP_PUSH_PPG: update_push_data_with_attribute: Non"
               " existing push machine status: %ld", status);
     break;
     }
@@ -2011,9 +2014,8 @@ static long ota_abort_to_pap(long reason)
 }
 
 /*
- * Accept connectionless push, it is, this is preferconfirmed or PI wants con-
- * nectionless push and there is no sessions open.
- * FIXME: preferconfirmed messages.
+ * Accept connectionless push when PI wants connectionless push and there is 
+ * no sessions open.
  */
 static int cless_accepted(WAPEvent *e, PPGSessionMachine *sm)
 {
@@ -2146,7 +2148,7 @@ static char *wina_uri[] =
 #define NUMBER_OF_WINA_URIS sizeof(wina_uri)/sizeof(wina_uri[0])
 
 /*
- * X-Wap-Application-Id header is defined in push Message, chapter 6.2.2.1.
+ * X-Wap-Application-Id header is defined in Push Message, chapter 6.2.2.1.
  * First check do we a header with an app-encoding field and a coded value. 
  * If not, try to find push application id from table of wina approved values.
  */

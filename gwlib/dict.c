@@ -104,18 +104,24 @@ static int dict_put_true(Dict *dict, Octstr *key, void *value)
     item_unique = 0;
     lock(dict);
     i = key_to_index(dict, key);
+
     if (dict->tab[i] == NULL) {
 	dict->tab[i] = list_create();
 	p = NULL;
-    } else
+    } else {
 	p = list_search(dict->tab[i], key, item_has_key);
+    }
+
     if (p == NULL) {
     	p = item_create(key, value);
 	list_append(dict->tab[i], p);
         dict->key_count++;
         item_unique = 1;
-    } else
+    } else {
         item_unique = 0;
+    }
+
+    unlock(dict);
 
     return item_unique;
 }
@@ -206,13 +212,13 @@ int dict_put_once(Dict *dict, Octstr *key, void *value)
     int ret;
 
     ret = 1;
-    if (handle_null_value(dict, key, dict->tab))
+    if (handle_null_value(dict, key, value))
         return 1;
-    if (dict_put_true(dict, key, dict->tab))
+    if (dict_put_true(dict, key, value)) {
         ret = 1;
-    else 
+    } else {
         ret = 0;
-    unlock(dict);
+    }
     return ret;
 }
 
