@@ -437,18 +437,24 @@ int main(int argc, char **argv)
     wsp_push_client_init(&wsp_push_client_dispatch_event, 
                          &wtp_resp_dispatch_event);
     
-    wtp_initiator_init(&dispatch_datagram, &wsp_session_dispatch_event);
+    if (cfg)
+        wtp_initiator_init(&dispatch_datagram, &wsp_session_dispatch_event);
+
     wtp_resp_init(&dispatch_datagram, &wsp_session_dispatch_event,
                   &wsp_push_client_dispatch_event);
-    wap_appl_init();
+    wap_appl_init(cfg);
 
 #if (HAVE_WTLS_OPENSSL)
     wtls_secmgr_init();
     wtls_init();
 #endif
     
-    wap_push_ota_init(&wsp_session_dispatch_event, &wsp_unit_dispatch_event);
-    wap_push_ppg_init(&wap_push_ota_dispatch_event, &wap_appl_dispatch, cfg);
+    if (cfg) {
+        wap_push_ota_init(&wsp_session_dispatch_event, 
+                          &wsp_unit_dispatch_event);
+        wap_push_ppg_init(&wap_push_ota_dispatch_event, &wap_appl_dispatch, 
+                          cfg);
+    }
 		
     wml_init();
     
@@ -457,7 +463,8 @@ int main(int argc, char **argv)
     connect_to_bearerbox(bearerbox_host, bearerbox_port, bearerbox_ssl, NULL
 		    /* bearerbox_our_port */);
 
-    wap_push_ota_bb_address_set(bearerbox_host);
+    if (cfg)
+        wap_push_ota_bb_address_set(bearerbox_host);
 	    
     program_status = running;
     heartbeat_thread = heartbeat_start(write_to_bearerbox, heartbeat_freq, 
@@ -515,14 +522,21 @@ int main(int argc, char **argv)
     program_status = shutting_down;
     heartbeat_stop(heartbeat_thread);
     counter_destroy(sequence_counter);
-    wtp_initiator_shutdown();
+
+    if (cfg)
+        wtp_initiator_shutdown();
+
     wtp_resp_shutdown();
     wsp_push_client_shutdown();
     wsp_unit_shutdown();
     wsp_session_shutdown();
     wap_appl_shutdown();
-    wap_push_ota_shutdown();
-    wap_push_ppg_shutdown();
+
+    if (cfg) {
+        wap_push_ota_shutdown();
+        wap_push_ppg_shutdown();
+    }
+
     wml_shutdown();
     close_connection_to_bearerbox();
     wsp_http_map_destroy();
