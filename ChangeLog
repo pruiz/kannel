@@ -1,3 +1,8 @@
+2000-11-19  Derry Hamilton  <rasilon@tardis.ed.ac.uk>
+
+	* solaris/prototype: Updated the prototype to reflect the newer
+	install style.
+
 2000-11-17  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_smsc.c (sms_receiver): usleep limit to avoid portability
