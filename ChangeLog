@@ -1,6 +1,8 @@
 2003-03-07  Stipe Tolj  <tolj@wapme-systems.de>
     * contrib/kannel-monitor/index.php: some minor changes contributed by
       Alexander.
+    * gwlib/http.c: fixed (kludge?!) a HTTP basic auth problem with the passwd.
+      Bruno substitues this with stars, I don't know why.
 
 2003-03-06  Stipe Tolj  <tolj@wapme-systems.de>
     * contrib/kannel-monitor/*: a simple php application to summerize sms
