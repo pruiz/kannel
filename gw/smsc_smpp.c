@@ -32,7 +32,6 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password,
 	smsc->type = SMSC_TYPE_SMPP_IP;
 	sprintf(smsc->name, "SMPP:%s:%i/%i:%s:%s", host, port,
 		(receive_port ? receive_port : port), system_id, system_type);
-	smsc->latency = 100*1000;
 
 	smsc->hostname = gw_strdup(host);
 	smsc->port = port;

@@ -71,7 +71,6 @@ SMSCenter * sema_open(char* smscnua, char* homenua,
 	sprintf(smsc->name, "SEMA:X28:"); 
 
 	smsc->type = SMSC_TYPE_SEMA_X28;
-	smsc->latency = 1000*1000; 
 	smsc->sema_smscnua = gw_strdup(smscnua);
 	smsc->sema_homenua = gw_strdup(homenua);
 	smsc->sema_serialdevice = gw_strdup(serialdevice);

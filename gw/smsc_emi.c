@@ -118,7 +118,6 @@ SMSCenter *emi_open(char *phonenum, char *serialdevice, char *username, char *pa
 		goto error;
 
 	smsc->type = SMSC_TYPE_EMI;
-	smsc->latency = 1000*1000; /* 1 second */
 
 	smsc->emi_phonenum = gw_strdup(phonenum);
 	smsc->emi_serialdevice = gw_strdup(serialdevice);
@@ -180,7 +179,6 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
 		goto error;
 
 	smsc->type = SMSC_TYPE_EMI_IP;
-	smsc->latency = 1000*1000; /* 1 second */ 
 
 	smsc->emi_hostname = gw_strdup(hostname);
 	smsc->emi_port = port;

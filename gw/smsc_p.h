@@ -42,7 +42,6 @@ struct SMSCenter {
 	
 	char name[1024];
 	int id;
-        int latency;
     	
 	/* Personal dialing prefix (normalization string). */
 	char *dial_prefix;

@@ -41,7 +41,6 @@ SMSCenter *fake_open(char *hostname, int port) {
 	if (smsc == NULL)
 		goto error;
 
-	smsc->latency = 1000*1000;
 	smsc->type = SMSC_TYPE_FAKE;
 	smsc->port = port;
 	smsc->hostname = gw_strdup(hostname);

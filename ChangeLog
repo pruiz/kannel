@@ -1,3 +1,8 @@
+2000-03-21  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_cimd.c, gw/smsc_emi.c, gw/smsc_fake.c, gw/smsc_p.h,
+	gw/smsc_sema.c, gw/smsc_smpp.c: Removed unused field "latency".
+
 2000-03-21  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gwlib/octstr.c: a bug fixed in the octstr_delete; now the 

@@ -66,8 +66,6 @@ static int cimd_open_connection(SMSCenter *smsc) {
 	if (smsc->socket == -1)
 	    goto error;
 	
-	smsc->latency = 1000*1000;
-	
 	/* receive protocol string "CIMD rel 1.37\n" */
 	for (;;) {
 	    ret = smscenter_read_into_buffer(smsc);
