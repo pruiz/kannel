@@ -1,4 +1,9 @@
 2003-06-24  Stipe Tolj  <tolj@wapme-systems.de>
+    * radius/radius_acct.c: fixing mutex_lock() PANIC inside 
+      radius_acct_get_msisdn() when gw/wap-appl.c is calling the function
+      without having the proxy thread running. This broke wapbox.
+
+2003-06-24  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap-appl.c: removing HTTP referer inclusion by Kannel again. This has
       caused WAP certification tests to fail in the REFPOOL. There is a magic
       WML attribute which forbids to send the referer, but as Kannel does it
