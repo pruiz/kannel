@@ -1,5 +1,12 @@
 2000-10-24  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/octstr.c: Add support for formats u, o, x, and X.
+	(test_cimd2 needs X.)
+
+	* test/test_cimd2.c: Fix errors in octstr_format calls.
+
+2000-10-24  Richard Braakman  <dark@wapit.com>
+
 	* wmlscript/wsstdlib.c: Corrected "Phonebook" to "PhoneBook".
 
 2000-10-24  Kalle Marjola  <rpr@wapit.com>

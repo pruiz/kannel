@@ -317,7 +317,7 @@ static Octstr *eat_string_parm(Octstr *packet, int parm, int maxlen) {
 	Octstr *result;
 	Octstr *parmheader;
 
-    	parmheader = octstr_format("%c%0d:", TAB, parm);
+    	parmheader = octstr_format("%c%03d:", TAB, parm);
 	start = octstr_search(packet, parmheader, 0);
 	if (start < 0) {
 		octstr_destroy(parmheader);
@@ -384,6 +384,11 @@ static void eat_checksum(Octstr *packet) {
 static void handle_login(Octstr *packet, Octstr *out, int sequence) {
 	Octstr *user = eat_string_parm(packet, 10, 32);
 	Octstr *pass = eat_string_parm(packet, 11, 32);
+
+	if (user == NULL)
+		user = octstr_create("");
+	if (pass == NULL)
+		pass = octstr_create("");
 
 	if (logging == LOG_packets)
 		printf("RCV: Login user '%s', password '%s'\n",

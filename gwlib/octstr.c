@@ -1806,6 +1806,7 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     Octstr *new;
     char *s, *pad;
     long n;
+    unsigned long u;
     char tmpfmt[1024];
     char tmpbuf[1024];
     char c;
@@ -1833,6 +1834,29 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
         }
         new = octstr_create("");
         octstr_append_decimal(new, n);
+        break;
+
+    case 'o':
+    case 'u':
+    case 'x':
+    case 'X':
+	switch (format->type) {
+	case 'l':
+	    u = va_arg(*args, long);
+	    break;
+        case 'h':
+            u = (unsigned short) va_arg(*args, int);
+            break;
+        default:
+            u = va_arg(*args, int);
+            break;
+        }
+        tmpfmt[0] = '%';
+	tmpfmt[1] = 'l';
+	tmpfmt[2] = **fmt;
+	tmpfmt[3] = '\0';
+	sprintf(tmpbuf, tmpfmt, u);
+        new = octstr_create(tmpbuf);
         break;
 
     case 'e':
