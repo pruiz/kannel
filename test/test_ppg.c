@@ -31,6 +31,7 @@ static int verbose = 1,
            accept_binary = 0, 
            use_numeric = 0,
            use_string = 0,
+           use_content_header = 0,
            add_epilogue = 0,
            add_preamble = 0;
 static double wait_seconds = 0.0;
@@ -40,6 +41,7 @@ static char *boundary = NULL;
 static Octstr *content_flag = NULL;
 static Octstr *appid_flag = NULL;
 static Octstr *appid_string = NULL;
+static Octstr *content_header = NULL;
 static Octstr *content_transfer_encoding = NULL;
 static Octstr *connection = NULL;
 static Octstr *delimiter = NULL;
@@ -116,30 +118,39 @@ static void add_push_application_id(List **push_headers, Octstr *appid_flag,
 
     if (octstr_compare(appid_flag, octstr_imm("any")) == 0) {
         if (!use_numeric)
-        http_header_add(*push_headers, "X-WAP-Application-Id", 
-                        "http://www.wiral.com:*");
+            http_header_add(*push_headers, "X-WAP-Application-Id", 
+                            "http://www.wiral.com:*");
         else
             http_header_add(*push_headers, "X-WAP-Application-Id", "0");
     } else if (octstr_compare(appid_flag, octstr_imm("ua")) == 0) {
         if (!use_numeric)
-        http_header_add(*push_headers, "X-WAP-Application-Id", 
-                        "http://www.wiral.com:wml.ua");
+            http_header_add(*push_headers, "X-WAP-Application-Id", 
+                            "http://www.wiral.com:wml.ua");
         else
             http_header_add(*push_headers, "X-WAP-Application-Id", "2");
     } else if (octstr_compare(appid_flag, octstr_imm("mms")) == 0) {
         if (!use_numeric)
-        http_header_add(*push_headers, "X-WAP-Application-Id", 
-                        "mms.ua");
+            http_header_add(*push_headers, "X-WAP-Application-Id", 
+                            "mms.ua");
         else
             http_header_add(*push_headers, "X-WAP-Application-Id", "4");
     } else if (octstr_compare(appid_flag, octstr_imm("scrap")) == 0) {
         if (!use_numeric)
-        http_header_add(*push_headers, "X-WAP-Application-Id", 
+            http_header_add(*push_headers, "X-WAP-Application-Id", 
                         "no appid at all");
         else
             http_header_add(*push_headers, "X-WAP-Application-Id", 
                             "this is not a numeric header");
     }
+}
+
+static void add_part_header(Octstr *content_keader, Octstr **wap_content)
+{
+    if (use_content_header) {
+        octstr_append(*wap_content, content_header);
+    }
+
+    add_delimiter(wap_content);
 }
 
 static void add_content_type(Octstr *content_flag, Octstr **wap_content)
@@ -155,7 +166,7 @@ static void add_content_type(Octstr *content_flag, Octstr **wap_content)
             "Content-Type: text/vnd.wap.sl");
     else if (octstr_compare(content_flag, octstr_imm("multipart")) == 0)
         *wap_content = octstr_format("%s",
-            "Content-Type: multipart/related; boundary=fsahgwruijkfldsa\r\n");
+            "Content-Type: multipart/related; boundary=fsahgwruijkfldsa");
     else if (octstr_compare(content_flag, octstr_imm("mms")) == 0) 
         *wap_content = octstr_format("%s", 
             "Content-Type: application/vnd.wap.mms-message"); 
@@ -171,7 +182,7 @@ static void add_content_transfer_encoding_type(Octstr *content_flag,
                                                Octstr *wap_content)
 {
     if (!content_flag)
-	     return;
+	return;
 
     if (octstr_compare(content_flag, octstr_imm("base64")) == 0)
 	octstr_append_cstr(wap_content, "Content-transfer-encoding: base64");
@@ -179,26 +190,24 @@ static void add_content_transfer_encoding_type(Octstr *content_flag,
     add_delimiter(&wap_content);
 }
 
-static void add_connection_header(Octstr *connection, Octstr *wap_content)
+static void add_connection_header(List **push_headers, Octstr *connection)
 {
     if (!connection)
         return;
 
     if (octstr_compare(connection, octstr_imm("close")) == 0)
-        octstr_format_append(wap_content, "%s", "Connection: close");
+        http_header_add(*push_headers, "Connection", "close");
     else if (octstr_compare(connection, octstr_imm("keep-alive")) == 0) 
-        octstr_format_append(wap_content, "%s", "Connection: keep-alive");
-
-    add_delimiter(&wap_content);
+        http_header_add(*push_headers, "Connection", "keep-alive");
 }
 
 static void transfer_encode (Octstr *cte, Octstr *content)
 {
     if (!cte)
-	    return;
+	return;
     
     if (octstr_compare(cte, octstr_imm("base64")) == 0) {
-	    octstr_binary_to_base64(content);
+       octstr_binary_to_base64(content);
     }
 }
 
@@ -260,6 +269,7 @@ static List *push_headers_create(size_t content_len)
     if (use_headers)
         http_add_basic_auth(push_headers, username, password);
     add_push_application_id(&push_headers, appid_flag, use_string);
+    add_connection_header(&push_headers, connection);
 
     octstr_destroy(mos);
 
@@ -323,7 +333,7 @@ static Octstr *push_content_create(void)
         add_content_type(content_flag, &wap_content);
         add_content_transfer_encoding_type(content_transfer_encoding, 
                                            wap_content);
-        add_connection_header(connection, wap_content);
+        add_part_header(content_header, &wap_content);
 
         /* Read the content file. (To be pushed)*/
         if ((wap_file_content = 
@@ -338,7 +348,7 @@ static Octstr *push_content_create(void)
             octstr_hex_to_binary(wap_file_content);            
         }
 
-	    transfer_encode (content_transfer_encoding, wap_file_content);
+	transfer_encode(content_transfer_encoding, wap_file_content);
         octstr_append(wap_content, wap_file_content);
         octstr_destroy(wap_file_content);
 
@@ -635,9 +645,13 @@ static void help(void)
     info(0, "if set, use numeric appid values instead of string ones. For");
     info(0, "instance, '4' instead of 'mms.ua'. Default is off.");
     info(0, "-s string");
-    info(0, "supply application id as a plain string. For instance"); 
+    info(0, "supply a message header as a plain string. For instance"); 
     info(0, "-s x-wap-application-id:mms.ua equals -a ua. Default is");
     info(0, "x-wap-application-id:mms.ua.");
+    info(0, "-S string");
+    info(0, "supply an additional part header (for push content) as a string."); 
+    info(0, "For instance, -S Content-Language: en. Default no additional part");
+    info(0, "headers.");
     info(0, "-b");
     info(0, "If true, send username/password in headers. Default false");
     info(0, "-v number");
@@ -689,7 +703,7 @@ int main(int argc, char **argv)
     gwlib_init();
     num_threads = 1;
 
-    while ((opt = getopt(argc, argv, "HhBbnEpv:qr:t:c:a:i:e:k:d:s:")) != EOF) {
+    while ((opt = getopt(argc, argv, "HhBbnEpv:qr:t:c:a:i:e:k:d:s:S:")) != EOF) {
         switch(opt) {
 	    case 'v':
 	        log_set_output_level(atoi(optarg));
@@ -705,13 +719,13 @@ int main(int argc, char **argv)
             
 	    case 'i': 
 	        wait = 1;
-            wait_seconds = atof(optarg);
+                wait_seconds = atof(optarg);
 	    break;
 
-        case 't': 
+            case 't': 
 	        num_threads = atoi(optarg);
-            if (num_threads > MAX_THREADS)
-		        num_threads = MAX_THREADS;
+                if (num_threads > MAX_THREADS)
+		    num_threads = MAX_THREADS;
 	    break;
 
 	    case 'H': 
@@ -726,25 +740,24 @@ int main(int argc, char **argv)
                     octstr_compare(content_flag, octstr_imm("nil")) != 0 &&
                     octstr_compare(content_flag, octstr_imm("mms")) != 0 &&
                     octstr_compare(content_flag, octstr_imm("scrap")) != 0 &&
-                    octstr_compare(content_flag, 
-                    octstr_imm("multipart")) != 0) {
+                    octstr_compare(content_flag, octstr_imm("multipart")) != 0) {
 		        octstr_destroy(content_flag);
 		        error(0, "TEST_PPG: Content type not known");
 		        help();
-                exit(1);
+                         exit(1);
             }
 	    break;
 
 	    case 'a':
 	        appid_flag = octstr_create(optarg);
-            if (octstr_compare(appid_flag, octstr_imm("any")) != 0 && 
-                    octstr_compare(appid_flag, octstr_imm("ua")) != 0 &&
-                    octstr_compare(appid_flag, octstr_imm("mms")) != 0 &&
-                    octstr_compare(appid_flag, octstr_imm("nil")) != 0 &&
-                    octstr_compare(appid_flag, octstr_imm("scrap")) != 0) {
-		        octstr_destroy(appid_flag);
-		        error(0, "TEST_PPG: Push application id not known");
-		        help();
+                if (octstr_compare(appid_flag, octstr_imm("any")) != 0 && 
+                        octstr_compare(appid_flag, octstr_imm("ua")) != 0 &&
+                        octstr_compare(appid_flag, octstr_imm("mms")) != 0 &&
+                        octstr_compare(appid_flag, octstr_imm("nil")) != 0 &&
+                        octstr_compare(appid_flag, octstr_imm("scrap")) != 0) {
+		octstr_destroy(appid_flag);
+		error(0, "TEST_PPG: Push application id not known");
+		help();
                 exit(1);
            }
 	    break;
@@ -758,26 +771,31 @@ int main(int argc, char **argv)
                 use_string = 1;
             break;
 
+            case 'S':
+                content_header = octstr_create(optarg);
+                use_content_header = 1;
+            break;
+
 	    case 'e':
-		    content_transfer_encoding = octstr_create(optarg);
+		content_transfer_encoding = octstr_create(optarg);
                 if (octstr_compare(content_transfer_encoding, octstr_imm("base64")) != 0) {
-		        octstr_destroy(content_transfer_encoding);
-		        error(0, "TEST_PPG: unknown content transfer" 
+	            octstr_destroy(content_transfer_encoding);
+		    error(0, "TEST_PPG: unknown content transfer" 
                       " encoding \"%s\"", octstr_get_cstr(content_transfer_encoding));
-		        help();
-                exit(1);
-		    }
+		    help();
+                    exit(1);
+		}
 	    break;
 
 	    case 'k':
 	        connection = octstr_create(optarg);
-            if (octstr_compare(connection, octstr_imm("close")) != 0 && 
+                if (octstr_compare(connection, octstr_imm("close")) != 0 && 
                         octstr_compare(connection, octstr_imm("keep-alive")) != 0) {
-		        octstr_destroy(connection);
-		        error(0, "TEST_PPG: Connection-header unacceptable");
-		        help();
-                exit(1);
-           }
+	            octstr_destroy(connection);
+		    error(0, "TEST_PPG: Connection-header unacceptable");
+		    help();
+                    exit(1);
+                }
 	    break;
 
 	    case 'h':
@@ -837,6 +855,9 @@ int main(int argc, char **argv)
     if (appid_string == NULL)
         appid_string = octstr_imm("x-wap-application-id: wml.ua");
 
+    if (content_header == NULL)
+        use_content_header = 0;
+
     if (delimiter == NULL)
         delimiter = octstr_imm("crlf");
 
@@ -895,6 +916,7 @@ int main(int argc, char **argv)
 
     octstr_destroy(content_flag);
     octstr_destroy(appid_flag);
+    octstr_destroy(content_header);
     octstr_destroy(content_file);
     octstr_destroy(pap_file);
     octstr_destroy(ssl_client_certkey_file);
