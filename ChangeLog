@@ -1,3 +1,8 @@
+1999-12-22    <rpr@rpr.wapit.com>
+
+	* gw/smsbox_req.c (do_split_send): returned old code until Mikael
+	fixes his new one.
+
 1999-12-21    <rpr@rpr.wapit.com>
 
 	* gw/smsbox_req.c: fixed default username printing problem. Still

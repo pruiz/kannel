@@ -168,6 +168,84 @@ error:
  */
 static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
 {
+    Msg *split;
+
+    char *p, *suf, *sc;
+    int slen = 0;
+    int size, total_len, loc;
+    char *h, *f;
+    int fl, hl;
+
+    h = urltrans_header(trans);
+    f = urltrans_footer(trans);
+    if (h != NULL) hl = strlen(h); else hl = 0;
+    if (f != NULL) fl = strlen(f); else fl = 0;
+
+    suf = urltrans_split_suffix(trans);
+    sc = urltrans_split_chars(trans);
+    if (suf != NULL)
+	slen = strlen(suf);
+
+    if(msg->smart_sms.flag_udh) {
+	warning(0, "Cannot send too long UDH!");
+	return 0;
+    }
+    total_len = octstr_len(msg->smart_sms.msgdata);
+    
+    for(loc = 0, p = octstr_get_cstr(msg->smart_sms.msgdata);
+	maxmsgs > 0 && loc < total_len;
+	maxmsgs--) {
+
+	if (maxmsgs == 1 || total_len-loc < sms_max_length-fl-hl) {
+	    slen = 0;
+	    suf = NULL;
+	    sc = NULL;
+	}
+	size = sms_max_length - slen -hl -fl;	/* leave room to special parts */
+	/*
+	 * if we use split chars, find the first from starting from
+	 * the end of sms message and return partion _before_ that
+	 */
+	if (sc)
+	    size = str_reverse_seek(p+loc, size-1, sc) + 1;
+
+	/* do not accept a bit too small fractions... */
+	if (size < sms_max_length/2)
+	    size = sms_max_length - slen -hl -fl;
+
+	if ((split = msg_duplicate(msg))==NULL)
+	    goto error;
+
+	
+	if (h != NULL) {	/* add header and message */
+	    octstr_replace(split->smart_sms.msgdata, h, hl);
+	    octstr_insert_data(split->smart_sms.msgdata, hl, p+loc, size);    
+	} else			/* just the message */
+	    octstr_replace(split->smart_sms.msgdata, p+loc, size);
+	
+	if (suf != NULL)
+	    octstr_insert_data(split->smart_sms.msgdata, size, suf, slen);
+	
+	if (f != NULL)	/* add footer */
+	    octstr_insert_data(split->smart_sms.msgdata, size+hl, f, fl);
+
+	if (do_sending(split) < 0)
+	    return -1;
+
+	loc += size;
+    }
+    msg_destroy(msg);	/* we must delete at as it is supposed to be deleted */
+    return 0;
+
+error:
+    error(0, "Memory allocation failed!");
+    msg_destroy(msg);
+    return -1;
+    
+}
+
+
+#if 0
 
 	Msg *tmpmsg;
 
@@ -377,84 +455,9 @@ static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
 	/* This function must destroy the original message. */
 	msg_destroy(msg);
 
-#if 0    
-    Msg *split;
+#endif    
 
-    char *p, *suf, *sc;
-    int slen = 0;
-    int size, total_len, loc;
-    char *h, *f;
-    int fl, hl;
 
-    h = urltrans_header(trans);
-    f = urltrans_footer(trans);
-    if (h != NULL) hl = strlen(h); else hl = 0;
-    if (f != NULL) fl = strlen(f); else fl = 0;
-
-    suf = urltrans_split_suffix(trans);
-    sc = urltrans_split_chars(trans);
-    if (suf != NULL)
-	slen = strlen(suf);
-
-    if(msg->smart_sms.flag_udh) {
-	warning(0, "Cannot send too long UDH!");
-	return 0;
-    }
-    total_len = octstr_len(msg->smart_sms.msgdata);
-    
-    for(loc = 0, p = octstr_get_cstr(msg->smart_sms.msgdata);
-	maxmsgs > 0 && loc < total_len;
-	maxmsgs--) {
-
-	if (maxmsgs == 1 || total_len-loc < sms_max_length-fl-hl) {
-	    slen = 0;
-	    suf = NULL;
-	    sc = NULL;
-	}
-	size = sms_max_length - slen -hl -fl;	/* leave room to special parts */
-	/*
-	 * if we use split chars, find the first from starting from
-	 * the end of sms message and return partion _before_ that
-	 */
-	if (sc)
-	    size = str_reverse_seek(p+loc, size-1, sc) + 1;
-
-	/* do not accept a bit too small fractions... */
-	if (size < sms_max_length/2)
-	    size = sms_max_length - slen -hl -fl;
-
-	if ((split = msg_duplicate(msg))==NULL)
-	    goto error;
-
-	
-	if (h != NULL) {	/* add header and message */
-	    octstr_replace(split->smart_sms.msgdata, h, hl);
-	    octstr_insert_data(split->smart_sms.msgdata, hl, p+loc, size);    
-	} else			/* just the message */
-	    octstr_replace(split->smart_sms.msgdata, p+loc, size);
-	
-	if (suf != NULL)
-	    octstr_insert_data(split->smart_sms.msgdata, size, suf, slen);
-	
-	if (f != NULL)	/* add footer */
-	    octstr_insert_data(split->smart_sms.msgdata, size+hl, f, fl);
-
-	if (do_sending(split) < 0)
-	    return -1;
-
-	loc += size;
-    }
-    msg_destroy(msg);	/* we must delete at as it is supposed to be deleted */
-#endif
-
-    return 0;
-
-error:
-    error(0, "Memory allocation failed!");
-    msg_destroy(msg);
-    return -1;
-    
-}
 
 /*
  * send the 'reply', according to settings in 'trans' and 'msg'
