@@ -1,5 +1,16 @@
 2000-12-29  Tuomas Luttinen  <tuo@wapit.com>
 
+	* gw/wml_compiler.c: The own hash table code is deleted and dict 
+	implementation is used instead. The wml_init builds up the dicts 
+	for the WML binary bytecode and wml_shutdown frees those dicts.
+	Also a bit of code renewing by deleting all octstr_*_cstr-functions.
+
+	* gw/wapbox.c: Added calls to wml_init and wml_shutdown when starting
+	and shutting down the wapbox.
+
+	* gwlib/octstr.c (octstr_hash_key): Now hash key for a NULL octet 
+	string is 0.
+
 	* test/wml_tester.c: The test program now has a command line argument 
 	-n number that does the compiling n times. Also all the wml files 
 	written in sequence in the command line will be compiled. Some other 

@@ -98,66 +98,24 @@ typedef struct {
 
 
 /*
- * The hash table node.
- */
-
-typedef struct {
-    int count;
-    void *item;
-} hash_t;
-
-
-/*
- * The hash table data type.
- */
-
-typedef struct {
-    hash_t *table;
-
-    int count;
-    int prime;
-    int a;
-    int b;
-  
-    Mutex *operation_lock;
-} Hash;
-
-
-/*
- * The wml hash table node for 2 fields.
+ * The wml hash table node.
  */
 
 typedef struct {
     Octstr *item;
     unsigned char binary;
-} wml_hash2_t;
+} wml_hash_t;
 
 
 /*
- * The wml hash table node for 2 fields.
+ * The hash table node for attribute and values.
  */
 
 typedef struct {
-    Octstr *item1;
-    Octstr *item2;
+    Octstr *attribute;
     unsigned char binary;
-} wml_hash3_t;
-
-
-/*
- * A comparison function for hash items. Returns true (non-zero) for
- * equal, false for non-equal. Gets an item from the hash as the first
- * argument, the pattern as a second argument.
- */
-typedef int hash_item_matches_t(void *item, void *pattern);
-
-
-/*
- * A destructor function for hash items.  Must free all memory associated
- * with the hash item.
- */
-typedef void hash_item_destructor_t(void *item);
-
+    List *value_list;
+} wml_attribute_t;
 
 
 #include "wml_definitions.h"
@@ -167,13 +125,13 @@ typedef void hash_item_destructor_t(void *item);
  * Declarations of global variables. 
  */
 
-Hash *wml_elements_hash;
+Dict *wml_elements_dict;
 
-Hash *wml_attributes_hash;
+Dict *wml_attributes_dict;
 
-Hash *wml_attr_values_hash;
+List *wml_attr_values_list;
 
-Hash *wml_URL_values_hash;
+List *wml_URL_values_list;
 
 
 /***********************************************************************
@@ -194,7 +152,7 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
 static int parse_node(xmlNodePtr node, wml_binary_t **wbxml);
 static int parse_element(xmlNodePtr node, wml_binary_t **wbxml);
 static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml);
-static int parse_attr_value(Octstr *attr_value, wml_table_t *tokens, 
+static int parse_attr_value(Octstr *attr_value, List *tokens, 
 			    wml_binary_t **wbxml);
 static int parse_text(xmlNodePtr node, wml_binary_t **wbxml);
 static int parse_cdata(xmlNodePtr node, wml_binary_t **wbxml);
@@ -233,11 +191,18 @@ static void output_variable(Octstr *variable, Octstr **output,
  * Memory allocation and deallocations.
  */
 
-static wml_hash2_t *hash2_create(wml_table_t *node);
-static wml_hash3_t *hash3_create(wml_table3_t *node);
+static wml_hash_t *hash_create(char *text, unsigned char token);
+static wml_attribute_t *attribute_create(void);
+static void attr_dict_construct(wml_table3_t *attributes, Dict *attr_dict);
 
-static void hash2_destroy(void *p);
-static void hash3_destroy(void *p);
+static void hash_destroy(void *p);
+static void attribute_destroy(void *p);
+
+/*
+ * Comparison functions for the hash tables.
+ */
+
+static int hash_cmp(void *hash1, void *hash2);
 
 /*
  * Miscellaneous help functions.
@@ -270,22 +235,6 @@ static unsigned long string_table_add(Octstr *ostr, wml_binary_t **wbxml);
 static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml);
 static void string_table_output(Octstr *ostr, wml_binary_t **wbxml);
 
-/*
- * Hash table functions.
- */
-
-Hash *hash_create(int n);
-void hash_insert(Hash *table, int key, void *item);
-void *hash_find(Hash *table, int key, void* pat, hash_item_matches_t *cmp);
-void *hash_remove(Hash *table, int key, void* pat, hash_item_matches_t *cmp);
-void hash_destroy(Hash *table, hash_item_destructor_t *destructor);
-
-static int find_prime(int from);
-static int hash_seed(Hash *table, int key);
-static int hash_recount(Hash *table);
-
-static void lock(Hash *table);
-static void unlock(Hash *table);
 
 
 /*
@@ -353,52 +302,46 @@ int wml_compile(Octstr *wml_text,
 
 
 /*
- * Initaliation: makes up the hash tables for the compiler.
+ * Initialization: makes up the hash tables for the compiler.
  */
 
 void wml_init()
 {
     int i = 0, len = 0;
-    wml_hash2_t *temp = NULL;
-    wml_hash3_t *tmp = NULL;
+    wml_hash_t *temp = NULL;
+    
 
     /* The wml elements into a hash table. */
     len = wml_table_len(wml_elements);
-    wml_elements_hash = hash_create(len);
+    wml_elements_dict = dict_create(len, hash_destroy);
 
-    for (i = 0; i > len; i++) {
-	temp = hash2_create(wml_elements + i);
-	hash_insert(wml_elements_hash, octstr_hash_key(temp->item), temp);
+    for (i = 0; i < len; i++) {
+	temp = hash_create(wml_elements[i].text, wml_elements[i].token);
+	dict_put(wml_elements_dict, temp->item, temp);
     }
 
     /* Attributes. */
     len = wml_table3_len(wml_attributes);
-    wml_attributes_hash = hash_create(len);
-
-    for (i = 0; i > len; i++) {
-	tmp = hash3_create(wml_attributes + i);
-	hash_insert(wml_attributes_hash, 
-		    octstr_hash_key(tmp->item1) + octstr_hash_key(tmp->item2),
-		    tmp);
-    }
+    wml_attributes_dict = dict_create(len, attribute_destroy);
+    attr_dict_construct(wml_attributes, wml_attributes_dict);
 
     /* Attribute values. */
     len = wml_table_len(wml_attribute_values);
-    wml_attr_values_hash = hash_create(len);
+    wml_attr_values_list = list_create();
 
-    for (i = 0; i > len; i++) {
-	temp = hash2_create(wml_attribute_values + i);
-	hash_insert(wml_attr_values_hash, octstr_hash_key(temp->item), 
-		    temp);
+    for (i = 0; i < len; i++) {
+	temp = hash_create(wml_attribute_values[i].text, 
+			   wml_attribute_values[i].token);
+	list_append(wml_attr_values_list, temp);
     }
 
     /* URL values. */
     len = wml_table_len(wml_URL_values);
-    wml_URL_values_hash = hash_create(len);
+    wml_URL_values_list = list_create();
 
-    for (i = 0; i > len; i++) {
-	temp = hash2_create(wml_URL_values + i);
-	hash_insert(wml_URL_values_hash, octstr_hash_key(temp->item), temp);
+    for (i = 0; i < len; i++) {
+	temp = hash_create(wml_URL_values[i].text, wml_URL_values[i].token);
+	list_append(wml_URL_values_list, temp);
     }
 }
 
@@ -410,10 +353,10 @@ void wml_init()
 
 void wml_shutdown()
 {
-    hash_destroy(wml_elements_hash, hash2_destroy);
-    hash_destroy(wml_attributes_hash, hash3_destroy);
-    hash_destroy(wml_attr_values_hash, hash2_destroy);
-    hash_destroy(wml_URL_values_hash, hash2_destroy);
+    dict_destroy(wml_elements_dict);
+    dict_destroy(wml_attributes_dict);
+    list_destroy(wml_attr_values_list, hash_destroy);
+    list_destroy(wml_URL_values_list, hash_destroy);
 }
 
 
@@ -539,49 +482,45 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
 
 static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
 {
-    int i, add_end_tag = 0;
-    unsigned char wbxml_hex, status_bits;
+    int add_end_tag = 0;
+    unsigned char wbxml_hex = 0, status_bits;
     xmlAttrPtr attribute;
     Octstr *name;
+    wml_hash_t *element;
 
     name = octstr_create(node->name);
 
     /* Check, if the tag can be found from the code page. */
-    
-    for (i = 0; wml_elements[i].text != NULL; i++)
-	if (octstr_str_compare(name, wml_elements[i].text) == 0) {
-	    wbxml_hex = wml_elements[i].token;
-	    /* A conformance patch: no do-elements of same name in a card or
-	       template. An extremely ugly patch. --tuo */
-	    if (wbxml_hex == 0x27 || /* Card */
-		wbxml_hex == 0x3B)   /* Template */
-		if (check_do_elements(node) == -1) {
-		    add_end_tag = -1;
-		    error(0, "WML compiler: Two or more do elements with same"
-			  " name in a card or template element.");
-		    break;
-		}
-	    /* A conformance patch: if variable in setvar has a bad name, it's
-	       ignored. */
-	    if (wbxml_hex == 0x3E) /* Setvar */
-		if (check_variable_name(node) == FAILED) {
-		    octstr_destroy(name);
-		    return add_end_tag;
-		}
-	    if ((status_bits = element_check_content(node)) > 0) {
-		wbxml_hex = wbxml_hex | status_bits;
-		/* If this node has children, the end tag must be added after 
-		   them. */
-		if ((status_bits & CHILD_BIT) == CHILD_BIT)
-		    add_end_tag = 1;
+    if ((element = dict_get(wml_elements_dict, name)) != NULL) {
+	wbxml_hex = element->binary;
+	/* A conformance patch: no do-elements of same name in a card or
+	   template. An extremely ugly patch. --tuo */
+	if (wbxml_hex == 0x27 || /* Card */
+	    wbxml_hex == 0x3B)   /* Template */
+	    if (check_do_elements(node) == -1) {
+		add_end_tag = -1;
+		error(0, "WML compiler: Two or more do elements with same"
+		      " name in a card or template element.");
 	    }
-	    output_char(wbxml_hex, wbxml);
-	    break;
+	/* A conformance patch: if variable in setvar has a bad name, it's
+	   ignored. */
+	if (wbxml_hex == 0x3E) /* Setvar */
+	    if (check_variable_name(node) == FAILED) {
+		octstr_destroy(name);
+		return add_end_tag;
+	    }
+	if ((status_bits = element_check_content(node)) > 0) {
+	    wbxml_hex = wbxml_hex | status_bits;
+	    /* If this node has children, the end tag must be added after 
+	       them. */
+	    if ((status_bits & CHILD_BIT) == CHILD_BIT)
+		add_end_tag = 1;
 	}
-
-    /* The tag was not on the code page, it has to be encoded as a string. */
-
-    if (wml_elements[i].text == NULL) { 
+	
+	output_char(wbxml_hex, wbxml);
+    } else {    
+	/* The tag was not on the code page, it has to be encoded as a 
+	   string. */
 	wbxml_hex = LITERAL;
 	if ((status_bits = element_check_content(node)) > 0) {
 	    wbxml_hex = wbxml_hex | status_bits;
@@ -624,84 +563,68 @@ static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
 
 static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
 {
-    int i, j, status = 0;
+    int status = 0;
     int coded_length = 0;
     unsigned char wbxml_hex = 0x00;
-    Octstr *attribute = NULL, *value = NULL, *val_j = NULL, 
-	*p = NULL;
+    wml_hash_t *hit = NULL;
+    wml_attribute_t *attribute = NULL;
+    Octstr *name = NULL, *pattern = NULL, *p = NULL;
 
-    attribute = octstr_create(attr->name);
+    name = octstr_create(attr->name);
 
     if (attr->children != NULL)
-	value = octstr_create(attr->children->content);
-
+	pattern = octstr_create(attr->children->content);
     else 
-	value = NULL;
+	pattern = NULL;
 
     /* Check if the attribute is found on the code page. */
 
-    for (i = 0; wml_attributes[i].text1 != NULL; i++)
-	if (octstr_str_compare(attribute, wml_attributes[i].text1) == 0) {
-	    /* Check if there's an attribute start token with good value on 
-	       the code page. */
-	    for (j = i; (wml_attributes[j].text1 != NULL) &&
-		     (strcmp(wml_attributes[i].text1, 
-			     wml_attributes[j].text1)
-		      == 0); j++)
-		if (wml_attributes[j].text2 != NULL && value != NULL) {
-		    val_j = octstr_create(wml_attributes[j].text2);
+    if ((attribute = dict_get(wml_attributes_dict, name)) != NULL) {
+	if (attr->children == NULL || 
+	    (hit = list_search(attribute->value_list, (void *)pattern, 
+			       hash_cmp)) == NULL)
+	    wbxml_hex = attribute->binary;
+	else if (hit->binary) {
+	    wbxml_hex = hit->binary;
+	    coded_length = octstr_len(hit->item);
+	} else
+	    status = -1;
+    } else
+	status = -1;
 
-		    if (octstr_ncompare(val_j, value, 
-					coded_length = octstr_len(val_j)) 
-			== 0) {			
-			wbxml_hex = wml_attributes[j].token;
-			octstr_destroy(val_j);
-			break;
-		    } else {
-			octstr_destroy(val_j);
-			coded_length = 0;
-		    }
-		} else {
-		    wbxml_hex = wml_attributes[i].token;
-		    coded_length = 0;
-		}
-	    break;
+    if (status >= 0) {
+	output_char(wbxml_hex, wbxml);
+
+	/* The rest of the attribute is coded as a inline string. */
+	if (pattern != NULL && 
+	    coded_length < (int) octstr_len(pattern)) {
+	    if (coded_length == 0)
+		p = octstr_create(attr->children->content); 
+	    else
+		p = octstr_copy(pattern, coded_length, 
+				octstr_len(pattern) - coded_length); 
+
+	    if (check_if_url(wbxml_hex))
+		status = parse_attr_value(p, wml_URL_values_list,
+					  wbxml);
+	    else
+		status = parse_attr_value(p, wml_attr_values_list,
+					  wbxml);
+	    if (status != 0)
+		error(0, 
+		      "WML compiler: could not output attribute "
+		      "value as a string.");
+	    octstr_destroy(p);
 	}
-
-    output_char(wbxml_hex, wbxml);
-
-    /* The rest of the attribute is coded as a inline string. */
-    if (value != NULL && coded_length < (int) octstr_len(value)) {
-	if (coded_length == 0)
-	    p = octstr_create(attr->children->content); 
-	else
-	    p = octstr_copy(value, coded_length, octstr_len(value) - 
-			    coded_length); 
-
-	if (check_if_url(wbxml_hex))
-	    status = parse_attr_value(p, wml_URL_values,
-				      wbxml);
-	else
-	    status = parse_attr_value(p, wml_attribute_values,
-				      wbxml);
-	if (status != 0)
-	    error(0, 
-		  "WML compiler: could not output attribute "
-		  "value as a string.");
-	octstr_destroy(p);
     }
 
     /* Memory cleanup. */
-    octstr_destroy(attribute);
-    if (value != NULL)
-	octstr_destroy(value);
+    octstr_destroy(name);
 
-    /* Return the status. */
-    if (wml_attributes[i].text1 == NULL) {
-	error(0, "WML compiler: unknown attribute.");
-	return -1;
-    } else 
-	return status;
+    if (pattern != NULL)
+	octstr_destroy(pattern);
+
+    return status;
 }
 
 
@@ -710,10 +633,11 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
  * parse_attr_value - parses an attributes value using WML value codes.
  */
 
-static int parse_attr_value(Octstr *attr_value, wml_table_t *tokens,
+static int parse_attr_value(Octstr *attr_value, List *tokens,
 			    wml_binary_t **wbxml)
 {
     int i, pos, wbxml_hex;
+    wml_hash_t *temp = NULL;
     Octstr *cut_text = NULL;
 
     /*
@@ -732,15 +656,16 @@ static int parse_attr_value(Octstr *attr_value, wml_table_t *tokens,
 	    return -1;
     } else {
 
-	for (i = 0; tokens[i].text != NULL; i++) {
-	    pos = octstr_search_cstr(attr_value, tokens[i].text, 0);
+	for (i = 0; i < list_len(tokens); i++) {
+	    temp = list_get(tokens, i);
+	    pos = octstr_search(attr_value, temp->item, 0);
 	    switch (pos) {
 	    case -1:
 		break;
 	    case 0:
-		wbxml_hex = tokens[i].token;
+		wbxml_hex = temp->binary;
 		output_char(wbxml_hex, wbxml);	
-		octstr_delete(attr_value, 0, strlen(tokens[i].text));	
+		octstr_delete(attr_value, 0, octstr_len(temp->item));	
 		break;
 	    default:
 		/* 
@@ -754,10 +679,10 @@ static int parse_attr_value(Octstr *attr_value, wml_table_t *tokens,
 		    return -1;
 		octstr_destroy(cut_text);
 	    
-		wbxml_hex = tokens[i].token;
+		wbxml_hex = temp->binary;
 		output_char(wbxml_hex, wbxml);	
 
-		octstr_delete(attr_value, 0, pos + strlen(tokens[i].text));
+		octstr_delete(attr_value, 0, pos + octstr_len(temp->item));
 		break;
 	    }
 	}
@@ -768,7 +693,7 @@ static int parse_attr_value(Octstr *attr_value, wml_table_t *tokens,
 	 */
 
 	if ((int) octstr_len(attr_value) > 0) {
-	    if (tokens[i].text != NULL)
+	    if (i < list_len(tokens))
 		parse_attr_value(attr_value, tokens, wbxml);
 	    else
 		if (parse_octet_string(attr_value, 0, wbxml) != 0)
@@ -1139,23 +1064,27 @@ static void parse_entities(Octstr *wml_source)
     int pos = 0;
     Octstr *temp;
 
-    if ((pos = octstr_search_cstr(wml_source, entity_nbsp, pos)) >= 0) {
+    if ((pos = octstr_search(wml_source, octstr_create_immutable(entity_nbsp),
+			     pos)) >= 0) {
 	temp = octstr_create(nbsp);
 	while (pos >= 0) {
 	    octstr_delete(wml_source, pos, strlen(entity_nbsp));
 	    octstr_insert(wml_source, temp, pos);
-	    pos = octstr_search_cstr(wml_source, entity_nbsp, pos);
+	    pos = octstr_search(wml_source, 
+				octstr_create_immutable(entity_nbsp), pos);
 	}
 	octstr_destroy(temp);
     }
 
     pos = 0;
-    if ((pos = octstr_search_cstr(wml_source, entity_shy, pos)) >= 0) {
+    if ((pos = octstr_search(wml_source, octstr_create_immutable(entity_shy),
+			     pos)) >= 0) {
 	temp = octstr_create(shy);
 	while (pos >= 0) {
 	    octstr_delete(wml_source, pos, strlen(entity_shy));
 	    octstr_insert(wml_source, temp, pos);
-	    pos = octstr_search_cstr(wml_source, entity_shy, pos);
+	    pos = octstr_search(wml_source, 
+				octstr_create_immutable(entity_shy), pos);
 	}
 	octstr_destroy(temp);
     }	
@@ -1271,16 +1200,16 @@ static void output_variable(Octstr *variable, Octstr **output,
 
 
 /*
- * hash2_create - allocates memory for a 2 field hash table node.
+ * hash_create - allocates memory for a 2 field hash table node.
  */
 
-static wml_hash2_t *hash2_create(wml_table_t *node)
+static wml_hash_t *hash_create(char *text, unsigned char token)
 {
-    wml_hash2_t *table_node;
+    wml_hash_t *table_node;
 
-    table_node = gw_malloc(sizeof(wml_hash2_t));
-    table_node->item = octstr_create(node->text);
-    table_node->binary = node->token;
+    table_node = gw_malloc(sizeof(wml_hash_t));
+    table_node->item = octstr_create(text);
+    table_node->binary = token;
 
     return table_node;
 }
@@ -1288,30 +1217,68 @@ static wml_hash2_t *hash2_create(wml_table_t *node)
 
 
 /*
- * hash3_create - allocates memory for a 3 field hash table node.
+ * attribute_create - allocates memory for the attributes hash table node 
+ * that contains the attribute, the binary for it and a list of binary values
+ * tied with the attribute.
  */
 
-static wml_hash3_t *hash3_create(wml_table3_t *node)
+static wml_attribute_t *attribute_create(void)
 {
-    wml_hash3_t *table_node;
+    wml_attribute_t *attr;
 
-    table_node = gw_malloc(sizeof(wml_hash3_t));
-    table_node->item1 = octstr_create(node->text1);
-    table_node->item2 = octstr_create(node->text2);
-    table_node->binary = node->token;
+    attr = gw_malloc(sizeof(wml_attribute_t));
+    attr->attribute = NULL;
+    attr->binary = 0;
+    attr->value_list = list_create();
 
-    return table_node;
+    return attr;
 }
 
 
 
 /*
- * hash2_destroy - deallocates memory of a 2 field hash table node.
+ * attr_dict_construct - takes a table of attributes and their values and 
+ * inputs these into a dictionary. 
  */
 
-static void hash2_destroy(void *p)
+static void attr_dict_construct(wml_table3_t *attributes, Dict *attr_dict)
 {
-    wml_hash2_t *node;
+    int i = 0;
+    wml_attribute_t *node = NULL;
+    wml_hash_t *temp = NULL;
+
+    node = attribute_create();
+
+    do {
+	if (node->attribute == NULL)
+	    node->attribute = octstr_create(attributes[i].text1);
+	else if (strcmp(attributes[i].text1, attributes[i-1].text1) != 0) {
+	    dict_put(attr_dict, node->attribute, node);
+	    node = attribute_create();
+	    node->attribute = octstr_create(attributes[i].text1);
+	}
+
+	if (attributes[i].text2 == NULL)
+	    node->binary = attributes[i].token;
+	else {
+	    temp = hash_create(attributes[i].text2, attributes[i].token);
+	    list_append(node->value_list, (void *)temp);
+	}	
+	i++;
+    } while (attributes[i].text1 != NULL);
+
+    dict_put(attr_dict, node->attribute, node);
+}
+
+
+
+/*
+ * hash_destroy - deallocates memory of a 2 field hash table node.
+ */
+
+static void hash_destroy(void *p)
+{
+    wml_hash_t *node;
 
     if (p == NULL)
         return;
@@ -1325,21 +1292,41 @@ static void hash2_destroy(void *p)
 
 
 /*
- * hash3_destroy - deallocates memory of a 3 field hash table node.
+ * attribute_destroy - deallocates memory of a attribute hash table node.
  */
 
-static void hash3_destroy(void *p)
+static void attribute_destroy(void *p)
 {
-    wml_hash3_t *node;
+    wml_attribute_t *node;
 
     if (p == NULL)
 	return;
 
     node = p;
 
-    octstr_destroy(node->item1);
-    octstr_destroy(node->item2);
+    octstr_destroy(node->attribute);
+    list_destroy(node->value_list, hash_destroy);
     gw_free(node);
+}
+
+
+
+/*
+ * hash_cmp - compares pattern against item and if the pattern matches the 
+ * item returns 1, else 0.
+ */
+
+static int hash_cmp(void *item, void *pattern)
+{
+    int ret = 0;
+
+    gw_assert(item != NULL && pattern != NULL);
+    gw_assert(((wml_hash_t *)item)->item != NULL);
+
+    if (octstr_search(pattern, ((wml_hash_t *)item)->item, 0) == 0)
+	ret = 1;
+
+    return ret;
 }
 
 
@@ -1923,290 +1910,10 @@ List *wml_charsets(void) {
 	for (i = 0; character_sets[i].charset != NULL; i++) {
 		charset = octstr_create(character_sets[i].charset);
 		octstr_append_char(charset, '-');
-		octstr_append_cstr(charset, character_sets[i].nro);
+		octstr_append(charset, 
+			      octstr_create_immutable(character_sets[i].nro));
 		list_append(result, charset);
 	}
 	return result;
 }
 
-
-
-/*
- * hash_create - creates a hash table. This function reserves space for a hash
- * table and initializes a hash function to be used in the table. It takes an 
- * estimate of the nodes as an argument. NOTE: At the moment a static table, 
- * at some point a check must be added whether adding a new node requires 
- * allocating more memory at the hash_insert.
- */
-
-Hash *hash_create(int n)
-{
-    Hash *hash;
-    int i = 0;
-
-    hash = gw_malloc(sizeof(Hash));
-
-    if (n == 0)
-	n = START_NUM;
-
-    hash->count = 0;
-    hash->prime = find_prime(n);
-    hash->table = gw_malloc(hash->prime * sizeof(hash_t));
-
-    for (i = 0; i < hash->prime; i++) {
-	hash->table[i].count = 0;
-	hash->table[i].item = NULL;
-    }
-
-    hash->a = 1 + (gw_rand() % n); /* Must not be 0! */
-    hash->b = gw_rand() % n;
-
-    hash->operation_lock = mutex_create();
-
-    return hash;
-}
-
-
-
-/*
- * hash_insert - adds a node into the hash_table. This funcion adds a node 
- * to the hash table. If a conlict occurs the pointer is replaced with a list 
- * of nodes that have the same hash key. This should add also allocate more 
- * space when necessary and do the initialization of that table, like count a 
- * new prime that is at least 2* the old one, and recount the hash keys for 
- * every node in the table and add them into the new table.
- */
-
-void hash_insert(Hash *table, int key, void *item)
-{
-    void *temp = NULL;
-    int hash;
-
-    hash = hash_seed(table, key);
-
-    lock(table);
-
-    switch (table->table[hash].count) {
-    case 0:
-	table->table[hash].item = item;
-	table->table[hash].count = 1;
-	hash_recount(table);
-	break;
-    case 1:
-	temp = table->table[hash].item;
-	table->table[hash].item = list_create();
-	list_append(table->table[hash].item, temp);
-	list_append(table->table[hash].item, item);
-	table->table[hash].count = 2;
-	hash_recount(table);
-	break;
-    default:
-	list_append(table->table[hash].item, item);
-	table->table[hash].count ++;
-	hash_recount(table);
-	break;
-    }
-
-    unlock(table);    
-}
-
-
-
-/*
- * hash_find - searches for a node in the table and returns a pointer to it.
- * The arguments for the function are:
- * - table: the hash table to be used
- * - key: the hash key value to be searched.
- * - pat: an object where to compare if a conflict occurs
- * - cmp: a comparison function for a conflict. Takes two of the type of 
- *   objects as arguments and returns true (ie an integer > 0) for two similar
- *   ones.
- * Returns either an object found or in a conflict a list of objects that have 
- * the same hash key.
- * NOTE: This functions does not copy the object, so if the object is altered
- * or destroyed, the table becomes unconsistent.
- */
-
-void *hash_find(Hash *table, int key, void* pat, hash_item_matches_t *cmp)
-{
-    void *item = NULL;
-    int hash;
-
-    hash = hash_seed(table, key);
-
-    switch (table->table[hash].count) {
-    case 0:
-	break;
-    case 1:
-	item = table->table[hash].item;
-	break;
-    default:
-	if (pat != NULL && cmp != NULL)
-	    item = list_search(table->table[hash].item, pat, cmp);
-	else
-	    item = table->table[hash].item;
-	break;
-    }
-    
-    return item;
-}
-
-
-
-/*
- * hash_remove - searches for a node in the table and returns it. This funtion 
- * acts almost the same as the previous one, but also removes the node from the
- * hash table when returning it.
- */
-
-void *hash_remove(Hash *table, int key, void* pat, hash_item_matches_t *cmp)
-{
-    void *item = NULL, *temp = NULL;
-    int hash;
-
-    hash = hash_seed(table, key);
-
-    lock(table);
-
-    switch (table->table[hash].count) {
-    case 0:
-	break;
-    case 1:
-	item = table->table[hash].item;
-	table->table[hash].item = NULL;
-	table->table[hash].count = 0;
-	break;
-    default:
-	temp = list_extract_matching(table->table[hash].item, pat, cmp);
-	item = list_extract_first(temp);
-	list_destroy(temp, NULL);
-
-	if (list_len(table->table[hash].item) == 1) {
-	    temp = list_extract_first(table->table[hash].item);
-	    list_destroy(table->table[hash].item, NULL);
-	    table->table[hash].item = temp;
-	    table->table[hash].count = 1;
-	} else
-	    table->table[hash].count = table->table[hash].count - 1;
-	
-	break;
-    }
-    
-    unlock(table);
-
-    return item;
-}
-
-
-
-/*
- * hash_destroy - destroys an hash table. The function takes as arguments the 
- * hash table to be destroyed and a function pointer to a function that frees
- * all the memory allocated by a node in the table. If the second argument is 
- * NULL, it's up to the caller to make sure that the table is empty before it
- * is destroyed.
- */
-
-void hash_destroy(Hash *table, hash_item_destructor_t *destructor)
-{
-    int i;
-    
-    lock(table);
-
-    mutex_destroy(table->operation_lock);
-
-    if (destructor != NULL)
-	for (i = 0; i < table->prime; i ++) {
-	    switch (table->table[i].count) {
-	    case 0:
-		break;
-	    case 1:
-		destructor(table->table[i].item);
-		break;
-	    default:
-		list_destroy(table->table[i].item, destructor);
-		break;
-	    }
-	}
-
-    gw_free(table->table);
-    gw_free(table);  
-}
-
-
-
-/*
- * find_prime - searches for a prime starting from the argument from.
- */
-
-static int find_prime(int from)
-{
-    int num = 0, i;
-
-    /* Primes are not dividable with 2. */
-    if ((from % 2) == 0)
-	num = from + 1;
-    else 
-	num = from;
-
-    for (i = 3; i < sqrt(num); i = i + 2) {
-	if ((num % i) == 0) {
-	    i = 3;
-	    num = num + 2;
-	}
-    }
-
-    return num;
-}
-
-
-
-/*
- * hash_seed - returns the seed from the hash function from the table *table 
- * with the key key.
- */
-
-static int hash_seed(Hash *table, int key)
-{
-    return (table->a * key + table->b) % table->prime;
-}
-
-
-
-/*
- * lock - locks the hash table.
- */
-
-static void lock(Hash *table) 
-{
-    gw_assert(table != NULL);
-    mutex_lock(table->operation_lock);
-}
-
-
-
-/*
- * unlock - unlocks the hash table.
- */
-
-static void unlock(Hash *table) 
-{
-    gw_assert(table != NULL);
-    mutex_unlock(table->operation_lock);
-}
-
-
-
-/*
- * hash_recount - recounts the number of the nodes in the hash table.
- */
-
-static int hash_recount(Hash *table)
-{
-    int i, sum = 0;
-
-    for (i = 0; i < table->prime; i++)
-	sum = sum + table->table[i].count;
-
-    return sum;
-}

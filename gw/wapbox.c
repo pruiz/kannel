@@ -12,6 +12,7 @@
 
 #include "gwlib/gwlib.h"
 #include "shared.h"
+#include "wml_compiler.h"
 #include "heartbeat.h"
 #include "wap/wap.h"
 #include "wap-appl.h"
@@ -258,6 +259,8 @@ int main(int argc, char **argv)
     wtp_resp_init(&dispatch_datagram, &wsp_session_dispatch_event,
                   &wsp_push_client_dispatch_event);
     wap_appl_init();
+
+    wml_init();
     
     if (bearerbox_host == NULL)
     	bearerbox_host = octstr_create(BB_DEFAULT_HOST);
@@ -296,6 +299,7 @@ int main(int argc, char **argv)
     wsp_unit_shutdown();
     wsp_session_shutdown();
     wap_appl_shutdown();
+    wml_shutdown();
     close_connection_to_bearerbox();
     wsp_http_map_destroy();
     config_destroy(cfg);
