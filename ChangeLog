@@ -1,4 +1,9 @@
 2004-08-26  Stipe Tolj  <stolj@wapme.de>
+    * gw/wap-appl.c: fixing a memory leak while not destroying a created octstr
+      if wml_compile() fails. Thanks again to Slava for the patch.
+      [Msg-ID: <412B46C9.1030800@lmt.lv>]
+
+2004-08-26  Stipe Tolj  <stolj@wapme.de>
     * gw/wml_compiler.c: fixed PANIC inside octstr_create in wml compiler with 
       certain DOCTYPE definitions. Thanks to Slava for the patch.
       [Msg-ID: <412B44E4.9080204@lmt.lv>]

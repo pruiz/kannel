@@ -1297,9 +1297,12 @@ static Octstr *convert_wml_to_wmlc(struct content *content)
     /* content->charset is passed from the HTTP header parsing */
     ret = wml_compile(content->body, content->charset, &wmlc, 
                       content->version);
+
+    /* wmlc is created implicitely in wml_compile() */
     if (ret == 0)
         return wmlc;
 
+    octstr_destroy(wmlc);
     warning(0, "WSP: WML compilation failed.");
     return NULL;
 }
