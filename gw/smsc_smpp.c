@@ -207,10 +207,10 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     pdu = smpp_pdu_create(submit_sm, 
     	    	    	  counter_increase(smpp->message_id_counter));
     	    	   
-    pdu->u.submit_sm.dest_addr_ton = 2; /* national */
-    pdu->u.submit_sm.source_addr_ton = 2; /* national */
-    pdu->u.submit_sm.source_addr_npi = 1; /* ISDN number plan */
-    pdu->u.submit_sm.dest_addr_npi = 1; /* ISDN number plan */
+    pdu->u.submit_sm.dest_addr_ton = GSM_ADDR_TON_NATIONAL; /* national */
+    pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_NATIONAL; /* national */
+    pdu->u.submit_sm.source_addr_npi = GSM_ADDR_NPI_E164; /* ISDN number plan */
+    pdu->u.submit_sm.dest_addr_npi = GSM_ADDR_NPI_E164; /* ISDN number plan */
     
     pdu->u.submit_sm.source_addr = octstr_duplicate(msg->sms.sender);
     pdu->u.submit_sm.destination_addr = octstr_duplicate(msg->sms.receiver);
@@ -218,19 +218,19 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     /* lets see if its international or alphanumeric sender */
     if( octstr_get_char(pdu->u.submit_sm.source_addr,0) == '+') {
         if (!octstr_check_range(pdu->u.submit_sm.source_addr, 1, 256, gw_isdigit)) {
-    	    pdu->u.submit_sm.source_addr_ton = 5; /* alphanum */
-   	    pdu->u.submit_sm.source_addr_npi = 0;
+     	    pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_ALPHANUMERIC; /* alphanum */
+   	    pdu->u.submit_sm.source_addr_npi = GSM_ADDR_NPI_UNKNOWN;
     	}
         else {
 	    /* numeric sender address with + in front -> international*/
 	    octstr_delete(pdu->u.submit_sm.source_addr,0,1);
-            pdu->u.submit_sm.source_addr_ton = 1; /* international */
+           pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_INTERNATIONAL;
 	}
     }
     else    {
 	if (!octstr_check_range(pdu->u.submit_sm.source_addr,0, 256, gw_isdigit)) {
-   	    pdu->u.submit_sm.source_addr_ton = 5; /* alphanum */
-   	    pdu->u.submit_sm.source_addr_npi = 0;
+   	    pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_ALPHANUMERIC;
+   	    pdu->u.submit_sm.source_addr_npi = GSM_ADDR_NPI_UNKNOWN;
    	}
     }
     
