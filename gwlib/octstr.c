@@ -2053,3 +2053,34 @@ static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
                         filename, lineno, function);
     }
 }
+
+int
+octstr_recode (Octstr *tocode, Octstr *fromcode, Octstr *orig)
+{
+    Octstr *octstr_utf8 = NULL;
+    Octstr *octstr_final = NULL;
+    int resultcode = 0;
+    
+    if (octstr_case_compare(tocode, fromcode) == 0) {
+	goto cleanup_and_exit;
+    }
+
+    if (charset_to_utf8(orig, &octstr_utf8, fromcode) < 0) {
+	resultcode = -1;
+	goto cleanup_and_exit;
+    }
+
+    if (charset_from_utf8(octstr_utf8, &octstr_final, tocode) < 0) {
+	resultcode = -1;
+	goto cleanup_and_exit;
+    }
+
+    octstr_truncate(orig, 0);
+    octstr_append(orig, octstr_final);
+
+ cleanup_and_exit:
+    octstr_destroy (octstr_utf8);
+    octstr_destroy (octstr_final);
+
+    return resultcode;
+}

@@ -55,7 +55,7 @@ static Numhash *black_list;
 
 static List *smsbox_requests = NULL;
 
-int charset_processing (Octstr *charset, Octstr **text, int coding);
+int charset_processing (Octstr *charset, Octstr *text, int coding);
 
 /***********************************************************************
  * Communication with the bearerbox.
@@ -529,7 +529,7 @@ static void url_result_thread(void *arg)
 		replytext = octstr_duplicate(reply_couldnotrepresent); 
 	    }
 
-	    if (charset_processing(charset, &replytext, coding) == -1) {
+	    if (charset_processing(charset, replytext, coding) == -1) {
 		replytext = octstr_duplicate(reply_couldnotrepresent);
 	    }
 	    octstr_destroy(type);
@@ -1136,7 +1136,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     } else
 	msg->sms.smsc_id = NULL;
 
-    if (charset_processing(charset, &msg->sms.msgdata, msg->sms.coding) == -1) {
+    if (charset_processing(charset, msg->sms.msgdata, msg->sms.coding) == -1) {
 	returnerror = octstr_create("Charset or body misformed, rejected");
 	goto fielderror;
     }
@@ -1389,7 +1389,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	    ret = octstr_create("Unsupported content-type, rejected");
 	}
 
-	if (charset_processing(charset, &body, coding) == -1) {
+	if (charset_processing(charset, body, coding) == -1) {
 	    *status = 415;
 	    ret = octstr_create("Charset or body misformed, rejected");
 	}
@@ -2111,108 +2111,33 @@ int main(int argc, char **argv)
     return 0;
 }
 
-int charset_processing (Octstr *charset, Octstr **body, int coding) {
-	
-    /* Charset processing */
+int charset_processing (Octstr *charset, Octstr *body, int coding) {
+
+    int resultcode = 0;
+    
     if (octstr_len(charset)) {
-	Octstr *temp, *tempcharset;
+	debug("sms.http", 0, "enter charset, coding=%d, msgdata is %s", coding, octstr_get_cstr(body));
+	octstr_dump(body, 0);
 
-debug("sms.http", 0, "enter charset, coding=%d, msgdata is %s", coding, octstr_get_cstr(*body));
-octstr_dump(*body, 0);
-
-	/* For 7 bit, convert to UTF-8 and then to ISO-8859-1
-	 * (except if it is already in that format)
-	 */
-	if (coding == DC_7BIT && octstr_compare(charset, octstr_imm("ISO-8859-1")) != 0) {
-
-debug("sms.http", 0, "enter 7bit (and charset was not iso-8859-1)");
-
-	    /* encode to UTF-8 */
-	    if (octstr_compare(charset, octstr_imm("UTF-8")) != 0) {
-
-debug("sms.http", 0, "enter 7bit/to utf8");
-
-		if (charset_to_utf8(*body, &temp, charset) >= 0) {
-		    octstr_destroy(*body);
-		    *body = octstr_duplicate(temp);
-		    octstr_destroy(temp);
-
-debug("sms.http", 0, "in 7bit/to utf8, new msgdata is %s", octstr_get_cstr(*body));
-octstr_dump(*body, 0);
-
-		} else {
-
-debug("sms.http", 0, "error on 7bit/ to utf8");
-
-		    return -1;
-		}
+	if (coding == DC_7BIT) {
+	    /*
+	     * For 7 bit, convert to ISO-8859-1
+	     */
+	    if (octstr_recode (octstr_imm ("ISO-8859-1"), charset, body) < 0) {
+		resultcode = -1;
 	    }
-						
-	    /* UTF-8 to ISO-8859-1 */
-/*	    charset = octstr_create("ISO-8859-1");
-	    if (charset_from_utf8(new*body, &temp, charset) >= 0) {
-		octstr_destroy(new*body);
-		new*body = temp;
-		octstr_destroy(charset);
-	    } else {
-		octstr_destroy(charset);
-		octstr_destroy(new*body);
-		return NULL;
-	    }
-debug("sms.http", 0, "coding=7bit, after iso8859-1, msgdata is %s", octstr_get_cstr(new*body));
-octstr_dump(new*body, 0);
-
-*/
-	}
-
-	/* For UCS2, convert to UTF-8 and then to UTF-16BE
-	 * (except if it is already in that format)
-	 */
-	else if (coding == DC_UCS2 && octstr_compare(charset, octstr_imm("UCS2")) != 0 
-	         && octstr_compare(charset, octstr_imm("UTF-16BE")) != 0) {
-
-debug("sms.http", 0, "enter ucs2 (and charset was not UCS2)");
-		
-	    /* encoding to UTF-8 */
-	    if (octstr_compare(charset, octstr_imm("UTF-8")) != 0) {
-
-debug("sms.http", 0, "enter ucs2/to utf8");
-
-		if (charset_to_utf8(*body, &temp, charset) >= 0) {
-		    octstr_destroy(*body);
-		    *body = octstr_duplicate(temp);
-		    octstr_destroy(temp);
-
-debug("sms.http", 0, "in ucs2/to utf8, new msgdata is %s", octstr_get_cstr(*body));
-octstr_dump(*body, 0);
-
-		} else {
-
-debug("sms.http", 0, "error on ucs2/ to utf8");
-
-		    return -1;
-		}
-	    }
-						
-	    /* UTF-8 to UTF-16BE */
-	    tempcharset = octstr_create("UTF-16BE");
-	    if (charset_from_utf8(*body, &temp, tempcharset) >= 0) {
-		octstr_destroy(*body);
-		*body = octstr_duplicate(temp);
-		octstr_destroy(tempcharset);
-		octstr_destroy(temp);
-
-debug("sms.http", 0, "in ucs2/to ucs2, new msgdata is %s", octstr_get_cstr(*body));
-octstr_dump(*body, 0);
-
-	    } else {
-
-debug("sms.http", 0, "error on ucs2/ to ucs2");
-
-		octstr_destroy(tempcharset);
-		return -1;
+	} else if (coding == DC_UCS2) {
+	    /*
+	     * For UCS2, convert to UTF-16BE
+	     */
+	    if (octstr_recode (octstr_imm ("UTF-16BE"), charset, body) < 0) {
+		resultcode = -1;
 	    }
 	}
+	
+	debug("sms.http", 0, "exit charset, coding=%d, msgdata is %s", coding, octstr_get_cstr(body));
+	octstr_dump(body, 0);
     }
-    return 0;
+    
+    return resultcode;
 }

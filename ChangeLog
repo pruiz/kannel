@@ -1,3 +1,7 @@
+2001-12-10 Jörg Pommnitz <jpo@condat.de>
+    * gw/smsbox.c: rewrite of charset_processing
+    * gwlib/octstr.c, gwlib/octstr.h: new function octstr_recode
+
 2001-12-07  Tuomas Luttinen  <Tuomas.Luttinen@reach-u.com>
 
 	* gwlib/charset.[ch]: Function charset_shutdown added to release the
