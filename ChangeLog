@@ -1,3 +1,9 @@
+2001-08-13 Bruno Rodrigues <bruno.rodrigues@litux.org>
+
+	* smsc_emi2.c: Added waiting for first alert command and fixed other 
+	small issue that, when using stop-and-wait flow-control, messages 
+	stayed on queue if received a message between a send and a ack wait.
+
 2001-08-13 Andreas Fink <andreas@fink.org>
 	* gw/smsc_at: added new modem type siemens-tc35
 	

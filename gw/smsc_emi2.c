@@ -22,8 +22,6 @@
 #include "msg.h"
 #include "emimsg.h"
 
-#define DEFAULTWAITACK 120
-
 typedef struct privdata {
     List	*outgoing_queue;
     long	receiver_thread;
@@ -200,9 +198,24 @@ static Connection *open_send_connection(SMSCConn *conn)
 	    emimsg = make_emi31(privdata, 0);
 	    emimsg_send(server, emimsg);
 	    emimsg_destroy(emimsg);
-	    privdata->unacked = 1;
-	    privdata->sendtype[0]= 31;
-	    privdata->sendtime[0] = time(NULL);
+	    result = wait_for_ack(privdata, server, 31, 30);
+	    /* XXX In here we can test if smsc doesn't know alert command, and we
+	     * could try to use other command, like 61 
+	     */
+	    if (result == -2) {
+		error(0, "smsc_emi2: Server rejected our alert, disabling keepalive");
+		privdata->keepalive = 0;
+	    }
+	    else if (result == 0) {
+		error(0, "smsc_emi2: Got no reply to alert attempt "
+		         "within 30 s");
+		conn_destroy(server);
+		continue;
+	    }
+	    else if (result == -1) { /* Broken connection, already logged */
+		conn_destroy(server);
+		continue;
+	    }
 	}
 
 	if (conn->status != SMSCCONN_ACTIVE) {
@@ -631,27 +644,6 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 
     check_time = time(NULL);
     while (1) {
-	/* Send keepalive if there's room in the sending window */
-	if ((write || !privdata->flowcontrol) && privdata->keepalive > 0 
-	    && time(NULL) > keepalive_time + privdata->keepalive &&
-	    privdata->unacked < 100 && !privdata->shutdown ) {
-	    while (privdata->sendtime[nexttrn % 100] != 0)
-		nexttrn++; /* pick unused TRN */
-	    nexttrn %= 100;
-	    emimsg = make_emi31(privdata, nexttrn);
-	    privdata->sendtype[nexttrn]= 31;
-	    privdata->sendtime[nexttrn++] = time(NULL);
-	    privdata->unacked++;
-	    if (emimsg_send(server, emimsg) == -1) {
-		emimsg_destroy(emimsg);
-		return;
-	    }
-	    emimsg_destroy(emimsg);
-	    keepalive_time = time(NULL);
-	    write = 0;
-	}
-					    
-
 	/* Send messages if there's room in the sending window */
 	while ((write || !privdata->flowcontrol) && privdata->unacked < 100
 	       && !privdata->shutdown &&
@@ -673,6 +665,26 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 	    if ( privdata->keepalive > 0 )
 		keepalive_time = time(NULL);
 
+	    write = 0;
+	}
+
+	/* Send keepalive if there's room in the sending window */
+	if ((write || !privdata->flowcontrol) && privdata->keepalive > 0 
+	    && time(NULL) > keepalive_time + privdata->keepalive &&
+	    privdata->unacked < 100 && !privdata->shutdown ) {
+	    while (privdata->sendtime[nexttrn % 100] != 0)
+		nexttrn++; /* pick unused TRN */
+	    nexttrn %= 100;
+	    emimsg = make_emi31(privdata, nexttrn);
+	    privdata->sendtype[nexttrn]= 31;
+	    privdata->sendtime[nexttrn++] = time(NULL);
+	    privdata->unacked++;
+	    if (emimsg_send(server, emimsg) == -1) {
+		emimsg_destroy(emimsg);
+		return;
+	    }
+	    emimsg_destroy(emimsg);
+	    keepalive_time = time(NULL);
 	    write = 0;
 	}
 
@@ -765,8 +777,8 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 	    break;
 
 	/* If the server doesn't ack our messages, wake up to resend them */
-	if (!privdata->flowcontrol && list_len(privdata->outgoing_queue))
-	    conn_wait(server, 0);
+	if (privdata->flowcontrol && write && list_len(privdata->outgoing_queue))
+	    ;
 	else if (privdata->unacked == 0) {
 	    if (privdata->keepalive > 0)
 		conn_wait(server, privdata->keepalive + 1);
