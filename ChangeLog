@@ -1,3 +1,7 @@
+2001-04-25  Richard Braakman  <dark@wapit.com>
+
+	* doc/TESTCASES: Removed, we have "make check" now.
+
 2001-04-24  Uoti Urpala  <uau@wapit.com>
 
 	* doc/userguide/userguide.xml: Added information about emi2.
