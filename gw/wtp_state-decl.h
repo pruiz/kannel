@@ -58,6 +58,7 @@ ROW(RESULT_RESP_WAIT,
     {
      current_primitive=TRResultConfirmation;
      wsp_event=pack_wsp_event(current_primitive, event, machine);
+     wtp_machine_mark_unused(machine);
     },
     LISTEN)
 
