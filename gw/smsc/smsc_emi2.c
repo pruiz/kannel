@@ -1539,7 +1539,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->can_write = 1;
     privdata->priv_nexttrn = 0;
     privdata->last_activity_time = 0;
-
+    privdata->check_time = 0;
     
     host = cfg_get(cfg, octstr_imm("host"));
     if (host == NULL) {

@@ -581,9 +581,11 @@ int gwthread_pollfd(int fd, int events, double timeout)
 
     pollfd[0].fd = threadinfo->wakefd_recv;
     pollfd[0].events = POLLIN;
+    pollfd[0].revents = 0;
 
     pollfd[1].fd = fd;
     pollfd[1].events = events;
+    pollfd[1].revents = 0;
 
     milliseconds = timeout * 1000;
     if (milliseconds < 0)
