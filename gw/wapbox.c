@@ -92,7 +92,6 @@ int main(int argc, char **argv) {
                    continue;
                 debug(0, "wapbox: returning create machine");
 	        wtp_handle_event(wtp_machine, wtp_event);
-                debug(0,"wapbox: returning handle_event");
 	}
 	
 	info(0, "WAP box terminating.");

@@ -24,12 +24,14 @@ static WTPMachine *list = NULL;       /* list of wtp state machines */
 /*****************************************************************************
  *
  * Prototypes of internal functions:
+ *
+ * Create an uniniatilized wtp state machine.
  */
 
 static WTPMachine *wtp_machine_create_empty(void);
 
 /*
- * Give events and the state a readable name.
+ * Give wtp event and the state a readable name.
  */
 
 static char *name_event(int name);
@@ -245,7 +247,7 @@ void wtp_machine_dump(WTPMachine  *machine){
 	   #include "wtp_machine-decl.h"
 	
          } else
-           debug(0, "Machine does not exist");
+           debug(0, "wtp_machine_dump: machine does not exist");
 }
 
 
@@ -577,14 +579,13 @@ WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
  * We are interested only machines in use, it is, having in_use-flag 1.
  */
            if (list == NULL){
-              debug (0, "Empty list");
+              debug (0, "wtp_machine_find: empty list");
               return NULL;
            }
 
-           mutex_lock(&list->mutex);
-              
+           mutex_lock(&list->mutex); 
            temp=list;
-
+          
            while (temp != NULL){
    
 	   if ((octstr_compare(temp->source_address, source_address) == 0) &&
@@ -595,16 +596,19 @@ WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
 		temp->tid == tid && temp->in_use == 1){
 
                 mutex_unlock(&temp->mutex);
+                debug (0, "wtp_machine_find: machine found");
                 return temp;
                  
 		} else {
 
 		   mutex_unlock(&temp->mutex);
                    temp=temp->next;
-		   mutex_lock(&temp->mutex);
+
+                   if (temp != NULL)
+		      mutex_lock(&temp->mutex);
                }              
            }
-           mutex_unlock(&temp->mutex);         
+           debug (0, "wtp_machine_find: machine not found");      
            return temp;
 }
 
@@ -630,13 +634,14 @@ static WTPMachine *wtp_machine_create_empty(void){
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
 
-        mutex_lock(&list->mutex);
+        if (list != NULL)
+           mutex_lock(&list->mutex);
+
         machine->next=list;
         list=machine;
 
         mutex_unlock(&list->mutex);
 
-        debug(0, "wtp_create_machine: machine created");
         return machine;
 
 /*
@@ -788,6 +793,14 @@ static WTPEvent *remove_from_event_queue(WTPMachine *machine) {
 
 
 /*****************************************************************************/
+
+
+
+
+
+
+
+
 
 
 
