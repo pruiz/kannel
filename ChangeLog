@@ -1,3 +1,9 @@
+2001-02-02  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c (string_table_collect_strings): Removed the 
+	if (strlen(node->content) > WBXML_STRING_TABLE_MIN) -line that 
+	won't work with XML_USE_BUFFER_CONTENT.
+
 2001-02-02  Richard Braakman  <dark@wapit.com>
 
 	* Added gwmem_type() function that returns the name of the 

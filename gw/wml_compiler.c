@@ -1680,19 +1680,17 @@ static void string_table_collect_strings(xmlNodePtr node, List *strings)
 
     switch (node->type) {
     case XML_TEXT_NODE:
-	if (strlen(node->content) > WBXML_STRING_TABLE_MIN) {
-	    string = create_octstr_from_node(node);
+	string = create_octstr_from_node(node);
 
-	    octstr_shrink_blanks(string);
-	    octstr_strip_blanks(string);
-	    if (octstr_len(string) > WBXML_STRING_TABLE_MIN)
-		octstr_strip_nonalphanums(string);
+	octstr_shrink_blanks(string);
+	octstr_strip_blanks(string);
+	if (octstr_len(string) > WBXML_STRING_TABLE_MIN)
+	    octstr_strip_nonalphanums(string);
 
-	    if (octstr_len(string) > WBXML_STRING_TABLE_MIN)
-		list_append(strings, string);
-	    else 
-		octstr_destroy(string);
-	}
+	if (octstr_len(string) > WBXML_STRING_TABLE_MIN)
+	    list_append(strings, string);
+	else 
+	    octstr_destroy(string);
 	break;
     case XML_ELEMENT_NODE:
 	if(node->properties != NULL) {
