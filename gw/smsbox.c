@@ -739,15 +739,13 @@ static int PAM_conv (int num_msg, pam_message_type **msg,
 	    break;
 
 	case PAM_TEXT_INFO:
-	    printf("unexpected message from PAM: %s\n",
-	    msg[count]->msg);
+	    warning(0, "unexpected message from PAM: %s", msg[count]->msg);
 	    break;
 
 	case PAM_ERROR_MSG:
 	default:
 	    /* Must be an error of some sort... */
-	    printf("unexpected error from PAM: %s\n",
-	    msg[count]->msg);
+	    error(0, "unexpected error from PAM: %s", msg[count]->msg);
 	    gw_free(repl);
 	    return PAM_CONV_ERR;
 	}

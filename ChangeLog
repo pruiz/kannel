@@ -1,5 +1,10 @@
 2000-12-04  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsbox.c: Fixed the PAM code to use warning and error,
+	instead of printf.
+
+2000-12-04  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsbox.c: Reformatted the PAM code. Hopefully it still works.
 
 2000-12-04  Lars Wirzenius  <liw@iki.fi>
