@@ -1,3 +1,11 @@
+2000-02-22    <rpr@rpr.wapit.com>
+
+	* gwlib/octstr.c: fixed octstr_dump to show characters in
+	'partial' lines, too, and not to show 'empty' last line
+
+	* gw/smsbox.c: changed default configuration file to be as
+	'smsbox.smsconf'
+
 2000-02-21  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
 	* gw/wml_compiler.c: Some more bug fixes.
