@@ -19,7 +19,7 @@ PATH=$BOXPATH:$PATH
 # so don't generate any output.
 test -x $BOXPATH/bearerbox || exit 0
 
-test -r /etc/default/kannel && . /etc/default/kannel
+test -r /etc/default/`basename $0` && . /etc/default/`basename $0`
 
 case "$1" in
   start)
@@ -33,6 +33,7 @@ case "$1" in
 	--pidfile $PIDFILES/kannel_bearerbox.pid \
 	--no-extra-args \
 	$BOXPATH/bearerbox -v 4 -- $CONF
+    sleep 1 # Wait for bearerbox
     test ! -z $START_WAPBOX && (
     echo -n " wapbox"
 	start-stop-daemon --start --quiet \
@@ -62,18 +63,18 @@ case "$1" in
     echo -n "Stopping WAP gateway:"
     test ! -z $START_SMSBOX && (
 	echo -n " smsbox"
-	start-stop-daemon --stop --retry=-9 --quiet \
+	start-stop-daemon --stop --retry 5 --quiet \
     	    --pidfile $PIDFILES/kannel_smsbox.pid \
 	    --exec $BOXPATH/run_kannel_box
     )
     test ! -z $START_WAPBOX && (
 	echo -n " wapbox"
-	start-stop-daemon --stop --retry=-9 --quiet \
+	start-stop-daemon --stop --retry 5 --quiet \
     	    --pidfile $PIDFILES/kannel_wapbox.pid \
 	    --exec $BOXPATH/run_kannel_box
     )
     echo -n " bearerbox"
-    start-stop-daemon --stop --retry=-9 --quiet \
+    start-stop-daemon --stop --retry 5 --quiet \
     	--pidfile $PIDFILES/kannel_bearerbox.pid \
 	--exec $BOXPATH/run_kannel_box
     echo "."

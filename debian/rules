@@ -72,15 +72,16 @@ install: build
 	dh_installdirs
 
 	# Add here commands to install the package into debian/kannel.
-	$(MAKE) install prefix=$(CURDIR)/debian/kannel/usr
-	$(MAKE) install-docs prefix=$(CURDIR)/debian/kannel-docs/usr
-	$(MAKE) install-contrib prefix=$(CURDIR)/debian/kannel-extras/usr
-	$(MAKE) install-checks prefix=$(CURDIR)/debian/kannel-extras/usr
-	$(MAKE) install-test prefix=$(CURDIR)/debian/kannel-extras/usr
+	$(MAKE) install prefix=$(CURDIR)/debian/tmp/usr
+	$(MAKE) install-docs prefix=$(CURDIR)/debian/tmp/usr
+	$(MAKE) install-contrib prefix=$(CURDIR)/debian/tmp/usr
+	$(MAKE) install-checks prefix=$(CURDIR)/debian/tmp/usr
+	$(MAKE) install-test prefix=$(CURDIR)/debian/tmp/usr
 	# XXX this is temporary for pre 1.3.1/1.2.2 versions
-	-test -e test/run-http2-tests && mv $(CURDIR)/debian/kannel-extras/usr/lib/kannel/test/run-http2-tests $(CURDIR)/debian/kannel-extras/usr/lib/kannel/test/run-http2-tests.sh
+	-test -e test/run-http2-tests && mv $(CURDIR)/debian/tmp/usr/lib/kannel/test/run-http2-tests $(CURDIR)/debian/tmp/usr/lib/kannel/test/run-http2-tests.sh
 
 	dh_install
+	dh_movefiles
 
 # Build architecture-independent files here.
 binary-indep: build install

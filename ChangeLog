@@ -1,3 +1,8 @@
+2003-02-14  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
+    * debian/*: created kannel-devel-* package files - to build them you
+      need to copy control.devel and changelog.devel to control and changelog
+      respectivly. 
+
 2003-02-14  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: Alan provided some documentation about 
       log file roation.
