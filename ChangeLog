@@ -1,3 +1,6 @@
+2003-02-17  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: minor xml fixes.
+
 2003-02-16  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
     * userguide.xml: some xml fixes. Cleaning of debian chapter and added
       new packages's information. Standardization of configuration blocks, 
