@@ -345,15 +345,15 @@ int store_load(void)
     
     store_file = octstr_read_file(octstr_get_cstr(filename));
     if (store_file != NULL)
-	info(0, "Loading store file %s", octstr_get_cstr(filename));
+	info(0, "Loading store file `%s'", octstr_get_cstr(filename));
     else {
 	store_file = octstr_read_file(octstr_get_cstr(newfile));
 	if (store_file != NULL)
-	    info(0, "Loading store file %s", octstr_get_cstr(newfile));
+	    info(0, "Loading store file `%s'", octstr_get_cstr(newfile));
 	else {
 	    store_file = octstr_read_file(octstr_get_cstr(bakfile));
 	    if (store_file != NULL)
-		info(0, "Loading store file %s", octstr_get_cstr(bakfile));
+		info(0, "Loading store file `%s'", octstr_get_cstr(bakfile));
 	    else {
 		info(0, "Cannot open any store file, starting new one");
 		retval = open_file(filename);

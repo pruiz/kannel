@@ -1345,10 +1345,10 @@ void use_global_client_certkey_file(Octstr *certkeyfile)
                                 octstr_get_cstr(certkeyfile),
                                 SSL_FILETYPE_PEM);
     if (SSL_CTX_check_private_key(global_ssl_context) != 1)
-        panic(0, "reading global client certificate file %s, the certificate "
+        panic(0, "reading global client certificate file `%s', the certificate "
 	      "isn't consistent with the private key (or failed reading the file)", 
               octstr_get_cstr(certkeyfile));
-    info(0, "Using global SSL certificate and key from file %s",
+    info(0, "Using global SSL certificate and key from file `%s'",
          octstr_get_cstr(certkeyfile));
 }
 
@@ -1367,8 +1367,8 @@ void use_global_server_certkey_file(Octstr *certfile, Octstr *keyfile)
                   (or failed reading the file)", 
                   octstr_get_cstr(certfile), octstr_get_cstr(keyfile));
     }
-    info(0, "Using global server SSL certificate from file %s", octstr_get_cstr(certfile));
-    info(0, "Using global server SSL key from file %s", octstr_get_cstr(keyfile));
+    info(0, "Using global server SSL certificate from file `%s'", octstr_get_cstr(certfile));
+    info(0, "Using global server SSL key from file `%s'", octstr_get_cstr(keyfile));
 }
 
 static int verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
