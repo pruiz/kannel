@@ -51,7 +51,7 @@ build-stamp:  config.status
 clean:
 	dh_testdir
 	dh_testroot
-	rm -f build-stamp 
+	rm -f build-stamp config.status
 
 	# Add here commands to clean up after the build process.
 	-$(MAKE) clean
