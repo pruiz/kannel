@@ -1,4 +1,8 @@
 2001-09-21 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* gw/smsbox.c: Forced 7bits coding if coding=DC_UNDEF and udh is 
+	empty. Fixed bug in text concatenation
+
+2001-09-21 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* gw/smsbox.c: Fixed a bug in reply-* octstr. Smsbox panics
 	on second error reply
 

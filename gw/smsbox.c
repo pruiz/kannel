@@ -1221,8 +1221,13 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     msg->sms.compress = compress;
 
     /* Compatibility Mode */
-    if ( msg->sms.coding == DC_UNDEF && octstr_len(udh))
-	msg->sms.coding = DC_8BIT;
+    if ( msg->sms.coding == DC_UNDEF) {
+	if(octstr_len(udh))
+	  msg->sms.coding = DC_8BIT;
+	else
+	  msg->sms.coding = DC_7BIT;
+    }
+	
 
     if ( validity < 0 ) {
 	returnerror = octstr_create("Validity field misformed, rejected");
