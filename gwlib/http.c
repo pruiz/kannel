@@ -2374,12 +2374,14 @@ Octstr *http_header_value(List *headers, Octstr *name)
         if (octstr_case_compare(current_name, name) == 0) {
             value = octstr_copy(os, colon + 1, octstr_len(os));
             octstr_strip_blanks(value);
+            octstr_destroy(current_name);
             return value;
         }
+        octstr_destroy(current_name);
         ++i;
     }
     
-    return value;
+    return NULL;
 }
 
 List *http_header_duplicate(List *headers)

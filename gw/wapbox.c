@@ -49,6 +49,10 @@ static long timer_freq = DEFAULT_TIMER_FREQ;
 int wsp_smart_errors = 0;
 Octstr *device_home = NULL;
 
+/* Controlling segmentation of sms messages sent by wapbox (push related).*/
+int concatenation = 1;
+long max_messages = 10;
+
 #ifdef HAVE_WTLS_OPENSSL
 RSA* private_key = NULL;
 X509* x509_cert = NULL;
@@ -176,6 +180,9 @@ static Cfg *init_wapbox(Cfg *cfg)
      * error information instread of signaling using the HTTP reply codes
      */
     cfg_get_bool(&wsp_smart_errors, grp, octstr_imm("smart-errors"));
+    if (cfg_get_bool(&concatenation, grp, octstr_imm("concatenation")) < 0)
+        concatenation = 1;
+    cfg_get_integer(&max_messages, grp, octstr_imm("max-messages"));
 
     /* configure the 'wtls' group */
 #if (HAVE_WTLS_OPENSSL)
@@ -377,8 +384,6 @@ static void dispatch_datagram(WAPEvent *dgram)
     Msg *msg,
         *part;
     List *sms_datagrams;
-    long max_msgs,
-         msg_len;
     static unsigned long msg_sequence = 0L;   /* Used only by this function */
 
     msg = part = NULL;
@@ -396,13 +401,13 @@ static void dispatch_datagram(WAPEvent *dgram)
         } else {
 	    msg = pack_sms_datagram(dgram);
             msg_sequence = counter_increase(sequence_counter) & 0xff;
-            msg_len = octstr_len(msg->sms.msgdata);
-            max_msgs = (msg_len / MAX_SMS_OCTETS) + 1; 
-            sms_datagrams = sms_split(msg, NULL, NULL, NULL, NULL, 1, 
-                                      msg_sequence, max_msgs, MAX_SMS_OCTETS);
-
-            while ((part = list_extract_first(sms_datagrams)) != NULL)
+            /*msg_len = octstr_len(msg->sms.msgdata);
+            max_msgs = (msg_len / MAX_SMS_OCTETS) + 1;*/ 
+            sms_datagrams = sms_split(msg, NULL, NULL, NULL, NULL, concatenation, 
+                                      msg_sequence, max_messages, MAX_SMS_OCTETS);
+            while ((part = list_extract_first(sms_datagrams)) != NULL) {
 	            write_to_bearerbox(part);
+            }
 
             list_destroy(sms_datagrams, NULL);
             msg_destroy(msg);

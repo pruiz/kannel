@@ -192,7 +192,10 @@ static void main_thread(void *arg) {
 
 /*
  * We do not set TUnitData.ind's SMS-specific fields here, because we do not
- * support sending results to the phone over SMS.
+ * support sending results to the phone over SMS. Wsp, chapter 8.4.1 states
+ * that "that each peer entity is always associated with an encoding version.".
+ * So we add Encoding-Version when we are sending something to the client.
+ * (This includes push, which is not directly mentioned in chapter 8.4.2.70). 
  */
 static WAPEvent *pack_into_result_datagram(WAPEvent *event) {
 	WAPEvent *datagram;
@@ -203,6 +206,8 @@ static WAPEvent *pack_into_result_datagram(WAPEvent *event) {
 	
 	gw_assert(event->type == S_Unit_MethodResult_Req);
 	p = &event->u.S_Unit_MethodResult_Req;
+
+        http_header_add(p->response_headers, "Encoding-Version", "1.3");
 
 	pdu = wsp_pdu_create(Reply);
 	pdu->u.Reply.status = wsp_convert_http_status_to_wsp_status(p->status);
@@ -236,6 +241,10 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
 
         gw_assert(event->type == S_Unit_Push_Req);
         debug("wap.wsp.unit", 0, "WSP_UNIT: Connectionless push accepted");
+
+        http_header_add(event->u.S_Unit_Push_Req.push_headers, 
+                        "Encoding-Version", "1.3");
+
         pdu = wsp_pdu_create(Push);
 	pdu->u.Push.headers = wsp_headers_pack(
             event->u.S_Unit_Push_Req.push_headers, 1);

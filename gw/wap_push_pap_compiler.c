@@ -757,8 +757,9 @@ static int parse_element(xmlNodePtr node, WAPEvent **e, long *type_of_address,
     }
 
     if (i == NUM_ELEMENTS) {
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown element:");
+        octstr_dump(name, 0);
         octstr_destroy(name);
-        debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown element");
         return -2;
     }
 
@@ -1444,8 +1445,14 @@ static int parse_address(Octstr **address, long *type_of_address)
     if (octstr_get_char(*address, 0) == '/')
         octstr_delete(*address, 0, 1);
 
-    if ((pos = parse_ppg_specifier(address, pos)) < 0) {
-        warning(0, "illegal ppg specifier");
+/*
+ * WAP-209, chapter 8 states that addresses with telephone numbers
+ * should not have a ppg specifier. WAP-151 grammar, however, makes it
+ * mandatory. Best way to solve this contradiction seems to be regarding
+ * ppg specifier optional - MMSC is very important type of pi.
+ */
+    if (octstr_search_char(*address, '@', 0) >= 0) {
+        if ((pos = parse_ppg_specifier(address, pos)) < 0)
         return -2;
     }
 
@@ -1481,7 +1488,8 @@ static long parse_wappush_client_address(Octstr **address, long pos,
 }
 
 /*
- * We are not interested of ppg specifier, but we must check its format.
+ * We are not interested of ppg specifier, but we must check its format,
+ * if we find it - it is optional.
  */
 static long parse_ppg_specifier(Octstr **address, long pos)
 {
@@ -1494,8 +1502,6 @@ static long parse_ppg_specifier(Octstr **address, long pos)
 	    octstr_delete(*address, pos, 1);
             --pos;
         } else {
-            debug("wap.push.pap.compiler", 0, "PAP COMPILER: missing"
-                  " separator .");
 	    return -2;
         }
 
@@ -1511,8 +1517,6 @@ static long parse_ppg_specifier(Octstr **address, long pos)
     }
 
     if (pos < 0) {
-       debug("wap.push.pap.compiler", 0, "PAP COMPILER: missing separator /"
-             " or @");
        return -2;
     }
 

@@ -266,6 +266,7 @@ static int get_mime_boundary(List *push_headers, Octstr *content_header,
                              Octstr **boundary);
 static void change_header_value(List **push_headers, char *name, char *value);
 static void remove_mime_headers(List **push_headers);
+static void remove_link_headers(List **push_headers);
 
 /*
  * Communicating with pi.
@@ -374,6 +375,7 @@ void wap_push_ppg_shutdown(void)
          octstr_destroy(ppg_deny_ip);
          octstr_destroy(ppg_allow_ip);
          octstr_destroy(global_sender);
+         octstr_destroy(ppg_default_smsc);
 
          gwthread_join_every(http_read_thread);
 #ifdef HAVE_LIBSSL
@@ -693,6 +695,8 @@ static void pap_request_thread(void *arg)
         if (octstr_compare(url, ppg_url) != 0) {
             error(0,  "Request <%s> from <%s>: service not found", 
                   octstr_get_cstr(url), octstr_get_cstr(ip));
+            debug("wap.push.ppg", 0, "your configuration uses %s",
+                  octstr_get_cstr(ppg_url));           
             not_found = octstr_imm("Service not specified\n");
             http_send_reply(client, http_status, push_headers, not_found);
             goto ferror;
@@ -745,6 +749,7 @@ static void pap_request_thread(void *arg)
         
         http_remove_hop_headers(push_headers);
         remove_mime_headers(&push_headers);
+        remove_link_headers(&push_headers);
 
         if (!headers_acceptable(push_headers, &content_header)) {
 	        warning(0,  "PPG: Unparsable push headers, the request"
@@ -2670,7 +2675,23 @@ static char *wina_uri[] =
     "wta.ua", 
     "mms.ua", 
     "push.syncml", 
-    "loc.ua" 
+    "loc.ua",
+    "syncml.dm",
+    "drm.ua",
+    "emn.ua",
+    "wv.ua",
+    "x-wap-microsoft:localcontent.ua",
+    "x-wap-microsoft:IMclient.ua",
+    "x-wap-docomo:imode.mail.ua",
+    "x-wap-docomo:imode.mr.ua",
+    "x-wap-docomo:imode.mf.ua",
+    "x-motorola:location.ua",
+    "x-motorola:now.ua",
+    "x-motorola:otaprov.ua",
+    "x-motorola:browser.ua",
+    "x-motorola:splash.ua",
+    "x-wap-nai:mvsw.command",
+    "x-wap-openwave:iota.ua" 
 };
 
 #define NUMBER_OF_WINA_URIS sizeof(wina_uri)/sizeof(wina_uri[0])
@@ -2680,14 +2701,9 @@ static char *wina_uri[] =
  * First check do we a header with an app-encoding field and a coded value. 
  * If not, try to find push application id from table of wina approved values.
  * Return coded value value of application id in question, or an error code:
- *        -1, error
+ *        -1, no coded value (but defaults may be applied)
  *         0, * (meaning any application acceptable)
- *         1, push.sia
- *         2, wml.ua
- *         3, wta.ua 
- *         4, mms.ua
- *         5, push.syncml 
- *         6, loc.ua 
+ *         greater or equal as 1: code for this application id 
  */
 static long parse_appid_header(Octstr **appid_content)
 {
@@ -2844,12 +2860,21 @@ static void change_header_value(List **push_headers, char *name, char *value)
 
 /*
  * Some application level protocols may use MIME headers. This may cause problems
- * to them. 
+ * to them. (MIME version is a mandatory header).
  */
 static void remove_mime_headers(List **push_headers)
 {
     http_header_remove_all(*push_headers, "MIME-Version");
 }
+
+/*
+ * There are headers used only for HTTP POST pi->ppg. (For debugging, mainly.)
+ */
+static void remove_link_headers(List **push_headers)
+{
+    http_header_remove_all(*push_headers, "Host");
+}
+
 
 /*
  * Badmessage-response element is redefined in pap, implementation note, 

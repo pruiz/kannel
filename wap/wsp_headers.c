@@ -250,7 +250,8 @@ static Octstr *unpack_q_value(ParseContext *context)
     return convert_q_value(c);
 }
 
-/* Version-value is defined in 8.4.2.3 */
+/* Version-value is defined in 8.4.2.3. Encoding-Version uses coding
+ * defined in this chapter, see 8.4.2.70.  */
 static Octstr *unpack_version_value(long value)
 {
     Octstr *result;
@@ -267,6 +268,19 @@ static Octstr *unpack_version_value(long value)
     }
 
     return result;
+}
+
+static Octstr *unpack_encoding_version(ParseContext *context)
+{
+    int ch;
+
+    ch = parse_get_char(context);
+    if (ch < 128) {
+        warning(0, "WSP: bad Encoding-Version value");
+        return NULL;
+    }
+
+    return unpack_version_value(((long) ch) - 128);
 }
 
 /* Called with the parse limit set to the end of the parameter data,
@@ -1155,6 +1169,10 @@ static void unpack_well_known_field(List *unpacked, int field_type,
             decoded = unpack_disposition(context);
             break;
 
+        case WSP_HEADER_ENCODING_VERSION:
+            decoded = unpack_encoding_version(context);
+            break;
+
         default:
             if (headername) {
                 warning(0, "Did not expect value-length with "
@@ -1331,6 +1349,7 @@ static int pack_text(Octstr *packet, Octstr *value);
 static int pack_transfer_encoding(Octstr *packet, Octstr *value);
 static int pack_uri(Octstr *packet, Octstr *value);
 static int pack_warning(Octstr *packet, Octstr *value);
+static int pack_version_value(Octstr *packet, Octstr *value);
 
 /* LIST is a comma-separated list such as is described in the "#rule"
  * entry of RFC2616 section 2.1. */
@@ -1396,10 +1415,11 @@ struct headerinfo headerinfo[] =
         { WSP_HEADER_WARNING, pack_warning, LIST },
         { WSP_HEADER_WWW_AUTHENTICATE, pack_challenge, BROKEN_LIST },
         { WSP_HEADER_CONTENT_DISPOSITION, pack_content_disposition, 0 },
-        { WSP_HEADER_PUSH_FLAG, pack_integer_string, 0},
-        { WSP_HEADER_X_WAP_CONTENT_URI, pack_uri, 0},
-        { WSP_HEADER_X_WAP_INITIATOR_URI, pack_uri, 0},
-        { WSP_HEADER_X_WAP_APPLICATION_ID, pack_integer_string, 0}
+        { WSP_HEADER_PUSH_FLAG, pack_integer_string, 0 },
+        { WSP_HEADER_X_WAP_CONTENT_URI, pack_uri, 0 },
+        { WSP_HEADER_X_WAP_INITIATOR_URI, pack_uri, 0 },
+        { WSP_HEADER_X_WAP_APPLICATION_ID, pack_integer_string, 0 },
+        { WSP_HEADER_ENCODING_VERSION, pack_version_value, 0 }
     };
 
 static Parameter *parm_create(Octstr *key, Octstr *value)
@@ -1743,7 +1763,7 @@ overflow:
     return -1;
 }
 
-static void pack_version_value(Octstr *packed, Octstr *version)
+static int pack_version_value(Octstr *packed, Octstr *version)
 {
     long major, minor;
     long pos;
@@ -1763,10 +1783,11 @@ static void pack_version_value(Octstr *packed, Octstr *version)
     }
 
     pack_short_integer(packed, major << 4 | minor);
-    return;
+    return 0;
 
 usetext:
     pack_text(packed, version);
+    return 0;
 }
 
 static int pack_constrained_value(Octstr *packed, Octstr *text, long value)

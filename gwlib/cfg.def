@@ -77,6 +77,8 @@ SINGLE_GROUP(wapbox,
     OCTSTR(syslog-level)
     OCTSTR(smart-errors)
     OCTSTR(access-log)
+    OCTSTR(concatenation)
+    OCTSTR(max-messages)
 )
 
 

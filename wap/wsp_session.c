@@ -87,6 +87,10 @@ static char *state_name(WSPState state);
 static unsigned long next_wsp_session_id(void);
 
 static List *make_capabilities_reply(WSPMachine *m);
+static List *make_reply_headers(WSPMachine *m);
+static int is_default_version(WSPMachine *m);
+static int is_higher_version(WSPMachine *m);
+static int is_lower_version(WSPMachine *m);
 static Octstr *make_connectreply_pdu(WSPMachine *m);
 static Octstr *make_resume_reply_pdu(WSPMachine *m, List *headers);
 static WSP_PDU *make_confirmedpush_pdu(WAPEvent *e);
@@ -946,11 +950,91 @@ static List *make_capabilities_reply(WSPMachine *m) {
 	return caps;
 }
 
+static int is_default_version(WSPMachine *m)
+{
+    Octstr *request_version;
+
+    request_version = http_header_value(m->http_headers, octstr_imm("Encoding-Version"));
+    if (request_version == NULL) {
+        return 1;
+    } else {
+        octstr_destroy(request_version);
+        return 0;
+    }
+}
+
+static int is_higher_version(WSPMachine *m)
+{
+    Octstr *request_version;
+
+    request_version = http_header_value(m->http_headers, octstr_imm("Encoding-Version"));
+    if (request_version && octstr_compare(request_version, octstr_imm("1.1")) != 0 &&
+            octstr_compare(request_version, octstr_imm("1.2")) != 0 &&
+            octstr_compare(request_version, octstr_imm("1.3")) != 0) {
+        octstr_destroy(request_version);
+        return 1;
+    } else {
+        octstr_destroy(request_version);
+        return 0;
+    }
+}
+
+static int is_lower_version(WSPMachine *m)
+{
+    Octstr *request_version;
+
+    request_version = http_header_value(m->http_headers, octstr_imm("Encoding-Version"));
+    if (request_version && (octstr_compare(request_version, octstr_imm("1.1")) == 0 ||
+            octstr_compare(request_version, octstr_imm("1.2")) == 0)) {
+        octstr_destroy(request_version);
+        return 1;        
+    } else {
+        octstr_destroy(request_version);
+        return 0;
+    }
+}
+
+static List *make_reply_headers(WSPMachine *m)
+{
+    List *headers;
+    Octstr *encoding_version;
+    Octstr *request_version;
+
+    /* Add all server wsp level hop-by-hop headers. Currently only 
+     * Encoding-Version, as defined by wsp, chapter 8.4.2.70. 
+     * What headers belong to which version is defined in appendix A,
+     * table 39.. 
+    encoding_version = request_version = NULL;
+     * Essentially, if the client sends us an Encoding-Version
+     * higher than ours (1.3) we send our version number to it,
+     * if it is lower, we left version number intact. */
+    /* First the case that we have no Encoding-Version header at all. 
+     * This case we must assume that the client supports version 1.2
+     * or lower. */
+    if (is_default_version(m)) {
+        encoding_version = octstr_create("1.2");
+    } else if (is_higher_version(m)) {
+        encoding_version = octstr_create("1.3");
+    } else if (is_lower_version(m)) {
+        request_version = http_header_value(m->http_headers, octstr_imm("Encoding-Version"));
+        encoding_version = octstr_duplicate(request_version);
+        octstr_destroy(request_version);
+    }  else {   
+        encoding_version = octstr_create("1.3");
+    }
+
+    headers = http_create_empty_headers();
+    http_header_add(headers, "Encoding-Version", octstr_get_cstr(encoding_version));
+    octstr_destroy(encoding_version);
+
+    return headers;
+}
 
 static Octstr *make_connectreply_pdu(WSPMachine *m) {
 	WSP_PDU *pdu;
 	Octstr *os;
 	List *caps;
+        List *reply_headers;
 	
 	pdu = wsp_pdu_create(ConnectReply);
 
@@ -959,7 +1043,10 @@ static Octstr *make_connectreply_pdu(WSPMachine *m) {
 	caps = make_capabilities_reply(m);
 	pdu->u.ConnectReply.capabilities = wsp_cap_pack_list(caps);
 	wsp_cap_destroy_list(caps);
-	pdu->u.ConnectReply.headers = NULL;
+
+        reply_headers = make_reply_headers(m);
+	pdu->u.ConnectReply.headers = wsp_headers_pack(reply_headers, 0);
+        http_destroy_headers(reply_headers);
 	
 	os = wsp_pdu_pack(pdu);
 	wsp_pdu_destroy(pdu);

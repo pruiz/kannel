@@ -332,7 +332,8 @@ static void abort_push(WAPEvent *e)
 }
 
 /*
- * Add push flag into push headers. Push flag is defined in otaa, p. 17-18.
+ * Add push flag into push headers. Push flag is defined in ota, p. 17-18.
+ * If there is no flags set, no Push-Flag header is added.
  */
 static List *add_push_flag(WAPEvent *e)
 {
@@ -377,9 +378,11 @@ static List *add_push_flag(WAPEvent *e)
     push_flag = 0;
     push_flag = push_flag | authenticated | trusted | last;
     
+    if (push_flag) {
     buf = octstr_format("%d", push_flag);
     http_header_add(headers, "Push-Flag", octstr_get_cstr(buf)); 
     octstr_destroy(buf);
+    }
 
     return headers;
 }

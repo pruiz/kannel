@@ -2,7 +2,7 @@
  * Implementation of a gateway oriented mime parser for pap module. This 
  * parser follows proxy rules stated in Push Message, chapter 7.
  *
- * By Aarno Syvänen for Wiral Ltd
+ * By Aarno Syvänen for Wiral Ltd and Global Networks Inc.
  */
 
 #include "wap_push_pap_mime.h"
@@ -47,7 +47,7 @@ static long pass_field_name(Octstr **body_part, Octstr **content_header,
 			    long pos);
 static long pass_field_value(Octstr **body_part, Octstr **content_header, 
                              long pos);
-static void parse_epilogue(Octstr **mime_content);
+static int parse_epilogue(Octstr **mime_content);
 static int parse_tail(Octstr **multipart, Octstr *part_delimiter, 
                       long boundary_pos, long *next_part_pos);
 
@@ -103,8 +103,8 @@ int mime_parse(Octstr *boundary, Octstr *mime_content, Octstr **pap_content,
         return 0;
     } else if (ret == 0) {
         gw_assert(*rdf_content == NULL);
+        if (octstr_len(mime_content) != 0)
         parse_epilogue(&mime_content);
-        gw_assert(octstr_len(mime_content) == 0);
         return 1;
     }
 
@@ -112,6 +112,7 @@ int mime_parse(Octstr *boundary, Octstr *mime_content, Octstr **pap_content,
         warning(0, "erroneous capacity (rdf) headers");
         return 0;
     }
+    if (octstr_len(mime_content) != 0)
     parse_epilogue(&mime_content);
     gw_assert(octstr_len(mime_content) == 0);
     
@@ -141,6 +142,7 @@ static int islwspchar(int c)
     return c == '\t' || c == ' ';
 }
 
+/* These thingies we after normally have after delimiters. */
 static int parse_tail(Octstr **multipart, Octstr *delimiter, 
                       long boundary_pos, long *next_part_pos)
 {
@@ -150,6 +152,16 @@ static int parse_tail(Octstr **multipart, Octstr *delimiter,
     if ((*next_part_pos = parse_terminator(*multipart, *next_part_pos)) < 0)
         return -1;
     
+    return 0;
+}
+
+/* But if we have no epilogue, we do not have crlf after close delimiter either.*/
+static int parse_short_tail(Octstr **multipart, Octstr *delimiter, long boundary_pos,
+                            long *next_part_pos)
+{
+    *next_part_pos = parse_transport_padding(*multipart,
+         boundary_pos + octstr_len(delimiter));
+
     return 0;
 }
 
@@ -200,18 +212,28 @@ static long parse_terminator(Octstr *mime_content, long pos)
 
 static long parse_transport_padding(Octstr *mime_content, long pos)
 {
-    while (islwspchar(octstr_get_char(mime_content, 0)))
+    while (islwspchar(octstr_get_char(mime_content, pos)))
         ++pos;
 
     return pos;
 }
 
+static long parse_close_delimiter(Octstr *close_delimiter, Octstr *mime_content,
+                                  long pos)
+{
+    if (octstr_ncompare(close_delimiter, mime_content, 
+                        octstr_len(close_delimiter)) != 0)
+        return -1;
+    pos += octstr_len(close_delimiter);
+
+    return pos;
+}
+
 /*
- * Splits the first body part away from the multipart message, if there is 
- * more than one left. A body part end with either with another body or with 
- * a close delimiter. If there is more than one body part left, we first split
- * the first one and then remove the stuff separating bodies from the remaind-
- * er. If there is none just remove the ending stuff.
+ * Splits the first body part away from the multipart message. A body part end with
+ * either with another body or with a close delimiter. We first split the body and
+ * then remove the separating stuff  from the remainder. If we have the last body
+ * part, we must parse all closing stuff. 
  * Returns 1, there is still another body part in the multipart message
  *         0, if there is none
  *         -1, when parsing error.
@@ -223,8 +245,8 @@ static int parse_body_part (Octstr **multipart, Octstr *boundary,
            *close_delimiter;
     long boundary_pos,          /* start of the boundary */
          close_delimiter_pos,   /* start of the close delimiter */
-         end_pos,               /* end of the message */
-         next_part_pos;         /* start of the next part */
+         next_part_pos,         /* start of the next part */
+         epilogue_pos;          /* start of the epilogue */
  
     part_delimiter = make_part_delimiter(boundary);
     close_delimiter = make_close_delimiter(boundary);
@@ -235,17 +257,15 @@ static int parse_body_part (Octstr **multipart, Octstr *boundary,
 
     boundary_pos = octstr_search(*multipart, part_delimiter, 0);
     if (boundary_pos == close_delimiter_pos) {
-        if (parse_tail(multipart, close_delimiter, close_delimiter_pos,
-                       &end_pos) < 0) {
+        *body_part = octstr_create("");
+        octstr_split_by_pos(multipart, body_part, close_delimiter_pos);
+        if ((epilogue_pos = 
+                parse_close_delimiter(close_delimiter, *multipart, 0)) < 0)
             goto error;
-        } else {
-            octstr_delete(*multipart, close_delimiter_pos, 
-                          end_pos - close_delimiter_pos);
-            *body_part = octstr_duplicate(*multipart);
-            octstr_delete(*multipart, 0, end_pos);
+        epilogue_pos = parse_transport_padding(*multipart, epilogue_pos);
+        octstr_delete(*multipart, 0, epilogue_pos);
 	        goto last_part;
         }
-    }
 
     *body_part = octstr_create("");
     octstr_split_by_pos(multipart, body_part, boundary_pos);
@@ -727,26 +747,18 @@ static long pass_field_name(Octstr **body_part, Octstr **field_part,
     return pos;
 }
 
-static void parse_epilogue(Octstr **mime_content)
+/* This is actually CRLF epilogue. */
+static int parse_epilogue(Octstr **mime_content)
 {
+    long pos;
+
     if (octstr_len(*mime_content) == 0)
-        return;
+        return 0;
+    
+    if ((pos = parse_terminator(*mime_content, 0)) < 0)
+        return -1;
 
-    debug("wap.push.pap.mime", 0, "our epilogue was");
-    octstr_dump(*mime_content, 0);
     octstr_delete(*mime_content, 0, octstr_len(*mime_content));
+    return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
