@@ -1,4 +1,9 @@
 2003-02-14  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap_push_ppg_pushuser.c, gwlib/cfg.def: bouncing back to use unique
+      config directives for 'wap-push-user' and 'sendsms-user' groups for 
+      specifying forced smsc-ids.
+
+2003-02-14  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_smpp.c, doc/userguide/userguide.xml: Changed default behaviour
       of the 'source-addr-autodetect' to yes. Alex suggested this. If the 
       feature is not needed, it can be turned off by setting the config
