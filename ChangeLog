@@ -1,4 +1,8 @@
 2002-11-12  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.c: fixed a bug in basic auth userid and password handling,
+      reported by Vjacheslav Chekushin <slava@lmt.lv>
+
+2002-11-12  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_at2.c: fixed a bug in date pdu deocding, patch 
       submited by Sindunata Sudarmaji <software@dygsp.com>
       [Msg-ID: <20021023132104.A4594@top4>]
