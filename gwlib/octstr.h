@@ -8,8 +8,6 @@
  * length of the sequence. There are various basic operations on octet
  * strings: concatenating, comparing, printing, etc.
  *
- * Several octet strings can also be placed in a list, OctstrList.
- *
  * See comments below for explanations on individual functions. Note that
  * all functions use gw_malloc and friends, so they won't return if the
  * memory allocations fail.
@@ -22,8 +20,9 @@
 
 #include <stdio.h>
 
+#include "list.h"
+
 typedef struct Octstr Octstr;
-typedef struct OctstrList OctstrList;
 
 /*
  * Create an empty octet string. Return pointer to the new object.
@@ -264,42 +263,10 @@ Octstr *octstr_read_file(const char *filename);
 
 
 /*
- * Create an empty list of octet strings. Return pointer to new list.
- */
-OctstrList *octstr_list_create(void);
-
-
-/*
- * Destroy a list of octet strings. If `strings_also' is non-zero (true),
- * the strings in the list are also destroyed (using octstr_destroy).
- */
-void octstr_list_destroy(OctstrList *list, int strings_also);
-
-
-/*
- * Return length of octet string.
- */
-long octstr_list_len(OctstrList *list);
-
-
-/*
- * Append a new octet string to end of list.
- */
-void octstr_list_append(OctstrList *list, Octstr *ostr);
-
-
-/*
- * Return an item in an octet string. `index' starts at 0. If it is outside
- * the length of the list, return NULL.
- */
-Octstr *octstr_list_get(OctstrList *list, long index);
-
-
-/*
  * Split an octet string into words at whitespace, and return a list
  * containing the new octet strings.
  */
-OctstrList *octstr_split_words(Octstr *ostr);
+List *octstr_split_words(Octstr *ostr);
 
 
 /*

@@ -394,7 +394,7 @@ HTTPHeader *unpack_headers(Octstr *headers)
 }	
 
 
-Octstr *output_headers(OctstrList *uhdrs)
+Octstr *output_headers(List *uhdrs)
 {
     char buf[2*1024];
     char *pstr, *nstr;
@@ -405,9 +405,9 @@ Octstr *output_headers(OctstrList *uhdrs)
     *buf = '\0';
     
     for(i=0; ; i+=2) {
-	ostr = octstr_list_get(uhdrs, i);
-	if (ostr == NULL)
+	if (i+1 >= list_len(uhdrs))
 	    break;
+	ostr = list_get(uhdrs, i);
 	
 	nstr = octstr_get_cstr(ostr);
 	if (pstr != NULL && strcmp(pstr, nstr) == 0) {
@@ -419,7 +419,7 @@ Octstr *output_headers(OctstrList *uhdrs)
 	    strcat(buf, ": ");
 	    pstr = nstr;
 	}
-	strcat(buf, octstr_get_cstr(octstr_list_get(uhdrs, i+1)));
+	strcat(buf, octstr_get_cstr(list_get(uhdrs, i+1)));
     }
     strcat(buf, "\r\n");
     return octstr_create(buf);

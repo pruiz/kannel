@@ -1,3 +1,9 @@
+Tue Apr  4 14:42:54 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/urltrans.c, gw/wsp_headers.c, gw/wsp_headers.h,
+	gwlib/octstr.c, gwlib/octstr.h: Removed OctstrList, use plain
+	List instead.
+
 Tue Apr  4 14:15:27 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/bb_msg.c, gw/bearerbox.c, gw/boxc.c, gw/msg.c, gw/smsbox.c,

@@ -20,7 +20,7 @@ HTTPHeader *unpack_headers(Octstr *headers);
 /* Outputs unpacked headers into own string
  * the string has format 'Header1: value, value2, value3\r\nHeader2: ....'
  */
-Octstr *output_headers(OctstrList *uhdrs);
+Octstr *output_headers(List *uhdrs);
 
 
 

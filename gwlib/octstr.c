@@ -60,14 +60,6 @@ struct Node {
 };
 
 
-/*
- * List of octet strings.
- */
-struct OctstrList {
-	Node *head, *tail;
-};
-
-
 /***********************************************************************
  * Declarations of internal functions. These are defined at the end of
  * the file.
@@ -631,75 +623,15 @@ error:
 
 
 
-OctstrList *octstr_list_create(void) {
-	OctstrList *list;
-	
-	list = gw_malloc(sizeof(OctstrList));
-	list->head = NULL;
-	list->tail = NULL;
-	return list;
-}
-
-
-void octstr_list_destroy(OctstrList *list, int strings_also) {
-	while (list->head != NULL) {
-		Node *n = list->head;
-		list->head = list->head->next;
-		if (strings_also)
-			octstr_destroy(n->ostr);
-		gw_free(n);
-	}
-	gw_free(list);
-}
-
-
-long octstr_list_len(OctstrList *list) {
-	Node *n;
-	long len;
-	
-	for (len = 0, n = list->head; n != NULL; n = n->next, ++len)
-		;
-	return len;
-}
-
-
-void octstr_list_append(OctstrList *list, Octstr *ostr) {
-	Node *n;
-	
-	n = gw_malloc(sizeof(Node));
-
-	n->ostr = ostr;
-	n->next = NULL;
-	if (list->head == NULL) {
-		list->head = n;
-		list->tail = n;
-	} else {
-		list->tail->next = n;
-		list->tail = n;
-	}
-}
-
-
-Octstr *octstr_list_get(OctstrList *list, long index) {
-	Node *n;
-	
-	for (n = list->head; index > 0 && n != NULL; n = n->next, --index)
-		;
-	if (n == NULL)
-		return NULL;
-	return n->ostr;
-}
-
-
-OctstrList *octstr_split_words(Octstr *ostr) {
+List *octstr_split_words(Octstr *ostr) {
 	unsigned char *p;
-	OctstrList *list;
+	List *list;
 	Octstr *word;
 	long i, start, end;
 	
 	seems_valid(ostr);
 
-	list = octstr_list_create();
+	list = list_create();
 
 	p = ostr->data;
 	i = 0;
@@ -721,7 +653,7 @@ OctstrList *octstr_split_words(Octstr *ostr) {
 			
 		word = octstr_create_from_data(ostr->data + start, 
 						end - start);
-		octstr_list_append(list, word);
+		list_append(list, word);
 	}
 	
 	return list;

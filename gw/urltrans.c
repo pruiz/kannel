@@ -72,7 +72,7 @@ struct URLTranslationList {
 static URLTranslation *create_onetrans(ConfigGroup *grp);
 static void destroy_onetrans(URLTranslation *ot);
 static URLTranslation *find_translation(URLTranslationList *trans, 
-					OctstrList *words);
+					List *words);
 static URLTranslation *find_default_translation(URLTranslationList *trans);
 static void encode_for_url(char *buf, char *str);
 
@@ -136,7 +136,8 @@ int urltrans_add_cfg(URLTranslationList *trans, Config *cfg) {
 
 
 URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text) {
-	OctstrList *words;
+	List *words;
+	Octstr *word;
 	URLTranslation *t;
 	
 	words = octstr_split_words(text);
@@ -144,7 +145,11 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text) {
 	    return NULL;
 
 	t = find_translation(trans, words);
-	octstr_list_destroy(words, 1);
+	while (list_len(words) > 0) {
+	    word = list_extract_first(words);
+	    octstr_destroy(word);
+	}
+	list_destroy(words);
 	if (t == NULL)
 	    t = find_default_translation(trans);
 	return t;
@@ -176,21 +181,19 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	struct tm *tm;
 	char *words[161];
 	int max_words;
-	OctstrList *word_list;
+	List *word_list;
 	int n;
 
 	if (t->type == TRANSTYPE_SENDSMS)
 	    return gw_strdup("");
 	
 	word_list = octstr_split_words(request->smart_sms.msgdata);
-	if (word_list == NULL)
-		return NULL;
-	n = octstr_list_len(word_list);
+	n = list_len(word_list);
 	max_words = sizeof(words) / sizeof(words[0]);
 	if (n > max_words)
 		n = max_words;
 	for (j = 0; j < n; ++j)
-		words[j] = octstr_get_cstr(octstr_list_get(word_list, j));
+		words[j] = octstr_get_cstr(list_get(word_list, j));
 
 	maxword = 0;
 	for (j = 0; j < n; ++j) {
@@ -514,17 +517,17 @@ static void destroy_onetrans(URLTranslation *ot) {
  * Find the appropriate translation 
  */
 static URLTranslation *find_translation(URLTranslationList *trans, 
-	OctstrList *words)
+	List *words)
 {
 	char *keyword;
 	char alias_keyword[1024];
 	int n;
 	URLTranslation *t;
 
-	n = octstr_list_len(words);
+	n = list_len(words);
 	if (n == 0)
 		return NULL;
-	keyword = octstr_get_cstr(octstr_list_get(words, 0));
+	keyword = octstr_get_cstr(list_get(words, 0));
 	sprintf(alias_keyword, "%s;", keyword);
 
 	for (t = trans->list; t != NULL; t = t->next) {
