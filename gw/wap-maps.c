@@ -23,6 +23,15 @@ struct user_map_struct {
     Octstr *msisdn;
 };
 
+
+/*
+ * XXX All mapping functions should be implemented with Dicts instead of
+ * Lists! Linear scans in lists are pretty slow against hash table lookups,
+ * espacially when you have *lot* of entries, which is the case in URL re-
+ * writting in general.
+ * TODO: identify a hash key that can be used and use that as lookup.
+ */
+
 /* mapping lists */
 static List *url_map = NULL;
 static List *user_map = NULL;
