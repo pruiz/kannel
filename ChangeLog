@@ -1,3 +1,6 @@
+2001-12-19 Andreas Fink <andreas@fink.org>
+    *configure.in: added changes made to configure too.
+
 2001-12-18 Andreas Fink <andreas@fink.org>
     * gw/dlr.c: corrected missing comma
 

@@ -250,6 +250,16 @@ docs) echo Documentation will be built as well. ;;
 esac
 
 
+# Check whether mysqlclient library is present. gw/dlr.c might need it
+echo $ac_n "checking for /usr/lib/libmysqlclient.so... " 1>&6
+if [ -f /usr/lib/libmysqlclient.so ]
+then
+    echo "found"
+    LIBS="$LIBS -lmysqlclient "
+else
+    echo "not found"
+fi
+
 dnl Implement the --enable-pam option.
 
 AC_ARG_ENABLE(pam,
