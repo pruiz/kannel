@@ -255,8 +255,7 @@ static void handle_init_event(WTPInitMachine *init_machine, WAPEvent *event)
                    "Unhandled event was:");
 	     wap_event_dump(event);
              wap_event_destroy(event);
-             int_machine_destroy(machine);
-	     return;
+             return;
 	 }
 
       if (event != NULL) {
