@@ -6,11 +6,21 @@
  *
  * Lars Wirzenius <liw@wapit.com> for WapIT Ltd.
  */
+#if defined(linux)
+#define OSLinux
+#elif defined(__GNU__)
+#define OSHURD
+#elif defined(__sparc__)
+#define OSsunos
+#endif
 
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
+#ifdef OSsunos
+#include <sys/loadavg.h>
+#endif
 
 #include "gwlib/gwlib.h"
 #include "wapbox.h"
@@ -194,8 +204,19 @@ Msg *remove_msg_from_queue(void) {
 static void *send_heartbeat_thread(void *arg) {
 	list_add_producer(queue);
 	while (run_status == running) {
+		double loadavg[3]={0};
 		Msg *msg = msg_create(heartbeat);
+		#ifdef OSsunos
+		if(getloadavg(loadavg,3)==-1){
+			info(0,"getloadavg failed!\n");
+		}else{
+			info(0,"1 min load average %f\n",
+				loadavg[LOADAVG_1MIN]);
+		}
+		msg->heartbeat.load = loadavg[LOADAVG_1MIN];
+		#else
 		msg->heartbeat.load = 0;	/* XXX */
+		#endif
 		put_msg_in_queue(msg);
 		sleep(heartbeat_freq);
 	}
