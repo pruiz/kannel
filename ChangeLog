@@ -1,3 +1,10 @@
+2001-05-22  Uoti Urpala  <uau@wapit.com>
+
+	* gwlib/http.c: Fixed two bugs with redirects. One happened when
+	the redirect URL was recognized as unsupported/invalid
+	(f0o://bar), the other when Kannel didn't get a proper HTTP reply
+	from the server it was redirected to.
+
 2001-05-18  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/smsc_at.c: Initialize some local variables to shut off compiler

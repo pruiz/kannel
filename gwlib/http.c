@@ -13,7 +13,7 @@
 /* XXX set maximum number of concurrent connections to same host, total? */
 /* XXX basic auth is missing */
 /* XXX 100 status codes. */
-/* FIXME Don't try to re-use a connection that got a HTTP/1.0 reply */
+/* XXX stop destroying persistent connections when a request is redirected */
 
 #include <ctype.h>
 #include <errno.h>
@@ -914,6 +914,7 @@ static void handle_transaction(Connection *conn, void *data)
 	octstr_destroy(trans->url);
 	trans->url = h;
 	trans->state = request_not_sent;
+	trans->status = -1;
 	http_destroy_headers(trans->response->headers);
 	trans->response->headers = list_create();
 	octstr_destroy(trans->response->body);
@@ -1089,6 +1090,7 @@ static Connection *send_request(HTTPServer *trans, char *method_name)
 
     /* May not be NULL if we're retrying this transaction. */
     octstr_destroy(trans->host);
+    trans->host = NULL;
 
     if (parse_url(trans->url, &trans->host, &trans->port, &path, &trans->ssl) == -1)
         goto error;
