@@ -778,15 +778,14 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                     dlrmsg->sms.smsc_id = octstr_duplicate(smpp->conn->id); 
                     dlrmsg->sms.sender = octstr_duplicate(msg->sms.receiver); 
                     dlrmsg->sms.receiver = octstr_create("000"); 
-                    dlrmsg->sms.msgdata = octstr_duplicate(msg->sms.dlr_url); 
+                    dlrmsg->sms.dlr_url = octstr_duplicate(msg->sms.dlr_url);
+
+                    dlrmsg->sms.msgdata = reply;
+
                     time(&msg->sms.time); 
  			 
-                    octstr_append_char(reply, '/'); 
-                    octstr_insert(dlrmsg->sms.msgdata, reply, 0); 
-                    octstr_destroy(reply); 
- 			 
                     info(0,"SMPP[%s]: DLR = %s", octstr_get_cstr(smpp->conn->id),
-                         octstr_get_cstr(dlrmsg->sms.msgdata)); 
+                         octstr_get_cstr(dlrmsg->sms.dlr_url)); 
                     bb_smscconn_receive(smpp->conn, dlrmsg); 
                 } 
 

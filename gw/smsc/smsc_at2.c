@@ -1659,8 +1659,8 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
                 dlrmsg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
                 dlrmsg->sms.sender = octstr_duplicate(msg->sms.receiver);
                 dlrmsg->sms.receiver = octstr_duplicate(msg->sms.sender);
-                dlrmsg->sms.msgdata = octstr_create("ACK/");
-                octstr_append(dlrmsg->sms.msgdata,msg->sms.dlr_url);
+                dlrmsg->sms.msgdata = octstr_create("ACK");
+                dlrmsg->sms.dlr_url = octstr_duplicate(msg->sms.dlr_url);
                 time(&dlrmsg->sms.time);
 
 		debug("bb.smsc.at2",0,"AT2[%s]: sending DLR type ACK", octstr_get_cstr(privdata->name));
@@ -1704,8 +1704,8 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
                 dlrmsg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
                 dlrmsg->sms.sender = octstr_duplicate(msg->sms.receiver);
                 dlrmsg->sms.receiver = octstr_duplicate(msg->sms.sender);
-                dlrmsg->sms.msgdata = octstr_create("NACK/");
-                octstr_append(dlrmsg->sms.msgdata,msg->sms.dlr_url);
+                dlrmsg->sms.msgdata = octstr_create("NACK");
+                dlrmsg->sms.dlr_url = octstr_duplicate(msg->sms.dlr_url);
                 time(&dlrmsg->sms.time);
 
 		debug("bb.smsc.at2",0,"AT2[%s]: sending DLR type NACK", octstr_get_cstr(privdata->name));
