@@ -1,5 +1,10 @@
 2001-05-03  Lars Wirzenius  <liw@iki.fi>
 
+	* Makefile.in, configure.in: applied patch from Craig Emery to
+	slightly improve (and simplify!) building and configuring.
+
+2001-05-03  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsbox.c: Log username (at info level) whenever someone
 	uses the sendsms service. Based on request from Johan du Buson.
 	

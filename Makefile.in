@@ -114,39 +114,39 @@ progs = $(progsrcs:.c=)
 binprogs = $(binsrcs:.c=)
 sbinprogs = $(sbinsrcs:.c=)
 
-gwsrcs = $(shell echo gw/*.c)
+gwsrcs = $(wildcard gw/*.c)
 gwobjs = $(gwsrcs:.c=.o)
 
-libsrcs = $(shell echo gwlib/*.c) $(LIBSRCS)
+libsrcs = $(wildcard gwlib/*.c) $(LIBSRCS)
 libobjs = $(libsrcs:.c=.o) $(LIBOBJS)
 
-wapsrcs = $(shell echo wap/*.c)
+wapsrcs = $(wildcard wap/*.c)
 wapobjs = $(wapsrcs:.c=.o)
 
-wmlscriptsrcs = $(shell echo wmlscript/*.[cy])
+wmlscriptsrcs = $(wildcard wmlscript/*.[cy])
 wmlscriptobjs = $(wmlscriptsrcs:.c=.o) $(wmlscriptsrcs:.y=.o)
 
-testsrcs = $(shell echo test/*.c)
+testsrcs = $(wildcard test/*.c)
 testobjs = $(testsrcs:.c=.o)
 testprogs = $(testsrcs:.c=)
 
-checksrcs = $(shell echo checks/*.c)
+checksrcs = $(wildcard checks/*.c)
 checkobjs = $(checksrcs:.c=.o)
 checkprogs = $(checksrcs:.c=)
-checks = $(checkprogs) $(shell echo checks/*.sh)
+checks = $(checkprogs) $(wildcard checks/*.sh)
 
 benchformats = \
     benchmarks/report.pdf \
     benchmarks/report.ps \
     benchmarks/report.html
-benchscripts = benchmarks/run-benchmarks $(shell echo benchmarks/*.sh)
+benchscripts = benchmarks/run-benchmarks $(wildcard benchmarks/*.sh)
 benchoutputs = \
     $(benchformats) \
-    $(shell echo benchmarks/*.ps) \
-    $(shell echo benchmarks/*.png) \
-    $(shell echo benchmarks/*.xml)
+    $(wildcard benchmarks/*.ps) \
+    $(wildcard benchmarks/*.png) \
+    $(wildcard benchmarks/*.xml)
 
-srcs = $(shell echo */*.c)
+srcs = $(wildcard */*.c)
 objs = $(srcs:.c=.o)
 
 libs = libgw.a libwmlscript.a libwap.a libgwlib.a
@@ -156,11 +156,11 @@ srcdirs = gw gwlib test utils wmlscript checks wap
 man1pages = utils/seewbmp.1 wmlscript/wmlsc.1 wmlscript/wmlsdasm.1
 man8pages = gw/kannel.8 utils/run_kannel_box.8
 
-docsrcs = $(shell grep -l '<!DOCTYPE ' doc/*/*.xml)
+docsrcs = $(wildcard grep -l '<!DOCTYPE ' doc/*/*.xml)
 docs = $(docsrcs:.xml=.html) $(docsrcs:.xml=.ps) $(docsrcs:.xml=.pdf)
 DOCSTARGET=@DOCSTARGET@
 
-figsrcs = $(shell echo doc/*/*.fig)
+figsrcs = $(wildcard doc/*/*.fig)
 figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 
 
