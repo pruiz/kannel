@@ -547,7 +547,7 @@ EOF
 
 
 
-docdir='${prefix}/doc/kannel'
+docdir='${prefix}/share/doc/kannel'
 
 
 # Extract the first word of "gcc", so it can be a program name with args.

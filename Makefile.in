@@ -20,9 +20,10 @@ localstatedir = @localstatedir@
 libdir = @libdir@
 infodir = @infodir@
 mandir = @mandir@
-docdir = @docdir@
 includedir = @includedir@
 oldincludedir = /usr/include
+
+docdir = @docdir@
 
 DESTDIR =
 
@@ -96,17 +97,21 @@ suffix = -$(VERSION)
 
 STARTSTOPDAEMONSRC=@STARTSTOPDAEMONSRC@
 
-progsrcs = \
+binsrcs = \
+	wmlscript/wmlsc.c \
+	wmlscript/wmlsdasm.c \
+	utils/seewbmp.c
+sbinsrcs = \
 	gw/bearerbox.c \
 	gw/smsbox.c \
 	gw/wapbox.c \
-	wmlscript/wmlsc.c \
-	wmlscript/wmlsdasm.c \
-	utils/seewbmp.c \
 	utils/run_kannel_box.c \
 	$(STARTSTOPDAEMONSRC)
+progsrcs = $(binsrcs) $(sbinsrcs)
 progobjs = $(progsrcs:.c=.o)
 progs = $(progsrcs:.c=)
+binprogs = $(binsrcs:.c=)
+sbinprogs = $(sbinsrcs:.c=)
 
 gwsrcs = $(shell echo gw/*.c)
 gwobjs = $(gwsrcs:.c=.o)
@@ -132,6 +137,9 @@ objs = $(srcs:.c=.o)
 libs = libgw.a libwmlscript.a libgwlib.a
 
 srcdirs = gw gwlib test utils wmlscript checks
+
+man1pages = utils/seewbmp.1 wmlscript/wmlsc.1 wmlscript/wmlsdasm.1
+man8pages = gw/kannel.8 utils/run_kannel_box.8
 
 docsrcs = $(shell grep -l '<!DOCTYPE ' doc/*/*.xml)
 docs = $(docsrcs:.xml=.html) $(docsrcs:.xml=.ps)
@@ -184,13 +192,23 @@ check: all
 
 install: all
 	$(INSTALL) -d $(bindir)
-	for prog in $(progs); do \
+	for prog in $(binprogs); do \
 		$(INSTALL) $$prog $(bindir)/`basename $$prog`$(suffix); \
 	done
+	$(INSTALL) -d $(sbindir)
+	for prog in $(sbinprogs); do \
+		$(INSTALL) $$prog $(sbindir)/`basename $$prog`$(suffix); \
+	done
+	$(INSTALL) -d $(mandir)/man1
+	$(INSTALL) $(man1pages) $(mandir)/man1
+	$(INSTALL) -d $(mandir)/man8
+	$(INSTALL) $(man8pages) $(mandir)/man8
 
 install-docs:
-	$(INSTALL) -d $(docdir)
-	cp -r $(docs) $(docsrcs) $(figs) $(figsrcs) $(docdir)
+	$(INSTALL) -d $(docdir)/userguide
+	$(INSTALL) doc/userguide/userguide.ps $(docdir)/userguide
+	$(INSTALL) doc/userguide/userguide.html $(docdir)/userguide
+	$(INSTALL) doc/userguide/*.png $(docdir)/userguide
 
 clean:
 	rm -f core $(progs) $(testprogs) $(checkprogs) $(objs) $(docs) *.a

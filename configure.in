@@ -15,7 +15,7 @@ AC_DEFINE_UNQUOTED(VERSION, "`head -1 VERSION`")
 dnl Target installation directory for documentation
 
 AC_SUBST(docdir)
-docdir='${prefix}/doc/kannel'
+docdir='${prefix}/share/doc/kannel'
 
 dnl Checks for programs.
 

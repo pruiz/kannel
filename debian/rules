@@ -6,7 +6,8 @@ build: Makefile
 
 Makefile:
 	dh_testdir
-	CFLAGS='-Wall -O2 -g' ./configure --enable-docs
+	CFLAGS='-Wall -O2 -g' ./configure --enable-docs \
+	--mandir='$${prefix}/share/man'
 
 clean:
 	dh_testdir
@@ -20,20 +21,8 @@ install: build
 	dh_clean -k
 	dh_installdirs usr/sbin usr/bin
 
-#   	Kannel's make install does the wrong thing for Debian, so we need
-#   	to do this by hand.
-#	$(MAKE) prefix=`pwd`/debian/tmp/usr \
-#		suffix="" install
+	$(MAKE) prefix=`pwd`/debian/tmp/usr suffix="" install install-docs
 
-	install gw/bearerbox debian/tmp/usr/sbin
-	install gw/wapbox debian/tmp/usr/sbin
-	install gw/smsbox debian/tmp/usr/sbin
-	install utils/run_kannel_box debian/tmp/usr/sbin
-
-	install wmlscript/wmlsc debian/tmp/usr/bin
-	install wmlscript/wmlsdasm debian/tmp/usr/bin
-	install utils/seewbmp debian/tmp/usr/bin
-	
 	install -d debian/tmp/etc/kannel
 	install -m 0644 debian/kannel.* debian/tmp/etc/kannel
 	install -m 0700 -d debian/tmp/var/log/kannel
@@ -48,7 +37,7 @@ binary-arch: build install
 #	dh_installexamples
 	dh_installinit
 #	dh_installcron
-	dh_installmanpages utils/start-stop-daemon.8
+#	dh_installmanpages utils/start-stop-daemon.8
 	cd debian/tmp/usr/share/man/man8 && \
 	    for box in bearerbox wapbox smsbox; do \
 	    	ln -s kannel.8 $$box.8; \

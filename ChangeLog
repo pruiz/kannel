@@ -1,5 +1,16 @@
 2000-11-08  Lars Wirzenius  <liw@iki.fi>
 
+	* Makefile.in, configure.in: Made "make install" work in a more
+	sensible way, at least as far as the Filesystem Hierarchy Standard
+	(pretty much all Linux systems, and mostly BSD systems as well)
+	is concerned. /usr/bin and /usr/sbin are now used properly,
+	and manual pages are installed as well. Also, the User Guide is
+	installed in a more sensible way.
+	
+	* debian/rules: Updated accordingly.
+	
+2000-11-08  Lars Wirzenius  <liw@iki.fi>
+
 	* checks/check_sendsms.sh: Remove log files if check was
 	successful.
 
