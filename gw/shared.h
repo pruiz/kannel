@@ -100,7 +100,7 @@ Octstr *parse_date(Octstr *date);
  */
 List *sms_split(Msg *orig, Octstr *header, Octstr *footer, 
                 Octstr *nonlast_suffix, Octstr *split_chars, int catenate, 
-                int msg_sequence, int max_messages, int max_octets);
+                unsigned long msg_sequence, int max_messages, int max_octets);
 
 #endif
 

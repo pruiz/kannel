@@ -134,7 +134,8 @@ static int send_message(URLTranslation *trans, Msg *msg)
 {
     int max_msgs;
     Octstr *header, *footer, *suffix, *split_chars;
-    int catenate, msg_sequence, msg_count;
+    int catenate;
+    unsigned long msg_sequence, msg_count;
     List *list;
     Msg *part;
     
@@ -183,7 +184,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
     	    	     msg_sequence, max_msgs, sms_max_length);
     msg_count = list_len(list);
 
-    debug("sms", 0, "message length %ld, sending %d messages", 
+    debug("sms", 0, "message length %ld, sending %ld messages", 
           octstr_len(msg->sms.msgdata), msg_count);
 
     while ((part = list_extract_first(list)) != NULL)

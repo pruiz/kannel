@@ -7,6 +7,11 @@
  * if it reaches LONG_MAX, it wraps around to zero (_NOT_ LONG_MIN).
  *
  * Lars Wirzenius.
+ *
+ * Changed the counter type 'long' into 'unsigned long' so it wraps
+ * by itself. Just keep increasing it.
+ * Also added a counter_increase_with function.
+ * harrie@lisanza.net
  */
 
 
@@ -22,15 +27,18 @@ Counter *counter_create(void);
 void counter_destroy(Counter *counter);
 
 /* return the current value of the counter and increase counter by one */
-long counter_increase(Counter *counter);
+unsigned long counter_increase(Counter *counter);
+
+/* return the current value of the counter and increase counter by value */
+unsigned long counter_increase_with(Counter *counter, unsigned long value);
 
 /* return the current value of the counter */
-long counter_value(Counter *counter);
+unsigned long counter_value(Counter *counter);
 
 /* return the current value of the counter and decrease counter by one */
-long counter_decrease(Counter *counter);
+unsigned long counter_decrease(Counter *counter);
 
 /* return the current value of the counter and set it to the supplied value */
-long counter_set(Counter *, long);
+unsigned long counter_set(Counter *, unsigned long);
 
 #endif

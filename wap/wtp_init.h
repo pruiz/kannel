@@ -31,7 +31,7 @@ typedef enum init_states init_states;
  * every separate type.
  */
 typedef struct WTPInitMachine {
-    long mid; 
+    unsigned long mid; 
     #define INTEGER(name) int name; 
     #define EVENT(name) WAPEvent *name;
     #define TIMER(name) Timer *name; 

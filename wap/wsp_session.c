@@ -84,7 +84,7 @@ static WSPPushMachine *push_machine_create(WSPMachine *session, long id);
 static void push_machine_destroy(void *p);
 
 static char *state_name(WSPState state);
-static long next_wsp_session_id(void);
+static unsigned long next_wsp_session_id(void);
 
 static List *make_capabilities_reply(WSPMachine *m);
 static Octstr *make_connectreply_pdu(WSPMachine *m);
@@ -687,7 +687,7 @@ static char *state_name(WSPState state) {
 }
 
 
-static long next_wsp_session_id(void) {
+static unsigned long next_wsp_session_id(void) {
 	return counter_increase(session_id_counter);
 }
 

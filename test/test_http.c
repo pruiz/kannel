@@ -128,7 +128,8 @@ static int receive_reply(HTTPCaller *caller)
 static void client_thread(void *arg) 
 {
     List *reqh;
-    long i, succeeded, failed;
+    unsigned long i;
+    long succeeded, failed;
     HTTPCaller *caller;
     char buf[1024];
     long in_queue;

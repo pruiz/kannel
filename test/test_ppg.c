@@ -512,7 +512,8 @@ parse_error:
 static void push_thread(void *arg)
 {
     HTTPCaller *caller;
-    long succeeded, failed, in_queue, i;
+    long succeeded, failed, in_queue;
+    unsigned long i;
 
     caller = arg;
     succeeded = 0;

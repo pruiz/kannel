@@ -32,7 +32,7 @@ typedef enum resp_states resp_states;
  * every separate type.
  */ 
 struct WTPRespMachine {
-       long mid; 
+       unsigned long mid; 
        #define INTEGER(name) int name; 
        #define TIMER(name) Timer *name; 
        #define ADDRTUPLE(name) WAPAddrTuple *name;

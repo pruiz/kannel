@@ -4,6 +4,11 @@
  * This file implements the Counter objects declared in counter.h.
  *
  * Lars Wirzenius.
+ *
+ * Changed the counter type 'long' into 'unsigned long' so it wraps 
+ * by itself. Just keep increasing it.
+ * Also added a counter_increase_with function.
+ * harrie@lisanza.net
  */
 
 #include <limits.h>
@@ -13,7 +18,7 @@
 struct Counter
 {
     Mutex *lock;
-    long n;
+    unsigned long n;
 };
 
 Counter *counter_create(void)
@@ -33,23 +38,31 @@ void counter_destroy(Counter *counter)
     gw_free(counter);
 }
 
-long counter_increase(Counter *counter)
+unsigned long counter_increase(Counter *counter)
 {
-    long ret;
+    unsigned long ret;
 
     mutex_lock(counter->lock);
     ret = counter->n;
-    if (counter->n == LONG_MAX)
-        counter->n = 0;
-    else
-        ++counter->n;
+    ++counter->n;
     mutex_unlock(counter->lock);
     return ret;
 }
 
-long counter_value(Counter *counter)
+unsigned long counter_increase_with(Counter *counter, unsigned long value)
 {
-    long ret;
+    unsigned long ret;
+
+    mutex_lock(counter->lock);
+    ret = counter->n;
+    counter->n += value;
+    mutex_unlock(counter->lock);
+    return ret;
+}
+
+unsigned long counter_value(Counter *counter)
+{
+    unsigned long ret;
 
     mutex_lock(counter->lock);
     ret = counter->n;
@@ -57,9 +70,9 @@ long counter_value(Counter *counter)
     return ret;
 }
 
-long counter_decrease(Counter *counter)
+unsigned long counter_decrease(Counter *counter)
 {
-    long ret;
+    unsigned long ret;
 
     mutex_lock(counter->lock);
     ret = counter->n;
@@ -69,9 +82,9 @@ long counter_decrease(Counter *counter)
     return ret;
 }
 
-long counter_set(Counter *counter, long n)
+unsigned long counter_set(Counter *counter, unsigned long n)
 {
-    long ret;
+    unsigned long ret;
 
     mutex_lock(counter->lock);
     ret = counter->n;

@@ -108,9 +108,9 @@ typedef struct smsc_state {
     int	status;		/* see enumeration, below */
     int killed;		/* if we are killed, why */
     int is_stopped;	/* is connection currently in stopped state? */
-    long received;	/* total number */
-    long sent;		/* total number */
-    long failed;	/* total number */
+    unsigned long received;	/* total number */
+    unsigned long sent;		/* total number */
+    unsigned long failed;	/* total number */
     long queued;	/* set our internal outgoing queue length */
     long online;	/* in seconds */
     int load;		/* subjective value 'how loaded we are' for

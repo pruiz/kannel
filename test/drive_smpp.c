@@ -102,7 +102,7 @@ static SMPP_PDU *handle_bind_receiver(ESME *esme, SMPP_PDU *pdu)
 static SMPP_PDU *handle_submit_sm(ESME *esme, SMPP_PDU *pdu)
 {
     SMPP_PDU *resp;
-    long id;
+    unsigned long id;
     
     debug("test.smpp", 0, "submit_sm: short_message = <%s>",
     	  octstr_get_cstr(pdu->u.submit_sm.short_message));
@@ -195,7 +195,7 @@ static void send_smpp_thread(void *arg)
     ESME *esme;
     Octstr *os;
     SMPP_PDU *pdu;
-    long id;
+    unsigned long id;
 
     esme = arg;
     
@@ -304,7 +304,7 @@ static void smsbox_thread(void *arg)
     Msg *msg;
     Octstr *os;
     Octstr *reply_msg;
-    long count;
+    unsigned long count;
     
     msg = msg_create(sms);
     msg->sms.sender = octstr_create("123");

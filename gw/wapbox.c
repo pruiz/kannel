@@ -371,7 +371,7 @@ static void dispatch_datagram(WAPEvent *dgram)
     List *sms_datagrams;
     long max_msgs,
          msg_len;
-    static long msg_sequence = 0L;   /* Used only by this function */
+    static unsigned long msg_sequence = 0L;   /* Used only by this function */
 
     msg = part = NULL;
 

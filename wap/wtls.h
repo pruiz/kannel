@@ -33,7 +33,7 @@ typedef enum serv_states serv_states;
  * every separate type.
  */ 
 struct WTLSMachine {
-       long mid;
+       unsigned long mid;
        #define ENUM(name) serv_states name;
        #define ADDRTUPLE(name) WAPAddrTuple *name;
        #define INTEGER(name) int name;

@@ -285,11 +285,12 @@ static Octstr *extract_msgdata_part_by_coding(Msg *msg, Octstr *split_chars,
 
 List *sms_split(Msg *orig, Octstr *header, Octstr *footer, 
 		       Octstr *nonlast_suffix, Octstr *split_chars, 
-		       int catenate, int msg_sequence, int max_messages,
-		       int max_octets)
+		       int catenate, unsigned long msg_sequence,
+                       int max_messages, int max_octets)
 {
     long max_part_len, udh_len, hf_len, nlsuf_len;
-    long total_messages, msgno, last;
+    unsigned long total_messages, msgno;
+    long last;
     List *list;
     Msg *part, *temp;
 
