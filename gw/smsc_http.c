@@ -291,8 +291,8 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 	else
 	    msg->sms.flag_8bit = msg->sms.flag_udh = 0;
 
-	msg->sms.smsc_id = NULL;	/* XXX */
-	msg->sms.time = time(NULL);	/* XXX */
+	msg->sms.smsc_id = octstr_duplicate(conn->id);
+	msg->sms.time = time(NULL);
 	
 	ret = bb_smscconn_receive(conn, msg);
 	if (ret == -1)

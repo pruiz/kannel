@@ -1,5 +1,9 @@
 2001-03-22  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smsc_http.c: put smsc-id to correct place
+	
+2001-03-22  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/smsc_http.c: fixed several memory leaks
 
 2001-03-22  Uoti Urpala  <uau@wapit.com>
