@@ -484,14 +484,8 @@ no_datagram:
  * Feed an event to a WTP state machine. Handle all errors yourself,
  * and report them to the caller. Note: Do not put {}s of the else block inside
  * the macro definition (it ends with a line without a backlash.) 
- *
- * Returns: WSP event, if succeeded and an indication or a confirmation is 
- *          generated
- *          NULL, if succeeded and no indication or confirmation is generated
- *          NULL, if failed (this information is superflous, but required by
- *          the function call syntax.)
  */
-WSPEvent *wtp_handle_event(WTPMachine *machine, WTPEvent *event){
+void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 
      
      states current_state=machine->state;
@@ -514,7 +508,7 @@ WSPEvent *wtp_handle_event(WTPMachine *machine, WTPEvent *event){
              } else 
      #include "wtp_state-decl.h"
              {debug(0, "handle_event: out of synch error");}
-             return wsp_event;
+             return;
 /*
  *Send Abort(CAPTEMPEXCEEDED)
  */
@@ -524,7 +518,6 @@ mem_error:
         wtp_timer_destroy(timer);
      free(timer);
      free(wsp_event);
-     return NULL;
 }
 
 /*****************************************************************************

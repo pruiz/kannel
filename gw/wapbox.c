@@ -70,7 +70,6 @@ int main(int argc, char **argv) {
 	Msg *msg;
 	WTPEvent *wtp_event = NULL;
         WTPMachine *wtp_machine = NULL;
-        WSPEvent *wsp_event = NULL;
 
 	info(0, "WAP box starting up.");
 
@@ -87,18 +86,14 @@ int main(int argc, char **argv) {
 		wtp_event = wtp_unpack_wdp_datagram(msg);
                 if (wtp_event == NULL)
                    continue;
-		wtp_machine = create_or_find_wtp_machine(msg, wtp_event);
+		wtp_machine = wtp_machine_find_or_create(msg, wtp_event);
                 if (wtp_machine == NULL)
                    continue;
                 debug(0, "wapbox: returning create machine");
-	        wsp_event = wtp_handle_event(wtp_machine, wtp_event);
+	        wtp_handle_event(wtp_machine, wtp_event);
                 debug(0,"wapbox: returning handle_event");
-                if (wsp_event == NULL)
-		   continue;
 	}
 	
 	info(0, "WAP box terminating.");
 	return 0;
 }
-
-

@@ -1,3 +1,19 @@
+Mon Nov 29 19:33:42 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wtp.h: wtp_handle_event will call wsp_handle_event (not yet
+	written) instead of returning the WSPEvent, changed the return type
+	to void. Moved WTPTimer definition back to wtp_timer.h. Simplified
+	code by only using the pthreads version places where there was a
+	choice. Added wtp_machine_create and wtp_tid_next prototypes.
+	
+	* gw/wtp.c, gw/wtp_timer.h, gw/wapbox.c, gw/wtp_machine-decl.h:
+	Related changes.
+	
+	* gw/wtp_send.c: Added static to local function.
+
+	* gw/wsp_state-decl.h: Replaced pseudo code function with more
+	detailed code to generate events for WTP.
+
 1999-11-29    <rpr@rpr.wapit.com>
 
 	* gw/smsbox_req.c: added that 'return' to smsbox request if
