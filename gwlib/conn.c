@@ -26,6 +26,7 @@
 
 #ifdef HAVE_LIBSSL
 #include <openssl/ssl.h>
+#include <openssl/err.h>
 
 SSL_CTX *global_ssl_context = NULL;
 SSL_CTX *global_server_ssl_context = NULL;
@@ -423,6 +424,7 @@ Connection *conn_wrap_fd(int fd, int ssl)
 {
     Connection *conn;
     unsigned long err;
+    int rc;
 
     if (socket_set_blocking(fd, 0) < 0)
         return NULL;
@@ -461,14 +463,94 @@ Connection *conn_wrap_fd(int fd, int ssl)
         BIO_set_nbio(SSL_get_wbio(conn->ssl), 0);
 
         conn->ssl_mutex = mutex_create();
-        if (!SSL_accept(conn->ssl)) {
-	        if ((err = ERR_get_error())) {
-                error(0, "SSL: Access failed: %.256s", ERR_error_string(err, NULL));
-    	    }
-            error(0, "SSL: disconnected.");
-            SSL_free(conn->ssl);
-            goto error;
-        }
+
+        /* 
+         * now enter the SSL handshake phase
+         */    
+     
+        /*
+         * For non-blocking BIO we may return from SSL_accept(). In this 
+         * case we check for SSL_get_error() = SSL_ERROR_WANT_[READ|WRITE]
+         * and loop the SSL_accept() until we have come through.
+         */
+        while (((rc = SSL_accept(conn->ssl)) <= 0) && 
+               ((SSL_get_error(conn->ssl, rc) == SSL_ERROR_WANT_READ) ||
+               (SSL_get_error(conn->ssl, rc) == SSL_ERROR_WANT_WRITE))) 
+            {}
+	  	     
+        /*
+         * If SSL_accept() has failed then check which reason it may 
+         * have been and log the error.
+         */
+        if (rc <= 0) {
+             
+            if (SSL_get_error(conn->ssl, rc) == SSL_ERROR_ZERO_RETURN) {
+                /*
+                 * The case where the connection was closed before any data
+                 * was transferred. That's not a real error and can occur
+                 * sporadically with some clients.
+                 */
+                warning(0, "SSL: handshake stopped: connection was closed");
+                warning(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
+
+                SSL_set_shutdown(conn->ssl, SSL_RECEIVED_SHUTDOWN);
+                SSL_smart_shutdown(conn->ssl);
+             }
+             else if (ERR_GET_REASON(ERR_peek_error()) == SSL_R_HTTP_REQUEST) {
+                /*
+                 * The case where OpenSSL has recognized a HTTP request:
+                 * This means the client speaks plain HTTP on our HTTPS
+                 * port. Hmmmm...  At least for this error we can be more friendly
+                 * and try to provide him with a HTML error page. We have only one
+                 * problem: OpenSSL has already read some bytes from the HTTP
+                 * request. So we have to skip the request line manually.
+                 */
+                char ca[2];
+                int rv;
+
+                warning(0, "SSL: handshake failed: HTTP spoken on HTTPS port");
+                warning(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
+                    
+                /* first: skip the remaining bytes of the request line */
+                do {
+                    do {
+                        rv = read(conn->fd, ca, 1);
+                    } while (rv == -1 && errno == EINTR);
+                } while (rv > 0 && ca[0] != '\012' /*LF*/);
+
+                /* second: kick away the SSL stuff */
+                SSL_set_shutdown(conn->ssl, SSL_SENT_SHUTDOWN|SSL_RECEIVED_SHUTDOWN);
+                SSL_smart_shutdown(conn->ssl);
+
+                /* tell the user how to access using the HTTPS scheme */
+                //SSL_http_hint(conn, HTTP_BAD_REQUEST);
+             }   
+             else if (SSL_get_error(conn->ssl, rc) == SSL_ERROR_SYSCALL) {
+                if (errno > 0)
+                    warning(0, "SSL: handshake interrupted by system (stop button pressed in browser?!)");
+                else
+                    warning(0, "SSL: spurious handshake interrupt (one of OpenSSL confusions?!)");
+                error(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
+
+                SSL_set_shutdown(conn->ssl, SSL_RECEIVED_SHUTDOWN);
+                SSL_smart_shutdown(conn->ssl);
+             } 
+             else {
+                /*
+                 * ok, anything else is a fatal error
+                 */
+                warning(0, "SSL: handshake failed with fatal error");
+                warning(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
+                
+                SSL_set_shutdown(conn->ssl, SSL_RECEIVED_SHUTDOWN);
+                SSL_smart_shutdown(conn->ssl);
+             }
+
+             warning(0, "SSL: disconnecting.");
+             goto error;
+
+        } /* SSL error */
+     
     } else {
         conn->ssl = NULL;
         conn->peer_certificate = NULL;
@@ -497,8 +579,10 @@ void conn_destroy(Connection *conn)
         fdset_unregister(conn->registered, conn->fd);
 
     if (conn->fd >= 0) {
-        /* Try to flush any remaining data */
-        unlocked_write(conn);
+        /* Try to flush any remaining data, only in case this is
+         * not a SSL connection. Otherwise this crashes the bearerbox
+         * at least on the Cygwin platform
+         */
 #ifdef HAVE_LIBSSL
         if (conn->ssl != NULL) {
             mutex_lock(conn->ssl_mutex);
@@ -508,8 +592,11 @@ void conn_destroy(Connection *conn)
                 X509_free(conn->peer_certificate);
             mutex_unlock(conn->ssl_mutex);
             mutex_destroy(conn->ssl_mutex);
-	}
+	    }
+        else
 #endif /* HAVE_LIBSSL */
+        unlocked_write(conn);
+
         ret = close(conn->fd);
         if (ret < 0)
             error(errno, "conn_destroy: error on close");
@@ -1188,8 +1275,7 @@ static int verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
     return preverify_ok;
 }
 
-void
-conn_config_ssl (CfgGroup *grp)
+void conn_config_ssl (CfgGroup *grp)
 {
     Octstr *ssl_client_certkey_file = NULL;
     Octstr *ssl_server_cert_file    = NULL;
@@ -1240,10 +1326,17 @@ conn_config_ssl (CfgGroup *grp)
     octstr_destroy(ssl_trusted_ca_file);
 }
 
+SSL *conn_get_ssl(Connection *conn)
+{
+    if (conn != NULL)
+        return conn->ssl;
+    else 
+        return NULL;
+}
+
 #else
 
-void
-conn_config_ssl (CfgGroup *grp)
+void conn_config_ssl (CfgGroup *grp)
 {
     info(0, "SSL not supported, no SSL initialization done.");
 }
