@@ -1,3 +1,8 @@
+2002-06-11  Stipe Tolj <tolj@wapme-systems.de>
+    * gwlib/thread.[ch], gwlib/conn.c: applied Oded's patch to make gcc 3.x 
+      not complain about it's __FUNC__ macros.
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B296D8D@exchange.m-wise.com>]
+
 2002-06-03  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsc_smpp.c: fixed memory bug in msg_to_pdu(), patch by Oded
       [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B296D6F@exchange.m-wise.com>]
