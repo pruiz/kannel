@@ -1,4 +1,7 @@
 2003-04-06  Stipe Tolj  <tolj@wapme-systems.de>
+    * configure[.in]: fixed a bug from previous commit.
+
+2003-04-06  Stipe Tolj  <tolj@wapme-systems.de>
     * configure[.in]: fixing BUG#18, which caused to break the build process
       if mysql had library dependencies (ie. -lz) because they where not 
       included in the last stage linking process. Now we try to detect via
