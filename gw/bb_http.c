@@ -127,20 +127,11 @@ static Octstr *httpd_resume(List *cgivars)
 
 
 
-static void httpd_serve(void *arg)
+static void httpd_serve(HTTPClient *client, Octstr *url, List *headers, 
+    	    	    	Octstr *body, List *cgivars)
 {
-    HTTPSocket *client = arg;
-    List *headers, *cgivars;
-    Octstr *url, *body;
     Octstr *reply;
     char *content_type;
-    
-    if (http_server_get_request(client, &url, &headers, &body, &cgivars) < 1)
-    {
-	warning(0, "Malformed line from client, ignored");
-	http_server_close_client(client);
-	return;
-    }
     
     if (octstr_str_compare(url, "/cgi-bin/status")==0) {
 	reply = httpd_status(cgivars);
@@ -176,53 +167,36 @@ static void httpd_serve(void *arg)
     headers = list_create();
     http_header_add(headers, "Content-Type", content_type);
 
-    if (http_server_send_reply(client, HTTP_OK, headers, reply) == -1)
-	warning(0, "HTTP-admin server_send_reply failed");
+    http_send_reply(client, HTTP_OK, headers, reply);
 
     octstr_destroy(url);
     octstr_destroy(body);
     octstr_destroy(reply);
     http_destroy_headers(headers);
     http_destroy_cgiargs(cgivars);
-
-    http_server_close_client(client);
 }
 
 static void httpadmin_run(void *arg)
 {
-    HTTPSocket *httpd, *client;
-    int port;
-
-    port = (int)arg;
-    
-    httpd = http_server_open(port);
-    if (httpd == NULL)
-	panic(0, "Cannot start without HTTP admin");
-    
-    /* infinitely wait for new connections;
-     */
+    HTTPClient *client;
+    Octstr *ip, *url, *body;
+    List *headers, *cgivars;
 
     while(bb_status != BB_DEAD) {
 	if (bb_status == BB_SHUTDOWN)
 	    bb_shutdown();
-	if (read_available(http_socket_fd(httpd), 100000) < 1)
-	    continue;
-	client = http_server_accept_client(httpd);
+    	client = http_accept_request(&ip, &url, &headers, &body, &cgivars);
 	if (client == NULL)
-	    continue;
-	if (is_allowed_ip(ha_allow_ip,ha_deny_ip,http_socket_ip(client))==0) {
+	    break;
+	if (is_allowed_ip(ha_allow_ip, ha_deny_ip, ip) == 0) {
 	    info(0, "HTTP admin tried from denied host <%s>, disconnected",
-		 octstr_get_cstr(http_socket_ip(client)));
-	    http_server_close_client(client);
+		 octstr_get_cstr(ip));
+	    http_close_client(client);
 	    continue;
 	}
-        if (gwthread_create(httpd_serve, client) == -1) {
-	    error(0, 
-	    	"Failed to start a new thread to handle HTTP admin command");
-	    http_server_close_client(client);
-	}
+        httpd_serve(client, url, headers, body, cgivars);
+	octstr_destroy(ip);
     }
-    http_server_close(httpd);
 
     httpadmin_running = 0;
 }
@@ -253,7 +227,9 @@ int httpadmin_start(Config *config)
     ha_allow_ip = config_get(grp, "admin-allow-ip");
     ha_deny_ip = config_get(grp, "admin-deny-ip");
     
-    if (gwthread_create(httpadmin_run, (void *)ha_port) == -1)
+    http_open_server(ha_port);
+
+    if (gwthread_create(httpadmin_run, NULL) == -1)
 	panic(0, "Failed to start a new thread for HTTP admin");
 
     httpadmin_running = 1;
@@ -261,3 +237,8 @@ int httpadmin_start(Config *config)
 }
 
 
+void httpadmin_stop(void)
+{
+    http_close_all_servers();
+    gwthread_join_every(httpadmin_run);
+}

@@ -1,3 +1,19 @@
+2000-11-06  Lars Wirzenius  <liw@iki.fi>
+
+    	* Bearerbox converted to use with ne HTTP server API, with help
+	from Kalle Marjola.
+
+	* gw/bb_http.c: Only use one thread to handle HTTP requests.
+	Added function httpadmin_stop to help with shutdown
+	synchronization issues.
+	
+	* gw/bearerbox.[ch]: In signal handler, call bb_shutdown, instead
+	of set_shutdown_status. This point may need to be implemented
+	better later. Call httpadmin_stop in main.
+	
+	* gwlib/http.c: Have http_close_all_server kill the server threads
+	as well, including killing the FDSet poller thread.
+
 2000-11-06  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsc_emi.c (emi_open_ip): check if allow_ip set. Thanks for

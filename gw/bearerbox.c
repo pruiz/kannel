@@ -95,8 +95,11 @@ static void signal_handler(int signum)
 
 	mutex_lock(status_mutex);
         if (bb_status != BB_SHUTDOWN && bb_status != BB_DEAD) {
-	    set_shutdown_status();
+//	    set_shutdown_status();
 
+	    mutex_unlock(status_mutex);
+	    bb_shutdown();
+	    return;
 	    /* shutdown smsc/udp is called by the http admin thread */
 
             warning(0, "Killing signal received, shutting down...");
@@ -420,6 +423,7 @@ int main(int argc, char **argv)
 
     info(0, "All flow threads have died, killing core");
     bb_status = BB_DEAD;
+    httpadmin_stop();
 
     smsc_die();
     

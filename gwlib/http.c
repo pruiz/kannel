@@ -755,6 +755,9 @@ void http_close_all_servers(void)
     if (server_thread_id != -1) {
 	keep_servers_open = 0;
 	gwthread_wakeup(server_thread_id);
+	gwthread_join_every(server_thread);
+	fdset_destroy(server_fdset);
+	server_fdset = NULL;
     }
 }
 

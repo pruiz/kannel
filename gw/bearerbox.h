@@ -85,6 +85,7 @@ int smsc_outgoing_queue(void);
 
 int httpadmin_start(Config *config);
 /* int http_restart(Config *config); */
+void httpadmin_stop(void);
 
 
 /*----------------------------------------------------------------
