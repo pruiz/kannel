@@ -1161,6 +1161,12 @@ X509 *conn_get_peer_certificate(Connection *conn)
     return conn->peer_certificate;
 }
 
+/*
+ * XXX Alex decalred the RSA callback routine static and now we're getting 
+ * warning messages for our automatic compilation tests. So we are commenting
+ * the function out to avoid the warnings.
+ *
+
 static RSA *tmp_rsa_callback(SSL *ssl, int export, int key_len)
 {
     static RSA *rsa = NULL;
@@ -1172,6 +1178,7 @@ static RSA *tmp_rsa_callback(SSL *ssl, int export, int key_len)
     }
     return rsa;
 }
+*/
 
 static Mutex **ssl_static_locks = NULL;
 

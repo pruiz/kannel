@@ -1,7 +1,12 @@
+2003-12-08  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/conn.c: fixed compiler warning, commenting out function 
+      tmp_rsa_callback().
+
 2003-12-05  Alexander Malysh  <a.malysh@centrium.de>
-    * gw/dlr.c: fixed bug that dlr's were not routed correctly to smsbox within bb_boxc,
-      due to last changes in dlr.c (now we do not duplicate dlr_entry values in order 
-      to avoid not needed memory allocations, but bb_boxc await e.g. boxc_id as NULL and not as "").
+    * gw/dlr.c: fixed bug that dlr's were not routed correctly to smsbox within 
+      bb_boxc, due to last changes in dlr.c (now we do not duplicate dlr_entry 
+      values in order to avoid not needed memory allocations, but bb_boxc await 
+      e.g. boxc_id as NULL and not as "").
 
 2003-12-05  Stipe Tolj  <tolj@wapme-systems.de>
     * wap/wtp_resp_states.def: fixing BUG#102. In RESULT_RESP_WAIT state, when
