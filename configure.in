@@ -20,8 +20,10 @@ if test "x$VERSION" = "xcvs"; then
   #cvs_date=`ls -lcda  . | awk '{print $6,$7,$8}'`
   cvs_date=`ls -lcda  CVS/Entries | awk '{print $6,$7,$8}'`
   AC_MSG_RESULT([$cvs_date])
+  cvs_date=`date -d "$cvs_date" +%Y-%m-%d`
   VERSION="$VERSION $cvs_date"
 fi
+AC_DEFINE_UNQUOTED(GW_NAME, "Kannel")
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION")
 AC_CONFIG_SECTION([Configuring for Kannel gateway version $VERSION])
 

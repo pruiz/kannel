@@ -47,6 +47,9 @@
 /* Define if you have getopt_long(3). */
 #undef HAVE_GETOPT_LONG
 
+/* Define gateway name */
+#undef GW_NAME
+
 /* the VERSION symbol - for older autoconfs */
 #undef VERSION
 
