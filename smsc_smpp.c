@@ -76,17 +76,11 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password, char
 	/* Open the transmitter connection */
 	smsc->fd_t = tcpip_connect_to_server(smsc->hostname, smsc->port);
 	if(smsc->fd_t == -1) goto error;
-	debug(0, "smsc->fd_t == %i", smsc->fd_t);
-	debug(0, "smsc->hostname == %s", smsc->hostname);
-	debug(0, "smsc->port == %i", smsc->port);
 	smsc->smpp_t_state = SMPP_STATE_CONNECTED;
 
 	/* Open the receiver connection */
 	smsc->fd_r = tcpip_connect_to_server(smsc->hostname, smsc->port);
 	if(smsc->fd_r == -1) goto error;
-	debug(0, "smsc->fd_r == %i", smsc->fd_t);
-	debug(0, "smsc->hostname == %s", smsc->hostname);
-	debug(0, "smsc->port == %i", smsc->port);
 	smsc->smpp_r_state = SMPP_STATE_CONNECTED;
 
 	/* Push a BIND_RECEIVER PDU on the [smsc->unsent] stack. */
@@ -562,13 +556,16 @@ static int data_free(Octstr *str) {
 
 static fifostack* fifo_new(void) {
 
-	struct fifostack *newfifo = NULL;
+	struct fifostack *fifo = NULL;
 
-	newfifo = malloc(sizeof(struct fifostack));
-	if(newfifo == NULL) goto error;
-	memset(newfifo, 0, sizeof(struct fifostack));
+	fifo = malloc(sizeof(struct fifostack));
+	if(fifo == NULL) goto error;
+	memset(fifo, 0, sizeof(struct fifostack));
 
-	return newfifo;
+	fifo->left = NULL;
+	fifo->right = NULL;
+
+	return fifo;
 
 error:
 	error(0, "fifo_new: memory allocation error");
@@ -583,6 +580,7 @@ static void fifo_free(fifostack *fifo) {
 
 	/* Drain the leftover PDUs to the bit sink. */
 	while( fifo_pop(fifo, &pdu) == 1 )  {
+		if(pdu==NULL) break;
 		pdu_free(pdu);
 		pdu = NULL;
 	}
@@ -605,7 +603,7 @@ static int fifo_push(fifostack *fifo, smpp_pdu *pdu) {
 	}
 
 	/* If fifostack is completely empty. */
-	if( (fifo->left == NULL) && (fifo->right == NULL) ) {
+	if( fifo->left == NULL ) {
 		fifo->left = pdu;
 		fifo->right = pdu;
 		pdu->left = NULL;
@@ -727,8 +725,8 @@ error:
 */
 static int data_pop(Octstr *from, Octstr **to) {
 
-	int32 quadoct;
-	int32 realint;
+	uint32_t quadoct;
+	uint32_t realint;
 	unsigned int olen = 0;
 
 	olen = octstr_len(from);
@@ -852,7 +850,7 @@ static int data_send(int fd, Octstr *from) {
 	size_t length, curl, written = 0;
 	char *willy = NULL;
 
-	debug(0, "data_send: starting");
+/*	debug(0, "data_send: starting"); */
 
 	/* Create temp data structures. */
 	length = octstr_len(from);
@@ -934,12 +932,12 @@ static int smpp_read_cstr(char** where, int* left, char** data) {
 	smpp_read_cstr(where, left, data);
 }
 
-static int smpp_append_int32(char** where, int* left, int32 data) {
+static int smpp_append_int32(char** where, int* left, uint32_t data) {
 	return -1;
 	smpp_append_int32(where, left, data);
 }
 
-static int smpp_read_int32(char** where, int* left, int32* data) {
+static int smpp_read_int32(char** where, int* left, uint32_t* data) {
 	return -1;
 	smpp_read_int32(where, left, data);
 }
@@ -1209,7 +1207,12 @@ static int pdu_encode(smpp_pdu *pdu, Octstr **rawdata) {
 
 	pdu_header_encode(pdu, &header);
 
-	whole = octstr_cat(header, body);
+	if(body != NULL) {
+		whole = octstr_cat(header, body);
+	} else {
+		whole = header;
+		header = NULL;
+	}
 
 	octstr_destroy(header);
 	octstr_destroy(body);
@@ -1504,7 +1507,7 @@ static int pdu_encode_submit_sm(smpp_pdu* pdu, Octstr** str) {
 
 	struct smpp_pdu_submit_sm *submit_sm = NULL;
 
-	int32 length;
+	uint32_t length;
 	int left;
 	char *data = NULL, *where = NULL;
 	Octstr *newstr = NULL;
@@ -1893,6 +1896,7 @@ static int charset_smpp_to_iso(char* data) {
 
 	while(*data != '\0') {
 		i = 0;
+		/* The translation table is 0 terminated. */
 		while( translation_table[i].iso != 0 ) {
 			if( translation_table[i].smpp == *data ) {
 				*data = translation_table[i].iso;
@@ -1912,6 +1916,7 @@ static int charset_iso_to_smpp(char* data) {
 
 	while(*data != '\0') {
 		i = 0;
+		/* The translation table is 0 terminated. */
 		while( translation_table[i].iso != 0 ) {
 			if( translation_table[i].iso == *data ) {
 				*data = translation_table[i].smpp;

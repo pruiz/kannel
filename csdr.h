@@ -6,8 +6,16 @@
 #include "bb_msg.h"
 
 typedef struct csdrouter {
-    char	*ip;
-    int		port;
+
+	char *interface_name;
+
+	fd_set rset;
+
+	int wsp, wsp_wtls;
+	int wsp_wtp, wsp_wtp_wtls;
+	int vcard, vcard_wtls;
+	int vcal, vcal_wtls;
+
 } CSDRouter;
 
 /*

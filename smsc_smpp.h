@@ -6,8 +6,6 @@
 #include "sms_msg.h"
 #include "smsc_p.h"
 
-typedef unsigned int int32;
-
 /******************************************************************************
 * Command Codes from 
 * SMPP 3.4 specification
@@ -326,8 +324,8 @@ static int smpp_append_oct(char**, int*, uint32_t);
 static int smpp_read_oct(char**, int*, Octet*);
 static int smpp_append_cstr(char**, int*, char*);
 static int smpp_read_cstr(char**, int*, char**);
-static int smpp_append_int32(char**, int*, int32);
-static int smpp_read_int32(char**, int*, int32*);
+static int smpp_append_int32(char**, int*, uint32_t);
+static int smpp_read_int32(char**, int*, uint32_t*);
 
 static Octstr* data_new(void);
 static int data_free(Octstr*);
