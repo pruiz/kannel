@@ -504,7 +504,9 @@ int octstr_send(int fd, Octstr *ostr) {
 	
 	while(written < datalength) {
 		ret = send(fd, data+written, datalength-written, 0);
-		if(ret == -1) {
+		if(ret == 0)
+			goto error;
+		else if(ret == -1) {
 			if(errno==EINTR) continue;
 			if(errno==EAGAIN) continue;
 			goto error;
@@ -533,7 +535,9 @@ int octstr_recv(int fd, Octstr **ostr) {
 	readlength = 0;
 	while(readlength < sizeof(uint32_t)) {
 		ret = recv(fd, (&length)+readlength, sizeof(uint32_t)-readlength, 0);
-		if(ret == -1) {
+		if(ret == 0)
+			goto error;
+		else if(ret == -1) {
 			if(errno==EINTR) continue;
 			if(errno==EAGAIN) continue;
 			goto error;
@@ -550,7 +554,9 @@ int octstr_recv(int fd, Octstr **ostr) {
 	readlength = 0;
 	while(readlength < length) {
 		ret = recv(fd, data+readlength, length-readlength, 0);
-		if(ret == -1) {
+		if(ret == 0)
+			goto error;
+		else if(ret == -1) {
 			if(errno==EINTR) continue;
 			if(errno==EAGAIN) continue;
 			goto error;
