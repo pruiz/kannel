@@ -1,3 +1,9 @@
+Fri Jun  9 02:46:53 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wap-events.[ch]: Changed the WAPEvent sub-structures to be
+	held inside a union, to reduce amount of space used. Related
+	changes everywhere WAPEvents are used.
+	
 2000-06-08  Richard Braakman  <dark@wapit.com>
 
 	* test/drive_wapbox.c: Added option -g N to try more than one

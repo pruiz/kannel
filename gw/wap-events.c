@@ -19,14 +19,20 @@ WAPEvent *wap_event_create(WAPEventName type) {
 	event = gw_malloc(sizeof(WAPEvent));
 	event->type = type;
 
+	switch (event->type) {
 	#define WAPEVENT(name, fields) \
-		{ struct name *p = &event->name; fields }
+		case name: \
+			{ struct name *p = &event->u.name; fields } \
+			break;
 	#define OCTSTR(name) p->name = NULL;
 	#define INTEGER(name) p->name = 0;
 	#define SESSION_MACHINE(name) p->name = NULL;
 	#define HTTPHEADER(name) p->name = NULL;
 	#define ADDRTUPLE(name) p->name = NULL;
 	#include "wap-events-def.h"
+	default:
+		panic(0, "Unknown WAP event type %d", event->type);
+	}
 	
 	return event;
 }
@@ -41,7 +47,8 @@ void wap_event_destroy(WAPEvent *event) {
 	switch (event->type) {
 	#define WAPEVENT(name, fields) \
 		case name: \
-			{ struct name *p = &event->name; fields; break; }
+			{ struct name *p = &event->u.name; fields; } \
+			break;
 	#define OCTSTR(name) octstr_destroy(p->name);
 	#define INTEGER(name) p->name = 0;
 	#define SESSION_MACHINE(name) p->name = NULL;
@@ -66,14 +73,22 @@ WAPEvent *wap_event_duplicate(WAPEvent *event) {
 	new = gw_malloc(sizeof(WAPEvent));
 	new->type = event->type;
 
+	switch (event->type) {
 	#define WAPEVENT(name, fields) \
-		{ struct name *p = &new->name, *q = &event->name; fields }
+		case name: \
+			{ struct name *p = &new->u.name; \
+			  struct name *q = &event->u.name; \
+			  fields } \
+			break;
 	#define OCTSTR(name) p->name = octstr_duplicate(q->name);
 	#define INTEGER(name) p->name = q->name;
 	#define SESSION_MACHINE(name) p->name = q->name;
 	#define HTTPHEADER(name) p->name = http2_header_duplicate(q->name);
 	#define ADDRTUPLE(name) p->name = wap_addr_tuple_duplicate(q->name);
 	#include "wap-events-def.h"
+	default:
+		panic(0, "Unknown WAP event type %d", event->type);
+	}
 	
 	return new;
 }
@@ -99,7 +114,7 @@ void wap_event_dump(WAPEvent *event) {
 		switch (event->type) {
 		#define WAPEVENT(name, fields) \
 			case name: \
-			{ struct name *p = &event->name; fields; break; }
+			{ struct name *p = &event->u.name; fields; break; }
 		#define OCTSTR(name) \
 			debug("wap.event", 0, "%s =", #name); \
 			octstr_dump(p->name, 1);

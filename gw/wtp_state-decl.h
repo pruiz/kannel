@@ -85,11 +85,11 @@ STATE_NAME(WAIT_TIMEOUT)
 
 ROW(LISTEN,
     RcvInvoke,
-    (event->RcvInvoke.tcl == 2 || event->RcvInvoke.tcl == 1) &&
+    (event->u.RcvInvoke.tcl == 2 || event->u.RcvInvoke.tcl == 1) &&
     wtp_tid_is_valid(event, machine) == ok,
     {
-     machine->u_ack = event->RcvInvoke.up_flag;
-     machine->tcl = event->RcvInvoke.tcl;
+     machine->u_ack = event->u.RcvInvoke.up_flag;
+     machine->tcl = event->u.RcvInvoke.tcl;
      current_primitive = TR_Invoke_Ind;
 
      wsp_event = pack_wsp_event(current_primitive, event, machine);
@@ -103,7 +103,7 @@ ROW(LISTEN,
 
 ROW(LISTEN,
     RcvInvoke,
-    (event->RcvInvoke.tcl == 2 || event->RcvInvoke.tcl == 1) &&
+    (event->u.RcvInvoke.tcl == 2 || event->u.RcvInvoke.tcl == 1) &&
     (wtp_tid_is_valid(event, machine) == fail || 
      wtp_tid_is_valid(event, machine) == no_cached_tid),
     { 
@@ -111,8 +111,8 @@ ROW(LISTEN,
      wtp_send_ack(TID_VERIFICATION, machine, event);
      machine->rid = 1;
     
-     machine->u_ack = event->RcvInvoke.up_flag;
-     machine->tcl = event->RcvInvoke.tcl;
+     machine->u_ack = event->u.RcvInvoke.up_flag;
+     machine->tcl = event->u.RcvInvoke.tcl;
      current_primitive = TR_Invoke_Ind;
      machine->invoke_indication = pack_wsp_event(current_primitive, event, machine);
      debug("wap.wtp", 0, "WTP_STATE: generating invoke indication, tid being invalid");
@@ -124,7 +124,7 @@ ROW(LISTEN,
  */
 ROW(LISTEN,
     RcvInvoke,
-    event->RcvInvoke.tcl == 0,
+    event->u.RcvInvoke.tcl == 0,
     {
      current_primitive = TR_Invoke_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
@@ -150,7 +150,7 @@ ROW(LISTEN,
 
 ROW(TIDOK_WAIT,
     RcvAck,
-    (machine->tcl == 2 || machine->tcl == 1) && event->RcvAck.tid_ok == 1,
+    (machine->tcl == 2 || machine->tcl == 1) && event->u.RcvAck.tid_ok == 1,
     { 
      wsp_event = wap_event_duplicate(machine->invoke_indication);
      wsp_dispatch_event(wsp_event);
@@ -169,13 +169,13 @@ ROW(TIDOK_WAIT,
 
 ROW(TIDOK_WAIT,
     RcvInvoke,
-    event->RcvInvoke.rid == 0,
+    event->u.RcvInvoke.rid == 0,
     { },
     TIDOK_WAIT)
 
 ROW(TIDOK_WAIT,
     RcvInvoke,
-    event->RcvInvoke.rid == 1,
+    event->u.RcvInvoke.rid == 1,
     { 
      wtp_send_ack(TID_VERIFICATION, machine, event); 
     },
@@ -223,7 +223,7 @@ ROW(INVOKE_RESP_WAIT,
     TR_Abort_Req,
     1,
     { 
-     wtp_send_abort(USER, event->TR_Abort_Req.abort_reason,
+     wtp_send_abort(USER, event->u.TR_Abort_Req.abort_reason,
                     machine, event); 
     },
     LISTEN)
@@ -313,21 +313,21 @@ ROW(RESULT_WAIT,
 
 ROW(RESULT_WAIT,
     RcvInvoke,
-    event->RcvInvoke.rid == 0,
+    event->u.RcvInvoke.rid == 0,
     { },
     RESULT_WAIT)
 
 ROW(RESULT_WAIT,
     RcvInvoke,
-    event->RcvInvoke.rid == 1 && machine->ack_pdu_sent == 0,
+    event->u.RcvInvoke.rid == 1 && machine->ack_pdu_sent == 0,
     { },
     RESULT_WAIT)
 
 ROW(RESULT_WAIT,
     RcvInvoke,
-    event->RcvInvoke.rid == 1 && machine->ack_pdu_sent == 1,
+    event->u.RcvInvoke.rid == 1 && machine->ack_pdu_sent == 1,
     {
-     machine->rid = event->RcvInvoke.rid;
+     machine->rid = event->u.RcvInvoke.rid;
      wtp_send_ack(machine->tid_ve, machine, event);
     },
     RESULT_WAIT)
@@ -336,7 +336,7 @@ ROW(RESULT_WAIT,
     TR_Abort_Req,
     1,
     { 
-     wtp_send_abort(USER, event->TR_Abort_Req.abort_reason, machine, event); 
+     wtp_send_abort(USER, event->u.TR_Abort_Req.abort_reason, machine, event); 
     },
     LISTEN)
 
@@ -384,7 +384,7 @@ ROW(RESULT_RESP_WAIT,
     TR_Abort_Req,
     1,
     { 
-     wtp_send_abort(USER, event->TR_Abort_Req.abort_reason, machine, event); 
+     wtp_send_abort(USER, event->u.TR_Abort_Req.abort_reason, machine, event); 
     },
     LISTEN)
 
@@ -465,10 +465,3 @@ ROW(RESULT_RESP_WAIT,
 
 #undef ROW
 #undef STATE_NAME
-
-
-
-
-
-
-

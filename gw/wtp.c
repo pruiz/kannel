@@ -158,17 +158,17 @@ WAPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 	switch (pdu->type) {
 	case Invoke:
 		event = wap_event_create(RcvInvoke);
-		event->RcvInvoke.user_data = 
+		event->u.RcvInvoke.user_data = 
 			octstr_duplicate(pdu->u.Invoke.user_data);
-		event->RcvInvoke.exit_info = NULL;
-		event->RcvInvoke.tcl = pdu->u.Invoke.class;
-		event->RcvInvoke.tid = pdu->u.Invoke.tid;
-		event->RcvInvoke.tid_new = pdu->u.Invoke.tidnew;
-		event->RcvInvoke.rid = pdu->u.Invoke.rid;
-		event->RcvInvoke.up_flag = pdu->u.Invoke.uack;
-		event->RcvInvoke.exit_info_present = 0;
-		event->RcvInvoke.no_cache_supported = 0;
-		event->RcvInvoke.addr_tuple = 
+		event->u.RcvInvoke.exit_info = NULL;
+		event->u.RcvInvoke.tcl = pdu->u.Invoke.class;
+		event->u.RcvInvoke.tid = pdu->u.Invoke.tid;
+		event->u.RcvInvoke.tid_new = pdu->u.Invoke.tidnew;
+		event->u.RcvInvoke.rid = pdu->u.Invoke.rid;
+		event->u.RcvInvoke.up_flag = pdu->u.Invoke.uack;
+		event->u.RcvInvoke.exit_info_present = 0;
+		event->u.RcvInvoke.no_cache_supported = 0;
+		event->u.RcvInvoke.addr_tuple = 
 		  wap_addr_tuple_create(msg->wdp_datagram.source_address,
 					msg->wdp_datagram.source_port,
 					msg->wdp_datagram.destination_address,
@@ -177,10 +177,10 @@ WAPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
 	case Ack:
 		event = wap_event_create(RcvAck);
-		event->RcvAck.tid = pdu->u.Ack.tid;
-		event->RcvAck.tid_ok = pdu->u.Ack.tidverify;
-		event->RcvAck.rid = pdu->u.Ack.rid;
-		event->RcvAck.addr_tuple =
+		event->u.RcvAck.tid = pdu->u.Ack.tid;
+		event->u.RcvAck.tid_ok = pdu->u.Ack.tidverify;
+		event->u.RcvAck.rid = pdu->u.Ack.rid;
+		event->u.RcvAck.addr_tuple =
 		  wap_addr_tuple_create(msg->wdp_datagram.source_address,
 					msg->wdp_datagram.source_port,
 					msg->wdp_datagram.destination_address,
@@ -189,10 +189,10 @@ WAPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
 	case Abort:
 		event = wap_event_create(RcvAbort);
-		event->RcvAbort.tid = pdu->u.Abort.tid;
-		event->RcvAbort.abort_type = pdu->u.Abort.abort_type;
-		event->RcvAbort.abort_reason = pdu->u.Abort.abort_reason;
-		event->RcvAbort.addr_tuple = 
+		event->u.RcvAbort.tid = pdu->u.Abort.tid;
+		event->u.RcvAbort.abort_type = pdu->u.Abort.abort_type;
+		event->u.RcvAbort.abort_reason = pdu->u.Abort.abort_reason;
+		event->u.RcvAbort.addr_tuple = 
 		  wap_addr_tuple_create(msg->wdp_datagram.source_address,
 					msg->wdp_datagram.source_port,
 					msg->wdp_datagram.destination_address,
@@ -356,31 +356,31 @@ static WTPMachine *wtp_machine_find_or_create(WAPEvent *event){
           switch (event->type){
 
 	          case RcvInvoke:
-                       tid = event->RcvInvoke.tid;
-		       tuple = event->RcvInvoke.addr_tuple;
+                       tid = event->u.RcvInvoke.tid;
+		       tuple = event->u.RcvInvoke.addr_tuple;
                   break;
 
 	          case RcvAck:
-                       tid = event->RcvAck.tid;
-		       tuple = event->RcvAck.addr_tuple;
+                       tid = event->u.RcvAck.tid;
+		       tuple = event->u.RcvAck.addr_tuple;
                   break;
 
 	          case RcvAbort:
-                       tid = event->RcvAbort.tid;
-		       tuple = event->RcvAbort.addr_tuple;
+                       tid = event->u.RcvAbort.tid;
+		       tuple = event->u.RcvAbort.addr_tuple;
                   break;
 
 	          case RcvErrorPDU:
-                       tid = event->RcvErrorPDU.tid;
-		       tuple = event->RcvErrorPDU.addr_tuple;
+                       tid = event->u.RcvErrorPDU.tid;
+		       tuple = event->u.RcvErrorPDU.addr_tuple;
                   break;
 
 		  case TR_Invoke_Res:
-		  	mid = event->TR_Invoke_Res.mid;
+		  	mid = event->u.TR_Invoke_Res.mid;
 			break;
 
 		  case TR_Result_Req:
-		  	mid = event->TR_Result_Req.mid;
+		  	mid = event->u.TR_Result_Req.mid;
 			break;
 
                   default:
@@ -402,7 +402,7 @@ static WTPMachine *wtp_machine_find_or_create(WAPEvent *event){
  */
 	              case RcvInvoke: 
 	                   machine = wtp_machine_create(tuple, tid,
-				     		event->RcvInvoke.tcl);
+				     		event->u.RcvInvoke.tcl);
                            machine->in_use = 1;
                       break;
 
@@ -547,45 +547,43 @@ static WAPEvent *pack_wsp_event(WAPEventName wsp_name, WAPEvent *wtp_event,
                 
 	        case TR_Invoke_Ind:
 		     gw_assert(wtp_event->type == RcvInvoke);
-                     event->TR_Invoke_Ind.ack_type = machine->u_ack;
-                     event->TR_Invoke_Ind.user_data =
-                            octstr_duplicate(wtp_event->RcvInvoke.user_data);
-                     event->TR_Invoke_Ind.tcl = wtp_event->RcvInvoke.tcl;
-                     event->TR_Invoke_Ind.wsp_tid = wtp_tid_next();
-                     event->TR_Invoke_Ind.tid = machine->tid;
-                     event->TR_Invoke_Ind.mid = machine->mid;
-                     event->TR_Invoke_Ind.addr_tuple = 
+                     event->u.TR_Invoke_Ind.ack_type = machine->u_ack;
+                     event->u.TR_Invoke_Ind.user_data =
+                            octstr_duplicate(wtp_event->u.RcvInvoke.user_data);
+                     event->u.TR_Invoke_Ind.tcl = wtp_event->u.RcvInvoke.tcl;
+                     event->u.TR_Invoke_Ind.wsp_tid = wtp_tid_next();
+                     event->u.TR_Invoke_Ind.tid = machine->tid;
+                     event->u.TR_Invoke_Ind.mid = machine->mid;
+                     event->u.TR_Invoke_Ind.addr_tuple = 
 		     	wap_addr_tuple_duplicate(machine->addr_tuple);
                 break;
 
 	        case TR_Invoke_Cnf:
 		     gw_assert(wtp_event->type == TR_Invoke_Ind);
-                     event->TR_Invoke_Cnf.wsp_tid =
-                            event->TR_Invoke_Ind.wsp_tid;
-                     event->TR_Invoke_Cnf.addr_tuple = 
+                     event->u.TR_Invoke_Cnf.wsp_tid =
+                            event->u.TR_Invoke_Ind.wsp_tid;
+                     event->u.TR_Invoke_Cnf.addr_tuple = 
 		     	wap_addr_tuple_duplicate(machine->addr_tuple);
                 break;
                 
 	        case TR_Result_Cnf:
 		     gw_assert(wtp_event->type == RcvAck);
-                     event->TR_Result_Cnf.exit_info = NULL;
-/*                            octstr_duplicate(wtp_event->RcvInvoke.exit_info); */
-                     event->TR_Result_Cnf.exit_info_present = 0;
-/*                            wtp_event->RcvInvoke.exit_info_present; */
-                     event->TR_Result_Cnf.wsp_tid = machine->tid;
-                     event->TR_Result_Cnf.addr_tuple = 
+                     event->u.TR_Result_Cnf.exit_info = NULL;
+                     event->u.TR_Result_Cnf.exit_info_present = 0;
+                     event->u.TR_Result_Cnf.wsp_tid = machine->tid;
+                     event->u.TR_Result_Cnf.addr_tuple = 
 		     	wap_addr_tuple_duplicate(machine->addr_tuple);
                 break;
 
 	        case TR_Abort_Ind:
 		     gw_assert(wtp_event->type == RcvAbort);
-                     event->TR_Abort_Ind.abort_code =
-                            wtp_event->RcvAbort.abort_reason;
-                     event->TR_Abort_Ind.wsp_tid =
-                            event->TR_Invoke_Ind.wsp_tid;
-                     event->TR_Abort_Ind.tid = machine->tid;
-                     event->TR_Abort_Ind.mid = machine->mid;
-		     event->TR_Abort_Ind.addr_tuple = 
+                     event->u.TR_Abort_Ind.abort_code =
+                            wtp_event->u.RcvAbort.abort_reason;
+                     event->u.TR_Abort_Ind.wsp_tid =
+                            event->u.TR_Invoke_Ind.wsp_tid;
+                     event->u.TR_Abort_Ind.tid = machine->tid;
+                     event->u.TR_Abort_Ind.mid = machine->mid;
+		     event->u.TR_Abort_Ind.addr_tuple = 
 		     	wap_addr_tuple_duplicate(machine->addr_tuple);
                 break;
                 

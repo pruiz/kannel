@@ -72,13 +72,13 @@ int wtp_tid_is_valid(WAPEvent *event, WTPMachine *machine){
 #endif
     rcv_tid = machine->tid;
    
-    if (!event->RcvInvoke.tid_new) {
+    if (!event->u.RcvInvoke.tid_new) {
 /*
  * First we check whether the current iniator has a cache item for it.
  */      
        if ((item = tid_cached(machine)) == NULL) {
 
-          if (event->RcvInvoke.no_cache_supported)
+          if (event->u.RcvInvoke.no_cache_supported)
              return no_cached_tid;
           else {
 #if 0

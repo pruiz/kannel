@@ -108,10 +108,10 @@ static void main_thread(void *arg) {
 		gw_assert(ind->type == S_MethodInvoke_Ind);
 		gwthread_create(fetch_thread, ind);
 		res = wap_event_create(S_MethodInvoke_Res);
-		res->S_MethodInvoke_Res.mid = 
-			ind->S_MethodInvoke_Ind.mid;
-		res->S_MethodInvoke_Res.tid = 
-			ind->S_MethodInvoke_Ind.tid;
+		res->u.S_MethodInvoke_Res.mid = 
+			ind->u.S_MethodInvoke_Ind.mid;
+		res->u.S_MethodInvoke_Res.tid = 
+			ind->u.S_MethodInvoke_Ind.tid;
 		wsp_dispatch_event(res);
 	}
 }
@@ -162,10 +162,10 @@ static void fetch_thread(void *arg) {
 
 	event = arg;
 	gw_assert(event->type == S_MethodInvoke_Ind);
-	sm = event->S_MethodInvoke_Ind.session;
+	sm = event->u.S_MethodInvoke_Ind.session;
 
-	wsp_http_map_url(&event->S_MethodInvoke_Ind.url);
-	url = event->S_MethodInvoke_Ind.url;
+	wsp_http_map_url(&event->u.S_MethodInvoke_Ind.url);
+	url = event->u.S_MethodInvoke_Ind.url;
 
 	body = NULL;
 
@@ -177,9 +177,9 @@ static void fetch_thread(void *arg) {
 	req_headers = list_create();
 	if (sm->http_headers != NULL)
 		http2_append_headers(req_headers, sm->http_headers);
-	if (event->S_MethodInvoke_Ind.http_headers)
+	if (event->u.S_MethodInvoke_Ind.http_headers)
 		http2_append_headers(req_headers, 
-			event->S_MethodInvoke_Ind.http_headers);
+			event->u.S_MethodInvoke_Ind.http_headers);
 
 	wml_ok = http2_type_accepted(req_headers, "text/vnd.wap.wml");
 	wmlscript_ok = http2_type_accepted(req_headers, 
@@ -266,7 +266,7 @@ static void fetch_thread(void *arg) {
 		body_size = 0;
 	else
 		body_size = octstr_len(body);
-	client_SDU_size = event->S_MethodInvoke_Ind.session->client_SDU_size;
+	client_SDU_size = event->u.S_MethodInvoke_Ind.session->client_SDU_size;
 
 	if (body != NULL && body_size > client_SDU_size) {
 		status = 413; /* XXX requested entity too large */
@@ -279,14 +279,14 @@ static void fetch_thread(void *arg) {
 	}
 
 	e = wap_event_create(S_MethodResult_Req);
-	e->S_MethodResult_Req.server_transaction_id = 
-		event->S_MethodInvoke_Ind.server_transaction_id;
-	e->S_MethodResult_Req.status = status;
-	e->S_MethodResult_Req.response_type = 
+	e->u.S_MethodResult_Req.server_transaction_id = 
+		event->u.S_MethodInvoke_Ind.server_transaction_id;
+	e->u.S_MethodResult_Req.status = status;
+	e->u.S_MethodResult_Req.response_type = 
 		encode_content_type(octstr_get_cstr(type));
-	e->S_MethodResult_Req.response_body = body;
-	e->S_MethodResult_Req.mid = event->S_MethodInvoke_Ind.mid;
-	e->S_MethodResult_Req.tid = event->S_MethodInvoke_Ind.tid;
+	e->u.S_MethodResult_Req.response_body = body;
+	e->u.S_MethodResult_Req.mid = event->u.S_MethodInvoke_Ind.mid;
+	e->u.S_MethodResult_Req.tid = event->u.S_MethodInvoke_Ind.tid;
 
 	wsp_dispatch_event(e);
 

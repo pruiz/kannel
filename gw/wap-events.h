@@ -33,6 +33,7 @@ typedef enum {
 struct WAPEvent {
 	WAPEventName type;
 
+	union {
 	#define WAPEVENT(name, fields) struct name { fields } name;
 	#define OCTSTR(name) Octstr *name;
 	#define INTEGER(name) long name;
@@ -40,6 +41,7 @@ struct WAPEvent {
 	#define HTTPHEADER(name) List *name;
 	#define ADDRTUPLE(name) WAPAddrTuple *name;
 	#include "wap-events-def.h"
+	} u;
 };
 
 

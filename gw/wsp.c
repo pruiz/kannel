@@ -156,7 +156,7 @@ static void main_thread(void *arg) {
 		wap_event_assert(e);
 		switch (e->type) {
 		case TR_Invoke_Ind:
-			pdu = wsp_pdu_unpack(e->TR_Invoke_Ind.user_data);
+			pdu = wsp_pdu_unpack(e->u.TR_Invoke_Ind.user_data);
 			if (pdu == NULL) {
 				warning(0, "WSP: Broken PDU ignored.");
 				return;
@@ -189,42 +189,42 @@ static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
 	switch (event->type) {
 	case TR_Invoke_Ind:
 		tuple = wap_addr_tuple_duplicate(
-				event->TR_Invoke_Ind.addr_tuple);
+				event->u.TR_Invoke_Ind.addr_tuple);
 		break;
 
 	case TR_Invoke_Cnf:
 		tuple = wap_addr_tuple_duplicate(
-				event->TR_Invoke_Cnf.addr_tuple);
+				event->u.TR_Invoke_Cnf.addr_tuple);
 		break;
 
 	case TR_Result_Cnf:
 		tuple = wap_addr_tuple_duplicate(
-				event->TR_Result_Cnf.addr_tuple);
+				event->u.TR_Result_Cnf.addr_tuple);
 		break;
 
 	case TR_Abort_Ind:
 		tuple = wap_addr_tuple_duplicate(
-				event->TR_Abort_Ind.addr_tuple);
+				event->u.TR_Abort_Ind.addr_tuple);
 		break;
 
 	case S_Connect_Res:
-		mid = event->S_Connect_Res.mid;
+		mid = event->u.S_Connect_Res.mid;
 		break;
 
 	case Release:
-		mid = event->Release.mid;
+		mid = event->u.Release.mid;
 		break;
 
 	case S_MethodInvoke_Ind:
-		mid = event->S_MethodInvoke_Ind.mid;
+		mid = event->u.S_MethodInvoke_Ind.mid;
 		break;
 
 	case S_MethodInvoke_Res:
-		mid = event->S_MethodInvoke_Res.mid;
+		mid = event->u.S_MethodInvoke_Res.mid;
 		break;
 
 	case S_MethodResult_Req:
-		mid = event->S_MethodResult_Req.mid;
+		mid = event->u.S_MethodResult_Req.mid;
 		break;
 
 	default:
@@ -246,7 +246,7 @@ static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
 
 	/* XXX this should probably be moved to a condition function --liw */
 	if (event->type == TR_Invoke_Ind &&
-	    event->TR_Invoke_Ind.tcl == 2 &&
+	    event->u.TR_Invoke_Ind.tcl == 2 &&
 	    pdu->type == Connect) {
 		/* Client wants to start new session. Igore existing
 		   machines. */
@@ -364,7 +364,7 @@ static void handle_event(WSPMachine *sm, WAPEvent *current_event, WSP_PDU *pdu)
 	#define ROW(state_name, event, condition, action, next_state) \
 		{ \
 			struct event *e; \
-			e = &current_event->event; \
+			e = &current_event->u.event; \
 			if (sm->state == state_name && \
 			   current_event->type == event && \
 			   (condition)) { \
@@ -382,10 +382,10 @@ static void handle_event(WSPMachine *sm, WAPEvent *current_event, WSP_PDU *pdu)
 		
 		error(0, "WSP: Can't handle TR-Invoke.ind, aborting transaction.");
 		abort = wap_event_create(TR_Abort_Req);
-		abort->TR_Abort_Req.tid = current_event->TR_Invoke_Ind.tid;
-		abort->TR_Abort_Req.abort_type = 0x01; /* USER */
-		abort->TR_Abort_Req.abort_reason = 0xE0; /* PROTOERR */
-		abort->TR_Abort_Req.mid = current_event->TR_Invoke_Ind.mid;
+		abort->u.TR_Abort_Req.tid = current_event->u.TR_Invoke_Ind.tid;
+		abort->u.TR_Abort_Req.abort_type = 0x01; /* USER */
+		abort->u.TR_Abort_Req.abort_reason = 0xE0; /* PROTOERR */
+		abort->u.TR_Abort_Req.mid = current_event->u.TR_Invoke_Ind.mid;
 
 		wtp_dispatch_event(abort);
 		machine_mark_unused(sm);
