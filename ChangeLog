@@ -1,3 +1,6 @@
+2004-08-09 Alexander Malysh <olek2002 at hotmail.com>
+    * gwlib/gw-rwlock.c: catch 'pthread_rwlock_init' errors too.
+
 2004-08-08 Alexander Malysh <olek2002 at hotmail.com>
     * gwlib/log.c: more fixes for compiler format warnings.
 

@@ -69,7 +69,9 @@
 RWLock *gw_rwlock_create(void)
 {
     RWLock *ret = gw_malloc(sizeof(*ret));
-    pthread_rwlock_init(&ret->rwlock, NULL);
+    int rc = pthread_rwlock_init(&ret->rwlock, NULL);
+    if (rc != 0)
+        panic(rc, "Initialization of RWLock failed.");
     ret->dynamic = 1;
 
     return ret;
@@ -78,7 +80,9 @@ RWLock *gw_rwlock_create(void)
 
 void gw_rwlock_init_static(RWLock *lock)
 {
-    pthread_rwlock_init(&lock->rwlock, NULL);
+    int rc = pthread_rwlock_init(&lock->rwlock, NULL);
+    if (rc != 0)
+        panic(rc, "Initialization of RWLock failed.");
     lock->dynamic = 0;
 }
 
