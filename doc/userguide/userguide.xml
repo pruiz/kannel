@@ -97,10 +97,10 @@
 	WAP phone.</para>
 
         <para>In addition, Kannel operates as <emphasis>Push Proxy Gateway 
-        </emphasis>, making possible for content servers to send data 
-        to the phones. This is a new type of WAP service, and have many
-        interesting applications. Usually servers know whether some data
-        is new, not the users. </para>
+        </emphasis>, or <emphasis>PPG</emphasis>, making possible for content 
+        servers to send data to the phones. This is a new type of WAP service,
+        and have many interesting applications. Usually servers know whether 
+        some data is new, not the users. </para>
 
 	<para><ulink url="http://www.opensource.org">Open Source</ulink>
 	is a way to formalize the principle of openness by placing the
@@ -155,8 +155,8 @@
 	content to the phones.</para>
 
         <figure>
-        <title>Logical position of WAP gateway (and Push Proxy Gateway)
-        between a phone and a content server.</title>
+        <title>Logical position of WAP gateway (and PPG)between a phone and a 
+        content server.</title>
         <graphic fileref="wap-gateway&figtype;"></graphic>
         </figure>
 
