@@ -3,6 +3,8 @@
 * Mikael Gueck for WapIT Ltd.
 */
 
+/* This file implements two smsc interfaces: EMI and EMI_IP */
+
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
@@ -73,7 +75,7 @@ static int internal_emi_parse_binary_to_emi(
 
 static int at_dial(char *device, char *phonenum, 
 	char *at_prefix, time_t how_long);
-static char internal_gurantee_link(SMSCenter *smsc);
+static int internal_guarantee_link(SMSCenter *smsc);
 
 
 static char *internal_emi_generate_checksum(const char *fmt, ...);
@@ -83,10 +85,6 @@ static int internal_emi_wait_for_ack(SMSCenter *smsc);
 static char internal_char_iso_to_sms(unsigned char from, int alt_charset);
 static char internal_char_sms_to_iso(unsigned char from, int alt_charset);
 
-#if 0
-static char internal_is_connection_open(SMSCenter *smsc);
-#endif
-
 static int secondary_fd	= -1;	/* opened secondary fd */
 
 
@@ -95,13 +93,12 @@ static int secondary_fd	= -1;	/* opened secondary fd */
 * Open the connection and log in - handshake baby
 */
 int emi_open_connection(SMSCenter *smsc) {
-
-	char      tmpbuff[1024];
+	char tmpbuff[1024];
 
 	sprintf(tmpbuff, "/dev/%s", smsc->emi_serialdevice);
 	smsc->emi_fd = at_dial(tmpbuff, smsc->emi_phonenum, "ATD", 30);
 
-	if(smsc->emi_fd <= 0) 
+	if (smsc->emi_fd <= 0) 
 	    return -1;
 
 	return 0;
@@ -110,7 +107,6 @@ int emi_open_connection(SMSCenter *smsc) {
 /* open EMI smscenter */
 
 SMSCenter *emi_open(char *phonenum, char *serialdevice, char *username, char *password) {
-
 	SMSCenter *smsc;
 
 	smsc = smscenter_construct();
@@ -125,14 +121,14 @@ SMSCenter *emi_open(char *phonenum, char *serialdevice, char *username, char *pa
 	smsc->emi_password = gw_strdup(password);
 
 	if (emi_open_connection(smsc) < 0)
-	    goto error;
+		goto error;
 
 	sprintf(smsc->name, "EMI:%s:%s", smsc->emi_phonenum, 
 		smsc->emi_username);
 	return smsc;
 
 error:
-	error(errno, "emi_open: could not open");
+	error(0, "emi_open failed");
 	smscenter_destruct(smsc);
 	return NULL;
 }
@@ -141,7 +137,7 @@ int emi_reopen(SMSCenter *smsc) {
     emi_close(smsc);
 
     if (emi_open_connection(smsc) < 0) {
-	error(0, "Failed to re-open the connection!");
+	error(0, "emi_reopen failed");
 	return -1;
     }
     return 0;
@@ -174,7 +170,6 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
 	SMSCenter *smsc;
 
 	smsc = smscenter_construct();
-
 	if (smsc == NULL)
 		goto error;
 
@@ -204,7 +199,7 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
 	return smsc;
 
 error:
-	error(errno, "emi_open: could not open");
+	error(0, "emi_open_ip failed");
 	smscenter_destruct(smsc);
 	return NULL;
 
@@ -241,10 +236,10 @@ int emi_pending_smsmessage(SMSCenter *smsc) {
 /*	time_t timenow; */
 
 	/* Block until we have a connection */
-	internal_gurantee_link(smsc);
+	internal_guarantee_link(smsc);
 
 	/* If we have MO-message, then act (return 1) */
-	if( internal_emi_memorybuffer_has_rawmessage(smsc, 52, 'O') > 0 || 
+	if (internal_emi_memorybuffer_has_rawmessage(smsc, 52, 'O') > 0 || 
 	    internal_emi_memorybuffer_has_rawmessage(smsc, 1, 'O') > 0 )
 	        return 1;
 
@@ -252,20 +247,20 @@ int emi_pending_smsmessage(SMSCenter *smsc) {
 	memset(tmpbuff, 0, 10*1024);
 
 	/* check for data */
-	n = get_data( smsc, tmpbuff, 1024*10 );
+	n = get_data(smsc, tmpbuff, 10*1024);
 	if (n > 0)
-	    internal_emi_memorybuffer_insert_data( smsc, tmpbuff, n );
+	    internal_emi_memorybuffer_insert_data(smsc, tmpbuff, n);
 
 	/* delete all ACKs/NACKs/whatever */
-	while( internal_emi_memorybuffer_has_rawmessage( smsc, 51, 'R' ) > 0 ||
-	       internal_emi_memorybuffer_has_rawmessage( smsc, 1, 'R' ) > 0)
-	    internal_emi_memorybuffer_cut_rawmessage( smsc, tmpbuff, 10*1024 );
+	while (internal_emi_memorybuffer_has_rawmessage(smsc, 51, 'R') > 0 ||
+	       internal_emi_memorybuffer_has_rawmessage(smsc, 1, 'R') > 0)
+	    internal_emi_memorybuffer_cut_rawmessage(smsc, tmpbuff, 10*1024);
 
 	gw_free(tmpbuff);
 
 	/* If we have MO-message, then act (return 1) */
 	
-	if( internal_emi_memorybuffer_has_rawmessage(smsc, 52, 'O') > 0 ||
+	if (internal_emi_memorybuffer_has_rawmessage(smsc, 52, 'O') > 0 ||
 	    internal_emi_memorybuffer_has_rawmessage(smsc, 1, 'O') > 0)
 		return 1;
 
@@ -287,7 +282,6 @@ int emi_pending_smsmessage(SMSCenter *smsc) {
  * Submit (send) a Mobile Terminated message to the EMI server
  */
 int emi_submit_msg(SMSCenter *smsc, Msg *omsg) {
-
 	char *tmpbuff = NULL;
 
 	if (smsc == NULL) goto error;
@@ -296,22 +290,22 @@ int emi_submit_msg(SMSCenter *smsc, Msg *omsg) {
 	tmpbuff = gw_malloc(10*1024);
 	memset(tmpbuff, 0, 10*1024);
 
-	if(internal_emi_parse_msg_to_rawmessage( smsc, omsg, tmpbuff, 10*1024 ) < 1)
+	if (internal_emi_parse_msg_to_rawmessage(smsc, omsg, tmpbuff, 10*1024) < 1)
 		goto error;
 
-	if(put_data( smsc, tmpbuff, strlen(tmpbuff),0) < 0) {
+	if (put_data(smsc, tmpbuff, strlen(tmpbuff), 0) < 0) {
 	    info(0, "put_data failed!");
 	    goto error;
 	}
 
-	if(smsc->type == SMSC_TYPE_EMI_IP) {
+	if (smsc->type == SMSC_TYPE_EMI_IP) {
 		if (!internal_emi_wait_for_ack(smsc)) {
 		    info(0, "emi_submit_smsmessage: wait for ack failed!");
 		    goto error;
 		}
 	}
 
-	if(smsc->type == SMSC_TYPE_EMI) {
+	if (smsc->type == SMSC_TYPE_EMI) {
 		internal_emi_wait_for_ack(smsc);
 	}
 
@@ -332,7 +326,6 @@ error:
 * Receive a Mobile Terminated message to the EMI server
 */
 int emi_receive_msg(SMSCenter *smsc, Msg **tmsg) {
-
 	char *tmpbuff;
 	Msg *msg = NULL;
 
@@ -342,8 +335,8 @@ int emi_receive_msg(SMSCenter *smsc, Msg **tmsg) {
 	memset(tmpbuff, 0, 10*1024);
 
 	/* get and delete message from buffer */
-	internal_emi_memorybuffer_cut_rawmessage(smsc, tmpbuff, 10*1024 );
-	internal_emi_parse_rawmessage_to_msg( smsc, &msg, tmpbuff, strlen(tmpbuff) );
+	internal_emi_memorybuffer_cut_rawmessage(smsc, tmpbuff, 10*1024);
+	internal_emi_parse_rawmessage_to_msg(smsc, &msg, tmpbuff, strlen(tmpbuff));
 
 	/* yeah yeah, I got the message... */
 	internal_emi_acknowledge_from_rawmessage(smsc, tmpbuff, strlen(tmpbuff));
@@ -365,54 +358,45 @@ error:
 
 
 /******************************************************************************
-* In(f)ternal functions
+* Internal functions
 */
 
 
 /******************************************************************************
-* Gurantee that we have a link
+* Guarantee that we have a link
 */
-static char internal_gurantee_link(SMSCenter *smsc) {
-
-	char tmpbuff[1024];
+static int internal_guarantee_link(SMSCenter *smsc) {
 	int need_to_connect = 0;
 
-	if(smsc->type == SMSC_TYPE_EMI_IP) { 
-		/* We don't currently gurantee TCP connections. */
+	if (smsc->type == SMSC_TYPE_EMI_IP) { 
+		/* We don't currently guarantee TCP connections. */
 		return 0;
 	}
 
 	/* If something is obviously wrong. */
-	if( strstr(smsc->buffer, "OK") ) need_to_connect = 1;
-	if( strstr(smsc->buffer, "NO CARRIER") ) need_to_connect = 1;
-	if( strstr(smsc->buffer, "NO DIALTONE") ) need_to_connect = 1;
+	if (strstr(smsc->buffer, "OK")) need_to_connect = 1;
+	if (strstr(smsc->buffer, "NO CARRIER")) need_to_connect = 1;
+	if (strstr(smsc->buffer, "NO DIALTONE")) need_to_connect = 1;
 
 	/* Clear the buffer */
-	for(;;) {
-	
-		if(need_to_connect == 0) break;
-		
+	while (need_to_connect) {
 		/* Connect */
-		sprintf(tmpbuff, "/dev/%s", smsc->emi_serialdevice);
-		smsc->emi_fd = at_dial(tmpbuff, smsc->emi_phonenum, "ATD", 30);
-		if(smsc->emi_fd != -1) need_to_connect = 0;
+		need_to_connect = emi_open_connection(smsc) < 0;
 
-		/* Clear the buffer so that the next call to gurantee
+		/* Clear the buffer so that the next call to guarantee
 		   doesn't find the "NO CARRIER" string again. */
 		smsc->buflen = 0;
 		memset(smsc->buffer, 0, smsc->bufsize);
-		
 	}
 
 	return 0;
-
 }
 
 static int at_dial(char *device, char *phonenum, char *at_prefix, time_t how_long) {
-
 	char tmpbuff[1024];
-	int howmanyread = 0, thistime = 0;
-	int redial = 1;
+	int howmanyread = 0;
+	int thistime = 0;
+	int redial;
 	int fd = -1;
 	int ret;
 	time_t timestart;
@@ -426,11 +410,8 @@ static int at_dial(char *device, char *phonenum, char *at_prefix, time_t how_lon
 	/* Open the device properly. Remember to set the
 	   access codes correctly. */
 	fd = open(device, O_RDWR|O_NONBLOCK|O_NOCTTY);
-	if(fd==-1) {
-		error(errno, "at_dial: error open(2)ing the character device <%s>", device);
-		if(errno == EACCES)
-			error(0, "at_dial: remember to give the user running the smsgateway"
-			" process the right to access the serial device");
+	if (fd==-1) {
+		error(errno, "at_dial: error opening character device <%s>", device);
 		goto error;
 	}
 	tcflush(fd, TCIOFLUSH);
@@ -444,14 +425,10 @@ static int at_dial(char *device, char *phonenum, char *at_prefix, time_t how_lon
 	tcsetattr(fd, TCSANOW, &tios);
 
 	/* Dial using an AT command string. */
-	for(;;) {
-
-		/* Do want to dial or redial? */
-		if(redial==0) break;
-
+	for (redial = 1; redial; ) {
 		info(0, "at_dial: dialing <%s> on <%s> for <%i> seconds",
 			phonenum, device, 
-			(int)how_long - ((int)time(NULL)-(int)timestart));
+			(int)(how_long - (time(NULL)-timestart)));
 
 		/* Send AT dial request. */
 		howmanyread = 0;
@@ -461,53 +438,48 @@ static int at_dial(char *device, char *phonenum, char *at_prefix, time_t how_lon
 
 		/* Read the answer to the AT command and react accordingly. */
 		for(;;) {
-
 			/* We don't want to dial forever */
-			if( time(NULL) > (timestart+how_long) )
-				if(how_long != 0) goto timeout;
+			if (how_long != 0 && time(NULL) > timestart + how_long)
+				goto timeout;
 
 			/* We don't need more space for dialout */
-			if(howmanyread >= sizeof(tmpbuff))
+			if (howmanyread >= sizeof(tmpbuff))
 				goto error;
 
 			/* We read 1 char a time so that we don't
 			   accidentally read past the modem chat and
 			   into the SMSC datastream -mg */
 			thistime = read(fd, &tmpbuff[howmanyread], 1);
-			if(thistime==-1) {
-				if(errno==EAGAIN) continue;
-				if(errno==EINTR) continue;
+			if (thistime==-1) {
+				if (errno == EAGAIN) continue;
+				if (errno == EINTR) continue;
 				goto error;
 			} else {
 				howmanyread += thistime;
 			}
 
 			/* Search for the newline on the AT status line. */
-			if( (tmpbuff[howmanyread-1] == '\r') 
-			 || (tmpbuff[howmanyread-1] == '\n') ) {
+			if (tmpbuff[howmanyread-1] == '\r' 
+			    || tmpbuff[howmanyread-1] == '\n') {
 
 				/* XXX ADD ALL POSSIBLE CHAT STRINGS XXX */
 
-				if(strstr(tmpbuff, "CONNECT")!=NULL) {
-				
+				if (strstr(tmpbuff, "CONNECT") != NULL) {
 					debug("bb.sms.emi", 0, "at_dial: CONNECT");
 					redial = 0;
 					break;
 					
-				} else if(strstr(tmpbuff, "NO CARRIER")!=NULL) {
-				
+				} else if (strstr(tmpbuff, "NO CARRIER") != NULL) {
 					debug("bb.sms.emi", 0, "at_dial: NO CARRIER");
 					redial = 1;
 					break;
 
-				} else if(strstr(tmpbuff, "BUSY")!=NULL) {
-				
+				} else if (strstr(tmpbuff, "BUSY") != NULL) {
 					debug("bb.sms.emi", 0, "at_dial: BUSY");
 					redial = 1;
 					break;
 					
-				} else if(strstr(tmpbuff, "NO DIALTONE")!=NULL) {
-				
+				} else if (strstr(tmpbuff, "NO DIALTONE") != NULL) {
 					debug("bb.sms.emi", 0, "at_dial: NO DIALTONE");
 					redial = 1;
 					break;
@@ -533,12 +505,12 @@ static int at_dial(char *device, char *phonenum, char *at_prefix, time_t how_lon
 	return fd;
 
 timeout:
-	error(0, "at_dial: timed out");
+	error(0, "at_dial timed out");
 	close(fd);
 	return -1;
 
 error:
-	error(0, "at_dial: done with dialing");
+	error(0, "at_dial failed");
 	close(fd);
 	return -1;		
 }
@@ -559,30 +531,26 @@ static int internal_emi_wait_for_ack(SMSCenter *smsc) {
     start = time(NULL);
     do {
 	/* check for data */
-	n = get_data( smsc, tmpbuff, 1024*10 );
+	n = get_data(smsc, tmpbuff, 1024*10);
 	
-	if(smsc->type == SMSC_TYPE_EMI) {
+	if (smsc->type == SMSC_TYPE_EMI) {
 		/* At least the X.31 interface wants to append the data.
 		   Kalle, what about the TCP/IP interface? Am I correct
 		   that you are assuming that the message arrives in a 
 		   single read(2)? -mg */
 		if(n>0) internal_emi_memorybuffer_append_data(smsc, tmpbuff, n);
-		
-	} else if(smsc->type == SMSC_TYPE_EMI_IP) {
-
+	} else if (smsc->type == SMSC_TYPE_EMI_IP) {
 		if(n>0) internal_emi_memorybuffer_insert_data(smsc, tmpbuff, n);
-
 	}
     
 	/* act on data */
-	if( internal_emi_memorybuffer_has_rawmessage( smsc, 51, 'R' ) > 0 ||
-	    internal_emi_memorybuffer_has_rawmessage( smsc, 1, 'R' ) > 0 ) {
-	       internal_emi_memorybuffer_cut_rawmessage( smsc, tmpbuff, 10*1024 );
+	if (internal_emi_memorybuffer_has_rawmessage(smsc, 51, 'R') > 0 ||
+	    internal_emi_memorybuffer_has_rawmessage(smsc, 1, 'R') > 0) {
+	       internal_emi_memorybuffer_cut_rawmessage(smsc, tmpbuff, 10*1024);
 	       debug("bb.sms.emi", 0,"Found ACK/NACK: <%s>",tmpbuff);
 	       found = 1;
-
 	}
-    } while ((!found) && ((time(NULL) - start) < 5));
+    } while (!found && ((time(NULL) - start) < 5));
 
     gw_free(tmpbuff);  
     return found;
@@ -595,7 +563,6 @@ static int internal_emi_wait_for_ack(SMSCenter *smsc) {
  * Reads from main fd, but also from backup-fd - does accept if needed
  */
 static int get_data(SMSCenter *smsc, char *buff, int length) {
-    
 	int n = 0;
 
 	struct sockaddr client_addr;
@@ -610,10 +577,6 @@ static int get_data(SMSCenter *smsc, char *buff, int length) {
 	if(smsc->type == SMSC_TYPE_EMI) {
 		tcdrain(smsc->emi_fd);
 		n = read(smsc->emi_fd, buff, length);
-/*
-		if(n > 0)
-			debug("bb.sms.emi", 0, "modembuffer_get_data(X.31): got <%s>", buff);
-*/
 		return n;
 	}
 
@@ -627,7 +590,6 @@ static int get_data(SMSCenter *smsc, char *buff, int length) {
 	to.tv_usec = 100;
 
 	ret = select(FD_SETSIZE, &rf, NULL, NULL, &to);
-
 
 	if (ret > 0) {
 	    if (secondary_fd >= 0 && FD_ISSET(secondary_fd, &rf)) {
@@ -657,11 +619,9 @@ static int get_data(SMSCenter *smsc, char *buff, int length) {
 		}
 	    }
 	    if (FD_ISSET(smsc->emi_backup_fd, &rf)) {
-
 		if (secondary_fd == -1) {
 		    /* well we actually should check if the connector is really
 		     * that SMS Center... back to that in a few minutes... */
-		
 		    secondary_fd = accept(smsc->emi_backup_fd, &client_addr, &client_addr_len);
 		    info(0, "Secondary socket opened by SMSC");
 		}
@@ -681,14 +641,11 @@ static int get_data(SMSCenter *smsc, char *buff, int length) {
 * Put the buff data to the modem buffer, return the amount of data put
 */
 static int put_data(SMSCenter *smsc, char *buff, int length, int is_backup) {
-
 	size_t len = length;
 	int ret;
-	int fd;
-	
-	fd = -1;
+	int fd = -1;
 
-	if(smsc->type == SMSC_TYPE_EMI_IP) {
+	if (smsc->type == SMSC_TYPE_EMI_IP) {
 		if (is_backup) {
 		    fd = secondary_fd;
 		    info(0, "Writing into secondary (backup) fd!");
@@ -715,8 +672,8 @@ static int put_data(SMSCenter *smsc, char *buff, int length, int is_backup) {
 	while (len > 0) {
 	        ret = write(fd, buff, len);
 		if (ret == -1) {
-			if(errno==EINTR) continue;
-			if(errno==EAGAIN) continue;
+			if (errno==EINTR) continue;
+			if (errno==EAGAIN) continue;
 			error(errno, "Writing to fd failed");
 			if (fd == smsc->emi_fd && smsc->type == SMSC_TYPE_EMI_IP) {
 			    close(fd);
@@ -731,7 +688,7 @@ static int put_data(SMSCenter *smsc, char *buff, int length, int is_backup) {
 		buff += ret;
 	}
 
-	if(smsc->type == SMSC_TYPE_EMI) {
+	if (smsc->type == SMSC_TYPE_EMI) {
 		/* Make sure the data gets written immediately.
 		   Wait a while just to add some latency so
 		   that the modem (or the UART) doesn't choke
@@ -747,19 +704,14 @@ static int put_data(SMSCenter *smsc, char *buff, int length, int is_backup) {
 * Append the buff data to smsc->buffer
 */
 static int internal_emi_memorybuffer_append_data(SMSCenter *smsc, char *buff, int length) {
-
-        char *p;
-
-	while( smsc->bufsize < (smsc->buflen + length) ) { /* buffer too small */
-	        p = gw_realloc(smsc->buffer, smsc->bufsize * 2);
+	while (smsc->bufsize < (smsc->buflen + length)) { /* buffer too small */
+	        char *p = gw_realloc(smsc->buffer, smsc->bufsize * 2);
 		smsc->buffer = p;
 		smsc->bufsize *= 2;
 	}
 
 	memcpy(smsc->buffer + smsc->buflen, buff, length);
-
 	smsc->buflen += length;
-
 	return 0;
 
 }
@@ -768,20 +720,14 @@ static int internal_emi_memorybuffer_append_data(SMSCenter *smsc, char *buff, in
 * Insert (put to head) the buff data to smsc->buffer
 */
 static int internal_emi_memorybuffer_insert_data(SMSCenter *smsc, char *buff, int length) {
-	
-    char *p;
-    
-    while( smsc->bufsize < (smsc->buflen + length) ) { /* buffer too small */
-	p = gw_realloc(smsc->buffer, smsc->bufsize * 2);
+    while (smsc->bufsize < (smsc->buflen + length)) { /* buffer too small */
+	char *p = gw_realloc(smsc->buffer, smsc->bufsize * 2);
 	smsc->buffer = p;
 	smsc->bufsize *= 2;
     }
     memmove(smsc->buffer + length, smsc->buffer, smsc->buflen);
     memcpy(smsc->buffer, buff, length);
-
     smsc->buflen += length;
-/*    debug("bb.sms.emi", 0, "insert: buff = <%s> (length=%d)", smsc->buffer, smsc->buflen); */
-    
     return 0;
 
 }
@@ -791,15 +737,13 @@ static int internal_emi_memorybuffer_insert_data(SMSCenter *smsc, char *buff, in
 */
 static int internal_emi_memorybuffer_has_rawmessage(SMSCenter *smsc,
 						    int type, char auth) {
-
 	char tmpbuff[1024], tmpbuff2[1024];
 	char *stx, *etx;
 
 	stx = memchr(smsc->buffer, '\2', smsc->buflen);
 	etx = memchr(smsc->buffer, '\3', smsc->buflen);
 
-	if ( ( stx != NULL ) && ( etx != NULL ) && (stx < etx) ) {
-
+	if (stx && etx && stx < etx) {
 	    strncpy(tmpbuff, stx, etx-stx+1);
 	    tmpbuff[etx-stx+1] = '\0';
 	    if (auth)
@@ -807,12 +751,10 @@ static int internal_emi_memorybuffer_has_rawmessage(SMSCenter *smsc,
 	    else
 		sprintf(tmpbuff2, "/%02i/", type);
 		
-	    if( strstr(tmpbuff, tmpbuff2) != NULL ) {
-		
+	    if (strstr(tmpbuff, tmpbuff2) != NULL) {
 		debug("bb.sms.emi", 0, "found message <%c/%02i>...msg <%s>", auth, type, tmpbuff);
 		return 1;
 	    }
-
 	}
 	return 0;
 
@@ -841,12 +783,7 @@ static int internal_emi_memorybuffer_cut_rawmessage(
 	size_of_cut_piece = (etx - stx) + 1;
 	size_of_the_rest  = (smsc->buflen - size_of_cut_piece);
 
-/*
-	debug("bb.sms.emi", 0, "size_of_cut_piece == <%i> ; size_of_the_rest == <%i>",
-	      size_of_cut_piece, size_of_the_rest);
-*/
-	
-	if(length < size_of_cut_piece) {
+	if (length < size_of_cut_piece) {
 		error(0, "the buffer you provided for cutting was too small");
 		return -1;
 	}
@@ -859,7 +796,6 @@ static int internal_emi_memorybuffer_cut_rawmessage(
 	memmove(stx, etx+1, (smsc->buffer + smsc->bufsize) - stx );
 
 	smsc->buflen -= size_of_cut_piece;
-/*	debug("bb.sms.emi", 0,"cut: buff == <%s>\nsmsc->buffer == <%s>",buff,smsc->buffer); */
 
 	return 0;
 
@@ -884,7 +820,7 @@ static int internal_emi_parse_rawmessage_to_msg(
 	strncpy(isotext, rawmessage, length);
 	leftslash = isotext;
 	
-	for(tmpint=0;leftslash!=NULL;tmpint++) {
+	for (tmpint=0;leftslash!=NULL;tmpint++) {
 		rightslash = strchr(leftslash+1, '/');
 		
 		if(rightslash == NULL)
@@ -1014,7 +950,6 @@ static int internal_emi_acknowledge_from_rawmessage(
 * Parse the Msg structure to the raw message format
 */
 static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char *rawmessage, int rawmessage_length) {
-
 	char message_whole[10*1024];
 	char message_body[10*1024];
 	char message_header[1024];
@@ -1139,7 +1074,6 @@ static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char 
 */
 static int internal_emi_parse_emi_to_iso88591(char *from, char *to,
 					      int length, int alt_charset) {
-
 	int hmtg = 0;
 	unsigned int mychar;
 	char tmpbuff[128];
@@ -1161,12 +1095,11 @@ static int internal_emi_parse_emi_to_iso88591(char *from, char *to,
 */
 static int internal_emi_parse_iso88591_to_emi(char *from, char *to,
 					      int length, int alt_charset) {
-
 	char buf[10];
 	unsigned char tmpchar;
 	char *ptr;
 
-	if( (from == NULL) || (to == NULL) || (length <= 0) )
+	if (!from || !to || length <= 0)
 		return -1;
 
 	*to = '\0';
@@ -1185,11 +1118,10 @@ static int internal_emi_parse_iso88591_to_emi(char *from, char *to,
 * Parse the data from binary to the two byte EMI code
 */
 static int internal_emi_parse_binary_to_emi(char *from, char *to, int length) {
-
 	char buf[10];
 	char *ptr;
 
-	if( (from == NULL) || (to == NULL) || (length <= 0) )
+	if (!from || !to || length <= 0)
 		return -1;
 
 	*to = '\0';
@@ -1207,9 +1139,8 @@ static int internal_emi_parse_binary_to_emi(char *from, char *to, int length) {
 * Generate the EMI message checksum
 */
 static char *internal_emi_generate_checksum(const char *fmt, ...) {
-
 	va_list args;
-	static 	char	buf[1024];
+	static 	char buf[1024];
 	char	*ptr;
 	int	j;
 

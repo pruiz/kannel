@@ -1,3 +1,7 @@
+2000-03-21  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_emi.c: small changes, in preparation for large changes.
+
 2000-03-21 Sanna Seppanen <sanna@wapit.com>
 
 	* gwlib/http.c: Changed socklen_t to int according to manual in
