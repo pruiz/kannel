@@ -44,7 +44,9 @@
 #include "gwlib/gwlib.h"
 #include "msg.h"
 #include "bearerbox.h"
+#include "shared.h"
 #include "wap/wap.h"
+#include "wap/wtp.h"
 #include "wap/wtp_pdu.h"
 
 /* globals */
@@ -123,7 +125,6 @@ static void wdp_event_dump(Msg *msg)
 static void wtp_event_dump(Msg *msg)
 {
     WAPEvent *dgram;
-    WTP_PDU *pdu;
     List *events;
     long i, n;
 
@@ -315,7 +316,7 @@ static void udp_sender(void *arg)
         if ((msg = list_consume(conn->outgoing_list)) == NULL)
             break;
 
-        info(0, "sending datagram <%s:%d> -> <%s:%d>",
+        info(0, "sending datagram <%s:%ld> -> <%s:%ld>",
               octstr_get_cstr(msg->wdp_datagram.source_address),
               msg->wdp_datagram.source_port,
               octstr_get_cstr(msg->wdp_datagram.destination_address),
@@ -424,8 +425,6 @@ error:
 
 int udp_start(Cfg *cfg)
 {
-    CfgGroup *grp;
-    int allow_wtls;
 
     if (udp_running) return -1;
     
@@ -474,10 +473,8 @@ Udpc *udpc_find_mapping(Msg *msg, int inbound)
  */
 int udp_addwdp_from_server(Msg *msg)
 {
-    int i;
     Udpc *udpc;
     Octstr *os;
-    Octstr *dest;
     Octstr *source;
 
     if (!udp_running) return -1;
@@ -525,7 +522,6 @@ int udp_addwdp_from_server(Msg *msg)
  */
 int udp_addwdp_from_client(Msg *msg)
 {
-    int i, client_fd;
     Udpc *udpc;
     Octstr *map_addr;
     Octstr *os;
@@ -541,7 +537,7 @@ int udp_addwdp_from_client(Msg *msg)
      * The mapped port is simply 2x of the client port. 
      */
     if ((udpc = udpc_find_mapping(msg, 1)) == NULL) {
-        info(0, "Creating UDP mapping <%s:%d> <-> <%s:%d>",
+        info(0, "Creating UDP mapping <%s:%ld> <-> <%s:%ld>",
               octstr_get_cstr(msg->wdp_datagram.source_address),
               msg->wdp_datagram.source_port,
               octstr_get_cstr(msg->wdp_datagram.destination_address),
@@ -696,7 +692,6 @@ static void help(void)
 int main(int argc, char **argv) 
 {
     int opt;
-	int port;
     Cfg *cfg = NULL;
 	
 	gwlib_init();
