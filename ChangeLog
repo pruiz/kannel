@@ -1,3 +1,22 @@
+2001-01-10  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/log.c: Made info() use octstr_format as well. All places
+	that call info() have been checked manually. In the process, found
+	a couple of bugs, see below.
+
+	* gw/bb_smscconn.c: Bugfix. octstr_get_cstr was called with a NULL
+	argument, reversed the test so that it is called only when the
+	argument will be non-NULL.
+	
+	* gwlib/log.c: Bugfix. Output needs to be flushed as soon as it
+	has been written.
+	
+	* gwlib/octstr.[ch]: Implemented %i for octstr_format, and made
+	octstr_get_cstr report the place it has been called from.
+	
+	* test/drive_smpp.c: Bugfix. Remember to quit from a loop within
+	the main loop of a thread, if the quitting signal has been given.
+	
 2001-01-09  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smscconn*.*, gw/smsc_wrapper.c: updated start/stop interface,

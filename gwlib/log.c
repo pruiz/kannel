@@ -287,8 +287,10 @@ void panic_hard(int e, const char *msg, const char *file, long line,
 	os = octstr_format_valist(buf, args); \
 	va_end(args); \
 	for (i = 0; i < num_logfiles; ++i) { \
-	    if (level >= logfiles[i].minimum_output_level) \
+	    if (level >= logfiles[i].minimum_output_level) { \
 		(void) octstr_print(logfiles[i].file, os); \
+		(void) fflush(logfiles[i].file); \
+	    } \
 	} \
 	\
 	if (dosyslog) { \
@@ -315,6 +317,12 @@ void error(int e, const char *fmt, ...)
 void warning(int e, const char *fmt, ...) 
 {
     FUNCTION_GUTS(GW_WARNING, "");
+}
+
+
+void info(int e, const char *fmt, ...) 
+{
+   FUNCTION_GUTS(GW_INFO, "");
 }
 
 
@@ -352,11 +360,6 @@ void warning(int e, const char *fmt, ...)
 	    } \
 	} while (0)
 
-
-void info(int e, const char *fmt, ...) 
-{
-   FUNCTION_GUTS(GW_INFO, "");
-}
 
 
 static int place_matches(const char *place, const char *pat) 

@@ -313,9 +313,10 @@ void octstr_get_many_chars(char *buf, Octstr *ostr, long pos, long len)
 }
 
 
-char *octstr_get_cstr(Octstr *ostr)
+char *octstr_get_cstr_real(Octstr *ostr, const char *file, long line, 
+    	    	    	   const char *func)
 {
-    seems_valid(ostr);
+    seems_valid_real(ostr, file, line, func);
     if (ostr->len == 0)
         return "";
     return ostr->data;
@@ -1820,6 +1821,7 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
         break;
 
     case 'd':
+    case 'i':
         switch (format->type) {
         case 'l':
             n = va_arg(*args, long);

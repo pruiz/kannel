@@ -188,8 +188,10 @@ static void send_smpp_thread(void *arg)
     id = 0;
     while (!quitting && counter_value(num_to_esme) < max_to_esme) {
 	id = counter_increase(num_to_esme) + 1;
-    	while (counter_value(num_from_esme) + 500 < id)
+    	while (!quitting && counter_value(num_from_esme) + 500 < id)
 	    gwthread_sleep(1.0);
+	if (quitting)
+	    break;
 	pdu = smpp_pdu_create(deliver_sm,
 			       counter_increase(message_id_counter));
 	pdu->u.deliver_sm.source_addr = octstr_create("456");

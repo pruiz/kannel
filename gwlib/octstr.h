@@ -163,7 +163,10 @@ void octstr_get_many_chars(char *buf, Octstr *ostr, long pos, long len);
  *
  * If the octet string is empty, an empty C string is returned, not NULL.
  */
-char *octstr_get_cstr(Octstr *ostr);
+char *octstr_get_cstr_real(Octstr *ostr, const char *file, long line,
+    	    	    	   const char *func);
+#define octstr_get_cstr(ostr) \
+    (octstr_get_cstr_real(ostr, __FILE__, __LINE__, __func__))
 
 
 /*
