@@ -1,3 +1,8 @@
+2002-04-17  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/bb_udp.c: added checking if WTLS support should be used, even while
+      compiled in
+    * gwlib/cfg.h: introduce new 'wtls' group to specify all required arguments
+
 2002-04-16  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsbox.c: added preliminary function smsbox_xmlrpc_post() to handle
       the XML-RPC calls and replies.
