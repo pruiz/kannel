@@ -11,7 +11,9 @@
 #	- number of non-empty files
 #	- number of lines with semicolons
 
-find gw gwlib wmlscript -type f ! -name .cvsignore ! -name control.html \
+DIRS="gw gwlib wmlscript wap"
+
+find $DIRS -type f ! -name .cvsignore ! -name control.html \
 	! -name '*kannel.conf' ! -name 'wsgram.[ch]' ! -name '*.txt' \
 	! -name '*.[ao]' ! -name '*box' ! -name wmlsc ! -name wmlsdasm |
 grep -v /CVS/ > files.txt

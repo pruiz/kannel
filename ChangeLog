@@ -1,3 +1,41 @@
+2000-12-21  Lars Wirzenius  <liw@iki.fi>
+
+	* Rewrote the SMPP protocol implementation. The old one was
+	excessively verbose (lots of repetitive code), did not use Octstr,
+	or Connection, and needed much attention in order to fit into the
+	new SMSC interface anyway. The new code is about half the length
+	and much cleaner and should be functionally about as concrete
+	(but see comments at the top of gw/smsc_smpp.c), and happens to
+	be somewhat faster.
+	
+	* gw/smsc_smpp.h: Removed. It was only included by the old version
+	of gw/smsc_smpp.c anyway, and shouldn't have existed at all.
+	
+	* gw/smpp_pdu.[ch] and gw/smpp_pdu.def: Wrote. These parse and
+	generate the binary and struct versions of the SMPP PDUs. The
+	C preprocessor trick the WAP stack uses is used here as well to
+	keep code clean and short. They're used by drive_smpp as well,
+	so they're not made part of smsc_smpp.c itself.
+
+	* test/drive_smpp.c: Wrote. This is a server end implementation of
+	the SMPP protocol and is used to verify that the client end works.
+
+	* checks/check_smpp.sh, test/drive_smpp.conf: Wrote.
+	
+	* gwlib/semaphore.[ch]: Wrote. These are used by the SMPP code
+	to make sure not too many pending submit_sm requests are open.
+	The current implementation of Semaphore is quite simplistic
+	and wraps around List; native semaphores should probably be
+	used instead, but this is good enough for now.
+	
+	* gwlib/gwlib.h: Added include for semaphore.h.
+	
+	* gwlib/octstr.c: Ignore NULL arguments before calling
+	seems_valid, instead of afterwards, since seems_valid asserts
+	that the argument is not NULL.
+	
+	* utils/source-stats: Cound the `wap' subdirectory as well.
+
 2000-12-21  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsc_wrapper.c: added some mutex operations so that reconnect

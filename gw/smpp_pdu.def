@@ -1,0 +1,160 @@
+/*
+ * smpp_pdu.def - definitions of SMPP PDU structure
+ *
+ * Lars Wirzenius
+ */
+
+/*
+ * XXX Implementation note:
+ * 
+ * The PDUs bind_transmitter_resp, bind_receiver_resp, and submit_sm_resp
+ * contain a body part that is not optional, but on the other hand is only
+ * included if the command_status field is zero. The way this is handled at
+ * the moment is that the body is not included in the PDU description in
+ * this file, so it is always ignored. This is OK because it is not being
+ * used anyway. In the future the body will be needed, and so this will
+ * be implemented in a better way then.
+ */
+
+
+#ifndef PDU
+#error Macro PDU not defined.
+#endif
+
+#ifndef INTEGER
+#error Macro INTEGER not defined.
+#endif
+
+#ifndef NULTERMINATED
+#error Macro NULTERMINATED not defined.
+#endif
+
+#ifndef OCTETS
+#error Macro OCTETS not defined.
+#endif
+
+/*
+ * All SMPP PDUs have a common header consisting of four integers.
+ * The first integer, command_length, is dealt with implicitly by
+ * the I/O stuff, so we don't store it in the PDU data structure.
+ * The other three are defined in the HEADER macro.
+ */
+#ifdef HEADER
+#error Macro HEADER was already defined.
+#endif
+#define HEADER	\
+	INTEGER(command_id, 4) \
+	INTEGER(command_status, 4) \
+	INTEGER(sequence_number, 4)
+
+PDU(bind_transmitter,
+    0x00000002,
+    HEADER
+    NULTERMINATED(system_id, 16)
+    NULTERMINATED(password, 9)
+    NULTERMINATED(system_type, 13)
+    INTEGER(interface_version, 1)
+    INTEGER(addr_ton, 1)
+    INTEGER(addr_npi, 1)
+    NULTERMINATED(address_range, 41)
+)
+
+
+PDU(bind_transmitter_resp,
+    0x80000002,
+    HEADER
+    /* XXX not included for now: NULTERMINATED(system_id, 16) */
+)
+
+PDU(bind_receiver,
+    0x00000001,
+    HEADER
+    NULTERMINATED(system_id, 16)
+    NULTERMINATED(password, 9)
+    NULTERMINATED(system_type, 13)
+    INTEGER(interface_version, 1)
+    INTEGER(addr_ton, 1)
+    INTEGER(addr_npi, 1)
+    NULTERMINATED(address_range, 41)
+)
+
+PDU(bind_receiver_resp,
+    0x80000001,
+    HEADER
+    /* XXX not included for now: NULTERMINATED(system_id, 16) */
+)
+
+PDU(unbind,
+    0x00000006,
+    HEADER
+)
+
+PDU(unbind_resp,
+    0x80000006,
+    HEADER
+)
+
+PDU(submit_sm,
+    0x00000004,
+    HEADER
+    NULTERMINATED(service_type, 6)
+    INTEGER(source_addr_ton, 1)
+    INTEGER(source_addr_npi, 1)
+    NULTERMINATED(source_addr, 21)
+    INTEGER(dest_addr_ton, 1)
+    INTEGER(dest_addr_npi, 1)
+    NULTERMINATED(destination_addr, 21)
+    INTEGER(esm_class, 1)
+    INTEGER(protocol_id, 1)
+    INTEGER(priority_flag, 1)
+    NULTERMINATED(schedule_delivery_time, 17)
+    NULTERMINATED(validity_period, 17)
+    INTEGER(registered_delivery, 1)
+    INTEGER(replace_if_present_flag, 1)
+    INTEGER(data_coding, 1)
+    INTEGER(sm_default_msg_id, 1)
+    INTEGER(sm_length, 1)
+    OCTETS(short_message, sm_length)
+)
+
+PDU(submit_sm_resp,
+    0x80000004,
+    HEADER
+    /* XXX not included for now: NULTERMINATED(message_id, 65) */
+)
+
+PDU(deliver_sm,
+    0x00000005,
+    HEADER
+    NULTERMINATED(service_type, 6)
+    INTEGER(source_addr_ton, 1)
+    INTEGER(source_addr_npi, 1)
+    NULTERMINATED(source_addr, 21)
+    INTEGER(dest_addr_ton, 1)
+    INTEGER(dest_addr_npi, 1)
+    NULTERMINATED(destination_addr, 21)
+    INTEGER(esm_class, 1)
+    INTEGER(protocol_id, 1)
+    INTEGER(priority_flag, 1)
+    NULTERMINATED(schedule_delivery_time, 1)
+    NULTERMINATED(validity_period, 1)
+    INTEGER(registered_delivery, 1)
+    INTEGER(replace_if_present_flag, 1)
+    INTEGER(data_coding, 1)
+    INTEGER(sm_default_msg_id, 1)
+    INTEGER(sm_length, 1)
+    OCTETS(short_message, sm_length)
+)
+
+PDU(deliver_sm_resp,
+    0x80000005,
+    HEADER
+    NULTERMINATED(message_id, 1)
+)
+
+
+#undef PDU
+#undef INTEGER
+#undef NULTERMINATED
+#undef OCTETS
+#undef HEADER

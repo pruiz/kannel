@@ -38,6 +38,7 @@
 #include "protected.h"
 #include "accesslog.h"
 #include "dict.h"
+#include "semaphore.h"
 
 void gwlib_assert_init(void);
 void gwlib_init(void);

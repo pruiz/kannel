@@ -34,6 +34,8 @@ enum {
 	SMSC_TYPE_AT
 };
 
+typedef struct SMPP SMPP;
+
 /*
  * The implementation of the SMSCenter object. 
  */
@@ -127,16 +129,8 @@ struct SMSCenter {
         int emi_our_port;		/* port to bind us when connecting smsc */
         int emi_secondary_fd;
 
-	/* SMPP */
-	char *smpp_system_id, *smpp_password;
-	char *smpp_system_type, *smpp_address_range;
-	int smpp_t_state, smpp_r_state;
-	List *unsent_mt, *received_mo;
-	List *fifo_t_in, *fifo_t_out;
-	List *fifo_r_in, *fifo_r_out;
-	Octstr *data_t, *data_r;
-	int fd_t, fd_r;
-	int seq_t, seq_r;
+    	/* SMPP */
+    	SMPP *smpp;
 
         /* SEMA SMS2000 OIS 4.5 X28 */
 

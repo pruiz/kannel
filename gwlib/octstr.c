@@ -1344,10 +1344,10 @@ void octstr_dump(Octstr *ostr, int level)
     const int octets_per_line = 8;
     int c, this_line_begins_at;
 
-    seems_valid(ostr);
-
     if (ostr == NULL)
         return;
+
+    seems_valid(ostr);
 
     debug("gwlib.octstr", 0, "%*sOctet string at %p:", level, "",
           (void *) ostr);
