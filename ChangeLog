@@ -1,3 +1,6 @@
+2002-11-07  Oded Arbel  <odeda@m-wise.com>
+    * gw/smsc/smsc_at2.c: fixed compilation warning from last commit
+
 2002-11-06  Oded Arbel  <odeda@m-wise.com>
     * gw/smsc/smsc_at2.c: added detection of invalid TP-OA address 
       length in decode_deliver_sm(); added logging in case of 

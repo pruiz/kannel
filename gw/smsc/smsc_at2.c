@@ -1414,7 +1414,7 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
     
 msg_error:
     error(1,"AT2[%s]: Invalid DELIVER-SMS pdu !",
-	privdata->name);
+	octstr_get_cstr(privdata->name));
     O_DESTROY(udh);
     O_DESTROY(origin);
     O_DESTROY(text);
