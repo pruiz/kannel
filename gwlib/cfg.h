@@ -1,6 +1,8 @@
 /*
  * cfg.h - configuration file handling
  *
+ * All returned octet strings are copies which the caller should destroy.
+ *
  * Lars Wirzenius
  */
 

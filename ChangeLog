@@ -1,3 +1,7 @@
+2001-03-21  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/cfg.h: Commented return value policy for octet strings.
+
 2001-03-21  Tuomas Luttinen  <tuo@wapit.com>
 
 	* configure.in, configure: Added the xml2-config that libxml-2.3.* and 
