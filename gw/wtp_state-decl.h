@@ -248,6 +248,8 @@ ROW(INVOKE_RESP_WAIT,
     machine->aec == AEC_MAX,
     {
      wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
+     wsp_event = create_tr_abort_ind(machine, PROTOERR);
+     wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
 

@@ -1,3 +1,7 @@
+2000-06-12 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp_state-decl.h: TR-Abort.ind when timer counter has expired
+
 2000-06-10  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/gwmem-check.c: New implementation.  This fixes the speed
