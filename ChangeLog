@@ -1,4 +1,7 @@
 2002-05-25  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/bb_smscconn.c: deleted unnecessary debug lines
+
+2002-05-25  Stipe Tolj <tolj@wapme-systems.de>
     * gw/bb_http.c, gw/bb_smscconn.c, gw/bearerbox.c: added HTTP admin
       commands 'stop-smsc' and 'start-smsc' to stop and start single
       smsc connections without interfearing other connected smscs.
