@@ -39,7 +39,7 @@ Getting the gateway sources
 	Note that you also need the Gnome-xml library from
 	http://xmlsoft.org/xml.html. That one probably requires zlib,
 	depending on how it is configured. You need at least version
-	1.8.6 (but 2.0 is too new).
+	1.8.6, we recommend at least version 1.8.8
 
 Compiling and installing the gateway
 
@@ -110,6 +110,8 @@ For developers only: adding new SMS Center protocol support
 	When doing this, use file gw/smsc_interface.def as guideline on 
 	how to do it. Note that we will change this interface a bit now 
 	that we have a new bearerbox which can accept a better interface.
+	In practise that means that new smsc protocols will not need 
+	pending_message anymore, as things are handled in 2 threads.
 
 Configuring and running the gateway
 

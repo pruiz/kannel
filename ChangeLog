@@ -1,3 +1,7 @@
+2000-07-13  Kalle Marjola  <rpr@wapit.com>
+
+	* */*: Making out release 0.10.2
+
 2000-07-13  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c (wml_compile): Compiler now checks that the 
