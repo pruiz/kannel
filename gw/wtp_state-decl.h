@@ -12,7 +12,6 @@ ROW(LISTEN,
     {
      machine->u_ack=1;
      current_primitive=TRInvokeIndication;
-     debug(0,"handle_event: packing event");
      wsp_event=pack_wsp_event(current_primitive, event, machine);
      if (wsp_event == NULL)
         goto mem_error;

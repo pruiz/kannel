@@ -587,12 +587,26 @@ mem_error:
 /*****************************************************************************
  *
  *INTERNAL FUNCTIONS:
+ *
+ *Give the name of an event in a readable form. 
  */
+
 static char *name_event(int s){
 
        switch (s){
               #define EVENT(type, field) case type: return #type;
               #include "wtp_events-decl.h"
+              default:
+                      return "unknown event";
+       }
+ }
+
+
+static char *name_wsp_event(int s){
+
+       switch (s){
+              #define WSP_EVENT(type, field) case type: return #type;
+              #include "wsp_events-decl.h"
               default:
                       return "unknown event";
        }
@@ -782,7 +796,7 @@ void wsp_event_destroy(WSPEvent *event){
 void wsp_event_dump(WSPEvent *event){
 
         debug(0, "WSP event %p:", (void *) event);
-        debug(0, "The TYPE of the wsp event = %s", name_event(event->name));
+        debug(0, "The TYPE of the event = %s", name_wsp_event(event->name));
         #define INTEGER(name) debug(0, "Int %s.%s,%ld:", t, #name, p->name)
         #define OCTSTR(name) debug(0, "Octstr field %s.%s:", t, #name);\
                              octstr_dump(p->name)
