@@ -162,28 +162,37 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
 	content_type = "text/plain";
     }    
 
-    if (octstr_str_compare(url, "/cgi-bin/status")==0) {
+    if (octstr_str_compare(url, "/cgi-bin/status")==0
+	|| octstr_str_compare(url, "/status")==0) {
 	reply = httpd_status(cgivars, status_type);
-    } else if (octstr_str_compare(url, "/cgi-bin/status.html")==0) {
+    } else if (octstr_str_compare(url, "/cgi-bin/status.html")==0
+	       || octstr_str_compare(url, "/status.html")==0) {
 	status_type = BBSTATUS_HTML;
 	reply = httpd_status(cgivars, status_type);
-    } else if (octstr_str_compare(url, "/cgi-bin/status.wml")==0) {
+    } else if (octstr_str_compare(url, "/cgi-bin/status.wml")==0
+	       || octstr_str_compare(url, "/status.wml")==0) {
 	status_type = BBSTATUS_WML;
 	reply = httpd_status(cgivars, status_type);
-    } else if (octstr_str_compare(url, "/cgi-bin/status.txt")==0) {
+    } else if (octstr_str_compare(url, "/cgi-bin/status.txt")==0
+	       || octstr_str_compare(url, "/status.txt")==0) {
 	status_type = BBSTATUS_TEXT;
 	reply = httpd_status(cgivars, status_type);
-    } else if (octstr_str_compare(url, "/cgi-bin/status.xml")==0) {
+    } else if (octstr_str_compare(url, "/cgi-bin/status.xml")==0
+	       || octstr_str_compare(url, "/cgi-bin/status.xml")==0) {
 	status_type = BBSTATUS_XML;
 	reply = httpd_status(cgivars, status_type);
 	/* content_type = "text/x-kannelstatus"; */
-    } else if (octstr_str_compare(url, "/cgi-bin/shutdown")==0) {
+    } else if (octstr_str_compare(url, "/cgi-bin/shutdown")==0
+	       || octstr_str_compare(url, "/shutdown")==0) {
 	reply = httpd_shutdown(cgivars);
-    } else if (octstr_str_compare(url, "/cgi-bin/suspend")==0) {
+    } else if (octstr_str_compare(url, "/cgi-bin/suspend")==0
+	       || octstr_str_compare(url, "/suspend")==0) {
 	reply = httpd_suspend(cgivars);
-    } else if (octstr_str_compare(url, "/cgi-bin/isolate")==0) {
+    } else if (octstr_str_compare(url, "/cgi-bin/isolate")==0
+	       || octstr_str_compare(url, "/isolate")==0) {
 	reply = httpd_isolate(cgivars);
-    } else if (octstr_str_compare(url, "/cgi-bin/resume")==0) {
+    } else if (octstr_str_compare(url, "/cgi-bin/resume")==0
+	       || octstr_str_compare(url, "/resume")==0) {
 	reply = httpd_resume(cgivars);
     /*
      * reconfig? restart?

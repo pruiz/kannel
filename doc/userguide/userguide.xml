@@ -1020,13 +1020,17 @@ above.
 commands are done as normal HTTP queries, so they can be easily done
 from command line like this:
 
-<screen><userinput>% lynx -dump "http://localhost:12345/cgi-bin/shutdown?password=bar"</userinput></screen>
+<screen><userinput>% lynx -dump "http://localhost:12345/shutdown?password=bar"</userinput></screen>
 
 ...in which the '12345' is the configured admin-port in Kannel
 configuration file (see above). For most commands, admin-password is required as a
-cgi-bin argument as shown above. In addition, HTTP administration can
+argument as shown above. In addition, HTTP administration can
 be denied from certain IP addresses, as explained in configuration
 chapter.</para>
+
+<para>Note that you can use these commands with WAP terminal, too, but
+if you use it through the same Kannel, replies to various suspend
+commands never arrive nor can you restart it via WAP anymore.</para>
 
  <table frame=none>
   <title>Kannel HTTP Administration Commands</title>

@@ -1,5 +1,13 @@
 2000-12-28  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/bb_http.c: added that HTTP admin commands can be used without
+	cgi-bin/ in the URL, too.
+	
+	* doc/userguide/userguide.xml: documentation updated to reflect
+	that
+
+2000-12-28  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bb_http.c, gw/bearerbox.c: modified so that every reply to
 	HTTP admin is formatted according to client Accept: -header, with
 	preference as WML > HTML > plain text.
