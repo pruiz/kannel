@@ -39,7 +39,7 @@ Getting the gateway sources
 	Note that you also need the Gnome-xml library from
 	http://xmlsoft.org/xml.html. That one probably requires zlib,
 	depending on how it is configured. You need at least version
-	1.8.1, and it looks like 1.8.7 is buggy. Use 1.8.6 if you can.
+	1.8.1.
 
 Compiling and installing the gateway
 
