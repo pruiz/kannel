@@ -1,5 +1,15 @@
 2000-08-31  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/wapbox.[ch]: Moved WB_DEFAULT_TIMER_TICK and CONNECTIONLESS_PORT
+	defines from .h to .c, since they're only used inside .c.
+	
+	* gw/wsp-method-state.h: Formatting change (comments should be
+	indented similarly to the code they describe). Also, bug fixes:
+	several comparisons had a single equals (i.e., assignment)
+	instead of two (i.e., comparison).
+
+2000-08-31  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/wapbox.c, gw/log.c: Moved syslog opening internals to log.c,
 	where it belongs. Introduced new function set_syslog to do this.
 	
