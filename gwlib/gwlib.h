@@ -18,7 +18,6 @@
 #include "gw-getopt.h"
 #include "gwpoll.h"
 
-#include "gwstr.h"
 #include "utils.h"
 #include "log.h"
 #include "thread.h"

@@ -16,7 +16,6 @@
 typedef int socklen_t;
 #endif
 
-#include "gwstr.h"
 #include "octstr.h"
 
 /* Return the official and fully qualified domain name of the host. 

@@ -1,3 +1,11 @@
+2000-12-05  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/gwstr.[ch], gwlib/conffile.c: Moved trim_ends to
+	conffile.c, and the other functions were no longer used, so
+	removed the gwstr module.
+	
+	* gwlib/gwlib.h, gwlib/socket.h: Removed include for gwstr.h.
+
 2000-12-04  Lars Wirzenius  <liw@iki.fi>
 
     	* gw/urltrans.c: Made urltrans_get_pattern return an Octstr, instead

@@ -9,10 +9,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "gwlib.h"
 
 
+static char *trim_ends(char *str);
 static ConfigVar *find_var(ConfigGroup *grp, char *name);
 static ConfigGroup *find_group_starting_with(ConfigGroup *grp, char *name,
         char *value);
@@ -333,6 +335,21 @@ void config_dump(Config *cfg)
             info(0, "  <%s> = <%s>", var->name, var->value);
     }
     info(0, "Config dump ends.");
+}
+
+
+char *trim_ends(char *str)
+{
+    unsigned char *ustr, *end;
+
+    ustr = str;
+    while (isspace(*ustr))
+        ++ustr;
+    end = strchr(ustr, '\0');
+    while (ustr < end && isspace(end[-1]))
+        --end;
+    *end = '\0';
+    return ustr;
 }
 
 
