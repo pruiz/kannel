@@ -1,3 +1,7 @@
+Wed Apr 26 16:40:41 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Making relase 0.8.
+
 Wed Apr 26 15:34:17 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/gwmem.h: Fixed prototypes for native wrapper.
