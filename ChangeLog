@@ -1,3 +1,10 @@
+2002-01-28  Stipe Tolj  <tolj@wapme-systems.de>
+	* configure{,.in}: modified --with-wtls implementation to be
+      more --with-ssl style and moved it to the end.
+    * gw/pki.[ch], gw/wapbox.c, wtls-secmgr.c, wtls.c, wtls_pdu.c,
+      gw/wtls_pdusupport.c, wtls_statesupport.c: make at least the
+      whole thing compile and build using --with-wtls=openssl.
+
 2002-01-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: added multi-cast support in smsbox_req_handle(), see 
       [Msg-ID: <3C45F6E8.F677C8D1@wapme-systems.de>]
