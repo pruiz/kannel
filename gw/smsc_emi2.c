@@ -544,7 +544,8 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	if (emimsg->fields[E50_AMSG] == NULL)
 	    emimsg->fields[E50_AMSG] = octstr_create("");
 	else if (octstr_hex_to_binary(emimsg->fields[E50_AMSG]) == -1)
-	    warning(0, "EMI2[%s]: Couldn't decode message text");
+	    warning(0, "EMI2[%s]: Couldn't decode message text",
+		      octstr_get_cstr(privdata->name));
 
 	xser = emimsg->fields[E50_XSER];
 	while (octstr_len(xser) > 0) {
@@ -1432,6 +1433,8 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     long window;
     	/* has to be long because of cfg_get_integer */
     int i;
+
+    allow_ip = deny_ip = host = alt_host = NULL; 
 
     privdata = gw_malloc(sizeof(PrivData));
     privdata->outgoing_queue = list_create();

@@ -1,3 +1,6 @@
+2002-03-09  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsc_emi2.c, gwlib/cfg.h: fixed some compilation warnings
+
 2002-03-08 Andreas Fink <andreas@fink.org>
     * gw/smsc_at2.c: fixed a bug for +CPIN which wasnt waiting for OK after
     +CPIN answer. This was screwing up AT command answers and Siemens TC35

@@ -61,7 +61,7 @@ CfgLoc *cfgloc_create(Octstr *filename)
 } 
  
  
-void *cfgloc_destroy(CfgLoc *cfgloc) 
+void cfgloc_destroy(CfgLoc *cfgloc) 
 { 
     if (cfgloc != NULL) { 
 	octstr_destroy(cfgloc->filename); 
@@ -298,6 +298,8 @@ int cfg_read(Cfg *cfg)
     long lineno;
     long error_lineno;
     
+    loc = loc_inc = NULL;
+
     /* 
      * expand initial main config file and add it to the recursion 
      * stack to protect against cycling 
