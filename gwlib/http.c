@@ -1,5 +1,8 @@
 /*
- * http.c - HTTP protocol implementation
+ * http.c - HTTP protocol server and client implementation
+ *
+ * Implements major parts of the Hypertext Transfer Protocol HTTP/1.1 (RFC 2616)
+ * See http://www.w3.org/Protocols/rfc2616/rfc2616.txt
  *
  * Lars Wirzenius
  */
@@ -24,6 +27,7 @@
 
 #include "gwlib.h"
 
+/* comment this out if you don't want Keep-Alive HTTP requests */
 #define USE_KEEPALIVE 1
 
 
@@ -721,7 +725,7 @@ static void conn_pool_put(Connection *conn, Octstr *host, int port)
     list = dict_get(conn_pool, key);
     if (list == NULL) {
     	list = list_create();
-	dict_put(conn_pool, key, list);
+        dict_put(conn_pool, key, list);
     }
     list_append(list, conn);
     octstr_destroy(key);
@@ -911,6 +915,7 @@ static void handle_transaction(Connection *conn, void *data)
 		 * opening a new socket, but only once.
 		 */
 		if (trans->retrying) {
+            debug("gwlib.http",0,"Failed while retrying");
 		    goto error;
 		} else {
 		    conn_destroy(trans->conn);
@@ -932,7 +937,8 @@ static void handle_transaction(Connection *conn, void *data)
 	case reading_entity:
 	    ret = entity_read(trans->response, conn);
 	    if (ret < 0) {
-		goto error;
+            debug("gwlib.http",0,"Failed reading entity");
+            goto error;
 	    } else if (ret == 0 && http_status_class(trans->status)
                                   == HTTP_STATUS_PROVISIONAL) {
                     /* This was a provisional reply; get the real one now. */
@@ -1170,7 +1176,7 @@ static Connection *get_connection(HTTPServer *trans)
     int port;
 
     conn = NULL;
-  path = NULL;
+    path = NULL;
 
     /* May not be NULL if we're retrying this transaction. */
     octstr_destroy(trans->host);
@@ -1225,6 +1231,9 @@ static int send_request(HTTPServer *trans)
 
   path = NULL;
   request = NULL;
+
+  octstr_destroy(trans->host);
+  trans->host = NULL;
 
   if (parse_url(trans->url, &trans->host, &trans->port, &path, &trans->ssl,
 		&trans->username, &trans->password) == -1)
