@@ -91,16 +91,19 @@ struct db_ops {
      *           result is the list of rows each row will be stored also as list each column is stored as Octstr.
      * If someone has better idea please tell me ...
      *
-     * @params conn - database specific connection; sql - sql statement ; result - result will be saved here
+     * @params conn - database specific connection; sql - sql statement ; 
+     *         binds - list of Octstr values for binding holes in sql (NULL if no binds);
+     *         result - result will be saved here
      * @return 0 if all was fine ; -1 otherwise
      */
-    int (*select) (void *conn, const Octstr *sql, List **result);
+    int (*select) (void *conn, const Octstr *sql, List *binds, List **result);
     /*
      * Database specific update/insert/delete.
-     * @params conn - database specific connection ; sql - sql statement
+     * @params conn - database specific connection ; sql - sql statement;
+     *         binds - list of Octstr values for binding holes in sql (NULL if no binds);
      * @return #rows processed ; -1 if a error occurs
      */
-    int (*update) (void *conn, const Octstr *sql);
+    int (*update) (void *conn, const Octstr *sql, List *binds);
 };
 
 struct DBPool

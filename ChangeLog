@@ -1,3 +1,10 @@
+2004-03-20  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/dlr_oracle.c, gwlib/dbpool.[ch], gwlib/dbpool_oracle.c,
+      gwlib/dbpool_p.h: applied db_pool_binding_variables_2.patch provided
+      by "Robert Galach" <kanelek (at) tenbit.pl> that enables binding variable
+      in sql statements and contains implementation for oracle.
+      [Msg-Id: <01bb01c407a7$26623640$320da8c0@tenbit.com>].
+
 2004-03-17  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/smsc/smsc_sema.[ch]: fixed annoying compiler warning. Changed
       msgbody from (void**) to (void*). I don't know why in hell (void**)

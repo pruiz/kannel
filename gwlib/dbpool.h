@@ -177,8 +177,8 @@ DBPoolConn *dbpool_conn_consume(DBPool *p);
  */
 void dbpool_conn_produce(DBPoolConn *conn);
 
-int inline dbpool_conn_select(DBPoolConn *conn, const Octstr *sql, List **result);
-int inline dbpool_conn_update(DBPoolConn *conn, const Octstr *sql);
+int inline dbpool_conn_select(DBPoolConn *conn, const Octstr *sql, List *binds, List **result);
+int inline dbpool_conn_update(DBPoolConn *conn, const Octstr *sql, List *binds);
 
 /*
  * Perfoms a check of all connections within the pool and tries to

@@ -63,6 +63,8 @@
  * believe me, just check it youself with valgrind ;)
  *
  * Alexander Malysh <a.malysh@centrium.de>
+ * Robert Ga³ach <robert.galach@my.tenbit.pl>
+ *      2004 Added support for binding variables.
  */
 
 #ifdef HAVE_ORACLE
@@ -70,7 +72,7 @@
 #include <oci.h>
 
 /* forward decl. */
-static int oracle_select(void *theconn, const Octstr *sql, List **res);
+static int oracle_select(void *theconn, const Octstr *sql, List *binds, List **res);
 
 struct ora_conn {
     /* environment handle */
@@ -82,7 +84,7 @@ struct ora_conn {
 };
 
 /* This function prints the error */
-void oracle_checkerr(OCIError *errhp, sword status)
+static void oracle_checkerr(OCIError *errhp, sword status)
 {
     text errbuf[512];
     sb4 errcode = 0;
@@ -247,7 +249,7 @@ static int oracle_check_conn(void *conn)
     /* TODO Check for appropriate OCI function */
     sql = octstr_create("SELECT 1 FROM DUAL");
 
-    ret = oracle_select(conn, sql, &res);
+    ret = oracle_select(conn, sql, NULL, &res);
     if (ret != -1 && list_len(res) > 0) {
         List *row = list_extract_first(res);
         list_destroy(row, octstr_destroy_item);
@@ -274,7 +276,7 @@ static void oracle_conf_destroy(DBConf *theconf)
 }
 
 
-static int oracle_select(void *theconn, const Octstr *sql, List **res)
+static int oracle_select(void *theconn, const Octstr *sql, List *binds, List **res)
 {
     List *row;
     OCIStmt *stmt;
@@ -290,6 +292,7 @@ static int oracle_select(void *theconn, const Octstr *sql, List **res)
     };
     struct data_s *data;
     struct ora_conn *conn = (struct ora_conn*) theconn;
+    int binds_len = (binds ? list_len(binds) : 0);
 
     *res = NULL;
 
@@ -306,6 +309,21 @@ static int oracle_select(void *theconn, const Octstr *sql, List **res)
         oracle_checkerr(conn->errhp, status);
         OCIHandleFree(stmt, OCI_HTYPE_STMT);
         return -1;
+    }
+
+    /* bind variables */
+    for (i = 0; i < binds_len; i++) {
+        OCIBind *bndhp = NULL;
+        Octstr *bind = list_get(binds, i);
+        status = OCIBindByPos(stmt, &bndhp, 
+                              conn->errhp, (i+1), (dvoid *) octstr_get_cstr(bind),
+                              (sword) octstr_len(bind)+1, SQLT_STR, (dvoid *) 0, (ub2 *)0,
+                              (ub2 *)0, (ub4)0, (ub4 *)0, OCI_DEFAULT);
+        if (OCI_SUCCESS != status) {
+            oracle_checkerr(conn->errhp, status);
+            OCIHandleFree(stmt, OCI_HTYPE_STMT);
+            return -1;
+        }
     }
     /* execute our statement */
     status = OCIStmtExecute(conn->svchp, stmt, conn->errhp, 0, 0, NULL, NULL, 
@@ -439,13 +457,14 @@ static int oracle_select(void *theconn, const Octstr *sql, List **res)
 }
 
 
-static int oracle_update(void *theconn, const Octstr *sql)
+static int oracle_update(void *theconn, const Octstr *sql, List *binds)
 {
     OCIStmt *stmt;
     sword status;
-    ub4 rows = 0;
+    ub4 rows = 0, i;
     struct ora_conn *conn = (struct ora_conn*) theconn;
-
+    int binds_len = (binds ? list_len(binds) : 0);
+    
     /* allocate statement handle */
     status = OCIHandleAlloc(conn->envp, (dvoid**)&stmt, OCI_HTYPE_STMT, 0,0);
     if (OCI_SUCCESS != status) {
@@ -462,6 +481,22 @@ static int oracle_update(void *theconn, const Octstr *sql)
         return -1;
     }
     debug("dbpool.oracle",0,"OCIStmtPrepare done");
+   
+    /* bind variables */
+    for (i = 0; i < binds_len; i++) {
+        Octstr *bind = list_get(binds, i);
+        OCIBind *bndhp = NULL;
+        status = OCIBindByPos(stmt, &bndhp, 
+                              conn->errhp, (i+1), (dvoid *) octstr_get_cstr(bind),
+                              (sword) octstr_len(bind)+1, SQLT_STR, (dvoid *) 0, (ub2 *)0,
+                              (ub2 *)0, (ub4)0, (ub4 *)0, OCI_DEFAULT);
+        if (OCI_SUCCESS != status) {
+            oracle_checkerr(conn->errhp, status);
+            OCIHandleFree(stmt, OCI_HTYPE_STMT);
+            return -1;
+        }
+    }
+    
     /* execute our statement */
     status = OCIStmtExecute(conn->svchp, stmt, conn->errhp, 1, 0, NULL, NULL, 
                             /*OCI_DEFAULT*/ OCI_COMMIT_ON_SUCCESS);
@@ -481,7 +516,7 @@ static int oracle_update(void *theconn, const Octstr *sql)
     debug("dbpool.oracle",0,"rows processed = %d", rows);
 
     OCIHandleFree(stmt, OCI_HTYPE_STMT);
-
+    
     return (int) rows;
 }
 

@@ -61,6 +61,8 @@
  *      2003 Initial version.
  * Alexander Malysh <a.malysh@centrium.de>
  *      2003 Made dbpool more generic.
+ * Robert Ga³ach <robert.galach@my.tenbit.pl>
+ *      2004 Added support for binding variables.
  */
 
 #include "gwlib.h"
@@ -319,7 +321,7 @@ unsigned int dbpool_check(DBPool *p)
     return n;
 }
 
-int inline dbpool_conn_select(DBPoolConn *conn, const Octstr *sql, List **result)
+int inline dbpool_conn_select(DBPoolConn *conn, const Octstr *sql, List *binds, List **result)
 {
     if (sql == NULL || conn == NULL)
         return -1;
@@ -327,10 +329,10 @@ int inline dbpool_conn_select(DBPoolConn *conn, const Octstr *sql, List **result
     if (conn->pool->db_ops->select == NULL)
         return -1; /* may be panic here ??? */
 
-    return conn->pool->db_ops->select(conn->conn, sql, result);
+    return conn->pool->db_ops->select(conn->conn, sql, binds, result);
 }
 
-int inline dbpool_conn_update(DBPoolConn *conn, const Octstr *sql)
+int inline dbpool_conn_update(DBPoolConn *conn, const Octstr *sql, List *binds)
 {
     if (sql == NULL || conn == NULL)
         return -1;
@@ -338,6 +340,6 @@ int inline dbpool_conn_update(DBPoolConn *conn, const Octstr *sql)
     if (conn->pool->db_ops->update == NULL)
         return -1; /* may be panic here ??? */
 
-    return conn->pool->db_ops->update(conn->conn, sql);
+    return conn->pool->db_ops->update(conn->conn, sql, binds);
 }
 #endif /* HAVE_DBPOOL */
