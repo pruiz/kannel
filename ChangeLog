@@ -1,4 +1,8 @@
 2003-05-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_cimd2.c: Fixing wrong time for messages. 
+      Thanks again to Angel for this fix.
+
+2003-05-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smscconn_p.h, gw/smscconn.c, gw/smsc/smsc_at2.h, 
       gw/smsc/smsc_[at2|cimd2|smpp].c: Angel's alt-dcs abstraction layer
       patch for at2, cimd2 and smpp. Thanks a lot.
