@@ -1338,6 +1338,12 @@ int octstr_item_match(void *item, void *pattern)
 }
 
 
+int octstr_item_case_match(void *item, void *pattern)
+{
+    return octstr_case_compare(item, pattern) == 0;
+}
+
+
 void octstr_dump(Octstr *ostr, int level)
 {
     unsigned char *p, *d, buf[1024], charbuf[256];

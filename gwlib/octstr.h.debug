@@ -440,9 +440,16 @@ int octstr_item_match(void *item, void *pattern);
 
 
 /*
+ * Same as above, except compares bytes without case sensitivity
+ */
+int octstr_item_case_match(void *item, void *pattern);
+
+
+/*
  * Print debugging information about octet string.
  */
 void octstr_dump(Octstr *ostr, int level);
+
 
 /*
  * Write the contents of an octet string to the debug log.
@@ -451,16 +458,19 @@ void octstr_dump(Octstr *ostr, int level);
  */
 void octstr_dump_short(Octstr *ostr, int level, const char *name);
 
+
 /*
  * decode url-encoded octstr in-place.
  * Return 0 if all went fine, or -1 if there was some garbage
  */
 int octstr_url_decode(Octstr *ostr);
 
+
 /*
  * URL encode the argument string in place.
  */
 void octstr_url_encode(Octstr *ostr);
+
 
 /*
  * Treat the octstr as an unsigned array of bits, most significant bit
@@ -469,6 +479,7 @@ void octstr_url_encode(Octstr *ostr);
  * be read as 0.
  */
 long octstr_get_bits(Octstr *ostr, long bitpos, int numbits);
+
 
 /*
  * Treat the octstr as an unsigned array of bits, most significant bit
