@@ -48,6 +48,8 @@ static void heartbeat_thread(void *arg)
     while (info->running) {
         Msg *msg;
 
+        gwthread_sleep(info->freq);
+
         /*
          * Because the sleep can be interrupted, we might end up sending
          * heartbeats faster than the configured heartbeat frequency.
@@ -61,8 +63,6 @@ static void heartbeat_thread(void *arg)
         msg->heartbeat.load = info->load_func();
         info->send_func(msg);
         last_hb = time(NULL);
-
-        gwthread_sleep(info->freq);
     }
 }
 
