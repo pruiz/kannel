@@ -2,6 +2,8 @@
  
     * gw/connc.c: fixed a typo in void
       use_global_client_certkey_file(Octstr *certkeyfile)
+
+    * doc/userguide.xml: fixed some minor typos in new PPG documentation
       
 2001-10-24 Aarno Syvänen <aarno@wiral.com>
 
