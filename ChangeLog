@@ -1,23 +1,28 @@
+2003-01-11  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
+  * debian/*: updated to generate packages for 1.3.0
+  * test/.cvsignore: ignore new wapproxy file
+  * ChangeLog: fix spaces ;)
+ 
 2003-01-09 Andreas Fink <andreas@fink.org>
-    * gw/cfg.def added wait-ack-expire variable as otherwhise it wont work
-	on a clean compilation
+  * gw/cfg.def: added wait-ack-expire variable as otherwhise it wont work
+    on a clean compilation
 
 2003-01-09  Stipe Tolj  <tolj@wapme-systems.de>
-	* gw/wap-appl.c: fixed assertion panic in case HTTP method is not
-	  supported. Thanks to Vjacheslav Chekushin <slava@lmt.lv>.
+  * gw/wap-appl.c: fixed assertion panic in case HTTP method is not
+    supported. Thanks to Vjacheslav Chekushin <slava@lmt.lv>.
 
 2003-01-07  Stipe Tolj  <tolj@wapme-systems.de>
-	* test/wapproxy.c: fixed compiler warning.
+  * test/wapproxy.c: fixed compiler warning.
 
 2003-01-07  Stipe Tolj  <tolj@wapme-systems.de>
-	* solaris/pkginfo.[tmpl]: removed pkginfo and added pkginfo.tmpl. 
-	  Suggested by Alan McNatty <alan@catalyst.net.nz>.
+  * solaris/pkginfo.[tmpl]: removed pkginfo and added pkginfo.tmpl. 
+    Suggested by Alan McNatty <alan@catalyst.net.nz>.
 
 2003-01-06  Stipe Tolj  <tolj@wapme-systems.de>
-    * README, README.MACOSX: moved information from MacOS X specific README
-      file to the global README. There is no need for a specific OS dependend
-      README file for such minimal informations.
+  * README, README.MACOSX: moved information from MacOS X specific README
+    file to the global README. There is no need for a specific OS dependend
+    README file for such minimal informations.
 
 2003-01-05  Stipe Tolj  <tolj@wapme-systems.de>
-    * Making development release 1.3.0.
+  * Making development release 1.3.0.
 

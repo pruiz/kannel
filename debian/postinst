@@ -6,8 +6,8 @@ set -e
 
 # Automatically added by dh_installdocs
 if [ "$1" = "configure" ]; then
-        if [ -d /usr/doc -a ! -e /usr/doc/aktion -a -d /usr/share/doc/aktion ]; then
-                ln -sf ../share/doc/aktion /usr/doc/aktion
+        if [ -d /usr/doc -a ! -e /usr/doc/kannel -a -d /usr/share/doc/kannel ]; then
+                ln -sf ../share/doc/kannel /usr/doc/kannel
         fi
 fi
 # End automatically added section

@@ -6,4 +6,7 @@ set -e
 
 if [ purge = "$1" ]; then
     update-rc.d kannel remove >/dev/null
+    test -d /var/log/kannel && rm -fr /var/log/kannel
+    test -d /etc/kannel && rmdir /etc/kannel
+    id kannel && userdel -r kannel
 fi
