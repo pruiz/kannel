@@ -1,3 +1,8 @@
+2000-11-22  Richard Braakman  <dark@wapi.com>
+
+	* gwlib/fdset.c: When destroying an fdset with active fd's,
+	close them first and signal that event.
+
 2000-11-22  Lars Wirzenius  <liw@iki.fi>
 
 	* doc/userguide/userguide.xml: Add notes about HTTP proxy username

@@ -324,8 +324,21 @@ void fdset_destroy(FDSet *set)
 
     if (set->poll_thread < 0 || gwthread_self() == set->poll_thread) {
         if (set->entries > 0) {
+    	    int i;
+
             warning(0, "Destroying fdset with %d active entries.",
                     set->entries);
+	    warning(0, "Will close them first.");
+	    /* The callbacks will probably try to unregister the fd
+	     * if they see it's been closed.  Make sure fdset_unregister
+	     * does not disrupt our loop. */
+	    set->scanning = 1;
+	    for (i = 0; i < set->entries; i++) {
+		close(set->pollinfo[i].fd);
+		set->callbacks[i](set->pollinfo[i].fd,
+                                  POLLIN, /* This signals end-of-file */
+				  set->datafields[i]);
+            }
         }
         gw_free(set->pollinfo);
         gw_free(set->callbacks);
