@@ -1,5 +1,12 @@
 2000-11-03  Lars Wirzenius  <liw@iki.fi>
 
+	* checks/check_list.c: Fixed synchronization problems that
+	occasionally caused it to randomly fail. The list code itself
+	was OK, but the checking code did not synchronize thread startups
+	correctly.
+
+2000-11-03  Lars Wirzenius  <liw@iki.fi>
+
 	* test/test_http.c: Change the error message when there are
 	no command line arguments from "Floating point exception (core
 	dumped)" to the standard help text.

@@ -12,21 +12,14 @@
 #define NUM_CONSUMERS (4)
 #define NUM_ITEMS_PER_PRODUCER (1*1000)
 
-static long producers[NUM_PRODUCERS];
-static long consumers[NUM_CONSUMERS];
-static char received[NUM_PRODUCERS * NUM_ITEMS_PER_PRODUCER];
+struct producer_info {
+    List *list;
+    long start_index;
+    long id;
+};
 
-static int producer_index_start(long producer) {
-	int i;
-	
-	for (i = 0; i < NUM_PRODUCERS; ++i) {
-		if (producer == producers[i])
-			break;
-	}
-	if (i >= NUM_PRODUCERS)
-		panic(0, "Couldn't find thread.");
-	return i * NUM_ITEMS_PER_PRODUCER;
-}
+
+static char received[NUM_PRODUCERS * NUM_ITEMS_PER_PRODUCER];
 
 
 typedef struct {
@@ -48,34 +41,30 @@ static Item *new_item(long producer, long num, long index) {
 
 
 static void producer(void *arg) {
-	List *list;
 	long i, index;
 	long id;
+	struct producer_info *info;
 
-	list = arg;
+	info = arg;
 
 	id = gwthread_self();
-	index = producer_index_start(id);
-	list_add_producer(list);
+	index = info->start_index;
 	for (i = 0; i < NUM_ITEMS_PER_PRODUCER; ++i, ++index)
-		list_produce(list, new_item(id, i, index));
-	list_remove_producer(list);
+		list_produce(info->list, new_item(id, i, index));
+	list_remove_producer(info->list);
 }
 
 static void consumer(void *arg) {
 	List *list;
-	long i;
 	Item *item;
 	
 	list = arg;
-	i = 0;
 	for (;;) {
 		item = list_consume(list);
 		if (item == NULL)
 			break;
 		received[item->index] = 1;
 		gw_free(item);
-		++i;
 	}
 }
 
@@ -84,46 +73,29 @@ static void init_received(void) {
 	memset(received, 0, sizeof(received));
 }
 
-static void check_received(void) {
-	long p, n, index;
-	int errors;
-	
-	errors = 0;
-	for (p = 0; p < NUM_PRODUCERS; ++p) {
-		for (n = 0; n < NUM_ITEMS_PER_PRODUCER; ++n) {
-			index = p * NUM_ITEMS_PER_PRODUCER + n;
-			if (!received[index]) {
-				error(0, "Not received: producer=%lu "
-				         "item=%ld index=%ld", 
-					 (unsigned long) producers[p], 
-					 n, index);
-				errors = 1;
-			}
-		}
-	}
-	
-	if (errors)
-		panic(0, "Not all messages were received.");
-}
-
 
 static void main_for_producer_and_consumer(void) {
 	List *list;
 	int i;
 	Item *item;
+	struct producer_info tab[NUM_PRODUCERS];
+	long p, n, index;
+	int errors;
 	
 	list = list_create();
 	init_received();
 	
-	for (i = 0; i < NUM_PRODUCERS; ++i)
-		producers[i] = gwthread_create(producer, list);
+	for (i = 0; i < NUM_PRODUCERS; ++i) {
+	    	tab[i].list = list;
+		tab[i].start_index = i * NUM_ITEMS_PER_PRODUCER;
+	    	list_add_producer(list);
+		tab[i].id = gwthread_create(producer, tab + i);
+	}
 	for (i = 0; i < NUM_CONSUMERS; ++i)
-		consumers[i] = gwthread_create(consumer, list);
+		gwthread_create(consumer, list);
 	
-	for (i = 0; i < NUM_PRODUCERS; ++i)
-		gwthread_join(producers[i]);
-	for (i = 0; i < NUM_CONSUMERS; ++i)
-		gwthread_join(consumers[i]);
+    	gwthread_join_every(producer);
+    	gwthread_join_every(consumer);
 
 	while (list_len(list) > 0) {
 		item = list_get(list, 0);
@@ -132,7 +104,21 @@ static void main_for_producer_and_consumer(void) {
 				item->num, item->index);
 	}
 	
-	check_received();
+	errors = 0;
+	for (p = 0; p < NUM_PRODUCERS; ++p) {
+		for (n = 0; n < NUM_ITEMS_PER_PRODUCER; ++n) {
+			index = p * NUM_ITEMS_PER_PRODUCER + n;
+			if (!received[index]) {
+				error(0, "Not received: producer=%ld "
+				         "item=%ld index=%ld", 
+					 tab[p].id, n, index);
+				errors = 1;
+			}
+		}
+	}
+	
+	if (errors)
+		panic(0, "Not all messages were received.");
 }
 
 
