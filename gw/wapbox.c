@@ -35,7 +35,7 @@ static Octstr *http_proxy_password = NULL;
 
 static enum {
     initializing,
-    running,
+    running_ok,
     aborting,
     aborting_with_prejudice
 } run_status = initializing;
@@ -174,9 +174,9 @@ static Msg *msg_receive(int s)
     Octstr *os;
     Msg *msg;
     
-    while (run_status == running && !read_available(s, 1000*1000))
+    while (run_status == running_ok && !read_available(s, 1000*1000))
 	continue;
-    if (run_status != running)
+    if (run_status != running_ok)
 	return NULL;
     if (octstr_recv(s, &os) < 1)
 	return NULL;
@@ -225,7 +225,7 @@ static void empty_queue_thread(void *arg)
     int socket;
     
     socket = *(int *) arg;
-    while (run_status == running) {
+    while (run_status == running_ok) {
 	msg = list_consume(queue);
 	if (msg != NULL)
 	    msg_send(socket, msg);
@@ -359,13 +359,13 @@ int main(int argc, char **argv)
     bbsocket = connect_to_bearer_box();
     queue = list_create();
     
-    run_status = running;
+    run_status = running_ok;
     list_add_producer(queue);
     heartbeat_thread =
         heartbeat_start(put_msg_on_queue, heartbeat_freq, wap_appl_get_load);
     gwthread_create(empty_queue_thread, &bbsocket);
 
-    while (run_status == running && (msg = msg_receive(bbsocket)) != NULL) {
+    while (run_status == running_ok && (msg = msg_receive(bbsocket)) != NULL) {
 	WAPEvent *dgram;
 
 	dgram = wap_event_create(T_DUnitdata_Ind);

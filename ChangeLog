@@ -1,5 +1,16 @@
 2000-12-05  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/shared.[ch]: Moved bearerbox communication stuff from
+	smsbox.c to shared.c, so that it can easily be used by wapbox
+	as well.
+	
+	* gw/smsbox.c: Related changes.
+	
+	* gw/wapbox.c: Renamed "running" to "running_ok", until the
+	wapbox will use program_status from shared.c.
+
+2000-12-05  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsc.c: Removed calls to str_find_substr.
 	
 	* gwlib/utils.[ch]: Removed now-unused str_find_substr function.

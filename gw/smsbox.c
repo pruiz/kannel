@@ -46,73 +46,35 @@ static char *global_sender = NULL;
 
 static List *smsbox_requests = NULL;
 
-static volatile sig_atomic_t abort_program = 0;
-
-
 
 /***********************************************************************
  * Communication with the bearerbox.
  */
 
 
-static Connection *bb_conn;
-
-
-/*
- * Connect to the bearerbox.
- */
-static void connect_to_bearerbox(Octstr *host, int port)
-{
-    bb_conn = conn_open_tcp(host, port);
-    if (bb_conn == NULL)
-    	panic(0, "Couldn't connect to the bearerbox.");
-    info(0, "Connected to bearerbox at %s port %d.",
-        octstr_get_cstr(bb_host), bb_port);
-}
-
-
-
 /*
  * Read an Msg from the bearerbox and send it to the proper receiver
  * via a List. At the moment all messages are sent to the smsbox_requests
- * List..
+ * List.
  */
-static void read_from_bearerbox(void)
+static void read_messages_from_bearerbox(void)
 {
     time_t start, t;
-    int ret, secs;
+    int secs;
     int total = 0;
-    Octstr *pack;
     Msg *msg;
 
     start = t = time(NULL);
-    while (!abort_program) {
-	pack = conn_read_withlen(bb_conn);
-	gw_claim_area(pack);
-	if (pack == NULL) {
-	    if (conn_eof(bb_conn)) {
-		info(0, "Connection closed by the Bearerbox");
-		break;
-	    }
-
-            ret = conn_wait(bb_conn, -1.0);
-	    if (ret < 0) {
-		error(0, "Connection to bearerbox broke.");
-		break;
-	    }
-	    continue;
-	}
+    while (program_status != shutting_down) {
+	msg = read_from_bearerbox();
+	if (msg == NULL)
+	    break;
 
         if (total == 0)
 	    start = time(NULL);
 	total++;
 
-	msg = msg_unpack(pack);
-	octstr_destroy(pack);
-
-	if (msg == NULL)
-	    error(0, "Failed to unpack data!");
-	else if (msg_type(msg) != sms) {
+	if (msg_type(msg) != sms) {
 	    warning(0, "Received other message than sms, ignoring!");
 	    msg_destroy(msg);
 	} else
@@ -122,25 +84,6 @@ static void read_from_bearerbox(void)
     secs = difftime(time(NULL), start);
     info(0, "Received (and handled?) %d requests in %d seconds "
     	 "(%.2f per second)", total, secs, (float)total / secs);
-}
-
-
-/*
- * Write Msg to bearerbox. Destroy Msg.
- */
-static void write_to_bearerbox(Msg *pmsg)
-{
-    Octstr *pack;
-    int ret;
-
-    pack = msg_pack(pmsg);
-    ret = conn_write_withlen(bb_conn, pack);
-
-    info(0, "Message sent to bearerbox, receiver <%s>",
-         octstr_get_cstr(pmsg->sms.receiver));
-   
-    msg_destroy(pmsg);
-    octstr_destroy(pack);
 }
 
 
@@ -1263,9 +1206,9 @@ static void signal_handler(int signum) {
 	return;
 
     if (signum == SIGINT) {
-	if (abort_program == 0) {
+	if (program_status != shutting_down) {
 	    error(0, "SIGINT received, aborting program...");
-	    abort_program = 1;
+	    program_status = shutting_down;
 	}
     } else if (signum == SIGHUP) {
         warning(0, "SIGHUP received, catching and re-opening logs");
@@ -1447,7 +1390,7 @@ int main(int argc, char **argv)
     heartbeat_thread = heartbeat_start(write_to_bearerbox, heartbeat_freq,
 				       outstanding_requests);
 
-    read_from_bearerbox();
+    read_messages_from_bearerbox();
 
     info(0, "Kannel smsbox terminating.");
 
@@ -1459,7 +1402,7 @@ int main(int argc, char **argv)
     http_caller_signal_shutdown(caller);
     gwthread_join_every(url_result_thread);
 
-    conn_destroy(bb_conn);
+    close_connection_to_bearerbox();
     alog_close();
     urltrans_destroy(translations);
     gw_assert(list_len(smsbox_requests) == 0);
