@@ -1,5 +1,10 @@
 2000-11-21  Richard Braakman  <dark@wapi.com>
 
+	* gw/html.c, convert_html_entity(): Made conversion of entities
+	like &#1234; work.
+
+2000-11-21  Richard Braakman  <dark@wapi.com>
+
 	* gw/html.c, gw/msg.c: Reformatted.
 
 2000-11-21  Richard Braakman  <dark@wapi.com>
