@@ -112,9 +112,9 @@ int get_and_set_debugs(int argc, char **argv,
 	    } else
 		fprintf(stderr, "Missing argument for option %s\n", argv[i]); 
 	} else if (strcmp(argv[i],"--")==0) {
+	    i++;
 	    break;
 	} else if(*argv[i] != '-') {
-	    i++;
 	    break;
 	} else {
 	    if (find_own != NULL) {
