@@ -8,8 +8,6 @@
 
 2002-02-25  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * Changelog: fixed spaces in my last entries.
-    * STATUS: removed emi2 reconnection entry and added unicode receiving 
-      request.
     * gw/smsc_at2.c: fixed a bug introduced by my last patch that even on
       successful modem connection, kannel would still stay inside the 
       connection cicle (a missing "break" command).
