@@ -1002,6 +1002,14 @@
 	need to start the bearer box before the other boxes. Without
 	the bearer box, the other boxes won't even start.</para>
 	
+	<para>If you want to use the old WML compiler, which is run as
+	an external program called test_wml, you need to set the
+	<envar>TEST_WML</envar> environment variable:
+	
+<screen><userinput>export TEST_WML=<replaceable>../test/test_wml</replaceable></userinput></screen>
+
+	(the correct value depends on where the program actually is).</para>
+	
 </sect1>
 
 <sect1>
