@@ -519,6 +519,8 @@ static void destroy_onetrans(URLTranslation *ot) {
 		gw_free(ot->split_suffix);
 		gw_free(ot->username);
 		gw_free(ot->password);
+		if(NULL != ot->header) gw_free(ot->header);
+		if(NULL != ot->footer) gw_free(ot->footer);
 		gw_free(ot);
 	}
 }
