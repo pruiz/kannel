@@ -1,4 +1,4 @@
-2001-05-22  Richard Braakman  <dark@wapit.com>
+2001-05-26  Richard Braakman  <dark@wapit.com>
 
 	* gw/urltrans.c: Fixed bug in find_default_translation() that would
 	make the smsbox panic if there was no default.
