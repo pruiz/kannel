@@ -1,3 +1,6 @@
+2003-06-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smpp.c: fixed compiler warning
+
 2003-06-03  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * userguide.xml: added information about libxml2-dev packages; replace
       kannel.3glab.org to kannel.org
