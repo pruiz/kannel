@@ -1,3 +1,17 @@
+2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap_push_ota.c: fixed handling of Push flag.
+    * gw/wap_push_pap_[compiler|mime].c: fixed PPG specifier and prologue
+      parsing to support other PIs, including delimiter parsing.
+    * gw/wap_push_ppg.c: added missing official WINA URIs
+    * gw/wapbox.c, gwlib/cfg.def: added 'concatenation' and 'max-messages' 
+      config directive support for wapbox group.
+    * gwlib/http.c: fixed missing octstr_destroy()s.
+    * test/test_ppg.c: major rewrites to support also binary content, etc.
+    * wap/wsp_headers.c, wap/wsp_session.c, wap/wsp_strings.def, 
+      wap/wsp_unit.c: added proper WSP 'Encoding-Version' handling.
+    Patch made by Aarno. Thanks a lot.  
+    [Msg-ID: <BFA27CD2-972C-11D7-9CAD-0003937AE746@gni.ch>]
+         
 2003-06-18  Alexander Malysh  <a.malysh@centrium.de>
     *  gwlib/dbpool.c: fixed compiler warning
 
