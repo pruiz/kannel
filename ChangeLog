@@ -1,5 +1,10 @@
 2000-11-16  Richard Braakman  <dark@wapi.com>
 
+	* gwlib/http.c: Responses with status 1xx, 204, or 304 are
+	defined as having no message body, so don't expect one.
+
+2000-11-16  Richard Braakman  <dark@wapi.com>
+
 	* gwlib/http.c: Removed calls to conn_unregister that were followed
 	by calls to conn_destroy.  It's redundant, and in one case the
 	connection might be NULL.

@@ -545,6 +545,14 @@ static int deduce_body_state(HTTPServer *trans)
 {
     Octstr *h;
 
+    /* RFC2616 says that responses with these status codes must not
+     * have a message body. */
+    if (trans->status == HTTP_NO_CONTENT ||
+        trans->status == HTTP_NOT_MODIFIED ||
+        (trans->status >= 100 && trans->status <= 199)) {
+        return transaction_done;
+    }
+
     h = http_header_find_first(trans->response_headers, "Transfer-Encoding");
     if (h != NULL) {
         octstr_strip_blanks(h);
