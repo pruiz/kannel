@@ -1,3 +1,10 @@
+2002-01-22  Stipe Tolj  <tolj@wapme-systems.de>
+    * configure.in: added /usr/local tree checking for docbook.dsl.
+      Reported by "Bernino Lind" <lind@catpipe.net>
+      [Msg-ID: <OPEOKAFGKKMPLPGLEINCGEBECGAA.lind@catpipe.net>]
+    * configure: the resulting outout of configure.in produced
+      by autoconf 2.13.
+
 2002-01-18  Tuomas Luttinen  <Tuomas.Luttinen@reach-u.com>
 
 	* gwlib/http.c (http_header_find_first): A bug corrected so that the 
