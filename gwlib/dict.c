@@ -53,6 +53,7 @@ static int item_has_key(void *item, void *key)
  */
 
 struct Dict {
+    /* Empty lists may be represented with NULL. */
     List **tab;
     long size;
     void (*destroy_value)(void *);
@@ -97,7 +98,7 @@ Dict *dict_create(long size_hint, void (*destroy_value)(void *))
 
     dict->tab = gw_malloc(sizeof(dict->tab[0]) * dict->size);
     for (i = 0; i < dict->size; ++i)
-    	dict->tab[i] = list_create();
+    	dict->tab[i] = NULL;
     dict->lock = mutex_create();
     dict->destroy_value = destroy_value;
     
@@ -111,6 +112,9 @@ void dict_destroy(Dict *dict)
     Item *p;
     
     for (i = 0; i < dict->size; ++i) {
+        if (dict->tab[i] == NULL)
+	    continue;
+
 	while ((p = list_extract_first(dict->tab[i])) != NULL) {
 	    if (dict->destroy_value != NULL)
 	    	dict->destroy_value(p->value);
@@ -131,6 +135,8 @@ void dict_put(Dict *dict, Octstr *key, void *value)
 
     lock(dict);
     i = key_to_index(dict, key);
+    if (dict->tab[i] == NULL)
+	dict->tab[i] = list_create();
     p = list_search(dict->tab[i], key, item_has_key);
     if (p == NULL) {
     	p = item_create(key, value);
@@ -152,7 +158,10 @@ void *dict_get(Dict *dict, Octstr *key)
 
     lock(dict);
     i = key_to_index(dict, key);
-    p = list_search(dict->tab[i], key, item_has_key);
+    if (dict->tab[i] == NULL)
+	p = NULL;
+    else
+        p = list_search(dict->tab[i], key, item_has_key);
     if (p == NULL)
     	value = NULL;
     else
@@ -171,7 +180,10 @@ void *dict_remove(Dict *dict, Octstr *key)
 
     lock(dict);
     i = key_to_index(dict, key);
-    list = list_extract_matching(dict->tab[i], key, item_has_key);
+    if (dict->tab[i] == NULL)
+        list = NULL;
+    else
+        list = list_extract_matching(dict->tab[i], key, item_has_key);
     gw_assert(list == NULL || list_len(list) == 1);
     if (list == NULL)
     	value = NULL;

@@ -1,3 +1,15 @@
+2000-11-20  Richard Braakman  <dark@wapi.com>
+
+	* gwlib/dict.c: Made it initialize empty table entries with
+	NULL instead of empty lists, to save memory.
+
+	* gwlib/http.c: Fix memory leak in send_request() when retrying
+	a request.
+
+	* gwlib/http.c: Make sure that a retried request really gets
+	a _new_ connection.  Otherwise it could be rejected just because
+	two connections have timed out.
+
 2000-11-19  Derry Hamilton  <rasilon@tardis.ed.ac.uk>
 
 	* solaris/prototype: Updated the prototype to reflect the newer

@@ -13,6 +13,8 @@
 /* XXX set maximum number of concurrent connections to same host, total? */
 /* XXX basic auth is missing */
 /* XXX 100 status codes. */
+/* XXX accept HTTP/1.x requests with 1.x >= 1.1 (see RFC2145) */
+/* FIXME Don't try to re-use a connection that got a HTTP/1.0 reply */
 
 #include <ctype.h>
 #include <errno.h>
@@ -892,10 +894,15 @@ static Connection *send_request(HTTPServer *trans, char *method_name)
 {
     Octstr *path, *request;
     Connection *conn;
+    Octstr *host;
+    int port;
 
     path = NULL;
     request = NULL;
     conn = NULL;
+
+    /* May not be NULL if we're retrying this transaction. */
+    octstr_destroy(trans->host);
 
     if (parse_url(trans->url, &trans->host, &trans->port, &path) == -1)
         goto error;
@@ -905,12 +912,22 @@ static Connection *send_request(HTTPServer *trans, char *method_name)
         request = build_request(trans->url, trans->host, trans->port, 
 	    	    	    	trans->request_headers, 
 				trans->request_body, method_name);
-    	conn = conn_pool_get(proxy_hostname, proxy_port);
+	host = proxy_hostname;
+	port = proxy_port;
     } else {
         request = build_request(path, trans->host, trans->port, 
 	    	    	    	trans->request_headers,
                                 trans->request_body, method_name);
-    	conn = conn_pool_get(trans->host, trans->port);
+	host = trans->host;
+	port = trans->port;
+    }
+
+    if (trans->retrying) {
+	debug("gwlib.http", 0, "HTTP: Opening NEW connection to `%s:%d'.",
+	      octstr_get_cstr(host), port);
+    	conn = conn_open_tcp(host, port);
+    } else {
+        conn = conn_pool_get(host, port);
     }
     if (conn == NULL)
         goto error;
