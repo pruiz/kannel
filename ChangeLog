@@ -2,6 +2,10 @@
     * gw/smsc/smsc_smpp.c: Added Alexander's patch to support clean suspend
       mode for the SMPP module.
       [Msg-ID: <200212111207.23455.a.malysh@centrium.de>]
+    * doc/userguide/userguide.xml: added 'wait-ack-expire' documentation for
+      the UCP/EMI section.
+    * gw/smsc/smsc_emi2.c: Added Nisan's wait-ack-expire patch to handle 
+      msg was not acked event.
 
 2002-12-31  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: added account to fill_message(). Thanks to Paul.
