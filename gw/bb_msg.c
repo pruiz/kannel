@@ -199,6 +199,36 @@ RQueueItem *rq_pull_msg_class(RQueue *queue, int class)
 }
 
 
+int rq_change_destination(RQueue *queue, int class, int type, char *routing_str,
+			   int original, int new_destination)
+{
+    RQueueItem *ptr;
+    int tot = 0;
+    
+    mutex_lock(&queue->mutex);
+
+    ptr = queue->first;
+    while(ptr) {
+
+	if (ptr->msg_class == class &&
+	    ptr->msg_type == type &&
+	    ptr->destination == original)
+
+	    if (routing_str == NULL ||
+		strcmp(routing_str, ptr->routing_info)==0) {
+
+		ptr->destination = new_destination;
+		tot++;
+	    }
+	
+	ptr = ptr->next;
+    }
+    mutex_unlock(&queue->mutex);
+
+    return tot;
+}
+
+
 int rq_queue_len(RQueue *queue, int *total)
 {
     int retval;

@@ -1,3 +1,12 @@
+1999-11-18    <rpr@rpr.wapit.com>
+
+	* gw/bearerbox.c: added wdp_datagram routing functions, and means
+	to get rid of old information and simple re-routing for messages
+	after a wap box fails
+
+	* gw/bb_msg.c, gw/bb_msg.h: added function rq_change_destination
+	for wdp_datagram routing use
+
 1999-11-18    <mikael@wapit.com>
 
 	* gwlib/http.c, gw/smsbox_req.c: Content-Type fetching

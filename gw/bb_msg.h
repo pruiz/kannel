@@ -119,6 +119,17 @@ RQueueItem *rq_pull_msg(RQueue *queue, int req_id);
 RQueueItem *rq_pull_msg_class(RQueue *queue, int class);
 
 /*
+ * change all messages of class 'class', type 'type' and routing_str same
+ * as 'routing_str' (unless it is NULL) with destination
+ * as 'original' into 'new_destination'
+ *
+ * Return total number of messages re-routed
+ */
+int rq_change_destination(RQueue *queue, int class, int type,
+			  char *routing_str,
+			  int original, int new_destination);
+
+/*
  * return the current length of the queue
  * if total is set, puts the 'added' value into it
  */

@@ -180,14 +180,10 @@ static RouteInfo *route_info = NULL;
 static int route_count = 0;
 static int route_limit = 0;
 
-/*
+/*----------------------------------------------------------------
  * WAP datagram routing routines
  */
 
-int cmp_route(const void *str, const void *route)
-{
-    return strcmp(str, ((RouteInfo *)route)->route_match);
-}
 
 /*
  * this is 'normal' binary search except that index of last compare
@@ -196,7 +192,7 @@ int cmp_route(const void *str, const void *route)
  * Return 0 if last matched, <0 or >0 if not. '*i' is set as last comprasion
  * index
  */
-int bsearch_receiver(char *str, int *index)
+static int bsearch_receiver(char *str, int *index)
 {
     int lo = 1;
     int hi = route_count;
@@ -213,8 +209,11 @@ int bsearch_receiver(char *str, int *index)
     return cmp;
 }
 
-
-int find_receiver(RQueueItem *rqi)
+/*
+ * find receiver with matching routing string.
+ * return id of the receiver, or -1 if not found
+ */
+static int find_receiver(RQueueItem *rqi)
 {
     int i, ret;
     
@@ -233,36 +232,48 @@ int find_receiver(RQueueItem *rqi)
     return route_info[i].receiver_id;
 }
 
-
-int del_receiver(int index)
+/*
+ * delete given receiver from table. Return number of addresses removed
+ */
+static int del_receiver_id(int id)
 {
+    int index;
+    int del = 0;
+    
     mutex_lock(&route_mutex);
 
-    memmove(route_info+index, route_info+index+1, route_count-index-1);
-    route_count--;
-
+    for(index=0; index < route_count; index++) {
+	if (route_info[index].receiver_id == id) {
+	    memmove(route_info+index, route_info+index+1, route_count-index-1);
+	    route_count--;
+	    index--;
+	    del++;
+	}
+    }
     mutex_unlock(&route_mutex);
-    return 0;
+    return del;
 }
 
-
-
-int add_receiver(char *routing_str, int id)
+/*
+ * add receiver of the given string and link it to given 'id'
+ */
+static int add_receiver(RQueue *queue, RQueueItem *msg, int old_id, int new_id)
 {
     RouteInfo *new;
     int ret, index;
     char *p;
 
-    p = strdup(routing_str);
+    p = strdup(msg->routing_info);
     if (p == NULL) {
 	error(errno, "Failed to allocate room for router");
 	return -1;
     }
     mutex_lock(&route_mutex);
 
-    ret = bsearch_receiver(routing_str, &index);
+    ret = bsearch_receiver(msg->routing_info, &index);
     if (ret == 0) {
 	warning(0, "Trying to re-insert already known");
+	free(p);
 	goto end;
     }
     /*
@@ -289,9 +300,16 @@ int add_receiver(char *routing_str, int id)
 	memmove(route_info+index+1, route_info+index, route_count-index);
     
     route_info[index].route_match = p;
-    route_info[index].receiver_id = id;
+    route_info[index].receiver_id = new_id;
     route_info[index].tag = time(NULL);
     route_count++;
+
+    /*
+     * we 'steal' all messages with identical routing str 
+     */
+    rq_change_destination(queue, msg->msg_class, msg->msg_type,
+			  msg->routing_info, old_id, new_id);
+	
     ret = 0;
 end:
     mutex_unlock(&route_mutex);
@@ -302,10 +320,13 @@ end:
 /*
  * check routing list and delete all that are older than
  * 10 minutes (600 seconds) (non-used for that period)
+ *
+ * Return number of references deleted
  */
-int check_receivers()
+static int check_receivers()
 {
     int i;
+    int tot = 0;
     time_t now;
 
     mutex_lock(&route_mutex);
@@ -317,9 +338,10 @@ int check_receivers()
 	    memmove(route_info+i, route_info+i+1, route_count-i-1);
 	    route_count--;
 	    i--;
+	    tot++;
 	}
     mutex_unlock(&route_mutex);
-    return 0;
+    return tot;
 }
 
     
@@ -343,17 +365,23 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 	msg->source = -1;	/* unknown */
 
     if (msg->msg_type == R_MSG_TYPE_MO) {
-	if (msg->msg_class == R_MSG_CLASS_SMS)
+	if (msg->msg_class == R_MSG_CLASS_SMS) {
+	    msg->destination= -1;
 	    return 0;	      	/* no direct destination, leave it
 				 * to load balancing functions */
+	}
 	/* WAP
 	* .. if a WAP is connectioneless, send to any wap box.. so
 	* need to set the destination. But if the message is connectioned
-	* session, we must route all to same wap box... that later */
+	* session, we must route all to same wap box... */
 
-	return 0;		/* TODO: Route! */
-
-	
+	msg->destination = find_receiver(msg);
+	/*
+	 * note that if we did NOT find a receiver (-1 returned)
+	 * we do not care but leave that to wapbox connection to take
+	 * care of
+	 */
+	return 0; 
     }
     /* if we have gone this far, this must be a mobile terminated
      * (new) message from sms/wap box to SMSC/CSD Router
@@ -375,14 +403,15 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 		(thr->status == BB_STATUS_OK ||
 		 thr->status == BB_STATUS_CREATED)) {
 
-		/* Route all WAPs to single CSDR.
-		 * TODO: multiple routing
+		/* Route WAP according to CSDR port and IP
 		 */
 		if (msg->msg_class == R_MSG_CLASS_WAP &&
 		    thr->type == BB_TTYPE_CSDR) {
 
-		    msg->destination = thr->id;
-		    break;
+/*		    if (csdr_is_to_us(msg->msg) == 1) { */
+			msg->destination = thr->id;
+			break;
+/*		    } */
 		}
 
 
@@ -666,9 +695,17 @@ static void *wapboxconnection_thread(void *arg)
 	 * about that to reply-queue, otherwise NACK
 	 */
 	msg = rq_pull_msg(bbox->request_queue, us->id);
-	if (msg == NULL)
+	if (msg == NULL) {
 	    msg = rq_pull_msg_class(bbox->request_queue, R_MSG_CLASS_WAP);
 
+	    /*
+	     * if we catch an general WAP message (sent to '-1') lets
+	     * catch them _all_
+	     */
+	    if (msg)
+		add_receiver(bbox->request_queue, msg, -1, us->id);
+		
+	}
 	if (msg) {
 	    warning(0, "WAPBOXC: wap-message read from queue and discarded"); 
 	    ret = boxc_send_message(us->boxc, msg, bbox->reply_queue); 
@@ -694,6 +731,21 @@ static void *wapboxconnection_thread(void *arg)
     }
     warning(0, "WAPBOXC: Closing and dying...");
     boxc_close(us->boxc);
+    /*
+     * route all WAP messages routed to us to unknown receiver (-1)
+     */
+    ret = rq_change_destination(bbox->request_queue, R_MSG_CLASS_WAP,
+				R_MSG_TYPE_MO, NULL, us->id, -1);
+
+    if (ret > 0)
+	info(0, "WAPBOXC: Re-routed %d WAP messages to new unknown WAP box", ret);
+    /*
+     * remove any references to us
+     */
+    ret = del_receiver_id(us->id);
+    if (ret > 0)
+	info(0, "WAPBOXC: Deleted %d WAP routing references to us", ret);
+    
     us->boxc = NULL;
     us->status = BB_STATUS_DEAD;
     return NULL;
@@ -1433,7 +1485,6 @@ static void main_program(void)
     int ret;
     char buf[1024];
     time_t last, now, last_sec;
-    int c = 0;
     
     last = last_sec = time(NULL);
     
@@ -1453,14 +1504,11 @@ static void main_program(void)
 	if (now - last > bbox->heartbeat_freq) {
 	    check_threads();		/* destroy killed */
 	    check_heartbeats();		/* check if need to be marked as killed */
-	    last = now;
+	    ret = check_receivers();
+	    if (ret > 0)
+		info(0, "%d old WAP routing infos deleted", ret);
 
-	    c++;
-	    if (c == 60) {
-		print_threads(buf);
-		info(0, "Threads:\n%s", buf);
-		c = 0;
-	    }
+	    last = now;
 	}
 
 	if (bbox->accept_pending)
