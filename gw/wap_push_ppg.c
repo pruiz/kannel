@@ -44,6 +44,7 @@ enum {
  */
 enum {
     DEFAULT_HTTP_PORT = 8080,
+    NO_HTTPS_PORT = -1,
     DEFAULT_NUMBER_OF_PUSHES = 100,
     PI_TRUSTED = 1,
     SSL_CONNECTION_OFF = 0,
@@ -51,9 +52,9 @@ enum {
     USER_CONFIGURATION_NOT_ADDED = 0
 };
 
-enum {USER_CONFIGURATION_ADDED = 1};
+enum { USER_CONFIGURATION_ADDED = 1 };
 
-#define DEFAULT_PPG_URL "cgi-bin/wap-push.cgi"
+#define DEFAULT_PPG_URL "/wappush"
 
 /*****************************************************************************
  *
@@ -71,9 +72,14 @@ enum {USER_CONFIGURATION_ADDED = 1};
 static enum {limbo, running, terminating} run_status = limbo;
 
 /*
- * The event queue for this module
+ * The external event queue for this module
  */
 static List *ppg_queue = NULL;
+
+/*
+ * The internal event queue for this module (allowing listening of many ports)
+ */
+static List *pap_queue = NULL;
 
 /*
  * List of ppg session machines (it is, of currently active sessions)
@@ -121,17 +127,35 @@ static wap_dispatch_func_t *dispatch_to_appl;
 
 static Octstr *ppg_url = NULL ;
 static long ppg_port = DEFAULT_HTTP_PORT;
-static int ppg_port_ssl = SSL_CONNECTION_OFF;
+
+#ifdef HAVE_LIBSSL
+static long ppg_ssl_port = NO_HTTPS_PORT;
+#endif
+
 static long number_of_pushes = DEFAULT_NUMBER_OF_PUSHES;
 static int trusted_pi = PI_TRUSTED;
 static long number_of_users = DEFAULT_NUMBER_OF_USERS;
 static Octstr *ppg_deny_ip = NULL;
 static Octstr *ppg_allow_ip = NULL; 
 static int user_configuration = USER_CONFIGURATION_NOT_ADDED;
+static Octstr *global_sender = NULL;
 #ifdef HAVE_LIBSSL
 static Octstr *ssl_server_cert_file = NULL;
 static Octstr *ssl_server_key_file = NULL;
 #endif
+
+
+struct PAPEvent {
+    HTTPClient *client;
+    Octstr *ip; 
+    Octstr *url;
+    List *push_headers; 
+    Octstr *mime_content;
+    List *cgivars;
+};
+
+typedef struct PAPEvent PAPEvent;
+
 
 /*****************************************************************************
  *
@@ -141,8 +165,22 @@ static Octstr *ssl_server_key_file = NULL;
  */
 static void ota_read_thread(void *arg);
 static void http_read_thread(void *arg);
+
+#ifdef HAVE_LIBSSL
+static void https_read_thread(void *arg);
+#endif
+
 static void handle_internal_event(WAPEvent *e);
+static void pap_request_thread(void *arg);
 static int handle_push_message(WAPEvent *ppg_event, int status);
+static PAPEvent *pap_event_create(Octstr *ip, Octstr *url, List *push_headers, 
+                                  Octstr *mime_content, List *cgivars,
+                                  HTTPClient *client);
+static void pap_event_destroy(PAPEvent *p);
+static void pap_event_destroy_item(void *p);
+static void pap_event_unpack(PAPEvent *p, Octstr **ip, Octstr **url, 
+                             List **push_headers, Octstr **mime_content, 
+                             List **cgivars, HTTPClient **client);
 
 /*
  * Constructors and destructors for machines.
@@ -263,7 +301,7 @@ static Octstr *describe_code(long code);
 static long ota_abort_to_pap(long reason);
 static int content_transformable(List *push_headers);
 static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport, 
-                                    long servport);
+                                    long servport, long address_type);
 static WAPAddrTuple *addr_tuple_change_cliport(WAPAddrTuple *tuple, long port);
 static void initialize_time_item_array(long time_data[], struct tm now);
 static int date_item_compare(Octstr *before, long time_data, long pos);
@@ -277,11 +315,18 @@ static int is_phone_number(long type_of_address);
  * EXTERNAL FUNCTIONS
  */
 
+enum {
+    TYPE_HTTP = 0,
+    TYPE_HTTPS = 1
+};
+
 void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch, 
                        wap_dispatch_func_t *appl_dispatch, Cfg *cfg)
 {
     ppg_queue = list_create();
     list_add_producer(ppg_queue);
+    pap_queue = list_create();
+    list_add_producer(pap_queue);
     push_id_counter = counter_create();
     ppg_machines = list_create();
     ppg_unit_pushes = list_create();
@@ -291,7 +336,10 @@ void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
 
     user_configuration = read_ppg_config(cfg);
     if (user_configuration != USER_CONFIGURATION_NOT_ADDED) {
-        http_open_port(ppg_port, ppg_port_ssl);
+        http_open_port(ppg_port, TYPE_HTTP);
+#ifdef HAVE_LIBSSL
+        http_open_port(ppg_ssl_port, TYPE_HTTPS);
+#endif
         http_clients = dict_create(number_of_pushes, NULL);
         urls = dict_create(number_of_pushes, NULL);
 
@@ -299,6 +347,10 @@ void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
         run_status = running;
         gwthread_create(ota_read_thread, NULL);
         gwthread_create(http_read_thread, NULL);
+#ifdef HAVE_LIBSSL 
+        gwthread_create(https_read_thread, NULL);
+#endif
+        gwthread_create(pap_request_thread, NULL);
     }
 }
 
@@ -307,6 +359,7 @@ void wap_push_ppg_shutdown(void)
      gw_assert(run_status == running);
      run_status = terminating;
      list_remove_producer(ppg_queue);
+     list_remove_producer(pap_queue);
      octstr_destroy(ppg_url);
      http_close_all_ports();
      dict_destroy(http_clients);
@@ -314,11 +367,17 @@ void wap_push_ppg_shutdown(void)
      wap_push_ppg_pushuser_list_destroy();
      octstr_destroy(ppg_deny_ip);
      octstr_destroy(ppg_allow_ip);
+     octstr_destroy(global_sender);
 
      gwthread_join_every(http_read_thread);
+#ifdef HAVE_LIBSSL
+     gwthread_join_every(https_read_thread);
+#endif
      gwthread_join_every(ota_read_thread);
+     gwthread_join_every(pap_request_thread);
 
      list_destroy(ppg_queue, wap_event_destroy_item);
+     list_destroy(pap_queue, pap_event_destroy_item);
      counter_destroy(push_id_counter);
      
      debug("wap.push.ppg", 0, "PPG: %ld push session machines left.",
@@ -386,26 +445,26 @@ static int read_ppg_config(Cfg *cfg)
 
      grp = cfg_get_single_group(cfg, octstr_imm("ppg"));
      if ((ppg_url = cfg_get(grp, octstr_imm("ppg-url"))) == NULL)
-         ppg_url = octstr_imm("/cgi-bin/wap-push.cgi");
+         ppg_url = octstr_imm("/wappush");
      cfg_get_integer(&ppg_port, grp, octstr_imm("ppg-port"));
      cfg_get_integer(&number_of_pushes, grp, octstr_imm("concurrent-pushes"));
      cfg_get_bool(&trusted_pi, grp, octstr_imm("trusted-pi"));
-     cfg_get_bool(&ppg_port_ssl, grp, octstr_imm("ppg-port-ssl"));
      cfg_get_integer(&number_of_users, grp, octstr_imm("users"));
      ppg_deny_ip = cfg_get(grp, octstr_imm("ppg-deny-ip"));
      ppg_allow_ip = cfg_get(grp, octstr_imm("ppg-allow-ip"));
+     if ((global_sender = cfg_get(grp, octstr_imm("global-sender"))) == NULL)
+         global_sender = octstr_imm("1234");
 
 #ifdef HAVE_LIBSSL
+     cfg_get_integer(&ppg_ssl_port, grp, octstr_imm("ppg-ssl-port"));
      ssl_server_cert_file = cfg_get(grp, octstr_imm("ssl-server-cert-file"));
      ssl_server_key_file = cfg_get(grp, octstr_imm("ssl-server-key-file"));
-     if (ppg_port_ssl) {
-         if (ssl_server_cert_file != NULL && ssl_server_key_file != NULL) {
-             use_global_server_certkey_file(ssl_server_cert_file, 
-                                            ssl_server_key_file);
-         } else { 
-             panic(0, "cannot continue without server cert and/or key files");
-         }
-     }
+     if (ppg_ssl_port == -1) 
+         panic(0, "cannot continue; https port not defined");
+     if (ssl_server_cert_file == NULL || ssl_server_key_file == NULL) 
+         panic(0, "cannot continue without server cert and/or key files");
+     use_global_server_certkey_file(ssl_server_cert_file, ssl_server_key_file);
+    
      octstr_destroy(ssl_server_cert_file);
      octstr_destroy(ssl_server_key_file);
 #endif
@@ -478,7 +537,97 @@ static void ota_read_thread (void *arg)
 }
 
 /*
- * Authorization failure as such causes a challenge to the client (a required 
+ * Pap event functions handle only copy pointers. They do not allocate memory.
+ */
+static PAPEvent *pap_event_create(Octstr *ip, Octstr *url, List *push_headers, 
+                                  Octstr *mime_content, List *cgivars,
+                                  HTTPClient *client)
+{
+    PAPEvent *p;
+
+    p = gw_malloc(sizeof(PAPEvent));
+    p->ip = ip;
+    p->url = url;
+    p->push_headers = push_headers;
+    p->mime_content = mime_content;
+    p->cgivars = cgivars;
+    p->client = client;
+
+    return p;
+}
+
+static void pap_event_destroy(PAPEvent *p)
+{
+    if (p == NULL)
+        return;
+
+    gw_free(p);
+}
+
+static void pap_event_destroy_item(void *p)
+{
+    pap_event_destroy(p);
+}
+
+static void pap_event_unpack(PAPEvent *p, Octstr **ip, Octstr **url, 
+                             List **push_headers, Octstr **mime_content, 
+                             List **cgivars, HTTPClient **client)
+{
+    *ip = p->ip;
+    *url = p->url;
+    *push_headers = p->push_headers;
+    *mime_content = p->mime_content;
+    *cgivars = p->cgivars;
+    *client = p->client;
+}
+
+static void http_read_thread(void *arg)
+{
+    PAPEvent *p;
+    Octstr *ip; 
+    Octstr *url; 
+    List *push_headers;
+    Octstr *mime_content; 
+    List *cgivars;
+    HTTPClient *client;
+
+    while (run_status == running) {
+        client = http_accept_request(ppg_port, &ip, &url, &push_headers, 
+                                     &mime_content, &cgivars);
+        if (client == NULL) 
+	    break;
+        p = pap_event_create(ip, url, push_headers, mime_content, cgivars,
+                             client);
+        list_produce(pap_queue, p);
+    }
+}
+
+#ifdef HAVE_LIBSSL
+static void https_read_thread(void *arg)
+{
+    PAPEvent *p;
+    Octstr *ip; 
+    Octstr *url; 
+    List *push_headers;
+    Octstr *mime_content; 
+    List *cgivars;
+    HTTPClient *client;
+
+    while (run_status == running) {
+        client = http_accept_request(ppg_ssl_port, &ip, &url, &push_headers, 
+                                     &mime_content, &cgivars); 
+        if (client == NULL) 
+	    break;
+        
+        p = pap_event_create(ip, url, push_headers, mime_content, cgivars, 
+                             client);
+        list_produce(pap_queue, p);
+    }
+}
+#endif
+
+/*
+ * Authorization failure as such causes a challenge to the client (as required 
  * by rfc 2617, chapter 1).
  * We store HTTPClient data structure corresponding a given push id, so that 
  * we can send responses to the rigth address.
@@ -489,9 +638,10 @@ static void ota_read_thread (void *arg)
  * we cannot know this error before parsing the document.
  */
 
-static void http_read_thread(void *arg)
+static void pap_request_thread(void *arg)
 {
     WAPEvent *ppg_event;
+    PAPEvent *p;
     size_t push_len;
     Octstr *pap_content,
            *push_data,
@@ -516,11 +666,10 @@ static void http_read_thread(void *arg)
     
     http_status = 202;                
   
-    while (run_status == running) {
-        client = http_accept_request(ppg_port, &ip, &url, &push_headers, 
-                                     &mime_content, &cgivars);
-        if (client == NULL) 
-	    break;
+    while (run_status == running && (p = list_consume(pap_queue)) != NULL) {
+        pap_event_unpack(p, &ip, &url, &push_headers, &mime_content, 
+                         &cgivars, &client);      
+        pap_event_destroy(p);
 
         if (octstr_compare(url, ppg_url) != 0) {
 	    http_status = HTTP_NOT_FOUND;
@@ -1381,12 +1530,17 @@ static void push_machine_assert(PPGPushMachine *pm)
  * module (gw/wap_push_ota.c). 
  * FIXME: Remove all headers which default values are known to the client. 
  *
- * Return message, either transformed or not (if there is no-transform cache 
- * directive or wml code is erroneous) separately the transformed gw address 
- * tuple and message content type and body. In addition, a flag telling was 
- * the transformation (if any) successfull or not. Error flag is returned when
- * there is no push headers, there is no Content-Type header or push content
- * does not compile.
+ * Return 
+ *    a) message, either transformed or not (if there is no-transform cache 
+ *       directive or wml code is erroneous) 
+ *    b) The transformed gw address. Use here global-sender, when the bearer
+ *       is SMS (some SMS centers would require this).
+ *    c) the transformed message content type
+ *
+ * Returned flag tells was the transformation (if any) successfull or not. Error 
+ * flag is returned when there is no push headers, there is no Content-Type header
+ * or push content does not compile. We should have checked existence of push 
+ * headers earlier, but let us be carefull.
  */
 static int transform_message(WAPEvent **e, WAPAddrTuple **tuple, 
                              List *push_headers, int cless_accepted, Octstr **type)
@@ -1395,7 +1549,8 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
     struct content content;
     Octstr *cliaddr;
     long cliport,
-         servport;
+         servport,
+         address_type;
 
     gw_assert((**e).type == Push_Message);
     if ((**e).u.Push_Message.push_headers == NULL)
@@ -1411,16 +1566,19 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
         cliport = CONNECTIONLESS_PUSH_CLIPORT;
         servport = CONNECTIONLESS_SERVPORT;
     }
+    
+    address_type = (**e).u.Push_Message.address_type;
+    *tuple = set_addr_tuple(cliaddr, cliport, servport, address_type);
 
-    *tuple = set_addr_tuple(cliaddr, cliport, servport);
     if (!content_transformable(push_headers)) 
         goto no_transform;
+
     content.body = (**e).u.Push_Message.push_data; 
     if (content.body == NULL)
         goto no_transform;
 
-    content.type = http_header_find_first(push_headers, "Content-Transfer-Encoding");
-
+    content.type = http_header_find_first(push_headers, 
+        "Content-Transfer-Encoding");
     if (content.type) {
 	octstr_strip_blanks(content.type);
 	debug("wap.push.ppg", 0, "PPG: Content-Transfer-Encoding is \"%s\"",
@@ -1428,7 +1586,8 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
 	message_deliverable = pap_get_content(&content);
 	
 	if (message_deliverable) {
-	    change_header_value(&push_headers, "Content-Transfer-Encoding", "binary");
+	    change_header_value(&push_headers, "Content-Transfer-Encoding", 
+                                "binary");
 	} else {
 	    goto error;
 	}
@@ -1437,6 +1596,7 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
     http_header_get_content_type(push_headers, &content.type,
                                  &content.charset);   
     message_deliverable = pap_convert_content(&content);
+
     if (content.type == NULL)
         goto error;
 
@@ -2379,17 +2539,22 @@ static int deliver_after_test_cleared(Octstr *after, struct tm now)
 /*
  * We exchange here server and client addresses and ports, because our WDP,
  * written for pull, exchange them, too. Similarly server address INADDR_ANY is
- * used for compability reasons.
+ * used for compability reasons, when the bearer is ip. When it is SMS, the
+ * server address is global-sender.
  */
 static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport, 
-                                    long servport)
+                                    long servport, long address_type)
 {
     Octstr *cliaddr;
     WAPAddrTuple *tuple;
     
     gw_assert(address);
 
-    cliaddr = octstr_imm("0.0.0.0");
+    if (address_type == ADDR_PLMN)
+        cliaddr = octstr_duplicate(global_sender);
+    else
+        cliaddr = octstr_imm("0.0.0.0");
+
     tuple = wap_addr_tuple_create(address, cliport, cliaddr, servport);
 
     return tuple;
