@@ -480,8 +480,8 @@ static void return_unit_reply(WAPAddrTuple *tuple, long transaction_id,
  */
 static void return_reply(int status, Octstr *content_body, List *headers,
     	    	    	 long sdu_size, WAPEvent *orig_event,
-			 long session_id, Octstr *url, int x_wap_tod,
-			 List *request_headers)
+                         long session_id, Octstr *url, int x_wap_tod,
+                         List *request_headers)
 {
     struct content content;
 
@@ -489,49 +489,46 @@ static void return_reply(int status, Octstr *content_body, List *headers,
     content.body = content_body;
 
     if (status < 0) {
-	error(0, "WSP: http lookup failed, oops.");
-	status = HTTP_BAD_GATEWAY;
-	content.type = octstr_create("text/plain");
-	content.charset = octstr_create("");
-	content.body = octstr_create("");
+        error(0, "WSP: http lookup failed, oops.");
+        status = HTTP_BAD_GATEWAY;
+        content.type = octstr_create("text/plain");
+        content.charset = octstr_create("");
+        content.body = octstr_create("");
     } else {
-	int converted;
+        int converted;
 
-	http_header_get_content_type(headers, &content.type, 
-	    	    	    	     &content.charset);
-	info(0, "WSP: Fetched <%s> (%s, charset='%s')", 
-		octstr_get_cstr(url), octstr_get_cstr(content.type),
-		octstr_get_cstr(content.charset));
-	if (status != HTTP_OK)
-		info(0, "WSP: Got status %d", status);
+        http_header_get_content_type(headers, &content.type, &content.charset);
+        info(0, "WSP: Fetched <%s> (%s, charset='%s')", 
+             octstr_get_cstr(url), octstr_get_cstr(content.type),
+             octstr_get_cstr(content.charset));
+        if (status != HTTP_OK)
+            info(0, "WSP: Got status %d", status);
 
 #ifdef ENABLE_COOKIES
-	if (session_id != -1)
-		if (get_cookies(headers, find_session_machine_by_id(session_id)) == -1)
-			error(0, "WSP: Failed to extract cookies");
+        if (session_id != -1)
+            if (get_cookies(headers, find_session_machine_by_id(session_id)) == -1)
+                error(0, "WSP: Failed to extract cookies");
 #endif		
 	
-	converted = convert_content(&content);
-	if (converted < 0) {
-	    warning(0, "WSP: All converters for `%s' failed.",
-			octstr_get_cstr(content.type));
-	    /* Don't change status; just send the client what
-	     * we did get. */
-	}
-	if (converted == 1)
-	    http_header_mark_transformation(headers, content.body, 
-		    	    	    	    content.type);
+        converted = convert_content(&content);
+        if (converted < 0) {
+            warning(0, "WSP: All converters for `%s' failed.",
+                    octstr_get_cstr(content.type));
+            /* Don't change status; just send the client what we did get. */
+        }
+        if (converted == 1)
+            http_header_mark_transformation(headers, content.body, content.type);
     }
 
     if (headers == NULL)
-    	headers = http_create_empty_headers();
+        headers = http_create_empty_headers();
     http_remove_hop_headers(headers);
     http_header_remove_all(headers, "X-WAP.TOD");
     if (x_wap_tod)
-	add_x_wap_tod(headers);
+        add_x_wap_tod(headers);
 
     if (content.body == NULL)
-	content.body = octstr_create("");
+        content.body = octstr_create("");
 
     /*
      * Deal with otherwise wap-aware servers that return text/html error
@@ -544,11 +541,11 @@ static void return_reply(int status, Octstr *content_body, List *headers,
         !http_type_accepted(request_headers, octstr_get_cstr(content.type))) {
         warning(0, "WSP: Content type <%s> not supported by client,"
                    " deleting body.", octstr_get_cstr(content.type));
-	octstr_destroy(content.body);
-	content.body = octstr_create("");
-	octstr_destroy(content.type);
-	content.type = octstr_create("text/plain");
-	http_header_mark_transformation(headers, content.body, content.type);
+        octstr_destroy(content.body);
+        content.body = octstr_create("");
+        octstr_destroy(content.type);
+        content.type = octstr_create("text/plain");
+        http_header_mark_transformation(headers, content.body, content.type);
     }
 
     /*
@@ -557,27 +554,27 @@ static void return_reply(int status, Octstr *content_body, List *headers,
      */
     if (octstr_len(content.body) > sdu_size && sdu_size > 0) {
         /*
-	 * Only change the status if it indicated success.
+         * Only change the status if it indicated success.
          * If it indicated an error, then that information is
-	 * more useful to the client than our "Bad Gateway" would be.
-	 * The too-large body is probably an error page in html.
-	 */
-	if (http_status_class(status) == HTTP_STATUS_SUCCESSFUL)
-	    status = HTTP_BAD_GATEWAY;
-	warning(0, "WSP: Entity at %s too large (size %ld B, limit %lu B)",
-	        octstr_get_cstr(url), octstr_len(content.body), sdu_size);
-	octstr_destroy(content.body);
-	content.body = octstr_create("");
-	http_header_mark_transformation(headers, content.body, content.type);
+         * more useful to the client than our "Bad Gateway" would be.
+         * The too-large body is probably an error page in html.
+         */
+        if (http_status_class(status) == HTTP_STATUS_SUCCESSFUL)
+            status = HTTP_BAD_GATEWAY;
+        warning(0, "WSP: Entity at %s too large (size %ld B, limit %lu B)",
+                octstr_get_cstr(url), octstr_len(content.body), sdu_size);
+        octstr_destroy(content.body);
+        content.body = octstr_create("");
+        http_header_mark_transformation(headers, content.body, content.type);
     }
 
     if (orig_event->type == S_MethodInvoke_Ind) {
-	return_session_reply(orig_event->u.S_MethodInvoke_Ind.server_transaction_id,
-			     status, headers, content.body, session_id);
+        return_session_reply(orig_event->u.S_MethodInvoke_Ind.server_transaction_id,
+                             status, headers, content.body, session_id);
     } else {
-	return_unit_reply(orig_event->u.S_Unit_MethodInvoke_Ind.addr_tuple,
-			  orig_event->u.S_Unit_MethodInvoke_Ind.transaction_id,
-			  status, headers, content.body);
+        return_unit_reply(orig_event->u.S_Unit_MethodInvoke_Ind.addr_tuple,
+                          orig_event->u.S_Unit_MethodInvoke_Ind.transaction_id,
+                          status, headers, content.body);
     }
 
     octstr_destroy(content.type); /* body was re-used above */
