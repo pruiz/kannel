@@ -1,6 +1,7 @@
-2002-09-09  Oded Arbel  <odea@m-wise.com>
+2002-09-18  Oded Arbel  <odea@m-wise.com>
     * gw/wap_push_ppg.c: Fixed a bug in get_mime_boundary that would cause 
-      it to get into an endless loop if the boundary was not ; terminated
+      it to get into an endless loop if the boundary was not ; terminated,
+      changed the HTML entity name of a double quote from &qt; to &quot;
 2002-09-09  Stipe Tolj  <tolj@wapme-systems.de>
     * config.h.in, configure[.in], gwlib/cfg.c: veto against #define WIN32. 
       This shoould be only used for Win32 native support, *not* for Cygwin
