@@ -854,7 +854,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
             break; 
  
         case submit_sm_resp: 
-            os = octstr_format("%ld", pdu->u.submit_sm.sequence_number); 
+            os = octstr_format("%ld", pdu->u.submit_sm_resp.sequence_number); 
             msg = dict_remove(smpp->sent_msgs, os); 
             octstr_destroy(os); 
             if (msg == NULL) { 
