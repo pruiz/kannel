@@ -4851,24 +4851,24 @@ forced-smsc = SOL
 	<literal>dlr-storage = mysql</literal> configuration directive in the
 	<literal>core</literal> group.
 	</para>
-	<para>In addition to that you must have a <literal>dlr-mysql</literal>
+	<para>In addition to that you must have a <literal>dlr-db</literal>
 	group defined that specifies the table field names that are used to the
 	DLR attributes and a <literal>mysql-connection</literal> group that 
 	defines the connection to the MySQL server itself.
 	</para>
-	<para>Here is the example configuration from <literal>doc/dlr-mysql.conf
-	</literal>:
+	<para>Here is the example configuration from 
+	<literal>doc/examples/dlr-mysql.conf</literal>:
 	
 <programlisting>
 group = mysql-connection
-id = dlr-db
+id = mydlr
 host = localhost
 mysql-username = foo
 mysql-password = bar
 database = dlr
 
-group = dlr-mysql
-mysql-id = dlr-db
+group = dlr-db
+id = mydlr
 table = dlr
 field-smsc = smsc
 field-timestamp = ts
@@ -4881,6 +4881,157 @@ field-status = status
 
 	</para>
 	
+	</sect3>
+
+	<sect3>
+	<title>LibSDB DLR storage</title>
+	<para>To store DLR information into a LibSDB ressource (which is an 
+	abstraction	of a real database) you may use the 
+	<literal>dlr-storage = sdb</literal> configuration directive in the
+	<literal>core</literal> group.
+	</para>
+	<para>In addition to that you must have a <literal>dlr-db</literal>
+	group defined that specifies the table field names that are used to the
+	DLR attributes and a <literal>sdb-connection</literal> group that 
+	defines the LibSDB ressource itself.
+	</para>
+	<para>Here is the example configuration from 
+	<literal>doc/examples/dlr-sdb.conf</literal> using a MySQL ressource:
+	
+<programlisting>
+group = sdb-connection
+id = mydlr
+url = "mysql:host=localhost:db=dlr:uid=foo:pwd=bar"
+
+group = dlr-db
+id = mydlr
+table = dlr
+field-smsc = smsc
+field-timestamp = ts
+field-destination = destination
+field-service = service
+field-url = url
+field-mask = mask
+field-status = status
+</programlisting>
+
+	</para>
+  </para>
+  <para>Beware that you have the DB support build in your LibSDB 
+  installation when trying to use a specific DB type within the URL.
+  </para>
+	
+	</sect3>
+
+	<sect3>
+	<title>DLR database field configuration</title>
+	<para>For external database storage of DLR information in relational 
+	database management systems (RDMS) you will have tospecify which table
+	field are used to represend the stored data. This is done via the 
+	<literl>dlr-db</literal> group as follows:
+	</para>
+
+ <table frame=none>
+  <title>DLR Database Field Configuration Group Variables</title>
+  <tgroup cols=3>
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>group</literal></entry>
+     <entry><literal>dlr-db</literal></entry>
+     <entry valign=bottom>
+       This is a mandatory variable
+     </entry></row>
+
+   <row><entry><literal>id (m)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+	     An id to identify which external connection should be used for
+ 		  DLR storage. Any string is acceptable, but semicolon ';' may cause 
+		  problems, so avoid it and any other special non-alphabet characters. 
+     </entry></row>
+
+   <row><entry><literal>table (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        The name of the table that is used to store the DLR information.
+     </entry></row>
+
+   <row><entry><literal>field-smsc (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        The table field that is used for the smsc data.
+     </entry></row>
+
+   <row><entry><literal>field-timestamp (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        The table field that is used for the timestamp data.
+     </entry></row>
+
+   <row><entry><literal>field-destination (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        The table field that is used for the destination number data.
+     </entry></row>
+
+   <row><entry><literal>field-service (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        The table field that is used for the service username data.
+     </entry></row>
+
+   <row><entry><literal>field-url (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        The table field that is used for the DLR URL which is triggered
+		  when the DLR for this message arrives from the SMSC.
+     </entry></row>
+
+   <row><entry><literal>field-mask (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        The table field that is used for the DLR mask that has been set
+		  for a message.
+     </entry></row>
+
+   <row><entry><literal>field-status (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        The table field that is used to reflect the status of the DLR
+		  for a specific message.
+     </entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
+
+  <para>A sample 'dlr-db' group:
+
+<programlisting>
+group = dlr-db
+id = dlr-db
+table = dlr
+field-smsc = smsc
+field-timestamp = ts
+field-destination = destination
+field-service = service
+field-url = url
+field-mask = mask
+field-status = status
+</programlisting>
+
+  </para>
+  <para>Beware that all variables in this group are mandatory, so you
+  have to specify all fields to enable bearerbox to know how to store
+  and retrieve the DLR information from the external storage spaces.
+  </para>
+
 	</sect3>
 
 </sect2>	  
