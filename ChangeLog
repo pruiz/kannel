@@ -1,3 +1,17 @@
+Mon Nov 15 12:04:37 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* wapbox.c, wapbox.conf: Wrote. This is the main module of
+	the WAP box.
+	
+	* wapbox_feeder.c: Trivial test program for wapbox.c.
+	
+	* Makefile: related changes.
+	
+	* octstr.c: removed debugging message telling argument was NULL.
+	Now a NULL argument is silently ignored.
+	
+	* msg.c: Added name of message type to message dump.
+
 1999-11-12    <rpr@rpr.wapit.com>
 
 	* bearerbox.c, boxc.c: ready for WAP invasion (ok, still missing
