@@ -133,6 +133,7 @@ static void httpd_serve(void *arg)
     List *headers, *cgivars;
     Octstr *url, *body;
     Octstr *reply;
+    char *content_type;
     
     if (http_server_get_request(client, &url, &headers, &body, &cgivars) < 1)
     {
@@ -141,30 +142,40 @@ static void httpd_serve(void *arg)
 	return;
     }
     
-    if (octstr_str_compare(url, "/cgi-bin/status")==0)
+    if (octstr_str_compare(url, "/cgi-bin/status")==0) {
 	reply = httpd_status(cgivars);
-    else if (octstr_str_compare(url, "/cgi-bin/xmlstatus")==0)
+	content_type = "text/html";
+    } else if (octstr_str_compare(url, "/cgi-bin/xmlstatus")==0) {
 	reply = httpd_xmlstatus(cgivars);
-    else if (octstr_str_compare(url, "/cgi-bin/shutdown")==0)
+	content_type = "text/x-kannelstatus";
+    } else if (octstr_str_compare(url, "/cgi-bin/shutdown")==0) {
 	reply = httpd_shutdown(cgivars);
-    else if (octstr_str_compare(url, "/cgi-bin/suspend")==0)
+	content_type = "text/html";
+    } else if (octstr_str_compare(url, "/cgi-bin/suspend")==0) {
 	reply = httpd_suspend(cgivars);
-    else if (octstr_str_compare(url, "/cgi-bin/isolate")==0)
+	content_type = "text/html";
+    } else if (octstr_str_compare(url, "/cgi-bin/isolate")==0) {
 	reply = httpd_isolate(cgivars);
-    else if (octstr_str_compare(url, "/cgi-bin/resume")==0)
+	content_type = "text/html";
+    } else if (octstr_str_compare(url, "/cgi-bin/resume")==0) {
 	reply = httpd_resume(cgivars);
+	content_type = "text/html";
     /*
      * reconfig? restart?
      */
-    else 
+    } else  {
 	reply = octstr_format("Unknown command %S", url);
+	content_type = "text/plain";
+    }
 
     gw_assert(reply != NULL);
     
-    /* XXX: how about headers? */
-
     debug("bb.http", 0, "Result: '%s'", octstr_get_cstr(reply));
     
+    http_destroy_headers(headers);
+    headers = list_create();
+    http_header_add(headers, "Content-Type", content_type);
+
     if (http_server_send_reply(client, HTTP_OK, headers, reply) == -1)
 	warning(0, "HTTP-admin server_send_reply failed");
 

@@ -1,3 +1,8 @@
+2000-10-27  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/bb_http.c: Add Content-Type header to bearerbox admin
+	interface replies.
+
 2000-10-27  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsbox_req.c: fixed bug created by applying a few day old fix...
