@@ -1,3 +1,9 @@
+2000-11-14  Yann Muller  <ymuller@3glab.com>
+
+	* gw/smsc_at.c: phone numbers starting with '+' or '00' are
+	coded as international numbers, others are left with the 
+	default (Unknown).	
+	
 2000-11-13  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/smsbox.c, gw/wapbox.c, gwlib/http.[ch], test/test_http.c:
