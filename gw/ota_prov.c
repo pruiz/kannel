@@ -16,7 +16,6 @@
 
 #include "msg.h"
 #include "sms.h"
-#include "urltrans.h"
 #include "ota_prov_attr.h"
 #include "ota_compiler.h"
 
