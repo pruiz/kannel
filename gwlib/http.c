@@ -1551,8 +1551,10 @@ static void destroy_int_pointer(void *p)
 static void server_shutdown(void)
 {
     list_remove_producer(new_server_sockets);
-    gwthread_wakeup(server_thread_id);
-    gwthread_join_every(server_thread);
+    if (server_thread_id != -1) {
+	gwthread_wakeup(server_thread_id);
+	gwthread_join_every(server_thread);
+    }
     mutex_destroy(server_thread_lock);
     list_destroy(clients_with_requests, client_destroy);
     fdset_destroy(server_fdset);
