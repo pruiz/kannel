@@ -21,14 +21,19 @@ long dtd_id;
 DTD_TYPE_LIST DTDTypeList[] =
 {
 	{1, "UNKNOWN"},
-	{2, "-//WAPFORUM//DTD WML 1.0//EN"},
+	{2, "-//WAPFORUM//DTD WML 1.0//EN\"\n"
+	 "\"http://www.wapforum.org/DTD/wml.xml"},
 	{3, "-//WAPFORUM//DTD WTA 1.0//EN"},
-	{4, "-//WAPFORUM//DTD WML 1.1//EN"},
-	{5, "-//WAPFORUM//DTD SI 1.0//EN"},
-	{6, "-//WAPFORUM//DTD SL 1.0//EN"},
+	{4, "-//WAPFORUM//DTD WML 1.1//EN\"\n"
+	 "\"http://www.wapforum.org/DTD/wml_1.1.xml"},
+	{5, "-//WAPFORUM//DTD SI 1.0//EN\"\n"
+	 "\"http://www.wapforum.org/DTD/si.dtd"},
+	{6, "-//WAPFORUM//DTD SL 1.0//EN\"\n"
+	 "\"http://www.wapforum.org/DTD/sl.dtd"},
 	{7, "-//WAPFORUM//DTD CO 1.0//EN"},
 	{8, "-//WAPFORUM//DTD CHANNEL 1.1//EN"},
-	{9, "-//WAPFORUM//DTD WML 1.2//EN"},
+	{9, "-//WAPFORUM//DTD WML 1.2//EN\"\n"
+	 "\"http://www.wapforum.org/DTD/wml12.dtd"},
 	{0, NULL}
 };
 
@@ -1284,6 +1289,7 @@ void Read_termstr_rtn(P_WBXML_INFO buffer, char** result)
 
 	int buflen = STRING_BLOCK_SIZE;
 	char* strbuf = (char*) malloc(buflen);
+	BOOL doubled = FALSE;
 	int i = 0;
 
 	if (!result)
@@ -1297,9 +1303,20 @@ void Read_termstr_rtn(P_WBXML_INFO buffer, char** result)
 			strbuf = realloc(strbuf, buflen);
 		}
 
-		strbuf[i] = *(buffer->m_curpos);
-		buffer->m_curpos++;
-		i++;
+		if (*(buffer->m_curpos) != '$' || doubled == TRUE)
+		{
+			strbuf[i] = *(buffer->m_curpos);
+			buffer->m_curpos++;
+			i++;
+			if (doubled == TRUE)
+				doubled = FALSE;
+		}
+		else
+		{
+			strbuf[i] = *(buffer->m_curpos);
+			i++;
+			doubled = TRUE;
+		}
 	}
 
 	strbuf[i] = 0;
