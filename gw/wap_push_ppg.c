@@ -269,6 +269,7 @@ static int get_mime_boundary(List *push_headers, Octstr *content_header,
 static void change_header_value(List **push_headers, char *name, char *value);
 static void remove_mime_headers(List **push_headers);
 static void remove_link_headers(List **push_headers);
+static void remove_x_kannel_headers(List **push_headers);
 
 /*
  * Communicating with pi.
@@ -298,10 +299,10 @@ static Octstr *convert_sl_to_slc(struct content *content);
  * some control, but not enough.)
  */
 
-static Octstr *set_smsc_id(List *cgivars, Octstr *username);
-static Octstr *set_dlr_url(List *cgivars, Octstr *username);
-static long set_dlr_mask(List *cgivars, Octstr *dlr_url);
-static Octstr *set_smsbox_id(List *cgivars, Octstr *username);
+static Octstr *set_smsc_id(List *headers, Octstr *username, int trusted_pi);
+static Octstr *set_dlr_url(List *headers, Octstr *username, int trusted_pi);
+static long set_dlr_mask(List *headers, Octstr *dlr_url);
+static Octstr *set_smsbox_id(List *headers, Octstr *username, int trusted_pi);
 static Octstr *set_service_name(void);
 
 /*
@@ -456,7 +457,8 @@ PPGSessionMachine *wap_push_ppg_have_push_session_for_sid(long sid)
  *
  * Read general ppg configuration and configuration specific for users (to the
  * list 'users').
- * Return 1 when an user configuration group is present, 0 otherwise.
+ * Return 1 when an user ppg group is present, 0 otherwise (and panic
+ * if we have not trusted ppg and no user groups).
  */
 
 static int read_ppg_config(Cfg *cfg)
@@ -497,9 +499,16 @@ static int read_ppg_config(Cfg *cfg)
      octstr_destroy(ssl_server_key_file);
 #endif
 
+     /* If pi is trusted, ignore possible user groups. */
+     if (trusted_pi) {
+        cfg_destroy(cfg);
+        return USER_CONFIGURATION_ADDED;
+     }
+
+     /* But if it is not, we cannot continue without user groups.*/
      if ((list = cfg_get_multi_group(cfg, octstr_imm("wap-push-user")))
               == NULL) {
-         info(0, "No configuration for any user, continuing without");
+         panic(0, "No user group but ppg not trusted, stopping");
          list_destroy(list, NULL);
          cfg_destroy(cfg); 
          return USER_CONFIGURATION_NOT_ADDED;
@@ -632,6 +641,7 @@ static void http_read_thread(void *arg)
                                      &mime_content, &cgivars);
         if (client == NULL) 
 	        break;
+
         p = pap_event_create(ip, url, push_headers, mime_content, cgivars,
                              client);
         list_produce(pap_queue, p);
@@ -801,7 +811,7 @@ static void pap_request_thread(void *arg)
 	        debug("wap.push.ppg", 0, "PPG: http_read_thread: pap multipart"
                   " accepted");
         }
-
+        
         push_len = octstr_len(push_data); 
         http_header_remove_all(push_headers, "Content-Type");
 	    http_append_headers(push_headers, content_headers);
@@ -855,15 +865,17 @@ static void pap_request_thread(void *arg)
 
             debug("wap.push.ppg", 0, "PPG: http_read_thread: pap control"
                   " entity compiled ok");
-            ppg_event->u.Push_Message.push_headers = 
-                http_header_duplicate(push_headers);
             ppg_event->u.Push_Message.push_data = octstr_duplicate(push_data);
-            ppg_event->u.Push_Message.smsc_id = set_smsc_id(cgivars, username);
-            dlr_url = set_dlr_url(cgivars, username);
+            ppg_event->u.Push_Message.smsc_id = set_smsc_id(push_headers, username,
+                                                            trusted_pi);
+            dlr_url = set_dlr_url(push_headers, username, trusted_pi);
             ppg_event->u.Push_Message.dlr_url = dlr_url;
-            ppg_event->u.Push_Message.dlr_mask = set_dlr_mask(cgivars, dlr_url);
-            ppg_event->u.Push_Message.smsbox_id = set_smsbox_id(cgivars, username);
+            ppg_event->u.Push_Message.dlr_mask = set_dlr_mask(push_headers, dlr_url);
+            ppg_event->u.Push_Message.smsbox_id = set_smsbox_id(push_headers, username,
+                                                                trusted_pi);
             ppg_event->u.Push_Message.service_name = set_service_name();
+            remove_x_kannel_headers(&push_headers);
+            ppg_event->u.Push_Message.push_headers = http_header_duplicate(push_headers);
             
             if (!handle_push_message(&client, ppg_event, http_status)) {
 	        if (client == NULL)
@@ -1509,8 +1521,9 @@ static void request_unit_push(long last, PPGPushMachine *pm)
     if (pm->smsbox_id != NULL)   
         ota_event->u.Po_Unit_Push_Req.smsbox_id = octstr_duplicate(pm->smsbox_id);
     else
-        ota_event->u.Po_Unit_Push_Req.smsbox_id = NULL;    
-    ota_event->u.Po_Unit_Push_Req.service_name = octstr_duplicate(pm->service_name);
+        ota_event->u.Po_Unit_Push_Req.smsbox_id = NULL;
+    if (pm->service_name != NULL)    
+        ota_event->u.Po_Unit_Push_Req.service_name = octstr_duplicate(pm->service_name);
 
     ota_event->u.Po_Unit_Push_Req.push_body = octstr_duplicate(pm->push_data);
 
@@ -2710,7 +2723,9 @@ static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport,
  * ain application id reserved by WINA or the part containing assigned code. 
  * Otherwise (regardless of it being an URI or assigned code) we simply pass 
  * it forward. 
- * These are defined by WINA at http://www.wapforum.org/wina/push-app-id.htm. 
+ * These are defined by WINA at http://www.openmobilealliance.org/tech/
+ * omna/omna-push-app-id.htm. We recognize both well-known and registered
+ * values. X-wap-application is not added, it is considired a default.
  */
 
 static char *wina_uri[] =
@@ -2736,7 +2751,10 @@ static char *wina_uri[] =
     "x-motorola:browser.ua",
     "x-motorola:splash.ua",
     "x-wap-nai:mvsw.command",
-    "x-wap-openwave:iota.ua" 
+    "x-wap-openwave:iota.ua",
+    "x-wap-docomo:imode.mail2.ua",
+    "x-oma-nec:otaprov.ua",
+    "x-oma-nokia:call.ua"
 };
 
 #define NUMBER_OF_WINA_URIS sizeof(wina_uri)/sizeof(wina_uri[0])
@@ -2920,6 +2938,16 @@ static void remove_link_headers(List **push_headers)
     http_header_remove_all(*push_headers, "Host");
 }
 
+/*
+ * X-Kannel headers are used to control Kannel ppg.
+ */
+static void remove_x_kannel_headers(List **push_headers)
+{
+    http_header_remove_all(*push_headers, "X-Kannel-SMSC");
+    http_header_remove_all(*push_headers, "X-Kannel-DLR-Url");
+    http_header_remove_all(*push_headers, "X-Kannel-DLR-Mask");
+    http_header_remove_all(*push_headers, "X-Kannel-Smsbox-Id");
+}
 
 /*
  * Badmessage-response element is redefined in pap, implementation note, 
@@ -3155,22 +3183,25 @@ static void replace_octstr_char(Octstr *os1, Octstr *os2, long *pos)
 
 /* 
  * Check if we have an explicit routing information 
- *       a) first check cgi variable
- *       b) then ppg user specific routing
+ *       a) first check x-kannel header
+ *       b) then ppg user specific routing (if there is any groups; we have none,
+ *          if pi is trusted)
  *       c) then global ppg routing
  *       d) if all these failed, return NULL
  */
-static Octstr *set_smsc_id(List *cgivars, Octstr *username)
+static Octstr *set_smsc_id(List *headers, Octstr *username, int trusted_pi)
 {
     Octstr *smscidos;
-    Octstr *smsc_id;
+    Octstr *smsc_id = NULL;
 
-    smscidos = http_cgi_variable(cgivars, "smsc");
+    smscidos = http_header_value(headers, octstr_imm("X-Kannel-SMSC"));
     if (smscidos != NULL) {
         return octstr_duplicate(smscidos);
     }
 
-    smsc_id = wap_push_ppg_pushuser_smsc_id_get(username);
+    if (!trusted_pi)
+        smsc_id = wap_push_ppg_pushuser_smsc_id_get(username);
+
     smsc_id = smsc_id ? 
         smsc_id : (ppg_default_smsc ? octstr_duplicate(ppg_default_smsc) : NULL);
 
@@ -3179,22 +3210,25 @@ static Octstr *set_smsc_id(List *cgivars, Octstr *username)
 
 /* 
  * Checking for dlr url, using  following order:
- *       a) first check cgi variable  
- *       b) then ppg user specific dlr url
+ *       a) first check X-Kannel header  
+ *       b) then ppg user specific dlr url (if there is any user group; if pi is
+ *          trusted, there are none.)
  *       c) then global ppg dlr url
  *       d) if all these failed, return NULL
  */
-static Octstr *set_dlr_url(List *cgivars, Octstr *username)
+static Octstr *set_dlr_url(List *headers, Octstr *username, int trusted_pi)
 {
     Octstr *dlrurlos;
-    Octstr *dlr_url;
+    Octstr *dlr_url = NULL;
 
-    dlrurlos = http_cgi_variable(cgivars, "dlrurl");
+    dlrurlos = http_header_value(headers, octstr_imm("X-Kannel-DLR-Url"));
     if (dlrurlos != NULL) {
         return octstr_duplicate(dlrurlos);
     }
 
-    dlr_url = wap_push_ppg_pushuser_dlr_url_get(username);
+    if (!trusted_pi)
+        dlr_url = wap_push_ppg_pushuser_dlr_url_get(username);
+
     dlr_url = dlr_url ?
         dlr_url : (ppg_dlr_url ? octstr_duplicate(ppg_dlr_url) : NULL);
 
@@ -3206,20 +3240,18 @@ static Octstr *set_dlr_url(List *cgivars, Octstr *username)
  * We reject (some) non-meaningfull values of dlr_mask. Value indic-
  * ating rejection is 0.
  */
-static long set_dlr_mask(List *cgivars, Octstr *dlr_url)
+static long set_dlr_mask(List *headers, Octstr *dlr_url)
 {
     Octstr *dlrmaskos;
     long dlr_mask;
     long masklen;    
 
     if (dlr_url == NULL) {
-        debug("wap.push.ppg", 0, "no dlr url set, no dlr mask either");
         return 0; 
     }
 
-    dlrmaskos = http_cgi_variable(cgivars, "dlrmask");
-    if (dlrmaskos == NULL) {
-        debug("wap.push.ppg", 0, "no dlr mask from cgi vars"); 
+    dlrmaskos = http_header_value(headers, octstr_imm("X-Kannel-DLR-Mask"));
+    if (dlrmaskos == NULL) { 
         return 0;
     }
 
@@ -3229,29 +3261,32 @@ static long set_dlr_mask(List *cgivars, Octstr *dlr_url)
          return dlr_mask;
     }
 
-    debug("wap.push.ppg", 0, "unparsable dlr mask, rejected");
+    warning("wap.push.ppg", 0, "unparsable dlr mask, rejected");
     return 0;
 }
 
 /*
  * Checking for dlr smsbox id, using  following order:
- *       a) first check cgi variable
- *       b) then ppg user specific smsbox id
+ *       a) first check X-Kannel header
+ *       b) then ppg user specific smsbox id, if there is any group; if pi
+ *          is trusted, there are none
  *       c) then global ppg smsbox id
  *       d) if all these failed, return NULL
  */
 
-static Octstr *set_smsbox_id(List *cgivars, Octstr *username)
+static Octstr *set_smsbox_id(List *headers, Octstr *username, int trusted_pi)
 {
     Octstr *smsboxidos;
-    Octstr *smsbox_id;
+    Octstr *smsbox_id = NULL;
 
-    smsboxidos = http_cgi_variable(cgivars, "smsbox-id");
+    smsboxidos = http_header_value(headers, octstr_imm("X-Kannel-Smsbox-Id"));
     if (smsboxidos != NULL) {
         return octstr_duplicate(smsboxidos);
     }
 
-    smsbox_id = wap_push_ppg_pushuser_smsbox_id_get(username);
+    if (!trusted_pi)
+        smsbox_id = wap_push_ppg_pushuser_smsbox_id_get(username);
+
     smsbox_id = smsbox_id ?
         smsbox_id : (ppg_smsbox_id ? octstr_duplicate(ppg_smsbox_id) : NULL);
 
