@@ -895,7 +895,7 @@ int octstr_case_search(Octstr *haystack, Octstr *needle, long pos)
     if (needle->len == 0)
         return 0;
 
-    for (i = pos; i < haystack->len - needle->len; ++i) {
+    for (i = pos; i <= haystack->len - needle->len; ++i) {
 	for (j = 0; j < needle->len; ++j) {
 	    c1 = toupper(haystack->data[i + j]);
 	    c2 = toupper(needle->data[j]);

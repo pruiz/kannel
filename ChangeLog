@@ -1,4 +1,9 @@
-2001-02-03  Richard Braakman  <dark@wapit.com>
+2001-02-05  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/octstr.c: Fixed off-by-one error in octstr_case_search(),
+	reported by Vjacheslav Chekushin.
+
+2001-02-04  Richard Braakman  <dark@wapit.com>
 
 	* wmlscript/wsasm.c: Avoid generating 0-length functions,
 	because not all clients can handle them.
