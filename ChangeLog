@@ -1,5 +1,13 @@
 2000-12-29  Tuomas Luttinen  <tuo@wapit.com>
 
+	* gw/wml_definitions.h: Added WBXML_ to every defined constant, 
+	so that there wouldn't be any more mixups with constants defined 
+	elsewhere.
+
+	* gw/wml_compiler.c: The code modified to use the new definitions.
+
+2000-12-29  Tuomas Luttinen  <tuo@wapit.com>
+
 	* gw/wml_compiler.c: The own hash table code is deleted and dict 
 	implementation is used instead. The wml_init builds up the dicts 
 	for the WML binary bytecode and wml_shutdown frees those dicts.

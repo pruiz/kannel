@@ -513,7 +513,7 @@ static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
 	    wbxml_hex = wbxml_hex | status_bits;
 	    /* If this node has children, the end tag must be added after 
 	       them. */
-	    if ((status_bits & CHILD_BIT) == CHILD_BIT)
+	    if ((status_bits & WBXML_CHILD_BIT) == WBXML_CHILD_BIT)
 		add_end_tag = 1;
 	}
 	
@@ -521,12 +521,12 @@ static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
     } else {    
 	/* The tag was not on the code page, it has to be encoded as a 
 	   string. */
-	wbxml_hex = LITERAL;
+	wbxml_hex = WBXML_LITERAL;
 	if ((status_bits = element_check_content(node)) > 0) {
 	    wbxml_hex = wbxml_hex | status_bits;
 	    /* If this node has children, the end tag must be added after 
 	       them. */
-	    if ((status_bits & CHILD_BIT) == CHILD_BIT)
+	    if ((status_bits & WBXML_CHILD_BIT) == WBXML_CHILD_BIT)
 		add_end_tag = 1;
 	}
 	output_char(wbxml_hex, wbxml);
@@ -712,7 +712,7 @@ static int parse_attr_value(Octstr *attr_value, List *tokens,
 
 static void parse_end(wml_binary_t **wbxml)
 {
-    output_char(END, wbxml);
+    output_char(WBXML_END, wbxml);
 }
 
 
@@ -1184,13 +1184,13 @@ static void output_variable(Octstr *variable, Octstr **output,
   switch (escaped)
     {
     case ESC:
-      octstr_append_char(*output, EXT_T_0);
+      octstr_append_char(*output, WBXML_EXT_T_0);
       break;
     case UNESC:
-      octstr_append_char(*output, EXT_T_1);
+      octstr_append_char(*output, WBXML_EXT_T_1);
       break;
     default:
-      octstr_append_char(*output, EXT_T_2);
+      octstr_append_char(*output, WBXML_EXT_T_2);
       break;
     }
 
@@ -1342,10 +1342,10 @@ static unsigned char element_check_content(xmlNodePtr node)
     unsigned char status_bits = 0x00;
 
     if (node->children != NULL)
-	status_bits = CHILD_BIT;
+	status_bits = WBXML_CHILD_BIT;
 
     if (node->properties != NULL)
-	status_bits = status_bits | ATTR_BIT;
+	status_bits = status_bits | WBXML_ATTR_BIT;
 
     return status_bits;
 }
@@ -1633,15 +1633,15 @@ static void string_table_collect_strings(xmlNodePtr node, List *strings)
 
     switch (node->type) {
     case XML_TEXT_NODE:
-	if (strlen(node->content) > STRING_TABLE_MIN) {
+	if (strlen(node->content) > WBXML_STRING_TABLE_MIN) {
 	    string = octstr_create(node->content);
 
 	    octstr_shrink_blanks(string);
 	    octstr_strip_blanks(string);
-	    if (octstr_len(string) > STRING_TABLE_MIN)
+	    if (octstr_len(string) > WBXML_STRING_TABLE_MIN)
 		octstr_strip_nonalphanums(string);
 
-	    if (octstr_len(string) > STRING_TABLE_MIN)
+	    if (octstr_len(string) > WBXML_STRING_TABLE_MIN)
 		list_append(strings, string);
 	    else 
 		octstr_destroy(string);
@@ -1728,7 +1728,8 @@ static List *string_table_add_many(List *sorted, wml_binary_t **wbxml)
     while (list_len(sorted)) {
 	item = list_extract_first(sorted);
 
-	if (item->count > 1 && octstr_len(item->string) > STRING_TABLE_MIN) {
+	if (item->count > 1 && octstr_len(item->string) > 
+	    WBXML_STRING_TABLE_MIN) {
 	    string_table_add(octstr_duplicate(item->string), wbxml);
 	    string_table_proposal_destroy(item);
 	} else
@@ -1829,7 +1830,7 @@ static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
     for (i = 0; i < list_len((*wbxml)->string_table); i++) {
 	item = list_get((*wbxml)->string_table, i);
 
-	if (octstr_len(item->string) > STRING_TABLE_MIN)
+	if (octstr_len(item->string) > WBXML_STRING_TABLE_MIN)
 	    /* No use to replace 1 to 3 character substring, the reference 
 	       will eat the saving up. A variable will be in the string table 
 	       even though it's only 1 character long. */
@@ -1840,7 +1841,7 @@ static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
 		    if ((word_s = octstr_compare(ostr, item->string)) == 0)
 		    {
 			octstr_truncate(ostr, 0);
-			octstr_append_char(ostr, STR_T);
+			octstr_append_char(ostr, WBXML_STR_T);
 			octstr_append_uintvar(ostr, item->offset);
 			str_e = 1;
 		    }
@@ -1856,14 +1857,14 @@ static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
 		    octstr_truncate(input, 0);
 		    /* Substring in the start? No STR_END then. */
 		    if (word_s > 0)
-			octstr_append_char(input, STR_END);
+			octstr_append_char(input, WBXML_STR_END);
                   
-		    octstr_append_char(input, STR_T);
+		    octstr_append_char(input, WBXML_STR_T);
 		    octstr_append_uintvar(input, item->offset);
 
 		    /* Subtring the end? No need to start a new one. */
 		    if ( word_s < octstr_len(ostr))
-			octstr_append_char(input, STR_I);
+			octstr_append_char(input, WBXML_STR_I);
 
 		    octstr_insert(ostr, input, word_s);
 		}
@@ -1874,10 +1875,10 @@ static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
 
     octstr_destroy(input);
 
-    if (octstr_get_char(ostr, 0) != STR_T)
-	output_char(STR_I, wbxml);
+    if (octstr_get_char(ostr, 0) != WBXML_STR_T)
+	output_char(WBXML_STR_I, wbxml);
     if (!str_e)
-	octstr_append_char(ostr, STR_END);    
+	octstr_append_char(ostr, WBXML_STR_END);    
 
     output_octet_string(ostr, wbxml);
 }
@@ -1895,7 +1896,7 @@ static void string_table_output(Octstr *ostr, wml_binary_t **wbxml)
 
     while ((item = list_extract_first((*wbxml)->string_table)) != NULL) {
 	octstr_insert(ostr, item->string, octstr_len(ostr));
-	octstr_append_char(ostr, STR_END);
+	octstr_append_char(ostr, WBXML_STR_END);
 	string_table_destroy(item);
     }
 }

@@ -13,37 +13,35 @@
  * Declarations of global tokens. 
  */
 
-#define SWITCH_PAGE 0x00
-#define END         0x01
-#define ENTITY      0x02
-#define STR_I       0x03
-#define LITERAL     0x04
-#define EXT_I_0     0x40
-#define EXT_I_1     0x41
-#define EXT_I_2     0x42
-#define PI          0x43
-#define LITERAL_C   0x44
-#define EXT_T_0     0x80
-#define EXT_T_1     0x81
-#define EXT_T_2     0x82
-#define STR_T       0x83
-#define LITERAL_A   0x84
-#define EXT_0       0xC0
-#define EXT_1       0xC1
-#define EXT_2       0xC2
-#if 0
-#define OPAQUE      0xC3
-#endif
-#define LITERAL_AC  0xC4
+#define WBXML_SWITCH_PAGE 0x00
+#define WBXML_END         0x01
+#define WBXML_ENTITY      0x02
+#define WBXML_STR_I       0x03
+#define WBXML_LITERAL     0x04
+#define WBXML_EXT_I_0     0x40
+#define WBXML_EXT_I_1     0x41
+#define WBXML_EXT_I_2     0x42
+#define WBXML_PI          0x43
+#define WBXML_LITERAL_C   0x44
+#define WBXML_EXT_T_0     0x80
+#define WBXML_EXT_T_1     0x81
+#define WBXML_EXT_T_2     0x82
+#define WBXML_STR_T       0x83
+#define WBXML_LITERAL_A   0x84
+#define WBXML_EXT_0       0xC0
+#define WBXML_EXT_1       0xC1
+#define WBXML_EXT_2       0xC2
+#define WBXML_OPAQUE      0xC3
+#define WBXML_LITERAL_AC  0xC4
 
-#define STR_END     0x00
+#define WBXML_STR_END     0x00
 
-#define CHILD_BIT   0x40
-#define ATTR_BIT    0x80
+#define WBXML_CHILD_BIT   0x40
+#define WBXML_ATTR_BIT    0x80
 
-#define STRING_TABLE_MIN 4    
+#define WBXML_STRING_TABLE_MIN 4    
 
-#define START_NUM 100
+#define WBXML_START_NUM 100
 
 
 /***********************************************************************
