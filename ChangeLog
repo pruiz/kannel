@@ -1,3 +1,11 @@
+2001-02-16  Richard Braakman  <dark@wapit.com>
+
+	* gw/bb_smscconn.c, gw/urltrans.c: Deal with cfg_get_multi_group()
+	possibly being NULL.
+
+	* gw/bb_smscconn_p.h: Add #include "smscconn.h" so that it doesn't
+	depend on the caller having included that file already.
+
 2001-02-15  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/smpp_pdu.def, gw/smsc_smpp.c: Implemented the enquire_link

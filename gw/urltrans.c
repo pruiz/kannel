@@ -153,7 +153,7 @@ int urltrans_add_cfg(URLTranslationList *trans, Cfg *cfg)
     List *list;
     
     list = cfg_get_multi_group(cfg, octstr_imm("sms-service"));
-    while ((grp = list_extract_first(list)) != NULL) {
+    while (list && (grp = list_extract_first(list)) != NULL) {
 	if (urltrans_add_one(trans, grp) == -1) {
 	    list_destroy(list, NULL);
 	    return -1;
@@ -162,7 +162,7 @@ int urltrans_add_cfg(URLTranslationList *trans, Cfg *cfg)
     list_destroy(list, NULL);
     
     list = cfg_get_multi_group(cfg, octstr_imm("sendsms-user"));
-    while ((grp = list_extract_first(list)) != NULL) {
+    while (list && (grp = list_extract_first(list)) != NULL) {
 	if (urltrans_add_one(trans, grp) == -1) {
 	    list_destroy(list, NULL);
 	    return -1;

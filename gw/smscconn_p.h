@@ -86,6 +86,7 @@
 
 #include <signal.h>
 #include "gwlib/gwlib.h"
+#include "smscconn.h"
 
 struct smscconn {
     /* variables set by appropriate SMSCConn driver */

@@ -282,7 +282,7 @@ int smsc2_start(Cfg *cfg)
     }
 
     groups = cfg_get_multi_group(cfg, octstr_imm("smsc"));
-    while((grp = list_extract_first(groups)) != NULL) {
+    while(groups && (grp = list_extract_first(groups)) != NULL) {
         conn = smscconn_create(grp, 1); /* start as stopped */
         if (conn == NULL)
             panic(0, "Cannot start with SMSC connection failing");
