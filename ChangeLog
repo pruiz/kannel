@@ -1,3 +1,10 @@
+2001-04-24  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/smsc_smpp.c, test/test_smsc.c: Implemented sending of
+	enquire_link packets and handling of their responses. This is
+	very simplistic, still: It doesn't check that the responses
+	are actually received. That will have to be implemented later.
+
 2001-04-24  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_wrapper.c: Produce an info log when a reconnection

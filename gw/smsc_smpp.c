@@ -11,6 +11,7 @@
 /* XXX charset conversions on incoming messages (didn't work earlier, 
        either) */
 /* XXX numbering plans and type of number: check spec */
+/* XXX notice that link is down if responses to enquire_link aren't received */
  
 #include "gwlib/gwlib.h"
 #include "msg.h"
@@ -20,7 +21,8 @@
 
 /*
  * Select these based on whether you want to dump SMPP PDUs as they are 
- # sent and received or not.
+ * sent and received or not. Not dumping should be the default in at least
+ * stable releases.
  */
 
 #if 1
@@ -276,6 +278,9 @@ static void read_thread(void *pointer)
 		octstr_destroy(os_resp);
 	    	break;
 
+    	    case enquire_link_resp:
+	    	break;
+
 	    case submit_sm_resp:
 		if (pdu->u.submit_sm_resp.command_status != 0) {
 		    error(0, "SMPP: SMSC returned error code 0x%08lu "
@@ -321,14 +326,37 @@ static void read_thread(void *pointer)
 }
 
 
+static void write_enquire_link_thread(void *arg)
+{
+    SMPP *smpp;
+    SMPP_PDU *pdu;
+    Octstr *os;
+    
+    smpp = arg;
+
+    while (!smpp->quitting) {
+	pdu = smpp_pdu_create(enquire_link, 
+			      counter_increase(smpp->message_id_counter));
+    	dump_pdu("Sending enquire link:", pdu);
+    	os = smpp_pdu_pack(pdu);
+	conn_write(smpp->transmission, os);
+	octstr_destroy(os);
+	smpp_pdu_destroy(pdu);
+	gwthread_sleep(60.0);
+    }
+}
+
+
 static void write_thread(void *arg)
 {
     Msg *msg;
     SMPP_PDU *pdu;
     Octstr *os;
     SMPP *smpp;
+    long child;
 
     smpp = arg;
+    child = gwthread_create(write_enquire_link_thread, smpp);
 
     while (!smpp->quitting) {
 	semaphore_down(smpp->send_semaphore);
@@ -364,6 +392,9 @@ static void write_thread(void *arg)
     	dump_pdu("Sent PDU:", pdu);
 	smpp_pdu_destroy(pdu);
     }
+
+    gwthread_wakeup(child);
+    gwthread_join(child);
 }
 
 

@@ -4,7 +4,7 @@
 
 
 /*
- * Move this to date.c.
+ * XXX Move this to date.c.
  */
 static long date_universal_now(void)
 {
@@ -58,7 +58,8 @@ typedef struct Event {
 	deliver_ack,
 	http_request,
 	http_response,
-	submit
+	submit,
+	got_enquire_link
     } type;
     long id;
     long time;
@@ -85,6 +86,7 @@ static const char *eq_type(Event *e)
 	TYPE(http_request)
 	TYPE(http_response)
 	TYPE(submit)
+	TYPE(got_enquire_link)
     }
 #undef TYPE
     return "unknown";
@@ -305,6 +307,12 @@ static void smpp_emu_handle_pdu(struct smpp_emu_arg *p, SMPP_PDU *pdu)
     	case deliver_sm_resp:
 	    eq_append(p->eq, eq_create_event(deliver_ack));
 	    semaphore_up(p->ok_to_send);
+	    break;
+
+    	case enquire_link:
+	    eq_append(p->eq, eq_create_event(got_enquire_link));
+	    resp = smpp_pdu_create(enquire_link_resp,
+	    	    	    	   pdu->u.enquire_link.sequence_number);
 	    break;
 
     	case unbind:
@@ -738,6 +746,9 @@ static void sustained_level_benchmark(void)
 	    smsc_emu_submit_ack(e);
 	    break;
 	    
+    	case got_enquire_link:
+	    break;
+
 	default:
 	    debug("test_smsc", 0, "Ignoring event of type %s", eq_type(e));
 	    break;
@@ -816,6 +827,9 @@ static void n_messages_benchmark(void)
 	    --num_in_queue;
 	    break;
 	    
+    	case got_enquire_link:
+	    break;
+
 	default:
 	    debug("test_smsc", 0, "Ignoring event of type %s", eq_type(e));
 	    break;
