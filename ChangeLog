@@ -1,3 +1,12 @@
+2001-02-15  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/smpp_pdu.def, gw/smsc_smpp.c: Implemented the enquire_link
+	PDU and the corresponding enquire_link_resp PDU. This should keep
+	Kannel connected to an SMPP SMS center even when the connection
+	is otherwise idle.
+	
+	* test/drive_smpp.c: Cleaned up shutdown.
+
 2001-02-15  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c (set_charset): bug reported by Aymerick Jéhanne

@@ -16,8 +16,6 @@
 
 
 static int quitting = 0;
-static long accept_thread_id = -1;
-static long smsbox_thread_id = -1;
 static Octstr *smsc_system_id;
 static Octstr *smsc_source_addr;
 static Counter *message_id_counter;
@@ -34,13 +32,13 @@ static time_t last_to_esme = (time_t) -1;
 static time_t last_from_esme = (time_t) -1;
 static time_t first_from_bb = (time_t) -1;
 static time_t last_to_bb = (time_t) -1;
+static long enquire_interval = 1; /* Measured in messages, not time. */
 
 
 static void quit(void)
 {
     quitting = 1;
-    gwthread_wakeup(accept_thread_id);
-    gwthread_wakeup(smsbox_thread_id);
+    gwthread_wakeup_all();
 }
 
 
@@ -137,6 +135,12 @@ static SMPP_PDU *handle_unbind(ESME *esme, SMPP_PDU *pdu)
 }
 
 
+static SMPP_PDU *handle_enquire_link_resp(ESME *esme, SMPP_PDU *pdu)
+{
+    return NULL;
+}
+
+
 static struct {
     unsigned long type;
     SMPP_PDU *(*handler)(ESME *, SMPP_PDU *);
@@ -147,6 +151,7 @@ static struct {
     HANDLER(submit_sm)
     HANDLER(deliver_sm_resp)
     HANDLER(unbind)
+    HANDLER(enquire_link_resp)
     #undef HANDLER
 };
 static int num_handlers = sizeof(handlers) / sizeof(handlers[0]);
@@ -207,6 +212,16 @@ static void send_smpp_thread(void *arg)
 	debug("test.smpp", 0, 
 	      "Delivered SMS %ld of %ld to bearerbox via SMPP.",
 	      id, max_to_esme);
+
+    	if ((id % enquire_interval) == 0) {
+	    pdu = smpp_pdu_create(enquire_link, 
+	    	    	    	  counter_increase(message_id_counter));
+	    os = smpp_pdu_pack(pdu);
+	    conn_write(esme->conn, os);
+	    octstr_destroy(os);
+	    smpp_pdu_destroy(pdu);
+	    debug("test.smpp", 0, "Sent enquire_link to bearerbox.");
+	}
     }
     time(&last_to_esme);
     if (id == max_to_esme)
@@ -220,12 +235,12 @@ static void receive_smpp_thread(void *arg)
     ESME *esme;
     Octstr *os;
     long len;
-    int sender_running;
+    long sender_id;
     SMPP_PDU *pdu;
 
     esme = arg;
     
-    sender_running = 0;
+    sender_id = -1;
     len = 0;
     while (!quitting && conn_wait(esme->conn, -1.0) != -1) {
     	for (;;) {
@@ -260,13 +275,15 @@ static void receive_smpp_thread(void *arg)
 		break;
 	}
 
-    	if (esme->receiver && !sender_running) {
-	    gwthread_create(send_smpp_thread, esme);
-	    sender_running = 1;
-	}
+    	if (!quitting && esme->receiver && sender_id == -1)
+	    sender_id = gwthread_create(send_smpp_thread, esme);
     }
 
 error:
+    if (sender_id != -1) {
+	quit();
+	gwthread_join(sender_id);
+    }
     esme_destroy(esme);
     quit();
     debug("test.smpp", 0, "%s terminates.", __func__);
@@ -340,12 +357,14 @@ static void accept_thread(void *arg)
     int port;
     socklen_t addrlen;
     struct sockaddr addr;
+    long smsbox_thread_id;
     
     port = *(int *) arg;
     fd = make_server_socket(port);
     if (fd == -1)
     	panic(0, "Couldn't create SMPP listen port.");
     
+    smsbox_thread_id = -1;
     for (;;) {
 	if (gwthread_pollfd(fd, POLLIN, -1.0) != POLLIN)
 	    break;
@@ -354,7 +373,7 @@ static void accept_thread(void *arg)
     	if (start_time == (time_t) -1)
 	    time(&start_time);
 	gwthread_create(receive_smpp_thread, 
-	    	    	esme_create(conn_wrap_fd(new_fd)));
+			esme_create(conn_wrap_fd(new_fd)));
 	if (smsbox_thread_id == -1)
 	    smsbox_thread_id = gwthread_create(smsbox_thread, NULL);
     }
@@ -443,7 +462,7 @@ int main(int argc, char **argv)
     	log_open(log_file, GW_DEBUG);
 
     info(0, "Starting drive_smpp test.");
-    accept_thread_id = gwthread_create(accept_thread, &port);
+    gwthread_create(accept_thread, &port);
     gwthread_join_all();
     debug("test.smpp", 0, "Program exiting normally.");
 

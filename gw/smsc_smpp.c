@@ -247,6 +247,15 @@ static void read_thread(void *pointer)
 		octstr_destroy(os_resp);
 		break;
 		
+    	    case enquire_link:
+	    	resp = smpp_pdu_create(enquire_link_resp, 
+		    	    	       pdu->u.enquire_link.sequence_number);
+    	    	os_resp = smpp_pdu_pack(resp);
+		gw_assert(os_resp != NULL);
+		conn_write(conn, os_resp);
+		octstr_destroy(os_resp);
+	    	break;
+
 	    case submit_sm_resp:
 		if (pdu->u.submit_sm_resp.command_status != 0) {
 		    error(0, "SMPP: SMSC returned error code 0x%08lu "

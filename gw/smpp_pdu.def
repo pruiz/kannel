@@ -152,6 +152,16 @@ PDU(deliver_sm_resp,
     NULTERMINATED(message_id, 1)
 )
 
+PDU(enquire_link,
+    0x00000015,
+    HEADER
+)
+
+PDU(enquire_link_resp,
+    0x80000015,
+    HEADER
+)
+
 
 #undef PDU
 #undef INTEGER
