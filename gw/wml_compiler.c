@@ -597,7 +597,7 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
     }
 
     /* Return WML Version dependent on xml ExternalID string */
-    if (document->intSubset != NULL)
+    if ((document->intSubset != NULL) && (document->intSubset->ExternalID != NULL))    
         externalID = octstr_create(document->intSubset->ExternalID);
     if (externalID == NULL) {
         (*wbxml)->wml_public_id = 0x04; /* WML 1.1 Public ID */

@@ -1,4 +1,9 @@
 2004-08-26  Stipe Tolj  <stolj@wapme.de>
+    * gw/wml_compiler.c: fixed PANIC inside octstr_create in wml compiler with 
+      certain DOCTYPE definitions. Thanks to Slava for the patch.
+      [Msg-ID: <412B44E4.9080204@lmt.lv>]
+
+2004-08-26  Stipe Tolj  <stolj@wapme.de>
     * wap/wsp_string.c: fixed a mis-interpretated datatype change from rev 1.3
       to 1.4. Thanks to Slava for this hint and patch.
       [Msg-ID: <412ADEEE.2030608@lmt.lv>]
