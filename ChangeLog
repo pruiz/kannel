@@ -1,5 +1,9 @@
 2000-07-06  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smsc_ois.c: (hopefully) fixed warnings from FreeBSD
+
+2000-07-06  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bearerbox.c: added --suspended and --isolated command-line
 	option names (same as -S and -I)
 

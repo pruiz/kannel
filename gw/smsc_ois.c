@@ -478,10 +478,12 @@ static int ois_open_receiver(SMSCenter *smsc)
     /* the listening socket should be non-blocking... */
 
     addrlen = sizeof(addr);
-    smsc->socket = accept(smsc->ois_listening_socket, &addr, &addrlen);
+    smsc->socket = accept(smsc->ois_listening_socket,
+			  (struct sockaddr *)&addr, &addrlen);
     if (smsc->socket == -1) {
-	if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK ||
-	    errno == ECONNABORTED || errno == EPROTO) {
+	if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+	    /* || errno == ECONNABORTED || errno == EPROTO) -Kalle 6.7 */
+	{
 	    return 0;
 	} else {
 	    error(errno, "ois_open_receiver: accept failed");
