@@ -2,7 +2,7 @@
  *
  * Generates packing and unpacking code from wtp_pdu.def.
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 #include "gwlib/gwlib.h"

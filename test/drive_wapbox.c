@@ -4,7 +4,7 @@
  * and the http server, so that it can test and benchmark the wapbox in
  * isolation.
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 #include <string.h>

@@ -14,7 +14,7 @@
  *
  * Note: The octstr involved MUST NOT change during parsing.
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 #ifndef PARSE_H

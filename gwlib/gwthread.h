@@ -6,7 +6,7 @@
  * be extended to encapsulate all pthread functions we use, so that
  * non-POSIX platforms can plug in their own versions.
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 #ifndef GWTHREAD_H

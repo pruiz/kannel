@@ -1,7 +1,7 @@
 /* 
  * parse.c - implement parse.h interface
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 #include "gwlib/gwlib.h"

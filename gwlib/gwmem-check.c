@@ -28,7 +28,7 @@
  * is kept around for a while, to see if anything tries to write to it
  * after it's been freed.
  * 
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 

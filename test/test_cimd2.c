@@ -3,7 +3,7 @@
  * This program pretends to be an CIMD 2 SMS center, accessible via IP.
  * It is used to test the Kannel smsc_cimd2 code.
  * 
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 /* Note: The CIMD2 parsing code was written as a prototype, and currently

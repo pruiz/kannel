@@ -1,7 +1,7 @@
 /*
  * gwthread-pthread.c - implementation of gwthread.h using POSIX threads.
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 #include <unistd.h>

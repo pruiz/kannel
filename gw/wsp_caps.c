@@ -1,6 +1,6 @@
 /* wsp_caps.c - implement interface to WSP capability negotiation
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 #include "gwlib/gwlib.h"

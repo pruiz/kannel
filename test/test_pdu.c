@@ -1,7 +1,7 @@
 /*
  * test_pdu.c - test gw/wtp_pdu packing and unpacking.
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
  
 #include <string.h>

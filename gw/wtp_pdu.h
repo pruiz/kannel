@@ -3,7 +3,7 @@
  * This file generates a structure definition and some function
  * declarations from wtp_pdu.def, using preprocessor magic.
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 #ifndef WTP_PDU_H

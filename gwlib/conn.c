@@ -2,7 +2,7 @@
  *
  * This file implements the interface defined in conn.h.
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 /* TODO: unlocked_close() on error */

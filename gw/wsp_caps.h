@@ -1,6 +1,6 @@
 /* wsp_caps.h - interface to WSP capability negotiation
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 struct capability {

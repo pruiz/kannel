@@ -7,7 +7,7 @@
  * 
  * Currently only GSM and Latin-1 are supported.
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 #ifndef CHARSET_H

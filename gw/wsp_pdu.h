@@ -3,7 +3,7 @@
  * This file generates a structure definition and some function
  * declarations from wtp_pdu.def, using preprocessor magic.
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 /* Enumerate the symbolic names of the PDUs */

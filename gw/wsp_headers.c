@@ -6,7 +6,7 @@
  *   RFC 2068, Hypertext Transfer Protocol HTTP/1.1
  *
  * Kalle Marjola <rpr@wapit.com>
- * Modified by Richard Braakman <dark@wapit.com>
+ * Modified by Richard Braakman
  */
 
 #include <string.h>

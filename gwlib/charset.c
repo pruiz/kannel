@@ -3,7 +3,7 @@
  *
  * This file implements the character set conversions declared in charset.h.
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 #include "gwlib/gwlib.h"

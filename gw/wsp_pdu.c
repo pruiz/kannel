@@ -3,7 +3,7 @@
  * Generates packing and unpacking code from wsp_pdu.def.
  * Code is very similar to wsp_pdu.c, please make any changes in both files.
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 #include "gwlib/gwlib.h"

@@ -1,6 +1,6 @@
 /* date.c - utility functions for handling times and dates
  *
- * Richard Braakman <dark@wapit.com>
+ * Richard Braakman
  */
 
 #include <unistd.h>
