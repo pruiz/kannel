@@ -102,3 +102,29 @@ int mutex_unlock_real(Mutex *mutex, char *file, int line, const char *func)
     return ret;
 }
 
+int mutex_trylock_real(Mutex *mutex, const char *file, int line, const char *func)
+{
+    int ret;
+
+    if (mutex == NULL) {
+        error(0, "%s:%ld: %s: Trying to lock a NULL mutex! (Called from %s:%ld:%s.)", \
+		         __FILE__, (long) __LINE__, __func__, file, (long) line, func);
+        return -1;
+    }
+
+    ret = pthread_mutex_trylock(&mutex->mutex);
+    if (ret == 0) {
+        if (mutex->owner == gwthread_self())
+            panic(0, "%s:%ld: %s: Managed to lock the mutex twice! (Called from %s:%ld:%s.)", \
+		         __FILE__, (long) __LINE__, __func__, file, (long) line, func);
+
+        mutex->owner = gwthread_self();
+    }
+    else if (ret == EINVAL)
+        panic(0, "%s:%ld: %s: Mutex failure! (Called from %s:%ld:%s.)", \
+		         __FILE__, (long) __LINE__, __func__, file, (long) line, func);
+
+    return ret;
+}
+
+

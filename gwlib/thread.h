@@ -81,6 +81,14 @@ void mutex_lock_real(Mutex *mutex, char *file, int line, const char *func);
 #define mutex_unlock(m) mutex_unlock_real(m, __FILE__, __LINE__, __func__)
 int mutex_unlock_real(Mutex *mutex, char *file, int line, const char *func);
 
+
+/*
+ * Try to lock given mutex, returns -1 if mutex is NULL; 0 if mutex acquired; otherwise
+ * EBUSY. PANIC if mutex was not properly initialized before.
+ */
+#define mutex_trylock(m) mutex_trylock_real(m, __FILE__, __LINE__, __func__)
+int mutex_trylock_real(Mutex *mutex, const char *file, int line, const char *func);
+
 #endif
 
 
