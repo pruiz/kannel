@@ -196,30 +196,6 @@ static Connection *open_send_connection(SMSCConn *conn)
 	    }
 	}
 
-	if (privdata->username) {
-	    emimsg = make_emi31(privdata, 0);
-	    emimsg_send(server, emimsg);
-	    emimsg_destroy(emimsg);
-	    result = wait_for_ack(privdata, server, 31, 30);
-	    /* XXX In here we can test if smsc doesn't know alert command, and we
-	     * could try to use other command, like 61 
-	     */
-	    if (result == -2) {
-		error(0, "smsc_emi2: Server rejected our alert, disabling keepalive");
-		privdata->keepalive = 0;
-	    }
-	    else if (result == 0) {
-		error(0, "smsc_emi2: Got no reply to alert attempt "
-		         "within 30 s");
-		conn_destroy(server);
-		continue;
-	    }
-	    else if (result == -1) { /* Broken connection, already logged */
-		conn_destroy(server);
-		continue;
-	    }
-	}
-
 	if (conn->status != SMSCCONN_ACTIVE) {
 	    mutex_lock(conn->flow_mutex);
 	    conn->status = SMSCCONN_ACTIVE;
@@ -630,10 +606,6 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
     Msg		*msg;
     time_t	current_time, check_time, keepalive_time=0;
     int write = 1; /* write=1, read=0, for stop-and-wait flow control */
-
-    /* Initialize keepalive time counter */
-    if ( privdata->keepalive > 0 )
-	keepalive_time = time(NULL);
 
     check_time = time(NULL);
     while (1) {

@@ -1,4 +1,12 @@
-2001-09-17 Bruno Rodrigues <bruno.rodrigues@litux.org>
+2001-09-19 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* gw/bb_store.c: Fixed two bugs that don't close store.lock when
+	store_dump is called. One was (introduced by me) in store_rename
+	and the other was a missing close in store_dump to close old file.
+	* gw/smsc_emi2.c: Removed alert (31) sending just after login and
+	forced it in send_loop. This way, first message received will be
+	correctly processed.
+
+2001-09-19 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* gw/sms.c: fields_to_dcs correctly encodes mclass=MC_UNDEF and
 	don´t set bit "mclass present"
 	* gw/smsc_at.c, smsc_at2.c, smsc.c, smsc_p.h, docs/userguide: 

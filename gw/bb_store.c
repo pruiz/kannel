@@ -74,11 +74,10 @@ static int rename_store(void)
 {
     static FILE *f = NULL;
     
-    if ((f = fopen(octstr_get_cstr(filename), "r")) != NULL) {
-	fclose(f);
-	if (rename(octstr_get_cstr(filename), octstr_get_cstr(bakfile)) == -1) {
-	   error(errno, "Failed to rename old store '%s' as '%s'",
-	   octstr_get_cstr(filename), octstr_get_cstr(bakfile));
+    if (rename(octstr_get_cstr(filename), octstr_get_cstr(bakfile)) == -1) {
+	if (errno != ENOENT) {
+	    error(errno, "Failed to rename old store '%s' as '%s'",
+	    octstr_get_cstr(filename), octstr_get_cstr(bakfile));
 	    return -1;
 	}
     }
@@ -390,7 +389,13 @@ int store_dump(void)
     list_lock(ack_store);
     debug("bb.store", 0, "Dumping %ld messages and %ld acks to store",
 	  list_len(sms_store), list_len(ack_store));
+    mutex_lock(file_mutex);
+    if (file != NULL) {
+	fclose(file);
+	file = NULL;
+    }
     retval = do_dump();
+    mutex_unlock(file_mutex);
     list_unlock(ack_store);
     list_unlock(sms_store);
 
