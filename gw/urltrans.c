@@ -655,25 +655,21 @@ static URLTranslation *find_default_translation(URLTranslationList *trans)
  * RFC 2396 defines the list of characters that need to be encoded.
  */
 static void encode_for_url(char *buf, char *str) {
-    static unsigned char *unsafe = ";/?:@&=+$,-_.!~*'(){}|\\^[]`<>#% \"";
-    static unsigned char delete = 0x7F;
-    static char is_unsafe[UCHAR_MAX];
+    static unsigned char *safe = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	    "abcdefghijklmnopqrstuvwxyz-_.!~*'()";
+    static char is_safe[UCHAR_MAX];
     static char hexdigits[] = "0123456789ABCDEF";
     unsigned char *ustr;
-    unsigned char ch;
     
-    if (unsafe != NULL) {
-	for (; *unsafe != '\0'; ++unsafe)
-	    is_unsafe[*unsafe] = 1;
-	for (ch = 0x00; ch <= 0x1F; ch++)
-	    is_unsafe[*unsafe] = 1;
-	is_unsafe[delete] = 1;
-	unsafe = NULL;
+    if (safe != NULL) {
+	for (; *safe != '\0'; ++safe)
+	    is_safe[*safe] = 1;
+	safe = NULL;
     }
 	
     ustr = str;
     while (*ustr != '\0') {
-	if (!is_unsafe[*ustr])
+	if (is_safe[*ustr])
 	    *buf++ = *ustr++;
 	else {
 	    *buf++ = '%';

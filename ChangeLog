@@ -1,3 +1,10 @@
+2000-10-17  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/urltrans.c: Changed the logic in the encode_for_url so that the
+	safe ones are listed and the save characters being alphanums and marks
+	"-", "_", ".", "!", "~", "*", "'", "(", ")". Also UTF-8 with full 
+	spectrum of Unicode should work now.
+
 2000-10-17  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsbox.c: Added requested event of sent message
