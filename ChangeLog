@@ -1,4 +1,11 @@
 2004-04-21  Alexander Malysh  <a.malysh@centrium.de> 
+    * doc/userguide/userguide.xml: applied patch adds, in 
+      "Extended headers" description, that they need a configuration 
+      parameter to be accepted.
+      Thanks to Guillaume Cottenceau <guillaume.cottenceau@mnc.ch>.
+      [Msg-Id: <84r7uj0z8n.fsf@frozen.mnc.ch>].
+
+2004-04-21  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/wml_compiler.c: applied patch that fixes variable substitution.
       Thanks to Joerg Pommnitz <jpo@condat.de>.
       [Msg-Id: <4D93AAF95CB5A64E8F622EC796ECF5AC3FC0EB@exil.condat.de>].
