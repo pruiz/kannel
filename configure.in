@@ -279,33 +279,6 @@ AC_ARG_ENABLE(assertions,
 ])
 
 
-dnl Check to see if we should do the WTLS thing, and which version to use
-
-AC_ARG_WITH(wtls,
-[  --with-wtls             select wtls version to use: openssl/baltimore], [
-  case "$withval" in
-  openssl) echo "OpenSSL WTLS selected, attempting to find libraries..."
-	OLDLIBS="$LIBS"
-	LIBS="$LIBS -L/usr/local/ssl/lib -lcrypto"
-	AC_CHECK_LIB(crypto, RSA_new,
-	[
-		echo "OpenSSL found; WTLS enabled"
-		CFLAGS="$CFLAGS -I/usr/local/ssl/include"
-		AC_DEFINE(HAVE_WTLS_OPENSSL)
-	],
-	[
-		LIBS=$OLDLIBS
-		echo "OpenSSL not found; WTLS disabled"
-	]
-	)
-	;;
-  baltimore) echo "Baltimore WTLS not available" ;;
-  *) echo "Unknown wtls version $withval. Oops."; exit 1 ;;
-  esac
-]
-)
-
-
 dnl Implement --enable-docs option.
 
 AC_SUBST(DOCSTARGET)
@@ -516,6 +489,7 @@ AC_ARG_WITH(mysql,
 
 
 dnl Implement the --enable-mysql-dlr option. 
+
 AC_ARG_ENABLE(mysql-dlr,
 [  --enable-mysql-dlr      enable MySQL support for DLR (default: disabled)], 
 [if test "$enableval" = "yes"; then
@@ -526,6 +500,35 @@ AC_ARG_ENABLE(mysql-dlr,
    fi
    AC_DEFINE(MYSQL_DLR)
  fi
+])
+
+
+dnl Implement the --with-wrls option.
+dnl Check to see if we should include WTLS support, and which library to use.
+
+AC_ARG_WITH(wtls,
+[  --with-wtls[=TYPE]      select WTLS version to use: openssl, baltimore], [
+  AC_MSG_CHECKING([for WTLS support])
+  AC_MSG_RESULT($withval)
+  case "$withval" in
+  openssl) 
+ 	OLDLIBS="$LIBS"
+	LIBS="$LIBS -L/usr/local/ssl/lib -lcrypto"
+    AC_CHECK_LIB(crypto, RSA_new,
+    [ AC_CHECK_HEADERS(openssl/objects.h openssl/rc5.h, 
+        AC_DEFINE(HAVE_WTLS_OPENSSL),
+        AC_MSG_WARN(OpenSSL installation seems to lack RC5 algorithm!)
+      )
+	])
+	;;
+  baltimore) 
+    AC_MSG_ERROR(This WTLS library is yet not supported!)
+    ;;
+  *) 
+    AC_MSG_ERROR(Unknown WTLS libary support!)
+    exit 1 
+    ;;
+  esac
 ])
 
 
