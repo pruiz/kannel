@@ -1,3 +1,8 @@
+2000-10-20  Kalle Marjola  <rpr@wapit.com>
+
+	* doc/userguide/userguide.xml: wrote appendix B, using fake SMS
+	center.
+
 2000-10-19  Kalle Marjola  <rpr@wapit.com>
 
 	* doc/userguide/userguide.xml: added notes on 'required

@@ -742,8 +742,8 @@ white-list = "http://localhost/whitelist.txt"
 
 </sect2>
 
-<sect2>
-<title>Command line options</title>
+<sect2 id="arguments">
+<title id="arguments.title">Command line options</title>
 
  <para>Bearerbox, smsbox and wapbox each accept certain command line options
    and arguments when they are launched. These arguments are:</para>
@@ -2470,8 +2470,152 @@ http://smsbox.host.name:13013/cgi-bin/sendota?username=foo&amp;password=bar&amp;
 <appendix>
 <title>Using the fake SMS center</title>
 
-	<para>This appendix explains how to use the fake SMS center
-	to test the gateway.</para>
+	<para>Fakesmsc is a simple testing tool to test out Kannel and
+	its SMS services. It <emphasis>cannot</emphasis> be used to
+	send messages to mobile terminals, it is just a simulated SMS
+	center with no connection to real terminals.</para>
+
+<sect1>
+<title>Setting up fakesmsc</title>
+
+    <para>This section sums up needed steps to set up system for
+    fakesmsc use.</para>
+
+
+<sect2>
+<title>Compiling fakesmsc</title>
+
+     <para>The fake SMS center should compile at the same time as main
+     Kannel compiles. The outcoming binary,
+     <literal>fakesmsc</literal>, is in <literal>test</literal>
+     directory. The source code is quite simple and trivial, and is
+     easily edited.</para>
+
+</sect2>
+<sect2>
+<title>Configuring Kannel</title>
+
+     <para>To use <literal>fakesmsc</literal> to test out Kannel, you
+     have to add it to main configuration file (see above). The
+     simplest form for this configuration group is like this:</para>
+
+<programlisting>
+group = smsc
+smsc = fake
+host = localhost
+port = 10000
+</programlisting>
+
+      <para>The fakesmsc configuration group accepts all common 'smsc' 
+      configuration group variables, like <literal>smsc-id</literal>,
+      <literal>preferred-smsc-id</literal> or
+      <literal>smsc-id</literal>, which can be used to test out
+      routing systems and diverted services, before setting up real
+      SMS center connections.</para>
+
+      <para>To set up multiple fakesmsc'es, just add new
+      groups. Remember to put different port number to each one.</para>
+
+</sect2>
+
+</sect1>
+<sect1>
+<title>Running Kannel with fakesmsc connections</title>
+
+      <para>After configuring Kannel, you can start testing
+      it. Remember that you HAVE to start all fakesmsc programs before
+      starting the bearerbox.</para>
+
+<sect2>
+<title>Starting fake SMS center</title>
+
+    <para>Each fakesmsc is started from command line, with all sent
+    messages after command name. If any options are used (see below),
+    they are put between messages and command. The usage is as
+    follows:</para>
+
+<programlisting>
+test/fakesmsc [options] &lt;message1&gt; [message2 ...]
+</programlisting>
+
+    <para>Options and messages are explained below, but as fast
+    example, a typical startup can go like this:</para>
+
+<programlisting>
+test/fakesmsc -p 10001 -i 0.1 -m 100 "100 200 nop" "100 300 echo this"
+</programlisting>
+
+    <para>This starts fakesmsc in port 10001, with hundred messages to
+    be sent with interval of 0.1 seconds. Each message is from number
+    100, and is ether to number 200 with message 'nop' or to 300 with
+    message 'echo this'.</para>
+
+
+<sect3>
+<title>Fake messages</title>
+
+    <para>Each message consists of three parts: sender number,
+    receiver number and message itself. Sender and receiver number
+    does not mean anything except for log files and number-based
+    routing in Kannel. Message itself is the keyword and parameters
+    then parsed in smsbox.</para>
+
+    <para>Each part in message is separated with space. As message is
+    taken as one argument, it must be put in quotation marks.</para>
+
+    <para>If multiple messages are given, fakesmsc randomly chooses
+    one for each sending.</para>
+
+</sect3>
+<sect3>
+<title>Fakesmsc command line options</title>
+
+   <para>Fake SMS center can be started with various optional command
+   line arguments.</para>
+
+ <table frame=none>
+  <title>Fakesmsc command line options</title>
+  <tgroup cols=3>
+  <thead>
+   <row>
+     <entry>Switch</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>-p</literal></entry>
+     <entry><emphasis>port</emphasis></entry>
+     <entry valign=bottom>
+       Use port number <emphasis>port</emphasis> instead of default
+       10000.
+     </entry></row>
+
+   <row><entry><literal>-i</literal></entry>
+     <entry><emphasis>interval</emphasis></entry>
+     <entry valign=bottom>
+       Use message interval <emphasis>interval</emphasis> (in seconds,
+       fractions accepted) instead of default interval 1.0 seconds.
+     </entry></row>
+
+   <row><entry><literal>-m</literal></entry>
+     <entry><emphasis>mex</emphasis></entry>
+     <entry valign=bottom>
+       Send maximum of <emphasis>max</emphasis> messages. Value 0
+       means that infinite number of messages is sent. Default 0.
+     </entry></row>
+  </tbody>
+  </tgroup>
+ </table>
+
+    <para>In addition, fakesmsc accepts all common Kannel <xref
+    linkend="arguments" endterm="arguments.title"> like 
+    <literal>--verbosity</literal>.</para>
+
+</sect3>
+
+</sect2>
+</sect1>
 
 </appendix>
 
