@@ -1,3 +1,14 @@
+Tue Nov 23 12:07:03 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* Makefile: Added more stuff for docs.
+	
+	* Rules.mk, doc/*/Makefile: Moved common stuff to new Rules.mk,
+	which is included by the individual makefiles.
+	
+	* doc/*/*.xml: Converted to use the SGML identifier of DocBook,
+	instead of the XML one, because we have the SGML version of
+	DocBook on Red Hat machines.
+
 1999-11-22    <rpr@rpr.wapit.com>
 
 	* gwlib/wapitlib.*: added function check_ip

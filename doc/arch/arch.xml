@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<!DOCTYPE book PUBLIC "-//Norman Walsh//DTD DocBk XML V3.1//EN"
-     "dtd/docbook-xml/docbookx.dtd" [
-
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V3.1//EN"
+     [
 <!ENTITY bearerboxchapter SYSTEM "arch-bearerbox.xml">
 <!ENTITY externalschapter SYSTEM "arch-externalinterfaces.xml">
 <!ENTITY internalschapter SYSTEM "arch-internals.xml">
@@ -13,8 +12,8 @@
 
 <!ENTITY figtype "#FIGTYPE#">
 <!ENTITY timestamp "#DATE#">
-
 ]>
+
 
 <book>
 

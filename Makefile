@@ -75,17 +75,19 @@ testprogs = $(testsrcs:.c=)
 srcs = $(shell echo */*.c)
 objs = $(srcs:.c=.o)
 
+docdirs = $(shell echo doc/[a-z]*/.)
+
 all: progs tests
 
 progs: $(progs)
 tests: $(testprogs)
 docs:
-	cd doc/arch && make
-	cd doc/userguide && make
+	for dir in $(docdirs); do set -e; (cd $$dir && make); done
 
 clean:
 	rm -f core $(progs) $(objs) *.a gateway.pid
 	find . -name .cvsignore | xargs rm -f
+	for dir in $(docdirs); do set -e; (cd $$dir && make clean); done
 
 depend .depend:
 	$(MKDEPEND) */*.c > .depend
@@ -116,9 +118,9 @@ cvsignore:
 	echo .depend >> .cvsignore
 	for prog in $(progs) $(testprogs); do \
 		echo `basename $$prog` >> `dirname $$prog`/.cvsignore; done
-	cd doc/arch && $(MAKE) cvsignore
-	cd doc/userguide && $(MAKE) cvsignore
+	for dir in $(docdirs); do set -e; (cd $$dir && make clean); done
 
 install: all
 	mkdir -p $(bindir)
 	install $(progs) $(bindir)
+	for dir in $(docdirs); do set -e; (cd $$dir && make install); done
