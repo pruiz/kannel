@@ -109,7 +109,7 @@ static int add_group(Cfg *cfg, CfgGroup *grp)
     
     groupname = cfg_get(grp, octstr_imm("group"));
     if (groupname == NULL) {
-	error(0, "Group doens not contain variable 'group'.");
+	error(0, "Group does not contain variable 'group'.");
     	return -1;
     }
     set_group_name(grp, groupname);
