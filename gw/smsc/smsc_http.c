@@ -215,7 +215,7 @@ static void httpsmsc_send_cb(void *arg)
     conndata->shutdown = 1;
 
     if (conndata->open_sends) {
-        warning(0, "HTTP[%s]: Shutdown while <%d> requests are pending.",
+        warning(0, "HTTP[%s]: Shutdown while <%ld> requests are pending.",
                 octstr_get_cstr(conn->id), conndata->open_sends);
     }
 
