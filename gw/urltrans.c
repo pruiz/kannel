@@ -483,6 +483,12 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    octstr_destroy(enc);
 	    break;
 
+	case 'I':
+	    if (request->sms.id == -1)
+		break;
+	    octstr_format_append(result, "%ld", request->sms.id);
+	    break;
+
 	case 'n':
 	    if (request->sms.service == NULL)
 		break;

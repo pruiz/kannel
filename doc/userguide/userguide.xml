@@ -4837,6 +4837,10 @@ like %P, but a leading `00' is replaced with `+'
 the smsc-id of the connection that received the message
 </entry></row>
 
+<row><entry><literal>%I</literal></entry><entry>
+the SMS ID of the internal message structure
+</entry></row>
+
 <row><entry><literal>%d</literal></entry><entry>
 the delivery report value
 </entry></row>
