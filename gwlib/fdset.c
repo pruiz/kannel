@@ -26,6 +26,28 @@ struct FDSet
      * put in struct pollfd because that structure is defined externally. */
     fdset_callback_t **callbacks;
     void **datafields;
+
+    /* The poller function loops over the table after poll() returns,
+     * and calls callback functions that may modify the table that is
+     * being scanned.  We can't just copy the table to avoid interference,
+     * because fdset_unregister and fdset_listen guarantee that their
+     * operations are complete when they return -- that does not work
+     * if poller() is scanning an outdated copy of the table.
+     * To solve this, we have a field that marks when the table is
+     * being scanned.  If this field is true, fdset_unregister merely
+     * sets the fd to -1 instead of deleting the whole entry.
+     * fdset_listen will takes care to modify revents as well as
+     * events. fdset_register always adds to the end of the table,
+     * so it does not have to do anything special.
+     */
+    int scanning;
+
+    /* This field keeps track of how many fds were set to -1 by
+     * fdset_unregister while "scanning" is true.  That way we can
+     * efficiently check if we need to scan the table to really 
+     * delete those entries. */
+    int deleted_entries;
+
     
     /* The following fields are for general use, and are of types that
      * have internal locks. */
@@ -186,6 +208,32 @@ static int find_entry(FDSet *set, int fd)
     return -1;
 }
 
+static void remove_entry(FDSet *set, int entry)
+{
+    if (entry != set->entries - 1) {
+        /* We need to keep the array contiguous, so move the last element
+         * to fill in the hole. */
+        set->pollinfo[entry] = set->pollinfo[set->entries - 1];
+        set->callbacks[entry] = set->callbacks[set->entries - 1];
+        set->datafields[entry] = set->datafields[set->entries - 1];
+    }
+    set->entries--;
+}
+
+static void remove_deleted_entries(FDSet *set)
+{
+    int i;
+
+    i = 0;
+    while (i < set->entries && set->deleted_entries > 0) {
+        if (set->pollinfo[i].fd < 0) {
+            remove_entry(set, i);
+	    set->deleted_entries--;
+	} else {
+	    i++;
+        }
+    }
+}
 
 /* Main function for polling thread.  Most its time is spent blocking
  * in poll().  No-one else is allowed to change the fields it uses,
@@ -218,12 +266,18 @@ static void poller(void *arg)
             continue;
         }
 
+	/* Callbacks may modify the table while we scan it, so be careful. */
+	set->scanning = 1;
         for (i = 0; i < set->entries; i++) {
             if (set->pollinfo[i].revents != 0)
                 set->callbacks[i](set->pollinfo[i].fd,
                                   set->pollinfo[i].revents,
                                   set->datafields[i]);
         }
+	set->scanning = 0;
+
+	if (set->deleted_entries > 0)
+	    remove_deleted_entries(set);
     }
 }
 
@@ -242,6 +296,8 @@ FDSet *fdset_create(void)
     new->pollinfo = gw_malloc(sizeof(new->pollinfo[0]) * new->size);
     new->callbacks = gw_malloc(sizeof(new->callbacks[0]) * new->size);
     new->datafields = gw_malloc(sizeof(new->datafields[0]) * new->size);
+    new->scanning = 0;
+    new->deleted_entries = 0;
 
     new->actions = list_create();
 
@@ -313,6 +369,9 @@ void fdset_register(FDSet *set, int fd, int events,
         set->size = newsize;
     }
 
+    /* We don't check set->scanning.  Adding new entries is not harmful
+     * because their revents fields are 0. */
+
     new = set->entries++;
     set->pollinfo[new].fd = fd;
     set->pollinfo[new].events = events;
@@ -348,6 +407,15 @@ void fdset_listen(FDSet *set, int fd, int mask, int events)
      * bits not specified by the mask. */
     set->pollinfo[entry].events =
 	(set->pollinfo[entry].events & ~mask) | (events & mask);
+
+    /* If poller is currently scanning the array, then change the
+     * revents field so that the callback function will not be called
+     * for events we should no longer listen for.  The idea is the
+     * same as for the events field, except that we only turn bits off. */
+    if (set->scanning) {
+        set->pollinfo[entry].revents =
+            set->pollinfo[entry].revents & (events | ~mask);
+    }
 }
 
 void fdset_unregister(FDSet *set, int fd)
@@ -373,12 +441,16 @@ void fdset_unregister(FDSet *set, int fd)
         return;
     }
 
-    if (entry != set->entries - 1) {
-        /* We need to keep the array contiguous, so move the last element
-         * to fill in the hole. */
-        set->pollinfo[entry] = set->pollinfo[set->entries - 1];
-        set->callbacks[entry] = set->callbacks[set->entries - 1];
-        set->datafields[entry] = set->datafields[set->entries - 1];
+    if (entry == set->entries - 1) {
+        /* It's the last entry.  We can safely remove it even while
+         * the array is being scanned, because the scan checks set->entries. */
+        set->entries--;
+    } else if (set->scanning) {
+        /* We can't remove entries because the array is being
+         * scanned.  Mark it as deleted.  */
+        set->pollinfo[entry].fd = -1;
+        set->deleted_entries++;
+    } else {
+        remove_entry(set, entry);
     }
-    set->entries--;
 }

@@ -1,3 +1,12 @@
+2000-10-31  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/conn.[ch]: Make it possible to change the callback info
+	efficiently, by calling conn_register again with the same fdset.
+
+	* gwlib/fdset.c: Fiddled with poller loop to deal with callback
+	functions doing strange things to the poll array while it's being
+	scanned.
+
 2000-10-31  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/http.c: Now uses FDSet, instead of explicit waits,

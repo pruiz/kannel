@@ -393,6 +393,7 @@ static void poll_callback(int fd, int revents, void *data) {
 int conn_register(Connection *conn, FDSet *fdset,
 		  conn_callback_t callback, void *data) {
 	int events;
+	int result = 0;
 
 	if (conn->fd < 0)
 		return -1;
@@ -402,29 +403,34 @@ int conn_register(Connection *conn, FDSet *fdset,
 	lock_out(conn);
 	lock_in(conn);
 
-	if (conn->registered) {
-	    unlock_in(conn);
-	    unlock_out(conn);
-	    return -1;
+        if (conn->registered == fdset) {
+            /* Re-registering.  Change only the callback info. */
+	    conn->callback = callback;
+            conn->callback_data = data;
+            result = 0;
+        } else if (conn->registered) {
+            /* Already registered to a different fdset. */
+            result = -1;
+        } else {
+	    events = 0;
+  	    if (!conn->read_eof)
+		    events |= POLLIN;
+            if (unlocked_outbuf_len(conn) > 0)
+            	events |= POLLOUT;
+    
+            conn->registered = fdset;
+            conn->callback = callback;
+            conn->callback_data = data;
+            conn->listening_pollin = (events & POLLIN) != 0;
+            conn->listening_pollout = (events & POLLOUT) != 0;
+            fdset_register(fdset, conn->fd, events, poll_callback, conn);
+            result = 0;
         }
 
-	events = 0;
-	if (!conn->read_eof)
-		events |= POLLIN;
-	if (unlocked_outbuf_len(conn) > 0)
-		events |= POLLOUT;
+        unlock_in(conn);
+        unlock_out(conn);
 
-	conn->registered = fdset;
-	conn->callback = callback;
-	conn->callback_data = data;
-	conn->listening_pollin = (events & POLLIN) != 0;
-	conn->listening_pollout = (events & POLLOUT) != 0;
-	fdset_register(fdset, conn->fd, events, poll_callback, conn);
-
-	unlock_in(conn);
-	unlock_out(conn);
-
-	return 0;
+	return result;
 }
 
 void conn_unregister(Connection *conn) {

@@ -88,8 +88,11 @@ void conn_set_output_buffering(Connection *conn, unsigned int size);
 /* Register this connection with an FDSet.  This will make it unnecessary
  * to call conn_wait.  Instead, the callback function will be called when
  * there is new data available.  A connection can be registered with only
- * one FDSet at a time.  Return -1 if it was already registered, otherwise
- * return 0.
+ * one FDSet at a time.  Return -1 if it was already registered with a
+ * different FDSet, otherwise return 0.
+ * A connection can be re-registered with the same FDSet.  This will
+ * change only the callback information, and is much more efficient
+ * than calling conn_unregister first.
  * NOTE: Using conn_register will always mean that the Connection will be
  * used by more than one thread, so don't also call conn_claim. */
 int conn_register(Connection *conn, FDSet *fdset,
