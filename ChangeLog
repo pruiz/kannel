@@ -1,3 +1,8 @@
+2000-03-24 Sanna Seppänen <sanna@wapit.com>
+
+	* gwlib/http.c: tested and debugged
+	httprequest_replace_header().
+
 Fri Mar 24 12:38:33 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* configure.in, configure: Check that gnome-xml is at least 1.8.6.

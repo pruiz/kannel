@@ -1287,25 +1287,29 @@ int httprequest_replace_header(HTTPRequest *request, char *key, char *value)
 {
     char *old = NULL;
     HTTPHeader *hdr = NULL;
+    int found = 0;
     
     if(request == NULL || key == NULL || value == NULL){
 	error(0, "httprequest_replace_header: Bad input.");
 	return -1;
     }
-    hdr = request->baseheader;
-    
+
+    hdr = request->baseheader;    
     while(hdr != NULL){
 	if(strcasecmp(hdr->key, key) == 0 ){
 	    /* match */
 	    old = hdr->value;
 	    hdr->value = gw_strdup(value);
 	    gw_free(old);
-	    
-	    return 0;
+	    found++;
 	}
 	hdr = hdr->next;
     }
-    return httprequest_add_header(request,key,value);
+
+    if(found == 0)
+	return httprequest_add_header(request,key,value);
+    else
+	return 0;
 }
 
 /***************************
