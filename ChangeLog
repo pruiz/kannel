@@ -1,3 +1,8 @@
+2000-11-17  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_smsc.c (sms_receiver): usleep limit to avoid portability
+	problems, patch by Jarkko Oikarinen
+
 2000-11-16  Richard Braakman  <dark@wapi.com>
 
 	* gwlib/http.c: Responses with status 1xx, 204, or 304 are

@@ -111,7 +111,11 @@ static void sms_receiver(void *arg)
 	     * happen - this of course reduces response time, but that's better than
 	     * extensive CPU usage when it is not used
 	     */
-	    if (sleep < 1000000) sleep *= 100;
+	    if (sleep < 1000000) {
+		sleep *= 100;
+		if (sleep >= 1000000)
+		    sleep = 999999;
+	    }
 	}
     }    
     list_remove_producer(incoming_sms);
