@@ -524,6 +524,11 @@ text=text+of+message+using+URL+encoding+as+necessary
 	configuration file, as <literal>sendsms-user</literal> groups.
 	See configuration file syntax for more details.</para>
 
+        <para>The user can also define the SMS Center used to send the
+        SMS, by specifying <literal>smsc</literal> variable into
+        HTTP-request. The value for this variable must match a SMSC ID
+        set in Kannel configuration file for target SMS Center
+        connection.</para>
 	
 </sect1>
 

@@ -1,5 +1,13 @@
 2000-09-25  Kalle Marjola  <rpr@wapit.com>
 
+	* doc/userguide/userguide.xml, doc/userguide/newconf.txt: updated
+	to include notes about SMSC ID use.
+
+	* gw/bb_smsc.c, gw/smsc.c|h, gw/smsc_p.h: added preferred-id and
+	denied-id configuration variable for SMS routing
+	
+2000-09-25  Kalle Marjola  <rpr@wapit.com>
+
 	* gwlib/utils.c: added str_find_substr
 
 	* gw/urltrans.c|h: added 'smsc' to find_translations, and

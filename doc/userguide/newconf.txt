@@ -157,7 +157,8 @@ Mandatory variables in smsc group are following ones:
  #       Identifies the smsc type. Currently supported ones are:
  #       fake, emi, emi_ip, cimd, cimd2, smpp and sema
 
-Message routing can be used to route SMS messages to be sent:
+Message routing can be used to route incoming SMS messages to specific
+sms-services, and to route outgoing messages to preferred SMS Centers:
 
  smsc-id = <id>
  #       An optional name or id for the smsc. Any string is
@@ -166,6 +167,16 @@ Message routing can be used to route SMS messages to be sent:
  #       This 'id' is written into log files and can be used to
  #	 route SMS messages, and to specify used SMS-service. 
  #       Several smsc'es can have same id. 
+ #
+ denied-smsc-id = <id-list>
+ #       SMS messages with SMSC ID equal to any of IDs in this list
+ #       are never routed to this SMSC. Multiple entries are separated 
+ #       with semicolon (';')
+ #
+ preferred-smsc-id = <id-list>
+ #       SMS messages with SMSC ID in this list are sent to this SMSC
+ #       instead than to SMSC without that ID as preferred. Multiple
+ #       entries are separated with semicolon (';')
  #
  denied-prefix = <prefix-list>
  #       A list of phone number prefixes which are NOT accepted to be
@@ -448,6 +459,7 @@ we can perform HTTP Basic authentication.
  #       as header, but not inserted into head but appended to end
  #
 
+
 SENDSMS-USER GROUP
 
 For smsbox, if any sendsms-services are used, there must be one or
@@ -477,8 +489,7 @@ more accounts to use it.
  #       If set to 1 enables the concatenation of SMS's for long messages 
  #
  forced-smsc = <name>
- #       Force smsc id as 'name' (linked to SMS routing, which is not
- #       yet supported)
+ #       Force smsc id as 'name' (linked to SMS routing, see SMSC groups)
  #
  default-smsc = <name>
  #       If no smsc id given with send-sms request, use this one. No

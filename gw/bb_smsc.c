@@ -203,6 +203,11 @@ static void sms_router(void *arg)
 
 	if (list_len(smsc_list) == 0) {
 	    warning(0, "No SMSCes to receive message, discarding it!");
+	    alog("SMS DISCARDED - SMSC:%s receiver:%s msg: '%s'",
+		 (msg->smart_sms.smsc_id) == NULL ?
+		 octstr_get_cstr(msg->smart_sms.smsc_id) : "unknown",
+		 octstr_get_cstr(msg->smart_sms.receiver),
+		 octstr_get_cstr(msg->smart_sms.msgdata));
 	    msg_destroy(msg);
 	    continue;
 	}
@@ -224,10 +229,10 @@ static void sms_router(void *arg)
 	for (i=0; i < list_len(smsc_list); i++) {
 	    si = list_get(smsc_list,  (i+s) % list_len(smsc_list));
 
-	    if (smsc_denied(si->smsc, number)==1)
+	    if (smsc_denied(si->smsc, number, msg->smart_sms.smsc_id)==1)
 		continue;
 
-	    if (smsc_preferred(si->smsc, number)==1) {
+	    if (smsc_preferred(si->smsc, number, msg->smart_sms.smsc_id)==1) {
 		debug("bb", 0, "sms_router: adding message to preferred <%s>",
 		      smsc_name(si->smsc));
 		list_produce(si->outgoing_list, msg);
@@ -243,6 +248,11 @@ static void sms_router(void *arg)
 	}
 	else {
 	    warning(0, "Cannot find SMSC for message to <%s>, discarded.", number);
+	    alog("SMS DISCARDED - SMSC:%s receiver:%s msg: '%s'",
+		 (msg->smart_sms.smsc_id) == NULL ?
+		 octstr_get_cstr(msg->smart_sms.smsc_id) : "unknown",
+		 octstr_get_cstr(msg->smart_sms.receiver),
+		 octstr_get_cstr(msg->smart_sms.msgdata));
 	    msg_destroy(msg);
 	}
     found:

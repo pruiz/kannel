@@ -60,6 +60,11 @@ SMSCenter *smscenter_construct(void) {
 	sprintf(smsc->name, "Unknown SMSC");
 	smsc->id = next_id++;
 
+	/* SMSC ID */
+	smsc->smsc_id = NULL;
+	smsc->preferred_id = NULL;
+	smsc->denied_id = NULL;
+
 	/* FAKE */
 	smsc->hostname = NULL;
 	smsc->port = -1;
@@ -136,6 +141,11 @@ SMSCenter *smscenter_construct(void) {
 void smscenter_destruct(SMSCenter *smsc) {
 	if (smsc == NULL)
 		return;
+
+	/* SMSC ID */
+	octstr_destroy(smsc->smsc_id);
+	octstr_destroy(smsc->preferred_id);
+	octstr_destroy(smsc->denied_id);
 
 	/* FAKE */
 	gw_free(smsc->hostname);
@@ -498,6 +508,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 	SMSCenter *smsc;
         char *type, *host, *port, *username, *password, *phone, *device;
 	char *smsc_id;
+        char *preferred_id, *denied_id;
         char *preferred_prefix, *denied_prefix;
         char *backup_port, *receive_port, *our_port; 
         char *alt_chars;
@@ -526,6 +537,8 @@ SMSCenter *smsc_open(ConfigGroup *grp)
         alt_chars = config_get(grp, "alt-charset");
 
 	smsc_id = config_get(grp, "smsc-id");
+	preferred_id = config_get(grp, "preferred-smsc-id");
+	denied_id = config_get(grp, "denied-smsc-id");
 	    
         smpp_system_id = config_get(grp, "system-id");
         smpp_system_type = config_get(grp, "system-type");
@@ -667,10 +680,12 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 	    smsc->preferred_prefix = preferred_prefix;
 	    smsc->denied_prefix = denied_prefix;
 
-	    if (smsc_id) 
+	    if (smsc_id)
 		smsc->smsc_id = octstr_create(smsc_id);
-	    else 
-		smsc->smsc_id = NULL; 
+	    if (preferred_id)
+		smsc->preferred_id = octstr_create(preferred_id);
+	    if (denied_id)
+		smsc->denied_id = octstr_create(denied_id);
 	}
 	
 	return smsc;
@@ -744,14 +759,26 @@ static int does_prefix_match(char *p, char *number)
 }
 
 
-int smsc_preferred(SMSCenter *smsc, char *number)
+int smsc_preferred(SMSCenter *smsc, char *number, Octstr *smsc_id)
 {
-    return does_prefix_match(smsc->preferred_prefix, number);
+    if (does_prefix_match(smsc->preferred_prefix, number)==1)
+	return 1;
+    if (smsc->preferred_id
+	&& str_find_substr(octstr_get_cstr(smsc->preferred_id),
+			   octstr_get_cstr(smsc_id), ";")==1)
+	return 1;
+    return 0;
 }
 
-int smsc_denied(SMSCenter *smsc, char *number)
+int smsc_denied(SMSCenter *smsc, char *number, Octstr *smsc_id)
 {
-    return does_prefix_match(smsc->denied_prefix, number);
+    if (does_prefix_match(smsc->denied_prefix, number)==1)
+	return 1;
+    if (smsc->denied_id
+	&& str_find_substr(octstr_get_cstr(smsc->denied_id),
+			   octstr_get_cstr(smsc_id), ";")==1)
+	return 1;
+    return 0;
 }
 
 
@@ -764,7 +791,7 @@ int smsc_close(SMSCenter *smsc)
 	return 0;
 	
     smscenter_lock(smsc);
-	
+
     switch (smsc->type) {
     case SMSC_TYPE_FAKE:	/* Our own fake SMSC */
 	if (fake_close(smsc) == -1)

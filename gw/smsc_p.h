@@ -48,10 +48,15 @@ struct SMSCenter {
 
         /* For log files/message-routing */
         Octstr *smsc_id;
-    	
-	/* Routing prefixes. */
+
+        /* Routing based on smsc id */
+        Octstr *preferred_id;
+        Octstr *denied_id;
+
+        /* Routing prefixes (based on phone number) */
 	char *preferred_prefix;
 	char *denied_prefix;
+
 
 	/* Alternative charset */
         int alt_charset;
