@@ -184,7 +184,7 @@ void at2_read_buffer(PrivAT2data *privdata)
     if (privdata->fd == -1) {
         error(errno, "AT2[%s]: at2_read_buffer: fd = -1. Can not read", 
               octstr_get_cstr(privdata->name));
-        return ;
+        return;
     }
     count = MAX_READ;
 
@@ -202,6 +202,10 @@ void at2_read_buffer(PrivAT2data *privdata)
     if (ret == -1) {
         if (!(errno == EINTR || errno == EAGAIN))
             error(errno, "AT2[%s]: error on select", octstr_get_cstr(privdata->name));
+        return;
+    }
+
+    if (ret == 0) {
         return;
     }
 
@@ -417,19 +421,31 @@ int	at2_init_device(PrivAT2data *privdata)
     gwthread_sleep(0.10);
 
     /* reset the modem */
-    if (at2_send_modem_command(privdata, "ATZ", 0, 0) == -1)
-        return -1;
+    if (at2_send_modem_command(privdata, "ATZ", 0, 0) == -1) {
+        error(0, "AT2[%s]: Modem doesnt like me, but i don't care",
+              octstr_get_cstr(privdata->name));
+    }
 
     /* check if the modem responded */
     if (at2_send_modem_command(privdata, "AT", 0, 0) == -1) {
-        error(0, "AT2[%s]: no answer from modem", octstr_get_cstr(privdata->name));
-        return -1;
+        error(0, "AT2[%s]: Wrong or no answer from modem. Trying again",
+              octstr_get_cstr(privdata->name));
+   	if (at2_send_modem_command(privdata, "AT", 0, 0) == -1) {
+            error(0, "AT2[%s]: No luck. get something more reliable",
+                  octstr_get_cstr(privdata->name));
+            return -1;
+    	}
     }
 
     at2_flush_buffer(privdata);
 
-    if (at2_send_modem_command(privdata, "AT&F", 0, 0) == -1)
-        return -1;
+    if (at2_send_modem_command(privdata, "AT&F", 7, 0) == -1) {
+        error(0, "AT2[%s]: Modem didnt like my AT&F. Lets give it a second try",
+              octstr_get_cstr(privdata->name));
+	if (at2_send_modem_command(privdata, "AT&F", 7, 0) == -1) {
+    	    return -1;
+    	}
+    }
 
     if (at2_send_modem_command(privdata, "ATE0", 0, 0) == -1)
         return -1;
@@ -684,8 +700,8 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag,
             if ( -1 != octstr_search(line, octstr_imm("ERROR"), 0)) {
                 int errcode;
                 sscanf(octstr_get_cstr(line), "ERROR: %d", &errcode);
-                error(0, "AT2[%s]: Error occurs: %s (%s)", octstr_get_cstr(privdata->name),
-                      octstr_get_cstr(line), at2_error_string(errcode));
+                error(0, "AT2[%s]: Error occurs: %s: %s (%d)", octstr_get_cstr(privdata->name),
+                      octstr_get_cstr(line), at2_error_string(errcode), errcode);
                 ret = -1;
                 goto end;
             }
