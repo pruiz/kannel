@@ -1,4 +1,7 @@
 2003-03-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap_push_ppg[_pushuser].c: fixed BUG#8. Reported by Bas A. Schulte.
+
+2003-03-20  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap_push_pap_compiler.c, wap/wap_events.def: fixed none accepted <pap>
       attribute 'product-name'. Thanks to "Bas A. Schulte" <bschulte@zeelandnet.nl>.
       [Msg-ID: <B647848F-5A5B-11D7-8DAC-000393059670@zeelandnet.nl>]
