@@ -1140,12 +1140,14 @@ void octstr_insert_data(Octstr *ostr, long pos, const char *data, long len)
 
 void octstr_append_data(Octstr *ostr, const char *data, long len)
 {
+    gw_assert(ostr != NULL);
     octstr_insert_data(ostr, ostr->len, data, len);
 }
 
 
 void octstr_append(Octstr *ostr1, Octstr *ostr2)
 {
+    gw_assert(ostr1 != NULL);
     octstr_insert(ostr1, ostr2, ostr1->len);
 }
 

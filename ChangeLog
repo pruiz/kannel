@@ -1,3 +1,55 @@
+2000-10-04  Richard Braakman  <dark@wapit.com>
+
+	* Encode response headers and send them to the client:
+
+	* gw/wsp_headers.[ch]: Added wsp_headers_pack.  Fixed some bugs in
+	wsp_headers_unpack.  Replaced a few magic numbers with names.
+	Reformatted.
+
+	* checks/check_headers.sh, test/test_headers.c, test/header_test:
+	New files.  Exercise header code by packing and unpacking a set
+	of headers that try to cover all possibilities.
+
+	* test/fakewap.c: Be less strict in checking Reply packet, because
+	it can no longer assume the response headers are empty.  (Implementing
+	full parsing wouldn't be worth the effort.)
+
+	* gw/wap-appl.c: Added http_remove_hop_headers and used it to
+	delete hop-by-hop headers when forwarding HTTP headers to
+	client or server.  (The hop-by-hop headers are for one connection
+	only, for example Transfer-Encoding.)
+
+	* gw/wap-appl.c: When applying a content converter to the 
+	response body, update the response headers to reflect this.
+
+	* gw/wap-appl.c: Fill in the response_headers field of
+	S_MethodResult_Req and S_Unit_MethodResult_Req events, now
+	that they're used.
+
+	* gw/wap-events-def: In the S_MethodResult_Req, response_headers
+	is a HTTPHEADER, not an OCTSTR.
+	Removed response_type field from the MethodResult events, it's
+	not used and the information is present in response_headers.
+
+	* gw/wsp-method-state.h, gw/wsp-session-state.h, gw/wsp-unit.c:
+	Renamed unpack_headers to wsp_headers_unpack to match function naming
+	convention.  Use wsp_headers_pack instead of wsp_encode_http_headers.
+
+	* gw/wsp-strings.def: Introduce some new tables used for
+	header encoding.
+
+	* gw/wsp.c, gw/wsp.h: Deleted wsp_encode_http_headers, it's
+	obsoleted by wsp_headers_pack.
+
+	* gw/wsp.c: Changed wsp_convert_http_status_to_wsp_status to
+	handle all defined status values.
+
+	* gwlib/http.[ch]: Added several utility functions used by
+	header packing.  Minor formatting corrections.
+
+	* gwlib/octstr.c: Added assertions to octstr_append* functions
+	to prevent segfault.
+
 2000-10-04  Kalle Marjola  <rpr@wapit.com>
 
 	* gwlib/conffile.c|h: added new function 'config_sanity_check' to

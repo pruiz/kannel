@@ -366,6 +366,7 @@ static void fetch_thread(void *arg) {
 	if (request_headers != NULL)
 		http_append_headers(actual_headers, request_headers);
 
+        http_remove_hop_headers(actual_headers);
 	add_accept_headers(actual_headers);
 	add_charset_headers(actual_headers);
 	add_network_info(actual_headers, addr_tuple);
@@ -418,12 +419,14 @@ static void fetch_thread(void *arg) {
 		content.type = octstr_create("text/plain");
 		content.charset = octstr_create("");
 	} else {
+		int converted;
+
 		http_header_get_content_type(resp_headers,
 				&content.type, &content.charset);
 		info(0, "WSP: Fetched <%s> (%s, charset='%s')", 
 			octstr_get_cstr(url), octstr_get_cstr(content.type),
 			octstr_get_cstr(content.charset));
-		status = 200; /* OK */
+		status = HTTP_OK;
 
 
 #ifdef COOKIE_SUPPORT
@@ -432,16 +435,20 @@ static void fetch_thread(void *arg) {
 				error(0, "WSP: Failed to extract cookies");
 #endif		
 		
-		if (convert_content(&content) < 0) {
+		converted = convert_content(&content);
+		if (converted < 0) {
 			status = 500; /* XXX */
 			warning(0, "WSP: All converters for `%s' failed.",
 					octstr_get_cstr(content.type));
 		}
+		if (converted == 1)
+			http_header_mark_transformation(resp_headers, content.body, content.type);
 	}
 
-	gw_assert(actual_headers);
 	list_destroy(actual_headers, octstr_destroy_item);
-	list_destroy(resp_headers, octstr_destroy_item);
+	/* resp_headers will be re-used below */
+
+	http_remove_hop_headers(resp_headers);
 		
 	if (octstr_len(content.body) > client_SDU_size) {
 		status = 413; /* XXX requested entity too large */
@@ -462,9 +469,7 @@ static void fetch_thread(void *arg) {
 		e->u.S_MethodResult_Req.server_transaction_id = 
 			event->u.S_MethodInvoke_Ind.server_transaction_id;
 		e->u.S_MethodResult_Req.status = status;
-		e->u.S_MethodResult_Req.response_type = content.type;
-		/* XXX Fill these in */
-		e->u.S_MethodResult_Req.response_headers = NULL;
+		e->u.S_MethodResult_Req.response_headers = resp_headers;
 		e->u.S_MethodResult_Req.response_body = content.body;
 		e->u.S_MethodResult_Req.session_id = session_id;
 	
@@ -477,16 +482,15 @@ static void fetch_thread(void *arg) {
 		e->u.S_Unit_MethodResult_Req.transaction_id = 
 			event->u.S_Unit_MethodInvoke_Ind.transaction_id;
 		e->u.S_Unit_MethodResult_Req.status = status;
-		e->u.S_Unit_MethodResult_Req.response_type = content.type;
-		/* XXX Fill these in */
-		e->u.S_Unit_MethodResult_Req.response_headers = NULL;
+		e->u.S_Unit_MethodResult_Req.response_headers = resp_headers;
 		e->u.S_Unit_MethodResult_Req.response_body = content.body;
 	
 		wsp_unit_dispatch_event(e);
 	}
 
 	wap_event_destroy(event);
-	octstr_destroy(content.url); /* body and type were re-used above */
+	octstr_destroy(content.type); /* body was re-used above */
+	octstr_destroy(content.url);
 	octstr_destroy(content.charset);
 	octstr_destroy(url);
 	octstr_destroy(request_body);

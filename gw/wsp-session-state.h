@@ -44,7 +44,7 @@ ROW(NULL_SESSION,
 		if (pdu->u.Connect.headers_len > 0) {
 			List *hdrs;
 			
-			hdrs = unpack_headers(pdu->u.Connect.headers, 0);
+			hdrs = wsp_headers_unpack(pdu->u.Connect.headers, 0);
 			http_header_pack(hdrs);
 			gw_assert(sm->http_headers == NULL);
 			sm->http_headers = hdrs;

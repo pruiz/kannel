@@ -357,6 +357,16 @@ ASSIGN("POST", 0x60)
 ASSIGN("PUT", 0x61)
 )
 
+/* Connection-value tokens, from section 8.4.2.16 */
+LINEAR(connection,
+STRING("close")
+)
+
+/* Transfer-encoding values, from section 8.4.2.46 */
+LINEAR(transfer_encoding,
+STRING("chunked")
+)
+
 /**** More preprocessor magic ****/
 
 #undef LINEAR

@@ -240,13 +240,52 @@ void http_header_get(List *headers, long i, Octstr **name, Octstr **value);
 List *http_header_duplicate(List *headers);
 void http_header_pack(List *headers);
 void http_append_headers(List *to, List *from);
+Octstr *http_header_value(Octstr *header);
+
+/*
+ * Return the length of the quoted-string (a HTTP field element)
+ * starting at position pos in the header.  Return -1 if there
+ * is no quoted-string at that position.
+ */
+long http_header_quoted_string_len(Octstr *header, long pos);
+
+/*
+ * Take the value part of a header that has a format that allows
+ * multiple comma-separated elements, and split it into a list of
+ * those elements.  Note that the function may have surprising
+ * results for values of headers that are not in this format.
+ */
+List *http_header_split_value(Octstr *value);
+
+/*
+ * The same as http_header_split_value, except that it splits 
+ * headers containing 'credentials' or 'challenge' lists, which
+ * have a slightly different format.  It also normalizes the list
+ * elements, so that parameters are introduced with ';'.
+ */
+List *http_header_split_auth_value(Octstr *value);
 
 #if LIW_TODO
 List *http_parse_header_string(Octstr *headers_as_string);
 Octstr *http_generate_header_string(List *headers_as_list);
+#endif
 
 void http_header_remove_all(List *headers, char *name);
-#endif
+
+/*
+ * Remove the hop-by-hop headers from a header list.  These are the
+ * headers that describe a specific connection, not anything about
+ * the content.  RFC2616 section 13.5.1 defines these.
+ */
+void http_remove_hop_headers(List *headers);
+
+/*
+ * Update the headers to reflect that a transformation has been
+ * applied to the entity body.
+ */
+void http_header_mark_transformation(List *headers,
+Octstr *new_body, Octstr *new_type);
+
 
 /*
  * Find the first header called `name' in `headers'. Returns its contents

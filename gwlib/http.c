@@ -188,7 +188,7 @@ int http_get(Octstr *url, List *request_headers,
         goto error;
 
     switch (read_body(p, *reply_headers, reply_body)) {
-    case - 1:
+    case -1:
         goto error;
     case 0:
         pool_free_and_close(p);
@@ -320,7 +320,7 @@ int http_post(Octstr *url, List *request_headers, Octstr *request_body,
         goto error;
 
     switch (read_body(p, *reply_headers, reply_body)) {
-    case - 1:
+    case -1:
         goto error;
     case 0:
         pool_free_and_close(p);
@@ -484,7 +484,7 @@ int http_server_get_request(HTTPSocket *socket, Octstr **url, List **headers,
     *cgivars = NULL;
 
     switch (socket_read_line(socket, &line)) {
-    case - 1:
+    case -1:
         goto error;
     case 0:
         return 0;
@@ -719,6 +719,87 @@ List *http_header_find_all(List *headers, char *name)
 }
 
 
+void http_header_remove_all(List *headers, char *name)
+{
+    long i;
+    Octstr *h;
+
+    gwlib_assert_init();
+    gw_assert(headers != NULL);
+    gw_assert(name != NULL);
+
+    i = 0;
+    while (i < list_len(headers)) {
+	h = list_get(headers, i);
+	if (header_is_called(h, name))
+	    list_delete(headers, i, 1);
+	else
+	    i++;
+    }
+}
+
+
+void http_remove_hop_headers(List *headers)
+{
+    Octstr *h;
+    List *connection_headers;
+
+    gwlib_assert_init();
+    gw_assert(headers != NULL);
+
+    /*
+     * The hop-by-hop headers are a standard list, plus those named
+     * in the Connection header(s).
+     */
+
+    connection_headers = http_header_find_all(headers, "Connection");
+    while ((h = list_consume(connection_headers))) {
+	List *hop_headers;
+	Octstr *v, *e;
+
+	v = octstr_copy(h, strlen("Connection: "), octstr_len(h));
+	hop_headers = http_header_split_value(v);
+	octstr_destroy(v);
+	while ((e = list_consume(hop_headers))) {
+	    http_header_remove_all(headers, octstr_get_cstr(v));
+	    octstr_destroy(e);
+	}
+	list_destroy(hop_headers, NULL);
+    }
+    list_destroy(connection_headers, NULL);
+   
+    http_header_remove_all(headers, "Connection");
+    http_header_remove_all(headers, "Keep-Alive");
+    http_header_remove_all(headers, "Proxy-Authenticate");
+    http_header_remove_all(headers, "Proxy-Authorization");
+    http_header_remove_all(headers, "TE");
+    http_header_remove_all(headers, "Trailers");
+    http_header_remove_all(headers, "Transfer-Encoding");
+    http_header_remove_all(headers, "Upgrade");
+}
+
+
+void http_header_mark_transformation(List *headers,
+Octstr *new_body, Octstr *new_type)
+{
+    Octstr *new_length = NULL;
+
+    /* Remove all headers that no longer apply to the new body. */
+    http_header_remove_all(headers, "Content-Length");
+    http_header_remove_all(headers, "Content-MD5");
+    http_header_remove_all(headers, "Content-Type");
+
+    /* Add headers that we need to describe the new body. */
+    new_length = octstr_format("%ld", octstr_len(new_body));
+    http_header_add(headers, "Content-Length", octstr_get_cstr(new_length));
+    http_header_add(headers, "Content-Type", octstr_get_cstr(new_type));
+
+    /* Perhaps we should add Warning: 214 "Transformation applied" too? */
+
+    octstr_destroy(new_length);
+}
+
+
 void http_header_get_content_type(List *headers, Octstr **type,
                                   Octstr **charset)
 {
@@ -764,6 +845,151 @@ void http_header_get_content_type(List *headers, Octstr **type,
 }
 
 
+static void http_header_add_element(List *list, Octstr *value,
+				    long start, long end)
+{
+    Octstr *element;
+
+    element = octstr_copy(value, start, end - start);
+    octstr_strip_blanks(element);
+    if (octstr_len(element) == 0)
+	octstr_destroy(element);
+    else
+    	list_append(list, element);
+}
+
+
+long http_header_quoted_string_len(Octstr *header, long start)
+{
+    long len;
+    long pos;
+    int c;
+
+    if (octstr_get_char(header, start) != '"')
+	return -1;
+
+    len = octstr_len(header);
+    for (pos = start + 1; pos < len; pos++) {
+	c = octstr_get_char(header, pos);
+	if (c == '\\')    /* quoted-pair */
+	    pos++;
+	else if (c == '"')
+	    return pos - start + 1;
+    }
+
+    warning(0, "Header contains unterminated quoted-string:");
+    warning(0, "%s", octstr_get_cstr(header));
+    return len - start;
+}
+
+
+List *http_header_split_value(Octstr *value)
+{
+    long start;  /* start of current element */
+    long pos;
+    long len;
+    List *result;
+    int c;
+
+    /*
+     * According to RFC2616 section 4.2, a field-value is either *TEXT
+     * (the caller is responsible for not feeding us one of those) or
+     * combinations of token, separators, and quoted-string.  We're
+     * looking for commas which are separators, and have to skip
+     * commas in quoted-strings.
+     */
+ 
+    result = list_create();
+    len = octstr_len(value);
+    start = 0;
+    for (pos = 0; pos < len; pos++) {
+	c = octstr_get_char(value, pos);
+	if (c == ',') {
+	    http_header_add_element(result, value, start, pos);
+	    start = pos + 1;
+	} else if (c == '"') {
+            pos += http_header_quoted_string_len(value, pos);
+	    pos--; /* compensate for the loop's pos++ */
+        }
+    }
+    http_header_add_element(result, value, start, len);
+    return result;
+}
+
+
+List *http_header_split_auth_value(Octstr *value)
+{
+    List *result;
+    Octstr *auth_scheme;
+    Octstr *element;
+    long i;
+
+    /*
+     * According to RFC2617, both "challenge" and "credentials"
+     * consist of an auth-scheme followed by a list of auth-param.
+     * Since we have to parse a list of challenges or credentials,
+     * we have to look for auth-scheme to signal the start of
+     * a new element.  (We can't just split on commas because
+     * they are also used to separate the auth-params.)
+     *
+     * An auth-scheme is a single token, while an auth-param is
+     * always a key=value pair.  So we can recognize an auth-scheme
+     * as a token that is not followed by a '=' sign.
+     *
+     * Simple approach: First split at all commas, then recombine
+     * the elements that belong to the same challenge or credential.
+     * This is somewhat expensive but saves programmer thinking time.
+     *
+     * Richard Braakman
+     */
+ 
+    result = http_header_split_value(value);
+
+    auth_scheme = list_get(result, 0);
+    i = 1;
+    while (i < list_len(result)) {
+	int c;
+	long pos;
+
+	element = list_get(result, i);
+	/*
+	 * If the element starts with: token '='
+	 * then it's just an auth_param; append it to the current
+	 * auth_scheme.  If it starts with: token token '='
+	 * then it's the start of a new auth scheme.
+	 * 
+	 * To make the scan easier, we consider anything other
+	 * than whitespace or '=' to be part of a token.
+	 */
+
+	/* Skip first token */
+	for (pos = 0; pos < octstr_len(element); pos++) {
+	    c = octstr_get_char(element, pos);
+	    if (isspace(c) || c == '=')
+		break;
+	}
+
+	/* Skip whitespace, if any */
+	while (isspace(octstr_get_char(element, pos)))
+	    pos++;
+
+	if (octstr_get_char(element, pos) == '=') {
+		octstr_append_char(auth_scheme, ';');
+		octstr_append(auth_scheme, element);
+		list_delete(result, i, 1);
+		octstr_destroy(element);
+	} else {
+		unsigned char semicolon = ';';
+		octstr_insert_data(element, pos, &semicolon, 1);
+		auth_scheme = element;
+		i++;
+	}
+    }
+
+    return result;
+}
+
+
 void http_header_dump(List *headers)
 {
     long i;
@@ -776,18 +1002,20 @@ void http_header_dump(List *headers)
     debug("gwlib.http", 0, "End of dump.");
 }
 
-static char *istrdup (char *orig)
+
+static char *istrdup(char *orig)
 {
-    int i, len = strlen (orig);
-    char *result = gw_malloc (len + 1);
+    int i, len = strlen(orig);
+    char *result = gw_malloc(len + 1);
 
     for (i = 0; i < len; i++)
-        result[i] = toupper (orig [i]);
+        result[i] = toupper(orig[i]);
 
     result[i] = 0;
 
     return result;
 }
+
 
 static int http_something_accepted(List *headers, char *header_name,
                                    char *what)
@@ -806,11 +1034,10 @@ static int http_something_accepted(List *headers, char *header_name,
 
     found = 0;
     for (i = 0; !found && i < list_len(accepts); ++i) {
-        char *header_value = istrdup(octstr_get_cstr(
-                                         list_get(accepts, i)));
+        char *header_value = istrdup(octstr_get_cstr(list_get(accepts, i)));
         if (strstr(header_value, iwhat) != NULL)
             found = 1;
-        gw_free (header_value);
+        gw_free(header_value);
     }
 
     gw_free(iwhat);
@@ -823,6 +1050,7 @@ int http_type_accepted(List *headers, char *type)
 {
     return http_something_accepted(headers, "Accept", type);
 }
+
 
 int http_charset_accepted(List *headers, char *charset)
 {
@@ -957,7 +1185,7 @@ static int pool_socket_is_alive(HTTPSocket *p)
         return 0;
 
     switch (read_available(p->socket, 0)) {
-    case - 1:
+    case -1:
         return 0;
 
     case 0:
@@ -1129,7 +1357,7 @@ static int socket_read_line(HTTPSocket *p, Octstr **line)
 
     while ((newline = octstr_search_char(p->buffer, '\n', 0)) == -1) {
         switch (octstr_append_from_socket(p->buffer, p->socket)) {
-        case - 1:
+        case -1:
             return -1;
         case 0:
             return 0;
@@ -1156,7 +1384,7 @@ static int socket_read_bytes(HTTPSocket *p, Octstr **os, long bytes)
 {
     while (octstr_len(p->buffer) < bytes) {
         switch (octstr_append_from_socket(p->buffer, p->socket)) {
-        case - 1:
+        case -1:
             return -1;
         case 0:
             return 0;
@@ -1176,7 +1404,7 @@ static int socket_read_to_eof(HTTPSocket *p, Octstr **os)
 {
     for (; ; ) {
         switch (octstr_append_from_socket(p->buffer, p->socket)) {
-        case - 1:
+        case -1:
             return -1;
         case 0:
             *os = octstr_duplicate(p->buffer);

@@ -17,7 +17,12 @@
  * Content-Type field.  Some WSP PDUs encode Content-Type separately
  * this way for historical reasons.
  */
-List *unpack_headers(Octstr *headers, int content_type);
-/* XXX this function should follow naming convention */
+List *wsp_headers_unpack(Octstr *headers, int content_type);
+
+/* Take a List of headers, encode them according to the WSP spec,
+ * and return the encoded headers as an Octstr. 
+ * The second argument is true if the encoded headers should have
+ * a leading content-type field.  See the note for wsp_headers_unpack. */
+Octstr *wsp_headers_pack(List *headers, int separate_content_type);
 
 #endif

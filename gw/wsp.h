@@ -98,7 +98,6 @@ WAPEvent *wsp_unit_unpack_wdp_datagram(Msg *msg);
 /*
  * Shared stuff.
  */
-Octstr *wsp_encode_http_headers(Octstr *content_type);
 long wsp_convert_http_status_to_wsp_status(long http_status);
 
 #endif

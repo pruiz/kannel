@@ -29,7 +29,7 @@ ROW(NULL_METHOD,
 		 * the information nicely available. */
 
 		if (octstr_len(pdu->u.Get.headers) > 0)
-			headers = unpack_headers(pdu->u.Get.headers, 0);
+			headers = wsp_headers_unpack(pdu->u.Get.headers, 0);
 		else
 			headers = NULL;
 
@@ -67,7 +67,7 @@ ROW(NULL_METHOD,
 		 * the information nicely available. */
 
 		if (octstr_len(pdu->u.Post.headers) > 0)
-			headers = unpack_headers(pdu->u.Post.headers, 1);
+			headers = wsp_headers_unpack(pdu->u.Post.headers, 1);
 		else
 			headers = NULL;
 
@@ -248,7 +248,7 @@ ROW(PROCESSING,
 		new_pdu->u.Reply.status = 
 			wsp_convert_http_status_to_wsp_status(e->status);
 		new_pdu->u.Reply.headers = 
-			wsp_encode_http_headers(e->response_type);
+			wsp_headers_pack(e->response_headers, 1);
 		new_pdu->u.Reply.data = octstr_duplicate(e->response_body);
 
 		/* Send TR-Result.req to WTP */
