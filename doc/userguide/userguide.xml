@@ -600,6 +600,11 @@
 	    Enable using PAM for authentication of sendsms users for
 	    smsbox.</para></listitem>
 
+        <listitem><para><literal>--enable-oracle</literal>
+
+            Enable using Oracle OCI libraries for Oracle 8i/9i dbpool and
+            dlr support.</para></listitem>
+
 	<!-- XXX DAVI add mysql, openssl and others in here -->
 
 	</itemizedlist>
@@ -1361,9 +1366,9 @@ admin-password = f00bar
      <entry>type</entry>
      <entry valign="bottom">
         Defines the way DLRs are stored. If you have build-in external 
-		  DLR storage support, i.e. using MySQL you may define here the 
+		  DLR storage support, i.e. using MySQL you may define here the
 		  alternative storage type like 'mysql'. Supported types are:
-		  internal, mysql. By default this is set to 'internal'.
+		  internal, mysql, oracle. By default this is set to 'internal'.
      </entry></row>
 
      <row><entry><literal>maximum-queue-length</literal></entry>
@@ -1371,8 +1376,8 @@ admin-password = f00bar
      <entry valign="bottom">
         Set maximum size of incoming message queue. After number of messages
         has hit this value, Kannel began to discard them.
-        Value 0 means giving strict priority to outgoing messages. -1, 
-        default, means that the queue of infinite length is accepted. (This 
+        Value 0 means giving strict priority to outgoing messages. -1,
+        default, means that the queue of infinite length is accepted. (This
         works with any normal input, use this variable only when Kannel message
         queues grow very long).
      </entry></row>
@@ -5385,15 +5390,15 @@ forced-smsc = SOL
 	means all DLRs are stored in the memory of the bearerbox process.
 	This is problematic if bearerbox crashes or you take the process
 	down in a controlled way, but there are still DLRs open. Therefore
-	you may use external DLR storage places, i.e. a MySQL database. 
+	you may use external DLR storage places, i.e. a MySQL database.
 	</para>
-	<para>Following are the supported DLR storage types and how to use 
+	<para>Following are the supported DLR storage types and how to use
 	them:</para>
 
 	<sect3>
 	<title>Internal DLR storage</title>
 
-   <para>This is the default way in handling DLRs and does not 
+   <para>This is the default way in handling DLRs and does not
 	require any special configuration. In order to configure bearerbox
 	to use internal DLR storage use <literal>dlr-storage = internal</literal>
 	in the <literal>core</literal> group.
@@ -5409,12 +5414,12 @@ forced-smsc = SOL
 	</para>
 	<para>In addition to that you must have a <literal>dlr-db</literal>
 	group defined that specifies the table field names that are used to the
-	DLR attributes and a <literal>mysql-connection</literal> group that 
+	DLR attributes and a <literal>mysql-connection</literal> group that
 	defines the connection to the MySQL server itself.
 	</para>
-	<para>Here is the example configuration from 
+	<para>Here is the example configuration from
 	<literal>doc/examples/dlr-mysql.conf</literal>:
-	
+
 <programlisting>
 group = mysql-connection
 id = mydlr
@@ -5438,24 +5443,24 @@ field-boxc-id = boxc
 </programlisting>
 
 	</para>
-	
+
 	</sect3>
 
 	<sect3>
 	<title>LibSDB DLR storage</title>
-	<para>To store DLR information into a LibSDB ressource (which is an 
-	abstraction	of a real database) you may use the 
+	<para>To store DLR information into a LibSDB ressource (which is an
+	abstraction	of a real database) you may use the
 	<literal>dlr-storage = sdb</literal> configuration directive in the
 	<literal>core</literal> group.
 	</para>
 	<para>In addition to that you must have a <literal>dlr-db</literal>
 	group defined that specifies the table field names that are used to the
-	DLR attributes and a <literal>sdb-connection</literal> group that 
+	DLR attributes and a <literal>sdb-connection</literal> group that
 	defines the LibSDB ressource itself.
 	</para>
-	<para>Here is the example configuration from 
+	<para>Here is the example configuration from
 	<literal>doc/examples/dlr-sdb.conf</literal> using a MySQL ressource:
-	
+
 <programlisting>
 group = sdb-connection
 id = mydlr
@@ -5475,17 +5480,56 @@ field-boxc-id = boxc
 </programlisting>
 
 	</para>
-  <para>Beware that you have the DB support build in your LibSDB 
+  <para>Beware that you have the DB support build in your LibSDB
   installation when trying to use a specific DB type within the URL.
   </para>
-	
+
 	</sect3>
 
 	<sect3>
+	<title>Oracle 8i/9i DLR storage</title>
+	<para>To store DLR information into a Oracle database you may use the
+	<literal>dlr-storage = oracle</literal> configuration directive in the
+	<literal>core</literal> group.
+	</para>
+	<para>In addition to that you must have a <literal>dlr-db</literal>
+	group defined that specifies the table field names that are used to the
+	DLR attributes and a <literal>oracle-connection</literal> group that
+	defines the connection to the Oracle server itself.
+	</para>
+	<para>Here is the example configuration from
+	<literal>doc/examples/dlr-oracle.conf</literal>:
+
+<programlisting>
+group = oracle-connection
+id = mydlr
+username = foo
+password = bar
+tnsname = dlr
+max-connections = 1
+
+group = dlr-db
+id = mydlr
+table = dlr
+field-smsc = smsc
+field-timestamp = ts
+field-destination = destination
+field-service = service
+field-url = url
+field-mask = mask
+field-status = status
+field-boxc-id = boxc
+</programlisting>
+
+	</para>
+
+	</sect3>
+
+        <sect3>
 	<title>DLR database field configuration</title>
-	<para>For external database storage of DLR information in relational 
+	<para>For external database storage of DLR information in relational
 	database management systems (RDMS) you will have tospecify which table
-	field are used to represend the stored data. This is done via the 
+	field are used to represend the stored data. This is done via the
 	<literal>dlr-db</literal> group as follows:
 	</para>
 
@@ -5510,8 +5554,8 @@ field-boxc-id = boxc
      <entry><literal>string</literal></entry>
      <entry valign="bottom">
 	     An id to identify which external connection should be used for
- 		  DLR storage. Any string is acceptable, but semicolon ';' may cause 
-		  problems, so avoid it and any other special non-alphabet characters. 
+ 		  DLR storage. Any string is acceptable, but semicolon ';' may cause
+		  problems, so avoid it and any other special non-alphabet characters.
      </entry></row>
 
    <row><entry><literal>table (m)</literal></entry>
@@ -5637,8 +5681,8 @@ field-status = status
      <entry valign="bottom">
 	     An optional name or id to identify this MySQL connection
 		  for internal reference with other MySQL related configuration
-		  groups. Any string is acceptable, but semicolon ';' may cause 
-		  problems, so avoid it and any other special non-alphabet characters. 
+		  groups. Any string is acceptable, but semicolon ';' may cause
+		  problems, so avoid it and any other special non-alphabet characters.
      </entry></row>
 
    <row><entry><literal>host (m)</literal></entry>
@@ -5665,6 +5709,13 @@ field-status = status
         Name of database in MySQL database server to connect to.
      </entry></row>
 
+    <row><entry><literal>max-connections</literal></entry>
+     <entry>integer</entry>
+     <entry valign="bottom">
+        How many connections should be opened to the given database.
+        This is used for database pool.
+     </entry></row>
+
   </tbody>
   </tgroup>
  </table>
@@ -5678,6 +5729,7 @@ host = localhost
 mysql-username = foo
 mysql-password = bar
 database = dlr
+max-connections = 1
 </programlisting>
 
   </para>

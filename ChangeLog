@@ -1,3 +1,7 @@
+2003-08-11  Alexander Malysh  <a.malysh@centrium.de>
+    * doc/userguide/userguide.xml: added info for Oracle support and
+      new config params for MySQL connection group.
+
 2003-08-11  Stipe Tolj  <tolj@wapme-systems.de>
     * test/test_dict.c: added extended huge Dict test.
 
