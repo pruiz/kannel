@@ -1,4 +1,8 @@
 2003-01-28  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: add debug info about ammount of outstanding HTTP reqeusts
+      in the retry queue.
+
+2003-01-28  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smpp_pdu.c: added Alexander's optional PDU parameters
       robustness patch.
       [Msg-ID: <200301252018.01219.a.malysh@centrium.de>]
