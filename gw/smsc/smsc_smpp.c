@@ -127,7 +127,6 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     list_add_producer(smpp->msgs_to_send); 
     smpp->received_msgs = list_create(); 
     smpp->message_id_counter = counter_create(); 
-    counter_increase(smpp->message_id_counter); 
     smpp->host = octstr_duplicate(host); 
     smpp->system_type = octstr_duplicate(system_type); 
     smpp->username = octstr_duplicate(username); 
@@ -677,7 +676,11 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                      * 0x02 deliver_sm hex, submit_sm_resp dec
                      * 0x03 deliver_sm hex, submit_sm_resp hex *
                      */
-                    tmp = octstr_duplicate(msgid);
+                    if (smpp->smpp_msg_id_type & 0x02)                         
+                        tmp = octstr_format("%ld", strtol(octstr_get_cstr(msgid), NULL, 16));
+                    else
+                        tmp = octstr_format("%ld", strtol(octstr_get_cstr(msgid), NULL, 10));
+ 
                     dlrmsg = dlr_find(octstr_get_cstr(smpp->conn->id),  
                                       octstr_get_cstr(tmp), /* smsc message id */ 
                                       octstr_get_cstr(pdu->u.deliver_sm.destination_addr), /* destination */ 
@@ -790,7 +793,15 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                 --(*pending_submits); 
             } else {  
                 Octstr *tmp; 
-		tmp = octstr_duplicate(pdu->u.submit_sm_resp.message_id);
+	 
+                /* check if msg_id is decimal or hex for this SMSC */
+                if (smpp->smpp_msg_id_type & 0x01)
+                    tmp = octstr_format("%ld", strtol(
+                            octstr_get_cstr(pdu->u.submit_sm_resp.message_id), NULL, 16));
+                else
+                    tmp = octstr_format("%ld", strtol(
+                            octstr_get_cstr(pdu->u.submit_sm_resp.message_id), NULL, 10));
+ 
                 /* SMSC ACK.. now we have the message id. */ 
  				 
                 if (msg->sms.dlr_mask & (DLR_SMSC_SUCCESS|DLR_SUCCESS|DLR_FAIL|DLR_BUFFERED)) 
