@@ -662,6 +662,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
     privdata->lines = octstr_create("");
     while(time(&cur_time) <= end_time)
     {
+        O_DESTROY(line);
     	line = at2_read_line(privdata, gt_flag);
     	if(line)
     	{
