@@ -23,7 +23,7 @@ gw/smsbox -v $loglevel gw/smskannel.conf > check_fakesmsc_sms.log 2>&1 &
 running=yes
 while [ $running = yes ]
 do
-    sleep 1
+    sleep 2
     if grep "Got message $times" check_fakesmsc.log >/dev/null
     then
     	running=no
