@@ -1,3 +1,8 @@
+Thu Nov 25 15:49:13 1999  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/smsc_p.h: Added a missing include for signal.h to get the
+	sig_atomic_t typedef.
+
 1999-11-24    <rpr@rpr.wapit.com>
 
 	* gw/smsc.c: delayed re-open calls, with panic-option

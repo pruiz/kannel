@@ -12,6 +12,7 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <signal.h>
 #include <time.h>
 
 #include "smsc.h"
