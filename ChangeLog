@@ -1,3 +1,8 @@
+2000-05-29  Derry Hamilton  <rasilon@tardis.ed.ac.uk>
+
+	* gwlib/gwthread-pthread.c: Added some system cleanups to 
+	delete_threadinfo.  Threads are not always processes!
+
 2000-05-29    Kalle Marjola <rpr@wapit.com>
 	
 	* gw/bb_boxc.c: fixed possible problem in box shutdown and added
