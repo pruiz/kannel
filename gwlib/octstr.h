@@ -173,7 +173,7 @@ long octstr_len(const Octstr *ostr);
  * octet string is created. If `from+len' is after the end of `ostr', 
  * `len' is reduced appropriately.
  */
-Octstr *octstr_copy_real(Octstr *ostr, long from, long len, const char *file,
+Octstr *octstr_copy_real(const Octstr *ostr, long from, long len, const char *file,
                          long line, const char *func);
 #define octstr_copy(ostr, from, len) \
     gw_claim_area(octstr_copy_real((ostr), (from), (len), __FILE__, __LINE__, __func__))
@@ -200,7 +200,7 @@ Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2);
  * value has a range of 0..255 for valid positions, and -1 if `pos' is
  * after the end of the octet string.
  */
-int octstr_get_char(Octstr *ostr, long pos);
+int octstr_get_char(const Octstr *ostr, long pos);
 
 
 /*
@@ -332,6 +332,12 @@ int octstr_str_compare(const Octstr *ostr1, const char *str);
 
 
 /*
+ * Same as octstr_str_compare, but comparing is done only up to n bytes.
+ */
+int octstr_str_ncompare(const Octstr *ostr, const char *str, long n);
+
+
+/*
  * Write contents of octet string to a file. Return -1 for error, 0 for OK.
  */
 int octstr_print(FILE *f, Octstr *ostr);
@@ -341,14 +347,14 @@ int octstr_print(FILE *f, Octstr *ostr);
  * Search the character from octet string starting from position pos. Returns 
  * the position (index) of the char in string, -1 if not found.
  */
-int octstr_search_char(Octstr *ostr, int ch, long pos);
+int octstr_search_char(const Octstr *ostr, int ch, long pos);
 
 
 /*
  * Search several character from octet string starting from position pos. Returns 
  * the position (index) of the first char found in string, -1 if none was found.
  */
-int octstr_search_chars(Octstr *ostr, Octstr *chars, long pos);
+int octstr_search_chars(const Octstr *ostr, const Octstr *chars, long pos);
 
 
 /*
@@ -356,18 +362,18 @@ int octstr_search_chars(Octstr *ostr, Octstr *chars, long pos);
  * Return the start position (index) of 'needle' in 'haystack'.
  * Return -1 if not found.
  */
-int octstr_search(Octstr *haystack, Octstr *needle, long pos);
+int octstr_search(const Octstr *haystack, const Octstr *needle, long pos);
 
 
 /*
  * Like octstr_search, but ignores 8-bit byte case.
  */
-int octstr_case_search(Octstr *haystack, Octstr *needle, long pos);
+int octstr_case_search(const Octstr *haystack, const Octstr *needle, long pos);
 
 /*
  * Like octstr_case_search, but searchs only first n octets.
  */
-int octstr_case_nsearch(Octstr *haystack, Octstr *needle, long pos, long n);
+int octstr_case_nsearch(const Octstr *haystack, const Octstr *needle, long pos, long n);
 
 /*
  * Write contents of octet string to a file, in human readable form. 
@@ -402,7 +408,7 @@ int octstr_append_from_socket(Octstr *ostr, int socket);
  * Insert one octet string into another. `pos' gives the position
  * in `ostr1' where `ostr2' should be inserted.
  */
-void octstr_insert(Octstr *ostr1, Octstr *ostr2, long pos);
+void octstr_insert(Octstr *ostr1, const Octstr *ostr2, long pos);
 
 
 /*
@@ -429,7 +435,7 @@ void octstr_append_data(Octstr *ostr, const char *data, long len);
 /*
  * Append a second octstr to the first.
  */
-void octstr_append(Octstr *ostr1, Octstr *ostr2);
+void octstr_append(Octstr *ostr1, const Octstr *ostr2);
 
 
 /*
@@ -497,14 +503,14 @@ Octstr *octstr_read_pipe(FILE *f);
  * Split an octet string into words at whitespace, and return a list
  * containing the new octet strings.
  */
-List *octstr_split_words(Octstr *ostr);
+List *octstr_split_words(const Octstr *ostr);
 
 
 /*
  * Split an octet string into substrings at every occurence of `sep'.
  * Return List with the substrings.
  */
-List *octstr_split(Octstr *os, Octstr *sep);
+List *octstr_split(const Octstr *os, const Octstr *sep);
 
 
 /*
@@ -522,7 +528,7 @@ int octstr_item_case_match(void *item, void *pattern);
 /*
  * Print debugging information about octet string.
  */
-void octstr_dump(Octstr *ostr, int level);
+void octstr_dump(const Octstr *ostr, int level);
 
 
 /*

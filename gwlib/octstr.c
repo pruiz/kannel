@@ -142,6 +142,17 @@ static char is_safe[UCHAR_MAX + 1];
  */
 #define CSTR_TO_LONG(ptr)	(((long) ptr) >> 2)
 
+
+/*
+ * HEX to ASCII preprocessor macro
+ */
+#define H2B(a) (a >= '0' && a <= '9' ? \
+    a - '0' : (a >= 'a' && a <= 'f' ? \
+        a - 'a' + 10 : (a >= 'A' && a <= 'F' ? a - 'A' + 10 : -1) \
+        ) \
+    )
+
+
 /***********************************************************************
  * Declarations of internal functions. These are defined at the end of
  * the file.
@@ -174,6 +185,8 @@ static void octstr_grow(Octstr *ostr, long size)
     size++;   /* make room for the invisible terminating NUL */
 
     if (size > ostr->size) {
+        /* allways reallocate in 1kB chunks */
+        size += 1024 - (size % 1024);
         ostr->data = gw_realloc(ostr->data, size);
         ostr->size = size;
     }
@@ -325,7 +338,7 @@ long octstr_len(const Octstr *ostr)
 }
 
 
-Octstr *octstr_copy_real(Octstr *ostr, long from, long len, const char *file, long line,
+Octstr *octstr_copy_real(const Octstr *ostr, long from, long len, const char *file, long line,
                          const char *func)
 {
     seems_valid(ostr);
@@ -378,7 +391,7 @@ Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2)
 }
 
 
-int octstr_get_char(Octstr *ostr, long pos)
+int octstr_get_char(const Octstr *ostr, long pos)
 {
     seems_valid(ostr);
     if (pos >= ostr->len || pos < 0)
@@ -440,7 +453,7 @@ void octstr_append_from_hex(Octstr *ostr, char *hex)
 void octstr_binary_to_hex(Octstr *ostr, int uppercase)
 {
     unsigned char *hexits;
-    long i;
+    long i, tmp;
 
     seems_valid(ostr);
     gw_assert(!ostr->immutable);
@@ -454,8 +467,9 @@ void octstr_binary_to_hex(Octstr *ostr, int uppercase)
      * overwriting the data while we read it.  Even the order of
      * the two assignments is important, to get i == 0 right. */
     for (i = ostr->len - 1; i >= 0; i--) {
-        ostr->data[i * 2 + 1] = hexits[ostr->data[i] % 16];
-        ostr->data[i * 2] = hexits[(ostr->data[i] / 16) & 0xf];
+        tmp = i << 1; /* tmp = i * 2; */
+        ostr->data[tmp + 1] = hexits[ostr->data[i] & 0xf];
+        ostr->data[tmp] = hexits[ostr->data[i] >> 4];
     }
 
     ostr->len = ostr->len * 2;
@@ -909,7 +923,20 @@ int octstr_str_compare(const Octstr *ostr, const char *str)
 }
 
 
-int octstr_search_char(Octstr *ostr, int ch, long pos)
+int octstr_str_ncompare(const Octstr *ostr, const char *str, long n)
+{
+    seems_valid(ostr);
+
+    if (str == NULL)
+        return -1;
+    if (ostr->data == NULL)
+        return 1; /* str grater */
+
+    return strncmp(ostr->data, str, n);
+}
+
+
+int octstr_search_char(const Octstr *ostr, int ch, long pos)
 {
     unsigned char *p;
 
@@ -928,7 +955,7 @@ int octstr_search_char(Octstr *ostr, int ch, long pos)
 }
 
 
-int octstr_search_chars(Octstr *ostr, Octstr *chars, long pos)
+int octstr_search_chars(const Octstr *ostr, const Octstr *chars, long pos)
 {
     long i, j;
     for(i=0; i < octstr_len(chars); i++) {
@@ -940,7 +967,7 @@ int octstr_search_chars(Octstr *ostr, Octstr *chars, long pos)
 }
 
 
-int octstr_search(Octstr *haystack, Octstr *needle, long pos)
+int octstr_search(const Octstr *haystack, const Octstr *needle, long pos)
 {
     int first;
 
@@ -972,7 +999,7 @@ int octstr_search(Octstr *haystack, Octstr *needle, long pos)
 }
 
 
-int octstr_case_search(Octstr *haystack, Octstr *needle, long pos)
+int octstr_case_search(const Octstr *haystack, const Octstr *needle, long pos)
 {
     long i, j;
     int c1, c2;
@@ -999,7 +1026,7 @@ int octstr_case_search(Octstr *haystack, Octstr *needle, long pos)
     return -1;    
 }
 
-int octstr_case_nsearch(Octstr *haystack, Octstr *needle, long pos, long n)
+int octstr_case_nsearch(const Octstr *haystack, const Octstr *needle, long pos, long n)
 {
     long i, j;
     int c1, c2;
@@ -1139,7 +1166,7 @@ again:
 }
 
 
-void octstr_insert(Octstr *ostr1, Octstr *ostr2, long pos)
+void octstr_insert(Octstr *ostr1, const Octstr *ostr2, long pos)
 {
     seems_valid(ostr1);
     seems_valid(ostr2);
@@ -1334,7 +1361,7 @@ void octstr_append_data(Octstr *ostr, const char *data, long len)
 }
 
 
-void octstr_append(Octstr *ostr1, Octstr *ostr2)
+void octstr_append(Octstr *ostr1, const Octstr *ostr2)
 {
     gw_assert(ostr1 != NULL);
     octstr_insert(ostr1, ostr2, ostr1->len);
@@ -1432,7 +1459,7 @@ error:
 }
 
 
-List *octstr_split_words(Octstr *ostr)
+List *octstr_split_words(const Octstr *ostr)
 {
     unsigned char *p;
     List *list;
@@ -1470,7 +1497,7 @@ List *octstr_split_words(Octstr *ostr)
 }
 
 
-List *octstr_split(Octstr *os, Octstr *sep)
+List *octstr_split(const Octstr *os, const Octstr *sep)
 {
     List *list;
     long next, pos, seplen;
@@ -1502,8 +1529,7 @@ int octstr_item_case_match(void *item, void *pattern)
     return octstr_case_compare(item, pattern) == 0;
 }
 
-
-void octstr_dump(Octstr *ostr, int level)
+void octstr_dump(const Octstr *ostr, int level)
 {
     unsigned char *p, *d, buf[1024], charbuf[256];
     long pos;
@@ -1604,61 +1630,56 @@ void octstr_dump_short(Octstr *ostr, int level, const char *name)
     octstr_dump(ostr, level + 1);
 }
 
+
 void octstr_url_encode(Octstr *ostr)
 {
-    int i, n, newlen;
-    unsigned char *str, *str2, *hexits;
-    unsigned char c;
-    Octstr *res;
+    long i, n, len;
+    unsigned char c, *str, *str2, *res, *hexits;
 
     seems_valid(ostr);
 
     if (ostr->immutable || ostr->len == 0)
-	return;
+        return;
 
-    res = octstr_create("");
-    str = ostr->data;
-    n = 0;
-    for (i = 0; i < ostr->len; i++)
+    /* calculate new length */
+    for (i = 0, str = ostr->data, n = 0; i < ostr->len; i++)
 	if (!is_safe[*str++])
 	    n++;
-    newlen = ostr->len + 2 * n;
-    res->len = newlen;
-    res->size = res->len + 1;
-    res->data = gw_malloc(res->size);
+
+    if (n == 0) /* we are done, all chars are safe */
+       return;
 
     hexits = "0123456789ABCDEF";
 
-    str = ostr->data;
-    str2 = res->data;
-    for (i = 0; i < ostr->len; i++) {
-	c = *str++;
-	if (!is_safe[c]) {
-	    *str2++ = '%';
-	    *str2++ = hexits[c >> 4 & 0xf];
-	    *str2++ = hexits[c & 0xf];
-	}
-	else if (c == ' ')
-	    *str2++ = '+';
-	else
-	    *str2++ = c;
+    res = str2 = gw_malloc((len = ostr->len + 2 * n + 1));
+
+    for (i = 0, str = ostr->data; i < ostr->len; i++) {
+        c = *str++;
+        if (!is_safe[c]) {
+            *str2++ = '%';
+            *str2++ = hexits[c >> 4 & 0xf];
+            *str2++ = hexits[c & 0xf];
+        }
+        else if (c == ' ')
+            *str2++ = '+';
+        else
+            *str2++ = c;
     }
     *str2 = 0;
-    seems_valid(res);
-    
-    octstr_truncate(ostr, 0);
-    octstr_insert(ostr, res, 0);
-    octstr_destroy(res);
+    gw_free(ostr->data);
+    ostr->data = res;
+    ostr->size = len;
+    ostr->len = len - 1;
+
+    seems_valid(ostr);
 }
 
 
 int octstr_url_decode(Octstr *ostr)
 {
-    long value;
     unsigned char *string = ostr->data;
     unsigned char *dptr = ostr->data;
-    unsigned char buf[3];    	/* buffer for strtol conversion */
-    buf[2] = '\0';
+    int code, code2, ret = 0;
 
     seems_valid(ostr);
     gw_assert(!ostr->immutable);
@@ -1668,39 +1689,40 @@ int octstr_url_decode(Octstr *ostr)
 
     do {
         if (*string == '%') {
-            if (*(string + 1) == '\0' || *(string + 2) == '\0')
-                goto error;
-            buf[0] = *(string + 1);
-            buf[1] = *(string + 2);
-            value = strtol(buf, NULL, 16);
+            if (*(string + 1) == '\0' || *(string + 2) == '\0') {
+                warning(0, "octstr_url_decode: corrupted end-of-string <%s>", string);
+                ret = -1;
+                break;
+            }
 
-            if (value >= 0 && value < 256) {
-                *dptr = (unsigned char)value;
-                string += 3;
-                dptr++;
+            code = H2B(*(string + 1));
+            code2 = H2B(*(string + 2));
+
+            if (code == -1 || code2 == -1) {
+                warning(0, "octstr_url_decode: garbage detected (%c%c%c) skipping.",
+                            *string, *(string + 1), *(string + 2));
+                *dptr++ = *string++;
+                *dptr++ = *string++;
+                *dptr++ = *string++;
+                ret = -1;
                 continue;
             }
-            warning(0, "Garbage encoded (value = %ld)", value);
+
+            *dptr++ = code << 4 | code2;
+            string += 3;
         }
-        if (*string == '+') {
+        else if (*string == '+') {
             *dptr++ = ' ';
             string++;
         } else
             *dptr++ = *string++;
     } while (*string); 	/* we stop here because it terimates encoded string */
-    *dptr = '\0';
 
+    *dptr = '\0';
     ostr->len = (dptr - ostr->data);
 
     seems_valid(ostr);
-    return 0;
-
-error:
-    *dptr = '\0';
-    ostr->len = (dptr - ostr->data);
-    warning(0, "octstr_url_decode: corrupted end-of-string <%s>", string);
-    seems_valid(ostr);
-    return -1;
+    return ret;
 }
 
 

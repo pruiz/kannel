@@ -1,4 +1,8 @@
 2004-01-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/octstr.[ch]: applied Alex's performance gain patch. Thanks.
+      [Msg-ID: <200401191255.42340.a.malysh@centrium.de>]
+
+2004-01-20  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smasi.c: fixed decode_binary_data() which now behaves the 
       way expected according to the specs. Binary MOs are *NOT* encoded the
       same way like MTs. The SM/ASI SMSC sends raw data bytes in the body
