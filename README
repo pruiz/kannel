@@ -156,6 +156,24 @@ Using the gateway with a Nokia 7110
 	home page. If you use the sample page above, you should see
 	"hello, world" on the screen after a few moments.
 
+Modifications to old Kannel (0.8 and older)
+
+	After release 0.8 Kannel architechture has been modified considerably, 
+	resulting changes in basic running of the standard WAP or WAP gateway.
+
+	In new design, there is only one configuration file (to be more exact,
+	 you can have several of them, one for each kind of box, but that is
+	 advanced feature, which is not very usable) for bearerbox, smsboxes
+	and wapboxes. Details of that file is in doc/userguide/newconf.txt.
+	As a quick reference, you just put all your old configuration files
+	into same file, remove some rows and add 'group = xxx' variables into
+	it.
+
+	Moreover, there is no internal smsbox in new Kannel. So, when running 
+	SMS services you MUST run separate smsbox. This is most easily done
+	with Kannel as daemon, launched with init.d. See utils/ directory
+	for any supplied systems.
+
 Feedback and more information
 
 	You may want to subscribe the announce and devel lists at
