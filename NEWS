@@ -1,29 +1,36 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.7
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.7.1
 
-Change summary from version 0.6.1:
+This is a development release. We're trying to make this as stable as
+possible and when we reach that, we'll call the stable version 0.8.
 
-* New WML compiler, based on the Gnome XML library, is now used. The old
-  one is included in the sources but not included in the program.
+Change summary from version 0.7:
 
-* A generic, dynamic, thread safe list implementation added. This reduces
-  bugs and simplifies code when compared to implementing lists separately
-  everywhere.
+* Cleanups and bug fixes, mostly.
 
-* Scripts and wrappers for running Kannel as a daemon from init.d included.
+* Phone's IP address and Session ID are sent with HTTP requests.
 
-* Various code cleanups.
+* Changes to configuration files: some configuration variables have been
+renamed to make them more descriptive.
 
-* Bug fixes, including:
+* Some alpha-level and mostly untested support for User Data Headers
+(UDH) in SMS messages.
 
-	- HTTP header packing.
-	- Memory allocation and freeing bugs in HTTP, visible under
-	  heavy load.
-	- URL mapping not reported on INFO level anymore.
-	- Minor portability issues.
-	- Error messages in logs don't include spurious system error
-	  message quite as often as before.
-	- WML compiler is now thread safe, kludge to call it from one thread
-	  at a time removed.
-	- Old libxml versions had problems, requirement changed to 1.8.6.
+* There is now a getopt included for systems that don't have one.
+
+* Initial Debian packaging files included, though they're not usable to
+build a real Debian package yet.
+
+* fakewap has a much more user friendly command line now.
+
+* Log files are much less cluttered by debugging output now, which is
+good for heavy production use.
+
+* Bug fixes:
+
+	- libxml 1.8.6 and 1.8.7 now both work
+	- many race conditions removed by better use of mutexes in 
+	  many places
+	- lots of memory leaks plugged
+	- various minor portability fixes
 
 See ChangeLog for detailed information.

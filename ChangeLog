@@ -1,3 +1,7 @@
+Thu Apr 13 18:35:15 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Making release 0.7.1.
+
 Thu Apr 13 17:14:40 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/bearerbox.c: Commented out extraneous debugging message.
