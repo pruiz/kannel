@@ -172,7 +172,7 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 	 * If we're already handling events for this machine, add the
 	 * event to the queue.
 	 */
-	if (mutex_try_lock(sm->mutex) == EBUSY) {
+	if (mutex_try_lock(sm->mutex) == -1) {
 		debug(0, "wsp_handle_event: machine already locked, queing event");
 		append_to_event_queue(sm, current_event);
 		return;

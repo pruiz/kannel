@@ -244,7 +244,7 @@ void wtp_machine_dump(WTPMachine  *machine){
                                  octstr_dump(machine->name)
            #define TIMER(name)   debug(0, "  Machine timer %p:", (void *) \
                                        machine->name)
-           #define MUTEX(name)   if (mutex_try_lock(machine->name) == EBUSY) \
+           #define MUTEX(name)   if (mutex_try_lock(machine->name) == -1) \
                                     debug(0, "%s locked", #name);\
                                  else {\
                                     debug(0, "%s unlocked", #name);\
@@ -503,7 +503,7 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
  * If we're already handling events for this machine, add the event to the 
  * queue.
  */
-     if (mutex_try_lock(machine->mutex) == EBUSY) {
+     if (mutex_try_lock(machine->mutex) == -1) {
 	  debug(0, "wtp_handle_event: machine already locked, queing event");
 	  append_to_event_queue(machine, event);
 	  return;
