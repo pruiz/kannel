@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
 	int fd;
 
 	if(argc < 3) {
-		printf("usage...\n");
+		printf("usage: udp_send hostname port data");
 		exit(1);
 	}
 
