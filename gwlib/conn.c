@@ -423,8 +423,6 @@ Connection *conn_open_tcp_with_port(Octstr *host, int port, int our_port,
 Connection *conn_wrap_fd(int fd, int ssl)
 {
     Connection *conn;
-    unsigned long err;
-    int rc;
 
     if (socket_set_blocking(fd, 0) < 0)
         return NULL;
@@ -454,6 +452,8 @@ Connection *conn_wrap_fd(int fd, int ssl)
      * do all the SSL magic for this connection
      */
     if (ssl) {
+        int rc;
+
         conn->ssl = SSL_new(global_server_ssl_context);
         conn->peer_certificate = NULL;
 
@@ -547,8 +547,10 @@ Connection *conn_wrap_fd(int fd, int ssl)
              }
 
              warning(0, "SSL: disconnecting.");
-             goto error;
-
+  
+             conn_destroy(conn);
+             return NULL;
+  
         } /* SSL error */
      
     } else {
@@ -559,10 +561,6 @@ Connection *conn_wrap_fd(int fd, int ssl)
 #endif /* HAVE_LIBSSL */
 
     return conn;
-
-error:
-    conn_destroy(conn);
-    return NULL;
 }
 
 void conn_destroy(Connection *conn)
