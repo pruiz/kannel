@@ -12,6 +12,8 @@
 #include "gwlib/gwlib.h"
 #include "gwlib/http.h"
 
+#define MAX_THREADS 1024
+
 Octstr *whitelist,
        *blacklist;
 
@@ -122,7 +124,7 @@ static void sigterm(int signo) {
 }
 
 int main(int argc, char **argv) {
-    int opt, use_threads;
+    int i, opt, use_threads;
     struct sigaction act;
     char *filename;
     Octstr *log_filename;
@@ -136,6 +138,7 @@ int main(int argc, char **argv) {
     char *blacklist_name;
     int white_asked,
         black_asked;
+    long threads[MAX_THREADS];
 
     gwlib_init();
 
@@ -145,7 +148,7 @@ int main(int argc, char **argv) {
     sigaction(SIGTERM, &act, NULL);
 
     port = 8080;
-    use_threads = 0;
+    use_threads = 1;
     verbose = 1;
     run = 1;
     filename = NULL;
@@ -155,7 +158,7 @@ int main(int argc, char **argv) {
     white_asked = 0;
     black_asked = 0;
 
-    while ((opt = getopt(argc, argv, "hqv:p:tf:l:sc:k:b:w:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hqv:p:t:f:l:sc:k:b:w:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
@@ -174,7 +177,9 @@ int main(int argc, char **argv) {
 	    break;
 
 	case 't':
-	    use_threads = 1; /* XXX unimplemented as of now */
+	    use_threads = atoi(optarg);
+	    if (use_threads > MAX_THREADS)
+            use_threads = MAX_THREADS;
 	    break;
 
         case 'c':
@@ -273,9 +278,10 @@ int main(int argc, char **argv) {
      * Do the real work in a separate thread so that the main
      * thread can catch signals safely.
      */
-    if (gwthread_create(client_thread, file_contents) < 0)
-	panic(0, "Cannot create client thread.");
-    gwthread_join_every(client_thread);
+    for (i = 0; i < use_threads; ++i) 
+        threads[i] = gwthread_create(client_thread, file_contents);
+    for (i = 0; i < use_threads; ++i)
+        gwthread_join(threads[i]);
 
     debug("test.http", 0, "Program exiting normally.");
     gwlib_shutdown();
