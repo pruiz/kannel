@@ -592,7 +592,7 @@ void dlr_flush(void)
         int	state;
         MYSQL_RES *result;
         
-        sql = octstr_format("DELETE * FROM %s;", octstr_get_cstr(table));
+        sql = octstr_format("DELETE FROM %s;", octstr_get_cstr(table));
         mutex_lock(dlr_mutex);
         state = mysql_query(connection, octstr_get_cstr(sql));
         octstr_destroy(sql);
