@@ -185,6 +185,7 @@ MULTI_GROUP(smsc,
     OCTSTR(appname)
     OCTSTR(retry)
     OCTSTR(my-number)
+    OCTSTR(sms-center)
 )
 
 

@@ -1372,6 +1372,8 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->password = cfg_get(cfg, octstr_imm("smsc-password"));
 
     cfg_get_bool(&privdata->retry, cfg, octstr_imm("retry"));
+    if(privdata->retry < 0)
+	privdata->retry = 0;
 
     if (privdata->username == NULL || cfg_get_integer(&keepalive, cfg, octstr_imm("keepalive")) < 0)
 	privdata->keepalive = 0;

@@ -75,7 +75,7 @@ struct modem_def ModemTypes[MAX_MODEM_TYPES] =
     { "nokiaphone",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"NokiaPhone" ,	NULL,	0, 1, 1, 1, 1, 0.1 },
     { "falcom",		"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"Falcom",	NULL,	0, 0, 1, 0, 0, 0.1 },
     { "ericsson",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=3,2,0,0",	"R520m",	NULL,	0, 0, 1, 1, 1, 0.1 },
-    { "alcatel",    "AT+IFC=2,2"    , 9600  , "AT+CNMI=1,3,0,0,0",  "Alcatel",  NULL,   0, 0, 1, 1, 1, 0.1 } 
+    { "alcatel",	"AT+IFC=2,2"    , 9600  , "AT+CNMI=1,3,0,0,0",  "Alcatel",  NULL,   0, 0, 1, 1, 1, 0.1 } 
 };
 
 /* maximum data to attempt to read in one go */
@@ -119,6 +119,7 @@ typedef struct PrivAT2data
     int		alt_dcs;
     int 	retry;
     Octstr	*my_number;
+    Octstr	*sms_center;
 } PrivAT2data;
 
 
@@ -563,6 +564,24 @@ int	at2_init_device(PrivAT2data *privdata)
     	       return -1;
     	}
     } 
+    // Set the GSM SMS message center address if supplied
+    if (octstr_len(privdata->sms_center)) {
+	Octstr *temp;
+	temp = octstr_create("AT+CSCA=");
+	octstr_append_char(temp, 34); // "
+	octstr_append(temp, privdata->sms_center);
+	octstr_append_char(temp, 34); // "
+	/* XXX If some modem don't process the +, remove it and add ",145" 
+	       and ",129" to national numbers
+	*/
+	ret = at2_send_modem_command(privdata, octstr_get_cstr(temp), 0, 0);
+	octstr_destroy(temp);
+	if(ret == -1)
+	    return -1;
+	if(ret > 0) {
+	    info(0,"AT2[%s]: Cannot set SMS message center, continuing",octstr_get_cstr(privdata->device));
+	}
+    }
 
     /* Set the modem to PDU mode and autodisplay of new messages */
     ret = at2_send_modem_command(privdata, "AT+CMGF=0", 0, 0);
@@ -700,7 +719,8 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
            if (-1 != octstr_search(line, octstr_imm("+CPIN: READY"), 0))
            {
            	privdata->pin_ready = 1;
-		continue;
+		ret = 4;
+		goto end;
 	   }
 
 	   if (-1 != octstr_search(line, octstr_imm("+CMS ERROR"),0))
@@ -1015,10 +1035,15 @@ int  smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
 
     cfg_get_integer(&temp, cfg, octstr_imm("keepalive"));
     privdata->keepalive = temp;
+    if(privdata->keepalive < 0)
+	privdata->keepalive = 0;
 
     cfg_get_bool(&privdata->retry, cfg, octstr_imm("retry"));
+    if(privdata->retry < 0)
+	privdata->retry = 0;
 
     privdata->my_number = cfg_get(cfg, octstr_imm("my-number"));
+    privdata->sms_center = cfg_get(cfg, octstr_imm("sms-center"));
 
     privdata->device = cfg_get(cfg, octstr_imm("device"));
     if (privdata->device == NULL)
@@ -1891,6 +1916,7 @@ int at2_detect_modem_type(PrivAT2data *privdata)
     if(privdata->phase2plus)
     	info(0,"AT2[%s]: Phase 2+ is supported",octstr_get_cstr(privdata->device));
     info(0,"AT2[%s]: Modemtype set to %s",octstr_get_cstr(privdata->device), ModemTypes[privdata->modemid].name);
+    at2_close_device(privdata);
     return 0;
 }
 

@@ -1,3 +1,14 @@
+2002-02-28  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsc_at2.c: applied sms-center configuration for at2, based on patch
+      privided by Oded Arbel 
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B166D5E@exchange.m-wise.com>]
+    * gw/smsbox.c: fixed a panic when text is empty and kannel try to print it
+    * gw/smsc_at2.c: set keepalive to 0 if not defined in configuration; close
+      device after auto-detecting modem; return ok(4) when receive the 
+      +CPIN:READY reply
+    * gw/smsc_at2.c, gw/smsc_emi2.c: set retry to 0 if not defined in 
+      configuration
+
 2002-02-25  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * contrib/web/*: Added a form and a php file to send messages.
       Includes text, mwi, NSM, Wap related and Siemens MMC.

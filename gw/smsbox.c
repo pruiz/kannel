@@ -1176,8 +1176,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
          octstr_get_cstr(newfrom),
          octstr_get_cstr(client_ip),
          octstr_get_cstr(to),
-         udh == NULL ? ( text == NULL ? "" : octstr_get_cstr(text) ) : 
-             octstr_get_cstr(text));
+         ( text == NULL ? "" : octstr_get_cstr(text) ));
     
     /*
      * Create the msg structure and fill the types. Note that sms.receiver

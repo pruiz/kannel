@@ -2455,6 +2455,12 @@ pin = 2345
 	try to reconnect to it.
      </entry></row>
 
+    <row><entry><literal>sms-center</literal></entry>
+      <entry><literal>number</literal></entry>
+      <entry valign=bottom>
+      	SMS Center to send messages.
+     </entry></row>
+
    </tbody></tgroup></informaltable>
 
  <informaltable frame=none>
