@@ -108,6 +108,7 @@ int main(int argc, char **argv)
     List *split;
     Octstr *packed;
     List *unpacked;
+    Octstr *filename;
     long i;
 
     gwlib_init();
@@ -115,7 +116,8 @@ int main(int argc, char **argv)
 
     get_and_set_debugs(argc, argv, NULL);
 
-    headers = octstr_read_file("test/header_test");
+    filename = octstr_create(argv[1]);
+    headers = octstr_read_file(octstr_get_cstr(filename));
     split_headers(headers, &split, &expected);
     packed = wsp_headers_pack(split, 0);
     unpacked = wsp_headers_unpack(packed, 0);
@@ -138,6 +140,7 @@ int main(int argc, char **argv)
     test_header_combine();
 
     octstr_destroy(headers);
+    octstr_destroy(filename);
     list_destroy(split, octstr_destroy_item);
     list_destroy(expected, octstr_destroy_item);
     octstr_destroy(packed);
