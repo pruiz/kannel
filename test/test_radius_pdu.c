@@ -73,11 +73,18 @@ int main(int argc, char **argv)
     RADIUS_PDU *pdu, *r;
 
     gwlib_init();
-    
+
+    data = filename = rdata = NULL;
     get_and_set_debugs(argc, argv, NULL);
 
+    if (argc <= 1) {
+        debug("",0,"Usage: %s [filename containing raw RADIUS PDU]", argv[0]);
+        goto error;
+    }
+
     filename = octstr_create(argv[1]);
-    data = octstr_read_file(octstr_get_cstr(filename));
+    if ((data = octstr_read_file(octstr_get_cstr(filename))) == NULL)
+        goto error;
 
     debug("",0,"Calling radius_pdu_unpack() now");
     pdu = radius_pdu_unpack(data);
@@ -109,7 +116,8 @@ int main(int argc, char **argv)
     debug("",0,"Destroying RADIUS_PDUs");
     radius_pdu_destroy(pdu);
     radius_pdu_destroy(r);
-    
+
+error:    
     octstr_destroy(data);
     octstr_destroy(rdata);
     octstr_destroy(filename);
