@@ -1,3 +1,11 @@
+2001-03-16 Nick Clarey  <nclarey@3glab.com>
+
+	* gw/smsc_at.c: Repaired a bug in at_reopen which would cause 
+	failed smsc_at connections to be reopened continuously, and
+	repaired a bug in at_close which could possibly cause memory 
+	leakage. Also fixed bugs in both which didn't reset the smsc's
+	file descriptor correctly in case of failed closes.
+
 2001-03-16  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_definitions.h: The WBXML_CHILD_BIT was changed into 
@@ -72,6 +80,7 @@
 	test/test_http_server.c, test/test_smsc.c: Changed calls to http
 	code based on interface code.
 
+>>>>>>> 1.1373
 2001-03-15  Uoti Urpala  <uau@wapit.com>
 
 	* gwlib/http.c, gwlib/http.h: Changed http_start_request and
