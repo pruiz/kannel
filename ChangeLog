@@ -1,4 +1,7 @@
 2002-10-22  Stipe Tolj  <tolj@wapme-systems.de>
+    * Re-creating stable release 1.2.1.
+
+2002-10-22  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_at2.c: fixed a major bug in 7bit encoding. Thanks a lot 
       to "Rodrigo Sousa Coutinho" <rodrigo.coutinho@outsystems.com> for patch.
       [Msg-ID: <004c01c279da$5d6a3c70$ca00a8c0@domain.outsystems.com>]
