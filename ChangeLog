@@ -1,6 +1,12 @@
+2002-02-18  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: fixed bug in smsbox_req_sendota()
+      reported by Peter Löfman <petlof@aland.net>
+      [Msg-ID: <004e01c1b32b$98c8b2e0$9d0a70c2@mtel.mtel.aland.fi>]
+
 2002-02-12 Andreas Fink <andreas@fink.org>
-    * gwlib//octstr.c: removed annoying info message for making gwlib
-    be better usable for command line tools.
+    * gwlib/octstr.c: removed annoying info message for making gwlib
+      be better usable for command line tools.
+
 2002-02-10  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_ois.c: removed unused ois_convert_from_iso88591() for the
       sake of kannel-nag
