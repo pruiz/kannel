@@ -1,3 +1,8 @@
+1999-11-23 Mikael Gueck <mikael@wapit.com>
+
+	* gw/csdr.c, gw/boxc.c: Solaris compatibility hack, later
+	  to wapitlib.c.
+
 Wed Nov 24 13:31:44 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile, Rules.mk, doc/*/Makefile: Modifications so it works
