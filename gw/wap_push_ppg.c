@@ -30,6 +30,7 @@
 #include "wap_push_si_compiler.h"
 #include "wap_push_pap_compiler.h"
 #include "wap_push_pap_mime.h"
+#include "wap_push_ppg_pushuser.h"
 
 enum {
     TIME_EXPIRED = 0,
@@ -37,12 +38,19 @@ enum {
     NO_CONSTRAINTS = 2
 };
 
+/*
+ * Default values for configuration variables
+ */
 enum {
     DEFAULT_HTTP_PORT = 8080,
     DEFAULT_NUMBER_OF_PUSHES = 100,
     PI_TRUSTED = 1,
-    SSL_CONNECTION_OFF = 0
+    SSL_CONNECTION_OFF = 0,
+    DEFAULT_NUMBER_OF_USERS = 1024,
+    USER_CONFIGURATION_NOT_ADDED = 0
 };
+
+enum {USER_CONFIGURATION_ADDED = 1};
 
 #define DEFAULT_PPG_URL "cgi-bin/wap-push.cgi"
 
@@ -94,11 +102,6 @@ static Dict *http_clients = NULL;
 static Dict *urls = NULL;
 
 /*
- * This hash table stores time when a specific ip is allowed to try next time.
- */
-static Dict *next_try = NULL;
-
-/*
  * Push content packed for compilers (wml, si, sl, co).
  */
 struct content {
@@ -111,16 +114,19 @@ static wap_dispatch_func_t *dispatch_to_ota;
 static wap_dispatch_func_t *dispatch_to_appl;
 
 /*
- * Configurable variables, with some default values
+ * Configurable variables of ppg core group (for general configuration of a 
+ * ppg), with some default values.
  */
 
 static Octstr *ppg_url = NULL;
 static long ppg_port = DEFAULT_HTTP_PORT;
 static int ppg_port_ssl = SSL_CONNECTION_OFF;
 static long number_of_pushes = DEFAULT_NUMBER_OF_PUSHES;
-static int  trusted_pi = PI_TRUSTED;
-static Octstr *ppg_username = NULL;
-static Octstr *ppg_password = NULL;
+static int trusted_pi = PI_TRUSTED;
+static long number_of_users = DEFAULT_NUMBER_OF_USERS;
+static Octstr *ppg_deny_ip = NULL;
+static Octstr *ppg_allow_ip = NULL; 
+static int user_configuration = USER_CONFIGURATION_NOT_ADDED;
 
 /*****************************************************************************
  *
@@ -175,11 +181,10 @@ static int session_has_sid(void *a, void *b);
 /*
  * Main logic of PPG.
  */
-static int client_authenticated(HTTPClient *client, List *cgivars, Octstr *ip);
 static int check_capabilities(List *requested, List *assumed);
 static int transform_message(WAPEvent **e, WAPAddrTuple **tuple, 
-                             int connected, Octstr **type);
-static void check_x_wap_application_id_header(List **push_headers);
+                             List *push_headers, int connected, Octstr **type);
+static long check_x_wap_application_id_header(List **push_headers);
 static int pap_convert_content(struct content *content);
 static int select_bearer_network(WAPEvent **e);
 static int delivery_time_constraints(WAPEvent *e, PPGPushMachine *pm);
@@ -223,7 +228,7 @@ static void send_bad_message_response(HTTPClient *c, Octstr *body_fragment,
                                       int code, int status);
 static void send_push_response(WAPEvent *e, int status);
 static void send_to_pi(HTTPClient *c, Octstr *reply_body, int status);
-static int parse_cgivars(List *cgivars, Octstr **username, Octstr **password);
+/*static int parse_cgivars(List *cgivars, Octstr **username, Octstr **password);*/
 static void tell_fatal_error(HTTPClient *c, WAPEvent *e, Octstr *url, 
                              int status, int code);
 
@@ -246,9 +251,11 @@ static Octstr *convert_wml_to_wmlc(struct content *content);
 static Octstr *convert_si_to_sic(struct content *content);
 static void initialize_time_item_array(long time_data[], struct tm now);
 static int date_item_compare(Octstr *before, long time_data, long pos);
-static void parse_appid_header(Octstr **assigned_code);
+static long parse_appid_header(Octstr **assigned_code);
 static Octstr *escape_fragment(Octstr *fragment);
-static void read_config(Cfg *cfg);
+static int read_ppg_config(Cfg *cfg);
+static int ip_allowed_by_ppg(Octstr *ip);
+static int coriented_deliverable(long code);
 
 /*****************************************************************************
  *
@@ -267,10 +274,9 @@ void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
     dispatch_to_ota = ota_dispatch;
     dispatch_to_appl = appl_dispatch;
 
-    read_config(cfg);
+    user_configuration = read_ppg_config(cfg);
     http_open_port(ppg_port, ppg_port_ssl);
     http_clients = dict_create(number_of_pushes, NULL);
-    next_try = dict_create(number_of_pushes, octstr_destroy_item);
     urls = dict_create(number_of_pushes, octstr_destroy_item);
 
     gw_assert(run_status == limbo);
@@ -286,14 +292,12 @@ void wap_push_ppg_shutdown(void)
      list_remove_producer(ppg_queue);
 
      octstr_destroy(ppg_url);
-     octstr_destroy(ppg_password);
-     octstr_destroy(ppg_username);
 
      http_close_all_ports();
      dict_destroy(http_clients);
      dict_destroy(urls);
-     dict_destroy(next_try);
-     
+     wap_push_ppg_pushuser_list_destroy();
+
      gwthread_join_every(http_read_thread);
      gwthread_join_every(ota_read_thread);
 
@@ -349,16 +353,21 @@ PPGSessionMachine *wap_push_ppg_have_push_session_for_sid(long sid)
 /*****************************************************************************
  *
  * INTERNAL FUNCTIONS
+ *
+ * Read general ppg configuration and configuration specific for users (to the
+ * list 'users').
+ * Return 1 when an user configuration group is present, 0 otherwise.
  */
 
-static void read_config(Cfg *cfg)
+static int read_ppg_config(Cfg *cfg)
 {
      CfgGroup *grp;
+     List *list;
 
      if (cfg == NULL) {
          warning(0, "PPG: No ppg group, using default values.");
          ppg_url = octstr_imm("/cgi-bin/wap-push.cgi");
-         return;
+         return USER_CONFIGURATION_NOT_ADDED;
      }
      grp = cfg_get_single_group(cfg, octstr_imm("ppg"));
      if ((ppg_url = cfg_get(grp, octstr_imm("ppg-url"))) == NULL)
@@ -366,17 +375,64 @@ static void read_config(Cfg *cfg)
      cfg_get_integer(&ppg_port, grp, octstr_imm("ppg-port"));
      cfg_get_integer(&number_of_pushes, grp, octstr_imm("concurrent-pushes"));
      cfg_get_bool(&trusted_pi, grp, octstr_imm("trusted-pi"));
-     ppg_password = cfg_get(grp, octstr_imm("ppg-password"));
-     ppg_username = cfg_get(grp, octstr_imm("ppg-username"));
      cfg_get_bool(&ppg_port_ssl, grp, octstr_imm("ppg-port-ssl"));
-     if (!trusted_pi && (ppg_password == NULL || ppg_username == NULL))
-         panic(0, "a try to configure a secure ppg without a username and/or"
-               "  a password");
+     cfg_get_integer(&number_of_users, grp, octstr_imm("users"));
+     ppg_deny_ip = cfg_get(grp, octstr_imm("ppg-allow-ip"));
+     ppg_allow_ip = cfg_get(grp, octstr_imm("ppg-deny-ip"));
+
+     if ((list = cfg_get_multi_group(cfg, octstr_imm("wap-push-user")))
+              == NULL) {
+         info(0, "No configuration for any user, continuing without");
+         list_destroy(list, NULL);
+         cfg_destroy(cfg); 
+         return USER_CONFIGURATION_NOT_ADDED;
+     }
     
+     if (!wap_push_ppg_pushuser_list_add(list, number_of_pushes, number_of_users)) {
+         panic(0, "unable to create users configuration list, exiting");
+         return USER_CONFIGURATION_NOT_ADDED;     
+     }  
+
+     list_destroy(list, NULL);
      cfg_destroy(cfg); 
+     return USER_CONFIGURATION_ADDED;
 }
 
-static void ota_read_thread(void *arg)
+static int ip_allowed_by_ppg(Octstr *ip)
+{
+    if (ppg_deny_ip == NULL && ppg_allow_ip == NULL) {
+        if (!trusted_pi)
+            warning(0, "Your ppg core configuration lacks allowed and denied ip"
+                    " lists");
+        return 1;
+    }
+
+    if (octstr_compare(ppg_deny_ip, octstr_imm("*.*.*.*")) == 0) {
+        panic(0, "Your ppg core configuration deny all ips, exiting");
+        return 0;
+    }
+
+    if (octstr_compare(ppg_allow_ip, octstr_imm("*.*.*.*")) == 0) {
+        if (!trusted_pi)
+            warning(0, "Your ppg core configuration allow all ips");
+        return 1;
+    }
+
+    if (wap_push_ppg_pushuser_search_ip_from_wildcarded_list(ppg_deny_ip, ip, 
+            octstr_imm(";"), octstr_imm(".")) == 0)
+        return 0;
+
+    if (wap_push_ppg_pushuser_search_ip_from_wildcarded_list(ppg_allow_ip, ip, 
+            octstr_imm(";"), octstr_imm(".")) != 0)
+        return 1;
+
+    return 0;
+}
+
+/*
+ * Event handling functions
+ */
+static void ota_read_thread (void *arg)
 {
     WAPEvent *e;
 
@@ -408,7 +464,8 @@ static void http_read_thread(void *arg)
            *content_header,            /* Content-Type MIME header */
            *url,
            *ip,
-           *not_found;
+           *not_found,
+           *username;
     int compiler_status,
         http_status;
     List *push_headers,                /* MIME headers themselves */
@@ -436,8 +493,17 @@ static void http_read_thread(void *arg)
             goto ferror;
         }
 
-        if (!trusted_pi) {
-	    if (!client_authenticated(client, cgivars, ip)) {
+        if (!ip_allowed_by_ppg(ip)) {
+            http_status = 403;
+            error(0,  "Request <%s> from <%s>: ip forbidden, closing the"
+                  " client", octstr_get_cstr(url), octstr_get_cstr(ip));
+            http_close_client(client);
+            goto ferror; 
+        }
+
+        if (!trusted_pi && user_configuration) {
+	    if (!wap_push_ppg_pushuser_authenticate(client, cgivars, ip, 
+                                                    push_headers, &username)) {
                 error(0,  "Request <%s> from <%s>: authorisation failure," 
                       "closing the client", octstr_get_cstr(url), 
                       octstr_get_cstr(ip));
@@ -445,8 +511,6 @@ static void http_read_thread(void *arg)
             }
 	} 
 
-        dict_remove(next_try, ip);       /* no restrictions after authentica-
-                                            tion */
         info(0, "PPG: Accept request <%s> from <%s>", octstr_get_cstr(url), 
              octstr_get_cstr(ip));
         
@@ -454,6 +518,13 @@ static void http_read_thread(void *arg)
 	    warning(0, "PPG: No MIME content received, the request"
                     " unacceptable");
             send_bad_message_response(client, octstr_imm("No MIME content"), 
+                                      PAP_BAD_REQUEST, http_status);
+            goto ferror;
+        }
+        if (!push_headers) {
+            warning(0, "PPG: No push headers received , the request"
+                    " unacceptable");
+            send_bad_message_response(client, octstr_imm("No push headers"), 
                                       PAP_BAD_REQUEST, http_status);
             goto ferror;
         }
@@ -521,6 +592,15 @@ static void http_read_thread(void *arg)
 	    } 
 
             dict_put(urls, ppg_event->u.Push_Message.pi_push_id, url); 
+ 
+            if (user_configuration && 
+                !wap_push_ppg_pushuser_client_phone_number_acceptable(username, 
+		    ppg_event->u.Push_Message.address_value)) {
+                tell_fatal_error(client, ppg_event, url, http_status, 
+                                 PAP_FORBIDDEN);
+	        goto no_compile;
+	    }           
+
             debug("wap.push.ppg", 0, "PPG: http_read_thread: pap control"
                   " entity compiled ok");
             ppg_event->u.Push_Message.push_headers = 
@@ -542,6 +622,7 @@ static void http_read_thread(void *arg)
 
 no_transform:
         http_destroy_headers(push_headers);
+        http_destroy_cgiargs(cgivars);
         octstr_destroy(mime_content);
         octstr_destroy(pap_content);
         octstr_destroy(push_data);
@@ -595,60 +676,10 @@ berror:
 }
 
 /*
- * For protection against brute force attacks, an exponential backup algorithm
- * is used. Time when a specific ip is allowed to reconnect, is stored in Dict
- * next_try. If an ip tries to reconnect before this (because first periods
- * are small, this means that reconnection attempt cannot be manual) we drop
- * the connection.
- */
-static int client_authenticated (HTTPClient *c, List *cgivars, Octstr *ip) {
-        Octstr *username,
-	       *password,
-               *copy;
-        time_t now;
-	time_t *next_time;
-        static time_t addition = 0.0;  /* used only for this thread, and this
-                                          function */
-        static long multiplier = 1L;   /* and again */
-
-        next_time = NULL;
-        copy = octstr_duplicate(ip);
-        if ((next_time = dict_get(next_try, ip)) != NULL) {
-            time(&now);
-            if (difftime(now, *next_time) < 0.0) {
-	        error(0, "another try from %s, not much time used", 
-                      octstr_get_cstr(copy));
-	        goto denied;
-            }
-        }
-
-        if (!parse_cgivars(cgivars, &username, &password)) {
-	    goto denied;
-        }
-
-        if (octstr_compare(ppg_username, username) != 0 ||
-            octstr_compare(ppg_password, password) != 0) {
-	    goto denied;
-        }                                               
-
-        octstr_destroy(copy);
-        return 1;
-
-denied:
-        multiplier <<= 1;
-        addition *= multiplier;
-        next_time += addition;
-        dict_put(next_try, ip, next_time);
-        http_close_client(c);
-        octstr_destroy(copy);
-        return 0;
-}
-
-/*
  * Operations needed when push proxy gateway receives a new push message are 
  * defined in ppg Chapter 6. We create machines when error, too, because we 
  * must then have a reportable message error state.
- * Return 1 if the push content was transformable, 0 otherwise.
+ * Return 1 if the push content was OK, 0 if it was not tranformable.
  */
 
 static int handle_push_message(WAPEvent *e, int status)
@@ -658,7 +689,10 @@ static int handle_push_message(WAPEvent *e, int status)
         bearer_supported,
         dummy,
         constraints,
-        message_transformable;
+        message_transformable,
+        coriented_possible;
+
+    long coded_appid_value;
 
     PPGPushMachine *pm;
     PPGSessionMachine *sm;
@@ -667,20 +701,33 @@ static int handle_push_message(WAPEvent *e, int status)
            *cliaddr,
            *type;
 
+    List *push_headers;
+
     push_data = e->u.Push_Message.push_data;
+    push_headers = e->u.Push_Message.push_headers;
     cliaddr = e->u.Push_Message.address_value;
     session_exists = 0;
 
     sm = session_find_using_pi_client_address(cliaddr);
+    coded_appid_value = check_x_wap_application_id_header(&push_headers);
+    coriented_possible = coriented_deliverable(coded_appid_value);
     cless = cless_accepted(e, sm);
-    message_transformable = transform_message(&e, &tuple, cless, &type);
+
+    if (!cless && !coriented_possible) {
+        warning(0, "PPG: handle_push_message: wrong app id for confirmed push");
+        response_push_message(pm, PAP_BAD_REQUEST, status);
+        goto no_start;
+    }
+
+    message_transformable = transform_message(&e, &tuple, push_headers, cless, 
+                                              &type);
 
     if (!sm && !cless) {
         sm = store_session_data(sm, e, tuple, &session_exists); 
     }
 
     if (!store_push_data(&pm, sm, e, tuple, cless)) {
-        warning(0, "PPG: handle_push_messae: duplicate push id");
+        warning(0, "PPG: handle_push_message: duplicate push id");
         response_push_message(pm, PAP_DUPLICATE_PUSH_ID, status);
         goto no_start;
     }
@@ -764,7 +811,6 @@ store_push:
 
 no_transformation:
     wap_addr_tuple_destroy(tuple);
-    octstr_destroy(type);
     remove_push_data(sm, pm, cless);
     if (sm)
         remove_pushless_session(sm);
@@ -888,6 +934,8 @@ static void handle_internal_event(WAPEvent *e)
 }
 
 /*
+ * Functions related to various ppg machine types.
+ *
  * We do not set session id here: it is told to us by wsp.
  */
 static PPGSessionMachine *session_machine_create(WAPAddrTuple *tuple, 
@@ -1295,9 +1343,8 @@ static void push_machine_assert(PPGPushMachine *pm)
  * does not compile.
  */
 static int transform_message(WAPEvent **e, WAPAddrTuple **tuple, 
-                             int cless_accepted, Octstr **type)
+                             List *push_headers, int cless_accepted, Octstr **type)
 {
-    List *push_headers;
     int message_deliverable;
     struct content content;
     Octstr *cliaddr;
@@ -1310,8 +1357,6 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
 
     cliaddr = (**e).u.Push_Message.address_value;
     push_headers = (**e).u.Push_Message.push_headers;
-    
-    check_x_wap_application_id_header(&push_headers);
 
     if (!cless_accepted) {
         cliport = CONNECTED_CLIPORT;
@@ -1364,27 +1409,35 @@ no_transform:
     return 1;
 }
 
+enum {APPID_CODE_FOR_WMLUA = 0x02};
+
 /*
  * Transform X-WAP-Application headers as per ppg 6.1.2.1. If push application
  * id is wml.ua, add no header (this is default). AbsoluteURI format for X-Wap
  * -Application-Id is defined in push message, 6.2.2.1. 
  */
-static void check_x_wap_application_id_header(List **push_headers)
+static long check_x_wap_application_id_header(List **push_headers)
 {
     Octstr *appid_content,
            *vos;
+    long coded_value;
     
+    if (*push_headers == NULL)
+        return -1;
+
     appid_content = http_header_find_first(*push_headers, 
         "X-WAP-Application-Id");
     
     if (appid_content == NULL) {
         octstr_destroy(appid_content);
-        return;
+        return -1;
     }
 
-    parse_appid_header(&appid_content);
+    if ((coded_value = parse_appid_header(&appid_content)) < 0)
+        return -1;
+
     http_header_remove_all(*push_headers, "X-WAP-Application-Id");
-    vos = octstr_format("%d", 2);
+    vos = octstr_format("%d", APPID_CODE_FOR_WMLUA);
 
     if (octstr_compare(appid_content, vos) != 0) {
         http_header_add(*push_headers, "X-WAP-Application-Id", 
@@ -1392,7 +1445,8 @@ static void check_x_wap_application_id_header(List **push_headers)
     }
     
     octstr_destroy(vos);
-    octstr_destroy(appid_content);   
+    octstr_destroy(appid_content); 
+    return coded_value;  
 }
 
 /*
@@ -1611,7 +1665,7 @@ static Octstr *tell_ppg_name(void)
 /*
  * Delivery time constraints are a) deliver before and b) deliver after. It is
  * possible that service required is after some time and before other. So we 
- * test first condition a).
+ * test first condition a). Note that 'now' satisfy both constraints. 
  * Returns: 0 delivery time expired
  *          1 too early to send the message
  *          2 no constraints
@@ -2113,6 +2167,14 @@ static int cless_accepted(WAPEvent *e, PPGSessionMachine *sm)
 }
 
 /*
+ * Check that we have rigth application id for confirmed push (it is, "push.sia")
+ */
+static int coriented_deliverable(long appid_code)
+{
+    return appid_code == 2;
+}
+
+/*
  * Compare PAP message timestamp, in PAP message format, and stored in octstr,
  * to gm (UTC) broken time. Return true, if before is after now, or if the 
  * service in question was not requested by PI. PAP time format is defined in 
@@ -2129,16 +2191,19 @@ static void initialize_time_item_array(long time_data[], struct tm now)
     time_data[5] = now.tm_sec;
 }
 
-static int date_item_compare(Octstr *before, long time_data, long pos)
+static int date_item_compare(Octstr *condition, long time_data, long pos)
 {
     long data;
 
-    if (octstr_parse_long(&data, before, pos, 10) < 0)
+    if (octstr_parse_long(&data, condition, pos, 10) < 0) {
         return 0;
-    if (data < time_data)
+    }
+    if (data < time_data) {
         return -1;
-    if (data > time_data)
+    }
+    if (data > time_data) {
         return 1;
+    }
 
     return 0;
 }
@@ -2154,7 +2219,7 @@ static int deliver_before_test_cleared(Octstr *before, struct tm now)
 
     if (before == NULL)
         return 1;
-    
+
     initialize_time_item_array(time_data, now);
     if (date_item_compare(before, time_data[0], 0) == 1)
         return 1;
@@ -2182,7 +2247,7 @@ static int deliver_after_test_cleared(Octstr *after, struct tm now)
 
     if (after == NULL)
         return 1;
-
+    
     initialize_time_item_array(time_data, now);
     if (date_item_compare(after, time_data[0], 0) == -1)
         return 1;
@@ -2238,8 +2303,14 @@ static char *wina_uri[] =
  * X-Wap-Application-Id header is defined in Push Message, chapter 6.2.2.1.
  * First check do we a header with an app-encoding field and a coded value. 
  * If not, try to find push application id from table of wina approved values.
+ * Return coded value value of application id in question, or an error code:
+ *        -1, error
+ *         0, * (meaning any application acceptable)
+ *         1, push.sia
+ *         2, wml.ua
+ *         4, mms.ua
  */
-static void parse_appid_header(Octstr **appid_content)
+static long parse_appid_header(Octstr **appid_content)
 {
     long pos,
          coded_value;
@@ -2249,7 +2320,7 @@ static void parse_appid_header(Octstr **appid_content)
         octstr_delete(*appid_content, pos, 
                       octstr_len(octstr_imm(";app-encoding=")));
         octstr_delete(*appid_content, 0, pos);         /* the URI part */
-	return;
+	return -1;
     } 
 
     i = 0;
@@ -2262,15 +2333,17 @@ static void parse_appid_header(Octstr **appid_content)
 
     if (i == NUMBER_OF_WINA_URIS) {
         *appid_content = octstr_format("%ld", 2);      /* assigned number */
-        return;                                        /* for wml ua */
+        return -1;                                        /* for wml ua */
     }
     
     octstr_delete(*appid_content, 0, pos);             /* again the URI */
     if ((coded_value = wsp_string_to_application_id(*appid_content)) >= 0) {
         octstr_destroy(*appid_content);
         *appid_content = octstr_format("%ld", coded_value);
-        return;
+        return coded_value;
     }
+
+    return -1;
 }
 
 static WAPAddrTuple *addr_tuple_change_cliport(WAPAddrTuple *tuple, long port)
@@ -2335,7 +2408,8 @@ static int type_is(Octstr *content_header, char *name)
     if (octstr_case_search(content_header, osname, 0) >= 0)
         return 1;
 
-    quoted_type = octstr_create("\"");
+    quoted_type = octstr_create("");
+    octstr_format_append(quoted_type, "%c", '\"');
     octstr_append(quoted_type, osname);
     octstr_format_append(quoted_type, "%c", '"');
 
@@ -2612,19 +2686,17 @@ static Octstr *escape_fragment(Octstr *fragment)
     return fragment;
 }
 
-/*
- * Return 1 when we found password and username, 0 otherwise.
- */
-static int parse_cgivars(List *cgivars, Octstr **username, Octstr **password)
-{
-    *username = http_cgi_variable(cgivars, "username");
-    *password = http_cgi_variable(cgivars, "password");
 
-    if (*username == NULL || *password == NULL)
-        return 0;
 
-    return 1;
-}
+
+
+
+
+
+
+
+
+
 
 
 

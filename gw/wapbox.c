@@ -185,10 +185,10 @@ static Cfg *read_config(Octstr *filename)
     wsp_http_map_url_config_info();	/* debugging aid */
 
 /*
- * We pass ppg configuration group to the ppg module.
+ * We pass ppg configuration groups to the ppg module.
  */   
     grp = cfg_get_single_group(cfg, octstr_imm("ppg"));
-    if (grp == NULL) {
+    if (grp == NULL) { 
         cfg_destroy(cfg);
         return NULL;
     }

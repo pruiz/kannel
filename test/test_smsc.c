@@ -874,7 +874,7 @@ int main(int argc, char **argv)
 	}
     }
 
-    for (i = 0; i < sizeof(tab) / sizeof(tab[0]); ++i) {
+    for (i = 0; (size_t) i < sizeof(tab) / sizeof(tab[0]); ++i) {
 	if (strcmp(main_name, tab[i].name) == 0) {
 	    tab[i].func();
 	    break;

@@ -601,7 +601,7 @@ static int X28_open_send_link(int padfd, char *nua) {
     sprintf(writebuff, "%s\r", nua);
     sprintf(smscbuff, "%s COM",nua);
   
-    while(writeall < strlen(writebuff)){
+    while((size_t) writeall < strlen(writebuff)){
 	writeonce = -1;
 	writeonce = write(padfd, writebuff+writeall, strlen(writebuff)-writeall);
 	if(writeonce == -1){
@@ -618,7 +618,7 @@ static int X28_open_send_link(int padfd, char *nua) {
 
     time(&timestart);
     while(time(NULL) - timestart < INTERNAL_CONNECT_TIMEVAL){
-	if(readall >= sizeof(readbuff))
+	if((size_t) readall >= sizeof(readbuff))
 	    goto error_overflow;
 	/* We read 1 char a time */
 	readonce = read(padfd, &readbuff[readall], 1);
@@ -689,7 +689,7 @@ static int X28_data_read(int padfd, char *cbuffer) {
 	    goto eof;
        
 	readall += ret;
-	if (len >  sizeof(cbuffer)- 256) {
+	if ((size_t) len >  sizeof(cbuffer)- 256) {
 	    p = gw_realloc(cbuffer, sizeof(cbuffer) * 2);
 	    memset(p+len,0,sizeof(cbuffer)*2 - len);
 	    cbuffer = p;

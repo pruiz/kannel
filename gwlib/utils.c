@@ -260,7 +260,7 @@ int normalize_number(char *dial_prefixes, Octstr **number)
 		    
 		    if ( official[0] == '-' ) official_len=0;
 		    n = official_len;
-		    if (strlen(official) < n)
+		    if (strlen(official) < (size_t) n)
 		    	n = strlen(official);
                     nstr = octstr_create_from_data(official, n);
                     octstr_insert_data(nstr, official_len,
@@ -364,3 +364,5 @@ int roundup_div(int a, int b)
 
     return t;
 }
+
+

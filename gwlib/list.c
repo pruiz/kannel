@@ -355,11 +355,13 @@ void *list_search(List *list, void *pattern, int (*cmp)(void *, void *))
     item = NULL;
     for (i = 0; i < list->len; ++i) {
         item = GET(list, i);
-        if (cmp(item, pattern))
+        if (cmp(item, pattern)) {
             break;
+        }
     }
-    if (i == list->len)
+    if (i == list->len) {
         item = NULL;
+    }
     unlock(list);
 
     return item;

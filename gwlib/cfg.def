@@ -79,9 +79,21 @@ SINGLE_GROUP(ppg,
     OCTSTR(ppg-port)
     OCTSTR(trusted-pi)
     OCTSTR(concurrent-pushes)
+    OCTSTR(ppg-port-ssl)
+    OCTSTR(users)
+    OCTSTR(ppg-allow-ip)
+    OCTSTR(ppg-deny-ip)
+)
+
+MULTI_GROUP(wap-push-user,
     OCTSTR(ppg-username)
     OCTSTR(ppg-password)
-    OCTSTR(ppg-port-ssl)
+    OCTSTR(allowed-prefix)
+    OCTSTR(denied-prefix)
+    OCTSTR(white-list)
+    OCTSTR(black-list)
+    OCTSTR(user-deny-ip)
+    OCTSTR(user-allow-ip)
 )
 
 SINGLE_GROUP(smsbox,

@@ -159,6 +159,9 @@ void dict_destroy(Dict *dict)
     long i;
     Item *p;
     
+    if (dict == NULL)
+        return;
+
     for (i = 0; i < dict->size; ++i) {
         if (dict->tab[i] == NULL)
 	    continue;

@@ -1596,7 +1596,7 @@ static int ois_extract_msg_from_buffer(char *str, SMSCenter *smsc)
     /* a valid message type, find the end of the message */
 
     count = smsc->buffer[1] & 0x0f;
-    for (len = 0; len < smsc->buflen; ++len) {
+    for (len = 0; (size_t) len < smsc->buflen; ++len) {
 	if (smsc->buffer[len] == EOL) {
 	    if (--count < 0) {
 		++len;
@@ -1621,7 +1621,8 @@ static int ois_extract_msg_from_buffer(char *str, SMSCenter *smsc)
     return len;
 
  error:
-    for (len = 0; len < smsc->buflen && smsc->buffer[len] != EOL; ++len) ;
+    for (len = 0; (size_t) len < smsc->buflen && smsc->buffer[len] != EOL; 
+         ++len) ;
     if (len > BUFLEN) len = BUFLEN;
 
     memcpy(str, smsc->buffer, len);
@@ -1645,9 +1646,10 @@ static int ois_extract_line_from_buffer(char *str, SMSCenter *smsc)
 
     str[0] = '\0';
 
-    for (len = 0; len < smsc->buflen && smsc->buffer[len] != '\n'; ++len) ;
+    for (len = 0; (size_t) len < smsc->buflen && smsc->buffer[len] != '\n'; 
+         ++len) ;
 
-    if (len >= smsc->buflen) {
+    if ((size_t) len >= smsc->buflen) {
 	return 0;
     } else {
 	++len;

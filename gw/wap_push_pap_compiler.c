@@ -249,6 +249,7 @@ static int uses_ipv4_address(long network_required, long bearer_required,
 static int uses_ipv6_address(long network_required, long bearer_required,
                              Octstr *bearer);
 static int event_semantically_valid(WAPEvent *e, int type_of_address);
+static char *address_type(int type_of_address);
 
 /*
  * Macro for creating an octet string from a node content. This has two 
@@ -366,6 +367,24 @@ enum {
     ADDR_WINA
 };
 
+static char *address_type(int type_of_address)
+{
+    switch(type_of_address) {
+    case ADDR_USER:
+    return "user defined address";
+    case ADDR_PLMN:
+    return "a phone number";
+    case ADDR_IPV4:
+    return "a IPv4 address";
+    case ADDR_IPV6:
+    return "a IPv6 address";
+    case ADDR_WINA:
+    return "a WINA accepted address";
+    default:
+    return "unknown address";
+    }
+}
+
 /*
  * Do semantic analysis, when the event was Push_Message. Do not accept an IP 
  * address, when a non-IP bearer is requested, and a phone number, when an IP
@@ -376,35 +395,42 @@ enum {
 
 static int event_semantically_valid(WAPEvent *e, int type_of_address)
 {
-    if (e->type != Push_Message)
+    debug("wap.push.pap.compiler", 0, "doing semantic analysis for address"
+          " type %s", address_type(type_of_address));
+    if (e->type != Push_Message) {
         return 1;
-
+    }
+    
     if (e->u.Push_Message.network_required != 
-            e->u.Push_Message.bearer_required)
+	     e->u.Push_Message.bearer_required) {
        return 0;
+    }
 
     if (type_of_address == ADDR_PLMN && 
             !uses_gsm_msisdn_address(e->u.Push_Message.network_required,
                                      e->u.Push_Message.network,
                                      e->u.Push_Message.bearer_required,
-                                     e->u.Push_Message.bearer))
+                                     e->u.Push_Message.bearer)) {
         return 0;
-
+    }
+    
     if (type_of_address == ADDR_IPV4 && 
             !uses_ipv4_address(e->u.Push_Message.network_required,
                                e->u.Push_Message.bearer_required,
-                               e->u.Push_Message.bearer))
+                               e->u.Push_Message.bearer)) {
         return 0;
-
+    }
+    
     if (type_of_address == ADDR_IPV6 && 
             (!uses_ipv4_address(e->u.Push_Message.network_required,
                                 e->u.Push_Message.bearer_required,
                                 e->u.Push_Message.bearer) || 
 	    !uses_ipv6_address(e->u.Push_Message.network_required,
                                e->u.Push_Message.bearer_required,
-                               e->u.Push_Message.bearer)))
+                               e->u.Push_Message.bearer))) {
         return 0;
-
+    }
+    
     return 1;
 }
 
@@ -438,7 +464,10 @@ static int uses_gsm_msisdn_address(long network_required, Octstr *network,
 {
     if (!network_required || !bearer_required)
         return 0;
-
+    
+    if (!network || !bearer)
+        return 0;
+    
     return (octstr_compare(network, octstr_imm("GSM")) == 0 &&
 	   octstr_compare(bearer, octstr_imm("SMS")) == 0) ||
            (octstr_compare(network, octstr_imm("ANSI-136")) == 0 &&
@@ -450,10 +479,13 @@ static int uses_ipv4_address(long network_required, long bearer_required,
 {
     long i;
 
-    if (!network_required && !bearer_required) {
+    if (!bearer_required) {
         return 1;
     }
 
+    if (!bearer)
+        return 0;
+    
     i = 0;
     while (i < NUMBER_OF_IP4_BEARERS) {
         if (octstr_compare(bearer, octstr_imm(ip4_bearers[i])) == 0) {
@@ -470,7 +502,10 @@ static int uses_ipv6_address(long network_required, long bearer_required,
 {
     long i;
 
-    if (!network_required || !bearer_required)
+    if (!bearer_required)
+        return 0;
+
+    if (!bearer)
         return 0;
 
     i = 0;
@@ -691,13 +726,13 @@ static int parse_push_message_value(Octstr *attr_name, Octstr *attr_value,
              octstr_imm("deliver-before-timestamp")) == 0) {
 	(**e).u.Push_Message.deliver_before_timestamp = 
              (ros = parse_date(attr_value)) ? 
-             octstr_duplicate(attr_value) : NULL;  
+             octstr_duplicate(attr_value) : octstr_imm("erroneous");  
         return return_flag(ros);
     } else if (octstr_compare(attr_name, 
              octstr_imm("deliver-after-timestamp")) == 0) {
 	(**e).u.Push_Message.deliver_after_timestamp = 
              (ros = parse_date(attr_value)) ? 
-             octstr_duplicate(attr_value) : NULL;
+             octstr_duplicate(attr_value) : octstr_imm("erroneous");
         return return_flag(ros);
     } else if (octstr_compare(attr_name, 
              octstr_imm("source-reference")) == 0) {
@@ -747,12 +782,12 @@ static int parse_quality_of_service_value(Octstr *attr_name,
     ros = octstr_imm("erroneous");
     if (octstr_compare(attr_name, octstr_imm("network")) == 0) {
 	(**e).u.Push_Message.network = (ros = parse_network(attr_value)) ? 
-            octstr_duplicate(ros) : NULL;
+            octstr_duplicate(ros) : octstr_imm("erroneous");
             return return_flag(ros);
     }
     if (octstr_compare(attr_name, octstr_imm("bearer")) == 0) {
 	(**e).u.Push_Message.bearer = (ros = parse_bearer(attr_value)) ? 
-            octstr_duplicate(ros) : NULL;
+            octstr_duplicate(ros) : octstr_imm("erroneous");
         return return_flag(ros);
     }
 
@@ -805,7 +840,7 @@ static int parse_progress_note_value(Octstr *attr_name, Octstr *attr_value,
         return 0;
     } else if (octstr_compare(attr_name, octstr_imm("time")) == 0) {
 	(**e).u.Progress_Note.time = (ros = parse_date(attr_value)) ?
-             octstr_duplicate(attr_value) : NULL;
+             octstr_duplicate(attr_value) : octstr_imm("erroneous");
 	return return_flag(ros);
     }
 
@@ -1759,6 +1794,7 @@ static long handle_two_terminators (Octstr **address, long pos,
 
     return pos;
 }
+
 
 
 

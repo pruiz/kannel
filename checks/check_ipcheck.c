@@ -32,7 +32,7 @@ int main(void)
     gwlib_init();
     log_set_output_level(GW_INFO);
         
-    for (i = 0; i < sizeof(tab) / sizeof(tab[0]); ++i) {
+    for (i = 0; (size_t) i < sizeof(tab) / sizeof(tab[0]); ++i) {
 	allowed = octstr_imm(tab[i].allowed);
 	denied = octstr_imm(tab[i].denied);
 	ip = octstr_imm(tab[i].ip);

@@ -1,6 +1,19 @@
 /*
  * Push PPG main module header
  *
+ * This module implements following Wapforum specifications:
+ *      WAP-151-PPGService-19990816-a (called afterwards ppg),
+ *      WAP-164-PAP-19991108-a (pap),
+ *      WAP-164_100-PAP-20000218-a (pap implementation note).
+ * 
+ * We refer following Wapforum specifications:
+ *      WAP-145-PushMessage-19990816-a (push message)
+ *      WAP-200-WDP-20001212-a (wdp)
+ *      WAP-203-WSP-20000504-a (wsp)
+ *      WAP-189-PushOTA-20000217-a (ota).
+ *
+ * In addition, rfcs 1521, 2045 and 2617 are referred.
+ *
  * By Aarno Syvänen for Wapit Ltd and for Wiral Ltd.
  */
 
