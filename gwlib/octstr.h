@@ -55,7 +55,8 @@ Octstr *octstr_create_from_data(const char *data, size_t len);
 
 
 /*
- * Destroy an octet string, freeing all memory it uses.
+ * Destroy an octet string, freeing all memory it uses. A NULL argument
+ * is ignored.
  */
 void octstr_destroy(Octstr *ostr);
 

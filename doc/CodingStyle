@@ -1,6 +1,15 @@
-CodingStyle for the WapIT SMS Gateway
+CodingStyle for Kannel
 by Lars Wirzenius <liw@wapit.com>
 
+
+Code formatting
+
+	Don't make lines that are longer than 78 characters.
+	
+	Tabs are 8 characters. Indents can be discussed.
+	
+	When editing someone else's code, follow *their* formatting.
+	Don't mix formatting styles within one file.
 
 Commenting
 
@@ -52,6 +61,11 @@ Error handling
 	problem, since it becomes more clear which parts of the system
 	were involved in the operation that failed.
 	
+Memory allocation
+
+	Never use malloc, calloc, realloc, or free. Use gw_malloc,
+	gw_realloc, and gw_free instead.
+
 Log messages
 
 	The logging functions in wapitlib.h shall be used, not printf.
@@ -140,3 +154,56 @@ Log message at the `debug' level: naming convention for `place'
 	places need to be excluded from the set are marked with
 	preceding '-', like "wap.* -wap.wsp.*"
 
+Using integer types
+
+	Avoid the uint32_t type, and similar types with other names, and
+	try to live with:
+
+		int (-32000 to 32000)
+		long (-2 000 000 000 to 2 000 000 000)
+		unsigned long (-4 000 000 000 to 4 000 000 000)
+		unsigned char (0 to 255)
+	
+	The ranges given are _minimum_ ranges. Do not assume that there
+	ever exists an integer type of a specific size. If you think you
+	need one of a specific size, think again. If that doesn't help,
+	discuss things on devel@kannel.org.
+	
+	The exception to this is that it is probably safe to assume char
+	is 8 bits. Do not assume a plain `char' type is signed or unsigned
+	- always use unsigned chars. However, remember that it is almost
+	always smarter to use an `int' for a char (and store non-negative
+	values) instead of an unsigned char, because of the complicated
+	type promotion rules in C, when dealing with a single character.
+	When using an array ("string"), use unsigned char as the element
+	type. However, remember to use Octstr whenever possible.
+	
+	Some library functions require the use of a specific integer type.
+	In that case, use that.
+
+#include directives
+
+	When referring to header files that are not part of Kannel,
+	use the <foo.h> syntax. When referring to header files that
+	are part of Kannel, use the "foo.h" syntax. Since Kannel source
+	code is spread over several directories, use the following
+	rules to construct the actual filename:
+	
+		if foo.c includes foo.h and they are both in the
+		same directory, use "foo.h"
+		
+		if foo.c includes, for example, gwlib.h, and foo.c is not
+		in the same directory as gwlib.h, the path relative to
+		the root of the Kannel source tree should be given, thus
+		"gwlib/gwlib.h".
+
+Typecasts
+
+	Don't use them, unless you're really certain it's needed. Almost
+	always when you think you need one, you are doing things that
+	are too tricky and may become a portability problem in the future.
+	
+	A common exception are the braindead BSD socket functions: they
+	have been designed so that typecasts are necessary. We try to
+	make wrappers around such functions in gwlib, so that we have the
+	cast only in one place.
