@@ -2921,46 +2921,49 @@ List *http_header_split_auth_value(Octstr *value)
      */
  
     result = http_header_split_value(value);
+    if (list_len(result) == 0)
+        return result;
 
     auth_scheme = list_get(result, 0);
     i = 1;
     while (i < list_len(result)) {
-	int c;
-	long pos;
+        int c;
+        long pos;
 
-	element = list_get(result, i);
-	/*
-	 * If the element starts with: token '='
-	 * then it's just an auth_param; append it to the current
-	 * auth_scheme.  If it starts with: token token '='
-	 * then it's the start of a new auth scheme.
-	 * 
-	 * To make the scan easier, we consider anything other
-	 * than whitespace or '=' to be part of a token.
-	 */
+        element = list_get(result, i);
 
-	/* Skip first token */
-	for (pos = 0; pos < octstr_len(element); pos++) {
-	    c = octstr_get_char(element, pos);
-	    if (isspace(c) || c == '=')
-		break;
-	}
+        /*
+         * If the element starts with: token '='
+         * then it's just an auth_param; append it to the current
+         * auth_scheme.  If it starts with: token token '='
+         * then it's the start of a new auth scheme.
+         *
+         * To make the scan easier, we consider anything other
+         * than whitespace or '=' to be part of a token.
+         */
 
-	/* Skip whitespace, if any */
-	while (isspace(octstr_get_char(element, pos)))
-	    pos++;
+        /* Skip first token */
+        for (pos = 0; pos < octstr_len(element); pos++) {
+            c = octstr_get_char(element, pos);
+            if (isspace(c) || c == '=')
+                break;
+        }
 
-	if (octstr_get_char(element, pos) == '=') {
-		octstr_append_char(auth_scheme, ';');
-		octstr_append(auth_scheme, element);
-		list_delete(result, i, 1);
-		octstr_destroy(element);
-	} else {
-		unsigned char semicolon = ';';
-		octstr_insert_data(element, pos, &semicolon, 1);
-		auth_scheme = element;
-		i++;
-	}
+        /* Skip whitespace, if any */
+        while (isspace(octstr_get_char(element, pos)))
+            pos++;
+
+        if (octstr_get_char(element, pos) == '=') {
+            octstr_append_char(auth_scheme, ';');
+            octstr_append(auth_scheme, element);
+            list_delete(result, i, 1);
+            octstr_destroy(element);
+        } else {
+            unsigned char semicolon = ';';
+            octstr_insert_data(element, pos, &semicolon, 1);
+            auth_scheme = element;
+            i++;
+        }
     }
 
     return result;

@@ -160,8 +160,8 @@ static long string_to_versioned_number(Octstr *ostr, struct table *table,
         }
     }
 
-    debug("wsp.strings",0,"WSP: Mapping string `%s', WSP version 1.%d to binary " 
-          "representation `0x%04x'.", octstr_get_cstr(ostr), version, ret);
+    debug("wsp.strings",0,"WSP: Mapping `%s', WSP 1.%d to 0x%04x.", 
+          octstr_get_cstr(ostr), version, ret);
 
     return ret;
 }
