@@ -826,7 +826,7 @@ static URLTranslation *authorise_user(List *list, char *client_ip)
  * Create and send an SMS message from an HTTP request.
  * Args: list contains the CGI parameters
  */
-char *smsbox_req_sendsms(List *list, char *client_ip)
+static char *smsbox_req_sendsms(List *list, char *client_ip)
 {
     Msg *msg = NULL;
     URLTranslation *t = NULL;
@@ -963,7 +963,7 @@ error:
  * 
  * This will be changed later to use an XML compiler.
  */
-char *smsbox_req_sendota(List *list, char *client_ip)
+static char *smsbox_req_sendota(List *list, char *client_ip)
 {
     char *url = NULL, *desc = NULL, *ipaddr = NULL, *phonenum = NULL;
     char *username = NULL, *passwd = NULL, *id = NULL;

@@ -1,3 +1,8 @@
+2000-12-15  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsbox.c: smsbox_req_sendsms and smsbox_req_sendota made
+	static, they're not called from anywhere else.
+
 2000-12-13  Richard Braakman  <dark@wapit.com>
 
 	* test/fakewap.c: Indented gwlib_shutdown() call according to
