@@ -317,13 +317,6 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	return -1;
     }
 
-    if (octstr_len(msg->smart_sms.msgdata)==0) {
-	if (urltrans_omit_empty(trans) != 0) {
-	    max_msgs = 0;
-	} else { 
-	    octstr_replace(msg->smart_sms.msgdata, empty, strlen(empty));
-	}
-    }
     if (max_msgs == 0) {
 	info(0, "No reply sent, denied.");
 	msg_destroy(msg);
@@ -332,8 +325,15 @@ static int send_message(URLTranslation *trans, Msg *msg)
 
     if(msg->smart_sms.flag_udh)
 	return send_udh_sms(trans, msg, 1);
-    else
-	return send_plain_sms(trans, msg, max_msgs);
+    
+    if (octstr_len(msg->smart_sms.msgdata)==0) {
+	if (urltrans_omit_empty(trans) != 0) {
+	    max_msgs = 0;
+	} else { 
+	    octstr_replace(msg->smart_sms.msgdata, empty, strlen(empty));
+	}
+    }
+    return send_plain_sms(trans, msg, max_msgs);
 }
 
 
@@ -375,7 +375,8 @@ void *smsbox_req_thread(void *arg) {
 
     req_threads++;	/* possible overflow */
     
-    if (octstr_len(msg->smart_sms.msgdata) == 0 ||
+    if ((octstr_len(msg->smart_sms.msgdata) == 0 &&
+	octstr_len(msg->smart_sms.udhdata) == 0) ||
 	octstr_len(msg->smart_sms.sender) == 0 ||
 	octstr_len(msg->smart_sms.receiver) == 0) 
     {
@@ -397,7 +398,8 @@ void *smsbox_req_thread(void *arg) {
     trans = urltrans_find(translations, msg->smart_sms.msgdata);
     if (trans == NULL) goto error;
 
-    info(0, "Starting to service <%s> from <%s> to <%s>",
+    info(0, "Starting to service <%*s> from <%s> to <%s>",
+	 octstr_len(msg->smart_sms.msgdata),
 	 octstr_get_cstr(msg->smart_sms.msgdata),
 	 octstr_get_cstr(msg->smart_sms.sender),
 	 octstr_get_cstr(msg->smart_sms.receiver));
@@ -458,25 +460,28 @@ char *smsbox_req_sendsms(CGIArg *list)
 {
 	Msg *msg = NULL;
 	URLTranslation *t = NULL;
-	char *user = NULL, *val, *from, *to, *text;
+	char *user = NULL, *val, *from, *to;
+	char *text = NULL;
 	char *udh = NULL;
 	int ret;
 
 	if (cgiarg_get(list, "username", &user) == -1)
-		t = urltrans_find_username(translations, "default");
+	    t = urltrans_find_username(translations, "default");
 	else 
-		t = urltrans_find_username(translations, user);
+	    t = urltrans_find_username(translations, user);
     
 	if (t == NULL || 
-		cgiarg_get(list, "password", &val) == -1 ||
-		strcmp(val, urltrans_password(t)) != 0) {
-		return "Authorization failed";
+	    cgiarg_get(list, "password", &val) == -1 ||
+	    strcmp(val, urltrans_password(t)) != 0)
+	{
+	    return "Authorization failed";
 	}
 
 	cgiarg_get(list, "udh", &udh);
+	cgiarg_get(list, "text", &text);
 
 	if (cgiarg_get(list, "to", &to) == -1 ||
-		cgiarg_get(list, "text", &text) == -1)
+	    (text == NULL && udh == NULL))
 	{
 		error(0, "/cgi-bin/sendsms got wrong args");
 		return "Wrong sendsms args.";
@@ -493,16 +498,15 @@ char *smsbox_req_sendsms(CGIArg *list)
 	} else {
 		return "Sender missing and no global set";
 	}
-    
 	info(0, "/cgi-bin/sendsms <%s:%s> <%s> <%s>", user ? user : "default",
-	     from, to, text);
+	     from, to, text ? text : "<<udh>>");
   
 	msg = msg_create(smart_sms);
 	if (msg == NULL) goto error;
 
 	msg->smart_sms.receiver = octstr_create(to);
 	msg->smart_sms.sender = octstr_create(from);
-	msg->smart_sms.msgdata = octstr_create(text);
+	msg->smart_sms.msgdata = octstr_create(text ? text : "");
 	msg->smart_sms.udhdata = octstr_create(udh ? udh : "");
 
 	if(udh==NULL) {

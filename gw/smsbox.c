@@ -115,7 +115,10 @@ int socket_sender(Msg *pmsg)
     }
     mutex_unlock(socket_mutex);
 
-    debug("sms", 0, "write <%s>", octstr_get_cstr(pmsg->smart_sms.msgdata));
+    debug("sms", 0, "write <%*s> [%d]",
+	  octstr_len(pmsg->smart_sms.msgdata),
+	  octstr_get_cstr(pmsg->smart_sms.msgdata),
+	  octstr_len(pmsg->smart_sms.udhdata));
     octstr_destroy(pack);
 
     msg_destroy(pmsg);

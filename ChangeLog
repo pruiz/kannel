@@ -1,3 +1,11 @@
+2000-03-29    <Kalle Marjola <rpr@wapit.com>>
+
+	* gw/*box*.c: fixed some udh-things like it is now possible to
+	send UDH without text field
+
+	* gw/smsc_cimd.c: fixed that it discarded message without text
+	file, but with udh field
+
 2000-03-29  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/octstr.c: Added static octstr_grow() call for other

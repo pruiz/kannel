@@ -312,8 +312,10 @@ int cimd_submit_msg(SMSCenter *smsc, Msg *msg) {
 
 	/* Fix these by implementing a could-not-send-because-
 	   protocol-does-not-allow in smsc.c or smsgateway.c */
-	if(octstr_len(msg->smart_sms.msgdata) < 1) {
-		warning(0, "cimd_submit_smsmessage: ignoring message with 0-length field");
+	if(octstr_len(msg->smart_sms.msgdata) +
+	   octstr_len(msg->smart_sms.udhdata) < 1)
+	{
+		warning(0, "cimd_submit_smsmessage: ignoring message with 0-length fields");
 		goto okay; /* THIS IS NOT OKAY!!!! XXX */
 	}
 	if(octstr_len(msg->smart_sms.sender) < 1) {

@@ -38,6 +38,9 @@ static CGIArg *new_cgiarg(char *name, char *value);
 CGIArg *cgiarg_decode_to_list(char *args) {
 	CGIArg *list, *tail, *new;
 	char *name, *value;
+
+	if (args == NULL)
+	    return NULL;
 	
 	list = NULL;
 	tail = NULL;

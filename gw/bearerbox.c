@@ -937,8 +937,10 @@ int thread_writer(Msg *msg)
     normalize_numbers(rqi, NULL);
     route_msg(internal_smsbox(), rqi);
     rq_push_msg(bbox->reply_queue, rqi);
-    debug("bb", 0, "SMSBox: wrote <%s> into queue",
-	  octstr_get_cstr(msg->smart_sms.msgdata));
+    debug("bb", 0, "SMSBox: wrote <%*s> [%d] into queue",
+	  octstr_len(msg->smart_sms.msgdata),
+	  octstr_get_cstr(msg->smart_sms.msgdata),
+	  octstr_len(msg->smart_sms.udhdata));
     return 0;
 }
 
@@ -1354,11 +1356,14 @@ static void *sendsms_thread(void *arg)
     info(0, "smsbox: Get HTTP request < %s > from < %s >", path, client_ip);
     
     if (strcmp(path, "/cgi-bin/sendsms") == 0) {
+	if (args == NULL) {
+	    answer = "no arguments!";
+	} else {
+	    arglist = cgiarg_decode_to_list(args);
+	    answer = smsbox_req_sendsms(arglist);
 
-	arglist = cgiarg_decode_to_list(args);
-	answer = smsbox_req_sendsms(arglist);
-
-	cgiarg_destroy_list(arglist);
+	    cgiarg_destroy_list(arglist);
+	}
     } else
 	answer = "unknown request";
     info(0, "%s", answer);
