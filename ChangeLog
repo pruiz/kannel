@@ -1,4 +1,9 @@
 2001-12-25  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/conn.c: remoted label error for conn_wrap_fd() in case
+      the ssl specific code causes an connection error. This also fixes
+      an warning message while compiling.
+
+2001-12-25  Stipe Tolj  <tolj@wapme-systems.de>
     * utils/attgetopt.c: exclude implementation of getopt() if config.h
       has HAVE_GETOPT_IN_STDIO_H defined. This fixes make run bug
       for Solaris 2.6 (at least).
