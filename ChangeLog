@@ -1,3 +1,12 @@
+Sun Jun  4 00:06:23 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wap-events.c: Added assertions to wap_event_name. Added
+	calls to wap_event_assert. Event duplication now also works for
+	NULL arguments. Fixed wap_event_assert (i.e., reduced the number
+	of checks it makes - it was overly aggressive).
+	
+	* gw/wsp.c: Added calls to wap_event_assert.
+
 2000-06-03  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/octstr.[ch]: Added octstr_append_uintvar.

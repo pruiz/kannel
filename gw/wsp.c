@@ -142,6 +142,7 @@ void wsp_shutdown(void) {
 
 
 void wsp_dispatch_event(WAPEvent *event) {
+	wap_event_assert(event);
 	list_produce(queue, event);
 }
 
@@ -156,6 +157,7 @@ static void main_thread(void *arg) {
 	WSPMachine *sm;
 	
 	while (run_status == running && (e = list_consume(queue)) != NULL) {
+		wap_event_assert(e);
 		sm = find_machine(e);
 		debug("wap.wsp", 0, "WSP: Got event %p, for %p",
 			(void *) e, (void *) sm);

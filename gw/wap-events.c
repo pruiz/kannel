@@ -36,6 +36,8 @@ void wap_event_destroy(WAPEvent *event) {
 	if (event == NULL)
 		return;
 
+	wap_event_assert(event);
+
 	switch (event->type) {
 	#define WAPEVENT(name, fields) \
 		case name: \
@@ -56,9 +58,10 @@ void wap_event_destroy(WAPEvent *event) {
 WAPEvent *wap_event_duplicate(WAPEvent *event) {
 	WAPEvent *new;
 	
-	gw_assert(event != NULL);
-	gw_assert(event->type >= 0);
-	gw_assert(event->type < WAPEventNameCount);
+	if (event == NULL)
+		return NULL;
+
+	wap_event_assert(event);
 
 	new = gw_malloc(sizeof(WAPEvent));
 	new->type = event->type;
@@ -124,6 +127,7 @@ void wap_event_assert(WAPEvent *event) {
 	gw_assert(event->type >= 0);
 	gw_assert(event->type < WAPEventNameCount);
 
+#if 0 /* XXX the following is bogus. --liw */
 	switch (event->type) {
 	#define WAPEVENT(name, fields) \
 		case name: \
@@ -137,4 +141,5 @@ void wap_event_assert(WAPEvent *event) {
 	default:
 		gw_assert(0);
 	}
+#endif
 }
