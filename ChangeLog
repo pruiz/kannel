@@ -1,4 +1,8 @@
 2002-04-10  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsbox.c: Changed XML Post format (smsbox->application) to conform
+      to IETF sms-xml-02 draft.
+
+2002-04-10  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/urltrans.c: Added white/black list and allowed/denied prefix 
       implementation to default service.
     * doc/userguide/userguide.xml: added --enable-drafts information

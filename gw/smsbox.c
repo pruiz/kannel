@@ -937,17 +937,29 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	http_header_add(request_headers, "Content-Type", "text/xml");
 
 	xml = octstr_create("");
-	octstr_append(xml, octstr_imm("<?xml version=\"1.0\"?>\n")); 
-				/* XXX Should add encoding="" */
+	octstr_append(xml, octstr_imm("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n")); 
+	octstr_append(xml, octstr_imm("<!DOCTYPE message SYSTEM \"SMSmessage.dtd\">\n")); 
 
-	octstr_append(xml, octstr_imm("<message>\n"));
-	octstr_append(xml, octstr_imm("\t<type>SMS</type>\n"));
-	octstr_append(xml, octstr_imm("\t<body>\n"));
+	octstr_append(xml, octstr_imm("<message cid=\"1\">\n"));
+	octstr_append(xml, octstr_imm("\t<submit>\n"));
 
-	if(urltrans_send_sender(trans))
-	    OCTSTR_APPEND_XML(xml, "from", msg->sms.receiver);
-	OCTSTR_APPEND_XML(xml, "to", msg->sms.sender);
+	/* oa */
+	if(urltrans_send_sender(trans)) {
+	    tmp = octstr_create("");
+	    OCTSTR_APPEND_XML(tmp, "number", msg->sms.receiver);
+	    OCTSTR_APPEND_XML(xml, "oa", tmp);
+	    octstr_destroy(tmp);
+	}
 
+	/* da */
+	{
+	    tmp = octstr_create("");
+	    OCTSTR_APPEND_XML(tmp, "number", msg->sms.sender);
+	    OCTSTR_APPEND_XML(xml, "da", tmp);
+	    octstr_destroy(tmp);
+	}
+
+	/* udh */
 	if(octstr_len(msg->sms.udhdata)) {
 	    Octstr *t;
 	    t = octstr_duplicate(msg->sms.udhdata);
@@ -956,35 +968,52 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	    octstr_destroy(t);
 	}
 
+	/* ud */
 	if(octstr_len(msg->sms.msgdata))
-	    OCTSTR_APPEND_XML(xml, "text", msg->sms.msgdata);
-	if(octstr_len(msg->sms.smsc_id))
-	    OCTSTR_APPEND_XML(xml, "smsc", msg->sms.smsc_id);
-	if(msg->sms.coding)
-	    OCTSTR_APPEND_XML_NUMBER(xml, "coding", msg->sms.coding);
-	if(msg->sms.mclass)
-	    OCTSTR_APPEND_XML_NUMBER(xml, "mclass", msg->sms.mclass);
+	    OCTSTR_APPEND_XML(xml, "ud", msg->sms.msgdata);
+
+	/* pid */
 	if(msg->sms.pid)
 	    OCTSTR_APPEND_XML_NUMBER(xml, "pid", msg->sms.pid);
-	if(msg->sms.alt_dcs)
-	    OCTSTR_APPEND_XML_NUMBER(xml, "alt-dcs", msg->sms.alt_dcs);
-	if(msg->sms.mwi)
-	    OCTSTR_APPEND_XML_NUMBER(xml, "mwi", msg->sms.mwi);
-	if(msg->sms.compress)
-	    OCTSTR_APPEND_XML_NUMBER(xml, "compress", msg->sms.compress);
-	if(msg->sms.validity)
-	    OCTSTR_APPEND_XML_NUMBER(xml, "validity", msg->sms.validity);
-	if(msg->sms.deferred)
-	    OCTSTR_APPEND_XML_NUMBER(xml, "deferred", msg->sms.deferred);
 
+	/* dcs */
+	{
+	    tmp = octstr_create("");
+
+	    if(msg->sms.coding)
+		OCTSTR_APPEND_XML_NUMBER(tmp, "coding", msg->sms.coding);
+	    if(msg->sms.mclass)
+		OCTSTR_APPEND_XML_NUMBER(tmp, "mclass", msg->sms.mclass);
+	    if(msg->sms.alt_dcs)
+		OCTSTR_APPEND_XML_NUMBER(tmp, "alt-dcs", msg->sms.alt_dcs);
+	    if(msg->sms.mwi)
+		OCTSTR_APPEND_XML_NUMBER(tmp, "mwi", msg->sms.mwi);
+	    if(msg->sms.compress)
+		OCTSTR_APPEND_XML_NUMBER(tmp, "compress", msg->sms.compress);
+
+	    if(octstr_len(tmp)) {
+		OCTSTR_APPEND_XML(xml, "dcs", tmp)
+	    }
+	    octstr_destroy(tmp);
+	}
+
+	/* XXX timing = deferred */
+	/* XXX vp = validity */
+
+	/* at */
 	tm = gw_gmtime(msg->sms.time);
-	tmp = octstr_format("%04d-%02d-%02d %02d:%02d:%02d",
+	tmp = octstr_format("<year>%04d</year><month>%02d</month>"
+			"<day>02d</day><hour>%02d</hour><minute>%02d</minute>"
+			"<second>%02d</second><timezone>0</timezone>",
 		       	tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 		       	tm.tm_hour, tm.tm_min, tm.tm_sec);
-	OCTSTR_APPEND_XML(xml, "time", tmp);
+	OCTSTR_APPEND_XML(xml, "at", tmp);
 	octstr_destroy(tmp);
 
-	octstr_append(xml, octstr_imm("\t</body>\n"));
+	if(octstr_len(msg->sms.smsc_id))
+	    OCTSTR_APPEND_XML(xml, "smsc", msg->sms.smsc_id);
+
+	octstr_append(xml, octstr_imm("\t</submit>\n"));
 	octstr_append(xml, octstr_imm("</message>\n"));
 
 	if(msg->sms.msgdata != NULL)
