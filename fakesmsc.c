@@ -41,9 +41,6 @@ sent in random order.";
 #include <netinet/in.h>
 
 #include <sys/param.h>
-#ifdef BSD
-typedef int socklen_t;
-#endif
 
 #include "wapitlib.h"
 

@@ -24,7 +24,7 @@ CC=gcc
 LIBS=
 # CFLAGS=-Wall -Werror -g -DHAVE_THREADS=1 $(PID_FILE) -DVERSION=\"$(VERSION)\"
 CFLAGS=-Wall -g -DHAVE_THREADS=1 $(PID_FILE) -DVERSION=\"$(VERSION)\"
-LDFLAGS= -static
+LDFLAGS=
 
 MKDEPEND=$(CC) -MM
 
@@ -34,17 +34,24 @@ RANLIB=:
 #RANLIB=ranlib
 
 # For Linux, uncomment the following:
+CFLAGS += -DHAVE_SOCKLEN_T
 THREADLIB = -lpthread
 
 # For FreeBSD, uncomment the following:
 #LIBS += -lc_r
 #THREADLIB = 
 
+# For Solaris, uncomment the following:
+#CFLAGS += -DSOLARIS
+
 # Uncomment one of these if you want to use a malloc debugger.
 #EFENCELIB = -lefence
 
 # Generic libraries.
 LIBS += $(THREADLIB) $(EFENCELIB) $(DMALLOCLIB) -lm
+
+# For Solaris uncomment the following
+LIBS += -lsocket -lnsl
 
 #
 # You probably don't need to touch anything below this, if you're just
