@@ -1,3 +1,9 @@
+2003-11-12  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsc/smsc_at.c: applied (in slightly modified version) patch that
+      fixes non-blocking write to modem device. Thanks a lot to:
+      Yulianto Z <sehari24jam@yahoo.com> for provided patch.
+      Msg-Id: <1068643285.4052.58.camel@pandora.daehsan.com>
+
 2003-11-12  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.c: fixes partially BUG#99 when the HTTP servers sends an
       'Authorization' header without real values in it. This would cause

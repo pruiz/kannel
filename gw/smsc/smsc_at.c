@@ -235,7 +235,7 @@ int at2_write_line(PrivAT2data *privdata, char *line)
 {
     int count;
     int s = 0;
-    int write_count = 0;
+    int write_count = 0, data_written = 0;
     Octstr *linestr = NULL;
 
     linestr = octstr_format("%s\r", line);
@@ -243,19 +243,23 @@ int at2_write_line(PrivAT2data *privdata, char *line)
     debug("bb.smsc.at2", 0, "AT2[%s]: --> %s^M", octstr_get_cstr(privdata->name), line);
 
     count = octstr_len(linestr);
-    while (1) {
+    while (count > data_written) {
 	errno = 0;
-	s = write(privdata->fd, octstr_get_cstr(linestr), count);
+	s = write(privdata->fd, octstr_get_cstr(linestr) + data_written, count - data_written);
 	if (s < 0 && errno == EAGAIN && write_count < RETRY_SEND) {
 	    gwthread_sleep(1);
 	    ++write_count;
+        } else if (s > 0) {
+            data_written += s;
+            write_count = 0;
 	} else
 	    break;
     };
     O_DESTROY(linestr);
     if (s < 0) {
-        debug("bb.smsc.at2", 0, "AT2[%s]: write failed with errno %d", 
-              octstr_get_cstr(privdata->name), errno);
+        error(errno, "AT2[%s]: Couldnot write to device.", 
+              octstr_get_cstr(privdata->name));
+        tcflush(privdata->fd, TCOFLUSH);
         return s;
     }
     tcdrain(privdata->fd);
@@ -282,8 +286,9 @@ int at2_write_ctrlz(PrivAT2data *privdata)
 	    break;
     };
     if (s < 0) {
-        debug("bb.smsc.at2", 0, "AT2[%s]: write failed with errno %d", 
-              octstr_get_cstr(privdata->name), errno);
+        error(errno, "AT2[%s]: Couldnot write to device.", 
+              octstr_get_cstr(privdata->name));
+        tcflush(privdata->fd, TCOFLUSH);
         return s;
     }
     tcdrain(privdata->fd);
@@ -294,12 +299,31 @@ int at2_write_ctrlz(PrivAT2data *privdata)
 
 int at2_write(PrivAT2data *privdata, char *line)
 {
-    int count;
-    int s;
+    int count, data_written = 0, write_count = 0;
+    int s = 0;
+
+    debug("bb.smsc.at2", 0, "AT2[%s]: --> %s", octstr_get_cstr(privdata->name), line);
 
     count = strlen(line);
-    debug("bb.smsc.at2", 0, "AT2[%s]: --> %s", octstr_get_cstr(privdata->name), line);
-    s = write(privdata->fd, line, count);
+    while(count > data_written) {
+        s = write(privdata->fd, line + data_written, count - data_written);
+        if (s < 0 && errno == EAGAIN && write_count < RETRY_SEND) {
+            gwthread_sleep(1);
+            ++write_count;
+        } else if (s > 0) {
+            data_written += s;
+            write_count = 0;
+        } else
+            break;
+    }
+
+    if (s < 0) {
+        error(errno, "AT2[%s]: Couldnot write to device.",
+              octstr_get_cstr(privdata->name));
+        tcflush(privdata->fd, TCOFLUSH);
+        return s;
+    }
+
     tcdrain(privdata->fd);
     return s;
 }
