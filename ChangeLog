@@ -1,3 +1,9 @@
+Wed Jan 26 18:14:39 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wapbox.c: Fixed SIGINT reactions so it doesn't wait until
+	bearerbox breaks connection when wapbox stops sending heartbeat
+	messages after SIGINT.
+
 Wed Jan 26 17:57:32 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c, gw/wsp_state-decl.h: Fixed compile time warnings

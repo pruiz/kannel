@@ -86,6 +86,12 @@ static Msg *msg_receive(int s) {
 	Octstr *os;
 	Msg *msg;
 	
+	while (run_status == running && !read_available(s)) {
+		debug(0, "msg_receive: Nothing to read, sleeping...");
+		usleep(1000*1000);
+	}
+	if (run_status != running)
+		return NULL;
 	if (octstr_recv(s, &os) < 1)
 		return NULL;
 	msg = msg_unpack(os);
