@@ -1,3 +1,11 @@
+2002-12-05 Andreas Fink <andreas@fink.org>
+   * gw/smsc/smsc_smpp.c: fixed throttling problem in SMPP
+     which was triggered by getting back a generic error instead of
+     a submit_response error. For incoming messages
+     the original ID is set (my-number problem) as a temporary fix
+     and if coding is not 1, then conversion to latin1 is not done
+     to allow incoming unicode and binary to work properly.
+
 2002-12-03  Igor Ivoilov <igor@francoudi.com>
     * wap/wsp_server_session_states.def: fixed initial approach for
       client SDU size to solve the problem with concatenated WSP requests.

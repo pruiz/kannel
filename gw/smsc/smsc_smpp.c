@@ -237,7 +237,8 @@ static Msg *pdu_to_msg(SMPP_PDU *pdu)
     pdu->u.deliver_sm.destination_addr = NULL; 
     msg->sms.msgdata = pdu->u.deliver_sm.short_message; 
     pdu->u.deliver_sm.short_message = NULL; 
-    charset_gsm_to_latin1(msg->sms.msgdata); 
+	if(msg->sms.coding == 1)	/* dont screw up unicode messages */
+    	charset_gsm_to_latin1(msg->sms.msgdata);
     msg->sms.pid = pdu->u.deliver_sm.protocol_id; 
     dcs_to_fields(&msg, pdu->u.deliver_sm.data_coding); 
  
@@ -726,12 +727,13 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
             {
                 /* ensure the smsc-id is set */ 
                 msg = pdu_to_msg(pdu); 
- 
+#if 0 
                 /* Replace MO destination number with my-number */ 
                 if (octstr_len(smpp->my_number)) { 
                     octstr_destroy(msg->sms.receiver); 
                     msg->sms.receiver = octstr_duplicate(smpp->my_number); 
                 } 
+#endif
                 time(&msg->sms.time); 
                 msg->sms.smsc_id = octstr_duplicate(smpp->conn->id); 
                 (void) bb_smscconn_receive(smpp->conn, msg); 
@@ -908,6 +910,32 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
         case unbind_resp:       
             break;
 
+        case generic_nack:
+	    error(0, "SMPP[%s]: generic nack pdu with comand_status 0x%08lx",
+            	octstr_get_cstr(smpp->conn->id),
+		pdu->u.generic_nack.command_status); 
+	    if(pdu->u.generic_nack.command_status == SMPP_ESME_RTHROTTLED) {
+		error(0,"SMPP[%s]:  ESME_RTHROTTLED",octstr_get_cstr(smpp->conn->id));
+		os = octstr_format("%ld", pdu->u.generic_nack.sequence_number); 
+            	msg = dict_remove(smpp->sent_msgs, os); 
+            	octstr_destroy(os); 
+            	if (msg == NULL) { 
+               	    warning(0, "SMPP[%s]: SMSC sent generic_nack " 
+                  	"with wrong sequence number 0x%08lx",
+                       octstr_get_cstr(smpp->conn->id),
+                       pdu->u.generic_nack.sequence_number); 
+            	} 
+                error(0, "SMPP[%s]: SMSC returned error code 0x%08lx " 
+                    "in response to submit_sm as generic_nack.",
+                    octstr_get_cstr(smpp->conn->id),
+                    pdu->u.generic_nack.command_status); 
+               reason = smpp_status_to_smscconn_failure_reason( 
+               pdu->u.generic_nack.command_status); 
+               time(&(smpp->throttling_err_time));
+               bb_smscconn_send_failed(smpp->conn, msg, reason);
+               --(*pending_submits); 
+           }
+	   break;
         default: 
             error(0, "SMPP[%s]: Unknown PDU type 0x%08lx, ignored.",
                   octstr_get_cstr(smpp->conn->id), pdu->type); 

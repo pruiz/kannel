@@ -747,7 +747,10 @@ static int handle_operation(SMSCConn *conn, Connection *server,
          * Recode the msg structure with the given msgdata.
          * Note: the DLR URL is delivered in msg->sms.dlr_url already.
          */
-        msg->sms.msgdata = octstr_duplicate(emimsg->fields[E50_AMSG]);
+		if((emimsg->fields[E50_AMSG]) == NULL)
+			msg->sms.msgdata = octstr_create("Delivery Report without text");
+		else
+        	msg->sms.msgdata = octstr_duplicate(emimsg->fields[E50_AMSG]);
         octstr_hex_to_binary(msg->sms.msgdata);
         msg->sms.sms_type = report;
 
