@@ -1,3 +1,25 @@
+2003-03-17  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap-error.[ch]: added error_converting() for reporting smart error
+      messages if the converter failed, ie. libxml2 parser failed because of
+      non-indicated encoding in the xml source.
+    * gw/xml_shared.[ch]: added find_charset_encoding() to scan the xml preamble
+      line, ie. <?xml version="1.0" encoding="iso-8859-1" ?> and extract a given
+      charset encoding definition if available.
+    * gwlib/octstr.h, gwlib/dbpool.c: cosmetic fixes
+    * gw/wml_compiler.c: make wml_compile() more "inteligent" concerning the 
+      encapsulated charset encoding in the xml source. This also fixes BUG#6.
+      The problem was/is that the HTTP reponse header can deliver a charset
+      definition and the xml preamble. So we cascade now as follows:
+      If xml preample has an encoding specified, this overrides the HTTP reponse
+      header, if not we take the HTTP reponse header if available. If both
+      are not available, we assume UTF-8 as default encoding charset.
+      The charset information is stored in the libxml2 document tree and re-used
+      afterwards while text elements are parsed and transcoding to the targeted
+      charset has to be done.
+    * gw/wap-appl.c: added smart error messaging if converters failed while
+      converting or compile a supported content-type, ie. a WML compilation
+      failed.
+
 2003-03-13  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smpp_pdu.c: Alexander's patch for fixing optional SMPP 3.4 
       parameter parsing. Thanks a lot.
