@@ -29,7 +29,7 @@ typedef struct xmlrpc_value XMLRPCValue;
 typedef struct xmlrpc_scalar XMLRPCScalar;
 typedef struct xmlrpc_member XMLRPCMember;
     
-
+#define create_octstr_from_node(node) (octstr_create(node->content))
 
 /*** METHOD CALLS ***/
 
