@@ -1,3 +1,15 @@
+2000-09-29  Kalle Marjola  <rpr@wapit.com>
+
+        * doc/userguide/userguide.xml: updating, moved all data from
+	newbb.txt into this and did some reorganisating. Started to insert
+	entire newconf.txt into this.
+	
+	* doc/userguide/newconf.txt: some data already moved to User Guide
+	
+	* doc/userguide/newbb.txt: removed
+
+	* gw/*kannel.conf, README: updated file references
+
 2000-09-28  Kalle Marjola  <rpr@wapit.com>
 
 	* doc/userguide/userguide.xml: fixed mismatch and put some extra

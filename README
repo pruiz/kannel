@@ -151,9 +151,6 @@ Configuring and running the gateway
 	For test use, you can see sample configurations
 	gw/smskannel.conf and gw/wapkannel.conf.
 
-	See file doc/userguide/newbb.txt for further instructions for
-	running the Kannel
-
 Using the gateway with a Nokia 7110
 
 	To configure a Nokia 7110 to use the gateway, fill in the

@@ -387,11 +387,28 @@
 	the gateway or using it for sending SMS messages.</para>
 
 	<para>There is only one configuration file for all parts of
-	Kalle, although when kannel is distributed to several hosts
+	Kannel, although when Kannel is distributed to several hosts
 	some lines from the configuration file can be removed in some
 	hosts.</para>
 
 <sect1>
+<title>Configuring the gateway</title>
+
+	<para>The configuration file practically consists of three parts:
+	bearerbox configurations, smsbox configurations and
+	wapbox configurations. Bearerbox part has one 'core' group
+	and any used SMS center groups, while wapbox part has only
+	one wapbox group. In smsbox part there is one smsbox group and
+	then number of sms-service and sendsms-user groups.</para>
+
+	<para>Details of each part is in appropritae section of this
+        documentation. The 'core' group used by the bearerbox is
+        explained in this chapter, while 'wapbox' part is in next
+        chapter and 'smsbox', 'sms center', 'sms-service' and
+        'sendsms-user' groups are in SMS Kannel chapter.</para>
+
+
+<sect2>
 <title>Configuration file syntax</title>
 
 	<para>A configuration file consists of groups of configuration variables. Groups are
@@ -413,15 +430,15 @@
 	<para>Perhaps an example will make things easier to comprehend:
 
 <programlisting>
-1  # A do-nothing service.
-2  group = sms-service
-3  keyword = nop
-4  text = "You asked nothing and I did it!"
+1    # A do-nothing service.
+2    group = sms-service
+3    keyword = nop
+4    text = "You asked nothing and I did it!"
 5
-6  # Default service.
-4  group = sms-service
-8  keyword = default
-9  text = "No services defined"
+6    # Default service.
+4    group = sms-service
+8    keyword = default
+9    text = "No services defined"
 </programlisting>
 
 	The above snippet defines the keyword <literal>nop</literal>
@@ -436,140 +453,459 @@
 	<para>The various variables that are understood in each type
 	of configuration group are explained below.</para>
 
-</sect1>
+</sect2>
 
-<sect1>
-<title>Configuring the gateway</title>
+<sect2>
+<title>Core Configuration</title>
 
-	<para>The configuration file consists of three parts:
-	bearerbox configurations, smsbox configurations and
-	wapbox configurations. Bearerbox part has one 'core' group
-	and any used SMS center groups, while wapbox part has only
-	one wapbox group. In smsbox part there is one smsbox group and
-	then number of sms-service and sendsms-user groups.</para>
+  <para>Configuration for Kannel <emphasis>MUST</emphasis> always
+  include a group for general bearerbox configuration. This group is
+  named as 'core' in configuration file, and should be the first group
+  in the configuration file.</para>
 
-	<para>Details of all those groups are in file 
-	<filename>newconf.txt</filename> in userguide directory.</para>
+  <para>As its simplest form, 'core' group looks like this:
 
 <programlisting>
+group = core
+admin-port = 13000
+admin-password = f00bar
 </programlisting>
+
+   Naturally this is not sufficient for any real use, as you want to
+   use Kannel as SMS gateway, WAP gateway or as both. Thus, one or
+   more of the optional configuration variables are used.</para>
+
+   <para>The full list of configuration variables in 'core' group is
+   this:
+
+<programlisting>
+ group = core
+ #       This is always required
+ # 
+ admin-port = &lt;port-number&gt;
+ #       The port number in which the bearerbox listens to HTTP
+ #       adminstration commands. It is NOT the same as the HTTP
+ #       port of the local www server, just invent any port, but
+ #       must be over 1023 unless you are running Kannel as a
+ #       root process (not recommended)
+ #
+ admin-password = &lt;password&gt;
+ #       Password for HTTP admin commands except for status
+ #
+ smsbox-port = &lt;port-number&gt;
+ #       This is the port number which the smsboxes, if any, connect.
+ #       As with admin-port, this can be anything you want
+ # 
+ wapbox-port = &lt;port-number&gt;
+ #       Like smsbox-port, but for wapbox-connections. If not set,
+ #       Kannel cannot handle WAP traffic
+ # 
+ wdp-interface-name = &lt;IP&gt;
+ #       If this is set, Kannel listens to WAP UDP packets incoming to
+ #       ports 9200-9208, bound to given IP. If no spesific IP is
+ #       needed, use just an asterisk ("*"). If UDP messages are
+ #       listened to, wapbox-port variable MUST be set.
+
+ log-file = &lt;file-name&gt;
+ #       A file in which to write a log. This in addition to stdout
+ #       and any log file defined in command line
+ #
+ log-level = &lt;number 0..5&gt;
+ #       Minimum level of logfile events logged. 0 is for debug, 1
+ #       info etc.
+ #
+ access-log = &lt;file-name&gt;
+ #       A file in which information about received/sent SMS messages 
+ #       is stored.
+ #
+ box-deny-ip = &lt;IP-list&gt;
+ box-allow-ip = &lt;IP-list&gt;
+ #       These lists can be used to prevent connection from given IP 
+ #       addresses. Each list can have several addresses, each
+ #       separated with semicolon (';'). An asterisk ('*') can be used
+ #       as a wildcard in a place of any ONE number, so *.*.*.*
+ #       matches any IP
+ #
+ admin-deny-ip = &lt;IP-list&gt;
+ admin-deny-ip = &lt;IP-list&gt;
+ #       As above, but for adminstration HTTP requests
+ #
+ unified-prefix = &lt;prefix-list&gt;
+ #       String to unify received phone numbers, for SMSC routing and
+ #       to ensure that SMS centers can handle them properly. 
+ #       This is applied to 'sender' number when receiving SMS
+ #       messages from SMS Center and for 'receiver' number when
+ #       receiving messages from SMSbox (either sendsms message or
+ #        reply to original message). Format is so that first is the
+ #       unified prefix, then all prefixes which are replaced by the
+ #       unified prefix, separated with comma (','). For example,
+ #       for Finland an unified-prefix "+358,00358,0;+,00" should do the trick. 
+ #       If there are several unified prefixes, separate their rules with
+ #       semicolon (';'), like "+35850,050;+35840,040"
+ #
+ white-list = &lt;url&gt;
+ #       Load a list of accepted senders of SMS messages. If a sender
+ #       of an SMS message is not in this list, any message received
+ #       from SMS Center is discarded. See notes of phone number
+ #       format from numhash.h header file. NOTE: the system has only
+ #       a precision of last 9 or 18 digits of phone numbers, so
+ #       beware
+ #
+ black-list = &lt;url&gt;
+ #       As white-list, but SMS messages from these numbers are
+ #       automatically discarded
+ #
+ http-proxy-host = &lt;hostname&gt;
+ http-proxy-port = &lt;portnumber&gt;
+ http-proxy-exceptions = "www.foo.bar www.plimpeli.plom.com"
+ #       HTTP Proxy settings.
+ #
+</programlisting>
+
+</sect2>
 
 </sect1>
 
 <sect1>
-<title>Starting the gateway</title>
+<title>Running Kannel</title>
 
 	<para>To start the gateway, you need to start each box you need.
 	You always need the bearer box, and depending on whether you want
 	WAP and SMS gateways you need to start the WAP and SMS boxes. If
 	you want, you can run several of them, but we'll explain the
 	simple case of only running one each.</para>
-	
-	<para>There is currently no sophisticated way to start the boxes.
-	Instead, you run them from the command line. This means that you
-	probably want to have one terminal window for each box you want
-	to start (xterm or screen will do fine). To start the bearer
-	box, give the following command:
 
-<screen><userinput>./bearerbox -v 1 my_conf.conf</userinput></screen>
 
-	The <option>-v 1</option> sets the logging level to
-	<literal>INFO</literal>. This way, you won't see a large amount of
-	debugging output (the default is <literal>DEBUG</literal>).</para>
-	
-	<para>After the bearer box, you can start the WAP box:
-	
-<screen><userinput>./wapbox -v 1 my_conf.conf</userinput></screen>
+<sect2>
+<title>Starting the Gateway</title>
 
-	or the SMS box:
+  <para>After you have compiled Kannel and edited configuration file
+  for your taste, you can either run Kannel from command line or use
+  supplied <literal>start-stop-daemon</literal> and
+  <literal>run_kannel_box</literal> programs to use it as daemon
+  service (more documentation about that later).</para>
 
-<screen><userinput>./smsbox -v 1 my_conf.conf</userinput></screen>
+  <para>If you cannot or do not know how to set up daemon systems or
+  just want to test out Kannel, you probably want to start it from
+  command line. This means that you probably want to have one terminal
+  window for each box you want to start (xterm or screen will do
+  fine). To start the bearerbox, give the following command:
 
-	or both, of course. The order does not matter, except that you
-	need to start the bearer box before the other boxes. Without
-	the bearer box, the other boxes won't even start.</para>
+<screen><userinput>./bearerbox -v 1 [conffile]</userinput></screen>
+
+  The <option>-v 1</option> sets the logging level to
+  <literal>INFO</literal>. This way, you won't see a large amount of
+  debugging output (the default is <literal>DEBUG</literal>). Full
+  explanation of Kannel command line arguments is below.</para>
+
+  <para><emphasis>[conffile]</emphasis> is the name of the
+  configuration file you are using with Kannel. The basic distribution
+  packet comes with two sample configuration files,
+  <literal>smskannel.conf</literal> and
+  <literal>wapkannel.conf</literal> (in <literal>gw</literal>
+  subdirectory), of which the first one is for
+  testing out SMS Kannel and the second one for setting up a WAP
+  Kannel. Feel free to edit those configuration files to set up your
+  own specialized system.</para>
+
+  <para>After the bearer box, you can start the WAP box:
 	
-	<para>The 'my_conf.conf' above is a name of the configuration
-	file. There is NO configuration file named 'my_conf.file' 
-        in Kannel sources, so replace it with name of your own
-        configuration file. For fast startup, Kannel is supplied with two trivial
-	simple configuration files, <literal>smskannel.conf</literal>
-	and <literal>wapkannel.conf</literal>. The first one is for
-	testing out the SMS side, and it requires, in addition to
-	running bearerbox and smsbox, to start first the
-	<literal>fakesmsc</literal> program from utils
-	directory. The second one is for WAP use, and it requires a
-	running bearerbox and wapbox.</para>
-	
+<screen><userinput>./wapbox -v 1 [conffile]</userinput></screen>
+
+  or the SMS box:
+
+<screen><userinput>./smsbox -v 1 [conffile]</userinput></screen>
+
+  or both, of course. The order does not matter, except that you need
+  to start the bearer box before the other boxes. Without the bearer
+  box, the other boxes won't even start.</para>
+
+  <para>Please note that if you using SMS Kannel, you
+  <emphasis>MUST</emphasis> start up any <literal>fakesmsc</literal>
+  systems before starting the bearerbox, if there is any
+  <literal>fake</literal> SMSC groups in configuration file, like
+  there is one in supplied <literal>smskannel.conf</literal>.
+
+</sect2>
+
+<sect2>
+<title>Command Line Options</title>
+
+ <para>Bearerbox, smsbox and wapbox each accept certain command line options
+   and arguments when they are launched. These arguments are:</para>
+
+ <table frame=none>
+  <title>Kannel Command Line Options</title>
+  <tgroup cols=2>
+  <tbody>
+   <row><entry><literal>-v &lt;level&gt;</literal></entry>
+        <entry morerows=1 valign=top>
+             Set verbosity level for stdout (screen) logging. Default is 0,
+             which means 'debug'. 1 is 'info, 2 'warning', 3
+             'error' and 4 'panic'
+        </entry></row>
+   <row><entry><literal>--verbosity &lt;level&gt;</literal></entry></row>
+
+   <row><entry><literal>-D &lt;places&gt;</literal></entry>
+        <entry morerows=1 valign=top>
+             Set debug-places for 'debug' level output. 
+        </entry></row>
+   <row><entry><literal>--debug &lt;places&gt;</literal></entry></row>
+
+   <row><entry><literal>-F &lt;file-name&gt;</literal></entry>
+        <entry morerows=1 valign=top>
+              Log to file named file-name, too. Does not overrun nor
+              affect any logfile defined in configuration file.
+        </entry></row>
+   <row><entry><literal>--logfile &lt;file-name&gt;</literal></entry></row>
+
+   <row><entry><literal>-V &lt;level&gt;</literal></entry>
+        <entry morerows=1 valign=top>
+            Set verbosity level for that extra logfile (default 0,
+            which means 'debug'). Does not affect verbosity level of
+            the logfile defined in configuration file, not verbosity
+            level of the <literal>stdout</literal> output.
+        </entry></row>
+   <row><entry><literal>--fileverbosity &lt;level&gt;</literal></entry></row>
+
+   <row><entry><literal>-S</literal></entry>
+        <entry morerows=1 valign=top>
+             Start the system initially at SUSPENDED state (see below,
+              bearerbox only)
+        </entry></row>
+   <row><entry><literal>--suspended</literal></entry></row>
+
+   <row><entry><literal>-I</literal></entry>
+        <entry morerows=1 valign=top>
+             Start the system initially at ISOLATED state (see below,
+              bearerbox only)
+        </entry></row>
+   <row><entry><literal>--isolated</literal></entry></row>
+
+   <row><entry><literal>-H</literal></entry>
+        <entry morerows=1 valign=top>
+             Only try to open HTTP sendsms interface; if it
+             fails, only warn about that, do not exit. (smsbox only)
+        </entry></row>
+   <row><entry><literal>--tryhttp</literal></entry></row>
+
+ </tbody>
+ </tgroup>
+ </table>
+
+</sect2>
+
+<sect2>
+<title>Kannel Statuses</title>
+
+    <para>In Kannel, there are four states for the program (which
+    currently directly only apply to bearerbox):</para>
+ 
+    <orderedlist numeration=loweralpha>
+     <listitem><para>
+       Running. The gateway accepts, proceeds and relies 
+       messages normally. This is the defaul state for the bearerbox.
+     </para></listitem>
+     <listitem><para>
+ Suspended. The gateway does not accept any new messages from SMS
+   centers nor from UDP ports. It neither does accept new sms and wapbox
+   connections and does not send any messages already in the system
+   onward.
+
+     </para></listitem>
+     <listitem><para>
+ Isolated. In this state, the gateway does not accept any messages
+   from external message providers, which means SMS Centers and UDP
+   ports. It still processes any messages in the system and can
+   accept new messages from sendsms interface in smsbox.
+
+     </para></listitem>
+     <listitem><para>
+
+   Shutdown. When the gateway is brought down, it does not accept any
+   new messages from SMS centers and UDP ports, but processes all
+   systems already in the system. As soon as any queues are emptied,
+   the system exits
+
+   </para></listitem>
+    </orderedlist>
+ 
+  <para>
+The state can be changed via HTTP adminstration interface (see below),
+and shutdown can also be initiated via TERM or INT signal from
+terminal. In addition, the bearerbox can be started already in
+suspended or isolated state with -S or -I command line option, see
+above.
+</para>
+
+</sect2>
+
+<sect2>
+<title>HTTP Adminstration</title>
+
+<para>Kannel can be controlled via an HTTP adminstration interface. All
+commands are done as normal HTTP queries, so they can be easily done
+from command line like this:
+
+<screen><userinput>% lynx -dump "http://localhost:12345/cgi-bin/shutdown?password=bar"</userinput></screen>
+
+...in which the '12345' is the configured admin-port in Kannel
+configuration file (see above). For most commands, admin-password is required as a
+cgi-bin argument as shown above. In addition, HTTP adminstration can
+be denied from certain IP addresses, as explained in configuration
+chapter.</para>
+
+ <table frame=none>
+  <title>Kannel HTTP Adminstration Commands</title>
+  <tgroup cols=2>
+  <tbody>
+   <row><entry><literal>status</literal></entry>
+   <entry valign=top>
+        Get the current status of the gateway. Tells the current state
+        (see above) and total number of messages relied and queuing in
+        the system right now. Also lists the total number of smsbox
+        and wapbox connections.
+   </entry></row>
+
+   <row><entry><literal>suspend</literal></entry>
+   <entry valign=top>
+        Set Kannel state as 'suspended' (see above). Password
+        required.
+   </entry></row>
+
+   <row><entry><literal>isolate</literal></entry>
+   <entry valign=top>
+        Set Kannel state as 'isolated' (see above). Password required.
+   </entry></row>
+
+   <row><entry><literal>resume</literal></entry>
+   <entry valign=top>
+        Set Kannel state as 'running' if it is suspended or isolated.
+        Password required.
+   </entry></row>
+
+   <row><entry><literal>shutdown</literal></entry>
+   <entry valign=top>
+        Bring down the gateway, by setting state to 'shutdown'. After
+        a shutdown is initiated, there is no other chance to resume
+        normal operation. However, 'status' command still works.
+        Password required. If shutdown is sent for a second time, the
+        gateway is forced down, even if it has still messages in
+        queue.
+   </entry></row>
+  </tbody>
+  </tgroup>
+ </table>
+
+</sect2>
+  
+
+
+</sect1>
+
+
+</chapter>
+
+
+<chapter id="wap-gateway">
+<title>Setting up a WAP Gateway</title>
+
+    <para>This chapter tells you how to set Kannel up as a WAP
+    gateway.</para>
+
+<sect1>
+<title>WAP Gateway Configuration</title>
+
+  <para>To set up WAP Kannel, you have to edit 'core' group in the
+  configuration file, and define 'wapbox' group.</para>
+
+  <para>For 'core' group, you must set following variables:  
+    <literal>wapbox-port</literal> and
+    <literal>wdp-interface-name</literal>. See previous chapter about
+    details of these variables.</para>
+
+  <para>With standard distribution, a sample configuration file
+  <literal>wapkannel.conf</literal> is supplied. You may want to take
+  a look at that when setting up a WAP Kannel.</para>
+
+<sect2>
+<title>Wapbox Configuration</title>
+
+  <para>If you have set <literal>wapbox-port</literal> variable in
+  'core' configuration group, you <emphasis>MUST</emphasis> supply
+  'wapbox' group.</para>
+
+  <para>The simpliest working 'wapbox' group looks like this:
+<programlisting>
+group = wapbox
+bearerbox-host = localhost
+</programlisting>
+
+   There is, however, multiple optional variables for the 'wapbox'
+   group.</para>
+
+<programlisting>
+ group = wapbox
+ #       Mandatory identifier
+ #
+ bearerbox-host = &lt;host&gt;
+ #       The machine in which the bearerbox is. THIS IS TEMPORARY
+ #       VARIABLE, but mandatory right now
+ #
+ log-file = &lt;file-name&gt;
+ log-level = &lt;number 0..5&gt;
+ #       As with bearerbox (core) logfile
+ #
+ timer-freq = &lt;value-in-seconds&gt;
+ #       the frequency how often timers are checked out. Default is 1 
+ #
+ map-url = "http://from.here/ http://some.where/"
+ #       adds a single mapping for the left side URL to the given destination.
+ #       If you append an asterisk `*' to the left side URL, it is prefix
+ #       matched against the incoming URL. Whenever that prefix matches,
+ #       the URL will be replaced completely by the right side. If you
+ #       additionally append an asterisk to the right side URL, the part
+ #       of the incoming URL coming after the prefix, will be appended
+ #       to the right side URL. Thus, for a line:
+ #               map-url = "http://source/* http://destination/*"
+ #       and an incoming URL of "http://source/some/path", the result
+ #       will be "http://destination/some/path"
+ #
+ map-url-max = &lt;number&gt;
+ #       if you need more than one mapping, set this to the highest number
+ #       mapping you need. The default gives you 10 mappings, numbered
+ #       from 0 to 9. default: 9
+ #
+ map-url-0 = "http://from.here/ http://some.where/"
+ #       adds a mapping for the left side URL to the given destination URL.
+ #       Repeat these lines, with 0 replaced by a number up to map-url-max,
+ #       if you need several mappings.
+ #
+ device-home = "http://some.where/"
+ #       adds a mapping for the URL DEVICE:home (as sent by Phone.com browsers)
+ #       to the given destination URL. There is no default mapping.
+ #       NOTE: the mapping is added with both asterisks, as described above
+ #       for the "map-url" setting. Thus, the above example line is
+ #       equivalent to writing
+ #               map-url = "DEVICE:home* http://some.where/*"
+</programlisting>
+</sect2>
+  
 </sect1>
 
 <sect1>
-<title>Using the HTTP interface to send SMS messages</title>
+<title>Running WAP Gateway</title>
 
-	<para>If you have configured Kannel to allow the sendsms
-	service, you can send SMS messages via HTTP, e.g., using a
-	WWW browser. The URL looks like this:
-	
-<programlisting>
-http://smsbox.host.name:port/cgi-bin/sendsms?username=username&amp;
-password=password&amp;from=sender-number&amp;to=receiver-number&amp;
-text=text+of+message+using+URL+encoding+as+necessary
-</programlisting>
-
-	(all of the above needs to be on one line, it's broken into
-	several above so it will fit on the page). Thus, technically,
-	you make a HTTP GET request. This means that all the information
-	is stuffed into the URL. If you want to use this often via a
-	browser, you probably want to make an HTML form for this.</para>
-
-	<para>Username and password fields are spesified in
-	configuration file, as <literal>sendsms-user</literal> groups.
-	See configuration file syntax for more details.</para>
-
-        <para>The user can also define the SMS Center used to send the
-        SMS, by specifying <literal>smsc</literal> variable into
-        HTTP-request. The value for this variable must match a SMSC ID
-        set in Kannel configuration file for target SMS Center
-        connection.</para>
-	
-</sect1>
-
-<sect1>
-<title>Using the HTTP interface to send SMS messages with UDH field</title>
-
-       <para>SMS messages can be sent with optional UDH (user data
-       header) field. Add an 'udh=udh+data' to the URL requested. Note
-       that you should encode all bytes in UDH (and remaining text-field)
-       for UDH to work correctly. An example URL is like this:
-
-<programlisting>
-http://localhost:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
-from=123&amp;to=456&amp;udh=%3a%2f%04&amp;text=%20%00%60%7a%43
-</programlisting>
-
-	</para>
-</sect1> 
-
-
-<sect1>
-<title>Using the HTTP administrative interface to control the gateway</title>
-
-	<para>Kannel allows certain HTTP requests to monitor and control
-	the gateway. These commands are sent to adminstration port
-	defined in configuration file. Details can be found from file
-	<filename>newbb.txt</filename></para>
-
-	<para>Unlike in old version of the bearerbox, in Kannel
-	version 0.9 and onward only password is used for adminstration
-	authentication, so there is no more an username and password
-	combination.</para>
+ <para>WAP Gateway is ran as explained in previous chapter.</para>
 
 </sect1>
 
 </chapter>
 
+
+
 <chapter id="sms-gateway">
-<title>Setting up a SMS gateway</title>
+<title>Setting up a SMS Gateway</title>
 
     <para>This chapter is a more detailed guide to set Kannel up as a
     SMS gateway. There are three parts in the chapter:
@@ -579,12 +915,11 @@ from=123&amp;to=456&amp;udh=%3a%2f%04&amp;text=%20%00%60%7a%43
 	the media to transfer SMS messages to actual
 	phones.</para></listitem>
 
-        <listitem><para><citetitle>SMS-service
-        definations</citetitle>, services for mobile orientated
+        <listitem><para><citetitle>SMS-services</citetitle>, services for mobile orientated
         messages.</para></listitem>
 
-        <listitem><para><citetitle>SMS user definations</citetitle>,
-        for SMS push.</para></listitem>
+        <listitem><para><citetitle>SMS push</citetitle>,
+        configuring and using Kannel SMS push (sendsms) interface</para></listitem>
         </orderedlist>
 
     </para>
@@ -607,7 +942,7 @@ from=123&amp;to=456&amp;udh=%3a%2f%04&amp;text=%20%00%60%7a%43
      hooked up.</para>
 
 <sect2>
-<title>Configuring the SMS center</title>
+<title>Configuring the SMS Center</title>
 
     <para>To set up the SMS center at Kannel, you have to add a smsc
     group into configuration file (see above for configuration
@@ -702,10 +1037,90 @@ url = "http://%S"
 <title>SMS Push</title>
 
    <para>To be able to use SMS Push with Kannel, you need to define 
-    sendsms-port for SMSBox and one or more sendsms-user accounts.
+    <literal>sendsms-port</literal> for smsbox and one or more 
+    <literal>sendsms-user</literal> accounts. All these are put into
+    Kannel configuration file and read during startup of the system.
    </para>
 
-   <para>SMS Push is done via HTTP interface, see above.</para>
+
+<sect2>
+<title>Using the HTTP interface to send SMS messages</title>
+
+	<para>If you have configured Kannel to allow the sendsms
+	service, you can send SMS messages via HTTP, e.g., using a
+	WWW browser. The URL looks something like this:
+	
+<programlisting>
+http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;to=0123456&amp;text=Hello+world
+</programlisting>
+
+         Thus, technically,
+	you make a HTTP GET request. This means that all the information
+	is stuffed into the URL. If you want to use this often via a
+	browser, you probably want to make an HTML form for this.</para>
+
+ <table frame=none>
+  <title>SMS Push (send-sms) CGI Variables</title>
+  <tgroup cols=2>
+  <tbody>
+   <row><entry><literal>username</literal></entry>
+   <entry valign=top>
+        Username or account name. Must be 'username' of the one
+        <literal>sendsms-user</literal> group in Kannel configuration,
+        or results in 'Authorization failed' reply.
+   </entry></row>
+
+   <row><entry><literal>password</literal></entry>
+   <entry valign=top>
+       Password associated to given 'username'. Must match
+ corresponding field in <literal>sendsms-user</literal> group in
+ Kannel configuration, or 'Authorization failed' is returned.
+   </entry></row>
+
+   <row><entry><literal>from</literal></entry>
+   <entry valign=top>
+        Phone number of the sender. This field is usually overridden
+        by the SMS Center, or it can be overridden by
+        <literal>faked-sender</literal> variable in
+        <literal>sendsms-user</literal> group. If this variable is not
+        set, smsbox <literal>global-sender</literal> is used.
+   </entry></row>
+
+   <row><entry><literal>to</literal></entry>
+   <entry valign=top>
+        Phone number of the receiver.
+   </entry></row>
+
+   <row><entry><literal>text</literal></entry>
+   <entry valign=top>
+        Contents of the message, URL encoded as necessary. The content
+        can be more than 160 characters, but then
+        <literal>sendsms-user</literal> group must have
+        <literal>max-messages</literal> set more than 1.
+   </entry></row>
+
+   <row><entry><literal>udh</literal></entry>
+   <entry valign=top>
+         Optional User Data Header (UDH) part of the message. Must be
+         URL encoded.
+   </entry></row>
+
+   <row><entry><literal>smsc</literal></entry>
+   <entry valign=top>
+        Optional guideline of which SMS Center is used to send the
+        message (see above). This cariable can be overridden with
+        <literal>forced-smsc</literal> configuration
+        variable. Likewise, <literal>default-smsc</literal> variable
+        can be used to set the SMSC if it is not set otherwise.
+   </entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
+
+	
+</sect2>
+
 
 </sect1>
 

@@ -4,133 +4,16 @@ This is a draft which is written in plain text. The xml version will
 come later. --Kalle
 
 
-OVERVIEW
-
-The new bearerbox has some modifications to configuration file,
-althought is is mainly identical to the old one. The main difference
-is that 
- a) every group is distinguished by group = type variable
- b) smsbox and wapbox configuration is included in the same 
-    configuration file, instead of seperate files
-
-The point b) is prelude for upcoming dynamic loading of the
-configuration. Until it is done, however, smsbox and wapbox can use a
-separate configuration file, too, but there is no need to do that.
-
-
-CONFIGURATION GROUPS
-
-As in old configuration file, variables are divided into groups which
-are separated with one or more blank lines. So, there is two groups in
-the following configuration:
-
-   smsc = fake
-
-   username = foo
-
-All lines starting with '#' are comments, and are ignored and not
-counted as blank linkes.
-
-As a modification to old configuration, each group MUST now be started 
-with 'group = identifier' variable, to identify it. Althought it is
-not mandatory, it is a good practise to put the group-variable as the
-first one in the group.
-
-Currently used groups are: core, smsc, wapbox, smsbox, sms-service and
-sendsms-user, of which core, wapbox and smsbox whould appear only once
-in configuration file.
-
-
-
+NOTES: Some of the data is now moved to User Guide, and rest will soon
+follow!
 
 CORE GROUP
 
 Core group consists of the main Kannel (bearerbox) configuration
 variables. It must have following variables defined:
 
- group = core
- #       This is always required
- # 
- admin-port = <port-number>
- #	 The port number in which the bearerbox listens to HTTP
- #	 adminstration commands. It is NOT the same as the HTTP
- #	 port of the local www server, just invent any port, but
- #	 must be over 1023 unless you are running Kannel as a
- #       root process (not recommended)
- #
- admin-password = <password>
- #       Password for HTTP admin commands except for status
- #
+<see User Guide>
 
-To start certain modules of the Kannel, following configuration
-variables can be set:
-
- smsbox-port = <port-number>
- #	 This is the port number which the smsboxes, if any, connect.
- #	 As with admin-port, this can be anything you want
- # 
- wapbox-port = <port-number>
- #	 Like smsbox-port, but for wapbox-connections. If not set,
- #       Kannel cannot handle WAP traffic
- # 
- wdp-interface-name = <IP>
- #       If this is set, Kannel listens to WAP UDP packets incoming to
- #	 ports 9200-9208, bound to given IP. If no spesific IP is
- #       needed, use just an asterisk ("*"). If UDP messages are
- #       listened to, wapbox-port variable MUST be set.
-
-For logging and security issues, following optional variables can be
-used:
-
- log-file = <file-name>
- #       A file in which to write a log. This in addition to stdout
- #       and any log file defined in command line
- #
- log-level = <number 0..5>
- #	 Minimum level of logfile events logged. 0 is for debug, 1
- #       info etc.
- #
- access-log = <file-name>
- #       A file in which information about received/sent SMS messages 
- #       is stored.
- #
- box-deny-ip = <IP-list>
- box-allow-ip = <IP-list>
- #       These lists can be used to prevent connection from given IP 
- #       addresses. Each list can have several addresses, each
- #       separated with semicolon (';'). An asterisk ('*') can be used
- #       as a wildcard in a place of any ONE number, so *.*.*.*
- #       matches any IP
- #
- admin-deny-ip = <IP-list>
- admin-deny-ip = <IP-list>
- #       As above, but for adminstration HTTP requests
- #
- unified-prefix = <prefix-list>
- #	 String to unify received phone numbers, for SMSC routing and
- #       to ensure that SMS centers can handle them properly. 
- #       This is applied to 'sender' number when receiving SMS
- #       messages from SMS Center and for 'receiver' number when
- #	 receiving messages from SMSbox (either sendsms message or
- #	  reply to original message). Format is so that first is the
- #       unified prefix, then all prefixes which are replaced by the
- #       unified prefix, separated with comma (','). For example,
- #       for Finland an unified-prefix "+358,00358,0;+,00" should do the trick. 
- #       If there are several unified prefixes, separate their rules with
- #       semicolon (';'), like "+35850,050;+35840,040"
- #
- white-list = <url>
- #       Load a list of accepted senders of SMS messages. If a sender
- #       of an SMS message is not in this list, any message received
- #       from SMS Center is discarded. See notes of phone number
- #       format from numhash.h header file. NOTE: the system has only
- #	 a precision of last 9 or 18 digits of phone numbers, so
- #	 beware
- #
- black-list = <url>
- #       As white-list, but SMS messages from these numbers are
- #       automatically discarded
- 
 To use an HTTP proxy for all HTTP requests, set the following two
 variables:
 
@@ -271,53 +154,7 @@ GSM modem as an SMSC:
 
 WAPBOX GROUP
 
-If Kannel is supporting WAP, it must define wapbox connections.
-They rae defined with following fields, of which some are optional:
-
- group = wapbox
- #       Mandatory identifier
- #
- bearerbox-host = <host>
- #	 The machine in which the bearerbox is. THIS IS TEMPORARY
- #       VARIABLE, but mandatory right now
- #
- log-file = <file-name>
- log-level = <number 0..5>
- #       As with bearerbox (core) logfile
- #
- timer-freq = <value-in-seconds>
- #	 the frequency how often timers are checked out. Default is 1 
- #
- map-url = "http://from.here/ http://some.where/"
- #       adds a single mapping for the left side URL to the given destination.
- #       If you append an asterisk `*' to the left side URL, it is prefix
- #       matched against the incoming URL. Whenever that prefix matches,
- #       the URL will be replaced completely by the right side. If you
- #       additionally append an asterisk to the right side URL, the part
- #       of the incoming URL coming after the prefix, will be appended
- #       to the right side URL. Thus, for a line:
- #               map-url = "http://source/* http://destination/*"
- #       and an incoming URL of "http://source/some/path", the result
- #       will be "http://destination/some/path"
- #
- map-url-max = <number>
- #       if you need more than one mapping, set this to the highest number
- #       mapping you need. The default gives you 10 mappings, numbered
- #       from 0 to 9. default: 9
- #
- map-url-0 = "http://from.here/ http://some.where/"
- #       adds a mapping for the left side URL to the given destination URL.
- #       Repeat these lines, with 0 replaced by a number up to map-url-max,
- #       if you need several mappings.
- #
- device-home = "http://some.where/"
- #       adds a mapping for the URL DEVICE:home (as sent by Phone.com browsers)
- #       to the given destination URL. There is no default mapping.
- #       NOTE: the mapping is added with both asterisks, as described above
- #       for the "map-url" setting. Thus, the above example line is
- #       equivalent to writing
- #               map-url = "DEVICE:home* http://some.where/*"
- #
+<see User Guide>
 
 Note that as new bearerbox is not yet supporting dynamic
 configurations nor uploading them into sms and wapboxes, sms and
