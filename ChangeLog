@@ -1,4 +1,7 @@
 2003-11-21  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_smscconn.c: adding logging of msg->sms.binfo field to access-log.
+
+2003-11-21  Stipe Tolj  <tolj@wapme-systems.de>
     * wap/wtp_resp_states.def: fixing PANIC output in case object is larger
       then maximum SAR limit of 256 packets.
       Thanks to "Vjacheslav Chekushin" <slava@lmt.lv> for providing patch.

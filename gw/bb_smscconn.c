@@ -128,13 +128,14 @@ static void log_sms(SMSCConn *conn, Msg *sms, char *message)
 	octstr_binary_to_hex(text, 1);
     octstr_binary_to_hex(udh, 1);
 
-    alog("%s [SMSC:%s] [SVC:%s] [ACT:%s] [from:%s] [to:%s] [flags:%d:%d:%d:%d:%d] [msg:%d:%s]"
+    alog("%s [SMSC:%s] [SVC:%s] [ACT:%s] [BINF:%s] [from:%s] [to:%s] [flags:%d:%d:%d:%d:%d] [msg:%d:%s]"
 	" [udh:%d:%s]",
 	 message,
 	 conn ? (smscconn_id(conn) ? octstr_get_cstr(smscconn_id(conn)) : "")
 	 : "",
 	 sms->sms.service ? octstr_get_cstr(sms->sms.service) : "",
 	 sms->sms.account ? octstr_get_cstr(sms->sms.account) : "",
+	 sms->sms.binfo ? octstr_get_cstr(sms->sms.binfo) : "",
 	 sms->sms.sender ? octstr_get_cstr(sms->sms.sender) : "",
 	 sms->sms.receiver ? octstr_get_cstr(sms->sms.receiver) : "",
 	 sms->sms.mclass, sms->sms.coding, sms->sms.mwi, sms->sms.compress,
