@@ -1,4 +1,7 @@
 2005-01-28  Stipe Tolj  <stolj@wapme.de> 
+    * doc/userguide/userguide.xml: fixed personal email reference.
+
+2005-01-28  Stipe Tolj  <stolj@wapme.de> 
     * test/hello.wml: fixed obviously wml compiling break for 
       checks/check_fakewap.sh.
 
