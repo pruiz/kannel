@@ -1,3 +1,6 @@
+2003-10-22  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/http.c: applied patch from bug #78.
+
 2003-10-20  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/accesslog.c, gwlib/gwlib.c, gwlib/log.[ch]: applied alog-log-rc-reopen.diff patch.
       This patch should fix race conditions in the accesslog and log module while reopening 

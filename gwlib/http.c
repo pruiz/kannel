@@ -2034,9 +2034,8 @@ static void server_thread(void *dummy)
         }
 
         if ((ret = gwthread_poll(tab, n, -1.0)) == -1) {
-            if (errno == EINTR) /* a signal was caught during poll() function */
-                break;
-            warning(0, "HTTP: gwthread_poll failed.");
+            if (errno != EINTR) /* a signal was caught during poll() function */
+                warning(0, "HTTP: gwthread_poll failed.");
             continue;
         }
 
