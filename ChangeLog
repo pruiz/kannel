@@ -1,3 +1,9 @@
+2001-12-28  Stipe Tolj  <tolj@wapme-systems.de>
+    * configure.in: fixing the ls option --full-time which is not 
+      supported on Solaris 2.6.
+    * configure: the resulting output of configure.in produced by
+      autoconf 2.13.
+ 
 2001-12-27  Stipe Tolj  <tolj@wapme-systems.de>
     * configure.in: re-wrote checking for openssl library and headers
       and a couple of cosmetic clean-ups and re-arrangement of single 
