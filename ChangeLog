@@ -1,3 +1,8 @@
+2000-02-16    <rpr@rpr.wapit.com>
+
+	* gw/wsp.c (unpack_caps): fixed one defination error, added extra
+	debug for unknown capabilities
+
 Wed Feb 16 00:04:03 2000  Lars Wirzenius  <liw@iki.fi>
 
 	* doc/userguide/userguide.xml: Started filling in. Nothing useful
