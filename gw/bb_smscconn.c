@@ -558,6 +558,9 @@ int smsc2_stop_smsc(Octstr *id)
     SMSCConn *conn;
     long i = -1;
 
+    if (!smsc_running)
+        return -1;
+
     gw_rwlock_rdlock(&smsc_list_lock);
     /* find the specific smsc via id */
     while((i = smsc2_find(id, ++i)) != -1) {
@@ -581,6 +584,9 @@ int smsc2_restart_smsc(Octstr *id)
     Octstr *smscid = NULL;
     long i = -1;
     int num = 0;
+
+    if (!smsc_running)
+        return -1;
 
     gw_rwlock_wrlock(&smsc_list_lock);
     /* find the specific smsc via id */
@@ -637,7 +643,6 @@ int smsc2_restart_smsc(Octstr *id)
     /* wake-up the router */
     if (router_thread >= 0)
         gwthread_wakeup(router_thread);
-
     
     return 0;
 }
@@ -647,14 +652,18 @@ void smsc2_resume(void)
     SMSCConn *conn;
     long i;
 
+    if (!smsc_running)
+        return;
+
     gw_rwlock_rdlock(&smsc_list_lock);
     for (i = 0; i < list_len(smsc_list); i++) {
         conn = list_get(smsc_list, i);
         smscconn_start(conn);
     }
     gw_rwlock_unlock(&smsc_list_lock);
+    
     if (router_thread >= 0)
-	gwthread_wakeup(router_thread);
+        gwthread_wakeup(router_thread);
 }
 
 
@@ -662,6 +671,9 @@ void smsc2_suspend(void)
 {
     SMSCConn *conn;
     long i;
+
+    if (!smsc_running)
+        return;
 
     gw_rwlock_rdlock(&smsc_list_lock);
     for (i = 0; i < list_len(smsc_list); i++) {
@@ -707,6 +719,9 @@ void smsc2_cleanup(void)
 {
     SMSCConn *conn;
     long i;
+
+    if (!smsc_running)
+        return;
 
     debug("smscconn", 0, "final clean-up for SMSCConn");
     

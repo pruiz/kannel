@@ -1,3 +1,7 @@
+2004-11-18  Stipe Tolj  <stolj@wapme.de>
+    * gw/bb_smscconn.c: fixing bug #160, causing segfault on cygwin while
+      using uninited rwlock functions.
+
 2004-11-15 Alexander Malysh <amalysh at kannel.org>
     * doc/examples/dlr-*.conf: fixed group name from e.g. dlr-mysql -> dlr-db.
       Thanks to James Coleman jamesc_at_doolin.com for pointing to this.
