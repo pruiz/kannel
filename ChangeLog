@@ -1,3 +1,19 @@
+2001-11-09 Aarno Syvänen <aarno@wiral.com>
+    * gw/pushkannel.conf: Updated the sample configuration file
+	
+    * test/test_ppg.c: Handle http level responses. Added a switch for sending
+      authorization in headers. Response server challenge with authorization.
+	
+    * test/test_http_server.c: Answer whitelist and blacklist requests with
+      a hardcoded response.
+	
+    * gw/wap_push_ppg_pushuser.c: Rewrote. Do not close connection ever. Treat
+      username and password as a pair.
+	
+    * gw/wap_push_ppg.c: Fixed a memory leak. A bugfix.
+	
+    * gwlib/cfg.def: Added configuration variables.
+
 2001-11-08 Jörg Pommnitz <jpo@condat.de>
     * gateway/gw/wap_push_ppg.c, gateway/test/test_ppg.c:
       Add support for BASE64 encoded WAPPush content.
