@@ -1,3 +1,10 @@
+2003-10-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_http.c: added forwarding of 'binfo' CGI variable in Kannel
+      type.
+    * gw/smsbox.c: added X-Kannel-BInfo header for sms-service.
+      Thanks to Adi Prasaja <adi@imt.co.id> for this patch.
+      [Msg-ID: <20031019021038.GA18965@imt.co.id>]
+
 2003-10-17  Alexander Malysh  <a.malysh@centrium.de>
     * gw/smsc/smsc_smpp.c: applied smsc_smpp.c-allow-plus.diff. This patch 
       implements workaround for buggy SMSC's that send '+' in front of source

@@ -424,6 +424,10 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 	    *account = octstr_duplicate(val);
 	    octstr_strip_blanks(*account);
 	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-BInfo")) == 0) {
+            *binfo = octstr_duplicate(val);
+            octstr_strip_blanks(*binfo);
+	}
 	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Coding")) == 0) {
     	    sscanf(octstr_get_cstr(val),"%d", coding);
 	}

@@ -299,6 +299,8 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 	octstr_format_append(url, "&mwi=%d", sms->sms.mwi);
     if (sms->sms.account) /* prepend account with local username */
 	octstr_format_append(url, "&account=%E:%E", sms->sms.service, sms->sms.account);
+    if (sms->sms.binfo) /* prepend billing info */
+	octstr_format_append(url, "&binfo=%S", sms->sms.binfo);
     if (sms->sms.smsc_id) /* proxy the smsc-id to the next instance */
 	octstr_format_append(url, "&smsc=%S", sms->sms.smsc_id);
     if (sms->sms.dlr_url) {
@@ -341,7 +343,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 			       List *headers, Octstr *body, List *cgivars)
 {
     ConnData *conndata = conn->data;
-    Octstr *user, *pass, *from, *to, *text, *udh, *account, *tmp_string;
+    Octstr *user, *pass, *from, *to, *text, *udh, *account, *binfo, *tmp_string;
     Octstr *retmsg;
     int	mclass, mwi, coding, validity, deferred;
     List *reply_headers;
@@ -356,7 +358,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     text = http_cgi_variable(cgivars, "text");
     udh = http_cgi_variable(cgivars, "udh");
     account = http_cgi_variable(cgivars, "account");
-
+    binfo = http_cgi_variable(cgivars, "binfo");
     tmp_string = http_cgi_variable(cgivars, "flash");
     if(tmp_string) {
 	sscanf(octstr_get_cstr(tmp_string),"%d", &mclass);
@@ -417,7 +419,8 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 	msg->sms.coding = coding;
 	msg->sms.validity = validity;
 	msg->sms.deferred = deferred;
-    msg->sms.account = octstr_duplicate(account);
+	msg->sms.account = octstr_duplicate(account);
+	msg->sms.binfo = octstr_duplicate(binfo);
 	ret = bb_smscconn_receive(conn, msg);
 	if (ret == -1)
 	    retmsg = octstr_create("Not accepted");
