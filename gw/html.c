@@ -249,19 +249,3 @@ Octstr *html_to_sms(Octstr *html)
     octstr_strip_blanks(sms);
     return sms;
 }
-
-
-Octstr *html_strip_prefix_and_suffix(Octstr *html, char *prefix, char *suffix)
-{
-    char *p, *q, *data;
-
-    data = octstr_get_cstr(html);
-    p = str_case_str(data, prefix);
-    if (p == NULL)
-        return octstr_duplicate(html);
-    p += strlen(prefix);
-    q = str_case_str(p, suffix);
-    if (q == NULL)
-        return octstr_duplicate(html);
-    return octstr_copy(html, p - data, q - p);
-}

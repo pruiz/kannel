@@ -20,6 +20,8 @@ bbpid=$!
 sleep 2
 gw/smsbox -v $loglevel gw/smskannel.conf > check_sendsms_sms.log 2>&1 &
 
+sleep 2
+
 i=0
 while [ $i -lt $times ]
 do

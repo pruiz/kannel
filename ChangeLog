@@ -1,5 +1,14 @@
 2000-11-28  Lars Wirzenius  <liw@iki.fi>
 
+	* checks/check_sendsms.sh: Wait a couple of seconds before making
+	http requests so that the smsbox has time to start up properly.
+	
+	* gw/html.c: Moved the html prefix and suffix stripping function
+	into smsbox_req.c, since it doesn't really do anything with html,
+	just octstrs. Cleaned up url_result_thread slightly.
+
+2000-11-28  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsbox_req.c: Accept WML responses as well as plain text
 	and HTML responses.
 
