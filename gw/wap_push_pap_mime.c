@@ -84,7 +84,7 @@ int mime_parse(Octstr *boundary, Octstr *mime_content, Octstr **pap_content,
 
     ret = -1;
     if ((ret = parse_encapsulation(&mime_content, boundary, push_data, 
-                            content_headers, rdf_content)) < 0) {
+                                   content_headers, rdf_content)) < 0) {
         warning(0, "erroneous content entity (push message)");
         return 0;
     } else if (ret == 0) {
@@ -264,15 +264,15 @@ last_part:
  *         -1, when error
  */
 static int parse_encapsulation(Octstr **mime_content, Octstr *boundary, 
-                                Octstr **push_data, List **content_headers,
-                                Octstr **rdf_content)
+                               Octstr **push_data, List **content_headers,
+                               Octstr **rdf_content)
 {
     int ret;
 
     ret = -1;
     if ((ret = parse_body_part(mime_content, boundary, push_data)) < 0)
         return -1;
-    if (pass_data_headers(push_data, content_headers) < 0)
+    if (pass_data_headers(push_data, content_headers) == 0)
         return -1;
     if (ret == 0)
         return 0;
@@ -282,6 +282,9 @@ static int parse_encapsulation(Octstr **mime_content, Octstr *boundary,
     return 1;
 }
 
+/*
+ * Split os2 from os1, boundary being boundary_pos.
+ */
 static void octstr_split_by_pos(Octstr **os1, Octstr **os2, 
                                 long boundary_pos)
 {
@@ -330,14 +333,10 @@ static int check_control_headers(Octstr **body_part)
 {
     if (check_control_content_type_header(body_part) == 0)
         return 0;
-    if (drop_optional_header(body_part, "Content-Transfer-Encoding:") == 0)
-        return 0;
-    if (drop_optional_header(body_part, "Content-ID:") == 0)
-        return 0;
-    if (drop_optional_header(body_part, "Content-Description:") == 0)
-        return 0;
-    if (drop_extension_headers(body_part) == 0)
-        return 0;
+    drop_optional_header(body_part, "Content-Transfer-Encoding:");
+    drop_optional_header(body_part, "Content-ID:");
+    drop_optional_header(body_part, "Content-Description:");
+    drop_extension_headers(body_part);
 
     return 1;
 }
@@ -460,29 +459,32 @@ static long parse_field_name(Octstr *pap_content, long pos)
  * Transfer entity headers of a body part (it is, from the content entity) 
  * to a header list. Push Message, chapter 6.2.1.10 states that Content-Type
  * header is mandatory. 
+ * Return 0 when error, 1 otherwise. In addition, return the modified body
+ * part and content headers.
  */
 static int pass_data_headers(Octstr **body_part, List **data_headers)
 {
-    if (check_data_content_type_header(body_part, data_headers) == 0)
-        return 0;
-        
-    if (pass_optional_header(body_part, "Content-Transfer-Encoding:", 
-                             data_headers) == 0)
-        return 0;
-    if (pass_optional_header(body_part, "Content-ID:", data_headers) == 0)
-        return 0;
-    if (pass_optional_header(body_part, "Content-Description:", 
-                             data_headers) == 0)
-        return 0;
-    if (pass_extension_headers(body_part, data_headers) == 0)
-        return 0;
+    *data_headers = http_create_empty_headers();
 
+    if (check_data_content_type_header(body_part, data_headers) == 0) {
+        warning(0, "MIME: pass_data_headers: Content-Type header missing"); 
+        return 0;
+    }
+        
+    pass_optional_header(body_part, "Content-Transfer-Encoding:", 
+                         data_headers);
+    pass_optional_header(body_part, "Content-ID:", data_headers);
+    pass_optional_header(body_part, "Content-Description:", 
+                         data_headers);
+    pass_extension_headers(body_part, data_headers);
+   
     return 1;
 }
 
 /*
  * Checks if body_part contains a Content-Type header. Tranfers this header to
  * a list content_headers.
+ * Return 1, when Content-Type headers was found, 0 otherwise
  */
 static int check_data_content_type_header(Octstr **body_part, 
                                           List **content_headers)
@@ -494,15 +496,17 @@ static int check_data_content_type_header(Octstr **body_part,
     header_pos = next_header_pos = -1;
     content_header = octstr_create("Content-Type");
     
-    if ((header_pos = octstr_search(*body_part, content_header, 0)) < 0)
+    if ((header_pos = octstr_search(*body_part, content_header, 0)) < 0) {
         goto error;
-
+    }
     if ((next_header_pos = pass_field_value(body_part, &content_header, 
-             header_pos + octstr_len(content_header))) < 0)
+	    header_pos + octstr_len(content_header))) < 0) {
         goto error;
+    }
     if ((next_header_pos = 
-	     parse_terminator(*body_part, next_header_pos)) < 0)
+	     parse_terminator(*body_part, next_header_pos)) < 0) {
         goto error;
+    }
 
     octstr_delete(*body_part, header_pos, next_header_pos - header_pos);
     list_append(*content_headers, octstr_duplicate(content_header));
@@ -515,6 +519,9 @@ error:
     return 0;
 }
 
+/*
+ * Return 0 when not found, 1 otherwise.
+ */
 static int pass_optional_header(Octstr **body_part, char *name, 
                                 List **content_headers)
 {
@@ -526,7 +533,7 @@ static int pass_optional_header(Octstr **body_part, char *name,
     osname = octstr_imm(name);
 
     if ((content_pos = octstr_search(*body_part, octstr_imm(name), 0)) < 0)
-        return 1;
+        return 0;
     if ((next_header_pos = pass_field_value(body_part, &osname, 
 	     content_pos + octstr_len(osname))) < 0)
         return 0;   

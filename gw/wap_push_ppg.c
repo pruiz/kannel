@@ -839,12 +839,6 @@ static void response_push_message(PPGPushMachine *pm, long code)
         octstr_duplicate(pm->pi_push_id);
     pap_event->u.Push_Response.sender_name = tell_ppg_name();
     pap_event->u.Push_Response.reply_time = set_time();
-/*
- * Data to generate response result, from 9.3.2. No more progress notes for 
- * current pushed message.
- */
-    pap_event->u.Push_Response.code = code;
-    pap_event->u.Push_Response.desc = describe_code(code);
 
     dispatch_to_pap(pap_event);
 }
@@ -970,6 +964,7 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
 
     (**e).u.Push_Message.push_data = content.body;
     octstr_destroy(content.charset);
+    /*octstr_destroy(content.type);*/
 
     debug("wap.push.ppg", 0, "PPG: push message content and headers valid");
     return 1;
@@ -1213,6 +1208,7 @@ struct description_t {
 typedef struct description_t description_t;
 
 static description_t pap_desc[] = {
+    { PAP_OK, "The request succeeded"},
     { PAP_ACCEPTED_FOR_PROCESSING, "The request has been accepted for"
                                    " processing"},
     { PAP_BAD_REQUEST, "Not understood due to malformed syntax"},
@@ -1221,9 +1217,14 @@ static description_t pap_desc[] = {
     { PAP_CAPABILITIES_MISMATCH, "Capabilities assumed by PI were not"
                                  "  acceptable for the client specified"},
     { PAP_DUPLICATE_PUSH_ID, "Push id supplied was not unique"},
+    { PAP_INTERNAL_SERVER_ERROR, "Server could not fulfill the request due"
+                                 " to an internal error"},
     { PAP_TRANSFORMATION_FAILURE, "PPG was unable to perform a transformation"
                                   " of the message"},
     { PAP_REQUIRED_BEARER_NOT_AVAILABLE, "Required bearer not available"},
+    { PAP_SERVICE_FAILURE, "The service failed. The client may re-attempt"
+                           " the operation"},
+    { PAP_CLIENT_ABORTED, "The client aborted the operation. No reason given"},
     { WSP_ABORT_USERREQ, "Wsp requested abort"},
     { WSP_ABORT_USERRFS, "Wsp refused push message. Do not try again"},
     { WSP_ABORT_USERPND, "Push message cannot be delivered to intended"
@@ -1394,14 +1395,13 @@ static PPGPushMachine *abort_delivery(PPGSessionMachine *sm)
     code = PAP_CAPABILITIES_MISMATCH;
     
     while (list_len(sm->push_machines) > 0) {
-        pm = list_get(sm->push_machines, i);
+        pm = list_get(sm->push_machines, 0);
         push_machine_assert(pm);
 
         pm = update_push_data_with_attribute(&sm, pm, reason, PAP_ABORTED);
         response_push_message(pm, code);
 
         remove_push_data(sm, pm, sm == NULL);
-        ++i;
     }
 
     return pm;

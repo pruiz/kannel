@@ -70,6 +70,7 @@ static pap_attributes_t pap_attributes[] = {
     { "source-reference", NULL },
     { "progress-notes-requested", "true" },
     { "progress-notes-requested", "false" },
+    { "ppg-notify-requested-to", NULL },
     { "address-value", NULL },
     { "priority", "high" },
     { "priority", "medium" },
@@ -101,6 +102,23 @@ static pap_attributes_t pap_attributes[] = {
 };
 
 #define NUM_ATTRIBUTES sizeof(pap_attributes)/sizeof(pap_attributes[0])
+
+/*
+ * Status codes are defined in PAP, chapter 9.13.
+ */
+static int pap_codes[] = {
+    PAP_ACCEPTED_FOR_PROCESSING,
+    PAP_BAD_REQUEST,
+    PAP_FORBIDDEN,
+    PAP_ADDRESS_ERROR,
+    PAP_CAPABILITIES_MISMATCH,
+    PAP_DUPLICATE_PUSH_ID,
+    PAP_TRANSFORMATION_FAILURE,
+    PAP_REQUIRED_BEARER_NOT_AVAILABLE,
+    PAP_ABORT_USERPND
+};
+
+#define NUM_CODES sizeof(pap_codes)/sizeof(pap_codes[0])
 
 /*
  * Possible bearer types. These are defined in WDP, appendix C.
@@ -158,6 +176,20 @@ static int parse_attr_value(Octstr *element_name, Octstr *attr_name,
                             Octstr *attr_value, WAPEvent **e);
 static int set_attribute_value(Octstr *element_name, Octstr *attr_value, 
                                Octstr *attr_name, WAPEvent **e);
+static int return_flag(Octstr *ros);
+static void wap_event_accept_or_create(Octstr *element_name, WAPEvent **e);
+static int parse_push_message_value(Octstr *attr_name, Octstr *attr_value,
+                                     WAPEvent **e);
+static int parse_address_value(Octstr *attr_name, Octstr *attr_value, 
+                               WAPEvent **e);
+static int parse_quality_of_service_value(Octstr *attr_name, 
+                                          Octstr *attr_value, WAPEvent **e);
+static int parse_push_response_value(Octstr *attr_name, Octstr *attr_value,
+                                     WAPEvent **e);
+static int parse_progress_note_value(Octstr *attr_name, Octstr *attr_value,
+                                     WAPEvent **e);
+static int parse_bad_message_response_value(Octstr *attr_name, 
+                                            Octstr *attr_value, WAPEvent **e);
 static Octstr *parse_date(Octstr *attr_value);
 static int parse_code(Octstr *attr_value);
 static Octstr *parse_bearer(Octstr *attr_value);
@@ -227,20 +259,23 @@ int pap_compile(Octstr *pap_content, WAPEvent **e)
     int ret;
 
     if (octstr_search_char(pap_content, '\0', 0) != -1) {
-        warning(0, "PUSH_PAP: compiler: pap source contained a \\0 character");
+        warning(0, "PAP COMPILER: pap_compile: pap source contained a \\0"
+                   " character");
         return -2;
     }
 
     octstr_strip_blanks(pap_content);
     oslen = octstr_len(pap_content);
     doc_p = xmlParseMemory(octstr_get_cstr(pap_content), oslen);
-    if (doc_p == NULL) 
+    if (doc_p == NULL) {
         goto error;
+    }
 
-    if ((ret = parse_document(doc_p, e)) < 0) 
+    if ((ret = parse_document(doc_p, e)) < 0) { 
         goto parserror;
-    xmlFreeDoc(doc_p);
+    }
 
+    xmlFreeDoc(doc_p);
     return 0;
 
 parserror:
@@ -250,7 +285,7 @@ parserror:
     return ret;
 
 error:
-    warning(0, "PUSH_PAP: pap compiler: parse error in pap source");
+    warning(0, "PAP COMPILER: pap_compile: parse error in pap source");
     xmlFreeDoc(doc_p);
     wap_event_destroy(*e);
     *e = NULL;
@@ -296,8 +331,9 @@ static int parse_node(xmlNodePtr node, WAPEvent **e)
     int ret;
 
     switch (node->type) {
-    case XML_COMMENT_NODE:        /* ignore comments and pi nodes */
+    case XML_COMMENT_NODE:        /* ignore text, comments and pi nodes */
     case XML_PI_NODE:
+    case XML_TEXT_NODE:
     break;
 
     case XML_ELEMENT_NODE:
@@ -306,7 +342,7 @@ static int parse_node(xmlNodePtr node, WAPEvent **e)
     break;
 
     default:
-        error(0, "PUSH_PAP: pap compiler: Unknown XML node in PAP source");
+        error(0, "PAP COMPILER: parse_node: Unknown XML node in PAP source");
         return -2;
     }
 
@@ -413,14 +449,15 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
 	goto parsed;
     }
 
-    while (octstr_compare(attr_name, nameos) == 0) {
+    while (octstr_compare(attr_name, 
+            nameos = octstr_imm(pap_attributes[i].name)) == 0) {
         if (octstr_compare(value, octstr_imm(pap_attributes[i].value)) == 0)
 	    break;
         ++i;
     }
 
     if (octstr_compare(attr_name, nameos) != 0)
-        goto ok;
+        goto error;
 
 /*
  * Check that the value of the attribute is one enumerated for this attribute
@@ -443,42 +480,172 @@ parsed:
     octstr_destroy(attr_name);
     octstr_destroy(value);
     return ret;
-
-ok:
-    octstr_destroy(attr_name);
-    octstr_destroy(value);
-    return 0;
 }
 
-/*
- * Validates non-enumeration attributes and stores their value to a newly
- * created wap event e. (Even when attribute value parsing was not success-
- * full)
- * Some values are just validated - their value is not used by the event. 
- * Character data does not always require validation. Value types of attribu-
- * tes are defined in PAP, chapter 9. Note that multiple addresses are not yet
- * supported.
- *
- * Returns 0, when success,
- *        -1, when a non-implemented feature requested.
- *        -2, when an error
- * In addition, returns the newly created wap event containing attribute value
- * from pap source, if successfull; filler value if not (mandatory fields of 
- * a wap event must be non-NULL).
+/* 
+ * Value parsing functions return the newly created wap event containing 
+ * attribute value from pap source, if successfull; filler value if not 
+ * (mandatory fields of a wap event must be non-NULL). Value types of attribu-
+ * tes are defined in PAP, chapter 9.  
  */
-static int parse_attr_value(Octstr *element_name, Octstr *attr_name, 
-                            Octstr *attr_value, WAPEvent **e)
+
+static int parse_push_message_value(Octstr *attr_name, Octstr *attr_value, 
+                                    WAPEvent **e)
+{
+    Octstr *ros;
+
+    ros = octstr_imm("erroneous");
+    if (octstr_compare(attr_name, octstr_imm("push-id")) == 0) {
+	(**e).u.Push_Message.pi_push_id = octstr_duplicate(attr_value);
+        return 0;
+    } else if (octstr_compare(attr_name, 
+             octstr_imm("deliver-before-timestamp"))== 0) {
+	(**e).u.Push_Message.deliver_before_timestamp = 
+             (ros = parse_date(attr_value)) ? 
+             octstr_duplicate(attr_value) : NULL;  
+        return return_flag(ros);
+    } else if (octstr_compare(attr_name, 
+             octstr_imm("deliver-after-timestamp")) == 0) {
+	(**e).u.Push_Message.deliver_after_timestamp = 
+             (ros = parse_date(attr_value)) ? 
+             octstr_duplicate(attr_value) : NULL;
+        return return_flag(ros);
+    } else if (octstr_compare(attr_name, 
+             octstr_imm("source-reference")) == 0) {
+	(**e).u.Push_Message.source_reference = octstr_duplicate(attr_value);
+        return 0;
+    } else if (octstr_compare(attr_name, 
+             octstr_imm("ppg-notify-requested-to")) == 0) {
+	(**e).u.Push_Message.ppg_notify_requested_to = 
+             octstr_duplicate(attr_value);
+        return 0;
+    }
+
+    return -2;
+}  
+
+static int parse_address_value(Octstr *attr_name, Octstr *attr_value, 
+                               WAPEvent **e)
+{
+    int ret;
+
+    ret = -2;
+    if (octstr_compare(attr_name, octstr_imm("address-value")) == 0) {
+	(**e).u.Push_Message.address_value = 
+             (ret = parse_address(&attr_value)) > -2 ? 
+             octstr_duplicate(attr_value) : octstr_imm("not successfull");
+        return ret;
+    } 
+
+    return -2;
+}
+
+static int parse_quality_of_service_value(Octstr *attr_name, 
+                                          Octstr *attr_value, WAPEvent **e)
+{
+    Octstr *ros;
+
+    ros = octstr_imm("erroneous");
+    if (octstr_compare(attr_name, octstr_imm("network")) == 0) {
+	(**e).u.Push_Message.network = (ros = parse_network(attr_value)) ? 
+            octstr_duplicate(ros) : NULL;
+            return return_flag(ros);
+    }
+    if (octstr_compare(attr_name, octstr_imm("bearer")) == 0) {
+	(**e).u.Push_Message.bearer = (ros = parse_bearer(attr_value)) ? 
+            octstr_duplicate(ros) : NULL;
+        return return_flag(ros);
+    }
+
+    return -2;
+}
+
+static int parse_push_response_value(Octstr *attr_name, Octstr *attr_value,
+                                     WAPEvent **e)
 {
     Octstr *ros;
     int ret;
 
     ret = -2;
+    ros = octstr_imm("erroneous");
+
+    if (octstr_compare(attr_name, octstr_imm("push-id")) == 0) {
+	(**e).u.Push_Response.pi_push_id = octstr_duplicate(attr_value);
+        return 0;
+    } else if (octstr_compare(attr_name, octstr_imm("sender-address")) == 0) {
+	(**e).u.Push_Response.sender_name = octstr_duplicate(attr_value);
+        return 0;
+    } else if (octstr_compare(attr_name, octstr_imm("reply-time")) == 0) {
+	(**e).u.Push_Response.reply_time = (ros = parse_date(attr_value)) ?
+             octstr_duplicate(attr_value) : NULL;
+        return return_flag(ros);
+    } else if (octstr_compare(attr_name, octstr_imm("sender-name")) == 0) {
+	(**e).u.Push_Response.sender_address = octstr_duplicate(attr_value);
+        return 0;
+    }
+
+    return -2;
+}
+
+static int parse_progress_note_value(Octstr *attr_name, Octstr *attr_value,
+                                     WAPEvent **e)
+{
+    Octstr *ros;
+    int ret;
+
+    ret = -2;
+    ros = octstr_imm("erroneous");
+
+    if (octstr_compare(attr_name, octstr_imm("stage")) == 0) {
+        (**e).u.Progress_Note.stage = 
+             (ret = parse_state(attr_value)) ? ret : 0;
+        return ret;
+    } else if (octstr_compare(attr_name, octstr_imm("note")) == 0) {
+	(**e).u.Progress_Note.note = octstr_duplicate(attr_value);
+        return 0;
+    } else if (octstr_compare(attr_name, octstr_imm("time")) == 0) {
+	(**e).u.Progress_Note.time = (ros = parse_date(attr_value)) ?
+             octstr_duplicate(attr_value) : NULL;
+	return return_flag(ros);
+    }
+
+    return -2;
+}
+
+static int parse_bad_message_response_value(Octstr *attr_name, 
+                                            Octstr *attr_value, WAPEvent **e)
+{
+    int ret;
+
+    ret = -2;
+    if (octstr_compare(attr_name, octstr_imm("code")) == 0) {
+	(**e).u.Bad_Message_Response.code = parse_code(attr_value);
+        return 0;
+    } else if (octstr_compare(attr_name, octstr_imm("desc")) == 0) {
+	(**e).u.Bad_Message_Response.desc = octstr_duplicate(attr_value);
+        return 0;
+    } else if (octstr_compare(attr_name, 
+	    octstr_imm("bad-message-fragment")) == 0) {
+        (**e).u.Bad_Message_Response.bad_message_fragment = 
+            octstr_duplicate(attr_value);
+        return 0;
+    }
+
+    return -2;
+}
 
 /*
- * Do not create multiple events
+ * Do not create multiple events. If *e points to NULL, we have not yet creat-
+ * ed a wap event.
+ * Some values are just validated - their value is not used by the event. 
+ * Character data does not always require validation. Note that multiple add-
+ * resses are not yet supported.
  */
-    if (octstr_compare(element_name, octstr_imm("push-message")) == 0 &&
-            *e == NULL) {         
+
+static void wap_event_accept_or_create(Octstr *element_name, WAPEvent **e)
+{
+    if (octstr_compare(element_name, octstr_imm("push-message")) == 0 
+            && *e == NULL) {         
         *e = wap_event_create(Push_Message); 
     } else if (octstr_compare(element_name, octstr_imm("push-response")) == 0 
             && *e == NULL) {
@@ -486,128 +653,52 @@ static int parse_attr_value(Octstr *element_name, Octstr *attr_name,
     } else if (octstr_compare(element_name, octstr_imm("progress-note")) == 0 
             && *e == NULL) {
         *e = wap_event_create(Progress_Note);
+    } else if (octstr_compare(element_name, 
+            octstr_imm("badmessage-response")) == 0 && *e == NULL) {
+      *e = wap_event_create(Bad_Message_Response);
     } 
+}
+
+static int return_flag(Octstr *ros)
+{
+    if (ros) {
+        return 0;
+    } else {
+        return -2;
+    }
+}
+
+/*
+ * Validates non-enumeration attributes and stores their value to a newly
+ * created wap event e. (Even when attribute value parsing was not success-
+ * full.)
+ * Returns 0, when success,
+ *        -1, when a non-implemented feature requested.
+ *        -2, when an error
+ * In addition, return event as created by subroutines.
+ */
+static int parse_attr_value(Octstr *element_name, Octstr *attr_name, 
+                            Octstr *attr_value, WAPEvent **e)
+{
+    wap_event_accept_or_create(element_name, e);
 
     if (octstr_compare(element_name, octstr_imm("push-message")) == 0) {
-        if (octstr_compare(attr_name, octstr_imm("push-id")) == 0) {
-	    if ((ros = octstr_duplicate(attr_value)) != NULL) {
-	        (**e).u.Push_Message.pi_push_id = ros;
-                return 0;
-            } else {
-	        (**e).u.Push_Message.pi_push_id = octstr_imm("erroneous");
-	        return -2;
-            }
-        } else if (octstr_compare(attr_name, 
-                                 octstr_imm("deliver-before-timestamp"))== 0) {
-	    if ((ros = parse_date(attr_value)) != NULL) {
-	        (**e).u.Push_Message.deliver_before_timestamp = 
-                     octstr_duplicate(ros);
-                return 0;
-            } else
-	        return -2;
-        } else if (octstr_compare(attr_name, 
-                                 octstr_imm("deliver-after-timestamp")) == 0) {
-	    if ((ros = parse_date(attr_value)) != NULL) {
-	        (**e).u.Push_Message.deliver_after_timestamp = 
-                     octstr_duplicate(ros);
-                return 0;
-            } else
-	        return -2;
-        } else if (octstr_compare(attr_name, 
-                                 octstr_imm("source-reference")) == 0) {
-	    if ((ros = octstr_duplicate(attr_value)) != NULL) {
-	        (**e).u.Push_Message.source_reference = ros;
-		return 0;
-            } else
-	        return -2;
-        } else if (octstr_compare(attr_name, 
-                                 octstr_imm("ppg-notify-requested-to")) == 0) {
-	    if ((ros = octstr_duplicate(attr_value)) != NULL) {
-	        (**e).u.Push_Message.ppg_notify_requested_to = ros;
-                return 0;
-            } else
-	        return -2;
-        }
-    
+        return parse_push_message_value(attr_name, attr_value, e);
     } else if (octstr_compare(element_name, octstr_imm("address")) == 0) {
-        if (octstr_compare(attr_name, octstr_imm("address-value")) == 0) {
-	    (**e).u.Push_Message.address_value = 
-                 (ret = parse_address(&attr_value)) == 0 ? 
-                 octstr_duplicate(attr_value) : octstr_imm("not successfull");
-            return ret;
-        } 
-
+        return parse_address_value(attr_name, attr_value, e);
     } else if (octstr_compare(element_name, 
-                             octstr_imm("quality-of-service")) == 0) {
-        if (octstr_compare(attr_name, octstr_imm("network")) == 0) {
-	    if ((ros = parse_network(attr_value)) != NULL) {
-	        (**e).u.Push_Message.network = parse_network(attr_value);
-                return 0;
-            } else
-	        return -2;
-        }
-        if (octstr_compare(attr_name, octstr_imm("bearer")) == 0) {
-	    if ((ros = parse_bearer(attr_value)) != NULL) {
-	        (**e).u.Push_Message.bearer = parse_bearer(attr_value);
-                return 0;
-            } else
-	        return -2;
-        }
-
+                   octstr_imm("quality-of-service")) == 0) {
+        return parse_quality_of_service_value(attr_name, attr_value, e);
     } else if (octstr_compare(element_name, 
                               octstr_imm("push-response")) == 0) {
-        if (octstr_compare(attr_name, octstr_imm("push-id")) == 0) {
-	    if ((ros = octstr_duplicate(attr_value)) != NULL) {
-	        (**e).u.Push_Response.pi_push_id = ros;
-                return 0;
-            } else {
-	      (**e).u.Push_Response.pi_push_id = octstr_imm("erroneous");
-	        return -2;
-            }
-        } else if (octstr_compare(attr_name, octstr_imm("sender-name")) == 0) {
-	    if ((ros = octstr_duplicate(attr_value)) != NULL) {
-	        (**e).u.Push_Response.sender_name = ros;
-                return 0;
-            } else
-	        return -2; 
-        } else if (octstr_compare(attr_name, octstr_imm("reply-time")) == 0) {
-	    if ((ros = parse_date(attr_value)) != NULL) {
-	        (**e).u.Push_Response.reply_time = octstr_duplicate(ros);
-                return 0;
-            } else
-	        return -2;
-        } else if (octstr_compare(attr_name, octstr_imm("code")) == 0) {
-	    (**e).u.Push_Response.code = 
-                 (ret = parse_code(attr_value)) ? ret : 0;
-            return ret;
-        } else if (octstr_compare(attr_name, octstr_imm("desc")) == 0) {
-	    if ((ros = octstr_duplicate(attr_value)) != NULL) {
-	        (**e).u.Push_Response.desc = ros;
-                return 0;
-            } else
-	        return -2;
-        }
-
+        return parse_push_response_value(attr_name, attr_value, e);
     } else if (octstr_compare(element_name, 
-                             octstr_imm("progress-note")) == 0) {
-        if (octstr_compare(attr_name, octstr_imm("stage")) == 0) {
-	    (**e).u.Progress_Note.stage = 
-                  (ret = parse_state(attr_value)) ? ret : 0;
-            return ret;
-        } else if (octstr_compare(attr_name, octstr_imm("note")) == 0) {
-	    if ((ros = octstr_duplicate(attr_value)) != NULL) {
-	        (**e).u.Progress_Note.note = ros;
-                return 0;
-            } else
-	        return -2;
-        } else if (octstr_compare(attr_name, octstr_imm("time")) == 0) {
-	    if ((ros = parse_date(attr_value)) != NULL) {
-	        (**e).u.Progress_Note.time = octstr_duplicate(ros);
-                return 0;
-            } else
-	        return -2;
-        }
-    } 
+                   octstr_imm("progress-note")) == 0) {
+        return parse_progress_note_value(attr_name, attr_value, e);
+    } else if (octstr_compare(element_name, 
+                   octstr_imm("badmessage-response")) == 0) {
+        return parse_bad_message_response_value(attr_name, attr_value, e);
+    }
 
     return -2; 
 }
@@ -620,8 +711,7 @@ static int set_attribute_value(Octstr *element_name, Octstr *attr_value,
 {
     int ret;
 
-    ret = -1;
-    
+    ret = -2;
     if (octstr_compare(element_name, octstr_imm("push-message")) == 0) {
         if (octstr_compare(attr_name, 
                           octstr_imm("progress-notes-requested")) == 0)
@@ -648,65 +738,80 @@ static int set_attribute_value(Octstr *element_name, Octstr *attr_value,
     return ret;
 }
 
+/*
+ * Date type used by PAP protocol is defined in PAP, chapter 9.2.
+ */
 static Octstr *parse_date(Octstr *attr_value)
 {
     long date_value;
 
     if (octstr_parse_long(&date_value, attr_value, 0, 10) < 0)
-        return NULL;
+        goto error;
     if (octstr_parse_long(&date_value, attr_value, 5, 10) < 0)
-        return NULL;
+        goto error;
     if (date_value < 1 || date_value > 12)
-        return NULL;
+        goto error;
     if (octstr_parse_long(&date_value, attr_value, 8, 10) < 0)
-        return NULL;
+        goto error;
     if (date_value < 1 || date_value > 31)
-        return NULL;
+        goto error;
     if (octstr_parse_long(&date_value, attr_value, 11, 10) < 0)
-        return NULL;
+        goto error;
     if (date_value < 0 || date_value > 23)
-        return NULL;
+        goto error;
     if (octstr_parse_long(&date_value, attr_value, 14, 10) < 0)
-        return NULL;
+        goto error;
     if (date_value < 0 || date_value > 59)
-        return NULL;
+        goto error;
     if (date_value < 0 || date_value > 59)
-        return NULL;
+        goto error;
     if (octstr_parse_long(&date_value, attr_value, 17, 10) < 0)
-        return NULL;
+        goto error;
 
     return attr_value;
+
+error:
+    warning(0, "PAP COMPILER: parse_date: not an ISO date");
+    return NULL;
 }
 
+/*
+ * We must recognize status class and treat unrecognized codes as a x000 code,
+ * see 9.13, p 27.
+ */
 static int parse_code(Octstr *attr_value)
 {
-    long attr_as_number;
+    long attr_as_number,
+         len, 
+         i;
+    Octstr *ros;
 
-    attr_as_number = -1;
-    if (octstr_case_compare(attr_value, 
-            octstr_imm("accepted for processing")) == 0)
-        attr_as_number = PAP_ACCEPTED_FOR_PROCESSING;
-    else if (octstr_case_compare(attr_value, octstr_imm("bad request")) == 0)
+    for (i = 0; i < NUM_CODES; i++) {
+         ros = octstr_format("%d", pap_codes[i]);
+         if (octstr_compare(attr_value, ros) == 0) {
+	     octstr_destroy(ros);
+	     return pap_codes[i];
+         }
+         octstr_destroy(ros);
+    }
+
+    warning(0, "PAP COMPILER: parse_code: no such return code, reversing to"
+               " x000 code");
+    len = octstr_parse_long(&attr_as_number, attr_value, 0, 10);
+    if (attr_as_number >= PAP_OK && attr_as_number < PAP_BAD_REQUEST) {
+        attr_as_number = PAP_OK;
+    } else if (attr_as_number >= PAP_BAD_REQUEST && 
+            attr_as_number < PAP_INTERNAL_SERVER_ERROR) {
         attr_as_number = PAP_BAD_REQUEST;
-    else if (octstr_case_compare(attr_value, octstr_imm("forbidden")) == 0)
-        attr_as_number = PAP_FORBIDDEN;
-    else if (octstr_case_compare(attr_value, octstr_imm("address error")) == 0)
-        attr_as_number = PAP_ADDRESS_ERROR;
-    else if (octstr_case_compare(attr_value, 
-            octstr_imm("capabilities mismatch")) == 0)
-        attr_as_number = PAP_CAPABILITIES_MISMATCH;
-    else if (octstr_case_compare(attr_value, 
-            octstr_imm("duplicate push id")) == 0)
-        attr_as_number = PAP_DUPLICATE_PUSH_ID;
-    else if (octstr_case_compare(attr_value, 
-            octstr_imm("transformation failure")) == 0)
-        attr_as_number = PAP_TRANSFORMATION_FAILURE;
-    else if (octstr_case_compare(attr_value, 
-            octstr_imm("required bearer not available")) == 0)
-        attr_as_number = PAP_REQUIRED_BEARER_NOT_AVAILABLE;
-    else if (octstr_case_compare(attr_value, octstr_imm("abort userpnd")) == 0)
-        attr_as_number = PAP_ABORT_USERPND;
-
+    } else if (attr_as_number >= PAP_INTERNAL_SERVER_ERROR &&
+	    attr_as_number < PAP_SERVICE_FAILURE) {
+        attr_as_number = PAP_INTERNAL_SERVER_ERROR;
+    } else if (attr_as_number >= PAP_SERVICE_FAILURE &&
+	    attr_as_number < PAP_CLIENT_ABORTED) {
+        attr_as_number = PAP_SERVICE_FAILURE;
+    } else {
+        attr_as_number = PAP_CLIENT_ABORTED;
+    }
     
     return attr_as_number;
 }
@@ -722,6 +827,7 @@ static Octstr *parse_bearer(Octstr *attr_value)
 	     return ros;
     }
 
+    warning(0, "PAP COMPILER: parse_bearer: no such bearer");
     return NULL;
 }
 
@@ -736,42 +842,56 @@ static Octstr *parse_network(Octstr *attr_value)
 	     return ros;
     }
 
+    warning(0, "PAP COMPILER: parse_network: no such network");
     return NULL;
 }
 
+/*
+ * Used for attributes accepting logical values.
+ */
 static int parse_requirement(Octstr *attr_value)
 {
     long attr_as_number;
 
-    attr_as_number = -1;
+    attr_as_number = -2;
     if (octstr_case_compare(attr_value, octstr_imm("false")) == 0)
         attr_as_number = PAP_FALSE;
     else if (octstr_case_compare(attr_value, octstr_imm("true")) == 0)
         attr_as_number = PAP_TRUE;
+    else
+        warning(0, "PAP COMPILER: parse_requirement: not a truth value");
 
     return attr_as_number;
 }
 
+/*
+ * Priority is defined in PAP, chapter 9.2.2.
+ */
 static int parse_priority(Octstr *attr_value)
 {
     long attr_as_number;
 
-    attr_as_number = -1;
+    attr_as_number = -2;
     if (octstr_case_compare(attr_value, octstr_imm("high")) == 0)
         attr_as_number = PAP_HIGH;
     else if (octstr_case_compare(attr_value, octstr_imm("medium")) == 0)
         attr_as_number = PAP_MEDIUM;
     else if (octstr_case_compare(attr_value, octstr_imm("low")) == 0)
         attr_as_number = PAP_LOW;
+    else
+        warning(0, "PAP COMPILER: parse_priority: illegal priority");
 
     return attr_as_number;
 }
 
+/*
+ * Delivery-method is defined in PAP, chapter 9.2.2.
+ */
 static int parse_delivery_method(Octstr *attr_value)
 {
     long attr_as_number;
 
-    attr_as_number = -1;
+    attr_as_number = -2;
     if (octstr_case_compare(attr_value, octstr_imm("confirmed")) == 0)
         attr_as_number = PAP_CONFIRMED;
     else if (octstr_case_compare(attr_value, 
@@ -781,15 +901,20 @@ static int parse_delivery_method(Octstr *attr_value)
         attr_as_number = PAP_UNCONFIRMED;
     else if (octstr_case_compare(attr_value, octstr_imm("notspecified")) == 0)
 	attr_as_number = PAP_NOT_SPECIFIED;
+    else
+        warning(0, "PAP COMPILER: parse_delivery_method: illegal method");
     
     return attr_as_number;
 }
 
+/*
+ * PAP states are defined in PPG, chapter 6.
+ */
 static int parse_state(Octstr *attr_value)
 {
     long attr_as_number;
 
-    attr_as_number = 0;
+    attr_as_number = -2;
     if (octstr_case_compare(attr_value, octstr_imm("undeliverable")) == 0)
         attr_as_number = PAP_UNDELIVERABLE; 
     else if (octstr_case_compare(attr_value, octstr_imm("pending")) == 0)
@@ -804,6 +929,8 @@ static int parse_state(Octstr *attr_value)
         attr_as_number = PAP_TIMEOUT;
     else if (octstr_case_compare(attr_value, octstr_imm("cancelled")) == 0)
         attr_as_number = PAP_CANCELLED;
+    else 
+         warning(0, "PAP COMPILER: parse_state: illegal ppg state");
 
     return attr_as_number;
 }
@@ -830,6 +957,7 @@ static int parse_address(Octstr **address)
         octstr_delete(*address, 0, 1);
 
     if ((pos = parse_ppg_specifier(address, pos)) < 0) {
+        warning(0, "PAP COMPILER: parse_address: illegal ppg specifier");
         return -2;
     }
 
@@ -841,6 +969,7 @@ static int parse_address(Octstr **address)
 static long parse_wappush_client_address(Octstr **address, long pos)
 {
     if ((pos = parse_client_specifier(address, pos)) < 0) {
+        warning(0, "PAP COMPILER: illegal client specifier");
         return pos;
     }
 
