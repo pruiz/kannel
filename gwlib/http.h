@@ -114,6 +114,25 @@ int http_get(char *url, char **type, char **data, size_t *size);
 
 int http_get_u(char *url, char **type, char **data, size_t *size, HTTPHeader *header);
 
+/********************************
+ *http_post - POSTs an entity to server
+ *
+ * user provides headers and data. http_post counts the length of the data to send it to server.
+ * pointer *size points to the size of the data returned by the server.
+ */
+
+int http_post(char *urltext, char **type, char **data, size_t *size, HTTPHeader *header);
+
+
+/**********************************************************
+ * header_dump - dump headers
+ * function to test headers 
+ */
+
+int header_dump(HTTPHeader *header);
+    
+
+
 
 /******************************************
  * httpserver_setup

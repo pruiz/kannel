@@ -320,7 +320,7 @@ error:
  */
 
 int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeader *header)
-{
+{ 
     
     URL *url = NULL;
     HTTPRequest *request = NULL, *response = NULL;
@@ -328,20 +328,17 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     char *authorization = NULL;
     int how_many_moves = 0;
   
-    HTTPHeader *tmp_hdr = NULL;
-  
 
-/* Initializing... */
-    
+    /* Initializing... */
     /* ..request */
     if( (url = internal_url_create(urltext)) == NULL) {
-	error(errno, "http_get: creating URL failed");
+	error(errno, "http_get_u: creating URL failed");
 	goto error;
     }
 
     /* ..url */
     if( (request = httprequest_create(url, NULL)) == NULL) {
-	error(errno, "http_get: creating HTTPRequest failed");
+	error(errno, "http_get_u: creating HTTPRequest failed");
 	goto error;
     }
     internal_url_destroy(url);    
@@ -354,7 +351,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 /*   ..the user defined headers */
     for(;;){
 	if(header == NULL)break;
-	httprequest_add_header(request, header->key, tmp_hdr->value);
+	httprequest_add_header(request, header->key, header->value);
 	header = header->next;
     }
     
@@ -409,7 +406,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	    /* Abort if we feel like we might be pushed around in 
 	       an endless loop. 10 is just an arbitrary number. */
 	    if(how_many_moves > 10) {
-		error(0, "http_get: too many redirects");
+		error(0, "http_get_u: too many redirects");
 		goto error;
 	    }
 	    how_many_moves++;
@@ -421,12 +418,14 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	    httprequest_add_header(request, "Host", request->url->host);
 	    httprequest_add_header(request, "Connection", "close");
 	    httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
-	    /* adding user defined headers.. */
-	    tmp_hdr = header;
-	    while( tmp_hdr != NULL ){
-		httprequest_add_header(request, tmp_hdr->key, tmp_hdr->value);
-		tmp_hdr = tmp_hdr->next;
+	    
+	    /*   ..the user defined headers */
+	    for(;;){
+		if(header == NULL)break;
+		httprequest_add_header(request, header->key, header->value);
+		header = header->next;
 	    }
+	    
 	} /* else-if ends*/
 	
 	
@@ -468,7 +467,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     return 0;
     
 error:
-    error(errno, "http_get: failed");
+    error(errno, "http_get_u: failed");
     httprequest_destroy(request);
     httprequest_destroy(response);
     return -1;
@@ -1041,6 +1040,8 @@ error:
 }
 
 
+
+
 /*****************************************************************************
 * Add a HTTPHeader to the linked list HTTPRequst structure.
 */
@@ -1051,6 +1052,7 @@ int httprequest_add_header(HTTPRequest *request, char *key, char *value) {
 	if( (request == NULL) || (key == NULL) || (value == NULL) )
 		goto error; /* PEBKaC */
 
+	
 	thisheader = request->baseheader;
 
 	if(thisheader == NULL) {
@@ -1099,7 +1101,40 @@ error:
 	error(errno, "httprequest_add_header: failed");
 	return -1;
 }
-	
+
+
+
+
+/**********************************************************
+ *header_dump - dump headers
+ *
+ */
+
+int header_dump(HTTPHeader *header){
+    
+    HTTPHeader *thisheader = NULL;
+    int i;
+    
+    thisheader = header;
+    
+    if(thisheader == NULL) goto error;
+
+    if( (i = fprintf(0, "%s %s", thisheader->key, thisheader->value)) > -1 )
+	thisheader = thisheader->next;
+    else goto error;
+
+    return 1;
+
+    
+error:
+    error(errno, "header_dump: failed");
+    return -1;
+}
+
+
+
+/*************************************************************
+ */
 int httprequest_remove_header(HTTPRequest *request, char *key) {
 
 	HTTPHeader *thisheader = NULL;
@@ -1217,4 +1252,6 @@ static char *internal_base6t4(char *pass) {
 
 	return result;
 }
+
+
 
