@@ -1,9 +1,95 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 1.3.2
+NEWS about Kannel: Open Source WAP and SMS Gateway version 1.4.0
 
-This is a DEVELOPMENT version. It should be usable for experimentation
-and testing, and is a release candidate for the 1.4 branch. Please do 
-try it out and report problems to devel@kannel.org (the development 
-mailing list). The bug tracking system is currently offline.
+This is a STABLE version. It should be usable for production systems.
+Please do report problems to the Kannel bug tracking system available at 
+http://bugs.kannel.org/ or send a mail to <devel@kannel.org> (the development 
+mailing list).
+
+
+Changes since version 1.3.2: 
+
+Compatibility breakers:
+
+  * fakesmsc switching from -p to -r for port, since -p is used for pid-file 
+    creation. This broke fakesmsc to use an other port then the default 10000 
+    to connect to the smsc_fake module of bearerbox.
+
+New features:
+
+  * Added ability to start/stop/restart of all smscconn's that have equal 
+    smsc-id's instead of only one.
+
+  * Implemented very simple priority queue ala Robert Sedgewick for gwlib. 
+
+  * Implemented concatenation of large sms inside bearerbox and does care of 
+    sending all message parts over one smsc link. Now we have a problem with 
+    concatenated large sms that bearerbox will try to load balance those over 
+    different smsc links and such messages arrive as junk (all parts of 
+    concatenated large sms must go through the same smsc).
+
+  * SMPP added ESME dlr bit to DLR processing, added setting of sms priority 
+    flag in smsbox and smpp module. 
+    
+  * bruNET upgrading response parsing to comply with more recent interface 
+    version (v2.0+) where bruNET delivers 'MessageId' in the HTTP response 
+    body.
+    
+  * AT, EMI usage of the of priority queue and priority flag.
+
+  * URLTranslation added '%o' as escape code for MO msgs representing the 
+    msg->sms.account field. Which is interpreted as the operator ID for 
+    aggregator specific MO messages. ie. Xidris HTTP SMSC module.
+    
+  * test_ppg added support for X-WAP-Initiator-URI, use -I option.
+
+Bugfixes:
+
+  * SMPP fixed panic on NULLed source_addr/destination_addr, for nulterminated 
+    string length checking of PDU elements, bug that dlr lookup was made with 
+    source instead of destination address (in dlr source and destination 
+    switched), fixed incorrect handling of GSM_ADDR_TON_ALPHANUMERIC for 
+    destination address,
+    
+  * AT fixed segfault when modemtype is set to 'auto' or 'autodetect', 
+    fixed '+CPIN', some modem needs '"'.
+
+  * HTTP fixed a binary MT bug (when DC_8BIT has been set) and various 
+    improvements for passing parameters to the HTTP request, fixing 3united 
+    (formerly Xidris) HTTP interface for  binary MT messages. We passed 
+    URL-encoded binary string, but server side  expected HEX encoded (2 char
+    per byte) version.
+    
+  * WSP string coding bug fixed.
+
+  * WML compiler fixed panic for certain DOCTYPE definitions, memory leak fixed. 
+
+  * XMLRPC fixed memory leak.
+
+  * Fixed ISO date handling.
+
+  * Fixed double encoding in smsbox when trans coding from UCS2 to UTF-8 or 
+    ISO-8859-1.
+
+  * Improved pthread reader/writer-locks.
+
+  * Fixed usage of native semaphores on MacOS X to avoid a "not implemented" 
+    error.
+
+  * Fixed pthread lib settings for FreeBSD 5.2.1. 
+  
+  * Added check for 'sem_init' in librt. This needs on Solaris & HP-UX.
+
+  * Fixed Linux version of gw_gethostbyname when gethostbyname_r failed. 
+    Also free buffer on error.
+
+  * Fixed daemon mode (make sure stdin/stdout/sdterr are opened and do 
+    chdir("/")) and change user code (set supplementary group id's and 
+    don't destroy passwd struct).
+
+  * Bug work-around causing segfault on cygwin while using uninited 
+    rwlock functions.
+
+  * Various memory leak and double free fixes.
 
 
 Changes since version 1.3.1: 
