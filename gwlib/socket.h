@@ -7,10 +7,15 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <netinet/in.h>
 
 #ifndef HAVE_SOCKLEN_T
 typedef int socklen_t;
 #endif
+
+#include "gwstr.h"
+
+int gw_getnameinfo(struct sockaddr_in *addr, char** hostname, int* port);
 
 /* Open a server socket. Return -1 for error, >= 0 socket number for OK.*/
 int make_server_socket(int port);
