@@ -1,3 +1,9 @@
+Tue Mar 21 14:41:01 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* utils/kannel-nag, utils/changelog-report, utils/daily-patch:
+	Added to CVS so that interested people can look at them. Don't
+	run them without asking.
+
 2000-03-21  Richard Braakman  <dark@wapit.com>
 
 	* gw/bearerbox.c: Deleted assertion in http_admin_command.  It is
