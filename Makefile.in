@@ -191,6 +191,9 @@ clean:
 	rm -f core $(progs) $(testprogs) $(objs) $(docs) *.a
 	rm -f $(figs) $(docs)
 
+distclean: clean
+	rm -f Makefile config.h config.cache config.log config.status .depend
+
 nag:
 	utils/find-long-lines
 
