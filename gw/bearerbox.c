@@ -661,7 +661,8 @@ Octstr *bb_print_status(int status_type)
 	    " <p>WDP: received %ld (%ld queued), sent %ld "
 	    "(%ld queued)</p>\n\n"
 	    " <p>SMS: received %ld (%ld queued), sent %ld "
-	    "(%ld queued), store size %ld</p>\n\n"
+	    "(%ld queued), store size %ld</p>\n"
+        " <p>SMS: inbound %.2f msg/sec, outbound %.2f msg/sec</p>\n\n"
         " <p>DLR: %ld queued, using %s storage</p>\n\n";
 	footer = "<p>";
     } else if (status_type == BBSTATUS_WML) {
@@ -671,7 +672,9 @@ Octstr *bb_print_status(int status_type)
 	    "      WDP: sent %ld (%ld queued)</p>\n\n"
 	    "   <p>SMS: received %ld (%ld queued)<br/>\n"
 	    "      SMS: sent %ld (%ld queued)<br/>\n"
-        "      SMS: store size %ld</p>\n\n"
+        "      SMS: store size %ld<br/>\n"
+        "      SMS: inbound %.2f msg/sec<br/>\n"
+        "      SMS: outbound %.2f msg/sec</p>\n\n"
         "   <p>DLR: %ld queued<br/>\n"
         "      DLR: using %s storage</p>\n\n";
 	footer = "<p>";
@@ -681,14 +684,15 @@ Octstr *bb_print_status(int status_type)
 	    "\t<wdp>\n\t\t<received><total>%ld</total><queued>%ld</queued></received>\n\t\t<sent><total>%ld"
 	    "</total><queued>%ld</queued></sent>\n\t</wdp>\n"
 	    "\t<sms>\n\t\t<received><total>%ld</total><queued>%ld</queued></received>\n\t\t<sent><total>%ld"
-	    "</total><queued>%ld</queued></sent>\n\t\t<storesize>%ld</storesize>\n\t</sms>\n"
+	    "</total><queued>%ld</queued></sent>\n\t\t<storesize>%ld</storesize>\n\t\t"
+        "<inbound>%.2f</inbound>\n\t\t<outbound>%.2f</outbound>\n\t</sms>\n"
 	    "\t<dlr>\n\t\t<queued>%ld</queued>\n\t\t<storage>%s</storage>\n\t</dlr>\n";
 	footer = "";
     } else {
 	frmt = "%s\n\nStatus: %s, uptime %ldd %ldh %ldm %lds\n\n"
 	    "WDP: received %ld (%ld queued), sent %ld (%ld queued)\n\n"
-	    "SMS: received %ld (%ld queued), sent %ld (%ld queued), "
-	    "store size %ld\n\n"
+	    "SMS: received %ld (%ld queued), sent %ld (%ld queued), store size %ld\n"
+        "SMS: inbound %.2f msg/sec, outbound %.2f msg/sec\n\n"
         "DLR: %ld queued, using %s storage\n\n";
 	footer = "";
     }
@@ -705,6 +709,8 @@ Octstr *bb_print_status(int status_type)
 	    counter_value(outgoing_sms_counter),
 	    list_len(outgoing_sms),
 	    store_messages(),
+        (float)counter_value(incoming_sms_counter)/t,
+        (float)counter_value(outgoing_sms_counter)/t,
         dlr_messages(),
         octstr_get_cstr(dlr_type));
 
