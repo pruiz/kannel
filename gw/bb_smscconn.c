@@ -91,7 +91,6 @@
 /* passed from bearerbox core */
 
 extern volatile sig_atomic_t bb_status;
-extern List *incoming_wdp;
 extern List *incoming_sms;
 extern List *outgoing_sms;
 
@@ -113,8 +112,8 @@ static Octstr *unified_prefix;
 static Numhash *black_list;
 static Numhash *white_list;
 
-static regex_t *white_list_regex = NULL;
-static regex_t *black_list_regex = NULL;
+static regex_t *white_list_regex;
+static regex_t *black_list_regex;
 
 static long router_thread = -1;
 
@@ -476,7 +475,6 @@ int smsc2_start(Cfg *cfg)
 	panic(0, "Failed to start a new thread for SMS routing");
     
     list_add_producer(incoming_sms);
-    list_add_producer(incoming_wdp);
     smsc_running = 1;
     return 0;
 }
@@ -628,7 +626,6 @@ int smsc2_shutdown(void)
      * to shutdown before calling these?
      */
     list_remove_producer(incoming_sms);
-    list_remove_producer(incoming_wdp);
     return 0;
 }
 
