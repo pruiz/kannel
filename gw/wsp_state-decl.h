@@ -49,6 +49,9 @@ ROW(NULL_STATE,
 		wsp_handle_event(sm, new_event);
 	},
 	CONNECTING)
+
+
+#if 0
 /*
  * When WAP box is restarting, the first PDU can be other than Connect. (That 
  * can happen when the bearerbox is sending us old packets or the peer has not
@@ -84,6 +87,7 @@ ROW(NULL_STATE,
     e->tcl == 0 && wsp_deduce_pdu_type(e->user_data, 0) == Disconnect_PDU,
     { },
     NULL_STATE)
+#endif
 
 ROW(CONNECTING,
 	SConnectResponse,

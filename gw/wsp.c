@@ -761,6 +761,9 @@ error:
 		} else if (strcmp(type, "image/vnd.wap.wbmp") == 0) {
 			body = octstr_create_from_data(data, size);
 		} else if (strcmp(type, "text/vnd.wap.wmlscript") == 0) {
+			debug(0, "WSP: Compiling WMLScript");
+			type = "application/vnd.wap.wmlscriptc";
+#if 0
 			WsCompilerParams params;
 			WsCompilerPtr compiler;
 			WsResult result;
@@ -794,6 +797,40 @@ error:
 				error(0, "WSP: WMLScript not supported yet.");
 				status = 415;
 			}
+#else
+{
+	FILE *f;
+	char *wmlsc;
+	char cmd[100*1024];
+	char buf[100*1024];
+	size_t n;
+	char name[10*1024];
+	
+	tmpnam(name);
+	f = fopen(name, "w");
+	if (f == NULL)
+		panic(0, "WSP: Couldn't open temp file.");
+	fwrite(data, size, 1, f);
+	fclose(f);
+
+	wmlsc = getenv("WMLSC");
+	if (wmlsc == NULL)
+		wmlsc = "./wmlsc";
+	sprintf(cmd, "%s %s", wmlsc, name);
+	debug(0, "WSP: WMLSC cmd: <%s>", cmd);
+	if (system(cmd) != 0)
+		panic(0, "WSP: Couldn't run WMLSC compiler.");
+
+	strcat(name, "c");
+	f = fopen(name, "r");
+	if (f == NULL)
+		panic(0, "WSP: Couldn't open compiled temp file.");
+	n = fread(buf, 1, sizeof(buf), f);
+	fclose(f);
+	debug(0, "WSP: Read %lu bytes of compiled WMLC", (unsigned long) n);
+	body = octstr_create_from_data(buf, n);
+}
+#endif
 		} else {
 			status = 415; /* Unsupported media type */
 			warning(0, "Unsupported content type `%s'", type);
@@ -809,6 +846,7 @@ error:
 	e->SMethodResultRequest.machine = 
 		event->SMethodInvokeResult.machine;
 	debug(0, "WSP: sending S-MethodResult.req to WSP");
+	wsp_event_dump(e);
 	wsp_dispatch_event(event->SMethodInvokeResult.machine, e);
 
 	debug(0, "WSP: wsp_http_thread ends");

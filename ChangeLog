@@ -1,3 +1,12 @@
+Tue Jan 18 12:55:36 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c: Use WMLScript compiler as an external process. This
+	works, the internal one has problems (or else I have problems
+	using it).
+	
+	* gw/wsp_state-decl.h: Commented out, at least temporarily, rows
+	that handle method invocations before session has been opened.
+
 Mon Jan 17 17:47:37 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: Added WMLScript compilation (untested, though), and
