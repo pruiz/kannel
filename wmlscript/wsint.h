@@ -71,8 +71,8 @@ typedef double WsFloat;
 
 typedef enum
 {
-  WS_FALSE,
-  WS_TRUE
+    WS_FALSE,
+    WS_TRUE
 } WsBool;
 
 
@@ -119,9 +119,9 @@ extern WsCompilerPtr global_compiler;
    labels.  These are allocated from the syntax-tree pool. */
 struct WsContBreakRec
 {
-  struct WsContBreakRec *next;
-  WsAsmIns *l_cont;
-  WsAsmIns *l_break;
+    struct WsContBreakRec *next;
+    WsAsmIns *l_cont;
+    WsAsmIns *l_break;
 };
 
 typedef struct WsContBreakRec WsContBreak;
@@ -129,84 +129,84 @@ typedef struct WsContBreakRec WsContBreak;
 #define COMPILER_MAGIC (0xfefe0101)
 struct WsCompilerRec
 {
-  /* A magic number of assure that a correct compiler handle is passed
-     to the parser and lexer functions. */
-  WsUInt32 magic;
+    /* A magic number of assure that a correct compiler handle is passed
+       to the parser and lexer functions. */
+    WsUInt32 magic;
 
-  /* User-specifiable parameters. */
-  WsCompilerParams params;
+    /* User-specifiable parameters. */
+    WsCompilerParams params;
 
-  /* Current input stream. */
-  WsStream *input;
+    /* Current input stream. */
+    WsStream *input;
 
-  /* The source file name and line number of the current input
-     stream. */
-  const char *input_name;
-  WsUInt32 linenum;
+    /* The source file name and line number of the current input
+       stream. */
+    const char *input_name;
+    WsUInt32 linenum;
 
-  /* Fast-malloc pool for the syntax tree items. */
-  WsFastMalloc *pool_stree;
+    /* Fast-malloc pool for the syntax tree items. */
+    WsFastMalloc *pool_stree;
 
-  /* Fast-malloc pool for the symbolic assembler instructions. */
-  WsFastMalloc *pool_asm;
+    /* Fast-malloc pool for the symbolic assembler instructions. */
+    WsFastMalloc *pool_asm;
 
-  /* List of active memory blocks, allocated by the lexer.  When lexer
-     allocates string or symbol tokens, their dynamically allocated
-     data is registered to this list.  The parser removes the items
-     when needed, but if the parsing fails, the items can be freed
-     from this list during the cleanup. */
-  void **lexer_active_list;
-  size_t lexer_active_list_size;
+    /* List of active memory blocks, allocated by the lexer.  When lexer
+       allocates string or symbol tokens, their dynamically allocated
+       data is registered to this list.  The parser removes the items
+       when needed, but if the parsing fails, the items can be freed
+       from this list during the cleanup. */
+    void **lexer_active_list;
+    size_t lexer_active_list_size;
 
-  /* The byte-code object. */
-  WsBc *bc;
+    /* The byte-code object. */
+    WsBc *bc;
 
-  /* The next label for the assembler generation. */
-  WsUInt32 next_label;
+    /* The next label for the assembler generation. */
+    WsUInt32 next_label;
 
-  /* The assembler code, currently begin constructed on this compiler. */
-  WsAsmIns *asm_head;
-  WsAsmIns *asm_tail;
+    /* The assembler code, currently begin constructed on this compiler. */
+    WsAsmIns *asm_head;
+    WsAsmIns *asm_tail;
 
-  /* Buffer holding the linearized byte-code for the current symbolic
-     assembler. */
-  WsBuffer byte_code;
+    /* Buffer holding the linearized byte-code for the current symbolic
+       assembler. */
+    WsBuffer byte_code;
 
-  /* The syntax tree items, found from the source stream. */
+    /* The syntax tree items, found from the source stream. */
 
-  /* External compilation unit pragmas. */
-  WsHashPtr pragma_use_hash;
+    /* External compilation unit pragmas. */
+    WsHashPtr pragma_use_hash;
 
-  /* Functions. */
-  WsUInt32 num_functions;
-  WsFunction *functions;
+    /* Functions. */
+    WsUInt32 num_functions;
+    WsFunction *functions;
 
-  /* A mapping from function names to their declarations in
-     `functions'. */
-  WsHashPtr functions_hash;
+    /* A mapping from function names to their declarations in
+       `functions'. */
+    WsHashPtr functions_hash;
 
-  /* A namespace for function arguments and local variables. */
-  WsUInt32 next_vindex;
-  WsHashPtr variables_hash;
+    /* A namespace for function arguments and local variables. */
+    WsUInt32 next_vindex;
+    WsHashPtr variables_hash;
 
-  /* Registry for the currently active `continue-break' labels. */
-  WsContBreak *cont_break;
+    /* Registry for the currently active `continue-break' labels. */
+    WsContBreak *cont_break;
 
-  /* Statistics about the compilation. */
+    /* Statistics about the compilation. */
 
-  WsUInt32 num_errors;
-  WsUInt32 num_warnings;
+    WsUInt32 num_errors;
+    WsUInt32 num_warnings;
 
-  WsUInt32 num_extern_functions;
-  WsUInt32 num_local_functions;
+    WsUInt32 num_extern_functions;
+    WsUInt32 num_local_functions;
 
-  /* Bitmask to record occurred errors.  This is used in error
-     generation and reporting to make sane error messages. */
-  WsUInt32 errors;
+    /* Bitmask to record occurred errors.  This is used in error
+       generation and reporting to make sane error messages. */
+    WsUInt32 errors;
 
-  /* The latest line where a syntax error occurred.  The compiler do
-     not print multiple syntax errors from the same line. */
-  WsUInt32 last_syntax_error_line;
+    /* The latest line where a syntax error occurred.  The compiler do
+       not print multiple syntax errors from the same line. */
+    WsUInt32 last_syntax_error_line;
 };
 
 typedef struct WsCompilerRec WsCompiler;

@@ -1,18 +1,18 @@
 typedef union
 {
-  WsUInt32 integer;
-  WsFloat vfloat;
-  char *identifier;
-  WsUtf8String *string;
+    WsUInt32 integer;
+    WsFloat vfloat;
+    char *identifier;
+    WsUtf8String *string;
 
-  WsBool boolean;
-  WsList *list;
-  WsPair *pair;
+    WsBool boolean;
+    WsList *list;
+    WsPair *pair;
 
-  WsPragmaMetaBody *meta_body;
+    WsPragmaMetaBody *meta_body;
 
-  WsStatement *stmt;
-  WsExpression *expr;
+    WsStatement *stmt;
+    WsExpression *expr;
 } YYSTYPE;
 
 #ifndef YYLTYPE

@@ -20,17 +20,17 @@
 /* Return codes for encoding and decoding functions. */
 typedef enum
 {
-  /* The operation was successful. */
-  WS_IEEE754_OK,
+    /* The operation was successful. */
+    WS_IEEE754_OK,
 
-  /* The value is `Not a Number' NaN. */
-  WS_IEEE754_NAN,
+    /* The value is `Not a Number' NaN. */
+    WS_IEEE754_NAN,
 
-  /* The valueis positive infinity. */
-  WS_IEEE754_POSITIVE_INF,
+    /* The valueis positive infinity. */
+    WS_IEEE754_POSITIVE_INF,
 
-  /* The value is negative infinity. */
-  WS_IEEE754_NEGATIVE_INF
+    /* The value is negative infinity. */
+    WS_IEEE754_NEGATIVE_INF
 } WsIeee754Result;
 
 /********************* Special values ***********************************/
@@ -61,7 +61,7 @@ WsIeee754Result ws_ieee754_encode_single(double value, unsigned char *buf);
    decode operation.  If the result is WS_IEEE754_OK, the resulting
    floating point number is returned in `value_return'. */
 WsIeee754Result ws_ieee754_decode_single(unsigned char *buf,
-					 double *value_return);
+        double *value_return);
 
 /* Get the sign bit from the IEEE-754 single format encoded number
    `buf'.  The buffer `buf' must have 32 bits of data. */

@@ -15,92 +15,83 @@
 
 /********************* Global functions *********************************/
 
-void
-ws_buffer_init(WsBuffer *buffer)
+void ws_buffer_init(WsBuffer *buffer)
 {
-  buffer->len = 0;
-  buffer->data = NULL;
+    buffer->len = 0;
+    buffer->data = NULL;
 }
 
 
-void
-ws_buffer_uninit(WsBuffer *buffer)
+void ws_buffer_uninit(WsBuffer *buffer)
 {
-  ws_free(buffer->data);
-  buffer->len = 0;
-  buffer->data = NULL;
+    ws_free(buffer->data);
+    buffer->len = 0;
+    buffer->data = NULL;
 }
 
 
-WsBuffer *
-ws_buffer_alloc()
+WsBuffer *ws_buffer_alloc()
 {
-  return ws_calloc(1, sizeof(WsBuffer));
+    return ws_calloc(1, sizeof(WsBuffer));
 }
 
 
-void
-ws_buffer_free(WsBuffer *buffer)
+void ws_buffer_free(WsBuffer *buffer)
 {
-  ws_free(buffer->data);
-  ws_free(buffer);
+    ws_free(buffer->data);
+    ws_free(buffer);
 }
 
 
-WsBool
-ws_buffer_append(WsBuffer *buffer, unsigned char *data, size_t len)
+WsBool ws_buffer_append(WsBuffer *buffer, unsigned char *data, size_t len)
 {
-  unsigned char *p;
+    unsigned char *p;
 
-  if (!ws_buffer_append_space(buffer, &p, len))
-    return WS_FALSE;
+    if (!ws_buffer_append_space(buffer, &p, len))
+        return WS_FALSE;
 
-  memcpy(p, data, len);
+    memcpy(p, data, len);
 
-  return WS_TRUE;
+    return WS_TRUE;
 }
 
 
-WsBool
-ws_buffer_append_space(WsBuffer *buffer, unsigned char **p, size_t size)
+WsBool ws_buffer_append_space(WsBuffer *buffer, unsigned char **p, size_t size)
 {
-  unsigned char *ndata = ws_realloc(buffer->data, buffer->len + size);
+    unsigned char *ndata = ws_realloc(buffer->data, buffer->len + size);
 
-  if (ndata == NULL)
-    return WS_FALSE;
+    if (ndata == NULL)
+        return WS_FALSE;
 
-  buffer->data = ndata;
+    buffer->data = ndata;
 
-  if (p)
-    *p = buffer->data + buffer->len;
+    if (p)
+        *p = buffer->data + buffer->len;
 
-  buffer->len += size;
+    buffer->len += size;
 
-  return WS_TRUE;
+    return WS_TRUE;
 }
 
 
-unsigned char *
-ws_buffer_ptr(WsBuffer *buffer)
+unsigned char *ws_buffer_ptr(WsBuffer *buffer)
 {
-  return buffer->data;
+    return buffer->data;
 }
 
 
-size_t
-ws_buffer_len(WsBuffer *buffer)
+size_t ws_buffer_len(WsBuffer *buffer)
 {
-  return buffer->len;
+    return buffer->len;
 }
 
 
-unsigned char *
-ws_buffer_steal(WsBuffer *buffer)
+unsigned char *ws_buffer_steal(WsBuffer *buffer)
 {
-  unsigned char *p = buffer->data;
+    unsigned char *p = buffer->data;
 
-  buffer->data = NULL;
-  buffer->len = 0;
+    buffer->data = NULL;
+    buffer->len = 0;
 
-  return p;
+    return p;
 }

@@ -51,8 +51,8 @@ void ws_src_warning(WsCompilerPtr compiler, WsUInt32 line, char *message, ...);
    the compiler. */
 
 #define WS_STREAM(_stream)		\
-  compiler->params._stream ## _cb,	\
-  compiler->params._stream ## _cb_context
+compiler->params._stream ## _cb,	\
+compiler->params._stream ## _cb_context
 
 #define WS_STDOUT WS_STREAM(stdout)
 #define WS_STDERR WS_STREAM(stderr)

@@ -28,8 +28,7 @@
    the number of characters written.  In both operations, if the
    function reads or writes less that `buflen' characters, the EOF is
    assumed to been seen in the stream. */
-typedef size_t (*WsStreamIOProc)(void *context, WsUInt32 *buf,
-				 size_t buflen);
+typedef size_t (*WsStreamIOProc)(void *context, WsUInt32 *buf, size_t buflen);
 
 /* Flush all buffered data of the stream instance `context'.  The
    function returns WS_TRUE if the flushing was successful or WS_FALSE
@@ -42,22 +41,22 @@ typedef void (*WsStreamCloseProc)(void *context);
 /* A stream handle. */
 struct WsStreamRec
 {
-  /* The method functions of this stream. */
-  WsStreamIOProc io;
-  WsStreamFlushProc flush;
-  WsStreamCloseProc close;
+    /* The method functions of this stream. */
+    WsStreamIOProc io;
+    WsStreamFlushProc flush;
+    WsStreamCloseProc close;
 
-  /* The stream instance context. */
-  void *context;
+    /* The stream instance context. */
+    void *context;
 
-  /* The current buffered contents of the stream. */
-  WsUInt32 buffer[WS_STREAM_BUFFER_SIZE];
-  size_t buffer_pos;
-  size_t data_in_buffer;
+    /* The current buffered contents of the stream. */
+    WsUInt32 buffer[WS_STREAM_BUFFER_SIZE];
+    size_t buffer_pos;
+    size_t data_in_buffer;
 
-  /* The possible put-back character. */
-  WsBool ungetch_valid;
-  WsUInt32 ungetch;
+    /* The possible put-back character. */
+    WsBool ungetch_valid;
+    WsUInt32 ungetch;
 };
 
 typedef struct WsStreamRec WsStream;
@@ -84,7 +83,7 @@ void ws_stream_close(WsStream *stream);
    context and from the method functions.  The function returns NULL
    if the stream creation failed. */
 WsStream *ws_stream_new(void *context, WsStreamIOProc io,
-			WsStreamFlushProc flush, WsStreamCloseProc close);
+                        WsStreamFlushProc flush, WsStreamCloseProc close);
 
 /* Create a new file stream to the file handle `fp'.  The argument
    `output' specifies whether the stream is an output or an input

@@ -21,14 +21,14 @@
 /* UTF-8 string handle. */
 struct WsUtf8StringRec
 {
-  /* The length of the UTF-8 encoded `data'. */
-  size_t len;
+    /* The length of the UTF-8 encoded `data'. */
+    size_t len;
 
-  /* The UTF-8 encoded data. */
-  unsigned char *data;
+    /* The UTF-8 encoded data. */
+    unsigned char *data;
 
-  /* The number of characters in the string. */
-  size_t num_chars;
+    /* The number of characters in the string. */
+    size_t num_chars;
 };
 
 typedef struct WsUtf8StringRec WsUtf8String;
@@ -52,14 +52,14 @@ int ws_utf8_append_char(WsUtf8String *string, unsigned long ch);
    and 0 otherwise.  If the argument `strlen_return' is not NULL, it
    is set to the number of characters in the string. */
 int ws_utf8_verify(const unsigned char *data, size_t len,
-		   size_t *strlen_return);
+                   size_t *strlen_return);
 
 /* Set UTF-8 encoded data `data', `len' to the string `string'.  The
    function returns 1 if the data was UTF-8 encoded and 0 otherwise
    (malformed data or out of memory).  The function frees the possible
    old data from `string'. */
 int ws_utf8_set_data(WsUtf8String *string, const unsigned char *data,
-		     size_t len);
+                     size_t len);
 
 /* Get a character from the UTF-8 string `string'.  The argument
    `posp' gives the index of the character in the UTF-8 encoded data.
@@ -71,7 +71,7 @@ int ws_utf8_set_data(WsUtf8String *string, const unsigned char *data,
    `posp' was invalid or there were no more characters in the
    string). */
 int ws_utf8_get_char(const WsUtf8String *string, unsigned long *ch_return,
-		     size_t *posp);
+                     size_t *posp);
 
 /* Convert the UTF-8 encoded string `string' to null-terminated ISO
    8859/1 (ISO latin1) string.  Those characters of `string' which can
@@ -83,8 +83,8 @@ int ws_utf8_get_char(const WsUtf8String *string, unsigned long *ch_return,
    returned string must be freed with the ws_utf8_free_data()
    function. */
 unsigned char *ws_utf8_to_latin1(const WsUtf8String *string,
-				 unsigned char unknown_char,
-				 size_t *len_return);
+                                 unsigned char unknown_char,
+                                 size_t *len_return);
 
 /* Free a string, returned by the ws_utf8_to_latin1_cstr()
    function. */

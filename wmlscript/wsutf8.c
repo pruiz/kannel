@@ -29,15 +29,15 @@
    bytes in the encoding to get the initialization mask for the
    high-order bits. */
 static unsigned char utf8_hibits[7] =
-{
-  0x00,				/* unused */
-  0x00,				/* 1 byte */
-  0xc0,				/* 2 bytes */
-  0xe0,				/* 3 bytes */
-  0xf0,				/* 4 bytes */
-  0xf8,				/* 5 bytes */
-  0xfc,				/* 6 bytes */
-};
+    {
+        0x00, 				/* unused */
+        0x00, 				/* 1 byte */
+        0xc0, 				/* 2 bytes */
+        0xe0, 				/* 3 bytes */
+        0xf0, 				/* 4 bytes */
+        0xf8, 				/* 5 bytes */
+        0xfc, 				/* 6 bytes */
+    };
 
 /* The high-order bits for continuation bytes (10xxxxxx). */
 #define WS_UTF8_ENC_C_BITS	0x80
@@ -50,19 +50,19 @@ static unsigned char utf8_hibits[7] =
    0 if the value `ch' can not be encoded as UTF-8 and the number of
    bytes in the encoded value otherwise. */
 #define WS_UTF8_ENC_TYPE(ch)			\
-  (((ch) & WS_UTF8_ENC_1_M) == 0		\
-   ? 1						\
-   : (((ch) & WS_UTF8_ENC_2_M) == 0		\
-      ? 2					\
-      : (((ch) & WS_UTF8_ENC_3_M) == 0		\
-	 ? 3					\
-	 : (((ch) & WS_UTF8_ENC_4_M) == 0	\
-	    ? 4					\
-	    : (((ch) & WS_UTF8_ENC_5_M) == 0	\
-	       ? 5				\
-	       : (((ch) & WS_UTF8_ENC_6_M) == 0 \
-		  ? 6				\
-		  : 0))))))
+    (((ch) & WS_UTF8_ENC_1_M) == 0		\
+     ? 1					\
+     : (((ch) & WS_UTF8_ENC_2_M) == 0		\
+       ? 2					\
+       : (((ch) & WS_UTF8_ENC_3_M) == 0		\
+         ? 3					\
+         : (((ch) & WS_UTF8_ENC_4_M) == 0	\
+           ? 4					\
+           : (((ch) & WS_UTF8_ENC_5_M) == 0	\
+             ? 5				\
+             : (((ch) & WS_UTF8_ENC_6_M) == 0   \
+               ? 6				\
+               : 0))))))
 
 /* Masks and values to determine the length of an UTF-8 encoded
    character. */
@@ -84,15 +84,15 @@ static unsigned char utf8_hibits[7] =
    character.  This array can be indexed with the number of bytes in
    the encoding. */
 static unsigned char utf8_hidata_masks[7] =
-{
-  0x00,				/* unused */
-  0x7f,				/* 1 byte */
-  0x1f,				/* 2 bytes */
-  0x0f,				/* 3 bytes */
-  0x07,				/* 4 bytes */
-  0x03,				/* 5 bytes */
-  0x01,				/* 6 bytes */
-};
+    {
+        0x00, 				/* unused */
+        0x7f, 				/* 1 byte */
+        0x1f, 				/* 2 bytes */
+        0x0f, 				/* 3 bytes */
+        0x07, 				/* 4 bytes */
+        0x03, 				/* 5 bytes */
+        0x01, 				/* 6 bytes */
+    };
 
 /* The mask and the value of the continuation bytes. */
 #define WS_UTF8_DEC_C_M	0xc0
@@ -103,19 +103,19 @@ static unsigned char utf8_hidata_masks[7] =
    char'.  The macro returns 0 if the byte `b' is not a valid UTF-8
    first byte. */
 #define WS_UTF8_DEC_TYPE(b)					\
-  (((b) & WS_UTF8_DEC_1_M) == WS_UTF8_DEC_1_V			\
-   ? 1								\
-   : (((b) & WS_UTF8_DEC_2_M) == WS_UTF8_DEC_2_V		\
-      ? 2							\
-      : (((b) & WS_UTF8_DEC_3_M) == WS_UTF8_DEC_3_V		\
-	 ? 3							\
-	 : (((b) & WS_UTF8_DEC_4_M) == WS_UTF8_DEC_4_V		\
-	    ? 4							\
-	    : (((b) & WS_UTF8_DEC_5_M) == WS_UTF8_DEC_5_V	\
-	       ? 5						\
-	       : (((b) & WS_UTF8_DEC_6_M) == WS_UTF8_DEC_6_V	\
-		  ? 6						\
-		  : 0))))))
+    (((b) & WS_UTF8_DEC_1_M) == WS_UTF8_DEC_1_V			\
+     ? 1							\
+     : (((b) & WS_UTF8_DEC_2_M) == WS_UTF8_DEC_2_V		\
+       ? 2							\
+       : (((b) & WS_UTF8_DEC_3_M) == WS_UTF8_DEC_3_V		\
+         ? 3							\
+         : (((b) & WS_UTF8_DEC_4_M) == WS_UTF8_DEC_4_V		\
+           ? 4							\
+           : (((b) & WS_UTF8_DEC_5_M) == WS_UTF8_DEC_5_V	\
+             ? 5						\
+             : (((b) & WS_UTF8_DEC_6_M) == WS_UTF8_DEC_6_V	\
+               ? 6						\
+               : 0))))))
 
 /* Predicate to check whether the `unsigned char' byte `b' is a
    continuation byte. */
@@ -123,204 +123,194 @@ static unsigned char utf8_hidata_masks[7] =
 
 /********************* Global functions *********************************/
 
-WsUtf8String *
-ws_utf8_alloc()
+WsUtf8String *ws_utf8_alloc()
 {
-  return ws_calloc(1, sizeof(WsUtf8String));
+    return ws_calloc(1, sizeof(WsUtf8String));
 }
 
 
-void
-ws_utf8_free(WsUtf8String *string)
+void ws_utf8_free(WsUtf8String *string)
 {
-  if (string == NULL)
-    return;
+    if (string == NULL)
+        return;
 
-  ws_free(string->data);
-  ws_free(string);
+    ws_free(string->data);
+    ws_free(string);
 }
 
 
-int
-ws_utf8_append_char(WsUtf8String *string, unsigned long ch)
+int ws_utf8_append_char(WsUtf8String *string, unsigned long ch)
 {
-  unsigned char *d;
-  unsigned int num_bytes = WS_UTF8_ENC_TYPE(ch);
-  unsigned int len, i;
+    unsigned char *d;
+    unsigned int num_bytes = WS_UTF8_ENC_TYPE(ch);
+    unsigned int len, i;
 
-  if (num_bytes == 0)
-    ws_fatal("ws_utf8_append_char(): 0x%lx is not a valid UTF-8 character",
-	     ch);
+    if (num_bytes == 0)
+        ws_fatal("ws_utf8_append_char(): 0x%lx is not a valid UTF-8 character",
+                 ch);
 
-  d = ws_realloc(string->data, string->len + num_bytes);
-  if (d == NULL)
-    return 0;
+    d = ws_realloc(string->data, string->len + num_bytes);
+    if (d == NULL)
+        return 0;
 
-  len = string->len;
+    len = string->len;
 
-  /* Encode the continuation bytes (n > 1). */
-  for (i = num_bytes - 1; i > 0; i--)
-    {
-      d[len + i] = WS_UTF8_ENC_C_BITS;
-      d[len + i] |= ch & WS_UTF8_CONT_DATA_MASK;
-      ch >>= 6;
+    /* Encode the continuation bytes (n > 1). */
+    for (i = num_bytes - 1; i > 0; i--) {
+        d[len + i] = WS_UTF8_ENC_C_BITS;
+        d[len + i] |= ch & WS_UTF8_CONT_DATA_MASK;
+        ch >>= 6;
     }
 
-  /* And continue the first byte. */
-  d[len] = utf8_hibits[num_bytes];
-  d[len] |= ch;
+    /* And continue the first byte. */
+    d[len] = utf8_hibits[num_bytes];
+    d[len] |= ch;
 
-  string->data = d;
-  string->len += num_bytes;
-  string->num_chars++;
+    string->data = d;
+    string->len += num_bytes;
+    string->num_chars++;
 
-  return 1;
+    return 1;
 }
 
 
-int
-ws_utf8_verify(const unsigned char *data, size_t len, size_t *strlen_return)
+int ws_utf8_verify(const unsigned char *data, size_t len,
+                   size_t *strlen_return)
 {
-  unsigned int num_bytes, i;
-  size_t strlen = 0;
+    unsigned int num_bytes, i;
+    size_t strlen = 0;
 
-  while (len > 0)
-    {
-      num_bytes = WS_UTF8_DEC_TYPE(*data);
-      if (num_bytes == 0)
-	/* Not a valid beginning. */
-	return 0;
+    while (len > 0) {
+        num_bytes = WS_UTF8_DEC_TYPE(*data);
+        if (num_bytes == 0)
+            /* Not a valid beginning. */
+            return 0;
 
-      if (len < num_bytes)
-	/* The data is truncated. */
-	return 0;
+        if (len < num_bytes)
+            /* The data is truncated. */
+            return 0;
 
-      for (i = 1; i < num_bytes; i++)
-	if (!WS_UTF8_DEC_C_P(data[i]))
-	  /* Not a valid continuation byte. */
-	  return 0;
+        for (i = 1; i < num_bytes; i++)
+            if (!WS_UTF8_DEC_C_P(data[i]))
+                /* Not a valid continuation byte. */
+                return 0;
 
-      len -= num_bytes;
-      data += num_bytes;
-      strlen++;
+        len -= num_bytes;
+        data += num_bytes;
+        strlen++;
     }
 
-  if (strlen_return)
-    *strlen_return = strlen;
+    if (strlen_return)
+        *strlen_return = strlen;
 
-  return 1;
+    return 1;
 }
 
 
-int
-ws_utf8_set_data(WsUtf8String *string, const unsigned char *data,
-		 size_t len)
+int ws_utf8_set_data(WsUtf8String *string, const unsigned char *data,
+                     size_t len)
 {
-  size_t num_chars;
+    size_t num_chars;
 
-  if (!ws_utf8_verify(data, len, &num_chars))
-    /* Malformed data. */
-    return 0;
+    if (!ws_utf8_verify(data, len, &num_chars))
+        /* Malformed data. */
+        return 0;
 
-  /* Init `string' to empty. */
-  ws_free(string->data);
-  string->data = NULL;
-  string->len = 0;
-  string->num_chars = 0;
+    /* Init `string' to empty. */
+    ws_free(string->data);
+    string->data = NULL;
+    string->len = 0;
+    string->num_chars = 0;
 
-  /* Set the new data. */
-  string->data = ws_memdup(data, len);
-  if (string->data == NULL)
-    return 0;
+    /* Set the new data. */
+    string->data = ws_memdup(data, len);
+    if (string->data == NULL)
+        return 0;
 
-  string->len = len;
-  string->num_chars = num_chars;
+    string->len = len;
+    string->num_chars = num_chars;
 
-  return 1;
+    return 1;
 }
 
 
-int
-ws_utf8_get_char(const WsUtf8String *string, unsigned long *ch_return,
-		 size_t *posp)
+int ws_utf8_get_char(const WsUtf8String *string, unsigned long *ch_return,
+                     size_t *posp)
 {
-  size_t pos = *posp;
-  unsigned int num_bytes, i;
-  unsigned char *data;
-  unsigned long ch;
+    size_t pos = *posp;
+    unsigned int num_bytes, i;
+    unsigned char *data;
+    unsigned long ch;
 
-  if (pos < 0 || pos >= string->len)
-    /* Index out range. */
-    return 0;
+    if (pos < 0 || pos >= string->len)
+        /* Index out range. */
+        return 0;
 
-  data = string->data + pos;
+    data = string->data + pos;
 
-  num_bytes = WS_UTF8_DEC_TYPE(*data);
-  if (num_bytes == 0)
-    /* Invalid position. */
-    return 0;
+    num_bytes = WS_UTF8_DEC_TYPE(*data);
+    if (num_bytes == 0)
+        /* Invalid position. */
+        return 0;
 
-  if (pos + num_bytes > string->len)
-    /* Truncated data. */
-    return 0;
+    if (pos + num_bytes > string->len)
+        /* Truncated data. */
+        return 0;
 
-  /* Get the first byte. */
-  ch = data[0] & utf8_hidata_masks[num_bytes];
+    /* Get the first byte. */
+    ch = data[0] & utf8_hidata_masks[num_bytes];
 
-  /* Add the continuation bytes. */
-  for (i = 1; i < num_bytes; i++)
-    {
-      ch <<= 6;
-      ch |= data[i] & WS_UTF8_CONT_DATA_MASK;
+    /* Add the continuation bytes. */
+    for (i = 1; i < num_bytes; i++) {
+        ch <<= 6;
+        ch |= data[i] & WS_UTF8_CONT_DATA_MASK;
     }
 
-  *ch_return = ch;
-  *posp = pos + num_bytes;
+    *ch_return = ch;
+    *posp = pos + num_bytes;
 
-  return 1;
+    return 1;
 }
 
 
-unsigned char *
-ws_utf8_to_latin1(const WsUtf8String *string, unsigned char unknown_char,
-		  size_t *len_return)
+unsigned char *ws_utf8_to_latin1(const WsUtf8String *string,
+                                 unsigned char unknown_char,
+                                 size_t *len_return)
 {
-  unsigned char *cstr;
-  size_t i;
-  size_t pos = 0;
+    unsigned char *cstr;
+    size_t i;
+    size_t pos = 0;
 
-  if (string == NULL)
-    return NULL;
+    if (string == NULL)
+        return NULL;
 
-  cstr = ws_malloc(string->num_chars + 1);
-  if (cstr == NULL)
-    return NULL;
+    cstr = ws_malloc(string->num_chars + 1);
+    if (cstr == NULL)
+        return NULL;
 
-  for (i = 0; i < string->num_chars; i++)
-    {
-      unsigned long ch;
+    for (i = 0; i < string->num_chars; i++) {
+        unsigned long ch;
 
-      if (!ws_utf8_get_char(string, &ch, &pos))
-	ws_fatal("ws_utf8_to_latin1_cstr(): internal inconsistency");
+        if (!ws_utf8_get_char(string, &ch, &pos))
+            ws_fatal("ws_utf8_to_latin1_cstr(): internal inconsistency");
 
-      if (ch > 0xff)
-	cstr[i] = unknown_char;
-      else
-	cstr[i] = (unsigned char) ch;
+        if (ch > 0xff)
+            cstr[i] = unknown_char;
+        else
+            cstr[i] = (unsigned char) ch;
     }
 
-  cstr[i] = '\0';
+    cstr[i] = '\0';
 
-  if (len_return)
-    *len_return = string->num_chars;
+    if (len_return)
+        *len_return = string->num_chars;
 
-  return cstr;
+    return cstr;
 }
 
 
-void
-ws_utf8_free_data(unsigned char *data)
+void ws_utf8_free_data(unsigned char *data)
 {
-  if (data)
-    ws_free(data);
+    if (data)
+        ws_free(data);
 }

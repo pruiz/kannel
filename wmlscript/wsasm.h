@@ -44,25 +44,25 @@
 /* Get the opcode of the operand `op'.  The operand `op' can belong to
    any of the classes 1-4. */
 #define WS_ASM_OP(op)		\
-  (WS_ASM_CLASS1P(op)		\
-   ? WS_ASM_CLASS1_OP(op)	\
-   : (WS_ASM_CLASS2P(op)	\
-      ? WS_ASM_CLASS2_OP(op)	\
-      : (WS_ASM_CLASS3P(op)	\
-	 ? WS_ASM_CLASS3_OP(op) \
-	 : WS_ASM_CLASS4_OP(op))))
+    (WS_ASM_CLASS1P(op)		\
+     ? WS_ASM_CLASS1_OP(op)	\
+     : (WS_ASM_CLASS2P(op)	\
+       ? WS_ASM_CLASS2_OP(op)	\
+       : (WS_ASM_CLASS3P(op)	\
+         ? WS_ASM_CLASS3_OP(op) \
+         : WS_ASM_CLASS4_OP(op))))
 
 /* Get the implicit argument of the operand `op'.  The operand `op'
    can belong to any of the classes 1-4.  For the class 4 operands,
    this returns 0. */
 #define WS_ASM_ARG(op)			\
-  (WS_ASM_CLASS1P(op)			\
-   ? WS_ASM_CLASS1_ARG(op)		\
-   : (WS_ASM_CLASS2P(op)		\
-      ? WS_ASM_CLASS2_ARG(op)		\
-      : (WS_ASM_CLASS3P(op)		\
-	 ? WS_ASM_CLASS3_ARG(op)	\
-	 : 0)))
+    (WS_ASM_CLASS1P(op)			\
+     ? WS_ASM_CLASS1_ARG(op)		\
+     : (WS_ASM_CLASS2P(op)		\
+       ? WS_ASM_CLASS2_ARG(op)		\
+       : (WS_ASM_CLASS3P(op)		\
+         ? WS_ASM_CLASS3_ARG(op)	\
+         : 0)))
 
 /* Create an operand with implicit argument from the operand `op' and
    argument `arg'. */
@@ -180,7 +180,7 @@
 /* Check whether the instruction `ins' is a pseudo-branch
    instruction. */
 #define WS_ASM_P_BRANCH(ins) \
-  ((ins)->type == WS_ASM_P_JUMP || (ins)->type == WS_ASM_P_TJUMP)
+    ((ins)->type == WS_ASM_P_JUMP || (ins)->type == WS_ASM_P_TJUMP)
 
 /********************* Symbolic assembler instructions ******************/
 
@@ -196,36 +196,38 @@
 
 struct WsAsmInsRec
 {
-  struct WsAsmInsRec *next;
-  struct WsAsmInsRec *prev;
-  WsUInt16 type;
+    struct WsAsmInsRec *next;
+    struct WsAsmInsRec *prev;
+    WsUInt16 type;
 
-  /* The source stream line number. */
-  WsUInt32 line;
+    /* The source stream line number. */
+    WsUInt32 line;
 
-  /* The operands offset in the linearized byte-code stream. */
-  WsUInt32 offset;
+    /* The operands offset in the linearized byte-code stream. */
+    WsUInt32 offset;
 
-  union
-  {
-    /* The target label for branch instructions. */
-    struct
+    union
     {
-      struct WsAsmInsRec *label;
+        /* The target label for branch instructions. */
+        struct
+        {
+            struct WsAsmInsRec *label;
 
-      /* The offset argument of the branch operand.  This is the
-         adjustment that must be performed for the pc after this
-         instruction. */
-      WsUInt32 offset;
-    } branch;
+            /* The offset argument of the branch operand.  This is the
+               adjustment that must be performed for the pc after this
+               instruction. */
+            WsUInt32 offset;
+        }
+        branch;
 
-    struct
-    {
-      WsUInt32 i1;
-      WsUInt16 i2;
-      WsUInt16 i3;
-    } ivalues;
-  } u;
+        struct
+        {
+            WsUInt32 i1;
+            WsUInt16 i2;
+            WsUInt16 i3;
+        }
+        ivalues;
+    } u;
 };
 
 typedef struct WsAsmInsRec WsAsmIns;
@@ -241,7 +243,7 @@ void ws_asm_print(WsCompilerPtr compiler);
 
 /* Disassemble the byte-code `code', `len' to the standard output. */
 void ws_asm_dasm(WsCompilerPtr compiler, const unsigned char *code,
-		 size_t len);
+                 size_t len);
 
 /* Linearize the assembler, currently being constructed in `compiler',
    into `compiler->byte_code'. */
@@ -254,7 +256,7 @@ WsAsmIns *ws_asm_label(WsCompilerPtr compiler, WsUInt32 line);
 
 /* Create a branch instruction `ins' to label `label'. */
 WsAsmIns *ws_asm_branch(WsCompilerPtr compiler, WsUInt32 line, WsUInt16 ins,
-			WsAsmIns *label);
+                        WsAsmIns *label);
 
 /* Create a local call instruction to function `findex'. */
 WsAsmIns *ws_asm_call(WsCompilerPtr compiler, WsUInt32 line, WsUInt8 findex);
@@ -262,22 +264,22 @@ WsAsmIns *ws_asm_call(WsCompilerPtr compiler, WsUInt32 line, WsUInt8 findex);
 /* Create a library call instruction to function `findex' from the
    libary `lindex'. */
 WsAsmIns *ws_asm_call_lib(WsCompilerPtr compiler, WsUInt32 line,
-			  WsUInt8 findex, WsUInt16 lindex);
+                          WsUInt8 findex, WsUInt16 lindex);
 
 /* Create an URL call instruction for function `findex' from the URL
    `urlindex' with `args' arguments.  The arguments `urlindex' and
    `findex' pont to the constant pool. */
 WsAsmIns *ws_asm_call_url(WsCompilerPtr compiler, WsUInt32 line,
-			  WsUInt16 findex, WsUInt16 urlindex, WsUInt8 args);
+                          WsUInt16 findex, WsUInt16 urlindex, WsUInt8 args);
 
 /* Create a variable modification instruction `ins' for the variable
    `vindex'. */
 WsAsmIns *ws_asm_variable(WsCompilerPtr compiler, WsUInt32 line, WsUInt16 ins,
-			  WsUInt8 vindex);
+                          WsUInt8 vindex);
 
 /* Create a constant loading instruction for the constant `cindex'. */
 WsAsmIns *ws_asm_load_const(WsCompilerPtr compiler, WsUInt32 line,
-			    WsUInt16 cindex);
+                            WsUInt16 cindex);
 
 /* Create an instruction `ins'. */
 WsAsmIns *ws_asm_ins(WsCompilerPtr compiler, WsUInt32 line, WsUInt8 opcode);

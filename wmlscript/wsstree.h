@@ -20,8 +20,8 @@
 /* A pair to bind two items together. */
 struct WsPairRec
 {
-  void *car;
-  void *cdr;
+    void *car;
+    void *cdr;
 };
 
 typedef struct WsPairRec WsPair;
@@ -34,8 +34,8 @@ WsPair *ws_pair_new(WsCompilerPtr compiler, void *car, void *cdr);
 /* A list item. */
 struct WsListItemRec
 {
-  struct WsListItemRec *next;
-  void *data;
+    struct WsListItemRec *next;
+    void *data;
 };
 
 typedef struct WsListItemRec WsListItem;
@@ -43,15 +43,15 @@ typedef struct WsListItemRec WsListItem;
 /* The linked list object. */
 struct WsListRec
 {
-  WsListItem *head;
-  WsListItem *tail;
-  WsUInt32 num_items;
+    WsListItem *head;
+    WsListItem *tail;
+    WsUInt32 num_items;
 
-  /* These are used in blocks to record the first and last line
-     information.  They might also be used in other grammar
-     constructs. */
-  WsUInt32 first_line;
-  WsUInt32 last_line;
+    /* These are used in blocks to record the first and last line
+       information.  They might also be used in other grammar
+       constructs. */
+    WsUInt32 first_line;
+    WsUInt32 last_line;
 };
 
 typedef struct WsListRec WsList;
@@ -70,11 +70,11 @@ void ws_list_append(WsCompilerPtr compiler, WsList *list, void *value);
 /* A namespace record. */
 struct WsNamespaceRec
 {
-  /* The line where this argument or local variable is declared. */
-  WsUInt32 line;
+    /* The line where this argument or local variable is declared. */
+    WsUInt32 line;
 
-  /* The index of this variable. */
-  WsUInt8 vindex;
+    /* The index of this variable. */
+    WsUInt8 vindex;
 };
 
 typedef struct WsNamespaceRec WsNamespace;
@@ -90,7 +90,7 @@ WsHashPtr ws_variable_hash_create(void);
    needed.  It will also report errors, etc.  The function returns
    NULL if there were any errors. */
 WsNamespace *ws_variable_define(WsCompilerPtr compiler, WsUInt32 line,
-				WsBool variablep, char *name);
+                                WsBool variablep, char *name);
 
 /* Lookup the variable `name' from the variables namespace.  The
    function returns NULL if the variable `name' is undefined.  The
@@ -103,12 +103,12 @@ WsNamespace *ws_variable_lookup(WsCompilerPtr compiler, char *name);
 
 struct WsPragmaUseRec
 {
-  /* The line number of the pragma. */
-  WsUInt32 line;
+    /* The line number of the pragma. */
+    WsUInt32 line;
 
-  /* The byte-code pool constant index of the external compilation
-     unit URL. */
-  WsUInt16 urlindex;
+    /* The byte-code pool constant index of the external compilation
+       unit URL. */
+    WsUInt16 urlindex;
 };
 
 typedef struct WsPragmaUseRec WsPragmaUse;
@@ -124,25 +124,25 @@ WsHashPtr ws_pragma_use_hash_create(void);
    function reports errors if the identifier `identifier' does already
    have a mapping the external compilation unit namespace. */
 void ws_pragma_use(WsCompilerPtr compiler, WsUInt32 line, char *identifier,
-		   WsUtf8String *url);
+                   WsUtf8String *url);
 
 
 /* MetaBody handling of the `use meta' pragmas. */
 
 struct WsPragmaMetaBodyRec
 {
-  WsUtf8String *property_name;
-  WsUtf8String *content;
-  WsUtf8String *scheme;
+    WsUtf8String *property_name;
+    WsUtf8String *content;
+    WsUtf8String *scheme;
 };
 
 typedef struct WsPragmaMetaBodyRec WsPragmaMetaBody;
 
 /* Create a meta body pragma. */
 WsPragmaMetaBody *ws_pragma_meta_body(WsCompilerPtr compiler,
-				      WsUtf8String *property_name,
-				      WsUtf8String *content,
-				      WsUtf8String *scheme);
+                                      WsUtf8String *property_name,
+                                      WsUtf8String *content,
+                                      WsUtf8String *scheme);
 
 /* Free the MetaBody `mb'. */
 void ws_pragma_meta_body_free(WsCompilerPtr compiler, WsPragmaMetaBody *mb);
@@ -152,16 +152,16 @@ void ws_pragma_meta_body_free(WsCompilerPtr compiler, WsPragmaMetaBody *mb);
 
 struct WsFunctionRec
 {
-  WsUInt8 findex;
-  WsBool externp;
-  char *name;
-  WsUInt32 line;
-  WsList *params;
-  WsList *block;
+    WsUInt8 findex;
+    WsBool externp;
+    char *name;
+    WsUInt32 line;
+    WsList *params;
+    WsList *block;
 
-  /* The usage count of this function.  This is used when sorting the
-     functions by their usage count. */
-  WsUInt32 usage_count;
+    /* The usage count of this function.  This is used when sorting the
+       functions by their usage count. */
+    WsUInt32 usage_count;
 };
 
 typedef struct WsFunctionRec WsFunction;
@@ -171,13 +171,13 @@ typedef struct WsFunctionRec WsFunction;
    declaration. */
 struct WsFunctionHashRec
 {
-  /* Does this mapping have a function declaration. */
-  WsBool defined;
+    /* Does this mapping have a function declaration. */
+    WsBool defined;
 
-  /* If declared, this is the index. */
-  WsUInt8 findex;
+    /* If declared, this is the index. */
+    WsUInt8 findex;
 
-  WsUInt32 usage_count;
+    WsUInt32 usage_count;
 };
 
 typedef struct WsFunctionHashRec WsFunctionHash;
@@ -201,126 +201,135 @@ WsFunctionHash *ws_function_hash(WsCompilerPtr compiler, char *name);
    parameters of the function and its body is specified in the
    argument `block'. */
 void ws_function(WsCompilerPtr compiler, WsBool externp, char *name,
-		 WsUInt32 line, WsList *params, WsList *block);
+                 WsUInt32 line, WsList *params, WsList *block);
 
 /********************* Expressions **************************************/
 
 /* Expression types. */
 typedef enum
 {
-  WS_EXPR_COMMA,
-  WS_EXPR_ASSIGN,
-  WS_EXPR_CONDITIONAL,
-  WS_EXPR_LOGICAL,
-  WS_EXPR_BINARY,
-  WS_EXPR_UNARY,
-  WS_EXPR_UNARY_VAR,
-  WS_EXPR_POSTFIX_VAR,
-  WS_EXPR_CALL,
-  WS_EXPR_SYMBOL,
-  WS_EXPR_CONST_INVALID,
-  WS_EXPR_CONST_TRUE,
-  WS_EXPR_CONST_FALSE,
-  WS_EXPR_CONST_INTEGER,
-  WS_EXPR_CONST_FLOAT,
-  WS_EXPR_CONST_STRING
+    WS_EXPR_COMMA,
+    WS_EXPR_ASSIGN,
+    WS_EXPR_CONDITIONAL,
+    WS_EXPR_LOGICAL,
+    WS_EXPR_BINARY,
+    WS_EXPR_UNARY,
+    WS_EXPR_UNARY_VAR,
+    WS_EXPR_POSTFIX_VAR,
+    WS_EXPR_CALL,
+    WS_EXPR_SYMBOL,
+    WS_EXPR_CONST_INVALID,
+    WS_EXPR_CONST_TRUE,
+    WS_EXPR_CONST_FALSE,
+    WS_EXPR_CONST_INTEGER,
+    WS_EXPR_CONST_FLOAT,
+    WS_EXPR_CONST_STRING
 } WsExpressionType;
 
 /* An expression. */
 struct WsExpressionRec
 {
-  WsExpressionType type;
-  WsUInt32 line;
+    WsExpressionType type;
+    WsUInt32 line;
 
-  union
-  {
-    struct
+    union
     {
-      struct WsExpressionRec *left;
-      struct WsExpressionRec *right;
-    } comma;
+        struct
+        {
+            struct WsExpressionRec *left;
+            struct WsExpressionRec *right;
+        }
+        comma;
 
-    struct
-    {
-      /* The identifier that is modified. */
-      char *identifier;
+        struct
+        {
+            /* The identifier that is modified. */
+            char *identifier;
 
-      /* The type of the assignment.  This is the assignment token
-         value: '=', tMULA, tDA, ... */
-      int op;
+            /* The type of the assignment.  This is the assignment token
+               value: '=', tMULA, tDA, ... */
+            int op;
 
-      /* The expression to assign to the identifier `identifier'. */
-      struct WsExpressionRec *expr;
-    } assign;
+            /* The expression to assign to the identifier `identifier'. */
+            struct WsExpressionRec *expr;
+        }
+        assign;
 
-    struct
-    {
-      struct WsExpressionRec *e_cond;
-      struct WsExpressionRec *e_then;
-      struct WsExpressionRec *e_else;
-    } conditional;
+        struct
+        {
+            struct WsExpressionRec *e_cond;
+            struct WsExpressionRec *e_then;
+            struct WsExpressionRec *e_else;
+        }
+        conditional;
 
-    struct
-    {
-      /* The type is the opcode of the short-circuit logical byte-code
-         operand. */
-      int type;
-      struct WsExpressionRec *left;
-      struct WsExpressionRec *right;
-    } logical;
+        struct
+        {
+            /* The type is the opcode of the short-circuit logical byte-code
+               operand. */
+            int type;
+            struct WsExpressionRec *left;
+            struct WsExpressionRec *right;
+        }
+        logical;
 
-    struct
-    {
-      /* The type is the opcode of the binary byte-code operand. */
-      int type;
-      struct WsExpressionRec *left;
-      struct WsExpressionRec *right;
-    } binary;
+        struct
+        {
+            /* The type is the opcode of the binary byte-code operand. */
+            int type;
+            struct WsExpressionRec *left;
+            struct WsExpressionRec *right;
+        }
+        binary;
 
-    struct
-    {
-      /* The type is the opcode of the unary byte-code operand. */
-      int type;
-      struct WsExpressionRec *expr;
-    } unary;
+        struct
+        {
+            /* The type is the opcode of the unary byte-code operand. */
+            int type;
+            struct WsExpressionRec *expr;
+        }
+        unary;
 
-    struct
-    {
-      /* Is this an unary addition or substraction. */
-      WsBool addp;
-      char *variable;
-    } unary_var;
+        struct
+        {
+            /* Is this an unary addition or substraction. */
+            WsBool addp;
+            char *variable;
+        }
+        unary_var;
 
-    struct
-    {
-      /* Is this a postfix addition or substraction. */
-      WsBool addp;
-      char *variable;
-    } postfix_var;
+        struct
+        {
+            /* Is this a postfix addition or substraction. */
+            WsBool addp;
+            char *variable;
+        }
+        postfix_var;
 
-    struct
-    {
-      /* The type of the call: ' ', '#', '.' */
-      int type;
+        struct
+        {
+            /* The type of the call: ' ', '#', '.' */
+            int type;
 
-      /* The name of the external module or library. */
-      char *base;
+            /* The name of the external module or library. */
+            char *base;
 
-      /* The name of the function to call. */
-      char *name;
+            /* The name of the function to call. */
+            char *name;
 
-      /* The arguments of the call. */
-      WsList *arguments;
-    } call;
+            /* The arguments of the call. */
+            WsList *arguments;
+        }
+        call;
 
-    char *symbol;
+        char *symbol;
 
-    WsUInt16 cindex;
+        WsUInt16 cindex;
 
-    WsUInt32 ival;
-    WsFloat fval;
-    WsUtf8String string;
-  } u;
+        WsUInt32 ival;
+        WsFloat fval;
+        WsUtf8String string;
+    } u;
 };
 
 typedef struct WsExpressionRec WsExpression;
@@ -334,58 +343,58 @@ void ws_expr_linearize(WsCompilerPtr compiler, WsExpression *expr);
 
 /* Create a comma expression for `left' and `right'. */
 WsExpression *ws_expr_comma(WsCompilerPtr compiler, WsUInt32 line,
-			    WsExpression *left, WsExpression *right);
+                            WsExpression *left, WsExpression *right);
 
 /* Create an assignment expression.  The argument `type' specifies the
    type of the expression.  It is the assignment token value. */
 WsExpression *ws_expr_assign(WsCompilerPtr compiler, WsUInt32 line,
-			     char *identifier, int op, WsExpression *expr);
+                             char *identifier, int op, WsExpression *expr);
 
 /* Create a conditional expression with condition `e_cond' and
    expressions `e_then' and `e_else'. */
 WsExpression *ws_expr_conditional(WsCompilerPtr compiler, WsUInt32 line,
-				  WsExpression *e_cond, WsExpression *e_then,
-				  WsExpression *e_else);
+                                  WsExpression *e_cond, WsExpression *e_then,
+                                  WsExpression *e_else);
 
 /* Create a logical expression of type `type'.  The argument `type' is
    the opcode of the logical shoft-circuit byte-code operand. */
 WsExpression *ws_expr_logical(WsCompilerPtr compiler, WsUInt32 line,
-			      int type, WsExpression *left,
-			      WsExpression *right);
+                              int type, WsExpression *left,
+                              WsExpression *right);
 
 /* Create a binary expression of type `type'.  The argument `type' is
    the opcode of the binary byte-code operand. */
 WsExpression *ws_expr_binary(WsCompilerPtr compiler, WsUInt32 line,
-			     int type, WsExpression *left,
-			     WsExpression *right);
+                             int type, WsExpression *left,
+                             WsExpression *right);
 
 /* Create an unary expression of type `type'.  The argument `type' is
    the opcode of the unary byte-code operand. */
 WsExpression *ws_expr_unary(WsCompilerPtr compiler, WsUInt32 line,
-			    int type, WsExpression *expr);
+                            int type, WsExpression *expr);
 
 /* Create an unary variable modification expression.  The argument
    `addp' specified whether the expression is an addition (++) or a
    substraction (--) expression. */
 WsExpression *ws_expr_unary_var(WsCompilerPtr compiler, WsUInt32 line,
-				WsBool addp, char *variable);
+                                WsBool addp, char *variable);
 
 /* Create a postfix variable modification expression. The argument
    `addp' specified whether the expression is an addition (++) or a
    substraction (--) expression. */
 WsExpression *ws_expr_postfix_var(WsCompilerPtr compiler, WsUInt32 line,
-				  WsBool addp, char *variable);
+                                  WsBool addp, char *variable);
 
 /* A generic call expression.  The argument `type' must be one of ' ',
    '#', or '.' for local, extern, or library function call
    respectively. */
 WsExpression *ws_expr_call(WsCompilerPtr compiler, WsUInt32 linenum,
-			   int type, char *base, char *name,
-			   WsList *arguments);
+                           int type, char *base, char *name,
+                           WsList *arguments);
 
 /* A symbol reference expression. */
 WsExpression *ws_expr_symbol(WsCompilerPtr compiler, WsUInt32 linenum,
-			     char *identifier);
+                             char *identifier);
 
 /* Constant `invalid'. */
 WsExpression *ws_expr_const_invalid(WsCompilerPtr compiler, WsUInt32 linenum);
@@ -398,68 +407,71 @@ WsExpression *ws_expr_const_false(WsCompilerPtr compiler, WsUInt32 linenum);
 
 /* An unsigned 32 bit integer. */
 WsExpression *ws_expr_const_integer(WsCompilerPtr compiler, WsUInt32 linenum,
-				    WsUInt32 ival);
+                                    WsUInt32 ival);
 
 /* A floating point number. */
 WsExpression *ws_expr_const_float(WsCompilerPtr compiler, WsUInt32 linenum,
-				  WsFloat fval);
+                                  WsFloat fval);
 
 /* An UTF-8 encoded string. */
 WsExpression *ws_expr_const_string(WsCompilerPtr compiler, WsUInt32 linenum,
-				   WsUtf8String *string);
+                                   WsUtf8String *string);
 
 /********************* Statements ***************************************/
 
 /* Statement types. */
 typedef enum
 {
-  WS_STMT_BLOCK,
-  WS_STMT_VARIABLE,
-  WS_STMT_EMPTY,
-  WS_STMT_EXPR,
-  WS_STMT_IF,
-  WS_STMT_FOR,
-  WS_STMT_WHILE,
-  WS_STMT_CONTINUE,
-  WS_STMT_BREAK,
-  WS_STMT_RETURN
+    WS_STMT_BLOCK,
+    WS_STMT_VARIABLE,
+    WS_STMT_EMPTY,
+    WS_STMT_EXPR,
+    WS_STMT_IF,
+    WS_STMT_FOR,
+    WS_STMT_WHILE,
+    WS_STMT_CONTINUE,
+    WS_STMT_BREAK,
+    WS_STMT_RETURN
 } WsStatementType;
 
 /* A statement. */
 struct WsStatementRec
 {
-  WsStatementType type;
-  WsUInt32 first_line;
-  WsUInt32 last_line;
+    WsStatementType type;
+    WsUInt32 first_line;
+    WsUInt32 last_line;
 
-  union
-  {
-    WsList *block;
-    WsList *var;
-    WsExpression *expr;
-
-    struct
+    union
     {
-      WsExpression *expr;
-      struct WsStatementRec *s_then;
-      struct WsStatementRec *s_else;
-    } s_if;
+        WsList *block;
+        WsList *var;
+        WsExpression *expr;
 
-    struct
-    {
-      WsList *init;
-      WsExpression *e1;
-      WsExpression *e2;
-      WsExpression *e3;
-      struct WsStatementRec *stmt;
-    } s_for;
+        struct
+        {
+            WsExpression *expr;
+            struct WsStatementRec *s_then;
+            struct WsStatementRec *s_else;
+        }
+        s_if ;
 
-    struct
-    {
-      WsExpression *expr;
-      struct WsStatementRec *stmt;
-    } s_while;
-  } u;
+        struct
+        {
+            WsList *init;
+            WsExpression *e1;
+            WsExpression *e2;
+            WsExpression *e3;
+            struct WsStatementRec *stmt;
+        }
+        s_for ;
+
+        struct
+        {
+            WsExpression *expr;
+            struct WsStatementRec *stmt;
+        }
+        s_while ;
+    } u;
 };
 
 typedef struct WsStatementRec WsStatement;
@@ -475,36 +487,36 @@ void ws_stmt_linearize(WsCompilerPtr compiler, WsStatement *stmt);
    line numbers of the block (the line numbers of the '{' and '}'
    tokens). */
 WsStatement *ws_stmt_block(WsCompilerPtr compiler, WsUInt32 first_line,
-			   WsUInt32 last_line, WsList *block);
+                           WsUInt32 last_line, WsList *block);
 
 /* Create a new variable initialization statement. */
 WsStatement *ws_stmt_variable(WsCompilerPtr compiler, WsUInt32 line,
-			      WsList *variables);
+                              WsList *variables);
 
 /* Create a new empty statement. */
 WsStatement *ws_stmt_empty(WsCompilerPtr compiler, WsUInt32 line);
 
 /* Create a new expression statement. */
 WsStatement *ws_stmt_expr(WsCompilerPtr compiler, WsUInt32 line,
-			  WsExpression *expr);
+                          WsExpression *expr);
 
 /* Create a new if statement. */
-WsStatement *ws_stmt_if(WsCompilerPtr compiler, WsUInt32 line,
-			WsExpression *expr, WsStatement *s_then,
-			WsStatement *s_else);
+WsStatement *ws_stmt_if (WsCompilerPtr compiler, WsUInt32 line,
+                         WsExpression *expr, WsStatement *s_then,
+                         WsStatement *s_else);
 
 /* Create a new for statement.  Only one of the arguments `init' and
    `e1' can be defined.  The init must be given for statements which
    has a VariableDeclarationList in the initialization block.  For the
    C-like statements, the argument `e1' must be given for the
    initialization expression. */
-WsStatement *ws_stmt_for(WsCompilerPtr compiler, WsUInt32 line, WsList *init,
-			 WsExpression *e1, WsExpression *e2, WsExpression *e3,
-			 WsStatement *stmt);
+WsStatement *ws_stmt_for (WsCompilerPtr compiler, WsUInt32 line, WsList *init,
+                          WsExpression *e1, WsExpression *e2, WsExpression *e3,
+                          WsStatement *stmt);
 
 /* Create a new while statement. */
-WsStatement *ws_stmt_while(WsCompilerPtr compiler, WsUInt32 line,
-			   WsExpression *expr, WsStatement *stmt);
+WsStatement *ws_stmt_while (WsCompilerPtr compiler, WsUInt32 line,
+                            WsExpression *expr, WsStatement *stmt);
 
 /* Create a new continue statement. */
 WsStatement *ws_stmt_continue(WsCompilerPtr compiler, WsUInt32 line);
@@ -516,6 +528,6 @@ WsStatement *ws_stmt_break(WsCompilerPtr compiler, WsUInt32 line);
    expression to return.  If it is NULL, the return statement returns
    an empty string. */
 WsStatement *ws_stmt_return(WsCompilerPtr compiler, WsUInt32 line,
-			    WsExpression *expr);
+                            WsExpression *expr);
 
 #endif /* not WSSTREE_H */

@@ -33,8 +33,8 @@
    `rfc/iana/assignments/character-sets'. */
 typedef enum
 {
-  WS_BC_STRING_ENC_ISO_8859_1	= 4,
-  WS_BC_STRING_ENC_UTF8		= 106
+    WS_BC_STRING_ENC_ISO_8859_1	= 4,
+    WS_BC_STRING_ENC_UTF8	= 106
 } WsBcStringEncoding;
 
 /* Constant types in the BC constants pool. */
@@ -51,25 +51,25 @@ typedef enum
 
 typedef enum
 {
-  WS_BC_CONST_TYPE_INT,
-  WS_BC_CONST_TYPE_FLOAT32,
-  WS_BC_CONST_TYPE_FLOAT32_NAN,
-  WS_BC_CONST_TYPE_FLOAT32_POSITIVE_INF,
-  WS_BC_CONST_TYPE_FLOAT32_NEGATIVE_INF,
-  WS_BC_CONST_TYPE_UTF8_STRING,
-  WS_BC_CONST_TYPE_EMPTY_STRING
+    WS_BC_CONST_TYPE_INT,
+    WS_BC_CONST_TYPE_FLOAT32,
+    WS_BC_CONST_TYPE_FLOAT32_NAN,
+    WS_BC_CONST_TYPE_FLOAT32_POSITIVE_INF,
+    WS_BC_CONST_TYPE_FLOAT32_NEGATIVE_INF,
+    WS_BC_CONST_TYPE_UTF8_STRING,
+    WS_BC_CONST_TYPE_EMPTY_STRING
 } WsBcConstantType;
 
 struct WsBcConstantRec
 {
-  WsBcConstantType type;
+    WsBcConstantType type;
 
-  union
-  {
-    WsInt32 v_int;
-    WsFloat v_float;
-    WsUtf8String v_string;
-  } u;
+    union
+    {
+        WsInt32 v_int;
+        WsFloat v_float;
+        WsUtf8String v_string;
+    } u;
 };
 
 typedef struct WsBcConstantRec WsBcConstant;
@@ -85,19 +85,19 @@ typedef struct WsBcConstantRec WsBcConstant;
 
 typedef enum
 {
-  WS_BC_PRAGMA_TYPE_ACCESS_DOMAIN,
-  WS_BC_PRAGMA_TYPE_ACCESS_PATH,
-  WS_BC_PRAGMA_TYPE_USER_AGENT_PROPERTY,
-  WS_BC_PRAGMA_TYPE_USER_AGENT_PROPERTY_AND_SCHEME
+    WS_BC_PRAGMA_TYPE_ACCESS_DOMAIN,
+    WS_BC_PRAGMA_TYPE_ACCESS_PATH,
+    WS_BC_PRAGMA_TYPE_USER_AGENT_PROPERTY,
+    WS_BC_PRAGMA_TYPE_USER_AGENT_PROPERTY_AND_SCHEME
 } WsBcPragmaType;
 
 struct WsBcPragmaRec
 {
-  WsBcPragmaType type;
+    WsBcPragmaType type;
 
-  WsUInt16 index_1;
-  WsUInt16 index_2;
-  WsUInt16 index_3;
+    WsUInt16 index_1;
+    WsUInt16 index_2;
+    WsUInt16 index_3;
 };
 
 typedef struct WsBcPragmaRec WsBcPragma;
@@ -105,12 +105,12 @@ typedef struct WsBcPragmaRec WsBcPragma;
 /* An in-memory byte-code function name. */
 struct WsBcFunctionNameRec
 {
-  /* Index to the function pool. */
-  WsUInt8 index;
+    /* Index to the function pool. */
+    WsUInt8 index;
 
-  /* The name of the function as a 7 bit ASCII.  This is as-is in the
-     UTF-8 format. */
-  char *name;
+    /* The name of the function as a 7 bit ASCII.  This is as-is in the
+       UTF-8 format. */
+    char *name;
 };
 
 typedef struct WsBcFunctionNameRec WsBcFunctionName;
@@ -118,10 +118,10 @@ typedef struct WsBcFunctionNameRec WsBcFunctionName;
 /* An in-memory byte-code function. */
 struct WsBcFunctionRec
 {
-  WsUInt8 num_arguments;
-  WsUInt8 num_locals;
-  WsUInt32 code_size;
-  unsigned char *code;
+    WsUInt8 num_arguments;
+    WsUInt8 num_locals;
+    WsUInt32 code_size;
+    unsigned char *code;
 };
 
 typedef struct WsBcFunctionRec WsBcFunction;
@@ -129,26 +129,26 @@ typedef struct WsBcFunctionRec WsBcFunction;
 /* An in-memory byte-code file. */
 struct WsBcRec
 {
-  /* How the strings are encoded in linearization. */
-  WsBcStringEncoding string_encoding;
+    /* How the strings are encoded in linearization. */
+    WsBcStringEncoding string_encoding;
 
-  /* Constant pool.  In this structure, all strings are in UTF-8
-     format.  However, they can be converted to different formats - if
-     requested - when linearizing the byte-code. */
-  WsUInt16 num_constants;
-  WsBcConstant *constants;
+    /* Constant pool.  In this structure, all strings are in UTF-8
+       format.  However, they can be converted to different formats - if
+       requested - when linearizing the byte-code. */
+    WsUInt16 num_constants;
+    WsBcConstant *constants;
 
-  /* Pragma pool. */
-  WsUInt16 num_pragmas;
-  WsBcPragma *pragmas;
+    /* Pragma pool. */
+    WsUInt16 num_pragmas;
+    WsBcPragma *pragmas;
 
-  /* Function pool. */
+    /* Function pool. */
 
-  WsUInt8 num_function_names;
-  WsBcFunctionName *function_names;
+    WsUInt8 num_function_names;
+    WsBcFunctionName *function_names;
 
-  WsUInt8 num_functions;
-  WsBcFunction *functions;
+    WsUInt8 num_functions;
+    WsBcFunction *functions;
 };
 
 typedef struct WsBcRec WsBc;
@@ -173,7 +173,7 @@ void ws_bc_free(WsBc *bc);
    function.  You *must* not free it with ws_free() since it will
    corrupt the heap. */
 WsBool ws_bc_encode(WsBc *bc, unsigned char **data_return,
-		    size_t *data_len_return);
+                    size_t *data_len_return);
 
 /* Free a byte-code data `data', returned by the ws_bc_encode()
    function. */
@@ -194,7 +194,7 @@ WsBc *ws_bc_decode(const unsigned char *data, size_t data_len);
    `index_return'.  The function returns WS_TRUE if the operation was
    successfull or WS_FALSE otherwise (out of memory).  */
 WsBool ws_bc_add_const_int(WsBc *bc, WsUInt16 *index_return,
-			   WsInt32 value);
+                           WsInt32 value);
 
 /* Add a floating point constant `value' to the constant pool of the
    byte-code structure `bc'. */
@@ -203,7 +203,7 @@ WsBool ws_bc_add_const_float(WsBc *bc, WsUInt16 *index_return, WsFloat value);
 /* Add an UTF-8 encoded string to the constant pool of the byte-code
    structure `bc'. */
 WsBool ws_bc_add_const_utf8_string(WsBc *bc, WsUInt16 *index_return,
-				   const unsigned char *data, size_t len);
+                                   const unsigned char *data, size_t len);
 
 /* Add an empty string to the constant pool of the byte-code structure
    `bc'. */
@@ -215,36 +215,36 @@ WsBool ws_bc_add_const_empty_string(WsBc *bc, WsUInt16 *index_return);
    pools of the byte-code structure `bc'.  The argument `domain' has
    `domain_len' bytes of UTF-8 data specifying the access domain. */
 WsBool ws_bc_add_pragma_access_domain(WsBc *bc,
-				      const unsigned char *domain,
-				      size_t domain_len);
+                                      const unsigned char *domain,
+                                      size_t domain_len);
 
 /* Add an access control specifier pragma to the constant and pragma
    pools of the byte-code structure `bc'.  The argument `path' has
    `path_len' bytes of UTF-8 data specifying the access path. */
 WsBool ws_bc_add_pragma_access_path(WsBc *bc,
-				    const unsigned char *path,
-				    size_t path_len);
+                                    const unsigned char *path,
+                                    size_t path_len);
 
 /* Add a use agent property pragma to the constant and pragma pools of
    the byte-code structure `bc'.  The arguments `name' and `property'
    are UTF-8 encoded use agent property. */
 WsBool ws_bc_add_pragma_user_agent_property(WsBc *bc,
-					    const unsigned char *name,
-					    size_t name_len,
-					    const unsigned char *property,
-					    size_t property_len);
+        const unsigned char *name,
+        size_t name_len,
+        const unsigned char *property,
+        size_t property_len);
 
 /* Add a use agent property pragma to the constant and pragma pools of
    the byte-code structure `bc'.  The arguments `name', `property',
    and `scheme' are UTF-8 encoded use agent property and scheme. */
 WsBool ws_bc_add_pragma_user_agent_property_and_scheme(
-					WsBc *bc,
-					const unsigned char *name,
-					size_t name_len,
-					const unsigned char *property,
-					size_t property_len,
-					const unsigned char *scheme,
-					size_t scheme_len);
+    WsBc *bc,
+    const unsigned char *name,
+    size_t name_len,
+    const unsigned char *property,
+    size_t property_len,
+    const unsigned char *scheme,
+    size_t scheme_len);
 
 /********************* Adding functions *********************************/
 
@@ -261,8 +261,8 @@ WsBool ws_bc_add_pragma_user_agent_property_and_scheme(
    if the adding was successfull or WS_FALSE otherwise (out of
    memory). */
 WsBool ws_bc_add_function(WsBc *bc, WsUInt8 *index_return,
-			  char *name, WsUInt8 num_arguments,
-			  WsUInt8 num_locals, WsUInt32 code_size,
-			  unsigned char *code);
+                          char *name, WsUInt8 num_arguments,
+                          WsUInt8 num_locals, WsUInt32 code_size,
+                          unsigned char *code);
 
 #endif /* not WSBC_H */

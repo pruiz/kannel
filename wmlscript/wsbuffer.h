@@ -20,8 +20,8 @@
    visible but its internals should not be modified directly. */
 struct WsBufferRec
 {
-  size_t len;
-  unsigned char *data;
+    size_t len;
+    unsigned char *data;
 };
 
 typedef struct WsBufferRec WsBuffer;
@@ -52,8 +52,7 @@ WsBool ws_buffer_append(WsBuffer *buffer, unsigned char *data, size_t len);
    argument `p' is not NULL, it is set to point to the beginning of
    the appended space.  The function returns WS_TRUE if the operation
    was successful of WS_FALSE otherwise.  */
-WsBool ws_buffer_append_space(WsBuffer *buffer, unsigned char **p,
-			      size_t size);
+WsBool ws_buffer_append_space(WsBuffer *buffer, unsigned char **p, size_t size);
 
 /* Return a pointer to the beginning of the buffer's data. */
 unsigned char *ws_buffer_ptr(WsBuffer *buffer);

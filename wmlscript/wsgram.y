@@ -32,19 +32,19 @@ WsCompilerPtr global_compiler = NULL;
 /* The possible semantic values. */
 %union
 {
-  WsUInt32 integer;
-  WsFloat vfloat;
-  char *identifier;
-  WsUtf8String *string;
+    WsUInt32 integer;
+    WsFloat vfloat;
+    char *identifier;
+    WsUtf8String *string;
 
-  WsBool boolean;
-  WsList *list;
-  WsPair *pair;
+    WsBool boolean;
+    WsList *list;
+    WsPair *pair;
 
-  WsPragmaMetaBody *meta_body;
+    WsPragmaMetaBody *meta_body;
 
-  WsStatement *stmt;
-  WsExpression *expr;
+    WsStatement *stmt;
+    WsExpression *expr;
 }
 
 /* Tokens. */
@@ -121,9 +121,7 @@ CompilationUnit:
 	  Pragmas FunctionDeclarations
 	| FunctionDeclarations
 	| error
-		{
-		  ws_error_syntax(pctx, @1.first_line);
-		}
+		{ ws_error_syntax(pctx, @1.first_line); }
 	;
 
 /* Pragmas. */
@@ -136,9 +134,7 @@ Pragmas:
 Pragma:
 	  tUSE PragmaDeclaration ';'
 	| error
-		{
-		  ws_error_syntax(pctx, @2.first_line);
-		}
+		{ ws_error_syntax(pctx, @2.first_line); }
 	;
 
 PragmaDeclaration:
@@ -149,9 +145,7 @@ PragmaDeclaration:
 
 ExternalCompilationUnitPragma:
 	  tURL tIDENTIFIER tSTRING
-	  	{
-		  ws_pragma_use(pctx, @2.first_line, $2, $3);
-		}
+	  	{ ws_pragma_use(pctx, @2.first_line, $2, $3); }
 	;
 
 AccessControlPragma:
@@ -161,44 +155,44 @@ AccessControlPragma:
 AccessControlSpecifier:
 	  tDOMAIN tSTRING
 	  	{
-		  WsCompiler *compiler = (WsCompiler *) pctx;
+		    WsCompiler *compiler = (WsCompiler *) pctx;
 
-		  /* Pass this to the byte-code */
-		  if (!ws_bc_add_pragma_access_domain(compiler->bc, $2->data,
-						      $2->len))
-		    ws_error_memory(pctx);
-		  ws_lexer_free_utf8(compiler, $2);
+		    /* Pass this to the byte-code */
+		    if (!ws_bc_add_pragma_access_domain(compiler->bc, $2->data,
+						        $2->len))
+		        ws_error_memory(pctx);
+		    ws_lexer_free_utf8(compiler, $2);
 		}
 	| tPATH tSTRING
 	  	{
-		  WsCompiler *compiler = (WsCompiler *) pctx;
+		    WsCompiler *compiler = (WsCompiler *) pctx;
 
-		  /* Pass this to the byte-code */
-		  if (!ws_bc_add_pragma_access_path(compiler->bc, $2->data,
-						    $2->len))
-		    ws_error_memory(pctx);
+		    /* Pass this to the byte-code */
+		    if (!ws_bc_add_pragma_access_path(compiler->bc, $2->data,
+						      $2->len))
+		        ws_error_memory(pctx);
 
-		  ws_lexer_free_utf8(compiler, $2);
+		    ws_lexer_free_utf8(compiler, $2);
 		}
 	| tDOMAIN tSTRING tPATH tSTRING
 	  	{
-		  WsCompiler *compiler = (WsCompiler *) pctx;
-		  WsBool success = WS_TRUE;
+		    WsCompiler *compiler = (WsCompiler *) pctx;
+		    WsBool success = WS_TRUE;
 
-		  /* Pass these to the byte-code */
-		  if (!ws_bc_add_pragma_access_domain(compiler->bc, $2->data,
-						      $2->len))
-		    success = WS_FALSE;
+		    /* Pass these to the byte-code */
+		    if (!ws_bc_add_pragma_access_domain(compiler->bc, $2->data,
+						        $2->len))
+		        success = WS_FALSE;
 
-		  if (!ws_bc_add_pragma_access_path(compiler->bc, $4->data,
-						    $4->len))
-		    success = WS_FALSE;
+		    if (!ws_bc_add_pragma_access_path(compiler->bc, $4->data,
+						      $4->len))
+		        success = WS_FALSE;
 
-		  if (!success)
-		    ws_error_memory(pctx);
+		    if (!success)
+		        ws_error_memory(pctx);
 
-		  ws_lexer_free_utf8(compiler, $2);
-		  ws_lexer_free_utf8(compiler, $4);
+		    ws_lexer_free_utf8(compiler, $2);
+		    ws_lexer_free_utf8(compiler, $4);
 		}
 	;
 
@@ -215,52 +209,51 @@ MetaSpecifier:
 MetaName:
 	  tNAME MetaBody
 		{
-		  WsCompiler *compiler = (WsCompiler *) pctx;
+		    WsCompiler *compiler = (WsCompiler *) pctx;
 
-		  /* Meta information for the origin servers.  Show it
-                     to the user if requested. */
-		  if (compiler->params.meta_name_cb)
-		    (*compiler->params.meta_name_cb)(
+		    /* Meta information for the origin servers.  Show it
+                     * to the user if requested. */
+		    if (compiler->params.meta_name_cb)
+		        (*compiler->params.meta_name_cb)(
 					$2->property_name, $2->content,
 					$2->scheme,
 					compiler->params.meta_name_cb_context);
 
-		  /* We do not need the MetaBody anymore. */
-		  ws_pragma_meta_body_free(compiler, $2);
+		    /* We do not need the MetaBody anymore. */
+		    ws_pragma_meta_body_free(compiler, $2);
 		}
 	;
 
 MetaHttpEquiv:
 	  tHTTP tEQUIV MetaBody
 	  	{
-		  WsCompiler *compiler = (WsCompiler *) pctx;
+		    WsCompiler *compiler = (WsCompiler *) pctx;
 
-		  /* Meta information HTTP header that should be
-                     included to an HTTP response header.  Show it to
-                     the user if requested. */
-		  if (compiler->params.meta_http_equiv_cb)
-		    (*compiler->params.meta_http_equiv_cb)(
+		    /* Meta information HTTP header that should be
+                     * included to an HTTP response header.  Show it to
+                     * the user if requested. */
+		    if (compiler->params.meta_http_equiv_cb)
+		        (*compiler->params.meta_http_equiv_cb)(
 				$3->property_name,
 				$3->content,
 				$3->scheme,
 				compiler->params.meta_http_equiv_cb_context);
 
-		  /* We do not need the MetaBody anymore. */
-		  ws_pragma_meta_body_free(compiler, $3);
+		    /* We do not need the MetaBody anymore. */
+		    ws_pragma_meta_body_free(compiler, $3);
 		}
 	;
 
 MetaUserAgent:
 	  tUSER tAGENT MetaBody
 		{
-		  WsBool success;
-		  WsCompiler *compiler = (WsCompiler *) pctx;
+		    WsBool success;
+		    WsCompiler *compiler = (WsCompiler *) pctx;
 
-		  /* Pass this pragma to the byte-code */
-		  if ($3)
-		    {
-		      if ($3->scheme)
-			success
+		    /* Pass this pragma to the byte-code */
+		    if ($3) {
+		        if ($3->scheme)
+		  	    success
 			  = ws_bc_add_pragma_user_agent_property_and_scheme(
 						compiler->bc,
 						$3->property_name->data,
@@ -269,32 +262,28 @@ MetaUserAgent:
 						$3->content->len,
 						$3->scheme->data,
 						$3->scheme->len);
-		      else
-			success = ws_bc_add_pragma_user_agent_property(
+		        else
+		  	    success = ws_bc_add_pragma_user_agent_property(
 						compiler->bc,
 						$3->property_name->data,
 						$3->property_name->len,
 						$3->content->data,
 						$3->content->len);
 
-		      /* Free the MetaBody. */
-		      ws_pragma_meta_body_free(compiler, $3);
+		        /* Free the MetaBody. */
+		        ws_pragma_meta_body_free(compiler, $3);
 
-		      if (!success)
-			ws_error_memory(pctx);
+		        if (!success)
+		  	    ws_error_memory(pctx);
 		    }
 		}
 	;
 
 MetaBody:
 	  MetaPropertyName MetaContent
-		{
-		  $$ = ws_pragma_meta_body(pctx, $1, $2, NULL);
-		}
+		{ $$ = ws_pragma_meta_body(pctx, $1, $2, NULL); }
 	| MetaPropertyName MetaContent MetaScheme
-		{
-		  $$ = ws_pragma_meta_body(pctx, $1, $2, $3);
-		}
+		{ $$ = ws_pragma_meta_body(pctx, $1, $2, $3); }
 	;
 
 MetaPropertyName: tSTRING;
@@ -312,14 +301,14 @@ FunctionDeclaration:
 	  ExternOpt tFUNCTION tIDENTIFIER '(' FormalParameterListOpt ')' Block
 	  SemicolonOpt
 		{
-		  char *name = ws_strdup($3);
+		    char *name = ws_strdup($3);
 
-		  ws_lexer_free_block(pctx, $3);
+		    ws_lexer_free_block(pctx, $3);
 
-		  if (name)
-		    ws_function(pctx, $1, name, @3.first_line, $5, $7);
-		  else
-		    ws_error_memory(pctx);
+		    if (name)
+		        ws_function(pctx, $1, name, @3.first_line, $5, $7);
+		    else
+		        ws_error_memory(pctx);
 		}
 	;
 
@@ -330,9 +319,7 @@ ExternOpt:
 
 FormalParameterListOpt:
 	  /* empty */
-		{
-		  $$ = ws_list_new(pctx);
-		}
+		{ $$ = ws_list_new(pctx); }
 	| FormalParameterList
 	;
 
@@ -344,38 +331,33 @@ SemicolonOpt:
 FormalParameterList:
 	  tIDENTIFIER
 		{
-		  char *id = ws_f_strdup(((WsCompiler *) pctx)->pool_stree,
-					 $1);
-		  WsPair *pair = ws_pair_new(pctx, (void *) @1.first_line, id);
+		    char *id = ws_f_strdup(((WsCompiler *) pctx)->pool_stree,
+					    $1);
+		    WsPair *pair = ws_pair_new(pctx, (void *) @1.first_line, id);
 
-		  ws_lexer_free_block(pctx, $1);
+		    ws_lexer_free_block(pctx, $1);
 
-		  if (id == NULL || pair == NULL)
-		    {
-		      ws_error_memory(pctx);
-		      $$ = NULL;
-		    }
-		  else
-		    {
-		      $$ = ws_list_new(pctx);
-		      ws_list_append(pctx, $$, pair);
+		    if (id == NULL || pair == NULL) {
+		        ws_error_memory(pctx);
+		        $$ = NULL;
+		    } else {
+		        $$ = ws_list_new(pctx);
+		        ws_list_append(pctx, $$, pair);
 		    }
 		}
 	| FormalParameterList ',' tIDENTIFIER
 		{
-		  char *id = ws_f_strdup(((WsCompiler *) pctx)->pool_stree,
-					 $3);
-		  WsPair *pair = ws_pair_new(pctx, (void *) @1.first_line, id);
+		    char *id = ws_f_strdup(((WsCompiler *) pctx)->pool_stree,
+					   $3);
+		    WsPair *pair = ws_pair_new(pctx, (void *) @1.first_line, id);
 
-		  ws_lexer_free_block(pctx, $3);
+		    ws_lexer_free_block(pctx, $3);
 
-		  if (id == NULL || pair == NULL)
-		    {
-		      ws_error_memory(pctx);
-		      $$ = NULL;
-		    }
-		  else
-		    ws_list_append(pctx, $1, pair);
+		    if (id == NULL || pair == NULL) {
+		        ws_error_memory(pctx);
+		        $$ = NULL;
+		    } else
+		        ws_list_append(pctx, $1, pair);
 		}
 	;
 
@@ -384,158 +366,121 @@ FormalParameterList:
 Statement:
 	  Block
 		{
-		  if ($1)
-		    $$ = ws_stmt_block(pctx, $1->first_line, $1->last_line,
-				       $1);
-		  else
-		    $$ = NULL;
+		    if ($1)
+		        $$ = ws_stmt_block(pctx, $1->first_line, $1->last_line,
+				           $1);
+		    else
+		        $$ = NULL;
 		}
 	| VariableStatement
 	| ';'			/* EmptyStatement */
-		{
-		  $$ = ws_stmt_empty(pctx, @1.first_line);
-		}
+		{ $$ = ws_stmt_empty(pctx, @1.first_line); }
 	| Expression ';'	/* ExpressionStatement */
-		{
-		  $$ = ws_stmt_expr(pctx, $1->line, $1);
-		}
+		{ $$ = ws_stmt_expr(pctx, $1->line, $1); }
 	| IfStatement
 	| IterationStatement
 	| tCONTINUE ';'		/* ContinueStatement */
-		{
-		  $$ = ws_stmt_continue(pctx, @1.first_line);
-		}
+		{ $$ = ws_stmt_continue(pctx, @1.first_line); }
 	| tBREAK ';'		/* BreakStatement */
-		{
-		  $$ = ws_stmt_break(pctx, @1.first_line);
-		}
+		{ $$ = ws_stmt_break(pctx, @1.first_line); }
 	| ReturnStatement
 	;
 
 Block:	'{' StatementListOpt '}'
 		{
-		  $$ = $2;
-		  if ($$)
-		    {
-		      $$->first_line = @1.first_line;
-		      $$->last_line = @3.first_line;
+		    $$ = $2;
+		    if ($$) {
+		        $$->first_line = @1.first_line;
+		        $$->last_line = @3.first_line;
 		    }
 		}
 	| error
 		{
-		  ws_error_syntax(pctx, @2.first_line);
-		  $$ = NULL;
+		    ws_error_syntax(pctx, @2.first_line);
+		    $$ = NULL;
 		}
 	;
 
 StatementListOpt:
 	  /* empty */
-		{
-		  $$ = ws_list_new(pctx);
-		}
+		{ $$ = ws_list_new(pctx); }
 	| StatementList
 	;
 
 StatementList:
 	  Statement
 		{
-		  $$ = ws_list_new(pctx);
-		  ws_list_append(pctx, $$, $1);
+		    $$ = ws_list_new(pctx);
+		    ws_list_append(pctx, $$, $1);
 		}
 	| StatementList Statement
-		{
-		  ws_list_append(pctx, $1, $2);
-		}
+		{ ws_list_append(pctx, $1, $2); }
 	;
 
 VariableStatement:
 	  tVAR VariableDeclarationList ';'
-		{
-		  $$ = ws_stmt_variable(pctx, @1.first_line, $2);
-		}
+		{ $$ = ws_stmt_variable(pctx, @1.first_line, $2); }
 	| tVAR error
-		{
-		  ws_error_syntax(pctx, @2.first_line);
-		}
+		{ ws_error_syntax(pctx, @2.first_line); }
 	;
 
 VariableDeclarationList:
 	  VariableDeclaration
 		{
-		  $$ = ws_list_new(pctx);
-		  ws_list_append(pctx, $$, $1);
+		    $$ = ws_list_new(pctx);
+		    ws_list_append(pctx, $$, $1);
 		}
 	| VariableDeclarationList ',' VariableDeclaration
-		{
-		  ws_list_append(pctx, $1, $3);
-		}
+		{ ws_list_append(pctx, $1, $3); }
 	;
 
 VariableDeclaration:
 	  tIDENTIFIER VariableInitializedOpt
 		{
-		  char *id = ws_f_strdup(((WsCompiler *) pctx)->pool_stree,
-					 $1);
+		    char *id = ws_f_strdup(((WsCompiler *) pctx)->pool_stree,
+					   $1);
 
-		  ws_lexer_free_block(pctx, $1);
-		  if (id == NULL)
-		    {
-		      ws_error_memory(pctx);
-		      $$ = NULL;
-		    }
-		  else
-		    $$ = ws_pair_new(pctx, id, $2);
+		    ws_lexer_free_block(pctx, $1);
+		    if (id == NULL) {
+		        ws_error_memory(pctx);
+		        $$ = NULL;
+		    } else
+		        $$ = ws_pair_new(pctx, id, $2);
 		}
 	;
 
 VariableInitializedOpt:
 	  /* empty */
-		{
-		  $$ = NULL;
-		}
+		{ $$ = NULL; }
 	| '=' ConditionalExpression
-		{
-		  $$ = $2;
-		}
+		{ $$ = $2; }
 	;
 
 IfStatement:
 	  tIF '(' Expression ')' Statement tELSE Statement
-		{
-		  $$ = ws_stmt_if(pctx, @1.first_line, $3, $5, $7);
-		}
+		{ $$ = ws_stmt_if(pctx, @1.first_line, $3, $5, $7); }
 	| tIF '(' Expression ')' Statement
-		{
-		  $$ = ws_stmt_if(pctx, @1.first_line, $3, $5, NULL);
-		}
+		{ $$ = ws_stmt_if(pctx, @1.first_line, $3, $5, NULL); }
 	;
 
 IterationStatement:
 	  tWHILE '(' Expression ')' Statement
-		{
-		  $$ = ws_stmt_while(pctx, @1.first_line, $3, $5);
-		}
+		{ $$ = ws_stmt_while(pctx, @1.first_line, $3, $5); }
 	| ForStatement
 	;
 
 ForStatement:
 	  tFOR '(' ExpressionOpt ';' ExpressionOpt ';' ExpressionOpt ')'
 			Statement
-	  	{
-		  $$ = ws_stmt_for(pctx, @1.first_line, NULL, $3, $5, $7, $9);
-		}
+	  	{ $$ = ws_stmt_for(pctx, @1.first_line, NULL, $3, $5, $7, $9); }
 	| tFOR '(' tVAR VariableDeclarationList ';' ExpressionOpt ';'
 	       		ExpressionOpt ')' Statement
-	  	{
-		  $$ = ws_stmt_for(pctx, @1.first_line, $4, NULL, $6, $8, $10);
-		}
+	  	{ $$ = ws_stmt_for(pctx, @1.first_line, $4, NULL, $6, $8, $10); }
 	;
 
 ReturnStatement:
 	  tRETURN ExpressionOpt ';'
-		{
-		  $$ = ws_stmt_return(pctx, @1.first_line, $2);
-		}
+		{ $$ = ws_stmt_return(pctx, @1.first_line, $2); }
 	;
 
 /* Expressions. */
@@ -549,349 +494,227 @@ ExpressionOpt:
 Expression:
 	  AssignmentExpression
 	| Expression ',' AssignmentExpression
-		{
-		  $$ = ws_expr_comma(pctx, @2.first_line, $1, $3);
-		}
+		{ $$ = ws_expr_comma(pctx, @2.first_line, $1, $3); }
 	;
 
 AssignmentExpression:
 	  ConditionalExpression
 	| tIDENTIFIER	'='		AssignmentExpression
-		{
-		  $$ = ws_expr_assign(pctx, @1.first_line, $1, '=', $3);
-		}
+		{ $$ = ws_expr_assign(pctx, @1.first_line, $1, '=', $3); }
 	| tIDENTIFIER	tMULA		AssignmentExpression
-		{
-		  $$ = ws_expr_assign(pctx, @1.first_line, $1, tMULA, $3);
-		}
+		{ $$ = ws_expr_assign(pctx, @1.first_line, $1, tMULA, $3); }
 	| tIDENTIFIER	tDIVA		AssignmentExpression
-		{
-		  $$ = ws_expr_assign(pctx, @1.first_line, $1, tDIVA, $3);
-		}
+		{ $$ = ws_expr_assign(pctx, @1.first_line, $1, tDIVA, $3); }
 	| tIDENTIFIER	tREMA		AssignmentExpression
-		{
-		  $$ = ws_expr_assign(pctx, @1.first_line, $1, tREMA, $3);
-		}
+		{ $$ = ws_expr_assign(pctx, @1.first_line, $1, tREMA, $3); }
 	| tIDENTIFIER	tADDA		AssignmentExpression
-		{
-		  $$ = ws_expr_assign(pctx, @1.first_line, $1, tADDA, $3);
-		}
+		{ $$ = ws_expr_assign(pctx, @1.first_line, $1, tADDA, $3); }
 	| tIDENTIFIER	tSUBA		AssignmentExpression
-		{
-		  $$ = ws_expr_assign(pctx, @1.first_line, $1, tSUBA, $3);
-		}
+		{ $$ = ws_expr_assign(pctx, @1.first_line, $1, tSUBA, $3); }
 	| tIDENTIFIER	tLSHIFTA	AssignmentExpression
-		{
-		  $$ = ws_expr_assign(pctx, @1.first_line, $1, tLSHIFTA, $3);
-		}
+		{ $$ = ws_expr_assign(pctx, @1.first_line, $1, tLSHIFTA, $3); }
 	| tIDENTIFIER	tRSSHIFTA	AssignmentExpression
-		{
-		  $$ = ws_expr_assign(pctx, @1.first_line, $1, tRSSHIFTA, $3);
-		}
+		{ $$ = ws_expr_assign(pctx, @1.first_line, $1, tRSSHIFTA, $3); }
 	| tIDENTIFIER	tRSZSHIFTA	AssignmentExpression
-		{
-		  $$ = ws_expr_assign(pctx, @1.first_line, $1, tRSZSHIFTA, $3);
-		}
+		{ $$ = ws_expr_assign(pctx, @1.first_line, $1, tRSZSHIFTA, $3); }
 	| tIDENTIFIER	tANDA		AssignmentExpression
-		{
-		  $$ = ws_expr_assign(pctx, @1.first_line, $1, tANDA, $3);
-		}
+		{ $$ = ws_expr_assign(pctx, @1.first_line, $1, tANDA, $3); }
 	| tIDENTIFIER	tXORA		AssignmentExpression
-		{
-		  $$ = ws_expr_assign(pctx, @1.first_line, $1, tXORA, $3);
-		}
+		{ $$ = ws_expr_assign(pctx, @1.first_line, $1, tXORA, $3); }
 	| tIDENTIFIER	tORA		AssignmentExpression
-		{
-		  $$ = ws_expr_assign(pctx, @1.first_line, $1, tORA, $3);
-		}
+		{ $$ = ws_expr_assign(pctx, @1.first_line, $1, tORA, $3); }
 	| tIDENTIFIER	tIDIVA		AssignmentExpression
-		{
-		  $$ = ws_expr_assign(pctx, @1.first_line, $1, tIDIVA, $3);
-		}
+		{ $$ = ws_expr_assign(pctx, @1.first_line, $1, tIDIVA, $3); }
 	;
 
 ConditionalExpression:
 	  LogicalORExpression
 	| LogicalORExpression '?' AssignmentExpression ':' AssignmentExpression
-		{
-		  $$ = ws_expr_conditional(pctx, @2.first_line, $1, $3, $5);
-		}
+		{ $$ = ws_expr_conditional(pctx, @2.first_line, $1, $3, $5); }
 	;
 
 LogicalORExpression:
 	  LogicalANDExpression
 	| LogicalORExpression tOR LogicalANDExpression
-		{
-		  $$ = ws_expr_logical(pctx, @2.first_line, WS_ASM_SCOR,
-				       $1, $3);
-		}
+		{ $$ = ws_expr_logical(pctx, @2.first_line, WS_ASM_SCOR, $1, $3); }
 	;
 
 LogicalANDExpression:
 	  BitwiseORExpression
 	| LogicalANDExpression tAND BitwiseORExpression
-		{
-		  $$ = ws_expr_logical(pctx, @2.first_line, WS_ASM_SCAND,
-				       $1, $3);
-		}
+		{ $$ = ws_expr_logical(pctx, @2.first_line, WS_ASM_SCAND, $1, $3); }
 	;
 
 BitwiseORExpression:
 	  BitwiseXORExpression
 	| BitwiseORExpression '|' BitwiseXORExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_B_OR,
-				      $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_B_OR, $1, $3); }
 	;
 
 BitwiseXORExpression:
 	  BitwiseANDExpression
 	| BitwiseXORExpression '^' BitwiseANDExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_B_XOR,
-				      $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_B_XOR, $1, $3); }
 	;
 
 BitwiseANDExpression:
 	  EqualityExpression
 	| BitwiseANDExpression '&' EqualityExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_B_AND,
-				      $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_B_AND, $1, $3); }
 	;
 
 EqualityExpression:
 	  RelationalExpression
 	| EqualityExpression tEQ RelationalExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_EQ, $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_EQ, $1, $3); }
 	| EqualityExpression tNE RelationalExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_NE, $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_NE, $1, $3); }
 	;
 
 RelationalExpression:
 	  ShiftExpression
 	| RelationalExpression '<' ShiftExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_LT, $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_LT, $1, $3); }
 	| RelationalExpression '>' ShiftExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_GT, $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_GT, $1, $3); }
 	| RelationalExpression tLE ShiftExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_LE, $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_LE, $1, $3); }
 	| RelationalExpression tGE ShiftExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_GE, $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_GE, $1, $3); }
 	;
 
 ShiftExpression:
 	  AdditiveExpression
 	| ShiftExpression tLSHIFT AdditiveExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_B_LSHIFT,
-				      $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_B_LSHIFT, $1, $3); }
 	| ShiftExpression tRSSHIFT AdditiveExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_B_RSSHIFT,
-				      $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_B_RSSHIFT, $1, $3); }
 	| ShiftExpression tRSZSHIFT AdditiveExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_B_RSZSHIFT,
-				      $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_B_RSZSHIFT, $1, $3); }
 	;
 
 AdditiveExpression:
 	  MultiplicativeExpression
 	| AdditiveExpression '+' MultiplicativeExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_ADD, $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_ADD, $1, $3); }
 	| AdditiveExpression '-' MultiplicativeExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_SUB, $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_SUB, $1, $3); }
 	;
 
 MultiplicativeExpression:
 	  UnaryExpression
 	| MultiplicativeExpression '*' UnaryExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_MUL, $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_MUL, $1, $3); }
 	| MultiplicativeExpression '/' UnaryExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_DIV, $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_DIV, $1, $3); }
 	| MultiplicativeExpression tIDIV UnaryExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_IDIV,
-				      $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_IDIV, $1, $3); }
 	| MultiplicativeExpression '%' UnaryExpression
-		{
-		  $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_REM, $1, $3);
-		}
+		{ $$ = ws_expr_binary(pctx, @2.first_line, WS_ASM_REM, $1, $3); }
 	;
 
 UnaryExpression:
 	  PostfixExpression
 	| tTYPEOF UnaryExpression
-		{
-		  $$ = ws_expr_unary(pctx, @1.first_line, WS_ASM_TYPEOF, $2);
-		}
+		{ $$ = ws_expr_unary(pctx, @1.first_line, WS_ASM_TYPEOF, $2); }
 	| tISVALID UnaryExpression
-		{
-		  $$ = ws_expr_unary(pctx, @1.first_line, WS_ASM_ISVALID, $2);
-		}
+		{ $$ = ws_expr_unary(pctx, @1.first_line, WS_ASM_ISVALID, $2); }
 	| tPLUSPLUS tIDENTIFIER
-		{
-		  $$ = ws_expr_unary_var(pctx, @1.first_line, WS_TRUE, $2);
-		}
+		{ $$ = ws_expr_unary_var(pctx, @1.first_line, WS_TRUE, $2); }
 	| tMINUSMINUS tIDENTIFIER
-		{
-		  $$ = ws_expr_unary_var(pctx, @1.first_line, WS_FALSE, $2);
-		}
+		{ $$ = ws_expr_unary_var(pctx, @1.first_line, WS_FALSE, $2); }
 	| '+' UnaryExpression
 		{
-		  /* TODO: The WMLScript specification do not say how
-                     unary `+' expressions should be compiled.
-                     Basicly we have three alternatives:
-
-		       1. Do nothing: just pass the UnaryExpression
-		          forward
-
-		       2. Convert the `+UnaryExpression' to binary
-		          expression: `UnaryExpression + 0'.  This
-		          would force type conversion and we would get
-		          the possible type check errors from the
-		          correct location.
-
-		       3. Convert the `+UnaryExpression' to:
-		          `--UnaryExpression'.  This would also
-		          perform the possible type conversion.
-
-		     Since this is an open issue, we select the most
-		     compact form which is the case 1. */
-		  $$ = $2;
+		    /* TODO: The WMLScript specification do not say how
+                     * unary `+' expressions should be compiled.
+                     * Basically we have three alternatives:
+                     *
+		     *   1. Do nothing: just pass the UnaryExpression
+		     *      forward
+                     *
+		     *   2. Convert the `+UnaryExpression' to binary
+		     *      expression: `UnaryExpression + 0'.  This
+		     *      would force type conversion and we would get
+		     *      the possible type check errors from the
+		     *      correct location.
+                     *
+		     *   3. Convert the `+UnaryExpression' to:
+		     *      `--UnaryExpression'.  This would also
+		     *      perform the possible type conversion.
+                     *
+		     * Since this is an open issue, we select the most
+		     * compact form which is the case 1.
+                     */
+		    $$ = $2;
 		}
 	| '-' UnaryExpression
-		{
-		  $$ = ws_expr_unary(pctx, @1.first_line, WS_ASM_UMINUS, $2);
-		}
+		{ $$ = ws_expr_unary(pctx, @1.first_line, WS_ASM_UMINUS, $2); }
 	| '~' UnaryExpression
-		{
-		  $$ = ws_expr_unary(pctx, @1.first_line, WS_ASM_B_NOT, $2);
-		}
+		{ $$ = ws_expr_unary(pctx, @1.first_line, WS_ASM_B_NOT, $2); }
 	| '!' UnaryExpression
-		{
-		  $$ = ws_expr_unary(pctx, @1.first_line, WS_ASM_NOT, $2);
-		}
+		{ $$ = ws_expr_unary(pctx, @1.first_line, WS_ASM_NOT, $2); }
 	;
 
 PostfixExpression:
 	  CallExpression
 	| tIDENTIFIER tPLUSPLUS
-		{
-		  $$ = ws_expr_postfix_var(pctx, @1.first_line, WS_TRUE, $1);
-		}
+		{ $$ = ws_expr_postfix_var(pctx, @1.first_line, WS_TRUE, $1); }
 	| tIDENTIFIER tMINUSMINUS
-		{
-		  $$ = ws_expr_postfix_var(pctx, @1.first_line, WS_FALSE, $1);
-		}
+		{ $$ = ws_expr_postfix_var(pctx, @1.first_line, WS_FALSE, $1); }
 	;
 
 CallExpression:
 	  PrimaryExpression
 	| tIDENTIFIER Arguments                 /* LocalScriptFunctionCall */
 		{
-		  WsFunctionHash *f = ws_function_hash(pctx, $1);
+		    WsFunctionHash *f = ws_function_hash(pctx, $1);
 
-		  /* Add an usage count for the local script function. */
-		  if (f)
-		    f->usage_count++;
+		    /* Add an usage count for the local script function. */
+		    if (f)
+		      f->usage_count++;
 
-		  $$ = ws_expr_call(pctx, @1.first_line, ' ', NULL, $1, $2);
+		    $$ = ws_expr_call(pctx, @1.first_line, ' ', NULL, $1, $2);
 		}
 	| tIDENTIFIER '#' tIDENTIFIER Arguments /* ExternalScriptFunctionCall*/
-		{
-		  $$ = ws_expr_call(pctx, @3.first_line, '#', $1, $3, $4);
-		}
+		{ $$ = ws_expr_call(pctx, @3.first_line, '#', $1, $3, $4); }
 	| tIDENTIFIER '.' tIDENTIFIER Arguments /* LibraryFunctionCall */
-		{
-		  $$ = ws_expr_call(pctx, @3.first_line, '.', $1, $3, $4);
-		}
+		{ $$ = ws_expr_call(pctx, @3.first_line, '.', $1, $3, $4); }
 	;
 
 PrimaryExpression:
 	  tIDENTIFIER
-		{
-		  $$ = ws_expr_symbol(pctx, @1.first_line, $1);
-		}
+		{ $$ = ws_expr_symbol(pctx, @1.first_line, $1); }
 	| tINVALID
-		{
-		  $$ = ws_expr_const_invalid(pctx, @1.first_line);
-		}
+		{ $$ = ws_expr_const_invalid(pctx, @1.first_line); }
 	| tTRUE
-		{
-		  $$ = ws_expr_const_true(pctx, @1.first_line);
-		}
+		{ $$ = ws_expr_const_true(pctx, @1.first_line); }
 	| tFALSE
-		{
-		  $$ = ws_expr_const_false(pctx, @1.first_line);
-		}
+		{ $$ = ws_expr_const_false(pctx, @1.first_line); }
 	| tINTEGER
-		{
-		  $$ = ws_expr_const_integer(pctx, @1.first_line, $1);
-		}
+		{ $$ = ws_expr_const_integer(pctx, @1.first_line, $1); }
 	| tFLOAT
-		{
-		  $$ = ws_expr_const_float(pctx, @1.first_line, $1);
-		}
+		{ $$ = ws_expr_const_float(pctx, @1.first_line, $1); }
 	| tSTRING
-		{
-		  $$ = ws_expr_const_string(pctx, @1.first_line, $1);
-		}
+		{ $$ = ws_expr_const_string(pctx, @1.first_line, $1); }
 	| '(' Expression ')'
-		{
-		  $$ = $2;
-		}
+		{ $$ = $2; }
 	;
 
 Arguments:
 	  '(' ')'
-		{
-		  $$ = ws_list_new(pctx);
-		}
+		{ $$ = ws_list_new(pctx); }
 	| '(' ArgumentList ')'
-		{
-		  $$ = $2;
-		}
+		{ $$ = $2; }
 	;
 
 ArgumentList:
 	  AssignmentExpression
 		{
-		  $$ = ws_list_new(pctx);
-		  ws_list_append(pctx, $$, $1);
+		    $$ = ws_list_new(pctx);
+		    ws_list_append(pctx, $$, $1);
 		}
 	| ArgumentList ',' AssignmentExpression
-		{
-		  ws_list_append(pctx, $1, $3);
-		}
+		{ ws_list_append(pctx, $1, $3); }
 	;
 
 %%

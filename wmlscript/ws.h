@@ -37,87 +37,87 @@ typedef void (*WsIOProc)(const char *data, size_t len, void *context);
    and you should not modify or free them.  The argument `context' is
    the user-specified context data for the callback function. */
 typedef void (*WsPragmaMetaProc)(const WsUtf8String *property_name,
-				 const WsUtf8String *content,
-				 const WsUtf8String *scheme,
-				 void *context);
+                                 const WsUtf8String *content,
+                                 const WsUtf8String *scheme,
+                                 void *context);
 
 /* Parameters for a WMLScript copiler. */
 struct WsCompilerParamsRec
 {
-  /* Features. */
+    /* Features. */
 
-  /* Store string constants in ISO-8859/1 (ISO latin1) format.  The
-     default format is UTF-8.  This option makes a bit smaller
-     byte-code files but it loses information for non-latin1
-     languages. */
-  unsigned int use_latin1_strings : 1;
-
-
-  /* Warning flags. */
-
-  /* Warn if a standard library function is called with mismatching
-     argument types. */
-  unsigned int warn_stdlib_type_mismatch : 1;
+    /* Store string constants in ISO-8859/1 (ISO latin1) format.  The
+       default format is UTF-8.  This option makes a bit smaller
+       byte-code files but it loses information for non-latin1
+       languages. */
+    unsigned int use_latin1_strings : 1;
 
 
-  /* Optimization flags. */
+    /* Warning flags. */
 
-  /* Do not perform constant folding. */
-  unsigned int no_opt_constant_folding : 1;
-
-  /* Do not sort byte-code functions by their usage counts. */
-  unsigned int no_opt_sort_bc_functions : 1;
-
-  /* Do not perform peephole optimization. */
-  unsigned int no_opt_peephole : 1;
-
-  /* Do not optimize jumps to jump instructions to jump directly to
-     the target label of the next instruction. */
-  unsigned int no_opt_jumps_to_jumps : 1;
-
-  /* Do not optimize jumps to the next instruction. */
-  unsigned int no_opt_jumps_to_next_instruction : 1;
-
-  /* Do not remove unreachable code. */
-  unsigned int no_opt_dead_code : 1;
-
-  /* Perform expensive optimizations which require liveness
-     analyzation of the local variables. */
-  unsigned int opt_analyze_variable_liveness : 1;
+    /* Warn if a standard library function is called with mismatching
+       argument types. */
+    unsigned int warn_stdlib_type_mismatch : 1;
 
 
-  /* Output flags. */
+    /* Optimization flags. */
 
-  /* Print verbose progress messages. */
-  unsigned int verbose : 1;
+    /* Do not perform constant folding. */
+    unsigned int no_opt_constant_folding : 1;
 
-  /* Print symbolic assembler to the stdout. */
-  unsigned int print_symbolic_assembler : 1;
+    /* Do not sort byte-code functions by their usage counts. */
+    unsigned int no_opt_sort_bc_functions : 1;
 
-  /* Disassemble the resulting byte-code instructions. */
-  unsigned int print_assembler : 1;
+    /* Do not perform peephole optimization. */
+    unsigned int no_opt_peephole : 1;
 
-  /* Function pointers to receive standard output and error messages.
-     If these are unset, the outputs are directed to the system's
-     standard output and error streams. */
+    /* Do not optimize jumps to jump instructions to jump directly to
+       the target label of the next instruction. */
+    unsigned int no_opt_jumps_to_jumps : 1;
 
-  /* Standard output. */
-  WsIOProc stdout_cb;
-  void *stdout_cb_context;
+    /* Do not optimize jumps to the next instruction. */
+    unsigned int no_opt_jumps_to_next_instruction : 1;
 
-  /* Standard error. */
-  WsIOProc stderr_cb;
-  void *stderr_cb_context;
+    /* Do not remove unreachable code. */
+    unsigned int no_opt_dead_code : 1;
 
-  /* A callback function which is called for each `use meta name'
-     pragma, found from the current compilation unit. */
-  WsPragmaMetaProc meta_name_cb;
-  void *meta_name_cb_context;
+    /* Perform expensive optimizations which require liveness
+       analyzation of the local variables. */
+    unsigned int opt_analyze_variable_liveness : 1;
 
-  /* A callback function which is called for each `use meta http
-     equiv' pragma, found from the current compilation unit. */
-  WsPragmaMetaProc meta_http_equiv_cb;
-  void *meta_http_equiv_cb_context;
+
+    /* Output flags. */
+
+    /* Print verbose progress messages. */
+    unsigned int verbose : 1;
+
+    /* Print symbolic assembler to the stdout. */
+    unsigned int print_symbolic_assembler : 1;
+
+    /* Disassemble the resulting byte-code instructions. */
+    unsigned int print_assembler : 1;
+
+    /* Function pointers to receive standard output and error messages.
+       If these are unset, the outputs are directed to the system's
+       standard output and error streams. */
+
+    /* Standard output. */
+    WsIOProc stdout_cb;
+    void *stdout_cb_context;
+
+    /* Standard error. */
+    WsIOProc stderr_cb;
+    void *stderr_cb_context;
+
+    /* A callback function which is called for each `use meta name'
+       pragma, found from the current compilation unit. */
+    WsPragmaMetaProc meta_name_cb;
+    void *meta_name_cb_context;
+
+    /* A callback function which is called for each `use meta http
+       equiv' pragma, found from the current compilation unit. */
+    WsPragmaMetaProc meta_http_equiv_cb;
+    void *meta_http_equiv_cb_context;
 };
 
 typedef struct WsCompilerParamsRec WsCompilerParams;
@@ -143,24 +143,24 @@ void ws_destroy(WsCompilerPtr compiler);
 /* Returns codes for the compiler functions. */
 typedef enum
 {
-  /* Successful termination */
-  WS_OK,
+    /* Successful termination */
+    WS_OK,
 
-  /* The compiler ran out of memory. */
-  WS_ERROR_OUT_OF_MEMORY,
+    /* The compiler ran out of memory. */
+    WS_ERROR_OUT_OF_MEMORY,
 
-  /* The input was not syntactically correct. */
-  WS_ERROR_SYNTAX,
+    /* The input was not syntactically correct. */
+    WS_ERROR_SYNTAX,
 
-  /* The input was not semantically correct. */
-  WS_ERROR_SEMANTIC,
+    /* The input was not semantically correct. */
+    WS_ERROR_SEMANTIC,
 
-  /* IO error. */
-  WS_ERROR_IO,
+    /* IO error. */
+    WS_ERROR_IO,
 
-  /* A generic `catch-all' error code.  This should not be used.  More
-     descriptive error messages should be generated instead. */
-  WS_ERROR
+    /* A generic `catch-all' error code.  This should not be used.  More
+       descriptive error messages should be generated instead. */
+    WS_ERROR
 } WsResult;
 
 /* Compile the WMLScript input file `input' with the compiler
@@ -171,7 +171,7 @@ typedef enum
    output file `output' is modified only if the result code is
    `WS_OK'. */
 WsResult ws_compile_file(WsCompilerPtr compiler, const char *input_name,
-			 FILE *input, FILE *output);
+                         FILE *input, FILE *output);
 
 /* Compile the `input_len' bytes of WMLScript data in `input' with the
    compiler `compiler'.  The data is assumed to be in the ISO-8859/1
@@ -186,9 +186,9 @@ WsResult ws_compile_file(WsCompilerPtr compiler, const char *input_name,
    anymore.  It is a fatal error to free it with any other function,
    like free(). */
 WsResult ws_compile_data(WsCompilerPtr compiler, const char *input_name,
-			 const unsigned char *input, size_t input_len,
-			 unsigned char **output_return,
-			 size_t *output_len_return);
+                         const unsigned char *input, size_t input_len,
+                         unsigned char **output_return,
+                         size_t *output_len_return);
 
 /* Free the byte-code buffer `byte_code', returned by
    ws_compiler_data() function.  The byte-code `byte_code' must not be

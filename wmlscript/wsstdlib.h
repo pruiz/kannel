@@ -24,10 +24,10 @@
    library or the function name was unknown.  Note that if the library
    is unknown, then also the function is unknown. */
 WsBool ws_stdlib_function(const char *library, const char *function,
-			  WsUInt16 *lindex_return, WsUInt8 *findex_return,
-			  WsUInt8 *num_args_return,
-			  WsBool *lindex_found_return,
-			  WsBool *findex_found_return);
+                          WsUInt16 *lindex_return, WsUInt8 *findex_return,
+                          WsUInt8 *num_args_return,
+                          WsBool *lindex_found_return,
+                          WsBool *findex_found_return);
 
 /* Returns the library and function names, corresponding to their
    indexes `lindex' and `findex'.  The function returns WS_TRUE if
@@ -35,7 +35,7 @@ WsBool ws_stdlib_function(const char *library, const char *function,
    the function returns WS_FALSE and sets the failed name pointer(s)
    to NULL. */
 WsBool ws_stdlib_function_name(WsUInt16 lindex, WsUInt8 findex,
-			       const char **library_return,
-			       const char **function_return);
+                               const char **library_return,
+                               const char **function_return);
 
 #endif /* not WSSTDLIB_H */

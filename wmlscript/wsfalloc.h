@@ -18,27 +18,27 @@
 
 struct WsFastMallocBlockRec
 {
-  struct WsFastMallocBlockRec *next;
-  /* The data follows immediately here. */
+    struct WsFastMallocBlockRec *next;
+    /* The data follows immediately here. */
 };
 
 typedef struct WsFastMallocBlockRec WsFastMallocBlock;
 
 struct WsFastMallocRec
 {
-  WsFastMallocBlock *blocks;
+    WsFastMallocBlock *blocks;
 
-  /* The default block size of this pool. */
-  size_t block_size;
+    /* The default block size of this pool. */
+    size_t block_size;
 
-  /* The number of bytes allocates for user blocks. */
-  size_t user_bytes_allocated;
+    /* The number of bytes allocates for user blocks. */
+    size_t user_bytes_allocated;
 
-  /* The next allocation can be done from this position. */
-  unsigned char *ptr;
+    /* The next allocation can be done from this position. */
+    unsigned char *ptr;
 
-  /* And it has this much space. */
-  size_t size;
+    /* And it has this much space. */
+    size_t size;
 };
 
 typedef struct WsFastMallocRec WsFastMalloc;
