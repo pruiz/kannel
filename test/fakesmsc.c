@@ -227,9 +227,8 @@ int main(int argc, char **argv)
             if (num_sent == max_send)
                 info(0, "fakesmsc: sent message %ld", num_sent);
             else
-                debug("send", 0, "fakesmsc: sent message %ld: %s", num_sent, 
-                      octstr_get_cstr(msg));
-
+                debug("send", 0, "fakesmsc: sent message %ld", num_sent);
+      
             if (rnd > 0)
                 octstr_destroy(msg);
 

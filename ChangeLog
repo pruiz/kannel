@@ -1,4 +1,8 @@
 2003-11-13  Stipe Tolj  <tolj@wapme-systems.de>
+    * test/fakesmsc.c: don't dump msg line in debug, because this takes speed
+      away and the EOL is anyway annoying.
+
+2003-11-13  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_smscconn.c: typo fix. no logic change.
     * test/fakesmsc.c: added -r option to allow randomization of source and/or
       receiver numbers while passing MO messages to smsc_fake.
