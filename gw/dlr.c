@@ -221,8 +221,6 @@ void dlr_shutdown_mysql()
 {
 #ifdef DLR_MYSQL
     mysql_close(connection);
-    if (!mysql_errno(connection)) 
-        error(0,"MYSQL: %s", mysql_error(connection));
 #endif
 }
 
@@ -490,7 +488,7 @@ Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
         debug("dlr.mysql", 0, "dlr not deleted because we wait on more reports");
     } else {
         debug("dlr.mysql", 0, "removing DLR from database");
-        sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s';",
+        sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s' LIMIT 1;",
                             octstr_get_cstr(table), octstr_get_cstr(field_smsc), 
                             smsc, octstr_get_cstr(field_ts), ts);
         

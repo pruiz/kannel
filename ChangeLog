@@ -1,3 +1,9 @@
+2002-04-08 Andreas Fink <andreasgfink.org>
+    * gw/dlr.c: fixed mysql_close issue pointed
+      out by "Dima Milentiev" <Dima@m-wise.com>
+      partially fixed a mysql problem when multiple
+      messages where sent using the same timestamp
+
 2002-04-06  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * test/.cvsignore: sorry, two last lines got concatenated
     * doc/userguide/userguide.xml: moved "account" information from 
