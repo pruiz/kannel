@@ -1,4 +1,7 @@
 2003-08-11  Stipe Tolj  <tolj@wapme-systems.de>
+    * test/test_dict.c: added extended huge Dict test.
+
+2003-08-11  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/dbpool[_oracle|_p][.ch]: some source code reformating. 
       No logic changes.
 
