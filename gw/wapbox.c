@@ -12,9 +12,12 @@
 #include "gwlib.h"
 #include "msg.h"
 #include "wtp.h"
+#include "bb.h"
 
-static char *bearerbox_host = NULL;
-static int bearerbox_port = -1;
+static char *bearerbox_host = BB_DEFAULT_HOST;
+static int bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
+static int heartbeat_freq = BB_DEFAULT_HEARTBEAT;
+
 
 static void read_config(char *filename) {
 	Config *cfg;
@@ -34,6 +37,8 @@ static void read_config(char *filename) {
 			bearerbox_host = s;
 		if ((s = config_get(grp, "bearerbox-port")) != NULL)
 			bearerbox_port = atoi(s);
+		if ((s = config_get(grp, "heartbeat-freq")) != NULL)
+		        heartbeat_freq = atoi(s);
 		grp = config_next_group(grp);
 	}
 }
@@ -124,16 +129,41 @@ Msg *remove_msg_from_queue(void) {
 }
 
 
+static int send_heartbeat(int socket, int load)
+{
+    static Msg *msg = NULL;
+    Octstr *pack;
+    
+    if (msg == NULL)
+        if ((msg = msg_create(heartbeat)) == NULL)
+            return -1;
+
+    msg->heartbeat.load = load;
+    msg_send(socket, msg);
+
+    return 0;
+}
+
+
 static void *empty_queue_thread(void *arg) {
 	Msg *msg;
 	int socket;
+	time_t stamp;
 	
 	socket = *(int *) arg;
-
+	stamp = time(NULL);
+	
 	for (;;) {
 		msg = remove_msg_from_queue();
 		if (msg != NULL)
 			msg_send(socket, msg);
+		else {
+		    if (time(NULL) - stamp > heartbeat_freq) {
+			/* send heartbeat */
+			send_heartbeat(socket, 0);
+			stamp = time(NULL);
+		    }
+		}
 	}
 }
 

@@ -1,3 +1,9 @@
+2000-01-03    <rpr@rpr.wapit.com>
+
+	* gw/wapbox.c (send_heartbeat): added heartbeat sending. And
+	changed bearerbox port and host information to default values,
+	not undefined.
+
 Thu Dec 30 17:51:28 1999  Patrick Schaaf  <bof@bof.de>
 
 	* gw/boxc.c, gwlib/http.c, gwlib/socket.{c,h}: reverted
