@@ -1,5 +1,8 @@
 2002-08-23  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_at2.c, gwlib/http.c: fixed a minor compiler warnings
+    * gw/smsc/smsc_smpp.c: fixed a type in handle_pdu(), reported by 
+      Vibhu Mohindra <vibhu@dialogsl.net>
+      [Msg-ID: <20020822214514.GA4279@lfs.localdomain>]
 
 2002-08-22  Stipe Tolj  <tolj@wapme-systems.de>
     * wap/wap_events.def, wap/wtp.c: added a RcvResult event and a coresponding
