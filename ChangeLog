@@ -1,3 +1,7 @@
+2001-04-19  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsbox.c: Fixed bad assertion in prepend_catenation_udh().
+
 2001-04-18  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/gwthread-pthread.c: Made gwthread_join safe.

@@ -116,8 +116,8 @@ static Counter *catenated_sms_counter;
 static void prepend_catenation_udh(Msg *sms, int part_no, int num_messages,
     	    	    	    	   int msg_sequence)
 {
-    gw_assert(sms->sms.udhdata != NULL);
-
+    if (sms->sms.udhdata == NULL)
+        sms->sms.udhdata = octstr_create("");
     if (octstr_len(sms->sms.udhdata) == 0)
 	octstr_append_char(sms->sms.udhdata, CATENATE_UDH_LEN);
     octstr_format_append(sms->sms.udhdata, "%c\3%c%c%c", 
