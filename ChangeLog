@@ -1,3 +1,8 @@
+2000-10-24  Kalle Marjola  <rpr@wapit.com>
+
+	* doc/userguide/userguide.xml: filled SMPP smsc group fields,
+	thanks for Mikael Gueck for patch.
+
 2000-10-24  Lars Wirzenius  <liw@iki.fi>
 
 	* Finished first phase of reducing the number of threads

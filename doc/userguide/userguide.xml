@@ -1309,8 +1309,8 @@ keepalive = 5
 
   <para>Kannel supports two types of connections with CMG SMS centers:
   direct TCP/IP connections (<literal>emi_ip</literal>) and
-  ISDN/modem connection (<literal>emi</literal>). Sample
-  configurations for these are:</para>
+  ISDN/modem (X.25 over D channel ISDN is called X.31) connection 
+  (<literal>emi</literal>). Sample  configurations for these are:</para>
   
 <programlisting>
 group = smsc
@@ -1389,19 +1389,85 @@ smsc-password = bar
 <title>SMPP 3.3</title>
 
    <para>This implements Short Message Peer to Peer (SMPP) Protocol
-   3.3</para>
+   3.3. Sample configuration:</para>
 
 <programlisting>
 group = smsc
 smsc = smpp
-host = 127.0.0.1
+host = 123.123.123.123
 port = 600
-receive-port = 700      (optional, receiver port if it a different one)
-system-id = "param, ask from dealer.. 'same' as username"
+receive-port = 700 
+system-id = "STT"
 smsc-password = foo
-system-type = "param, ask from dealer"
-address-range = "" (regex of received numbers)
+system-type = "VMA"
+address-range = ""
 </programlisting>
+
+<informaltable frame=none>
+  <tgroup cols=3><thead><row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row></thead><tbody>
+
+   <row><entry><literal>host</literal></entry>
+     <entry><literal>hostname</literal></entry>
+     <entry valign=bottom>
+        Machine that runs SMSC. As IP (100.100.100.100) 
+        or hostname (their.machine.here)
+     </entry></row>
+
+   <row><entry><literal>port</literal></entry>
+     <entry><literal>port-number</literal></entry>
+     <entry valign=bottom>
+       The port number for the TRANSMITTER connection to the SM-SC. 
+       May be the same as receive-port.
+     </entry></row>
+
+   <row><entry><literal>receive-port</literal></entry>
+     <entry><literal>port-number</literal></entry>
+     <entry valign=bottom>
+       The port number for the RECEIVER connection to the SM-SC. 
+       May be the same as port.
+     </entry></row>
+
+   <row><entry><literal>system-id</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       The 'username' of the Messaging Entity connecting to the
+       SM-SC. If the SM-SC operator reports that the "TELEPATH
+       SYSTEM MANAGER TERMINAL" view "Control.Apps.View" value 
+       "Name:" is "SMPP_ZAPVMA_T" for the transmitter and 
+       "SMPP_ZAPVMA_R" for the receiver the system-id value 
+       is accordingly "SMPP_ZAP".
+     </entry></row>
+
+   <row><entry><literal>smsc-password</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       The password matching the "system-id" your teleoperator
+       provided you with.
+     </entry></row>
+
+
+   <row><entry><literal>system-type</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       Usually you can get away with "VMA" which stands for
+       Voice Mail Activation.
+     </entry></row>
+
+   <row><entry><literal>address-range</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       According to the SMPP 3.4 spec this is supposed to
+       affect which MS's can send messages to this account.
+       Doesn't seem to work, though.
+     </entry></row>
+
+   </tbody></tgroup></informaltable>
+ 
+
 
 </sect3>
 
