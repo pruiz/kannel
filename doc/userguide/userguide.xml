@@ -6217,9 +6217,9 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <entry><literal>number</literal></entry>
    <entry valign="bottom">
          Optional. Sets the Message Class in DCS Field.
-	 Accepts values between 1 and 4, for Message Class 0 to 3, 
-	 A value of 1 sends the message directly to display. mclass=2 sends
-	 to mobile, 3 do SIM and 4 to SIM Toolkit.
+	 Accepts values between 0 and 3, for Message Class 0 to 3, 
+	 A value of 0 sends the message directly to display. mclass=1 sends
+	 to mobile, 2 do SIM and 3 to SIM Toolkit.
    </entry></row>
 
    <row><entry><literal>mwi</literal></entry>
@@ -6227,13 +6227,13 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <entry valign="bottom">
          Optional. Sets Message Waiting Indicator bits in DCS field.
 	 If given, the message will be encoded as a Message Waiting
-	 Indicator. The accepted values are 1,2,3 and 4 for activating the
-	 voice, fax, email and other indicator, or 5,6,7,8 for deactivating,
+	 Indicator. The accepted values are 0,1,2 and 3 for activating the
+	 voice, fax, email and other indicator, or 4,5,6,7 for deactivating,
 	 respectivly.
 	 This option excludes the <literal>flash</literal> option.
      <footnote id="mwi-messages"><para>To set number of messages, use
-	 <literal>mwi=[1-4]&amp;coding=1&amp;udh=%04%01%02%&lt;XX&gt;%&lt;YY&gt;</literal>,
-	 where YY are the number of messages, in HEX, and XX are <literal>mwi-1</literal>
+	 <literal>mwi=[0-3]&amp;coding=0&amp;udh=%04%01%02%&lt;XX&gt;%&lt;YY&gt;</literal>,
+	 where YY are the number of messages, in HEX, and XX are <literal>mwi</literal>
 	 plus 0xC0 if <literal>text</literal> field is not empty.</para> </footnote>
    </entry></row>
 
@@ -6241,7 +6241,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <entry><literal>number</literal></entry>
    <entry valign="bottom">
          Optional. Sets the coding scheme bits in DCS field.
-	 Accepts values 1 to 3, for 7bit, 8bit or UCS2.
+	 Accepts values 0 to 2, for 7bit, 8bit or UCS2.
 	 If unset, defaults to 7 bits unless a udh is defined, which sets
 	 coding to 8bits.
    </entry></row>
@@ -6267,18 +6267,30 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <row><entry><literal>dlrmask</literal></entry>
    <entry><literal>number (bit mask)</literal></entry>
    <entry valign="bottom">
+	   Deprecated. See <literal>dlr-mask</literal>.
+   </entry></row>
+
+   <row><entry><literal>dlr-mask</literal></entry>
+   <entry><literal>number (bit mask)</literal></entry>
+   <entry valign="bottom">
 	   Optional. Request for delivery reports with the state of the sent 
 	   message. The value is a bit mask composed of: 1: Delivered to phone, 
 	   2: Non-Delivered to Phone, 4: Queued on SMSC, 8: Delivered to SMSC, 
 	   16: Non-Delivered to SMSC. Must set <literal>dlr-url</literal> on 
 	   <literal>sendsms-user</literal> group or use the 
-	   <literal>dlrurl</literal> CGI variable. 
+	   <literal>dlr-url</literal> CGI variable. 
    </entry></row>
 
    <row><entry><literal>dlrurl</literal></entry>
    <entry><literal>string (url)</literal></entry>
    <entry valign="bottom">
-	   Optional. If <literal>dlrmask</literal> is given, this is the url to
+	   Deprecated. See <literal>dlr-url</literal>.
+   </entry></row>
+
+   <row><entry><literal>dlr-url</literal></entry>
+   <entry><literal>string (url)</literal></entry>
+   <entry valign="bottom">
+	   Optional. If <literal>dlr-mask</literal> is given, this is the url to
 	   be fetched. (Must be urlencoded)
    </entry></row>
 
