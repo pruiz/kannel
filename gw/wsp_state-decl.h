@@ -183,6 +183,9 @@ ROW(CONNECTED,
 	},
 	NULL_STATE)
 
+#if 0 /* XXX This doesn't work at all. It initializes the wrong fields
+	of the WTPEvent structure. I don't have the time to fix it yet.
+	--liw */
 ROW(CONNECTED,
 	TRInvokeIndication,
 	wsp_deduce_pdu_type(e->user_data, 0) == Connect_PDU,
@@ -193,9 +196,6 @@ ROW(CONNECTED,
 		debug(0, "WSP: Got Reconnect PDU.");
 		/* Send Disconnect event to existing sessions for client. */
 
-		/* Invent a new session ID since we're now the official
-		 * session for this client. 
-		 */
 		/* Make a TR-Result.req event for WTP. */
 		wtp_event = wtp_event_create(TRAbort);
 		wtp_event->TRResult.tid = e->machine->tid;
@@ -205,6 +205,7 @@ ROW(CONNECTED,
 
 	},
 	NULL_STATE)
+#endif
 
 ROW(CONNECTED,
 	TRInvokeIndication,

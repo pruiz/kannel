@@ -1,3 +1,10 @@
+Wed Jan 26 17:57:32 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c, gw/wsp_state-decl.h: Fixed compile time warnings
+	about unused or uninitialized variables. Had to comment out
+	Reconnect handling, because it doesn't seem to work at all,
+	and I don't have time to investigate.
+
 Wed Jan 26 16:28:05 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wml_compiler.[ch]: Comment out everything if HAVE_LIBXML

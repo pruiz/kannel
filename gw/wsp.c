@@ -479,7 +479,6 @@ static int unpack_post_pdu(Octstr **url, Octstr **headers, Octstr *pdu) {
 	unsigned long param_len;
 	Octstr 		*param;
 	Octstr 		*head;
-	Octstr 		*comp;
 	int off;
 
 	off = 1; /* Offset 0 has type octet. */
