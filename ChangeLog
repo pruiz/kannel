@@ -1,3 +1,9 @@
+2002-02-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * STATUS: added Oded Arbel's fix for timestamp issue in at2
+    * gw/smsc_ois.c: Applied patch for handling 7bit encoded messages
+      submitted by: Oded Arbel <oded@m-wise.com>
+      [Msg-ID: <1013025181.2798.3.camel@preceptor.m-wise.co.il>]
+
 2002-01-31  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bearerbox.c, gw/smsbox.c: added SIGQUIT signal handling in
       signal_handler() to call gw_check_leaks() like in gw/wapbox.c.
