@@ -107,6 +107,7 @@ typedef struct PrivAT2data
     Octstr	*device;
     int		modemid;
     long	speed;
+    int		keepalive;
     int		fd;	/* file descriptor */
     Octstr	*ilb;	/*input line buffer */
     Octstr	*lines; /* the last few lines before OK was seen */
@@ -117,6 +118,7 @@ typedef struct PrivAT2data
     Octstr	*validityperiod;    
     int		alt_dcs;
     int 	retry;
+    Octstr	*my_number;
 } PrivAT2data;
 
 
@@ -141,8 +143,8 @@ int	at2_add_msg_cb(SMSCConn *conn, Msg *sms);
 int 	smsc_at2_create(SMSCConn *conn, CfgGroup *cfg);
 int	at2_pdu_extract(PrivAT2data *privdata, Octstr **pdu, Octstr *buffer);
 int 	at2_hexchar(int hexc);
-Msg	*at2_pdu_decode(Octstr *data);
-Msg	*at2_pdu_decode_deliver_sm(Octstr *data);
+Msg	*at2_pdu_decode(Octstr *data, PrivAT2data *privdata);
+Msg	*at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata);
 Octstr	*at2_convertpdu(Octstr *pdutext);
 void	at2_decode7bituncompressed(Octstr *input, int len, Octstr *decoded, int offset);
 void 	at2_send_messages(PrivAT2data *privdata);
@@ -728,7 +730,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
 		    }
 		    else
 		    {
-			msg = at2_pdu_decode(pdu);
+			msg = at2_pdu_decode(pdu, privdata);
                     	if(msg != NULL)
                     	{
 			    msg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
@@ -759,7 +761,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
     O_DESTROY(line);
     O_DESTROY(line2);
     O_DESTROY(pdu);
-    return -10; /* timeout */
+    return -1; /* timeout */
 
 end:
     octstr_append(privdata->lines,line);
@@ -841,10 +843,12 @@ void at2_device_thread(void *arg)
     PrivAT2data	*privdata = conn->data;
 
     int l, wait=0;
+    long idle_timeout;
    
     conn->status = SMSCCONN_CONNECTING;
     
-    
+reconnect:    
+
     do {
 	if (wait) {
 	    if (conn->status == SMSCCONN_ACTIVE) {
@@ -896,10 +900,15 @@ void at2_device_thread(void *arg)
 	    } else
 		continue;
 	}
+
+	/* If we got here, then the device is opened */
+	break;
     } while(privdata->retry && ! privdata->shutdown); 
     
     conn->status = SMSCCONN_ACTIVE;
     bb_smscconn_connected(conn);
+
+    idle_timeout=0;
     while (!privdata->shutdown)
     {
     	 l = list_len(privdata->outgoing_queue);
@@ -907,6 +916,16 @@ void at2_device_thread(void *arg)
     	     at2_send_messages(privdata);
     	 else
              at2_wait_modem_command(privdata,1,0);
+
+	if(idle_timeout + privdata->keepalive < time(NULL)) {
+	    if(at2_send_modem_command(privdata, "AT", 5, 0) < 0) { 
+		at2_close_device(privdata);
+		conn->status = SMSCCONN_RECONNECTING;
+		wait = 15;
+		goto reconnect;
+	    }
+	    idle_timeout = time(NULL);
+	}
    }
     at2_close_device(privdata);
     conn->status = SMSCCONN_DISCONNECTED;
@@ -985,7 +1004,7 @@ int  smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
 {
     PrivAT2data	*privdata;
     Octstr *modem_type_string;
-    long alt_dcs = 0;
+    long alt_dcs = 0, temp;
    
 
     privdata = gw_malloc(sizeof(PrivAT2data));
@@ -994,7 +1013,12 @@ int  smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->speed = 0;
     cfg_get_integer(&privdata->speed, cfg, octstr_imm("speed"));
 
+    cfg_get_integer(&temp, cfg, octstr_imm("keepalive"));
+    privdata->keepalive = temp;
+
     cfg_get_bool(&privdata->retry, cfg, octstr_imm("retry"));
+
+    privdata->my_number = cfg_get(cfg, octstr_imm("my-number"));
 
     privdata->device = cfg_get(cfg, octstr_imm("device"));
     if (privdata->device == NULL)
@@ -1140,7 +1164,7 @@ int at2_hexchar(int hexc)
 /******************************************************************************
  * Decode a raw PDU into a Msg
  */
-Msg *at2_pdu_decode(Octstr *data)
+Msg *at2_pdu_decode(Octstr *data, PrivAT2data *privdata)
 {
         int type;
         Msg *msg = NULL;
@@ -1151,7 +1175,7 @@ Msg *at2_pdu_decode(Octstr *data)
         switch(type) {
 
         case AT_DELIVER_SM:
-                msg = at2_pdu_decode_deliver_sm(data);
+                msg = at2_pdu_decode_deliver_sm(data, privdata);
                 break;
 
                 /* Add other message types here: */
@@ -1164,7 +1188,7 @@ Msg *at2_pdu_decode(Octstr *data)
 /******************************************************************************
  * Decode a DELIVER PDU
  */
-Msg *at2_pdu_decode_deliver_sm(Octstr *data)
+Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
 {
         int len, pos, i;
         char origaddr[21];
@@ -1253,8 +1277,12 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data)
         }
 
         message->sms.sender = origin;
-        /* Put a dummy address in the receiver for now (SMSC requires one) */
-        message->sms.receiver = octstr_create_from_data("1234", 4);
+	if(octstr_len(privdata->my_number)) {
+	    message->sms.receiver = octstr_duplicate(privdata->my_number);
+	} else {
+            /* Put a dummy address in the receiver for now (SMSC requires one) */
+	    message->sms.receiver = octstr_create_from_data("1234", 4);
+	}
         /*message->sms.receiver = destination;*/
         if (udhi) {
                 message->sms.udhdata = udh;
@@ -1488,13 +1516,14 @@ int at2_pdu_encode(Msg *msg, unsigned char *pdu, PrivAT2data *privdata)
     
     /* protocol identifier */
     /* 0x00 implicit */
-    pdu[pos] = at2_numtext(0);
+    pdu[pos] = at2_numtext((msg->sms.pid & 240) >> 4);
     pos++;
-    pdu[pos] = at2_numtext(0);
+    pdu[pos] = at2_numtext(msg->sms.pid & 15);
     pos++;
     
     /* data coding scheme */
-    dcs = fields_to_dcs(msg, privdata->alt_dcs);
+    dcs = fields_to_dcs(msg, 
+	(msg->sms.alt_dcs ? 2- msg->sms.alt_dcs : privdata->alt_dcs));
 
     pdu[pos] = at2_numtext(dcs >> 4);
     pos++;
@@ -1707,7 +1736,12 @@ int at2_numtext(int num)
 
 int at2_detect_speed(PrivAT2data *privdata)
 {
+
+#ifdef	B57600
+    int autospeeds[] = { 57600, 38400, 19200, 9600 };
+#else
     int autospeeds[] = { 38400, 19200, 9600 };
+#endif
     int i;
     int res;
     

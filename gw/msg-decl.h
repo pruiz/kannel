@@ -40,6 +40,8 @@ MSG(sms,
 		INTEGER(deferred);
 		INTEGER(dlr_mask);
 		OCTSTR(dlr_url);
+		INTEGER(pid);
+		INTEGER(alt_dcs);
 	})
 
 MSG(ack,

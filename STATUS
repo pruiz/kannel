@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.6 2002-02-20 11:02:06 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.7 2002-02-25 20:27:15 davi Exp $]
 
 Release:
 
@@ -40,16 +40,6 @@ Available Patches:
 
 Open issues:
 
-    * smsc_emi2.c does not try to re-connect if the initial login attempt fails,
-      this causes a problem if the session timeout of the provider has yet not 
-      been taken place and the bearerbox may connect in a couple of minutes
-      later.
-      Suggested solution: global configuration directive is a smsc driver should
-      attempt to loop for re-connceting to the smsc.
-    Posted by: "Angel Fradejas" <afradejas@mediafusion.es>
-    Message-ID: <FMEKKCFKIGBADHGIJKPJMECFCNAA.afradejas@mediafusion.es>
-    Status: Stipe +1 (on concept)
-
     * Clashing unified-prefix when several SMSCs send their incoming messages
       with or without international prefix. 
       Suggested solution: introduce unified-prefix on smsc group level
@@ -79,4 +69,5 @@ Open issues:
     Status: Stipe: "Andrea Viscovich" <anviscov@tin.it> has done this for a 
             own solutions, needs to be revised and cleaned up.
 
-
+    * decode received unicode messages: ericsson phones sends messages in unicode
+      if a &ccedil; or accented char is written and can't be disabled on the phone

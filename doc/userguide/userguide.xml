@@ -2448,6 +2448,13 @@ pin = 2345
 	even if some related error ocur.
      </entry></row>
 
+    <row><entry><literal>keepalive</literal></entry>
+      <entry><literal>seconds</literal></entry>
+      <entry valign=bottom>
+        Kannel would "ping" the modem for this many seconds. If the probe fails, 
+	try to reconnect to it.
+     </entry></row>
+
    </tbody></tgroup></informaltable>
 
  <informaltable frame=none>
@@ -2680,6 +2687,7 @@ marked as "not tested" because the table is still new.</para>
      <entry>sema</entry>
      <entry>ois</entry>
      <entry>at</entry>
+     <entry>at2</entry>
      <entry>http</entry>
      <entry>fake</entry>
    </row>
@@ -2700,9 +2708,28 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
+    <entry>?</entry>
     <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>
+   </row>
+   <row>
+    <entry spanname="feature">Can set Alt-DCS</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>y</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>y</entry>
+    <entry>n</entry>
+    <entry>n</entry>
    </row>
 
    <row>
@@ -2715,6 +2742,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>y</entry>
+    <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -2736,9 +2764,29 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
+    <entry>?</entry>
     <entry>n</entry>
     <entry>?</entry>
     <entry>?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can set Pid</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>y</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>y</entry>
+    <entry>n</entry>
+    <entry>n</entry>
    </row>
 
    <row>
@@ -2751,6 +2799,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>y</entry>
+    <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -2772,6 +2821,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
+    <entry>?</entry>
     <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -2787,6 +2837,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>y</entry>
+    <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -2816,6 +2867,7 @@ marked as "not tested" because the table is still new.</para>
      <entry>smpp</entry>
      <entry>sema</entry>
      <entry>ois</entry>
+     <entry>at2</entry>
      <entry>at</entry>
      <entry>http</entry>
      <entry>fake</entry>
@@ -2836,6 +2888,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>?</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -2857,6 +2910,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>y?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
     <entry>n</entry>
     <entry>y?<footnote id="nomarkod"><para>Does not mark it as octet data</para></footnote></entry>
    </row>
@@ -2875,6 +2929,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?<footnoteref linkend="nomarkod"></entry>
    </row>
@@ -2893,6 +2948,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
     <entry>n</entry>
     <entry>y?</entry>
    </row>
@@ -2911,6 +2967,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?<footnote><para>However, it looks like the <literal>sema</literal> driver can't receive <emphasis>text</emphasis> data.</para></footnote></entry>
     <entry>y?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
     <entry>n</entry>
     <entry>n</entry>
    </row>
@@ -2929,6 +2986,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
+    <entry>?</entry>
     <entry>n</entry>
     <entry>n</entry>
    </row>
@@ -2947,6 +3005,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>N</entry>
     <entry>y?</entry>
+    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -2965,6 +3024,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>N</entry>
     <entry>y?</entry>
+    <entry>?</entry>
     <entry>n</entry>
     <entry>n</entry>
    </row>
@@ -2983,6 +3043,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -3001,6 +3062,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -3019,6 +3081,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>n</entry>
     <entry>N<footnote><para>Miscalculates message length</para></footnote></entry>
+    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -3037,6 +3100,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -3055,6 +3119,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -3073,6 +3138,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>n</entry>
     <entry>y?</entry>
+    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -3088,6 +3154,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>y</entry>
     <entry>n</entry>
+    <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -3878,6 +3945,12 @@ text = "No action specified"
    <row><entry><literal>account</literal></entry>
    <entry><literal>X-Kannel-account</literal></entry></row>
 
+   <row><entry><literal>pid</literal></entry>
+   <entry><literal>X-Kannel-PID</literal></entry></row>
+
+   <row><entry><literal>alt-dcs</literal></entry>
+   <entry><literal>X-Kannel-Alt-DCS</literal></entry></row>
+
   </tbody>
   </tgroup>
  </table>
@@ -4552,6 +4625,21 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <entry valign=bottom>
 	   Optional. If <literal>dlrmask</literal> is given, this is the url to
 	   be fetched. (Must be urlencoded)
+   </entry></row>
+
+   <row><entry><literal>pid</literal></entry>
+   <entry><literal>byte</literal></entry>
+   <entry valign=bottom>
+	   Optional. Sets the PID value. (See ETSI Documentation).
+	   Ex: SIM Toolkit messages would use something like 
+	   <literal>&amp;pid=127&amp;coding=2&amp;alt-dcs=1&amp;mclass=3</literal>
+   </entry></row>
+
+   <row><entry><literal>alt-dcs</literal></entry>
+   <entry><literal>number</literal></entry>
+   <entry valign=bottom>
+	   Optional. If unset, kannel uses the alt-dcs defined on smsc configuration,
+	   or 0X per default. If equals to 1, uses FX. If equals to 2, force 0X.
    </entry></row>
 
   </tbody>

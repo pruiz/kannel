@@ -1,22 +1,50 @@
+2002-02-25  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * Changelog: fixed spaces in my last entries.
+    * STATUS: removed emi2 reconnection entry and added unicode receiving 
+      request.
+    * gw/smsc_at2.c: fixed a bug introduced by my last patch that even on
+      successful modem connection, kannel would still stay inside the 
+      connection cicle (a missing "break" command).
+    * gw/smsc_at2.c: Changed a possible bug. On timeout, at2_wait_modem_command
+      returned -10, and every other line shows that it should be -1;
+    * gw/smsc_at2.c: When auto-detecting speed, try 57600 too (if defined) 
+      Siemens SL45 only uses 57600. :)
+    * gw/msg-decl.h, gw/smsbox.c, gw/smsc_emi2.c, gw/smsc_at2.c: added pid http
+      argument. Pid is used to send Sim Toolkit Messages.
+      A get like: ...&pid=127&coding=2&alt-dcs=1&mclass=3 passes without error 
+      on emi but not yet on at2. (I'm checking on that)
+    * gw/msg-decl.h, gw/smsbox.c, gw/smsc_emi2.c, gw/smsc_at2.c: added alt-dcs 
+      http argument. Like the configuration variable in AT2, this is used to 
+      force the 0X or FX kind of DCS when sending the message. (Fixes a bug 
+      when sending flash messages to old mobiles).
+    * gw/smsc_at2.c: Added my-number configuration variable, so the message 
+      appears in logs with the correct number instead of "1234"
+    * gw/smsc_at2.c: Added keepalive configuration variable. From this many
+      seconds, kannel sends an AT command and if it fails, reconnect to the
+      modem (We could later use other command instead of a simple AT, to check
+      if we are still connected to the GSM Network :) )
+    * doc/userguide/userguide.xml: Added pid, alt-dcs and at2-keepalive info;
+      Separated at and at2 in feature tables
+
 2002-02-23  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_emi2.c: removed unused variable `retry' to make 
       kannel-nag script happy again.
       
 2002-02-22  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsc_emi2.c, gw/smsc_at2.c, gwlib/cfg.def: Added retry configuration
-    boolean value to force these to smsc to always try to reconnect.  The 
-    idea is that if the connection went ok once, it should retry it.
-    Example: M20 sometimes don't start. EMI with multiple smsc's or a bad
-    terminated connection could reply with a "Too many sessions".
+      boolean value to force these to smsc to always try to reconnect.  The 
+      idea is that if the connection went ok once, it should retry it.
+      Example: M20 sometimes don't start. EMI with multiple smsc's or a bad
+      terminated connection could reply with a "Too many sessions".
     * gw/smsc_at2.c: In initialization, the modem could be probbed for speed
-    and modemtype. Changed code to exit or retry if one of these fail; in
-    detect_speed, if every speed probe fail, speed would be 0. Now it returns
-    an error
+      and modemtype. Changed code to exit or retry if one of these fail; in
+      detect_speed, if every speed probe fail, speed would be 0. Now it returns
+      an error
     * doc/userguide/userguide.xml: added retry configuration information
 
 2002-02-22  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsbox.c: fixed a bug when reply_requestfailed message was used, 
-    because the memory wasn't duplicated and is deleted later
+      because the memory wasn't duplicated and is deleted later
 
 2002-02-21  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_at2.c: fixing memory leak

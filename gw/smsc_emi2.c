@@ -340,6 +340,10 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
  
     emimsg->fields[E50_OADC] = str;
 
+    if(msg->sms.pid != 0) {
+	emimsg->fields[E50_RPID] = octstr_format("%04d", msg->sms.pid);
+    }
+
     str = octstr_duplicate(msg->sms.receiver);
     if(octstr_get_char(str,0) == '+') {
     	 /* international number format */
@@ -366,7 +370,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
     }
 	
     /* XSer2: DCS */
-    if ((dcs = fields_to_dcs(msg, 0))) {
+    if ((dcs = fields_to_dcs(msg, msg->sms.alt_dcs))) {
    	str = octstr_create("");
 	octstr_append_char(str, 2); 
 	octstr_append_char(str, 1); /* len 01 */
