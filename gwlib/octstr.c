@@ -1928,6 +1928,10 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
             octstr_truncate(new, format->prec);
         break;
 
+    case '%':
+    	new = octstr_create_immutable("%");
+    	break;
+
     default:
         panic(0, "octstr_format format string syntax error.");
     }
@@ -1937,12 +1941,10 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     else
         pad = " ";
 
-    if (format->minus)
-    {
+    if (format->minus) {
         while (format->min_width > octstr_len(new))
             octstr_append_data(new, pad, 1);
-    } else
-    {
+    } else {
         while (format->min_width > octstr_len(new))
             octstr_insert_data(new, 0, pad, 1);
     }
@@ -1975,9 +1977,7 @@ Octstr *octstr_format_valist(const char *fmt, va_list args)
     os = octstr_create("");
 
     while (*fmt != '\0') {
-        struct format format = {
-                                   0,
-                               };
+        struct format format = { 0, };
 
         n = strcspn(fmt, "%");
         octstr_append_data(os, fmt, n);

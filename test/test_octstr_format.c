@@ -9,7 +9,7 @@ int main(void) {
 
 	gwlib_init();
 
-	os = octstr_format("hello, %-5.*s, %-5d + %05d = %d, -%5.2f", 
+	os = octstr_format("hello, %% %-5.*s, %-5d + %05d = %d, -%5.2f", 
 			   3, "world", 1, 2, 3, 3.1415927);
 	octstr_dump(os, 0);
 	

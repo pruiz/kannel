@@ -1,3 +1,7 @@
+2000-12-11  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/octstr.c: octstr_format(): Implement %% in format strings.
+
 2000-12-08  Aarno Syväen <syvanen@wapit.com>
 
 	* wap/wsp_push_client.c, wap/wap_events.def: Really resolve a conflict.
