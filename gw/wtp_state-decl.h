@@ -1,16 +1,16 @@
 /*
- *Macro calls to generate rows of the state table. See the documentation for
- *guidance how to use and update these.
+ * Macro calls to generate rows of the state table. See the documentation for
+ * guidance how to use and update these.
  *
- *By Aarno Syvänen for WapIT Ltd.
+ * By Aarno Syvänen for WapIT Ltd.
  */
 
 ROW(LISTEN,
     RcvInvoke,
     (event->RcvInvoke.tcl == 2 || event->RcvInvoke.tcl == 1) &&
-    event->RcvInvoke.up_flag == 1 && wtp_tid_is_valid(event->RcvInvoke.tid),
+    event->RcvInvoke.up_flag == 1 && wtp_tid_is_valid(event),
     {
-     machine->u_ack=1;
+     machine->u_ack=event->RcvInvoke.up_flag;
      current_primitive=TRInvokeIndication;
      wsp_event=pack_wsp_event(current_primitive, event, machine);
      if (wsp_event == NULL)
@@ -26,3 +26,8 @@ ROW(INVOKE_RESP_WAIT,
     INVOKE_RESP_WAIT)
 
 #undef ROW
+
+
+
+
+
