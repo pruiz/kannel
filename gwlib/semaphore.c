@@ -64,6 +64,10 @@
 
 #include "gwlib/gwlib.h"
 
+#ifdef	DARWIN
+#undef	HAVE_SEMAPHORE_H
+#endif
+
 #ifdef HAVE_SEMAPHORE_H
 #include <semaphore.h>
 #include <errno.h>
