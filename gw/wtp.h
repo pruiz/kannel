@@ -135,6 +135,7 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event);
 /*
  * Generates a new transaction handle by incrementing the previous by one.
  */
-long wtp_tid_next(void);
+long wtp_tid_next(long tid);
 
 #endif
+

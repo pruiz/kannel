@@ -87,13 +87,12 @@ char *wsp_event_name(WSPEventType type) {
 
 void wsp_event_dump(WSPEvent *event) {
 	debug(0, "Dump of WSPEvent %p follows:", (void *) event);
-	debug(0, "  Type: %s (%d)", wsp_event_name(event->type), event->type);
-	#define INTEGER(name) debug(0, "  %s: %d", #name, p->name)
-	#define OCTSTR(name) debug(0, "  %s:", #name); octstr_dump(p->name)
+	#define INTEGER(name) debug(0, " %s. %s: %d", t, #name, p->name)
+	#define OCTSTR(name) debug(0, "%s.%s:", t, #name); octstr_dump(p->name)
 	#define MACHINE(name) \
-		debug(0, "  %s:", #name); wtp_machine_dump(p->name)
-	#define WSP_EVENT(name, fields) \
-		{ struct name *p = &event->name; fields }
+		debug(0, "%s.%s:", t, #name); wtp_machine_dump(p->name)
+	#define WSP_EVENT(type, fields) \
+		{ char *t=#type; struct type *p = &event->type; fields }
 	#include "wsp_events-decl.h"
 	debug(0, "Dump of WSPEvent %p ends.", (void *) event);
 }

@@ -21,8 +21,7 @@ ROW(LISTEN,
      machine->tcl=event->RcvInvoke.tcl;
      current_primitive=TRInvokeIndication;
 
-     gen_tid=wtp_tid_next();
-     wsp_event=pack_wsp_event(current_primitive, event, machine, gen_tid);
+     wsp_event=pack_wsp_event(current_primitive, event, machine);
      if (wsp_event == NULL)
         goto mem_error;
 
@@ -58,7 +57,7 @@ ROW(INVOKE_RESP_WAIT,
     1,
     {
      current_primitive=TRAbortIndication;
-     wsp_event=pack_wsp_event(current_primitive, event, machine, gen_tid);
+     wsp_event=pack_wsp_event(current_primitive, event, machine);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -84,7 +83,7 @@ ROW(RESULT_WAIT,
     1,
     {
      current_primitive=TRAbortIndication;
-     wsp_event=pack_wsp_event(current_primitive, event, machine, gen_tid);
+     wsp_event=pack_wsp_event(current_primitive, event, machine);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -94,7 +93,7 @@ ROW(RESULT_RESP_WAIT,
     1,
     {
      current_primitive=TRResultConfirmation;
-     wsp_event=pack_wsp_event(current_primitive, event, machine, gen_tid);
+     wsp_event=pack_wsp_event(current_primitive, event, machine);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -104,7 +103,7 @@ ROW(RESULT_RESP_WAIT,
     1,
     {
      current_primitive=TRAbortIndication;
-     wsp_event=pack_wsp_event(current_primitive, event, machine, gen_tid);
+     wsp_event=pack_wsp_event(current_primitive, event, machine);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)

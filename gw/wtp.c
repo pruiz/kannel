@@ -60,7 +60,7 @@ static WTPMachine *name_machine(WTPMachine *machine, Octstr *source_address,
  * five-tuple and tid are fields of the wtp machine.
  */
 static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event, 
-         WTPMachine *machine, long gen_tid);
+         WTPMachine *machine);
 
 static int wtp_tid_is_valid(WTPEvent *event);
 
@@ -240,8 +240,7 @@ void wtp_machine_dump(WTPMachine  *machine){
                                     debug(0, "Machine %s unlocked", #name);\
                                     mutex_unlock(&machine->name);\
                                  }
-           #define QUEUE(name)   debug (0, "head and tail is: %s %p", \
-                                        #name, (void *) machine->name) 
+           #define QUEUE(name)   debug (0,"%s %p",#name,(void *) machine->name) 
            #define NEXT(name) 
 	   #define MACHINE(field) field
 	   #include "wtp_machine-decl.h"
@@ -507,7 +506,6 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 	  return;
      }
 
-     debug(0, "wtp_handle_event: wsp event dump included");
      do {
 	  debug(0,"handle_event: current state=%s.",name_state(machine->state));
           debug(0,"handle_event: queue visited");
@@ -541,6 +539,12 @@ mem_error:
      mutex_unlock(&machine->mutex);
 }
 
+long wtp_tid_next(long tid){
+
+     return ++tid;
+}
+
+
 /*****************************************************************************
  *
  *INTERNAL FUNCTIONS:
@@ -571,7 +575,7 @@ static char *name_state(int s){
 }
 
 
-WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
+static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
 	   Octstr *destination_address, long destination_port, long tid){
 
            WTPMachine *temp;
@@ -690,15 +694,13 @@ static WTPMachine *name_machine(WTPMachine *machine, Octstr *source_address,
 /*
  * Packs a wsp event. Fetches flags and user data from a wtp event. Address 
  * five-tuple and tid are fields of the wtp machine.
- *
- * Input:                              gen_tid, a generated tid used as a 
- *                                     transaction identifying handle between 
- *                                     wsp and wtp.
  */
 static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event, 
-         WTPMachine *machine, long gen_tid){
+         WTPMachine *machine){
 
          WSPEvent *event=wsp_event_create(wsp_name);
+
+         debug(0, "Gen_tid has a value %ld", gen_tid);
 /*
  * Abort(CAPTEMPEXCEEDED)
  */
@@ -715,7 +717,7 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
                      event->TRInvokeIndication.user_data=
                             wtp_event->RcvInvoke.user_data;
                      event->TRInvokeIndication.tcl=wtp_event->RcvInvoke.tcl;
-                     event->TRInvokeIndication.wsp_tid=gen_tid;
+                     event->TRInvokeIndication.wsp_tid=wtp_next_tid(gen_tid);
                      event->TRInvokeIndication.machine=machine;
                 break;
                 
@@ -741,14 +743,9 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
          return event;
 } 
 
-int wtp_tid_is_valid(WTPEvent *event){
+static int wtp_tid_is_valid(WTPEvent *event){
 
     return 1;
-}
-
-long wtp_tid_next(){
-
-     return gen_tid++;
 }
 
 /*
