@@ -132,7 +132,6 @@ static volatile sig_atomic_t bb_todo = 0;
 /* own global variables */
 
 static Mutex *status_mutex;
-Mutex *boxid_mutex;
 static time_t start_time;
 volatile sig_atomic_t restart = 0;
 
@@ -436,7 +435,6 @@ static Cfg *init_bearerbox(Cfg *cfg)
     incoming_wdp_counter = counter_create();
     
     status_mutex = mutex_create();
-    boxid_mutex = mutex_create();
 
     setup_signal_handlers();
 
@@ -642,7 +640,6 @@ int main(int argc, char **argv)
     list_destroy(suspended, NULL);
     list_destroy(isolated, NULL);
     mutex_destroy(status_mutex);
-    mutex_destroy(boxid_mutex);
 
     alog_close();		/* if we have any */
     bb_alog_shutdown();

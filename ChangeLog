@@ -1,4 +1,10 @@
 2004-06-28  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/bearerbox.c: got rid of unused 'boxid' mutex.
+    * gw/msg.h: introduced 'ack_status_t' typedef instead of anonymous enum.
+    * gw/shared.[ch], gw/sms.[ch]: moved sms splitting code from shared.[ch] to
+      sms.[ch]. That's IMO approriate place for it.
+
+2004-06-28  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/smscconn.c, gw/smscconn_p.h, gwlib/cfg.def, doc/userguide/userguide.xml, gw/bb_smscconn.c:
       made rerouting between SMSC's working properly.
 

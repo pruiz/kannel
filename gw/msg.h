@@ -109,12 +109,12 @@ enum {
 };
 
 /* ack message status */
-enum {
+typedef enum {
     ack_success = 0,
     ack_failed = 1,     /* do not try again (e.g. no route) */
     ack_failed_tmp = 2, /* temporary failed, try again (e.g. queue full) */
     ack_buffered = 3
-};
+} ack_status_t;
 
 /*
  * Create a new, empty Msg object. Panics if fails.

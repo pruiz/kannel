@@ -63,6 +63,7 @@
  */
 
 #include "sms.h"
+#include "dlr.h"
 
 /* 
  * Encode DCS using sms fields
@@ -210,5 +211,176 @@ int sms_swap(Msg *msg)
     }
 
     return 0;
+}
+
+
+/*****************************************************************************
+ *
+ * Split an SMS message into smaller ones.
+ */
+#define CATENATE_UDH_LEN 5
+
+
+static void prepend_catenation_udh(Msg *sms, int part_no, int num_messages,
+    	    	    	    	   int msg_sequence)
+{
+    if (sms->sms.udhdata == NULL)
+        sms->sms.udhdata = octstr_create("");
+    if (octstr_len(sms->sms.udhdata) == 0)
+	octstr_append_char(sms->sms.udhdata, CATENATE_UDH_LEN);
+    octstr_format_append(sms->sms.udhdata, "%c\3%c%c%c", 
+    	    	    	 0, msg_sequence, num_messages, part_no);
+
+     /* Set the number of messages left, if any */
+     if (part_no < num_messages)
+     	sms->sms.msg_left = num_messages - part_no;
+     else
+     	sms->sms.msg_left = 0;
+    /* 
+     * Now that we added the concatenation information the
+     * length is all wrong. we need to recalculate it. 
+     */
+    octstr_set_char(sms->sms.udhdata, 0, octstr_len(sms->sms.udhdata) - 1 );
+}
+
+
+static Octstr *extract_msgdata_part(Octstr *msgdata, Octstr *split_chars,
+    	    	    	    	    int max_part_len)
+{
+    long i, len;
+    Octstr *part;
+
+    len = max_part_len;
+    if (split_chars != NULL)
+	for (i = max_part_len; i > 0; i--)
+	    if (octstr_search_char(split_chars,
+				   octstr_get_char(msgdata, i - 1), 0) != -1) {
+		len = i;
+		break;
+	    }
+    part = octstr_copy(msgdata, 0, len);
+    octstr_delete(msgdata, 0, len);
+    return part;
+}
+
+
+static Octstr *extract_msgdata_part_by_coding(Msg *msg, Octstr *split_chars,
+											  int max_part_len)
+{
+	Octstr *temp = NULL;
+	int pos, esc_count;
+
+	if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
+        /* nothing to do here, just call the original extract_msgdata_part */
+		return extract_msgdata_part(msg->sms.msgdata, split_chars, max_part_len);
+	}
+
+	/* 
+     * else we need to do something special. I'll just get charset_gsm_truncate to
+     * cut the string to the required length and then count real characters. 
+     */
+	temp = octstr_duplicate(msg->sms.msgdata);
+	charset_latin1_to_gsm(temp);
+	charset_gsm_truncate(temp, max_part_len);
+	
+	pos = esc_count = 0;
+
+	while ((pos = octstr_search_char(temp, 27, pos)) != -1) {
+		++pos;
+    	++esc_count;
+	}
+
+	octstr_destroy(temp);
+
+	/* now just call the original extract_msgdata_part with the new length */
+	return extract_msgdata_part(msg->sms.msgdata, split_chars, max_part_len - esc_count);
+}
+
+
+List *sms_split(Msg *orig, Octstr *header, Octstr *footer, 
+                Octstr *nonlast_suffix, Octstr *split_chars, 
+                int catenate, unsigned long msg_sequence,
+                int max_messages, int max_octets)
+{
+    long max_part_len, udh_len, hf_len, nlsuf_len;
+    unsigned long total_messages, msgno;
+    long last;
+    List *list;
+    Msg *part, *temp;
+
+    hf_len = octstr_len(header) + octstr_len(footer);
+    nlsuf_len = octstr_len(nonlast_suffix);
+    udh_len = octstr_len(orig->sms.udhdata);
+
+    /* First check whether the message is under one-part maximum */
+    if (orig->sms.coding == DC_8BIT || orig->sms.coding == DC_UCS2)
+        max_part_len = max_octets - udh_len - hf_len;
+    else
+        max_part_len = max_octets * 8 / 7 - (udh_len * 8 + 6) / 7 - hf_len;
+
+    if (sms_msgdata_len(orig) > max_part_len && catenate) {
+        /* Change part length to take concatenation overhead into account */
+        if (udh_len == 0)
+            udh_len = 1;  /* Add the udh total length octet */
+        udh_len += CATENATE_UDH_LEN;
+        if (orig->sms.coding == DC_8BIT || orig->sms.coding == DC_UCS2)
+            max_part_len = max_octets - udh_len - hf_len;
+        else
+            max_part_len = max_octets * 8 / 7 - (udh_len * 8 + 6) / 7 - hf_len;
+    }
+
+    /* ensure max_part_len is never negativ */
+    max_part_len = max_part_len > 0 ? max_part_len : 0;
+
+    temp = msg_duplicate(orig);
+    msgno = 0;
+    list = list_create();
+
+    do {
+        msgno++;
+        part = msg_duplicate(orig);
+
+        /* 
+         * if its a DLR request message getting split, 
+         * only ask DLR for the first one 
+         */
+        if ((msgno > 1) && DLR_IS_ENABLED(part->sms.dlr_mask)) {
+            octstr_destroy(part->sms.dlr_url);
+            part->sms.dlr_url = NULL;
+            part->sms.dlr_mask = 0;
+        }
+        octstr_destroy(part->sms.msgdata);
+        if (sms_msgdata_len(temp) <= max_part_len || msgno == max_messages) {
+            part->sms.msgdata = temp->sms.msgdata ? 
+                octstr_copy(temp->sms.msgdata, 0, max_part_len) : octstr_create("");
+            last = 1;
+        }
+        else {
+            part->sms.msgdata = 
+                extract_msgdata_part_by_coding(temp, split_chars,
+                                               max_part_len - nlsuf_len);
+            /* create new id for every part, except last */
+            uuid_generate(part->sms.id);
+            last = 0;
+        }
+        if (header)
+            octstr_insert(part->sms.msgdata, header, 0);
+        if (footer)
+            octstr_append(part->sms.msgdata, footer);
+        if (!last && nonlast_suffix)
+            octstr_append(part->sms.msgdata, nonlast_suffix);
+        list_append(list, part);
+    } while (!last);
+
+    total_messages = msgno;
+    msg_destroy(temp);
+    if (catenate && total_messages > 1) {
+        for (msgno = 1; msgno <= total_messages; msgno++) {
+            part = list_get(list, msgno - 1);
+            prepend_catenation_udh(part, msgno, total_messages, msg_sequence);
+        }
+    }
+
+    return list;
 }
 

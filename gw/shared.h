@@ -70,7 +70,6 @@
 #include "gwlib/gwlib.h"
 #include "msg.h"
 
-#define CATENATE_UDH_LEN 5
 #define INFINITE_TIME -1
 
 /*
@@ -145,37 +144,6 @@ int deliver_to_bearerbox(Msg *msg);
  */
 Octstr *parse_date(Octstr *date);
 
-/*
- * 
- * Split an SMS message into smaller ones.
- * 
- * The original SMS message is represented as an Msg object, and the
- * resulting list of smaller ones is represented as a List of Msg objects.
- * A plain text header and/or footer can be added to each part, and an
- * additional suffix can be added to each part except the last one.
- * Optionally, a UDH prefix can be added to each part so that phones
- * that understand this prefix can join the messages into one large one
- * again. At most `max_messages' parts will be generated; surplus text
- * from the original message will be silently ignored.
- * 
- * If the original message has UDH, they will be duplicated in each part.
- * It is an error to use catenation and UDH together, or catenation and 7
- * bit mode toghether; in these cases, catenation is silently ignored.
- * 
- * If `catenate' is true, `msg_sequence' is used as the sequence number for
- * the logical message. The catenation UDH contain three numbers: the
- * concatenated message reference, which is constant for all parts of
- * the logical message, the total number of parts in the logical message,
- * and the sequence number of the current part.
- *
- * Note that `msg_sequence' must have a value in the range 0..255.
- * 
- * `max_octets' gives the maximum number of octets in on message, including
- * UDH, and after 7 bit characters have been packed into octets.
- */
-List *sms_split(Msg *orig, Octstr *header, Octstr *footer, 
-                Octstr *nonlast_suffix, Octstr *split_chars, int catenate, 
-                unsigned long msg_sequence, int max_messages, int max_octets);
 
 #endif
 
