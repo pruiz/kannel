@@ -15,6 +15,11 @@ MSG(heartbeat,
 		INTEGER(load);
 	})
 
+MSG(admin,
+        {
+	        INTEGER(command);
+	})
+    
 MSG(sms,
 	{
 		OCTSTR(sender);

@@ -3,7 +3,7 @@
  * 
  * This file declares the Msg data type and the functions to manipulate it.
  * 
- * Lars Wirzenius <liw@wapit.com> 
+ * Lars Wirzenius
  */
 
 
@@ -27,10 +27,22 @@ typedef struct {
 	#include "msg-decl.h"
 } Msg;
 
+
+/* enums for Msg fields */
+
+/* sms message type */
+
 enum {
     mo = 0,
     mt_reply = 1,
     mt_push = 2
+};
+
+/* admin commands */
+enum {
+    cmd_shutdown = 0,
+    cmd_suspend = 1,
+    cmd_resume = 2
 };
 
 /*

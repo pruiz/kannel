@@ -276,17 +276,30 @@ int main(int argc, char **argv)
 	msg = read_from_bearerbox();
 	if (msg == NULL)
 	    break;
-	dgram = wap_event_create(T_DUnitdata_Ind);
-	dgram->u.T_DUnitdata_Ind.addr_tuple = wap_addr_tuple_create(
+	if (msg_type(msg) == admin) {
+	    if (msg->admin.command == cmd_shutdown) {
+		info(0, "Bearerbox told us to die");
+		program_status = shutting_down;
+	    }
+	    /*
+	     * XXXX here should be suspend/resume, add RSN
+	     */
+	} else if (msg_type(msg) == wdp_datagram) {
+	    dgram = wap_event_create(T_DUnitdata_Ind);
+	    dgram->u.T_DUnitdata_Ind.addr_tuple = wap_addr_tuple_create(
 		msg->wdp_datagram.source_address,
 		msg->wdp_datagram.source_port,
 		msg->wdp_datagram.destination_address,
 		msg->wdp_datagram.destination_port);
-	dgram->u.T_DUnitdata_Ind.user_data = msg->wdp_datagram.user_data;
-	msg->wdp_datagram.user_data = NULL;
-	msg_destroy(msg);
+	    dgram->u.T_DUnitdata_Ind.user_data = msg->wdp_datagram.user_data;
+	    msg->wdp_datagram.user_data = NULL;
+	    msg_destroy(msg);
 
-	wap_dispatch_datagram(dgram);
+	    wap_dispatch_datagram(dgram);
+	} else {
+	    warning(0, "Received other message than wdp/admin, ignoring!");
+	    msg_destroy(msg);
+	}
     }
 
     info(0, "Kannel wapbox terminating.");

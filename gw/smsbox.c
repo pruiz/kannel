@@ -70,17 +70,25 @@ static void read_messages_from_bearerbox(void)
 	if (msg == NULL)
 	    break;
 
-        if (total == 0)
-	    start = time(NULL);
-	total++;
-
-	if (msg_type(msg) != sms) {
-	    warning(0, "Received other message than sms, ignoring!");
+	if (msg_type(msg) == admin) {
+	    if (msg->admin.command == cmd_shutdown) {
+		info(0, "Bearerbox told us to die");
+		program_status = shutting_down;
+	    }
+	    /*
+	     * XXXX here should be suspend/resume, add RSN
+	     */
 	    msg_destroy(msg);
-	} else
+	} else if (msg_type(msg) == sms) {
+	    if (total == 0)
+		start = time(NULL);
+	    total++;
 	    list_produce(smsbox_requests, msg);
+	} else {
+	    warning(0, "Received other message than sms/admin, ignoring!");
+	    msg_destroy(msg);
+	}
     }
-
     secs = difftime(time(NULL), start);
     info(0, "Received (and handled?) %d requests in %d seconds "
     	 "(%.2f per second)", total, secs, (float)total / secs);

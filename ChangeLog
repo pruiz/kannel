@@ -1,3 +1,20 @@
+2001-02-27  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_boxc.c: Modified to use Conn instead of raw TCP/IP with
+	sms|wapbox connections
+
+	* gw/msg[-decl].h: added new message type 'admin' for
+	shutdown/suspend use.
+
+	* gw/smsbox.c: modified to die when shutdown command
+	received. Needs to implement suspend/shutdown, still
+
+	* gw/wapbox.c: modified to die when shutdown command received and
+	to ignore non-wdp messages
+
+	* gwlib/octstr.h|c: removed now non-used octstr_send and
+	octstr_recv
+
 2001-02-27  Richard Braakman <dark@wapit.com>
 
 	* Ran spelling check over userguide.xml.

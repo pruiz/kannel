@@ -50,7 +50,7 @@ static Octstr *box_deny_ip;
 static long	boxid = 0;
 
 typedef struct _boxc {
-    int   	fd;
+    Connection	*conn;
     int		is_wap;
     long      	id;
     int		load;
@@ -67,46 +67,61 @@ typedef struct _boxc {
  *  receiver thingies
  */
 
+static Msg *read_from_box(Boxc *boxconn)
+{
+    int ret;
+    Octstr *pack;
+    Msg *msg;
+
+    pack = NULL;
+    while (bb_status != BB_DEAD && boxconn->alive) {
+	pack = conn_read_withlen(boxconn->conn);
+	gw_claim_area(pack);
+	if (pack != NULL)
+	    break;
+	if (conn_eof(boxconn->conn)) {
+	    info(0, "Connection closed by the box <%s>",
+		 octstr_get_cstr(boxconn->client_ip));
+	    return NULL;
+	}
+
+	ret = conn_wait(boxconn->conn, -1.0);
+	if (ret < 0) {
+	    error(0, "Connection to box <%s> broke.",
+		  octstr_get_cstr(boxconn->client_ip));
+	    return NULL;
+	}
+    }
+    
+    if (pack == NULL)
+    	return NULL;
+
+    msg = msg_unpack(pack);
+    octstr_destroy(pack);
+
+    if (msg == NULL)
+	error(0, "Failed to unpack data!");
+    return msg;
+}
+
+
 static void boxc_receiver(void *arg)
 {
     Boxc *conn = arg;
-    Octstr *pack;
     Msg *msg;
     int ret;
 
     /* remove messages from socket until it is closed */
     while(bb_status != BB_DEAD && conn->alive) {
 
-	if (read_available(conn->fd, 100000) < 1)
-	    continue;
-
 	list_consume(suspended);	/* block here if suspended */
-	
-	ret = octstr_recv(conn->fd, &pack);
 
-	if (ret < 1) {
-	    info(0, "Client <%s> closed connection",
-		  octstr_get_cstr(conn->client_ip));
+	msg = read_from_box(conn);
+
+	if (msg == NULL) {	/* garbage/connection lost */
 	    conn->alive = 0;
-
-	    /* XXX this kludge wakes up the sender if it is sleeping
-	     *     in list_consume. However, this does not work reliably
-	     *	   for smsbox connections as many of them listen to same
-	     *     list, but this is better than nothing   -kalle
-             */
-	    /*
-	    msg = msg_create(heartbeat);
-	    msg->heartbeat.load = 0;
-	    list_produce(conn->incoming, msg); */
 	    break;
 	}
-	if ((msg = msg_unpack(pack))==NULL) {
-	    debug("bb.boxc", 0, "boxc_receiver: received garbage from <%s>, ignored",
-		  octstr_get_cstr(conn->client_ip));
-	    octstr_destroy(pack);
-	    continue;
-	}
-	octstr_destroy(pack);
 
 	if (msg_type(msg) == sms && conn->is_wap == 0)
 	{
@@ -153,14 +168,14 @@ static void boxc_receiver(void *arg)
  * sender thingies
  */
 
-static int send_msg(int fd, Msg *msg)
+static int send_msg(Boxc *boxconn, Msg *pmsg)
 {
     Octstr *pack;
 
-    pack = msg_pack(msg);
-
-    if (octstr_send(fd, pack) == -1) {
-	octstr_destroy(pack);
+    pack = msg_pack(pmsg);
+    if (conn_write_withlen(boxconn->conn, pack) == -1) {
+    	error(0, "Couldn't write Msg to box <%s>, disconnecting",
+	      octstr_get_cstr(boxconn->client_ip));
 	return -1;
     }
     octstr_destroy(pack);
@@ -180,7 +195,12 @@ static void boxc_sender(void *arg)
 	list_consume(suspended);	/* block here if suspended */
 
 	if ((msg = list_consume(conn->incoming)) == NULL) {
-	    shutdown(conn->fd, 1);
+
+	    /* tell sms/wapbox to die */
+	    msg = msg_create(admin);
+	    msg->admin.command = cmd_shutdown;
+	    send_msg(conn, msg);
+	    msg_destroy(msg);
 	    break;
 	}
 	if (msg_type(msg) == heartbeat) {
@@ -193,16 +213,15 @@ static void boxc_sender(void *arg)
 	    list_produce(conn->retry, msg);
 	    break;
 	}
-        if (send_msg(conn->fd, msg) == -1) {
+        if (send_msg(conn, msg) == -1) {
 	    /* if we fail to send, return msg to the list it came from
 	     * before dying off */
-	    debug("bb.boxc", 0, "boxc_sender: send failed, let's assume that "
-		                "connection had died");
 	    list_produce(conn->retry, msg);
 	    break;
 	}
 	msg_destroy(msg);
-	debug("bb.boxc", 0, "boxc_sender: sent message");
+	debug("bb.boxc", 0, "boxc_sender: sent message to <%s>",
+	      octstr_get_cstr(conn->client_ip));
     }
     /* the client closes the connection, after that die in receiver */
     /* conn->alive = 0; */
@@ -222,7 +241,7 @@ static Boxc *boxc_create(int fd, Octstr *ip)
     boxc = gw_malloc(sizeof(Boxc));
     boxc->is_wap = 0;
     boxc->load = 0;
-    boxc->fd = fd;
+    boxc->conn = conn_wrap_fd(fd);
     boxc->id = boxid++;		/* XXX  MUTEX! fix later... */
     boxc->client_ip = ip;
     boxc->alive = 1;
@@ -237,8 +256,8 @@ static void boxc_destroy(Boxc *boxc)
     
     /* do nothing to the lists, as they are only references */
 
-    if (boxc->fd >= 0)
-	close(boxc->fd);
+    if (boxc->conn)
+	conn_destroy(boxc->conn);
     octstr_destroy(boxc->client_ip);
     gw_free(boxc);
 }    
@@ -785,6 +804,8 @@ Octstr *boxc_status(int status_type)
 	list_lock(wapbox_list);
 	for(i=0; i < list_len(wapbox_list); i++) {
 	    bi = list_get(wapbox_list, i);
+	    if (bi->alive == 0)
+		continue;
 	    t = orig - bi->connect_time;
 	    sprintf(buf, "%swapbox %s (on-line %ldd %ldh %ldm %lds)%s",
 		    ws, octstr_get_cstr(bi->client_ip),
@@ -798,6 +819,8 @@ Octstr *boxc_status(int status_type)
 	list_lock(smsbox_list);
 	for(i=0; i < list_len(smsbox_list); i++) {
 	    bi = list_get(smsbox_list, i);
+	    if (bi->alive == 0)
+		continue;
 	    t = orig - bi->connect_time;
 	    sprintf(buf, "%ssmsbox %s (on-line %ldd %ldh %ldm %lds)%s",
 		    ws, octstr_get_cstr(bi->client_ip),

@@ -429,19 +429,6 @@ int octstr_item_match(void *item, void *pattern);
 void octstr_dump(Octstr *ostr, int level);
 
 /*
- * Send(2) given octstr into 'fd', possibly blocking. 
- * Return -1 if failed, 0 otherwise.
- */
-int octstr_send(int fd, Octstr *ostr);
-
-/*
- * Read recv(2) one Octstr from (socket) 'fd'.
- * Blocks until the whole Octstr is read.
- * Return -1 if failed, 0 if the socket was closed, 1 for data.
- */
-int octstr_recv(int fd, Octstr **ostr);
-
-/*
  * decode url-encoded octstr in-place.
  * Return 0 if all went fine, or -1 if there was some garbage
  */
