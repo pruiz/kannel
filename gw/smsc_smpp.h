@@ -282,28 +282,6 @@ typedef struct smpp_pdu_query_sm_resp {
 	
 } smpp_pdu_query_sm_resp;
 
-/******************************************************************************
-* PDU UNBIND
-*/
-typedef struct smpp_pdu_unbind {
-	/* This space has been intentionally left blank. */
-} smpp_pdu_unbind;
-
-typedef struct smpp_pdu_unbind_resp {
-	/* This space has been intentionally left blank. */
-} smpp_pdu_unbind_resp;
-
-/******************************************************************************
-* PDU ENQUIRE_LINK
-*/
-typedef struct smpp_pdu_enquire_link {
-	/* This space has been intentionally left blank. */
-} smpp_pdu_enquire_link;
-
-typedef struct smpp_pdu_enquire_link_resp {
-	/* This space has been intentionally left blank. */
-} smpp_pdu_enquire_link_resp;
-
 typedef struct fifostack {
 
 	int records;

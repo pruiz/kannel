@@ -1,3 +1,9 @@
+2000-03-29  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_smpp.h: Removed definitions of unused empty structures
+	smpp_pdu_unbind, smpp_pdu_unbind_resp, smpp_pdu_enquire_link, and
+	smpp_pdu_enquire_link_resp.
+
 2000-03-29 Sanna Seppanen <sanna@wapit.com>
 
 	* gwlib/http.c: http_get_u() deleted a bunch of duplicate code.
