@@ -97,7 +97,8 @@ static void format(char *buf, int level, int e, const char *fmt)
 		"INFO: ",
 		"WARNING: ",
 		"ERROR: ",
-		"PANIC: "
+		"PANIC: ",
+		"LOG: "
 	};
 	static int tab_size = sizeof(tab) / sizeof(tab[0]);
 	time_t t;
@@ -158,6 +159,11 @@ static void output(FILE *f, char *buf, va_list args) {
 			} \
 		} \
 	} while (0)
+
+void forced(int e, const char *fmt, ...) {
+	FUNCTION_GUTS(LOG);
+}
+
 
 void panic(int e, const char *fmt, ...) {
 	FUNCTION_GUTS(PANIC);

@@ -17,22 +17,44 @@
 
 /* Symbolic levels for output levels. */
 enum output_level {
-	DEBUG, INFO, WARNING, ERROR, PANIC
+	DEBUG, INFO, WARNING, ERROR, PANIC, LOG
 };
 
-/* Print a panicky error message and terminate the program with a failure. */
+/* Print an 'always printed' (forced) message (LOG:)
+ * This log level is meant for messages that are _always_ printed. They
+ * are not errors, warnings or similar things but data that always should
+ * be printed. Like billing information.
+ */
+void forced(int, const char *, ...) PRINTFLIKE ;
+
+/* Print a panicky error message and terminate the program with a failure.
+ * So, this function is called when there is no other choice than to exit
+ * immediately, with given reason
+ */
 void panic(int, const char *, ...) PRINTFLIKE ;
 
-/* Print a normal error message. */
+/* Print a normal error message. Used when something which should be
+ * investigated and possibly fixed, happens. The error might be fatal, too,
+ * but we have time to put system down peacefully.
+ */
 void error(int, const char *, ...) PRINTFLIKE ;
 
-/* Print a warning message. */
+/* Print a warning message. 'Warning' is a message that should be told and
+ * distinguished from normal information (info), but does not necessary require
+ * any further investigations. Like 'warning, no sender number set'
+ */
 void warning(int, const char *, ...) PRINTFLIKE ;
 
-/* Print an informational message. */
+/* Print an informational message. This information should be limited to
+ * one or two rows per request, if real debugging information is needed,
+ * use debug
+ */
 void info(int, const char *, ...) PRINTFLIKE ;
 
-/* Print a debug message. */
+/*
+ * Print a debug message. Most of the log messages should be of this level when
+ * the system is under development
+ */
 void debug(int, const char *, ...) PRINTFLIKE ;
 
 /* Set minimum level for output messages to stderr. Messages with a lower 
