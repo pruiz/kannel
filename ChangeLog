@@ -13,6 +13,9 @@
 	* gw/bb_boxc.c: Fix memory leak in route_msg() when routing
 	WAP packet but no wapboxes are connected.
 
+	* gwlib/http.c: Fixed silly bug in http_remove_hop_headers that
+	would make the wapbox panic if a server used the Connection: header.
+
 2000-10-05  Yann Muller  <ymuller@3glab.com>
 
 	* gw/smsbox_req.c/h: added smsbox_req_sendota() to send OTA config

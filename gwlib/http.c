@@ -762,7 +762,7 @@ void http_remove_hop_headers(List *headers)
 	hop_headers = http_header_split_value(v);
 	octstr_destroy(v);
 	while ((e = list_consume(hop_headers))) {
-	    http_header_remove_all(headers, octstr_get_cstr(v));
+	    http_header_remove_all(headers, octstr_get_cstr(e));
 	    octstr_destroy(e);
 	}
 	list_destroy(hop_headers, NULL);
