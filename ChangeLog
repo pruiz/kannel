@@ -1,3 +1,10 @@
+Wed Apr 26 15:34:17 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/gwmem.h: Fixed prototypes for native wrapper.
+	
+	* gwlib/socket.c: Commented out SO_LINGER settings and added
+	more detailed error reporting.
+
 2000-04-26    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/bearebox.c: added VERSION to status query

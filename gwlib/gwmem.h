@@ -26,8 +26,8 @@ void gw_native_init(void);
 void gw_native_check_leaks(void);
 void *gw_native_malloc(size_t size);
 void *gw_native_realloc(void *ptr, size_t size);
-void *gw_native_free(void *ptr);
-char *gw_strdup(const char *str);
+void gw_native_free(void *ptr);
+char *gw_native_strdup(const char *str);
 
 #define gw_init_mem()
 #define gw_check_leaks()

@@ -126,13 +126,18 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
 	struct sockaddr_in addr;
 	struct sockaddr_in o_addr;
 	struct hostent *hostinfo;
+#if 0
 	struct linger dontlinger;
+#endif
 	int s;
 
 	s = socket(PF_INET, SOCK_STREAM, 0);
-	if (s == -1)
+	if (s == -1) {
+		error(errno, "Couldn't create new socket.");
 		goto error;
+	}
 
+#if 0
 	dontlinger.l_onoff = 1;
 	dontlinger.l_linger = 0;
 #if defined(BSD) && !defined(__NetBSD__)
@@ -145,10 +150,13 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
 	setsockopt(s, p->p_proto, SO_LINGER, &dontlinger, sizeof(dontlinger));
 }
 #endif
+#endif
 
 	hostinfo = gethostbyname(hostname);
-	if (hostinfo == NULL)
+	if (hostinfo == NULL) {
+		error(errno, "gethostbyname failed");
 		goto error;
+	}
 
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
@@ -173,8 +181,10 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
 	    }
 	}
 
-	if (connect(s, (struct sockaddr *) &addr, sizeof(addr)) == -1)
+	if (connect(s, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
+		error(errno, "connect failed");
 		goto error;
+	}
 
 	return s;
 
