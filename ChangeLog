@@ -1,3 +1,13 @@
+2000-07-07  Tuomas Luttinen  <tuo@wapit.com>
+
+	* configure: Now supprt for libxml 1.8.8 and 2.1.1.
+
+	* gw/wml_compiler.c: Supprt for libxml version 2 and above now ready.
+
+	* gw/wml_compiler.c (parse_attribute): Patch by Holger Casties applied
+	to eliminate a segmentation fault with NULL pointer passed as a second 
+	argument to strcmp.
+
 2000-07-07  Kalle Marjola  <rpr@wapit.com>
 
 	* doc/dialup.txt: updated to reflect current configuration, and
