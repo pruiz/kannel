@@ -7,6 +7,9 @@
 
 #include "gwlib.h"
 
+/* NOTE: This is depricated thing, should not be used by anyone anymore! */
+
+
 /*
  * A data structure holding one SMS message. `sender' and `receiver'
  * are strings containing the phone numbers of the sender and

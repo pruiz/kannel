@@ -1,11 +1,9 @@
 /*
  * SMSC Interface design 2.0
  *
- * Kalle Marjola 2000 for Open SOurce Gateway
+ * Kalle Marjola 2000 for Kannel
  *
  *
- * NOTE: This interface might change in the future, but basic idea is
- *       kept as it is now.
  *
  * All new SMSC protocols must implement these functions, with
  * given functionality.
@@ -14,12 +12,20 @@
  * In addition, following files must be edited accordingly:
  *
  * smsc_p.h   to support all fields required by the new protocol
- * smsc.c     to call appropriate functions when this porotocol is used
- *            (all functions with quite identical names as here is, recognized
- *             switch()es for different kind of SMSC protocols)
  *
- * The new file should be named smsc_XXX.c, where XXX is the protocol
- * name. If needed, a specific header can also be added.
+ * smsc.c     to call appropriate functions when this protocol is used
+ *            (all functions with quite identical names as here is, 
+ *             recognized switch()es for different kind of SMSC protocols)
+ *
+ * kannel.conf if any new configuration variables are needed; a short
+ *             description here. And a list of used variables.
+ *
+ * The new file should be named smsc_XXX.c, where XXX is the protocol/
+ * provider name. If needed, a specific header can also be added.
+ *
+ * Read file doc/CodingStyle to keep the code as it is elsewhere. Old
+ * smsc codes are not the best place to look at sample code. And do NOT
+ * use sms_msg.h, it is depricated, just use Msg and smart_sms
  *
  */
 
