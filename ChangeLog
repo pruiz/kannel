@@ -1,3 +1,23 @@
+2000-06-09  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gwlib/http2.c: A http request headers patch applied.
+
+	* gw/wap-appl.c: A http request headers patch applied.
+
+	* gw/wml_definitions.c: Character set conversion pathes added, see 
+	below.
+
+	* gw/utf8map_iso8859-7.h: A conversion table for greek character set.
+
+	* gw/utf8map_win1253.h: A character set added.
+
+	* gw/utf8map_win1251.h: A russian character set added.
+
+	* gw/utf8map_koi8r.h: A russian character set added.
+
+	* gw/wml_compiler.c: A memory allocation loop removed from 
+	parse_attribute.
+
 2000-06-09  Richard Braakman  <dark@wapit.com>
 
 	* gw/wap-appl.c: In fetch_thread, also clean up "url" octstr.
