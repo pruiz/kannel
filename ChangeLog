@@ -1,3 +1,6 @@
+2002-06-28  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/wap_push_pap_compiler.c: fixing a compiler warning
+
 2002-06-28 Aarno Syvdnen <aarno@global-networks.ch>
     * checks/check_sendsms.sh: Better debugging for failure cases
     * checks/check_smpp.sh: Do test only 10 times, to save nerves
