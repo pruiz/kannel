@@ -1,4 +1,7 @@
 2004-06-20  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/wap_push_ota.c: fixed attempt to destroy locked mutex.
+
+2004-06-20  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/wap_push_ppg.c: fixed typo, see bug#114.
 
 2004-06-20  Alexander Malysh  <a.malysh@centrium.de> 

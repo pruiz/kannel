@@ -647,7 +647,6 @@ static void bearerbox_address_destroy(BearerboxAddress *ba)
     if (ba == NULL)
         return;
 
-    mutex_lock(ba->mutex);
     octstr_destroy(ba->address);
     mutex_destroy(ba->mutex);
     gw_free(ba);
