@@ -244,11 +244,10 @@ int http_get(char *urltext, char **type, char **data, size_t *size) {
 		if(response->status == 200) break;
 
 		/* We are redirected to another URL */
-		else  if( 
-			(response->status == 301) || 
-			(response->status == 302) || 
-			(response->status == 303)
-			) {
+		else if( (response->status == 301) || 
+			 (response->status == 302) || 
+			 (response->status == 303) ) 
+		{
 
 			url = internal_url_create(httprequest_get_header_value(response, "Location"));
 			if(url==NULL) goto error;
@@ -268,7 +267,7 @@ int http_get(char *urltext, char **type, char **data, size_t *size) {
 			if(request==NULL) goto error;
 			httprequest_add_header(request, "Host", request->url->host);
 			httprequest_add_header(request, "Connection", "close");
-/*			httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)"); */
+			httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
 			
 		}
 
@@ -298,7 +297,7 @@ int http_get(char *urltext, char **type, char **data, size_t *size) {
 	if( (response->data != NULL) && (response->data_length > 0) ) {
 		*data = malloc(response->data_length+1);
 		if(*data==NULL) goto error;
-		bzero(*data, response->data_length+1);
+		memset(*data, 0, response->data_length+1);
 		memcpy(*data, response->data, response->data_length);
 		*size = response->data_length;
 	} else {

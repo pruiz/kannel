@@ -1,5 +1,5 @@
 /*****************************************************************************
-* smsc_smpp.c - Short Message Peer to Peer Provisioning Protocol 3.3
+* smsc_smpp.c - Short Message Peer to Peer Protocol 3.3
 * Mikael Gueck for WapIT Ltd.
 */
 
@@ -442,6 +442,8 @@ int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 	if(smsc == NULL) goto error;
 	if(msg == NULL) goto error;
 
+	msg_dump(msg);
+
 	/* If we cannot really send yet, push message to
 	   smsc->unsent_mt where it will stay until
 	   smpp_pdu_act_bind_transmitter_resp is called. */
@@ -466,17 +468,21 @@ int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 		submit_sm->sm_length = octstr_len(msg->plain_sms.text);
 		octstr_get_many_chars(submit_sm->short_message, msg->plain_sms.text, 0, 160);
 		charset_iso_to_smpp(submit_sm->short_message);
-	
+
 	} else if(msg_type(msg) == smart_sms) {
 
 		if(msg->smart_sms.flag_8bit == 1) {
 			/* As per GSM 03.38. */
 			submit_sm->esm_class = 67;
+		} else {
+			submit_sm->esm_class = 0;
 		}
 
 		if(msg->smart_sms.flag_udh == 1) {
 			/* As per GSM 03.38. */
 			submit_sm->data_coding = 245;
+		} else {
+			submit_sm->data_coding = 3;
 		}
 
 		strncpy(submit_sm->source_addr, octstr_get_cstr(msg->smart_sms.sender), 21);
@@ -558,34 +564,26 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 		strncat(deliver_sm->source_addr, newnum, sizeof(deliver_sm->source_addr)-2);
 		free(newnum);
 
-		if( (deliver_sm->esm_class == 67) || (deliver_sm->data_coding == 245) ) {
+		newmsg = msg_create(smart_sms);
+		if(newmsg==NULL) goto error;
 
-			newmsg = msg_create(smart_sms);
-			if(newmsg==NULL) goto error;
-
+		if( (deliver_sm->esm_class == 67) && (deliver_sm->data_coding == 245) ) {
 			newmsg->smart_sms.flag_8bit = 1;
 			newmsg->smart_sms.flag_udh = 1;
-
-			newmsg->smart_sms.receiver = octstr_create(deliver_sm->dest_addr);
-			newmsg->smart_sms.sender = octstr_create(deliver_sm->source_addr);
-			newmsg->smart_sms.msgdata = octstr_create(deliver_sm->short_message);
-			newmsg->smart_sms.udhdata = octstr_create("");
-
-		} else if( deliver_sm->esm_class == 3 ) {
-
-			newmsg = msg_create(plain_sms);
-			if(newmsg==NULL) goto error;
-
-			newmsg->plain_sms.receiver = octstr_create(deliver_sm->dest_addr);
-			newmsg->plain_sms.sender = octstr_create(deliver_sm->source_addr);
-			newmsg->plain_sms.text = octstr_create(deliver_sm->short_message);
-
+		} else if( (deliver_sm->esm_class == 3) && (deliver_sm->data_coding == 0) ) {
+			newmsg->smart_sms.flag_8bit = 0;
+			newmsg->smart_sms.flag_udh = 0;
 		} else {
-
 			debug(0, "problemss....");
 			newmsg = NULL;
-			
 		}
+
+		newmsg->smart_sms.receiver = octstr_create(deliver_sm->dest_addr);
+		newmsg->smart_sms.sender = octstr_create(deliver_sm->source_addr);
+		newmsg->smart_sms.msgdata = octstr_create(deliver_sm->short_message);
+		newmsg->smart_sms.udhdata = octstr_create("");
+
+		msg_dump(newmsg);
 
 		*msg = newmsg;
 

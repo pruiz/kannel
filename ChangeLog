@@ -1,3 +1,8 @@
+1999-11-18    <mikael@wapit.com>
+
+	* gwlib/http.c, gw/smsbox_req.c: Content-Type fetching
+	in http_get works, interface changed.
+
 1999-11-18    <rpr@rpr.wapit.com>
 
 	* gw/smsbox_req.c, gw/smsbox.c: Modified send_message to use
