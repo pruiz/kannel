@@ -11,6 +11,7 @@
 #include "wsp.h"
 #include "wsp_pdu.h"
 #include "wsp_headers.h"
+#include "cookies.h"
 
 /* WAP standard defined values for capabilities */
 
@@ -98,6 +99,7 @@ static void wsp_method_abort(WSPMethodMachine *msm, long reason);
 static void wsp_indicate_method_abort(WSPMethodMachine *msm, long reason);
 
 static void main_thread(void *);
+static int id_belongs_to_session (void *, void *);
 
 
 
@@ -400,6 +402,7 @@ static WSPMachine *machine_create(void) {
 	#define ADDRTUPLE(name) p->name = NULL;
 	#define METHODMACHINES(name) p->name = list_create();
 	#define MACHINE(fields) fields
+	#define COOKIES(name) p->name = NULL;
 	#include "wsp-session-machine.h"
 	
 	p->state = NULL_SESSION;
@@ -444,6 +447,7 @@ static void machine_destroy(WSPMachine *p) {
 	#define ADDRTUPLE(name) wap_addr_tuple_destroy(p->name);
 	#define METHODMACHINES(name) wsp_session_destroy_methods(p->name);
 	#define MACHINE(fields) fields
+	#define COOKIES(name) cookies_destroy(p->name);
 	#include "wsp-session-machine.h"
 	gw_free(p);
 }
@@ -988,4 +992,18 @@ static void wsp_abort_methods(WSPMachine *sm, long reason) {
 	wap_event_destroy(ab);
 }
 
+WSPMachine *find_session_machine_by_id (int id) {
 
+	return list_search(session_machines, &id, id_belongs_to_session);
+}
+
+static int id_belongs_to_session (void *wsp_ptr, void *pid) {
+	WSPMachine *wsp;
+	int *id;
+
+	wsp = wsp_ptr;
+	id = (int *) pid;
+
+	if (*id == wsp->session_id) return 1;
+	return 0;
+}
