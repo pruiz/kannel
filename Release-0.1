@@ -14,6 +14,9 @@ Improvements to SMSGateway release 0.6:
 
  * HTTP-access IP-logging
 
+ * New HTTP adminstration commands: status-lookup and connection
+   disabling
+
  * Improved SMS-services:
 
 	* Fixed text answers
@@ -40,11 +43,17 @@ Upcoming features:
 
  * WAP SMS support (version 0.2?)
 
+ * Thread SMS BOX (part of Bearerbox)
+
+ * Dynamically loadable service definitions, new SMSC connections and
+   other similar things
+
 
 Missing from current version that were in SMSGateway 0.6:
 
- * nothing? (ok, the suspend is not working perfectly, as it allows
-    sendsms to work)
+ * addsmsc and delsmsc configuration options (I dunno if they worked
+    before, either...)
 
+ * 'suspend' is not a complete state; sendsms still works
  
  
