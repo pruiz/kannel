@@ -1,3 +1,10 @@
+2001-05-16  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc.c, gw/smsc_p.h, gw/smsc_cimd2.c, gwlib/cfg.def:
+        Added configuration variable "sender-prefix" for CIMD2.
+
+        * doc/userguide/userguide.xml: Documented new variable.
+
 2001-05-16  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_smscconn.c, gw/bb_boxc.c: now that we have octstr_format, 

@@ -158,6 +158,7 @@ void smscenter_destruct(SMSCenter *smsc)
     octstr_destroy(smsc->cimd2_username);
     octstr_destroy(smsc->cimd2_password);
     octstr_destroy(smsc->cimd2_inbuffer);
+    octstr_destroy(smsc->sender_prefix);
     list_destroy(smsc->cimd2_received, NULL);
 
     /* EMI */
@@ -480,6 +481,7 @@ SMSCenter *smsc_open(CfgGroup *grp)
     Octstr *alt_chars, *allow_ip;
     Octstr *sema_smscnua, *sema_homenua, *sema_report;
     Octstr *at_modemtype, *at_pin, *at_validityperiod;
+    Octstr *sender_prefix;
 
     long iwaitreport;
     long port, receive_port, our_port;
@@ -548,6 +550,10 @@ SMSCenter *smsc_open(CfgGroup *grp)
     at_pin = cfg_get(grp, octstr_imm("pin"));
     at_validityperiod = cfg_get(grp, octstr_imm("validityperiod"));
 
+    sender_prefix = cfg_get(grp, octstr_imm("sender-prefix"));
+    if (sender_prefix == NULL)
+        sender_prefix = octstr_create("never");
+
     smsc = NULL;
 
     switch (typeno) {
@@ -565,11 +571,12 @@ SMSCenter *smsc_open(CfgGroup *grp)
         if (host == NULL || port == 0 || username == NULL || password == NULL)
             error(0, "Required field missing for CIMD 2 center.");
         else
-            smsc = cimd2_open(octstr_get_cstr(host),
+            smsc = cimd2_open(host,
 	    	    	      port, 
-			      octstr_get_cstr(username), 
-			      octstr_get_cstr(password), 
-			      keepalive);
+			      username, 
+			      password, 
+			      keepalive,
+                              sender_prefix);
         break;
 
     case SMSC_TYPE_EMI:
@@ -664,6 +671,7 @@ SMSCenter *smsc_open(CfgGroup *grp)
     octstr_destroy(at_modemtype);
     octstr_destroy(at_pin);
     octstr_destroy(at_validityperiod);
+    octstr_destroy(sender_prefix);
     return smsc;
 }
 

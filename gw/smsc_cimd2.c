@@ -1197,7 +1197,7 @@ static void packet_set_sequence(struct packet *packet, int seq)
     packet->seq = seq;
 }
 
-static struct packet *packet_encode_message(Msg *msg)
+static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix)
 {
     struct packet *packet;
     Octstr *text;
@@ -1230,12 +1230,28 @@ static struct packet *packet_encode_message(Msg *msg)
 
     packet_add_address_parm(packet, P_DESTINATION_ADDRESS, msg->sms.receiver);
 
-    /* We used to also set the originating address here, but CIMD2
-     * interprets such numbers as a sub-address to our connection
-     * number (so if the connection is "400" and we fill in "600"
-     * as the sender number, the user sees "400600".  Since most
-     * of the SMSC protocols ignore the sender field, we just ignore
-     * it here, too. */
+    /* CIMD2 interprets the originating address as a sub-address to
+     * our connection number (so if the connection is "400" and we
+     * fill in "600" as the sender number, the user sees "400600").
+     * Since we have no way to ask what this number is, it has to
+     * be configured. */
+    if (octstr_len(sender_prefix) == 0) { /* Speed up the default case */
+        packet_add_address_parm(packet, P_ORIGINATING_ADDRESS,
+                                msg->sms.sender);
+    } else if (octstr_compare(sender_prefix, octstr_imm("never")) != 0) {
+        if (octstr_ncompare(sender_prefix, msg->sms.sender,
+                            octstr_len(sender_prefix)) == 0) {
+            Octstr *sender;
+            sender = octstr_copy(msg->sms.sender,
+                octstr_len(sender_prefix), octstr_len(msg->sms.sender));
+            packet_add_address_parm(packet, P_ORIGINATING_ADDRESS, sender);
+            octstr_destroy(sender);
+        } else {
+            warning(0, "CIMD2: Sending message with originating address <%s>, "
+                       "which does not start with the sender-prefix.",
+                    octstr_get_cstr(msg->sms.sender));
+        }
+    }
 
     /* Explicitly ask not to get status reports.
      * If we do not do this, the server's default might be to
@@ -1688,7 +1704,8 @@ static int cimd2_send_alive(SMSCenter *smsc)
 /* SMSC Interface, as defined in smsc_interface.def                        */
 /***************************************************************************/
 
-SMSCenter *cimd2_open(char *hostname, int port, char *username, char *password, int keepalive)
+SMSCenter *cimd2_open(Octstr *hostname, int port, Octstr *username,
+Octstr *password, int keepalive, Octstr *sender_prefix)
 {
     SMSCenter *smsc = NULL;
     int maxlen;
@@ -1698,11 +1715,12 @@ SMSCenter *cimd2_open(char *hostname, int port, char *username, char *password, 
 
     smsc->type = SMSC_TYPE_CIMD2;
     smsc->keepalive = keepalive;
-    smsc->cimd2_hostname = octstr_create(hostname);
+    smsc->cimd2_hostname = octstr_duplicate(hostname);
     smsc->cimd2_port = port;
-    smsc->cimd2_username = octstr_create(username);
-    smsc->cimd2_password = octstr_create(password);
-    sprintf(smsc->name, "CIMD2:%s:%d:%s", hostname, port, username);
+    smsc->cimd2_username = octstr_duplicate(username);
+    smsc->cimd2_password = octstr_duplicate(password);
+    smsc->sender_prefix = octstr_duplicate(sender_prefix);
+    sprintf(smsc->name, "CIMD2:%s:%d:%s", octstr_get_cstr(hostname), port, octstr_get_cstr(username));
     smsc->cimd2_received = list_create();
     smsc->cimd2_inbuffer = octstr_create("");
     smsc->cimd2_error = 0;
@@ -1794,7 +1812,7 @@ int cimd2_submit_msg(SMSCenter *smsc, Msg *msg)
 
     gw_assert(smsc != NULL);
 
-    packet = packet_encode_message(msg);
+    packet = packet_encode_message(msg, smsc->sender_prefix);
     if (!packet)
         return 0;   /* We can't signal protocol errors yet */
 

@@ -1592,6 +1592,7 @@ port = 600
 smsc-username = foo
 smsc-password = bar
 keepalive = 5 
+sender-prefix = "12345"
 </programlisting>
 
  <informaltable frame=none>
@@ -1635,6 +1636,22 @@ keepalive = 5
        see many unexplained reconnects, try lowering this value.
        Set it to 0 to disable this feature.
      </entry></row>
+
+   <row><entry><literal>sender-prefix</literal></entry>
+      <entry><literal>string</literal></entry>
+      <entry valign=bottom>
+        The number that the SMSC will add in front of the sender number
+        of all messages sent from Kannel.  If Kannel is asked to send
+        a message, it will remove this prefix from the sender number
+        so that the SMSC will add it again.  If the prefix was not present,
+        Kannel will log a warning and will not send the sender number.
+        If <literal>sender-prefix</literal> is not set, or is set
+        to <literal>"never"</literal>, then Kannel will not send the
+        sender number to the SMSC at all.
+        If you want Kannel to pass all sender numbers to the SMSC
+        unchanged, then just set <literal>sender-prefix</literal> to the
+        empty string <literal>""</literal>.
+      </entry></row>
 
    </tbody></tgroup></informaltable>
    

@@ -99,6 +99,7 @@ struct SMSCenter {
 	List *cimd2_received;
 	int cimd2_error;
 	time_t cimd2_next_ping;
+        Octstr *sender_prefix;
 	
 	/* EMI */
 	int emi_fd;
@@ -197,7 +198,7 @@ int cimd_receive_msg(SMSCenter *smsc, Msg **msg);
 /*
  * Interface to Nokia SMS centers using CIMD 2.
  */
-SMSCenter *cimd2_open(char *hostname, int port, char *username, char *password, int keepalive);
+SMSCenter *cimd2_open(Octstr *hostname, int port, Octstr *username, Octstr *password, int keepalive, Octstr *sender_prefix);
 int cimd2_reopen(SMSCenter *smsc);
 int cimd2_close(SMSCenter *smsc);
 int cimd2_pending_smsmessage(SMSCenter *smsc);

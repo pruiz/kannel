@@ -112,6 +112,7 @@ MULTI_GROUP(smsc,
     OCTSTR(pin)
     OCTSTR(phone)
     OCTSTR(send-url)
+    OCTSTR(sender-prefix)
 )
 
 
