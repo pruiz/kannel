@@ -1,5 +1,13 @@
 2000-06-05  Richard Braakman  <dark@wapit.com>
 
+	* gw/wsp_pdu.[ch]: Added wtp_pdu_append_tpi function.
+
+	* gw/wtp_send.c: Continued conversion to use of wtp_pdu.
+	Next step is to handle resends better, but that requires
+	changes to the state machines.
+
+2000-06-05  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/conn.[ch]: Change conn_flush interface so that it can
 	block, and tries to send all queued output.  This makes it more
 	useful for threads that only want to do output and do not want

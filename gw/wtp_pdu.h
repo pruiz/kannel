@@ -51,6 +51,7 @@ struct wtp_pdu {
 };
 typedef struct wtp_pdu WTP_PDU;
 
+void wtp_pdu_append_tpi(WTP_PDU *pdu, int type, Octstr *data);
 WTP_PDU *wtp_pdu_create(int type);
 WTP_PDU *wtp_pdu_unpack(Octstr *data);
 Octstr *wtp_pdu_pack(WTP_PDU *pdu);

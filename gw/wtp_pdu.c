@@ -94,15 +94,26 @@ void wtp_tpi_destroy(WTP_TPI *p) {
 	gw_free(p);
 }
 
-static long unpack_tpis(Octstr *data, long bitpos, List *tpis) {
-	long length;
+void wtp_pdu_append_tpi(WTP_PDU *pdu, int type, Octstr *data) {
 	WTP_TPI *tpi;
+
+	tpi = gw_malloc(sizeof(*tpi));
+	tpi->type = type;
+	tpi->data = data;
+	if (pdu->options == NULL)
+		pdu->options = list_create();
+	list_append(pdu->options, tpi);
+}
+
+static long unpack_tpis(Octstr *data, long bitpos, WTP_PDU *pdu) {
+	long length;
+	int type;
+	Octstr *tpidata;
 	int another;
 
 	do {
-		tpi = gw_malloc(sizeof(*tpi));
 		another = octstr_get_bits(data, bitpos, 1);
-		tpi->type = octstr_get_bits(data, bitpos + 1, 4);
+		type = octstr_get_bits(data, bitpos + 1, 4);
 		if (octstr_get_bits(data, bitpos + 5, 1)) {
 			/* Long TPI */
 			length = octstr_get_bits(data, bitpos + 8, 8);
@@ -113,9 +124,9 @@ static long unpack_tpis(Octstr *data, long bitpos, List *tpis) {
 			bitpos += 8;
 		}
 		gw_assert(bitpos % 8 == 0);
-		tpi->data = octstr_copy(data, bitpos / 8, length);
+		tpidata = octstr_copy(data, bitpos / 8, length);
 		bitpos += 8 * length;
-		list_append(tpis, tpi);
+		wtp_pdu_append_tpi(pdu, type, data);
 	} while (another);
 
 	return bitpos;
@@ -267,7 +278,7 @@ WTP_PDU *wtp_pdu_unpack(Octstr *data) {
 #define TPI(confield) \
 	if (p->confield) { \
 		pdu->options = list_create(); \
-		bitpos = unpack_tpis(data, bitpos, pdu->options); \
+		bitpos = unpack_tpis(data, bitpos, pdu); \
 	}
 #include "wtp_pdu.def"
 #undef TPI
