@@ -382,6 +382,12 @@ int at_submit_msg(SMSCenter *smsc, Msg *msg) {
                                debug("AT", 0, "send command status: %d", ret);
                                retries--;
                         }
+			if (retries<0){
+			  debug("AT", 0, "AT: Retries exceeded \nSMS send failure :");
+			  debug("AT", 0, "Phone number: %s", octstr_get_cstr(msg->sms.receiver));
+			  debug("AT", 0, "SMS data: %s", octstr_get_cstr(msg->sms.msgdata));
+			}
+
                 }
         }
         return ret;
