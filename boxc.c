@@ -65,8 +65,6 @@ int boxc_close(BOXC *boxc)
 
 int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
 {
-    char buf[1024];
-    int ret;
     int ack = 0;
     
     if (boxc->fd == BOXC_THREAD)
@@ -141,8 +139,15 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 		return -1;	/* time to die */
 	    
 	    info(0, "BOXC:read: < %s >", buffer);
+	    boxc->box_heartbeat = time(NULL);		/* update heartbeat */
+	    
 	    if (*buffer == 'A' || *buffer == 'N')	/* ignore ack/nack */
 		return 0;
+	    if (*buffer == 'H') {		/* heartbeat/load */
+		boxc->load = atoi(buffer+1);
+		info(0, "BOXC: Load factor %d received", boxc->load);
+		return 0;
+	    }
 	    msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
 	    if (msg == NULL) {
 		error(0, "Failed to create new message, killing thread");

@@ -469,7 +469,7 @@ static void init_smsbox(Config *cfg)
 
 int main(int argc, char **argv)
 {
-    char linebuf[1024+1];
+    char linebuf[1024+1], buf[32];
     Config *cfg;
     int cf_index;
     int ret;
@@ -514,7 +514,7 @@ int main(int argc, char **argv)
 		error(0, "read line failed!");
 		break;
 	    }
-	    debug(0, "Read < %s >", linebuf);
+	    debug(0, "Read < %s > (load: %d)", linebuf, req_threads);
 
 	    /* ignore ack/nack, TODO: do not ignore
 	     */
