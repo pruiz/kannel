@@ -70,6 +70,9 @@
 #include "smscconn.h"
 #include "smscconn_p.h"
 #include "bb_smscconn_cb.h"
+#include "sms.h"
+
+extern Counter *split_msg_counter;
 
 /*
  * Some defaults
@@ -489,8 +492,8 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
 
 int smscconn_send(SMSCConn *conn, Msg *msg)
 {
-    int ret;
-    char *uf;
+    int ret = -1;
+    List *parts = NULL;
     
     gw_assert(conn != NULL);
     mutex_lock(conn->flow_mutex);
@@ -499,11 +502,60 @@ int smscconn_send(SMSCConn *conn, Msg *msg)
         return -1;
     }
 
-    /* normalize the destination number for this smsc */
-    uf = conn->unified_prefix ? octstr_get_cstr(conn->unified_prefix) : NULL;
-    normalize_number(uf, &(msg->sms.receiver));
+    /* if this a retry of splitted message, don't unify prefix and don't try to split */
+    if (msg->sms.split_parts == NULL) {    
+        /* normalize the destination number for this smsc */
+        char *uf = conn->unified_prefix ? octstr_get_cstr(conn->unified_prefix) : NULL;
+        normalize_number(uf, &(msg->sms.receiver));
 
-    ret = conn->send_msg(conn, msg);
+        /* split msg */
+        parts = sms_split(msg, NULL, NULL, NULL, NULL, 1, 
+            counter_increase(split_msg_counter) & 0xff, 0xff, MAX_SMS_OCTETS);
+        if (list_len(parts) == 1) {
+            /* don't create split_parts of sms fit into one */
+            list_destroy(parts, msg_destroy_item);
+            parts = NULL;
+        }
+    }
+    
+    if (parts == NULL)
+        ret = conn->send_msg(conn, msg);
+    else {
+        long i, parts_len = list_len(parts);
+        struct split_parts *split = gw_malloc(sizeof(*split));
+         /* must duplicate, because smsc2_route will destroy this msg */
+        split->orig = msg_duplicate(msg);
+        split->parts_left = counter_create();
+        split->status = SMSCCONN_SUCCESS;
+        counter_set(split->parts_left, parts_len);
+        debug("bb.sms.splits", 0, "new split_parts created %p", split);
+        for (i = 0; i < parts_len; i++) {
+            msg = list_get(parts, i);
+            msg->sms.split_parts = split;
+            ret = conn->send_msg(conn, msg);
+            if (ret < 0) {
+                if (i == 0) {
+                    counter_destroy(split->parts_left);
+                    list_destroy(parts, msg_destroy_item);
+                    gw_free(split);
+                    mutex_unlock(conn->flow_mutex);
+                    return ret;
+                }
+                /*
+                 * Some parts were sent. So handle this within
+                 * bb_smscconn_XXX().
+                 */
+                split->status = SMSCCONN_FAILED_REJECTED;
+                while (++i < parts_len) {
+                    msg_destroy(list_get(parts, i));
+                    counter_decrease(split->parts_left);
+                }
+                warning(0, "Could not send all parts of a split message");
+                break;
+            }
+        }
+        list_destroy(parts, NULL);
+    }
     mutex_unlock(conn->flow_mutex);
     return ret;
 }

@@ -104,6 +104,7 @@ MSG(sms,
 		OCTSTR(boxc_id);
 		OCTSTR(binfo);
 		INTEGER(msg_left);
+		VOID(split_parts);
 	})
 
 MSG(ack,
@@ -126,3 +127,4 @@ MSG(wdp_datagram,
 #undef INTEGER
 #undef OCTSTR
 #undef UUID
+#undef VOID

@@ -122,6 +122,11 @@
 #define SMS_7BIT_MAX_LEN 160
 #define SMS_8BIT_MAX_LEN 140
 #define SMS_UCS2_MAX_LEN 70
+/*
+ * Maximum number of octets in an SMS message. Note that this is 8 bit
+ * characters, not 7 bit characters.
+ */
+#define MAX_SMS_OCTETS 140
 
 /* Encode DCS using sms fields
  * mode = 0= encode using 00xxxxxx, 1= encode using 1111xxxx mode

@@ -313,7 +313,6 @@ static void httpsmsc_send_cb(void *arg)
  */
 
 enum { HEX_NOT_UPPERCASE = 0 };
-enum { MAX_SMS_OCTETS = 140 };
 
 
 static void kannel_send_sms(SMSCConn *conn, Msg *sms)

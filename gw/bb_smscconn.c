@@ -117,6 +117,15 @@ static regex_t *black_list_regex;
 
 static long router_thread = -1;
 
+/*
+ * Counter for catenated SMS messages. The counter that can be put into
+ * the catenated SMS message's UDH headers is actually the lowest 8 bits.
+ */
+Counter *split_msg_counter;
+
+/*
+ * forward declaration
+ */
 static long route_incoming_to_smsc(SMSCConn *conn, Msg *msg);
 
 
@@ -150,22 +159,70 @@ void bb_smscconn_killed(void)
 }
 
 
+static void handle_split(SMSCConn *conn, Msg *msg, long reason)
+{
+    struct split_parts *split = msg->sms.split_parts;
+    
+    /* if temporarely failed, try again immediately */
+    if (reason == SMSCCONN_FAILED_TEMPORARILY && smscconn_send(conn, msg) == 0)
+        return;
+    
+    /*
+     * if the reason is not a success and status is still success
+     * then set status of a split to the reason.
+     * Note: reason 'malformed','discarded' or 'rejected' has higher priority!
+     */
+    switch(reason) {
+    case SMSCCONN_FAILED_DISCARDED:
+    case SMSCCONN_FAILED_REJECTED:
+    case SMSCCONN_FAILED_MALFORMED:
+        debug("bb.sms.splits", 0, "Set split msg status to %ld", reason);
+        split->status = reason;
+        break;
+    case SMSCCONN_SUCCESS:
+        break; /* nothing todo */
+    default:
+        if (split->status == SMSCCONN_SUCCESS) {
+            debug("bb.sms.splits", 0, "Set split msg status to %ld", reason);
+            split->status = reason;
+        }
+        break;
+    }
+
+    /*
+     * now destroy this message, because we don't need it anymore.
+     * we will split it again in smscconn_send(...).
+     */
+    msg_destroy(msg);
+        
+    if (counter_decrease(split->parts_left) <= 1) {
+        /* all splited parts were processed */
+        counter_destroy(split->parts_left);
+        msg = split->orig;
+        msg->sms.split_parts = NULL;
+        if (split->status == SMSCCONN_SUCCESS)
+            bb_smscconn_sent(conn, msg, NULL);
+        else {
+            debug("bb.sms.splits", 0, "Parts of concatenated message failed.");
+            bb_smscconn_send_failed(conn, msg, split->status, NULL);
+        }
+        gw_free(split);
+    }
+}
+
+
 void bb_smscconn_sent(SMSCConn *conn, Msg *sms, Octstr *reply)
 {
-    Msg *mack;
-
+    if (sms->sms.split_parts != NULL) {
+        handle_split(conn, sms, SMSCCONN_SUCCESS);
+        return;
+    }
+    
     counter_increase(outgoing_sms_counter);
     if (conn) counter_increase(conn->sent);
 
     /* write ACK to store file */
-
-    mack = msg_create(ack);
-    mack->ack.nack = ack_success;
-    mack->ack.time = sms->sms.time;
-    uuid_copy(mack->ack.id, sms->sms.id);
-
-    (void) store_save(mack);
-    msg_destroy(mack);
+    store_save_ack(sms, ack_success);
 
     bb_alog_sms(conn, sms, "Sent SMS");
 
@@ -191,6 +248,11 @@ void bb_smscconn_sent(SMSCConn *conn, Msg *sms, Octstr *reply)
 
 void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply)
 {
+    if (sms->sms.split_parts != NULL) {
+        handle_split(conn, sms, reason);
+        return;
+    }
+    
     switch (reason) {
 
     case SMSCCONN_FAILED_SHUTDOWN:
@@ -198,7 +260,6 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply
 	list_produce(outgoing_sms, sms);
 	break;
     default:
-
 	/* write NACK to store file */
         store_save_ack(sms, ack_failed);
 
@@ -409,6 +470,9 @@ int smsc2_start(Cfg *cfg)
 
     if (smsc_running) return -1;
 
+    /* create split sms counter */
+    split_msg_counter = counter_create();
+    
     smsc_list = list_create();
     gw_rwlock_init_static(&smsc_list_lock);
 
@@ -662,6 +726,8 @@ void smsc2_cleanup(void)
         gw_regex_destroy(white_list_regex);
     if (black_list_regex != NULL)
         gw_regex_destroy(black_list_regex);
+    /* destroy msg split counter */
+    counter_destroy(split_msg_counter);
     gw_rwlock_destroy(&smsc_list_lock);
 }
 
@@ -849,7 +915,6 @@ int smsc2_rout(Msg *msg)
 	    bo_load = info.load;
 	}
     }
-    gw_rwlock_unlock(&smsc_list_lock);
 
     if (best_preferred)
 	ret = smscconn_send(best_preferred, msg);
@@ -858,15 +923,18 @@ int smsc2_rout(Msg *msg)
     else if (bad_found) {
 	if (bb_status != BB_SHUTDOWN)
 	    list_produce(outgoing_sms, msg);
+        gw_rwlock_unlock(&smsc_list_lock);
 	return 0;
     }
     else {
+        gw_rwlock_unlock(&smsc_list_lock);
 	if (bb_status == BB_SHUTDOWN)
 	    return 0;
 	warning(0, "Cannot find SMSCConn for message to <%s>, rejected.",
 		octstr_get_cstr(msg->sms.receiver));
 	return -1;
     }
+    gw_rwlock_unlock(&smsc_list_lock);
     /* check the status of sending operation */
     if (ret == -1)
 	return (smsc2_rout(msg));	/* re-try */

@@ -84,13 +84,6 @@
 #endif
 
 
-/*
- * Maximum number of octets in an SMS message. Note that this is 8 bit
- * characters, not 7 bit characters.
- */
-enum { MAX_SMS_OCTETS = 140 };
-
-
 #define SENDSMS_DEFAULT_CHARS "0123456789 +-"
 
 #define O_DESTROY(a) { if(a) octstr_destroy(a); a = NULL; }
@@ -298,12 +291,30 @@ static int send_message(URLTranslation *trans, Msg *msg)
     list = sms_split(msg, header, footer, suffix, split_chars, catenate,
     	    	     msg_sequence, max_msgs, sms_max_length);
     msg_count = list_len(list);
-
+    
     debug("sms", 0, "message length %ld, sending %ld messages",
           octstr_len(msg->sms.msgdata), msg_count);
-
-    while ((part = list_extract_first(list)) != NULL)
-	write_to_bearerbox(part);
+    
+    /*
+     * In order to get catenated msgs work properly, we
+     * have moved catenation to bearerbox.
+     * So here we just need to put splitted msgs into one again and send
+     * to bearerbox that will care about catenation.
+     */
+    if (catenate) {
+        Msg *new_msg = msg_duplicate(msg);
+        octstr_delete(new_msg->sms.msgdata, 0, octstr_len(new_msg->sms.msgdata));
+        while((part = list_extract_first(list)) != NULL) {
+            octstr_append(new_msg->sms.msgdata, part->sms.msgdata);
+            msg_destroy(part);
+        }
+        write_to_bearerbox(new_msg);
+    } else {
+        /* msgs are the independed parts so sent those as is */
+        while ((part = list_extract_first(list)) != NULL)
+            write_to_bearerbox(part);
+    }
+    
     list_destroy(list, NULL);
 
     return msg_count;

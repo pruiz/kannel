@@ -80,12 +80,6 @@
 #include "shared.h"
 #include "heartbeat.h"
 
-/*
- * Maximum number of octets in an SMS message. Note that this is 8 bit
- * characters, not 7 bit characters.
- */
-enum { MAX_SMS_OCTETS = 140 };
-
 static char *pid_file;
 static Octstr *smsbox_id = NULL;
 static Octstr *content = NULL;

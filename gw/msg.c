@@ -101,6 +101,7 @@ Msg *msg_create_real(enum msg_type type, const char *file, long line,
 #define INTEGER(name) p->name = MSG_PARAM_UNDEFINED
 #define OCTSTR(name) p->name = NULL
 #define UUID(name) uuid_generate(p->name)
+#define VOID(name) p->name = NULL
 #define MSG(type, stmt) { struct type *p = &msg->type; stmt }
 #include "msg-decl.h"
 
@@ -118,6 +119,7 @@ Msg *msg_duplicate(Msg *msg)
     if (q->name == NULL) p->name = NULL; \
     else p->name = octstr_duplicate(q->name);
 #define UUID(name) uuid_copy(p->name, q->name)
+#define VOID(name) p->name = q->name
 #define MSG(type, stmt) { \
     struct type *p = &new->type; \
     struct type *q = &msg->type; \
@@ -135,6 +137,7 @@ void msg_destroy(Msg *msg)
 #define INTEGER(name) p->name = 0
 #define OCTSTR(name) octstr_destroy(p->name)
 #define UUID(name) uuid_clear(p->name)
+#define VOID(name)
 #define MSG(type, stmt) { struct type *p = &msg->type; stmt }
 #include "msg-decl.h"
 
@@ -160,6 +163,8 @@ void msg_dump(Msg *msg, int level)
 #define UUID(name) \
     uuid_unparse(p->name, buf); \
     debug("gw.msg", 0 , "%*s %s.%s: %s", level, "", t, #name, buf)
+#define VOID(name) \
+     debug("gw.msg", 0, "%*s %s.%s: %p", level, "", t, #name, p->name)
 #define MSG(tt, stmt) \
     if (tt == msg->type) \
         { char *t = #tt; struct tt *p = &msg->tt; stmt }
@@ -183,6 +188,7 @@ Octstr *msg_pack(Msg *msg)
 #define INTEGER(name) append_integer(os, p->name)
 #define OCTSTR(name) append_string(os, p->name)
 #define UUID(name) append_uuid(os, p->name)
+#define VOID(name)
 #define MSG(type, stmt) \
     case type: { struct type *p = &msg->type; stmt } break;
 
@@ -219,6 +225,7 @@ Msg *msg_unpack_real(Octstr *os, const char *file, long line, const char *func)
     if (parse_string(&(p->name), os, &off) == -1) goto error
 #define UUID(name) \
     if (parse_uuid(p->name, os, &off) == -1) goto error
+#define VOID(name)
 #define MSG(type, stmt) \
     case type: { struct type *p = &(msg->type); stmt } break;
 

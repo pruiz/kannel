@@ -1,4 +1,14 @@
 2004-08-28 Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_smscconn.c, gw/msg-decl.h, gw/msg.[ch], gw/sms.h, gw/smsbox.c,
+      gw/smscconn.c, gw/wapbox.c, gw/smsc/smsc_http.c, gw/smsc/smsc_soap.c,
+      utils/mtbatch.c: applied patch that implements concatenation of large
+      sms inside bearerbox and does care of a sending all message parts over
+      one smsc link. Now we have a problem with concatenated large sms that
+      bearerbox will try to load balance those over diff. smsc links and such
+      messages arrive as junk (all parts of concatenated large sms must go through
+      the same smsc).
+
+2004-08-28 Alexander Malysh <amalysh at kannel.org>
     * gw-config.h.in, configure.in, configure: changed 'HAVE_PTHREAD_RWLOCK_T' to
       more generic 'HAVE_PTHREAD_RWLOCK'.
     * gwlib/gw-rwlock.[ch]: added "ugly" rwlock emulation code if no pthread_rwlock

@@ -2062,6 +2062,7 @@ static Octstr* soap_convert_token(Msg* msg, Octstr* name, PrivData* privdata)
         if (!octstr_str_compare(name, #fieldname)) \
                 return octstr_duplicate(p->fieldname);
 #define UUID(fieldname) 
+#define VOID(fieldname)
 
 #define MSG(type, stmt) \
         case type: { struct type *p = &msg->type; stmt } break;

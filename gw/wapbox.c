@@ -95,8 +95,6 @@ enum {
     WTLS_CONNECTION_ORIENTED_PORT = 9203
 };
 
-enum { MAX_SMS_OCTETS = 140 };
-
 enum { DEFAULT_TIMER_FREQ = 1};
 
 static Octstr *bearerbox_host;
