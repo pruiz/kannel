@@ -2321,6 +2321,11 @@ void http_header_add(List *headers, char *name, char *contents)
 }
 
 
+/*
+ * Given an headers list and a position, returns its header name and value,
+ * or (X-Unknown, header) if it doesn't exist or if it's malformed - missing 
+ * ":" for example
+ */
 void http_header_get(List *headers, long i, Octstr **name, Octstr **value)
 {
     Octstr *os;
@@ -2347,6 +2352,10 @@ void http_header_get(List *headers, long i, Octstr **name, Octstr **value)
     }
 }
 
+/*
+ * Given an headers list and a name, returns its value or NULL if it 
+ * doesn't exist
+ */
 Octstr *http_header_value(List *headers, Octstr *name)
 {
     Octstr *value;
@@ -2401,11 +2410,71 @@ List *http_header_duplicate(List *headers)
 }
 
 
+#define MAX_HEADER_LENGHT 256
+/*
+ * Aggregate header in one (or more) lines with several parameters seperated
+ * by commas, instead of one header per parameter
+ */
 void http_header_pack(List *headers)
 {
     gwlib_assert_init();
     gw_assert(headers != NULL);
-    /* XXX not implemented yet. */
+
+    Octstr *name, *value;
+    Octstr *name2, *value2;
+    long i, j;
+
+    /*
+     * For each header, search forward headers for similar ones and if possible, 
+     * add it to current header and delete it
+     */
+    for(i = 0; i < list_len(headers); i++) {
+        http_header_get(headers, i, &name, &value);
+	//debug("http_header_pack", 0, "HTTP_HEADER_PACK: Processing header %d. [%s: %s]", 
+	//		i, octstr_get_cstr(name), octstr_get_cstr(value));
+
+        for(j=i+1; j < list_len(headers); j++) {
+            http_header_get(headers, j, &name2, &value2);
+
+            if(octstr_case_compare( name, name2) == 0) {
+                if(octstr_len(value) + 2 + octstr_len(value2) > MAX_HEADER_LENGHT) {
+		    //debug("http_header_pack", 0, "HTTP_HEADER_PACK: Header %d is full, "
+		    //      "skipping. [j=%d] [toaddvalue=%s] [%s: %s]",
+		    //      i, j, octstr_get_cstr(value2), octstr_get_cstr(name), 
+		    //      octstr_get_cstr(value));
+                    break;
+                } else {
+		    Octstr *header;
+		    //Octstr *oldvalue;	// XXX for logging
+		    //oldvalue = octstr_duplicate(value); // XXX for logging
+
+		    /* Adds comma and new value to old header value */
+                    octstr_append(value, octstr_create(", "));
+                    octstr_append(value, value2);
+
+		    /* Creates a new header */
+		    header = octstr_create("");
+                    octstr_append(header, name);
+                    octstr_append(header, octstr_create(": "));
+                    octstr_append(header, value);
+
+		    /* Delete old header and insert new one */
+                    list_delete(headers, i, 1);
+                    list_insert(headers, i, header);
+				
+		    /* Delete this header */
+                    list_delete(headers, j, 1);
+                    j--;
+
+		    //debug("http_header_pack", 0, "HTTP_HEADER_PACK: Packing header %d "
+		    //      "(j=%d), name=[%s], old value [%s], new value [%s]",
+		    //	    i, j+1, octstr_get_cstr(name), octstr_get_cstr(oldvalue), 
+		    //	    octstr_get_cstr(value));
+		    //octstr_destroy(oldvalue);
+                }
+            }
+        }
+    }
 }
 
 
@@ -3016,5 +3085,4 @@ char *http_method2name(int method)
 
     return http_methods[method-1];
 }
-
 

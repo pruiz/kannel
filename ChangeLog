@@ -1,3 +1,10 @@
+2003-07-11  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gwlib/http.c: added some comments
+    * gwlib/http.c[http_header_pack]: implemented header_pack functionality
+      to aggregate similar headers without exceed a string limit - this is
+      required because if you have one header with all, it's too long, and if
+      you have one header for each value it's too many headers
+
 2003-07-07  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * debian/kannel-cvs.docs: don't include deleted TODO
     * debian/rules: enabled cookies - hope they don't crash in version 1.2.x ;)
