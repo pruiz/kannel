@@ -50,7 +50,8 @@ problem, fix it, and re-start from beginning:
 	* Put new files on www.kannel.org, and otherwise update the
 	  site to reflect the new release.
 
-	* Send out the announce to appropriate places.
+	* Send out the announce to appropriate places.  Remember to
+	  set Reply-To to the devel list.
 	
 		* announce@kannel.org
 		
