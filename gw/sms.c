@@ -65,8 +65,10 @@ int fields_to_dcs(Msg *msg, int mode)
 	    dcs |= 0xF0; /* sets bits 7-3 */
 	    if(msg->sms.coding != DC_UNDEF)
 		dcs |= (msg->sms.coding << 2); /* only DC_7BIT or DC_8BIT, sets bit 2*/
-	    if (msg->sms.mclass != MC_UNDEF)
-		dcs |= msg->sms.mclass; /* sets bit 1,0 */
+	    if (msg->sms.mclass == MC_UNDEF)
+                dcs |= 1; /* default meaning: ME specific */
+            else
+                dcs |= msg->sms.mclass; /* sets bit 1,0 */
 	}
     }
 
