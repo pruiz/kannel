@@ -1259,10 +1259,10 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
 	    /* Alphanumeric sender */
 	    origin = octstr_create("");
 	    tmpstr = octstr_copy(pdu, 3, len);
-	    at2_decode7bituncompressed(tmpstr, ((len * 4 - 3)/7), origin, 0);
+	    at2_decode7bituncompressed(tmpstr, ((len * 4 - 3)/7) + 1, origin, 0);
 	    octstr_destroy(tmpstr);
 	    debug("bb.smsc.at2", 0, "AT2[%s]: Alphanumeric sender \"%s\"", octstr_get_cstr(privdata->name), octstr_get_cstr(origin));
-	    pos += ceil(len / 2);
+	    pos += (len + 1) / 2;
 	} else {
 	    origin = octstr_create("");
 	    if((ntype & 0x90) == 0x90) {
@@ -1274,7 +1274,7 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
 		if(i+1 < len)
 		    octstr_append_char(origin, (octstr_get_char(pdu, pos) >> 4) + 48);
 	    }
-	    debug("bb.smsc.at2", 0, "AT2[%s]: Numberic sender %s \"%s\"", octstr_get_cstr(privdata->name), ((ntype & 0x90) == 0x90 ? "(international)" : ""), octstr_get_cstr(origin));
+	    debug("bb.smsc.at2", 0, "AT2[%s]: Numeric sender %s \"%s\"", octstr_get_cstr(privdata->name), ((ntype & 0x90) == 0x90 ? "(international)" : ""), octstr_get_cstr(origin));
 	}
 
         /* PID */

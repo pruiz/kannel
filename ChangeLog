@@ -1,4 +1,8 @@
 2002-03-12  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsc_at2.c: fixed a typo, removed ceil function and fixed len in 
+      alphanumeric text
+
+2002-03-12  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsc_at2.c: increased timeout when sending the +CPIN? command; added
       a colon to +CMT so kannel doesn't interpret +CMTI; added alphanumeric
       sender interpretation to received messages; added interpretation of
