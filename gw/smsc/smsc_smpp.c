@@ -233,11 +233,23 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu)
     /* extract UDH sequence if any */
     if (pdu->u.deliver_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR) {
         udh_offset = octstr_get_char(pdu->u.deliver_sm.short_message, 0) + 1; 
-        msg->sms.udhdata = octstr_copy(pdu->u.deliver_sm.short_message, 0, udh_offset);
-        msg->sms.msgdata = octstr_copy(pdu->u.deliver_sm.short_message, udh_offset,
-                                       octstr_len(pdu->u.deliver_sm.short_message) - udh_offset);
-        octstr_destroy(pdu->u.deliver_sm.short_message);
-        msg->sms.coding = DC_8BIT;
+        /* check if the UDH offset is of acceptable length, or discard */
+        if (udh_offset <= octstr_len(pdu->u.deliver_sm.short_message)) {
+            msg->sms.udhdata = 
+                octstr_copy(pdu->u.deliver_sm.short_message, 0, udh_offset);
+            msg->sms.msgdata = 
+                octstr_copy(pdu->u.deliver_sm.short_message, udh_offset,
+                            octstr_len(pdu->u.deliver_sm.short_message) - udh_offset);
+            octstr_destroy(pdu->u.deliver_sm.short_message);
+            msg->sms.coding = DC_8BIT;
+        } else {
+            /* discard message if UDH length indicator is obvious corrupt */
+            error(0, "SMPP[%s]: Mallformed UDH length indicator 0x%03x while message length "
+                     "0x%03x. Discarding binary MO message.", octstr_get_cstr(smpp->conn->id), 
+                     udh_offset, octstr_len(pdu->u.deliver_sm.short_message));
+            msg_destroy(msg);
+            return NULL;
+        }
     } else {
         msg->sms.msgdata = pdu->u.deliver_sm.short_message;
     }
@@ -818,17 +830,17 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
             } else /* MO-SMS */
             {
                 /* ensure the smsc-id is set */ 
-                msg = pdu_to_msg(smpp, pdu); 
- 
-                /* Replace MO destination number with my-number */ 
-                if (octstr_len(smpp->my_number)) { 
-                    octstr_destroy(msg->sms.receiver); 
-                    msg->sms.receiver = octstr_duplicate(smpp->my_number); 
-                } 
+                if ((msg = pdu_to_msg(smpp, pdu)) != NULL) {
+                    /* Replace MO destination number with my-number */ 
+                    if (octstr_len(smpp->my_number)) { 
+                        octstr_destroy(msg->sms.receiver); 
+                        msg->sms.receiver = octstr_duplicate(smpp->my_number); 
+                    } 
 
-                time(&msg->sms.time); 
-                msg->sms.smsc_id = octstr_duplicate(smpp->conn->id); 
-                (void) bb_smscconn_receive(smpp->conn, msg); 
+                    time(&msg->sms.time); 
+                    msg->sms.smsc_id = octstr_duplicate(smpp->conn->id); 
+                    (void) bb_smscconn_receive(smpp->conn, msg); 
+                }
                 resp = smpp_pdu_create(deliver_sm_resp,  
                             pdu->u.deliver_sm.sequence_number); 
             } 
