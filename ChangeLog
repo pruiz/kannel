@@ -1,4 +1,4 @@
-2001-01-24  Uoti Urpala <uau@iki.fi>
+2001-01-24  Uoti Urpala <uau@wapit.com>
 
 	* test/fakesmsc2.c, gw/smsc_fake2.c: Several fake2 changes, added
 	send/receive udh, possibility to restrict connections based on IP.
