@@ -110,6 +110,7 @@ MULTI_GROUP(smsc,
     OCTSTR(modem-type)
     OCTSTR(pin)
     OCTSTR(phone)
+    OCTSTR(send-url)
 )
 
 

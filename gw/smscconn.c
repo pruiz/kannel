@@ -68,6 +68,8 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
 
     if (octstr_compare(smsc_type, octstr_imm("fake")) == 0)
 	ret = smsc_fake_create(conn, grp);
+    else if (octstr_compare(smsc_type, octstr_imm("http")) == 0)
+	ret = smsc_http_create(conn, grp);
     else
 	ret = smsc_wrapper_create(conn, grp);
 

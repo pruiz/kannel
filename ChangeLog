@@ -1,5 +1,17 @@
 2001-03-19  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smsc_http.c: Added. New module to handle HTTP based SMS
+	Center connections or other gateways (relay gateways). Currently
+	only supports 'kannel' as relay gateway
+
+	* gw/smscconn.c, gw/smscconn_p.h: modified to understand new
+	SMSCConn type
+
+	* gwlib/cfg.def: accept new configuration variable 'send-url' used
+	with smsc_http
+
+2001-03-19  Kalle Marjola  <rpr@wapit.com>
+
 	* gwlib/utils.c|h: added new function connect_denied(..), which is
 	like the old is_allowed_ip(..) except that deny-ip is no longer
 	used as it is expected to be "*.*.*.*" and no allow-ip means

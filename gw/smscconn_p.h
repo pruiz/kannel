@@ -176,6 +176,9 @@ int smsc_wrapper_create(SMSCConn *conn, CfgGroup *cfg);
 /* Responsible file: smsc_fake.c */
 int smsc_fake_create(SMSCConn *conn, CfgGroup *cfg);
 
+/* Responsible file: smsc_http.c */
+int smsc_http_create(SMSCConn *conn, CfgGroup *cfg);
+
 
 /* ADD NEW CREATE FUNCTIONS HERE
  *
