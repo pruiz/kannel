@@ -89,7 +89,9 @@ static int verbose = 1,
            use_string = 0,
            use_content_header = 0,
            add_epilogue = 0,
-           add_preamble = 0;
+           add_preamble = 0,
+           use_dlr_mask = 0,
+           use_dlr_url = 0;
 static double wait_seconds = 0.0;
 static Counter *counter = NULL;
 static char **push_data = NULL;
@@ -102,6 +104,8 @@ static Octstr *content_transfer_encoding = NULL;
 static Octstr *connection = NULL;
 static Octstr *delimiter = NULL;
 static Octstr *initiator_uri = NULL;
+static Octstr *dlr_mask = NULL;
+static Octstr *dlr_url = NULL;
 
 enum { SSL_CONNECTION_OFF = 0,
        DEFAULT_NUMBER_OF_RELOGS = 2};
@@ -201,6 +205,18 @@ static void add_push_application_id(List **push_headers, Octstr *appid_flag,
     }
 }
 
+static void add_dlr_mask(List **push_headers, Octstr *value)
+{
+    http_header_add(*push_headers, "X-Kannel-DLR-Mask", 
+                    octstr_get_cstr(value));
+}
+
+static void add_dlr_url(List **push_headers, Octstr *value)
+{
+    http_header_add(*push_headers, "X-Kannel-DLR-Url",
+                    octstr_get_cstr(value));
+}
+
 static void add_part_header(Octstr *content_keader, Octstr **wap_content)
 {
     if (use_content_header) {
@@ -209,6 +225,7 @@ static void add_part_header(Octstr *content_keader, Octstr **wap_content)
 
     add_delimiter(wap_content);
 }
+
 
 static void add_content_type(Octstr *content_flag, Octstr **wap_content)
 {
@@ -327,6 +344,10 @@ static List *push_headers_create(size_t content_len)
         http_add_basic_auth(push_headers, username, password);
     add_push_application_id(&push_headers, appid_flag, use_string);
     add_connection_header(&push_headers, connection);
+    if (use_dlr_mask)
+        add_dlr_mask(&push_headers, dlr_mask);
+    if (use_dlr_url)
+        add_dlr_url(&push_headers, dlr_url);
 
     octstr_destroy(mos);
 
@@ -753,6 +774,12 @@ static void help(void)
     info(0, "Default off.");
     info(0, "-p");
     info(0, "If set, add hardcoded preamble. Default is off.");
+    info(0, "-m value");
+    info(0, "If set, add push header X-Kannel-DLR-Mask: value");
+    info(0, "Default off.");
+    info(0, "-u value");
+    info(0, "If set, add push header X-Kannel-DLR-Url: value");
+    info(0, "Default off.");
 }
 
 int main(int argc, char **argv)
@@ -769,7 +796,7 @@ int main(int argc, char **argv)
     gwlib_init();
     num_threads = 1;
 
-    while ((opt = getopt(argc, argv, "HhBbnEpv:qr:t:c:a:i:e:k:d:s:S:I:")) != EOF) {
+    while ((opt = getopt(argc, argv, "HhBbnEpv:qr:t:c:a:i:e:k:d:s:S:I:m:u:")) != EOF) {
         switch(opt) {
 	    case 'v':
 	        log_set_output_level(atoi(optarg));
@@ -899,6 +926,16 @@ int main(int argc, char **argv)
                 initiator_uri = octstr_create(optarg);
 		break;
 
+            case 'm':
+                use_dlr_mask = 1;
+                dlr_mask = octstr_create(optarg);
+            break;
+
+            case 'u':
+                use_dlr_url = 1;
+                dlr_url = octstr_create(optarg);
+            break;
+
 	case '?':
 	    default:
 	        error(0, "TEST_PPG: Invalid option %c", opt);
@@ -927,6 +964,12 @@ int main(int argc, char **argv)
 
     if (content_header == NULL)
         use_content_header = 0;
+
+    if (dlr_mask == NULL)
+        use_dlr_mask = 0;
+
+    if (dlr_url == NULL)
+        use_dlr_url = 0;
 
     if (delimiter == NULL)
         delimiter = octstr_imm("crlf");
@@ -994,7 +1037,9 @@ int main(int argc, char **argv)
     octstr_destroy(password);
     octstr_destroy(push_url);
     octstr_destroy(connection);
-    octstr_destroy(delimiter);;
+    octstr_destroy(delimiter);
+    octstr_destroy(dlr_mask);
+    octstr_destroy(dlr_url);
     counter_destroy(counter);
     gwlib_shutdown();
 
