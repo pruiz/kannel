@@ -1,4 +1,9 @@
 2002-11-12  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_at2.c: fixed a bug in date pdu deocding, patch 
+      submited by Sindunata Sudarmaji <software@dygsp.com>
+      [Msg-ID: <20021023132104.A4594@top4>]
+
+2002-11-12  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wapbox.c, gwlib/cfg.def, wap/wap_events.def, wap/wtp.[ch],
       wap/wtp_pack.[ch], wap/wtp_pdu.c, wap/wtp_resp.[ch], 
       wap/wtp_resp_machine.def, wap/wtp_resp_states.def:
