@@ -544,7 +544,7 @@ void cfg_set(CfgGroup *grp, Octstr *varname, Octstr *value)
 }
 
 
-static void dump_group(CfgGroup *grp)
+void grp_dump(CfgGroup *grp)
 {
     List *names;
     Octstr *name;
@@ -583,7 +583,7 @@ void cfg_dump(Cfg *cfg)
     while ((name = list_extract_first(names)) != NULL) {
 	grp = cfg_get_single_group(cfg, name);
 	if (grp != NULL)
-	    dump_group(grp);
+	    grp_dump(grp);
     	octstr_destroy(name);
     }
     list_destroy(names, NULL);
@@ -592,7 +592,7 @@ void cfg_dump(Cfg *cfg)
     while ((name = list_extract_first(names)) != NULL) {
 	list = cfg_get_multi_group(cfg, name);
 	while ((grp = list_extract_first(list)) != NULL)
-	    dump_group(grp);
+	    grp_dump(grp);
 	list_destroy(list, NULL);
     	octstr_destroy(name);
     }

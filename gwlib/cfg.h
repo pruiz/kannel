@@ -37,6 +37,7 @@ int cfg_get_bool(int *n, CfgGroup *grp, Octstr *varname);
 List *cfg_get_list(CfgGroup *grp, Octstr *varname);
 void cfg_set(CfgGroup *grp, Octstr *varname, Octstr *value);
 
+void grp_dump(CfgGroup *grp);
 void cfg_dump(Cfg *cfg);
 
 #endif
