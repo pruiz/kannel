@@ -1,3 +1,8 @@
+2000-09-27  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_emi.c: Correct calculation of message length for
+	UDH messages.
+
 2000-09-27  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/wapbox.c: moved http-proxy-host and http-proxy-port into

@@ -986,6 +986,7 @@ static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char 
     memset(&my_buffer2, 0, sizeof(my_buffer2));
     mt = '3';
     memset(&snumbits, 0, sizeof(snumbits));
+    memset(&xser, 0, sizeof(xser));
 
     /* XXX internal_emi_parse_iso88591_to_emi shouldn't use NUL terminated
      * strings, but Octstr directly, or a char* and a length.
@@ -1020,7 +1021,7 @@ static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char 
 
         internal_emi_parse_binary_to_emi(msgtext, my_buffer2, octstr_len(msg->smart_sms.msgdata));
 
-        sprintf(snumbits, "%04d", (int) (octstr_len(msg->smart_sms.msgdata) - udh_len)*8);
+        sprintf(snumbits, "%04ld", octstr_len(msg->smart_sms.msgdata)*8);
         mt = '4';
         strcpy(mcl, "1");
     }
