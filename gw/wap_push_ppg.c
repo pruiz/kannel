@@ -523,7 +523,7 @@ static void http_read_thread(void *arg)
 	    break;
 
         if (octstr_compare(url, ppg_url) != 0) {
-	    http_status = 404;
+	    http_status = HTTP_NOT_FOUND;
             error(0,  "Request <%s> from <%s>: service not found", 
                   octstr_get_cstr(url), octstr_get_cstr(ip));
             not_found = octstr_imm("Service not specified\n");
@@ -899,7 +899,7 @@ static void handle_internal_event(WAPEvent *e)
     WAPAddrTuple *tuple;
     List *caps;
         
-    http_status = 200;
+    http_status = HTTP_OK;
     switch (e->type) {
 /*
  * Pap, Chapter 11.1.3 states that if client is incapable, we should abort the
