@@ -711,6 +711,8 @@ int parse_text(xmlNodePtr node)
 
   temp2 = octstr_duplicate(wbxml_string);
   wbxml_string = octstr_cat(temp2, temp1);
+  if (output_char(STR_END) == -1)
+      error(0, "WML compiler: couldn't output STR_END after a text field.");
 
   return 0;
 }
