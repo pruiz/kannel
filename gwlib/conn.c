@@ -408,6 +408,7 @@ void conn_set_output_buffering(Connection *conn, unsigned int size)
 static void poll_callback(int fd, int revents, void *data)
 {
     Connection *conn;
+    int do_callback = 0;
 
     conn = data;
 
@@ -426,6 +427,8 @@ static void poll_callback(int fd, int revents, void *data)
     if (revents & POLLOUT) {
         lock_out(conn);
         unlocked_write(conn);
+	if (unlocked_outbuf_len(conn) == 0)
+	    do_callback = 1;
         unlock_out(conn);
     }
 
@@ -435,8 +438,10 @@ static void poll_callback(int fd, int revents, void *data)
         lock_in(conn);
         unlocked_read(conn);
         unlock_in(conn);
-        conn->callback(conn, conn->callback_data);
+	do_callback = 1;
     }
+    if (do_callback)
+        conn->callback(conn, conn->callback_data);
 }
 
 int conn_register(Connection *conn, FDSet *fdset,

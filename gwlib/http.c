@@ -1170,7 +1170,7 @@ void http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
 
     trans = server_create(caller, url, headers, body, follow_remaining);
     if (id == NULL)
-	/* We don't leave this NULL so http_receive_request can use NULL
+	/* We don't leave this NULL so http_receive_result can use NULL
 	 * to signal no more requests */
 	trans->request_id = http_start_request;
     else
@@ -1263,7 +1263,8 @@ struct HTTPClient {
     enum {
         reading_request_line,
         reading_request,
-        request_is_being_handled
+        request_is_being_handled,
+	sending_reply
     } state;
     int method;  /* HTTP_METHOD_ value */
     Octstr *url;
@@ -1538,6 +1539,18 @@ static void receive_request(Connection *conn, void *data)
 	    }
 	    return;
 
+	case sending_reply:
+	    if (conn_outbuf_len(conn) > 0)
+		return;
+	    /* Reply has been sent completely */
+	    if (client->use_version_1_0) {
+		client_destroy(client);
+		return;
+	    }
+	    /* Start reading another request */
+	    client_reset(client);
+	    break;
+
     	default:
 	    panic(0, "Internal error: HTTPClient state is wrong.");
 	}
@@ -1788,6 +1801,7 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
 {
     Octstr *response;
     long i;
+    int ret;
 
     if (client->use_version_1_0)
     	response = octstr_format("HTTP/1.0 %d Foo\r\n", status);
@@ -1803,24 +1817,23 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     if (body != NULL)
     	octstr_append(response, body);
 	
-    (void) conn_write(client->conn, response);
+    ret = conn_write(client->conn, response);
     octstr_destroy(response);
 
-#if 0 /* conn_flush is broken atm XXX fix me when it's not */
-    while (conn_flush(client->conn) == 1)
-    	continue;
-#endif
-
-#if 0 /* Reuse enabled again, let's see if anyone complains... */
-    client_destroy(client);
-#else
-    if (client->use_version_1_0)
-    	client_destroy(client);
-    else {
-	client_reset(client);
+    if (ret == 0) {	/* Sent already */
+	if (client->use_version_1_0)
+	    client_destroy(client);
+	else {
+	    client_reset(client);
+	    conn_register(client->conn, server_fdset, receive_request, client);
+	}
+    }
+    else if (ret == 1) {      /* Queued for sending, we don't want to block */
+	client->state = sending_reply;
 	conn_register(client->conn, server_fdset, receive_request, client);
     }
-#endif
+    else	/* Error */
+	client_destroy(client);
 }
 
 

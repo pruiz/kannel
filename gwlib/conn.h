@@ -38,8 +38,9 @@
 
 typedef struct Connection Connection;
 
-/* If the conn_register was called for this connection, a callback function
- * of type conn_callback_t will be called when new input is available. 
+/* If conn_register was called for this connection, a callback function
+ * of type conn_callback_t will be called when new input is available,
+ * or when all data that was previously queued for output is sent.
  * The data pointer is the one supplied by the caller of conn_register.
  * NOTE: Beware of concurrency issues.  The callback function will run
  * in the fdset's private thread, not in the caller's thread.
@@ -95,9 +96,11 @@ void conn_set_output_buffering(Connection *conn, unsigned int size);
 
 /* Register this connection with an FDSet.  This will make it unnecessary
  * to call conn_wait.  Instead, the callback function will be called when
- * there is new data available.  A connection can be registered with only
- * one FDSet at a time.  Return -1 if it was already registered with a
- * different FDSet, otherwise return 0.
+ * there is new data available, or when all data queued for output is
+ * sent (note that small amounts are usually sent immediately without
+ * queuing, and thus won't trigger the callback).  A connection can be
+ * registered with only one FDSet at a time.  Return -1 if it was
+ * already registered with a different FDSet, otherwise return 0.
  * A connection can be re-registered with the same FDSet.  This will
  * change only the callback information, and is much more efficient
  * than calling conn_unregister first.

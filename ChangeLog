@@ -1,3 +1,13 @@
+2001-04-05  Uoti Urpala  <uau@wapit.com>
+
+	* gwlib/http.c: Fixed a bug in the sending of HTTP replies. It was
+	unlikely to be triggered with replies as short as Kannel normally
+	uses, though.
+
+	* gwlib/conn.[ch]: The callback function of registered connections
+	is called when all queued output is sent. This was required for
+	the above fix.
+
 2001-04-04  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsbox.c: Bugfix. Fixed memory leak in header parsing
