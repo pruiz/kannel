@@ -85,6 +85,8 @@ static Msg *msg_receive(int s) {
 	if (octstr_recv(s, &os) < 1)
 		return NULL;
 	msg = msg_unpack(os);
+        debug(0, "WAPBOX: message received");
+        msg_dump(msg);
 	if (msg == NULL)
 		return NULL;
 	octstr_destroy(os);
@@ -270,7 +272,13 @@ int main(int argc, char **argv) {
 		msg = msg_receive(bbsocket);
 		if (msg == NULL)
 			break;
+#ifdef debug
+                debug(0, "WAPBOX: message received");
+#endif
 		wtp_event = wtp_unpack_wdp_datagram(msg);
+#ifdef debug
+                debug(0, "WAPBOX: datagram unpacked");
+#endif
                 if (wtp_event == NULL)
                    continue;
 		wtp_machine = wtp_machine_find_or_create(msg, wtp_event);
@@ -282,3 +290,8 @@ int main(int argc, char **argv) {
 	info(0, "WAP box terminating.");
 	return 0;
 }
+
+
+
+
+
