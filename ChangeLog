@@ -1,5 +1,11 @@
 2001-02-12  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/bb_store.c: Ooops, forgot to add earlier. Anyway, now uses
+	straight octstr handling instead of using octstr_split and thus
+	does not need so much memory while unpacking the store-file
+
+2001-02-12  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bb_boxc.c: removed heartbeat message kludge as it caused
 	other problems, had to think this more...
 
