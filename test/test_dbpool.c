@@ -186,11 +186,7 @@ static void oracle_client_thread(void *arg)
 {
     DBPool *pool = arg;
     DBPoolConn *pconn = NULL;
-    struct ora_conn *conn;
     int i;
-    OCIStmt *stmt;
-    sword status;
-    ub2 stmt_type;
     List *result;
 
     for (i = 1; i <= queries; i++) {
@@ -199,19 +195,19 @@ static void oracle_client_thread(void *arg)
         if (pconn == NULL)
             continue;
 #if 1 /* selects */
-        if (dbpool_conn_select(pconn, sql, &result) == 0) {
+        if (dbpool_conn_select(pconn, sql, NULL, &result) == 0) {
             long i,j;
             for (i=0; i < list_len(result); i++) {
                 List *row = list_get(result, i);
                 for (j=0; j < list_len(row); j++)
-                    debug("", 0, "col = %d   value = '%s'", j, octstr_get_cstr(list_get(row,j)));
+                    debug("", 0, "col = %ld   value = '%s'", j, octstr_get_cstr(list_get(row,j)));
                 list_destroy(row, octstr_destroy_item);
             }
         }
         list_destroy(result, NULL);
         dbpool_conn_produce(pconn);
 #else /* only updates */
-        debug("", 0, "rows processed = %d ", dbpool_conn_update(pconn, sql));
+        debug("", 0, "rows processed = %d ", dbpool_conn_update(pconn, sql, NULL));
         dbpool_conn_produce(pconn);
 #endif
     }
@@ -299,7 +295,7 @@ static void inc_dec_thread(void *arg)
 int main(int argc, char **argv)
 {
     DBPool *pool;
-    DBConf *conf;
+    DBConf *conf = NULL; /* for compiler please */
     unsigned int num_threads = 1;
     unsigned long i;
     int opt;

@@ -1,3 +1,7 @@
+2004-03-22  Alexander Malysh  <a.malysh@centrium.de> 
+    * test/test_dbpool.c: applied missind part of last commit.
+      Thanks again to "Robert Galach" <kanelek (at) tenbit.pl>.
+
 2004-03-20  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/dlr_oracle.c, gwlib/dbpool.[ch], gwlib/dbpool_oracle.c,
       gwlib/dbpool_p.h: applied db_pool_binding_variables_2.patch provided
