@@ -1,3 +1,10 @@
+2004-09-28  Stipe Tolj  <stolj@wapme.de>
+    * gw/urltrans.c: added a fix by Alex that prevents panic'ing while msg text
+      is NULL and adding '%o' as escape code for MO msgs representing the 
+      msg->sms.account field. Which is interpreted as the operator ID for 
+      aggregator specific MO messages. ie. Xidris HTTP SMSC module. Thanks
+      to Tobias for this.
+
 2004-09-27  Stipe Tolj  <stolj@wapme.de>
     * gw/smsc/smsc_http.c: fixed a binary MT bug (when DC_8BIT ahs been set) and
       various improvements for passing parameters to the HTTP request. Added

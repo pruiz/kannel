@@ -276,17 +276,16 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
 			      Octstr *smsc, Octstr *sender, Octstr *receiver) 
 {
     List *words;
-    URLTranslation *t;
+    URLTranslation *t = NULL;
     int reject = 0;
     
     /* do not panic if text == NULL */
-    if (text != NULL)
+    if (text != NULL) {
         words = octstr_split_words(text);
-    else
-        words = list_create();
+        t = find_translation(trans, words, smsc, sender, receiver, &reject);
+        list_destroy(words, octstr_destroy_item);
+    }
     
-    t = find_translation(trans, words, smsc, sender, receiver, &reject);
-    list_destroy(words, octstr_destroy_item);
     if (reject)
 	t = find_black_list_translation(trans, smsc);
     if (t == NULL) {
@@ -628,6 +627,15 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	case 'B':  /* billing identifier/information */
 	    if (octstr_len(request->sms.binfo)) {
             enc = octstr_duplicate(request->sms.binfo);
+            octstr_url_encode(enc);
+            octstr_append(result, enc);
+            octstr_destroy(enc);
+        }
+        break;
+	
+    case 'o':  /* billing identifier/information */
+	    if (octstr_len(request->sms.account)) {
+            enc = octstr_duplicate(request->sms.account);
             octstr_url_encode(enc);
             octstr_append(result, enc);
             octstr_destroy(enc);
