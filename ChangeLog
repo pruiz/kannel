@@ -1,5 +1,12 @@
 2000-09-29  Kalle Marjola  <rpr@wapit.com>
 
+	* doc/userguide/userguide.xml: rest of the newconf.txt moved into
+	this, and some of it edited to XML
+
+	* doc/userguide/newconf.txt: removed
+
+2000-09-29  Kalle Marjola  <rpr@wapit.com>
+
 	* doc/userguide/userguide.xml: moved rest of the newconf.txt main
 	things into it, but not yet formatted.
 

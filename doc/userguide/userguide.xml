@@ -497,13 +497,13 @@ admin-password = f00bar
   <tbody>
    <row><entry><literal>group</literal></entry>
      <entry><literal>core</literal></entry>
-     <entry valign=top>
+     <entry valign=bottom>
        This is mandatory variable
      </entry></row>
 
     <row><entry><literal>admin-port</literal></entry>
      <entry>port-number</entry>
-     <entry valign=top>
+     <entry valign=bottom>
         The port number in which the bearerbox listens to HTTP
         adminstration commands. It is NOT the same as the HTTP
         port of the local www server, just invent any port, but
@@ -513,13 +513,13 @@ admin-password = f00bar
 
     <row><entry><literal>admin-password</literal></entry>
      <entry>string</entry>
-     <entry valign=top>
+     <entry valign=bottom>
          Password for HTTP adminstration commands (see below)
      </entry></row>
    
     <row><entry><literal>admin-deny-ip</literal></entry>
      <entry morerows=1>IP-list</entry>
-     <entry morerows=1 valign=top>
+     <entry morerows=1 valign=bottom>
         These lists can be used to prevent connection from given IP 
         addresses. Each list can have several addresses, each
         separated with semicolon (';'). An asterisk ('*') can be used
@@ -531,7 +531,7 @@ admin-password = f00bar
 
     <row><entry><literal>smsbox-port</literal></entry>
      <entry>port-number</entry>
-     <entry valign=top>
+     <entry valign=bottom>
         This is the port number which the smsboxes, if any, connect.
         As with admin-port, this can be anything you want. Must be set
         if you want to handle any SMS traffic.
@@ -539,14 +539,14 @@ admin-password = f00bar
 
     <row><entry><literal>wapbox-port</literal></entry>
      <entry>port-number</entry>
-     <entry valign=top>
+     <entry valign=bottom>
         Like smsbox-port, but for wapbox-connections. If not set,
         Kannel cannot handle WAP traffic
      </entry></row>
 
     <row><entry><literal>box-deny-ip</literal></entry>
      <entry morerows=1>IP-list</entry>
-     <entry morerows=1 valign=top>
+     <entry morerows=1 valign=bottom>
         These lists can be used to prevent connection from given IP 
         addresses. Each list can have several addresses, each
         separated with semicolon (';'). An asterisk ('*') can be used
@@ -557,7 +557,7 @@ admin-password = f00bar
 
     <row><entry><literal>wdp-interface-name</literal></entry>
      <entry>IP or '*'</entry>
-     <entry valign=top>
+     <entry valign=bottom>
         If this is set, Kannel listens to WAP UDP packets incoming to
         ports 9200-9208, bound to given IP. If no spesific IP is
         needed, use just an asterisk ('*'). If UDP messages are
@@ -566,14 +566,15 @@ admin-password = f00bar
 
     <row><entry><literal>log-file</literal></entry>
      <entry>filename</entry>
-     <entry valign=top>
+     <entry valign=bottom>
         A file in which to write a log. This in addition to <literal>stdout</literal>
-        and any log file defined in command line.
+        and any log file defined in command line. Log-file in 'core'
+        group is only used by the bearerbox.
      </entry></row>
 
     <row><entry><literal>log-level</literal></entry>
      <entry>number 0..5</entry>
-     <entry valign=top>
+     <entry valign=bottom>
         Minimum level of logfile events logged. 0 is for 'debug', 1
         'info', 2 'warning, 3 'error' and 4 'panic' (see Command Line
         Options)
@@ -581,14 +582,16 @@ admin-password = f00bar
 
     <row><entry><literal>access-log</literal></entry>
      <entry>filename</entry>
-     <entry valign=top>
+     <entry valign=bottom>
         A file in which information about received/sent SMS messages 
-        is stored.
+        is stored. Access-log in 'core' group is only used by the
+        bearerbox.
+
      </entry></row>
 
     <row><entry><literal>unified-prefix</literal></entry>
      <entry>prefix-list</entry>
-     <entry valign=top>
+     <entry valign=bottom>
         String to unify received phone numbers, for SMSC routing and
         to ensure that SMS centers can handle them properly. 
         This is applied to 'sender' number when receiving SMS
@@ -607,7 +610,7 @@ admin-password = f00bar
 
     <row><entry><literal>white-list</literal></entry>
      <entry>URL</entry>
-     <entry valign=top>
+     <entry valign=bottom>
         Load a list of accepted senders of SMS messages. If a sender
         of an SMS message is not in this list, any message received
         from SMS Center is discarded. See notes of phone number
@@ -618,14 +621,14 @@ admin-password = f00bar
 
     <row><entry><literal>black-list</literal></entry>
      <entry>URL</entry>
-     <entry valign=top>
+     <entry valign=bottom>
         As white-list, but SMS messages from these numbers are
         automatically discarded
      </entry></row>
 
     <row><entry><literal>http-proxy-host</literal></entry>
      <entry>hostname</entry>
-     <entry morerows=1 valign=top>
+     <entry morerows=1 valign=bottom>
         Enable use of an HTTP proxy for all HTTP requests.
      </entry></row>
     <row><entry><literal>http-proxy-port</literal></entry>
@@ -633,7 +636,7 @@ admin-password = f00bar
 
     <row><entry><literal>http-proxy-exceptions</literal></entry>
      <entry>URL-list</entry>
-     <entry valign=top>
+     <entry valign=bottom>
          A list of excluded hosts from being used via a
          proxy. Separate each entry with space.
      </entry></row>
@@ -743,7 +746,7 @@ white-list = "http://localhost/whitelist.txt"
   <tgroup cols=2>
   <tbody>
    <row><entry><literal>-v &lt;level&gt;</literal></entry>
-        <entry morerows=1 valign=top>
+        <entry morerows=1 valign=bottom>
              Set verbosity level for stdout (screen) logging. Default is 0,
              which means 'debug'. 1 is 'info, 2 'warning', 3
              'error' and 4 'panic'
@@ -751,20 +754,20 @@ white-list = "http://localhost/whitelist.txt"
    <row><entry><literal>--verbosity &lt;level&gt;</literal></entry></row>
 
    <row><entry><literal>-D &lt;places&gt;</literal></entry>
-        <entry morerows=1 valign=top>
+        <entry morerows=1 valign=bottom>
              Set debug-places for 'debug' level output. 
         </entry></row>
    <row><entry><literal>--debug &lt;places&gt;</literal></entry></row>
 
    <row><entry><literal>-F &lt;file-name&gt;</literal></entry>
-        <entry morerows=1 valign=top>
+        <entry morerows=1 valign=bottom>
               Log to file named file-name, too. Does not overrun nor
               affect any logfile defined in configuration file.
         </entry></row>
    <row><entry><literal>--logfile &lt;file-name&gt;</literal></entry></row>
 
    <row><entry><literal>-V &lt;level&gt;</literal></entry>
-        <entry morerows=1 valign=top>
+        <entry morerows=1 valign=bottom>
             Set verbosity level for that extra logfile (default 0,
             which means 'debug'). Does not affect verbosity level of
             the logfile defined in configuration file, not verbosity
@@ -773,21 +776,21 @@ white-list = "http://localhost/whitelist.txt"
    <row><entry><literal>--fileverbosity &lt;level&gt;</literal></entry></row>
 
    <row><entry><literal>-S</literal></entry>
-        <entry morerows=1 valign=top>
+        <entry morerows=1 valign=bottom>
              Start the system initially at SUSPENDED state (see below,
               bearerbox only)
         </entry></row>
    <row><entry><literal>--suspended</literal></entry></row>
 
    <row><entry><literal>-I</literal></entry>
-        <entry morerows=1 valign=top>
+        <entry morerows=1 valign=bottom>
              Start the system initially at ISOLATED state (see below,
               bearerbox only)
         </entry></row>
    <row><entry><literal>--isolated</literal></entry></row>
 
    <row><entry><literal>-H</literal></entry>
-        <entry morerows=1 valign=top>
+        <entry morerows=1 valign=bottom>
              Only try to open HTTP sendsms interface; if it
              fails, only warn about that, do not exit. (smsbox only)
         </entry></row>
@@ -864,7 +867,7 @@ chapter.</para>
   <tgroup cols=2>
   <tbody>
    <row><entry><literal>status</literal></entry>
-   <entry valign=top>
+   <entry valign=bottom>
         Get the current status of the gateway. Tells the current state
         (see above) and total number of messages relied and queuing in
         the system right now. Also lists the total number of smsbox
@@ -872,24 +875,24 @@ chapter.</para>
    </entry></row>
 
    <row><entry><literal>suspend</literal></entry>
-   <entry valign=top>
+   <entry valign=bottom>
         Set Kannel state as 'suspended' (see above). Password
         required.
    </entry></row>
 
    <row><entry><literal>isolate</literal></entry>
-   <entry valign=top>
+   <entry valign=bottom>
         Set Kannel state as 'isolated' (see above). Password required.
    </entry></row>
 
    <row><entry><literal>resume</literal></entry>
-   <entry valign=top>
+   <entry valign=bottom>
         Set Kannel state as 'running' if it is suspended or isolated.
         Password required.
    </entry></row>
 
    <row><entry><literal>shutdown</literal></entry>
-   <entry valign=top>
+   <entry valign=bottom>
         Bring down the gateway, by setting state to 'shutdown'. After
         a shutdown is initiated, there is no other chance to resume
         normal operation. However, 'status' command still works.
@@ -948,50 +951,95 @@ bearerbox-host = localhost
    There is, however, multiple optional variables for the 'wapbox'
    group.</para>
 
+ <table frame=none>
+  <title>Wapbox Group Variables</title>
+  <tgroup cols=3>
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>group</literal></entry>
+     <entry><literal>wapbox</literal></entry>
+     <entry valign=bottom>
+       This is mandatory variable
+     </entry></row>
+
+   <row><entry><literal>bearerbox-host</literal></entry>
+     <entry><literal>hostname</literal></entry>
+     <entry valign=bottom>
+        The machine in which the bearerbox is. 
+     </entry></row>
+
+    <row><entry><literal>timer-freq</literal></entry>
+     <entry>value-in-seconds</entry>
+     <entry valign=bottom>
+         The frequency how often timers are checked out. Default is 1 
+     </entry></row>
+
+    <row><entry><literal>map-url</literal></entry>
+     <entry>URL-pair</entry>
+     <entry valign=bottom>
+        The pair is separated with space.
+        Adds a single mapping for the left side URL to the given destination.
+        If you append an asterisk `*' to the left side URL, it is prefix
+        matched against the incoming URL. Whenever that prefix matches,
+        the URL will be replaced completely by the right side. If you
+        additionally append an asterisk to the right side URL, the part
+        of the incoming URL coming after the prefix, will be appended
+        to the right side URL. Thus, for a line:
+                map-url = "http://source/* http://destination/*"
+        and an incoming URL of "http://source/some/path", the result
+        will be "http://destination/some/path"
+     </entry></row>
+
+    <row><entry><literal>map-url-max</literal></entry>
+     <entry>number</entry>
+     <entry valign=bottom>
+        If you need more than one mapping, set this to the highest number
+        mapping you need. The default gives you 10 mappings, numbered
+        from 0 to 9. Default: 9
+     </entry></row>
+
+    <row><entry><literal>map-url-0</literal></entry>
+     <entry>URL-pair</entry>
+     <entry valign=bottom>
+        Adds a mapping for the left side URL to the given destination URL.
+        Repeat these lines, with 0 replaced by a number up to map-url-max,
+        if you need several mappings.
+     </entry></row>
+
+    <row><entry><literal>device-home</literal></entry>
+     <entry>URL</entry>
+     <entry valign=bottom>
+        Adds a mapping for the URL DEVICE:home (as sent by Phone.com browsers)
+        to the given destination URL. There is no default mapping.
+        NOTE: the mapping is added with both asterisks, as described above
+        for the "map-url" setting. Thus, the above example line is
+        equivalent to writing
+                map-url = "DEVICE:home* http://some.where/*"
+
+     </entry></row>
+
+    <row><entry><literal>log-file</literal></entry>
+     <entry>filename</entry>
+     <entry morerows=1 valign=bottom>
+       As with bearerbox 'core' group. 
+     </entry></row>
+
+    <row><entry><literal>log-level</literal></entry>
+     <entry>number 0..5</entry></row>
+
+
+  </tbody>
+  </tgroup>
+ </table>
+
+
 <programlisting>
- group = wapbox
- #       Mandatory identifier
- #
- bearerbox-host = &lt;host&gt;
- #       The machine in which the bearerbox is. THIS IS TEMPORARY
- #       VARIABLE, but mandatory right now
- #
- log-file = &lt;file-name&gt;
- log-level = &lt;number 0..5&gt;
- #       As with bearerbox (core) logfile
- #
- timer-freq = &lt;value-in-seconds&gt;
- #       the frequency how often timers are checked out. Default is 1 
- #
- map-url = "http://from.here/ http://some.where/"
- #       adds a single mapping for the left side URL to the given destination.
- #       If you append an asterisk `*' to the left side URL, it is prefix
- #       matched against the incoming URL. Whenever that prefix matches,
- #       the URL will be replaced completely by the right side. If you
- #       additionally append an asterisk to the right side URL, the part
- #       of the incoming URL coming after the prefix, will be appended
- #       to the right side URL. Thus, for a line:
- #               map-url = "http://source/* http://destination/*"
- #       and an incoming URL of "http://source/some/path", the result
- #       will be "http://destination/some/path"
- #
- map-url-max = &lt;number&gt;
- #       if you need more than one mapping, set this to the highest number
- #       mapping you need. The default gives you 10 mappings, numbered
- #       from 0 to 9. default: 9
- #
- map-url-0 = "http://from.here/ http://some.where/"
- #       adds a mapping for the left side URL to the given destination URL.
- #       Repeat these lines, with 0 replaced by a number up to map-url-max,
- #       if you need several mappings.
- #
- device-home = "http://some.where/"
- #       adds a mapping for the URL DEVICE:home (as sent by Phone.com browsers)
- #       to the given destination URL. There is no default mapping.
- #       NOTE: the mapping is added with both asterisks, as described above
- #       for the "map-url" setting. Thus, the above example line is
- #       equivalent to writing
- #               map-url = "DEVICE:home* http://some.where/*"
 </programlisting>
 </sect2>
   
@@ -1162,6 +1210,54 @@ GSM modem as an SMSC:
 </programlisting>
   </para>
 
+  <para>Some sample SMS center configurations:
+
+<programlisting>
+# group = smsc
+# smsc = fake
+# host = localhost
+# port = 10000
+#
+# group = smsc
+# smsc = cimd
+# host = 100.101.102.103
+# port = 600
+# smsc-username = foo
+# smsc-password = bar
+#
+# group = smsc
+# smsc = emi_ip
+# host = 103.102.101.100
+# port = 600
+# our-port = 600 (optional bind in our end)
+# receive-port = 700 (the port in which the SMSC will contact)
+#
+# group = smsc
+# smsc = emi
+# host = 100.102.100.102
+# device = /dev/tty0
+# smsc-username = foo
+# smsc-password = bar
+#
+# group = smsc
+# smsc = smpp
+# host = 127.0.0.1
+# port = 600
+# receive-port = 700      (receiver port if it a different one)
+# system-id = "param, ask from dealer.. 'same' as username"
+# smsc-password = foo
+# system-type = "param, ask from dealer"
+# address-range = "" (regex of received numbers)
+#
+# group = smsc
+# smsc = ois
+# host = 103.102.101.100
+# port = 10000
+# receive-port = 10000 (the port in which the SMSC will contact)
+</programlisting>
+ </para>
+
+
 
 <sect3>
 <title>Using multiple SMS centers</title>
@@ -1184,37 +1280,87 @@ GSM modem as an SMSC:
 <sect2>
 <title>Smsbox Configuration</title>
 
-  <para>Smsbox variables in configuration group are:
-
+  <para>You must define a 'smsbox' group into configuration file to be
+  able to use SMS Kannel. The simplest working 'smsbox' group looks 
+   like this:
 
 <programlisting>
- group = smsbox
- #       Mandatory identifier
- #
- bearerbox-host = host
- #       The machine in which the bearerbox is. THIS IS TEMPORARY
- #       VARIABLE, but mandatory right now
- #
- sendsms-port = port-number
- #       The port in which to do any sendsms HTTP requests. As with
- #       other ports in Kannel, can be set as anything desired.
- #
- global-sender = phone-number
- #       If set, all sendsms originators are set as these before
- #       proceeding. Note that in a case of most SMS centers you
- #       cannot set the sender number, but it is automatically set
- #       as the number of the SMSC
- #
- log-file = file-name
- log-level = number 0..5
- #       As with bearerbox (core) logfile
- #
- access-log = file-name
- #       A file in which information about MO and send-sms requests
- #       is stored. Can be named same as main access-log.
- #
+group = smsbox
+bearerbox-host = localhost
 </programlisting>
-  </para>
+
+   ...but you would most probably want to define 'sendsms-port' to be
+   able to use SMS push.</para>
+
+ <table frame=none>
+  <title>Smsbox Group Variables</title>
+  <tgroup cols=3>
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>group</literal></entry>
+     <entry><literal>smsbox</literal></entry>
+     <entry valign=bottom>
+       This is mandatory variable
+     </entry></row>
+
+   <row><entry><literal>bearerbox-host</literal></entry>
+     <entry><literal>hostname</literal></entry>
+     <entry valign=bottom>
+        The machine in which the bearerbox is. 
+     </entry></row>
+
+    <row><entry><literal>sendsms-port</literal></entry>
+     <entry>port-number</entry>
+     <entry valign=bottom>
+        The port in which to do any sendsms HTTP requests. As with
+        other ports in Kannel, can be set as anything desired.
+     </entry></row>
+
+    <row><entry><literal>global-sender</literal></entry>
+     <entry>phone-number</entry>
+     <entry valign=bottom>
+        If set, all sendsms originators are set as these before
+        proceeding. Note that in a case of most SMS centers you
+        cannot set the sender number, but it is automatically set
+        as the number of the SMSC
+     </entry></row>
+
+    <row><entry><literal>log-file</literal></entry>
+     <entry>filename</entry>
+     <entry morerows=2 valign=bottom>
+       As with bearerbox 'core' group. Access-log is used to store
+       information about MO and send-sms requests. Can be named same as
+       'main' access-log (in 'core' group).
+     </entry></row>
+
+    <row><entry><literal>log-level</literal></entry>
+     <entry>number 0..5</entry></row>
+
+    <row><entry><literal>access-log</literal></entry>
+     <entry>filename</entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
+
+   <para>A typical 'smsbox' grou pcould be something like this:
+
+<programlisting>
+group = smsbox
+bearerbox-host = localhost
+sendsms-port = 13131
+global-sender = 123456
+access-log = "kannel.access"
+log-file = "smsbox.log"
+log-level = 0
+</programlisting>
+ </para>
 
 
 </sect2>
@@ -1350,6 +1496,26 @@ we can perform HTTP Basic authentication.
 </programlisting> 
   </para>
 
+ <para>Some sample 'sms-service' groups:
+
+<programlisting>
+group = sms-service
+keyword = nop
+text = "You asked nothing and I did it!"
+
+group = sms-service
+keyword = complex
+url = "http://my.applet.machine/Servlet/kludge2?sender=%p&amp;text=%r"
+max-messages = 3
+header = "<<<"
+footer = ">>>"
+
+group = sms-service
+keyword = default
+text = "No action spesified"
+</programlisting>
+</para>
+
 
 
 <sect3>
@@ -1367,8 +1533,16 @@ we can perform HTTP Basic authentication.
     needed formatting beforehand.</para>
 
     <para>Note that when no reply is wanted, remember to set variable
-    'max-messages' to zero (0) so that no reply is sent, unless an
-    error occurs.</para>
+    <literal>max-messages</literal> to zero (0) so that no reply is sent, unless an
+    error occurs. Simple sample:</para>
+
+<programlisting>
+group = sms-service
+keyword = talk
+url = "http://my.applet.machine/Servlet/talk?sender=%p&amp;text=%r"
+max-messages = 0
+</programlisting>
+
 
 </sect3>
 <sect3>
@@ -1380,48 +1554,133 @@ we can perform HTTP Basic authentication.
    above). Then, use 'accepted-smsc' variable to define which messages
    can use that service.</para>
 
+<programlisting>
+group = sms-service
+keyword = weather
+accepted-smsc = SOL
+url = "http://my.applet.machine/Servlet/weather?sender=%p&amp;operator=SOL&amp;text=%r"
+</programlisting>
+
 </sect3>
 </sect2>
 
 <sect2>
 <title>SendSMS-User Configurations</title>
 
-   <para>Variables in 'sendsms-user' group are:
+   <para>To enable SMS push, you must set
+   <literal>sendsms-port</literal> in 'smsbox' group and define one or
+   more 'sendsms-user' groups. Each of these groups define one
+   account, which can be used for SMS push, via HTTP interface (see
+   below)</para>
+
+ <table frame=none>
+  <title>SendSMS-User Group Variables</title>
+  <tgroup cols=3>
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>group</literal></entry>
+     <entry><literal>sendsms-user</literal></entry>
+     <entry valign=bottom>
+       This is mandatory variable
+     </entry></row>
+
+   <row><entry><literal>username</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+       Name for the user/account.
+     </entry></row>
+
+   <row><entry><literal>password</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+       Password for the user (see HTTP interface, below)
+     </entry></row>
+
+   <row><entry><literal>user-deny-ip</literal></entry>
+     <entry>IP-list</entry>
+     <entry morerows=1 valign=bottom>
+        As other deny/allow IP lists, but for this user (i.e. this
+         user is not allowed to do the SMS push HTTP request from
+         other IPs than allowed ones). If not set, there is no
+         limitations.
+     </entry></row>
+   <row><entry><literal>user-allow-IP</literal></entry>
+     <entry>IP-list</entry></row>
+
+   <row><entry><literal>forced-smsc</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+         Force smsc id as 'string' (linked to SMS routing, see 'smsc' groups)
+     </entry></row>
+
+   <row><entry><literal>default-smsc</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        If no smsc id given with send-sms request (see below), use
+        this one. No idea to use with forced-smsc.
+     </entry></row>
+
+   <row><entry><literal>concetenation</literal></entry>
+     <entry>0 or 1</entry>
+     <entry valign=bottom>
+         If set to 1 enables the concatenation of SMS's for long messages 
+     </entry></row>
+
+   <row><entry><literal>faked-sender</literal></entry>
+     <entry>phone-number</entry>
+     <entry morerows=6 valign=bottom>
+        As in 'sms-service' groups
+     </entry></row>
+
+   <row><entry><literal>max-messages</literal></entry>
+     <entry>number</entry></row>
+
+   <row><entry><literal>split-chars</literal></entry>
+     <entry>string</entry></row>
+
+   <row><entry><literal>split-suffix</literal></entry>
+     <entry>string</entry></row>
+
+   <row><entry><literal>omit-empty</literal></entry>
+     <entry>0 or 1</entry></row>
+
+   <row><entry><literal>header</literal></entry>
+     <entry>string</entry></row>
+
+   <row><entry><literal>footer</literal></entry>
+     <entry>string</entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
+
+  <para>Some sample 'sendsms-user' groups:
 
 <programlisting>
- group = sendsms-user
- #       Mandatory identifier
- #
- username = string
- password = string
- #       For HTTP cgi-bin arguments
- #
- user-deny-ip = IP-list
- user-allow-ip = IP-list
- #       As other deny/allow lists, but for this user.
- #
- faked-sender = phone-number
- max-messages = number
- split-chars = character-list
- split-suffix = string
- omit-empty = number
- header = string
- footer = string
- #       As in sms-services
- #
- concatenation = 0 or 1
- #       If set to 1 enables the concatenation of SMS's for long messages 
- #
- forced-smsc = name
- #       Force smsc id as 'name' (linked to SMS routing, see SMSC groups)
- #
- default-smsc = name
- #       If no smsc id given with send-sms request, use this one. No
- #       idea to use with forced-smsc.
- #
-</programlisting>
-  </para>
+group = sendsms-user
+username = simple
+password = elpmis
 
+group = sendsms-user
+username = complex
+password = 76ftY
+user-deny-ip = "*.*.*.*"
+user-allow-ip = "123.234.123.234"
+max-messages = 3
+concatenation = 1
+forced-smsc = SOL
+</programlisting>
+
+   The second one is a very limited only, only allowed to user from IP
+   "123.234.123.234". On the other hand, the user can send a longer
+   message, up to 3 SMSes long, which is sent as concatenated
+   SMS.</para>
 
 </sect2>
 </sect1>
@@ -1458,21 +1717,21 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
   <tgroup cols=2>
   <tbody>
    <row><entry><literal>username</literal></entry>
-   <entry valign=top>
-        Username or account name. Must be 'username' of the one
-        <literal>sendsms-user</literal> group in Kannel configuration,
+   <entry valign=bottom>
+        Username or account name. Must be <literal>username</literal> of the one
+        'sendsms-user' group in Kannel configuration,
         or results in 'Authorization failed' reply.
    </entry></row>
 
    <row><entry><literal>password</literal></entry>
-   <entry valign=top>
-       Password associated to given 'username'. Must match
- corresponding field in <literal>sendsms-user</literal> group in
+   <entry valign=bottom>
+       Password associated to given <literal>username</literal>. Must match
+ corresponding field in 'sendsms-user' group in
  Kannel configuration, or 'Authorization failed' is returned.
    </entry></row>
 
    <row><entry><literal>from</literal></entry>
-   <entry valign=top>
+   <entry valign=bottom>
         Phone number of the sender. This field is usually overridden
         by the SMS Center, or it can be overridden by
         <literal>faked-sender</literal> variable in
@@ -1481,12 +1740,12 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
    </entry></row>
 
    <row><entry><literal>to</literal></entry>
-   <entry valign=top>
+   <entry valign=bottom>
         Phone number of the receiver.
    </entry></row>
 
    <row><entry><literal>text</literal></entry>
-   <entry valign=top>
+   <entry valign=bottom>
         Contents of the message, URL encoded as necessary. The content
         can be more than 160 characters, but then
         <literal>sendsms-user</literal> group must have
@@ -1494,13 +1753,13 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
    </entry></row>
 
    <row><entry><literal>udh</literal></entry>
-   <entry valign=top>
+   <entry valign=bottom>
          Optional User Data Header (UDH) part of the message. Must be
          URL encoded.
    </entry></row>
 
    <row><entry><literal>smsc</literal></entry>
-   <entry valign=top>
+   <entry valign=bottom>
         Optional guideline of which SMS Center is used to send the
         message (see above). This variable can be overridden with
         <literal>forced-smsc</literal> configuration
@@ -1519,6 +1778,8 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
 </sect1>
 
 </chapter>
+
+
 
 
 <chapter id="smswap-gateway">

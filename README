@@ -147,7 +147,6 @@ Configuring and running the gateway
 	See the user guide in doc/userguide or on the web at
 	http://www.kannel.org/doc.shtml.
 	
-	Kannel configuration is defined in doc/userguide/newconf.txt.
 	For test use, you can see sample configurations
 	gw/smskannel.conf and gw/wapkannel.conf.
 
