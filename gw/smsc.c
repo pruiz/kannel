@@ -204,10 +204,6 @@ int smscenter_submit_msg(SMSCenter *smsc, Msg *msg)
     smscenter_lock(smsc);
 
     switch (smsc->type) {
-    case SMSC_TYPE_FAKE:
-        if (fake_submit_msg(smsc, msg) == -1)
-            goto error;
-        break;
 
     case SMSC_TYPE_CIMD:
         if (cimd_submit_msg(smsc, msg) == -1)
@@ -268,12 +264,6 @@ int smscenter_receive_msg(SMSCenter *smsc, Msg **msg)
     smscenter_lock(smsc);
 
     switch (smsc->type) {
-
-    case SMSC_TYPE_FAKE:
-        ret = fake_receive_msg(smsc, msg);
-        if (ret == -1)
-            goto error;
-        break;
 
     case SMSC_TYPE_CIMD:
         ret = cimd_receive_msg(smsc, msg);
@@ -344,11 +334,6 @@ int smscenter_pending_smsmessage(SMSCenter *smsc)
     smscenter_lock(smsc);
 
     switch (smsc->type) {
-    case SMSC_TYPE_FAKE:
-        ret = fake_pending_smsmessage(smsc);
-        if (ret == -1)
-            goto error;
-        break;
 
     case SMSC_TYPE_CIMD:
         ret = cimd_pending_smsmessage(smsc);
@@ -527,9 +512,7 @@ SMSCenter *smsc_open(CfgGroup *grp)
 	error(0, "Required field 'smsc' missing for smsc group.");
 	return NULL;
     }
-    if (octstr_compare(type, octstr_imm("fake")) == 0)
-    	typeno = SMSC_TYPE_FAKE;
-    else if (octstr_compare(type, octstr_imm("cimd")) == 0)
+    if (octstr_compare(type, octstr_imm("cimd")) == 0)
     	typeno = SMSC_TYPE_CIMD;
     else if (octstr_compare(type, octstr_imm("cimd2")) == 0)
     	typeno = SMSC_TYPE_CIMD2;
@@ -593,14 +576,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
     smsc = NULL;
 
     switch (typeno) {
-    case SMSC_TYPE_FAKE:
-        if (host == NULL || port == 0)
-            error(0, "'host' or 'port' invalid in 'fake' record.");
-        else {
-            smsc = fake_open(octstr_get_cstr(host), port);
-            break;
-        }
-
     case SMSC_TYPE_CIMD:
         if (host == NULL || port == 0 || username == NULL || password == NULL)
             error(0, "Required field missing for CIMD center.");
@@ -747,9 +722,6 @@ int smsc_reopen(SMSCenter *smsc)
     smscenter_lock(smsc);
 
     switch (smsc->type) {
-    case SMSC_TYPE_FAKE:
-        ret = fake_reopen(smsc);
-	break;
     case SMSC_TYPE_CIMD:
         ret = cimd_reopen(smsc);
 	break;
@@ -800,11 +772,6 @@ int smsc_close(SMSCenter *smsc)
     smscenter_lock(smsc);
 
     switch (smsc->type) {
-    case SMSC_TYPE_FAKE: 	/* Our own fake SMSC */
-        if (fake_close(smsc) == -1)
-            errors = 1;
-        break;
-
     case SMSC_TYPE_CIMD:
         if (cimd_close(smsc) == -1)
             errors = 1;

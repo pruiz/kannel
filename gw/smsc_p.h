@@ -22,7 +22,6 @@
  */
 enum {
 	SMSC_TYPE_DELETED,
-	SMSC_TYPE_FAKE,
 	SMSC_TYPE_CIMD,
 	SMSC_TYPE_CIMD2,
 	SMSC_TYPE_EMI,
@@ -190,15 +189,6 @@ int smscenter_receive_msg(SMSCenter *smsc, Msg **msg);
    the message. */
 int smscenter_pending_smsmessage(SMSCenter *smsc);
 
-/*
- * Interface to fakesmsc.c. 
- */
-SMSCenter *fake_open(char *hostname, int port);
-int fake_reopen(SMSCenter *smsc);
-int fake_close(SMSCenter *smsc);
-int fake_pending_smsmessage(SMSCenter *smsc);
-int fake_submit_msg(SMSCenter *smsc, Msg *msg);
-int fake_receive_msg(SMSCenter *smsc, Msg **msg);
 
 /*
  * Interface to Nokia SMS centers using CIMD.

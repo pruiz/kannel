@@ -20,6 +20,7 @@
 #include <time.h>
 #include <errno.h>
 #include <limits.h>
+#include <string.h>
 
 #include <unistd.h>
 

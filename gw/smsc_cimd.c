@@ -123,6 +123,7 @@ SMSCenter *cimd_open(char *hostname, int port, char *username, char *password)
     if (smsc == NULL) goto error;
     smsc->type = SMSC_TYPE_CIMD;
     smsc->cimd_hostname = gw_strdup(hostname);
+    smsc->hostname = gw_strdup(hostname); /* Needed by read_into_buffer() */
     smsc->cimd_port = port;
     smsc->cimd_username = gw_strdup(username);
     smsc->cimd_password = gw_strdup(password);

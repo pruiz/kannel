@@ -1,3 +1,21 @@
+2001-01-25  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsc.c, gw/smsc_p.h, gw/smsc_fake.c, gw/smsc_fake2.c,
+	gw/smscconn.c, gw/smscconn_p.h, test/fakesmsc.c, test/fakesmsc2.c:
+	Removed the old fakesmsc and replaced it with the new one.
+	Note that the new version is used differently from the old one!
+
+	* gw/smskannel.conf, checks/check_fakesmsc.sh,
+	checks/check_sendsms.sh: Changed the examples and checks to use
+	new fakesmsc.
+
+	* doc/userguide/userguide.xml: Changed the documentation to
+	describe the new fakesmsc.
+
+	* gw/smsc_cimd.c: Fixed a possible NULL reference.
+
+	* gw/smsc_cimd2.c: Added a missing #include <string.h>.
+
 2001-01-25  Lars Wirzenius  <liw@iki.fi>
 
     	* gw/bb_udp.c, gwlib/cfg.def: Applied and adapted patch from

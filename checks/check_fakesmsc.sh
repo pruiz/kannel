@@ -5,17 +5,17 @@
 set -e
 
 times=10
-interval=0.001
+interval=0
 loglevel=0
-
-test/fakesmsc -i $interval -m $times '123 234 nop' > check_fakesmsc.log 2>&1 &
-
-sleep 2
 
 gw/bearerbox -v $loglevel gw/smskannel.conf > check_fakesmsc_bb.log 2>&1 &
 bbpid=$!
 
 sleep 2
+
+test/fakesmsc -i $interval -m $times '123 234 text nop' > check_fakesmsc.log 2>&1 &
+
+sleep 1
 
 gw/smsbox -v $loglevel gw/smskannel.conf > check_fakesmsc_sms.log 2>&1 &
 
@@ -23,7 +23,7 @@ running=yes
 while [ $running = yes ]
 do
     sleep 1
-    if grep "got message $times" check_fakesmsc.log >/dev/null
+    if grep "Got message $times" check_fakesmsc.log >/dev/null
     then
     	running=no
     fi

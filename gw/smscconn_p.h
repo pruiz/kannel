@@ -166,8 +166,8 @@ struct smscconn {
  * Responsible file: smsc_wrapper.c */
 int smsc_wrapper_create(SMSCConn *conn, CfgGroup *cfg);
 
-/* Responsible file: smsc_fake2.c */
-int smsc_fake2_create(SMSCConn *conn, CfgGroup *cfg);
+/* Responsible file: smsc_fake.c */
+int smsc_fake_create(SMSCConn *conn, CfgGroup *cfg);
 
 
 /* ADD NEW CREATE FUNCTIONS HERE

@@ -8,7 +8,6 @@
 
 #include <signal.h>
 #include <time.h>
-#include <string.h>
 
 #include "gwlib/gwlib.h"
 #include "smscconn.h"
@@ -67,8 +66,8 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
 	return NULL;
     }
 
-    if (octstr_compare(smsc_type, octstr_imm("fake2")) == 0)
-	ret = smsc_fake2_create(conn, grp);
+    if (octstr_compare(smsc_type, octstr_imm("fake")) == 0)
+	ret = smsc_fake_create(conn, grp);
     else
 	ret = smsc_wrapper_create(conn, grp);
 
