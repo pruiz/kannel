@@ -1,3 +1,7 @@
+2003-08-07  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bb_boxc.c: do not use NULL values in debug log.
+    * gw/bb_store.c: Fixed segfault if bearerbox going down.
+
 2003-08-07 Aarno Syvänen <aarno@gni.ch>
     * gw/smsc/smsc_http.c: Dont add drlmsk to urls when dlrs are not asked for
 

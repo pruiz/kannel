@@ -188,6 +188,7 @@ static void store_cleanup(void *arg)
     
     list_destroy(ack_store, msg_destroy_item);
     list_destroy(sms_store, msg_destroy_item);
+    sms_store = NULL;
 
     list_remove_producer(flow_threads);
 }
@@ -277,7 +278,7 @@ finish:
 
 long store_messages(void)
 {
-    return list_len(sms_store);
+    return (sms_store ? list_len(sms_store) : -1);
 }
 
 

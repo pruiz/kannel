@@ -271,8 +271,12 @@ static int send_msg(Boxc *boxconn, Msg *pmsg)
     Octstr *pack;
 
     pack = msg_pack(pmsg);
-    debug("bb.boxc", 0, "send_msg: sending msg to boxc: <%s>", 
+    if (boxconn->boxc_id != NULL)
+        debug("bb.boxc", 0, "send_msg: sending msg to boxc: <%s>",
           octstr_get_cstr(boxconn->boxc_id));
+    else
+        debug("bb.boxc", 0, "send_msg: sending msg to box: <%s>",
+          octstr_get_cstr(boxconn->client_ip));
     if (conn_write_withlen(boxconn->conn, pack) == -1) {
     	error(0, "Couldn't write Msg to box <%s>, disconnecting",
 	      octstr_get_cstr(boxconn->client_ip));
