@@ -873,7 +873,7 @@ static void obey_request_thread(void *arg)
 	        error(0, "request failed");
 	        /* XXX this can be something different, according to 
 	           urltranslation */
-	        reply = reply_requestfailed;
+	        reply = octstr_duplicate(reply_requestfailed);
 	        trans = NULL;	/* do not use any special translation */
 	    }
 	    octstr_destroy(msg->sms.msgdata);

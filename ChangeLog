@@ -1,3 +1,7 @@
+2002-02-22  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsbox.c: fixed a bug when reply_requestfailed message was used, 
+    because it wasn't duplicated
+
 2002-02-21  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_at2.c: fixing memory leak
       reported by: "Oded Arbel" <oded@m-wise.com>
