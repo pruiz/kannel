@@ -1,5 +1,10 @@
 2000-11-01  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/gwthread-pthread.c: Fix memory leak if poll() was
+	interrupted.
+
+2000-11-01  Richard Braakman  <dark@wapit.com>
+
 	* gw/smsc_emi.c: Cleaned up a bit, made thread-safe.
 
 	* gw/smsc_p.h, gw/smsc.c: Declare and initialize new EMI fields.

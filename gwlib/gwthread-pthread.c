@@ -454,6 +454,7 @@ int gwthread_poll(struct pollfd *fds, long numfds, double timeout) {
 	if (ret < 0) {
 		if (errno != EINTR)
 			error(errno, "gwthread_poll: error in poll");
+                gw_free(pollfds);
 		return -1;
 	}
 	if (pollfds[0].revents)
