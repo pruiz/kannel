@@ -223,14 +223,14 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 
     if (!conndata->no_sep) {
         url = octstr_format("%S?"
-			    "user=%E&pass=%E&to=%E&text=%E",
+			    "username=%E&password=%E&to=%E&text=%E",
 			     conndata->send_url,
 			     conndata->username, conndata->password,
 			     sms->sms.receiver, sms->sms.msgdata);
     } else {
         octstr_binary_to_hex(sms->sms.msgdata, HEX_NOT_UPPERCASE);
         url = octstr_format("%S?"
-			    "user=%E&pass=%E&to=%E&text=%S",
+			    "username=%E&password=%E&to=%E&text=%S",
 			     conndata->send_url,
 			     conndata->username, conndata->password,
 			     sms->sms.receiver, 
@@ -256,6 +256,8 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 	octstr_format_append(url, "&mwi=%d", sms->sms.mwi);
     if (sms->sms.account) /* prepend account with local username */
 	octstr_format_append(url, "&account=%E:%E", sms->sms.service, sms->sms.account);
+    if (sms->sms.smsc_id) /* proxy the smsc-id to the next instance */
+	octstr_format_append(url, "&smsc=%S", sms->sms.smsc_id);
 
     headers = list_create();
     debug("smsc.http.kannel", 0, "start request");
