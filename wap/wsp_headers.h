@@ -71,6 +71,7 @@ int wsp_field_value(ParseContext *context, int *well_known_value);
 void wsp_skip_field_value(ParseContext *context);
 int wsp_secondary_field_value(ParseContext *context, long *result);
 void parm_destroy_item(void *parm);
+List *strip_parameters(Octstr *value);
 /* unpacking */
 Octstr *wsp_unpack_integer_value(ParseContext *context);
 Octstr *wsp_unpack_version_value(long value);
