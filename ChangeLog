@@ -1,3 +1,9 @@
+2002-11-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added explanation about 'field-boxc-id'
+      directive in 'dlr-db' group.
+    * gw/wap-appl.c: fixed a bug if 'smart-errors' was on in wapbox group and 
+      the HTTP lookup failed, reported by Peter Löfman <petlof75@hotmail.com>.
+      
 2002-11-14  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/shared.[ch]: added wrapper for connecting to bearerbox from external
       boxes and return the connection itself if successfull.
