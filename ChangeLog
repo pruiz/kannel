@@ -1,3 +1,6 @@
+2002-07-02  Stipe Tolj  <tolj@wapme-systems.de>
+    * Making stable release 1.2.0.
+
 2002-06-28  Stipe Tolj <tolj@wapme-systems.de>
     * gw/wap_push_pap_compiler.c: fixing a compiler warning
 
