@@ -1306,8 +1306,7 @@ static void client_reset(HTTPClient *p)
     debug("gwlib.http", 0, "HTTP: Resetting HTTPClient for `%s'.",
     	  octstr_get_cstr(p->ip));
     p->state = reading_request_line;
-    gw_assert(p->headers == NULL);
-    p->headers = http_create_empty_headers();
+    gw_assert(p->request == NULL);
 }
 #endif
 
@@ -1472,6 +1471,8 @@ static int parse_request_line(int *method, Octstr **url,
         goto error;
     *use_version_1_0 = !ret;
 
+    octstr_destroy(method_str);
+    octstr_destroy(version);
     return 0;
 
 error:
@@ -1664,7 +1665,7 @@ int http_open_port(int port)
     keep_servers_open = 1;
     start_server_thread();
     gwthread_wakeup(server_thread_id);
-    
+
     return 0;
 }
 
@@ -1766,7 +1767,9 @@ HTTPClient *http_accept_request(int port, Octstr **client_ip, Octstr **url,
     client->url = NULL;
     client->request->headers = NULL;
     client->request->body = NULL;
-    
+    entity_destroy(client->request);
+    client->request = NULL;
+
     return client;
 }
 
