@@ -142,8 +142,9 @@ static Octstr *httpd_resume(List *cgivars)
 static void httpd_serve(HTTPClient *client, Octstr *url, List *headers, 
     	    	    	Octstr *body, List *cgivars)
 {
-    Octstr *reply;
+    Octstr *reply, *final_reply;
     char *content_type;
+    char *header, *footer;
     int status_type;
 
     /* Set default reply format according to client
@@ -164,50 +165,67 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
     if (octstr_str_compare(url, "/cgi-bin/status")==0) {
 	reply = httpd_status(cgivars, status_type);
     } else if (octstr_str_compare(url, "/cgi-bin/status.html")==0) {
-	reply = httpd_status(cgivars, BBSTATUS_HTML);
-	content_type = "text/html";
+	status_type = BBSTATUS_HTML;
+	reply = httpd_status(cgivars, status_type);
     } else if (octstr_str_compare(url, "/cgi-bin/status.wml")==0) {
-	reply = httpd_status(cgivars, BBSTATUS_WML);
-	content_type = "text/vnd.wap.wml";
+	status_type = BBSTATUS_WML;
+	reply = httpd_status(cgivars, status_type);
     } else if (octstr_str_compare(url, "/cgi-bin/status.txt")==0) {
-	reply = httpd_status(cgivars, BBSTATUS_TEXT);
-	content_type = "text/plain";
+	status_type = BBSTATUS_TEXT;
+	reply = httpd_status(cgivars, status_type);
     } else if (octstr_str_compare(url, "/cgi-bin/status.xml")==0) {
-	reply = httpd_status(cgivars, BBSTATUS_XML);
-	content_type = "text/x-kannelstatus";
+	status_type = BBSTATUS_XML;
+	reply = httpd_status(cgivars, status_type);
+	/* content_type = "text/x-kannelstatus"; */
     } else if (octstr_str_compare(url, "/cgi-bin/shutdown")==0) {
 	reply = httpd_shutdown(cgivars);
-	content_type = "text/html";
     } else if (octstr_str_compare(url, "/cgi-bin/suspend")==0) {
 	reply = httpd_suspend(cgivars);
-	content_type = "text/html";
     } else if (octstr_str_compare(url, "/cgi-bin/isolate")==0) {
 	reply = httpd_isolate(cgivars);
-	content_type = "text/html";
     } else if (octstr_str_compare(url, "/cgi-bin/resume")==0) {
 	reply = httpd_resume(cgivars);
-	content_type = "text/html";
     /*
      * reconfig? restart?
      */
     } else  {
 	reply = octstr_format("Unknown command %S", url);
-	content_type = "text/plain";
     }
 
     gw_assert(reply != NULL);
+
+    if (status_type == BBSTATUS_HTML) {
+	header = "<html>\n<title>Kannel</title>\n<body>\n<p>";
+	footer = "</p>\n</body></html>\n";
+	content_type = "text/html";
+    } else if (status_type == BBSTATUS_WML) {
+	header = "<?xml version=\"1.0\"?>\n"
+            "<!DOCTYPE wml PUBLIC \"-//WAPFORUM//DTD WML 1.1//EN\" "
+            "\"http://www.wapforum.org/DTD/wml_1.1.xml\">\n"
+            "\n<wml>\n <card>\n  <p>";
+	footer = "  </p>\n </card>\n</wml>\n";
+	content_type = "text/vnd.wap.wml";
+    } else {
+	header = "";
+	footer = "";
+	content_type = "text/plain";
+    }
+    final_reply = octstr_create(header);
+    octstr_append(final_reply, reply);
+    octstr_append_cstr(final_reply, footer);
     
-    debug("bb.http", 0, "Result: '%s'", octstr_get_cstr(reply));
+    debug("bb.http", 0, "Result: '%s'", octstr_get_cstr(final_reply));
     
     http_destroy_headers(headers);
     headers = list_create();
     http_header_add(headers, "Content-Type", content_type);
 
-    http_send_reply(client, HTTP_OK, headers, reply);
+    http_send_reply(client, HTTP_OK, headers, final_reply);
 
     octstr_destroy(url);
     octstr_destroy(body);
     octstr_destroy(reply);
+    octstr_destroy(final_reply);
     http_destroy_headers(headers);
     http_destroy_cgiargs(cgivars);
 }
