@@ -1,4 +1,8 @@
 2005-01-21  Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: fixed bug #165. we now always send validity &
+      deferred time in UTC.
+
+2005-01-21  Alexander Malysh <amalysh at kannel.org>
     * gwlib/gwmem-check.c: added backtrace support. w/o backtrace is this
       module really hard to use.
       [Msg-Id: csodge$rfm$1@sea.gmane.org>]

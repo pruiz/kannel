@@ -535,10 +535,6 @@ static long smpp_status_to_smscconn_failure_reason(long status)
 static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
 {
     SMPP_PDU *pdu;
-    Octstr *buffer;
-    Octstr *relation_UTC_time = NULL;
-    struct tm gmtime, localtime, tm;
-    int gwqdiff;
 
     pdu = smpp_pdu_create(submit_sm,
     	    	    	  counter_increase(smpp->message_id_counter));
@@ -685,40 +681,18 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     /*
      * check for validity and defered settings
      */
-    if (msg->sms.validity >= 0 || msg->sms.deferred >= 0) {
+    if (msg->sms.validity >= 0) {
+        struct tm tm = gw_gmtime(time(NULL) + msg->sms.validity * 60);
+        pdu->u.submit_sm.validity_period = octstr_format("%02d%02d%02d%02d%02d%02d000+",
+                tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
+                tm.tm_hour, tm.tm_min, tm.tm_sec);
+    }
 
-        /* work out 1/4 hour difference between local time and UTC/GMT */
-        gmtime = gw_gmtime(time(NULL));
-        localtime = gw_localtime(time(NULL));
-        gwqdiff = ((localtime.tm_hour - gmtime.tm_hour) * 4)
-                  + ((localtime.tm_min - gmtime.tm_min) / 15);
-
-        if (gwqdiff >= 0) {
-            relation_UTC_time = octstr_create("+");
-        } else {
-            relation_UTC_time = octstr_create("-");
-            gwqdiff *= -1;  /* make absolute */
-        }
-
-        if (msg->sms.validity >= 0) {
-            tm = gw_localtime(time(NULL) + msg->sms.validity * 60);
-            buffer = octstr_format("%02d%02d%02d%02d%02d%02d0%02d%1s",
-                    tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
-                    tm.tm_hour, tm.tm_min, tm.tm_sec,
-                    gwqdiff, octstr_get_cstr(relation_UTC_time));
-            pdu->u.submit_sm.validity_period = octstr_copy(buffer,0,16);
-            octstr_destroy(buffer);
-        }
-
-        if (msg->sms.deferred >= 0) {
-            tm = gw_localtime(time(NULL) + msg->sms.deferred * 60);
-            buffer = octstr_format("%02d%02d%02d%02d%02d%02d0%02d%1s",
-                    tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
-                    tm.tm_hour, tm.tm_min, tm.tm_sec,
-                    gwqdiff, octstr_get_cstr(relation_UTC_time));
-            pdu->u.submit_sm.schedule_delivery_time = octstr_copy(buffer,0,16);
-            octstr_destroy(buffer);
-        }
+    if (msg->sms.deferred >= 0) {
+        struct tm tm = gw_gmtime(time(NULL) + msg->sms.deferred * 60);
+        pdu->u.submit_sm.schedule_delivery_time = octstr_format("%02d%02d%02d%02d%02d%02d000+",
+                tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
+                tm.tm_hour, tm.tm_min, tm.tm_sec);
     }
 
     /* ask for the delivery reports if needed */
@@ -726,8 +700,6 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
         pdu->u.submit_sm.registered_delivery = 1;
     else if (DLR_IS_FAIL(msg->sms.dlr_mask) && !DLR_IS_SUCCESS(msg->sms.dlr_mask))
         pdu->u.submit_sm.registered_delivery = 2;
-
-    octstr_destroy(relation_UTC_time);
 
     /* set priority */
     if (msg->sms.priority >= 0 && msg->sms.priority <= 3)
