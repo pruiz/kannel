@@ -408,13 +408,11 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 		if (msg->msg_class == R_MSG_CLASS_WAP &&
 		    thr->type == BB_TTYPE_CSDR) {
 
-/*		    if (csdr_is_to_us(msg->msg) == 1) { */
+		    if (csdr_is_to_us(thr->csdr, msg->msg) == 1) { 
 			msg->destination = thr->id;
 			break;
-/*		    } */
+		    }
 		}
-
-
 		if (thr->type == BB_TTYPE_SMSC)
 		    ret = smsc_receiver(thr->smsc,
 			   octstr_get_cstr(msg->msg->smart_sms.receiver));
@@ -564,7 +562,7 @@ static void *smscenter_thread(void *arg)
     us->status = BB_STATUS_OK;
     last_time = time(NULL);
 
-    info(0, "smscenter thread [%d/%s]..", us->id, smsc_name(us->smsc));
+    info(0, "SMSCenter thread [%d] </%s>", us->id, smsc_name(us->smsc));
     
     while(bbox->abort_program < 2) {
 	if (us->status == BB_STATUS_KILLED) break;
@@ -588,10 +586,13 @@ static void *smscenter_thread(void *arg)
 
 	    ret = smsc_get_message(us->smsc, &msg);
 	    if (ret == -1) {
-		error(0, "SMSC: [%d] failed permanently, killing thread", us->id);
+		error(0, "SMSC: <%s> failed permanently, killing thread",
+		      smsc_name(us->smsc));
 		break;		/* kill us */
 	    }
 	    if (ret == 1) {
+		debug(0, "SMSC: Received a message from <%s>",
+		      smsc_name(us->smsc));
 		normalize_numbers(msg, us->smsc);
 		route_msg(us, msg);
 	    
@@ -684,7 +685,17 @@ static void *wapboxconnection_thread(void *arg)
     
     while(us->boxc != NULL && !bbox->abort_program) {
 	if (us->status == BB_STATUS_KILLED) break;
-	HEARTBEAT_UPDATE(our_time, last_time, us);
+
+	our_time = time(NULL);
+	if (our_time - last_time > bbox->heartbeat_freq) {
+	    if (us->boxc->box_heartbeat + bbox->heartbeat_freq * 2 < our_time) {
+		
+		warning(0, "WAPBOXC: Other end has stopped beating");
+		break;
+	    }
+	    update_heartbeat(us);
+	    last_time = our_time;
+	}
 
 	/* check for any messages to us in request-queue,
 	 * if any, put into socket and if accepted, add ACK
@@ -767,15 +778,12 @@ static void *smsboxconnection_thread(void *arg)
     last_time = time(NULL);
     
     while(us->boxc != NULL && bbox->abort_program < 2) {
-	
 	if (us->status == BB_STATUS_KILLED) break;
-	/* update heartbeat if too much from the last update
-	 * die if forced to, closing the socket */
 
-        our_time = time(NULL);
-	if ((our_time) - (last_time) > bbox->heartbeat_freq * 2) {
+	our_time = time(NULL);
+	if (our_time - last_time > bbox->heartbeat_freq) {
 	    if (us->boxc->fd != BOXC_THREAD &&
-		us->boxc->box_heartbeat < last_time) {
+		us->boxc->box_heartbeat + bbox->heartbeat_freq * 2 < our_time) {
 
 		warning(0, "SMSBOXC: Other end has stopped beating");
 		break;
@@ -864,6 +872,8 @@ int thread_writer(Msg *msg)
     normalize_numbers(rqi, NULL);
     route_msg(internal_smsbox(), rqi);
     rq_push_msg(bbox->reply_queue, rqi);
+    debug(0, "SMSBox: wrote <%s> into queue",
+	  octstr_get_cstr(msg->smart_sms.msgdata));
     return 0;
 }
 
@@ -1102,12 +1112,15 @@ static BBThread *internal_smsbox(void)
 		thr->boxc != NULL &&
 		thr->boxc->fd == BOXC_THREAD)
 
-		return thr;
+		break;
 	}
     }
     mutex_unlock(&bbox->mutex);
 
-    return NULL;
+    if (i == bbox->thread_limit)
+	thr = NULL;
+    
+    return thr;
 }
 
 /*-----------------------------------------------------------

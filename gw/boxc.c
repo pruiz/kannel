@@ -91,6 +91,8 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
 	return 0;
     }
     if (boxc->fd == BOXC_THREAD) {
+
+	debug(0, "BOXC: starting a new thread to handle request");
 	
 	(void)start_thread(1, smsbox_req_thread, msg->msg, 0);
 
@@ -114,17 +116,21 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
 	    }
 	ack = 1;
     }
-    
+
+    /* ACK/NACK later.. now we ignore...
+     * 
     if (msg->msg_type == R_MSG_TYPE_MO) {
 	if (ack) {
-	    msg->msg_type = R_MSG_TYPE_ACK;	/* done. */
+	    msg->msg_type = R_MSG_TYPE_ACK;   
 	} else {
-	    msg->msg_type = R_MSG_TYPE_NACK;	/* failed. */
+	    msg->msg_type = R_MSG_TYPE_NACK;
 	}
-	rq_push_msg_ack(reply_queue, msg);
-    } else {
-	rqi_delete(msg);	/* delete ACK/NACK from SMSC/CSDR */
-    }
+ 	rq_push_msg_ack(reply_queue, msg);
+     } else
+     *
+     */
+	rqi_delete(msg);	/* delete message */
+    
 	
     return 0;
 error:

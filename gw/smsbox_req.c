@@ -325,76 +325,81 @@ void *smsbox_req_thread(void *arg) {
 
     req_threads++;	/* possible overflow */
     
-	if (octstr_len(msg->smart_sms.msgdata) == 0 ||
-		octstr_len(msg->smart_sms.sender) == 0 ||
-		octstr_len(msg->smart_sms.receiver) == 0) 
-	{
+    if (octstr_len(msg->smart_sms.msgdata) == 0 ||
+	octstr_len(msg->smart_sms.sender) == 0 ||
+	octstr_len(msg->smart_sms.receiver) == 0) 
+    {
 
-		error(0, "smsbox_req_thread: EMPTY Msg, dump follows:");
-		msg_dump(msg);
+	error(0, "smsbox_req_thread: EMPTY Msg, dump follows:");
+	msg_dump(msg);
 		/* NACK should be returned here if we use such 
 		   things... future implementation! */
 	   
-		return NULL;
-	}
+	return NULL;
+    }
 
-	if (octstr_compare(msg->smart_sms.sender, msg->smart_sms.receiver) == 0) {
-		info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
-		     octstr_get_cstr(msg->smart_sms.sender));
-		return NULL;
-	}
+    if (octstr_compare(msg->smart_sms.sender, msg->smart_sms.receiver) == 0) {
+	info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
+	     octstr_get_cstr(msg->smart_sms.sender));
+	return NULL;
+    }
 
-	trans = urltrans_find(translations, msg->smart_sms.msgdata);
-	if (trans == NULL) goto error;
+    trans = urltrans_find(translations, msg->smart_sms.msgdata);
+    if (trans == NULL) goto error;
+
+    info(0, "Starting to service <%s> from <%s> to <%s>",
+	 octstr_get_cstr(msg->smart_sms.msgdata),
+	 octstr_get_cstr(msg->smart_sms.sender),
+	 octstr_get_cstr(msg->smart_sms.receiver));
 
 	/*
 	 * now, we change the sender (receiver now 'cause we swap them later)
 	 * if faked-sender or similar set. Note that we ignore if the replacement
 	 * fails.
 	 */
-	tmp = octstr_duplicate(msg->smart_sms.sender);
-	if (tmp == NULL) goto error;
+    tmp = octstr_duplicate(msg->smart_sms.sender);
+    if (tmp == NULL) goto error;
 	
-	p = urltrans_faked_sender(trans);
-	if (p != NULL)
-		octstr_replace(msg->smart_sms.sender, p, strlen(p));
-	else if (global_sender != NULL)
-		octstr_replace(msg->smart_sms.sender, global_sender, strlen(global_sender));
-	else {
-		Octstr *t = msg->smart_sms.sender;
-		msg->smart_sms.sender = msg->smart_sms.receiver;
-		msg->smart_sms.receiver = t;
-	}
-	octstr_destroy(msg->smart_sms.receiver);
-	msg->smart_sms.receiver = tmp;
+    p = urltrans_faked_sender(trans);
+    if (p != NULL)
+	octstr_replace(msg->smart_sms.sender, p, strlen(p));
+    else if (global_sender != NULL)
+	octstr_replace(msg->smart_sms.sender, global_sender, strlen(global_sender));
+    else {
+	Octstr *t = msg->smart_sms.sender;
+	msg->smart_sms.sender = msg->smart_sms.receiver;
+	msg->smart_sms.receiver = t;
+    }
+    octstr_destroy(msg->smart_sms.receiver);
+    msg->smart_sms.receiver = tmp;
 
-	/* TODO: check if the sender is approved to use this service */
+    /* TODO: check if the sender is approved to use this service */
 
-	reply = obey_request(trans, msg);
-	if (reply == NULL) {
+    reply = obey_request(trans, msg);
+    if (reply == NULL) {
 		error(0, "request failed");
 		reply = strdup("Request failed");
 		goto error;
-	}
+    }
 
-	 if (octstr_replace(msg->smart_sms.msgdata, reply, strlen(reply)) == -1)
+    if (octstr_replace(msg->smart_sms.msgdata, reply, strlen(reply)) == -1)
 		goto error;
 
-	msg->smart_sms.time = time(NULL);	/* set current time */
+    msg->smart_sms.time = time(NULL);	/* set current time */
 
 	/* send_message frees the 'msg' */
-	if(send_message(trans, msg) < 0)
+    if(send_message(trans, msg) < 0)
 		error(0, "request_thread: failed");
     
-	free(reply);
-	req_threads--;
-	return NULL;
+    free(reply);
+    req_threads--;
+    return NULL;
 error:
-	error(0, "request_thread: failed");
-	msg_destroy(msg);
-	free(reply);
-	req_threads--;
-	return NULL;
+    error(0, "Request_thread: failed");
+    msg_destroy(msg);
+    free(reply);
+    req_threads--;
+    return NULL;
 }
 
 

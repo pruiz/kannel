@@ -124,7 +124,9 @@ error:
     return -1;
 }
 
-
+/*
+ * start a new thread for each request
+ */
 static void new_request(Octstr *pack)
 {
     Msg *msg;

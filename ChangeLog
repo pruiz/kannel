@@ -1,5 +1,16 @@
 1999-11-19    <rpr@rpr.wapit.com>
 
+	* gw/smsbox_req.c: returned info about new service starting, fixed
+	some bugs
+
+	* gw/bearerbox.c: fixed mutex deadlock in internal sms box and
+	heartbeat bug in sms and wap boxes.
+
+	* gw/boxc.c: commented ack/nack things out as they are not
+	currently supported
+
+1999-11-19    <rpr@rpr.wapit.com>
+
 	* gw/smsc_*.*: removed last submit_smsmessage and
 	receive_smsmessages. The EMI code still needs some fixing but
 	should work now.
