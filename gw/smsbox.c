@@ -54,6 +54,7 @@ static Octstr *reply_couldnotfetch = NULL;
 static Octstr *reply_couldnotrepresent = NULL;
 static Octstr *reply_requestfailed = NULL;
 static Octstr *reply_emptymessage = NULL;
+static int mo_recode = 0;
 static Numhash *white_list;
 static Numhash *black_list;
 
@@ -827,6 +828,28 @@ static void obey_request_thread(void *arg)
 	    dreport = 1;
 	else
 	    dreport = 0;
+
+
+	/* Recode to iso-8859-1 the MO message if possible */
+	if(mo_recode && msg->sms.coding == DC_UCS2) {
+	    Octstr *text;
+	    text = octstr_duplicate(msg->sms.msgdata);
+
+	    if(0 == octstr_recode (octstr_imm("iso-8859-1"), octstr_imm("UTF-16BE"), text)) {
+		if(octstr_search(text, octstr_imm("&#"), 0) == -1) {
+		    /* XXX I'm trying to search for &#xxxx; text, which indicates that the
+		     * text couldn't be recoded.
+		     * We should use other function to do the recode or detect it using
+		     * other method */
+		    info(0, "MO message converted from UCS2 to ISO-8859-1");
+		    octstr_destroy(msg->sms.msgdata);
+		    msg->sms.msgdata = octstr_duplicate(text);
+		    msg->sms.charset = octstr_create("ISO-8859-1");
+		    msg->sms.coding = DC_7BIT;
+		}
+	    }
+	    octstr_destroy(text);
+	}
 
 	if (octstr_len(msg->sms.sender) == 0 ||
 	    octstr_len(msg->sms.receiver) == 0) {
@@ -1975,6 +1998,10 @@ static void init_smsbox(Cfg *cfg)
 	bb_host = p;
     }
 
+    cfg_get_bool(&mo_recode, grp, octstr_imm("mo-recode"));
+    if(mo_recode < 0)
+	mo_recode = 0;
+
     reply_couldnotfetch= cfg_get(grp, octstr_imm("reply-couldnotfetch"));
     if (reply_couldnotfetch == NULL)
 	reply_couldnotfetch = octstr_create("Could not fetch content, sorry.");
@@ -2170,8 +2197,8 @@ int charset_processing (Octstr *charset, Octstr *body, int coding) {
     int resultcode = 0;
     
     if (octstr_len(charset)) {
-	debug("sms.http", 0, "enter charset, coding=%d, msgdata is %s", coding, octstr_get_cstr(body));
-	octstr_dump(body, 0);
+	// debug("sms.http", 0, "enter charset, coding=%d, msgdata is %s", coding, octstr_get_cstr(body));
+	// octstr_dump(body, 0);
 
 	if (coding == DC_7BIT) {
 	    /*
@@ -2189,8 +2216,8 @@ int charset_processing (Octstr *charset, Octstr *body, int coding) {
 	    }
 	}
 	
-	debug("sms.http", 0, "exit charset, coding=%d, msgdata is %s", coding, octstr_get_cstr(body));
-	octstr_dump(body, 0);
+	// debug("sms.http", 0, "exit charset, coding=%d, msgdata is %s", coding, octstr_get_cstr(body));
+	// octstr_dump(body, 0);
     }
     
     return resultcode;

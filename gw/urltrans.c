@@ -14,6 +14,7 @@
 
 #include "urltrans.h"
 #include "gwlib/gwlib.h"
+#include "gw/sms.h"
 
 
 /***********************************************************************
@@ -496,6 +497,29 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    octstr_url_encode(enc);
 	    octstr_append(result, enc);
 	    octstr_destroy(enc);
+	    break;
+
+	case 'c':
+	    octstr_append_decimal(result, request->sms.coding);
+	    break;
+
+	case 'C':
+	    if(octstr_len(request->sms.charset)) {
+		octstr_append(result, request->sms.charset);
+	    } else {
+		switch (request->sms.coding) {
+		    case DC_UNDEF:
+		    case DC_7BIT:
+			octstr_append(result, octstr_imm("gsm"));
+			break;
+		    case DC_8BIT:
+			octstr_append(result, octstr_imm("binary"));
+			break;
+		    case DC_UCS2:
+			octstr_append(result, octstr_imm("UTF16-BE"));
+			break;
+		}
+	    }
 	    break;
 
 	case '%':

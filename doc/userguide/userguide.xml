@@ -2078,6 +2078,15 @@ smsc-password = bar
 	even if some related error ocur.
      </entry></row>
 
+    <row><entry><literal>my-number</literal></entry>
+      <entry><literal>number</literal></entry>
+      <entry valign=bottom>
+        If the large account number is different from the short number, assign
+	it with this variable. For example, if short number is 12345 and large account
+	is 0100100100101234 (IP+port), set my-number to 12345 and 
+	every message received will have that receiver.
+     </entry></row>
+
    </tbody></tgroup></informaltable>
    
 
@@ -2453,6 +2462,12 @@ pin = 2345
       <entry valign=bottom>
         Kannel would "ping" the modem for this many seconds. If the probe fails, 
 	try to reconnect to it.
+     </entry></row>
+
+    <row><entry><literal>my-number</literal></entry>
+      <entry><literal>number</literal></entry>
+      <entry valign=bottom>
+      	Modem number.
      </entry></row>
 
     <row><entry><literal>sms-center</literal></entry>
@@ -3388,6 +3403,15 @@ ssl-certkey-file
 	Defaults to <literal>&lt;Empty reply from service provider&gt;</literal>.
      </entry></row>
 
+    <row><entry><literal>mo-recode</literal></entry>
+     <entry>boolean</entry>
+     <entry valign=bottom>
+        If true, kannel will try to convert UCS2 messages received to ISO-8859-1.
+	If it's possible, the message will have <literal>coding</literal> equal
+	to <literal>7 bits</literal> and <literal>charset</literal> equal to 
+	<literal>iso-8859-1</literal>.
+     </entry></row>
+
   </tbody>
   </tgroup>
  </table>
@@ -3803,6 +3827,18 @@ the delivery report SMSC reply, if any
 
 <row><entry><literal>%n</literal></entry><entry>
 the sendsms-user or sms-service name
+</entry></row>
+
+<row><entry><literal>%c</literal></entry><entry>
+message coding: 0 (default, 7 bits), 1 (7 bits),
+2 (8 bits) or 3 (unicode)
+</entry></row>
+
+<row><entry><literal>%C</literal></entry><entry>
+message charset: for a "normal" message, it will 
+be "gsm" (coding=1), "binary" (coding=2) or 
+"UTF16-BE" (coding=3). If the message was sucessfully
+recoded from unicode, it will be "ISO-8859-1"
 </entry></row>
 
 </tbody>

@@ -2097,9 +2097,14 @@ octstr_recode (Octstr *tocode, Octstr *fromcode, Octstr *orig)
 	octstr_utf8 = octstr_duplicate(orig);
     }
 
-    if (charset_from_utf8(octstr_utf8, &octstr_final, tocode) < 0) {
-	resultcode = -1;
-	goto cleanup_and_exit;
+    if ((octstr_case_compare(tocode, octstr_imm ("utf-8")) != 0) &&
+	(octstr_case_compare(tocode, octstr_imm ("utf8")) != 0)) {
+	if (charset_from_utf8(octstr_utf8, &octstr_final, tocode) < 0) {
+	    resultcode = -1;
+	    goto cleanup_and_exit;
+	}
+    } else {
+	octstr_final = octstr_duplicate(octstr_utf8);
     }
 
     octstr_truncate(orig, 0);

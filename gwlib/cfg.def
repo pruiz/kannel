@@ -136,6 +136,7 @@ SINGLE_GROUP(smsbox,
     OCTSTR(denied-prefix)
     OCTSTR(white-list)
     OCTSTR(black-list)
+    OCTSTR(mo-recode)
 )
 
 

@@ -41,6 +41,7 @@ typedef struct privdata {
     int		rport;		  /* Receive-port to listen */
     Octstr	*allow_ip, *deny_ip;
     Octstr	*host, *username, *password;
+    Octstr	*my_number;	/* My number if we want to force one */
     int		unacked;	/* Sent messages not acked */
     struct {
 	time_t	sendtime;	/* When we sent out a message with a given
@@ -99,7 +100,7 @@ static int emi2_emimsg_send(SMSCConn *conn, Connection *server, struct emimsg *e
 {
     int result = emimsg_send(server, emimsg);
 
-    if (result >= 0) {
+    if (result >= 0 && emimsg->or == 'O' && ( emimsg->ot == 31 || emimsg->ot == 51)) {
 	PRIVDATA(conn)->last_activity_time = time (NULL);
     }
 
@@ -479,7 +480,12 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	    msg->sms.sender = octstr_create("");
 	}
 
-	msg->sms.receiver = octstr_duplicate(emimsg->fields[E01_ADC]);
+	if(octstr_len(PRIVDATA(conn)->my_number)) {
+	    msg->sms.receiver = octstr_duplicate(PRIVDATA(conn)->my_number);
+	}
+	else {
+	    msg->sms.receiver = octstr_duplicate(emimsg->fields[E01_ADC]);
+	}
 	if (msg->sms.sender == NULL) {
 	    warning(0, "Empty receiver field in received message");
 	    msg->sms.receiver = octstr_create("");
@@ -570,7 +576,12 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	    msg->sms.sender = octstr_create("");
 	}
 
-	msg->sms.receiver = octstr_duplicate(emimsg->fields[E50_ADC]);
+	if(octstr_len(PRIVDATA(conn)->my_number)) {
+	    msg->sms.receiver = octstr_duplicate(PRIVDATA(conn)->my_number);
+	}
+	else {
+	    msg->sms.receiver = octstr_duplicate(emimsg->fields[E50_ADC]);
+	}
 	if (msg->sms.sender == NULL) {
 	    warning(0, "Empty receiver field in received message");
 	    msg->sms.receiver = octstr_create("");
@@ -1371,8 +1382,10 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->username = cfg_get(cfg, octstr_imm("smsc-username"));
     privdata->password = cfg_get(cfg, octstr_imm("smsc-password"));
 
+    privdata->my_number = cfg_get(cfg, octstr_imm("my-number"));
+
     cfg_get_bool(&privdata->retry, cfg, octstr_imm("retry"));
-    if(privdata->retry < 0)
+    if(privdata->retry < 0) 
 	privdata->retry = 0;
 
     if (privdata->username == NULL || cfg_get_integer(&keepalive, cfg, octstr_imm("keepalive")) < 0)

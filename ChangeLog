@@ -1,4 +1,23 @@
-2002-02-28  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+2002-03-03  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsc_emi2.c: keepalive time is now only updated after sending an
+      operation 51 or the keepalive itself
+    * doc/userguide/userguide.xml: added my-number information to at2 group
+    * gw/smsc_emi2.c: added my-number configuration to emi2. Sometimes, the
+      large account number is not the same as the short number. 
+    * doc/userguide/userguide.xml: added my-number information to emi2 group
+    * gw/msg-decl.h, gw/smsbox.c, gw/urltrans.c: added charset field to 
+      message. If undefined, kannel should assume default charsets by looking 
+      at coding value
+    * gwlib/cfg.def, gw/smsbox.c: added mo-recode boolean value to ask smsbox
+      to try to recode a UCS2 received message to iso-8859-1.
+    * gw/smsbox.c: commented the debug lines in charset_processing. It works,
+      we don't need them anymore
+    * gw/urltrans.c: added variables %c for coding and %C for charset
+    * gwlib/octstr.c: added check to avoid converting from utf-8 to utf-8
+    * doc/userguide/userguide.xml: added mo-recode information to smsbox group,
+      and %c and %C information
+
+2002-03-03  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsc_at2.c: applied sms-center configuration for at2, based on patch
       privided by Oded Arbel 
       [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B166D5E@exchange.m-wise.com>]

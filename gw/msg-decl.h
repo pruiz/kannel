@@ -42,6 +42,7 @@ MSG(sms,
 		OCTSTR(dlr_url);
 		INTEGER(pid);
 		INTEGER(alt_dcs);
+		OCTSTR(charset);
 	})
 
 MSG(ack,
