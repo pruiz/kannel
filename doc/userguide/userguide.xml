@@ -4792,7 +4792,7 @@ udh=%06%05%04%0B%84%23%F0
 group = core
 ...
 ssl-client-certkey-file = "filename"
-</screen></userinput>
+</userinput></screen>
 	  <para>Now you are able to use https:// scheme URLs within 
  	    your WML decks and SMS services.</para>
 	</sect1>	
@@ -4810,7 +4810,7 @@ admin-port-ssl = true
 ...
 ssl-server-cert-file = "filename"
 ssl-server-key-file = "filenane"
-</screen></userinput>
+</userinput></screen>
 	</sect1>	
 
 	<sect1>
@@ -4829,7 +4829,7 @@ ssl-server-key-file = "filenane"
 group = smsbox
 ...
 sendsms-port-ssl = true
-</screen></userinput>
+</userinput></screen>
 	</sect1>	
 							  
 </chapter>

@@ -1,3 +1,6 @@
+2001-11-22 Jörg Pommnitz <jpo@condat.de>
+	* doc/userguide/userguide.xml: fix doc to get through Jade.
+
 2001-11-22 Andreas Fink <andreas@fink.org>
     * gw/smsc_smpp.c: set number plan indicator and type of number for
     international numbers and alphanumeric ones.
