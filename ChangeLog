@@ -1,3 +1,8 @@
+2003-07-07  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * debian/kannel-cvs.docs: don't include deleted TODO
+    * debian/rules: enabled cookies - hope they don't crash in version 1.2.x ;)
+    * {test,utils}/.cvsignore: ignore new binaries
+
 2003-07-02  Alexander Malysh  <a.malysh@centrium.de>
     * gw/dlr.c: fixed debug message if dlr_url was not set.
       gw/dlr_mysql.c: fixed a bug in missing '%s' for select statement.

@@ -39,7 +39,8 @@ build-stamp:  config.status
 		--infodir=\$${prefix}/share/info \
 		--disable-docs --enable-pam \
 	        --enable-ssl --with-ssl=/usr \
-		--enable-mysql --with-mysql=/usr
+		--enable-mysql --with-mysql=/usr \
+		--enable-cookies
 	$(MAKE)
 	touch build-stamp
 
@@ -53,7 +54,8 @@ build-stamp.indep:  config.status
 		--infodir=\$${prefix}/share/info \
 		--enable-docs --enable-pam \
 	        --enable-ssl --with-ssl=/usr \
-		--enable-mysql --with-mysql=/usr
+		--enable-mysql --with-mysql=/usr \
+		--enable-cookies
 	$(MAKE) docs
 	touch build-stamp.indep
 
