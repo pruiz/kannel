@@ -363,3 +363,13 @@ int str_find_substr(char *list, char *sub, const char *separator)
 
 
     
+int gw_isdigit(int c)
+{
+    return isdigit(c);
+}
+
+
+int gw_isxdigit(int c)
+{
+    return isxdigit(c);
+}

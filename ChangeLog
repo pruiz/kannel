@@ -1,5 +1,15 @@
 2000-10-23  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/utils.[ch]: Wrote gw_isdigit and gw_isxdigit as wrappers
+	around isdigit and isxdigit, to compensate for broken platforms
+	where they are not available as functions.
+
+	* gw/smsc_cimd2.c, gw/wsp_headers.c, gwlib/octstr.[ch]: Use
+	gw_isdigit and gw_isxdigit instead of isdigit and isxdigit
+	together with octstr_check_range.
+
+2000-10-23  Lars Wirzenius  <liw@iki.fi>
+
 	* configure{.in,}: Don't compile start-stop-daemon, unless the
 	--enable-start-stop-daemon option is used.
 	

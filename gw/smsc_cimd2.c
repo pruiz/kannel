@@ -605,9 +605,9 @@ static int packet_check_header(struct packet *packet)
      * and a three-digit sequence number, followed by a tab.
      * (CIMD2, 3.1) */
     if (octstr_len(data) < 8 ||
-        !octstr_check_range(data, 1, 2, isdigit) ||
+        !octstr_check_range(data, 1, 2, gw_isdigit) ||
         octstr_get_char(data, 3) != ':' ||
-        !octstr_check_range(data, 4, 3, isdigit) ||
+        !octstr_check_range(data, 4, 3, gw_isdigit) ||
         octstr_get_char(data, 7) != TAB) {
         warning(0, "CIMD2 packet header in wrong format");
         return -1;
@@ -634,7 +634,7 @@ static int packet_check_parameter(struct packet *packet, long pos, long len)
      * the tab. */
 
     if (len < 5 ||
-        !octstr_check_range(data, pos + 1, 3, isdigit) ||
+        !octstr_check_range(data, pos + 1, 3, gw_isdigit) ||
         octstr_get_char(data, pos + 4) != ':') {
         warning(0, "CIMD2 parameter at offset %ld in wrong format",
                 pos);
@@ -671,7 +671,7 @@ static int packet_check_parameter(struct packet *packet, long pos, long len)
         /* Allow a leading - */
         negative = (octstr_get_char(data, dpos) == '-');
         if (!octstr_check_range(data, dpos + negative,
-                                dlen - negative, isdigit)) {
+                                dlen - negative, gw_isdigit)) {
             warning(0, "CIMD2 packet has '%s' parameter with non-integer contents", parameters[i].name);
             errors++;
         }
@@ -684,7 +684,7 @@ static int packet_check_parameter(struct packet *packet, long pos, long len)
         }
         break;
     case P_TIME:
-        if (!octstr_check_range(data, dpos, dlen, isdigit)) {
+        if (!octstr_check_range(data, dpos, dlen, gw_isdigit)) {
             warning(0, "CIMD2 packet has '%s' parameter with non-digit contents", parameters[i].name);
             errors++;
         }
@@ -696,7 +696,7 @@ static int packet_check_parameter(struct packet *packet, long pos, long len)
         }
         break;
     case P_HEX:
-        if (!octstr_check_range(data, dpos, dlen, isxdigit)) {
+        if (!octstr_check_range(data, dpos, dlen, gw_isxdigit)) {
             warning(0, "CIMD2 packet has '%s' parameter with non-hex contents", parameters[i].name);
             errors++;
         }
@@ -760,7 +760,7 @@ static int packet_check(struct packet *packet)
              * and the ETX are there. */
             if (!(octstr_len(data) - pos == 2 ||
                   (octstr_len(data) - pos == 4 &&
-                   octstr_check_range(data, pos + 1, 2, isxdigit)))) {
+                   octstr_check_range(data, pos + 1, 2, gw_isxdigit)))) {
                 warning(0, "CIMD2 packet checksum in wrong format");
                 errors++;
             }

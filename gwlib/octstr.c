@@ -377,7 +377,7 @@ int octstr_hex_to_binary(Octstr *ostr)
         return 0;
 
     /* Check if it's in the right format */
-    if (!octstr_check_range(ostr, 0, ostr->len, isxdigit))
+    if (!octstr_check_range(ostr, 0, ostr->len, gw_isxdigit))
         return -1;
 
     len = ostr->len;

@@ -125,4 +125,14 @@ void kannel_cfmakeraw (struct termios *tio);
 int str_find_substr(char *list, char *sub, const char *separator);
 
 
+/*
+ * Wrappers around the isdigit and isxdigit functions that are guaranteed
+ * to be functions, not macros. (The standard library functions are also
+ * guaranteed by the C standard to be functions, in addition to possibly
+ * also being macros, but not all implementations follow the standard.)
+ */
+int gw_isdigit(int);
+int gw_isxdigit(int);
+
+
 #endif

@@ -1793,7 +1793,8 @@ static void pack_parameter(Octstr *packed, Parameter *parm)
                 return;
             case 3:  /* type */
                 if (octstr_check_range(parm->value, 0,
-                                       octstr_len(parm->value), isdigit) &&
+                                       octstr_len(parm->value), 
+				       gw_isdigit) &&
                     pack_integer_string(packed, parm->value) >= 0)
                     return;
                 break;

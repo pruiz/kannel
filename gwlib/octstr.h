@@ -219,7 +219,7 @@ long octstr_parse_long(long *number, Octstr *ostr, long pos, int base);
 /* Run the 'filter' function over each character in the specified range.
  * Return 1 if the filter returned true for all characters, otherwise 0.
  * The octet string is not changed.
- * For example: ok = octstr_check_range(o, 1, 10, isdigit);
+ * For example: ok = octstr_check_range(o, 1, 10, gw_isdigit);
  */
 typedef int (*octstr_func_t)(int);
 int octstr_check_range(Octstr *ostr, long pos, long len, 
