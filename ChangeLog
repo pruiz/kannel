@@ -1,3 +1,9 @@
+2004-03-28  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/smsc/smsc_cimd2.c: applied in a slightly modified version that
+      set the DLR Msg's sms->msgdata value to the statuscode if there is
+      no USER_DATA available. Thanks to Nicholas Rahn <nicholas.rahn@mnc.ch>.
+      [Msg-Id: <1080286173.6498.46.camel@frisbee.mnc.ch>].
+
 2004-03-27  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/smsc/smpp_pdu.[ch], gw/smsc/smpp_pdu.def, gw/smsc/smpp_pdu_opt.def:
       applied patch with new version of optional params handling in smpp pdu.

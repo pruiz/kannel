@@ -2104,14 +2104,19 @@ static Msg *cimd2_accept_delivery_report_message(struct packet *request,
     	msg = dlr_find(conn->name, timestamp, destination, code);
     else
         msg = NULL;
-    octstr_destroy(statuscode);
-    octstr_destroy(destination);
-    octstr_destroy(timestamp);
 
     /* recode the body into msgdata */
     if (msg) {
         msg->sms.msgdata = packet_get_parm(request, P_USER_DATA);
+        if (!msg->sms.msgdata) {
+            msg->sms.msgdata = statuscode;
+            statuscode = NULL;
+        }
     }
+
+    octstr_destroy(statuscode);
+    octstr_destroy(destination);
+    octstr_destroy(timestamp);
 
     return msg;
  }
