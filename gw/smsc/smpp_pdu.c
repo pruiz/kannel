@@ -136,7 +136,7 @@ Octstr *smpp_pdu_pack(SMPP_PDU *pdu)
         if (p->name != NULL) { \
             if (octstr_len(p->name) >= max_octets) { \
                 warning(0, "SMPP: PDU element <%s> to long " \
-                        "(length is %d, should be %d)", \
+                        "(length is %ld, should be %d)", \
                         #name, octstr_len(p->name), max_octets); \
                 temp = octstr_copy(p->name, 0, max_octets-1); \
             } else \
