@@ -1,3 +1,7 @@
+2004-01-26 Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/dbpool_mysq.c, gwlib/utils.c: some source code beautifying. 
+      No logic change.
+
 2004-01-23  Alexander Malysh  <a.malysh@centrium.de>
     * gw/wap_push_ppg_pushuser.c: forgot this one by last commit.
 

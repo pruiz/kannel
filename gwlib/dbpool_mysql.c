@@ -75,7 +75,7 @@ static void* mysql_open_conn(const DBConf *db_conf)
     if (conf == NULL)
         return NULL;
 
-     /* pre-allocate */
+    /* pre-allocate */
     mysql = gw_malloc(sizeof(MYSQL));
     gw_assert(mysql != NULL);
 
@@ -95,9 +95,9 @@ static void* mysql_open_conn(const DBConf *db_conf)
         goto failed;
     }
 
-    info(0,"MYSQL: Connected to server at %s.", octstr_get_cstr(conf->host));
+    info(0, "MYSQL: Connected to server at %s.", octstr_get_cstr(conf->host));
     info(0, "MYSQL: server version %s, client version %s.",
-                  mysql_get_server_info(mysql), mysql_get_client_info());
+           mysql_get_server_info(mysql), mysql_get_client_info());
 
     return mysql;
 

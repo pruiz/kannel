@@ -245,7 +245,7 @@ static void parachute_start(const char *myname, const char *panic_script) {
 	    return;
         }
 	else if (child_pid < 0) {
-	    error(errno, "Couldnot start child process ! Will retry in 5 sec.");
+	    error(errno, "Could not start child process ! Will retry in 5 sec.");
 	    gwthread_sleep(5.0);
             continue;
 	}
@@ -306,11 +306,11 @@ static void write_pid_file(void)
 
     fd = open(pid_file, O_WRONLY|O_NOCTTY|O_TRUNC|O_CREAT|O_EXCL, 0644);
     if (fd == -1)
-        panic(errno, "Couldnot open pid-file `%s'", pid_file);
+        panic(errno, "Could not open pid-file `%s'", pid_file);
 
     file = fdopen(fd, "w");
     if (!file)
-        panic(errno, "Couldnot open file-stream `%s'", pid_file);
+        panic(errno, "Could not open file-stream `%s'", pid_file);
 
     fprintf(file, "%ld\n", (long) getpid());
     fclose(file);
@@ -326,7 +326,7 @@ static void remove_pid_file(void)
         return;
 
     if (-1 == unlink(pid_file))
-        error(errno, "Couldnot unlink pid-file `%s'", pid_file);
+        error(errno, "Could not unlink pid-file `%s'", pid_file);
 }
 
 static int change_user(const char *user)
@@ -338,7 +338,7 @@ static int change_user(const char *user)
 
     pass = getpwnam(user);
     if (!pass) {
-        error(0, "Couldnot find a user `%s' in system.", user);
+        error(0, "Could not find a user `%s' in system.", user);
         return -1;
     }
     gw_claim_area(pass);
@@ -349,12 +349,12 @@ static int change_user(const char *user)
     gw_claim_area(pass->pw_shell);
 
     if (-1 == setgid(pass->pw_gid)) {
-        error(errno, "Couldnot change group id %ld -> %ld.", (long) getgid(), (long) pass->pw_gid);
+        error(errno, "Could not change group id %ld -> %ld.", (long) getgid(), (long) pass->pw_gid);
         goto out;
     }
 
     if (-1 == setuid(pass->pw_uid)) {
-        error(errno, "Couldnot change user id %ld -> %ld.", (long) getuid(), (long) pass->pw_uid);
+        error(errno, "Could not change user id %ld -> %ld.", (long) getuid(), (long) pass->pw_uid);
         goto out;
     }
 
