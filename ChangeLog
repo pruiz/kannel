@@ -1,3 +1,9 @@
+2000-11-23  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/http.c: Deal with HTTP version numbers above 1.1 also
+	on the server side. Use a single function for the checking that
+	is used by both the client and server.
+
 2000-11-23  Richard Braakman  <dark@wapi.com>
 
 	* wap/wtp_init.c, wap/wtp_init_states.def, wap/wtp_resp.c,

@@ -85,6 +85,35 @@ static int read_some_headers(Connection *conn, List *headers)
 }
 
 
+/*
+ * Check that the HTTP version string is valid. Return -1 for invalid,
+ * 0 for version 1.0, 1 for 1.x.
+ */
+static int parse_http_version(Octstr *version)
+{
+    static Octstr *prefix = NULL;
+    static long prefix_len = -1;
+    int digit;
+    
+    if (prefix == NULL)
+    	prefix = octstr_create_immutable("HTTP/1."); /* thread safe! */
+
+    if (prefix_len == -1)
+    	prefix_len = octstr_len(prefix);
+
+    if (octstr_ncompare(version, prefix, prefix_len) != 0)
+    	return -1;
+    if (octstr_len(version) != prefix_len + 1)
+    	return -1;
+    digit = octstr_get_char(version, prefix_len);
+    if (!isdigit(digit))
+    	return -1;
+    if (digit == '0')
+    	return 0;
+    return 1;
+}
+
+
 /***********************************************************************
  * Proxy support.
  */
@@ -600,6 +629,7 @@ static int client_read_status(HTTPServer *trans)
 {
     Octstr *line, *version;
     long space;
+    int ret;
 
     line = conn_read_line(trans->conn);
     if (line == NULL) {
@@ -615,16 +645,11 @@ static int client_read_status(HTTPServer *trans)
     	goto error;
 	
     version = octstr_copy(line, 0, space);
-    if (octstr_compare(version, octstr_create_immutable("HTTP/1.1")) == 0)
-    	trans->persistent = 1;
-    else if (octstr_search(version, 
-    	    	    	   octstr_create_immutable("HTTP/1."), 0) == 0)
-    	trans->persistent = 0;
-    else {
-	octstr_destroy(version);
-    	goto error;
-    }
+    ret = parse_http_version(version);
     octstr_destroy(version);
+    if (ret == -1)
+    	goto error;
+    trans->persistent = ret;
 
     octstr_delete(line, 0, space + 1);
     space = octstr_search_char(line, ' ', 0);
@@ -1200,6 +1225,7 @@ static int keep_servers_open = 0;
 static int parse_request(Octstr **url, int *use_version_1_0, Octstr *line)
 {
     long space;
+    int ret;
 
     if (octstr_search(line, octstr_create_immutable("GET "), 0) != 0)
     	return -1;
@@ -1212,14 +1238,12 @@ static int parse_request(Octstr **url, int *use_version_1_0, Octstr *line)
     *url = octstr_copy(line, 0, space);
     octstr_delete(line, 0, space + 1);
 
-    if (octstr_str_compare(line, "HTTP/1.0") == 0)
-    	*use_version_1_0 = 1;
-    else if (octstr_str_compare(line, "HTTP/1.1") == 0)
-    	*use_version_1_0 = 0;
-    else {
+    ret = parse_http_version(line);
+    if (ret == -1) {
 	octstr_destroy(*url);
     	return -1;
     }
+    *use_version_1_0 = !ret;
     return 0;
 }
 
