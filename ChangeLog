@@ -1,4 +1,8 @@
 2002-09-06 Andreas Fink <afink@gni.ch>
+    * gw/dlr.c: fixed a crash when migrating from MySQL database
+    without source field to one which has.
+
+2002-09-06 Andreas Fink <afink@gni.ch>
     * gw/dlr.c: fixed Stipe's modifications so it at least compiles!
 	
 2002-09-06  Stipe Tolj  <tolj@wapme-systems.de>

@@ -589,11 +589,14 @@ static Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
     }
     
     debug("dlr.mysql", 0, "Found entry, row[0]=%s, row[1]=%s, row[2]=%s, row[3]=%s", 
-          row[0], row[1], row[2], row[3]);
+          row[0], row[1], row[2], row[3] ? row[3] : "NULL");
     dlr_mask = atoi(row[0]);
     dlr_service = octstr_create(row[1]);
     dlr_url = octstr_create(row[2]);
-    source_addr = octstr_create(row[3]);
+    if(row[3])		
+    	source_addr = octstr_create(row[3]);
+    else
+	source_addr = octstr_create("");
     mysql_free_result(result);
     
     mutex_unlock(dlr_mutex);
