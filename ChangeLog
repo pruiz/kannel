@@ -1,4 +1,9 @@
 2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added documentation sections for PPG DLR.
+      Thanks to Aarno for providing the sections.
+      [Msg-ID: <F7348DBA-9D80-11D7-86C5-0003937AE746@gni.ch>]
+
+2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: added handling of PPG related DLR reports. PPG sends
       SMS with DLR, but smsbox has to do the DLR signalization to the 
       specified DLR-URL. The stored service name is read from PPG core group.
