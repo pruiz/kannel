@@ -435,45 +435,71 @@ static char *sendsms_request(CGIArg *list)
 {
     Msg *msg;
     URLTranslation *t;
-    char *val, *from, *to, *text, *udh;
+    char *val, *from, *to, *text;
+    char *udh = NULL;
     int ret;
     
-    if (cgiarg_get(list, "username", &val) == -1)
-	return "Authorization failed";	
+	if (cgiarg_get(list, "username", &val) == -1) {
+		return "Authorization failed";	
+	}
 
-    t = urltrans_find_username(translations, val);
-    if (t == NULL || cgiarg_get(list, "password", &val) == -1 ||
-	strcmp(val, urltrans_password(t)) != 0)
+	t = urltrans_find_username(translations, val);
+	if (t == NULL || 
+		cgiarg_get(list, "password", &val) == -1 ||
+		strcmp(val, urltrans_password(t)) != 0)
+	{
+		return "Authorization failed";
+	}
 
-	return "Authorization failed";	
+	cgiarg_get(list, "udh", &udh);
 
-    if (cgiarg_get(list, "to", &to) == -1 ||
-	cgiarg_get(list, "text", &text) == -1) {
+	if (cgiarg_get(list, "to", &to) == -1 ||
+		cgiarg_get(list, "text", &text) == -1)
+	{
+		error(0, "/cgi-bin/sendsms got wrong args");
+		return "Wrong sendsms args.";
+	}
 
-	error(0, "/cgi-bin/sendsms got wrong args");
-	return "Wrong sendsms args.";
-    }
-    if (urltrans_faked_sender(t) != NULL)
-	from = urltrans_faked_sender(t);
-    else if (cgiarg_get(list, "from", &from) == 0)
-	;
-    else if (global_sender != NULL)
-	from = global_sender;
-    else
-	return "Sender missing and no global set";
+	if (urltrans_faked_sender(t) != NULL) {
+		from = urltrans_faked_sender(t);
+	} else if (cgiarg_get(list, "from", &from) == 0) {
+		;
+	} else if (global_sender != NULL) {
+		from = global_sender;
+	} else {
+		return "Sender missing and no global set";
+	}
     
-    info(0, "/cgi-bin/sendsms <%s> <%s> <%s>", from, to, text);
-    
-    msg = msg_create(plain_sms);
-    if (msg == NULL)
-	goto error;
+	info(0, "/cgi-bin/sendsms <%s> <%s> <%s>", from, to, text);
 
-    msg->plain_sms.receiver = octstr_create(to);
-    msg->plain_sms.sender = octstr_create(from);
-    msg->plain_sms.text = octstr_create("");
-    msg->plain_sms.time = time(NULL);
+	if(udh==NULL) {
+  
+		msg = msg_create(plain_sms);
+		if (msg == NULL) goto error;
+
+		msg->plain_sms.receiver = octstr_create(to);
+		msg->plain_sms.sender = octstr_create(from);
+		msg->plain_sms.text = octstr_create("");
+		msg->plain_sms.time = time(NULL);
     
-    ret = send_message(t, msg, text);
+		ret = send_message(t, msg, text);
+
+	} else {
+  
+		msg = msg_create(smart_sms);
+		if (msg == NULL) goto error;
+
+		msg->smart_sms.receiver = octstr_create(to);
+		msg->smart_sms.sender = octstr_create(from);
+		msg->smart_sms.msgdata = octstr_create("");
+		msg->smart_sms.udhdata = octstr_create("");
+		msg->smart_sms.flag_8bit = 1;
+		msg->smart_sms.flag_udh  = 1;
+		msg->smart_sms.time = time(NULL);
+    
+		ret = send_message(t, msg, text);
+
+	}
 
     if (ret == -1)
 	goto error;
