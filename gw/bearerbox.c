@@ -1636,7 +1636,7 @@ static void print_threads(char *buffer, int in_xml)
 		    if (in_xml)
 			sprintf(buf, BOX_XML_ANSWER,
 				thr->id, bbt_status_name(thr->status),
-				"General", "SMS Box",
+				"General", "SMS",
 				"Internal", 0, 0, 0);
 		    else
 			sprintf(buf, "[%d] Internal SMS BOX (%s)\n", thr->id,
@@ -1645,7 +1645,7 @@ static void print_threads(char *buffer, int in_xml)
 		    if (in_xml)
 			sprintf(buf, BOX_XML_ANSWER,
 				thr->id, bbt_status_name(thr->status),
-				"UNKNOWN", "SMS Box",
+				"UNKNOWN", "SMS",
 				thr->boxc->client_ip, 0, 0, 0);
 		    else
 			sprintf(buf, "[%d] SMS BOX Connection from <%s> (%s)\n", thr->id,
@@ -1656,7 +1656,7 @@ static void print_threads(char *buffer, int in_xml)
 		if (in_xml)
 		    sprintf(buf, BOX_XML_ANSWER,
 			    thr->id, bbt_status_name(thr->status),
-			    "UNKNOWN", "Wap Box",
+			    "UNKNOWN", "Wap",
 			    thr->boxc->client_ip, 0, 0, 0);
 		else
 		    sprintf(buf, "[%d] WAP BOX Connection from <%s> (%s)\n", thr->id,
@@ -1674,14 +1674,14 @@ static void print_threads(char *buffer, int in_xml)
 	if (in_xml)
 	    sprintf(buf, BOX_XML_ANSWER,
 		    -1, "n/a",
-		    "General", "HTTP Adminstration",
+		    "General", "HTTP",
 		    "Internal", bbox->http_port, 0, 0);	
 	else
 	    sprintf(buf, "[n/a] HTTP-Adminstration at port %d\n", bbox->http_port);
 	strcat(buffer, buf);
     }
     if (in_xml)
-	strcat(buffer, "<Boxes> ");
+	strcat(buffer, "</Boxes> ");
 
 }
 

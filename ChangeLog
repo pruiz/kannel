@@ -1,3 +1,7 @@
+2000-02-02    <rpr@rpr.wapit.com>
+
+	* gw/bearerbox.c: updated XML to be synchronized with Plectra
+
 2000-01-31  Markku Rossi  <mtr@iki.fi>
 
 	* wmlscript: Lots of code review changes.  Implemented IEEE 754
