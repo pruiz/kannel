@@ -111,7 +111,10 @@ error_reporting(0);
         }     
         
         /* read the XML input */
-        $status[$inst] = fread($fp, 200000);
+        $status[$inst] = "";
+        while (!feof($fp)) {  
+            $status[$inst] .= fread($fp, 200000);
+        }
         fclose($fp);
 
         /* get the status of this bearerbox */

@@ -1,3 +1,8 @@
+2003-12-18  Stipe Tolj  <tolj@wapme-systems.de>
+    * contrib/kannel-monitor/index.php: fixed fread() problem if XML output is
+      too big. Thanks to Angel for this quick patch.
+      [Msg-ID: <200312181230.hBICUvh16011@int-mail01.mediafusion.es>]
+
 2003-12-17  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_boxc.c, gwlib/gw_uuid.[ch], gwlib/utils.[ch], radius/radius_pdu.c,
       test/wapproxy.c: fixed strict compiler warnings.
