@@ -196,8 +196,7 @@ int main(int argc, char **argv)
 	client_thread(http_caller_create());
     else {
 	for (i = 0; i < num_threads; ++i)
-	    threads[i] = gwthread_create(client_thread, 
-	http_caller_create());
+	    threads[i] = gwthread_create(client_thread, http_caller_create());
 	for (i = 0; i < num_threads; ++i)
 	    gwthread_join(threads[i]);
     }
