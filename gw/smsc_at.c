@@ -170,10 +170,17 @@ SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin,
         if (strcmp(smsc->at_modemtype, NOKIAPHONE) == 0) 
                 sleep(1);
 
+	/* lets initialize the modem to a safe state */
+        send_modem_command(smsc->at_fd, "AT", 0);
+        send_modem_command(smsc->at_fd, "AT&F", 0);
+        send_modem_command(smsc->at_fd, "AT", 0);
+	
         /* Turn Echo off on the modem: we don't need it */
         if(send_modem_command(smsc->at_fd, "ATE0", 0) == -1)
+ 	{
+ 		/* ok that was the first command we tried. */
                 goto error;
-
+	}
 	/* Let's collect some information from modem */
 	if(send_modem_command(smsc->at_fd, "ATI", 0) == -1)
 	    goto error;

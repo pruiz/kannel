@@ -184,6 +184,9 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg);
 /* Responsible file: smsc_smpp.c */
 int smsc_smpp_create(SMSCConn *conn, CfgGroup *cfg);
 
+/* Responsible file: smsc_at2.c */
+int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg);
+
 /* ADD NEW CREATE FUNCTIONS HERE
  *
  * int smsc_xxx_create(SMSCConn *conn, CfgGroup *cfg);

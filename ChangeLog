@@ -1,3 +1,12 @@
+2001-09-05 Andreas Fink <andreas@fink.org
+	* gw/smscconn_p.h gw/smscconn.c gw/smsc_at2.c
+	new AT driver for GSM modems. This one is operating
+	in GSM Phase 2+ mode. Well tested with siemens TC35
+	config options are as in old at driver with addionally:
+	  speed = speed in bps. 0 = autobaud
+	  modemtype = as in old driver but defaulting to autodetect
+	  (can be specified by passing "auto")
+
 2001-09-03 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* Makefile.in, docs/*/*.xml: Corrected Makefiles, xml and other 
 	files so now all documentation should compile
