@@ -1,15 +1,19 @@
-2002-04-27 Aarno Syvänen <aarno@wiral.com>
-    * gw/wap_push_ppg.c: Corrected handling of puah.soa application id. Thanks
-      to Michael Mulcahy for correction.
-    * gw/wapbox.c: Dropped an useless (and dangerous) dump.
-    * wap/wsp_unit.c Better debugging.
-	
+2002-04-29  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * doc/userguide/userguide.xml: Added UDH example to set number of 
+	  messages in MWI
+	* Changelog: Fixed ^M. Please cvs up -d and cvs diff before commiting
+
 2002-04-29  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/otacompiler.c, gw/shared.c, gw/wap_push_pap_compiler.c, 
       gw/wap_push_si_compiler.c, gwlib/xmlrpc.c: Fix xml includes to be
       #include <libxml/*.h>
 
->>>>>>> 1.1799
+2002-04-27 Aarno Syvänen <aarno@wiral.com>
+    * gw/wap_push_ppg.c: Corrected handling of puah.soa application id. Thanks
+      to Michael Mulcahy for correction.
+    * gw/wapbox.c: Dropped an useless (and dangerous) dump.
+    * wap/wsp_unit.c: Better debugging.
+	
 2002-04-27 Aarno Syvänen <aarno@wiral.com>
     * gw/wap_push_ppg.c: Fixed HTTP return statuses.
 	
