@@ -1,3 +1,13 @@
+Fri Apr  7 15:08:50 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/gwassert.h: Made gw_assert_place also report the actual
+	place its called from.
+	
+	* gwlib/octstr.c: Made seems_valid_real report the calling
+	function name also, and re-wrote the assertions so that it is
+	easier to see which condition failed. Addes some assertions
+	as well.
+
 2000-04-05  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/octstr.c, gwlib/octstr.h: Added new functions

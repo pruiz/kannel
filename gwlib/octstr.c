@@ -66,8 +66,10 @@ struct Node {
  */
 
 
-static void seems_valid_real(Octstr *ostr, const char *filename, long lineno);
-#define seems_valid(ostr) (seems_valid_real(ostr, __FILE__, __LINE__))
+static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
+			     const char *function);
+#define seems_valid(ostr) \
+	(seems_valid_real(ostr, __FILE__, __LINE__, __FUNCTION__))
 
 
 /***********************************************************************
@@ -141,10 +143,11 @@ Octstr *octstr_create_from_data(const void *data, long len) {
 	Octstr *ostr;
 	
 	gw_assert(len >= 0);
-	gw_assert(data != NULL || len == 0);
+	if (data == NULL)
+		gw_assert(len == 0);
 
 	ostr = octstr_create_empty();
-	if (ostr != NULL && len > 0) {
+	if (len > 0) {
 		ostr->len = len;
 		ostr->size = len + 1;
 		ostr->data = gw_malloc(ostr->size);
@@ -175,6 +178,10 @@ long octstr_len(Octstr *ostr) {
 
 Octstr *octstr_copy(Octstr *ostr, long from, long len) {
 	seems_valid(ostr);
+
+	seems_valid(ostr);
+	gw_assert(from >= 0);
+	gw_assert(len >= 0);
 
 	if (from >= ostr->len)
 		return octstr_create_empty();
@@ -423,7 +430,7 @@ int octstr_compare(Octstr *ostr1, Octstr *ostr2) {
 		len = ostr2->len;
 
 	if (len == 0)
-		return 0;
+		return 0;	/* XXX this is a bug --liw */
 
 	ret = memcmp(ostr1->data, ostr2->data, len);
 	if (ret == 0) {
@@ -501,6 +508,7 @@ int octstr_search_str(Octstr *ostr, char *str) {
 
 	len_o = octstr_len(ostr);
 	len_c = octstr_len( char_to_oct = octstr_create(str) );
+	/* XXX the above is a memory leak --liw */
 	
 	for (pos_a = 0; pos_a < len_o; pos_a++) {
 		a=octstr_get_char(ostr, pos_a);
@@ -1005,12 +1013,25 @@ error:
  * Local functions.
  */
 
-static void seems_valid_real(Octstr *ostr, const char *filename, long lineno) {
-	gw_assert_place(ostr != NULL, filename, lineno, "");
-	gw_assert_place(ostr->len < ostr->size || 
-	         (ostr->size == 0 && ostr->len == 0),
-		 filename, lineno, "");
-	gw_assert_place(ostr->size == 0 || 
-	         (ostr->data !=  NULL && ostr->data[ostr->len] == '\0'),
-		 filename, lineno, "");
+static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
+const char *function) {
+	gw_assert_place(ostr != NULL, 
+		filename, lineno, filename);
+	gw_assert_place(ostr->len >= 0,
+		filename, lineno, filename);
+	gw_assert_place(ostr->size >= 0,
+		filename, lineno, filename);
+	if (ostr->size == 0) {
+		gw_assert_place(ostr->len == 0,
+			filename, lineno, filename);
+		gw_assert_place(ostr->data == NULL, 
+			filename, lineno, filename);
+	} else {
+		gw_assert_place(ostr->len + 1 <= ostr->size, 
+			filename, lineno, filename);
+		gw_assert_place(ostr->data != NULL,
+			filename, lineno, filename);
+		gw_assert_place(ostr->data[ostr->len] == '\0',
+			filename, lineno, filename);
+	}
 }
