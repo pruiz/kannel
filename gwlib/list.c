@@ -59,6 +59,7 @@ struct List {
 static void lock(List *list);
 static void unlock(List *list);
 static void make_bigger(List *list, long items);
+static void delete_items_from_list(List *list, long pos, long count);
 
 
 List *list_create(void) {
@@ -120,57 +121,46 @@ void list_insert(List *list, long pos, void *item) {
 
 
 void list_delete(List *list, long pos, long count) {
-	long i, from, to;
+	lock(list);
+	delete_items_from_list(list, pos, count);
+	unlock(list);
+}
+
+
+void list_delete_all(List *list, void *pat, list_item_matches_t *cmp) {
+	long i;
 
 	lock(list);
-	assert(pos >= 0);
-	assert(pos < list->len);
-	assert(count >= 0);
-	assert(pos + count <= list->len);
-
-	/*
-	 * There are four cases (* = used element, space = unused):
-	 *
-	 * Case 1: Deletion at beginning of list. Just move start
-	 * marker forwards (wrapping it at end of array). No need
-	 * to move any items.
-	 *
-	 * Case 2: Deletion at end of list. Just shorten the length
-	 * of the list. No need to move any items.
-	 *
-	 * Case 3: Deletion in the middle so that the list does not
-	 * wrap in the array. Move remaining items at end of list
-	 * to the place of the deletion.
-	 *
-	 * Case 4: Deletion in the middle so that the list does indeed
-	 * wrap in the array. Move as many remaining items at the end
-	 * of the list as will fit to the end of the array, then move
-	 * the rest to the beginning of the array.
-	 */
-	if (pos == 0) {
-		list->start = (list->start + count) % list->tab_size;
-		list->len -= count;
-	} else if (pos + count == list->len) {
-		list->len -= count;
-	} else if (list->start + list->len < list->tab_size) {
-		memmove(list->tab + list->start + pos,
-		        list->tab + list->start + pos + count,
-			(list->len - pos - count) * sizeof(void *));
-		list->len -= count;
-	} else {
-		/*
-		 * This is not especially efficient, but it's simple and
-		 * works. Faster methods would have to take more special
-		 * cases into account. 
-		 */
-		for (i = 0; i < list->len - count; ++i) {
-			from = (list->start + pos + i) % list->tab_size;
-			to = (list->start + pos + i + count) % list->tab_size;
-			list->tab[to] = list->tab[from];
-		}
-		list->len -= count;
+	
+	/* XXX this could be made more efficient by noticing
+	   consecutive items to be removed, but leave that for later.
+	   --liw */
+	i = 0;
+	while (i < list->len) {
+		if (cmp(GET(list, i), pat))
+			delete_items_from_list(list, i, 1);
+		else
+			++i;
 	}
+	unlock(list);
+}
 
+
+void list_delete_equal(List *list, void *item) {
+	long i;
+
+	lock(list);
+	
+	/* XXX this could be made more efficient by noticing
+	   consecutive items to be removed, but leave that for later.
+	   --liw */
+	i = 0;
+	while (i < list->len) {
+		if (GET(list, i) == item)
+			delete_items_from_list(list, i, 1);
+		else
+			++i;
+	}
 	unlock(list);
 }
 
@@ -200,6 +190,30 @@ void *list_extract_first(List *list) {
 	}
 	unlock(list);
 	return item;
+}
+
+
+List *list_extract_all(List *list, void *pat, list_item_matches_t *cmp) {
+	List *new_list;
+	long i;
+
+	new_list = list_create();
+	lock(list);
+	i = 0;
+	while (i < list->len) {
+		if (cmp(GET(list, i), pat)) {
+			list_append(new_list, GET(list, i));
+			delete_items_from_list(list, i, 1);
+		} else
+			++i;
+	}
+	unlock(list);
+
+	if (list_len(new_list) == 0) {
+		list_destroy(new_list);
+		return NULL;
+	}
+	return new_list;
 }
 
 
@@ -406,5 +420,62 @@ static void make_bigger(List *list, long items) {
 				(len_at_beginning - (new_size - old_size))
 					* sizeof(void *));
 		}
+	}
+}
+
+
+/*
+ * Remove items `pos' through `pos+count-1' from list. Assume list has
+ * been locked by caller already.
+ */
+static void delete_items_from_list(List *list, long pos, long count) {
+	long i, from, to;
+
+	assert(pos >= 0);
+	assert(pos < list->len);
+	assert(count >= 0);
+	assert(pos + count <= list->len);
+
+	/*
+	 * There are four cases:
+	 *
+	 * Case 1: Deletion at beginning of list. Just move start
+	 * marker forwards (wrapping it at end of array). No need
+	 * to move any items.
+	 *
+	 * Case 2: Deletion at end of list. Just shorten the length
+	 * of the list. No need to move any items.
+	 *
+	 * Case 3: Deletion in the middle so that the list does not
+	 * wrap in the array. Move remaining items at end of list
+	 * to the place of the deletion.
+	 *
+	 * Case 4: Deletion in the middle so that the list does indeed
+	 * wrap in the array. Move as many remaining items at the end
+	 * of the list as will fit to the end of the array, then move
+	 * the rest to the beginning of the array.
+	 */
+	if (pos == 0) {
+		list->start = (list->start + count) % list->tab_size;
+		list->len -= count;
+	} else if (pos + count == list->len) {
+		list->len -= count;
+	} else if (list->start + list->len < list->tab_size) {
+		memmove(list->tab + list->start + pos,
+		        list->tab + list->start + pos + count,
+			(list->len - pos - count) * sizeof(void *));
+		list->len -= count;
+	} else {
+		/*
+		 * This is not especially efficient, but it's simple and
+		 * works. Faster methods would have to take more special
+		 * cases into account. 
+		 */
+		for (i = 0; i < list->len - count; ++i) {
+			from =  INDEX(list, pos + i + count);
+			to = INDEX(list, pos + i);
+			list->tab[to] = list->tab[from];
+		}
+		list->len -= count;
 	}
 }

@@ -53,7 +53,19 @@
 #define LIST_H
 
 
+/*
+ * The list type. It is opaque: do not touch it except via the functions
+ * defined in this header.
+ */
 typedef struct List List;
+
+
+/*
+ * A comparison function for list items. Returns true (non-zero) for
+ * equal, false for non-equal. Gets an item from the list as the first
+ * argument, the pattern as a second argument.
+ */
+typedef int list_item_matches_t(void *item, void *pattern);
 
 
 /*
@@ -96,6 +108,19 @@ void list_delete(List *list, long pos, long count);
 
 
 /*
+ * Delete all items from the list that match `pattern'. Like list_delete,
+ * the items are removed from the list, but are not destroyed themselves.
+ */
+void list_delete_all(List *list, void *pat, list_item_matches_t *cmp);
+
+
+/*
+ * Delete all items from the list whose pointer value is exactly `item'.
+ */
+void list_delete_equal(List *list, void *item);
+
+
+/*
  * Return the item at position `pos'.
  */
 void *list_get(List *list, long pos);
@@ -107,6 +132,15 @@ void *list_get(List *list, long pos);
  * something in the list.
  */
 void *list_extract_first(List *list);
+
+
+/*
+ * Create a new list with items from `list' that match a pattern. The items
+ * are removed from `list'. Return NULL if no matching items are found.
+ * Note that unlike list_consume, this won't sleep until there is
+ * something in the list.
+ */
+List *list_extract_all(List *list, void *pat, list_item_matches_t *cmp);
 
 
 /*
@@ -166,7 +200,7 @@ void *list_consume(List *list);
  * return the list element. Compare items to search pattern with 
  * `cmp(item, pattern)'. If the function returns non-zero, the items are equal.
  */
-void *list_search(List *list, void *pattern, int (*cmp)(void *, void *));
+void *list_search(List *list, void *pattern, list_item_matches_t *cmp);
 
 
 /*
@@ -175,8 +209,7 @@ void *list_search(List *list, void *pattern, int (*cmp)(void *, void *));
  * to search pattern with `cmp(item, pattern)'. If the function returns 
  * non-zero, the items are equal.
  */
-List *list_search_all(List *list, void *pattern, int (*cmp)(void *, void *));
-
+List *list_search_all(List *list, void *pattern, list_item_matches_t *cmp);
 
 
 #endif

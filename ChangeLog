@@ -1,3 +1,11 @@
+Tue Mar 28 16:14:49 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/list.[ch]: added functions list_delete_all, list_delete_equal,
+	and list_extract_all. Also added a typedef for the comparision
+	function type used by several list functions.
+	
+	* test/test_list.c: Wrote additional test for the new functions.
+
 2000-03-28 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_state-decl.h: Allocated memory for resended messages

@@ -13,6 +13,7 @@
 #endif
 
 
+#include <string.h>
 #include <unistd.h>
 #include <signal.h>
 #include "gwlib.h"
@@ -127,7 +128,7 @@ static void check_received(void) {
 }
 
 
-void main_with_threads(void) {
+static void main_with_threads(void) {
 	List *list;
 	int i;
 	void *ret;
@@ -160,7 +161,7 @@ void main_with_threads(void) {
 }
 
 
-void main_without_threads(void) {
+static void main_without_threads(void) {
 	List *list;
 	Item *item;
 	
@@ -184,7 +185,104 @@ void main_without_threads(void) {
 }
 
 
+static int compare_cstr(void *item, void *pat) {
+	return strcmp(item, pat) == 0;
+}
+
+
+static void dump(List *list) {
+	long i;
+	
+	debug("", 0, "List dump begin (%ld items):", list_len(list));
+	for (i = 0; i < list_len(list); ++i)
+		debug("", 0, "[%ld] = <%s>", i, list_get(list, i));
+	debug("", 0, "List dump end.");
+}
+
+
+static void main_for_list_add_and_delete(void) {
+	static char *items[] = {
+		"one",
+		"two",
+		"three",
+	};
+	int num_items = sizeof(items) / sizeof(items[0]);
+	int num_repeats = 3;
+	int i, j;
+	char *p;
+	List *list;
+
+	list = list_create();
+	
+	for (j = 0; j < num_repeats; ++j)
+		for (i = 0; i < num_items; ++i)
+			list_append(list, items[i]);
+	list_delete_all(list, items[0], compare_cstr);
+	for (i = 0; i < list_len(list); ++i) {
+		p = list_get(list, i);
+		if (strcmp(p, items[0]) == 0)
+			panic(0, "list contains `%s' after deleting it!",
+				items[0]);
+	}
+	
+	for (i = 0; i < num_items; ++i)
+		list_delete_equal(list, items[i]);
+	if (list_len(list) != 0)
+		panic(0, "list is not empty after deleting everything");
+	
+	list_destroy(list);
+	info(0, "list adds and deletes OK in simple case.");
+}
+
+
+static void main_for_extract(void) {
+	static char *items[] = {
+		"one",
+		"two",
+		"three",
+	};
+	int num_items = sizeof(items) / sizeof(items[0]);
+	int num_repeats = 3;
+	int i, j;
+	char *p;
+	List *list, *extracted;
+
+	list = list_create();
+	
+	for (j = 0; j < num_repeats; ++j)
+		for (i = 0; i < num_items; ++i)
+			list_append(list, items[i]);
+
+	for (j = 0; j < num_items; ++j) {
+		extracted = list_extract_all(list, items[j], compare_cstr);
+		if (extracted == NULL)
+			panic(0, "no extracted elements, should have!");
+		for (i = 0; i < list_len(list); ++i) {
+			p = list_get(list, i);
+			if (strcmp(p, items[j]) == 0)
+				panic(0, "list contains `%s' after "
+				         "extracting it!",
+					items[j]);
+		}
+		for (i = 0; i < list_len(extracted); ++i) {
+			p = list_get(extracted, i);
+			if (strcmp(p, items[j]) != 0)
+				panic(0, "extraction returned wrong element!");
+		}
+		list_destroy(extracted);
+	}
+	
+	if (list_len(list) != 0)
+		panic(0, "list is not empty after extracting everything");
+	
+	list_destroy(list);
+	info(0, "list extraction OK in simple case.");
+}
+
+
 int main(void) {
+	main_for_list_add_and_delete();
+	main_for_extract();
 #if THREADS
 	main_with_threads();
 #else
