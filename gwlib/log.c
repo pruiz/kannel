@@ -312,6 +312,12 @@ void error(int e, const char *fmt, ...)
 }
 
 
+void warning(int e, const char *fmt, ...) 
+{
+    FUNCTION_GUTS(GW_WARNING, "");
+}
+
+
 #undef FUNCTION_GUTS
 
 
@@ -345,12 +351,6 @@ void error(int e, const char *fmt, ...)
 		va_end(args); \
 	    } \
 	} while (0)
-
-
-void warning(int e, const char *fmt, ...) 
-{
-    FUNCTION_GUTS(GW_WARNING, "");
-}
 
 
 void info(int e, const char *fmt, ...) 

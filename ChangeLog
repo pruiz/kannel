@@ -1,3 +1,8 @@
+2001-01-08  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/log.c: Made warning() use octstr_format. All usages have
+	been checked and should work.
+
 2001-01-08  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/*smscconn*.*: removed reason from killed-callback,
