@@ -1,3 +1,14 @@
+2003-08-03  Alexander Malysh  <a.malysh@centrium.de>
+     * gw/bb_smscconn_cb.h: added new enum types (SMSCCONN_SUCCESS,SMSCCONN_FAILED_QFULL)
+     * gw/bb_smscconn.c: changed return code for bb_smscconn_receive(...) now we use enum
+       types, so we can react with error codes in low level drivers appropriately.
+     * gw/smsc/smsc_smpp.c: added requeuing if tcp connection was closed. As per smpp spec.
+       required send gnack if command not supported/handled. Added more check-code for MO
+       traffic (pdu_to_msg) so if smsc send "shit" to us, we set appropriate error code and discard
+       such sms's. Corrected msg->sms.coding behaviour for MO messages (for LATIN-1/ASCII we
+       set DC_7BIT instead of DC_8BIT, because DC_8BIT == BINARY DATA).Added handling of
+       error codes if bb_smscconn_receive(...) failed.
+
 2003-08-01  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.c, gw/wap-[maps|appl].c: fixed some compiler warnings.
 
