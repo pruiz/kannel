@@ -5,6 +5,8 @@
  */
 
 /* Doesn't warn about unrecognized configuration variables */
+/* The EMI specification doesn't document how connections should be
+ * opened/used. The way they currently work might need to be changed. */
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -155,7 +157,7 @@ static Connection *open_send_connection(SMSCConn *conn)
 		return NULL;
 	    }
 	    else if (result == 0) {
-		error(0, "smsc_emi2: Got no reply to login attempt"
+		error(0, "smsc_emi2: Got no reply to login attempt "
 		      "within 30 s");
 		conn_destroy(server);
 		if (conn->status == SMSCCONN_ACTIVE) {
@@ -280,6 +282,180 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
 }
 
 
+/* Return -1 if the connection broke, 0 if the request couldn't be handled
+ * (unknown type), or 1 if everything was successful */
+static int handle_operation(SMSCConn *conn, Connection *server,
+			   struct emimsg *emimsg)
+{
+    struct emimsg *reply;
+    Octstr *tempstr, *xser;
+    int type, len;
+    Msg *msg;
+    struct universaltime unitime;
+
+    msg = msg_create(sms);
+    switch(emimsg->ot) {
+    case 01:
+	if (emimsg->fields[E01_AMSG] == NULL)
+	    emimsg->fields[E01_AMSG] = octstr_create("");
+	else if (octstr_hex_to_binary(emimsg->fields[E01_AMSG]) == -1)
+	    warning(0, "emi2: Couldn't decode message text");
+
+	if (emimsg->fields[E01_MT] == NULL) {
+	    warning(0, "emi2: required field MT missing");
+	    /* This guess could be incorrect, maybe the message should just
+	       be dropped */
+	    emimsg->fields[E01_MT] = octstr_create("3");
+	}
+
+	if (octstr_get_char(emimsg->fields[E01_MT], 0) == '3') {
+	    msg->sms.msgdata = emimsg->fields[E01_AMSG];
+	    emimsg->fields[E01_AMSG] = NULL; /* So it's not freed */
+	    charset_gsm_to_latin1(msg->sms.msgdata);
+	}
+	else {
+	    error(0, "emi2: MT == %s isn't supported for operation type 01",
+		  octstr_get_cstr(emimsg->fields[E01_MT]));
+	    msg->sms.msgdata = octstr_create("");
+	}
+
+	msg->sms.sender = octstr_duplicate(emimsg->fields[E01_OADC]);
+	if (msg->sms.sender == NULL) {
+	    warning(0, "Empty sender field in received message");
+	    msg->sms.sender = octstr_create("");
+	}
+
+	msg->sms.receiver = octstr_duplicate(emimsg->fields[E01_ADC]);
+	if (msg->sms.sender == NULL) {
+	    warning(0, "Empty receiver field in received message");
+	    msg->sms.receiver = octstr_create("");
+	}
+
+	/* Operation type 01 doesn't have a time stamp field */
+	time(&msg->sms.time);
+
+	msg->sms.smsc_id = octstr_duplicate(conn->id);
+	counter_increase(conn->received);
+	bb_smscconn_receive(conn, msg);
+	reply = emimsg_create_reply(01, emimsg->trn, 1);
+	if (emimsg_send(server, reply) < 0) {
+	    emimsg_destroy(reply);
+	    return -1;
+	}
+	emimsg_destroy(reply);
+	return 1;
+
+    case 52:
+	/* AMSG is the same field as TMSG */
+	if (emimsg->fields[E50_AMSG] == NULL)
+	    emimsg->fields[E50_AMSG] = octstr_create("");
+	else if (octstr_hex_to_binary(emimsg->fields[E50_AMSG]) == -1)
+	    warning(0, "emi2: Couldn't decode message text");
+
+	xser = emimsg->fields[E50_XSER];
+	while (octstr_len(xser) > 0) {
+	    tempstr = octstr_copy(xser, 0, 4);
+	    if (octstr_hex_to_binary(tempstr) == -1)
+		error(0, "Invalid XSer");
+	    type = octstr_get_char(tempstr, 0);
+	    len = octstr_get_char(tempstr, 1);
+	    octstr_destroy(tempstr);
+	    if (len < 0) {
+		error(0, "Malformed emi XSer field");
+		break;
+	    }
+	    if (type != 1)
+		warning(0, "Unsupported EMI XSer field %d", type);
+	    else {
+		tempstr = octstr_copy(xser, 4, len * 2);
+		if (octstr_hex_to_binary(tempstr) == -1)
+		    error(0, "Invalid UDH contents");
+		msg->sms.udhdata = tempstr;
+		msg->sms.flag_udh = 1;
+	    }
+	    octstr_delete(xser, 0, 2 * len + 4);
+	}
+
+	if (emimsg->fields[E50_MT] == NULL) {
+	    warning(0, "emi2: required field MT missing");
+	    /* This guess could be incorrect, maybe the message should just
+	       be dropped */
+	    emimsg->fields[E50_MT] = octstr_create("3");
+	}
+	if (octstr_get_char(emimsg->fields[E50_MT], 0) == '3') {
+	    msg->sms.msgdata = emimsg->fields[E50_AMSG];
+	    emimsg->fields[E50_AMSG] = NULL; /* So it's not freed */
+	    charset_gsm_to_latin1(msg->sms.msgdata);
+	}
+	else if (octstr_get_char(emimsg->fields[E50_MT], 0) == '4') {
+	    msg->sms.msgdata = emimsg->fields[E50_TMSG];
+	    emimsg->fields[E50_TMSG] = NULL;
+	    msg->sms.flag_8bit = 1;
+	}
+	else {
+	    error(0, "emi2: MT == %s isn't supported yet",
+		  octstr_get_cstr(emimsg->fields[E50_MT]));
+	    msg->sms.msgdata = octstr_create("");
+	}
+
+	msg->sms.sender = octstr_duplicate(emimsg->fields[E50_OADC]);
+	if (msg->sms.sender == NULL) {
+	    warning(0, "Empty sender field in received message");
+	    msg->sms.sender = octstr_create("");
+	}
+
+	msg->sms.receiver = octstr_duplicate(emimsg->fields[E50_ADC]);
+	if (msg->sms.sender == NULL) {
+	    warning(0, "Empty receiver field in received message");
+	    msg->sms.receiver = octstr_create("");
+	}
+
+	tempstr = emimsg->fields[E50_SCTS]; /* Just a shorter name */
+	if (tempstr == NULL) {
+	    warning(0, "Received EMI message doesn't have required timestamp");
+	    goto notime;
+	}
+	if (octstr_len(tempstr) != 12) {
+	    warning(0, "EMI SCTS field must have length 12, now %ld",
+		  octstr_len(tempstr));
+	    goto notime;
+	}
+	if (octstr_parse_long(&unitime.second, tempstr, 10, 10) != 12 ||
+	    (octstr_delete(tempstr, 10, 2),
+	     octstr_parse_long(&unitime.minute, tempstr, 8, 10) != 10) ||
+	    (octstr_delete(tempstr, 8, 2),
+	     octstr_parse_long(&unitime.hour, tempstr, 6, 10) != 8) ||
+	    (octstr_delete(tempstr, 6, 2),
+	     octstr_parse_long(&unitime.year, tempstr, 4, 10) != 6) ||
+	    (octstr_delete(tempstr, 4, 2),
+	     octstr_parse_long(&unitime.month, tempstr, 2, 10) != 4) ||
+	    (octstr_delete(tempstr, 2, 2),
+	     octstr_parse_long(&unitime.day, tempstr, 0, 10) != 2)) {
+	    error(0, "EMI delivery time stamp looks malformed");
+	notime:
+	    time(&msg->sms.time);
+	}
+	else
+	    msg->sms.time = date_convert_universal(&unitime);
+
+	msg->sms.smsc_id = octstr_duplicate(conn->id);
+	counter_increase(conn->received);
+	bb_smscconn_receive(conn, msg);
+	reply = emimsg_create_reply(52, emimsg->trn, 1);
+	if (emimsg_send(server, reply) < 0) {
+	    emimsg_destroy(reply);
+	    return -1;
+	}
+	emimsg_destroy(reply);
+	return 1;
+
+    default:
+	error(0, "I don't know how to handle operation type %d", emimsg->ot);
+	return 0;
+    }
+}
+
+
 static void emi2_send_loop(SMSCConn *conn, Connection *server)
 {
     PrivData *privdata = conn->data;
@@ -318,8 +494,15 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 		octstr_destroy(str);
 		debug("smsc.emi2", 0, "Got type %d (%c)",
 		      emimsg->ot, emimsg->or);
-		if (emimsg->or == 'O')
-		    error(0, "Emi2: Received operation through send socket");
+		if (emimsg->or == 'O') {
+		    /* If the SMSC wants to send operations through this
+		     * socket, we'll have to read them because there
+		     * might be ACKs too. We just drop them while stopped,
+		     * hopefully the SMSC will resend them later. */
+		    if (!conn->is_stopped)
+			if (handle_operation(conn, server, emimsg) < 0)
+			    return; /* Connection broke */
+		}
 		else {   /* Already checked to be 'O' or 'R' */
 		    debug("smsc.emi2", 0, "Received ack to operation %d, "
 			  "trn %d, %s", emimsg->ot, emimsg->trn,
@@ -380,9 +563,9 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 	else
 	    conn_wait(server, 40);
 	if (conn_read_error(server)) {
-	    error(0, "emi2: Error trying to read ACKs from SMSC");
+	    warning(0, "emi2: Error reading from the main connection");
 	    return;
-	    }
+	}
 	if (conn_eof(server)) {
 	    info(0, "emi2: Send connection closed by SMSC");
 	    return;
@@ -429,147 +612,31 @@ static void emi2_sender(void *arg)
 }
 
 
-static int handle_request(SMSCConn *conn, Connection *client,
-			   struct emimsg *emimsg)
-{
-    struct emimsg *reply;
-    long u;
-    Octstr *tempstr, *xser;
-    int type, len;
-    Msg *msg;
-    struct universaltime unitime;
-
-    msg = msg_create(sms);
-    switch(emimsg->ot) {
-    case 52:
-	/* AMSG is the same field as TMSG */
-	if (octstr_hex_to_binary(emimsg->fields[E50_AMSG]) == -1)
-	    warning(0, "Couldn't decode message");
-
-	xser = emimsg->fields[E50_XSER];
-	while (octstr_len(xser) > 0) {
-	    tempstr = octstr_copy(xser, 0, 4);
-	    if (octstr_hex_to_binary(tempstr) == -1)
-		error(0, "Invalid XSer");
-	    type = octstr_get_char(tempstr, 0);
-	    len = octstr_get_char(tempstr, 1);
-	    octstr_destroy(tempstr);
-	    if (len < 0) {
-		error(0, "Malformed emi XSer field");
-		break;
-	    }
-	    if (type != 1)
-		warning(0, "Unsupported EMI XSer field %d", type);
-	    else {
-		tempstr = octstr_copy(xser, 4, len * 2);
-		if (octstr_hex_to_binary(tempstr) == -1)
-		    error(0, "Invalid UDH contents");
-		msg->sms.udhdata = tempstr;
-		msg->sms.flag_udh = 1;
-	    }
-	    octstr_delete(xser, 0, 2 * len + 4);
-	}
-
-	if (octstr_get_char(emimsg->fields[E50_MT], 0) == '3') {
-	    msg->sms.msgdata = octstr_duplicate(emimsg->fields[E50_AMSG]);
-	    charset_gsm_to_latin1(msg->sms.msgdata);
-	}
-	else if (octstr_get_char(emimsg->fields[E50_MT], 0) == '4') {
-	    if (!emimsg->fields[E50_MCLS] ||
-		octstr_compare(emimsg->fields[E50_MCLS], octstr_imm("1")))
-		error(0, "Expected MCLs 1 with MT 4");
-	    if (octstr_len(emimsg->fields[E50_NB]) != 4 ||
-		octstr_parse_long(&u, emimsg->fields[E50_NB], 0, 10) == -1 ||
-		octstr_len(emimsg->fields[E50_TMSG]) * 8 != u)
-		error(0, "NB looks incorrect");
-	    msg->sms.msgdata = octstr_duplicate(emimsg->fields[E50_TMSG]);
-	    msg->sms.flag_8bit = 1;
-	}
-	else {
-	    error(0, "emi2: MT == %s isn't supported yet",
-		  octstr_get_cstr(emimsg->fields[E50_MT]));
-	    msg->sms.msgdata = octstr_create("");
-	}
-
-	msg->sms.sender = octstr_duplicate(emimsg->fields[E50_OADC]);
-	if (msg->sms.sender == NULL) {
-	    warning(0, "Empty from field in received message");
-	    msg->sms.sender = octstr_create("");
-	}
-
-	msg->sms.receiver = octstr_duplicate(emimsg->fields[E50_ADC]);
-	if (msg->sms.sender == NULL) {
-	    warning(0, "Empty receiver field in received message");
-	    msg->sms.receiver = octstr_create("");
-	}
-
-	tempstr = emimsg->fields[E50_SCTS]; /* Just a shorter name */
-	if (tempstr == NULL) {
-	    error(0, "Received EMI message doesn't have required timestamp");
-	    goto notime;
-	}
-	if (octstr_len(tempstr) != 12) {
-	    error(0, "EMI SCTS field must have length 12, now %ld",
-		  octstr_len(tempstr));
-	    goto notime;
-	}
-	if (octstr_parse_long(&unitime.second, tempstr, 10, 10) != 12 ||
-	    (octstr_delete(tempstr, 10, 2),
-	     octstr_parse_long(&unitime.minute, tempstr, 8, 10) != 10) ||
-	    (octstr_delete(tempstr, 8, 2),
-	     octstr_parse_long(&unitime.hour, tempstr, 6, 10) != 8) ||
-	    (octstr_delete(tempstr, 6, 2),
-	     octstr_parse_long(&unitime.year, tempstr, 4, 10) != 6) ||
-	    (octstr_delete(tempstr, 4, 2),
-	     octstr_parse_long(&unitime.month, tempstr, 2, 10) != 4) ||
-	    (octstr_delete(tempstr, 2, 2),
-	     octstr_parse_long(&unitime.day, tempstr, 0, 10) != 2)) {
-	    error(0, "EMI delivery time stamp looks malformed");
-	notime:
-	    time(&msg->sms.time);
-	}
-	else
-	    msg->sms.time = date_convert_universal(&unitime);
-
-	msg->sms.smsc_id = octstr_duplicate(conn->id);
-	counter_increase(conn->received);
-	bb_smscconn_receive(conn, msg);
-	reply = emimsg_create_reply(52, emimsg->trn, 1);
-	if (emimsg_send(client, reply) < 0) {
-	    emimsg_destroy(reply);
-	    return -1;
-	}
-	emimsg_destroy(reply);
-	return 1;
-    default:
-	error(0, "I don't know how to handle operation type %d", emimsg->ot);
-	return 0;
-    }
-}
-
-
-static void emi2_receiver(SMSCConn *conn, Connection *client)
+static void emi2_receiver(SMSCConn *conn, Connection *server)
 {
     PrivData *privdata = conn->data;
     Octstr *str;
     struct emimsg *emimsg;
 
     while (1) {
-	if (conn_eof(client)) {
+	if (conn_eof(server)) {
 	    info(0, "emi2: receive connection closed by SMSC");
 	    return;
 	}
-	if (conn_read_error(client)) {
+	if (conn_read_error(server)) {
 	    error(0, "emi2: receive connection broken");
 	    return;
 	}
-	str = conn_read_packet(client, 2, 3);
+	if (conn->is_stopped)
+	    str = NULL;
+	else
+	    str = conn_read_packet(server, 2, 3);
 	if (str) {
 	    if ( (emimsg = get_fields(str)) ) {
 		debug("smsc.emi2", 0, "emi2: Got %d, %c, %d",
 		      emimsg->ot, emimsg->or, emimsg->trn);
 		if (emimsg->or == 'O') {
-		    if (handle_request(conn, client, emimsg) < 0)
+		    if (handle_operation(conn, server, emimsg) < 0)
 			return;
 		}
 		else
@@ -578,7 +645,7 @@ static void emi2_receiver(SMSCConn *conn, Connection *client)
 	    }
 	    octstr_destroy(str);
 	}
-	conn_wait(client, -1);
+	conn_wait(server, -1);
 	if (privdata->shutdown)
 	    break;
     }
@@ -610,14 +677,14 @@ static void emi2_listener(void *arg)
 {
     SMSCConn	*conn = arg;
     PrivData	*privdata = conn->data;
-    struct sockaddr_in client_addr;
-    socklen_t	client_addr_len;
+    struct sockaddr_in server_addr;
+    socklen_t	server_addr_len;
     Octstr	*ip;
-    Connection	*client;
+    Connection	*server;
     int 	s, ret;
 
     while (!privdata->shutdown) {
-	client_addr_len = sizeof(client_addr);
+	server_addr_len = sizeof(server_addr);
 	ret = gwthread_pollfd(privdata->listening_socket, POLLIN, -1);
 	if (ret == -1) {
 	    if (errno == EINTR)
@@ -630,13 +697,13 @@ static void emi2_listener(void *arg)
 	if (ret == 0) /* This thread was woken up from elsewhere, but
 			 if we're not shutting down nothing to do here. */
 	    continue;
-	s = accept(privdata->listening_socket, (struct sockaddr *)&client_addr,
-		   &client_addr_len);
+	s = accept(privdata->listening_socket, (struct sockaddr *)&server_addr,
+		   &server_addr_len);
 	if (s == -1) {
 	    warning(errno, "emi2_listener: accept() failed, retrying...");
 	    continue;
 	}
-	ip = host_ip(client_addr);
+	ip = host_ip(server_addr);
 	if (!is_allowed_ip(privdata->allow_ip, privdata->deny_ip, ip)) {
 	    info(0, "Emi2 smsc connection tried from denied host <%s>,"
 		 " disconnected", octstr_get_cstr(ip));
@@ -644,19 +711,19 @@ static void emi2_listener(void *arg)
 	    close(s);
 	    continue;
 	}
-	client = conn_wrap_fd(s);
-	if (client == NULL) {
+	server = conn_wrap_fd(s);
+	if (server == NULL) {
 	    error(0, "emi2_listener: conn_wrap_fd failed on accept()ed fd");
 	    octstr_destroy(ip);
 	    close(s);
 	    continue;
 	}
-	conn_claim(client);
-	info(0, "Emi2 smsc client connected from %s", octstr_get_cstr(ip));
+	conn_claim(server);
+	info(0, "Emi2: smsc connected from %s", octstr_get_cstr(ip));
 	octstr_destroy(ip);
 
-	emi2_receiver(conn, client);
-	conn_destroy(client);
+	emi2_receiver(conn, server);
+	conn_destroy(server);
     }
     if (close(privdata->listening_socket) == -1)
 	warning(errno, "smsc_emi2: couldn't close listening socket "

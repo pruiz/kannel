@@ -1,3 +1,8 @@
+2001-04-17  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsc_emi2.c, gw/emimsg.[ch]: Added support for operation type
+	01, other changes to work with different SMSC setups.
+
 2001-04-17  Richard Braakman  <dark@wapit.com>
 
 	* gw/urltrans.c: In strip_keyword(), use the right test for

@@ -55,6 +55,8 @@ static char *emi_strerror(int errnum)
 static int field_count_op(int ot)
 {
     switch (ot) {
+    case 01:
+	return SZ01;
     case 31:
 	return 2;
     case 51:
@@ -72,6 +74,8 @@ static int field_count_op(int ot)
 static int field_count_reply(int ot, int posit)
 {
     switch(ot) {
+    case 01:
+	return posit ? 2 : 3;
     case 31:
 	return posit ? 2 : 3;
     case 51:
@@ -239,8 +243,20 @@ struct emimsg *get_fields(Octstr *message)
 	if (pos2 > pos)
 	    result->fields[fieldno] = octstr_copy(message, pos, pos2 - pos);
     }
-    if (octstr_search_char(message, '/', pos2 + 1) != -1)
-	goto error;    /* too many fields */
+    if (octstr_search_char(message, '/', pos2 + 1) != -1) {
+	int extrafields = 0;
+
+	pos = pos2;
+	while ((pos = octstr_search_char(message, '/', pos + 1)) != -1) {
+	    extrafields++;
+	    pos2 = pos;
+	}
+	/* The extra fields are ignored */
+	warning(0, "get_fields: EMI message of type %d/%c has %d more fields "
+		"than expected.", result->ot, result->or, extrafields);
+	debug("smsc.emi2", 0, "get_fields: message contents: %s",
+	      octstr_get_cstr(message));
+    }
     if (octstr_parse_long(&checksum, message, pos2 + 1, 16) !=
 	octstr_len(message) - 1 || checksum != calculate_checksum(message))
 	goto error;

@@ -19,6 +19,12 @@ struct emimsg {
     Octstr **fields;
 };
 
+/* Symbolic constants for the number of a field in a message */
+
+enum {
+    E01_ADC, E01_OADC, E01_AC, E01_MT, E01_AMSG, SZ01
+};
+
 
 /* All the 50-series messages have the same number of fields */
 enum {
