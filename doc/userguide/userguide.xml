@@ -6902,10 +6902,10 @@ smsbox-id = dlrbox
        smsbox one. See chapter Delivery Reports for details.</para>
 
        <para> For ppg sms delivery reports you will need a fully working 
-       smsbox. Add configuration variable <literal>smsbox-id<\literal> to
-       <literal>smsbox<\literal> group (it is necessary, because there
+       smsbox. Add configuration variable <literal>smsbox-id</literal> to
+       <literal>smsbox</literal> group (it is necessary, because there
        is no MT from any smsbox corresponding the delivery report 
-       bearerbox is receiving):<\para>
+       bearerbox is receiving):</para>
 
 <programlisting>
        group = smsbox
@@ -6914,33 +6914,33 @@ smsbox-id = dlrbox
        log-file = "/var/log/kannel/smsbox-core.log"
        log-level = 0
        access-log = "/var/log/kannel/smsbox-access.log"
-<\programlisting>
+</programlisting>
 
        <para> Start smsbox normal way after updating the configuration
-       file. <\para>
+       file. </para>
 
        <para> You must add to PPG configuration file two less obvious
-       variables: <literal>ppg-smsbox-id<\literal> and <literal>
-       service-name<\literal>. <literal>Ppg-smsbox-id<\literal> 
+       variables: <literal>ppg-smsbox-id</literal> and <literal>
+       service-name</literal>. <literal>Ppg-smsbox-id</literal> 
        defines smsbox through which you want to route delivery reports,
-       <literal>service-name<\literal> makes possible for smsbox to
-       handle wap pushes as a separate sms service.<\para>
+       <literal>service-name</literal> makes possible for smsbox to
+       handle wap pushes as a separate sms service.</para>
 
-       <para>Setting <literal>ppg-smsbox-id<\literal> will route all
+       <para>Setting <literal>ppg-smsbox-id</literal> will route all
        ppg messages through same smsbox. You can route delivery 
        reports of separate user through separate smsboxes, by using
-       configuration variable <literal>smsbox-id<\literal> in group
+       configuration variable <literal>smsbox-id</literal> in group
        wap push user. Or you can use cgi variable <literal>smsbox-id
-      <\literal>. This means routing every message separately. <\para>
+      </literal>. This means routing every message separately. </para>
 
        <para> You can supply dlr url and dlr mask as cgi variable, or
        as a configuration variable in ppg user or ppg core group. (This
        is order of precedence, too.) First one is valid for only one
        message, second for a specific user, and third for every ppg
-       user. <\para>
+       user. </para>
 
        <para> So following is a minimum ppg core group for sms delivery
-       reports:<\para>
+       reports:</para>
 
 <programlisting>
 group = ppg
@@ -6951,10 +6951,10 @@ trusted-pi = true
 users = 1024
 service-name = ppg
 ppg-smsbox-id = dlrbox
-<\programlisting>
+</programlisting>
 
        <para>This you can use with following http post request (one
-       asking for all possible delivery reports):<\para>
+       asking for all possible delivery reports):</para>
 
 <screen><userinput>
        http://193.53.0.56:8080/phplib/kannelgw.php?user=*deleted*&amp;
@@ -6964,16 +6964,16 @@ ppg-smsbox-id = dlrbox
        %03Want+to+test+a+fetch%3F%00%01%01&amp;udh=%06%05%04%0B%84%23%F0&amp;
        dlrmask=31&amp;dlrurl=http%3A%2F%2F193.53.0.56%2Fnotification-dlr%3F
        smsc-id=%i%26status=%d%26answer=%A%26to=%P%26from=%p%26ts=%t
-<\userinput><\screen>
+</userinput></screen>
 
        <para>Note that you can use all sms service escapes in dlrur, see
-       Parameters (Escape Codes) for details.<\para>
+       Parameters (Escape Codes) for details.</para>
 
        <para> If you want to set dlr url for a spesific user, you must set
-       configuration variable <literal>dlr-url<\literal>in <literal>
-       wap-push-user<\literal>, if for entire ppg, <literal>default-dlr-url
-       <\literal> in group <literal>ppg<\literal>. Value must naturally match
-       with one used in group smsc.<\para>
+       configuration variable <literal>dlr-url</literal>in <literal>
+       wap-push-user</literal>, if for entire ppg, <literal>default-dlr-url
+       </literal> in group <literal>ppg</literal>. Value must naturally match
+       with one used in group smsc.</para>
 </sect1>
 
 <sect1>
@@ -6983,8 +6983,8 @@ ppg-smsbox-id = dlrbox
 
        <para> Smsc routing for wap pushes is similar to sms pushes. So,
        firstly you must define configuration variable <literal>smsc-id
-       <\literal> in smsc group (or groups) in question. Say you used
-       value <literal>link0<\literal>. So you can issue a request:<\para>
+       </literal> in smsc group (or groups) in question. Say you used
+       value <literal>link0</literal>. So you can issue a request:</para>
 
 <screen><userinput>
        http://193.53.0.56:8080/phplib/kannelgw.php?user=*deleted*&amp;
@@ -6993,15 +6993,15 @@ ppg-smsbox-id = dlrbox
        1%40wiral.com%00%07%0A%C3%07%19%99%06%25%15%23%15%10%C3%04+%02%060%01
        %03Want+to+test+a+fetch%3F%00%01%01&amp;udh=%06%05%04%0B%84%23%F0&amp;
        smsc=link0
-<\userinput><\screen>
+</userinput></screen>
 
       <para> You can use configuration variables to route all messages of a
-      specific user or all ppg messages. Set <literal>default-smsc<\literal>
-      in group wap-push-user or in group ppg.<\para>
+      specific user or all ppg messages. Set <literal>default-smsc</literal>
+      in group wap-push-user or in group ppg.</para>
 
       <para>Again precedence of various methods of setting the smsc is 
       cgi variable, then configuration variable in group wap push user and
-      then in group ppg.<\para>
+      then in group ppg.</para>
 
 </sect1>
      
@@ -7550,7 +7550,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              <row><entry><literal>-s</literal></entry>
              <entry><emphasis>string</emphasis></entry>
              <entry valign="bottom">
-             Use <literal>string<\literal> as a X-WAP-Application-Id
+             Use <literal>string</literal> as a X-WAP-Application-Id
              header (You must supply whole header).
              </entry></row>
              <row><entry><literal>-B</literal></entry>
@@ -7563,7 +7563,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              <entry><emphasis>enumerated string</emphasis></entry>
              <entry valign="bottom">
              Set delimiter to be used. Acceptable values are crlf anf
-             lf. Default is <literal>crlf<\literal>.
+             lf. Default is <literal>crlf</literal>.
              </entry></row>
              <row><entry><literal>-p</literal></entry>
              <entry><emphasis>boolean</emphasis></entry>
