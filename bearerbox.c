@@ -524,18 +524,26 @@ static void *smsboxconnection_thread(void *arg)
  */
 int find_bbt_index(void)
 {
-    BBThread *thr;
-    int i;
+    BBThread *thr, **new;
+    int i, ns, in;
     
     for(i=0; i < bbox->thread_limit; i++) {
 	thr = bbox->threads[i];
 	if (thr == NULL)
 	    return i;
     }
-    /* OUT OF ROOM - REALLOC DATA!
-     */
-    panic(0, "Out of room, cannot creat a new thread!");
-    return 0;
+    ns = bbox->thread_limit * 2;
+    new = realloc(bbox->threads, sizeof(BBThread *) * ns);
+    if (new == NULL) {
+	error(0, "Failed to realloc thread space!");
+	return -1;
+    }
+    in = i;
+    bbox->thread_limit = ns;
+    for(; i < bbox->thread_limit; i++)
+	bbox->threads[i] = NULL;
+
+    return in;
 }
 
 /*
