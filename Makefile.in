@@ -82,6 +82,7 @@ JADE=@JADE@
 JADETEX=@JADETEX@
 DVIPS=@DVIPS@
 FIG2DEV=@FIG2DEV@
+PS2PDF=@PS2PDF@
 
 HTML_DSL=@HTML_DSL@
 TEX_DSL=@TEX_DSL@
@@ -145,14 +146,14 @@ man1pages = utils/seewbmp.1 wmlscript/wmlsc.1 wmlscript/wmlsdasm.1
 man8pages = gw/kannel.8 utils/run_kannel_box.8
 
 docsrcs = $(shell grep -l '<!DOCTYPE ' doc/*/*.xml)
-docs = $(docsrcs:.xml=.html) $(docsrcs:.xml=.ps)
+docs = $(docsrcs:.xml=.html) $(docsrcs:.xml=.ps) $(docsrcs:.xml=.pdf)
 DOCSTARGET=@DOCSTARGET@
 
 figsrcs = $(shell echo doc/*/*.fig)
 figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 
 
-.SUFFIXES: $(SUFFIXES) .xml .html .ps .fig .png .y .c .o
+.SUFFIXES: $(SUFFIXES) .xml .html .ps .fig .png .y .c .o .pdf
 
 .xml.html:
 	sed "s/#FIGTYPE#/.png/;s/#VERSION#/`head -1 VERSION`/" $< > $*.tmp
@@ -167,6 +168,9 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 	cd `dirname $<` && jadetex `basename $*`.tex >/dev/null
 	cd `dirname $<` && dvips -q -o `basename $*`.ps `basename $*`.dvi
 	rm -f $*.dvi $*.tex $*.aux $*.log $*.tmp
+
+.ps.pdf:
+	$(PS2PDF) $< $@
 
 .fig.png:
 	fig2dev -Lpng $< $@

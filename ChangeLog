@@ -1,3 +1,12 @@
+2001-01-04  Lars Wirzenius  <liw@iki.fi>
+
+	* configure.in, Makefile.in: Added PDF conversion of docs.
+	
+	* doc/arch/*: Replaced the architecture document with a modified
+	version of the draft for my MSc thesis. The old document was
+	horribly out of date, the thesis draft is at least mostly current,
+	even if it is still missing a few bits.
+	
 2000-01-04 Aarno Syvänen <syvanen@wapit.com>
 
 	* wap/wap_events.def: Added Push OTA events
