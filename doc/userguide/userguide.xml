@@ -2220,6 +2220,115 @@ pin = 2345
    </tbody></tgroup></informaltable>
 </sect3>
 
+<sect3>
+<title>GSM modem 2</title>
+
+   <para>This new driver is replacing the old GSM Modem driver from Kannel. 
+   It allows a GSM Modem or Phone to be connected to Kannel and work as a
+   virtual SMSC</para>
+
+<programlisting>
+group = smsc
+smsc = at2
+modemtype = auto
+device = /dev/ttyS0
+speed = 9600
+pin = 2345
+</programlisting>
+
+ <informaltable frame=none>
+  <tgroup cols=3><thead><row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row></thead><tbody>
+
+   <row><entry><literal>modemtype</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+        Modems from different manufacturers have slightly different
+        behaviour. We need to know what type of modem is used. Use "auto"
+        or omit parameter to have kannel detect the modem type automatically.
+        (some types should not be autodetected like the Nokia Premicell).
+     </entry></row>
+
+   <row><entry><literal>device (m)</literal></entry>
+     <entry><literal>device-name</literal></entry>
+     <entry valign=bottom>
+          The device the modem is connected to, like <literal>/dev/ttyS0</literal>.
+     </entry></row>
+
+   <row><entry><literal>speed</literal></entry>
+     <entry><literal>serial speed in bps</literal></entry>
+     <entry valign=bottom>
+          The  speed in bits per second. default value 0 means autodetect.
+     </entry></row>
+
+   <row><entry><literal>pin</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+         This is the PIN number of the SIM card in the GSM modem. You can specify
+         this option if your SIM has never been used before and needs to have
+         the PIN number entered. The PIN is usually a four digit number.
+     </entry></row>
+
+   <row><entry><literal>validityperiod</literal></entry>
+     <entry><literal>integer</literal></entry>
+     <entry valign=bottom>
+     	 How long the message will be valid, i.e., how long the SMS
+	 center (the real one, not the phone acting as one for Kannel)
+	 will try to send the message to the recipient. Encoded as per
+	 the GSM 03.40 standard, section 9.2.3.12. Default is
+	 167, meaning 24 hours.
+     </entry></row>
+
+   </tbody></tgroup></informaltable>
+
+ <informaltable frame=none>
+  <tgroup cols=3><thead><row>
+     <entry>Modem Type</entry>
+     <entry>Modems</entry>
+   </row></thead><tbody>
+
+   <row><entry><literal>wavecom</literal></entry>
+     <entry valign=bottom>
+     	Wavecom
+     </entry></row>
+
+   <row><entry><literal>premicell</literal></entry>
+     <entry valign=bottom>
+     	Nokia Premicell
+     </entry></row>
+
+   <row><entry><literal>siemens</literal></entry>
+     <entry valign=bottom>
+     	Siemens M20 (this modem have some bugs)
+     </entry></row>
+
+   <row><entry><literal>siemens-tc35</literal></entry>
+     <entry valign=bottom>
+     	Siemens TC35
+     </entry></row>
+
+   <row><entry><literal>falcom</literal></entry>
+     <entry valign=bottom>
+     	Falcom
+     </entry></row>
+
+   <row><entry><literal>nokiaphone</literal></entry>
+     <entry valign=bottom>
+     	Nokia 6210, 7210, 8210 (tested). Probably other 
+	nokia phones too.
+     </entry></row>
+
+   <row><entry><literal>ericsson</literal></entry>
+     <entry valign=bottom>
+     	Ericsson
+     </entry></row>
+
+   </tbody></tgroup></informaltable>
+</sect3>
+
 
 <sect3>
 <title>Fake SMSC</title>
