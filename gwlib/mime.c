@@ -275,6 +275,50 @@ MIMEEntity *mime_octstr_to_entity(Octstr *mime)
 }
 
 
+List *mime_entity_headers(MIMEEntity *m)
+{
+    List *headers;
+
+    gw_assert(m != NULL && m->headers != NULL);
+
+    headers = http_header_duplicate(m->headers);
+
+    return headers;
+}
+
+
+Octstr *mime_entity_body(MIMEEntity *m)
+{
+    Octstr *os, *body;
+    ParseContext *context;
+    MIMEEntity *e;
+
+    gw_assert(m != NULL && m->headers != NULL);
+
+    os = mime_entity_to_octstr(m);
+    context = parse_context_create(os);
+    e = mime_entity_create();
+
+    /* parse the headers up to the body */
+    if ((read_mime_headers(context, e->headers) != 0) || e->headers == NULL) {
+        debug("mime.parse",0,"Failed to read MIME headers in Octstr block:");
+        octstr_dump(os, 0);
+        mime_entity_destroy(e);
+        parse_context_destroy(context);
+        return NULL;
+    }
+
+    /* the rest is the body */
+    body = parse_get_rest(context);
+
+    octstr_destroy(os);
+    mime_entity_destroy(e);
+    parse_context_destroy(context);
+
+    return body;
+}
+
+
 /********************************************************************
  * Routines for debugging purposes.
  */
