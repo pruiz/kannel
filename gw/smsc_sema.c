@@ -604,7 +604,7 @@ static int X28_open_send_link(int padfd, char *nua) {
     sprintf(writebuff, "%s\r", nua);
     sprintf(smscbuff, "%s COM",nua);
   
-    while(writeall < (int) strlen(writebuff)){
+    while(writeall < strlen(writebuff)){
 	writeonce = -1;
 	writeonce = write(padfd, writebuff+writeall, strlen(writebuff)-writeall);
 	if(writeonce == -1){
@@ -621,7 +621,7 @@ static int X28_open_send_link(int padfd, char *nua) {
 
     time(&timestart);
     while(time(NULL) - timestart < INTERNAL_CONNECT_TIMEVAL){
-	if(readall >= (int) sizeof(readbuff))
+	if(readall >= sizeof(readbuff))
 	    goto error_overflow;
 	/* We read 1 char a time */
 	readonce = read(padfd, &readbuff[readall], 1);
@@ -691,7 +691,7 @@ static int X28_data_read(int padfd, char *cbuffer) {
 	    goto eof;
        
 	readall += ret;
-	if (len > (int) sizeof(cbuffer)- 256) {
+	if (len >  sizeof(cbuffer)- 256) {
 	    p = gw_realloc(cbuffer, sizeof(cbuffer) * 2);
 	    memset(p+len,0,sizeof(cbuffer)*2 - len);
 	    cbuffer = p;
@@ -972,6 +972,8 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 	memset(IA5buff,0,sizeof(IA5buff));
 	memcpy(IA5buff,octstr_get_cstr(segments[i].content),
 	       octstr_len(segments[i].content));
+
+        info(0,"echo send buffer %s",IA5buff);
 	iret =X28_data_send(smsc->sema_fd,IA5buff,strlen(IA5buff));
 	if(iret == -1)
 	    goto error;
@@ -1465,6 +1467,7 @@ error_msg:
 static int sema_encode_msg(sema_msg* pmsg, char* str) {
     struct sm_submit_invoke *submit_sm = NULL;
     Octstr *IA5msg = NULL;
+    int tSize = 0;
     unsigned char oc1byte[10];
     IA5msg = octstr_create_empty();	
     switch(pmsg->type)
@@ -1498,12 +1501,15 @@ static int sema_encode_msg(sema_msg* pmsg, char* str) {
 	line_append_hex_IA5(IA5msg, oc1byte, 1);
 	write_variable_value(submit_sm->replypath, oc1byte);/*use reply path*/
 	line_append_hex_IA5(IA5msg, oc1byte, 1);
-	write_variable_value(submit_sm->textsizeseptet, oc1byte);
+	
             /*text size in 7 bits char*/
-	line_append_hex_IA5(IA5msg, oc1byte, 1);
-	write_variable_value(submit_sm->textsizeoctect, oc1byte);
+      	tSize = internal_char_hex_to_IA5(submit_sm->textsizeseptet,oc1byte);
+	octstr_insert_data(IA5msg, octstr_len(IA5msg), oc1byte, tSize);
+
             /*text size in 8 bits char*/
-	line_append_hex_IA5(IA5msg, oc1byte, 1);
+	tSize = internal_char_hex_to_IA5(submit_sm->textsizeoctect,oc1byte);  
+ 	octstr_insert_data(IA5msg, octstr_len(IA5msg), oc1byte, tSize);
+
 	line_append_hex_IA5(IA5msg,		      
 			    octstr_get_cstr(submit_sm->shortmsg),
 			    submit_sm->textsizeoctect); /*msg text*/

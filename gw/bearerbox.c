@@ -1280,10 +1280,11 @@ static void *http_request_thread(void *arg)
 	t = time(NULL) - start_time;
 	
 	sprintf(answer,
-		"<pre>%s (Time %dd %dh %dm %ds)\n\nQUEUE STATUS:\n%s\n\nTHREAD STATUS:\n%s</pre>",
+		"<pre>%s version %s (Time %dd %dh %dm %ds)\n\nQUEUE STATUS:\n%s\n\nTHREAD STATUS:\n%s</pre>",
 		(bbox->abort_program > 0) ? "Gateway is going down..." : 
 		(bbox->suspended > 0) ? "Gateway is currently suspended" :
-		"Gateway is running", t/3600/24, t/3600 % 24, t/60 % 60, t % 60,
+		"Gateway is running", VERSION,
+		t/3600/24, t/3600 % 24, t/60 % 60, t % 60,
 		buf, buf2);
     } else {
 
