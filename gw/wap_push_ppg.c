@@ -3025,13 +3025,13 @@ static Octstr *escape_fragment(Octstr *fragment)
     i = 0;
     while (i < octstr_len(fragment)) {
         if ((c = octstr_get_char(fragment, i)) == '"') {
-            replace_octstr_char(fragment, octstr_imm("&quot"), &i);
+            replace_octstr_char(fragment, octstr_imm("&quot;"), &i);
         } else if (c == '<') {
-            replace_octstr_char(fragment, octstr_imm("&lt"), &i);
+            replace_octstr_char(fragment, octstr_imm("&lt;"), &i);
         } else if (c == '>') {
-            replace_octstr_char(fragment, octstr_imm("&gt"), &i);
+            replace_octstr_char(fragment, octstr_imm("&gt;"), &i);
         } else if (c == '&') {
-            replace_octstr_char(fragment, octstr_imm("&amp"), &i);
+            replace_octstr_char(fragment, octstr_imm("&amp;"), &i);
 	    } 
     }
 
