@@ -1,6 +1,9 @@
 2002-04-04  Stipe Tolj  <tolj@wapme-systems.de>
+    * test/test_xmlrpc.c: fixed some memory leaks
+
+2002-04-04  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/xmlrpc.[ch]: additional parsing improvements, error handling
-    * test/test_xmprpc.c: added call to xmlrpc_call_send() in thread to
+    * test/test_xmlrpc.c: added call to xmlrpc_call_send() in thread to
       test sending XMP-RPC requests via HTTP POST to servers.
 
 2002-04-04  Stipe Tolj  <tolj@wapme-systems.de>
