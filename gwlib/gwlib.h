@@ -13,7 +13,10 @@
 #include <stddef.h>
 
 #include "wapitlib.h"
+#include "gwstr.h"
+#include "gwlog.h"
 #include "gwmem.h"
+#include "thread.h"
 #include "config.h"
 #include "http.h"
 #include "octstr.h"

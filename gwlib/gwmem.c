@@ -3,6 +3,7 @@
 #include "gwmem.h"
 #include <stdlib.h>
 #include <errno.h>
+#include <pthread.h>
 
 void *gw_malloc(size_t size)
 {
@@ -32,4 +33,5 @@ void  gw_free(void *ptr)
 {
     free(ptr);
 }
+
 

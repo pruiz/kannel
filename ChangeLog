@@ -1,3 +1,14 @@
+1999-11-29    <rpr@rpr.wapit.com>
+
+	* gw/smsbox_req.c: added sender username for sendsms request log
+	output
+
+	* gw/urltrans.c: fixed swapped receiver and sender
+
+	* gwlib/*.*: split wapitlib into several parts, some splitting
+	still possibly. All projects should work but those including 
+	wapitlib.h should be converted to use gwlib.h instead
+
 1999-11-26    <rpr@rpr.wapit.com>
 
 	* gwlib/gwmem.*, gwlib/gwlib.h: Added new dynamic memory handling

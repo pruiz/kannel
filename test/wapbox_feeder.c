@@ -3,9 +3,8 @@
 #include <unistd.h>
 #include <time.h>
 
-#include "wapitlib.h"
+#include "gwlib.h"
 #include "msg.h"
-#include "octstr.h"
 
 int main(void) {
 	int i, s, ss, addrlen;

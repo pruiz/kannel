@@ -15,7 +15,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-#include "wapitlib.h"
+#include "gwlib.h"
 
 int main(int argc, char *argv[]) {
 

@@ -436,14 +436,14 @@ char *smsbox_req_sendsms(CGIArg *list)
 {
 	Msg *msg = NULL;
 	URLTranslation *t = NULL;
-	char *val, *from, *to, *text;
+	char *user, *val, *from, *to, *text;
 	char *udh = NULL;
 	int ret;
     
-	if (cgiarg_get(list, "username", &val) == -1)
+	if (cgiarg_get(list, "username", &user) == -1)
 		t = urltrans_find_username(translations, "default");
 	else 
-		t = urltrans_find_username(translations, val);
+		t = urltrans_find_username(translations, user);
     
 	if (t == NULL || 
 		cgiarg_get(list, "password", &val) == -1 ||
@@ -472,7 +472,8 @@ char *smsbox_req_sendsms(CGIArg *list)
 		return "Sender missing and no global set";
 	}
     
-	info(0, "/cgi-bin/sendsms <%s> <%s> <%s>", from, to, text);
+	info(0, "/cgi-bin/sendsms <%s:%s> <%s> <%s>", user ? user : "default",
+	     from, to, text);
   
 	msg = msg_create(smart_sms);
 	if (msg == NULL) goto error;

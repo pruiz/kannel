@@ -258,15 +258,15 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 				s = strchr(s, '\0');
 			}
 			break;
-		case 'p':
+		case 'P':
 			encode_for_url(enc, octstr_get_cstr(request->smart_sms.sender));
 			sprintf(s, "%s", enc);
 			break;
-		case 'P':
+		case 'p':
 			encode_for_url(enc, octstr_get_cstr(request->smart_sms.receiver));
 			sprintf(s, "%s", enc);
 			break;
-		case 'q':
+		case 'Q':
 			if (strncmp(octstr_get_cstr(request->smart_sms.sender),
 				    "00", 2) == 0) {
 				encode_for_url(enc, octstr_get_cstr(request->smart_sms.sender) + 2);
@@ -276,7 +276,7 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 				sprintf(s, "%s", enc);
 			}
 			break;
-		case 'Q':
+		case 'q':
 			if (strncmp(octstr_get_cstr(request->smart_sms.receiver), "00", 2) == 0) {
 				encode_for_url(enc, octstr_get_cstr(request->smart_sms.receiver) + 2);
 				sprintf(s, "%%2B%s", enc);

@@ -9,8 +9,7 @@
 
 
 #include "msg.h"
-#include "octstr.h"
-#include "wapitlib.h"
+#include "gwlib.h"
 
 int main(void) {
 	Msg *msg, *msg2;

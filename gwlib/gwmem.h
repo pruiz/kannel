@@ -1,14 +1,12 @@
 /*
  * This is a simple malloc()-wrapper. It does not return NULLs but
- * instead panics.
+ * instead panics. It also introduces mutex wrappers
  *
  * Kalle 'rpr' Marjola 1999
  */
 
 #ifndef _GWMEM_H
 #define _GWMEM_H
-
-#include <stdlib.h>
 
 /* these functions are as equivalent stdlib functions, except
  *
@@ -21,5 +19,7 @@
 void *gw_malloc(size_t size);
 void *gw_realloc(void *ptr, size_t size);
 void  gw_free(void *ptr);
+
+
 
 #endif
