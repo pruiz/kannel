@@ -266,10 +266,10 @@ void *wsp_http_thread(void *arg) {
                         if (octstr_str_compare(value_os, "application/vnd.wap.wmlscriptc") == 0)
                            wmlscriptc_ok = 1;
                 }
-	}
 
-        octstr_destroy(key_os);
-        octstr_destroy(value_os);
+        	octstr_destroy(key_os);
+	        octstr_destroy(value_os);
+	}
 
 	if (wmlc_ok && !wml_ok) {
 		list_append(req_headers, 

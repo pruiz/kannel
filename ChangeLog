@@ -1,3 +1,8 @@
+2000-05-15  Richard Braakman  <dark@wapit.com>
+
+	* wsp_http.c: octstr_destroy(key_os) and (value_os) moved into the
+	loop, so that it's not a memory leak.
+
 2000-05-11   Aarno Syvänen <syvanen@wapit.com>
 
 	* wsp_http.c: Using octstr_compare instead of strstr in conditional 
