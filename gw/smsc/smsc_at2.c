@@ -35,13 +35,6 @@
 #include "dlr.h"
 #include "smsc_at2.h"
 
-
-static void at2_octstr_destroy(Octstr *ostr)
-{
-    octstr_destroy(ostr);
-}
-
-
 static int at2_open_device1(PrivAT2data *privdata)
 {
     info(0, "AT2[%s]: opening device", octstr_get_cstr(privdata->name));
@@ -241,6 +234,7 @@ int at2_write_line(PrivAT2data *privdata, char *line)
 {
     int count;
     int s = 0;
+    int write_count = 0;
     Octstr *linestr = NULL;
 
     linestr = octstr_format("%s\r", line);
@@ -248,7 +242,15 @@ int at2_write_line(PrivAT2data *privdata, char *line)
     debug("bb.smsc.at2", 0, "AT2[%s]: --> %s^M", octstr_get_cstr(privdata->name), line);
 
     count = octstr_len(linestr);
-    s = write(privdata->fd, octstr_get_cstr(linestr), count);
+    while (1) {
+	errno = 0;
+	s = write(privdata->fd, octstr_get_cstr(linestr), count);
+	if (s < 0 && errno == EAGAIN && write_count < RETRY_SEND) {
+	    gwthread_sleep(1);
+	    ++write_count;
+	} else
+	    break;
+    };
     O_DESTROY(linestr);
     if (s < 0) {
         debug("bb.smsc.at2", 0, "AT2[%s]: write failed with errno %d", 
@@ -266,9 +268,18 @@ int at2_write_ctrlz(PrivAT2data *privdata)
 {
     int s;
     char *ctrlz = "\032" ;
-
+    int write_count = 0;
+    
     debug("bb.smsc.at2", 0, "AT2[%s]: --> ^Z", octstr_get_cstr(privdata->name));
-    s = write(privdata->fd, ctrlz, 1);
+    while (1) {
+	errno = 0;
+	s = write(privdata->fd, ctrlz, 1);
+	if (s < 0 && errno == EAGAIN && write_count < RETRY_SEND) {
+	    gwthread_sleep(1);
+	    ++write_count;
+	} else
+	    break;
+    };
     if (s < 0) {
         debug("bb.smsc.at2", 0, "AT2[%s]: write failed with errno %d", 
               octstr_get_cstr(privdata->name), errno);
@@ -430,7 +441,7 @@ int	at2_init_device(PrivAT2data *privdata)
         ts = list_search(vals, octstr_imm("1"), (void*) octstr_item_match);
         if (ts)
             privdata->phase2plus = 1;
-        list_destroy(vals, (void*) at2_octstr_destroy);
+        list_destroy(vals, octstr_destroy_item);
     }
     if (privdata->phase2plus) {
         info(0, "AT2[%s]: Phase 2+ is supported", octstr_get_cstr(privdata->name));
@@ -470,7 +481,7 @@ int at2_send_modem_command(PrivAT2data *privdata, char *cmd, time_t timeout, int
 
 
 int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag, 
-                           int *messages_collected)
+                           int *output)
 {
     Octstr *line = NULL;
     Octstr *line2 = NULL;
@@ -523,7 +534,8 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag,
                 ret = 1;
                 goto end;
             }
-            if (octstr_search(line, octstr_imm("+CMT:"), 0) != -1 || 
+            if (octstr_search(line, octstr_imm("+CMT:"), 0) != -1 ||
+		octstr_search(line, octstr_imm("+CDS:"), 0) != -1 ||
                 ((octstr_search(line, octstr_imm("+CMGR:"), 0) != -1) && (cmgr_flag = 1)) ) {
                 line2 = at2_wait_line(privdata, 1, 0);
 
@@ -541,8 +553,8 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag,
                               octstr_get_cstr(privdata->name));
                     } else {
                         /* count message even if I can't decode it */
-                        if (messages_collected)
-                            ++(*messages_collected);
+                        if (output)
+                            ++(*output);
                         msg = at2_pdu_decode(pdu, privdata);
                         if (msg != NULL) {
                             msg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
@@ -558,6 +570,14 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag,
                     }
                 }
                 continue;
+            }
+            if ((octstr_search(line, octstr_imm("+CMGS:"),0) != -1) && (output)) {
+		/* found response to a +CMGS command, read the message id and return it in output */
+		long temp;
+		if (octstr_parse_long(&temp, line, octstr_search(line, octstr_imm("+CMGS:"),0)+6,10) == -1)
+		    error(0,"AT2[%s]: got +CMGS but failed to read message id", octstr_get_cstr(privdata->name));
+		else
+		    *output = temp;
             }
 
             if ( -1 != octstr_search(line, octstr_imm("ERROR"), 0)) {
@@ -871,7 +891,7 @@ reconnect:
             error(0, "AT2[%s]: Opening failed. Terminating", octstr_get_cstr(privdata->name));
             if (!privdata->retry) {
                 privdata->shutdown = 1;
-                return;
+                //return;
             } else
                 continue;
         }
@@ -914,6 +934,16 @@ reconnect:
     conn->status = SMSCCONN_DISCONNECTED;
     /* maybe some cleanup here? */
     at2_destroy_modem(privdata->modem);
+    octstr_destroy(privdata->device);
+    octstr_destroy(privdata->ilb);
+    octstr_destroy(privdata->lines);
+    octstr_destroy(privdata->pin);
+    octstr_destroy(privdata->validityperiod);
+    octstr_destroy(privdata->my_number);
+    octstr_destroy(privdata->sms_center);
+    octstr_destroy(privdata->name);
+    octstr_destroy(privdata->configfile);
+    list_destroy(privdata->outgoing_queue, NULL);
     gw_free(conn->data);
     conn->data = NULL;
     conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
@@ -954,8 +984,13 @@ int at2_shutdown_cb(SMSCConn *conn, int finish_sending)
 
 long at2_queued_cb(SMSCConn *conn)
 {
+    long ret;
     PrivAT2data *privdata = conn->data;
-    long ret = list_len(privdata->outgoing_queue);
+
+    if (conn->status == SMSCCONN_DEAD) /* I'm dead, why would you care ? */
+	return -1;
+	
+    ret = list_len(privdata->outgoing_queue);
 
     /* use internal queue as load, maybe something else later */
 
@@ -968,11 +1003,13 @@ void at2_start_cb(SMSCConn *conn)
 {
     PrivAT2data *privdata = conn->data;
 
+    if (conn->status == SMSCCONN_DISCONNECTED)
+        conn->status = SMSCCONN_ACTIVE;
+    
     /* in case there are messages in the buffer already */
     gwthread_wakeup(privdata->device_thread);
     debug("smsc.at2", 0, "AT2[%s]: start called", octstr_get_cstr(privdata->name));
 }
-
 
 int at2_add_msg_cb(SMSCConn *conn, Msg *sms)
 {
@@ -1107,25 +1144,30 @@ int at2_pdu_extract(PrivAT2data *privdata, Octstr **pdu, Octstr *line)
 
     buffer = octstr_duplicate(line);
     /* find the beginning of a message from the modem*/
-    if ((pos = octstr_search(buffer, octstr_imm("+CMT:"), 0)) != -1)
-        pos += 5;
-    else if ((pos = octstr_search(buffer, octstr_imm("+CMGR:"), 0)) != -1) {
-        pos += 6;
-        if ((pos = octstr_search(buffer, octstr_imm(","), pos)) != -1) 
-            /* skip status field in +CMGR response */
-            pos++;
-        else
-            goto nomsg;
-    } else
-        goto nomsg;
 
-    tmp = octstr_search(buffer, octstr_imm(","), pos);
-    if (! privdata->modem->broken && tmp == -1)
-        goto nomsg;
-    if (tmp != -1)
-        pos = tmp + 1;
+    if ((pos = octstr_search(buffer, octstr_imm("+CDS:"), 0)) != -1) 
+	pos += 5;
+    else {
+	if ((pos = octstr_search(buffer, octstr_imm("+CMT:"), 0)) != -1)
+	    pos += 5;
+	else if ((pos = octstr_search(buffer, octstr_imm("+CMGR:"), 0)) != -1) {
+	    /* skip status field in +CMGR response */
+	    if ((pos = octstr_search(buffer, octstr_imm(","), pos + 6)) != -1) 
+		pos++;
+	    else
+		goto nomsg;
+	} else
+	    goto nomsg;
 
-    /* The message length is after the comma */
+	/* skip the next comma in CMGR and CMT responses */
+	tmp = octstr_search(buffer, octstr_imm(","), pos);
+	if (! privdata->modem->broken && tmp == -1)
+	    goto nomsg;
+	if (tmp != -1)
+	    pos = tmp + 1;
+    }
+
+    /* read the message length */
     pos = octstr_parse_long(&len, buffer, pos, 10);
     if (pos == -1)
         goto nomsg;
@@ -1183,6 +1225,9 @@ Msg *at2_pdu_decode(Octstr *data, PrivAT2data *privdata)
         case AT_DELIVER_SM:
             msg = at2_pdu_decode_deliver_sm(data, privdata);
             break;
+        case AT_STATUS_REPORT_SM:
+	    msg = at2_pdu_decode_report_sm(data, privdata);
+	    break;
 
             /* Add other message types here: */
 
@@ -1354,6 +1399,112 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
     return message;
 }
 
+Msg *at2_pdu_decode_report_sm(Octstr *data, PrivAT2data *privdata)
+{
+   Msg* dlrmsg = NULL;
+   Octstr *pdu, *msg_id, *tmpstr = NULL, *receiver = NULL;
+   int type, tp_mr, len, ntype, pos;
+
+    /*
+     * parse the PDU.
+     */
+
+    /* convert the pdu to binary format for ease of processing */
+    pdu = at2_convertpdu(data);
+
+    /* Message reference */
+    tp_mr = octstr_get_char(pdu,1);
+    msg_id = octstr_format("%d",tp_mr);
+    debug("bb.smsc.at2",0,"AT2[%s]: got STATUS-REPORT for message <%d>:", octstr_get_cstr(privdata->name), tp_mr);
+    
+    /* reciver address */
+    len = octstr_get_char(pdu, 2);
+    ntype = octstr_get_char(pdu, 3);
+
+    pos = 4;
+    if ((ntype & 0xD0) == 0xD0) {
+        /* Alphanumeric sender */
+        receiver = octstr_create("");
+        tmpstr = octstr_copy(pdu, pos, (len+1)/2);
+        at2_decode7bituncompressed(tmpstr, (((len - 1) * 4 - 3) / 7) + 1, receiver, 0);
+        octstr_destroy(tmpstr);
+        debug("bb.smsc.at2", 0, "AT2[%s]: Alphanumeric receiver <%s>",
+              octstr_get_cstr(privdata->name), octstr_get_cstr(receiver));
+        pos += (len + 1) / 2;
+    } else {
+	int i;
+        receiver = octstr_create("");
+        if ((ntype & 0x90) == 0x90) {
+            /* International number */
+            octstr_append_char(receiver, '+');
+        }
+        for (i = 0; i < len; i += 2, pos++) {
+            octstr_append_char(receiver, (octstr_get_char(pdu, pos) & 15) + 48);
+            if (i + 1 < len)
+                octstr_append_char(receiver, (octstr_get_char(pdu, pos) >> 4) + 48);
+        }
+        debug("bb.smsc.at2", 0, "AT2[%s]: Numeric receiver %s <%s>",
+              octstr_get_cstr(privdata->name), ((ntype & 0x90) == 0x90 ? "(international)" : ""),
+              octstr_get_cstr(receiver));
+    }
+
+    pos += 14; /* skip time stamps for now */
+
+    if ((type = octstr_get_char(pdu, pos)) == -1 ) {
+	error(1,"AT2[%s]: STATUS-REPORT pdu too short to have TP-Status field !",
+	    octstr_get_cstr(privdata->name));
+	goto error;
+    }
+
+	/* check DLR type:
+	 * 3GPP TS 23.040 defines this a bit mapped field with lots of options
+	 * most of which are not really intersting to us, as we are only interested
+	 * in one of three conditions : failed, held in SC for delivery later, or delivered successfuly
+	 * and here's how I suggest to test it (read the 3GPP reference for further detailes) -
+	 * we'll test the 6th and 5th bits (7th bit when set making all other values 'reseved' so I want to test it).
+	 */
+    type = type & 0xE0; /* filter out everything but the 7th, 6th and 5th bits */
+    switch (type) {
+	case 0x00:
+	    /* 0 0 : success class */
+	    type = DLR_SUCCESS;
+	    tmpstr = octstr_create("Success/");
+	    break;
+	case 0x20:
+	    /* 0 1 : buffered class (temporary error) */
+	    type = DLR_BUFFERED;
+	    tmpstr = octstr_create("Buffered/");
+	    break;
+	case 0x40:
+	case 0x60:
+	default:
+	    /* 1 0 : failed class */
+	    /* 1 1 : failed class (actually, temporary error but timed out) */
+	    /* and any other value (can't think of any) is considered failure */
+	    type = DLR_FAIL;
+	    tmpstr = octstr_create("Failed/");
+	    break;
+    }
+    /* Actually, the above implementation is not correct, as the reference says that implementations should consider
+     * any "reserved" values to be "failure", but most reserved values fall into one of the three categories. it will catch
+     * "reserved" values where the first 3 MSBits are not set as "Success" which may not be correct. */
+
+    if ((dlrmsg = dlr_find(octstr_get_cstr(privdata->conn->id),
+	    octstr_get_cstr(msg_id), octstr_get_cstr(receiver), type)) == NULL) {
+	debug("bb.smsc.at2",1,"AT2[%s]: Received delivery notification but can't find that ID in the DLR storage",
+	    octstr_get_cstr(privdata->name));
+	    goto error;
+    }
+
+    octstr_insert(dlrmsg->sms.msgdata, tmpstr, 0);
+	
+error:
+    O_DESTROY(tmpstr);
+    O_DESTROY(pdu);
+    O_DESTROY(receiver);
+    O_DESTROY(msg_id);
+    return dlrmsg;
+}
 
 Octstr *at2_convertpdu(Octstr *pdutext)
 {
@@ -1434,7 +1585,7 @@ void at2_send_messages(PrivAT2data *privdata)
 
 void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 {
-    unsigned char command[500], pdu[500];
+    unsigned char command[500];
     int ret = -1;
     char sc[3];
     int retries = RETRY_SEND;
@@ -1456,18 +1607,24 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
         strcpy(sc, "00");
 
     if (msg_type(msg) == sms) {
-        at2_pdu_encode(msg, &pdu[0], privdata);
+	Octstr* pdu;
+
+	if ((pdu = at2_pdu_encode(msg, privdata)) == NULL) {
+	    error(2, "AT2[%s]: Error encoding PDU!",octstr_get_cstr(privdata->name));
+	    return;
+	}	
 
         ret = -99;
         retries = RETRY_SEND;
         while ((ret != 0) && (retries-- > 0)) {
+	    int msg_id = -1;
             /* 
              * send the initial command and then wait for > 
              */
-            sprintf(command, "AT+CMGS=%d", strlen(pdu) / 2);
+            sprintf(command, "AT+CMGS=%ld", octstr_len(pdu) / 2);
             
             ret = at2_send_modem_command(privdata, command, 5, 1);
-            debug("bb.at", 0, "AT2[%s]: send command status: %d",
+            debug("bb.smsc.at2", 0, "AT2[%s]: send command status: %d",
                   octstr_get_cstr(privdata->name), ret);
 
             if (ret != 1) /* > only! */
@@ -1476,22 +1633,83 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
              * ok the > has been see now so we can send the PDU now and a 
              * control Z but no CR or LF 
              */
-            sprintf(command, "%s%s", sc, pdu);
+            sprintf(command, "%s%s", sc, octstr_get_cstr(pdu));
             at2_write(privdata, command);
             at2_write_ctrlz(privdata);
             
             /* wait 20 secs for modem command */
-            ret = at2_wait_modem_command(privdata, 20, 0, NULL);
-            debug("bb.at", 0, "AT2[%s]: send command status: %d",
+            ret = at2_wait_modem_command(privdata, 20, 0, &msg_id);
+            debug("bb.smsc.at2", 0, "AT2[%s]: send command status: %d",
                   octstr_get_cstr(privdata->name), ret);
             
             if (ret != 0) /* OK only */
                 continue;
+
+	    /* gen DLR_SMSC_SUCCESS */
+	    if (msg->sms.dlr_mask & DLR_SMSC_SUCCESS)
+	    {
+		Msg* dlrmsg;
+
+		dlrmsg = msg_create(sms);
+		dlrmsg->sms.id = msg->sms.id;
+                dlrmsg->sms.service = octstr_duplicate(msg->sms.service);
+                dlrmsg->sms.dlr_mask = DLR_SMSC_SUCCESS;
+                dlrmsg->sms.sms_type = report;
+                dlrmsg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
+                dlrmsg->sms.sender = octstr_duplicate(msg->sms.receiver);
+                dlrmsg->sms.receiver = octstr_duplicate(msg->sms.sender);
+                dlrmsg->sms.msgdata = octstr_create("ACK/");
+                octstr_append(dlrmsg->sms.msgdata,msg->sms.dlr_url);
+                time(&dlrmsg->sms.time);
+
+		debug("bb.smsc.at2",0,"AT2[%s]: sending DLR type ACK", octstr_get_cstr(privdata->name));
+		bb_smscconn_receive(privdata->conn, dlrmsg);
+
+	    }
+
+	    /* store DLR message if needed for SMSC generated delivery reports */
+	    if (msg->sms.dlr_mask & (DLR_SUCCESS | DLR_FAIL | DLR_BUFFERED)) {
+		if (msg_id == -1)
+		    error(0,"AT2[%s]: delivery notification requested, but I have no message ID!",
+			octstr_get_cstr(privdata->name));
+		 else {
+		     Octstr* dlrmsgid = octstr_format("%d", msg_id);
+
+		     dlr_add(octstr_get_cstr(privdata->conn->id),
+			octstr_get_cstr(dlrmsgid),
+			octstr_get_cstr(msg->sms.receiver),
+			octstr_get_cstr(msg->sms.service),
+			octstr_get_cstr(msg->sms.dlr_url),
+			msg->sms.dlr_mask);
+				
+		    O_DESTROY(dlrmsgid);
+		}
+	    }
+
             counter_increase(privdata->conn->sent);
             bb_smscconn_sent(privdata->conn, msg);
         }
 
         if (ret != 0) {
+	    /* gen DLR_SMSC_FAIL */
+	    if (msg->sms.dlr_mask & DLR_SMSC_FAIL) {
+		Msg* dlrmsg;
+
+		dlrmsg = msg_create(sms);
+                dlrmsg->sms.service = octstr_duplicate(msg->sms.service);
+                dlrmsg->sms.dlr_mask = DLR_SMSC_FAIL;
+                dlrmsg->sms.sms_type = report;
+                dlrmsg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
+                dlrmsg->sms.sender = octstr_duplicate(msg->sms.receiver);
+                dlrmsg->sms.receiver = octstr_duplicate(msg->sms.sender);
+                dlrmsg->sms.msgdata = octstr_create("NACK/");
+                octstr_append(dlrmsg->sms.msgdata,msg->sms.dlr_url);
+                time(&dlrmsg->sms.time);
+
+		debug("bb.smsc.at2",0,"AT2[%s]: sending DLR type NACK", octstr_get_cstr(privdata->name));
+		bb_smscconn_receive(privdata->conn, dlrmsg);
+	    }
+
             /*
              * no need to do counter_increase(privdata->conn->failed) here, 
              * since bb_smscconn_send_failed() will inc the counter on 
@@ -1499,107 +1717,47 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
              */
             bb_smscconn_send_failed(privdata->conn, msg, SMSCCONN_FAILED_MALFORMED);
         }
+
+        O_DESTROY(pdu);
     }
 }
 
 
-int at2_pdu_encode(Msg *msg, unsigned char *pdu, PrivAT2data *privdata)
+Octstr* at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
 {
-    int pos = 0, i, len, setvalidity = 0;
-    int ntype = PNT_UNKNOWN; /* number type default */
-    int nstartpos = 0; /* offset for the phone number */
-    int dcs; /* data coding scheme (GSM 03.38) */
+    /*
+     * Message coding is done as a binary octet string,
+     * as per 3GPP TS 23.040 specification (GSM 03.40),
+     */
+    Octstr *pdu = NULL, *temp = NULL, *buffer = octstr_create("");
+     
+    int len, setvalidity = 0;
 
     /* 
-     * The message is encoded directly in the text representation of
-     * the hex values that will be sent to the modem.
-     * Each octet is coded with two characters. 
+     * message type SUBMIT , bit mapped :
+     * bit7                            ..                                    bit0
+     * TP-RP , TP-UDHI, TP-SRR, TP-VPF(4), TP-VPF(3), TP-RD, TP-MTI(1), TP-MTI(0)
      */
-
-    /* 
-     * message type SUBMIT
-     *    01010001 = 0x51 indicating add. UDH, TP-VP(Rel) & MSG_SUBMIT
-     * or 00010001 = 0x11 for just TP-VP(Rel) & MSG_SUBMIT 
-     */
-
-    pdu[pos] = octstr_len(msg->sms.udhdata) ? at2_numtext(5) : at2_numtext(1);
-    pos++;
-    pdu[pos] = at2_numtext(AT_SUBMIT_SM);
-    pos++;
+    octstr_append_char(buffer,
+	((msg->sms.rpi ? 1 : 0) << 7) /* TP-RP */
+	| ((octstr_len(msg->sms.udhdata)  ? 1 : 0) << 6) /* TP-UDHI */
+	| (((msg->sms.dlr_mask & (DLR_SUCCESS | DLR_FAIL | DLR_BUFFERED)) ? 1 : 0) << 5) /* TP-SRR */
+	| 16 /* TP-VP(Rel)*/
+	| 1 /* TP-MTI: SUBMIT_SM */
+	);
 
     /* message reference (0 for now) */
-    pdu[pos] = at2_numtext(0);
-    pos++;
-    pdu[pos] = at2_numtext(0);
-    pos++;
+    octstr_append_char(buffer, 0);
 
     /* destination address */
-    octstr_strip_blanks(msg->sms.receiver); /* strip blanks before length calculation */
-    len = octstr_len(msg->sms.receiver);
+    if ((temp = at2_format_address_field(msg->sms.receiver)) == NULL)
+	goto error;
+    octstr_append(buffer, temp);
+    O_DESTROY(temp);
 
-    /* 
-     * Check for international numbers
-     * number starting with '+' or '00' are international,
-     * others are national. 
-     */
-    if (strncmp(octstr_get_cstr(msg->sms.receiver), "+", 1) == 0) {
-        debug("bb.smsc.at2", 0, "AT2[%s]: international starting with + (%s)",
-              octstr_get_cstr(privdata->name), octstr_get_cstr(msg->sms.receiver));
-        nstartpos++;
-        ntype = PNT_INTER; /* international */
-    } else if (strncmp(octstr_get_cstr(msg->sms.receiver), "00", 2) == 0) {
-        debug("bb.smsc.at2", 0, "AT2[%s]: international starting with 00 (%s)",
-              octstr_get_cstr(privdata->name), octstr_get_cstr(msg->sms.receiver));
-        nstartpos += 2;
-        ntype = PNT_INTER; /* international */
-    }
-
-    /* address length */
-    pdu[pos] = at2_numtext(((len - nstartpos) & 240) >> 4);
-    pos++;
-    pdu[pos] = at2_numtext((len - nstartpos) & 15);
-    pos++;
-
-    /* Type of number */
-    pdu[pos] = at2_numtext(8 + ntype);
-    pos++;
-    /* numbering plan: ISDN/Telephone numbering plan */
-    pdu[pos] = at2_numtext(1);
-    pos++;
-
-    /* 
-     * make sure there is no blank in the phone number and encode
-     * an even number of digits 
-     */
-    octstr_strip_blanks(msg->sms.receiver);
-    for (i = nstartpos; i < len; i += 2) {
-        if (i + 1 < len) {
-            pdu[pos] = octstr_get_char(msg->sms.receiver, i + 1);
-        } else {
-            pdu[pos] = at2_numtext (15);
-        }
-        pos++;
-        pdu[pos] = octstr_get_char(msg->sms.receiver, i);
-        pos++;
-    }
-
-    /* 
-     * protocol identifier 
-     * 0x00 implicit 
-     */
-    pdu[pos] = at2_numtext((msg->sms.pid & 240) >> 4);
-    pos++;
-    pdu[pos] = at2_numtext(msg->sms.pid & 15);
-    pos++;
-
-    /* data coding scheme */
-    dcs = fields_to_dcs(msg,
-                        (msg->sms.alt_dcs ? 2 - msg->sms.alt_dcs : privdata->alt_dcs));
-
-    pdu[pos] = at2_numtext(dcs >> 4);
-    pos++;
-    pdu[pos] = at2_numtext(dcs % 16);
-    pos++;
+    octstr_append_char(buffer, msg->sms.pid); /* protocol identifier */
+    octstr_append_char(buffer, fields_to_dcs(msg, /* data coding scheme */
+	(msg->sms.alt_dcs ? 2 - msg->sms.alt_dcs : privdata->alt_dcs)));
 
     /* 
      * Validity-Period (TP-VP)
@@ -1641,10 +1799,7 @@ int at2_pdu_encode(Msg *msg, unsigned char *pdu, PrivAT2data *privdata)
     else
         debug("bb.smsc.at2", 0, "AT2[%s]: TP-Validity-Period: %d weeks",
               octstr_get_cstr(privdata->name), (setvalidity - 192));
-    pdu[pos] = at2_numtext((setvalidity & 240) >> 4);
-    pos++;
-    pdu[pos] = at2_numtext(setvalidity & 15);
-    pos++;
+    octstr_append_char(buffer, setvalidity);
 
     /* user data length - include length of UDH if it exists */
     len = sms_msgdata_len(msg);
@@ -1652,6 +1807,10 @@ int at2_pdu_encode(Msg *msg, unsigned char *pdu, PrivAT2data *privdata)
     if (octstr_len(msg->sms.udhdata)) {
         if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
             len += octstr_len(msg->sms.udhdata);
+            if (len > SMS_8BIT_MAX_LEN) { /* truncate user data to allow UDH to fit */
+                octstr_delete(msg->sms.msgdata, SMS_8BIT_MAX_LEN - octstr_len(msg->sms.udhdata), 9999);
+                len = SMS_8BIT_MAX_LEN;
+            }
         } else {
             /*
              * The reason we branch here is because UDH data length is determined
@@ -1659,140 +1818,102 @@ int at2_pdu_encode(Msg *msg, unsigned char *pdu, PrivAT2data *privdata)
              * will ensure that for an octet length of 0, we get septet length 0,
              * and for octet length 1 we get septet length 2. 
              */
-            len += (((8 * octstr_len(msg->sms.udhdata)) + 6) / 7);
+            int temp_len;
+            len += (temp_len = (((8 * octstr_len(msg->sms.udhdata)) + 6) / 7));
+            if (len > SMS_7BIT_MAX_LEN) { /* truncate user data to allow UDH to fit */
+                octstr_delete(msg->sms.msgdata, SMS_7BIT_MAX_LEN - temp_len, 9999);
+                len = SMS_7BIT_MAX_LEN;
+            }
         }
     }
 
-    pdu[pos] = at2_numtext((len & 240) >> 4);
-    pos++;
-    pdu[pos] = at2_numtext(len & 15);
-    pos++;
+    octstr_append_char(buffer,len);
 
-    /* udh */
-    if (octstr_len(msg->sms.udhdata)) {
-        pos += at2_encode8bituncompressed(msg->sms.udhdata, &pdu[pos]);
-    }
+    if (octstr_len(msg->sms.udhdata)) /* udh */
+	octstr_append(buffer, msg->sms.udhdata);
 
-    /* 
-     * user data 
-     * if the data is too long, it is cut 
-     */
+    /* user data */
     if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
-        pos += at2_encode8bituncompressed(msg->sms.msgdata, &pdu[pos]);
+        octstr_append(buffer, msg->sms.msgdata);
     } else {
         int offset = 0;
 
+        /*
+         * calculate the number of fill bits needed to align
+         * the 7bit encoded user data on septet boundry
+         */
         if (octstr_len(msg->sms.udhdata)) { /* Have UDH */
             int nbits = octstr_len(msg->sms.udhdata) * 8; /* Includes UDH length byte */
             offset = (((nbits / 7) + 1) * 7 - nbits) % 7; /* Fill bits */
         }
-        pos += at2_encode7bituncompressed(msg->sms.msgdata, &pdu[pos], offset);
-    }
-    pdu[pos] = 0;
 
-    return 0;
+        charset_latin1_to_gsm(msg->sms.msgdata);
+        
+        if ((temp = at2_encode7bituncompressed(msg->sms.msgdata, offset)) != NULL)
+	    octstr_append(buffer, temp);
+        O_DESTROY(temp);
+    }
+
+    /* convert PDU to HEX representation suitable for the AT2 command set */
+    pdu = at2_encode8bituncompressed(buffer);
+    O_DESTROY(buffer);
+
+    return pdu;
+error:
+    O_DESTROY(temp);
+    O_DESTROY(buffer);
+    O_DESTROY(pdu);
+    return NULL;
 }
 
 
-int at2_encode7bituncompressed(Octstr *input, unsigned char *encoded, int offset)
+Octstr* at2_encode7bituncompressed(Octstr *source, int offset)
 {
+    int LSBmask[8] = { 0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F };
+    int MSBmask[8] = { 0x00, 0x40, 0x60, 0x70, 0x78, 0x7C, 0x7E, 0x7F };
+    int i = (offset?8-offset:7), iStore = offset;
+    int posT, posS;
+    Octstr *target = octstr_create("");
+    int target_chr = 0, source_chr;
 
-    unsigned char prevoctet, tmpenc;
-    int i;
-    int c = 1;
-    int r = 7;
-    int pos = 0;
-    int len;
-    unsigned char enc7bit[256];
-    int j, encpos = 0;
-    int ermask[8] = { 0, 1, 3, 7, 15, 31, 63, 127 };
-    int elmask[8] = { 0, 64, 96, 112, 120, 124, 126, 127 };
-
-    charset_latin1_to_gsm(input);
-    len = octstr_len(input);
-
-    /* 
-     * prevoctet is set to the first character and we'll start the loop
-     * at the following char. 
-     */
-    prevoctet = octstr_get_char(input , 0);
-    for (i = 1; i < octstr_len(input); i++) {
-        /* 
-         * a byte is encoded with what is left of the previous character
-         * and filled with as much as possible of the current one. 
-         */
-        tmpenc = prevoctet + ((octstr_get_char(input, i) & ermask[c]) << r);
-        enc7bit[encpos] = tmpenc;
-        encpos++;
-        c = (c > 6) ? 1 : c + 1;
-        r = (r < 2) ? 7 : r - 1;
-
-        /* 
-         * prevoctet becomes the part of the current octet that hasn't
-         * been copied to 'encoded' or the next char if the current has
-         * been completely copied already. 
-         */
-        prevoctet = (octstr_get_char(input, i) & elmask[r]) >> (c - 1);
-        if (r == 7) {
-            i++;
-            prevoctet = octstr_get_char(input, i);
-        }
+    /* start packing the septet stream into an octet stream */
+    for (posS = 0, posT = 0; (source_chr = octstr_get_char(source, posS++)) != -1;) {
+	/* grab least significant bits from current septet and store them packed to the right */
+	target_chr |= (source_chr & LSBmask[i]) << iStore;
+	/* store current byte if last command filled it */
+	if (iStore != 0) {
+	    octstr_append_char(target, target_chr);
+	    target_chr = 0;
+	}
+	/* grab most significant bits from current septet and store them packed to the left */
+	target_chr |= (source_chr & MSBmask[7 - i]) >> (8 - iStore) % 8;
+	/* advance target bit index by 7 ( modulo 8 addition ) */
+	iStore = (--iStore < 0 ? 7 : iStore);
+	if (iStore != 0) /* if just finished packing 8 septets (into 7 octets) don't advance mask index */
+	    i = (++i > 7 ? 1 : i); 
     }
 
-    /* 
-     * if the length of the message is a multiple of 8 then we
-     * are finished. Otherwise prevoctet still contains part of a 
-     * character so we add it. 
-     */
-    if ((len / 8)*8 != len) {
-        enc7bit[encpos] = prevoctet;
-        encpos++;
-    }
+    /* don't forget to pack the leftovers ;-) */
+    if (target_chr)
+	octstr_append_char(target, target_chr);
 
-    /* Now shift the buffer by the offset */
-    if (offset > 0) {
-        unsigned char nextdrop, lastdrop;
-
-        nextdrop = lastdrop = 0;
-        for (i = 0; i < encpos; i++) {
-            nextdrop = enc7bit[i] >> (8 - offset); /* This drops off by shifting */
-            if (i == 0)
-                enc7bit[i] = enc7bit[i] << offset; /* This drops off by shifting */
-            else
-                enc7bit[i] = (enc7bit[i] << offset) | lastdrop;
-            lastdrop = nextdrop;
-        }
-
-        if (offset > ((len*7) % 8)) {
-            enc7bit [i] = nextdrop;
-            i++;
-        }
-    } else
-        i = encpos;
-
-    for (j = 0; j < i; j++) {
-        encoded[pos] = at2_numtext((enc7bit [j] & 240) >> 4);
-        pos++;
-        encoded[pos] = at2_numtext(enc7bit [j] & 15);
-        pos++;
-    }
-    return pos;
-
+    return target;
 }
 
 
-int at2_encode8bituncompressed(Octstr *input, unsigned char *encoded)
+Octstr* at2_encode8bituncompressed(Octstr *input)
 {
     int len, i;
+    Octstr* out = octstr_create("");
 
     len = octstr_len(input);
 
     for (i = 0; i < len; i++) {
         /* each character is encoded in its hex representation (2 chars) */
-        encoded[i*2] = at2_numtext((octstr_get_char(input, i) & 240) >> 4);
-        encoded[i*2 + 1] = at2_numtext(octstr_get_char(input, i) & 15);
+        octstr_append_char(out, at2_numtext( (octstr_get_char(input, i) & 0xF0) >> 4));
+        octstr_append_char(out, at2_numtext( (octstr_get_char(input, i) & 0x0F)));
     }
-    return len*2;
+    return out;
 }
 
 
@@ -1949,7 +2070,7 @@ int at2_detect_modem_type(PrivAT2data *privdata)
         ts = list_search(vals, octstr_imm("1"), (void*) octstr_item_match);
         if (ts)
             privdata->phase2plus = 1;
-        list_destroy(vals, (void*) at2_octstr_destroy);
+        list_destroy(vals, octstr_destroy_item);
     }
     if (privdata->phase2plus)
         info(0, "AT2[%s]: Phase 2+ is supported", octstr_get_cstr(privdata->name));
@@ -2028,7 +2149,7 @@ ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int i
 
         modem->init_string = cfg_get(grp, octstr_imm("init-string"));
         if (modem->init_string == NULL)
-            modem->init_string = octstr_create("AT+CNMI=1,2,0,0,0");
+            modem->init_string = octstr_create("AT+CNMI=1,2,0,1,0");
 
         modem->speed = 9600;
         cfg_get_integer(&modem->speed, grp, octstr_imm("speed"));
@@ -2092,3 +2213,46 @@ int swap_nibbles(char byte)
     return ( ( byte & 15 ) * 10 ) + ( byte >> 4 );
 }
 
+Octstr* at2_format_address_field(Octstr* msisdn)
+{
+    int ntype;
+    Octstr* out = octstr_create("");
+    Octstr* temp = octstr_duplicate(msisdn);
+
+    octstr_strip_blanks(temp);
+    /*
+     * Check for international numbers
+     * number starting with '+' or '00' are international,
+     * others are national.
+     */
+    if (strncmp(octstr_get_cstr(msisdn), "+", 1) == 0) {
+	octstr_delete(temp, 0, 1);
+        ntype = PNT_INTER; /* international */
+    } else if (strncmp(octstr_get_cstr(msisdn), "00", 2) == 0) {
+        octstr_delete(temp, 0, 2);
+        ntype = PNT_INTER; /* international */
+    }
+
+    /* address length */
+    octstr_append_char(out, octstr_len(temp));
+
+    /* Type of address : bit mapped values */
+    octstr_append_char(out, 0x80 /* Type-of-address prefix */ |
+			    0x01 /* Numbering-plan: MSISDN */ |
+			    (ntype == PNT_INTER ? 0x10 : 0x00) /* Type-of-number: International or National */
+			    );
+
+    /* grab the digits from the MSISDN and encode as swapped semi-octets */
+    while (octstr_len(temp)) {
+	int digit1, digit2;
+	/* get the first two digit */
+	digit1 = octstr_get_char(temp,0) - 48;
+	if ((digit2 = octstr_get_char(temp,1) - 48) < 0)
+	    digit2 = 0x0F;
+	octstr_append_char(out, (digit2 << 4) | digit1);
+	octstr_delete(temp, 0, 2);
+    }
+
+    O_DESTROY(temp);
+    return out;	
+}

@@ -2871,8 +2871,7 @@ pin = 2345
                 Polling the memory is done at the same interval as keepalive (if set) or 60 seconds
                 (if not set).
                 NOTE: This behaviour is known to cause minor or major hicups for a few buggy modems.
-                A modem known not to like this setting is Siemens M20.
-                A modem known to work with this setting is Wavecom.
+                Modems known to work with this setting are Wavecom WM02/M1200 and the Siemens M20.
      </entry></row>
 
    </tbody></tgroup></informaltable>
@@ -2928,8 +2927,8 @@ pin = 2345
    <row><entry><literal>init-string</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
-     	Optional initialization string. Defaults to 
-	"AT+CNMI=1,2,0,0,0"
+     	Optional initialization string. Defaults to
+	"AT+CNMI=1,2,0,1,0"
      </entry></row>
 
    <row><entry><literal>speed</literal></entry>
@@ -3011,6 +3010,17 @@ pin = 2345
      </entry></row>
 
    </tbody></tgroup></informaltable>
+
+   <para><emphasis>A note about delivery reports and GSM modems:</emphasis>
+   while it is possible (and supported) to receive delivery reports on GSM 
+   modems, it may not work for you. if you encounter problems, check that your 
+   modem's init string (if not the default) is set to correctly allow the modem 
+   to send delivery reports using unsolicted notification (check your modem's 
+   manual). If the init-string is not set as si, some modems will store delivery 
+   reports to SIM memory, to get at which you will need to enable sim-buffering. 
+   finally your GSM network provider may not support delivery reports to mobile 
+   units.</para>
+
 </sect3>
 
 

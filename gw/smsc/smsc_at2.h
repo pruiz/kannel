@@ -19,6 +19,7 @@
 /* Message types defines */
 #define AT_DELIVER_SM   0
 #define AT_SUBMIT_SM    1
+#define AT_STATUS_REPORT_SM 2
 
 /* type of phone number defines */
 #define PNT_UNKNOWN     0
@@ -164,7 +165,7 @@ int	at2_send_modem_command(PrivAT2data *privdata, char *cmd, time_t timeout,
  * Waits for the modem to send us something.
  */
 int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, 
-                           int greaterflag, int* messages_collected);
+                           int greaterflag, int* output);
 
 /*
  * Sets the serial port speed on the device
@@ -209,6 +210,11 @@ Msg	*at2_pdu_decode(Octstr *data, PrivAT2data *privdata);
 Msg	*at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata);
 
 /*
+ * Decode a SUBMIT-REPORT PDU
+ */
+Msg	*at2_pdu_decode_report_sm(Octstr *data, PrivAT2data *privdata);
+
+/*
  * Converts the text representation of hexa to binary
  */
 Octstr *at2_convertpdu(Octstr *pdutext);
@@ -233,18 +239,17 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg);
 /*
  * Encode a Msg into a PDU
  */
-int	at2_pdu_encode(Msg *msg, unsigned char *pdu, PrivAT2data *privdata);
+Octstr* at2_pdu_encode(Msg *msg, PrivAT2data *privdata);
 
 /*
- * Encode 7bit uncompressed user data
+ * Encode 7bit uncompressed user data into an Octstr, prefixing with <offset> 0 bits
  */
-int at2_encode7bituncompressed(Octstr *input, unsigned char *encoded, 
-                               int offset);
+Octstr* at2_encode7bituncompressed(Octstr *input, int offset);
 
 /*
- * Encode 8bit uncompressed user data
+ * Encode 8bit uncompressed user data into an Octstr
  */
-int	at2_encode8bituncompressed(Octstr *input, unsigned char *encoded);
+Octstr*	at2_encode8bituncompressed(Octstr *input);
 
 /*
  * Code a half-byte to its text hexa representation
@@ -295,6 +300,11 @@ int at2_check_sms_memory(PrivAT2data* privdata);
  */
 int	swap_nibbles(char byte);
 
+/*
+ * creates a buffer with a valid PDU address field as per [GSM 03.40]
+ * from an MSISDN number
+ */
+Octstr* at2_format_address_field(Octstr* msisdn);
 
 #endif /* SMSC_AT2_H */
 

@@ -53,6 +53,10 @@
 #define DC_8BIT 2
 #define DC_UCS2 3
 
+#define SMS_7BIT_MAX_LEN 160
+#define SMS_8BIT_MAX_LEN 140
+#define SMS_UCS2_MAX_LEN 70
+
 /* Encode DCS using sms fields
  * mode = 0= encode using 00xxxxxx, 1= encode using 1111xxxx mode
  */
