@@ -1,5 +1,20 @@
 2000-10-04  Richard Braakman  <dark@wapit.com>
 
+	* gw/wap-appl.c: Pass the status code we really got from the server
+	to the client, instead of only accepting code 200 (HTTP_OK).
+	Use 502 (Bad Gateway) if the actual lookup failed.
+	Use http_get and http_post instead of http_get_real and http_post_real.
+	Together with the header encoding patch earlier today, these changes
+	allow HTTP redirection to work.
+
+	* gw/wap-appl.c, gwlib/http.h: Use symbolic names for HTTP status
+	codes.
+
+	* gw/wsp_headers.c: Correct small bug that made wsp_headers_pack
+	encode the content-type twice if separate_content_type was on.
+
+2000-10-04  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/gwmem.h, gwlib/gwmem-check.c: Let gw_claim_area return
 	the pointer it gets, and let it accept NULL pointers.  This
 	makes it easier to use in wrapper macros.

@@ -314,7 +314,7 @@ static void add_via(List *headers) {
 
 static void fetch_thread(void *arg) {
 	int status;
-	int ret=500;
+	int ret;
 	WAPEvent *event;
 	long client_SDU_size;
 	Octstr *url;
@@ -384,18 +384,17 @@ static void fetch_thread(void *arg) {
 
 	http_header_pack(actual_headers);
 
+	ret = HTTP_INTERNAL_SERVER_ERROR;
 	switch (method) {
 
 	case 0x40 :			/* Get request */
-
-		ret = http_get_real(url, actual_headers, 
-		     &content.url, &resp_headers, &content.body);
+		ret = http_get(url, actual_headers, 
+		               &resp_headers, &content.body);
 		break;
 
 	case 0x60 :			/* Post request		*/
-
-		ret = http_post_real(url, actual_headers, request_body,
-		     &content.url, &resp_headers, &content.body);
+		ret = http_post(url, actual_headers, request_body,
+		                &resp_headers, &content.body);
 		break;
 
 	case 0x41 :			/* Options	*/
@@ -403,21 +402,23 @@ static void fetch_thread(void *arg) {
 	case 0x43 :			/* Delete	*/
 	case 0x44 :			/* Trace	*/
 	case 0x61 :			/* Put		*/
-
 	default:
-		error(0, "WSP: Method not supported: %d.", method);
-		content.url = octstr_duplicate(url);
+		error(0, "WSP: Method %d not supported.", method);
 		content.body = octstr_create("");
 		resp_headers = NULL;
-		ret = 501;
-
+		ret = HTTP_NOT_IMPLEMENTED;
+		break;
 	}
 
-	if (ret != HTTP_OK) {
-		error(0, "WSP: http_get_real failed (%d), oops.", ret);
-		status = 500; /* Internal server error; XXX should be 503 */
+	if (content.url == NULL)
+		content.url = octstr_duplicate(url);
+
+	if (ret < 0) {
+		error(0, "WSP: http lookup failed, oops.");
+		status = HTTP_BAD_GATEWAY;
 		content.type = octstr_create("text/plain");
 		content.charset = octstr_create("");
+		content.body = octstr_create("");
 	} else {
 		int converted;
 
@@ -426,20 +427,22 @@ static void fetch_thread(void *arg) {
 		info(0, "WSP: Fetched <%s> (%s, charset='%s')", 
 			octstr_get_cstr(url), octstr_get_cstr(content.type),
 			octstr_get_cstr(content.charset));
-		status = HTTP_OK;
-
+		status = ret;
+		if (status != HTTP_OK)
+			info(0, "WSP: Got status %d", status);
 
 #ifdef COOKIE_SUPPORT
 		if (session_id != -1)
-			if (get_cookies (resp_headers, find_session_machine_by_id(session_id)) == -1)
+			if (get_cookies(resp_headers, find_session_machine_by_id(session_id)) == -1)
 				error(0, "WSP: Failed to extract cookies");
 #endif		
 		
 		converted = convert_content(&content);
 		if (converted < 0) {
-			status = 500; /* XXX */
 			warning(0, "WSP: All converters for `%s' failed.",
 					octstr_get_cstr(content.type));
+			/* Don't change status; just send the client what
+			 * we did get. */
 		}
 		if (converted == 1)
 			http_header_mark_transformation(resp_headers, content.body, content.type);
@@ -451,8 +454,12 @@ static void fetch_thread(void *arg) {
 	http_remove_hop_headers(resp_headers);
 		
 	if (octstr_len(content.body) > client_SDU_size) {
-		status = 413; /* XXX requested entity too large */
-		warning(0, "WSP: Entity at %s too large (size %lu B, limit %lu B)",
+		/* XXX: This is the wrong status.  It says that the
+		 * client sent us a too large entity (for example with
+		 * POST).  There seems to be no way to indicate that the
+		 * response entity is too large. */
+		status = HTTP_REQUEST_ENTITY_TOO_LARGE;
+		warning(0, "WSP: Entity at %s too large (size %ld B, limit %lu B)",
 			octstr_get_cstr(url), octstr_len(content.body),
 			client_SDU_size);
                 octstr_destroy(content.body);

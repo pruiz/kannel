@@ -2803,10 +2803,9 @@ Octstr *wsp_headers_pack(List *headers, int separate_content_type)
 
         errors = 0;
 
-        if (separate_content_type &&
-            fieldnum == WSP_HEADER_CONTENT_TYPE) {
+        if (separate_content_type && fieldnum == WSP_HEADER_CONTENT_TYPE) {
 	    /* already handled */
-        } if (fieldnum < 0) {
+        } else if (fieldnum < 0) {
             if (pack_application_header(packed, fieldname, value) < 0)
                 errors = 1;
         } else {
