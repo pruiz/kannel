@@ -1,3 +1,11 @@
+2001-01-12  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsc_wrapper.c: fixed deadlock in message sending
+
+	* gw/smsc_wrapper.c: modified reconnect so that it does not cause
+	bearerbox to wait in various functions, by adding new mutex
+	instead of using old flow_mutex
+
 2001-01-11  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
 	* gwlib/gw_inet.c: Fixed off by one errors.

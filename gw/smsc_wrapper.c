@@ -21,8 +21,21 @@ typedef struct smsc_wrapper {
     List	*stopped;	/* list-trick for suspend/isolate */ 
     long     	receiver_thread;
     long	sender_thread;
+    Mutex	*reconnect_mutex;
 } SmscWrapper;
 
+
+static void smscwrapper_destroy(SmscWrapper *wrap)
+{
+    if (wrap == NULL)
+	return;
+    list_destroy(wrap->outgoing_queue, NULL);
+    list_destroy(wrap->stopped, NULL);
+    mutex_destroy(wrap->reconnect_mutex);
+    if (wrap->smsc != NULL)
+	smsc_close(wrap->smsc);
+    gw_free(wrap);
+}
 
 
 static int reconnect(SMSCConn *conn)
@@ -39,11 +52,11 @@ static int reconnect(SMSCConn *conn)
      *   maybe later --rpr
      */
     if (conn->status == SMSCCONN_RECONNECTING) {
-	mutex_lock(conn->flow_mutex);	/* wait here */
-	mutex_unlock(conn->flow_mutex);
+	mutex_lock(wrap->reconnect_mutex);	/* wait here */
+	mutex_unlock(wrap->reconnect_mutex);
 	return 0;
     }
-    mutex_lock(conn->flow_mutex);
+    mutex_lock(wrap->reconnect_mutex);
 
     debug("bb.sms", 0, "smsc_wrapper <%s>: reconnect started",
 	  octstr_get_cstr(conn->name));
@@ -62,7 +75,7 @@ static int reconnect(SMSCConn *conn)
 	    error(0, "Re-open of %s failed permanently",
 		  octstr_get_cstr(conn->name));
 	    conn->status = SMSCCONN_DISCONNECTED;
-	    mutex_unlock(conn->flow_mutex);
+	    mutex_unlock(wrap->reconnect_mutex);
 	    return -1;	/* permanent failure */
 	}
 	else {
@@ -73,7 +86,7 @@ static int reconnect(SMSCConn *conn)
 	    wait = wait > 10 ? 10 : wait * 2 + 1;
 	}
     }
-    mutex_unlock(conn->flow_mutex);
+    mutex_unlock(wrap->reconnect_mutex);
     return 0;
 }
 
@@ -240,10 +253,7 @@ static void wrapper_sender(void *arg)
     while((msg = list_extract_first(wrap->outgoing_queue))!=NULL) {
 	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
     }
-    list_destroy(wrap->outgoing_queue, NULL);
-    list_destroy(wrap->stopped, NULL);
-    smsc_close(wrap->smsc);
-    gw_free(wrap);
+    smscwrapper_destroy(wrap);
     conn->data = NULL;
     
     mutex_unlock(conn->flow_mutex);
@@ -258,13 +268,9 @@ static int wrapper_add_msg(SMSCConn *conn, Msg *sms)
     SmscWrapper *wrap = conn->data;
     Msg *copy;
 
-    mutex_lock(conn->flow_mutex);
-
     copy = msg_duplicate(sms);
     list_produce(wrap->outgoing_queue, copy);
 
-    mutex_unlock(conn->flow_mutex);
-    
     return 0;
 }
 
@@ -340,6 +346,7 @@ int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
     
     wrap->outgoing_queue = list_create();
     wrap->stopped = list_create();
+    wrap->reconnect_mutex = mutex_create();
     list_add_producer(wrap->outgoing_queue);
     
     conn->status = SMSCCONN_ACTIVE;
@@ -368,9 +375,7 @@ int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
 
 error:
     error(0, "Failed to create Smsc wrapper");
-    if (wrap->smsc != NULL)
-	smsc_close(wrap->smsc);
-    gw_free(wrap);
+    smscwrapper_destroy(wrap);
     conn->why_killed = SMSCCONN_KILLED_CANNOT_CONNECT;
     conn->status = SMSCCONN_DEAD;
     return -1;
