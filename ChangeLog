@@ -1,3 +1,7 @@
+1999-11-16    <rpr@rpr.wapit.com>
+
+	* doc/arch/arch-bearerbox.xml: updated to reflect current version
+
 Tue Nov 16 15:40:59 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile: Added compilation of test programs.
