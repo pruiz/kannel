@@ -1,5 +1,10 @@
 2000-10-31  Richard Braakman  <dark@wapit.com>
 
+	* Moved wap_addr functions from wapbox.c to new file wap_addr.c,
+	and created wap_addr.h for it.
+
+2000-10-31  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/conn.[ch]: Make it possible to change the callback info
 	efficiently, by calling conn_register again with the same fdset.
 

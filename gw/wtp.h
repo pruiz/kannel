@@ -14,6 +14,7 @@
 #include "gwlib/gwlib.h"
 #include "wapbox.h"
 #include "msg.h"
+#include "wap_addr.h"
 #include "wap-events.h"
 #include "wtp_pdu.h"
 
