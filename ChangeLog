@@ -1,3 +1,9 @@
+2000-06-28  Richard Braakman  <dark@wapit.com>
+
+	* wmlscript/wsstdlib.c: Applied Joerg Pommnitz's patch to support 
+        WTAI standard library function calls, after converting it to the
+	local indentation style.
+
 2000-06-27  Kalle Marjola  <rpr@wapit.com>
 
 	* doc/userguide/userguide.xml: did some updating, still needs to
@@ -63,7 +69,7 @@
 
 2000-06-19  Kalle Marjola  <rpr@wapit.com>
 
-	* gw/wsp-session.c, gw/wsp_pdu.c: inserted patch from Joergz
+	* gw/wsp-session.c, gw/wsp_pdu.c: inserted patch from Joerg
 	Pommnitz, now Kannel hopefully works better with Motorola
 	Timeport.
 
@@ -122,7 +128,7 @@
 
 2000-06-16 Aarno Syvänen <syvanen@wapit.com>
 
-	* wtp.c: Fixed bug pointed out by Joerg Pommnintz
+	* wtp.c: Fixed bug pointed out by Joerg Pommnitz
 
 	* removed debug functions
 
