@@ -50,23 +50,11 @@ int main(int argc, char **argv)
   if (ret == 0)
     {
       printf("Here's the binary output: \n\n");
-  
-      for (i = 0; i < octstr_len(wml_binary); i ++)
-	{
-	  printf("%X ", octstr_get_char(wml_binary, i));
-	  if ((i % 25) == 0 && i != 0)
-	    printf("\n");
-	}
+      octstr_dump(wml_binary);
       printf("\n\n");
 
       printf("And as a text: \n\n");
-  
-      for (i = 0; i < octstr_len(wml_binary); i ++)
-	{
-	  printf("%c", octstr_get_char(wml_binary, i));
-	  if ((i % 40) == 0 && i != 0)
-	    printf("\n");
-	}
+      octstr_pretty_print(stdout, wml_binary);
       printf("\n\n");
     }
 

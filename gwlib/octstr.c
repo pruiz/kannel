@@ -103,7 +103,7 @@ Octstr *octstr_create_limited(char *cstr, int max_len) {
 }
 
 
-Octstr *octstr_create_tolower(unsigned char *cstr) {
+Octstr *octstr_create_tolower(const char *cstr) {
     int i;
     int len = strlen(cstr);
     Octstr *ret;
@@ -117,7 +117,7 @@ Octstr *octstr_create_tolower(unsigned char *cstr) {
 }
 
 
-Octstr *octstr_create_from_data(char *data, size_t len) {
+Octstr *octstr_create_from_data(const char *data, size_t len) {
     Octstr *ostr;
     
     ostr = octstr_create_empty();

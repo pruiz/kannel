@@ -1,3 +1,11 @@
+2000-02-17  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gwlib/octstr.h&c: argument changed from char * to const char * on 
+	functions octstr_create_tolower and octstr_create_from_data.
+	* test/wml_tester.c: Ouput now uses the fancy otcstr-output functions.
+	* gw/wml_compiler.c: Now adds STR_END to the end of the attribute 
+	value fields.
+
 Thu Feb 17 17:35:11 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* doc/userguide/userguide.xml: Filled in some more. Now most details

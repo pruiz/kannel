@@ -296,7 +296,6 @@ void text_shrink_blank(Octstr *text);
 int output_char(char byte);
 int output_octet_string(Octstr *ostr);
 
-
 /*
 void parse_cdata(xmlNodePtr node);
 void parse_entity_ref(xmlNodePtr node);
@@ -645,13 +644,27 @@ int parse_attribute(xmlAttrPtr attr)
 	      != 0)
 	    error(0, 
 		  "WML compiler: could not output attribute value as a string.");
+	  if (output_char(STR_END) == -1)
+	    {
+	      error(0, 
+		    "WML compiler: could not output attribute value end tag.");
+	      return -1;
+	    }
 	}
       else
-	if ((status = output_octet_string(octstr_copy(value, coded_length, 
-						      octstr_len(value) -
-						      coded_length))) != 0)
-	  error(0, 
-		"WML compiler: could not output attribute value as a string.");
+	{
+	  if ((status = output_octet_string(octstr_copy(value, coded_length, 
+							octstr_len(value) -
+							coded_length))) != 0)
+	    error(0, 
+		  "WML compiler: could not output attribute value as a string.");
+	  if (output_char(STR_END) == -1)
+	    {
+	      error(0, 
+		    "WML compiler: could not output attribute value end tag.");
+	      return -1;
+	    }
+	}
     }
 
   if (wml_attributes[i].attribute == NULL)
@@ -814,7 +827,6 @@ void text_shrink_blank(Octstr *text)
 
   return;
 }
-
 
 
 #endif

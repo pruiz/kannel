@@ -45,13 +45,13 @@ Octstr *octstr_create_limited(char *cstr, int max_len);
 /*
  * as octstr_create except that the string is converted to lower case
  */
-Octstr *octstr_create_tolower(unsigned char *cstr);
+Octstr *octstr_create_tolower(const char *cstr);
 
 /*
  * Create an octet string from arbitrary binary data. The length of the
  * data is given, so it can contain NUL characters.
  */
-Octstr *octstr_create_from_data(char *data, size_t len);
+Octstr *octstr_create_from_data(const char *data, size_t len);
 
 
 /*
