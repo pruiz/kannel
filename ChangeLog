@@ -1,3 +1,7 @@
+2000-11-06  Yann Muller <ymuller@3glab.com>
+
+	* gw/smsc_at.c: fixed Premicell bug. Added sleep(1) for nokiaphone.
+
 2000-11-05  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/http.c: Make the interface of client_read_body() match the
