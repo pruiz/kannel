@@ -1,3 +1,8 @@
+2000-07-24  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/smsbox_req.c: Removed function smsbox_req_sendota that used
+	nonexistent octstr-function so that the CVS version didn't compile.
+
 2000-07-23  Tuomas Luttinen  <tuo@wapit.com>
 
 	* configure.[in]: libxml 2.2.1 added.
