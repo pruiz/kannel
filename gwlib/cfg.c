@@ -364,72 +364,68 @@ int cfg_read(Cfg *cfg)
                           octstr_get_cstr(filename), loc->line_no,  
                           octstr_get_cstr(loc->filename)); 
                 } else {     
-		    List *files = list_create();
-		    Octstr *file;
-		    struct stat filestat;
+                    List *files = list_create();
+                    Octstr *file;
+                    struct stat filestat;
 
-		    /* check if included file is a directory */
-		    lstat(octstr_get_cstr(filename), &filestat);
+                    /* check if included file is a directory */
+                    lstat(octstr_get_cstr(filename), &filestat);
 
-		    /* is a directory. create a list with files */
-		    if(S_ISDIR(filestat.st_mode) ) {
-			DIR *dh;
-			struct dirent *diritem;
+                    /* is a directory. create a list with files */
+                    if (S_ISDIR(filestat.st_mode)) {
+                        DIR *dh;
+                        struct dirent *diritem;
 
-			debug("gwlib.cfg", 0, "Loading include dir `%s' "
-				"(on line %ld of file %s).",  
-				octstr_get_cstr(filename), loc->line_no,  
-				octstr_get_cstr(loc->filename)); 
+                        debug("gwlib.cfg", 0, "Loading include dir `%s' "
+                              "(on line %ld of file %s).",  
+                              octstr_get_cstr(filename), loc->line_no,  
+                              octstr_get_cstr(loc->filename)); 
 
-			dh = opendir(octstr_get_cstr(filename));
-			while( (diritem = readdir(dh)) ) {
-			    Octstr *fileitem;
+                        dh = opendir(octstr_get_cstr(filename));
+                        while ((diritem = readdir(dh))) {
+                            Octstr *fileitem;
 
-			    fileitem = octstr_duplicate(filename);
-#ifdef WIN32
-			    octstr_append(fileitem, octstr_create("\\"));
-#else
-			    octstr_append(fileitem, octstr_create("/"));
-#endif
-			    octstr_append(fileitem, octstr_create(diritem->d_name));
+                            fileitem = octstr_duplicate(filename);
+                            octstr_append(fileitem, octstr_create("/"));
+                            octstr_append(fileitem, octstr_create(diritem->d_name));
 
-			    lstat(octstr_get_cstr(fileitem), &filestat);
-			    if(! S_ISDIR(filestat.st_mode)) {
-				list_insert(files, 0, fileitem);
-			    }
-			}
-			closedir(dh);
-		    } 
+                            lstat(octstr_get_cstr(fileitem), &filestat);
+                            if (!S_ISDIR(filestat.st_mode)) {
+                                list_insert(files, 0, fileitem);
+                            }
+                        }
+                        closedir(dh);
+                    } 
 		    
-		    /* is a file, create a list with it */
-		    else {
-			list_insert(files, 0, octstr_duplicate(filename));
-		    }
+                    /* is a file, create a list with it */
+                    else {
+                        list_insert(files, 0, octstr_duplicate(filename));
+                    }
 
-		    /* include files */
-		    while((file = list_extract_first(files)) != NULL) {
+                    /* include files */
+                    while((file = list_extract_first(files)) != NULL) {
 
-			list_insert(stack, 0, octstr_duplicate(file)); 
-			debug("gwlib.cfg", 0, "Loading include file `%s' (on line %ld of file %s).",  
-				octstr_get_cstr(file), loc->line_no,  
-				octstr_get_cstr(loc->filename)); 
+                        list_insert(stack, 0, octstr_duplicate(file)); 
+                        debug("gwlib.cfg", 0, "Loading include file `%s' (on line %ld of file %s).",  
+                              octstr_get_cstr(file), loc->line_no,  
+                              octstr_get_cstr(loc->filename)); 
 
-			/*  
-			 * expand the given include file and add it to the current 
-			 * processed main while loop 
-			 */ 
-			if ((expand = expand_file(file, 0)) != NULL) {
-			    while ((loc_inc = list_extract_first(expand)) != NULL) 
-				list_insert(lines, 0, loc_inc); 
-			} else { 
-    	                    panic(0, "Failed to load whole configuration. Aborting!"); 
-			} 
+                        /*  
+                         * expand the given include file and add it to the current 
+                         * processed main while loop 
+                         */ 
+                        if ((expand = expand_file(file, 0)) != NULL) {
+                            while ((loc_inc = list_extract_first(expand)) != NULL) 
+                                list_insert(lines, 0, loc_inc); 
+                        } else { 
+                            panic(0, "Failed to load whole configuration. Aborting!"); 
+                        } 
                  
-			list_destroy(expand, NULL); 
-			cfgloc_destroy(loc_inc); 
+                        list_destroy(expand, NULL); 
+                        cfgloc_destroy(loc_inc); 
 
-		    }
-		    list_destroy(files, octstr_destroy_item);
+                    }
+                list_destroy(files, octstr_destroy_item);
                 } 
                 octstr_destroy(filename); 
             }  
@@ -446,10 +442,10 @@ int cfg_read(Cfg *cfg)
     	    	if (grp == NULL)
                     grp = create_group(); 
                  
-		if(grp->configfile != NULL) {
-		    octstr_destroy(grp->configfile); grp->configfile=NULL;
-		}
-		grp->configfile = octstr_duplicate(cfg->filename); 
+                if (grp->configfile != NULL) {
+                    octstr_destroy(grp->configfile); grp->configfile=NULL;
+                }
+                grp->configfile = octstr_duplicate(cfg->filename); 
 
                 cfg_set(grp, name, value); 
                 octstr_destroy(name); 
