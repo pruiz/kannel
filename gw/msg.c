@@ -7,7 +7,6 @@
  * Lars Wirzenius <liw@wapit.com>
  */
 
-#include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -196,7 +195,7 @@ static void append_string(Octstr *os, Octstr *field) {
 
 
 static int parse_integer(long *i, Octstr *packed, int *off) {
-	assert(*off >= 0);
+	gw_assert(*off >= 0);
 	if ((int) sizeof(long) + *off > octstr_len(packed)) {
 		error(0, "Packet too short while unpacking Msg.");
 		return -1;

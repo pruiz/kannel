@@ -1298,7 +1298,7 @@ static Octstr *concatenate_message(long tid, WTPSegment *segments_list){
        Octstr *message = NULL;
 
        debug("wap.wtp", 0, "WTP: concatenation not yet supported");
-       assert(segments_list != NULL);
+       gw_assert(segments_list != NULL);
        
        return message;
 }
@@ -1364,9 +1364,9 @@ static int list_missing_segments(WTPSegment *segments_ackd,
 
        int segments_missing = 0;
 
-       assert(segments_ackd != NULL);
-       assert(segments_list != NULL);
-       assert(missing_segments != NULL);
+       gw_assert(segments_ackd != NULL);
+       gw_assert(segments_list != NULL);
+       gw_assert(missing_segments != NULL);
 
        return segments_missing;
 }
@@ -1379,8 +1379,8 @@ static WTPSegment *make_missing_segments_list(Msg *msg,
 
        WTPSegment *missing_segments = NULL;
 
-       assert(msg != NULL);
-       assert(number_of_missing_packets != 0);
+       gw_assert(msg != NULL);
+       gw_assert(number_of_missing_packets != 0);
 
        return missing_segments;
 }

@@ -6,7 +6,6 @@
  * URL mapping by Patrick Schaaf <bof@bof.de>
  */
 
-#include <assert.h>
 #include <string.h>
 
 #include "gwlib/gwlib.h"
@@ -52,7 +51,7 @@ static void wsp_http_map_url_do_config(char *src, char *dst)
 		warning(0, "wsp_http_map_url_do_config: empty incoming string");
 		return;
 	}
-	assert(in_len > 0);
+	gw_assert(in_len > 0);
 
 	new_map = gw_malloc(sizeof(*new_map));
 	new_map->next = NULL;

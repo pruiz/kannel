@@ -1,3 +1,10 @@
+Tue Apr  4 14:15:27 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/bb_msg.c, gw/bearerbox.c, gw/boxc.c, gw/msg.c, gw/smsbox.c,
+	gw/smsbox_req.c, gw/wapbox.c, gw/wsp.c, gw/wsp_http.c, gw/wtp.c,
+	gw/wtp_send.c, gw/wtp_send.h, gw/wtp_timer.c, gwlib/http.c:
+	Changed calls to assert to calls to gw_assert.
+
 Mon Apr  3 21:58:19 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/smsbox.c: Fixed a memory leak in error conditions. Also

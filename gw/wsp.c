@@ -6,7 +6,6 @@
  */
 
 
-#include <assert.h>
 #include <string.h>
 
 #include "gwlib/gwlib.h"
@@ -760,8 +759,8 @@ static Octstr *make_reply_pdu(long status, long type, Octstr *body) {
 	pdu = make_connectionmode_pdu(Reply_PDU);
 	append_uint8(pdu, convert_http_status_to_wsp_status(status));
 	append_uintvar(pdu, 1);
-	assert(type >= 0x00);
-	assert(type < 0x80);
+	gw_assert(type >= 0x00);
+	gw_assert(type < 0x80);
 	append_uint8(pdu, type | 0x80);
 	if (body != NULL)
 		append_octstr(pdu, body);

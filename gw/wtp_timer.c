@@ -10,7 +10,6 @@
  * Lars Wirzenius for WapIT Ltd.
  */
 
-#include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <time.h>
@@ -81,7 +80,7 @@ void wtp_timer_destroy(WTPTimer *timer) {
 	      return;
 	   }
 
-	   assert(t == timer);
+	   gw_assert(t == timer);
            debug("wap.wtp.timer", 0, "destroying timer %p", (void *) t);
 	   timer->next = t->next;
 	}

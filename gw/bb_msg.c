@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <assert.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -37,8 +36,8 @@ RQueue *rq_new(void)
 
 void rq_push_msg(RQueue *queue, RQueueItem *msg)
 {
-    assert(queue != NULL);
-    assert(msg != NULL);
+    gw_assert(queue != NULL);
+    gw_assert(msg != NULL);
 
     mutex_lock(queue->mutex);
 
@@ -65,8 +64,8 @@ void rq_push_msg(RQueue *queue, RQueueItem *msg)
 
 void rq_push_msg_head(RQueue *queue, RQueueItem *msg)
 {
-    assert(queue != NULL);
-    assert(msg != NULL);
+    gw_assert(queue != NULL);
+    gw_assert(msg != NULL);
 
     mutex_lock(queue->mutex);
 
@@ -91,8 +90,8 @@ void rq_push_msg_head(RQueue *queue, RQueueItem *msg)
 void rq_push_msg_ack(RQueue *queue, RQueueItem *msg)
 {
     RQueueItem *ptr, *prev;
-    assert(queue != NULL);
-    assert(msg != NULL);
+    gw_assert(queue != NULL);
+    gw_assert(msg != NULL);
     
     mutex_lock(queue->mutex);
 
@@ -145,7 +144,7 @@ void rq_push_msg_ack(RQueue *queue, RQueueItem *msg)
 static void rq_remove_msg(RQueue *queue, RQueueItem *msg, RQueueItem *prev)
 {
     if (msg == NULL) return;
-    assert(queue != NULL);
+    gw_assert(queue != NULL);
     
     if (prev == NULL)
 	queue->first = msg->next;
@@ -162,7 +161,7 @@ static void rq_remove_msg(RQueue *queue, RQueueItem *msg, RQueueItem *prev)
 RQueueItem *rq_pull_msg(RQueue *queue, int req_id)
 {
     RQueueItem *ptr, *prev;
-    assert(queue != NULL);
+    gw_assert(queue != NULL);
     
     mutex_lock(queue->mutex);
 
@@ -186,7 +185,7 @@ RQueueItem *rq_pull_msg(RQueue *queue, int req_id)
 RQueueItem *rq_pull_msg_class(RQueue *queue, int class)
 {
     RQueueItem *ptr, *prev;
-    assert(queue != NULL);
+    gw_assert(queue != NULL);
     
     mutex_lock(queue->mutex);
 
@@ -216,7 +215,7 @@ int rq_change_destination(RQueue *queue, int class, int type, char *routing_str,
 {
     RQueueItem *ptr;
     int tot = 0;
-    assert(queue != NULL);
+    gw_assert(queue != NULL);
     
     mutex_lock(queue->mutex);
 
@@ -245,7 +244,7 @@ int rq_change_destination(RQueue *queue, int class, int type, char *routing_str,
 int rq_queue_len(RQueue *queue, int *total)
 {
     int retval;
-    assert(queue != NULL);
+    gw_assert(queue != NULL);
     
     mutex_lock(queue->mutex);
 
@@ -263,7 +262,7 @@ time_t rq_oldest_message(RQueue *queue)
 {
     time_t smallest;
     RQueueItem *ptr;
-    assert(queue != NULL);
+    gw_assert(queue != NULL);
     
     mutex_lock(queue->mutex);
 
@@ -283,7 +282,7 @@ time_t rq_oldest_message(RQueue *queue)
 time_t rq_last_mod(RQueue *queue)
 {
     time_t val;
-    assert(queue != NULL);
+    gw_assert(queue != NULL);
     
     mutex_lock(queue->mutex);
 

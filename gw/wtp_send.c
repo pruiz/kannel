@@ -507,7 +507,7 @@ static Msg *add_direct_address(Msg *msg, Address *address){
 
 static Msg *add_segment_address(Msg *msg, Address *address){
 
-       assert(msg != NULL);
+       gw_assert(msg != NULL);
        return msg;
 }
 
@@ -607,8 +607,8 @@ static unsigned char indicate_ack_type(unsigned char ack_type,
 static void insert_missing_segments_list(unsigned char *wtp_pdu, 
        WTPSegment *missing_segments){
     
-       assert(missing_segments != NULL);
-       assert(wtp_pdu != NULL);
+       gw_assert(missing_segments != NULL);
+       gw_assert(wtp_pdu != NULL);
 }
 
 static unsigned char indicate_variable_header(unsigned char octet){

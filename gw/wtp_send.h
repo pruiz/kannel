@@ -7,7 +7,6 @@
 #ifndef WTP_SEND_H
 #define WTP_SEND_H
 
-#include <assert.h>
 #include "wtp.h"
 
 

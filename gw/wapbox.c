@@ -7,7 +7,6 @@
  * Lars Wirzenius <liw@wapit.com> for WapIT Ltd.
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
@@ -176,7 +175,7 @@ static List *queue = NULL;
 
 
 void init_queue(void) {
-        assert(queue == NULL);
+        gw_assert(queue == NULL);
 	queue = list_create();
 }
 

@@ -5,7 +5,6 @@
 */
 
 
-#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -192,8 +191,8 @@ int httpserver_answer(int socket, char *text) {
     int tmpint = 0;
     size_t bufsize = 0;
 
-    assert(socket >= 0);
-    assert(text != NULL);
+    gw_assert(socket >= 0);
+    gw_assert(text != NULL);
 
     bufsize = strlen(text) + 1024;
     bigbuff = gw_malloc(bufsize + 1);
@@ -1242,7 +1241,7 @@ HTTPRequest* httprequest_execute(HTTPRequest *request) {
 /* parse the results */
     result = httprequest_wrap(datareceive, size);
     gw_free(datareceive);
-    /* assert(result != NULL); */
+    /* gw_assert(result != NULL); */
     
 /* return the result */	
     return result;
@@ -1334,8 +1333,8 @@ HTTPHeader *header_create(char *key, char *value)
 {
     HTTPHeader *h;
 
-    assert(key != NULL);
-    assert(value != NULL);
+    gw_assert(key != NULL);
+    gw_assert(value != NULL);
     
     h = gw_malloc(sizeof(HTTPHeader));
     h->key = gw_strdup(key);

@@ -45,7 +45,6 @@
 #include <time.h>
 #include <string.h>
 #include <signal.h>
-#include <assert.h>
 
 #include "gwlib/gwlib.h"
 
@@ -208,8 +207,8 @@ static int bsearch_receiver(char *str, int *index)
     int cmp = -1;
     *index = -1;
 
-    assert(str != NULL);
-    assert(index != NULL);
+    gw_assert(str != NULL);
+    gw_assert(index != NULL);
     
     while(hi >= lo) {
 	*index = (lo+hi)/2 - 1;
@@ -229,7 +228,7 @@ static int find_receiver(RQueueItem *rqi)
 {
     int i, ret;
 
-    assert(rqi != NULL);
+    gw_assert(rqi != NULL);
     if (rqi->routing_info == NULL)
 	return -1;
 
@@ -369,8 +368,8 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
     int backup_backup = -1;
     int bad_choice = -1;
 
-    assert(bbt != NULL);
-    assert(msg != NULL);
+    gw_assert(bbt != NULL);
+    gw_assert(msg != NULL);
     
     if (msg->source > -1)	/* if we have already routed message */
 	return 0;
@@ -496,7 +495,7 @@ static int normalize_number(char *dial_prefixes, Octstr **number)
     t = official = dial_prefixes;
     official_len = 0;
 
-    assert(number != NULL);
+    gw_assert(number != NULL);
     
     while(1) {
 
@@ -532,7 +531,7 @@ static void normalize_numbers(RQueueItem *msg, SMSCenter *from)
     char *p;
     int sr, rr;
 
-    assert(msg != NULL);
+    gw_assert(msg != NULL);
 
     sr = rr = 0;
     if (from != NULL) {
@@ -637,7 +636,7 @@ static void *smscenter_thread(void *arg)
     warning(0, "SMSC: Closing and dying...");
     mutex_lock(bbox->mutex);
 
-    assert(us != NULL);
+    gw_assert(us != NULL);
     smsc_close(us->smsc);
     us->smsc = NULL;
     us->status = BB_STATUS_DEAD;
@@ -697,7 +696,7 @@ static void *csdrouter_thread(void *arg)
     warning(0, "CSDR: Closing and dying...");
     mutex_lock(bbox->mutex);
 
-    assert(us != NULL);
+    gw_assert(us != NULL);
     csdr_close(us->csdr);
     us->csdr = NULL;
     us->status = BB_STATUS_DEAD;
@@ -775,7 +774,7 @@ static void *wapboxconnection_thread(void *arg)
 	    error(0, "WAPBOXC: [%d] get message failed, killing", us->id);
 	    break;
 	} else if (ret > 0) {
-	    assert(qmsg != NULL);
+	    gw_assert(qmsg != NULL);
 	    route_msg(us, qmsg);
 	    rq_push_msg(bbox->reply_queue, qmsg);
 	    continue;
@@ -801,7 +800,7 @@ disconnect:
     
     mutex_lock(bbox->mutex);
     
-    assert(us != NULL);
+    gw_assert(us != NULL);
     boxc_close(us->boxc);
     us->boxc = NULL;
     us->status = BB_STATUS_DEAD;
@@ -860,7 +859,7 @@ static void *smsboxconnection_thread(void *arg)
 	 * NOTE: there should be something load balance here?
 	 */
 
-	assert(us->boxc != NULL);
+	gw_assert(us->boxc != NULL);
 	if (written + us->boxc->load < 100) {
 	    qmsg = rq_pull_msg(bbox->request_queue, us->id);
 	    if (qmsg == NULL) {
@@ -895,7 +894,7 @@ static void *smsboxconnection_thread(void *arg)
 	    error(0, "SMSBOXC: [%d] get message failed, killing", us->id);
 	    break;
 	} else if (ret > 0) {
-	    assert(qmsg != NULL);
+	    gw_assert(qmsg != NULL);
 	    normalize_numbers(qmsg, NULL);
 	    route_msg(us, qmsg);
 	    rq_push_msg(bbox->reply_queue, qmsg);
@@ -909,7 +908,7 @@ disconnect:
     warning(0, "SMSBOXC: Closing and dying...");
     mutex_lock(bbox->mutex);
 
-    assert(us != NULL);
+    gw_assert(us != NULL);
     boxc_close(us->boxc);
     us->boxc = NULL;
     us->status = BB_STATUS_DEAD;
@@ -927,7 +926,7 @@ static int thread_writer(Msg *msg)
 {
     RQueueItem *rqi;
 
-    assert(msg != NULL);
+    gw_assert(msg != NULL);
     rqi = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
     if (rqi == NULL) {
 	msg_destroy(msg);
@@ -1046,7 +1045,7 @@ static void new_bbt_smsc(SMSCenter *smsc)
 {
     BBThread *nt;
 
-    assert(smsc != NULL);
+    gw_assert(smsc != NULL);
     nt = create_bbt(BB_TTYPE_SMSC);
     if (nt != NULL) {
 	nt->smsc = smsc;
@@ -1065,7 +1064,7 @@ static void new_bbt_csdr(CSDRouter *csdr)
 {
     BBThread *nt;
     
-    assert(csdr != NULL);
+    gw_assert(csdr != NULL);
     nt = create_bbt(BB_TTYPE_CSDR);
     if (nt != NULL) {
 	nt->csdr = csdr;
@@ -1193,7 +1192,7 @@ static char *http_admin_command(char *command, CGIArg *list, char *extrabuf)
 {
     Octstr *val;
 
-    assert(command != NULL);
+    gw_assert(command != NULL);
     
     if (cgiarg_get(list, "username", &val) == -1 ||
 	bbox->admin_username == NULL ||
@@ -1283,8 +1282,8 @@ static void *http_request_thread(void *arg)
 	}
     /* print client information */
 
-    assert(path != NULL);
-    assert(client_ip != NULL);
+    gw_assert(path != NULL);
+    gw_assert(client_ip != NULL);
     
     info(0, "Get HTTP request < %s > from < %s >", path, client_ip);
     
@@ -1457,7 +1456,7 @@ static void check_threads(void)
 		 * point, righto?)
 		 */
 		if (thr->type == BB_TTYPE_SMSC && bbox->abort_program > 0) {
-		    assert(thr->smsc != NULL);
+		    gw_assert(thr->smsc != NULL);
 		    smsc_set_killed(thr->smsc, 1);
 		}
 	    }
@@ -1624,7 +1623,7 @@ static void print_threads(char *buffer, int in_xml)
     int i;
     char buf[1024];
 
-    assert(buffer != NULL);
+    gw_assert(buffer != NULL);
     buffer[0] = '\0';
 
     if (in_xml)
@@ -1843,7 +1842,7 @@ static void init_bb(Config *cfg)
     bbox->allow_ip = NULL;
     bbox->deny_ip = NULL;
 
-    assert(cfg != NULL);
+    gw_assert(cfg != NULL);
     grp = config_first_group(cfg);
     while(grp != NULL) {
 	if ((p = config_get(grp, "max-threads")) != NULL)

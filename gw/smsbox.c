@@ -56,7 +56,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <assert.h>
 
 #include "gwlib/gwlib.h"
 #include "urltrans.h"
@@ -136,7 +135,7 @@ static void new_request(Octstr *pack)
 {
     Msg *msg;
 
-    assert(pack != NULL);
+    gw_assert(pack != NULL);
     msg = msg_unpack(pack);
     if (msg == NULL)
 	error(0, "Failed to unpack data!");

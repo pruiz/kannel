@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <assert.h>
 
 #include <netdb.h>
 #include <sys/types.h>
@@ -97,7 +96,7 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
 {
     int ack = 0;
 
-    assert(msg != NULL);
+    gw_assert(msg != NULL);
     
     if (msg->msg_type == R_MSG_TYPE_ACK ||
 	msg->msg_type == R_MSG_TYPE_NACK) {
@@ -160,7 +159,7 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
     RQueueItem *msg;
     int ret;
 
-    assert(boxc != NULL);
+    gw_assert(boxc != NULL);
     
     msg = NULL;
     *rmsg = NULL;

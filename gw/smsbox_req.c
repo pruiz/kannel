@@ -9,7 +9,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <assert.h>
 
 #include "gwlib/gwlib.h"
 #include "html.h"
@@ -52,8 +51,8 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 	char *type = NULL;
 	char replytext[1024*10+1];       /* ! absolute limit ! */
 
-	assert(sms != NULL);
-	assert(msg_type(sms) == smart_sms);
+	gw_assert(sms != NULL);
+	gw_assert(msg_type(sms) == smart_sms);
 
 	pattern = urltrans_get_pattern(trans, sms);
 	if (pattern == NULL) {
@@ -176,7 +175,7 @@ static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans,
     int slen = 0;
     int size, total_len, loc;
 
-    assert(trans != NULL);
+    gw_assert(trans != NULL);
     
     suf = urltrans_split_suffix(trans);
     if (suf != NULL) slen = strlen(suf);
