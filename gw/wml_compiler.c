@@ -309,7 +309,8 @@ int wml_compile(Octstr *wml_text,
 		Octstr **wml_binary,
 		Octstr **wml_scripts)
 {
-  int i, size, ret;
+  int i, ret = 0;
+  size_t size;
   char *wml_c_text;
 
   /* Check the WML-code for \0-characters. */
@@ -320,9 +321,11 @@ int wml_compile(Octstr *wml_text,
   for (i = 0; i < size; i++)
     {
       if (wml_c_text[i] == '\0')
-	error(0, 
-	      "WML compiler: Compiling error in WML text.\n\\0 character found in the middle of the buffer.");
-      return -1;
+	{
+	  error(0, 
+		"WML compiler: Compiling error in WML text.\n\\0 character found in the middle of the buffer.");
+	  return -1;
+	}
     }
 
   /* 
@@ -341,52 +344,12 @@ int wml_compile(Octstr *wml_text,
 }
 
 
-/* FOR TESTING */ 
-
-#ifdef WBXML_TEST
-int main(int argc, char **argv)
-{
-  Octstr *wml_text;
-  Octstr **wml_binary;
-  Octstr **wml_scripts;
-
-  int ret;
-  int fd, i = 0;
-  char tmpbuff[100*1024];
-
-  /* You can give an wml text file as an argument './wap_compile main.wml' */
-  if (argc > 1) 
-    {
-      if (strcmp(argv[1], "--debug") == 0)
-	{
-	  wml_text = octstr_create("Test string number one.");
-	  octstr_set_char(wml_text, 6, '\0');
-	}
-      else
-	{
-	  fd = open(argv[1], O_NONBLOCK);
-	  memset(tmpbuff, 0, sizeof(tmpbuff));            
-	  i = read(fd, tmpbuff, sizeof(tmpbuff));
-	  close(fd);
-	  wml_text = octstr_create_from_data(tmpbuff, sizeof(tmpbuff));
-	}
-    } 
-  else 
-    printf("Give the wml file as a parameter.\n");
-
-  ret = wml_compile(wml_text, wml_binary, wml_scripts);
-
-  octstr_destroy(wml_text);
-  return ret;
-}
-#endif
 
 
 
 /***********************************************************************
  * Internal functions.
  */
-
 
 
 /*
@@ -404,12 +367,15 @@ int parse_node(xmlNodePtr node)
   /* Call for the parser function of the node type. */
   switch (node->type) {
   case XML_DOCUMENT_NODE:
+    debug(0, "WML compiler: Parsing document node.");
     status = parse_document(node);
     break;
   case XML_ELEMENT_NODE:
+    debug(0, "WML compiler: Parsing element node.");
     status = parse_element(node);
     break;
   case XML_ATTRIBUTE_NODE:
+    debug(0, "WML compiler: Parsing attribute node.");
     status = parse_attribute(node);
     break;
   case XML_TEXT_NODE:
@@ -537,6 +503,7 @@ int parse_element(xmlNodePtr node)
 	    {
 	      wbxml_hex = wbxml_hex + status_bits;
 	      add_end_tag = 1;
+	      break;
 	    }
 	  if (output_char(wbxml_hex) != 0)
 	    {

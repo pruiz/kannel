@@ -1,3 +1,9 @@
+2000-01-27  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gw/wml_compiler.c : some little bug fixes
+
+	* test/wml_tester.c : A tester for the new WML compiler added.
+
 2000-1-27 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_state-decl.h: Added a row receiving RcvInvoke when the state is
