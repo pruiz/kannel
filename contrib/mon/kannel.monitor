@@ -15,7 +15,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 # USA #
 #
-# Revision $Id: kannel.monitor,v 1.3 2003-04-08 08:51:34 stolj Exp $
+# Revision $Id: kannel.monitor,v 1.4 2003-05-24 16:31:18 davi Exp $
 #
 # Ingo Brombach <brombach@wapme-systems.de>
 
@@ -250,8 +250,8 @@ sub analyze{
     } # end while STATUSFILE
     
     if ($warncount){
-        return &pushall;
         info "Kannel is queueing - please take a look\n";
+        return &pushall;
     }
     close(STATUSFILE);
     

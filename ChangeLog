@@ -1,3 +1,7 @@
+2003-05-24  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
+    * contrib/mon/kannel.monitor: applied fix from Dariusz Markowicz
+      <00a301c321fa$08edab00$d4e34cd5@oem>
+
 2003-05-19  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_http.c: fixed compiler warning
 
