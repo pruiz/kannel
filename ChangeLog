@@ -1,3 +1,8 @@
+2004-09-03  Stipe Tolj  <stolj@wapme.de>
+    * gw/smsc/smsc_http.c: upgradding bruNET response parsing to comply with
+      more recent interface verions (v2.0+) where bruNET delivers 'MessageId'
+      in the HTTP response body.
+
 2004-09-03 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c, gw/msg-decl.h, gw/smsbox.c: applied patch that allows
       setting of sms priority flag in smsbox and smpp module. Also fixes wrong 

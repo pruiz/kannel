@@ -138,6 +138,7 @@ typedef struct conndata {
     int no_sender;      /* ditto */
     int no_coding;      /* this, too */
     int no_sep;         /* not to mention this */
+    Octstr *proxy;      /* proxy a constant string */
 
     /* callback functions set by HTTP-SMSC type */
     void (*send_sms) (SMSCConn *conn, Msg *msg);
@@ -158,6 +159,7 @@ static void conndata_destroy(ConnData *conndata)
     octstr_destroy(conndata->send_url);
     octstr_destroy(conndata->username);
     octstr_destroy(conndata->password);
+    octstr_destroy(conndata->proxy);
 
     gw_free(conndata);
 }
@@ -547,13 +549,17 @@ static void brunet_send_sms(SMSCConn *conn, Msg *sms)
                              sms->sms.udhdata);
     }
 
+    /* Proxy any constant URI string from the config directive 'system-id' */
+    if (octstr_len(conndata->proxy))
+        octstr_format_append(url,"&%S", conndata->proxy);
+
     /* 
      * We use &binfo=<foobar> from sendsms interface to encode any additionaly
      * proxied parameters, ie. billing information.
      */
     if (octstr_len(sms->sms.binfo)) {
         octstr_url_decode(sms->sms.binfo);
-        octstr_format_append(url, "&%s", octstr_get_cstr(sms->sms.binfo));
+        octstr_format_append(url, "&%S", sms->sms.binfo);
     }
 
     headers = list_create();
@@ -572,18 +578,65 @@ static void brunet_send_sms(SMSCConn *conn, Msg *sms)
     http_destroy_headers(headers);
 }
 
+
+/*
+ * Parse a line in the format: <name=value name=value ...>
+ * and return a Dict with the name as key and the value as value,
+ * otherwise return NULL if a parsing error occures.
+ */
+static Dict *brunet_parse_body(Octstr *body)
+{
+    Dict *param = NULL;
+    List *words = NULL;
+    long len;
+    Octstr *word;
+
+    words = octstr_split_words(body);
+    if ((len = list_len(words)) > 0) {
+        param = dict_create(4, NULL);
+        while ((word = list_extract_first(words)) != NULL) {
+            List *l = octstr_split(word, octstr_imm("="));
+            Octstr *key = list_extract_first(l);
+            Octstr *value = list_extract_first(l);
+            if (octstr_len(key))
+                dict_put(param, key, value);
+            octstr_destroy(key);
+            octstr_destroy(word);
+            list_destroy(l, (void(*)(void *)) octstr_destroy);
+        }
+    }
+    list_destroy(words, (void(*)(void *)) octstr_destroy);
+
+    return param;
+}
+
+
 static void brunet_parse_reply(SMSCConn *conn, Msg *msg, int status,
                                List *headers, Octstr *body)
 {
     if (status == HTTP_OK || status == HTTP_ACCEPTED) {
-        if (octstr_case_compare(body, octstr_imm("Status=0")) == 0) {
+        Dict *param;
+        Octstr *status;
+
+        if ((param = brunet_parse_body(body)) != NULL &&
+            (status = dict_get(param, octstr_imm("Status"))) != NULL &&
+            octstr_case_compare(status, octstr_imm("0")) == 0) {
+            Octstr *msg_id;
+
+            /* pass the MessageId for this MT to the logging facility */
+            if ((msg_id = dict_get(param, octstr_imm("MessageId"))) != NULL)
+                msg->sms.binfo = octstr_duplicate(msg_id);
+
             bb_smscconn_sent(conn, msg, NULL);
+
         } else {
             error(0, "HTTP[%s]: Message was malformed. SMSC response `%s'.",
                   octstr_get_cstr(conn->id), octstr_get_cstr(body));
             bb_smscconn_send_failed(conn, msg,
 	                SMSCCONN_FAILED_MALFORMED, octstr_duplicate(body));
         }
+        dict_destroy(param);
+
     } else {
         error(0, "HTTP[%s]: Message was rejected. SMSC reponse `%s'.",
               octstr_get_cstr(conn->id), octstr_get_cstr(body));
@@ -990,6 +1043,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     cfg_get_bool(&conndata->no_sender, cfg, octstr_imm("no-sender"));
     cfg_get_bool(&conndata->no_coding, cfg, octstr_imm("no-coding"));
     cfg_get_bool(&conndata->no_sep, cfg, octstr_imm("no-sep"));
+    conndata->proxy = cfg_get(cfg, octstr_imm("system-id"));
 
     if (conndata->send_url == NULL)
         panic(0, "HTTP[%s]: Sending not allowed. No 'send-url' specified.",
@@ -1007,7 +1061,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     }
     else if (octstr_case_compare(type, octstr_imm("brunet")) == 0) {
         if (conndata->username == NULL) {
-            error(0, "HTTP[%s]: 'username' required for Brunet http smsc",
+            error(0, "HTTP[%s]: 'username' (=CustomerId) required for bruNET http smsc",
                   octstr_get_cstr(conn->id));
             goto error;
         }
