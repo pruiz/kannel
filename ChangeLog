@@ -1,3 +1,7 @@
+2000-12-08  Aarno Syväen <syvanen@wapit.com>
+
+	* wap/wsp_push_client.c, wap/wap_events.def: Really resolve a conflict.
+
 2000-12-09  Lars Wirzenius  <liw@iki.fi>
 
 	* wap/wsp_push_client.c, wap/wsp_push_client_states.def,

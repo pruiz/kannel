@@ -22,7 +22,6 @@ ROW(SERVER_PUSH_NULL_STATE,
     },
     SERVER_PUSH_PUSHING)
 
-#if 0 /* Push_Abort is defined nowhere -- XXX Aarno, fix this, please */
 ROW(SERVER_PUSH_PUSHING,
     Push_Abort,
     1,
@@ -32,7 +31,6 @@ ROW(SERVER_PUSH_PUSHING,
      indicate_pushabort(pm, current_event->u.Push_Abort.reason);
     },
     SERVER_PUSH_NULL_STATE)
-#endif
 
 ROW(SERVER_PUSH_PUSHING,
     TR_Invoke_Cnf,
@@ -66,7 +64,6 @@ ROW(SERVER_PUSH_PUSHING,
     },
     SERVER_PUSH_NULL_STATE)
 
-#if 0 /* Push_Abort isn't defined anywhere -- XXX Aarno, fix this, please */
 ROW(SERVER_PUSH_PUSHING,
     TR_Abort_Ind,
     current_event->u.TR_Abort_Ind.abort_code != WSP_ABORT_DISCONNECT  &&
@@ -75,9 +72,9 @@ ROW(SERVER_PUSH_PUSHING,
      indicate_pushabort(pm, current_event->u.Push_Abort.reason);
     },
     SERVER_PUSH_NULL_STATE)
-#endif
 
 #undef STATE_NAME
 #undef ROW
+
 
 

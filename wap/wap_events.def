@@ -363,6 +363,10 @@ WAPEVENT(S_PushAbort_Ind, "S-PushAbort.ind",
 	INTEGER(session_handle)
 	)
 
+WAPEVENT(Push_Abort, "Internal abort",
+         INTEGER(reason)
+        )
+
 /*
  * Events created by unpacking T-DUnitdata.ind events.
  * Used by WTP layer.

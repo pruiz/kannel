@@ -117,10 +117,8 @@ static void indicate_method_abort(WSPMethodMachine *msm, long reason);
 static WAPEvent *make_abort(long reason, long handle);
 static void send_invoke(WSPMachine *session, WSP_PDU *pdu, WAPEvent *e,
                         long class);
-#if 0 /* XXX not currently called from code that is compiled in */
 static void send_abort_to_initiator(long reason, long handle);
 static void indicate_pushabort(WSPPushMachine *machine, long reason);
-#endif
 static void confirm_push(WSPPushMachine *machine);
 
 static void main_thread(void *);
@@ -1149,7 +1147,6 @@ static void send_abort(long reason, long handle) {
 	dispatch_to_wtp_resp(wtp_event);
 }
 
-#if 0 /* XXX not currently compiled from code not commented out */
 static void send_abort_to_initiator(long reason, long handle)
 {
        WAPEvent *wtp_event;
@@ -1157,7 +1154,6 @@ static void send_abort_to_initiator(long reason, long handle)
        wtp_event = make_abort(reason, handle);
        dispatch_to_wtp_init(wtp_event);
 }
-#endif
 
 /*
  * The server sends invoke (to be exact, makes TR-Invoke.req) only when it is 
@@ -1222,12 +1218,10 @@ static void indicate_resume(WSPMachine *sm,
 	dispatch_to_appl(new_event);
 }
 
-#if 0 /* XXX code that calls this was commented out */
 static void indicate_pushabort(WSPPushMachine *spm, long reason)
 {
         debug("wap.wsp", 0, "pot not yet supported");
 }
-#endif
 
 static void confirm_push(WSPPushMachine *m)
 {
