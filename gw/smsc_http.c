@@ -271,6 +271,8 @@ static void kannel_parse_reply(SMSCConn *conn, Msg *msg, int status,
 {
     if (status == HTTP_OK && octstr_case_compare(body, octstr_imm("Sent."))==0)
 	bb_smscconn_sent(conn, msg);
+    else if (status == HTTP_OK && octstr_ncompare(body, octstr_imm("Result: OK"),10) == 0)
+        bb_smscconn_sent(conn, msg);
     else
 	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_MALFORMED);
 }

@@ -1,3 +1,7 @@
+2002-03-07 Andreas Fink <andreas@fink.org>
+    * gw/smsc_http.c: Made kannel accept a more structured reply
+      besides "Sent". Used by some sms aggregators.
+
 2002-03-07  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap_push_ppg.c, test/test_ppg.c, wap/wsp_strings.def: corrected
       MMS related well known values and stuff that is required to use
