@@ -59,19 +59,36 @@
  * If pthread_rwlock_XXX functions are present then those will be used;
  * otherwise emulation with mutexes/condition should be done.
  *
- * Alexander Malysh <a.malysh@centrium.de>, initial version 2004
+ * Alexander Malysh <amalysh@kannel.org>, initial version 2004
  */
 
+#ifdef HAVE_CONFIG_H
+  #include "gw-config.h"
+#endif
 #include "gwlib.h"
 #include "gw-rwlock.h"
+
+#define DEBUG 0
+#if DEBUG
+  #define RWDEBUG(str,lev,frm,args...) debug(str, lev, frm, ## args)
+#else
+  #define RWDEBUG(str,lev,frm,args...) do{}while(0)
+#endif
 
 
 RWLock *gw_rwlock_create(void)
 {
     RWLock *ret = gw_malloc(sizeof(*ret));
+#ifdef HAVE_PTHREAD_RWLOCK
     int rc = pthread_rwlock_init(&ret->rwlock, NULL);
     if (rc != 0)
         panic(rc, "Initialization of RWLock failed.");
+#else
+    ret->writer = -1;
+    ret->rwlock = list_create();
+    if (ret->rwlock == NULL)
+        panic(0, "Initialization of RWLock failed.");
+#endif
     ret->dynamic = 1;
 
     return ret;
@@ -80,23 +97,36 @@ RWLock *gw_rwlock_create(void)
 
 void gw_rwlock_init_static(RWLock *lock)
 {
+#ifdef HAVE_PTHREAD_RWLOCK
     int rc = pthread_rwlock_init(&lock->rwlock, NULL);
     if (rc != 0)
         panic(rc, "Initialization of RWLock failed.");
+#else
+    lock->writer = -1;
+    lock->rwlock = list_create();
+    if (lock->rwlock == NULL)
+        panic(0, "Initialization of RWLock failed.");
+#endif
     lock->dynamic = 0;
 }
 
 
 void gw_rwlock_destroy(RWLock *lock)
 {
+#ifdef HAVE_PTHREAD_RWLOCK
     int ret;
+#endif
 
     if (!lock)
         return;
 
+#ifdef HAVE_PTHREAD_RWLOCK
     ret = pthread_rwlock_destroy(&lock->rwlock);
     if (ret != 0)
         panic(ret, "Attempt to destroy locked rwlock.");
+#else
+    list_destroy(lock->rwlock, NULL);
+#endif
 
     if (lock->dynamic)
         gw_free(lock);
@@ -108,10 +138,17 @@ int gw_rwlock_rdlock(RWLock *lock)
     int ret;
     gw_assert(lock != NULL);
 
+#ifdef HAVE_PTHREAD_RWLOCK
     ret = pthread_rwlock_rdlock(&lock->rwlock);
     if (ret != 0) {
         panic(ret, "Error while pthread_rwlock_rdlock.");
     }
+#else
+    list_lock(lock->rwlock);
+    list_add_producer(lock->rwlock);
+    list_unlock(lock->rwlock);
+    RWDEBUG("", 0, "------------ gw_rwlock_rdlock(%p) ----------", lock);
+#endif
 
     return ret;
 }
@@ -122,9 +159,18 @@ int gw_rwlock_unlock(RWLock *lock)
     int ret;
     gw_assert(lock != NULL);
 
+#ifdef HAVE_PTHREAD_RWLOCK
     ret = pthread_rwlock_unlock(&lock->rwlock);
     if (ret != 0)
         panic(ret, "Error while gw_rwlock_unlock.");
+#else
+    RWDEBUG("", 0, "------------ gw_rwlock_unlock(%p) ----------", lock);
+    if (lock->writer == gwthread_self()) {
+        lock->writer = -1;
+        list_unlock(lock->rwlock);
+    } else 
+        list_remove_producer(lock->rwlock);
+#endif
 
     return ret;
 }
@@ -135,9 +181,18 @@ int gw_rwlock_wrlock(RWLock *lock)
     int ret;
     gw_assert(lock != NULL);
 
+#ifdef HAVE_PTHREAD_RWLOCK
     ret = pthread_rwlock_wrlock(&lock->rwlock);
     if (ret != 0)
         panic(ret, "Error while pthread_rwlock_wrlock.");
+#else
+    RWDEBUG("", 0, "------------ gw_rwlock_wrlock(%p) ----------", lock);
+    list_lock(lock->rwlock);
+    RWDEBUG("", 0, "------------ gw_rwlock_wrlock(%p) producers=%d", lock, list_producer_count(lock->rwlock));
+    /* wait for reader */
+    list_consume(lock->rwlock);
+    lock->writer = gwthread_self();
+#endif
 
     return ret;
 }

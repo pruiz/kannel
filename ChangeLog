@@ -1,3 +1,10 @@
+2004-08-28 Alexander Malysh <amalysh at kannel.org>
+    * gw-config.h.in, configure.in, configure: changed 'HAVE_PTHREAD_RWLOCK_T' to
+      more generic 'HAVE_PTHREAD_RWLOCK'.
+    * gwlib/gw-rwlock.[ch]: added "ugly" rwlock emulation code if no pthread_rwlock
+      support detected. This emulation code uses List and works in all cases where
+      rwlock used in kannel.
+
 2004-08-26  Stipe Tolj  <stolj@wapme.de>
     * gw/wap-appl.c: fixing a memory leak while not destroying a created octstr
       if wml_compile() fails. Thanks again to Slava for the patch.

@@ -57,16 +57,28 @@
 /*
  * gw-rwlock.h:  Prototypes for Reader/Writer Lock.
  *
- * Alexander Malysh <a.malysh@centrium.de>, initial version 2004
+ * Alexander Malysh <amalysh@kannel.org>, initial version 2004
  */
 
 #ifndef GW_RWLOCK_H
 #define GW_RWLOCK_H
 
-#include <pthread.h>
+#ifdef HAVE_CONFIG_H
+  #include "gw-config.h"
+#endif
+#ifndef HAVE_PTHREAD_RWLOCK
+  #include "list.h"
+#else
+  #include <pthread.h>
+#endif
 
 typedef struct {
+#ifdef HAVE_PTHREAD_RWLOCK
     pthread_rwlock_t rwlock;
+#else
+    List *rwlock;
+    long writer;
+#endif
     int dynamic;
 } RWLock;
 

@@ -253,7 +253,7 @@
 #undef HAVE_PTHREAD_SPINLOCK_T
 
 /* Define if you have pthread_rwlock_t type and reader/writer lock support. */
-#undef HAVE_PTHREAD_RWLOCK_T
+#undef HAVE_PTHREAD_RWLOCK
 
 /* Define if you have working semaphore (sem_t). */
 #undef HAVE_SEMAPHORE

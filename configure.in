@@ -299,7 +299,8 @@ pthread_rwlock_unlock(&lock);
 pthread_rwlock_wrlock(&lock);
 pthread_rwlock_unlock(&lock);
 pthread_rwlock_destroy(&lock);
-], [AC_MSG_RESULT(yes); AC_DEFINE(HAVE_PTHREAD_RWLOCK_T)], AC_MSG_RESULT(no))
+], [AC_MSG_RESULT(yes); AC_DEFINE(HAVE_PTHREAD_RWLOCK)], AC_MSG_RESULT(no), [
+AC_MSG_RESULT(Cross compiling - assuming suuported) ; AC_DEFINE(HAVE_PTHREAD_RWLOCK)])
 
 dnl checking for native semaphore support
 AC_MSG_CHECKING([for semaphore support])
@@ -316,7 +317,8 @@ int main(void) {
     sem_destroy(&s);
     return 0;
 }
-], [AC_MSG_RESULT(yes); AC_DEFINE(HAVE_SEMAPHORE)], AC_MSG_RESULT(no))
+], [AC_MSG_RESULT(yes); AC_DEFINE(HAVE_SEMAPHORE)], AC_MSG_RESULT(no), [
+AC_MSG_RESULT(Cross compiling - assuming suuported) ; AC_DEFINE(HAVE_SEMAPHORE)])
 
 dnl Check if we have libxml2 installed and which version it is.
 dnl Kannel requires currently at least version 2.2.5 of libxml2.
