@@ -1,3 +1,8 @@
+2002-08-04  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wml_compiler.c: fixed a segmentation fault bug in check_if_emphasis()
+      which was caused while a nulled node->name gets into strcmp().
+      Thanks to Peter Bieringer <pb@bieringer.de> for reporting this.
+
 2002-08-03  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_store.c: fixed a minor compiler warning
     * gw/bb_smscconn.c: fixed a possible segmentation fault bug in 
