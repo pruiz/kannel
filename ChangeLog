@@ -1,3 +1,8 @@
+2002-02-08  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_at2.c: added Alcatel support as AT GSM modem SMSC
+      submitted by: Olivier Durécu <olivier.durecu@ms.alcatel.fr>
+      [Msg-ID: <3C63AA61.7000208@ms.alcatel.fr>]
+
 2002-02-07  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/octstr.c: removed unused variable from octstr_read_pipe() in 
       order to make kannel-nag run happily.
