@@ -473,9 +473,7 @@ static void set_referer_url(Octstr *url, WSPMachine *sm)
 
 static Octstr *get_referer_url(const WSPMachine *sm)
 {
-	gw_assert(sm != NULL);
-
-    return sm->referer_url;
+    return sm ? sm->referer_url : NULL;
 }
 
 
