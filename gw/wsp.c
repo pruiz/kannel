@@ -214,7 +214,7 @@ WSPMachine *wsp_machine_create(void) {
 	
 	p->state = NULL_STATE;
 
-	/* set capabilities to default values */
+	/* set capabilities to default values (defined in 1.1) */
 
 	p->client_SDU_size = 1400;
 	p->server_SDU_size = 1400;
@@ -383,7 +383,7 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 		debug("wap.wsp", 0, "Client protocol option flags %0xd, not supported.", flags);
 		     
 		m->protocol_options = WSP_MAX_PROTOCOL_OPTIONS;
-		m->set_caps |= WSP_SSDU_SET;
+		m->set_caps |= WSP_PO_SET;
 	    }
 	    break;
 	case WSP_CAPS_METHOD_MOR:
@@ -425,7 +425,8 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 	    break;
 	default:
 	    /* unassigned */
-	    debug("wap.wsp", 0, "Unknown capability ignored");
+	    debug("wap.wsp", 0, "Unknown capability '%d' ignored",
+		  octstr_get_char(caps,off-1));
 	    break;
 	}
     }
