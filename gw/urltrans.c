@@ -616,6 +616,17 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
     ot->faked_sender = cfg_get(grp, octstr_imm("faked-sender"));
     ot->split_chars = cfg_get(grp, octstr_imm("split-chars"));
     ot->split_suffix = cfg_get(grp, octstr_imm("split-suffix"));
+
+    if ( (ot->prefix == NULL && ot->suffix != NULL) ||
+	 (ot->prefix != NULL && ot->suffix == NULL) ) {
+	warning(0, "Service <%s>: suffix and prefix are only used"
+		   " if both are set.", octstr_get_cstr(ot->keyword));
+    }
+    if ((ot->prefix != NULL || ot->suffix != NULL) &&
+        ot->type != TRANSTYPE_URL) {
+	warning(0, "Service <%s>: suffix and prefix are only used"
+                   " if type is 'url'.", octstr_get_cstr(ot->keyword));
+    }
     
     return ot;
 
@@ -643,9 +654,11 @@ static void destroy_onetrans(void *p)
 	octstr_destroy(ot->faked_sender);
 	octstr_destroy(ot->split_chars);
 	octstr_destroy(ot->split_suffix);
+	octstr_destroy(ot->header);
+	octstr_destroy(ot->footer);
+	list_destroy(ot->accepted_smsc, octstr_destroy_item);
 	octstr_destroy(ot->username);
 	octstr_destroy(ot->password);
-	list_destroy(ot->accepted_smsc, octstr_destroy_item);
 	octstr_destroy(ot->forced_smsc);
 	octstr_destroy(ot->default_smsc);
 	octstr_destroy(ot->allow_ip);

@@ -181,7 +181,7 @@ static List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
     long max_part_len, udh_len, hf_len, nlsuf_len;
     long total_messages, msgno, last;
     List *list;
-    Msg *part, *partlist[256];
+    Msg *part;
     Octstr *msgdata;
 
     hf_len = octstr_len(header) + octstr_len(footer);
@@ -208,6 +208,7 @@ static List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
 
     msgdata = octstr_duplicate(orig->sms.msgdata);
     msgno = 0;
+    list = list_create();
     do {
 	msgno++;
 	part = msg_duplicate(orig);
@@ -227,16 +228,15 @@ static List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
 	    octstr_append(part->sms.msgdata, footer);
 	if (!last && nonlast_suffix)
 	    octstr_append(part->sms.msgdata, nonlast_suffix);
-	partlist[msgno] = part;
+	list_append(list, part);
     } while (!last);
     total_messages = msgno;
     octstr_destroy(msgdata);
-    list = list_create();
-    for (msgno = 1; msgno <= total_messages; msgno++) {
-	part = partlist[msgno];
-	if (catenate && total_messages > 1)
+    if (catenate && total_messages > 1) {
+        for (msgno = 1; msgno <= total_messages; msgno++) {
+	    part = list_get(list, msgno - 1);
 	    prepend_catenation_udh(part, msgno, total_messages, msg_sequence);
-	list_append(list, part);
+        }
     }
     return list;
 }

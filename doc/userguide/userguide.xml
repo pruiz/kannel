@@ -2159,14 +2159,14 @@ url = "http://%S"
      <entry>string</entry>
      <entry valign=bottom>
         If specified, this string is automatically added to each SMS sent with
-        this service. If the message is split, it is added to each part
+        this service. If the message is split, it is added to each part.
 
      </entry></row>
 
    <row><entry><literal>footer</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
-        As header, but not inserted into head but appended to end
+        As header, but not inserted into head but appended to end.
 
      </entry></row>
 
@@ -2174,8 +2174,10 @@ url = "http://%S"
      <entry>string</entry>
      <entry morerows=1 valign=bottom>
         Stuff in answer that is cut away, only things between prefix
-        and suffix is left. In-casesensitive. Matches the first prefix
-        and then the first suffix.
+        and suffix is left. Not case sensitive. Matches the first prefix
+        and then the first suffix. These are only used for 
+        <literal>url</literal> type services, and only if both are
+	specified.
 
      </entry></row>
 

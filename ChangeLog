@@ -1,5 +1,18 @@
 2001-02-16  Richard Braakman  <dark@wapit.com>
 
+	* gw/smsbox.c: Fix a potential buffer overflow in sms_split(),
+	by removing the partlist array and using List directly.
+
+	* gw/urltrans.c: Fix memory leak: destroy_onetrans also destroys
+	"header" and "footer".
+
+	* gw/urltrans.c: Warn if a service configures prefix or suffix
+	when they will not be used.
+
+	* userguide: Describe when prefix and suffix are used.
+
+2001-02-16  Richard Braakman  <dark@wapit.com>
+
 	* gw/bb_smscconn.c, gw/urltrans.c: Deal with cfg_get_multi_group()
 	possibly being NULL.
 
