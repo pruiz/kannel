@@ -105,10 +105,10 @@ static void main_thread(void *arg) {
 	WAPEvent *ind, *res;
 	
 	while (run_status == running && (ind = list_consume(queue)) != NULL) {
-		gw_assert(ind->type == S_MethodInvoke_Ind ||
-			  ind->type == S_Unit_MethodInvoke_Ind);
-		gwthread_create(fetch_thread, ind);
-		if (ind->type == S_MethodInvoke_Ind) {
+		switch (ind->type) {
+		case S_MethodInvoke_Ind:
+			gwthread_create(fetch_thread, ind);
+
 			res = wap_event_create(S_MethodInvoke_Res);
 			res->u.S_MethodInvoke_Res.mid = 
 				ind->u.S_MethodInvoke_Ind.mid;
@@ -117,10 +117,28 @@ static void main_thread(void *arg) {
 			res->u.S_MethodInvoke_Res.msmid = 
 				ind->u.S_MethodInvoke_Ind.msmid;
 			wsp_session_dispatch_event(res);
+
+			break;
+		case S_Unit_MethodInvoke_Ind:
+			gwthread_create(fetch_thread, ind);
+			break;
+		default:
+			panic(0, "APPL: Can't handle %s event",
+				wap_event_name(ind->type));
+			break;
 		}
 	}
 }
 
+
+static void add_kannel_version(List *headers) {
+	Octstr *version;
+
+	version = octstr_create("Kannel ");
+	octstr_append_cstr(version, VERSION);
+	http_header_add(headers, "X-WAP-Gateway", octstr_get_cstr(version));
+	octstr_destroy(version);
+}
 
 
 static void fetch_thread(void *arg) {
@@ -131,7 +149,6 @@ static void fetch_thread(void *arg) {
 	int converter_failed;
 	WAPEvent *event;
 	unsigned long body_size, client_SDU_size;
-	int wml_ok, wmlc_ok, wmlscript_ok, wmlscriptc_ok;
 	Octstr *url, *final_url, *resp_body, *body, *os, *type, *charset;
 	List *session_headers;
 	List *request_headers;
@@ -195,42 +212,38 @@ static void fetch_thread(void *arg) {
 
 	body = NULL;
 
-	wml_ok = 0;
-	wmlc_ok = 0;
-	wmlscript_ok = 0;
-	wmlscriptc_ok = 0;
-	
 	actual_headers = list_create();
 	if (session_headers != NULL)
 		http_append_headers(actual_headers, session_headers);
 	if (request_headers)
-		http_append_headers(actual_headers, 
-			request_headers);
+		http_append_headers(actual_headers, request_headers);
 
-	wml_ok = http_type_accepted(actual_headers, "text/vnd.wap.wml");
-	wmlscript_ok = http_type_accepted(actual_headers, 
-		"text/vnd.wap.wmlscript");
-	wmlc_ok = http_type_accepted(actual_headers, "application/vnd.wap.wmlc");
-	wmlscriptc_ok = http_type_accepted(actual_headers, 
-		"application/vnd.wap.wmlscriptc");
-
-	if (wmlc_ok && !wml_ok) {
+	/* We can compile WML to WMLC */
+	if (http_type_accepted(actual_headers, "application/vnd.wap.wmlc")
+	    && !http_type_accepted(actual_headers, "text/vnd.wap.wml")) {
 		http_header_add(actual_headers, "Accept", "text/vnd.wap.wml");
 	}
-	if (wmlscriptc_ok && !wmlscript_ok) {
-		http_header_add(actual_headers, 
+
+	/* We can compile WMLScript */
+	if (http_type_accepted(actual_headers,
+		"application/vnd.wap.wmlscriptc")
+	    && !http_type_accepted(actual_headers, "text/vnd.wap.wmlscript")) {
+		http_header_add(actual_headers,
 			"Accept", "text/vnd.wap.wmlscript");
 	}
+
 	if (octstr_len(addr_tuple->client->address) > 0) {
 		http_header_add(actual_headers, 
 			"X_Network_Info", 
 			octstr_get_cstr(addr_tuple->client->address));
 	}
 	if (session_id != -1) {
-		char buf[1024];
+		char buf[40];
 		sprintf(buf, "%ld", session_id);
 		http_header_add(actual_headers, "X-WAP-Session-ID", buf);
 	}
+
+	add_kannel_version(actual_headers);
 
 	{
 	    extern struct {

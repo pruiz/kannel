@@ -1,5 +1,12 @@
 2000-06-12  Richard Braakman  <dark@wapit.com>
 
+	* Started simplifying fetch_thread function.
+
+	* Add "X-WAP-Gateway: Kannel XXX" to requests, where XXX is the
+	version number.
+
+2000-06-12  Richard Braakman  <dark@wapit.com>
+
 	* Renamed http2 to http everywhere, because the old http code
 	is completely gone.  Removed --with-http2 configuration option.
 
