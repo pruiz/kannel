@@ -1,5 +1,10 @@
 2000-10-10  Lars Wirzenius  <liw@iki.fi>
 
+	* debian/rules: "clean" doesn't run "make clean" unless Makefile
+	exists.
+
+2000-10-10  Lars Wirzenius  <liw@iki.fi>
+
 	* debian/init: start kannel boxes as user "kannel" instead of
 	root. run_kannel_box needs to run as root to create the pid file.
 	

@@ -10,7 +10,7 @@ Makefile:
 
 clean:
 	dh_testdir
-	$(MAKE) clean
+	if [ -f Makefile ]; then $(MAKE) clean; fi
 	rm -f Makefile
 	dh_clean
 
