@@ -1,3 +1,8 @@
+2000-11-10  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/http.c: Implemented persistent connections on the
+	client end.
+
 2000-11-10  Richard Braakman  <dark@wapi.com>
 
 	* gwlib/gwlib.c: Call gwlib_protected_shutdown() last, because

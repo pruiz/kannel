@@ -216,6 +216,8 @@ typedef struct {
     List *response_headers;
     Octstr *response_body;
     Connection *conn;
+    Octstr *host;
+    long port;
     int retrying;
     int follow_remaining;
     enum {
@@ -245,6 +247,8 @@ static HTTPServer *server_create(HTTPCaller *caller, Octstr *url,
     trans->response_headers = list_create();
     trans->response_body = octstr_create("");
     trans->conn = NULL;
+    trans->host = NULL;
+    trans->port = 0;
     trans->retrying = 0;
     trans->follow_remaining = follow_remaining;
     trans->chunked_body_state = reading_chunk_len;
@@ -263,8 +267,84 @@ static void server_destroy(void *p)
     octstr_destroy(trans->request_body);
     http_destroy_headers(trans->response_headers);
     octstr_destroy(trans->response_body);
+    octstr_destroy(trans->host);
     gw_free(trans);
 }
+
+
+/*
+ * Pool of open, but unused connections to servers or proxies. Key is
+ * "servername:port", value is List with Connection objects.
+ */
+static Dict *conn_pool = NULL;
+static Mutex *conn_pool_lock = NULL;
+
+
+static void conn_pool_item_destroy(void *item)
+{
+    Connection *conn;
+    
+    while ((conn = list_extract_first(item)) != NULL)
+    	conn_destroy(conn);
+    list_destroy(item, NULL);
+}
+
+
+static void conn_pool_init(void)
+{
+    conn_pool = dict_create(1024, conn_pool_item_destroy);
+    conn_pool_lock = mutex_create();
+}
+
+
+static void conn_pool_shutdown(void)
+{
+    dict_destroy(conn_pool);
+    mutex_destroy(conn_pool_lock);
+}
+
+
+static Octstr *conn_pool_key(Octstr *host, int port)
+{
+    return octstr_format("%S:%d", host, port);
+}
+
+
+static Connection *conn_pool_get(Octstr *host, int port)
+{
+    Octstr *key;
+    List *list;
+    Connection *conn;
+
+    mutex_lock(conn_pool_lock);
+    key = conn_pool_key(host, port);
+    list = dict_get(conn_pool, key);
+    octstr_destroy(key);
+    if (list == NULL)
+    	conn = NULL;
+    else
+    	conn = list_extract_first(list);
+    mutex_unlock(conn_pool_lock);
+    return conn;
+}
+
+static void conn_pool_put(Connection *conn, Octstr *host, int port)
+{
+    Octstr *key;
+    List *list;
+    
+    mutex_lock(conn_pool_lock);
+    key = conn_pool_key(host, port);
+    list = dict_get(conn_pool, key);
+    if (list == NULL) {
+    	list = list_create();
+	dict_put(conn_pool, key, list);
+    }
+    list_append(list, conn);
+    octstr_destroy(key);
+    mutex_unlock(conn_pool_lock);
+}
+
 
 
 /*
@@ -572,7 +652,7 @@ static void handle_transaction(Connection *conn, void *data)
 		goto error;
 	    else if (ret == 0) {
 		conn_unregister(trans->conn);
-		conn_destroy(trans->conn);
+		conn_pool_put(trans->conn, trans->host, trans->port);
 		trans->conn = NULL;
 		trans->state = transaction_done;
 	    } else 
@@ -730,29 +810,32 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path)
  * response can be read or -1 for error.
  */
 
-static Connection *send_request(Octstr *url, List *request_headers,
-                                Octstr *request_body, char *method_name)
+static Connection *send_request(HTTPServer *trans, char *method_name)
 {
-    Octstr *host, *path, *request;
-    long port;
+    Octstr *path, *request;
     Connection *conn;
 
-    host = NULL;
     path = NULL;
     request = NULL;
     conn = NULL;
 
-    if (parse_url(url, &host, &port, &path) == -1)
+    if (parse_url(trans->url, &trans->host, &trans->port, &path) == -1)
         goto error;
 
-    if (proxy_used_for_host(host)) {
-        request = build_request(url, host, port, request_headers,
-                                request_body, method_name);
-        conn = conn_open_tcp(proxy_hostname, proxy_port);
+    if (proxy_used_for_host(trans->host)) {
+        request = build_request(trans->url, trans->host, trans->port, 
+	    	    	    	trans->request_headers, 
+				trans->request_body, method_name);
+    	conn = conn_pool_get(proxy_hostname, proxy_port);
+	if (conn == NULL)
+	    conn = conn_open_tcp(proxy_hostname, proxy_port);
     } else {
-        request = build_request(path, host, port, request_headers,
-                                request_body, method_name);
-        conn = conn_open_tcp(host, port);
+        request = build_request(path, trans->host, trans->port, 
+	    	    	    	trans->request_headers,
+                                trans->request_body, method_name);
+    	conn = conn_pool_get(trans->host, trans->port);
+	if (conn == NULL)
+	    conn = conn_open_tcp(trans->host, trans->port);
     }
     if (conn == NULL)
         goto error;
@@ -762,7 +845,6 @@ static Connection *send_request(Octstr *url, List *request_headers,
     if (conn_write(conn, request) == -1)
         goto error;
 
-    octstr_destroy(host);
     octstr_destroy(path);
     octstr_destroy(request);
 
@@ -770,10 +852,9 @@ static Connection *send_request(Octstr *url, List *request_headers,
 
 error:
     conn_destroy(conn);
-    octstr_destroy(host);
     octstr_destroy(path);
     octstr_destroy(request);
-    error(0, "Couldn't send request to <%s>", octstr_get_cstr(url));
+    error(0, "Couldn't send request to <%s>", octstr_get_cstr(trans->url));
     return NULL;
 }
 
@@ -810,8 +891,7 @@ static void write_request_thread(void *arg)
 	    http_header_add(trans->request_headers, "Content-Length", buf);
 	}
 
-	trans->conn = send_request(trans->url, trans->request_headers,  
-				   trans->request_body, method);
+	trans->conn = send_request(trans, method);
     	if (trans->conn == NULL)
 	    list_produce(trans->caller, trans);
 	else {
@@ -997,6 +1077,7 @@ static void client_reset(HTTPClient *p)
     debug("gwlib.http", 0, "HTTP: Resetting HTTPClient for `%s'.",
     	  octstr_get_cstr(p->ip));
     p->state = reading_request_line;
+    p->headers = http_create_empty_headers();
 }
 
 
@@ -1928,6 +2009,7 @@ void http_init(void)
 
     proxy_init();
     client_init();
+    conn_pool_init();
     server_init();
     
     run_status = running;
@@ -1941,6 +2023,7 @@ void http_shutdown(void)
 
     run_status = terminating;
 
+    conn_pool_shutdown();
     client_shutdown();
     server_shutdown();
     proxy_shutdown();
