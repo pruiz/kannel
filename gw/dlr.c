@@ -190,7 +190,7 @@ void dlr_init(Cfg* cfg)
         dlr_init_mysql(cfg);
 #else
    	    panic(0, "DLR: storage type defined as '%s', but no MySQL support build in!", 
-              octstr_get_cstr(dlr_type);
+              octstr_get_cstr(dlr_type));
 #endif        
     } else 
     if (octstr_compare(dlr_type, octstr_imm("internal")) == 0) {
