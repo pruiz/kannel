@@ -1,4 +1,8 @@
 2003-03-04  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smasi.c: fixed bugs in pdu_to_msg(), including the setting
+      of 7bit coding to have normal text logged in access.log.
+
+2003-03-04  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/octstr.[ch|debug]: added some more functions provided by Nisan.
       [Msg-ID: <5.1.0.14.0.20030304085848.026b6020@amagoblin.ialien.co.za>]
     * gwlib/conn.[ch], gwlib/http.c: fixed a serious pthread_mutex bug for 
