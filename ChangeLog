@@ -1,3 +1,7 @@
+2002-08-06  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_store.c: fixed possible race conditioning for sms_store list in
+      store_status() causing segfault.
+
 2002-08-06 Harrie Hazewinkel <harrie@mod-snmp.com>
     * Added an access log facility to the wapbox.
 
