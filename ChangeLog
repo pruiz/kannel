@@ -1,4 +1,8 @@
 2002-11-18  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/cfg.def: added missing 'field-boxc-id' field in 'dlr-db' grou.
+      Thanks to Ignat Vassilev <ozzy@declera.com> for pointing this out.
+
+2002-11-18  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.c: added http_open_port_if() to bind to specific interface.
       Thanks to Nisan for this patch.
 
