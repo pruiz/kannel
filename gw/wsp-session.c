@@ -188,11 +188,6 @@ static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
 				event->u.TR_Invoke_Ind.addr_tuple);
 		break;
 
-	case TR_Invoke_Cnf:
-		tuple = wap_addr_tuple_duplicate(
-				event->u.TR_Invoke_Cnf.addr_tuple);
-		break;
-
 	case TR_Result_Cnf:
 		tuple = wap_addr_tuple_duplicate(
 				event->u.TR_Result_Cnf.addr_tuple);

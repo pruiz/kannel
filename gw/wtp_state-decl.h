@@ -353,8 +353,7 @@ ROW(RESULT_RESP_WAIT,
     RcvAck,
     1,
     {
-     current_primitive = TR_Result_Cnf;
-     wsp_event = pack_wsp_event(current_primitive, event, machine);
+     wsp_event = create_tr_result_cnf(machine);
      wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)

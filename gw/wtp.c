@@ -13,32 +13,58 @@
  * Abort types (i.e., provider abort codes defined by WAP)
  */
 enum {
-   UNKNOWN = 0x00,
-   PROTOERR = 0x01,
-   INVALIDTID = 0x02,
-   NOTIMPLEMENTEDCL2 = 0x03,
-   NOTIMPLEMENTEDSAR = 0x04,
-   NOTIMPLEMENTEDUACK = 0x05,
-   WTPVERSIONZERO = 0x06,
-   CAPTEMPEXCEEDED = 0x07,
-   NORESPONSE = 0x08,
-   MESSAGETOOLARGE = 0x09
+	UNKNOWN = 0x00,
+	PROTOERR = 0x01,
+	INVALIDTID = 0x02,
+	NOTIMPLEMENTEDCL2 = 0x03,
+	NOTIMPLEMENTEDSAR = 0x04,
+	NOTIMPLEMENTEDUACK = 0x05,
+	WTPVERSIONZERO = 0x06,
+	CAPTEMPEXCEEDED = 0x07,
+	NORESPONSE = 0x08,
+	MESSAGETOOLARGE = 0x09
 };    
 
-/*
- * Global data structuresc:
- *
- * wtp machines list
+/***********************************************************************
+ * Internal data structures:
  */
 
+/*
+ * List of WTPMachines.
+ */
 static List *machines = NULL;
 
+/*
+ * Counter for WTPMachine id numbers, to make sure they are unique.
+ */
 static Counter *machine_id_counter = NULL;
+
+
+/*
+ * Give the status the module:
+ *
+ *	limbo
+ *		not running at all
+ *	running
+ *		operating normally
+ *	terminating
+ *		waiting for operations to terminate, returning to limbo
+ */
+static enum { limbo, running, terminating } run_status = limbo;
+
+
+/*
+ * Queue of events to be handled by WTP layer.
+ */
+static List *queue = NULL;
+
 
 /*****************************************************************************
  *
  * Prototypes of internal functions:
- *
+ */
+ 
+/*
  * Create an uniniatilized wtp state machine.
  */
 
@@ -85,30 +111,12 @@ static unsigned char *name_state(int name);
  */
 static WTPMachine *wtp_machine_find(WAPAddrTuple *tuple, long tid, long mid);
 
-/*
- * Packs a wsp event. Fetches flags and user data from a wtp event. Address 
- * five-tuple and tid are fields of the wtp machine.
- */
-static WAPEvent *pack_wsp_event(WAPEventName wsp_name, WAPEvent *wtp_event, 
-         WTPMachine *machine);
-
-/*
- * Give the status the module:
- *
- *	limbo
- *		not running at all
- *	running
- *		operating normally
- *	terminating
- *		waiting for operations to terminate, returning to limbo
- */
-static enum { limbo, running, terminating } run_status = limbo;
-
-static List *queue = NULL;
 
 static void main_thread(void *);
 static WTPMachine *find_machine_using_mid(long mid);
 static WAPEvent *create_tr_invoke_ind(WTPMachine *sm, Octstr *user_data);
+static WAPEvent *create_tr_result_cnf(WTPMachine *sm);
+static WAPEvent *create_tr_abort_ind(WTPMachine *sm, long abort_reason);
 
 
 /******************************************************************************
@@ -513,7 +521,7 @@ WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl) {
 
 
 /*
- * Create a TR-Invoke.ind event to be sent to WSP.
+ * Create a TR-Invoke.ind event.
  */
 static WAPEvent *create_tr_invoke_ind(WTPMachine *sm, Octstr *user_data) {
 	WAPEvent *event;
@@ -531,46 +539,34 @@ static WAPEvent *create_tr_invoke_ind(WTPMachine *sm, Octstr *user_data) {
 
 
 /*
- * Packs a wsp event. Fetches flags and user data from a wtp event. Address 
- * five-tuple and tid are fields of the wtp machine.
+ * Create a TR-Result.cnf event.
  */
-static WAPEvent *pack_wsp_event(WAPEventName wsp_name, WAPEvent *wtp_event, 
-         WTPMachine *machine){
+static WAPEvent *create_tr_result_cnf(WTPMachine *sm) {
+	WAPEvent *event;
+	
+	event = wap_event_create(TR_Result_Cnf);
+	event->u.TR_Result_Cnf.addr_tuple = 
+		wap_addr_tuple_duplicate(sm->addr_tuple);
+	return event;
+}
 
-         WAPEvent *event = wap_event_create(wsp_name);
 
-         switch (wsp_name){
-                
-	        case TR_Invoke_Cnf:
-		     gw_assert(wtp_event->type == TR_Invoke_Ind);
-                     event->u.TR_Invoke_Cnf.addr_tuple = 
-		     	wap_addr_tuple_duplicate(machine->addr_tuple);
-                break;
-                
-	        case TR_Result_Cnf:
-		     gw_assert(wtp_event->type == RcvAck);
-                     event->u.TR_Result_Cnf.exit_info = NULL;
-                     event->u.TR_Result_Cnf.exit_info_present = 0;
-                     event->u.TR_Result_Cnf.addr_tuple = 
-		     	wap_addr_tuple_duplicate(machine->addr_tuple);
-                break;
+/*
+ * Create a TR-Abort.ind event.
+ */
+static WAPEvent *create_tr_abort_ind(WTPMachine *sm, long abort_reason) {
+	WAPEvent *event;
+	
+	event = wap_event_create(TR_Abort_Ind);
 
-	        case TR_Abort_Ind:
-		     gw_assert(wtp_event->type == RcvAbort);
-                     event->u.TR_Abort_Ind.abort_code =
-                            wtp_event->u.RcvAbort.abort_reason;
-                     event->u.TR_Abort_Ind.tid = machine->tid;
-                     event->u.TR_Abort_Ind.mid = machine->mid;
-		     event->u.TR_Abort_Ind.addr_tuple = 
-		     	wap_addr_tuple_duplicate(machine->addr_tuple);
-                break;
-                
-	        default:
-                break;
-         }
+	event->u.TR_Abort_Ind.abort_code = abort_reason;
+	event->u.TR_Abort_Ind.tid = sm->tid;
+	event->u.TR_Abort_Ind.mid = sm->mid;
+	event->u.TR_Abort_Ind.addr_tuple = 
+		wap_addr_tuple_duplicate(sm->addr_tuple);
 
-         return event;
-} 
+	return event;
+}
 
 
 static int machine_has_mid(void *a, void *b) {
@@ -581,6 +577,7 @@ static int machine_has_mid(void *a, void *b) {
 	mid = *(long *) b;
 	return sm->mid == mid;
 }
+
 
 static WTPMachine *find_machine_using_mid(long mid) {
 	return list_search(machines, &mid, machine_has_mid);

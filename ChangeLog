@@ -1,3 +1,13 @@
+Fri Jun  9 05:18:07 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wap-events-def.h: Finished breaking up pack_wsp_event into
+	smaller functions.
+
+Fri Jun  9 05:10:20 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wtp.c, gw/wap-events-def.h: Removed event TR_Invoke_Cnf since
+	it wasn't used and is only generated on the client side.
+
 Fri Jun  9 04:58:02 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wap-events-def.h, gw/wtp.c: Removed unused fields wsp_pdu

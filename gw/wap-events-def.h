@@ -18,12 +18,6 @@ WAPEVENT(TR_Invoke_Ind,
 	  ADDRTUPLE(addr_tuple)
 	  )
 
-WAPEVENT(TR_Invoke_Cnf,
-          OCTSTR(exit_info)
-          INTEGER(exit_info_present)
-	  ADDRTUPLE(addr_tuple);
-          )
-
 WAPEVENT(TR_Result_Cnf,
           OCTSTR(exit_info)
           INTEGER(exit_info_present)
