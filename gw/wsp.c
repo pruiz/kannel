@@ -196,16 +196,14 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 				struct event *e; \
 				e = &current_event->event; \
 				if (!done && sm->state == state_name && \
-				    current_event->type == event && \
-				    (condition)) { \
-				        debug(0, "WSP: entering %s handler", \
-						#state_name); \
-					action \
-					debug(0, "WSP: setting state to %s", \
-						#next_state); \
-					sm->state = next_state; \
-					done = 1; \
-					goto end; \
+				   current_event->type == event && \
+				   (condition)) { \
+				   debug(0, "WSP: entering %s handler", #state_name); \
+                                   debug(0, "WSP: setting state to %s", #next_state); \
+				   sm->state = next_state; \
+				   action \
+				   done = 1; \
+				   goto end; \
 				} \
 			}
 		#include "wsp_state-decl.h"

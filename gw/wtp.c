@@ -15,12 +15,6 @@
  * Global data structures:
  */
 
-#if 0
-static long gen_tid=0;                /* tid used as transaction identifying 
-                                       * handle.
-                                       */
-#endif
-
 static WTPMachine *list = NULL;       /* list of wtp state machines */
 
 
@@ -265,21 +259,39 @@ void wtp_machine_dump(WTPMachine  *machine){
 WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
 
            WTPMachine *machine;
+           long tid;
+
+          switch (event->type){
+
+	          case RcvInvoke:
+                       tid=event->RcvInvoke.tid;
+                       debug(0, "WTP: machine_find_or_create: receiving invoke");
+                  break;
+
+	          case RcvAck: 
+                       tid=event->RcvAck.tid;
+                       debug(0, "WTP: machine_find_or_create: receiving ack");
+                  break;
+                 
+	          default:
+                       debug(0, "WTP: machine_find_or_create: wrong event");
+                  break;
+	   }
 
            machine=wtp_machine_find(msg->wdp_datagram.source_address,
                                     msg->wdp_datagram.source_port, 
                                     msg->wdp_datagram.destination_address,
-                                    msg->wdp_datagram.destination_port,
-                                    event->RcvInvoke.tid);
+                                    msg->wdp_datagram.destination_port, 
+                                    tid);
            if (machine == NULL){
 	       machine = wtp_machine_create(msg->wdp_datagram.source_address,
 				  msg->wdp_datagram.source_port, 
 				  msg->wdp_datagram.destination_address,
 				  msg->wdp_datagram.destination_port,
-				  event->RcvInvoke.tid,
-				  event->RcvInvoke.tcl);
+				  tid, event->RcvInvoke.tcl);
+               machine->in_use=1;
            }
-           machine->in_use=1;
+
            return machine;
 }
 
@@ -395,7 +407,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                event->RcvAck.tid_ok=this_octet>>2&1;
                this_octet=octet;
                event->RcvAck.rid=this_octet&1;
-               info(0, "Ack event packed");
+               debug(0, "Ack event packed");
                wtp_event_dump(event);
             }
 
@@ -520,16 +532,14 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 		  if (machine->state == wtp_state && \
 		     event->type == event_type && \
 		     (condition)) { \
-		     debug(0, "WTP: doing action for %s", #wtp_state); \
-		     action \
-		     debug(0, "WTP: setting state to %s", #next_state); \
+                     debug(0, "WTP: doing action for %s", #wtp_state); \
+                     debug(0, "WTP: setting state to %s", #next_state); \
 		     machine->state = next_state; \
+		     action \
 		  } else 
 	  #include "wtp_state-decl.h"
 		  {
 			error(0, "wtp_handle_event: unhandled event!");
-			debug(0, "wtp_handle_event: unhandled event is");
-			wtp_event_dump(event);
 		  }
 
           event = remove_from_event_queue(machine);
