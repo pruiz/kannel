@@ -1,9 +1,9 @@
 NEWS about Kannel: Open Source WAP and SMS Gateway version 0.9.1
 
-This is a DEVELOPMENT version. It is stable, but should be good enough
-for testing things out. Please do try it out and report problems to
-devel@kannel.org (the development mailing list) or bugs@kannel.org
-(the bug tracking system).
+This is a DEVELOPMENT version. It should be usable for experimentation
+and testing but is not intended for production use.  Please do try it
+out and report problems to devel@kannel.org (the development mailing list)
+or bugs@kannel.org (the bug tracking system).
 
 Change summary from version 0.8:
 
