@@ -209,6 +209,8 @@ struct emimsg *get_fields(Octstr *message)
     long fieldno, pos, pos2;
     struct emimsg *result = NULL;
 
+    debug("smsc.emi2", 0, "emi2 parsing packet: <%s>",
+		  octstr_get_cstr(message));
     if (octstr_get_char(message, 0) != 2 ||
 	octstr_get_char(message, octstr_len(message) - 1) != 3)
 	goto error;
@@ -254,8 +256,6 @@ struct emimsg *get_fields(Octstr *message)
 	/* The extra fields are ignored */
 	warning(0, "get_fields: EMI message of type %d/%c has %d more fields "
 		"than expected.", result->ot, result->or, extrafields);
-	debug("smsc.emi2", 0, "get_fields: message contents: %s",
-	      octstr_get_cstr(message));
     }
     if (octstr_parse_long(&checksum, message, pos2 + 1, 16) !=
 	octstr_len(message) - 1 || checksum != calculate_checksum(message))
@@ -287,6 +287,12 @@ int emimsg_send(Connection *conn, struct emimsg *emimsg)
 	error(0, "emimsg_send: conversion to string failed");
 	return -1;
     }
+    if (emimsg->ot == 60)
+	debug("smsc.emi2", 0, "Sending operation type 60, message with "
+	      "password not shown in log file.");
+    else
+	debug("smsc.emi2", 0, "emi2 sending packet: <%s>",
+	      octstr_get_cstr(string));
     if (conn_write(conn, string) == -1) {
 	octstr_destroy(string);
 	error(0, "emimsg_send: write failed");

@@ -458,6 +458,17 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 }
 
 
+static void clear_sent(PrivData *privdata, time_t sendtime[100],
+		       Msg *sendmsg[100])
+{
+    int i;
+
+    for (i = 0; i < 100; i++)
+	if (sendtime[i])
+	    list_produce(privdata->outgoing_queue, sendmsg[i]);
+}
+
+
 static void emi2_send_loop(SMSCConn *conn, Connection *server)
 {
     PrivData *privdata = conn->data;
@@ -479,12 +490,12 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 		nexttrn++; /* pick unused TRN */
 	    nexttrn %= 100;
 	    emimsg = msg_to_emimsg(msg, nexttrn);
-	    debug("smsc.emi2", 0, "sending message with TRN %d", nexttrn);
 	    sendmsg[nexttrn] = msg;
 	    sendtime[nexttrn++] = time(NULL);
 	    unacked++;
 	    if (emimsg_send(server, emimsg) == -1) {
 		emimsg_destroy(emimsg);
+		clear_sent(privdata, sendtime, sendmsg);
 		return;
 	    }
 	    emimsg_destroy(emimsg);
@@ -492,23 +503,25 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 
 	/* Read acks/nacks from the server */
 	while ((str = conn_read_packet(server, 2, 3))) {
+	    debug("smsc.emi2", 0, "Got packet from the main socket");
 	    if ( (emimsg = get_fields(str)) ) {
 		octstr_destroy(str);
-		debug("smsc.emi2", 0, "Got type %d (%c)",
-		      emimsg->ot, emimsg->or);
 		if (emimsg->or == 'O') {
 		    /* If the SMSC wants to send operations through this
 		     * socket, we'll have to read them because there
 		     * might be ACKs too. We just drop them while stopped,
 		     * hopefully the SMSC will resend them later. */
-		    if (!conn->is_stopped)
-			if (handle_operation(conn, server, emimsg) < 0)
+		    if (!conn->is_stopped) {
+			if (handle_operation(conn, server, emimsg) < 0) {
+			    clear_sent(privdata, sendtime, sendmsg);
 			    return; /* Connection broke */
+			}
+		    }
+		    else
+			info(0, "Ignoring operation from main socket "
+			     "because the connection is stopped.");
 		}
 		else {   /* Already checked to be 'O' or 'R' */
-		    debug("smsc.emi2", 0, "Received ack to operation %d, "
-			  "trn %d, %s", emimsg->ot, emimsg->trn,
-			  octstr_get_cstr(emimsg->fields[0]));
 		    if (!sendtime[emimsg->trn] || emimsg->ot != 51)
 			error(0, "Emi2: Got ack, don't remember sending O?");
 		    else {
@@ -530,10 +543,12 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 	}
 	if (conn_read_error(server)) {
 	    error(0, "emi2: Error trying to read ACKs from SMSC");
+	    clear_sent(privdata, sendtime, sendmsg);
 	    return;
 	    }
 	if (conn_eof(server)) {
-	    info(0, "emi2: Send connection closed by SMSC");
+	    info(0, "emi2: Main connection closed by SMSC");
+	    clear_sent(privdata, sendtime, sendmsg);
 	    return;
 	}
 	/* Check whether there are messages the server hasn't acked in a
@@ -566,10 +581,12 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 	    conn_wait(server, 40);
 	if (conn_read_error(server)) {
 	    warning(0, "emi2: Error reading from the main connection");
+	    clear_sent(privdata, sendtime, sendmsg);
 	    return;
 	}
 	if (conn_eof(server)) {
-	    info(0, "emi2: Send connection closed by SMSC");
+	    info(0, "emi2: Main connection closed by SMSC");
+	    clear_sent(privdata, sendtime, sendmsg);
 	    return;
 	}
     }
@@ -634,12 +651,13 @@ static void emi2_receiver(SMSCConn *conn, Connection *server)
 	else
 	    str = conn_read_packet(server, 2, 3);
 	if (str) {
+	    debug("smsc.emi2", 0, "Got packet from the receive connection.");
 	    if ( (emimsg = get_fields(str)) ) {
-		debug("smsc.emi2", 0, "emi2: Got %d, %c, %d",
-		      emimsg->ot, emimsg->or, emimsg->trn);
 		if (emimsg->or == 'O') {
-		    if (handle_operation(conn, server, emimsg) < 0)
+		    if (handle_operation(conn, server, emimsg) < 0) {
+			emimsg_destroy(emimsg);
 			return;
+		    }
 		}
 		else
 		    error(0, "emi2: No ACKs expected on receive connection!");
@@ -778,7 +796,7 @@ static void start_cb(SMSCConn *conn)
 
     /* in case there are messages in the buffer already */
     gwthread_wakeup(privdata->receiver_thread);
-    debug("bb.sms", 0, "smsc_emi2: start called");
+    debug("smsc.emi2", 0, "smsc_emi2: start called");
 }
 
 

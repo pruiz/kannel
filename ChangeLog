@@ -1,3 +1,8 @@
+2001-04-25  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsc_emi2.c, gw/emimsg.c: Changed debugging output, made
+	reconnections more robust.
+
 2001-04-25  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_at.c: In pdu_encode(), revert to using a Protocol-ID
