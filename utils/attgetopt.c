@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "config.h"
+#include "gw-config.h"
 
 /*
  * If the systm has getopt() defined within stdio.h (like on Solaris 2.6)

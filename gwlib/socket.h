@@ -10,7 +10,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 
-#include <config.h>
+#include "gw-config.h"
 
 #ifndef HAVE_SOCKLEN_T
 typedef int socklen_t;

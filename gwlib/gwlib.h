@@ -15,7 +15,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "config.h"
+#include "gw-config.h"
 
 #include "gw-getopt.h"
 #include "gwpoll.h"

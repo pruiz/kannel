@@ -15,7 +15,7 @@
 #ifndef WSINT_H
 #define WSINT_H
 
-#include "config.h"
+#include "gw-config.h"
 
 #include <stdio.h>
 #include <stdlib.h>

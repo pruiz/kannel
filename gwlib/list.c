@@ -32,8 +32,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "gw-config.h"
 #include "gwassert.h"
-#include "config.h"
 #include "list.h"
 #include "log.h"
 #include "thread.h"

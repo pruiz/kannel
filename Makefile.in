@@ -65,7 +65,7 @@ YFLAGS = -d -p ws_yy_
 
 
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
-CONFIG_HEADER = config.h
+CONFIG_HEADER = gw-config.h
 CONFIG_CLEAN_FILES =
 
 
@@ -295,12 +295,12 @@ clean:
 	rm -f $(benchoutputs)
 
 distclean: clean
-	rm -f Makefile config.h config.cache config.log config.status .depend
+	rm -f Makefile gw-config.h config.cache config.log config.status .depend
 
 nag:
 	utils/find-long-lines
 
-depend .depend: wmlscript/wsgram.h config.h
+depend .depend: wmlscript/wsgram.h gw-config.h
 	for dir in $(srcdirs); do \
 		$(MKDEPEND) $$dir/*.c | sed "s:^[^ ]:$$dir/&:"; done > .depend
 include .depend

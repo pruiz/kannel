@@ -5,10 +5,10 @@
 #ifndef GW_THREAD_H
 #define GW_THREAD_H
 
-#include "config.h"
+#include "gw-config.h"
 
 #if !HAVE_PTHREAD_H
-#error "You need Posix threads and <pthread.h>"
+#error "You need POSIX.1 threads and <pthread.h> header file"
 #endif
 
 #include <pthread.h>
