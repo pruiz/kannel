@@ -1,3 +1,7 @@
+Sat Mar 18 10:40:24 CET 2000	Patrick Schaaf	<bof@bof.de>
+
+	* gw/wsp_http.c: map-url logging tamed, minor code cleanup.
+
 Fri Mar 17 17:49:38 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Making release 0.6.1.

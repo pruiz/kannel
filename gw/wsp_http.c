@@ -3,6 +3,7 @@
  *
  * Lars Wirzenius <liw@wapit.com>
  * Capabilities/headers by Kalle Marjola <rpr@wapit.com>
+ * URL mapping by Patrick Schaaf <bof@bof.de>
  */
 
 #include <assert.h>
@@ -21,6 +22,8 @@ static Octstr *convert_wml_to_wmlc_old(Octstr *wml, char *url);
 static Octstr *convert_wml_to_wmlc_new(Octstr *wml, char *url);
 static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, char *url);
 
+/* The following code implements the map-url mechanism */
+
 struct wsp_http_map {
 	struct wsp_http_map *next;
 	unsigned flags;
@@ -36,8 +39,7 @@ struct wsp_http_map {
 static struct wsp_http_map *wsp_http_map = 0;
 static struct wsp_http_map *wsp_http_map_last = 0;
 
-
-/* wsp_http_map_url_do_config() - add mapping for src URL to dst URL. */
+/* Add mapping for src URL to dst URL. */
 static void wsp_http_map_url_do_config(char *src, char *dst)
 {
 	struct wsp_http_map *new_map;
@@ -45,9 +47,11 @@ static void wsp_http_map_url_do_config(char *src, char *dst)
 	int out_len = dst ? strlen(dst) : 0;
 
 	if (!in_len) {
-		info(0, "wsp_http_map_url_do_config: empty incoming string");
+		warning(0, "wsp_http_map_url_do_config: empty incoming string");
 		return;
 	}
+	assert(in_len > 0);
+
 	new_map = gw_malloc(sizeof(*new_map));
 	new_map->next = NULL;
 	new_map->flags = 0;
@@ -80,11 +84,6 @@ static void wsp_http_map_url_do_config(char *src, char *dst)
 	}
 	new_map->out_len = out_len;
 
-	info(0, "WSP: Adding mapping <%s> (%d) to <%s> (%d) [%x]",
-		new_map->in, new_map->in_len,
-		new_map->out, new_map->out_len,
-		new_map->flags);
-
 	/* insert at tail of existing list */
 	if (wsp_http_map == NULL) {
 		wsp_http_map = wsp_http_map_last = new_map;
@@ -94,10 +93,8 @@ static void wsp_http_map_url_do_config(char *src, char *dst)
 	}
 }
 
-/* wsp_http_map_url_config() - could be called during configuration read,
- * once for each "map-url" statement. Interprets parameter value as
- * a space-separated two-tuple, with the first element being a full
- * URL which should be rewritten to the second element.
+/* Called during configuration read, once for each "map-url" statement.
+ * Interprets parameter value as a space-separated two-tuple of src and dst.
  */
 void wsp_http_map_url_config(char *s)
 {
@@ -112,42 +109,45 @@ void wsp_http_map_url_config(char *s)
 	gw_free(s);
 }
 
-/* wsp_http_map_url_config_device_home() - called during configuration read,
- * adds a mapping for the source URL "DEVICE:home", to the given destination.
- * The mapping is configured as an in/out prefix mapping, to make relative
- * URLs work right.
+/* Called during configuration read, this adds a mapping for the source URL
+ * "DEVICE:home", to the given destination. The mapping is configured
+ * as an in/out prefix mapping.
  */
 void wsp_http_map_url_config_device_home(char *to)
 {
-	if (to) {
-		int len = strlen(to);
-		char *newto = 0;
-		if (to[len] != '*') {
-			/* ugly, I know... */
-			newto = gw_malloc(len+2);
-			strcpy(newto, to);
-			newto[len] = '*';
-			newto[len+1] = '\0';
-			to = newto;
-		}
-		wsp_http_map_url_do_config("DEVICE:home*", to);
-		if (newto)
-			gw_free(newto);
+	int len;
+	char *newto = 0;
+
+	if (!to)
+		return;
+	len = strlen(to);
+	if (to[len] != '*') {
+		newto = gw_malloc(len+2);
+		strcpy(newto, to);
+		newto[len] = '*';
+		newto[len+1] = '\0';
+		to = newto;
 	}
+	wsp_http_map_url_do_config("DEVICE:home*", to);
+	if (newto)
+		gw_free(newto);
 }
 
-/* debugging aid - show whole mapping list after configuration */
+/* show mapping list at info level, after configuration is done. */
 void wsp_http_map_url_config_info(void)
 {
 	struct wsp_http_map *run;
 
-	for (run = wsp_http_map; run; run = run->next)
-		info(0, "WSP: Configured mapping <%s> (%d) to <%s> (%d)",
-			run->in, run->in_len,
-			run->out, run->out_len);
+	for (run = wsp_http_map; run; run = run->next) {
+		char *s1 = (run->flags & WSP_HTTP_MAP_INPREFIX)  ? "*" : "";
+		char *s2 = (run->flags & WSP_HTTP_MAP_OUTPREFIX) ? "*" : "";
+		info(0, "map-url %.*s%s %.*s%s",
+			run->in_len, run->in, s1,
+			run->out_len, run->out, s2);
+	}
 }
 
-/* wsp_http_map_find() - search list of mappings for given URL */
+/* Search list of mappings for the given URL, returning the map structure. */
 static struct wsp_http_map *wsp_http_map_find(char *s)
 {
 	struct wsp_http_map *run;
@@ -156,14 +156,16 @@ static struct wsp_http_map *wsp_http_map_find(char *s)
 		if (0 == strncasecmp(s, run->in, run->in_len))
 			break;
 	if (run) {
-		info(0, "WSP: found mapping for url <%s>", s);
+		debug("wap.wsp.http", 0, "WSP: found mapping for url <%s>", s);
 	} else {
-		info(0, "WSP: no mapping for url <%s>", s);
+		debug("wap.wsp.http", 0, "WSP: no mapping for url <%s>", s);
 	}
 	return run;
 }
 
-/* wsp_http_map_url() - maybe rewrite URL, if matching */
+/* Maybe rewrite URL, if there is a mapping. This is where the runtime
+ * lookup comes in (called from further down this file, wsp_http.c)
+ */
 static void wsp_http_map_url(Octstr **osp)
 {
 	struct wsp_http_map *map;
@@ -184,6 +186,8 @@ static void wsp_http_map_url(Octstr **osp)
 		oldstr, octstr_get_cstr(*osp));
 	octstr_destroy(old);
 }
+
+/* here comes the main processing */
 
 void *wsp_http_thread(void *arg) {
 	char *type, *data;
