@@ -133,7 +133,7 @@ void wtp_machine_dump(WTPMachine  *machine);
 void wtp_handle_event(WTPMachine *machine, WTPEvent *event);
 
 /*
- * Generates a new transaction handle by incrementing the previous by one.
+ * Generates a new transaction handle by incrementing the previous one by one.
  */
 long wtp_tid_next(long tid);
 

@@ -235,9 +235,9 @@ void wtp_machine_dump(WTPMachine  *machine){
            #define TIMER(name)   debug(0, "Machine timer %p:", (void *) \
                                        machine->name)
            #define MUTEX(name)   if (mutex_try_lock(&machine->name) == EBUSY) \
-                                    debug(0, "Machine %s locked", #name);\
+                                    debug(0, "%s locked", #name);\
                                  else {\
-                                    debug(0, "Machine %s unlocked", #name);\
+                                    debug(0, "%s unlocked", #name);\
                                     mutex_unlock(&machine->name);\
                                  }
            #define QUEUE(name)   debug (0,"%s %p",#name,(void *) machine->name) 
@@ -717,7 +717,7 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
                      event->TRInvokeIndication.user_data=
                             wtp_event->RcvInvoke.user_data;
                      event->TRInvokeIndication.tcl=wtp_event->RcvInvoke.tcl;
-                     event->TRInvokeIndication.wsp_tid=wtp_next_tid(gen_tid);
+                     event->TRInvokeIndication.wsp_tid=wtp_tid_next(gen_tid);
                      event->TRInvokeIndication.machine=machine;
                 break;
                 
