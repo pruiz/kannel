@@ -1,3 +1,7 @@
+2003-06-24  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bb_boxc.c: fixed boxc mutex handling. We lock in box_sender but never unlock.This
+      confuse valgrind as example and is a bug while destroying locked mutex.
+
 2003-06-24  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap_push_pap_mime.c, gw/smsc/smsc_fake.c: some code styling
     * gwlib/dlr.c: fixed a output typo
