@@ -28,8 +28,8 @@
 #define MAX_READ_INTO_BUFFER	(1024)
 
 
-static int smscenter_lock(SMSCenter *smsc);
-static int smscenter_unlock(SMSCenter *smsc);
+static void smscenter_lock(SMSCenter *smsc);
+static void smscenter_unlock(SMSCenter *smsc);
 
 /*--------------------------------------------------------------------
  * TODO: WAP WDP functions!
@@ -56,11 +56,7 @@ SMSCenter *smscenter_construct(void) {
 	smsc->route_prefix = NULL;
 	smsc->alt_charset = 0;
 
-#if HAVE_THREADS
-	pthread_mutex_init(&smsc->mutex, NULL);
-#else
-	smsc->mutex = 0;
-#endif
+	smsc->mutex = mutex_create();
 
 	sprintf(smsc->name, "Unknown SMSC");
 	smsc->id = next_id++;
@@ -133,8 +129,7 @@ void smscenter_destruct(SMSCenter *smsc) {
 
 
 int smscenter_submit_msg(SMSCenter *smsc, Msg *msg) {
-	if (smscenter_lock(smsc) == -1)
-		return -1;
+	smscenter_lock(smsc);
 
 	switch (smsc->type) {
 	case SMSC_TYPE_FAKE:
@@ -175,8 +170,7 @@ error:
 int smscenter_receive_msg(SMSCenter *smsc, Msg **msg) {
 	int ret;
 
-	if (smscenter_lock(smsc) == -1)
-		return -1;
+	smscenter_lock(smsc);
 
 	switch (smsc->type) {
 
@@ -229,8 +223,7 @@ error:
 int smscenter_pending_smsmessage(SMSCenter *smsc) {
 	int ret;
 
-	if (smscenter_lock(smsc) == -1)
-		return -1;
+	smscenter_lock(smsc);
 
 	switch (smsc->type) {
 	case SMSC_TYPE_FAKE:
@@ -350,56 +343,18 @@ void smscenter_remove_from_buffer(SMSCenter *smsc, size_t n) {
 /*
  * Lock an SMSCenter. Return -1 for error, 0 for OK. 
  */
-static int smscenter_lock(SMSCenter *smsc) {
-	int ret;
-
+static void smscenter_lock(SMSCenter *smsc) {
 	if (smsc->type == SMSC_TYPE_DELETED)
-		return -1;
-
-#if HAVE_THREADS
-	ret = pthread_mutex_lock(&smsc->mutex);
-	
-#else
-	if (smsc->mutex)
-		ret = -1;
-	else {
-		ret = 0;
-		smsc->mutex = 1;
-	}
-#endif
-
-	if (ret != 0) {
-		error(ret, "Couldn't lock the SMSCenter data structure");
-		return -1;
-	}
-
-	return 0;
+		error(0, "smscenter_lock called on DELETED SMSC.");
+	mutex_lock(smsc->mutex);
 }
 
 
 /*
  * Unlock an SMSCenter. Return -1 for error, 0 for OK.
  */
-static int smscenter_unlock(SMSCenter *smsc) {
-	int ret;
-
-#if HAVE_THREADS
-	ret = pthread_mutex_unlock(&smsc->mutex);
-#else
-	if (smsc->mutex) {
-		ret = 0;
-		smsc->mutex = 0;
-	} else
-		ret = -1;
-#endif
-
-	if (ret != 0) {
-		error(ret, "Couldn't unlock SMSC data structure");
-		return -1;
-	}
-
-	return 0;
-
+static void smscenter_unlock(SMSCenter *smsc) {
+	mutex_unlock(smsc->mutex);
 }
 
 
@@ -577,8 +532,7 @@ int smsc_close(SMSCenter *smsc) {
 	if (smsc == NULL)
 	    return 0;
 	
-	if (smscenter_lock(smsc) == -1)
-		return -1;
+	smscenter_lock(smsc);
 	
 	switch (smsc->type) {
 	case SMSC_TYPE_FAKE:	/* Our own fake SMSC */
@@ -611,8 +565,7 @@ int smsc_close(SMSCenter *smsc) {
 	}
 
 	smsc->type = SMSC_TYPE_DELETED;
-	if (smscenter_unlock(smsc) == -1)
-		errors = 1;
+	smscenter_unlock(smsc);
 
 	if (errors)
 		return -1;

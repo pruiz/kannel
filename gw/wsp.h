@@ -29,7 +29,7 @@ struct WSPEvent {
 };
 
 struct WSPMachine
-	#define MUTEX(name) pthread_mutex_t name
+	#define MUTEX(name) Mutex *name
 	#define INTEGER(name) long name
 	#define OCTSTR(name) Octstr *name
 	#define EVENT_POINTER(name) WSPEvent *name
@@ -42,7 +42,7 @@ struct WSPMachine
 
 
 struct WSPMethodMachine
-	#define MUTEX(name) pthread_mutex_t name
+	#define MUTEX(name) Mutex *name
 	#define INTEGER(name) long name
 	#define METHOD_POINTER(name) WSPMethodMachine *name
 	#define SESSION_POINTER(name) WSPMethodMachine *name

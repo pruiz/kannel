@@ -21,7 +21,6 @@ SESSION_MACHINE({
 	OCTSTR(server_address);
 	INTEGER(server_port);
 	SESSION_POINTER(next);
-	INTEGER(locker);
 })
 
 METHOD_MACHINE({

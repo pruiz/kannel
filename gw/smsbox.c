@@ -86,7 +86,7 @@ static char 	*http_deny_ip = NULL;
 
 /* thread handling */
 
-static pthread_mutex_t 	socket_mutex;
+static Mutex	 	*socket_mutex;
 static sig_atomic_t 	http_accept_pending = 0;
 static sig_atomic_t 	abort_program = 0;
 
@@ -106,12 +106,12 @@ int socket_sender(Msg *pmsg)
     if (pack == NULL)
 	goto error;
 
-    mutex_lock(&socket_mutex);
+    mutex_lock(socket_mutex);
 
     if (octstr_send(socket_fd, pack) < 0)
 	goto error;
 
-    mutex_unlock(&socket_mutex);
+    mutex_unlock(socket_mutex);
 
     debug(0, "write <%s>", octstr_get_cstr(pmsg->smart_sms.msgdata));
     octstr_destroy(pack);
@@ -384,7 +384,7 @@ void main_loop()
 		sleep(10);
 		goto reconnect;
 	    }
-	    mutex_unlock(&socket_mutex);
+	    mutex_unlock(socket_mutex);
 
 	    if (total == 0)
 		start = time(NULL);
@@ -392,14 +392,14 @@ void main_loop()
 	    new_request(pack);
 	    octstr_destroy(pack);
 	    
-	    mutex_lock(&socket_mutex);
+	    mutex_lock(socket_mutex);
 	    continue;
 	}
-	mutex_unlock(&socket_mutex);
+	mutex_unlock(socket_mutex);
 	    
 	usleep(1000);
 
-	mutex_lock(&socket_mutex);
+	mutex_lock(socket_mutex);
     }
     secs = time(NULL) - start;
     info(0, "Received (and handled?) %d requests in %d seconds (%.2f per second)",
@@ -421,7 +421,7 @@ int main(int argc, char **argv)
 
     warning(0, "Gateway SMS BOX version %s starting", VERSION);
 
-    pthread_mutex_init(&socket_mutex, NULL);
+    socket_mutex = mutex_create();
 
     setup_signal_handlers();
     cfg = config_from_file(argv[cf_index], "smsbox.conf");

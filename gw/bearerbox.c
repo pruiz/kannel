@@ -142,7 +142,7 @@ typedef struct bb_s {
     char *pid_file;		/* our pid */
     char *global_prefix;	/* global normalization string */
     
-    pthread_mutex_t mutex;	/* for heartbeat/structure update */
+    Mutex *mutex;	/* for heartbeat/structure update */
 } BearerBox;
 
 
@@ -175,7 +175,7 @@ static void print_queues(char *buffer);
  * a sorted list so that we can use a binary search or something...
  */
 
-pthread_mutex_t route_mutex;
+Mutex *route_mutex;
 
 typedef struct routeinfo {
     char *route_match;
@@ -227,12 +227,12 @@ static int find_receiver(RQueueItem *rqi)
     if (rqi->routing_info == NULL)
 	return -1;
 
-    mutex_lock(&route_mutex);
+    mutex_lock(route_mutex);
     ret = bsearch_receiver(rqi->routing_info, &i);
     if (ret == 0)
 	route_info[i].tag = time(NULL);
     
-    mutex_unlock(&route_mutex);
+    mutex_unlock(route_mutex);
     if (ret != 0)
 	return -1;
     
@@ -247,7 +247,7 @@ static int del_receiver_id(int id)
     int index;
     int del = 0;
     
-    mutex_lock(&route_mutex);
+    mutex_lock(route_mutex);
 
     for(index=0; index < route_count; index++) {
 	if (route_info[index].receiver_id == id) {
@@ -257,7 +257,7 @@ static int del_receiver_id(int id)
 	    del++;
 	}
     }
-    mutex_unlock(&route_mutex);
+    mutex_unlock(route_mutex);
     return del;
 }
 
@@ -275,7 +275,7 @@ static int add_receiver(RQueue *queue, RQueueItem *msg, int old_id, int new_id)
 	error(errno, "Failed to allocate room for router");
 	return -1;
     }
-    mutex_lock(&route_mutex);
+    mutex_lock(route_mutex);
 
     ret = bsearch_receiver(msg->routing_info, &index);
     if (ret == 0) {
@@ -319,7 +319,7 @@ static int add_receiver(RQueue *queue, RQueueItem *msg, int old_id, int new_id)
 	
     ret = 0;
 end:
-    mutex_unlock(&route_mutex);
+    mutex_unlock(route_mutex);
 
     return ret;
 }
@@ -336,7 +336,7 @@ static int check_receivers()
     int tot = 0;
     time_t now;
 
-    mutex_lock(&route_mutex);
+    mutex_lock(route_mutex);
 
     now = time(NULL);
     
@@ -347,7 +347,7 @@ static int check_receivers()
 	    i--;
 	    tot++;
 	}
-    mutex_unlock(&route_mutex);
+    mutex_unlock(route_mutex);
     return tot;
 }
 
@@ -401,7 +401,7 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 
     /* possible bottleneck? deal with this later */
     
-    mutex_lock(&bbox->mutex);	
+    mutex_lock(bbox->mutex);	
 
     for(i=0; i < bbox->thread_limit; i++) {
 	thr = bbox->threads[i];
@@ -444,7 +444,7 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 	    }
 	}
     }
-    mutex_unlock(&bbox->mutex);
+    mutex_unlock(bbox->mutex);
 
     if (msg->destination == -1) {
 	if (backup >= 0)
@@ -560,11 +560,11 @@ static void normalize_numbers(RQueueItem *msg, SMSCenter *from)
  */
 static void update_heartbeat(BBThread *thr)
 {
-    mutex_lock(&bbox->mutex);
+    mutex_lock(bbox->mutex);
 
     thr->heartbeat = time(NULL);
     
-    mutex_unlock(&bbox->mutex);
+    mutex_unlock(bbox->mutex);
 }
 
 
@@ -629,11 +629,11 @@ static void *smscenter_thread(void *arg)
 	usleep(1000);
     }
     warning(0, "SMSC: Closing and dying...");
-    mutex_lock(&bbox->mutex);
+    mutex_lock(bbox->mutex);
     smsc_close(us->smsc);
     us->smsc = NULL;
     us->status = BB_STATUS_DEAD;
-    mutex_unlock(&bbox->mutex);
+    mutex_unlock(bbox->mutex);
     return NULL;
 }
 
@@ -687,13 +687,13 @@ static void *csdrouter_thread(void *arg)
 	usleep(1000);
     }
     warning(0, "CSDR: Closing and dying...");
-    mutex_lock(&bbox->mutex);
+    mutex_lock(bbox->mutex);
 
     csdr_close(us->csdr);
     us->csdr = NULL;
     us->status = BB_STATUS_DEAD;
 
-    mutex_unlock(&bbox->mutex);
+    mutex_unlock(bbox->mutex);
     return NULL;
 }
 
@@ -788,13 +788,13 @@ disconnect:
     if (ret > 0)
 	info(0, "WAPBOXC: Deleted %d WAP routing references to us", ret);
     
-    mutex_lock(&bbox->mutex);
+    mutex_lock(bbox->mutex);
     
     boxc_close(us->boxc);
     us->boxc = NULL;
     us->status = BB_STATUS_DEAD;
 
-    mutex_unlock(&bbox->mutex);
+    mutex_unlock(bbox->mutex);
     return NULL;
 }
 
@@ -891,13 +891,13 @@ static void *smsboxconnection_thread(void *arg)
     }
 disconnect:    
     warning(0, "SMSBOXC: Closing and dying...");
-    mutex_lock(&bbox->mutex);
+    mutex_lock(bbox->mutex);
 
     boxc_close(us->boxc);
     us->boxc = NULL;
     us->status = BB_STATUS_DEAD;
 
-    mutex_unlock(&bbox->mutex);
+    mutex_unlock(bbox->mutex);
     return NULL;
 }
 
@@ -1002,7 +1002,7 @@ static BBThread *create_bbt(int type)
     nt->csdr = NULL;
     nt->boxc = NULL;
 
-    mutex_lock(&bbox->mutex);
+    mutex_lock(bbox->mutex);
 
     id = find_bbt_id();
     index = find_bbt_index();
@@ -1010,7 +1010,7 @@ static BBThread *create_bbt(int type)
     bbox->threads[index] = nt;
     bbox->id_max = id;
 
-    mutex_unlock(&bbox->mutex);
+    mutex_unlock(bbox->mutex);
     return nt;
 }
 
@@ -1127,7 +1127,7 @@ static int bbt_kill(int id)
     num = del = 0;
     ret = -1;
     
-    mutex_lock(&bbox->mutex);
+    mutex_lock(bbox->mutex);
     
     for(i=0; i < bbox->thread_limit; i++) {
 	thr = bbox->threads[i];
@@ -1137,7 +1137,7 @@ static int bbt_kill(int id)
 	    break;
 	}
     }
-    mutex_unlock(&bbox->mutex);
+    mutex_unlock(bbox->mutex);
     return ret;
 }
 
@@ -1150,7 +1150,7 @@ static BBThread *internal_smsbox(void)
     BBThread *thr;
     int i;
     
-    mutex_lock(&bbox->mutex);
+    mutex_lock(bbox->mutex);
 
     for(i=0; i < bbox->thread_limit; i++) {
 	thr = bbox->threads[i];
@@ -1162,7 +1162,7 @@ static BBThread *internal_smsbox(void)
 		break;
 	}
     }
-    mutex_unlock(&bbox->mutex);
+    mutex_unlock(bbox->mutex);
 
     if (i == bbox->thread_limit)
 	thr = NULL;
@@ -1369,7 +1369,7 @@ static void check_queues(void)
     time_t now;
     RQueueItem *ptr, *prev;
     
-    mutex_lock(&bbox->request_queue->mutex);
+    mutex_lock(bbox->request_queue->mutex);
 
     ptr = bbox->request_queue->first;
     prev = NULL;
@@ -1389,7 +1389,7 @@ static void check_queues(void)
 	
 	ptr = ptr->next;
     }
-    mutex_unlock(&bbox->request_queue->mutex);
+    mutex_unlock(bbox->request_queue->mutex);
 }
 
 /*
@@ -1402,7 +1402,7 @@ static void check_threads(void)
     int i, num, del;
     num = del = 0;
     
-    mutex_lock(&bbox->mutex);
+    mutex_lock(bbox->mutex);
 
     for(i=0; i < bbox->thread_limit; i++) {
 	thr = bbox->threads[i];
@@ -1427,7 +1427,7 @@ static void check_threads(void)
     }
     bbox->num_threads = num;
 
-    mutex_unlock(&bbox->mutex);
+    mutex_unlock(bbox->mutex);
 }
 
 
@@ -1440,7 +1440,7 @@ static void check_heartbeats(void)
     BBThread *thr;
     int i;
     time_t now;
-    mutex_lock(&bbox->mutex);
+    mutex_lock(bbox->mutex);
 
     now = time(NULL);
     for(i=0; i < bbox->thread_limit; i++) {
@@ -1455,7 +1455,7 @@ static void check_heartbeats(void)
 	    }
 	}
     }
-    mutex_unlock(&bbox->mutex);
+    mutex_unlock(bbox->mutex);
 }
 
 /*
@@ -1474,14 +1474,14 @@ static void print_queues(char *buffer)
     trp = rq_oldest_message(bbox->reply_queue);
     now = time(NULL);
     
-    mutex_lock(&bbox->mutex);
+    mutex_lock(bbox->mutex);
 
     sprintf(buffer,"Request queue length %d, oldest %ds old; mean %.1f, total %d messages\n"
 	    "Reply queue length %d; oldest %ds old; mean %.1f, total %d messages",
 	    rq, (int)(now-trq), bbox->mean_req_ql, totq, 
 	    rp, (int)(now-trp), bbox->mean_rep_ql, totp);
 	    
-    mutex_unlock(&bbox->mutex);
+    mutex_unlock(bbox->mutex);
 }
 
 /*
@@ -1529,12 +1529,12 @@ static void update_queue_watcher()
 	req += req_ql[i];
 	rep += rep_ql[i];
     }
-    mutex_lock(&bbox->mutex);
+    mutex_lock(bbox->mutex);
 
     bbox->mean_req_ql = req / id;
     bbox->mean_rep_ql = rep / id;
 
-    mutex_unlock(&bbox->mutex);
+    mutex_unlock(bbox->mutex);
 
     c++;
     if (c % 20 == 19)
@@ -1567,7 +1567,7 @@ static void print_threads(char *buffer)
 
     buffer[0] = '\0';
     
-    mutex_lock(&bbox->mutex);
+    mutex_lock(bbox->mutex);
 
     for(i=0; i < bbox->thread_limit; i++) {
 	thr = bbox->threads[i];
@@ -1599,7 +1599,7 @@ static void print_threads(char *buffer)
 	    strcat(buffer, buf);
 	}
     }
-    mutex_unlock(&bbox->mutex);
+    mutex_unlock(bbox->mutex);
 
     if (bbox->http_port > -1) {
 	sprintf(buf, "[n/a] HTTP-Adminstration at port %d\n", bbox->http_port);
@@ -1715,8 +1715,8 @@ static void init_bb(Config *cfg)
     bbox->id_max = 1;
     bbox->abort_program = 0;
     bbox->suspended = 0;
-    pthread_mutex_init(&bbox->mutex, NULL);
-    pthread_mutex_init(&route_mutex, NULL);
+    bbox->mutex = mutex_create();
+    route_mutex = mutex_create();
     
     bbox->thread_limit = 20;
     bbox->http_port = BB_DEFAULT_HTTP_PORT;

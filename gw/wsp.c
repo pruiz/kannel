@@ -130,15 +130,10 @@ void wsp_dispatch_event(WTPMachine *wtp_sm, WSPEvent *event) {
 
 WSPMachine *wsp_machine_create(void) {
 	WSPMachine *p;
-	pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 	
 	p = gw_malloc(sizeof(WSPMachine));
 	
-#if 0
-	#define MUTEX(name) pthread_mutex_init(&p->name, 0)
-#else
-	#define MUTEX(name) p->name = init_mutex
-#endif
+	#define MUTEX(name) p->name = mutex_create()
 	#define INTEGER(name) p->name = 0
 	#define OCTSTR(name) p->name = NULL
 	#define METHOD_POINTER(name) p->name = NULL
@@ -177,21 +172,11 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 	 * If we're already handling events for this machine, add the
 	 * event to the queue.
 	 */
-	if (mutex_try_lock(&sm->mutex) == EBUSY) {
-	    append:
+	if (mutex_try_lock(sm->mutex) == EBUSY) {
 		debug(0, "wsp_handle_event: machine already locked, queing event");
 		append_to_event_queue(sm, current_event);
 		return;
 	}
-
-	/* 
-	 * The following is a damn idiotic kludge that is necessary because
-	 * pthread_mutex_trylock on Linux (at least) doesn't protect us from
-	 * ourselves, even though the documentation says it does.
-	 */
-	if (pthread_equal((pthread_t) sm->locker, pthread_self()))
-		goto append;
-	sm->locker = (long) pthread_self();
 
 	debug(0, "wsp_handle_event: got mutex");
 	
@@ -233,8 +218,7 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 	} while (current_event != NULL);
 	debug(0, "wsp_handle_event: done handling events");
 	
-	sm->locker = -1;
-	mutex_unlock(&sm->mutex);
+	mutex_unlock(sm->mutex);
 	debug(0, "wsp_handle_event: done");
 }
 
@@ -289,7 +273,7 @@ int wsp_unpack_connect_pdu(Octstr *user_data) {
 
 
 static void append_to_event_queue(WSPMachine *machine, WSPEvent *event) {
-	mutex_lock(&machine->queue_lock);
+	mutex_lock(machine->queue_lock);
 	if (machine->event_queue_head == NULL) {
 		machine->event_queue_head = event;
 		machine->event_queue_tail = event;
@@ -299,13 +283,13 @@ static void append_to_event_queue(WSPMachine *machine, WSPEvent *event) {
 		machine->event_queue_tail = event;
 		event->next = NULL;
 	}
-	mutex_unlock(&machine->queue_lock);
+	mutex_unlock(machine->queue_lock);
 }
 
 static WSPEvent *remove_from_event_queue(WSPMachine *machine) {
 	WSPEvent *event;
 	
-	mutex_lock(&machine->queue_lock);
+	mutex_lock(machine->queue_lock);
 	if (machine->event_queue_head == NULL)
 		event = NULL;
 	else {
@@ -313,7 +297,7 @@ static WSPEvent *remove_from_event_queue(WSPMachine *machine) {
 		machine->event_queue_head = event->next;
 		event->next = NULL;
 	}
-	mutex_unlock(&machine->queue_lock);
+	mutex_unlock(machine->queue_lock);
 	return event;
 }
 

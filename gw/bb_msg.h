@@ -71,7 +71,7 @@ struct r_queue {
     int queue_len;		/* items in queue */
     int added;			/* total number of messages added */
     time_t last_mod;		/* time of the last modification */
-    pthread_mutex_t mutex;
+    Mutex *mutex;
 };
 
 

@@ -54,7 +54,7 @@ struct SMSCenter {
         int alt_charset;
 
 	/* For locking/unlocking. */
-	pthread_mutex_t mutex;
+	Mutex *mutex;
 
         /* for dying */
         sig_atomic_t killed;

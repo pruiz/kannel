@@ -22,7 +22,6 @@ MACHINE(INTEGER(in_use);
         INTEGER(ack_pdu_sent);
         TIMER(timer_data);
         MUTEX(mutex);
-	INTEGER(locker);
 	MUTEX(queue_lock);
         QUEUE(event_queue_head);
         QUEUE(event_queue_tail);

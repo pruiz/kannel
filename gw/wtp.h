@@ -47,7 +47,7 @@ struct WTPMachine {
         #define OCTSTR(name) Octstr *name
         #define QUEUE(name) WTPEvent *name
 	#define TIMER(name) WTPTimer *name
-        #define MUTEX(name) pthread_mutex_t name
+        #define MUTEX(name) Mutex *name
         #define NEXT(name) struct WTPMachine *name
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"

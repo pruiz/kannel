@@ -82,11 +82,16 @@ static void msg_send(int s, Msg *msg) {
 static Msg *queue_tab[MAX_MSGS_IN_QUEUE];
 static int queue_start = 0;
 static int queue_len = 0;
-static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+static Mutex *queue_mutex;
+
+
+void init_queue(void) {
+	queue_mutex = mutex_create();
+}
 
 
 void put_msg_in_queue(Msg *msg) {
-	mutex_lock(&queue_mutex);
+	mutex_lock(queue_mutex);
 	debug(0, "wapbox: putting msg %p in queue", (void *) msg);
 	if (queue_len == MAX_MSGS_IN_QUEUE)
 		error(0, "wapbox: message queue full, dropping message");
@@ -94,14 +99,14 @@ void put_msg_in_queue(Msg *msg) {
 		queue_tab[(queue_start + queue_len) % MAX_MSGS_IN_QUEUE] = msg;
 		++queue_len;
 	}
-	mutex_unlock(&queue_mutex);
+	mutex_unlock(queue_mutex);
 }
 
 
 Msg *remove_msg_from_queue(void) {
 	Msg *msg;
 	
-	mutex_lock(&queue_mutex);
+	mutex_lock(queue_mutex);
 	if (queue_len == 0)
 		msg = NULL;
 	else {
@@ -110,7 +115,7 @@ Msg *remove_msg_from_queue(void) {
 		--queue_len;
 		debug(0, "wapbox: removed msg %p in queue", (void *) msg);
 	}
-	mutex_unlock(&queue_mutex);
+	mutex_unlock(queue_mutex);
 	return msg;
 }
 
@@ -132,6 +137,7 @@ int main(int argc, char **argv) {
 		read_config("wapbox.wapconf");
 		
 	bbsocket = connect_to_bearer_box();
+	init_queue();
 	for (;;) {
 		msg = msg_receive(bbsocket);
 		if (msg == NULL)

@@ -134,6 +134,7 @@ void wtp_event_dump(WTPEvent *event) {
  * Panics when there is no machine to mark unused.
  */
 void wtp_machine_mark_unused(WTPMachine *machine){
+#if 0	/* XXX this needs to be re-done together with the list locking */
 
         WTPMachine *temp;
 
@@ -142,26 +143,27 @@ void wtp_machine_mark_unused(WTPMachine *machine){
  * because calling this function when there were no machines is a programming
  * error).
  */
-        mutex_lock(&list->mutex);
+        mutex_lock(list->mutex);
 
         temp=list;
-        mutex_lock(&temp->next->mutex);
+        mutex_lock(temp->next->mutex);
 
         while (temp != NULL && temp->next != machine){
-	      mutex_unlock(&temp->mutex);
+	      mutex_unlock(temp->mutex);
               temp=temp->next;
-	      mutex_lock(&temp->next->mutex);
+	      mutex_lock(temp->next->mutex);
         }
 
         if (temp == NULL){
-	    mutex_unlock(&temp->mutex);
+	    mutex_unlock(temp->mutex);
             debug(0, "WTPMachine unknown");
             return;
 	}
        
         temp->in_use=0;
-        mutex_unlock(&temp->mutex);
+        mutex_unlock(temp->mutex);
         return;
+#endif
 }
 
 /*
@@ -169,17 +171,18 @@ void wtp_machine_mark_unused(WTPMachine *machine){
  * Panics when there is no machines to destroy.
  */
 void wtp_machine_destroy(WTPMachine *machine){
-
         WTPMachine *temp;
 
-        mutex_lock(&list->mutex);
-        mutex_lock(&list->next->mutex);
+#if 0 /* XXX list locking done wrongly */
+
+
+        mutex_lock(list->mutex);
+        mutex_lock(list->next->mutex);
 
         if (list == machine) {
            list=machine->next;         
            mutex_unlock(&list->next->mutex);
 	   mutex_unlock(&list->mutex);
-
         } else {
           temp=list;
 
@@ -201,6 +204,9 @@ void wtp_machine_destroy(WTPMachine *machine){
 	}
 
         mutex_unlock(&temp->next->mutex);
+#else
+	temp = machine;
+#endif
 
         #define INTEGER(name)
         #define ENUM(name)        
@@ -208,14 +214,16 @@ void wtp_machine_destroy(WTPMachine *machine){
         #define TIMER(name) wtp_timer_destroy(temp->name)
         #define QUEUE(name) if (temp->name != NULL)\
                                panic(0, "Event queue was not empty")
-        #define MUTEX(name) mutex_destroy(&temp->name)
+        #define MUTEX(name) mutex_destroy(temp->name)
         #define NEXT(name)
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
 
+#if 0
         free(temp);
         mutex_unlock(&machine->next->mutex);
 	mutex_unlock(&machine->mutex);
+#endif
         
         return;
 }
@@ -236,11 +244,11 @@ void wtp_machine_dump(WTPMachine  *machine){
                                  octstr_dump(machine->name)
            #define TIMER(name)   debug(0, "  Machine timer %p:", (void *) \
                                        machine->name)
-           #define MUTEX(name)   if (mutex_try_lock(&machine->name) == EBUSY) \
+           #define MUTEX(name)   if (mutex_try_lock(machine->name) == EBUSY) \
                                     debug(0, "%s locked", #name);\
                                  else {\
                                     debug(0, "%s unlocked", #name);\
-                                    mutex_unlock(&machine->name);\
+                                    mutex_unlock(machine->name);\
                                  }
            #define QUEUE(name) \
 	   	debug (0, "  %s %p",#name, (void *) machine->name) 
@@ -495,20 +503,11 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
  * If we're already handling events for this machine, add the event to the 
  * queue.
  */
-     if (mutex_try_lock(&machine->mutex) == EBUSY) {
-	append:
+     if (mutex_try_lock(machine->mutex) == EBUSY) {
 	  debug(0, "wtp_handle_event: machine already locked, queing event");
 	  append_to_event_queue(machine, event);
 	  return;
      }
-     /* 
-      * The following is a damn idiotic kludge that is necessary because
-      * pthread_mutex_trylock on Linux (at least) doesn't protect us from
-      * ourselves, even though the documentation says it does.
-      */
-     if (pthread_equal((pthread_t) machine->locker, pthread_self()))
-	     goto append;
-     machine->locker = (long) pthread_self();
 
      debug(0, "wtp_handle_event: got mutex");
 
@@ -536,8 +535,7 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
           event = remove_from_event_queue(machine);
      } while (event != NULL);
 
-     machine->locker = -1;
-     mutex_unlock(&machine->mutex);
+     mutex_unlock(machine->mutex);
      debug(0, "wtp_handle_event: done");
      return;
 
@@ -552,7 +550,7 @@ mem_error:
         wsp_event_destroy(wsp_event);
      free(timer);
      free(wsp_event);
-     mutex_unlock(&machine->mutex);
+     mutex_unlock(machine->mutex);
 }
 
 long wtp_tid_next(void){
@@ -604,7 +602,7 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
               return NULL;
            }
 
-           mutex_lock(&list->mutex); 
+           mutex_lock(list->mutex); 
            temp=list;
           
            while (temp != NULL){
@@ -616,17 +614,17 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
                 temp->destination_port == destination_port &&
 		temp->tid == tid && temp->in_use == 1){
 
-                mutex_unlock(&temp->mutex);
+                mutex_unlock(temp->mutex);
                 debug (0, "wtp_machine_find: machine found");
                 return temp;
                  
 		} else {
 
-		   mutex_unlock(&temp->mutex);
+		   mutex_unlock(temp->mutex);
                    temp=temp->next;
 
                    if (temp != NULL)
-		      mutex_lock(&temp->mutex);
+		      mutex_lock(temp->mutex);
                }              
            }
            debug (0, "wtp_machine_find: machine not found");      
@@ -647,15 +645,13 @@ static WTPMachine *wtp_machine_create_empty(void){
                              if (machine->name == NULL)\
                                 goto error
         #define QUEUE(name) machine->name=NULL
-        #define MUTEX(name) pthread_mutex_init(&machine->name, NULL)
+        #define MUTEX(name) machine->name = mutex_create()
         #define TIMER(name) machine->name=wtp_timer_create();\
                             if (machine->name == NULL)\
                                goto error
         #define NEXT(name) machine->name=NULL
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
-
-	machine->locker = -1;
 
 #if 0 /* This way of locking the list is broken, we need a separate mutex */
         if (list != NULL)
@@ -682,8 +678,8 @@ static WTPMachine *wtp_machine_create_empty(void){
             #define OCTSTR(name) if (machine->name != NULL)\
                                     octstr_destroy(machine->name)
             #define QUEUE(name)  
-            #define MUTEX(name)  mutex_lock(&machine->name);\
-                                 mutex_destroy(&machine->name)
+            #define MUTEX(name)  mutex_lock(machine->name);\
+                                 mutex_destroy(machine->name)
             #define TIMER(name) if (machine->name != NULL)\
                                    wtp_timer_destroy(machine->name)
             #define NEXT(name)
@@ -787,7 +783,7 @@ static int wtp_tid_is_valid(WTPEvent *event){
  */
 static void append_to_event_queue(WTPMachine *machine, WTPEvent *event) {
 
-	mutex_lock(&machine->queue_lock);
+	mutex_lock(machine->queue_lock);
 
 	if (machine->event_queue_head == NULL) {
 		machine->event_queue_head = event;
@@ -799,7 +795,7 @@ static void append_to_event_queue(WTPMachine *machine, WTPEvent *event) {
 		event->next = NULL;
 	}
 
-	mutex_unlock(&machine->queue_lock);
+	mutex_unlock(machine->queue_lock);
 }
 
 
@@ -810,7 +806,7 @@ static void append_to_event_queue(WTPMachine *machine, WTPEvent *event) {
 static WTPEvent *remove_from_event_queue(WTPMachine *machine) {
 	WTPEvent *event;
 	
-	mutex_lock(&machine->queue_lock);
+	mutex_lock(machine->queue_lock);
 
 	if (machine->event_queue_head == NULL)
 		event = NULL;
@@ -820,7 +816,7 @@ static WTPEvent *remove_from_event_queue(WTPMachine *machine) {
 		event->next = NULL;
 	}
 
-	mutex_unlock(&machine->queue_lock);
+	mutex_unlock(machine->queue_lock);
 
 	return event;
 }

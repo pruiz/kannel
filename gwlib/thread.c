@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include "gwmem.h"
 #include "log.h"
 #include "thread.h"
 
@@ -64,35 +65,49 @@ error:
 }
 
 
-void mutex_lock(pthread_mutex_t *mutex)
-{
-    if (pthread_mutex_lock(mutex) != 0)
-	panic(errno, "Mutex failure!");
+Mutex *mutex_create(void) {
+	Mutex *mutex;
+	
+	mutex = gw_malloc(sizeof(Mutex));
+	pthread_mutex_init(&mutex->mutex, NULL);
+	mutex->owner = (pthread_t) -1;
+	return mutex;
 }
 
 
-int mutex_try_lock(pthread_mutex_t *mutex)
+void mutex_destroy(Mutex *mutex) {
+     gw_free(mutex);
+}
+
+
+void mutex_lock(Mutex *mutex)
+{
+    if (pthread_mutex_lock(&mutex->mutex) != 0)
+	panic(errno, "mutex_lock: Mutex failure!");
+    mutex->owner = pthread_self();
+}
+
+
+int mutex_try_lock(Mutex *mutex)
 {
     int ret;
     
-    ret = pthread_mutex_trylock(mutex);
+    ret = pthread_mutex_trylock(&mutex->mutex);
     if (ret == EBUSY)
 	ret = -1;
     else if (ret != 0)
-        panic(errno, "Mutex failure!");
+        panic(errno, "mutex_try_lock: Mutex failure!");
+    else if (pthread_equal(mutex->owner, pthread_self()))
+        ret = -1;  /* Linux pthread_mutex_trylock doesn't work, I think. */
+    else
+        mutex->owner = pthread_self();
     return ret;
 }
 
 
-void mutex_unlock(pthread_mutex_t *mutex)
+void mutex_unlock(Mutex *mutex)
 {
-    if (pthread_mutex_unlock(mutex) != 0)
-	panic(errno, "Mutex failure!");
-}
-
-
-void mutex_destroy(pthread_mutex_t *mutex)
-{
-     if (pthread_mutex_destroy != 0)
-        panic(errno, "Trying to destroy a locked mutex");
+    mutex->owner = (pthread_t) -1;
+    if (pthread_mutex_unlock(&mutex->mutex) != 0)
+	panic(errno, "mutex_unlock: Mutex failure!");
 }

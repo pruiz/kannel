@@ -1,3 +1,14 @@
+Mon Dec 13 20:47:28 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/bb_msg.c, gw/bb_msg.h, gw/bearerbox.c, gw/smsbox.c,
+	gw/smsc.c, gw/smsc_p.h, gw/wapbox.c, gw/wsp.c, gw/wsp.h,
+	gw/wsp_machine-decl.h, gw/wtp.c, gw/wtp.h, gw/wtp_machine-decl.h,
+	gwlib/thread.c, gwlib/thread.h: Replaced pthread_mutex_t with
+	Mutex (defined in gwlib/thread.h), so that the evil kludge to work
+	around pthread_mutex_trylock can be hidden inside gwlib/thread.c.
+	This required touching lightly lots of code, but it should
+	work now. Sorry if I broke anything.
+
 Mon Dec 13 19:31:56 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wapbox.c, gw/wapbox.h (new file): Wrote functions for
