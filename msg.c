@@ -27,6 +27,8 @@ static int append_string(Octstr *os, Octstr *field);
 static int parse_integer(int32 *i, Octstr *packed, int *off);
 static int parse_string(Octstr **os, Octstr *packed, int *off);
 
+static char *type_as_str(Msg *msg);
+
 
 /**********************************************************************
  * Implementations of the exported functions.
@@ -67,6 +69,7 @@ void msg_destroy(Msg *msg) {
 
 void msg_dump(Msg *msg) {
 	debug(0, "Msg object at %p:", (void *) msg);
+	debug(0, "  type: %s", type_as_str(msg));
 	#define INTEGER(name) debug(0, "  %s: %ld", #name, (long) p->name)
 	#define OCTSTR(name) debug(0, "  %s:", #name); octstr_dump(p->name)
 	#define MSG(type, stmt) { struct type *p = &msg->type; stmt }
@@ -225,4 +228,14 @@ static int parse_string(Octstr **os, Octstr *packed, int *off) {
 	*off += len;
 
 	return 0;
+}
+
+
+static char *type_as_str(Msg *msg) {
+	switch (msg->type) {
+	#define MSG(t, stmt) case t: return #t;
+	#include "msg-decl.h"
+	default:
+		return "unknown type";
+	}
 }

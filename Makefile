@@ -51,7 +51,7 @@ LIBS += $(THREADLIB) $(EFENCELIB) $(DMALLOCLIB) -lm
 # compiling and installing the software.
 #
 
-progs = fakesmsc bearerbox smsbox
+progs = fakesmsc bearerbox smsbox wapbox wapbox_feeder
 
 libobjs = wapitlib.o html.o http.o config.o octstr.o \
           urltrans.o cgi.o
@@ -75,6 +75,12 @@ bearerbox: $(BBOBJS) libgw.a
 
 smsbox: smsbox.o msg.o libgw.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o smsbox smsbox.o msg.o libgw.a $(LIBS)
+
+wapbox: wapbox.o msg.o libgw.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o wapbox wapbox.o msg.o libgw.a $(LIBS)
+
+wapbox_feeder: wapbox_feeder.o msg.o libgw.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o wapbox_feeder wapbox_feeder.o msg.o libgw.a $(LIBS)
 
 libgw.a: $(libobjs)
 	ar rc libgw.a $(libobjs)
