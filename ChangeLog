@@ -1,4 +1,10 @@
 2002-03-22  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/modems.conf, doc/userguide/userguide.xml, gw/smsc_at2.c,
+      gwlib/cfg.def: added SIM buffering pool patch, 
+      contributed by Oded Arbel <oded@m-wise.com>, forwarded by Andrea
+      [Msg-ID: <20020321103746.QED1149.fep31-svc.tin.it@[127.0.0.1]>]
+
+2002-03-22  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_at2.c: fixed timestamp issue in at2, patch contributed by 
       Oded Arbel <oded@m-wise.com>
       [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B166E88@exchange.m-wise.com>]
