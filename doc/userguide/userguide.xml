@@ -6530,12 +6530,14 @@ trusted-pi = false
              <row><entry><literal>ppg-smsbox-id</literal></entry>
              <entry><emphasis>string</emphasis></entry>
              <entry valign="bottom">
-             All ppg delivery reports are handled by this smsbox..
+             All ppg delivery reports are handled by this smsbox. This routes all
+				 DLR messages inside beaerbox to the specified smsbox for processing
+				 the HTTP requests to the DLR-URL.
              </entry></row>
              <row><entry><literal>service-name</literal></entry>
              <entry><emphasis>string</emphasis></entry>
              <entry valign="bottom">
-             This is sms service name used by smsbox for wap push..
+             This is sms service name used by smsbox for wap push.
              </entry></row>
              <row><entry><literal>default-dlr</literal></entry>
              <entry><emphasis>string</emphasis></entry>

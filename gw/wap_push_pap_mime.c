@@ -237,7 +237,6 @@ static int parse_body_part (Octstr **multipart, Octstr *boundary,
            *close_delimiter;
     long boundary_pos,          /* start of the boundary */
          close_delimiter_pos,   /* start of the close delimiter */
-         end_pos,               /* end of the message */
          next_part_pos,         /* start of the next part */
          epilogue_pos;          /* start of the epilogue */
  
