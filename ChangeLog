@@ -1,3 +1,16 @@
+2002-05-24  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/ota_prov.c: excluded not needed include of urltrans.h
+    * gw/dlr.h: fixed header comment path
+
+2002-05-23  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c: fixed another ocstr bug in msg_to_pdu(), thanks Oded
+
+2002-05-23  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c: fixed the smsc-id definition, provided by Oded
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B296D40@exchange.m-wise.com>]
+    * doc/userguide/userguide.xml: added documentation to timing directives 
+      of the smpp module, provided by Alan McNatty <alan@catalyst.net.nz>
+
 2002-05-22  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsc_smpp.c: fixed destruction of a octstr in msg_to_pdu()
 
