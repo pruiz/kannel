@@ -1,3 +1,21 @@
+2001-12-31  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: changed hardcoded HTTP return status values to
+      use HTTP_* enum defines instead. Added config directive to
+      set sendsms and sentota request URLs, defaulting to
+      /cgi-bin/sendsms and /cgi-bin/sendota respectivly. The user
+      may change these with "sendsms-url" and "sendota-url" directives
+      within the smsbox group.
+    * gw/wap_push_ppg.c: substituted hardcoded HTTP return values
+      with HTTP_* enum defines.
+    * gw/wap_push_ppg_pushuser.c: same as wap_push_ppg.c
+    * gwlib/cfg.def: added allowed directives "sendsms-url" and
+      "sendota-url" to the smsbox group.
+    * gwlib/http.h: added a couple of additional HTTP_* return 
+      values specified in HTTP/1.1 from RFC2616.
+    * test/drive_wapbox.c: substituted hardcoded HTTP return values
+      with HTTP_* enum defines.
+    * test/test_ppg.c: same as drive_wapbox.c 
+
 2001-12-28  Stipe Tolj  <tolj@wapme-systems.de>
     * configure.in: fixing the ls option --full-time which is not 
       supported on Solaris 2.6.
