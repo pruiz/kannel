@@ -1465,7 +1465,9 @@ static void start_cb(SMSCConn *conn)
 static long queued_cb(SMSCConn *conn)
 {
     PrivData *privdata = conn->data;
-    long ret = list_len(privdata->outgoing_queue);
+    long ret;
+
+    ret = (privdata ? list_len(privdata->outgoing_queue) : 0);
 
     /* use internal queue as load, maybe something else later */
 
