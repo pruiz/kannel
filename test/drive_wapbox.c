@@ -124,13 +124,17 @@ static void http_thread(void *arg) {
 		"        <p>Hello, world.</p>\n"
 		"</card></wml>\n");
 	List *reply_headers = list_create();
+	int port;
+
+    	port = *(int *) arg;
+	gw_free(arg);
 
 	list_append(reply_headers,
 		octstr_create("Content-Type: text/vnd.wap.wml"));
 
 	for (;!dying;) {
-		client = http_accept_request(&ip, &url, &headers, &body,
-		    	    	    	     &cgivars);
+		client = http_accept_request(port, &ip, &url, &headers, 
+		    	    	    	     &body, &cgivars);
 		if (client == NULL)
 			break;
 		http_send_reply(client, 200, reply_headers, reply_body);
@@ -150,15 +154,18 @@ static long http_thread_id;
 
 static int start_http_thread(void) {
 	unsigned short port;
+	int *port_copy;
 
 	for (port = 40000; port < 41000; port += 13) {
-		if (http_open_server(port) != -1)
+		if (http_open_port(port) != -1)
 		    break;
 	}
 	if (port == 41000)
 		panic(0, "No ports available for http server");
 
-	http_thread_id = gwthread_create(http_thread, NULL);
+    	port_copy = gw_malloc(sizeof(*port_copy));
+	*port_copy = port;
+	http_thread_id = gwthread_create(http_thread, port_copy);
 	if (http_thread_id == -1) 
 		panic(0, "Cannot start http thread");
 	return port;
@@ -657,7 +664,7 @@ int main(int argc, char **argv) {
 		run_time, max_requests / run_time);
 
 	dying = 1;
-	http_close_all_servers();
+	http_close_all_ports();
 	if (!http_url)
 		gwthread_join(http_thread_id);
 

@@ -249,7 +249,8 @@ static void httpadmin_run(void *arg)
     while(bb_status != BB_DEAD) {
 	if (bb_status == BB_SHUTDOWN)
 	    bb_shutdown();
-    	client = http_accept_request(&ip, &url, &headers, &body, &cgivars);
+    	client = http_accept_request(ha_port, &ip, &url, &headers, &body, 
+	    	    	    	     &cgivars);
 	if (client == NULL)
 	    break;
 	if (is_allowed_ip(ha_allow_ip, ha_deny_ip, ip) == 0) {
@@ -291,7 +292,7 @@ int httpadmin_start(Cfg *cfg)
     ha_allow_ip = cfg_get(grp, octstr_imm("admin-allow-ip"));
     ha_deny_ip = cfg_get(grp, octstr_imm("admin-deny-ip"));
     
-    http_open_server(ha_port);
+    http_open_port(ha_port);
 
     if (gwthread_create(httpadmin_run, NULL) == -1)
 	panic(0, "Failed to start a new thread for HTTP admin");
@@ -303,7 +304,7 @@ int httpadmin_start(Cfg *cfg)
 
 void httpadmin_stop(void)
 {
-    http_close_all_servers();
+    http_close_all_ports();
     gwthread_join_every(httpadmin_run);
     octstr_destroy(ha_password);
     octstr_destroy(ha_status_pw);

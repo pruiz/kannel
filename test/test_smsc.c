@@ -518,6 +518,7 @@ static List *httpd_emu_headers = NULL;
 
 
 struct httpd_emu_arg {
+    int port;
     Semaphore *sema;
     EventQueue *eq;
 };
@@ -543,7 +544,8 @@ static void httpd_emu(void *arg)
     semaphore_up(p->sema);
 
     for (;;) {
-	client = http_accept_request(&ip, &url, &headers, &body, &cgivars);
+	client = http_accept_request(p->port, &ip, &url, &headers, &body, 
+	    	    	    	     &cgivars);
 	if (client == NULL)
 	    break;
     	
@@ -574,11 +576,12 @@ static void httpd_emu_create(EventQueue *eq)
 {
     struct httpd_emu_arg *arg;
 
-    if (http_open_server(http_port) == -1)
+    if (http_open_port(http_port) == -1)
     	panic(0, "Can't open HTTP server emulator port %ld.", http_port);
 
     gw_assert(httpd_emu_tid == -1);
     arg = gw_malloc(sizeof(*arg));
+    arg->port = http_port;
     arg->sema = semaphore_create(0);
     arg->eq = eq;
     httpd_emu_tid = gwthread_create(httpd_emu, arg);
@@ -597,7 +600,7 @@ static void httpd_emu_create(EventQueue *eq)
 static void httpd_emu_destroy(void)
 {
     gw_assert(httpd_emu_tid != -1);
-    http_close_all_servers();
+    http_close_all_ports();
     gwthread_join(httpd_emu_tid);
     httpd_emu_tid = -1;
 }

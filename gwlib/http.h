@@ -247,12 +247,12 @@ typedef struct HTTPClient HTTPClient;
  * port number, etc), 0 for OK. This will also start a background thread
  * to listen for connections to that port and read the requests from them.
  */
-int http_open_server(int port);
+int http_open_port(int port);
 
 
 /*
- * Accept a request from a client to any currently open port. Return NULL
- * if all ports are closed, otherwise a pointer to a client descriptor.
+ * Accept a request from a client to the specified open port. Return NULL
+ * if the port is closed, otherwise a pointer to a client descriptor.
  * Return the IP number (as a string) and other related information about
  * the request via arguments if function return value is non-NULL. The
  * caller is responsible for destroying the values returned via arguments,
@@ -263,8 +263,8 @@ int http_open_server(int port);
  * many threads to be fast. The HTTP user should use a single thread,
  * unless requests can block.
  */
-HTTPClient *http_accept_request(Octstr **client_ip, Octstr **url, 
-    	    	    	    	List **headers, Octstr **body, 
+HTTPClient *http_accept_request(int port, Octstr **client_ip, 
+    	    	    	    	Octstr **url, List **headers, Octstr **body,
 				List **cgivars);
 
 
@@ -286,9 +286,15 @@ void http_close_client(HTTPClient *client);
 
 
 /*
- * Close all currently open servers and stop background threads.
+ * Close a currently open port and stop corresponding background threads.
  */
-void http_close_all_servers(void);
+void http_close_port(int port);
+
+
+/*
+ * Close all currently open ports and stop background threads.
+ */
+void http_close_all_ports(void);
 
 
 /*

@@ -1,3 +1,26 @@
+2001-03-15  Lars Wirzenius  <liw@iki.fi>
+
+	* Changed the HTTP server side code so that it allows easily
+	processing requests to different ports in different ways.
+	
+	* gwlib/http.[ch]: Renamed http_open_server to http_open_port,
+	and http_close_all_servers to http_close_all_ports, since the
+	concept of "server" is a bit confusing when used this way. Port
+	is clearer.
+	
+	* gwlib/http.[ch]: Added port argument to http_accept_request
+	so that the caller can specify which port she's interested in.
+	This then required some changes in the internals of http.c
+	because the clients_with_requests list had to be replaced
+	with port specific lists, and this required some inter-thread
+	communication, which was a bit tricky to get working (and it
+	therefore likely to be buggy in non-obvious ways). Also added new
+	function, http_close_port, to allow closing only a specific port.
+
+	* gw/bb_http.c, gw/smsbox.c, test/drive_wapbox.c,
+	test/test_http_server.c, test/test_smsc.c: Changed calls to http
+	code based on interface code.
+
 2001-03-15  Uoti Urpala  <uau@wapit.com>
 
 	* gwlib/http.c, gwlib/http.h: Changed http_start_request and

@@ -1257,7 +1257,8 @@ static void sendsms_thread(void *arg)
     http_header_add(reply_hdrs, "Content-type", "text/html");
 
     for (;;) {
-    	client = http_accept_request(&ip, &url, &hdrs, &body, &args);
+    	client = http_accept_request(sendsms_port, &ip, &url, &hdrs, &body, 
+	    	    	    	     &args);
 	if (client == NULL)
 	    break;
 
@@ -1421,7 +1422,7 @@ static void init_smsbox(Cfg *cfg)
     }
 
     if (sendsms_port > 0) {
-	if (http_open_server(sendsms_port) == -1) {
+	if (http_open_port(sendsms_port) == -1) {
 	    if (only_try_http)
 		error(0, "Failed to open HTTP socket, ignoring it");
 	    else
@@ -1510,7 +1511,7 @@ int main(int argc, char **argv)
     info(0, "Kannel smsbox terminating.");
 
     heartbeat_stop(heartbeat_thread);
-    http_close_all_servers();
+    http_close_all_ports();
     gwthread_join_every(sendsms_thread);
     list_remove_producer(smsbox_requests);
     gwthread_join_every(obey_request_thread);

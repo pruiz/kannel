@@ -1142,6 +1142,7 @@ static void client_shutdown(void)
  * Information about a client that has connected to the server we implement.
  */
 struct HTTPClient {
+    int port;
     Connection *conn;
     Octstr *ip;
     enum {
@@ -1156,13 +1157,14 @@ struct HTTPClient {
 };
 
 
-static HTTPClient *client_create(Connection *conn, Octstr *ip)
+static HTTPClient *client_create(int port, Connection *conn, Octstr *ip)
 {
     HTTPClient *p;
     
     debug("gwlib.http", 0, "HTTP: Creating HTTPClient for `%s'.",
     	  octstr_get_cstr(ip));
     p = gw_malloc(sizeof(*p));
+    p->port = port;
     p->conn = conn;
     p->ip = ip;
     p->state = reading_request_line;
@@ -1208,6 +1210,117 @@ static void client_reset(HTTPClient *p)
 
 
 /*
+ * Port specific lists of clients with requests.
+ */
+
+
+struct port {
+    List *clients_with_requests;
+    Counter *active_consumers;
+};
+
+
+static Mutex *port_mutex = NULL;
+static Dict *port_collection = NULL;
+
+
+static void port_init(void)
+{
+    port_mutex = mutex_create();
+    port_collection = dict_create(1024, NULL);
+}
+
+static void port_shutdown(void)
+{
+    mutex_destroy(port_mutex);
+    dict_destroy(port_collection);
+}
+
+
+static Octstr *port_key(int port)
+{
+    return octstr_format("%d", port);
+}
+
+
+static void port_add(int port)
+{
+    Octstr *key;
+    struct port *p;
+
+    p = gw_malloc(sizeof(*p));
+    p->clients_with_requests = list_create();
+    list_add_producer(p->clients_with_requests);
+    p->active_consumers = counter_create();
+
+    key = port_key(port);
+    mutex_lock(port_mutex);
+    dict_put(port_collection, key, p);
+    mutex_unlock(port_mutex);
+    octstr_destroy(key);
+}
+
+
+static void port_remove(int port)
+{
+    Octstr *key;
+    struct port *p;
+
+    key = port_key(port);
+    mutex_lock(port_mutex);
+    p = dict_remove(port_collection, key);
+    mutex_unlock(port_mutex);
+    octstr_destroy(key);
+
+    list_remove_producer(p->clients_with_requests);
+    while (counter_value(p->active_consumers) > 0)
+       gwthread_sleep(0.1);    /* Reasonable use of busy waiting. */
+    list_destroy(p->clients_with_requests, client_destroy);
+    counter_destroy(p->active_consumers);
+    gw_free(p);
+}
+
+
+static void port_put_request(HTTPClient *client)
+{
+    Octstr *key;
+    struct port *p;
+
+    mutex_lock(port_mutex);
+    key = port_key(client->port);
+    p = dict_get(port_collection, key);
+    gw_assert(p != NULL);
+    list_produce(p->clients_with_requests, client);
+    octstr_destroy(key);
+    mutex_unlock(port_mutex);
+}
+
+
+static HTTPClient *port_get_request(int port)
+{
+    Octstr *key;
+    struct port *p;
+    HTTPClient *client;
+    
+    mutex_lock(port_mutex);
+    key = port_key(port);
+    p = dict_get(port_collection, key);
+    octstr_destroy(key);
+
+    if (p == NULL) {
+       client = NULL;
+       mutex_unlock(port_mutex);
+    } else {
+       counter_increase(p->active_consumers);
+       mutex_unlock(port_mutex);   /* Placement of this unlock is tricky. */
+       client = list_consume(p->clients_with_requests);
+       counter_decrease(p->active_consumers);
+    }
+    return client;
+}
+
+
+/*
  * Maximum number of servers (ports) we have open at the same time.
  */
 enum { MAX_SERVERS = 32 };
@@ -1220,8 +1333,8 @@ static Mutex *server_thread_lock = NULL;
 static volatile sig_atomic_t server_thread_is_running = 0;
 static long server_thread_id = -1;
 static FDSet *server_fdset = NULL;
-static List *clients_with_requests = NULL;
 static List *new_server_sockets = NULL;
+static List *closed_server_sockets = NULL;
 static int keep_servers_open = 0;
 
 
@@ -1289,7 +1402,7 @@ static void receive_request(Connection *conn, void *data)
 	    if (ret == 0) {
 	    	client->state = request_is_being_handled;
 		conn_unregister(conn);
-		list_produce(clients_with_requests, client);
+		port_put_request(client);
 	    }
 	    return;
 
@@ -1303,11 +1416,19 @@ error:
 }
 
 
+struct server {
+    int fd;
+    int port;
+};
+
+
 static void server_thread(void *dummy)
 {
     struct pollfd tab[MAX_SERVERS];
+    int ports[MAX_SERVERS];
     long i, j, n, fd;
-    int *p;
+    int *portno;
+    struct server *p;
     struct sockaddr_in addr;
     int addrlen;
     Connection *conn;
@@ -1321,8 +1442,9 @@ static void server_thread(void *dummy)
 		debug("gwlib.http", 0, "HTTP: No new servers. Quitting.");
 	    	break;
 	    }
-	    tab[n].fd = *p;
+	    tab[n].fd = p->fd;
 	    tab[n].events = POLLIN;
+	    ports[n] = p->port;
 	    ++n;
 	    gw_free(p);
 	}
@@ -1340,28 +1462,44 @@ static void server_thread(void *dummy)
 		if (fd == -1) {
 		    error(errno, "HTTP: Error accepting a client.");
     	    	    (void) close(tab[i].fd);
+		    port_remove(ports[i]);
 		    tab[i].fd = -1;
+		    ports[i] = -1;
 		} else {
 		    conn = conn_wrap_fd(fd);
-    	    	    client = client_create(conn, host_ip(addr));
+    	    	    client = client_create(ports[i], conn, host_ip(addr));
 		    conn_register(conn, server_fdset, receive_request, 
 		    	    	  client);
 		}
 	    }
 	}
 	
+	while ((portno = list_extract_first(closed_server_sockets)) != NULL) {
+	    for (i = 0; i < n; ++i) {
+		if (ports[i] == *portno) {
+		    (void) close(tab[i].fd);
+		    port_remove(ports[i]);
+		    tab[i].fd = -1;
+		    ports[i] = -1;
+		}
+	    }
+	}
+       
     	j = 0;
 	for (i = 0; i < n; ++i) {
-	    if (tab[i].fd != -1)
-	    	tab[j++] = tab[i];
+	    if (tab[i].fd != -1) {
+	    	tab[j] = tab[i];
+		ports[j] = ports[i];
+		++j;
+	    }
 	}
 	n = j;
     }
     
-    for (i = 0; i < n; ++i)
+    for (i = 0; i < n; ++i) {
 	(void) close(tab[i].fd);
-
-    list_remove_producer(clients_with_requests);
+	port_remove(ports[i]);
+    }
 }
 
 
@@ -1377,7 +1515,6 @@ static void start_server_thread(void)
 	mutex_lock(server_thread_lock);
 	if (!server_thread_is_running) {
 	    server_fdset = fdset_create();
-	    list_add_producer(clients_with_requests);
 	    server_thread_id = gwthread_create(server_thread, NULL);
 	    server_thread_is_running = 1;
 	}
@@ -1386,18 +1523,20 @@ static void start_server_thread(void)
 }
 
 
-int http_open_server(int port)
+int http_open_port(int port)
 {
-    int *p;
+    struct server *p;
 
     debug("gwlib.http", 0, "HTTP: Opening server at port %d.", port);
     p = gw_malloc(sizeof(*p));
-    *p = make_server_socket(port);
-    if (*p == -1) {
+    p->port = port;
+    p->fd = make_server_socket(port);
+    if (p->fd == -1) {
 	gw_free(p);
     	return -1;
     }
 
+    port_add(port);
     list_produce(new_server_sockets, p);
     keep_servers_open = 1;
     start_server_thread();
@@ -1406,7 +1545,17 @@ int http_open_server(int port)
 }
 
 
-void http_close_all_servers(void)
+void http_close_port(int port)
+{
+    int *p;
+    
+    p = gw_malloc(sizeof(*p));
+    *p = port;
+    list_produce(closed_server_sockets, p);
+}
+
+
+void http_close_all_ports(void)
 {
     if (server_thread_id != -1) {
 	keep_servers_open = 0;
@@ -1466,13 +1615,13 @@ static List *parse_cgivars(Octstr *url)
 }
 
 
-HTTPClient *http_accept_request(Octstr **client_ip, Octstr **url, 
+HTTPClient *http_accept_request(int port, Octstr **client_ip, Octstr **url, 
     	    	    	    	List **headers, Octstr **body, 
 				List **cgivars)
 {
     HTTPClient *client;
 
-    client = list_consume(clients_with_requests);
+    client = port_get_request(port);
     if (client == NULL) {
 	debug("gwlib.http", 0, "HTTP: No clients with requests, quitting.");
     	return NULL;
@@ -1543,8 +1692,18 @@ static void server_init(void)
 {
     new_server_sockets = list_create();
     list_add_producer(new_server_sockets);
-    clients_with_requests = list_create();
+    closed_server_sockets = list_create();
     server_thread_lock = mutex_create();
+}
+
+
+static void destroy_struct_server(void *p)
+{
+    struct server *pp;
+    
+    pp = p;
+    (void) close(pp->fd);
+    gw_free(pp);
 }
 
 
@@ -1563,9 +1722,9 @@ static void server_shutdown(void)
 	gwthread_join_every(server_thread);
     }
     mutex_destroy(server_thread_lock);
-    list_destroy(clients_with_requests, client_destroy);
     fdset_destroy(server_fdset);
-    list_destroy(new_server_sockets, destroy_int_pointer);
+    list_destroy(new_server_sockets, destroy_struct_server);
+    list_destroy(closed_server_sockets, destroy_int_pointer);
 }
 
 
@@ -2157,6 +2316,7 @@ void http_init(void)
     client_init();
     conn_pool_init();
     server_init();
+    port_init();
     
     run_status = running;
 }
@@ -2170,6 +2330,7 @@ void http_shutdown(void)
     run_status = terminating;
 
     conn_pool_shutdown();
+    port_shutdown();
     client_shutdown();
     server_shutdown();
     proxy_shutdown();

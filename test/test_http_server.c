@@ -13,6 +13,7 @@
 #include "gwlib/http.h"
 
 static volatile sig_atomic_t run = 1;
+static int port;
 
 static void client_thread(void *arg) 
 {
@@ -35,7 +36,8 @@ static void client_thread(void *arg)
     list_append(resph, reply_type);
 
     while (run) {
-	client = http_accept_request(&ip, &url, &headers, &body, &cgivars);
+	client = http_accept_request(port, &ip, &url, &headers, &body, 
+	    	    	    	     &cgivars);
 	if (client == NULL)
 	    break;
 
@@ -64,6 +66,7 @@ static void client_thread(void *arg)
     list_destroy(resph, octstr_destroy_item);
     octstr_destroy(reply_body);
     debug("test.http", 0, "client_thread terminates");
+    http_close_all_ports();
 }
 
 static void help(void) {
@@ -72,12 +75,12 @@ static void help(void) {
 
 static void sigterm(int signo) {
     run = 0;
-    http_close_all_servers();
+    http_close_all_ports();
     debug("test.gwlib", 0, "Signal %d received, quitting.", signo);
 }
 
 int main(int argc, char **argv) {
-    int opt, port, use_threads;
+    int opt, use_threads;
     struct sigaction act;
     char *filename;
     Octstr *log_filename;
@@ -140,7 +143,7 @@ int main(int argc, char **argv) {
     else
     	file_contents = octstr_read_file(filename);
 
-    if (http_open_server(port) == -1)
+    if (http_open_port(port) == -1)
 	panic(0, "http_open_server failed");
 
     client_thread(file_contents);

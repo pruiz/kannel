@@ -7,7 +7,7 @@ set -e
 times=1000
 port="8080"
 url="http://localhost:$port/foo.txt"
-loglevel=1
+loglevel=0
 
 test/test_http_server -p $port -v $loglevel > check_http_server.log 2>&1 &
 serverpid=$!
