@@ -22,6 +22,7 @@
  *   wml_text: the WML text to be compiled
  *   charset: the character set as HTTP headers declare it
  *   wml_binary: buffer for the compiled WML binary
+ *   version: max wbxml version supported by device, or NULL for default
  *
  * The wml_text and charset are allocated by the caller and should also be
  * freed by the caller. The function takes care for memory allocation for
@@ -33,7 +34,8 @@
  */
 int wml_compile(Octstr *wml_text,
 		Octstr *charset,
-		Octstr **wml_binary);
+		Octstr **wml_binary,
+		Octstr *version);
 
 /*
  * A function to initialize the wml compiler for use. Allocates memory 
@@ -46,6 +48,38 @@ void wml_init(void);
  * by the wml compiler.
  */
 void wml_shutdown(void);
+
+
+struct wml_externalid_t {
+    char *string;
+    char value;
+};
+
+typedef struct wml_externalid_t wml_externalid_t;
+
+static wml_externalid_t wml_externalid[] = {
+    { "-//WAPFORUM//DTD WML 1.3//EN", 0x0A },
+    { "-//WAPFORUM//DTD WML 1.2//EN", 0x09 },
+    { "-//WAPFORUM//DTD WML 1.1//EN", 0x04 },
+    { "-//WAPFORUM//DTD WML 1.0//EN", 0x02 }
+};
+
+#define NUMBER_OF_WML_EXTERNALID sizeof(wml_externalid)/sizeof(wml_externalid[0])
+
+struct wbxml_version_t {
+    char *string;
+    char value;
+};
+
+typedef struct wbxml_version_t wbxml_version_t;
+
+static wbxml_version_t wbxml_version[] = {
+    { "1.3", 0x03 },
+    { "1.2", 0x02 },
+    { "1.1", 0x01 },
+};
+
+#define NUMBER_OF_WBXML_VERSION sizeof(wbxml_version)/sizeof(wbxml_version[0])
 
 
 #endif

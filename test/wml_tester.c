@@ -121,7 +121,7 @@ int main(int argc, char **argv)
 	    set_zero(wml_text);
 
 	for (i = 0; i <= num; i++) {
-	    ret = wml_compile(wml_text, charset, &wml_binary);
+	    ret = wml_compile(wml_text, charset, &wml_binary, NULL);
 	    if (i < num)
 		octstr_destroy(wml_binary);
 	}

@@ -36,8 +36,8 @@ charset_t character_sets[] = {
  *
  * Implementation of external functions
  *
- * set_charset - set the charset of the http headers into the document, if 
- * it has no encoding set.
+ * set_charset - if xml doesn't have an <?xml..encoding=something>, 
+ * converts body from argument charset to utf-8
  */
 
 void set_charset(Octstr *document, Octstr *charset)

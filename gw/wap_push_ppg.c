@@ -1857,7 +1857,7 @@ static Octstr *convert_wml_to_wmlc(struct content *content)
 {
     Octstr *wmlc;
 
-    if (wml_compile(content->body, content->charset, &wmlc) == 0)
+    if (wml_compile(content->body, content->charset, &wmlc, NULL) == 0)
         return wmlc;
     warning(0, "PPG: wml compilation failed");
     return NULL;

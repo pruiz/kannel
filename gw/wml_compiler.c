@@ -146,7 +146,7 @@ List *wml_URL_values_list;
  */
 
 static int parse_document(xmlDocPtr document, Octstr *charset, 
-			  wml_binary_t **wbxml);
+			  wml_binary_t **wbxml, Octstr *version);
 
 static int parse_node(xmlNodePtr node, wml_binary_t **wbxml);
 static int parse_element(xmlNodePtr node, wml_binary_t **wbxml);
@@ -241,7 +241,8 @@ static void string_table_output(Octstr *ostr, wml_binary_t **wbxml);
  * For more information, look wml_compiler.h. 
  */
 
-int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary)
+int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary,
+		Octstr *version)
 {
     int ret = 0;
     size_t size;
@@ -263,7 +264,11 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary)
     parse_entities(wml_text);
 
     /* transcode from charset to UTF-8 */
-    set_charset(wml_text, charset);
+    if(charset && octstr_len(charset)) {
+        debug("wml_compile", 0, "WMLC: transcoding from [%s] to UTF-8", 
+		    octstr_get_cstr(charset));
+        set_charset(wml_text, charset);
+    }
 
     /* 
      * If we did not set the character set encoding yet, then obviously
@@ -287,6 +292,8 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary)
         /* we had none, so use UTF-8 as default */
         encoding = octstr_create("UTF-8");
     }
+    debug("wml_compile", 0, "WMLC: final encoding will be [%s]", 
+		    octstr_get_cstr(encoding));
 
     size = octstr_len(wml_text);
     wml_c_text = octstr_get_cstr(wml_text);
@@ -313,7 +320,7 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary)
             if (encoding)
                 pDoc->charset = xmlParseCharEncoding(octstr_get_cstr(encoding));
 
-            ret = parse_document(pDoc, encoding, &wbxml);
+            ret = parse_document(pDoc, encoding, &wbxml, version);
             wml_binary_output(*wml_binary, wbxml);
         } else {    
             error(0, "WML compiler: Compiling error: "
@@ -475,19 +482,61 @@ static int parse_node(xmlNodePtr node, wml_binary_t **wbxml)
  */
 
 static int parse_document(xmlDocPtr document, Octstr *charset, 
-			  wml_binary_t **wbxml)
+			  wml_binary_t **wbxml, Octstr *version)
 {
     xmlNodePtr node;
+    Octstr *externalID;
+    long i;
 
     if (document == NULL) {
-	error(0, "WML compiler: XML parsing failed, no parsed document.");
-	error(0, "Most probably an error in the WML source.");
-	return -1;
+        error(0, "WML compiler: XML parsing failed, no parsed document.");
+        error(0, "Most probably an error in the WML source.");
+        return -1;
     }
 
-    /* XXX - A bad hack, WBXML version is assumed to be 1.1. -tuo */
-    (*wbxml)->wbxml_version = 0x01; /* WBXML Version number 1.1 */
-    (*wbxml)->wml_public_id = 0x04; /* WML 1.1 Public ID */
+
+    /* Return WBXML version dependent on device given Encoding-Version */
+    if(version == NULL) {
+        (*wbxml)->wbxml_version = 0x01; /* WBXML Version number 1.1 */
+        info(0, "WBXML: no WBXML version given, assuming 1.1");
+    } else {
+        for(i=0; i<NUMBER_OF_WBXML_VERSION; i++) {
+            if(octstr_compare(version, octstr_imm(wbxml_version[i].string)) == 0) {
+                (*wbxml)->wbxml_version = wbxml_version[i].value;
+                debug("parse_document", 0, "WBXML: encoding with wbxml version [%s]",
+                                           octstr_get_cstr(version));
+                break;
+            }
+        }
+        if(i == NUMBER_OF_WBXML_VERSION) {
+            (*wbxml)->wbxml_version = 0x01; /* WBXML Version number 1.1 */
+            warning(0, "WBXML: unknown WBXML version given, assuming 1.1 [%s]",
+                       octstr_get_cstr(version));
+        }
+    }
+
+    /* Return WML Version dependent on xml ExternalID string */
+    externalID = octstr_create(document->intSubset->ExternalID);
+    if(externalID == NULL) {
+        (*wbxml)->wml_public_id = 0x04; /* WML 1.1 Public ID */
+        warning(0, "WBXML: WML without ExternalID, assuming 1.1");
+    } else {
+        for(i=0; i<NUMBER_OF_WML_EXTERNALID; i++) {
+            if(octstr_compare(externalID, octstr_imm(wml_externalid[i].string)) == 0) {
+                (*wbxml)->wml_public_id = wml_externalid[i].value;
+                debug("parse_document", 0, "WBXML: WML with ExternalID [%s]",
+                                           octstr_get_cstr(externalID));
+                break;
+            }
+        }
+        if(i == NUMBER_OF_WML_EXTERNALID) {
+            (*wbxml)->wml_public_id = 0x04; /* WML 1.1 Public ID */
+            warning(0, "WBXML: WML with unknown ExternalID, assuming 1.1 [%s]",
+                       octstr_get_cstr(externalID));
+        }
+    }
+    octstr_destroy(externalID);
+    
     (*wbxml)->string_table_length = 0x00; /* String table length=0 */
 
     /*

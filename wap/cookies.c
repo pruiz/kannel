@@ -71,7 +71,7 @@ int get_cookies (List *headers, const WSPMachine *sm)
 
 	for (pos = 0; pos < list_len (headers); pos++) {
 		header = list_get(headers, pos);
-		debug ("wap.wsp.http", 0, "get_cookies: Examining header (%s)", octstr_get_cstr (header));
+		/* debug ("wap.wsp.http", 0, "get_cookies: Examining header (%s)", octstr_get_cstr (header)); */
 		if (strncasecmp ("set-cookie", octstr_get_cstr (header),10) == 0) {		
 			debug ("wap.wsp.http", 0, "Caching cookie (%s)", octstr_get_cstr (header));
 
@@ -127,7 +127,8 @@ int set_cookies(List *headers, WSPMachine *sm)
 			value = list_get(sm->cookies, pos);
 
 			cookie = octstr_create("Cookie: ");
-			octstr_append(cookie, value->version);
+			if (value->version) 
+			    octstr_append(cookie, value->version);
 			octstr_append(cookie, value->name);
 			octstr_append_char(cookie, '=');
 			octstr_append(cookie, value->value);
@@ -216,20 +217,26 @@ static Cookie *parse_cookie(Octstr *cookiestr)
 		else if (strncasecmp("path", p, 4) == 0)
 			f = &c -> path;
 		else if (strncasecmp("domain", p, 6) == 0)
-			f = &c -> domain;
+			f = &c -> domain;	/* XXX DAVI: Shouldn't we check if domain is similar 
+						 *           to real domain, and to set domain to
+						 *           real domain if not set by header ??? */
 		else if (strncasecmp("max-age", p, 7) == 0) {
 			c -> max_age = atol(strrchr (p, '=') + 1);
 			p = strtok(NULL, ";");
 			continue;
 		} 
-        else if (strncasecmp("expires", p, 7) == 0) {
+		else if (strncasecmp("expires", p, 7) == 0) {
 			delta = parse_http_date(p);
 			if (delta != -1) 
-                c->max_age = delta;
+				c->max_age = delta;
 			p = strtok(NULL, ";");
 			continue;
 		}
-		else if (strncasecmp("comment", p, 7) == 0 || strncasecmp("secure", p, 6) == 0) {
+		else if (strncasecmp("comment", p, 7) == 0 ) { /* Ignore comments */
+			p = strtok(NULL, ";");
+			continue;
+		}
+		else if (strncasecmp("secure", p, 6) == 0 ) { /* XXX DAVI: this should processed */
 			p = strtok(NULL, ";");
 			continue;
 		}
@@ -261,12 +268,14 @@ static Cookie *parse_cookie(Octstr *cookiestr)
 		p = strtok(NULL, ";");
 	}
 
-	/* Process version - 4.3.4 */
-
+	/* Process version - 4.3.4 
+        /* XXX DAVI: Altough it seems to be "MUST" in RFC, no one sends a Version 
+         * tag when it's value is "0" 
 	if (c->version == NULL) {
 		c->version = octstr_create("");
 		octstr_append_cstr(c->version, "$Version=\"0\";");
 	}
+	*/
 
 	gw_free (v);
 	return c;

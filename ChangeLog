@@ -1,3 +1,32 @@
+2003-07-13  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * Every comment with DAVI is a mental note for me to finish or fix that
+    * code
+    * gw/wap-appl.c, gw/wml_compiler.c: set wbxml version related to device's
+      supported version
+    * gw/wap-appl.c: added support for deconvertion, similar to existing 
+      convertion (ex: wml to wmlc), for device's POST content
+    * gw/wap-appl.c: added preliminary application/vnd.wap.multipart.form-data
+      to multipart/form-data; deconversion code is just waiting until I 
+      understand Stipe's mms decoding code ;)
+    * gw/wap-appl.c: added preliminary multipart/mixed to application/vnd.wap.
+      multipart.mixed; it's on hold because there's some other priority issues
+    * gw/wap-appl.c: in convert_content, don't convert from x to y if x is
+      supported by device
+    * gw/wap-appl.c: added some debugging and body dump to debug content 
+      encoding and decoding
+    * gw/wap-appl.c: adapts content charset to device supported charsets. For
+      now, it only tries to convert content to UTF-8 if device doesn't support
+      original charset but supports utf-8. This works for wml and xhtml content
+    * gw/wap_push_ppg.c, test/wml_tester.c: fix change to wml_compile call
+    * gw/wml_compiler.{h,c}: like wbxml version change, also send right wml 
+      version by looking at replied wml's external ID (Note: SE-T610 and others
+      looks at wml version and if 1.1, it would ignore enctype attribute with
+      multipart/form-data and do a POST with appl/x-www-urlencode because that
+      attribute is wml 1.3 only)
+    * gw/xml_shared.c: rewrote a comment to be more explicit
+    * wap/cookies.c: removed "too verbose" debug line; removed "Version" text
+      in cookie when its value is 0 (default)
+
 2003-07-13  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/list.c: fixed panic about: Managed to lock the mutex twice.
       It occurs if list_lock(..) follows pthread_cond_wait(...) called. We lock
