@@ -1,3 +1,7 @@
+2000-05-08  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+
+	* gw/wapbox.c: Implemented load reporting for Solaris
+
 2000-05-08  Richard Braakman  <dark@wapit.com>
 
 	* Made all sig_atomic_t variables volatile, because there is no
