@@ -1,5 +1,8 @@
 2002-08-06  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: fixed typos from last commit.
+    * contrib/mon/kannel.monitor: some slight changes to the monitor module
+    * gw/bb_smscconn.c: fixed a possible critical race condition causing 
+      segfaulting bearerbox if the admin status page is called to often.
 
 2002-08-05  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/examples/dlr-*.conf: fixed a typo in the 'dlr-db' group for the id
