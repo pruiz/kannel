@@ -1,3 +1,8 @@
+2000-05-11   Aarno Syvänen <syvanen@wapit.com>
+
+	* wsp_http.c: Using octstr_compare instead of strstr in conditional 
+	header addition. There was some curious problem with strstrs.
+
 Fri May 12    Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	* fakewap.c: Added -F switch which enables continue on fail
 	rather than exit on fail. (Stress testing)
