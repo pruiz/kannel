@@ -173,7 +173,7 @@ int wml_compile(Octstr *wml_text,
   if (octstr_search_char(wml_text, '\0') != -1)
     {    
       error(0, 
-	    "WML compiler: Compiling error in WML text. "
+	    "WML compiler: Compiling error: "
 	    "\\0 character found in the middle of the WML source.");
       ret = -1;
     }
@@ -194,8 +194,18 @@ int wml_compile(Octstr *wml_text,
       pDoc = xmlParseMemory(wml_c_text, size);
 #endif
 
-      ret = parse_document(pDoc, charset, &wbxml);
-      wml_binary_output(*wml_binary, wbxml);
+      if(pDoc != NULL)
+	{
+	  ret = parse_document(pDoc, charset, &wbxml);
+	  wml_binary_output(*wml_binary, wbxml);
+	}
+      else
+	{    
+	  error(0, 
+		"WML compiler: Compiling error: "
+                "libxml returned a NULL pointer");
+	  ret = -1;
+	}
     }
 
   wml_binary_destroy(wbxml);

@@ -1,3 +1,8 @@
+2000-07-13  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c (wml_compile): Compiler now checks that the 
+	output from libxml is not a NULL pointer.
+
 2000-07-13  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	* config.h.in,configure,configure.in: configure now checks for the 
 	32-bit type and defines kint32 and kuint32 as appropriate in 
