@@ -1,3 +1,8 @@
+2001-07-27 Jörg Pommnitz <jpo@condat.de>
+
+	* doc/userguide/userguide.xml,doc/arch/arch.xml: fix doc to get 
+	through Jade.
+
 2001-10-12 Aarno Syvänen <aarno@wiral.com>
 
 	* gw/wap_push_ota.c, gw/wap-appl.c, gw/wap_push_pap_compiler.c, 

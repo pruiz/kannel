@@ -6,7 +6,7 @@
 
 <bookinfo>
 	<title>Kannel Architecture and Design</title>
-	<subtitle>$Revision: 1.16 $</subtitle>
+	<subtitle>$Revision: 1.17 $</subtitle>
 	<author>
 	<firstname>Lars</firstname>
 	<surname>Wirzenius</surname>
@@ -703,7 +703,7 @@
        <listitem><para>
        The gateway makes an OTA request for pushing the data to the phone.
        It is delivered using WSP sessionless services.
-       <para></listitem>
+       </para></listitem>
        </orderedlist>
 
        and confirmed (and session-oriented) one, see <xref 

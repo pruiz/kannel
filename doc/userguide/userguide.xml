@@ -5074,6 +5074,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
      </entry></row>
 
    </tbody>
+   </tgroup>
   </informaltable>
 
 </sect1>
