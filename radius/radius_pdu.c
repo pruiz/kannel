@@ -296,7 +296,8 @@ static Octstr *radius_type_convert(int type, Octstr *value)
                 int c = octstr_get_char(value, i);
                 Octstr *b = octstr_format("%d", c);
                 octstr_append(ret, b);
-                i < 3 ? octstr_append_cstr(ret, ".") : NULL;
+                if (i < 3)
+                    octstr_append_cstr(ret, ".");
                 octstr_destroy(b);
             }
             break;

@@ -1,4 +1,14 @@
 2005-03-01  Stipe Tolj  <stolj@wapme.de> 
+    Portability enhancement for non-gcc compilers, no logic change.
+    * gw/smsc/smsc_smpp.c: changed gcc specific magic macro __PRETTY_FUNCTION_
+      to __func__ that is more generic, because of gw-config.h.in macro
+      rule used.
+    * readius/radius_pdu.c: remove void NULL void call and enclose into an
+      if statement.
+      Thanks to Mike Bristrow <mike@urgle.com> for the patch.
+      [Msg-ID: <20050218120010.GA17561@urgle.com>]
+
+2005-03-01  Stipe Tolj  <stolj@wapme.de> 
     * configure[.in]: added support to find docbook.dsl file on Debian 
       unstable. Thanks to Benjamin for this patch.
       [Msg-ID: <20050219161644.GA938@xaos.realthought.net>]

@@ -1520,7 +1520,7 @@ static void io_thread(void *arg)
                     }
                 }
                 debug("bb.sms.smpp", 0, "SMPP[%s]: %s: break and shutting down",
-                      octstr_get_cstr(smpp->conn->id), __PRETTY_FUNCTION__);
+                      octstr_get_cstr(smpp->conn->id), __func__);
 
                 break;
             }
