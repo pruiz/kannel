@@ -116,12 +116,22 @@ static void lock_in(Connection *conn)
 }
 
 /* Unlock a Connection's read direction, if the Connection is unclaimed */
-static void unlock_in(Connection *conn)
+#define	unlock_in(conn)	unlock_in_real(conn,__FILE__,__LINE__)
+#define unlock_out(conn) unlock_out_real(conn,__FILE__,__LINE__)
+
+static void unlock_in_real(Connection *conn, char *file, int line)
 {
+    int ret;
     gw_assert(conn != NULL);
 
     if (!conn->claimed)
-        mutex_unlock(conn->inlock);
+    {
+        ret = mutex_unlock(conn->inlock);
+        if (ret !=0)
+        {
+	    panic(0,"Mutex unlock failed in unlock_in called from %s at %d",file,line);
+        }
+     }
 }
 
 /* Lock a Connection's write direction, if the Connection is unclaimed */
@@ -136,12 +146,19 @@ static void lock_out(Connection *conn)
 }
 
 /* Unlock a Connection's write direction, if the Connection is unclaimed */
-static void unlock_out(Connection *conn)
+static void unlock_out_real(Connection *conn, char *file, int line)
 {
+    int ret;
     gw_assert(conn != NULL);
 
     if (!conn->claimed)
-        mutex_unlock(conn->outlock);
+    {
+        ret = mutex_unlock(conn->outlock);
+        if (ret !=0)
+        {
+            panic(0,"Mutex unlock failed in unlock_out_real called from %s at %d",file,line);
+        }
+     }
 }
 
 /* Return the number of bytes in the Connection's output buffer */

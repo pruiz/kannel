@@ -242,18 +242,20 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     	pdu->u.submit_sm.dest_addr_ton = 1; /* international */
     }
 
+    pdu->u.submit_sm.data_coding = fields_to_dcs(msg, 0);
+
     if (octstr_len(msg->sms.udhdata)) {
 	pdu->u.submit_sm.short_message =
 	    octstr_format("%S%S", msg->sms.udhdata, msg->sms.msgdata);
 	pdu->u.submit_sm.esm_class = SMPP_ESM_CLASS_UDH_INDICATOR;
     } else {
 	pdu->u.submit_sm.short_message = octstr_duplicate(msg->sms.msgdata);
-	charset_latin1_to_gsm(pdu->u.submit_sm.short_message);		
+	if(pdu->u.submit_sm.data_coding == 0 ) /*no reencoding for unicode! */
+	   charset_latin1_to_gsm(pdu->u.submit_sm.short_message);		
     }
     /* ask for the delivery reports if needed */
     if (msg->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL))
  	pdu->u.submit_sm.registered_delivery = 1; 
-    pdu->u.submit_sm.data_coding = fields_to_dcs(msg, 0);
 
     return pdu;
 }
