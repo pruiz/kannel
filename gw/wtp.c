@@ -347,6 +347,8 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
                        debug("wap.wtp", 0, "WTP: machine_find_or_create: unhandled event");
                        wtp_event_dump(event);
                   break;
+		  	/* XXX in the default case, return from function
+			   instead of exiting from switch? --liw */
 	   }
 
            machine = wtp_machine_find(msg->wdp_datagram.source_address,
@@ -398,6 +400,8 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
  */
 WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
+	/* XXX static makes the function unsafe with threads and needs to
+	   be fixed. --liw */
          static WTPEvent *event = NULL;
          static WTPSegment *segments_list = NULL,
                            *missing_segments = NULL;
@@ -503,6 +507,8 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
               break;
          } /* switch */
          panic(0, "Following return is unnecessary but are required by the compiler");
+	 /* XXX that is a nonsensical panic message and is meaningless to
+	    the user. --liw */
          return NULL;
 } /* function */
 
@@ -555,6 +561,7 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
      return;
 }
 
+/* XXX this function is not thread safe --liw */
 unsigned long wtp_tid_next(void){
      static unsigned long next_tid = 0;
      return ++next_tid;

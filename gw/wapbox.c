@@ -209,11 +209,8 @@ static void *send_heartbeat_thread(void *arg) {
 static void *empty_queue_thread(void *arg) {
 	Msg *msg;
 	int socket;
-	time_t stamp;
 	
 	socket = *(int *) arg;
-	stamp = time(NULL);
-	
 	while (run_status == running) {
 		msg = remove_msg_from_queue();
 		if (msg == NULL)

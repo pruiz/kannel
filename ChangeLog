@@ -1,3 +1,18 @@
+Mon Mar 20 15:10:52 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wapbox.c: Function empty_queue_thread: Removed timestamp
+	variable that isn't used anymore.
+	
+	* gw/wsp.c, gw/wtp.c: Marked some places with comments about
+	problems, since I had no time to fix the problems yet.
+	
+	* gwlib/gwmem.c: gw_realloc now checks that the size is non-zero
+	and panics if it is zero. realloc(foo, 0) is equivalent to free(foo),
+	but this is obscure enough that using it for that is rather likely
+	to be a bug.
+	
+	* gwlib/octstr.c: Made octstr_dump use unsigned chars.
+
 Sat Mar 18 10:40:24 CET 2000	Patrick Schaaf	<bof@bof.de>
 
 	* gw/wsp_http.c: map-url logging tamed, minor code cleanup.

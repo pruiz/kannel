@@ -587,7 +587,7 @@ OctstrList *octstr_split_words(Octstr *ostr) {
 
 
 void octstr_dump(Octstr *ostr) {
-	char *p, *d, buf[1024], charbuf[256];
+	unsigned char *p, *d, buf[1024], charbuf[256];
 	size_t pos;
 	const int octets_per_line = 8;
 	int c, this_line_begins_at;
@@ -723,7 +723,3 @@ error:
 	gw_free(data);
 	return -1;
 }
-
-/***********************************************************************
- * Internal functions.
- */

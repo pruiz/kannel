@@ -169,6 +169,7 @@ void wsp_dispatch_event(WTPMachine *wtp_sm, WSPEvent *event) {
 	
 	WSPMachine *sm;
 	
+	/* XXX this should probably be moved to a condition function --liw */
 	if (event->type == TRInvokeIndication &&
 	    event->TRInvokeIndication.tcl == 2 &&
 	    wsp_deduce_pdu_type(event->TRInvokeIndication.user_data, 0) == Connect_PDU) {
@@ -646,6 +647,7 @@ static char *wsp_state_to_string(WSPState state) {
 }
 
 
+/* XXX this function is not thread safe. --liw */
 static long wsp_next_session_id(void) {
 	static long next_id = 1;
 	return next_id++;
@@ -789,9 +791,9 @@ static long convert_http_status_to_wsp_status(long http_status) {
 }
 
 
+/* XXX this function is not thread safe. --liw */
 static long new_server_transaction_id(void) {
 	static long next_id = 1;
-	
 	return next_id++;
 }
 

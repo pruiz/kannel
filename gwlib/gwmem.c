@@ -21,6 +21,8 @@ void *gw_realloc(void *ptr, size_t size)
 {
     void *new_ptr;
 
+    if (size == 0)
+        panic(0, "gw_realloc called with size == 0. This is an error.");
     new_ptr = realloc(ptr, size);
     if (new_ptr == NULL)
 	panic(errno, "Memory re-allocation of %lu bytes failed", (unsigned long) size);
