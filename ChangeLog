@@ -1,5 +1,38 @@
 2001-01-23  Lars Wirzenius  <liw@iki.fi>
 
+	* Ran some compiles with stricter warning options than -Wall.
+	This resulted in a few minor changes.
+	
+	* gw/bb_smscconn.c: Removed the function smsc2_addwdp, since it is
+	unused and the wapbox is the better place to do WAP-on-SMS anyway.
+	
+	* gw/smpp_pdu.c: Cast the return value of octstr_len in an assert
+	that compares it to an unsigned long. This is a bit ugly, but -
+	in my humble opinion - better than a warning about comparing signed
+	and unsigned. Reasonable minds differ.
+	
+	* gwlib/gwthread.h: Removed duplicate prototype for
+	gwthread_dumpsigmask.
+	
+	* gwlib/socket.c: Made gw_netaddr_to_octstr4 and
+	gw_netaddr_to_octstr6 static, since they're not to be used from
+	outside socket.c.
+	
+	* test/decompile.c: Made a number of functions static. I don't
+	understand why some functions are declared in decompile.h (or
+	why decompile.h exists in the first place), but presumably there
+	is a good reason for this. Removed the Read_zero_index function,
+	since it was unused.
+	
+	* test/test_cimd2.c, test/test_headers.c, test/test_pdu.c,
+	test/test_wakeup.c, test/udpfeed.c, utils/seewbmp.c: Use a return
+	statement instead of calling exit. Stylistic change.
+	
+	* utils/run_kannel_box.c: Make main_loop return instead of
+	calling exit directly. Stylistic change.
+
+2001-01-23  Lars Wirzenius  <liw@iki.fi>
+
 	* doc/arch/arch.xml: Fixed references to figures.
 
 2001-01-23  Lars Wirzenius  <liw@iki.fi>

@@ -1027,6 +1027,5 @@ int main(int argc, char *argv[]) {
 
 	sockfd = wait_for_client(port);
 	main_loop();
-
-	exit(0);
+	return 0;
 }

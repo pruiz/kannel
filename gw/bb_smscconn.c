@@ -327,18 +327,6 @@ int smsc2_start(Cfg *cfg)
 }
 
 
-/*
- * this function receives an WDP message, and puts into
- * WDP disassembly unit list... in the future!
- */
-int smsc2_addwdp(Msg *msg)
-{
-    if (!smsc_running) return -1;
-    
-    return -1;
-}
-
-
 void smsc2_resume(void)
 {
     SMSCConn *conn;

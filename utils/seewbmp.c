@@ -280,5 +280,5 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	exit(exitvalue);
+	return exitvalue;
 }

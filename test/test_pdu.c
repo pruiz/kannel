@@ -87,5 +87,5 @@ int main(int argc, char **argv) {
 	wtp_pdu_destroy(pdu);
 
 	gwlib_shutdown();
-	exit(0);
+    	return 0;
 }

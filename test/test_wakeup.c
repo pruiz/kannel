@@ -15,5 +15,5 @@ int main(void) {
 	gwthread_wakeup_all();
 	gwthread_join_all();
 	gwlib_shutdown();
-	exit(0);
+    	return 0;
 }

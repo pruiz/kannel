@@ -203,7 +203,7 @@ static void setup_signals(void)
 
 /* Fork off a box process and loop indefinitely, forking a new one
  * every time it dies. */
-static void main_loop(char *boxfile)
+static int main_loop(char *boxfile)
 {
 	time_t next_fork = 0;
 
@@ -224,7 +224,7 @@ static void main_loop(char *boxfile)
 
 		child_box = fork();
 		if (child_box < 0) {
-			exit(errno);
+			return errno;
 		}
 		if (child_box == 0) {
 			/* child.  exec the box */
@@ -243,7 +243,7 @@ static void main_loop(char *boxfile)
 				continue;
 			}
 			/* Something weird happened. */
-			exit(errno);
+			return errno;
 		}
 	}
 }
@@ -338,6 +338,5 @@ int main(int argc, char *argv[])
 	close_extra_files();
 
 	setup_signals();
-	main_loop(boxfile);
-	return 0;
+	return main_loop(boxfile);
 }

@@ -84,17 +84,14 @@ void gwthread_sleep(double seconds);
  */
 int gwthread_shouldhandlesignal(int signal);
 
-/* Display the signal mask for this thread.
- * Debugging purposes mostly so it can be ignored on platforms
- * where this isn't applicable.
- */
-int gwthread_dumpsigmask(void);
-
-
 /* Dump the current signal mask for this thread. This will print out a
  * set of debug messages that state the signal handling status for the
  * first 32 signals on the current system. Return -1 if something goes
- * wrong. */
+ * wrong.
+ *
+ * Debugging purposes mostly so it can be ignored on platforms
+ * where this isn't applicable.
+ */
 int gwthread_dumpsigmask(void);
 
 

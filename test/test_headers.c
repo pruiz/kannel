@@ -145,5 +145,5 @@ int main(int argc, char **argv)
 
     wsp_strings_shutdown();
     gwlib_shutdown();
-    exit(0);
+    return 0;
 }

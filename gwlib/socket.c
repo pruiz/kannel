@@ -534,7 +534,7 @@ void socket_shutdown(void)
 }
 
 
-Octstr *gw_netaddr_to_octstr4(unsigned char* src)
+static Octstr *gw_netaddr_to_octstr4(unsigned char* src)
 {
     return octstr_format("%d.%d.%d.%d",src[0],src[1],src[2],src[3]);
 }
@@ -544,7 +544,7 @@ Octstr *gw_netaddr_to_octstr4(unsigned char* src)
 
 #define INET6_OCTETS 16
 
-Octstr *gw_netaddr_to_octstr6(unsigned char* src)
+static Octstr *gw_netaddr_to_octstr6(unsigned char* src)
 {
     Octstr *address;
 

@@ -183,7 +183,8 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
     #define OCTETS(name, field_giving_octets) \
     	p->name = octstr_copy(data_without_len, pos, \
 	    	    	      p->field_giving_octets); \
-    	gw_assert(p->field_giving_octets == octstr_len(p->name)); \
+    	gw_assert(p->field_giving_octets == \
+	    	  (unsigned long) octstr_len(p->name)); \
 	pos += p->field_giving_octets;
     #define PDU(name, id, fields) \
     	case id: { struct name *p = &pdu->u.name; fields } break;

@@ -220,7 +220,7 @@ CODEPAGE_ATTRVALUE_NAME_LIST CodepageAttrvalueNames[] =
  *  P_WBXML_NODE - A pointer to the newly allocated node.
  *
  */
-P_WBXML_NODE NewNode(P_WBXML_INFO buffer, WBXML_NODE_TYPE type)
+static P_WBXML_NODE NewNode(P_WBXML_INFO buffer, WBXML_NODE_TYPE type)
 {
 	if (buffer)
 	{
@@ -289,7 +289,7 @@ P_WBXML_NODE NewNode(P_WBXML_INFO buffer, WBXML_NODE_TYPE type)
  *  node - The node to free
  *
  */
-void FreeNode(P_WBXML_NODE node)
+static void FreeNode(P_WBXML_NODE node)
 {
 	if (node)
 	{
@@ -307,7 +307,7 @@ void FreeNode(P_WBXML_NODE node)
 	}
 }
 
-void AddDTDNode(P_WBXML_INFO buffer, const WBXML_DTD_TYPE dtdnum, const WBXML_MB_U_INT32 index)
+static void AddDTDNode(P_WBXML_INFO buffer, const WBXML_DTD_TYPE dtdnum, const WBXML_MB_U_INT32 index)
 {
 	P_WBXML_NODE newnode = NewNode(buffer, NODE_DTD_TYPE);
 	newnode->m_data = malloc(sizeof(DTD_NODE_DATA));
@@ -315,66 +315,66 @@ void AddDTDNode(P_WBXML_INFO buffer, const WBXML_DTD_TYPE dtdnum, const WBXML_MB
 	memcpy( &( ((DTD_NODE_DATA*)newnode->m_data)->m_index ), &(index[0]), sizeof(WBXML_MB_U_INT32) );
 }
 
-void AddStringTableNode(P_WBXML_INFO buffer, const P_WBXML_STRING_TABLE strings)
+static void AddStringTableNode(P_WBXML_INFO buffer, const P_WBXML_STRING_TABLE strings)
 {
 	P_WBXML_NODE newnode = NewNode(buffer, NODE_STRING_TABLE);
 	newnode->m_data = malloc(sizeof(WBXML_STRING_TABLE));
 	memcpy( newnode->m_data, strings, sizeof(WBXML_STRING_TABLE) );
 }
 
-void AddCodepageTagNode(P_WBXML_INFO buffer, WBXML_TAG tag)
+static void AddCodepageTagNode(P_WBXML_INFO buffer, WBXML_TAG tag)
 {
 	P_WBXML_NODE newnode = NewNode(buffer, NODE_CODEPAGE_TAG);
 	newnode->m_data = malloc(sizeof(WBXML_TAG));
 	*((P_WBXML_TAG)newnode->m_data) = tag;
 }
 
-void AddCodepageLiteralTagNode(P_WBXML_INFO buffer, WBXML_MB_U_INT32 index)
+static void AddCodepageLiteralTagNode(P_WBXML_INFO buffer, WBXML_MB_U_INT32 index)
 {
 	P_WBXML_NODE newnode = NewNode(buffer, NODE_CODEPAGE_LITERAL_TAG);
 	newnode->m_data = malloc(sizeof(WBXML_MB_U_INT32));
 	memcpy( ((P_WBXML_MB_U_INT32)newnode->m_data), &index, sizeof(WBXML_MB_U_INT32) );
 }
 
-void AddAttrStartNode(P_WBXML_INFO buffer, WBXML_TAG tag)
+static void AddAttrStartNode(P_WBXML_INFO buffer, WBXML_TAG tag)
 {
 	P_WBXML_NODE newnode = NewNode(buffer, NODE_ATTRSTART);
 	newnode->m_data = malloc(sizeof(WBXML_TAG));
 	*((P_WBXML_TAG)newnode->m_data) = tag;
 }
 
-void AddAttrStartLiteralNode(P_WBXML_INFO buffer, WBXML_MB_U_INT32 index)
+static void AddAttrStartLiteralNode(P_WBXML_INFO buffer, WBXML_MB_U_INT32 index)
 {
 	P_WBXML_NODE newnode = NewNode(buffer, NODE_ATTRSTART_LITERAL);
 	newnode->m_data = malloc(sizeof(WBXML_MB_U_INT32));
 	memcpy( ((P_WBXML_MB_U_INT32)newnode->m_data), &index, sizeof(WBXML_MB_U_INT32) );
 }
 
-void AddAttrValueNode(P_WBXML_INFO buffer, WBXML_TAG tag)
+static void AddAttrValueNode(P_WBXML_INFO buffer, WBXML_TAG tag)
 {
 	P_WBXML_NODE newnode = NewNode(buffer, NODE_ATTRVALUE);
 	newnode->m_data = malloc(sizeof(WBXML_TAG));
 	*((P_WBXML_TAG)newnode->m_data) = tag;
 }
 
-void AddAttrEndNode(P_WBXML_INFO buffer)
+static void AddAttrEndNode(P_WBXML_INFO buffer)
 {
 	P_WBXML_NODE newnode = NewNode(buffer, NODE_ATTREND);
 	newnode->m_data = NULL;
 }
 
-void AddStringNode(P_WBXML_INFO buffer, char* string)
+static void AddStringNode(P_WBXML_INFO buffer, char* string)
 {
 	P_WBXML_NODE newnode = NewNode(buffer, NODE_STRING);
 	newnode->m_data = strdup(string);
 }
 
-void AddVariableStringNode(P_WBXML_INFO buffer, char* string, WBXML_VARIABLE_TYPE type)
+static void AddVariableStringNode(P_WBXML_INFO buffer, char* string, WBXML_VARIABLE_TYPE type)
 {
 	// TODO: add this node
 }
 
-void AddVariableIndexNode(P_WBXML_INFO buffer, char* string, WBXML_VARIABLE_TYPE type)
+static void AddVariableIndexNode(P_WBXML_INFO buffer, char* string, WBXML_VARIABLE_TYPE type)
 {
 	// TODO: add this node
 }
@@ -664,13 +664,6 @@ void Read_mb_u_int32(P_WBXML_INFO buffer, P_WBXML_MB_U_INT32 result)
   }
 }
 
-void Read_zero_index(P_WBXML_INFO buffer, P_WBXML_STRING_INDEX result)
-{
-  WBXML_U_INT8 dummy;
-  Read_u_int8(buffer, &dummy);
-  Read_mb_u_int32(buffer, result);
-}
-
 void Read_bytes(P_WBXML_INFO buffer, WBXML_LENGTH length, P_WBXML_BYTES result)
 {
   if (buffer && result)
@@ -803,7 +796,7 @@ long mb_u_int32_to_long(P_WBXML_MB_U_INT32 value)
   return result;
 }
 
-void OutputEncodedString(const unsigned char* str)
+static void OutputEncodedString(const unsigned char* str)
 {
 	/* Work our way down the string looking for illegal chars */
 	while (*str != 0)
@@ -1316,7 +1309,7 @@ void Read_pageindex  (P_WBXML_INFO buffer, P_WBXML_U_INT8 result)
   Read_u_int8(buffer, result);
 }
 
-void Init(P_WBXML_INFO buffer)
+static void Init(P_WBXML_INFO buffer)
 {
 	buffer->m_start = NULL;
 	buffer->m_curpos = NULL;
@@ -1326,7 +1319,7 @@ void Init(P_WBXML_INFO buffer)
 	buffer->m_curpage = 0;
 }
 
-void Free(P_WBXML_INFO buffer)
+static void Free(P_WBXML_INFO buffer)
 {
 	if (buffer->m_start)
 	{
@@ -1341,7 +1334,7 @@ void Free(P_WBXML_INFO buffer)
 	buffer->m_tree = NULL;
 }
 
-long FileSize(FILE* file)
+static long FileSize(FILE* file)
 {
 	long curpos = ftell(file);
 	long endpos;
@@ -1352,7 +1345,7 @@ long FileSize(FILE* file)
 	return endpos;
 }
 
-void ReadBinary(P_WBXML_INFO buffer, char* filename)
+static void ReadBinary(P_WBXML_INFO buffer, char* filename)
 {
 	if (buffer && filename)
 	{
@@ -1388,7 +1381,7 @@ void ReadBinary(P_WBXML_INFO buffer, char* filename)
 	}
 }
 
-const char* DTDTypeName(long dtdnum)
+static const char* DTDTypeName(long dtdnum)
 {
 	int i = 0;
 
@@ -1406,7 +1399,7 @@ const char* DTDTypeName(long dtdnum)
 	return DTDTypeList[i].m_name;
 }
 
-const char* CodepageTagName(WBXML_CODEPAGE page, WBXML_TAG tag)
+static const char* CodepageTagName(WBXML_CODEPAGE page, WBXML_TAG tag)
 {
 	int i = 0;
 
@@ -1428,7 +1421,7 @@ const char* CodepageTagName(WBXML_CODEPAGE page, WBXML_TAG tag)
 	return CodepageTagNames[i].m_name;
 }
 
-const char* CodepageAttrstartName(WBXML_CODEPAGE page, WBXML_TAG tag, char** value)
+static const char* CodepageAttrstartName(WBXML_CODEPAGE page, WBXML_TAG tag, char** value)
 {
 	int i = 0;
 
@@ -1464,7 +1457,7 @@ const char* CodepageAttrstartName(WBXML_CODEPAGE page, WBXML_TAG tag, char** val
 	return CodepageAttrstartNames[i].m_name;
 }
 
-void CodepageAttrvalueName(WBXML_CODEPAGE page, WBXML_TAG tag, char** value)
+static void CodepageAttrvalueName(WBXML_CODEPAGE page, WBXML_TAG tag, char** value)
 {
 	int i = 0;
 
@@ -1501,7 +1494,7 @@ void CodepageAttrvalueName(WBXML_CODEPAGE page, WBXML_TAG tag, char** value)
 	}
 }
 
-const char* GetStringTableString(P_WBXML_NODE node, long index)
+static const char* GetStringTableString(P_WBXML_NODE node, long index)
 {
 	/* Find the string table node */
 
@@ -1539,7 +1532,7 @@ const char* GetStringTableString(P_WBXML_NODE node, long index)
 	}
 }
 
-void DumpNode(P_WBXML_NODE node, int indent, BOOL *inattrs, BOOL hascontent, char** value)
+static void DumpNode(P_WBXML_NODE node, int indent, BOOL *inattrs, BOOL hascontent, char** value)
 {
 	P_WBXML_NODE curnode = node->m_child;
 
@@ -1714,7 +1707,7 @@ void DumpNode(P_WBXML_NODE node, int indent, BOOL *inattrs, BOOL hascontent, cha
 	}
 }
 
-void DumpNodes(P_WBXML_INFO buffer)
+static void DumpNodes(P_WBXML_INFO buffer)
 {
 	P_WBXML_NODE curnode = buffer->m_tree;
 	BOOL bAttrsFollow = FALSE;

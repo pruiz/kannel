@@ -117,5 +117,5 @@ int main(int argc, char **argv) {
 	octstr_destroy(address);
 	octstr_destroy(hostname);
 	gwlib_shutdown();
-	exit(0);
+    	return 0;
 }
