@@ -48,6 +48,7 @@ static int unpack_octstr(Octstr **ret, int len, Octstr *os, int *off);
 static char *wsp_state_to_string(WSPState state);
 
 
+
 WSPEvent *wsp_event_create(WSPEventType type) {
 	WSPEvent *event;
 	
@@ -197,7 +198,8 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 		#define STATE_NAME(name)
 		#define ROW(state_name, event, condition, action, next_state) \
 			{ \
-				struct event *e = &current_event->event; \
+				struct event *e; \
+				e = &current_event->event; \
 				if (!done && sm->state == state_name && \
 				    current_event->type == event && \
 				    (condition)) { \

@@ -1,3 +1,56 @@
+Mon Dec 13 16:36:34 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* Makefile: test programs are also removed by "make clean".
+	
+	* gw/wapbox.c: Uses a log file (wapbox.log). Debug messages tweaked.
+	
+	* gw/wtp.c: Minor tweaking and bug fixing. Fixed wtp_next_tid:
+	It shouldn't get the next or current tid as its argument,
+	but use a static variable instead.  wtp_event_destroy is
+	commented out to avoid problems with freeing things too early.
+	wtp_event_dump output tweaked so it's clearer.	All debug messages
+	say they come from WTP now; this helps reading long log files.
+	WTPMachine.tcl is now set. Log file functions now don't get
+	`errno' as their argument when it's not relevant (this cleans
+	up log files quite a bit). New debugging message sprinkled
+	all over the code. Added kludge to wtp_handle_event to avoid
+	problem with pthread_mutex_trylock (see comment). Fixed problem
+	wtp_handle_event so it uses machine->state and event->type
+	(instead of separate variables that need to be kept up to date
+	separately).
+	
+	* gw/wtp.h: Fixed prototype for wtp_tid_next.
+	
+	* gw/wtp_state-decl.h, state LISTEN: Actually sends the WSPEvent
+	it generates to WSP, using wsp_dispatch_event (new function,
+	see below).
+	
+	* gw/wtp_machine-decl.h: Added field `locker' as part of kludge
+	for pthread_mutex_trylock.
+	
+	* gw/wsp.c: Lots of changes. Keeps list of WSPMachines (but
+	doesn't use it yet). WSPEvent dumping improved. Wrote function
+	wsp_dispatch_event to make it simpler for WTP to send events
+	(current version doesn't yet try to find the correct WSPMachine,
+	but always creates a new one). Lots of debugging messages
+	sprinkled throughout the code. Added similar pthread_mutex_trylock
+	kludge as for WTP in wsp_handle_event. Fixed bug in identifying
+	the type of a WSP packet (got 0 and 1 wrong, stupid me).
+	
+	* gw/wsp.h: Added prototype for wsp_dispatch_event and missing
+	#defines for WSPMachine definition.
+	
+	* gw/wsp_events-decl.h: Added event SConnectResponse.
+	
+	* gw/wsp_state-decl.h: NULL_STATE now implemented (only a lot of
+	states more...).
+	
+	* gw/wsp_machine-decl.h: Added new fields for client address
+	and port (for wsp_dispatch_event routing), locker (for kludge)
+	and next (for keeping a list of WSPMachines).
+
+	* gwlib/thread.c: Removed unnecessary empty lines from end.
+	
 1999-07-12 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp.c: fixed locking bugs in functions wtp_machine_* 
