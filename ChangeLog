@@ -1,3 +1,8 @@
+Thu May  4 18:35:24 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Making *DEVELOPMENT* release 0.9. This is not stable, don't use
+	it in production use.
+
 2000-05-04    Kalle Marjola <rpr@wapit.com>
 
 	* gw/bb_core.c, gw/bb_boxc.c, gw/bb_udp.c, gw/bb_smsc.c,

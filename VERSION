@@ -1,4 +1,4 @@
-cvs
+0.9
 This file contains the version number of the gateway.
 It is stored on the first line. Nothing else should
 be there.
@@ -6,3 +6,9 @@ be there.
 Note that if you get this file from CVS, it tends to
 give the latest release version number, not the version
 number for whatever junk happens to be current in CVS.
+
+Starting with version 0.8, version numbers that have an even
+second part are STABLE versions and those with odd ones are
+DEVELOPMENT versions. Thus, 0.8 is stable, 0.9 is development.
+Don't use development versions for production unless you
+really know what you do.
