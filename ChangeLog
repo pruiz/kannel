@@ -1,5 +1,10 @@
 2000-10-03  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smsbox.c: Fixed that we tried to close non-opened
+	http-server-socket, which caused PANIC.
+
+2000-10-03  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bb_smsc.c: Fixed a nice bug that appeared only with severe
 	load. 
 	

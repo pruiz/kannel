@@ -531,7 +531,8 @@ int main(int argc, char **argv)
     info(0, "Smsbox terminating.");
 
     alog_close();
-    http_server_close(http_server_socket);
+    if (http_server_socket)
+	http_server_close(http_server_socket);
     mutex_destroy(socket_mutex);
     urltrans_destroy(translations);
     config_destroy(cfg);
