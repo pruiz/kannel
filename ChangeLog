@@ -1,4 +1,8 @@
 2004-01-20  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/shared.c: added more info to 'version_report_string'.
+      Compiler,Build time, Mysql build with version, running with.
+
+2004-01-20  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bearerbox.[ch], gw/bb_store.c: applied bb-store-fixes.patch that:
       1) remove check for report while loading of store-file (this check has no 
          sense to me because if bearerbox crashed or was down, we want deliver
