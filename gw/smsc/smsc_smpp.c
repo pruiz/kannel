@@ -1426,9 +1426,6 @@ static void io_thread(void *arg)
 
     conn = NULL;
     while (!smpp->quitting) {
-        mutex_lock(smpp->conn->flow_mutex);
-        smpp->conn->connect_time = -1;
-        mutex_unlock(smpp->conn->flow_mutex);
         if (transmitter == 1)
             conn = open_transmitter(smpp);
         else if (transmitter == 2)

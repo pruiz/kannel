@@ -1,3 +1,8 @@
+2004-03-10  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/smsc/smsc_smpp.c: applied patch that removes unneeded setting
+      of online time to -1. Thanks to Nisan Bloch <nisof@amagoblin.co.za>.
+      [Msg-Id: <6.0.0.22.0.20040311193716.03189a90@amagoblin.ialien.co.za>]
+
 2004-03-11 Stipe Tolj  <tolj@wapme-systems.de> 
     * wap/cookies.c: source beauty, no logic change.
 
