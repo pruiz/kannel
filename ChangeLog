@@ -1,4 +1,9 @@
 2004-03-10  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/shared.c: fixed bug that every part of splitted message has
+      the same UUID. Thanks a lot to "Robert Galach" <kanelek@tenbit.pl>.
+      Msg-Id: <00f701c40696$8168da10$320da8c0@tenbit.com>.
+
+2004-03-10  Alexander Malysh  <a.malysh@centrium.de>
     * wap/cookies.c: applied patch from "Mindaugas Riauba" <mindaugas@bi.lt>
       that fixed segfault. Thanks a lot to him.
       Msg-Id: <02c601c40691$c9750310$f20214ac@bite.lt>.

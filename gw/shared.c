@@ -487,6 +487,8 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
             part->sms.msgdata = 
                 extract_msgdata_part_by_coding(temp, split_chars,
                                                max_part_len - nlsuf_len);
+            /* create new id for every part, except last */
+            uuid_generate(part->sms.id);
             last = 0;
         }
         if (header)
