@@ -26,59 +26,76 @@ typedef struct _smsc_wrapper {
 
 static void wrapper_receiver(void *arg)
 {
-#if 0
     Msg 	*msg;
     SMSCConn 	*conn = arg;
     SmscWrapper *wrap = conn->data;
+    double 	sleep = 0.0001;
     int 	ret;
-    int 	sleep = 100;
-#endif
-
-#if 0
+    
     
     /* remove messages from SMSC until we are killed */
-    while(conn->is_killed = 0) {
+    while(conn->is_killed == 0) {
 
+        list_consume(conn->stopped); /* block here if suspended/isolated */
 
-#if 0 /* XXX not this way */
-        list_consume(isolated); /* block here if suspended/isolated */
-#endif
-
-        ret = smsc_get_message(conn->smsc, &msg);
+        ret = smsc_get_message(wrap->smsc, &msg);
         if (ret == -1)
             break;
 
-	        if (ret == 1) {
+	if (ret == 1) {
             debug("bb.sms", 0, "smsc: new message received");
-            sleep = 100;
+            sleep = 0.0001;
+	    bb_smscconn_receive(conn, msg);
         }
         else {
-            usleep(sleep);
+            gwthread_sleep(sleep);
             /* gradually sleep longer and longer times until something starts to
              * happen - this of course reduces response time, but that's better than
              * extensive CPU usage when it is not used
              */
             sleep *= 2;
-            /* Don't let it go over one second, because usleep might not
-             * be able to handle that. */
-            if (sleep >= 1000000)
-                sleep = 999999;
+            if (sleep >= 2.0)
+                sleep = 1.999999;
         }
-    }    
-    list_remove_producer(incoming_sms);
-    list_remove_producer(flow_threads);
+    }
+    conn->is_killed = 1;
 
-#endif    
+    /* this thread is joined at sender */
 }
 
 
 static void wrapper_sender(void *arg)
 {
-#if 0
     Msg 	*msg;
     SMSCConn 	*conn = arg;
     SmscWrapper *wrap = conn->data;
-#endif
+
+    /* send messages to SMSC until we are killed */
+    while(conn->is_killed == 0) {
+
+        list_consume(conn->stopped); /* block here if suspended/isolated */
+
+	if ((msg = list_consume(wrap->outgoing_queue)) == NULL)
+            break;
+
+	/* send here, including multi-send... */
+    }
+
+    conn->is_killed = 1;
+    if (conn->is_stopped) {
+	list_remove_producer(conn->stopped);
+	conn->is_stopped = 0;
+    }
+
+    gwthread_wakeup(wrap->sender_thread);
+    gwthread_join(wrap->sender_thread);
+    
+    list_destroy(wrap->outgoing_queue, NULL);
+    smsc_close(wrap->smsc);
+    gw_free(conn->data);
+
+    conn->status = SMSCCONN_KILLED;
+    bb_smscconn_killed(SMSCCONN_KILLED_SHUTDOWN);
 }
 
 
@@ -91,7 +108,6 @@ static int wrapper_add_msg(SMSCConn *conn, Msg *sms)
     mutex_lock(conn->flow_mutex);
 
     copy = msg_duplicate(sms);
-    
     list_produce(wrap->outgoing_queue, copy);
 
     mutex_unlock(conn->flow_mutex);
@@ -122,7 +138,11 @@ int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
 	goto error;
 
     conn->status = SMSCCONN_ACTIVE;
+    conn->connect_time = time(NULL);
 
+    /* XXX here we could fail things... especialöly if the second one
+     *     fails.. so fix this ASAP */
+    
     if ((wrap->receiver_thread = gwthread_create(wrapper_receiver, conn))==-1)
 	goto error;
 

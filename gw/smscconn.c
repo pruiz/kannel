@@ -27,11 +27,15 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
     conn = gw_malloc(sizeof(SMSCConn));
 
     conn->is_killed = 0;
-    conn->is_stopped = start_as_stopped;
     conn->status = SMSCCONN_STARTING;
     conn->connect_time = -1;
     conn->load = 0;
 
+    conn->stopped = list_create();
+    conn->is_stopped = start_as_stopped;
+    if (start_as_stopped)
+	list_add_producer(conn->stopped);
+    
     conn->received = counter_create();
     conn->sent = counter_create();
     conn->failed = counter_create();
@@ -91,6 +95,7 @@ int smscconn_destroy(SMSCConn *conn)
     octstr_destroy(conn->name);
     octstr_destroy(conn->id);
     mutex_destroy(conn->flow_mutex);
+    list_destroy(conn->stopped, NULL);
     
     gw_free(conn);
     return 0;
@@ -100,9 +105,10 @@ int smscconn_destroy(SMSCConn *conn)
 int smscconn_stop(SMSCConn *conn)
 {
     gw_assert(conn != NULL);
-    if (conn->status == SMSCCONN_KILLED)
+    if (conn->status == SMSCCONN_KILLED || conn->is_stopped || conn->is_killed)
 	return -1;
     conn->is_stopped = 1;
+    list_add_producer(conn->stopped);
     return 0;
 }
 
@@ -110,9 +116,10 @@ int smscconn_stop(SMSCConn *conn)
 void smscconn_start(SMSCConn *conn)
 {
     gw_assert(conn != NULL);
-    if (conn->status == SMSCCONN_KILLED)
+    if (conn->status == SMSCCONN_KILLED || conn->is_stopped == 0)
 	return;
     conn->is_stopped = 0;
+    list_remove_producer(conn->stopped);
 }
 
 

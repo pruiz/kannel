@@ -18,7 +18,7 @@
  * Structure hierarchy:
  *
  * bearerbox has its own smsc struct, in which it helds information
- * about routing information, and then pointer to smscc
+ * about routing information, and then pointer to SMSCConn
  *
  * SMSCConn is internal structure for smscc module. It has a list
  * of common variables like number of sent/received messages and

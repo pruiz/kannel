@@ -30,9 +30,12 @@
     certain things occur:
 
     a) Each SMSC Connection MUST call callback function
-       bb_smscconn_killed when it dies because it was put down
-       via bb_smscconn_shutdown or it simply cannot keep the connection
-       up (wrong password etc.) Reason must be supplied.
+       bb_smscconn_killed when it dies because it was put down earlier
+       with bb_smscconn_shutdown or it simply cannot keep the connection
+       up (wrong password etc.) Reason must be supplied. When killed,
+       SMSC Connection MUST release all memory it has taken EXCEPT for
+       the basic SMSCConn struct, which is laterwards released by the
+       bearerbox. 
 
     b) When SMSC Connection receives a message from SMSC, it must
        create a new Msg from it and call bb_smscconn_received
@@ -45,12 +48,16 @@
        reason
 
  3) SMSC Connection MUST fill up SMSCConn structure as needed to, and is
-    responsible for any concurrency timings.
+    responsible for any concurrency timings. SMSCConn->status MAY NOT be
+    set to KILLED until the connection is really that. Use is_killed to
+    make internally dead.
 
  4) When SMSC Connection shuts down, it MUST call bb_smscconn_send_failed
     for each message not yet sent, and must destroy all memory it has used
-    (SMSCConn struct MUST be left, but data is destroyed). Before destroying
-    data, status MUST be set to SMSCCONN_KILLED
+    (SMSCConn struct MUST be left, but data is destroyed). Before data is
+    being destroyed, the SMSC Connection must set SMSCConn->is_killed to
+    non-zero. After everything is destroyed, it MUST set status to
+    SMSCCONN_KILLED and call callback bb_smscconn_killed with correct reason.
 
  5) Callback bb_smscconn_ready is automatically called by main
     smscconn_create. New implementation MAY NOT call it directly
@@ -62,11 +69,12 @@
 struct smscconn {
     int		 status;	/* see smscconn.h */
     int 	load;	       	/* load factor, 0 = no load */
-    int 	is_stopped;
     int		is_killed;	/* time to die */
     time_t 	connect_time;	/* When connection to SMSC was established */
 
     Mutex 	*flow_mutex;	/* used for thread synchronization */
+    List	*stopped;	/* list-trick for suspend/isolate */ 
+    int 	is_stopped;
 
     /* connection specific counters */
     Counter *received;

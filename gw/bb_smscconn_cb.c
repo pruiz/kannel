@@ -25,6 +25,7 @@
 
 #include "bb_smscconn_cb.h"
 
+
 /* passed from bearerbox core */
 
 extern volatile sig_atomic_t bb_status;
@@ -49,6 +50,9 @@ void bb_smscconn_ready(SMSCConn *conn)
 
 void bb_smscconn_killed(int reason)
 {
+    /* NOTE: after status has been set to KILLED, bearerbox
+     *   is free to release/delete 'conn'
+     */
     list_remove_producer(incoming_sms);
     list_remove_producer(flow_threads);
 }
@@ -100,6 +104,10 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	 octstr_get_cstr(sms->sms.msgdata));
 #endif    
 
+    /*
+     * XXX  WAP on SMS - assembling WDP packets should be somehow here
+     */
+    
     list_produce(incoming_sms, sms);
     counter_increase(incoming_sms_counter);
 

@@ -18,6 +18,14 @@
 void bb_smscconn_ready(SMSCConn *conn);
 
 
+/* called after SMSCConn is shutdown or it kills itself
+ * because of non-recoverable problems. SMSC Connection has already
+ * destroyed all its private data areas and set status as KILLED.
+ * Note that after this has been called the bearerbox can call final
+ * destroy for the connection
+ */
+void bb_smscconn_killed(int reason);
+
 enum {
     SMSCCONN_KILLED_WRONG_PASSWORD = 0,
     SMSCCONN_KILLED_CANNOT_CONNECT,
@@ -25,14 +33,14 @@ enum {
 };
 
 
-/* called after SMSCConn is shut down or it kills itself
- * because of non-recoverable problems. Note that all connection
- * structures are already destroyed. */
-void bb_smscconn_killed(int reason);
-
 /* called after successful sending of Msg 'sms'. This callbacks takes
  * care of 'sms' and MAY NOT be used by caller again. */
 void bb_smscconn_sent(SMSCConn *conn, Msg *sms);
+
+
+/* called after failed sending of 'sms'. Reason is set accordingly.
+ * callback handles 'sms' and MAY NOT be used by caller again */
+void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason);
 
 enum {
     SMSCCONN_FAILED_SHUTDOWN,
@@ -40,9 +48,6 @@ enum {
     SMSCCONN_FAILED_MALFORMED
 };
 
-/* called after failed sending of 'sms'. Reason is set accordingly.
- * callback handles 'sms' and MAY NOT be used by caller again */
-void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason);
 
 /* called when a new message 'sms' received. Callback handles
  * 'sms' and MAY NOT be used by caller again. Return 0 if all went
