@@ -135,6 +135,13 @@ static SMPP_PDU *handle_unbind(ESME *esme, SMPP_PDU *pdu)
 }
 
 
+static SMPP_PDU *handle_enquire_link(ESME *esme, SMPP_PDU *pdu)
+{
+    return smpp_pdu_create(enquire_link_resp, 
+    	    	    	   pdu->u.enquire_link.sequence_number);
+}
+
+
 static SMPP_PDU *handle_enquire_link_resp(ESME *esme, SMPP_PDU *pdu)
 {
     return NULL;
@@ -151,6 +158,7 @@ static struct {
     HANDLER(submit_sm)
     HANDLER(deliver_sm_resp)
     HANDLER(unbind)
+    HANDLER(enquire_link)
     HANDLER(enquire_link_resp)
     #undef HANDLER
 };

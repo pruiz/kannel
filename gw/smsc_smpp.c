@@ -116,6 +116,7 @@ static void smpp_destroy(SMPP *smpp)
 	octstr_destroy(smpp->host);
 	octstr_destroy(smpp->username);
 	octstr_destroy(smpp->password);
+	octstr_destroy(smpp->system_type);
 	octstr_destroy(smpp->address_range);
 	gw_free(smpp);
     }
@@ -554,6 +555,7 @@ static int send_msg_cb(SMSCConn *conn, Msg *msg)
     
     smpp = conn->data;
     list_produce(smpp->msgs_to_send, msg_duplicate(msg));
+    gwthread_wakeup(smpp->transmitter);
     return 0;
 }
 

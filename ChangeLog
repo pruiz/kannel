@@ -1,5 +1,16 @@
 2001-05-03  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsbox.c: Log username (at info level) whenever someone
+	uses the sendsms service. Based on request from Johan du Buson.
+	
+	* gw/smsc_smpp.c: The transmitter thread is woken up as soon as
+	there is something to send. Previously it woke up only when it
+	was time to send the next enquire_link PDU. This was slighly slow.
+	
+	* test/drive_smpp.c: Deal with enquire_link PDUs.
+
+2001-05-03  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsc_smpp.c: Implemented system-type and address-range
 	variables from the config file. In the I/O thread, timeouts
 	are calculated to the next time when enquire_link needs to be

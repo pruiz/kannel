@@ -897,6 +897,7 @@ static int authenticate(const char *login, const char *passwd)
 	return 0;
     }
     pam_end(pamh, PAM_SUCCESS);
+    info(0, "/sendsms used by <%s>", login);
     return 1;
 }
 
@@ -1064,6 +1065,8 @@ static URLTranslation *authorise_username(Octstr *username, Octstr *password,
 	    return NULL;
         }
     }
+
+    info(0, "/sendsms used by <%s>", octstr_get_cstr(username));
     return t;
 }
 
