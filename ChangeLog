@@ -1,5 +1,8 @@
 2002-08-03  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_store.c: fixed a minor compiler warning
+    * gw/bb_smscconn.c: fixed a possible segmentation fault bug in 
+      smsc2_status while accessing the SMSCConn structure.
+    * gw/smsc_smpp.c: disallow start if no system-type is specified
 
 2002-08-02 Harrie Hazewinkel <harrie@mod-snmp.com>
     * Added a '--with-cflags=CFLAGS' and '--with-libs=LIBS' configuration
