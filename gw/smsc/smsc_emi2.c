@@ -56,6 +56,7 @@ typedef struct privdata {
     int		keepalive; 	/* Seconds to send a Keepalive Command (OT=31) */
     int		flowcontrol;	/* 0=Windowing, 1=Stop-and-Wait */
     int		waitack;	/* Seconds to wait to ack */
+    int		waitack_expire;	/* What to do on waitack expire */
     int		throughput;	/* Messages per second */
     int		window;		/* In windowed flow-control, the window size */
     int         can_write;      /* write = 1, read = 0, for stop-and-wait flow control */
@@ -1107,7 +1108,7 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
     return 0;
 }
 
-static void emi2_idleprocessing(SMSCConn *conn)
+static void emi2_idleprocessing(SMSCConn *conn, Connection **server)
 {
     time_t current_time;
     int i;
@@ -1121,21 +1122,42 @@ static void emi2_idleprocessing(SMSCConn *conn)
     
     if (PRIVDATA(conn)->unacked && (current_time > (PRIVDATA(conn)->check_time + 30))) {
 	PRIVDATA(conn)->check_time = current_time;
-	for (i = 0; i < EMI2_MAX_TRN; i++) {
+        for (i = 0; i < PRIVDATA(conn)->window; i++) {
 	    if (SLOTBUSY(conn,i)
 		&& PRIVDATA(conn)->slots[i].sendtime < (current_time - PRIVDATA(conn)->waitack)) {
+
+                if (PRIVDATA(conn)->slots[i].sendtype == 51) {
+                    if (PRIVDATA(conn)->waitack_expire == 0x00) {
+                        // 0x00 - disconnect/reconnect
+                        warning(0, "EMI2[%s]: received neither ACK nor NACK for message %d "
+                            "in %d seconds, disconnecting and reconnection",
+                            octstr_get_cstr(privdata->name), i, PRIVDATA(conn)->waitack);
 		PRIVDATA(conn)->slots[i].sendtime = 0;
 		PRIVDATA(conn)->unacked--;
-		if (PRIVDATA(conn)->slots[i].sendtype == 51) {
+                        info(0, "EMI2[%s]: closing connection.",
+                                  octstr_get_cstr(privdata->name));
+                        conn_destroy(*server);
+                        *server = NULL;
+                        break;
+                    } else if (PRIVDATA(conn)->waitack_expire == 0x01) {
+                        // 0x01 - resend
 		    warning(0, "EMI2[%s]: received neither ACK nor NACK for message %d " 
 			    "in %d seconds, resending message", octstr_get_cstr(privdata->name),
 			    i, PRIVDATA(conn)->waitack);
 		    list_produce(PRIVDATA(conn)->outgoing_queue,
 				 PRIVDATA(conn)->slots[i].sendmsg);
+                        PRIVDATA(conn)->slots[i].sendtime = 0;
+                        PRIVDATA(conn)->unacked--;
 		    if (PRIVDATA(conn)->flowcontrol) PRIVDATA(conn)->can_write=1;
 		    /* Wake up this same thread to send again
 		     * (simpler than avoiding sleep) */
 		    gwthread_wakeup(PRIVDATA(conn)->sender_thread);
+                    } else if (PRIVDATA(conn)->waitack_expire == 0x03) {
+                        // 0x02 - carry on waiting
+                           warning(0, "EMI2[%s]: received neither ACK nor NACK for message %d "
+                                "in %d seconds, carrying on waiting", octstr_get_cstr(privdata->name),
+                                i, PRIVDATA(conn)->waitack);
+                    }
 		} else if (PRIVDATA(conn)->slots[i].sendtype == 31) {
 		    warning(0, "EMI2[%s]: Alert (operation 31) was not "
 			    "ACKed within %d seconds", octstr_get_cstr(privdata->name),
@@ -1231,7 +1253,7 @@ static void emi2_send_loop(SMSCConn *conn, Connection **server)
             return; /* reopen the connection */
         }
 	
-	emi2_idleprocessing (conn);
+	emi2_idleprocessing (conn, server);
 	emi2_idletimeout_handling (conn, server);
 
 	if (PRIVDATA(conn)->shutdown && (PRIVDATA(conn)->unacked == 0)) {
@@ -1510,7 +1532,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     PrivData *privdata;
     Octstr *allow_ip, *deny_ip, *host, *alt_host;
     long portno, our_port, keepalive, flowcontrol, waitack, throughput, 
-         idle_timeout, alt_portno, alt_charset; 
+         idle_timeout, alt_portno, alt_charset, waitack_expire;
     long window;
     	/* has to be long because of cfg_get_integer */
     int i;
@@ -1651,6 +1673,16 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 	privdata->waitack = waitack;
     if (privdata->waitack < 30 ) {
 	error(0, "EMI2[%s]: 'wait-ack' invalid in emi2 configuration.",
+	      octstr_get_cstr(privdata->name));
+	goto error;
+    }
+
+    if (cfg_get_integer(&waitack_expire, cfg, octstr_imm("wait-ack-expire")) < 0)
+	privdata->waitack_expire = 0;
+    else
+	privdata->waitack_expire = waitack_expire;
+    if (privdata->waitack_expire >3  ) {
+	error(0, "EMI2[%s]: 'wait-ack-expire' invalid in emi2 configuration.",
 	      octstr_get_cstr(privdata->name));
 	goto error;
     }
