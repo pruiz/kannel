@@ -103,18 +103,21 @@ error_reporting(0);
         /* get the status.xml URL of one config */
         $url = $config["base_url"]."/status.xml?password=".$config["status_passwd"];
 
+        $status[$inst] = "";
+
         /* open the file description to the URL */
         if (($fp = fopen($url, "r"))) {
             echo "<span class=green>($inst) (".$config["name"].") <b>$url</b></span> <br /> \n";
+
+            /* read the XML input */
+            while (!feof($fp)) {  
+                $status[$inst] .= fread($fp, 200000);
+            }
+
         } else {
             echo "<span class=red>($inst) (".$config["name"].") <b>$url</b></span> <br /> \n";
         }     
         
-        /* read the XML input */
-        $status[$inst] = "";
-        while (!feof($fp)) {  
-            $status[$inst] .= fread($fp, 200000);
-        }
         fclose($fp);
 
         /* get the status of this bearerbox */
@@ -294,9 +297,11 @@ error_reporting(0);
             $x = XPathValue("gateway/boxes", $status[$inst]);
             /* drop an error in case we have no boxes connected */
             if (empty($x)) {
-					 echo "<tr><td valign=top colspan=4 class=text>\n";
+                        echo "<tr><td valign=top align=center class=text>\n";
+                echo "($inst)";
+                        echo "</td><td valign=top align=left colspan=4 class=text>\n";
                 echo "<span class=red><b>no boxes connected to this bearerbox!</b></span> <br /> \n";
-					 echo "</td></tr>\n";
+                        echo "</td></tr>\n";
             } else {
                 /* loop the boxes */          
                 $i = 0;
@@ -357,9 +362,15 @@ error_reporting(0);
 
         $sum = 0;
         foreach ($configs as $inst => $config) {
-            $links[$inst] = XPathValue("gateway/smscs/count", $status[$inst]);
-            $sum += $links[$inst];
-            echo "($inst) ".$links[$inst]." links <br />\n";
+            echo "($inst) ";
+            if (!empty($status[$inst])) {
+                $links[$inst] = XPathValue("gateway/smscs/count", $status[$inst]);
+                $sum += $links[$inst];
+                echo $links[$inst]." links";
+            } else {
+                echo "none";
+            }
+            echo "<br />\n";
         }
         echo "<hr size=1>\n";
         echo "(all) $sum links <br />\n";
@@ -371,10 +382,14 @@ error_reporting(0);
         $sum = 0;
         echo "<span class=green>";
         foreach ($configs as $inst => $config) {
-            $x = check_status("online", $status[$inst]);
-            $sum += $x;
             echo "($inst) ";
-            echo ($links[$inst] == $x ? "<b>all</b> links" : "$x links");
+            if (!empty($status[$inst])) {
+                $x = check_status("online", $status[$inst]);
+                $sum += $x;
+                echo ($links[$inst] == $x ? "<b>all</b> links" : "$x links");
+            } else {
+                echo "none";
+            }
             echo "<br />\n";
         }
         echo "<hr size=1>\n";

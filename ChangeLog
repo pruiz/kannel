@@ -1,3 +1,9 @@
+2004-12-23  Alexander Malysh <amalysh at kannel.org>
+    * contrib/kannel-monitor/index.php: applied patch that should fix
+      a bug when dead bearerbox causes monitor to freeze.
+      Thanks to Agastiya S. Mohammad <egi at sinaptix.com>.
+      [Msg-Id: <1103539890.3803.309.camel@localhost.localdomain>]
+
 2004-12-15    <kmarjola@enpocket.com>
 
     * gw/bb_store.c: removed -Wall warnings
