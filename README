@@ -48,7 +48,7 @@ Documentation
 Getting the gateway sources
 
 	You can download the gateway sources from 
-	http://www.wapgateway.org/sourcecode.shtml.
+	http://www.kannel.org/sourcecode.shtml.
 
 Compiling and installing the gateway
 
@@ -132,16 +132,16 @@ Feedback and more information
 	If you have trouble with this software, don't hesitate to ask
 	for help at
 	
-		feedback@wapgateway.org
+		feedback@kannel.org
 		
 	If you modify the code (whether to fix bugs or add features), and
 	want to have your changes included in the official version, send
 	them also to the above address.
 	
 	You may also want to subscribe the announce and devel lists at
-	wapgateway.org: send e-mail to
+	kannel.org: send e-mail to
 	
-		announce-subscribe@wapgateway.org
-		devel-subscribe@wapgateway.org
+		announce-subscribe@kannel.org
+		devel-subscribe@kannel.org
 
 	(You'll get further instructions via automatic reply mails.)

@@ -1,3 +1,12 @@
+Fri Jan 21 19:05:35 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Making release 0.4.
+
+	* The gateway is now called Kannel. Whee!
+
+	* Changed wapgateway.org to kannel.org, since the name of the
+	domain is changing.
+
 Fri Jan 21 18:36:33 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* configure.in, configure, Makefile.in, README.docbook: Added

@@ -26,14 +26,9 @@
 			<jobtitle>Gateway architect</jobtitle>
 			<orgname>WapIT Ltd</orgname>
 			<address>
-			<street>Atomitie 5 C</street>
-			<postcode>Fin-00370 Helsinki</postcode>
-			<country>Finland</country>
-			<phone>GSM: +358-50 300 0019</phone>
-			<fax>FAX: +358-9 694 7007</fax>
 			<email>liw@wapit.com</email>
 			<otheraddr>http://www.wapit.com</otheraddr>
-			<otheraddr>http://www.wapgateway.org</otheraddr>
+			<otheraddr>http://www.kannel.org</otheraddr>
 			</address>
 		</affiliation>
 	</author>

@@ -1,11 +1,16 @@
-NEWS about Open Source WAP and SMS Gateway version 0.3
+NEWS about Open Source WAP and SMS Gateway version 0.4
 
-Change summary from version 0.2.2:
+Change summary from version 0.3:
 
-* fakewap test program, by Antti Saarenheimo, first prototype.
+* Gateway now has a name: Kannel.
 
-* WMLScript compiler, by Markku Rossi.
+* DocBook is disabled if not found by configure or using --without-docs
+  option to configure.
 
-* Using WML compiler as an external program, due to bugs.
+* Formatted documentation added to distribution, though not to CVS.
 
-* Various bug fixes, see ChangeLog for details.
+* Bison output files added to CVS and distribution.
+
+* Initial code for decoding headers during WAP sessions.
+
+* Bug fixes.

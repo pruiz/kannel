@@ -23,7 +23,7 @@ fi
 tar -c -z -f $base.tar.gz $base
 zip -9qr $base.zip $base/*
 
-(cd $docs && ./configure --enable-docs && make docs)
+(cd $base && ./configure --enable-docs >/dev/null && make -s docs)
 
 cp -a $base/doc/arch arch-$version
 tar -c -z -f arch-$version.tar.gz arch-$version/*

@@ -1,3 +1,5 @@
+NOTE: This is not up to date. --liw
+
 Steps to follow when making a release of the gateway:
 
 	* Prepare the software for release.
