@@ -6,20 +6,15 @@
 
 set -e
 
-times=1000
+times=100000
 port=8080
 
-if true
-then
 rm -f bench_http.log
 test/test_http_server -v 4 -l bench_http.log -p $port &
-pid=$!
 sleep 1
-
 test/test_http -q -v 2 -r $times http://localhost:$port/foo
 test/test_http -q -v 2 http://localhost:$port/quit
 wait
-fi
 
 awk '/DEBUG: Request for/ { print $1, $2 }' bench_http.log  |
 test/timestamp | uniq -c | 

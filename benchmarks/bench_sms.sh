@@ -4,7 +4,7 @@
 
 set -e
 
-times=100
+times=100000
 
 rm -f bench_sms_smsc.log bench_sms_bb.log bench_sms_sb.log
 

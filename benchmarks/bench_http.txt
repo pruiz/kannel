@@ -3,7 +3,7 @@
 
 <para>This benchmark makes #TIMES# HTTP requests using the Kannel HTTP
 client and server code, specifically, the <command>test_http</command>
-client and the <command>test_http_server</command> server.
+client and the <command>test_http_server</command> server.</para>
 
 <figure>
 <title>HTTP requests per second during benchmark</title>

@@ -1,3 +1,22 @@
+2001-03-05  Lars Wirzenius  <liw@iki.fi>
+
+	* benchmarks/bench_http.sh: Removed unnecessary cruft. Set number
+	of HTTP requests made to 100 000 instead of 1000.
+	
+	* benchmarks/bench_http.txt, benchmarks/bench_sms.txt,
+	benchmarks/report-begin.txt: Added missing </para>.
+	
+	* benchmarks/bench_sms.sh: Set number of requests to 100 000
+	instead of 1000.
+	
+	* gwlib/http.c: Disabled re-use of TCP connections for HTTP
+	transactions. There is a bug somewhere that makes this crash.
+	
+	* test/test_http.c: Allow client to queue multiple requests into
+	a queue (up to MAX_IN_QUEUE #define in test_http.c), instead of
+	doing the next one only after the response to the previous one
+	has finished.
+	
 2001-03-01  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsbox.c: Added a temporary half-fix for a bug that could

@@ -12,6 +12,7 @@
 #include "gwlib/http.h"
 
 #define MAX_THREADS 1024
+#define MAX_IN_QUEUE 128
 
 static Counter *counter = NULL;
 static long max_requests = 1;
@@ -21,14 +22,67 @@ static int print_body = 1;
 static Octstr *auth_username = NULL;
 static Octstr *auth_password = NULL;
 
+
+static void start_request(HTTPCaller *caller, List *reqh, long i)
+{
+    Octstr *url;
+    long id;
+
+    if ((i % 1000) == 0)
+	info(0, "Starting fetch %ld", i);
+    url = octstr_create(urls[i % num_urls]);
+    id = http_start_request(caller, url, reqh, NULL, 0);
+    debug("", 0, "Started request %ld", id);
+    octstr_destroy(url);
+}
+
+
+static int receive_reply(HTTPCaller *caller)
+{
+    long id;
+    int ret;
+    Octstr *final_url;
+    List *replyh;
+    Octstr *replyb;
+    Octstr *type;
+    Octstr *charset;
+    Octstr *os;
+
+    id = http_receive_result(caller, &ret, &final_url, &replyh, &replyb);
+    octstr_destroy(final_url);
+    if (id == -1 || ret == -1) {
+	error(0, "http GET failed");
+	return -1;
+    }
+    debug("", 0, "Done with request %ld", id);
+
+    http_header_get_content_type(replyh, &type, &charset);
+    debug("", 0, "Content-type is <%s>, charset is <%s>",
+	  octstr_get_cstr(type), 
+	  octstr_get_cstr(charset));
+    octstr_destroy(type);
+    octstr_destroy(charset);
+    debug("", 0, "Reply headers:");
+    while ((os = list_extract_first(replyh)) != NULL) {
+	octstr_dump(os, 1);
+	octstr_destroy(os);
+    }
+    list_destroy(replyh, NULL);
+    if (print_body)
+	octstr_print(stdout, replyb);
+    octstr_destroy(replyb);
+
+    return 0;
+}
+
+
 static void client_thread(void *arg) 
 {
-    int ret;
-    Octstr *url, *final_url, *replyb, *os, *type, *charset;
-    List *reqh, *replyh;
-    long i, id, succeeded, failed;
+    List *reqh;
+    long i, succeeded, failed;
     HTTPCaller *caller;
     char buf[1024];
+    long in_queue;
 
     caller = arg;
     succeeded = 0;
@@ -38,38 +92,38 @@ static void client_thread(void *arg)
     http_header_add(reqh, "X-Thread", buf);
     if (auth_username != NULL && auth_password != NULL)
 	http_add_basic_auth(reqh, auth_username, auth_password);
-    while ((i = counter_increase(counter)) < max_requests) {
-	if ((i % 1000) == 0)
-	    info(0, "Starting fetch %ld", i);
-	url = octstr_create(urls[i % num_urls]);
-	id = http_start_request(caller, url, reqh, NULL, 0);
-	debug("", 0, "Started request %ld", id);
-	id = http_receive_result(caller, &ret, &final_url, &replyh, &replyb);
-	octstr_destroy(final_url);
-	debug("", 0, "Done with reqest %ld", id);
-	if (id == -1 || ret == -1) {
-	    ++failed;
-	    error(0, "http GET failed");
-	} else {
-	    ++succeeded;
-	    http_header_get_content_type(replyh, &type, &charset);
-	    debug("", 0, "Content-type is <%s>, charset is <%s>",
-		  octstr_get_cstr(type), 
-		  octstr_get_cstr(charset));
-	    octstr_destroy(type);
-	    octstr_destroy(charset);
-	    debug("", 0, "Reply headers:");
-	    while ((os = list_extract_first(replyh)) != NULL) {
-		octstr_dump(os, 1);
-		octstr_destroy(os);
-	    }
-	    list_destroy(replyh, NULL);
-	    if (print_body)
-		octstr_print(stdout, replyb);
-	octstr_destroy(replyb);
+
+    in_queue = 0;
+    
+    for (;;) {
+	while (in_queue < MAX_IN_QUEUE) {
+	    i = counter_increase(counter);
+	    if (i >= max_requests)
+	    	goto receive_rest;
+	    start_request(caller, reqh, i);
+#if 0
+	    gwthread_sleep(0.1);
+#endif
+	    ++in_queue;
 	}
-	octstr_destroy(url);
+	while (in_queue >= MAX_IN_QUEUE) {
+	    if (receive_reply(caller) == -1)
+	    	++failed;
+    	    else
+	    	++succeeded;
+	    --in_queue;
+	}
     }
+    
+receive_rest:
+    while (in_queue > 0) {
+	if (receive_reply(caller) == -1)
+	    ++failed;
+	else
+	    ++succeeded;
+    	--in_queue;
+    }
+
     http_destroy_headers(reqh);
     http_caller_destroy(caller);
     info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);

@@ -3,6 +3,7 @@
 
 <para>This benchmark sends #TIMES# SMS requests using the SMPP protocol.
 Each SMS request results in one HTTP request, and one SMS response message.
+</para>
 
 <figure>
 <title>SMPP requests per second during benchmark</title>

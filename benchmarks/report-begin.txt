@@ -39,6 +39,6 @@ marketing people make funny sounds.</para>
 <title>System information</title>
 
 <para>This benchmark was run on &timestamp; a system identified as
-<literal>#UNAME#</literal>.
+<literal>#UNAME#</literal>.</para>
 
 </sect1>

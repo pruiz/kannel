@@ -768,9 +768,11 @@ static void handle_transaction(Connection *conn, void *data)
 	trans->persistent = 0;
     octstr_destroy(h);
 
+#if 0 /* XXX re-using connections seems to be buggy at high load --liw */
     if (trans->persistent)
         conn_pool_put(trans->conn, trans->host, trans->port);
     else
+#endif
     	conn_destroy(trans->conn);
 
     trans->conn = NULL;
@@ -1518,12 +1520,16 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     	continue;
 #endif
 
+#if 1 /* XXX re-using the connection seems to be buggy at high load --liw */
+    client_destroy(client);
+#else
     if (client->use_version_1_0)
     	client_destroy(client);
     else {
 	client_reset(client);
 	conn_register(client->conn, server_fdset, receive_request, client);
     }
+#endif
 }
 
 
