@@ -1,3 +1,25 @@
+2002-01-25 Aarno Syvänen <aarno@wiral.com>
+    * gw/ota_compiler.[ch]: Added compiler for XML OTA configuration documents
+    * test/test_ota.c: Added a test program for it
+    * gw/settings.dtd: Added a DTD for OTA compiler
+    * test/test_http.c: Better debugging. Added an option for reading the 
+      test message from a file; usefull when it contains lots of unsafe
+      characters
+    * gwlib/charset.c: In function charset_to_utf8:  If the original charset
+      is utf8, return immediately (to still an annoying error message)
+    * gw/wap_push_pap_compiler.c: Remove one use of string library (we should
+      use octstr instead). Updated the interface comment.
+    * test/test_pap.c: Added test program for pap compiler
+    * gwlib/cfg.def: Added configuration variable no_sep. Some network 
+      programs misshandle escaped characters.
+    * gw/smsc_http.c: Implement no_sep option: URL and text as a numeric hex
+      string
+    * gw/smsbox.c: Dump a message with UDH, too. Added calling of the ota 
+      compiler.
+    * doc/userguide/userguide.xml: Updated push and OTA documentation
+    * test/test_ppg.c: -H and -r options work again. Added option -k, for
+      sending Connection header.
+	
 2002-01-23  Stipe Tolj  <tolj@wapme-systems.de>
     * configure.in: added another docbook.dsl path to test for, there are
       for some BSD systems, reported by "Bernino Lind" <lind@catpipe.net>
