@@ -1,3 +1,8 @@
+Thu Jan 27 13:43:12 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c: Don't set client address to NULL, just set client
+	port to -1, when disabling a session.
+
 Thu Jan 27 13:40:44 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* configure.in, configure, README: Added check for zlib and

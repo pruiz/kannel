@@ -38,7 +38,8 @@ Getting the gateway sources
 	http://www.kannel.org/sourcecode.shtml.
 	
 	Note that you also need the Gnome-xml library from
-	http://xmlsoft.org/xml.html.
+	http://xmlsoft.org/xml.html. That one probably requires zlib,
+	depending on how it is configured.
 
 Compiling and installing the gateway
 

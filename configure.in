@@ -32,6 +32,7 @@ AC_CHECK_LIB(m, log)
 AC_CHECK_LIB(socket, accept)
 AC_CHECK_LIB(nsl, inet_ntoa)
 AC_CHECK_LIB(pthread, pthread_create)
+AC_CHECK_LIB(z, gzopen)
 AC_CHECK_LIB(xml, xmlParseMemory)
 AC_SEARCH_LIBS(inet_aton, c resolv)
 
