@@ -283,6 +283,9 @@ Header files
 
 		#endif
 
+	If your code is not in gwlib, #include "gwlib/gwlib.h", but
+	nothing else from gwlib.
+
 Use of #if, #ifdef, etc
 
 	Try to avoid using the various forms of #if for portability
