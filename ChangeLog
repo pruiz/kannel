@@ -1,3 +1,18 @@
+2000-05-03  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wsp_http.c: Added the charset support here too. Now it's still 
+	needed in html2.
+
+	* test/wml_tester.c: Rewrote most of the main-function, started 
+	using getopt for options. The charset stuff was added too.
+
+	* gw/wml_definitions.h: The pile of definitions and static arrays 
+	just grew too huge. Added an own file for them.
+
+	* gw/wml_compiler.[ch] : The WML compiler now recognises the 
+	most common character sets from ISO-8859-series(1-9) and UTF-8.
+	It is now easy to add new 8-bit character sets into it.
+
 2000-05-03  Richard Braakman  <dark@wapit.com>
 
 	* inet_aton is not used anywhere.  Removed definition from
