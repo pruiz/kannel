@@ -1,3 +1,17 @@
+2002-08-11 Harrie Hazewinkel <harrie@mod-snmp.com>
+    * gwlib.octstr.c: graceful handling of the Octstr* when it is
+      NULL, instead of panicing.
+      Oded Arbel <odeda@m-wise.com>
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B296EEF@exchange.m-wise.com>]
+    * Converted all doc/ChangeLog-* file to have a UNIX line ending and
+      not the '^M'.
+    * gw/smsc/smsc_smpp.c, gw/smsc/smpp_pdu.h, gw/smsc/smpp_pdu.def:
+      Make sure that the address length going into the PDU is not longer
+      then the maximum length. If the address is longer it causes a panic.
+      Oded Arbel <odeda@m-wise.com>
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B296EEF@exchange.m-wise.com>]
+      
+
 2002-08-10  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/list.c: fixed a mutex_destroy() problem, because list is still 
       locked while mutex is destroyed.
