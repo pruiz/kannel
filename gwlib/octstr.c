@@ -320,6 +320,15 @@ int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, long n) {
 }
 
 
+int octstr_str_compare (Octstr *ostr, char *str){
+	seems_valid(ostr);
+
+        if (str == NULL) 
+	        return -1;
+
+	return strcmp(ostr->data, str);
+}
+
 
 int octstr_search_char(Octstr *ostr, int ch) {
 	return octstr_search_char_from(ostr, ch, 0);

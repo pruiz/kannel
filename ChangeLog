@@ -1,3 +1,9 @@
+2000-03-30  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: Memory leaks stiched.
+
+	* gwlib/octstr.[ch]: octstr_str_compare added.
+
 2000-03-30    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/cgi.*: changed argument list value into Octstr to allow

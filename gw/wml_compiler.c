@@ -14,7 +14,6 @@
 
 
 
-#include <assert.h>
 #include <time.h>
 #include <ctype.h>
 #include <unistd.h>
@@ -58,7 +57,7 @@
 
 #define STR_END     0x00
 
-#define CHILDS_BIT  0x40
+#define CHILD_BIT   0x40
 #define ATTR_BIT    0x80
 
 
@@ -330,6 +329,7 @@ int wml_compile(Octstr *wml_text,
 {
   int ret = 0;
   size_t size;
+  xmlDocPtr pDoc = NULL;
   char *wml_c_text;
 
   *wml_binary = octstr_create_empty();
@@ -359,11 +359,15 @@ int wml_compile(Octstr *wml_text,
 #if HAVE_LIBXML_1_8_6
   /* XXX this seems to work around a bug in libxml, which is even in
      1.8.6. --liw */
-  ret = parse_document(xmlParseMemory(wml_c_text, size + 1), wml_binary);
+  pDoc = xmlParseMemory(wml_c_text, size + 1);
 #else
   /* XXX this should be the correct version. --liw */
-  ret = parse_document(xmlParseMemory(wml_c_text, size), wml_binary);
+  pDoc = xmlParseMemory(wml_c_text, size);
 #endif
+
+  ret = parse_document(pDoc, wml_binary);
+  if (pDoc) 
+    xmlFreeDoc (pDoc);
 
   return ret;
 }
@@ -513,7 +517,7 @@ static int parse_element(xmlNodePtr node, Octstr **wbxml_string)
 
   for (i = 0; wml_elements[i].element != NULL; i++)
     {
-      if (octstr_compare(name, octstr_create(wml_elements[i].element)) == 0)
+      if (octstr_str_compare(name, wml_elements[i].element) == 0)
 	{
 	  wbxml_hex = wml_elements[i].token;
 	  if ((status_bits = element_check_content(node)) > 0)
@@ -521,12 +525,12 @@ static int parse_element(xmlNodePtr node, Octstr **wbxml_string)
 	      wbxml_hex = wbxml_hex | status_bits;
 	      /* If this node has children, the end tag must be added after 
 		 them. */
-	      if ((status_bits & 0x40) == 0x40)
+	      if ((status_bits & CHILD_BIT) == CHILD_BIT)
 		add_end_tag = 1;
 	    }
 	  if (output_char(wbxml_hex, wbxml_string) != 0)
 	    {
-	      error(0, "WML compiler: could not output WML tag.");	      
+	      error(0, "WML compiler: could not output WML tag.");
 	      return -1;
 	    }
 	  break;
@@ -571,7 +575,7 @@ static unsigned char element_check_content(xmlNodePtr node)
   unsigned char status_bits = 0x00;
 
   if (node->childs != NULL)
-    status_bits = CHILDS_BIT;
+    status_bits = CHILD_BIT;
 
   if (node->properties != NULL)
     status_bits = status_bits | ATTR_BIT;
@@ -591,10 +595,11 @@ static unsigned char element_check_content(xmlNodePtr node)
 
 static int parse_attribute(xmlAttrPtr attr, Octstr **wbxml_string)
 {
-  int i, j, status = 0, coded_length = 0;
+  int i, j, status = 0;
+  int coded_length = 0;
   unsigned char wbxml_hex = 0x00;
-  Octstr *attribute = NULL, *value = NULL, *attr_i = NULL, *attr_j = NULL,
-    *val_j = NULL;
+  Octstr *attribute = NULL, *value = NULL, *attr_i = NULL, *val_j = NULL, 
+    *p = NULL;
 
   attribute = octstr_create(attr->name);
   if (attr->val != NULL)
@@ -614,9 +619,7 @@ static int parse_attribute(xmlAttrPtr attr, Octstr **wbxml_string)
 	     the code page. */
 
 	  for (j = i; 
-	       octstr_compare(attr_i,
-			      (attr_j = 
-			       octstr_create(wml_attributes[j].attribute)))
+	       octstr_str_compare(attr_i, wml_attributes[j].attribute)
 		 == 0; j++)
 	    {
 	      if (wml_attributes[j].a_value != NULL && value != NULL)	      
@@ -641,8 +644,8 @@ static int parse_attribute(xmlAttrPtr attr, Octstr **wbxml_string)
 		  wbxml_hex = wml_attributes[i].token;
 		  coded_length = 0;
 		}
-	      octstr_destroy(attr_j);	      
 	    }
+	  octstr_destroy(attr_i);      
 	  break;
 	}
       octstr_destroy(attr_i);      
@@ -658,24 +661,23 @@ static int parse_attribute(xmlAttrPtr attr, Octstr **wbxml_string)
    * The rest of the attribute is coded as a inline string. Not as 
    * compressed as it could be... This will be enchanced later.
    */
-  if (value != NULL && coded_length < octstr_len(value))
+  if (value != NULL && coded_length < (int) octstr_len(value))
     {
       if (coded_length == 0) 
 	{
-	  if ((status = parse_octet_string(octstr_create(attr->val->content), 
-					   wbxml_string)) 
-	      != 0)
+	  p = octstr_create(attr->val->content); 
+	  if ((status = parse_octet_string(p, wbxml_string)) != 0)
 	    error(0, 
 		  "WML compiler: could not output attribute value as a string.");
+	  octstr_destroy(p);
 	}
       else
 	{
-	  if ((status = parse_octet_string(octstr_copy(value, coded_length, 
-						       octstr_len(value) -
-						       coded_length), 
-					   wbxml_string)) != 0)
+	  p = octstr_copy(value, coded_length, octstr_len(value) - coded_length); 
+	  if ((status = parse_octet_string(p, wbxml_string)) != 0)
 	    error(0, 
 		  "WML compiler: could not output attribute value as a string.");
+	  octstr_destroy(p);
 	}
     }
 
@@ -775,6 +777,7 @@ static int parse_variable(Octstr *text, int start, Octstr **output,
 	  return -1;
     }
 
+  octstr_destroy (variable);
   return ret;
 }
 
@@ -792,8 +795,8 @@ static Octstr *get_variable(Octstr *text, int start)
   long end;
   int ch;
 
-  assert(text != NULL);
-  assert(start >= 0 && start <= octstr_len(text));
+  gw_assert(text != NULL);
+  gw_assert(start >= 0 && start <= (int) octstr_len(text));
 
   ch = octstr_get_char(text, start);
 
@@ -821,7 +824,7 @@ static Octstr *get_variable(Octstr *text, int start)
       var = octstr_copy(text, start, end - start);
     }
 
-  assert(var != NULL);
+  gw_assert(var != NULL);
 
   return var;
 }
@@ -838,8 +841,7 @@ static var_esc_t check_variable_syntax(Octstr *variable)
   Octstr *escaped, *noesc, *unesc, *escape;
   char *buf;
   char ch;
-  int i;
-  int pos, len;
+  int pos, len, i;
   var_esc_t ret;
 
   if ((pos = octstr_search_char(variable, ':')) > 0)
@@ -892,7 +894,7 @@ static var_esc_t check_variable_syntax(Octstr *variable)
       return FAILED;
     }
   else
-    for (i = 1; i < octstr_len(variable); i++)
+    for (i = 1; i < (int) octstr_len(variable); i++)
       if (!isalnum((int)(ch = octstr_get_char(variable, 0))) && ch != '_')
 	{
 	  error(0, "WML compiler: syntax error in variable.");
@@ -991,6 +993,7 @@ static int parse_octet_string(Octstr *ostr, Octstr **wbxml_string)
       return -1;
   
   octstr_destroy(output);
+  octstr_destroy(var);
   
   return 0;
 }

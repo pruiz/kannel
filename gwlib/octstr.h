@@ -147,6 +147,13 @@ int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, long n);
 
 
 /*
+ * Same as octstr_compare, but compares the content of the octet string to 
+ * a C string.
+ */
+int octstr_str_compare(Octstr *ostr1, char *str);
+
+
+/*
  * Write contents of octet string to a file. Return -1 for error, 0 for OK.
  */
 int octstr_print(FILE *f, Octstr *ostr);
