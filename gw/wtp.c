@@ -527,6 +527,10 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 	  debug(0, "wtp_handle_event: state is %s, event is %s.",
 	  		name_state(machine->state),
 	  		name_event(event->type));
+#if 0
+	  debug(0, "wtp_handle_event: event details:");
+	  wtp_event_dump(event);
+#endif
 	  #define STATE_NAME(state)
 	  #define ROW(wtp_state, event_type, condition, action, next_state) \
 		  if (machine->state == wtp_state && \

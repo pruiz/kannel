@@ -96,6 +96,7 @@ ROW(RESULT_RESP_WAIT,
     {
      current_primitive=TRResultConfirmation;
      wsp_event=pack_wsp_event(current_primitive, event, machine);
+     wsp_dispatch_event(machine, wsp_event);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -106,14 +107,10 @@ ROW(RESULT_RESP_WAIT,
     {
      current_primitive=TRAbortIndication;
      wsp_event=pack_wsp_event(current_primitive, event, machine);
+     /* XXX wsp_dispatch_event(machine, wsp_event); */
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
 
 #undef ROW
 #undef STATE_NAME
-
-
-
-
-
