@@ -73,6 +73,7 @@ typedef struct {
   unsigned char string_table_length;
   List *string_table;
   Octstr *wbxml_string;
+  unsigned char *utf8map;
 } wml_binary_t;
 
 /*
@@ -110,7 +111,7 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml);
 static int parse_attr_value(Octstr *attr_value, wml_attr_value_t *tokens, 
 			    wml_binary_t **wbxml);
 static int parse_text(xmlNodePtr node, wml_binary_t **wbxml);
-static int parse_charset(Octstr *charset);
+static int parse_charset(Octstr *charset, wml_binary_t **wbxml);
 static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml);
 
 static void parse_end(wml_binary_t **wbxml);
@@ -336,15 +337,15 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
   if (document->encoding != NULL)
     {
       chars = octstr_create(document->encoding);
-      (*wbxml)->character_set = parse_charset(chars);
+      (*wbxml)->character_set = parse_charset(chars, wbxml);
       octstr_destroy(chars);
     }
   else if (charset != NULL && octstr_len(charset) > 0)
-    (*wbxml)->character_set = parse_charset(charset);
+    (*wbxml)->character_set = parse_charset(charset, wbxml);
   else
     {
       chars = octstr_create("UTF-8");
-      (*wbxml)->character_set = parse_charset(chars);
+      (*wbxml)->character_set = parse_charset(chars, wbxml);
       octstr_destroy(chars);
     }
 
@@ -674,7 +675,7 @@ static int parse_text(xmlNodePtr node, wml_binary_t **wbxml)
  * This function parses the character set of the document. 
  */
 
-static int parse_charset(Octstr *charset)
+static int parse_charset(Octstr *charset, wml_binary_t **wbxml)
 {
   Octstr *number = NULL;
   int i, j, cut = 0, ret = 0;
@@ -708,6 +709,8 @@ static int parse_charset(Octstr *charset)
 	  if (octstr_str_compare(number, character_sets[j].nro) == 0)
 	    {
 	      ret = character_sets[j].MIBenum;
+	      if (character_sets[j].utf8map)
+		(*wbxml)->utf8map = character_sets[j].utf8map ;
 	      break;
 	    }
 	break;
@@ -974,6 +977,7 @@ static wml_binary_t *wml_binary_create(void)
   wbxml->string_table_length = 0x00;
   wbxml->string_table = list_create();
   wbxml->wbxml_string = octstr_create_empty();
+  wbxml->utf8map = NULL ;
 
   return wbxml;
 }
@@ -1046,15 +1050,43 @@ static int output_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 
 
 /*
+ * output_plain_octet_string_utf8map - remap ascii to utf8 and
+ * output an octet string into wbxml.
+ * Returns 0 for success, -1 for an error.
+ */
+
+static int output_plain_octet_utf8map(Octstr *ostr, wml_binary_t **wbxml)
+{
+  long i ;
+
+  for (i = 0; i < octstr_len(ostr); i++) 
+    {
+      int ch = octstr_get_char(ostr, i) ;
+      /* copy chars  [0-127] interval and transform [128-255] */
+      if (ch < 0x80) 
+	octstr_append_char((*wbxml)->wbxml_string, ch) ;
+      else 
+	octstr_append_cstr((*wbxml)->wbxml_string, 
+			   (*wbxml)->utf8map + ((ch - 128) * 4)) ;
+    }
+    
+  return 0 ;
+}
+
+
+
+/*
  * output_plain_octet_string - output an octet string into wbxml.
  * Returns 0 for success, -1 for an error.
  */
 
 static int output_plain_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 {
-  octstr_insert((*wbxml)->wbxml_string, ostr, 
-		octstr_len((*wbxml)->wbxml_string));
-
+  if ((*wbxml)->utf8map) 
+    output_plain_octet_utf8map(ostr, wbxml) ;
+  else
+    octstr_insert((*wbxml)->wbxml_string, ostr, 
+		  octstr_len((*wbxml)->wbxml_string));
   return 0;
 }
 

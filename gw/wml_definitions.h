@@ -227,21 +227,28 @@ wml_attr_value_t wml_URL_values[] = {
  * Character sets.
  */
 
+static unsigned char utf8map_win1257[] = {
+#include "utf8map_win1257.h"
+} ;
+
 struct {
   char *charset;
   char *nro;
   unsigned char MIBenum;
+  unsigned char *utf8map;
 } character_sets[] = {
-  { "ISO", "8859-1", 4 }, /* ISOLatin1 */
-  { "ISO", "8859-2", 5 }, /* ISOLatin2 */
-  { "ISO", "8859-3", 6 }, /* ISOLatin3 */
-  { "ISO", "8859-4", 7 }, /* ISOLatin4 */
-  { "ISO", "8859-5", 8 }, /* ISOLatinCyrillic */
-  { "ISO", "8859-6", 9 }, /* ISOLatinArabic */
-  { "ISO", "8859-7", 10 }, /* ISOLatinGreek */
-  { "ISO", "8859-8", 11 }, /* ISOLatinHebrew */
-  { "ISO", "8859-9", 12 }, /* ISOLatin5 */
+  { "ISO", "8859-1", 4, NULL }, /* ISOLatin1 */
+  { "ISO", "8859-2", 5, NULL }, /* ISOLatin2 */
+  { "ISO", "8859-3", 6, NULL }, /* ISOLatin3 */
+  { "ISO", "8859-4", 7, NULL }, /* ISOLatin4 */
+  { "ISO", "8859-5", 8, NULL }, /* ISOLatinCyrillic */
+  { "ISO", "8859-6", 9, NULL }, /* ISOLatinArabic */
+  { "ISO", "8859-7", 10, NULL }, /* ISOLatinGreek */
+  { "ISO", "8859-8", 11, NULL }, /* ISOLatinHebrew */
+  { "ISO", "8859-9", 12, NULL }, /* ISOLatin5 */
+  /* Latvian, uses UTF-8 but with remaping */
+  { "WINDOWS", "1257", 106, utf8map_win1257 }, 
   /* Note!! If you want to add character sets, put them above this line. */
-  { "UTF", "8", 106 }, /* UTF-8, the default. */
+  { "UTF", "8", 106, NULL }, /* UTF-8, the default. */
   {NULL}
 };
