@@ -1,5 +1,10 @@
 2001-01-15  Lars Wirzenius  <liw@iki.fi>
 
+	* wap/wtp_pdu.c: Bugfix from Aymerick Jéhanne. When unpacking
+	TPIs, append the correct data to the PDU.
+
+2001-01-15  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/gw_inet.c: Added an include for <sys/types.h> to allow
 	compilation on FreeBSD. Thanks to vlm@smarts-gsm.ru for pointing
 	this out.

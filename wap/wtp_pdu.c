@@ -126,7 +126,7 @@ static long unpack_tpis(Octstr *data, long bitpos, WTP_PDU *pdu) {
 		gw_assert(bitpos % 8 == 0);
 		tpidata = octstr_copy(data, bitpos / 8, length);
 		bitpos += 8 * length;
-		wtp_pdu_append_tpi(pdu, type, data);
+		wtp_pdu_append_tpi(pdu, type, tpidata);
 	} while (another);
 
 	return bitpos;
