@@ -3,6 +3,11 @@
 /*
  * kannel-status.php -- display a summarized kannel status page
  *
+ * This php script acts as client for the status.xml output of
+ * Kannel's bearerbox and aggregates information about smsc link
+ * status and message flow. It is the first step to provide an
+ * external Kannel Control Center interface via HTTP.
+ *
  * Stipe Tolj <tolj@wapme-systems.de>
  * Copyright (c) 2003 Kannel Group.
  */
@@ -12,17 +17,20 @@ include("xmlfunc.php");
 /* config section: define which Kannel status URLs to monitor */
 
 $configs = array(
-            array( "base_url" => "http://kannel.foobar.com:13000",
-                   "passwd" => "tester",
-                   "name" => "NAME-A"
+            array( "base_url" => "http://kannel.sms.wapme.net:13000",
+                   "status_passwd" => "pr0theu5",
+                   "admin_passwd" => "",
+                   "name" => "Kannel 1"
                  ),
-            array( "base_url" => "http://kannel.foonar.com:23000",
-                   "passwd" => "tester",
-                   "name" => "NAME-B"
+            array( "base_url" => "http://kannel.sms.wapme.net:23000",
+                   "status_passwd" => "pr0theu5",
+                   "admin_passwd" => "",
+                   "name" => "Kannel 2"
                  ),
-            array( "base_url" => "http://kannel.foobar.com:33000",
-                   "passwd" => "tester",
-                   "name" => "NAME-C"
+            array( "base_url" => "http://kannel.sms.wapme.net:33000",
+                   "status_passwd" => "pr0theu5",
+                   "admin_passwd" => "",
+                   "name" => "Kannel 3"
                  )
             );
 
@@ -93,7 +101,7 @@ error_reporting(0);
         xml_set_element_handler($xml_parser, "startElement", "endElement");
 
         /* get the status.xml URL of one config */
-        $url = $config["base_url"]."/status.xml?password=".$config["passwd"];
+        $url = $config["base_url"]."/status.xml?password=".$config["status_passwd"];
 
         /* open the file description to the URL */
         if (($fp = fopen($url, "r"))) {
@@ -121,12 +129,12 @@ error_reporting(0);
 
         ?>
         </td><td class=text valign=top align=right>
-            <a class=href href="#" onClick="admin_url('suspend', '<?php echo $config["base_url"]."/suspend?password=".$config["passwd"]; ?>');">suspend</a> |
-            <a class=href href="#" onClick="admin_url('isolate', '<?php echo $config["base_url"]."/isolate?password=".$config["passwd"]; ?>');">isolate</a> |
-            <a class=href href="#" onClick="admin_url('resume', '<?php echo $config["base_url"]."/resume?password=".$config["passwd"]; ?>');">resume</a> <br />
-            <a class=href href="#" onClick="admin_url('flush-dlr', '<?php echo $config["base_url"]."/flush-dlr?password=".$config["passwd"]; ?>');">flush-dlr</a> |
-            <a class=href href="#" onClick="admin_url('shutdown', '<?php echo $config["base_url"]."/shutdown?password=".$config["passwd"]; ?>');">shutdown</a> |
-            <a class=href href="#" onClick="admin_url('restart', '<?php echo $config["base_url"]."/restart?password=".$config["passwd"]; ?>');">restart</a>
+            <a class=href href="#" onClick="admin_url('suspend', '<?php echo $config["base_url"]."/suspend"; ?>', '<?php echo $config["admin_passwd"]; ?>');">suspend</a> |
+			   <a class=href href="#" onClick="admin_url('isolate', '<?php echo $config["base_url"]."/isolate"; ?>', '<?php echo $config["admin_passwd"]; ?>');">isolate</a> |
+			   <a class=href href="#" onClick="admin_url('resume', '<?php echo $config["base_url"]."/resume"; ?>', '<?php echo $config["admin_passwd"]; ?>');">resume</a> <br/>
+			   <a class=href href="#" onClick="admin_url('flush-dlr', '<?php echo $config["base_url"]."/flush-dlr"; ?>', '<?php echo $config["admin_passwd"]; ?>');">flush-dlr</a> |
+			   <a class=href href="#" onClick="admin_url('shutdown', '<?php echo $config["base_url"]."/shutdown"; ?>', '<?php echo $config["admin_passwd"]; ?>');">shutdown</a> |
+			   <a class=href href="#" onClick="admin_url('restart', '<?php echo $config["base_url"]."/restart"; ?>', '<?php echo $config["admin_passwd"]; ?>');">restart</a>
         </td></tr>
 
         <?php
@@ -149,7 +157,7 @@ error_reporting(0);
 <h4>Overall SMS traffic</h4>
 
 <p id=bord>
-<table width=100% cellspacing=0 cellpadding=5 border=0>
+<table width=100% cellspacing=0 cellpadding=5 border=1>
 <tr><td valign=top align=right class=text>
   Received (MO)
 </td><td valign=top align=right class=text>
@@ -260,28 +268,58 @@ error_reporting(0);
 <h4>Box connections</h4>
 
 <p id=bord>
-
+<table width=100% cellspacing=0 cellpadding=1 border=0>
+<tr><td valign=top align=center class=text>
+  Instance
+</td><td valign=top class=text>
+  Type
+</td><td valign=top class=text>
+  ID
+</td><td valign=top class=text>
+  IP
+</td><td valign=top align=right class=text>
+  Queued (MO)
+</td><td valign=top align=right class=text>
+</td><td valign=top class=text>
+  Started
+</td><td valign=top class=text>
+  SSL
+</td></tr>
     <?php 
 
         foreach ($configs as $inst => $config) {
             $x = XPathValue("gateway/boxes", $status[$inst]);
             /* drop an error in case we have no boxes connected */
             if (empty($x)) {
-                echo "<span class=red>($inst) <b>no boxes connected to this bearerbox!</b></span> <br /> \n";
+					 echo "<tr><td valign=top colspan=4 class=text>\n";
+                echo "<span class=red><b>no boxes connected to this bearerbox!</b></span> <br /> \n";
+					 echo "</td></tr>\n";
             } else {
                 /* loop the boxes */          
                 $i = 0;
                 while (($y = XPathValue("box", $x)) != "") {
                     $i++;
-                    echo "($inst) <b>".XPathValue("type", $y)."</b>, ";
+        				  echo "<tr><td valign=top align=center class=text>\n";
+        		        echo "($inst)";
+        				  echo "</td><td valign=top align=left class=text>\n";
+                    echo "<b>".XPathValue("type", $y)."</b>";
+						  echo "</td><td valign=top class=text nowrap>\n";
+                    echo XPathValue("id", $y);
+						  echo "</td><td valign=top class=text nowrap>\n";
+                    echo XPathValue("IP", $y);
+						  echo "</td><td valign=top align=right class=text nowrap>\n";
+                    echo "<b>".XPathValue("queue", $y)."</b> msgs";
+						  echo "</td><td valign=top nowrap></td>";
+						  echo "<td valign=top class=text nowrap>\n";
                     if (ereg("on-line (.*)d (.*)h (.*)m (.*)s", XPathValue("status", $y), $regs)) {
                         $ts = ($regs[1]*24*60*60) + ($regs[2]*60*60) 
                             + ($regs[3]*60) + $regs[4];
-                        echo "started ".date("Y-m-d H:i:s", mktime()-$ts);
-                        echo ", uptime $regs[1]d $regs[2]h $regs[3]m $regs[4]s, ";
+                        echo date("Y-m-d H:i:s", mktime()-$ts).", ";
+                        echo "uptime $regs[1]d $regs[2]h $regs[3]m $regs[4]s";
                     }
-                    echo "SSL ".XPathValue("ssl", $y);
-                    echo " <br />\n";
+						  echo "</td><td valign=top class=text nowrap>\n";
+                    echo XPathValue("ssl", $y);
+						  echo "</td></tr>\n";
                     $a = substr($x, strpos($x, "</box>") + 6);
                     $x = $a;
                 }
@@ -289,7 +327,7 @@ error_reporting(0);
         }
 
     ?>
-
+</table>
 </p>
 
 <h4>SMSC connections</h4>
@@ -472,6 +510,8 @@ error_reporting(0);
   SMSC-ID
 </td><td valign=top class=text>
   Status
+</td><td valign=top class=text>
+  Started
 </td><td valign=top align=right class=text>
   Received (MO)
 </td><td valign=top align=right class=text>

@@ -1,3 +1,9 @@
+2003-11-07 Stipe Tolj  <tolj@wapme-systems.de>
+    * contrib/kannel-monitor/*: changed the monitor to allow non persistance 
+      of the admin password. Instead, if no admin password is configured,
+      a dialog box will ask you for it whenever you try to issue HTTP admin
+      commands to bearerbox. Added Alex's smsbox queue output.
+
 2003-11-06  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: fixed another issue resulting from the previous
       revision commit. We want to convert the charset *only* if data_coding
