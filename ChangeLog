@@ -1,3 +1,8 @@
+2001-03-19  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_smscconn.c (sms_router): Bugfix. Now hopefully router does
+	not get stuck again if the list is successfully emptied
+
 2001-03-16  Kalle Marjola  <rpr@wapit.com>
 
 	* gwlib/http.c: Bugfix: wakeup server when new port added, so that

@@ -203,20 +203,23 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 static void sms_router(void *arg)
 {
     Msg *msg, *newmsg, *startmsg;
-
+    int ret;
     
     list_add_producer(flow_threads);
     gwthread_wakeup(MAIN_THREAD_ID);
 
     newmsg = startmsg = NULL;
+    ret = 0;
     
     while(bb_status != BB_DEAD) {
 
 	if (newmsg == startmsg) {
-	    debug("bb.sms", 0, "sms_router: time to sleep"); 
-	    gwthread_sleep(600.0);	/* hopefully someone wakes us up */
-	    debug("bb.sms", 0, "sms_router: list_len = %ld",
-		  list_len(outgoing_sms)); 
+	    if (ret != 1) {
+		debug("bb.sms", 0, "sms_router: time to sleep"); 
+		gwthread_sleep(600.0);	/* hopefully someone wakes us up */
+		debug("bb.sms", 0, "sms_router: list_len = %ld",
+		      list_len(outgoing_sms)); 
+	    }
 	    startmsg = list_consume(outgoing_sms);
 	    newmsg = NULL;
 	    msg = startmsg;
@@ -224,13 +227,14 @@ static void sms_router(void *arg)
 	    newmsg = list_consume(outgoing_sms);
 	    msg = newmsg;
 	}
-	debug("bb.sms", 0, "sms_router: handling message (%p vs %p)",
-	      newmsg, startmsg);
+	/* debug("bb.sms", 0, "sms_router: handling message (%p vs %p)",
+	 *         newmsg, startmsg); */
 	
 	if (msg == NULL)
             break;
 
-	if (smsc2_rout(msg) == -1) {
+	ret = smsc2_rout(msg);
+	if (ret == -1) {
             warning(0, "No SMSCes to receive message, discarding it!");
             alog("SMS DISCARDED - SMSC:%s receiver:%s msg: '%s'",
                  (msg->sms.smsc_id) == NULL ?
@@ -238,7 +242,11 @@ static void sms_router(void *arg)
                  octstr_get_cstr(msg->sms.receiver),
                  octstr_get_cstr(msg->sms.msgdata));
             msg_destroy(msg);
-        }
+        } else if (ret == 1) {
+	    newmsg = startmsg = NULL;
+	}
+	    
+	    
     }
     /* router has died, make sure that rest die, too */
     
@@ -435,7 +443,7 @@ Octstr *smsc2_status(int status_type)
  *
  * If finds a good one, puts into it and returns 1
  * If finds only bad ones, but acceptable, queues and
- *  returns 0  8like all acceptable currently disconnected)
+ *  returns 0  (like all acceptable currently disconnected)
  * If cannot find nothing at all, returns -1 and
  * message is NOT destroyed (otherwise it is)
  */
