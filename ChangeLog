@@ -1,4 +1,10 @@
 2003-10-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/mime.[ch]: abstracted mime_[octstr|http]_to_entity() to use the 
+      same base routine for the transcoding. Added mime_http_to_entity().
+      Added MIMEEntity *start to the MIMEEntity struct to reference the 
+      multipart/related start elmement.
+
+2003-10-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.c: applied Alex's patch for Vjacheslav report on a failing 
       http_something_accepted() routine if we have multi-valued parameter.
 
