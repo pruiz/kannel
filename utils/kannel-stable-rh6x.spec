@@ -1,13 +1,13 @@
 Summary: Kannel SMS/WAP gateway
 Name: kannel
-Version: 1.0.1
+Version: 1.0.2
 Release: 1
 Copyright: Open source, FreeBSD-style license; see COPYING
 Group: Applications/Communications
 Source: gateway-%{version}.tar.gz
 BuildRoot: /var/tmp/%{name}-buildroot
 Packager: Peter Gronholm. <peter.gronholm@wapit.com>
-Requires: libxml2 => 2.2.0
+Requires: libxml2 >= 2.2.0, libxml2 < 2.3.0
 
 %description
 Kannel is an Open Source SMS/WAP gateway. WAP is short for Wireless Application
@@ -81,6 +81,9 @@ rm -f /usr/bin/run_kannel_box
 rm -rf $RPM_BUILD_ROOT
 
 %changelog
+* Tue Feb 27 2001 Peter Gronholm <peter@wapit.com>
+- added that Kannel requires libxml2 < 2.3.0
+
 * Tue Feb 06 2001 Peter Gronholm <peter@wapit.com>
 - install configuration files with %config macro.
 - clean $RPM_BUILD_ROOT before and after building the rpm package.
