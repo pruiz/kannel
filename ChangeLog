@@ -1,5 +1,9 @@
 2000-10-10  Kalle Marjola  <rpr@wapit.com>
 
+	* gwlib/octstr.c: fixed bug in octstr_str_compare
+	
+2000-10-10  Kalle Marjola  <rpr@wapit.com>
+
 	* gwlib/socket.c: moved 'errno' from second call to first one in
 	connect_to_server to avoid tempering with it before we report the
 	error.

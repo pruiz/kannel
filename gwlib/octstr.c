@@ -802,6 +802,8 @@ int octstr_str_compare(Octstr *ostr, const char *str)
 
     if (str == NULL)
         return -1;
+    if (ostr->data == NULL)
+	return strcmp("", str);
 
     return strcmp(ostr->data, str);
 }

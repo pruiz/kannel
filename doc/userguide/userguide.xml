@@ -2283,6 +2283,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 <programlisting>
 http://smsbox.host.name:13013/cgi-bin/sendota?username=foo&amp;password=bar&amp;phonenumber=0123456
 </programlisting>
+       </para>
 
  <table frame=none>
   <title>OTA CGI Variables</title>
@@ -2306,6 +2307,7 @@ http://smsbox.host.name:13013/cgi-bin/sendota?username=foo&amp;password=bar&amp;
        Number of the phone that is to receive the OTA configuration message.
    </entry></row>
   </tbody>
+  </tgroup>
  </table>
 
 </sect2>
