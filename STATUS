@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.21 2002-04-16 11:17:13 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.22 2002-06-20 13:23:28 stolj Exp $]
 
 Release:
 
@@ -115,3 +115,20 @@ Open issues:
     Message-ID: <3C4F4BFE.AE3C687B@wapme-systems.de>
     Status: Stipe: "Andrea Viscovich" <anviscov@tin.it> has done this for a 
             own solutions, needs to be revised and cleaned up.
+
+    * AT2 module fails to open serial ports after system startup.
+      The reason is that the default serial port parameters are not peroper
+      for connecting to modems. to work around the problem you can open the modem
+      port with a terminal program, make sure it works, close the terminal
+      program and use the stty program (available on linux and other unixes. check 
+      your system's documentation for an equivilent program) to record the port parameters :
+      stty -g -F /dev/<serial device>
+      and then write a startup script to setup the port with those parameters :
+      stty -F /dev/<serial device> <output of stty -g>
+      The following line "works for me"(tm) on a Linux Mandrake 8.2 with wavecom modem
+      connected to a USB port extender:
+      stty -F /dev/usb/tts/0 1:0:800008bd:0:3:1c:7f:15:4:5:1:0:11:13:1a:0:12:f:17:16:0:0:2f:0:0:0:0:0:0:0:0:0:0:0:0:0  
+    Posted by: Oded Arbel <odeda@m-wise.com>
+    Message-ID: <2CFC21DAF860CC49AF57333C4459DD4B167F99@exchange.m-wise.com>
+    Status: Oded: AT2 module should be fixed to do that internally
+
