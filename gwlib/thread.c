@@ -46,6 +46,7 @@ pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size)
 			sleep(1);
 		}
 	} while (ret == EAGAIN);
+	pthread_attr_destroy(&attr);
 	if (ret != 0) {
 		error(errno, "pthread_create failed");
 		goto error;
