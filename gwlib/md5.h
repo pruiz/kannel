@@ -34,11 +34,17 @@ typedef struct {
     unsigned char buffer[64];   /* input buffer */
 } md5_ctx;
 
+/* 
+ * Calculates the MD5 hash value, which is the raw 16 byte
+ * data block. Returns NULL in case NULL has been given as argument.
+ */
+Octstr *md5(Octstr *data);
+
 /*
  * Calculates the MD5 digest key of a given Octstr.
  * Returns NULL in case NULL has been given as argument.
  */
-Octstr *md5(Octstr *data);
+Octstr *md5digest(Octstr *data);
 
 #endif
 

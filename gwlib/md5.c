@@ -330,7 +330,6 @@ unsigned int len;
 
 Octstr *md5(Octstr *data)
 {
-    char md5str[33];
     md5_ctx context;
     unsigned char digest[16];
     Octstr *enc;
@@ -338,15 +337,33 @@ Octstr *md5(Octstr *data)
     if (data == NULL)
         return NULL;
 
-    md5str[0] = '\0';
     md5_init(&context);
     md5_update(&context, octstr_get_cstr(data), octstr_len(data));
     md5_final(digest, &context);
-    md5_digest(md5str, digest);
 
-    enc = octstr_create(md5str);
+    enc = octstr_create(digest);
 
     return enc; 
 }
+
+
+Octstr *md5digest(Octstr *data)
+{
+    char md5str[33];
+    Octstr *digest;
+
+    if (data == NULL)
+        return NULL;
+
+    md5str[0] = '\0';
+    digest = md5(data);
+    md5_digest(md5str, octstr_get_cstr(digest));
+    octstr_destroy(digest);
+
+    digest = octstr_create(md5str);
+
+    return digest;
+}
+
 
 
