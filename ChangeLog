@@ -1,4 +1,22 @@
 2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: added handling of PPG related DLR reports. PPG sends
+      SMS with DLR, but smsbox has to do the DLR signalization to the 
+      specified DLR-URL. The stored service name is read from PPG core group.
+    * gw/urltrans.c: allow handling of NULLed URLTranslation in case it's a 
+      PPGed DLR response.
+    * gw/wap_ppg_push_machine.def: added PPG DLR related variables.
+    * gw/wap_push_[ota|ppg|ppg_pushuser].[ch], gw/wapbox.c, wap/wap_events.def,
+      wap/wsp_unit.c: added PPG DLR support. 
+    * gw/smsc/smsc_http.c: added 'dlrurl' and 'dlrmask' handling for Kannel
+      message proxying.
+    * gwlib/cfg.def: added 'default-dlr-url', 'ppg-smsbox-id', 'service-name'
+      to ppg core group and 'dlr-url', 'smsbox-id' to wap-push-user group.
+      See new documentation sections for explanations.
+    * gwlib/http.c: changed http_cgivar_dump() slightly.
+    Again a patch by Aarno. Many thanks to the PPG maintainer ;)
+    [Msg-ID: <EDE57806-94D8-11D7-8A04-0003937AE746@gni.ch>]
+
+2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap_push_ota.c: fixed handling of Push flag.
     * gw/wap_push_pap_[compiler|mime].c: fixed PPG specifier and prologue
       parsing to support other PIs, including delimiter parsing.
