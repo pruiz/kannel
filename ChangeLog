@@ -1,4 +1,9 @@
 2002-07-05  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c: fixing timezone issue for sms time validity, 
+      patch made by Alan
+      [Msg-ID:  <1024987558.1209.472.camel@euclid>]
+
+2002-07-05  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smpp_pdu.def, gw/smsc_smpp.c: added unbind PDU support,
       patch submitted by Ignat Vassilev <ozzy@declera.com>
       [Msg-ID: <3D17E046.1060806@declera.com>]
