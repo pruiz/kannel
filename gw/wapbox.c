@@ -546,6 +546,7 @@ static void config_reload(int reload) {
 	}
     }
     wsp_http_map_url_config_info();	/* debugging aid */
+    list_destroy(groups, NULL);
 
     if( (groups = cfg_get_multi_group(cfg, octstr_imm("wap-user-map"))) != NULL) {
     	for(i=0; i<list_len(groups); i++) {
@@ -559,6 +560,7 @@ static void config_reload(int reload) {
 	}
     }
     wsp_http_map_user_config_info();	/* debugging aid */
+    list_destroy(groups, NULL);
 
     cfg_destroy(cfg);
     /* XXX TO-DO: if(reload) implement wapbox.resume/mutex.unlock */
@@ -716,6 +718,7 @@ int main(int argc, char **argv)
     wsp_http_map_user_destroy();
     octstr_destroy(device_home);
     octstr_destroy(bearerbox_host);
+    octstr_destroy(config_filename);
 
     /*
      * Just sleep for a while to get bearerbox chance to restart.

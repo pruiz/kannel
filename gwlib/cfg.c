@@ -516,6 +516,10 @@ Octstr *cfg_get_real(CfgGroup *grp, Octstr *varname, const char *file,
 {
     Octstr *os;
 
+    if(grp == NULL) 
+    	panic(0, "Trying to fetch variable `%s' in non-existing group",
+	      octstr_get_cstr(varname));
+
     if (grp->name != NULL && !is_allowed_in_group(grp->name, varname))
     	panic(0, "Trying to fetch variable `%s' in group `%s', not allowed.",
 	      octstr_get_cstr(varname), octstr_get_cstr(grp->name));
