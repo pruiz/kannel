@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.18 2002-04-03 10:59:33 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.19 2002-04-09 14:28:49 davi Exp $]
 
 Release:
 
@@ -23,11 +23,6 @@ Release:
 
 RELEASE SHOWSTOPPERS:
 
-    * sms-service might not reply back the sms 
-    Posted by: Alex Judd <ajudd@skywire.co.uk>
-    Message-ID: <Pine.LNX.4.44.0202270925420.23783-100000@samsara.kgbinternet.com>
-    Status: Bruno Rodrigues: I'm checking that.
- 
 RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
 
     * WTLS for secure communication
@@ -59,6 +54,12 @@ RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
     Message-ID: <3CAAD32F.C44A5956@wiral.com>
     Status: Aarno has this on his TODO list
     
+    * sms-service might not reply back the sms 
+      when http keepalive is activated
+    Posted by: Alex Judd <ajudd@skywire.co.uk>
+    Message-ID: <Pine.LNX.4.44.0202270925420.23783-100000@samsara.kgbinternet.com>
+    Status: Bruno Rodrigues: I've disabled http keepalive until it gets fixed
+ 
 Available Patches:
 
     * DLR handling logic change 
