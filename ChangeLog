@@ -1,4 +1,7 @@
 2002-08-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_store.c: fixed a segfault bug in store_status()
+
+2002-08-07  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_http.c, gw/bearerbox.[ch] : renaming start operation to 'restart'
       to indicate that this is used after bearerbox has started and individual
       smsc have been shutdown previously.
