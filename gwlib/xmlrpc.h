@@ -22,65 +22,30 @@
 /*
  * types and structures defined by www.xml-rpc.com
  */
-typedef struct xmlrpc_methodcall XMLRPCMethodCall;
 typedef struct xmlrpc_methodresponse XMLRPCMethodResponse;
-typedef struct xmlrpc_value XMLRPCValue;
-typedef struct xmlrpc_scalar XMLRPCScalar;
 typedef struct xmlrpc_member XMLRPCMember;
-    
-#define create_octstr_from_node(node) (octstr_create(node->content))
-
-
-struct xmlrpc_table_t {
-    char *name;
-};
-
-struct xmlrpc_2table_t {
-    char *name;
-    int s_type; /* enum here */
-};
+typedef struct xmlrpc_scalar XMLRPCScalar;
+typedef struct xmlrpc_methodcall XMLRPCMethodCall;
+typedef struct xmlrpc_value XMLRPCValue;
 
 typedef struct xmlrpc_table_t xmlrpc_table_t;
 typedef struct xmlrpc_2table_t xmlrpc_2table_t;
 
-static xmlrpc_table_t methodcall_elements[] = {
-    "METHODNAME",
-    "PARAMS"
-};
-
-static xmlrpc_table_t params_elements[] = {
-    "PARAM"
-};
-
-static xmlrpc_table_t param_elements[] = {
-    "VALUE"
-};
+#define create_octstr_from_node(node) (octstr_create(node->content))
 
 enum { 
     xr_undefined, xr_scalar, xr_array, xr_struct, 
     xr_string, xr_int, xr_bool, xr_double, xr_date, xr_base64 
 };
 
-static xmlrpc_2table_t value_elements[] = {
-    { "I4", xr_int },
-    { "INT", xr_int },
-    { "BOOLEAN", xr_bool },
-    { "STRING", xr_string },
-    { "DOUBLE", xr_double },
-    { "DATETIME.ISO8601", xr_date },
-    { "BASE64", xr_base64 },
-    { "STRUCT", xr_struct },
-    { "ARRAY", xr_array }
+/*
+ * status codes while parsing
+ */
+enum {
+    XMLRPC_COMPILE_OK,
+    XMLRPC_XMLPARSE_FAILED,
+    XMLRPC_PARSING_FAILED
 };
-
-#define NUMBER_OF_METHODCALL_ELEMENTS \
-    sizeof(methodcall_elements)/sizeof(methodcall_elements[0])
-#define NUMBER_OF_PARAMS_ELEMENTS \
-    sizeof(params_elements)/sizeof(params_elements[0])
-#define NUMBER_OF_PARAM_ELEMENTS \
-    sizeof(param_elements)/sizeof(param_elements[0])
-#define NUMBER_OF_VALUE_ELEMENTS \
-    sizeof(value_elements)/sizeof(value_elements[0])
 
 
 /*** METHOD CALLS ***/
@@ -192,5 +157,19 @@ void xmlrpc_scalar_print(XMLRPCScalar *scalar, Octstr *os);
 /* Create <value> of <scalar> type with given type and value */
 XMLRPCValue *xmlrpc_create_scalar_value(int type, void *arg);
 XMLRPCValue *xmlrpc_create_scalar_value_double(int type, double val);
+
+/* 
+ * Check if parsing had any errors, return status code of parsing by
+ * returning one of the following: 
+ *   XMLRPC_COMPILE_OK,
+ *   XMLRPC_XMLPARSE_FAILED,
+ *   XMLRPC_PARSING_FAILED
+ *   -1 if call has been NULL
+ */
+int xmlrpc_parse_status(XMLRPCMethodCall *call);
+
+/* Return parser error string if parse_status != XMLRPC_COMPILE_OK */
+/* return NULL if no error occured or no error string was available */
+Octstr *xmlrpc_parse_error(XMLRPCMethodCall *call);
 
 #endif
