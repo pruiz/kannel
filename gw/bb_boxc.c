@@ -255,7 +255,7 @@ static void boxc_sender(void *arg)
     list_add_producer(flow_threads);
 
     /* wait for smsbox identification */
-    if (bb_status != BB_DEAD && conn->alive) {
+    if (bb_status != BB_DEAD && conn->alive && conn->is_wap == 0) {
         mutex_lock(conn->boxc_id_mutex);
         debug("bb.boxc", 0, "boxc_sender: sender unlocked");
     }
