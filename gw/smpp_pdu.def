@@ -179,6 +179,10 @@ PDU(enquire_link_resp,
     HEADER
 )
 
+PDU(generic_nack_resp,
+    0x80000000,
+    HEADER
+)
 
 #undef PDU
 #undef INTEGER

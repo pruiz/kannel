@@ -395,6 +395,19 @@ static void send_enquire_link(SMPP *smpp, Connection *conn, long *last_sent)
 } 
  
  
+static void send_unbind(SMPP *smpp, Connection *conn)
+{
+    SMPP_PDU *pdu;
+    Octstr *os;
+    pdu = smpp_pdu_create(unbind, counter_increase(smpp->message_id_counter));
+    dump_pdu("Sending unbind:", smpp->conn->id, pdu);
+    os = smpp_pdu_pack(pdu);
+    conn_write(conn, os);
+    octstr_destroy(os);
+    smpp_pdu_destroy(pdu);
+}
+
+
 static int send_pdu(Connection *conn, Octstr *id, SMPP_PDU *pdu) 
 { 
     Octstr *os; 
@@ -798,6 +811,19 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
             } 
             break; 
  
+        case generic_nack_resp:
+            error(0, "SMPP[%s]: NACK PDU type 0x%08lx, "
+                  "code 0x%08lx.",
+                  octstr_get_cstr(smpp->conn->id), pdu->type,
+                  pdu->u.generic_nack_resp.command_status);
+            break;
+
+        case unbind:
+            break;          
+ 
+        case unbind_resp:       
+            break;
+
         default: 
             error(0, "SMPP[%s]: Unknown PDU type 0x%08lx, ignored.",
                   octstr_get_cstr(smpp->conn->id), pdu->type); 
@@ -875,6 +901,19 @@ static void io_thread(void *arg)
         for (;;) { 
             timeout = last_enquire_sent + smpp->enquire_link_interval
                         - date_universal_now(); 
+
+            /* unbind */
+            if (smpp->quitting) {
+                send_unbind(smpp, conn);
+                while ((ret = read_pdu(smpp, conn, &len, &pdu)) == 1) {
+                    dump_pdu("Got PDU:", smpp->conn->id, pdu);
+                    handle_pdu(smpp, conn, pdu, &pending_submits);
+                    smpp_pdu_destroy(pdu);
+                }
+                debug("bb.sms.smpp", 0, "SMPP[%s]: %s: break and shutting down",
+                      octstr_get_cstr(smpp->conn->id), __PRETTY_FUNCTION__);
+            }
+
             if (smpp->quitting || conn_wait(conn, timeout) == -1) 
                 break; 
  
