@@ -183,7 +183,8 @@ void *list_get(List *list, long pos) {
 
 void *list_extract_first(List *list) {
 	void *item;
-
+	
+	/*gw_assert(list);*/
 	lock(list);
 	if (list->len == 0)
 		item = NULL;
@@ -222,11 +223,13 @@ List *list_extract_all(List *list, void *pat, list_item_matches_t *cmp) {
 
 
 void list_lock(List *list) {
+	gw_assert(list);
 	mutex_lock(list->permanent_lock);
 }
 
 
 void list_unlock(List *list) {
+	gw_assert(list);
 	mutex_unlock(list->permanent_lock);
 }
 
@@ -357,10 +360,12 @@ List *list_cat(List *list1, List *list2)
 /*************************************************************************/
 
 static void lock(List *list) {
+	gw_assert(list);
 	mutex_lock(list->single_operation_lock);
 }
 
 static void unlock(List *list) {
+	gw_assert(list);
 	mutex_unlock(list->single_operation_lock);
 }
 
