@@ -99,6 +99,7 @@ SINGLE_GROUP(ppg,
     OCTSTR(ssl-server-cert-file)
     OCTSTR(ssl-server-key-file)
     OCTSTR(global-sender)
+    OCTSTR(default-smsc)
 )
 
 
@@ -113,6 +114,7 @@ MULTI_GROUP(wap-push-user,
     OCTSTR(black-list)
     OCTSTR(deny-ip)
     OCTSTR(allow-ip)
+    OCTSTR(forced-smsc)
 )
 
 

@@ -28,6 +28,7 @@ struct WAPPushUser {
     Octstr *user_deny_ip;              /* this user allows pushes from these 
                                           IPs*/
     Octstr *user_allow_ip;             /* and denies them from these*/
+    Octstr *smsc_id;                   /* send SMS via a specific smsc-id */
 };
 
 typedef struct WAPPushUser WAPPushUser;
@@ -350,6 +351,7 @@ static WAPPushUser *create_oneuser(CfgGroup *grp)
     u->black_list = NULL;              
     u->user_deny_ip = NULL;              
     u->user_allow_ip = NULL;
+    u->smsc_id = NULL;
 
     u->name = cfg_get(grp, octstr_imm("wap-push-user"));
 
@@ -381,6 +383,7 @@ static WAPPushUser *create_oneuser(CfgGroup *grp)
     u->country_prefix = cfg_get(grp, octstr_imm("country-prefix"));
     u->allowed_prefix = cfg_get(grp, octstr_imm("allowed-prefix"));
     u->denied_prefix = cfg_get(grp, octstr_imm("denied-prefix"));
+    u->smsc_id = cfg_get(grp, octstr_imm("forced-smsc"));
 
     os = cfg_get(grp, octstr_imm("white-list"));
     if (os != NULL) {
@@ -424,6 +427,7 @@ static void destroy_oneuser(void *p)
      numhash_destroy(u->black_list);              
      octstr_destroy(u->user_deny_ip);              
      octstr_destroy(u->user_allow_ip);
+     octstr_destroy(u->smsc_id);
      gw_free(u);             
 }
 
@@ -449,6 +453,8 @@ static void oneuser_dump(WAPPushUser *u)
     octstr_dump(u->user_deny_ip, 0);    
     debug("wap.push.ppg.pushuser", 0, "allowed ip list:");                   
     octstr_dump(u->user_allow_ip, 0);
+    debug("wap.push.ppg.pushuser", 0, "send via smsc-id:");                   
+    octstr_dump(u->smsc_id, 0);
     debug("wap.push.ppg.pushuser", 0, "end of the dump");
 }
 
