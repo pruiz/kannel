@@ -3786,6 +3786,23 @@ ssl-certkey-file
 	<literal>iso-8859-1</literal>.
      </entry></row>
 
+	 <row><entry><literal>http-request-retry</literal></entry>
+     <entry>integer</entry>
+     <entry valign=bottom>
+        If set, specifies how many retries should be performed for failing
+		  HTTP requests of sms-services. Defaults to 0, which means no retries
+		  should be performed and hence no HTTP request queueing is done.
+     </entry></row>
+
+	 <row><entry><literal>http-queue-delay</literal></entry>
+     <entry>integer</entry>
+     <entry valign=bottom>
+        If set, specifies how many seconds should pass within the HTTP queueing
+		  thread for retrying a failed HTTP request. Defaults to 10 sec. and is
+		  only obeyed if <literal>http-request-retry</literal> is set to a 
+		  non-zero value.
+     </entry></row>
+
   </tbody>
   </tgroup>
  </table>
