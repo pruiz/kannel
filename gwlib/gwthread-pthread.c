@@ -46,6 +46,12 @@ static long active_threads = 0;
  * live threads. */
 static long next_threadnumber;
 
+/* Info for the main thread is kept statically, because it should not
+ * be deallocated even after the thread module shuts down -- after all,
+ * the main thread is still running, and in practice, it can still
+ * output debug messages which will require the thread number. */
+static struct threadinfo mainthread;
+
 /* Our key for accessing the (struct gwthread *) we stash in the
  * thread-specific-data area.  This is much more efficient than
  * accessing a global table, which we would have to lock. */
@@ -147,23 +153,17 @@ static void delete_threadinfo(void) {
 	pthread_cond_destroy(&threadinfo->exiting);
 	close(threadinfo->wakefd_recv);
 	close(threadinfo->wakefd_send);
-	/* The main thread may still try call gwthread_self, when
-	 * logging stuff.  So we need to set this to a safe value. */
-#if 0 /* XXX for some reason, this makes shutdown hang --liw */
-	pthread_setspecific(tsd_key, NULL);
-#endif
 	THREAD(threadinfo->number) = NULL;
 	active_threads--;
+	gw_assert(threadinfo != &main_thread);
 	gw_free(threadinfo);
 }
 
 static void create_threadinfo_main(void) {
-	struct threadinfo *ti;
 	int ret;
 
-	ti = gw_malloc(sizeof(*ti));
-	fill_threadinfo(pthread_self(), "main", NULL, ti);
-	ret = pthread_setspecific(tsd_key, ti);
+	fill_threadinfo(pthread_self(), "main", NULL, &mainthread);
+	ret = pthread_setspecific(tsd_key, &mainthread);
 	if (ret != 0) {
 		panic(ret, "gwthread-pthread: pthread_setspecific failed");
 	}
@@ -196,10 +196,11 @@ void gwthread_shutdown(void) {
 	/* Main thread must not have disappeared */
 	gw_assert(threadtable[0] != NULL);
 	lock();
-	delete_threadinfo();
 	
 	running = 0;
-	for (i = 0; i < THREADTABLE_SIZE; i++) {
+	/* Start i at 1 to skip the main thread, which is supposed to be
+	 * still running. */
+	for (i = 1; i < THREADTABLE_SIZE; i++) {
 		if (threadtable[i] != NULL) {
 			debug("gwlib", 0, "Thread %ld (%s) still running", 
 				threadtable[i]->number,

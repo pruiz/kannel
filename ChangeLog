@@ -1,5 +1,12 @@
 2000-06-06  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/gwthread-pthread.c: Information for main thread is now
+	allocated statically, so that we don't have to deallocate it
+	at shutdown.  This way we can keep it around so that gwthread_self
+	continues to work as expected even during shutdown.
+
+2000-06-06  Richard Braakman  <dark@wapit.com>
+
 	* Making development release 0.9.1.
 
 2000-06-06  Richard Braakman  <dark@wapit.com>
