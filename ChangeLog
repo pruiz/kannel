@@ -1,3 +1,8 @@
+2002-05-25  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/bb_http.c, gw/bb_smscconn.c, gw/bearerbox.c: added HTTP admin
+      commands 'stop-smsc' and 'start-smsc' to stop and start single
+      smsc connections without interfearing other connected smscs.
+
 2002-05-24  Stipe Tolj <tolj@wapme-systems.de>
     * gw/ota_prov.c: excluded not needed include of urltrans.h
     * gw/dlr.h: fixed header comment path
