@@ -1,3 +1,8 @@
+2001-03-27  Tuomas Luttinen  <tuo@wapit.com>
+
+	* configure.in: Removed the earlier patch, the test was just on the 
+	old implementation, I didn't run autoconf...
+
 2001-03-27 Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wap_push_pap.c|h. Testing  version of the pap module
