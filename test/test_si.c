@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 #include "gwlib/gwlib.h"
-#include "gw/wap_push_si_compiler.c"
+#include "gw/wap_push_si_compiler.h"
 
 Octstr *charset = NULL;
 Octstr *file_name = NULL;

@@ -1,3 +1,10 @@
+2001-10-18: Aarno Syvänen <aarno@wiral.com>
+
+	* doc/arch/arch.xml: Documented sessionless wsp and unconfirmed push
+	architecture.
+	* doc/userguide/userguide.xml: Documented use of Nokia Toolkit as a
+	part of push server developing enviroment. 
+
 2001-10-18 Andreas Fink <andreas@fink.org>
 	* gw/dlr.c: added support for MySQL based delivery reports
 	* gw/smsc_emi2.c: fixed delivery report failure if text

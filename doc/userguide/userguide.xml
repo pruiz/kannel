@@ -4439,7 +4439,7 @@ otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
 <title>Configuring ppg group</title>
      <para>Ppg configuration group defines gateway's service interface.
      Configuring a ppg working with a trusted pi is easiest. Actually,
-     you need no ppg configuration at all: in this case a ppg with default 
+     you need no configuration at all: in this case a ppg with default 
      values will be set up. Do not rely on this, default values may change.
      For ppg configuration variables, see table 7.1.
      </para>
@@ -4914,7 +4914,8 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              Use content qualifier <emphasis>string</emphasis> instead of 
              default <literal>si</literal> (service indication). Allowed 
              values are wml, multipart, nil and scrap. Nil and scrap are used 
-             for debugging purposes. 
+             for debugging purposes. Wml does work with some older phone
+             simulators.
              </entry></row>
              <row><entry><literal>-a</literal></entry>
              <entry><emphasis>string</emphasis></entry>
@@ -4946,6 +4947,57 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              </tbody>
              </tgroup>
        </table>
+</sect1>
+<sect1>
+<title>Using Nokia Toolkit as a part of a developing environment</title>
+       <para>This chapter describes a developing environment using Nokia 
+       Toolkit instead of <literal>test_http_server</literal> program.
+       </para>
+       <para>You cannot use a real phone for testing a push server. Sending
+       random messages to a phone does not work, because its only feedback
+       (if it works properly) in error situations is dropping the offending
+       message.</para>
+       <para>Nokia Toolkit, instead, displays push headers, decompiles
+       tokenised documents and outputs debugging information. It is not,
+       of course, a carbon copy of a real phone. But it is still usefull
+       for checking spec conformance of push servers.</para>
+       <para>Toolkit runs on Windows, the first thing you must is to install
+       a virtual machine (VMWare is one possibility) in the machine where
+       Kannel runs. Then you must configure Toolkit for working with a push
+       gateway.</para>
+       <para>Then start <literal>bearerbox</literal> and <literal>wapbox
+       </literal> similar way as told before. You must set the correct client
+       address in the push document sended by <literal>test_ppg</literal>
+       program. Use IP address of our virtual machine (easiest way to get this
+       is to ping your virtual machine name in the dos prompt window). Your
+       bearer is in this case IP. An example pap document follows:</para> 
+       
+       <screen><userinput>
+&#60;?xml version="1.0"?&#62;
+&#60;!DOCTYPE pap PUBLIC "-//WAPFORUM//DTD PAP//EN"
+          "http://www.wapforum.org/DTD/pap_1.0.dtd"&#62;
+&#60;pap&#62;
+  &#60;push-message push-id="9fjeo39jf084@pi.com"
+  deliver-before-timestamp="2001-09-28T06:45:00Z"
+  deliver-after-timestamp="2001-02-28T06:45:00Z"
+  progress-notes-requested="false"&#62;
+    &#60;address 
+    address-value="WAPPUSH=192.168.214.1/TYPE=IPV4@ppg.carrier.com"&#62;
+    &#60;/address&#62;
+    &#60;quality-of-service
+    priority="low"
+    delivery-method="unconfirmed"
+    &#60;/quality-of-service&#62;
+  &#60;/push-message&#62;
+&#60;/pap&#62;
+       </userinput></screen>
+       <para>Note address-value format. It is contains type and value, 
+       because PAP protocol supports different address formats.</para>
+       <para>You must use <literal>test_ppg</literal>'s -a and -c flags
+       when pushing messages to Toolkit. -A defines the client application
+       handling pushes, right value for it is ua. -C defines the content 
+       type of your push message. SI works with all Toolkits, wml only
+       with some older versions. </para>
 </sect1>
 </appendix>
 
@@ -5140,6 +5192,10 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 
 
 </book>
+
+
+
+
 
 
 

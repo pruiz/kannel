@@ -6,7 +6,7 @@
 
 <bookinfo>
 	<title>Kannel Architecture and Design</title>
-	<subtitle>$Revision: 1.17 $</subtitle>
+	<subtitle>$Revision: 1.18 $</subtitle>
 	<author>
 	<firstname>Lars</firstname>
 	<surname>Wirzenius</surname>
@@ -1310,15 +1310,17 @@
         protocol implementation is divided between OTA layer (requests)
         and application (indications and confirmations) layer. There are two 
         threads corresponding PAP protocol, one communicating with OTA layer 
-        and other accepting push requests from a push initiator:
+        and other accepting push requests from a push initiator (Session-
+        oriented WSP and confirmed push, these are treated concurrently,
+        because, as mentioned before, WAP Push is followed by a pull.):
 	
 	    <itemizedlist>
 	    
 	    <listitem><para>Bearerbox communication layer. This layer
 	    corresponds to the WDP layer inside the wapbox; network related
             parts of WDP are implemented in the bearerbox. Wapbox segmentates 
-            the push content before it sends it to the bearerbox. This layer
-            is used for both pushing and pulling.
+            the push content before it sends it to the bearerbox, and selects
+            the bearer. This layer is used for both pushing and pulling.
             </para></listitem>
 	    
 	    <listitem><para>WTP responder layer. This layer exchanges messages
@@ -1336,13 +1338,6 @@
             layer and OTA layer, and manages the WSP session, method and 
             push state machines. This is used for both push and pull.</para>
             </listitem>
-	    
-	    <listitem><para>Sessionless WSP layer. This layer exchanges 
-            messages with the bearerbox communication layer, the application 
-            layer and OTA layer. It has no state machines as such, so it is 
-            very simple. It is completely independent of the WTP and session 
-            mode WSP layers, despite the name similarity. It can do both push
-            and pull.</para></listitem>
 	    
 	    <listitem><para>Application layer. This layer exchanges
 	    messages with two WSP layers and makes HTTP requests on their 
@@ -1391,6 +1386,35 @@
 	<title>Wapbox thread structure for pulling</title>
 	<graphic fileref="wapbox-threads#FIGTYPE#"></graphic>
 	</figure>
+
+        <para>Sessionless WSP and unconfirmed push services use only a part
+        of whole stack:</para>
+
+        <itemizedlist>
+
+        <listitem><para>
+        Bearerbox communication layer. This layer is allways same.
+        </para></listitem>
+        <listitem><para>
+        Sessionless WSP layer. This layer exchanges messages with the 
+        bearerbox communication layer, the application layer and OTA layer. It
+        has no state machines as such, so it is very simple. It is completely
+        independent of the WTP and session mode WSP layers, despite the name 
+        similarity. It can do both push and pull.
+        </para></listitem>
+        <listitem><para>
+        Application layer. In this case, this layer is used only for pull:
+        the phone sends no confirmation messages to the server.
+        </para></listitem>
+        <listitem><para>
+        OTA layer. This is similar for confirmed and unconfirmed pushes.
+        </para></listitem>
+        <listitem><para>
+        PAP layer. Now <literal>ota_read_thread</literal> is missing; it is
+        used for receiving phone confirmations.
+        </para></listitem>
+
+        </itemizedlist>
 	
 	<para>All communication between internal (ones communicating with
         other Kannel layers) threads is via message queues. These layers 
