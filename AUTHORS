@@ -12,10 +12,17 @@ The gateway inside WapIT:
 	Aarno Syvänen <syvanen@wapit.com>
 	wapbox (WTP), WAP specifications
 	
+	Tuomas Luttinen <tuo@wapit.com>
+	New WML compiler
+	
+	Sanna Seppänen <sanna@wapit.com>
+	Maintains HTTP code
+	
 	Formerly also:
 
 	Mikael Gueck <mikael@wapit.com>
-	smsbox (especially SMS center protocols)
+	smsbox, wap box (especially SMS center protocols)
+	HTTP
 
 Other people:
 
