@@ -195,6 +195,8 @@ Octstr *octstr_copy(Octstr *ostr, long from, long len) {
 
 
 Octstr *octstr_duplicate(Octstr *ostr) {
+	if (ostr == NULL)
+		return NULL;
 	seems_valid(ostr);
 	return octstr_create_from_data(ostr->data, ostr->len);
 }

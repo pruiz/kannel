@@ -161,6 +161,7 @@ void header_dump(HTTPHeader *hdr);
  */
 HTTPHeader *header_destroy(HTTPHeader *header);
 
+HTTPHeader *header_duplicate(HTTPHeader *header);
 void header_destroy_all(HTTPHeader *header);
 
 /***************************************************************

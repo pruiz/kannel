@@ -5,11 +5,11 @@
  */
 
 #ifndef GWMEM_CHECK
-#define GWMEM_CHECK 1
+#define GWMEM_CHECK 0
 #endif
 
 #ifndef GWMEM_TRACE
-#define GWMEM_TRACE 1
+#define GWMEM_TRACE 0
 #endif
 
 #ifndef GWMEM_FILL

@@ -1388,6 +1388,22 @@ HTTPHeader *header_destroy(HTTPHeader *hdr)
 }
 
 
+HTTPHeader *header_duplicate(HTTPHeader *hdr) {
+	HTTPHeader *dup, *h;
+
+	if (hdr == NULL)
+		return NULL;
+	dup = header_create(hdr->key, hdr->value);
+	h = dup;
+	while (hdr->next != NULL) {
+		hdr = hdr->next;
+		h->next = header_create(hdr->key, hdr->value);
+		h = h->next;
+	}
+	return dup;
+}
+
+
 void header_destroy_all(HTTPHeader *hdr)
 {
 	while (hdr != NULL)
