@@ -1,8 +1,9 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.23 2002-06-27 13:33:00 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.24 2002-07-04 12:46:49 stolj Exp $]
 
 Release:
 
+    1.2.0: update to stable, released Jul 04, 2002.
     1.1.6: development version, released Mar 28, 2002.
     1.1.5: development version, released May 31, 2001.
     1.1.4: development version, released May 07, 2001.
@@ -23,14 +24,15 @@ Release:
 
 RELEASE SHOWSTOPPERS:
 
+
+RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
+
     * DLRs crash smsbox using CIMD2 
       octstr_copy_real() throughs len >= 0 assert exception, maybe in 
       smsbox.c:obey_request_thread()
     Posted by: Stefan Cars <stefan@globalwire.se>
     Message-ID: <Pine.LNX.4.40.0203201829460.2113-100000@tjatte.globalwire.se>
     Status:
-
-RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
 
     * WTLS for secure communication
     Posted by: Stipe Tolj <tolj@wapme-systems.de>
