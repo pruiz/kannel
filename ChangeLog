@@ -2,6 +2,10 @@
     * TODO: Added file for larger projects. Now it is about making WAP 1.2.1 
       gateway and PPG to support working with MMS centers.
 
+2002-07-05  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c: added throttleing error code support,
+      patch provided by Oded.
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B296D6C@exchange.m-wise.com>]
 
 2002-07-05  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_smpp.c: fixing timezone issue for sms time validity, 
