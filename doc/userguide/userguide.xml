@@ -952,6 +952,20 @@
 	
 	</para>
 
+	<para>A configuration file for the WAP box might look like this:
+
+<programlisting>
+1  bearerbox-host = localhost
+2  bearerbox-port = 13000
+3  heartbeat-freq = 5
+4
+5  log-file = "wapbox.log"
+6  log-level = 0
+</programlisting>
+
+	This assumes that the bearer box runs on the same machine as the
+	WAP box.</para>
+
 </sect1>
 
 <sect1>
