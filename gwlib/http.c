@@ -265,11 +265,6 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     
     internal_url_destroy(url);    
     
-    
-
-
-
-    
     /* Adding useful stuff */
 
     if( request->method_type == POST ){
@@ -1271,51 +1266,21 @@ error:
  */
 int httprequest_add_header(HTTPRequest *request, char *key, char *value) {
     
-    HTTPHeader *thisheader = NULL, *prev = NULL;
+    HTTPHeader *hdr = NULL;
     
-    if( (request == NULL) || (key == NULL) || (value == NULL) )
-	goto error; /* PEBKaC */
-
-	
-    thisheader = request->baseheader;
-
-    if(thisheader == NULL) {
-
-	thisheader = gw_malloc(sizeof(HTTPHeader));
-		
-	thisheader->key = gw_strdup(key);
-		
-	thisheader->value = gw_strdup(value);
-		
-	thisheader->next = NULL;
-	request->baseheader = thisheader;
-
-	return 1;
-
+    if(request == NULL || key == NULL || value == NULL){
+	error(errno, "httprequest_add_header: Bad input.");
+	return -1;
     }
+	
+    hdr = request->baseheader;
 
-/* Let's just hope that nobody has created a circular loop... */
-    for(;;) {
+    while(hdr != NULL)
+	hdr = hdr->next;
 
-	if(thisheader == NULL) {
-	    thisheader = header_create(key, value);
-	    thisheader->next = NULL;
-	    prev->next = thisheader;
+    hdr = header_create(key, value);
 
-	    return 1;
-
-	} /* if */
-
-	prev = thisheader;
-	thisheader = prev->next;
-
-    } /* for */
-
-    return 1;
-
-error:
-    error(errno, "httprequest_add_header: failed");
-    return -1;
+    return 0;
 }
 
 /*****************************************************************************
@@ -1375,7 +1340,7 @@ int httprequest_replace_header(HTTPRequest *request, char *key, char *value) {
     return 1;
 
 error:
-    error(errno, "httprequest_add_header: failed");
+    error(errno, "httprequest_replace_header: failed");
     return -1;
 }
 
@@ -1486,7 +1451,7 @@ int httprequest_remove_header(HTTPRequest *request, char *key) {
 	
 
 error:
-    error(errno, "httprequest_add_header: failed");
+    error(errno, "httprequest_remove_header: failed");
     return -1;
 }
 
@@ -1515,7 +1480,7 @@ char* httprequest_get_header_value(HTTPRequest *request, char *key) {
 	
 
 error:
-    debug("gwlib.http", errno, "httprequest_add_header: failed");
+    debug("gwlib.http", errno, "httprequest_get_header_value: failed");
     return NULL;
 }
 
