@@ -1508,11 +1508,10 @@ void octstr_url_encode(Octstr *ostr)
 
     seems_valid(ostr);
 
-    res = octstr_create("");
-
     if (ostr->len == 0)
 	return;
 
+    res = octstr_create("");
     str = ostr->data;
     n = 0;
     for (i = 0; i < ostr->len; i++)
