@@ -1,3 +1,9 @@
+2003-03-25  Stipe Tolj  <tolj@wapme-systems.de>
+    * Makefile.in: fixing Bruno's delete commit that caused config.sub and 
+      config.guess to dissapear after a 'make distclean'. They are part of
+      configure and have been produced while autoconf did all it's magic.
+      Thanks to Alan for this hint.
+
 2003-03-21  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_emi2.c: fixed a re-connection bug cause by last commit.
       Thanks to Angel for this one.
