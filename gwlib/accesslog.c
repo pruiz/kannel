@@ -21,28 +21,48 @@ static char filename[FILENAME_MAX + 1]; /* to allow re-open */
 
 static int use_localtime;
 
+/*
+ * Reopen/rotate lock.
+ */
+static List *writers = NULL;
+
 void alog_reopen(void)
 {
     if (file == NULL)
 	return;
-    
+
     alog("Log ends");
+
+    list_lock(writers);
+    /* wait for writers to complete */
+    list_consume(writers);
+
     fclose(file);
     file = fopen(filename, "a");
+
+    list_unlock(writers);
+
     if (file == NULL) {
 	error(errno, "Couldn't re-open access logfile `%s'.",
 	      filename);
-    } else	
+    } else
 	alog("Log begins");
 }
 
 
 void alog_close(void)
 {
+
     if (file != NULL) {
 	alog("Log ends");
+        list_lock(writers);
+        /* wait for writers to complete */
+        list_consume(writers);
 	fclose(file);
 	file = NULL;
+        list_unlock(writers);
+        list_destroy(writers, NULL);
+        writers = NULL;
     }
 }
 
@@ -59,6 +79,10 @@ void alog_open(char *fname, int use_localtm)
 	error(0, "Access Log filename too long: `%s', cannot open.", fname);
 	return;
     }
+
+    if (writers == NULL)
+        writers = list_create();
+
     f = fopen(fname, "a");
     if (f == NULL) {
 	error(errno, "Couldn't open logfile `%s'.", fname);
@@ -120,8 +144,16 @@ void alog(const char *fmt, ...)
     buf = gw_malloc(FORMAT_SIZE + 1);
     format(buf, fmt);
     va_start(args, fmt);
+
+    list_lock(writers);
+    list_add_producer(writers);
+    list_unlock(writers);
+
     vfprintf(file, buf, args);
     fflush(file);
+
+    list_remove_producer(writers);
+
     va_end(args);
     gw_free(buf);
 }

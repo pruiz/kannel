@@ -1,3 +1,10 @@
+2003-10-20  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/accesslog.c, gwlib/gwlib.c, gwlib/log.[ch]: applied alog-log-rc-reopen.diff patch.
+      This patch should fix race conditions in the accesslog and log module while reopening 
+      of log files. Patch just add reader/writer lock and make sure that writer are locked
+      while reopening of log files, plus adds log_shutdown(..) function in order to proper
+      close log files.
+
 2003-10-20  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_http.c: added forwarding of 'binfo' CGI variable in Kannel
       type.

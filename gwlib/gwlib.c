@@ -44,5 +44,6 @@ void gwlib_shutdown(void)
     gw_check_leaks();
     gwmem_shutdown();
     gwlib_protected_shutdown();
+    log_shutdown();
     init = 0;
 }

@@ -49,7 +49,7 @@ static struct {
 static int num_logfiles = 0;
 
 
-/* 
+/*
  * Mapping array between thread id and logfiles[] index.
  * This is used for smsc specific logging.
  */
@@ -74,6 +74,11 @@ static int num_places = 0;
 
 
 /*
+ * Reopen/rotate locking things.
+ */
+static List *writers = NULL;
+
+/*
  * Syslog support.
  */
 static int sysloglevel;
@@ -83,10 +88,10 @@ static int dosyslog = 0;
 /*
  * Make sure stderr is included in the list.
  */
-static void add_stderr(void) 
+static void add_stderr(void)
 {
     int i;
-    
+
     for (i = 0; i < num_logfiles; ++i)
 	if (logfiles[i].file == stderr)
 	    return;
@@ -105,14 +110,27 @@ void log_init()
     for (i = 0; i <= THREADTABLE_SIZE; i++) {
         thread_to[i] = 0;
     }
+
+    add_stderr();
+
+    /* initialize rw lock */
+    if (writers == NULL);
+        writers = list_create();
+}
+
+void log_shutdown()
+{
+    log_close_all();
+    if (writers != NULL)
+        list_destroy(writers, NULL);
+    writers = NULL;
 }
 
 
-void log_set_output_level(enum output_level level) 
+void log_set_output_level(enum output_level level)
 {
     int i;
-    
-    add_stderr();
+
     for (i = 0; i < num_logfiles; ++i) {
 	if (logfiles[i].file == stderr) {
 	    logfiles[i].minimum_output_level = level;
@@ -121,10 +139,10 @@ void log_set_output_level(enum output_level level)
     }
 }
 
-void log_set_log_level(enum output_level level) 
+void log_set_log_level(enum output_level level)
 {
     int i;
-    
+
     /* change everything but stderr */
     for (i = 0; i < num_logfiles; ++i) {
         if (logfiles[i].file != stderr) {
@@ -135,7 +153,7 @@ void log_set_log_level(enum output_level level)
 }
 
 
-void log_set_syslog(const char *ident, int syslog_level) 
+void log_set_syslog(const char *ident, int syslog_level)
 {
     if (ident == NULL)
 	dosyslog = 0;
@@ -148,18 +166,27 @@ void log_set_syslog(const char *ident, int syslog_level)
 }
 
 
-void log_reopen(void) 
+void log_reopen(void)
 {
-	int i, j, found;
-	
+    int i, j, found;
+
+    /*
+     * Writer lock.
+     */
+    if (writers != NULL) {
+        list_lock(writers);
+        /* wait for writers complete */
+        list_consume(writers);
+    }
+
     for (i = 0; i < num_logfiles; ++i) {
         if (logfiles[i].file != stderr) {
             found = 0;
 
-            /* 
+            /*
              * Reverse seek for allready reopened logfile.
              * If we find a previous file descriptor for the same file
-             * name, then don't reopen that duplicate, but assign the 
+             * name, then don't reopen that duplicate, but assign the
              * file pointer to it.
              */
             for (j = i-1; j >= 0 && found == 0; j--) {
@@ -178,40 +205,63 @@ void log_reopen(void)
                       logfiles[i].filename);
             }
         }
-    }		
+    }
+
+    /*
+     * Unlock writer.
+     */
+    if (writers != NULL)
+        list_unlock(writers);
 }
 
 
-void log_close_all(void) 
+void log_close_all(void)
 {
+    /*
+     * Writer lock.
+     */
+    if (writers != NULL) {
+        list_lock(writers);
+        /* wait for writers */
+        list_consume(writers);
+    }
+
     while (num_logfiles > 0) {
         --num_logfiles;
-        if (logfiles[num_logfiles].file != stderr && 
+        if (logfiles[num_logfiles].file != stderr &&
             logfiles[num_logfiles].file != NULL)
             fclose(logfiles[num_logfiles].file);
         logfiles[num_logfiles].file = NULL;
     }
+
+    /*
+     * Unlock writer.
+     */
+    if (writers != NULL)
+        list_unlock(writers);
 }
 
 
-int log_open(char *filename, int level, enum excl_state excl) 
+int log_open(char *filename, int level, enum excl_state excl)
 {
     FILE *f = NULL;
     int i;
     
-    add_stderr();
+    if (writers == NULL)
+        writers = list_create();
+
     if (num_logfiles == MAX_LOGFILES) {
-        error(0, "Too many log files already open, not adding `%s'", 
+        error(0, "Too many log files already open, not adding `%s'",
               filename);
         return -1;
     }
-    
+
     if (strlen(filename) > FILENAME_MAX) {
         error(0, "Log filename too long: `%s'.", filename);
         return -1;
     }
-    
-    /* 
+
+    /*
      * Check if the file is already opened for logging.
      * If there is an open file, then assign the file descriptor
      * that is already existing for this log file.
@@ -356,17 +406,23 @@ static void kannel_syslog(char *format, va_list args, int level)
 	    char buf[FORMAT_SIZE]; \
 	    va_list args; \
 	    \
-	    add_stderr(); \
 	    format(buf, level, place, err, fmt); \
+            if (writers != NULL) { \
+                list_lock(writers); \
+                list_add_producer(writers); \
+                list_unlock(writers); \
+            } \
 	    for (i = 0; i < num_logfiles; ++i) { \
 		if (logfiles[i].exclusive == GW_NON_EXCL && \
-            level >= logfiles[i].minimum_output_level && \
-            logfiles[i].file != NULL) { \
-		    va_start(args, fmt); \
-		    output(logfiles[i].file, buf, args); \
-		    va_end(args); \
+                    level >= logfiles[i].minimum_output_level && \
+                    logfiles[i].file != NULL) { \
+		        va_start(args, fmt); \
+		        output(logfiles[i].file, buf, args); \
+		        va_end(args); \
 		} \
 	    } \
+            if (writers != NULL) \
+                list_remove_producer(writers); \
 	    if (dosyslog) { \
 		va_start(args, fmt); \
 		kannel_syslog(buf,args,level); \
@@ -379,25 +435,34 @@ static void kannel_syslog(char *format, va_list args, int level)
 	    char buf[FORMAT_SIZE]; \
 	    va_list args; \
 	    \
-	    add_stderr(); \
 	    format(buf, level, place, err, fmt); \
-        if (logfiles[e].exclusive == GW_EXCL && \
-            level >= logfiles[e].minimum_output_level && \
-            logfiles[e].file != NULL) { \
-            va_start(args, fmt); \
-            output(logfiles[e].file, buf, args); \
-            va_end(args); \
-        } \
+            if (writers != NULL) { \
+                list_lock(writers); \
+                list_add_producer(writers); \
+                list_unlock(writers); \
+            } \
+            if (logfiles[e].exclusive == GW_EXCL && \
+                level >= logfiles[e].minimum_output_level && \
+                logfiles[e].file != NULL) { \
+                va_start(args, fmt); \
+                output(logfiles[e].file, buf, args); \
+                va_end(args); \
+            } \
+            if (writers != NULL) \
+              list_remove_producer(writers); \
 	} while (0)
 
 
-void gw_panic(int err, const char *fmt, ...) 
+void gw_panic(int err, const char *fmt, ...)
 {
     /* 
      * we don't want PANICs to spread accross smsc logs, so
      * this will be always within the main core log.
      */
     FUNCTION_GUTS(GW_PANIC, "");
+#ifdef SEGFAULT_PANIC
+    *((char*)0) = 0;
+#endif
     exit(EXIT_FAILURE);
 }
 
