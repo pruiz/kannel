@@ -85,7 +85,7 @@
 #define	SMPP_language_indicator 		0x020D 
 #define	SMPP_sar_total_segments 		0x020E 
 #define	SMPP_sar_segment_seqnum 		0x020F 
-#define	SMPP_SC_interface_version 		0x0210 
+#define	SMPP_sc_interface_version 		0x0210 
 #define	SMPP_callback_num_pres_ind 		0x0302 
 #define	SMPP_callback_num_atag 			0x0303 
 #define	SMPP_number_of_messages 		0x0304 

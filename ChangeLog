@@ -1,3 +1,13 @@
+2004-03-27  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/smsc/smpp_pdu.[ch], gw/smsc/smpp_pdu.def, gw/smsc/smpp_pdu_opt.def:
+      applied patch with new version of optional params handling in smpp pdu.
+      With this version Dict* is killed and all opt. params are treated the
+      same as mandatory and could be easier accessed. Now pack/unpack for int 
+      values works too.
+      Note: not available in pdu opt. params are initialized with '-1' for int,
+      NULL for nulterminated/octet strings.
+      [Msg-Id: <200403231506.31479.a.malysh@centrium.de>].
+
 2004-03-22  Alexander Malysh  <a.malysh@centrium.de> 
     * test/test_dbpool.c: applied missind part of last commit.
       Thanks again to "Robert Galach" <kanelek (at) tenbit.pl>.

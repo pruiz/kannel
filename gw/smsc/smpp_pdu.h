@@ -58,6 +58,8 @@
  * smpp_pdu.h - declarations for SMPP PDUs
  *
  * Lars Wirzenius
+ * Alexander Malysh <a.malysh@centrium.de>:
+ *     Extended optional parameters implementation.
  */
 
 
@@ -70,8 +72,10 @@
 
 
 enum {
-    #define OPTIONAL_BEGIN(num_expected)
-    #define TLV(tag_id, min_len, max_len)
+    #define OPTIONAL_BEGIN
+    #define TLV_INTEGER(name, max_len)
+    #define TLV_NULTERMINATED(name, max_len)
+    #define TLV_OCTETS(name, min_len, max_len)
     #define OPTIONAL_END
     #define INTEGER(name, octets)
     #define NULTERMINATED(name, max_octets)
@@ -87,14 +91,16 @@ struct SMPP_PDU {
     unsigned long type;
     const char *type_name;
     union {
-	#define OPTIONAL_BEGIN(num_expected) Dict * optional_parameters;
-	#define TLV(tag_id, min_len, max_len)
-	#define OPTIONAL_END
-	#define INTEGER(name, octets) unsigned long name;
-	#define NULTERMINATED(name, max_octets) Octstr *name;
-	#define OCTETS(name, field_giving_octets) Octstr *name;
-	#define PDU(name, id, fields) struct name { fields } name;
-	#include "smpp_pdu.def"
+        #define OPTIONAL_BEGIN
+        #define TLV_INTEGER(name, octets) unsigned long name;
+        #define TLV_NULTERMINATED(name, max_len) Octstr *name;
+        #define TLV_OCTETS(name, min_len, max_len) Octstr *name;
+        #define OPTIONAL_END
+        #define INTEGER(name, octets) unsigned long name;
+        #define NULTERMINATED(name, max_octets) Octstr *name;
+        #define OCTETS(name, field_giving_octets) Octstr *name;
+        #define PDU(name, id, fields) struct name { fields } name;
+        #include "smpp_pdu.def"
     } u;
 };
 
