@@ -1,3 +1,12 @@
+2001-10-26  Stipe Tolj  <tolj@wapme-systems.de>
+
+    * gw/wap_ota_prov.h: added file containing WAP OTA configuration 
+      message tokens for the WBXML encoding.
+
+    * gw/smsbox.c: refined static Octstr *smsbox_req_sendota() to use official
+      WAP OTA configuration specification to support all new handsets capable
+      of receiving OTA configuration messages via SMS bearer.
+
 2001-10-24  Stipe Tolj  <tolj@wapme-systems.de>
  
     * gw/connc.c: fixed a typo in void
