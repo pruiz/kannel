@@ -2086,25 +2086,418 @@ send-url = "http://localhost:20022"
     <literal>denied-smsc-id</literal> to set up the routing to your
     taste. See also SMS PUSH settings ('sendsms-user' groups), below.</para>
 </sect3>
+
+<sect3>
+<title>Feature checklist</title>
+
+<para>Not all of Kannel's SMSC drivers support the same set of features.
+This is because they were written at different times, and new features
+are often only added to drivers that the feature author can test.</para>
+
+<para>The table in this section is an attempt to show exactly what
+features to expect from a driver, and to help identify areas where
+drivers need to be updated.  Currently most of the entries are
+marked as "not tested" because the table is still new.</para>
+
+<para>Some of the items are not really features, but rather the absence
+of specific bugs that seem to show up often.</para>
+
+<table frame=none>
+ <title>SMSC driver features</title>
+ <tgroup cols="12" align="center">
+  <colspec colname="first" colnum="1" align="left">
+  <colspec colname="last" colnum="12">
+  <spanspec spanname="feature" namest="first" nameend="last">
+  <thead>
+   <row>
+     <entry>Feature</entry>
+     <entry>cimd</entry>
+     <entry>cimd2</entry>
+     <entry>emi</entry>
+     <entry>emi_ip</entry>
+     <entry>emi2</entry>
+     <entry>smpp</entry>
+     <entry>sema</entry>
+     <entry>ois</entry>
+     <entry>at</entry>
+     <entry>http</entry>
+     <entry>fake</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row>
+    <entry spanname="feature">Can send octet data without UDH</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>y?<footnote id="nomarkod"><para>Does not mark it as octet data</para></footnote></entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can send unicode messages</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can send octet data with UDH</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>N</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?<footnoteref linkend="nomarkod"></entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can send text messages with UDH</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>?</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can receive octet data without UDH</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>y?<footnote><para>However, it looks like the <literal>sema</literal> driver can't receive <emphasis>text</emphasis> data.</para></footnote></entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can receive unicode messages</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can receive octet data with UDH</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>N</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can receive text messages with UDH</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>N</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Correctly encodes <literal>@</literal> when sending</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Correctly encodes <literal>&auml;</literal> when sending</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Correctly encodes <literal>{</literal> when sending</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>?</entry>
+    <entry>n</entry>
+    <entry>N<footnote><para>Miscalculates message length</para></footnote></entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can receive <literal>@</literal> in text messages</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can receive <literal>&auml;</literal> in text messages</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can receive <literal>{</literal> in text messages</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>?</entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+    <entry>y?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can keep idle connections alive</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>?</entry>
+    <entry>y?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can shut down idle connections</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>?</entry>
+    <entry>n</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can set validity period</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can set arbitrary data coding scheme</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+   </row>
+
+  </tbody>
+ </tgroup>
+</table>
+
+<informaltable frame="none">
+ <tgroup cols="2">
+  <colspec colnum="1" align="center">
+  <thead>
+   <row><entry>Symbol</entry><entry>Meaning</entry></row>
+  </thead>
+
+  <tbody>
+
+   <row>
+    <entry>?</entry>
+    <entry>not yet investigated</entry>
+   </row>
+ 
+   <row>
+    <entry>y</entry>
+    <entry>driver has this feature, and it has been tested</entry>
+   </row>
+  
+   <row>
+    <entry>y?</entry>
+    <entry>driver probably has this feature, has not been tested</entry>
+   </row>
+  
+   <row>
+    <entry>n</entry>
+    <entry>driver does not have this feature</entry>
+   </row>
+  
+   <row>
+    <entry>N</entry>
+    <entry>driver claims to have this feature but it doesn't work<entry>
+   </row>
+
+   <row>
+    <entry>-</entry>
+    <entry>feature is not applicable for this driver</entry>
+   </row>
+
+  </tbody>
+
+ </tgroup>
+</informaltable>
+
 </sect2>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -1,3 +1,9 @@
+2001-05-27  Richard Braakman  <dark@wapit.com>
+
+	* doc/userguide/userguide.xml: Added big table of smsc_* features,
+	to get an overview of which smsc driver supports what.  It's still
+	mostly empty.
+
 2001-05-26  Richard Braakman  <dark@wapit.com>
 
 	* gw/urltrans.c: Fixed bug in find_default_translation() that would
