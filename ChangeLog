@@ -1,3 +1,9 @@
+2000-04-27  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/gwmem.h: Move prototype declarations out of the #if
+	construct, because all of them are compiled though only one
+	set is used.
+
 2000-04-26  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_cimd2.c: Wrote.  Support for CIMD2 servers.

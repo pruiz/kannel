@@ -16,18 +16,33 @@
 #define _GWMEM_H
 
 
-#if USE_GWMEM_NATIVE
-
-/*
- * The `native' wrapper.
- */
-
 void gw_native_init(void);
 void gw_native_check_leaks(void);
 void *gw_native_malloc(size_t size);
 void *gw_native_realloc(void *ptr, size_t size);
 void gw_native_free(void *ptr);
 char *gw_native_strdup(const char *str);
+
+
+void gw_check_init_mem(void);
+void gw_check_check_leaks(void);
+void *gw_check_malloc(size_t size, 
+	const char *filename, long line, const char *function);
+void *gw_check_realloc(void *ptr, size_t size, 
+	const char *filename, long line, const char *function);
+void  gw_check_free(void *ptr, 
+	const char *filename, long line, const char *function);
+char *gw_check_strdup(const char *str, 
+	const char *filename, long line, const char *function);
+void gw_check_assert_allocated_real(void *ptr, const char *filename, long line,
+	const char *function);
+
+
+#if USE_GWMEM_NATIVE
+
+/*
+ * The `native' wrapper.
+ */
 
 #define gw_init_mem()
 #define gw_check_leaks()
@@ -42,19 +57,6 @@ char *gw_native_strdup(const char *str);
 /*
  * The `check' wrapper.
  */
-
-void gw_check_init_mem(void);
-void gw_check_check_leaks(void);
-void *gw_check_malloc(size_t size, 
-	const char *filename, long line, const char *function);
-void *gw_check_realloc(void *ptr, size_t size, 
-	const char *filename, long line, const char *function);
-void  gw_check_free(void *ptr, 
-	const char *filename, long line, const char *function);
-char *gw_check_strdup(const char *str, 
-	const char *filename, long line, const char *function);
-void gw_check_assert_allocated_real(void *ptr, const char *filename, long line,
-	const char *function);
 
 #define gw_init_mem() (gw_check_init_mem())
 #define gw_check_leaks() (gw_check_check_leaks())
