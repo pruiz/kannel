@@ -1,3 +1,8 @@
+2000-09-28  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/socket.c: udp_bind: Recognize interf "*" as an alias for
+	INADDR_ANY, so that Kannel again follows documentation.
+
 2000-09-27  Richard Braakman  <dark@wapit.com>
 
 	* gw/wsp-strings.c: Changed everything in order to get

@@ -357,11 +357,15 @@ int udp_bind(int port, const char *interface_name) {
 	
 	sa.sin_family = AF_INET;
 	sa.sin_port = htons(port);
-        if (gw_gethostbyname(&hostinfo, interface_name) == -1) {
-                error(errno, "gethostbyname failed");
-                return -1;
-        }
-        sa.sin_addr = *(struct in_addr *) hostinfo.h_addr;
+    	if (strcmp(interface_name, "*") == 0)
+	    	sa.sin_addr.s_addr = htonl(INADDR_ANY);
+	else {
+		if (gw_gethostbyname(&hostinfo, interface_name) == -1) {
+			error(errno, "gethostbyname failed");
+			return -1;
+		}
+		sa.sin_addr = *(struct in_addr *) hostinfo.h_addr;
+	}
 
 	if (bind(s, (struct sockaddr *) &sa, (int) sizeof(sa)) == -1) {
 		error(errno, "Couldn't bind a UDP socket to port %d", port);
