@@ -1,3 +1,7 @@
+2000-01-10    <rpr@rpr.wapit.com>
+
+	* gw/wsp.*: continued capability work
+
 2000-01-10 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_events-decl.h: added user_data to primitive TRAbort (WSP PDU will

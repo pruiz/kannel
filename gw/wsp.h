@@ -5,6 +5,38 @@
 #ifndef WSP_H
 #define WSP_H
 
+/*
+ * these capability maximum values are real maximum
+ * values to our server. It cannot negotiate larger values
+ * than these. No way.
+ */
+
+#define WSP_MAX_CLIENT_SDU 0
+#define WSP_MAX_SERVER_SDU 0
+#define WSP_MAX_PROTOCOL_OPTIONS 0x00
+#define WSP_MAX_METHOD_MOR 1
+#define WSP_MAX_PUSH_MOR 1
+
+/*
+ * int WSP_accepted_extended_methods[] = { -1 };
+ * int WSP_accepted_header_code_pages[] = { -1 };
+ */
+
+/* well, aliases are not negotiated... */
+
+/* use bitflags for set values */
+   
+#define WSP_CSDU_SET 	1
+#define WSP_SSDU_SET 	2
+#define WSP_PO_SET 	4
+#define WSP_MMOR_SET	8
+#define WSP_PMOR_SET	16
+#define WSP_EM_SET	32
+#define WSP_HCP_SET	64
+#define WSP_A_SET	128
+
+
+
 typedef struct WSPMachine WSPMachine;
 typedef struct WSPMethodMachine WSPMethodMachine;
 typedef struct WSPEvent WSPEvent;

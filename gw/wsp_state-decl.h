@@ -101,7 +101,7 @@ ROW(CONNECTING,
 		debug(0, "WSP: Session ID is %ld", sm->session_id);
 
 		/* Make a ConnectReply PDU for WSP. */
-		pdu = make_connectreply_pdu(sm->session_id);
+		pdu = make_connectreply_pdu(sm, sm->session_id);
 
 		/* Make a TR-Result.req event for WTP. */
 		wtp_event = wtp_event_create(TRResult);

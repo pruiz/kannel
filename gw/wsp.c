@@ -59,7 +59,7 @@ static void append_uintvar(Octstr *pdu, long n);
 static void append_octstr(Octstr *pdu, Octstr *os);
 
 static Octstr *make_connectionmode_pdu(long type);
-static Octstr *make_connectreply_pdu(long session_id);
+static Octstr *make_connectreply_pdu(WSPMachine *m, long session_id);
 static Octstr *make_reply_pdu(long status, long type, Octstr *body);
 
 static long convert_http_status_to_wsp_status(long http_status);
@@ -333,20 +333,33 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 	    if (unpack_uintvar(&uiv, caps, &off) == -1)
 		warning(0, "Problems getting client SDU size capability");
 	    else {
-		debug(0, "Client SDU size %lu", uiv);
-		m->client_SDU_size = uiv;
+		if (WSP_MAX_CLIENT_SDU && uiv < WSP_MAX_CLIENT_SDU) {
+		    debug(0, "Client tried client SDU size %lu larger than our max %d",
+			  uiv, WSP_MAX_CLIENT_SDU);
+		} else if (!(m->set_caps & WSP_CSDU_SET)) {
+		    debug(0, "Client SDU size negotiated to %lu", uiv);
+		    m->client_SDU_size = uiv;
+		    m->set_caps |= WSP_CSDU_SET;
+		}
 	    }
 	    break;
 	case 0x01:
 	    if (unpack_uintvar(&uiv, caps, &off) == -1)
 		warning(0, "Problems getting server SDU size capability");
 	    else {
-		debug(0, "Server SDU size %lu", uiv);
-		m->server_SDU_size = uiv;
+		if (WSP_MAX_SERVER_SDU && uiv < WSP_MAX_SERVER_SDU) {
+		    debug(0, "Client tried server SDU size %lu larger than our max %d",
+			  uiv, WSP_MAX_SERVER_SDU);
+		} else if (!(m->set_caps & WSP_SSDU_SET)) {
+		    debug(0, "Server SDU size negotiated to %lu", uiv);
+		    m->server_SDU_size = uiv;
+		    m->set_caps |= WSP_SSDU_SET;
+		}
 	    }
 	    break;
 	case 0x02:
-	    /* XXX should be taken as octstr or something */
+	    /* XXX should be taken as octstr or something - and
+	    * be sure, that there is that information */
 	    flags = (octstr_get_char(caps,off));
 	    debug(0, "Receiver flags %0xd", flags);
 	    /* currently our server does not serve any of these, but
@@ -502,13 +515,32 @@ static void append_octstr(Octstr *pdu, Octstr *os) {
 }
 
 
-static Octstr *make_connectreply_pdu(long session_id) {
-	Octstr *pdu;
+static Octstr *make_connectreply_pdu(WSPMachine *m, long session_id) {
+	Octstr *pdu, *caps = NULL, *hdrs = NULL;
 	
 	pdu = make_connectionmode_pdu(ConnectReply_PDU);
 	append_uintvar(pdu, session_id);
+	/* set CapabilitiesLen */
+	if (m->set_caps) {
+	    caps = octstr_create_empty();
+
+	    /* XXX put negotiated capabilities into octstr */
+
+	    append_uintvar(pdu, octstr_len(caps));
+	} else
+	    append_uintvar(pdu, 0);
+
+	/* set HeadersLen */
 	append_uintvar(pdu, 0);
-	append_uintvar(pdu, 0);
+
+	if (caps != NULL) {
+	    append_octstr(pdu, caps);
+	    octstr_destroy(caps);
+	}
+	if (hdrs != NULL) {
+	    append_octstr(pdu, hdrs);
+	    octstr_destroy(hdrs);
+	}
 	return pdu;
 }
 

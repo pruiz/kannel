@@ -22,6 +22,7 @@ SESSION_MACHINE({
 	INTEGER(server_port);
 	SESSION_POINTER(next);
 
+	INTEGER(set_caps);
 	INTEGER(protocol_options);
 	INTEGER(MOR_method);
 	INTEGER(MOR_push);
