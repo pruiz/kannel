@@ -380,6 +380,10 @@ ws_asm_linearize(WsCompiler *compiler)
                 }
                 break;
 
+            case WS_ASM_TJUMP_BW:
+                 ins->ws_offset = offset - ins->ws_label->offset;
+                 break;
+
             case WS_ASM_TJUMP_BW_W:
                 ins->ws_offset = offset - ins->ws_label->offset;
 
