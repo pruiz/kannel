@@ -1,3 +1,12 @@
+2000-12-06  Yann Muller  <ymuller@3glab.com>
+
+	* gw/smsbox.c: Corrected reference number for concatenation UDH,
+	recalculate UDH length after adding concatenation info and adjust
+	if UDH was empty. Commented out reset of 'catenate' if UDH is
+	already present.
+	
+	* gw/smsc_at.c: fixed the length of the user data in pdu_encode().
+	
 2000-12-05  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/wapbox.c: Converted to use bearerbox communication stuff

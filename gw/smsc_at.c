@@ -370,7 +370,7 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 	ostr = octstr_create("");
 
 	/* debug */
-	/* printf("Command: %s\n", cmd); */
+	printf("Command: %s\n", cmd);
 	
 	/* DEBUG !!! - pretend to send but just return success (0)*/
 	/* return 0; */
@@ -696,9 +696,9 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	len = octstr_len(msg->sms.msgdata);
 	if(msg->sms.flag_udh != 0) {
 		if(msg->sms.flag_8bit != 0)
-			len += octstr_len(msg->sms.udhdata) + 1;
+			len += octstr_len(msg->sms.udhdata);
 		else
-			len += octstr_len(msg->sms.udhdata) / 2 * 8 / 7 + 1;
+			len += octstr_len(msg->sms.udhdata) / 2 * 8 / 7;
 	}
 	pdu[pos] = numtext((len & 240) >> 4);
 	pos++;
