@@ -35,11 +35,11 @@
 	<para><emphasis>UDP sender/receiver module</emphasis> receives and sends all
 	WDP packets which are transferred via UDP packets.</para>
 
-	<para><emphasis>WAPbox connection module</empasis> acts as a
+	<para><emphasis>WAPbox connection module</emphasis> acts as a
 	server for WAPboxes, allowing them to contact and
 	sending and receiving messages.</para>
 
-	<para><emphasis>SMSbox connection module</empasis> acts as a
+	<para><emphasis>SMSbox connection module</emphasis> acts as a
 	server for SMSboxes, allowing them to contact and
 	sending and receiving messages.</para>
 
