@@ -151,6 +151,7 @@ static struct dlr_entry* dlr_mysql_get(const Octstr *smsc, const Octstr *ts, con
     res->source = row[3] ? octstr_create(row[3]) : octstr_create("");
     res->destination = row[4] ? octstr_create(row[4]) : octstr_create("");
     res->boxc_id = row[5] ? octstr_create(row[5]) : octstr_create("");
+    res->smsc = octstr_duplicate(smsc);
 
     mysql_free_result(result);
 

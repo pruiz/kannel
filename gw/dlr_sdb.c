@@ -163,6 +163,8 @@ static struct dlr_entry*  dlr_sdb_get(const Octstr *smsc, const Octstr *ts, cons
         goto notfound;
     }
 
+    res->smsc = octstr_duplicate(smsc);
+
     return res;
 
 notfound:

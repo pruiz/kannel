@@ -1,3 +1,8 @@
+2003-09-26  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/dlr_mysql.c, gw/dlr_oracle.c, gw/dlr_sdb.c: fixed bug, that smsc-id was
+      not copied to dlr message.
+      Thanks to: Adi Prasaja <adi@imt.co.id> for pointing this.
+
 2003-09-25  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/mime.[ch]: added function mime_entity_header() and mime_entity_body()
       to return HTTP header and HTTP POST body of e MIMEEntity type.

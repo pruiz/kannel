@@ -170,6 +170,7 @@ static struct dlr_entry* dlr_get_oracle(const Octstr *smsc, const Octstr *ts, co
         res->destination = octstr_create(LO2CSTR(row, 4));
         res->boxc_id = octstr_create(LO2CSTR(row, 5));
         list_destroy(row, octstr_destroy_item);
+        res->smsc = octstr_duplicate(smsc);
     }
     list_destroy(result, NULL);
 
