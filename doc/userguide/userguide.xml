@@ -3200,7 +3200,7 @@ marked as "not tested" because the table is still new.</para>
    </row>
 
    <row>
-    <entry spanname="feature">Can set Pid</entry>
+    <entry spanname="feature">Can set PID</entry>
    </row>
    <row>
     <entry></entry>
@@ -3209,11 +3209,30 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>y</entry>
+    <entry>y</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>y</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+   </row>
+
+	<row>
+    <entry spanname="feature">Can set RPI</entry>
+   </row>
+   <row>
+	 <entry></entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>y</entry>
+    <entry>y</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
    </row>
@@ -5460,6 +5479,12 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <entry valign=bottom>
 	   Optional. If unset, kannel uses the alt-dcs defined on smsc configuration,
 	   or 0X per default. If equals to 1, uses FX. If equals to 2, force 0X.
+   </entry></row>
+
+   <row><entry><literal>rpi</literal></entry>
+   <entry><literal>number</literal></entry>
+   <entry valign=bottom>
+	   Optional. Sets the Return Path Indicator (RPI) value. (See ETSI Documentation).
    </entry></row>
 
     <row><entry><literal>account</literal></entry>
