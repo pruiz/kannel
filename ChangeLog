@@ -1,3 +1,8 @@
+2001-09-14 Andreas Fink <andreas@fink.org>
+	* gw/smsc_at2.c
+	added some callbacks to bb_smscconn_sent and 
+	bb_smscconn_send_failed as suggested by Paul Keogh
+
 2001-09-12 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* bb_store.c: don't try to rename store.lock to store.lock.bak if
 	store.lock does not exists

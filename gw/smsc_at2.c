@@ -814,6 +814,7 @@ void at2_device_thread(void *arg)
     }
     
     conn->status = SMSCCONN_ACTIVE;
+    bb_smscconn_connected(conn);
     while (!privdata->shutdown)
     {
     	 l = list_len(privdata->outgoing_queue);
@@ -825,7 +826,11 @@ void at2_device_thread(void *arg)
     at2_close_device(privdata);
     conn->status = SMSCCONN_DISCONNECTED;
     /* maybe some cleanup here?*/
+    gw_free(conn->data);
+    conn->data = NULL;
+    conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
     conn->status = SMSCCONN_DEAD;
+    bb_smscconn_killed();
 }
 
 int at2_shutdown_cb(SMSCConn *conn, int finish_sending)
@@ -848,7 +853,6 @@ int at2_shutdown_cb(SMSCConn *conn, int finish_sending)
 	    bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
 	}
     }
-
     gwthread_wakeup(privdata->device_thread);
     return 0;
 
@@ -1238,7 +1242,7 @@ void at2_decode7bituncompressed(Octstr *input, int len, Octstr *decoded, int off
 
 
 /******************************************************************************
- * Send a message
+ * Sends messages from the queue
  */
 
 void at2_send_messages(PrivAT2data *privdata)
@@ -1252,6 +1256,10 @@ void at2_send_messages(PrivAT2data *privdata)
     } while (msg);
 }
 
+/******************************************************************************
+** sends a single message
+** after having it sent, the msg is no longe belonging to us
+*/
 void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 {
     unsigned char command[500], pdu[500];
@@ -1299,12 +1307,26 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 		retries--;
 	    }
 	    if(ret >= 0)
-	    	counter_increase(privdata->conn->received);
+	    {
+	    	counter_increase(privdata->conn->sent);
+	    	bb_smscconn_sent(privdata->conn, msg);
+	    }
 	    else
+	    {
 	    	counter_increase(privdata->conn->failed);
+	    	bb_smscconn_send_failed(privdata->conn,msg,SMSCCONN_FAILED_MALFORMED);
+	    }
         }
         else
+        {
 	    counter_increase(privdata->conn->failed);
+	    bb_smscconn_send_failed(privdata->conn,msg,SMSCCONN_FAILED_MALFORMED);
+	}
+    }
+    else
+    {
+        counter_increase(privdata->conn->failed);
+	bb_smscconn_send_failed(privdata->conn,msg,SMSCCONN_FAILED_MALFORMED);
     }
 }
 
