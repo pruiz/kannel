@@ -24,7 +24,10 @@ struct threadinfo
     long number;
     int wakefd_recv;
     int wakefd_send;
-    pthread_cond_t exiting;
+    /* joiners may be NULL.  It is not allocated until a thread wants
+     * to register.  This is safe because the thread table is always
+     * locked when a thread accesses this field. */
+    List *joiners;
 };
 
 struct new_thread_args
@@ -103,7 +106,6 @@ static long fill_threadinfo(pthread_t id, const char *name,
 {
     int pipefds[2];
     long first_try;
-    int ret;
 
     gw_assert(active_threads < THREADTABLE_SIZE);
 
@@ -118,11 +120,7 @@ static long fill_threadinfo(pthread_t id, const char *name,
     ti->wakefd_send = pipefds[1];
     socket_set_blocking(ti->wakefd_recv, 0);
     socket_set_blocking(ti->wakefd_send, 0);
-
-    ret = pthread_cond_init(&ti->exiting, NULL);
-    if (ret != 0) {
-        panic(ret, "cannot create condition variable for new thread");
-    }
+    ti->joiners = NULL;
 
     /* Find a free table entry and claim it. */
     first_try = next_threadnumber;
@@ -155,13 +153,30 @@ static struct threadinfo *getthreadinfo(void)
     return threadinfo;
 }
 
+/*
+ * Go through the list of threads waiting for us to exit, and tell
+ * them that we're exiting.  The joiner_cond entries are registered
+ * by those threads, and will be cleaned up by them.
+ */
+static void alert_joiners(void)
+{
+    struct threadinfo *threadinfo;
+    pthread_cond_t *joiner_cond;
+
+    threadinfo = getthreadinfo();
+    if (!threadinfo->joiners)
+        return;
+    while ((joiner_cond = list_extract_first(threadinfo->joiners))) {
+        pthread_cond_broadcast(joiner_cond);
+    }
+}
+
 static void delete_threadinfo(void)
 {
     struct threadinfo *threadinfo;
 
     threadinfo = getthreadinfo();
-    pthread_cond_broadcast(&threadinfo->exiting);
-    pthread_cond_destroy(&threadinfo->exiting);
+    list_destroy(threadinfo->joiners, NULL);
     close(threadinfo->wakefd_recv);
     close(threadinfo->wakefd_send);
     THREAD(threadinfo->number) = NULL;
@@ -266,6 +281,7 @@ static void *new_thread(void *arg)
     lock();
     debug("gwlib.gwthread", 0, "Thread %ld (%s) terminates.",
           p->ti->number, p->ti->name);
+    alert_joiners();
     /* Must free p before signaling our exit, otherwise there is
      * a race with gw_check_leaks at shutdown. */
     gw_free(p);
@@ -401,6 +417,7 @@ long gwthread_create_real(gwthread_func_t *func, const char *name, void *arg)
 void gwthread_join(long thread)
 {
     struct threadinfo *threadinfo;
+    pthread_cond_t exit_cond;
     int ret;
 
     gw_assert(thread >= 0);
@@ -408,19 +425,35 @@ void gwthread_join(long thread)
     lock();
     threadinfo = THREAD(thread);
     if (threadinfo == NULL || threadinfo->number != thread) {
+        /* The other thread has already exited */
         unlock();
         return;
     }
 
+    /* Register our desire to be alerted when that thread exits,
+     * and wait for it. */
+
+    ret = pthread_cond_init(&exit_cond, NULL);
+    if (ret != 0) {
+        warning(ret, "gwthread_join: cannot create condition variable.");
+        unlock();
+        return;
+    }
+
+    if (!threadinfo->joiners)
+        threadinfo->joiners = list_create();
+    list_append(threadinfo->joiners, &exit_cond);
+
     /* The wait immediately releases the lock, and reacquires it
      * when the condition is satisfied.  So don't worry, we're not
      * blocking while keeping the table locked. */
-    ret = pthread_cond_wait(&threadinfo->exiting, &threadtable_lock);
+    ret = pthread_cond_wait(&exit_cond, &threadtable_lock);
     unlock();
 
-    if (ret != 0) {
+    if (ret != 0)
         warning(ret, "gwthread_join: error in pthread_cond_wait");
-    }
+
+    pthread_cond_destroy(&exit_cond);
 }
 
 void gwthread_join_all(void)
@@ -447,10 +480,24 @@ void gwthread_wakeup_all(void)
 
 void gwthread_join_every(gwthread_func_t *func)
 {
-    long i;
     struct threadinfo *ti;
+    pthread_cond_t exit_cond;
     int ret;
+    long i;
 
+    ret = pthread_cond_init(&exit_cond, NULL);
+    if (ret != 0) {
+        warning(ret, "gwthread_join_every: cannot create condition variable.");
+        unlock();
+        return;
+    }
+
+    /*
+     * FIXME: To be really safe, this function should keep looping
+     * over the table until it does a complete run without having
+     * to call pthread_cond_wait.  Otherwise, new threads could
+     * start while we wait, and we'll miss them.
+     */
     lock();
     for (i = 0; i < THREADTABLE_SIZE; ++i) {
         ti = THREAD(i);
@@ -459,12 +506,16 @@ void gwthread_join_every(gwthread_func_t *func)
         debug("gwlib.gwthread", 0,
               "Waiting for %ld (%s) to terminate",
               ti->number, ti->name);
-        ret = pthread_cond_wait(&ti->exiting, &threadtable_lock);
-        if (ret != 0) {
+        if (!ti->joiners)
+            ti->joiners = list_create();
+        list_append(ti->joiners, &exit_cond);
+        ret = pthread_cond_wait(&exit_cond, &threadtable_lock);
+        if (ret != 0)
             warning(ret, "gwthread_join_all: error in pthread_cond_wait");
-        }
     }
     unlock();
+
+    pthread_cond_destroy(&exit_cond);
 }
 
 /* Return the thread id of this thread. */
