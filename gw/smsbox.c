@@ -265,9 +265,11 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	    octstr_replace(msg->sms.msgdata, empty, strlen(empty));
     }
 
-    if (max_msgs == 0)
+    if (max_msgs == 0) {
+	msg_destroy(msg);
     	return 0;
-
+    }
+    
     if (trans == NULL) {
 	header = NULL;
 	footer = NULL;
@@ -552,12 +554,14 @@ static void obey_request_thread(void *arg)
 	    msg_dump(msg, 0);
 		    /* NACK should be returned here if we use such 
 		       things... future implementation! */
+	    msg_destroy(msg);
 	    continue;
 	}
     
 	if (octstr_compare(msg->sms.sender, msg->sms.receiver) == 0) {
 	    info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
 		 octstr_get_cstr(msg->sms.sender));
+	    msg_destroy(msg);
 	    continue;
 	}
     
@@ -611,7 +615,6 @@ static void obey_request_thread(void *arg)
 	       urltranslation */
 	    reply = octstr_create("Request failed");
 	    trans = NULL;	/* do not use any special translation */
-    	    break;
 	    
 	case 1:
 	    octstr_destroy(msg->sms.msgdata);
