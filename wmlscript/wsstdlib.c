@@ -217,7 +217,7 @@ static WsStdLibReg libraries[] =
         {"WTAPublic", 512, NF(lib_wtapublic_functions), lib_wtapublic_functions},
         {"WTAVoiceCall", 513, NF(lib_wtavoicecall_functions), lib_wtavoicecall_functions},
         {"WTANetText", 514, NF(lib_wtanettext_functions), lib_wtanettext_functions},
-        {"Phonebook", 515, NF(lib_phonebook_functions), lib_phonebook_functions},
+        {"PhoneBook", 515, NF(lib_phonebook_functions), lib_phonebook_functions},
         {"WTAMisc", 516, NF(lib_wtamisc_functions), lib_wtamisc_functions},
         {"WTAGSM", 518, NF(lib_wtagsm_functions), lib_wtagsm_functions},
         {"WTACallLog", 519, NF(lib_wtacalllog_functions), lib_wtacalllog_functions},

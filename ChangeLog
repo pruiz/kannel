@@ -1,3 +1,7 @@
+2000-10-24  Richard Braakman  <dark@wapit.com>
+
+	* wmlscript/wsstdlib.c: Corrected "Phonebook" to "PhoneBook".
+
 2000-10-24  Kalle Marjola  <rpr@wapit.com>
 
 	* doc/userguide/userguide.xml: filled SMPP smsc group fields,
