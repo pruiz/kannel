@@ -771,7 +771,7 @@ long mb_u_int32_to_long(P_WBXML_MB_U_INT32 value)
   return result;
 }
 
-OutputEncodedString(const unsigned char* str)
+void OutputEncodedString(const unsigned char* str)
 {
 	/* Work our way down the string looking for illegal chars */
 	while (*str != 0)

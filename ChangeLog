@@ -1,3 +1,8 @@
+Tue Jun  6 08:44:13 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* test/decompile.c: Added return type (void) to function
+	OutputEncodedString.
+
 2000-06-05  Richard Braakman  <dark@wapit.com>
 
 	* gw/wsp_pdu.[ch]: Added wtp_pdu_append_tpi function.
