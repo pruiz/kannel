@@ -1,3 +1,8 @@
+2000-11-20  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/dict.c: Avoid an extra list_search if we know the 
+	list was empty.
+
 2000-11-20  Richard Braakman  <dark@wapi.com>
 
 	* Making release 0.13.

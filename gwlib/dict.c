@@ -135,9 +135,11 @@ void dict_put(Dict *dict, Octstr *key, void *value)
 
     lock(dict);
     i = key_to_index(dict, key);
-    if (dict->tab[i] == NULL)
+    if (dict->tab[i] == NULL) {
 	dict->tab[i] = list_create();
-    p = list_search(dict->tab[i], key, item_has_key);
+	p = NULL;
+    } else
+	p = list_search(dict->tab[i], key, item_has_key);
     if (p == NULL) {
     	p = item_create(key, value);
 	list_append(dict->tab[i], p);
