@@ -1,4 +1,9 @@
 2003-03-11  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/dbpool.[ch], test/test_dbpool.c: implements database connection
+      pools for further use within Kannel. Currently MySQL is supported. More
+      abstraction for various other DBMS is needed. 
+
+2003-03-11  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_boxc.c, gw/bb_smscconn.c, gw/msg.h, gw/smsbox.c: added Alexander's
       ACK/NACK patch to provide smsbox connections with accurate ACK'ing data.
       [Msg-ID: <200303092018.30806.a.malysh@centrium.de>]
