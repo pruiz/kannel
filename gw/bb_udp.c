@@ -337,3 +337,22 @@ int udp_die(void)
 }
 
 
+int udp_outgoing_queue(void)
+{
+    int i, q = 0;
+    Udpc *udpc;
+
+    if (!udp_running || udpc_list == NULL)
+	return 0;
+
+    list_lock(udpc_list);
+    for (i=0; i < list_len(udpc_list); i++) {
+	udpc = list_get(udpc_list, i);
+	q += list_len(udpc->outgoing_list);
+    }
+    list_unlock(udpc_list);
+    return q;
+}
+
+
+

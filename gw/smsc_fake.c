@@ -112,6 +112,9 @@ int fake_pending_smsmessage(SMSCenter *smsc)
 
 int fake_submit_msg(SMSCenter *smsc, Msg *msg)
 {
+    if (smsc->socket == -1)
+	return -1;
+    
     if (msg_type(msg) == sms) {
         if (octstr_write_to_socket(smsc->socket, msg->sms.sender) == -1 ||
             write_to_socket(smsc->socket, " ") == -1 ||

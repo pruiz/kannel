@@ -42,6 +42,8 @@ int smsbox_restart(Config *config);
 int wapbox_start(Config *config);
 
 Octstr *boxc_status(int xml);
+/* tell total number of messages in seperate wapbox incoming queues */
+int boxc_incoming_wdp_queue(void);
 
 /*---------------
  * bb_udp.c (UDP receiver/sender)
@@ -55,6 +57,8 @@ int udp_die(void);	/* called when router dies */
 /* add outgoing WDP. If fails, return -1 and msg is untouched, so
  * caller must think of new uses for it */
 int udp_addwdp(Msg *msg);
+/* tell total number of messages in seperate UDP outgoing port queues */
+int udp_outgoing_queue(void);
 
 
 
@@ -71,6 +75,8 @@ int smsc_die(void);	/* called when router dies */
 int smsc_addwdp(Msg *msg);
 
 Octstr *smsc_status(int xml);
+/* tell total number of messages in seperate SMSC outgoing queues */
+int smsc_outgoing_queue(void);
 
 
 /*---------------

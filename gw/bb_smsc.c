@@ -464,3 +464,21 @@ Octstr *smsc_status(int xml)
     return octstr_create(tmp);
 }
 
+
+int smsc_outgoing_queue(void)
+{
+    int i, q = 0;
+    Smsc *smsc;
+
+    if (!smsc_running || smsc_list == NULL)
+	return 0;
+
+    list_lock(smsc_list);
+    for(i=0; i < list_len(smsc_list); i++) {
+	smsc = list_get(smsc_list, i);
+	q += list_len(smsc->outgoing_list);
+    }
+    list_unlock(smsc_list);
+    return q;
+}
+

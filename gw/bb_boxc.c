@@ -747,3 +747,20 @@ Octstr *boxc_status(int xml)
     return octstr_create(tmp);
 }
 
+
+int boxc_incoming_wdp_queue(void)
+{
+    int i, q = 0;
+    Boxc *boxc;
+    
+    if (wapbox_list) {
+	list_lock(wapbox_list);
+	for(i=0; i < list_len(wapbox_list); i++) {
+	    boxc = list_get(wapbox_list, i);
+	    q += list_len(boxc->incoming);
+	}
+	list_unlock(wapbox_list);
+    }
+    return q;
+}
+

@@ -566,13 +566,13 @@ Octstr *bb_print_status(int xml)
 	    VERSION, s, t/3600/24, t/3600%24, t/60%60, t%60,
 	    list_producer_count(flow_threads),
 	    counter_value(incoming_wdp_counter),
-	    list_len(incoming_wdp),
+	    list_len(incoming_wdp) + boxc_incoming_wdp_queue(),
 	    counter_value(outgoing_wdp_counter),
-	    list_len(outgoing_wdp),
+	    list_len(outgoing_wdp) + udp_outgoing_queue(),
 	    counter_value(incoming_sms_counter),
 	    list_len(incoming_sms),
 	    counter_value(outgoing_sms_counter),
-	    list_len(outgoing_sms));
+	    list_len(outgoing_sms) + smsc_outgoing_queue());
 
     ret = octstr_create(buf);
 

@@ -1,3 +1,11 @@
+2000-10-18  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsc_fake.c: fixed that message sending is not tried with
+	closed socket, but error is returned instead
+
+	* gw/bb_*.c: added missing queueing information to status: now all
+	lists are added together before reporting queue lengths
+
 2000-10-18 Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wtp_init_state-decl.h, wtp_resp_state-decl.h: Add a comment tell-
@@ -10,7 +18,7 @@
 	still queued in main queues (internal specific queues are not yet
 	counted)
 
-	* gw/bx_*.c: Did initial code changes for 'xmlstatus' query,
+	* gw/bb_*.c: Did initial code changes for 'xmlstatus' query,
 	although it does not return anything yet.
 
 2000-10-18  Lars Wirzenius  <liw@iki.fi>
