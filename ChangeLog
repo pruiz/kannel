@@ -1,3 +1,8 @@
+2001-10-29 Andreas Fink <andreas@fink.org>
+    * gw/smsc_at2.c: changed default speeds for siemens to 19200
+      also updated so Siemens do a sleep wait after opening the port
+      as suggested by "Alexei Pashkovsky" <alexei@m-wise.co.il>
+
 2001-10-26  Stipe Tolj  <tolj@wapme-systems.de>
 
     * gw/wap_ota_prov.h: added file containing WAP OTA configuration 

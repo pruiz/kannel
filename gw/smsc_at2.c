@@ -69,8 +69,8 @@ struct modem_def ModemTypes[MAX_MODEM_TYPES] =
     { "autodetect", 	"AT+IFC=2,2" 	, 0     , "AT+CNMI=1,2,0,0,0",	NULL,		NULL, 	0, 0, 1, 0, 0	},
     { "wavecom", 	"AT+IFC=2,2" 	, 9600  , "AT+CNMI=1,2,0,0,0",	"WAVECOM",	NULL,	0, 0, 1, 1, 1	},
     { "premicell", 	"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"PREMICEL",	NULL,	0, 0, 0, 0, 0	},
-    { "siemens-tc35",	"AT\\Q3" 	, 38400 , "AT+CNMI=1,2,0,0,1",	"SIEMENS", 	"TC35",	0, 0, 1, 1, 1	},
-    { "siemens",	"AT\\Q3" 	, 38400 , "AT+CNMI=1,2,0,0,0",	"SIEMENS", 	"M20",	0, 0, 1, 1, 1	},
+    { "siemens-tc35",	"AT\\Q3" 	, 19200 , "AT+CNMI=1,2,0,0,1",	"SIEMENS", 	"TC35",	0, 1, 1, 1, 1	},
+    { "siemens",	"AT\\Q3" 	, 19200 , "AT+CNMI=1,2,0,0,0",	"SIEMENS", 	"M20",	0, 1, 1, 1, 1	},
     { "nokiaphone",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"NokiaPhone" ,	NULL,	0, 1, 1, 1, 1	},
     { "falcom",		"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"Falcom",	NULL,	0, 0, 1, 0, 0	},
     { "ericcson",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=3,2,0,0",	"R520m",	NULL,	0, 0, 1, 1, 1	}
