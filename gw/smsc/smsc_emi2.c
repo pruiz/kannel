@@ -210,11 +210,12 @@ static Connection *open_send_connection(SMSCConn *conn)
     struct emimsg *emimsg;
     Connection *server;
     Msg *msg;
+    int connect_error = 0;
 
     do_alt_host = octstr_len(privdata->alt_host) != 0 || 
 	    privdata->alt_port != 0;
 
-    alt_host = do_alt_host ? 1 : 0;
+    alt_host = 0;
 
     mutex_lock(conn->flow_mutex);
     conn->status = SMSCCONN_RECONNECTING;
@@ -228,14 +229,13 @@ static Connection *open_send_connection(SMSCConn *conn)
     }
 
     /* if there is no alternative host, sleep and try to re-connect */
-    if(alt_host == 0) {
+    if (alt_host == 0 && connect_error) {
         error(0, "EMI2[%s]: Couldn't connect to SMS center (retrying in %ld seconds).",
               octstr_get_cstr(privdata->name), conn->reconnect_delay);
         gwthread_sleep(conn->reconnect_delay);
-        continue;
     }
 
-	if(alt_host != 1) {
+	if (alt_host != 1) {
 	    info(0, "EMI2[%s]: connecting to Primary SMSC", 
 			    octstr_get_cstr(privdata->name));
 	    server = conn_open_tcp_with_port(privdata->host, privdata->port,
@@ -263,6 +263,7 @@ static Connection *open_send_connection(SMSCConn *conn)
 	    error(0, "EMI2[%s]: opening TCP connection to %s failed",
 		  octstr_get_cstr(privdata->name),
 		  octstr_get_cstr(privdata->host));
+        connect_error = 1;  
 	    continue;
 	}
 
@@ -279,14 +280,17 @@ static Connection *open_send_connection(SMSCConn *conn)
             error(0, "EMI2[%s]: Server rejected our login",
                   octstr_get_cstr(privdata->name));
             conn_destroy(server);
+            connect_error = 1;
             continue;
         } else if (result == 0) {
             error(0, "EMI2[%s]: Got no reply to login attempt "
                      "within 30 seconds", octstr_get_cstr(privdata->name));
             conn_destroy(server);
+            connect_error = 1;
             continue;
         } else if (result == -1) { /* Broken connection, already logged */
             conn_destroy(server);
+            connect_error = 1;
             continue;
         }
         privdata->last_activity_time = 0; /* to force keepalive after login */
