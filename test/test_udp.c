@@ -42,7 +42,7 @@ static void server(int port) {
 	int i, s;
 	Octstr *ping, *pong, *from;
 	
-	s = udp_bind(port);
+	s = udp_bind(port,"0.0.0.0");
 	pong = octstr_create(PONG);
 	if (s == -1)
 		panic(0, "Couldn't set up client socket.");

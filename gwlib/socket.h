@@ -63,7 +63,7 @@ int read_available(int fd, long wait_usec);
  * Create a UDP socket for receiving from clients. Return -1 for failure,
  * a socket file descriptor >= 0 for OK.
  */
-int udp_bind(int port);
+int udp_bind(int port, const char *interface_name);
 
 
 /*

@@ -1,3 +1,8 @@
+2000-09-25  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_udp.c, gwlib/socket.c|h, test/test_udp.c: inserted
+	interface-name patch by Andreas Fink. 
+
 2000-09-25  Lars Wirzenius  <liw@iki.fi>
 
 	* doc/userguide/newconf.txt: Added slightly better descriptions

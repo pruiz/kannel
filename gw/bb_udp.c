@@ -170,7 +170,7 @@ static Udpc *udpc_create(int port, char *interface_name)
     int fl;
     
     udpc = gw_malloc(sizeof(Udpc));
-    udpc->fd = udp_bind(port);
+    udpc->fd = udp_bind(port, interface_name);
 
     os = octstr_create(interface_name);
     udpc->addr = udp_create_address(os, port);

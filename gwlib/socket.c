@@ -341,9 +341,10 @@ int udp_client_socket(void) {
 }
 
 
-int udp_bind(int port) {
+int udp_bind(int port, const char *interface_name) {
 	int s;
 	struct sockaddr_in sa;
+	struct hostent hostinfo;
 	
 	s = socket(PF_INET, SOCK_DGRAM, 0);
 	if (s == -1) {
@@ -353,7 +354,11 @@ int udp_bind(int port) {
 	
 	sa.sin_family = AF_INET;
 	sa.sin_port = htons(port);
-	sa.sin_addr.s_addr = htonl(INADDR_ANY);
+        if (gw_gethostbyname(&hostinfo, interface_name) == -1) {
+                error(errno, "gethostbyname failed");
+                return -1;
+        }
+        sa.sin_addr = *(struct in_addr *) hostinfo.h_addr;
 
 	if (bind(s, (struct sockaddr *) &sa, (int) sizeof(sa)) == -1) {
 		error(errno, "Couldn't bind a UDP socket to port %d", port);
