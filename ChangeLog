@@ -1,4 +1,14 @@
 2005-02-10  Stipe Tolj  <stolj@wapme.de> 
+    * gw/dlr_pgsql.c: fixing bug #190, where PostgreSQL does not take LIMIT
+      for DELETE and UPDATE operations. WARNING: This causes a possible loose
+      of uniqueness, since only timestamp and smsc-id is used as unique id.
+      Which means we will drop *all* messages of a particular second, then
+      at least one of them get's a DLR. This needs a fix in the semantical
+      issue on how DLR resolving is done.
+      Reported by Johann du Preez <johann@profile.co.za>. 
+      [Msg-ID: <000b01c509bd$92e1aee0$bf00a8c0@Pinotage>]
+
+2005-02-10  Stipe Tolj  <stolj@wapme.de> 
     * doc/examples/modems.conf: added modemds group for SonyEricsson GR47 GSM 
       modem module. Thanks to Matti Ärmänen <matti.armanen@sci.fi> for this.
       [Msg-ID: <421C8F56.2050502@sci.fi>]

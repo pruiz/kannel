@@ -215,7 +215,7 @@ static void dlr_pgsql_remove(const Octstr *smsc, const Octstr *ts, const Octstr 
     Octstr *sql;
 
     debug("dlr.pgsql", 0, "removing DLR from database");
-    sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s' LIMIT 1;",
+    sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s';",
                         octstr_get_cstr(fields->table), octstr_get_cstr(fields->field_smsc),
                         octstr_get_cstr(smsc), octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
 
@@ -229,7 +229,7 @@ static void dlr_pgsql_update(const Octstr *smsc, const Octstr *ts, const Octstr 
     Octstr *sql;
 
     debug("dlr.pgsql", 0, "updating DLR status in database");
-    sql = octstr_format("UPDATE %s SET %s=%d WHERE %s='%s' AND %s='%s' LIMIT 1;",
+    sql = octstr_format("UPDATE %s SET %s=%d WHERE %s='%s' AND %s='%s';",
                         octstr_get_cstr(fields->table),
                         octstr_get_cstr(fields->field_status), status,
                         octstr_get_cstr(fields->field_smsc), octstr_get_cstr(smsc),
