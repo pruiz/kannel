@@ -24,6 +24,7 @@
 #include <netdb.h>
 #include <sys/ioctl.h>
 #include <time.h>
+#include <math.h>
 
 #include "gwlib/gwlib.h"
 #include "gwlib/charset.h"
@@ -1873,6 +1874,7 @@ Octstr* at2_encode7bituncompressed(Octstr *source, int offset)
 {
     int LSBmask[8] = { 0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F };
     int MSBmask[8] = { 0x00, 0x40, 0x60, 0x70, 0x78, 0x7C, 0x7E, 0x7F };
+    int destRemain = (int)ceil ((octstr_len(source) * 7.0) / 8.0);
     int i = (offset?8-offset:7), iStore = offset;
     int posT, posS;
     Octstr *target = octstr_create("");
@@ -1884,6 +1886,7 @@ Octstr* at2_encode7bituncompressed(Octstr *source, int offset)
 	target_chr |= (source_chr & LSBmask[i]) << iStore;
 	/* store current byte if last command filled it */
 	if (iStore != 0) {
+	    destRemain--;
 	    octstr_append_char(target, target_chr);
 	    target_chr = 0;
 	}
@@ -1896,7 +1899,7 @@ Octstr* at2_encode7bituncompressed(Octstr *source, int offset)
     }
 
     /* don't forget to pack the leftovers ;-) */
-    if (target_chr)
+    if (destRemain > 0)
 	octstr_append_char(target, target_chr);
 
     return target;
