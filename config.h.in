@@ -84,22 +84,5 @@
 /* Defined if we have getnameinfo() in <netdb.h> */
 #undef HAVE_GETNAMEINFO
 
-/* The number of bytes in a int.  */
-#undef SIZEOF_INT
-
-/* The number of bytes in a long.  */
-#undef SIZEOF_LONG
-
-#if SIZEOF_INT == 4
-#define kint32 int
-#define kuint32 unsigned
-#else
-#if SIZEOF_LONG == 4 
-#define kint32 long
-#define kuint32 unsigned long
-#else
-#error "can't find type of 32-bit integer"
-#endif
-#endif
 
 #endif
