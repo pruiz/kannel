@@ -1,3 +1,8 @@
+2000-12-15  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/bb_smscconn_cb.c, gw/smsc_wrapper.c, gw/smscconn.c: Rudely
+	commented out things to shut compiler warnings off.
+
 2000-12-15  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smscconn.c|h|_p.h, gw/smsc_wrapper.c: continued the work

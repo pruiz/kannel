@@ -55,7 +55,9 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
 	return NULL;
     }
     gw_assert(conn->send_msg != NULL);
+#if 0
     bb_smscconn_ready();
+#endif
     
     return conn;
 }

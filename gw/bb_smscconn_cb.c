@@ -77,7 +77,7 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason)
 
 int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 {
-#ifdef 0
+#if 0
     normalize_number(unified_prefix, &(sms->sms.sender));
     if (white_list &&
 	numhash_find_number(white_list, sms->sms.sender) < 1) {

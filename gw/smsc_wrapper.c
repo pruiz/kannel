@@ -26,19 +26,23 @@ typedef struct _smsc_wrapper {
 
 static void wrapper_receiver(void *arg)
 {
+#if 0
     Msg 	*msg;
     SMSCConn 	*conn = arg;
     SmscWrapper *wrap = conn->data;
     int 	ret;
     int 	sleep = 100;
+#endif
 
-#ifdef 0
+#if 0
     
     /* remove messages from SMSC until we are killed */
     while(conn->is_killed = 0) {
 
 
-        /* XXX not this way list_consume(isolated); /* block here if suspended/isolated */
+#if 0 /* XXX not this way */
+        list_consume(isolated); /* block here if suspended/isolated */
+#endif
 
         ret = smsc_get_message(conn->smsc, &msg);
         if (ret == -1)
@@ -70,9 +74,11 @@ static void wrapper_receiver(void *arg)
 
 static void wrapper_sender(void *arg)
 {
+#if 0
     Msg 	*msg;
     SMSCConn 	*conn = arg;
     SmscWrapper *wrap = conn->data;
+#endif
 }
 
 
