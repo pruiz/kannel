@@ -563,7 +563,7 @@ int octstr_recv(int fd, Octstr **ostr) {
 	while(readlength < sizeof(uint32_t)) {
 		ret = recv(fd, (&length)+readlength, sizeof(uint32_t)-readlength, 0);
 		if(ret == 0)
-			goto error;
+			goto eof;
 		else if(ret == -1) {
 			if(errno==EINTR) continue;
 			if(errno==EAGAIN) continue;
@@ -596,7 +596,7 @@ int octstr_recv(int fd, Octstr **ostr) {
 
 	*ostr = newostr;
 	free(data);
-	return 0;
+	return 1;
 eof:
 	free(data);
 	return 0;
