@@ -290,8 +290,8 @@ static void *remember_receiver(Msg *msg, URLTranslation *trans, int method,
     receiver->msg->sms.sender = octstr_duplicate(msg->sms.sender);
     receiver->msg->sms.receiver = octstr_duplicate(msg->sms.receiver);
     /* ppg_service_name should always be not NULL here */
-    if (msg->sms.service == NULL || ppg_service_name == NULL || 
-        octstr_compare(msg->sms.service, ppg_service_name) != 0) {
+    if (trans != NULL && (msg->sms.service == NULL || ppg_service_name == NULL || 
+        octstr_compare(msg->sms.service, ppg_service_name) != 0)) {
         receiver->msg->sms.service = octstr_duplicate(urltrans_name(trans));
     } else {
         receiver->msg->sms.service = octstr_duplicate(msg->sms.service);
