@@ -46,6 +46,7 @@ struct SMSCenter {
 
         /* Routing prefixes (based on phone number) */
 	char *preferred_prefix;
+	char *allowed_prefix;
 	char *denied_prefix;
 
 

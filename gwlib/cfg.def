@@ -83,6 +83,10 @@ SINGLE_GROUP(smsbox,
     OCTSTR(sms-length)
     OCTSTR(reply-couldnotfetch)
     OCTSTR(reply-couldnotrepresent)
+    OCTSTR(allowed-prefix)
+    OCTSTR(denied-prefix)
+    OCTSTR(white-list)
+    OCTSTR(black-list)
 )
 
 
@@ -92,6 +96,7 @@ MULTI_GROUP(smsc,
     OCTSTR(denied-smsc-id)
     OCTSTR(allowed-smsc-id)
     OCTSTR(preferred-smsc-id)
+    OCTSTR(allowed-prefix)
     OCTSTR(denied-prefix)
     OCTSTR(preferred-prefix)
     OCTSTR(alt-charset)
@@ -124,6 +129,7 @@ MULTI_GROUP(smsc,
 
 
 MULTI_GROUP(sms-service,
+    OCTSTR(name)
     OCTSTR(keyword)
     OCTSTR(aliases)    
     OCTSTR(url)
@@ -147,10 +153,15 @@ MULTI_GROUP(sms-service,
     OCTSTR(strip-keyword)
     OCTSTR(send-sender)
     OCTSTR(catch-all)
+    OCTSTR(allowed-prefix)
+    OCTSTR(denied-prefix)
+    OCTSTR(white-list)
+    OCTSTR(black-list)
 )
 
 
 MULTI_GROUP(sendsms-user,
+    OCTSTR(name)
     OCTSTR(username)
     OCTSTR(password)
     OCTSTR(user-deny-ip)
@@ -165,6 +176,10 @@ MULTI_GROUP(sendsms-user,
     OCTSTR(omit-empty)
     OCTSTR(header)
     OCTSTR(footer)
+    OCTSTR(allowed-prefix)
+    OCTSTR(denied-prefix)
+    OCTSTR(white-list)
+    OCTSTR(black-list)
 )
 
 

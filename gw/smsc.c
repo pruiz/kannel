@@ -52,6 +52,7 @@ SMSCenter *smscenter_construct(void)
     smsc->killed = 0;
     smsc->type = SMSC_TYPE_DELETED;
     smsc->preferred_prefix = NULL;
+    smsc->allowed_prefix = NULL;
     smsc->denied_prefix = NULL;
     smsc->alt_charset = 0;
     smsc->keepalive = 0;
@@ -477,7 +478,7 @@ SMSCenter *smsc_open(CfgGroup *grp)
 {
     SMSCenter *smsc;
     Octstr *type, *host, *username, *password, *phone, *device;
-    Octstr *preferred_prefix, *denied_prefix;
+    Octstr *preferred_prefix, *allowed_prefix, *denied_prefix;
     Octstr *alt_chars, *allow_ip;
     Octstr *sema_smscnua, *sema_homenua, *sema_report;
     Octstr *at_modemtype, *at_pin, *at_validityperiod;
@@ -527,6 +528,7 @@ SMSCenter *smsc_open(CfgGroup *grp)
     phone = cfg_get(grp, octstr_imm("phone"));
     device = cfg_get(grp, octstr_imm("device"));
     preferred_prefix = cfg_get(grp, octstr_imm("preferred-prefix"));
+    allowed_prefix = cfg_get(grp, octstr_imm("allowed-prefix"));
     denied_prefix = cfg_get(grp, octstr_imm("denied-prefix"));
     alt_chars = cfg_get(grp, octstr_imm("alt-charset"));
 
@@ -649,6 +651,10 @@ SMSCenter *smsc_open(CfgGroup *grp)
 	else
 	    smsc->preferred_prefix = 
 	    	gw_strdup(octstr_get_cstr(preferred_prefix));
+    	if (allowed_prefix == NULL)
+	    smsc->allowed_prefix = NULL;
+	else
+	    smsc->allowed_prefix = gw_strdup(octstr_get_cstr(allowed_prefix));
     	if (denied_prefix == NULL)
 	    smsc->denied_prefix = NULL;
 	else
@@ -663,6 +669,7 @@ SMSCenter *smsc_open(CfgGroup *grp)
     octstr_destroy(device);
     octstr_destroy(preferred_prefix);
     octstr_destroy(denied_prefix);
+    octstr_destroy(allowed_prefix);
     octstr_destroy(alt_chars);
     octstr_destroy(allow_ip);
     octstr_destroy(sema_smscnua);

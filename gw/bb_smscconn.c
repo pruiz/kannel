@@ -57,14 +57,28 @@ static long router_thread = -1;
 
 static void log_sms(SMSCConn *conn, Msg *sms, char *message)
 {
-    alog("%s [SMSC:%s] [from:%s] [to:%s] [msg:%s]",
+    Octstr *text, *udh;
+    
+    text = sms->sms.msgdata ? octstr_duplicate(sms->sms.msgdata) : octstr_create("");
+    udh = sms->sms.udhdata ? octstr_duplicate(sms->sms.udhdata) : octstr_create("");
+//    if (sms->sms.dc > 1)
+    if (sms->sms.flag_8bit)
+	octstr_binary_to_hex(text, 1);
+    octstr_binary_to_hex(udh, 1);
+
+    alog("%s [SMSC:%s] [SVC:%s] [from:%s] [to:%s] [flags:%d:%d:%d:%d] [msg:%d:%s] [udh:%d:%s]",
 	 message,
 	 conn ? (smscconn_id(conn) ? octstr_get_cstr(smscconn_id(conn)) : "")
 	 : "",
+	 sms->sms.service ? octstr_get_cstr(sms->sms.service) : "",
 	 octstr_get_cstr(sms->sms.sender),
 	 octstr_get_cstr(sms->sms.receiver),
-	 sms->sms.flag_udh ? "<<UDH>>" :
-	 octstr_get_cstr(sms->sms.msgdata));
+	 /* sms->sms.dc*/ sms->sms.flag_8bit + 1, /*sms->sms.mc*/ 2-sms->sms.flag_flash, /*sms->sms.mwi*/ sms->sms.flag_mwi, /*sms->sms.compress*/ 0,
+	 octstr_len(sms->sms.msgdata), octstr_get_cstr(text),
+	 octstr_len(sms->sms.udhdata), octstr_get_cstr(udh)
+    );
+    octstr_destroy(udh);
+    octstr_destroy(text);
 }
 
 /*---------------------------------------------------------------------------
@@ -102,11 +116,12 @@ void bb_smscconn_sent(SMSCConn *conn, Msg *sms)
     Msg *mack;
     
     counter_increase(outgoing_sms_counter);
-    counter_increase(conn->sent);
+    if (conn) counter_increase(conn->sent);
     
     /* write ACK to store file */
 
     mack = msg_create(ack);
+    mack->ack.nack = 0;
     mack->ack.time = sms->sms.time;
     mack->ack.id = sms->sms.id;
     
@@ -122,6 +137,7 @@ void bb_smscconn_sent(SMSCConn *conn, Msg *sms)
 
 void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason)
 {
+    Msg *mnack;
     
     switch (reason) {
 
@@ -130,13 +146,22 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason)
 	list_produce(outgoing_sms, sms);
 	break;
     default:
-	/* XXX add write SMS-NACK to sms-store and generate
-	 *     smsc-delivered notice
-	 * NOTE: right now, if the sending fails, the message is retried
-	 *   when store is loaded, etc. */ 
-	
-	counter_increase(conn->failed);
-	log_sms(conn, sms, "FAILED Send SMS");
+
+	/* write NACK to store file */
+
+	mnack = msg_create(ack);
+	mnack->ack.nack = 1;
+	mnack->ack.time = sms->sms.time;
+	mnack->ack.id = sms->sms.id;
+
+	(void) store_save(mnack);
+	msg_destroy(mnack);
+    
+	if (conn) counter_increase(conn->failed);
+	if (reason == SMSCCONN_FAILED_DISCARDED)
+	    log_sms(conn, sms, "DISCARDED SMS");
+	else
+	    log_sms(conn, sms, "FAILED Send SMS");
 	msg_destroy(sms);
     }
 }    
@@ -239,12 +264,7 @@ static void sms_router(void *arg)
 	ret = smsc2_rout(msg);
 	if (ret == -1) {
             warning(0, "No SMSCes to receive message, discarding it!");
-            alog("SMS DISCARDED - SMSC:%s receiver:%s msg: '%s'",
-                 (msg->sms.smsc_id) != NULL ?
-                 octstr_get_cstr(msg->sms.smsc_id) : "unknown",
-                 octstr_get_cstr(msg->sms.receiver),
-                 octstr_get_cstr(msg->sms.msgdata));
-            msg_destroy(msg);
+	    bb_smscconn_send_failed(NULL, msg, SMSCCONN_FAILED_DISCARDED);
         } else if (ret == 1) {
 	    newmsg = startmsg = NULL;
 	}

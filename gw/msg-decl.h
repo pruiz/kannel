@@ -30,6 +30,7 @@ MSG(sms,
 		OCTSTR(msgdata);
 		INTEGER(time);
 		OCTSTR(smsc_id);
+		OCTSTR(service);
 		INTEGER(id);
 		INTEGER(sms_type);
 		INTEGER(flag_flash);
@@ -45,6 +46,7 @@ MSG(sms,
 
 MSG(ack,
 	{
+		INTEGER(nack);
 		INTEGER(time);
 		INTEGER(id);
 	})

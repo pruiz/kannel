@@ -1,6 +1,17 @@
+2001-08-31 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* If message is NACKed, write it to store so message got
+	out of queue.
+	* Added white/black-list send filter to sms-user and global 
+	smsbox.
+	* Added allowed-prefix send filter to smsc (besides denied-prefix)
+	* Added more fields to bearerbox_access.log
+	* Added dlr.h and dlr.c from Andreas Fink <andreas@fink.org> as of
+	Message-Id: <p05100301b7b0fc812c5c@[x]> [delivery reports (update)]
+	* Corrected some glitches, cleaning some warnings when using gcc -Wall
+
 2001-08-30 Andreas Fink <andreas@fink.org>
 	* gw/bearerbox.c, gw/emimsg.c, gw/msg-decl.h, gw/smsbox.c,
-	*  gw/smsc_cimd2.c: Added delivery report mechanism.
+	* gw/smsc_cimd2.c: Added delivery report mechanism.
 	* to use it: ask for a DLR by specifying &dlrmask =
 	* 0 = no dlr, 1 = success, 2 = failure, 3 both.
 	* and &dlrid= a unique application specific ID.

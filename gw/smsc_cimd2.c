@@ -1959,10 +1959,8 @@ static Msg *cimd2_accept_delivery_report_message(struct packet *request, SMSCent
     Octstr *destination = NULL;
     Octstr *timestamp = NULL;
     Octstr *statuscode = NULL;
-    int i;
     int st_code; 
     int code;
-    int remove;
 	
     destination = packet_get_parm(request, P_DESTINATION_ADDRESS);
     timestamp = packet_get_parm(request, P_MC_TIMESTAMP);

@@ -21,6 +21,7 @@
 #include "gwlib/gwlib.h"
 #include "msg.h"
 #include "bearerbox.h"
+#include "bb_smscconn_cb.h"
 
 /* passed from bearerbox core */
 
@@ -137,16 +138,12 @@ static void boxc_receiver(void *arg)
 	    if (smsc2_rout(msg)== -1) {
 		warning(0, "Message rejected by bearerbox, no router!");
 		/* send NACK */
-		msg_destroy(msg);
-
-		/* XXX we should mark message as 'ACK' to store so that
-		 *     it is not retried again and again...
-		 */
+	        bb_smscconn_send_failed(NULL, msg, SMSCCONN_FAILED_DISCARDED);
 	    }
 	    if (msg->sms.sms_type == mt_push) {
 		/* XXX generate ack-message and send it - in fact, this
-		*  should include information did it succeed, wa sit queued
-		*  or rejected... */
+		 *  should include information did it succeed, wa sit queued
+		 *  or rejected... */
 	    }
 	}
 	else if (msg_type(msg) == wdp_datagram && conn->is_wap)

@@ -115,6 +115,7 @@ struct smscconn {
     Octstr *denied_smsc_id;
     Octstr *preferred_smsc_id;
 
+    Octstr *allowed_prefix;
     Octstr *denied_prefix;
     Octstr *preferred_prefix;
 

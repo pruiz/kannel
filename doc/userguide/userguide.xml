@@ -1507,7 +1507,6 @@ bearerbox-host = localhost
         SMS messages with SMSC ID equal to any of the IDs in this list
         are never routed to this SMSC. Multiple entries are separated 
         with semicolons (';')
-
      </entry></row>
 
    <row><entry><literal>allowed-smsc-id</literal></entry>
@@ -1516,7 +1515,6 @@ bearerbox-host = localhost
         This list is opposite to previous: only SMS messages with SMSC
         ID in this list are ever routed to this SMSC.
         Multiple entries are separated with semicolons (';')
-
      </entry></row>
 
    <row><entry><literal>preferred-smsc-id</literal></entry>
@@ -1534,6 +1532,14 @@ bearerbox-host = localhost
         sent through this SMSC. Multiple entries are separated with 
         semicolon (';'). For example, "040;050" prevents sending of
         any SMS message with prefix of 040 or 050 through this SMSC
+     </entry></row>
+
+   <row><entry><literal>allowed-prefix</literal></entry>
+     <entry><literal>prefix-list</literal></entry>
+     <entry valign=bottom>
+        As <literal>denied-prefix</literal>, but SMS messages with destination
+        with any of these prefixes is allowed to be  sent through this
+        SMSC. 
      </entry></row>
 
    <row><entry><literal>preferred-prefix</literal></entry>
@@ -2619,6 +2625,22 @@ bearerbox-host = localhost
     <row><entry><literal>access-log</literal></entry>
      <entry>filename</entry></row>
 
+    <row><entry><literal>white-list</literal></entry>
+     <entry>URL</entry>
+     <entry valign=bottom>
+        Load a list of accepted destinations of SMS messages. If a 
+	destination of an SMS message is not in this list, any message 
+	received from the HTTP interface is rejected. See notes of phone 
+	number format from numhash.h header file. 
+     </entry></row>
+
+    <row><entry><literal>black-list</literal></entry>
+     <entry>URL</entry>
+     <entry valign=bottom>
+        As white-list, but SMS messages from these numbers are
+        automatically discarded
+     </entry></row>
+
     <row><entry><literal>reply-couldnotfetch</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
@@ -3144,6 +3166,24 @@ text = "No action specified"
 
    <row><entry><literal>footer</literal></entry>
      <entry>string</entry></row>
+
+    <row><entry><literal>white-list</literal></entry>
+     <entry>URL</entry>
+     <entry valign=bottom>
+        Load a list of accepted destinations of SMS messages. If a 
+	destination of an SMS message is not in this list, any message 
+	received from the HTTP interface is rejected. See notes of phone 
+	number format from numhash.h header file. 
+     </entry></row>
+
+    <row><entry><literal>black-list</literal></entry>
+     <entry>URL</entry>
+     <entry valign=bottom>
+        As white-list, but SMS messages from these numbers are
+        automatically discarded
+     </entry></row>
+
+    <row><entry><literal>store-file</literal></entry>
 
   </tbody>
   </tgroup>

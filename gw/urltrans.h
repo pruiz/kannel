@@ -27,6 +27,7 @@
 
 #include "gwlib/gwlib.h"
 #include "msg.h"
+#include "numhash.h"
 
 /*
  * This is the data structure that holds the list of translations. It is
@@ -201,9 +202,10 @@ Octstr *urltrans_footer(URLTranslation *t);
 
 
 /*
- * return the username or password string, or NULL if not set
+ * return the name, username or password string, or NULL if not set
  * (used only with TRANSTYPE_SENDSMS)
  */
+Octstr *urltrans_name(URLTranslation *t);
 Octstr *urltrans_username(URLTranslation *t);
 Octstr *urltrans_password(URLTranslation *t);
 
@@ -219,6 +221,14 @@ Octstr *urltrans_default_smsc(URLTranslation *t);
 /* Return allow and deny IP strings, if set. */
 Octstr *urltrans_allow_ip(URLTranslation *t);
 Octstr *urltrans_deny_ip(URLTranslation *t);
+
+/* Return allowed and denied prefixes */
+Octstr *urltrans_allowed_prefix(URLTranslation *t);
+Octstr *urltrans_denied_prefix(URLTranslation *t);
+
+/* Return white and black to number list */
+Numhash *urltrans_white_list(URLTranslation *t);
+Numhash *urltrans_black_list(URLTranslation *t);
 
 /* Return value of true (!0) or false (0) variables */
 int urltrans_assume_plain_text(URLTranslation *t);

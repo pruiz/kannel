@@ -332,12 +332,12 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
 	else { /* MWI */
 	    mwi = msg->sms.flag_mwi - 1;
 	    if ( mwi & 0x04 ) {			/* MWI Inactive, no text needed */
-		mwi = mwi & 0x03 | 0xC0;
+		mwi = (mwi & 0x03) | 0xC0;
 		octstr_destroy(msg->sms.msgdata);
 		msg->sms.msgdata = octstr_create("");
 	    } 
 	    else {				/* MWI Active, we could set the number of messages */
-		mwi = mwi & 0x03 | 0x08;
+		mwi = (mwi & 0x03) | 0x08;
 	        if (msg->sms.flag_unicode)	/* MWI Store and unicode */
 		    mwi |= 0xE0;
 	        else {
@@ -358,7 +358,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
 	    octstr_append_char(str, 4);
 	    octstr_append_char(str, 1);
 	    octstr_append_char(str, 2);
-	    octstr_append_char(str, (msg->sms.flag_mwi - 1) & 0x03 | (octstr_len(msg->sms.msgdata) == 0 ? 0x00 : 0x80));
+	    octstr_append_char(str, ((msg->sms.flag_mwi - 1) & 0x03) | (octstr_len(msg->sms.msgdata) == 0 ? 0x00 : 0x80));
 	    octstr_append_char(str, msg->sms.mwimessages);
 	    msg->sms.udhdata = octstr_create("");
 	    octstr_append(msg->sms.udhdata, str);
@@ -447,12 +447,9 @@ static int handle_operation(SMSCConn *conn, Connection *server,
     struct emimsg *reply;
     Octstr *tempstr, *xser;
     int type, len;
-    Msg *msg;
+    Msg *msg = NULL;
     struct universaltime unitime;
-    int	i;
     int st_code;
-    int remove;
-    int code;
 
   
     switch(emimsg->ot) {
@@ -680,7 +677,7 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
     struct emimsg *emimsg;
     Octstr	*str;
     Msg		*msg;
-    time_t	current_time, check_time, keepalive_time;
+    time_t	current_time, check_time, keepalive_time=0;
     int write = 1; /* write=1, read=0, for stop-and-wait flow control */
 
     /* Initialize keepalive time counter */
@@ -729,7 +726,8 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 		return;
 	    }
 	    emimsg_destroy(emimsg);
-	    keepalive_time = time(NULL);
+	    if (privdata->keepalive)
+		keepalive_time = time(NULL);
 	    write = 0;
 	}
 

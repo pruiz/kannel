@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <signal.h>
+#include <string.h>
 
 #include "gwlib/gwlib.h"
 
@@ -44,6 +45,8 @@ static char *sendsms_number_chars;
 static Octstr *global_sender = NULL;
 static Octstr *reply_couldnotfetch = NULL;
 static Octstr *reply_couldnotrepresent = NULL;
+static Numhash *white_list;
+static Numhash *black_list;
 
 static List *smsbox_requests = NULL;
 
@@ -351,6 +354,7 @@ static void *remember_receiver(Msg *msg, URLTranslation *trans)
     receiver->msg = msg_create(sms);
     receiver->msg->sms.sender = octstr_duplicate(msg->sms.sender);
     receiver->msg->sms.receiver = octstr_duplicate(msg->sms.receiver);
+    receiver->msg->sms.service = octstr_duplicate(urltrans_name(trans));
     receiver->msg->sms.flag_8bit = 0;
     receiver->msg->sms.flag_udh = 0;
     receiver->msg->sms.udhdata = NULL;
@@ -1135,15 +1139,44 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      * message, to prevent intentional buffer overflow schemes
      */
     if (udh != NULL && (octstr_len(udh) != octstr_get_char(udh, 0) + 1)) {
-	*status = 400;
-	return octstr_create("UDH field misformed, rejected");
+	returnerror = octstr_create("UDH field misformed, rejected");
+	goto fielderror2;
     }
 
     if (strspn(octstr_get_cstr(to), sendsms_number_chars) < octstr_len(to)) {
 	info(0,"Illegal characters in 'to' string ('%s') vs '%s'",
 	     octstr_get_cstr(to), sendsms_number_chars);
-	*status = 400;
-	return octstr_create("Garbage 'to' field, rejected.");
+	returnerror = octstr_create("Garbage 'to' field, rejected.");
+	goto fielderror2;
+    }
+    if (urltrans_white_list(t) != NULL &&
+	numhash_find_number(urltrans_white_list(t), to) < 1) {
+	info(0, "Number <%s> is not in white-list, message discarded",
+	octstr_get_cstr(to));
+	returnerror = octstr_create("Number is not in white-list.");
+	goto fielderror2;
+    }
+    if (urltrans_black_list(t) != NULL &&
+	numhash_find_number(urltrans_black_list(t), to) == 1) {
+	info(0, "Number <%s> is in black-list, message discarded",
+	octstr_get_cstr(to));
+	returnerror = octstr_create("Number is in black-list.");
+	goto fielderror2;
+    }
+    
+    if (white_list != NULL &&
+	numhash_find_number(white_list, to) < 1) {
+	info(0, "Number <%s> is not in global white-list, message discarded",
+	octstr_get_cstr(to));
+	returnerror = octstr_create("Number is not in global white-list.");
+	goto fielderror2;
+    }
+    if (black_list != NULL &&
+	numhash_find_number(black_list, to) == 1) {
+	info(0, "Number <%s> is in global black-list, message discarded",
+	octstr_get_cstr(to));
+	returnerror = octstr_create("Number is in global black-list.");
+	goto fielderror2;
     }
     
     if (urltrans_faked_sender(t) != NULL) {
@@ -1154,8 +1187,8 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     } else if (global_sender != NULL) {
 	newfrom = octstr_duplicate(global_sender);
     } else {
-	*status = 400;
-	return octstr_create("Sender missing and no global set, rejected");
+	returnerror = octstr_create("Sender missing and no global set, rejected");
+	goto fielderror2;
     }
     
     info(0, "/cgi-bin/sendsms sender:<%s:%s> (%s) to:<%s> msg:<%s>",
@@ -1171,6 +1204,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      */
     msg = msg_create(sms);
     
+    msg->sms.service = octstr_duplicate(urltrans_name(t));
     msg->sms.sms_type = mt_push;
     msg->sms.receiver = octstr_duplicate(to);
     msg->sms.sender = octstr_duplicate(newfrom);
@@ -1268,9 +1302,14 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     
 
 fielderror:
-    *status = 400;
     octstr_destroy(newfrom);
     msg_destroy(msg);
+
+fielderror2:
+    alog("send-SMS request failed - %s",
+	 octstr_get_cstr(returnerror));
+
+    *status = 400;
     return returnerror;
 
 error:
@@ -1965,6 +2004,19 @@ static void init_smsbox(Cfg *cfg)
     if (reply_couldnotrepresent == NULL)
 	reply_couldnotrepresent = octstr_create("Result could not be represented "
 					        "as an SMS message.");
+    {   
+	Octstr *os;
+	os = cfg_get(grp, octstr_imm("white-list"));
+	if (os != NULL) {
+	    white_list = numhash_create(octstr_get_cstr(os));
+	    octstr_destroy(os);
+	}
+	os = cfg_get(grp, octstr_imm("black-list"));
+	if (os != NULL) {
+	    black_list = numhash_create(octstr_get_cstr(os));
+	    octstr_destroy(os);
+	}
+    }
 
     cfg_get_integer(&sendsms_port, grp, octstr_imm("sendsms-port"));
     cfg_get_integer(&sms_max_length, grp, octstr_imm("sms-length"));
@@ -2103,6 +2155,8 @@ int main(int argc, char **argv)
     octstr_destroy(global_sender);
     octstr_destroy(reply_couldnotfetch);
     octstr_destroy(reply_couldnotrepresent);
+    numhash_destroy(black_list);
+    numhash_destroy(white_list);
     cfg_destroy(cfg);
     gwlib_shutdown();
     return 0;

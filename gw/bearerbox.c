@@ -20,6 +20,7 @@
 #include "msg.h"
 #include "bearerbox.h"
 #include "shared.h"
+#include "dlr.h"
 
 /* global variables; included to other modules as needed */
 

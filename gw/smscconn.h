@@ -83,7 +83,7 @@ Octstr *smscconn_id(SMSCConn *conn);
 
 /* Check if this SMSC Connection is usable as sender for given
  * message. The bearerbox must then select the good SMSC for sending
- * according to load levels and conbnected/disconnected status, this
+ * according to load levels and connected/disconnected status, this
  * function only checks preferred/denied strings and overall status
  *
  * Return -1 if not (denied or permanently down), 0 if okay,

@@ -44,6 +44,7 @@ struct URLTranslation {
     List *accepted_smsc; /* smsc id's allowed to use this service. If not set,
 			    all messages can use this service */
     
+    Octstr *name;	/* Translation name */
     Octstr *username;	/* send sms username */
     Octstr *password;	/* password associated */
     Octstr *forced_smsc;/* if smsc id is forcet to certain for this user */
@@ -51,6 +52,10 @@ struct URLTranslation {
     Octstr *allow_ip;	/* allowed IPs to request send-sms with this 
     	    	    	   account */
     Octstr *deny_ip;	/* denied IPs to request send-sms with this account */
+    Octstr *allowed_prefix;	/* Prefixes allowed in this translation, or... */
+    Octstr *denied_prefix;	/* ...denied prefixes */
+    Numhash *white_list;	/* To numbers allowed, or ... */
+    Numhash *black_list; /* ...denied numbers */
 
     int assume_plain_text; /* for type: octet-stream */
     int accept_x_kannel_headers; /* do we accept special headers in reply */
@@ -480,6 +485,11 @@ Octstr *urltrans_footer(URLTranslation *t)
     return t->footer;
 }
 
+Octstr *urltrans_name(URLTranslation *t) 
+{
+    return t->name;
+}
+
 Octstr *urltrans_username(URLTranslation *t) 
 {
     return t->username;
@@ -508,6 +518,26 @@ Octstr *urltrans_allow_ip(URLTranslation *t)
 Octstr *urltrans_deny_ip(URLTranslation *t) 
 {
     return t->deny_ip;
+}
+
+Octstr *urltrans_allowed_prefix(URLTranslation *t) 
+{
+    return t->allowed_prefix;
+}
+
+Octstr *urltrans_denied_prefix(URLTranslation *t) 
+{
+    return t->denied_prefix;
+}
+
+Numhash *urltrans_white_list(URLTranslation *t)
+{
+    return t->white_list;
+}
+
+Numhash *urltrans_black_list(URLTranslation *t)
+{
+    return t->black_list;
 }
 
 int urltrans_assume_plain_text(URLTranslation *t) 
@@ -576,6 +606,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
     ot->split_suffix = NULL;
     ot->footer = NULL;
     ot->header = NULL;
+    ot->name = NULL;
     ot->username = NULL;
     ot->password = NULL;
     ot->omit_empty = 0;
@@ -584,6 +615,10 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
     ot->default_smsc = NULL;
     ot->allow_ip = NULL;
     ot->deny_ip = NULL;
+    ot->allowed_prefix = NULL;
+    ot->denied_prefix = NULL;
+    ot->white_list = NULL;
+    ot->black_list = NULL;
     
     if (is_sms_service) {
 	cfg_get_bool(&ot->catch_all, grp, octstr_imm("catch-all"));
@@ -621,6 +656,10 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	}
 	octstr_convert_range(ot->keyword, 0, octstr_len(ot->keyword), 
 	    	    	     tolower);
+
+	ot->name = cfg_get(grp, octstr_imm("name"));
+	if (ot->name == NULL)
+	    ot->name = octstr_duplicate(ot->keyword);
 
 	aliases = cfg_get(grp, octstr_imm("aliases"));
 	if (aliases == NULL)
@@ -671,6 +710,9 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	    error(0, "Password required for send-sms user");
 	    goto error;
 	}
+	ot->name = cfg_get(grp, octstr_imm("name"));
+	if (ot->name == NULL)
+	    ot->name = octstr_duplicate(ot->username);
 
 	forced_smsc = cfg_get(grp, octstr_imm("forced-smsc"));
 	default_smsc = cfg_get(grp, octstr_imm("default-smsc"));
@@ -686,6 +728,21 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 
 	ot->deny_ip = cfg_get(grp, octstr_imm("user-deny-ip"));
 	ot->allow_ip = cfg_get(grp, octstr_imm("user-allow-ip"));
+	ot->allowed_prefix = cfg_get(grp, octstr_imm("allowed-prefix"));
+	ot->denied_prefix = cfg_get(grp, octstr_imm("denied-prefix"));
+	{
+	    Octstr *os;
+	    os = cfg_get(grp, octstr_imm("white-list"));
+	    if (os != NULL) {
+		ot->white_list = numhash_create(octstr_get_cstr(os));
+		octstr_destroy(os);
+	    }
+	    os = cfg_get(grp, octstr_imm("black-list"));
+	    if (os != NULL) {
+		ot->black_list = numhash_create(octstr_get_cstr(os));
+		octstr_destroy(os);
+	    }
+	}
     }
 
     if (cfg_get_integer(&ot->max_messages, grp, 
@@ -742,12 +799,17 @@ static void destroy_onetrans(void *p)
 	octstr_destroy(ot->header);
 	octstr_destroy(ot->footer);
 	list_destroy(ot->accepted_smsc, octstr_destroy_item);
+	octstr_destroy(ot->name);
 	octstr_destroy(ot->username);
 	octstr_destroy(ot->password);
 	octstr_destroy(ot->forced_smsc);
 	octstr_destroy(ot->default_smsc);
 	octstr_destroy(ot->allow_ip);
 	octstr_destroy(ot->deny_ip);
+	octstr_destroy(ot->allowed_prefix);
+	octstr_destroy(ot->denied_prefix);
+	numhash_destroy(ot->white_list);
+	numhash_destroy(ot->black_list);
 	gw_free(ot);
     }
 }

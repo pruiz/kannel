@@ -51,6 +51,7 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     GET_OPTIONAL_VAL(conn->allowed_smsc_id, "allowed-smsc-id");
     GET_OPTIONAL_VAL(conn->denied_smsc_id, "denied-smsc-id");
     GET_OPTIONAL_VAL(conn->preferred_smsc_id, "preferred-smsc-id");
+    GET_OPTIONAL_VAL(conn->allowed_prefix, "allowed-prefix");
     GET_OPTIONAL_VAL(conn->denied_prefix, "denied-prefix");
     GET_OPTIONAL_VAL(conn->preferred_prefix, "preferred-prefix");
 
@@ -127,6 +128,7 @@ int smscconn_destroy(SMSCConn *conn)
     octstr_destroy(conn->denied_smsc_id);
     octstr_destroy(conn->preferred_smsc_id);
     octstr_destroy(conn->denied_prefix);
+    octstr_destroy(conn->allowed_prefix);
     octstr_destroy(conn->preferred_prefix);
     
     mutex_unlock(conn->flow_mutex);
@@ -246,12 +248,24 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
 	}
 	list_destroy(list, octstr_destroy_item);
     }
-    if (conn->denied_prefix)
-	if (does_prefix_match(conn->denied_prefix, msg->sms.receiver) == 1)
-	    return -1;
+
+    /* Have allowed */
+    if (conn->allowed_prefix && ! conn->denied_prefix && 
+       (does_prefix_match(conn->allowed_prefix, msg->sms.receiver) != 1))
+	return -1;
+
+    /* Have denied */
+    if (conn->denied_prefix && ! conn->allowed_prefix &&
+       (does_prefix_match(conn->denied_prefix, msg->sms.receiver) == 1))
+	return -1;
+
+    /* Have allowed and denied */
+    if (conn->denied_prefix && conn->allowed_prefix &&
+       (does_prefix_match(conn->allowed_prefix, msg->sms.receiver) != 1) &&
+       (does_prefix_match(conn->denied_prefix, msg->sms.receiver) == 1) )
+	return -1;
 
     /* then see if it is preferred one */
-
 
     if (conn->preferred_smsc_id && msg->sms.smsc_id != NULL) {
         list = octstr_split(conn->preferred_smsc_id, octstr_imm(";"));
