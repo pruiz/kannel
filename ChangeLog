@@ -1,3 +1,8 @@
+2000-11-23  Yann Muller  <ymuller@3glab.com>
+
+	* gw/smsc_at.c: reverted default GSM alphabet patch and added
+	call to charset_latin1_to_gsm().
+	
 2000-11-23  Richard Braakman  <dark@wapi.com>
 
 	* gw/smsbox.c: Moved http_proxy_ variables into init_smsbox, since

@@ -30,6 +30,7 @@
 #include <time.h>
 
 #include "gwlib/gwlib.h"
+#include "gwlib/charset.h"
 #include "smsc.h"
 #include "smsc_p.h"
 
@@ -52,8 +53,6 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded);
 static int encode8bituncompressed(Octstr *input, unsigned char *encoded);
 static void decode7bituncompressed(Octstr *input, int len, Octstr *decoded);
 static int numtext(int num);
-unsigned char gsm_alpha(unsigned char value);
-
 
 /******************************************************************************
  * Types of GSM modems (as used in kannel.conf: at_type=xxxx)
@@ -76,32 +75,6 @@ unsigned char gsm_alpha(unsigned char value);
 #define PNT_UNKNOWN	0
 #define PNT_INTER	1
 #define PNT_NATIONAL	2
-
-/******************************************************************************
- * ETSI GSM 03.38, version 6.0.1, section 6.2.1; Default alphabet 
- * Characters in hex position 10, [12 to 1a] and 24 are not present on
- * latin1 charset, so we cannot reproduce on the screen 
- */
-
-unsigned char GSM_Default_Alphabet[] = {
-  '@',  0xa3, '$',  0xa5, 0xe8, 0xe9, 0xf9, 0xec,
-  0xf2, 0xc7, '\n', 0xd8, 0xf8, '\r', 0xc5, 0xe5,
-  '?',  '_',  '?',  '?',  '?',  '?',  '?',  '?',
-  '?',  '?',  '?',  '?',  0xc6, 0xe6, 0xdf, 0xc9,
-  ' ',  '!',  '\"', '#',  0xa4,  '%',  '&',  '\'',
-  '(',  ')',  '*',  '+',  ',',  '-',  '.',  '/',
-  '0',  '1',  '2',  '3',  '4',  '5',  '6',  '7',
-  '8',  '9',  ':',  ';',  '<',  '=',  '>',  '?',
-  0xa1, 'A',  'B',  'C',  'D',  'E',  'F',  'G',
-  'H',  'I',  'J',  'K',  'L',  'M',  'N',  'O',
-  'P',  'Q',  'R',  'S',  'T',  'U',  'V',  'W',
-  'X',  'Y',  'Z',  0xc4, 0xd6, 0xd1, 0xdc, 0xa7,
-  0xbf, 'a',  'b',  'c',  'd',  'e',  'f',  'g',
-  'h',  'i',  'j',  'k',  'l',  'm',  'n',  'o',
-  'p',  'q',  'r',  's',  't',  'u',  'v',  'w',
-  'x',  'y',  'z',  0xe4, 0xf6, 0xf1, 0xfc, 0xe0
-};
-
 
 /******************************************************************************
  * Open the connection
@@ -288,15 +261,15 @@ error:
 int at_submit_msg(SMSCenter *smsc, Msg *msg) {
 	unsigned char command[500], pdu[500];
 	int ret = -1; 
-        char *sc;
+	char sc[3];
 
 	/* Some modem types need a '00' prepended to the PDU
 	 * to indicate to use the default SC. */
-	sc = "";
+	sc[0] = '\0';
 	if((strcmp(smsc->at_modemtype, WAVECOM) == 0) || 
        (strcmp(smsc->at_modemtype, SIEMENS) == 0) ||
 	   (strcmp(smsc->at_modemtype, NOKIAPHONE) == 0))
-		sc = "00";
+		strcpy(sc, "00");
 	
 	if(msg_type(msg)==sms) {
 		pdu_encode(msg, &pdu[0]);
@@ -690,8 +663,6 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	pdu[pos] = numtext(1);
 	pos++;
 	
-	debug("AT", 0, "nstartpos: %d", nstartpos);
-	
 	/* make sure there is no blank in the phone number and encode
 	 * an even number of digits */
 	octstr_strip_blanks(msg->sms.receiver);
@@ -795,15 +766,16 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded) {
 	int pos = 0;
 	int len;
 
+    charset_latin1_to_gsm(input);
 	len = octstr_len(input);
 
 	/* prevoctet is set to the first character and we'll start the loop
 	 * at the following char. */
-	prevoctet = gsm_alpha(octstr_get_char(input ,0) & 0x7f);
+	prevoctet = octstr_get_char(input ,0);
 	for(i=1; i<octstr_len(input); i++) {
 		/* a byte is encoded with what is left of the previous character
 		 * and filled with as much as possible of the current one. */
-		tmpenc = prevoctet + ((gsm_alpha(octstr_get_char(input,i) & 0x7f) & ermask[c]) << r);
+		tmpenc = prevoctet + ((octstr_get_char(input,i) & ermask[c]) << r);
 		encoded[pos] = numtext((tmpenc & 240) >> 4); pos++;
 		encoded[pos] = numtext(tmpenc & 15); pos++;
 		c = (c>6)? 1 : c+1;
@@ -812,10 +784,10 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded) {
 		/* prevoctet becomes the part of the current octet that hasn't
 		 * been copied to 'encoded' or the next char if the current has
 		 * been completely copied already. */
-		prevoctet = (gsm_alpha(octstr_get_char(input,i) & 0x7f) & elmask[r]) >> (c-1);
+		prevoctet = (octstr_get_char(input,i) & elmask[r]) >> (c-1);
 		if(r == 7) {
 			i++;
-			prevoctet = gsm_alpha(octstr_get_char(input, i) & 0x7f);
+			prevoctet = octstr_get_char(input, i);
 		}
 	}
 	/* if the length of the message is a multiple of 8 then we
@@ -862,14 +834,14 @@ static void decode7bituncompressed(Octstr *input, int len, Octstr *decoded) {
 	prevoctet = 0;
 	for(i=0; i<len; i++) {
 		septet = ((octet & rmask[c]) << (r-1)) + prevoctet;
-                octstr_append_char(decoded, GSM_Default_Alphabet[septet]);
+		octstr_append_char(decoded, septet);
 
 		prevoctet = (octet & lmask[r]) >> c;
 	
 		/* When r=7 we have a full character in prevoctet*/
 		if((r==7) && (i<len-1)){
 			i++;
-                        octstr_append_char(decoded, GSM_Default_Alphabet[prevoctet]);
+			octstr_append_char(decoded, prevoctet);
 			prevoctet = 0;
 		}
 
@@ -879,6 +851,7 @@ static void decode7bituncompressed(Octstr *input, int len, Octstr *decoded) {
 		pos++;
 		octet = octstr_get_char(input, pos);
 	}
+	charset_gsm_to_latin1(decoded);
 }
 
 /**********************************************************************
@@ -896,22 +869,3 @@ static int hexchar(char hexc) {
 	hexc = toupper(hexc) - 48;
 	return (hexc>9) ? hexc-7 : hexc;
 }
-
-/**********************************************************************
- * GSM default character encoding
- */
-
-unsigned char gsm_alpha(unsigned char value)
-{
-
-  unsigned char i;
-
-  if (value == '?') return  0x3f;
-
-  for (i = 0 ; i < 128 ; i++)
-    if (GSM_Default_Alphabet[i] == value)
-      return i;
-
-  return 0x3f; /* '?' */
-}
-
