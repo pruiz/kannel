@@ -66,6 +66,7 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 		return pattern;
 
 	} else if (urltrans_type(trans) == TRANSTYPE_FILE) {
+
 		int fd;
 		size_t len;
 	
@@ -74,6 +75,7 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 		    error(errno, "Couldn't open file <%s>", pattern);
 		    return NULL;
 		}
+
 		replytext[0] = '\0';
 		len = read(fd, replytext, 1024*10);
 		close(fd);
@@ -254,7 +256,6 @@ static int send_message(URLTranslation *trans, Msg *msg)
 		goto error;
     
 	if (octstr_len(text)==0) {
-
 		if (urltrans_omit_empty(trans) != 0) {
 			max_msgs = 0;
 		} else { 
@@ -301,21 +302,21 @@ int smsbox_req_init(URLTranslationList *transls,
 		    char *global,
 		    int (*send) (Msg *msg))
 {
-    translations = transls;
-    sms_max_length = sms_max;
-    if (global != NULL) {
-	global_sender = strdup(global);
-	if (global_sender == NULL)
-	    return -1;
-    }
-    sender = send;
-    return 0;
+	translations = transls;
+	sms_max_length = sms_max;
+	if (global != NULL) {
+		global_sender = strdup(global);
+		if (global_sender == NULL)
+		    return -1;
+	}
+	sender = send;
+	return 0;
 }
 
 
 int smsbox_req_count(void)
 {
-    return (int)req_threads;
+	return (int)req_threads;
 }
 
 
