@@ -1,6 +1,6 @@
 2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
-    * checks/check_pph.sh: need some time before trying to grep around in the
-      logs and descide if things are doing well
+    * checks/check_[fakesmsc|pph].sh: need some time before trying to grep 
+      around in the logs and descide if things are doing well
 
 2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/pushkannel.conf: adjusted log-file entries for make checking
