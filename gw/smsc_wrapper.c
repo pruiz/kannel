@@ -71,6 +71,7 @@ static int reconnect(SMSCConn *conn)
     while(conn->why_killed == SMSCCONN_ALIVE) {
 	ret = smsc_reopen(wrap->smsc);
 	if (ret == 0) {
+	    info(0, "Re-open of %s succeeded.", octstr_get_cstr(conn->name));
 	    mutex_lock(conn->flow_mutex);
 	    conn->status = SMSCCONN_ACTIVE;
 	    conn->connect_time = time(NULL);

@@ -1,3 +1,8 @@
+2001-04-24  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_wrapper.c: Produce an info log when a reconnection
+	attempt succeeds.
+
 2001-04-23  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/octstr.c, test/fakesmsc.c, utils/start-stop-daemon.c,
