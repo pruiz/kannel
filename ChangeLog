@@ -1,3 +1,8 @@
+2000-04-13  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_cimd.c: Fixed message text loading for messages with both
+	UDH and normal text.
+
 2000-04-13    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/bearerbox.c: tried to fix saturation problem; failed but now

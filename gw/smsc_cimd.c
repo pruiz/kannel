@@ -336,8 +336,9 @@ int cimd_submit_msg(SMSCenter *smsc, Msg *msg) {
 
 	if(msg->smart_sms.flag_udh == 1) {
 		octstr_get_many_chars(msgtext, msg->smart_sms.udhdata, 0, octstr_len(msg->smart_sms.udhdata));
-		octstr_get_many_chars(msgtext, msg->smart_sms.msgdata, octstr_len(msg->smart_sms.udhdata), 
-			140 - ( octstr_len(msg->smart_sms.msgdata) + octstr_len(msg->smart_sms.udhdata) ) );
+		octstr_get_many_chars(msgtext + octstr_len(msg->smart_sms.udhdata),
+			msg->smart_sms.msgdata, 0, 
+			140 - octstr_len(msg->smart_sms.udhdata));
 	} else {
 		octstr_get_many_chars(msgtext, msg->smart_sms.msgdata, 0, 
 			octstr_len(msg->smart_sms.msgdata));
