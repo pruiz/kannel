@@ -61,6 +61,14 @@ enum {
    TID_VERIFICATION = 1
 };
 
+/*
+ * Types of aborts
+ */
+enum {
+     USER = 0x01,
+     PROVIDER = 0x00,
+};
+
 enum event_name {
      #define EVENT(name, field) name,
      #include "wtp_events-decl.h"

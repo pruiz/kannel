@@ -24,11 +24,6 @@ enum {
 };
 
 enum {
-   PROVIDER = 0x00,
-   USER = 0x01
-};
-
-enum {
    UNKNOWN = 0x00,
    PROTOERR = 0x01,
    INVALIDTID = 0x02,
@@ -632,7 +627,6 @@ static WTPMachine *wtp_machine_create_empty(void){
         WTPMachine *machine = NULL;
         int machines_list_is_busy = 0;
 
-        debug(0, "WTP: creating a machine");
         machine = gw_malloc(sizeof(WTPMachine));
         
         #define INTEGER(name) machine->name = 0

@@ -2,7 +2,7 @@
  * wtp_events-decl.h - macro calls for defining WTP events. See the 
  * architecture document how to use and update these.
  *
- *By Aarno Syvänen for WapIT Ltd.
+ * By Aarno Syvänen for WapIT Ltd.
  */
 
 EVENT(RcvInvoke,
@@ -29,6 +29,17 @@ EVENT(RcvAck,
       INTEGER(tid);
       INTEGER(tid_ok);
       INTEGER(rid);
+      })
+
+EVENT(TRInvokeRequire,
+      {
+      OCTSTR(source_address);
+      INTEGER(source_port);
+      OCTSTR(destination_address);
+      INTEGER(destination_port);
+      INTEGER(ack_type);
+      INTEGER(tcl);
+      OCTSTR(user_data);
       })
 
 EVENT(TRInvoke,
