@@ -301,8 +301,7 @@ int conn_wait(Connection *conn, double seconds) {
 		return 0;
 	}
 
-	/* Get both locks, now, so we can query read_eof */
-	lock_in(conn);
+	fd = conn->fd;
 
 	/* Normally, we block until there is more data available.  But
 	 * if any data still needs to be sent, we block until we can
@@ -316,13 +315,13 @@ int conn_wait(Connection *conn, double seconds) {
 	events = 0;
 	if (unlocked_outbuf_len(conn) > 0)
 		events |= POLLOUT;
-	if (!conn->read_eof || events == 0)
-		events |= POLLIN;
-
-	fd = conn->fd;
-
 	/* Don't keep the connection locked while we wait */
 	unlock_out(conn);
+
+	/* We need the in lock to query read_eof */
+	lock_in(conn);
+	if (!conn->read_eof || events == 0)
+		events |= POLLIN;
 	unlock_in(conn);
 
 	ret = gwthread_pollfd(fd, events, seconds);
@@ -368,6 +367,71 @@ int conn_wait(Connection *conn, double seconds) {
 		lock_in(conn);
 		unlocked_read(conn);
 		unlock_in(conn);
+	}
+
+	return 0;
+}
+
+int conn_wait_multi(List *conns, double seconds, List **active_conns) {
+	List *active;
+	struct pollfd *fds;
+	long len;
+	long i;
+	Connection *conn;
+	int ret;
+
+	/* Default value, until we're sure of a successful poll. */
+	*active_conns = NULL;
+
+	len = list_len(conns);
+	fds = gw_malloc(len * sizeof(*fds));
+
+	/* Fill the fd array */
+	for (i = 0; i < len; i++) {
+		conn = list_get(conns, i);
+		fds[i].fd = conn->fd;
+		fds[i].events = 0;
+
+		lock_out(conn);
+		if (unlocked_outbuf_len(conn) > 0)
+			fds[i].events |= POLLOUT;
+		unlock_out(conn);
+
+		lock_in(conn);
+		if (!conn->read_eof)
+			fds[i].events |= POLLIN;
+		unlock_in(conn);
+	}
+
+	ret = gwthread_poll(fds, len, seconds);
+	if (ret < 0) {
+		if (errno == EINTR)
+			return 0;
+		return -1;
+	}
+
+	if (ret == 0)
+		return 1;
+
+	*active_conns = active = list_create();
+	for (i = 0; i < len; i++) {
+		if (fds[i].revents != 0) {
+			conn = list_get(conns, i);
+			if (fds[i].revents & POLLOUT) {
+				lock_out(conn);
+				unlocked_write(conn);
+				unlock_out(conn);
+			}
+			if (fds[i].revents & POLLIN) {
+				lock_in(conn);
+				unlocked_read(conn);
+				unlock_in(conn);
+			}
+			/* POLLNVAL, POLLHUP, and POLLERR will take care
+			 * of themselves when the caller tries to use the
+			 * connection. */
+			list_append(active, conn);
+		}
 	}
 
 	return 0;

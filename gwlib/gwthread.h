@@ -65,6 +65,13 @@ void gwthread_wakeup_all(void);
  * went wrong. */
 int gwthread_pollfd(int fd, int events, double timeout);
 
+/* Wrapper around the poll() system call, for an array of file
+ * descriptors.  The difference with normal poll is that the
+ * thread can be woken up with gwthread_wakeup.  timeout is in seconds. */
+/* NOTE: This interface will probably change in the future, because currently
+ * it is hard to implement efficiently. */
+int gwthread_poll(struct pollfd *fds, long numfds, double timeout);
+
 /* Sleep until "seconds" seconds have elapsed, or until another thread
  * calls gwthread_wakeup on us.  Fractional seconds are allowed. */
 void gwthread_sleep(double seconds);

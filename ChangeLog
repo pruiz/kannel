@@ -1,5 +1,13 @@
 2000-10-18  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/conn.[ch]: Added conn_wait_multi(). Untested.
+	Fine-tuned the locking in conn_wait.
+
+	* gwlib/gwthread-pthread.c, gwlib/gwthread.h:
+	Added gwthread_poll().  Untested.
+
+2000-10-18  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/charset.c, gwlib/conffile.c, gwlib/counter.c,
 	gwlib/counter.c, gwlib/gwmem-check.c, gwlib/gwmem-native.c,
 	gwlib/gwstr.c, gwlib/parse.c, gwlib/protected.c, gwlib/socket.c,

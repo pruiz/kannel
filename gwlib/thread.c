@@ -5,13 +5,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-#include "config.h"
-#include "gwmem.h"
-#include "log.h"
-#include "thread.h"
-#include "gwthread.h"
-#include "gwassert.h"
-
+#include "gwlib/gwlib.h"
 
 
 #ifdef MUTEX_STATS

@@ -76,6 +76,8 @@ static void unlock(void) {
 	}
 }
 
+/* Empty the wakeup pipe, in case we got several wakeup signals before
+ * noticing.  We want to wake up only once. */
 static void flushpipe(int fd) {
 	unsigned char buf[128];
 	ssize_t bytes;
@@ -423,11 +425,43 @@ int gwthread_pollfd(int fd, int events, double timeout) {
 			error(errno, "gwthread_pollfd: error in poll");
 		return -1;
 	}
-	if (pollfd[0].revents) {
+
+	if (pollfd[0].revents)
 		flushpipe(pollfd[0].fd);
-	}
+
 	return pollfd[1].revents;
 }
+
+int gwthread_poll(struct pollfd *fds, long numfds, double timeout) {
+	struct pollfd *pollfds;
+	struct threadinfo *threadinfo;
+	int milliseconds;
+	int ret;
+
+	threadinfo = getthreadinfo();
+
+	/* Create a new pollfd array with an extra element for the
+	 * thread wakeup fd. */
+
+	pollfds = gw_malloc((numfds + 1) * sizeof(*pollfds));
+	pollfds[0].fd = threadinfo->wakefd_recv;
+	pollfds[0].events = POLLIN;
+	memcpy(pollfds + 1, fds, numfds * sizeof(*pollfds));
+
+	milliseconds = timeout * 1000;
+
+	ret = poll(pollfds, numfds + 1, milliseconds);
+	if (ret < 0) {
+		if (errno != EINTR)
+			error(errno, "gwthread_poll: error in poll");
+		return -1;
+	}
+	if (pollfds[0].revents)
+		flushpipe(pollfds[0].fd);
+
+	return ret;
+}
+
 
 void gwthread_sleep(double seconds) {
 	struct pollfd pollfd;

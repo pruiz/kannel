@@ -94,6 +94,22 @@ int conn_wait(Connection *conn, double seconds);
  * is broken. */
 int conn_flush(Connection *conn);
 
+/* Block the thread until one of the following is true:
+ *    - The timeout expires
+ *    - The thread is woken up via the wakeup interface (in gwthread.h)
+ *    - Activity in any of the Connections in the `conns' List:
+ *        + New data is available for reading
+ *        + Some data queued for output is sent (if there was any)
+ *        + The connection broke
+ * If the timeout is 0 seconds, check for the conditions above without
+ * actually blocking.  If it is negative, block indefinitely.
+ * Return 1 if the timeout expired.  Return 0 if returning for
+ * any other reason.  Before returning, create the 'active_conns' list
+ * and fill it with the Connections that have shown activity.
+ * If no connections have shown activity, set active_conns to NULL.
+ */
+int conn_wait_multi(List *conns, double seconds, List **active_conns);
+
 /* Output functions.  Each of these takes an open connection and some
  * data, formats the data and queues it for sending.  It may also
  * try to send the data immediately.  The current implementation always
