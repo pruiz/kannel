@@ -275,7 +275,21 @@ List *expand_file(Octstr *file, int forward)
         else 
             list_insert(expand, 0, loc); 
     } 
-                 
+    
+    /* 
+     * add newline at each end of included files to avoid 
+     * concatenating different groups by mistake
+     */
+    if (lineno > 0) {
+        loc = cfgloc_create(file); 
+        loc->line_no = lineno;
+        loc->line = octstr_create("\n");
+        if (forward) 
+            list_append(expand, loc); 
+        else 
+            list_insert(expand, 0, loc); 
+    }
+         
     list_destroy(lines, octstr_destroy_item); 
     octstr_destroy(os); 
  
@@ -355,7 +369,7 @@ int cfg_read(Cfg *cfg)
                      * expand the given include file and add it to the current 
                      * processed main while loop 
                      */ 
-                    if ((expand = expand_file(filename, 0)) != NULL) { 
+                    if ((expand = expand_file(filename, 0)) != NULL) {
                         while ((loc_inc = list_extract_first(expand)) != NULL) 
                             list_insert(lines, 0, loc_inc); 
                     } else { 
