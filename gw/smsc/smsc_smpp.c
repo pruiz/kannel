@@ -62,9 +62,10 @@ static void dump_pdu(const char *msg, Octstr *id, SMPP_PDU *pdu)
  */
 
 enum {
-    SMPP_ESME_RMSGQFUL   = 0x00000014,
-    SMPP_ESME_RTHROTTLED = 0x00000058,
-    SMPP_ESME_RX_T_APPN = 0x00000064
+    SMPP_ESME_RMSGQFUL    = 0x00000014,
+    SMPP_ESME_RTHROTTLED  = 0x00000058,
+    SMPP_ESME_RX_T_APPN   = 0x00000064,
+    SMPP_ESME_RUNKNOWNERR = 0x000000FF
 } SMPP_ERROR_MESSAGES;
  
  
@@ -677,9 +678,10 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 { 
     SMPP_PDU *resp; 
     Octstr *os; 
-    Msg *msg, *dlrmsg=NULL; 
+    Msg *msg, *dlrmsg = NULL; 
     long reason; 
-    resp = NULL; 
+    resp = NULL;
+    int cmd_stat;
  
     switch (pdu->type) { 
         case deliver_sm: 
@@ -992,31 +994,48 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
             break;
 
         case generic_nack:
-	    error(0, "SMPP[%s]: generic nack pdu with comand_status 0x%08lx",
-            	octstr_get_cstr(smpp->conn->id),
-		pdu->u.generic_nack.command_status); 
-	    if(pdu->u.generic_nack.command_status == SMPP_ESME_RTHROTTLED) {
-		error(0,"SMPP[%s]:  ESME_RTHROTTLED",octstr_get_cstr(smpp->conn->id));
-		os = octstr_format("%ld", pdu->u.generic_nack.sequence_number); 
-            	msg = dict_remove(smpp->sent_msgs, os); 
-            	octstr_destroy(os); 
-            	if (msg == NULL) { 
-               	    warning(0, "SMPP[%s]: SMSC sent generic_nack " 
-                  	"with wrong sequence number 0x%08lx",
-                       octstr_get_cstr(smpp->conn->id),
-                       pdu->u.generic_nack.sequence_number); 
-            	} 
-                error(0, "SMPP[%s]: SMSC returned error code 0x%08lx " 
-                    "in response to submit_sm as generic_nack.",
-                    octstr_get_cstr(smpp->conn->id),
-                    pdu->u.generic_nack.command_status); 
-               reason = smpp_status_to_smscconn_failure_reason( 
-               pdu->u.generic_nack.command_status); 
-               time(&(smpp->throttling_err_time));
-               bb_smscconn_send_failed(smpp->conn, msg, reason);
-               --(*pending_submits); 
-           }
-	   break;
+            cmd_stat  = pdu->u.generic_nack.command_status;
+
+            os = octstr_format("%ld", pdu->u.generic_nack.sequence_number);
+            msg = dict_remove(smpp->sent_msgs, os);
+            octstr_destroy(os);
+
+            if (msg == NULL) {
+                warning(0, "SMPP[%s]: SMSC sent generic_nack "
+                        "with wrong sequence number 0x%08lx",
+                        octstr_get_cstr(smpp->conn->id),
+                        pdu->u.generic_nack.sequence_number);
+            } else {
+                if ((cmd_stat == SMPP_ESME_RTHROTTLED) ||
+                    (cmd_stat == SMPP_ESME_RMSGQFUL)) {
+                    info(0, "SMPP[%s]: SMSC sent generic_nack %s: status 0x%08lx ",
+                        (cmd_stat == SMPP_ESME_RTHROTTLED ? 
+                            "ESME_RTHROTTLED" : "ESME_RMSGQFUL"),
+                        octstr_get_cstr(smpp->conn->id),
+                        pdu->u.generic_nack.command_status);
+
+                    time(&(smpp->throttling_err_time));
+                    reason = smpp_status_to_smscconn_failure_reason(
+                                pdu->u.generic_nack.command_status);
+                    bb_smscconn_send_failed(smpp->conn, msg, reason);
+                    --(*pending_submits);
+                } else if (cmd_stat == SMPP_ESME_RUNKNOWNERR) {
+                    info(0, "SMPP[%s]: SMSC sent generic_nack SMPP_ESME_RUNKNOWNERR: status 0x%08lx ",
+                         octstr_get_cstr(smpp->conn->id),
+                         pdu->u.generic_nack.command_status);
+                    reason = smpp_status_to_smscconn_failure_reason(-1);
+                    bb_smscconn_send_failed(smpp->conn, msg, reason);
+                    --(*pending_submits);
+                } else {
+                    error(0, "SMPP[%s]: SMSC sent generic_nack type 0x%08lx, code 0x%08lx.",
+                          octstr_get_cstr(smpp->conn->id), pdu->type,
+                          pdu->u.generic_nack.command_status);
+                    reason = smpp_status_to_smscconn_failure_reason(-1);
+                    bb_smscconn_send_failed(smpp->conn, msg, reason);
+                    --(*pending_submits);
+                }
+            }
+            break;
         default: 
             error(0, "SMPP[%s]: Unknown PDU type 0x%08lx, ignored.",
                   octstr_get_cstr(smpp->conn->id), pdu->type); 
