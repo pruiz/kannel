@@ -1,8 +1,7 @@
 #ifndef SMSC_SEMA_H
 #define SMSC_SEMA_H
 
-#include "gwlib.h"
-#include "octstr.h"
+#include "gwlib/gwlib.h"
 #include "smsc.h"
 #include "smsc_p.h"
 

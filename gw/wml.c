@@ -16,7 +16,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "wml.h"
 
 /***********************************************************************************/

@@ -12,7 +12,7 @@
 
 #include <sys/time.h>
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "msg.h"
 
 typedef struct r_queue_item RQueueItem;

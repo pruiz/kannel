@@ -16,7 +16,7 @@
 #include <time.h>
 
 #include "wtp_timer.h"
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 
 /*
  * Wtp timers "queue" (additions at to the end, removals by searching through 

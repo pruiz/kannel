@@ -16,7 +16,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
-#include "gwlib.h"
+
+#include "gwlib/gwlib.h"
 
 #if THREADS
 #define NUM_PRODUCERS (4)

@@ -17,7 +17,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "bb_msg.h"
 
 

@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "bb_msg.h"
 
 /*

@@ -11,7 +11,7 @@
 #include <fcntl.h>
 #include <assert.h>
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "html.h"
 #include "cgi.h"
 #include "msg.h"

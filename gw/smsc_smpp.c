@@ -14,7 +14,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "smsc.h"
 #include "smsc_smpp.h"
 

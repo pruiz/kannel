@@ -3,8 +3,8 @@
 #include <unistd.h>
 #include <time.h>
 
-#include "gwlib.h"
-#include "msg.h"
+#include "gwlib/gwlib.h"
+#include "gw/msg.h"
 
 int main(void) {
 	int i, s, ss, addrlen;

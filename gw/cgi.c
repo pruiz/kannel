@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "cgi.h"
 
 

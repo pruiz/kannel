@@ -10,7 +10,7 @@
 #ifndef MSG_H
 #define MSG_H
 
-#include "octstr.h"
+#include "gwlib/gwlib.h"
 
 typedef long int32;
 

@@ -24,7 +24,7 @@
 #ifndef URLTRANS_H
 #define URLTRANS_H
 
-#include "conffile.h"
+#include "gwlib/gwlib.h"
 #include "msg.h"
 
 /*

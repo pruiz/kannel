@@ -20,10 +20,9 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#include <config.h>
+#include "config.h"
 
-#include "gwlib.h"
-#include "conffile.h"
+#include "gwlib/gwlib.h"
 #include "bb_msg.h"
 #include "csdr.h"
 

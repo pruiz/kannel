@@ -22,11 +22,11 @@
 #include <sys/param.h>
 #include <sys/ioctl.h>
 
-#include <config.h>
+#include "config.h"
 
 #include "smsc.h"
 #include "smsc_p.h"
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "alt_charsets.h"
 
 #if !HAVE_CFMAKERAW

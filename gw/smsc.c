@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "smsc.h"
 #include "smsc_p.h"
 #include "bb_msg.h"

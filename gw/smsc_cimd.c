@@ -16,7 +16,7 @@
 
 #include "smsc.h"
 #include "smsc_p.h"
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "alt_charsets.h"
 
 /******************************************************************************

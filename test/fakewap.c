@@ -115,7 +115,7 @@ typedef int SOCKET;
 #endif
 
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 
 #define GET_WTP_PDU_TYPE(hdr)  (hdr[0] >> 3)
 

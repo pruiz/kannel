@@ -9,11 +9,10 @@
 #include <assert.h>
 #include <string.h>
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "wsp.h"
 #include "wsp_headers.h"
 #include "wml.h"
-#include "http.h"
 
 /* WAP standard defined values for capabilities */
 

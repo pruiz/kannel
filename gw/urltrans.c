@@ -12,7 +12,7 @@
 #include <time.h>
 
 #include "urltrans.h"
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 
 
 /***********************************************************************

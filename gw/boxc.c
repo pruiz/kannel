@@ -16,9 +16,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include <config.h>
+#include "config.h"
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "boxc.h"
 #include "bb_msg.h"
 #include "msg.h"

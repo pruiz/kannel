@@ -9,8 +9,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "gwlib.h"
-#include "wml.h"
+#include "gwlib/gwlib.h"
+#include "gw/wml.h"
 
 int main(int argc, char *argv[])
 {	

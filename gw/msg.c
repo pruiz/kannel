@@ -14,7 +14,7 @@
 #include <netinet/in.h>
 
 #include "msg.h"
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 
 /**********************************************************************
  * Prototypes for private functions.

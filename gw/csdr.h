@@ -1,7 +1,7 @@
 #ifndef _CSDR_H
 #define _CSDR_H
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "bb_msg.h"
 
 typedef struct csdrouter {

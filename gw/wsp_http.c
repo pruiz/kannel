@@ -9,9 +9,9 @@
 #include <assert.h>
 #include <string.h>
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
+#include "wmlscript/ws.h"
 #include "wsp.h"
-#include "ws.h"
 #include "wml_compiler.h"
 
 static void  dev_null(const char *data, size_t len, void *context);

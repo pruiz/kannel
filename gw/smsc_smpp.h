@@ -1,8 +1,7 @@
 #ifndef SMSC_SMPP_H
 #define SMSC_SMPP_H
 
-#include "gwstdint.h"
-#include "octstr.h"
+#include "gwlib/gwlib.h"
 #include "smsc.h"
 #include "smsc_p.h"
 

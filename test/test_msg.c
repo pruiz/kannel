@@ -8,8 +8,8 @@
  */
 
 
-#include "msg.h"
-#include "gwlib.h"
+#include "gw/msg.h"
+#include "gwlib/gwlib.h"
 
 int main(void) {
 	Msg *msg, *msg2;

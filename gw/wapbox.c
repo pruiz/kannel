@@ -13,8 +13,8 @@
 #include <unistd.h>
 #include <signal.h>
 
+#include "gwlib/gwlib.h"
 #include "wapbox.h"
-#include "gwlib.h"
 #include "msg.h"
 #include "wtp.h"
 #include "wtp_timer.h"

@@ -40,9 +40,8 @@ typedef struct WSPMachine WSPMachine;
 typedef struct WSPMethodMachine WSPMethodMachine;
 typedef struct WSPEvent WSPEvent;
 
-#include "octstr.h"
+#include "gwlib/gwlib.h"
 #include "wtp.h"
-#include "gwlib.h"
 
 typedef enum {
 	#define WSP_EVENT(name, fields) name,

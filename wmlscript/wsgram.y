@@ -12,7 +12,7 @@
  *
  */
 
-#include <wsint.h>
+#include "wmlscript/wsint.h"
 
 #define YYPARSE_PARAM	pctx
 #define YYLEX_PARAM	pctx

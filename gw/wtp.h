@@ -16,7 +16,7 @@ typedef struct Tid_cache Tid_cache;
 #include <netinet/in.h>
 #include <stdlib.h>
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "msg.h"
 #include "wsp.h"
 #include "wtp_timer.h"

@@ -1,3 +1,12 @@
+Thu Mar 30 00:01:35 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Makefile.in: Removed -I options from CFLAGS. We're supposed to
+	refer to header files in other ways than assuming -I. You need to
+	re-run configure (or at least config.status).
+
+	* lotsafiles: Changed header file references to include directory
+	names where necessary.
+
 Wed Mar 29 23:42:40 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/gwmem.c: Added some asserts. Also, gw_malloc now fills the
