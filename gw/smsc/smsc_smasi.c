@@ -946,6 +946,13 @@ static void smasi_thread(void *arg)
             timeout = last_enquire_sent + smasi->enquire_link_interval
                         - date_universal_now(); 
 
+            /* wait for activity */
+            if (conn_wait(conn, timeout) == -1) {
+                error(0, "SMASI[%s]: I/O error or other error. Re-connecting.",
+                      octstr_get_cstr(smasi->conn->id));
+                break;
+            }
+
             /* Send logoff request if module is shutting down. */
             if (smasi->quitting && !logoff_already_sent) {
                 send_logoff(smasi, conn);
@@ -977,7 +984,7 @@ static void smasi_thread(void *arg)
             } 
 
             /* Check if connection broken. */
-            if (ret == -1 || conn_wait(conn, -1) == -1) {
+            if (ret == -1) {
                 error(0, "SMASI[%s]: I/O error or other error. Re-connecting.",
                       octstr_get_cstr(smasi->conn->id));
                 break;

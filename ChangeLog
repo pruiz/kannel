@@ -1,3 +1,7 @@
+2004-06-07  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/smsc/smsc_smasi.c: fixed bug that enquire link pdu's were not sent within
+      regular timeframe.
+
 2004-06-03  Alexander Malysh  <a.malysh@centrium.de> 
     * gwlib/http.c: applied patch that adds real reason phrases for http reply
       line instead of just 'Foo'.
