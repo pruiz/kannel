@@ -1,4 +1,4 @@
-1999-11-23 Mikael Gueck <mikael@wapit.com>
+1999-11-24 Mikael Gueck <mikael@wapit.com>
 
 	* gw/csdr.c, gw/boxc.c: Solaris compatibility hack, later
 	  to wapitlib.c.
