@@ -300,6 +300,20 @@ void *wsp_http_thread(void *arg) {
 		new_h->next = headers;
 		headers = new_h;
 	}
+	if (octstr_len(sm->client_address) > 0) {
+		new_h = header_create("X_Network_Info",
+				octstr_get_cstr(sm->client_address));
+		new_h->next = headers;
+		headers = new_h;
+	}
+	{
+		char buf[1024];
+		
+		sprintf(buf, "%ld", sm->session_id);
+		new_h = header_create("X-WAP-Session-ID", buf);
+		new_h->next = headers;
+		headers = new_h;
+	}
 	header_pack(headers);
 	debug("wap.wsp.http", 0, "WSP: Headers used for request:");
 	header_dump(headers);
