@@ -49,19 +49,22 @@ void bb_smscconn_sent(SMSCConn *conn, Msg *sms, Octstr *reply);
 void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply);
 
 enum {
+    SMSCCONN_SUCCESS = 0,
     SMSCCONN_FAILED_SHUTDOWN,
     SMSCCONN_FAILED_REJECTED,
     SMSCCONN_FAILED_MALFORMED,
     SMSCCONN_FAILED_TEMPORARILY,
-    SMSCCONN_FAILED_DISCARDED
+    SMSCCONN_FAILED_DISCARDED,
+    SMSCCONN_FAILED_QFULL
 };
 
 
 /* called when a new message 'sms' received. Callback handles
- * 'sms' and MAY NOT be used by caller again. Return 0 if all went
- * fine, and -1 if bearerbox does NOT accept the 'sms' (black/white
- * -listed) */
-int bb_smscconn_receive(SMSCConn *conn, Msg *sms);
+ * 'sms' and MAY NOT be used by caller again. Return SMSCCONN_SUCCESS if all went
+ * fine, SMSCCONN_FAILED_QFULL if incoming queue full, SMSCCONN_FAILED_TEMPORARILY
+ * if store enabled and failed, and SMSCCONN_FAILED_REJECTED if bearerbox does
+ * NOT accept the 'sms' (black/whitelisted) */
+long bb_smscconn_receive(SMSCConn *conn, Msg *sms);
 
 
 #endif

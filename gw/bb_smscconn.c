@@ -210,7 +210,7 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply
     octstr_destroy(reply);
 }
 
-int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
+long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 {
     char *uf;
     int rc;
@@ -227,10 +227,13 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
         if (bb_status != BB_FULL)
             bb_status = BB_FULL;
         warning(0, "incoming messages queue too long, dropping a message");
-        log_sms(conn, sms, "DROPPED Received SMS");
+        if (sms->sms.sms_type == report)
+            log_sms(conn, sms, "DROPPED Received DLR");
+        else
+            log_sms(conn, sms, "DROPPED Received SMS");
 	msg_destroy(sms);
         gwthread_sleep(0.1); /* letting the queue go down */
-     	return -1;
+     	return SMSCCONN_FAILED_QFULL;
     }
 
     /* else if (list_len(incoming_sms) > 100)
@@ -253,7 +256,7 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	     octstr_get_cstr(sms->sms.sender));
 	log_sms(conn, sms, "REJECTED - not white-listed SMS");
 	msg_destroy(sms);
-        return -1;
+        return SMSCCONN_FAILED_REJECTED;
     }
     if (black_list &&
 	numhash_find_number(black_list, sms->sms.sender) == 1) {
@@ -261,7 +264,7 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	     octstr_get_cstr(sms->sms.sender));
 	log_sms(conn, sms, "REJECTED - black-listed SMS");
 	msg_destroy(sms);
-	return -1;
+	return SMSCCONN_FAILED_REJECTED;
     }
 
     if (sms->sms.sms_type != report)
@@ -269,7 +272,7 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 
     /* write to store (if enabled) */
     if (store_save(sms) == -1)
-	return -1;
+	return SMSCCONN_FAILED_TEMPORARILY;
 
     if (sms->sms.sms_type != report)
 	log_sms(conn, sms, "Receive SMS");
