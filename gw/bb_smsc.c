@@ -103,7 +103,7 @@ static void sms_receiver(void *arg)
 	    debug("bb.sms", 0, "smsc: new message received");
 	}
 	else
-	    sleep(1);
+	    usleep(100000);
     }    
     list_remove_producer(incoming_sms);
     debug("bb.thread", 0, "EXIT: sms_receiver");

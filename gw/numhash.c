@@ -255,7 +255,7 @@ Numhash *numhash_create(char *seek_url)
     Octstr	*url, *final_url, *reply_body;
     Octstr	*type, *charset;
     
-    char       	*data, *ptr, numbuf[100];
+    unsigned char       	*data, *ptr, numbuf[100];
     int		status;
     Numhash	*table;
 
@@ -301,11 +301,12 @@ Numhash *numhash_create(char *seek_url)
   
     while((ptr = strchr(data, '\n'))) {	/* each line is ended with linefeed */
 	*ptr = '\0';
-	while(*data && isspace(*(unsigned char *)data)) data++;
+	while(*data != '\0' && isspace(*data))
+	    data++;
 	if (*data != '#') {
 	    loc = 0;
-	    while (*data) {
-		if (isdigit(*(unsigned char *)data))
+	    while (*data != '\0') {
+		if (isdigit(*data))
 		    numbuf[loc++] = *data;
 		else if (*data == ' ' || *data == '+' || *data == '-')
 			;
