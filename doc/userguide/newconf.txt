@@ -166,7 +166,7 @@ sms-services, and to route outgoing messages to preferred SMS Centers:
  #	 it, as you should any special non-alphabet characters. 
  #       This 'id' is written into log files and can be used to
  #	 route SMS messages, and to specify used SMS-service. 
- #       Several smsc'es can have same id. 
+ #       Several smsc'es can have same id. The name is case-insensitive.
  #
  denied-smsc-id = <id-list>
  #       SMS messages with SMSC ID equal to any of IDs in this list
@@ -475,7 +475,7 @@ more accounts to use it.
  #
  user-deny-ip = <IP-list>
  user-allow-ip = <IP-list>
- #       As other deny/allow lists, but for this user. NOT SUPPORTED YET.
+ #       As other deny/allow lists, but for this user.
  #
  faked-sender = <phone-number>
  max-messages = <number>

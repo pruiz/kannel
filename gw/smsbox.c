@@ -79,8 +79,6 @@ static int	heartbeat_freq;
 
 static int 	socket_fd;
 static HTTPSocket *http_server_socket;
-static char 	*http_allow_ip = NULL;
-static char 	*http_deny_ip = NULL;
 static char 	*http_proxy_host = NULL;
 static int  	http_proxy_port = -1;
 
@@ -169,16 +167,6 @@ static void http_request_thread(void *arg)
 
     client = arg;
     client_ip = socket_get_peer_ip(http_socket_fd(client));
-    if (http_allow_ip != NULL &&
-	check_ip(http_allow_ip, client_ip, NULL) < 1 &&
-	http_deny_ip != NULL &&
-	check_ip(http_deny_ip, client_ip, NULL) == 1) {
-	    warning(0, "Non-allowed connect tried from <%s>, ignored",
-		    client_ip);
-	    (void) http_server_send_reply(client, HTTP_NOT_FOUND, /* XXX */
-	    		NULL, NULL);
-	    goto done;
-    }
     
     while (http_server_get_request(client, &url, &hdrs, &body, &args) > 0) {
 	info(0, "smsbox: Got HTTP request <%s> from <%s>",
@@ -186,7 +174,7 @@ static void http_request_thread(void *arg)
 	    client_ip);
 
 	if (octstr_str_compare(url, "/cgi-bin/sendsms") == 0)
-	    answer = octstr_create(smsbox_req_sendsms(args));
+	    answer = octstr_create(smsbox_req_sendsms(args, client_ip));
 	else
 	    answer = octstr_create("unknown request\n");
         debug("sms.http", 0, "Answer: <%s>", octstr_get_cstr(answer));
@@ -313,10 +301,6 @@ static void init_smsbox(Config *cfg)
     if ((p = config_get(grp, "sms-length")) != NULL)
 	sms_len = atoi(p);
     /*
-     * if ((p = config_get(grp, "http-allowed-hosts")) != NULL)
-     *	http_allow_ip = p;
-     *if ((p = config_get(grp, "http-denied-hosts")) != NULL)
-     *http_deny_ip = p;
      *if ((p = config_get(grp, "heartbeat-freq")) != NULL)
      *	heartbeat_freq = atoi(p);
      *if ((p = config_get(grp, "pid-file")) != NULL)

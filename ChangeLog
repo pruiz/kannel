@@ -1,5 +1,14 @@
 2000-09-25  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smsbox*.*: activated sendsms-user allow/deny-ip strings
+
+	* gw/urltrans.c|h: appropriate modifications to that file
+	
+	* doc/userguide/userguide.xml: started to write a new chapter
+	about SMS Kannel setup
+
+2000-09-25  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bb_udp.c, gwlib/socket.c|h, test/test_udp.c: inserted
 	interface-name patch by Andreas Fink. 
 

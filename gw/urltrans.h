@@ -196,5 +196,8 @@ char *urltrans_default_smsc(URLTranslation *t);
 /* Return list of approved SMSC IDs, if set */
 char *urltrans_approved_smsc(URLTranslation *t);
 
+/* Return allow and deny IP strings, if set. */
+char *urltrans_allow_ip(URLTranslation *t);
+char *urltrans_deny_ip(URLTranslation *t);
 
 #endif

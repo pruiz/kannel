@@ -566,6 +566,150 @@ from=123&amp;to=456&amp;udh=%3a%2f%04&amp;text=%20%00%60%7a%43
 
 </chapter>
 
+<chapter id="sms-gateway">
+<title>Setting up a SMS gateway</title>
+
+    <para>This chapter is a more detailed guide to set Kannel up as a
+    SMS gateway. There are three parts in the chapter:
+
+	<orderedlist>
+	<listitem><para><citetitle>SMS Center connections</citetitle>,
+	the media to transfer SMS messages to actual
+	phones.</para></listitem>
+
+        <listitem><para><citetitle>SMS-service
+        definations</citetitle>, services for mobile orientated
+        messages.</para></listitem>
+
+        <listitem><para><citetitle>SMS user definations</citetitle>,
+        for SMS push.</para></listitem>
+        </orderedlist>
+
+    </para>
+
+<sect1>
+<title>SMS Center Connections</title>
+
+    <para>To use Kannel for real SMS use, you need a real SMS center
+    connection. There are generally two types of SMS centers supported
+    by Kannel:
+
+     <orderedlist>
+       <listitem><para>Operator SMS centers</para></listitem>
+       <listitem><para>GSM modems</para></listitem>
+     </orderedlist>
+
+     the fake smsc program coming with Kannel is just that, a fake
+     system. It cannot be used to send messages to real phones. You
+     really need an account at operator's SMS center or GSM modems
+     hooked up.</para>
+
+<sect2>
+<title>Configuring the SMS center</title>
+
+    <para>To set up the SMS center at Kannel, you have to add a smsc
+    group into configuration file (see above for configuration
+    files). This group must include all the data needed to connect
+    that SMS center. You may also want to define an ID
+    (identification) name for the SMSC, for logging and routing
+    purposes.</para>
+
+    <para>SMSC ID is an abstract name for the connection. It can be
+    anything you like, but you should avoid any special
+    characters. You do not need to use ID, but rely on SMS center IP
+    address and other information. However, if you use the ID, you do
+    not need to re-define sms-services nor routing systems if the IP
+    of the SMS Center is changed, for example.</para>
+
+
+</sect2>
+<sect2>
+<title>Using multiple SMS centers</title>
+
+    <para>If you have several SMS center connections (multiple
+    operators or number of GSM modems) you need to configure one smsc
+    group per SMS Center (or GSM modem). When doing this, you might
+    want to use routing systems to rout messages to specific centers -
+    for example, you have 2 operator SMS centers, and the other is
+    much faster and cheaper to use.</para>
+
+    <para>To set up routing systems, first give an unique ID for each
+    SMS center - or if you want to treat multiple ones completely
+    identical, give them identical ID. Then use 'preferred-smsc-id'
+    and 'denied-smsc-id' to set up routing to your taste. See also SMS
+    PUSH settings, below.</para>
+</sect2>
+</sect1>
+
+<sect1>
+<title>SMS Service Definations</title>
+
+    <para>Now that you have a SMS center connection to send and
+    receive SMS messages you need to define services for incoming
+    messages. This is done via sms-service configuration groups.
+    </para>
+
+    <para>The full list of SMS service variables is defined in
+    newconf.txt, but as a short introduction, the simplest service
+    group is like this:
+<programlisting>
+group = sms-service
+keyword = www
+url = "http://%S"
+</programlisting>
+     
+     This service grabs any SMS with 'www' as the first word, and then
+     does HTTP request to URL which is taken from the rest of the
+     message. Any result is sent back to phone (or requester), but is
+     truncated to 160 characters, naturally.</para>
+
+
+<sect2>
+<title>Setting Up More Complex Services</title>
+
+    <para>The basic service system is very limited - it can only
+    answer to original requester and it cannot send UDH data, for
+    example. To create more sophicated systems, SMS Push is
+    used.</para>
+
+    <para>The idea is to get the initial request, but then send no
+    reply. Instead, the reply (if any) is sent via HTTP
+    sendsms-interface, as a SMS Push (see below). This way the service
+    application has full control of return content, and can do all
+    needed formatting beforehand.</para>
+
+    <para>Note that when no reply is wanted, remember to set variable
+    'max-messages' to zero (0) so that no reply is sent, unless an
+    error occurs.</para>
+
+<sect2>
+<title>Setting Up Operator Specific Services</title>
+
+   <para>Those running Kannel with several SMS centers might need to
+   define services according to relying SMS center. To achieve this,
+   first you need to give an ID name for SMS center connections (see
+   above). Then, use 'accepted-smsc' variable to define which messages
+   can use that service.</para>
+
+</sect2>
+
+</sect1>
+
+<sect1>
+<title>SMS Push</title>
+
+   <para>To be able to use SMS Push with Kannel, you need to define 
+    sendsms-port for SMSBox and one or more sendsms-user accounts.
+   </para>
+
+   <para>SMS Push is done via HTTP interface, see above.</para>
+
+</sect1>
+
+
+
+</chapter>
+
 <chapter id="bug-reporting">
 <title>Getting help and reporting bugs</title>
 

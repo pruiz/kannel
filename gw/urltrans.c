@@ -47,6 +47,8 @@ struct URLTranslation {
     char *password;	/* password associated */
     char *forced_smsc;	/* if smsc id is forcxet to certain for this user */
     char *default_smsc; /* smsc id if none given in http send-sms request */
+    char *allow_ip;	/* allowed IPs to request send-sms with this account */
+    char *deny_ip;	/* denied IPs to request send-sms with this account */
     
     int args;
     int has_catchall_arg;
@@ -381,6 +383,13 @@ char *urltrans_accepted_smsc(URLTranslation *t) {
 	return t->accepted_smsc;
 }
 
+char *urltrans_allow_ip(URLTranslation *t) {
+	return t->allow_ip;
+}
+
+char *urltrans_deny_ip(URLTranslation *t) {
+	return t->deny_ip;
+}
 
 
 
@@ -402,6 +411,7 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     char *username, *password;
     char *header, *footer;
     char *accepted_smsc, *forced_smsc, *default_smsc;
+    char *allow_ip, *deny_ip;
     
     ot = gw_malloc(sizeof(URLTranslation));
 
@@ -412,6 +422,7 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     ot->username = ot->password = NULL;
     ot->omit_empty = 0;
     ot->accepted_smsc = ot->forced_smsc = ot->default_smsc = NULL;
+    ot->allow_ip = ot->deny_ip = NULL;
     
     keyword = config_get(grp, "keyword");
     aliases = config_get(grp, "aliases");
@@ -434,7 +445,9 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     accepted_smsc = config_get(grp, "accepted-smsc");
     forced_smsc = config_get(grp, "forced-smsc");
     default_smsc = config_get(grp, "default-smsc");
-    
+
+    allow_ip = config_get(grp, "user-allow-ip");
+    deny_ip = config_get(grp, "user-deny-ip");
     
     if (url) {
 	ot->type = TRANSTYPE_URL;
@@ -462,6 +475,11 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 	} else if (default_smsc) {
 	    ot->default_smsc = gw_strdup(default_smsc);
 	}
+	if (allow_ip)
+	    ot->allow_ip = gw_strdup(allow_ip);
+	if (deny_ip)
+	    ot->deny_ip = gw_strdup(deny_ip);
+	
     } else {
 	error(0, "No url, file or text spesified");
 	goto error;

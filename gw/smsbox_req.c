@@ -471,7 +471,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
  * Check for matching username and password for requests.
  * Return an URLTranslation if successful NULL otherwise.
  */
-static URLTranslation *authorise_user(List *list) {
+static URLTranslation *authorise_user(List *list, char *client_ip) {
 	URLTranslation *t = NULL;
 	Octstr *val, *user = NULL;
 	
@@ -485,6 +485,19 @@ static URLTranslation *authorise_user(List *list) {
 	{
 		/* if the password is not correct, reset the translation. */
 		t = NULL;
+	}
+	if (t) {
+	    Octstr *ip = octstr_create(client_ip);
+
+	    if (is_allowed_ip(urltrans_allow_ip(t),
+			      urltrans_allow_ip(t), ip) == 0)
+	    {
+		warning(0, "Non-allowed connect tried by <%s> from <%s>, ignored",
+			user ? octstr_get_cstr(user) : "default-user" ,
+			client_ip);
+		t = NULL;
+	    }
+	    octstr_destroy(ip);
 	}
 	return t;
 }
@@ -605,7 +618,7 @@ error:
  * Creates and sends an SMS message from an HTTP request
  * Args: list contains the CGI parameters
  */
-char *smsbox_req_sendsms(List *list)
+char *smsbox_req_sendsms(List *list, char *client_ip)
 {
 	Msg *msg = NULL;
 	URLTranslation *t = NULL;
@@ -614,7 +627,7 @@ char *smsbox_req_sendsms(List *list)
 	int ret;
 
 	/* check the username and password */
-	t = authorise_user(list);
+	t = authorise_user(list, client_ip);
 	if (t == NULL) {
 		return "Authorization failed";
 	}
@@ -686,9 +699,10 @@ char *smsbox_req_sendsms(List *list)
 	if (ret == -1)
 		goto error;
 
-	alog("send-SMS request added - sender:%s:%s target:%s request: '%s'",
+	alog("send-SMS request added - sender:%s:%s %s target:%s request: '%s'",
 	     user ? octstr_get_cstr(user) : "default",
-	     octstr_get_cstr(from), octstr_get_cstr(to),
+	     octstr_get_cstr(from), client_ip,
+	     octstr_get_cstr(to),
 	     text ? octstr_get_cstr(text) : "<< UDH >>");
 
 	return "Sent.";
