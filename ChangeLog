@@ -1,4 +1,7 @@
 2002-04-04  Stipe Tolj  <tolj@wapme-systems.de>
+    * test/test_http.c: fixed unitialized var usage for the POST content   
+
+2002-04-04  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/xmlrpc.[ch]: added parsing of XML document
     * test/test_xmlrpc.c: some minor changes
 
