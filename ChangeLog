@@ -1,3 +1,9 @@
+2000-05-17  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: Now variables use the string table. Some fixing 
+	for reducing numbers of the memory allocations and reallocations is 
+	needed.
+
 2000-05-17    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/bb_*.c: Some final cleanup added

@@ -127,7 +127,8 @@ static void wml_binary_output(Octstr *ostr, wml_binary_t *wbxml);
 static void output_char(int byte, wml_binary_t **wbxml);
 static int output_octet_string(Octstr *ostr, wml_binary_t **wbxml);
 static int output_plain_octet_string(Octstr *ostr, wml_binary_t **wbxml);
-void output_variable(Octstr *variable, Octstr **output, var_esc_t escaped);
+void output_variable(Octstr *variable, Octstr **output, var_esc_t escaped,
+		     wml_binary_t **wbxml);
 
 /* 
  * String table functions, used to add and remove strings into and from the
@@ -720,7 +721,7 @@ static int parse_variable(Octstr *text, int start, Octstr **output,
       if ((esc = check_variable_syntax(variable)) == FAILED)
 	return -1;
       else
-	output_variable(variable, output, esc);
+	output_variable(variable, output, esc, wbxml);
     }
 
   octstr_destroy (variable);
@@ -1019,26 +1020,31 @@ static int output_plain_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 
 
 /*
- * output_variable - output a variable reference into an octet string.
+ * output_variable - output a variable reference into an octet string or
+ * the string table.
  */
 
-void output_variable(Octstr *variable, Octstr **output, var_esc_t escaped)
+void output_variable(Octstr *variable, Octstr **output, var_esc_t escaped, 
+		     wml_binary_t **wbxml)
 {
   switch (escaped)
     {
     case ESC:
-      octstr_append_char(*output, EXT_I_0);
+      octstr_append_char(*output, EXT_T_0);
       break;
     case UNESC:
-      octstr_append_char(*output, EXT_I_1);
+      octstr_append_char(*output, EXT_T_1);
       break;
     default:
-      octstr_append_char(*output, EXT_I_2);
+      octstr_append_char(*output, EXT_T_2);
       break;
     }
-
+#if 0
   octstr_insert(*output, variable, octstr_len(*output));
   octstr_append_char(*output, STR_END);
+#else
+  octstr_append_char(*output, string_table_add(variable, wbxml));
+#endif
 }
 
 
@@ -1054,7 +1060,7 @@ static string_table_t *string_table_create(int offset, Octstr *ostr)
 
   node = gw_malloc(sizeof(string_table_t));
   node->offset = offset;
-  node->string = ostr;
+  node->string = octstr_duplicate(ostr);
 
   return node;
 }
@@ -1094,10 +1100,7 @@ static int string_table_add(Octstr *ostr, wml_binary_t **wbxml)
     {
       item = list_get((*wbxml)->string_table, i);
       if (octstr_compare(item->string, ostr) == 0)
-	{
-	  octstr_destroy(ostr);
-	  return item->offset;
-	}
+	return item->offset;
     }
 
   /* Create a new list item for the string table. */
@@ -1108,6 +1111,7 @@ static int string_table_add(Octstr *ostr, wml_binary_t **wbxml)
 
   (*wbxml)->string_table_length = 
     (*wbxml)->string_table_length + octstr_len(ostr);
+  list_append((*wbxml)->string_table, item);
 
   return offset;
 }
