@@ -1,17 +1,22 @@
+2004-08-19 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/gw-prioqueue.[ch]: implemented very simple priority queue ala
+      Robert Sedgewick. Behavior like kannel's list.
+      Thanks to 'almado.de' for the idea.
+
 2004-08-18  Stipe Tolj  <stolj@wapme.de>
     * gw/smsc/smsc_smpp.c: some typo fixes, no logic change.
 
 2004-08-17  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * utils/mtbatch.1: added manpage for mtbatch
-	* all: re-"released" 1.4.0 - moved branch tag
+    * all: re-"released" 1.4.0 - moved branch tag
 
 2004-08-17  Stipe Tolj  <stolj@wapme.de>
     * gw/shared.c: fix compiler warning for tcc.
     * wmlscript/ws.[ch]: fix const compiler warning for tcc.
 
 2004-08-16 Andreas Fink <afink@global.networks.ch>
-	* gwlib/semaphore.c: dont use native semaphores on MacOS X
-	  to avoid a "not implemented" error
+    * gwlib/semaphore.c: dont use native semaphores on MacOS X
+      to avoid a "not implemented" error
 
 2004-08-12 Alexander Malysh <olek2002 at hotmail.com>
     * gwlib/utils.c: fixed warning about format attributes.
