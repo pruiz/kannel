@@ -1,3 +1,6 @@
+2005-02-10  Stipe Tolj  <stolj@wapme.de> 
+    * doc/userguide/userguide.xml: minor typo fix.
+
 2005-02-01  Alexander Malysh <amalysh at kannel.org>
     * checks/check_list.c, gw/bb_alog.c, gw/bb_boxc.c, gw/bb_http.c,
       gw/bb_smscconn.c, gw/bb_store.c, gw/bb_udp.c, gw/bearerbox.c,

@@ -1928,7 +1928,7 @@ bearerbox-host = localhost
     <row><entry><literal>http-interface-name</literal></entry>
      <entry>IP address</entry>
      <entry valign="bottom">
-         If this is set then Kannel do outgoing http requests
+         If this is set then Kannel do outgoing HTTP requests
          using this interface.
      </entry></row>
 
