@@ -1,4 +1,8 @@
 2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/date.c: bounced back to rev 1.8 to satisfy "make -s check" run
+      in preparation of new release
+
+2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/dlr.c: fixed another kannel-nag warning about unused vars
       in dlr_find_mysql()
 
