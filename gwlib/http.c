@@ -1973,7 +1973,7 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
 {
     Octstr *response;
     long i;
-    int ret, p;
+    int ret;
 
     if (client->use_version_1_0)
     	response = octstr_format("HTTP/1.0 %d Foo\r\n", status);
