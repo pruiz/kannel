@@ -1,3 +1,7 @@
+2001-01-11  Lars Wirzenius  <liw@iki.fi>
+
+	* utils/chlog-stats: Wrote.
+
 2001-01-10  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/gwassert.h, gwlib/gwmem-check.c, gwlib/gwmem-native.c,
