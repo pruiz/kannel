@@ -1,4 +1,4 @@
-2002-12-10  Stipe Tolj  <tolj@wapme-systems.de>
+2002-12-26  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.c: added some more debugging output and fixed missing NULLing
       of reused trans->host for parse_url().
     * gw/smsbox.c: fixed missing destruction of structures in http client retry
