@@ -1,3 +1,9 @@
+2004-04-27  Alexander Malysh  <a.malysh@centrium.de> 
+    * doc/examples/dlr-sdb.conf: applied patch that addds sql code
+      to create a correct Postgres table.
+      Thanks to Guillaume Cottenceau.
+      [Msg-Id: <84smeuy9rn.fsf@frozen.mnc.ch>].
+
 2004-04-21  Alexander Malysh  <a.malysh@centrium.de> 
     * doc/userguide/userguide.xml: applied patch adds, in 
       "Extended headers" description, that they need a configuration 
