@@ -422,16 +422,16 @@ int	at2_init_device(PrivAT2data *privdata)
 
     /* reset the modem */
     if (at2_send_modem_command(privdata, "ATZ", 0, 0) == -1) {
-        error(0, "AT2[%s]: Modem doesnt like me, but i don't care",
+        error(0, "AT2[%s]: Wrong or no answer to ATZ, ignoring",
               octstr_get_cstr(privdata->name));
     }
 
     /* check if the modem responded */
     if (at2_send_modem_command(privdata, "AT", 0, 0) == -1) {
-        error(0, "AT2[%s]: Wrong or no answer from modem. Trying again",
+        error(0, "AT2[%s]: Wrong or no answer to AT. Trying again",
               octstr_get_cstr(privdata->name));
    	if (at2_send_modem_command(privdata, "AT", 0, 0) == -1) {
-            error(0, "AT2[%s]: No luck. get something more reliable",
+            error(0, "AT2[%s]: Second attempt to send AT failed",
                   octstr_get_cstr(privdata->name));
             return -1;
     	}
@@ -440,7 +440,7 @@ int	at2_init_device(PrivAT2data *privdata)
     at2_flush_buffer(privdata);
 
     if (at2_send_modem_command(privdata, "AT&F", 7, 0) == -1) {
-        error(0, "AT2[%s]: Modem didnt like my AT&F. Lets give it a second try",
+        error(0, "AT2[%s]: No answer to AT&F. Trying again",
               octstr_get_cstr(privdata->name));
 	if (at2_send_modem_command(privdata, "AT&F", 7, 0) == -1) {
     	    return -1;

@@ -1,3 +1,6 @@
+2005-03-01 Aarno Syvanen <as@gni.ch>
+    * gw/smsc/smsc_at.c: Fixed error messages in "slow modem start patch"
+
 2005-03-01  Stipe Tolj  <stolj@wapme.de> 
     * configure[.in], gw-config.h.in, gwlib/http.c: added option to make
       HTTP/1.1 keep-alive support disabled via optional configure switch 
