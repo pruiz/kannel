@@ -50,11 +50,11 @@ MYSQL	mysql;
 #define	DB_HOST		"localhost"
 #define	DB_USER		"username"
 #define	DB_PASSWORD	"password"
+#define	DB_NAME		"DLR"
 
 #define	DB_PORT		0
 #define	DB_SOCKET	0
 #define	DB_CLIENTFLAG	0
-#define	DB_NAME		"DLR"
 #define	DLR_TABLE	"DLR"
 #define DLR_FIELD_SMSC		"smsc"
 #define	DLR_FIELD_TS		"ts"
@@ -92,15 +92,45 @@ Mutex *dlr_mutex;
 
 /* at startup initialize the list */
 
-void	dlr_init()
+void	dlr_init(Cfg* cfg)
 {
+#if (MYSQL_DLR)
+    CfgGroup *grp;
+    Octstr *mysql_host, *mysql_user, *mysql_pass, *mysql_dbname;
+#endif
     dlr_mutex = mutex_create();
 
 #if (MYSQL_DLR)
+// read configuration from 
+    grp = cfg_get_single_group(cfg, octstr_imm("core"));
+    mysql_host = cfg_get(grp, octstr_imm("mysql-host"));
+    mysql_user = cfg_get(grp, octstr_imm("mysql-username"));
+    mysql_pass = cfg_get(grp, octstr_imm("mysql-password"));
+    mysql_dbname = cfg_get(grp, octstr_imm("mysql-dbname"));
+    
+// verify validity and use defaults 
+    if (!mysql_host)
+        mysql_host = octstr_create(DB_HOST);
+    
+    if (!mysql_user)
+        mysql_user = octstr_create(DB_USER);
+    
+    if (!mysql_pass)
+        mysql_pass = octstr_create(DB_PASSWORD);
+    
+    if (!mysql_dbname)
+        mysql_dbname = octstr_create(DB_NAME);
+    
    mysql_init(&mysql);
-   connection = mysql_real_connect(&mysql, DB_HOST,DB_USER,DB_PASSWORD,DB_NAME,DB_PORT,DB_SOCKET,DB_CLIENTFLAG);
+   connection = mysql_real_connect(&mysql, 
+   	octstr_get_cstr(mysql_host), octstr_get_cstr(mysql_user), octstr_get_cstr(mysql_pass),
+   	octstr_get_cstr(mysql_dbname), DB_PORT, DB_SOCKET, DB_CLIENTFLAG);
    if(connection == NULL)
    	error(0,"can not connect to MySQL database for DLR ! Error = %s",mysql_error(&mysql));
+   octstr_destroy(mysql_dbname);
+   octstr_destroy(mysql_host);
+   octstr_destroy(mysql_user);
+   octstr_destroy(mysql_pass);
 #else
     dlr_waiting_list = list_create();
 #endif

@@ -451,7 +451,6 @@ int main(int argc, char **argv)
     bb_status = BB_RUNNING;
     
     gwlib_init();
-    dlr_init();
     start_time = time(NULL);
 
     suspended = list_create();
@@ -470,6 +469,8 @@ int main(int argc, char **argv)
     if (cfg_read(cfg) == -1)
         panic(0, "No configuration or bad configuration, aborting.");
 
+    dlr_init(cfg);
+    
     report_versions("bearerbox");
 
     flow_threads = list_create();

@@ -52,7 +52,7 @@ static char *emi_strerror(int errnum)
 }
 
 
-static int field_count_op(int ot)
+static int field_count_op(int ot, Octstr *whoami)
 {
     switch (ot) {
     case 01:
@@ -66,13 +66,14 @@ static int field_count_op(int ot)
     case 60:
 	return SZ60;
     default:
-	error(0, "Unsupported EMI operation request type %d", ot);
+	error(0, "EMI2[%s]: Unsupported EMI operation request type %d", 
+	      octstr_get_cstr(whoami), ot);
 	return -1;
     }
 }
 
 
-static int field_count_reply(int ot, int posit)
+static int field_count_reply(int ot, int posit, Octstr *whoami)
 {
     switch(ot) {
     case 01:
@@ -86,7 +87,8 @@ static int field_count_reply(int ot, int posit)
     case 60:
 	return posit ? 2 : 3;
     default:
-	error(0, "Unsupported EMI operation reply type %d", ot);
+	error(0, "EMI2[%s]: Unsupported EMI operation reply type %d", 
+	      octstr_get_cstr(whoami), ot);
 	return -1;
     }
 }
@@ -105,12 +107,12 @@ static struct emimsg *emimsg_create_withlen(int len)
 }
 
 
-struct emimsg *emimsg_create_op(int ot, int trn)
+struct emimsg *emimsg_create_op(int ot, int trn, Octstr *whoami)
 {
     int len;
     struct emimsg *ret;
 
-    len = field_count_op(ot);
+    len = field_count_op(ot, whoami);
     if (len < 0)
 	return NULL;
     ret = emimsg_create_withlen(len);
@@ -121,12 +123,13 @@ struct emimsg *emimsg_create_op(int ot, int trn)
 }
 
 
-static struct emimsg *emimsg_create_reply_s(int ot, int trn, int positive)
+static struct emimsg *emimsg_create_reply_s(int ot, int trn, int positive,
+		Octstr *whoami)
 {
     int len;
     struct emimsg *ret;
 
-    len = field_count_reply(ot, positive);
+    len = field_count_reply(ot, positive, whoami);
     if (len < 0)
 	return NULL;
     ret = emimsg_create_withlen(len);
@@ -137,11 +140,12 @@ static struct emimsg *emimsg_create_reply_s(int ot, int trn, int positive)
 }
 
 
-struct emimsg *emimsg_create_reply(int ot, int trn, int positive)
+struct emimsg *emimsg_create_reply(int ot, int trn, int positive, 
+		Octstr *whoami)
 {
     struct emimsg *ret;
 
-    ret = emimsg_create_reply_s(ot, trn, positive);
+    ret = emimsg_create_reply_s(ot, trn, positive, whoami);
     if (ret) {
 	if (positive)
 	    ret->fields[0] = octstr_create("A");
@@ -204,15 +208,15 @@ static Octstr *emimsg_tostring(struct emimsg *emimsg)
 
 
 /* Doesn't check that the string is strictly according to format */
-struct emimsg *get_fields(Octstr *message)
+struct emimsg *get_fields(Octstr *message, Octstr *whoami)
 {
     long trn, len, ot, checksum; /* because of Octstr_parse_long... */
     char or, posit;
     long fieldno, pos, pos2;
     struct emimsg *result = NULL;
 
-    debug("smsc.emi2", 0, "emi2 parsing packet: <%s>",
-		  octstr_get_cstr(message));
+    debug("smsc.emi2", 0, "EMI2[%s]: emi2 parsing packet: <%s>",
+	  octstr_get_cstr(whoami), octstr_get_cstr(message));
     if (octstr_get_char(message, 0) != 2 ||
 	octstr_get_char(message, octstr_len(message) - 1) != 3)
 	goto error;
@@ -227,13 +231,13 @@ struct emimsg *get_fields(Octstr *message)
     if (octstr_parse_long(&ot, message, 12, 10) != 14)
 	goto error;
     if (or == 'O')
-	result = emimsg_create_op(ot, trn);
+	result = emimsg_create_op(ot, trn, whoami);
     else {
 	posit = octstr_get_char(message, 15);
 	if (posit == 'A')
-	    result = emimsg_create_reply_s(ot, trn, 1);
+	    result = emimsg_create_reply_s(ot, trn, 1, whoami);
 	else if (posit == 'N')
-	    result = emimsg_create_reply_s(ot, trn, 0);
+	    result = emimsg_create_reply_s(ot, trn, 0, whoami);
 	else
 	    goto error;
     }
@@ -267,37 +271,41 @@ struct emimsg *get_fields(Octstr *message)
 	if (!result->fields[1] ||
 	    octstr_parse_long(&errcode, result->fields[1], 0, 10) != 2)
 	    goto error;
-	error(0, "Got negative ack. op:%d, trn:%d, error:%ld (%s), message:%s",
+	error(0, "EMI2[%s]: Got negative ack. op:%d, trn:%d, error:%ld (%s), message:%s",
+	      octstr_get_cstr(whoami),
 	      result->ot, result->trn, errcode, emi_strerror(errcode),
 	      result->fields[2] ? octstr_get_cstr(result->fields[2]) : "");
     }
     return result;
 error:
-    error(0, "Invalid EMI packet: %s", octstr_get_cstr(message));
+    error(0, "EMI2[%s]: Invalid EMI packet: %s", octstr_get_cstr(whoami),
+	  octstr_get_cstr(message));
     if (result)
 	emimsg_destroy(result);
     return NULL;
 }
 
 
-int emimsg_send(Connection *conn, struct emimsg *emimsg)
+int emimsg_send(Connection *conn, struct emimsg *emimsg, Octstr *whoami)
 {
     Octstr *string;
 
     string = emimsg_tostring(emimsg);
     if (!string) {
-	error(0, "emimsg_send: conversion to string failed");
+	error(0, "EMI2[%s]: emimsg_send: conversion to string failed",
+	      octstr_get_cstr(whoami));
 	return -1;
     }
     if (emimsg->ot == 60)
-	debug("smsc.emi2", 0, "Sending operation type 60, message with "
-	      "password not shown in log file.");
+	debug("smsc.emi2", 0, "EMI2[%s]: Sending operation type 60, message with "
+	      "password not shown in log file.", octstr_get_cstr(whoami));
     else
-	debug("smsc.emi2", 0, "emi2 sending packet: <%s>",
-	      octstr_get_cstr(string));
+	debug("smsc.emi2", 0, "EMI2[%s]: emi2 sending packet: <%s>",
+	      octstr_get_cstr(whoami), octstr_get_cstr(string));
     if (conn_write(conn, string) == -1) {
 	octstr_destroy(string);
-	error(0, "emimsg_send: write failed");
+	error(0, "EMI2[%s]: emimsg_send: write failed",
+	      octstr_get_cstr(whoami));
 	return -1;
     }
     octstr_destroy(string);

@@ -2180,6 +2180,8 @@ int main(int argc, char **argv)
     counter_destroy(num_outstanding_requests);
     counter_destroy(catenated_sms_counter);
     octstr_destroy(bb_host);
+    octstr_destroy(sendsms_url);
+    octstr_destroy(sendota_url);
     octstr_destroy(global_sender);
     octstr_destroy(reply_emptymessage);
     octstr_destroy(reply_requestfailed);

@@ -919,7 +919,7 @@ syslog-level = none
 	</para>
 
 	
-	snippet defines the keyword <literal>nop</literal>
+	<para>snippet defines the keyword <literal>nop</literal>
 	for an SMS service, and a default action for situation when
 	the keyword in the SMS message does not match any defined
 	service.</para>
@@ -1959,7 +1959,7 @@ sender-prefix = "12345"
 </sect3>
 
 <sect3>
-<title>CMG UCP/EMI 3.5</title>
+<title>CMG UCP/EMI 4.0</title>
 
   <para>Kannel supports two types of connections with CMG SMS centers:
   direct TCP/IP connections (<literal>emi_ip</literal> or
@@ -2013,6 +2013,21 @@ smsc-password = bar
        Port number in the SMSC host machine
      </entry></row>
 
+   <row><entry><literal>alt-host</literal></entry>
+     <entry><literal>hostname</literal></entry>
+     <entry valign=bottom>
+        Optional alternate Machine that runs SMSC. 
+	As IP (100.100.100.100) or hostname (their.machine.here)
+	(If undef but exists alt-port, emi2 would try host:alt-port)
+     </entry></row>
+
+   <row><entry><literal>alt-port</literal></entry>
+     <entry><literal>port-number</literal></entry>
+     <entry valign=bottom>
+       Optional alternate Port number in the SMSC host machine
+	(If undef but exists alt-host, emi2 would try alt-host:port)
+     </entry></row>
+
    <row><entry><literal>smsc-username</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
@@ -2037,6 +2052,13 @@ smsc-password = bar
      <entry valign=bottom>
        Phone number to dial to, when connecting over a modem to an
        SMS center.
+     </entry></row>
+
+   <row><entry><literal>our-host</literal></entry>
+     <entry><literal>hostname</literal></entry>
+     <entry valign=bottom>
+       Optional hostname in which to bind the connection in our
+     end. TCP/IP connection only.
      </entry></row>
 
    <row><entry><literal>our-port</literal></entry>
@@ -3898,6 +3920,10 @@ message charset: for a "normal" message, it will
 be "gsm" (coding=1), "binary" (coding=2) or 
 "UTF16-BE" (coding=3). If the message was sucessfully
 recoded from unicode, it will be "ISO-8859-1"
+</entry></row>
+
+<row><entry><literal>%u</literal></entry><entry>
+<literal>udh</literal> of incoming message
 </entry></row>
 
 </tbody>

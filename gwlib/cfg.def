@@ -50,6 +50,10 @@ SINGLE_GROUP(core,
     OCTSTR(ssl-server-cert-file)
     OCTSTR(ssl-server-key-file)
     OCTSTR(ssl-trusted-ca-file)
+    OCTSTR(mysql-host)
+    OCTSTR(mysql-username)
+    OCTSTR(mysql-password)
+    OCTSTR(mysql-dbname)
 )
 
 
@@ -151,7 +155,9 @@ MULTI_GROUP(smsc,
     OCTSTR(preferred-prefix)
     OCTSTR(alt-charset)
     OCTSTR(host)
+    OCTSTR(alt-host)
     OCTSTR(port)
+    OCTSTR(alt-port)
     OCTSTR(smsc-username)
     OCTSTR(smsc-password)
     OCTSTR(keepalive)
@@ -159,6 +165,7 @@ MULTI_GROUP(smsc,
     OCTSTR(device)
     OCTSTR(speed)
     OCTSTR(validityperiod)
+    OCTSTR(our-host)
     OCTSTR(our-port)
     OCTSTR(receive-port)
     OCTSTR(connect-allow-ip)

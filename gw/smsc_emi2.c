@@ -28,6 +28,7 @@
 #define EMI2_MAX_TRN 100
 
 typedef struct privdata {
+    Octstr	*name;
     List	*outgoing_queue;
     long	receiver_thread;
     long	sender_thread;
@@ -35,12 +36,12 @@ typedef struct privdata {
     int		shutdown;	  /* Internal signal to shut down */
     int		listening_socket; /* File descriptor */
     int		send_socket;
-    int		port;		  /* SMSC port */
+    int		port, alt_port;		  /* SMSC port */
     int		our_port;	  /* Optional local port number in which to
 				   * bind our end of send connection */
     int		rport;		  /* Receive-port to listen */
     Octstr	*allow_ip, *deny_ip;
-    Octstr	*host, *username, *password;
+    Octstr	*host, *alt_host, *username, *password, *our_host;
     Octstr	*my_number;	/* My number if we want to force one */
     int		unacked;	/* Sent messages not acked */
     struct {
@@ -98,7 +99,7 @@ typedef enum {
  */
 static int emi2_emimsg_send(SMSCConn *conn, Connection *server, struct emimsg *emimsg)
 {
-    int result = emimsg_send(server, emimsg);
+    int result = emimsg_send(server, emimsg, PRIVDATA(conn)->name);
 
     if (result >= 0 && emimsg->or == 'O' && ( emimsg->ot == 31 || emimsg->ot == 51)) {
 	PRIVDATA(conn)->last_activity_time = time (NULL);
@@ -123,15 +124,17 @@ static int wait_for_ack(PrivData *privdata, Connection *server, int ot, int t)
     while (1) {
 	str = conn_read_packet(server, 2, 3);
 	if (conn_eof(server)) {
-	    error(0, "emi2: connection closed in wait_for_ack");
+	    error(0, "EMI2[%s]: connection closed in wait_for_ack",
+		  octstr_get_cstr(privdata->name));
 	    return -1;
 	}
 	if (conn_read_error(server)) {
-	    error(0, "emi2: connection error in wait_for_ack");
+	    error(0, "EMI2[%s]: connection error in wait_for_ack",
+		  octstr_get_cstr(privdata->name));
 	    return -1;
 	}
 	if (str) {
-	    emimsg = get_fields(str);
+	    emimsg = get_fields(str, privdata->name);
 	    if (emimsg == NULL) {
 		octstr_destroy(str);
 		continue;
@@ -140,8 +143,9 @@ static int wait_for_ack(PrivData *privdata, Connection *server, int ot, int t)
 		octstr_destroy(str);
 		break;
 	    }
-	    warning(0, "Emi2: ignoring message %s while waiting for ack to"
-			"ot:%d trn:%d", octstr_get_cstr(str), ot, 0);
+	    warning(0, "EMI2[%s]: ignoring message %s while waiting for ack to"
+			"ot:%d trn:%d", octstr_get_cstr(privdata->name),
+			octstr_get_cstr(str), ot, 0);
 	    emimsg_destroy(emimsg);
 	    octstr_destroy(str);
 	}
@@ -163,7 +167,7 @@ static struct emimsg *make_emi31(PrivData *privdata, int trn)
 {
     struct emimsg *emimsg;
 
-    emimsg = emimsg_create_op(31, trn);
+    emimsg = emimsg_create_op(31, trn, privdata->name);
     emimsg->fields[0] = octstr_duplicate(privdata->username);
     emimsg->fields[1] = octstr_create("0539");
     return emimsg;
@@ -174,7 +178,7 @@ static struct emimsg *make_emi60(PrivData *privdata)
 {
     struct emimsg *emimsg;
 
-    emimsg = emimsg_create_op(60, 0);
+    emimsg = emimsg_create_op(60, 0, privdata->name);
     emimsg->fields[E60_OADC] = octstr_duplicate(privdata->username);
     emimsg->fields[E60_OTON] = octstr_create("6");
     emimsg->fields[E60_ONPI] = octstr_create("5");
@@ -189,46 +193,70 @@ static struct emimsg *make_emi60(PrivData *privdata)
 static Connection *open_send_connection(SMSCConn *conn)
 {
     PrivData *privdata = conn->data;
-    int result, wait;
+    int result, wait, alt_host, do_alt_host;
     struct emimsg *emimsg;
     Connection *server;
     Msg *msg;
 
+    do_alt_host = octstr_len(privdata->alt_host) != 0 || 
+	    privdata->alt_port != 0;
+
     wait = 0;
+    alt_host = -1; /* to avoid waiting in first cicle */
+
+    mutex_lock(conn->flow_mutex);
+    conn->status = SMSCCONN_RECONNECTING;
+    mutex_unlock(conn->flow_mutex);
     while (!privdata->shutdown) {
 	/* Change status only if the first attempt to form a
 	 * connection fails, as it's possible that the SMSC closed the
 	 * connection because of idle timeout and a new one will be
 	 * created quickly. */
 	if (wait) {
-	    if (conn->status == SMSCCONN_ACTIVE) {
-		mutex_lock(conn->flow_mutex);
-		conn->status = SMSCCONN_RECONNECTING;
-		mutex_unlock(conn->flow_mutex);
-	    }
 	    while ((msg = list_extract_first(privdata->outgoing_queue))) {
 		bb_smscconn_send_failed(conn, msg,
 					SMSCCONN_FAILED_TEMPORARILY);
 	    }
-	    info(0, "smsc_emi2: waiting for %d %s before trying to "
-		 "connect again", (wait < 60 ? wait : wait/60), 
-		 (wait < 60 ? "seconds" : "minutes"));
-	    gwthread_sleep(wait);
-	    wait = wait > (privdata->retry ? 3600 : 600) ? 
-		(privdata->retry ? 3600 : 600) : wait * 2;
+	    if(alt_host == 0) {
+		info(0, "EMI2[%s]: waiting for %d %s before trying to "
+			    "connect again", octstr_get_cstr(privdata->name), 
+			    (wait < 60 ? wait : wait/60), 
+			    (wait < 60 ? "seconds" : "minutes"));
+		gwthread_sleep(wait);
+		wait = wait > (privdata->retry ? 3600 : 600) ?
+		    (privdata->retry ? 3600 : 600) : wait * 2;
+	    }
 	}
 	else
-	    wait = 15;
+	    wait = 15; 
 
-	server = conn_open_tcp_with_port(privdata->host, privdata->port,
-					 privdata->our_port, NULL
-					 /* privdata->our_host */);
+	if(alt_host != 1) {
+	    info(0, "EMI2[%s]: connecting to Primary SMSC", 
+			    octstr_get_cstr(privdata->name));
+	    server = conn_open_tcp_with_port(privdata->host, privdata->port,
+					     privdata->our_port, 
+					     privdata->our_host);
+	    if(do_alt_host)
+		alt_host=1;
+	    else
+		alt_host=0;
+	} else {
+	    info(0, "EMI2[%s]: connecting to Alternate SMSC",
+			    octstr_get_cstr(privdata->name));
+	    /* use alt_host or/and alt_port if defined */
+	    server = conn_open_tcp_with_port(
+		(octstr_len(privdata->alt_host) ? privdata->alt_host : privdata->host),
+		(privdata->alt_port ? privdata->alt_port : privdata->port),
+		privdata->our_port, privdata->our_host);
+	    alt_host=0;
+	}
 	if (privdata->shutdown) {
 	    conn_destroy(server);
 	    return NULL;
 	}
 	if (server == NULL) {
-	    error(0, "smsc_emi2: opening TCP connection to %s failed",
+	    error(0, "EMI2[%s]: opening TCP connection to %s failed",
+		  octstr_get_cstr(privdata->name),
 		  octstr_get_cstr(privdata->host));
 	    continue;
 	}
@@ -241,17 +269,18 @@ static Connection *open_send_connection(SMSCConn *conn)
 	    if (result == -2) {
 		/* Are SMSCs going to return any temporary errors? If so,
 		 * testing for those error codes should be added here. */
-		error(0, "smsc_emi2: Server rejected our login, giving up");
-		conn->why_killed = SMSCCONN_KILLED_WRONG_PASSWORD;
+		error(0, "EMI2[%s]: Server rejected our login, giving up",
+		      octstr_get_cstr(privdata->name));
 		conn_destroy(server);
-		if(! privdata->retry) 
+		if(! privdata->retry)  {
+		    conn->why_killed = SMSCCONN_KILLED_WRONG_PASSWORD;
 		    return NULL;
-		else
+		} else
 		    continue;
 	    }
 	    else if (result == 0) {
-		error(0, "smsc_emi2: Got no reply to login attempt "
-		      "within 30 s");
+		error(0, "EMI2[%s]: Got no reply to login attempt "
+		      "within 30 s", octstr_get_cstr(privdata->name));
 		conn_destroy(server);
 		continue;
 	    }
@@ -261,13 +290,11 @@ static Connection *open_send_connection(SMSCConn *conn)
 	    }
 	}
 
-	if (conn->status != SMSCCONN_ACTIVE) {
-	    mutex_lock(conn->flow_mutex);
-	    conn->status = SMSCCONN_ACTIVE;
-	    conn->connect_time = time(NULL);
-	    mutex_unlock(conn->flow_mutex);
-	    bb_smscconn_connected(conn);
-	}
+	mutex_lock(conn->flow_mutex);
+	conn->status = SMSCCONN_ACTIVE;
+	conn->connect_time = time(NULL);
+	mutex_unlock(conn->flow_mutex);
+	bb_smscconn_connected(conn);
 	return server;
     }
     return NULL;
@@ -303,7 +330,7 @@ static void pack_7bit(Octstr *str)
 }
 
 
-static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
+static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
 {
     Octstr *str;
     struct emimsg *emimsg;
@@ -311,7 +338,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
     struct tm tm;
     char p[20];
 
-    emimsg = emimsg_create_op(51, trn);
+    emimsg = emimsg_create_op(51, trn, privdata->name);
     str = octstr_duplicate(msg->sms.sender);
     if(octstr_get_char(str,0) == '+') {
     	/* either alphanum or international */
@@ -397,8 +424,9 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
 	/* Could still be too long after truncation if there's an UDH part,
 	 * but this is only to notice errors elsewhere (should never happen).*/
 	if (charset_gsm_truncate(str, 160))
-	    error(0, "emi2: Message to send is longer "
-		  "than 160 gsm characters");
+	    error(0, "EMI2[%s]: Message to send is longer "
+		  "than 160 gsm characters",
+		  octstr_get_cstr(privdata->name));
 	octstr_binary_to_hex(str, 1);
 	emimsg->fields[E50_AMSG] = str;
     }
@@ -446,6 +474,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
     Msg *msg = NULL;
     struct universaltime unitime;
     int st_code;
+    PrivData *privdata = conn->data;
 
   
     switch(emimsg->ot) {
@@ -454,10 +483,12 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	if (emimsg->fields[E01_AMSG] == NULL)
 	    emimsg->fields[E01_AMSG] = octstr_create("");
 	else if (octstr_hex_to_binary(emimsg->fields[E01_AMSG]) == -1)
-	    warning(0, "emi2: Couldn't decode message text");
+	    warning(0, "EMI2[%s]: Couldn't decode message text",
+		    octstr_get_cstr(privdata->name));
 
 	if (emimsg->fields[E01_MT] == NULL) {
-	    warning(0, "emi2: required field MT missing");
+	    warning(0, "EMI2[%s]: required field MT missing",
+		    octstr_get_cstr(privdata->name));
 	    /* This guess could be incorrect, maybe the message should just
 	       be dropped */
 	    emimsg->fields[E01_MT] = octstr_create("3");
@@ -469,14 +500,16 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	    charset_gsm_to_latin1(msg->sms.msgdata);
 	}
 	else {
-	    error(0, "emi2: MT == %s isn't supported for operation type 01",
+	    error(0, "EMI2[%s]: MT == %s isn't supported for operation type 01",
+		  octstr_get_cstr(privdata->name),
 		  octstr_get_cstr(emimsg->fields[E01_MT]));
 	    msg->sms.msgdata = octstr_create("");
 	}
 
 	msg->sms.sender = octstr_duplicate(emimsg->fields[E01_OADC]);
 	if (msg->sms.sender == NULL) {
-	    warning(0, "Empty sender field in received message");
+	    warning(0, "EMI2[%s]: Empty sender field in received message",
+		    octstr_get_cstr(privdata->name));
 	    msg->sms.sender = octstr_create("");
 	}
 
@@ -487,7 +520,8 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	    msg->sms.receiver = octstr_duplicate(emimsg->fields[E01_ADC]);
 	}
 	if (msg->sms.sender == NULL) {
-	    warning(0, "Empty receiver field in received message");
+	    warning(0, "EMI2[%s]: Empty receiver field in received message",
+		    octstr_get_cstr(privdata->name));
 	    msg->sms.receiver = octstr_create("");
 	}
 
@@ -496,7 +530,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 
 	msg->sms.smsc_id = octstr_duplicate(conn->id);
 	bb_smscconn_receive(conn, msg);
-	reply = emimsg_create_reply(01, emimsg->trn, 1);
+	reply = emimsg_create_reply(01, emimsg->trn, 1, privdata->name);
 	if (emi2_emimsg_send(conn, server, reply) < 0) {
 	    emimsg_destroy(reply);
 	    return -1;
@@ -510,27 +544,31 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	if (emimsg->fields[E50_AMSG] == NULL)
 	    emimsg->fields[E50_AMSG] = octstr_create("");
 	else if (octstr_hex_to_binary(emimsg->fields[E50_AMSG]) == -1)
-	    warning(0, "emi2: Couldn't decode message text");
+	    warning(0, "EMI2[%s]: Couldn't decode message text");
 
 	xser = emimsg->fields[E50_XSER];
 	while (octstr_len(xser) > 0) {
 	    tempstr = octstr_copy(xser, 0, 4);
 	    if (octstr_hex_to_binary(tempstr) == -1)
-		error(0, "Invalid XSer");
+		error(0, "EMI2[%s]: Invalid XSer", 
+		      octstr_get_cstr(privdata->name));
 	    type = octstr_get_char(tempstr, 0);
 	    len = octstr_get_char(tempstr, 1);
 	    octstr_destroy(tempstr);
 	    if (len < 0) {
-		error(0, "Malformed emi XSer field");
+		error(0, "EMI2[%s]: Malformed emi XSer field",
+		      octstr_get_cstr(privdata->name));
 		break;
 	    }
 	    if (type != 1 && type != 2)
-		warning(0, "Unsupported EMI XSer field %d", type);
+		warning(0, "EMI2[%s]: Unsupported EMI XSer field %d", 
+			octstr_get_cstr(privdata->name), type);
 	    else {
 		if (type == 1) {
 		    tempstr = octstr_copy(xser, 4, len * 2);
 		    if (octstr_hex_to_binary(tempstr) == -1)
-			error(0, "Invalid UDH contents");
+			error(0, "EMI2[%s]: Invalid UDH contents",
+			      octstr_get_cstr(privdata->name));
 		    msg->sms.udhdata = tempstr;
 		}
 		if (type == 2) {
@@ -540,7 +578,8 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 		    dcs = octstr_get_char(tempstr, 0);
 		    octstr_destroy(tempstr);
 		    if (! dcs_to_fields(&msg, dcs)) {
-			error(0, "emi2: invalid dcs received");
+			error(0, "EMI2[%s]: invalid dcs received",
+			      octstr_get_cstr(privdata->name));
 			/* XXX Should we discard message ? */
 			dcs_to_fields(&msg, 0);
 		    }
@@ -550,7 +589,8 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	}
 
 	if (emimsg->fields[E50_MT] == NULL) {
-	    warning(0, "emi2: required field MT missing");
+	    warning(0, "EMI2[%s]: required field MT missing",
+		    octstr_get_cstr(privdata->name));
 	    /* This guess could be incorrect, maybe the message should just
 	       be dropped */
 	    emimsg->fields[E50_MT] = octstr_create("3");
@@ -565,14 +605,16 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	    emimsg->fields[E50_TMSG] = NULL;
 	}
 	else {
-	    error(0, "emi2: MT == %s isn't supported yet",
+	    error(0, "EMI2[%s]: MT == %s isn't supported yet",
+		  octstr_get_cstr(privdata->name),
 		  octstr_get_cstr(emimsg->fields[E50_MT]));
 	    msg->sms.msgdata = octstr_create("");
 	}
 
 	msg->sms.sender = octstr_duplicate(emimsg->fields[E50_OADC]);
 	if (msg->sms.sender == NULL) {
-	    warning(0, "Empty sender field in received message");
+	    warning(0, "EMI2[%s]: Empty sender field in received message",
+		    octstr_get_cstr(privdata->name));
 	    msg->sms.sender = octstr_create("");
 	}
 
@@ -583,18 +625,20 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	    msg->sms.receiver = octstr_duplicate(emimsg->fields[E50_ADC]);
 	}
 	if (msg->sms.sender == NULL) {
-	    warning(0, "Empty receiver field in received message");
+	    warning(0, "EMI2[%s]: Empty receiver field in received message",
+		    octstr_get_cstr(privdata->name));
 	    msg->sms.receiver = octstr_create("");
 	}
 
 	tempstr = emimsg->fields[E50_SCTS]; /* Just a shorter name */
 	if (tempstr == NULL) {
-	    warning(0, "Received EMI message doesn't have required timestamp");
+	    warning(0, "EMI2[%s]: Received EMI message doesn't have required timestamp",
+		    octstr_get_cstr(privdata->name));
 	    goto notime;
 	}
 	if (octstr_len(tempstr) != 12) {
-	    warning(0, "EMI SCTS field must have length 12, now %ld",
-		  octstr_len(tempstr));
+	    warning(0, "EMI2[%s]: EMI SCTS field must have length 12, now %ld",
+		    octstr_get_cstr(privdata->name), octstr_len(tempstr));
 	    goto notime;
 	}
 	if (octstr_parse_long(&unitime.second, tempstr, 10, 10) != 12 ||
@@ -608,7 +652,8 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	     octstr_parse_long(&unitime.month, tempstr, 2, 10) != 4) ||
 	    (octstr_delete(tempstr, 2, 2),
 	     octstr_parse_long(&unitime.day, tempstr, 0, 10) != 2)) {
-	    error(0, "EMI delivery time stamp looks malformed");
+	    error(0, "EMI2[%s]: EMI delivery time stamp looks malformed",
+		  octstr_get_cstr(privdata->name));
 	notime:
 	    time(&msg->sms.time);
 	}
@@ -620,7 +665,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	msg->sms.smsc_id = octstr_duplicate(conn->id);
 	counter_increase(conn->received);
 	bb_smscconn_receive(conn, msg);
-	reply = emimsg_create_reply(52, emimsg->trn, 1);
+	reply = emimsg_create_reply(52, emimsg->trn, 1, privdata->name);
 	if (emi2_emimsg_send(conn, server, reply) < 0) {
 	    emimsg_destroy(reply);
 	    return -1;
@@ -667,7 +712,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	    octstr_destroy(reply);
 	    bb_smscconn_receive(conn, msg);
 	}
-	reply = emimsg_create_reply(53, emimsg->trn, 1);
+	reply = emimsg_create_reply(53, emimsg->trn, 1, privdata->name);
 	if (emi2_emimsg_send(conn, server, reply) < 0) {
 	    emimsg_destroy(reply);
 	    return -1;
@@ -676,7 +721,8 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	return 1;
 
     default:
-	error(0, "I don't know how to handle operation type %d", emimsg->ot);
+	error(0, "EMI2[%s]: I don't know how to handle operation type %d", 
+	      octstr_get_cstr(privdata->name), emimsg->ot);
 	return 0;
     }
 }
@@ -688,7 +734,8 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 static void clear_sent(PrivData *privdata)
 {
     int i;
-    debug("smsc.emi2", 0, "clear_sent called");
+    debug("smsc.emi2", 0, "EMI2[%s]: clear_sent called", 
+	  octstr_get_cstr(privdata->name));
     for (i = 0; i < EMI2_MAX_TRN; i++) {
 	if (privdata->slots[i].sendtime && privdata->slots[i].sendtype == 51)
 	    list_produce(privdata->outgoing_queue, privdata->slots[i].sendmsg);
@@ -785,7 +832,7 @@ static int emi2_do_send (SMSCConn *conn, Connection *server)
 	    gwthread_sleep(delay);
 
 	/* convert the generic Kannel message into an EMI type message */
-	emimsg = msg_to_emimsg(msg, nexttrn);
+	emimsg = msg_to_emimsg(msg, nexttrn, PRIVDATA(conn));
 
 	/* remember the message for retransmission or DLR */
 	PRIVDATA(conn)->slots[nexttrn].sendmsg = msg;
@@ -839,13 +886,15 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
 {
     Octstr	  *str;
     struct emimsg *emimsg;
+    PrivData *privdata = conn->data;
     
     /* Read acks/nacks/ops from the server */
     while ((str = conn_read_packet(server, 2, 3))) {
-	debug("smsc.emi2", 0, "Got packet from the main socket");
+	debug("smsc.emi2", 0, "EMI2[%s]: Got packet from the main socket",
+	      octstr_get_cstr(privdata->name));
 
 	/* parse the msg */
-	emimsg = get_fields(str);
+	emimsg = get_fields(str, privdata->name);
 	octstr_destroy(str);
 	
 	if (emimsg == NULL) {
@@ -861,13 +910,15 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
 		if (handle_operation(conn, server, emimsg) < 0)
 		    return -1; /* Connection broke */
 	    } else {
-		info(0, "Ignoring operation from main socket "
-		     "because the connection is stopped.");
+		info(0, "EMI2[%s]: Ignoring operation from main socket "
+		     "because the connection is stopped.",
+		     octstr_get_cstr(privdata->name));
 	    }
 	} else {   /* Already checked to be 'O' or 'R' */
 	    if (!SLOTBUSY(conn,emimsg->trn) ||
 		emimsg->ot != PRIVDATA(conn)->slots[emimsg->trn].sendtype) {
-		error(0, "Emi2: Got ack for TRN %d, don't remember sending O?", emimsg->trn);
+		error(0, "EMI2[%s]: Got ack for TRN %d, don't remember sending O?", 
+		      octstr_get_cstr(privdata->name), emimsg->trn);
 	    } else {
 		PRIVDATA(conn)->can_write = 1;
 		PRIVDATA(conn)->slots[emimsg->trn].sendtime = 0;
@@ -927,7 +978,8 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
 			        
 				m = PRIVDATA(conn)->slots[emimsg->trn].sendmsg;
 				if(m == NULL) {
-				    info(0,"uhhh m is NULL, very bad");
+				    info(0,"EMI2[%s]: uhhh m is NULL, very bad",
+					 octstr_get_cstr(privdata->name));
 				} else if (m->sms.dlr_mask & 0x7) {
 				    dlr_add(octstr_get_cstr(conn->id), 
 					    octstr_get_cstr(ts),
@@ -958,7 +1010,8 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
 		    /* We don't use the data in the reply */
 		    ;
 		} else {
-		    panic(0, "Bug, ACK handler missing for sent packet");
+		    panic(0, "EMI2[%s]: Bug, ACK handler missing for sent packet",
+			  octstr_get_cstr(privdata->name));
 		}
 	    }
 	}
@@ -966,12 +1019,14 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
     }
 
     if (conn_read_error(server)) {
-	error(0, "emi2: Error trying to read ACKs from SMSC");
+	error(0, "EMI2[%s]: Error trying to read ACKs from SMSC",
+	      octstr_get_cstr(privdata->name));
 	return -1;
     }
     
     if (conn_eof(server)) {
-	info(0, "emi2: Main connection closed by SMSC");
+	info(0, "EMI2[%s]: Main connection closed by SMSC",
+	     octstr_get_cstr(privdata->name));
 	return -1;
     }
 
@@ -982,6 +1037,7 @@ static void emi2_idleprocessing(SMSCConn *conn)
 {
     time_t current_time;
     int i;
+    PrivData *privdata = conn->data;
     
     /*
      * Check whether there are messages the server hasn't acked in a
@@ -997,8 +1053,9 @@ static void emi2_idleprocessing(SMSCConn *conn)
 		PRIVDATA(conn)->slots[i].sendtime = 0;
 		PRIVDATA(conn)->unacked--;
 		if (PRIVDATA(conn)->slots[i].sendtype == 51) {
-		    warning(0, "smsc_emi2: received neither ACK nor NACK for message %d " 
-			    "in %d seconds, resending message", i, PRIVDATA(conn)->waitack);
+		    warning(0, "EMI2[%s]: received neither ACK nor NACK for message %d " 
+			    "in %d seconds, resending message", octstr_get_cstr(privdata->name),
+			    i, PRIVDATA(conn)->waitack);
 		    list_produce(PRIVDATA(conn)->outgoing_queue,
 				 PRIVDATA(conn)->slots[i].sendmsg);
 		    if (PRIVDATA(conn)->flowcontrol) PRIVDATA(conn)->can_write=1;
@@ -1006,11 +1063,13 @@ static void emi2_idleprocessing(SMSCConn *conn)
 		     * (simpler than avoiding sleep) */
 		    gwthread_wakeup(PRIVDATA(conn)->sender_thread);
 		} else if (PRIVDATA(conn)->slots[i].sendtype == 31) {
-		    warning(0, "smsc_emi2: Alert (operation 31) was not "
-			    "ACKed within %d seconds", PRIVDATA(conn)->waitack);
+		    warning(0, "EMI2[%s]: Alert (operation 31) was not "
+			    "ACKed within %d seconds", octstr_get_cstr(privdata->name),
+			    PRIVDATA(conn)->waitack);
 		    if (PRIVDATA(conn)->flowcontrol) PRIVDATA(conn)->can_write=1;
 		} else {
-		    panic(0, "Bug, no timeout handler for sent packet");
+		    panic(0, "EMI2[%s]: Bug, no timeout handler for sent packet",
+			  octstr_get_cstr(privdata->name));
 		}
 	    }
 	}
@@ -1019,11 +1078,14 @@ static void emi2_idleprocessing(SMSCConn *conn)
 
 static void emi2_idletimeout_handling (SMSCConn *conn, Connection **server)
 {
+    PrivData *privdata = conn->data;
+
     /*
      * close the connection if there was no activity.
      */
     if ((*server != NULL) && CONNECTIONIDLE(conn)) {
-	info(0, "emi2: closing idle connection.");
+	info(0, "EMI2[%s]: closing idle connection.",
+	     octstr_get_cstr(privdata->name));
 	conn_destroy(*server);
 	*server = NULL;
     }
@@ -1049,6 +1111,8 @@ static double emi2_get_timeouttime (SMSCConn *conn, Connection *server)
  */
 static void emi2_send_loop(SMSCConn *conn, Connection **server)
 {
+    PrivData *privdata = conn->data;
+
     for (;;) {
 	double timeouttime = emi2_get_timeouttime (conn, *server);
 	
@@ -1099,12 +1163,14 @@ static void emi2_send_loop(SMSCConn *conn, Connection **server)
 
 	if (*server != NULL) {
 	    if (conn_read_error(*server)) {
-		warning(0, "emi2: Error reading from the main connection");
+		warning(0, "EMI2[%s]: Error reading from the main connection",
+			octstr_get_cstr(privdata->name));
 		break;
 	    }
 	
 	    if (conn_eof(*server)) {
-		info(0, "emi2: Main connection closed by SMSC");
+		info(0, "EMI2[%s]: Main connection closed by SMSC",
+		     octstr_get_cstr(privdata->name));
 		break;
 	    }
 	}
@@ -1141,17 +1207,22 @@ static void emi2_sender(void *arg)
 
     conn->status = SMSCCONN_DEAD;
 
+    debug("bb.sms", 0, "EMI2[%s]: connection has completed shutdown.",
+	  octstr_get_cstr(privdata->name));
+
     list_destroy(privdata->outgoing_queue, NULL);
+    octstr_destroy(privdata->name);
     octstr_destroy(privdata->allow_ip);
     octstr_destroy(privdata->deny_ip);
     octstr_destroy(privdata->host);
+    if(octstr_len(privdata->alt_host))
+	octstr_destroy(privdata->alt_host);
     octstr_destroy(privdata->username);
     octstr_destroy(privdata->password);
     gw_free(privdata);
     conn->data = NULL;
 
     mutex_unlock(conn->flow_mutex);
-    debug("bb.sms", 0, "smsc_emi2 connection has completed shutdown.");
     bb_smscconn_killed();
 }
 
@@ -1164,11 +1235,13 @@ static void emi2_receiver(SMSCConn *conn, Connection *server)
 
     while (1) {
 	if (conn_eof(server)) {
-	    info(0, "emi2: receive connection closed by SMSC");
+	    info(0, "EMI2[%s]: receive connection closed by SMSC",
+		 octstr_get_cstr(privdata->name));
 	    return;
 	}
 	if (conn_read_error(server)) {
-	    error(0, "emi2: receive connection broken");
+	    error(0, "EMI2[%s]: receive connection broken",
+		  octstr_get_cstr(privdata->name));
 	    return;
 	}
 	if (conn->is_stopped)
@@ -1176,8 +1249,9 @@ static void emi2_receiver(SMSCConn *conn, Connection *server)
 	else
 	    str = conn_read_packet(server, 2, 3);
 	if (str) {
-	    debug("smsc.emi2", 0, "Got packet from the receive connection.");
-	    if ( (emimsg = get_fields(str)) ) {
+	    debug("smsc.emi2", 0, "EMI2[%s]: Got packet from the receive connection.",
+		  octstr_get_cstr(privdata->name));
+	    if ( (emimsg = get_fields(str, privdata->name)) ) {
 		if (emimsg->or == 'O') {
 		    if (handle_operation(conn, server, emimsg) < 0) {
 			emimsg_destroy(emimsg);
@@ -1185,7 +1259,8 @@ static void emi2_receiver(SMSCConn *conn, Connection *server)
 		    }
 		}
 		else
-		    error(0, "emi2: No ACKs expected on receive connection!");
+		    error(0, "EMI2[%s]: No ACKs expected on receive connection!",
+			  octstr_get_cstr(privdata->name));
 		emimsg_destroy(emimsg);
 	    }
 	    octstr_destroy(str);
@@ -1205,13 +1280,13 @@ static int emi2_open_listening_socket(PrivData *privdata)
 
     if ( (s = make_server_socket(privdata->rport, NULL)) == -1) {
 	    /* XXX add interface_name if required */
-	error(0, "smsc_emi2: could not create listening socket in port %d",
-	      privdata->rport);
+	error(0, "EMI2[%s]: could not create listening socket in port %d",
+	      octstr_get_cstr(privdata->name), privdata->rport);
 	return -1;
     }
     if (socket_set_blocking(s, 0) == -1) {
-	error(0, "smsc_emi2: couldn't make listening socket port %d "
-		 "non-blocking", privdata->rport);
+	error(0, "EMI2[%s]: couldn't make listening socket port %d "
+		 "non-blocking", octstr_get_cstr(privdata->name), privdata->rport);
 	close(s);
 	return -1;
     }
@@ -1236,7 +1311,8 @@ static void emi2_listener(void *arg)
 	if (ret == -1) {
 	    if (errno == EINTR)
 		continue;
-	    error(0, "Poll for emi2 smsc connections failed, shutting down");
+	    error(0, "EMI2[%s]: Poll for emi2 smsc connections failed, shutting down",
+		  octstr_get_cstr(privdata->name));
 	    break;
 	}
 	if (privdata->shutdown)
@@ -1247,34 +1323,38 @@ static void emi2_listener(void *arg)
 	s = accept(privdata->listening_socket, (struct sockaddr *)&server_addr,
 		   &server_addr_len);
 	if (s == -1) {
-	    warning(errno, "emi2_listener: accept() failed, retrying...");
+	    warning(errno, "EMI2[%s]: emi2_listener: accept() failed, retrying...",
+		    octstr_get_cstr(privdata->name));
 	    continue;
 	}
 	ip = host_ip(server_addr);
 	if (!is_allowed_ip(privdata->allow_ip, privdata->deny_ip, ip)) {
-	    info(0, "Emi2 smsc connection tried from denied host <%s>,"
-		 " disconnected", octstr_get_cstr(ip));
+	    info(0, "EMI2[%s]: smsc connection tried from denied host <%s>,"
+		 " disconnected", octstr_get_cstr(privdata->name), 
+		 octstr_get_cstr(ip));
 	    octstr_destroy(ip);
 	    close(s);
 	    continue;
 	}
 	server = conn_wrap_fd(s, 0);
 	if (server == NULL) {
-	    error(0, "emi2_listener: conn_wrap_fd failed on accept()ed fd");
+	    error(0, "EMI2[%s]: emi2_listener: conn_wrap_fd failed on accept()ed fd",
+		  octstr_get_cstr(privdata->name));
 	    octstr_destroy(ip);
 	    close(s);
 	    continue;
 	}
 	conn_claim(server);
-	info(0, "Emi2: smsc connected from %s", octstr_get_cstr(ip));
+	info(0, "EMI2[%s]: smsc connected from %s", 
+	     octstr_get_cstr(privdata->name), octstr_get_cstr(ip));
 	octstr_destroy(ip);
 
 	emi2_receiver(conn, server);
 	conn_destroy(server);
     }
     if (close(privdata->listening_socket) == -1)
-	warning(errno, "smsc_emi2: couldn't close listening socket "
-		"at shutdown");
+	warning(errno, "EMI2[%s]: couldn't close listening socket "
+		"at shutdown", octstr_get_cstr(privdata->name));
     gwthread_wakeup(privdata->sender_thread);
 }
 
@@ -1296,7 +1376,8 @@ static int shutdown_cb(SMSCConn *conn, int finish_sending)
 {
     PrivData *privdata = conn->data;
 
-    debug("bb.sms", 0, "Shutting down SMSCConn EMI2, %s",
+    debug("bb.sms", 0, "EMI2[%s]: Shutting down SMSCConn EMI2, %s",
+	  octstr_get_cstr(privdata->name), 
 	  finish_sending ? "slow" : "instant");
 
     /* Documentation claims this would have been done by smscconn.c,
@@ -1325,7 +1406,8 @@ static void start_cb(SMSCConn *conn)
     /* in case there are messages in the buffer already */
     if (privdata->rport > 0)
 	gwthread_wakeup(privdata->receiver_thread);
-    debug("smsc.emi2", 0, "smsc_emi2: start called");
+    debug("smsc.emi2", 0, "EMI2[%s]: start called",
+	  octstr_get_cstr(privdata->name));
 }
 
 
@@ -1344,8 +1426,9 @@ static long queued_cb(SMSCConn *conn)
 int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 {
     PrivData *privdata;
-    Octstr *allow_ip, *deny_ip, *host;
-    long portno, our_port, keepalive, flowcontrol, waitack, throughput, idle_timeout; 
+    Octstr *allow_ip, *deny_ip, *host, *alt_host;
+    long portno, our_port, keepalive, flowcontrol, waitack, throughput, 
+         idle_timeout, alt_portno; 
     long window;
     	/* has to be long because of cfg_get_integer */
     int i;
@@ -1358,23 +1441,79 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->last_activity_time = 0;
 
     
+    host = cfg_get(cfg, octstr_imm("host"));
+    if (host == NULL) {
+	error(0, "EMI2[-]: 'host' missing in emi2 configuration.");
+	goto error;
+    }
+    privdata->host = host;
+
+    if (cfg_get_integer(&portno, cfg, octstr_imm("port")) == -1)
+	portno = 0;
+    privdata->port = portno;
+    if (privdata->port <= 0 || privdata->port > 65535) {
+	error(0, "EMI2[%s]: 'port' missing/invalid in emi2 configuration.",
+	      octstr_get_cstr(host));
+	goto error;
+    }
+
+    privdata->our_host = cfg_get(cfg, octstr_imm("our-host"));
+
+    if (cfg_get_integer(&our_port, cfg, octstr_imm("our-port")) == -1)
+	privdata->our_port = 0; /* 0 means use any port */
+    else
+	privdata->our_port = our_port;
+
+    privdata->name = cfg_get(cfg, octstr_imm("smsc-id"));
+    if(privdata->name == NULL) {
+	privdata->name = octstr_create("");
+
+	/* Add our_host */
+	if(octstr_len(privdata->our_host)) {
+	    octstr_append(privdata->name, privdata->our_host);
+	}
+
+	/* Add our_port */
+	if(privdata->our_port != 0) {
+	    /* if we have our_port but not our_host, add kannel:our_port */
+	    if(octstr_len(privdata->name) == 0) {
+		octstr_append(privdata->name, octstr_imm("kannel"));
+	    }
+	    octstr_append_char(privdata->name, ':');
+	    octstr_append_decimal(privdata->name, privdata->our_port);
+	} else {
+	    if(octstr_len(privdata->name) != 0) {
+		octstr_append(privdata->name, octstr_imm(":*"));
+	    }
+	}
+	    
+	/* if we have our_host neither our_port */
+	if(octstr_len(privdata->name) != 0)
+	    octstr_append(privdata->name, octstr_imm("->"));
+
+	octstr_append(privdata->name, privdata->host);
+	octstr_append_char(privdata->name, ':');
+	octstr_append_decimal(privdata->name, privdata->port);
+    }
+
+
     if (cfg_get_integer(&idle_timeout, cfg, octstr_imm("idle-timeout")) == -1)
 	idle_timeout = 0;
     
     privdata->idle_timeout = idle_timeout;
 
-    if (cfg_get_integer(&portno, cfg, octstr_imm("port")) == -1)
-	portno = 0;
-    privdata->port = portno;
-    if (cfg_get_integer(&our_port, cfg, octstr_imm("our-port")) == -1)
-	privdata->our_port = 0; /* 0 means use any port */
-    else
-	privdata->our_port = our_port;
+    alt_host = cfg_get(cfg, octstr_imm("alt-host"));
+    privdata->alt_host = alt_host;
+
     if (cfg_get_integer(&portno, cfg, octstr_imm("receive-port")) < 0)
 	portno = 0;
     privdata->rport = portno;
+
+    if (cfg_get_integer(&alt_portno, cfg, octstr_imm("alt-port")) < 0) 
+	alt_portno = 0;
+    privdata->alt_port = alt_portno;
+
     allow_ip = cfg_get(cfg, octstr_imm("connect-allow-ip"));
-    host = cfg_get(cfg, octstr_imm("host"));
     if (allow_ip)
 	deny_ip = octstr_create("*.*.*.*");
     else
@@ -1398,7 +1537,8 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     else
 	privdata->flowcontrol = flowcontrol;
     if (privdata->flowcontrol < 0 || privdata->flowcontrol > 1) {
-	error(0, "'flow-control' invalid in emi2 configuration.");
+	error(0, "EMI2[%s]: 'flow-control' invalid in emi2 configuration.",
+	      octstr_get_cstr(privdata->name));
 	goto error;
     }
 
@@ -1412,7 +1552,8 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     else
 	privdata->window = window;
     if (privdata->window > EMI2_MAX_TRN) {
-	warning(0, "Value of 'window' should be lesser or equal to %d..", EMI2_MAX_TRN);
+	warning(0, "EMI2[%s]: Value of 'window' should be lesser or equal to %d..", 
+		octstr_get_cstr(privdata->name), EMI2_MAX_TRN);
 	privdata->window = EMI2_MAX_TRN;
     }
 
@@ -1421,26 +1562,19 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     else
 	privdata->waitack = waitack;
     if (privdata->waitack < 30 ) {
-	error(0, "'wait-ack' invalid in emi2 configuration.");
+	error(0, "EMI2[%s]: 'wait-ack' invalid in emi2 configuration.",
+	      octstr_get_cstr(privdata->name));
 	goto error;
     }
 
-    if (privdata->port <= 0 || privdata->port > 65535) {
-	error(0, "'port' missing/invalid in emi2 configuration.");
-	goto error;
-    }
     if (privdata->rport < 0 || privdata->rport > 65535) {
-	error(0, "'receive-port' missing/invalid in emi2 configuration.");
-	goto error;
-    }
-    if (host == NULL) {
-	error(0, "'host' missing in emi2 configuration.");
+	error(0, "EMI2[%s]: 'receive-port' missing/invalid in emi2 configuration.",
+	      octstr_get_cstr(privdata->name));
 	goto error;
     }
 
     privdata->allow_ip = allow_ip;
     privdata->deny_ip = deny_ip;
-    privdata->host = host;
 
     if (privdata->rport > 0 && emi2_open_listening_socket(privdata) < 0) {
 	gw_free(privdata);
@@ -1482,7 +1616,8 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     return 0;
 
 error:
-    error(0, "Failed to create emi2 smsc connection");
+    error(0, "EMI2[%s]: Failed to create emi2 smsc connection",
+	  octstr_get_cstr(privdata->name));
     if (privdata != NULL) {
 	list_destroy(privdata->outgoing_queue, NULL);
     }
@@ -1492,6 +1627,6 @@ error:
     octstr_destroy(host);
     conn->why_killed = SMSCCONN_KILLED_CANNOT_CONNECT;
     conn->status = SMSCCONN_DEAD;
-    info(0, "exiting");
+    info(0, "EMI2[%s]: exiting", octstr_get_cstr(privdata->name));
     return -1;
 }

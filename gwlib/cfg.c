@@ -385,8 +385,10 @@ int cfg_read(Cfg *cfg)
                  * This may be referenced in several other places, 
                  * i.e. dump_group() 
                  */ 
-                grp->configfile = octstr_duplicate(loc->filename); 
-                grp->line = loc->line_no; 
+		if(octstr_len(grp->configfile) == 0) {
+		    grp->configfile = octstr_duplicate(loc->filename); 
+                    grp->line = loc->line_no; 
+		} 
  
                 cfg_set(grp, name, value); 
                 octstr_destroy(name); 

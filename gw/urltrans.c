@@ -522,6 +522,15 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    }
 	    break;
 
+	case 'u':
+	    if(octstr_len(request->sms.udhdata)) {
+		enc = octstr_duplicate(request->sms.udhdata);
+		octstr_url_encode(enc);
+		octstr_append(result, enc);
+		octstr_destroy(enc);
+	    }
+	    break;
+
 	case '%':
 	    octstr_format_append(result, "%%");
 	    break;

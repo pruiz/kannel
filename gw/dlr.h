@@ -18,7 +18,7 @@
 #define	DLR_SMSC_SUCCESS	0x08
 #define	DLR_SMSC_FAIL		0x10
 
-void	dlr_init();
+void	dlr_init(Cfg* cfg);
 void	dlr_shutdown();
 
 void	dlr_add(char *smsc, char *ts, char *dst, char *keyword, char *id, int mask);

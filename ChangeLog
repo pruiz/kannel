@@ -1,3 +1,35 @@
+2002-03-08  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/bearerbox.c, gwlib/cfg.def: Added mysql-* configuration variables to 
+      define the hostname, user, password and database name (It's still missing
+      documentation about mysql) - Oded Arbel Patch
+    * gw/emimsg.c, gw/emimsg.h, gw/smsc_at2.c, gw/smsc_emi2.c: Uniformization
+      of log files: now AT2 and EMI2 always say "AT2[name]: something" and 
+      "EMI2[name]: something". 
+    * gw/smsc_emi2.c: Added name to privdata. Name is equal to smsc-id or, if 
+      undefined, is [[our-host|kannel]:[our-port|*]->]host:port. (Sorry for 
+      passing "whoami" Octstr through some functions, but later we should remove
+      all debug() from them and only debug() at the parent and make all function
+      "childs" return -1 or something)
+    * gw/smsc_at2.c: Added name to privdata. Name is equal to smsc-id or, if 
+      undefined, is device-name as before
+    * gw/smsc_emi2.c, gwlib/cfg.def: Added our-host configuration value to define 
+      kannel local ip
+    * gw/smsc_emi2.c, gwlib/cfg.def: Added alt-host and alt-port configuration 
+      value. If main connection fails, emi2 switch to a alternate connection. 
+      Both are optional and emi2 defaults to original host/port. (ex: if 
+      our_port is undef, emi2 switches to alt-host:port) (should be used with 
+      retry = true)
+    * gw/smsc_emi2.c: Always set status=RECONNECTING on entering 
+      open_send_connection and status=ACTIVE on sucessful connection
+    * gw/smsc_emi2.c: Don't set why_killed=SMSC_KILLED_PASSWORD when retry is 
+      true, because emi2 won't be really killed
+    * gw/smsbox.c: Added octstr_destroy to sendsms_url and sendota_url
+    * gw/urltrans.c: Added %u value to sms-service, dumping UDH 
+    * gwlib/cfg.def: Fixed a bug in Stipe Tolj patch that were creating a new 
+      Octstr for each config line read
+    * gw/http.c: Added a new header to kannel "httpd": "Server: Kannel-VERSION"
+    * doc/userguide/userguide.xml: added a missing <para>
+
 2002-03-07 Andreas Fink <andreas@fink.org>
     * gw/smsc_http.c: Made kannel accept a more structured reply
       besides "Sent". Used by some sms aggregators.

@@ -42,10 +42,11 @@ enum {
 };
 
 
-struct emimsg *emimsg_create_op(int ot, int trn);
+struct emimsg *emimsg_create_op(int ot, int trn, Octstr *whoami);
 
 
-struct emimsg *emimsg_create_reply(int ot, int trn, int positive);
+struct emimsg *emimsg_create_reply(int ot, int trn, int positive,
+		Octstr *whoami);
 
 
 void emimsg_destroy(struct emimsg *emimsg);
@@ -53,10 +54,11 @@ void emimsg_destroy(struct emimsg *emimsg);
 
 /* Create an emimsg struct from the string. */
 /* Doesn't check that the string is strictly according to format */
-struct emimsg *get_fields(Octstr *message);
+struct emimsg *get_fields(Octstr *message, Octstr *whoami);
 
 
 /* Send emimsg over conn using the EMI protocol. */
-int emimsg_send(Connection *conn, struct emimsg *emimsg);
+int emimsg_send(Connection *conn, struct emimsg *emimsg,
+		Octstr *whoami);
 
 #endif
