@@ -1168,6 +1168,9 @@ again:
 
 void octstr_insert(Octstr *ostr1, const Octstr *ostr2, long pos)
 {
+    if (ostr2 == NULL)
+        return;
+
     seems_valid(ostr1);
     seems_valid(ostr2);
     gw_assert(pos <= ostr1->len);
@@ -1637,9 +1640,13 @@ void octstr_url_encode(Octstr *ostr)
     int all_safe;
     unsigned char c, *str, *str2, *res, *hexits;
 
-    seems_valid(ostr);
+    if (ostr == NULL)
+        return;
 
-    if (ostr->immutable || ostr->len == 0)
+    seems_valid(ostr);
+    gw_assert(!ostr->immutable);
+
+    if (ostr->len == 0)
         return;
 
     /* calculate new length */
@@ -1705,6 +1712,9 @@ int octstr_url_decode(Octstr *ostr)
     unsigned char *string = ostr->data;
     unsigned char *dptr = ostr->data;
     int code, code2, ret = 0;
+
+    if (ostr == NULL)
+        return 0;
 
     seems_valid(ostr);
     gw_assert(!ostr->immutable);

@@ -1,3 +1,8 @@
+2004-03-09  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/octstr.c: applied patch from "Angel Fradejas" <afradejas@mediafusion.es>
+      in slighly modified version that checks for NULL pointers.
+      Msg-Id: <200403031228.i23CSkP16905@int-mail01.mediafusion.es>.
+
 2004-03-08  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_alog.c: fixed custom & default access_log. Now we try to determine SMSC-ID
       as follows: 1) smscconn_id(conn); 2) smscconn_name(conn); 3) msg->sms.smsc_id.
