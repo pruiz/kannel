@@ -1,3 +1,6 @@
+2002-05-15 Aarno Syvänen <aarno@wiral.com>
+    * doc/userguide/userguide.xml: some clarifications in ppg documentation
+
 2002-05-14  Stipe Tolj <tolj@wapme-systems.de>
     * gw/shared.[ch], gw/smsbox.c, gw/smscconn.h, gw/wapbox.c,
       gwlib/counter.[ch], test/drive_smpp.c, test/test_http.c, 
