@@ -1,5 +1,10 @@
 2000-11-28  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsbox_req.c: Deal with failed requests in the proper manner,
+	which does not include segfaulting.
+
+2000-11-28  Lars Wirzenius  <liw@iki.fi>
+
 	* checks/check_sendsms.sh: Wait a couple of seconds before making
 	http requests so that the smsbox has time to start up properly.
 	

@@ -171,38 +171,48 @@ static void url_result_thread(void *arg)
     	
     	get_receiver(id, &msg, &trans);
 
-	http_header_get_content_type(reply_headers, &type, &charset);
-	if (octstr_compare(type, text_html) == 0 ||
-	    octstr_compare(type, text_wml) == 0) {
-	    strip_prefix_and_suffix(reply_body,
-				    urltrans_prefix(trans), 
-				    urltrans_suffix(trans));
-	    replytext = html_to_sms(reply_body);
-	} else if (octstr_compare(type, text_plain) == 0) {
-	    replytext = reply_body;
-	    reply_body = NULL;
-	} else {
-	    replytext = octstr_create("Result could not be represented "
-				      "as an SMS message.");
-	}
-    
-	octstr_destroy(type);
-	octstr_destroy(charset);
-	http_destroy_headers(reply_headers);
-	octstr_destroy(reply_body);
+    	if (status == HTTP_OK) {
+	    http_header_get_content_type(reply_headers, &type, &charset);
+	    if (octstr_compare(type, text_html) == 0 ||
+		octstr_compare(type, text_wml) == 0) {
+		strip_prefix_and_suffix(reply_body,
+					urltrans_prefix(trans), 
+					urltrans_suffix(trans));
+		replytext = html_to_sms(reply_body);
+	    } else if (octstr_compare(type, text_plain) == 0) {
+		replytext = reply_body;
+		reply_body = NULL;
+	    } else {
+		replytext = octstr_create("Result could not be represented "
+					  "as an SMS message.");
+	    }
+	    octstr_destroy(type);
+	    octstr_destroy(charset);
+	} else
+	    replytext = octstr_create("Could not fetch content, sorry.");
     
 	octstr_strip_blanks(replytext);
-	
 	msg->sms.msgdata = replytext;
 	msg->sms.time = time(NULL);
     
-	alog("SMS HTTP-request sender:%s request: '%s' url: '%s' reply: %d '%s'",
+    	if (final_url == NULL)
+	    final_url = octstr_create_immutable("");
+    	if (reply_body == NULL)
+	    reply_body = octstr_create_immutable("");
+	alog("SMS HTTP-request sender:%s request: '%s' "
+	     "url: '%s' reply: %d '%s'",
 	     octstr_get_cstr(msg->sms.receiver),
 	     octstr_get_cstr(msg->sms.msgdata),
-	     octstr_get_cstr(final_url), status,
-	     (status == 200) ? "<< successful >>"
-	     : (reply_body != NULL) ? octstr_get_cstr(reply_body) : "");
+	     octstr_get_cstr(final_url),
+	     status,
+	     (status == HTTP_OK) 
+		? "<< successful >>"
+		: octstr_get_cstr(reply_body));
 		
+    	octstr_destroy(final_url);
+	http_destroy_headers(reply_headers);
+	octstr_destroy(reply_body);
+    
 	if (send_message(trans, msg) < 0)
 	    error(0, "failed to send message to phone");
     }
