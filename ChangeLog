@@ -1,4 +1,8 @@
 2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/cfg.c: fixed release showstopper from previous multiple include
+      fix from Bruno.
+
+2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
 	* Making release 1.1.6.
 
 2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
