@@ -32,10 +32,13 @@ static pthread_mutex_t mutex;
 static void lock(void);
 static void unlock(void);
 static void dump(void);
+static int is_allocated(void *p);
 #endif
 
-static void remember(void *p, size_t size, const char *filename, long lineno);
-static void forget(void *p, const char *filename, long lineno);
+static void remember(void *p, size_t size, const char *filename, long lineno,
+	const char *function);
+static void forget(void *p, const char *filename, long lineno,
+	const char *function);
 static void check_leaks(void);
 
 static void fill(void *p, size_t bytes, long pattern);
@@ -47,7 +50,8 @@ void gw_init_mem(void) {
 	initialized = 1;
 }
 
-void *gw_malloc_real(size_t size, const char *filename, long lineno) {
+void *gw_malloc_real(size_t size, const char *filename, long lineno,
+const char *function) {
 	void *ptr;
 	
 	gw_assert(initialized);
@@ -61,14 +65,14 @@ void *gw_malloc_real(size_t size, const char *filename, long lineno) {
 			(unsigned long) size);
 	
 	fill(ptr, size, 0xbabecafe);
-	remember(ptr, size, filename, lineno);
+	remember(ptr, size, filename, lineno, function);
 	
 	return ptr;
 }
 
 
 void *gw_realloc_real(void *ptr, size_t size, 
-const char *filename, long lineno) {
+const char *filename, long lineno, const char *function) {
 	void *new_ptr;
 	
 	gw_assert(initialized);
@@ -80,36 +84,46 @@ const char *filename, long lineno) {
 			(unsigned long) size);
 	
 	if (new_ptr != ptr) {
-		remember(new_ptr, size, filename, lineno);
-		forget(ptr, filename,lineno);
+		remember(new_ptr, size, filename, lineno, function);
+		forget(ptr, filename, lineno, function);
 	}
 	
 	return new_ptr;
 }
 
 
-void  gw_free_real(void *ptr, const char *filename, long lineno) {
+void  gw_free_real(void *ptr, const char *filename, long lineno,
+const char *function) {
 	gw_assert(initialized);
-	forget(ptr, filename, lineno);
+	forget(ptr, filename, lineno, function);
 	free(ptr);
 }
 
 
-char *gw_strdup_real(const char *str, const char *filename, long lineno) {
+char *gw_strdup_real(const char *str, const char *filename, long lineno,
+const char *function) {
 	char *copy;
 	
 	gw_assert(initialized);
 	gw_assert(str != NULL);
 
-	copy = gw_malloc_real(strlen(str) + 1, filename, lineno);
+	copy = gw_malloc_real(strlen(str) + 1, filename, lineno, function);
 	strcpy(copy, str);
 	return copy;
 }
 
 
 void gw_check_leaks(void) {
-    gw_assert(initialized);
-    check_leaks();
+	gw_assert(initialized);
+	check_leaks();
+}
+
+
+void gw_assert_allocated_real(void *ptr, const char *file, long line, 
+const char *function) {
+#if !defined(NDEBUG) && GWMEM_CHECK
+	gw_assert_place(is_allocated(ptr), file, line, function);
+#endif
 }
 
 
@@ -128,6 +142,7 @@ struct mem {
 	size_t size;
 	const char *allocated_filename;
 	long allocated_lineno;
+	const char *allocated_function;
 };
 static struct mem tab[MAX_ALLOCATIONS + 1];
 static long num_allocations = 0;
@@ -172,9 +187,25 @@ static long unlocked_find(void *p) {
 
 
 /*
+ * Is `p' a currently allocated memory area?
+ */
+#if GWMEM_CHECK
+static int is_allocated(void *p) {
+	int ret;
+	
+	lock();
+	ret = (unlocked_find(p) != -1);
+	unlock();
+	return ret;
+}
+#endif
+
+
+/*
  * Add a memory area to the table.
  */
-static void remember(void *p, size_t size, const char *filename, long lineno) {
+static void remember(void *p, size_t size, const char *filename, long lineno,
+const char *function) {
 #if GWMEM_CHECK
 	lock();
 #if GWMEM_TRACE
@@ -186,6 +217,7 @@ static void remember(void *p, size_t size, const char *filename, long lineno) {
 	tab[num_allocations].size = size;
 	tab[num_allocations].allocated_filename = filename;
 	tab[num_allocations].allocated_lineno = lineno;
+	tab[num_allocations].allocated_function = function;
 	++num_allocations;
 	qsort(tab, num_allocations, sizeof(struct mem), compare_mem);
 	unlock();
@@ -196,7 +228,8 @@ static void remember(void *p, size_t size, const char *filename, long lineno) {
 /*
  * Forget about a memory area.
  */
-static void forget(void *p, const char *filename, long lineno) {
+static void forget(void *p, const char *filename, long lineno,
+const char *function) {
 #if GWMEM_CHECK
 	long i;
 
@@ -245,9 +278,10 @@ static void dump(void) {
 
 	for (i = 0; i < num_allocations; ++i) {
 		debug("gwlib.gwmem", 0, "area %ld at %p, %lu bytes, "
-			"allocated at %s:%ld",
+			"allocated at %s:%ld:%s",
 			i, tab[i].p, (unsigned long) tab[i].size,
-			tab[i].allocated_filename, tab[i].allocated_lineno);
+			tab[i].allocated_filename, tab[i].allocated_lineno,
+			tab[i].allocated_function);
 	}
 }
 #endif

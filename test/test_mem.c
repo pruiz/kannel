@@ -14,6 +14,7 @@ int main(void) {
 	gw_init_mem();
 
 	p = gw_malloc(100);
+	gw_assert_allocated(p);
 	gw_free(p);
 	gw_check_leaks();
 

@@ -1076,6 +1076,8 @@ static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
 const char *function) {
 	gw_assert_place(ostr != NULL, 
 		filename, lineno, function);
+	gw_assert_allocated_real(ostr,
+		filename, lineno, function);
 	gw_assert_place(ostr->len >= 0,
 		filename, lineno, function);
 	gw_assert_place(ostr->size >= 0,

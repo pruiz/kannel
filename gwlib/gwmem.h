@@ -16,23 +16,31 @@
  * So they work 'always', no need to check the return value.
  */
 
-void *gw_malloc_real(size_t size, const char *filename, long line);
-void *gw_realloc_real(void *ptr, size_t size, const char *filename, long line);
-void  gw_free_real(void *ptr, const char *filename, long line);
-char *gw_strdup_real(const char *str, const char *filename, long line);
+void *gw_malloc_real(size_t size, const char *filename, long line, 
+	const char *function);
+void *gw_realloc_real(void *ptr, size_t size, const char *filename, long line, 
+	const char *function);
+void  gw_free_real(void *ptr, const char *filename, long line, 
+	const char *function);
+char *gw_strdup_real(const char *str, const char *filename, long line, 
+	const char *function);
 
 void gw_init_mem(void);
 void gw_check_leaks(void);
+void gw_assert_allocated_real(void *ptr, const char *filename, long line, 
+	const char *function);
 
 
 #define gw_malloc(size) \
-	(gw_malloc_real(size, __FILE__, __LINE__))
+	(gw_malloc_real(size, __FILE__, __LINE__, __FUNCTION__))
 #define gw_realloc(ptr, size) \
-	(gw_realloc_real(ptr, size, __FILE__, __LINE__))
+	(gw_realloc_real(ptr, size, __FILE__, __LINE__, __FUNCTION__))
 #define gw_free(ptr) \
-	(gw_free_real(ptr, __FILE__, __LINE__))
+	(gw_free_real(ptr, __FILE__, __LINE__, __FUNCTION__))
 #define gw_strdup(str) \
-	(gw_strdup_real(str, __FILE__, __LINE__))
+	(gw_strdup_real(str, __FILE__, __LINE__, __FUNCTION__))
+#define gw_assert_allocated(ptr) \
+	(gw_assert_allocated_real(ptr, __FILE__, __LINE__, __FUNCTION__))
 
 
 #endif

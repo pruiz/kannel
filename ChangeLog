@@ -1,3 +1,12 @@
+Sat Apr 22 21:07:11 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/gwmem.[ch]: Now report the name of the calling function
+	as well as the file and source line (this requires a compiler
+	that supports __FUNCTION__). Also, added gw_assert_allocated
+	for checking that a pointer points at an allocated area.
+	
+	* gwlib/octstr.c, test/test_mem.c: Made use of gwlib/octstr.c.
+	
 Sat Apr 22 19:28:52 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/gwmem.c: Turned memory checks back on by default.
