@@ -228,10 +228,12 @@ Octstr *octstr_imm(const char *cstr)
 
 void octstr_destroy(Octstr *ostr)
 {
-    if (ostr != NULL && !ostr->immutable) {
+    if (ostr != NULL) {
         seems_valid(ostr);
-        gw_free(ostr->data);
-        gw_free(ostr);
+	if (!ostr->immutable) {
+            gw_free(ostr->data);
+            gw_free(ostr);
+        }
     }
 }
 

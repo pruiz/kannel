@@ -403,6 +403,8 @@ void gwthread_join(long thread)
     struct threadinfo *threadinfo;
     int ret;
 
+    gw_assert(thread >= 0);
+
     lock();
     threadinfo = THREAD(thread);
     if (threadinfo == NULL || threadinfo->number != thread) {
@@ -481,6 +483,8 @@ void gwthread_wakeup(long thread)
     unsigned char c = 0;
     struct threadinfo *threadinfo;
     int fd;
+
+    gw_assert(thread >= 0);
 
     lock();
 

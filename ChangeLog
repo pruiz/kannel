@@ -1,3 +1,12 @@
+2001-01-31  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/octstr.c: Made octstr_destroy() call seems_valid even
+	if the octstr is immutable.  This should catch double destroy
+	calls in the future.
+
+	* gwlib/gwthread-pthread.c: In gwthread_wakeup() and gwthread_join(),
+	assert that the thread number >= 0.
+
 2001-01-31  Uoti Urpala  <uau@wapit.com>
 
 	* gw/bb_udp.c, gw/wap_push_ota.c: Fixed double octstr_destroy() calls.
