@@ -1567,7 +1567,7 @@ static long parse_constant(const char *field_name, Octstr **address, long pos)
         ++i;
     }
 
-    while (octstr_get_char(*address, pos) != 
+    while ((octstr_len (*address) > 0) && octstr_get_char(*address, pos) !=
                octstr_get_char(nameos, 0) && pos >= 0) {
         pos = drop_character(address, pos);
     }
