@@ -1,3 +1,45 @@
+2001-12-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added documentation for the introduced
+      configuration directives "smsbox-port-ssl" and "wapbox-port-ssl" in
+      the core group.
+    * gw/bb_boxc.c: added parameters for calling ssl-enabled box connection
+      using boolean configuration directives "smsbox-port-ssl" for bearerbox
+      to smsbox communication and "wapbox-port-ssl" for bearerbox to wapbox
+      communication. Changed the way boxc_status() displays the current 
+      status of kannel's boxes, including ssl information for internal conn.
+    * gw/bb_http.c: Commented out call to use_global_server_certkey_file()
+      within httpadmin_start(), this is now done globaly by conn_config_ssl().    
+    * gw/bearerbox.c: added checking in starter() if corresponding cert and 
+      key files are specified in the conf file for ssl-enabled inter-box 
+      connections. Changed the way the status is displayed.
+    * gw/shared.c: added OpenSSL version string within widely used 
+      version_report_string(). Added information that established inter-box
+      connections are ssl-enabled if so.
+    * gw/shared.h: changed declaration of connect_to_bearerbox() to include
+      ssl flag.
+    * gw/smsbox.c: added handling for "smsbox-port-ssl" conf directive.
+    * gw/wapbox.c: added handling for "wapbox-port-ssl" conf directive.
+    * gwlib/cfg.def: added "smsbox-port-ssl" and "wapbox-port-ssl" to allow
+      boolean configuration of ssl-enabled internal box connections.
+    * gwlib/conn.c: changed the way ssl connections are established in 
+      conn_wrap_fd() and checked. Fixes also a not previosly detected bug,
+      that causes non-ssl enabled connections on the same port as wanted 
+      for ssl, hence SSL_accept() = -1 was not handled correctly. Fixed
+      a potential (non-reported) bug in conn_destroy() that causes errors
+      if we call unlocked_write() in case of ssl-enabled connection.
+      Added function conn_get_ssl() to return the corresponding pointer.
+    * gwlib/conn.h: included declaration of conn_config_ssl() and 
+      conn_get_ssl().
+    * gwlib/gwlib.h: added header file inlusion for ssl.h.
+    * gwlib/http.c: added information to display if HTTP clients are using
+      ssl to connect to an ssl-enabled HTTP server.
+      Fixed potential bug if client_create() is called, but the previous
+      ssl-enabled conn_wrap_fd() has failed, now we check.
+    * gwlib/http.h: added response code for HTTP_BAD_REQUEST.
+    * gwlib/ssl.c: added file to hold all ssl specific code.
+    * gwlib/ssl.h: added file for declaration of all code implemented 
+      in ssl.c. 
+
 2001-12-20: Andreas Fink <andreas@fink.org>
    * gw/smsc_emi2.c: fixed a problem resulting in timing out at high load.
    *gw/bb_smscconn.c, gw/msg-decl.h, gw/smsbox.c:
