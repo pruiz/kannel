@@ -6,7 +6,7 @@
 	heuristics with the following options:
 	
 		--enable-docs	Always build documentation
-		--without-docs	Never build documentation
+		--disable-docs	Never build documentation
 	
 DocBook installation on Debian (potato)
 

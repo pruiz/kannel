@@ -388,8 +388,7 @@ route:
 	ap->address = octstr_duplicate(msg->wdp_datagram.source_address);
 	ap->port = msg->wdp_datagram.source_port;
 
-
-	if (list_wait_until_nonempty(wapbox_list)==-1)
+	if (list_len(wapbox_list) == 0)
 	    return NULL;
 
 	/* XXX this SHOULD according to load levels! */
@@ -589,6 +588,7 @@ static void wapboxc_run(void *arg)
     while(list_wait_until_nonempty(wapbox_list)== 1)
 	sleep(1);
 
+    /* wait for wdp_to_wapboxes to exit */
     while(list_consume(wapbox_list)!=NULL)
 	;
     

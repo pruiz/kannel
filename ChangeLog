@@ -1,3 +1,10 @@
+2000-06-19  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_boxc.c: fixed one very-infrequently striking lockout
+	during shutdown
+
+	* README.docbook: user --disable-docs, not --without-docs
+
 2000-06-19  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
 	* gw/wsp-session.c: included limits.h to get LONG_MAX
