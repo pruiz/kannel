@@ -1,4 +1,9 @@
 2002-04-17  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/bb_smscconn.c: added smsc id information to status.xml
+      patch provided by Angel.
+      [Msg-ID: <FMEKKCFKIGBADHGIJKPJAEPADCAA.afradejas@mediafusion.es>]
+
+2002-04-17  Stipe Tolj <tolj@wapme-systems.de>
     * gw/wapbox.c, gwlib/pki.c: more work on WTLS configuration checking
 
 2002-04-17  Stipe Tolj <tolj@wapme-systems.de>
