@@ -1,3 +1,9 @@
+2000-10-10  Lars Wirzenius  <liw@iki.fi>
+
+	* debian/postinst: Now updates rc.d links and starts Kannel.
+	
+	* debian/postrm: Wrote. Removes rc.d links.
+
 2000-10-10  Richard Braakman  <dark@wapit.com>
 
 	* gw/wsp-method-state.h: Fixed state transition for TR-Abort.Ind,
