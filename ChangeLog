@@ -1,3 +1,9 @@
+2002-01-23  Stipe Tolj  <tolj@wapme-systems.de>
+    * Makefile.in: fixed tab layout error from previous commit (Andreas) for 
+      target pkg. This has broken make.
+    * solaris/mk-solaris-package.sh: fixing obviously type in referencing
+      var VERSION. Andreas, this needs to be some more stylisher code here?! 
+
 2002-01-23 Andreas Fink <andreas@fink.org>
     * Makefile.in, solaris/mk-solaris-package.sh, solaris/pkginfo,
     solaris/pkginfo.tmpl: updated packaging for solaris8.
