@@ -295,6 +295,7 @@ error_reporting(0);
 
         foreach ($configs as $inst => $config) {
             $x = XPathValue("gateway/boxes", $status[$inst]);
+            $x = trim($x); // the boxes number sometimes returns a few blank spaces
             /* drop an error in case we have no boxes connected */
             if (empty($x)) {
                         echo "<tr><td valign=top align=center class=text>\n";

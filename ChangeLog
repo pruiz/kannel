@@ -1,4 +1,13 @@
 2004-12-23  Alexander Malysh <amalysh at kannel.org>
+    * contrib/kannel-monitor/index.php: and yet another one-liner.
+      Fixed a case when there is a bearerbox attached and no smsbox's
+      attached to it, the bearerbox doesn't appear in the Box Connections.
+      This is due to the test being an empty() test with a few spaces
+      in the variable $x... Doing a trim solved this..
+      Thanks to Bill Brigden <bill at baghead.co.uk>.
+      [Msg-Id: <200412231224.iBNCOU008238@bill.aqvs.co.uk>]
+
+2004-12-23  Alexander Malysh <amalysh at kannel.org>
     * gwlib/http.c: applied 'http client timeouts part1 (v4)' patch.
       This patch fixes a problem with dead connections in http client
       connection pool. It's only a first part of fixes that we need
