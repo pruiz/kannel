@@ -11,6 +11,7 @@
 #ifndef CGI_H
 #define CGI_H
 
+#include "gwlib/gwlib.h"
 
 /*
  * This defines a singly linked list with each node being one name/value pair.
@@ -24,6 +25,7 @@ typedef struct CGIArg CGIArg;
  * a CGIArg list. Return NULL for failure, pointer to head of list for OK.
  * `args' is modified while this is called, but it is not used after this
  * function returns, so the caller may free it or whatever.
+ * Note that any url encoding is automatically decoded.
  */
 CGIArg *cgiarg_decode_to_list(char *args);
 
@@ -37,8 +39,8 @@ void cgiarg_destroy_list(CGIArg *list);
 /*
  * Find the value of a given argument in a list. Return -1 if the name
  * was not found, or 0 if it was (and set `*value' to point at the
- * value string).
+ * value octstr).
  */
-int cgiarg_get(CGIArg *list, char *name, char **value);
+int cgiarg_get(CGIArg *list, char *name, Octstr **value);
 
 #endif

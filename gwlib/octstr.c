@@ -864,6 +864,50 @@ error:
 }
 
 
+int octstr_url_decode(Octstr *ostr)
+{
+    long value;
+    unsigned char *string = ostr->data;
+    unsigned char *dptr = ostr->data;
+    unsigned char buf[3];   	/* buffer for strtol conversion */
+    buf[2] = '\0';
+    
+    do {
+	if (*string == '%') {
+	    if (*(string+1) == '\0' || *(string+2) == '\0')
+		goto error;
+	    buf[0] = *(string+1);
+	    buf[1] = *(string+2);
+	    value =  strtol(buf, NULL, 16);
+
+	    if (value >= 0 && value < 256) {
+		*dptr = (unsigned char)value;
+		string += 3;
+		dptr++;
+		continue;
+	    }
+	    warning(0, "Garbage encoded (value = %ld)", value);
+	}
+	if (*string == '+') {
+	    *dptr++ = ' ';
+	    string++;
+	}
+	else
+	    *dptr++ = *string++;
+    } while(*string);	/* we stop here because it terimates encoded string */
+    *dptr = '\0';
+
+    ostr->len = (dptr - ostr->data);
+    return 0;
+
+error:
+    *dptr = '\0';
+    ostr->len = (dptr - ostr->data);
+    warning(0, "octstr_url_decode: corrupted end-of-string <%s>", string);
+    return -1;
+}
+
+
 
 /**********************************************************************
  * Local functions.

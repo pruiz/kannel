@@ -398,8 +398,7 @@ void *smsbox_req_thread(void *arg) {
     trans = urltrans_find(translations, msg->smart_sms.msgdata);
     if (trans == NULL) goto error;
 
-    info(0, "Starting to service <%*s> from <%s> to <%s>",
-	 (int) octstr_len(msg->smart_sms.msgdata),
+    info(0, "Starting to service <%*> from <%s> to <%s>",
 	 octstr_get_cstr(msg->smart_sms.msgdata),
 	 octstr_get_cstr(msg->smart_sms.sender),
 	 octstr_get_cstr(msg->smart_sms.receiver));
@@ -460,19 +459,18 @@ char *smsbox_req_sendsms(CGIArg *list)
 {
 	Msg *msg = NULL;
 	URLTranslation *t = NULL;
-	char *user = NULL, *val, *from, *to;
-	char *text = NULL;
-	char *udh = NULL;
+	Octstr *user = NULL, *val, *from, *to;
+	Octstr *text = NULL, *udh = NULL;
 	int ret;
 
 	if (cgiarg_get(list, "username", &user) == -1)
 	    t = urltrans_find_username(translations, "default");
 	else 
-	    t = urltrans_find_username(translations, user);
+	    t = urltrans_find_username(translations, octstr_get_cstr(user));
     
 	if (t == NULL || 
 	    cgiarg_get(list, "password", &val) == -1 ||
-	    strcmp(val, urltrans_password(t)) != 0)
+	    strcmp(octstr_get_cstr(val), urltrans_password(t)) != 0)
 	{
 	    return "Authorization failed";
 	}
@@ -488,26 +486,28 @@ char *smsbox_req_sendsms(CGIArg *list)
 	}
 
 	if (urltrans_faked_sender(t) != NULL) {
-		from = urltrans_faked_sender(t);
+	    from = octstr_create(urltrans_faked_sender(t));
 	} else if (cgiarg_get(list, "from", &from) == 0 &&
-	       *from != '\0') 
+		   octstr_len(from) > 0) 
 	{
-		/* Do nothing. */
+	    from = octstr_duplicate(from);
 	} else if (global_sender != NULL) {
-		from = global_sender;
+	    from = octstr_create(global_sender);
 	} else {
-		return "Sender missing and no global set";
+	    return "Sender missing and no global set";
 	}
-	info(0, "/cgi-bin/sendsms <%s:%s> <%s> <%s>", user ? user : "default",
-	     from, to, text ? text : "<<udh>>");
+	info(0, "/cgi-bin/sendsms <%s:%s> <%s> <%s>",
+	     user ? octstr_get_cstr(user) : "default",
+	     octstr_get_cstr(from), octstr_get_cstr(to),
+	     text ? octstr_get_cstr(text) : "<< UDH >>");
   
 	msg = msg_create(smart_sms);
 	if (msg == NULL) goto error;
 
-	msg->smart_sms.receiver = octstr_create(to);
-	msg->smart_sms.sender = octstr_create(from);
-	msg->smart_sms.msgdata = octstr_create(text ? text : "");
-	msg->smart_sms.udhdata = octstr_create(udh ? udh : "");
+	msg->smart_sms.receiver = octstr_duplicate(to);
+	msg->smart_sms.sender = from;  	/* duplication */
+	msg->smart_sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
+	msg->smart_sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
 
 	if(udh==NULL) {
 		msg->smart_sms.flag_8bit = 0;
@@ -515,6 +515,7 @@ char *smsbox_req_sendsms(CGIArg *list)
 	} else {
 		msg->smart_sms.flag_8bit = 1;
 		msg->smart_sms.flag_udh  = 1;
+		octstr_dump(msg->smart_sms.udhdata, 0);
 	}
 
 	msg->smart_sms.time = time(NULL);

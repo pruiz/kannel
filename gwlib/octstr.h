@@ -313,4 +313,11 @@ int octstr_send(int fd, Octstr *ostr);
  */
 int octstr_recv(int fd, Octstr **ostr);
 
+/*
+ * decode url-encoded octstr in-place.
+ * Return 0 if all went fine, or -1 if there was some garbage
+ */
+
+int octstr_url_decode(Octstr *ostr);
+
 #endif

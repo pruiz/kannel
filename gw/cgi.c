@@ -19,9 +19,9 @@
  */
 
 struct CGIArg{
-	char *name;
-	char *value;
-	struct CGIArg *next;
+    char *name;
+    Octstr *value;
+    struct CGIArg *next;
 };
 
 /***********************************************************************
@@ -79,13 +79,13 @@ void cgiarg_destroy_list(CGIArg *list) {
 		p = list;
 		list = list->next;
 		gw_free(p->name);
-		gw_free(p->value);
+		octstr_destroy(p->value);
 		gw_free(p);
 	}
 }
 
 
-int cgiarg_get(CGIArg *list, char *name, char **value) {
+int cgiarg_get(CGIArg *list, char *name, Octstr **value) {
 	while (list != NULL && strcmp(list->name, name) != 0)
 		list = list->next;
 	if (list == NULL)
@@ -104,9 +104,10 @@ static CGIArg *new_cgiarg(char *name, char *value) {
 	
 	new = gw_malloc(sizeof(CGIArg));
 	new->name = gw_strdup(name);
-	new->value = gw_strdup(value);
+	new->value = octstr_create(value);
 
-	url_decode(new->value);	      
+	octstr_url_decode(new->value);
+
 	new->next = NULL;
 	return new;
 }

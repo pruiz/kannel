@@ -1191,16 +1191,16 @@ static BBThread *internal_smsbox(void)
 
 static char *http_admin_command(char *command, CGIArg *list, char *extrabuf)
 {
-    char *val;
+    Octstr *val;
 
     assert(command != NULL);
     
     if (cgiarg_get(list, "username", &val) == -1 ||
 	bbox->admin_username == NULL ||
-	strcasecmp(bbox->admin_username, val) != 0 ||
+	strcasecmp(bbox->admin_username, octstr_get_cstr(val)) != 0 ||
 	cgiarg_get(list, "password", &val) == -1 ||
 	bbox->admin_password == NULL ||
-	strcmp(bbox->admin_password, val) != 0)
+	strcmp(bbox->admin_password, octstr_get_cstr(val)) != 0)
 
 	return "Authorization failed";
 
@@ -1233,7 +1233,7 @@ static char *http_admin_command(char *command, CGIArg *list, char *extrabuf)
     else if (strcasecmp(command, "/cgi-bin/disconnect") == 0) {
 	if (cgiarg_get(list, "id", &val) == -1)
 	    return "Id number missing";
-	if (bbt_kill(atoi(val)) == -1)
+	if (bbt_kill(atoi(octstr_get_cstr(val))) == -1)
 	    return "Failed (no such id or other error)";
 	else
 	    return "Disconnected";
