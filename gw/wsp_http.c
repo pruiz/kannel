@@ -405,7 +405,7 @@ error:
 
 
 static Octstr *convert_wml_to_wmlc_new(Octstr *wml, char *url) {
-#if 1
+#if HAVE_LIBXML
 	Octstr *wmlc, *wmlscripts;
 	int ret;
 	

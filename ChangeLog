@@ -1,3 +1,8 @@
+Sun Mar  5 10:55:00 CET 2000	Patrick Schaaf	<bof@bof.de>
+
+	* gw/wsp_http.c: change #if 1 to #if HAVE_LIBXML, to really not
+	break compilation when libxml is missing.
+
 2000-03-03 Sanna Seppanen <sanna@wapit.com>
 
 	* gwlib/http.c: http_get_u: Should not crash anymore due trying
