@@ -112,6 +112,7 @@ typedef struct PrivAT2data
     SMSCConn	*conn;
     int 	phase2plus;
     Octstr	*validityperiod;    
+    int		alt_dcs;
 } PrivAT2data;
 
 
@@ -900,6 +901,7 @@ int  smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
 {
     PrivAT2data	*privdata;
     Octstr *modem_type_string;
+    long alt_dcs = 0;
    
 
     privdata = gw_malloc(sizeof(PrivAT2data));
@@ -935,6 +937,10 @@ int  smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->phase2plus = 0;
     privdata->validityperiod = cfg_get(cfg, octstr_imm("validityperiod"));
 
+    if (cfg_get_integer(&alt_dcs, cfg, octstr_imm("alt-dcs")) == -1)
+	privdata->alt_dcs = 0;
+    if (alt_dcs > 1)
+	privdata->alt_dcs = 1;
    
     conn->data = privdata;
     conn->name = octstr_format("AT2[%s]", octstr_get_cstr(privdata->device));
@@ -1412,7 +1418,7 @@ int at2_pdu_encode(Msg *msg, unsigned char *pdu, PrivAT2data *privdata)
     pos++;
     
     /* data coding scheme */
-    dcs = fields_to_dcs(msg,0);
+    dcs = fields_to_dcs(msg, privdata->alt_dcs);
 
     pdu[pos] = at2_numtext(dcs >> 4);
     pos++;

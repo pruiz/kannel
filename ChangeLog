@@ -1,4 +1,13 @@
 2001-09-17 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* gw/sms.c: fields_to_dcs correctly encodes mclass=MC_UNDEF and
+	don´t set bit "mclass present"
+	* gw/smsc_at.c, smsc_at2.c, smsc.c, smsc_p.h, docs/userguide: 
+	Added alt-dcs configuration field to smsc = at, to use the 0xFX 
+	mode if set. Removed fixed mode=1 when modem = SIEMENS
+	* gw/Smsc_emi.c: Corrected a bug. Old flag_8bit != 0 should be
+	coding = DC_7BITS
+
+2001-09-17 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* gw/sms.c: Fixed a bug in mode=1 dcs encoding and some other in
 	dcs_to_fields ('cause mclass and coding starts with 1, not 0)
 	* gw/bb_store.c: When I added a line saying which store file was

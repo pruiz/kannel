@@ -128,6 +128,7 @@ SMSCenter *smscenter_construct(void)
     smsc->at_inbuffer = NULL;
     smsc->at_pin = NULL;
     smsc->at_validityperiod = NULL;
+    smsc->at_alt_dcs = 0;
 
     /* add new SMSCes here */
 
@@ -488,6 +489,7 @@ SMSCenter *smsc_open(CfgGroup *grp)
     long port, receive_port, our_port;
     long keepalive;
     long ois_debug;
+    long alt_dcs;
     int typeno;
 
 
@@ -544,6 +546,11 @@ SMSCenter *smsc_open(CfgGroup *grp)
 
     if (cfg_get_integer(&keepalive, grp, octstr_imm("keepalive")) == -1)
     	keepalive = 0;
+
+    if (cfg_get_integer(&alt_dcs, grp, octstr_imm("alt-dcs")) == -1)
+    	alt_dcs = 0;
+    if (alt_dcs > 1)
+        alt_dcs = 1;
 
     if (cfg_get_integer(&ois_debug, grp, octstr_imm("ois-debug-level")) == -1)
     	ois_debug = 0;
@@ -633,7 +640,8 @@ SMSCenter *smsc_open(CfgGroup *grp)
 	    	    	   at_modemtype ? octstr_get_cstr(at_modemtype) : 0, 
 			   at_pin ? octstr_get_cstr(at_pin) : 0,
 	    	    	   at_validityperiod ? 
-			       octstr_get_cstr(at_validityperiod) : 0);
+			       octstr_get_cstr(at_validityperiod) : 0,
+			       alt_dcs);
         break;
 
         /* add new SMSCes here */

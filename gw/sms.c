@@ -23,10 +23,6 @@ int fields_to_dcs(Msg *msg, int mode) {
 	else
 	  msg->sms.coding = DC_7BIT;
     }
-    /* Message Class defaults to Class1 (Mobile) */
-    if (msg->sms.mclass == MC_UNDEF) {
-	msg->sms.mclass = MC_CLASS1;
-    }
 
 
     /* MWI */
@@ -66,12 +62,12 @@ int fields_to_dcs(Msg *msg, int mode) {
 	else {
 	    dcs |= 0xF0; /* sets bits 7-3 */
 	    dcs |= (msg->sms.coding - 1) << 2; /* only DC_7BIT or DC_8BIT, sets bit 2*/
-	    dcs |= (msg->sms.mclass - 1); /* sets bit 1,0 */
+	    if (msg->sms.mclass == 0)
+		dcs |= 1; /* sets bit 1,0 */
+	    else
+		dcs |= (msg->sms.mclass - 1); /* sets bit 1,0 */
 	}
     }
-
-    if ( dcs == 0x11)
-	dcs = 0;	/* 7BIT, class 1 message, no need to send dcs */
 
     return dcs;
 }

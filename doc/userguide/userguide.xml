@@ -2173,6 +2173,16 @@ pin = 2345
 	 167, meaning 24 hours.
      </entry></row>
 
+   <row><entry><literal>alt-dcs</literal></entry>
+     <entry><literal>0/1</literal></entry>
+     <entry valign=bottom>
+     	 When encoding DCS field internally, there are two formats
+	 with similar functionality. The 0x0X (alt-dcs = 0 or non-present)
+	 or the 0xFX (alt-dcs = 1).
+	 If you have a buggy modem (like Siemens M20) that don't like to 
+	 send binary messages, try setting alt-dcs to 1.
+     </entry></row>
+
    </tbody></tgroup></informaltable>
 
  <informaltable frame=none>

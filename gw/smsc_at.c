@@ -141,7 +141,7 @@ static int at_open_connection(SMSCenter *smsc) {
  * Open the (Virtual) SMSCenter
  */
 SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin,
-                   char *validityperiod) 
+                   char *validityperiod, int alt_dcs) 
 {
         SMSCenter *smsc;
         char setpin[20];
@@ -160,6 +160,7 @@ SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin,
                 smsc->at_pin = gw_strdup(pin);
         smsc->at_received = list_create();
         smsc->at_inbuffer = octstr_create("");
+	smsc->at_alt_dcs = alt_dcs;
         
         smsc->at_fd = at_open_connection(smsc);
         if (smsc->at_fd < 0)
@@ -184,14 +185,19 @@ SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin,
 	/* Let's collect some information from modem */
 	if(send_modem_command(smsc->at_fd, "ATI", 0) == -1)
 	    goto error;
+	sleep(1);
 	if(send_modem_command(smsc->at_fd, "ATI1", 0) == -1)
 	    goto error;
+	sleep(1);
 	if(send_modem_command(smsc->at_fd, "ATI2", 0) == -1)
 	    goto error;
+	sleep(1);
 	if(send_modem_command(smsc->at_fd, "ATI3", 0) == -1)
 	    goto error;
+	sleep(1);
 	if(send_modem_command(smsc->at_fd, "ATI4", 0) == -1)
 	    goto error;
+	sleep(1);
 
         /* Check does the modem require a PIN and, if so, send it
          * This is not supported by the Nokia Premicell */
@@ -810,7 +816,7 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
         pos++;
         
         /* data coding scheme */
-	dcs = fields_to_dcs(msg, strcmp(smsc->at_modemtype, SIEMENS ) == 0 ? 1 : 0);
+	dcs = fields_to_dcs(msg, smsc->at_alt_dcs);
         pdu[pos] = numtext(dcs >> 4);
         pos++;
         pdu[pos] = numtext(dcs % 16);
