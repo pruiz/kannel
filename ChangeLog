@@ -1,4 +1,11 @@
 2002-04-16  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsbox.c: added preliminary function smsbox_xmlrpc_post() to handle
+      the XML-RPC calls and replies.
+    * gwlib/gwlib.h: added inclusion of xmlrpc.h to make the structures public
+    * gwlib/xmlrpc.[ch]: further improvements in the <struct> parsing, but yet
+      not finished for that.
+
+2002-04-16  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsbox.c: changed return value semantic of send_message() to return
       the number of splits that have been send to bearerbox, otherwise
       return -1 in case of an error. Patch submitted by Oded.
