@@ -325,6 +325,7 @@ static int httpsmsc_send(SMSCConn *conn, Msg *msg)
     ConnData *conndata = conn->data;
     Msg *sms = msg_duplicate(msg);
 
+    conndata->open_sends++;
     conndata->send_sms(conn, sms);
 
     return 0;
