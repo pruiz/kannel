@@ -1248,6 +1248,28 @@ error:
 }
 
 
+Octstr *octstr_read_pipe(FILE *f)
+{
+    Octstr *os;
+    char buf[4096];
+    long n;
+
+    gw_assert(f != NULL);
+
+    os = octstr_create("");
+    if (os == NULL)
+        goto error;
+
+    while (fgets(buf, sizeof(buf), f) != NULL)
+        octstr_append_data(os, buf, strlen(buf));
+
+    return os;
+
+error:
+    octstr_destroy(os);
+    return NULL;
+}
+
 
 List *octstr_split_words(Octstr *ostr)
 {
