@@ -529,7 +529,7 @@ static long run_requests(Connection *boxc) {
 				requests_sent++;
 			}
 			ret = conn_wait(boxc, TIMEOUT);
-			if (ret < 0)
+			if (ret < 0 || conn_eof(boxc))
 				panic(0, "Wapbox dead.");
 			if (ret == 1)
 				break; /* Timed out. */

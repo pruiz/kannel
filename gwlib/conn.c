@@ -7,7 +7,6 @@
 
 /* TODO: unlocked_close() on error */
 /* TODO: have I/O functions check if connection is open */
-/* TODO: handle eof when reading */
 /* TODO: implement conn_open_tcp */
 /* TODO: implement conn_read_packet */
 
@@ -35,6 +34,8 @@ struct Connection {
 
 	Octstr *inbuf;
 	long inbufpos;   /* start of unread data in inbuf */
+
+	int read_eof;    /* we encountered eof on read */
 };
 
 /* Lock a Connection, if it is unclaimed */
@@ -128,9 +129,11 @@ static void unlocked_read(Connection *conn) {
 			return;
 		error(errno, "Error reading from fd %d:", conn->fd);
 		return;
+	} else if (len == 0) {
+		conn->read_eof = 1;
+	} else {
+		octstr_append_data(conn->inbuf, buf, len);
 	}
-
-	octstr_append_data(conn->inbuf, buf, len);
 }
 
 /* Cut "length" octets from the input buffer and return them as an Octstr */
@@ -165,6 +168,7 @@ Connection *conn_wrap_fd(int fd) {
 	conn->inbufpos = 0;
 
 	conn->fd = fd;
+	conn->read_eof = 0;
 
 	return conn;
 }
@@ -178,7 +182,10 @@ void conn_destroy(Connection *conn) {
 	/* No locking done here.  conn_destroy should not be called
 	 * if any thread might still be interested in the connection. */
 
+
 	if (conn->fd >= 0) {
+		/* Try to flush any remaining data */
+		unlocked_write(conn);
 		ret = close(conn->fd);
 		if (ret < 0)
 			error(errno, "conn_destroy: error on close");
@@ -221,6 +228,16 @@ long conn_inbuf_len(Connection *conn) {
 	return len;
 }
 
+int conn_eof(Connection *conn) {
+	int eof;
+
+	lock(conn);
+	eof = conn->read_eof;
+	unlock(conn);
+
+	return eof;
+}
+
 int conn_wait(Connection *conn, double seconds) {
 	struct pollfd pollinfo;
 	int milliseconds;
@@ -242,11 +259,18 @@ int conn_wait(Connection *conn, double seconds) {
 
 	/* Normally, we block until there is more data available.  But
 	 * if any data still needs to be sent, we block until we can
-	 * send it (or there is more data available). */
+	 * send it (or there is more data available).  We always block
+	 * for reading, unless we know there is no more data coming.
+	 * (Because in that case, poll will keep reporting POLLIN to
+	 * signal the end of the file).  If the caller explicitly wants
+	 * to wait even though there is no data to write and we're at
+	 * end of file, then poll for new data anyway because the callr
+	 * apparently doesn't trust eof. */
+	pollinfo.events = 0;
 	if (unlocked_outbuf_len(conn) > 0)
-		pollinfo.events = POLLIN | POLLOUT;
-	else
-		pollinfo.events = POLLIN;
+		pollinfo.events |= POLLOUT;
+	if (!conn->read_eof || pollinfo.events == 0)
+		pollinfo.events |= POLLIN;
 	pollinfo.fd = conn->fd;
 
 	/* Don't keep the connection locked while we wait */
@@ -270,7 +294,7 @@ int conn_wait(Connection *conn, double seconds) {
 	}
 
 	if (pollinfo.revents & (POLLERR | POLLHUP)) {
-		/* Call unlocked_read report the specific error,
+		/* Call unlocked_read to report the specific error,
 		 * and handle the results of the error.  We can't be
 		 * certain that the error still exists, because we
 		 * released the lock for a while. */
@@ -283,7 +307,7 @@ int conn_wait(Connection *conn, double seconds) {
 	if (pollinfo.revents & (POLLOUT | POLLIN)) {
 		lock(conn);
 
-		/* If POLLOUT was on, then we must have wanted
+		/* If POLLOUT is on, then we must have wanted
 		 * to write something. */
 		if (pollinfo.revents & POLLOUT)
 			unlocked_write(conn);

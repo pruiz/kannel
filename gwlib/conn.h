@@ -63,10 +63,14 @@ long conn_outbuf_len(Connection *conn);
 /* Return the length of the unprocessed data ready for reading, in octets. */
 long conn_inbuf_len(Connection *conn);
 
+/* Return 1 iff there was an end-of-file indication from the last read or
+ * wait operation. */
+int conn_eof(Connection *conn);
+
 /* Block the thread until one of the following is true:
  *   - The timeout expires
  *   - New data is available for reading
- *   - All data queued for output is sent (if there was any)
+ *   - Some data queued for output is sent (if there was any)
  *   - Kannel changes its global status (not implemented yet)
  * Return 1 if the timeout expired.  Return 0 otherwise, if the
  * connection is okay.  Return -1 if the connection is broken.

@@ -1,5 +1,12 @@
 2000-05-22  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/conn.h, gwlib/conn.c: Extended to handle end-of-file better.
+	Added conn_eof function.
+
+	* test/drive_wapbox.c: Use conn_eof.
+
+2000-05-22  Richard Braakman  <dark@wapit.com>
+
 	* test/drive_wapbox.c: Make setting the U/P flag optional, with
 	the -U flag, because Kannel no longer (erroneously) requires it.
 	Also have its internal httpd supply a Content-Type header.
