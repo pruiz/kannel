@@ -658,7 +658,7 @@ int parse_attribute(xmlAttrPtr attr)
 	}
       else
 	{
-	  if ((status = output_octet_string(octstr_copy(value, coded_length-1, 
+	  if ((status = output_octet_string(octstr_copy(value, coded_length, 
 							octstr_len(value) -
 							coded_length))) != 0)
 	    error(0, 
@@ -666,7 +666,7 @@ int parse_attribute(xmlAttrPtr attr)
 	}
     }
 
-  /* Memory clean. */
+  /* Memory cleanup. */
   octstr_destroy(attribute);
   if (value != NULL)
     octstr_destroy(value);
@@ -724,6 +724,10 @@ int parse_text(xmlNodePtr node)
   wbxml_string = octstr_cat(temp2, temp1);
   if (output_char(STR_END) == -1)
       error(0, "WML compiler: couldn't output STR_END after a text field.");
+
+  /* Memory cleanup. */
+  octstr_destroy(temp1);
+  octstr_destroy(temp2);
 
   return 0;
 }
