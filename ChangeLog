@@ -1,3 +1,11 @@
+Wed Jan 12 15:16:49 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* lots of small changes in lots of files: Changed the gateway
+	to systematically use gw_malloc and friends instead of malloc
+	and friends directly. It shall henceforth be considered an
+	error for anything but gwlib/gwmem.c to call malloc or friends
+	directly. (Six unchecked malloc calls found during this cleanup.)
+
 2000-01-11    <rpr@rpr.wapit.com>
 
 	* gw/wsp.c|h: capabilities client|server SDU size, method|push MOR
