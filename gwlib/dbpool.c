@@ -184,9 +184,20 @@ void *dbpool_conn_consume(DBPool *p)
 {
     DBPoolConn *pc;
 
-    pc = list_consume(p->pool);
+    /* garantee that you deliver a valid connection to the caller */
+    while ((pc = list_consume(p->pool)) != NULL) {
 
-    /* XXX check that the connection is still existing */
+        /* 
+         * XXX check that the connection is still existing.
+         * Is this a performance bottle-neck?!
+         */
+        if (!pc->conn || mysql_ping(pc->conn) != 0) {
+            /* something was wrong, drop the connection */
+            dbpool_conn_destroy(pc);
+        } else {
+            break;
+        }
+    }
 
     return (pc->conn != NULL ? pc : NULL);
 }
