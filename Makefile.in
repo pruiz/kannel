@@ -69,6 +69,15 @@ LDFLAGS=@LDFLAGS@
 
 MKDEPEND=$(CC) $(CFLAGS) -MM
 
+JADE=@JADE@
+JADETEX=@JADETEX@
+DVIPS=@DVIPS@
+FIG2DEV=@FIG2DEV@
+
+HTML_DSL=@HTML_DSL@
+TEX_DSL=@TEX_DSL@
+
+
 #
 # You probably don't need to touch anything below this, if you're just
 # compiling and installing the software.
@@ -96,13 +105,33 @@ srcs = $(shell echo */*.c)
 objs = $(srcs:.c=.o)
 
 srcdirs = gw gwlib test utils
-docdirs = $(shell echo doc/[a-z]*/.)
 
+docsrcs = $(shell grep -l '<!DOCTYPE ' doc/*/*.xml)
+docs = $(docsrcs:.xml=.html) $(docsrcs:.xml=.ps)
+
+figsrcs = $(shell echo doc/*/*.fig)
+figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
+
+
+.SUFFIXES: $(SUFFIXES) .xml .html .ps .fig .png
+
+.xml.html:
+	$(srcdir)/utils/docbook-to-html $<
+
+.xml.ps:
+	$(srcdir)/utils/docbook-to-ps $<
+
+.fig.png:
+	fig2dev -Lpng $< $@
+
+.fig.ps:
+	fig2dev -Lps $< $@
 
 all: progs tests docs
 progs: $(progs)
 tests: $(testprogs)
-docs: $(docs)
+docs: figs $(docs)
+figs: $(figs)
 
 install: all
 	$(INSTALL) $(progs) $(bindir)
@@ -111,6 +140,7 @@ install: all
 
 clean:
 	rm -f core $(progs) $(testprogs) $(objs) $(docs) *.a
+	rm -f $(figs) $(docs)
 
 depend .depend:
 	for dir in $(srcdirs); do \

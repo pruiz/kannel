@@ -93,6 +93,22 @@ GW_HAVE_FUNC_FROM(netdb.h, getnameinfo,
 	HAVE_GETNAMEINFO, [Defined if we have getnameinfo() in <netdb.h>])
 
 
+dnl DocBook stuff
+AC_CHECK_PROG(JADE, jade, jade, :)
+AC_CHECK_PROG(JADETEX, jadetex, jadetex, :)
+AC_CHECK_PROG(DVIPS, dvips, dvips, :)
+AC_CHECK_PROG(FIG2DEV, fig2dev, fig2dev, :)
+AC_SUBST(HTML_DSL)
+for file in /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/html/docbook.dsl
+do
+	AC_CHECK_FILE($file,HTML_DSL=$file)
+done
+AC_SUBST(TEX_DSL)
+for file in /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/print/docbook.dsl
+do
+	AC_CHECK_FILE($file,TEX_DSL=$file)
+done
+
 dnl Final Output
 
 AC_OUTPUT(Makefile)

@@ -2133,6 +2133,185 @@ EOF
 
 
 
+# Extract the first word of "jade", so it can be a program name with args.
+set dummy jade; ac_word=$2
+echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+echo "configure:2140: checking for $ac_word" >&5
+if eval "test \"`echo '$''{'ac_cv_prog_JADE'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  if test -n "$JADE"; then
+  ac_cv_prog_JADE="$JADE" # Let the user override the test.
+else
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+  ac_dummy="$PATH"
+  for ac_dir in $ac_dummy; do
+    test -z "$ac_dir" && ac_dir=.
+    if test -f $ac_dir/$ac_word; then
+      ac_cv_prog_JADE="jade"
+      break
+    fi
+  done
+  IFS="$ac_save_ifs"
+  test -z "$ac_cv_prog_JADE" && ac_cv_prog_JADE=":"
+fi
+fi
+JADE="$ac_cv_prog_JADE"
+if test -n "$JADE"; then
+  echo "$ac_t""$JADE" 1>&6
+else
+  echo "$ac_t""no" 1>&6
+fi
+
+# Extract the first word of "jadetex", so it can be a program name with args.
+set dummy jadetex; ac_word=$2
+echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+echo "configure:2170: checking for $ac_word" >&5
+if eval "test \"`echo '$''{'ac_cv_prog_JADETEX'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  if test -n "$JADETEX"; then
+  ac_cv_prog_JADETEX="$JADETEX" # Let the user override the test.
+else
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+  ac_dummy="$PATH"
+  for ac_dir in $ac_dummy; do
+    test -z "$ac_dir" && ac_dir=.
+    if test -f $ac_dir/$ac_word; then
+      ac_cv_prog_JADETEX="jadetex"
+      break
+    fi
+  done
+  IFS="$ac_save_ifs"
+  test -z "$ac_cv_prog_JADETEX" && ac_cv_prog_JADETEX=":"
+fi
+fi
+JADETEX="$ac_cv_prog_JADETEX"
+if test -n "$JADETEX"; then
+  echo "$ac_t""$JADETEX" 1>&6
+else
+  echo "$ac_t""no" 1>&6
+fi
+
+# Extract the first word of "dvips", so it can be a program name with args.
+set dummy dvips; ac_word=$2
+echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+echo "configure:2200: checking for $ac_word" >&5
+if eval "test \"`echo '$''{'ac_cv_prog_DVIPS'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  if test -n "$DVIPS"; then
+  ac_cv_prog_DVIPS="$DVIPS" # Let the user override the test.
+else
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+  ac_dummy="$PATH"
+  for ac_dir in $ac_dummy; do
+    test -z "$ac_dir" && ac_dir=.
+    if test -f $ac_dir/$ac_word; then
+      ac_cv_prog_DVIPS="dvips"
+      break
+    fi
+  done
+  IFS="$ac_save_ifs"
+  test -z "$ac_cv_prog_DVIPS" && ac_cv_prog_DVIPS=":"
+fi
+fi
+DVIPS="$ac_cv_prog_DVIPS"
+if test -n "$DVIPS"; then
+  echo "$ac_t""$DVIPS" 1>&6
+else
+  echo "$ac_t""no" 1>&6
+fi
+
+# Extract the first word of "fig2dev", so it can be a program name with args.
+set dummy fig2dev; ac_word=$2
+echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+echo "configure:2230: checking for $ac_word" >&5
+if eval "test \"`echo '$''{'ac_cv_prog_FIG2DEV'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  if test -n "$FIG2DEV"; then
+  ac_cv_prog_FIG2DEV="$FIG2DEV" # Let the user override the test.
+else
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+  ac_dummy="$PATH"
+  for ac_dir in $ac_dummy; do
+    test -z "$ac_dir" && ac_dir=.
+    if test -f $ac_dir/$ac_word; then
+      ac_cv_prog_FIG2DEV="fig2dev"
+      break
+    fi
+  done
+  IFS="$ac_save_ifs"
+  test -z "$ac_cv_prog_FIG2DEV" && ac_cv_prog_FIG2DEV=":"
+fi
+fi
+FIG2DEV="$ac_cv_prog_FIG2DEV"
+if test -n "$FIG2DEV"; then
+  echo "$ac_t""$FIG2DEV" 1>&6
+else
+  echo "$ac_t""no" 1>&6
+fi
+
+
+for file in /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/html/docbook.dsl
+do
+	
+ac_safe=`echo "$file" | sed 'y%./+-%__p_%'`
+echo $ac_n "checking for $file""... $ac_c" 1>&6
+echo "configure:2263: checking for $file" >&5
+if eval "test \"`echo '$''{'ac_cv_file_$ac_safe'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  if test "$cross_compiling" = yes; then
+    { echo "configure: error: Cannot check for file existence when cross compiling" 1>&2; exit 1; }
+else
+  if test -r $file; then
+    eval "ac_cv_file_$ac_safe=yes"
+  else
+    eval "ac_cv_file_$ac_safe=no"
+  fi
+fi
+fi
+if eval "test \"`echo '$ac_cv_file_'$ac_safe`\" = yes"; then
+  echo "$ac_t""yes" 1>&6
+  HTML_DSL=$file
+else
+  echo "$ac_t""no" 1>&6
+
+fi
+
+done
+
+for file in /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/print/docbook.dsl
+do
+	
+ac_safe=`echo "$file" | sed 'y%./+-%__p_%'`
+echo $ac_n "checking for $file""... $ac_c" 1>&6
+echo "configure:2292: checking for $file" >&5
+if eval "test \"`echo '$''{'ac_cv_file_$ac_safe'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  if test "$cross_compiling" = yes; then
+    { echo "configure: error: Cannot check for file existence when cross compiling" 1>&2; exit 1; }
+else
+  if test -r $file; then
+    eval "ac_cv_file_$ac_safe=yes"
+  else
+    eval "ac_cv_file_$ac_safe=no"
+  fi
+fi
+fi
+if eval "test \"`echo '$ac_cv_file_'$ac_safe`\" = yes"; then
+  echo "$ac_t""yes" 1>&6
+  TEX_DSL=$file
+else
+  echo "$ac_t""no" 1>&6
+
+fi
+
+done
+
 
 trap '' 1 2 15
 cat > confcache <<\EOF
@@ -2278,6 +2457,12 @@ s%@LEXLIB@%$LEXLIB%g
 s%@PERL@%$PERL%g
 s%@CPP@%$CPP%g
 s%@LIBOBJS@%$LIBOBJS%g
+s%@JADE@%$JADE%g
+s%@JADETEX@%$JADETEX%g
+s%@DVIPS@%$DVIPS%g
+s%@FIG2DEV@%$FIG2DEV%g
+s%@HTML_DSL@%$HTML_DSL%g
+s%@TEX_DSL@%$TEX_DSL%g
 
 CEOF
 EOF
