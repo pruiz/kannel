@@ -1,3 +1,14 @@
+Thu May 25 21:46:04 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/http.[ch], test/test_http.c: Removed.
+	
+	* gwlib/http2.[ch]: Added a number of header handling functions.
+	Also added many assertions.
+
+	* gw/wsp.[ch], gw/wsp_headers.[ch], gw/wsp_http.c,
+	gw/wsp_state-decl.h: Converted to use http2 instead of http for
+	header handling.
+
 2000-05-25    Kalle Marjola <rpr@wapit.com>
 
 	* gw/bb_smsc.c: fixed some lock-ups during violent shutdown

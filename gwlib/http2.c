@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <unistd.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -86,9 +87,12 @@ static int read_body(HTTPSocket *p, List *headers, Octstr **body);
 static int read_chunked_body(HTTPSocket *p, Octstr **body, List *headers);
 static int read_raw_body(HTTPSocket *p, Octstr **body, long bytes);
 static List *parse_cgivars(Octstr *url);
+static int header_is_called(Octstr *header, char *name);
+
 
 
 void http2_init(void) {
+	gw_assert(proxy_mutex == NULL);
 	proxy_mutex = mutex_create();
 	proxy_exceptions = list_create();
 	pool_init();
@@ -96,15 +100,23 @@ void http2_init(void) {
 
 
 void http2_shutdown(void) {
+	gwlib_assert_init();
 	http2_close_proxy();
 	list_destroy(proxy_exceptions);
 	mutex_destroy(proxy_mutex);
+	proxy_mutex = NULL;
 	pool_shutdown();
 }
 
 
 void http2_use_proxy(Octstr *hostname, int port, List *exceptions) {
 	int i;
+
+	gwlib_assert_init();
+	gw_assert(hostname != NULL);
+	gw_assert(octstr_len(hostname) > 0);
+	gw_assert(port > 0);
+	gw_assert(exceptions != NULL);
 
 	http2_close_proxy();
 	mutex_lock(proxy_mutex);
@@ -119,6 +131,8 @@ void http2_use_proxy(Octstr *hostname, int port, List *exceptions) {
 
 void http2_close_proxy(void) {
 	Octstr *p;
+
+	gwlib_assert_init();
 
 	mutex_lock(proxy_mutex);
 	if (proxy_hostname != NULL) {
@@ -136,6 +150,12 @@ int http2_get(Octstr *url, List *request_headers,
 List **reply_headers, Octstr **reply_body)  {
 	int status;
 	HTTPSocket *p;
+
+	gwlib_assert_init();
+	gw_assert(url != NULL);
+	gw_assert(request_headers != NULL);
+	gw_assert(reply_headers != NULL);
+	gw_assert(reply_body != NULL);
 
 	*reply_headers = NULL;
 	*reply_body = NULL;
@@ -183,6 +203,13 @@ List **reply_headers, Octstr **reply_body) {
 	int i, ret;
 	Octstr *h;
 
+	gwlib_assert_init();
+	gw_assert(url != NULL);
+	gw_assert(final_url != NULL);
+	gw_assert(request_headers != NULL);
+	gw_assert(reply_headers != NULL);
+	gw_assert(reply_body != NULL);
+
 	ret = -1;
 	
 	*final_url = octstr_duplicate(url);
@@ -215,31 +242,43 @@ List **reply_headers, Octstr **reply_body) {
 
 
 HTTPSocket *http2_server_open(int port) {
+	gwlib_assert_init();
+	gw_assert(port > 0);
 	return socket_create_server(port);
 }
 
 
 void http2_server_close(HTTPSocket *socket) {
+	gwlib_assert_init();
+	gw_assert(socket != NULL);
 	socket_destroy(socket);
 }
 
 
 int http2_socket_fd(HTTPSocket *socket) {
+	gwlib_assert_init();
+	gw_assert(socket != NULL);
 	return socket->socket;
 }
 
 
 Octstr *http2_socket_ip(HTTPSocket *socket) {
+	gwlib_assert_init();
+	gw_assert(socket != NULL);
         return socket->host;
 }
 
 
 HTTPSocket *http2_server_accept_client(HTTPSocket *socket) {
+	gwlib_assert_init();
+	gw_assert(socket != NULL);
 	return socket_accept(socket);
 }
 
 
 void http2_server_close_client(HTTPSocket *socket) {
+	gwlib_assert_init();
+	gw_assert(socket != NULL);
 	socket_destroy(socket);
 }
 
@@ -248,6 +287,13 @@ int http2_server_get_request(HTTPSocket *socket, Octstr **url, List **headers,
 Octstr **body, List **cgivars) {
 	Octstr *line;
 	long space;
+
+	gwlib_assert_init();
+	gw_assert(socket != NULL);
+	gw_assert(url != NULL);
+	gw_assert(headers != NULL);
+	gw_assert(body != NULL);
+	gw_assert(cgivars != NULL);
 
 	line = NULL;
 	*url = NULL;
@@ -305,6 +351,12 @@ Octstr *body) {
 	int i, ret;
 	long len;
 	
+	gwlib_assert_init();
+	gw_assert(status >= 100);
+	gw_assert(status < 1000);
+	gw_assert(headers != NULL);
+	gw_assert(body != NULL);
+
 	sprintf(buf, "HTTP/1.1 %d Foo\r\n", status);
 	response = octstr_create(buf);
 	if (body == NULL)
@@ -329,6 +381,11 @@ Octstr *body) {
 void http2_destroy_cgiargs(List *args) {
         HTTPCGIVar *v;
 
+	gwlib_assert_init();
+
+	if (args == NULL)
+		return;
+
 	while ((v = list_extract_first(args)) != NULL) {
 		octstr_destroy(v->name);
 		octstr_destroy(v->value);
@@ -338,11 +395,14 @@ void http2_destroy_cgiargs(List *args) {
 }
 
 
-Octstr *http2_cgi_variable(List *list, char *name) 
-{
+Octstr *http2_cgi_variable(List *list, char *name) {
 	int i;
 	HTTPCGIVar *v;
 	
+	gwlib_assert_init();
+	gw_assert(list != NULL);
+	gw_assert(name != NULL);
+
 	for (i = 0; i < list_len(list); ++i) {
 		v = list_get(list, i);
 		if (octstr_str_compare(v->name, name) == 0)
@@ -352,8 +412,19 @@ Octstr *http2_cgi_variable(List *list, char *name)
 }
 
 
+List *http2_create_empty_headers(void) {
+	gwlib_assert_init();
+	return list_create();
+}
+
+
 void http2_destroy_headers(List *headers) {
 	Octstr *h;
+
+	gwlib_assert_init();
+
+	if (headers == NULL)
+		return;
 
 	while ((h = list_extract_first(headers)) != NULL)
 	    octstr_destroy(h);
@@ -362,9 +433,89 @@ void http2_destroy_headers(List *headers) {
 }
 
 
+void http2_header_add(List *headers, char *name, char *contents) {
+	Octstr *h;
+	
+	gwlib_assert_init();
+	gw_assert(headers != NULL);
+	gw_assert(name != NULL);
+	gw_assert(contents != NULL);
+
+	h = octstr_create(name);
+	octstr_append_cstr(h, ": ");
+	octstr_append_cstr(h, contents);
+	list_append(headers, h);
+}
+
+
+void http2_header_get(List *headers, long i, Octstr **name, Octstr **value) {
+	Octstr *os;
+	long colon;
+	
+	gwlib_assert_init();
+	gw_assert(i >= 0);
+	gw_assert(name != NULL);
+	gw_assert(value != NULL);
+
+	os = list_get(headers, i);
+	if (os == NULL)
+		colon = -1;
+	else
+		colon = octstr_search_char(os, ':');
+	if (colon == -1) {
+		error(0, "HTTP2: Header does not contain a colon. BAD.");
+		*name = octstr_create("X-Unknown");
+		*value = octstr_duplicate(os);
+	} else {
+		*name = octstr_copy(os, 0, colon);
+		*value = octstr_copy(os, colon+1, octstr_len(os));
+		octstr_strip_blank(*value);
+	}
+}
+
+
+List *http2_header_duplicate(List *headers) {
+	List *new;
+	long i;
+	
+	gwlib_assert_init();
+
+	if (headers == NULL)
+		return NULL;
+
+	new = http2_create_empty_headers();
+	for (i = 0; i < list_len(headers); ++i)
+		list_append(new, octstr_duplicate(list_get(headers, i)));
+	return new;
+}
+
+
+void http2_header_pack(List *headers) {
+	gwlib_assert_init();
+	gw_assert(headers != NULL);
+	/* XXX not implemented yet. */
+}
+
+
+void http2_append_headers(List *to, List *from) {
+	long i;
+	
+	gwlib_assert_init();
+	gw_assert(to != NULL);
+	gw_assert(from != NULL);
+
+	for (i = 0; i < list_len(from); ++i)
+		list_append(to, list_get(from, i));
+}
+
+
 Octstr *http2_header_find_first(List *headers, char *name) {
 	long i, name_len;
 	Octstr *h;
+
+	gwlib_assert_init();
+	gw_assert(headers != NULL);
+	gw_assert(name != NULL);
 
 	name_len = strlen(name);
 
@@ -378,11 +529,35 @@ Octstr *http2_header_find_first(List *headers, char *name) {
 }
 
 
+List *http2_header_find_all(List *headers, char *name) {
+	List *list;
+	long i;
+	Octstr *h;
+	
+	gwlib_assert_init();
+	gw_assert(headers != NULL);
+	gw_assert(name != NULL);
+
+	list = list_create();
+	for (i = 0; i < list_len(headers); ++i) {
+		h = list_get(headers, i);
+		if (header_is_called(h, name))
+			list_append(list, octstr_duplicate(h));
+	}
+	return list;
+}
+
+
 void http2_header_get_content_type(List *headers, Octstr **type, 
 Octstr **charset) {
 	Octstr *h;
 	long semicolon;
 	
+	gwlib_assert_init();
+	gw_assert(headers != NULL);
+	gw_assert(type != NULL);
+	gw_assert(charset != NULL);
+
 	h = http2_header_find_first(headers, "Content-Type");
 	if (h == NULL) {
 		*type = octstr_create("application/octet-stream");
@@ -406,6 +581,37 @@ Octstr **charset) {
 }
 
 
+void http2_header_dump(List *headers) {
+	long i;
+	
+	gwlib_assert_init();
+	gw_assert(headers != NULL);
+
+	debug("gwlib.http2", 0, "Dumping HTTP2 headers:");
+	for (i = 0; i < list_len(headers); ++i)
+		octstr_dump(list_get(headers, i), 1);
+	debug("gwlib.http2", 0, "End of dump.");
+}
+
+
+int http2_type_accepted(List *headers, char *type) {
+	int found;
+	long i;
+	List *accepts;
+	
+	gwlib_assert_init();
+	gw_assert(headers != NULL);
+	gw_assert(type != NULL);
+
+	accepts = http2_header_find_all(headers, "Accept");
+	
+	found = 0;
+	for (i = 0; !found && i < list_len(accepts); ++i) {
+		if (strstr(octstr_get_cstr(list_get(accepts, i)), type) != NULL)
+			found = 1;
+	}
+	return found;
+}
 
 
 /***********************************************************************
@@ -1177,4 +1383,20 @@ static List *parse_cgivars(Octstr *url) {
 	}
 	
 	return list;
+}
+
+
+static int header_is_called(Octstr *header, char *name) {
+	Octstr *header_name;
+	long colon;
+	int is;
+	
+	colon = octstr_search_char(header, ':');
+	if (colon == -1)
+		return 0;
+	header_name = octstr_copy(header, 0, colon);
+	is = strcasecmp(octstr_get_cstr(header_name), name);
+	octstr_destroy(header_name);
+	return is;
+	/* XXX this is ineffiecient. I'm stupid. --liw */
 }

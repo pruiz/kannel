@@ -145,7 +145,7 @@ ROW(CONNECTED,
 	{
 		WSPEvent *new_event;
 		Octstr *url;
-		HTTPHeader *headers;
+		List *headers;
 
 		++sm->n_methods;
 
@@ -265,7 +265,7 @@ ROW(HOLDING,
 		new_event->S_MethodInvoke_Res.url = octstr_duplicate(e->url);
 		new_event->S_MethodInvoke_Res.method = Get_PDU;
 		new_event->S_MethodInvoke_Res.http_headers = 
-			header_duplicate(e->http_headers);
+			http2_header_duplicate(e->http_headers);
 		new_event->S_MethodInvoke_Res.server_transaction_id = 
 			new_server_transaction_id();
 		(void) start_thread(1, wsp_http_thread, new_event, 0);

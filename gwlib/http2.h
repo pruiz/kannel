@@ -267,13 +267,18 @@ Octstr *http2_cgi_variable(List *list, char *name);
  * Once you have a list of headers, you can use http2_header_add and the
  * other functions to manipulate it.
  */
-void http2_destroy_headers(List *);
-#if LIW_TODO
 List *http2_create_empty_headers(void);
+void http2_destroy_headers(List *headers);
+void http2_header_add(List *headers, char *name, char *contents);
+void http2_header_get(List *headers, long i, Octstr **name, Octstr **value);
+List *http2_header_duplicate(List *headers);
+void http2_header_pack(List *headers);
+void http2_append_headers(List *to, List *from);
+
+#if LIW_TODO
 List *http2_parse_header_string(Octstr *headers_as_string);
 Octstr *http2_generate_header_string(List *headers_as_list);
 
-void http2_header_add(List *headers, char *name, Octstr *contents);
 void http2_header_remove_all(List *headers, char *name);
 #endif
 
@@ -283,10 +288,8 @@ void http2_header_remove_all(List *headers, char *name);
  * not found.
  */
 Octstr *http2_header_find_first(List *headers, char *name);
-
-#if LIW_TODO
 List *http2_header_find_all(List *headers, char *name);
-#endif
+
 
 /*
  * Find the Content-Type header and returns the type and charset.
@@ -298,6 +301,18 @@ void http2_header_get_content_type(List *headers, Octstr **type,
 void http2_header_set_content_type(List *headers, Octstr *type, 
 	Octstr *charset);
 #endif
+
+
+/*
+ * Do the headers indicate that MIME type `type' is accepted?
+ */
+int http2_type_accepted(List *headers, char *type);
+
+
+/*
+ * Dump the contents of a header list with debug.
+ */
+void http2_header_dump(List *headers);
 
 
 #endif

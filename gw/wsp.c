@@ -61,7 +61,7 @@ static void append_to_event_queue(WSPMachine *machine, WSPEvent *event);
 static WSPEvent *remove_from_event_queue(WSPMachine *machine);
 
 static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data);
-static int unpack_get_pdu(Octstr **url, HTTPHeader **headers, Octstr *pdu);
+static int unpack_get_pdu(Octstr **url, List **headers, Octstr *pdu);
 static int unpack_post_pdu(Octstr **url, Octstr **headers, Octstr *pdu);
 
 static int unpack_uint8(unsigned long *u, Octstr *os, int *off);
@@ -139,16 +139,7 @@ WSPEvent *wsp_event_duplicate(WSPEvent *event) {
 		{ struct name *p = &copy->name; \
 		  struct name *q = &event->name; \
 		  fields }
-	#define HTTPHEADER(name) \
-		{ HTTPHeader *hh, *h = q->name; \
-		  p->name = NULL; \
-		  while (h != NULL) { \
-		    hh = header_create(h->key, h->value); \
-		    hh->next = p->name; \
-		    p->name = hh; \
-		    h = h->next; \
-		  } \
-		}
+	#define HTTPHEADER(name) p->name = http2_header_duplicate(q->name)
 	#include "wsp_events-decl.h"
 
 	return copy;
@@ -201,7 +192,7 @@ void wsp_event_dump(WSPEvent *event) {
 			{ char *t = #tt; struct tt *p = &event->tt; fields }
 	#define HTTPHEADER(name) \
 		debug("wap.wsp", 0, "  %s.%s: HTTP headers:", t, #name); \
-		header_dump(p->name)
+		http2_header_dump(p->name)
 	#include "wsp_events-decl.h"
 	debug("wap.wsp", 0, "Dump of WSPEvent %p ends.", (void *) event);
 }
@@ -283,7 +274,7 @@ void wsp_machine_destroy(WSPMachine *p) {
 	#define METHOD_POINTER(name) p->name = NULL;
 	#define EVENT_POINTER(name) p->name = NULL;
 	#define SESSION_POINTER(name) p->name = NULL;
-	#define HTTPHEADER(name) header_destroy_all(p->name);
+	#define HTTPHEADER(name) http2_destroy_headers(p->name);
 	#define LIST(name) list_destroy(p->name);
 	#define SESSION_MACHINE(fields) fields
 	#define METHOD_MACHINE(fields)
@@ -546,12 +537,12 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 	    unpack_caps(caps, m);
 	}
 	if (headers_len > 0) {
-	    HTTPHeader *hdrs;
+	    List *hdrs;
 	    
 	    hdrs = unpack_headers(headers);
 
 	    /* pack them for more compact form */
-	    header_pack(hdrs);
+	    http2_header_pack(hdrs);
 
 	    m->http_headers = hdrs;
 	}
@@ -562,7 +553,7 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 }
 
 
-static int unpack_get_pdu(Octstr **url, HTTPHeader **headers, Octstr *pdu) {
+static int unpack_get_pdu(Octstr **url, List **headers, Octstr *pdu) {
 	unsigned long url_len;
 	int off;
 	Octstr *h;

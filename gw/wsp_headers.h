@@ -14,7 +14,7 @@
 /* return an HTTPHeader linked list which must be freed by the caller
  * (see http.h for details of HTTPHeaders). Cannot fail.
  */
-HTTPHeader *unpack_headers(Octstr *headers);
+List *unpack_headers(Octstr *headers);
 
 
 /* Outputs unpacked headers into own string

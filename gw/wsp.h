@@ -65,7 +65,7 @@ struct WSPEvent {
 	#define WTP_MACHINE(name) WTPMachine *name
 	#define SESSION_MACHINE(name) WSPMachine *name
 	#define WSP_EVENT(name, fields) struct name fields name;
-	#define HTTPHEADER(name) HTTPHeader *name
+	#define HTTPHEADER(name) List *name
 	#include "wsp_events-decl.h"
 };
 
@@ -76,7 +76,7 @@ struct WSPMachine {
 	#define EVENT_POINTER(name) WSPEvent *name;
 	#define METHOD_POINTER(name) WSPMethodMachine *name;
 	#define SESSION_POINTER(name) WSPMachine *name;
-	#define HTTPHEADER(name) HTTPHeader *name;
+	#define HTTPHEADER(name) List *name;
 	#define LIST(name) List *name;
 	#define SESSION_MACHINE(fields) fields
 	#define METHOD_MACHINE(fields)
@@ -91,7 +91,7 @@ struct WSPMethodMachine {
 	#define EVENT_POINTER(name) WSPEvent *name;
 	#define METHOD_POINTER(name) WSPMethodMachine *name;
 	#define SESSION_POINTER(name) WSPMethodMachine *name;
-	#define HTTPHEADER(name) HTTPHeader *name;
+	#define HTTPHEADER(name) List *name;
 	#define LIST(name) List *name;
 	#define SESSION_MACHINE(fields)
 	#define METHOD_MACHINE(fields) fields

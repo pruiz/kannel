@@ -196,7 +196,6 @@ void *wsp_http_thread(void *arg) {
 	unsigned long body_size, client_SDU_size;
 	WTPMachine *wtp_sm;
 	WSPMachine *sm;
-	HTTPHeader *h;
 	int wml_ok, wmlc_ok, wmlscript_ok, wmlscriptc_ok;
 	Octstr *url, *final_url, *resp_body, *body, *os, *type, *charset;
 	List *req_headers, *resp_headers;
@@ -247,59 +246,34 @@ void *wsp_http_thread(void *arg) {
 	wmlscriptc_ok = 0;
 	
 	req_headers = list_create();
-	for (h = sm->http_headers; h != NULL; h = h->next) {
-		os = octstr_create(h->key);
-		octstr_append_cstr(os, ": ");
-		octstr_append_cstr(os, h->value);
-		list_append(req_headers, os);
-		if (strcasecmp(h->key, "Accept") == 0) {
-			if (strstr(h->value, "text/vnd.wap.wml") != NULL)
-				wml_ok = 1;
-			if (strstr(h->value, "text/vnd.wap.wmlscript") != NULL)
-				wmlscript_ok = 1;
-			if (strstr(h->value, "application/vnd.wap.wmlc") != NULL)
-				wmlc_ok = 1;
-			if (strstr(h->value, "application/vnd.wap.wmlscriptc") != NULL)
-				wmlscriptc_ok = 1;
-		}
-	}
-	for (h = event->S_MethodInvoke_Res.http_headers; h != NULL; h = h->next) {
-		os = octstr_create(h->key);
-		octstr_append_cstr(os, ": ");
-		octstr_append_cstr(os, h->value);
-		list_append(req_headers, os);
-		if (strcasecmp(h->key, "Accept") == 0) {
-			if (strstr(h->value, "text/vnd.wap.wml") != NULL)
-				wml_ok = 1;
-			if (strstr(h->value, "text/vnd.wap.wmlscript") != NULL)
-				wmlscript_ok = 1;
-			if (strstr(h->value, "application/vnd.wap.wmlc") != NULL)
-				wmlc_ok = 1;
-			if (strstr(h->value, "application/vnd.wap.wmlscriptc") != NULL)
-				wmlscriptc_ok = 1;
-		}
-	}
+	if (sm->http_headers != NULL)
+		http2_append_headers(req_headers, sm->http_headers);
+	if (event->S_MethodInvoke_Res.http_headers)
+		http2_append_headers(req_headers, 
+			event->S_MethodInvoke_Res.http_headers);
+
+	wml_ok = http2_type_accepted(req_headers, "text/vnd.wap.wml");
+	wmlscript_ok = http2_type_accepted(req_headers, 
+		"text/vnd.wap.wmlscript");
+	wmlc_ok = http2_type_accepted(req_headers, "application/vnd.wap.wmlc");
+	wmlscriptc_ok = http2_type_accepted(req_headers, 
+		"application/vnd.wap.wmlscriptc");
 
 	if (wmlc_ok && !wml_ok) {
-		list_append(req_headers, 
-			octstr_create("Accept: text/vnd.wap.wml"));
+		http2_header_add(req_headers, "Accept", "text/vnd.wap.wml");
 	}
 	if (wmlscriptc_ok && !wmlscript_ok) {
-		list_append(req_headers, 
-			octstr_create("Accept: text/vnd.wap.wmlscript"));
+		http2_header_add(req_headers, 
+			"Accept", "text/vnd.wap.wmlscript");
 	}
 	if (octstr_len(sm->client_address) > 0) {
-		os = octstr_create("X_Network_Info: ");
-		octstr_append_cstr(os, octstr_get_cstr(sm->client_address));
-		list_append(req_headers, os);
+		http2_header_add(req_headers, 
+			"X_Network_Info", octstr_get_cstr(sm->client_address));
 	}
 	{
 		char buf[1024];
-		
-		os = octstr_create("X-WAP-Session-ID: ");
 		sprintf(buf, "%ld", sm->session_id);
-		octstr_append_cstr(os, buf);
-		list_append(req_headers, os);
+		http2_header_add(req_headers, "X-WAP-Session-ID", buf);
 	}
 
 	ret = http2_get_real(url, req_headers, 

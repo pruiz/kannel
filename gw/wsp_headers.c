@@ -244,13 +244,12 @@ static char *encode_language_str(Octstr *str, char *buf, int off, int data_len)
 }
 
 
-static HTTPHeader *decode_well_known_field(int field_type,
+static void decode_well_known_field(List *unpacked, int field_type,
 					   Octstr *headers, int *off)
 {
     unsigned long len;
     int data_off, ret, val;
     char *ch, tmpbuf[1024];
-    HTTPHeader *newhdr;
     ch = "";
     
     ret = field_value(headers, off, &val, &data_off, &len);
@@ -275,7 +274,7 @@ static HTTPHeader *decode_well_known_field(int field_type,
 	    else if (ret == WSP_FIELD_VALUE_DATA) {
 		debug("wap.wsp", 0, "%s: accept-general-form not supported",
 		      WSPHeaderFieldNameAssignment[field_type]);
-		return NULL;
+		return;
 	    } else
 		goto error;
 	    break;
@@ -302,7 +301,7 @@ static HTTPHeader *decode_well_known_field(int field_type,
 		else if (val == 0x70) ch = "sv";
 		else {
 		    debug("wap.wsp", 0, "Nonsupported language '0x%x'", val);
-		    return NULL;
+		    return;
 		}
 	    } else
 		ch = "Unsupported";
@@ -312,53 +311,42 @@ static HTTPHeader *decode_well_known_field(int field_type,
 	default:
 	    if (field_type <= WSP_PREDEFINED_LAST_FIELDNAME) {
 		debug("wap.wsp", 0, "Nonsupported field '0x%x'", field_type);
-		return NULL;
+		return;
 	    } else
 		goto error;
 	}
     }
-    newhdr = gw_malloc(sizeof(HTTPHeader));
-    newhdr->next = NULL;
-    newhdr->key = gw_strdup(WSPHeaderFieldNameAssignment[field_type]);
-    newhdr->value = gw_strdup(ch);
-    
-    return newhdr;
+
+    http2_header_add(unpacked, WSPHeaderFieldNameAssignment[field_type], ch);
+    return;
 
 error:
     warning(0, "Faulty header!");
-    return NULL;
 }
 
 
-static HTTPHeader *decode_app_header(Octstr *str, int *off)
+static void decode_app_header(List *unpacked, Octstr *str, int *off)
 {
     int len;
-    HTTPHeader *newhdr;
-    newhdr = gw_malloc(sizeof(HTTPHeader));
-    newhdr->next = NULL;
-    
-    len = strlen(octstr_get_cstr(str) + *off);
 
-    newhdr->key = gw_strdup(octstr_get_cstr(str)+ *off);
-    newhdr->value = gw_strdup(octstr_get_cstr(str)+ *off+len+1);
+    len = strlen(octstr_get_cstr(str) + *off);
+    http2_header_add(unpacked, octstr_get_cstr(str)+ *off, 
+    		     octstr_get_cstr(str)+ *off+len+1);
     
     *off += len + 2 + strlen(octstr_get_cstr(str)+*off+len+1);
-
-    return newhdr;
 }
 
 
-HTTPHeader *unpack_headers(Octstr *headers)
+List *unpack_headers(Octstr *headers)
 {
     int off, byte;
-    HTTPHeader *first, *prev, *val;
+    List *unpacked;
     
     off = 0;
-    first = prev = NULL;
 
+    unpacked = http2_create_empty_headers();
     while(off < octstr_len(headers)) {
 	byte = octstr_get_char(headers, off);
-	val = NULL;
 	
 	if (byte == -1) {
 	    warning(0, "read past header octet!");
@@ -372,25 +360,15 @@ HTTPHeader *unpack_headers(Octstr *headers)
 	}
 	else if (byte >= 128) {  /* well-known-header */
 	    off++;
-	    val = decode_well_known_field(byte-0x80, headers, &off);
+	    decode_well_known_field(unpacked, byte-0x80, headers, &off);
 	} else if (byte > 31 && byte < 127) {
-	    val = decode_app_header(headers, &off);
+	    decode_app_header(unpacked, headers, &off);
 	} else {
 	    warning(0, "Unsupported token/whatever header (start 0x%x)", byte);
 	    break;
 	}
-	/*
-	 * append new header
-	 */
-	if (val != NULL) {
-	    if (first == NULL) first = prev = val;
-	    else {
-		prev->next = val;
-		prev = val;
-	    }
-	}
     }
-    return first;
+    return unpacked;
 }	
 
 

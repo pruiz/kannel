@@ -27,7 +27,6 @@
 #include "thread.h"
 #include "socket.h"
 #include "conffile.h"
-#include "http.h"
 #include "http2.h"
 #include "octstr.h"
 #include "list.h"
