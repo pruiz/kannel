@@ -15,6 +15,8 @@
 static int is_cr(int c);
 static int is_lf(int c);
 static int islwspchar(int c);
+static long octstr_drop_leading_blanks(Octstr **header_value);
+static void drop_separator(Octstr **header_value, long *pos);
 static int parse_preamble(Octstr **mime_content, Octstr *boundary);
 static long parse_transport_padding(Octstr *mime_content, long pos);
 static long parse_terminator(Octstr *mime_content, long pos);
@@ -61,6 +63,11 @@ static int parse_tail(Octstr **multipart, Octstr *part_delimiter,
  * appendix D. PAP, chapter 8 defines how MIME multipart message is used by PAP
  * protocol. Functions called by mime_parse remove parsed parts from the mime
  * content. 
+ * Input: pointer to mime boundary and mime content
+ * Output: Pointer to pap control document and push data, if parsable, NULL
+ * otherwise. If there is a capabilities document, pointer to this is return-
+ * ed, too. If there is none, or , pointer to NULL instead. 
+ * In addition, return 1 if parsing was succesfull, 0 otherwise.
  */
 
 int mime_parse(Octstr *boundary, Octstr *mime_content, Octstr **pap_content, 
@@ -68,6 +75,11 @@ int mime_parse(Octstr *boundary, Octstr *mime_content, Octstr **pap_content,
                Octstr **rdf_content)
 {
     int ret;
+
+    *pap_content = NULL;
+    *push_data = NULL;
+    *content_headers = NULL;
+    *rdf_content = NULL;
 
     if (parse_preamble(&mime_content, boundary) < 0) {
         warning(0, "erroneous preamble");
@@ -88,6 +100,7 @@ int mime_parse(Octstr *boundary, Octstr *mime_content, Octstr **pap_content,
         warning(0, "erroneous content entity (push message)");
         return 0;
     } else if (ret == 0) {
+        gw_assert(*rdf_content == NULL);
         parse_epilogue(&mime_content);
         gw_assert(octstr_len(mime_content) == 0);
         return 1;
@@ -222,13 +235,13 @@ static int parse_body_part (Octstr **multipart, Octstr *boundary,
         } else {
 	    octstr_delete(*multipart, close_delimiter_pos, 
                 end_pos - close_delimiter_pos);
-            octstr_destroy(*body_part);
             *body_part = octstr_duplicate(*multipart);
             octstr_delete(*multipart, 0, end_pos);
 	    goto last_part;
         }
     }
 
+    *body_part = octstr_create("");
     octstr_split_by_pos(multipart, body_part, boundary_pos);
 
     if (parse_tail(multipart, part_delimiter, 0, &next_part_pos) < 0) {
@@ -274,10 +287,17 @@ static int parse_encapsulation(Octstr **mime_content, Octstr *boundary,
         return -1;
     if (pass_data_headers(push_data, content_headers) == 0)
         return -1;
-    if (ret == 0)
+
+    if (ret == 0) {
+        *rdf_content = NULL;
         return 0;
-    if (parse_body_part(mime_content, boundary, rdf_content) != 0)
+    }
+
+    if ((ret = parse_body_part(mime_content, boundary, rdf_content)) < 0 || 
+            ret > 0)
         return -1;
+    else if (ret == 0)
+        return 1;
     
     return 1;
 }
@@ -333,10 +353,14 @@ static int check_control_headers(Octstr **body_part)
 {
     if (check_control_content_type_header(body_part) == 0)
         return 0;
-    drop_optional_header(body_part, "Content-Transfer-Encoding:");
-    drop_optional_header(body_part, "Content-ID:");
-    drop_optional_header(body_part, "Content-Description:");
-    drop_extension_headers(body_part);
+    if (drop_optional_header(body_part, "Content-Transfer-Encoding:") == 0)
+        return 0;
+    if (drop_optional_header(body_part, "Content-ID:") == 0)
+        return 0;
+    if (drop_optional_header(body_part, "Content-Description:") == 0)
+        return 0;
+    if (drop_extension_headers(body_part) == 0)
+        return 0;
 
     return 1;
 }
@@ -443,13 +467,13 @@ static long parse_field_value(Octstr *pap_content, long pos)
     return pos;
 }
 
-static long parse_field_name(Octstr *pap_content, long pos)
+static long parse_field_name(Octstr *content, long pos)
 {
-    while (octstr_get_char(pap_content, pos) != ':' && 
-               pos < octstr_len(pap_content))
+    while (octstr_get_char(content, pos) != ':' && 
+               pos < octstr_len(content))
            ++pos;
 
-    if (pos == octstr_len(pap_content))
+    if (pos == octstr_len(content))
         return -1;
 
     return pos;
@@ -471,14 +495,22 @@ static int pass_data_headers(Octstr **body_part, List **data_headers)
         return 0;
     }
         
-    pass_optional_header(body_part, "Content-Transfer-Encoding:", 
-                         data_headers);
-    pass_optional_header(body_part, "Content-ID:", data_headers);
-    pass_optional_header(body_part, "Content-Description:", 
-                         data_headers);
-    pass_extension_headers(body_part, data_headers);
+    if (pass_optional_header(body_part, "Content-Transfer-Encoding", 
+                             data_headers) < 0)
+        goto operror;
+    if (pass_optional_header(body_part, "Content-ID", data_headers) < 0)
+        goto operror;
+    if (pass_optional_header(body_part, "Content-Description", 
+                         data_headers) < 0)
+        goto operror;
+    if (pass_extension_headers(body_part, data_headers) == 0)
+        goto operror;
    
     return 1;
+
+operror:
+    warning(0, "MIME: pass_data_headers: an unparsable optional header");
+    return 0;
 }
 
 /*
@@ -520,52 +552,100 @@ error:
 }
 
 /*
- * Return 0 when not found, 1 otherwise.
+ * We try to find an optional header, so a failure to find one is not an 
+ * error. Return -1 when error, 0 when header name not found, 1 otherwise.
  */
 static int pass_optional_header(Octstr **body_part, char *name, 
                                 List **content_headers)
 {
     long content_pos,
          next_header_pos;
-    Octstr *osname;
+    Octstr *osname,
+           *osvalue;
 
     content_pos = next_header_pos = -1;
-    osname = octstr_imm(name);
+    osname = octstr_create(name);
+    osvalue = octstr_create("");
 
-    if ((content_pos = octstr_search(*body_part, octstr_imm(name), 0)) < 0)
-        return 0;
-    if ((next_header_pos = pass_field_value(body_part, &osname, 
+    if ((content_pos = octstr_search(*body_part, osname, 0)) < 0) 
+        goto noheader;
+    if ((next_header_pos = pass_field_value(body_part, &osvalue, 
 	     content_pos + octstr_len(osname))) < 0)
-        return 0;   
+        goto error;   
     if ((next_header_pos = 
 	     parse_terminator(*body_part, next_header_pos)) == 0)
-        return 0;
+        goto error;
 
-    http_header_add(*content_headers, name, octstr_get_cstr(osname));
+    drop_separator(&osvalue, &next_header_pos);
+    http_header_add(*content_headers, name, octstr_get_cstr(osvalue));
     octstr_delete(*body_part, content_pos, next_header_pos - content_pos);
 
+    octstr_destroy(osname);
+    octstr_destroy(osvalue);
     return 1;
+
+error:
+    octstr_destroy(osvalue);
+    octstr_destroy(osname);
+    return -1;
+
+noheader:
+    octstr_destroy(osvalue);
+    octstr_destroy(osname);
+    return 0;
 }
 
 /*
- * Extension headers are optional, see Push Message, chapter 6.2.
+ * Remove ':' plus spaces from the header value
+ */
+static void drop_separator(Octstr **header_value, long *pos)
+{
+   long count;
+
+   octstr_delete(*header_value, 0, 1);            /* remove :*/
+   count = octstr_drop_leading_blanks(header_value);
+   pos = pos - 1 - count;
+} 
+
+/*
+ * Return number of spaces dropped.
+ */
+static long octstr_drop_leading_blanks(Octstr **header_value)
+{
+    long count;
+
+    count = 0;
+    while (octstr_get_char(*header_value, 0) == ' ') {
+        octstr_delete(*header_value, 0, 1);
+        ++count;
+    }
+
+    return count;
+}
+
+/*
+ * Extension headers are optional, see Push Message, chapter 6.2. Field struc-
+ * ture is defined in rfc 822, chapter 3.2. Extension headers are defined in 
+ * rfc 2045, chapter 9, grammar in appendix A.
+ * Return 0 when error, 1 otherwise.
  */
 static int pass_extension_headers(Octstr **body_part, List **content_headers)
 {
-    long content_pos,
-         next_field_part_pos;  
+    long next_field_part_pos,
+         count;  
     Octstr *header_name,
-           *header_value;  
+           *header_value; 
 
     header_name = octstr_create("");
     header_value = octstr_create("");
+    count = 0;
+    next_field_part_pos = 0;
 
     do {
-        if ((content_pos = octstr_search(*body_part, 
-                 octstr_imm("Content"), 0)) < 0)
+        if ((octstr_search(*body_part, octstr_imm("Content"), 0)) < 0)
             goto end; 
         if ((next_field_part_pos = pass_field_name(body_part, &header_name,
-                 content_pos)) < 0)
+                 next_field_part_pos)) < 0)
             goto error;
         if ((next_field_part_pos = pass_field_value(body_part, &header_value, 
                  next_field_part_pos)) < 0)
@@ -573,11 +653,12 @@ static int pass_extension_headers(Octstr **body_part, List **content_headers)
         if ((next_field_part_pos = parse_terminator(*body_part, 
                  next_field_part_pos)) == 0)
             goto error;
+        drop_separator(&header_value, &next_field_part_pos);
         http_header_add(*content_headers, octstr_get_cstr(header_name), 
             octstr_get_cstr(header_value));
-    } while (!islwspchar(octstr_get_char(*body_part, next_field_part_pos)));
+    } while (islwspchar(octstr_get_char(*body_part, next_field_part_pos)));
 
-    octstr_delete(*body_part, content_pos, next_field_part_pos - content_pos);
+    octstr_delete(*body_part, 0, next_field_part_pos);
 
 /*
  * An intentional fall-through. We must eventually use a function for memory
@@ -600,7 +681,7 @@ static long pass_field_value(Octstr **body_part, Octstr **header,
     int c;
 
     while (((c = octstr_get_char(*body_part, pos)) != '\r' ) &&
-             pos < octstr_len(*body_part)){
+             pos < octstr_len(*body_part)) {
         octstr_format_append(*header, "%c", c);
         ++pos;
     }
@@ -612,11 +693,12 @@ static long pass_field_value(Octstr **body_part, Octstr **header,
 }
 
 static long pass_field_name(Octstr **body_part, Octstr **field_part, 
-                             long pos)
+                            long pos)
 {
     int c;
 
-    while ((c = octstr_get_char(*body_part, pos)) != ':') {
+    while (((c = octstr_get_char(*body_part, pos)) != ':') &&
+            pos < octstr_len(*body_part)) {
         octstr_format_append(*field_part, "%c", c);
         ++pos;
     }
@@ -636,6 +718,11 @@ static void parse_epilogue(Octstr **mime_content)
     octstr_dump(*mime_content, 0);
     octstr_delete(*mime_content, 0, octstr_len(*mime_content));
 }
+
+
+
+
+
 
 
 

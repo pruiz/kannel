@@ -2,7 +2,7 @@
  * Push PPG implementation. This module implements the general logic of a push
  * proxy gateway, as specified in WAP PPG Service.
  *
- * By Aarno Syvänen for Wapit Ltd.
+ * By Aarno Syvänen for Wapit Ltd and for Wiral Ltd.
  */
 
 #include <time.h>
@@ -1002,29 +1002,33 @@ no_transform:
 }
 
 /*
- * Transform X-WAP-Application headers as per PPG 6.1.2.1. AbsoluteURI format
- * for X-Wap-Application-Id is defined in PushMessage, 6.2.2.1. Note: handling
- * default application id is missing (an optional feature).
+ * Transform X-WAP-Application headers as per PPG 6.1.2.1. If push application
+ * id is wml.ua, add no header (this is default). AbsoluteURI format for X-Wap
+ * -Application-Id is defined in PushMessage, 6.2.2.1. 
  */
 static void check_x_wap_application_id_header(List **push_headers)
 {
-    Octstr *appid_content;
-    char *header_value;
+    Octstr *appid_content,
+           *vos;
     
     appid_content = http_header_find_first(*push_headers, 
         "X-WAP-Application-Id");
     
     if (appid_content == NULL) {
-        header_value = "2";                 /* assigned number for wml ua */
-        http_header_add(*push_headers, "X-WAP-Application-Id", header_value);
+        octstr_destroy(appid_content);
         return;
     }
 
     parse_appid_header(&appid_content);
     http_header_remove_all(*push_headers, "X-WAP-Application-Id");
-    http_header_add(*push_headers, "X-WAP-Application-Id", 
-                    octstr_get_cstr(appid_content));
+    vos = octstr_format("%d", 2);
+
+    if (octstr_compare(appid_content, vos) != 0) {
+        http_header_add(*push_headers, "X-WAP-Application-Id", 
+                        octstr_get_cstr(appid_content));
+    }
     
+    octstr_destroy(vos);
     octstr_destroy(appid_content);   
 }
 
@@ -1815,6 +1819,11 @@ static char *wina_uri[] =
 
 #define NUMBER_OF_WINA_URIS sizeof(wina_uri)/sizeof(wina_uri[0])
 
+/*
+ * X-Wap-Application-Id header is defined in Push Message, chapter 6.2.2.1.
+ * First check do we a header with an app-encoding field and a coded value. 
+ * If not, try to find push application id from table of wina approved values.
+ */
 static void parse_appid_header(Octstr **appid_content)
 {
     long pos,

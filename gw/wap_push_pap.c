@@ -183,9 +183,9 @@ static void http_read_thread(void *arg)
 	    goto berror;
         }
         
-        pap_content = octstr_create("");
+        /*pap_content = octstr_create("");
         push_data = octstr_create("");
-        rdf_content = octstr_create("");
+        rdf_content = octstr_create("");*/
 
         gw_assert(mime_content);
         if (!mime_parse(boundary, mime_content, &pap_content, &push_data, 
@@ -216,6 +216,7 @@ static void http_read_thread(void *arg)
             send_bad_message_response(client, pap_content, PAP_BAD_REQUEST);
             warning(0, "PAP: http_read_thread: non implemented pap feature"
                     " requested");
+            goto no_compile;
         } else {
 	    dict_put(http_clients, ppg_event->u.Push_Message.pi_push_id, 
                      client);

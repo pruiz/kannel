@@ -70,8 +70,8 @@ static si_2table_t si_elements[] = {
 #define NUMBER_OF_ELEMENTS sizeof(si_elements)/sizeof(si_elements[0])
 
 /*
- * Attributes (and start value of ) from attribute code page zero. These are
- * defined in si, chapter 9.3.2.
+ * Attributes (and start or whole value of ) from attribute code page zero. 
+ * These are defined in si, chapter 9.3.2.
  */
 
 static si_3table_t si_attributes[] = {
@@ -110,8 +110,7 @@ static si_2table_t si_URL_values[] = {
 
 /****************************************************************************
  *
- * Prototypes of internal functions. Functions tagged with wml may be common 
- * with wml. Note that 'Ptr' means here '*'.
+ * Prototypes of internal functions. Note that 'Ptr' means here '*'.
  */
 
 static int parse_document(xmlDocPtr document, Octstr *charset, 
@@ -311,7 +310,8 @@ static int parse_element(xmlNodePtr node, si_binary_t **sibxml)
 
 /*
  * Parse a text node of a si document. Ignore empty text nodes (space addi-
- * tions to certain points will produce these).
+ * tions to certain points will produce these). Si codes text nodes as an
+ * inline string.
  */
 
 static int parse_text(xmlNodePtr node, si_binary_t **sibxml)
