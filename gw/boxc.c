@@ -191,9 +191,11 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 	     * or would it?
 	     */
 	    ret = octstr_recv(boxc->fd, &os);
-	    if (ret < 0)
+	    if (ret < 1) {
+		if (ret == -1)
+		    error(0, "BOXC: Socket error, closing...");
 		return -1;	/* time to die */
-	    
+	    }
 	    pmsg = msg_unpack(os);
 	    if (pmsg == NULL)
 		goto error;

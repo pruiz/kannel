@@ -1,5 +1,10 @@
 1999-11-29    <rpr@rpr.wapit.com>
 
+	* gwlib/octstr.c, gw/*box.c: modified octstr_recv to return 1 for
+	data and 0 for EOF. Changed boxes accordingly 
+
+1999-11-29    <rpr@rpr.wapit.com>
+
 	* gwlib/*: renamed gwlog as log and separated socket functions to
 	own module 'socket.c'. Renamed remaining wapitlib as 'utils'
 

@@ -371,9 +371,18 @@ void main_loop()
 	    Octstr *pack;
 
 	    ret = octstr_recv(socket_fd, &pack);
-	    if (ret < 0) {
-		info(0, "Receive failed, apparently other end was closed/failed");
+	    if (ret == 0) {
+		info(0, "Connection closed by the Bearerbox");
 		break;
+	    }
+	    else if (ret == -1) {
+		info(0, "Connection to Bearerbox failed, reconnecting");
+	    reconnect:
+		socket_fd = tcpip_connect_to_server(bb_host, bb_port);
+		if (socket_fd > -1)
+		    continue;
+		sleep(10);
+		goto reconnect;
 	    }
 	    mutex_unlock(&socket_mutex);
 

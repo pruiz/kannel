@@ -55,7 +55,7 @@ static Msg *msg_receive(int s) {
 	Octstr *os;
 	Msg *msg;
 	
-	if (octstr_recv(s, &os) == -1)
+	if (octstr_recv(s, &os) < 1)
 		return NULL;
 	msg = msg_unpack(os);
 	if (msg == NULL)
