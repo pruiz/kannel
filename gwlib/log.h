@@ -65,9 +65,12 @@ void debug(const char *, int, const char *, ...) PRINTFLIKE2 ;
  * allows run-time configuration of what is and is not logged when debug
  * is called. `places' is a string of tokens, separated by whitespace and/or
  * commas, with trailing asterisks (`*') matching anything. For instance,
- * if `places' is "wsp.* wtp.* wapbox", then all places that begin with
- * "wsp." or "wtp." (including the dots) are logged, and so is the place
+ * if `places' is "wap.wsp.* wap.wtp.* wapbox", then all places that begin with
+ * "wap.wsp." or "wap.wtp." (including the dots) are logged, and so is the place
  * called "wapbox". Nothing else is logged at debug level, however.
+ * The 'places' string can also have negations, marked with '-' at the start,
+ * so that nothing in that place is outputted. So if the string is
+ * "wap.wsp.* -wap.wap.http", only wap.wsp is logged, but not http-parts on it
  */
 void set_debug_places(const char *places);
 

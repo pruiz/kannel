@@ -1,3 +1,10 @@
+2000-03-23    <Kalle Marjola <rpr@wapit.com>>
+
+	* gwlib/log.c|h: added negation to -D (debug place) command line
+	option, which is used with starting '-'
+
+	* gwlib/utils.h, doc/CodingStyle: commented -D option
+
 2000-03-23 Sanna Seppanen <sanna@wapit.com>
 	
 	* gwlib/http.c, http.h: added comments.

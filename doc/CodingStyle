@@ -129,4 +129,8 @@ Log message at the `debug' level: naming convention for `place'
 
 	If you need more subsystems, please add them here as well.
 
+	Debugging places can be set via '-D' (or --debug) command line
+	option, with format like "wap.* bb.csdr" (see gwlib/log.h). Any 
+	places need to be excluded from the set are marked with
+	preceding '-', like "wap.* -wap.wsp.*"
 

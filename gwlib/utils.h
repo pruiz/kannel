@@ -31,8 +31,9 @@ int write_variable_value(MultibyteInt value, Octet *dest);
 /* reverse the value of an octet */
 Octet reverse_octet(Octet source);
 
-/* parse command line arguments and set options '-v', '-F' and '-V'
- * (output-level, logfile name, logfile output-level)
+/* parse command line arguments and set options '-v', '-D', '-F' and '-V'
+ * (or --verbosity, --debug, --logfile, --fileverbosity, respectively)
+ *
  * Any other argument starting with '-' calls 'find_own' function,
  * which is provided by the user. If set to NULL, these are ignored
  * (but error message is put into stderr)
