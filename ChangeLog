@@ -1,3 +1,8 @@
+2004-09-27  Stipe Tolj  <stolj@wapme.de>
+    * gw/smsc/smsc_http.c: fixed a binary MT bug (when DC_8BIT ahs been set) and
+      various improvements for passing parameters to the HTTP request. Added
+      credits to Tobias Weber <weber@wapme.de> who did improvements on the code.
+
 2004-09-27 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: fixed stupid bug that dlr lookup was
       made with source instead of destination address (in dlr

@@ -106,7 +106,8 @@
  *  password = YYY
  *  
  * Kalle Marjola for Project Kannel 2001
- * Stipe Tolj <tolj@wapme-systems.de>
+ * Stipe Tolj <stolj@wapme.de>
+ * Tobias Weber <weber@wapme.de>
  */
 
 #include <sys/types.h>
@@ -513,16 +514,18 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
  *  o bruHTT v1.3L (for MO traffic) 
  *  o bruHTP v2.1 (date 22.04.2003) (for MT traffic)
  *
- * Stipe Tolj <tolj@wapme-systems.de>
+ * Stipe Tolj <stolj@wapme.de>
+ * Tobias Weber <weber@wapme.de>
  */
 
 /* MT related function */
 static void brunet_send_sms(SMSCConn *conn, Msg *sms)
 {
     ConnData *conndata = conn->data;
-    Octstr *url, *tid;
+    Octstr *url, *tid, *xser;
     List *headers;
     char id[UUID_STR_LEN + 1];
+    int dcs;
 
     /* 
      * Construct TransactionId.
@@ -533,36 +536,69 @@ static void brunet_send_sms(SMSCConn *conn, Msg *sms)
     tid = octstr_create(id);
     octstr_replace(tid, octstr_imm("-"), octstr_imm(""));
 
-    /* format the URL for call */
-    url = octstr_format("%S?"
-        "CustomerId=%E&MsIsdn=%E&Originator=%E&MessageType=%E"
-        "&Text=%E&TransactionId=%E"
-        "&SMSCount=1&ActionType=A&ServiceDeliveryType=P", /* static parts */
-        conndata->send_url,
-        conndata->username, sms->sms.receiver, sms->sms.sender,
-        (octstr_len(sms->sms.udhdata) ? octstr_imm("B") : octstr_imm("S")),
-        sms->sms.msgdata, tid);
-
-    /* add binary UDH header */
-    if (octstr_len(sms->sms.udhdata)) {
-        octstr_format_append(url, "&XSer=01%02x%E", octstr_len(sms->sms.udhdata), 
-                             sms->sms.udhdata);
-    }
-
-    /* Proxy any constant URI string from the config directive 'system-id' */
-    if (octstr_len(conndata->proxy))
-        octstr_format_append(url,"&%S", conndata->proxy);
-
+    /* form the basic URL */
+    url = octstr_format("%S?MsIsdn=%E&Originator=%E",
+        conndata->send_url, sms->sms.receiver, sms->sms.sender);
+    
     /* 
-     * We use &binfo=<foobar> from sendsms interface to encode any additionaly
-     * proxied parameters, ie. billing information.
+     * We use &binfo=<foobar> from sendsms interface to encode
+     * additional paramters. If a mandatory value is not set,
+     * a default value is applied
      */
     if (octstr_len(sms->sms.binfo)) {
         octstr_url_decode(sms->sms.binfo);
         octstr_format_append(url, "&%S", sms->sms.binfo);
     }
+    /* CustomerId */
+    if (octstr_search(url, octstr_create("CustomerId="), 0) == -1) {
+        octstr_format_append(url, "&CustomerId=%S", conndata->username);
+    }
+    /* TransactionId */
+    if (octstr_search(url, octstr_create("TransactionId="), 0) == -1) {
+        octstr_format_append(url, "&TransactionId=%S", tid);
+    }
+    /* SMSCount */
+    if (octstr_search(url, octstr_create("SMSCount="), 0) == -1) {
+        octstr_format_append(url, "&%s", "SMSCount=1");
+    }
+    /* ActionType */
+    if (octstr_search(url, octstr_create("ActionType="), 0) == -1) {
+        octstr_format_append(url, "&%s", "ActionType=A");
+    }
+    /* ServiceDeliveryType */
+    if (octstr_search(url, octstr_create("ServiceDeliveryType="), 0) == -1) {
+        octstr_format_append(url, "&%s", "ServiceDeliveryType=P");
+    }
 
-    headers = list_create();
+    /* if coding is not set and UDH exists, assume DC_8BIT
+     * else default to DC_7BIT */
+    if (sms->sms.coding == DC_UNDEF)
+        sms->sms.coding = octstr_len(sms->sms.udhdata) > 0 ? DC_8BIT : DC_7BIT;
+
+    if (sms->sms.coding == DC_8BIT)
+        octstr_format_append(url, "&MessageType=B&Text=%H", sms->sms.msgdata);
+    else
+        octstr_format_append(url, "&MessageType=S&Text=%E", sms->sms.msgdata);
+
+    dcs = fields_to_dcs(sms,
+        (sms->sms.alt_dcs != SMS_PARAM_UNDEFINED ? sms->sms.alt_dcs : 0));
+
+    /* XSer processing */    
+    xser = octstr_create("");
+    /* XSer DCS values */
+    if (dcs != 0 && dcs != 4)
+        octstr_format_append(xser, "0201%02x", dcs & 0xff);
+    /* add UDH header */
+    if (octstr_len(sms->sms.udhdata)) {
+        octstr_format_append(xser, "01%02x%H", octstr_len(sms->sms.udhdata), 
+                             sms->sms.udhdata);
+    }
+    if (octstr_len(xser) > 0)
+        octstr_format_append(url, "&XSer=%S", xser);
+    octstr_destroy(xser);
+
+
+    headers = http_create_empty_headers();
     debug("smsc.http.brunet", 0, "HTTP[%s]: Sending request <%s>",
           octstr_get_cstr(conn->id), octstr_get_cstr(url));
 
@@ -721,7 +757,7 @@ static void brunet_receive_sms(SMSCConn *conn, HTTPClient *client,
  * Xidris - An austrian aggregator 
  * Implementing version 1.3, 06.05.2003
  *
- * Stipe Tolj <tolj@wapme-systems.de>
+ * Stipe Tolj <stolj@wapme.de>
  */
 
 /* MT related function */
