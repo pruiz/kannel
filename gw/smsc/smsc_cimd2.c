@@ -76,6 +76,7 @@ enum {
     P_DESTINATION_ADDRESS = 21,
     P_ORIGINATING_ADDRESS = 23,
     P_ORIGINATING_IMSI = 26,
+    P_ALPHANUMERIC_ORIGINATING_ADDRESS = 27,
     P_ORIGINATED_VISITED_MSC = 28,
     P_DATA_CODING_SCHEME = 30,
     P_USER_DATA_HEADER = 32,
@@ -133,6 +134,7 @@ parameters[] = {
     { "originating address", P_ORIGINATING_ADDRESS, 20, P_ADDRESS },
     /* IMSI is International Mobile Subscriber Identity number */
     { "originating IMSI", P_ORIGINATING_IMSI, 20, P_ADDRESS },
+    { "alphanumeric originating address", P_ALPHANUMERIC_ORIGINATING_ADDRESS, 11, P_STRING },
     { "originated visited MSC", P_ORIGINATED_VISITED_MSC, 20, P_ADDRESS },
     { "data coding scheme", P_DATA_CODING_SCHEME, 3, P_INT, 0, 255 },
     { "user data header", P_USER_DATA_HEADER, 280, P_HEX },
@@ -1207,6 +1209,7 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix)
     int spaceleft;
     long truncated;
     int dcs = 0;
+    int setvalidity = 0;
 
     gw_assert(msg != NULL);
     gw_assert(msg->type == sms);
@@ -1223,13 +1226,6 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix)
         return NULL;
     }
 
-    if (!parm_valid_address(msg->sms.sender)) {
-        warning(0, "cimd2_submit_msg: non-digits in "
-                "originating phone number '%s', discarded",
-                octstr_get_cstr(msg->sms.sender));
-        return NULL;
-    }
-
     packet = packet_create(SUBMIT_MESSAGE, BOGUS_SEQUENCE);
 
     packet_add_address_parm(packet, P_DESTINATION_ADDRESS, msg->sms.receiver);
@@ -1239,22 +1235,67 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix)
      * fill in "600" as the sender number, the user sees "400600").
      * Since we have no way to ask what this number is, it has to
      * be configured. */
-    if (octstr_len(sender_prefix) == 0) { /* Speed up the default case */
-        packet_add_address_parm(packet, P_ORIGINATING_ADDRESS,
-                                msg->sms.sender);
-    } else if (octstr_compare(sender_prefix, octstr_imm("never")) != 0) {
-        if (octstr_ncompare(sender_prefix, msg->sms.sender,
-                            octstr_len(sender_prefix)) == 0) {
-            Octstr *sender;
-            sender = octstr_copy(msg->sms.sender,
-                octstr_len(sender_prefix), octstr_len(msg->sms.sender));
-            packet_add_address_parm(packet, P_ORIGINATING_ADDRESS, sender);
-            octstr_destroy(sender);
-        } else {
-            warning(0, "CIMD2: Sending message with originating address <%s>, "
-                       "which does not start with the sender-prefix.",
-                    octstr_get_cstr(msg->sms.sender));
+    
+    /* Quick and dirty check to see if we are using alphanumeric sender */
+    if (parm_valid_address(msg->sms.sender)) {
+        /* We are not, so send in the usual way */
+        /* Speed up the default case */
+        if (octstr_len(sender_prefix) == 0) {
+            packet_add_address_parm(packet, P_ORIGINATING_ADDRESS,msg->sms.sender);
         }
+        else if (octstr_compare(sender_prefix, octstr_imm("never")) != 0) {
+            if (octstr_ncompare(sender_prefix, msg->sms.sender,
+                                octstr_len(sender_prefix)) == 0) {
+                Octstr *sender;
+                sender = octstr_copy(msg->sms.sender,
+                                     octstr_len(sender_prefix), octstr_len(msg->sms.sender));
+                packet_add_address_parm(packet, P_ORIGINATING_ADDRESS, sender);
+                octstr_destroy(sender);
+            } else {
+                warning(0, "CIMD2: Sending message with originating address <%s>, "
+                        "which does not start with the sender-prefix.",
+                        octstr_get_cstr(msg->sms.sender));
+            }
+        }
+    }
+    else {
+        /* The test above to check if sender was all digits failed, so assume we want alphanumeric sender */
+        packet_add_string_parm(packet, P_ALPHANUMERIC_ORIGINATING_ADDRESS,msg->sms.sender);
+    }
+
+    /* Add the validity period if necessary.  This sets the relative validity
+     * period as this is the description of the "validity" parameter of the
+     * sendsms interface.
+     *
+     * Convert from minutes to GSM 03.40 specification (section 9.2.3.12).
+     * 0-143   = 0 to 12 hours in 5 minute increments.
+     * 144-167 = 12hrs30min to 24hrs in 30 minute increments.
+     * 168-196 = 2days to 30days in 1 day increments.
+     * 197-255 = 5weeks to 63weeks in 1 week increments.
+     *
+     * This code was copied from smsc_at2.c. 
+     */
+    if (msg->sms.validity) {
+      if (msg->sms.validity > 635040)
+	setvalidity = 255;
+      if (msg->sms.validity >= 50400 && msg->sms.validity <= 635040)
+	setvalidity = (msg->sms.validity - 1) / 7 / 24 / 60 + 192 + 1;
+      if (msg->sms.validity > 43200 && msg->sms.validity < 50400)
+	setvalidity = 197;
+      if (msg->sms.validity >= 2880 && msg->sms.validity <= 43200)
+	setvalidity = (msg->sms.validity - 1) / 24 / 60 + 166 + 1;
+      if (msg->sms.validity > 1440 && msg->sms.validity < 2880)
+	setvalidity = 168;
+      if (msg->sms.validity >= 750 && msg->sms.validity <= 1440)
+	setvalidity = (msg->sms.validity - 720 - 1) / 30 + 143 + 1;
+      if (msg->sms.validity > 720 && msg->sms.validity < 750)
+	setvalidity = 144;
+      if (msg->sms.validity >= 5 && msg->sms.validity <= 720)
+	setvalidity = (msg->sms.validity - 1) / 5 - 1 + 1;
+      if (msg->sms.validity < 5)
+	setvalidity = 0;
+
+      packet_add_int_parm(packet, P_VALIDITY_PERIOD_RELATIVE, setvalidity);
     }
 
     /* Explicitly ask not to get status reports.
@@ -1265,10 +1306,16 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix)
 
     if (msg->sms.dlr_mask & 0x03)
     {
-	packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 14);
+        packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 14);
     }
     else
-	packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 0);
+        packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 0);
+
+    /* Turn off reply path as default.
+     * This avoids phones automatically asking for a reply
+     * However, it is a nice feature and could be enabled through a parameter
+     */
+    packet_add_int_parm(packet, P_REPLY_PATH, 0);
 
     truncated = 0;
 
