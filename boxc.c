@@ -46,7 +46,7 @@ BOXC *boxc_open(int fd)
     return nb;
     
 error:
-    error(errno, "Failed to create and open Box connection");
+    error(errno, "BOXC: Failed to create and open Box connection");
     return NULL;
 
 }

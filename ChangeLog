@@ -1,3 +1,9 @@
+1999-11-15    <rpr@rpr.wapit.com>
+
+	* bearerbox.c, boxc.c: Basic routing for WAP messages. Does not
+	work with connectioned sessions, if there are more than one WAP
+	BOX. Tough. Fixed later.
+	
 1999-11-15 Mikael Gueck <mikael.gueck@wapit.com>
 
 	* csdr.c: send and receive UDP datagrams.

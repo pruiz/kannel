@@ -132,10 +132,19 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 	return 0;			
     msg->source = bbt->id;
 
-    if (msg->msg_type == R_MSG_TYPE_MO)
-	return 0;	      	/* no direct destination, leave it
+    if (msg->msg_type == R_MSG_TYPE_MO) {
+	if (msg->msg_class == R_MSG_CLASS_SMS)
+	    return 0;	      	/* no direct destination, leave it
 				 * to load balancing functions */
-    
+	/* WAP
+	* .. if a WAP is connectioneless, send to any wap box.. so
+	* need to set the destination. But if the message is connectioned
+	* session, we must route all to same wap box... that later */
+
+	return 0;		/* TODO: Route! */
+
+	
+    }
     /* if we have gone this far, this must be a mobile terminated
      * (new) message from sms/wap box to SMSC/CSD Router
      *
@@ -157,6 +166,17 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 		&&
 		(thr->status == BB_STATUS_OK ||
 		 thr->status == BB_STATUS_CREATED)) {
+
+		/* Route all WAPs to single CSDR.
+		 * TODO: multiple routing
+		 */
+		if (msg->msg_class == R_MSG_CLASS_WAP &&
+		    thr->type == BB_TTYPE_CSDR) {
+
+		    msg->destination = thr->id;
+		    break;
+		}
+
 
 		if (thr->type == BB_TTYPE_SMSC)
 		    ret = smsc_receiver(thr->smsc,
@@ -403,6 +423,7 @@ static void *csdrouter_thread(void *arg)
 	 */
 	msg = csdr_get_message(us->csdr);
 	if (msg) {
+	    route_msg(us, msg);
 	    rq_push_msg(bbox->request_queue, msg);
 	    continue;	/* is this necessary? */
 	}
@@ -460,7 +481,7 @@ static void *wapboxconnection_thread(void *arg)
 	    error(0, "WAPBOXC: [%d] get message failed, killing", us->id);
 	    break;
 	} else if (ret > 0) {
-	    /* route_msg(us, msg); */
+	    route_msg(us, msg);
 	    rq_push_msg(bbox->reply_queue, msg);
 	    continue;
 	}
