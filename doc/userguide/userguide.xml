@@ -1894,51 +1894,6 @@ text = "No action spesified"
 </para>
 
 
-
-<sect3>
-<title>Setting up more complex services</title>
-
-    <para>The basic service system is very limited - it can only
-    answer to original requester and it cannot send UDH data, for
-    example. To create more sophisticated systems, an SMS push is
-    used.</para>
-
-    <para>The idea is to get the initial request, but then send no
-    reply. Instead, the reply (if any) is sent via HTTP
-    sendsms-interface as SMS Push (see below). This way the service
-    application has full control of the return content, and can do all
-    needed formatting beforehand.</para>
-
-    <para>Note that when no reply is wanted, remember to set the variable
-    <literal>max-messages</literal> to zero (0) so that no reply is sent, unless an
-    error occurs. Simple sample:</para>
-
-<programlisting>
-group = sms-service
-keyword = talk
-url = "http://my.applet.machine/Servlet/talk?sender=%p&amp;text=%r"
-max-messages = 0
-</programlisting>
-
-
-</sect3>
-<sect3>
-<title>Setting up operator specific services</title>
-
-   <para>Those running Kannel with several SMS centers might need to
-   define services according to the relying SMS center. To achieve this,
-   first you need to give an ID name for SMS center connections (see
-   above). Then use the 'accepted-smsc' variable to define which messages
-   can use that service.</para>
-
-<programlisting>
-group = sms-service
-keyword = weather
-accepted-smsc = SOL
-url = "http://my.applet.machine/Servlet/weather?sender=%p&amp;operator=SOL&amp;text=%r"
-</programlisting>
-
-</sect3>
 </sect2>
 
 <sect2>
@@ -2184,6 +2139,122 @@ concatenation = 1
   </para>
 
 </sect2>
+
+<sect2>
+<title>Setting up more complex services</title>
+
+    <para>The basic service system is very limited - it can only
+    answer to original requester and it cannot send UDH data, for
+    example. This chapter explains some more sophicated and complex
+    SMS service setups.</para>
+
+<sect3>
+<title>Redirected replies</title>
+
+    <para>The basic service system always sends the answer back to
+    original requester, but sometimes the content server needs to send
+    something to other terminals or delay the answer. To create 
+    such systems, an SMS push is used.</para>
+
+    <para>The idea is to get the initial request, but then send no
+    reply. Instead, the reply (if any) is sent via HTTP
+    sendsms-interface as SMS Push. This way the service
+    application has full control of the return content, and can do all
+    needed formatting beforehand.</para>
+
+    <para>Note that when no reply is wanted, remember to set the variable
+    <literal>max-messages</literal> to zero (0) so that no reply is sent, unless an
+    error occurs. Simple sample:</para>
+
+<programlisting>
+group = sms-service
+keyword = talk
+url = "http://my.applet.machine/Servlet/talk?sender=%p&amp;text=%r"
+max-messages = 0
+</programlisting>
+
+
+</sect3>
+<sect3>
+<title>Setting up operator specific services</title>
+
+   <para>Those running Kannel with several SMS centers might need to
+   define services according to the relying SMS center. To achieve this,
+   first you need to give an ID name for SMS center connections (see
+   above). Then use the <literal>accepted-smsc</literal> variable to 
+   define which messages can use that service.</para>
+
+<programlisting>
+group = sms-service
+keyword = weather
+accepted-smsc = SOL
+url = "http://my.applet.machine/Servlet/weather?sender=%p&amp;operator=SOL&amp;text=%r"
+</programlisting>
+
+</sect3>
+<sect3>
+<title>Setting up multi-operator Kannel</title>
+
+   <para>Sometimes there is a need for Kannel to listen to two (or
+   more) distinct SMS centers, and messages must be routed to services
+   according to wherefrom they came, and replies likewise must return
+   to same SMSC. This is done via <literal>smsc-id</literal>
+   magics. Here is a shortened sample configuration, which handles to
+   distinct SMS servers and services:</para>
+
+<programlisting>
+group = smsc
+smsc-id = A
+denied-smsc-id = B
+...
+
+group = smsc
+smsc-id = B
+denied-smsc-id = A
+...
+
+group = sms-service
+accepted-smsc = A
+url = "..."
+
+group = sms-service
+accepted-smsc = B
+url = "..."
+</programlisting>
+ 
+    <para>As can be seen, the <literal>smsc-id</literal> is used to
+    identify the SMS center wherefrom the message came from. Then, the
+    <literal>denied-smsc-id</literal> variable is used to prevent
+    messages originally from the other SMS center from being sent
+    through the other one. Finally 'sms-service' groups are defined
+    with <literal>accepted-smsc</literal> so that they only accept
+    messages from certain SMS center.</para>
+
+    <para>If you want to use SMS push services, requesters 
+    should then set the <literal>smsc</literal> request parameter, or
+    'sendsms-user' groups should be defined like this:</para>
+
+<programlisting>
+group = sendsms-user
+username = operator_A
+password = foo
+forced-smsc = A
+
+group = sendsms-user
+username = operator_B
+password = bar
+forced-smsc = B
+</programlisting>
+
+    <para>Note that if your SMS centers do not set the sender phone
+    number but rely on number transmitted, you should set
+    <literal>forced-number</literal> to all 'sendsms-user'
+    groups.</para>
+
+</sect3>
+
+</sect2>
+
 </sect1>
 
 <sect1>
