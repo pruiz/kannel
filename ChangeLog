@@ -1,3 +1,21 @@
+2000-02-14 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp*: Compiled with -pedantic. Some of warnings removed.
+
+	* wtp_events-decl.h: Added field no_cache_supported to the event 
+	RcvInvoke.
+
+	* wtp.c: Argument machine added to function wtp_tid_is_valid
+
+	* wtp_machine-decl.h: Field wsp_event added to wtp_machine
+
+	* wtp.c|h corresponding change to type declarations, constructors, 
+	destructors and debugging functions
+
+	* wtp_state-decl.h: wsp_event stored until tid is validated
+
+	* wtp_tid.c|h: Added code for tid validation
+
 2000-20-03 Sanna Seppanen <sanna@wapit.com>
 
 	* gwlib/octstr.h: gwlib/octstr.c: minor fixes.
