@@ -61,9 +61,3 @@ void wap_map_url_config_device_home(char *to);
 void wap_map_url_config(char *s);
 
 
-/* show mapping list at info level, after configuration is done. */
-void wap_map_url_config_info(void);
-
-/* show mapping list at info level, after configuration is done. */
-void wap_map_user_config_info(void);
-

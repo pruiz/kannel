@@ -32,9 +32,9 @@ struct user_map_struct {
  * TODO: identify a hash key that can be used and use that as lookup.
  */
 
-/* mapping lists */
+/* mapping storrage */
 static List *url_map = NULL;
-static List *user_map = NULL;
+static Dict *user_map = NULL;
 
 
 /********************************************************************
@@ -63,20 +63,34 @@ void wap_map_add_url(Octstr *name, Octstr *url, Octstr *map_url,
     list_append(url_map, entry);
 }
 
+
+static void wap_user_map_destroy(void *i) 
+{
+    struct user_map_struct *entry = i;
+
+    octstr_destroy(entry->name);
+    octstr_destroy(entry->user);
+    octstr_destroy(entry->pass);
+    octstr_destroy(entry->msisdn);
+    gw_free(entry);
+}
+
+
 void wap_map_add_user(Octstr *name, Octstr *user, Octstr *pass,
                       Octstr *msisdn) {
     struct user_map_struct *entry;
 
     if (user_map == NULL) 
-        user_map = list_create();
+        user_map = dict_create(32, wap_user_map_destroy);
 
     entry = gw_malloc(sizeof(*entry));
     entry->name = name;
     entry->user = user;
     entry->pass = pass;
     entry->msisdn = msisdn;
-    list_append(user_map, entry);
+    dict_put(user_map, entry->user, entry);
 }
+
 
 void wap_map_destroy(void) 
 {
@@ -99,21 +113,10 @@ void wap_map_destroy(void)
     url_map = NULL;
 }
 
-void wap_map_user_destroy(void) 
+
+void wap_map_user_destroy(void)
 {
-    long i;
-    struct user_map_struct *entry;
-    if (user_map != NULL) {
-        for (i = 0; i < list_len(user_map); i++) {
-            entry = list_get(user_map, i);
-            octstr_destroy(entry->name);
-            octstr_destroy(entry->user);
-            octstr_destroy(entry->pass);
-            octstr_destroy(entry->msisdn);
-            gw_free(entry);
-        }
-        list_destroy(user_map, NULL);
-    }
+    dict_destroy(user_map);
     user_map = NULL;
 }
 
@@ -144,36 +147,6 @@ void wap_map_url_config_device_home(char *to)
                      octstr_create(to), NULL, NULL, NULL, -1);
 }
 
-void wap_map_url_config_info(void)
-{
-    long i;
-    for (i = 0; url_map && i < list_len(url_map); i++) {
-        struct url_map_struct *entry;
-        entry = list_get(url_map, i);
-        info(0, "WSP: Added wap-url-map, name <%s>, url <%s>, map-url <%s>, "
-                "send-msisdn-query <%s>, send-msisdn-header <%s>, "
-                "send-msisdn-format <%s>, accept-cookies <%d>", 
-             octstr_get_cstr(entry->name), octstr_get_cstr(entry->url), 
-             octstr_get_cstr(entry->map_url), 
-             octstr_get_cstr(entry->send_msisdn_query), 
-             octstr_get_cstr(entry->send_msisdn_header), 
-             octstr_get_cstr(entry->send_msisdn_format), 
-             entry->accept_cookies);
-    }
-}
-
-void wap_map_user_config_info(void)
-{
-    long i;
-    for (i = 0; user_map && i < list_len(user_map); i++) {
-        struct user_map_struct *entry;
-        entry = list_get(user_map, i);
-        info(0, "WSP: Added wap-user-map, name <%s>, user <%s>, pass <%s>, "
-                "msisdn <%s>", octstr_get_cstr(entry->name), 
-             octstr_get_cstr(entry->user), octstr_get_cstr(entry->pass), 
-             octstr_get_cstr(entry->msisdn));
-    }
-}
 
 void wap_map_url(Octstr **osp, Octstr **send_msisdn_query, 
                  Octstr **send_msisdn_header, 
@@ -240,13 +213,10 @@ int wap_map_user(Octstr **msisdn, Octstr *user, Octstr *pass)
     long i;
     struct user_map_struct *entry;
 
-    for (i = 0; user_map && i < list_len(user_map); i++) {
-        entry = list_get(user_map, i);
-        if (octstr_compare(user, entry->user)==0 && 
-            octstr_compare(pass, entry->pass)==0) {
-            *msisdn = octstr_duplicate(entry->msisdn);
-            return 1;
-        }
+    entry = dict_get(user_map, user);
+    if (entry != NULL && octstr_compare(pass, entry->pass) == 0) {
+        *msisdn = octstr_duplicate(entry->msisdn);
+        return 1;
     }
     return 0;
 }
