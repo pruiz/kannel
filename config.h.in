@@ -4,6 +4,10 @@
 /* Define if you want to enable use of experimental HTTP implementation. */
 #undef USE_HTTP2
 
+/* Define one of these depending on which malloc wrapper you want to use. */
+#undef USE_GWMEM_NATIVE
+#undef USE_GWMEM_CHECK
+
 /* Define if you want log file timestamps in localtime instead of GMT. */
 #undef LOG_TIMESTAMP_LOCALTIME
 

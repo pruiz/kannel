@@ -4,9 +4,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "gwmem.h"
-#include "gwstr.h"
-#include "log.h"
+#include "gwlib.h"
 
 
 char *trim_ends(char *str) {

@@ -171,6 +171,20 @@ AC_ARG_ENABLE(http2,
   fi
 ])
 
+dnl --with-malloc=native/fast/checking
+
+AC_ARG_WITH(malloc,
+[  --with-malloc	 select malloc wrapper to use: native/checking], [
+  case "$withval" in
+  native) AC_DEFINE(USE_GWMEM_NATIVE) ;;
+  check) AC_DEFINE(USE_GWMEM_CHECK) ;;
+  *) echo "Unknown malloc wrapper $withval. Oops."; exit 1 ;;
+  esac
+], [
+  echo "malloc without"
+  AC_DEFINE(USE_GWMEM_CHECK)
+])
+
 dnl Final Output
 
 AC_OUTPUT(Makefile)

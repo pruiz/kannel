@@ -17,7 +17,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "gwassert.h"
 #include "gwlib.h"
 
 
@@ -1076,7 +1075,7 @@ static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
 const char *function) {
 	gw_assert_place(ostr != NULL, 
 		filename, lineno, function);
-	gw_assert_allocated_real(ostr,
+	gw_assert_allocated(ostr,
 		filename, lineno, function);
 	gw_assert_place(ostr->len >= 0,
 		filename, lineno, function);

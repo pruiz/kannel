@@ -1,3 +1,7 @@
+Sun Apr 23 23:44:30 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* README.autoconf: Obsolete, thus removed.
+
 Sun Apr 23 23:37:40 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* config.h.in, configure.in: Made it configure-time selectable
