@@ -426,18 +426,13 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
 
     /* XSer 0c: billing identifier */
     if (octstr_len(msg->sms.binfo)) {
-        if (octstr_len(msg->sms.binfo) % 2 != 0) {
-            error(0, "EMI2[%s]: XSer 0c billing identifier `%s' has odd-length.", 
-                  octstr_get_cstr(privdata->name), 
-                  octstr_get_cstr(msg->sms.binfo));
-        } else {
-            str = octstr_create("");
-            octstr_append_char(str, 0x0c);
-            octstr_append_char(str, octstr_len(msg->sms.binfo) / 2);
-            octstr_append(str, msg->sms.binfo);
-            octstr_append(emimsg->fields[E50_XSER], str);
-            octstr_destroy(str);
-        }
+        str = octstr_create("");
+        octstr_append_char(str, 0x0c);
+        octstr_append_char(str, octstr_len(msg->sms.binfo));
+        octstr_append(str, msg->sms.binfo);
+        octstr_binary_to_hex(str, 1);
+        octstr_append(emimsg->fields[E50_XSER], str);
+        octstr_destroy(str);
     }
 
     if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
@@ -644,7 +639,13 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 
             case 0x0c:  /* XSer 0c, billing identifier */
                 tempstr = octstr_copy(xser, 4, len * 2);
-                msg->sms.binfo = tempstr;
+                if (octstr_hex_to_binary(tempstr) == -1) {
+                    error(0, "EMI2[%s] Invalid XSer 0c billing identifier <%s>",
+                          octstr_get_cstr(privdata->name), 
+                          octstr_get_cstr(tempstr));
+                } else {
+                    msg->sms.binfo = tempstr;
+                }
                 break;
                 
             case 0x0d:  /* XSer 0d, single shot indicator */

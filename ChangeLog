@@ -1,3 +1,8 @@
+2003-10-28  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_emi.c: fixed billing identifier handling. We have to 
+      convert the binary information received from smsbox to hex for
+      the EMI XSer 0c representation.
+
 2003-10-27  Stipe Tolj  <tolj@wapme-systems.de>
     * wap/cookies.c: fixed BUG#95 causing wapbox to crash while comparing 
       cookies octstr_compare(). 
