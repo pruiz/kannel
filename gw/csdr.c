@@ -112,7 +112,6 @@ int csdr_close(CSDRouter *router)
 RQueueItem *csdr_get_message(CSDRouter *router)
 {
 
-	fd_set rset;
 	int length;
 	RQueueItem *item = NULL;
 	char data[64*1024];
@@ -120,7 +119,7 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	char server_ip[16], server_port[8];
 
 	struct sockaddr_in cliaddr, servaddr;
-	socklen_t len, servlen;
+	socklen_t clilen, servlen;
 
 	/* Initialize datasets. */
 	memset(data, 0, sizeof(data));
@@ -129,12 +128,9 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	memset(server_ip, 0, sizeof(server_ip));
 	memset(server_port, 0, sizeof(server_port));
 
-	FD_ZERO(&rset);
-	FD_SET(router->fd, &rset);
-
 	/* Maximum size of UDP datagram == 64*1024 bytes. */
-	len = sizeof(cliaddr);
-	length = recvfrom(router->fd, data, sizeof(data), 0, &cliaddr, &len);
+	clilen = sizeof(cliaddr);
+	length = recvfrom(router->fd, data, sizeof(data), 0, &cliaddr, &clilen);
 	if(length==-1) {
 		if(errno==EAGAIN) {
 			/* No datagram available, don't block. */
@@ -147,7 +143,7 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	servlen = sizeof(servaddr);
 	getsockname(router->fd, (struct sockaddr*)&servaddr, &servlen);
 
-	getnameinfo((struct sockaddr*)&cliaddr, len, 
+	getnameinfo((struct sockaddr*)&cliaddr, clilen, 
 		client_ip, sizeof(client_ip), 
 		client_port, sizeof(client_port), 
 		NI_NUMERICHOST | NI_NUMERICSERV);
