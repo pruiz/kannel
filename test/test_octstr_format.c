@@ -5,7 +5,7 @@
 #include "gwlib/gwlib.h"
 
 int main(void) {
-	Octstr *os, *os2, *os3;
+	Octstr *os, *os2, *os3, *os4;
 
 	gwlib_init();
 
@@ -22,6 +22,9 @@ int main(void) {
 	os3 = octstr_format("NULL=%p &os=%p", (void *) NULL, (void *) &os);
 	octstr_dump(os3, 0);
 	
+	os4 = octstr_format("Encode %E and limited %-10.10E", os, os);
+	octstr_dump(os4, 0);
+
 	octstr_destroy(os);
 	octstr_destroy(os2);
 	octstr_destroy(os3);

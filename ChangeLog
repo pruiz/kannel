@@ -1,3 +1,10 @@
+2001-03-16  Kalle Marjola  <rpr@wapit.com>
+
+	* gwlib/octstr.h|c: added %E to octstr_format, which takes an
+	Octstr and URL-encodes it into string
+
+	* test/test_octstr_format.c: added test for that format
+
 2001-03-16  Richard Braakman  <dark@wapit.com>
 
 	* When logging errors, do not report errno if it's not relevant.

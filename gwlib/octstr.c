@@ -1859,6 +1859,16 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
             octstr_truncate(new, format->prec);
         break;
 
+    case 'E':
+        new = octstr_duplicate(va_arg(*args, Octstr *));
+	octstr_url_encode(new);
+	/*
+	 * note: we use blind truncate - encoded character can get cut half-way.
+         */
+        if (format->has_prec)
+            octstr_truncate(new, format->prec);
+        break;
+
     case '%':
     	new = octstr_imm("%");
     	break;

@@ -525,6 +525,12 @@ void octstr_append_decimal(Octstr *ostr, long value);
  *				output as character string, except '\0'
  *				inside the string is included in the
  *				output
+ *
+ *                      E       Octstr *
+ *                              output as character string, except that
+ *                              contents are URL-encoded when need to. Note
+ *                              that trunctae is done afterwards and can
+ *                              cut escape '%EE' in half
  */
 Octstr *octstr_format(const char *fmt, ...);
 
