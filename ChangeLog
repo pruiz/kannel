@@ -1,6 +1,37 @@
+2002-09-04 Aarno Syv\212nen <aarno@gni.ch>
+    * STATUS: updated
+    * TODO: typo fix
+    * checks/check_ppg.sh: typo fix
+    * gw/bb_boxc.c: Reformatted. Store wap push messages to the store file.
+    * gw/pushkannel.conf: Added country-prefix to the example file.
+    * gw/wap_push_ota.c: Minor formatting change.
+    * gw/wap_push_ppg_pap_compiler.c: Ditto
+    * gw/wap_push_mime.c: Better public function comment
+    * gw/wap_push_ppg.c: Reformatted. Handling missing denied and allowed
+    lists. Remove X-WAP-Application-Id header, when user agent is wml.ua.
+    If there is none, assume wml.ua. Removed push.sia requirement, when push
+    is confirmed. Use 'any' as default bearer and network. Do not add Content-
+    Type header to responses. Use xml escapes when sending message fragment
+    to pi.
+    * gw/wap_push_ppg_pushuser.c: Reformatted. Use country-prefix. Handle 
+    missing allowed and denied lists. Do not add Content-Length to the 
+    responses. Edited function compare_octstr_sequence.
+    * gwlib/cfg.def: Added country prefix. 
+    * gwlib/gwthread_pthread.c: Reformatted. Dummu function for older MacOSXs
+    returns a value.
+    * gwlib/http.[ch]: Added function http_header_value.
+    * gwlib/octstr.[ch]: Added function octstr_insert_char. Memory leak wrapper
+    around function octstr_format_valist.
+    * gwlib/parse.[ch]: Added function parse_get_rest.
+    * test/test_ppg.c: Removed content type sia. Use mms.ua as X-WAP-Applica-
+    tion-Id value. Reformatted. Do not add Content-Length header. Use HTTP
+    POST in test_ppg requests.
+    * wap/wsp_strings.def: Added new content types and headers from newer wap
+    specs.
+
 2002-09-04  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smasi_pdu.c, test/test_cfg.c: fixed compiler warnings
-
+	
 2002-09-03  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smpp_pdu.c: fixed a bug in copy_until_nul() which caused to return
       octstr "" when the null-terminated string contained "\0". The return value
