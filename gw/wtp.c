@@ -568,7 +568,7 @@ WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl) {
         #define MSG(name) machine->name = msg_create(wdp_datagram);
         #define OCTSTR(name) machine->name = NULL;
         #define WSP_EVENT(name) machine->name = NULL;
-        #define TIMER(name) machine->name = timer_create(queue);
+        #define TIMER(name) machine->name = gwtimer_create(queue);
 	#define ADDRTUPLE(name) machine->name = NULL;
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
@@ -605,7 +605,7 @@ static void wtp_machine_destroy(void *p){
         #define MSG(name) msg_destroy(machine->name);
         #define OCTSTR(name) octstr_destroy(machine->name);
         #define WSP_EVENT(name) machine->name = NULL;
-        #define TIMER(name) timer_destroy(machine->name);
+        #define TIMER(name) gwtimer_destroy(machine->name);
 	#define ADDRTUPLE(name) wap_addr_tuple_destroy(machine->name);
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
@@ -684,7 +684,7 @@ static void start_timer_A(WTPMachine *machine) {
 
 	timer_event = wap_event_create(TimerTO_A);
 	timer_event->u.TimerTO_A.handle = machine->mid;
-	timer_start(machine->timer, L_A_WITH_USER_ACK, timer_event);
+	gwtimer_start(machine->timer, L_A_WITH_USER_ACK, timer_event);
 }
 
 
@@ -696,7 +696,7 @@ static void start_timer_R(WTPMachine *machine) {
 
 	timer_event = wap_event_create(TimerTO_R);
 	timer_event->u.TimerTO_R.handle = machine->mid;
-	timer_start(machine->timer, L_R_WITH_USER_ACK, timer_event);
+	gwtimer_start(machine->timer, L_R_WITH_USER_ACK, timer_event);
 }
 
 

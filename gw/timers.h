@@ -23,6 +23,9 @@
  * This way, it can be guaranteed that the calling thread will not
  * see a timer elapse after being destroyed, or while being extended,
  * because the elapse event will be deleted during such an operation.
+ *
+ * The timer_* functions have been renamed to gwtimer_* to avoid
+ * a name conflict on Solaris systems.
  */
 
 #ifndef TIMERS_H
@@ -44,12 +47,12 @@ void timers_shutdown(void);
  * Create a timer and tell it to use the specified output list when
  * it elapses.  Do not start it yet.  Return the new timer.
  */
-Timer *timer_create(List *outputlist);
+Timer *gwtimer_create(List *outputlist);
 
 /*
  * Destroy this timer and free its resources.  Stop it first, if needed.
  */
-void timer_destroy(Timer *timer);
+void gwtimer_destroy(Timer *timer);
 
 /*
  * Make the timer elapse after 'interval' seconds, at which time it
@@ -65,12 +68,12 @@ void timer_destroy(Timer *timer);
  * create the event, and passes control of it to the timer module with
  * this call.
  */
-void timer_start(Timer *timer, int interval, WAPEvent *event);
+void gwtimer_start(Timer *timer, int interval, WAPEvent *event);
 
 /*
  * Stop this timer.  If it has already elapsed, try to remove its
  * event from the output list.
  */
-void timer_stop(Timer *timer);
+void gwtimer_stop(Timer *timer);
 
 #endif

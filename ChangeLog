@@ -1,5 +1,10 @@
 2000-09-20  Richard Braakman  <dark@wapit.com>
 
+	* gw/timers.[ch], gw/wtp.c: Renamed timer_* to gwtimer_* to
+	avoid name conflict with system functions.  Sigh.
+
+2000-09-20  Richard Braakman  <dark@wapit.com>
+
 	* gw/timers.c: Reformatted according to new layout standard.
 
 2000-09-20  Richard Braakman  <dark@wapit.com>

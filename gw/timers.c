@@ -142,7 +142,7 @@ void timers_shutdown(void)
         warning(0, "Timers shutting down with %ld active timers.",
                 timers->heap->len);
     while (timers->heap->len > 0)
-        timer_stop(timers->heap->heap[0]);
+        gwtimer_stop(timers->heap->heap[0]);
 
     /* Kill timer thread */
     timers->stopping = 1;
@@ -158,7 +158,7 @@ void timers_shutdown(void)
 }
 
 
-Timer *timer_create(List *outputlist)
+Timer *gwtimer_create(List *outputlist)
 {
     Timer *t;
 
@@ -175,20 +175,20 @@ Timer *timer_create(List *outputlist)
     return t;
 }
 
-void timer_destroy(Timer *timer)
+void gwtimer_destroy(Timer *timer)
 {
     gw_assert(initialized);
 
     if (timer == NULL)
         return;
 
-    timer_stop(timer);
+    gwtimer_stop(timer);
     list_remove_producer(timer->output);
     wap_event_destroy(timer->event);
     gw_free(timer);
 }
 
-void timer_start(Timer *timer, int interval, WAPEvent *event)
+void gwtimer_start(Timer *timer, int interval, WAPEvent *event)
 {
     int wakeup = 0;
 
@@ -234,7 +234,7 @@ void timer_start(Timer *timer, int interval, WAPEvent *event)
         gwthread_wakeup(timers->thread);
 }
 
-void timer_stop(Timer *timer)
+void gwtimer_stop(Timer *timer)
 {
     gw_assert(initialized);
     gw_assert(timer != NULL);
