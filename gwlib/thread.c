@@ -81,13 +81,20 @@ void mutex_lock(Mutex *mutex)
     mutex->owner = gwthread_self();
 }
 
-
-void mutex_unlock(Mutex *mutex)
+int mutex_unlock_real(Mutex *mutex, char *file, int line)
 {
-    int ret;
-    gw_assert(mutex != NULL);
-    mutex->owner = -1;
-    ret = pthread_mutex_unlock(&mutex->mutex);
-    if (ret != 0)
-        panic(ret, "mutex_unlock: Mutex failure!");
+     int ret;
+    
+    if(mutex == NULL)
+    {
+       error(0,"trying to unlock a NULL mutex from %s at line %d",file,line);
+       return;
+    }
+     gw_assert(mutex != NULL);
+     mutex->owner = -1;
+     ret = pthread_mutex_unlock(&mutex->mutex);
+     if (ret != 0)
+        error(ret, "mutex_unlock: Mutex failure! called from file %s at line %d",file,line);
+     return ret;
 }
+
