@@ -1,3 +1,17 @@
+Fri Mar 31 02:17:52 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/socket.c: Changed PF_INET to AF_INET.
+	
+	* test/fakewap.c: Made command line parsing much more user friendly.
+	Also started cleaning up the implementation, so that it, for
+	example, uses gwlib and avoids using quite as many magic numbers
+	and convoluted logic, but got bored and decided to do something
+	else instead. Current version works, however. Removed some unwanted
+	Windows stuff (the goal is to make gwlib work in Windows and make
+	fakewap use that).
+	
+	Removed unnecessary option to set sender port number.
+
 Fri Mar 31 00:31:21 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* debian/*: Added Debian packaging files. The Debian package is not

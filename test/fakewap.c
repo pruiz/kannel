@@ -67,26 +67,26 @@
 
 #define MAX_SEND (0)
 
-static char usage[] =
-"Usage: \n\
-fakewap [-v] <my port> <host> <port> <max> <interval> <thrds> <version> <pdu_type> <tcl> <tid_new> <tid_increase> <url1> <url2>... \n\\n\
-where [-v] enables optional verbose mode, \n\
-<my port> is the first port used in this machine, each thread has own port\n\
-<host> and <port> is the host and the port to connect to, \n\
-<max> is the maximum number of messages to send (0 means infinitum), \n\
-<interval>, is the interval in seconds (floating point allowed), \n\
-between automatically generated messages,\n\
-<thrds> is the number of simultaneous client sessions,\n\
-<version> protocol version field, as an integer,\n\
-<pdu_type> pdu type, as an integer,\n\
-<tcl> transaction class, as an integer, \n\
-<tid_new> means that tid_new flag is set. This will force clearing of \n\
-tid cache of the responder, \n\
-<tid_increase> the difference between two tids,\n\
-<url> is the url to be requested. If there are several urls, they are \n\
-sent in random order.\n\
+static char usage[] = "\
+Usage: fakewap [options] url ...\n\
 \n\
-For example: fakewap -v 10008 my_host 9201 10 0 1 0 1 2 0 1 http://www.wapit.com/~liw/hello.wml\n";
+where options are:\n\
+\n\
+-h		help\n\
+-v		verbose\n\
+-g hostname	hostname or IP number of gateway (default: localhost)\n\
+-p port		port number of gateway (default: 9201)\n\
+-m max		maximum number of requests fakewap will make (default: 1)\n\
+-i interval	interval between requests (default: 1.0 seconds)\n\
+-c threads	number concurrent of clients simulated (default: 1)\n\
+-V protoversion	protocol version field, as an integer (default: 0)\n\
+-T pdu-type	PDU type, as an integer (default: 1)\n\
+-t tcl		transaction class, as an integer (default: 2)\n\
+-n		set tid_new flag in packets, forces gateway to flush cache\n\
+-d difference	difference between successive tid numbers (default: 1)\n\
+\n\
+The urls are fetched in random order.\n\
+";
 
 #include <errno.h>
 #include <math.h>
@@ -104,20 +104,18 @@ For example: fakewap -v 10008 my_host 9201 10 0 1 0 1 2 0 1 http://www.wapit.com
 #include <sys/param.h>
 #include <math.h>
 
-#ifdef _WINDOWS_
-#undef DEBUG
-#undef ERROR
-#undef PANIC
-#undef WARNING
-#undef INFO
-#else
-typedef int SOCKET;
+#if HAVE_GETOPT_H
+#include <getopt.h>
 #endif
+
 
 
 #include "gwlib/gwlib.h"
 
 #define GET_WTP_PDU_TYPE(hdr)  (hdr[0] >> 3)
+static int get_wtp_pdu_type(Octstr *hdr) {
+	return octstr_get_char(hdr, 0) >> 3;
+}
 
 #define WTP_PDU_INVOKE  1
 #define WTP_PDU_RESULT  2
@@ -129,11 +127,13 @@ typedef int SOCKET;
 */
 char **urls;
 int num_urls;
-char * hostname;
-double interval;
-unsigned short port;
-int max_send;
-unsigned short tid_addition; 
+
+Octstr *hostname = NULL;
+Octstr *gateway_addr = NULL;
+double interval = 1.0;
+unsigned short port = 9201;
+int max_send = 1;
+unsigned short tid_addition = 1; 
 Mutex *mutex;
 int threads = 1;
 int num_sent = 0;
@@ -164,11 +164,36 @@ unsigned char WSP_Disconnect[] =   {0x0E, 0x00, 0x00, 0x00, 0x05 };
     memcpy( dest, template, sizeof(template));\
     SET_TID( dest, tid )
 
+static void set_tid(Octstr *hdr, int tid) {
+	int c;
+	
+	c = octstr_get_char(hdr, 1);
+	c |= 0x7f & (tid >> 8);
+	octstr_set_char(hdr, 1, c);
+	octstr_set_char(hdr, 2, (unsigned char) tid);
+}
+
+
 #ifndef min
 #define min(a,b) (a < b ? a : b)
 #endif
 
 
+/*
+**  if -v option has been defined, function prints the trace message and
+**  the first bytes in the message header
+*/
+static void print_msg( const char * trace, unsigned char * msg,
+                int msg_len ) {
+    int i;
+    if (verbose) {
+        mutex_lock( mutex );
+        printf( "%s (len %d): ", trace, msg_len );
+        for (i = 0; i < msg_len && i < 16; i++) printf( "%02X ", msg[i] );
+        printf( "\n");
+        mutex_unlock( mutex );
+    }
+}
 /* Choose a random message from a table of messages. */
 static char *choose_message(char **urls, int num_urls) {
     /* the following doesn't give an even distribution, but who cares */
@@ -176,27 +201,13 @@ static char *choose_message(char **urls, int num_urls) {
 }
 /* returns TID */
 static unsigned short get_tid(void) {
+/* XXX this is not thread safe. --liw */
     static unsigned short tid = 0;
     tid += tid_addition;
     tid %= 1 << 15;
     return tid;
 }
 
-/*
-**  if -v option has been defined, function prints the trace message and
-**  the first bytes in the message header
-*/
-static void print_msg( unsigned short port, const char * trace, unsigned char * msg,
-                int msg_len ) {
-    int i;
-    if (verbose) {
-        mutex_lock( mutex );
-        printf( "%d: %s (len %d): ", port, trace, msg_len );
-        for (i = 0; i < msg_len && i < 16; i++) printf( "%02X ", msg[i] );
-        printf( "\n");
-        mutex_unlock( mutex );
-    }
-}
 
 /*
 **  Function stores WAP/WSP variable length integer to buffer and returns actual len
@@ -241,37 +252,43 @@ static int ReadVarIntLen( const unsigned char *buf )
 **  Function sends message to WAP GW
 */
 static int
-wap_msg_send( unsigned short port, SOCKET fd, const unsigned char * hdr,
+wap_msg_send( int fd, unsigned char * hdr,
             int hdr_len, const unsigned short * tid, unsigned char * data,
             int data_len )
 {
     int ret;
-    unsigned char msg[1024*64];
-    int msg_len = 0;
+    Octstr *datagram;
 
-    if (hdr != NULL) {
-        memcpy( msg, hdr, hdr_len );
-        msg_len = hdr_len;
-    }
+    datagram = octstr_create_empty();
+    if (hdr != NULL)
+    	octstr_append_data(datagram, hdr, hdr_len);
+
     if (tid != NULL) {
-        SET_TID( msg, *tid );
-        if (GET_WTP_PDU_TYPE(msg) == WTP_PDU_INVOKE)
+	set_tid(datagram, *tid);
+        if (get_wtp_pdu_type(datagram) == WTP_PDU_INVOKE)
         {
-            msg[3] |= 0x10; /* request ack every time */
+	    /* request ack every time */
+	    int c;
+	    c = octstr_get_char(datagram, 3);
+	    octstr_set_char(datagram, 3, c | 0x10);
         }
     }
-    if (data != NULL) {
-        memcpy( msg+msg_len, data, data_len );
-        msg_len += data_len;
-    }
-    ret = send( fd, msg, msg_len, 0 );
+
+    if (data != NULL)
+	octstr_append_data(datagram, data, data_len);
+    
+    ret = udp_sendto(fd, datagram, gateway_addr);
+
     if (ret == -1) {
         error(errno, "Sending to socket failed");
         return -1;
     }
-    else if (verbose) {
-        print_msg( port, "Sent packet", msg, msg_len );
+
+    if (verbose) {
+	debug("", 0, "Sent packet:");
+	octstr_dump(datagram, 0);
     }
+    octstr_destroy(datagram);
     return ret;
 }
 
@@ -284,16 +301,15 @@ wap_msg_send( unsigned short port, SOCKET fd, const unsigned char * hdr,
 **      < 0  => error,
 */
 static int
-wap_msg_recv( unsigned short port, SOCKET fd, const char * hdr, int hdr_len,
+wap_msg_recv( int fd, const char * hdr, int hdr_len,
               unsigned short tid, unsigned char * data, int data_len,
               int timeout )
 {
     int ret;
     unsigned char msg[1024*64];
     int msg_len = 0;
-    struct timeval  tv;
-    fd_set readset;
     int    fResponderIsDead = 1;  /* assume this by default */
+    Octstr *datagram, *dummy;
 
     /*
     **  Loop until we get the expected response or do timeout
@@ -302,25 +318,25 @@ wap_msg_recv( unsigned short port, SOCKET fd, const char * hdr, int hdr_len,
     {
         if (timeout != 0)
         {
-            tv.tv_sec = timeout;
-            tv.tv_usec = 0;
-
-            FD_ZERO(&readset);
-            FD_SET( fd, &readset);
-
-            ret = select(fd+1, &readset, NULL, NULL, &tv);
-            if (ret == -1 || FD_ISSET(fd,&readset)==0) {
+	    ret = read_available(fd, timeout * 1000 * 1000);
+	    if (ret <= 0) {
                 info(0, "Timeout while receiving from socket.\n");
                 return fResponderIsDead ? -1 : 0;  /* continue if we got ack? */
-            }
+	    }
         }
-        ret = recv( fd, msg, sizeof(msg), 0 );
+	
+	ret = udp_recvfrom(fd, &datagram, &dummy);
+	if (ret == 0) {
+		octstr_get_many_chars(msg, datagram, 0, octstr_len(datagram));
+		msg_len = octstr_len(datagram);
+	}
+	octstr_destroy(datagram);
+	octstr_destroy(dummy);
 
         if (ret == -1) {
             error(errno, "recv() from socket failed");
             return -1;
         }
-        msg_len = ret;
 
         if (hdr != NULL) {
             /*
@@ -338,15 +354,15 @@ wap_msg_recv( unsigned short port, SOCKET fd, const char * hdr, int hdr_len,
             */
             else if (GET_WTP_PDU_TYPE(msg) == WTP_PDU_ACK &&
                      GET_TID(msg) == tid) {
-                print_msg( port, "Received tid verification", msg, msg_len );
-                wap_msg_send( port, fd, WTP_TidVe, sizeof(WTP_TidVe), &tid,
+                print_msg( "Received tid verification", msg, msg_len );
+                wap_msg_send( fd, WTP_TidVe, sizeof(WTP_TidVe), &tid,
                               NULL, 0 );
             }
             else if (GET_WTP_PDU_TYPE(msg) == WTP_PDU_ABORT) {
-                print_msg( port, "Received WTP Abort", msg, msg_len );
+                print_msg( "Received WTP Abort", msg, msg_len );
             }
             else {
-                print_msg( port, "Received unexpected message", msg, msg_len );
+                print_msg( "Received unexpected message", msg, msg_len );
             }
             fResponderIsDead = 0;
         }
@@ -355,7 +371,7 @@ wap_msg_recv( unsigned short port, SOCKET fd, const char * hdr, int hdr_len,
             break;
         }
     }
-    print_msg( port, "Received packet", msg, msg_len );
+    print_msg( "Received packet", msg, msg_len );
 
     if (data != NULL && msg_len > hdr_len) {
         data_len = min( data_len, msg_len - hdr_len );
@@ -365,128 +381,6 @@ wap_msg_recv( unsigned short port, SOCKET fd, const char * hdr, int hdr_len,
     return data_len;
 }
 
-
-/*
-**  Function initializes and binds datagram socket.
-*/
-
-static SOCKET connect_to_server_with_port(char *hostname, unsigned short port,
-                                         unsigned short our_port)
-{
-    struct sockaddr_in addr;
-    struct sockaddr_in o_addr;
-    struct hostent * hostinfo;
-    struct linger dontlinger;
-    SOCKET s;
-
-    s = socket(AF_INET, SOCK_DGRAM, 0);
-    if (s == -1) {
-	error(errno, "socket failed");
-        goto error;
-    }
-
-    dontlinger.l_onoff = 1;
-    dontlinger.l_linger = 0;
-#if defined(SOL_TCP)
-    setsockopt(s, SOL_TCP, SO_LINGER, &dontlinger, sizeof(dontlinger));
-#else
-{
-    /* XXX no error trapping */
-    struct protoent *p = getprotobyname("tcp");
-    setsockopt(s, p->p_proto, SO_LINGER, (void *)&dontlinger, sizeof(dontlinger));
-}
-#endif
-    hostinfo = gethostbyname(hostname);
-    if (hostinfo == NULL) {
-	error(errno, "gethostbyname failed");
-        goto error;
-    }
-
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    addr.sin_addr = *(struct in_addr *) hostinfo->h_addr;
-    addr.sin_addr = *(struct in_addr *) hostinfo->h_addr;
-
-    if (our_port > 0) {
-        o_addr.sin_family = AF_INET;
-        o_addr.sin_port = htons(our_port);
-        o_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-        if (bind(s, (const void *)&o_addr, sizeof(o_addr)) == -1) {
-            error(0, "bind to local port %d failed", our_port);
-            goto error;
-        }
-    }
-    if (connect(s, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
-	error(errno, "error connecting to server `%s' at port `%d'",
-	    hostname, port);
-        goto error;
-    }
-
-    return s;
-
-error:
-    if (s >= 0)
-        close(s);
-    return -1;
-}
-
-#ifdef _WINDOWS_
-/*
-**  We cannot use wapit library in Windows
-*/
-static void panic(int level, const char * args, ...)
-{
-    va_list ap;
-
-    va_start(ap, args);
-    vprintf( args, ap );
-    va_end( ap );
-    printf( "\n");
-    exit(level);
-}
-
-static void error(int level, const char * args, ...)
-{
-    va_list ap;
-
-    printf("Last socket error=%d\n", WSAGetLastError());
-    va_start(ap, args);
-    vprintf( args, ap );
-    va_end( ap );
-    printf( "\n");
-}
-
-static void info(int level, const char * args, ...)
-{
-    va_list ap;
-
-    va_start(ap, args);
-    vprintf( args, ap );
-    va_end( ap );
-    printf( "\n");
-}
-
-/*
-**  UNCHECKED! mappings to WINAPI
-*/
-static Mutex *mutex_create() {
-    return (Mutex *)CreateMutex( NULL, FALSE, NULL );
-}
-
-static void mutex_lock( Mutex *mutex ) {
-    WaitForSingleObject( (HANDLE)mutex, INFINITE );
-}
-
-static void mutex_unlock( Mutex *mutex) {
-    ReleaseMutex((HANDLE)mutex);
-}
-
-static pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size) {
-    DWORD id;
-    return CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)func,arg,0,&id)? id : -1;
-}
-#endif
 
 static int get_next_transaction(void) {
     int i_this;
@@ -504,8 +398,7 @@ static int get_next_transaction(void) {
 static void *
 client_session( void * arg)
 {
-    SOCKET fd;
-    unsigned short our_port = 0;
+    int fd;
     int ret;
     int url_len = 0, url_off = 0;
     double nowsec, lastsec, tmp;
@@ -521,12 +414,9 @@ client_session( void * arg)
     int connection_retries = 0;
     int i_this;
 
-    our_port = (unsigned short)(unsigned)arg;
-
-    fd = connect_to_server_with_port( hostname, port, our_port);
+    fd = udp_client_socket();
     if (fd == -1)
-        panic(0, "couldn't connect host ");
-    debug("test.fakewap", 0, "Connected socket to host.");
+        panic(0, "Couldn't create socket.");
 
     gettimeofday(&now, &tz);
     lastsec = (double) now.tv_sec + now.tv_usec / 1e6;
@@ -546,13 +436,13 @@ client_session( void * arg)
         **  Connect, save sid from reply and finally ack the reply
         */
         tid = get_tid();
-        ret = wap_msg_send( our_port, fd, WSP_Connect, sizeof(WSP_Connect),
+        ret = wap_msg_send( fd, WSP_Connect, sizeof(WSP_Connect),
                             &tid, NULL, 0 );
 
         if (ret == -1) panic(0, "Send WSP_Connect failed");
 
         CONSTRUCT_EXPECTED_REPLY_HDR( reply_hdr, WSP_ConnectReply, tid );
-        ret = wap_msg_recv( our_port, fd, reply_hdr, sizeof(WSP_ConnectReply),
+        ret = wap_msg_recv( fd, reply_hdr, sizeof(WSP_ConnectReply),
                             tid, buf, sizeof(buf), timeout );
 
         if (ret == -1) panic(0, "Receive WSP_ConnectReply failed");
@@ -569,14 +459,14 @@ client_session( void * arg)
             if (connection_retries++ > 3) {
                 panic(0, "Cannot connect WAP GW!");
             }
-            wap_msg_send( our_port, fd, WTP_Abort, sizeof(WTP_Abort), &tid,
+            wap_msg_send( fd, WTP_Abort, sizeof(WTP_Abort), &tid,
                           NULL, 0 );
             continue;
         }
         else {
             connection_retries = 0;
         }
-        ret = wap_msg_send( our_port, fd, WTP_Ack, sizeof(WTP_Ack), &tid,
+        ret = wap_msg_send( fd, WTP_Ack, sizeof(WTP_Ack), &tid,
                             NULL, 0 );
 
         if (ret == -1) panic(0, "Send WTP_Ack failed");
@@ -589,16 +479,16 @@ client_session( void * arg)
         url_len = strlen(url);
         url_off = StoreVarInt( buf, url_len );
         memcpy( buf+url_off, url, url_len );
-        ret = wap_msg_send( our_port, fd, WSP_Get, sizeof(WSP_Get), &tid, buf,
+        ret = wap_msg_send( fd, WSP_Get, sizeof(WSP_Get), &tid, buf,
                             url_len+3 );
         if (ret == -1) break;
 
         CONSTRUCT_EXPECTED_REPLY_HDR( reply_hdr, WSP_Reply, tid );
-        ret = wap_msg_recv( our_port, fd, reply_hdr, sizeof(WSP_Reply),
+        ret = wap_msg_recv( fd, reply_hdr, sizeof(WSP_Reply),
                             tid, buf, sizeof(buf), timeout );
         if (ret == -1) break;
 
-        ret = wap_msg_send( our_port, fd, WTP_Ack, sizeof(WTP_Ack), &tid, NULL,
+        ret = wap_msg_send( fd, WTP_Ack, sizeof(WTP_Ack), &tid, NULL,
                             0 );
 
         if (ret == -1) break;
@@ -606,7 +496,7 @@ client_session( void * arg)
         /*
         **  Finally disconnect with the sid returned by connect reply
         */
-        ret = wap_msg_send( our_port, fd, WSP_Disconnect,
+        ret = wap_msg_send( fd, WSP_Disconnect,
                             sizeof(WSP_Disconnect), &tid, sid, sid_len );
 
         if (ret == -1) break;
@@ -640,59 +530,107 @@ client_session( void * arg)
 }
 
 
+static void help(void) {
+	info(0, "\n%s", usage);
+}
+
+
 
 /* The main program. */
 int main(int argc, char **argv)
 {
-    unsigned short our_port;
-    int i, org_threads;
+    int i, opt, org_threads;
     double delta;
+    int proto_version, pdu_type, tcl, tid_new;
 
     gw_init_mem();
 
-    if (argc > 2 && argv[1][0] == '-' && argv[1][1] == 'v') {
-        verbose = 1;
-        argv++;
-        argc--;
-    }
-    if (argc < 12)
-        panic(0, "%s", usage);
+    proto_version = 0;
+    pdu_type = 1;
+    tcl = 2;
+    tid_new = 0;
 
-#ifdef _WINDOWS_
-    {
-        WORD wVersionRequested = MAKEWORD( 2, 0 );
-        WSADATA wsaData;
-	int ret;
+    hostname = octstr_create("localhost");
 
-        ret = WSAStartup( wVersionRequested, &wsaData );
-        if ( ret != 0 ) {
-            panic( 0, "Windows socket api version is not supported, v2,0 is required\n");
-            /* Tell the user that we could not find a usable */
-            /* WinSock DLL.                                  */
-            return 0;
-        }
+    while ((opt = getopt(argc, argv, "hvg:p:P:m:i:t:V:T:t:nd:")) != EOF) {
+	switch (opt) {
+	case 'g':
+	    hostname = octstr_create(optarg);
+	    break;
+
+	case 'p':
+	    port = atoi(optarg);
+	    break;
+
+	case 'm':
+	    max_send = atoi(optarg);
+	    break;
+
+	case 'i':
+	    interval = atof(optarg);
+	    break;
+
+	case 'c':
+	    threads = atoi(optarg);
+	    break;
+
+	case 'V':
+	    proto_version = atoi(optarg);
+	    break;
+
+	case 'T':
+	    pdu_type = atoi(optarg);
+	    break;
+
+	case 't':
+	    tcl = atoi(optarg);
+	    break;
+
+	case 'n':
+	    tid_new = atoi(optarg);
+	    break;
+
+	case 'd':
+	    tid_addition = atoi(optarg);
+	    break;
+
+	case 'v':
+	    verbose = 1;
+	    break;
+	    
+	case 'h':
+	    help();
+	    break;
+	    
+	case '?':
+	default:
+	    error(0, "Unknown option %c", opt);
+	    help();
+	    panic(0, "Stopping.");
+	}
     }
-#endif
+
     time(&start_time);
 
-    our_port = (unsigned short)atoi(argv[1]);
-    hostname = argv[2];
-    port = (unsigned short)atoi(argv[3]);
-    max_send = atoi(argv[4]);
-    interval = atof(argv[5]);
-    threads = atoi(argv[6]);
-    WSP_Connect[3] += (atoi(argv[7])&3)<<6;
-    WSP_Connect[0] += (atoi(argv[8])&15)<<3;
-    WSP_Connect[3] += atoi(argv[9])&3;
-    WSP_Connect[3] += (atoi(argv[10])&1)<<5;
-    tid_addition = (unsigned short)atol(argv[11]);
-    urls = argv + 12;
-    num_urls = argc - 12;
+    if (optind >= argc)
+        panic(0, "%s", usage);
+
+    WSP_Connect[3] += (proto_version&3)<<6;
+    WSP_Connect[0] += (pdu_type&15)<<3;
+    WSP_Connect[3] += tcl&3;
+    WSP_Connect[3] += (tid_new&1)<<5;
+
+
+    gateway_addr = udp_create_address(hostname, port);
+
+    urls = argv + optind;
+    num_urls = argc - optind;
+
     srand((unsigned int) time(NULL));
 
     mutex = mutex_create();
 
-    info(0, "fakewap starting...\n");
+    info(0, "fakewap starting");
 
     if (threads < 1) threads = 1;
     org_threads = threads;
@@ -701,18 +639,16 @@ int main(int argc, char **argv)
     **  Start 'extra' client threads and finally execute the
     **  session of main thread
     */
-    for (i = 1; i < threads; i++) {
-        start_thread( 0, client_session, (void *)(unsigned)our_port, 0);
-        our_port++;
-    }
-    client_session((void *)(unsigned)our_port);
+    for (i = 1; i < threads; i++)
+        start_thread( 0, client_session, NULL, 0);
+    client_session(NULL);
 
     /*
     **  Wait the other sessions to complete
     */
     while (threads > 0) usleep( 1000 );
 
-    info(0, "\nfakewap complete.");
+    info(0, "fakewap complete.");
     info( 0, "fakewap: %d client threads made total %d transactions.", org_threads, num_sent);
     delta = difftime(end_time, start_time);
     info( 0, "fakewap: total running time %.1f seconds", delta);

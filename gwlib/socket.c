@@ -305,7 +305,7 @@ int read_available(int fd, long wait_usec)
 int udp_client_socket(void) {
 	int s;
 	
-	s = socket(PF_INET, SOCK_DGRAM, 0);
+	s = socket(AF_INET, SOCK_DGRAM, 0);
 	if (s == -1) {
 		error(errno, "Couldn't create a UDP socket");
 		return -1;
@@ -319,7 +319,7 @@ int udp_bind(int port) {
 	int s;
 	struct sockaddr_in sa;
 	
-	s = socket(PF_INET, SOCK_DGRAM, 0);
+	s = socket(AF_INET, SOCK_DGRAM, 0);
 	if (s == -1) {
 		error(errno, "Couldn't create a UDP socket");
 		return -1;

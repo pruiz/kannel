@@ -61,7 +61,6 @@
 #include "gwlib/gwlib.h"
 #include "urltrans.h"
 
-#include "html.h"
 #include "cgi.h"
 #include "msg.h"
 #include "bb.h"
