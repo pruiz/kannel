@@ -419,6 +419,8 @@ int main(int argc, char **argv)
     else
 	read_config("kannel.conf");
     
+    report_versions("wapbox");
+
     setup_signal_handlers();
     
     info(0, "------------------------------------------------------------");

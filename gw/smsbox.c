@@ -494,14 +494,15 @@ int main(int argc, char **argv)
 
     gwlib_init();
     cf_index = get_and_set_debugs(argc, argv, check_args);
-
-
+    
     socket_mutex = mutex_create();
 
     setup_signal_handlers();
     cfg = config_from_file(argv[cf_index], "kannel.conf");
     if (cfg == NULL)
 	panic(0, "No configuration, aborting.");
+
+    report_versions("smsbox");
 
     init_smsbox(cfg);
 

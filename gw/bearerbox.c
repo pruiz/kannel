@@ -392,6 +392,8 @@ int main(int argc, char **argv)
     if (cfg == NULL)
         panic(0, "No configuration, aborting.");
 
+    report_versions("bearerbox");
+
     flow_threads = list_create();
     
     starter(cfg);

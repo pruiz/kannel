@@ -1,3 +1,14 @@
+2000-10-17  Lars Wirzenius  <liw@iki.fi>
+
+    	* gwlib/gwlib.c: Reformatted to new coding style.
+	
+	* gw/shared.[ch]: New files to hold the function report_versions
+	(and other functions in the future). This function reports the
+	version of Kannel that starts up, and the host it runs on, and
+	the version of libxml.
+
+	* gw/bearerbox.c, gw/smsbox.c, gw/wapbox.c: Call report_versions.
+
 2000-10-17  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/urltrans.c: Changed the logic in the encode_for_url so that the
