@@ -870,12 +870,12 @@ static void pap_request_thread(void *arg)
         
         push_len = octstr_len(push_data); 
         http_header_remove_all(push_headers, "Content-Type");
-	    http_append_headers(push_headers, content_headers);
+	http_append_headers(push_headers, content_headers);
         change_header_value(&push_headers, "Content-Length", 
             octstr_get_cstr(plos = octstr_format("%d", push_len)));
         octstr_destroy(plos);
         octstr_destroy(content_header);
-	    http_destroy_headers(content_headers);
+	http_destroy_headers(content_headers);
 
         ppg_event = NULL;
         if ((compiler_status = pap_compile(pap_content, &ppg_event)) == -2) {
@@ -918,7 +918,7 @@ static void pap_request_thread(void *arg)
 	                goto not_acceptable;
 	            }   
             }        
-
+            
             debug("wap.push.ppg", 0, "PPG: http_read_thread: pap control"
                   " entity compiled ok");
             ppg_event->u.Push_Message.push_data = octstr_duplicate(push_data);
@@ -1742,10 +1742,10 @@ static void push_machine_assert(PPGPushMachine *pm)
  *       is SMS (some SMS centers would require this).
  *    c) the transformed message content type
  *
- * Returned flag tells was the transformation (if any) successfull or not. Error 
+ * Returned flag tells was the transformation (if any) successful or not. Error 
  * flag is returned when there is no push headers, there is no Content-Type header
  * or push content does not compile. We should have checked existence of push 
- * headers earlier, but let us be carefull.
+ * headers earlier, but let us be careful.
  */
 static int transform_message(WAPEvent **e, WAPAddrTuple **tuple, 
                              List *push_headers, int cless_accepted, Octstr **type)
@@ -1777,6 +1777,9 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
 
     if (!content_transformable(push_headers)) 
         goto no_transform;
+
+    content.charset = NULL;
+    content.type = NULL;
 
     content.body = (**e).u.Push_Message.push_data; 
     if (content.body == NULL)
@@ -2962,7 +2965,7 @@ static int get_mime_boundary(List *push_headers, Octstr *content_header,
     bstart = pos;
     while ((c = octstr_get_char(content_header, pos)) != -1) {
         if (c == ';' || (quoted && c == '"') || (!quoted && c == ' '))
-                break;
+             break;
         ++pos;
     }
     *boundary = octstr_copy(content_header, bstart, pos - bstart);
@@ -3246,12 +3249,11 @@ static void replace_octstr_char(Octstr *os1, Octstr *os2, long *pos)
  */
 static Octstr *set_smsc_id(List *headers, Octstr *username, int trusted_pi)
 {
-    Octstr *smscidos;
     Octstr *smsc_id = NULL;
 
-    smscidos = http_header_value(headers, octstr_imm("X-Kannel-SMSC"));
-    if (smscidos != NULL) {
-        return octstr_duplicate(smscidos);
+    smsc_id = http_header_value(headers, octstr_imm("X-Kannel-SMSC"));
+    if (smsc_id) {
+        return smsc_id;
     }
 
     if (!trusted_pi)
@@ -3273,12 +3275,11 @@ static Octstr *set_smsc_id(List *headers, Octstr *username, int trusted_pi)
  */
 static Octstr *set_dlr_url(List *headers, Octstr *username, int trusted_pi)
 {
-    Octstr *dlrurlos;
     Octstr *dlr_url = NULL;
 
-    dlrurlos = http_header_value(headers, octstr_imm("X-Kannel-DLR-Url"));
-    if (dlrurlos != NULL) {
-        return octstr_duplicate(dlrurlos);
+    dlr_url = http_header_value(headers, octstr_imm("X-Kannel-DLR-Url"));
+    if (dlr_url) {
+        return dlr_url;
     }
 
     if (!trusted_pi)
