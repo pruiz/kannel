@@ -1,3 +1,11 @@
+2001-02-06  Peter Grönholm  <peter@wapit.com>
+
+	* utils/kannel-stable-rh6x.spec: Added rpm spec file for Kannel
+	stable releases.
+
+	* utils/kannel-stable-rh7.spec: Added rpm spec file for Kannel
+	stable releases.
+
 2001-02-06  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsbox.c: Rewrote message-splitting functions because they
