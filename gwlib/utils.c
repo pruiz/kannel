@@ -292,29 +292,32 @@ void kannel_cfmakeraw (struct termios *tio){
 
     /* GNU cfmakeraw sets these flags so we had better too...*/
 
-    /* Control modes,*/
-    tio->c_cflag      &= ~(CSIZE|PARENB); /* Allow parity bits and size*/
-    tio->c_cflag      |= CS8;             /* Wow, eight bit bytes!!! */
+    /* Control modes */
+    /* Mask out character size (CSIZE), then set it to 8 bits (CS8).
+     * Enable parity bit generation in both directions (PARENB).
+     */
+    tio->c_cflag      &= ~(CSIZE|PARENB);
+    tio->c_cflag      |= CS8;
 
     /* Input Flags,*/
-
-    /* Break on SIGINT, the FSF set both ICRNL (translate CR -> NL) and 
-     * IGNCR (which cancels out  ICRNL) - leave this in case something 
-     * barfs, INLCR - translate NL to CR,IXON - enable Xon/Xoff, ISTRIP - 
-     * strip the eighth bit (do we really want to be doing this?), IGNBRK - 
-     * ignore break condition.*/
-    tio->c_iflag &= ~(BRKINT|ICRNL|IGNCR|IGNBRK|INLCR|IXON|ISTRIP|IGNBRK);
+    /* Turn off all input flags that interfere with the byte stream:
+     * BRKINT - generate SIGINT when receiving BREAK, ICRNL - translate
+     * NL to CR, IGNCR - ignore CR, IGNBRK - ignore BREAK,
+     * INLCR - translate NL to CR, IXON - use XON/XOFF flow control,
+     * ISTRIP - strip off eighth bit.
+     */
+    tio->c_iflag &= ~(BRKINT|ICRNL|IGNCR|IGNBRK|INLCR|IXON|ISTRIP);
 
     /* Other flags,*/
-
-    /* ECHO - echo input chars, ECHONL - always echo NL, even if ECHO is off
-     * ICANON - enable stuff like KILL, EOF, EOL etc in the stream, IEXTEN - 
-     * enable implementation dependant stuff, ISIG - generate signals in 
-     * response to chars like INTR, SUSP etc.*/
+    /* Turn off all local flags that interpret the byte stream:
+     * ECHO - echo input chars, ECHONL - always echo NL even if ECHO is off,
+     * ICANON - enable canonical mode (basically line-oriented mode),
+     * IEXTEN - enable implementation-defined input processing,
+     * ISIG - generate signals when certain characters are received. */
     tio->c_lflag      &= ~(ECHO|ECHONL|ICANON|IEXTEN|ISIG);
 
     /* Output flags,*/
-    /* Enable Implementation defined stuff on the output stream*/
+    /* Disable implementation defined processing on the output stream*/
     tio->c_oflag      &= ~OPOST;
 }
 

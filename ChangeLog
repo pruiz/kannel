@@ -1,6 +1,11 @@
+2000-10-06  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/utils.c: Changed kannel_cfmakeraw() comments to match
+	reality.
+
 2000-10-06 Aarno Syvänen <syvanen@wapit.com>
 
-	* gw/wtp*: Reformat (expect wtp_pdu.*).
+	* gw/wtp*: Reformat (except wtp_pdu.*).
 
 	* gw/wtp_resp_state-decl.h: More comments.
 
