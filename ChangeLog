@@ -1,3 +1,9 @@
+2001-10-16 Aarno Syvänen <aarno@wiral.com>
+
+	* gw/wap_push_pap_compiler.c: Reject wrong address type for a
+	bearer (a phone number for IP bearer, IP address for SMS).
+	* gw/wap_push_pap_compiler.h: Tell this in the module comment.
+
 2001-07-27 Jörg Pommnitz <jpo@condat.de>
 
 	* doc/userguide/userguide.xml,doc/arch/arch.xml: fix doc to get 
