@@ -26,9 +26,10 @@ Fri Mar 10 14:52:19 2000  Lars Wirzenius  <liw@wapit.com>
 2000-03-10    <dark@wapit.com>
 
 	* utils/run_kannel_box.c: New utility, a wrapper that runs as
-	  a daemon and spawns a given box.  If the box dies, the wrapper
-	  will spawn a new one.  It will die and kill its box if it
-	  gets SIGINT, SIGQUIT, or SIGTERM.
+	a daemon and spawns a given box.  If the box dies, the wrapper
+	will spawn a new one.  It will die and kill its box if it
+	gets SIGINT, SIGQUIT, or SIGTERM.
+
 	* Makefile.in: add a line for run_kannel_box.c
 
 Fri Mar 10 13:34:59 2000  Lars Wirzenius  <liw@wapit.com>
