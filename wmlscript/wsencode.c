@@ -158,7 +158,7 @@ ws_encode_buffer(WsBuffer *buffer, ...)
 
 	case WS_ENC_DATA:
 #ifdef SPARC_ABI
-	  cp = va_arg(ap, int);
+	  cp = (unsigned char *) va_arg(ap, int);
 	  len = va_arg(ap, int);
 #else
 	  cp = va_arg(ap, unsigned char *);

@@ -1,5 +1,10 @@
 2000-08-31  Lars Wirzenius  <liw@iki.fi>
 
+	* wmlscript/wsencode.c: Added a typecast to convert a va_arg call
+	that fetches an int to convert the value to an unsigned char *.
+
+2000-08-31  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/http.c: Improved (but still did not write properly) HTTP
 	Content-Type header parsing. Fix suggested by Joerg Pommnitz,
 	though re-did the patch to add some error checking.
