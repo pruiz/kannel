@@ -1,3 +1,9 @@
+2002-07-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/urltrans.[ch], gw/smsbox.c, gwlib/cfg.def, test/test_urltrans.c:
+      added 'allowed-receiver-prefix' and 'denied-receiver-prefix' for 
+      sms-service groups. This is used to restrict access to service
+      requests coming in on certain receiver numbers, i.e. shortcut numbers.
+
 2002-07-09  Stipe Tolj  <tolj@wapme-systems.de>
     * configure[.in]: correcting a type and a match pattern from the 
       previous commit.
