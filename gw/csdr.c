@@ -237,6 +237,8 @@ int csdr_send_message(CSDRouter *router, RQueueItem *item)
 
 	memset(&cliaddr, 0, sizeof(struct sockaddr_in));
 
+	debug(0, "CSDR: Time to send a message");
+
 	/* Can only do 64k of data... have to def a MIN macro one of these times... -MG */
 	datalen = (sizeof(data)<octstr_len(item->msg->wdp_datagram.user_data)) ? 
 		sizeof(data) : octstr_len(item->msg->wdp_datagram.user_data);
@@ -254,9 +256,11 @@ int csdr_send_message(CSDRouter *router, RQueueItem *item)
 
 	sendto(router->fd, data, datalen, 0, &cliaddr, clilen);
 
+	debug(0, "CSDR: Done.");
+
 	return 0;
 error:
-	error(errno, "csdr_get_message: could not send UDP datagram");
+	error(errno, "csdr_send_message: could not send UDP datagram");
 	return -1;
 }
 

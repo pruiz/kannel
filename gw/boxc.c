@@ -134,10 +134,10 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
 	if (msg->msg_class == R_MSG_CLASS_SMS) {
 
 	    if(msg_type(msg->msg) == smart_sms) {
-		debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->smart_sms.msgdata));
+		debug(0, "BOXC: Write < %s >", octstr_get_cstr(msg->msg->smart_sms.msgdata));
 	    }
 	} else {
-	    debug(0, "BOXC:write < WAP >");
+	    debug(0, "BOXC: Write < WAP >");
 	    }
 	ack = 1;
     }

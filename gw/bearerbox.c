@@ -751,7 +751,6 @@ static void *wapboxconnection_thread(void *arg)
 		
 	}
 	if (msg) {
-	    warning(0, "WAPBOXC: wap-message read from queue and discarded"); 
 	    ret = boxc_send_message(us->boxc, msg, bbox->reply_queue); 
 	    if (ret < 0) {
 		error(0, "WAPBOXC: [%d] send message failed, killing", us->id);
