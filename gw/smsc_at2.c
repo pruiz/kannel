@@ -829,7 +829,7 @@ reconnect:
 	    privdata->modem->speed != 0) {
 
 	    info(0, "AT2[%s]: trying to use speed <%d> from modem definition", 
-	         privdata->name, privdata->modem->speed);
+	         octstr_get_cstr(privdata->name), privdata->modem->speed);
 	    if(0 == at2_test_speed(privdata, privdata->modem->speed)) { 
 		privdata->speed = privdata->modem->speed;
 		info(0, "AT2[%s]: speed is %ld", 
