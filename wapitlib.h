@@ -75,6 +75,9 @@ int read_line(int fd, char *line, int max);
 /* Read the rest of the input file into dynamically allocated memory. */
 int read_to_eof(int fd, char **data, size_t *len);
 
+/* Check if there is something to be read in 'fd'. Return 1 if there
+ * is data, 0 otherwise, -1 on error */
+int read_available(int fd);
 
 /* Split string `buf' up to `max' words at space characters. Return number
    of words found. If there are more than `max' words, all the remaining

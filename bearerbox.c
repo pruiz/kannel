@@ -96,6 +96,16 @@ typedef struct bb_s {
 static BearerBox *bbox = NULL;
 
 
+
+
+/*--------------------------------------------------------
+ * FORWARD DECLARATIONS
+ */
+
+static void print_threads(char *buffer);
+
+
+
 /*--------------------------------------------------------------------
  * UTILITIES
  */
@@ -118,7 +128,7 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
     if (msg->msg_type == R_MSG_TYPE_MO)
 	return 0;	      	/* no direct destination, leave it
 				 * to load balancing functions */
-
+    
     /* if we have gone this far, this must be a mobile terminated
      * (new) message from sms/wap box to SMSC/CSD Router
      *
@@ -229,6 +239,8 @@ static void *smscenter_thread(void *arg)
     us = arg;
     us->status = BB_STATUS_OK;
     last_time = time(NULL);
+
+    info(0, "smscenter thread..");
     
     while(!bbox->abort_program) {
 	if (us->status == BB_STATUS_KILLED) break;
@@ -241,6 +253,7 @@ static void *smscenter_thread(void *arg)
 	    route_msg(us, msg);
 	    
 	    rq_push_msg(bbox->request_queue, msg);
+	    info(0, "Got message [%d] from %s", msg->id, smsc_name(us->smsc));
 	    continue;	/* is this necessary? */
 	}
 
@@ -248,23 +261,8 @@ static void *smscenter_thread(void *arg)
 	 */
 	msg = rq_pull_msg(bbox->reply_queue, us->id);
 	if (msg) {
-	    ret = smsc_send_message(us->smsc, msg);
+	    ret = smsc_send_message(us->smsc, msg, bbox->request_queue);
 
-	    /* if the message was mobile terminated (MT), put
-	     * ACK/NACK information into request_queue
-	     */
-	    if (msg->msg_type == R_MSG_TYPE_MT) {
-		if (ret < 0)
-		    msg->msg_type = R_MSG_TYPE_NACK;
-		else
-		    msg->msg_type = R_MSG_TYPE_ACK;
-
-		rq_push_msg_head(bbox->request_queue, msg);
-	    }
-	    else {
-/* TODO:		smsmessage_destruct(msg->client_data); */
-		rqi_delete(msg);
-	    }
 	    continue;
 	}
 	usleep(1000);
@@ -377,11 +375,13 @@ static void *smsboxconnection_thread(void *arg)
 	/* if socket is closed, set us to die-mode */
 
 	ret = boxc_get_message(us->boxc, bbox->reply_queue);
-	if (ret < 0)
+	if (ret < 0) {
+	    error(0, "SMS BOX %d get message failed, killing", us->id);
 	    break;
-	else if (ret > 0)
+	} else if (ret > 0) {
+	    info(0, "Got a message (ignoring)!");
 	    continue;
-	    
+	}	    
 	/* check for any messages to us in request-queue,
 	 * if any, put into socket and if accepted, add ACK
 	 * about that to reply-queue, otherwise NACK (unless it
@@ -390,10 +390,15 @@ static void *smsboxconnection_thread(void *arg)
 	 * NOTE: there should be something load balance here?
 	 */
 	msg = rq_pull_msg(bbox->request_queue, us->id);
-	if (msg == NULL)
-	    msg = rq_pull_msg_class(bbox->request_queue, us->type);
+	if (msg == NULL) {
+	    msg = rq_pull_msg_class(bbox->request_queue, R_MSG_CLASS_SMS);
+	}
 	if (msg) {
 	    ret = boxc_send_message(us->boxc, msg, bbox->reply_queue);
+	    if (ret < 0) {
+		error(0, "SMS BOX %d send message failed, killing", us->id);
+		break;
+	    }
 	    continue;
 	}
 	usleep(1000);
@@ -457,18 +462,16 @@ static BBThread *create_bbt(int type)
 {
     int id;
     int index;
-
+    char buffer[12000];
+    
     BBThread	*nt;
     
-    id = find_bbt_id();
-    index = find_bbt_index();
     nt = malloc(sizeof(BBThread));
     if (nt == NULL) {
 	error(errno, "Malloc failed at create_bbt");
 	return NULL;
     }
     nt->type = type;
-    nt->id = id;
     nt->status = BB_STATUS_CREATED;
     nt->heartbeat = time(NULL);
 
@@ -476,6 +479,14 @@ static BBThread *create_bbt(int type)
     nt->csdr = NULL;
     nt->boxc = NULL;
     nt->route_str = NULL;
+
+    id = find_bbt_id();
+    index = find_bbt_index();
+    nt->id = id;
+    bbox->threads[index] = nt;
+
+    print_threads(buffer);
+    info(0, "Did thread id %d:\n%s", id, buffer);
 
     bbox->id_max = id;
     return nt;
@@ -505,7 +516,7 @@ static void new_bbt_smsc(SMSCenter *smsc)
     nt = create_bbt(BB_TTYPE_SMSC);
     if (nt != NULL) {
 	nt->smsc = smsc;
-	(void)start_thread(1, smscenter_thread, nt, sizeof(nt));
+	(void)start_thread(1, smscenter_thread, nt, 0);
     }
     debug(0, "Created a new SMSC thread");
 }
@@ -521,7 +532,7 @@ static void new_bbt_csdr(CSDRouter *csdr)
     nt = create_bbt(BB_TTYPE_CSDR);
     if (nt != NULL) {
 	nt->csdr = csdr;
-	(void)start_thread(1, csdrouter_thread, nt, sizeof(nt));
+	(void)start_thread(1, csdrouter_thread, nt, 0);
     }
     debug(0, "Created a new CSDR thread");
 }
@@ -535,7 +546,7 @@ static void new_bbt_wapbox()
     BBThread *nt;
     nt = create_bbt(BB_TTYPE_WAP_BOX);
     if (nt != NULL)
-	(void)start_thread(1, wapboxconnection_thread, nt, sizeof(nt));
+	(void)start_thread(1, wapboxconnection_thread, nt, 0);
 
     debug(0, "Created a new WAP BOX thread (id = %d)", nt->id);
 }
@@ -549,7 +560,7 @@ static void new_bbt_smsbox()
     BBThread *nt;
     nt = create_bbt(BB_TTYPE_SMS_BOX);
     if (nt != NULL)
-	(void)start_thread(1, smsboxconnection_thread, nt, sizeof(nt));
+	(void)start_thread(1, smsboxconnection_thread, nt, 0);
 
     debug(0, "Created a new SMS BOX thread (id = %d)", nt->id);
 }
@@ -768,7 +779,7 @@ static void print_queues(char *buffer)
     return;	      
 
 error:
-    error(ret, "Failed to update mean queue lengths");
+    error(ret, "Failed to print queues");
 }
 
 /*
@@ -813,7 +824,7 @@ static void print_threads(char *buffer)
 
     return;	      
 error:
-    error(ret, "Failed to update mean queue lengths");
+    error(ret, "Failed to print threads");
 }
 
 
@@ -866,6 +877,8 @@ static void main_program(void)
 		new_bbt_wapbox();
 	    if (FD_ISSET(bbox->sms_fd, &rf))
 		new_bbt_smsbox();
+
+	    sleep(1);	/* sleep for a while... work around this */
 	}
 	else if (ret < 0)
 	    /* error */
@@ -922,11 +935,20 @@ static void init_bb(Config *cfg)
 	
 	grp = config_next_group(grp);
     }
+    if (bbox->thread_limit < 5) {
+	error(0, "Thread limit set to less than 5 (%d), set it 5",
+	      bbox->thread_limit);
+	bbox->thread_limit = 5;
+    }
+    bbox->threads = malloc(sizeof(BBThread *) * bbox->thread_limit);
+    if (bbox->threads == NULL)
+	goto error;
     bbox->request_queue = rq_new();
     bbox->reply_queue = rq_new();
-    bbox->threads = malloc(sizeof(BBThread *) * bbox->thread_limit);
-    if (bbox->threads == NULL || bbox->request_queue || bbox->reply_queue)
+    if (bbox->request_queue == NULL || bbox->reply_queue == NULL) {
+	error(0, "Failed to create queues");
 	goto error;
+    }
     for(i=0; i < bbox->thread_limit; i++)
 	bbox->threads[i] = NULL;
 
@@ -934,8 +956,10 @@ static void init_bb(Config *cfg)
     bbox->wap_fd = make_server_socket(bbox->wapbox_port);
     bbox->sms_fd = make_server_socket(bbox->smsbox_port);
 
-    if(bbox->http_fd < 0 || bbox->wap_fd < 0 || bbox->sms_fd < 0)
+    if(bbox->http_fd < 0 || bbox->wap_fd < 0 || bbox->sms_fd < 0) {
+	error(0, "Failed to open sockets");
 	goto error;
+    }
     
     return;
 error:	

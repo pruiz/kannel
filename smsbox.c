@@ -282,7 +282,19 @@ error:
 
 int main(int argc, char **argv)
 {
-    printf("SMS BOX not yet done. exiting.\n");
+    int fd;
 
+    char *bb_host = "localhost";
+    char linebuf[1024+1];
+    int bb_port = 13001;
+    
+    fd = tcpip_connect_to_server(bb_host, bb_port);
+
+    info(0, "Connected to Bearer Box at %s port %d", bb_host, bb_port);
+    
+    while(read_line(fd, linebuf, 1024) > 0) {
+	info(0, "Read < %s >", linebuf);
+	write_to_socket(fd, "A\n");
+    }
     return 0;
 }

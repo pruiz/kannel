@@ -458,6 +458,7 @@ static int smscenter_lock(SMSCenter *smsc) {
 
 #if HAVE_THREADS
 	ret = pthread_mutex_lock(&smsc->mutex);
+	
 #else
 	if (smsc->mutex)
 		ret = -1;
@@ -579,7 +580,7 @@ int normalize_number(char *dial_prefixes, char *number, char **new) {
 SMSCenter *smsc_open(ConfigGroup *grp) {
 	SMSCenter *smsc;
         char *type, *host, *port, *username, *password, *phone, *device;
-        char *dial_prefix;
+        char *dial_prefix, *route_prefix;
         char *backup_port;      /* EMI IP */
         char *alt_chars;
         char *smpp_system_id, *smpp_system_type, *smpp_address_range;
@@ -596,6 +597,7 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
         phone = config_get(grp, "phone");
         device = config_get(grp, "device");
         dial_prefix = config_get(grp, "dial-prefix");
+        route_prefix = config_get(grp, "route-prefix");
         alt_chars = config_get(grp, "alt-charset");
 
         smpp_system_id = config_get(grp, "system-id");
@@ -604,7 +606,6 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 
 	portno = (port != NULL ? atoi(port) : 0);
 	backportno = (backup_port != NULL ? atoi(backup_port) : 0);
-	smsc->alt_charset = (alt_chars != NULL ? atoi(alt_chars) : 0);
 
 	smsc = NULL;
 
@@ -645,7 +646,7 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 	case SMSC_TYPE_EMI_IP:
 	    if (host == NULL || port == NULL || username == NULL ||
 		password == NULL)
-		error(0, "Required field missing for EMI center.");
+		error(0, "Required field missing for EMI IP center.");
             else
 		smsc = emi_open_ip(host, portno, username, password,
 				   backportno);
@@ -665,10 +666,14 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 		break;
 	}
 	if (smsc != NULL) {
+	    smsc->alt_charset = (alt_chars != NULL ? atoi(alt_chars) : 0);
+
 	    if (dial_prefix == NULL)
 		dial_prefix = "";
 	    sprintf(smsc->dial_prefix, "%.*s",
 		    (int) sizeof(smsc->dial_prefix), dial_prefix);
+
+	    info(0, "Opened a new SMSC type %d", typeno);
 	}
 	
 	return smsc;
@@ -751,7 +756,7 @@ int smsc_close(SMSCenter *smsc) {
 
 
 
-int smsc_send_message(SMSCenter *smsc, RQueueItem *msg)
+int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 {
     SMSMessage *sms_msg;
     int ret;
@@ -761,25 +766,35 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg)
 	return -1;
     }	
 
-    if (msg->msg_type == R_MSG_TYPE_ACK)
-	/* handle ACK */
+    if (msg->msg_type == R_MSG_TYPE_ACK) {
+	debug(0, "Read ACK [%d] from queue, ignoring.", msg->id);
 	ret = 0;
-    else if (msg->msg_type == R_MSG_TYPE_NACK)
-	/* handle NACK */
+    } else if (msg->msg_type == R_MSG_TYPE_NACK) {
+	debug(0, "Read NACK [%d] from queue, ignoring.", msg->id);
 	ret = 0;
-    else if (msg->msg_type == R_MSG_TYPE_MT) {
+    }  else if (msg->msg_type == R_MSG_TYPE_MT) {
 	sms_msg = smsmessage_construct(msg->sender, msg->receiver, msg->msg);
     
 	ret = smscenter_submit_smsmessage(smsc, sms_msg);
 	if (ret == -1)
 	    /* rebuild connection? */
 	    ;
+	if (ret < 0)
+	    msg->msg_type = R_MSG_TYPE_NACK;
+	else
+	    msg->msg_type = R_MSG_TYPE_ACK;
+
+	rq_push_msg_ack(request_queue, msg);
+	return ret;
     }
     else {
 	error(0, "Unknown message type '%d' to be sent by SMSC, ignored",
 	      msg->msg_type);
 	ret = -1;
     }
+/* TODO:		smsmessage_destruct(msg->client_data); */
+    rqi_delete(msg);
+
     return ret;
 }
 
@@ -789,24 +804,28 @@ RQueueItem *smsc_get_message(SMSCenter *smsc)
     SMSMessage *sms_msg;
     RQueueItem *msg;
     int ret;
-    
+
     if (smscenter_pending_smsmessage(smsc) == 1) {
+
 	ret = smscenter_receive_smsmessage(smsc, &sms_msg);
-	if (ret < 1)
+	if (ret < 1) {
+	    error(0, "Failed to receive the message, ignore...");
 	    /* reopen the connection etc. invisible to other end */
-	    ;
+	}
 
 	/* hm, what about ACK/NACK? */
+
 	msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MO);
 
 	/* normalization where? */
 	strcpy(msg->sender, sms_msg->sender);
 	strcpy(msg->receiver, sms_msg->receiver);
-
+	msg->msg = octstr_copy(sms_msg->text, 0, 160);
+	
 	msg->client_data = sms_msg;	/* keep the data for ACK/NACK */
 	
-	/* construct RQueueItem from sms message received */
-	    
+	
+	return msg;		/* ok, quite empty one */
     }
     return NULL;
 }

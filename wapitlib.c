@@ -13,6 +13,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -374,6 +375,27 @@ error:
 	free(*data);
 	return -1;
 }
+
+
+int read_available(int fd)
+{
+    fd_set rf;
+    struct timeval to;
+    int ret;
+
+    FD_ZERO(&rf);
+    FD_SET(fd, &rf);
+    to.tv_sec = 0;
+    to.tv_usec = 0;
+
+    ret = select(FD_SETSIZE, &rf, NULL, NULL, &to);
+    if (ret > 0 && FD_ISSET(fd, &rf))
+	return 1;
+    if (ret < 0)
+	return -1;	/* some error */
+    return 0;
+}
+
 
 
 int split_words(char *buf, int max, char **words) {

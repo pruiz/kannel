@@ -46,8 +46,8 @@ struct r_queue_item {
     int id;		/* internal number */
     int msg_class;	/* see enum above */
     int msg_type;	/* see enum above */
-    char sender[35];
-    char receiver[35];
+    char sender[35];	/* normalized phone number or IP number */
+    char receiver[35];	/* ditto */
     Octstr *msg;     	/* parsed message (just the message) */
     time_t time_tag;	/* when created (in our system) */
     int source;		/* original receiver thread id */
@@ -92,9 +92,15 @@ RQueue *rq_new(void);
 int rq_push_msg(RQueue *queue, RQueueItem *msg);
 
 /*
- * as above, but pushes to head - meant for ACK/NACK messages
+ * as above, but pushes to head 
  */
 int rq_push_msg_head(RQueue *queue, RQueueItem *msg);
+
+/*
+ * push an acknowledgement/NACK. It is pushed after last ACK/NACK
+ * in the queue, and into head if there is none
+ */
+int rq_push_msg_ack(RQueue *queue, RQueueItem *msg);
 
 /*
  * remove a message from queue. You must first seek it via

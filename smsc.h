@@ -60,13 +60,14 @@ char *smsc_name(SMSCenter *smsc);
 int smsc_close(SMSCenter *smsc);
 
 
-/* Send an SMS message via an SMS center. Return -1 for error,
-   0 for OK. */
-int smsc_send_message(SMSCenter *smsc, RQueueItem *msg);
+/* Send an SMS message via an SMS center. If the message is not an ACK/NACK,
+   add ACK or NACK according to status intp request queue
+
+   Return -1 for error, 0 for OK. */
+int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue);
 
 
-/* receive a message from SMS center. Return received message or NULL
-   if no message pending or some error occurs
+/* receive a message from SMS center and return it. Return NULL on problem
 */
 RQueueItem *smsc_get_message(SMSCenter *smsc);
 

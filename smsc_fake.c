@@ -53,6 +53,9 @@ SMSCenter *fake_open(char *hostname, int port) {
 	    goto error;
 	
 	sprintf(smsc->name, "FAKE:%s:%d", smsc->hostname, smsc->port);
+
+	info(0, "Fake open successfully done");
+	
 	return smsc;
 
 error:

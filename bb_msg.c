@@ -104,6 +104,59 @@ error:
 }
 
 
+int rq_push_msg_ack(RQueue *queue, RQueueItem *msg)
+{
+    int ret;
+    RQueueItem *ptr, *prev;
+    
+    ret = pthread_mutex_lock(&queue->mutex);
+    
+    if (ret != 0)
+	goto error;
+
+    ptr = queue->first;
+    prev = NULL;
+
+    /* find last ACK/NACK
+     */
+    while(ptr) {
+	if (ptr->msg_type != R_MSG_TYPE_ACK &&
+	    ptr->msg_type != R_MSG_TYPE_NACK)
+
+	    return prev;
+	prev = ptr;
+	ptr = ptr->next;
+    }
+    if (prev == NULL) {
+	msg->next = queue->first;
+	queue->first = msg;
+	if (queue->last == NULL)
+	    queue->last = msg;
+    }
+    else {
+	msg->next = prev->next;
+	prev->next = msg;
+	if (queue->last == prev)
+	    queue->last = msg;
+    }
+    msg->id = queue->id_max;
+    if (queue->id_max < ID_MAX)
+	queue->id_max++;
+    else
+	queue->id_max = 1;
+
+    queue->queue_len++;
+    ret = pthread_mutex_unlock(&queue->mutex);
+    if (ret != 0)
+	goto error;
+
+    return 0;
+    
+error:
+    error(ret, "Failed to push acknowledgement");
+    return -1;
+}
+
 
 void rq_remove_msg(RQueue *queue, RQueueItem *msg, RQueueItem *prev)
 {
