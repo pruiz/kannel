@@ -286,10 +286,13 @@ static void *remember_receiver(Msg *msg, URLTranslation *trans, int method,
     receiver->msg = msg_create(sms);
     receiver->msg->sms.sender = octstr_duplicate(msg->sms.sender);
     receiver->msg->sms.receiver = octstr_duplicate(msg->sms.receiver);
-    if (octstr_compare(msg->sms.service, ppg_service_name) != 0)
-    receiver->msg->sms.service = octstr_duplicate(urltrans_name(trans));
-    else
+    /* ppg_service_name should always be not NULL here */
+    if (msg->sms.service == NULL || ppg_service_name == NULL || 
+        octstr_compare(msg->sms.service, ppg_service_name) != 0) {
+        receiver->msg->sms.service = octstr_duplicate(urltrans_name(trans));
+    } else {
         receiver->msg->sms.service = octstr_duplicate(msg->sms.service);
+    }
     receiver->msg->sms.udhdata = NULL;
     receiver->msg->sms.mclass = 0;
     receiver->msg->sms.alt_dcs = 0;
@@ -1522,13 +1525,17 @@ static void obey_request_thread(void *arg)
 	reply_msg->ack.time = msg->sms.time;
 	reply_msg->ack.id = msg->sms.id;
     
-        /* no smsbox services when we are doing ppg dlr - so trans would be
-         * NULL in this case.*/
-	if (dreport) {
-            if (octstr_compare(msg->sms.service, ppg_service_name) != 0)
-	    trans = urltrans_find_service(translations, msg);
-            else
-                trans = NULL;
+    /* 
+     * no smsbox services when we are doing ppg dlr - so trans would be
+     * NULL in this case.
+     */
+    if (dreport) {
+        if (msg->sms.service == NULL || ppg_service_name == NULL ||
+            octstr_compare(msg->sms.service, ppg_service_name) != 0) {
+            trans = urltrans_find_service(translations, msg);
+        } else {
+            trans = NULL;
+        }
 
 	    info(0, "Starting delivery report <%s> from <%s>",
 		octstr_get_cstr(msg->sms.service),
@@ -3052,12 +3059,12 @@ static Cfg *init_smsbox(Cfg *cfg)
         }
     }
 
-/*
- * Reading the name we are using for ppg services from ppg core group
- */
+    /*
+     * Reading the name we are using for ppg services from ppg core group
+     */
     if ((grp = cfg_get_single_group(cfg, octstr_imm("ppg"))) != NULL) {
         if ((ppg_service_name = cfg_get(grp, octstr_imm("service-name"))) == NULL)
-            ppg_service_name = octstr_format("%s", "ppg");
+            ppg_service_name = octstr_create("ppg");
     }
 
     if (http_proxy_host != NULL && http_proxy_port > 0) {
