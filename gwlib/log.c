@@ -468,7 +468,7 @@ void log_thread_to(unsigned int idx)
 
     if (idx > 0) 
         info(0, "Logging thread `%ld' to logfile `%s' with level `%d'.", 
-             thread_id, &logfiles[idx].filename, logfiles[idx].minimum_output_level);
+             thread_id, logfiles[idx].filename, logfiles[idx].minimum_output_level);
     thread_to[thread_id] = idx;
 }
 
