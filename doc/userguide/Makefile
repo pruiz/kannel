@@ -9,6 +9,11 @@ instdir = $(HOME)/public_html/wapit-intra/userguide
 
 include ../../Rules.mk
 
+all: figs html ps
+html: figs $(docshtml)
+ps: figs $(docsps)
+figs: $(figspng) $(figsps)
+
 userguide.html: userguide.timestamp $(docs) $(subdocs)
 userguide.ps: userguide.timestamp $(docs) $(subdocs)
 

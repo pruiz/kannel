@@ -34,7 +34,7 @@ cvsignore:
 public: all
 	rm -rf $(instdir)/arch
 	mkdir -p $(instdir)/arch
-	cp index.html $(docs) $(docsps) $(docshtml) $(figspng) $(figsps) \
+	cp $(docs) $(docsps) $(docshtml) $(figspng) $(figsps) \
 		$(instdir)/arch
 	for dir in $(docs:.xml=); do \
 		if [ -d $$dir ]; then cp -r $$dir $(instdir)/arch; fi; done
