@@ -63,6 +63,9 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 
     URL *url = NULL;
 
+
+
+    
     /* accept the connection */
     len = sizeof(cliaddr);
     connfd = accept(socket, (struct sockaddr *) &cliaddr, &len);
@@ -77,17 +80,31 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 		NULL, 0, NI_NUMERICHOST);
     *client_ip = gw_strdup(accept_ip);
 
+
+
+    
     gbsize = 1024;
     growingbuff = gw_malloc(gbsize);
     memset(growingbuff, 0, gbsize);
-
     errno = 0;
 
+
+
+
+
+
+
+
+    
     /* Receive the client request. */
     for(;;) {
-	    
+
+
+	
 	if(done_with_looping == 1) break;
-	    
+
+
+	
 	/* Read from socket. */
 	ptr = growingbuff + readthisfar;
 	tmpint = read(connfd, ptr, gbsize-readthisfar);
@@ -101,6 +118,10 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	    readthisfar += tmpint;
 	}
 
+
+
+
+
 	/* First comes the status line. */
 	if(done_with_status == 0) {
 
@@ -108,38 +129,67 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	    if(eol != NULL) {
 		*eol = '\0';
 		newbuff = gw_strdup(growingbuff);
-		sscanf(growingbuff, "GET %s HTTP/%i.%i", 
-		       newbuff, &tmpint, &tmpint);
-		debug("gwlib.http", 0, "http_get_request: got the first line");
 
-		url = internal_url_create(newbuff);
-		gw_free(newbuff);
-		*eol = '\r';
-		done_with_status = 1;
-		done_with_looping = 1;
-		continue;
+
+
+		/* so what do we have here */
+		if( sscanf(growingbuff, "GET %s HTTP/%i.%i", newbuff, &tmpint, &tmpint) == 3 ){
+		    debug("gwlib.http",0,"httpserver_get_request: we have a get request");/* then its GET */
+		    debug("gwlib.http", 0, "http_get_request: the first line: abs_url <%s>", newbuff);
+		    
+		    url = internal_url_create(newbuff);
+		    gw_free(newbuff);
+		    *eol = '\r';
+		    done_with_status = 1;
+		    done_with_looping = 1;
+
+		    debug("gwlib.http", 0, "http_get_request: continue");
+		    continue;
+		}
+		else if( sscanf(growingbuff, "POST %s HTTP/%i.%i", newbuff, &tmpint, &tmpint) == 3 ){
+		    debug("gwlib.http",0,"httpserver_get_request: we have a post request"); /* then its POST */
+		    debug("gwlib.http", 0, "http_get_request: the first line: abs_url <%s>", newbuff);
+		    
+		    url = internal_url_create(newbuff);
+		    gw_free(newbuff);
+		    *eol = '\r';
+		    done_with_status = 1;
+		    done_with_looping = 1;
+		    continue;
+		}
+		
 	    }
-			
-	} /* if */
-		
-	/* see if the buffer needs enlargement */
-		
-    } /* for */
-	
-    if(url->abs_path != NULL)
-	*path = gw_strdup(url->abs_path);
-    else
-	*path = NULL;
-	
-    if(url->query != NULL)
-	*args = gw_strdup(url->query);
-    else
-	*args = NULL;
+	    
+	} /* Statusline found */
 
+
+
+
+
+	
+	/* see if the buffer needs enlargement */
+	
+    } /* for */
+
+
+
+    
+    if(url->abs_path != NULL) *path = gw_strdup(url->abs_path);
+    else *path = NULL;
+	
+    if(url->query != NULL) *args = gw_strdup(url->query);
+    else *args = NULL;
+
+
+
+    
     internal_url_destroy(url);
     gw_free(growingbuff);
     return connfd;
 
+
+
+    
 error:
     gw_free(growingbuff);
     return -1;
@@ -210,12 +260,15 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     
     URL *url = NULL;
     HTTPRequest *request = NULL, *response = NULL;
-    char *ptr = NULL;
+    char *ptr = NULL, tempbuffer[4];
     char *authorization = NULL;
     int how_many_moves = 0;
-  
+    size_t temp =0;
       
-    /* Initializing... */
+
+
+
+   /* Initializing... */
     /* ..request */
     if( (url = internal_url_create(urltext)) == NULL) {
 	error(errno, "http_get_u: creating URL failed");
@@ -230,25 +283,29 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     internal_url_destroy(url);    
 
 
-/*
-  info(0, "url->scheme   = <%s>", request->url->scheme);
-  info(0, "url->host     = <%s>", request->url->host);
-  info(0, "url->port     = <%i>", request->url->port);
-  info(0, "url->abs_path = <%s>", request->url->abs_path);
-  info(0, "url->username = <%s>", request->url->username);
-  info(0, "url->password = <%s>", request->url->password);
-*/
 
+    
+    /* Adding useful stuff */
 
-
-    /* Adding... */
-    /* ..Method token.. */    
-    request->method_type = GET;
-
+    if( request->method_type == POST ){
+	memset(tempbuffer, 0, strlen(tempbuffer));	temp = (int) strlen(*data);
+	sprintf(tempbuffer, "%d", temp);
+	httprequest_add_header( request, "Content-Length", tempbuffer );
+    } else {
+	request->method_type = GET;
+	/* data length zero */
+	httprequest_add_header(request, "Content-Length", "0" );
+    }
+	
+    
     /* .. the common headers... */
     httprequest_add_header(request, "Host", request->url->host);
     httprequest_add_header(request, "Connection", "close");
+    /* httprequest_add_header(request, "Connection", "Keep-Alive");*/
+    httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
 
+    
+    
     /* ..the user defined headers */
     for(;;){
 	if(header == NULL)break;
@@ -257,7 +314,9 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     }
     
     
-    /* ..username, although this is not used now */
+    
+    
+    /* ..username */
     if(request->url->username != NULL) {
 	ptr = gw_malloc(1024);
 	sprintf(ptr, "%s:%s", 
@@ -373,13 +432,13 @@ error:
 
 int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader *header)
 { 
-    
-    URL *url = NULL;
+
+  URL *url = NULL;
     HTTPRequest *request = NULL, *response = NULL;
     char *ptr = NULL;
     char *authorization = NULL;
     int how_many_moves = 0;
-    char temp_buffer[1024];
+    char temp_buffer[5]="\0\0\0\0\0";
 
     /* Initializing... */
     /* ..request */
@@ -387,7 +446,7 @@ int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader
 	error(errno, "http_post: creating URL failed");
 	goto error;
     }
-
+    
     /* ..url */
     if( (request = httprequest_create(url, *data)) == NULL) {
 	error(errno, "http_post: creating HTTPRequest failed");
@@ -398,13 +457,21 @@ int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader
 
     /* Adding... */
     request->method_type = POST;
-    
 
-    /*   httprequest_add_header(request, "Referer" , );*/
+
+    /*
+      if( getsockname(int  s , struct sockaddr * name , socklen_t * namelen ) == 0 );
+      else {error(0, "http_post: coulnd get socketname");goto error;}
+      httprequest_add_header(request, "Referer", name->);
+      gethostname("localhost", MAXHOSTNAMELEN));
+    */    /*    httprequest_add_header(request, "Content-Type", );*/
+
+
     httprequest_add_header(request, "Connection", "Keep-Alive");
     httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
     httprequest_add_header(request, "Host", request->url->host);
-    /*    httprequest_add_header(request, "Content-Type", );*/
+
+    memset(temp_buffer, 0, strlen(temp_buffer));
     sprintf(temp_buffer, "%d", (int) strlen(*data));
     httprequest_add_header(request, "Content-Length", temp_buffer);
 
@@ -520,6 +587,8 @@ error:
     httprequest_destroy(request);
     httprequest_destroy(response);
     return -1;
+
+    
 }
 
 
@@ -872,26 +941,38 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 	}
 
 	if(ptr == eol) {    /* found "\r\n\r\n" - end of headers */
-	    ptr += 2; /* advance to start of data */
+	    ptr += 2; 
 	    break;
 	}
 
 	if(eol != NULL) *eol = '\0';
 	if(midptr != NULL) *midptr = '\0';
 	midptr++;
-	while(isspace(*midptr)) midptr++;
+	while(isspace(*midptr)) midptr++;  /* advance to start of data- cut off the whitespaces */
 	if( (eol!=NULL) && (midptr!=NULL) )
 	    httprequest_add_header(request, ptr, midptr);
     }
 
     request->data_length = size - ((int)ptr - (int)mycopy);
 
+
+
+
+
+
+
+
+    
     /* The data might be chucked according to RFC2616/3.6.1, and in
        practise quite often is. We detect this by checking the value of
        the "Transfer-Encoding" header. */
+
+    
     midptr = httprequest_get_header_value(request, "Transfer-Encoding");
+
+
     if(midptr == NULL) {
-	
+	/* no transfer encoding - a simple case */
 	if(httprequest_get_header_value(request, "Content-Length") != NULL)
 	    request->data_length = atoi(httprequest_get_header_value(request, "Content-Length"));
 	
@@ -900,59 +981,41 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 	memset(request->data, 0, request->data_length);
 	memcpy(request->data, ptr, request->data_length);
 	request->data[request->data_length] = '\0';
-	
+
+
+
+
+
+
     } else if(strstr(midptr, "chunked") != NULL) {
-	
+	/* yepp, data has encoding */	
 	/* Get enough space to hold all the data. */
 	request->data = gw_malloc(request->data_length);
 	memset(request->data, 0,  request->data_length);
 	
 	
-
+	debug("gwlib.http",0, "all shit:<%s>",ptr);	    
 	/* Convert RFC2616/3.6.1 chunked data to normal. */
 	for(;;){
-	    /* 
-	       ptr = eol+2;
-	       midptr = strchr(ptr, ':');
-	       eol = strstr(ptr, "\r\n");
-	    
-	    -----Kludge for a stupid nonconforming HTTP server ------
-	    if(eol == NULL) {
-	    eol = strstr(ptr, "\n\n");
-	    if(eol==NULL) {
-	    ptr += 2;
-	    break;
-	    }
-	    }
-	    
-	    if(ptr==eol) {    ---- found "\r\n\r\n" - end of headers ----
-	    ptr += 2; --- advance to start of data ---
-	    break;
-	    } 
-	    
-	    if(eol != NULL) *eol = '\0';
-	    if(midptr != NULL) *midptr = '\0';
-	    midptr++;
-	    while(isspace((int)*midptr)) midptr++;
-	    if( (eol!=NULL) && (midptr!=NULL) )
-	    httprequest_add_header(request, ptr, midptr);
-	    }*/
-	    
+
 	    /* Get the chunk size. */
 	    tmpint = strtol(ptr, NULL, 16);
 	    if( (tmpint2+tmpint) > size) {
 		error(0, "httprequest_wrap: chunk size too big");
 		break;
 	    }
-	    
+	    debug("gwlib.http",0, "chunk size:<%d>",tmpint);
+	    debug("gwlib.http",0, "chunk:<%s>",ptr);	    
 	    if(tmpint == 0) break;
 	    midptr = strstr(ptr, "\r\n");
 	    if(midptr == NULL) break;
 	    memcpy(request->data+tmpint2, midptr+2, tmpint);
 	    ptr = midptr + 2 /* CRLF */ + tmpint + 2 /* CRLF */;
 	    tmpint2 += tmpint;
-	    
-	} /* for endless loop */
+	    debug("gwlib.http",0, "loopstop\n\n\n\n\n");
+	} /* for loop */
+
+
 	
 	/* Get the real data size */
 	request->data_length = tmpint2;
@@ -961,13 +1024,20 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 	request->data = gw_realloc(request->data, request->data_length+1);
 	request->data[request->data_length] = '\0';
 	
-    } else { /* Transfer-Encoding set to an unknown value */
+    }
+
+
+
+
+    else { /* Transfer-Encoding set to an unknown value */
 	/* Someone at the server end seems to have botched
 	   the job of implementing HTTP/1.1. 
 	   The "Transfer-Encoding" header should hold 
 	   either "chunked" or NULL. */
 	error(0, "Broken HTTP implementation on the server side.");
     }
+
+
     
     /* done */
     gw_free(tmpbuff);
@@ -1042,7 +1112,7 @@ char* httprequest_unwrap(HTTPRequest *request) {
 /* terminate headers */
     strcat(bigbuff, "\r\n");
     
-    debug("gwlib.http", 0,"request_unwrap: preparing to put data: <%s>", request->data);
+    debug("gwlib.http", 0,"request_unwrap: preparing to put entity: <%s>", request->data);
     
 /* data */
     if(request->data != NULL) 
