@@ -1,3 +1,13 @@
+2003-09-10  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/parse.[ch]: added routines parse_get_line() to get the Octstr
+      stream up to an EOL and parse_get_seperated_block() to get an next 
+      Octstr block between two seperators. 
+    * gwlib/mime.[ch]: added MIME multipart/related parsing routines. This
+      allows to parse an MIME document given as Octstr into our own 
+      MIMEEntity representation which is a hierarchical linked structure.
+    * test/test_mime_multipart.c: added simple testing instance for the MIME
+      parsing and transcoding routines.
+    
 2003-09-10  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/octstr.c: fixed bug in octstr_replace(...). We should not replace
       in replacement, so just skip replacement length. Otherwise here follow
