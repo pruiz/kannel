@@ -15,8 +15,8 @@ int main(void)
     
     gwlib_init();
     
-    foo = octstr_create_immutable("foo");
-    bar = octstr_create_immutable("bar");
+    foo = octstr_imm("foo");
+    bar = octstr_imm("bar");
     
     dict = dict_create(10, NULL);
     dict_put(dict, foo, bar);

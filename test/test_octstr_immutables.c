@@ -1,5 +1,5 @@
 /*
- * test_octstr_immutables.c - simple testing of octstr_create_immutable()
+ * test_octstr_immutables.c - simple testing of octstr_imm()
  */
 
 #include "gwlib/gwlib.h"
@@ -9,7 +9,7 @@ int main(void) {
 
 	gwlib_init();
 	
-	os = octstr_create_immutable("foo");
+	os = octstr_imm("foo");
 
 	/* 
 	 * Note: don't destroy this, check that the log file has no

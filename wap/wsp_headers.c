@@ -368,7 +368,7 @@ static int unpack_parameter(ParseContext *context, Octstr *decoded)
         goto error;
     }
 
-    octstr_append(decoded, octstr_create_immutable("; "));
+    octstr_append(decoded, octstr_imm("; "));
     octstr_append(decoded, parm);
     if (octstr_len(value) > 0) {
         octstr_append_char(decoded, '=');
@@ -426,7 +426,7 @@ static void unpack_optional_q_value(ParseContext *context, Octstr *decoded)
     if (parse_octets_left(context) > 0) {
         Octstr *qval = unpack_q_value(context);
         if (qval) {
-            octstr_append(decoded, octstr_create_immutable("; q="));
+            octstr_append(decoded, octstr_imm("; q="));
             octstr_append(decoded, qval);
             octstr_destroy(qval);
         } else
@@ -641,7 +641,7 @@ static Octstr *unpack_challenge(ParseContext *context)
         realm_value = parse_get_nul_string(context);
         if (decoded && realm_value) {
             octstr_append(decoded,
-                          octstr_create_immutable(" realm=\""));
+                          octstr_imm(" realm=\""));
             octstr_append(decoded, realm_value);
             octstr_append_char(decoded, '"');
             if (parse_octets_left(context) > 0) {
@@ -1905,8 +1905,8 @@ static int pack_challenge(Octstr *packed, Octstr *value)
 {
     Octstr *encoding = NULL;
     Octstr *scheme = NULL;
-    Octstr *basic = octstr_create_immutable("Basic");
-    Octstr *realm = octstr_create_immutable("realm");
+    Octstr *basic = octstr_imm("Basic");
+    Octstr *realm = octstr_imm("realm");
     Octstr *parmstring = NULL;
     List *parms = NULL;
     Parameter *realmparm = NULL;
@@ -2026,7 +2026,7 @@ static int pack_credentials(Octstr *packed, Octstr *value)
     while (isspace(octstr_get_char(value, pos)))
         pos++;
 
-    basic = octstr_create_immutable("Basic");
+    basic = octstr_imm("Basic");
     if (octstr_case_compare(scheme, basic) == 0) {
         Octstr *cookie;
         Octstr *userid;
@@ -2353,7 +2353,7 @@ static int pack_cache_control(Octstr *packed, Octstr *value)
              * this extra Token-text?  I decided to leave it blank.
              *  - Richard Braakman
              */
-            pack_text(encoding, octstr_create_immutable(""));
+            pack_text(encoding, octstr_imm(""));
             pack_parameter(encoding, parm);
         } else {
             int done = 0;
@@ -2440,7 +2440,7 @@ static int pack_content_range(Octstr *packed, Octstr *value)
     long firstbyte, lastbyte, instancelen;
     Octstr *encoding;
 
-    bytes = octstr_create_immutable("bytes ");
+    bytes = octstr_imm("bytes ");
     if (octstr_ncompare(value, bytes, octstr_len(bytes)) != 0)
         goto error;
 
@@ -2543,7 +2543,7 @@ static int pack_pragma(Octstr *packed, Octstr *value)
 {
     Octstr *nocache;
 
-    nocache = octstr_create_immutable("no-cache");
+    nocache = octstr_imm("no-cache");
     if (octstr_case_compare(value, nocache) == 0)
         pack_short_integer(packed, WSP_CACHE_CONTROL_NO_CACHE);
     else {
@@ -2563,7 +2563,7 @@ static int pack_pragma(Octstr *packed, Octstr *value)
 
 static int pack_range(Octstr *packed, Octstr *value)
 {
-    Octstr *bytes = octstr_create_immutable("bytes");
+    Octstr *bytes = octstr_imm("bytes");
     long pos;
 
     if (octstr_ncompare(value, bytes, octstr_len(bytes)) != 0

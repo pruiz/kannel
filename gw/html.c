@@ -32,7 +32,7 @@ static void skip_html_comment(Octstr *html, long *pos)
     long i;
 
     *pos += 4; 	/* Skip "<!--" at beginning of comment. */
-    i = octstr_search(html, octstr_create_immutable("-->"), *pos);
+    i = octstr_search(html, octstr_imm("-->"), *pos);
     if (i == -1)
         *pos = octstr_len(html);
     else

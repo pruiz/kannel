@@ -51,20 +51,20 @@ static int is_allowed_in_group(Octstr *group, Octstr *variable)
 {
     Octstr *groupstr;
     
-    groupstr = octstr_create_immutable("group");
+    groupstr = octstr_imm("group");
 
     #define OCTSTR(name) \
-    	if (octstr_compare(octstr_create_immutable(#name), variable) == 0) \
+    	if (octstr_compare(octstr_imm(#name), variable) == 0) \
 	    return 1;
     #define SINGLE_GROUP(name, fields) \
-    	if (octstr_compare(octstr_create_immutable(#name), group) == 0) { \
+    	if (octstr_compare(octstr_imm(#name), group) == 0) { \
 	    if (octstr_compare(groupstr, variable) == 0) \
 		return 1; \
 	    fields \
 	    return 0; \
 	}
     #define MULTI_GROUP(name, fields) \
-    	if (octstr_compare(octstr_create_immutable(#name), group) == 0) { \
+    	if (octstr_compare(octstr_imm(#name), group) == 0) { \
 	    if (octstr_compare(groupstr, variable) == 0) \
 		return 1; \
 	    fields \
@@ -80,10 +80,10 @@ static int is_single_group(Octstr *query)
 {
     #define OCTSTR(name)
     #define SINGLE_GROUP(name, fields) \
-    	if (octstr_compare(octstr_create_immutable(#name), query) == 0) \
+    	if (octstr_compare(octstr_imm(#name), query) == 0) \
 	    return 1;
     #define MULTI_GROUP(name, fields) \
-    	if (octstr_compare(octstr_create_immutable(#name), query) == 0) \
+    	if (octstr_compare(octstr_imm(#name), query) == 0) \
 	    return 0;
     #include "cfg.def"
     return 0;
@@ -97,7 +97,7 @@ static int add_group(Cfg *cfg, CfgGroup *grp)
     List *names;
     List *list;
     
-    groupname = cfg_get(grp, octstr_create_immutable("group"));
+    groupname = cfg_get(grp, octstr_imm("group"));
     if (groupname == NULL) {
 	error(0, "Group does not contain variable 'group'.");
     	return -1;
@@ -219,7 +219,7 @@ int cfg_read(Cfg *cfg)
     if (os == NULL)
     	return -1;
 
-    lines = octstr_split(os, octstr_create_immutable("\n"));
+    lines = octstr_split(os, octstr_imm("\n"));
     octstr_destroy(os);
     
     grp = NULL;

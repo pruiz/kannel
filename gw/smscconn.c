@@ -221,7 +221,7 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
 	if (msg->sms.smsc_id == NULL)
 	    return -1;
 
-        list = octstr_split(conn->allowed_smsc_id, octstr_create_immutable(";"));
+        list = octstr_split(conn->allowed_smsc_id, octstr_imm(";"));
         if (list_search(list, msg->sms.smsc_id, octstr_item_match) == NULL) {
 	    list_destroy(list, octstr_destroy_item);
 	    return -1;
@@ -231,7 +231,7 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
     /* ..if no allowed-smsc-id set but denied-smsc-id and message smsc-id
      * is set, deny message if smsc-ids match */
     else if (conn->denied_smsc_id && msg->sms.smsc_id != NULL) {
-        list = octstr_split(conn->denied_smsc_id, octstr_create_immutable(";"));
+        list = octstr_split(conn->denied_smsc_id, octstr_imm(";"));
         if (list_search(list, msg->sms.smsc_id, octstr_item_match) != NULL) {
 	    list_destroy(list, octstr_destroy_item);
 	    return -1;
@@ -246,7 +246,7 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
 
 
     if (conn->preferred_smsc_id && msg->sms.smsc_id != NULL) {
-        list = octstr_split(conn->preferred_smsc_id, octstr_create_immutable(";"));
+        list = octstr_split(conn->preferred_smsc_id, octstr_imm(";"));
         if (list_search(list, msg->sms.smsc_id, octstr_item_match) != NULL) {
 	    list_destroy(list, octstr_destroy_item);
 	    return 1;

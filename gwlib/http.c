@@ -96,7 +96,7 @@ static int parse_http_version(Octstr *version)
     int digit;
     
     if (prefix == NULL)
-    	prefix = octstr_create_immutable("HTTP/1."); /* thread safe! */
+    	prefix = octstr_imm("HTTP/1."); /* thread safe! */
 
     if (prefix_len == -1)
     	prefix_len = octstr_len(prefix);
@@ -141,7 +141,7 @@ static void proxy_add_authentication(List *headers)
     os = octstr_format("%S:%S", proxy_username, proxy_password);
     octstr_binary_to_base64(os);
     octstr_strip_blanks(os);
-    octstr_insert(os, octstr_create_immutable("Basic "), 0);
+    octstr_insert(os, octstr_imm("Basic "), 0);
     http_header_add(headers, "Proxy-Authorization", octstr_get_cstr(os));
     octstr_destroy(os);
 }
@@ -763,7 +763,7 @@ static void handle_transaction(Connection *conn, void *data)
     conn_unregister(trans->conn);
 
     h = http_header_find_first(trans->response_headers, "Connection");
-    if (h != NULL && octstr_compare(h, octstr_create_immutable("close")) == 0)
+    if (h != NULL && octstr_compare(h, octstr_imm("close")) == 0)
 	trans->persistent = 0;
     octstr_destroy(h);
 
@@ -821,13 +821,13 @@ static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port,
     octstr_format_append(request, "Host: %S", host);
     if (port != HTTP_PORT)
         octstr_format_append(request, ":%ld", port);
-    octstr_append(request, octstr_create_immutable("\r\n"));
+    octstr_append(request, octstr_imm("\r\n"));
 
     for (i = 0; headers != NULL && i < list_len(headers); ++i) {
         octstr_append(request, list_get(headers, i));
-        octstr_append(request, octstr_create_immutable("\r\n"));
+        octstr_append(request, octstr_imm("\r\n"));
     }
-    octstr_append(request, octstr_create_immutable("\r\n"));
+    octstr_append(request, octstr_imm("\r\n"));
 
     if (request_body != NULL)
         octstr_append(request, request_body);
@@ -853,7 +853,7 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path)
     long prefix_len;
     int host_len, colon, slash;
 
-    prefix = octstr_create_immutable("http://");
+    prefix = octstr_imm("http://");
     prefix_len = octstr_len(prefix);
 
     if (octstr_case_search(url, prefix, 0) != 0) {
@@ -1227,7 +1227,7 @@ static int parse_request(Octstr **url, int *use_version_1_0, Octstr *line)
     long space;
     int ret;
 
-    if (octstr_search(line, octstr_create_immutable("GET "), 0) != 0)
+    if (octstr_search(line, octstr_imm("GET "), 0) != 0)
     	return -1;
 
     octstr_delete(line, 0, 4);
@@ -2127,7 +2127,7 @@ void http_add_basic_auth(List *headers, Octstr *username, Octstr *password)
     os = octstr_format("%S:%S", username, password);
     octstr_binary_to_base64(os);
     octstr_strip_blanks(os);
-    octstr_insert(os, octstr_create_immutable("Basic "), 0);
+    octstr_insert(os, octstr_imm("Basic "), 0);
     http_header_add(headers, "Authorization", octstr_get_cstr(os));
     octstr_destroy(os);
 }

@@ -4,6 +4,13 @@
 	octstr_create_immutable to octstr_imm. This should make it a
 	bit more palatable.
 
+	* gw/html.c, gw/smsbox.c, gw/smsc_at.c, gw/smscconn.c,
+	gw/urltrans.c, gw/wap-appl.c, gw/wap_push_ota.c,
+	gw/wml_compiler.c, gwlib/cfg.c, gwlib/http.c, test/test_dict.c,
+	test/test_headers.c, test/test_http_server.c,
+	test/test_octstr_immutables.c, test/wml_tester.c,
+	wap/wsp_headers.c, wap/wsp_strings.c: Related changes.
+
 2001-01-18  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/cfg.[ch]: Wrote functions cfg_get_integer and cfg_get_list

@@ -1079,27 +1079,27 @@ static void parse_entities(Octstr *wml_source)
     int pos = 0;
     Octstr *temp;
 
-    if ((pos = octstr_search(wml_source, octstr_create_immutable(entity_nbsp),
+    if ((pos = octstr_search(wml_source, octstr_imm(entity_nbsp),
 			     pos)) >= 0) {
 	temp = octstr_create(nbsp);
 	while (pos >= 0) {
 	    octstr_delete(wml_source, pos, strlen(entity_nbsp));
 	    octstr_insert(wml_source, temp, pos);
 	    pos = octstr_search(wml_source, 
-				octstr_create_immutable(entity_nbsp), pos);
+				octstr_imm(entity_nbsp), pos);
 	}
 	octstr_destroy(temp);
     }
 
     pos = 0;
-    if ((pos = octstr_search(wml_source, octstr_create_immutable(entity_shy),
+    if ((pos = octstr_search(wml_source, octstr_imm(entity_shy),
 			     pos)) >= 0) {
 	temp = octstr_create(shy);
 	while (pos >= 0) {
 	    octstr_delete(wml_source, pos, strlen(entity_shy));
 	    octstr_insert(wml_source, temp, pos);
 	    pos = octstr_search(wml_source, 
-				octstr_create_immutable(entity_shy), pos);
+				octstr_imm(entity_shy), pos);
 	}
 	octstr_destroy(temp);
     }	
@@ -1927,7 +1927,7 @@ List *wml_charsets(void) {
 		charset = octstr_create(character_sets[i].charset);
 		octstr_append_char(charset, '-');
 		octstr_append(charset, 
-			      octstr_create_immutable(character_sets[i].nro));
+			      octstr_imm(character_sets[i].nro));
 		list_append(result, charset);
 	}
 	return result;

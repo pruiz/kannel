@@ -50,7 +50,7 @@ static void client_thread(void *arg)
 	}
 	list_destroy(cgivars, NULL);
     
-    	if (octstr_compare(url, octstr_create_immutable("/quit")) == 0)
+    	if (octstr_compare(url, octstr_imm("/quit")) == 0)
 	    run = 0;
 
 	octstr_destroy(ip);

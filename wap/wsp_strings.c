@@ -137,7 +137,7 @@ const unsigned char **strings, long size)
     table->linear = 1;
 
     for (i = 0; i < size; i++) {
-	table->strings[i] = octstr_create_immutable(strings[i]);
+	table->strings[i] = octstr_imm(strings[i]);
     }
 }
 
@@ -152,7 +152,7 @@ const struct element *strings, long size)
     table->linear = 0;
 
     for (i = 0; i < size; i++) {
-	table->strings[i] = octstr_create_immutable(strings[i].str);
+	table->strings[i] = octstr_imm(strings[i].str);
 	table->numbers[i] = strings[i].number;
     }
 }

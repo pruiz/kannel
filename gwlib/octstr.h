@@ -23,7 +23,7 @@
  * or a C string, the number of functions doubles. Thus, we use immutable
  * strings instead:
  *
- *	octstr_search(os, octstr_create_immutable("foo"), 0)
+ *	octstr_search(os, octstr_imm("foo"), 0)
  *
  * The above looks like a memory leak, but it is not. Each immutable
  * octet string (i.e., with the same C string literal pointer) is really 
@@ -80,9 +80,11 @@ Octstr *octstr_create_from_data_real(const char *data, long len);
 /*
  * Create an immutable octet string from a C string literal. The
  * C string literal MUST NOT be modified and it MUST exist until the
- * octet string is destroyed.
+ * octet string is destroyed. The immutable octet string need not be
+ * destroyed - it is destroyed automatically when octstr_shutdown is
+ * called. In fact, octstr_destroy is a no-op for immutables.
  */
-Octstr *octstr_create_immutable(const char *cstr);
+Octstr *octstr_imm(const char *cstr);
 
 
 /*

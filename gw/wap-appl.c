@@ -685,7 +685,7 @@ static void start_fetch(WAPEvent *event)
     
     http_header_pack(actual_headers);
     
-    magic_url = octstr_create_immutable("kannel:alive");
+    magic_url = octstr_imm("kannel:alive");
     if (octstr_str_compare(method, "GET")  == 0 &&
         octstr_compare(url, magic_url) == 0) {
 	ret = HTTP_OK;

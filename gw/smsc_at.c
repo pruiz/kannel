@@ -400,32 +400,32 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 			goto error;
 
 		ret = octstr_search(ostr, 
-		    	    	    octstr_create_immutable("SIM PIN"), 0);
+		    	    	    octstr_imm("SIM PIN"), 0);
 		if(ret != -1) {
 			octstr_destroy(ostr);
 			return -2;
 		}
 		if(multiline)
 			ret = octstr_search(ostr, 
-					    octstr_create_immutable(">"), 
+					    octstr_imm(">"), 
 					    0);
 		else {
 			ret = octstr_search(ostr, 
-			    	    	    octstr_create_immutable("OK"), 
+			    	    	    octstr_imm("OK"), 
 					    0);
 			if(ret == -1)
 				ret = octstr_search(ostr, 
-				    	 octstr_create_immutable("READY"), 0);
+				    	 octstr_imm("READY"), 0);
 			if(ret == -1)
 				ret = octstr_search(ostr,
-				    	 octstr_create_immutable("CMGS"), 0);
+				    	 octstr_imm("CMGS"), 0);
 		}
 		if(ret != -1) {
 			octstr_destroy(ostr);
 			return 0;
 		}
 		ret = octstr_search(ostr, 
-		    	    	    octstr_create_immutable("ERROR"), 0);
+		    	    	    octstr_imm("ERROR"), 0);
 		if(ret != -1) {
 			octstr_destroy(ostr);
 			return -1;
@@ -451,11 +451,11 @@ static int pdu_extract(SMSCenter *smsc, Octstr **pdu) {
 	buffer = smsc->at_inbuffer;
 	
 	/* find the beginning of a message from the modem*/	
-	pos = octstr_search(buffer, octstr_create_immutable("+CMT:"), 0);
+	pos = octstr_search(buffer, octstr_imm("+CMT:"), 0);
 	if(pos == -1) 
 		goto nomsg;
 	pos += 5;
-	pos = octstr_search(buffer, octstr_create_immutable(","), pos);
+	pos = octstr_search(buffer, octstr_imm(","), pos);
 	if(pos == -1)
 		goto nomsg;
 	pos++;

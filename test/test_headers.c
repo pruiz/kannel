@@ -45,11 +45,11 @@ static void test_header_combine(void)
     http_header_combine(old, new);
     if (list_len(old) != 3 ||
         octstr_compare(list_get(old, 0),
-                       octstr_create_immutable("Accept-Language: en")) != 0 ||
+                       octstr_imm("Accept-Language: en")) != 0 ||
         octstr_compare(list_get(old, 1),
-                       octstr_create_immutable("Accept: text/html")) != 0 ||
+                       octstr_imm("Accept: text/html")) != 0 ||
         octstr_compare(list_get(old, 2),
-                       octstr_create_immutable("Accept: text/plain")) != 0) {
+                       octstr_imm("Accept: text/plain")) != 0) {
         error(0, "http_header_combine failed.");
     }
 

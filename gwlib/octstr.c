@@ -164,7 +164,7 @@ Octstr *octstr_create_from_data_real(const char *data, long len)
 }
 
 
-Octstr *octstr_create_immutable(const char *cstr)
+Octstr *octstr_imm(const char *cstr)
 {
     Octstr *os;
     long i, index;
@@ -1906,7 +1906,7 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
         break;
 
     case '%':
-    	new = octstr_create_immutable("%");
+    	new = octstr_imm("%");
     	break;
 
     default:

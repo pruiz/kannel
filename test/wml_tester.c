@@ -123,7 +123,7 @@ int main(int argc, char **argv)
 		octstr_append_char(output, '\n');
 	    }
 
-	    octstr_append(output, octstr_create_immutable(
+	    octstr_append(output, octstr_imm(
 		    "Here's the binary output: \n\n"));
 	    octstr_print(fp, output);
 	

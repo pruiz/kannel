@@ -545,7 +545,7 @@ static Octstr *pack_server_address(void)
  */ 
 static Octstr *name(Octstr *in)
 {
-    if (octstr_compare(in, octstr_create_immutable("localhost")) != 0)
+    if (octstr_compare(in, octstr_imm("localhost")) != 0)
 	return octstr_duplicate(in);
     else
 	return octstr_duplicate(get_official_ip());

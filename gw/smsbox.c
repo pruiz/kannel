@@ -405,9 +405,9 @@ static void url_result_thread(void *arg)
     Octstr *text_plain;
     Octstr *text_wml;
 
-    text_html = octstr_create_immutable("text/html");
-    text_wml = octstr_create_immutable("text/vnd.wap.wml");
-    text_plain = octstr_create_immutable("text/plain");
+    text_html = octstr_imm("text/html");
+    text_wml = octstr_imm("text/vnd.wap.wml");
+    text_plain = octstr_imm("text/plain");
 
     for (;;) {
     	id = http_receive_result(caller, &status, &final_url, &reply_headers,
@@ -442,9 +442,9 @@ static void url_result_thread(void *arg)
 	msg->sms.time = time(NULL);
     
     	if (final_url == NULL)
-	    final_url = octstr_create_immutable("");
+	    final_url = octstr_imm("");
     	if (reply_body == NULL)
-	    reply_body = octstr_create_immutable("");
+	    reply_body = octstr_imm("");
 	alog("SMS HTTP-request sender:%s request: '%s' "
 	     "url: '%s' reply: %d '%s'",
 	     octstr_get_cstr(msg->sms.receiver),
@@ -762,7 +762,7 @@ static URLTranslation *default_authorise_user(List *list, char *client_ip)
     if ((user = http_cgi_variable(list, "username")) == NULL
         && (user = http_cgi_variable(list, "user")) == NULL)
         t = urltrans_find_username(translations, 
-	    	    	    	   octstr_create_immutable("default"));
+	    	    	    	   octstr_imm("default"));
     else
         t = urltrans_find_username(translations, user);
 
@@ -804,7 +804,7 @@ static URLTranslation *authorise_user(List *list, char *client_ip)
 #ifdef HAVE_SECURITY_PAM_APPL_H
     URLTranslation *t;
     
-    t = urltrans_find_username(translations, octstr_create_immutable("pam"));
+    t = urltrans_find_username(translations, octstr_imm("pam"));
     if (t != NULL) {
 	if (pam_authorise_user(list))
 	    return t;
@@ -1002,9 +1002,9 @@ static char *smsbox_req_sendota(List *list, char *client_ip)
      * properties to be send to the client otherwise send the default */
     id = http_cgi_variable(list, "otaid");
     
-    grplist = cfg_get_multi_group(cfg, octstr_create_immutable("otaconfig"));
+    grplist = cfg_get_multi_group(cfg, octstr_imm("otaconfig"));
     while ((grp = list_extract_first(grplist)) != NULL) {
-	p = cfg_get(grp, octstr_create_immutable("ota-id"));
+	p = cfg_get(grp, octstr_imm("ota-id"));
 	if (p != NULL && octstr_compare(p, id) == 0)
 	    goto found;
     }
@@ -1018,11 +1018,11 @@ static char *smsbox_req_sendota(List *list, char *client_ip)
     
 found:
     list_destroy(grplist, NULL);
-    url = cfg_get(grp, octstr_create_immutable("location"));
-    desc = cfg_get(grp, octstr_create_immutable("service"));
-    ipaddr = cfg_get(grp, octstr_create_immutable("ipaddress"));
-    phonenum = cfg_get(grp, octstr_create_immutable("phonenumber"));
-    p = cfg_get(grp, octstr_create_immutable("bearer"));
+    url = cfg_get(grp, octstr_imm("location"));
+    desc = cfg_get(grp, octstr_imm("service"));
+    ipaddr = cfg_get(grp, octstr_imm("ipaddress"));
+    phonenum = cfg_get(grp, octstr_imm("phonenumber"));
+    p = cfg_get(grp, octstr_imm("bearer"));
     if (p != NULL) {
 	if (strcasecmp(octstr_get_cstr(p), "data") == 0)
 	    bearer = BEARER_DATA;
@@ -1030,7 +1030,7 @@ found:
 	    bearer = -1;
 	octstr_destroy(p);
     }
-    p = cfg_get(grp, octstr_create_immutable("calltype"));
+    p = cfg_get(grp, octstr_imm("calltype"));
     if (p != NULL) {
 	if (strcasecmp(octstr_get_cstr(p), "calltype") == 0)
 	    calltype = CALL_ISDN;
@@ -1040,14 +1040,14 @@ found:
     }
 	
     speed = SPEED_9660;
-    p = cfg_get(grp, octstr_create_immutable("speed"));
+    p = cfg_get(grp, octstr_imm("speed"));
     if (p != NULL) {
-	if (octstr_compare(p, octstr_create_immutable("14400")) == 0)
+	if (octstr_compare(p, octstr_imm("14400")) == 0)
 	    speed = SPEED_14400;
     }
 
     /* connection mode and security */
-    p = cfg_get(grp, octstr_create_immutable("connection"));
+    p = cfg_get(grp, octstr_imm("connection"));
     if (p != NULL) {
 	if (strcasecmp(octstr_get_cstr(p), "temp") == 0)
 	    connection = CONN_TEMP;
@@ -1056,7 +1056,7 @@ found:
 	octstr_destroy(p);
     }
 
-    p = cfg_get(grp, octstr_create_immutable("pppsecurity"));
+    p = cfg_get(grp, octstr_imm("pppsecurity"));
     if (p != NULL) {
 	if (strcasecmp(octstr_get_cstr(p), "on") == 0)
 	    security = 1;
@@ -1067,7 +1067,7 @@ found:
     if (security == 1)
 	connection = (connection == CONN_CONT)? CONN_SECCONT : CONN_SECTEMP;
     
-    p = cfg_get(grp, octstr_create_immutable("authentication"));
+    p = cfg_get(grp, octstr_imm("authentication"));
     if (p != NULL) {
 	if (strcasecmp(octstr_get_cstr(p), "secure") == 0)
 	    authent = AUTH_SECURE;
@@ -1076,8 +1076,8 @@ found:
 	octstr_destroy(p);
     }
     
-    username = cfg_get(grp, octstr_create_immutable("login"));
-    passwd = cfg_get(grp, octstr_create_immutable("secret"));
+    username = cfg_get(grp, octstr_imm("login"));
+    passwd = cfg_get(grp, octstr_imm("secret"));
 
     msg = msg_create(sms);
     if (msg == NULL)
@@ -1301,44 +1301,44 @@ static void init_smsbox(Cfg *cfg)
      * core group in configuration file
      */
 
-    grp = cfg_get_single_group(cfg, octstr_create_immutable("core"));
+    grp = cfg_get_single_group(cfg, octstr_imm("core"));
     
-    if (cfg_get_integer(&bb_port, grp, octstr_create_immutable("smsbox-port")) == -1)
+    if (cfg_get_integer(&bb_port, grp, octstr_imm("smsbox-port")) == -1)
 	panic(0, "Missing or bad 'smsbox-port' in core group");
 
-    cfg_get_integer(&http_proxy_port, grp, octstr_create_immutable("http-proxy-port"));
+    cfg_get_integer(&http_proxy_port, grp, octstr_imm("http-proxy-port"));
 
     http_proxy_host = cfg_get(grp, 
-    	    	    	octstr_create_immutable("http-proxy-host"));
+    	    	    	octstr_imm("http-proxy-host"));
     http_proxy_username = cfg_get(grp, 
-    	    	    	    octstr_create_immutable("http-proxy-username"));
+    	    	    	    octstr_imm("http-proxy-username"));
     http_proxy_password = cfg_get(grp, 
-    	    	    	    octstr_create_immutable("http-proxy-password"));
+    	    	    	    octstr_imm("http-proxy-password"));
     http_proxy_exceptions = cfg_get_list(grp,
-    	    	    	    octstr_create_immutable("http-proxy-exceptions"));
+    	    	    	    octstr_imm("http-proxy-exceptions"));
 
 
     /*
      * get the remaining values from the smsbox group
      */
-    grp = cfg_get_single_group(cfg, octstr_create_immutable("smsbox"));
+    grp = cfg_get_single_group(cfg, octstr_imm("smsbox"));
     if (grp == NULL)
 	panic(0, "No 'smsbox' group in configuration");
 
-    p = cfg_get(grp, octstr_create_immutable("bearerbox-host"));
+    p = cfg_get(grp, octstr_imm("bearerbox-host"));
     if (p != NULL) {
 	octstr_destroy(bb_host);
 	bb_host = p;
     }
 
-    cfg_get_integer(&sendsms_port, grp, octstr_create_immutable("sendsms-port"));
-    cfg_get_integer(&sms_max_length, grp, octstr_create_immutable("sms-length"));
+    cfg_get_integer(&sendsms_port, grp, octstr_imm("sendsms-port"));
+    cfg_get_integer(&sms_max_length, grp, octstr_imm("sms-length"));
 
-    global_sender = cfg_get(grp, octstr_create_immutable("global-sender"));
-    accepted_chars = cfg_get(grp, octstr_create_immutable("sendsms-chars"));
-    logfile = cfg_get(grp, octstr_create_immutable("log-file"));
+    global_sender = cfg_get(grp, octstr_imm("global-sender"));
+    accepted_chars = cfg_get(grp, octstr_imm("sendsms-chars"));
+    logfile = cfg_get(grp, octstr_imm("log-file"));
 
-    cfg_get_integer(&lvl, grp, octstr_create_immutable("log-level"));
+    cfg_get_integer(&lvl, grp, octstr_imm("log-level"));
 
     if (logfile != NULL) {
 	info(0, "Starting to log to file %s level %ld", 
@@ -1350,7 +1350,7 @@ static void init_smsbox(Cfg *cfg)
 	     octstr_get_cstr(global_sender));
     }
     
-    p = cfg_get(grp, octstr_create_immutable("access-log"));
+    p = cfg_get(grp, octstr_imm("access-log"));
     if (p != NULL) {
 	info(0, "Logging accesses to '%s'.", octstr_get_cstr(p));
 	alog_open(octstr_get_cstr(p), 1);

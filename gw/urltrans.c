@@ -118,8 +118,8 @@ int urltrans_add_one(URLTranslationList *trans, CfgGroup *grp)
     Octstr *keyword;
     Octstr *username;
 	
-    keyword = cfg_get(grp, octstr_create_immutable("keyword"));
-    username = cfg_get(grp, octstr_create_immutable("username"));
+    keyword = cfg_get(grp, octstr_imm("keyword"));
+    username = cfg_get(grp, octstr_imm("username"));
     if (keyword == NULL && username == NULL) {
 	octstr_destroy(keyword);
 	octstr_destroy(username);
@@ -163,7 +163,7 @@ int urltrans_add_cfg(URLTranslationList *trans, Cfg *cfg)
     CfgGroup *grp;
     List *list;
     
-    list = cfg_get_multi_group(cfg, octstr_create_immutable("sms-service"));
+    list = cfg_get_multi_group(cfg, octstr_imm("sms-service"));
     while ((grp = list_extract_first(list)) != NULL) {
 	if (urltrans_add_one(trans, grp) == -1) {
 	    list_destroy(list, NULL);
@@ -172,7 +172,7 @@ int urltrans_add_cfg(URLTranslationList *trans, Cfg *cfg)
     }
     list_destroy(list, NULL);
     
-    list = cfg_get_multi_group(cfg, octstr_create_immutable("sendsms-user"));
+    list = cfg_get_multi_group(cfg, octstr_imm("sendsms-user"));
     while ((grp = list_extract_first(list)) != NULL) {
 	if (urltrans_add_one(trans, grp) == -1) {
 	    list_destroy(list, NULL);
@@ -502,30 +502,30 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
     ot->allow_ip = NULL;
     ot->deny_ip = NULL;
     
-    keyword = cfg_get(grp, octstr_create_immutable("keyword"));
-    aliases = cfg_get(grp, octstr_create_immutable("aliases"));
-    url = cfg_get(grp, octstr_create_immutable("url"));
-    text = cfg_get(grp, octstr_create_immutable("text"));
-    file = cfg_get(grp, octstr_create_immutable("file"));
-    prefix = cfg_get(grp, octstr_create_immutable("prefix"));
-    suffix = cfg_get(grp, octstr_create_immutable("suffix"));
-    faked_sender = cfg_get(grp, octstr_create_immutable("faked-sender"));
-    max_msgs = cfg_get(grp, octstr_create_immutable("max-messages"));
-    split_chars = cfg_get(grp, octstr_create_immutable("split-chars"));
-    split_suffix = cfg_get(grp, octstr_create_immutable("split-suffix"));
-    omit_empty = cfg_get(grp, octstr_create_immutable("omit-empty"));
-    header = cfg_get(grp, octstr_create_immutable("header"));
-    footer = cfg_get(grp, octstr_create_immutable("footer"));
-    username = cfg_get(grp, octstr_create_immutable("username"));
-    password = cfg_get(grp, octstr_create_immutable("password"));
-    concatenation = cfg_get(grp, octstr_create_immutable("concatenation"));
+    keyword = cfg_get(grp, octstr_imm("keyword"));
+    aliases = cfg_get(grp, octstr_imm("aliases"));
+    url = cfg_get(grp, octstr_imm("url"));
+    text = cfg_get(grp, octstr_imm("text"));
+    file = cfg_get(grp, octstr_imm("file"));
+    prefix = cfg_get(grp, octstr_imm("prefix"));
+    suffix = cfg_get(grp, octstr_imm("suffix"));
+    faked_sender = cfg_get(grp, octstr_imm("faked-sender"));
+    max_msgs = cfg_get(grp, octstr_imm("max-messages"));
+    split_chars = cfg_get(grp, octstr_imm("split-chars"));
+    split_suffix = cfg_get(grp, octstr_imm("split-suffix"));
+    omit_empty = cfg_get(grp, octstr_imm("omit-empty"));
+    header = cfg_get(grp, octstr_imm("header"));
+    footer = cfg_get(grp, octstr_imm("footer"));
+    username = cfg_get(grp, octstr_imm("username"));
+    password = cfg_get(grp, octstr_imm("password"));
+    concatenation = cfg_get(grp, octstr_imm("concatenation"));
 
-    accepted_smsc = cfg_get(grp, octstr_create_immutable("accepted-smsc"));
-    forced_smsc = cfg_get(grp, octstr_create_immutable("forced-smsc"));
-    default_smsc = cfg_get(grp, octstr_create_immutable("default-smsc"));
+    accepted_smsc = cfg_get(grp, octstr_imm("accepted-smsc"));
+    forced_smsc = cfg_get(grp, octstr_imm("forced-smsc"));
+    default_smsc = cfg_get(grp, octstr_imm("default-smsc"));
 
-    allow_ip = cfg_get(grp, octstr_create_immutable("user-allow-ip"));
-    deny_ip = cfg_get(grp, octstr_create_immutable("user-deny-ip"));
+    allow_ip = cfg_get(grp, octstr_imm("user-allow-ip"));
+    deny_ip = cfg_get(grp, octstr_imm("user-deny-ip"));
     
     if (url) {
 	ot->type = TRANSTYPE_URL;
@@ -574,7 +574,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	if (aliases) {
 	    Octstr *temp = aliases;
 	    ot->aliases = octstr_split(temp, 
-	    	    	    	       octstr_create_immutable(";"));
+	    	    	    	       octstr_imm(";"));
     	    octstr_destroy(temp);
 	} else
 	    ot->aliases = list_create();
@@ -582,7 +582,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	if (accepted_smsc) {
 	    Octstr *temp = accepted_smsc;
 	    ot->accepted_smsc = octstr_split(temp, 
-	    	    	    	    	     octstr_create_immutable(";"));
+	    	    	    	    	     octstr_imm(";"));
 	    octstr_destroy(temp);
 	}
 	    
@@ -592,12 +592,12 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	}
 
 	ot->args = count_occurences(ot->pattern, 
-	    	    	    	    octstr_create_immutable("%s"));
+	    	    	    	    octstr_imm("%s"));
 	ot->args += count_occurences(ot->pattern, 
-	    	    	    	     octstr_create_immutable("%S"));
+	    	    	    	     octstr_imm("%S"));
 	ot->has_catchall_arg = 
-	    (count_occurences(ot->pattern, octstr_create_immutable("%r")) > 0) ||
-	    (count_occurences(ot->pattern, octstr_create_immutable("%a")) > 0);
+	    (count_occurences(ot->pattern, octstr_imm("%r")) > 0) ||
+	    (count_occurences(ot->pattern, octstr_imm("%a")) > 0);
     }
     else { 		/* send-sms user */
 	ot->args = 0;
@@ -727,7 +727,7 @@ static URLTranslation *find_default_translation(URLTranslationList *trans)
     for (i = 0; i < list_len(trans->list); ++i) {
 	t = list_get(trans->list, i);
 	if (t->keyword != NULL && t->type != TRANSTYPE_SENDSMS
-	    && octstr_compare(octstr_create_immutable("default"), 
+	    && octstr_compare(octstr_imm("default"), 
 	    	    	      t->keyword) == 0)
 	    break;
     }
