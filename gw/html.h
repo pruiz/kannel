@@ -9,7 +9,7 @@
 
 #include <stddef.h>
 
-#include "gwlib/octstr.h"
+#include "gwlib/gwlib.h"
 
 /*
  * Remove HTML tags and decode HTML entities in `html'. Return the

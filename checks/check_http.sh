@@ -18,7 +18,8 @@ ret=$?
 kill $serverpid
 wait
 
-if [ "$ret" != 0 ]
+if [ "$ret" != 0 ] || \
+   grep ERROR: check_http.log check_http_server.log > /dev/null 
 then
 	echo check_http failed 1>&2
 	echo See check_http.log and check_http_server.log for info 1>&2

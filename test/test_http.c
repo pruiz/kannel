@@ -17,6 +17,7 @@ static Counter *counter = NULL;
 static long max_requests = 1;
 static char **urls = NULL;
 static int num_urls = 0;
+static int print_body = 1;
 
 static void client_thread(void *arg) {
 	int ret;
@@ -49,7 +50,8 @@ static void client_thread(void *arg) {
 				octstr_destroy(os);
 			}
 			list_destroy(replyh, NULL);
-			octstr_print(stdout, replyb);
+			if (print_body)
+				octstr_print(stdout, replyb);
 			octstr_destroy(replyb);
 			octstr_destroy(url);
 			octstr_destroy(final_url);
@@ -82,10 +84,14 @@ int main(int argc, char **argv) {
 	exceptions = list_create();
 	num_threads = 0;
 
-	while ((opt = getopt(argc, argv, "hv:r:p:P:e:t:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:")) != EOF) {
 		switch (opt) {
 		case 'v':
 			set_output_level(atoi(optarg));
+			break;
+		
+		case 'q':
+		    	print_body = 0;
 			break;
 
 		case 'r':

@@ -537,7 +537,7 @@ int http_server_send_reply(HTTPSocket *socket, int status, List *headers,
         len = octstr_len(body);
     octstr_format_append(response, "Content-Length: %ld\r\n", len);
     for (i = 0; headers != NULL && i < list_len(headers); ++i) {
-        octstr_format_append(response, "%s\r\n",
+        octstr_format_append(response, "%S\r\n",
                              list_get(headers, i));
     }
     octstr_format_append(response, "\r\n");
