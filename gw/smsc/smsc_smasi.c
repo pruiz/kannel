@@ -873,6 +873,7 @@ static void smasi_thread(void *arg)
             continue;
         }
 
+        last_enquire_sent = date_universal_now(); 
         pending_submits = -1;
         len = 0;
 
@@ -885,6 +886,9 @@ static void smasi_thread(void *arg)
                 send_logoff(smasi, conn);
                 logoff_already_sent = 1;
             } 
+
+            /* send an enquire link */
+            send_enquire_link(smasi, conn, &last_enquire_sent); 
 
             /* Receive incoming PDUs. */
             while ((ret = read_pdu(smasi, conn, &pdu)) == 1) {
