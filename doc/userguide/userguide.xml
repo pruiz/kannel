@@ -2165,7 +2165,7 @@ of specific bugs that seem to show up often.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
-    <entry>n</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
@@ -2399,7 +2399,7 @@ of specific bugs that seem to show up often.</para>
     <entry>y?</entry>
     <entry>n</entry>
     <entry>n</entry>
-    <entry>?</entry>
+    <entry>y</entry>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -2417,7 +2417,7 @@ of specific bugs that seem to show up often.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
-    <entry>?</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -2435,7 +2435,7 @@ of specific bugs that seem to show up often.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
-    <entry>n</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
@@ -2453,7 +2453,7 @@ of specific bugs that seem to show up often.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
-    <entry>n</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
@@ -3517,6 +3517,22 @@ the Kannel configuration, or 'Authorization failed' is returned.
          Optional. If given, the message will be encoded using the Unicode
 	 text given in <literal>text</literal> field.
 	 ex: text=0041007200610062002006306350636.
+   </entry></row>
+
+   <row><entry><literal>validity</literal></entry>
+   <entry valign=bottom>
+         Optional. If given, kannel will inform SMS Center that it should only
+	 try to send the message for this many seconds. If the destination
+	 mobile is off other situation that it cannot receive the sms, the
+	 smsc discards the message.
+	 Note: you must have your kannel box time syncronized with the SMS Center.
+   </entry></row>
+
+   <row><entry><literal>deferred</literal></entry>
+   <entry valign=bottom>
+         Optional. If given, the SMS center will postpone the message to be
+	 delivered at now plus this many seconds.
+	 Note: you must have your kannel box time syncronized with the SMS Center.
    </entry></row>
 
   </tbody>

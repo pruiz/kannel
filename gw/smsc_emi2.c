@@ -248,6 +248,8 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
     Octstr *str;
     struct emimsg *emimsg;
     int mwi;
+    struct tm tm;
+    char p[20];
 
     emimsg = emimsg_create_op(51, trn);
     str = octstr_duplicate(msg->sms.sender);
@@ -385,6 +387,26 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
 	octstr_binary_to_hex(str, 1);
 	emimsg->fields[E50_AMSG] = str;
     }
+
+    if (msg->sms.validity) {
+	tm = gw_localtime(time(NULL) + msg->sms.validity);
+	sprintf(p, "%02d%02d%02d%02d%02d",
+	    tm.tm_mday, tm.tm_mon + 1, tm.tm_year % 100, 
+	    tm.tm_hour, tm.tm_min);
+	str = octstr_create(p);
+	emimsg->fields[E50_VP] = str;
+    }
+    if (msg->sms.deferred) {
+	str = octstr_create("1");
+	emimsg->fields[E50_DD] = str;
+	tm = gw_localtime(time(NULL) + msg->sms.deferred);
+	sprintf(p, "%02d%02d%02d%02d%02d",
+	    tm.tm_mday, tm.tm_mon + 1, tm.tm_year % 100, 
+	    tm.tm_hour, tm.tm_min);
+	str = octstr_create(p);
+	emimsg->fields[E50_DDT] = str;
+    }
+
 
     return emimsg;
 }

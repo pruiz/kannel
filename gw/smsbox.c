@@ -349,6 +349,8 @@ static void *remember_receiver(Msg *msg, URLTranslation *trans)
     receiver->msg->sms.mwimessages = 0;
     receiver->msg->sms.flag_unicode = 0;
     receiver->msg->sms.msgdata = NULL;
+    receiver->msg->sms.validity = 0;
+    receiver->msg->sms.deferred = 0;
     receiver->msg->sms.time = (time_t) -1;
     receiver->msg->sms.smsc_id = octstr_duplicate(msg->sms.smsc_id);
     
@@ -423,12 +425,13 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 				      Octstr **user, Octstr **pass,
 				      Octstr **smsc, int *flag_flash,
 				      int *flag_mwi, int *mwimessages,
-				      int *flag_unicode)
+				      int *flag_unicode, int *validity,
+				      int *deferred)
 {
     Octstr *name, *val;
     long l;
 
-    *flag_flash = *flag_mwi = *mwimessages = *flag_unicode = 0;
+    *flag_flash = *flag_mwi = *mwimessages = *flag_unicode = *validity = *deferred = 0;
     for(l=0; l<list_len(headers); l++) {
 	http_header_get(headers, l, &name, &val);
 
@@ -478,6 +481,12 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Unicode")) == 0) {
     	    sscanf(octstr_get_cstr(val),"%d", flag_unicode);
         }
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Validity")) == 0) {
+    	    sscanf(octstr_get_cstr(val),"%d", validity);
+	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Deferred")) == 0) {
+    	    sscanf(octstr_get_cstr(val),"%d", deferred);
+	}
 	octstr_destroy(name);
 	octstr_destroy(val);
     }
@@ -486,7 +495,8 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 static void fill_message(Msg *msg, URLTranslation *trans,
 			 Octstr *replytext, int octet_stream,
 			 Octstr *from, Octstr *to, Octstr *udh, 
-			 int flag_flash, int flag_mwi, int mwimessages, int flag_unicode)
+			 int flag_flash, int flag_mwi, int mwimessages, 
+			 int flag_unicode, int validity, int deferred)
 {    
     msg->sms.msgdata = replytext;
     if (octet_stream && urltrans_assume_plain_text(trans)==0)
@@ -551,6 +561,22 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 	    warning(0, "Tried to set Unicode field, denied.");
 	}
     }
+    if (validity) {
+	if (urltrans_accept_x_kannel_headers(trans)) {
+	    msg->sms.validity = validity;
+	} else {
+	    warning(0, "Tried to change validity to '%d', denied.",
+		    validity);
+	}
+    }
+    if (deferred) {
+	if (urltrans_accept_x_kannel_headers(trans)) {
+	    msg->sms.deferred = deferred;
+	} else {
+	    warning(0, "Tried to change deferred to '%d', denied.",
+		    deferred);
+	}
+    }
 }
 
 
@@ -569,6 +595,7 @@ static void url_result_thread(void *arg)
     Octstr *udh, *from, *to;
     int octets;
     int flag_flash, flag_mwi, mwimessages, flag_unicode;
+    int validity, deferred;
     
     text_html = octstr_imm("text/html");
     text_wml = octstr_imm("text/vnd.wap.wml");
@@ -585,6 +612,7 @@ static void url_result_thread(void *arg)
 
     	from = to = udh = NULL;
 	octets = flag_flash = flag_mwi = mwimessages = flag_unicode = 0;
+	validity = deferred = 0;
 	
     	if (status == HTTP_OK) {
 	    http_header_get_content_type(reply_headers, &type, &charset);
@@ -597,21 +625,24 @@ static void url_result_thread(void *arg)
 		octstr_strip_blanks(replytext);
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, NULL, &flag_flash,
-					  &flag_mwi, &mwimessages, &flag_unicode);
+					  &flag_mwi, &mwimessages, &flag_unicode,
+					  &validity, &deferred);
 	    } else if (octstr_compare(type, text_plain) == 0) {
 		replytext = reply_body;
 		reply_body = NULL;
 		octstr_strip_blanks(replytext);
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, NULL, &flag_flash,
-					  &flag_mwi, &mwimessages, &flag_unicode);
+					  &flag_mwi, &mwimessages, &flag_unicode,
+					  &validity, &deferred);
 	    } else if (octstr_compare(type, octet_stream) == 0) {
 		replytext = reply_body;
 		octets = 1;
 		reply_body = NULL;
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, NULL, &flag_flash,
-					  &flag_mwi, &mwimessages, &flag_unicode);
+					  &flag_mwi, &mwimessages, &flag_unicode,
+					  &validity, &deferred);
 	    } else {
 		replytext = octstr_create("Result could not be represented "
 					  "as an SMS message.");
@@ -622,7 +653,7 @@ static void url_result_thread(void *arg)
 	    replytext = octstr_create("Could not fetch content, sorry.");
 
 	fill_message(msg, trans, replytext, octets, from, to, udh, flag_flash,
-			flag_mwi, mwimessages, flag_unicode);
+			flag_mwi, mwimessages, flag_unicode, validity, deferred);
 	
     	if (final_url == NULL)
 	    final_url = octstr_imm("");
@@ -761,6 +792,20 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	    Octstr *os;
 	    os = octstr_format("%d",msg->sms.flag_unicode);
 	    http_header_add(request_headers, "X-Kannel-Unicode", 
+	    	octstr_get_cstr(os));
+	    octstr_destroy(os);
+	}
+	if (msg->sms.validity) {
+	    Octstr *os;
+	    os = octstr_format("%d",msg->sms.validity);
+	    http_header_add(request_headers, "X-Kannel-Validity", 
+	    	octstr_get_cstr(os));
+	    octstr_destroy(os);
+	}
+	if (msg->sms.deferred) {
+	    Octstr *os;
+	    os = octstr_format("%d",msg->sms.deferred);
+	    http_header_add(request_headers, "X-Kannel-Deferred", 
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
@@ -1024,7 +1069,8 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 				 Octstr *from, Octstr *to, Octstr *text,
 				 int binary, Octstr *udh, Octstr *smsc, 
 				 int flag_flash, int flag_mwi, int mwimessages,
-				 int flag_unicode, int *status)
+				 int flag_unicode, int validity,
+				 int deferred, int *status)
 {				     
     Msg *msg = NULL;
     Octstr *newfrom, *returnerror;
@@ -1103,6 +1149,18 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	goto fielderror;
     }
     msg->sms.flag_unicode = flag_unicode;
+
+    if ( validity < 0 ) {
+	returnerror = octstr_create("Validity field misformed, rejected");
+	goto fielderror;
+    }
+    msg->sms.validity = validity;
+
+    if ( deferred < 0 ) {
+	returnerror = octstr_create("Deferred field misformed, rejected");
+	goto fielderror;
+    }
+    msg->sms.deferred = deferred;
 
     /* new smsc-id argument - we should check this one, if able,
        but that's advanced logics -- Kalle */
@@ -1244,8 +1302,9 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     Octstr *from, *to;
     Octstr *text, *udh, *smsc, *flash_string, *mwi_string;
     Octstr *mwimessages_string, *unicode_string;
+    Octstr *validity_string, *deferred_string;
     int binary;
-    int flag_flash, flag_mwi, mwimessages, flag_unicode;
+    int flag_flash, flag_mwi, mwimessages, flag_unicode, validity, deferred;
    
     /* check the username and password */
     t = authorise_user(args, client_ip);
@@ -1263,8 +1322,10 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     mwi_string = http_cgi_variable(args, "mwi");
     mwimessages_string = http_cgi_variable(args, "mwimessages");
     unicode_string = http_cgi_variable(args, "unicode");
+    validity_string = http_cgi_variable(args, "validity");
+    deferred_string = http_cgi_variable(args, "deferred");
 
-    flag_flash = flag_mwi = mwimessages = flag_unicode = 0;
+    flag_flash = flag_mwi = mwimessages = flag_unicode = validity = deferred = 0;
 
     if(flash_string != NULL) {
         sscanf(octstr_get_cstr(flash_string),"%d",&flag_flash);
@@ -1277,6 +1338,12 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     }
     if(unicode_string != NULL) {
         sscanf(octstr_get_cstr(unicode_string),"%d",&flag_unicode);
+    }
+    if(validity_string != NULL) {
+        sscanf(octstr_get_cstr(validity_string),"%d",&validity);
+    }
+    if(deferred_string != NULL) {
+        sscanf(octstr_get_cstr(deferred_string),"%d",&deferred);
     }
 
     if (to == NULL) {
@@ -1298,7 +1365,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
 
     return smsbox_req_handle(t, client_ip, from, to, text, binary,
 			     udh, smsc, flag_flash, flag_mwi, mwimessages,
-			     flag_unicode, status);
+			     flag_unicode, validity, deferred, status);
     
 }
 
@@ -1315,13 +1382,14 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     Octstr *ret;
     Octstr *type, *charset;
     int binary = 0;
-    int flag_flash, flag_mwi, mwimessages, flag_unicode;
+    int flag_flash, flag_mwi, mwimessages, flag_unicode, validity, deferred;
  
     from = to = user = pass = udh = smsc = NULL;
 
     get_x_kannel_from_headers(headers, &from, &to, &udh,
 			      &user, &pass, &smsc,  &flag_flash,
-			      &flag_mwi, &mwimessages, &flag_unicode);
+			      &flag_mwi, &mwimessages, &flag_unicode,
+			      &validity, &deferred);
     
     ret = NULL;
     
@@ -1355,7 +1423,8 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	if (ret == NULL)
 	    ret = smsbox_req_handle(t, client_ip, from, to, body,
 				    binary, udh, smsc, flag_flash, 
-				    flag_mwi, mwimessages, flag_unicode, status);
+				    flag_mwi, mwimessages, flag_unicode,
+				    validity, deferred, status);
 
 	octstr_destroy(type);
 	octstr_destroy(charset);
