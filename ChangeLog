@@ -1,3 +1,23 @@
+2001-07-05 Aarno Syvänen <aarno@wiral.com>
+
+	* test/test_ppg.c: Added a simple pi for testing ppgs
+
+	* gw/wap_push_pap.c: Added communications with pi
+
+	* wap/wap_events.def: Added an event Bad_Message_Response. 
+	Corrected definitions of Push_response
+
+	* gw/wap_push_pap_compiler.c: Rewrote. Corrected bugs spotted by 
+	Bernard Walton
+
+	* gw/wap_push_ppg.h: Added x000 pap result codes to enumerations
+
+	* gw/wap_push_ppg.c: Added descriptions of aforementioned codes.
+	Corrected a bug spotted by Bernard Walton
+
+	* gw/wap_push_mime.c: Corrected handling of optional headers
+
+
 2001-06-22  Dave Holland <david.holland@3glab.com>
 
 	* configure.in, configure: added reference to html and tex
