@@ -38,6 +38,15 @@
 
 typedef struct Connection Connection;
 
+/* If the conn_register was called for this connection, a callback function
+ * of type conn_callback_t will be called when new input is available. 
+ * The data pointer is the one supplied by the caller of conn_register.
+ * NOTE: Beware of concurrency issues.  The callback function will run
+ * in the fdset's private thread, not in the caller's thread.
+ * This also means that if the callback does a lot of work it will slow
+ * down the polling process.  This may be good or bad. */
+typedef void conn_callback_t(Connection *conn, void *data);
+
 /* Open a TCP/IP connection to the given host and port.  Return the
  * new Connection.  If the connection can not be made, return NULL
  * and log the problem. */
@@ -75,6 +84,19 @@ int conn_eof(Connection *conn);
  * get an unbuffered connection.  See the discussion on output buffering
  * at the top of this file for more information. */
 void conn_set_output_buffering(Connection *conn, unsigned int size);
+
+/* Register this connection with an FDSet.  This will make it unnecessary
+ * to call conn_wait.  Instead, the callback function will be called when
+ * there is new data available.  A connection can be registered with only
+ * one FDSet at a time.  Return -1 if it was already registered, otherwise
+ * return 0.
+ * NOTE: Using conn_register will always mean that the Connection will be
+ * used by more than one thread, so don't also call conn_claim. */
+int conn_register(Connection *conn, FDSet *fdset,
+                  conn_callback_t callback, void *data);
+
+/* Remove the current registration. */
+void conn_unregister(Connection *conn);
 
 /* Block the thread until one of the following is true:
  *   - The timeout expires

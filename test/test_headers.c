@@ -52,6 +52,10 @@ static void test_header_combine(void)
                        octstr_create_immutable("Accept: text/plain")) != 0) {
         error(0, "http_header_combine failed.");
     }
+
+    http_destroy_headers(old);
+    http_destroy_headers(new);
+    http_destroy_headers(tmp);
 }
  
 

@@ -1,3 +1,21 @@
+2000-10-26  Richard Braakman  <dark@wapit.com>
+
+	* test/test_headers: Fix memory leaks introduced by
+	http_header_combine test.
+
+2000-10-26  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/fdset.[ch]: New module for polling large sets of file
+	descriptors efficiently.  Not used yet, intended for HTTP module.
+
+	* gwlib/gwlib.h: include fdset.h
+
+	* gwlib/conn.[ch]: Added conn_register and conn_unregister,
+	to use Connections with FDSets.
+
+	* gwlib/list.[ch]: Wrap list_create just like octstr_create,
+	so that the memory leak listing shows who called list_create.
+	
 2000-10-26  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/dict.c: Initialize hash table elements to be Lists, instead

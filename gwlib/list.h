@@ -76,7 +76,8 @@ typedef void list_item_destructor_t(void *item);
 /*
  * Create a list and return a pointer to the list object.
  */
-List *list_create(void);
+List *list_create_real(void);
+#define list_create() gw_claim_area(list_create_real())
 
 /*
  * Destroy the list. If `destructor' is not NULL, first destroy all items

@@ -62,7 +62,7 @@ static void make_bigger(List *list, long items);
 static void delete_items_from_list(List *list, long pos, long count);
 
 
-List *list_create(void) {
+List *list_create_real(void) {
 	List *list;
 
 	list = gw_malloc(sizeof(List));

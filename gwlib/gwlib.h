@@ -30,6 +30,7 @@
 #include "http.h"
 #include "octstr.h"
 #include "list.h"
+#include "fdset.h"
 #include "gwassert.h"
 #include "counter.h"
 #include "charset.h"

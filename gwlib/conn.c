@@ -24,9 +24,9 @@
 #define DEFAULT_OUTPUT_BUFFERING 4096
 
 struct Connection {
-	/* We use two locks, so that read and write activities don't
-	 * have to get in each other's way.  If you need both, then
-	 * acquire the outlock first. */
+	/* We use separate locks for input and ouput fields, so that
+	 * read and write activities don't have to get in each other's
+	 * way.  If you need both, then acquire the outlock first. */
 	Mutex *inlock;
 	Mutex *outlock;
 	volatile sig_atomic_t claimed;
@@ -52,7 +52,28 @@ struct Connection {
 	long inbufpos;   /* start of unread data in inbuf */
 
 	int read_eof;    /* we encountered eof on read */
+
+	/* Protected by both locks when updating, so you need only one
+	 * of the locks when reading. */
+        FDSet *registered;
+        conn_callback_t *callback;
+        void *callback_data;
+	/* Protected by inlock */
+	int listening_pollin;
+	/* Protected by outlock */
+	int listening_pollout;
 };
+
+static void unlocked_register_pollin(Connection *conn, int onoff);
+static void unlocked_register_pollout(Connection *conn, int onoff);
+
+/* There are a number of functions that play with POLLIN and POLLOUT flags.
+ * The general rule is that we always want to poll for POLLIN except when
+ * we have detected eof (which may be reported as eternal POLLIN), and
+ * we want to poll for POLLOUT only if there's data waiting in the
+ * output buffer.  If output buffering is set, we may not want to poll for
+ * POLLOUT if there's not enough data waiting, which is why we have
+ * unlocked_try_write. */
 
 /* Lock a Connection's read direction, if the Connection is unclaimed */
 static void lock_in(Connection *conn) {
@@ -114,11 +135,14 @@ static long unlocked_write(Connection *conn) {
 
 	/* Heuristic: Discard the already-written data if it's more than
 	 * half of the total.  This should keep the buffer size small
-	 * without wasting too much cycles on moving data around. */
+	 * without wasting too many cycles on moving data around. */
 	if (conn->outbufpos > octstr_len(conn->outbuf) / 2) {
 		octstr_delete(conn->outbuf, 0, conn->outbufpos);
 		conn->outbufpos = 0;
 	}
+
+        if (conn->registered)
+		unlocked_register_pollout(conn, unlocked_outbuf_len(conn) > 0);
 
 	return ret;
 }
@@ -159,9 +183,13 @@ static void unlocked_read(Connection *conn) {
 		if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
 			return;
 		error(errno, "Error reading from fd %d:", conn->fd);
+		if (conn->registered)
+			unlocked_register_pollin(conn, 0);
 		return;
 	} else if (len == 0) {
 		conn->read_eof = 1;
+		if (conn->registered)
+			unlocked_register_pollin(conn, 0);
 	} else {
 		octstr_append_data(conn->inbuf, buf, len);
 	}
@@ -176,6 +204,44 @@ static Octstr *unlocked_get(Connection *conn, long length) {
 	conn->inbufpos += length;
 
 	return result;
+}
+
+/* Tell the fdset whether we are interested in POLLIN events, but only
+ * if the status changed.  (Calling fdset_listen can be expensive if
+ * it requires synchronization with the polling thread.)
+ * We must already have the inlock.
+ */
+static void unlocked_register_pollin(Connection *conn, int onoff) {
+	gw_assert(conn->registered);
+
+	if (onoff == 1 && !conn->listening_pollin) {
+		/* Turn it on */
+		conn->listening_pollin = 1;
+		fdset_listen(conn->registered, conn->fd, POLLIN, POLLIN);
+	} else if (onoff == 0 && conn->listening_pollin) {
+		/* Turn it off */
+		conn->listening_pollin = 0;
+		fdset_listen(conn->registered, conn->fd, POLLIN, 0);
+	}
+}
+
+/* Tell the fdset whether we are interested in POLLOUT events, but only
+ * if the status changed.  (Calling fdset_listen can be expensive if
+ * it requires synchronization with the polling thread.)
+ * We must already have the outlock.
+ */
+static void unlocked_register_pollout(Connection *conn, int onoff) {
+	gw_assert(conn->registered);
+
+	if (onoff == 1 && !conn->listening_pollout) {
+		/* Turn it on */
+		conn->listening_pollout = 1;
+		fdset_listen(conn->registered, conn->fd, POLLOUT, POLLOUT);
+	} else if (onoff == 0 && conn->listening_pollout) {
+		/* Turn it off */
+		conn->listening_pollout = 0;
+		fdset_listen(conn->registered, conn->fd, POLLOUT, 0);
+	}
 }
 
 Connection *conn_open_tcp(Octstr *host, int port) {
@@ -208,6 +274,12 @@ Connection *conn_wrap_fd(int fd) {
 	conn->read_eof = 0;
 	conn->output_buffering = DEFAULT_OUTPUT_BUFFERING;
 
+	conn->registered = NULL;
+	conn->callback = NULL;
+	conn->callback_data = NULL;
+	conn->listening_pollin = 0;
+	conn->listening_pollout = 0;
+
 	return conn;
 }
 
@@ -219,6 +291,9 @@ void conn_destroy(Connection *conn) {
 
 	/* No locking done here.  conn_destroy should not be called
 	 * if any thread might still be interested in the connection. */
+
+	if (conn->registered)
+		fdset_unregister(conn->registered, conn->fd);
 
 	if (conn->fd >= 0) {
 		/* Try to flush any remaining data */
@@ -280,6 +355,76 @@ void conn_set_output_buffering(Connection *conn, unsigned int size) {
 	lock_out(conn);
 	conn->output_buffering = size;
 	unlock_out(conn);
+}
+
+static void poll_callback(int fd, int revents, void *data) {
+	Connection *conn;
+
+	conn = data;
+
+	if (conn == NULL) {
+		error(0, "poll_callback called with NULL connection.");
+		return;
+	}
+
+	if (conn->fd != fd) {
+		error(0, "poll_callback called on wrong connection.");
+		return;
+	}
+
+	/* If unlocked_write manages to write all pending data, it will
+	 * tell the fdset to stop listening for POLLOUT. */
+	if (revents & POLLOUT) {
+		lock_out(conn);
+		unlocked_write(conn);
+		unlock_out(conn);
+	}
+
+	/* If unlocked_read hits eof or error, it will tell the fdset to
+         * stop listening for POLLIN. */
+	if (revents & POLLIN) {
+		lock_in(conn);
+		unlocked_read(conn);
+		unlock_in(conn);
+		conn->callback(conn, conn->callback_data);
+	}
+}
+
+int conn_register(Connection *conn, FDSet *fdset,
+		  conn_callback_t callback, void *data) {
+	int events;
+
+	if (conn->fd < 0)
+		return -1;
+
+	/* We need both locks if we want to update the registration
+	 * information. */
+	lock_out(conn);
+	lock_in(conn);
+
+	if (conn->registered) {
+	    unlock_in(conn);
+	    unlock_out(conn);
+	    return -1;
+        }
+
+	events = 0;
+	if (!conn->read_eof)
+		events |= POLLIN;
+	if (unlocked_outbuf_len(conn) > 0)
+		events |= POLLOUT;
+
+	conn->registered = fdset;
+	conn->callback = callback;
+	conn->callback_data = data;
+	conn->listening_pollin = (events & POLLIN) != 0;
+	conn->listening_pollout = (events & POLLOUT) != 0;
+	fdset_register(fdset, conn->fd, events, poll_callback, conn);
+
+	unlock_in(conn);
+	unlock_out(conn);
+
+	return 0;
 }
 
 int conn_wait(Connection *conn, double seconds) {
