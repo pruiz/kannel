@@ -37,6 +37,13 @@ static void cfmakeraw(struct termios *tio)
 {}
 #endif
 
+/*
+ * Not all systems have B115200, but all should have B38400.
+ */
+#ifndef B115200
+#define B115200 B38400
+#endif
+
 /******************************************************************************
 * Static functions
 */

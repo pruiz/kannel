@@ -1,3 +1,8 @@
+Sat Apr 15 18:01:39 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/smsc_emi.c: If B115200 is not defined, use B38400 instead.
+	This compiles, but I can't test it right now.
+
 Sat Apr 15 17:40:18 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* test/test_list.c: More fixes to correct assumptions that
