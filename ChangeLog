@@ -1,3 +1,13 @@
+2000-03-28 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp_state-decl.h: Allocated memory for resended messages
+
+	* wapbox.c: Deallocate memory reserved for messages. (Based on tips 
+	from Paul Keogh) In addition, added timer mutex iniatilisation.
+
+	* wtp.c: Added locks for machines. Added structure segments for making
+	reassembly thread safe. 
+
 2000-03-28  Richard Braakman  <dark@wapit.com>
 
 	* utils/start-stop-daemon.c: Put conditional OSLinux || OSHURD
@@ -20,7 +30,7 @@
 2000-03-27 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp*: Added some comments. Made code review changes. Added code for
-	timers (This is however, still commented out. It must be tested with
+	timers (This is,  how ever, still commented out. It must be tested with
 	a new version of fakewap.). Corrected some of memory leaks pointed out
 	by Paul Keogh.
 
