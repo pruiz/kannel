@@ -2,6 +2,10 @@
 
 	* wtp.c: fixed locking bugs in functions wtp_machine_* 
 
+	* wtp.c, wtp.h, wtp_state-decl.h: fixed wsp handle
+
+	* changing debugging functions all the time
+
 1999-03-12 Aarno Syvänen <syvanen@wapit.com>
 
 	* gwlib/thread.c: added function mutex_destroy
