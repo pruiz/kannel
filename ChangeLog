@@ -1,3 +1,7 @@
+2000-11-02  Paul Keogh  <paul.keogh@anam.com>
+
+	* gw/cookies.c: Fix for some cookie management bugs.
+
 2000-11-01  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/gwthread-pthread.c: Fix memory leak if poll() was
