@@ -1,3 +1,10 @@
+2000-05-31  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c (string_table_add): A bug fixed. The string 
+	didn't match any in the table, since it didn't have a termination 
+	character at the end of it as those in the table. Also string has 
+	to be destroyed if it has already a duplicate in the table.
+
 2000-05-30  Kalle Marjola <rpr@wapit.com>
 
 	* gw/bb_smsc.c: added white and black lists.

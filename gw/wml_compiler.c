@@ -23,12 +23,14 @@
 
 #if defined(LIBXML_VERSION) && LIBXML_VERSION >= 20000
 
+#include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include <libxml/debugXML.h>
 
 #else
 
+#include <gnome-xml/xmlmemory.h>
 #include <gnome-xml/parser.h>
 #include <gnome-xml/tree.h>
 #include <gnome-xml/debugXML.h>
@@ -764,7 +766,6 @@ static int parse_variable(Octstr *text, int start, Octstr **output,
 	output_variable(variable, output, esc, wbxml);
     }
 
-  octstr_destroy (variable);
   return ret;
 }
 
@@ -1079,9 +1080,11 @@ void output_variable(Octstr *variable, Octstr **output, var_esc_t escaped,
       octstr_append_char(*output, EXT_T_2);
       break;
     }
-#if 0
+
+#if NO_STRING_TABLE
   octstr_insert(*output, variable, octstr_len(*output));
   octstr_append_char(*output, STR_END);
+  octstr_destroy (variable);
 #else
   octstr_append_char(*output, string_table_add(variable, wbxml));
 #endif
@@ -1100,7 +1103,7 @@ static string_table_t *string_table_create(int offset, Octstr *ostr)
 
   node = gw_malloc(sizeof(string_table_t));
   node->offset = offset;
-  node->string = octstr_duplicate(ostr);
+  node->string = ostr;
 
   return node;
 }
@@ -1135,16 +1138,20 @@ static int string_table_add(Octstr *ostr, wml_binary_t **wbxml)
   int i;
   long offset = 0;
 
+  octstr_append_char(ostr, STR_END);
+
   /* Check whether the string is unique. */
   for (i = 0; i < list_len((*wbxml)->string_table); i++)
     {
       item = list_get((*wbxml)->string_table, i);
       if (octstr_compare(item->string, ostr) == 0)
-	return item->offset;
+	{
+	  octstr_destroy(ostr);
+	  return item->offset;
+	}
     }
 
   /* Create a new list item for the string table. */
-  octstr_append_char(ostr, STR_END);
   offset = (*wbxml)->string_table_length;
 
   item = string_table_create(offset, ostr);
