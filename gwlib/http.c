@@ -30,6 +30,8 @@
 /* comment this out if you don't want Keep-Alive HTTP requests */
 #define USE_KEEPALIVE 1
 
+/* comment this out if you don't want HTTP responses to be dumped */
+#define DUMP_RESPONSE 1
 
 /***********************************************************************
  * Stuff used in several sub-modules.
@@ -560,7 +562,8 @@ typedef struct {
     HTTPCaller *caller;
     void *request_id;
     int method;             /* uses enums from http.h for the HTTP methods */
-    Octstr *url;
+    Octstr *url;            /* the full URL, including scheme, host, etc. */
+    Octstr *uri;            /* the HTTP URI path only */
     List *request_headers;
     Octstr *request_body;   /* NULL for GET or HEAD, non-NULL for POST */
     enum {
@@ -586,6 +589,7 @@ typedef struct {
 
 
 static int send_request(HTTPServer *trans);
+static Octstr *build_response(List *headers, Octstr *body);
 
 static HTTPServer *server_create(HTTPCaller *caller, int method, Octstr *url,
                                  List *headers, Octstr *body, int follow_remaining,
@@ -598,6 +602,7 @@ static HTTPServer *server_create(HTTPCaller *caller, int method, Octstr *url,
     trans->request_id = NULL;
     trans->method = method;
     trans->url = octstr_duplicate(url);
+    trans->uri = NULL;
     trans->request_headers = http_header_duplicate(headers);
     trans->request_body = octstr_duplicate(body);
     trans->state = request_not_sent;
@@ -623,11 +628,15 @@ static void server_destroy(void *p)
     
     trans = p;
     octstr_destroy(trans->url);
+    octstr_destroy(trans->uri);
     http_destroy_headers(trans->request_headers);
     trans->request_headers = NULL;
     octstr_destroy(trans->request_body);
     entity_destroy(trans->response);
     octstr_destroy(trans->host);
+    octstr_destroy(trans->certkeyfile);
+    octstr_destroy(trans->username);
+    octstr_destroy(trans->password);
     gw_free(trans);
 }
 
@@ -939,15 +948,24 @@ static void handle_transaction(Connection *conn, void *data)
 	    if (ret < 0) {
             debug("gwlib.http",0,"Failed reading entity");
             goto error;
-	    } else if (ret == 0 && http_status_class(trans->status)
-                                  == HTTP_STATUS_PROVISIONAL) {
-                    /* This was a provisional reply; get the real one now. */
-                    trans->state = reading_status;
-            } else if (ret == 0) {
-		    trans->state = transaction_done;
+	    } else if (ret == 0 && 
+                    http_status_class(trans->status) == HTTP_STATUS_PROVISIONAL) {
+            /* This was a provisional reply; get the real one now. */
+            trans->state = reading_status;
+        } else if (ret == 0) {
+            trans->state = transaction_done;
+
+#ifdef DUMP_RESPONSE
+            /* Dump the response */
+            debug("wsp.http", 0, "HTTP: Received response:");
+            h = build_response(trans->response->headers, trans->response->body);
+            octstr_dump(h, 0);
+            octstr_destroy(h);
+#endif
+
 	    } else {
-		return;
-            }
+            return;
+        }
 	    break;
 
 	default:
@@ -1033,6 +1051,30 @@ static Octstr *build_request(char *method_name, Octstr *path_or_url,
         octstr_append(request, request_body);
 
     return request;
+}
+
+
+/*
+ * Re-build the HTTP response given the headers and the body.
+ * Return the response as an Octstr.
+ */
+static Octstr *build_response(List *headers, Octstr *body)
+{
+    Octstr *response;
+    int i;
+
+    response = octstr_create("");
+
+    for (i = 0; headers != NULL && i < list_len(headers); ++i) {
+        octstr_append(response, list_get(headers, i));
+        octstr_append(response, octstr_imm("\r\n"));
+    }
+    octstr_append(response, octstr_imm("\r\n"));
+
+    if (body != NULL)
+        octstr_append(response, body);
+
+    return response;
 }
 
 
@@ -1155,12 +1197,8 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
     if (auth_sep != -1)
         octstr_set_char(url, auth_sep, ':');
     
-    /* XXX 
-     * This breaks HTTP basic auth. What is it for?!
-
 	for(i = at2 + 1; i < at ; i++)
 	    octstr_set_char(url, i, '*');
-    */
 
 	host_len = host_len - at + prefix_len - 1;
 	prefix_len = at + 1;
@@ -1178,22 +1216,18 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
 
 static Connection *get_connection(HTTPServer *trans) 
 {
-  Octstr *path;
     Connection *conn;
     Octstr *host, *our_host = NULL;
     int port;
 
     conn = NULL;
-    path = NULL;
 
-    /* May not be NULL if we're retrying this transaction. */
-    octstr_destroy(trans->host);
-    trans->host = NULL;
-
-    if (parse_url(trans->url, &trans->host, &trans->port, &path, &trans->ssl,
-                  &trans->username, &trans->password) == -1)
-        goto error;
-
+    /* if the parsing has not yet been done, then do it now */
+    if (!trans->host && trans->port == 0) {
+        if (parse_url(trans->url, &trans->host, &trans->port, &trans->uri, &trans->ssl,
+                      &trans->username, &trans->password) == -1)
+            goto error;
+    }
 
     if (proxy_used_for_host(trans->host)) {
         host = proxy_hostname;
@@ -1217,13 +1251,10 @@ static Connection *get_connection(HTTPServer *trans)
     if (conn == NULL)
         goto error;
 
-  octstr_destroy(path);
-
   return conn;
 
  error:
   conn_destroy(conn);
-  octstr_destroy(path);
   error(0, "Couldn't send request to <%s>", octstr_get_cstr(trans->url));
   return NULL;
 }
@@ -1235,17 +1266,14 @@ static Connection *get_connection(HTTPServer *trans)
 
 static int send_request(HTTPServer *trans)
 {
-  Octstr *path, *request;
+  Octstr *request;
 
-  path = NULL;
   request = NULL;
 
-  octstr_destroy(trans->host);
-  trans->host = NULL;
-
-  if (parse_url(trans->url, &trans->host, &trans->port, &path, &trans->ssl,
-		&trans->username, &trans->password) == -1)
-    goto error;
+  /* 
+   * we have to assume all values in trans are already set
+   * by parse_url() before calling this.
+   */
 
   if (trans->username != NULL)
     http_add_basic_auth(trans->request_headers, trans->username,
@@ -1258,7 +1286,7 @@ static int send_request(HTTPServer *trans)
 			    trans->request_headers, 
 			    trans->request_body);
   } else {
-    request = build_request(http_method2name(trans->method),path, 
+    request = build_request(http_method2name(trans->method), trans->uri, 
 			    trans->host, trans->port,
 			    trans->request_headers,
 			    trans->request_body);
@@ -1269,7 +1297,6 @@ static int send_request(HTTPServer *trans)
   if (conn_write(trans->conn, request) == -1)
         goto error;
 
-    octstr_destroy(path);
     octstr_destroy(request);
 
   return 0;
@@ -1277,7 +1304,6 @@ static int send_request(HTTPServer *trans)
  error:
   conn_destroy(trans->conn);
   trans->conn = NULL;
-    octstr_destroy(path);
     octstr_destroy(request);
     error(0, "Couldn't send request to <%s>", octstr_get_cstr(trans->url));
   return -1;
@@ -1301,7 +1327,11 @@ static void write_request_thread(void *arg)
 
         gw_assert(trans->state == request_not_sent);
 
-	trans->conn = get_connection(trans);
+        /* 
+         * get the connection to use
+         * also calls parse_url() to populate the trans values
+         */
+        trans->conn = get_connection(trans);
 
 	if (trans->conn == NULL)
 	  list_produce(trans->caller, trans);
