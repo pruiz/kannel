@@ -1,3 +1,7 @@
+Fri May 12    Derry Hamilton <rasilon@tardis.ed.ac.uk>
+	* fakewap.c: Added -F switch which enables continue on fail
+	rather than exit on fail. (Stress testing)
+
 2000-05-11    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/bb_*.c: suspend and isolate status now in work. System still
