@@ -1,3 +1,10 @@
+2000-06-05  Tuomas Luttinen  <tuo@wapit.com>
+
+	* test/decompile.[ch]: A WML decompiler by Chris Wulff, Vanteon.
+	
+	* test/wml_tester.c: A patch by Chris Wulff, Vanteon added to produce 
+	pure binary files. A little cleanup.
+
 2000-06-05    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/bb_smsc.c: changed sleep(1) to usleep. A bit more busier

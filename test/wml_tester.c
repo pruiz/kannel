@@ -11,13 +11,15 @@
 #include "gw/wml_compiler.h"
 
 
+
 static void help(void) {
-	info(0, "Usage: wml_tester [-hzs] [-f file] [-c charset] file.wml\n"
+	info(0, "Usage: wml_tester [-hzs] [-f file] [-b file] [-c charset] file.wml\n"
 	        "where\n"
 		"  -h  this text\n"
 	        "  -z  insert a '\\0'-character in the midlle of the input\n"
 	        "  -s  output also the WML source\n"
 	        "  -f file     direct the output into a file\n"
+                "  -b file     binary output into a file\n"
 	        "  -c charset  character set as given by the http");
 }
 
@@ -25,8 +27,10 @@ static void help(void) {
 int main(int argc, char **argv)
 {
   FILE *fp = NULL;
+  FILE *fb = NULL;
   Octstr *output = NULL;
   Octstr *filename = NULL;
+  Octstr *binary_file_name = NULL;
   Octstr *wml_text = NULL;
   Octstr *charset = NULL;
   Octstr *wml_binary = NULL;
@@ -39,7 +43,7 @@ int main(int argc, char **argv)
 
   /* You can give an wml text file as an argument './wap_compile main.wml' */
 
-  while ((opt = getopt(argc, argv, "hzsf:c:")) != EOF) {
+  while ((opt = getopt(argc, argv, "hzsf:b:c:")) != EOF) {
     switch (opt) {
     case 'h':
       help();
@@ -56,6 +60,9 @@ int main(int argc, char **argv)
       fp = fopen(optarg, "a");
       if (fp == NULL)
 	panic(0, "Couldn't open output file.");	
+      break;
+    case 'b':
+      binary_file_name = octstr_create(optarg);
       break;
     case 'c':
       charset = octstr_create(optarg);
@@ -103,6 +110,13 @@ int main(int argc, char **argv)
       octstr_append_cstr(output, buffer);
       octstr_print(fp, output);
 
+      if (binary_file_name)
+	{
+	  fb = fopen(octstr_get_cstr(binary_file_name), "w");
+	  octstr_print(fb, wml_binary);
+	  fclose(fb);
+	  octstr_destroy(binary_file_name);
+	}
       if (file)
 	{
 	  fclose(fp);
