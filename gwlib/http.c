@@ -790,8 +790,10 @@ static Octstr *get_redirection_location(HTTPServer *trans)
 {
     if (trans->status < 0 || trans->follow_remaining <= 0)
     	return NULL;
+    /* check for the redirection response codes */
     if (trans->status != HTTP_MOVED_PERMANENTLY &&
-    	trans->status != HTTP_FOUND && trans->status != HTTP_SEE_OTHER)
+    	trans->status != HTTP_FOUND && trans->status != HTTP_SEE_OTHER &&
+        trans->status != HTTP_TEMPORARY_REDIRECT)
 	return NULL;
     if (trans->response == NULL)
         return NULL;
@@ -992,23 +994,51 @@ static void handle_transaction(Connection *conn, void *data)
 
     trans->conn = NULL;
 
-    h = get_redirection_location(trans);
-    if (h != NULL) {
-	octstr_strip_blanks(h);
-	octstr_destroy(trans->url);
-	trans->url = h;
-	trans->state = request_not_sent;
-	trans->status = -1;
-	http_destroy_headers(trans->response->headers);
-	trans->response->headers = list_create();
-	octstr_destroy(trans->response->body);
-	trans->response->body = octstr_create("");
-	--trans->follow_remaining;
-	conn_destroy(trans->conn);
-	trans->conn = NULL;
-	list_produce(pending_requests, trans);
-    } else
-	list_produce(trans->caller, trans);
+    /* 
+     * Check if the HTTP server told us to look somewhere else,
+     * hence if we got one of the following response codes:
+     *   HTTP_MOVED_PERMANENTLY (301)
+     *   HTTP_FOUND (302)
+     *   HTTP_SEE_OTHER (303)
+     *   HTTP_TEMPORARY_REDIRECT (307)
+     */
+    if ((h = get_redirection_location(trans)) != NULL) {
+
+        /* 
+         * This is a redirected response, we have to follow.
+         * Clean up all trans stuff for the next request we do.
+         */
+        octstr_strip_blanks(h);
+        octstr_destroy(trans->url);
+        octstr_destroy(trans->host);
+        trans->port = 0;
+        octstr_destroy(trans->uri);
+        octstr_destroy(trans->username);
+        octstr_destroy(trans->password);
+        trans->host = NULL;
+        trans->port = 0;
+        trans->uri = NULL;
+        trans->username = NULL;
+        trans->password = NULL;
+        trans->ssl = 0;
+        trans->url = h; /* apply new absolute URL to next request */
+        trans->state = request_not_sent;
+        trans->status = -1;
+        http_destroy_headers(trans->response->headers);
+        trans->response->headers = list_create();
+        octstr_destroy(trans->response->body);
+        trans->response->body = octstr_create("");
+        --trans->follow_remaining;
+        conn_destroy(trans->conn);
+        trans->conn = NULL;
+
+        /* re-inject request to queue */
+        list_produce(pending_requests, trans);
+
+    } else {
+        /* handle this response as usual */
+        list_produce(trans->caller, trans);
+    }
     return;
 
 error:
