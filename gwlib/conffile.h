@@ -50,7 +50,7 @@ Config *config_create(char *filename);
 /* Forget all configuration variables. */
 void config_clear(Config *cfg);
 
-/* Destroy the configuration object. */
+/* Destroy the configuration object. Do nothing if cfg == NULL. */
 void config_destroy(Config *cfg);
 
 /* Read a configuration file. */
@@ -81,7 +81,7 @@ ConfigGroup *config_add_group(Config *cfg);
 /* Remove a group. */
 void config_remove_group(Config *cfg, ConfigGroup *grp);
 
-/* Get the value of a variable in a group. */
+/* Get the value of a variable in a group. Return NULL if grp == NULL */
 char *config_get(ConfigGroup *grp, char *name);
 
 /* Set the value of a variable in a group. The variable need not exist

@@ -31,6 +31,7 @@ Config *config_create(char *filename) {
 
 
 void config_destroy(Config *cfg) {
+        if (cfg == NULL) return;
 	config_clear(cfg);
 	gw_free(cfg->filename);
 	gw_free(cfg);
@@ -61,6 +62,7 @@ void config_remove_group(Config *cfg, ConfigGroup *grp) {
 	ConfigGroup *g;
 	ConfigVar *var, *next;
 
+	if (cfg == NULL || grp == NULL) return;
 	g = cfg->grouplist;
 	if (grp == NULL || g == NULL)
 		return;
@@ -85,6 +87,7 @@ void config_remove_group(Config *cfg, ConfigGroup *grp) {
 
 char *config_get(ConfigGroup *grp, char *name) {
 	ConfigVar *var;
+	if (grp == NULL) return NULL;
 	
 	for (var = grp->varlist; var != NULL; var = var->next)
 		if (strcmp(name, var->name) == 0)
@@ -130,6 +133,8 @@ void config_set(ConfigGroup *grp, char *name, char *value) {
 void config_clear(Config *cfg) {
 	ConfigGroup *grp, *grp_next;
 	ConfigVar *var, *var_next;
+
+	if (cfg == NULL) return;
 	
 	for (grp = cfg->grouplist; grp != NULL; grp = grp_next) {
 		grp_next = grp->next;

@@ -1,3 +1,8 @@
+2000-05-02    <Kalle Marjola <rpr@wapit.com>>
+
+	* gwlib/conffile.c|h: modified some functions to work even with
+	NULL arguments, to reduce checking in calling functions
+
 2000-04-27  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/thread.c: Unlike every other C library function, 
