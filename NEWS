@@ -24,7 +24,7 @@ New features:
 
  * smsbox: Added "%b" translation for receiving binary data.
 
- * Updated and expanding User's Guide.
+ * Updated and expanded User's Guide.
 
  * SMPP driver now responds to Enquire Link packets, which will help
    keep Kannel connected to an SMS center when the connection is idle.
