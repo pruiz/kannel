@@ -1,3 +1,9 @@
+2004-02-10  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/wml_compiler.c: applied patch that prevent segfaults on
+      solaris while printing debug msgs.
+      Thanks a lot to: Paul P Komkoff Jr <i@stingr.net>.
+      Msg-Id: <20040209125602.GK12061@stingr.net>.
+
 2004-02-04  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/utils.c: don't free 'struct passwd*' because it's allocated
       staticaly within glibc.
