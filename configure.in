@@ -414,11 +414,14 @@ AC_ARG_ENABLE(debug,
 dnl Implement --enable-localtime option.
 
 AC_ARG_ENABLE(localtime,
-[  --enable-localtime	  log file time stamps in local time, not GMT (default: disabled)], [
+[  --enable-localtime	  log file time stamps in local time, not GMT (default: enabled)], [
   if test "$enableval" = yes; then
       echo enabling local time
       AC_DEFINE(LOG_TIMESTAMP_LOCALTIME)
   fi
+],[
+  echo enabling local time
+  AC_DEFINE(LOG_TIMESTAMP_LOCALTIME)
 ])
 
 

@@ -1,3 +1,8 @@
+2002-06-11  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * configure.in: WARNING: defaults to localtime
+    * gw/smsc_emi2.c: some cleaning
+    * utils/find-long-lines: added rtf, pdf and html to ignored files
+
 2002-06-12  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsbox.c: fixing inline comments to fit CodingStyle rules
 

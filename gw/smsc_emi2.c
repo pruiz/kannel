@@ -894,7 +894,6 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
     Octstr	  *str;
     struct emimsg *emimsg;
     PrivData *privdata = conn->data;
-    int relogin=0;
     
     /* Read acks/nacks/ops from the server */
     while ((str = conn_read_packet(server, 2, 3))) {
@@ -1013,8 +1012,7 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
 			/* XXX Process error code here
 			long errorcode;
 			octstr_parse_long(&errorcode, emimsg->fields[1], 0, 10);
-			if(errorcode == 4) {
-			    relogin=51;
+			... switch(errorcode) ...
 			} 
 			
 			else { */
@@ -1028,7 +1026,7 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
 		    if (octstr_get_char(emimsg->fields[0], 0) == 'N') {
 			long errorcode;
 			octstr_parse_long(&errorcode, emimsg->fields[1], 0, 10);
-			.. switch errorcode ...
+			... switch errorcode ...
 		    } 
 		    
 		    else { */
