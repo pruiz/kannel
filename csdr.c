@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <fcntl.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -28,6 +29,7 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	CSDRouter *router = NULL;
 	char *interface_name;
 	char *wap_service;
+	int fl;
 
 	struct sockaddr_in servaddr;
 
@@ -81,6 +83,9 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 		sleep(1);
 	}
 
+	fl = fcntl(router->fd, F_GETFL);
+	fcntl(router->fd, F_SETFL, fl | O_NONBLOCK);
+
 	return router;
 
 error:
@@ -103,7 +108,7 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 {
 
 	fd_set rset;
-	int nready, length;
+	int length;
 	RQueueItem *item = NULL;
 	char data[64*1024];
 	char client_ip[16], client_port[8];
@@ -122,9 +127,7 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	FD_ZERO(&rset);
 	FD_SET(router->fd, &rset);
 
-	item = rqi_new(R_MSG_CLASS_WAP, R_MSG_TYPE_MO);
-	if(item==NULL) goto error;
-
+#if 0
 	/* Block until we get a datagram. */
 	for(;;) {
 		nready = select(router->fd+1, &rset, NULL, NULL, NULL);
@@ -136,9 +139,18 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 			break;
 		}
 	}
-
-	/* Maximum size of UDP datagram == 64*1024 bytes. */	
+#endif
+ 
+	/* Maximum size of UDP datagram == 64*1024 bytes. */
 	length = recvfrom(router->fd, data, sizeof(data), 0, &cliaddr, &len);
+	if(length==-1) {
+		if(errno==EAGAIN) {
+			/* No datagram available, don't block. */
+			goto error;
+		}
+		error(errno, "Error receiving datagram.");
+		goto error;
+	}
 
 	getsockname(router->fd, (struct sockaddr*)&servaddr, &servlen);
 
@@ -152,6 +164,9 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 		server_port, sizeof(server_port), 
 		NI_NUMERICHOST | NI_NUMERICSERV);
 
+	item = rqi_new(R_MSG_CLASS_WAP, R_MSG_TYPE_MO);
+	if(item==NULL) goto error;
+
 	item->msg->wdp_datagram.source_address = octstr_create(client_ip);
 	item->msg->wdp_datagram.source_port    = atoi(client_port);
 	item->msg->wdp_datagram.destination_address = octstr_create(server_ip);
@@ -164,7 +179,35 @@ error:
 	return NULL;
 }
 
-int csdr_send_message(CSDRouter *csdr, RQueueItem *msg)
+int csdr_send_message(CSDRouter *router, RQueueItem *item)
 {
-    return 0;
+
+	char data[64*1024];
+	size_t  datalen;
+	struct sockaddr_in cliaddr;
+	struct hostent *hostinfo;
+	socklen_t clilen;
+
+	memset(&cliaddr, 0, sizeof(struct sockaddr_in));
+
+	/* Can only do 64k of data... */
+	datalen = (sizeof(data)<octstr_len(item->msg->wdp_datagram.user_data)) ? 
+		sizeof(data) : octstr_len(item->msg->wdp_datagram.user_data);
+
+	octstr_get_many_chars(data, item->msg->wdp_datagram.user_data, 0, datalen);
+
+	hostinfo = gethostbyname(octstr_get_cstr(item->msg->wdp_datagram.destination_address));
+	if (hostinfo == NULL)
+		goto error;
+
+        cliaddr.sin_family = AF_INET;
+        cliaddr.sin_port = htons(item->msg->wdp_datagram.destination_port);
+        cliaddr.sin_addr = *(struct in_addr *) hostinfo->h_addr;
+
+	sendto(router->fd, data, datalen, 0, &cliaddr, clilen);
+
+	return 0;
+error:
+	return -1;
 }
+
