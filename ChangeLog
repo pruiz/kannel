@@ -1,3 +1,9 @@
+2001-05-28  Uoti Urpala  <uau@wapit.com>
+
+	* gw/urltrans.c: Fixed handling of unrecognized %-escapes in
+	sms-service URLs (for example, "%x" was supposed to stay
+	unchanged, became "%%" instead).
+
 2001-05-27  Richard Braakman  <dark@wapit.com>
 
 	* doc/userguide/userguide.xml: Added big table of smsc_* features,

@@ -407,7 +407,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
 	default:
 	    octstr_format_append(result, "%%%c",
-	    	    	    	 octstr_get_char(t->pattern, pos));
+	    	    	    	 octstr_get_char(t->pattern, pos + 1));
 	    break;
 	}
 
