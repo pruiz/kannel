@@ -1,3 +1,8 @@
+2005-03-01  Stipe Tolj  <stolj@wapme.de> 
+    * configure[.in]: added support to find docbook.dsl file on Debian 
+      unstable. Thanks to Benjamin for this patch.
+      [Msg-ID: <20050219161644.GA938@xaos.realthought.net>]
+
 2003-02-23 Aarno Syvanen <as@gni.ch>
     * doc/userguide/userguide.xml: changed the added si doc
       to minimum one, so that users can minimize the 

@@ -404,6 +404,7 @@ for loc in /usr /usr/local; do
 	${loc}/share/sgml/docbook/dsssl-stylesheets-1.59/html/docbook.dsl \
 	${loc}/share/sgml/docbook/dsssl-stylesheets-1.77/html/docbook.dsl \
 	${loc}/share/sgml/docbook/dsssl-stylesheets/html/docbook.dsl \
+	${loc}/share/sgml/docbook/stylesheet/dsssl/modular/html/docbook.dsl \
         ${loc}/share/sgml/docbook/dsssl/modular/html/docbook.dsl ; do
       if test "x$found" = "x" ; then 
 	AC_CHECK_FILE($file,HTML_DSL=$file; found=1)
@@ -420,6 +421,7 @@ for loc in /usr /usr/local; do
 	${loc}/share/sgml/docbook/dsssl-stylesheets-1.59/print/docbook.dsl \
 	${loc}/share/sgml/docbook/dsssl-stylesheets-1.77/print/docbook.dsl \
 	${loc}/share/sgml/docbook/dsssl-stylesheets/print/docbook.dsl \
+	${loc}/share/sgml/docbook/stylesheet/dsssl/modular/print/docbook.dsl \
         ${loc}/share/sgml/docbook/dsssl/modular/print/docbook.dsl ; do
       if test "x$found" = "x" ; then 
 	AC_CHECK_FILE($file,TEX_DSL=$file; found=1)
