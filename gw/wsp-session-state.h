@@ -115,6 +115,24 @@ ROW(CONNECTING,
 
 /* MISSING: CONNECTING, Suspend_Event */
 
+#ifdef POST_SUPPORT
+
+ROW(CONNECTING,
+	TR_Invoke_Ind,
+	e->tcl == 2 && (pdu->type == Get || pdu->type == Post),
+	{ 
+		WSPMethodMachine *msm;
+
+		/* Start new method transaction */
+		msm = method_machine_create(sm, e->handle);
+
+		/* Hand off the event to the new method machine */
+		handle_method_event(sm, msm, current_event, pdu);
+	},
+	CONNECTING)
+
+#else	/* POST_SUPPORT */
+
 ROW(CONNECTING,
 	TR_Invoke_Ind,
 	e->tcl == 2 && pdu->type == Get,
@@ -128,6 +146,8 @@ ROW(CONNECTING,
 		handle_method_event(sm, msm, current_event, pdu);
 	},
 	CONNECTING)
+
+#endif	/* POST_SUPPORT */
 
 /* MISSING: CONNECTING, TR_Invoke_Ind, pdu->type = Resume */
 
@@ -251,6 +271,30 @@ ROW(CONNECTING_2,
 
 /* MISSING: CONNECTING_2, Session Resume facility enabled */
 
+#ifdef POST_SUPPORT
+
+ROW(CONNECTING_2,
+	TR_Invoke_Ind,
+	e->tcl == 2 && (pdu->type == Get || pdu->type == Post),
+	{
+		WSPMethodMachine *msm;
+		WAPEvent *new_event;
+
+		/* Start new method transaction */
+		msm = method_machine_create(sm, e->handle);
+
+		/* Hand off the event to the new method machine */
+		handle_method_event(sm, msm, current_event, pdu);
+
+		/* Release the new method transaction */
+		new_event = wap_event_create(Release_Event);
+		handle_method_event(sm, msm, new_event, NULL);
+		wap_event_destroy(new_event);
+	},
+	CONNECTING_2)
+
+#else	/* POST_SUPPORT */
+
 ROW(CONNECTING_2,
 	TR_Invoke_Ind,
 	e->tcl == 2 && pdu->type == Get,
@@ -270,6 +314,8 @@ ROW(CONNECTING_2,
 		wap_event_destroy(new_event);
 	},
 	CONNECTING_2)
+
+#endif	/* POST_SUPPORT */
 
 ROW(CONNECTING_2,
 	TR_Invoke_Ind,
@@ -411,6 +457,30 @@ ROW(CONNECTED,
 
 /* MISSING: CONNECTED, Session Resume facility enabled */
 
+#ifdef POST_SUPPORT
+
+ROW(CONNECTED,
+	TR_Invoke_Ind,
+	e->tcl == 2 && (pdu->type == Get || pdu->type == Post),
+	{
+		WSPMethodMachine *msm;
+		WAPEvent *new_event;
+
+		/* Start new method transaction */
+		msm = method_machine_create(sm, e->handle);
+
+		/* Hand off the event to the new method machine */
+		handle_method_event(sm, msm, current_event, pdu);
+
+		/* Release the new method transaction */
+		new_event = wap_event_create(Release_Event);
+		handle_method_event(sm, msm, new_event, NULL);
+		wap_event_destroy(new_event);
+	},
+	CONNECTED)
+
+#else	/* POST_SUPPORT */
+
 ROW(CONNECTED,
 	TR_Invoke_Ind,
 	e->tcl == 2 && pdu->type == Get,
@@ -430,6 +500,8 @@ ROW(CONNECTED,
 		wap_event_destroy(new_event);
 	},
 	CONNECTED)
+
+#endif	/* POST_SUPPORT */
 
 ROW(CONNECTED,
 	TR_Invoke_Ind,

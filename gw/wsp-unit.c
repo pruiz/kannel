@@ -67,6 +67,85 @@ void wsp_unit_dispatch_event(WAPEvent *event) {
 }
 
 
+#ifdef POST_SUPPORT
+
+WAPEvent *wsp_unit_unpack_wdp_datagram(Msg *msg) {
+	WAPEvent *event;
+	Octstr *os;
+	WSP_PDU *pdu;
+	long tid_byte;
+	
+	os = NULL;
+	pdu = NULL;
+	event = NULL;
+
+	os = octstr_duplicate(msg->wdp_datagram.user_data);
+	if (octstr_len(os) == 0) {
+		warning(0, "WSP UNIT: Empty datagram.");
+		goto error;
+	}
+	
+	tid_byte = octstr_get_char(os, 0);
+	octstr_delete(os, 0, 1);
+	
+	pdu = wsp_pdu_unpack(os);
+	if (pdu == NULL)
+		goto error;
+	
+/* POST_SUPPORT */
+	if (pdu->type != Get && pdu->type != Post) {
+		warning(0, "WSP UNIT: Unsupported PDU type %d", pdu->type);
+		goto error;
+	}
+
+	event = wap_event_create(S_Unit_MethodInvoke_Ind);
+	event->u.S_Unit_MethodInvoke_Ind.addr_tuple = wap_addr_tuple_create(
+				msg->wdp_datagram.source_address,
+				msg->wdp_datagram.source_port,
+				msg->wdp_datagram.destination_address,
+				msg->wdp_datagram.destination_port);
+
+
+	event->u.S_Unit_MethodInvoke_Ind.transaction_id = tid_byte;
+	
+	switch (pdu->type) {
+	case Get:
+		debug("wap.wsp", 0, "Connectionless Get Request Received.");
+		event->u.S_Unit_MethodInvoke_Ind.method = 0x40 + pdu->u.Get.subtype;
+		event->u.S_Unit_MethodInvoke_Ind.request_uri = 
+			octstr_duplicate(pdu->u.Get.uri);
+		event->u.S_Unit_MethodInvoke_Ind.request_headers = 
+			unpack_headers(pdu->u.Get.headers);
+		event->u.S_Unit_MethodInvoke_Ind.request_body = NULL;
+		break;
+	case Post:
+		debug("wap.wsp", 0, "Connectionless Post Request Received.");
+		event->u.S_Unit_MethodInvoke_Ind.method = 0x60 + pdu->u.Post.subtype;
+		event->u.S_Unit_MethodInvoke_Ind.request_uri = 
+			octstr_duplicate(pdu->u.Post.uri);
+		event->u.S_Unit_MethodInvoke_Ind.request_headers = 
+			unpack_post_headers(pdu->u.Post.headers);
+		event->u.S_Unit_MethodInvoke_Ind.request_body = 
+			octstr_duplicate(pdu->u.Post.data);
+		break;
+	default:
+		warning(0, "WSP UNIT: Unsupported PDU type %d", pdu->type);
+		goto error;
+	}
+
+	return event;
+
+error:
+	octstr_destroy(os);
+	wsp_pdu_destroy(pdu);
+	wap_event_destroy(event);
+	return NULL;
+}
+
+
+#else	/* POST_SUPPORT */
+
+
 WAPEvent *wsp_unit_unpack_wdp_datagram(Msg *msg) {
 	WAPEvent *event;
 	Octstr *os;
@@ -121,6 +200,10 @@ error:
 	wap_event_destroy(event);
 	return NULL;
 }
+
+
+#endif	/* POST_SUPPORT */
+
 
 
 /***********************************************************************

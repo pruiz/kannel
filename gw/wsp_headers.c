@@ -12,6 +12,16 @@
 #include "wsp_headers.h"
 
 
+/* 
+ * Private Functions: 
+ */
+ 
+#ifdef POST_SUPPORT
+
+static List *unpack_headers_with_offset(Octstr *headers, int off);
+
+#endif /* POST_SUPPORT */
+
 /*
  * some predefined well-known assignments
  */
@@ -170,8 +180,19 @@ static int field_value(Octstr *str, int	*offset, int *well_known_value,
 	int len;
 	*well_known_value = -1;
 	(*offset)++;
+
+#ifdef POST_SUPPORT
+	/*
+	 * There appears to be a bug below with the offset values
+	 */
+	*data_len = get_variable_value(octstr_get_cstr(str)+ *offset, &len);
+	*data_offset = *offset + len;
+#else
 	*data_len = get_variable_value(octstr_get_cstr(str)+ *offset + 1, &len);
 	*data_offset = *offset + 1 + len;
+#endif
+
+	
 	*offset = *data_offset + *data_len;
 	return WSP_FIELD_VALUE_DATA;
     }
@@ -336,15 +357,32 @@ static void decode_app_header(List *unpacked, Octstr *str, int *off)
     *off += len + 2 + strlen(octstr_get_cstr(str)+*off+len+1);
 }
 
+#ifdef POST_SUPPORT
 
-List *unpack_headers(Octstr *headers)
-{
-    int off, byte;
-    List *unpacked;
+/* 
+ * The unpack_headers_with_offset is a private function which is 
+ * called by unpack_headers, unpack_get_headers and unpack_post_headers.
+ * The off parameter allows an offset to specified.
+ * its main function is to bypass the content-type field for post headers
+ * which is not available in the other headers.
+ */
+
+List *unpack_headers_with_offset(Octstr *headers, int off) {
+	int byte;
+
+#else	/* POST_HEADERS */
+
+	List *unpack_headers(Octstr *headers) {
+	int off = 0, byte;
+
+#endif	/* POST_HEADERS */
     
-    off = 0;
-
+    List *unpacked;
     unpacked = http_create_empty_headers();
+
+	if(off < 0)
+		return unpacked;
+
     while(off < octstr_len(headers)) {
 	byte = octstr_get_char(headers, off);
 	
@@ -371,6 +409,83 @@ List *unpack_headers(Octstr *headers)
     return unpacked;
 }	
 
+#ifdef POST_SUPPORT
+
+/* 
+ * The unpack_headers is just a wrapper for the unpack_headers_with_offset
+ * function. it calls unpack_headers_with_offset with the offset of 0.
+ */
+
+List *unpack_headers(Octstr *headers) {
+	return unpack_headers_with_offset(headers, 0);
+};
+
+/*
+ * This is the function for unpacking post headers. The Post headers 
+ * contain the content type field as the initial header. This needs to
+ * be added first and then the unpack_headers function can be called
+ * with the offset set to after the content field.
+ */
+
+List *unpack_post_headers(Octstr *headers)
+{
+    int off = 0, byte;
+    List *unpacked;
+
+	unsigned long len;
+    int data_off, ret, val;
+    char *ch = NULL;
+    
+	unpacked = http_create_empty_headers();
+   	
+	if(headers == NULL) {
+		return unpacked;
+	}
+
+    byte = octstr_get_char(headers, off);
+	if (byte == -1) {
+	    warning(0, "read past header octet!");
+		return unpacked;
+	}
+
+    ret = field_value(headers, &off, &val, &data_off, &len);
+
+    while (ret != -1) {
+
+		switch(ret) {
+		case WSP_FIELD_VALUE_NUL_STRING:
+			ch = octstr_get_cstr(headers) + data_off;
+			ret = -1;
+			break;
+
+		case WSP_FIELD_VALUE_DATA:
+			off = data_off;
+			ret = field_value(headers, &off, &val, &data_off, &len);
+			break;				
+
+		case WSP_FIELD_VALUE_ENCODED:
+			if (val <= WSP_PREDEFINED_LAST_CONTENTTYPE) {
+				ch = WSPContentTypeAssignment[val];
+				ret = -1;
+				break;
+			}
+		default:
+			ch = NULL;
+			debug("wap.wsp", 0, "Nonsupported Content-Type '0x%x'", val);
+			ret = -1;
+		}
+	}
+
+	if (ch != NULL) {
+		http_header_add(unpacked, "Content-Type", ch);
+	}
+
+	unpacked=list_cat(unpacked,unpack_headers_with_offset(headers,off));
+	
+    return unpacked;
+}
+
+#endif	/* POST_HEADERS */
 
 Octstr *output_headers(List *uhdrs)
 {

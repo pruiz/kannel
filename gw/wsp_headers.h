@@ -14,6 +14,10 @@
 /* return an HTTPHeader linked list which must be freed by the caller
  * (see http.h for details of HTTPHeaders). Cannot fail.
  */
+#ifdef POST_SUPPORT
+List *unpack_post_headers(Octstr *headers);
+#endif
+
 List *unpack_headers(Octstr *headers);
 
 
