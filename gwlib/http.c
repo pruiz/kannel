@@ -1397,36 +1397,35 @@ int header_pack(HTTPHeader *hdr)
 
 
 
-/*************************************************************
+/*
+ * httprequest_remove_header - remove header from http request. Search for
+ * multiple occurrences.  Return 0 for ok or if header not found, -1 for
+ * errors. 
  */
 int httprequest_remove_header(HTTPRequest *request, char *key) {
 
-    HTTPHeader *thisheader = NULL;
+    HTTPHeader *hdr = NULL, *prev = NULL;
 
-    if( (request==NULL) || (key==NULL) )
-	goto error; /* PEBKaC */
-
-    thisheader = request->baseheader;
-
-    /* people who create circular loops don't deserve a paddle... */
-    for(;;) {
-	if(thisheader == NULL) /* end of chain */
-	    return -1;
-			
-	if(strcasecmp(thisheader->key, key) == 0) {
-	    /* XXX REMOVE IT XXX */
-	    error(0, "function not implemented yet");
-	    return 0;
-	}
-
-	thisheader = thisheader->next;
+    if(request==NULL || key==NULL){
+	error(0, "httprequest_remove_header: Bad input.");
+	return -1;
     }
-	
-
-error:
-    error(errno, "httprequest_remove_header: failed");
-    return -1;
+    hdr = request->baseheader;
+    while(hdr!=NULL){
+	if(!(strcasecmp(hdr->key, key))){
+	    /* strcasecmp return 0 for match */
+	    prev->next = hdr->next;
+	    gw_free(hdr->key);
+	    gw_free(hdr->value);
+	    gw_free(hdr);
+	    hdr = prev->next;
+	}
+	prev = hdr;
+	hdr = hdr->next;
+    }
+    return 0;
 }
+
 
 /*
  * This value must not be meddled with.
