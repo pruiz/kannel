@@ -181,6 +181,8 @@ static void sms_router(void *arg)
 
     while(bb_status != BB_DEAD) {
 
+	list_consume(suspended);	/* block here if suspended */
+
 	if ((msg = list_consume(outgoing_sms)) == NULL)
 	    break;
 

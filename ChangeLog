@@ -1,3 +1,8 @@
+2000-06-19  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_smsc.c: added suspend-mode to sms_router to synchronize
+	start-up
+
 2000-06-19  Yann Muller  <ymuller@3glab.com>
 
 	* gw/smsc.c, gw/smsc_p.h, gw/smsc_at.c: Applied Denis Hennessy's
