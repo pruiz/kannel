@@ -1,5 +1,9 @@
 2000-11-20  Richard Braakman  <dark@wapi.com>
 
+	* Making release 0.13.
+
+2000-11-20  Richard Braakman  <dark@wapi.com>
+
 	* gwlib/dict.c: Made it initialize empty table entries with
 	NULL instead of empty lists, to save memory.
 

@@ -1,107 +1,96 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.11.3
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.13
 
 This is a DEVELOPMENT version. It should be usable for experimentation
-and testing, and is a release candidate for 0.12. Please do try it out
+and testing, and is a release candidate for 0.14. Please do try it out
 and report problems to devel@kannel.org (the development mailing list)
 or bugs@kannel.org (the bug tracking system).
 
-Changes since version 0.11.2:
-
-Compatibility breakers:
-
- * No longer supports libxml older than 2.2.0.
+Changes since version 0.11.3:
 
 New features:
 
- * HTTP headers received from a server are packed and sent to the phone.
-   This allows cache-control and redirection to work.
+ * HTTP module restructured to use a fixed number of threads.  This makes
+   it able to handle many more requests at a time.  This is used by the
+   wapbox, not yet by the smsbox.
 
- * Overhaul of the user guide.
+ * Kannel boxes report version numbers of themselves and their components
+   (such as libxml) when starting up.
 
- * Support for use of HTTP proxies.
+ * Support for proxies that require basic authorization.
 
- * sendsms support for sending one message to multiple recipients.
+ * Bearerbox "status" command reports lengths of internal queues.
 
- * New sendota interface for sending over-the-air configuration messages.
+ * Phone-as-SMSC module now also supports Falcom A2D modem and Nokia 7110.
 
- * New smsbox configuration variable 'sendsms-chars' (see user guide).
+ * Added configure option --with-defaults=speed for production systems.
 
- * New configuration variable 'connect-allow-ip' for EMI IP SMSC, to
-   limit who can connect to the SMS reception port.
+ * WSP: Support for X-WAP.TOD header, needed for WAP 1.1 conformance.
 
- * Kannel adds Via: header when making HTTP requests.
+ * Support for Debian packages of Kannel.
+
+ * Updated documentation.
+
+ * Bearerbox starts up faster.
+
+ * sendsms interface can handle multiple requests over one HTTP/1.1 connection.
+
+ * Improved portability to HP/UX, FreeBSD and Cygwin, possibly others.
+
+ * Support magic URL "kannel:alive", to check if the gateway is still running.
+
+ * Support for PAM authentication of sendsms interface.
+
+ * Sendsms interface checks that UDH messages have a correct length indicator.
+
 
 Bugfixes:
 
- * In EMI SMSC driver, corrected calculation of message length for UDH.
+ * In smsbox configuration, %t, %p, %P, %q, and %Q work again in url fields.
 
- * When configuring wdp-interface-name, using "*" works as expected again.
+ * URL escaping uses a better set of "safe" characters.
 
- * Lots of minor bugfixes.
+ * HTTP POST requests have a Content-Length again.
 
-Development news:
+ * In wapbox, request headers should actually override session headers of
+   the same name, rather than just being appended.  This has been corrected.
 
- * Support for WTP Initiator (we used to have only Responder).  Not used yet.
-   This involved renaming some files.
+ * WSP: Corrected handling of invalid Expires headers to conform to RFC2068.
 
- * The memory leak checker now also reports the caller of certain often-used
-   functions such as octstr_create(), to make it easier to find out what code
-   is responsible for a memory leak.  It's relatively easy to wrap more
-   functions this way.
+ * WSP: Corrected encoding of date values that are exactly the start of
+   the epoch (Thu, 01 Jan 1970 00:00:00 GMT).
 
+ * WML compiler now allows reserved words as variable names, such
+   as $(password).
 
-Changes since version 0.11:
+ * WML compiler accepts &nbsp; and &shy;.
 
-Compatibility breakers:
+ * Made WMLScript compiler work on 64-bit architectures.
 
-  * X-WAP-Gateway header now uses a slash to separate "kannel" from
-  the version number, rather than a space.  This makes it consistent
-  with the HTTP definition of a "product token".
+ * WMLScript compiler can now handle the number -2147483648.
 
-  * No longer supports libxml 1.8.6 or older.
+ * When wapbox is killed, it dies immediately.
+   
+ * Fixed memory leaks.
 
-  * wdp-interface-name is now actually used, so that the WAP port listens
-  to only one interface.
+ * Fixed small bugs and conformance issues in WMLScript compiler,
+   WML compiler, WTP, and WSP.
 
-New features:
+ * Fixed several bugs in Phone-as-SMSC module.
 
-  * Working WTP timers.
+ * Fixed the problem that switching malloc wrappers required a "make clean"
+   when recompiling.
 
-  * Access logging.
-
-  * Support for assigning names to SMSC configurations, and use of those
-  names in access logs and sendsms interface.
-
-  * X-WAP-Client-SDU-Size header in HTTP requests.
-
-  * Debugging: SIGQUIT is caught to report memory usage.
-
-  * WML compiler uses string table more efficiently, to produce smaller
-  compiled pages.
-
-  * Better handling of clients that try to use unsupported WSP extensions.
-
-  * Wapboxes now report load average to the bearer box.
-
-  * Better Solaris support.
-
-Bugfixes:
-
-  * WML compiler also accepts 'e', 'u', and 'n' as aliases for "noesc",
-  "unesc", and "escape".
-
-  * More reliable signal handling.
-
-  * Various bugs and memory leaks fixed.
 
 Development news:
 
-  * Adopted official formatting style for Kannel code.
+ * Many files have been reformatted to our new coding style.
 
-  * Added "immutable octet strings", a way to use Octstr functions
-  with C string literals.
+ * Renamed Msg type smart_sms to just sms.
 
-  * Added octstr_format, which will simplify use of Octstrs in
-  many places.
+ * New Dict module in gwlib, for Octstr -> value hash tables.
+
+ * New FDSet module in gwlib, for efficient polling of large sets of
+   file descriptors.  Connection module has extensions for using it.
+
 
 See ChangeLog for detailed information.
