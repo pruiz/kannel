@@ -964,7 +964,8 @@ static char *smsbox_req_sendsms(List *list, char *client_ip)
 	goto error;
     
     alog("send-SMS request added - sender:%s:%s %s target:%s request: '%s'",
-	 urltrans_username(t), octstr_get_cstr(from), client_ip,
+	 octstr_get_cstr(urltrans_username(t)),
+         octstr_get_cstr(from), client_ip,
 	 octstr_get_cstr(to),
 	 udh == NULL ? octstr_get_cstr(text) : "<< UDH >>");
 

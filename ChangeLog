@@ -1,3 +1,8 @@
+2001-03-23  Richard Braakman  <dark@xs4all.nl>
+
+	* gw/smsbox.c: Fix call to alog (urltrans_username returns
+	Octstr *, not char *).  Spotted by Gildas PERROT.
+
 2001-03-23  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smscconn_p.h: made interface a bit more clarified and
