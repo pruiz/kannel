@@ -1,3 +1,8 @@
+2001-07-16  Tuomas Luttinen  <tuo@wapit.com>
+
+	* doc/userguide/userguide.xml: Updated the information about the 
+	libxml version requierd to 2.2.5.
+
 2001-07-11 Aarno Syvänen <aarno@wiral.com>
 
 	* test/test_ppg.c: Made help more helpful
