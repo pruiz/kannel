@@ -510,7 +510,7 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
                           wml_binary_t **wbxml, Octstr *version)
 {
     xmlNodePtr node;
-    Octstr *externalID;
+    Octstr *externalID = NULL;
     long i;
 
     if (document == NULL) {
