@@ -1713,7 +1713,6 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 		}
 	    }
 
-            counter_increase(privdata->conn->sent);
             bb_smscconn_sent(privdata->conn, msg);
         }
 
