@@ -138,6 +138,7 @@ struct SMSCenter {
 	/* AT Commands (wireless modems...) */
 	char *at_serialdevice;
 	int at_fd;
+	char *at_modemtype;
 	List *at_received;
 	Octstr *at_inbuffer;
 	
@@ -243,7 +244,7 @@ int sema_receive_msg(SMSCenter *smsc, Msg **msg);
 /*
  * Interface to wireless modems using AT commands.
  */
-SMSCenter *at_open(char *serialdevice);
+SMSCenter *at_open(char *serialdevice, char *modemtype);
 int at_reopen(SMSCenter *smsc);
 int at_close(SMSCenter *smsc);
 int at_pending_smsmessage(SMSCenter *smsc);

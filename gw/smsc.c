@@ -104,6 +104,7 @@ SMSCenter *smscenter_construct(void) {
 
 	smsc->at_serialdevice = NULL;
 	smsc->at_fd = -1;
+	smsc->at_modemtype = NULL;
 	smsc->at_received = NULL;
 	smsc->at_inbuffer = NULL;
 	
@@ -154,6 +155,7 @@ void smscenter_destruct(SMSCenter *smsc) {
 	
 	/* AT */
 	gw_free(smsc->at_serialdevice);
+	gw_free(smsc->at_modemtype);
 	list_destroy(smsc->at_received);
 	gw_free(smsc->at_inbuffer);
 	
@@ -464,6 +466,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
         char *alt_chars;
         char *smpp_system_id, *smpp_system_type, *smpp_address_range;
 	char *sema_smscnua, *sema_homenua, *sema_report;
+	char *at_modemtype;
 	char *keepalive;
 
         int typeno, portno, backportno, ourportno, receiveportno, iwaitreport;
@@ -493,7 +496,9 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 	sema_report = config_get(grp, "wait_report");
 	iwaitreport = (sema_report != NULL ? atoi(sema_report) : 1);
 	keepalive = config_get(grp, "keepalive");
-	
+
+	at_modemtype = config_get(grp, "modemtype");
+		
 	if (backup_port)
 	    warning(0, "Depricated SMSC config variable 'backup-port' used, "
 		    "'receive-port' recommended (but backup-port functions"); 
@@ -597,7 +602,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 	    if (device == NULL)
 		error(0, "Required field missing for AT virtual center.");
 	    else
-		smsc = at_open(device);
+		smsc = at_open(device, at_modemtype);
 	    break;    
 	    
 	 /* add new SMSCes here */

@@ -3,7 +3,7 @@
  *
  * Yann Muller - 3G Lab, 2000.
  *
- * $Id: smsc_at.c,v 1.2 2000-06-14 13:06:39 3glab Exp $
+ * $Id: smsc_at.c,v 1.3 2000-06-16 13:35:25 3glab Exp $
  * 
  * Make sure your kannel configuration file contains the following lines
  * to be able to use the AT SMSC:
@@ -38,7 +38,7 @@
  * Prototypes for private functions
  */
 static int at_data_read(int fd, Octstr *ostr);
-static int send_modem_command(int fd, char *cmd);
+static int send_modem_command(int fd, char *cmd, int multiline);
 static int pdu_extract(Octstr *buffer, Octstr **ostr);
 static Msg *pdu_decode(Octstr *data);
 static Msg *pdu_decode_deliver_sm(Octstr *data);
@@ -56,6 +56,12 @@ static int numtext(int num);
  */
 #define AT_DELIVER_SM	0
 #define AT_SUBMIT_SM	1
+
+/******************************************************************************
+ * Types of GSM modems (as used in kannel.conf: at_type=xxxx)
+ */
+#define WAVECOM		"wavecom"
+#define PREMICELL	"premicell"
 
 /******************************************************************************
  * Open the connection
@@ -104,7 +110,7 @@ error:
 /******************************************************************************
  * Open the (Virtual) SMSCenter
  */
-SMSCenter *at_open(char* serialdevice) {
+SMSCenter *at_open(char *serialdevice, char *modemtype) {
 	SMSCenter *smsc;
 	
 	smsc = smscenter_construct();
@@ -113,6 +119,7 @@ SMSCenter *at_open(char* serialdevice) {
 
 	smsc->type = SMSC_TYPE_AT;
 	smsc->at_serialdevice = gw_strdup(serialdevice);
+	smsc->at_modemtype = gw_strdup(modemtype);
 	smsc->at_received = list_create();
 	smsc->at_inbuffer = octstr_create_empty();
 
@@ -120,10 +127,13 @@ SMSCenter *at_open(char* serialdevice) {
 	if (smsc->at_fd < 0)
 		goto error;
 
-	/* Set the modem to PDU mode and autodisplay of new messages */
-	if(send_modem_command(smsc->at_fd, "AT+CMGF=0") == -1)
+	/* Turn Echo off on the modem: we don't need it */
+	if(send_modem_command(smsc->at_fd, "ATE0", 0) == -1)
 		goto error;
-	if(send_modem_command(smsc->at_fd, "AT+CNMI=1,2,0,0,0") == -1)
+	/* Set the modem to PDU mode and autodisplay of new messages */
+	if(send_modem_command(smsc->at_fd, "AT+CMGF=0", 0) == -1)
+		goto error;
+	if(send_modem_command(smsc->at_fd, "AT+CNMI=1,2,0,0,0", 0) == -1)
 		goto error;
 		
 	sprintf(smsc->name, "AT: %s", smsc->at_serialdevice); 
@@ -135,7 +145,6 @@ SMSCenter *at_open(char* serialdevice) {
 error:
 	return NULL;
 }
-
 
 /******************************************************************************
  * Re-Open the AT (Virtual) SMSCenter
@@ -151,7 +160,6 @@ int at_reopen(SMSCenter *smsc) {
 	}
 	return at_open_connection(smsc);
 }
-
 
 /******************************************************************************
  * Close the SMSCenter
@@ -169,8 +177,6 @@ int at_close(SMSCenter *smsc) {
 	smscenter_destruct(smsc);
 	return 0;
 }
-
-
 
 /******************************************************************************
  * Check for pending messages
@@ -206,20 +212,30 @@ error:
 	return -1;
 }
 
-
 /******************************************************************************
  * Send a message
  */
 int at_submit_msg(SMSCenter *smsc, Msg *msg) {
 	unsigned char command[350], pdu[281];
 	int ret = -1; 
+	char sc[3];
 
+	/* The Wavecom modem needs a '00' prepended to the PDU
+	 * to indicate to use the default SC. */
+	sc[0] = '\0';
+	if(strcmp(smsc->at_modemtype, WAVECOM) == 0)
+		strcpy(sc, "00");
+	
 	if(msg_type(msg)==smart_sms) {
 		pdu_encode(msg, &pdu[0]);
 		
-		sprintf(command, "AT+CMGS=%d\r00%s%c", strlen(pdu)/2, pdu, 26); 
-		ret = send_modem_command(smsc->at_fd, command);
-
+		sprintf(command, "AT+CMGS=%d", strlen(pdu)/2);
+		if(send_modem_command(smsc->at_fd, command, 1) == 0)
+		{
+			sprintf(command, "%s%s%c", sc, pdu, 26);
+			ret = send_modem_command(smsc->at_fd, command, 0);
+			printf("send command status: %d\n", ret);
+		}
 	}
 	return ret;
 }
@@ -301,28 +317,38 @@ unblock:
  * Send an AT command to the modem
  * returns 0 if OK, -1 on failure.
  */
-
-static int send_modem_command(int fd, char *cmd) {
+static int send_modem_command(int fd, char *cmd, int multiline) {
 	Octstr *ostr;
 	int ret, i;
 	
 	ostr = octstr_create_empty();
 
+	/* debug */
+	/*printf("Command: %s\n", cmd);*/
+	
 	/* send the command */	
 	write(fd, cmd, strlen(cmd));
 	write(fd, "\r", 1);
 
+	/* We don't want to wait forever -
+	 * This is not perfect but OK for now */
 	for( i=0; i<1000; i++) {
 		ret = at_data_read(fd, ostr);
-		/*printf("Read: ");
+		/*printf("Read from modem: ");
 		for(i=0; i<octstr_len(ostr); i++) {
-			printf("%c", octstr_get_char(ostr, i));
+			if(octstr_get_char(ostr, i) <32)
+				printf("[%02x] ", octstr_get_char(ostr, i));
+			else
+				printf("%c ", octstr_get_char(ostr, i));
 		}
 		printf("\n");*/
 		if(ret == -1)
 			goto error;
-		
-		ret = octstr_search_cstr(ostr, "OK");
+
+		if(multiline)
+			ret = octstr_search_cstr(ostr, ">");
+		else
+			ret = octstr_search_cstr(ostr, "OK");
 		if(ret != -1) {
 			octstr_destroy(ostr);
 			return 0;
@@ -333,6 +359,7 @@ static int send_modem_command(int fd, char *cmd) {
 			return -1;
 		}
 	}
+	octstr_destroy(ostr);
 	return -1;
 	
 error:
@@ -343,7 +370,6 @@ error:
 /******************************************************************************
  * Extract the first PDU in the string
  */
-
 static int pdu_extract(Octstr *buffer, Octstr **pdu) {
 	long len = 0;
 	int pos = 0;
@@ -355,8 +381,6 @@ static int pdu_extract(Octstr *buffer, Octstr **pdu) {
 		printf("%c", octstr_get_char(buffer, i));
 	}
 	printf("\n");*/
-
-	*pdu = octstr_create_empty();
 
 	/* find the beginning of a message from the modem*/	
 	pos = octstr_search_cstr(buffer, "+CMT:");
@@ -398,18 +422,17 @@ nomsg:
 /******************************************************************************
  * Decode a raw PDU into a Msg
  */
-
 static Msg *pdu_decode(Octstr *data) {
 	int type;
 	int i;
 	Msg *msg = NULL;
 
 	/* debug info */
-	printf("Decoding PDU: ");
+	/*printf("Decoding PDU: ");
 	for(i=0; i<octstr_len(data); i++) {
 		printf("%c", octstr_get_char(data, i));
 	}
-	printf("\n");
+	printf("\n");*/
 
 	/* Get the PDU type */
 	type = octstr_get_char(data, 0) & 3;
