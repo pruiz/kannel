@@ -6,11 +6,13 @@
  *
  * Changelog:
  *
+ * 22/02/2002: Preliminary support for the Euro character (req. ProviderServer 2.5.2)
+ * 25/01/2002: Caught a potentially nasty bug
  * 16/01/2002: Some code cleanup
  * 10/01/2002: Fixed a bug in trn handling
  * 16/11/2001: Some minor fixes (Thanks to Tuomas Luttinen)
  * 12/11/2001: Delivery reports, better acking and numerous other small fixes
- * 05/11/2001: Initial release. Based heavily on smsc_emi2 and smsc_at2.						
+ * 05/11/2001: Initial release. Based heavily on smsc_emi2 and smsc_at2. 
  *
  *
  * TO-DO: Do some real life testing
@@ -124,7 +126,7 @@ static void cgw_start_cb(SMSCConn *conn);
 static long cgw_queued_cb(SMSCConn *conn);
 static void cgw_sender(void *arg);
 static Connection *cgw_open_send_connection(SMSCConn *conn);
-static void cgw_send_loop(SMSCConn *conn, Connection *server);
+static int cgw_send_loop(SMSCConn *conn, Connection *server);
 void cgw_check_acks(PrivData *privdata);
 int cgw_wait_command(PrivData *privdata, SMSCConn *conn, Connection *server, int timeout);
 static int cgw_open_listening_socket(PrivData *privdata);
@@ -255,9 +257,22 @@ static int cgwop_send(Connection *conn, struct cgwop *cgwop)
 static Octstr *cgw_encode_msg(Octstr* str)
 {
     int i;
+    char esc = 27;
+    char e = 'e';
 
-    // first, do a gsm -> latin1 conversion (as cgw expects latin1)
-    //charset_gsm_to_latin1(str);
+    /* Euro char (0x80) -> ESC + e. We do this conversion as long as the message 
+       length is under 160 chars (the checking could probably be done better) */
+
+    while ((i = octstr_search_char(str, 0x80, 0)) != -1) {    
+        octstr_delete(str, i, 1);     // delete Euro char
+	if (octstr_len(str) < 160) {
+	    octstr_insert_data(str, i, &esc, 1);  // replace with ESC + e
+	    octstr_insert_data(str, i+1, &e, 1);  
+	} else {
+	    octstr_insert_data(str, i, &e, 1);  // no room for ESC + e, just replace with an e
+        }
+    }
+
 
     /* Escape backslash characters */
     while ((i = octstr_search_char(str, '\\', 0)) != -1) {
@@ -550,6 +565,7 @@ static void cgw_sender(void *arg)
     Msg *msg = NULL;
     Connection *server = NULL;
     int l = 0;
+    int ret = 0;
 
     conn->status = SMSCCONN_CONNECTING;
 
@@ -565,14 +581,21 @@ static void cgw_sender(void *arg)
 
             conn->status = SMSCCONN_ACTIVE;
             bb_smscconn_connected(conn);
+        } else {
+	    ret = 0;
+            l = list_len(privdata->outgoing_queue);
+            if (l > 0)
+               ret = cgw_send_loop(conn, server);     /* send any messages in queue */
+
+            if (ret != -1) ret = cgw_wait_command(privdata, conn, server, 1);     /* read ack's and delivery reports */
+            if (ret != -1) cgw_check_acks(privdata);     /* check un-acked messages */
+ 
+            if (ret == -1) {
+                mutex_lock(conn->flow_mutex);
+                conn->status = SMSCCONN_RECONNECTING;
+                mutex_unlock(conn->flow_mutex);
+	    }
         }
-
-        l = list_len(privdata->outgoing_queue);
-        if (l > 0)
-            cgw_send_loop(conn, server);     /* send any messages in queue */
-
-        cgw_wait_command(privdata, conn, server, 1);     /* read ack's and delivery reports */
-        cgw_check_acks(privdata);     /* check un-acked messages */
     }
 
     conn_destroy(server);
@@ -655,7 +678,7 @@ static Connection *cgw_open_send_connection(SMSCConn *conn)
  * Send messages in queue.
  */
 
-static void cgw_send_loop(SMSCConn *conn, Connection *server)
+static int cgw_send_loop(SMSCConn *conn, Connection *server)
 {
     PrivData *privdata = conn->data;
     struct cgwop *cgwop;
@@ -673,7 +696,7 @@ static void cgw_send_loop(SMSCConn *conn, Connection *server)
                  * CGW_TRN_MAX */
                 info(0, "cgw: Saturated, increase size of CGW_TRN_MAX!");
                 list_produce(privdata->outgoing_queue, msg);
-                return ;     /* re-insert, and go check for acks */
+                return 1;     /* re-insert, and go check for acks */
             }
         }
 
@@ -681,7 +704,7 @@ static void cgw_send_loop(SMSCConn *conn, Connection *server)
 
         if (cgwop == NULL) {
             info(0, "cgw: cgwop == NULL");
-            return ;
+            return 0;
         }
 
         privdata->sendmsg[privdata->nexttrn] = msg;
@@ -690,14 +713,14 @@ static void cgw_send_loop(SMSCConn *conn, Connection *server)
         if (cgwop_send(server, cgwop) == -1) {
             cgwop_destroy(cgwop);
             info(0, "cgw: Unable to send (cgwop_send() == -1)");
-            return ;
+            return -1;
         }
 
         privdata->unacked++;
 
         cgwop_destroy(cgwop);
     }
-
+    return 0;
 }
 
 /* Check whether there are messages the server hasn't acked in a
