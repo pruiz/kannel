@@ -142,17 +142,34 @@ void log_set_syslog(const char *ident, int syslog_level)
 
 void log_reopen(void) 
 {
-	int i;
+	int i, j, found;
 	
     for (i = 0; i < num_logfiles; ++i) {
-	if (logfiles[i].file != stderr) {
-	    fclose(logfiles[i].file);
-	    logfiles[i].file = fopen(logfiles[i].filename, "a");
-	    if (logfiles[i].file == NULL) {
-		error(errno, "Couldn't re-open logfile `%s'.",
-		      logfiles[i].filename);
-	    }
-	}
+        if (logfiles[i].file != stderr) {
+            found = 0;
+
+            /* 
+             * Reverse seek for allready reopened logfile.
+             * If we find a previous file descriptor for the same file
+             * name, then don't reopen that duplicate, but assign the 
+             * file pointer to it.
+             */
+            for (j = i-1; j >= 0 && found == 0; j--) {
+                if (strcmp(logfiles[i].filename, logfiles[j].filename) == 0) {
+                    logfiles[i].file = logfiles[j].file;
+                    found = 1;
+                }
+            }
+            if (found)
+                continue;
+            if (logfiles[i].file != NULL)
+                fclose(logfiles[i].file);
+            logfiles[i].file = fopen(logfiles[i].filename, "a");
+            if (logfiles[i].file == NULL) {
+                error(errno, "Couldn't re-open logfile `%s'.",
+                      logfiles[i].filename);
+            }
+        }
     }		
 }
 
@@ -160,10 +177,11 @@ void log_reopen(void)
 void log_close_all(void) 
 {
     while (num_logfiles > 0) {
-	--num_logfiles;
-	if (logfiles[num_logfiles].file != stderr)
-	    fclose(logfiles[num_logfiles].file);
-	logfiles[num_logfiles].file = NULL;
+        --num_logfiles;
+        if (logfiles[num_logfiles].file != stderr && 
+            logfiles[num_logfiles].file != NULL)
+            fclose(logfiles[num_logfiles].file);
+        logfiles[num_logfiles].file = NULL;
     }
 }
 
@@ -334,7 +352,8 @@ static void kannel_syslog(char *format, va_list args, int level)
 	    format(buf, level, place, e, fmt); \
 	    for (i = 0; i < num_logfiles; ++i) { \
 		if (logfiles[i].exclusive == GW_NON_EXCL && \
-            level >= logfiles[i].minimum_output_level) { \
+            level >= logfiles[i].minimum_output_level && \
+            logfiles[i].file != NULL) { \
 		    va_start(args, fmt); \
 		    output(logfiles[i].file, buf, args); \
 		    va_end(args); \
@@ -355,7 +374,8 @@ static void kannel_syslog(char *format, va_list args, int level)
 	    add_stderr(); \
 	    format(buf, level, place, 0, fmt); \
         if (logfiles[e].exclusive == GW_EXCL && \
-            level >= logfiles[e].minimum_output_level) { \
+            level >= logfiles[e].minimum_output_level && \
+            logfiles[e].file != NULL) { \
             va_start(args, fmt); \
             output(logfiles[e].file, buf, args); \
             va_end(args); \
