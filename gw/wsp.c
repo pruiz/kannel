@@ -399,12 +399,20 @@ end:
 
 static void unpack_caps(Octstr *caps, WSPMachine *m)
 {
-    int off, flags;
-    unsigned long length, uiv, mor, caps_id;
+    int off, flags, next_off;
+    unsigned long length, uiv, mor;
+    int caps_id;
+
+    debug("wap.wsp", 0, "capabilities dump starts.");
+    octstr_dump(caps, 1);
+    debug("wap.wsp", 0, "capabilities dump done.");
     
-    off = 0;
-    while (off < octstr_len(caps)) {
+    next_off = off = 0;
+    while (next_off < octstr_len(caps)) {
+	off = next_off;
+	
 	unpack_uintvar(&length, caps, &off);
+	next_off = off + length;
 
 	/* XXX
 	 * capablity identifier is defined as 'multiple octets'
@@ -412,7 +420,15 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 	 * capabilities can be identified via one number
 	 */
 
-	unpack_uintvar(&caps_id, caps, &off);
+	caps_id = octstr_get_char(caps, off);
+	off++;
+
+	if (caps_id & 0x80) {
+	    caps_id &= 0x7F;
+	} else {
+	    warning(0, "Ignoring unknown token-text capability");
+	    continue;
+	}
 
 	switch(caps_id) {
 	    
@@ -454,11 +470,12 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 		  * be sure, that there is that information */
 
 	    flags = (octstr_get_char(caps,off));
+	    off++;
 	    if (!(m->set_caps & WSP_PO_SET)) {
 
 		/* we do not support anything yet, so answer so */
 
-		debug("wap.wsp", 0, "Client protocol option flags %0xd, not supported.", flags);
+		debug("wap.wsp", 0, "Client protocol option flags 0x%02X, not supported.", flags);
 		     
 		m->protocol_options = WSP_MAX_PROTOCOL_OPTIONS;
 		m->set_caps |= WSP_PO_SET;
@@ -494,18 +511,26 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 	    break;
 	case WSP_CAPS_EXTENDED_METHODS:
 	    debug("wap.wsp", 0, "Extended methods capability ignored");
+	    off += length - 1;
 	    break;
 	case WSP_CAPS_HEADER_CODE_PAGES:
 	    debug("wap.wsp", 0, "Header code pages capability ignored");
+	    off += length - 1;
 	    break;
 	case WSP_CAPS_ALIASES:
 	    debug("wap.wsp", 0, "Aliases capability ignored");
+	    off += length - 1;
 	    break;
 	default:
 	    /* unassigned */
-	    debug("wap.wsp", 0, "Unknown capability '%d' ignored",
-		  octstr_get_char(caps,off-1));
+	    debug("wap.wsp", 0, "Unknown capability '0x%02X' ignored", caps_id);
+	    off += length - 1;
 	    break;
+	}
+
+	if (off != next_off) {
+	    warning(0, "Problems extracting capability parameters, offset is %d, but should be %d",
+		    off, next_off);
 	}
     }
 }
