@@ -1,4 +1,8 @@
 2003-01-29  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_at2.c: fixed double-increment bug for outgoing messages
+      counter. Thanks to Paul for pointing on this.
+
+2003-01-29  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.c: fixed the missing HTTP Server identifier from previous 
       commit.
 
