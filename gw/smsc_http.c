@@ -228,7 +228,7 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
     
     headers = list_create();
     debug("smsc.http.kannel", 0, "start request");
-    http_start_request(conndata->http_ref, url, headers, NULL, 0, sms);
+    http_start_request(conndata->http_ref, url, headers, NULL, 0, sms, NULL);
 
     octstr_destroy(url);
     http_destroy_headers(headers);

@@ -17,7 +17,7 @@ dnl Target installation directory for documentation
 AC_SUBST(docdir)
 docdir='${prefix}/share/doc/kannel'
 
-dnl Checks Sytem Type.
+dnl Checks System Type.
 AC_CANONICAL_HOST
 
 case "$host" in
@@ -329,6 +329,36 @@ AC_ARG_ENABLE(start-stop-daemon,
   fi
 ])
 AC_SUBST(STARTSTOPDAEMONSRC)
+
+
+dnl --disable-ssl option.
+
+AC_ARG_ENABLE(ssl,
+[  --disable-ssl  disable support for ssl and https], [
+  echo Disabling SSL support.
+], [
+  echo Attempting to compile with SSL support.
+  AC_CHECK_LIB(ssl, SSL_library_init,
+  [ AC_MSG_CHECKING(whether the OpenSSL library is multithread-enabled)
+    AC_TRY_RUN([ #define OPENSSL_THREAD_DEFINES
+		 #include <openssl/opensslconf.h>
+		 int main(void) {
+		 #if defined(THREADS)
+		  exit(0);
+		 #else
+		  exit(1);
+		 #endif
+		 }
+	      ], echo yes;AC_DEFINE(HAVE_LIBSSL) 
+              LIBS="$LIBS -lssl",
+	      echo no;echo Either get a multithread-enabled SSL or configure with --disable-ssl;
+	      exit 1,
+	      echo "Cross-compiling; make sure your SSL library is multithread-enabled"
+              )
+  ])
+])
+
+
 
 dnl Final Output
 

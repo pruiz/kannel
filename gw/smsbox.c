@@ -644,7 +644,8 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
     case TRANSTYPE_GET_URL:
 	request_headers = list_create();
 	id = remember_receiver(msg, trans);
-	http_start_request(caller, pattern, request_headers, NULL, 1, id);
+	http_start_request(caller, pattern, request_headers, NULL, 1, id,
+ 			   NULL);
 	octstr_destroy(pattern);
 	http_destroy_headers(request_headers);
 	*result = NULL;
@@ -679,8 +680,8 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 			    octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
-	http_start_request(caller, pattern, request_headers,
-			   msg->sms.msgdata, 1, id);
+	http_start_request(caller, pattern, request_headers, 
+ 			   msg->sms.msgdata, 1, id, NULL);
 	octstr_destroy(pattern);
 	http_destroy_headers(request_headers);
 	*result = NULL;
@@ -1598,6 +1599,7 @@ static void init_smsbox(Cfg *cfg)
     List *http_proxy_exceptions = NULL;
     Octstr *http_proxy_username = NULL;
     Octstr *http_proxy_password = NULL;
+    Octstr *ssl_certkey_file;
 
 
     bb_port = BB_DEFAULT_SMSBOX_PORT;
@@ -1626,6 +1628,12 @@ static void init_smsbox(Cfg *cfg)
     	    	    	    octstr_imm("http-proxy-password"));
     http_proxy_exceptions = cfg_get_list(grp,
     	    	    	    octstr_imm("http-proxy-exceptions"));
+#ifdef HAVE_LIBSSL
+    ssl_certkey_file = cfg_get(grp, octstr_imm("ssl-certkey-file"));
+    if (ssl_certkey_file != NULL) 
+        use_global_certkey_file(ssl_certkey_file);
+    octstr_destroy(ssl_certkey_file);
+#endif /* HAVE_LIBSSL */
 
 
     /*

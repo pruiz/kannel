@@ -48,6 +48,14 @@ typedef struct Connection Connection;
  * down the polling process.  This may be good or bad. */
 typedef void conn_callback_t(Connection *conn, void *data);
 
+#ifdef HAVE_LIBSSL
+/* Open an SSL connection to the given host and port.  Same behavior
+ * as conn_open_tcp() below. 'certkeyfile' specifies a PEM-encoded
+ * file where OpenSSL looks for a private key and a certificate. 
+ */
+Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile);
+#endif /* HAVE_LIBSSL */
+
 /* Open a TCP/IP connection to the given host and port.  Return the
  * new Connection.  If the connection can not be made, return NULL
  * and log the problem. */
@@ -175,3 +183,26 @@ Octstr *conn_read_withlen(Connection *conn);
  * Everything up to the first startmark is discarded.
   */
 Octstr *conn_read_packet(Connection *conn, int startmark, int endmark);
+
+#ifdef HAVE_LIBSSL
+
+#include <openssl/x509.h>
+
+/* Returns the SSL peer certificate for the given Connection or NULL
+ * if none. 
+ */
+X509 *get_peer_certificate(Connection *conn);
+
+/* These must be called if SSL is used. Currently http.c calls 
+ * conn_init_ssl from http_init and conn_shutdown_ssl from http_shutdown. 
+ */
+void conn_init_ssl(void);
+void conn_shutdown_ssl(void);
+
+/* Specifies a global PEM-encoded certificate and a private key file 
+ * to be used with SSL connections. conn_init_ssl() must be called 
+ * first. This checks that the private key matches with the certificate
+ * and will panic if it doesn't.
+ */
+void use_global_certkey_file(Octstr *certkeyfile);
+#endif /* HAVE_LIBSSL */

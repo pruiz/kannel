@@ -227,9 +227,16 @@ void http_caller_signal_shutdown(HTTPCaller *caller);
  *
  * If `body' is NULL, it is a GET request, otherwise as POST request.
  * If `follow' is true, HTTP redirections are followed, otherwise not.
+ *
+ * 'certkeyfile' defines a filename where openssl looks for a PEM-encoded
+ * certificate and a private key, if openssl is compiled in and an https 
+ * URL is used. It can be NULL, in which case none is used and thus there 
+ * is no ssl authentication, unless you have set a global one with
+ * use_global_certkey_file() from conn.c.
  */
 void http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
-    	    	    	Octstr *body, int follow, void *id);
+    	    	    	Octstr *body, int follow, void *id, 
+    	    	    	Octstr *certkeyfile); 
 
 
 /*

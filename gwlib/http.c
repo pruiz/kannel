@@ -25,6 +25,10 @@
 
 #include "gwlib.h"
 
+#ifdef HAVE_LIBSSL
+#include <openssl/err.h>
+#endif /* HAVE_LIBSSL */
+
 
 /***********************************************************************
  * Stuff used in several sub-modules.
@@ -34,7 +38,8 @@
 /*
  * Default port to connect to for HTTP connections.
  */
-enum { HTTP_PORT = 80 };
+enum { HTTP_PORT = 80,
+       HTTPS_PORT = 443 };
 
 
 /*
@@ -562,12 +567,15 @@ typedef struct {
     long port;
     int retrying;
     int follow_remaining;
+    Octstr *certkeyfile;
+    int ssl;
 } HTTPServer;
 
 
 static HTTPServer *server_create(HTTPCaller *caller, Octstr *url,
     	    	    	    	    	   List *headers, Octstr *body,
-					   int follow_remaining)
+					   int follow_remaining,
+					   Octstr *certkeyfile)
 {
     HTTPServer *trans;
     
@@ -586,6 +594,8 @@ static HTTPServer *server_create(HTTPCaller *caller, Octstr *url,
     trans->port = 0;
     trans->retrying = 0;
     trans->follow_remaining = follow_remaining;
+    trans->certkeyfile = certkeyfile;
+    trans->ssl = 0;
     return trans;
 }
 
@@ -642,7 +652,7 @@ static Octstr *conn_pool_key(Octstr *host, int port)
 }
 
 
-static Connection *conn_pool_get(Octstr *host, int port)
+static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certkeyfile)
 {
     Octstr *key;
     List *list;
@@ -672,7 +682,12 @@ static Connection *conn_pool_get(Octstr *host, int port)
     if (conn == NULL) {
 	debug("gwlib.http", 0, "HTTP: Opening connection to `%s:%d'.",
 	      octstr_get_cstr(host), port);
-    	conn = conn_open_tcp(host, port);
+#ifdef HAVE_LIBSSL
+	if (ssl) 
+	    conn = conn_open_ssl(host, port, certkeyfile);
+	else
+#endif /* HAVE_LIBSSL */
+	    conn = conn_open_tcp(host, port);
     }
     
     return conn;
@@ -966,19 +981,35 @@ static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port,
  * 
  *  http_URL = "http:" "//" host [ ":" port ] [ abs_path [ "?" query ]]
  */
-static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path)
+static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
+		     int *ssl)
 {
-    Octstr *prefix;
+    Octstr *prefix, *prefix_https;
     long prefix_len;
     int host_len, colon, slash;
 
     prefix = octstr_imm("http://");
+    prefix_https = octstr_imm("https://");
     prefix_len = octstr_len(prefix);
 
     if (octstr_case_search(url, prefix, 0) != 0) {
-        error(0, "URL <%s> doesn't start with `%s'",
-              octstr_get_cstr(url), octstr_get_cstr(prefix));
-        return -1;
+        if (octstr_case_search(url, prefix_https, 0) == 0) {
+#ifdef HAVE_LIBSSL
+            debug("gwlib.http", 0, "HTTPS URL; Using SSL for the connection");
+            prefix = prefix_https;
+            prefix_len = octstr_len(prefix_https);	
+            *ssl = 1;
+#else
+            error(0, "Attempt to use HTTPS <%s> but SSL not compiled in", 
+                  octstr_get_cstr(url));
+            return -1;
+#endif
+        } else {
+            error(0, "URL <%s> doesn't start with `%s' nor `%s'",
+            octstr_get_cstr(url), octstr_get_cstr(prefix),
+            octstr_get_cstr(prefix_https));
+            return -1;
+        }
     }
 
     if (octstr_len(url) == prefix_len) {
@@ -996,7 +1027,11 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path)
     if (slash == -1 && colon == -1) {
         /* Just the hostname, no port or path. */
         host_len = octstr_len(url) - prefix_len;
+#ifdef HAVE_LIBSSL
+        *port = *ssl ? HTTPS_PORT : HTTP_PORT;
+#else
         *port = HTTP_PORT;
+#endif /* HAVE_LIBSSL */
     } else if (slash == -1) {
         /* Port, but not path. */
         host_len = colon - prefix_len;
@@ -1008,7 +1043,11 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path)
     } else if (colon == -1 || colon > slash) {
         /* Path, but not port. */
         host_len = slash - prefix_len;
+#ifdef HAVE_LIBSSL
+        *port = *ssl ? HTTPS_PORT : HTTP_PORT;
+#else
         *port = HTTP_PORT;
+#endif /* HAVE_LIBSSL */
     } else if (colon < slash) {
         /* Both path and port. */
         host_len = colon - prefix_len;
@@ -1051,7 +1090,7 @@ static Connection *send_request(HTTPServer *trans, char *method_name)
     /* May not be NULL if we're retrying this transaction. */
     octstr_destroy(trans->host);
 
-    if (parse_url(trans->url, &trans->host, &trans->port, &path) == -1)
+    if (parse_url(trans->url, &trans->host, &trans->port, &path, &trans->ssl) == -1)
         goto error;
 
     if (proxy_used_for_host(trans->host)) {
@@ -1072,10 +1111,14 @@ static Connection *send_request(HTTPServer *trans, char *method_name)
     if (trans->retrying) {
 	debug("gwlib.http", 0, "HTTP: Opening NEW connection to `%s:%d'.",
 	      octstr_get_cstr(host), port);
-    	conn = conn_open_tcp(host, port);
-    } else {
-        conn = conn_pool_get(host, port);
-    }
+#ifdef HAVE_LIBSSL
+	if (trans->ssl) conn = 
+	    conn_open_ssl(host, port, trans->certkeyfile);
+	else
+#endif /* HAVE_LIBSSL */
+	    conn = conn_open_tcp(host, port);
+    } else
+        conn = conn_pool_get(host, port, trans->ssl, trans->certkeyfile);
     if (conn == NULL)
         goto error;
 
@@ -1139,6 +1182,9 @@ static void write_request_thread(void *arg)
 	    	    	  trans);
 	}
     }
+#ifdef HAVE_LIBSSL
+    ERR_remove_state(0);
+#endif /* HAVE_LIBSSL */
 }
 
 
@@ -1163,7 +1209,7 @@ static void start_client_threads(void)
 
 
 void http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
-    	    	    	Octstr *body, int follow, void *id)
+    	    	    	Octstr *body, int follow, void *id, Octstr *certkeyfile)
 {
     HTTPServer *trans;
     int follow_remaining;
@@ -1173,7 +1219,9 @@ void http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
     else
     	follow_remaining = 0;
 
-    trans = server_create(caller, url, headers, body, follow_remaining);
+    trans = server_create(caller, url, headers, body, follow_remaining, 
+			  certkeyfile);
+
     if (id == NULL)
 	/* We don't leave this NULL so http_receive_result can use NULL
 	 * to signal no more requests */
@@ -1225,7 +1273,7 @@ int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
     void *ret;
     
     caller = http_caller_create();
-    http_start_request(caller, url, request_headers, NULL, 1, http_get_real);
+    http_start_request(caller, url, request_headers, NULL, 1, http_get_real, NULL);
     ret = http_receive_result(caller, &status, final_url, 
     	    	    	      reply_headers, reply_body);
     http_caller_destroy(caller);
@@ -1653,6 +1701,9 @@ static void server_thread(void *dummy)
 	(void) close(tab[i].fd);
 	port_remove(ports[i]);
     }
+#ifdef HAVE_LIBSSL
+    ERR_remove_state(0);
+#endif /* HAVE_LIBSSL */
 }
 
 
@@ -2474,6 +2525,9 @@ void http_init(void)
 {
     gw_assert(run_status == limbo);
 
+#ifdef HAVE_LIBSSL
+    conn_init_ssl();
+#endif /* HAVE_LIBSSL */
     proxy_init();
     client_init();
     conn_pool_init();
@@ -2496,6 +2550,9 @@ void http_shutdown(void)
     client_shutdown();
     server_shutdown();
     proxy_shutdown();
+#ifdef HAVE_LIBSSL
+    conn_shutdown_ssl();
+#endif /* HAVE_LIBSSL */
     run_status = limbo;
 }
 

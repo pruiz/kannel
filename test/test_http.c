@@ -33,7 +33,7 @@ static void start_request(HTTPCaller *caller, List *reqh, long i)
     id = gw_malloc(sizeof(long));
     *id = i;
     url = octstr_create(urls[i % num_urls]);
-    http_start_request(caller, url, reqh, NULL, 0, id);
+    http_start_request(caller, url, reqh, NULL, 0, id, NULL);
     debug("", 0, "Started request %ld", *id);
     octstr_destroy(url);
 }

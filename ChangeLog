@@ -1,3 +1,30 @@
+2001-05-07  Jarkko Kovala <jarkko.kovala@iki.fi>
+ 
+	* config.in, config.h.in: Added autoconfiguration for
+	libssl and a --disable-ssl option. Checks for libssl
+	libraries and compiles it in if found and not disabled.
+	Also checks if the OpenSSL libraries are multithread-
+	enabled.
+ 
+	* gw/smsbox.c, gw/smskannel.conf, gwlib/cfg.def: Added 
+	configuration of a global SSL certificate and key file 
+	with variable 'ssl-certkey-file'.
+ 
+	* gwlib/conn.[ch]: Added support for client-side thread-safe
+	use of SSL; new interface conn_open_ssl() similar to 
+	conn_open_tcp(). Also initialization functions for some
+	stuff needed for SSL and interfaces to use global certificates
+	and to get certificates from remote hosts.
+
+	* gwlib/http.[ch]: Changed the http_start_request interface
+	to accept variable certkeyfile for call-specific certificate &
+	private key files. Changed to initialize the SSL stuff from
+	conn.c at startup.
+ 
+	* gw/smsbox.c gw/smsc_http.c, gw/wap-appl.c, test/test_http.c,
+	gwlib/xmlrpc.c: Changed calls to http_start_request to use the
+	new interface.
+
 2001-05-07  Richard Braakman  <dark@wapit.com>
 
 	* Making release 1.1.4.

@@ -143,7 +143,7 @@ int xmlrpc_call_send(XMLRPCMethodCall *call, HTTPCaller *http_ref,
 
     body = xmlrpc_call_octstr(call);
 
-    http_start_request(http_ref, url, headers, body, 0, ref);
+    http_start_request(http_ref, url, headers, body, 0, ref, NULL);
     
     octstr_destroy(body);
     http_destroy_headers(headers);

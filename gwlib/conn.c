@@ -18,6 +18,12 @@
 
 #include "gwlib/gwlib.h"
 
+#ifdef HAVE_LIBSSL
+#include <openssl/ssl.h>
+
+SSL_CTX *global_ssl_context;
+#endif /* HAVE_LIBSSL */
+
 /*
  * This used to be 4096.  It is now 0 so that callers don't have to
  * deal with the complexities of buffering (i.e. deciding when to
@@ -66,6 +72,12 @@ struct Connection
     int listening_pollin;
     /* Protected by outlock */
     int listening_pollout;
+
+#ifdef HAVE_LIBSSL
+    SSL *ssl;
+    X509 *peer_certificate;
+    Mutex *ssl_mutex;
+#endif /* HAVE_LIBSSL */
 };
 
 static void unlocked_register_pollin(Connection *conn, int onoff);
@@ -137,7 +149,34 @@ static long unlocked_write(Connection *conn)
 {
     long ret;
 
-    ret = octstr_write_data(conn->outbuf, conn->fd, conn->outbufpos);
+#ifdef HAVE_LIBSSL
+    if (conn->ssl != NULL) {
+        mutex_lock(conn->ssl_mutex);
+        ret = SSL_write(conn->ssl, 
+                        octstr_get_cstr(conn->outbuf) + conn->outbufpos, 
+                        octstr_len(conn->outbuf) - conn->outbufpos);
+
+        if (ret < 0) {
+            int SSL_error = SSL_get_error(conn->ssl, ret); 
+
+            if (SSL_error == SSL_ERROR_WANT_READ) {
+                SSL_read(conn->ssl, NULL, 0);
+                mutex_unlock(conn->ssl_mutex);
+                return 0;
+            } else if (SSL_error == SSL_ERROR_WANT_WRITE) {
+                mutex_unlock(conn->ssl_mutex);
+                return 0;
+            } else {
+                error(0, "SSL write failed: OpenSSL error %d: %s", 
+                      SSL_error, ERR_error_string(SSL_error, NULL));
+                mutex_unlock(conn->ssl_mutex);
+                return -1;
+            }
+        }
+        mutex_unlock(conn->ssl_mutex);
+    } else
+#endif /* HAVE_LIBSSL */
+        ret = octstr_write_data(conn->outbuf, conn->fd, conn->outbufpos);
 
     if (ret < 0)
         return -1;
@@ -191,7 +230,30 @@ static void unlocked_read(Connection *conn)
         conn->inbufpos = 0;
     }
 
-    len = read(conn->fd, buf, sizeof(buf));
+#ifdef HAVE_LIBSSL
+    if (conn->ssl != NULL) {
+        mutex_lock(conn->ssl_mutex);
+        len = SSL_read(conn->ssl, buf, sizeof(buf));
+
+        if (len < 0) { 
+            int SSL_error = SSL_get_error(conn->ssl, len);
+
+            if (SSL_error == SSL_ERROR_WANT_WRITE) {
+                len = SSL_write(conn->ssl, NULL, 0);
+                mutex_unlock(conn->ssl_mutex);
+                return;
+            } else if (SSL_error == SSL_ERROR_WANT_READ) {
+                mutex_unlock(conn->ssl_mutex);
+                return;
+            } else
+                error(0, "SSL read failed: OpenSSL error %d: %s",
+                      SSL_error, ERR_error_string(SSL_error, NULL));
+        }
+        mutex_unlock(conn->ssl_mutex);
+    } else
+#endif /* HAVE_LIBSSL */
+        len = read(conn->fd, buf, sizeof(buf));
+
     if (len < 0) {
         if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
             return;
@@ -261,6 +323,52 @@ static void unlocked_register_pollout(Connection *conn, int onoff)
     }
 }
 
+#ifdef HAVE_LIBSSL
+
+Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile)
+{
+    Connection *ret;
+    int SSL_ret;
+
+    ret = conn_open_tcp(host, port);
+
+    ret->ssl = SSL_new(global_ssl_context);
+    SSL_set_connect_state(ret->ssl);
+    if (certkeyfile != NULL) {
+        SSL_use_certificate_file(ret->ssl, octstr_get_cstr(certkeyfile),
+                                 SSL_FILETYPE_PEM);
+        SSL_use_PrivateKey_file(ret->ssl, octstr_get_cstr(certkeyfile), 
+                                SSL_FILETYPE_PEM);
+        if (SSL_check_private_key(ret->ssl) != 1) {
+            error(0, "conn_open_ssl: private key isn't consistent with the \
+certificate from file %s (or failed reading the file)",
+                  octstr_get_cstr(certkeyfile));
+            goto error;
+        }
+    }
+    SSL_set_fd(ret->ssl, ret->fd);
+    SSL_ret = SSL_connect(ret->ssl);
+
+    if (SSL_ret != 1) {
+        int SSL_error = SSL_get_error(ret->ssl, SSL_ret); 
+
+        if (SSL_error != SSL_ERROR_WANT_READ
+           && SSL_error != SSL_ERROR_WANT_WRITE) {
+            error(0, "SSL connect failed: OpenSSL error %d: %s", 
+                     SSL_error, ERR_error_string(SSL_error, NULL));
+            goto error;
+        }
+    }
+
+    ret->ssl_mutex = mutex_create();
+    return(ret);
+error:
+    conn_destroy(ret);
+    return(NULL);
+}
+
+#endif /* HAVE_LIBSSL */
+
 Connection *conn_open_tcp(Octstr *host, int port)
 {
     return conn_open_tcp_with_port(host, port, 0);
@@ -306,6 +414,11 @@ Connection *conn_wrap_fd(int fd)
     conn->callback_data = NULL;
     conn->listening_pollin = 0;
     conn->listening_pollout = 0;
+#ifdef HAVE_LIBSSL
+    conn->ssl = NULL;
+    conn->peer_certificate = NULL;
+    conn->ssl_mutex = NULL;
+#endif /* HAVE_LIBSSL */
 
     return conn;
 }
@@ -326,6 +439,17 @@ void conn_destroy(Connection *conn)
     if (conn->fd >= 0) {
         /* Try to flush any remaining data */
         unlocked_write(conn);
+#ifdef HAVE_LIBSSL
+        if (conn->ssl != NULL) {
+            mutex_lock(conn->ssl_mutex);
+            SSL_shutdown(conn->ssl);
+            SSL_free(conn->ssl);
+            if (conn->peer_certificate != NULL) 
+                X509_free(conn->peer_certificate);
+            mutex_unlock(conn->ssl_mutex);
+            mutex_destroy(conn->ssl_mutex);
+	}
+#endif /* HAVE_LIBSSL */
         ret = close(conn->fd);
         if (ret < 0)
             error(errno, "conn_destroy: error on close");
@@ -849,3 +973,67 @@ Octstr *conn_read_packet(Connection *conn, int startmark, int endmark)
     unlock_in(conn);
     return result;
 }
+
+#ifdef HAVE_LIBSSL
+X509 *conn_get_peer_certificate(Connection *conn) 
+{
+    mutex_lock(conn->ssl_mutex);
+    if (conn->peer_certificate == NULL && conn->ssl != NULL) 
+        conn->peer_certificate = SSL_get_peer_certificate(conn->ssl);
+    mutex_unlock(conn->ssl_mutex);
+    return(conn->peer_certificate);
+}
+
+Mutex **ssl_static_locks = NULL;
+
+void openssl_locking_function(int mode, int n, const char *file, int line) 
+{
+    if (mode & CRYPTO_LOCK)
+        mutex_lock(ssl_static_locks[n-1]);
+    else
+        mutex_unlock(ssl_static_locks[n-1]);
+}
+
+void conn_init_ssl(void)
+{
+    int c, maxlocks = CRYPTO_num_locks();
+
+    gw_assert(ssl_static_locks == NULL);
+    ssl_static_locks = gw_malloc(sizeof(Mutex *) * maxlocks);
+    for (c=0;c<maxlocks;c++) 
+        ssl_static_locks[c] = mutex_create();
+
+    CRYPTO_set_locking_callback(openssl_locking_function);
+    CRYPTO_set_id_callback(gwthread_self);
+
+    SSL_library_init();
+    SSL_load_error_strings();
+    global_ssl_context = SSL_CTX_new(SSLv23_method());
+}
+
+void conn_shutdown_ssl(void)
+{
+    int c, maxlocks = CRYPTO_num_locks();
+
+    SSL_CTX_free(global_ssl_context);
+
+    for (c=0;c<maxlocks;c++) 
+        mutex_destroy(ssl_static_locks[c]);
+    gw_free(ssl_static_locks);
+}
+
+void use_global_certkey_file(Octstr *certkeyfile) {
+    SSL_CTX_use_certificate_file(global_ssl_context, 
+                                 octstr_get_cstr(certkeyfile), 
+                                 SSL_FILETYPE_PEM);
+    SSL_CTX_use_PrivateKey_file(global_ssl_context,
+                                octstr_get_cstr(certkeyfile),
+                                SSL_FILETYPE_PEM);
+    if (SSL_CTX_check_private_key(global_ssl_context) != 1)
+        panic(0, "reading global certificate file %s, the certificate \
+isn't consistent with the private key (or failed reading the file)", 
+              octstr_get_cstr(certkeyfile));
+    info(0, "Using global SSL certificate and key from file %s",
+         octstr_get_cstr(certkeyfile));
+}
+#endif /* HAVE_LIBSSL */
