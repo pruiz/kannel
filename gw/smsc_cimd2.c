@@ -1457,8 +1457,12 @@ static int cimd2_request(struct packet *request, SMSCenter *smsc) {
 
 	gw_assert(smsc != NULL);
 	gw_assert(request != NULL);
-	gw_assert(smsc->socket >= 0);
 	gw_assert(operation_can_send(request->operation));
+
+	if (smsc->socket < 0) {
+		warning(0, "cimd2_request: socket not open.");
+		goto io_error;
+	}
 
 retransmit:
 	packet_set_send_sequence(request, smsc);
@@ -1775,6 +1779,14 @@ int cimd2_pending_smsmessage(SMSCenter *smsc) {
 
 	if (list_len(smsc->cimd2_received) > 0)
 		return 1;
+
+	if (smsc->socket < 0) {
+		/* XXX We have to assume that smsc_send_message is
+		 * currently trying to reopen, so we have to make
+		 * this thread wait.  It should be done in a nicer
+		 * way. */
+		return 0;
+	}
 
 	ret = read_available(smsc->socket, 0);
 	if (ret == 0) {
