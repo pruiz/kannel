@@ -4,7 +4,7 @@
  * HTTP based "SMSC Connection" is meant for gateway connections,
  * and has following features:
  *
- * o Kannel listens to certain (HHTP server) port for MO SMS messages.
+ * o Kannel listens to certain (HTTP server) port for MO SMS messages.
  *   The exact format of these HTTP calls are defined by type of HTTP based
  *   connection. Kannel replies to these messages as ACK, but does not
  *   support immediate reply. Thus, if Kannel is linked to another Kannel,
