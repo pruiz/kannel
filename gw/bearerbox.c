@@ -735,7 +735,7 @@ Octstr *bb_print_status(int status_type)
         (float)counter_value(incoming_sms_counter)/t,
         (float)counter_value(outgoing_sms_counter)/t,
         dlr_messages(),
-        octstr_get_cstr(dlr_type));
+        dlr_type());
 
     octstr_destroy(version);
     ret = octstr_create(buf);

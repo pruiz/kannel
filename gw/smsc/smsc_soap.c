@@ -1112,18 +1112,15 @@ static void soap_read_response(SMSCConn *conn)
         sprintf(tmpid,"%lld",msgID);
         debug("bb.soap.read_response",0,"SOAP[%s]: ACK - id: %lld", octstr_get_cstr(privdata->name), msgID);
 
-        dlr_add(octstr_get_cstr(conn->id), tmpid, octstr_get_cstr(msg->sms.sender),
-                "receiver", octstr_get_cstr(msg->sms.service),
-                octstr_get_cstr(msg->sms.dlr_url), msg->sms.dlr_mask,
-                octstr_get_cstr(msg->sms.boxc_id));
+        dlr_add(conn->id, octstr_imm(tmpid), msg);
 
         /* generate SMSC success DLR */
         if (msg->sms.dlr_mask & DLR_SMSC_SUCCESS) {
             Msg* dlrmsg;
 
 
-            dlrmsg = dlr_find(octstr_get_cstr(conn->id),tmpid,
-                              octstr_get_cstr(msg->sms.receiver), /* destination */
+            dlrmsg = dlr_find(conn->id,octstr_imm(tmpid),
+                              msg->sms.receiver, /* destination */
                               DLR_SMSC_SUCCESS);
 
             if (dlrmsg) {
@@ -1586,7 +1583,7 @@ static long soap_parse_dlr(SMSCConn *conn, Octstr *request, Octstr **response)
 
     /* fetch the DLR */
 
-    dlrmsg = dlr_find(octstr_get_cstr(conn->id),msgid, "receiver", /* destination */
+    dlrmsg = dlr_find(conn->id, octstr_imm(msgid), octstr_imm("receiver"), /* destination */
                       dlrtype);
 
     if (!dlrmsg) {
@@ -2375,12 +2372,11 @@ long soap_release_dependences(Octstr* file_deps, List* lstmaps, Msg* msg, PrivDa
     List *issues;
     long i, j, key_index, key_deps_index, map_index;
     int res, k;
-
     List *issue_items, *header_item;
     int key_func_index;
     ArgumentMap* map;
     Octstr *header, *key, *key_deps;
-    Octstr *func_alias, *block;
+    Octstr *func_alias = NULL, *block;
 
     /* follows  keys and funcs identifiers must be
      * the same as in a 'deps' file
@@ -2524,7 +2520,7 @@ int soap_process_deps(int key_index, int key_func_ind, Msg* msg, PrivData *privd
 **/
 int soap_msgtype_deps(int key_func_index, Msg* msg)
 {
-    /* {"text","binary","unicode","default"}	/* msgtype  */
+    /* {"text","binary","unicode","default"}	msgtype  */
 
     /* ADD HERE: see order in funcs[][] */
     switch (key_func_index)
@@ -2551,7 +2547,7 @@ int soap_msgtype_deps(int key_func_index, Msg* msg)
 int soap_msgdata_deps(int key_func_index, Msg* msg, PrivData *privdata)
 {
     int ret = 0;
-    /* {"set_iso","64_binary","hex_binary","unicode","default"} /* msgdata */
+    /* {"set_iso","64_binary","hex_binary","unicode","default"}  msgdata */
 
     /* ADD HERE: */
     switch (key_func_index)

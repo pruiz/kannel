@@ -1078,28 +1078,27 @@ static int cgw_handle_op(SMSCConn *conn, Connection *server, struct cgwop *cgwop
 
             switch (stat) {
             case 0:     /* delivered */
-                dlrmsg = dlr_find(octstr_get_cstr(conn->id),
-                                  octstr_get_cstr(ts),     /* timestamp */
-                                  octstr_get_cstr(msid),   /* destination */
+                dlrmsg = dlr_find(conn->id,
+                                            ts,     /* timestamp */
+                                            msid,   /* destination */
                                   DLR_SUCCESS);
                 break;
             case 1:     /* buffered */
-                dlrmsg = dlr_find(octstr_get_cstr(conn->id),
-                                  octstr_get_cstr(ts),     /* timestamp */
-                                  octstr_get_cstr(msid),   /* destination */
+                dlrmsg = dlr_find(conn->id,
+                                            ts,     /* timestamp */
+                                            msid,   /* destination */
                                   DLR_BUFFERED);
                 break;
             case 2:     /* not delivered */
-                dlrmsg = dlr_find(octstr_get_cstr(conn->id),
-                                  octstr_get_cstr(ts),     /* timestamp */
-                                  octstr_get_cstr(msid),   /* destination */
+                dlrmsg = dlr_find(conn->id,
+                                            ts,     /* timestamp */
+                                            msid,   /* destination */
                                   DLR_FAIL);
                 break;
             }
 
             octstr_destroy(ts);
             if (dlrmsg != NULL) {
-
                 dlrmsg->sms.msgdata = octstr_duplicate(txt);
                 bb_smscconn_receive(conn, dlrmsg);
             }
@@ -1126,14 +1125,7 @@ static int cgw_handle_op(SMSCConn *conn, Connection *server, struct cgwop *cgwop
             octstr_append_char(ts, '-');
             octstr_append_decimal(ts, trn);
 
-            dlr_add(octstr_get_cstr(conn->id),
-                    octstr_get_cstr(ts),
-                    octstr_get_cstr(msg->sms.sender),
-                    octstr_get_cstr(msg->sms.receiver),
-                    octstr_get_cstr(msg->sms.service),
-                    octstr_get_cstr(msg->sms.dlr_url),
-                    msg->sms.dlr_mask,
-                    octstr_get_cstr(msg->sms.boxc_id));
+            dlr_add(conn->id, ts, msg);
 
             octstr_destroy(ts);
             privdata->dlr[trn] = 1;

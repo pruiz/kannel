@@ -1494,8 +1494,7 @@ Msg *at2_pdu_decode_report_sm(Octstr *data, PrivAT2data *privdata)
      * any "reserved" values to be "failure", but most reserved values fall into one of the three categories. it will catch
      * "reserved" values where the first 3 MSBits are not set as "Success" which may not be correct. */
 
-    if ((dlrmsg = dlr_find(octstr_get_cstr(privdata->conn->id),
-	    octstr_get_cstr(msg_id), octstr_get_cstr(receiver), type)) == NULL) {
+    if ((dlrmsg = dlr_find(privdata->conn->id, msg_id, receiver, type)) == NULL) {
 	debug("bb.smsc.at2",1,"AT2[%s]: Received delivery notification but can't find that ID in the DLR storage",
 	    octstr_get_cstr(privdata->name));
 	    goto error;
@@ -1681,14 +1680,7 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 		 else {
             Octstr *dlrmsgid = octstr_format("%d", msg_id);
 
-            dlr_add(octstr_get_cstr(privdata->conn->id),
-                    octstr_get_cstr(dlrmsgid),
-			        octstr_get_cstr(msg->sms.sender),
-			        octstr_get_cstr(msg->sms.receiver),
-			        octstr_get_cstr(msg->sms.service),
-			        octstr_get_cstr(msg->sms.dlr_url),
-                    msg->sms.dlr_mask,
-                    octstr_get_cstr(msg->sms.boxc_id));
+            dlr_add(privdata->conn->id, dlrmsgid, msg);
 				
 		    O_DESTROY(dlrmsgid);
 		}

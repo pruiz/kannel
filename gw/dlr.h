@@ -16,33 +16,6 @@
 #define	DLR_SMSC_SUCCESS    0x08
 #define	DLR_SMSC_FAIL       0x10
 
-#if defined(DLR_MYSQL) || defined(DLR_SDB)
-#define DLR_DB 1
-#endif
-
-Mutex *dlr_mutex;
-Octstr *dlr_type;
-
-/*
- * DB specific global things
- */
-#ifdef DLR_DB
-#ifdef DLR_MYSQL
-#include <mysql/mysql.h>
-MYSQL *connection;
-MYSQL mysql;
-#endif
-#ifdef DLR_SDB
-#include <sdb.h>
-char *connection;
-#endif
-Octstr *table;
-Octstr *field_smsc, *field_ts, *field_src, *field_dst, *field_serv;
-Octstr *field_url, *field_mask, *field_status, *field_boxc;
-#endif
-
-/* macros */
-#define	O_DELETE(a)	 { if (a) octstr_destroy(a); a = NULL; }
 
 /* DLR initialization routine (abstracted) */
 void dlr_init(Cfg *cfg);
@@ -53,17 +26,13 @@ void dlr_shutdown(void);
 /* 
  * Add a new entry to the list 
  */
-void dlr_add(char *smsc, char *ts, char *src, char *dst, 
-             char *keyword, char *id, int mask, char *boxc);
+void dlr_add(const Octstr *smsc, const Octstr *ts, const Msg *msg);
 
 /* 
  * Find an entry in the list. If there is one a message is returned and 
  * the entry is removed from the list otherwhise the message returned is NULL 
  */
-Msg* dlr_find(char *smsc, char *ts, char *dst, int type);
-
-void dlr_save(const char *filename);
-void dlr_load(const char *filename);
+Msg* dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int type);
 
 /* return the number of DLR messages in the current waiting queue */
 long dlr_messages(void);
@@ -74,6 +43,16 @@ long dlr_messages(void);
  */
 void dlr_flush(void);
 
+/*
+ * Return type of dlr storage
+ */
+const char* dlr_type();
+
+/*
+ * Yet not used functions.
+ */
+void dlr_save(const char *filename);
+void dlr_load(const char *filename);
 
 #endif /* DLR_H */
 

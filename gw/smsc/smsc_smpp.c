@@ -799,9 +799,9 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                         }
                     }
  
-                    dlrmsg = dlr_find(octstr_get_cstr(smpp->conn->id),  
-                                      octstr_get_cstr(tmp), /* smsc message id */ 
-                                      octstr_get_cstr(pdu->u.deliver_sm.destination_addr), /* destination */ 
+                    dlrmsg = dlr_find(smpp->conn->id,
+                                      tmp, /* smsc message id */
+                                      pdu->u.deliver_sm.destination_addr, /* destination */
                                       dlrstat);
                     octstr_destroy(tmp); 
                 } 
@@ -931,14 +931,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                 /* SMSC ACK.. now we have the message id. */ 
  				 
                 if (msg->sms.dlr_mask & (DLR_SMSC_SUCCESS|DLR_SUCCESS|DLR_FAIL|DLR_BUFFERED)) 
-                    dlr_add(octstr_get_cstr(smpp->conn->id), 
-                            octstr_get_cstr(tmp), 
-                            octstr_get_cstr(msg->sms.sender), 
-                            octstr_get_cstr(msg->sms.receiver), 
-                            octstr_get_cstr(msg->sms.service), 
-                            octstr_get_cstr(msg->sms.dlr_url), 
-                            msg->sms.dlr_mask, 
-                            octstr_get_cstr(msg->sms.boxc_id)); 
+                    dlr_add(smpp->conn->id, tmp, msg);
   
                 /* gen DLR_SMSC_SUCCESS */ 
                 if (msg->sms.dlr_mask & DLR_SMSC_SUCCESS) { 
@@ -946,9 +939,9 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
  		 
                     reply = octstr_format("0x%08lx", pdu->u.submit_sm_resp.command_status); 
   
-                    dlrmsg = dlr_find(octstr_get_cstr(smpp->conn->id),  
-                                      octstr_get_cstr(tmp), /* smsc message id */ 
-                                      octstr_get_cstr(msg->sms.receiver), /* destination */ 
+                    dlrmsg = dlr_find(smpp->conn->id,
+                                      tmp, /* smsc message id */
+                                      msg->sms.receiver, /* destination */ 
                                       (DLR_SMSC_SUCCESS|((msg->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL)) ? DLR_BUFFERED : 0))); 
  			 
                     if (dlrmsg != NULL) { 

@@ -1042,14 +1042,7 @@ int oisd_submit_msg(SMSCenter *smsc, Msg *msg)
         if ((ret == 0) && (ts) && (msg->sms.dlr_mask & 0x03)) {
             debug("bb.sms.oisd", 0, "oisd_submit_msg dlr_add url=%s ",
                   octstr_get_cstr(msg->sms.dlr_url));
-            dlr_add(smsc->name,
-                    octstr_get_cstr(ts),
-                    octstr_get_cstr(msg->sms.sender),
-                    octstr_get_cstr(msg->sms.receiver),
-                    octstr_get_cstr(msg->sms.service),
-                    octstr_get_cstr(msg->sms.dlr_url),
-                    msg->sms.dlr_mask,
-                    octstr_get_cstr(msg->sms.boxc_id));
+            dlr_add(octstr_imm(smsc->name), ts, msg);
             octstr_destroy(ts);
             ts = NULL;
         }
@@ -1202,9 +1195,9 @@ static Msg *oisd_accept_delivery_report_message(struct packet *request,
         code = 0;
     }
     if (code) {
-        msg = dlr_find(smsc->name,
-                       octstr_get_cstr(timestamp),
-                       octstr_get_cstr(destination),
+        msg = dlr_find(octstr_imm(smsc->name),
+                       timestamp,
+                       destination,
                        code);
         debug("bb.sms.oisd", 0, "oisd_accept_dlr_message val=%d ",
               st_code);

@@ -1900,15 +1900,7 @@ static int cimd2_submit_msg(SMSCConn *conn, Msg *msg)
 
     ret = cimd2_request(packet, conn, &ts);
     if((ret == 0) && (ts) && (msg->sms.dlr_mask & 0x03) && !pdata->no_dlr) {
-    
-        dlr_add(octstr_get_cstr(conn->name),
-            octstr_get_cstr(ts), 
-            octstr_get_cstr(msg->sms.sender),
-            octstr_get_cstr(msg->sms.receiver),
-            octstr_get_cstr(msg->sms.service),
-            octstr_get_cstr(msg->sms.dlr_url),
-            msg->sms.dlr_mask,
-            octstr_get_cstr(msg->sms.boxc_id));
+        dlr_add(conn->name, ts, msg);
     }
     octstr_destroy(ts);
     packet_destroy(packet);
@@ -2041,10 +2033,7 @@ static Msg *cimd2_accept_delivery_report_message(struct packet *request,
         code = 0;
     }
     if(code)
-    	msg = dlr_find(octstr_get_cstr(conn->name),
-		       octstr_get_cstr(timestamp),
-		       octstr_get_cstr(destination),
-            code);
+    	msg = dlr_find(conn->name, timestamp, destination, code);
     else
         msg = NULL;
     octstr_destroy(statuscode);

@@ -716,21 +716,21 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	switch(st_code)
 	{
 	case 0: /* delivered */
-		msg = dlr_find(octstr_get_cstr((conn->id ? conn->id : privdata->name)), 
-			octstr_get_cstr(emimsg->fields[E50_SCTS]), /* timestamp */
-			octstr_get_cstr(emimsg->fields[E50_OADC]), /* destination */
+		msg = dlr_find((conn->id ? conn->id : privdata->name),
+			emimsg->fields[E50_SCTS], /* timestamp */
+			emimsg->fields[E50_OADC], /* destination */
 			DLR_SUCCESS);
 		break;
 	case 1: /* buffered */
-		msg = dlr_find(octstr_get_cstr((conn->id ? conn->id : privdata->name)), 
-			octstr_get_cstr(emimsg->fields[E50_SCTS]), /* timestamp */
-			octstr_get_cstr(emimsg->fields[E50_OADC]), /* destination */
+		msg = dlr_find((conn->id ? conn->id : privdata->name),
+			emimsg->fields[E50_SCTS], /* timestamp */
+			emimsg->fields[E50_OADC], /* destination */
 			DLR_BUFFERED);
 		break;
 	case 2: /* not delivered */
-		msg = dlr_find(octstr_get_cstr((conn->id ? conn->id : privdata->name)), 
-			octstr_get_cstr(emimsg->fields[E50_SCTS]), /* timestamp */
-			octstr_get_cstr(emimsg->fields[E50_OADC]), /* destination */
+		msg = dlr_find((conn->id ? conn->id : privdata->name),
+			emimsg->fields[E50_SCTS], /* timestamp */
+			emimsg->fields[E50_OADC], /* destination */
 			DLR_FAIL);
 		break;
 	}
@@ -892,14 +892,7 @@ static int emi2_do_send (SMSCConn *conn, Connection *server)
 	    octstr_append_char(ts, '-');
 	    octstr_append_decimal(ts, nexttrn);
 
-	    dlr_add(octstr_get_cstr((conn->id ? conn->id : PRIVDATA(conn)->name)), 
-		    octstr_get_cstr(ts),
-		    octstr_get_cstr(msg->sms.sender),
-		    octstr_get_cstr(emimsg->fields[E50_ADC]),
-		    octstr_get_cstr(msg->sms.service),
-		    octstr_get_cstr(msg->sms.dlr_url),
-		    msg->sms.dlr_mask,
-		    octstr_get_cstr(msg->sms.boxc_id));
+	    dlr_add((conn->id ? conn->id : PRIVDATA(conn)->name), ts, msg);
 	    
 	    octstr_destroy(ts);
 	    PRIVDATA(conn)->slots[nexttrn].dlr = 1;
@@ -978,9 +971,9 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
 			octstr_append_char(ts, '-');
 			octstr_append_decimal(ts, emimsg->trn);
 
-			dlrmsg = dlr_find(octstr_get_cstr((conn->id ? conn->id : privdata->name)), 
-					  octstr_get_cstr(ts), /* timestamp */
-					  octstr_get_cstr(origmsg->sms.receiver), /* destination */
+			dlrmsg = dlr_find((conn->id ? conn->id : privdata->name),
+					  ts, /* timestamp */
+					  origmsg->sms.receiver, /* destination */
 					  (octstr_get_char(emimsg->fields[0], 0) == 'A' ? 
 					   DLR_SMSC_SUCCESS : DLR_SMSC_FAIL));
 
@@ -1027,14 +1020,7 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
 				    info(0,"EMI2[%s]: uhhh m is NULL, very bad",
 					 octstr_get_cstr(privdata->name));
                 } else if ((m->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL|DLR_BUFFERED))) {
-				    dlr_add(octstr_get_cstr((conn->id ? conn->id : privdata->name)), 
-					    octstr_get_cstr(ts),
-					    octstr_get_cstr(m->sms.sender),
-					    octstr_get_cstr(adc),
-                        m->sms.service ? octstr_get_cstr(m->sms.service) : NULL,
-                        m->sms.dlr_url ? octstr_get_cstr(m->sms.dlr_url) : NULL,
-					    m->sms.dlr_mask,
-					    octstr_get_cstr(m->sms.boxc_id));
+				    dlr_add((conn->id ? conn->id : privdata->name), ts, m);
 				}
 				octstr_destroy(ts);
 				octstr_destroy(adc);
