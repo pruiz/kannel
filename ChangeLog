@@ -1,3 +1,12 @@
+1999-03-12 Aarno Syvänen <syvanen@wapit.com>
+
+	* gwlib/thread.c: added function mutex_destroy
+
+	* wtp.c: added (uncommented) list locks in functions wtp_machine_*. 
+	Now these functions panic when mutexes are not iniatilized
+
+	* wtp.h: updated external function comments
+
 1999-01-12 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp.c: fixed a bug in wtp_machine_find (now it actually does find 
