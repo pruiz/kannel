@@ -1,3 +1,7 @@
+2001-05-04  Aarno Syvänen <syvanen@wapit.com>
+
+	* gw/wap_push_pap_compiler.c: Fixed an uninitialised variable
+
 2001-05-03  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c (parse_text): A bug fix: added a check that around 
@@ -40,6 +44,7 @@
 	* test/test_smsc.c, gwlib/date.[ch]: Moved function
 	date_universal_now from test_smsc.c to date.c.
 	
+>>>>>>> 1.1469
 2001-05-03  Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wap_push_pap_compiler.[ch]: A compiler for compiling pap control
