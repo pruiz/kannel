@@ -1,3 +1,9 @@
+2001-01-15  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/gw_inet.c: Added an include for <sys/types.h> to allow
+	compilation on FreeBSD. Thanks to vlm@smarts-gsm.ru for pointing
+	this out.
+
 2001-01-15  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smscconn_p.h: modified so that 'start as stopped' is done
