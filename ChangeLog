@@ -1,4 +1,8 @@
 2003-08-22  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml, gw/urltrans.c: added new escape code '%T'
+      for sending the UNIX epoch timestamp in favor of '%t'.
+
+2003-08-22  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml, gw/urltrans.c: added new escape code '%I'
       to allow inclussion of the internal SMS ID into the processing. This
       is a preliminary support in having unique IDs sometime of all messages
