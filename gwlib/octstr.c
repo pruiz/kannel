@@ -260,7 +260,7 @@ void octstr_destroy_item(void *os)
 }
 
 
-long octstr_len(Octstr *ostr)
+long octstr_len(const Octstr *ostr)
 {
     if (ostr == NULL)
         return 0;

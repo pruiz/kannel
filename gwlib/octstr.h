@@ -108,7 +108,7 @@ void octstr_destroy_item(void *os);
 /*
  * Return the length of (number of octets in) an object string.
  */
-long octstr_len(Octstr *ostr);
+long octstr_len(const Octstr *ostr);
 
 
 /*

@@ -258,7 +258,7 @@ void dlr_add(const Octstr *smsc, const Octstr *ts, const Msg *msg)
 {
     struct dlr_entry *dlr = NULL;
 
-    if(octstr_len((Octstr *)smsc) == 0) {
+    if(octstr_len(smsc) == 0) {
 	warning(0, "DLR[%s]: Can't add a dlr without smsc-id", dlr_type());
         return;
     }
@@ -303,7 +303,7 @@ Msg *dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int typ)
     Msg	*msg = NULL;
     struct dlr_entry *dlr = NULL;
     
-    if(octstr_len((Octstr *)smsc) == 0) {
+    if(octstr_len(smsc) == 0) {
 	warning(0, "DLR[%s]: Can't find a dlr without smsc-id", dlr_type());
         return NULL;
     }

@@ -1,3 +1,9 @@
+2003-07-20  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/dlr.c: changed ugly Octstr* cast.
+    * gw/msg-decl.h: added new fields: auth_code,hplmn. These where missed from Bruno's last
+      commit.
+    * gwlib/octstr.[ch]: added more const identifiers.
+
 2003-07-20  Oded Arbel  <odeda@m-wise.com>
     * gwlib/charset.c: fixed return value as per Bruno's suggestion
     * gwlib/date.{c,h}: added ISO-8601 date functions used by SOAP driver
