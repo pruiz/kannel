@@ -1,3 +1,10 @@
+2001-01-08  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+
+	* gwlib/gw_inet.[ch]: Added initial implementation of
+	gw_inet_ntop and supporting code.
+	* gw/wap_push_ota.c: included gwlib/gw_inet.h.
+
+
 2001-01-08  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/log.c: Made warning() use octstr_format. All usages have

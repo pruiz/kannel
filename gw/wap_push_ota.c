@@ -22,6 +22,7 @@
 
 #include "wap_push_ota.h"
 #include "gwlib/gwlib.h"
+#include "gwlib/gw_inet.h"
 #include "wap/wsp_strings.h"
 #include "wap/wsp_pdu.h"
 
