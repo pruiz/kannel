@@ -1502,6 +1502,13 @@ commands never arrive nor can you restart it via WAP anymore.</para>
         gateway is forced down, even if it has still messages in
         queue.
    </entry></row>
+
+	<row><entry><literal>flush-dlr</literal></entry>
+   <entry valign=bottom>
+        If Kannel state is 'suspended' this will flush all queued DLR
+		  messages in the current storage space. Password required.
+   </entry></row>
+
   </tbody>
   </tgroup>
  </table>

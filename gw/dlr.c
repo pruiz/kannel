@@ -71,7 +71,7 @@ void dlr_init_mysql(Cfg* cfg)
     CfgGroup *grp;
     List *grplist;
     Octstr *mysql_host, *mysql_user, *mysql_pass, *mysql_db, *mysql_id;
-    Octstr *p;
+    Octstr *p = NULL;
 
     /*
      * check for all mandatory directives that specify the field names 
@@ -558,6 +558,47 @@ long dlr_messages(void)
         mysql_free_result(result);
         mutex_unlock(dlr_mutex);
         return res;
+#endif
+
+    /*
+     * add aditional types here
+     */
+
+    } else {
+   	    panic(0, "DLR: storage type '%s' is not supported!", octstr_get_cstr(dlr_type));
+    }
+    return -1;
+}
+
+
+void dlr_flush(void)
+{
+    long i;
+    long len;
+ 
+    info(0, "Flushing all %ld queued DLR messages in %s storage", dlr_messages(), 
+            octstr_get_cstr(dlr_type));
+ 
+    if (octstr_compare(dlr_type, octstr_imm("internal")) == 0) {
+        len = list_len(dlr_waiting_list);
+        for (i=0; i < len; i++)
+            list_delete(dlr_waiting_list, i, 1);
+        
+    } else 
+    if (octstr_compare(dlr_type, octstr_imm("mysql")) == 0) {
+#ifdef DLR_MYSQL
+        Octstr *sql;
+        int	state;
+        MYSQL_RES *result;
+        
+        sql = octstr_format("DELETE * FROM %s;", octstr_get_cstr(table));
+        state = mysql_query(connection, octstr_get_cstr(sql));
+        octstr_destroy(sql);
+        if (state != 0) {
+            error(0, "MYSQL: %s", mysql_error(connection));
+        }
+        result = mysql_store_result(connection);
+        mysql_free_result(result);
 #endif
 
     /*

@@ -136,6 +136,17 @@ static Octstr *httpd_resume(List *cgivars)
 	return octstr_create("Running resumed");
 }
 
+static Octstr *httpd_flush_dlr(List *cgivars)
+{
+    Octstr *reply;
+    if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
+    if ((reply = httpd_check_status())!= NULL) return reply;
+
+    if (bb_flush_dlr() == -1)
+	return octstr_create("Suspend Kannel before trying to flush DLR queue");
+    else
+	return octstr_create("DLR queue flushed");
+}
 
 
 
@@ -198,6 +209,9 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
     } else if (octstr_str_compare(url, "/cgi-bin/resume")==0
 	       || octstr_str_compare(url, "/resume")==0) {
 	reply = httpd_resume(cgivars);
+    } else if (octstr_str_compare(url, "/cgi-bin/flush-dlr")==0
+	       || octstr_str_compare(url, "/flush-dlr")==0) {
+	reply = httpd_flush_dlr(cgivars);
     /*
      * reconfig? restart?
      */

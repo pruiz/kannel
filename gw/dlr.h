@@ -58,5 +58,12 @@ void dlr_load(const char *filename);
 /* return the number of DLR messages in the current waiting queue */
 long dlr_messages(void);
 
+/* 
+ * Flush all DLR messages in the current waiting queue.
+ * Beware to take bearerbox to suspended state before doing this.
+ */
+void dlr_flush(void);
+
+
 #endif /* DLR_H */
 

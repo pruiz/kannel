@@ -607,6 +607,18 @@ int bb_resume(void)
     return 0;
 }
 
+int bb_flush_dlr(void)
+{
+    mutex_lock(dlr_mutex);
+    if (bb_status != BB_SUSPENDED) {
+	mutex_unlock(dlr_mutex);
+	return -1;
+    }
+    dlr_flush();
+    mutex_unlock(dlr_mutex);
+    return 0;
+}
+
 int bb_restart(void)
 {
     return -1;
