@@ -382,5 +382,11 @@ static int at2_set_message_storage(PrivAT2data* privdata, Octstr* memory_name);
  */
 static int at2_read_delete_message(PrivAT2data* privdata, int message_number);
 
+
+/*
+ * Return appropriate error string for the given error code.
+ */
+static const char *at2_error_string(int code);
+
 #endif /* SMSC_AT2_H */
 

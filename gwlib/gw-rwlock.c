@@ -133,7 +133,7 @@ void gw_rwlock_destroy(RWLock *lock)
 
 int gw_rwlock_rdlock(RWLock *lock)
 {
-    int ret;
+    int ret = 0;
     gw_assert(lock != NULL);
 
 #ifdef HAVE_PTHREAD_RWLOCK
@@ -154,7 +154,7 @@ int gw_rwlock_rdlock(RWLock *lock)
 
 int gw_rwlock_unlock(RWLock *lock)
 {
-    int ret;
+    int ret = 0;
     gw_assert(lock != NULL);
 
 #ifdef HAVE_PTHREAD_RWLOCK
@@ -176,7 +176,7 @@ int gw_rwlock_unlock(RWLock *lock)
 
 int gw_rwlock_wrlock(RWLock *lock)
 {
-    int ret;
+    int ret = 0;
     gw_assert(lock != NULL);
 
 #ifdef HAVE_PTHREAD_RWLOCK

@@ -1,3 +1,6 @@
+2004-09-25 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/gw-rwlock.c, gw/smsc/smsc_at.h: fixed compiler warnings.
+
 2004-09-18 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.c: added new function 'at2_error_string' and teached
       smsc_at to use it.
