@@ -1,3 +1,8 @@
+2000-11-10  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smscconn.h|c: Added. New SMSC connection interface with stub
+	of upcoming connection module (and wrapper for old system)
+
 2000-11-10  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/http.[ch]: Killed http_get and http_post, since they're
