@@ -152,6 +152,7 @@ static void proxy_thread(void *arg)
     int forward;
 
     run_thread = 1;
+    ss = cs = -1;
 
     /* create client binding, only if we have a remote server */
     if (remote_host != NULL) {

@@ -89,9 +89,6 @@ static unsigned long next_wsp_session_id(void);
 
 static List *make_capabilities_reply(WSPMachine *m);
 static List *make_reply_headers(WSPMachine *m);
-static int is_default_version(WSPMachine *m);
-static int is_higher_version(WSPMachine *m);
-static int is_lower_version(WSPMachine *m);
 static Octstr *make_connectreply_pdu(WSPMachine *m);
 static Octstr *make_resume_reply_pdu(WSPMachine *m, List *headers);
 static WSP_PDU *make_confirmedpush_pdu(WAPEvent *e);
@@ -952,51 +949,6 @@ static List *make_capabilities_reply(WSPMachine *m) {
 	return caps;
 }
 
-/*
-static int is_default_version(WSPMachine *m)
-{
-    Octstr *request_version;
-
-    request_version = http_header_value(m->http_headers, octstr_imm("Encoding-Version"));
-    if (request_version == NULL) {
-        return 1;
-    } else {
-        octstr_destroy(request_version);
-        return 0;
-    }
-}
-
-static int is_higher_version(WSPMachine *m)
-{
-    Octstr *request_version;
-
-    request_version = http_header_value(m->http_headers, octstr_imm("Encoding-Version"));
-    if (request_version && octstr_compare(request_version, octstr_imm("1.1")) != 0 &&
-            octstr_compare(request_version, octstr_imm("1.2")) != 0 &&
-            octstr_compare(request_version, octstr_imm("1.3")) != 0) {
-        octstr_destroy(request_version);
-        return 1;
-    } else {
-        octstr_destroy(request_version);
-        return 0;
-    }
-}
-
-static int is_lower_version(WSPMachine *m)
-{
-    Octstr *request_version;
-
-    request_version = http_header_value(m->http_headers, octstr_imm("Encoding-Version"));
-    if (request_version && (octstr_compare(request_version, octstr_imm("1.1")) == 0 ||
-            octstr_compare(request_version, octstr_imm("1.2")) == 0)) {
-        octstr_destroy(request_version);
-        return 1;        
-    } else {
-        octstr_destroy(request_version);
-        return 0;
-    }
-}
-*/
 
 static List *make_reply_headers(WSPMachine *m)
 {
@@ -1014,20 +966,6 @@ static List *make_reply_headers(WSPMachine *m)
     /* First the case that we have no Encoding-Version header at all. 
      * This case we must assume that the client supports version 1.2
      * or lower. */
-
-    /*
-    if (is_default_version(m)) {
-        encoding_version = octstr_create("1.2");
-    } else if (is_higher_version(m)) {
-        encoding_version = octstr_create("1.3");
-    } else if (is_lower_version(m)) {
-        request_version = http_header_value(m->http_headers, octstr_imm("Encoding-Version"));
-        encoding_version = octstr_duplicate(request_version);
-        octstr_destroy(request_version);
-    }  else {   
-        encoding_version = octstr_create("1.3");
-    }
-    */
 
     headers = http_create_empty_headers();
     encoding_version = wsp_encoding_version_to_string(m->encoding_version);
