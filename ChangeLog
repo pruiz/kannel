@@ -1,4 +1,7 @@
 2004-03-05  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/octstr.c: don't allocate temporarely Octstr in 'octstr_append_decimal'.
+
+2004-03-05  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/protected.[ch]: fixed non reentrant time functions, those _must_
       use only one mutex instead of mutex per time function. Quote from man
       page: The return value points to a statically allocated struct which

@@ -1927,12 +1927,9 @@ long octstr_extract_uintvar(Octstr *ostr, unsigned long *value, long pos)
 void octstr_append_decimal(Octstr *ostr, long value)
 {
     char tmp[128];
-    Octstr *ostmp;
 
     sprintf(tmp, "%ld", value);
-    ostmp = octstr_create(tmp);
-    octstr_append(ostr, ostmp);
-    octstr_destroy(ostmp);
+    octstr_append_cstr(ostr, tmp);
 }
 
 
