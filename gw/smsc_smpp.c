@@ -237,7 +237,7 @@ static long smpp_status_to_smscconn_failure_reason(long status)
 static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg) 
 { 
     SMPP_PDU *pdu; 
-    char buffer[16];
+    Octstr *buffer;
     Octstr *relation_UTC_time = NULL;
     struct tm gmtime, localtime, tm;
     int gwqdiff;
@@ -294,7 +294,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
      * if its a international number starting with +, lets remove the 
      * '+' and set number type to international instead  
      */ 
-    if( octstr_get_char(pdu->u.submit_sm.destination_addr,0) == '+') { 
+    if (octstr_get_char(pdu->u.submit_sm.destination_addr,0) == '+') { 
         octstr_delete(pdu->u.submit_sm.destination_addr, 0,1); 
         pdu->u.submit_sm.dest_addr_ton = GSM_ADDR_TON_INTERNATIONAL; 
     } 
@@ -327,30 +327,31 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
         /* work out 1/4 hour difference between local time and UTC/GMT */
         gmtime = gw_gmtime(time(NULL));
         localtime = gw_localtime(time(NULL));
-        if (localtime.tm_hour >= gmtime.tm_hour) {
+        gwqdiff = ((localtime.tm_hour - gmtime.tm_hour) * 4)
+                  + ((localtime.tm_min - gmtime.tm_min) / 15);
+        if (gwqdiff >= 0)
             relation_UTC_time = octstr_create("+");
-            gwqdiff = (localtime.tm_hour - gmtime.tm_hour) * 4;
-        } else {
+        else
             relation_UTC_time = octstr_create("-");
-            gwqdiff = (gmtime.tm_hour - localtime.tm_hour) * 4;
-        }
 
         if (msg->sms.validity) {
             tm = gw_localtime(time(NULL) + msg->sms.validity * 60);
-            sprintf(buffer, "%02d%02d%02d%02d%02d%02d0%01d%02d%1s",
+            buffer = octstr_format("%02d%02d%02d%02d%02d%02d0%01d%02d%1s",
                     tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
                     tm.tm_hour, tm.tm_min, tm.tm_sec,
                     0, gwqdiff, octstr_get_cstr(relation_UTC_time));
-            pdu->u.submit_sm.validity_period = octstr_create(buffer);
+            pdu->u.submit_sm.validity_period = octstr_copy(buffer,0,16);
+            octstr_destroy(buffer);
         }
 
         if (msg->sms.deferred) {
             tm = gw_localtime(time(NULL) + msg->sms.deferred * 60);
-            sprintf(buffer, "%02d%02d%02d%02d%02d%02d0%01d%02d%1s",
+            buffer = octstr_format("%02d%02d%02d%02d%02d%02d0%01d%02d%1s",
                     tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
                     tm.tm_hour, tm.tm_min, tm.tm_sec,
                     0, gwqdiff, octstr_get_cstr(relation_UTC_time));
-            pdu->u.submit_sm.schedule_delivery_time = octstr_create(buffer);
+            pdu->u.submit_sm.schedule_delivery_time = octstr_copy(buffer,0,16);
+            octstr_destroy(buffer);
         }
     }
 
@@ -376,7 +377,8 @@ static void send_enquire_link(SMPP *smpp, Connection *conn, long *last_sent)
     pdu = smpp_pdu_create(enquire_link, counter_increase(smpp->message_id_counter)); 
     dump_pdu("Sending enquire link:", smpp->conn->id, pdu); 
     os = smpp_pdu_pack(pdu); 
-    conn_write(conn, os); /* Write errors checked by caller. */ 
+    if (os)
+	conn_write(conn, os); /* Write errors checked by caller. */ 
     octstr_destroy(os); 
     smpp_pdu_destroy(pdu); 
 } 
@@ -389,7 +391,10 @@ static int send_pdu(Connection *conn, Octstr *id, SMPP_PDU *pdu)
      
     dump_pdu("Sending PDU:", id, pdu); 
     os = smpp_pdu_pack(pdu); 
-    ret = conn_write(conn, os);   /* Caller checks for write errors later */ 
+    if (os)
+        ret = conn_write(conn, os);   /* Caller checks for write errors later */ 
+    else
+	ret = -1;
     octstr_destroy(os); 
     return ret; 
 } 
