@@ -1,5 +1,11 @@
 2000-09-26  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsbox_req.c: smsbox used to dump core if the sendsms
+	username was incorrect, now it correctly returned authorization
+	failure. Fixes bug report 105 from Paul Keogh.
+
+2000-09-26  Lars Wirzenius  <liw@iki.fi>
+
 	* test/fakesmsc.c: Initialize the third parameter to accept
 	correctly. I wonder why this has ever worked.
 

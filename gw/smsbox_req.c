@@ -480,7 +480,8 @@ static URLTranslation *authorise_user(List *list, char *client_ip) {
 	else 
 		t = urltrans_find_username(translations, octstr_get_cstr(user));
     
-	if ((val = http_cgi_variable(list, "password")) == NULL ||
+	if ((val = http_cgi_variable(list, "password")) == NULL || 
+	    t == NULL ||
 	    strcmp(octstr_get_cstr(val), urltrans_password(t)) != 0)
 	{
 		/* if the password is not correct, reset the translation. */
