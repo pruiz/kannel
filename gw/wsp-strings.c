@@ -7,12 +7,9 @@
  * The tables are in wsp-strings.def, in a special format suitable for
  * use with the C preprocessor, which we abuse liberally to get the
  * interface we want. 
+ *
+ * Richard Braakman
  */
-
-/* Currently we only have LINEAR tables, which number their strings
- * sequentially starting at 0.  Eventually we may also need tables
- * where each string is assigned a number, but we'll leave that 
- * complication until later. */
 
 #include "gwlib/gwlib.h"
 #include "wsp-strings.h"
@@ -21,82 +18,169 @@
 
 static int initialized;
 
-struct element {
-	unsigned char *str;
-	long number;
+/* The arrays in a table structure are all of equal length, and their
+ * elements correspond.  The number for string 0 is in numbers[0], etc.
+ * Table structures are initialized dynamically.
+ */
+struct table
+{
+    long size;          /* Nr of entries in each of the tables below */
+    Octstr **strings;   /* Immutable octstrs */
+    long *numbers;      /* Assigned numbers, or NULL for linear tables */
+    int linear;	    /* True for tables defined as LINEAR */
 };
 
-/* Declare the data */
+struct element
+{
+    unsigned char *str;
+    long number;
+};
+
+/* Local functions */
+static Octstr *number_to_string(long number, struct table *table);
+static unsigned char *number_to_cstr(long number, struct table *table);
+static long string_to_number(Octstr *ostr, struct table *table);
+
+
+/* Declare the data.  For each table "foo", create a foo_strings array
+ * to hold the data, and a (still empty) foo_table structure. */
 #define LINEAR(name, strings) \
-	static unsigned char *name##_table[] = { strings };
+    static const unsigned char *name##_strings[] = { strings }; \
+    static struct table name##_table;
 #define STRING(string) string,
 #define NUMBERED(name, strings) \
-	static struct element name##_table[] = { strings };
+    static const struct element name##_strings[] = { strings }; \
+    static struct table name##_table;
 #define ASSIGN(string, number) { string, number },
 #include "wsp-strings.def"
 
 /* Define the functions for translating number to Octstr */
 #define LINEAR(name, strings) \
 Octstr *wsp_##name##_to_string(long number) { \
-	unsigned char *cstr = wsp_##name##_to_cstr(number); \
-	return cstr ? octstr_create(cstr) : NULL; \
+    return number_to_string(number, &name##_table); \
 }
-#define STRING(string)
 #include "wsp-strings.def"
 
 /* Define the functions for translating number to constant string */
 #define LINEAR(name, strings) \
 unsigned char *wsp_##name##_to_cstr(long number) { \
-	gw_assert(initialized); \
-	if (number < 0 || number >= TABLE_SIZE(name##_table)) \
-		return NULL; \
-	return name##_table[number]; \
-}
-#define STRING(string)
-#define NUMBERED(name, strings) \
-unsigned char *wsp_##name##_to_cstr(long number) { \
-	long i; \
-	gw_assert(initialized); \
-	for (i = 0; i < TABLE_SIZE(name##_table); i++) { \
-		if (name##_table[i].number == number) \
-			return name##_table[i].str; \
-	} \
-	return NULL; \
+    return number_to_cstr(number, &name##_table); \
 }
 #include "wsp-strings.def"
 
-/* Define the functions for translating Octstr to number.  Currently
- * this is a linear search, but it can be speeded up greatly if that
- * proves necessary by creating hash tables or other indices in
- * wsp_strings_init.
- * The functions return -1 if the string is not in the table. */
 #define LINEAR(name, strings) \
 long wsp_string_to_##name(Octstr *ostr) { \
-	long i; \
-	gw_assert(initialized); \
-	for (i = 0; i < TABLE_SIZE(name##_table); i++) { \
-		if (octstr_str_compare(ostr, name##_table[i]) == 0) \
-			return i; \
-	} \
-	return -1; \
-}
-#define STRING(string)
-#define NUMBERED(name, strings) \
-long wsp_string_to_##name(Octstr *ostr) { \
-	long i; \
-	gw_assert(initialized); \
-	for (i = 0; i < TABLE_SIZE(name##_table); i++) { \
-		if (octstr_str_compare(ostr, name##_table[i].str) == 0) \
-			return name##_table[i].number; \
-	} \
-	return -1; \
+     return string_to_number(ostr, &name##_table); \
 }
 #include "wsp-strings.def"
 
-void wsp_strings_init(void) {
-	initialized = 1;
+static Octstr *number_to_string(long number, struct table *table)
+{
+    long i;
+
+    gw_assert(initialized);
+
+    if (table->linear) {
+	if (number >= 0 && number < table->size)
+	    return octstr_duplicate(table->strings[number]);
+    } else {
+	for (i = 0; i < table->size; i++) {
+   	     if (table->numbers[i] == number)
+		return octstr_duplicate(table->strings[i]);
+	}
+    }
+    return NULL;
 }
 
-void wsp_strings_shutdown(void) {
-	initialized = 0;
+static unsigned char *number_to_cstr(long number, struct table *table)
+{
+    long i;
+
+    gw_assert(initialized);
+
+    if (table->linear) {
+	if (number >= 0 && number < table->size)
+	    return octstr_get_cstr(table->strings[number]);
+    } else {
+	for (i = 0; i < table->size; i++) {
+   	     if (table->numbers[i] == number)
+		return octstr_get_cstr(table->strings[i]);
+	}
+    }
+    return NULL;
+}
+
+/* Case-insensitive string lookup */
+static long string_to_number(Octstr *ostr, struct table *table)
+{
+    long i;
+
+    gw_assert(initialized);
+
+    for (i = 0; i < table->size; i++) {
+	if (octstr_case_compare(ostr, table->strings[i])) {
+	    return table->linear ? i : table->numbers[i];
+	}
+    }
+
+    return -1;
+}
+
+static void construct_linear_table(struct table *table,
+const unsigned char **strings, long size)
+{
+    long i;
+
+    table->size = size;
+    table->strings = gw_malloc(size * (sizeof table->strings[0]));
+    table->numbers = NULL;
+    table->linear = 1;
+
+    for (i = 0; i < size; i++) {
+	table->strings[i] = octstr_create_immutable(strings[i]);
+    }
+}
+
+static void construct_numbered_table(struct table *table,
+const struct element *strings, long size)
+{
+    long i;
+
+    table->size = size;
+    table->strings = gw_malloc(size * (sizeof table->strings[0]));
+    table->numbers = gw_malloc(size * (sizeof table->numbers[0]));
+    table->linear = 0;
+
+    for (i = 0; i < size; i++) {
+	table->strings[i] = octstr_create_immutable(strings[i].str);
+	table->numbers[i] = strings[i].number;
+    }
+}
+
+static void destroy_table(struct table *table)
+{
+    /* No need to call octstr_destroy on immutable octstrs */
+
+    gw_free(table->strings);
+    gw_free(table->numbers);
+}
+
+void wsp_strings_init(void)
+{
+#define LINEAR(name, strings) \
+    construct_linear_table(&name##_table, \
+		name##_strings, TABLE_SIZE(name##_strings));
+#define NUMBERED(name, strings) \
+    construct_numbered_table(&name##_table, \
+	        name##_strings, TABLE_SIZE(name##_strings));
+#include "wsp-strings.def"
+    initialized = 1;
+}
+
+void wsp_strings_shutdown(void)
+{
+    initialized = 0;
+#define LINEAR(name, strings) \
+    destroy_table(&name##_table);
+#include "wsp-strings.def"
 }

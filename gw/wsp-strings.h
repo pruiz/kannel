@@ -10,11 +10,18 @@
  * interface we want. 
  *
  * For a table named foo, these functions will be declared:
+ *
  * Octstr *wsp_foo_to_string(long number);
+ *   - return NULL if the number has no assigned string.
+ * 
  * unsigned char *wsp_foo_to_cstr(long number);
+ *   - return NULL if the number has no assigned string.
+ *
  * long wsp_string_to_foo(Octstr *ostr);
- * The first will return NULL if the number has no assigned string.
- * The second will return -1 if the string has no assigned number.
+ *   - case-insensitive lookup.
+ *   - Return -1 if the string has no assigned number.
+ *
+ * Richard Braakman
  */
 
 /* Must be called before any of the other functions in this file */

@@ -1,3 +1,11 @@
+2000-09-27  Richard Braakman  <dark@wapit.com>
+
+	* gw/wsp-strings.c: Changed everything in order to get
+	case-insensitive string lookup working right.  Converted
+	to new formatting rules.
+
+	* gw/wsp-strings.h, gw/wsp-strings.def: Improved comments.
+
 2000-09-27  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/wtp_state-decl.h: Removed handling of event RcvInvoke in

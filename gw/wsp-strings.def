@@ -1,11 +1,13 @@
+/****  Preprocessor magic ****/
+
 /* String table with entries starting at 0 and numbered upwards. */
 #if !defined(LINEAR)
 #error "Required macro LINEAR is missing."
 #endif
 
-/* Entry in a LINEAR table */
+/* Entry in a LINEAR table.  Default is to do nothing for it. */
 #if !defined(STRING)
-#error "Required macro STRING is missing."
+#define STRING
 #endif
 
 /* String table where entries have assigned numbers.  Multiple
@@ -30,6 +32,8 @@
 #if !defined(NSTRING)
 #define NSTRING(string, name) STRING(string)
 #endif
+
+/**** End of preprocessor magic.  Tables start here. ****/
 
 /* Table 39. Header Field Name Assignments */
 NAMED(header,
@@ -352,6 +356,8 @@ ASSIGN("TRACE", 0x44)
 ASSIGN("POST", 0x60)
 ASSIGN("PUT", 0x61)
 )
+
+/**** More preprocessor magic ****/
 
 #undef LINEAR
 #undef STRING
