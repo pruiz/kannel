@@ -220,7 +220,7 @@ wml_attr_value_t wml_URL_values[] = {
   { "www.", 0xA1 },
   { ".com/", 0x85 },
   { ".edu/", 0x86 },
-  { ".net/", 0x67 },
+  { ".net/", 0x87 },
   { ".org/", 0x88 },
   { NULL }
 };
