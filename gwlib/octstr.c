@@ -1907,6 +1907,17 @@ void octstr_format_append(Octstr *os, const char *fmt, ...)
 }
 
 
+unsigned long octstr_hash_key(Octstr *ostr)
+{
+    unsigned long key = 0;
+    long i;
+
+    for (i = 0; i < octstr_len(ostr); i++)
+	key = key + octstr_get_char(ostr, i);
+
+    return key;
+}
+
 
 /**********************************************************************
  * Local functions.

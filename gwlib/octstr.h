@@ -526,4 +526,10 @@ Octstr *octstr_format_valist(const char *fmt, va_list args);
 void octstr_format_append(Octstr *os, const char *fmt, ...);
 
 
+/*
+ * ount a hash key value for an octet srting by adding all the octets together.
+ */
+unsigned long octstr_hash_key(Octstr *ostr);
+
+
 #endif

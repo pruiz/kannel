@@ -1,3 +1,14 @@
+2000-10-03  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_definitions.h: some data types unified.
+
+	* gw/wml_compiler.c: Code updated to the new coding style.
+	Old character set conversion code mostly removed, some skeletons still 
+	in the closet. Hash table code added, wml_init and wml_shutdown written,
+	but not yet used or tested.
+
+	* gwlib/octstr.[ch]: octstr_hash_key-function added.
+
 2000-10-03  Kalle Marjola  <rpr@wapit.com>
 
 	* test/fakesmsc.c: Updated to use general Kannel command line

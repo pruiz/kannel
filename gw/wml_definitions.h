@@ -41,6 +41,8 @@
 
 #define STRING_TABLE_MIN 4    
 
+#define START_NUM 100
+
 
 /***********************************************************************
  * Declarations of global variables. 
@@ -50,10 +52,8 @@
  * Elements as defined by tag code page 0.
  */
 
-struct {
-  char *element;
-  unsigned char token;
-} wml_elements[] = {
+static
+wml_table_t wml_elements[] = {
   { "wml", 0x3F },
   { "card", 0x27 },
   { "do", 0x28 },
@@ -97,11 +97,8 @@ struct {
  * Attributes as defined by attribute code page 0.
  */
 
-struct {
-  char *attribute;
-  char *a_value;
-  unsigned char token;
-} wml_attributes[] = {
+static
+wml_table3_t wml_attributes[] = {
   { "accept_charset", NULL, 0x05 },
   { "align", NULL, 0x52 },
   { "align", "bottom", 0x06 },
@@ -189,7 +186,7 @@ struct {
  */
 
 static
-wml_attr_value_t wml_attribute_values[] = {
+wml_table_t wml_attribute_values[] = {
   { "accept", 0x89 },
   { "bottom", 0x8A },
   { "clear", 0x8B },
@@ -216,7 +213,7 @@ wml_attr_value_t wml_attribute_values[] = {
  */
 
 static
-wml_attr_value_t wml_URL_values[] = {
+wml_table_t wml_URL_values[] = {
   { "www.", 0xA1 },
   { ".com/", 0x85 },
   { ".edu/", 0x86 },
