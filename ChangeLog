@@ -1,5 +1,11 @@
 2000-06-30  Richard Braakman  <dark@wapit.com>
 
+	* gw/wml_compiler.c: In parse_octet_string, one extra byte was
+	skipped after a variable reference, including the special "$$"
+	sequence.  Fixed.
+
+2000-06-30  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/http.c: Change some of the locking according to Joerg
 	Pommnitz's suggestions, to deal more smoothly with slow connects.
 

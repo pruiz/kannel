@@ -886,7 +886,7 @@ static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
   output = octstr_create_empty();
   var = octstr_create_empty();
 
-  for ( ; pos < len; pos ++)
+  while (pos < len)
     {
       if (octstr_get_char(ostr, pos) == '$')
 	{
@@ -915,6 +915,8 @@ static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 	  else
 	    return -1;
 	}
+      else
+	pos ++;
     }
 
   /* Was there still something after the last variable? */
