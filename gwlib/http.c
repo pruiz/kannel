@@ -2417,12 +2417,12 @@ List *http_header_duplicate(List *headers)
  */
 void http_header_pack(List *headers)
 {
-    gwlib_assert_init();
-    gw_assert(headers != NULL);
-
     Octstr *name, *value;
     Octstr *name2, *value2;
     long i, j;
+
+    gwlib_assert_init();
+    gw_assert(headers != NULL);
 
     /*
      * For each header, search forward headers for similar ones and if possible, 
@@ -2430,47 +2430,31 @@ void http_header_pack(List *headers)
      */
     for(i = 0; i < list_len(headers); i++) {
         http_header_get(headers, i, &name, &value);
-	//debug("http_header_pack", 0, "HTTP_HEADER_PACK: Processing header %d. [%s: %s]", 
-	//		i, octstr_get_cstr(name), octstr_get_cstr(value));
+	/* debug("http_header_pack", 0, "HTTP_HEADER_PACK: Processing header %d. [%s: %s]", 
+	       i, octstr_get_cstr(name), octstr_get_cstr(value)); */
 
         for(j=i+1; j < list_len(headers); j++) {
             http_header_get(headers, j, &name2, &value2);
 
             if(octstr_case_compare( name, name2) == 0) {
                 if(octstr_len(value) + 2 + octstr_len(value2) > MAX_HEADER_LENGHT) {
-		    //debug("http_header_pack", 0, "HTTP_HEADER_PACK: Header %d is full, "
-		    //      "skipping. [j=%d] [toaddvalue=%s] [%s: %s]",
-		    //      i, j, octstr_get_cstr(value2), octstr_get_cstr(name), 
-		    //      octstr_get_cstr(value));
                     break;
                 } else {
 		    Octstr *header;
-		    //Octstr *oldvalue;	// XXX for logging
-		    //oldvalue = octstr_duplicate(value); // XXX for logging
-
 		    /* Adds comma and new value to old header value */
                     octstr_append(value, octstr_create(", "));
                     octstr_append(value, value2);
-
 		    /* Creates a new header */
 		    header = octstr_create("");
                     octstr_append(header, name);
                     octstr_append(header, octstr_create(": "));
                     octstr_append(header, value);
-
 		    /* Delete old header and insert new one */
                     list_delete(headers, i, 1);
                     list_insert(headers, i, header);
-				
 		    /* Delete this header */
                     list_delete(headers, j, 1);
                     j--;
-
-		    //debug("http_header_pack", 0, "HTTP_HEADER_PACK: Packing header %d "
-		    //      "(j=%d), name=[%s], old value [%s], new value [%s]",
-		    //	    i, j+1, octstr_get_cstr(name), octstr_get_cstr(oldvalue), 
-		    //	    octstr_get_cstr(value));
-		    //octstr_destroy(oldvalue);
                 }
             }
         }

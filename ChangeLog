@@ -1,3 +1,7 @@
+2003-07-12  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gwlib/http.c: moved new variable declaration to function begining.
+      Strange, it worked with my Debian's gcc-3.3; changed comment style 
+
 2003-07-11  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gwlib/http.c: added some comments
     * gwlib/http.c[http_header_pack]: implemented header_pack functionality
