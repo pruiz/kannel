@@ -1,3 +1,10 @@
+2002-03-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/cfg.[ch]: implemented inclusion feature for configuration file
+      processing. Now you may use 'include = "foobar.conf"' anywhere in
+      the config file to include sub-configuration parts. 
+    * doc/userguide/userguide.xml: added section which describes the new
+      'include' configuration directive.
+
 2002-03-03  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsc_emi2.c: keepalive time is now only updated after sending an
       operation 51 or the keepalive itself
