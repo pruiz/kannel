@@ -47,6 +47,11 @@ static enum { limbo, running, terminating } initiator_run_status = limbo;
 static wap_dispatch_func_t *dispatch_to_wdp;
 static wap_dispatch_func_t *dispatch_to_wsp;
 
+/*
+ * This is a timer 'tick'. All timer values multiplies of this value.
+ */
+static long init_timer_freq = -1;
+
 /***************************************************************************
  *
  * Prototypes for internal functions:
@@ -105,7 +110,7 @@ static void stop_initiator_timer(Timer *timer);
  */
 
 void wtp_initiator_init(wap_dispatch_func_t *datagram_dispatch,
-			wap_dispatch_func_t *session_dispatch) 
+			wap_dispatch_func_t *session_dispatch, long timer_freq) 
 {
     init_machines = list_create();
     init_machine_id_counter = counter_create();
@@ -117,6 +122,7 @@ void wtp_initiator_init(wap_dispatch_func_t *datagram_dispatch,
     dispatch_to_wsp = session_dispatch;
 
     timers_init();
+    init_timer_freq = timer_freq;
 
     gw_assert(initiator_run_status == limbo);
     initiator_run_status = running;
@@ -483,7 +489,7 @@ static unsigned short rcv_tid(unsigned short tid)
 
 /*
  * Start retry interval timer (strictly speaking, timer iniatilised with retry
- * interval).
+ * interval). Multiply timer value with init_timer_freq.
  */
 static void start_initiator_timer_R(WTPInitMachine *machine) 
 {
@@ -493,9 +499,9 @@ static void start_initiator_timer_R(WTPInitMachine *machine)
     timer_event = wap_event_create(TimerTO_R);
     timer_event->u.TimerTO_R.handle = machine->mid;
     if (machine->u_ack)
-        seconds = S_R_WITH_USER_ACK;
+        seconds = S_R_WITH_USER_ACK * init_timer_freq;
     else
-        seconds = S_R_WITHOUT_USER_ACK;
+        seconds = S_R_WITHOUT_USER_ACK * init_timer_freq;
     gwtimer_start(machine->timer, seconds, timer_event);
 }
 

@@ -49,6 +49,11 @@ wap_dispatch_func_t *dispatch_to_push;
  */
 static List *resp_queue = NULL;
 
+/*
+ * Timer 'tick'. All wtp responder timer values are multiplies of this one
+ */
+static long resp_timer_freq = -1;
+
 /*****************************************************************************
  *
  * Prototypes of internal functions:
@@ -149,7 +154,8 @@ static void send_ack(WTPRespMachine *machine, long ack_type, int rid_flag);
 
 void wtp_resp_init(wap_dispatch_func_t *datagram_dispatch,
                    wap_dispatch_func_t *session_dispatch,
-                   wap_dispatch_func_t *push_dispatch) 
+                   wap_dispatch_func_t *push_dispatch, 
+                   long timer_freq) 
 {
     resp_machines = list_create();
     resp_machine_id_counter = counter_create();
@@ -162,6 +168,7 @@ void wtp_resp_init(wap_dispatch_func_t *datagram_dispatch,
     dispatch_to_push = push_dispatch;
 
     timers_init();
+    resp_timer_freq = timer_freq;
     wtp_tid_cache_init();
 
     gw_assert(resp_run_status == limbo);
@@ -630,7 +637,8 @@ static WAPEvent *create_tr_abort_ind(WTPRespMachine *sm, long abort_reason) {
 }
 
 /*
- * Start acknowledgement interval timer
+ * Start acknowledgement interval timer. Multiply time with
+ * resp_timer_freq.
  */
 static void start_timer_A(WTPRespMachine *machine) 
 {
@@ -638,11 +646,12 @@ static void start_timer_A(WTPRespMachine *machine)
 
     timer_event = wap_event_create(TimerTO_A);
     timer_event->u.TimerTO_A.handle = machine->mid;
-    gwtimer_start(machine->timer, L_A_WITH_USER_ACK, timer_event);
+    gwtimer_start(machine->timer, L_A_WITH_USER_ACK * resp_timer_freq, 
+                  timer_event);
 }
 
 /*
- * Start retry interval timer
+ * Start retry interval timer. Multiply time with resp_timer_freq.
  */
 static void start_timer_R(WTPRespMachine *machine) 
 {
@@ -650,11 +659,13 @@ static void start_timer_R(WTPRespMachine *machine)
 
     timer_event = wap_event_create(TimerTO_R);
     timer_event->u.TimerTO_R.handle = machine->mid;
-    gwtimer_start(machine->timer, L_R_WITH_USER_ACK, timer_event);
+    gwtimer_start(machine->timer, L_R_WITH_USER_ACK * resp_timer_freq, 
+                  timer_event);
 }
 
 /*
- * Start timeout interval timer
+ * Start segmentation timeout interval timer. Multiply time with
+ * resp_timer_freq.
  */
 static void start_timer_W(WTPRespMachine *machine)
 {
@@ -662,7 +673,8 @@ static void start_timer_W(WTPRespMachine *machine)
 
     timer_event = wap_event_create(TimerTO_W);
     timer_event->u.TimerTO_W.handle = machine->mid;
-    gwtimer_start(machine->timer, W_WITH_USER_ACK, timer_event);
+    gwtimer_start(machine->timer, W_WITH_USER_ACK * resp_timer_freq, 
+                  timer_event);
 }
 
 static void send_abort(WTPRespMachine *machine, long type, long reason)
