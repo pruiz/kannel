@@ -186,6 +186,7 @@
 	<listitem><para>The Gnome XML library (known as
 	gnome-xml and libxml), version 1.8.1 or newer. See <ulink
 	url="http://xmlsoft.org/xml.html">http://xmlsoft.org/xml.html</ulink>.
+	</para></listitem>
 
 	<listitem><para>GNU Make.</para></listitem>
 
