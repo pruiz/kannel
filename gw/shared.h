@@ -49,6 +49,12 @@ void connect_to_bearerbox(Octstr *host, int port, int ssl, Octstr *our_host);
 
 
 /*
+ * Try to open a connection to the bearerbox and return the connection pointer.
+ */
+Connection *get_connect_to_bearerbox(Octstr *host, int port, int ssl, Octstr *our_host);
+
+
+/*
  * Close connection to the bearerbox.
  */
 void close_connection_to_bearerbox(void);

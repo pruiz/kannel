@@ -101,6 +101,20 @@ void connect_to_bearerbox(Octstr *host, int port, int ssl, Octstr *our_host)
 }
 
 
+Connection *get_connect_to_bearerbox(Octstr *host, int port, int ssl, Octstr *our_host)
+{
+#ifdef HAVE_LIBSSL
+       if (ssl)
+           bb_conn = conn_open_ssl(host, port, NULL, our_host);
+        /* XXX add certkeyfile to be given to conn_open_ssl */
+       else
+#endif /* HAVE_LIBSSL */
+    bb_conn = conn_open_tcp(host, port, our_host);
+
+    return bb_conn;
+}
+
+
 void close_connection_to_bearerbox(void)
 {
     conn_destroy(bb_conn);
