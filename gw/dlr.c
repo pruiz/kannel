@@ -511,6 +511,7 @@ static Msg *dlr_find_mem(char *smsc, char *ts, char *dst, int typ)
     int dlr_mask;
     
     debug("dlr.dlr", 0, "Looking for DLR smsc=%s, ts=%s, dst=%s, type=%d", smsc, ts, dst, typ);
+    list_lock(dlr_waiting_list);
     len = list_len(dlr_waiting_list);
     for (i=0; i < len; i++) {
         dlr = list_get(dlr_waiting_list, i);
@@ -563,9 +564,11 @@ static Msg *dlr_find_mem(char *smsc, char *ts, char *dst, int typ)
                 dlr_destroy(dlr);
             }
 
+            list_unlock(dlr_waiting_list);
             return msg;
         }
     }
+    list_unlock(dlr_waiting_list);
     debug("dlr.dlr", 0, "DLR not found!");
     /* we couldnt find a matching entry */
     return NULL;
