@@ -19,7 +19,7 @@ PATH=$BOXPATH:$PATH
 # so don't generate any output.
 test -x $BOXPATH/bearerbox || exit 0
 
-test -r /etc/default/`basename $0` && . /etc/default/`basename $0`
+test -r /etc/default/kannel-cvs && . /etc/default/kannel-cvs
 
 case "$1" in
   start)

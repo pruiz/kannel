@@ -1,3 +1,6 @@
+2003-05-04  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
+    * debian/*.init: fix bug (Closes: #25)
+
 2003-04-29  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_emi2.c: login operation 60 had a hard timeout of 30 sec.
       Some SMSC may need longer to ACK the login, so use the 'wait-ack' time
