@@ -103,6 +103,7 @@ typedef struct {
     time_t throttling_err_time;
     int smpp_msg_id_type;  /* msg id in C string, hex or decimal */
     int autodetect_addr;
+    Octstr *alt_charset;
     SMSCConn *conn; 
 } SMPP; 
  
@@ -116,7 +117,8 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
                          int alt_dcs, int enquire_link_interval, 
                          int max_pending_submits, int reconnect_delay,
                          int version, int priority, Octstr *my_number,
-                         int smpp_msg_id_type, int autodetect_addr) 
+                         int smpp_msg_id_type, int autodetect_addr,
+                         Octstr *alt_charset) 
 { 
     SMPP *smpp; 
      
@@ -152,6 +154,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->throttling_err_time = 0; 
     smpp->smpp_msg_id_type = smpp_msg_id_type;    
     smpp->autodetect_addr = autodetect_addr;
+    smpp->alt_charset = octstr_duplicate(alt_charset);
  
     return smpp; 
 } 
@@ -160,17 +163,19 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
 static void smpp_destroy(SMPP *smpp) 
 { 
     if (smpp != NULL) { 
-	list_destroy(smpp->msgs_to_send, msg_destroy_item); 
-	dict_destroy(smpp->sent_msgs); 
-	list_destroy(smpp->received_msgs, msg_destroy_item); 
-	counter_destroy(smpp->message_id_counter); 
-	octstr_destroy(smpp->host); 
-	octstr_destroy(smpp->username); 
-	octstr_destroy(smpp->password); 
-	octstr_destroy(smpp->system_type); 
-	octstr_destroy(smpp->address_range); 
-	octstr_destroy(smpp->our_host); 
-	gw_free(smpp); 
+        list_destroy(smpp->msgs_to_send, msg_destroy_item); 
+        dict_destroy(smpp->sent_msgs); 
+        list_destroy(smpp->received_msgs, msg_destroy_item); 
+        counter_destroy(smpp->message_id_counter); 
+        octstr_destroy(smpp->host); 
+        octstr_destroy(smpp->username); 
+        octstr_destroy(smpp->password); 
+        octstr_destroy(smpp->system_type); 
+        octstr_destroy(smpp->address_range); 
+        octstr_destroy(smpp->our_host); 
+        octstr_destroy(smpp->my_number);
+        octstr_destroy(smpp->alt_charset);
+        gw_free(smpp); 
     } 
 } 
  
@@ -224,7 +229,7 @@ static int read_pdu(SMPP *smpp, Connection *conn, long *len, SMPP_PDU **pdu)
 } 
  
  
-static Msg *pdu_to_msg(SMPP_PDU *pdu) 
+static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu) 
 { 
     Msg *msg; 
  
@@ -237,11 +242,54 @@ static Msg *pdu_to_msg(SMPP_PDU *pdu)
     pdu->u.deliver_sm.destination_addr = NULL; 
     msg->sms.msgdata = pdu->u.deliver_sm.short_message; 
     pdu->u.deliver_sm.short_message = NULL; 
-	if(msg->sms.coding == 1)	/* dont screw up unicode messages */
-    	charset_gsm_to_latin1(msg->sms.msgdata);
+    dcs_to_fields(&msg, pdu->u.deliver_sm.data_coding);
+
+    /* handle default data coding */
+    switch (pdu->u.deliver_sm.data_coding) { 
+        case 0x00: /* default SMSC alphabet */
+            /* 
+             * try to convert from something interesting if specified so
+             * unless it was specified binary
+             */
+            if (smpp->alt_charset && msg->sms.coding != DC_8BIT) { 
+                if (charset_convert(msg->sms.msgdata, octstr_get_cstr(smpp->alt_charset), "ISO-8859-1") != 0)
+                    error(0, "Failed to convert msgdata from charset <%s> to <%s>, will leave as is.",
+                             octstr_get_cstr(smpp->alt_charset), "ISO-8859-1");
+                msg->sms.coding = DC_7BIT;
+
+            } else { /* assume GSM 03.38 7-bit alphabet */
+                charset_gsm_to_latin1(msg->sms.msgdata); 
+                msg->sms.coding = DC_7BIT;
+            }
+            break;
+        case 0x01: /* ASCII or IA5 - not sure if I need to do anything */
+        case 0x02: /* 8 bit binary - do nothing */
+        case 0x04: /* 8 bit binary - do nothing */
+                break;
+        case 0x03: /* ISO-8859-1 - do nothing */
+                msg->sms.coding = DC_8BIT; break;
+        case 0x05: /* JIS - what do I do with that ? */
+                break;
+        case 0x06: /* Cyrllic - iso-8859-5, I'll convert to unicode */
+            if (charset_convert(msg->sms.msgdata, "ISO-8859-5", "UCS-2BE") != 0)
+                error(0, "Failed to convert msgdata from cyrllic to UCS-2, will leave as is");
+            msg->sms.coding = DC_UCS2; break;
+        case 0x07: /* Hebrew iso-8859-8, I'll convert to unicode */
+            if (charset_convert(msg->sms.msgdata, "ISO-8859-8", "UCS-2BE") != 0)
+                error(0, "Failed to convert msgdata from hebrew to UCS-2, will leave as is");
+            msg->sms.coding = DC_UCS2; break;
+        case 0x08: /* unicode UCS-2, yey */
+            msg->sms.coding = DC_UCS2; break;
+
+            /* 
+             * don't much care about the others,
+             * you implement them if you feel like it 
+             */
+        default: 
+            msg->sms.coding = DC_7BIT;
+    }
     msg->sms.pid = pdu->u.deliver_sm.protocol_id; 
-    dcs_to_fields(&msg, pdu->u.deliver_sm.data_coding); 
- 
+
     return msg; 
 } 
  
@@ -354,16 +402,35 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
             ESM_CLASS_SUBMIT_RPI;
 
     /*
-     * set data segments
+     * set data segments and length
      */
     if (octstr_len(msg->sms.udhdata)) { 
         pdu->u.submit_sm.short_message = 
 	       octstr_format("%S%S", msg->sms.udhdata, msg->sms.msgdata); 
     } else { 
         pdu->u.submit_sm.short_message = octstr_duplicate(msg->sms.msgdata); 
-        if (pdu->u.submit_sm.data_coding == 0 ) /* no reencoding for unicode! */ 
-            charset_latin1_to_gsm(pdu->u.submit_sm.short_message);		 
-    } 
+
+        /* 
+         * only re-encoding if using default smsc charset that is defined via 
+         * alt-charset in smsc group and if MT is not binary
+         */
+        if (pdu->u.submit_sm.data_coding == 0) {
+            
+            /* 
+             * convert to the given alternative charset
+             * otherwise assume to convert to GSM 03.38 7-bit alphabet
+             */
+            if (smpp->alt_charset) {
+                if (charset_convert(pdu->u.submit_sm.short_message, "ISO-8859-1",
+                                    octstr_get_cstr(smpp->alt_charset)) != 0)
+                    error(0, "Failed to convert msgdata from charset <%s> to <%s>, will send as is.", 
+                             "ISO-8859-1", octstr_get_cstr(smpp->alt_charset));
+            } else {
+                charset_latin1_to_gsm(pdu->u.submit_sm.short_message);		 
+            }
+        } 
+    }
+    pdu->u.submit_sm.sm_length = octstr_len(pdu->u.submit_sm.short_message);
 
     /*
      * check for validity and defered settings
@@ -726,14 +793,14 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
             } else /* MO-SMS */
             {
                 /* ensure the smsc-id is set */ 
-                msg = pdu_to_msg(pdu); 
-#if 0 
+                msg = pdu_to_msg(smpp, pdu); 
+ 
                 /* Replace MO destination number with my-number */ 
                 if (octstr_len(smpp->my_number)) { 
                     octstr_destroy(msg->sms.receiver); 
                     msg->sms.receiver = octstr_duplicate(smpp->my_number); 
                 } 
-#endif
+
                 time(&msg->sms.time); 
                 msg->sms.smsc_id = octstr_duplicate(smpp->conn->id); 
                 (void) bb_smscconn_receive(smpp->conn, msg); 
@@ -1163,8 +1230,9 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     long priority;
     long smpp_msg_id_type;
     int autodetect_addr;
+    Octstr *alt_charset;
  
-    my_number = NULL; 
+    my_number = alt_charset = NULL; 
     transceiver_mode = 0;
     alt_dcs = 0;
     autodetect_addr = 0;
@@ -1265,8 +1333,11 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
         smpp_msg_id_type = -1; 
     } else {
         if (smpp_msg_id_type < 0 || smpp_msg_id_type > 3)
-            panic(0,"SMPP: Invlid value for msg-id-type directive in configuraton"); 
+            panic(0,"SMPP: Invalid value for msg-id-type directive in configuraton"); 
     }
+
+    /* check for an alternative charset */
+    alt_charset = cfg_get(grp, octstr_imm("alt-charset"));
 
     smpp = smpp_create(conn, host, port, receive_port, system_type,  
     	    	       username, password, address_range, our_host, 
@@ -1274,7 +1345,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
                        dest_addr_npi, alt_dcs, enquire_link_interval, 
                        max_pending_submits, reconnect_delay, 
                        version, priority, my_number, smpp_msg_id_type,
-                       autodetect_addr); 
+                       autodetect_addr, alt_charset); 
  
     conn->data = smpp; 
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S",  
@@ -1295,7 +1366,8 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     octstr_destroy(our_host); 
     octstr_destroy(my_number); 
     octstr_destroy(smsc_id);
- 
+    octstr_destroy(alt_charset); 
+
     conn->status = SMSCCONN_CONNECTING; 
        
     /* 
