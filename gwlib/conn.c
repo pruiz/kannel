@@ -152,6 +152,9 @@ Connection *conn_open_tcp(Octstr *host, int port) {
 Connection *conn_wrap_fd(int fd) {
 	Connection *conn;
 
+	if (socket_set_blocking(fd, 0) < 0)
+		return NULL;
+
 	conn = gw_malloc(sizeof(*conn));
 	conn->mutex = mutex_create();
 	conn->claimed = 0;
@@ -226,8 +229,16 @@ int conn_wait(Connection *conn, double seconds) {
 	lock(conn);
 
 	/* Try to write any data that might still be waiting to be sent */
-	if (unlocked_write(conn) < 0)
-		goto error_unlock;
+	ret = unlocked_write(conn);
+	if (ret < 0) {
+		unlock(conn);
+		return -1;
+	}
+	if (ret > 0) {
+		/* We did something useful.  No need to poll or wait now. */
+		unlock(conn);
+		return 0;
+	}
 
 	/* Normally, we block until there is more data available.  But
 	 * if any data still needs to be sent, we block until we can
@@ -249,6 +260,9 @@ int conn_wait(Connection *conn, double seconds) {
 		error(errno, "conn_wait: poll failed on fd %d:", pollinfo.fd);
 		return -1;
 	}
+
+	if (ret == 0)
+		return 1;
 
 	if (pollinfo.revents & POLLNVAL) {
 		error(0, "conn_wait: fd %d not open.", pollinfo.fd);
@@ -285,10 +299,6 @@ int conn_wait(Connection *conn, double seconds) {
 	}
 
 	return 0;
-
-error_unlock:
-	unlock(conn);
-	return -1;
 }
 
 int conn_write(Connection *conn, Octstr *data) {

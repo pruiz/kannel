@@ -100,6 +100,8 @@ void mutex_lock(Mutex *mutex)
 {
 	int ret;
 
+	gw_assert(mutex != NULL);
+
 #ifdef MUTEX_STATS
 	ret = pthread_mutex_trylock(&mutex->mutex);
 	if (ret != 0) {
@@ -121,6 +123,8 @@ void mutex_lock(Mutex *mutex)
 int mutex_try_lock(Mutex *mutex)
 {
 	int ret;
+
+	gw_assert(mutex != NULL);
     
 	/* Let's try to lock it. */
 	ret = pthread_mutex_trylock(&mutex->mutex);
@@ -154,6 +158,7 @@ int mutex_try_lock(Mutex *mutex)
 void mutex_unlock(Mutex *mutex)
 {
 	int ret;
+	gw_assert(mutex != NULL);
 	mutex->owner = (pthread_t) -1;
 	ret = pthread_mutex_unlock(&mutex->mutex);
 	if (ret != 0)

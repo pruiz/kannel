@@ -68,8 +68,8 @@ long conn_inbuf_len(Connection *conn);
  *   - New data is available for reading
  *   - All data queued for output is sent (if there was any)
  *   - Kannel changes its global status (not implemented yet)
- * Return 0 if the connection is okay, or -1 if the connection is
- * broken.
+ * Return 1 if the timeout expired.  Return 0 otherwise, if the
+ * connection is okay.  Return -1 if the connection is broken.
  * If the timeout is 0 seconds, check for the conditions above without
  * actually blocking.
  */
