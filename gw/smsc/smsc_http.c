@@ -305,7 +305,7 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
         octstr_url_encode(sms->sms.dlr_url);
         octstr_format_append(url, "&dlrurl=%S", sms->sms.dlr_url);
     }
-    if (sms->sms.dlr_mask != DLR_UNDEFINED)
+    if (sms->sms.dlr_mask != DLR_UNDEFINED && sms->sms.dlr_mask != DLR_NOTHING)
         octstr_format_append(url, "&drlmask=%d", sms->sms.dlr_mask);
 
     headers = list_create();
