@@ -10,6 +10,8 @@
 
 	* wtp_tid.c|h: Module now uses list standard functions
 
+	* wtp_state-decl.h: Commented
+
 2000-05-04    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/bb_core.c: logfiles
