@@ -9,6 +9,7 @@
 # ing of ppg.
 
 set -e
+#set -x
 
 list_port=8082
 server_port=8081
@@ -54,21 +55,21 @@ for control_file in $ip_control_files;
             then
                 cat check_ppg.tmp >> check_ppg.log 2>&1
                 error=yes
-                echo "ppg failed"
+                echo "ppg failed with control file $control_file"
             fi
 
             if ! grep "Connectionless push accepted" check_wap.tmp > /dev/null
             then
                 cat check_wap.tmp >> check_wap.log 2>&1
                 error="yes"
-                echo "wap failed"
+                echo "wap failed with control file $control_file"
             fi
         
             if ! grep "got wdp from wapbox" check_bb.tmp > /dev/null
             then
                 cat check_bb.tmp >> check_bb.log 2>&1
                 error=yes
-                echo "bb failed"
+                echo "bb failed with control file $control_file"
             fi
 
             kill -SIGINT $wappid
@@ -83,21 +84,21 @@ for control_file in $ip_control_files;
                 then
                     cat check_bb.tmp >> check_bb.log 2>&1
                     error="yes"
-                    echo "got errors in bb"
+                    echo "got errors in bb when going down when $control_file"
                 fi
 
                 if grep 'WARNING:|ERROR:|PANIC:' check_wap.tmp > /dev/null
                 then
                     cat check_wap.tmp >> check_wap.log 2>&1
                     error="yes"
-                    echo "got errors in wap"
+                    echo "got errors in wap when going down when $control_file"
                 fi 
 
                 if grep 'WARNING:|ERROR:|PANIC:' check_ppg.tmp > /dev/null
                 then
                     cat check_ppg.tmp >> check_ppg.log 2>&1
                     error="yes"
-                    echo "got errors in ppg"
+                    echo "got errors in ppg when going down when $control_file"
                 fi 
            fi
          
@@ -126,7 +127,7 @@ for control_file in $wrong_ip_files;
             then
                 cat check_ppg.tmp >> check_ppg.log 2>&1
                 error=yes
-                echo "ppg failed"
+                echo "ppg failed when control file $control_file"
             fi
 
             if grep "Connectionless push accepted" check_wap.tmp > /dev/null &&
@@ -134,14 +135,14 @@ for control_file in $wrong_ip_files;
             then
                 cat check_wap.tmp >> check_wap.log 2>&1
                 error="yes"
-                echo "wap failed"
+                echo "wap failed when control file $control_file"
             fi
         
             if grep "got wdp from wapbox" check_bb.tmp > /dev/null
             then
                 cat check_bb.tmp >> check_bb.log 2>&1
                 error=yes
-                echo "bb failed"
+                echo "bb failed when control file $control_file"
             fi
 
             kill -SIGINT $wappid
@@ -156,21 +157,21 @@ for control_file in $wrong_ip_files;
                 then
                     cat check_bb.tmp >> check_bb.log 2>&1
                     error="yes"
-                    echo "got errors in bb"
+                    echo "got errors in bb when going down with $control_file"
                 fi
 
                 if grep 'ERROR:|PANIC:' check_wap.tmp > /dev/null
                 then
                     cat check_wap.tmp >> check_wap.log 2>&1
                     error="yes"
-                    echo "got errors in wap"
+                    echo "got errors in wap when going down with $control_file"
                 fi 
 
                 if grep 'ERROR:|PANIC:' check_ppg.tmp > /dev/null
                 then
                     cat check_ppg.tmp >> check_ppg.log 2>&1
                     error="yes"
-                    echo "got errors in ppg"
+                    echo "got errors in ppg when going down with $control_file"
                 fi 
            fi
          
@@ -198,29 +199,24 @@ for control_file in $sms_control_files;
             then
                 cat check_ppg.tmp >> check_ppg.log 2>&1
                 error=yes
-                echo "ppg failed"
+                echo "ppg failed with control file $control_file"
             fi
 
             if ! grep "Connectionless push accepted" check_wap.tmp > /dev/null
             then
                 cat check_wap.tmp >> check_wap.log 2>&1
                 error="yes"
-                echo "wap failed"
+                echo "wap failed with control file $control_file"
             fi
         
             if ! grep "got sms from wapbox" check_bb.tmp > /dev/null
             then
                 cat check_bb.tmp >> check_bb.log 2>&1
                 error=yes
-                echo "bb failed"
+                echo "bb failed with control file $control_file"
             fi
 
-            #if ! grep "request headers were" check_http_sim.tmp > /dev/null
-            #then
-            #    cat check_http_sim.tmp >> check_http_sim.log 2>&1
-            #    error=yes
-            #fi
-
+            
             kill -SIGINT $wappid
             kill -SIGINT $bbpid
             sleep 2
@@ -233,28 +229,28 @@ for control_file in $sms_control_files;
                 then
                     cat check_bb.tmp >> check_bb.log 2>&1
                     error="yes"
-                    echo "got errors in bb"
+                    echo "got errors in bb when going down with $control_file"
                 fi 
 
                 if grep 'WARNING:|ERROR:|PANIC:' check_wap.tmp > /dev/null
                 then
                     cat check_wap.tmp >> check_wap.log 2>&1
                     error="yes"
-                    echo "got errors in wap"
+                    echo "got errors in wap when going down with $control_file"
                 fi 
 
                 if grep 'WARNING:|ERROR:|PANIC:' check_ppg.tmp > /dev/null
                 then
                     cat check_ppg.tmp >> check_ppg.log 2>&1
                     error="yes"
-                    echo "got errors in ppg"
+                    echo "got errors in ppg when going down with $control_file"
                 fi
 
                 if grep 'WARNING:|ERROR:|PANIC:' check_http_sim.tmp > /dev/null
                 then
                     cat check_sim.tmp >> check_sim.log 2>&1
                     error="yes"
-                    echo "got errors in http_sim"
+                    echo "errors, http_sim when going down with $control_file"
                 fi 
             fi
          
@@ -285,7 +281,7 @@ for control_file in $wrong_sms_files;
             then
                 cat check_ppg.tmp >> check_ppg.log 2>&1
                 error=yes
-                echo "ppg failed"
+                echo "ppg failed, going down with control file $control_file"
             fi
 
             if grep "Connectionless push accepted" check_wap.tmp > /dev/null &&
@@ -293,14 +289,14 @@ for control_file in $wrong_sms_files;
             then
                 cat check_wap.tmp >> check_wap.log 2>&1
                 error="yes"
-                echo "wap failed"
+                echo "wap failed, going down with control file $control_file"
             fi
         
             if grep "got sms from wapbox" check_bb.tmp > /dev/null
             then
                 cat check_bb.tmp >> check_bb.log 2>&1
                 error=yes
-                echo "bb failed"
+                echo "bb failed, going down with control file $control_file"
             fi
 
             kill -SIGINT $wappid
@@ -317,28 +313,28 @@ for control_file in $wrong_sms_files;
                 then
                     cat check_bb.tmp >> check_bb.log 2>&1
                     error="yes"
-                    echo "got errors in bb"
+                    echo "got errors in bb when ending tests"
                 fi
 
                 if grep 'ERROR:|PANIC:' check_wap.tmp > /dev/null
                 then
                     cat check_wap.tmp >> check_wap.log 2>&1
                     error="yes"
-                    echo "got errors in wap"
+                    echo "got errors in wap when ending tests"
                 fi 
 
                 if grep 'ERROR:|PANIC:' check_ppg.tmp > /dev/null
                 then
                     cat check_ppg.tmp >> check_ppg.log 2>&1
                     error="yes"
-                    echo "got errors in ppg"
+                    echo "got errors in ppg when ending tests"
                 fi 
 
                 if grep 'ERROR:|PANIC:' check_http_sim.tmp > /dev/null
                 then
                     cat check_http_sim.tmp >> check_http_sim.log 2>&1
                     error=yes
-                    echo "got errors in http_sim"
+                    echo "got errors in http_sim when ending tests"
                 fi
             fi
          
