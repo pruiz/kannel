@@ -1,8 +1,13 @@
 2001-03-13  Lars Wirzenius  <liw@iki.fi>
 
+	* benchmarks/bench_sms.sh: Only plot the "submit" events; in long
+	runs, the different graphs were on top of each other anyway.
+
+2001-03-13  Lars Wirzenius  <liw@iki.fi>
+
     	* Various improvements to "make bench".
 
-j	* benchmarks/bench_http.sh, benchmarks/bench_sms.sh,
+	* benchmarks/bench_http.sh, benchmarks/bench_sms.sh,
 	benchmarks/run-benchmarks: Implemented --fast option.
 	
 	* benchmarks/functions.inc: Isolated common script stuff into

@@ -26,7 +26,7 @@ function gather_data {
 }
 
 function analyze_logs {
-    for type in deliver deliver_ack http_request submit
+    for type in submit # deliver deliver_ack http_request 
     do
 	awk "/INFO: Event .*, type $type,/ { print \$NF, \$(NF-2) }" \
 	    bench_sms_smsc.log |
@@ -44,10 +44,11 @@ function analyze_logs {
 function make_graphs {
     plot benchmarks/bench_sms_"$1" \
 	"time (s)" "requests/s (Hz)" \
-	"bench_sms-deliver.dat" "deliver" \
-	"bench_sms-deliver_ack.dat" "deliver_ack" \
-	"bench_sms-http_request.dat" "http_request" \
 	"bench_sms-submit.dat" "submit"
+
+#	"bench_sms-deliver.dat" "deliver" \
+#	"bench_sms-deliver_ack.dat" "deliver_ack" \
+#	"bench_sms-http_request.dat" "http_request" \
     
     plot benchmarks/bench_sms_rtt_"$1" \
 	"received message number" "average round trip time (s)" \
