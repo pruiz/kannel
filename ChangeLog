@@ -1,5 +1,13 @@
 2001-03-27  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smsbox.c: added post-url support for sms-service
+	group. Documentation in User's Guide RSN (hopefully)
+
+	* gw/urltrans.c: added that strip-keyword with POST is done here,
+	althougt that is ugly (but easier to do that way)
+	
+2001-03-27  Kalle Marjola  <rpr@wapit.com>
+
 	* gwlib/cfg.h|c: added new function cfg_get_bool, taking
 	true/false, on/off, yes/no or 0/1
 

@@ -383,7 +383,14 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
 	pos += 2;
     }
-    
+    /*
+     * this SHOULD be done in smsbox, not here, but well,
+     * much easier to do here
+     */
+    if (t->type == TRANSTYPE_POST_URL && t->strip_keyword)
+	octstr_delete(request->sms.msgdata, 0,
+		      octstr_len(list_get(word_list, 0))+1);
+
     list_destroy(word_list, octstr_destroy_item);
     return result;
 }

@@ -413,7 +413,7 @@ static Octstr *get_udh_from_headers(List *headers)
 }
 */
 
-static void *get_x_kannel_from_headers(List *headers, Octstr **from,
+static void get_x_kannel_from_headers(List *headers, Octstr **from,
 				       Octstr **to, Octstr **udh)
 {
     Octstr *name, *val;
@@ -587,6 +587,8 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
     Octstr *pattern;
     List *request_headers;
     void *id;
+    struct tm tm;
+    char p[22];
     
     gw_assert(msg != NULL);
     gw_assert(msg_type(msg) == sms);
@@ -618,6 +620,42 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	request_headers = list_create();
 	id = remember_receiver(msg, trans);
 	http_start_request(caller, pattern, request_headers, NULL, 1, id);
+	octstr_destroy(pattern);
+	http_destroy_headers(request_headers);
+	*result = NULL;
+	return 0;
+
+    case TRANSTYPE_POST_URL:
+	request_headers = list_create();
+	id = remember_receiver(msg, trans);
+	if (msg->sms.flag_8bit)
+	    http_header_add(request_headers, "Content-Type",
+			    "application/octet-stream");
+	else
+	    http_header_add(request_headers, "Content-Type", "text/plain");
+	if (urltrans_send_sender(trans))
+	    http_header_add(request_headers, "X-Kannel-From",
+			    octstr_get_cstr(msg->sms.receiver));
+	http_header_add(request_headers, "X-Kannel-To",
+			octstr_get_cstr(msg->sms.sender));
+
+	/* should we use localtime? FIX ME */
+	tm = gw_gmtime(msg->sms.time);
+	sprintf(p, "%04d-%02d-%02d %02d:%02d:%02d",
+		tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+		tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+	http_header_add(request_headers, "X-Kannel-Time", p);
+	if (msg->sms.flag_udh) {
+	    Octstr *os;
+	    os = octstr_duplicate(msg->sms.udhdata);
+	    octstr_binary_to_hex(os, 1);
+	    http_header_add(request_headers, "X-Kannel-UDH",
+			    octstr_get_cstr(os));
+	    octstr_destroy(os);
+	}
+	http_start_request(caller, pattern, request_headers,
+			   msg->sms.msgdata, 1, id);
 	octstr_destroy(pattern);
 	http_destroy_headers(request_headers);
 	*result = NULL;
