@@ -63,9 +63,7 @@
 #ifndef GW_RWLOCK_H
 #define GW_RWLOCK_H
 
-#ifdef HAVE_CONFIG_H
-  #include "gw-config.h"
-#endif
+#include "gw-config.h"
 #ifndef HAVE_PTHREAD_RWLOCK
   #include "list.h"
 #else

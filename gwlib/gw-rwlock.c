@@ -62,9 +62,7 @@
  * Alexander Malysh <amalysh@kannel.org>, initial version 2004
  */
 
-#ifdef HAVE_CONFIG_H
-  #include "gw-config.h"
-#endif
+#include "gw-config.h"
 #include "gwlib.h"
 #include "gw-rwlock.h"
 

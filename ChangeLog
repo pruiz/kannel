@@ -1,4 +1,8 @@
 2004-08-30 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/gw-rwlock.[ch]: fixed includes. we don't define HAVE_CONFIG_H so
+      gw-config.h should be always included.
+
+2004-08-30 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: added ESME dlr bit to DLR processing (some smsc's sent
       us esm_class=0x08 and it's IMO ok). 
 
