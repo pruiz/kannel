@@ -1,16 +1,14 @@
 /*
  * dbpool_p.h - Database pool private header.
  *
- * Author: Alexander Malysh <a.malysh@centrium.de>, (C) 2003
- *
- * Copyright: See COPYING file that comes with this distribution
+ * Alexander Malysh <a.malysh@centrium.de>
  */
 
 #ifndef DBPOOL_P_H
 #define DBPOOL_P_H 1
 
 
- struct db_ops {
+struct db_ops {
     /*
      * Open db connection with given config params.
      * Config params are specificaly for each database type.

@@ -1,5 +1,8 @@
 /*
  * dbpool.h - database pool functions
+ *
+ * Stipe Tolj <tolj@wapme-systems.de>
+ * Alexander Malysh <a.malysh@centrium.de>
  */
 
 #ifndef GWDBPOOL_H
