@@ -60,17 +60,23 @@ struct SMPP_PDU {
 #define GSM_ADDR_NPI_EXTENSION        0x0000000F /* Reserved */
 
 /******************************************************************************
- * esm_class parameters
+ * esm_class parameters for both submit_sm and deliver_sm PDUs
  */
-#define ESM_CLASS_DEFAULT_SMSC_MODE        0x00000000
-#define ESM_CLASS_DATAGRAM_MODE            0x00000001
-#define ESM_CLASS_FORWARD_MODE             0x00000002
-#define ESM_CLASS_STORE_AND_FORWARD_MODE   0x00000003
-#define ESM_CLASS_DELIVERY_ACK             0x00000008
-#define ESM_CLASS_USER_ACK                 0x00000010
-#define ESM_CLASS_UDH_INDICATOR            0x00000040
-#define ESM_CLASS_RPI                      0x00000080
-#define ESM_CLASS_UDH_AND_RPI              0x000000C0
+#define ESM_CLASS_SUBMIT_DEFAULT_SMSC_MODE        0x00000000
+#define ESM_CLASS_SUBMIT_DATAGRAM_MODE            0x00000001
+#define ESM_CLASS_SUBMIT_FORWARD_MODE             0x00000002
+#define ESM_CLASS_SUBMIT_STORE_AND_FORWARD_MODE   0x00000003
+#define ESM_CLASS_SUBMIT_DELIVERY_ACK             0x00000008
+#define ESM_CLASS_SUBMIT_USER_ACK                 0x00000010
+#define ESM_CLASS_SUBMIT_UDH_INDICATOR            0x00000040
+#define ESM_CLASS_SUBMIT_RPI                      0x00000080
+#define ESM_CLASS_SUBMIT_UDH_AND_RPI              0x000000C0
+
+#define ESM_CLASS_DELIVER_DEFAULT_TYPE            0x00000000
+#define ESM_CLASS_DELIVER_SMSC_DELIVER_ACK        0x00000004
+#define ESM_CLASS_DELIVER_SME_DELIVER_ACK         0x00000008
+#define ESM_CLASS_DELIVER_SME_MANULAL_ACK         0x00000010
+#define ESM_CLASS_DELIVER_INTERM_DEL_NOTIFICATION 0x00000020
 
 
 SMPP_PDU *smpp_pdu_create(unsigned long type, unsigned long seq_no);
