@@ -8,7 +8,7 @@
 		--enable-docs	Always build documentation
 		--without-docs	Never build documentation
 	
-DocBook installation on Debian (unstable)
+DocBook installation on Debian (potato)
 
 	Install the "docbook-stylesheets" package and everything it
 	depends on, either using dselect or 
@@ -73,5 +73,3 @@ DocBook installation on Redhat
 		stack_size.jadetex = 1500
 		stack_size.pdfjadetex = 1500
 	
-	Comment out the Debian lines and uncomment the Redhat lines in
-	Rules.mk.
