@@ -338,7 +338,7 @@ int wml_compile(Octstr *wml_text,
   parse_tree = xmlParseMemory(wml_c_text, size+1);
   ret = parse_node(xmlDocGetRootElement(parse_tree));
 
-  wml_binary = &wbxml_string;
+  *wml_binary = octstr_duplicate(wbxml_string);
 
   return ret;
 }
@@ -426,9 +426,11 @@ int parse_node(xmlNodePtr node)
   case 1:
     if (node->childs != NULL)
       parse_node(node->childs);
-    if (parse_end() != 0)
-      error(0, "WML compiler: adding end tag failed.");
-      return -1;
+    if (parse_end() != 0) 
+      {
+	error(0, "WML compiler: adding end tag failed.");
+	return -1;
+      }
     break;
   default:
     error(0, "WML compiler: undefined return value in a parse function.");
@@ -436,7 +438,8 @@ int parse_node(xmlNodePtr node)
     break;
   }
 
-  parse_node(node->next);
+  if (node->next != NULL)
+    parse_node(node->next);
 
   return 0;
 }

@@ -1,3 +1,9 @@
+2000-01-28  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gw/wml_compiler.c : Some little fixes.
+	* test/wml_tester.c : Some bug fixes, no more core dump, not 
+	working yet correctly thou.
+
 2000-1-28 Aarno Syvänen <syvanen@wapit.com>
 
         * wtp.c: Important trivial change: error message "no concatenation 

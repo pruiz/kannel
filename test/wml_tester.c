@@ -14,8 +14,8 @@ int wml_compiler_not_implemented = 1;
 int main(int argc, char **argv)
 {
   Octstr *wml_text = NULL;
-  Octstr **wml_binary = NULL;
-  Octstr **wml_scripts = NULL;
+  Octstr *wml_binary = NULL;
+  Octstr *wml_scripts = NULL;
 
   int ret;
   int i = 0;
@@ -29,7 +29,11 @@ int main(int argc, char **argv)
 	  octstr_set_char(wml_text, 6, '\0');
 	}
       else
+	{
 	  wml_text = octstr_read_file(argv[1]);
+	  if (wml_text == NULL)
+	    return -1;
+	}
     } 
   else 
     {
@@ -39,7 +43,7 @@ int main(int argc, char **argv)
 
   set_output_level(DEBUG);
 
-  ret = wml_compile(wml_text, wml_binary, wml_scripts);
+  ret = wml_compile(wml_text, &wml_binary, &wml_scripts);
 
   printf("wml_compile returned: %d\n", ret);
 
@@ -47,15 +51,28 @@ int main(int argc, char **argv)
     {
       printf("Here's the binary output: \n\n");
   
-      for (i = 0; i < octstr_len(wml_text); i ++)
+      for (i = 0; i < octstr_len(wml_binary); i ++)
 	{
-	  printf("%X ", octstr_get_char(wml_text, i));
-	  if ((i % 25) == 0)
+	  printf("%X ", octstr_get_char(wml_binary, i));
+	  if ((i % 25) == 0 && i != 0)
 	    printf("\n");
 	}
+      printf("\n\n");
+
+      printf("And as a text: \n\n");
+  
+      for (i = 0; i < octstr_len(wml_binary); i ++)
+	{
+	  printf("%c ", octstr_get_char(wml_binary, i));
+	  if ((i % 25) == 0 && i != 0)
+	    printf("\n");
+	}
+      printf("\n\n");
     }
 
   octstr_destroy(wml_text);
+  octstr_destroy(wml_binary);
+  octstr_destroy(wml_scripts);
   return ret;
 }
 
