@@ -35,6 +35,11 @@ WAPEvent *wtp_pack_invoke(WTPInitMachine *init_machine, WAPEvent *event);
 WAPEvent *wtp_pack_result(WTPRespMachine *resp_machine, WAPEvent *event); 
 
 /*
+ * Same as above but for a segmented result.
+ */
+WAPEvent *wtp_pack_sar_result(WTPRespMachine *resp_machine, int psn); 
+
+/*
  * Create a datagram event, having abort PDU as user data. Fetches SDU
  * from WTP event, address four-tuple from WTP machine. 
  * Handles all errors by itself. Both for wtp initiator and responder.
@@ -53,6 +58,11 @@ WAPEvent *wtp_pack_abort(long abort_type, long abort_reason, long tid,
 
 WAPEvent *wtp_pack_ack(long ack_type, int rid_flag, long tid, 
                        WAPAddrTuple *address);
+
+/*
+ * Same as above but for a segmented ack
+ */
+WAPEvent *wtp_pack_sar_ack(long ack_type, long tid, WAPAddrTuple *address, int psn);
 
 /*
  * Set or unset the retransmission indicator on a PDU that has already

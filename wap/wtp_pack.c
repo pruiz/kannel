@@ -27,7 +27,9 @@ enum {
     ERROR_DATA = 0x00,
     INFO_DATA = 0x01,
     OPTION = 0x02,
-    PACKET_SEQUENCE_NUMBER = 0x03
+    PACKET_SEQUENCE_NUMBER = 0x03,
+    SDU_BOUNDARY = 0x04,
+    FRAME_BOUNDARY = 0x05
 };
 
 /*****************************************************************************
@@ -106,6 +108,54 @@ WAPEvent *wtp_pack_result(WTPRespMachine *machine, WAPEvent *event)
     return dgram;
 }
 
+WAPEvent *wtp_pack_sar_result(WTPRespMachine *machine, int psn)
+{
+    WAPEvent *dgram = NULL;
+    WTP_PDU *pdu = NULL;
+    Octstr *data = NULL;
+    int gtr, ttr;
+
+    gw_assert(machine->sar && machine->sar->data);
+
+    if (psn > machine->sar->nsegm)
+        return dgram;
+
+    ttr = psn == machine->sar->nsegm ? 1 : 0;
+    gtr = ttr ? 0 : (psn+1)%SAR_GROUP_LEN ? 0 : 1;
+
+    if (gtr || ttr) 
+        machine->sar->tr = 1;
+
+    data = octstr_copy(machine->sar->data,psn*SAR_SEGM_SIZE,SAR_SEGM_SIZE);
+
+    if (!psn) {
+        pdu = wtp_pdu_create(Result);
+        pdu->u.Result.con = 0;
+        pdu->u.Result.gtr = gtr;
+        pdu->u.Result.ttr = ttr;
+        pdu->u.Result.rid = 0;
+        pdu->u.Result.tid = send_tid(machine->tid);
+        pdu->u.Result.user_data = data;
+    } else {
+        pdu = wtp_pdu_create(Segmented_result);
+        pdu->u.Segmented_result.con = 0;
+        pdu->u.Segmented_result.gtr = gtr;
+        pdu->u.Segmented_result.ttr = ttr;
+        pdu->u.Segmented_result.rid = 0;
+        pdu->u.Segmented_result.tid = send_tid(machine->tid);
+        pdu->u.Segmented_result.psn = psn;
+        pdu->u.Segmented_result.user_data = data;
+    }
+
+    dgram = wap_event_create(T_DUnitdata_Req);
+    dgram->u.T_DUnitdata_Req.addr_tuple =
+        wap_addr_tuple_duplicate(machine->addr_tuple);
+    dgram->u.T_DUnitdata_Req.user_data = wtp_pdu_pack(pdu);
+    wtp_pdu_destroy(pdu);
+
+    return dgram;
+}
+
 void wtp_pack_set_rid(WAPEvent *dgram, long rid)
 {
     gw_assert(dgram != NULL);
@@ -145,6 +195,30 @@ WAPEvent *wtp_pack_ack(long ack_type, int rid_flag, long tid,
     pdu->u.Ack.tidverify = ack_type;
     pdu->u.Ack.rid = rid_flag;
     pdu->u.Ack.tid = send_tid(tid);
+
+    dgram = wap_event_create(T_DUnitdata_Req);
+    dgram->u.T_DUnitdata_Req.addr_tuple = wap_addr_tuple_duplicate(address);
+    dgram->u.T_DUnitdata_Req.user_data = wtp_pdu_pack(pdu);
+    wtp_pdu_destroy(pdu);
+
+    return dgram;
+}
+
+WAPEvent *wtp_pack_sar_ack(long ack_type, long tid, WAPAddrTuple *address, int psn)
+{
+    WAPEvent *dgram = NULL;
+    WTP_PDU *pdu;
+    unsigned char cpsn;
+    
+    sprintf(&cpsn, "%c", psn);
+
+    pdu = wtp_pdu_create(Ack);
+    pdu->u.Ack.con = 1;
+    pdu->u.Ack.tidverify = ack_type;
+    pdu->u.Ack.rid = 0;
+    pdu->u.Ack.tid = send_tid(tid);
+
+    wtp_pdu_append_tpi(pdu, 3, octstr_create_from_data((char*) &cpsn, 1));
 
     dgram = wap_event_create(T_DUnitdata_Req);
     dgram->u.T_DUnitdata_Req.addr_tuple = wap_addr_tuple_duplicate(address);

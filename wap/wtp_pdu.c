@@ -38,7 +38,7 @@ WTP_PDU *wtp_pdu_create(int type) {
 #undef UINT
 #undef PDU
 	default:
-		warning(0, "Cannot destroy unknown WTP PDU type %d", pdu->type);
+        warning(0, "Cannot create unknown WTP PDU type %d", pdu->type);
 		break;
 	}
 

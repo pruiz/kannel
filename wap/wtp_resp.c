@@ -49,11 +49,6 @@ wap_dispatch_func_t *dispatch_to_push;
  */
 static List *resp_queue = NULL;
 
-/*
- * Indicator for forced WTP-SAR client kludge
- */
-extern int wtp_forced_sar;
-
 /*****************************************************************************
  *
  * Prototypes of internal functions:
@@ -120,8 +115,20 @@ static WAPEvent *create_tr_invoke_ind(WTPRespMachine *sm, Octstr *user_data);
 static WAPEvent *create_tr_abort_ind(WTPRespMachine *sm, long abort_reason);
 static WAPEvent *create_tr_result_cnf(WTPRespMachine *sm);
 static int erroneous_field_in(WAPEvent *event);
-static void handle_no_sar(WAPEvent *event);
 static void handle_wrong_version(WAPEvent *event);
+
+/*
+ * SAR related functions.
+ */
+static WAPEvent *assembly_sar_event (WTPRespMachine *machine, int last_psn);
+static int add_sar_transaction (WTPRespMachine *machine, Octstr *data, int psn);
+/* static int is_wanted_sar_data (void *a, void *b); */
+static int process_sar_transaction(WTPRespMachine *machine, WAPEvent **event);
+static void begin_sar_result(WTPRespMachine *machine, WAPEvent *event);
+static void continue_sar_result(WTPRespMachine *machine, WAPEvent *event);
+static void resend_sar_result(WTPRespMachine *resp_machine, WAPEvent *event);
+static void sar_info_destroy(void *sar_info);
+static void sardata_destroy(void *sardata);
 
 /*
  * Create a datagram with an Abort PDU and send it to the WDP layer.
@@ -199,12 +206,14 @@ static void main_thread(void *arg)
 
     while (resp_run_status == running && 
            (e = list_consume(resp_queue)) != NULL) {
-	sm = resp_machine_find_or_create(e);
-	if (sm == NULL)
-	    wap_event_destroy(e);
-	else
-	    resp_event_handle(sm, e);
-	}
+
+        sm = resp_machine_find_or_create(e);
+        if (sm == NULL) {
+            wap_event_destroy(e);
+        } else {
+            resp_event_handle(sm, e);
+        }
+    }
 }
 
 /*
@@ -230,6 +239,21 @@ static unsigned char *name_resp_state(int s)
 static void resp_event_handle(WTPRespMachine *resp_machine, WAPEvent *event)
 {
     WAPEvent *wsp_event = NULL;
+    WAPEvent *e = NULL; /* For SAR acknowledgment */
+
+    /* 
+     * We don't feed sar packets into state machine 
+     * until we got the whole message 
+     */
+    if (process_sar_transaction(resp_machine,&event) == 0) {
+        debug("wap.wtp", 0, "SAR event received, wait for continue");
+        /* For removing state machine in case of incomplete sar */
+        start_timer_W(resp_machine);
+        if (event != NULL) {
+            wap_event_destroy(event);  
+        }
+        return;
+    }
 
     debug("wap.wtp", 0, "WTP: resp_machine %ld, state %s, event %s.", 
 	  resp_machine->mid, 
@@ -274,34 +298,11 @@ static void handle_wrong_version(WAPEvent *event)
 }
 
 /*
- * This function will be removed when we have SAR
- */
-static void handle_no_sar(WAPEvent *event)
-{
-    WAPEvent *ab;
-
-    if (event->type == RcvInvoke) {
-        ab = wtp_pack_abort(PROVIDER, NOTIMPLEMENTEDSAR, 
-                            event->u.RcvInvoke.tid,
-                            event->u.RcvInvoke.addr_tuple);
-        dispatch_to_wdp(ab);
-    }
-}
-
-/*
  * Check for features 7 and 9 in WTP 10.2.
  */
 static int erroneous_field_in(WAPEvent *event)
 {
-    /*
-     * If clients request WTP-SAR should we force to continue
-     * or act as be should do by telling the client to call back.
-     */
-    if (wtp_forced_sar) 
-        return 0;
-
-    return event->type == RcvInvoke && (event->u.RcvInvoke.version != 0 || 
-               !event->u.RcvInvoke.ttr || !event->u.RcvInvoke.gtr);
+    return event->type == RcvInvoke && event->u.RcvInvoke.version != 0;
 }
 
 /*
@@ -310,17 +311,11 @@ static int erroneous_field_in(WAPEvent *event)
  */
 static void handle_erroneous_field_in(WAPEvent *event)
 {
-    if (event->type == RcvInvoke){
-        if (event->u.RcvInvoke.version != 0){
-	   debug("wap.wtp_resp", 0, "WTP_RESP: wrong version, aborting"
-                 "transaction");
-	       handle_wrong_version(event);
-        }
-
-        if (!event->u.RcvInvoke.ttr || !event->u.RcvInvoke.gtr){
-            debug("wap.wtp_resp", 0, "WTP_RESP: no sar implemented," 
-                  "aborting transaction");
-            handle_no_sar(event);
+    if (event->type == RcvInvoke) {
+        if (event->u.RcvInvoke.version != 0) {
+            debug("wap.wtp_resp", 0, "WTP_RESP: wrong version, aborting"
+                  "transaction");
+            handle_wrong_version(event);
         }
     }
 }
@@ -359,7 +354,17 @@ static WTPRespMachine *resp_machine_find_or_create(WAPEvent *event)
             }
             break;
 
-       case RcvAck:
+        case RcvSegInvoke:
+            tid = event->u.RcvSegInvoke.tid;
+            tuple = event->u.RcvSegInvoke.addr_tuple;
+            break;
+
+        case RcvAck:
+            tid = event->u.RcvAck.tid;
+            tuple = event->u.RcvAck.addr_tuple;
+            break;
+
+        case RcvNegativeAck:
             tid = event->u.RcvAck.tid;
             tuple = event->u.RcvAck.addr_tuple;
             break;
@@ -426,8 +431,22 @@ static WTPRespMachine *resp_machine_find_or_create(WAPEvent *event)
             break;
            
         case RcvInvoke:
-	       resp_machine = resp_machine_create(tuple, tid, 
-                                              event->u.RcvInvoke.tcl);
+            resp_machine = resp_machine_create(tuple, tid, 
+                                               event->u.RcvInvoke.tcl);
+            /* if SAR requested */
+            if (!event->u.RcvInvoke.gtr || !event->u.RcvInvoke.ttr) {
+                resp_machine->sar = gw_malloc(sizeof(WTPSARData));
+                resp_machine->sar->nsegm = 0;
+                resp_machine->sar->csegm = 0;
+                resp_machine->sar->lsegm = 0;
+                resp_machine->sar->data = NULL;		
+            }
+
+            break;
+	    
+        case RcvSegInvoke:
+            info(0, "WTP_RESP: resp_machine_find_or_create:"
+                 " segmented invoke received, yet having no machine");
             break;
 
         /*
@@ -436,6 +455,11 @@ static WTPRespMachine *resp_machine_find_or_create(WAPEvent *event)
         case RcvAck: 
             info(0, "WTP_RESP: resp_machine_find_or_create:"
                  " ack received, yet having no machine");
+            break;
+
+        case RcvNegativeAck: 
+            info(0, "WTP_RESP: resp_machine_find_or_create:"
+                 " negative ack received, yet having no machine");
             break;
 
         case RcvAbort: 
@@ -512,6 +536,8 @@ static WTPRespMachine *resp_machine_create(WAPAddrTuple *tuple, long tid,
     #define INTEGER(name) resp_machine->name = 0; 
     #define TIMER(name) resp_machine->name = gwtimer_create(resp_queue); 
     #define ADDRTUPLE(name) resp_machine->name = NULL; 
+    #define LIST(name) resp_machine->name = NULL;
+    #define SARDATA(name) resp_machine->name = NULL;
     #define MACHINE(field) field
     #include "wtp_resp_machine.def"
 
@@ -548,6 +574,8 @@ static void resp_machine_destroy(void * p)
     #define INTEGER(name) resp_machine->name = 0; 
     #define TIMER(name) gwtimer_destroy(resp_machine->name); 
     #define ADDRTUPLE(name) wap_addr_tuple_destroy(resp_machine->name); 
+    #define LIST(name) list_destroy(resp_machine->name,sar_info_destroy);
+    #define SARDATA(name) sardata_destroy(resp_machine->name);
     #define MACHINE(field) field
     #include "wtp_resp_machine.def"
     gw_free(resp_machine);
@@ -653,3 +681,249 @@ static void send_ack(WTPRespMachine *machine, long ack_type, int rid_flag)
     e = wtp_pack_ack(ack_type, rid_flag, machine->tid, machine->addr_tuple);
     dispatch_to_wdp(e);
 }
+
+/* 
+ * Process incoming event, checking for WTP SAR 
+ */
+static int process_sar_transaction(WTPRespMachine *machine, WAPEvent **event) 
+{
+    WAPEvent *e, *orig_event;
+    int psn;
+  
+    orig_event = *event;
+
+    if (orig_event->type == RcvInvoke) { 
+        if (!orig_event->u.RcvInvoke.ttr || !orig_event->u.RcvInvoke.gtr) { /* SAR */
+            /* Ericcson set TTR flag even if we have the only part */
+            if (orig_event->u.RcvInvoke.ttr == 1) {
+                return 1; /* Not SAR although TTR flag was set */
+            } else {
+                /* save initial event */
+                machine->sar_invoke = wap_event_duplicate(orig_event);
+
+                /* save data into list with psn = 0 */
+                add_sar_transaction(machine, orig_event->u.RcvInvoke.user_data, 0);
+
+                if (orig_event->u.RcvInvoke.gtr == 1) { /* Need to acknowledge */
+                    e = wtp_pack_sar_ack(ACKNOWLEDGEMENT, machine->tid,
+                                         machine->addr_tuple, 0);
+                    dispatch_to_wdp(e);
+                }
+                return 0;
+            }
+        } else {
+            return 1; /* Not SAR */
+        } 
+    }
+
+    if (orig_event->type == RcvSegInvoke) {
+        add_sar_transaction(machine, orig_event->u.RcvSegInvoke.user_data, 
+                            orig_event->u.RcvSegInvoke.psn);
+
+        if (orig_event->u.RcvSegInvoke.gtr == 1) { /* Need to acknowledge */
+            e = wtp_pack_sar_ack(ACKNOWLEDGEMENT, machine->tid, machine->addr_tuple,
+                                 orig_event->u.RcvSegInvoke.psn);
+            dispatch_to_wdp(e);
+        }
+
+        if (orig_event->u.RcvSegInvoke.ttr == 1) { /* Need to feed to WSP */
+
+            /* Create assembled event */
+            psn = orig_event->u.RcvSegInvoke.psn;
+            wap_event_destroy(orig_event);
+      
+            *event = assembly_sar_event(machine,psn);
+
+            gw_assert(event != NULL);
+
+            return 1;
+        }
+        return 0;
+    }
+
+    /* Not SAR message */
+    return 1;
+}
+
+static int is_wanted_sar_data(void *a, void *b)
+{
+    sar_info_t *s;
+    int *i;
+
+    s = a;
+    i = b;
+
+    if (*i == s->sar_psn) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+/* 
+ * Return 0 if transaction added suscessufully, 1 otherwise.
+ */
+static int add_sar_transaction(WTPRespMachine *machine, Octstr *data, int psn) 
+{
+    sar_info_t *sar_info;
+
+    if (machine->sar_info == NULL) {
+        machine->sar_info = list_create();
+    }
+
+    if (list_search(machine->sar_info, &psn, is_wanted_sar_data) == NULL) {
+        sar_info = gw_malloc(sizeof(sar_info_t));
+        sar_info->sar_psn = psn;
+        sar_info->sar_data = octstr_duplicate(data);
+        list_append(machine->sar_info, sar_info);
+        return 0;
+    } else {
+        debug("wap.wtp", 0, "Duplicated psn found, ignore packet");
+        return 1;
+    } 
+}
+
+static WAPEvent *assembly_sar_event(WTPRespMachine *machine, int last_psn) 
+{
+    WAPEvent *e;
+    int i;
+    sar_info_t *sar_info;
+
+    e = wap_event_duplicate(machine->sar_invoke);
+
+    for (i = 1; i <= last_psn; i++) {
+        if ((sar_info = list_search(machine->sar_info, &i, is_wanted_sar_data)) != NULL) {
+            octstr_append(e->u.RcvInvoke.user_data,sar_info->sar_data);
+        } else {
+            debug("wap.wtp", 0, "Packet with psn %d not found", i);
+            return e;
+        }
+    }
+
+    return e;
+}
+
+static void sar_info_destroy(void *p) 
+{
+    sar_info_t *sar_info;
+
+    sar_info = p;
+  
+    octstr_destroy(sar_info->sar_data);
+    gw_free(sar_info);
+}
+
+static void sardata_destroy(void *p) 
+{
+    WTPSARData * sardata;
+
+    if (p) {
+        sardata = p;
+        octstr_destroy(sardata->data);
+        gw_free(sardata);
+    }
+}
+
+static void begin_sar_result(WTPRespMachine *resp_machine, WAPEvent *event) 
+{
+    WAPEvent *result;
+    WTPSARData *sar;
+    int psn;
+
+    gw_assert(resp_machine->sar != NULL);
+
+    sar = resp_machine->sar;
+    sar->data = octstr_duplicate(event->u.TR_Result_Req.user_data);
+    sar->nsegm = (octstr_len(sar->data)-1)/SAR_SEGM_SIZE;
+    sar->tr = sar->lsegm = 0;
+    sar->csegm = -1;
+
+    debug("wap.wtp", 0, "WTP: begin_sar_result(): data len = %lu", 
+          octstr_len(sar->data));
+
+    for (psn = 0; !sar->tr; psn++) {
+        result = wtp_pack_sar_result(resp_machine, psn);
+        if (sar->tr) 
+            resp_machine->result = wap_event_duplicate(result);
+
+        debug("wap.wtp", 0, "WTP: dispath_to_wdp(): psn = %u", psn);
+        dispatch_to_wdp(result);
+        sar->lsegm = psn;
+    }
+
+    resp_machine->rid = 1;
+}
+
+static void continue_sar_result(WTPRespMachine *resp_machine, WAPEvent *event) 
+{
+    WAPEvent *result;
+    WTPSARData *sar;
+    int psn;
+
+    gw_assert(resp_machine->sar != NULL && event->type == RcvAck);
+
+    sar = resp_machine->sar;
+
+    debug("wap.wtp", 0, "WTP: continue_sar_result(): lsegm=%d, nsegm=%d, csegm=%d",
+          sar->lsegm, sar->nsegm, sar->csegm);
+
+    start_timer_R(resp_machine);
+
+    if (event->u.RcvAck.psn>sar->csegm) {
+        sar->csegm = event->u.RcvAck.psn;
+    }
+
+    sar->tr = 0;
+    wap_event_destroy(resp_machine->result);
+    resp_machine->result = NULL;
+
+    for (psn = sar->csegm + 1; !sar->tr; psn++) {
+        result = wtp_pack_sar_result(resp_machine, psn);
+        if (sar->tr) 
+            resp_machine->result = wap_event_duplicate(result);
+
+        debug("wap.wtp", 0, "WTP: dispath_to_wdp(): psn = %u",psn);
+        dispatch_to_wdp(result);
+        sar->lsegm = psn;
+    }
+}
+
+static void resend_sar_result(WTPRespMachine *resp_machine, WAPEvent *event)
+{
+    WAPEvent *result;
+    WTPSARData *sar;
+    int	psn, i;
+
+    gw_assert(resp_machine->sar != NULL && event->type == RcvNegativeAck);
+
+    sar = resp_machine->sar;
+
+    debug("wap.wtp", 0, "WTP: resend_sar_result(): lsegm=%d, nsegm=%d, csegm=%d",
+          sar->lsegm, sar->nsegm, sar->csegm);
+
+    start_timer_R(resp_machine);
+
+    if (event->u.RcvNegativeAck.nmissing) { 
+        /* if we have a list of missed packets */
+        for(i = 0; i < event->u.RcvNegativeAck.nmissing; i++) {
+            if ((psn = octstr_get_char(event->u.RcvNegativeAck.missing, i)) >= 0) {		
+                result = wtp_pack_sar_result(resp_machine, psn);
+                wtp_pack_set_rid(result, 1);
+                debug("wap.wtp", 0, "WTP: dispath_to_wdp(): psn = %u", psn);
+                dispatch_to_wdp(result);
+            }
+        }
+    } else { 
+        /* if we have to resend a whole group */
+        sar->tr = 0;
+        for (psn = sar->csegm+1; !sar->tr; psn++) {
+            result = wtp_pack_sar_result(resp_machine, psn);
+            wtp_pack_set_rid(result, 1);
+            debug("wap.wtp", 0, "WTP: dispath_to_wdp(): psn = %u", psn);
+            dispatch_to_wdp(result);
+        }
+    }
+}
+
+
+

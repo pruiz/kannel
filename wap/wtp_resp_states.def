@@ -165,6 +165,15 @@ ROW(LISTEN,
     LISTEN)
 
 /*
+ * Need to control SAR incomplete packets
+ */	
+ROW(LISTEN,
+    TimerTO_W,
+    1,
+    {},
+    LISTEN)
+
+/*
  * We must cache the newly accepted tid item, otherwise every tid after a 
  * suspected one will be validated. We use wsp event stored by the responder
  * machine.
@@ -273,9 +282,12 @@ ROW(INVOKE_RESP_WAIT,
     },
     LISTEN)
 
+/*
+ * non-SARed
+ */
 ROW(INVOKE_RESP_WAIT,
     TR_Result_Req,
-    1,
+    resp_machine->sar == NULL,
     {
      WAPEvent *result;
 
@@ -290,6 +302,24 @@ ROW(INVOKE_RESP_WAIT,
      resp_machine->rid = 1;
     },
     RESULT_RESP_WAIT)
+
+/*
+ * SARed
+ */
+ROW(INVOKE_RESP_WAIT,
+     TR_Result_Req,
+     resp_machine->sar != NULL,
+     {
+      WAPEvent *result;
+
+      resp_machine->rcr = 0;
+
+      start_timer_R(resp_machine);
+      wap_event_destroy(resp_machine->result);
+      resp_machine->rid = 0;
+      begin_sar_result(resp_machine, event);	
+     },
+     RESULT_RESP_WAIT)
 
 /*
  * Conditions below do not correspond wholly ones found from the spec. (If 
@@ -366,9 +396,12 @@ ROW(INVOKE_RESP_WAIT,
     },
     LISTEN)
 
+/*
+ * Non-SARed
+ */
 ROW(RESULT_WAIT,
     TR_Result_Req,
-    1,
+    resp_machine->sar == NULL,
     {
      WAPEvent *result;
      resp_machine->rcr = 0;
@@ -381,6 +414,24 @@ ROW(RESULT_WAIT,
      resp_machine->result = wap_event_duplicate(result);
      dispatch_to_wdp(result);
      resp_machine->rid = 1;
+    },
+    RESULT_RESP_WAIT)
+
+/*
+ * SARed
+ */
+ROW(RESULT_WAIT,
+    TR_Result_Req,
+    resp_machine->sar != NULL,
+    {
+     WAPEvent *result;
+     resp_machine->rcr = 0;
+
+     start_timer_R(resp_machine);
+
+     wap_event_destroy(resp_machine->result);
+     resp_machine->rid = 0;
+     begin_sar_result(resp_machine, event);	
     },
     RESULT_RESP_WAIT)
 
@@ -471,14 +522,36 @@ ROW(RESULT_WAIT,
     {},
     RESULT_WAIT)
 
+/*
+ * Non-SARed
+ */
 ROW(RESULT_RESP_WAIT,
     RcvAck,
-    1,
+    resp_machine->sar == NULL || event->u.RcvAck.psn == resp_machine->sar->nsegm,
     {
      wsp_event = create_tr_result_cnf(resp_machine);
      wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
+
+/*
+ * SARed
+ */
+ROW(RESULT_RESP_WAIT,
+    RcvAck,
+    resp_machine->sar != NULL && event->u.RcvAck.psn != resp_machine->sar->nsegm,
+    {
+     continue_sar_result(resp_machine, event);	 
+    },
+    RESULT_RESP_WAIT)
+
+ROW(RESULT_RESP_WAIT,
+    RcvNegativeAck,
+    resp_machine->sar != NULL,
+    {
+     resend_sar_result(resp_machine, event);	 
+    },
+    RESULT_RESP_WAIT)
 
 /*
  * Specs does not tell what to do, when wtp responder receives invoke pdu and

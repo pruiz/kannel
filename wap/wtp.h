@@ -25,7 +25,7 @@ typedef struct WTPSegment WTPSegment;
  */
 enum {
     NUMBER_OF_ABORT_TYPES = 2,
-    NUMBER_OF_ABORT_REASONS  = 9,
+    NUMBER_OF_ABORT_REASONS  = 10,
     NUMBER_OF_TRANSACTION_CLASSES = 3
 };
 
@@ -82,7 +82,8 @@ enum {
     WTPVERSIONZERO = 0x06,
     CAPTEMPEXCEEDED = 0x07,
     NORESPONSE = 0x08,
-    MESSAGETOOLARGE = 0x09
+    MESSAGETOOLARGE = 0x09,
+    NOTIMPLEMENTEDESAR = 0x0A
 };    
 
 /*
@@ -108,6 +109,15 @@ enum {
 enum {
     INITIATOR_INDICATION = 0,
     RESPONDER_INDICATION = 1 
+};
+
+enum {
+    TPI_ERROR = 0,
+    TPI_INFO = 1,
+    TPI_OPTION = 2,
+    TPI_PSN = 3,
+    TPI_SDU_BOUNDARY = 4,
+    TPI_FRAME_BOUNDARY = 5
 };
 
 /*

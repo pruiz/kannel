@@ -41,7 +41,6 @@ static Octstr *bearerbox_host;
 static long bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static int bearerbox_ssl = 0;
 static Counter *sequence_counter = NULL;
-int wtp_forced_sar = 0;
 int wsp_smart_errors = 0;
 
 #ifdef HAVE_WTLS_OPENSSL
@@ -164,9 +163,6 @@ static Cfg *init_wapbox(Cfg *cfg)
         octstr_destroy(name);
     }
     wsp_http_map_url_config_info();	/* debugging aid */
-
-    /* check if we are using a kludge to allow WTP-SAR only clients */
-    cfg_get_bool(&wtp_forced_sar, grp, octstr_imm("force-sar"));
 
     /* 
      * users may define 'smart-errors' to have WML decks returned with

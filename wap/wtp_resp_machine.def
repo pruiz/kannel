@@ -42,6 +42,10 @@
     #error "Macro TIMER is missing."
 #elif !defined(EVENT) 
     #error "Macro EVENT is missing."
+#elif !defined(LIST)
+    #error "Macro LIST is missing."
+#elif !defined(SARDATA)
+    #error "Macro SARDATA is missing."
 #elif !defined(ADDRTUPLE)
     #error "Macro ADDRTUPLE is missing."
 #endif
@@ -63,6 +67,9 @@ MACHINE(ENUM(state)
                                       in the global timers list */
         EVENT(invoke_indication) /* packed wsp invoke indication - for tid
                                          verification */
+        EVENT(sar_invoke)     /* initial invoke for SAR, accumulate user_data */
+        LIST(sar_info)
+        SARDATA(sar)              /* ! NULL if were we asked for SAR */
 	)
 
 #undef MACHINE
@@ -70,4 +77,6 @@ MACHINE(ENUM(state)
 #undef ENUM
 #undef TIMER
 #undef EVENT
+#undef LIST
+#undef SARDATA
 #undef ADDRTUPLE

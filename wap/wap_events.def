@@ -438,6 +438,17 @@ WAPEVENT(RcvInvoke, "RcvInvoke",
 	ADDRTUPLE(addr_tuple)
 	)
 
+WAPEVENT(RcvSegInvoke, "RcvSegInvoke",
+    OCTSTR(user_data)
+    INTEGER(tid)
+    INTEGER(rid)
+    INTEGER(no_cache_supported)
+    INTEGER(gtr)
+    INTEGER(ttr)
+    INTEGER(psn)
+    ADDRTUPLE(addr_tuple)
+    )
+
 WAPEVENT(RcvResult, "RcvResult",
 	OCTSTR(user_data)
 	INTEGER(tid)
@@ -458,8 +469,17 @@ WAPEVENT(RcvAck, "RcvAck",
 	INTEGER(tid)
 	INTEGER(tid_ok)
 	INTEGER(rid)
+    INTEGER(psn)
 	ADDRTUPLE(addr_tuple)
 	)
+
+WAPEVENT(RcvNegativeAck, "RcvNack",
+    INTEGER(tid)
+    INTEGER(rid)
+    INTEGER(nmissing)
+    OPTIONAL_OCTSTR(missing)
+    ADDRTUPLE(addr_tuple)
+    )
 
 /*
  * Other events used by WTP layer.

@@ -26,8 +26,10 @@ static int deduce_tid(Octstr *user_data);
 static int concatenated_message(Octstr *user_data);
 static int truncated_datagram(WAPEvent *event);
 static WAPEvent *unpack_invoke(WTP_PDU *pdu, WAPAddrTuple *addr_tuple);
+static WAPEvent *unpack_segmented_invoke(WTP_PDU *pdu, WAPAddrTuple *addr_tuple);
 static WAPEvent *unpack_result(WTP_PDU *pdu, WAPAddrTuple *addr_tuple);
 static WAPEvent *unpack_ack(WTP_PDU *pdu, WAPAddrTuple *addr_tuple);
+static WAPEvent *unpack_negative_ack(WTP_PDU *pdu, WAPAddrTuple *addr_tuple);
 static WAPEvent *unpack_abort(WTP_PDU *pdu, WAPAddrTuple *addr_tuple);
 static WAPEvent *pack_error(WAPEvent *datagram);
 
@@ -102,11 +104,17 @@ int wtp_event_is_for_responder(WAPEvent *event)
      case RcvInvoke:
          return event->u.RcvInvoke.tid < INITIATOR_TID_LIMIT;
 
+     case RcvSegInvoke:
+        return event->u.RcvSegInvoke.tid < INITIATOR_TID_LIMIT;
+
      case RcvResult:
          return event->u.RcvResult.tid < INITIATOR_TID_LIMIT;
 
      case RcvAck:
         return event->u.RcvAck.tid < INITIATOR_TID_LIMIT;
+
+     case RcvNegativeAck:
+        return event->u.RcvNegativeAck.tid < INITIATOR_TID_LIMIT;
 
      case RcvAbort:
         return event->u.RcvAbort.tid < INITIATOR_TID_LIMIT;
@@ -160,6 +168,24 @@ static WAPEvent *unpack_invoke(WTP_PDU *pdu, WAPAddrTuple *addr_tuple)
     return event;
 }
 
+static WAPEvent *unpack_segmented_invoke(WTP_PDU *pdu, WAPAddrTuple *addr_tuple)
+{
+    WAPEvent *event;
+
+    event = wap_event_create(RcvSegInvoke);
+    event->u.RcvSegInvoke.user_data = 
+        octstr_duplicate(pdu->u.Segmented_invoke.user_data);
+    event->u.RcvSegInvoke.tid = pdu->u.Segmented_invoke.tid;
+    event->u.RcvSegInvoke.rid = pdu->u.Segmented_invoke.rid;
+    event->u.RcvSegInvoke.no_cache_supported = 0;
+    event->u.RcvSegInvoke.gtr = pdu->u.Segmented_invoke.gtr;
+    event->u.RcvSegInvoke.ttr = pdu->u.Segmented_invoke.ttr;
+    event->u.RcvSegInvoke.psn = pdu->u.Segmented_invoke.psn;
+    event->u.RcvSegInvoke.addr_tuple = wap_addr_tuple_duplicate(addr_tuple);
+
+    return event;
+}
+
 static WAPEvent *unpack_result(WTP_PDU *pdu, WAPAddrTuple *addr_tuple)
 {
     WAPEvent *event;
@@ -179,6 +205,8 @@ static WAPEvent *unpack_result(WTP_PDU *pdu, WAPAddrTuple *addr_tuple)
 static WAPEvent *unpack_ack(WTP_PDU *pdu, WAPAddrTuple *addr_tuple)
 {
     WAPEvent *event;
+    WTP_TPI *tpi;
+    int	i, num_tpis;
 
     event = wap_event_create(RcvAck);
     event->u.RcvAck.tid = pdu->u.Ack.tid;
@@ -186,6 +214,32 @@ static WAPEvent *unpack_ack(WTP_PDU *pdu, WAPAddrTuple *addr_tuple)
     event->u.RcvAck.rid = pdu->u.Ack.rid;
     event->u.RcvAck.addr_tuple = wap_addr_tuple_duplicate(addr_tuple);
 
+    /* Set default to 0 because Ack on 1 piece message has no tpi */
+    event->u.RcvAck.psn = 0;
+    num_tpis = list_len(pdu->options);
+
+    for (i = 0; i < num_tpis; i++) {
+        tpi = list_get(pdu->options, i);
+        if (tpi->type == TPI_PSN) {
+            event->u.RcvAck.psn = octstr_get_bits(tpi->data,0,8);
+            break;
+        }
+    }
+
+    return event;
+}
+
+static WAPEvent *unpack_negative_ack(WTP_PDU *pdu, WAPAddrTuple *addr_tuple)
+{
+    WAPEvent *event;
+
+    event = wap_event_create(RcvNegativeAck);
+    event->u.RcvNegativeAck.tid = pdu->u.Negative_ack.tid;
+    event->u.RcvNegativeAck.rid = pdu->u.Negative_ack.rid;
+    event->u.RcvNegativeAck.nmissing = pdu->u.Negative_ack.nmissing;
+    event->u.RcvNegativeAck.missing = octstr_duplicate(pdu->u.Negative_ack.missing);
+    event->u.RcvNegativeAck.addr_tuple = wap_addr_tuple_duplicate(addr_tuple);
+    
     return event;
 }
 
@@ -266,6 +320,10 @@ WAPEvent *unpack_wdp_datagram_real(WAPEvent *datagram)
         }
         break;
 
+    case Segmented_invoke:
+        event = unpack_segmented_invoke(pdu, datagram->u.T_DUnitdata_Ind.addr_tuple);
+        break;
+
     case Result:
         event = unpack_result(pdu, datagram->u.T_DUnitdata_Ind.addr_tuple);
         /* if an WTP responder gets result, it would be an illegal pdu. */
@@ -278,6 +336,10 @@ WAPEvent *unpack_wdp_datagram_real(WAPEvent *datagram)
 
     case Ack:
 	    event = unpack_ack(pdu, datagram->u.T_DUnitdata_Ind.addr_tuple);    
+        break;
+
+    case Negative_ack:
+        event = unpack_negative_ack(pdu, datagram->u.T_DUnitdata_Ind.addr_tuple);    
         break;
 
 	case Abort:
