@@ -1,7 +1,6 @@
 2000-03-25 Derry Hamilton <rasilon@tardis.ed.ac.uk>
-	* Makefile.in: Added -Iutils so that getopt.h is found
-	* utils/getopt.h: Created an empty (at the moment) header file in the 
-	  last place gcc should look so that it can find something.
+	* Makefile.in: Added -Iutils to CFLAGS
+	* utils/start-stop-daemon.c: Added short option only stuff.
 
 Fri Mar 24 16:43:16 2000  Lars Wirzenius  <liw@wapit.com>
 

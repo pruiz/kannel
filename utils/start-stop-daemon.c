@@ -52,7 +52,9 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
+#ifndef OSsunos
 #include <getopt.h>
+#endif
 #include <pwd.h>
 #include <grp.h>
 #include <sys/ioctl.h>
@@ -172,6 +174,11 @@ push(struct pid_list **list, int pid)
 static void
 do_help(void)
 {
+
+/*Print the help for systems that have getopt long*/
+
+#ifndef OSsunos     /*Solaris doesn't*/
+
 	printf("\
 start-stop-daemon for Debian GNU/Linux - small and fast C version written by\n\
 Marek Michalkiewicz <marekm@i17linuxb.ists.pwr.wroc.pl>, public domain.\n"
@@ -200,6 +207,37 @@ Options (at least one of --exec|--pidfile|--user is required):
   -v|--verbose                  be more verbose\n\
 \n\
 Exit status:  0 = done  1 = nothing done (=> 0 if --oknodo)  2 = trouble\n");
+
+#else /* Deal with systems that don't have getopt long, like Solaris*/
+
+	printf("\
+start-stop-daemon for Debian GNU/Linux - small and fast C version written by\n\
+Marek Michalkiewicz <marekm@i17linuxb.ists.pwr.wroc.pl>, public domain.\n"
+VERSION "\n\
+\n\
+Usage:
+  start-stop-daemon -S options ... -- arguments ...\n\
+  start-stop-daemon -K options ...\n\
+  start-stop-daemon -H\n\
+  start-stop-daemon -V\n\
+\n\
+Options (at least one of --exec|--pidfile|--user is required):
+  -x <executable>               program to start/check if it is running\n\
+  -p <pid-file>                 pid file to check\n\
+  -c <name|uid[:group|gid]>     change to this user/group before starting process\n\
+  -u <username>|<uid>           stop processes owned by this user\n\
+  -n <process-name>             stop processes with this name\n\
+  -s <signal>                   signal to send (default TERM)\n\
+  -a <pathname>                 program to start (default is <executable>)\n\
+  -b                            force the process to detach\n\
+  -m                            create the pidfile before starting\n\
+  -t                            test mode, don't do anything\n\
+  -o                            exit status 0 (not 1) if nothing done\n\
+  -q                            be more quiet\n\
+  -v                            be more verbose\n\
+\n\
+Exit status:  0 = done  1 = nothing done (=> 0 if -o)  2 = trouble\n");
+#endif   /*No more OS ( getopt ) specific stuff this function... */
 }
 
 
@@ -208,7 +246,13 @@ badusage(const char *msg)
 {
 	if (msg)
 		fprintf(stderr, "%s: %s\n", progname, msg);
+
+	#ifndef OSsunos
 	fprintf(stderr, "Try `%s --help' for more information.\n", progname);
+	#else
+	fprintf(stderr, "Try `%s -H' for more information.\n", progname);
+	#endif
+
 	exit(2);
 }
 
@@ -254,6 +298,8 @@ static int parse_signal (const char *signal_str, int *signal_nr)
 static void
 parse_options(int argc, char * const *argv)
 {
+
+	#ifndef OSsunos
 	static struct option longopts[] = {
 		{ "help",	  0, NULL, 'H'},
 		{ "stop",	  0, NULL, 'K'},
@@ -275,11 +321,16 @@ parse_options(int argc, char * const *argv)
 		{ "make-pidfile", 0, NULL, 'm'},
 		{ NULL,		0, NULL, 0}
 	};
+	#endif
 	int c;
 
 	for (;;) {
+	#ifndef OSsunos
 		c = getopt_long(argc, argv, "HKSVa:n:op:qr:s:tu:vx:c:bm",
 				longopts, (int *) 0);
+	#else
+		c = getopt(argc, argv, "HKSVa:n:op:qr:s:tu:vx:c:bm");
+	#endif
 		if (c == -1)
 			break;
 		switch (c) {
@@ -355,7 +406,11 @@ parse_options(int argc, char * const *argv)
 	}
 
 	if (start == stop)
+		#ifndef OSsunos
 		badusage("need one of --start or --stop");
+		#else
+		badusage("need one of -S (start) or -K (stop)");
+		#endif
 
 	if (!execname && !pidfile && !userspec)
 		badusage("need at least one of --exec, --pidfile or --user");
