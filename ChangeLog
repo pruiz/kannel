@@ -1,4 +1,8 @@
 2002-08-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smpp.c: fixed a bit calculus typo, reported by Nisan.
+      [Msg-ID: <5.1.0.14.0.20020819154851.02066060@amagoblin.ialien.co.za>]
+
+2002-08-19  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smasi_pdu.c: fixed a parsing bug in decode_type() and switched
       some error levels from error to warning for the sake of the logs.
 
