@@ -4,7 +4,7 @@ kannel (1.2.1-2) unstable; urgency=low
 
  -- Bruno Rodrigues <bruno.rodrigues@litux.org>  Sun, 26 Jan 2003 17:05:13 +0100
 
-kkannel (1.2.1-1) unstable; urgency=low
+kannel (1.2.1-1) unstable; urgency=low
 
   * New upstream version
 
