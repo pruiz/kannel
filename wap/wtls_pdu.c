@@ -219,9 +219,9 @@ Octstr* wtls_pack_payloadlist (List* payloadlist) {
         returnData = octstr_create("");
         
         /* While there are PDUs remaining in our list */
-        while (list_len(payloadlist) > 0) {                
+        while (gwlist_len(payloadlist) > 0) {                
                 /* Retrieve the next payload from the payloadlist */
-                retrievedPDU = (wtls_Payload*) list_extract_first (payloadlist);
+                retrievedPDU = (wtls_Payload*) gwlist_extract_first (payloadlist);
 
                 /* Pack the PDU */
                 tempData2 = wtls_payload_pack(retrievedPDU);
@@ -263,7 +263,7 @@ List* wtls_unpack_payloadlist (Octstr *data) {
         gw_assert(data != NULL);
         
         /* Initialise our list */
-        payloadlist = list_create();
+        payloadlist = gwlist_create();
         dataLength = octstr_len(data);
         
         /* While offset is less than the size of the data */
@@ -276,14 +276,14 @@ List* wtls_unpack_payloadlist (Octstr *data) {
                 /* If the packet returned is not NULL */
                 if (tempPayload != NULL) {
                         /* Add the returned packet to the current list of packets */
-                        list_append(payloadlist, (void*) tempPayload);
+                        gwlist_append(payloadlist, (void*) tempPayload);
                 }
         }
 
-        debug("wtls:wtls_unpack_payloadlist",0,"Finished, found %d PDUs", list_len(payloadlist));
+        debug("wtls:wtls_unpack_payloadlist",0,"Finished, found %d PDUs", gwlist_len(payloadlist));
         
         /* If the length of the list is greater than 0 */
-        if (list_len(payloadlist) > 0) {
+        if (gwlist_len(payloadlist) > 0) {
                 /* Return the List */
                 return payloadlist;
         }
@@ -464,9 +464,9 @@ void *wtls_payloadlist_destroy(List* payloadList) {
 		wtls_Payload* currentPayload;
 		int listLen, i;
 		
-		listLen = list_len(payloadList);
+		listLen = gwlist_len(payloadList);
 		for( i=0; i<listLen; i++) {
-			currentPayload = (wtls_Payload *)list_get(payloadList, i);
+			currentPayload = (wtls_Payload *)gwlist_get(payloadList, i);
 			wtls_payload_destroy(currentPayload);
 		}
 		

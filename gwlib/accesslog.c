@@ -90,14 +90,14 @@ void alog_reopen(void)
     if (markers)
         alog("Log ends");
 
-    list_lock(writers);
+    gwlist_lock(writers);
     /* wait for writers to complete */
-    list_consume(writers);
+    gwlist_consume(writers);
 
     fclose(file);
     file = fopen(filename, "a");
 
-    list_unlock(writers);
+    gwlist_unlock(writers);
 
     if (file == NULL) {
         error(errno, "Couldn't re-open access logfile `%s'.", filename);
@@ -114,13 +114,13 @@ void alog_close(void)
     if (file != NULL) {
         if (markers)
             alog("Log ends");
-        list_lock(writers);
+        gwlist_lock(writers);
         /* wait for writers to complete */
-        list_consume(writers);
+        gwlist_consume(writers);
         fclose(file);
         file = NULL;
-        list_unlock(writers);
-        list_destroy(writers, NULL);
+        gwlist_unlock(writers);
+        gwlist_destroy(writers, NULL);
         writers = NULL;
     }
 }
@@ -143,7 +143,7 @@ void alog_open(char *fname, int use_localtm, int use_markers)
     }
 
     if (writers == NULL)
-        writers = list_create();
+        writers = gwlist_create();
 
     f = fopen(fname, "a");
     if (f == NULL) {
@@ -214,14 +214,14 @@ void alog(const char *fmt, ...)
     format(buf, fmt);
     va_start(args, fmt);
 
-    list_lock(writers);
-    list_add_producer(writers);
-    list_unlock(writers);
+    gwlist_lock(writers);
+    gwlist_add_producer(writers);
+    gwlist_unlock(writers);
 
     vfprintf(file, buf, args);
     fflush(file);
 
-    list_remove_producer(writers);
+    gwlist_remove_producer(writers);
 
     va_end(args);
 }

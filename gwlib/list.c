@@ -122,7 +122,7 @@ static void make_bigger(List *list, long items);
 static void delete_items_from_list(List *list, long pos, long count);
 
 
-List *list_create_real(void)
+List *gwlist_create_real(void)
 {
     List *list;
 
@@ -139,7 +139,7 @@ List *list_create_real(void)
 }
 
 
-void list_destroy(List *list, list_item_destructor_t *destructor)
+void gwlist_destroy(List *list, gwlist_item_destructor_t *destructor)
 {
     void *item;
 
@@ -147,7 +147,7 @@ void list_destroy(List *list, list_item_destructor_t *destructor)
         return;
 
     if (destructor != NULL) {
-        while ((item = list_extract_first(list)) != NULL)
+        while ((item = gwlist_extract_first(list)) != NULL)
             destructor(item);
     }
 
@@ -159,7 +159,7 @@ void list_destroy(List *list, list_item_destructor_t *destructor)
 }
 
 
-long list_len(List *list)
+long gwlist_len(List *list)
 {
     long len;
 
@@ -172,7 +172,7 @@ long list_len(List *list)
 }
 
 
-void list_append(List *list, void *item)
+void gwlist_append(List *list, void *item)
 {
     lock(list);
     make_bigger(list, 1);
@@ -183,7 +183,7 @@ void list_append(List *list, void *item)
 }
 
 
-void list_append_unique(List *list, void *item, int (*cmp)(void *, void *))
+void gwlist_append_unique(List *list, void *item, int (*cmp)(void *, void *))
 {
     void *it;
     long i;
@@ -207,7 +207,7 @@ void list_append_unique(List *list, void *item, int (*cmp)(void *, void *))
 }
         
 
-void list_insert(List *list, long pos, void *item)
+void gwlist_insert(List *list, long pos, void *item)
 {
     long i;
 
@@ -226,7 +226,7 @@ void list_insert(List *list, long pos, void *item)
 }
 
 
-void list_delete(List *list, long pos, long count)
+void gwlist_delete(List *list, long pos, long count)
 {
     lock(list);
     delete_items_from_list(list, pos, count);
@@ -234,7 +234,7 @@ void list_delete(List *list, long pos, long count)
 }
 
 
-long list_delete_matching(List *list, void *pat, list_item_matches_t *matches)
+long gwlist_delete_matching(List *list, void *pat, gwlist_item_matches_t *matches)
 {
     long i;
     long count;
@@ -260,7 +260,7 @@ long list_delete_matching(List *list, void *pat, list_item_matches_t *matches)
 }
 
 
-long list_delete_equal(List *list, void *item)
+long gwlist_delete_equal(List *list, void *item)
 {
     long i;
     long count;
@@ -286,7 +286,7 @@ long list_delete_equal(List *list, void *item)
 }
 
 
-void *list_get(List *list, long pos)
+void *gwlist_get(List *list, long pos)
 {
     void *item;
 
@@ -299,7 +299,7 @@ void *list_get(List *list, long pos)
 }
 
 
-void *list_extract_first(List *list)
+void *gwlist_extract_first(List *list)
 {
     void *item;
 
@@ -316,46 +316,46 @@ void *list_extract_first(List *list)
 }
 
 
-List *list_extract_matching(List *list, void *pat, list_item_matches_t *cmp)
+List *gwlist_extract_matching(List *list, void *pat, gwlist_item_matches_t *cmp)
 {
     List *new_list;
     long i;
 
-    new_list = list_create();
+    new_list = gwlist_create();
     lock(list);
     i = 0;
     while (i < list->len) {
         if (cmp(GET(list, i), pat)) {
-            list_append(new_list, GET(list, i));
+            gwlist_append(new_list, GET(list, i));
             delete_items_from_list(list, i, 1);
         } else
             ++i;
     }
     unlock(list);
 
-    if (list_len(new_list) == 0) {
-        list_destroy(new_list, NULL);
+    if (gwlist_len(new_list) == 0) {
+        gwlist_destroy(new_list, NULL);
         return NULL;
     }
     return new_list;
 }
 
 
-void list_lock(List *list)
+void gwlist_lock(List *list)
 {
     gw_assert(list != NULL);
     mutex_lock(list->permanent_lock);
 }
 
 
-void list_unlock(List *list)
+void gwlist_unlock(List *list)
 {
     gw_assert(list != NULL);
     mutex_unlock(list->permanent_lock);
 }
 
 
-int list_wait_until_nonempty(List *list)
+int gwlist_wait_until_nonempty(List *list)
 {
     int ret;
 
@@ -375,7 +375,7 @@ int list_wait_until_nonempty(List *list)
 }
 
 
-void list_add_producer(List *list)
+void gwlist_add_producer(List *list)
 {
     lock(list);
     ++list->num_producers;
@@ -383,7 +383,7 @@ void list_add_producer(List *list)
 }
 
 
-int list_producer_count(List *list)
+int gwlist_producer_count(List *list)
 {
     int ret;
     lock(list);
@@ -393,7 +393,7 @@ int list_producer_count(List *list)
 }
 
 
-void list_remove_producer(List *list)
+void gwlist_remove_producer(List *list)
 {
     lock(list);
     gw_assert(list->num_producers > 0);
@@ -403,13 +403,13 @@ void list_remove_producer(List *list)
 }
 
 
-void list_produce(List *list, void *item)
+void gwlist_produce(List *list, void *item)
 {
-    list_append(list, item);
+    gwlist_append(list, item);
 }
 
 
-void *list_consume(List *list)
+void *gwlist_consume(List *list)
 {
     void *item;
 
@@ -431,7 +431,7 @@ void *list_consume(List *list)
 }
 
 
-void *list_search(List *list, void *pattern, int (*cmp)(void *, void *))
+void *gwlist_search(List *list, void *pattern, int (*cmp)(void *, void *))
 {
     void *item;
     long i;
@@ -454,25 +454,25 @@ void *list_search(List *list, void *pattern, int (*cmp)(void *, void *))
 
 
 
-List *list_search_all(List *list, void *pattern, int (*cmp)(void *, void *))
+List *gwlist_search_all(List *list, void *pattern, int (*cmp)(void *, void *))
 {
     List *new_list;
     void *item;
     long i;
 
-    new_list = list_create();
+    new_list = gwlist_create();
 
     lock(list);
     item = NULL;
     for (i = 0; i < list->len; ++i) {
         item = GET(list, i);
         if (cmp(item, pattern))
-            list_append(new_list, item);
+            gwlist_append(new_list, item);
     }
     unlock(list);
 
-    if (list_len(new_list) == 0) {
-        list_destroy(new_list, NULL);
+    if (gwlist_len(new_list) == 0) {
+        gwlist_destroy(new_list, NULL);
         new_list = NULL;
     }
 
@@ -480,18 +480,18 @@ List *list_search_all(List *list, void *pattern, int (*cmp)(void *, void *))
 }
 
 
-void list_sort(List *list, int(*cmp)(const void *, const void *))
+void gwlist_sort(List *list, int(*cmp)(const void *, const void *))
 {
     gw_assert(list != NULL && cmp != NULL);
 
-    list_lock(list);
+    gwlist_lock(list);
     if (list->len == 0) {
         /* nothing to sort */
-        list_unlock(list);
+        gwlist_unlock(list);
         return;
     }
     qsort(&GET(list, 0), list->len, sizeof(void*), cmp);
-    list_unlock(list);
+    gwlist_unlock(list);
 }
 
 

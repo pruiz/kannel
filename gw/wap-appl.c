@@ -244,9 +244,9 @@ static void response_push_connection(WAPEvent *e);
 void wap_appl_init(Cfg *cfg) 
 {
     gw_assert(run_status == limbo);
-    queue = list_create();
+    queue = gwlist_create();
     fetches = counter_create();
-    list_add_producer(queue);
+    gwlist_add_producer(queue);
     run_status = running;
     charsets = wml_charsets();
     caller = http_caller_create();
@@ -265,7 +265,7 @@ void wap_appl_shutdown(void)
     gw_assert(run_status == running);
     run_status = terminating;
     
-    list_remove_producer(queue);
+    gwlist_remove_producer(queue);
     gwthread_join_every(main_thread);
     
     http_caller_signal_shutdown(caller);
@@ -274,8 +274,8 @@ void wap_appl_shutdown(void)
     wap_map_destroy(); 
     wap_map_user_destroy(); 
     http_caller_destroy(caller);
-    list_destroy(queue, wap_event_destroy_item);
-    list_destroy(charsets, octstr_destroy_item);
+    gwlist_destroy(queue, wap_event_destroy_item);
+    gwlist_destroy(charsets, octstr_destroy_item);
     counter_destroy(fetches);
 }
 
@@ -283,14 +283,14 @@ void wap_appl_shutdown(void)
 void wap_appl_dispatch(WAPEvent *event) 
 {
     gw_assert(run_status == running);
-    list_produce(queue, event);
+    gwlist_produce(queue, event);
 }
 
 
 long wap_appl_get_load(void) 
 {
     gw_assert(run_status == running);
-    return counter_value(fetches) + list_len(queue);
+    return counter_value(fetches) + gwlist_len(queue);
 }
 
 
@@ -312,7 +312,7 @@ static void main_thread(void *arg)
     long sid;
     WAPAddrTuple *tuple;
     
-    while (run_status == running && (ind = list_consume(queue)) != NULL) {
+    while (run_status == running && (ind = gwlist_consume(queue)) != NULL) {
     switch (ind->type) {
     case S_MethodInvoke_Ind:
         res = wap_event_create(S_MethodInvoke_Res);
@@ -512,9 +512,9 @@ static void add_charset_headers(List *headers)
     long i, len;
     
     gw_assert(charsets != NULL);
-    len = list_len(charsets);
+    len = gwlist_len(charsets);
     for (i = 0; i < len; i++) {
-        unsigned char *charset = octstr_get_cstr(list_get(charsets, i));
+        unsigned char *charset = octstr_get_cstr(gwlist_get(charsets, i));
         if (!http_charset_accepted(headers, charset))
             http_header_add(headers, "Accept-Charset", charset);
     }
@@ -735,7 +735,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
         orig_event->u.S_MethodInvoke_Ind.request_headers :
         orig_event->u.S_Unit_MethodInvoke_Ind.request_headers;
     if (device_headers == NULL)
-        device_headers = list_create();
+        device_headers = gwlist_create();
 
     /* 
      * We are acting as a proxy. Hence ensure we log a correct HTTP response
@@ -1149,7 +1149,7 @@ static void start_fetch(WAPEvent *event)
     if (send_msisdn_header == NULL)
         send_msisdn_header = octstr_create("X-WAP-Network-Client-MSISDN");
 
-    actual_headers = list_create();
+    actual_headers = gwlist_create();
     
     if (session_headers != NULL)
         http_header_combine(actual_headers, session_headers);
@@ -1204,7 +1204,7 @@ static void start_fetch(WAPEvent *event)
     if (octstr_str_compare(method, "GET")  == 0 && 
         octstr_compare(url, magic_url) == 0) {
         ret = HTTP_OK;
-        resp_headers = list_create();
+        resp_headers = gwlist_create();
         http_header_add(resp_headers, "Content-Type", "text/vnd.wap.wml");
         content_body = octstr_create(HEALTH_DECK);
         octstr_destroy(request_body);
@@ -1417,7 +1417,7 @@ static List *negotiate_capabilities(List *req_caps)
     /* Currently we don't know or care about any capabilities,
      * though it is likely that "Extended Methods" will be
      * the first. */
-    return list_create();
+    return gwlist_create();
 }
 
 
@@ -1445,7 +1445,7 @@ static void check_application_headers(List **headers,
 
     split_header_list(headers, &inh, "Accept-Application");
     
-    if (*headers == NULL || list_len(inh) == 0) {
+    if (*headers == NULL || gwlist_len(inh) == 0) {
         http_header_add(*application_headers, "Accept-Application", "wml ua");
         debug("wap.appl.push", 0, "APPL: No push application, assuming wml"
               " ua");
@@ -1458,7 +1458,7 @@ static void check_application_headers(List **headers,
     coded_value = NULL;
     appid_value = NULL;
 
-    while (list_len(inh) > 0) {
+    while (gwlist_len(inh) > 0) {
         http_header_get(inh, i, &appid_name, &coded_octstr);
 
         /* Greatest value reserved by WINA is 0xFF00 0000*/
@@ -1507,14 +1507,14 @@ static void decode_bearer_indication(List **headers, List **bearer_headers)
 
     split_header_list(headers, &inb, "Bearer-Indication");
 
-    if (list_len(inb) == 0) {
+    if (gwlist_len(inb) == 0) {
         debug("wap.appl.push", 0, "APPL: No bearer indication headers,"
               " continuing");
         http_destroy_headers(inb);
         return;  
     }
 
-    if (list_len(inb) > 1) {
+    if (gwlist_len(inb) > 1) {
         error(0, "APPL: To many bearer indication header(s), skipping"
               " them");
         http_destroy_headers(inb);
@@ -1580,7 +1580,7 @@ static void indicate_push_connection(WAPEvent *e)
 
     decode_bearer_indication(&push_headers, &bearer_headers);
 
-    if (list_len(bearer_headers) == 0) {
+    if (gwlist_len(bearer_headers) == 0) {
         http_destroy_headers(bearer_headers);
         ppg_event->u.Pom_Connect_Ind.bearer_indication = NULL;
     } else
@@ -1675,7 +1675,7 @@ static void indicate_push_resume(WAPEvent *e)
    
     decode_bearer_indication(&push_headers, &bearer_headers);
 
-    if (list_len(bearer_headers) == 0) {
+    if (gwlist_len(bearer_headers) == 0) {
         http_destroy_headers(bearer_headers);
         ppg_event->u.Pom_Resume_Ind.bearer_indication = NULL;
     } else 

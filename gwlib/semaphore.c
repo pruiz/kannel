@@ -91,10 +91,10 @@ Semaphore *semaphore_create(long n)
     if (sem_init(&semaphore->sem, 0, (unsigned int) n) != 0)
         panic(errno, "Couldnot initialize semaphore.");
 #else
-    semaphore->list = list_create();
-    list_add_producer(semaphore->list);
+    semaphore->list = gwlist_create();
+    gwlist_add_producer(semaphore->list);
     while (n-- > 0)
-	list_produce(semaphore->list, &item);
+	gwlist_produce(semaphore->list, &item);
 #endif
 
     return semaphore;
@@ -108,7 +108,7 @@ void semaphore_destroy(Semaphore *semaphore)
         if (sem_destroy(&semaphore->sem) != 0)
             panic(errno, "Destroing semaphore while some threads are waiting.");
 #else
-	list_destroy(semaphore->list, NULL);
+	gwlist_destroy(semaphore->list, NULL);
 #endif
 	gw_free(semaphore);
     }
@@ -120,7 +120,7 @@ void semaphore_up(Semaphore *semaphore)
 #ifndef HAVE_SEMAPHORE
     static char item;
     gw_assert(semaphore != NULL);
-    list_produce(semaphore->list, &item);
+    gwlist_produce(semaphore->list, &item);
 #else
     gw_assert(semaphore != NULL);
     if (sem_post(&semaphore->sem) != 0)
@@ -135,7 +135,7 @@ void semaphore_down(Semaphore *semaphore)
 #ifdef HAVE_SEMAPHORE
     sem_wait(&semaphore->sem);
 #else
-    list_consume(semaphore->list);
+    gwlist_consume(semaphore->list);
 #endif
 }
 
@@ -151,7 +151,7 @@ long semaphore_getvalue(Semaphore *semaphore)
         return val;
     }
 #else
-    return list_len(semaphore->list);
+    return gwlist_len(semaphore->list);
 #endif
 }
 

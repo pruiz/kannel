@@ -84,7 +84,7 @@ MIMEEntity *mime_entity_create(void)
 
     e = gw_malloc(sizeof(MIMEEntity));
     e->headers = http_create_empty_headers();
-    e->multiparts = list_create();
+    e->multiparts = gwlist_create();
     e->body = NULL;
     e->start = NULL;
 
@@ -101,11 +101,11 @@ void mime_entity_destroy(MIMEEntity *e)
     gw_assert(e != NULL);
 
     if (e->headers != NULL)
-        list_destroy(e->headers, octstr_destroy_item);
+        gwlist_destroy(e->headers, octstr_destroy_item);
     if (e->multiparts != NULL)
-        list_destroy(e->multiparts, mime_entity_destroy_item);
+        gwlist_destroy(e->multiparts, mime_entity_destroy_item);
     octstr_destroy(e->body);
-    e->start = NULL; /* will be destroyed on it's own via list_destroy */
+    e->start = NULL; /* will be destroyed on it's own via gwlist_destroy */
   
     gw_free(e);
 }    
@@ -123,10 +123,10 @@ static int read_mime_headers(ParseContext *context, List *headers)
 {
     Octstr *line, *prev;
 
-    if (list_len(headers) == 0)
+    if (gwlist_len(headers) == 0)
         prev = NULL;
     else
-        prev = list_get(headers, list_len(headers) - 1);
+        prev = gwlist_get(headers, gwlist_len(headers) - 1);
 
     for (;;) {
         line = parse_get_line(context);
@@ -141,7 +141,7 @@ static int read_mime_headers(ParseContext *context, List *headers)
             octstr_append(prev, line);
             octstr_destroy(line);
         } else {
-            list_append(headers, line);
+            gwlist_append(headers, line);
             prev = line;
         }
     }
@@ -170,9 +170,9 @@ static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
      * list. If no, then add headers and body and return. This is the
      * easy case. Otherwise we have to loop inside our entities.
      */
-    if (list_len(m->multiparts) == 0) {
-        for (i = 0; i < list_len(m->headers); i++) {
-            octstr_append(mime, list_get(m->headers, i));
+    if (gwlist_len(m->multiparts) == 0) {
+        for (i = 0; i < gwlist_len(m->headers); i++) {
+            octstr_append(mime, gwlist_get(m->headers, i));
             octstr_append(mime, octstr_imm("\r\n"));
         }
         octstr_append(mime, octstr_imm("\r\n"));
@@ -203,15 +203,15 @@ static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
     octstr_destroy(value);
 
     /* headers */
-    for (i = 0; i < list_len(headers); i++) {
-        octstr_append(mime, list_get(headers, i));
+    for (i = 0; i < gwlist_len(headers); i++) {
+        octstr_append(mime, gwlist_get(headers, i));
         octstr_append(mime, octstr_imm("\r\n"));
     }
     http_destroy_headers(headers);
 
     /* loop through all MIME multipart entities of this entity */
-    for (i = 0; i < list_len(m->multiparts); i++) {
-        MIMEEntity *e = list_get(m->multiparts, i);
+    for (i = 0; i < gwlist_len(m->multiparts); i++) {
+        MIMEEntity *e = gwlist_get(m->multiparts, i);
         Octstr *body;
 
         if (i != 0)
@@ -342,7 +342,7 @@ static MIMEEntity *mime_something_to_entity(Octstr *mime, List *headers)
 
             /* call ourself for this MIME entity and inject to list */
             m = mime_octstr_to_entity(entity);
-            list_append(e->multiparts, m);
+            gwlist_append(e->multiparts, m);
 
             /* check if this entity is our start entity (in terms of related)
              * and set our start pointer to it */
@@ -469,7 +469,7 @@ static void mime_entity_dump_real(MIMEEntity *m, unsigned int level)
               octstr_get_cstr(prefix), octstr_get_cstr(cid), m->start);
         octstr_destroy(cid);
     }
-    items = list_len(m->multiparts);
+    items = gwlist_len(m->multiparts);
     debug("mime.dump",0,"%sBody contains %ld MIME entities, size %ld", octstr_get_cstr(prefix),
           items, (items == 0 && m->body) ? octstr_len(m->body) : -1);
 
@@ -478,7 +478,7 @@ static void mime_entity_dump_real(MIMEEntity *m, unsigned int level)
     octstr_destroy(charset);
 
     for (i = 0; i < items; i++) {
-        MIMEEntity *e = list_get(m->multiparts, i);
+        MIMEEntity *e = gwlist_get(m->multiparts, i);
 
         mime_entity_dump_real(e, level + 1);
     }

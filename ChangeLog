@@ -1,4 +1,32 @@
 2005-02-01  Alexander Malysh <amalysh at kannel.org>
+    * checks/check_list.c, gw/bb_alog.c, gw/bb_boxc.c, gw/bb_http.c,
+      gw/bb_smscconn.c, gw/bb_store.c, gw/bb_udp.c, gw/bearerbox.c,
+      gw/dlr_mem.c, gw/dlr_mysql.c, gw/dlr_oracle.c, gw/dlr_pgsql.c,
+      gw/dlr_sdb.c, gw/heartbeat.c, gw/mime_decompiler.c, gw/msg.h,
+      gw/numhash.c, gw/sms.c, gw/smsbox.c, gw/smscconn.c, gw/urltrans.c,
+      gw/wap-appl.c, gw/wap-maps.c, gw/wap_push_ota.c, gw/wap_push_pap_mime.c,
+      gw/wap_push_ppg.c, gw/wap_push_ppg_pushuser.c, gw/wap_push_ppg_pushuser.h,
+      gw/wapbox.c, gw/wml_compiler.c, gw/xml_shared.c, gw/smsc/smsc_at.c,
+      gw/smsc/smsc_cgw.c, gw/smsc/smsc_cimd2.c, gw/smsc/smsc_fake.c, 
+      gw/smsc/smsc_http.c, gw/smsc/smsc_oisd.c, gw/smsc/smsc_smasi.c,
+      gw/smsc/smsc_smpp.c, gw/smsc/smsc_soap.c, gw/smsc/smsc_wrapper.c,
+      gwlib/accesslog.c, gwlib/cfg.c, gwlib/dbpool.c, gwlib/dbpool_oracle.c,
+      gwlib/dbpool_pgsql.c, gwlib/dict.c, gwlib/fdset.c, gwlib/gw-rwlock.c,
+      gwlib/gwthread-pthread.c, gwlib/http.c, gwlib/list.c, gwlib/list.h,
+      gwlib/log.c, gwlib/mime.c, gwlib/octstr.c, gwlib/octstr.c.debug, gwlib/octstr.h,
+      gwlib/octstr.h.debug, gwlib/parse.c, gwlib/semaphore.c, gwlib/utils.c, gwlib/xmlrpc.c,
+      test/drive_wapbox.c, test/fakesmsc.c, test/test_cimd2.c, test/test_dbpool.c,
+      test/test_headers.c, test/test_http.c, test/test_http_server.c, test/test_mime.c,
+      test/test_ppg.c, test/test_smsc.c, test/test_xmlrpc.c, test/wapproxy.c, utils/mtbatch.c,
+      wap/cookies.c, wap/timers.c, wap/wap.c, wap/wsp_caps.c, wap/wsp_headers.c, 
+      wap/wsp_push_client.c, wap/wsp_push_client_states.def, wap/wsp_server_method_states.def,
+      wap/wsp_server_push_states.def, wap/wsp_server_session_states.def, wap/wsp_session.c,
+      wap/wsp_unit.c, wap/wtls-secmgr.c, wap/wtls.c, wap/wtls_pdu.c, wap/wtls_pdusupport.c,
+      wap/wtls_state-decl.h, wap/wtls_statesupport.c, wap/wtp.c, wap/wtp_init.c, wap/wtp_pdu.c,
+      wap/wtp_resp.c, wap/wtp_tid.c: renamed all occurence of 'list_XXX' to 'gwlist_XXX' thus
+      fixed bug #32.
+
+2005-02-01  Alexander Malysh <amalysh at kannel.org>
     * gwlib/fdset.[ch]: In order to efficient handle timeouts and don't
       start "yet another thread" we use already available fdset's threads.
       With this patch applied we will have a possibility to set timeout 

@@ -111,15 +111,15 @@ void wsp_cap_dump_list(List *caps_list) {
 		return;
 	}
 	debug("wsp", 0, "Dumping capability list at %p, length %ld",
-		caps_list, list_len(caps_list));
-	for (i = 0; i < list_len(caps_list); i++) {
-		wsp_cap_dump(list_get(caps_list, i));
+		caps_list, gwlist_len(caps_list));
+	for (i = 0; i < gwlist_len(caps_list); i++) {
+		wsp_cap_dump(gwlist_get(caps_list, i));
 	}
 	debug("wsp", 0, "End of capability list dump");
 }
 
 void wsp_cap_destroy_list(List *caps_list) {
-	list_destroy(caps_list, wsp_cap_destroy_item);
+	gwlist_destroy(caps_list, wsp_cap_destroy_item);
 }
 
 List *wsp_cap_duplicate_list(List *caps_list) {
@@ -127,14 +127,14 @@ List *wsp_cap_duplicate_list(List *caps_list) {
 	List *new_list;
 	long i;
 
-	new_list = list_create();
+	new_list = gwlist_create();
 
 	if (caps_list == NULL)
 		return new_list;
 
-	for (i = 0; i < list_len(caps_list); i++) {
-		cap = list_get(caps_list, i);
-		list_append(new_list, wsp_cap_duplicate(cap));
+	for (i = 0; i < gwlist_len(caps_list); i++) {
+		cap = gwlist_get(caps_list, i);
+		gwlist_append(new_list, wsp_cap_duplicate(cap));
 	}
 	return new_list;
 };
@@ -156,7 +156,7 @@ List *wsp_cap_unpack_list(Octstr *caps) {
 	List *caps_list;
 	long pos, capslen;
 
-	caps_list = list_create();
+	caps_list = gwlist_create();
 	if (caps == NULL)
 		return caps_list;
 
@@ -187,7 +187,7 @@ List *wsp_cap_unpack_list(Octstr *caps) {
 			data = octstr_copy(caps, nullpos + 1,
 				length - (nullpos + 1 - pos));
 		}
-		list_append(caps_list, wsp_cap_create(id, name, data));
+		gwlist_append(caps_list, wsp_cap_create(id, name, data));
 		pos += length;
 	}
 
@@ -204,11 +204,11 @@ Octstr *wsp_cap_pack_list(List *caps_list) {
 	long i, len;
 
 	result = octstr_create("");
-	len = list_len(caps_list);
+	len = gwlist_len(caps_list);
 	for (i = 0; i < len; i++) {
 		long datalen;
 
-		cap = list_get(caps_list, i);
+		cap = gwlist_get(caps_list, i);
 
 		datalen = 0;
 		if (cap->data)
@@ -256,11 +256,11 @@ static int wsp_cap_get_data(List *caps_list, int id, Octstr *name,
 	Capability *cap;
 	int found;
 
-	len = list_len(caps_list);
+	len = gwlist_len(caps_list);
 	found = 0;
 	*data = NULL;
 	for (i = 0; i < len; i++) {
-		cap = list_get(caps_list, i);
+		cap = gwlist_get(caps_list, i);
 		if ((name && cap->name 
 		     && octstr_compare(name, cap->name) == 0)
 		    || (!name && cap->id == id)) {

@@ -316,12 +316,12 @@ Numhash *numhash_create(char *seek_url)
     Numhash	*table;
 
     url = octstr_create(seek_url);
-    request_headers = list_create();
+    request_headers = gwlist_create();
     status = http_get_real(HTTP_METHOD_GET, url, request_headers, &final_url,
 			    &reply_headers, &reply_body);
     octstr_destroy(url);
     octstr_destroy(final_url);
-    list_destroy(request_headers, NULL);
+    gwlist_destroy(request_headers, NULL);
 
     if (status != HTTP_OK) {
 	http_destroy_headers(reply_headers);

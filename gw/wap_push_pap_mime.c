@@ -631,7 +631,7 @@ static int check_data_content_type_header(Octstr **body_part, List **content_hea
     }
 
     octstr_delete(*body_part, header_pos, next_header_pos - header_pos);
-    list_append(*content_headers, octstr_duplicate(content_header));
+    gwlist_append(*content_headers, octstr_duplicate(content_header));
     octstr_destroy(content_header);
 
     return 1;

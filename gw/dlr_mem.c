@@ -81,7 +81,7 @@ static RWLock rwlock;
 static void dlr_mem_shutdown()
 {
     gw_rwlock_wrlock(&rwlock);
-    list_destroy(dlr_waiting_list, (list_item_destructor_t *)dlr_entry_destroy);
+    gwlist_destroy(dlr_waiting_list, (gwlist_item_destructor_t *)dlr_entry_destroy);
     gw_rwlock_unlock(&rwlock);
     gw_rwlock_destroy(&rwlock);
 }
@@ -91,7 +91,7 @@ static void dlr_mem_shutdown()
  */
 static long dlr_mem_messages(void)
 {
-    return list_len(dlr_waiting_list);
+    return gwlist_len(dlr_waiting_list);
 }
 
 static void dlr_mem_flush(void)
@@ -100,9 +100,9 @@ static void dlr_mem_flush(void)
     long len;
 
     gw_rwlock_wrlock(&rwlock);
-    len = list_len(dlr_waiting_list);
+    len = gwlist_len(dlr_waiting_list);
     for (i=0; i < len; i++)
-        list_delete(dlr_waiting_list, i, 1);
+        gwlist_delete(dlr_waiting_list, i, 1);
     gw_rwlock_unlock(&rwlock);
 }
 
@@ -112,7 +112,7 @@ static void dlr_mem_flush(void)
 static void dlr_mem_add(struct dlr_entry *dlr)
 {
     gw_rwlock_wrlock(&rwlock);
-    list_append(dlr_waiting_list,dlr);
+    gwlist_append(dlr_waiting_list,dlr);
     gw_rwlock_unlock(&rwlock);
 }
 
@@ -141,9 +141,9 @@ static struct dlr_entry *dlr_mem_get(const Octstr *smsc, const Octstr *ts, const
     struct dlr_entry *dlr = NULL, *ret = NULL;
 
     gw_rwlock_rdlock(&rwlock);
-    len = list_len(dlr_waiting_list);
+    len = gwlist_len(dlr_waiting_list);
     for (i=0; i < len; i++) {
-        dlr = list_get(dlr_waiting_list, i);
+        dlr = gwlist_get(dlr_waiting_list, i);
 
         if (dlr_mem_entry_match(dlr, smsc, ts, dst) == 0) {
             ret = dlr_entry_duplicate(dlr);
@@ -166,12 +166,12 @@ static void dlr_mem_remove(const Octstr *smsc, const Octstr *ts, const Octstr *d
     struct dlr_entry *dlr = NULL;
 
     gw_rwlock_wrlock(&rwlock);
-    len = list_len(dlr_waiting_list);
+    len = gwlist_len(dlr_waiting_list);
     for (i=0; i < len; i++) {
-        dlr = list_get(dlr_waiting_list, i);
+        dlr = gwlist_get(dlr_waiting_list, i);
 
         if (dlr_mem_entry_match(dlr, smsc, ts, dst) == 0) {
-            list_delete(dlr_waiting_list, i, 1);
+            gwlist_delete(dlr_waiting_list, i, 1);
             dlr_entry_destroy(dlr);
             break;
         }
@@ -194,7 +194,7 @@ static struct dlr_storage  handles = {
  */
 struct dlr_storage *dlr_init_mem(Cfg *cfg)
 {
-    dlr_waiting_list = list_create();
+    dlr_waiting_list = gwlist_create();
     gw_rwlock_init_static(&rwlock);
 
     return &handles;

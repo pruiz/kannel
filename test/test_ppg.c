@@ -169,7 +169,7 @@ static void add_push_application_id(List **push_headers, Octstr *appid_flag,
                                     int use_string)
 {
     if (use_string) {
-        list_append(*push_headers, appid_string);
+        gwlist_append(*push_headers, appid_string);
         return;
     }
 
@@ -579,7 +579,7 @@ static int receive_push_reply(HTTPCaller *caller)
     if (verbose)
         debug("test.ppg", 0, "TEST_PPG: reply headers were");
 
-    while ((os = list_extract_first(reply_headers)) != NULL) {
+    while ((os = gwlist_extract_first(reply_headers)) != NULL) {
         if (verbose)
             octstr_dump(os, 0); 
         octstr_destroy(os);

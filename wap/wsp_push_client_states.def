@@ -135,7 +135,7 @@ ROW(PUSH_CLIENT_RECEIVING,
 
      wsp_event = wap_event_create(Disconnect_Event);
      wsp_event->u.Disconnect_Event.session_handle = cpm->client_push_id;
-     list_append(push_client_queue, wsp_event);
+     gwlist_append(push_client_queue, wsp_event);
     },
     PUSH_CLIENT_NULL_STATE)
 
@@ -147,7 +147,7 @@ ROW(PUSH_CLIENT_RECEIVING,
 
      wsp_event = wap_event_create(Suspend_Event);
      wsp_event->u.Suspend_Event.session_handle = cpm->client_push_id;
-     list_append(push_client_queue, wsp_event);
+     gwlist_append(push_client_queue, wsp_event);
     },
     PUSH_CLIENT_NULL_STATE)
 

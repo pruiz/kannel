@@ -240,14 +240,14 @@ int main(int argc, char **argv)
     }
 
     source_parts = octstr_split(mime_content, octstr_imm("content="));
-    if (list_len(source_parts) == 1) {     /* a hack to circumvent a bug */
+    if (gwlist_len(source_parts) == 1) {     /* a hack to circumvent a bug */
         error(0, "Badly formatted source:");
         octstr_destroy(mime_content);
-        list_destroy(source_parts, octstr_destroy_item);
+        gwlist_destroy(source_parts, octstr_destroy_item);
         panic(0, "Stopping");
     }
 
-    boundary = list_extract_first(source_parts);
+    boundary = gwlist_extract_first(source_parts);
     octstr_delete(boundary, 0, octstr_len(octstr_imm("boundary=")));
     if (skip_tail(&boundary, ';') == 0) {
         error(0, "Cannot determine boundary, no delimiter; possible");
@@ -256,7 +256,7 @@ int main(int argc, char **argv)
     }
     
     octstr_destroy(mime_content);
-    mime_content = list_extract_first(source_parts);
+    mime_content = gwlist_extract_first(source_parts);
     if (skip_tail(&mime_content, ';') == 0){
         error(0, "Cannot determine mime content, no delimiter");
         octstr_dump(mime_content, 0);
@@ -297,9 +297,9 @@ int main(int argc, char **argv)
         }
         push_content_file = octstr_create("");
         octstr_append(push_content_file, octstr_imm("headers="));
-        while (list_len(content_headers) > 0) {
+        while (gwlist_len(content_headers) > 0) {
             octstr_append(push_content_file, 
-                          this_header = list_extract_first(content_headers));
+                          this_header = gwlist_extract_first(content_headers));
             octstr_format_append(push_content_file, "%c", ' ');
             octstr_destroy(this_header);
         }
@@ -346,7 +346,7 @@ int main(int argc, char **argv)
     octstr_destroy(pap_osname);
     octstr_destroy(data_osname);
     http_destroy_headers(content_headers);
-    list_destroy(source_parts, octstr_destroy_item);
+    gwlist_destroy(source_parts, octstr_destroy_item);
     octstr_destroy(push_content_file);
     gwlib_shutdown();
 
@@ -357,14 +357,14 @@ no_parse:
     octstr_destroy(mime_content);
     octstr_destroy(pap_osname);
     octstr_destroy(data_osname);
-    list_destroy(source_parts, octstr_destroy_item);
+    gwlist_destroy(source_parts, octstr_destroy_item);
     octstr_destroy(boundary);
     gwlib_shutdown();
     panic(0, "Stopping");
 
 error:
     octstr_destroy(mime_content);
-    list_destroy(source_parts, octstr_destroy_item);
+    gwlist_destroy(source_parts, octstr_destroy_item);
     octstr_destroy(boundary);
     octstr_destroy(pap_content);
     octstr_destroy(push_data);
@@ -377,7 +377,7 @@ error:
 
 cerror:
     octstr_destroy(mime_content);
-    list_destroy(source_parts, octstr_destroy_item);
+    gwlist_destroy(source_parts, octstr_destroy_item);
     octstr_destroy(boundary);
     octstr_destroy(pap_content);
     octstr_destroy(push_data);

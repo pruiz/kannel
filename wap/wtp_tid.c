@@ -101,14 +101,14 @@ static WTPCached_tid *tid_cached(WTPRespMachine *resp_machine);
 
 void wtp_tid_cache_init(void) 
 {
-    tid_cache = list_create();
+    tid_cache = gwlist_create();
 }
 
 void wtp_tid_cache_shutdown(void) 
 {
     debug("wap.wtp_tid", 0, "%ld items left in the tid cache", 
-          list_len(tid_cache));
-    list_destroy(tid_cache, cache_item_destroy);
+          gwlist_len(tid_cache));
+    gwlist_destroy(tid_cache, cache_item_destroy);
 }
 
 /*
@@ -275,7 +275,7 @@ static WTPCached_tid *tid_cached(WTPRespMachine *resp_machine)
 {
     WTPCached_tid *item = NULL;
 
-    item = list_search(tid_cache, resp_machine->addr_tuple, tid_is_cached);
+    item = gwlist_search(tid_cache, resp_machine->addr_tuple, tid_is_cached);
 
     return item;
 }
@@ -292,7 +292,7 @@ static void add_tid(WTPRespMachine *resp_machine, long tid)
     new_item->addr_tuple = wap_addr_tuple_duplicate(resp_machine->addr_tuple);
     new_item->tid = tid; 
 
-    list_append(tid_cache, new_item);
+    gwlist_append(tid_cache, new_item);
 }
 
 /*
@@ -300,7 +300,7 @@ static void add_tid(WTPRespMachine *resp_machine, long tid)
  */
 static void set_tid_by_item(WTPCached_tid *item, long tid)
 {
-    list_lock(tid_cache);
+    gwlist_lock(tid_cache);
     item->tid = tid;
-    list_unlock(tid_cache);
+    gwlist_unlock(tid_cache);
 }

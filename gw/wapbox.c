@@ -442,12 +442,12 @@ static void dispatch_datagram(WAPEvent *dgram)
             sms_datagrams = sms_split(msg, NULL, NULL, NULL, NULL, concatenation, 
                                       msg_sequence, max_messages, MAX_SMS_OCTETS);
             debug("wap",0,"WDP (wapbox): delivering %ld segments to bearerbox",
-                  list_len(sms_datagrams));
-            while ((part = list_extract_first(sms_datagrams)) != NULL) {
+                  gwlist_len(sms_datagrams));
+            while ((part = gwlist_extract_first(sms_datagrams)) != NULL) {
 	            write_to_bearerbox(part);
             }
 
-            list_destroy(sms_datagrams, NULL);
+            gwlist_destroy(sms_datagrams, NULL);
             msg_destroy(msg);
         }
     }
@@ -535,7 +535,7 @@ static void config_reload(int reload) {
     octstr_destroy(http_proxy_host);
     octstr_destroy(http_proxy_username);
     octstr_destroy(http_proxy_password);
-    list_destroy(http_proxy_exceptions, octstr_destroy_item);
+    gwlist_destroy(http_proxy_exceptions, octstr_destroy_item);
 
     grp = cfg_get_single_group(cfg, octstr_imm("wapbox"));
     if (grp == NULL) {
@@ -607,7 +607,7 @@ static void config_reload(int reload) {
 
     /* configure wap-url-map */
     groups = cfg_get_multi_group(cfg, octstr_imm("wap-url-map"));
-    while (groups && (grp = list_extract_first(groups)) != NULL) {
+    while (groups && (grp = gwlist_extract_first(groups)) != NULL) {
         Octstr *name, *url, *map_url, *send_msisdn_query;
         Octstr *send_msisdn_header, *send_msisdn_format;
         int accept_cookies;
@@ -632,11 +632,11 @@ static void config_reload(int reload) {
              octstr_get_cstr(send_msisdn_header), 
              octstr_get_cstr(send_msisdn_format), (accept_cookies ? "yes" : "no"));
     }
-    list_destroy(groups, NULL);
+    gwlist_destroy(groups, NULL);
 
     /* configure wap-user-map */
     groups = cfg_get_multi_group(cfg, octstr_imm("wap-user-map"));
-    while (groups && (grp = list_extract_first(groups)) != NULL) {
+    while (groups && (grp = gwlist_extract_first(groups)) != NULL) {
         Octstr *name, *user, *pass, *msisdn;
 
         name = cfg_get(grp, octstr_imm("name"));
@@ -651,7 +651,7 @@ static void config_reload(int reload) {
              octstr_get_cstr(user), octstr_get_cstr(pass),
              octstr_get_cstr(msisdn));
     }
-    list_destroy(groups, NULL);
+    gwlist_destroy(groups, NULL);
 
     cfg_destroy(cfg);
     /* XXX TO-DO: if(reload) implement wapbox.resume/mutex.unlock */

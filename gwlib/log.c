@@ -177,14 +177,14 @@ void log_init(void)
 
     /* initialize rw lock */
     if (writers == NULL);
-        writers = list_create();
+        writers = gwlist_create();
 }
 
 void log_shutdown(void)
 {
     log_close_all();
     if (writers != NULL)
-        list_destroy(writers, NULL);
+        gwlist_destroy(writers, NULL);
     writers = NULL;
 }
 
@@ -236,9 +236,9 @@ void log_reopen(void)
      * Writer lock.
      */
     if (writers != NULL) {
-        list_lock(writers);
+        gwlist_lock(writers);
         /* wait for writers complete */
-        list_consume(writers);
+        gwlist_consume(writers);
     }
 
     for (i = 0; i < num_logfiles; ++i) {
@@ -273,7 +273,7 @@ void log_reopen(void)
      * Unlock writer.
      */
     if (writers != NULL)
-        list_unlock(writers);
+        gwlist_unlock(writers);
 }
 
 
@@ -283,9 +283,9 @@ void log_close_all(void)
      * Writer lock.
      */
     if (writers != NULL) {
-        list_lock(writers);
+        gwlist_lock(writers);
         /* wait for writers */
-        list_consume(writers);
+        gwlist_consume(writers);
     }
 
     while (num_logfiles > 0) {
@@ -300,7 +300,7 @@ void log_close_all(void)
      * Unlock writer.
      */
     if (writers != NULL)
-        list_unlock(writers);
+        gwlist_unlock(writers);
 
     /* close syslog if used */
     if (dosyslog) {
@@ -316,7 +316,7 @@ int log_open(char *filename, int level, enum excl_state excl)
     int i;
     
     if (writers == NULL)
-        writers = list_create();
+        writers = gwlist_create();
 
     if (num_logfiles == MAX_LOGFILES) {
         error(0, "Too many log files already open, not adding `%s'",
@@ -482,9 +482,9 @@ static void PRINTFLIKE(1,0) kannel_syslog(char *format, va_list args, int level)
 	    \
 	    format(buf, level, place, err, fmt, 1); \
             if (writers != NULL) { \
-                list_lock(writers); \
-                list_add_producer(writers); \
-                list_unlock(writers); \
+                gwlist_lock(writers); \
+                gwlist_add_producer(writers); \
+                gwlist_unlock(writers); \
             } \
 	    for (i = 0; i < num_logfiles; ++i) { \
 		if (logfiles[i].exclusive == GW_NON_EXCL && \
@@ -496,7 +496,7 @@ static void PRINTFLIKE(1,0) kannel_syslog(char *format, va_list args, int level)
 		} \
 	    } \
             if (writers != NULL) \
-                list_remove_producer(writers); \
+                gwlist_remove_producer(writers); \
 	    if (dosyslog) { \
 	        format(buf, level, place, err, fmt, 0); \
 		va_start(args, fmt); \
@@ -512,9 +512,9 @@ static void PRINTFLIKE(1,0) kannel_syslog(char *format, va_list args, int level)
 	    \
 	    format(buf, level, place, err, fmt, 1); \
             if (writers != NULL) { \
-                list_lock(writers); \
-                list_add_producer(writers); \
-                list_unlock(writers); \
+                gwlist_lock(writers); \
+                gwlist_add_producer(writers); \
+                gwlist_unlock(writers); \
             } \
             if (logfiles[e].exclusive == GW_EXCL && \
                 level >= logfiles[e].minimum_output_level && \
@@ -524,7 +524,7 @@ static void PRINTFLIKE(1,0) kannel_syslog(char *format, va_list args, int level)
                 va_end(args); \
             } \
             if (writers != NULL) \
-              list_remove_producer(writers); \
+              gwlist_remove_producer(writers); \
 	} while (0)
 
 

@@ -128,7 +128,7 @@ int wap_push_ppg_pushuser_client_phone_number_acceptable(Octstr *username,
     Octstr *number);
 
 int wap_push_ppg_pushuser_search_ip_from_wildcarded_list(Octstr *haystack, 
-    Octstr *needle, Octstr *list_sep, Octstr *ip_sep);
+    Octstr *needle, Octstr *gwlist_sep, Octstr *ip_sep);
 
 /*
  * Returns smsc pushes by this user must use, or NULL when error.

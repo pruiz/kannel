@@ -161,13 +161,13 @@ int wap_push_ppg_pushuser_list_add(List *list, long number_of_pushes,
     next_try = dict_create(number_of_pushes, octstr_destroy_item);
     users = pushusers_create(number_of_users);
     gw_assert(list);
-    while (list && (grp = list_extract_first(list))) {
+    while (list && (grp = gwlist_extract_first(list))) {
         if (oneuser_add(grp) == -1) {
-	        list_destroy(list, NULL);
+	        gwlist_destroy(list, NULL);
             return 0;
         }
     }
-    list_destroy(list, NULL);
+    gwlist_destroy(list, NULL);
 
     return 1;
 }
@@ -178,7 +178,7 @@ void wap_push_ppg_pushuser_list_destroy(void)
     if (users == NULL)
         return;
 
-    list_destroy(users->list, destroy_oneuser);
+    gwlist_destroy(users->list, destroy_oneuser);
     dict_destroy(users->names);
     gw_free(users);
 }
@@ -337,14 +337,14 @@ int wap_push_ppg_pushuser_client_phone_number_acceptable(Octstr *username,
 }
 
 int wap_push_ppg_pushuser_search_ip_from_wildcarded_list(Octstr *haystack, 
-        Octstr *needle, Octstr *list_sep, Octstr *ip_sep)
+        Octstr *needle, Octstr *gwlist_sep, Octstr *ip_sep)
 {
     List *ips;
     long i;
     Octstr *configured_ip;
 
     gw_assert(haystack);
-    gw_assert(list_sep);
+    gw_assert(gwlist_sep);
     gw_assert(ip_sep);
 
     /*There are no wildcards in the list*/    
@@ -358,18 +358,18 @@ int wap_push_ppg_pushuser_search_ip_from_wildcarded_list(Octstr *haystack,
     
     /*There are wildcards in the list*/
     configured_ip = NULL;
-    ips = octstr_split(haystack, list_sep);
-    for (i = 0; i < list_len(ips); ++i) {
-        configured_ip = list_get(ips, i);
+    ips = octstr_split(haystack, gwlist_sep);
+    for (i = 0; i < gwlist_len(ips); ++i) {
+        configured_ip = gwlist_get(ips, i);
         if (wildcarded_ip_found(configured_ip, needle, ip_sep))
 	        goto found;
     }
 
-    list_destroy(ips, octstr_destroy_item);
+    gwlist_destroy(ips, octstr_destroy_item);
     return 0;
 
 found:
-    list_destroy(ips, octstr_destroy_item);
+    gwlist_destroy(ips, octstr_destroy_item);
     return 1;
 }
 
@@ -430,13 +430,13 @@ Octstr *wap_push_ppg_pushuser_smsbox_id_get(Octstr *username)
 
 static void destroy_users_list(void *l)
 {
-    list_destroy(l, NULL);
+    gwlist_destroy(l, NULL);
 }
 
 static WAPPushUserList *pushusers_create(long number_of_users) 
 {
     users = gw_malloc(sizeof(WAPPushUserList));
-    users->list = list_create();
+    users->list = gwlist_create();
     users->names = dict_create(number_of_users, destroy_users_list);
 
     return users;
@@ -625,11 +625,11 @@ static int oneuser_add(CfgGroup *grp)
     if (u == NULL)
         return -1;
 
-    list_append(users->list, u);
+    gwlist_append(users->list, u);
 
     list = dict_get(users->names, u->username);
     if (list == NULL) {
-        list = list_create();
+        list = gwlist_create();
         dict_put(users->names, u->username, list);
     }
 
@@ -648,8 +648,8 @@ static WAPPushUser *user_find_by_username(Octstr *username)
     if ((list = dict_get(users->names, username)) == NULL)
          return NULL;
 
-    for (i = 0; i < list_len(users->list); ++i) {
-         u = list_get(users->list, i);
+    for (i = 0; i < gwlist_len(users->list); ++i) {
+         u = gwlist_get(users->list, i);
          if (octstr_compare(u->username, username) == 0)
 	         return u;
     }
@@ -676,22 +676,22 @@ static int wildcarded_ip_found(Octstr *ip, Octstr *needle, Octstr *ip_sep)
     ip_fragments = octstr_split(ip, ip_sep);
     needle_fragments = octstr_split(needle, ip_sep);
 
-    gw_assert(list_len(ip_fragments) == list_len(needle_fragments));
-    for (i = 0; i < list_len(ip_fragments); ++i) {
-        ip_fragment = list_get(ip_fragments, i);
-        needle_fragment = list_get(needle_fragments, i);
+    gw_assert(gwlist_len(ip_fragments) == gwlist_len(needle_fragments));
+    for (i = 0; i < gwlist_len(ip_fragments); ++i) {
+        ip_fragment = gwlist_get(ip_fragments, i);
+        needle_fragment = gwlist_get(needle_fragments, i);
         if (octstr_compare(ip_fragment, needle_fragment) != 0 && 
                 octstr_compare(ip_fragment, octstr_imm("*")) != 0)
  	        goto not_found;
     }
 
-    list_destroy(ip_fragments, octstr_destroy_item);
-    list_destroy(needle_fragments, octstr_destroy_item);   
+    gwlist_destroy(ip_fragments, octstr_destroy_item);
+    gwlist_destroy(needle_fragments, octstr_destroy_item);   
     return 1;
 
 not_found:
-    list_destroy(ip_fragments, octstr_destroy_item);
-    list_destroy(needle_fragments, octstr_destroy_item);
+    gwlist_destroy(ip_fragments, octstr_destroy_item);
+    gwlist_destroy(needle_fragments, octstr_destroy_item);
     return 0;
 }
 
@@ -792,11 +792,11 @@ static int response(List *push_headers, Octstr **username, Octstr **password)
     octstr_base64_to_binary(header_value);
     auth_list = octstr_split(header_value, octstr_imm(":"));
 
-    if (list_len(auth_list) != 2)
+    if (gwlist_len(auth_list) != 2)
         goto no_response2;
     
-    *username = octstr_duplicate(list_get(auth_list, 0));
-    *password = octstr_duplicate(list_get(auth_list, 1));
+    *username = octstr_duplicate(gwlist_get(auth_list, 0));
+    *password = octstr_duplicate(gwlist_get(auth_list, 1));
 
     if (username == NULL) {
         goto no_response2;
@@ -808,7 +808,7 @@ static int response(List *push_headers, Octstr **username, Octstr **password)
 
     debug("wap.push.ppg.pushuser", 0, "we have an username and a password in" 
           " authorization header");
-    list_destroy(auth_list, octstr_destroy_item);
+    gwlist_destroy(auth_list, octstr_destroy_item);
     octstr_destroy(header_value);
     return HEADER_AUTHENTICATION;
 
@@ -817,7 +817,7 @@ no_response1:
     return NO_USERNAME;
 
 no_response2:   
-    list_destroy(auth_list, octstr_destroy_item);
+    gwlist_destroy(auth_list, octstr_destroy_item);
     octstr_destroy(header_value);
     return NO_USERNAME;
 
@@ -825,7 +825,7 @@ no_response3:
     return NO_USERNAME;
 
 no_response4:   
-    list_destroy(auth_list, octstr_destroy_item);
+    gwlist_destroy(auth_list, octstr_destroy_item);
     octstr_destroy(header_value);
     return NO_PASSWORD;
 }
@@ -898,8 +898,8 @@ static int prefix_allowed(WAPPushUser *u, Octstr *number)
 
     if (u->denied_prefix != NULL) {
         denied = octstr_split(u->denied_prefix, octstr_imm(";"));
-        for (i = 0; i < list_len(denied); ++i) {
-             listed_prefix = list_get(denied, i);
+        for (i = 0; i < gwlist_len(denied); ++i) {
+             listed_prefix = gwlist_get(denied, i);
              if (u->country_prefix != NULL)
                  octstr_insert(listed_prefix, u->country_prefix, 0);
              if (compare_octstr_sequence(number, listed_prefix, 
@@ -919,8 +919,8 @@ static int prefix_allowed(WAPPushUser *u, Octstr *number)
 
     if (u->allowed_prefix != NULL) {
     allowed = octstr_split(u->allowed_prefix, octstr_imm(";"));
-    for (i = 0; i < list_len(allowed); ++i) {
-         listed_prefix = list_get(allowed, i);
+    for (i = 0; i < gwlist_len(allowed); ++i) {
+         listed_prefix = gwlist_get(allowed, i);
          if (u->country_prefix != NULL)
              octstr_insert(listed_prefix, u->country_prefix, 0);
          if (compare_octstr_sequence(number, listed_prefix, 
@@ -940,13 +940,13 @@ static int prefix_allowed(WAPPushUser *u, Octstr *number)
  * functions are implemented.
  */
 denied:         
-    list_destroy(allowed, octstr_destroy_item);
-    list_destroy(denied, octstr_destroy_item);
+    gwlist_destroy(allowed, octstr_destroy_item);
+    gwlist_destroy(denied, octstr_destroy_item);
     return 0;
 
 allowed:      
-    list_destroy(allowed, octstr_destroy_item);
-    list_destroy(denied, octstr_destroy_item);
+    gwlist_destroy(allowed, octstr_destroy_item);
+    gwlist_destroy(denied, octstr_destroy_item);
     return 1;
 
 no_configuration:
@@ -956,7 +956,7 @@ no_user:
     return 0;
 
 no_allowed_config:
-    list_destroy(denied, octstr_destroy_item);
+    gwlist_destroy(denied, octstr_destroy_item);
     return 1;
 }
 

@@ -145,11 +145,11 @@ static WAPEvent *response_responder_invoke(WSPPushClientMachine *cpm);
 void wsp_push_client_init(wap_dispatch_func_t *dispatch_self, 
                           wap_dispatch_func_t *dispatch_wtp_resp)
 {
-    push_client_machines = list_create();
+    push_client_machines = gwlist_create();
     push_client_machine_id_counter = counter_create();
 
-    push_client_queue = list_create();
-    list_add_producer(push_client_queue);
+    push_client_queue = gwlist_create();
+    gwlist_add_producer(push_client_queue);
 
     dispatch_to_self = dispatch_self;
     dispatch_to_wtp_resp = dispatch_wtp_resp;
@@ -163,20 +163,20 @@ void wsp_push_client_shutdown(void)
 {
     gw_assert(push_client_run_status == running);
     push_client_run_status = terminating;
-    list_remove_producer(push_client_queue);
+    gwlist_remove_producer(push_client_queue);
     gwthread_join_every(main_thread);
 
     debug("wap.wsp", 0, "wsp_push_client_shutdown: %ld push client machines"
-          "left", list_len(push_client_machines));
-    list_destroy(push_client_machines, push_client_machine_destroy);
-    list_destroy(push_client_queue, wap_event_destroy_item);
+          "left", gwlist_len(push_client_machines));
+    gwlist_destroy(push_client_machines, push_client_machine_destroy);
+    gwlist_destroy(push_client_queue, wap_event_destroy_item);
 
     counter_destroy(push_client_machine_id_counter);
 }
 
 void wsp_push_client_dispatch_event(WAPEvent *e)
 {
-    list_produce(push_client_queue, e);
+    gwlist_produce(push_client_queue, e);
 }
 
 /***************************************************************************
@@ -191,7 +191,7 @@ static void main_thread(void *arg)
     WAPEvent *e;
 
     while (push_client_run_status == running &&
-            (e = list_consume(push_client_queue)) != NULL) {
+            (e = gwlist_consume(push_client_queue)) != NULL) {
          cpm = push_client_machine_find_or_create(e);
          if (cpm == NULL)
 	     wap_event_destroy(e);
@@ -289,7 +289,7 @@ static WSPPushClientMachine *push_client_machine_find_using_transid(
 {
     WSPPushClientMachine *m;
   
-    m = list_search(push_client_machines, &transid, 
+    m = gwlist_search(push_client_machines, &transid, 
                     push_client_machine_has_transid);
     return m;
 }
@@ -391,7 +391,7 @@ static WSPPushClientMachine *push_client_machine_create(long transid)
     m->transaction_id = transid;
     m->client_push_id = counter_increase(push_client_machine_id_counter);
 
-    list_append(push_client_machines, m);
+    gwlist_append(push_client_machines, m);
 
     return m;
 }
@@ -402,7 +402,7 @@ static void push_client_machine_destroy(void *a)
 
     m = a;
     debug("wap.wsp", 0, "Destroying WSPPushClientMachine %p", (void *) m);
-    list_delete_equal(push_client_machines, m); 
+    gwlist_delete_equal(push_client_machines, m); 
 
     #define INTEGER(name) m->name = 0;
     #define HTTPHEADERS(name) http_destroy_headers(m->name);  

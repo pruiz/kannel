@@ -253,12 +253,12 @@ List *wml_charsets(void)
     List *result;
     Octstr *charset;
 
-    result = list_create();
+    result = gwlist_create();
     for (i = 0; character_sets[i].charset != NULL; i++) {
          charset = octstr_create(character_sets[i].charset);
          octstr_append_char(charset, '-');
          octstr_append(charset, octstr_imm(character_sets[i].nro));
-         list_append(result, charset);
+         gwlist_append(result, charset);
     }
 
     return result;  

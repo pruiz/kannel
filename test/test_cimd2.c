@@ -495,18 +495,18 @@ static void handle_submit(Octstr *packet, Octstr *out, int sequence) {
 	long tariff_class = eat_int_parm(packet, 64, 2);
 	long service_desc = eat_int_parm(packet, 65, 1);
 	long priority = eat_int_parm(packet, 67, 1);
-	List *other_dests = list_create();
+	List *other_dests = gwlist_create();
 	Octstr *tmp;
 
 	while ((tmp = eat_string_parm(packet, 21, 20)))
-		list_append(other_dests, tmp);
+		gwlist_append(other_dests, tmp);
 
 	if (logging == LOG_packets) {
 		int i;
 		printf("RCV: Submit to %s", octstr_get_cstr(dest_addr));
-		for (i = 0; i < list_len(other_dests); i++) {
+		for (i = 0; i < gwlist_len(other_dests); i++) {
 			printf(", %s",
-				octstr_get_cstr(list_get(other_dests, i)));
+				octstr_get_cstr(gwlist_get(other_dests, i)));
 		}
 		printf("\n");
 
@@ -560,7 +560,7 @@ static void handle_submit(Octstr *packet, Octstr *out, int sequence) {
 
 	if (!dest_addr) {
 		send_error(out, 53, sequence, "300", "no destination");
-	} else if (list_len(other_dests) > 0) {
+	} else if (gwlist_len(other_dests) > 0) {
 		send_error(out, 53, sequence, "301", "too many destinations");
 	/* TODO: Report many other possible errors here */
 	} else {
@@ -582,7 +582,7 @@ static void handle_submit(Octstr *packet, Octstr *out, int sequence) {
 	octstr_destroy(textb);
 	octstr_destroy(valid_abs);
 	octstr_destroy(delivery_abs);
-	list_destroy(other_dests, octstr_destroy_item);
+	gwlist_destroy(other_dests, octstr_destroy_item);
 }
 
 static void handle_enquire(Octstr *packet, Octstr *out, int sequence) {

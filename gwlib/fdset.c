@@ -171,11 +171,11 @@ static void action_destroy(struct action *action)
     if (action == NULL)
         return;
 
-    list_destroy(action->done, NULL);
+    gwlist_destroy(action->done, NULL);
     gw_free(action);
 }
 
-/* For use with list_destroy */
+/* For use with gwlist_destroy */
 static void action_destroy_item(void *action)
 {
     action_destroy(action);
@@ -194,15 +194,15 @@ static void submit_action(FDSet *set, struct action *action)
     gw_assert(set != NULL);
     gw_assert(action != NULL);
 
-    done = list_create();
-    list_add_producer(done);
+    done = gwlist_create();
+    gwlist_add_producer(done);
 
     action->done = done;
 
-    list_append(set->actions, action);
+    gwlist_append(set->actions, action);
     gwthread_wakeup(set->poll_thread);
 
-    sync = list_consume(done);
+    sync = gwlist_consume(done);
     gw_assert(sync == action);
 
     action_destroy(action);
@@ -213,7 +213,7 @@ static void submit_action(FDSet *set, struct action *action)
  */
 static void submit_action_nosync(FDSet *set, struct action *action)
 {
-    list_append(set->actions, action);
+    gwlist_append(set->actions, action);
     gwthread_wakeup(set->poll_thread);
 }
 
@@ -254,7 +254,7 @@ static int handle_action(FDSet *set, struct action *action)
     if (action->done == NULL)
 	action_destroy(action);
     else
-        list_produce(action->done, action);
+        gwlist_produce(action->done, action);
 
     return result;
 }
@@ -321,7 +321,7 @@ static void poller(void *arg)
     gw_assert(set != NULL);
 
     for (;;) {
-        while ((action = list_extract_first(set->actions)) != NULL) {
+        while ((action = gwlist_extract_first(set->actions)) != NULL) {
             /* handle_action returns -1 if the set was destroyed. */
             if (handle_action(set, action) < 0)
                 return;
@@ -379,7 +379,7 @@ FDSet *fdset_create_real(long timeout)
     new->scanning = 0;
     new->deleted_entries = 0;
 
-    new->actions = list_create();
+    new->actions = gwlist_create();
 
     new->poll_thread = gwthread_create(poller, new);
     if (new->poll_thread < 0) {
@@ -405,11 +405,11 @@ void fdset_destroy(FDSet *set)
         gw_free(set->callbacks);
         gw_free(set->datafields);
         gw_free(set->times);
-        if (list_len(set->actions) > 0) {
+        if (gwlist_len(set->actions) > 0) {
             error(0, "Destroying fdset with %ld pending actions.",
-                  list_len(set->actions));
+                  gwlist_len(set->actions));
         }
-        list_destroy(set->actions, action_destroy_item);
+        gwlist_destroy(set->actions, action_destroy_item);
         gw_free(set);
     } else {
         long thread = set->poll_thread;

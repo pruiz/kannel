@@ -162,15 +162,15 @@ static int dict_put_true(Dict *dict, Octstr *key, void *value)
     i = key_to_index(dict, key);
 
     if (dict->tab[i] == NULL) {
-	dict->tab[i] = list_create();
+	dict->tab[i] = gwlist_create();
 	p = NULL;
     } else {
-	p = list_search(dict->tab[i], key, item_has_key);
+	p = gwlist_search(dict->tab[i], key, item_has_key);
     }
 
     if (p == NULL) {
     	p = item_create(key, value);
-	list_append(dict->tab[i], p);
+	gwlist_append(dict->tab[i], p);
         dict->key_count++;
         item_unique = 1;
     } else {
@@ -224,12 +224,12 @@ void dict_destroy(Dict *dict)
         if (dict->tab[i] == NULL)
 	    continue;
 
-	while ((p = list_extract_first(dict->tab[i])) != NULL) {
+	while ((p = gwlist_extract_first(dict->tab[i])) != NULL) {
 	    if (dict->destroy_value != NULL)
 	    	dict->destroy_value(p->value);
 	    item_destroy(p);
 	}
-	list_destroy(dict->tab[i], NULL);
+	gwlist_destroy(dict->tab[i], NULL);
     }
     mutex_destroy(dict->lock);
     gw_free(dict->tab);
@@ -252,13 +252,13 @@ void dict_put(Dict *dict, Octstr *key, void *value)
     lock(dict);
     i = key_to_index(dict, key);
     if (dict->tab[i] == NULL) {
-	dict->tab[i] = list_create();
+	dict->tab[i] = gwlist_create();
 	p = NULL;
     } else
-	p = list_search(dict->tab[i], key, item_has_key);
+	p = gwlist_search(dict->tab[i], key, item_has_key);
     if (p == NULL) {
     	p = item_create(key, value);
-	list_append(dict->tab[i], p);
+	gwlist_append(dict->tab[i], p);
         dict->key_count++;
     } else {
 	if (dict->destroy_value != NULL)
@@ -294,7 +294,7 @@ void *dict_get(Dict *dict, Octstr *key)
     if (dict->tab[i] == NULL)
 	p = NULL;
     else
-        p = list_search(dict->tab[i], key, item_has_key);
+        p = gwlist_search(dict->tab[i], key, item_has_key);
     if (p == NULL)
     	value = NULL;
     else
@@ -316,13 +316,13 @@ void *dict_remove(Dict *dict, Octstr *key)
     if (dict->tab[i] == NULL)
         list = NULL;
     else
-        list = list_extract_matching(dict->tab[i], key, item_has_key);
-    gw_assert(list == NULL || list_len(list) == 1);
+        list = gwlist_extract_matching(dict->tab[i], key, item_has_key);
+    gw_assert(list == NULL || gwlist_len(list) == 1);
     if (list == NULL)
     	value = NULL;
     else {
-	p = list_get(list, 0);
-	list_destroy(list, NULL);
+	p = gwlist_get(list, 0);
+	gwlist_destroy(list, NULL);
     	value = p->value;
 	item_destroy(p);
 	dict->key_count--;
@@ -350,15 +350,15 @@ List *dict_keys(Dict *dict)
     Item *item;
     long i, j;
     
-    list = list_create();
+    list = gwlist_create();
 
     lock(dict);
     for (i = 0; i < dict->size; ++i) {
 	if (dict->tab[i] == NULL)
 	    continue;
-	for (j = 0; j < list_len(dict->tab[i]); ++j) {
-	    item = list_get(dict->tab[i], j);
-	    list_append(list, octstr_duplicate(item->key));
+	for (j = 0; j < gwlist_len(dict->tab[i]); ++j) {
+	    item = gwlist_get(dict->tab[i], j);
+	    gwlist_append(list, octstr_duplicate(item->key));
 	}
     }
     unlock(dict);

@@ -99,11 +99,11 @@ static void client_thread(void *arg)
             debug("test.http", 0, "CGI vars were");
 
         /*
-         * Don't use list_extract() here, otherwise we don't have a chance
+         * Don't use gwlist_extract() here, otherwise we don't have a chance
          * to re-use the cgivars later on.
          */
-        for (i = 0; i < list_len(cgivars); i++) {
-            if ((v = list_get(cgivars, i)) != NULL && verbose) {
+        for (i = 0; i < gwlist_len(cgivars); i++) {
+            if ((v = gwlist_get(cgivars, i)) != NULL && verbose) {
                 octstr_dump(v->name, 0);
                 octstr_dump(v->value, 0);
             }
@@ -118,8 +118,8 @@ static void client_thread(void *arg)
             reply_type = octstr_create("Content-Type: text/vnd.wap.wml");
         }
 
-        resph = list_create();
-        list_append(resph, reply_type);
+        resph = gwlist_create();
+        gwlist_append(resph, reply_type);
 
         status = HTTP_OK;
 
@@ -174,7 +174,7 @@ static void client_thread(void *arg)
                 octstr_get_cstr(scheme),
                 octstr_get_cstr(http_header_value(headers, octstr_imm("Host"))),
                 octstr_get_cstr(uri));
-            list_append(resph, redirect_header);
+            gwlist_append(resph, redirect_header);
             status = HTTP_FOUND; /* will provide 302 */
             octstr_destroy(uri);
         } 
@@ -196,8 +196,8 @@ static void client_thread(void *arg)
         octstr_destroy(body);
         octstr_destroy(reply_body);
         http_destroy_cgiargs(cgivars);
-        list_destroy(headers, octstr_destroy_item);
-        list_destroy(resph, octstr_destroy_item);
+        gwlist_destroy(headers, octstr_destroy_item);
+        gwlist_destroy(resph, octstr_destroy_item);
     }
 
     octstr_destroy(whitelist);

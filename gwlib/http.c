@@ -132,10 +132,10 @@ static int read_some_headers(Connection *conn, List *headers)
 {
     Octstr *line, *prev;
 
-    if (list_len(headers) == 0)
+    if (gwlist_len(headers) == 0)
         prev = NULL;
     else
-    	prev = list_get(headers, list_len(headers) - 1);
+    	prev = gwlist_get(headers, gwlist_len(headers) - 1);
 
     for (;;) {
 	line = conn_read_line(conn);
@@ -152,7 +152,7 @@ static int read_some_headers(Connection *conn, List *headers)
             octstr_append(prev, line);
             octstr_destroy(line);
         } else {
-            list_append(headers, line);
+            gwlist_append(headers, line);
             prev = line;
         }
     }
@@ -223,7 +223,7 @@ static void proxy_add_authentication(List *headers)
 static void proxy_init(void)
 {
     proxy_mutex = mutex_create();
-    proxy_exceptions = list_create();
+    proxy_exceptions = gwlist_create();
 }
 
 
@@ -246,8 +246,8 @@ static int proxy_used_for_host(Octstr *host)
         return 0;
     }
 
-    for (i = 0; i < list_len(proxy_exceptions); ++i) {
-        if (octstr_compare(host, list_get(proxy_exceptions, i)) == 0) {
+    for (i = 0; i < gwlist_len(proxy_exceptions); ++i) {
+        if (octstr_compare(host, gwlist_get(proxy_exceptions, i)) == 0) {
             mutex_unlock(proxy_mutex);
             return 0;
         }
@@ -274,12 +274,12 @@ void http_use_proxy(Octstr *hostname, int port, List *exceptions,
 
     proxy_hostname = octstr_duplicate(hostname);
     proxy_port = port;
-    proxy_exceptions = list_create();
-    for (i = 0; i < list_len(exceptions); ++i) {
-        e = list_get(exceptions, i);
+    proxy_exceptions = gwlist_create();
+    for (i = 0; i < gwlist_len(exceptions); ++i) {
+        e = gwlist_get(exceptions, i);
 	debug("gwlib.http", 0, "HTTP: Proxy exception `%s'.",
 	      octstr_get_cstr(e));
-        list_append(proxy_exceptions, octstr_duplicate(e));
+        gwlist_append(proxy_exceptions, octstr_duplicate(e));
     }
     proxy_username = octstr_duplicate(username);
     proxy_password = octstr_duplicate(password);
@@ -302,7 +302,7 @@ void http_close_proxy(void)
     proxy_hostname = NULL;
     proxy_username = NULL;
     proxy_password = NULL;
-    list_destroy(proxy_exceptions, octstr_destroy_item);
+    gwlist_destroy(proxy_exceptions, octstr_destroy_item);
     proxy_exceptions = NULL;
     mutex_unlock(proxy_mutex);
 }
@@ -739,7 +739,7 @@ static Mutex *conn_pool_lock;
 
 static void conn_pool_item_destroy(void *item)
 {
-    list_destroy(item, (void(*)(void*))conn_destroy);
+    gwlist_destroy(item, (void(*)(void*))conn_destroy);
 }
 
 static void conn_pool_init(void)
@@ -776,7 +776,7 @@ static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certke
         list = dict_get(conn_pool, key);
         octstr_destroy(key);
         if (list != NULL)
-            conn = list_extract_first(list);
+            conn = gwlist_extract_first(list);
         mutex_unlock(conn_pool_lock);
         /*
          * Note: we don't hold conn_pool_lock when we check/destroy/unregister
@@ -833,7 +833,7 @@ static void check_pool_conn(Connection *conn, void *data)
         List *list;
         mutex_lock(conn_pool_lock);
         list = dict_get(conn_pool, key);
-        if (list_delete_equal(list, conn) > 0) {
+        if (gwlist_delete_equal(list, conn) > 0) {
             /*
              * ok, connection was still within pool. So it's
              * safe to destroy this connection.
@@ -863,10 +863,10 @@ static void conn_pool_put(Connection *conn, Octstr *host, int port)
     key = conn_pool_key(host, port);
     list = dict_get(conn_pool, key);
     if (list == NULL) {
-    	list = list_create();
+    	list = gwlist_create();
         dict_put(conn_pool, key, list);
     }
-    list_append(list, conn);
+    gwlist_append(list, conn);
     /* register connection to get server disconnect */
     conn_register_real(conn, client_fdset, check_pool_conn, key, octstr_destroy_item);
     mutex_unlock(conn_pool_lock);
@@ -878,21 +878,21 @@ HTTPCaller *http_caller_create(void)
 {
     HTTPCaller *caller;
     
-    caller = list_create();
-    list_add_producer(caller);
+    caller = gwlist_create();
+    gwlist_add_producer(caller);
     return caller;
 }
 
 
 void http_caller_destroy(HTTPCaller *caller)
 {
-    list_destroy(caller, server_destroy);
+    gwlist_destroy(caller, server_destroy);
 }
 
 
 void http_caller_signal_shutdown(HTTPCaller *caller)
 {
-    list_remove_producer(caller);
+    gwlist_remove_producer(caller);
 }
 
 
@@ -1021,7 +1021,7 @@ static void handle_transaction(Connection *conn, void *data)
 		    trans->conn = NULL;
 		    trans->retrying = 1;
 		    trans->state = request_not_sent;
-		    list_produce(pending_requests, trans);
+		    gwlist_produce(pending_requests, trans);
 		    return;
 		}
 	    } else if (ret == 0) {
@@ -1114,7 +1114,7 @@ static void handle_transaction(Connection *conn, void *data)
         trans->state = request_not_sent;
         trans->status = -1;
         http_destroy_headers(trans->response->headers);
-        trans->response->headers = list_create();
+        trans->response->headers = gwlist_create();
         octstr_destroy(trans->response->body);
         trans->response->body = octstr_create("");
         --trans->follow_remaining;
@@ -1122,11 +1122,11 @@ static void handle_transaction(Connection *conn, void *data)
         trans->conn = NULL;
 
         /* re-inject request to queue */
-        list_produce(pending_requests, trans);
+        gwlist_produce(pending_requests, trans);
 
     } else {
         /* handle this response as usual */
-        list_produce(trans->caller, trans);
+        gwlist_produce(trans->caller, trans);
     }
     return;
 
@@ -1135,7 +1135,7 @@ error:
     trans->conn = NULL;
     error(0, "Couldn't fetch <%s>", octstr_get_cstr(trans->url));
     trans->status = -1;
-    list_produce(trans->caller, trans);
+    gwlist_produce(trans->caller, trans);
 }
 
 
@@ -1160,8 +1160,8 @@ static Octstr *build_request(char *method_name, Octstr *path_or_url,
         octstr_format_append(request, ":%ld", port);
     octstr_append(request, octstr_imm("\r\n"));
 
-    for (i = 0; headers != NULL && i < list_len(headers); ++i) {
-        octstr_append(request, list_get(headers, i));
+    for (i = 0; headers != NULL && i < gwlist_len(headers); ++i) {
+        octstr_append(request, gwlist_get(headers, i));
         octstr_append(request, octstr_imm("\r\n"));
     }
     octstr_append(request, octstr_imm("\r\n"));
@@ -1184,8 +1184,8 @@ static Octstr *build_response(List *headers, Octstr *body)
 
     response = octstr_create("");
 
-    for (i = 0; headers != NULL && i < list_len(headers); ++i) {
-        octstr_append(response, list_get(headers, i));
+    for (i = 0; headers != NULL && i < gwlist_len(headers); ++i) {
+        octstr_append(response, gwlist_get(headers, i));
         octstr_append(response, octstr_imm("\r\n"));
     }
     octstr_append(response, octstr_imm("\r\n"));
@@ -1562,7 +1562,7 @@ static void write_request_thread(void *arg)
     int rc;
 
     while (run_status == running) {
-        trans = list_consume(pending_requests);
+        trans = gwlist_consume(pending_requests);
         if (trans == NULL)
             break;
 
@@ -1575,7 +1575,7 @@ static void write_request_thread(void *arg)
         trans->conn = get_connection(trans);
 
         if (trans->conn == NULL)
-            list_produce(trans->caller, trans);
+            gwlist_produce(trans->caller, trans);
         else if (conn_is_connected(trans->conn) == 0) {
             debug("gwlib.http", 0, "Socket connected at once");
 
@@ -1584,7 +1584,7 @@ static void write_request_thread(void *arg)
                 conn_register(trans->conn, client_fdset, handle_transaction, 
                                 trans);
             } else {
-                list_produce(trans->caller, trans);
+                gwlist_produce(trans->caller, trans);
             }
 
         } else { /* Socket not connected, wait for connection */
@@ -1641,7 +1641,7 @@ void http_start_request(HTTPCaller *caller, int method, Octstr *url, List *heade
 	trans->request_id = http_start_request;
     else
 	trans->request_id = id;
-    list_produce(pending_requests, trans);
+    gwlist_produce(pending_requests, trans);
     start_client_threads();
 }
 
@@ -1652,7 +1652,7 @@ void *http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
     HTTPServer *trans;
     void *request_id;
 
-    trans = list_consume(caller);
+    trans = gwlist_consume(caller);
     if (trans == NULL)
     	return NULL;
 
@@ -1699,17 +1699,17 @@ int http_get_real(int method, Octstr *url, List *request_headers, Octstr **final
 
 static void client_init(void)
 {
-    pending_requests = list_create();
-    list_add_producer(pending_requests);
+    pending_requests = gwlist_create();
+    gwlist_add_producer(pending_requests);
     client_thread_lock = mutex_create();
 }
 
 
 static void client_shutdown(void)
 {
-    list_remove_producer(pending_requests);
+    gwlist_remove_producer(pending_requests);
     gwthread_join_every(write_request_thread);
-    list_destroy(pending_requests, server_destroy);
+    gwlist_destroy(pending_requests, server_destroy);
     mutex_destroy(client_thread_lock);
     fdset_destroy(client_fdset);
     octstr_destroy(http_interface);
@@ -1773,7 +1773,7 @@ static HTTPClient *client_create(int port, Connection *conn, Octstr *ip)
     debug("gwlib.http", 0, "HTTP: Created HTTPClient area %p.", p);
     
     /* add this client to active_connections */
-    list_produce(active_connections, p);
+    gwlist_produce(active_connections, p);
     
     return p;
 }
@@ -1793,7 +1793,7 @@ static void client_destroy(void *client)
           octstr_get_cstr(p->ip));
     
     /* drop this client from active_connections list */
-    list_delete_equal(active_connections, p);
+    gwlist_delete_equal(active_connections, p);
     
     conn_destroy(p->conn);
     octstr_destroy(p->ip);
@@ -1868,7 +1868,7 @@ static void port_init(void)
     port_mutex = mutex_create();
     port_collection = dict_create(1024, NULL);
     /* create list with all active_connections */
-    active_connections = list_create();
+    active_connections = gwlist_create();
 }
 
 static void port_shutdown(void)
@@ -1876,7 +1876,7 @@ static void port_shutdown(void)
     mutex_destroy(port_mutex);
     dict_destroy(port_collection);
     /* destroy active_connections list */
-    list_destroy(active_connections, client_destroy);
+    gwlist_destroy(active_connections, client_destroy);
 }
 
 
@@ -1895,8 +1895,8 @@ static void port_add(int port)
     mutex_lock(port_mutex);
     if ((p = dict_get(port_collection, key)) == NULL) {
         p = gw_malloc(sizeof(*p));
-        p->clients_with_requests = list_create();
-        list_add_producer(p->clients_with_requests);
+        p->clients_with_requests = gwlist_create();
+        gwlist_add_producer(p->clients_with_requests);
         p->active_consumers = counter_create();
         dict_put(port_collection, key, p);
     } else {
@@ -1924,16 +1924,16 @@ static void port_remove(int port)
         return;
     }
 
-    list_remove_producer(p->clients_with_requests);
+    gwlist_remove_producer(p->clients_with_requests);
     while (counter_value(p->active_consumers) > 0)
        gwthread_sleep(0.1);    /* Reasonable use of busy waiting. */
-    list_destroy(p->clients_with_requests, client_destroy);
+    gwlist_destroy(p->clients_with_requests, client_destroy);
     counter_destroy(p->active_consumers);
     gw_free(p);
     
     /* drop all active_connections for this port */
-    l = list_extract_matching(active_connections, &port, port_match);
-    list_destroy(l, client_destroy);
+    l = gwlist_extract_matching(active_connections, &port, port_match);
+    gwlist_destroy(l, client_destroy);
 }
 
 
@@ -1946,7 +1946,7 @@ static void port_put_request(HTTPClient *client)
     key = port_key(client->port);
     p = dict_get(port_collection, key);
     gw_assert(p != NULL);
-    list_produce(p->clients_with_requests, client);
+    gwlist_produce(p->clients_with_requests, client);
     octstr_destroy(key);
     mutex_unlock(port_mutex);
 }
@@ -1969,7 +1969,7 @@ static HTTPClient *port_get_request(int port)
     } else {
        counter_increase(p->active_consumers);
        mutex_unlock(port_mutex);   /* Placement of this unlock is tricky. */
-       client = list_consume(p->clients_with_requests);
+       client = gwlist_consume(p->clients_with_requests);
        counter_decrease(p->active_consumers);
     }
     return client;
@@ -2003,15 +2003,15 @@ static int parse_request_line(int *method, Octstr **url,
     int ret;
 
     words = octstr_split_words(line);
-    if (list_len(words) != 3) {
-        list_destroy(words, octstr_destroy_item);
+    if (gwlist_len(words) != 3) {
+        gwlist_destroy(words, octstr_destroy_item);
 	return -1;
     }
 
-    method_str = list_get(words, 0);
-    *url = list_get(words, 1);
-    version = list_get(words, 2);
-    list_destroy(words, NULL);
+    method_str = gwlist_get(words, 0);
+    *url = gwlist_get(words, 1);
+    version = gwlist_get(words, 2);
+    gwlist_destroy(words, NULL);
 
     if (octstr_compare(method_str, octstr_imm("GET")) == 0)
 	*method = HTTP_METHOD_GET;
@@ -2136,8 +2136,8 @@ static void server_thread(void *dummy)
     n = 0;
     while (run_status == running && keep_servers_open) {
 
-        if (n == 0 || (n < MAX_SERVERS && list_len(new_server_sockets) > 0)) {
-            p = list_consume(new_server_sockets);
+        if (n == 0 || (n < MAX_SERVERS && gwlist_len(new_server_sockets) > 0)) {
+            p = gwlist_consume(new_server_sockets);
             if (p == NULL) {
                 debug("gwlib.http", 0, "HTTP: No new servers. Quitting.");
                 break;
@@ -2181,7 +2181,7 @@ static void server_thread(void *dummy)
             }
         }
 
-        while ((portno = list_extract_first(closed_server_sockets)) != NULL) {
+        while ((portno = gwlist_extract_first(closed_server_sockets)) != NULL) {
             for (i = 0; i < n; ++i) {
                 if (ports[i] == *portno) {
                     (void) close(tab[i].fd);
@@ -2254,7 +2254,7 @@ int http_open_port_if(int port, int ssl, Octstr *interface)
     }
 
     port_add(port);
-    list_produce(new_server_sockets, p);
+    gwlist_produce(new_server_sockets, p);
     keep_servers_open = 1;
     start_server_thread();
     gwthread_wakeup(server_thread_id);
@@ -2275,7 +2275,7 @@ void http_close_port(int port)
     
     p = gw_malloc(sizeof(*p));
     *p = port;
-    list_produce(closed_server_sockets, p);
+    gwlist_produce(closed_server_sockets, p);
     gwthread_wakeup(server_thread_id);
 }
 
@@ -2306,12 +2306,12 @@ static List *parse_cgivars(Octstr *url)
 
     query = octstr_search_char(url, '?', 0);
     if (query == -1)
-        return list_create();
+        return gwlist_create();
 
     args = octstr_copy(url, query + 1, octstr_len(url));
     octstr_truncate(url, query);
 
-    list = list_create();
+    list = gwlist_create();
 
     while (octstr_len(args) > 0) {
         et = octstr_search_char(args, '&', 0);
@@ -2332,7 +2332,7 @@ static List *parse_cgivars(Octstr *url)
 
         octstr_destroy(arg);
 
-        list_append(list, v);
+        gwlist_append(list, v);
     }
     octstr_destroy(args);
 
@@ -2454,8 +2454,8 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     if (!client->use_version_1_0 && !client->persistent_conn)
         octstr_format_append(response, "Connection: close\r\n");
 
-    for (i = 0; i < list_len(headers); ++i)
-    	octstr_format_append(response, "%S\r\n", list_get(headers, i));
+    for (i = 0; i < gwlist_len(headers); ++i)
+    	octstr_format_append(response, "%S\r\n", gwlist_get(headers, i));
     octstr_format_append(response, "\r\n");
     
     if (body != NULL && client->method != HTTP_METHOD_HEAD)
@@ -2496,9 +2496,9 @@ void http_close_client(HTTPClient *client)
 
 static void server_init(void)
 {
-    new_server_sockets = list_create();
-    list_add_producer(new_server_sockets);
-    closed_server_sockets = list_create();
+    new_server_sockets = gwlist_create();
+    gwlist_add_producer(new_server_sockets);
+    closed_server_sockets = gwlist_create();
     server_thread_lock = mutex_create();
 }
 
@@ -2522,15 +2522,15 @@ static void destroy_int_pointer(void *p)
 
 static void server_shutdown(void)
 {
-    list_remove_producer(new_server_sockets);
+    gwlist_remove_producer(new_server_sockets);
     if (server_thread_id != -1) {
 	gwthread_wakeup(server_thread_id);
 	gwthread_join_every(server_thread);
     }
     mutex_destroy(server_thread_lock);
     fdset_destroy(server_fdset);
-    list_destroy(new_server_sockets, destroy_struct_server);
-    list_destroy(closed_server_sockets, destroy_int_pointer);
+    gwlist_destroy(new_server_sockets, destroy_struct_server);
+    gwlist_destroy(closed_server_sockets, destroy_int_pointer);
 }
 
 
@@ -2548,12 +2548,12 @@ void http_destroy_cgiargs(List *args)
     if (args == NULL)
         return ;
 
-    while ((v = list_extract_first(args)) != NULL) {
+    while ((v = gwlist_extract_first(args)) != NULL) {
         octstr_destroy(v->name);
         octstr_destroy(v->value);
         gw_free(v);
     }
-    list_destroy(args, NULL);
+    gwlist_destroy(args, NULL);
 }
 
 
@@ -2566,8 +2566,8 @@ Octstr *http_cgi_variable(List *list, char *name)
     gw_assert(list != NULL);
     gw_assert(name != NULL);
 
-    for (i = 0; i < list_len(list); ++i) {
-        v = list_get(list, i);
+    for (i = 0; i < gwlist_len(list); ++i) {
+        v = gwlist_get(list, i);
         if (octstr_str_compare(v->name, name) == 0)
             return v->value;
     }
@@ -2596,14 +2596,14 @@ static int header_is_called(Octstr *header, char *name)
 List *http_create_empty_headers(void)
 {
     gwlib_assert_init();
-    return list_create();
+    return gwlist_create();
 }
 
 
 void http_destroy_headers(List *headers)
 {
     gwlib_assert_init();
-    list_destroy(headers, octstr_destroy_item);
+    gwlist_destroy(headers, octstr_destroy_item);
 }
 
 
@@ -2614,7 +2614,7 @@ void http_header_add(List *headers, char *name, char *contents)
     gw_assert(name != NULL);
     gw_assert(contents != NULL);
 
-    list_append(headers, octstr_format("%s: %s", name, contents));
+    gwlist_append(headers, octstr_format("%s: %s", name, contents));
 }
 
 
@@ -2633,7 +2633,7 @@ void http_header_get(List *headers, long i, Octstr **name, Octstr **value)
     gw_assert(name != NULL);
     gw_assert(value != NULL);
 
-    os = list_get(headers, i);
+    os = gwlist_get(headers, i);
     if (os == NULL)
         colon = -1;
     else
@@ -2666,8 +2666,8 @@ Octstr *http_header_value(List *headers, Octstr *name)
     
     value = NULL;
     i = 0;
-    while (i < list_len(headers)) {
-        os = list_get(headers, i);
+    while (i < gwlist_len(headers)) {
+        os = gwlist_get(headers, i);
         if (os == NULL)
             colon = -1;
         else
@@ -2701,9 +2701,9 @@ List *http_header_duplicate(List *headers)
         return NULL;
 
     new = http_create_empty_headers();
-    len = list_len(headers);
+    len = gwlist_len(headers);
     for (i = 0; i < len; ++i)
-        list_append(new, octstr_duplicate(list_get(headers, i)));
+        gwlist_append(new, octstr_duplicate(gwlist_get(headers, i)));
     return new;
 }
 
@@ -2726,12 +2726,12 @@ void http_header_pack(List *headers)
      * For each header, search forward headers for similar ones and if possible, 
      * add it to current header and delete it
      */
-    for(i = 0; i < list_len(headers); i++) {
+    for(i = 0; i < gwlist_len(headers); i++) {
         http_header_get(headers, i, &name, &value);
 	/* debug("http_header_pack", 0, "HTTP_HEADER_PACK: Processing header %d. [%s: %s]", 
 	       i, octstr_get_cstr(name), octstr_get_cstr(value)); */
 
-        for(j=i+1; j < list_len(headers); j++) {
+        for(j=i+1; j < gwlist_len(headers); j++) {
             http_header_get(headers, j, &name2, &value2);
 
             if(octstr_case_compare(name, name2) == 0) {
@@ -2743,9 +2743,9 @@ void http_header_pack(List *headers)
 		    Octstr *header;
 
 		    /* Delete old header */
-		    header = list_get(headers, i);
+		    header = gwlist_get(headers, i);
 		    octstr_destroy(header);
-                    list_delete(headers, i, 1);
+                    gwlist_delete(headers, i, 1);
 
 		    /* Adds comma and new value to old header value */
                     octstr_append(value, octstr_imm(", "));
@@ -2755,12 +2755,12 @@ void http_header_pack(List *headers)
                     octstr_append(header, name);
                     octstr_append(header, octstr_imm(": "));
                     octstr_append(header, value);
-                    list_insert(headers, i, header);
+                    gwlist_insert(headers, i, header);
 
 		    /* Delete this header */
-		    header = list_get(headers, j);
+		    header = gwlist_get(headers, j);
 		    octstr_destroy(header);
-                    list_delete(headers, j, 1);
+                    gwlist_delete(headers, j, 1);
                     j--;
                 }
             }
@@ -2782,9 +2782,9 @@ void http_append_headers(List *to, List *from)
     gw_assert(to != NULL);
     gw_assert(from != NULL);
 
-    for (i = 0; i < list_len(from); ++i) {
-        header = list_get(from, i);
-        list_append(to, octstr_duplicate(header));
+    for (i = 0; i < gwlist_len(from); ++i) {
+        header = gwlist_get(from, i);
+        gwlist_append(to, octstr_duplicate(header));
     }
 }
 
@@ -2798,8 +2798,8 @@ void http_header_combine(List *old_headers, List *new_headers)
     /*
      * Avoid doing this scan if old_headers is empty anyway.
      */
-    if (list_len(old_headers) > 0) {
-        for (i = 0; i < list_len(new_headers); i++) {
+    if (gwlist_len(old_headers) > 0) {
+        for (i = 0; i < gwlist_len(new_headers); i++) {
   	    http_header_get(new_headers, i, &name, &value);
 	    http_header_remove_all(old_headers, octstr_get_cstr(name));
             octstr_destroy(name);
@@ -2823,8 +2823,8 @@ Octstr *http_header_find_first_real(List *headers, char *name, const char *file,
 
     name_len = strlen(name);
 
-    for (i = 0; i < list_len(headers); ++i) {
-        h = list_get(headers, i);
+    for (i = 0; i < gwlist_len(headers); ++i) {
+        h = gwlist_get(headers, i);
         if (header_is_called(h, name)) {
             value = octstr_copy_real(h, name_len + 1, octstr_len(h),
                                      file, line, func);
@@ -2846,11 +2846,11 @@ List *http_header_find_all(List *headers, char *name)
     gw_assert(headers != NULL);
     gw_assert(name != NULL);
 
-    list = list_create();
-    for (i = 0; i < list_len(headers); ++i) {
-        h = list_get(headers, i);
+    list = gwlist_create();
+    for (i = 0; i < gwlist_len(headers); ++i) {
+        h = gwlist_get(headers, i);
         if (header_is_called(h, name))
-            list_append(list, octstr_duplicate(h));
+            gwlist_append(list, octstr_duplicate(h));
     }
     return list;
 }
@@ -2868,10 +2868,10 @@ long http_header_remove_all(List *headers, char *name)
 
     i = 0;
     count = 0;
-    while (i < list_len(headers)) {
-	h = list_get(headers, i);
+    while (i < gwlist_len(headers)) {
+	h = gwlist_get(headers, i);
 	if (header_is_called(h, name)) {
-	    list_delete(headers, i, 1);
+	    gwlist_delete(headers, i, 1);
 	    octstr_destroy(h);
 	    count++;
 	} else
@@ -2896,7 +2896,7 @@ void http_remove_hop_headers(List *headers)
      */
 
     connection_headers = http_header_find_all(headers, "Connection");
-    while ((h = list_consume(connection_headers))) {
+    while ((h = gwlist_consume(connection_headers))) {
 	List *hop_headers;
 	Octstr *e;
 
@@ -2904,14 +2904,14 @@ void http_remove_hop_headers(List *headers)
 	hop_headers = http_header_split_value(h);
 	octstr_destroy(h);
 
-	while ((e = list_consume(hop_headers))) {
+	while ((e = gwlist_consume(hop_headers))) {
 	    http_header_remove_all(headers, octstr_get_cstr(e));
 	    octstr_destroy(e);
 	}
 
-	list_destroy(hop_headers, NULL);
+	gwlist_destroy(hop_headers, NULL);
     }
-    list_destroy(connection_headers, NULL);
+    gwlist_destroy(connection_headers, NULL);
    
     http_header_remove_all(headers, "Connection");
     http_header_remove_all(headers, "Keep-Alive");
@@ -3001,7 +3001,7 @@ static void http_header_add_element(List *list, Octstr *value,
     if (octstr_len(element) == 0)
 	octstr_destroy(element);
     else
-    	list_append(list, element);
+    	gwlist_append(list, element);
 }
 
 
@@ -3045,7 +3045,7 @@ List *http_header_split_value(Octstr *value)
      * commas in quoted-strings.
      */
  
-    result = list_create();
+    result = gwlist_create();
     len = octstr_len(value);
     start = 0;
     for (pos = 0; pos < len; pos++) {
@@ -3090,16 +3090,16 @@ List *http_header_split_auth_value(Octstr *value)
      */
  
     result = http_header_split_value(value);
-    if (list_len(result) == 0)
+    if (gwlist_len(result) == 0)
         return result;
 
-    auth_scheme = list_get(result, 0);
+    auth_scheme = gwlist_get(result, 0);
     i = 1;
-    while (i < list_len(result)) {
+    while (i < gwlist_len(result)) {
         int c;
         long pos;
 
-        element = list_get(result, i);
+        element = gwlist_get(result, i);
 
         /*
          * If the element starts with: token '='
@@ -3125,7 +3125,7 @@ List *http_header_split_auth_value(Octstr *value)
         if (octstr_get_char(element, pos) == '=') {
             octstr_append_char(auth_scheme, ';');
             octstr_append(auth_scheme, element);
-            list_delete(result, i, 1);
+            gwlist_delete(result, i, 1);
             octstr_destroy(element);
         } else {
             unsigned char semicolon = ';';
@@ -3146,8 +3146,8 @@ void http_header_dump(List *headers)
     gwlib_assert_init();
 
     debug("gwlib.http", 0, "Dumping HTTP headers:");
-    for (i = 0; headers != NULL && i < list_len(headers); ++i)
-        octstr_dump(list_get(headers, i), 1);
+    for (i = 0; headers != NULL && i < gwlist_len(headers); ++i)
+        octstr_dump(gwlist_get(headers, i), 1);
     debug("gwlib.http", 0, "End of dump.");
 }
 
@@ -3158,8 +3158,8 @@ void http_cgivar_dump(List *cgiargs)
 
     gwlib_assert_init();
 
-    debug("gwlib.http", 0, "Dumping %ld cgi variables:", list_len(cgiargs));
-    while ((v = list_extract_first(cgiargs)) != NULL) {
+    debug("gwlib.http", 0, "Dumping %ld cgi variables:", gwlist_len(cgiargs));
+    while ((v = gwlist_extract_first(cgiargs)) != NULL) {
         octstr_dump(v->name, 0);
         octstr_dump(v->value, 0);
     }
@@ -3183,8 +3183,8 @@ static int http_something_accepted(List *headers, char *header_name,
     accepts = http_header_find_all(headers, header_name);
 
     found = 0;
-    for (i = 0; !found && i < list_len(accepts); ++i) {
-        Octstr *header_value = list_get(accepts, i);
+    for (i = 0; !found && i < gwlist_len(accepts); ++i) {
+        Octstr *header_value = gwlist_get(accepts, i);
         if (octstr_case_search(header_value, needle, 0) != -1)
             found = 1;
     }

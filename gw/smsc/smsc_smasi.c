@@ -164,9 +164,9 @@ static SMASI *smasi_create(SMSCConn *conn)
     smasi->conn = conn;
 
     smasi->thread_handle = -1;
-    smasi->msgs_to_send = list_create();
+    smasi->msgs_to_send = gwlist_create();
     smasi->sent_msgs = dict_create(16, NULL);
-    smasi->received_msgs = list_create();
+    smasi->received_msgs = gwlist_create();
     smasi->message_id_counter = counter_create();
     smasi->host = NULL;
     smasi->username = NULL;
@@ -183,7 +183,7 @@ static SMASI *smasi_create(SMSCConn *conn)
     smasi->throttling_err_time = 0;
     smasi->enquire_link_interval = 30;
 
-    list_add_producer(smasi->msgs_to_send);
+    gwlist_add_producer(smasi->msgs_to_send);
 
     return smasi;
 } 
@@ -193,9 +193,9 @@ static void smasi_destroy(SMASI *smasi)
 {
     if (smasi == NULL) return;
 
-    list_destroy(smasi->msgs_to_send, msg_destroy_item);
+    gwlist_destroy(smasi->msgs_to_send, msg_destroy_item);
     dict_destroy(smasi->sent_msgs);
-    list_destroy(smasi->received_msgs, msg_destroy_item);
+    gwlist_destroy(smasi->received_msgs, msg_destroy_item);
     counter_destroy(smasi->message_id_counter);
     octstr_destroy(smasi->host);
     octstr_destroy(smasi->username);
@@ -879,7 +879,7 @@ static void send_messages(SMASI *smasi, Connection *conn,
     while (*pending_submits < MAX_PENDING_SUBMITS) {
         SMASI_PDU *pdu = NULL;
         /* Get next message, quit if none to be sent. */
-        Msg *msg = list_extract_first(smasi->msgs_to_send);
+        Msg *msg = gwlist_extract_first(smasi->msgs_to_send);
 
         if (msg == NULL) break;
 
@@ -1016,7 +1016,7 @@ static long queued_cb(SMSCConn *conn)
     SMASI *smasi = conn->data;
 
     conn->load = (smasi ? (conn->status != SMSCCONN_DEAD ? 
-                    list_len(smasi->msgs_to_send) : 0) : 0);
+                    gwlist_len(smasi->msgs_to_send) : 0) : 0);
 
     return conn->load;
 } 
@@ -1026,7 +1026,7 @@ static int send_msg_cb(SMSCConn *conn, Msg *msg)
 {
     SMASI *smasi = conn->data;
 
-    list_produce(smasi->msgs_to_send, msg_duplicate(msg));
+    gwlist_produce(smasi->msgs_to_send, msg_duplicate(msg));
     gwthread_wakeup(smasi->thread_handle);
 
     return 0;

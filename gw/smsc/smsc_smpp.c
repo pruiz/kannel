@@ -220,10 +220,10 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp = gw_malloc(sizeof(*smpp)); 
     smpp->transmitter = -1; 
     smpp->receiver = -1; 
-    smpp->msgs_to_send = list_create(); 
+    smpp->msgs_to_send = gwlist_create(); 
     smpp->sent_msgs = dict_create(max_pending_submits, NULL); 
-    list_add_producer(smpp->msgs_to_send); 
-    smpp->received_msgs = list_create(); 
+    gwlist_add_producer(smpp->msgs_to_send); 
+    smpp->received_msgs = gwlist_create(); 
     smpp->message_id_counter = counter_create(); 
     counter_increase(smpp->message_id_counter);
     smpp->host = octstr_duplicate(host); 
@@ -260,9 +260,9 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
 static void smpp_destroy(SMPP *smpp) 
 { 
     if (smpp != NULL) { 
-        list_destroy(smpp->msgs_to_send, msg_destroy_item); 
+        gwlist_destroy(smpp->msgs_to_send, msg_destroy_item); 
         dict_destroy(smpp->sent_msgs); 
-        list_destroy(smpp->received_msgs, msg_destroy_item); 
+        gwlist_destroy(smpp->received_msgs, msg_destroy_item); 
         counter_destroy(smpp->message_id_counter); 
         octstr_destroy(smpp->host); 
         octstr_destroy(smpp->username); 
@@ -779,7 +779,7 @@ static void send_messages(SMPP *smpp, Connection *conn, long *pending_submits)
 
     while (*pending_submits < smpp->max_pending_submits) {
     	/* Get next message, quit if none to be sent */
-    	msg = list_extract_first(smpp->msgs_to_send);
+    	msg = gwlist_extract_first(smpp->msgs_to_send);
         if (msg == NULL)
             break;
 
@@ -1415,7 +1415,7 @@ static int do_queue_cleanup(SMPP *smpp, long *pending_submits, int action)
     if (keys == NULL)
         return 0;
                                             
-    while ((key = list_extract_first(keys)) != NULL) {
+    while ((key = gwlist_extract_first(keys)) != NULL) {
         smpp_msg = dict_get(smpp->sent_msgs, key);
         if (smpp_msg != NULL && difftime(now, smpp_msg->sent_time) > smpp->wait_ack) {
             switch(action) {
@@ -1424,7 +1424,7 @@ static int do_queue_cleanup(SMPP *smpp, long *pending_submits, int action)
                     warning(0, "SMPP[%s]: Not ACKED message found, reconnecting.",
                                    octstr_get_cstr(smpp->conn->id));
                     octstr_destroy(key);
-                    list_destroy(keys, octstr_destroy_item);
+                    gwlist_destroy(keys, octstr_destroy_item);
                     return 1; /* io_thread will reconnect */
                 case SMPP_WAITACK_REQUEUE: /* requeue */
                     smpp_msg = dict_remove(smpp->sent_msgs, key);
@@ -1443,13 +1443,13 @@ static int do_queue_cleanup(SMPP *smpp, long *pending_submits, int action)
                     error(0, "SMPP[%s] Unknown clenup action defined %xd.",
                              octstr_get_cstr(smpp->conn->id), action);
                     octstr_destroy(key);
-                    list_destroy(keys, octstr_destroy_item);
+                    gwlist_destroy(keys, octstr_destroy_item);
                     return 0;
             }
         }
         octstr_destroy(key);
     }
-    list_destroy(keys, octstr_destroy_item);
+    gwlist_destroy(keys, octstr_destroy_item);
 
     return 0;
 }
@@ -1599,11 +1599,11 @@ static void io_thread(void *arg)
 
             long reason = (smpp->quitting?SMSCCONN_FAILED_SHUTDOWN:SMSCCONN_FAILED_TEMPORARILY);
 
-            while((msg = list_extract_first(smpp->msgs_to_send)) != NULL)
+            while((msg = gwlist_extract_first(smpp->msgs_to_send)) != NULL)
                 bb_smscconn_send_failed(smpp->conn, msg, reason, NULL);
 
             noresp = dict_keys(smpp->sent_msgs);
-            while((key = list_extract_first(noresp)) != NULL) {
+            while((key = gwlist_extract_first(noresp)) != NULL) {
                 smpp_msg = dict_remove(smpp->sent_msgs, key);
                 if (smpp_msg != NULL && smpp_msg->msg) {
                     bb_smscconn_send_failed(smpp->conn, smpp_msg->msg, reason, NULL);
@@ -1611,7 +1611,7 @@ static void io_thread(void *arg)
                 }
                 octstr_destroy(key);
             }
-            list_destroy(noresp, NULL);
+            gwlist_destroy(noresp, NULL);
         }
         /*
          * Reconnect if that was a connection problem.
@@ -1639,7 +1639,7 @@ static long queued_cb(SMSCConn *conn)
 
     smpp = conn->data;
     conn->load = (smpp ? (conn->status != SMSCCONN_DEAD ?
-                  list_len(smpp->msgs_to_send) : 0) : 0);
+                  gwlist_len(smpp->msgs_to_send) : 0) : 0);
     return conn->load;
 }
 
@@ -1649,7 +1649,7 @@ static int send_msg_cb(SMSCConn *conn, Msg *msg)
     SMPP *smpp;
 
     smpp = conn->data;
-    list_produce(smpp->msgs_to_send, msg_duplicate(msg));
+    gwlist_produce(smpp->msgs_to_send, msg_duplicate(msg));
     gwthread_wakeup(smpp->transmitter);
     return 0;
 }

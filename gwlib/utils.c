@@ -602,12 +602,12 @@ static int pattern_list_matches_ip(Octstr *pattern_list, Octstr *ip)
     patterns = octstr_split(pattern_list, octstr_imm(";"));
     matches = 0;
 
-    while (!matches && (pattern = list_extract_first(patterns)) != NULL) {
+    while (!matches && (pattern = gwlist_extract_first(patterns)) != NULL) {
 	matches = pattern_matches_ip(pattern, ip);
 	octstr_destroy(pattern);
     }
     
-    list_destroy(patterns, octstr_destroy_item);
+    gwlist_destroy(patterns, octstr_destroy_item);
     return matches;
 }
 

@@ -151,7 +151,7 @@ void msg_destroy(Msg *msg);
 
 /*
  * Destroy an Msg object. Wrapper around msg_destroy to make it suitable for
- * list_destroy.
+ * gwlist_destroy.
  */
 void msg_destroy_item(void *msg);
 

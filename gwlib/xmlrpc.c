@@ -270,7 +270,7 @@ static XMLRPCMethodCall *xmlrpc_call_create(Octstr *name)
     XMLRPCMethodCall *nmsg = gw_malloc(sizeof(XMLRPCMethodCall));
 
     nmsg->method_name = octstr_duplicate(name);
-    nmsg->params = list_create();
+    nmsg->params = gwlist_create();
     
     return nmsg;
 }
@@ -281,7 +281,7 @@ static void xmlrpc_call_destroy(XMLRPCMethodCall *call)
         return;
 
     octstr_destroy(call->method_name);
-    list_destroy(call->params, xmlrpc_value_destroy_item);
+    gwlist_destroy(call->params, xmlrpc_value_destroy_item);
 
     gw_free(call);
 }
@@ -296,7 +296,7 @@ static int xmlrpc_call_add_param(XMLRPCMethodCall *method, XMLRPCValue *value)
     if (method == NULL || value == NULL)
         return -1;
 
-    list_produce(method->params, value);
+    gwlist_produce(method->params, value);
     return 0;
 }
 
@@ -313,11 +313,11 @@ static Octstr *xmlrpc_call_print(XMLRPCMethodCall *call, int level)
                          "%*s<methodName>%S</methodName>\n",
                          level, "", level + 2, "", call->method_name);
 
-    list_lock(call->params);
-    if (list_len(call->params) > 0) {
+    gwlist_lock(call->params);
+    if (gwlist_len(call->params) > 0) {
         octstr_format_append(body, "%*s<params>\n", level + 2, "");
-        for (i = 0; i < list_len(call->params); i++) {
-            val = list_get(call->params, i);
+        for (i = 0; i < gwlist_len(call->params); i++) {
+            val = gwlist_get(call->params, i);
             os_value = xmlrpc_value_print(val, level + 6);
 
             if (os_value == NULL) {
@@ -331,7 +331,7 @@ static Octstr *xmlrpc_call_print(XMLRPCMethodCall *call, int level)
         }
         octstr_format_append(body, "%*s</params>\n", level + 2, "");
     }
-    list_unlock(call->params);
+    gwlist_unlock(call->params);
     octstr_format_append(body, "%*s</methodCall>\n", level, "");
 
     return body;
@@ -695,7 +695,7 @@ int xmlrpc_doc_send(XMLRPCDocument *xrdoc, int d_type, HTTPCaller *http_ref,
     }
     
     if (headers == NULL)
-        headers = list_create();
+        headers = gwlist_create();
     
     http_header_remove_all(headers, "Content-Type");
     http_header_add(headers, "Content-Type", "text/xml");
@@ -747,7 +747,7 @@ void xmlrpc_value_destroy(XMLRPCValue *val)
             xmlrpc_scalar_destroy(val->v_scalar);
             break;
         case xr_array:
-            list_destroy(val->v_array, xmlrpc_value_destroy_item);
+            gwlist_destroy(val->v_array, xmlrpc_value_destroy_item);
             break;
         case xr_struct:
             dict_destroy(val->v_struct);
@@ -1061,7 +1061,7 @@ int xmlrpc_count_params(XMLRPCDocument *xrdoc)
     if (xrdoc == NULL)
         return -1;
     if (xrdoc->d_type == xr_methodcall && xrdoc->methodcall != NULL)
-        return list_len(xrdoc->methodcall->params);
+        return gwlist_len(xrdoc->methodcall->params);
     else if (xrdoc->d_type == xr_methodresponse && xrdoc->methodresponse != NULL)
         return (xrdoc->methodresponse->param != NULL ? 1 : 0);
     
@@ -1073,7 +1073,7 @@ XMLRPCValue *xmlrpc_get_param(XMLRPCDocument *xrdoc, int i)
     if (xrdoc == NULL)
         return NULL;
     if (xrdoc->d_type == xr_methodcall && xrdoc->methodcall != NULL) 
-        return list_get(xrdoc->methodcall->params, i);
+        return gwlist_get(xrdoc->methodcall->params, i);
     else if (xrdoc->d_type == xr_methodresponse && xrdoc->methodresponse != NULL
              && i == 0)
         return xrdoc->methodresponse->param;
@@ -1168,11 +1168,11 @@ Octstr *xmlrpc_print_struct(Dict *v_struct,  int level)
     keys = dict_keys(v_struct);
     body = octstr_format("%*s<struct>\n", level, "");
 
-    while ((key = list_consume(keys)) != NULL) {
+    while ((key = gwlist_consume(keys)) != NULL) {
         member_val = dict_get(v_struct, key);
         os_val = xmlrpc_value_print(member_val, level+4);
         if (os_val == NULL) {
-            list_destroy(keys, octstr_destroy_item);
+            gwlist_destroy(keys, octstr_destroy_item);
             octstr_destroy(key);
             octstr_destroy(body);
             return NULL;
@@ -1186,7 +1186,7 @@ Octstr *xmlrpc_print_struct(Dict *v_struct,  int level)
         octstr_destroy(key);
         octstr_destroy(os_val);
     }
-    list_destroy(keys, octstr_destroy_item);
+    gwlist_destroy(keys, octstr_destroy_item);
     octstr_format_append(body, "%*s</struct>\n", level, "");
     
     return body;
@@ -1197,7 +1197,7 @@ XMLRPCValue *xmlrpc_create_array_value(void)
 {
     XMLRPCValue *value = xmlrpc_value_create();
     value->v_type = xr_array;
-    value->v_array = list_create();
+    value->v_array = gwlist_create();
 
     return value;
 }
@@ -1207,7 +1207,7 @@ int xmlrpc_count_elements(XMLRPCValue *xrarray)
     if (xrarray == NULL || xrarray->v_type != xr_array)
         return -1;
     
-    return  list_len(xrarray->v_array);
+    return  gwlist_len(xrarray->v_array);
 }
 
 int xmlrpc_add_element(XMLRPCValue *xrarray, XMLRPCValue *value)
@@ -1215,7 +1215,7 @@ int xmlrpc_add_element(XMLRPCValue *xrarray, XMLRPCValue *value)
     if (xrarray == NULL || xrarray->v_type != xr_array || value == NULL)
         return -1;
     
-    list_produce(xrarray->v_array, value);
+    gwlist_produce(xrarray->v_array, value);
     return 1;
 }
 
@@ -1236,7 +1236,7 @@ XMLRPCValue *xmlrpc_get_element(XMLRPCValue *xrarray, int i)
     if (xrarray == NULL || xrarray->v_type != xr_array || i < 0)
         return NULL;
     
-    return list_get(xrarray->v_array, i);
+    return gwlist_get(xrarray->v_array, i);
 }
 
 int xmlrpc_get_element_type(XMLRPCValue *xrarray, int i)
@@ -1264,8 +1264,8 @@ Octstr *xmlrpc_print_array(List *v_array,  int level)
     
     body = octstr_format("%*s<array>\n%*s<data>", level, "", level+2, "");
 
-    for(i = 0; i < list_len(v_array); i++) {
-        element = list_get(v_array, i);
+    for(i = 0; i < gwlist_len(v_array); i++) {
+        element = gwlist_get(v_array, i);
         os_element = xmlrpc_value_print(element, level+4);
         if (os_element == NULL) {
             octstr_destroy(body);
@@ -1643,18 +1643,18 @@ static int parse_methodresponse_element(xmlDocPtr doc, xmlNodePtr node,
          * ok, this has to be an <params> tag, otherwise we would 
          * have returned previosly
          */
-        List *params = list_create();;
+        List *params = gwlist_create();;
         status = parse_params(doc, node->xmlChildrenNode, xrdoc, params);
         if (status < 0) return -1;
-        if (list_len(params) != 1) {
+        if (gwlist_len(params) != 1) {
             xrdoc->parse_status = XMLRPC_PARSING_FAILED;
             xrdoc->parse_error = octstr_format("XML-RPC compiler:wrong number of params "
                                                "at level <methodResponse>");
-            list_destroy(params, xmlrpc_value_destroy_item);
+            gwlist_destroy(params, xmlrpc_value_destroy_item);
             return -1;
         }
-        methodresponse->param = list_consume(params);
-        list_destroy(params, xmlrpc_value_destroy_item);
+        methodresponse->param = gwlist_consume(params);
+        gwlist_destroy(params, xmlrpc_value_destroy_item);
         return status;
     }
 
@@ -1850,7 +1850,7 @@ static int parse_param_element(xmlDocPtr doc, xmlNodePtr node,
             xmlrpc_value_destroy(value);
             return -1;
         }
-        list_append(params, value);
+        gwlist_append(params, value);
     } else {
         /* we should never be here */
         xrdoc->parse_status = XMLRPC_PARSING_FAILED;
@@ -2044,7 +2044,7 @@ static int parse_value_element(xmlDocPtr doc, xmlNodePtr node,
 
         case xr_array:
             xrvalue->v_type = xr_array;
-            xrvalue->v_array = list_create();
+            xrvalue->v_array = gwlist_create();
 
             if (parse_array(doc, node->xmlChildrenNode, xrdoc, xrvalue->v_array) == -1) {
                 xrdoc->parse_status = XMLRPC_PARSING_FAILED; 
@@ -2457,7 +2457,7 @@ static int parse_data_element(xmlDocPtr doc, xmlNodePtr node,
             xmlrpc_value_destroy(value);
             return -1;
         }
-        list_append(elements, value);
+        gwlist_append(elements, value);
             
     } else {
         /* we should never be here */

@@ -166,8 +166,8 @@ static void bearerbox_address_destroy(BearerboxAddress *ba);
 void wap_push_ota_init(wap_dispatch_func_t *wsp_dispatch,
                        wap_dispatch_func_t *wsp_unit_dispatch)
 {
-    ota_queue = list_create();
-    list_add_producer(ota_queue);
+    ota_queue = gwlist_create();
+    gwlist_add_producer(ota_queue);
 
     dispatch_to_wsp = wsp_dispatch;
     dispatch_to_wsp_unit = wsp_unit_dispatch;
@@ -183,17 +183,17 @@ void wap_push_ota_shutdown(void)
 {
     gw_assert(run_status == running);
     run_status = terminating;
-    list_remove_producer(ota_queue);
+    gwlist_remove_producer(ota_queue);
     gwthread_join_every(main_thread);
 
-    list_destroy(ota_queue, wap_event_destroy_item);
+    gwlist_destroy(ota_queue, wap_event_destroy_item);
     bearerbox_address_destroy(bearerbox);
 }
 
 void wap_push_ota_dispatch_event(WAPEvent *e)
 {
     gw_assert(run_status == running); 
-    list_produce(ota_queue, e);
+    gwlist_produce(ota_queue, e);
 }
 
 /*
@@ -218,7 +218,7 @@ static void main_thread(void *arg)
 {
     WAPEvent *e;
 
-    while (run_status == running && (e = list_consume(ota_queue)) != NULL) {
+    while (run_status == running && (e = gwlist_consume(ota_queue)) != NULL) {
         handle_ota_event(e);
     } 
 
@@ -570,7 +570,7 @@ static Octstr *pack_appid_list(List *headers)
 
     i = 0;
     appid_os = octstr_create("");
-    len = (size_t) list_len(headers);
+    len = (size_t) gwlist_len(headers);
 
     gw_assert(len);
 

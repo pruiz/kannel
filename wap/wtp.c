@@ -105,7 +105,7 @@ List *wtp_unpack_wdp_datagram(WAPEvent *datagram)
 
      gw_assert(datagram->type == T_DUnitdata_Ind);
 
-     events = list_create();
+     events = gwlist_create();
         
      if (concatenated_message(datagram->u.T_DUnitdata_Ind.user_data)) {
          data = octstr_duplicate(datagram->u.T_DUnitdata_Ind.user_data);
@@ -129,7 +129,7 @@ List *wtp_unpack_wdp_datagram(WAPEvent *datagram)
              wap_event_assert(subdgram);
              event = unpack_wdp_datagram_real(subdgram);
              wap_event_assert(event);
-             list_append(events, event);
+             gwlist_append(events, event);
              octstr_delete(data, 0, pdu_len);
              wap_event_destroy(subdgram);
          }
@@ -139,7 +139,7 @@ List *wtp_unpack_wdp_datagram(WAPEvent *datagram)
      } else {
           event = unpack_wdp_datagram_real(datagram); 
           wap_event_assert(event);
-          list_append(events, event);
+          gwlist_append(events, event);
      } 
 
      return events;
@@ -272,10 +272,10 @@ static WAPEvent *unpack_ack(WTP_PDU *pdu, WAPAddrTuple *addr_tuple)
 
     /* Set default to 0 because Ack on 1 piece message has no tpi */
     event->u.RcvAck.psn = 0;
-    num_tpis = list_len(pdu->options);
+    num_tpis = gwlist_len(pdu->options);
 
     for (i = 0; i < num_tpis; i++) {
-        tpi = list_get(pdu->options, i);
+        tpi = gwlist_get(pdu->options, i);
         if (tpi->type == TPI_PSN) {
             event->u.RcvAck.psn = octstr_get_bits(tpi->data,0,8);
             break;

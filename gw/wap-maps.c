@@ -106,7 +106,7 @@ void wap_map_add_url(Octstr *name, Octstr *url, Octstr *map_url,
     struct url_map_struct *entry;
 
     if (url_map == NULL) 
-        url_map = list_create();
+        url_map = gwlist_create();
 
     entry = gw_malloc(sizeof(*entry));
     entry->name = name;
@@ -117,7 +117,7 @@ void wap_map_add_url(Octstr *name, Octstr *url, Octstr *map_url,
     entry->send_msisdn_format = send_msisdn_format;
     entry->accept_cookies = accept_cookies;
     
-    list_append(url_map, entry);
+    gwlist_append(url_map, entry);
 }
 
 
@@ -155,8 +155,8 @@ void wap_map_destroy(void)
     struct url_map_struct *entry;
 
     if (url_map != NULL) {
-        for (i = 0; i < list_len(url_map); i++) {
-            entry = list_get(url_map, i);
+        for (i = 0; i < gwlist_len(url_map); i++) {
+            entry = gwlist_get(url_map, i);
             octstr_destroy(entry->name);
             octstr_destroy(entry->url);
             octstr_destroy(entry->map_url);
@@ -165,7 +165,7 @@ void wap_map_destroy(void)
             octstr_destroy(entry->send_msisdn_format);
             gw_free(entry);
         }
-        list_destroy(url_map, NULL);
+        gwlist_destroy(url_map, NULL);
     }
     url_map = NULL;
 }
@@ -217,9 +217,9 @@ void wap_map_url(Octstr **osp, Octstr **send_msisdn_query,
     *accept_cookies = -1;
 
     debug("wsp",0,"WSP: Mapping url <%s>", octstr_get_cstr(*osp));
-    for (i = 0; url_map && i < list_len(url_map); i++) {
+    for (i = 0; url_map && i < gwlist_len(url_map); i++) {
         struct url_map_struct *entry;
-        entry = list_get(url_map, i);
+        entry = gwlist_get(url_map, i);
 
         /* 
         debug("wsp",0,"WSP: matching <%s> with <%s>", 

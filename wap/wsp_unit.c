@@ -101,8 +101,8 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event);
 
 void wsp_unit_init(wap_dispatch_func_t *datagram_dispatch,
                    wap_dispatch_func_t *application_dispatch) {
-	queue = list_create();
-	list_add_producer(queue);
+	queue = gwlist_create();
+	gwlist_add_producer(queue);
 	dispatch_to_wdp = datagram_dispatch;
 	dispatch_to_appl = application_dispatch;
         wsp_strings_init();
@@ -114,16 +114,16 @@ void wsp_unit_init(wap_dispatch_func_t *datagram_dispatch,
 void wsp_unit_shutdown(void) {
 	gw_assert(run_status == running);
 	run_status = terminating;
-	list_remove_producer(queue);
+	gwlist_remove_producer(queue);
 	gwthread_join_every(main_thread);
-	list_destroy(queue, wap_event_destroy_item);
+	gwlist_destroy(queue, wap_event_destroy_item);
         wsp_strings_shutdown();
 }
 
 
 void wsp_unit_dispatch_event(WAPEvent *event) {
 	wap_event_assert(event);
-	list_produce(queue, event);
+	gwlist_produce(queue, event);
 }
 
 
@@ -217,7 +217,7 @@ static void main_thread(void *arg)
     WAPEvent *e;
     WAPEvent *newevent;
 	
-    while (run_status == running && (e = list_consume(queue)) != NULL) {
+    while (run_status == running && (e = gwlist_consume(queue)) != NULL) {
         debug("wap.wsp.unit", 0, "WSP (UNIT): event arrived");
         wap_event_assert(e);
         switch (e->type) {

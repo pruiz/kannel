@@ -215,16 +215,16 @@ static int pgsql_select(void *theconn, const Octstr *sql, List *binds, List **li
 
     nTuples = PQntuples(res);
     nFields = PQnfields(res);
-    *list = list_create();
+    *list = gwlist_create();
     for (row_loop = 0; row_loop < nTuples; row_loop++) {
-	fields = list_create();
+	fields = gwlist_create();
     	for (field_loop = 0; field_loop < nFields; field_loop++) {
             if (PQgetisnull(res, row_loop, field_loop))
-                list_produce(fields, octstr_create(""));
+                gwlist_produce(fields, octstr_create(""));
             else 
-	        list_produce(fields, octstr_create(PQgetvalue(res, row_loop, field_loop)));
+	        gwlist_produce(fields, octstr_create(PQgetvalue(res, row_loop, field_loop)));
 	}
-	list_produce(*list, fields);
+	gwlist_produce(*list, fields);
     }
     PQclear(res);
 

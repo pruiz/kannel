@@ -175,7 +175,7 @@ static URLTranslation *find_black_list_translation(URLTranslationList *trans,
 
 static void destroy_keyword_list(void *list)
 {
-    list_destroy(list, NULL);
+    gwlist_destroy(list, NULL);
 }
 
 
@@ -184,7 +184,7 @@ URLTranslationList *urltrans_create(void)
     URLTranslationList *trans;
     
     trans = gw_malloc(sizeof(URLTranslationList));
-    trans->list = list_create();
+    trans->list = gwlist_create();
     trans->dict = dict_create(1024, destroy_keyword_list);
     trans->names = dict_create(1024, destroy_keyword_list);
     return trans;
@@ -193,7 +193,7 @@ URLTranslationList *urltrans_create(void)
 
 void urltrans_destroy(URLTranslationList *trans) 
 {
-    list_destroy(trans->list, destroy_onetrans);
+    gwlist_destroy(trans->list, destroy_onetrans);
     dict_destroy(trans->names);
     dict_destroy(trans->dict);
     gw_free(trans);
@@ -211,33 +211,33 @@ int urltrans_add_one(URLTranslationList *trans, CfgGroup *grp)
     if (ot == NULL)
 	return -1;
 		
-    list_append(trans->list, ot);
+    gwlist_append(trans->list, ot);
     
     list2 = dict_get(trans->names, ot->name);
     if (list2 == NULL) {
-    	list2 = list_create();
+    	list2 = gwlist_create();
 	dict_put(trans->names, ot->name, list2);
     }
-    list_append(list2, ot);
+    gwlist_append(list2, ot);
 
     if (ot->keyword == NULL || ot->type == TRANSTYPE_SENDSMS)
     	return 0;
 
     list = dict_get(trans->dict, ot->keyword);
     if (list == NULL) {
-    	list = list_create();
+    	list = gwlist_create();
 	dict_put(trans->dict, ot->keyword, list);
     }
-    list_append(list, ot);
+    gwlist_append(list, ot);
 
-    for (i = 0; i < list_len(ot->aliases); ++i) {
-	alias = list_get(ot->aliases, i);
+    for (i = 0; i < gwlist_len(ot->aliases); ++i) {
+	alias = gwlist_get(ot->aliases, i);
 	list = dict_get(trans->dict, alias);
 	if (list == NULL) {
-	    list = list_create();
+	    list = gwlist_create();
 	    dict_put(trans->dict, alias, list);
 	}
-	list_append(list, ot);
+	gwlist_append(list, ot);
     }
 
 
@@ -251,22 +251,22 @@ int urltrans_add_cfg(URLTranslationList *trans, Cfg *cfg)
     List *list;
     
     list = cfg_get_multi_group(cfg, octstr_imm("sms-service"));
-    while (list && (grp = list_extract_first(list)) != NULL) {
+    while (list && (grp = gwlist_extract_first(list)) != NULL) {
 	if (urltrans_add_one(trans, grp) == -1) {
-	    list_destroy(list, NULL);
+	    gwlist_destroy(list, NULL);
 	    return -1;
 	}
     }
-    list_destroy(list, NULL);
+    gwlist_destroy(list, NULL);
     
     list = cfg_get_multi_group(cfg, octstr_imm("sendsms-user"));
-    while (list && (grp = list_extract_first(list)) != NULL) {
+    while (list && (grp = gwlist_extract_first(list)) != NULL) {
 	if (urltrans_add_one(trans, grp) == -1) {
-	    list_destroy(list, NULL);
+	    gwlist_destroy(list, NULL);
 	    return -1;
 	}
     }
-    list_destroy(list, NULL);
+    gwlist_destroy(list, NULL);
 
     return 0;
 }
@@ -283,7 +283,7 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
     if (text != NULL) {
         words = octstr_split_words(text);
         t = find_translation(trans, words, smsc, sender, receiver, &reject);
-        list_destroy(words, octstr_destroy_item);
+        gwlist_destroy(words, octstr_destroy_item);
     }
     
     if (reject)
@@ -304,7 +304,7 @@ URLTranslation *urltrans_find_service(URLTranslationList *trans, Msg *msg)
     
     list = dict_get(trans->names, msg->sms.service);
     if (list != NULL) {
-       t = list_get(list, 0);
+       t = gwlist_get(list, 0);
     } else  {
        t = NULL;
     }
@@ -320,8 +320,8 @@ URLTranslation *urltrans_find_username(URLTranslationList *trans,
     int i;
 
     gw_assert(name != NULL);
-    for (i = 0; i < list_len(trans->list); ++i) {
-	t = list_get(trans->list, i);
+    for (i = 0; i < gwlist_len(trans->list); ++i) {
+	t = gwlist_get(trans->list, i);
 	if (t->type == TRANSTYPE_SENDSMS) {
 	    if (octstr_compare(name, t->username) == 0)
 		return t;
@@ -379,9 +379,9 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
     if (request->sms.msgdata) {
         word_list = octstr_split_words(request->sms.msgdata);
-        num_words = list_len(word_list);
+        num_words = gwlist_len(word_list);
     } else {
-    	word_list = list_create();
+    	word_list = gwlist_create();
         num_words = 0;
     }
 
@@ -401,7 +401,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
             if (t && octstr_len(t->dlr_url)) {
                 pattern = t->dlr_url;
             } else {
-                list_destroy(word_list, octstr_destroy_item);
+                gwlist_destroy(word_list, octstr_destroy_item);
                 return octstr_create("");
             }
         }
@@ -426,7 +426,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	case 'k':
 	    if (num_words <= 0)
 		break;
-	    enc = octstr_duplicate(list_get(word_list, 0));
+	    enc = octstr_duplicate(gwlist_get(word_list, 0));
 	    octstr_url_encode(enc);
 	    octstr_append(result, enc);
 	    octstr_destroy(enc);
@@ -435,7 +435,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	case 's':
 	    if (nextarg >= num_words)
 		break;
-	    enc = octstr_duplicate(list_get(word_list, nextarg));
+	    enc = octstr_duplicate(gwlist_get(word_list, nextarg));
 	    octstr_url_encode(enc);
 	    octstr_append(result, enc);
 	    octstr_destroy(enc);
@@ -445,7 +445,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	case 'S':
 	    if (nextarg >= num_words)
 		break;
-	    temp = list_get(word_list, nextarg);
+	    temp = gwlist_get(word_list, nextarg);
 	    for (i = 0; i < octstr_len(temp); ++i) {
 		if (octstr_get_char(temp, i) == '*')
 		    octstr_append_char(result, '~');
@@ -457,7 +457,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
 	case 'r':
 	    for (j = nextarg; j < num_words; ++j) {
-		enc = octstr_duplicate(list_get(word_list, j));
+		enc = octstr_duplicate(gwlist_get(word_list, j));
 		octstr_url_encode(enc);
 		if (j != nextarg)
 		    octstr_append_char(result, '+');
@@ -516,7 +516,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
 	case 'a':
 	    for (j = 0; j < num_words; ++j) {
-		enc = octstr_duplicate(list_get(word_list, j));
+		enc = octstr_duplicate(gwlist_get(word_list, j));
 		octstr_url_encode(enc);
 		if (j > 0)
 		    octstr_append_char(result, '+');
@@ -676,7 +676,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
     octstr_destroy(url);
     octstr_destroy(reply);
 
-    list_destroy(word_list, octstr_destroy_item);
+    gwlist_destroy(word_list, octstr_destroy_item);
     return result;
 }
 
@@ -977,15 +977,15 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 
 	aliases = cfg_get(grp, octstr_imm("aliases"));
 	if (aliases == NULL)
-	    ot->aliases = list_create();
+	    ot->aliases = gwlist_create();
 	else {
 	    long i;
 	    Octstr *os;
 
 	    ot->aliases = octstr_split(aliases, octstr_imm(";"));
 	    octstr_destroy(aliases);
-	    for (i = 0; i < list_len(ot->aliases); ++i) {
-		os = list_get(ot->aliases, i);
+	    for (i = 0; i < gwlist_len(ot->aliases); ++i) {
+		os = gwlist_get(ot->aliases, i);
 	    	octstr_convert_range(os, 0, octstr_len(os), tolower);
 	    }
 	}
@@ -1151,7 +1151,7 @@ static void destroy_onetrans(void *p)
     ot = p;
     if (ot != NULL) {
         octstr_destroy(ot->keyword);
-	list_destroy(ot->aliases, octstr_destroy_item);
+	gwlist_destroy(ot->aliases, octstr_destroy_item);
 	octstr_destroy(ot->dlr_url);
 	octstr_destroy(ot->pattern);
 	octstr_destroy(ot->prefix);
@@ -1162,7 +1162,7 @@ static void destroy_onetrans(void *p)
 	octstr_destroy(ot->split_suffix);
 	octstr_destroy(ot->header);
 	octstr_destroy(ot->footer);
-	list_destroy(ot->accepted_smsc, octstr_destroy_item);
+	gwlist_destroy(ot->accepted_smsc, octstr_destroy_item);
 	octstr_destroy(ot->name);
 	octstr_destroy(ot->username);
 	octstr_destroy(ot->password);
@@ -1200,7 +1200,7 @@ static int check_num_args(URLTranslation *t, List *words)
     int n;
 
     
-    n = list_len(words);
+    n = gwlist_len(words);
     /* check number of arguments */
     if (t->catch_all)
         return IS_OKAY;
@@ -1229,7 +1229,7 @@ static int check_allowed_translation(URLTranslation *t,
 	 * translation only if smsc id is in accept string
 	 */
 	if (smsc && t->accepted_smsc) {
-        if (!list_search(t->accepted_smsc, smsc, octstr_item_match))              
+        if (!gwlist_search(t->accepted_smsc, smsc, octstr_item_match))              
             return NOT_ALLOWED;
     };
     if (smsc && t->accepted_smsc_regex)
@@ -1332,19 +1332,19 @@ static List* get_matching_translations(URLTranslationList *trans, Octstr *word)
 
     gw_assert(trans != NULL && word != NULL);
 
-    list = list_create();
-    for (i = 0; i < list_len(trans->list); ++i) {
-        t = list_get(trans->list, i);
+    list = gwlist_create();
+    for (i = 0; i < gwlist_len(trans->list); ++i) {
+        t = gwlist_get(trans->list, i);
         if (t->keyword == NULL) 
 	    continue;
 
         /* if regex feature is used try to match */
         if ((t->keyword_regex != NULL) && (gw_regex_exec(t->keyword_regex, word, n_match, p_match, 0) == 0))
-            list_append(list, t);
+            gwlist_append(list, t);
 
         /* otherwise look for exact match */
         if (octstr_compare(t->keyword, word) == 0) 
-            list_append(list, t);
+            gwlist_append(list, t);
 	}
     return list;
 }
@@ -1360,12 +1360,12 @@ static URLTranslation *find_translation(URLTranslationList *trans,
     URLTranslation *t;
     List *list;
 
-    n = list_len(words);
+    n = gwlist_len(words);
     if (n == 0)
         return NULL;
     n = 1;
 
-    keyword = list_get(words, 0);
+    keyword = gwlist_get(words, 0);
     keyword = octstr_duplicate(keyword);
     octstr_convert_range(keyword, 0, octstr_len(keyword), tolower);
 
@@ -1375,8 +1375,8 @@ static URLTranslation *find_translation(URLTranslationList *trans,
       pattern defined by the tranlsation's keyword
     */
     t = NULL;
-    for (i = 0; i < list_len(list); ++i) {
-        t = list_get(list, i);
+    for (i = 0; i < gwlist_len(list); ++i) {
+        t = gwlist_get(list, i);
 
         if (check_allowed_translation(t, smsc, sender, receiver, reject) == 0
             && check_num_args(t, words) == 0)
@@ -1390,7 +1390,7 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 	*reject = 0;
 
     octstr_destroy(keyword);    
-    list_destroy(list, NULL);
+    gwlist_destroy(list, NULL);
     return t;
 }
 
@@ -1407,8 +1407,8 @@ static URLTranslation *find_default_translation(URLTranslationList *trans,
 
     list = dict_get(trans->dict, octstr_imm("default"));
     t = NULL;
-    for (i = 0; i < list_len(list); ++i) {
-	t = list_get(list, i);
+    for (i = 0; i < gwlist_len(list); ++i) {
+	t = gwlist_get(list, i);
 
     if (check_allowed_translation(t, smsc, sender, receiver, reject) == 0)
         break;
@@ -1431,10 +1431,10 @@ static URLTranslation *find_black_list_translation(URLTranslationList *trans,
 
     list = dict_get(trans->dict, octstr_imm("black-list"));
     t = NULL;
-    for (i = 0; i < list_len(list); ++i) {
-	t = list_get(list, i);
+    for (i = 0; i < gwlist_len(list); ++i) {
+	t = gwlist_get(list, i);
 	if (smsc && t->accepted_smsc) {
-	    if (!list_search(t->accepted_smsc, smsc, octstr_item_match)) {
+	    if (!gwlist_search(t->accepted_smsc, smsc, octstr_item_match)) {
 		t = NULL;
 		continue;
 	    }

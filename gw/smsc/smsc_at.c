@@ -530,10 +530,10 @@ int	at2_init_device(PrivAT2data *privdata)
         }
         vals = octstr_split(ts, octstr_imm(","));
         octstr_destroy(ts);
-        ts = list_search(vals, octstr_imm("1"), (void*) octstr_item_match);
+        ts = gwlist_search(vals, octstr_imm("1"), (void*) octstr_item_match);
         if (ts)
             privdata->phase2plus = 1;
-        list_destroy(vals, octstr_destroy_item);
+        gwlist_destroy(vals, octstr_destroy_item);
     }
     if (privdata->phase2plus) {
         info(0, "AT2[%s]: Phase 2+ is supported", octstr_get_cstr(privdata->name));
@@ -628,7 +628,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag,
 		   put it in the pending_incoming_messages queue for later retrieval
 		*/
                 debug("bb.smsc.at2", 0, "AT2[%s]: +CMTI incoming SMS indication: %s", octstr_get_cstr(privdata->name), octstr_get_cstr(line));
-                list_append(privdata->pending_incoming_messages, line);
+                gwlist_append(privdata->pending_incoming_messages, line);
                 line = NULL;
                 continue;
             }
@@ -765,12 +765,12 @@ void at2_read_pending_incoming_messages(PrivAT2data* privdata)
     if (privdata->modem->message_storage) {
 	    current_storage = octstr_duplicate(privdata->modem->message_storage);
     }
-    while (list_len(privdata->pending_incoming_messages) > 0) {
+    while (gwlist_len(privdata->pending_incoming_messages) > 0) {
         int pos;
         long location;
         Octstr *cmti_storage = NULL, *line = NULL;
         
-        line = list_extract_first(privdata->pending_incoming_messages);
+        line = gwlist_extract_first(privdata->pending_incoming_messages);
 	/* message memory starts after the first quote in the string */
         if ((pos = octstr_search_char(line, '"', 0)) != -1) {
             /* grab memory storage name */
@@ -885,7 +885,7 @@ static int at2_read_sms_memory(PrivAT2data* privdata)
 
 	    /* if (meanwhile) there are pending CMTI notifications, process these first
 	     * to not let CMTI and sim buffering sit in each others way */
-	    while (list_len(privdata->pending_incoming_messages) > 0) {
+	    while (gwlist_len(privdata->pending_incoming_messages) > 0) {
 		    at2_read_pending_incoming_messages(privdata);
 	    }
 	    /* read the message and delete it */
@@ -1121,7 +1121,7 @@ reconnect:
         } else
             at2_wait_modem_command(privdata, 1, 0, NULL);
 
-	while (list_len(privdata->pending_incoming_messages) > 0) {
+	while (gwlist_len(privdata->pending_incoming_messages) > 0) {
 		at2_read_pending_incoming_messages(privdata);
 	}
 
@@ -1162,7 +1162,7 @@ reconnect:
     octstr_destroy(privdata->name);
     octstr_destroy(privdata->configfile);
     gw_prioqueue_destroy(privdata->outgoing_queue, NULL);
-    list_destroy(privdata->pending_incoming_messages, octstr_destroy_item);
+    gwlist_destroy(privdata->pending_incoming_messages, octstr_destroy_item);
     gw_free(conn->data);
     conn->data = NULL;
     mutex_lock(conn->flow_mutex);
@@ -1251,7 +1251,7 @@ int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
 
     privdata = gw_malloc(sizeof(PrivAT2data));
     privdata->outgoing_queue = gw_prioqueue_create(sms_priority_compare);
-    privdata->pending_incoming_messages = list_create();
+    privdata->pending_incoming_messages = gwlist_create();
 
     privdata->configfile = cfg_get_configfile(cfg);
 
@@ -2275,10 +2275,10 @@ int at2_detect_modem_type(PrivAT2data *privdata)
         }
         vals = octstr_split(ts, octstr_imm(","));
         octstr_destroy(ts);
-        ts = list_search(vals, octstr_imm("1"), (void*) octstr_item_match);
+        ts = gwlist_search(vals, octstr_imm("1"), (void*) octstr_item_match);
         if (ts)
             privdata->phase2plus = 1;
-        list_destroy(vals, octstr_destroy_item);
+        gwlist_destroy(vals, octstr_destroy_item);
     }
     if (privdata->phase2plus)
         info(0, "AT2[%s]: Phase 2+ is supported", octstr_get_cstr(privdata->name));
@@ -2314,13 +2314,13 @@ ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int i
     grplist = cfg_get_multi_group(cfg, octstr_imm("modems"));
     if (idnumber == 0)
         debug("bb.smsc.at2", 0, "AT2[%s]: Found <%ld> modems in config", 
-              octstr_get_cstr(privdata->name), list_len(grplist));
+              octstr_get_cstr(privdata->name), gwlist_len(grplist));
 
     if (grplist == NULL)
         panic(0, "Where are the modem definitions ?!?!");
 
     grp = NULL;
-    while (grplist && (grp = list_extract_first(grplist)) != NULL) {
+    while (grplist && (grp = gwlist_extract_first(grplist)) != NULL) {
         p = cfg_get(grp, octstr_imm("id"));
         if (p == NULL) {
             info(0, "Modems group without id, bad");
@@ -2341,7 +2341,7 @@ ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int i
         grp = NULL;
     }
     if (grplist != NULL)
-        list_destroy(grplist, NULL);
+        gwlist_destroy(grplist, NULL);
 
     if (grp != NULL) {
         modem = gw_malloc(sizeof(ModemDef));

@@ -370,7 +370,7 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
     if (sms->sms.dlr_mask != DLR_UNDEFINED && sms->sms.dlr_mask != DLR_NOTHING)
         octstr_format_append(url, "&dlr-mask=%d", sms->sms.dlr_mask);
 
-    headers = list_create();
+    headers = gwlist_create();
     debug("smsc.http.kannel", 0, "HTTP[%s]: Start request",
           octstr_get_cstr(conn->id));
     http_start_request(conndata->http_ref, HTTP_METHOD_GET, url, headers, 
@@ -498,7 +498,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 	else
 	    retmsg = octstr_create("Sent.");
     }
-    reply_headers = list_create();
+    reply_headers = gwlist_create();
     http_header_add(reply_headers, "Content-Type", "text/plain");
     debug("smsc.http.kannel", 0, "HTTP[%s]: Sending reply",
           octstr_get_cstr(conn->id));
@@ -629,20 +629,20 @@ static Dict *brunet_parse_body(Octstr *body)
     Octstr *word;
 
     words = octstr_split_words(body);
-    if ((len = list_len(words)) > 0) {
+    if ((len = gwlist_len(words)) > 0) {
         param = dict_create(4, NULL);
-        while ((word = list_extract_first(words)) != NULL) {
+        while ((word = gwlist_extract_first(words)) != NULL) {
             List *l = octstr_split(word, octstr_imm("="));
-            Octstr *key = list_extract_first(l);
-            Octstr *value = list_extract_first(l);
+            Octstr *key = gwlist_extract_first(l);
+            Octstr *value = gwlist_extract_first(l);
             if (octstr_len(key))
                 dict_put(param, key, value);
             octstr_destroy(key);
             octstr_destroy(word);
-            list_destroy(l, (void(*)(void *)) octstr_destroy);
+            gwlist_destroy(l, (void(*)(void *)) octstr_destroy);
         }
     }
-    list_destroy(words, (void(*)(void *)) octstr_destroy);
+    gwlist_destroy(words, (void(*)(void *)) octstr_destroy);
 
     return param;
 }
@@ -743,7 +743,7 @@ static void brunet_receive_sms(SMSCConn *conn, HTTPClient *client,
             retmsg = octstr_create("Status=0");
     }
 
-    reply_headers = list_create();
+    reply_headers = gwlist_create();
     http_header_add(reply_headers, "Content-Type", "text/plain");
     debug("smsc.http.brunet", 0, "HTTP[%s]: Sending reply `%s'.",
           octstr_get_cstr(conn->id), octstr_get_cstr(retmsg));
@@ -811,7 +811,7 @@ static void xidris_send_sms(SMSCConn *conn, Msg *sms)
         octstr_format_append(url, "&%s", octstr_get_cstr(sms->sms.account));
     }
 
-    headers = list_create();
+    headers = gwlist_create();
     debug("smsc.http.xidris", 0, "HTTP[%s]: Sending request <%s>",
           octstr_get_cstr(conn->id), octstr_get_cstr(url));
 
@@ -945,7 +945,7 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
         status = (ret == 0 ? HTTP_OK : HTTP_FORBIDDEN);
     }
 
-    reply_headers = list_create();
+    reply_headers = gwlist_create();
     debug("smsc.http.xidris", 0, "HTTP[%s]: Sending reply with HTTP status <%d>.",
           octstr_get_cstr(conn->id), status);
 
@@ -974,7 +974,7 @@ static void wapme_smsproxy_send_sms(SMSCConn *conn, Msg *sms)
                         sms->sms.msgdata, sms->sms.sender, sms->sms.receiver,
                         sms->sms.smsc_id);
 
-    headers = list_create();
+    headers = gwlist_create();
     debug("smsc.http.wapme", 0, "HTTP[%s]: Start request",
           octstr_get_cstr(conn->id));
     http_start_request(conndata->http_ref, HTTP_METHOD_GET, url, headers, 

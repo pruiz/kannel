@@ -436,7 +436,7 @@ int smsc_cgw_create(SMSCConn *conn, CfgGroup *cfg)
     int i;
 
     privdata = gw_malloc(sizeof(PrivData));
-    privdata->outgoing_queue = list_create();
+    privdata->outgoing_queue = gwlist_create();
     privdata->listening_socket = -1;
 
     if (cfg_get_integer(&portno, cfg, octstr_imm("port")) == -1)
@@ -526,7 +526,7 @@ int smsc_cgw_create(SMSCConn *conn, CfgGroup *cfg)
 error:
     error(0, "Failed to create CGW smsc connection");
     if (privdata != NULL)
-        list_destroy(privdata->outgoing_queue, NULL);
+        gwlist_destroy(privdata->outgoing_queue, NULL);
 
     gw_free(privdata);
     octstr_destroy(host);
@@ -552,7 +552,7 @@ static int cgw_add_msg_cb(SMSCConn *conn, Msg *sms)
     Msg *copy;
 
     copy = msg_duplicate(sms);
-    list_produce(privdata->outgoing_queue, copy);
+    gwlist_produce(privdata->outgoing_queue, copy);
     gwthread_wakeup(privdata->sender_thread);
 
     return 0;
@@ -574,7 +574,7 @@ static int cgw_shutdown_cb(SMSCConn *conn, int finish_sending)
 
     if (finish_sending == 0) {
         Msg *msg;
-        while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
+        while ((msg = gwlist_extract_first(privdata->outgoing_queue)) != NULL) {
             bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
         }
     }
@@ -599,7 +599,7 @@ static void cgw_start_cb(SMSCConn *conn)
 static long cgw_queued_cb(SMSCConn *conn)
 {
     PrivData *privdata = conn->data;
-    long ret = list_len(privdata->outgoing_queue);
+    long ret = gwlist_len(privdata->outgoing_queue);
 
     /* use internal queue as load, maybe something else later */
 
@@ -641,7 +641,7 @@ static void cgw_sender(void *arg)
             bb_smscconn_connected(conn);
         } else {
 	    ret = 0;
-            l = list_len(privdata->outgoing_queue);
+            l = gwlist_len(privdata->outgoing_queue);
             if (l > 0)
                ret = cgw_send_loop(conn, server);     /* send any messages in queue */
 
@@ -658,13 +658,13 @@ static void cgw_sender(void *arg)
 
     conn_destroy(server);
 
-    while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL)
+    while ((msg = gwlist_extract_first(privdata->outgoing_queue)) != NULL)
         bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
     mutex_lock(conn->flow_mutex);
 
     conn->status = SMSCCONN_DEAD;
 
-    list_destroy(privdata->outgoing_queue, NULL);
+    gwlist_destroy(privdata->outgoing_queue, NULL);
     octstr_destroy(privdata->host);
     octstr_destroy(privdata->allow_ip);
     octstr_destroy(privdata->deny_ip);
@@ -698,7 +698,7 @@ static Connection *cgw_open_send_connection(SMSCConn *conn)
                 conn->status = SMSCCONN_RECONNECTING;
                 mutex_unlock(conn->flow_mutex);
             }
-            while ((msg = list_extract_first(privdata->outgoing_queue)))
+            while ((msg = gwlist_extract_first(privdata->outgoing_queue)))
                 bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY, NULL);
             info(0, "smsc_cgw: waiting for %d minutes before trying to connect again", wait);
             gwthread_sleep(wait * 60);
@@ -744,7 +744,7 @@ static int cgw_send_loop(SMSCConn *conn, Connection *server)
     int firsttrn;
 
     /* Send messages in queue */
-    while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
+    while ((msg = gwlist_extract_first(privdata->outgoing_queue)) != NULL) {
         firsttrn = privdata->nexttrn;
         while (privdata->sendtime[privdata->nexttrn] != 0) { 
             if (++privdata->nexttrn >= CGW_TRN_MAX) privdata->nexttrn = 0;    
@@ -753,7 +753,7 @@ static int cgw_send_loop(SMSCConn *conn, Connection *server)
 		 * haven't been acked. In this case, increase size of 
                  * CGW_TRN_MAX */
                 info(0, "cgw: Saturated, increase size of CGW_TRN_MAX!");
-                list_produce(privdata->outgoing_queue, msg);
+                gwlist_produce(privdata->outgoing_queue, msg);
                 return 1;     /* re-insert, and go check for acks */
             }
         }
@@ -798,7 +798,7 @@ void cgw_check_acks(PrivData *privdata)
                 privdata->unacked--;
                 warning(0, "smsc_cgw: received neither OK nor ERR for message %d "
                         "in %d seconds, resending message", i, privdata->waitack);
-                list_produce(privdata->outgoing_queue, privdata->sendmsg[i]);
+                gwlist_produce(privdata->outgoing_queue, privdata->sendmsg[i]);
             }
     }
 }

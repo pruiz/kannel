@@ -330,7 +330,7 @@ struct dlr_storage *dlr_init_mysql(Cfg* cfg)
      */
 
      grplist = cfg_get_multi_group(cfg, octstr_imm("mysql-connection"));
-     while (grplist && (grp = list_extract_first(grplist)) != NULL) {
+     while (grplist && (grp = gwlist_extract_first(grplist)) != NULL) {
         p = cfg_get(grp, octstr_imm("id"));
         if (p != NULL && octstr_compare(p, mysql_id) == 0) {
             goto found;
@@ -342,7 +342,7 @@ struct dlr_storage *dlr_init_mysql(Cfg* cfg)
 
 found:
     octstr_destroy(p);
-    list_destroy(grplist, NULL);
+    gwlist_destroy(grplist, NULL);
 
     if (cfg_get_integer(&pool_size, grp, octstr_imm("max-connections")) == -1 || pool_size == 0)
         pool_size = 1;

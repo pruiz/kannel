@@ -140,8 +140,8 @@ long heartbeat_start(hb_send_func_t *send_func, double freq,
     info->thread = gwthread_create(heartbeat_thread, info);
     if (info->thread >= 0) {
 	if (heartbeats == NULL)
-	    heartbeats = list_create();
-	list_append(heartbeats, info);
+	    heartbeats = gwlist_create();
+	gwlist_append(heartbeats, info);
         return info->thread;
     } else {
         gw_free(info);
@@ -163,7 +163,7 @@ void heartbeat_stop(long hb_thread)
     struct hb_info *info;
 
     if (hb_thread == ALL_HEARTBEATS) {
-        while (NULL != (info = list_extract_first(heartbeats))) {
+        while (NULL != (info = gwlist_extract_first(heartbeats))) {
             gw_assert(info);
             info->running = 0;
             gwthread_wakeup(info->thread);
@@ -171,22 +171,22 @@ void heartbeat_stop(long hb_thread)
             gw_free(info);
         }
     } else {
-        matching_info = list_extract_matching(heartbeats, &hb_thread, find_hb);
+        matching_info = gwlist_extract_matching(heartbeats, &hb_thread, find_hb);
         if (matching_info == NULL) {
             warning(0, "Could not stop heartbeat %ld: not found.", hb_thread);
 	    return;
         }
-        gw_assert(list_len(matching_info) == 1);
-        info = list_extract_first(matching_info);
-        list_destroy(matching_info, NULL);
+        gw_assert(gwlist_len(matching_info) == 1);
+        info = gwlist_extract_first(matching_info);
+        gwlist_destroy(matching_info, NULL);
      
         info->running = 0;
         gwthread_wakeup(hb_thread);
         gwthread_join(hb_thread);
         gw_free(info);
     }
-    if (list_len(heartbeats) == 0) {
-        list_destroy(heartbeats, NULL);
+    if (gwlist_len(heartbeats) == 0) {
+        gwlist_destroy(heartbeats, NULL);
         heartbeats = NULL;
     }
 }

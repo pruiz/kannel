@@ -256,9 +256,9 @@ int pack_array(Octstr *data, long charpos, List *array) {
 	buffer = octstr_create("");
 	
 	/* pack each entry in the buffer */
-	for (i=0; i<list_len(array); i++)
+	for (i=0; i<gwlist_len(array); i++)
 	{
-		pos = pack_octstr(buffer, pos, (Octstr *) list_get(array, i));
+		pos = pack_octstr(buffer, pos, (Octstr *) gwlist_get(array, i));
 	}
 	
 	/* now we know the size of the list */
@@ -281,8 +281,8 @@ int pack_key_list(Octstr *data, long charpos, List *key_list) {
 	buffer = octstr_create("");
 	
 	/* pack the KeyExchangeIds */
-	for (i=0; i<list_len(key_list); i++) {
-		keyexid = (KeyExchangeId *) list_get(key_list, i);
+	for (i=0; i<gwlist_len(key_list); i++) {
+		keyexid = (KeyExchangeId *) gwlist_get(key_list, i);
 		
 		pos = pack_key_exchange_id(buffer, pos, keyexid);
 	}
@@ -302,12 +302,12 @@ int pack_ciphersuite_list(Octstr *data, long charpos, List *ciphersuites) {
 	
 	/* vector starts with its length 
 	   Each element uses 2 bytes */
-	octstr_set_char(data, charpos, list_len(ciphersuites)*2);
+	octstr_set_char(data, charpos, gwlist_len(ciphersuites)*2);
 	charpos += 1;
 	
 	/* pack the CipherSuites */
-	for (i=0; i<list_len(ciphersuites); i++) {
-		cs = (CipherSuite *) list_get(ciphersuites, i);
+	for (i=0; i<gwlist_len(ciphersuites); i++) {
+		cs = (CipherSuite *) gwlist_get(ciphersuites, i);
 		octstr_set_char(data, charpos, cs->bulk_cipher_algo);
 		charpos += 1;
 		octstr_set_char(data, charpos, cs->mac_algo);
@@ -321,13 +321,13 @@ int pack_compression_method_list(Octstr *data, long charpos, List *compmethod_li
 	int i;
 	
 	/* vector starts with its length */
-	octstr_set_char(data, charpos, list_len(compmethod_list));
+	octstr_set_char(data, charpos, gwlist_len(compmethod_list));
 	charpos += 1;
 	
 	/* pack the CompressionMethods */
-	for (i=0; i<list_len(compmethod_list); i++) {
+	for (i=0; i<gwlist_len(compmethod_list); i++) {
 		octstr_set_char(data, charpos, 
-				(CompressionMethod) list_get(compmethod_list, i));
+				(CompressionMethod) gwlist_get(compmethod_list, i));
 		charpos += 1;
 	}
 		
@@ -643,7 +643,7 @@ List * unpack_array(Octstr *data, long *charpos) {
 	List *array;
 	
 	/* create the list */
-	array = list_create();
+	array = gwlist_create();
 	
 	/* get the size of the array */
 	array_length = octstr_get_char(data, *charpos);
@@ -651,7 +651,7 @@ List * unpack_array(Octstr *data, long *charpos) {
 	
 	/* store each entry in the list */
 	for (i=0; i<array_length; i++) 	{
-		list_append(array, (void *)unpack_octstr(data, charpos));
+		gwlist_append(array, (void *)unpack_octstr(data, charpos));
 	}
 	
 	return array;
@@ -660,21 +660,21 @@ List * unpack_array(Octstr *data, long *charpos) {
 List * unpack_key_list(Octstr *data, long *charpos) {
 	KeyExchangeId *keyexid;
 	List *key_list;
-	int list_length;
+	int gwlist_length;
 	long endpos;
 	
 	/* create the list */
-	key_list = list_create();
+	key_list = gwlist_create();
 	
 	/* get the size of the array */
-	list_length = unpack_int16(data, charpos);
-	endpos = *charpos + list_length;
+	gwlist_length = unpack_int16(data, charpos);
+	endpos = *charpos + gwlist_length;
 	
 	/* unpack the KeyExchangeIds */
 	while (*charpos < endpos)
 	{
 		keyexid = unpack_key_exchange_id(data, charpos);
-		list_append(key_list, (void *)keyexid);
+		gwlist_append(key_list, (void *)keyexid);
 	}
 	return key_list;
 }
@@ -682,26 +682,26 @@ List * unpack_key_list(Octstr *data, long *charpos) {
 List * unpack_ciphersuite_list(Octstr *data, long *charpos)
 {
 	List *ciphersuites;
-	int list_length;
+	int gwlist_length;
 	int i;
 	CipherSuite *cs;
 	
 	/* create the list */
-	ciphersuites = list_create();
+	ciphersuites = gwlist_create();
 	
 	/* get the size of the array (in bytes, not elements)*/
-	list_length = octstr_get_char(data, *charpos);
+	gwlist_length = octstr_get_char(data, *charpos);
 	*charpos += 1;
 	
 	/* unpack the CipherSuites */
-	for (i=0; i<list_length; i+=2)
+	for (i=0; i<gwlist_length; i+=2)
 	{
 		cs = (CipherSuite *)gw_malloc(sizeof(CipherSuite));
 		cs->bulk_cipher_algo = octstr_get_char(data, *charpos);
 		*charpos += 1;
 		cs->mac_algo = octstr_get_char(data, *charpos);
 		*charpos += 1;
-		list_append(ciphersuites, (void *)cs);
+		gwlist_append(ciphersuites, (void *)cs);
 	}
 		
 	return ciphersuites;
@@ -709,23 +709,23 @@ List * unpack_ciphersuite_list(Octstr *data, long *charpos)
 
 List * unpack_compression_method_list(Octstr *data, long *charpos) {
 	List *compmethod_list;
-	int list_length;
+	int gwlist_length;
 	int i;
 	CompressionMethod *cm;
 	
 	/* create the list */
-	compmethod_list = list_create();
+	compmethod_list = gwlist_create();
 	
 	/* get the size of the array */
-	list_length = octstr_get_char(data, *charpos);
+	gwlist_length = octstr_get_char(data, *charpos);
 	*charpos += 1;
 	
 	/* unpack the CompressionMethods */
-	for (i=0; i<list_length; i++)
+	for (i=0; i<gwlist_length; i++)
 	{
 		cm = gw_malloc(sizeof(CompressionMethod));
 		*cm = octstr_get_char(data, *charpos);
-		list_append(compmethod_list, (void *)cm);
+		gwlist_append(compmethod_list, (void *)cm);
 	}
 		
 	return compmethod_list;
@@ -940,21 +940,21 @@ void destroy_array(List *array) {
 	int i;
 	
 	/* pack each entry in the array */
-	for (i=0; i<list_len(array); i++)
+	for (i=0; i<gwlist_len(array); i++)
 	{
-		octstr_destroy((Octstr *) list_get(array, i));
+		octstr_destroy((Octstr *) gwlist_get(array, i));
 	}
 	
-	list_destroy(array, NULL);
+	gwlist_destroy(array, NULL);
 }
 
 void destroy_key_list(List *key_list) {
 	int i;
 	/* destroy the KeyExchangeIds */
-	for (i=0; i<list_len(key_list); i++) {
-		destroy_key_exchange_id((KeyExchangeId *) list_get(key_list, i));
+	for (i=0; i<gwlist_len(key_list); i++) {
+		destroy_key_exchange_id((KeyExchangeId *) gwlist_get(key_list, i));
 	}
-	list_destroy(key_list, NULL);
+	gwlist_destroy(key_list, NULL);
 }
 
 void destroy_ciphersuite_list(List *ciphersuites) {
@@ -962,11 +962,11 @@ void destroy_ciphersuite_list(List *ciphersuites) {
 	CipherSuite *cs;
 	
 	/* destroy the CipherSuites */
-	for (i=0; i<list_len(ciphersuites); i++) {
-		gw_free( (CipherSuite *) list_get(ciphersuites, i) );
+	for (i=0; i<gwlist_len(ciphersuites); i++) {
+		gw_free( (CipherSuite *) gwlist_get(ciphersuites, i) );
 	}
 		
-	list_destroy(ciphersuites, NULL);
+	gwlist_destroy(ciphersuites, NULL);
 }
 
 void destroy_compression_method_list(List *compmethod_list) {
@@ -974,8 +974,8 @@ void destroy_compression_method_list(List *compmethod_list) {
 	CompressionMethod *cm;
 	
 	/* destroy the CompressionMethods */
-	for (i=0; i<list_len(compmethod_list); i++) {
-		cm = (CompressionMethod*) list_get(compmethod_list, i);
+	for (i=0; i<gwlist_len(compmethod_list); i++) {
+		cm = (CompressionMethod*) gwlist_get(compmethod_list, i);
 		gw_free(cm);
 	}
 		
@@ -1196,10 +1196,10 @@ void dump_array(unsigned char *dbg, int level, List *array) {
 	/*debug(dbg, 0, "%*sOctstr Array: %p", level, "");*/
 	
 	/* dump each entry in the array */
-	for (i=0; i<list_len(array); i++)
+	for (i=0; i<gwlist_len(array); i++)
 	{
 		debug(dbg, 0, "%*sElement %d", level, "", i);
-		dump_octstr(dbg, level+1, (Octstr *) list_get(array, i));
+		dump_octstr(dbg, level+1, (Octstr *) gwlist_get(array, i));
 	}
 }
 
@@ -1212,8 +1212,8 @@ void dump_key_list(unsigned char *dbg, int level, List *key_list) {
 	debug(dbg, 0, "%*sKey List: %p", level, "");
 	
 	/* pack the KeyExchangeIds */
-	for (i=0; i<list_len(key_list); i++) {
-		keyexid = (KeyExchangeId *) list_get(key_list, i);
+	for (i=0; i<gwlist_len(key_list); i++) {
+		keyexid = (KeyExchangeId *) gwlist_get(key_list, i);
 		
 		dump_key_exchange_id(dbg, level+1, keyexid);
 	}
@@ -1226,8 +1226,8 @@ void dump_ciphersuite_list(unsigned char *dbg, int level, List *ciphersuites) {
 	debug(dbg, 0, "%*sCipherSuite List: %p", level, "");
 	
 	/* dump the CipherSuites */
-	for (i=0; i<list_len(ciphersuites); i++) {
-		cs = (CipherSuite *) list_get(ciphersuites, i);
+	for (i=0; i<gwlist_len(ciphersuites); i++) {
+		cs = (CipherSuite *) gwlist_get(ciphersuites, i);
 		debug(dbg, 0, "%*sBulk Cipher Algo: %p", level, "", cs->bulk_cipher_algo);
 		debug(dbg, 0, "%*sMAC Algo: %p", level, "", cs->mac_algo);
 	}
@@ -1238,9 +1238,9 @@ void dump_compression_method_list(unsigned char *dbg, int level, List *compmetho
 	
 	debug(dbg, 0, "%*sCompression Method List: %p", level, "");
 	/* pack the CompressionMethods */
-	for (i=0; i<list_len(compmethod_list); i++) {
+	for (i=0; i<gwlist_len(compmethod_list); i++) {
 		debug(dbg, 0, "%*sMethod %d: %p", level, "", i, 
-				(CompressionMethod) list_get(compmethod_list, i));
+				(CompressionMethod) gwlist_get(compmethod_list, i));
 	}
 }
 

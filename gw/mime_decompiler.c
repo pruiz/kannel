@@ -121,7 +121,7 @@ int mime_decompile(Octstr *binary_mime, Octstr **mime)
 
     while(parse_octets_left(context) > 0) {
         Octstr *headers, *data;
-        List *list_headers;
+        List *gwlist_headers;
         i++;
     
         octstr_append(*mime, octstr_imm("--"));
@@ -134,9 +134,9 @@ int mime_decompile(Octstr *binary_mime, Octstr **mime)
                          "data length <0x%02lx>", i, headers_len, data_len);
 
         if((headers = parse_get_octets(context, headers_len)) != NULL) {
-            list_headers = wsp_headers_unpack(headers, 1);
-            for(j=0; j<list_len(list_headers);j++) {
-                octstr_append(*mime, list_get(list_headers, j));
+            gwlist_headers = wsp_headers_unpack(headers, 1);
+            for(j=0; j<gwlist_len(gwlist_headers);j++) {
+                octstr_append(*mime, gwlist_get(gwlist_headers, j));
                 octstr_append(*mime, octstr_imm("\n"));
             }
         } else {

@@ -399,13 +399,13 @@ void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
 {
     user_configuration = read_ppg_config(cfg);
     if (user_configuration != USER_CONFIGURATION_NOT_ADDED) {
-        ppg_queue = list_create();
-        list_add_producer(ppg_queue);
-        pap_queue = list_create();
-        list_add_producer(pap_queue);
+        ppg_queue = gwlist_create();
+        gwlist_add_producer(ppg_queue);
+        pap_queue = gwlist_create();
+        gwlist_add_producer(pap_queue);
         push_id_counter = counter_create();
-        ppg_machines = list_create();
-        ppg_unit_pushes = list_create();
+        ppg_machines = gwlist_create();
+        ppg_unit_pushes = gwlist_create();
 
         dispatch_to_ota = ota_dispatch;
         dispatch_to_appl = appl_dispatch;
@@ -435,8 +435,8 @@ void wap_push_ppg_shutdown(void)
      if (user_configuration != USER_CONFIGURATION_NOT_ADDED) {
          gw_assert(run_status == running);
          run_status = terminating;
-         list_remove_producer(ppg_queue);
-         list_remove_producer(pap_queue);
+         gwlist_remove_producer(ppg_queue);
+         gwlist_remove_producer(pap_queue);
          octstr_destroy(ppg_url);
          http_close_all_ports();
          dict_destroy(http_clients);
@@ -456,24 +456,24 @@ void wap_push_ppg_shutdown(void)
          gwthread_join_every(ota_read_thread);
          gwthread_join_every(pap_request_thread);
 
-         list_destroy(ppg_queue, wap_event_destroy_item);
-         list_destroy(pap_queue, pap_event_destroy_item);
+         gwlist_destroy(ppg_queue, wap_event_destroy_item);
+         gwlist_destroy(pap_queue, pap_event_destroy_item);
          counter_destroy(push_id_counter);
      
          debug("wap.push.ppg", 0, "PPG: %ld push session machines left.",
-               list_len(ppg_machines));
-         list_destroy(ppg_machines, session_machine_destroy);
+               gwlist_len(ppg_machines));
+         gwlist_destroy(ppg_machines, session_machine_destroy);
 
          debug("wap_push_ppg", 0, "PPG: %ld unit pushes left", 
-               list_len(ppg_unit_pushes));
-         list_destroy(ppg_unit_pushes, push_machine_destroy);
+               gwlist_len(ppg_unit_pushes));
+         gwlist_destroy(ppg_unit_pushes, push_machine_destroy);
      }
 }
 
 void wap_push_ppg_dispatch_event(WAPEvent *e)
 {
     gw_assert(run_status == running);
-    list_produce(ppg_queue, e);
+    gwlist_produce(ppg_queue, e);
 }
 
 /*
@@ -487,7 +487,7 @@ PPGSessionMachine *wap_push_ppg_have_push_session_for(WAPAddrTuple *tuple)
     PPGSessionMachine *sm;
 
     gw_assert(tuple);
-    sm = list_search(ppg_machines, tuple->remote->address, session_has_addr);
+    sm = gwlist_search(ppg_machines, tuple->remote->address, session_has_addr);
 
     return sm;
 }
@@ -502,7 +502,7 @@ PPGSessionMachine *wap_push_ppg_have_push_session_for_sid(long sid)
     PPGSessionMachine *sm;
 
     gw_assert(sid >= 0);
-    sm = list_search(ppg_machines, &sid, session_has_sid);
+    sm = gwlist_search(ppg_machines, &sid, session_has_sid);
 
     return sm;
 }
@@ -565,7 +565,7 @@ static int read_ppg_config(Cfg *cfg)
      if ((list = cfg_get_multi_group(cfg, octstr_imm("wap-push-user")))
               == NULL) {
          panic(0, "No user group but ppg not trusted, stopping");
-         list_destroy(list, NULL);
+         gwlist_destroy(list, NULL);
          cfg_destroy(cfg); 
          return USER_CONFIGURATION_NOT_ADDED;
      }
@@ -632,7 +632,7 @@ static void ota_read_thread (void *arg)
 {
     WAPEvent *e;
 
-    while (run_status == running && (e = list_consume(ppg_queue)) != NULL) {
+    while (run_status == running && (e = gwlist_consume(ppg_queue)) != NULL) {
         handle_internal_event(e);
     } 
 }
@@ -700,7 +700,7 @@ static void http_read_thread(void *arg)
 
         p = pap_event_create(ip, url, push_headers, mime_content, cgivars,
                              client);
-        list_produce(pap_queue, p);
+        gwlist_produce(pap_queue, p);
     }
 }
 
@@ -723,7 +723,7 @@ static void https_read_thread(void *arg)
         
         p = pap_event_create(ip, url, push_headers, mime_content, cgivars, 
                              client);
-        list_produce(pap_queue, p);
+        gwlist_produce(pap_queue, p);
     }
 }
 #endif
@@ -769,7 +769,7 @@ static void pap_request_thread(void *arg)
     
     http_status = 0;                
   
-    while (run_status == running && (p = list_consume(pap_queue)) != NULL) {
+    while (run_status == running && (p = gwlist_consume(pap_queue)) != NULL) {
 
         http_status = HTTP_NOT_FOUND;
         pap_event_unpack(p, &ip, &url, &push_headers, &mime_content, 
@@ -1306,7 +1306,7 @@ static PPGSessionMachine *session_machine_create(WAPAddrTuple *tuple,
     #define INTEGER(name) m->name = 0;
     #define OCTSTR(name) m->name = NULL;
     #define ADDRTUPLE(name) m->name = NULL;
-    #define PUSHMACHINES(name) m->name = list_create();
+    #define PUSHMACHINES(name) m->name = gwlist_create();
     #define CAPABILITIES(name) m->name = NULL;
     #define MACHINE(fields) fields
     #include "wap_ppg_session_machine.def"
@@ -1317,7 +1317,7 @@ static PPGSessionMachine *session_machine_create(WAPAddrTuple *tuple,
         wsp_cap_duplicate_list(e->u.Push_Message.pi_capabilities);
     m->preferconfirmed_value = PAP_CONFIRMED;    
 
-    list_append(ppg_machines, m);
+    gwlist_append(ppg_machines, m);
     debug("wap.push.ppg", 0, "PPG: Created PPGSessionMachine %ld",
           m->session_id);
 
@@ -1432,7 +1432,7 @@ static void push_machines_list_destroy(List *machines)
     if (machines == NULL)
         return;
 
-    list_destroy(machines, push_machine_destroy);
+    gwlist_destroy(machines, push_machine_destroy);
 }
 
 static int session_has_addr(void *a, void *b)
@@ -1896,13 +1896,13 @@ static int content_transformable(List *push_headers)
     gw_assert(push_headers);
 
     cache_directives = http_header_find_all(push_headers, "Cache-Control");
-    if (list_len(cache_directives) == 0) {
+    if (gwlist_len(cache_directives) == 0) {
         http_destroy_headers(cache_directives);
         return 1;
     }
 
     i = 0;
-    while (i < list_len(cache_directives)) {
+    while (i < gwlist_len(cache_directives)) {
         http_header_get(cache_directives, i, &header_name, &header_value);
         if (octstr_compare(header_value, octstr_imm("no-transform")) == 0) {
             http_destroy_headers(cache_directives);
@@ -2136,7 +2136,7 @@ PPGSessionMachine *session_find_using_pi_client_address(Octstr *caddr)
 {
     PPGSessionMachine *sm;
     
-    sm = list_search(ppg_machines, caddr, session_has_pi_client_address);
+    sm = gwlist_search(ppg_machines, caddr, session_has_pi_client_address);
 
     return sm;
 }
@@ -2250,10 +2250,10 @@ static void remove_push_data(PPGSessionMachine *sm, PPGPushMachine *pm,
     push_machine_assert(pm);
 
     if (cless) {
-        list_delete_equal(ppg_unit_pushes, pm);
+        gwlist_delete_equal(ppg_unit_pushes, pm);
     } else {
         session_machine_assert(sm);
-        list_delete_equal(sm->push_machines, pm);
+        gwlist_delete_equal(sm->push_machines, pm);
     }
 
     push_machine_destroy(pm);
@@ -2292,12 +2292,12 @@ static int store_push_data(PPGPushMachine **pm, PPGSessionMachine *sm,
         return !duplicate_push_id;
     
     if (!cless) {
-       list_append(sm->push_machines, *pm);
+       gwlist_append(sm->push_machines, *pm);
        debug("wap.push.ppg", 0, "PPG: store_push_data: push machine %ld"
              " appended to push list of sm machine %ld", (*pm)->push_id, 
              sm->session_id);
     } else {
-       list_append(ppg_unit_pushes, *pm);
+       gwlist_append(ppg_unit_pushes, *pm);
        debug("wap.push.ppg", 0, "PPG: store_push_data: push machine %ld"
              " appended to unit push list", (*pm)->push_id);
     }
@@ -2349,11 +2349,11 @@ static void deliver_pending_pushes(PPGSessionMachine *sm, int last)
     long i;
 
     session_machine_assert(sm);
-    gw_assert(list_len(sm->push_machines) > 0);
+    gw_assert(gwlist_len(sm->push_machines) > 0);
 
     i = 0;
-    while (i < list_len(sm->push_machines)) {
-        pm = list_get(sm->push_machines, i);
+    while (i < gwlist_len(sm->push_machines)) {
+        pm = gwlist_get(sm->push_machines, i);
         push_machine_assert(pm);
 
         if (pm->delivery_method == PAP_UNCONFIRMED) {
@@ -2384,8 +2384,8 @@ static PPGPushMachine *abort_delivery(PPGSessionMachine *sm, int status)
     reason = PAP_ABORT_USERPND;
     code = PAP_CAPABILITIES_MISMATCH;
     
-    while (list_len(sm->push_machines) > 0) {
-        pm = list_get(sm->push_machines, 0);
+    while (gwlist_len(sm->push_machines) > 0) {
+        pm = gwlist_get(sm->push_machines, 0);
         push_machine_assert(pm);
 
         pm = update_push_data_with_attribute(&sm, pm, reason, PAP_ABORTED);
@@ -2411,13 +2411,13 @@ static void remove_session_data(PPGSessionMachine *sm, int status)
 
     code = PAP_ABORT_USERPND;
     
-    while (list_len(sm->push_machines) > 0) {
-        pm = list_get(sm->push_machines, 0);
+    while (gwlist_len(sm->push_machines) > 0) {
+        pm = gwlist_get(sm->push_machines, 0);
         response_push_message(pm, code, status);
         remove_push_data(sm, pm, sm == NULL);
     }
 
-    list_delete_equal(ppg_machines, sm);
+    gwlist_delete_equal(ppg_machines, sm);
     session_machine_destroy(sm);
 }
 
@@ -2428,8 +2428,8 @@ static void remove_pushless_session(PPGSessionMachine *sm)
 {
     session_machine_assert(sm);
 
-    if (list_len(sm->push_machines) == 0) {
-        list_delete_equal(ppg_machines, sm);
+    if (gwlist_len(sm->push_machines) == 0) {
+        gwlist_delete_equal(ppg_machines, sm);
         session_machine_destroy(sm);
     }
 }
@@ -2458,8 +2458,8 @@ static PPGSessionMachine *store_session_data(PPGSessionMachine *sm,
 static PPGSessionMachine *update_session_data_with_headers(
     PPGSessionMachine *sm, PPGPushMachine *pm)
 {
-    list_delete_matching(sm->push_machines, &pm->push_id, push_has_pid);
-    list_append(sm->push_machines, pm);
+    gwlist_delete_matching(sm->push_machines, &pm->push_id, push_has_pid);
+    gwlist_append(sm->push_machines, pm);
 
     return sm;
 }
@@ -2497,7 +2497,7 @@ static PPGPushMachine *find_ppg_push_machine_using_pid(PPGSessionMachine *sm,
     gw_assert(pid >= 0);
     session_machine_assert(sm);
 
-    pm = list_search(sm->push_machines, &pid, push_has_pid);
+    pm = gwlist_search(sm->push_machines, &pid, push_has_pid);
 
     return pm;
 }
@@ -2521,7 +2521,7 @@ static PPGPushMachine *find_ppg_push_machine_using_pi_push_id(
     gw_assert(pi_push_id);
     session_machine_assert(sm);
 
-    pm = list_search(sm->push_machines, pi_push_id, push_has_pi_push_id);
+    pm = gwlist_search(sm->push_machines, pi_push_id, push_has_pi_push_id);
 
     return pm;
 }
@@ -2532,7 +2532,7 @@ static PPGPushMachine *find_unit_ppg_push_machine_using_pi_push_id(
     PPGPushMachine *pm;
 
     gw_assert(pi_push_id);
-    pm = list_search(ppg_unit_pushes, pi_push_id, push_has_pi_push_id);
+    pm = gwlist_search(ppg_unit_pushes, pi_push_id, push_has_pi_push_id);
 
     return pm;
 }
@@ -2597,13 +2597,13 @@ static PPGPushMachine *update_push_data_with_attribute(PPGSessionMachine **sm,
     }
 
     if (*sm != NULL){
-        list_delete_matching((**sm).push_machines, &qm->push_id, push_has_pid);
-        list_append((**sm).push_machines, qm);
-        list_delete_equal(ppg_machines, *sm);
-        list_append(ppg_machines, *sm);
+        gwlist_delete_matching((**sm).push_machines, &qm->push_id, push_has_pid);
+        gwlist_append((**sm).push_machines, qm);
+        gwlist_delete_equal(ppg_machines, *sm);
+        gwlist_append(ppg_machines, *sm);
     } else {
-        list_delete_matching(ppg_unit_pushes, &qm->push_id, push_has_pid);
-        list_append(ppg_unit_pushes, qm);
+        gwlist_delete_matching(ppg_unit_pushes, &qm->push_id, push_has_pid);
+        gwlist_append(ppg_unit_pushes, qm);
     }
 
     return qm;
@@ -2622,8 +2622,8 @@ static PPGSessionMachine *update_session_data(PPGSessionMachine *m,
     m->addr_tuple->remote->port = port;
     m->client_capabilities = wsp_cap_duplicate_list(caps);
 
-    list_delete_equal(ppg_machines, m);
-    list_append(ppg_machines, m);
+    gwlist_delete_equal(ppg_machines, m);
+    gwlist_append(ppg_machines, m);
 
     return m;
 }

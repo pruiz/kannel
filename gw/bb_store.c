@@ -167,14 +167,14 @@ static int do_dump(void)
 	return -1;
 
     sms_list = dict_keys(sms_dict);
-    for (l=0; l < list_len(sms_list); l++) {
-	key = list_get(sms_list, l);
+    for (l=0; l < gwlist_len(sms_list); l++) {
+	key = gwlist_get(sms_list, l);
 	msg = dict_get(sms_dict, key);
 	if (msg)
 	    write_msg(msg);
     }
     fflush(file);
-    list_destroy(sms_list, octstr_destroy_item);
+    gwlist_destroy(sms_list, octstr_destroy_item);
 
     /* rename old storefile as .bak, and then new as regular file
      * without .new ending */
@@ -193,7 +193,7 @@ static void store_dumper(void *arg)
 {
     time_t now;
 
-    list_add_producer(flow_threads);
+    gwlist_add_producer(flow_threads);
 
     while(active) {
 	now = time(NULL);
@@ -223,7 +223,7 @@ static void store_dumper(void *arg)
     file_mutex = NULL;
     sms_dict = NULL;
 
-    list_remove_producer(flow_threads);
+    gwlist_remove_producer(flow_threads);
 }
 
 
@@ -258,8 +258,8 @@ Octstr *store_status(int status_type)
 
     keys = dict_keys(sms_dict);
 
-    for (l = 0; l < list_len(keys); l++) {
-	key = list_get(keys, l);
+    for (l = 0; l < gwlist_len(keys); l++) {
+	key = gwlist_get(keys, l);
         msg = dict_get(sms_dict, key);
 	if (msg == NULL)
 	    continue;
@@ -322,7 +322,7 @@ Octstr *store_status(int status_type)
                 octstr_hex_to_binary(msg->sms.msgdata);
         }
     }
-    list_destroy(keys, octstr_destroy_item);
+    gwlist_destroy(keys, octstr_destroy_item);
 
 finish:
     /* set the type based footer */
@@ -509,7 +509,7 @@ int store_load(void)
      */
 
     keys = dict_keys(sms_dict);
-    while((key = list_extract_first(keys))!=NULL) {
+    while((key = gwlist_extract_first(keys))!=NULL) {
 	msg = dict_get(sms_dict, key);
 
 	if (msg_type(msg) != sms) {
@@ -522,20 +522,20 @@ int store_load(void)
 	if (msg->sms.sms_type == mo ||
 	    msg->sms.sms_type == report_mo) {
 	    copy = msg_duplicate(msg);
-	    list_produce(incoming_sms, copy);
+	    gwlist_produce(incoming_sms, copy);
         }
 	else if (msg->sms.sms_type == mt_push ||
 	    msg->sms.sms_type == mt_reply ||
 	    msg->sms.sms_type == report_mt) {
 	    copy = msg_duplicate(msg);
-	    list_produce(outgoing_sms, copy);
+	    gwlist_produce(outgoing_sms, copy);
         }
 	else {
 	    msg_dump(msg, 0);
 	    dict_remove(sms_dict, key);
 	}
     }
-    list_destroy(keys, octstr_destroy_item);
+    gwlist_destroy(keys, octstr_destroy_item);
 
     /* Finally, generate new store file out of left messages
      */

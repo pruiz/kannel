@@ -174,38 +174,38 @@ static struct dlr_entry* dlr_pgsql_get(const Octstr *smsc, const Octstr *ts, con
     result = pgsql_select(sql);
     octstr_destroy(sql);
 
-    if (result == NULL || list_len(result) < 1) {
+    if (result == NULL || gwlist_len(result) < 1) {
         debug("dlr.pgsql", 0, "no rows found");
-        while((row = list_extract_first(result)))
-            list_destroy(row, octstr_destroy_item);
-        list_destroy(result, NULL);
+        while((row = gwlist_extract_first(result)))
+            gwlist_destroy(row, octstr_destroy_item);
+        gwlist_destroy(result, NULL);
         return NULL;
     }
     
-    row = list_get(result, 0);
+    row = gwlist_get(result, 0);
 
     debug("dlr.pgsql", 0, "Found entry, col1=%s, col2=%s, col3=%s, col4=%s, col5=%s col6=%s",
-		    octstr_get_cstr(list_get(row, 0)),
-		    octstr_get_cstr(list_get(row, 1)),
-		    octstr_get_cstr(list_get(row, 2)),
-		    octstr_get_cstr(list_get(row, 3)),
-		    octstr_get_cstr(list_get(row, 4)),
-		    octstr_get_cstr(list_get(row, 5))
+		    octstr_get_cstr(gwlist_get(row, 0)),
+		    octstr_get_cstr(gwlist_get(row, 1)),
+		    octstr_get_cstr(gwlist_get(row, 2)),
+		    octstr_get_cstr(gwlist_get(row, 3)),
+		    octstr_get_cstr(gwlist_get(row, 4)),
+		    octstr_get_cstr(gwlist_get(row, 5))
 	 );
 
     res = dlr_entry_create();
     gw_assert(res != NULL);
-    res->mask        = atoi(octstr_get_cstr(list_get(row, 0)));
-    res->service     = octstr_duplicate(list_get(row, 1));
-    res->url         = octstr_duplicate(list_get(row, 2));
-    res->source      = octstr_duplicate(list_get(row, 3));
-    res->destination = octstr_duplicate(list_get(row, 4));
-    res->boxc_id     = octstr_duplicate(list_get(row, 5));
+    res->mask        = atoi(octstr_get_cstr(gwlist_get(row, 0)));
+    res->service     = octstr_duplicate(gwlist_get(row, 1));
+    res->url         = octstr_duplicate(gwlist_get(row, 2));
+    res->source      = octstr_duplicate(gwlist_get(row, 3));
+    res->destination = octstr_duplicate(gwlist_get(row, 4));
+    res->boxc_id     = octstr_duplicate(gwlist_get(row, 5));
     res->smsc        = octstr_duplicate(smsc);
 
-    while((row = list_extract_first(result)))
-        list_destroy(row, octstr_destroy_item);
-    list_destroy(result, NULL);
+    while((row = gwlist_extract_first(result)))
+        gwlist_destroy(row, octstr_destroy_item);
+    gwlist_destroy(result, NULL);
     
     return res;
 }
@@ -250,15 +250,15 @@ static long dlr_pgsql_messages(void)
     res = pgsql_select(sql);
     octstr_destroy(sql);
 
-    if (res == NULL || list_len(res) < 1) {
+    if (res == NULL || gwlist_len(res) < 1) {
         error(0, "PGSQL: Could not get count of DLR table");
         ret = -1;
     } else {
-        ret = atol(octstr_get_cstr(list_get(list_get(res, 0), 0)));
+        ret = atol(octstr_get_cstr(gwlist_get(gwlist_get(res, 0), 0)));
     }
 
-    list_destroy(list_extract_first(res), octstr_destroy_item);
-    list_destroy(res, NULL);
+    gwlist_destroy(gwlist_extract_first(res), octstr_destroy_item);
+    gwlist_destroy(res, NULL);
         
     return ret;
 }
@@ -315,7 +315,7 @@ struct dlr_storage *dlr_init_pgsql(Cfg* cfg)
      */
 
      grplist = cfg_get_multi_group(cfg, octstr_imm("pgsql-connection"));
-     while (grplist && (grp = list_extract_first(grplist)) != NULL) {
+     while (grplist && (grp = gwlist_extract_first(grplist)) != NULL) {
         p = cfg_get(grp, octstr_imm("id"));
         if (p != NULL && octstr_compare(p, pgsql_id) == 0) {
             goto found;
@@ -327,7 +327,7 @@ struct dlr_storage *dlr_init_pgsql(Cfg* cfg)
 
 found:
     octstr_destroy(p);
-    list_destroy(grplist, NULL);
+    gwlist_destroy(grplist, NULL);
 
     if (cfg_get_integer(&pool_size, grp, octstr_imm("max-connections")) == -1 || pool_size == 0)
         pool_size = 1;

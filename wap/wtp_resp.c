@@ -213,11 +213,11 @@ void wtp_resp_init(wap_dispatch_func_t *datagram_dispatch,
                    wap_dispatch_func_t *push_dispatch, 
                    long timer_freq) 
 {
-    resp_machines = list_create();
+    resp_machines = gwlist_create();
     resp_machine_id_counter = counter_create();
 
-    resp_queue = list_create();
-    list_add_producer(resp_queue);
+    resp_queue = gwlist_create();
+    gwlist_add_producer(resp_queue);
 
     dispatch_to_wdp = datagram_dispatch;
     dispatch_to_wsp = session_dispatch;
@@ -236,13 +236,13 @@ void wtp_resp_shutdown(void)
 {
     gw_assert(resp_run_status == running);
     resp_run_status = terminating;
-    list_remove_producer(resp_queue);
+    gwlist_remove_producer(resp_queue);
     gwthread_join_every(main_thread);
 
     debug("wap.wtp", 0, "wtp_resp_shutdown: %ld resp_machines left",
-     	  list_len(resp_machines));
-    list_destroy(resp_machines, resp_machine_destroy);
-    list_destroy(resp_queue, wap_event_destroy_item);
+     	  gwlist_len(resp_machines));
+    gwlist_destroy(resp_machines, resp_machine_destroy);
+    gwlist_destroy(resp_queue, wap_event_destroy_item);
 
     counter_destroy(resp_machine_id_counter);
 
@@ -252,7 +252,7 @@ void wtp_resp_shutdown(void)
 
 void wtp_resp_dispatch_event(WAPEvent *event) 
 {
-    list_produce(resp_queue, event);
+    gwlist_produce(resp_queue, event);
 }
 
 
@@ -268,7 +268,7 @@ static void main_thread(void *arg)
     WAPEvent *e;
 
     while (resp_run_status == running && 
-           (e = list_consume(resp_queue)) != NULL) {
+           (e = gwlist_consume(resp_queue)) != NULL) {
 
         sm = resp_machine_find_or_create(e);
         if (sm == NULL) {
@@ -581,7 +581,7 @@ static WTPRespMachine *resp_machine_find(WAPAddrTuple *tuple, long tid,
     pat.tid = tid;
     pat.mid = mid;
 	
-    m = list_search(resp_machines, &pat, is_wanted_resp_machine);
+    m = gwlist_search(resp_machines, &pat, is_wanted_resp_machine);
     return m;
 }
 
@@ -603,7 +603,7 @@ static WTPRespMachine *resp_machine_create(WAPAddrTuple *tuple, long tid,
     #define MACHINE(field) field
     #include "wtp_resp_machine.def"
 
-    list_append(resp_machines, resp_machine);
+    gwlist_append(resp_machines, resp_machine);
 
     resp_machine->mid = counter_increase(resp_machine_id_counter);
     resp_machine->addr_tuple = wap_addr_tuple_duplicate(tuple);
@@ -629,14 +629,14 @@ static void resp_machine_destroy(void * p)
     debug("wap.wtp", 0, "WTP: Destroying WTPRespMachine %p (%ld)", 
 	  (void *) resp_machine, resp_machine->mid);
 	
-    list_delete_equal(resp_machines, resp_machine);
+    gwlist_delete_equal(resp_machines, resp_machine);
         
     #define ENUM(name) resp_machine->name = LISTEN;
     #define EVENT(name) wap_event_destroy(resp_machine->name);
     #define INTEGER(name) resp_machine->name = 0; 
     #define TIMER(name) gwtimer_destroy(resp_machine->name); 
     #define ADDRTUPLE(name) wap_addr_tuple_destroy(resp_machine->name); 
-    #define LIST(name) list_destroy(resp_machine->name,sar_info_destroy);
+    #define LIST(name) gwlist_destroy(resp_machine->name,sar_info_destroy);
     #define SARDATA(name) sardata_destroy(resp_machine->name);
     #define MACHINE(field) field
     #include "wtp_resp_machine.def"
@@ -835,14 +835,14 @@ static int add_sar_transaction(WTPRespMachine *machine, Octstr *data, int psn)
     sar_info_t *sar_info;
 
     if (machine->sar_info == NULL) {
-        machine->sar_info = list_create();
+        machine->sar_info = gwlist_create();
     }
 
-    if (list_search(machine->sar_info, &psn, is_wanted_sar_data) == NULL) {
+    if (gwlist_search(machine->sar_info, &psn, is_wanted_sar_data) == NULL) {
         sar_info = gw_malloc(sizeof(sar_info_t));
         sar_info->sar_psn = psn;
         sar_info->sar_data = octstr_duplicate(data);
-        list_append(machine->sar_info, sar_info);
+        gwlist_append(machine->sar_info, sar_info);
         return 0;
     } else {
         debug("wap.wtp", 0, "Duplicated psn found, ignore packet");
@@ -859,7 +859,7 @@ static WAPEvent *assembly_sar_event(WTPRespMachine *machine, int last_psn)
     e = wap_event_duplicate(machine->sar_invoke);
 
     for (i = 1; i <= last_psn; i++) {
-        if ((sar_info = list_search(machine->sar_info, &i, is_wanted_sar_data)) != NULL) {
+        if ((sar_info = gwlist_search(machine->sar_info, &i, is_wanted_sar_data)) != NULL) {
             octstr_append(e->u.RcvInvoke.user_data,sar_info->sar_data);
         } else {
             debug("wap.wtp", 0, "Packet with psn %d not found", i);

@@ -106,8 +106,8 @@ static void producer(void *arg) {
 	id = gwthread_self();
 	index = info->start_index;
 	for (i = 0; i < NUM_ITEMS_PER_PRODUCER; ++i, ++index)
-		list_produce(info->list, new_item(id, i, index));
-	list_remove_producer(info->list);
+		gwlist_produce(info->list, new_item(id, i, index));
+	gwlist_remove_producer(info->list);
 }
 
 static void consumer(void *arg) {
@@ -116,7 +116,7 @@ static void consumer(void *arg) {
 	
 	list = arg;
 	for (;;) {
-		item = list_consume(list);
+		item = gwlist_consume(list);
 		if (item == NULL)
 			break;
 		received[item->index] = 1;
@@ -138,13 +138,13 @@ static void main_for_producer_and_consumer(void) {
 	long p, n, index;
 	int errors;
 	
-	list = list_create();
+	list = gwlist_create();
 	init_received();
 	
 	for (i = 0; i < NUM_PRODUCERS; ++i) {
 	    	tab[i].list = list;
 		tab[i].start_index = i * NUM_ITEMS_PER_PRODUCER;
-	    	list_add_producer(list);
+	    	gwlist_add_producer(list);
 		tab[i].id = gwthread_create(producer, tab + i);
 	}
 	for (i = 0; i < NUM_CONSUMERS; ++i)
@@ -153,9 +153,9 @@ static void main_for_producer_and_consumer(void) {
     	gwthread_join_every(producer);
     	gwthread_join_every(consumer);
 
-	while (list_len(list) > 0) {
-		item = list_get(list, 0);
-		list_delete(list, 0, 1);
+	while (gwlist_len(list) > 0) {
+		item = gwlist_get(list, 0);
+		gwlist_delete(list, 0, 1);
 		warning(0, "main: %ld %ld %ld", (long) item->producer, 
 				item->num, item->index);
 	}
@@ -198,25 +198,25 @@ static void main_for_list_add_and_delete(void) {
 	char *p;
 	List *list;
 
-	list = list_create();
+	list = gwlist_create();
 	
 	for (j = 0; j < num_repeats; ++j)
 		for (i = 0; i < num_items; ++i)
-			list_append(list, items[i]);
-	list_delete_matching(list, items[0], compare_cstr);
-	for (i = 0; i < list_len(list); ++i) {
-		p = list_get(list, i);
+			gwlist_append(list, items[i]);
+	gwlist_delete_matching(list, items[0], compare_cstr);
+	for (i = 0; i < gwlist_len(list); ++i) {
+		p = gwlist_get(list, i);
 		if (strcmp(p, items[0]) == 0)
 			panic(0, "list contains `%s' after deleting it!",
 				items[0]);
 	}
 	
 	for (i = 0; i < num_items; ++i)
-		list_delete_equal(list, items[i]);
-	if (list_len(list) != 0)
+		gwlist_delete_equal(list, items[i]);
+	if (gwlist_len(list) != 0)
 		panic(0, "list is not empty after deleting everything");
 	
-	list_destroy(list, NULL);
+	gwlist_destroy(list, NULL);
 }
 
 
@@ -232,37 +232,37 @@ static void main_for_extract(void) {
 	char *p;
 	List *list, *extracted;
 
-	list = list_create();
+	list = gwlist_create();
 	
 	for (j = 0; j < num_repeats; ++j)
 		for (i = 0; i < num_items; ++i)
-			list_append(list, items[i]);
+			gwlist_append(list, items[i]);
 
 	for (j = 0; j < num_items; ++j) {
-		extracted = list_extract_matching(list, items[j], 
+		extracted = gwlist_extract_matching(list, items[j], 
 					compare_cstr);
 		if (extracted == NULL)
 			panic(0, "no extracted elements, should have!");
-		for (i = 0; i < list_len(list); ++i) {
-			p = list_get(list, i);
+		for (i = 0; i < gwlist_len(list); ++i) {
+			p = gwlist_get(list, i);
 			if (strcmp(p, items[j]) == 0)
 				panic(0, "list contains `%s' after "
 				         "extracting it!",
 					items[j]);
 		}
-		for (i = 0; i < list_len(extracted); ++i) {
-			p = list_get(extracted, i);
+		for (i = 0; i < gwlist_len(extracted); ++i) {
+			p = gwlist_get(extracted, i);
 			if (strcmp(p, items[j]) != 0)
 				panic(0, 
 				  "extraction returned wrong element!");
 		}
-		list_destroy(extracted, NULL);
+		gwlist_destroy(extracted, NULL);
 	}
 	
-	if (list_len(list) != 0)
+	if (gwlist_len(list) != 0)
 		panic(0, "list is not empty after extracting everything");
 	
-	list_destroy(list, NULL);
+	gwlist_destroy(list, NULL);
 }
 
 

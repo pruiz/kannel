@@ -233,7 +233,7 @@ Timer *gwtimer_create(List *outputlist)
     t->elapsed_event = NULL;
     t->index = -1;
     t->output = outputlist;
-    list_add_producer(outputlist);
+    gwlist_add_producer(outputlist);
 
     return t;
 }
@@ -246,7 +246,7 @@ void gwtimer_destroy(Timer *timer)
         return;
 
     gwtimer_stop(timer);
-    list_remove_producer(timer->output);
+    gwlist_remove_producer(timer->output);
     wap_event_destroy(timer->event);
     gw_free(timer);
 }
@@ -342,7 +342,7 @@ static void abort_elapsed(Timer *timer)
     if (timer->elapsed_event == NULL)
         return;
 
-    count = list_delete_equal(timer->output, timer->elapsed_event);
+    count = gwlist_delete_equal(timer->output, timer->elapsed_event);
     if (count > 0) {
         debug("timers", 0, "Aborting %s timer.",
               wap_event_name(timer->elapsed_event->type));
@@ -522,7 +522,7 @@ static void elapse_timer(Timer *timer)
     debug("timers", 0, "%s elapsed.", wap_event_name(timer->event->type));
 
     timer->elapsed_event = wap_event_duplicate(timer->event);
-    list_produce(timer->output, timer->elapsed_event);
+    gwlist_produce(timer->output, timer->elapsed_event);
     timer->elapses = -1;
 }
 

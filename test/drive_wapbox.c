@@ -179,13 +179,13 @@ static void http_thread(void *arg) {
 		"<card id=\"main\" title=\"Hello, world\" newcontext=\"true\">\n"
 		"        <p>Hello, world.</p>\n"
 		"</card></wml>\n");
-	List *reply_headers = list_create();
+	List *reply_headers = gwlist_create();
 	int port;
 
     	port = *(int *) arg;
 	gw_free(arg);
 
-	list_append(reply_headers,
+	gwlist_append(reply_headers,
 		octstr_create("Content-Type: text/vnd.wap.wml"));
 
 	for (;!dying;) {
@@ -248,7 +248,7 @@ static Connection *start_wapbox(void) {
 static void initialize_clients(void) {
 	long i;
 
-	ready_clients = list_create();
+	ready_clients = gwlist_create();
 
 	clients = gw_malloc(max_clients * sizeof(*clients));
 	for (i = 0; i < max_clients; i++) {
@@ -258,13 +258,13 @@ static void initialize_clients(void) {
 		clients[i].wsp_session_id = -1;
 		clients[i].pages_fetched = 0;
 		clients[i].port = i;
-		list_append(ready_clients, &clients[i]);
+		gwlist_append(ready_clients, &clients[i]);
 	}
 }
 
 static void destroy_clients(void) {
 	gw_free(clients);
-	list_destroy(ready_clients, NULL);
+	gwlist_destroy(ready_clients, NULL);
 }
 
 static Client *find_client(unsigned short port) {
@@ -277,7 +277,7 @@ static Client *find_client(unsigned short port) {
 
 static void client_done(Client *client) {
 	requests_complete++;
-	list_append(ready_clients, client);
+	gwlist_append(ready_clients, client);
 }
 
 static void increment_tid(Client *client) {
@@ -601,7 +601,7 @@ static long run_requests(Connection *boxc) {
 			Client *client;
 
 			if (requests_sent < max_requests
-			    && (client = list_extract_first(ready_clients))) {
+			    && (client = gwlist_extract_first(ready_clients))) {
 				start_request(boxc, client);
 				requests_sent++;
 			}

@@ -110,8 +110,8 @@ static void main_thread(void *);
 
 void wtls_secmgr_init(void) {
         gw_assert(run_status == limbo);
-        secmgr_queue = list_create();
-        list_add_producer(secmgr_queue);
+        secmgr_queue = gwlist_create();
+        gwlist_add_producer(secmgr_queue);
         run_status = running;
         gwthread_create(main_thread, NULL);
 }
@@ -119,24 +119,24 @@ void wtls_secmgr_init(void) {
 
 void wtls_secmgr_shutdown(void) {
         gw_assert(run_status == running);
-        list_remove_producer(secmgr_queue);
+        gwlist_remove_producer(secmgr_queue);
         run_status = terminating;
         
         gwthread_join_every(main_thread);
         
-        list_destroy(secmgr_queue, wap_event_destroy_item);
+        gwlist_destroy(secmgr_queue, wap_event_destroy_item);
 }
 
 
 void wtls_secmgr_dispatch(WAPEvent *event) {
         gw_assert(run_status == running);
-        list_produce(secmgr_queue, event);
+        gwlist_produce(secmgr_queue, event);
 }
 
 
 long wtls_secmgr_get_load(void) {
         gw_assert(run_status == running);
-        return list_len(secmgr_queue);
+        return gwlist_len(secmgr_queue);
 }
 
 
@@ -148,7 +148,7 @@ long wtls_secmgr_get_load(void) {
 static void main_thread(void *arg) {
         WAPEvent *ind, *res, *req, *term;
         
-        while (run_status == running && (ind = list_consume(secmgr_queue)) != NULL) {
+        while (run_status == running && (ind = gwlist_consume(secmgr_queue)) != NULL) {
                 switch (ind->type) {
                 case SEC_Create_Ind:
                         /* Process the cipherlist */

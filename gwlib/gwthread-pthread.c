@@ -229,7 +229,7 @@ static void alert_joiners(void)
     threadinfo = getthreadinfo();
     if (!threadinfo->joiners)
         return;
-    while ((joiner_cond = list_extract_first(threadinfo->joiners))) {
+    while ((joiner_cond = gwlist_extract_first(threadinfo->joiners))) {
         pthread_cond_broadcast(joiner_cond);
     }
 }
@@ -239,7 +239,7 @@ static void delete_threadinfo(void)
     struct threadinfo *threadinfo;
 
     threadinfo = getthreadinfo();
-    list_destroy(threadinfo->joiners, NULL);
+    gwlist_destroy(threadinfo->joiners, NULL);
     close(threadinfo->wakefd_recv);
     close(threadinfo->wakefd_send);
     THREAD(threadinfo->number) = NULL;
@@ -523,8 +523,8 @@ void gwthread_join(long thread)
     }
 
     if (!threadinfo->joiners)
-        threadinfo->joiners = list_create();
-    list_append(threadinfo->joiners, &exit_cond);
+        threadinfo->joiners = gwlist_create();
+    gwlist_append(threadinfo->joiners, &exit_cond);
 
     /* The wait immediately releases the lock, and reacquires it
      * when the condition is satisfied.  So don't worry, we're not
@@ -589,8 +589,8 @@ void gwthread_join_every(gwthread_func_t *func)
               "Waiting for %ld (%s) to terminate",
               ti->number, ti->name);
         if (!ti->joiners)
-            ti->joiners = list_create();
-        list_append(ti->joiners, &exit_cond);
+            ti->joiners = gwlist_create();
+        gwlist_append(ti->joiners, &exit_cond);
         ret = pthread_cond_wait(&exit_cond, &threadtable_lock);
         if (ret != 0)
             warning(ret, "gwthread_join_all: error in pthread_cond_wait");

@@ -207,12 +207,12 @@ static int send_message(Msg *msg)
     }
     
     list = sms_split(msg, NULL, NULL, NULL, NULL, 1, 0, 100, sms_max_length);
-    msg_count = list_len(list);
+    msg_count = gwlist_len(list);
 
     debug("sms", 0, "message length %ld, sending %ld messages", 
           octstr_len(msg->sms.msgdata), msg_count);
 
-    while ((part = list_extract_first(list)) != NULL) {
+    while ((part = gwlist_extract_first(list)) != NULL) {
 
         if (delay > 0)
             gwthread_sleep(delay);
@@ -222,7 +222,7 @@ static int send_message(Msg *msg)
             return -1;
         
     }    
-    list_destroy(list, NULL);
+    gwlist_destroy(list, NULL);
     
     return msg_count;
 }
@@ -273,7 +273,7 @@ static void init_batch(Octstr *cfilename, Octstr *rfilename)
               octstr_get_cstr(rfilename)); 
 
     lines = octstr_split(receivers, octstr_imm("\n")); 
-    lineno = list_len(lines);
+    lineno = gwlist_len(lines);
     if (lineno <= 0) 
         panic(0,"Receiver file seems empty!");
 
@@ -286,7 +286,7 @@ static void run_batch(void)
     Octstr *no;
     unsigned long lineno = 0;
 
-    while ((no = list_consume(lines)) != NULL) {
+    while ((no = gwlist_consume(lines)) != NULL) {
     	if (octstr_check_range(no, 0, 256, gw_isdigit)) {
         Msg *msg;
         
@@ -398,7 +398,7 @@ int main(int argc, char **argv)
     octstr_destroy(service);
     octstr_destroy(account);
     octstr_destroy(smsc_id);
-    list_destroy(lines, octstr_destroy_item); 
+    gwlist_destroy(lines, octstr_destroy_item); 
    
     gwlib_shutdown();
 

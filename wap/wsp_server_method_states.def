@@ -196,7 +196,7 @@ ROW(HOLDING,
 		 * the queue because the state machine definitions expect
 		 * an event to be handled completely before the next is
 		 * started. */
-		list_insert(queue, 0, wsp_event);
+		gwlist_insert(queue, 0, wsp_event);
 	},
 	HOLDING)
 
@@ -210,7 +210,7 @@ ROW(HOLDING,
 		wsp_event = wap_event_create(Suspend_Event);
 		wsp_event->u.Suspend_Event.session_handle = msm->session_id;
 		/* See story for Disconnect, above */
-		list_insert(queue, 0, wsp_event);
+		gwlist_insert(queue, 0, wsp_event);
 	},
 	HOLDING)
 
@@ -263,7 +263,7 @@ ROW(REQUESTING,
 		/* Disconnect the session */
 		wsp_event = wap_event_create(Disconnect_Event);
 		wsp_event->u.Disconnect_Event.session_handle = msm->session_id;
-		list_insert(queue, 0, wsp_event);
+		gwlist_insert(queue, 0, wsp_event);
 	},
 	REQUESTING)
 
@@ -276,7 +276,7 @@ ROW(REQUESTING,
 		/* Suspend the session */
 		wsp_event = wap_event_create(Suspend_Event);
 		wsp_event->u.Suspend_Event.session_handle = msm->session_id;
-		list_insert(queue, 0, wsp_event);
+		gwlist_insert(queue, 0, wsp_event);
 	},
 	REQUESTING)
 
@@ -343,7 +343,7 @@ ROW(PROCESSING,
 		/* Disconnect the session */
 		wsp_event = wap_event_create(Disconnect_Event);
 		wsp_event->u.Disconnect_Event.session_handle = msm->session_id;
-		list_insert(queue, 0, wsp_event);
+		gwlist_insert(queue, 0, wsp_event);
 	},
 	PROCESSING)
 
@@ -356,7 +356,7 @@ ROW(PROCESSING,
 		/* Suspend the session */
 		wsp_event = wap_event_create(Suspend_Event);
 		wsp_event->u.Suspend_Event.session_handle = msm->session_id;
-		list_insert(queue, 0, wsp_event);
+		gwlist_insert(queue, 0, wsp_event);
 	},
 	PROCESSING)
 
@@ -418,7 +418,7 @@ ROW(REPLYING,
 		/* Disconnect the session */
 		wsp_event = wap_event_create(Disconnect_Event);
 		wsp_event->u.Disconnect_Event.session_handle = msm->session_id;
-		list_insert(queue, 0, wsp_event);
+		gwlist_insert(queue, 0, wsp_event);
 	},
 	REPLYING)
 
@@ -431,7 +431,7 @@ ROW(REPLYING,
 		/* Suspend the session */
 		wsp_event = wap_event_create(Suspend_Event);
 		wsp_event->u.Suspend_Event.session_handle = msm->session_id;
-		list_insert(queue, 0, wsp_event);
+		gwlist_insert(queue, 0, wsp_event);
 	},
 	REPLYING)
 

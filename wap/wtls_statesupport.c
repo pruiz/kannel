@@ -485,9 +485,9 @@ void wtls_decrypt_pdu_list(WTLSMachine *wtls_machine, List *pdu_list)
     Octstr* decryptedData = NULL;
 	wtls_Payload *payload;
 	
-	listlen = list_len(pdu_list);
+	listlen = gwlist_len(pdu_list);
 	for( i=0; i<listlen; i++) {
-		payload = (wtls_Payload *)list_get(pdu_list, i);
+		payload = (wtls_Payload *)gwlist_get(pdu_list, i);
 		
 		if(payload->cipher) {
 			debug("wtls", 0, "Decrypting PDU %d", i);
@@ -616,14 +616,14 @@ CipherSuite* wtls_choose_ciphersuite(List* ciphersuites) {
 		int i = 0;
         int listLen;
 		
-		listLen = list_len(ciphersuites);
+		listLen = gwlist_len(ciphersuites);
 		
         //returnSuite = gw_malloc(sizeof(CipherSuite));
 
 		/* the first CS in the list */
 		do {
 			/* the next CS in the list */
-			currentCS = list_get(ciphersuites, i);
+			currentCS = gwlist_get(ciphersuites, i);
 			/* Check if we support this BulkCipher */
 			if(currentCS->bulk_cipher_algo >= RC5_CBC_40 &&
 			   currentCS->bulk_cipher_algo <= IDEA_CBC) {
@@ -662,11 +662,11 @@ int wtls_choose_clientkeyid(List* clientKeyIds) {
 		int i = 0;
 		int listLen;
 		
-		listLen = list_len(clientKeyIds);
+		listLen = gwlist_len(clientKeyIds);
 		debug("wtls", 0, "listLen = %d", listLen);
 		
 		do {
-			currentKeyId = list_get(clientKeyIds, i);
+			currentKeyId = gwlist_get(clientKeyIds, i);
 			debug("wtls", 0, "Key %d", i);
 			dump_key_exchange_id("wtls", 0, currentKeyId);
 			
@@ -775,10 +775,10 @@ void add_all_handshake_data(WTLSMachine *wtls_machine, List *pdu_list)
 
 	gw_assert(pdu_list != NULL);
 	
-	listlen = list_len(pdu_list);
+	listlen = gwlist_len(pdu_list);
 	debug("wtls", 0,"adding handshake data from %d PDU(s)", listlen);
 	for(i=0; i<listlen; i++) {
-		payload = (wtls_Payload *)list_get(pdu_list, i);
+		payload = (wtls_Payload *)gwlist_get(pdu_list, i);
 		if(payload->type == Handshake_PDU) {
             octstr_insert(wtls_machine->handshake_data, payload->data,
                           octstr_len(wtls_machine->handshake_data));

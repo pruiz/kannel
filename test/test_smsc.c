@@ -194,37 +194,37 @@ static void eq_destroy_event(Event *e)
 
 static EventQueue *eq_create(void)
 {
-    return list_create();
+    return gwlist_create();
 }
 
 
 static void eq_add_producer(EventQueue *eq)
 {
-    list_add_producer(eq);
+    gwlist_add_producer(eq);
 }
 
 
 static void eq_remove_producer(EventQueue *eq)
 {
-    list_remove_producer(eq);
+    gwlist_remove_producer(eq);
 }
 
 
 static void eq_destroy(EventQueue *eq)
 {
-    list_destroy(eq, NULL);
+    gwlist_destroy(eq, NULL);
 }
 
 
 static void eq_append(EventQueue *eq, Event *e)
 {
-    list_produce(eq, e);
+    gwlist_produce(eq, e);
 }
 
 
 static Event *eq_extract(EventQueue *eq)
 {
-    return list_consume(eq);
+    return gwlist_consume(eq);
 }
 
 

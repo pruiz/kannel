@@ -133,10 +133,10 @@ void wtp_pdu_destroy(WTP_PDU *pdu) {
 	}
 
 	if (pdu->options) {
-		while (list_len(pdu->options)) {
-			wtp_tpi_destroy(list_consume(pdu->options));
+		while (gwlist_len(pdu->options)) {
+			wtp_tpi_destroy(gwlist_consume(pdu->options));
 		}
-		list_destroy(pdu->options, NULL);
+		gwlist_destroy(pdu->options, NULL);
 	}
 
 	gw_free(pdu);
@@ -157,8 +157,8 @@ void wtp_pdu_append_tpi(WTP_PDU *pdu, int type, Octstr *data) {
 	tpi->type = type;
 	tpi->data = data;
 	if (pdu->options == NULL)
-		pdu->options = list_create();
-	list_append(pdu->options, tpi);
+		pdu->options = gwlist_create();
+	gwlist_append(pdu->options, tpi);
 }
 
 static long unpack_tpis(Octstr *data, long bitpos, WTP_PDU *pdu) {
@@ -194,9 +194,9 @@ static long pack_tpis(Octstr *data, long bitpos, List *tpis) {
 	int i;
 	int num_tpis;
 
-	num_tpis = list_len(tpis);
+	num_tpis = gwlist_len(tpis);
 	for (i = 0; i < num_tpis; i++) {
-		tpi = list_get(tpis, i);
+		tpi = gwlist_get(tpis, i);
 		length = octstr_len(tpi->data);
 		octstr_set_bits(data, bitpos, 1, i + 1 < num_tpis);
 		octstr_set_bits(data, bitpos + 1, 4, tpi->type);
@@ -227,9 +227,9 @@ static void dump_tpis(List *tpis, int level) {
 	if (tpis == NULL)
 		return;
 
-	num_tpis = list_len(tpis);
+	num_tpis = gwlist_len(tpis);
 	for (i = 0; i < num_tpis; i++) {
-		tpi = list_get(tpis, i);
+		tpi = gwlist_get(tpis, i);
 		debug("wap.wtp", 0, "%*s TPI type %u:", level, "", tpi->type);
 		octstr_dump(tpi->data, level + 1);
 	}
@@ -336,7 +336,7 @@ WTP_PDU *wtp_pdu_unpack(Octstr *data) {
 #define RESERVED(bits) bitpos += (bits);
 #define TPI(confield) \
 	if (p->confield) { \
-		pdu->options = list_create(); \
+		pdu->options = gwlist_create(); \
 		bitpos = unpack_tpis(data, bitpos, pdu); \
 	}
 #include "wtp_pdu.def"
@@ -372,7 +372,7 @@ static void fixup_length_fields(WTP_PDU *pdu) {
 #define TYPE(bits, value)
 #define RESERVED(bits)
 #define TPI(confield) \
-	p->confield = pdu->options != NULL && list_len(pdu->options) > 0;
+	p->confield = pdu->options != NULL && gwlist_len(pdu->options) > 0;
 #include "wtp_pdu.def"
 #undef TPI
 #undef RESERVED

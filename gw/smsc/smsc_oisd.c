@@ -915,11 +915,11 @@ static void oisd_handle_request(struct packet *request, SMSCConn *conn)
     if (request->operation == STATUS_REPORT) {
         msg = oisd_accept_delivery_report_message(request, conn);
         if (msg)
-            list_append(pdata->received, msg);
+            gwlist_append(pdata->received, msg);
     } else if (request->operation == DELIVER_SM) {
         msg = oisd_accept_message(request, conn);
         if (msg)
-            list_append(pdata->received, msg);
+            gwlist_append(pdata->received, msg);
     }
 
     oisd_send_response(request, pdata);
@@ -1135,15 +1135,15 @@ static void oisd_destroy(PrivData *pdata)
     octstr_destroy(pdata->inbuffer);
     octstr_destroy(pdata->my_number);
 
-    discarded = list_len(pdata->received);
+    discarded = gwlist_len(pdata->received);
     if (discarded > 0)
         warning(0, "OISD[%s]: discarded %d received messages",
                 octstr_get_cstr(pdata->conn->id),
                 discarded);
 
-    list_destroy(pdata->received, msg_destroy_item);
-    list_destroy(pdata->outgoing_queue, NULL);
-    list_destroy(pdata->stopped, NULL);
+    gwlist_destroy(pdata->received, msg_destroy_item);
+    gwlist_destroy(pdata->outgoing_queue, NULL);
+    gwlist_destroy(pdata->stopped, NULL);
 
     gw_free(pdata);
 }
@@ -1202,8 +1202,8 @@ static int oisd_receive_msg(SMSCConn *conn, Msg **msg)
 
     gw_assert(pdata != NULL);
 
-    if (list_len(pdata->received) > 0) {
-        *msg = list_consume(pdata->received);
+    if (gwlist_len(pdata->received) > 0) {
+        *msg = gwlist_consume(pdata->received);
         return 1;
     }
 
@@ -1266,8 +1266,8 @@ static int oisd_receive_msg(SMSCConn *conn, Msg **msg)
         packet_destroy(packet);
     }
 
-    if (list_len(pdata->received) > 0) {
-        *msg = list_consume(pdata->received);
+    if (gwlist_len(pdata->received) > 0) {
+        *msg = gwlist_consume(pdata->received);
         return 1;
     }
     return 0;
@@ -1353,7 +1353,7 @@ static void io_thread (void *arg)
     /* remove messages from SMSC until we are killed */
     while (!pdata->quitting) {
 
-        list_consume(pdata->stopped); /* block here if suspended/isolated */
+        gwlist_consume(pdata->stopped); /* block here if suspended/isolated */
 
         /* check that connection is active */
         if (conn->status != SMSCCONN_ACTIVE) {
@@ -1387,7 +1387,7 @@ static void io_thread (void *arg)
 
         /* send messages */
         do {
-            msg = list_extract_first(pdata->outgoing_queue);
+            msg = gwlist_extract_first(pdata->outgoing_queue);
             if (msg) {
                 sleep = 0;
                 if (oisd_submit_msg(conn, msg) != 0) break;
@@ -1420,7 +1420,7 @@ static int oisd_add_msg_cb (SMSCConn *conn, Msg *sms)
     Msg *copy;
 
     copy = msg_duplicate(sms);
-    list_produce(pdata->outgoing_queue, copy);
+    gwlist_produce(pdata->outgoing_queue, copy);
     gwthread_wakeup(pdata->io_thread);
 
     return 0;
@@ -1442,13 +1442,13 @@ static int oisd_shutdown_cb (SMSCConn *conn, int finish_sending)
 
     if (finish_sending == 0) {
         Msg *msg;
-        while ((msg = list_extract_first(pdata->outgoing_queue)) != NULL) {
+        while ((msg = gwlist_extract_first(pdata->outgoing_queue)) != NULL) {
             bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
         }
     }
 
     if (conn->is_stopped) {
-        list_remove_producer(pdata->stopped);
+        gwlist_remove_producer(pdata->stopped);
         conn->is_stopped = 0;
     }
 
@@ -1471,7 +1471,7 @@ static void oisd_start_cb (SMSCConn *conn)
 {
     PrivData *pdata = conn->data;
 
-    list_remove_producer(pdata->stopped);
+    gwlist_remove_producer(pdata->stopped);
     /* in case there are messages in the buffer already */
     gwthread_wakeup(pdata->io_thread);
     debug("bb.sms", 0, "SMSCConn OISD %s, start called",
@@ -1481,7 +1481,7 @@ static void oisd_start_cb (SMSCConn *conn)
 static void oisd_stop_cb (SMSCConn *conn)
 {
     PrivData *pdata = conn->data;
-    list_add_producer(pdata->stopped);
+    gwlist_add_producer(pdata->stopped);
     debug("bb.sms", 0, "SMSCConn OISD %s, stop called",
           octstr_get_cstr(conn->id));
 }
@@ -1490,7 +1490,7 @@ static long oisd_queued_cb (SMSCConn *conn)
 {
     PrivData *pdata = conn->data;
     conn->load = (pdata ? (conn->status != SMSCCONN_DEAD ?
-                  list_len(pdata->outgoing_queue) : 0) : 0);
+                  gwlist_len(pdata->outgoing_queue) : 0) : 0);
     return conn->load;
 }
 
@@ -1506,15 +1506,15 @@ int smsc_oisd_create(SMSCConn *conn, CfgGroup *grp)
     pdata->no_dlr = 0;
     pdata->quitting = 0;
     pdata->socket = -1;
-    pdata->received = list_create();
+    pdata->received = gwlist_create();
     pdata->inbuffer = octstr_create("");
     pdata->send_seq = 1;
-    pdata->outgoing_queue = list_create();
-    pdata->stopped = list_create();
-    list_add_producer(pdata->outgoing_queue);
+    pdata->outgoing_queue = gwlist_create();
+    pdata->stopped = gwlist_create();
+    gwlist_add_producer(pdata->outgoing_queue);
 
     if (conn->is_stopped)
-        list_add_producer(pdata->stopped);
+        gwlist_add_producer(pdata->stopped);
 
     pdata->host = cfg_get(grp, octstr_imm("host"));
     if (cfg_get_integer(&(pdata->port), grp, octstr_imm("port")) == -1)

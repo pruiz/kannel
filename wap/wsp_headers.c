@@ -1382,12 +1382,12 @@ List *wsp_headers_unpack(Octstr *headers, int content_type_present)
         }
     }
 
-    if (list_len(unpacked) > 0) {
+    if (gwlist_len(unpacked) > 0) {
         long i;
 
         debug("wsp", 0, "WSP: decoded headers:");
-        for (i = 0; i < list_len(unpacked); i++) {
-            Octstr *header = list_get(unpacked, i);
+        for (i = 0; i < gwlist_len(unpacked); i++) {
+            Octstr *header = gwlist_get(unpacked, i);
             debug("wsp", 0, "%s", octstr_get_cstr(header));
         }
         debug("wsp", 0, "WSP: End of decoded headers.");
@@ -1572,7 +1572,7 @@ List *wsp_strip_parameters(Octstr *value)
     if (pos >= len)
         return NULL;   /* no parameters */
 
-    parms = list_create();
+    parms = gwlist_create();
     firstparm = pos;
 
     for (pos++; pos > 0 && pos < len; pos++) {
@@ -1604,7 +1604,7 @@ List *wsp_strip_parameters(Octstr *value)
             pos = octstr_search_char(value, ';', pos);
         }
 
-        list_append(parms, parm_create(key, val));
+        gwlist_append(parms, parm_create(key, val));
     }
 
     octstr_delete(value, firstparm, octstr_len(value) - firstparm);
@@ -1719,8 +1719,8 @@ static int get_qvalue(List *parms, int default_qvalue)
     Parameter *parm;
     int qvalue;
 
-    for (i = 0; i < list_len(parms); i++) {
-        parm = list_get(parms, i);
+    for (i = 0; i < gwlist_len(parms); i++) {
+        parm = gwlist_get(parms, i);
         if (octstr_str_compare(parm->key, "q") == 0 ||
             octstr_str_compare(parm->key, "Q") == 0) {
             qvalue = parse_qvalue(parm->value);
@@ -1960,8 +1960,8 @@ void wsp_pack_parameters(Octstr *packed, List *parms)
     long i;
     Parameter *parm;
 
-    for (i = 0; i < list_len(parms); i++) {
-        parm = list_get(parms, i);
+    for (i = 0; i < gwlist_len(parms); i++) {
+        parm = gwlist_get(parms, i);
         pack_parameter(packed, parm);
     }
 }
@@ -2037,11 +2037,11 @@ static int pack_challenge(Octstr *packed, Octstr *value)
 
         /* Find the realm parameter and exclude it */
         parms = wsp_strip_parameters(value);
-        for (i = 0; i < list_len(parms); i++) {
-            Parameter *parm = list_get(parms, i);
+        for (i = 0; i < gwlist_len(parms); i++) {
+            Parameter *parm = gwlist_get(parms, i);
             if (octstr_case_compare(realm, parm->key) == 0) {
                 realmparm = parm;
-                list_delete(parms, i, 1);
+                gwlist_delete(parms, i, 1);
                 break;
             }
         }
@@ -2081,7 +2081,7 @@ static int pack_challenge(Octstr *packed, Octstr *value)
     octstr_destroy(scheme);
     octstr_destroy(parmstring);
     parm_destroy(realmparm);
-    list_destroy(parms, parm_destroy_item);
+    gwlist_destroy(parms, parm_destroy_item);
     octstr_destroy(realmval);
     return 0;
 
@@ -2091,7 +2091,7 @@ error:
     octstr_destroy(scheme);
     octstr_destroy(parmstring);
     parm_destroy(realmparm);
-    list_destroy(parms, parm_destroy_item);
+    gwlist_destroy(parms, parm_destroy_item);
     octstr_destroy(realmval);
     return -1;
 }
@@ -2153,7 +2153,7 @@ static int pack_credentials(Octstr *packed, Octstr *value)
         wsp_pack_text(encoding, scheme);
         parms = wsp_strip_parameters(value);
         wsp_pack_parameters(encoding, parms);
-        list_destroy(parms, parm_destroy_item);
+        gwlist_destroy(parms, parm_destroy_item);
     }
 
     wsp_pack_value(packed, encoding);
@@ -2329,7 +2329,7 @@ static int pack_accept(Octstr *packed, Octstr *value)
         octstr_destroy(encoding);
     }
 
-    list_destroy(parms, parm_destroy_item);
+    gwlist_destroy(parms, parm_destroy_item);
     return 0;
 }
 
@@ -2344,7 +2344,7 @@ static int pack_accept_charset(Octstr *packed, Octstr *value)
     qvalue = 1000;
     if (parms)
         qvalue = get_qvalue(parms, qvalue);
-    list_destroy(parms, parm_destroy_item);
+    gwlist_destroy(parms, parm_destroy_item);
 
     /* See if we can fit this in a Constrained-charset encoding */
     if (qvalue == 1000 && charset <= MAX_SHORT_INTEGER) {
@@ -2381,7 +2381,7 @@ static int pack_accept_encoding(Octstr *packed, Octstr *value)
     parms = wsp_strip_parameters(value);
     if (parms)
         qvalue = get_qvalue(parms, qvalue);
-    list_destroy(parms, parm_destroy_item);
+    gwlist_destroy(parms, parm_destroy_item);
 
     if (qvalue > 0) {
         if (qvalue < 1000)
@@ -2406,7 +2406,7 @@ static int pack_accept_language(Octstr *packed, Octstr *value)
     qvalue = 1000;
     if (parms)
         qvalue = get_qvalue(parms, qvalue);
-    list_destroy(parms, parm_destroy_item);
+    gwlist_destroy(parms, parm_destroy_item);
 
     /* See if we can fit this in a Constrained-language encoding. */
     /* Note that our language table already includes Any-language */
@@ -2470,11 +2470,11 @@ static int pack_cache_control(Octstr *packed, Octstr *value)
                 if (octstr_get_char(parm->value, octstr_len(parm->value) - 1) == '"')
                     octstr_delete(parm->value, octstr_len(parm->value) - 1, 1);
                 names = http_header_split_value(parm->value);
-                while ((element = list_consume(names))) {
+                while ((element = gwlist_consume(names))) {
                     pack_field_name(value_encoding, element);
                     octstr_destroy(element);
                 }
-                list_destroy(names, octstr_destroy_item);
+                gwlist_destroy(names, octstr_destroy_item);
                 done = 1;
                 break;
 
@@ -2525,11 +2525,11 @@ static int pack_content_disposition(Octstr *packed, Octstr *value)
         goto error;
     }
 
-    list_destroy(parms, parm_destroy_item);
+    gwlist_destroy(parms, parm_destroy_item);
     return 0;
 
 error:
-    list_destroy(parms, parm_destroy_item);
+    gwlist_destroy(parms, parm_destroy_item);
     return -1;
 }
 
@@ -2852,7 +2852,7 @@ int wsp_pack_list(Octstr *packed, long fieldnum, List *elements, int i)
     long startpos;
     Octstr *element;
 
-    while ((element = list_consume(elements))) {
+    while ((element = gwlist_consume(elements))) {
         startpos = octstr_len(packed);
 
         wsp_pack_short_integer(packed, fieldnum);
@@ -2904,13 +2904,13 @@ static int pack_known_header(Octstr *packed, long fieldnum, Octstr *value)
             goto error;
     }
 
-    list_destroy(elements, octstr_destroy_item);
+    gwlist_destroy(elements, octstr_destroy_item);
     return 0;
 
 error:
     /* Remove whatever we added */
     octstr_delete(packed, startpos, octstr_len(packed) - startpos);
-    list_destroy(elements, octstr_destroy_item);
+    gwlist_destroy(elements, octstr_destroy_item);
     return -1;
 }
 
@@ -2949,7 +2949,7 @@ Octstr *wsp_headers_pack(List *headers, int separate_content_type, int wsp_versi
     if (separate_content_type)
         wsp_pack_separate_content_type(packed, headers);
 
-    len = list_len(headers);
+    len = gwlist_len(headers);
     for (i = 0; i < len; i++) {
         Octstr *fieldname;
         Octstr *value;

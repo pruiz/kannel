@@ -83,7 +83,7 @@ RWLock *gw_rwlock_create(void)
         panic(rc, "Initialization of RWLock failed.");
 #else
     ret->writer = -1;
-    ret->rwlock = list_create();
+    ret->rwlock = gwlist_create();
     if (ret->rwlock == NULL)
         panic(0, "Initialization of RWLock failed.");
 #endif
@@ -101,7 +101,7 @@ void gw_rwlock_init_static(RWLock *lock)
         panic(rc, "Initialization of RWLock failed.");
 #else
     lock->writer = -1;
-    lock->rwlock = list_create();
+    lock->rwlock = gwlist_create();
     if (lock->rwlock == NULL)
         panic(0, "Initialization of RWLock failed.");
 #endif
@@ -123,7 +123,7 @@ void gw_rwlock_destroy(RWLock *lock)
     if (ret != 0)
         panic(ret, "Attempt to destroy locked rwlock.");
 #else
-    list_destroy(lock->rwlock, NULL);
+    gwlist_destroy(lock->rwlock, NULL);
 #endif
 
     if (lock->dynamic)
@@ -142,9 +142,9 @@ int gw_rwlock_rdlock(RWLock *lock)
         panic(ret, "Error while pthread_rwlock_rdlock.");
     }
 #else
-    list_lock(lock->rwlock);
-    list_add_producer(lock->rwlock);
-    list_unlock(lock->rwlock);
+    gwlist_lock(lock->rwlock);
+    gwlist_add_producer(lock->rwlock);
+    gwlist_unlock(lock->rwlock);
     RWDEBUG("", 0, "------------ gw_rwlock_rdlock(%p) ----------", lock);
 #endif
 
@@ -165,9 +165,9 @@ int gw_rwlock_unlock(RWLock *lock)
     RWDEBUG("", 0, "------------ gw_rwlock_unlock(%p) ----------", lock);
     if (lock->writer == gwthread_self()) {
         lock->writer = -1;
-        list_unlock(lock->rwlock);
+        gwlist_unlock(lock->rwlock);
     } else 
-        list_remove_producer(lock->rwlock);
+        gwlist_remove_producer(lock->rwlock);
 #endif
 
     return ret;
@@ -185,10 +185,10 @@ int gw_rwlock_wrlock(RWLock *lock)
         panic(ret, "Error while pthread_rwlock_wrlock.");
 #else
     RWDEBUG("", 0, "------------ gw_rwlock_wrlock(%p) ----------", lock);
-    list_lock(lock->rwlock);
-    RWDEBUG("", 0, "------------ gw_rwlock_wrlock(%p) producers=%d", lock, list_producer_count(lock->rwlock));
+    gwlist_lock(lock->rwlock);
+    RWDEBUG("", 0, "------------ gw_rwlock_wrlock(%p) producers=%d", lock, gwlist_producer_count(lock->rwlock));
     /* wait for reader */
-    list_consume(lock->rwlock);
+    gwlist_consume(lock->rwlock);
     lock->writer = gwthread_self();
 #endif
 

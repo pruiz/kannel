@@ -137,8 +137,8 @@ static long route_incoming_to_smsc(SMSCConn *conn, Msg *msg);
 
 void bb_smscconn_ready(SMSCConn *conn)
 {
-    list_add_producer(flow_threads);
-    list_add_producer(incoming_sms);
+    gwlist_add_producer(flow_threads);
+    gwlist_add_producer(incoming_sms);
 }
 
 
@@ -154,8 +154,8 @@ void bb_smscconn_killed(void)
     /* NOTE: after status has been set to SMSCCONN_DEAD, bearerbox
      *   is free to release/delete 'conn'
      */
-    list_remove_producer(incoming_sms);
-    list_remove_producer(flow_threads);
+    gwlist_remove_producer(incoming_sms);
+    gwlist_remove_producer(flow_threads);
 }
 
 
@@ -257,7 +257,7 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply
 
     case SMSCCONN_FAILED_SHUTDOWN:
     case SMSCCONN_FAILED_TEMPORARILY:
-	list_produce(outgoing_sms, sms);
+	gwlist_produce(outgoing_sms, sms);
 	break;
     default:
 	/* write NACK to store file */
@@ -407,7 +407,7 @@ static void sms_router(void *arg)
     Msg *msg, *newmsg, *startmsg;
     int ret;
     
-    list_add_producer(flow_threads);
+    gwlist_add_producer(flow_threads);
     gwthread_wakeup(MAIN_THREAD_ID);
 
     newmsg = startmsg = NULL;
@@ -419,14 +419,14 @@ static void sms_router(void *arg)
 	    if (ret != 1) {
 		debug("bb.sms", 0, "sms_router: time to sleep"); 
 		gwthread_sleep(600.0);	/* hopefully someone wakes us up */
-		debug("bb.sms", 0, "sms_router: list_len = %ld",
-		      list_len(outgoing_sms));
+		debug("bb.sms", 0, "sms_router: gwlist_len = %ld",
+		      gwlist_len(outgoing_sms));
 	    }
-	    startmsg = list_consume(outgoing_sms);
+	    startmsg = gwlist_consume(outgoing_sms);
 	    newmsg = NULL;
 	    msg = startmsg;
 	} else {
-	    newmsg = list_consume(outgoing_sms);
+	    newmsg = gwlist_consume(outgoing_sms);
 	    msg = newmsg;
 	}
 	/* debug("bb.sms", 0, "sms_router: handling message (%p vs %p)",
@@ -450,7 +450,7 @@ static void sms_router(void *arg)
 
     smsc_running = 0;
 
-    list_remove_producer(flow_threads);
+    gwlist_remove_producer(flow_threads);
 }
 
 
@@ -473,7 +473,7 @@ int smsc2_start(Cfg *cfg)
     /* create split sms counter */
     split_msg_counter = counter_create();
     
-    smsc_list = list_create();
+    smsc_list = gwlist_create();
     gw_rwlock_init_static(&smsc_list_lock);
 
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
@@ -504,28 +504,28 @@ int smsc2_start(Cfg *cfg)
 
     smsc_groups = cfg_get_multi_group(cfg, octstr_imm("smsc"));
     /*
-    while(groups && (grp = list_extract_first(groups)) != NULL) {
+    while(groups && (grp = gwlist_extract_first(groups)) != NULL) {
         conn = smscconn_create(grp, 1); 
         if (conn == NULL)
             panic(0, "Cannot start with SMSC connection failing");
         
-        list_append(smsc_list, conn);
+        gwlist_append(smsc_list, conn);
     }
     */
-    list_add_producer(smsc_list);
-    for (i = 0; i < list_len(smsc_groups) && 
-        (grp = list_get(smsc_groups, i)) != NULL; i++) {
+    gwlist_add_producer(smsc_list);
+    for (i = 0; i < gwlist_len(smsc_groups) && 
+        (grp = gwlist_get(smsc_groups, i)) != NULL; i++) {
         conn = smscconn_create(grp, 1); 
         if (conn == NULL)
             panic(0, "Cannot start with SMSC connection failing");
-        list_append(smsc_list, conn);
+        gwlist_append(smsc_list, conn);
     }
-    list_remove_producer(smsc_list);
+    gwlist_remove_producer(smsc_list);
     
     if ((router_thread = gwthread_create(sms_router, NULL)) == -1)
 	panic(0, "Failed to start a new thread for SMS routing");
     
-    list_add_producer(incoming_sms);
+    gwlist_add_producer(incoming_sms);
     smsc_running = 1;
     return 0;
 }
@@ -539,16 +539,16 @@ static long smsc2_find(Octstr *id, long start)
     SMSCConn *conn = NULL;
     long i;
 
-    if (start > list_len(smsc_list) || start < 0)
+    if (start > gwlist_len(smsc_list) || start < 0)
         return -1;
 
-    for (i = start; i < list_len(smsc_list); i++) {
-        conn = list_get(smsc_list, i);
+    for (i = start; i < gwlist_len(smsc_list); i++) {
+        conn = gwlist_get(smsc_list, i);
         if (conn != NULL && octstr_compare(conn->id, id) == 0) {
             break;
         }
     }
-    if (i >= list_len(smsc_list))
+    if (i >= gwlist_len(smsc_list))
         i = -1;
     return i;
 }
@@ -564,7 +564,7 @@ int smsc2_stop_smsc(Octstr *id)
     gw_rwlock_rdlock(&smsc_list_lock);
     /* find the specific smsc via id */
     while((i = smsc2_find(id, ++i)) != -1) {
-        conn = list_get(smsc_list, i);
+        conn = gwlist_get(smsc_list, i);
         if (conn != NULL && smscconn_status(conn) == SMSCCONN_DEAD) {
             info(0, "HTTP: Could not shutdown already dead smsc-id `%s'",
                 octstr_get_cstr(id));
@@ -594,7 +594,7 @@ int smsc2_restart_smsc(Octstr *id)
         int hit;
         long group_index;
         /* check if smsc has online status already */
-        conn = list_get(smsc_list, i);
+        conn = gwlist_get(smsc_list, i);
         if (conn != NULL && smscconn_status(conn) != SMSCCONN_DEAD) {
             warning(0, "HTTP: Could not re-start already running smsc-id `%s'",
                 octstr_get_cstr(id));
@@ -603,8 +603,8 @@ int smsc2_restart_smsc(Octstr *id)
         /* find the group with equal smsc id */
         hit = 0;
         grp = NULL;
-        for (group_index = 0; group_index < list_len(smsc_groups) && 
-             (grp = list_get(smsc_groups, group_index)) != NULL; group_index++) {
+        for (group_index = 0; group_index < gwlist_len(smsc_groups) && 
+             (grp = gwlist_get(smsc_groups, group_index)) != NULL; group_index++) {
             smscid = cfg_get(grp, octstr_imm("smsc-id"));
             if (smscid != NULL && octstr_compare(smscid, id) == 0) {
                 if (hit == num)
@@ -631,10 +631,10 @@ int smsc2_restart_smsc(Octstr *id)
         }
         
         /* drop old connection from the active smsc list */
-        list_delete(smsc_list, i, 1);
+        gwlist_delete(smsc_list, i, 1);
         /* destroy the connection */
         smscconn_destroy(conn);
-        list_insert(smsc_list, i, new_conn);
+        gwlist_insert(smsc_list, i, new_conn);
         smscconn_start(new_conn);
         num++;
     }
@@ -656,8 +656,8 @@ void smsc2_resume(void)
         return;
 
     gw_rwlock_rdlock(&smsc_list_lock);
-    for (i = 0; i < list_len(smsc_list); i++) {
-        conn = list_get(smsc_list, i);
+    for (i = 0; i < gwlist_len(smsc_list); i++) {
+        conn = gwlist_get(smsc_list, i);
         smscconn_start(conn);
     }
     gw_rwlock_unlock(&smsc_list_lock);
@@ -676,8 +676,8 @@ void smsc2_suspend(void)
         return;
 
     gw_rwlock_rdlock(&smsc_list_lock);
-    for (i = 0; i < list_len(smsc_list); i++) {
-        conn = list_get(smsc_list, i);
+    for (i = 0; i < gwlist_len(smsc_list); i++) {
+        conn = gwlist_get(smsc_list, i);
         smscconn_stop(conn);
     }
     gw_rwlock_unlock(&smsc_list_lock);
@@ -696,8 +696,8 @@ int smsc2_shutdown(void)
      * handle that they quit, by emptying queues and then dying off
      */
     gw_rwlock_rdlock(&smsc_list_lock);
-    for(i=0; i < list_len(smsc_list); i++) {
-        conn = list_get(smsc_list, i);
+    for(i=0; i < gwlist_len(smsc_list); i++) {
+        conn = gwlist_get(smsc_list, i);
 	smscconn_shutdown(conn, 1);
     }
     gw_rwlock_unlock(&smsc_list_lock);
@@ -710,7 +710,7 @@ int smsc2_shutdown(void)
      * receive thingies? Is this guaranteed by setting bb_status
      * to shutdown before calling these?
      */
-    list_remove_producer(incoming_sms);
+    gwlist_remove_producer(incoming_sms);
     return 0;
 }
 
@@ -726,14 +726,14 @@ void smsc2_cleanup(void)
     debug("smscconn", 0, "final clean-up for SMSCConn");
     
     gw_rwlock_wrlock(&smsc_list_lock);
-    for (i = 0; i < list_len(smsc_list); i++) {
-        conn = list_get(smsc_list, i);
+    for (i = 0; i < gwlist_len(smsc_list); i++) {
+        conn = gwlist_get(smsc_list, i);
         smscconn_destroy(conn);
     }
-    list_destroy(smsc_list, NULL);
+    gwlist_destroy(smsc_list, NULL);
     smsc_list = NULL;
     gw_rwlock_unlock(&smsc_list_lock);
-    list_destroy(smsc_groups, NULL);
+    gwlist_destroy(smsc_groups, NULL);
     octstr_destroy(unified_prefix);    
     numhash_destroy(white_list);
     numhash_destroy(black_list);
@@ -776,11 +776,11 @@ Octstr *smsc2_status(int status_type)
     if (status_type != BBSTATUS_XML)
         tmp = octstr_format("%sSMSC connections:%s", para ? "<p>" : "", lb);
     else
-        tmp = octstr_format("<smscs><count>%d</count>\n\t", list_len(smsc_list));
+        tmp = octstr_format("<smscs><count>%d</count>\n\t", gwlist_len(smsc_list));
 
     gw_rwlock_rdlock(&smsc_list_lock);
-    for (i = 0; i < list_len(smsc_list); i++) {
-        conn = list_get(smsc_list, i);
+    for (i = 0; i < gwlist_len(smsc_list); i++) {
+        conn = gwlist_get(smsc_list, i);
 
         if ((smscconn_info(conn, &info) == -1)) {
             /* 
@@ -890,19 +890,19 @@ int smsc2_rout(Msg *msg)
      * start - from random SMSCConn, as they are all 'equal'
      */
     gw_rwlock_rdlock(&smsc_list_lock);
-    if (list_len(smsc_list) == 0) {
+    if (gwlist_len(smsc_list) == 0) {
 	warning(0, "No SMSCes to receive message");
         gw_rwlock_unlock(&smsc_list_lock);
 	return SMSCCONN_FAILED_DISCARDED;
     }
 
-    s = gw_rand() % list_len(smsc_list);
+    s = gw_rand() % gwlist_len(smsc_list);
     best_preferred = best_ok = NULL;
     bad_found = 0;
     
     conn = NULL;
-    for (i=0; i < list_len(smsc_list); i++) {
-	conn = list_get(smsc_list,  (i+s) % list_len(smsc_list));
+    for (i=0; i < gwlist_len(smsc_list); i++) {
+	conn = gwlist_get(smsc_list,  (i+s) % gwlist_len(smsc_list));
 
 	ret = smscconn_usable(conn,msg);
 	if (ret == -1)
@@ -937,7 +937,7 @@ int smsc2_rout(Msg *msg)
 	ret = smscconn_send(best_ok, msg);
     else if (bad_found) {
 	if (bb_status != BB_SHUTDOWN)
-	    list_produce(outgoing_sms, msg);
+	    gwlist_produce(outgoing_sms, msg);
         gw_rwlock_unlock(&smsc_list_lock);
 	return 0;
     }

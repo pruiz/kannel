@@ -194,11 +194,11 @@ WAPEvent *wtls_unpack_wdp_datagram(Msg *msg)
 
 void wtls_init(void) {
         /* Initialise our various lists and counters */
-        wtls_machines = list_create();
+        wtls_machines = gwlist_create();
         wtls_machine_id_counter = counter_create();
         
-        wtls_queue = list_create();
-        list_add_producer(wtls_queue);
+        wtls_queue = gwlist_create();
+        gwlist_add_producer(wtls_queue);
 
         /* Idiot check - ensure that we are able to start running */
         gw_assert(wtls_run_status == limbo);
@@ -211,22 +211,22 @@ void wtls_shutdown(void) {
            prepare for termination */
         gw_assert(wtls_run_status == running);
         wtls_run_status = terminating;
-        list_remove_producer(wtls_queue);
+        gwlist_remove_producer(wtls_queue);
         gwthread_join_every(main_thread);
 
         /* Print out a friendly message stating that we're going to die */
         debug("wap.wtls", 0, "wtls_shutdown: %ld wtls machines left",
-              list_len(wtls_machines));
+              gwlist_len(wtls_machines));
 
         /* And clean up nicely after ourselves */
-        list_destroy(wtls_machines, wtls_machine_destroy);
-        list_destroy(wtls_queue, wap_event_destroy_item);     
+        gwlist_destroy(wtls_machines, wtls_machine_destroy);
+        gwlist_destroy(wtls_queue, wap_event_destroy_item);     
         counter_destroy(wtls_machine_id_counter);
 }
 
 void wtls_dispatch_event(WAPEvent *event) {
         /* Stick the event on the incoming events queue */
-        list_produce(wtls_queue, event);
+        gwlist_produce(wtls_queue, event);
 }
 
 int wtls_get_address_tuple(long mid, WAPAddrTuple **tuple) {
@@ -351,7 +351,7 @@ static void main_thread(void *arg) {
 	WAPEvent *e;
         
 	while (wtls_run_status == running && 
-               (e = list_consume(wtls_queue)) != NULL) {
+               (e = gwlist_consume(wtls_queue)) != NULL) {
 		sm = wtls_machine_find_or_create(e);
 		if (sm == NULL)
 			wap_event_destroy(e);
@@ -528,7 +528,7 @@ static WTLSMachine *wtls_machine_find(WAPAddrTuple *tuple,
 	pat.tuple = tuple;
 	pat.mid = mid;
 	
-	m = list_search(wtls_machines, &pat, is_wanted_wtls_machine);
+	m = gwlist_search(wtls_machines, &pat, is_wanted_wtls_machine);
 	return m;
 }
 
@@ -546,7 +546,7 @@ static WTLSMachine *wtls_machine_create(WAPAddrTuple *tuple) {
         #define PDULIST(name) wtls_machine->name = NULL;
         #include "wtls_machine-decl.h"
         
-        list_append(wtls_machines, wtls_machine);
+        gwlist_append(wtls_machines, wtls_machine);
         wtls_machine->mid = counter_increase(wtls_machine_id_counter);
         wtls_machine->addr_tuple = wap_addr_tuple_duplicate(tuple);
 
@@ -567,7 +567,7 @@ static void wtls_machine_destroy(void * p) {
        wtls_machine = p;
        debug("wap.wtls", 0, "WTLS: Destroying WTLSMachine %p (%ld)",
              (void *) wtls_machine, wtls_machine->mid);
-       list_delete_equal(wtls_machines, wtls_machine);        
+       gwlist_delete_equal(wtls_machines, wtls_machine);        
         
        #define MACHINE(field) field
        #define ENUM(name) wtls_machine->name = NULL_STATE;
@@ -637,7 +637,7 @@ static int wtls_machine_has_mid(void *a, void *b) {
 }
 
 static WTLSMachine *find_wtls_machine_using_mid(long mid) {
-       return list_search(wtls_machines, &mid, wtls_machine_has_mid);
+       return gwlist_search(wtls_machines, &mid, wtls_machine_has_mid);
 }
 
 /* Used for list searches */

@@ -103,8 +103,8 @@ DBPool *dbpool_create(enum db_type db_type, DBConf *conf, unsigned int connectio
 
     p = gw_malloc(sizeof(DBPool));
     gw_assert(p != NULL);
-    p->pool = list_create();
-    list_add_producer(p->pool);
+    p->pool = gwlist_create();
+    gwlist_add_producer(p->pool);
     p->max_size = connections;
     p->curr_size = 0;
     p->conf = conf;
@@ -157,8 +157,8 @@ void dbpool_destroy(DBPool *p)
 
     gw_assert(p->pool != NULL && p->db_ops != NULL);
 
-    list_remove_producer(p->pool);
-    list_destroy(p->pool, (void*) dbpool_conn_destroy);
+    gwlist_remove_producer(p->pool);
+    gwlist_destroy(p->pool, (void*) dbpool_conn_destroy);
 
     p->db_ops->conf_destroy(p->conf);
     gw_free(p);
@@ -173,7 +173,7 @@ unsigned int dbpool_increase(DBPool *p, unsigned int count)
 
 
     /* lock dbpool for updates */
-    list_lock(p->pool);
+    gwlist_lock(p->pool);
 
     /* ensure we don't increase more items than the max_size border */
     for (i=0; i < count && p->curr_size < p->max_size; i++) {
@@ -187,12 +187,12 @@ unsigned int dbpool_increase(DBPool *p, unsigned int count)
 
             p->curr_size++;
             opened++;
-            list_produce(p->pool, pc);
+            gwlist_produce(p->pool, pc);
         }
     }
 
     /* unlock dbpool for updates */
-    list_unlock(p->pool);
+    gwlist_unlock(p->pool);
 
     return opened;
 }
@@ -205,7 +205,7 @@ unsigned int dbpool_decrease(DBPool *p, unsigned int c)
     gw_assert(p != NULL && p->pool != NULL && p->db_ops != NULL && p->db_ops->close != NULL);
 
     /* lock dbpool for updates */
-    list_lock(p->pool);
+    gwlist_lock(p->pool);
 
     /*
      * Ensure we don't try to decrease more then available in pool.
@@ -213,8 +213,8 @@ unsigned int dbpool_decrease(DBPool *p, unsigned int c)
     for (i = 0; i < c; i++) {
         DBPoolConn *pc;
 
-        /* list_extract_first doesn't block even if no conn here */
-        pc = list_extract_first(p->pool);
+        /* gwlist_extract_first doesn't block even if no conn here */
+        pc = gwlist_extract_first(p->pool);
 
         /* no conn availible anymore */
         if (pc == NULL)
@@ -226,7 +226,7 @@ unsigned int dbpool_decrease(DBPool *p, unsigned int c)
     }
 
     /* unlock dbpool for updates */
-    list_unlock(p->pool);
+    gwlist_unlock(p->pool);
 
     return i;
 }
@@ -236,7 +236,7 @@ long dbpool_conn_count(DBPool *p)
 {
     gw_assert(p->pool != NULL);
 
-    return list_len(p->pool);
+    return gwlist_len(p->pool);
 }
 
 
@@ -252,7 +252,7 @@ DBPoolConn *dbpool_conn_consume(DBPool *p)
 
 
     /* garantee that you deliver a valid connection to the caller */
-    while ((pc = list_consume(p->pool)) != NULL) {
+    while ((pc = gwlist_consume(p->pool)) != NULL) {
 
         /* 
          * XXX check that the connection is still existing.
@@ -261,11 +261,11 @@ DBPoolConn *dbpool_conn_consume(DBPool *p)
         if (!pc->conn || (p->db_ops->check && p->db_ops->check(pc->conn) != 0)) {
             /* something was wrong, reinitialize the connection */
             /* lock dbpool for update */
-            list_lock(p->pool);
+            gwlist_lock(p->pool);
             dbpool_conn_destroy(pc);
             p->curr_size--;
             /* unlock dbpool for update */
-            list_unlock(p->pool);
+            gwlist_unlock(p->pool);
             /*
              * maybe not needed, just try to get next connection, but it
              * can be dangeros if all connections where broken, then we will
@@ -285,7 +285,7 @@ void dbpool_conn_produce(DBPoolConn *pc)
 {
     gw_assert(pc != NULL && pc->conn != NULL && pc->pool != NULL && pc->pool->pool != NULL);
 
-    list_produce(pc->pool->pool, pc);
+    gwlist_produce(pc->pool->pool, pc);
 }
 
 
@@ -301,17 +301,17 @@ unsigned int dbpool_check(DBPool *p)
      * we have nothing todo and we simple return list length.
      */
     if (p->db_ops->check == NULL)
-        return list_len(p->pool);
+        return gwlist_len(p->pool);
 
-    list_lock(p->pool);
-    len = list_len(p->pool);
+    gwlist_lock(p->pool);
+    len = gwlist_len(p->pool);
     for (i = 0; i < len; i++) {
         DBPoolConn *pconn;
 
-        pconn = list_get(p->pool, i);
+        pconn = gwlist_get(p->pool, i);
         if (p->db_ops->check(pconn->conn) != 0) {
             /* something was wrong, reinitialize the connection */
-            list_delete(p->pool, i, 1);
+            gwlist_delete(p->pool, i, 1);
             dbpool_conn_destroy(pconn);
             p->curr_size--;
             reinit++;
@@ -321,7 +321,7 @@ unsigned int dbpool_check(DBPool *p)
             n++;
         }
     }
-    list_unlock(p->pool);
+    gwlist_unlock(p->pool);
 
     /* reinitialize brocken connections */
     if (reinit > 0)

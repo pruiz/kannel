@@ -168,11 +168,11 @@ static void stop_initiator_timer(Timer *timer);
 void wtp_initiator_init(wap_dispatch_func_t *datagram_dispatch,
 			wap_dispatch_func_t *session_dispatch, long timer_freq) 
 {
-    init_machines = list_create();
+    init_machines = gwlist_create();
     init_machine_id_counter = counter_create();
      
-    queue = list_create();
-    list_add_producer(queue);
+    queue = gwlist_create();
+    gwlist_add_producer(queue);
 
     dispatch_to_wdp = datagram_dispatch;
     dispatch_to_wsp = session_dispatch;
@@ -189,13 +189,13 @@ void wtp_initiator_shutdown(void)
 {
     gw_assert(initiator_run_status == running);
     initiator_run_status = terminating;
-    list_remove_producer(queue);
+    gwlist_remove_producer(queue);
     gwthread_join_every(main_thread);
 
     debug("wap.wtp", 0, "wtp_initiator_shutdown: %ld init_machines left",
-     	  list_len(init_machines));
-    list_destroy(init_machines, init_machine_destroy);
-    list_destroy(queue, wap_event_destroy_item);
+     	  gwlist_len(init_machines));
+    gwlist_destroy(init_machines, init_machine_destroy);
+    gwlist_destroy(queue, wap_event_destroy_item);
 
     counter_destroy(init_machine_id_counter);
     timers_shutdown();
@@ -203,7 +203,7 @@ void wtp_initiator_shutdown(void)
 
 void wtp_initiator_dispatch_event(WAPEvent *event) 
 {
-    list_produce(queue, event);
+    gwlist_produce(queue, event);
 }
 
 /**************************************************************************
@@ -217,7 +217,7 @@ static void main_thread(void *arg)
     WAPEvent *e;
 
     while (initiator_run_status == running && 
-          (e = list_consume(queue)) != NULL) {
+          (e = gwlist_consume(queue)) != NULL) {
         sm = init_machine_find_or_create(e);
 	if (sm == NULL)
 	    wap_event_destroy(e);
@@ -241,7 +241,7 @@ static WTPInitMachine *init_machine_create(WAPAddrTuple *tuple, unsigned short
      #define MACHINE(field) field
      #include "wtp_init_machine.def"
 
-     list_append(init_machines, init_machine);
+     gwlist_append(init_machines, init_machine);
 
      init_machine->mid = counter_increase(init_machine_id_counter);
      init_machine->addr_tuple = wap_addr_tuple_duplicate(tuple);
@@ -266,7 +266,7 @@ static void init_machine_destroy(void *p)
      debug("wap.wtp", 0, "WTP: Destroying WTPInitMachine %p (%ld)", 
 	    (void *) init_machine, init_machine->mid);
 	
-     list_delete_equal(init_machines, init_machine);
+     gwlist_delete_equal(init_machines, init_machine);
         
      #define ENUM(name) init_machine->name = INITIATOR_NULL_STATE;
      #define INTEGER(name) init_machine->name = 0; 
@@ -364,7 +364,7 @@ static WTPInitMachine *init_machine_find(WAPAddrTuple *tuple, long tid,
     pat.tid = tid;
     pat.mid = mid;
 	
-    m = list_search(init_machines, &pat, is_wanted_init_machine);
+    m = gwlist_search(init_machines, &pat, is_wanted_init_machine);
     return m;
 }
 

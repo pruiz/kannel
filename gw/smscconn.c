@@ -113,18 +113,18 @@ static void init_reroute(SMSCConn *conn, CfgGroup *grp)
         conn->reroute_by_receiver = dict_create(100, (void(*)(void *)) octstr_destroy);
 
         routes = octstr_split(rule, octstr_imm(";"));
-        for (i = 0; i < list_len(routes); i++) {
-            Octstr *item = list_get(routes, i);
+        for (i = 0; i < gwlist_len(routes); i++) {
+            Octstr *item = gwlist_get(routes, i);
             Octstr *smsc, *receiver;
             List *receivers;
 
             /* first word is the smsc-id, all other are the receivers */
             receivers = octstr_split(item, octstr_imm(","));
-            smsc = list_extract_first(receivers);
+            smsc = gwlist_extract_first(receivers);
             if (smsc)
                 octstr_strip_blanks(smsc);
 
-            while((receiver = list_extract_first(receivers))) {
+            while((receiver = gwlist_extract_first(receivers))) {
                 octstr_strip_blanks(receiver);
                 debug("smscconn",0,"Adding internal routing for smsc id <%s>: "
                           "receiver <%s> to smsc id <%s>",
@@ -138,10 +138,10 @@ static void init_reroute(SMSCConn *conn, CfgGroup *grp)
                 octstr_destroy(receiver);
             }
             octstr_destroy(smsc);
-            list_destroy(receivers, octstr_destroy_item);
+            gwlist_destroy(receivers, octstr_destroy_item);
         }
         octstr_destroy(rule);
-        list_destroy(routes, octstr_destroy_item);
+        gwlist_destroy(routes, octstr_destroy_item);
     }
 }
 
@@ -328,9 +328,9 @@ int smscconn_destroy(SMSCConn *conn)
 
     octstr_destroy(conn->name);
     octstr_destroy(conn->id);
-    list_destroy(conn->allowed_smsc_id, octstr_destroy_item);
-    list_destroy(conn->denied_smsc_id, octstr_destroy_item);
-    list_destroy(conn->preferred_smsc_id, octstr_destroy_item);
+    gwlist_destroy(conn->allowed_smsc_id, octstr_destroy_item);
+    gwlist_destroy(conn->denied_smsc_id, octstr_destroy_item);
+    gwlist_destroy(conn->preferred_smsc_id, octstr_destroy_item);
     octstr_destroy(conn->denied_prefix);
     octstr_destroy(conn->allowed_prefix);
     octstr_destroy(conn->preferred_prefix);
@@ -417,13 +417,13 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
      * smsc-id matches any of its allowed SMSCes
      */
     if (conn->allowed_smsc_id && (msg->sms.smsc_id == NULL ||
-         list_search(conn->allowed_smsc_id, msg->sms.smsc_id, octstr_item_match) == NULL)) {
+         gwlist_search(conn->allowed_smsc_id, msg->sms.smsc_id, octstr_item_match) == NULL)) {
         return -1;
     }
     /* ..if no allowed-smsc-id set but denied-smsc-id and message smsc-id
      * is set, deny message if smsc-ids match */
     else if (conn->denied_smsc_id && msg->sms.smsc_id != NULL &&
-                 list_search(conn->denied_smsc_id, msg->sms.smsc_id, octstr_item_match) != NULL) {
+                 gwlist_search(conn->denied_smsc_id, msg->sms.smsc_id, octstr_item_match) != NULL) {
         return -1;
     }
 
@@ -473,7 +473,7 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
     
     /* then see if it is preferred one */
     if (conn->preferred_smsc_id && msg->sms.smsc_id != NULL &&
-         list_search(conn->preferred_smsc_id, msg->sms.smsc_id, octstr_item_match) != NULL) {
+         gwlist_search(conn->preferred_smsc_id, msg->sms.smsc_id, octstr_item_match) != NULL) {
         return 1;
     }
 
@@ -511,9 +511,9 @@ int smscconn_send(SMSCConn *conn, Msg *msg)
         /* split msg */
         parts = sms_split(msg, NULL, NULL, NULL, NULL, 1, 
             counter_increase(split_msg_counter) & 0xff, 0xff, MAX_SMS_OCTETS);
-        if (list_len(parts) == 1) {
+        if (gwlist_len(parts) == 1) {
             /* don't create split_parts of sms fit into one */
-            list_destroy(parts, msg_destroy_item);
+            gwlist_destroy(parts, msg_destroy_item);
             parts = NULL;
         }
     }
@@ -521,7 +521,7 @@ int smscconn_send(SMSCConn *conn, Msg *msg)
     if (parts == NULL)
         ret = conn->send_msg(conn, msg);
     else {
-        long i, parts_len = list_len(parts);
+        long i, parts_len = gwlist_len(parts);
         struct split_parts *split = gw_malloc(sizeof(*split));
          /* must duplicate, because smsc2_route will destroy this msg */
         split->orig = msg_duplicate(msg);
@@ -530,13 +530,13 @@ int smscconn_send(SMSCConn *conn, Msg *msg)
         counter_set(split->parts_left, parts_len);
         debug("bb.sms.splits", 0, "new split_parts created %p", split);
         for (i = 0; i < parts_len; i++) {
-            msg = list_get(parts, i);
+            msg = gwlist_get(parts, i);
             msg->sms.split_parts = split;
             ret = conn->send_msg(conn, msg);
             if (ret < 0) {
                 if (i == 0) {
                     counter_destroy(split->parts_left);
-                    list_destroy(parts, msg_destroy_item);
+                    gwlist_destroy(parts, msg_destroy_item);
                     gw_free(split);
                     mutex_unlock(conn->flow_mutex);
                     return ret;
@@ -547,14 +547,14 @@ int smscconn_send(SMSCConn *conn, Msg *msg)
                  */
                 split->status = SMSCCONN_FAILED_REJECTED;
                 while (++i < parts_len) {
-                    msg_destroy(list_get(parts, i));
+                    msg_destroy(gwlist_get(parts, i));
                     counter_decrease(split->parts_left);
                 }
                 warning(0, "Could not send all parts of a split message");
                 break;
             }
         }
-        list_destroy(parts, NULL);
+        gwlist_destroy(parts, NULL);
     }
     mutex_unlock(conn->flow_mutex);
     return ret;

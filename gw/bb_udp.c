@@ -128,14 +128,14 @@ static void udp_receiver(void *arg)
     Udpc *conn = arg;
     Octstr *ip;
 
-    list_add_producer(incoming_wdp);
-    list_add_producer(flow_threads);
+    gwlist_add_producer(incoming_wdp);
+    gwlist_add_producer(flow_threads);
     gwthread_wakeup(MAIN_THREAD_ID);
     
     /* remove messages from socket until it is closed */
     while (bb_status != BB_DEAD && bb_status != BB_SHUTDOWN) {
 
-	list_consume(isolated);	/* block here if suspended/isolated */
+	gwlist_consume(isolated);	/* block here if suspended/isolated */
 
 	if (read_available(conn->fd, 100000) < 1)
 	    continue;
@@ -171,15 +171,15 @@ static void udp_receiver(void *arg)
 	    msg->wdp_datagram.destination_port    = udp_get_port(conn->addr);
 	    msg->wdp_datagram.user_data = datagram;
     
-	    list_produce(incoming_wdp, msg);
+	    gwlist_produce(incoming_wdp, msg);
 	    counter_increase(incoming_wdp_counter);
 	}
 
 	octstr_destroy(cliaddr);
 	octstr_destroy(ip);
     }    
-    list_remove_producer(incoming_wdp);
-    list_remove_producer(flow_threads);
+    gwlist_remove_producer(incoming_wdp);
+    gwlist_remove_producer(flow_threads);
 }
 
 
@@ -207,12 +207,12 @@ static void udp_sender(void *arg)
     Msg *msg;
     Udpc *conn = arg;
 
-    list_add_producer(flow_threads);
+    gwlist_add_producer(flow_threads);
     while(bb_status != BB_DEAD) {
 
-	list_consume(suspended);	/* block here if suspended */
+	gwlist_consume(suspended);	/* block here if suspended */
 
-	if ((msg = list_consume(conn->outgoing_list)) == NULL)
+	if ((msg = gwlist_consume(conn->outgoing_list)) == NULL)
 	    break;
 
 	debug("bb.udp", 0, "udp: sending message");
@@ -231,7 +231,7 @@ static void udp_sender(void *arg)
     gwthread_join(conn->receiver);
 
     udpc_destroy(conn);
-    list_remove_producer(flow_threads);
+    gwlist_remove_producer(flow_threads);
 }
 
 /*---------------------------------------------------------------
@@ -268,7 +268,7 @@ static Udpc *udpc_create(int port, char *interface_name)
 
     octstr_destroy(os);
     
-    udpc->outgoing_list = list_create();
+    udpc->outgoing_list = gwlist_create();
 
     return udpc;
 }    
@@ -282,8 +282,8 @@ static void udpc_destroy(Udpc *udpc)
     if (udpc->fd >= 0)
 	close(udpc->fd);
     octstr_destroy(udpc->addr);
-    gw_assert(list_len(udpc->outgoing_list) == 0);
-    list_destroy(udpc->outgoing_list, NULL);
+    gw_assert(gwlist_len(udpc->outgoing_list) == 0);
+    gwlist_destroy(udpc->outgoing_list, NULL);
 
     gw_free(udpc);
 }    
@@ -295,7 +295,7 @@ static int add_service(int port, char *interface_name)
     
     if ((udpc = udpc_create(port, interface_name)) == NULL)
 	goto error;
-    list_add_producer(udpc->outgoing_list);
+    gwlist_add_producer(udpc->outgoing_list);
 
     udpc->receiver = gwthread_create(udp_receiver, udpc);
     if (udpc->receiver == -1)
@@ -304,7 +304,7 @@ static int add_service(int port, char *interface_name)
     if (gwthread_create(udp_sender, udpc) == -1)
 	goto error;
 
-    list_append(udpc_list, udpc);
+    gwlist_append(udpc_list, udpc);
     return 0;
     
 error:    
@@ -345,12 +345,12 @@ int udp_start(Cfg *cfg)
     grp = cfg_get_single_group(cfg, octstr_imm("wtls"));
     allow_wtls = grp != NULL ? 1 : 0;
 
-    udpc_list = list_create();	/* have a list of running systems */
+    udpc_list = gwlist_create();	/* have a list of running systems */
 
     ifs = octstr_split(iface, octstr_imm(";"));
     octstr_destroy(iface);
-    while (list_len(ifs) > 0) {
-        iface = list_extract_first(ifs);
+    while (gwlist_len(ifs) > 0) {
+        iface = gwlist_extract_first(ifs);
 	info(0, "Adding interface %s", octstr_get_cstr(iface));
         add_service(9200, octstr_get_cstr(iface));   /* wsp 	*/
         add_service(9201, octstr_get_cstr(iface));   /* wsp/wtp	*/
@@ -370,9 +370,9 @@ int udp_start(Cfg *cfg)
     /* add_service(9207, octstr_get_cstr(interface_name));  * vcal/wtls	*/
         octstr_destroy(iface);
     }
-    list_destroy(ifs, NULL);
+    gwlist_destroy(ifs, NULL);
     
-    list_add_producer(incoming_wdp);
+    gwlist_add_producer(incoming_wdp);
     udp_running = 1;
     return 0;
 }
@@ -393,18 +393,18 @@ int udp_addwdp(Msg *msg)
     assert(msg != NULL);
     assert(msg_type(msg) == wdp_datagram);
     
-    list_lock(udpc_list);
+    gwlist_lock(udpc_list);
     /* select in which list to add this */
-    for (i=0; i < list_len(udpc_list); i++) {
-		udpc = list_get(udpc_list, i);
+    for (i=0; i < gwlist_len(udpc_list); i++) {
+		udpc = gwlist_get(udpc_list, i);
 
 		if (msg->wdp_datagram.source_port == udp_get_port(udpc->addr)) {
                     def_udpc = udpc;
                     ip = udp_get_ip(udpc->addr);
 		    if (octstr_compare(msg->wdp_datagram.source_address, ip) == 0) {
                         octstr_destroy(ip);
-	    		list_produce(udpc->outgoing_list, msg);
-	    		list_unlock(udpc_list);
+	    		gwlist_produce(udpc->outgoing_list, msg);
+	    		gwlist_unlock(udpc_list);
 	    		return 0;
 		    }
                     octstr_destroy(ip);
@@ -412,12 +412,12 @@ int udp_addwdp(Msg *msg)
     }
 
     if (NULL != def_udpc) {
-	list_produce(def_udpc->outgoing_list, msg);
-	list_unlock(udpc_list);
+	gwlist_produce(def_udpc->outgoing_list, msg);
+	gwlist_unlock(udpc_list);
 	return 0;
     }
 
-    list_unlock(udpc_list);
+    gwlist_unlock(udpc_list);
     return -1;
 }
 
@@ -426,7 +426,7 @@ int udp_shutdown(void)
     if (!udp_running) return -1;
 
     debug("bb.thread", 0, "udp_shutdown: Starting avalanche");
-    list_remove_producer(incoming_wdp);
+    gwlist_remove_producer(incoming_wdp);
     return 0;
 }
 
@@ -442,10 +442,10 @@ int udp_die(void)
      */
     debug("bb.udp", 0, "udp_die: removing producers from udp-lists");
 
-    while((udpc = list_consume(udpc_list)) != NULL) {
-	list_remove_producer(udpc->outgoing_list);
+    while((udpc = gwlist_consume(udpc_list)) != NULL) {
+	gwlist_remove_producer(udpc->outgoing_list);
     }
-    list_destroy(udpc_list, NULL);
+    gwlist_destroy(udpc_list, NULL);
     udp_running = 0;
     
     octstr_destroy(allow_ip);
@@ -465,11 +465,11 @@ int udp_outgoing_queue(void)
     if (!udp_running || udpc_list == NULL)
 	return 0;
 
-    list_lock(udpc_list);
-    for (i=0; i < list_len(udpc_list); i++) {
-	udpc = list_get(udpc_list, i);
-	q += list_len(udpc->outgoing_list);
+    gwlist_lock(udpc_list);
+    for (i=0; i < gwlist_len(udpc_list); i++) {
+	udpc = gwlist_get(udpc_list, i);
+	q += gwlist_len(udpc->outgoing_list);
     }
-    list_unlock(udpc_list);
+    gwlist_unlock(udpc_list);
     return q;
 }

@@ -84,7 +84,7 @@ ROW(NULL_STATE,
         CipherSuite* ciphersuite;
         int randomCounter;
             
-        tempPayload = (wtls_Payload*) list_search (event->u.T_Unitdata_Ind.pdu_list,
+        tempPayload = (wtls_Payload*) gwlist_search (event->u.T_Unitdata_Ind.pdu_list,
                                                    (void*) client_hello,
                                                    match_handshake_type);
 
@@ -345,7 +345,7 @@ ROW(EXCHANGE,
             Octstr* labelMaster=0;
             
             /* Process the incoming event : ClientKeyExchange*/            
-            tempPayload = (wtls_Payload*) list_search (event->u.T_Unitdata_Ind.pdu_list,
+            tempPayload = (wtls_Payload*) gwlist_search (event->u.T_Unitdata_Ind.pdu_list,
                                                       (void*) client_key_exchange,
                                                       match_handshake_type);
 
@@ -382,7 +382,7 @@ ROW(EXCHANGE,
 			calculate_client_key_block(wtls_machine);
                         
             /* Process the incoming event : ChangeCipherSpec*/            
-            tempPayload = (wtls_Payload*) list_search (event->u.T_Unitdata_Ind.pdu_list,
+            tempPayload = (wtls_Payload*) gwlist_search (event->u.T_Unitdata_Ind.pdu_list,
                                                       (void*) ChangeCipher_PDU,
                                                       match_pdu_type);
 
@@ -398,7 +398,7 @@ ROW(EXCHANGE,
             wtls_pdu_dump(changeCipherSpec_incoming_PDU,0);
 
             /* Process the incoming event : Finished*/            
-            tempPayload = (wtls_Payload*) list_search (event->u.T_Unitdata_Ind.pdu_list,
+            tempPayload = (wtls_Payload*) gwlist_search (event->u.T_Unitdata_Ind.pdu_list,
                                                       (void*) finished,
                                                       match_handshake_type);
             if(tempPayload == NULL)
@@ -632,7 +632,7 @@ ROW(OPENING,
             wtls_Payload* tempPayload;
             wtls_PDU* ApplicationPDU;
 			
-            tempPayload = (wtls_Payload*) list_search (event->u.T_Unitdata_Ind.pdu_list,
+            tempPayload = (wtls_Payload*) gwlist_search (event->u.T_Unitdata_Ind.pdu_list,
                                                       (void*) Application_PDU,
                                                       match_pdu_type);
 

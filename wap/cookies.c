@@ -104,7 +104,7 @@ void cookies_destroy(List *cookies)
 	if (cookies == NULL)
 		return;
 
-	list_destroy(cookies, cookie_destroy);
+	gwlist_destroy(cookies, cookie_destroy);
 }
 
 
@@ -126,8 +126,8 @@ int get_cookies(List *headers, const WSPMachine *sm)
 		return 0;
 	}
 
-	for (pos = 0; pos < list_len(headers); pos++) {
-		header = list_get(headers, pos);
+	for (pos = 0; pos < gwlist_len(headers); pos++) {
+		header = gwlist_get(headers, pos);
 		/* debug ("wap.wsp.http", 0, "get_cookies: Examining header (%s)", octstr_get_cstr (header)); */
 		if (strncasecmp ("set-cookie", octstr_get_cstr (header),10) == 0) {		
 			debug ("wap.wsp.http", 0, "Caching cookie (%s)", octstr_get_cstr (header));
@@ -171,17 +171,17 @@ int set_cookies(List *headers, WSPMachine *sm)
 	}
 
 	if (sm->cookies == NULL)
-		sm->cookies = list_create();
+		sm->cookies = gwlist_create();
 
 	/* Expire cookies that have timed out */
 	expire_cookies(sm->cookies);
 
 	/* Walk through the cookie cache, adding the cookie to the request headers */
-	if (list_len(sm->cookies) > 0) {
+	if (gwlist_len(sm->cookies) > 0) {
 		debug("wap.wsp.http", 0, "set_cookies: Cookies in cache");
 
-		for (pos = 0; pos < list_len(sm->cookies); pos++) {
-			value = list_get(sm->cookies, pos);
+		for (pos = 0; pos < gwlist_len(sm->cookies); pos++) {
+			value = gwlist_get(sm->cookies, pos);
 
 			cookie = octstr_create("Cookie: ");
 			if (value->version) 
@@ -199,7 +199,7 @@ int set_cookies(List *headers, WSPMachine *sm)
 				octstr_append(cookie, value->domain);
 			}
 
-			list_append(headers, cookie);
+			gwlist_append(headers, cookie);
 			debug("wap.wsp.http", 0, "set_cookies: Added (%s)", octstr_get_cstr (cookie));
 		}
 	} else
@@ -350,7 +350,7 @@ static void add_cookie_to_cache(const WSPMachine *sm, Cookie *value)
 	gw_assert(sm -> cookies != NULL);
 	gw_assert(value != NULL);
 
-	list_append(sm -> cookies, value);
+	gwlist_append(sm -> cookies, value);
 
 	return;
 }
@@ -372,8 +372,8 @@ static int have_cookie(List *cookies, Cookie *cookie)
     }
 
     /* Walk through the cookie cache, comparing cookie */
-	while (pos < list_len(cookies)) {
-        value = list_get(cookies, pos);
+	while (pos < gwlist_len(cookies)) {
+        value = gwlist_get(cookies, pos);
 
         /* octstr_compare() now only returns 0 on an exact match or if both args are 0 */
         debug ("wap.wsp.http", 0, "have_cookie: Comparing name (%s:%s), path (%s:%s), domain (%s:%s)",
@@ -393,7 +393,7 @@ static int have_cookie(List *cookies, Cookie *cookie)
 			
             /* We have a match according to 4.3.3 - discard the old one */
             cookie_destroy(value);
-            list_delete(cookies, pos, 1);
+            gwlist_delete(cookies, pos, 1);
 
             /* Discard the new cookie also if max-age is 0 - set if expiry date is up */
             if (cookie->max_age == 0) {
@@ -434,10 +434,10 @@ static void expire_cookies(List *cookies)
 
 	time(&now);
 
-	if (list_len(cookies) > 0) {
+	if (gwlist_len(cookies) > 0) {
 		debug("wap.wsp.http", 0, "expire_cookies: Cookies in cache");
-		for (pos = 0; pos < list_len(cookies); pos++) {
-			value = list_get(cookies, pos);
+		for (pos = 0; pos < gwlist_len(cookies); pos++) {
+			value = gwlist_get(cookies, pos);
 			gw_assert(value != NULL);
 
 			if (value->max_age != -1) {		/* Interesting value */
@@ -445,7 +445,7 @@ static void expire_cookies(List *cookies)
 					debug("wap.wsp.http", 0, "expire_cookies: Expired cookie (%s)",
 						  octstr_get_cstr(value->name));
 					cookie_destroy(value);
-					list_delete(cookies, pos, 1);
+					gwlist_delete(cookies, pos, 1);
 				}
 			}
 		}

@@ -85,8 +85,8 @@ static void smscwrapper_destroy(SmscWrapper *wrap)
 {
     if (wrap == NULL)
 	return;
-    list_destroy(wrap->outgoing_queue, NULL);
-    list_destroy(wrap->stopped, NULL);
+    gwlist_destroy(wrap->outgoing_queue, NULL);
+    gwlist_destroy(wrap->stopped, NULL);
     mutex_destroy(wrap->reconnect_mutex);
     if (wrap->smsc != NULL)
 	smsc_close(wrap->smsc);
@@ -118,7 +118,7 @@ static int reconnect(SMSCConn *conn)
     debug("bb.sms", 0, "smsc_wrapper <%s>: reconnect started",
 	  octstr_get_cstr(conn->name));
 
-    while((msg = list_extract_first(wrap->outgoing_queue))!=NULL) {
+    while((msg = gwlist_extract_first(wrap->outgoing_queue))!=NULL) {
 	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY, NULL);
     }
     conn->status = SMSCCONN_RECONNECTING;
@@ -202,7 +202,7 @@ static void wrapper_receiver(void *arg)
     /* remove messages from SMSC until we are killed */
     while(conn->why_killed == SMSCCONN_ALIVE) {
 
-        list_consume(wrap->stopped); /* block here if suspended/isolated */
+        gwlist_consume(wrap->stopped); /* block here if suspended/isolated */
 
 	msg = sms_receive(conn);
 	if (msg) {
@@ -268,7 +268,7 @@ static void wrapper_sender(void *arg)
      * no producer anymore (we are set to shutdown) */
     while(conn->status != SMSCCONN_DEAD) {
 
-	if ((msg = list_consume(wrap->outgoing_queue)) == NULL)
+	if ((msg = gwlist_consume(wrap->outgoing_queue)) == NULL)
             break;
 
         if (octstr_search_char(msg->sms.receiver, ' ', 0) != -1) {
@@ -285,15 +285,15 @@ static void wrapper_sender(void *arg)
 
 	    debug("bb.sms", 0, "Handling multi-receiver message");
 
-            for(i=0; i < list_len(nlist); i++) {
+            for(i=0; i < gwlist_len(nlist); i++) {
 
 		newmsg = msg_duplicate(msg);
                 octstr_destroy(newmsg->sms.receiver);
 
-                newmsg->sms.receiver = list_get(nlist, i);
+                newmsg->sms.receiver = gwlist_get(nlist, i);
                 sms_send(conn, newmsg);
             }
-            list_destroy(nlist, NULL);
+            gwlist_destroy(nlist, NULL);
             msg_destroy(msg);
         }
         else
@@ -308,7 +308,7 @@ static void wrapper_sender(void *arg)
     conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
 
     if (conn->is_stopped) {
-	list_remove_producer(wrap->stopped);
+	gwlist_remove_producer(wrap->stopped);
 	conn->is_stopped = 0;
     }
 
@@ -321,7 +321,7 @@ static void wrapper_sender(void *arg)
 
     conn->status = SMSCCONN_DEAD;
 
-    while((msg = list_extract_first(wrap->outgoing_queue))!=NULL) {
+    while((msg = gwlist_extract_first(wrap->outgoing_queue))!=NULL) {
 	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
     }
     smscwrapper_destroy(wrap);
@@ -340,7 +340,7 @@ static int wrapper_add_msg(SMSCConn *conn, Msg *sms)
     Msg *copy;
 
     copy = msg_duplicate(sms);
-    list_produce(wrap->outgoing_queue, copy);
+    gwlist_produce(wrap->outgoing_queue, copy);
 
     return 0;
 }
@@ -355,11 +355,11 @@ static int wrapper_shutdown(SMSCConn *conn, int finish_sending)
     
     if (finish_sending == 0) {
 	Msg *msg; 
-	while((msg = list_extract_first(wrap->outgoing_queue))!=NULL) {
+	while((msg = gwlist_extract_first(wrap->outgoing_queue))!=NULL) {
 	    bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
 	}
     }
-    list_remove_producer(wrap->outgoing_queue);
+    gwlist_remove_producer(wrap->outgoing_queue);
     gwthread_wakeup(wrap->sender_thread);
     gwthread_wakeup(wrap->receiver_thread);
     return 0;
@@ -370,7 +370,7 @@ static void wrapper_stop(SMSCConn *conn)
     SmscWrapper *wrap = conn->data;
 
     debug("smscconn", 0, "Stopping wrapper");
-    list_add_producer(wrap->stopped);
+    gwlist_add_producer(wrap->stopped);
 
 }
 
@@ -379,14 +379,14 @@ static void wrapper_start(SMSCConn *conn)
     SmscWrapper *wrap = conn->data;
 
     debug("smscconn", 0, "Starting wrapper");
-    list_remove_producer(wrap->stopped);
+    gwlist_remove_producer(wrap->stopped);
 }
 
 
 static long wrapper_queued(SMSCConn *conn)
 {
     SmscWrapper *wrap = conn->data;
-    long ret = list_len(wrap->outgoing_queue);
+    long ret = gwlist_len(wrap->outgoing_queue);
 
     /* use internal queue as load, maybe something else later */
     
@@ -411,10 +411,10 @@ int smsc_wrapper_create(SMSCConn *conn, CfgGroup *cfg)
     conn->send_msg = wrapper_add_msg;
     
     
-    wrap->outgoing_queue = list_create();
-    wrap->stopped = list_create();
+    wrap->outgoing_queue = gwlist_create();
+    wrap->stopped = gwlist_create();
     wrap->reconnect_mutex = mutex_create();
-    list_add_producer(wrap->outgoing_queue);
+    gwlist_add_producer(wrap->outgoing_queue);
     
     if ((wrap->smsc = smsc_open(cfg)) == NULL)
 	goto error;
@@ -424,7 +424,7 @@ int smsc_wrapper_create(SMSCConn *conn, CfgGroup *cfg)
     conn->connect_time = time(NULL);
 
     if (conn->is_stopped)
-	list_add_producer(wrap->stopped);
+	gwlist_add_producer(wrap->stopped);
 	
 
     /* XXX here we could fail things... specially if the second one

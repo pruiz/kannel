@@ -250,7 +250,7 @@ static void read_messages_from_bearerbox(void)
 	    if (total == 0)
 		start = time(NULL);
 	    total++;
-	    list_produce(smsbox_requests, msg);
+	    gwlist_produce(smsbox_requests, msg);
 	} else if (msg_type(msg) == ack) {
 
 	    if (!immediate_sendsms_reply)
@@ -352,7 +352,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
 
     list = sms_split(msg, header, footer, suffix, split_chars, catenate,
     	    	     msg_sequence, max_msgs, sms_max_length);
-    msg_count = list_len(list);
+    msg_count = gwlist_len(list);
     
     debug("sms", 0, "message length %ld, sending %ld messages",
           octstr_len(msg->sms.msgdata), msg_count);
@@ -366,18 +366,18 @@ static int send_message(URLTranslation *trans, Msg *msg)
     if (catenate) {
         Msg *new_msg = msg_duplicate(msg);
         octstr_delete(new_msg->sms.msgdata, 0, octstr_len(new_msg->sms.msgdata));
-        while((part = list_extract_first(list)) != NULL) {
+        while((part = gwlist_extract_first(list)) != NULL) {
             octstr_append(new_msg->sms.msgdata, part->sms.msgdata);
             msg_destroy(part);
         }
         write_to_bearerbox(new_msg);
     } else {
         /* msgs are the independed parts so sent those as is */
-        while ((part = list_extract_first(list)) != NULL)
+        while ((part = gwlist_extract_first(list)) != NULL)
             write_to_bearerbox(part);
     }
     
-    list_destroy(list, NULL);
+    gwlist_destroy(list, NULL);
 
     return msg_count;
 }
@@ -507,7 +507,7 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
     Octstr *name, *val;
     long l;
 
-    for(l=0; l<list_len(headers); l++) {
+    for(l=0; l<gwlist_len(headers); l++) {
 	http_header_get(headers, l, &name, &val);
 
 	if (octstr_case_compare(name, octstr_imm("X-Kannel-From")) == 0) {
@@ -682,11 +682,11 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
 
     if(requesttype == mt_push) {
 	/* to (da/number) Multiple tags */ 
-	*tolist = list_create();
+	*tolist = gwlist_create();
 	where = get_tag(*body, octstr_imm("da"), &tmp, 0, 0);
 	if(tmp) {
 	    get_tag(tmp, octstr_imm("number"), to, 0, 0);
-	    list_append(*tolist, octstr_duplicate(*to));
+	    gwlist_append(*tolist, octstr_duplicate(*to));
 	    O_DESTROY(*to);
 
 	    while(tmp && where != -1) {
@@ -695,7 +695,7 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
 		if(tmp) {
 		    get_tag(tmp, octstr_imm("number"), &tmp2, 0, 0);
 		    if(tmp2 != NULL) {
-			list_append(*tolist, octstr_duplicate(tmp2));
+			gwlist_append(*tolist, octstr_duplicate(tmp2));
 			O_DESTROY(tmp2);
 		    }
 		}
@@ -1041,7 +1041,7 @@ static void http_queue_thread(void *arg)
     unsigned long retries;
     int method;
 
-    while ((id = list_consume(smsbox_http_requests)) != NULL) {
+    while ((id = gwlist_consume(smsbox_http_requests)) != NULL) {
         /*
          * Sleep for a while in order not to block other operting requests.
          * Defaults to 10 sec. if not given via http-queue-delay directive in
@@ -1051,7 +1051,7 @@ static void http_queue_thread(void *arg)
             gwthread_sleep(http_queue_delay);
 
         debug("sms.http",0,"HTTP: Queue contains %ld outstanding requests",
-              list_len(smsbox_http_requests));
+              gwlist_len(smsbox_http_requests));
 
         /*
          * Get all required HTTP request data from the queue and reconstruct
@@ -1174,7 +1174,7 @@ static void url_result_thread(void *arg)
             octstr_destroy(type);
         } else if (max_http_retries > retries) {
             id = remember_receiver(msg, trans, method, req_url, req_headers, req_body, retries);
-            list_produce(smsbox_http_requests, id);
+            gwlist_produce(smsbox_http_requests, id);
             queued++;
             goto requeued;
         } else
@@ -1645,7 +1645,7 @@ static void obey_request_thread(void *arg)
     Octstr *p;
     int ret, dreport=0;
 
-    while ((msg = list_consume(smsbox_requests)) != NULL) {
+    while ((msg = gwlist_consume(smsbox_requests)) != NULL) {
 	if (msg->sms.sms_type == report_mo)
 	    dreport = 1;
 	else
@@ -1982,7 +1982,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     if(receiver == NULL) {
         receiver = octstr_split_words(to);
     }
-    no_recv = list_len(receiver);
+    no_recv = gwlist_len(receiver);
 
     /*
      * check if UDH length is legal, or otherwise discard the
@@ -2005,11 +2005,11 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      * least all allowed receiver messages. This is a constrain
      * walk through all disallowing rules within the lists.
      */
-    allowed = list_create();
-    denied = list_create();
+    allowed = gwlist_create();
+    denied = gwlist_create();
 
     for (i = 0; i < no_recv; i++) {
-        receiv = list_get(receiver, i); 
+        receiv = gwlist_get(receiver, i); 
             
 	/*
 	 * Check if there are any illegal characters in the 'to' scheme
@@ -2017,7 +2017,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	if (strspn(octstr_get_cstr(receiv), sendsms_number_chars) < octstr_len(receiv)) {
 	    info(0,"Illegal characters in 'to' string ('%s') vs '%s'",
 		octstr_get_cstr(receiv), sendsms_number_chars);
-            list_append_unique(denied, receiv, octstr_item_match);
+            gwlist_append_unique(denied, receiv, octstr_item_match);
 	}
 
         /*
@@ -2028,36 +2028,36 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
             numhash_find_number(urltrans_white_list(t), receiv) < 1) {
             info(0, "Number <%s> is not in white-list, message discarded",
                  octstr_get_cstr(receiv));
-            list_append_unique(denied, receiv, octstr_item_match);
+            gwlist_append_unique(denied, receiv, octstr_item_match);
         } else {
-            list_append_unique(allowed, receiv, octstr_item_match);
+            gwlist_append_unique(allowed, receiv, octstr_item_match);
         }
 
         if (urltrans_white_list_regex(t) &&
                 gw_regex_matches(urltrans_white_list_regex(t), receiv) == NO_MATCH) {
             info(0, "Number <%s> is not in white-list-regex, message discarded",
                  octstr_get_cstr(receiv));
-            list_append_unique(denied, receiv, octstr_item_match);
+            gwlist_append_unique(denied, receiv, octstr_item_match);
         } else {
-            list_append_unique(allowed, receiv, octstr_item_match);
+            gwlist_append_unique(allowed, receiv, octstr_item_match);
         }
         
         if (urltrans_black_list(t) &&
             numhash_find_number(urltrans_black_list(t), receiv) == 1) {
             info(0, "Number <%s> is in black-list, message discarded",
                  octstr_get_cstr(receiv));
-            list_append_unique(denied, receiv, octstr_item_match);
+            gwlist_append_unique(denied, receiv, octstr_item_match);
         } else {
-            list_append_unique(allowed, receiv, octstr_item_match);
+            gwlist_append_unique(allowed, receiv, octstr_item_match);
         }
 
         if (urltrans_black_list_regex(t) &&
                 gw_regex_matches(urltrans_black_list_regex(t), receiv) == MATCH) {
             info(0, "Number <%s> is in black-list-regex, message discarded",
                  octstr_get_cstr(receiv));
-            list_append_unique(denied, receiv, octstr_item_match);
+            gwlist_append_unique(denied, receiv, octstr_item_match);
         } else {
-            list_append_unique(allowed, receiv, octstr_item_match);
+            gwlist_append_unique(allowed, receiv, octstr_item_match);
         }
         
 
@@ -2065,36 +2065,36 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
             numhash_find_number(white_list, receiv) < 1) {
             info(0, "Number <%s> is not in global white-list, message discarded",
                  octstr_get_cstr(receiv));
-            list_append_unique(denied, receiv, octstr_item_match);
+            gwlist_append_unique(denied, receiv, octstr_item_match);
         } else {
-            list_append_unique(allowed, receiv, octstr_item_match);
+            gwlist_append_unique(allowed, receiv, octstr_item_match);
         }
 
         if (white_list_regex &&
             gw_regex_matches(white_list_regex, receiv) == NO_MATCH) {
             info(0, "Number <%s> is not in global white-list-regex, message discarded",
                  octstr_get_cstr(receiv));
-            list_append_unique(denied, receiv, octstr_item_match);
+            gwlist_append_unique(denied, receiv, octstr_item_match);
         } else {
-            list_append_unique(allowed, receiv, octstr_item_match);
+            gwlist_append_unique(allowed, receiv, octstr_item_match);
         }
 
         if (black_list &&
             numhash_find_number(black_list, receiv) == 1) {
             info(0, "Number <%s> is in global black-list, message discarded",
                  octstr_get_cstr(receiv));
-            list_append_unique(denied, receiv, octstr_item_match);
+            gwlist_append_unique(denied, receiv, octstr_item_match);
         } else {
-            list_append_unique(allowed, receiv, octstr_item_match);
+            gwlist_append_unique(allowed, receiv, octstr_item_match);
         }
 
         if (black_list_regex &&
             gw_regex_matches(black_list_regex, receiv) == MATCH) {
             info(0, "Number <%s> is in global black-list-regex, message discarded",
                  octstr_get_cstr(receiv));
-            list_append_unique(denied, receiv, octstr_item_match);
+            gwlist_append_unique(denied, receiv, octstr_item_match);
         } else {
-            list_append_unique(allowed, receiv, octstr_item_match);
+            gwlist_append_unique(allowed, receiv, octstr_item_match);
         }
     }
     
@@ -2103,9 +2103,9 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      * the 'denied' list and check if items are also present in 'allowed',
      * then we will discard them from 'allowed'.
      */
-    for (i = 0; i < list_len(denied); i++) {
-        receiv = list_get(denied, i);
-        del = list_delete_matching(allowed, receiv, octstr_item_match);
+    for (i = 0; i < gwlist_len(denied); i++) {
+        receiv = gwlist_get(denied, i);
+        del = gwlist_delete_matching(allowed, receiv, octstr_item_match);
     }
 
     if (urltrans_faked_sender(t) != NULL) {
@@ -2290,9 +2290,9 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      * number of receivers within 'to'. If the message fails append
      * it to 'failed_id'.
      */
-    failed_id = list_create();
+    failed_id = gwlist_create();
 
-    while ((receiv = list_extract_first(allowed)) != NULL) {
+    while ((receiv = gwlist_extract_first(allowed)) != NULL) {
 
 	O_DESTROY(msg->sms.receiver);
         msg->sms.receiver = octstr_duplicate(receiv);
@@ -2303,7 +2303,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 
         if (ret == -1) {
             /* add the receiver to the failed list */
-            list_append(failed_id, receiv);
+            gwlist_append(failed_id, receiv);
         } else {
             /* log the sending as successful for this particular message */
             alog("send-SMS request added - sender:%s:%s %s target:%s request: '%s'",
@@ -2322,19 +2322,19 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 
 
     msg_destroy(msg);
-    list_destroy(receiver, octstr_destroy_item);
-    list_destroy(allowed, octstr_destroy_item);
+    gwlist_destroy(receiver, octstr_destroy_item);
+    gwlist_destroy(allowed, octstr_destroy_item);
 
     /* have all receivers been denied by list rules?! */
-    if (no_recv == list_len(denied)) {
+    if (no_recv == gwlist_len(denied)) {
         returnerror = octstr_create("Number(s) has/have been denied by white- and/or black-lists.");
         goto fielderror2;
     }
 
-    if (list_len(failed_id) > 0)
+    if (gwlist_len(failed_id) > 0)
 	goto error;
     
-    list_destroy(failed_id, octstr_destroy_item);
+    gwlist_destroy(failed_id, octstr_destroy_item);
     octstr_destroy(newfrom);
     *status = HTTP_ACCEPTED;
     returnerror = octstr_create("Sent.");
@@ -2343,13 +2343,13 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      * Append all denied receivers to the returned body in case this is
      * a multi-cast send request
      */
-    if (list_len(denied) > 0) {
+    if (gwlist_len(denied) > 0) {
         octstr_format_append(returnerror, " Denied receivers are:");
-        while ((receiv = list_extract_first(denied)) != NULL) {
+        while ((receiv = gwlist_extract_first(denied)) != NULL) {
             octstr_format_append(returnerror, " %s", octstr_get_cstr(receiv));
         }
     }               
-    list_destroy(denied, octstr_destroy_item);  
+    gwlist_destroy(denied, octstr_destroy_item);  
 
     /*
      * Append number of splits to returned body. 
@@ -2384,14 +2384,14 @@ error:
      */
     if (no_recv > 1) {
         octstr_format_append(returnerror, " Failed receivers are:");
-        while ((receiv = list_extract_first(failed_id)) != NULL) {
+        while ((receiv = gwlist_extract_first(failed_id)) != NULL) {
             octstr_format_append(returnerror, " %s", octstr_get_cstr(receiv));
         }
     }
 
     octstr_destroy(receiv); 
-    list_destroy(failed_id, octstr_destroy_item);
-    list_destroy(denied, octstr_destroy_item);
+    gwlist_destroy(failed_id, octstr_destroy_item);
+    gwlist_destroy(denied, octstr_destroy_item);
     return returnerror;
 }
 
@@ -2871,7 +2871,7 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status,
         id = http_cgi_variable(list, "otaid");
     
         grplist = cfg_get_multi_group(cfg, octstr_imm("ota-setting"));
-        while (grplist && (grp = list_extract_first(grplist)) != NULL) {
+        while (grplist && (grp = gwlist_extract_first(grplist)) != NULL) {
             p = cfg_get(grp, octstr_imm("ota-id"));
             if (id == NULL || (p != NULL && octstr_compare(p, id) == 0)) {
                 ota_type = 1;
@@ -2879,10 +2879,10 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status,
             }
             octstr_destroy(p);
         }
-        list_destroy(grplist, NULL);
+        gwlist_destroy(grplist, NULL);
         
         grplist = cfg_get_multi_group(cfg, octstr_imm("ota-bookmark"));
-        while (grplist && (grp = list_extract_first(grplist)) != NULL) {
+        while (grplist && (grp = gwlist_extract_first(grplist)) != NULL) {
             p = cfg_get(grp, octstr_imm("ota-id"));
             if (id == NULL || (p != NULL && octstr_compare(p, id) == 0)) {
                 ota_type = 0;             
@@ -2890,7 +2890,7 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status,
             }
             octstr_destroy(p);
         }
-        list_destroy(grplist, NULL);
+        gwlist_destroy(grplist, NULL);
         
         if (id != NULL)
             error(0, "%s can't find any ota-setting or ota-bookmark group with ota-id '%s'.", 
@@ -2904,7 +2904,7 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status,
     
 found:
     octstr_destroy(p);
-    list_destroy(grplist, NULL);
+    gwlist_destroy(grplist, NULL);
 
     /* tokenize the OTA settings or bookmarks group and return the message */
     if (ota_type)
@@ -2980,7 +2980,7 @@ static Octstr *smsbox_sendota_post(List *headers, Octstr *body,
     /* 
      * process all special HTTP headers 
      */
-    for (l = 0; l < list_len(headers); l++) {
+    for (l = 0; l < gwlist_len(headers); l++) {
     http_header_get(headers, l, &name, &val);
 
 	if (octstr_case_compare(name, octstr_imm("X-Kannel-OTA-ID")) == 0) {
@@ -3461,7 +3461,7 @@ static Cfg *init_smsbox(Cfg *cfg)
     octstr_destroy(http_proxy_host);
     octstr_destroy(http_proxy_username);
     octstr_destroy(http_proxy_password);
-    list_destroy(http_proxy_exceptions, octstr_destroy_item);
+    gwlist_destroy(http_proxy_exceptions, octstr_destroy_item);
 
     return cfg;
 }
@@ -3525,10 +3525,10 @@ int main(int argc, char **argv)
 
 
     caller = http_caller_create();
-    smsbox_requests = list_create();
-    smsbox_http_requests = list_create();
-    list_add_producer(smsbox_requests);
-    list_add_producer(smsbox_http_requests);
+    smsbox_requests = gwlist_create();
+    smsbox_http_requests = gwlist_create();
+    gwlist_add_producer(smsbox_requests);
+    gwlist_add_producer(smsbox_http_requests);
     num_outstanding_requests = counter_create();
     catenated_sms_counter = counter_create();
     gwthread_create(obey_request_thread, NULL);
@@ -3551,8 +3551,8 @@ int main(int argc, char **argv)
     heartbeat_stop(ALL_HEARTBEATS);
     http_close_all_ports();
     gwthread_join_every(sendsms_thread);
-    list_remove_producer(smsbox_requests);
-    list_remove_producer(smsbox_http_requests);
+    gwlist_remove_producer(smsbox_requests);
+    gwlist_remove_producer(smsbox_http_requests);
     gwthread_join_every(obey_request_thread);
     http_caller_signal_shutdown(caller);
     gwthread_join_every(url_result_thread);
@@ -3561,10 +3561,10 @@ int main(int argc, char **argv)
     close_connection_to_bearerbox();
     alog_close();
     urltrans_destroy(translations);
-    gw_assert(list_len(smsbox_requests) == 0);
-    gw_assert(list_len(smsbox_http_requests) == 0);
-    list_destroy(smsbox_requests, NULL);
-    list_destroy(smsbox_http_requests, NULL);
+    gw_assert(gwlist_len(smsbox_requests) == 0);
+    gw_assert(gwlist_len(smsbox_http_requests) == 0);
+    gwlist_destroy(smsbox_requests, NULL);
+    gwlist_destroy(smsbox_http_requests, NULL);
     http_caller_destroy(caller);
     counter_destroy(num_outstanding_requests);
     counter_destroy(catenated_sms_counter);

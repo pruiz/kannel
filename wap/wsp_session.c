@@ -194,9 +194,9 @@ void wsp_session_init(wap_dispatch_func_t *responder_dispatch,
                       wap_dispatch_func_t *initiator_dispatch,
                       wap_dispatch_func_t *application_dispatch,
                       wap_dispatch_func_t *push_ota_dispatch) {
-	queue = list_create();
-	list_add_producer(queue);
-	session_machines = list_create();
+	queue = gwlist_create();
+	gwlist_add_producer(queue);
+	session_machines = gwlist_create();
 	session_id_counter = counter_create();
 	dispatch_to_wtp_resp = responder_dispatch;
 	dispatch_to_wtp_init = initiator_dispatch;
@@ -211,14 +211,14 @@ void wsp_session_init(wap_dispatch_func_t *responder_dispatch,
 void wsp_session_shutdown(void) {
 	gw_assert(run_status == running);
 	run_status = terminating;
-	list_remove_producer(queue);
+	gwlist_remove_producer(queue);
 	gwthread_join_every(main_thread);
 
-	list_destroy(queue, wap_event_destroy_item);
+	gwlist_destroy(queue, wap_event_destroy_item);
 
 	debug("wap.wsp", 0, "WSP: %ld session machines left.",
-		list_len(session_machines));
-	list_destroy(session_machines, machine_destroy);
+		gwlist_len(session_machines));
+	gwlist_destroy(session_machines, machine_destroy);
 
 	counter_destroy(session_id_counter);
         wsp_strings_shutdown();
@@ -227,7 +227,7 @@ void wsp_session_shutdown(void) {
 
 void wsp_session_dispatch_event(WAPEvent *event) {
 	wap_event_assert(event);
-	list_produce(queue, event);
+	gwlist_produce(queue, event);
 }
 
 
@@ -241,7 +241,7 @@ static void main_thread(void *arg) {
 	WSPMachine *sm;
 	WSP_PDU *pdu;
 	
-	while (run_status == running && (e = list_consume(queue)) != NULL) {
+	while (run_status == running && (e = gwlist_consume(queue)) != NULL) {
 		wap_event_assert(e);
 		switch (e->type) {
 		case TR_Invoke_Ind:
@@ -361,7 +361,7 @@ static WSPMachine *find_session_machine(WAPEvent *event, WSP_PDU *pdu) {
 		/* Pass to session identified by session id, not
 		 * the address tuple. */
 		session_id = pdu->u.Resume.sessionid;
-		sm = list_search(session_machines, &session_id,
+		sm = gwlist_search(session_machines, &session_id,
 				find_by_session_id);
 		if (sm == NULL) {
 			/* No session; TR-Abort.req(DISCONNECT) */
@@ -373,7 +373,7 @@ static WSPMachine *find_session_machine(WAPEvent *event, WSP_PDU *pdu) {
 	 * TR-Invoke.ind here by ignoring them; this seems to be
 	 * an omission in the spec table. */
 	} else if (event->type == TR_Invoke_Ind) {
-		sm = list_search(session_machines, tuple,
+		sm = gwlist_search(session_machines, tuple,
 				 transaction_belongs_to_session);
 		if (sm == NULL && (event->u.TR_Invoke_Ind.tcl == 1 ||
 				event->u.TR_Invoke_Ind.tcl == 2)) {
@@ -384,10 +384,10 @@ static WSPMachine *find_session_machine(WAPEvent *event, WSP_PDU *pdu) {
 	 * do those later, after we've tried to handle them. */
 	} else {
 		if (session_id != -1) {
-			sm = list_search(session_machines, &session_id,
+			sm = gwlist_search(session_machines, &session_id,
 				find_by_session_id);
 		} else {
-			sm = list_search(session_machines, tuple,
+			sm = gwlist_search(session_machines, tuple,
 				transaction_belongs_to_session);
 		}
 		/* The table doesn't really say what we should do with
@@ -490,7 +490,7 @@ static WSPMachine *machine_create(void) {
 	#define OCTSTR(name) p->name = NULL;
 	#define HTTPHEADERS(name) p->name = NULL;
 	#define ADDRTUPLE(name) p->name = NULL;
-	#define MACHINESLIST(name) p->name = list_create();
+	#define MACHINESLIST(name) p->name = gwlist_create();
 	#define CAPABILITIES(name) p->name = NULL;
 	#define COOKIES(name) p->name = NULL;
 	#define REFERER(name) p->name = NULL;
@@ -508,28 +508,28 @@ static WSPMachine *machine_create(void) {
 	 * to get events than old machines are, so this speeds up the linear
 	 * search, and 2) we want the newest machine to get any method
 	 * invokes that come through before the Connect is established. */
-	list_insert(session_machines, 0, p);
+	gwlist_insert(session_machines, 0, p);
 
 	return p;
 }
 
 
 static void destroy_methodmachines(List *machines) {
-	if (list_len(machines) > 0) {
+	if (gwlist_len(machines) > 0) {
 		warning(0, "Destroying WSP session with %ld active methods\n",
-			list_len(machines));
+			gwlist_len(machines));
 	}
 
-	list_destroy(machines, method_machine_destroy);
+	gwlist_destroy(machines, method_machine_destroy);
 }
 
 static void destroy_pushmachines(List *machines) {
-	if (list_len(machines) > 0) {
+	if (gwlist_len(machines) > 0) {
 		warning(0, "Destroying WSP session with %ld active pushes\n",
-			list_len(machines));
+			gwlist_len(machines));
 	}
 
-	list_destroy(machines, push_machine_destroy);
+	gwlist_destroy(machines, push_machine_destroy);
 }
 
 static void machine_destroy(void *pp) {
@@ -537,7 +537,7 @@ static void machine_destroy(void *pp) {
 	
 	p = pp;
 	debug("wap.wsp", 0, "Destroying WSPMachine %p", pp);
-	list_delete_equal(session_machines, p);
+	gwlist_delete_equal(session_machines, p);
 
 	#define INTEGER(name) p->name = 0;
 	#define OCTSTR(name) octstr_destroy(p->name);
@@ -598,7 +598,7 @@ WAPEvent *current_event, WSP_PDU *pdu) {
 end:
 	if (msm->state == NULL_METHOD) {
 		method_machine_destroy(msm);
-		list_delete_equal(sm->methodmachines, msm);
+		gwlist_delete_equal(sm->methodmachines, msm);
 	}
 }
 
@@ -620,7 +620,7 @@ static WSPMethodMachine *method_machine_create(WSPMachine *sm,
 	msm->addr_tuple = wap_addr_tuple_duplicate(sm->addr_tuple);
 	msm->session_id = sm->session_id;
 
-	list_append(sm->methodmachines, msm);
+	gwlist_append(sm->methodmachines, msm);
 
 	return msm;
 }
@@ -680,7 +680,7 @@ static void handle_push_event(WSPMachine *sm, WSPPushMachine *pm,
 end:
         if (pm->state == SERVER_PUSH_NULL_STATE) {
 		push_machine_destroy(pm);
-		list_delete_equal(sm->pushmachines, pm);
+		gwlist_delete_equal(sm->pushmachines, pm);
 	}
 }
 
@@ -703,7 +703,7 @@ static WSPPushMachine *push_machine_create(WSPMachine *sm,
 	m->addr_tuple = wap_addr_tuple_duplicate(sm->addr_tuple);
 	m->session_id = sm->session_id;
 
-	list_append(sm->pushmachines, m);
+	gwlist_append(sm->pushmachines, m);
 
 	return m;      
 }
@@ -756,8 +756,8 @@ static void sanitize_capabilities(List *caps, WSPMachine *m) {
 	Capability *cap;
 	unsigned long ui;
 
-	for (i = 0; i < list_len(caps); i++) {
-		cap = list_get(caps, i);
+	for (i = 0; i < gwlist_len(caps); i++) {
+		cap = gwlist_get(caps, i);
 
 		/* We only know numbered capabilities.  Let the application
 		 * layer negotiate whatever it wants for unknown ones. */
@@ -816,7 +816,7 @@ static void sanitize_capabilities(List *caps, WSPMachine *m) {
 	bad_cap:
 		error(0, "WSP: Found illegal value in capabilities reply.");
 		wsp_cap_dump(cap);
-		list_delete(caps, i, 1);
+		gwlist_delete(caps, i, 1);
 		i--;
 		wsp_cap_destroy(cap);
 		continue;
@@ -841,7 +841,7 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 		octstr_append_uintvar(data, m->client_SDU_size);
 		cap = wsp_cap_create(WSP_CAPS_CLIENT_SDU_SIZE,
 			NULL, data);
-		list_append(caps, cap);
+		gwlist_append(caps, cap);
 	}
 
 	if (wsp_cap_count(caps, WSP_CAPS_SERVER_SDU_SIZE, NULL) == 0) {
@@ -854,7 +854,7 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 		data = octstr_create("");
 		octstr_append_uintvar(data, ui);
 		cap = wsp_cap_create(WSP_CAPS_SERVER_SDU_SIZE, NULL, data);
-		list_append(caps, cap);
+		gwlist_append(caps, cap);
 	}
 
 	/* Currently we cannot handle any protocol options */
@@ -862,7 +862,7 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 		data = octstr_create("");
 		octstr_append_char(data, 0);
 		cap = wsp_cap_create(WSP_CAPS_PROTOCOL_OPTIONS, NULL, data);
-		list_append(caps, cap);
+		gwlist_append(caps, cap);
 	}
 
 	/* Accept any Method-MOR the client sent; if it sent none,
@@ -874,7 +874,7 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 		data = octstr_create("");
 		octstr_append_char(data, ui);
 		cap = wsp_cap_create(WSP_CAPS_METHOD_MOR, NULL, data);
-		list_append(caps, cap);
+		gwlist_append(caps, cap);
 	}
 
 	/* We will never send any Push requests because we don't support
@@ -887,7 +887,7 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 		data = octstr_create("");
 		octstr_append_char(data, m->MOR_push);
 		cap = wsp_cap_create(WSP_CAPS_PUSH_MOR, NULL, data);
-		list_append(caps, cap);
+		gwlist_append(caps, cap);
 	}
 
 	/* Supporting extended methods is up to the application layer,
@@ -910,12 +910,12 @@ static void refuse_unreplied_capabilities(List *caps, List *req) {
 	long i, len;
 	Capability *cap;
 
-	len = list_len(req);
+	len = gwlist_len(req);
 	for (i = 0; i < len; i++) {
-		cap = list_get(req, i);
+		cap = gwlist_get(req, i);
 		if (wsp_cap_count(caps, cap->id, cap->name) == 0) {
 			cap = wsp_cap_create(cap->id, cap->name, NULL);
-			list_append(caps, cap);
+			gwlist_append(caps, cap);
 		}
 	}
 }
@@ -959,12 +959,12 @@ static void strip_default_capabilities(List *caps, List *req) {
 	/* Hmm, this is an O(N*N) operation, which may be bad. */
 
 	i = 0;
-	while (i < list_len(caps)) {
-		cap = list_get(caps, i);
+	while (i < gwlist_len(caps)) {
+		cap = gwlist_get(caps, i);
 
 		count = wsp_cap_count(req, cap->id, cap->name);
 		if (count == 0 && is_default_cap(cap)) {
-			list_delete(caps, i, 1);
+			gwlist_delete(caps, i, 1);
 			wsp_cap_destroy(cap);
 		} else {
 			i++;
@@ -1168,12 +1168,12 @@ static int find_by_push_id(void *m_ptr, void *id_ptr) {
 }
 
 static WSPMethodMachine *find_method_machine(WSPMachine *sm, long id) {
-	return list_search(sm->methodmachines, &id, find_by_method_id);
+	return gwlist_search(sm->methodmachines, &id, find_by_method_id);
 }
 
 static WSPPushMachine *find_push_machine(WSPMachine *m, long id)
 {
-       return list_search(m->pushmachines, &id, find_by_push_id);
+       return gwlist_search(m->pushmachines, &id, find_by_push_id);
 }
 
 static int same_client(void *a, void *b) {
@@ -1191,19 +1191,19 @@ static void disconnect_other_sessions(WSPMachine *sm) {
 	WSPMachine *sm2;
 	long i;
 
-	old_sessions = list_search_all(session_machines, sm, same_client);
+	old_sessions = gwlist_search_all(session_machines, sm, same_client);
 	if (old_sessions == NULL)
 		return;
 
-	for (i = 0; i < list_len(old_sessions); i++) {
-		sm2 = list_get(old_sessions, i);
+	for (i = 0; i < gwlist_len(old_sessions); i++) {
+		sm2 = gwlist_get(old_sessions, i);
 		if (sm2 != sm) {
 			disconnect = wap_event_create(Disconnect_Event);
 			handle_session_event(sm2, disconnect, NULL);
 		}
 	}
 
-	list_destroy(old_sessions, NULL);
+	gwlist_destroy(old_sessions, NULL);
 }
 
 
@@ -1374,7 +1374,7 @@ static void release_holding_methods(WSPMachine *sm) {
 	List *holding;
 	long i, len;
 
-	holding = list_search_all(sm->methodmachines, NULL, method_is_holding);
+	holding = gwlist_search_all(sm->methodmachines, NULL, method_is_holding);
 	if (holding == NULL)
 		return;
 
@@ -1382,12 +1382,12 @@ static void release_holding_methods(WSPMachine *sm) {
 	 * destroy its event */
 	release = wap_event_create(Release_Event);
 
-	len = list_len(holding);
+	len = gwlist_len(holding);
 	for (i = 0; i < len; i++) {
-		msm = list_get(holding, i);
+		msm = gwlist_get(holding, i);
 		handle_method_event(sm, msm, release, NULL);
 	}
-	list_destroy(holding, NULL);
+	gwlist_destroy(holding, NULL);
 	wap_event_destroy(release);
 }
 
@@ -1402,9 +1402,9 @@ static void abort_methods(WSPMachine *sm, long reason) {
 
 	/* This loop goes backward because it has to deal with the
 	 * possibility of method machines disappearing after their event. */
-	len = list_len(sm->methodmachines);
+	len = gwlist_len(sm->methodmachines);
 	for (i = len - 1; i >= 0; i--) {
-		msm = list_get(sm->methodmachines, i);
+		msm = gwlist_get(sm->methodmachines, i);
 		handle_method_event(sm, msm, ab, NULL);
 	}
 
@@ -1421,9 +1421,9 @@ static void abort_pushes(WSPMachine *sm, long reason)
         ab = wap_event_create(Abort_Event);
 	ab->u.Abort_Event.reason = reason;
 
-        len = list_len(sm->pushmachines);
+        len = gwlist_len(sm->pushmachines);
 	for (i = len - 1; i >= 0; i--) {
-		psm = list_get(sm->pushmachines, i);
+		psm = gwlist_get(sm->pushmachines, i);
 		handle_push_event(sm, psm, ab);
 	}
 
@@ -1433,7 +1433,7 @@ static void abort_pushes(WSPMachine *sm, long reason)
 
 WSPMachine *find_session_machine_by_id (int id) {
 
-	return list_search(session_machines, &id, id_belongs_to_session);
+	return gwlist_search(session_machines, &id, id_belongs_to_session);
 }
 
 

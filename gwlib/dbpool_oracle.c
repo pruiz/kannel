@@ -250,12 +250,12 @@ static int oracle_check_conn(void *conn)
     sql = octstr_create("SELECT 1 FROM DUAL");
 
     ret = oracle_select(conn, sql, NULL, &res);
-    if (ret != -1 && list_len(res) > 0) {
-        List *row = list_extract_first(res);
-        list_destroy(row, octstr_destroy_item);
+    if (ret != -1 && gwlist_len(res) > 0) {
+        List *row = gwlist_extract_first(res);
+        gwlist_destroy(row, octstr_destroy_item);
     }
     if (ret != -1)
-        list_destroy(res, NULL);
+        gwlist_destroy(res, NULL);
 
     octstr_destroy(sql);
 
@@ -292,7 +292,7 @@ static int oracle_select(void *theconn, const Octstr *sql, List *binds, List **r
     };
     struct data_s *data;
     struct ora_conn *conn = (struct ora_conn*) theconn;
-    int binds_len = (binds ? list_len(binds) : 0);
+    int binds_len = (binds ? gwlist_len(binds) : 0);
 
     *res = NULL;
 
@@ -314,7 +314,7 @@ static int oracle_select(void *theconn, const Octstr *sql, List *binds, List **r
     /* bind variables */
     for (i = 0; i < binds_len; i++) {
         OCIBind *bndhp = NULL;
-        Octstr *bind = list_get(binds, i);
+        Octstr *bind = gwlist_get(binds, i);
         status = OCIBindByPos(stmt, &bndhp, 
                               conn->errhp, (i+1), (dvoid *) octstr_get_cstr(bind),
                               (sword) octstr_len(bind)+1, SQLT_STR, (dvoid *) 0, (ub2 *)0,
@@ -413,23 +413,23 @@ static int oracle_select(void *theconn, const Octstr *sql, List *binds, List **r
         }
     }
 
-    *res = list_create();
+    *res = gwlist_create();
     /* fetch data */
     while ((status = OCIStmtFetch(stmt, conn->errhp, 1, 
                                   OCI_FETCH_NEXT, OCI_DEFAULT)) == OCI_SUCCESS ||
             status == OCI_SUCCESS_WITH_INFO) {
 
-        row = list_create();
+        row = gwlist_create();
         for (i = 0; i < columns; i++) {
             if (data[i].data == NULL || data[i].ind == -1) {
-                list_insert(row, i, octstr_create(""));
+                gwlist_insert(row, i, octstr_create(""));
             } else {
-                list_insert(row, i, octstr_create_from_data(data[i].data, data[i].size));
+                gwlist_insert(row, i, octstr_create_from_data(data[i].data, data[i].size));
             }
             /* debug("dbpool.oracle",0,"inserted value = '%s'", 
-                     octstr_get_cstr(list_get(row,i))); */
+                     octstr_get_cstr(gwlist_get(row,i))); */
         }
-        list_append(*res, row);
+        gwlist_append(*res, row);
     }
 
     /* ignore OCI_NO_DATA error */
@@ -439,9 +439,9 @@ static int oracle_select(void *theconn, const Octstr *sql, List *binds, List **r
         for (i = 0; i < columns; i++)
             gw_free(data[i].data);
         gw_free(data);
-        while ((row = list_extract_first(*res)) != NULL)
-            list_destroy(row, octstr_destroy_item);
-        list_destroy(*res, NULL);
+        while ((row = gwlist_extract_first(*res)) != NULL)
+            gwlist_destroy(row, octstr_destroy_item);
+        gwlist_destroy(*res, NULL);
         *res = NULL;
         OCIHandleFree(stmt, OCI_HTYPE_STMT);
         return -1;
@@ -463,7 +463,7 @@ static int oracle_update(void *theconn, const Octstr *sql, List *binds)
     sword status;
     ub4 rows = 0, i;
     struct ora_conn *conn = (struct ora_conn*) theconn;
-    int binds_len = (binds ? list_len(binds) : 0);
+    int binds_len = (binds ? gwlist_len(binds) : 0);
     
     /* allocate statement handle */
     status = OCIHandleAlloc(conn->envp, (dvoid**)&stmt, OCI_HTYPE_STMT, 0,0);
@@ -484,7 +484,7 @@ static int oracle_update(void *theconn, const Octstr *sql, List *binds)
    
     /* bind variables */
     for (i = 0; i < binds_len; i++) {
-        Octstr *bind = list_get(binds, i);
+        Octstr *bind = gwlist_get(binds, i);
         OCIBind *bndhp = NULL;
         status = OCIBindByPos(stmt, &bndhp, 
                               conn->errhp, (i+1), (dvoid *) octstr_get_cstr(bind),

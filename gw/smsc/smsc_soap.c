@@ -360,8 +360,8 @@ int smsc_soap_create(SMSCConn *conn, CfgGroup *cfg)
 
     /* allocate and init internat data structure */
     privdata = gw_malloc(sizeof(PrivData));
-    privdata->outgoing_queue = list_create();
-    /* privdata->pending_ack_queue = list_create(); */
+    privdata->outgoing_queue = gwlist_create();
+    /* privdata->pending_ack_queue = gwlist_create(); */
 
     privdata->shutdown = 0;
     privdata->soap_client = NULL;
@@ -414,66 +414,66 @@ int smsc_soap_create(SMSCConn *conn, CfgGroup *cfg)
     filenames = octstr_split(temp = cfg_get(cfg,octstr_imm("xml-files")), 
                              octstr_imm(";"));
     octstr_destroy(temp);
-    if (list_len(filenames) < 3) {
+    if (gwlist_len(filenames) < 3) {
         error(0,"SOAP: Not enough template files for XML generation, you need 3 - aborting"); 
         goto error;
     }
     if ( !(privdata->mt_xml_file = octstr_read_file(
-            octstr_get_cstr(temp = list_extract_first(filenames))))) {
+            octstr_get_cstr(temp = gwlist_extract_first(filenames))))) {
         error(0,"SOAP: Can't load XML template for MT - aborting"); 
         goto error;
 
     }
     octstr_destroy(temp);
     if ( !(privdata->mo_xml_file = octstr_read_file(
-            octstr_get_cstr(temp = list_extract_first(filenames))))) {
+            octstr_get_cstr(temp = gwlist_extract_first(filenames))))) {
         error(0,"SOAP: Can't load XML template for MO - aborting"); 
         goto error;
     }
     octstr_destroy(temp);
     if ( !(privdata->dlr_xml_file = octstr_read_file(
-            octstr_get_cstr(temp = list_extract_first(filenames))))) {
+            octstr_get_cstr(temp = gwlist_extract_first(filenames))))) {
 
         error(0,"SOAP: Can't load XML template for DLR - aborting"); 
         goto error;
     }
     octstr_destroy(temp);
-    list_destroy(filenames, octstr_destroy_item);
+    gwlist_destroy(filenames, octstr_destroy_item);
 
     filenames = octstr_split(temp = cfg_get(cfg,octstr_imm("xmlspec-files")), 
                              octstr_imm(";"));
     octstr_destroy(temp);
-    if (list_len(filenames) < 4) {
+    if (gwlist_len(filenames) < 4) {
         error(0,"Not enough spec files for XML parsing, you need 4 - aborting"); 
         goto error;
     }
     if ( !(privdata->mt_spec_file = octstr_read_file(
-            octstr_get_cstr(temp = list_extract_first(filenames))))) {
+            octstr_get_cstr(temp = gwlist_extract_first(filenames))))) {
         error(0,"Can't load spec for MT parsing - aborting"); 
         goto error;
     }
     octstr_destroy(temp);
     if ( !(privdata->mo_spec_file = octstr_read_file(
-            octstr_get_cstr(temp = list_extract_first(filenames))))) {
+            octstr_get_cstr(temp = gwlist_extract_first(filenames))))) {
         error(0,"SOAP: Can't load spec for MO parsing - aborting"); 
         goto error;
     }
     octstr_destroy(temp);
     if ( !(privdata->dlr_spec_file = octstr_read_file(
-            octstr_get_cstr(temp = list_extract_first(filenames))))) {
+            octstr_get_cstr(temp = gwlist_extract_first(filenames))))) {
         error(0,"SOAP: Can't load spec for DLR parsing - aborting"); 
         goto error;
     }
     octstr_destroy(temp);
 
     if ( !(privdata->mo_deps_file = octstr_read_file(
-            octstr_get_cstr(temp = list_extract_first(filenames))))) {
+            octstr_get_cstr(temp = gwlist_extract_first(filenames))))) {
         error(0,"SOAP: Can't load 'deps' file for MO processing - aborting"); 
         goto error;
     }
     octstr_destroy(temp);
 
-    list_destroy(filenames, octstr_destroy_item);
+    gwlist_destroy(filenames, octstr_destroy_item);
 
     debug("bb.soap.create",0,"Connecting to %s",
           octstr_get_cstr(privdata->uri));
@@ -520,8 +520,8 @@ error:
 
     /* release stuff */
     if (privdata != NULL) {
-        list_destroy(privdata->outgoing_queue, NULL);
-        /* list_destroy(privdata->pending_ack_queue, NULL); */
+        gwlist_destroy(privdata->outgoing_queue, NULL);
+        /* gwlist_destroy(privdata->pending_ack_queue, NULL); */
 
         O_DESTROY(privdata->uri);
         O_DESTROY(privdata->allow_ip);
@@ -539,7 +539,7 @@ error:
     }
     gw_free(privdata);
     octstr_destroy(temp);
-    list_destroy(filenames, octstr_destroy_item);
+    gwlist_destroy(filenames, octstr_destroy_item);
 
     /* notify bearerbox */
     conn->why_killed = SMSCCONN_KILLED_CANNOT_CONNECT;
@@ -572,11 +572,11 @@ static int soap_add_msg_cb(SMSCConn *conn, Msg *sms)
         return -1;
 
     copy = msg_duplicate(sms); /* copy the message */
-    list_append(privdata->outgoing_queue, copy); /* put it in the queue */
+    gwlist_append(privdata->outgoing_queue, copy); /* put it in the queue */
 
     debug("bb.soap.add_msg",0,"SOAP[%s]: got a new MT from %s, list has now %ld MTs", 
           octstr_get_cstr(privdata->name), octstr_get_cstr(sms->sms.sender), 
-          list_len(privdata->outgoing_queue));
+          gwlist_len(privdata->outgoing_queue));
 
     gwthread_wakeup(privdata->listener_thread);
 
@@ -613,7 +613,7 @@ static int soap_shutdown_cb(SMSCConn *conn, int finish_sending)
 
     if (finish_sending == 0) {
         Msg *msg;
-        while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL)
+        while ((msg = gwlist_extract_first(privdata->outgoing_queue)) != NULL)
             bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
     }
 
@@ -695,8 +695,8 @@ static long soap_queued_cb(SMSCConn *conn)
     if (conn->status == SMSCCONN_DEAD)
         return -1;
 
-    ret = list_len(privdata->outgoing_queue); 
-    /* + list_len(privdata->pending_ack_queue); */
+    ret = gwlist_len(privdata->outgoing_queue); 
+    /* + gwlist_len(privdata->pending_ack_queue); */
 
     /* use internal queue as load, maybe something else later */
     conn->load = ret;
@@ -762,7 +762,7 @@ static void soap_listener(void *arg)
                 }
 
                 /* run the normal send/receive loop */
-                if (list_len(privdata->outgoing_queue) > 0) { /* we have messages to send */
+                if (gwlist_len(privdata->outgoing_queue) > 0) { /* we have messages to send */
                     soap_send_loop(conn); /* send any messages in queue */
                 }
                 break;
@@ -790,7 +790,7 @@ static void soap_listener(void *arg)
     debug("bb.soap.connection",0,"SOAP[%s]: sending messages back to bearerbox", 
           octstr_get_cstr(privdata->name));
 
-    while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL)
+    while ((msg = gwlist_extract_first(privdata->outgoing_queue)) != NULL)
         bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
 
     /* lock module public state data */
@@ -804,14 +804,14 @@ static void soap_listener(void *arg)
     debug("bb.soap.connection",0,"SOAP[%s]: don't need the queue anymore", 
           octstr_get_cstr(privdata->name));
 
-    list_destroy(privdata->outgoing_queue, NULL);
-    /* list_destroy(privdata->pending_ack_queue, NULL); */
+    gwlist_destroy(privdata->outgoing_queue, NULL);
+    /* gwlist_destroy(privdata->pending_ack_queue, NULL); */
 
     /* clear the soap client collection */
     debug("bb.soap.connection",0,"SOAP[%s]: tell caller to stop", 
           octstr_get_cstr(privdata->name));
     if (privdata->soap_client)
-        list_destroy(privdata->soap_client, soap_destroy_client_data);
+        gwlist_destroy(privdata->soap_client, soap_destroy_client_data);
 
     /* destroy private data stores */
     debug("bb.soap.connection",0,"SOAP[%s]: done with privdata", 
@@ -940,7 +940,7 @@ static void soap_server(void* arg)
             O_DESTROY(client_ip);
 
             http_destroy_headers(request_headers);
-            list_destroy(cgivars, NULL);
+            gwlist_destroy(cgivars, NULL);
         }
 
         gwthread_sleep(SOAP_SLEEP_TIME);
@@ -972,7 +972,7 @@ static void soap_send_loop(SMSCConn* conn)
           octstr_get_cstr(privdata->name));
 
     while ((counter < SOAP_MAX_MESSAGE_PER_ROUND) && 
-            (msg = list_extract_first(privdata->outgoing_queue))) { 
+            (msg = gwlist_extract_first(privdata->outgoing_queue))) { 
         /* as long as we have some messages */
         ++counter;
 
@@ -998,7 +998,7 @@ static void soap_send_loop(SMSCConn* conn)
         soap_send(privdata, xmldata, msg);
 
         /* store in the second queue so that soap_read_response will know what to do */
-        /* list_append(privdata->pending_ack_queue,msg); */
+        /* gwlist_append(privdata->pending_ack_queue,msg); */
 
         /* don't need this anymore */
         O_DESTROY(xmldata);
@@ -1128,7 +1128,7 @@ static void soap_read_response(SMSCConn *conn)
 
     /* don't get in here unless I have some callers */
     /* (I shouldn't have one before I start sending messages) */
-    if (!list_len(privdata->soap_client))
+    if (!gwlist_len(privdata->soap_client))
         return;
 
 
@@ -1151,7 +1151,7 @@ static void soap_read_response(SMSCConn *conn)
         bb_smscconn_send_failed(conn, msg,
 	            SMSCCONN_FAILED_MALFORMED, octstr_create("MALFORMED"));
         /*    bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY); */
-        /*      list_append(privdata->outgoing_queue, msg); */
+        /*      gwlist_append(privdata->outgoing_queue, msg); */
         return;
     }
 
@@ -1199,8 +1199,8 @@ static void soap_read_response(SMSCConn *conn)
  * Input: Connection session data, Octstr xml buffer
  * Returns: message ID parsed or -1 if parsing failed (for example - a NACK received)
  *
- * Possible bug : I use list_get() liberaly here, after checking that I have enough items,
- *                but if list_get() returns NULL for an empty item, things might break - and
+ * Possible bug : I use gwlist_get() liberaly here, after checking that I have enough items,
+ *                but if gwlist_get() returns NULL for an empty item, things might break - and
  *                not in a nice way.
  **/
 static int64 soap_parse_response(PrivData* privdata, Octstr* xmlResponse)
@@ -1242,7 +1242,7 @@ static int64 soap_parse_response(PrivData* privdata, Octstr* xmlResponse)
               octstr_get_cstr(privdata->name));
     }
 
-    list_destroy(maps, soap_destroy_map);
+    gwlist_destroy(maps, soap_destroy_map);
 
     /* done with the document */
     xmlFreeDoc(responseDoc);
@@ -1339,7 +1339,7 @@ static long soap_parse_mo(SMSCConn *conn, Octstr *request, Octstr **response)
 
 
     /* run the map and the xml through the parser */
-    if (soap_map_xml_data(root, maps) < list_len(maps)) {
+    if (soap_map_xml_data(root, maps) < gwlist_len(maps)) {
         error(0,"SOAP[%s]: parse_mo failed to map all the arguments from the XML data",
               octstr_get_cstr(privdata->name));
     }
@@ -1393,7 +1393,7 @@ static long soap_parse_mo(SMSCConn *conn, Octstr *request, Octstr **response)
         if ((res = soap_release_dependences(privdata->mo_deps_file, maps, msg, privdata))!=0)
             error(0,"SOAP: parse_mo - failed to release all dependences");
     }
-    list_destroy(maps, soap_destroy_map);
+    gwlist_destroy(maps, soap_destroy_map);
 
     /* fill in the date */
     if (strlen(date)) {
@@ -1582,7 +1582,7 @@ static long soap_parse_dlr(SMSCConn *conn, Octstr *request, Octstr **response)
               octstr_get_cstr(privdata->name));
     }
 
-    list_destroy(maps, soap_destroy_map);
+    gwlist_destroy(maps, soap_destroy_map);
 
     /* done with the document */
     xmlFreeDoc(requestDoc);
@@ -1939,14 +1939,14 @@ static void soap_client_init_query(PrivData* privdata, List* headers, Octstr* da
 
     /* no list yet, generate one */
     if (!privdata->soap_client)
-        privdata->soap_client = list_create();
+        privdata->soap_client = gwlist_create();
 
     /* I'm going to change the list, so lock it */
-    list_lock(privdata->soap_client);
+    gwlist_lock(privdata->soap_client);
 
     /* find the next live caller */
-    for (index = list_len(privdata->soap_client) - 1 ; index >= 0; --index) {
-        cur_client = list_get(privdata->soap_client, index);
+    for (index = gwlist_len(privdata->soap_client) - 1 ; index >= 0; --index) {
+        cur_client = gwlist_get(privdata->soap_client, index);
         if (
             cur_client->last_access + CLIENT_BUSY_TIME < time(NULL)
             &&
@@ -1955,18 +1955,18 @@ static void soap_client_init_query(PrivData* privdata, List* headers, Octstr* da
             debug("bb.soap.init_query",0,"SOAP[%s]: init_query getting a client",octstr_get_cstr(privdata->name));
 
             /* client is not busy - get it */
-            list_delete(privdata->soap_client, index, 1);
+            gwlist_delete(privdata->soap_client, index, 1);
             break;
         }
         cur_client = NULL;
     }
 
     if (!cur_client) {
-        if (list_len(privdata->soap_client) > MAX_SOAP_CLIENTS) {
+        if (gwlist_len(privdata->soap_client) > MAX_SOAP_CLIENTS) {
             debug("bb.soap.init_query",0,"SOAP[%s]: init_query all clients are busy, getting the first client",octstr_get_cstr(privdata->name));
             /* query not dispatched, and we have the max number of callers -
                grab the first caller (least used) from the list */
-            cur_client = list_extract_first(privdata->soap_client);
+            cur_client = gwlist_extract_first(privdata->soap_client);
         } else {
             /* query not dispatched, and we don't have enough callers -
                start a new one */
@@ -1979,8 +1979,8 @@ static void soap_client_init_query(PrivData* privdata, List* headers, Octstr* da
     http_start_request(cur_client->caller, HTTP_METHOD_POST, privdata->uri, headers, data, 1, msg, NULL);
     cur_client->requests++;
     cur_client->last_access = time(NULL);
-    list_append(privdata->soap_client, cur_client);
-    list_unlock(privdata->soap_client);
+    gwlist_append(privdata->soap_client, cur_client);
+    gwlist_unlock(privdata->soap_client);
 }
 
 
@@ -2016,18 +2016,18 @@ static ClientData* soap_client_have_response(List* client_list)
         return NULL;
 
     /* lock the list so nobody removes or adds clients while I'm looping on the list */
-    list_lock(client_list);
+    gwlist_lock(client_list);
 
-    for (index = list_len(client_list) - 1; index >= 0; --index) {
-        cd = list_get(client_list,index);
-        if (list_len(cd->caller)) {
+    for (index = gwlist_len(client_list) - 1; index >= 0; --index) {
+        cd = gwlist_get(client_list,index);
+        if (gwlist_len(cd->caller)) {
 
-            list_unlock(client_list);
-            return list_get(client_list, index);
+            gwlist_unlock(client_list);
+            return gwlist_get(client_list, index);
         }
     }
 
-    list_unlock(client_list);
+    gwlist_unlock(client_list);
     return NULL;
 }
 
@@ -2090,55 +2090,55 @@ List* soap_create_map(Octstr* spec, long count, char* keywords[], char* types[],
 {
     List *parse_items, *out;
 
-    out = list_create();
+    out = gwlist_create();
 
     /* read the list of items from the spec file */
     parse_items = octstr_split(spec, octstr_imm("\n"));
 
-    while (list_len(parse_items)) {
+    while (gwlist_len(parse_items)) {
         ArgumentMap* map;
         int index;
-        Octstr* temp = list_extract_first(parse_items);
+        Octstr* temp = gwlist_extract_first(parse_items);
         List* item = octstr_split_words(temp);
 
 
         /* make sure we have at least two things in the item : a keyword and a path */
-        if (list_len(item) < 2) {
+        if (gwlist_len(item) < 2) {
             debug("bb.soap.parse_create_map",0,"SOAP: broken spec file line <%s> in soap_create_map",
                   octstr_get_cstr(temp));
             octstr_destroy(temp);
-            list_destroy(item, octstr_destroy_item);
+            gwlist_destroy(item, octstr_destroy_item);
             continue;
         }
 
         /* check that the keyword matches something in the list of keywords */
         for (index = 0; index < count; ++index) {
-            if (!octstr_str_compare(list_get(item,0), keywords[index])) {
+            if (!octstr_str_compare(gwlist_get(item,0), keywords[index])) {
                 /* allocate the structure */
                 map = gw_malloc(sizeof(ArgumentMap));
-                map->name = list_extract_first(item);
-                map->path = list_extract_first(item);
-                map->attribute = list_extract_first(item); /* could be NULL, but that is ok */
+                map->name = gwlist_extract_first(item);
+                map->path = gwlist_extract_first(item);
+                map->attribute = gwlist_extract_first(item); /* could be NULL, but that is ok */
                 map->sscan_type = octstr_create(types[index]);
                 map->store = storage[index];
-                list_append(out, map);
+                gwlist_append(out, map);
                 break;
             }
         }
 
         /* destroy temporary variables; */
-        list_destroy(item, octstr_destroy_item);
+        gwlist_destroy(item, octstr_destroy_item);
         octstr_destroy(temp);
     }
 
-    list_destroy(parse_items, octstr_destroy_item);
+    gwlist_destroy(parse_items, octstr_destroy_item);
 
     return out;
 }
 
 /*
  * function soap_destroy_map()
- *	destroy a map structure. used in list_destroy(calls);
+ *	destroy a map structure. used in gwlist_destroy(calls);
  * Input: pointer to a map structure;
  **/
 void soap_destroy_map(void *item)
@@ -2181,10 +2181,10 @@ Octstr* soap_fetch_xml_data(xmlNodePtr xml, Octstr* path)
 
     /* split into XML path and attribute name */
     path_elements = octstr_split(path, octstr_imm(","));
-    xml_path = list_get(path_elements,0);
-    if (list_len(path_elements) > 1) /* case (b), we have an attribute */
-        attr_name = list_get(path_elements,1);
-    list_destroy(path_elements, NULL);
+    xml_path = gwlist_get(path_elements,0);
+    if (gwlist_len(path_elements) > 1) /* case (b), we have an attribute */
+        attr_name = gwlist_get(path_elements,1);
+    gwlist_destroy(path_elements, NULL);
 
     /* split path into parts */
     path_elements = octstr_split(xml_path, octstr_imm("/"));
@@ -2193,14 +2193,14 @@ Octstr* soap_fetch_xml_data(xmlNodePtr xml, Octstr* path)
     parent = NULL;
     node = xml;
     index = 0;
-    while (index < list_len(path_elements)) {
+    while (index < gwlist_len(path_elements)) {
         int found = 0;
         /* get the next path element */
-        temp = list_get(path_elements, index);
+        temp = gwlist_get(path_elements, index);
         do {
             if (!octstr_str_compare(temp,node->name)) {
                 /* found what we're looking for */
-                if (!(node->xmlChildrenNode) && index < (list_len(path_elements)-1)) {
+                if (!(node->xmlChildrenNode) && index < (gwlist_len(path_elements)-1)) {
                     /* while this is indeed the item we are looking for, it's not the end
                      * of the path, and this item has no children */
                     debug("bb.soap.fetch_xml_data",0,"SOAP: fetch_xml - error parsing XML, "
@@ -2236,11 +2236,11 @@ Octstr* soap_fetch_xml_data(xmlNodePtr xml, Octstr* path)
     /* coming here there are two options:
      * 1) we looped over all the tree, but did not succeed in traveling the
      *    requested path - index not pointing past the list of path elements - */
-    if (index < list_len(path_elements)) {
+    if (index < gwlist_len(path_elements)) {
         /* didn't find the full path */
         debug("bb.soap.map_xml_data",0,"SOAP: fetch_xml - path <%s> cannot be traveled in input XML",
               octstr_get_cstr(xml_path));
-        list_destroy(path_elements, octstr_destroy_item);
+        gwlist_destroy(path_elements, octstr_destroy_item);
         octstr_destroy(xml_path);
         octstr_destroy(attr_name);
         return NULL;
@@ -2267,7 +2267,7 @@ Octstr* soap_fetch_xml_data(xmlNodePtr xml, Octstr* path)
         xmlFree(content);
     }
 
-    list_destroy(path_elements, octstr_destroy_item);
+    gwlist_destroy(path_elements, octstr_destroy_item);
     octstr_destroy(xml_path);
     octstr_destroy(attr_name);
 
@@ -2286,26 +2286,26 @@ int soap_map_xml_data(xmlNodePtr xml, List* maps)
     xmlNodePtr node, parent;
 
     /* step through the items on the map */
-    while (mapindex < list_len(maps)) {
+    while (mapindex < gwlist_len(maps)) {
 
         Octstr* temp;
 
         int index = 0;
-        ArgumentMap* map = list_get(maps,mapindex);
+        ArgumentMap* map = gwlist_get(maps,mapindex);
         /* split the path elements */
         List* path_elements = octstr_split(map->path, octstr_imm("/"));
 
         /* walk the message tree down the path */
         parent = NULL;
         node = xml;
-        while (index < list_len(path_elements)) {
+        while (index < gwlist_len(path_elements)) {
             int found = 0;
             /* get the next path element */
-            temp = list_get(path_elements, index);
+            temp = gwlist_get(path_elements, index);
             do {
                 if (!octstr_str_compare(temp,node->name)) {
                     /* found what we're looking for */
-                    if (!(node->xmlChildrenNode) && index < (list_len(path_elements)-1)) {
+                    if (!(node->xmlChildrenNode) && index < (gwlist_len(path_elements)-1)) {
                         /* while this is indeed the item we are looking for, it's not the end
                            of the path, and this item has no children */
                         debug("bb.soap.map_xml_data",0,"SOAP: error parsing XML, looking for <%s>, but element <%s> has no children",
@@ -2339,11 +2339,11 @@ int soap_map_xml_data(xmlNodePtr xml, List* maps)
         }
 
 
-        if (index < list_len(path_elements)) {
+        if (index < gwlist_len(path_elements)) {
             /* didn't find the full path */
             debug("bb.soap.map_xml_data",0,"SOAP: didn't find element for keyword <%s> in XML data",
                   octstr_get_cstr(map->name));
-            list_destroy(path_elements, octstr_destroy_item);
+            gwlist_destroy(path_elements, octstr_destroy_item);
             ++mapindex;
             continue;
         }
@@ -2390,7 +2390,7 @@ int soap_map_xml_data(xmlNodePtr xml, List* maps)
 
         /* done for this item */
         octstr_destroy(temp);
-        list_destroy(path_elements, octstr_destroy_item);
+        gwlist_destroy(path_elements, octstr_destroy_item);
         ++mapindex;
     }
     return args;
@@ -2436,71 +2436,71 @@ long soap_release_dependences(Octstr* file_deps, List* lstmaps, Msg* msg, PrivDa
 
     issues = octstr_split(file_deps, octstr_imm(";"));					/* get paragraphs */
 
-    if (list_len(issues) == 0) {
+    if (gwlist_len(issues) == 0) {
         error(0, "SOAP: soap_release_dependences, empty or broken 'deps' file");
         return -1;
     }
 
-    for (i=0; i<list_len(issues); ++i)						            /* loop paragraphs */
+    for (i=0; i<gwlist_len(issues); ++i)						            /* loop paragraphs */
     {
-        block = list_get(issues, i);
+        block = gwlist_get(issues, i);
         octstr_strip_crlfs(block);
         octstr_strip_blanks(block);
 
         issue_items = octstr_split(block, octstr_imm("\n"));
-        if (list_len(issue_items) < 2) {
+        if (gwlist_len(issue_items) < 2) {
             error(0, "SOAP: soap_release_dependences, broken file 'deps' can't find any definition for <key>");
-            list_destroy(issue_items, octstr_destroy_item);
-            list_destroy(issues, octstr_destroy_item);
+            gwlist_destroy(issue_items, octstr_destroy_item);
+            gwlist_destroy(issues, octstr_destroy_item);
             return -1;
         }
 
 
-        header = list_extract_first(issue_items);
+        header = gwlist_extract_first(issue_items);
         header_item = octstr_split_words(header);				/* header content */
         O_DESTROY(header);
 
-        if (list_len(header_item) < 2) {
+        if (gwlist_len(header_item) < 2) {
             error(0, "SOAP: soap_release_dependences, broken 'deps' file in <key> <key_deps> part");
-            list_destroy(header_item, octstr_destroy_item);
-            list_destroy(issue_items, octstr_destroy_item);
-            list_destroy(issues, octstr_destroy_item);
+            gwlist_destroy(header_item, octstr_destroy_item);
+            gwlist_destroy(issue_items, octstr_destroy_item);
+            gwlist_destroy(issues, octstr_destroy_item);
             return -1;
         }
 
-        key      = list_get(header_item, 0);
-        key_deps = list_get(header_item, 1);
+        key      = gwlist_get(header_item, 0);
+        key_deps = gwlist_get(header_item, 1);
         key_index      = soap_get_index(lstmaps, key, 0);      /* search key_index */
         key_deps_index = soap_get_index(lstmaps, key_deps, 0); /* search key_deps_index, from what depends */
 
         if (key_index == -1 || key_deps_index == -1) {
-            list_destroy(header_item, octstr_destroy_item);
-            list_destroy(issue_items, octstr_destroy_item);
-            list_destroy(issues, octstr_destroy_item);
+            gwlist_destroy(header_item, octstr_destroy_item);
+            gwlist_destroy(issue_items, octstr_destroy_item);
+            gwlist_destroy(issues, octstr_destroy_item);
             return -1;
         }
 
         map_index = soap_get_index(lstmaps, key_deps, 1); /* get index for map->name==key_deps */
-        map = list_get(lstmaps, map_index);
+        map = gwlist_get(lstmaps, map_index);
 
         /* search <function_identifier> and if not found try to set default */
-        for (j=0; j < list_len(issue_items); ++j) {
+        for (j=0; j < gwlist_len(issue_items); ++j) {
 
-            Octstr *tmp = list_get(issue_items, j);
+            Octstr *tmp = gwlist_get(issue_items, j);
             List *row = octstr_split_words(tmp);
 
-            if (!octstr_str_compare(list_get(row, 0), map->store)) {
-                func_alias = octstr_duplicate(list_get(row, 1));
-                list_destroy(row, octstr_destroy_item);
+            if (!octstr_str_compare(gwlist_get(row, 0), map->store)) {
+                func_alias = octstr_duplicate(gwlist_get(row, 1));
+                gwlist_destroy(row, octstr_destroy_item);
                 break;
             }
 
-            if (j==list_len(issue_items)-1) {
+            if (j==gwlist_len(issue_items)-1) {
                 error(0, "SOAP: soap_release_dependences, \
                       can't find function_alias for <%s> in 'deps' file, set default", (char*)map->store);
                 func_alias = octstr_create(SPEC_DEFAULT);
             }
-            list_destroy(row, octstr_destroy_item);
+            gwlist_destroy(row, octstr_destroy_item);
         }
 
         key_func_index = -1;
@@ -2517,14 +2517,14 @@ long soap_release_dependences(Octstr* file_deps, List* lstmaps, Msg* msg, PrivDa
 
         O_DESTROY(func_alias);
 
-        list_destroy(header_item, octstr_destroy_item);
-        list_destroy(issue_items, octstr_destroy_item);
+        gwlist_destroy(header_item, octstr_destroy_item);
+        gwlist_destroy(issue_items, octstr_destroy_item);
 
         /* which field has deps, which func need be called, msg need be changed */
         if ((res=soap_process_deps(key_index, key_func_index, msg, privdata)) < 0)
             error(0, "SOAP: soap_release_dependences, error processing dependent value");
     }
-    list_destroy(issues, octstr_destroy_item);
+    gwlist_destroy(issues, octstr_destroy_item);
 
 
     return 0; /* OK */
@@ -2902,8 +2902,8 @@ int soap_get_index(List* where, Octstr* key, int map_index)
                              "msgtype", "msgdata"
                          };
 
-    for (i=0; i < list_len(where); ++i) {
-        map = list_get(where, i);
+    for (i=0; i < gwlist_len(where); ++i) {
+        map = gwlist_get(where, i);
         if (!octstr_compare(map->name, key)) {
             if (map_index==1) /* return index from the list where found name */
                 return i;

@@ -134,7 +134,7 @@ static void cfgloc_destroy(CfgLoc *cfgloc)
  
 static void destroy_group_list(void *arg)
 {
-    list_destroy(arg, destroy_group);
+    gwlist_destroy(arg, destroy_group);
 }
 
 
@@ -210,28 +210,28 @@ static int add_group(Cfg *cfg, CfgGroup *grp)
     set_group_name(grp, groupname);
 
     names = dict_keys(grp->vars);
-    while ((name = list_extract_first(names)) != NULL) {
+    while ((name = gwlist_extract_first(names)) != NULL) {
 	if (!is_allowed_in_group(groupname, name)) {
 	    error(0, "Group '%s' may not contain field '%s'.",
 		  octstr_get_cstr(groupname), octstr_get_cstr(name));
 	    octstr_destroy(name);
 	    octstr_destroy(groupname);
-	    list_destroy(names, octstr_destroy_item);
+	    gwlist_destroy(names, octstr_destroy_item);
 	    return -1;
 	}
 	octstr_destroy(name);
     }
-    list_destroy(names, NULL);
+    gwlist_destroy(names, NULL);
 
     if (is_single_group(groupname))
     	dict_put(cfg->single_groups, groupname, grp);
     else {
 	list = dict_get(cfg->multi_groups, groupname);
 	if (list == NULL) {
-	    list = list_create();
+	    list = gwlist_create();
 	    dict_put(cfg->multi_groups, groupname, list);
 	}
-    	list_append(list, grp);
+    	gwlist_append(list, grp);
     }
 
     octstr_destroy(groupname);
@@ -324,17 +324,17 @@ static List *expand_file(Octstr *file, int forward)
  
     lines = octstr_split(os, octstr_imm("\n")); 
     lineno = 0; 
-    expand = list_create(); 
+    expand = gwlist_create(); 
               
-    while ((line = list_extract_first(lines)) != NULL) { 
+    while ((line = gwlist_extract_first(lines)) != NULL) { 
         ++lineno; 
         loc = cfgloc_create(file); 
         loc->line_no = lineno; 
         loc->line = line; 
         if (forward) 
-            list_append(expand, loc); 
+            gwlist_append(expand, loc); 
         else 
-            list_insert(expand, 0, loc); 
+            gwlist_insert(expand, 0, loc); 
     } 
     
     /* 
@@ -346,12 +346,12 @@ static List *expand_file(Octstr *file, int forward)
         loc->line_no = lineno;
         loc->line = octstr_create("\n");
         if (forward) 
-            list_append(expand, loc); 
+            gwlist_append(expand, loc); 
         else 
-            list_insert(expand, 0, loc); 
+            gwlist_insert(expand, 0, loc); 
     }
          
-    list_destroy(lines, octstr_destroy_item); 
+    gwlist_destroy(lines, octstr_destroy_item); 
     octstr_destroy(os); 
  
     return expand; 
@@ -383,13 +383,13 @@ int cfg_read(Cfg *cfg)
         panic(0, "Failed to load main configuration file `%s'. Aborting!", 
               octstr_get_cstr(cfg->filename)); 
     } 
-    stack = list_create(); 
-    list_insert(stack, 0, octstr_duplicate(cfg->filename)); 
+    stack = gwlist_create(); 
+    gwlist_insert(stack, 0, octstr_duplicate(cfg->filename)); 
 
     grp = NULL;
     lineno = 0;
     error_lineno = 0;
-    while (error_lineno == 0 && (loc = list_extract_first(lines)) != NULL) { 
+    while (error_lineno == 0 && (loc = gwlist_extract_first(lines)) != NULL) { 
         octstr_strip_blanks(loc->line); 
         if (octstr_len(loc->line) == 0) { 
             if (grp != NULL && add_group(cfg, grp) == -1) { 
@@ -414,13 +414,13 @@ int cfg_read(Cfg *cfg)
                 parse_value(filename); 
  
                 /* check if we are cycling */ 
-                if (list_search(stack, filename, octstr_item_match) != NULL) { 
+                if (gwlist_search(stack, filename, octstr_item_match) != NULL) { 
                     panic(0, "Recursive include for config file `%s' detected " 
                              "(on line %ld of file %s).", 
                           octstr_get_cstr(filename), loc->line_no,  
                           octstr_get_cstr(loc->filename)); 
                 } else {     
-                    List *files = list_create();
+                    List *files = gwlist_create();
                     Octstr *file;
                     struct stat filestat;
 
@@ -451,7 +451,7 @@ int cfg_read(Cfg *cfg)
 
                             lstat(octstr_get_cstr(fileitem), &filestat);
                             if (!S_ISDIR(filestat.st_mode)) {
-                                list_insert(files, 0, fileitem);
+                                gwlist_insert(files, 0, fileitem);
                             }
                         }
                         closedir(dh);
@@ -459,13 +459,13 @@ int cfg_read(Cfg *cfg)
 		    
                     /* is a file, create a list with it */
                     else {
-                        list_insert(files, 0, octstr_duplicate(filename));
+                        gwlist_insert(files, 0, octstr_duplicate(filename));
                     }
 
                     /* include files */
-                    while ((file = list_extract_first(files)) != NULL) {
+                    while ((file = gwlist_extract_first(files)) != NULL) {
 
-                        list_insert(stack, 0, octstr_duplicate(file)); 
+                        gwlist_insert(stack, 0, octstr_duplicate(file)); 
                         debug("gwlib.cfg", 0, "Loading include file `%s' (on line %ld of file %s).",  
                               octstr_get_cstr(file), loc->line_no,  
                               octstr_get_cstr(loc->filename)); 
@@ -475,17 +475,17 @@ int cfg_read(Cfg *cfg)
                          * processed main while loop 
                          */ 
                         if ((expand = expand_file(file, 0)) != NULL) {
-                            while ((loc_inc = list_extract_first(expand)) != NULL) 
-                                list_insert(lines, 0, loc_inc); 
+                            while ((loc_inc = gwlist_extract_first(expand)) != NULL) 
+                                gwlist_insert(lines, 0, loc_inc); 
                         } else { 
                             panic(0, "Failed to load whole configuration. Aborting!"); 
                         } 
                  
-                        list_destroy(expand, NULL); 
+                        gwlist_destroy(expand, NULL); 
                         cfgloc_destroy(loc_inc);
                         octstr_destroy(file);
                     }
-                    list_destroy(files, octstr_destroy_item);
+                    gwlist_destroy(files, octstr_destroy_item);
                 } 
                 octstr_destroy(filename); 
             }  
@@ -521,8 +521,8 @@ int cfg_read(Cfg *cfg)
         destroy_group(grp); 
     }
 
-    list_destroy(lines, NULL); 
-    list_destroy(stack, octstr_destroy_item); 
+    gwlist_destroy(lines, NULL); 
+    gwlist_destroy(stack, octstr_destroy_item); 
 
     if (error_lineno != 0) {
         error(0, "Error found on line %ld of file `%s'.",  
@@ -549,9 +549,9 @@ List *cfg_get_multi_group(Cfg *cfg, Octstr *name)
     if (list == NULL)
     	return NULL;
 
-    copy = list_create();
-    for (i = 0; i < list_len(list); ++i)
-    	list_append(copy, list_get(list, i));
+    copy = gwlist_create();
+    for (i = 0; i < gwlist_len(list); ++i)
+    	gwlist_append(copy, gwlist_get(list, i));
     return copy;
 }
 
@@ -668,7 +668,7 @@ void grp_dump(CfgGroup *grp)
 	debug("gwlib.cfg", 0, "  dumping group (%s):",
 	      octstr_get_cstr(grp->name));
     names = dict_keys(grp->vars);
-    while ((name = list_extract_first(names)) != NULL) {
+    while ((name = gwlist_extract_first(names)) != NULL) {
 	value = cfg_get(grp, name);
 	debug("gwlib.cfg", 0, "    <%s> = <%s>", 
 	      octstr_get_cstr(name),
@@ -676,7 +676,7 @@ void grp_dump(CfgGroup *grp)
     	octstr_destroy(value);
     	octstr_destroy(name);
     }
-    list_destroy(names, NULL);
+    gwlist_destroy(names, NULL);
 }
 
 
@@ -692,23 +692,23 @@ void cfg_dump(Cfg *cfg)
     	  octstr_get_cstr(cfg->filename));
 
     names = dict_keys(cfg->single_groups);
-    while ((name = list_extract_first(names)) != NULL) {
+    while ((name = gwlist_extract_first(names)) != NULL) {
 	grp = cfg_get_single_group(cfg, name);
 	if (grp != NULL)
 	    grp_dump(grp);
     	octstr_destroy(name);
     }
-    list_destroy(names, NULL);
+    gwlist_destroy(names, NULL);
 
     names = dict_keys(cfg->multi_groups);
-    while ((name = list_extract_first(names)) != NULL) {
+    while ((name = gwlist_extract_first(names)) != NULL) {
 	list = cfg_get_multi_group(cfg, name);
-	while ((grp = list_extract_first(list)) != NULL)
+	while ((grp = gwlist_extract_first(list)) != NULL)
 	    grp_dump(grp);
-	list_destroy(list, NULL);
+	gwlist_destroy(list, NULL);
     	octstr_destroy(name);
     }
-    list_destroy(names, NULL);
+    gwlist_destroy(names, NULL);
 
     debug("gwlib.cfg", 0, "Dump ends.");
 }

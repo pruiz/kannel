@@ -1509,7 +1509,7 @@ List *octstr_split_words(const Octstr *ostr)
 
     seems_valid(ostr);
 
-    list = list_create();
+    list = gwlist_create();
 
     p = ostr->data;
     i = 0;
@@ -1531,7 +1531,7 @@ List *octstr_split_words(const Octstr *ostr)
 
         word = octstr_create_from_data(ostr->data + start,
                                        end - start);
-        list_append(list, word);
+        gwlist_append(list, word);
     }
 
     return list;
@@ -1543,17 +1543,17 @@ List *octstr_split(const Octstr *os, const Octstr *sep)
     List *list;
     long next, pos, seplen;
     
-    list = list_create();
+    list = gwlist_create();
     pos = 0;
     seplen = octstr_len(sep);
 
     while ((next = octstr_search(os, sep, pos)) != -1) {
-	list_append(list, octstr_copy(os, pos, next - pos));
+	gwlist_append(list, octstr_copy(os, pos, next - pos));
 	pos = next + seplen;
     }
     
     if (pos < octstr_len(os))
-    	list_append(list, octstr_copy(os, pos, octstr_len(os)));
+    	gwlist_append(list, octstr_copy(os, pos, octstr_len(os)));
     
     return list;
 }

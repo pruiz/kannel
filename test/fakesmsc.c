@@ -193,23 +193,23 @@ static Octstr *randomize(Octstr *os)
     int i;
 
     /* randomize source and receiver number */
-    octstr_format_append(msg, "%S", list_get(words, 0));
+    octstr_format_append(msg, "%S", gwlist_get(words, 0));
     if (rnd & 0x1) 
         octstr_format_append(msg, "%d", gw_rand());
 
-    octstr_format_append(msg, " %S", list_get(words, 1));
+    octstr_format_append(msg, " %S", gwlist_get(words, 1));
     if (rnd & 0x2) 
         octstr_format_append(msg, "%d", gw_rand());
 
-    for (i = 2; i < list_len(words); i++) 
-        octstr_format_append(msg, " %S", list_get(words, i));
+    for (i = 2; i < gwlist_len(words); i++) 
+        octstr_format_append(msg, " %S", gwlist_get(words, i));
 
     if (rnd & 0x4)
         octstr_format_append(msg, " %d", gw_rand());
 
     octstr_append_char(msg, 10); /* End of line */
 
-    list_destroy(words, octstr_destroy_item);
+    gwlist_destroy(words, octstr_destroy_item);
 
     return msg;
 }

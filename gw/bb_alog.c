@@ -129,9 +129,9 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, const char *message)
 
     if (octstr_len(text)) {
         word_list = octstr_split_words(text);
-        num_words = list_len(word_list);
+        num_words = gwlist_len(word_list);
     } else {
-    	word_list = list_create();
+    	word_list = gwlist_create();
         num_words = 0;
     }
 
@@ -154,20 +154,20 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, const char *message)
 	case 'k':
 	    if (num_words <= 0)
                 break;
-	    octstr_append(result, list_get(word_list, 0));
+	    octstr_append(result, gwlist_get(word_list, 0));
 	    break;
 
 	case 's':
 	    if (nextarg >= num_words)
                 break;
-	    octstr_append(result, list_get(word_list, nextarg));
+	    octstr_append(result, gwlist_get(word_list, nextarg));
 	    ++nextarg;
 	    break;
 
 	case 'S':
 	    if (nextarg >= num_words)
                 break;
-	    temp = list_get(word_list, nextarg);
+	    temp = gwlist_get(word_list, nextarg);
 	    for (i = 0; i < octstr_len(temp); ++i) {
 		if (octstr_get_char(temp, i) == '*')
 		    octstr_append_char(result, '~');
@@ -181,7 +181,7 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, const char *message)
 	    for (j = nextarg; j < num_words; ++j) {
 		if (j != nextarg)
 		    octstr_append_char(result, '+');
-		octstr_append(result, list_get(word_list, j));
+		octstr_append(result, gwlist_get(word_list, j));
 	    }
 	    break;
     
@@ -204,7 +204,7 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, const char *message)
 	    for (j = 0; j < num_words; ++j) {
                 if (j > 0)
                     octstr_append_char(result, ' ');
-                octstr_append(result, list_get(word_list, j));
+                octstr_append(result, gwlist_get(word_list, j));
             }
             break;
 
@@ -312,7 +312,7 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, const char *message)
         pattern++;
     } /* for ... */
 
-    list_destroy(word_list, octstr_destroy_item);
+    gwlist_destroy(word_list, octstr_destroy_item);
 
     return result;
 }

@@ -90,10 +90,10 @@ void wap_dispatch_datagram(WAPEvent *dgram)
             return;
         }
 
-        while (list_len(events) > 0) {
+        while (gwlist_len(events) > 0) {
 	    WAPEvent *event;
 
-	    event = list_extract_first(events);
+	    event = gwlist_extract_first(events);
             if (wtp_event_is_for_responder(event))
                 wtp_resp_dispatch_event(event);
             else
@@ -101,6 +101,6 @@ void wap_dispatch_datagram(WAPEvent *dgram)
         }
 
         wap_event_destroy(dgram);
-        list_destroy(events, NULL);
+        gwlist_destroy(events, NULL);
     }
 }

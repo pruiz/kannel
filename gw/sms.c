@@ -334,7 +334,7 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
 
     temp = msg_duplicate(orig);
     msgno = 0;
-    list = list_create();
+    list = gwlist_create();
 
     do {
         msgno++;
@@ -369,14 +369,14 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
             octstr_append(part->sms.msgdata, footer);
         if (!last && nonlast_suffix)
             octstr_append(part->sms.msgdata, nonlast_suffix);
-        list_append(list, part);
+        gwlist_append(list, part);
     } while (!last);
 
     total_messages = msgno;
     msg_destroy(temp);
     if (catenate && total_messages > 1) {
         for (msgno = 1; msgno <= total_messages; msgno++) {
-            part = list_get(list, msgno - 1);
+            part = gwlist_get(list, msgno - 1);
             prepend_catenation_udh(part, msgno, total_messages, msg_sequence);
         }
     }

@@ -106,12 +106,12 @@ static long dlr_messages_oracle()
     dbpool_conn_produce(conn);
     octstr_destroy(sql);
 
-    if (list_len(result) > 0) {
-        row = list_extract_first(result);
-        msgs = strtol(octstr_get_cstr(list_get(row,0)), NULL, 10);
-        list_destroy(row, octstr_destroy_item);
+    if (gwlist_len(result) > 0) {
+        row = gwlist_extract_first(result);
+        msgs = strtol(octstr_get_cstr(gwlist_get(row,0)), NULL, 10);
+        gwlist_destroy(row, octstr_destroy_item);
     }
-    list_destroy(result, NULL);
+    gwlist_destroy(result, NULL);
 
     return msgs;
 }
@@ -126,7 +126,7 @@ static void dlr_add_oracle(struct dlr_entry *entry)
 {
     Octstr *sql, *os_mask;
     DBPoolConn *pconn;
-    List *binds = list_create();
+    List *binds = gwlist_create();
     debug("dlr.oracle", 0, "adding DLR entry into database");
 
     pconn = dbpool_conn_consume(pool);
@@ -144,14 +144,14 @@ static void dlr_add_oracle(struct dlr_entry *entry)
                         fields->field_status);
     os_mask = octstr_format("%d", entry->mask);
     
-    list_append(binds, entry->smsc);         /* :1 */
-    list_append(binds, entry->timestamp);    /* :2 */
-    list_append(binds, entry->source);       /* :3 */
-    list_append(binds, entry->destination);  /* :4 */
-    list_append(binds, entry->service);      /* :5 */
-    list_append(binds, entry->url);          /* :6 */
-    list_append(binds, os_mask);             /* :7 */
-    list_append(binds, entry->boxc_id);      /* :8 */
+    gwlist_append(binds, entry->smsc);         /* :1 */
+    gwlist_append(binds, entry->timestamp);    /* :2 */
+    gwlist_append(binds, entry->source);       /* :3 */
+    gwlist_append(binds, entry->destination);  /* :4 */
+    gwlist_append(binds, entry->service);      /* :5 */
+    gwlist_append(binds, entry->url);          /* :6 */
+    gwlist_append(binds, os_mask);             /* :7 */
+    gwlist_append(binds, entry->boxc_id);      /* :8 */
 #if defined(DLR_TRACE)
     debug("dlr.oracle", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
@@ -160,7 +160,7 @@ static void dlr_add_oracle(struct dlr_entry *entry)
 
     dbpool_conn_produce(pconn);
     octstr_destroy(sql);
-    list_destroy(binds, NULL);
+    gwlist_destroy(binds, NULL);
     octstr_destroy(os_mask);
     dlr_entry_destroy(entry);
 }
@@ -169,7 +169,7 @@ static void dlr_remove_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
 {
     Octstr *sql;
     DBPoolConn *pconn;
-    List *binds = list_create();
+    List *binds = gwlist_create();
 
     debug("dlr.oracle", 0, "removing DLR from database");
 
@@ -182,9 +182,9 @@ static void dlr_remove_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
                         fields->table, fields->field_smsc,
                         fields->field_ts, fields->field_dst);
 
-    list_append(binds, (Octstr *)smsc);      /* :1 */
-    list_append(binds, (Octstr *)ts);        /* :2 */
-    list_append(binds, (Octstr *)dst);       /* :3 */
+    gwlist_append(binds, (Octstr *)smsc);      /* :1 */
+    gwlist_append(binds, (Octstr *)ts);        /* :2 */
+    gwlist_append(binds, (Octstr *)dst);       /* :3 */
 
 #if defined(DLR_TRACE)
     debug("dlr.oracle", 0, "sql: %s", octstr_get_cstr(sql));
@@ -194,7 +194,7 @@ static void dlr_remove_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
         error(0, "DLR: ORACLE: Error while removing dlr entry for DST<%s>", octstr_get_cstr(dst));
 
     dbpool_conn_produce(pconn);
-    list_destroy(binds, NULL);
+    gwlist_destroy(binds, NULL);
     octstr_destroy(sql);
 }
 
@@ -204,7 +204,7 @@ static struct dlr_entry* dlr_get_oracle(const Octstr *smsc, const Octstr *ts, co
     DBPoolConn *pconn;
     List *result = NULL, *row;
     struct dlr_entry *res = NULL;
-    List *binds = list_create();
+    List *binds = gwlist_create();
 
     pconn = dbpool_conn_consume(pool);
     if (pconn == NULL) /* should not happens, but sure is sure */
@@ -217,9 +217,9 @@ static struct dlr_entry* dlr_get_oracle(const Octstr *smsc, const Octstr *ts, co
                         fields->table, fields->field_smsc,
                         fields->field_ts, fields->field_dst);
 
-    list_append(binds, (Octstr *)smsc);      /* :1 */
-    list_append(binds, (Octstr *)ts);        /* :2 */
-    list_append(binds, (Octstr *)dst);       /* :3 */
+    gwlist_append(binds, (Octstr *)smsc);      /* :1 */
+    gwlist_append(binds, (Octstr *)ts);        /* :2 */
+    gwlist_append(binds, (Octstr *)dst);       /* :3 */
 
 #if defined(DLR_TRACE)
     debug("dlr.oracle", 0, "sql: %s", octstr_get_cstr(sql));
@@ -230,13 +230,13 @@ static struct dlr_entry* dlr_get_oracle(const Octstr *smsc, const Octstr *ts, co
         return NULL;
     }
     octstr_destroy(sql);
-    list_destroy(binds, NULL);
+    gwlist_destroy(binds, NULL);
     dbpool_conn_produce(pconn);
 
-#define LO2CSTR(r, i) octstr_get_cstr(list_get(r, i))
+#define LO2CSTR(r, i) octstr_get_cstr(gwlist_get(r, i))
 
-    if (list_len(result) > 0) {
-        row = list_extract_first(result);
+    if (gwlist_len(result) > 0) {
+        row = gwlist_extract_first(result);
         res = dlr_entry_create();
         gw_assert(res != NULL);
         res->mask = atoi(LO2CSTR(row,0));
@@ -245,10 +245,10 @@ static struct dlr_entry* dlr_get_oracle(const Octstr *smsc, const Octstr *ts, co
         res->source = octstr_create(LO2CSTR(row, 3));
         res->destination = octstr_create(LO2CSTR(row, 4));
         res->boxc_id = octstr_create(LO2CSTR(row, 5));
-        list_destroy(row, octstr_destroy_item);
+        gwlist_destroy(row, octstr_destroy_item);
         res->smsc = octstr_duplicate(smsc);
     }
-    list_destroy(result, NULL);
+    gwlist_destroy(result, NULL);
 
 #undef LO2CSTR
 
@@ -259,7 +259,7 @@ static void dlr_update_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
 {
     Octstr *sql, *os_status;
     DBPoolConn *pconn;
-    List *binds = list_create();
+    List *binds = gwlist_create();
 
     debug("dlr.oracle", 0, "updating DLR status in database");
 
@@ -273,10 +273,10 @@ static void dlr_update_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
                         fields->field_smsc, fields->field_ts, fields->field_dst);
 
     os_status = octstr_format("%d", status);
-    list_append(binds, (Octstr *)os_status); /* :1 */
-    list_append(binds, (Octstr *)smsc);      /* :2 */
-    list_append(binds, (Octstr *)ts);        /* :3 */
-    list_append(binds, (Octstr *)dst);       /* :4 */
+    gwlist_append(binds, (Octstr *)os_status); /* :1 */
+    gwlist_append(binds, (Octstr *)smsc);      /* :2 */
+    gwlist_append(binds, (Octstr *)ts);        /* :3 */
+    gwlist_append(binds, (Octstr *)dst);       /* :4 */
 #if defined(DLR_TRACE)
     debug("dlr.oracle", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
@@ -284,7 +284,7 @@ static void dlr_update_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
         error(0, "DLR: ORACLE: Error while updating dlr entry for DST<%s>", octstr_get_cstr(dst));
 
     dbpool_conn_produce(pconn);
-    list_destroy(binds, NULL);
+    gwlist_destroy(binds, NULL);
     octstr_destroy(os_status);
     octstr_destroy(sql);
 }
@@ -345,7 +345,7 @@ struct dlr_storage *dlr_init_oracle(Cfg *cfg)
 
     grplist = cfg_get_multi_group(cfg, octstr_imm("oracle-connection"));
     found = 0;
-    while (grplist && (grp = list_extract_first(grplist)) != NULL) {
+    while (grplist && (grp = gwlist_extract_first(grplist)) != NULL) {
         Octstr *p = cfg_get(grp, octstr_imm("id"));
         if (p != NULL && octstr_compare(p, id) == 0) {
             found = 1;
@@ -353,7 +353,7 @@ struct dlr_storage *dlr_init_oracle(Cfg *cfg)
         if (p != NULL) octstr_destroy(p);
         if (found == 1) break;
     }
-    list_destroy(grplist, NULL);
+    gwlist_destroy(grplist, NULL);
 
     if (found == 0)
         panic(0, "DLR: ORACLE: connection settings for id '%s' are not specified!",

@@ -156,7 +156,7 @@ void octstr_destroy(Octstr *ostr);
 
 /*
  * Destroy an octet string. Wrapper around octstr_destroy that is callable
- * via list_destroy.
+ * via gwlist_destroy.
  */
 void octstr_destroy_item(void *os);
 
@@ -517,7 +517,7 @@ List *octstr_split(const Octstr *os, const Octstr *sep);
 
 
 /*
- * Compare two octet strings in a manner suitable for list_search.
+ * Compare two octet strings in a manner suitable for gwlist_search.
  */
 int octstr_item_match(void *item, void *pattern);
 
