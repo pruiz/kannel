@@ -55,6 +55,7 @@ PACKAGE = @PACKAGE@
 RANLIB = @RANLIB@
 SHELL = @SHELL@
 VERSION = @VERSION@
+SUFFIX = @SUFFIX@
 LEX = @LEX@
 PERL = @PERL@
 YACC = @YACC@
@@ -67,7 +68,6 @@ mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 
-VERSION=$(shell head -1 VERSION)
 
 LIBOBJS=@LIBOBJS@
 LIBSRCS=$(LIBOBJS:.o=.c)
@@ -90,7 +90,7 @@ TEX_DSL=@TEX_DSL@
 
 # Set this to something if you want all installed binaries to have a suffix.
 # Version number is common.
-suffix = -$(VERSION)
+suffix = $(SUFFIX)
 
 #
 # You probably don't need to touch anything below this, if you're just
@@ -172,17 +172,17 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 .SUFFIXES: $(SUFFIXES) .xml .html .rtf .ps .fig .png .y .c .o .pdf
 
 .xml.html:
-	sed "s/#FIGTYPE#/.png/;s/#VERSION#/`head -1 VERSION`/;s/#DATE#/`date +%Y.%m.%d`/;s/#DRAFTS#/${DOCDRAFTS}/" $< > $*.tmp
+	sed "s/#FIGTYPE#/.png/;s/#VERSION#/${VERSION}/;s/#DATE#/`date +%Y.%m.%d`/;s/#DRAFTS#/${DOCDRAFTS}/" $< > $*.tmp
 	${JADE} -V nochunks -t sgml -d $(HTML_DSL) $*.tmp > $@
 	rm -f $*.tmp
 
 .xml.rtf:
-	sed "s/#FIGTYPE#/.ps/;s/#VERSION#/`head -1 VERSION`/;s/#DATE#/`date +%Y.%m.%d`/;s/#DRAFTS#/${DOCDRAFTS}/" $< > $*.tmp
+	sed "s/#FIGTYPE#/.ps/;s/#VERSION#/${VERSION}/;s/#DATE#/`date +%Y.%m.%d`/;s/#DRAFTS#/${DOCDRAFTS}/" $< > $*.tmp
 	cd `dirname $<` && $(JADE) -o `basename $*`.rtf -t rtf -d $(TEX_DSL) `basename $*`.tmp
 	rm -f $*.tmp
 
 .xml.ps:
-	sed "s/#FIGTYPE#/.ps/;s/#VERSION#/`head -1 VERSION`/;s/#DATE#/`date +%Y.%m.%d`/;s/#DRAFTS#/${DOCDRAFTS}/" $< > $*.tmp
+	sed "s/#FIGTYPE#/.ps/;s/#VERSION#/${VERSION}/;s/#DATE#/`date +%Y.%m.%d`/;s/#DRAFTS#/${DOCDRAFTS}/" $< > $*.tmp
 	$(JADE) -o $*.tex -t tex -d $(TEX_DSL) $*.tmp
 	cd `dirname $<` && $(JADETEX) `basename $*`.tex >/dev/null || true
 	cd `dirname $<` && $(JADETEX) `basename $*`.tex >/dev/null || true

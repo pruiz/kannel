@@ -1,4 +1,17 @@
 2002-05-01  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * : The "I want my cvs date" patch
+    * configure.in, Makefile.in: configure now creates a VERSION var with
+      cvs-20020501 based on ChangeLog date on cvs (or simply first line of
+      VERSION file, if not cvs); Makefile now uses it on documentation 
+      headers; added --enable-suffix (default: disabled) and 
+      --with-suffix= to enable and define the suffix name to
+      binaries; tweaked some messages
+    * gw/wapkannel.conf: default to aarno dirs ?? changed back to tmp
+    * gwlib/http.c: removed hard-coded User-Agent. It should be defined on
+      the module using it and passed through headers list. Fixes Wapbox
+      sending "kannel/$version" instead of mobile user-agent
+
+2002-05-01  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * : The "where was my head at that day" patch
     * gw/smsbox.c: reverted octstr_destroy(udh) but replaced original one
       with O_DESTROY;

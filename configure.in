@@ -17,14 +17,31 @@ dnl Check gateway version number.
 VERSION=`head -1 VERSION`
 if test "x$VERSION" = "xcvs"; then
   AC_MSG_CHECKING([cvs checkout date])
-  #cvs_date=`ls -lcda  . | awk '{print $6,$7,$8}'`
-  cvs_date=`ls -lcda  CVS/Entries | awk '{print $6,$7,$8}'`
+  cvs_date=`grep ChangeLog CVS/Entries | cut -f4 -d/`
+  day=`echo $cvs_date | cut -c8-9 | tr " " "0"`
+  month=`echo $cvs_date | cut -c5-7`
+  case $month in
+    "Jan") month="01" ;;
+    "Feb") month="02" ;;
+    "Mar") month="03" ;;
+    "Apr") month="04" ;;
+    "May") month="05" ;;
+    "Jun") month="06" ;;
+    "Jul") month="07" ;;
+    "Aug") month="08" ;;
+    "Sep") month="09" ;;
+    "Oct") month="10" ;;
+    "Nov") month="11" ;;
+    "Dec") month="12" ;;
+  esac
+  year=`echo $cvs_date | cut -c20-23`
+  cvs_date="$year$month$day"
   AC_MSG_RESULT([$cvs_date])
-  cvs_date=`date -d "$cvs_date" +%Y-%m-%d`
-  VERSION="$VERSION $cvs_date"
+  VERSION="$VERSION-$cvs_date"
 fi
 AC_DEFINE_UNQUOTED(GW_NAME, "Kannel")
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION")
+AC_SUBST(VERSION)
 AC_CONFIG_SECTION([Configuring for Kannel gateway version $VERSION])
 
 dnl Solaris pkgadd support definitions
@@ -246,8 +263,8 @@ AC_ARG_ENABLE(docs,
   fi
 ])
 case "$DOCSTARGET" in
-no-docs) echo Not building documentation. ;;
-docs) echo Documentation will be built as well. ;;
+no-docs) AC_MSG_RESULT(Not building documentation.) ;;
+docs) AC_MSG_RESULT(Documentation will be built as well.) ;;
 esac
 
 dnl Implement --enable-drafts option.
@@ -267,10 +284,42 @@ AC_ARG_ENABLE(drafts,
 if test "x$DOCSTARGET" = "xdocs"
 then
     case "$DOCDRAFTS" in
-    IGNORE) echo Not including drafts in documentation. ;;
-    INCLUDE) echo Documentation will include drafts. ;;
+    INCLUDE) AC_MSG_RESULT(Documentation will include drafts.) ;;
     esac
 fi
+
+
+AC_CONFIG_SECTION([Configuring parameters])
+
+dnl Implement --with-suffix=version option.
+
+SUFFIX=""
+
+AC_ARG_WITH(suffix,
+[  --with-suffix           set suffix for binaries (default: -\$VERSION)], [
+  if test "x$withval" != "x" ; then
+  	SUFFIX=$withval
+  fi
+])
+
+dnl Implement --enable-suffix option.
+
+AC_ARG_ENABLE(suffix,
+[  --enable-suffix         enable suffix for binaries (default: disabled)], [
+  if test "$enableval" = "yes" ; then
+    SUFFIX="-$VERSION"
+  else
+    SUFFIX=""
+  fi
+])
+
+if test "x$SUFFIX" != "x" ; then
+  AC_MSG_CHECKING(whether to append suffix to binary)
+  AC_MSG_RESULT($SUFFIX)
+fi
+
+AC_DEFINE_UNQUOTED(SUFFIX, "$SUFFIX")
+AC_SUBST(SUFFIX)
 
 
 dnl Implement --with-defaults=speed/debug option.
@@ -298,31 +347,31 @@ AC_ARG_WITH(defaults,
 
 dnl Implement --with-malloc=[native|check|slow] option.
 
-AC_CONFIG_SECTION([Configuring malloc wrapper])
+AC_MSG_CHECKING(which malloc to use)
 AC_ARG_WITH(malloc,
 [  --with-malloc           select malloc wrapper to use: native/check/slow (default: check)], [
   case "$withval" in
   native) AC_DEFINE(USE_GWMEM_NATIVE)
-          echo using native malloc
+          AC_MSG_RESULT(native malloc)
           ;;
   check) AC_DEFINE(USE_GWMEM_CHECK)
-         echo using checking malloc
+         AC_MSG_RESULT(checking malloc)
          ;;
   slow) AC_DEFINE(USE_GWMEM_SLOW)
-        echo using slow malloc
+        AC_MSG_RESULT(slow malloc)
 	;;
   *) echo "Unknown malloc wrapper $withval. Oops."; exit 1 ;;
   esac
 ], [
   case "$mallocdefault" in
   native) AC_DEFINE(USE_GWMEM_NATIVE)
-          echo using native malloc
+          AC_MSG_RESULT(native malloc)
           ;;
   slow) AC_DEFINE(USE_GWMEM_SLOW)
-        echo using slow malloc
+        AC_MSG_RESULT(slow malloc)
 	;;
   *) AC_DEFINE(USE_GWMEM_CHECK)
-     echo using checking malloc
+     AC_MSG_RESULT(checking malloc)
      ;;
   esac
 ])
@@ -442,8 +491,15 @@ AC_ARG_ENABLE(ssl,
 [  --enable-ssl            enable SSL client and server support (default: enabled)], [
   if test "$enableval" = no ; then
     AC_MSG_RESULT(disabled)
+    ssl=no
+  else
+    ssl=yes
   fi
 ],[
+  ssl=yes
+])
+
+if test "x$ssl" != "x" ; then
   dnl test only if --with-ssl has not been used
   if test "x$ssllib" = "x" && test "x$sslinc" = "x"; then
     for loc in /usr/lib /usr/local/ssl/lib /usr/local/openssl/lib; do 
@@ -459,7 +515,7 @@ AC_ARG_ENABLE(ssl,
     done
   fi
   AC_MSG_RESULT(trying $ssllib $sslinc)
-])
+fi
 
 
 dnl Implement the SSL library checking routine. 
