@@ -147,7 +147,7 @@ static int compare_mem(const void *a, const void *b) {
 		return -1;
 	if (aa->p > bb->p)
 		return 1;
-	retrun 0;
+	return 0;
 }
 
 /*
