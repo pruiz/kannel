@@ -1,8 +1,5 @@
 1999-16-12 Aarno Syvänen <syvanen@wapit.com>
 
-	* wsp.c, wtp.c: in handle_event, put state change before action. This
-	  is necessary, because this function in both modules use a stack.
-
 	* wtp.c: Fixing still wtp_machine_find_create. Now it can handle many
 	  events.
 

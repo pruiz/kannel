@@ -533,9 +533,9 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 		     event->type == event_type && \
 		     (condition)) { \
                      debug(0, "WTP: doing action for %s", #wtp_state); \
-                     debug(0, "WTP: setting state to %s", #next_state); \
-		     machine->state = next_state; \
 		     action \
+                     debug(0, "WTP: setting state to %s", #next_state); \
+                     machine->state = next_state; \
 		  } else 
 	  #include "wtp_state-decl.h"
 		  {

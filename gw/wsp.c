@@ -198,10 +198,8 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 				if (!done && sm->state == state_name && \
 				   current_event->type == event && \
 				   (condition)) { \
-				   debug(0, "WSP: entering %s handler", #state_name); \
-                                   debug(0, "WSP: setting state to %s", #next_state); \
-				   sm->state = next_state; \
 				   action \
+                                   sm->state = next_state; \
 				   done = 1; \
 				   goto end; \
 				} \
