@@ -16,8 +16,6 @@
  */
 
 #include <errno.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
 
 #include "wap_push_ota.h"
 #include "gwlib/gwlib.h"
