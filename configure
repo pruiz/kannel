@@ -586,7 +586,7 @@ echo "configuring for Kannel gateway version... $VERSION"
 if test "x$VERSION" = "xcvs"; then
   echo $ac_n "checking cvs checkout date""... $ac_c" 1>&6
 echo "configure:589: checking cvs checkout date" >&5
-  echo "$ac_t""`ls -cdla --full-time . | awk '{print $6,$7,$8,$9,$10}'`" 1>&6
+  echo "$ac_t""`ls -lcda  . | awk '{print $6,$7,$8}'`" 1>&6
 fi
 
 PKGADD_PKG="KANNELgateway"
