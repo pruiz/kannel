@@ -1,4 +1,9 @@
 2005-03-04  Stipe Tolj  <stolj@wapme.de> 
+    * gwlib/http.c: fixing bug #205 (leaking FDs). Due to an unhandled error
+      state we would not change the HTTPEntity state and the conn ist not
+      closed. Thanks to Jonathan for reporting this and Alex for the fix.
+
+2005-03-04  Stipe Tolj  <stolj@wapme.de> 
     * gw/wap-appl.c: added <ip:port> output in info() log line for fetching
       the requested client URL. Thanks to Jonathan for this.
       [Msg-ID: <422880B3.90805@wirelessonenet.com>]
