@@ -1,3 +1,7 @@
+2002-07-03  Stipe Tolj  <tolj@wapme-systems.de>
+    * test/*testppg.txt: fixed the "make check" failure report for ppg
+      module due to not-whitelisted receiver MSISDN.
+
 2002-07-02  Stipe Tolj  <tolj@wapme-systems.de>
     * Making stable release 1.2.0.
 
