@@ -1422,8 +1422,10 @@ void at2_send_messages(PrivAT2data *privdata)
     Msg *msg;
 
     do {
-        if (list_len(privdata->outgoing_queue) > 1)
+        if (privdata->modem->enable_mms && 
+			list_len(privdata->outgoing_queue) > 1)
             at2_send_modem_command(privdata, "AT+CMMS=2", 0, 0);
+
         if ((msg = list_extract_first(privdata->outgoing_queue)))
             at2_send_one_message(privdata, msg);
     } while (msg);
@@ -2049,6 +2051,9 @@ ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int i
             modem->keepalive_cmd = octstr_create("AT");
 
         modem->message_storage = cfg_get(grp, octstr_imm("message-storage"));
+
+        cfg_get_bool(&modem->enable_mms, grp, octstr_imm("enable-mms"));
+
         /*	
         if (modem->message_storage == NULL)
             modem->message_storage = octstr_create("SM");

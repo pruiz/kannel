@@ -2754,6 +2754,16 @@ pin = 2345
                 storage will be used (usually "SM").
      </entry></row>
 
+   <row><entry><literal>enable-mms</literal></entry>
+     <entry><literal>boolean</literal></entry>
+     <entry valign=bottom>
+     	Optional, defaults to false. If enabled, kannel
+	would send an AT+CMMS=2 if it have more than one
+	message on queue and hopefully will be quickier
+	sending the messages.
+     </entry></row>
+
+   <row><entry><literal>need-sleep</literal></entry>
    </tbody></tgroup></informaltable>
 </sect3>
 

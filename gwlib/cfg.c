@@ -380,16 +380,8 @@ int cfg_read(Cfg *cfg)
     	    	if (grp == NULL)
                     grp = create_group(); 
                  
-                /* 
-                 * Remember where the group has been defined. 
-                 * This may be referenced in several other places, 
-                 * i.e. dump_group() 
-                 */ 
-		if(grp->configfile == NULL) {
-		    grp->configfile = octstr_duplicate(loc->filename); 
-                    grp->line = loc->line_no; 
-		} 
- 
+		grp->configfile = octstr_duplicate(cfg->filename); 
+
                 cfg_set(grp, name, value); 
                 octstr_destroy(name); 
                 octstr_destroy(value); 

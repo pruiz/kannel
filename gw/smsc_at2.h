@@ -53,6 +53,7 @@ typedef struct ModemDef {
     Octstr *keepalive_cmd;
     int	broken;
     Octstr *message_storage;
+    int	enable_mms;
 } ModemDef;
 
 typedef struct PrivAT2data {

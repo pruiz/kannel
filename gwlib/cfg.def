@@ -316,6 +316,7 @@ MULTI_GROUP(modems,
     OCTSTR(keepalive-cmd)
     OCTSTR(broken)
     OCTSTR(message-storage)
+    OCTSTR(enable-mms)
 )
 
 MULTI_GROUP(mysql-connection,

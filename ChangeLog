@@ -1,4 +1,15 @@
 2002-04-10  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * doc/modems.conf: added enable-mms info and enabled it on nokiaphone
+    * doc/smsc_at2.[ch], gwlib/cfg.def, doc/userguide/userguide.xml: added 
+      enable-mms variable and only send +MMS if it's enabled
+    * gwlib/cfg.c: removed assignation of included filename to group structure.
+      If we want filename and line number for each line read, we need a 
+      different approach. With it, group would have the last file included and
+      at2 won't know anymore where the modem definitions are. It's better to
+      have the original kannel.conf in group struct so at2 could reread 
+      everything and find the group it wants
+
+2002-04-10  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsbox.c: Changed XML Post format (smsbox->application) to conform
       to IETF sms-xml-02 draft.
 
