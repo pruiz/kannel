@@ -110,6 +110,27 @@ ROW(RESULT_WAIT,
     },
     LISTEN)
 
+ROW(RESULT_WAIT,
+    RcvInvoke,
+    event->RcvInvoke.rid == 0,
+    { },
+    RESULT_WAIT)
+
+ROW(RESULT_WAIT,
+    RcvInvoke,
+    event->RcvInvoke.rid == 1 && machine->ack_pdu_sent == 0,
+    { },
+    RESULT_WAIT)
+
+ROW(RESULT_WAIT,
+    RcvInvoke,
+    event->RcvInvoke.rid == 1 && machine->ack_pdu_sent == 1,
+    {
+     machine->rid = event->RcvInvoke.rid;
+     wtp_send_ack(machine->tid_ve, machine, event);
+    },
+    RESULT_WAIT)
+
 ROW(RESULT_RESP_WAIT,
     RcvAck,
     1,

@@ -16,6 +16,7 @@ MACHINE(INTEGER(in_use);
         INTEGER(tcl);
         INTEGER(aec);
         INTEGER(rcr);
+        INTEGER(tid_ve);
         INTEGER(u_ack);
         INTEGER(hold_on);
         INTEGER(rid);
