@@ -1,3 +1,20 @@
+2001-05-03  Aarno Syvänen <syvanen@wapit.com>
+
+	* gw/wap_push_pap_compiler.[ch]: A compiler for compiling pap control
+	messages to wap events.
+
+	* gw/wap_push_ppg.c: Do not panic, when pi message does not not have
+	any headers (a warning instead). Corrected a misspelling. Use prefix
+	PAP in all enumerations defined by pap protocol.
+
+	* gw/wap_push_ppg.h: Another misspelling corrected. Hnadle default 
+	values of pap attributes (by reordering, so that the numeric equi-
+	valent of an attribute has value 0).
+
+	* gw/wap_push_pap.c: A new test version of pap module.
+
+	*wap/wap_events.def: Corrected a typo.
+
 2001-05-03  Nick Clarey  <nclarey@3glab.com>
 
 	* gw/smsc_at.c: Applied patch from Alex Judd (ajudd@snaz.com),
