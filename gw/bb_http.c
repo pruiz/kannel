@@ -316,10 +316,14 @@ int httpadmin_start(Cfg *cfg)
     ssl_server_cert_file = cfg_get(grp, octstr_imm("ssl-server-cert-file"));
     ssl_server_key_file = cfg_get(grp, octstr_imm("ssl-server-key-file"));
     if (ssl_server_cert_file != NULL && ssl_server_key_file != NULL) {
+        /* we are fine here, the following call is now in conn_config_ssl(),
+         * so there is no reason to do this twice.
+
         use_global_server_certkey_file(ssl_server_cert_file, 
             ssl_server_key_file);
+        */
     } else if (ssl) {
-	   panic(0, "You MUST specify cert and key files within core group for SSL!");
+	   panic(0, "You MUST specify cert and key files within core group for SSL-enabled HTTP servers!");
     }
 
     octstr_destroy(ssl_server_cert_file);
