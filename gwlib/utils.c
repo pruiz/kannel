@@ -133,7 +133,7 @@ int get_and_set_debugs(int argc, char **argv,
     if (debug_places != NULL)
         log_set_debug_places(debug_places);
     if (log_file != NULL)
-	log_open(log_file, file_lvl);
+	log_open(log_file, file_lvl, GW_NON_EXCL);
 
     info(0, "Debug_lvl = %d, log_file = %s, log_lvl = %d",
 	  debug_lvl, log_file ? log_file : "<none>", file_lvl);

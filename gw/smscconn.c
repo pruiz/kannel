@@ -45,6 +45,8 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     conn->stop_conn = NULL;
     conn->start_conn = NULL;
 
+    conn->log_idx = 0;
+
 #define GET_OPTIONAL_VAL(x, n) x = cfg_get(grp, octstr_imm(n))
     
     GET_OPTIONAL_VAL(conn->id, "smsc-id");
@@ -56,6 +58,15 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     GET_OPTIONAL_VAL(conn->preferred_prefix, "preferred-prefix");
     GET_OPTIONAL_VAL(conn->unified_prefix, "unified-prefix");
     GET_OPTIONAL_VAL(conn->our_host, "our-host");
+    GET_OPTIONAL_VAL(conn->log_file, "log-file");
+    
+    if (cfg_get_integer(&conn->log_level, grp, octstr_imm("log-level")) == -1)
+        conn->log_level = 0;
+
+    /* open a smsc-id specific log-file in exlusive mode */
+    if (conn->log_file)
+        conn->log_idx = log_open(octstr_get_cstr(conn->log_file), 
+                                 conn->log_level, GW_EXCL); 
 
     if (conn->allowed_smsc_id && conn->denied_smsc_id)
 	warning(0, "Both 'allowed-smsc-id' and 'denied-smsc-id' set, deny-list "
@@ -139,6 +150,8 @@ int smscconn_destroy(SMSCConn *conn)
     octstr_destroy(conn->allowed_prefix);
     octstr_destroy(conn->preferred_prefix);
     octstr_destroy(conn->unified_prefix);
+    octstr_destroy(conn->our_host);
+    octstr_destroy(conn->log_file);
     
     mutex_unlock(conn->flow_mutex);
     mutex_destroy(conn->flow_mutex);

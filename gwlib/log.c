@@ -39,13 +39,22 @@ static void syslog(int translog, const char *buf)
 /*
  * List of currently open log files.
  */
-#define MAX_LOGFILES 8
+#define MAX_LOGFILES 128
 static struct {
     FILE *file;
     int minimum_output_level;
     char filename[FILENAME_MAX + 1]; /* to allow re-open */
+    enum excl_state exclusive;
 } logfiles[MAX_LOGFILES];
 static int num_logfiles = 0;
+
+
+/* 
+ * Mapping array between thread id and logfiles[] index.
+ * This is used for smsc specific logging.
+ */
+#define THREADTABLE_SIZE 1024
+static unsigned int thread_to[THREADTABLE_SIZE];
 
 
 /*
@@ -75,7 +84,19 @@ static void add_stderr(void)
 	    return;
     logfiles[num_logfiles].file = stderr;
     logfiles[num_logfiles].minimum_output_level = GW_DEBUG;
+    logfiles[num_logfiles].exclusive = GW_NON_EXCL;
     ++num_logfiles;
+}
+
+
+void log_init()
+{
+    unsigned long i;
+
+    /* default all possible thread to logging index 0, stderr */
+    for (i = 0; i <= THREADTABLE_SIZE; i++) {
+        thread_to[i] = 0;
+    }
 }
 
 
@@ -147,7 +168,7 @@ void log_close_all(void)
 }
 
 
-void log_open(char *filename, int level) 
+int log_open(char *filename, int level, enum excl_state excl) 
 {
     FILE *f;
     
@@ -171,9 +192,12 @@ void log_open(char *filename, int level)
     
     logfiles[num_logfiles].file = f;
     logfiles[num_logfiles].minimum_output_level = level;
+    logfiles[num_logfiles].exclusive = excl;
     strcpy(logfiles[num_logfiles].filename, filename);
     ++num_logfiles;
     info(0, "Added logfile `%s' with level `%d'.", filename, level);
+
+    return (num_logfiles - 1);
 }
 
 
@@ -295,7 +319,8 @@ static void kannel_syslog(char *format, va_list args, int level)
 	    add_stderr(); \
 	    format(buf, level, place, e, fmt); \
 	    for (i = 0; i < num_logfiles; ++i) { \
-		if (level >= logfiles[i].minimum_output_level) { \
+		if (logfiles[i].exclusive == GW_NON_EXCL && \
+            level >= logfiles[i].minimum_output_level) { \
 		    va_start(args, fmt); \
 		    output(logfiles[i].file, buf, args); \
 		    va_end(args); \
@@ -308,9 +333,29 @@ static void kannel_syslog(char *format, va_list args, int level)
 	    } \
 	} while (0)
 
+#define FUNCTION_GUTS_EXCL(level, place) \
+	do { \
+	    int i; \
+	    char buf[FORMAT_SIZE]; \
+	    va_list args; \
+	    \
+	    add_stderr(); \
+	    format(buf, level, place, 0, fmt); \
+        if (logfiles[e].exclusive == GW_EXCL && \
+            level >= logfiles[e].minimum_output_level) { \
+            va_start(args, fmt); \
+            output(logfiles[e].file, buf, args); \
+            va_end(args); \
+        } \
+	} while (0)
+
 
 void gw_panic(int e, const char *fmt, ...) 
 {
+    /* 
+     * we don't want PANICs to spread accross smsc logs, so
+     * this will be always within the main core log.
+     */
     FUNCTION_GUTS(GW_PANIC, "");
     exit(EXIT_FAILURE);
 }
@@ -318,19 +363,31 @@ void gw_panic(int e, const char *fmt, ...)
 
 void error(int e, const char *fmt, ...) 
 {
-    FUNCTION_GUTS(GW_ERROR, "");
+    if ((e = thread_to[gwthread_self()])) {
+        FUNCTION_GUTS_EXCL(GW_ERROR, "");
+    } else {
+        FUNCTION_GUTS(GW_ERROR, "");
+    }
 }
 
 
 void warning(int e, const char *fmt, ...) 
 {
-    FUNCTION_GUTS(GW_WARNING, "");
+    if ((e = thread_to[gwthread_self()])) {
+        FUNCTION_GUTS_EXCL(GW_WARNING, "");
+    } else {
+        FUNCTION_GUTS(GW_WARNING, "");
+    }
 }
 
 
 void info(int e, const char *fmt, ...) 
 {
-   FUNCTION_GUTS(GW_INFO, "");
+    if ((e = thread_to[gwthread_self()])) {
+        FUNCTION_GUTS_EXCL(GW_INFO, "");
+    } else {
+        FUNCTION_GUTS(GW_INFO, "");
+    }
 }
 
 
@@ -378,13 +435,17 @@ static int place_is_not_logged(const char *place)
 void debug(const char *place, int e, const char *fmt, ...) 
 {
     if (place_should_be_logged(place) && place_is_not_logged(place) == 0) {
-	FUNCTION_GUTS(GW_DEBUG, "");
 	/*
 	 * Note: giving `place' to FUNCTION_GUTS makes log lines
     	 * too long and hard to follow. We'll rely on an external
     	 * list of what places are used instead of reading them
     	 * from the log file.
 	 */
+        if ((e = thread_to[gwthread_self()])) {
+            FUNCTION_GUTS_EXCL(GW_DEBUG, "");
+        } else {
+            FUNCTION_GUTS(GW_DEBUG, "");
+        }
     }
 }
 
@@ -400,3 +461,15 @@ void log_set_debug_places(const char *places)
 	p = strtok(NULL, " ,");
     }
 }
+
+
+void log_thread_to(unsigned int idx)
+{
+    long thread_id = gwthread_self();
+
+    if (idx > 0) 
+        info(0, "Logging thread `%ld' to logfile `%s' with level `%d'.", 
+             thread_id, &logfiles[idx].filename, logfiles[idx].minimum_output_level);
+    thread_to[thread_id] = idx;
+}
+

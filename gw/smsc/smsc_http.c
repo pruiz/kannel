@@ -120,7 +120,10 @@ static void httpsmsc_receiver(void *arg)
     HTTPClient *client;
     Octstr *ip, *url, *body;
     List *headers, *cgivars;
-    
+   
+    /* Make sure we log into our own log-file if defined */
+    log_thread_to(conn->log_idx);
+ 
     while(conndata->shutdown == 0) {
 
 	/* XXX if conn->is_stopped, do not receive new messages.. */
@@ -166,6 +169,9 @@ static void httpsmsc_send_cb(void *arg)
     int status;
     List *headers;
     Octstr *final_url, *body;
+
+    /* Make sure we log into our own log-file if defined */
+    log_thread_to(conn->log_idx);
 
     while(conndata->shutdown == 0 || conndata->open_sends) {
 

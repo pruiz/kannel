@@ -470,7 +470,7 @@ int main(int argc, char **argv)
     }
 
     if (log_file != NULL)
-    	log_open(log_file, GW_DEBUG);
+    	log_open(log_file, GW_DEBUG, GW_NON_EXCL);
 
     info(0, "Starting drive_smpp test.");
     gwthread_create(accept_thread, &port);

@@ -1280,6 +1280,9 @@ static void emi2_sender(void *arg)
     Msg *msg;
     Connection *server;
 
+    /* Make sure we log into our own log-file if defined */
+    log_thread_to(conn->log_idx);
+
     while (!privdata->shutdown) {
 	if ((server = open_send_connection(conn)) == NULL) {
 	    privdata->shutdown = 1;
@@ -1401,6 +1404,9 @@ static void emi2_listener(void *arg)
     Octstr	*ip;
     Connection	*server;
     int 	s, ret;
+
+    /* Make sure we log into our own log-file if defined */
+    log_thread_to(conn->log_idx);
 
     while (!privdata->shutdown) {
 	server_addr_len = sizeof(server_addr);

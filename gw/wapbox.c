@@ -117,7 +117,7 @@ static Cfg *init_wapbox(Cfg *cfg)
     if (cfg_get_integer(&logfilelevel, grp, octstr_imm("log-level")) == -1)
     	logfilelevel = 0;
     if (logfile != NULL) {
-        log_open(octstr_get_cstr(logfile), logfilelevel);
+        log_open(octstr_get_cstr(logfile), logfilelevel, GW_NON_EXCL);
         info(0, "Starting to log to file %s level %ld", 
              octstr_get_cstr(logfile), logfilelevel);
     }

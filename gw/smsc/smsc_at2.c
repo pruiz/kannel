@@ -832,6 +832,9 @@ void at2_device_thread(void *arg)
 
     conn->status = SMSCCONN_CONNECTING;
 
+    /* Make sure we log into our own log-file if defined */
+    log_thread_to(conn->log_idx);
+
 reconnect:
 
     do {

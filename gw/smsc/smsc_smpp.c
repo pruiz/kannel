@@ -1106,6 +1106,9 @@ static void io_thread(void *arg)
     smpp = io_arg->smpp; 
     transmitter = io_arg->transmitter; 
     gw_free(io_arg); 
+
+    /* Make sure we log into our own log-file if defined */
+    log_thread_to(smpp->conn->log_idx);
  
     conn = NULL; 
     while (!smpp->quitting) { 

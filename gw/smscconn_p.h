@@ -120,7 +120,13 @@ struct smscconn {
     Octstr *preferred_prefix;
     Octstr *unified_prefix;
     
-    Octstr *our_host;
+    Octstr *our_host;   /* local device IP to bind for TCP communication */
+
+    /* Our smsc specific log-file data */
+    Octstr *log_file;
+    long log_level;
+    int log_idx;    /* index position within the global logfiles[] array in gwlib/log.c */
+
 
     /* XXX: move rest global data from Smsc here
      */

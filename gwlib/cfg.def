@@ -184,6 +184,8 @@ MULTI_GROUP(smsc,
     OCTSTR(preferred-prefix)
     OCTSTR(unified-prefix)
     OCTSTR(alt-charset)
+    OCTSTR(log-file)
+    OCTSTR(log-level)
     OCTSTR(host)
     OCTSTR(alt-host)
     OCTSTR(port)

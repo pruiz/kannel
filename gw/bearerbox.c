@@ -300,7 +300,7 @@ static Cfg *init_bearerbox(Cfg *cfg)
     if (log != NULL) {
 	if (cfg_get_integer(&loglevel, grp, octstr_imm("log-level")) == -1)
 	    loglevel = 0;
-	log_open(octstr_get_cstr(log), loglevel);
+	log_open(octstr_get_cstr(log), loglevel, GW_NON_EXCL);
 	octstr_destroy(log);
     }
 

@@ -140,6 +140,8 @@ static void wrapper_receiver(void *arg)
     /* SmscWrapper *wrap = conn->data; ** non-used */
     double 	sleep = 0.0001;
     
+    /* Make sure we log into our own log-file if defined */
+    log_thread_to(conn->log_idx);
     
     /* remove messages from SMSC until we are killed */
     while(conn->why_killed == SMSCCONN_ALIVE) {
@@ -201,6 +203,9 @@ static void wrapper_sender(void *arg)
     Msg 	*msg;
     SMSCConn 	*conn = arg;
     SmscWrapper *wrap = conn->data;
+
+    /* Make sure we log into our own log-file if defined */
+    log_thread_to(conn->log_idx);
 
     /* send messages to SMSC until our putgoing_list is empty and
      * no producer anymore (we are set to shutdown) */

@@ -22,6 +22,14 @@ enum output_level {
 	GW_DEBUG, GW_INFO, GW_WARNING, GW_ERROR, GW_PANIC
 };
 
+/* defines if a log-file is exclusive or not */
+enum excl_state {
+    GW_NON_EXCL, GW_EXCL
+};
+
+/* Initialize the log file module */
+void log_init();
+
 /* Print a panicky error message and terminate the program with a failure.
  * So, this function is called when there is no other choice than to exit
  * immediately, with given reason
@@ -87,8 +95,11 @@ void log_set_syslog(const char *ident, int syslog_level);
 /* Start logging to a file as well. The file will get messages at least of
    level `level'. There is no need and no way to close the log file;
    it will be closed automatically when the program finishes. Failures
-   when opening to the log file are printed to stderr. */
-void log_open(char *filename, int level);
+   when opening to the log file are printed to stderr. 
+   Where `excl' defines if the log file will be exclusive or not.
+   Returns the index within the global logfiles[] array where this
+   log file entry has been added. */
+int log_open(char *filename, int level, enum excl_state excl);
 
 /* Close and re-open all logfiles */
 void log_reopen(void);
@@ -97,5 +108,11 @@ void log_reopen(void);
  * Close all log files.
  */
 void log_close_all(void);
+
+/* 
+ * Register a thread to a specific logfiles[] index and hence 
+ * to a specific exclusive log file.
+ */
+void log_thread_to(unsigned int idx);
 
 #endif

@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     }
 
     if (log_file != NULL) {
-    	log_open(octstr_get_cstr(log_file), GW_DEBUG);
+    	log_open(octstr_get_cstr(log_file), GW_DEBUG, GW_NON_EXCL);
 	octstr_destroy(log_file);
     }
 

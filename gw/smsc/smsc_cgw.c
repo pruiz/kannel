@@ -568,6 +568,9 @@ static void cgw_sender(void *arg)
 
     conn->status = SMSCCONN_CONNECTING;
 
+    /* Make sure we log into our own log-file if defined */
+    log_thread_to(conn->log_idx);
+
     while (!privdata->shutdown) {
 
         // check that connection is active
@@ -914,6 +917,9 @@ static void cgw_listener(void *arg)
     Octstr	*ip;
     Connection	*server;
     int s, ret;
+
+    /* Make sure we log into our own log-file if defined */
+    log_thread_to(conn->log_idx);
 
     while (!privdata->shutdown) {
         server_addr_len = sizeof(server_addr);

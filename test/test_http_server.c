@@ -234,7 +234,7 @@ int main(int argc, char **argv) {
     }
 
     if (log_filename != NULL) {
-    	log_open(octstr_get_cstr(log_filename), GW_DEBUG);
+    	log_open(octstr_get_cstr(log_filename), GW_DEBUG, GW_NON_EXCL);
 	    octstr_destroy(log_filename);
     }
 

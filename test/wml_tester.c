@@ -146,7 +146,7 @@ int main(int argc, char **argv)
 
 	    if (file && outputti != BINARY_OUT) {
 		fclose(fp);
-		log_open(octstr_get_cstr(filename), 0);
+		log_open(octstr_get_cstr(filename), 0, GW_NON_EXCL);
 		octstr_dump(wml_binary, 0);
 		log_close_all();
 		fp = fopen(octstr_get_cstr(filename), "a");

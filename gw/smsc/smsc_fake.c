@@ -227,6 +227,9 @@ static void fake_listener(void *arg)
     int s, ret;
     Msg	*msg;
 
+    /* Make sure we log into our own log-file if defined */
+    log_thread_to(conn->log_idx);
+
     while (1) {
         client_addr_len = sizeof(client_addr);
         ret = gwthread_pollfd(privdata->listening_socket, POLLIN, -1);

@@ -2064,6 +2064,21 @@ bearerbox-host = localhost
      end. TCP/IP connection only.
      </entry></row>
 
+    <row><entry><literal>log-file</literal></entry>
+     <entry>filename</entry>
+     <entry valign="bottom">
+        A file in which to write a log of the given smsc output. Hence
+ 		  this allows to log smsc specific entries to a seperate file.
+     </entry></row>
+
+    <row><entry><literal>log-level</literal></entry>
+     <entry>number 0..5</entry>
+     <entry valign="bottom">
+        Minimum level of logfile events logged. 0 is for 'debug', 1
+        'info', 2 'warning, 3 'error' and 4 'panic' (see Command Line
+        Options)
+     </entry></row>
+
   </tbody>
   </tgroup>
  </table>

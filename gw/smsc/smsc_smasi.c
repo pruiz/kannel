@@ -860,6 +860,9 @@ static void smasi_thread(void *arg)
 
     smasi = arg;
 
+    /* Make sure we log into our own log-file if defined */
+    log_thread_to(smasi->conn->log_idx);
+    
     while (!smasi->quitting) {
 
         conn = open_connection(smasi);
