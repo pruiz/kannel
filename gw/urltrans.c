@@ -468,10 +468,6 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 	(count_occurences(ot->pattern, "%a") > 0);
 
     ot->next = NULL;
-    if (ot->keyword)
-	debug(0, "Created translation '%s'", ot->keyword);
-    else
-	debug(0, "Created sendsms user '%s'", ot->username);
 	
     return ot;
 error:
