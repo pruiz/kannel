@@ -488,17 +488,21 @@ int store_dump(void)
 
 int store_init(Octstr *fname)
 {
-    if (octstr_len(fname) > (FILENAME_MAX-5)) {
-        error(0, "Store file filename too long: `%s', failed to init.",
+    /* message id always used */
+    msg_id = counter_create();
+    counter_set(msg_id, 1);
+
+    if (fname == NULL)
+        return 0; /* we are done */
+
+    if (octstr_len(fname) > (FILENAME_MAX-5))
+        panic(0, "Store file filename too long: `%s', failed to init.",
 	      octstr_get_cstr(fname));
-	return -1;
-    }
+
     filename = octstr_duplicate(fname);
     newfile = octstr_format("%s.new", octstr_get_cstr(filename));
     bakfile = octstr_format("%s.bak", octstr_get_cstr(filename));
 
-    msg_id = counter_create();
-    counter_set(msg_id, 1);
     sms_store = list_create();
     ack_store = list_create();
 
@@ -514,8 +518,10 @@ int store_init(Octstr *fname)
 
 void store_shutdown(void)
 {
-    if (filename == NULL)
+    if (filename == NULL) {
+        counter_destroy(msg_id);
 	return;
+    }
 
     list_remove_producer(ack_store);
 }

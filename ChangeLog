@@ -1,3 +1,6 @@
+2003-07-23  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bb_store.c,gw/bearerbox.c: fixed segfault if no store-file is configured.
+
 2003-07-21  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * contrib/web/sendsms.php: removed hardcoded -way in the past- date from 
       Wap PUSH SI
