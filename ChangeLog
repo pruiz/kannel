@@ -1,3 +1,31 @@
+2000-10-03  Lars Wirzenius  <liw@iki.fi>
+
+	* debian/changelog: Added new entry for newer upstream version
+	number.
+	
+	* debian/copyright: fixed spelling of Wapit (used to be WapIT).
+	
+	* debian/conffiles: New file, lists the files in the Debian
+	package that are marked as configuration files.
+	
+	* debian/init: No longer automatically copied from
+	utils/kannel-init.d, since we can't guarantee that would be the
+	right thing to do for a Debian package. Updated to work on Debian
+	(box path was wrong).
+	
+	* debian/kannel.conf: Re-wrote to work with newer config file
+	syntax.
+	
+	* debian/kannel.wapconf: Removed, no longer needed.
+	
+	* debian/rules: fixed so it works with current Kannel. Also added
+	manual page installation, etc.
+	
+	* gw/kannel.8, utils/run_kannel_box.8, utils/seewbmp.1,
+	wmlscript/wmlsc.1, wmlscript/wmlsdasm.1: Wrote skeletal manual
+	pages for various parts of Kannel that are installed by the
+	Debian package.
+
 2000-10-03  Richard Braakman  <dark@wapit.com>
 
 	* gw/wsp_headers.c: Bugfix in multi_octet_integer for integers

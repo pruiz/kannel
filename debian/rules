@@ -5,7 +5,8 @@ build: Makefile
 	$(MAKE)
 
 Makefile:
-	CFLAGS='-Wall -O2 -g' ./configure
+	dh_testdir
+	CFLAGS='-Wall -O2 -g' ./configure --enable-docs
 
 clean:
 	dh_testdir
@@ -17,10 +18,22 @@ install: build
 	dh_testdir
 	dh_testroot
 	dh_clean -k
-	dh_installdirs
+	dh_installdirs usr/sbin usr/bin
 
-	$(MAKE) prefix=`pwd`/debian/tmp/usr \
-		suffix="" install
+#   	Kannel's make install does the wrong thing for Debian, so we need
+#   	to do this by hand.
+#	$(MAKE) prefix=`pwd`/debian/tmp/usr \
+#		suffix="" install
+
+	install gw/bearerbox debian/tmp/usr/sbin
+	install gw/wapbox debian/tmp/usr/sbin
+	install gw/smsbox debian/tmp/usr/sbin
+	install utils/run_kannel_box debian/tmp/usr/sbin
+
+	install wmlscript/wmlsc debian/tmp/usr/bin
+	install wmlscript/wmlsdasm debian/tmp/usr/bin
+	install utils/seewbmp debian/tmp/usr/bin
+	
 	install -d debian/tmp/etc/kannel
 	install -m 0644 debian/kannel.* debian/tmp/etc/kannel
 	install -m 0700 -d debian/tmp/var/log/kannel
@@ -33,13 +46,14 @@ binary-arch: build install
 #	dh_installdebconf	
 	dh_installdocs
 #	dh_installexamples
-	cp utils/kannel-init.d debian/init
 	dh_installinit
 #	dh_installcron
-	if [ -e utils/start-stop-daemon ]; then \
-		not=""; else not="utils/start-stop-daemon.8"; \
-	fi; dh_installmanpages $$not
-	
+	dh_installmanpages utils/start-stop-daemon.8
+	cd debian/tmp/usr/share/man/man8 && \
+	    for box in bearerbox wapbox smsbox; do \
+	    	ln -s kannel.8 $$box.8; \
+	    done
+
 	dh_installchangelogs ChangeLog
 	dh_strip
 	dh_compress
