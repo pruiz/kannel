@@ -68,6 +68,7 @@
  *
  *
  * Kalle Marjola 2001 for project Kannel
+ * Robert Ga³ach <robert.galach@my.tenbit.pl>
  */
 
 #ifndef __XMLRPC_H
@@ -78,20 +79,14 @@
 /*
  * types and structures defined by www.xml-rpc.com
  */
-typedef struct xmlrpc_methodresponse XMLRPCMethodResponse;
-typedef struct xmlrpc_member XMLRPCMember;
-typedef struct xmlrpc_scalar XMLRPCScalar;
-typedef struct xmlrpc_methodcall XMLRPCMethodCall;
+typedef struct xmlrpc_document XMLRPCDocument;
 typedef struct xmlrpc_value XMLRPCValue;
-
-typedef struct xmlrpc_table_t xmlrpc_table_t;
-typedef struct xmlrpc_2table_t xmlrpc_2table_t;
-
-#define create_octstr_from_node(node) (octstr_create(node->content))
+typedef struct xmlrpc_scalar XMLRPCScalar;
 
 enum { 
     xr_undefined, xr_scalar, xr_array, xr_struct, 
-    xr_string, xr_int, xr_bool, xr_double, xr_date, xr_base64 
+    xr_string, xr_int, xr_bool, xr_double, xr_date, xr_base64, 
+    xr_methodcall, xr_methodresponse 
 };
 
 /*
@@ -104,104 +99,419 @@ enum {
 };
 
 
-/*** METHOD CALLS ***/
 
-/* Create new MethodCall object with given name and no params */
-XMLRPCMethodCall *xmlrpc_call_create(Octstr *method);
+/*** DOCUMENTS ***/
 
-/* Create new MethodCall object from given body of text/xml */
-/* PARTIALLY IMPLEMENTED */
-XMLRPCMethodCall *xmlrpc_call_parse(Octstr *post_body);
+/* Create new XMLRPCDocument object of undefined_type  */
+XMLRPCDocument *xmlrpc_doc_create(void);
+/* Create new MethodCall with given name */
+XMLRPCDocument *xmlrpc_doc_create_call(Octstr *name);
+/* Create new MethodResponse */
+XMLRPCDocument *xmlrpc_doc_create_response(void);
+/* Create new fault MethodResponse with given code and fault string */
+XMLRPCDocument *xmlrpc_doc_create_faultresponse(long faultcode, Octstr *faultstring);
 
-/* Destroy MethodCall object */
-void xmlrpc_call_destroy(XMLRPCMethodCall *call);
+/* Create new XMLRPCDocument object from given body of text/xml, 
+ * d_type is expected document type: xr_methodcall, xr_methodresponse
+   or xr_undefined if any
+ */
+XMLRPCDocument *xmlrpc_doc_parse(Octstr *post_body, int d_type);
 
-/* Add a scalar param to MethodCall object. Always return 0 */
-int xmlrpc_call_add_scalar(XMLRPCMethodCall *method, int type, void *arg);
+/* Destroy XMLRPCDocument object */
+void xmlrpc_doc_destroy(XMLRPCDocument *xrdoc, int d_type);
 
-/* Add given <value> param to MethodCall object. Always return 0.
- * Note that value is NOT duplicated */
-/* NOTE: As currently only string and int4 is supported, this function
- * has no real use, just use above functions */
-int xmlrpc_call_add_value(XMLRPCMethodCall *method, XMLRPCValue *value);
+/* Add a scalar param to XMLRPCDocument object.
+ * d_type is expected document type: xr_methodcall or xr_methodresponse.
+ * Return 0 if ok or -1 if something wrong (e.g. xrdoc is null or faultresponse)
+ */
+int xmlrpc_doc_add_scalar(XMLRPCDocument *xrdoc, int d_type, int type, void *arg);
 
-/* Create Octstr (text/xml string) out of given MethodCall. Caller
- * must free returned Octstr */
-/* PARTIALLY IMPLEMENTED */
-Octstr *xmlrpc_call_octstr(XMLRPCMethodCall *call);
+/* Add given XMLRPCValue param to XMLRPCDocument object.
+ * d_type is expected document type: xr_methodcall or xr_methodresponse.
+ * Return 0 if ok or -1 if something wrong.
+ * NOTE that value is NOT duplicated 
+ */
+int xmlrpc_doc_add_value(XMLRPCDocument *xrdoc, int d_type, XMLRPCValue *value);
 
-/* Send MethodCall to given URL with given Headers. Note: adds XML-RPC
- *  specified headers into given list. 'headers' are always destroyed, and
- * if NULL when this function called, automatically generated
+/* Create Octstr (text/xml string) out of given XMLRPCDocument. 
+ * d_type is expected document type. 
+ * level is the indent width.
+ * Caller must free returned Octstr.
+ */
+Octstr *xmlrpc_doc_print(XMLRPCDocument *xrdoc, int d_type, int level);
+
+/* Send XMLRPCDocument to given url with given headers. 
+ * d_type is expected document type. 
+ * Note: adds XML-RPC specified headers into given list if needed. 
+ *       and if NULL when this function called, automatically generated
  *
  * Return 0 if all went fine, -1 if failure. As user reference, uses *void
  */
-/* PARTIALLY IMPLEMENTED, as is based on above function, for example */
-int xmlrpc_call_send(XMLRPCMethodCall *call, HTTPCaller *http_ref,
-		     Octstr *url, List *headers, void *ref);
+int xmlrpc_doc_send(XMLRPCDocument *xrdoc, int d_type, HTTPCaller *http_ref,
+		    Octstr *url, List *headers, void *ref);
+
+
+/*** METHOD CALLS ***/
+
+/* Create new MethodCall with given name and no params */
+#define xmlrpc_create_call(method) \
+            xmlrpc_doc_create_call(method)
+
+/* Create new MethodCall from given body of text/xml */
+#define xmlrpc_parse_call(post_body) \
+            xmlrpc_doc_parse(post_body, xr_methodcall)
+
+/* Destroy MethodCall */
+#define xmlrpc_destroy_call(call) \
+            xmlrpc_doc_destroy(call, xr_methodcall)
+
+/* Add a scalar param to MethodCall. 
+ * type is scalar type: xr_string, xr_int, xr_bool, xr_double, xr_date or xr_base64
+ * arg is pointer to value of given type: Octstr*, long*, int*, double*, Octstr* or Octstr*
+ * respectively
+ * Return 0 if ok or -1 if something wrong.
+ */
+#define xmlrpc_add_call_scalar(call, type, arg) \
+            xmlrpc_doc_add_scalar(call, xr_methodcall, type, arg)
+
+/* Add given XMLRPCValue param to MethodCall.
+ * Return 0 if ok or -1 if something wrong.
+ * NOTE: value is NOT duplicated 
+ */
+#define xmlrpc_add_call_value(call, value) \
+            xmlrpc_doc_add_value(call, xr_methodcall, value)
+
+/* Create Octstr (text/xml string) out of given MethodCall. Caller
+ * must free returned Octstr 
+ */
+#define xmlrpc_print_call(call) \
+            xmlrpc_doc_print(call, xr_methodcall, 0)
+
+/* Send MethodCall to given url with given headers. 
+ * d_type is expected document type. 
+ * Note: adds XML-RPC specified headers into given list if needed. 
+ *       and if NULL when this function called, automatically generated
+ *
+ * Return 0 if all went fine, -1 if failure. As user reference, uses *void
+ */
+#define xmlrpc_send_call(call,http_ref, url, headers, ref) \
+            xmlrpc_doc_send(call, xr_methodcall, http_ref, url, headers, ref)
+
+/* Return the name of the method requested or NULL if document is not method call */
+Octstr *xmlrpc_get_call_name(XMLRPCDocument *call);
+
 
 
 /*** METHOD RESPONSES ***/
 
-/* Create a new MethodResponse object with given <value> */
-XMLRPCMethodResponse *xmlrpc_response_create(XMLRPCValue *value);
+/* Create a new MethodResponse with no param value */
+#define xmlrpc_create_response() \
+            xmlrpc_doc_create_response()
 
-/* As above, but with <fault> part with filled-up structs */
-/* NOT YET IMPLEMENTED */
-XMLRPCMethodResponse *xmlrpc_response_fault_create(long faultcode,
-						   Octstr *faultstring);
+/* Create a new fault MethodResponse with given faultcode and faultstring */
+#define xmlrpc_create_faultresponse(faultcode, faultstring) \
+            xmlrpc_doc_create_faultresponse(faultcode, faultstring)
 
-/* Create a new MethodResponse object from given text/xml string */
-/* NOT YET IMPLEMENTED */
-XMLRPCMethodResponse *xmlrpc_response_parse(Octstr *post_body);
+/* Create a new MethodResponse from given text/xml string */
+#define xmlrpc_parse_response(post_body) \
+            xmlrpc_doc_parse(post_body, xr_methodresponse)
 
-/* Destroy MethodResponse object */
-void xmlrpc_response_destroy(XMLRPCMethodResponse *response);
+/* Destroy MethodResponse */
+#define xmlrpc_destroy_response(response) \
+            xmlrpc_doc_destroy(response, xr_methodresponse)
+
+/* Add a scalar param to MethodResponse. 
+ * type is scalar type: xr_string, xr_int, xr_bool, xr_double, xr_date or xr_base64
+ * arg is pointer to value of given type: Octstr*, long*, int*, double*, Octstr* or Octstr*
+ * respectively
+ * Return 0 if ok or -1 if something wrong.
+ */
+#define xmlrpc_add_response_scalar(response, type, arg) \
+            xmlrpc_doc_add_scalar(response, xr_methodresponse, type, arg)
+
+/* Add given XMLRPCValue param to MethodResponse.
+ * Return 0 if ok or -1 if something wrong.
+ * NOTE: value is NOT duplicated 
+ */
+#define xmlrpc_add_response_value(response, value) \
+            xmlrpc_doc_add_value(response, xr_methodresponse, value)
+
+/* Create Octstr (text/xml string) out of given MethodCall. Caller
+ * must free returned Octstr 
+ */
+#define xmlrpc_print_response(response) \
+            xmlrpc_doc_print(response, xr_methodresponse, 0)
+
+/* Send MethodResponse to given url with given headers. 
+ * d_type is expected document type. 
+ * Note: adds XML-RPC specified headers into given list if needed. 
+ *       and if NULL when this function called, automatically generated
+ *
+ * Return 0 if all went fine, -1 if failure. As user reference, uses *void
+ */
+#define xmlrpc_send_response(response, http_ref, url, headers, ref) \
+            xmlrpc_doc_send(call, xr_methodresponse, http_ref, url, headers, ref)
 
 
-/*** STRUCT HANDLING ***/
 
-/* Create a new <value> object of undefined type */ 
+/*** PARAMS HANDLING ***/
+
+/* Return -1 if XMLRPCDocument can't have params or number of params */
+int xmlrpc_count_params(XMLRPCDocument *xrdoc);
+
+/* Return i'th MethodCall/MethodResponse param 
+ * or NULL if something wrong
+ */
+XMLRPCValue *xmlrpc_get_param(XMLRPCDocument *xrdoc, int i);
+
+/* Return type of i'th MethodCall/MethodResponse param: xr_scalar, xr_array or xr_struct
+ * or -1 if no param
+ */
+int xmlrpc_get_type_param(XMLRPCDocument *xrdoc, int i);
+
+/* Return content of i'th MethodCall/MethodResponse param: 
+ * XMLRPCScalar if xr_scalar, List of XMLRPCValues if xr_array 
+ * or Dict of XMLRPCValues if xr_struct (member names as keys)
+ * or NULL if no param
+ */
+void *xmlrpc_get_content_param(XMLRPCDocument *xrdoc, int i);
+
+/* Identify d_type of given XMLRPCDocument and add a scalar param. 
+ * type is scalar type: xr_string, xr_int, xr_bool, xr_double, xr_date or xr_base64
+ * arg is pointer to value of given type: Octstr*, long*, int*, double*, Octstr* or Octstr*
+ * respectively
+ * Return 0 if ok or -1 if something wrong.
+ */
+#define xmlrpc_add_scalar_param(xrdoc, type, arg) \
+            xmlrpc_doc_add_scalar(xrdoc, xr_undefined, type, arg)
+
+/* Identify d_type of given XMLRPCDocument and add XMLRPCValue param.
+ * Return 0 if ok or -1 if something wrong.
+ * NOTE: value is NOT duplicated 
+ */
+#define xmlrpc_add_param(xrdoc, value) \
+            xmlrpc_doc_add_value(xrdoc, xr_undefined, value)
+
+
+
+/*** VALUES HANDLING ***/
+
+/* Create a new XMLRPCValue object of undefined type */ 
 XMLRPCValue *xmlrpc_value_create(void);
 
-/* Destroy given <value> object */
+/* Destroy given XMLRPCValue object */
 void xmlrpc_value_destroy(XMLRPCValue *val);
 
 /* Wrapper for destroy */
 void xmlrpc_value_destroy_item(void *val);
 
-/* append output of value to given octstr */
-/* THIS SHOULD GO AWAY LATER */
-void xmlrpc_value_print(XMLRPCValue *val, Octstr *os);
+/* Set type of XMLRPCValue: xr_scalar, xr_array or xr_struct 
+ * Return 0 if ok or -1 if something wrong.
+ */
+int xmlrpc_value_set_type(XMLRPCValue *val, int v_type);
 
-/* Create a new <member> for xs_struct with undefined <value> */
-XMLRPCMember *xmlrpc_member_create(Octstr *name);
+/* Set XMLRPCValue content:
+ * XMLRPCScalar if xr_scalar, List of XMLRPCValues if xr_array 
+ * or Dict of XMLRPCValues if xr_struct (member names as keys)
+ * Return 0 if ok or -1 if something wrong.
+ */
+int xmlrpc_value_set_content(XMLRPCValue *val, void *content);
 
-/* Destroy struct member along with value */
-void xmlrpc_member_destroy(XMLRPCMember *member);
+/* Return type of XMLRPCValue: xr_scalar, xr_array or xr_struct */
+int xmlrpc_value_get_type(XMLRPCValue *val);
 
-/* Wrapper for destroy */
-void xmlrpc_member_destroy_item(void *member);
+/* Return leaf type of XMLRPCValue: 
+ * as above, but if value is xr_scalar return type of scalar
+ */
+int xmlrpc_value_get_type_smart(XMLRPCValue *val);
+
+/* Return XMLRPCValue content:
+ * XMLRPCScalar if xr_scalar, List of XMLRPCValues if xr_array 
+ * or Dict of XMLRPCValues if xr_struct (member names as keys)
+ * or NULL if something wrong.
+ */
+void *xmlrpc_value_get_content(XMLRPCValue *val);
+
+/* Create Octstr (text/xml string) out of given XMLRPCValue. Caller
+ * must free returned Octstr 
+ */
+Octstr *xmlrpc_value_print(XMLRPCValue *val, int level);
+
+
+/*** STRUCT VALUE HANDLING ***/
+
+/* Create a new XMLRPCValue object of xr_struct type. 
+ * size is expected number of struct members
+ */ 
+XMLRPCValue *xmlrpc_create_struct_value(int size);
+
+/* Return -1 if not a struct or number of members */
+long xmlrpc_count_members(XMLRPCValue *xrstruct);
+
+/* Add member with given name and value to the struct */
+int xmlrpc_add_member(XMLRPCValue *xrstruct, Octstr *name, XMLRPCValue *value);
+
+/* Add member with given name and scalar value built with type and arg to the struct */
+int xmlrpc_add_member_scalar(XMLRPCValue *xrstruct, Octstr *name, int type, void *arg);
+
+/* Return value of member with given name or NULL if not found */
+XMLRPCValue *xmlrpc_get_member(XMLRPCValue *xrstruct, Octstr *name);
+
+/* Return type of member with given name (xr_scalar, xr_array or xr_struct)
+ * or -1 if not found 
+ */
+int xmlrpc_get_member_type(XMLRPCValue *xrstruct, Octstr *name);
+
+/* Return content of member with given name:
+ * XMLRPCScalar if xr_scalar, List of XMLRPCValues if xr_array 
+ * or Dict of XMLRPCValues if xr_struct (member names as keys)
+ * or NULL if not found.
+ */
+void *xmlrpc_get_member_content(XMLRPCValue *xrstruct, Octstr *name);
+
+
+/* Create Octstr (text/xml string) out of struct. Caller
+ * must free returned Octstr.
+ */
+Octstr *xmlrpc_print_struct(Dict *members,  int level);
+
+
+/*** ARRAY VALUE HANDLING ***/
+
+/* Create a new XMLRPCValue object of xr_array type. */ 
+XMLRPCValue *xmlrpc_create_array_value(void);
+
+/* Return -1 if not an array or number of elements */
+int xmlrpc_count_elements(XMLRPCValue *xrarray);
+
+/* Add XMLRPCValue element to the end of array */
+int xmlrpc_add_element(XMLRPCValue *xrarray, XMLRPCValue *value);
+
+/* Build scalar XMLRPCValue with type and arg, 
+ *and add this element to the end of array 
+ */
+int xmlrpc_add_element_scalar(XMLRPCValue *xrarray, int type, void *arg);
+
+/* Return value of i'th element in array or NULL if something wrong*/
+XMLRPCValue *xmlrpc_get_element(XMLRPCValue *xrarray, int i);
+
+/* Return type of i'th element in array (xr_scalar, xr_array or xr_struct)
+ * or -1 if not found 
+ */
+int xmlrpc_get_element_type(XMLRPCValue *xrarray, int i);
+
+/* Return content of i'th element:
+ * XMLRPCScalar if xr_scalar, List of XMLRPCValues if xr_array 
+ * or Dict of XMLRPCValues if xr_struct (member names as keys)
+ * or NULL if not found.
+ */
+void *xmlrpc_get_element_content(XMLRPCValue *xrarray, int i);
+
+/* Create Octstr (text/xml string) out of array. Caller
+ * must free returned Octstr.
+ */
+Octstr *xmlrpc_print_array(List *elements,  int level);
+
+
+/*** SCALAR HANDLING ***/
 
 /* Create a new scalar of given type and value
- * (which must be in right format) */
+ * (which must be in right format) 
+ * type is scalar type: xr_string, xr_int, xr_bool, xr_double, xr_date or xr_base64
+ * arg is pointer to value of given type: Octstr*, long*, int*, double*, Octstr* or Octstr*
+ * respectively
+ * Return NULL if something wrong.
+ */
 XMLRPCScalar *xmlrpc_scalar_create(int type, void *arg);
-XMLRPCScalar *xmlrpc_scalar_create_double(int type, double val);
 
-/* Create a new sturct of given type and value
- * (which must be in right format) */
-XMLRPCValue *xmlrpc_create_struct_value(int type, void *arg);
-
-/* Destroy scalar */
+/* Destroy XMLRPCScalar */
 void xmlrpc_scalar_destroy(XMLRPCScalar *scalar);
 
-/* append output of scalar to given octstr */
-/* THIS SHOULD GO AWAY LATER */
-void xmlrpc_scalar_print(XMLRPCScalar *scalar, Octstr *os);
+/* Return type of scalar or -1 if scalar is NULL */
+int xmlrpc_scalar_get_type(XMLRPCScalar *scalar);
 
-/* Create <value> of <scalar> type with given type and value */
+/* Return content of scalar 
+ * s_type is expected type of scalar
+ */
+void *xmlrpc_scalar_get_content(XMLRPCScalar *scalar, int s_type);
+
+/* Create Octstr (text/xml string) out of scalar. Caller
+ * must free returned Octstr.
+ */
+Octstr *xmlrpc_scalar_print(XMLRPCScalar *scalar, int level);
+
+/* Wrappers to get scalar content of proper type 
+ * NOTE: returned values are copies, caller must free returned Octstr
+ */
+#define xmlrpc_scalar_get_double(scalar) \
+            *(double *)xmlrpc_scalar_get_content(scalar, xr_double)
+
+#define xmlrpc_scalar_get_int(scalar) \
+            *(long *)xmlrpc_scalar_get_content(scalar, xr_int)
+
+#define xmlrpc_scalar_get_bool(scalar) \
+            *(int *)xmlrpc_scalar_get_content(scalar, xr_bool)
+
+#define xmlrpc_scalar_get_date(scalar) \
+            octstr_duplicate((Octstr *)xmlrpc_scalar_get_content(scalar, xr_date))
+
+#define xmlrpc_scalar_get_string(scalar) \
+            octstr_duplicate((Octstr *)xmlrpc_scalar_get_content(scalar, xr_string))
+
+#define xmlrpc_scalar_get_base64(scalar) \
+            octstr_duplicate((Octstr *)xmlrpc_scalar_get_content(scalar, xr_base64))
+
+
+/*** SCALAR VALUE HANDLING ***/
+
+/* Create XMLRPCScalar with type and arg, 
+ * and then create XMLRPCValue with xr_scalar type and 
+ * created XMLRPCScalar as content
+ */
 XMLRPCValue *xmlrpc_create_scalar_value(int type, void *arg);
-XMLRPCValue *xmlrpc_create_scalar_value_double(int type, double val);
+
+/* As above, but scalar is xr_double type */
+XMLRPCValue *xmlrpc_create_double_value(double val);
+
+/* As above, but scalar is xr_int type */
+XMLRPCValue *xmlrpc_create_int_value(long val);
+
+/* As above, but scalar is xr_string type */
+XMLRPCValue *xmlrpc_create_string_value(Octstr *val);
+
+/* Return type of scalar in given XMLRPCValue */
+#define xmlrpc_get_scalar_value_type(value) \
+            xmlrpc_scalar_get_type(xmlrpc_value_get_content(value))
+            
+/* Wrappers to get scalar content of proper type from XMLRPCValue */
+#define xmlrpc_get_double_value(value) \
+            xmlrpc_scalar_get_double(xmlrpc_value_get_content(value))
+#define xmlrpc_get_int_value(value) \
+            xmlrpc_scalar_get_int(xmlrpc_value_get_content(value))
+#define xmlrpc_get_string_value(value) \
+            xmlrpc_scalar_get_string(xmlrpc_value_get_content(value))
+#define xmlrpc_get_base64_value(value) \
+            xmlrpc_scalar_get_base64(xmlrpc_value_get_content(value))
+
+
+/*** FAULT HANDLING ***/
+
+/* Return 1 if XMLRPCDocument is fault MethodResponse */
+int xmlrpc_is_fault(XMLRPCDocument *response);
+
+/* Return faultcode from fault MethodResponse 
+ * or -1 if XMLRPCDocument is not valid fault MethodResponse 
+ */
+long xmlrpc_get_faultcode(XMLRPCDocument *faultresponse);
+
+/* Return faultstring from fault MethodResponse 
+ * or NULL if XMLRPCDocument is not valid fault MethodResponse 
+ */
+Octstr *xmlrpc_get_faultstring(XMLRPCDocument *faultresponse);
+
+
+
+/*** PARSE STATUS HANDLING***/
 
 /* 
  * Check if parsing had any errors, return status code of parsing by
@@ -211,20 +521,10 @@ XMLRPCValue *xmlrpc_create_scalar_value_double(int type, double val);
  *   XMLRPC_PARSING_FAILED
  *   -1 if call has been NULL
  */
-int xmlrpc_parse_status(XMLRPCMethodCall *call);
+int xmlrpc_parse_status(XMLRPCDocument *xrdoc);
 
 /* Return parser error string if parse_status != XMLRPC_COMPILE_OK */
 /* return NULL if no error occured or no error string was available */
-Octstr *xmlrpc_parse_error(XMLRPCMethodCall *call);
-
-/* Return the name of the method requested */
-Octstr *xmlrpc_get_method_name(XMLRPCMethodCall *call);
-
-/* Return number of parameters within the params list */
-int xmlrpc_call_len(XMLRPCMethodCall *call);
-
-/* Return type of variable at position 'pos' within the param list */
-/* return -1 if there is no item in the list */
-int xmlrpc_get_type(XMLRPCMethodCall *call, int pos);
+Octstr *xmlrpc_parse_error(XMLRPCDocument *xrdoc);
 
 #endif

@@ -1,4 +1,9 @@
 2004-04-19  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/smsbox.c, gwlib/xmlrpc.[ch], gwlib/cfg.def, gwlib/octstr.[ch],
+      test/test_xmlrpc.c: applied patch from bug #120.
+      Thanks to Robert Galach <robert.galach@my.tenbit.pl>.
+
+2004-04-19  Alexander Malysh  <a.malysh@centrium.de> 
     * test/dlr-receiver.py: added simple ready-to-go server 
       for receiving DLRs.
       Thanks to Guillaume Cottenceau <guillaume.cottenceau@mnc.ch>.

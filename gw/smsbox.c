@@ -2576,7 +2576,7 @@ static Octstr *smsbox_xmlrpc_post(List *headers, Octstr *body,
     Octstr *from, *to, *udh, *smsc, *charset, *dlr_url, *account, *binfo;
     Octstr *output;
     Octstr *method_name;
-    XMLRPCMethodCall *msg;
+    XMLRPCDocument *msg;
 
     int	dlr_mask, mclass, mwi, coding, compress, validity, 
 	deferred, pid, alt_dcs, rpi;
@@ -2601,7 +2601,7 @@ static Octstr *smsbox_xmlrpc_post(List *headers, Octstr *body,
          * parse the body of the request and check if it is a valid XML-RPC
          * structure
          */
-        msg = xmlrpc_call_parse(body);
+        msg = xmlrpc_parse_call(body);
 
         if ((xmlrpc_parse_status(msg) != XMLRPC_COMPILE_OK) && 
             ((output = xmlrpc_parse_error(msg)) != NULL)) {
@@ -2616,7 +2616,7 @@ static Octstr *smsbox_xmlrpc_post(List *headers, Octstr *body,
              * at least the structure has been valid, now check for the
              * required methodName and the required variables
              */
-            if (octstr_case_compare((method_name = xmlrpc_get_method_name(msg)), 
+            if (octstr_case_compare((method_name = xmlrpc_get_call_name(msg)), 
                                     octstr_imm("sms.send")) != 0) {
                 error(0, "Unknown method name '%s'", octstr_get_cstr(method_name));
                 *status = HTTP_BAD_REQUEST;
@@ -2631,7 +2631,7 @@ static Octstr *smsbox_xmlrpc_post(List *headers, Octstr *body,
             }
         }
 
-        xmlrpc_call_destroy(msg);
+        xmlrpc_destroy_call(msg);
     }
     
     return ret;

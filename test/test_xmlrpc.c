@@ -73,9 +73,9 @@
 #define MAX_THREADS 1024
 #define MAX_IN_QUEUE 128
 
-static Counter *counter = NULL;
+static Counter *counter = NULL; 
 static long max_requests = 1;
-static int verbose = 1;
+/*static int verbose = 1;*/
 static Octstr *auth_username = NULL;
 static Octstr *auth_password = NULL;
 static Octstr *ssl_client_certkey_file = NULL;
@@ -83,7 +83,7 @@ static Octstr *extra_headers = NULL;
 static Octstr *content_file = NULL;
 static Octstr *url = NULL;
 static int file = 0;
-static XMLRPCMethodCall *msg;
+static XMLRPCDocument *msg;
 
 
 static void start_request(HTTPCaller *caller, List *reqh, long i)
@@ -100,11 +100,14 @@ static void start_request(HTTPCaller *caller, List *reqh, long i)
      * not semd the XML-RPC document contained in msg to
      * the URL 'url' using the POST method
      */
-    ret = xmlrpc_call_send(msg, caller, url, reqh, id);
+    ret = xmlrpc_send_call(msg, caller, url, reqh, id);
 
+    debug("", 0, "Started request %ld.", *id);
+    /*
     debug("", 0, "Started request %ld with url:", *id);
     octstr_url_decode(url);
     octstr_dump(url, 0);
+    */
 }
 
 
@@ -115,10 +118,13 @@ static int receive_reply(HTTPCaller *caller)
     Octstr *final_url;
     List *replyh;
     Octstr *replyb;
-    Octstr *type;
+    Octstr *output;
+    XMLRPCDocument *xrdoc;
+    /*
+    Octstr *type, *os_xrdoc, *os;
     Octstr *charset;
-    Octstr *os;
-
+    */
+    
     id = http_receive_result(caller, &ret, &final_url, &replyh, &replyb);
     octstr_destroy(final_url);
     if (id == NULL || ret == -1) {
@@ -129,6 +135,7 @@ static int receive_reply(HTTPCaller *caller)
     debug("", 0, "Done with request %ld", *(long *) id);
     gw_free(id);
 
+/*
     http_header_get_content_type(replyh, &type, &charset);
     debug("", 0, "Content-type is <%s>, charset is <%s>",
           octstr_get_cstr(type), octstr_get_cstr(charset));
@@ -141,13 +148,40 @@ static int receive_reply(HTTPCaller *caller)
             octstr_dump(os, 1);
         octstr_destroy(os);
     }
-    list_destroy(replyh, NULL);
     if (verbose) {
         debug("", 0, "Reply body:");
         octstr_dump(replyb, 1);
     }
+*/
+    xrdoc = xmlrpc_parse_response(replyb);
+    debug("", 0, "Parsed xmlrpc");
+    
+    if ((xmlrpc_parse_status(xrdoc) != XMLRPC_COMPILE_OK) && 
+        ((output = xmlrpc_parse_error(xrdoc)) != NULL)) {
+        /* parse failure */
+        error(0, "%s", octstr_get_cstr(output));
+        octstr_destroy(output);
+        return -1;
+    } else { 
+        /*parse proper xmlrpc */
+        if (xmlrpc_is_fault(xrdoc)) {
+            Octstr *fstring = xmlrpc_get_faultstring(xrdoc);
+            debug("xr", 0, "Got fault response with code:%ld and description: %s",
+                           xmlrpc_get_faultcode(xrdoc),
+                           octstr_get_cstr(fstring));
+            octstr_destroy(fstring);
+            http_destroy_headers(replyh);
+            octstr_destroy(replyb);
+            return -1;
+        } 
+        /*
+        os_xrdoc = xmlrpc_print_response(xrdoc);
+        debug("xr", 0, "XMLRPC response:");
+        octstr_dump(os_xrdoc, 0);
+        */
+    }
+    http_destroy_headers(replyh);
     octstr_destroy(replyb);
-
     return 0;
 }
 
@@ -178,7 +212,7 @@ static void client_thread(void *arg)
             if (i >= max_requests)
                 goto receive_rest;
             start_request(caller, reqh, i);
-#if 0
+#if 1
             gwthread_sleep(0.1);
 #endif
             ++in_queue;
@@ -244,7 +278,7 @@ int main(int argc, char **argv)
     time_t start, end;
     double run_time;
     FILE *fp;
-    Octstr *output, *xml_doc;
+    Octstr *output, *xml_doc; 
     int ssl = 0;
     
     gwlib_init();
@@ -365,7 +399,7 @@ int main(int argc, char **argv)
     /*
      * parse the XML source
      */
-    msg = xmlrpc_call_parse(xml_doc);
+    msg = xmlrpc_parse_call(xml_doc);
 
     if ((xmlrpc_parse_status(msg) != XMLRPC_COMPILE_OK) && 
         ((output = xmlrpc_parse_error(msg)) != NULL)) {
@@ -398,9 +432,11 @@ int main(int argc, char **argv)
         octstr_destroy(url);
 
     } else {
-        output = xmlrpc_call_octstr(msg);
-        octstr_dump(output, 0);
-        octstr_destroy(output);
+        output = xmlrpc_print_call(msg);
+        if (output != NULL) {
+            octstr_print(stderr, output);
+            octstr_destroy(output);
+        }
     }
 
     counter_destroy(counter);
@@ -409,15 +445,13 @@ int main(int argc, char **argv)
     octstr_destroy(ssl_client_certkey_file);
     octstr_destroy(extra_headers);
     octstr_destroy(content_file);
-    xmlrpc_call_destroy(msg);
+
+
+    xmlrpc_destroy_call(msg);
     octstr_destroy(xml_doc);
 
     gwlib_shutdown();
 
     return 0;
 }
-
-
-
-
 

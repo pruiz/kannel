@@ -260,7 +260,6 @@ SINGLE_GROUP(smsbox,
     OCTSTR(white-list)
     OCTSTR(black-list)
     OCTSTR(mo-recode)
-    OCTSTR(xmlrpc-url)
     OCTSTR(http-request-retry)
     OCTSTR(http-queue-delay)
     OCTSTR(white-list-regex)

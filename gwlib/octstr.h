@@ -283,6 +283,9 @@ void octstr_base64_to_binary(Octstr *ostr);
  */
 long octstr_parse_long(long *number, Octstr *ostr, long pos, int base);
 
+/* As above but parses and assigns double number. */
+long octstr_parse_double(double *number, Octstr *ostr, long pos);
+
 
 /* Run the 'filter' function over each character in the specified range.
  * Return 1 if the filter returned true for all characters, otherwise 0.

@@ -767,6 +767,38 @@ long octstr_parse_long(long *nump, Octstr *ostr, long pos, int base)
 }
 
 
+long octstr_parse_double(double *nump, Octstr *ostr, long pos)
+{
+    /* strtod wants a char *, and we have to compare the result to
+     * an unsigned char *.  The easiest way to avoid warnings without
+     * introducing typecasts is to use two variables. */
+    char *endptr;
+    unsigned char *endpos;
+    double number;
+
+    seems_valid(ostr);
+    gw_assert(nump != NULL);
+
+    if (pos >= ostr->len) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    errno = 0;
+    number = strtod(ostr->data + pos, &endptr);
+    endpos = endptr;
+    if (errno == ERANGE)
+        return -1;
+    if (endpos == ostr->data + pos) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    *nump = number;
+    return endpos - ostr->data;
+}
+
+
 int octstr_check_range(Octstr *ostr, long pos, long len,
                        octstr_func_t filter)
 {
