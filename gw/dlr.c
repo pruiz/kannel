@@ -551,6 +551,7 @@ long dlr_messages(void)
         octstr_destroy(sql);
         if (state != 0) {
             error(0, "MYSQL: %s", mysql_error(connection));
+            mutex_unlock(dlr_mutex);
             return -1;
         }
         result = mysql_store_result(connection);
@@ -592,6 +593,7 @@ void dlr_flush(void)
         MYSQL_RES *result;
         
         sql = octstr_format("DELETE * FROM %s;", octstr_get_cstr(table));
+        mutex_lock(dlr_mutex);
         state = mysql_query(connection, octstr_get_cstr(sql));
         octstr_destroy(sql);
         if (state != 0) {
@@ -599,6 +601,7 @@ void dlr_flush(void)
         }
         result = mysql_store_result(connection);
         mysql_free_result(result);
+        mutex_unlock(dlr_mutex);
 #endif
 
     /*

@@ -609,13 +609,11 @@ int bb_resume(void)
 
 int bb_flush_dlr(void)
 {
-    mutex_lock(dlr_mutex);
+    /* beware that mutex locking is done in dlr_foobar() routines */
     if (bb_status != BB_SUSPENDED) {
-	mutex_unlock(dlr_mutex);
 	return -1;
     }
     dlr_flush();
-    mutex_unlock(dlr_mutex);
     return 0;
 }
 

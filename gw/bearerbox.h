@@ -145,6 +145,7 @@ int bb_isolate(void);
 int bb_suspend(void);
 int bb_resume(void);
 int bb_restart(void);
+int bb_flush_dlr(void);
 
 /* return string of current status */
 Octstr *bb_print_status(int status_type);
