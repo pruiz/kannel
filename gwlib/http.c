@@ -3,15 +3,25 @@
  *
  * Lars Wirzenius
  */
+ 
+/* XXX TODO: 100 status codes. */
+/* XXX TODO: Use conn. */
 
 #include <ctype.h>
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
 #include "gwlib.h"
+
+
+/*
+ * Maximum number of HTTP redirections to follow.
+ */
+enum { HTTP_MAX_FOLLOW = 5 };
 
 
 /*
@@ -29,26 +39,11 @@ struct HTTPSocket {
 
 
 /*
- * An item in the request queue and operations on one.
- */
-typedef struct {
-    HTTPCaller *caller;
-    long id;
-    Octstr *url;
-    List *headers;
-    Octstr *body;   /* NULL for GET, non-NULL for POST */
-} HTTPRequest;
-
-
-static HTTPRequest *request_create(HTTPCaller *caller, Octstr *url, 
-    	    	    	    	   List *headers, Octstr *body);
-static void request_destroy(void *request);
-
-
-/*
- * Internal list of unhandled requests.
+ * Internal lists of completely unhandled requests and requests for which
+ * a request has been sent but response has not yet been read.
  */
 static List *pending_requests = NULL;
+static List *started_requests_queue = NULL;
 
 
 /*
@@ -58,19 +53,33 @@ static Counter *request_id_counter = NULL;
 
 
 /*
- * An item in the response list (HTTPCaller), and operations on one.
+ * Have background threads been started?
+ */
+static Mutex *background_threads_lock = NULL;
+static volatile sig_atomic_t background_threads_are_running = 0;
+
+
+/*
+ * Data associated with an HTTP transaction.
  */
 typedef struct {
-    HTTPRequest *request;
+    HTTPCaller *caller;
+    long request_id;
+    Octstr *url;
+    List *request_headers;
+    Octstr *request_body;   /* NULL for GET, non-NULL for POST */
     int status;
-    List *headers;
-    Octstr *body;
-} HTTPResponse;
+    List *response_headers;
+    Octstr *response_body;
+    HTTPSocket *socket;
+    int retrying;
+    int follow_remaining;
+} HTTPTransaction;
 
-
-static HTTPResponse *response_create(HTTPRequest *request, int status,
-    	    	    	    	     List *headers, Octstr *body);
-static void response_destroy(HTTPResponse *response);
+static HTTPTransaction *transaction_create(HTTPCaller *caller, Octstr *url, 
+    	    	    	    	    	   List *headers, Octstr *body,
+					   int follow_remaining);
+static void transaction_destroy(void *trans);
 
 
 /*
@@ -82,7 +91,8 @@ static enum { limbo, running, terminating } run_status = limbo;
 /*
  * XXX
  */
-static void start_request_thread(void *);
+static void start_background_threads(void);
+static void write_request_thread(void *);
 
 
 /*
@@ -159,12 +169,12 @@ void http_init(void)
     pool_init();
     pending_requests = list_create();
     list_add_producer(pending_requests);
+    started_requests_queue = list_create();
+    list_add_producer(started_requests_queue);
     request_id_counter = counter_create();
+    background_threads_lock = mutex_create();
     
     run_status = running;
-#if 0
-    gwthread_create(start_request_thread, NULL);
-#endif
 }
 
 
@@ -174,7 +184,7 @@ void http_shutdown(void)
 
     run_status = terminating;
     list_remove_producer(pending_requests);
-    gwthread_join_every(start_request_thread);
+    gwthread_join_every(write_request_thread);
 
     http_close_proxy();
     list_destroy(proxy_exceptions, NULL);
@@ -182,7 +192,8 @@ void http_shutdown(void)
     proxy_mutex = NULL;
     pool_shutdown();
     counter_destroy(request_id_counter);
-    list_destroy(pending_requests, request_destroy);
+    list_destroy(pending_requests, transaction_destroy);
+    mutex_destroy(background_threads_lock);
     /* XXX destroy caller ids */
 }
 
@@ -243,36 +254,54 @@ void http_caller_destroy(HTTPCaller *caller)
 }
 
 
-long http_start_get(HTTPCaller *caller, Octstr *url, List *headers)
+long http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
+    	    	    	Octstr *body, int follow)
 {
-    HTTPRequest *request;
+    HTTPTransaction *trans;
+    long id;
+    int follow_remaining;
     
-    request = request_create(caller, url, headers, NULL);
-    list_produce(pending_requests, request);
-    return request->id;
+    if (follow)
+    	follow_remaining = HTTP_MAX_FOLLOW;
+    else
+    	follow_remaining = 0;
+
+    trans = transaction_create(caller, url, headers, body, follow_remaining);
+    id = trans->request_id;
+    list_produce(pending_requests, trans);
+    start_background_threads();
+    return id;
 }
 
 
-long http_receive_result(HTTPCaller *caller, int *status, List **headers,
-    	    	    	 Octstr **body)
+long http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
+    	    	    	 List **headers, Octstr **body)
 {
-    HTTPResponse *response;
+    HTTPTransaction *trans;
     long request_id;
 
-#if 1 /* xxx this is a kludge to get the prototype work at least minimally */
-    start_request_thread(NULL);
-#endif
-
-    response = list_consume(caller);
-    if (response == NULL)
+    trans = list_consume(caller);
+    if (trans == NULL)
     	return -1;
 
-    *status = response->status;
-    *headers = response->headers;
-    *body = response->body;
-    request_id = response->request->id;
-    response_destroy(response);
+    request_id = trans->request_id;
+    *status = trans->status;
+    
+    if (trans->status >= 0) {
+	*final_url = trans->url;
+	*headers = trans->response_headers;
+	*body = trans->response_body;
 
+	trans->url = NULL;
+	trans->response_headers = NULL;
+	trans->response_body = NULL;
+    } else {
+	*final_url = NULL;
+	*headers = NULL;
+	*body = NULL;
+    }
+
+    transaction_destroy(trans);
     return request_id;
 }
 
@@ -280,256 +309,54 @@ long http_receive_result(HTTPCaller *caller, int *status, List **headers,
 int http_get(Octstr *url, List *request_headers,
              List **reply_headers, Octstr **reply_body)
 {
-    int status;
-    HTTPSocket *p;
-
-    gwlib_assert_init();
-    gw_assert(url != NULL);
-    gw_assert(request_headers != NULL);
-    gw_assert(reply_headers != NULL);
-    gw_assert(reply_body != NULL);
-
-    *reply_headers = NULL;
-    *reply_body = NULL;
-
-    p = send_request(url, request_headers, NULL, "GET");
-
-    if (p == NULL)
-        goto error;
-
-    status = read_status(p);
-    if (status < 0) {
-        pool_free_and_close(p);
-        p = send_request(url, request_headers, NULL, "GET");
-        if (p == NULL)
-            goto error;
-        status = read_status(p);
-        if (status < 0)
-            goto error;
-    }
-
-    if (read_headers(p, reply_headers) == -1)
-        goto error;
-
-    switch (read_body(p, *reply_headers, reply_body)) {
-    case -1:
-        goto error;
-    case 0:
-        pool_free_and_close(p);
-        break;
-    default:
-        pool_free(p);
-    }
-
+    HTTPCaller *caller;
+    int ret, status;
+    Octstr *final_url;
+    
+    caller = http_caller_create();
+    (void) http_start_request(caller, url, request_headers, NULL, 0);
+    ret = http_receive_result(caller, &status, &final_url, 
+    	    	    	      reply_headers, reply_body);
+    octstr_destroy(final_url);
+    http_caller_destroy(caller);
+    if (ret == -1)
+    	return -1;
     return status;
-
-error:
-    if (p != NULL)
-        pool_free(p);
-    error(0, "Couldn't fetch <%s>", octstr_get_cstr(url));
-    return -1;
 }
 
 
 int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
                   List **reply_headers, Octstr **reply_body)
 {
-    int i, ret;
-    Octstr *h;
-
-    gwlib_assert_init();
-    gw_assert(url != NULL);
-    gw_assert(final_url != NULL);
-    gw_assert(request_headers != NULL);
-    gw_assert(reply_headers != NULL);
-    gw_assert(reply_body != NULL);
-
-    ret = -1;
-
-    *final_url = octstr_duplicate(url);
-    for (i = 0; i < HTTP_MAX_FOLLOW; ++i) {
-        ret = http_get(*final_url, request_headers, reply_headers,
-                       reply_body);
-        if (ret != HTTP_MOVED_PERMANENTLY && ret != HTTP_FOUND &&
-            ret != HTTP_SEE_OTHER)
-            break;
-        h = http_header_find_first(*reply_headers, "Location");
-        if (h == NULL) {
-            ret = -1;
-            break;
-        }
-        octstr_strip_blanks(h);
-        octstr_destroy(*final_url);
-        *final_url = h;
-        list_destroy(*reply_headers, octstr_destroy_item);
-        octstr_destroy(*reply_body);
-    }
-    if (ret == -1) {
-	octstr_destroy(*final_url);
-        *final_url = NULL;
-    }
-
-    return ret;
+    HTTPCaller *caller;
+    int ret, status;
+    
+    caller = http_caller_create();
+    (void) http_start_request(caller, url, request_headers, NULL, 1);
+    ret = http_receive_result(caller, &status, final_url, 
+    	    	    	      reply_headers, reply_body);
+    http_caller_destroy(caller);
+    if (ret == -1)
+    	return -1;
+    return status;
 }
 
 int http_post(Octstr *url, List *request_headers, Octstr *request_body,
               List **reply_headers, Octstr **reply_body)
 {
-    int status, escape_ctr = 0;
-    HTTPSocket *p;
-    List *tmp_headers = NULL;
-
-    gwlib_assert_init();
-    gw_assert(url != NULL);
-    gw_assert(request_headers != NULL);
-    gw_assert(request_body != NULL);
-    gw_assert(reply_headers != NULL);
-    gw_assert(reply_body != NULL);
-
-    *reply_headers = NULL;
-    *reply_body = NULL;
-
-    /* Add a Content-Length header.  Override an existing one, if
-     * necessary.  We must have an accurate one in order to use the
-     * connection for more than a single request. */
-    /* XXX: Modifying the caller-supplied headers is evil.  Perhaps
-     * build_request should take care of this? */
-    http_header_remove_all(request_headers, "Content-Length");
-    if (request_body == NULL) {
-        http_header_add(request_headers, "Content-Length", "0");
-    } else {
-        char buf[128];
-        sprintf(buf, "%ld", octstr_len(request_body));
-        http_header_add(request_headers, "Content-Length", buf);
-    }
-
-    p = send_request(url, request_headers, request_body, "POST");
-
-    if (p == NULL)
-        goto error;
-
-    status = read_status(p);
-
-    if (status < 0) {
-        pool_free_and_close(p);
-
-        p = send_request(url, request_headers, request_body, "POST");
-        if (p == NULL)
-            goto error;
-
-        status = read_status(p);
-        if (status < 0)
-            goto error;
-
-    }
-
-    /*
-     * The http protocol allows an origin server to return a 
-     * status code of 100 even if we have not sent it. Therefore
-     * we should check for this status and should ignore it if it 
-     * arrives as we have already sent the full request.
-     * As the RFC 2616 does not specify how many 1XXs can be received 
-     * we will assume that if we receive more than 3 then there is
-     * a problem with the http server.
-     */
-
-    /* XXX all 1xx codes should be skipped; check the spec */
-
-    while (status == 100 && escape_ctr < 3) {
-        debug("gwlib.http", 0, "100-Continue status received: Ignoring");
-        /*
-         * This is to remove header information in the network buffer. 
-         */
-        if (read_headers(p, &tmp_headers) == -1) {
-            goto error;
-        }
-        status = read_status(p);
-        if (status < 0)
-            goto error;
-        escape_ctr++;
-    }
-
-    if (escape_ctr >= 3) {
-        error(0, "Too many 100 Continue messages");
-        goto error;
-    }
-
-    if (read_headers(p, reply_headers) == -1)
-        goto error;
-
-    switch (read_body(p, *reply_headers, reply_body)) {
-    case -1:
-        goto error;
-    case 0:
-        pool_free_and_close(p);
-        break;
-    default:
-        pool_free(p);
-    }
-
-    list_destroy(tmp_headers, NULL);
-
+    HTTPCaller *caller;
+    int ret, status;
+    Octstr *final_url;
+    
+    caller = http_caller_create();
+    (void) http_start_request(caller, url, request_headers, request_body, 0);
+    ret = http_receive_result(caller, &status, &final_url, 
+    	    	    	      reply_headers, reply_body);
+    octstr_destroy(final_url);
+    http_caller_destroy(caller);
+    if (ret == -1)
+    	return -1;
     return status;
-
-error:
-    if (p != NULL)
-        pool_free(p);
-
-    list_destroy(tmp_headers, NULL);
-
-    error(0, "Couldn't fetch <%s>", octstr_get_cstr(url));
-    return -1;
-}
-
-
-int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
-                   Octstr **final_url, List **reply_headers, 
-		   Octstr **reply_body)
-{
-    int i, ret;
-    Octstr *h;
-
-    gwlib_assert_init();
-    gw_assert(url != NULL);
-    gw_assert(final_url != NULL);
-    gw_assert(request_headers != NULL);
-    gw_assert(request_body != NULL);
-    gw_assert(reply_headers != NULL);
-    gw_assert(reply_body != NULL);
-
-    ret = -1;
-
-    *final_url = octstr_duplicate(url);
-    for (i = 0; i < HTTP_MAX_FOLLOW; ++i) {
-        ret = http_post(*final_url, request_headers, request_body, 
-	    	    	reply_headers, reply_body);
-        /*
-         * If the return value is any of these values then the url
-         * to return to the caller is in the Location field and
-         * must be extracted.
-         */
-        if (ret != HTTP_MOVED_PERMANENTLY &&
-            ret != HTTP_FOUND &&
-            ret != HTTP_SEE_OTHER
-           )
-            break;
-        h = http_header_find_first(*reply_headers, "Location");
-        if (h == NULL) {
-            ret = -1;
-            break;
-        }
-        octstr_strip_blanks(h);
-        octstr_destroy(*final_url);
-        *final_url = h;
-        list_destroy(*reply_headers, octstr_destroy_item);
-        octstr_destroy(*reply_body);
-    }
-    if (ret == -1) {
-        octstr_destroy(*final_url);
-        *final_url = NULL;
-    }
-
-    return ret;
 }
 
 
@@ -2034,86 +1861,178 @@ static int header_is_called(Octstr *header, char *name)
  */
  
  
-static HTTPRequest *request_create(HTTPCaller *caller, Octstr *url,
-    	    	    	    	   List *headers, Octstr *body)
+static HTTPTransaction *transaction_create(HTTPCaller *caller, Octstr *url,
+    	    	    	    	    	   List *headers, Octstr *body,
+					   int follow_remaining)
 {
-    HTTPRequest *request;
+    HTTPTransaction *trans;
     
-    request = gw_malloc(sizeof(*request));
-    request->caller = caller;
-    request->id = counter_increase(request_id_counter);
-    request->url = octstr_duplicate(url);
-    request->headers = http_header_duplicate(headers);
-    request->body = octstr_duplicate(body);
-    return request;
+    trans = gw_malloc(sizeof(*trans));
+    trans->caller = caller;
+    trans->request_id = counter_increase(request_id_counter);
+    trans->url = octstr_duplicate(url);
+    trans->request_headers = http_header_duplicate(headers);
+    trans->request_body = octstr_duplicate(body);
+    trans->status = -1;
+    trans->response_headers = NULL;
+    trans->response_body = NULL;
+    trans->socket = NULL;
+    trans->retrying = 0;
+    trans->follow_remaining = follow_remaining;
+    return trans;
 }
 
 
-static void request_destroy(void *p)
+static void transaction_destroy(void *p)
 {
-    HTTPRequest *request;
+    HTTPTransaction *trans;
     
-    request = p;
-    octstr_destroy(request->url);
-    http_destroy_headers(request->headers);
-    octstr_destroy(request->url);
-    gw_free(request);
-}
-
-
-static HTTPResponse *response_create(HTTPRequest *request, int status,
-    	    	    	    	     List *headers, Octstr *body)
-{
-    HTTPResponse *response;
-    
-    response = gw_malloc(sizeof(*response));
-    response->request = request;
-    response->status = status;
-    response->headers = headers;
-    response->body = body;
-    return response;
-}
-
-
-static void response_destroy(HTTPResponse *response)
-{
-    request_destroy(response->request);
-    /* Note: response->list and response->body MUST NOT be destroyed here. */
-    gw_free(response);
+    trans = p;
+    octstr_destroy(trans->url);
+    http_destroy_headers(trans->request_headers);
+    octstr_destroy(trans->request_body);
+    http_destroy_headers(trans->response_headers);
+    octstr_destroy(trans->response_body);
+    gw_free(trans);
 }
 
 
 /*
- * 
+ * This thread starts the transaction: it connects to the server and sends
+ * the request. It then sends the transaction to the read_response_thread
+ * via started_requests_queue.
  */
-static void kludge_do_one_request(void *arg)
+static void write_request_thread(void *arg)
 {
-    HTTPRequest *request;
-    HTTPResponse *response;
-    List *hdrs;
-    Octstr *body;
-    int status;
-    
-    request = arg;
-    status = http_get(request->url, request->headers, &hdrs, &body);
-    debug("xxx", 0, "Got response from http_get");
-    response = response_create(request, status, hdrs, body);
-    list_produce(request->caller, response);
+    HTTPTransaction *trans;
+    char *method;
+    char buf[128];    
+
+    while (run_status == running) {
+	trans = list_consume(pending_requests);
+	if (trans == NULL)
+	    break;
+
+    	if (trans->request_body == NULL)
+	    method = "GET";
+	else {
+	    method = "POST";
+	    /* 
+	     * Add a Content-Length header.  Override an existing one, if
+	     * necessary.  We must have an accurate one in order to use the
+	     * connection for more than a single request.
+	     */
+	    http_header_remove_all(trans->request_headers, "Content-Length");
+	    sprintf(buf, "%ld", octstr_len(trans->request_body));
+	    http_header_add(trans->request_headers, "Content-Length", buf);
+	}
+
+	trans->socket = send_request(trans->url, trans->request_headers,  
+	    	    	    	     trans->request_body, method);
+    	if (trans->socket == NULL)
+	    list_produce(trans->caller, trans);
+	else
+	    list_produce(started_requests_queue, trans);
+    }
+    list_remove_producer(started_requests_queue);
 }
 
-/*
- * 
- */
-static void start_request_thread(void *arg)
+
+static Octstr *get_redirection_location(HTTPTransaction *trans)
 {
-    HTTPRequest *request;
+    if (trans->status < 0 || trans->follow_remaining <= 0)
+    	return NULL;
+    if (trans->status != HTTP_MOVED_PERMANENTLY &&
+    	trans->status != HTTP_FOUND && trans->status != HTTP_SEE_OTHER)
+	return NULL;
+    return http_header_find_first(trans->response_headers, "Location");
+}
+
+static void read_response_thread(void *arg)
+{
+    HTTPTransaction *trans;
+    int ret;
+    Octstr *h;
     
-    while (run_status == running && 
-    	   (request = list_consume(pending_requests)) != NULL) {
-#if 0
-	gwthread_create(kludge_do_one_request, request);
-#else
-    	kludge_do_one_request(request);
-#endif
+    while (run_status == running) {
+	trans = list_consume(started_requests_queue);
+	if (trans == NULL)
+	    break;
+
+	trans->status = read_status(trans->socket);
+	if (trans->status < 0) {
+	    /*
+	     * Couldn't read the status from the socket. This may mean that 
+	     * the socket had been closed by the server after an idle 
+	     * timeout, so we close the connection and try again, opening a 
+	     * new socket, but only once.
+	     */
+	    if (trans->retrying) {
+		goto error;
+	    } else {
+		pool_free_and_close(trans->socket);
+		trans->retrying = 1;
+		list_produce(pending_requests, trans);
+		continue;
+	    }
+	}
+    
+	if (read_headers(trans->socket, &trans->response_headers) == -1)
+	    goto error;
+    
+	ret = read_body(trans->socket, 
+	    	    	trans->response_headers, 
+	    	    	&trans->response_body);
+	switch (ret) {
+	case -1:
+	    goto error;
+	case 0:
+	    pool_free_and_close(trans->socket);
+	    break;
+	default:
+	    pool_free(trans->socket);
+	    break;
+	}
+
+    	h = get_redirection_location(trans);
+    	if (h != NULL) {
+	    octstr_strip_blanks(h);
+	    octstr_destroy(trans->url);
+	    trans->url = h;
+	    http_destroy_headers(trans->response_headers);
+	    octstr_destroy(trans->response_body);
+	    --trans->follow_remaining;
+	    list_produce(pending_requests, trans);
+	    continue;
+	}
+
+	list_produce(trans->caller, trans);
+	continue;
+    
+    error:
+    	pool_free(trans->socket);
+	error(0, "Couldn't fetch <%s>", octstr_get_cstr(trans->url));
+	trans->status = -1;
+	list_produce(trans->caller, trans);
+    }
+}
+
+
+static void start_background_threads(void)
+{
+    if (!background_threads_are_running) {
+	/* 
+	 * To be really certain, we must repeat the test, but use the
+	 * lock first. If the test failed, however, we _know_ we've
+	 * already initialized. This strategy of double testing avoids
+	 * using the lock more than a few times at startup.
+	 */
+	mutex_lock(background_threads_lock);
+	if (!background_threads_are_running) {
+	    gwthread_create(write_request_thread, NULL);
+	    gwthread_create(read_response_thread, NULL);
+	    background_threads_are_running = 1;
+	}
+	mutex_unlock(background_threads_lock);
     }
 }

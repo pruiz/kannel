@@ -1,3 +1,22 @@
+2000-10-24  Lars Wirzenius  <liw@iki.fi>
+
+	* Finished first phase of reducing the number of threads
+	doing HTTP requests. This phase implements a new interface
+	(http_start_request and http_receive_response, with the http_get
+	and http_post functions being wrappers around these). The
+	goal is to have a static number of threads, internal to the
+	HTTP implementation, doing all HTTP requests at once, instead
+	of having a new thread for each HTTP request. This phase makes
+	that happen, but is implemented so that HTTP requests are done
+	serially, not in parallel. The next phase is to re-write the I/O
+	parts of the HTTP implementation so that HTTP requests are done
+	in parallel once again, using the conn.c module.
+	
+	* gwlib/http.[ch]: Many internal changes.
+	
+	* test/test_http.c: Use the new interface, instead of the
+	http_get wrapper.
+
 2000-10-24  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/urltrans.c: oops, forgot to switch reservations

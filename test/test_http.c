@@ -21,18 +21,13 @@ static int print_body = 1;
 
 static void client_thread(void *arg) {
 	int ret;
-	Octstr *url, *replyb, *os, *type, *charset;
+	Octstr *url, *final_url, *replyb, *os, *type, *charset;
 	List *reqh, *replyh;
 	long i, id, succeeded, failed;
-#if 0
 	HTTPCaller *caller;
-#endif
 	char buf[1024];
 	
-#if 0
     	caller = arg;
-#endif
-
 	succeeded = 0;
 	failed = 0;
 	reqh = list_create();
@@ -42,15 +37,12 @@ static void client_thread(void *arg) {
 		if ((i % 1000) == 0)
 			info(0, "Starting fetch %ld", i);
 		url = octstr_create(urls[i % num_urls]);
-#if 0
-		id = http_start_get(caller, url, reqh);
+		id = http_start_request(caller, url, reqh, NULL, 0);
 		debug("", 0, "Started request %ld", id);
-		id = http_receive_result(caller, &ret, &replyh, &replyb);
+		id = http_receive_result(caller, &ret, &final_url, 
+		    	    	    	 &replyh, &replyb);
+    	    	octstr_destroy(final_url);
 		debug("", 0, "Done with reqest %ld", id);
-#else
-    	    	id = 0;
-		ret = http_get(url, reqh, &replyh, &replyb);
-#endif
 		if (id == -1 || ret == -1) {
 			++failed;
 			error(0, "http GET failed");
@@ -74,9 +66,7 @@ static void client_thread(void *arg) {
 		octstr_destroy(url);
 	}
 	list_destroy(reqh, NULL);
-#if 0
 	http_caller_destroy(caller);
-#endif
 	info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
 }
 

@@ -92,12 +92,6 @@ enum { HTTP_PORT = 80 };
 
 
 /*
- * Maximum number of HTTP redirections to follow.
- */
-enum { HTTP_MAX_FOLLOW = 5 };
-
-
-/*
  * Well-known return values from HTTP servers. This is not a complete
  * list, but it includes the values that Kannel needs to handle
  * specially.
@@ -175,9 +169,6 @@ int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
 
 int http_post(Octstr *url, List *request_headers, Octstr *request_body,
 		List **reply_headers, Octstr **reply_body);
-int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
-		  Octstr **final_url, List **reply_headers, 
-		  Octstr **reply_body);
 
 
 /*
@@ -206,20 +197,24 @@ void http_caller_destroy(HTTPCaller *caller);
 
 
 /*
- * Start a GET request. It will be completed in the background, and
+ * Start an HTTP request. It will be completed in the background, and
  * the result will eventually be received by http_receive_result. The
  * return value is the request identifier; http_receive_result will
  * return the same request identifier, and the caller can use this to
  * keep track of which request and which response belong together.
+ *
+ * If `body' is NULL, it is a GET request, otherwise as POST request.
+ * If `follow' is true, HTTP redirections are followed, otherwise not.
  */
-long http_start_get(HTTPCaller *caller, Octstr *url, List *headers);
+long http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
+    	    	    	Octstr *body, int follow);
 
 
 /*
  * Get the result of a GET or a POST request.
  */
-long http_receive_result(HTTPCaller *caller, int *status, List **headers,
-    	    	    	 Octstr **body);
+long http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
+    	    	    	 List **headers, Octstr **body);
 
 
 /*
