@@ -57,7 +57,8 @@
 /*
  * gw/bb_alog.c -- encapsulate custom access log logic and escape code parsing
  *
- * Stipe Tolj <tolj@wapme-systems.de
+ * Stipe Tolj <tolj@wapme-systems.de>
+ * Alexander Malysh <a.malysh@centrium.de>
  */
 
 #include "gwlib/gwlib.h"
@@ -108,18 +109,17 @@ static Octstr *custom_log_format = NULL;
  *    [flags:%m:%c:%M:%C:%d] [msg:%L:%b] [udh:%U:%u]"
  */
   
-static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
+static Octstr *get_pattern(SMSCConn *conn, Msg *msg, const char *message)
 {
     int nextarg, j;
     struct tm tm;
     int num_words;
     List *word_list;
-    Octstr *result, *pattern;
-    long pattern_len;
-    long pos;
-    int c;
-    long i;
+    Octstr *result;
+    const char *pattern;
     Octstr *temp, *text, *udh;
+    size_t n;
+    long i;
  
     text = msg->sms.msgdata ? octstr_duplicate(msg->sms.msgdata) : octstr_create("");
     udh = msg->sms.udhdata ? octstr_duplicate(msg->sms.udhdata) : octstr_create("");
@@ -136,41 +136,37 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
     }
 
     result = octstr_create("");
-    pattern = octstr_duplicate(custom_log_format);
+    pattern = octstr_get_cstr(custom_log_format);
 
-    pattern_len = octstr_len(pattern);
     nextarg = 1;
-    pos = 0;
 
-    for (;;) {
-        while (pos < pattern_len) {
-            c = octstr_get_char(pattern, pos);
-            if (c == '%' && pos + 1 < pattern_len)
-                break;
-            octstr_append_char(result, c);
-            ++pos;
-        }
-
-        if (pos == pattern_len)
+    while(*pattern != '\0') {
+        n = strcspn(pattern, "%");
+        octstr_append_data(result, pattern, n);
+        pattern += n;
+        gw_assert(*pattern == '%' || *pattern == '\0');
+        if (*pattern == '\0')
             break;
 
-    switch (octstr_get_char(pattern, pos + 1)) {
+        pattern++;
+        
+        switch (*pattern) {
 	case 'k':
 	    if (num_words <= 0)
-            break;
+                break;
 	    octstr_append(result, list_get(word_list, 0));
 	    break;
 
 	case 's':
 	    if (nextarg >= num_words)
-            break;
+                break;
 	    octstr_append(result, list_get(word_list, nextarg));
 	    ++nextarg;
 	    break;
 
 	case 'S':
 	    if (nextarg >= num_words)
-            break;
+                break;
 	    temp = list_get(word_list, nextarg);
 	    for (i = 0; i < octstr_len(temp); ++i) {
 		if (octstr_get_char(temp, i) == '*')
@@ -190,15 +186,18 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
 	    break;
     
 	case 'l':
-	    octstr_append_cstr(result, message);
+            if (message)
+	        octstr_append_cstr(result, message);
 	    break;
 
 	case 'P':
-	    octstr_append(result, msg->sms.receiver);
+            if (msg->sms.receiver)
+	        octstr_append(result, msg->sms.receiver);
 	    break;
 
 	case 'p':
-	    octstr_append(result, msg->sms.sender);
+            if (msg->sms.sender)
+	        octstr_append(result, msg->sms.sender);
 	    break;
 
 	case 'a':
@@ -210,7 +209,8 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
             break;
 
 	case 'b':
-	    octstr_append(result, text);
+            if (text)
+	        octstr_append(result, text);
 	    break;
 
 	case 'L':
@@ -229,9 +229,8 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
 	    break;
 
 	case 'T':
-	    if (msg->sms.time == MSG_PARAM_UNDEFINED)
-            break;
-	    octstr_format_append(result, "%ld", msg->sms.time);
+	    if (msg->sms.time != MSG_PARAM_UNDEFINED)
+	        octstr_format_append(result, "%ld", msg->sms.time);
 	    break;
 
 	case 'i':
@@ -252,9 +251,8 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
 	    break;
 
 	case 'n':
-	    if (msg->sms.service == NULL)
-            break;
-	    octstr_append(result, msg->sms.service);
+	    if (msg->sms.service != NULL)
+	        octstr_append(result, msg->sms.service);
 	    break;
 
 	case 'd':
@@ -299,19 +297,19 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
             }
             break;
 
-    /* XXX add more here if needed */
+        /* XXX add more here if needed */
 
 	case '%':
 	    octstr_format_append(result, "%%");
 	    break;
 
 	default:
-	    octstr_format_append(result, "%%%c",
-	    	    	    	 octstr_get_char(pattern, pos + 1));
+	    warning(0, "Unknown escape code (%%%c) within custom-log-format, skipping!", *pattern);
+            octstr_format_append(result, "%%%c", *pattern);
 	    break;
-    } /* switch(...) */
-
-	pos += 2;
+        } /* switch(...) */
+    
+        pattern++;
     } /* for ... */
 
     list_destroy(word_list, octstr_destroy_item);
@@ -324,7 +322,7 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
  * 
  */
 
-void bb_alog_init(Octstr *format)
+void bb_alog_init(const Octstr *format)
 {
     gw_assert(format != NULL);
 
@@ -332,28 +330,37 @@ void bb_alog_init(Octstr *format)
 }
 
 
-void bb_alog_sms(SMSCConn *conn, Msg *sms, char *message)
+void bb_alog_shutdown(void)
+{
+    octstr_destroy(custom_log_format);
+    custom_log_format = NULL;
+}
+
+
+void bb_alog_sms(SMSCConn *conn, Msg *msg, const char *message)
 {
     Octstr *text = NULL;
+    
+    gw_assert(msg_type(msg) == sms);
 
     /* if we don't have any custom log, then use our "default" one */
     
     if (custom_log_format == NULL) {
         Octstr *udh, *cid;
 
-        text = sms->sms.msgdata ? octstr_duplicate(sms->sms.msgdata) : octstr_create("");
-        udh = sms->sms.udhdata ? octstr_duplicate(sms->sms.udhdata) : octstr_create("");
+        text = msg->sms.msgdata ? octstr_duplicate(msg->sms.msgdata) : octstr_create("");
+        udh = msg->sms.udhdata ? octstr_duplicate(msg->sms.udhdata) : octstr_create("");
 
         if (conn && smscconn_id(conn))
             cid = smscconn_id(conn);
         else if (conn && smscconn_name(conn))
             cid = smscconn_name(conn);
-        else if (sms->sms.smsc_id)
-            cid = sms->sms.smsc_id;
+        else if (msg->sms.smsc_id)
+            cid = msg->sms.smsc_id;
         else
             cid = octstr_imm("");
 
-        if ((sms->sms.coding == DC_8BIT || sms->sms.coding == DC_UCS2))
+        if ((msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2))
             octstr_binary_to_hex(text, 1);
         octstr_binary_to_hex(udh, 1);
 
@@ -361,20 +368,20 @@ void bb_alog_sms(SMSCConn *conn, Msg *sms, char *message)
              "[msg:%d:%s] [udh:%d:%s]",
              message,
              octstr_get_cstr(cid),
-             sms->sms.service ? octstr_get_cstr(sms->sms.service) : "",
-             sms->sms.account ? octstr_get_cstr(sms->sms.account) : "",
-             sms->sms.binfo ? octstr_get_cstr(sms->sms.binfo) : "",
-             sms->sms.sender ? octstr_get_cstr(sms->sms.sender) : "",
-             sms->sms.receiver ? octstr_get_cstr(sms->sms.receiver) : "",
-             sms->sms.mclass, sms->sms.coding, sms->sms.mwi, sms->sms.compress,
-             sms->sms.dlr_mask, 
-             octstr_len(sms->sms.msgdata), octstr_get_cstr(text),
-             octstr_len(sms->sms.udhdata), octstr_get_cstr(udh)
+             msg->sms.service ? octstr_get_cstr(msg->sms.service) : "",
+             msg->sms.account ? octstr_get_cstr(msg->sms.account) : "",
+             msg->sms.binfo ? octstr_get_cstr(msg->sms.binfo) : "",
+             msg->sms.sender ? octstr_get_cstr(msg->sms.sender) : "",
+             msg->sms.receiver ? octstr_get_cstr(msg->sms.receiver) : "",
+             msg->sms.mclass, msg->sms.coding, msg->sms.mwi, msg->sms.compress,
+             msg->sms.dlr_mask, 
+             octstr_len(msg->sms.msgdata), octstr_get_cstr(text),
+             octstr_len(msg->sms.udhdata), octstr_get_cstr(udh)
         );
 
         octstr_destroy(udh);
     } else {
-        text = get_pattern(conn, sms, message);
+        text = get_pattern(conn, msg, message);
         alog("%s", octstr_get_cstr(text));
     }
 

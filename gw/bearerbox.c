@@ -645,6 +645,7 @@ int main(int argc, char **argv)
     mutex_destroy(boxid_mutex);
 
     alog_close();		/* if we have any */
+    bb_alog_shutdown();
     cfg_destroy(cfg);
     dlr_shutdown();
     gwlib_shutdown();

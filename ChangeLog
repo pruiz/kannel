@@ -1,4 +1,8 @@
 2004-06-10  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/bb_alog.c, gw/bearerbox.[ch]: added const identifier. Rewrite of
+      costom log format handling (performance). Fixed memleak.
+
+2004-06-10  Alexander Malysh  <a.malysh@centrium.de> 
     * doc/userguide/userguide.xml, gw/smsc/smsc_cimd2.c: added ability to set PID for
       MT messages in CIMD2.
       Thanks to "Arne K. Haaje" <haaje (at) eurobate.com> for the patch.

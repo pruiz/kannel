@@ -204,10 +204,13 @@ Octstr *store_status(int status_type);
  */
 
 /* passes the access-log-format string from config to the module */
-void bb_alog_init(Octstr *format);
+void bb_alog_init(const Octstr *format);
+
+/* cleanup for internal things */
+void bb_alog_shutdown(void);
 
 /* called from bb_smscconn.c to log the various access-log events */
-void bb_alog_sms(SMSCConn *conn, Msg *sms, char *message);
+void bb_alog_sms(SMSCConn *conn, Msg *sms, const char *message);
 
 
 
