@@ -1,3 +1,6 @@
+2002-08-06 Harrie Hazewinkel <harrie@mod-snmp.com>
+    * Added an access log facility to the wapbox.
+
 2002-08-06  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: fixed typos from last commit.
     * contrib/mon/kannel.monitor: some slight changes to the monitor module

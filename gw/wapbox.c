@@ -131,6 +131,15 @@ static Cfg *init_wapbox(Cfg *cfg)
         log_set_syslog(NULL, 0);
         debug("wap", 0, "no syslog parameter");
     }
+    s = cfg_get(grp, octstr_imm("access-log"));
+    if (s != NULL) {
+        info(0, "Logging accesses to '%s'.", octstr_get_cstr(s));
+        alog_open(octstr_get_cstr(s), 1);
+            /* XXX should be able to use gmtime, too */
+        octstr_destroy(s);
+    } else {
+        debug("wap", 0, "Could not open access-log");
+    }
 
     /* configure URL mappings */
     map_url_max = -1;
