@@ -166,12 +166,12 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event);
 void wtp_machine_mark_unused(WTPMachine *machine);
 
 
-/*
- * Destroy a WTPMachine structure, including all its members. Remove the
- * structure from the global list of WTPMachine structures. This function is
- * used only by the garbage collection.
+/* 
+ * Removes from the machines list all machines having in_use-flag cleared. Panics  if 
+ * machines list is empty. If machines list is busy, does nothing (garbage collection 
+ * will eventually start again).
  */
-void wtp_machine_destroy(WTPMachine *machine);
+void wtp_machines_list_clear(void);
 
 
 /*

@@ -52,7 +52,23 @@ enum {
  * Global data structures:
  */
 
-static WTPMachine *list = NULL;         /* list of wtp state machines */
+struct Machines {
+       WTPMachine *first;        /* pointer to the first machine in the machines 
+                                    list */
+       WTPMachine *list;         /* pointer to the last machine in the machines 
+                                    list */       
+       Mutex *lock;              /* global mutex inserting, updating and removing 
+                                    machines */   
+};
+
+typedef struct Machines Machines;                                      
+
+static Machines machines =
+{
+      NULL,
+      NULL,
+      NULL,
+};
 
 /*****************************************************************************
  *
@@ -68,11 +84,11 @@ static WTPMachine *wtp_machine_create_empty(void);
  */
 
 static WTPSegment *create_segment(void);
-
+#ifdef next
 static void segment_dump(WTPSegment *segment);
 
 static void segment_destroy(WTPSegment *segment);
-
+#endif
 static WTPSegment *find_previous_segment(long tid, char sequence_number,
        WTPSegment *first, WTPSegment *next);
 
@@ -90,6 +106,11 @@ static WTPSegment *make_missing_segments_list(Msg *msg, char number_of_missing);
 static char *name_event(int name);
 
 static char *name_state(int name);
+
+/*
+ * Really removes a WTP state machine. Used only by the garbage collection. 
+ */
+static void destroy_machine(WTPMachine *machine, WTPMachine *previous);
 
 /*
  * Find the WTPMachine from the global list of WTPMachine structures that
@@ -171,7 +192,8 @@ WTPEvent *wtp_event_create(enum event_name type) {
 }
 /*
  * Note: We must use p everywhere (including events having only integer 
- * fields), otherwise we get a compiler warning.
+ * fields), otherwise we get a compiler warning. (Defs will be removed when we have
+ * an integrated memory freeing policy).
  */
 
 void wtp_event_destroy(WTPEvent *event) {
@@ -203,109 +225,62 @@ void wtp_event_dump(WTPEvent *event) {
 }
 
 /*
- * Mark a WTP state machine unused. Normal functions do not remove machines. 
- * Panics when there is no machine to mark unused.
+ * Mark a WTP state machine unused. Normal functions do not remove machines, just 
+ * set a flag. Panics when there is no machine to mark unused. If the machines 
+ * list is busy, just wait (fetching the page is the most time-consuming task).
  */
 void wtp_machine_mark_unused(WTPMachine *machine){
-#if 0	/* XXX this needs to be re-done together with the list locking */
 
-        WTPMachine *temp;
+     if (machines.list == NULL) {
+        panic(0, "WTP: the list is empty");
+        return;
+     }
 
-/*
- * If the list or temp was empty, mutex_lock will panic. (This is acceptable, 
- * because calling this function when there were no machines is a programming
- * error).
+     mutex_lock(machines.lock);
+
+     machine->in_use = 0;
+
+     mutex_unlock(machines.lock);
+
+     return;
+}
+
+/* 
+ * Removes from the machines list all machines having in_use-flag cleared. Panics  if 
+ * machines list is empty. If machines list is busy, does nothing (garbage collection 
+ * will eventually start again).
  */
-        mutex_lock(list->mutex);
+void wtp_machines_list_clear(void){
 
-        temp = list;
-        mutex_lock(temp->next->mutex);
+     WTPMachine *this_machine = NULL,
+                *previous = NULL; 
 
-        while (temp != NULL && temp->next != machine){
-	      mutex_unlock(temp->mutex);
-              temp = temp->next;
-	      mutex_lock(temp->next->mutex);
+     if (mutex_try_lock(machines.lock) == -1)
+        return;
+
+     else {
+        if (machines.list == NULL){
+           panic(0, "WTP: wtp_machines_list_clear: list is empty");
+           return;
         }
 
-        if (temp == NULL){
-	    mutex_unlock(temp->mutex);
-            debug(0, "WTP: machine_mark_unused: WTPMachine unknown");
-            return;
-	}
-       
-        temp->in_use = 0;
-        mutex_unlock(temp->mutex);
-        return;
-#endif
-}
+        this_machine = machines.first;
+        previous = machines.first;
 
-/*
- * Really removes a WTP state machine. Used only by the garbage collection. 
- * Panics when there is no machines to destroy.
- */
-void wtp_machine_destroy(WTPMachine *machine){
-        WTPMachine *temp;
-
-#if 0 /* XXX list locking done wrongly */
-
-
-        mutex_lock(list->mutex);
-        mutex_lock(list->next->mutex);
-
-        if (list == machine) {
-           list = machine->next;         
-           mutex_unlock(&list->next->mutex);
-	   mutex_unlock(&list->mutex);
-        } else {
-          temp = list;
-
-          while (temp != NULL && temp->next != machine){ 
-	        mutex_unlock(&temp->mutex);
-                temp = temp->next;
-                if (temp != NULL)
-		   mutex_lock(&temp->next->mutex);
-          }
-
-          if (temp == NULL){
-              mutex_unlock(&temp->next->mutex);
-	      mutex_unlock(&temp->mutex);
-              debug(0, "WTP: machine_destroy: Machine unknown");
-              return;
-	  }
-
-          temp->next = machine->next;
-	}
-
-        mutex_unlock(&temp->next->mutex);
-#else
-	temp = machine;
-#endif
-
-        #define INTEGER(name)
-        #define ENUM(name)        
-        #define OCTSTR(name) octstr_destroy(temp->name)
-        #define TIMER(name) wtp_timer_destroy(temp->name)
-        #define QUEUE(name) if (temp->name != NULL) \
-                panic(0, "WTP: machine_destroy: Event queue was not empty")
-        #define MUTEX(name) mutex_destroy(temp->name)
-        #define NEXT(name)
-        #define MACHINE(field) field
-        #include "wtp_machine-decl.h"
-
-#if 0
-        gw_free(temp);
-        mutex_unlock(&machine->next->mutex);
-	mutex_unlock(&machine->mutex);
-#endif
-        
-        return;
-}
+        while (this_machine != NULL){
+              if (this_machine->in_use == 0)
+                  destroy_machine(this_machine, previous);
+              previous = this_machine;
+              this_machine = this_machine->next;
+        }
+     }
+} 
 
 /*
  * Write state machine fields, using debug function from a project library 
  * wapitlib.c.
  */
-void wtp_machine_dump(WTPMachine  *machine){
+void wtp_machine_dump(WTPMachine *machine){
 
         if (machine != NULL){
 
@@ -330,8 +305,9 @@ void wtp_machine_dump(WTPMachine  *machine){
 	   #include "wtp_machine-decl.h"
            debug (0, "WTPMachine dump ends");
 	
-         } else
-           debug(0, "machine does not exist");
+	} else {
+           debug(0, "WTP: dump: machine does not exist");
+        }
 }
 
 
@@ -353,7 +329,7 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
                   break;
 
 	          case RcvAbort:
-                       tid = event->RcvAck.tid;
+                       tid = event->RcvAbort.tid;
                   break;
 
                   default:
@@ -396,7 +372,7 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
                       break;
               }
 	   }
-
+           
            return machine;
 }
 
@@ -475,7 +451,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 	       case ABORT:
                     fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 3);
 
-                    if (fourth_octet == -1){
+                    if (fourth_octet  -1){
                        tell_about_error(pdu_too_short_error, event);
                        debug(0, "WTP: unpack_datagram; missing fourth octet 
                             (abort)");
@@ -576,7 +552,7 @@ unsigned long wtp_tid_next(void){
 
 /*****************************************************************************
  *
- *INTERNAL FUNCTIONS:
+ * INTERNAL FUNCTIONS:
  *
  * Give the name of an event in a readable form. 
  */
@@ -604,49 +580,63 @@ static char *name_state(int s){
 }
 
 
-static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
-	   Octstr *destination_address, long destination_port, long tid){
-
-           WTPMachine *temp;
-
 /*
- * We are interested only machines in use, it is, having in_use-flag 1.
+ * If the machines list is busy, just waits. We are interested only machines in use,
+ * it is, having in_use-flag 1.
  */
-           if (list == NULL){
+static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
+       Octstr *destination_address, long destination_port, long tid){
+
+           WTPMachine *this_machine;
+
+           if (machines.list == NULL){
+              debug(0, "WTP: machine_find: list is empty");
               return NULL;
            }
 
-           mutex_lock(list->mutex); 
-           temp = list;
+           mutex_lock(machines.lock);
+
+           this_machine = machines.first;
+           debug(0, "WTP: find: start debugging");
+           debug(0, "WTP: find: search started at %ld ", machines.first->tid);
+           debug(0, "WTP: find: list stops at %ld", machines.list->tid);
           
-           while (temp != NULL){
+           while (this_machine != NULL){
    
-	   if ((octstr_compare(temp->source_address, source_address) == 0) &&
-                temp->source_port == source_port && 
-                (octstr_compare(temp->destination_address,
-                                destination_address) == 0) &&
-                temp->destination_port == destination_port &&
-		temp->tid == tid && temp->in_use == 1){
+	         if ((octstr_compare(this_machine->source_address, 
+                                     source_address) == 0) &&
+                      this_machine->source_port == source_port && 
+                      (octstr_compare(this_machine->destination_address,
+                                      destination_address) == 0) &&
+                      this_machine->destination_port == destination_port &&
+		      this_machine->tid == tid && 
+                      this_machine->in_use == 1){
 
-                mutex_unlock(temp->mutex);
-                return temp;
+                    mutex_unlock(machines.lock);
+                    debug(0, "WTP: find: found machine %ld=%ld", this_machine->tid, 
+                              tid);
+                    return this_machine;
                  
-		} else {
+		 } else {
+                    debug(0, "WTP: find: hit tid %ld!=%ld", this_machine->tid, tid);
+                    this_machine = this_machine->next;  
+                 }              
+          }
 
-		   mutex_unlock(temp->mutex);
-                   temp = temp->next;
-
-                   if (temp != NULL)
-		      mutex_lock(temp->mutex);
-               }              
-           }
-           return temp;
+          mutex_unlock(machines.lock); 
+          return this_machine;
 }
 
+/*
+ * Iniatilizes the global lock for inserting and removing machines. If machines 
+ * list is busy, puts the machine to be inserted in the corresponding list.
+ */
 static WTPMachine *wtp_machine_create_empty(void){
 
-        WTPMachine *machine;
+        WTPMachine *machine = NULL;
+        int machines_list_is_busy = 0;
 
+        debug(0, "WTP: creating a machine");
         machine = gw_malloc(sizeof(WTPMachine));
         
         #define INTEGER(name) machine->name = 0
@@ -662,21 +652,35 @@ static WTPMachine *wtp_machine_create_empty(void){
         #define NEXT(name) machine->name = NULL
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
+/*
+ * If machines list is empty, we iniatilise the global mutex.
+ */
+        if (machines.list != NULL){
+           debug(0, "WTP: machine_create: there was machines in the machines 
+                 list");
+           machines_list_is_busy = mutex_try_lock(machines.lock);
 
-#if 0 /* This way of locking the list is broken, we need a separate mutex */
-        if (list != NULL)
-           mutex_lock(&list->mutex);
-#endif
+        } else {
+           debug(0, "WTP: machine_create: creating first machine");
+           machines.lock = mutex_create();
+           machines_list_is_busy = mutex_try_lock(machines.lock);
+        }
+/*
+ * If the machines list is busy, we just wait (most time consuming task is fetching the
+ * page, not handling this list).
+ */
+        if (machines.list == NULL)
+           machines.first = machine;
 
-        machine->next = list;
-        list = machine;
+	else {  
+           machines.list->next = machine;
+        }
+    
+        machines.list = machine;
 
-#if 0
-        mutex_unlock(&list->mutex);
-#endif
+        mutex_unlock(machines.lock);
 
         return machine;
-
 /*
  * Message Abort(CAPTEMPEXCEEDED), to be added later. 
  * Thou shalt not leak memory... Note, that a macro could be called many times.
@@ -697,7 +701,7 @@ static WTPMachine *wtp_machine_create_empty(void){
             #include "wtp_machine-decl.h"
         }
         gw_free(machine);
-        error(errno, "WTP: machine_create_empty: Out of memory");
+        error(0, "WTP: machine_create_empty: unable to create a timer");
         return NULL;
 }
 
@@ -739,7 +743,7 @@ static WTPSegment *create_segment(void){
 
        return segment;
 }
-
+#ifdef next
 static void segment_dump(WTPSegment *segment){
 
        debug(0, "WTP: segment was:");
@@ -756,7 +760,7 @@ static void segment_destroy(WTPSegment *segment){
        gw_free(segment->next);
        gw_free(segment);
 }
-
+#endif
 /*
  * Packs a wsp event. Fetches flags and user data from a wtp event. Address 
  * five-tuple and tid are fields of the wtp machine.
@@ -1318,9 +1322,39 @@ static WTPSegment *make_missing_segments_list(Msg *msg,
        WTPSegment *missing_segments = NULL;
 
        return missing_segments;
-} 
+}
 
-/*****************************************************************************/
+/*
+ * Really removes a WTP state machine. Used only by the garbage collection. 
+ */
+static void destroy_machine(WTPMachine *machine, WTPMachine *previous){
+
+     if (machine == previous) {
+        machines.first = machine->next;
+     } else {
+        previous->next = machine->next;
+     }
+
+     #define INTEGER(name)
+     #define ENUM(name)        
+     #define OCTSTR(name) octstr_destroy(machine->name)
+     #define TIMER(name) wtp_timer_destroy(machine->name)
+     #define QUEUE(name) if (machine->name != NULL) \
+             panic(0, "WTP: machine_destroy: Event queue was not empty")
+     #define MUTEX(name) mutex_destroy(machine->name)
+     #define NEXT(name)
+     #define MACHINE(field) field
+     #include "wtp_machine-decl.h"
+
+     gw_free(machine);
+
+     return;
+}
+
+/**********************************************************************************/
+
+
+
 
 
 
