@@ -19,6 +19,29 @@ enum {
 
 enum {
    CURRENT = 0x00,
+};
+
+enum {
+   ACKNOWLEDGEMENT = 0,
+   TID_VERIFICATION = 1
+};
+
+enum {
+   PROVIDER = 0x00,
+   USER = 0x01
+};
+
+enum {
+   UNKNOWN = 0x00,
+   PROTOERR = 0x01,
+   INVALIDTID = 0x02,
+   NOTIMPLEMENTEDCL2 = 0x03,
+   NOTIMPLEMENTEDSAR = 0x04,
+   NOTIMPLEMENTEDUACK = 0x05,
+   WTPVERSIONZERO = 0x06,
+   CAPTEMPEXCEEDED = 0x07,
+   NORESPONSE = 0x08,
+   MESSAGETOOLARGE = 0x09
 };    
 
 /*

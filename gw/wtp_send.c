@@ -22,8 +22,8 @@ enum {
 
 static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event);
 
-static Msg *pack_abort(Msg *msg, long abort_type, WTPMachine *machine, 
-                       WTPEvent *event);
+static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason, 
+       WTPMachine *machine, WTPEvent *event);
 
 static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine, 
                      WTPEvent *event);
@@ -81,7 +81,8 @@ void wtp_send_result(WTPMachine *machine, WTPEvent *event){
      return;
 }
 
-void wtp_send_abort(long abort_type, WTPMachine *machine, WTPEvent *event){
+void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine, 
+     WTPEvent *event){
 
      Msg *msg = NULL;
 
@@ -96,7 +97,7 @@ void wtp_send_abort(long abort_type, WTPMachine *machine, WTPEvent *event){
        return;
      }
 
-     msg = pack_abort(msg, abort_type, machine, event);
+     msg = pack_abort(msg, abort_type, abort_reason, machine, event);
     
      if (msg == NULL){
         tell_send_error(oct_error, msg);
@@ -146,8 +147,16 @@ void wtp_send_ack(long ack_type, WTPMachine *machine, WTPEvent *event){
 static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
 
     int octet;
-
+    size_t pdu_len;
     char *wtp_pdu; 
+    
+    pdu_len = 3;
+    wtp_pdu = malloc(pdu_len);
+    if (wtp_pdu == NULL){
+       tell_send_error(oct_error, msg);
+       return NULL;
+    }
+    
 /*
  * We try to send fixed length result PDU, without segmentation. Only inputs 
  * are the rid field (which tells are we resending or not), and the tid.
@@ -176,8 +185,9 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
 
 }
 
-static Msg *pack_abort(Msg *msg, long abort_type, WTPMachine *machine, 
-                           WTPEvent *event){
+static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason, 
+       WTPMachine *machine, WTPEvent *event){
+
        int octet;
 
        char wtp_pdu[4];
@@ -199,7 +209,7 @@ static Msg *pack_abort(Msg *msg, long abort_type, WTPMachine *machine,
 
        insert_tid(wtp_pdu, event->TRAbort.tid);
 
-       wtp_pdu[3] = event->TRAbort.abort_reason;
+       wtp_pdu[3] = abort_reason;
 
        if (octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 4) == -1){
            tell_send_error(oct_error, msg);

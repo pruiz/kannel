@@ -28,6 +28,9 @@ typedef struct WTPEvent WTPEvent;
 #define L_A_WITH_USER_ACK 4
 #define L_R_WITH_USER_ACK 7
 
+#define AEC_MAX 4
+#define MAX_RCR 4
+
 /*
  * Types of WTP PDUs
  */

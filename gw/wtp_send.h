@@ -23,7 +23,8 @@ void wtp_send_result(WTPMachine *machine, WTPEvent *event);
  * data. Fetches SDU from WTP event, address four-tuple from WTP machine. 
  * Handles all errors by itself.
  */
-void wtp_send_abort(long abort_type, WTPMachine *machine, WTPEvent *event);
+void wtp_send_abort(long abort_type, long abort_reson, WTPMachine *machine, 
+     WTPEvent *event);
 
 /*
  * Send a message object, of wdp datagram type, having ack PDU as user 
