@@ -186,26 +186,6 @@ wml_table_t wml_URL_values[] = {
   { NULL }
 };
 
-/*
- * Character sets
- */
-
-struct alias_t {
-    char *real;
-    char *alias;
-}; 
-
-typedef struct alias_t alias_t;
-
-alias_t chars_aliases[] = {
-    { "CP1257", "WIN-1257" },
-    { "CP1257", "WINDOWS-1257" },
-    { "CP1251", "WINDOWS-1251" },
-    { "CP1251", "WIN-1251" }, 
-    { "CP1253", "WINDOWS-1253" },
-    { NULL }
-};
-
 
 
 

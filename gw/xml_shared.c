@@ -9,6 +9,8 @@
 #include "xml_shared.h"
 #include "xml_definitions.h"
 
+#include <string.h>
+
 struct charset_t {
     char *charset; 
     char *nro;

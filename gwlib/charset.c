@@ -222,6 +222,43 @@ static const int latin1_to_gsm[256] = {
 	'y', /* approximate y dieresis */
 };
 
+/*
+ * Register alises for Windows character sets that the libxml/libiconv can 
+ * recoqnise them.
+ */
+
+struct alias_t {
+    char *real;
+    char *alias;
+}; 
+
+typedef struct alias_t alias_t;
+
+alias_t chars_aliases[] = {
+    { "CP1250", "WIN-1250" }, 
+    { "CP1250", "WINDOWS-1250" },
+    { "CP1251", "WIN-1251" }, 
+    { "CP1251", "WINDOWS-1251" },
+    { "CP1252", "WIN-1252" }, 
+    { "CP1252", "WINDOWS-1252" },
+    { "CP1253", "WIN-1253" }, 
+    { "CP1253", "WINDOWS-1253" },
+    { "CP1254", "WIN-1254" }, 
+    { "CP1254", "WINDOWS-1254" },
+    { "CP1257", "WIN-1257" },
+    { "CP1257", "WINDOWS-1257" },
+    { NULL }
+};
+
+void charset_init(void)
+{
+    int i;
+
+    for (i = 0; chars_aliases[i].real != NULL; i++) {
+      xmlAddEncodingAlias(chars_aliases[i].real,chars_aliases[i].alias);
+      debug("encoding",0,"Add encoding for %s",chars_aliases[i].alias);
+    }
+}
 
 void charset_gsm_to_latin1(Octstr *ostr)
 {

@@ -311,12 +311,6 @@ void wml_init()
     int i = 0, len = 0;
     wml_hash_t *temp = NULL;
     
-    for (i = 0; chars_aliases[i].real != NULL; i++) {
-      xmlAddEncodingAlias(chars_aliases[i].real,chars_aliases[i].alias);
-      debug("encoding",0,"Add encoding for %s",chars_aliases[i].alias);
-    }
-
-
     /* The wml elements into a hash table. */
     len = wml_table_len(wml_elements);
     wml_elements_dict = dict_create(len, hash_destroy);

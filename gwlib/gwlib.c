@@ -28,6 +28,7 @@ void gwlib_init(void)
     gwthread_init();
     http_init();
     socket_init();
+    charset_init();
     init = 1;
 }
 

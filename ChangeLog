@@ -1,3 +1,17 @@
+2001-11-15  Tuomas Luttinen  <Tuomas.Luttinen@reach-u.com>
+
+    * gw/wml_definitions.h, gw/wml_compiler.c: Removed the windows character 
+      set registration from this module; it shouldn't have been here in the 
+      first place.
+
+    * gwlib/gwlib.c (gwlib_init): Added a call to charset_init.
+
+    * gwlib/charset.[ch]: New function charset_init added that registers 
+      windows charsets into the libxml character set aliases.
+
+    * gw/xml_shared.c: Added #include <string.h> to eliminate a compiler 
+      warning.
+
 2001-11-14 Jörg Pommnitz <jpo@condat.de>
     * gw/wap_push_ppg.c: fix octstr_destroy of uninitialized username
     * gw/smsc_at2.c: new function: at2_octstr_destroy(Octstr *ostr)

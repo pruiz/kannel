@@ -23,6 +23,11 @@
 #include <libxml/encoding.h>
 #include <libxml/tree.h>
 
+/*
+ * Initialize the charset subsystem.
+ */
+void charset_init(void);
+
 /* Convert a string in the GSM default character set (GSM 03.38)
  * to ISO-8859-1.  A series of Greek characters (codes 16, 18-26)
  * are not representable and are converted to '?' characters.
