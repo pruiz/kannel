@@ -178,7 +178,7 @@ static void http_request_thread(void *arg)
 	if (octstr_str_compare(url, "/cgi-bin/sendsms") == 0)
 	    answer = octstr_create(smsbox_req_sendsms(args, client_ip));
 	else if (octstr_str_compare(url, "/cgi-bin/sendota") == 0)
-	    answer = octstr_create(smsbox_req_sendota(args));
+	    answer = octstr_create(smsbox_req_sendota(args, client_ip));
 	else
 	    answer = octstr_create("unknown request\n");
         debug("sms.http", 0, "Answer: <%s>", octstr_get_cstr(answer));

@@ -1,3 +1,18 @@
+2000-10-06  Richard Braakman  <dark@wapit.com>
+
+	* doc/userguide/userguide.xml: Terminate OTA CGI table so that
+	it compiles.
+
+	* gw/smsbox.c, gw_smsbox_req.[ch]: Give smsbox_req_sendota() a
+	"client_ip" parameter so that it can call authorise_user correctly.
+
+	* gw/smsbox_req.c: smsbox_req_sendota(): Remove unused variables.
+	Use octstr_create("") instead of the no longer existing
+	octstr_create_empty().
+
+	* gw/bb_boxc.c: Fix memory leak in route_msg() when routing
+	WAP packet but no wapboxes are connected.
+
 2000-10-05  Yann Muller  <ymuller@3glab.com>
 
 	* gw/smsbox_req.c/h: added smsbox_req_sendota() to send OTA config

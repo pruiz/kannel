@@ -393,10 +393,6 @@ static Boxc *route_msg(List *route_info, Msg *msg)
 	    	    	    "generating new");
 route:
 
-	ap = gw_malloc(sizeof(AddrPar));
-	ap->address = octstr_duplicate(msg->wdp_datagram.source_address);
-	ap->port = msg->wdp_datagram.source_port;
-
 	if (list_len(wapbox_list) == 0)
 	    return NULL;
 
@@ -411,8 +407,13 @@ route:
 	    list_unlock(wapbox_list);
 	    return NULL;
 	}
+
+	ap = gw_malloc(sizeof(AddrPar));
+	ap->address = octstr_duplicate(msg->wdp_datagram.source_address);
+	ap->port = msg->wdp_datagram.source_port;
 	ap->wapboxid = conn->id;
 	list_produce(route_info, ap);
+
 	list_unlock(wapbox_list);
     } else
 	conn = list_search(wapbox_list, ap, cmp_boxc);

@@ -2305,6 +2305,8 @@ http://smsbox.host.name:13013/cgi-bin/sendota?username=foo&amp;password=bar&amp;
    <entry valign=bottom>
        Number of the phone that is to receive the OTA configuration message.
    </entry></row>
+  </tbody>
+ </table>
 
 </sect2>
 

@@ -744,7 +744,7 @@ error:
  * 
  * This will be changed later to use an XML compiler.
  */
-char *smsbox_req_sendota(List *list)
+char *smsbox_req_sendota(List *list, char *client_ip)
 {
 	char *url = NULL, *desc = NULL, *ipaddr = NULL, *phonenum = NULL;
 	char *username = NULL, *passwd = NULL;
@@ -756,14 +756,11 @@ char *smsbox_req_sendota(List *list)
 
 	Msg *msg = NULL;
 	URLTranslation *t = NULL;
-	Octstr *user = NULL, *val, *from = NULL, *to;
 	int ret;
-	int i;
 	Octstr *phonenumber = NULL;
-	char temp[10];
 
 	/* check the username and password */
-	t = authorise_user(list);
+	t = authorise_user(list, client_ip);
 	if (t == NULL) {
 	    return "Authorization failed";
 	}
@@ -812,11 +809,11 @@ char *smsbox_req_sendota(List *list)
 	msg = msg_create(smart_sms);
 	if (msg == NULL) goto error;
 
-	msg->smart_sms.udhdata = octstr_create_empty();
+	msg->smart_sms.udhdata = octstr_create("");
 
 	octstr_append_from_hex(msg->smart_sms.udhdata, "0504C34FC002");
 
-	msg->smart_sms.msgdata = octstr_create_empty();
+	msg->smart_sms.msgdata = octstr_create("");
 	/* header for the data part of the message */
 	octstr_append_from_hex(msg->smart_sms.msgdata, "010604039481EA0001");
 	/* unknow field */

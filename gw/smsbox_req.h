@@ -64,6 +64,6 @@ char *smsbox_req_sendsms(List *cgivars, char *client_ip);
  *
  * Returns 'answer' string (which shall NOT be freed by the caller)
  */
-char *smsbox_req_sendota(List *cgivars);
+char *smsbox_req_sendota(List *cgivars, char *client_ip);
 
 #endif
