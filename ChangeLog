@@ -1,3 +1,8 @@
+2000-05-11  Richard Braakman  <dark@wapit.com>
+
+	* configure.in, configure: Made it not look for getloadavg.c
+	on systems that have no getloadavg().
+
 2000-05-11    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/bb_http.c: Oooops, added
