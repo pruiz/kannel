@@ -1,3 +1,7 @@
+2000-07-13  Yann Muller  <ymuller@3glab.com>
+
+	* gw/smsc_at.c: removed two unused variables.
+	
 2000-07-12  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: Little bug fixes with variables:
