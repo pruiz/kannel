@@ -1,4 +1,10 @@
 2003-05-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smscconn_p.h, gw/smscconn.c, gw/smsc/smsc_at2.h, 
+      gw/smsc/smsc_[at2|cimd2|smpp].c: Angel's alt-dcs abstraction layer
+      patch for at2, cimd2 and smpp. Thanks a lot.
+      [Msg-ID: <NCEOLLKPFAEAOBBMHNHEAECCGAAA.afradejas@mediafusion.es>]
+
+2003-05-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/shared.c, gw/smsbox.c: fixing mainly BUG#24 for sending too long 
       UDH indicator sequences. This does not cover the effect, when UDH is
       pretty long and Msg body is getting split and hence the UDH gets
