@@ -113,4 +113,7 @@
 /* Define if you have and want to use the ssl library (-lssl) */
 #undef HAVE_LIBSSL
 
+/* Defined if we're using OpenSSL WTLS */
+#undef HAVE_WTLS_OPENSSL
+
 #endif

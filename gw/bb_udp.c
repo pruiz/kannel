@@ -288,8 +288,8 @@ int udp_start(Cfg *cfg)
 
     add_service(9200, octstr_get_cstr(interface_name));	   /* wsp 	*/
     add_service(9201, octstr_get_cstr(interface_name));	   /* wsp/wtp	*/
-    /* add_service(9202, octstr_get_cstr(interface_name));  * wsp/wtls	*/
-    /* add_service(9203, octstr_get_cstr(interface_name));  * wsp/wtp/wtls */
+    add_service(9202, octstr_get_cstr(interface_name));    /* wsp/wtls	*/
+    add_service(9203, octstr_get_cstr(interface_name));    /* wsp/wtp/wtls */
     /* add_service(9204, octstr_get_cstr(interface_name));  * vcard	*/
     /* add_service(9205, octstr_get_cstr(interface_name));  * vcal	*/
     /* add_service(9206, octstr_get_cstr(interface_name));  * vcard/wtls */
@@ -319,14 +319,14 @@ int udp_addwdp(Msg *msg)
     list_lock(udpc_list);
     /* select in which list to add this */
     for (i=0; i < list_len(udpc_list); i++) {
-	udpc = list_get(udpc_list, i);
+		udpc = list_get(udpc_list, i);
 
-	if (msg->wdp_datagram.source_port == udp_get_port(udpc->addr))
-	{
-	    list_produce(udpc->outgoing_list, msg);
-	    list_unlock(udpc_list);
-	    return 0;
-	}
+		if (msg->wdp_datagram.source_port == udp_get_port(udpc->addr))
+		{
+	    	list_produce(udpc->outgoing_list, msg);
+	    	list_unlock(udpc_list);
+	    	return 0;
+		}
     }
     list_unlock(udpc_list);
     return -1;

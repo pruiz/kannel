@@ -9,6 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
+#include <openssl/x509.h>
 
 #include "gwlib/gwlib.h"
 #include "shared.h"
@@ -19,8 +20,14 @@
 #include "wap_push_ota.h"
 #include "wap_push_ppg.h"
 #include "wap_push_pap.h"
-#include "msg.h"
+#include "gw/msg.h"
 #include "bb.h"
+#include "wap/wtls.h"
+
+#define CONNECTIONLESS_PORT 9200
+#define CONNECTION_ORIENTED_PORT 9201
+#define WTLS_CONNECTIONLESS_PORT 9202
+#define WTLS_CONNECTION_ORIENTED_PORT 9203
 
 
 static Octstr *bearerbox_host;
@@ -28,11 +35,14 @@ static long bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static long heartbeat_freq = BB_DEFAULT_HEARTBEAT;
 static long heartbeat_thread;
 
+RSA* private_key = NULL;
+X509* x509_cert = NULL;
+
 
 static void read_config(Octstr *filename) 
 {
     CfgGroup *grp;
-    Octstr *s;
+    Octstr *s, *password=NULL;
     long i;
     Cfg *cfg;
     Octstr *logfile;
@@ -115,6 +125,31 @@ static void read_config(Octstr *filename)
 	debug("wap", 0, "no syslog parameter");
     }
     
+
+    /* Load up the necessary keys */
+    if ((s = cfg_get(grp, octstr_imm("certificate-file"))) != NULL){
+            if(octstr_compare(s, octstr_imm("none")) == 0){
+                    debug("bbox",0,"certificate file not set");
+            }else{
+                    /* Load the certificate into the necessary parameter */
+                    get_cert_from_file(s, &x509_cert);
+                    gw_assert(x509_cert != NULL);
+                    debug("bbox",0,"certificate parameter is %s", s);
+            }
+    }
+
+    if ((s = cfg_get(grp, octstr_imm("privatekey-file"))) != NULL){
+            password = cfg_get(grp, octstr_imm("privatekey-password"));
+            if(octstr_compare(s, octstr_imm("none")) == 0){
+                    debug("bbox",0,"privatekey-file not set");
+            }else{
+                    /* Load the private key into the necessary parameter */
+                    get_privkey_from_file(s, &private_key,password);
+                    gw_assert(private_key != NULL);
+                    debug("bbox",0,"certificate parameter is %s", s);
+            }        
+    }
+
     /* configure URL mappings */
     map_url_max = -1;
     cfg_get_integer(&map_url_max, grp, octstr_imm("map-url-max"));
@@ -195,6 +230,7 @@ static void setup_signal_handlers(void)
 static void dispatch_datagram(WAPEvent *dgram)
 {
     Msg *msg;
+    WAPEvent *event = NULL;
 
     gw_assert(dgram != NULL);
     if (dgram->type != T_DUnitdata_Req) {
@@ -204,7 +240,7 @@ static void dispatch_datagram(WAPEvent *dgram)
 	WAPAddrTuple *tuple;
      
         msg = msg_create(wdp_datagram);
-	tuple = dgram->u.T_DUnitdata_Req.addr_tuple;
+	    tuple = dgram->u.T_DUnitdata_Req.addr_tuple;
         msg->wdp_datagram.source_address =
             octstr_duplicate(tuple->local->address);
         msg->wdp_datagram.source_port =
@@ -257,21 +293,26 @@ int main(int argc, char **argv)
     wtp_resp_init(&dispatch_datagram, &wsp_session_dispatch_event,
                   &wsp_push_client_dispatch_event);
     wap_appl_init();
-    wap_push_ota_init(&wsp_session_dispatch_event, &wsp_unit_dispatch_event);
+    wtls_secmgr_init();
+    wtls_init();
+    /*
+	wap_push_ota_init(&wsp_session_dispatch_event, &wsp_unit_dispatch_event);
     wap_push_ppg_init(&wap_push_ota_dispatch_event, 
                       &wap_push_pap_dispatch_event,
                       &wap_appl_dispatch);
     wap_push_pap_init(&wap_push_ppg_dispatch_event);
-
+	*/
+	
     wml_init();
     
     if (bearerbox_host == NULL)
     	bearerbox_host = octstr_create(BB_DEFAULT_HOST);
     connect_to_bearerbox(bearerbox_host, bearerbox_port);
 
-    wap_push_ota_bb_address_set(bearerbox_host);
-
-    program_status = running;
+    /*wap_push_ota_bb_address_set(bearerbox_host);
+	*/
+    
+	program_status = running;
     heartbeat_thread = heartbeat_start(write_to_bearerbox, heartbeat_freq, 
     	    	    	    	       wap_appl_get_load);
 
@@ -290,16 +331,30 @@ int main(int argc, char **argv)
 	     * XXXX here should be suspend/resume, add RSN
 	     */
 	} else if (msg_type(msg) == wdp_datagram) {
-	    dgram = wap_event_create(T_DUnitdata_Ind);
-	    dgram->u.T_DUnitdata_Ind.addr_tuple = wap_addr_tuple_create(
-		msg->wdp_datagram.source_address,
-		msg->wdp_datagram.source_port,
-		msg->wdp_datagram.destination_address,
-		msg->wdp_datagram.destination_port);
-	    dgram->u.T_DUnitdata_Ind.user_data = msg->wdp_datagram.user_data;
-	    msg->wdp_datagram.user_data = NULL;
+        switch (msg->wdp_datagram.destination_port) {
+        case CONNECTIONLESS_PORT:
+        case CONNECTION_ORIENTED_PORT:
+	    	dgram = wap_event_create(T_DUnitdata_Ind);
+	    	dgram->u.T_DUnitdata_Ind.addr_tuple = wap_addr_tuple_create(
+				msg->wdp_datagram.source_address,
+				msg->wdp_datagram.source_port,
+				msg->wdp_datagram.destination_address,
+				msg->wdp_datagram.destination_port);
+	    	dgram->u.T_DUnitdata_Ind.user_data = msg->wdp_datagram.user_data;
+	    	msg->wdp_datagram.user_data = NULL;
 
-            wap_dispatch_datagram(dgram); 
+          	wap_dispatch_datagram(dgram); 
+			break;
+        case WTLS_CONNECTIONLESS_PORT:
+        case WTLS_CONNECTION_ORIENTED_PORT:
+            dgram = wtls_unpack_wdp_datagram(msg);
+            if (dgram != NULL)
+                wtls_dispatch_event(dgram);
+			break;
+        default:
+                panic(0,"Bad packet received! This shouldn't happen!");
+                break;
+        } /* switch */
 	} else {
 	    warning(0, "Received other message than wdp/admin, ignoring!");
 	}
@@ -316,9 +371,9 @@ int main(int argc, char **argv)
     wsp_unit_shutdown();
     wsp_session_shutdown();
     wap_appl_shutdown();
-    wap_push_ota_shutdown();
-    wap_push_ppg_shutdown();
-    wap_push_pap_shutdown();
+    //wap_push_ota_shutdown();
+    //wap_push_ppg_shutdown();
+    //wap_push_pap_shutdown();
     wml_shutdown();
     close_connection_to_bearerbox();
     wsp_http_map_destroy();
