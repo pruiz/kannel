@@ -1,4 +1,10 @@
 2002-01-28  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_udp.c: bind to WTLS ports 9202 and 9203 only in case we
+      have HAVE_WTLS_OPENSSL defined, otherwise kwtls may be used to
+      bind to those.
+    * gw/shared.c: added WTLS reporting in version_report_string()
+
+2002-01-28  Stipe Tolj  <tolj@wapme-systems.de>
 	* configure{,.in}: modified --with-wtls implementation to be
       more --with-ssl style and moved it to the end.
     * gw/pki.[ch], gw/wapbox.c, wtls-secmgr.c, wtls.c, wtls_pdu.c,
