@@ -11,28 +11,42 @@ BOXPATH=/usr/bin
 PIDFILES=/var/run
 CONF=/etc/kannel/kannel.conf
 
+USER=kannel
+VERSION=""
+#VERSION="-0.12.4"
+
+RB=run_kannel_box$VERSION
+BB=bearerbox$VERSION
+WB=wapbox$VERSION
+SB=smsbox$VERSION
+SSD=start-stop-daemon$VERSION
+
 PATH=$BOXPATH:$PATH
 
 # On Debian, the most likely reason for the bearerbox not being available
 # is that the package is in the "removed" or "unconfigured" state, and the
 # init.d script is still around because it's a conffile.  This is normal,
 # so don't generate any output.
-test -x $BOXPATH/bearerbox || exit 0
+test -x $BOXPATH/$BB || exit 0
 
 case "$1" in
   start)
     echo -n "Starting WAP gateway: bearerbox"
-    start-stop-daemon --start --quiet --pidfile $PIDFILES/kannel_bearerbox.pid --exec $BOXPATH/run_kannel_box -- --pidfile $PIDFILES/kannel_bearerbox.pid bearerbox -- $CONF
+    $SSD --start --quiet --pidfile $PIDFILES/kannel_bearerbox.pid --exec $RB -- --pidfile $PIDFILES/kannel_bearerbox.pid $BB -- $CONF
     echo -n " wapbox"
-    start-stop-daemon --start --quiet --pidfile $PIDFILES/kannel_wapbox.pid --exec $BOXPATH/run_kannel_box -- --pidfile $PIDFILES/kannel_wapbox.pid wapbox -- $CONF
+    $SSD --start --quiet --pidfile $PIDFILES/kannel_wapbox.pid --exec $RB -- --pidfile $PIDFILES/kannel_wapbox.pid $WB -- $CONF
+#    echo -n " smsbox"
+#    $SSD --start --quiet --pidfile $PIDFILES/kannel_smsbox.pid --exec $RB -- --pidfile $PIDFILES/kannel_smsbox.pid $SB -- $CONF
     echo "."
     ;;
 
   stop)
     echo -n "Stopping WAP gateway: wapbox"
-    start-stop-daemon --stop --quiet --pidfile $PIDFILES/kannel_wapbox.pid --exec $BOXPATH/run_kannel_box
+    $SSD --stop --quiet --pidfile $PIDFILES/kannel_wapbox.pid --exec $RB
+#    echo -n " smsbox"
+#    $SSD --stop --quiet --pidfile $PIDFILES/kannel_smsbox.pid --exec $RB
     echo -n " bearerbox"
-    start-stop-daemon --stop --quiet --pidfile $PIDFILES/kannel_bearerbox.pid --exec $BOXPATH/run_kannel_box
+    $SSD --stop --quiet --pidfile $PIDFILES/kannel_bearerbox.pid --exec $RB
     echo "."
     ;;
 
