@@ -1,4 +1,8 @@
 2001-12-23  Stipe Tolj  <tolj@wapme-systems.de>
+    * utils/kannel-nag: changed cvsroot and added output support for
+      different platforms
+
+2001-12-23  Stipe Tolj  <tolj@wapme-systems.de>
     * configure.in: added options --with-mysql and --enable-mysql-dlr
     * configure: resulting output of configure.in
     * config.h.in: added #define HAVE_MYSQL and MYSQL_DIR
