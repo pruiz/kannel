@@ -59,8 +59,7 @@ typedef struct privdata {
 
     List *outgoing_queue;
     SMSCConn *conn;
-    int receiver_thread;
-    int sender_thread;
+    int io_thread;
     int quitting;
     List *stopped; /* list-trick for suspend/isolate */
 
@@ -1492,6 +1491,10 @@ static void cimd2_send_response(struct packet *request, PrivData *pdata)
     response = packet_create(request->operation + RESPONSE, request->seq);
     packet_set_checksum(response);
 
+    debug("bb.sms.cimd2", 0, "CIMD2[%s]: sending <%s>",
+          octstr_get_cstr(pdata->conn->id),
+          octstr_get_cstr(response->data));
+
     /* Don't check errors here because if there is something
      * wrong with the socket, the main loop will detect it. */
     octstr_write_to_socket(pdata->socket, response->data);
@@ -1635,9 +1638,9 @@ static int cimd2_request(struct packet *request, SMSCConn *conn, Octstr **ts)
     if (pdata->socket < 0) {
         warning(0, "CIMD2[%s]: cimd2_request: socket not open.",
                 octstr_get_cstr(conn->id));
-        goto io_error;
+        return -2;        
     }
-
+    
 retransmit:
     packet_set_send_sequence(request, pdata);
     packet_set_checksum(request);
@@ -1765,7 +1768,7 @@ static int cimd2_login(SMSCConn *conn)
                 octstr_get_cstr(conn->id));
         cimd2_close_socket(pdata);
     }
-
+    
     pdata->socket = tcpip_connect_to_server_with_port(
                                             octstr_get_cstr(pdata->host),
                                             pdata->port,
@@ -1906,11 +1909,6 @@ static int cimd2_submit_msg(SMSCConn *conn, Msg *msg)
     return ret;
 }
 
-/* The bearerbox really doesn't like it if pending_smsmessage returns
- * an error code.  We work around it until the bearerbox is rewritten.
- * Record the error here, and return it in cimd2_receive_msg.  Return
- * "message available" if there is an error so that cimd2_receive_msg
- * is called. */
 static int cimd2_receive_msg(SMSCConn *conn, Msg **msg)
 {
     PrivData *pdata = conn->data;
@@ -1931,7 +1929,7 @@ static int cimd2_receive_msg(SMSCConn *conn, Msg **msg)
          * way. */
         return 0;
     }
-
+    
     ret = read_available(pdata->socket, 0);
     if (ret == 0) {
         if (pdata->keepalive > 0 && pdata->next_ping < time(NULL)) {
@@ -1960,6 +1958,7 @@ static int cimd2_receive_msg(SMSCConn *conn, Msg **msg)
                 octstr_get_cstr(conn->id));
         return -1;
     }
+
 
     for (;;) {
         packet = packet_extract(pdata->inbuffer,conn);
@@ -2064,12 +2063,12 @@ static Msg *sms_receive(SMSCConn *conn)
 }
 
 
-static void sms_receiver(void *arg)
+static void io_thread (void *arg)
 {
     Msg       *msg;
     SMSCConn  *conn = arg;
     PrivData *pdata = conn->data;
-    double    sleep = 0.0001;
+    double    sleep;
 
     /* Make sure we log into our own log-file if defined */
     log_thread_to(conn->log_idx);
@@ -2079,49 +2078,6 @@ static void sms_receiver(void *arg)
     
         list_consume(pdata->stopped); /* block here if suspended/isolated */
       
-        if (conn->status == SMSCCONN_ACTIVE) {
-            msg = sms_receive(conn);
-            if (msg) {
-                debug("bb.sms.cimd2", 0, "CIMD2[%s]: new message received",
-                      octstr_get_cstr(conn->id));
-                sleep = 0.0001;
-                bb_smscconn_receive(conn, msg);
-                continue;
-            }
-        }
-        /* note that this implementations means that we sleep even
-         * when we fail connection.. but time is very short, anyway
-         */
-        gwthread_sleep(sleep);
-        /* gradually sleep longer and longer times until something starts to
-         * happen - this of course reduces response time, but that's better than
-         * extensive CPU usage when it is not used
-         */
-        sleep *= 2;
-        if (sleep >= 2.0)
-            sleep = 1.999999;
-    }
-}
-
-
-static void sms_sender(void *arg)
-{
-    Msg       *msg;
-    SMSCConn  *conn = arg;
-    PrivData *pdata = conn->data;
-    double sleep = 0.00001;
-    
-    mutex_lock(conn->flow_mutex);
-    conn->status = SMSCCONN_CONNECTING;
-    mutex_unlock(conn->flow_mutex);
-
-    /* Make sure we log into our own log-file if defined */
-    log_thread_to(conn->log_idx);
-
-    while (!pdata->quitting) {
-    
-        list_consume(pdata->stopped); /* block here if suspended/isolated */
-
         /* check that connection is active */
         if (conn->status != SMSCCONN_ACTIVE) {
             if (cimd2_login(conn) != 0) { 
@@ -2140,23 +2096,44 @@ static void sms_sender(void *arg)
             bb_smscconn_connected(conn);
             mutex_unlock(conn->flow_mutex);
         }
-        
-        if (pdata->quitting) 
-            break;
 
+        sleep = 0.0001;
+        
+        /* receive messages */
+        do { 
+            msg = sms_receive(conn);
+            if (msg) {
+                sleep = 0;
+                debug("bb.sms.cimd2", 0, "CIMD2[%s]: new message received",
+                      octstr_get_cstr(conn->id));
+                bb_smscconn_receive(conn, msg);
+            }
+        } while (msg);
+ 
         /* send messages */
         do {
             msg = list_extract_first(pdata->outgoing_queue);
             if (msg) {
+                sleep = 0;
                 if (cimd2_submit_msg(conn,msg) != 0) break;
             }
-            else {
-                gwthread_sleep(sleep);
-            }
         } while (msg);
+ 
+        if (sleep > 0) {
+            /* note that this implementations means that we sleep even
+             * when we fail connection.. but time is very short, anyway
+             */
+            gwthread_sleep(sleep);
+            /* gradually sleep longer and longer times until something starts to
+             * happen - this of course reduces response time, but that's better than
+             * extensive CPU usage when it is not used
+             */
+            sleep *= 2;
+            if (sleep >= 2.0)
+                sleep = 1.999999;
+        }
     }
 }
-
 
 
 static int cimd2_add_msg_cb (SMSCConn *conn, Msg *sms)
@@ -2166,7 +2143,7 @@ static int cimd2_add_msg_cb (SMSCConn *conn, Msg *sms)
 
     copy = msg_duplicate(sms);
     list_produce(pdata->outgoing_queue, copy);
-    gwthread_wakeup(pdata->sender_thread);
+    gwthread_wakeup(pdata->io_thread);
 
     return 0;
 }
@@ -2199,14 +2176,9 @@ static int cimd2_shutdown_cb (SMSCConn *conn, int finish_sending)
         conn->is_stopped = 0;
     }
     
-    if (pdata->sender_thread != -1) {
-        gwthread_wakeup(pdata->sender_thread);
-        gwthread_join(pdata->sender_thread); 
-    }
-    
-    if (pdata->receiver_thread != -1) {
-        gwthread_wakeup(pdata->receiver_thread);
-        gwthread_join(pdata->receiver_thread); 
+    if (pdata->io_thread != -1) {
+        gwthread_wakeup(pdata->io_thread);
+        gwthread_join(pdata->io_thread); 
     }
 
     cimd2_close_socket(pdata);
@@ -2225,7 +2197,7 @@ static void cimd2_start_cb (SMSCConn *conn)
 
     list_remove_producer(pdata->stopped);
     /* in case there are messages in the buffer already */
-    gwthread_wakeup(pdata->receiver_thread);
+    gwthread_wakeup(pdata->io_thread);
     debug("bb.sms", 0, "SMSCConn CIMD2 %s, start called",
           octstr_get_cstr(conn->id));
 }
@@ -2337,26 +2309,17 @@ int smsc_cimd2_create(SMSCConn *conn, CfgGroup *grp)
                 maxlen);
     }
 
-    pdata->receiver_thread = gwthread_create(sms_receiver, conn);
-    pdata->sender_thread = gwthread_create(sms_sender, conn);
+    pdata->io_thread = gwthread_create(io_thread, conn);
 
-    if ((pdata->receiver_thread == -1) ||  
-        (pdata->sender_thread == -1)) {  
+    if (pdata->io_thread == -1) {  
 
-        error(0,"CIMD2[%s]: Couldn't start I/O threads.",
+        error(0,"CIMD2[%s]: Couldn't start I/O thread.",
               octstr_get_cstr(conn->id));
         pdata->quitting = 1;
-        if (pdata->sender_thread != -1) {
-            gwthread_wakeup(pdata->sender_thread);
-            gwthread_join(pdata->sender_thread);
-        }  
-        if (pdata->receiver_thread != -1) {
-            gwthread_wakeup(pdata->receiver_thread);
-            gwthread_join(pdata->receiver_thread);
-        }
+        gwthread_wakeup(pdata->io_thread);
+        gwthread_join(pdata->io_thread);
         cimd2_destroy(pdata);
         return -1;  
-
     } 
 
     conn->send_msg = cimd2_add_msg_cb;
