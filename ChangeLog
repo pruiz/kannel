@@ -1,3 +1,10 @@
+2000-07-03 Paul Keogh <paul.keogh@anam.ie>
+
+	* gwlib/http.c,gwlib/http.h,gw/wsp_headers.h,gw/wsp_headers.c,
+	gw/wsp_unit.c,gw/wsp_session_state.h,gw/wsp_method_state.h,
+	gw/wap-appl.c: Added support for HTTP POST under #ifdef POST_SUPPORT.
+	Also enabled runtime cookies under #ifdef COOKIE_SUPPORT.
+
 2000-06-30 Aarno Syvänen <syvanen@apit.com>
 
 	* wsp-unit.c: Fixed some memory leaks
