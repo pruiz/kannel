@@ -122,7 +122,7 @@ gwobjs = $(gwsrcs:.c=.o)
 libsrcs = $(wildcard gwlib/*.c) $(LIBSRCS)
 libobjs = $(libsrcs:.c=.o) $(LIBOBJS)
 
-wapsrcs = $(wildcard wap/*.c)
+wapsrcs = $(wildcard wap/*.c) $(wildcard radius/*.c)
 wapobjs = $(wapsrcs:.c=.o)
 
 wmlscriptsrcs = $(wildcard wmlscript/*.c)
@@ -154,7 +154,7 @@ objs = $(srcs:.c=.o)
 
 libs = libgw.a libwmlscript.a libwap.a libgwlib.a
 
-srcdirs = gw gw/smsc gwlib test utils wmlscript checks wap
+srcdirs = gw gw/smsc gwlib test utils wmlscript checks wap radius
 
 man1pages = utils/seewbmp.1 wmlscript/wmlsc.1 wmlscript/wmlsdasm.1
 man8pages = gw/kannel.8 utils/run_kannel_box.8
