@@ -1,3 +1,8 @@
+2001-03-19  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/http.c: Made parse_http_version() thread-safe.  (There is
+	no guarantee that assignment of pointers or longs is atomic.)
+
 2001-03-19  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bearerbox.c: commented gwthread_join_all() away and now all

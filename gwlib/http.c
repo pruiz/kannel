@@ -91,15 +91,12 @@ static int read_some_headers(Connection *conn, List *headers)
  */
 static int parse_http_version(Octstr *version)
 {
-    static Octstr *prefix = NULL;
-    static long prefix_len = -1;
+    Octstr *prefix;
+    long prefix_len;
     int digit;
     
-    if (prefix == NULL)
-    	prefix = octstr_imm("HTTP/1."); /* thread safe! */
-
-    if (prefix_len == -1)
-    	prefix_len = octstr_len(prefix);
+    prefix = octstr_imm("HTTP/1."); /* thread safe! */
+    prefix_len = octstr_len(prefix);
 
     if (octstr_ncompare(version, prefix, prefix_len) != 0)
     	return -1;
