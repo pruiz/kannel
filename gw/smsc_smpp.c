@@ -391,6 +391,39 @@ static Connection *open_transmitter(SMPP *smpp)
 
 
 /*
+ * Open transceiver connection to SMS center. Return NULL for error,
+ * open Connection for OK. Caller must set smpp->conn->status correctly
+ * before calling this.
+ */
+static Connection *open_transceiver(SMPP *smpp)
+{
+    SMPP_PDU *bind;
+    Connection *conn;
+    
+    conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->our_host );
+    if (conn == NULL) { 
+       error(0, "SMPP: Couldn't connect to server.");
+       return NULL;
+    }
+
+    bind = smpp_pdu_create(bind_transceiver,
+                           counter_increase(smpp->message_id_counter));
+    bind->u.bind_transmitter.system_id = octstr_duplicate(smpp->username);
+    bind->u.bind_transmitter.password = octstr_duplicate(smpp->password);
+    if (smpp->system_type == NULL)
+        bind->u.bind_transmitter.system_type = octstr_create("VMA");
+    else   
+        bind->u.bind_transmitter.system_type = octstr_duplicate(smpp->system_type);
+    bind->u.bind_transmitter.interface_version = 0x34;
+    bind->u.bind_transmitter.address_range = octstr_duplicate(smpp->address_range);
+    send_pdu(conn, bind);
+    smpp_pdu_destroy(bind);
+
+    return conn;
+}
+
+
+/*
  * Open reception connection to SMS center. Return NULL for error, 
  * open Connection for OK. Caller must set smpp->conn->status correctly 
  * before calling this.
@@ -652,6 +685,19 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 	}
 	break;
 
+    case bind_transceiver_resp:
+        if (pdu->u.bind_transceiver_resp.command_status != 0) {
+            error(0, "SMPP: SMSC rejected login to transmit, "
+                     "code 0x%08lx.",
+                     pdu->u.bind_transceiver_resp.command_status);
+        } else {
+            *pending_submits = 0;
+            smpp->conn->status = SMSCCONN_ACTIVE;
+            smpp->conn->connect_time = time(NULL);
+            bb_smscconn_connected(smpp->conn);
+        }
+        break;
+
     case bind_receiver_resp:
 	if (pdu->u.bind_transmitter_resp.command_status != 0) {
 	    error(0, "SMPP: SMSC rejected login to receive, "
@@ -717,8 +763,10 @@ static void io_thread(void *arg)
 
     conn = NULL;
     while (!smpp->quitting) {
-	if (transmitter)
+	if (transmitter == 1)
 	    conn = open_transmitter(smpp);
+    else if (transmitter == 2)
+        conn = open_transceiver(smpp);
 	else
 	    conn = open_receiver(smpp);
 	if (conn == NULL) {
@@ -849,14 +897,18 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     Octstr *my_number;
     SMPP *smpp;
     int ok;
+    int transceiver_mode;
+
     
     my_number = NULL;
+    transceiver_mode = 0;
 
     host = cfg_get(grp, octstr_imm("host"));
     if (cfg_get_integer(&port, grp, octstr_imm("port")) == -1)
     	port = 0;
     if (cfg_get_integer(&receive_port, grp, octstr_imm("receive-port")) == -1)
     	receive_port = 0;
+    cfg_get_bool(&transceiver_mode, grp, octstr_imm("transceiver-mode"));
     username = cfg_get(grp, octstr_imm("smsc-username"));
     password = cfg_get(grp, octstr_imm("smsc-password"));
     system_type = cfg_get(grp, octstr_imm("system-type"));
@@ -929,7 +981,8 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
      * disable the creation of the corresponding thread.
      */
     if (port != 0)
-        smpp->transmitter = gwthread_create(io_thread, io_arg_create(smpp, 1));
+        smpp->transmitter = gwthread_create(io_thread, io_arg_create(smpp, 
+                                           (transceiver_mode ? 2 : 1)));
     if (receive_port != 0)
         smpp->receiver = gwthread_create(io_thread, io_arg_create(smpp, 0));
     

@@ -59,7 +59,6 @@ PDU(bind_transmitter,
     NULTERMINATED(address_range, 41)
 )
 
-
 PDU(bind_transmitter_resp,
     0x80000002,
     HEADER
@@ -80,6 +79,24 @@ PDU(bind_receiver,
 
 PDU(bind_receiver_resp,
     0x80000001,
+    HEADER
+    /* XXX not included for now: NULTERMINATED(system_id, 16) */
+)
+
+PDU(bind_transceiver,
+    0x00000009,
+    HEADER
+    NULTERMINATED(system_id, 16)
+    NULTERMINATED(password, 9)
+    NULTERMINATED(system_type, 13)
+    INTEGER(interface_version, 1)
+    INTEGER(addr_ton, 1)
+    INTEGER(addr_npi, 1)
+    NULTERMINATED(address_range, 41)
+)
+
+PDU(bind_transceiver_resp,
+    0x80000009,
     HEADER
     /* XXX not included for now: NULTERMINATED(system_id, 16) */
 )
