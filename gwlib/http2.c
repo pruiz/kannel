@@ -171,10 +171,6 @@ List **reply_headers, Octstr **reply_body) {
 	for (i = 0; i < HTTP_MAX_FOLLOW; ++i) {
 		ret = http2_get(*final_url, request_headers, reply_headers, 
 				reply_body);
-		if (ret == -1) {
-			ret = -1;
-			break;
-		}
 		if (ret != HTTP_MOVED_PERMANENTLY && ret != HTTP_FOUND &&
 		    ret != HTTP_SEE_OTHER)
 			break;
@@ -454,7 +450,6 @@ static HTTPSocket *pool_allocate(Octstr *host, int port) {
 		pool_kill_old_ones();
 		list_append(pool, p);
 	} else {
-		debug("gwlib.http2", 0, "HTTP2: Re-using old socket.");
 		gw_assert(p != NULL);
 		if (!pool_socket_is_alive(p) && pool_socket_reopen(p) == -1) {
 			list_unlock(pool);

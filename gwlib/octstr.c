@@ -678,9 +678,13 @@ int octstr_search_char_from(Octstr *ostr, int ch, long pos) {
 
 
 int octstr_search_cstr(Octstr *ostr, char *str) {
+	return octstr_search_cstr_from(ostr, str, 0);
+}
+
+
+int octstr_search_cstr_from(Octstr *ostr, char *str, long pos) {
 	int first;
 	long len;
-	long pos;
 
 	seems_valid(ostr);
 	gw_assert(str != NULL);
@@ -696,7 +700,7 @@ int octstr_search_cstr(Octstr *ostr, char *str) {
 	 * occurrences, or if the rest of str can't possibly fit in
 	 * the rest of the ostr. */
 	first = str[0];
-	pos = octstr_search_char(ostr, first);
+	pos = octstr_search_char_from(ostr, first, pos);
 	while (pos >= 0 && ostr->len - pos >= len) {
 		if (memcmp(ostr->data + pos, str, len) == 0)
 			return pos;

@@ -1,3 +1,24 @@
+Tue May  2 20:19:45 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/html.[ch]: Converted html_ functions to use Octstr instead
+	of C string.
+	
+	* gw/smsbox.c: Undid rpr's undoing of my change to get rid of
+	send_hearbeat's static variable. It's a memory leak. We don't want
+	memory leaks. In this case, it is of a fixed size, but it's annoying
+	in the gw_check_leaks report.
+	
+	Also added calls to http2_init and http2_shutdown.
+	
+	* gw/smsbox_req.c: function obey_request converted to use http2
+	and Octstr.
+	
+	* gwlib/http2.c: Removed verbose "Re-using old socket" message.
+	Also removed redundant checking of http2_get's return value in
+	http2_get_real.
+	
+	* gwlib/octstr.[ch]: Wrote octstr_search_cstr_from.
+
 2000-05-02  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/conn.h, gwlib.conn.c: Initial framework for Connection module.

@@ -14,44 +14,60 @@
 
 #define SMS_MAX 161
 
+
+/* Is there a comment beginning at offset `pos'? */
+static int html_comment_begins(Octstr *html, long pos) {
+	char buf[10];
+	
+	octstr_get_many_chars(buf, html, pos, 4);
+	buf[5] = '\0';
+	return strcmp(buf, "<!--") == 0;
+}
+
+
 /* Skip a comment in HTML. */
-static char *skip_html_comment(char *html) {
-	html += 4;	/* Skip "<!--" at beginning of comment. */
-	html = strstr(html, "-->");
-	if (html == NULL)
-		return "";
-	return html + 3;
+static void skip_html_comment(Octstr *html, long *pos) {
+	long i;
+
+	*pos += 4;	/* Skip "<!--" at beginning of comment. */
+	i = octstr_search_cstr_from(html, "-->", *pos);
+	if (i == -1)
+		*pos = octstr_len(html);
+	else
+		*pos = i;
 }
 
 
 /* Skip a beginning of ending tag in HTML, including any attributes. */
-static char *skip_html_tag(char *html) {
+static void skip_html_tag(Octstr *html, long *pos) {
+	long i, len;
+	int c;
+
 	/* Skip leading '<'. */
-	++html;
+	++(*pos);
 
 	/* Skip name of tag and attributes with values. */
-	while (*html != '\0' && *html != '>') {
-		if (*html == '"' || *html == '\'') {
-			html = strchr(html + 1, *html);
-			if (html == NULL)
-				html = "";
+	len = octstr_len(html);
+	while (*pos < len && (c = octstr_get_char(html, *pos)) != '>') {
+		if (c == '"' || c == '\'') {
+			i = octstr_search_char_from(html, c, *pos + 1);
+			if (i == -1)
+				*pos = len;
 			else
-				++html;
+				++(*pos);
 		} else
-			++html;
+			++(*pos);
 	}
 	
 	/* Skip trailing '>' if it is there. */
-	if (*html == '>')
-		++html;
-
-	return html;
+	if (octstr_get_char(html, *pos) == '>')
+		++(*pos);
 }
 
 
 /* Convert an HTML entity into a single character and advance `*html' past
    the entity. */
-static int convert_html_entity(char **html) {
+static void convert_html_entity(Octstr *sms, Octstr *html, long *pos) {
 	static struct {
 		char *entity;
 		int character;
@@ -165,81 +181,82 @@ static int convert_html_entity(char **html) {
 		{ "&yuml;", 255 },
 	};
 	int num_tab = sizeof(tab) / sizeof(tab[0]);
-	int i, code, digits;
+	long i, code;
 	size_t len;
+	char buf[1024];
 	
-	if ((*html)[1] == '#') {
-		digits = strspn((*html) + 2, "0123456789");
-		code = 0;
-		for (i = 0; i < digits; ++i)
-			code = code * 10 + (*html)[2 + i] - '0';
-		if (code <= ' ')
-			code = ' ';
-		*html += 2 + digits;
-		if (**html == ';')
-			++(*html);
-		return code;
-	}
-
-	for (i = 0; i < num_tab; ++i) {
-		len = strlen(tab[i].entity);
-		if (strncmp(*html, tab[i].entity, len) == 0) {
-			*html += len;
-			return tab[i].character;
+	if (octstr_get_char(html, (*pos) + 1) == '#') {
+		i = octstr_parse_long(&code, html, *pos, 10);
+		if (i > 0) {
+			if (code < 256)
+				octstr_append_char(sms, code);
+			*pos += i + 1;
+			if (octstr_get_char(html, *pos) == ';')
+				++(*pos);
+		}
+	} else {
+		for (i = 0; i < num_tab; ++i) {
+			len = strlen(tab[i].entity);
+			octstr_get_many_chars(buf, html, *pos, len);
+			buf[len] = '\0';
+			if (strcmp(buf, tab[i].entity) == 0) {
+				*pos += len;
+				octstr_append_char(sms, tab[i].character);
+				break;
+			}
+		}
+		if (i == num_tab) {
+			++(*pos);
+			octstr_append_char(sms, '&');
 		}
 	}
-
-	++(*html);
-	return '&';
 }
 
 
-/* Convert an HTML page into an SMS message: Remove tags, convert entities,
-   and so on. */
-void html_to_sms(char *sms, size_t smsmax_u, char *html_arg) {
-	int n;
-	long smsmax;
-	unsigned char *html;
+Octstr *html_to_sms(Octstr *html) {
+	long i, len;
+	int c;
+	Octstr *sms;
 	
-	html = html_arg;
-	n = 0;
-	smsmax = smsmax_u;
-	while (n < smsmax-1 && *html != '\0') {
-		switch (*html) {
+	sms = octstr_create_empty();
+	len = octstr_len(sms);
+	i = 0;
+	while (i < len) {
+		c = octstr_get_char(html, i);
+		switch (c) {
 		case '<':
-			if (strncmp(html, "<!--", 4) == 0)
-				html = skip_html_comment(html);
+			if (html_comment_begins(html, i))
+				skip_html_comment(html, &i);
 			else
-				html = skip_html_tag(html);
+				skip_html_tag(html, &i);
 			break;
 		case '&':
-			sms[n++] = convert_html_entity((char **) &html);
+			convert_html_entity(sms, html, &i);
 			break;
 		default:
-			if (isspace(*html)) {
-				if (n > 0 && sms[n-1] != ' ')
-					sms[n++] = ' ';
-				++html;
-			} else
-				sms[n++] = *(html++);
+			octstr_append_char(sms, c);
+			++i;
 			break;
 		}
 	}
-	while (n > 0 && sms[n-1] == ' ')
-		--n;
-	sms[n] = '\0';
+
+	octstr_shrink_blank(sms);
+	octstr_strip_blank(sms);
+	return sms;
 }
 
 
-char *html_strip_prefix_and_suffix(char *html, char *prefix, char *suffix) {
-	char *p, *q;
+Octstr *html_strip_prefix_and_suffix(Octstr *html, char *prefix, char *suffix)
+{
+	char *p, *q, *data;
 
-	p = str_case_str(html, prefix);
+	data = octstr_get_cstr(html);
+	p = str_case_str(data, prefix);
 	if (p == NULL)
-		return gw_strdup(html);	/* return original, if no prefix */
+		return octstr_duplicate(html);
 	p += strlen(prefix);
 	q = str_case_str(p, suffix);
 	if (q == NULL)
-		return gw_strdup(html);	/* return original, if no suffix */
-	return strndup(p, q - p);
+		return octstr_duplicate(html);
+	return octstr_copy(html, p - data, q - p);
 }

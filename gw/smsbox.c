@@ -318,24 +318,21 @@ static void init_smsbox(Config *cfg)
  */
 static int send_heartbeat(void)
 {
-    static Msg *msg = NULL;
+    Msg *msg;
     Octstr *pack;
+    int ret;
     
-    if (msg == NULL)
-	if ((msg = msg_create(heartbeat)) == NULL)
-	    return -1;
-
+    msg = msg_create(heartbeat);
     msg->heartbeat.load = smsbox_req_count();
-    if ((pack = msg_pack(msg)) == NULL)
-	return -1;
+    pack = msg_pack(msg);
 
-#if 0
-    debug("sms", 0, "sending heartbeat load %d", smsbox_req_count()); 
-#endif
-    if (octstr_send(socket_fd, pack))
-	return -1;
+    if (msg->heartbeat.load > 0)
+	debug("sms", 0, "sending heartbeat load %ld", msg->heartbeat.load); 
+    msg_destroy(msg);
+
+    ret = octstr_send(socket_fd, pack);
     octstr_destroy(pack);
-    return 0;
+    return ret;
 }
 
 
@@ -437,6 +434,7 @@ int main(int argc, char **argv)
     URLTranslationList *translations;
 
     gw_init_mem();
+    http2_init();
     cf_index = get_and_set_debugs(argc, argv, NULL);
 
 
@@ -476,6 +474,7 @@ int main(int argc, char **argv)
 
     info(0, "Smsbox terminating.");
 
+    http2_shutdown();
     mutex_destroy(socket_mutex);
     urltrans_destroy(translations);
     config_destroy(cfg);

@@ -45,93 +45,94 @@ static sig_atomic_t req_threads = 0;
  */
 static char *obey_request(URLTranslation *trans, Msg *sms)
 {
-	char *pattern = NULL;
-	char *data, *tmpdata;
-	size_t size;
-	char *type = NULL;
-	char replytext[1024*10+1];       /* ! absolute limit ! */
+	char *pattern, *ret;
+	Octstr *os, *url, *final_url, *reply_body, *type, *charset,
+		*temp, *replytext;
+	List *request_headers, *reply_headers;
+	int status;
 
 	gw_assert(sms != NULL);
 	gw_assert(msg_type(sms) == smart_sms);
 
 	pattern = urltrans_get_pattern(trans, sms);
-	if (pattern == NULL) {
-		error(0, "Oops, urltrans_get_pattern failed.");
+	gw_assert(pattern != NULL);
+
+	switch (urltrans_type(trans)) {
+	case TRANSTYPE_TEXT:
+		debug("sms", 0, "formatted text answer: <%s>", pattern);
+		ret = pattern;
+		break;
+
+	case TRANSTYPE_FILE:
+		replytext = octstr_read_file(pattern);
+		gw_free(pattern);
+		ret = gw_strdup(octstr_get_cstr(replytext));
+		octstr_destroy(replytext);
+		break;
+
+	case TRANSTYPE_URL:
+		url = octstr_create(pattern);
+		request_headers = list_create();
+		status = http2_get_real(url, request_headers, &final_url,
+					&reply_headers, &reply_body);
+		gw_free(pattern);		/* no longer needed */
+		octstr_destroy(url);
+		octstr_destroy(final_url);
+		list_destroy(request_headers);
+		if (status != HTTP_OK) {
+			while ((os = list_extract_first(reply_headers)) != NULL)
+				octstr_destroy(os);
+			list_destroy(reply_headers);
+			octstr_destroy(reply_body);
+			goto error;
+		}
+		
+		http2_header_get_content_type(reply_headers, &type, &charset);
+		if (octstr_str_compare(type, "text/html") == 0) {
+			if (urltrans_prefix(trans) != NULL &&
+			    urltrans_suffix(trans) != NULL) {
+			    temp = html_strip_prefix_and_suffix(reply_body,
+				       urltrans_prefix(trans), 
+				       urltrans_suffix(trans));
+			    octstr_destroy(reply_body);
+			    reply_body = temp;
+			}
+			replytext = html_to_sms(reply_body);
+		} else if (octstr_str_compare(type, "text/plain") == 0) {
+			replytext = reply_body;
+			reply_body = NULL;
+		} else {
+			replytext = octstr_create("Result could not be represented "
+						  "as an SMS message.");
+		}
+	
+		octstr_destroy(type);
+		octstr_destroy(charset);
+		while ((os = list_extract_first(reply_headers)) != NULL)
+			octstr_destroy(os);
+		list_destroy(reply_headers);
+		octstr_destroy(reply_body);
+	
+		if (octstr_len(replytext) == 0)
+			ret = gw_strdup("");
+		else {
+			octstr_strip_blank(replytext);
+			ret = gw_strdup(octstr_get_cstr(replytext));
+		}
+		octstr_destroy(replytext);
+	
+		break;
+
+	default:
+		error(0, "Unknown URL translation type %d", 
+			urltrans_type(trans));
 		return NULL;
 	}
-
-	if (urltrans_type(trans) == TRANSTYPE_TEXT) {
-
-		debug("sms", 0, "formatted text answer: <%s>", pattern);
-		return pattern;
-
-	} else if (urltrans_type(trans) == TRANSTYPE_FILE) {
-
-		int fd;
-		size_t len;
 	
-		fd = open(pattern, O_RDONLY);
-		if (fd == -1) {
-		    error(errno, "Couldn't open file <%s>", pattern);
-		    gw_free(pattern);
-		    return NULL;
-		}
-
-		replytext[0] = '\0';
-		len = read(fd, replytext, 1024*10);
-		close(fd);
-		replytext[len-1] = '\0';	/* remove trailing '\n' */
-
-		gw_free(pattern);
-		return gw_strdup(replytext);
-	}
-
-	/* URL */
-
-	if (http_get(pattern, &type, &data, &size) == -1) {
-		gw_free(pattern);
-		goto error;
-	}
-	gw_free(pattern);		/* no longer needed */
-	
-	/* Make sure the data is NUL terminated. */
-	tmpdata = gw_realloc(data, size + 1);
-	data = tmpdata;
-	data[size] = '\0';
-
-	if(strcmp(type, "text/html") == 0) {
-
-		if (urltrans_prefix(trans) != NULL &&
-		    urltrans_suffix(trans) != NULL) {
-
-		    tmpdata = html_strip_prefix_and_suffix(data,
-			       urltrans_prefix(trans), urltrans_suffix(trans));
-		    gw_free(data);	
-		    data = tmpdata;
-		}
-		html_to_sms(replytext, sizeof(replytext), data);
-
-	} else if(strcmp(type, "text/plain") == 0) {
-
-		strncpy(replytext, data, sizeof(replytext) - 1);
-
-	} else {
-
-		strcpy(replytext,
-		       "Result could not be represented as an SMS message.");
-
-	}
-
-	gw_free(data);
-	gw_free(type);
-
-	if (strlen(replytext)==0)
-		return gw_strdup("");
-
-	return gw_strdup(replytext);
+	return ret;
 
 error:
-    return NULL;
+	return NULL;
 }
 
 

@@ -231,6 +231,12 @@ int octstr_search_cstr(Octstr *ostr, char *str);
 
 
 /*
+ * Like octstr_search_cstr, but start at a given position.
+ */
+int octstr_search_cstr_from(Octstr *ostr, char *str, long pos);
+
+
+/*
  * Search for the octet string 'needle' in the octet string 'haystack'.
  * Return the start position (index) of 'needle' in 'haystack'.
  * Return -1 if not found.
