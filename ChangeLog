@@ -1,5 +1,24 @@
 2001-02-02  Tuomas Luttinen  <tuo@wapit.com>
 
+	* test/decompile.[ch]: Applied the patch by Neil Hunter that 
+	implements the codepage switch, changes the indent size to a #define
+	and adds basic support for different DTDs.
+
+	* gw/utf8map_iso8859-7.h, gw/utf8map_win1251.h, gw/utf8map_win1257.h,
+	gw/utf8map_koi8r.h, gw/utf8map_win1253.h: removed as obsolete.
+
+	* gw/wml_compiler.c: Patch by Vjacheslav Chekushin applied. The
+	patch makes the libxml aware of some aliases for different 
+	character_sets, so these can be used in the WML content with the 
+	libxml.
+	Some other modifications due modifications in the wml_definitions.h.
+
+	* gw/wml_definitions.h: Patch by Vjacheslav Chekushin applied. The 
+	patch removes the use of the utf8map in the character_sets[].
+	Also utf8map removed from the character_sets[].
+
+2001-02-02  Tuomas Luttinen  <tuo@wapit.com>
+
 	* gw/wml_compiler.c (string_table_collect_strings): Removed the 
 	if (strlen(node->content) > WBXML_STRING_TABLE_MIN) -line that 
 	won't work with XML_USE_BUFFER_CONTENT.

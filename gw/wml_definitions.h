@@ -226,50 +226,34 @@ wml_table_t wml_URL_values[] = {
  * Character sets.
  */
 
-static unsigned char utf8map_iso8859_7[] = {
-#include "utf8map_iso8859-7.h"
-} ;
+struct {
+  char *real;
+  char *alias;
+} chars_aliases[] = {
+  { "CP1257", "WIN-1257" },
+  { "CP1257", "WINDOWS-1257" },
+  { "CP1251", "WINDOWS-1251" },
+  { "CP1251", "WIN-1251" },
+  { "CP1253", "WINDOWS-1253" },
+  {NULL}
+};
 
-static unsigned char utf8map_win1251[] = {
-#include "utf8map_win1251.h"
-} ;
-
-static unsigned char utf8map_win1253[] = {
-#include "utf8map_win1253.h"
-} ;
-
-static unsigned char utf8map_win1257[] = {
-#include "utf8map_win1257.h"
-} ;
-
-static unsigned char utf8map_koi8r[] = {
-#include "utf8map_koi8r.h"
-} ;
 
 struct {
   char *charset;
   char *nro;
   unsigned int MIBenum;
-  unsigned char *utf8map;
 } character_sets[] = {
-  { "ISO", "8859-1", 4, NULL }, /* ISOLatin1 */
-  { "ISO", "8859-2", 5, NULL }, /* ISOLatin2 */
-  { "ISO", "8859-3", 6, NULL }, /* ISOLatin3 */
-  { "ISO", "8859-4", 7, NULL }, /* ISOLatin4 */
-  { "ISO", "8859-5", 8, NULL }, /* ISOLatinCyrillic */
-  { "ISO", "8859-6", 9, NULL }, /* ISOLatinArabic */
-  { "ISO", "8859-7", 10, utf8map_iso8859_7 }, /* ISOLatinGreek */
-  { "ISO", "8859-8", 11, NULL }, /* ISOLatinHebrew */
-  { "ISO", "8859-9", 12, NULL }, /* ISOLatin5 */
-  /* Russian, uses UTF-8 but with remapping */
-  { "WINDOWS", "1251", 106, utf8map_win1251 }, 
-  /* Windows-1253, uses UTF-8 but with remapping */
-  { "WINDOWS", "1253", 106, utf8map_win1253 }, 
-  /* Latvian, uses UTF-8 but with remapping */
-  { "WINDOWS", "1257", 106, utf8map_win1257 }, 
-  /* Russian, uses UTF-8 but with remapping */
-  { "KOI8", "R", 106, utf8map_koi8r }, 
+  { "ISO", "8859-1", 4 }, /* ISOLatin1 */
+  { "ISO", "8859-2", 5 }, /* ISOLatin2 */
+  { "ISO", "8859-3", 6 }, /* ISOLatin3 */
+  { "ISO", "8859-4", 7 }, /* ISOLatin4 */
+  { "ISO", "8859-5", 8 }, /* ISOLatinCyrillic */
+  { "ISO", "8859-6", 9 }, /* ISOLatinArabic */
+  { "ISO", "8859-7", 10 }, /* ISOLatinGreek */
+  { "ISO", "8859-8", 11 }, /* ISOLatinHebrew */
+  { "ISO", "8859-9", 12 }, /* ISOLatin5 */
   /* Note!! If you want to add character sets, put them above this line. */
-  { "UTF", "8", 106, NULL }, /* UTF-8, the default. */
+  { "UTF", "8", 106 }, /* UTF-8, the default. */
   {NULL}
 };

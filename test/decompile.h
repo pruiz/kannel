@@ -177,6 +177,7 @@ typedef struct tagDTD_TYPE_LIST
 
 typedef struct tagCODEPAGE_TAG_NAME_LIST
 {
+	long           m_dtd_id;
 	char*          m_name;
 	WBXML_CODEPAGE m_page;
 	WBXML_TAG      m_tag;
@@ -187,6 +188,7 @@ typedef CODEPAGE_TAG_NAME_LIST* P_CODEPAGE_TAG_NAME_LIST;
 
 typedef struct tagCODEPAGE_ATTRSTART_NAME_LIST
 {
+	long           m_dtd_id;
 	char*          m_name;
 	char*          m_valueprefix;
 	WBXML_CODEPAGE m_page;
@@ -198,6 +200,7 @@ typedef CODEPAGE_ATTRSTART_NAME_LIST* P_CODEPAGE_ATTRSTART_NAME_LIST;
 
 typedef struct tagCODEPAGE_ATTRVALUE_NAME_LIST
 {
+	long           m_dtd_id;
 	char*          m_name;
 	WBXML_CODEPAGE m_page;
 	WBXML_TAG      m_tag;

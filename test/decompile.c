@@ -14,6 +14,9 @@
 #include "decompile.h"
 
 const WBXML_MB_U_INT32 ZERO_WBXML_MB_U_INT32 = {0,0,0,0};
+long dtd_id;
+
+#define INDENT_SIZE		4
 
 DTD_TYPE_LIST DTDTypeList[] =
 {
@@ -36,162 +39,195 @@ DTD_TYPE_LIST DTDTypeList[] =
 
 CODEPAGE_TAG_NAME_LIST CodepageTagNames[] =
 {
-	{"a",         0, 0x1c},
-	{"anchor",    0, 0x22},
-	{"access",    0, 0x23},
-	{"b",         0, 0x24},
-	{"big",       0, 0x25},
-	{"br",        0, 0x26},
-	{"card",      0, 0x27},
-	{"do",        0, 0x28},
-	{"em",        0, 0x29},
-	{"fieldset",  0, 0x2a},
-	{"go",        0, 0x2b},
-	{"head",      0, 0x2c},
-	{"i",         0, 0x2d},
-	{"img",       0, 0x2e},
-	{"input",     0, 0x2f},
-	{"meta",      0, 0x30},
-	{"noop",      0, 0x31},
-	{"p",         0, 0x20},
-	{"postfield", 0, 0x21},
-	{"pre",       0, 0x1b},
-	{"prev",      0, 0x32},
-	{"onevent",   0, 0x33},
-	{"optgroup",  0, 0x34},
-	{"option",    0, 0x35},
-	{"refresh",   0, 0x36},
-	{"select",    0, 0x37},
-	{"setvar",    0, 0x3e},
-	{"small",     0, 0x38},
-	{"strong",    0, 0x39},
-	{"table",     0, 0x1f},
-	{"td",        0, 0x1d},
-	{"template",  0, 0x3b},
-	{"timer",     0, 0x3c},
-	{"tr",        0, 0x1e},
-	{"u",         0, 0x3d},
-	{"wml",       0, 0x3f},
-	{NULL, 0, 0}
+	{4, "a",         0, 0x1c},
+	{4, "anchor",    0, 0x22},
+	{4, "access",    0, 0x23},
+	{4, "b",         0, 0x24},
+	{4, "big",       0, 0x25},
+	{4, "br",        0, 0x26},
+	{4, "card",      0, 0x27},
+	{4, "do",        0, 0x28},
+	{4, "em",        0, 0x29},
+	{4, "fieldset",  0, 0x2a},
+	{4, "go",        0, 0x2b},
+	{4, "head",      0, 0x2c},
+	{4, "i",         0, 0x2d},
+	{4, "img",       0, 0x2e},
+	{4, "input",     0, 0x2f},
+	{4, "meta",      0, 0x30},
+	{4, "noop",      0, 0x31},
+	{4, "p",         0, 0x20},
+	{4, "postfield", 0, 0x21},
+	{4, "pre",       0, 0x1b},
+	{4, "prev",      0, 0x32},
+	{4, "onevent",   0, 0x33},
+	{4, "optgroup",  0, 0x34},
+	{4, "option",    0, 0x35},
+	{4, "refresh",   0, 0x36},
+	{4, "select",    0, 0x37},
+	{4, "setvar",    0, 0x3e},
+	{4, "small",     0, 0x38},
+	{4, "strong",    0, 0x39},
+	{4, "table",     0, 0x1f},
+	{4, "td",        0, 0x1d},
+	{4, "template",  0, 0x3b},
+	{4, "timer",     0, 0x3c},
+	{4, "tr",        0, 0x1e},
+	{4, "u",         0, 0x3d},
+	{4, "wml",       0, 0x3f},
+
+	{6, "TAG_05",    1, 0x05},
+	{6, "TAG_06",    1, 0x06},
+	{6, "TAG_07",    1, 0x07},
+
+	{0, NULL, 0, 0}
 };
 
 CODEPAGE_ATTRSTART_NAME_LIST CodepageAttrstartNames[] =
 {
-	{"accept-charset",  NULL,                                0, 0x05},
-	{"accesskey",       NULL,                                0, 0x5e},
-	{"align",           NULL,                                0, 0x52},
-	{"align",           "bottom",                            0, 0x06},
-	{"align",           "center",                            0, 0x07},
-	{"align",           "left",                              0, 0x08},
-	{"align",           "middle",                            0, 0x09},
-	{"align",           "right",                             0, 0x0a},
-	{"align",           "top",                               0, 0x0b},
-	{"alt",             NULL,                                0, 0x0c},
-	{"class",           NULL,                                0, 0x54},
-	{"columns",         NULL,                                0, 0x53},
-	{"content",         NULL,                                0, 0x0d},
-	{"content",         "application/vnd.wap.wmlc;charset=", 0, 0x5c},
-	{"domain",          NULL,                                0, 0x0f},
-	{"emptyok",         "false",                             0, 0x10},
-	{"emptyok",         "true",                              0, 0x11},
-	{"enctype",         NULL,                                0, 0x5f},
-	{"enctype",         "application/x-www-form-urlencoded", 0, 0x60},
-	{"enctype",         "multipart/form-data",               0, 0x61},
-	{"format",          NULL,                                0, 0x12},
-	{"forua",           "false",                             0, 0x56},
-	{"forua",           "true",                              0, 0x57},
-	{"height",          NULL,                                0, 0x13},
-	{"href",            NULL,                                0, 0x4a},
-	{"href",            "http://",                           0, 0x4b},
-	{"href",            "https://",                          0, 0x4c},
-	{"hspace",          NULL,                                0, 0x14},
-	{"http-equiv",      NULL,                                0, 0x5a},
-	{"http-equiv",      "Content-Type",                      0, 0x5b},
-	{"http-equiv",      "Expires",                           0, 0x5d},
-	{"id",              NULL,                                0, 0x55},
-	{"ivalue",          NULL,                                0, 0x15},
-	{"iname",           NULL,                                0, 0x16},
-	{"label",           NULL,                                0, 0x18},
-	{"localsrc",        NULL,                                0, 0x19},
-	{"maxlength",       NULL,                                0, 0x1a},
-	{"method",          "get",                               0, 0x1b},
-	{"method",          "post",                              0, 0x1c},
-	{"mode",            "nowrap",                            0, 0x1d},
-	{"mode",            "wrap",                              0, 0x1e},
-	{"multiple",        "false",                             0, 0x1f},
-	{"multiple",        "true",                              0, 0x20},
-	{"name",            NULL,                                0, 0x21},
-	{"newcontext",      "false",                             0, 0x22},
-	{"newcontext",      "true",                              0, 0x23},
-	{"onenterbackward", NULL,                                0, 0x25},
-	{"onenterforward",  NULL,                                0, 0x26},
-	{"onpick",          NULL,                                0, 0x24},
-	{"ontimer",         NULL,                                0, 0x27},
-	{"optional",        "false",                             0, 0x28},
-	{"optional",        "true",                              0, 0x29},
-	{"path",            NULL,                                0, 0x2a},
-	{"scheme",          NULL,                                0, 0x2e},
-	{"sendreferer",     "false",                             0, 0x2f},
-	{"sendreferer",     "true",                              0, 0x30},
-	{"size",            NULL,                                0, 0x31},
-	{"src",             NULL,                                0, 0x32},
-	{"src",             "http://",                           0, 0x58},
-	{"src",             "https://",                          0, 0x59},
-	{"ordered",         "true",                              0, 0x33},
-	{"ordered",         "false",                             0, 0x34},
-	{"tabindex",        NULL,                                0, 0x35},
-	{"title",           NULL,                                0, 0x36},
-	{"type",            NULL,                                0, 0x37},
-	{"type",            "accept",                            0, 0x38},
-	{"type",            "delete",                            0, 0x39},
-	{"type",            "help",                              0, 0x3a},
-	{"type",            "password",                          0, 0x3b},
-	{"type",            "onpick",                            0, 0x3c},
-	{"type",            "onenterbackward",                   0, 0x3d},
-	{"type",            "onenterforward",                    0, 0x3e},
-	{"type",            "ontimer",                           0, 0x3f},
-	{"type",            "options",                           0, 0x45},
-	{"type",            "prev",                              0, 0x46},
-	{"type",            "reset",                             0, 0x47},
-	{"type",            "text",                              0, 0x48},
-	{"type",            "vnd.",                              0, 0x49},
-	{"value",           NULL,                                0, 0x4d},
-	{"vspace",          NULL,                                0, 0x4e},
-	{"width",           NULL,                                0, 0x4f},
-	{"xml:lang",        NULL,                                0, 0x50},
-	{NULL,              NULL,                                0, 0}
+	{4, "accept-charset",  NULL,                                0, 0x05},
+	{4, "accesskey",       NULL,                                0, 0x5e},
+	{4, "align",           NULL,                                0, 0x52},
+	{4, "align",           "bottom",                            0, 0x06},
+	{4, "align",           "center",                            0, 0x07},
+	{4, "align",           "left",                              0, 0x08},
+	{4, "align",           "middle",                            0, 0x09},
+	{4, "align",           "right",                             0, 0x0a},
+	{4, "align",           "top",                               0, 0x0b},
+	{4, "alt",             NULL,                                0, 0x0c},
+	{4, "class",           NULL,                                0, 0x54},
+	{4, "columns",         NULL,                                0, 0x53},
+	{4, "content",         NULL,                                0, 0x0d},
+	{4, "content",         "application/vnd.wap.wmlc;charset=", 0, 0x5c},
+	{4, "domain",          NULL,                                0, 0x0f},
+	{4, "emptyok",         "false",                             0, 0x10},
+	{4, "emptyok",         "true",                              0, 0x11},
+	{4, "enctype",         NULL,                                0, 0x5f},
+	{4, "enctype",         "application/x-www-form-urlencoded", 0, 0x60},
+	{4, "enctype",         "multipart/form-data",               0, 0x61},
+	{4, "format",          NULL,                                0, 0x12},
+	{4, "forua",           "false",                             0, 0x56},
+	{4, "forua",           "true",                              0, 0x57},
+	{4, "height",          NULL,                                0, 0x13},
+	{4, "href",            NULL,                                0, 0x4a},
+	{4, "href",            "http://",                           0, 0x4b},
+	{4, "href",            "https://",                          0, 0x4c},
+	{4, "hspace",          NULL,                                0, 0x14},
+	{4, "http-equiv",      NULL,                                0, 0x5a},
+	{4, "http-equiv",      "Content-Type",                      0, 0x5b},
+	{4, "http-equiv",      "Expires",                           0, 0x5d},
+	{4, "id",              NULL,                                0, 0x55},
+	{4, "ivalue",          NULL,                                0, 0x15},
+	{4, "iname",           NULL,                                0, 0x16},
+	{4, "label",           NULL,                                0, 0x18},
+	{4, "localsrc",        NULL,                                0, 0x19},
+	{4, "maxlength",       NULL,                                0, 0x1a},
+	{4, "method",          "get",                               0, 0x1b},
+	{4, "method",          "post",                              0, 0x1c},
+	{4, "mode",            "nowrap",                            0, 0x1d},
+	{4, "mode",            "wrap",                              0, 0x1e},
+	{4, "multiple",        "false",                             0, 0x1f},
+	{4, "multiple",        "true",                              0, 0x20},
+	{4, "name",            NULL,                                0, 0x21},
+	{4, "newcontext",      "false",                             0, 0x22},
+	{4, "newcontext",      "true",                              0, 0x23},
+	{4, "onenterbackward", NULL,                                0, 0x25},
+	{4, "onenterforward",  NULL,                                0, 0x26},
+	{4, "onpick",          NULL,                                0, 0x24},
+	{4, "ontimer",         NULL,                                0, 0x27},
+	{4, "optional",        "false",                             0, 0x28},
+	{4, "optional",        "true",                              0, 0x29},
+	{4, "path",            NULL,                                0, 0x2a},
+	{4, "scheme",          NULL,                                0, 0x2e},
+	{4, "sendreferer",     "false",                             0, 0x2f},
+	{4, "sendreferer",     "true",                              0, 0x30},
+	{4, "size",            NULL,                                0, 0x31},
+	{4, "src",             NULL,                                0, 0x32},
+	{4, "src",             "http://",                           0, 0x58},
+	{4, "src",             "https://",                          0, 0x59},
+	{4, "ordered",         "true",                              0, 0x33},
+	{4, "ordered",         "false",                             0, 0x34},
+	{4, "tabindex",        NULL,                                0, 0x35},
+	{4, "title",           NULL,                                0, 0x36},
+	{4, "type",            NULL,                                0, 0x37},
+	{4, "type",            "accept",                            0, 0x38},
+	{4, "type",            "delete",                            0, 0x39},
+	{4, "type",            "help",                              0, 0x3a},
+	{4, "type",            "password",                          0, 0x3b},
+	{4, "type",            "onpick",                            0, 0x3c},
+	{4, "type",            "onenterbackward",                   0, 0x3d},
+	{4, "type",            "onenterforward",                    0, 0x3e},
+	{4, "type",            "ontimer",                           0, 0x3f},
+	{4, "type",            "options",                           0, 0x45},
+	{4, "type",            "prev",                              0, 0x46},
+	{4, "type",            "reset",                             0, 0x47},
+	{4, "type",            "text",                              0, 0x48},
+	{4, "type",            "vnd.",                              0, 0x49},
+	{4, "value",           NULL,                                0, 0x4d},
+	{4, "vspace",          NULL,                                0, 0x4e},
+	{4, "width",           NULL,                                0, 0x4f},
+	{4, "xml:lang",        NULL,                                0, 0x50},
+
+	{6, "ATTR_06",         NULL,                                1, 0x06},
+	{6, "ATTR_07",         NULL,                                1, 0x07},
+	{6, "ATTR_08",         NULL,                                1, 0x08},
+	{6, "ATTR_11",         NULL,                                1, 0x11},
+	{6, "ATTR_12",         NULL,                                1, 0x12},
+	{6, "ATTR_13",         NULL,                                1, 0x13},
+	{6, "ATTR_14",         NULL,                                1, 0x14},
+	{6, "ATTR_15",         NULL,                                1, 0x15},
+	{6, "ATTR_21",         NULL,                                1, 0x21},
+	{6, "ATTR_22",         NULL,                                1, 0x22},
+	{6, "ATTR_23",         NULL,                                1, 0x23},
+	{6, "ATTR_24",         NULL,                                1, 0x24},
+	{6, "ATTR_28",         NULL,                                1, 0x28},
+	{6, "ATTR_29",         NULL,                                1, 0x29},
+	{6, "ATTR_45",         NULL,                                1, 0x45},
+	{6, "ATTR_61",         NULL,                                1, 0x61},
+	{6, "ATTR_62",         NULL,                                1, 0x62},
+	{6, "ATTR_63",         NULL,                                1, 0x63},
+	{6, "ATTR_64",         NULL,                                1, 0x64},
+	{6, "ATTR_6A",         NULL,                                1, 0x6A},
+	{6, "ATTR_6B",         NULL,                                1, 0x6B},
+	{6, "ATTR_6C",         NULL,                                1, 0x6C},
+	{6, "ATTR_70",         NULL,                                1, 0x70},
+	{6, "ATTR_71",         NULL,                                1, 0x71},
+	{6, "ATTR_73",         NULL,                                1, 0x73},
+	{6, "ATTR_74",         NULL,                                1, 0x74},
+
+	{0, NULL,              NULL,                                0, 0}
 };
 
 CODEPAGE_ATTRVALUE_NAME_LIST CodepageAttrvalueNames[] =
 {
-	{".com/",           0, 0x85},
-	{".edu/",           0, 0x86},
-	{".net/",           0, 0x87},
-	{".org/",           0, 0x88},
-	{"accept",          0, 0x89},
-	{"bottom",          0, 0x8a},
-	{"clear",           0, 0x8b},
-	{"delete",          0, 0x8c},
-	{"help",            0, 0x8d},
-	{"http://",         0, 0x8e},
-	{"http://www.",     0, 0x8f},
-	{"https://",        0, 0x90},
-	{"https://www.",    0, 0x91},
-	{"middle",          0, 0x93},
-	{"nowrap",          0, 0x94},
-	{"onenterbackward", 0, 0x96},
-	{"onenterforward",  0, 0x97},
-	{"onpick",          0, 0x95},
-	{"ontimer",         0, 0x98},
-	{"options",         0, 0x99},
-	{"password",        0, 0x9a},
-	{"reset",           0, 0x9b},
-	{"text",            0, 0x9d},
-	{"top",             0, 0x9e},
-	{"unknown",         0, 0x9f},
-	{"wrap",            0, 0xa0},
-	{"www.",            0, 0xa1},
-	{NULL, 0, 0}
+	{4, ".com/",           0, 0x85},
+	{4, ".edu/",           0, 0x86},
+	{4, ".net/",           0, 0x87},
+	{4, ".org/",           0, 0x88},
+	{4, "accept",          0, 0x89},
+	{4, "bottom",          0, 0x8a},
+	{4, "clear",           0, 0x8b},
+	{4, "delete",          0, 0x8c},
+	{4, "help",            0, 0x8d},
+	{4, "http://",         0, 0x8e},
+	{4, "http://www.",     0, 0x8f},
+	{4, "https://",        0, 0x90},
+	{4, "https://www.",    0, 0x91},
+	{4, "middle",          0, 0x93},
+	{4, "nowrap",          0, 0x94},
+	{4, "onenterbackward", 0, 0x96},
+	{4, "onenterforward",  0, 0x97},
+	{4, "onpick",          0, 0x95},
+	{4, "ontimer",         0, 0x98},
+	{4, "options",         0, 0x99},
+	{4, "password",        0, 0x9a},
+	{4, "reset",           0, 0x9b},
+	{4, "text",            0, 0x9d},
+	{4, "top",             0, 0x9e},
+	{4, "unknown",         0, 0x9f},
+	{4, "wrap",            0, 0xa0},
+	{4, "www.",            0, 0xa1},
+	{0, NULL, 0, 0}
 };
 
 
@@ -313,6 +349,7 @@ static void AddDTDNode(P_WBXML_INFO buffer, const WBXML_DTD_TYPE dtdnum, const W
 	newnode->m_data = malloc(sizeof(DTD_NODE_DATA));
 	memcpy( &( ((DTD_NODE_DATA*)newnode->m_data)->m_dtdnum ), &(dtdnum[0]), sizeof(WBXML_MB_U_INT32) );
 	memcpy( &( ((DTD_NODE_DATA*)newnode->m_data)->m_index ), &(index[0]), sizeof(WBXML_MB_U_INT32) );
+	dtd_id = (long) dtdnum[0];
 }
 
 static void AddStringTableNode(P_WBXML_INFO buffer, const P_WBXML_STRING_TABLE strings)
@@ -1152,6 +1189,9 @@ void Read_switchPage (P_WBXML_INFO buffer)
 
   ReadFixedTag(buffer, TAG_SWITCH_PAGE);
   Read_pageindex(buffer, &pageindex);
+
+  /* Use the new codepage */
+  buffer->m_curpage = pageindex;
 }
 
 void Read_inline     (P_WBXML_INFO buffer)
@@ -1409,7 +1449,8 @@ static const char* CodepageTagName(WBXML_CODEPAGE page, WBXML_TAG tag)
 	/* Search the tag list for a match */
 	while (CodepageTagNames[i].m_name)
 	{
-		if ((CodepageTagNames[i].m_page == page) &&
+		if ((CodepageTagNames[i].m_dtd_id == dtd_id) &&
+			(CodepageTagNames[i].m_page == page) &&
 			(CodepageTagNames[i].m_tag == tag))
 		{
 			break;
@@ -1434,7 +1475,8 @@ static const char* CodepageAttrstartName(WBXML_CODEPAGE page, WBXML_TAG tag, cha
 	/* Search the tag list for a match */
 	while (CodepageAttrstartNames[i].m_name)
 	{
-		if ((CodepageAttrstartNames[i].m_page == page) &&
+		if ((CodepageAttrstartNames[i].m_dtd_id == dtd_id) &&
+			(CodepageAttrstartNames[i].m_page == page) &&
 			(CodepageAttrstartNames[i].m_tag == tag))
 		{
 			break;
@@ -1470,7 +1512,8 @@ static void CodepageAttrvalueName(WBXML_CODEPAGE page, WBXML_TAG tag, char** val
 	/* Search the tag list for a match */
 	while (CodepageAttrvalueNames[i].m_name)
 	{
-		if ((CodepageAttrvalueNames[i].m_page == page) &&
+		if ((CodepageAttrvalueNames[i].m_dtd_id == dtd_id) &&
+			(CodepageAttrvalueNames[i].m_page == page) &&
 			(CodepageAttrvalueNames[i].m_tag == tag))
 		{
 			break;
@@ -1668,7 +1711,7 @@ static void DumpNode(P_WBXML_NODE node, int indent, BOOL *inattrs, BOOL hasconte
 			break;
 	}
 
-	indent += 2;
+	indent += INDENT_SIZE;
 
 	if (curnode)
 	{
@@ -1681,7 +1724,7 @@ static void DumpNode(P_WBXML_NODE node, int indent, BOOL *inattrs, BOOL hasconte
 		}
 	}
 
-	indent -= 2;
+	indent -= INDENT_SIZE;
 
 	/* Output the element end if we have one */
 	if ((nodetype & CODEPAGE_TAG_HAS_CONTENT) == CODEPAGE_TAG_HAS_CONTENT)

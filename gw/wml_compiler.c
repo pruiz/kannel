@@ -25,6 +25,7 @@
 #include <parser.h>
 #include <tree.h>
 #include <debugXML.h>
+#include <encoding.h>
 
 #include "gwlib/gwlib.h"
 #include "wml_compiler.h"
@@ -73,7 +74,6 @@ typedef struct {
     unsigned long string_table_length;
     List *string_table;
     Octstr *wbxml_string;
-    unsigned char *utf8map;
 } wml_binary_t;
 
 
@@ -327,6 +327,11 @@ void wml_init()
     int i = 0, len = 0;
     wml_hash_t *temp = NULL;
     
+    for (i = 0; chars_aliases[i].real != NULL; i++) {
+      xmlAddEncodingAlias(chars_aliases[i].real,chars_aliases[i].alias);
+      debug("encoding",0,"Add encoding for %s",chars_aliases[i].alias);
+    }
+
 
     /* The wml elements into a hash table. */
     len = wml_table_len(wml_elements);
@@ -820,8 +825,6 @@ static int parse_charset(Octstr *charset, wml_binary_t **wbxml)
 		 j++)
 		if (octstr_str_compare(number, character_sets[j].nro) == 0) {
 		    ret = character_sets[j].MIBenum;
-		    if (character_sets[j].utf8map)
-			(*wbxml)->utf8map = character_sets[j].utf8map ;
 		    break;
 		}
 	    break;
@@ -1125,7 +1128,6 @@ static wml_binary_t *wml_binary_create(void)
     wbxml->string_table_length = 0x00;
     wbxml->string_table = list_create();
     wbxml->wbxml_string = octstr_create("");
-    wbxml->utf8map = NULL ;
 
     return wbxml;
 }
@@ -1681,7 +1683,7 @@ static void string_table_collect_strings(xmlNodePtr node, List *strings)
     switch (node->type) {
     case XML_TEXT_NODE:
 	string = create_octstr_from_node(node);
-
+	    
 	octstr_shrink_blanks(string);
 	octstr_strip_blanks(string);
 	if (octstr_len(string) > WBXML_STRING_TABLE_MIN)
