@@ -678,7 +678,7 @@ static Connection *conn_pool_get(Octstr *host, int port)
     return conn;
 }
 
-#if 0 /* XXX unused while http connection re-using is disabled */
+
 static void conn_pool_put(Connection *conn, Octstr *host, int port)
 {
     Octstr *key;
@@ -695,7 +695,6 @@ static void conn_pool_put(Connection *conn, Octstr *host, int port)
     octstr_destroy(key);
     mutex_unlock(conn_pool_lock);
 }
-#endif
 
 
 
@@ -880,7 +879,7 @@ static void handle_transaction(Connection *conn, void *data)
 	trans->persistent = 0;
     octstr_destroy(h);
 
-#if 0 /* XXX re-using connections seems to be buggy at high load --liw */
+#if 1 /* Reuse enabled again, let's see if anyone complains... */
     if (trans->persistent)
         conn_pool_put(trans->conn, trans->host, trans->port);
     else
@@ -1311,7 +1310,6 @@ static void client_destroy(void *client)
 }
 
 
-#if 0 /* XXX unused while http connection re-use is disabled */
 static void client_reset(HTTPClient *p)
 {
     debug("gwlib.http", 0, "HTTP: Resetting HTTPClient for `%s'.",
@@ -1319,7 +1317,6 @@ static void client_reset(HTTPClient *p)
     p->state = reading_request_line;
     gw_assert(p->request == NULL);
 }
-#endif
 
 
 /*
@@ -1814,7 +1811,7 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     	continue;
 #endif
 
-#if 1 /* XXX re-using the connection seems to be buggy at high load --liw */
+#if 0 /* Reuse enabled again, let's see if anyone complains... */
     client_destroy(client);
 #else
     if (client->use_version_1_0)

@@ -1,3 +1,7 @@
+2001-03-30  Uoti Urpala  <uau@wapit.com>
+
+	* gwlib/http.c: Enabled keepalive connections again.
+
 2001-03-29  Uoti Urpala  <uau@wapit.com>
 
 	* gw/urltrans.c: Test in find_translation() was the wrong way
