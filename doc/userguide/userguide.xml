@@ -18,8 +18,8 @@
 <book>
 
 <bookinfo>
-	<title>Kannel: Open Source WAP and SMS Gateway &version;</title>
-	<subtitle>User's Guide</subtitle>
+	<title>Kannel &version; User's Guide</title>
+	<subtitle>Open Source WAP and SMS gateway</subtitle>
 	<author>
 		<firstname>Lars</firstname>
 		<surname>Wirzenius</surname>
@@ -33,9 +33,11 @@
 		</affiliation>
 	</author>
 	<abstract>
-		<title>Abstract</title> <para>This document describes how
-		to install and use the Open Source WAP and SMS Gateway
-		produced by WapIT Ltd.	</para>
+		<title>Abstract</title> 
+		<para>This document describes how
+		to install and use Kannel, the Open Source WAP and SMS Gateway
+		produced by WapIT Ltd.
+		</para>
 	</abstract>
 </bookinfo>
 
@@ -43,13 +45,165 @@
 <chapter>
 <title>Introduction</title>
 
+	<highlights>
 	<para>This chapter introduces WAP in general terms, and explains the
-	role of the gateway in WAP, outlining its duties and features.</para>
+	role of the gateway in WAP, outlining its duties and features. It
+	also explains why the Kannel project was started in the first place,
+	and why it is open source.</para>
+	</highlights>
+	
+	<para>With hundreds of millions of mobile phones in use all over the
+	world, the market for services targeted at mobile users
+	is mindbogglingly immense.  Even simple services find plenty of users,
+	as long as they're useful or fun. Being able to get news, send e-mail
+	or just be entertained wherever you are is extremely attractive to
+	lots of people.</para>
 
-<sect1><title>Why yet another gateway?</title><para>xxx</para></sect1>
-<sect1><title>Why open source?</title><para>xxx</para></sect1>
-<sect1><title>Features of the gateway</title><para>xxx</para></sect1>
-<sect1><title>Requirements of the gateway</title><para>xxx</para></sect1>
+	<para>The hottest technology for implementing mobile services is WAP,
+	short for Wireless Application Protocol. It lets the phone act
+	as a simple web browser, but optimizes the markup language,
+	scripting language, and the transmission protocols for wireless
+	use. The optimized protocols are translated to plain old HTTP by
+	a <emphasis>WAP gateway</emphasis>.</para>
+
+	<para>Kannel is an open source WAP gateway. It attempts to
+	provide this essential part of the WAP infrastructure freely
+	to everyone so that the market potential for WAP services,
+	both from wireless operators and specialized service providers,
+	will be realized as efficiently as possible.</para>
+
+	<para>Kannel also works as an SMS gateway for GSM networks. Almost
+	all GSM phones can send and receive SMS messages, so this is
+	a way to serve many more clients than just those using a new
+	WAP phone.</para>
+
+	<para><ulink url="http://www.opensource.org">Open Source</ulink>
+	is a way to formalize the principle of openness by placing the
+	source code of a product under a Open Source compliant software
+	license. The BSD license was chosen over other Open Source
+	licenses by the merit of placing the least amount of limitations
+	on what a third party is able to do with the source code. In
+	practice this means that Kannel is going to be a fully-featured
+	WAP implementation and compatible with a maximum amount of
+	bearers with special emphasis on SMSC compatibility.</para>
+
+	<para>The Kannel project was founded by <ulink
+	url="http://www.wapit.com">WapIT Ltd.</ulink> in June, 1999. WapIT
+	Ltd. was founded on October 6th 1998 in Helsinki, Finland to
+	organize the work of the team which had built the most extensive
+	set of SMS services so far. WapIT Ltd. acts as a content innovator
+	and a packager for wireless services. WapIT is a member of the
+	<ulink url="http://www.wapforum.org">WAP Forum</ulink>.</para>
+	
+	
+<sect1>
+<title>Overview of WAP</title>
+
+	<para>WAP, short for Wireless Application Protocol, is a
+	collection of languages and tools and an infrastructure for
+	implementing services for mobile phones. Traditionally such
+	services have worked via normal phone calls or short textual
+	messages (e.g., SMS messages in GSM networks). Neither are very
+	efficient to use, nor very user friendly.  WAP makes it possible
+	to implement services similar to the World Wide Web.</para>
+	
+	<para>Unlike marketers claim, WAP does not bring the existing
+	content of the Internet directly to the phone. There are too many
+	technical and other problems for this to ever work properly. The
+	main problem is that Internet content is mainly in the form of
+	HTML pages, and they are written in such a way as to require
+	fast connections, fast processors, large memories, big screens,
+	audio output, and may require fairly efficient input mechanisms.
+	That's OK, since they hopefully work better for traditional
+	computers and networks that way. However, portable phones have
+	very slow processors, very little memory, abysmal and intermittent
+	bandwidth, and extremely awkward input mechanisms. Most existing
+	HTML pages simply will not work on them, nor will they ever
+	do that.</para>
+	
+	<para>WAP defines a completely new markup language, the Wireless
+	Markup Language (WML), which is simpler and much more strictly
+	defined than HTML.  It also defines a scripting language,
+	WMLScript, which all browsers are required to support. To make
+	things even simpler for the phones, it even defines its own
+	bitmap format (Wireless Bitmap, or WBMP).</para>
+	
+	<para>HTTP is also too inefficient for wireless use. By using
+	a semantically equivalent, but binary and compressed format it
+	is possible to reduce the protocol overhead to a few bytes per
+	request, instead of up to hundreds of bytes. Thus, WAP defines a
+	new protocol stack to be used. However, to make things simpler
+	also for the people actually implementing the services, WAP
+	introduces a gateway between the phones and the servers providing
+	content to the phones.</para>
+
+        <figure>
+        <title>Logcial position of WAP gateway between phone and content server.</title>
+        <graphic fileref="wap-gateway&figtype;"></graphic>
+        </figure>
+
+	<para>The WAP gateway talks to the phone using the WAP protocol
+	stack, and translates the requests it receives to normal
+	HTTP. Thus, the content providers can use any HTTP servers, and
+	can utilize existing know-how about HTTP service implementation
+	and administration.</para>
+	
+	<para>In addition to protocol translations, the gateway
+	also compresses the WML pages into a more compact form, to
+	save bandwidth on the air and to further reduce the phone's
+	processing requirements. It also compiles WMLScript programs
+	into a bytecode format.</para>
+	
+	<para>Kannel is not just a WAP gateway. It also works as an
+	SMS gateway.  Although WAP is the hot and technically superior
+	technology, SMS phones exist in huge numbers and SMS services are
+	thus quite useful.  Therefore, Kannel functions simultaneously
+	as both a WAP and an SMS gateway.</para>
+	
+	
+<sect1>
+<title>Features</title>
+
+	<para>This section needs to be written.</para>
+
+</sect1>
+
+<sect1>
+<title>Requirements</title>
+
+	<para>Kannel is being developed on Linux systems (Red Hat 6.1 and
+	Debian potato), and should be fairly easy to port to other Unix-like
+	systems. However, we don't yet support other platforms, due to lack
+	of time. Kannel requires the following software environment:
+	
+	<itemizedlist>
+
+	<listitem><para>C compiler and development libraries and related
+	tools.</para></listitem>
+
+	<listitem><para>GNU Make.</para></listitem>
+
+	<listitem><para>Posix threads (pthread.h).</para></listitem>
+
+	<listitem><para>GNU Bison 1.28 if you modify the WMLScript
+	compiler.</para></listitem>
+
+	<listitem><para>DocBook markup language tools (jade, jadetex,
+	DocBook stylesheets, etc; see README.docbook), if you want
+	to format the documentation (pre-formatted versions are
+	available).</para></listitem>
+
+	</itemizedlist>
+	</para>
+	
+	<para>Hardware requirements are fluffier. We haven't benchmarked Kannel
+	yet, so there are no hard numbers, but a reasonably fast PC workstation
+	(400 MHz Pentium II, 128 MB RAM) should serve several concurrent
+	users without problems. The goal is to support hundreds of concurrent
+	users on that kind of hardware.</para>
+
+</sect1>
+
 </chapter>
 
 <chapter>
@@ -64,18 +218,14 @@
 <sect1>
 <title>Getting the source code</title>
 
-	<para>The source code to Kannel is availble to download at
-	the following address:
-	
-		<blockquote>
-		<para><ulink url="http://www.kannel.org/download.shtml">http://www.kannel.org/download.shtml</ulink>
-		</para></blockquote>
-	
+	<para>The source code to
+	Kannel is available for download at <ulink
+	url="http://www.kannel.org/download.shtml">http://www.kannel.org/download.shtml</ulink>.
 	It is available on various formats and you can choose to download
-	either the latest release version or the daily snapshot of
-	the development source tree for the next release version,
-	depending on whether you want to use Kannel for production use
-	or to participate in development.</para>
+	either the latest release version or the daily snapshot of the
+	development source tree for the next release version, depending
+	on whether you want to use Kannel for production use or to
+	participate in development.</para>
 	
 	<para>If you're serious about development, you probably want to
 	use CVS, the version control system used by the Kannel project.
@@ -286,14 +436,477 @@
 <sect1>
 <title>Configuring the bearer box</title>
 
-	<para>xxx</para>	
+	<para>The bearer box configuration consists of three parts:
+	general, SMS centers, and WAP connections. The general part
+	contains the following variables:
+	
+	<itemizedlist>
+
+	<listitem><para><literal>max-threads</literal>: Maximum number
+	of threads. Each connection to an SMS center, each WAP port that
+	is open, and each SMS and WAP box that is connected uses up a thread.
+	</para></listitem>
+
+	<listitem><para><literal>http-port</literal>: Port number for
+	HTTP administration tool. Since Kannel is usually not run as
+	<literal>root</literal>, it can't use the normal HTTP port
+	(80), so you have to specify a number larger than 1024. It does
+	not matter which, as long as no other program on the system
+	tries to use it.
+	</para></listitem>
+
+	<listitem><para><literal>admin-username</literal>: Username for
+	authenticating HTTP administration requests.
+	</para></listitem>
+
+	<listitem><para><literal>admin-password</literal>: Password
+	for authenticating HTTP administration requests. Note that you
+	must set both the username and password for adminstration 
+	requests to work.
+	</para></listitem>
+
+	<listitem><para><literal>wap-port</literal>: Port number to which
+	WAP boxes connect.
+	</para></listitem>
+
+	<listitem><para><literal>sms-port</literal>: Port number to which
+	SMS boxes connect.
+	</para></listitem>
+
+	<listitem><para><literal>allowed-hosts</literal>: Hosts that are
+	allowed to connect as WAP or SMS boxes. A list of
+	IP addresses, separated by semicolons (<literal>;</literal>).
+	Wild card <literal>*</literal> is allowed in a place of any
+	single number, like <literal>*.*.*.*</literal> or 
+	<literal>10.20.30.*;120.30.40.50</literal>.
+	</para></listitem>
+
+	<listitem><para><literal>denied-hosts</literal>: Hosts that are
+	forbidden to connect as WAP or SMS boxes. Syntax is same as for
+	<literal>allowed-hosts</literal>. Kannel first checks
+	<literal>allowed-hosts</literal>, and if it finds the box IP
+	there, it accepts the connection.
+	</para></listitem>
+
+	<listitem><para><literal>global-prefix</literal>: List of 
+	phone number prefixes and their variants. This is used to
+	normalize the phone numbers Kannel receives from various
+	sources. The format is
+	
+<programlisting>official-number,optional-prefix1,optional-prefix2;official-prefix...</programlisting>
+
+	(For example, <literal>0035850,35850,050;0035840,35840,040</literal>.)
+	</para></listitem>
+
+	<listitem><para><literal>heartbeat-freq</literal>: Heartbeat frequency
+	rate. This needs to be the same value in all boxes.
+	</para></listitem>
+
+	<listitem><para><literal>max-queue</literal>: Maximum length of
+	the internal message queue. When the queue grows to this size,
+	the bearerbox will accept no further messages until the queue becomes
+	smaller again.
+	</para></listitem>
+
+	<listitem><para><literal>pid-file</literal>: The file where the
+	bearerbox writes is process ID at startup. If not set (this is
+	the default value), no file is written.
+	</para></listitem>
+
+	<listitem><para><literal>log-file</literal>: Name of log file where
+	log messages are output, in addition to the standard output.
+	</para></listitem>
+
+	<listitem><para><literal>log-level</literal>: Verbosity level for
+	the log file given by <literal>log-file</literal>. Defaults to
+	`0' for DEBUG.	</para></listitem>
+
+	</itemizedlist>
+
+	</para>	
+	
+	<para>Each SMS center gets its own group, with the variables
+	defined depending on the type of SMS center.
+
+	<itemizedlist>	
+
+	<listitem><para><literal>smsc</literal>: The type of the SMS center.
+	Allowed values are <literal>fake</literal>, <literal>emi</literal>, 
+	<literal>emi_ip</literal>, <literal>cimd</literal>,
+	<literal>smpp</literal>.
+	</para></listitem>
+
+	<listitem><para><literal>host</literal>: Domain name or IP number
+	of the SMS center.
+	</para></listitem>
+
+	<listitem><para><literal>port</literal>: Port number of the SMS
+	center.
+	</para></listitem>
+
+	<listitem><para><literal>our-port</literal>: Port number for SMS
+	center connection at bearer box end. This is only needed for
+	if the EMI/IP connection is configured at the SMS center end to
+	accept connections from a specific port.
+	</para></listitem>
+
+	<listitem><para><literal>backup-port</literal>: The secondary
+	port for EMI/IP connections. When the SMS center initiates a
+	connection, it will connect to this port number of the bearer box.
+	</para></listitem>
+
+	<listitem><para><literal>smsc-username</literal>: Username for
+	logging in using the SMS center protocol.
+	</para></listitem>
+
+	<listitem><para><literal>smsc-password</literal>: Password for
+	logging in using the SMS center protocol.
+	</para></listitem>
+
+	<listitem><para><literal>device</literal>: Pathname of device file
+	for EMI modem access. For example, <filename>/dev/ttyS0</filename>.
+	</para></listitem>
+
+	<listitem><para><literal>dial-prefix</literal>: Dial prefix
+	normalization string. XXX this needs explanation, but I'm too
+	tired to get this done at the moment. --liw
+	</para></listitem>
+
+	<listitem><para><literal>route-prefix</literal>: 
+	The SMS is routed to this SMS center if the reciever number
+	matches one of the prefixes given here. Use <literal>;</literal>
+	to separate entries, and <literal>default</literal>
+	to identify the SMS Center used if no SMSC is found.
+	<literal>backup</literal> is the same, but is is only used if
+	default receiver is not available currently (temporarily down)
+	If <literal>default</literal> is not set anywhere, SMS Message
+	with no suitable SMSC is ignored.
+	</para></listitem>
+
+	<listitem><para><literal>alt-charset</literal>: 
+	As some SMS centers do not follow the standards in
+	character coding, an alternative character set kludge is
+	presented. Currently implemented alternative charsets are defined
+	in <filename>gw/alt_charsets.h</filename> and new ones can be
+	added to appropriate SMS center protocol implementation.
+	</para></listitem>
+
+	</itemizedlist>	
+	
+	</para>
+
+	<para>To configure the bearer box for WAP use, you need to
+	define one or more groups of the following variables:
+	
+	<itemizedlist>
+
+	<listitem><para><literal>csdr</literal>: XXX Unneeded?
+	</para></listitem>
+
+	<listitem><para><literal>wap-service</literal>: Which UDP port
+	to listen to. One of: <literal>wsp</literal>, 
+	<literal>wsp/wtls</literal>, 
+	<literal>wsp/wtp</literal>, 
+	<literal>wsp/wtp/wtls</literal>, 
+	<literal>vcard</literal>, 
+	<literal>vcard/wtls</literal>, 
+	<literal>vcal</literal>, 
+	<literal>vcal/wtls</literal>. XXX explain the meaning of these
+	</para></listitem>
+
+	<listitem><para><literal>interface-name</literal>: IP number
+	(not hostname) of the host on which the bearer box is running.
+	</para></listitem>
+
+	</itemizedlist>
+	
+	</para>
+
+	<para>A simple configuration as a WAP gateway on UDP only might
+	look like this:
+	
+<programlisting>
+ 1  wap-port = 13000
+ 2  sms-port = 13001
+ 3  heartbeat-freq = 5
+ 4  log-file = "bearerbox.log"
+ 5  log-level = 0
+ 6
+ 7  csdr = wap
+ 8  interface-name = 127.0.0.1
+ 9  wap-service = "wsp"
+10
+11  csdr = wap
+12  interface-name = 127.0.0.1
+13  wap-service = "wsp/wtp"
+</programlisting>
+
+	(Note that you must change the IP numbers for the interface-name
+	variables.)
+	</para>
 
 </sect1>
 
 <sect1>
 <title>Configuring the SMS box</title>
 
-	<para>xxx</para>
+	<para>The SMS box is fairly simple to configure. There are two kinds
+	of things: general things, including the location of the bearer
+	box, and then the services. The general part consists of the
+	following variables:
+	
+	<itemizedlist>
+
+	<listitem><para><literal>bearerbox-host</literal>: A string giving
+	the DNS name or IP number of the machine where the bearer box runs.
+	</para></listitem>
+
+	<listitem><para><literal>bearerbox-port</literal>: The port number
+	where the bearer box listens for WAP box connections. Must be the
+	same as <literal>wap-port</literal> in the bearer box configuration.
+	</para></listitem>
+
+	<listitem><para><literal>heartbeat-freq</literal>: Frequency
+	of heartbeat messages. Must be same value as in the bearer box
+	configuration.	</para></listitem>
+
+	<listitem><para><literal>log-file</literal>: Name of log file where
+	log messages are output, in addition to the standard output.
+	</para></listitem>
+
+	<listitem><para><literal>log-level</literal>: Verbosity level for
+	the log file given by <literal>log-file</literal>. Defaults to
+	`0' for DEBUG.	</para></listitem>
+
+	<listitem><para><literal>sendsms-port</literal>: Port number where
+	the SMS box listens for HTTP requests to send SMS messages. Must
+	be set for this feature to work.
+	</para></listitem>
+
+	<listitem><para><literal>http-allowed-hosts</literal>: List
+	of hosts that are allowed to use the sendsms service.
+	</para></listitem>
+
+	<listitem><para><literal>http-denied-hosts</literal>: List of
+	hosts that are denied access to the sendsms service.
+	</para></listitem>
+
+	<listitem><para><literal>sms-length</literal>: Maximum length
+	of one SMS message. Defaults to 160 characters.
+	</para></listitem>
+
+	<listitem><para><literal>global-sender</literal>: Phone number to
+	set for messages sent to phone. This can be overriden by the
+	service-specific <literal>faked-sender</literal>, the phone number
+	given in an sendsms request, or by the
+	SMS center (the center itself, not its configuration in the
+	bearer box).
+	</para></listitem>
+
+	</itemizedlist>
+
+	</para>
+	
+	<para>Each service is specified by a group with the following
+	variables:
+
+	<itemizedlist>
+
+	<listitem><para><literal>keyword</literal>: The word used to identify
+	the service. One word with alphabetic characters. Not case sensitive.
+	The word <literal>default</literal> is special and is used if no
+	matching keyword is found.
+	</para></listitem>
+
+	<listitem><para><literal>aliases</literal>: List of aliases for the
+	keyword. Separated by a semicolon.
+	</para></listitem>
+
+	<listitem><para><literal>url</literal>: URL to use to fetch the
+	reply to the request. The URL can include a list of parameters,
+	which are filled in before the URL is fetched. These are defined
+	in <xref linkend="url-parameters">.
+	</para></listitem>
+
+	<listitem><para><literal>file</literal>: File read from local
+	disk. Only used if <literal>url</literal> is not set. URL parameters
+	are filled in the filename. The last character of the file
+	(usually linefeed) is removed.
+	</para></listitem>
+
+	<listitem><para><literal>text</literal>: Predefined text answer.
+	Only used if <literal>url</literal> is not set. URL parameters
+	are filled in the text.
+	</para></listitem>
+
+	<listitem><para><literal>prefix</literal> and <literal>suffix</literal>:
+	Remove everything up to the end of a prefix and starting from the
+	beginning of a suffix, if they are both defined and both are present
+	in the response from HTTP server when the URL is fetched. Matches
+	are case insensitive. This is meant for simple parsing of HTML
+	responses.
+	</para></listitem>
+
+	</itemizedlist>
+	
+	</para>
+	
+	<para>If you want to enable the sendsms service, you need to
+	specify a username and password:
+	
+	<itemizedlist>
+
+	<listitem><para><literal>username</literal>: User name. Case
+	sensitive. You can have any number of users, all with different
+	passwords, as long as you define each pair in a different group.
+	</para></listitem>
+
+	<listitem><para><literal>password</literal>: Password associated
+	with the username.
+	</para></listitem>
+
+	</itemizedlist>
+	
+	</para>
+	
+	<para>For both SMS services and variable groups defining sendsms users,
+	you can define some additional characteristics (in the same group
+	as the service or user):
+
+	<itemizedlist>
+
+	<listitem><para><literal>faked-sender</literal>: This number is set
+	as the sender, unless the SMS center is configured to override it.
+	</para></listitem>
+
+	<listitem><para><literal>max-messages</literal>: Maximum number of
+	SMS messages sent in a reply, or via a single sendsms request.
+	Default is 1. If set to 0, no reply is sent, except for error
+	messages. Note that replies are not yet concatenated, but are
+	separate messages.
+	</para></listitem>
+
+	<listitem><para><literal>split-chars</literal>: When a message is
+	split into several messages, split at characters given by this
+	variable. For example, if set to "., ", the message is split
+	at a dot, comma, or space, and the splitting character is ends
+	the part (i.e., it belongs to the first part, not the second part).
+	</para></listitem>
+
+	<listitem><para><literal>split-suffix</literal>: 
+	If the message is split into several ones, this string is appended to
+	each message except the last one.
+	</para></listitem>
+
+	<listitem><para><literal>omit-empty</literal>: 
+	If set to other than '0', 'no data' messages are not sent to receiver
+	in a case of empty reply from the service provider.
+	</para></listitem>
+
+	<listitem><para><literal>header</literal>: 
+	This string is automatically added to each SMS send with
+	this service. If message is split, it is added to each part.
+	</para></listitem>
+
+	<listitem><para><literal>footer</literal>:
+	Same as header, but at the end of each message or part.
+	</para></listitem>
+
+	</itemizedlist>
+	
+	</para>
+	
+
+	<para>A sample simple SMS box configuration file might look
+	like this:
+
+<programlisting>
+ 1  bearerbox-host = localhost
+ 2  bearerbox-port = 13001
+ 3  sendsms-port = 22022
+ 4  heartbeat-freq = 5
+ 5  log-file = "/tmp/smsbox.log"
+ 6  log-level = 0
+ 7  
+ 8  username = foo
+ 9  password = bar
+10  
+11  keyword = title
+12  url = http://%s
+13  prefix = &lt;title&gt;
+14  suffix = &lt;/title&gt;
+15  
+16  keyword = nop
+17  text = "You asked nothing and I did it!"
+18  
+19  keyword = default
+20  text = "Can't find service %a"
+</programlisting>
+
+	This defines two services. "TITLE" will fetch the title of
+	a WWW page. "NOP" will do nothing, except return a fixed string.
+	The default response is to tell the user that he didn't type the
+	service name correctly.
+	</para>
+
+<sect2 id="url-parameters">
+<title>URL parameters</title>
+
+	<para>The URL specification to SMS services can contain parameters
+	that are filled in from the SMS message or other sources before
+	the page the URL refers to is fetched. The parameters are:
+
+	<itemizedlist>
+
+	<listitem><para><literal>%s</literal>: The next word from the SMS 
+	message, starting with the second one (i.e., the first word, the
+        keyword, is not included); problematic characters
+	for URLs are encoded using URL syntax (e.g., '+' becomes '%2B').
+	</para></listitem>
+
+	<listitem><para><literal>%S</literal>: Same as %s, but 
+	an asterisk (<literal>*</literal>) is converted to a tilde
+	(<literal>~</literal>) and URL encoding is not done. Use this
+	with some care.
+	</para></listitem>
+
+	<listitem><para><literal>%r</literal>: The remaining words not
+	used by %s. For example, if the message is <literal>FOO BAR FOOBAR
+	BAZ</literal>, and there has been one %s, %r will mean<literal>FOOBAR
+	BAZ</literal>.
+	</para></listitem>
+
+	<listitem><para><literal>%a</literal>: All words of the SMS message, 
+	including the keyword.
+	</para></listitem>
+
+	<listitem><para><literal>%t</literal>: The time the SMS message was
+	sent (or received, for such SMS centers that don't provide the
+	send time). Formatted as <literal>YYYY-MM-DD HH:MM</literal>,
+	for example, <literal>1999-09-21 14:18</literal>.
+	</para></listitem>
+
+	<listitem><para><literal>%p</literal>: Phone number of the sender
+	of the SMS message.
+	</para></listitem>
+
+	<listitem><para><literal>%P</literal>: Phone number of the receiver
+	of the SMS message.
+	</para></listitem>
+
+	<listitem><para><literal>%q</literal>: Like %p, but a leading
+	`00' is replaced with `+'.
+	</para></listitem>
+
+	<listitem><para><literal>%Q</literal>: Like %P, but a leading
+	`00' is replaced with `+'.
+	</para></listitem>
+
+	</itemizedlist>
+
+	</para>
+
+</sect2>
 
 </sect1>
 
@@ -336,15 +949,57 @@
 <sect1>
 <title>Starting the gateway</title>
 
-	<para>xxx order of starting, command line options, log levels</para>
+	<para>To start the gateway, you need to start each box you need.
+	You always need the bearer box, and depending on whether you want
+	WAP and SMS gateways you need to start the WAP and SMS boxes. If
+	you want, you can run several of them, but we'll explain the
+	simple case of only running one each.</para>
+	
+	<para>There is currently no sophisticated way to start the boxes.
+	Instead, you run them from the command line. This means that you
+	probably want to have one terminal window for each box you want
+	to start (xterm or screen will do fine). To start the bearer
+	box, give the following command:
 
+<screen><userinput>./bearerbox -v 1 gw.conf</userinput></screen>
+
+	The <option>-v 1</option> sets the logging level to
+	<literal>INFO</literal>. This way, you won't see a large amount of
+	debugging output (the default is <literal>DEBUG</literal>).</para>
+	
+	<para>After the bearer box, you can start the WAP box:
+	
+<screen><userinput>./wapbox -v 1 gw.wapconf</userinput></screen>
+
+	or the SMS box:
+
+<screen><userinput>./smsbox -v 1 gw.smsconf</userinput></screen>
+
+	or both, of course. The order does not matter, except that you
+	need to start the bearer box before the other boxes. Without
+	the bearer box, the other boxes won't even start.</para>
+	
 </sect1>
 
 <sect1>
 <title>Using the HTTP interface to send SMS messages</title>
 
-	<para>xxx</para>
+	<para>If you have configured Kannel to allow the sendsms
+	service, you can send SMS messages via HTTP, e.g., using a
+	WWW browser. The URL looks like this:
+	
+<programlisting>
+http://smsbox.host.name:port/cgi-bin/sendsms?username=username&amp;
+password=password&amp;from=sender-number&amp;to=receiver-number&amp;
+text=text+of+message+using+URL+encoding+as+necessary
+</programlisting>
 
+	(all of the above needs to be on one line, it's broken into
+	several above so it will fit on the page). Thus, technically,
+	you make a HTTP GET request. This means that all the information
+	is stuffed into the URL. If you want to use this often via a
+	browser, you probably want to make an HTML form for this.</para>
+	
 </sect1>
 
 <sect1>
@@ -366,7 +1021,13 @@
 	<para>This chapter explains where to find help with problems
 	related to the gateway, and the preferred procedure for reporting
 	bugs and sending corrections to them.</para>
-
+	
+	<para>The Kannel development mailing list is at
+	devel@kannel.org.  To subscribe, send mail to <ulink
+	url="mailto:devel-subscribe@kannel.org">devel-subscribe@kannel.org</ulink>.
+	This is currently the best location for asking help and reporting
+	bugs.</para>
+	
 </chapter>
 
 <appendix>

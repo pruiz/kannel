@@ -1,3 +1,12 @@
+Thu Feb 17 17:35:11 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* doc/userguide/userguide.xml: Filled in some more. Now most details
+	should be copied from the sample configuration files, but things are
+	still not explained in a coherent or understandable manner.
+	
+	* gwlib/log.c: debug() doesn't print the place anymore. This makes
+	debug output readable again.
+
 2000-02-17    <rpr@rpr.wapit.com>
 
 	* gw/bearerbox.c, gw/bb.h: added max thread BB_DEFAULT.. value,

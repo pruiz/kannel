@@ -219,7 +219,11 @@ static int place_should_be_logged(const char *place) {
 
 void debug(const char *place, int e, const char *fmt, ...) {
 	if (place_should_be_logged(place)) {
-		FUNCTION_GUTS(DEBUG, place);
+		FUNCTION_GUTS(DEBUG, "");
+		/* Note: giving `place' to FUNCTION_GUTS makes log lines
+		   too long and hard to follow. We'll rely on an external
+		   list of what places are used instead of reading them
+		   from the log file. */
 	}
 }
 
