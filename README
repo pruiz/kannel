@@ -134,11 +134,8 @@ For developers only: adding new SMS Center protocol support
 	it might become necessary to add new kind of protocols, 
 	including support to use mobile phones as SMSCes.
 
-	When doing this, use file gw/smsc_interface.def as guideline on 
-	how to do it. Note that we will change this interface a bit now 
-	that we have a new bearerbox which can accept a better interface.
-	In practise that means that new smsc protocols will not need 
-	pending_message anymore, as things are handled in 2 threads.
+	When doing this, read interface specification in gw/smscconn_p.h.
+	Drivers should stick to these rules as good as they can.
 
 For developers only: "make check"
 

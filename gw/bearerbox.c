@@ -98,14 +98,12 @@ static void signal_handler(int signum)
 
 	mutex_lock(status_mutex);
         if (bb_status != BB_SHUTDOWN && bb_status != BB_DEAD) {
-//	    set_shutdown_status();
+
+            warning(0, "Killing signal received, shutting down...");
 
 	    mutex_unlock(status_mutex);
 	    bb_shutdown();
 	    return;
-	    /* shutdown smsc/udp is called by the http admin thread */
-
-            warning(0, "Killing signal received, shutting down...");
         }
         else if (bb_status == BB_SHUTDOWN) {
             warning(0, "New killing signal received, killing neverthless...");

@@ -215,6 +215,26 @@ URLTranslation *urltrans_find_username(URLTranslationList *trans,
     return NULL;
 }
 
+static void strip_keyword(Msg *request)
+{          
+    int ch;
+    long loc;
+    Octstr *os;
+
+    loc = 0;
+    for(;(ch = octstr_get_char(request->sms.msgdata, loc)) != '\0';loc++)
+       if (isspace(ch))
+           break;
+
+    for(;(ch = octstr_get_char(request->sms.msgdata, loc)) != '\0';loc++)
+       if (!isspace(ch))
+           break;
+
+    os = octstr_copy(request->sms.msgdata, loc,
+                    octstr_len(request->sms.msgdata));
+    octstr_destroy(request->sms.msgdata);
+    request->sms.msgdata = os;
+}
 
 
 Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
@@ -389,8 +409,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
      * much easier to do here
      */
     if (t->type == TRANSTYPE_POST_URL && t->strip_keyword)
-	octstr_delete(request->sms.msgdata, 0,
-		      octstr_len(list_get(word_list, 0))+1);
+	strip_keyword(request);
 
     list_destroy(word_list, octstr_destroy_item);
     return result;

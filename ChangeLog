@@ -1,3 +1,18 @@
+2001-04-11  Kalle Marjola  <rpr@wapit.com>
+
+	* README: changed smsc interface guidelines to point to
+	smscconn_p.h
+
+	* gw/smsc_interface.def: removed as depricated
+
+	* doc/userguide/userguide.xml: fixed typo, it is strip-keyword,
+	not split-keyword
+
+	* gw/urltrans.c: modified strip-keyword function
+
+	* gw/bearerbox.c: changed shutdown message a bit when killedby
+	signal
+
 2001-04-10  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_store.c: some little fixes, dumps acks to file, too, if

@@ -2305,7 +2305,7 @@ get-url = "http://%S"
         set, otherwise not.
      </entry></row>
 
-   <row><entry><literal>split-keyword</literal></entry>
+   <row><entry><literal>strip-keyword</literal></entry>
      <entry>bool</entry>
      <entry valign=bottom>
      Used only with POST. Remove matched keyword from message text
