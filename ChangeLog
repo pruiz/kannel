@@ -1,4 +1,9 @@
 2003-10-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * wap/wsp_unit.c: fixing DOS attack bug is datagram unpacking failed.
+      This fixes BUG#33. Thanks again to Vjachelsav.
+      [Msg-ID: <3F828204.3070209@lmt.lv>]
+
+2003-10-07  Stipe Tolj  <tolj@wapme-systems.de>
     * radius/radius_acct.c, wap/wsp_session.c: fixing compiler warnings.
 
 2003-10-07  Stipe Tolj  <tolj@wapme-systems.de>
