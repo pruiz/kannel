@@ -42,7 +42,7 @@
    Bearerbox. It starts a new thread for each new request and puts
    replies directly into Reply Queue (see Bearerbox design)</para>
 
-   <para>In addition to responding to the mobile orientated SMS
+   <para>In addition to responding to the mobile oriented SMS
    Messages, the SMS Box can accept text via HTTP-queries, which it
    then sends as SMSes to the bearerbox and onward.</para>
 	

@@ -1,4 +1,4 @@
-CodingStyle for Kannel
+Coding Style for Kannel
 
 
 Code formatting
@@ -97,7 +97,7 @@ Error handling
 	pointer, errors should be indicated with NULL.
 	
 	When a problem is noticed, the lowest level that notices it
-	should log it using one of the log functions in wapitlib.h,
+	should log it using one of the log functions in log.h,
 	and then return an indication of failure (unless it can handle
 	the problem itself) to its caller. If the problem is associated
 	with a system error, i.e., the global variable `errno' details
@@ -126,7 +126,7 @@ Memory allocation
 
 Log messages
 
-	The logging functions in wapitlib.h shall be used, not printf.
+	The logging functions in log.h shall be used, not printf.
 
 	Note that panic must never be used after the gateway has been
 	started, except when an error really, really, REALLY cannot
@@ -314,7 +314,7 @@ ChangeLog
 
 	When writing an entry, please try to make sure the entry is at
 	least somewhat understandable without referring to the actual
-	patch it reflects. This helps immensly those who want to follow
+	patch it reflects. This helps immensely those who want to follow
 	Kannel development without having to wade through millions of
 	lines of patches per year.
 

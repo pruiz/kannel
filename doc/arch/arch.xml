@@ -28,7 +28,7 @@
 			<surname>Wirzenius</surname>
 			<affiliation>
 				<jobtitle>Gateway architect</jobtitle>
-				<orgname>WapIT Ltd</orgname>
+				<orgname>Wapit Ltd</orgname>
 				<address>
 				<email>liw@wapit.com</email>
 				<otheraddr>http://www.wapit.com</otheraddr>
@@ -41,7 +41,7 @@
 			<surname>Marjola</surname>
 			<affiliation>
 				<jobtitle>Gateway specialist</jobtitle>
-				<orgname>WapIT Ltd</orgname>
+				<orgname>Wapit Ltd</orgname>
 				<address>
 				<email>rpr@wapit.com</email>
 				</address>
@@ -52,7 +52,7 @@
 		<title>Abstract</title>
 		<para>This document describes the software architecture
 		of Kannel, the Open Source WAP Gateway being produced
-		by WapIT Ltd.  It is meant for programmers wishing to
+		by Wapit Ltd.  It is meant for programmers wishing to
 		understand or modify the gateway.
 		</para>
 	</abstract>

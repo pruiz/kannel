@@ -64,7 +64,7 @@
 	the field <structfield>type</structfield>, which gives its type, and
 	a separate struct field for each type of message, named after
 	the type. The fields in the message are fields in the message
-	type specific structrue. For example, the hearbeat message contains
+	type specific structure. For example, the heartbeat message contains
 	one field giving the load of the sender, and this would be
 	accessed like this:
 
@@ -173,7 +173,7 @@
 <title>Heartbeat messages</title>
 
 	<para>Both the SMS and WAP boxes send heartbeat messages to the
-	bearer box. The hearbeat informs the bearer box that the sender
+	bearer box. The heartbeat informs the bearer box that the sender
 	is alive and also its load. The message is simple:
 	
 	<simplelist>
@@ -228,7 +228,7 @@
 	phone numbers, with more to come). The address may need to
 	contain a prefix that specifies the type. The WAP box doesn't
 	need to worry about the address, except for using it to identify
-	the WTP and WSM state machine it needs to use; it just treats it
+	the WTP and WSP state machine it needs to use; it just treats it
 	as a black box and puts it in the proper place in the response
 	message.  </para>
 	

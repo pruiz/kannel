@@ -44,7 +44,7 @@ that the thread table of the operating system is not filled.
 
 
 types of events (WTP):
-WTP PDU's: different event for each PDU type
+WTP PDUs: different event for each PDU type
 WSP service primitives
 timer signals
 

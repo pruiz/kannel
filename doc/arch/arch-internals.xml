@@ -70,7 +70,7 @@
 	some more routing processing.</para>
 	
 	<para>The WAP boxes implement the WTP (transaction) and
-	WSP (session) layers (and the WTSL security layer in the
+	WSP (session) layers (and the WTLS security layer in the
 	future). These take HTTP-like requests from the phones, and
 	make the actual HTTP requests to content servers, compress
 	the response, and send it back to the terminals. (Sessions are

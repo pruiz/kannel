@@ -4,7 +4,7 @@
 	<para>This chapter lists the requirements of the gateway and
 	its design.</para>
 
-	<para>The gateway must be able to share load between serveral
+	<para>The gateway must be able to share load between several
 	hosts. This is also necessary for fault tolerance.</para>
 
 	<para>The gateway needs to be able to serve hundreds of concurrent
@@ -15,7 +15,7 @@
 	concurrent users on reasonably priced hardware: less than ten
 	PCs with high-end Intel CPUs, 128 MB of memory, fast network
 	interfaces. It needs to be scalable to even higher levels of
-	perfomance by adding more hardware (meaning that there can't
+	performance by adding more hardware (meaning that there can't
 	be a single bottleneck that prevents more users from being
 	served).</para>
 
