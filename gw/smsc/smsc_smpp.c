@@ -340,13 +340,13 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
      * set the esm_class field
      * default is store and forward, plus udh and rpi if requested
      */
-    pdu->u.submit_sm.esm_class = ESM_CLASS_STORE_AND_FORWARD_MODE;
+    pdu->u.submit_sm.esm_class = ESM_CLASS_SUBMIT_STORE_AND_FORWARD_MODE;
     if (octstr_len(msg->sms.udhdata)) 
         pdu->u.submit_sm.esm_class = pdu->u.submit_sm.esm_class |
-            ESM_CLASS_UDH_INDICATOR;
+            ESM_CLASS_SUBMIT_UDH_INDICATOR;
     if (msg->sms.rpi) 
         pdu->u.submit_sm.esm_class = pdu->u.submit_sm.esm_class |
-            ESM_CLASS_RPI;
+            ESM_CLASS_SUBMIT_RPI;
 
     /*
      * set data segments
@@ -486,7 +486,6 @@ static void send_messages(SMPP *smpp, Connection *conn, long *pending_submits)
         dict_put(smpp->sent_msgs, os, msg); 
         octstr_destroy(os); 
         send_pdu(conn, smpp->conn->id, pdu); 
-        dump_pdu("Sent PDU:", smpp->conn->id, pdu); 
         smpp_pdu_destroy(pdu); 
  
         ++(*pending_submits); 
@@ -607,8 +606,6 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
     Octstr *os; 
     Msg *msg, *dlrmsg=NULL; 
     long reason; 
-    int idx;  
-    int len; 
     resp = NULL; 
  
     switch (pdu->type) { 
@@ -619,10 +616,11 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
              * have no way to usefull tell the SMS center about this 
              * (no suitable error code for the deliver_sm_resp is defined) 
              */ 
-            /* got a deliver ack? */ 
+
+            /* got a deliver ack (DLR)? */ 
             if ((pdu->u.deliver_sm.esm_class == 0x02 || 
                  pdu->u.deliver_sm.esm_class == 0x04)) { 
-                Octstr *reply, *respstr;    	 
+                Octstr *respstr;    	 
                 Octstr *msgid = NULL; 
                 Octstr *stat = NULL; 
                 int dlrstat; 
@@ -686,20 +684,19 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                     dlrmsg = dlr_find(octstr_get_cstr(smpp->conn->id),  
                                       octstr_get_cstr(tmp), /* smsc message id */ 
                                       octstr_get_cstr(pdu->u.deliver_sm.destination_addr), /* destination */ 
-                                      dlrstat); 
+                                      dlrstat);
                     octstr_destroy(tmp); 
                 } 
-                if (dlrmsg != NULL) { 
-                    reply = octstr_duplicate(respstr); 
-                    /* having a / in the text breaks it so lets replace it with a space */ 
-                    len = octstr_len(reply); 
-                    for (idx = 0; idx < len; idx++) 
-                        if (octstr_get_char(reply, idx) == '/') 
-                            octstr_set_char(reply, idx, '.'); 
-                    octstr_append_char(reply, '/'); 
-                    octstr_insert(dlrmsg->sms.msgdata, reply, 0); 
-                    octstr_destroy(reply); 
-                    bb_smscconn_receive(smpp->conn, dlrmsg); 
+                if (dlrmsg != NULL) {
+                    /* 
+                     * we found the delivery report in our storage, so recode the 
+                     * message structure. 
+                     * The DLR trigger URL is indicated by msg->sms.dlr_url. 
+                     */
+                    dlrmsg->sms.msgdata = octstr_duplicate(respstr);
+                    dlrmsg->sms.sms_type = report;
+
+                    bb_smscconn_receive(smpp->conn, dlrmsg);
                 } else { 
                     error(0,"SMPP[%s]: got DLR but could not find message or was not interested in it",
                           octstr_get_cstr(smpp->conn->id));    	 
@@ -811,6 +808,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                 if (msg->sms.dlr_mask & (DLR_SMSC_SUCCESS|DLR_SUCCESS|DLR_FAIL|DLR_BUFFERED)) 
                     dlr_add(octstr_get_cstr(smpp->conn->id), 
                             octstr_get_cstr(tmp), 
+                            octstr_get_cstr(msg->sms.sender), 
                             octstr_get_cstr(msg->sms.receiver), 
                             octstr_get_cstr(msg->sms.service), 
                             octstr_get_cstr(msg->sms.dlr_url), 
@@ -829,7 +827,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
  			 
                     if (dlrmsg != NULL) { 
                         octstr_append_char(reply, '/'); 
-                        octstr_insert(dlrmsg->sms.msgdata, reply, 0); 
+                        dlrmsg->sms.msgdata = octstr_duplicate(reply);
                         octstr_destroy(reply); 
                         bb_smscconn_receive(smpp->conn, dlrmsg); 
                     } else 

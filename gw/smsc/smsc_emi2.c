@@ -722,21 +722,16 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 			DLR_FAIL);
 		break;
 	}
-	if(msg != NULL) {     
-	    int idx; 
-	    int len;     
-	    Octstr *reply;
-	    reply = octstr_create("");
-	    octstr_append(reply, emimsg->fields[E50_AMSG]);
-	    octstr_hex_to_binary(reply);
-	    /* having a / in the text breaks it so lets replace it with a space */
-	    len = octstr_len(reply);
-	    for(idx=0;idx<len;idx++)
-	    	if(octstr_get_char(reply,idx)=='/')
-	    		octstr_set_char(reply,idx,'.');
-	    octstr_append_char(reply, '/');
-	    octstr_insert(msg->sms.msgdata, reply, 0);
-	    octstr_destroy(reply);
+	if (msg != NULL) {     
+	    
+        /*
+         * Recode the msg structure with the given msgdata.
+         * Note: the DLR URL is delivered in msg->sms.dlr_url already.
+         */
+        msg->sms.msgdata = octstr_duplicate(emimsg->fields[E50_AMSG]);
+        octstr_hex_to_binary(msg->sms.msgdata);
+        msg->sms.sms_type = report;
+
 	    bb_smscconn_receive(conn, msg);
 	}
 	reply = emimsg_create_reply(53, emimsg->trn, 1, privdata->name);
@@ -884,6 +879,7 @@ static int emi2_do_send (SMSCConn *conn, Connection *server)
 
 	    dlr_add(octstr_get_cstr((conn->id ? conn->id : PRIVDATA(conn)->name)), 
 		    octstr_get_cstr(ts),
+		    octstr_get_cstr(msg->sms.sender),
 		    octstr_get_cstr(emimsg->fields[E50_ADC]),
 		    octstr_get_cstr(msg->sms.service),
 		    octstr_get_cstr(msg->sms.dlr_url),
@@ -976,11 +972,19 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
 			if (dlrmsg != NULL) {
 			    Octstr *moretext;
 
+                /*
+                 * Recode the msg structure with the given msgdata.
+                 * Note: the DLR URL is delivered in msg->sms.dlr_url already.
+                 */
+                dlrmsg->sms.msgdata = octstr_duplicate(emimsg->fields[E50_AMSG]);
+                octstr_hex_to_binary(dlrmsg->sms.msgdata);
+                dlrmsg->sms.sms_type = report;
+
 			    moretext = octstr_create("");
 			    if (octstr_get_char(emimsg->fields[0], 0) == 'N') {
-				octstr_append(moretext, emimsg->fields[1]);
-				octstr_append_char(moretext, '-');
-				octstr_append(moretext, emimsg->fields[2]);
+                    octstr_append(moretext, emimsg->fields[1]);
+                    octstr_append_char(moretext, '-');
+                    octstr_append(moretext, emimsg->fields[2]);
 			    }
 			    octstr_append_char(moretext, '/');
 			    octstr_insert(dlrmsg->sms.msgdata, moretext, 0);
@@ -1012,6 +1016,7 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
 				} else if (m->sms.dlr_mask & 0x7) {
 				    dlr_add(octstr_get_cstr((conn->id ? conn->id : privdata->name)), 
 					    octstr_get_cstr(ts),
+					    octstr_get_cstr(m->sms.sender),
 					    octstr_get_cstr(adc),
 					    octstr_get_cstr(m->sms.service),
 					    octstr_get_cstr(m->sms.dlr_url),

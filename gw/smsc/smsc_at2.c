@@ -1496,7 +1496,8 @@ Msg *at2_pdu_decode_report_sm(Octstr *data, PrivAT2data *privdata)
 	    goto error;
     }
 
-    octstr_insert(dlrmsg->sms.msgdata, tmpstr, 0);
+    /* Beware DLR URL is now in msg->sms.dlr_url given by dlr_find() */
+    dlrmsg->sms.msgdata = octstr_duplicate(tmpstr);
 	
 error:
     O_DESTROY(tmpstr);
@@ -1673,14 +1674,15 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 		    error(0,"AT2[%s]: delivery notification requested, but I have no message ID!",
 			octstr_get_cstr(privdata->name));
 		 else {
-		     Octstr* dlrmsgid = octstr_format("%d", msg_id);
+            Octstr *dlrmsgid = octstr_format("%d", msg_id);
 
-		     dlr_add(octstr_get_cstr(privdata->conn->id),
-			octstr_get_cstr(dlrmsgid),
-			octstr_get_cstr(msg->sms.receiver),
-			octstr_get_cstr(msg->sms.service),
-			octstr_get_cstr(msg->sms.dlr_url),
-			msg->sms.dlr_mask);
+            dlr_add(octstr_get_cstr(privdata->conn->id),
+                    octstr_get_cstr(dlrmsgid),
+			        octstr_get_cstr(msg->sms.sender),
+			        octstr_get_cstr(msg->sms.receiver),
+			        octstr_get_cstr(msg->sms.service),
+			        octstr_get_cstr(msg->sms.dlr_url),
+			        msg->sms.dlr_mask);
 				
 		    O_DESTROY(dlrmsgid);
 		}

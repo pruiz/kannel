@@ -1094,14 +1094,9 @@ static int cgw_handle_op(SMSCConn *conn, Connection *server, struct cgwop *cgwop
 
             octstr_destroy(ts);
             if (dlrmsg != NULL) {
-                Octstr *moretext;
 
-                moretext = octstr_duplicate(txt);
-                octstr_append_char(moretext, '/');
-                octstr_insert(dlrmsg->sms.msgdata, moretext, 0);
+                dlrmsg->sms.msgdata = octstr_duplicate(txt);
                 bb_smscconn_receive(conn, dlrmsg);
-
-                octstr_destroy(moretext);
             }
         }
 
@@ -1128,6 +1123,7 @@ static int cgw_handle_op(SMSCConn *conn, Connection *server, struct cgwop *cgwop
 
             dlr_add(octstr_get_cstr(conn->id),
                     octstr_get_cstr(ts),
+                    octstr_get_cstr(msg->sms.sender),
                     octstr_get_cstr(msg->sms.receiver),
                     octstr_get_cstr(msg->sms.service),
                     octstr_get_cstr(msg->sms.dlr_url),

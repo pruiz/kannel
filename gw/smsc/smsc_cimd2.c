@@ -1827,6 +1827,7 @@ int cimd2_submit_msg(SMSCenter *smsc, Msg *msg)
         {
             dlr_add(smsc->name,
                 octstr_get_cstr(ts), 
+                octstr_get_cstr(msg->sms.sender),
                 octstr_get_cstr(msg->sms.receiver),
                 octstr_get_cstr(msg->sms.service),
                 octstr_get_cstr(msg->sms.dlr_url),
@@ -1979,6 +1980,11 @@ static Msg *cimd2_accept_delivery_report_message(struct packet *request, SMSCent
     octstr_destroy(statuscode);
     octstr_destroy(destination);
     octstr_destroy(timestamp);
+
+    /* recode the body into msgdata */
+    if (msg) {
+        msg->sms.msgdata = packet_get_parm(request, P_USER_DATA);
+    }
 
     return msg;
  }
