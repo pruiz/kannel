@@ -168,12 +168,10 @@ static void main_thread(void *arg) {
 static WSPMachine *find_session_machine(WAPEvent *event, WSP_PDU *pdu) {
 	WSPMachine *sm;
 	long session_id;
-	long handle;
 	WAPAddrTuple *tuple;
 	
 	tuple = NULL;
 	session_id = -1;
-	handle = -1;
 	
 	switch (event->type) {
 	case TR_Invoke_Ind:
@@ -220,14 +218,6 @@ static WSPMachine *find_session_machine(WAPEvent *event, WSP_PDU *pdu) {
 			wap_event_name(event->type));
 	}
 	
-	gw_assert(session_id != -1 || handle != -1 || tuple != NULL);
-	if (handle != -1 && wtp_resp_get_address_tuple(handle, &tuple) == -1) {
-		error(0, "Couldn't find WTP state machine %ld.", handle);
-		error(0, "This is an internal error.");
-		wap_event_dump(event);
-		panic(0, "foo");
-		return NULL;
-	}
 	gw_assert(tuple != NULL || session_id != -1);
 
 	/* Pre-state-machine tests, according to 7.1.5.  After the tests,

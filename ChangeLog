@@ -1,3 +1,13 @@
+2000-11-15  Richard Braakman  <dark@wapi.com>
+
+	* gw/wsp-session.c: Address tuples are now included in events
+	sent from WTP to WSP, so the code for looking up tuples based
+	on WTP handles is no longer needed.
+
+	* gw/wtp_resp.[ch]: Removed now-unused functions 
+        wtp_resp_get_address_tuple, find_resp_machine_using_mid,
+	and resp_machine_has_mid.
+
 2000-11-15  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_boxc.c: added wapbox load based balancing, based on

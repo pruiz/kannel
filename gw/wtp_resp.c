@@ -104,7 +104,6 @@ static void start_timer_R(WTPRespMachine *machine);
  * Start timeout interval timer.
  */
 static void start_timer_W(WTPRespMachine *machine);
-static WTPRespMachine *find_resp_machine_using_mid(long mid);
 static WAPEvent *create_tr_invoke_ind(WTPRespMachine *sm, Octstr *user_data);
 static WAPEvent *create_tr_abort_ind(WTPRespMachine *sm, long abort_reason);
 static WAPEvent *create_tr_result_cnf(WTPRespMachine *sm);
@@ -149,19 +148,6 @@ void wtp_resp_shutdown(void)
 void wtp_resp_dispatch_event(WAPEvent *event) 
 {
     list_produce(resp_queue, event);
-}
-
-int wtp_resp_get_address_tuple(long mid, WAPAddrTuple **tuple) 
-{
-    WTPRespMachine *sm;
-	
-    sm = find_resp_machine_using_mid(mid);
-    if (sm == NULL)
-	return -1;
-
-    *tuple = wap_addr_tuple_duplicate(sm->addr_tuple);
-
-    return 0;
 }
 
 
@@ -558,21 +544,6 @@ static WAPEvent *create_tr_abort_ind(WTPRespMachine *sm, long abort_reason) {
     event->u.TR_Abort_Ind.handle = sm->mid;
 
     return event;
-}
-
-static int resp_machine_has_mid(void *a, void *b) 
-{
-    WTPRespMachine *sm;
-    long mid;
-	
-    sm = a;
-    mid = *(long *) b;
-    return sm->mid == mid;
-}
-
-static WTPRespMachine *find_resp_machine_using_mid(long mid) 
-{
-    return list_search(resp_machines, &mid, resp_machine_has_mid);
 }
 
 /*

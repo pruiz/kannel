@@ -64,6 +64,4 @@ void wtp_resp_shutdown(void);
  */ 
 void wtp_resp_dispatch_event(WAPEvent *event);
 
-int wtp_resp_get_address_tuple(long mid, WAPAddrTuple **tuple);
-
 #endif
