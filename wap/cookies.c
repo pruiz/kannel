@@ -97,7 +97,8 @@ Cookie *cookie_create(void)
 	return p;
 }
 
-void cookies_destroy(List *cookies) {
+void cookies_destroy(List *cookies) 
+{
 	gwlib_assert_init();
 
 	if (cookies == NULL)
@@ -107,7 +108,7 @@ void cookies_destroy(List *cookies) {
 }
 
 
-int get_cookies (List *headers, const WSPMachine *sm)
+int get_cookies(List *headers, const WSPMachine *sm)
 {
 	Octstr *header = NULL;
 	Octstr *value = NULL;
@@ -454,7 +455,7 @@ static void expire_cookies(List *cookies)
 	return;
 }
 
-static void cookie_destroy (void *p)
+static void cookie_destroy(void *p)
 {
 	Cookie *cookie;
 	
