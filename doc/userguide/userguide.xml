@@ -1976,6 +1976,25 @@ bearerbox-host = localhost
 
      </entry></row>
 
+   <row><entry><literal>unified-prefix</literal></entry>
+     <entry>prefix-list</entry>
+     <entry valign=bottom>
+        String to unify received phone numbers, for SMSC routing and
+        to ensure that SMS centers can handle them properly. 
+        This is applied to 'sender' number when receiving SMS
+        messages from SMS Center and for 'receiver' number when
+        receiving messages from SMSbox (either sendsms message or
+        reply to original message). Format is that first comes the
+        unified prefix, then all prefixes which are replaced by the
+        unified prefix, separated with comma (','). For example,
+        for Finland an unified-prefix "+358,00358,0;+,00" should do the trick. 
+        If there are several unified prefixes, separate their rules with
+        semicolon (';'), like "+35850,050;+35840,040". <emphasis>Note
+        that prefix routing is next to useless now that there are
+        SMSC ID entries. To remove prefixes, use like 
+	     "-,+35850,050;-,+35840,040".
+	</emphasis>
+
    <row><entry><literal>alt-charset</literal></entry>
      <entry><literal>number</literal></entry>
      <entry valign=bottom>
