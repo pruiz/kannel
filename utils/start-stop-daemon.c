@@ -31,7 +31,8 @@
 #elif defined(__GNU__)
 #define OSHURD
 #elif defined(SunOS)
-
+#elif definedd(__FreeBSD__)
+#define FreeBSD
 #else
 #error Unknown architecture - cannot build start-stop-daemon
 #endif
@@ -119,7 +120,7 @@ static void *xmalloc(int size);
 static void push(struct pid_list **list, int pid);
 static void do_help(void);
 static void parse_options(int argc, char * const *argv);
-#if defined(OSLinux) || defined(OSHURD) || defined(SunOS)
+#if defined(OSLinux) || defined(OSHURD) || defined(SunOS) || defined(FreeBSD)
 static int pid_is_user(int pid, int uid);
 static int pid_is_cmd(int pid, const char *name);
 #endif
@@ -569,6 +570,18 @@ pid_is_cmd(int pid, const char *name)
 }
 #endif /*SunOS*/
 
+#ifdef FreeBSD
+static int pid_is_user(int pid, int uid)
+{
+ struct stat sb;
+ char buf[32];
+
+ sprintf(buf, "/proc/%d", pid);
+ if (stat(buf, &sb) != 0)
+  return 0;
+ return ((int) sb.st_uid == uid);
+}
+#endif /*FreeBSD*/
 
 static void
 check(int pid)
@@ -604,7 +617,7 @@ do_pidfile(const char *name)
 
 /* WTA: this  needs to be an autoconf check for /proc/pid existance.
  */
-#if defined(OSLinux) || defined (SunOS)
+#if defined(OSLinux) || defined (SunOS) || defined(FreeBSD)
 static void
 do_procinit(void)
 {
@@ -822,7 +835,11 @@ main(int argc, char **argv)
 		close(fd);
 		chdir("/");
 		umask(022); /* set a default for dumb programs */
+#ifndef FreeBSD
 		setpgrp();  /* set the process group */
+#else
+		setpgrp(0, runas_gid);  /* set the process group */
+#endif
 		fd=open("/dev/null", O_RDWR); /* stdin */
 		dup(fd); /* stdout */
 		dup(fd); /* stderr */
