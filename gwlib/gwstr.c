@@ -37,17 +37,6 @@ int count_occurences(char *str, char *pat)
 }
 
 
-char *strndup(char *str, size_t n)
-{
-    char *p;
-
-    p = gw_malloc(n + 1);
-    memcpy(p, str, n);
-    p[n] = '\0';
-    return p;
-}
-
-
 char *str_case_str(char *str, char *pat)
 {
     char *p, *s;
@@ -75,21 +64,6 @@ int str_reverse_seek(const char *s, int start_offset, const char *accept)
     for (; start_offset >= 0; start_offset--) {
         for (other = (char *)accept; *other != '\0'; other++) {
             if (*other == s[start_offset])
-                return start_offset;
-        }
-    }
-    return -1; 		/* not found */
-}
-
-
-/* as above but ignoring case */
-int str_reverse_case_seek(const char *s, int start_offset, const char *accept)
-{
-    char	*other;
-
-    for (; start_offset >= 0; start_offset--) {
-        for (other = (char *)accept; *other != '\0'; other++) {
-            if (toupper(*other) == toupper(s[start_offset]))
                 return start_offset;
         }
     }

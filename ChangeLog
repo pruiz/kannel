@@ -1,3 +1,9 @@
+2000-10-30  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/gwstr.[ch]: Removed unused functions strndup and
+	str_reverse_case_seek. The rest of this module will go away once
+	smsbox is re-written to use Octstr.
+
 2000-10-30  Richard Braakman  <dark@wapit.com>
 
 	* gw/wap-appl.c: Support for X-WAP.TOD header, needed for WAP 1.1

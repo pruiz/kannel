@@ -16,10 +16,6 @@ char *trim_ends(char *str);
 int count_occurences(char *str, char *pat);
 
 
-/* Make a dynamically allocated copy of first `n' characters of `str'. */
-char *strndup(char *str, size_t n);
-
-
 /* like strstr, but ignore case */
 char *str_case_str(char *str, char *pat);
 
@@ -29,9 +25,5 @@ char *str_case_str(char *str, char *pat);
  * found  */
 int str_reverse_seek(const char *s, int start_offset, const char *accept);
 
-
-/* as above but ignoring case */
-int str_reverse_case_seek(const char *s, int start_offset, 
-    	    	    	  const char *accept);
 
 #endif
