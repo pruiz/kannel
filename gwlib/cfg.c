@@ -11,6 +11,8 @@
 struct CfgGroup {
     Octstr *name;
     Dict *vars;
+    Octstr *configfile; 
+    long line; 
 };
 
 
@@ -21,6 +23,8 @@ static CfgGroup *create_group(void)
     grp = gw_malloc(sizeof(*grp));
     grp->name = NULL;
     grp->vars = dict_create(64, octstr_destroy_item);
+    grp->configfile = NULL; 
+    grp->line = 0; 
     return grp;
 }
 
@@ -31,12 +35,42 @@ static void destroy_group(void *arg)
     if (arg != NULL) {
 	grp = arg;
 	octstr_destroy(grp->name);
+	octstr_destroy(grp->configfile); 
 	dict_destroy(grp->vars);
 	gw_free(grp);
     }
 }
 
 
+struct CfgLoc { 
+    Octstr *filename; 
+    long line_no; 
+    Octstr *line; 
+}; 
+
+
+CfgLoc *cfgloc_create(Octstr *filename) 
+{ 
+    CfgLoc *cfgloc; 
+     
+    cfgloc = gw_malloc(sizeof(*cfgloc)); 
+    cfgloc->filename = octstr_duplicate(filename); 
+    cfgloc->line_no = 0; 
+    cfgloc->line = NULL; 
+    return cfgloc; 
+} 
+ 
+ 
+void *cfgloc_destroy(CfgLoc *cfgloc) 
+{ 
+    if (cfgloc != NULL) { 
+	octstr_destroy(cfgloc->filename); 
+	octstr_destroy(cfgloc->line); 
+	gw_free(cfgloc); 
+    } 
+} 
+
+ 
 static void destroy_group_list(void *arg)
 {
     list_destroy(arg, destroy_group);
@@ -214,69 +248,167 @@ static void parse_value(Octstr *value)
 }
 
 
-int cfg_read(Cfg *cfg)
+List *expand_file(Octstr *file, int forward) 
 {
     Octstr *os;
     Octstr *line;
+    Octstr *filename; 
+    List *lines; 
+    List *expand; 
+    long lineno; 
+    CfgLoc *loc; 
+ 
+    os = octstr_read_file(octstr_get_cstr(file)); 
+    if (os == NULL) 
+    	return NULL; 
+ 
+    lines = octstr_split(os, octstr_imm("\n")); 
+    lineno = 0; 
+    expand = list_create(); 
+              
+    while ((line = list_extract_first(lines)) != NULL) { 
+        ++lineno; 
+        loc = cfgloc_create(file); 
+        loc->line_no = lineno; 
+        loc->line = line; 
+        if (forward) 
+            list_append(expand, loc); 
+        else 
+            list_insert(expand, 0, loc); 
+    } 
+                 
+    list_destroy(lines, octstr_destroy_item); 
+    octstr_destroy(os); 
+ 
+    return expand; 
+} 
+ 
+ 
+int cfg_read(Cfg *cfg) 
+{ 
+    Octstr *os; 
+    CfgLoc *loc; 
+    CfgLoc *loc_inc; 
     List *lines;
+    List *expand; 
+    List *stack; 
     Octstr *name;
     Octstr *value;
+    Octstr *filename; 
     CfgGroup *grp;
     long equals;
     long lineno;
     long error_lineno;
     
-    os = octstr_read_file(octstr_get_cstr(cfg->filename));
-    if (os == NULL)
-    	return -1;
+    /* 
+     * expand initial main config file and add it to the recursion 
+     * stack to protect against cycling 
+     */ 
+    if ((lines = expand_file(cfg->filename, 1)) == NULL) { 
+        panic(0, "Failed to load main configuration file `%s'. Aborting!", 
+              octstr_get_cstr(cfg->filename)); 
+    } 
+    stack = list_create(); 
+    list_insert(stack, 0, cfg->filename); 
 
-    lines = octstr_split(os, octstr_imm("\n"));
-    octstr_destroy(os);
-    
     grp = NULL;
     lineno = 0;
     error_lineno = 0;
-    while (error_lineno == 0 && (line = list_extract_first(lines)) != NULL) {
-	++lineno;
-	octstr_strip_blanks(line);
-    	if (octstr_len(line) == 0) {
-	    if (grp != NULL && add_group(cfg, grp) == -1) {
-		error_lineno = lineno;
-		destroy_group(grp);
-	    }
-	    grp = NULL;
-	} else if (octstr_get_char(line, 0) != '#') {
-	    equals = octstr_search_char(line, '=', 0);
-	    if (equals == -1) {
-		error(0, "An equals sign ('=') is missing.");
-	    	error_lineno = lineno;
-	    } else {
-		name = octstr_copy(line, 0, equals);
-		octstr_strip_blanks(name);
-		value = octstr_copy(line, equals + 1, octstr_len(line));
-		parse_value(value);
+    while (error_lineno == 0 && (loc = list_extract_first(lines)) != NULL) { 
+        octstr_strip_blanks(loc->line); 
+        if (octstr_len(loc->line) == 0) { 
+            if (grp != NULL && add_group(cfg, grp) == -1) { 
+                error_lineno = loc->line_no; 
+                destroy_group(grp); 
+            } 
+            grp = NULL; 
+        } else if (octstr_get_char(loc->line, 0) != '#') { 
+            equals = octstr_search_char(loc->line, '=', 0); 
+            if (equals == -1) { 
+                error(0, "An equals sign ('=') is missing on line %ld of file %s.", 
+                      loc->line_no, octstr_get_cstr(loc->filename)); 
+                error_lineno = loc->line_no; 
+            } else  
+             
+            /* 
+             * check for special config directives, like include or conditional 
+             * directives here 
+             */ 
+            if (octstr_search(loc->line, octstr_imm("include"), 0) != -1) { 
+                filename = octstr_copy(loc->line, equals + 1, octstr_len(loc->line)); 
+                parse_value(filename); 
+ 
+                /* check if we are cycling */ 
+                if (list_search(stack, filename, octstr_item_match) != NULL) { 
+                    panic(0, "Recursive include for config file `%s' detected " 
+                             "(on line %ld of file %s).", 
+                          octstr_get_cstr(filename), loc->line_no,  
+                          octstr_get_cstr(loc->filename)); 
+                } else {     
+             
+                    list_insert(stack, 0, octstr_duplicate(filename)); 
+                    debug("gwlib.cfg", 0, "Loading include file `%s' (on line %ld of file %s).",  
+                          octstr_get_cstr(filename), loc->line_no,  
+                          octstr_get_cstr(loc->filename)); 
+                 
+                    /*  
+                     * expand the given include file and add it to the current 
+                     * processed main while loop 
+                     */ 
+                    if ((expand = expand_file(filename, 0)) != NULL) { 
+                        while ((loc_inc = list_extract_first(expand)) != NULL) 
+                            list_insert(lines, 0, loc_inc); 
+                    } else { 
+    	                panic(0, "Failed to load whole configuration. Aborting!"); 
+                    } 
+                 
+                    list_destroy(expand, NULL); 
+                    cfgloc_destroy(loc_inc); 
+                } 
+                octstr_destroy(filename); 
+            }  
+             
+            /* 
+             * this is a "normal" line, so process it accodingly 
+             */ 
+            else  { 
+                name = octstr_copy(loc->line, 0, equals); 
+                octstr_strip_blanks(name); 
+                value = octstr_copy(loc->line, equals + 1, octstr_len(loc->line)); 
+                parse_value(value); 
+ 
     	    	if (grp == NULL)
-		    grp = create_group();
-		cfg_set(grp, name, value);
-		octstr_destroy(name);
-		octstr_destroy(value);
-	    }
-	}
+                    grp = create_group(); 
+                 
+                /* 
+                 * Remember where the group has been defined. 
+                 * This may be referenced in several other places, 
+                 * i.e. dump_group() 
+                 */ 
+                grp->configfile = octstr_duplicate(loc->filename); 
+                grp->line = loc->line_no; 
+ 
+                cfg_set(grp, name, value); 
+                octstr_destroy(name); 
+                octstr_destroy(value); 
+            } 
+        } 
 
-	octstr_destroy(line);
+        cfgloc_destroy(loc); 
     }
 
     if (grp != NULL && add_group(cfg, grp) == -1) {
-    	error_lineno = 1;
-	destroy_group(grp);
+        error_lineno = 1; 
+        destroy_group(grp); 
     }
 
-    list_destroy(lines, octstr_destroy_item);
+    list_destroy(lines, NULL); 
+    list_destroy(stack, NULL); 
 
     if (error_lineno != 0) {
-	error(0, "Error found on %ld of file %s.", 
-	      lineno, octstr_get_cstr(cfg->filename));
-	return -1;
+        error(0, "Error found on line %ld of file `%s'.",  
+	          error_lineno, octstr_get_cstr(cfg->filename)); 
+        return -1; 
     }
 
     return 0;

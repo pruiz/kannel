@@ -11,6 +11,7 @@
 #define CFG_H
 
 typedef struct Cfg Cfg;
+typedef struct CfgLoc CfgLoc; 
 typedef struct CfgGroup CfgGroup;
 
 Cfg *cfg_create(Octstr *filename);
