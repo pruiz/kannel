@@ -592,7 +592,7 @@ int	at2_init_device(PrivAT2data *privdata)
 	}
 	vals = octstr_split(ts, octstr_imm(","));
 	octstr_destroy(ts);
-	ts = list_search(vals, octstr_imm("1"),(void *) octstr_case_compare);
+	ts = list_search(vals, octstr_imm("1"),(void *) octstr_item_match);
 	if(ts)
 	    privdata->phase2plus = 1;
 	list_destroy(vals,(void *) at2_octstr_destroy);
@@ -1802,7 +1802,7 @@ int at2_detect_modem_type(PrivAT2data *privdata)
 	}
 	vals = octstr_split(ts, octstr_imm(","));
 	octstr_destroy(ts);
-	ts = list_search(vals, octstr_imm("1"),(void *) octstr_case_compare);
+	ts = list_search(vals, octstr_imm("1"),(void *) octstr_item_match);
 	if(ts)
 	    privdata->phase2plus = 1;
 	list_destroy(vals,(void *) at2_octstr_destroy);
