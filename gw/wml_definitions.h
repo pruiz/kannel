@@ -101,7 +101,7 @@ wml_table_t wml_elements[] = {
 
 static
 wml_table3_t wml_attributes[] = {
-  { "accept_charset", NULL, 0x05 },
+  { "accept-charset", NULL, 0x05 },
   { "align", NULL, 0x52 },
   { "align", "bottom", 0x06 },
   { "align", "center", 0x07 },
