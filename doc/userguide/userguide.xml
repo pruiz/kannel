@@ -1567,6 +1567,9 @@ bearerbox-host = localhost
 <sect3>
 <title>Nokia CIMD 1.37 and 2.0</title>
 
+<para>Support for CIMD 1.37 is quite old and will be removed in a
+future version of Kannel.  Please let us know if you still need it.</para>
+
 <programlisting>
 group = smsc
 smsc = cimd
@@ -1574,7 +1577,14 @@ host = 100.101.102.103
 port = 600
 smsc-username = foo
 smsc-password = bar
+</programlisting>
 
+<para>The driver for CIMD2 is a "receiving SME" and expects the SMSC
+to be configured for that.  It also expects the SMSC to automatically
+send stored messages as soon as Kannel logs in (this is the normal
+configuration).</para>
+
+<programlisting>
 group = smsc
 smsc = cimd2
 host = 100.101.102.103

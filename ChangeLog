@@ -1,3 +1,14 @@
+2001-04-26  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_cimd2.c: Stopped sending "delivery request" when
+        logging in.  It is not needed in the normal configuration, and
+        it confuses some SMSCs.  Thanks to Antti Valtokari for tracking
+	this down.  (If it _is_ needed in your configuration, then you
+        will not get messages that arrived while Kannel wasn't connected.)
+
+	* doc/userguide/userguide.xml: Explain what configuration the
+	cimd2 driver expects from the SMSC.
+	
 2001-04-25  Tuomas Luttinen  <tuo@wapit.com>
 
 	* configure[.in] : Kannel now requires libxml 2.2.5 or newer. Reasons 

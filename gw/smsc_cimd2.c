@@ -1643,18 +1643,6 @@ static int cimd2_login(SMSCenter *smsc)
         goto error;
 
     packet_destroy(packet);
-
-    /* Just in case the connection is configured to only deliver
-     * new messages, and we have to query for old ones.  This does
-     * no harm in other configurations. */
-    packet = packet_create(DELIVERY_REQUEST, BOGUS_SEQUENCE);
-    /* Mode 2 for "deliver all messages" */
-    packet_add_int_parm(packet, P_DELIVERY_REQUEST_MODE, 2);
-    /* We don't actually care if the request fails.  cimd2_request
-     * will log a warning if it fails, that is enough. */
-    cimd2_request(packet, smsc);
-    packet_destroy(packet);
-
     info(0, "%s logged in.", smsc_name(smsc));
 
     return 0;
