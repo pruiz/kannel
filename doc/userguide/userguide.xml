@@ -55,11 +55,11 @@
 		<firstname>Andreas</firstname>
 		<surname>Fink</surname>
 		<affiliation>
-			<jobtitle>Open Source Developer</jobtitle>
-			<orgname>Global Networks Inc. (SMSRELAY)</orgname>
+			<jobtitle>Chairman & CTO</jobtitle>
+			<orgname>Global Networks Inc.</orgname>
 			<address> <email>andreas@fink.org</email>
 			<otheraddr>http://www.smsrelay.com</otheraddr>
-			<otheraddr>http://www.global-networks.ch</otheraddr>
+			<otheraddr>http://www.gni.ch</otheraddr>
 			</address>
 		</affiliation>
 	</author>
@@ -72,12 +72,15 @@
 			</address>
 		</affiliation>
 	</author>
-<!--	<author>
+	<author>
 		<firstname>Stipe</firstname>
 		<surname>Tolj</surname>
 		<affiliation>
+			<jobtitle>CTO & CIO</jobtitle>
+			<orgname>Wapme Systems AG</orgname>
 			<address> <email>tolj@wapme-systems.de</email>
-			<otheraddr>http://www.wapme-systems.de</otheraddr>
+			<otheraddr>http://www.wapme.de</otheraddr>
+			<otheraddr>http://www.kannel.org</otheraddr>
 			</address>
 		</affiliation>
 	</author>
@@ -85,12 +88,13 @@
 		<firstname>Aarno</firstname>
 		<surname>Syvänen</surname>
 		<affiliation>
-			<address> <email>aarno@wiral.com</email>
-			<otheraddr>http://www.wiral.com</otheraddr>
+			<jobtitle>Chief MMS Developer</jobtitle>
+			<orgname>Global Networks Inc.</orgname>
+			<address> <email>as@gni.ch</email>
+			<otheraddr>http://www.gni.ch</otheraddr>
 			</address>
 		</affiliation>
 	</author>
--->
 </authorgroup>
 
 	<abstract>
@@ -98,7 +102,8 @@
 		<para>This document describes how
 		to install and use Kannel, the Open Source WAP and SMS Gateway
 		originally developed by Wapit Ltd (now out of business) and now
-		being developed further by the open source community.
+		being developed further by the open source community, namely the 
+		Kannel Group.
 		</para>
 	</abstract>
 
