@@ -374,6 +374,10 @@ char *urltrans_footer(URLTranslation *t) {
 	return t->footer;
 }
 
+char *urltrans_username(URLTranslation *t) {
+	return t->username;
+}
+
 char *urltrans_password(URLTranslation *t) {
 	return t->password;
 }

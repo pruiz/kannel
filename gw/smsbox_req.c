@@ -293,7 +293,7 @@ static void do_sending(Msg *msg)
     /* sender does the freeing (or uses msg as it sees fit) */
     sender(msg);
 
-    debug("smsbox_req", 0, "message sent\n");
+    debug("smsbox_req", 0, "message sent");
 }
 
 
@@ -866,7 +866,7 @@ char *smsbox_req_sendsms(List *list, char *client_ip)
 {
     Msg *msg = NULL;
     URLTranslation *t = NULL;
-    Octstr *user = NULL, *from = NULL, *to;
+    Octstr *from = NULL, *to;
     Octstr *text = NULL, *udh = NULL, *smsc = NULL;
     int ret;
     
@@ -912,10 +912,10 @@ char *smsbox_req_sendsms(List *list, char *client_ip)
 	return "Sender missing and no global set, rejected";
     }
     
-    info(0, "/cgi-bin/sendsms <%s:%s> <%s> <%s>",
-	 user ? octstr_get_cstr(user) : "default",
-	 octstr_get_cstr(from), octstr_get_cstr(to),
-	 text ? octstr_get_cstr(text) : "<< UDH >>");
+    info(0, "/cgi-bin/sendsms sender:<%s:%s> (%s) to:<%s> msg:<%s>",
+	 urltrans_username(t), octstr_get_cstr(from), client_ip,
+	 octstr_get_cstr(to),
+	 udh == NULL ? octstr_get_cstr(text) : "<< UDH >>");
     
     /*
      * XXX here we should validate and split the 'to' field
@@ -961,10 +961,9 @@ char *smsbox_req_sendsms(List *list, char *client_ip)
 	goto error;
     
     alog("send-SMS request added - sender:%s:%s %s target:%s request: '%s'",
-	 user ? octstr_get_cstr(user) : "default",
-	 octstr_get_cstr(from), client_ip,
+	 urltrans_username(t), octstr_get_cstr(from), client_ip,
 	 octstr_get_cstr(to),
-	 text ? octstr_get_cstr(text) : "<< UDH >>");
+	 udh == NULL ? octstr_get_cstr(text) : "<< UDH >>");
 	 octstr_destroy(from);
     
     return "Sent.";

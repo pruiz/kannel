@@ -1,3 +1,10 @@
+2000-11-28  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsbox_req.c: fixed that sendsms user is again shown (it
+	disappeared during some authorization work, I guess)
+
+	* gw/urltrans.c|h: added function urltrans_username
+
 2000-11-28  Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wapbox.c: Initialize and shutdown the push client.

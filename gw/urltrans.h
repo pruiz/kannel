@@ -182,9 +182,10 @@ char *urltrans_header(URLTranslation *t);
 char *urltrans_footer(URLTranslation *t);
 
 /*
- * return the password string, or NULL if not set (used only with
- *  TRANSTYPE_SENDSMS)
+ * return the username or password string, or NULL if not set
+ * (used only with TRANSTYPE_SENDSMS)
  */
+char *urltrans_username(URLTranslation *t);
 char *urltrans_password(URLTranslation *t);
 
 /* Return forced smsc ID for send-sms user, if set */
