@@ -1,3 +1,40 @@
+2001-11-23 Aarno Syvänen <aarno@wiral.com>
+
+    * gw/wap_push_ppg.c: Added calling of SL compiler. Bugfixes. Specially,
+    Kannel again uses international phone number format. (And will use now on:
+    this is a  requirement of pap compiler, which needs an unique client 
+    identifier.)
+
+    * gw/wml_compiler.c: To avoid conflicts, give new name (containing st) to
+    parsing functions operating on compiler data structure containing string
+    tables.
+
+    * gw/wap_push_sl_compiler.[ch]: Added SL compiler
+
+    * gw/wap_push_si_compiler.c, gw/xml_shared.[ch]: Transferred parsing 
+    functions operating on compiler data structures not containing a string
+    to xml_shared.
+
+    * test/test_ppg.c: Added content type for SL and sia.
+
+    * test/test_sl.c: Added test program for SL compiler.
+
+    * gw/wap_push_ppg_pushuser.c: A bugfix: Do not check whitelist and black-
+    list when we have an IP address. Another.
+
+    * gw/wap_push_pap_compiler.c: A related change. A problem noticed by Jörg
+    Pomnitz: Do not reject a pap document without qos element (it is optional)
+    Instead, set default bearer and network based on address type (GSM+CSD for
+    IP addresses. GSM+SMS for MSISDN addresses)
+
+    * wap/wap_events.def: Ditto.
+
+    * gwlib/charset.c: Removed debug message from charset_init. Make check
+    assumes error logging only.
+
+    * gwlib/cfg.def: Added attribute for server size configuration files.
+    Added first part of test_ppg configuration.
+
 2001-11-22 Jörg Pommnitz <jpo@condat.de>
 	* doc/userguide/userguide.xml: fix doc to get through Jade.
 
