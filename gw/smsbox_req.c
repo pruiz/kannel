@@ -49,11 +49,14 @@
 static URLTranslationList *translations = NULL;
 static int sms_max_length = -1;		/* not initialized - never modify after 
                                          * smsbox_req_init! */
+static char *sendsms_number_chars;
 static char *global_sender = NULL;
 static int (*sender) (Msg *msg) = NULL;
 static Config 	*cfg = NULL;
 
 static volatile sig_atomic_t req_threads = 0;
+
+#define SENDSMS_DEFAULT_CHARS "0123456789 +-"
 
 
 /*-------------------------------------------------------------------*
@@ -475,13 +478,15 @@ static URLTranslation *authorise_user(List *list, char *client_ip) {
 	URLTranslation *t = NULL;
 	Octstr *val, *user = NULL;
 	
-	if ((user = http_cgi_variable(list, "username")) == NULL)
+	if ((user = http_cgi_variable(list, "username")) == NULL
+	    && (user = http_cgi_variable(list, "user")) == NULL)
 		t = urltrans_find_username(translations, "default");
 	else 
 		t = urltrans_find_username(translations, octstr_get_cstr(user));
     
-	if ((val = http_cgi_variable(list, "password")) == NULL || 
-	    t == NULL ||
+	if (((val = http_cgi_variable(list, "password")) == NULL
+	     && (val = http_cgi_variable(list, "pass")) == NULL)
+	    || t == NULL ||
 	    strcmp(octstr_get_cstr(val), urltrans_password(t)) != 0)
 	{
 		/* if the password is not correct, reset the translation. */
@@ -507,20 +512,24 @@ static URLTranslation *authorise_user(List *list, char *client_ip) {
  * PUBLIC FUNCTIONS
  */
 
-int smsbox_req_init(URLTranslationList *transls,
+void smsbox_req_init(URLTranslationList *transls,
 		    Config *config,
 		    int sms_max,
 		    char *global,
+		    char *accept_str,
 		    int (*send) (Msg *msg))
 {
 	translations = transls;
 	cfg = config;
 	sms_max_length = sms_max;
 	sender = send;
-	if (global != NULL) {
+	if (accept_str)
+	    sendsms_number_chars = accept_str;
+	else
+	    sendsms_number_chars = SENDSMS_DEFAULT_CHARS;
+
+	if (global != NULL)
 		global_sender = gw_strdup(global);
-	}
-	return 0;
 }
 
 
@@ -642,6 +651,14 @@ char *smsbox_req_sendsms(List *list, char *client_ip)
 	{
 		error(0, "/cgi-bin/sendsms got wrong args");
 		return "Wrong sendsms args.";
+	}
+
+	if (strspn(octstr_get_cstr(to), sendsms_number_chars)
+	    < octstr_len(to)) {
+
+	    info(0,"Illegal characters in 'to' string ('%s') vs '%s'",
+		 octstr_get_cstr(to), sendsms_number_chars);
+	    return "Garbage 'to' field, rejected.";
 	}
 
 	if (urltrans_faked_sender(t) != NULL) {

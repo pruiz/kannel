@@ -1573,6 +1573,15 @@ bearerbox-host = localhost
         other ports in Kannel, can be set as anything desired.
      </entry></row>
 
+    <row><entry><literal>sendsms-chars</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        Only these characters are allowed in 'to' field when send-SMS
+        service is requested via HTTP. Naturally, you should allow 
+        at least <literal>0123456789</literal>. If this variable is
+        not set, default set <literal>"0123456789&nbsp;+-"</literal> is used.
+     </entry></row>
+
     <row><entry><literal>global-sender</literal></entry>
      <entry>phone-number</entry>
      <entry valign=bottom>
@@ -1606,6 +1615,7 @@ bearerbox-host = localhost
 group = smsbox
 bearerbox-host = localhost
 sendsms-port = 13131
+sendsms-chars = "0123456789"
 global-sender = 123456
 access-log = "kannel.access"
 log-file = "smsbox.log"
@@ -1959,7 +1969,7 @@ url = "http://my.applet.machine/Servlet/weather?sender=%p&amp;operator=SOL&amp;t
    <row><entry><literal>username</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
-       Name for the user/account.
+       Name for the user/account. 
      </entry></row>
 
    <row><entry><literal>password</literal></entry>
@@ -2080,14 +2090,14 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
   <title>SMS Push (send-sms) CGI Variables</title>
   <tgroup cols=2>
   <tbody>
-   <row><entry><literal>username</literal></entry>
+   <row><entry><literal>username</literal> (or <literal>user</literal>)</entry>
    <entry valign=bottom>
         Username or account name. Must be <literal>username</literal> of the one
         'sendsms-user' group in Kannel configuration,
         or results in 'Authorization failed' reply.
    </entry></row>
 
-   <row><entry><literal>password</literal></entry>
+   <row><entry><literal>password</literal> (or <literal>pass</literal>)</entry>
    <entry valign=bottom>
        Password associated to given <literal>username</literal>. Must match
  corresponding field in 'sendsms-user' group in

@@ -76,6 +76,7 @@ static char	*pid_file;
 static int	sms_len = 160;
 static char	*global_sender;
 static int	heartbeat_freq;
+static char	*accepted_chars = NULL;
 
 static int 	socket_fd;
 static HTTPSocket *http_server_socket;
@@ -315,6 +316,8 @@ static void init_smsbox(Config *cfg)
      *	pid_file = p; */
     if ((p = config_get(grp, "global-sender")) != NULL)
 	global_sender = p;
+    if ((p = config_get(grp, "sendsms-chars")) != NULL)
+	accepted_chars = p;
     if ((p = config_get(grp, "log-file")) != NULL)
 	logfile = p;
     if ((p = config_get(grp, "log-level")) != NULL)
@@ -512,7 +515,8 @@ int main(int argc, char **argv)
     /*
      * initialize smsbox-request module
      */
-    smsbox_req_init(translations, cfg, sms_len, global_sender, socket_sender);
+    smsbox_req_init(translations, cfg, sms_len, global_sender, NULL,
+		    socket_sender);
     
     while(!abort_program) {
 	socket_fd = tcpip_connect_to_server(bb_host, bb_port);

@@ -1,3 +1,16 @@
+2000-10-03  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsbox.c, gw/smsbox_req.c|h: added new smsbox configuration
+	variable 'sendsms-chars' which is used to prevent garbage
+	requests. NOTE: if you are running SMS services, you should check
+	this out! (see user guide)
+
+	* gw/smsbox_req.c: allowed 'user' and 'password' in place of
+	'username' and 'password' in sendsms request.
+
+	* doc/userguide/userguide.xml: userguide upgraded to reflect
+	these.
+	
 2000-10-02	Paul Keogh <paul.keogh@anam.com>
 
 	* gw/cookies.c: Updated comment and fixed bug in get_cookies()

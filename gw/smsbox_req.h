@@ -18,21 +18,23 @@
  *
  * 'translations' are already depacked URLTranslations
  * 'sms_max_length' is max length of one message (160 normally)
- * 'global-sender' is backup sender number. String is strdupped
+ * 'global_sender' is backup sender number, which can be NULL.
+ *  String is strdupped
+ * 'accept_str' is string of accepted characters in 'to' field in
+ *  send-sms request. If NULL, defaults to "0123456789 +-"
  *
  * 'sender' is function pointer to function that does the actual sending,
  *     that is either uses a socket (to bearerbox) or appends into reply
  *     queue (bearerbox thread smsbox). The sender function must free the
  *     message unless it stores it - however, it is now its responsibility.
  *     Sender function must return 0 on success, and -1 on failure
- *
- * Return -1 on error (couldn't strdup global_sender), 0 if Ok.
  */
 
-int smsbox_req_init(URLTranslationList *translations,
+void smsbox_req_init(URLTranslationList *translations,
 		    Config *config,
 		    int sms_max_length,
 		    char *global_sender,
+		    char *accept_str,
 		    int (*sender) (Msg *msg));
 
 /*
