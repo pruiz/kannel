@@ -13,6 +13,7 @@
 int main(int argc, char **argv)
 {
     Octstr *re, *os, *sub;
+    Octstr *tmp;
     regex_t *regexp;
     regmatch_t pmatch[REGEX_MAX_SUB_MATCH];
     int rc;
@@ -24,6 +25,8 @@ int main(int argc, char **argv)
     os = octstr_create(argv[1]);
     re = octstr_create(argv[2]);
     sub = octstr_create(argv[3]);
+
+    info(0, "step 1: generic functions");
 
     /* compile */
     if ((regexp = gw_regex_comp(re, REG_EXTENDED|REG_ICASE)) == NULL)
@@ -49,8 +52,29 @@ int main(int argc, char **argv)
                             REGEX_MAX_SUB_MATCH, &pmatch[0]);
         debug("regex",0,"RE: substituted string is <%s>.", rsub);
     }
+    
+    info(0, "step 2: wrapper functions");
+
+    debug("regex",0,"RE: regex_match <%s> on <%s> did: %s",
+          octstr_get_cstr(re), octstr_get_cstr(os),
+          gw_regex_match(re, os) ? "match" : "NOT match");
+
+    debug("regex",0,"RE: regex_match_pre on <%s> did: %s",
+          octstr_get_cstr(os),
+          gw_regex_match_pre(regexp, os) ? "match" : "NOT match");
+
+    tmp = gw_regex_subst(re, os, sub);
+    debug("regex",0,"RE: regex_subst <%s> on <%s> rule <%s>: %s",
+          octstr_get_cstr(re), octstr_get_cstr(os), octstr_get_cstr(sub),
+          octstr_get_cstr(tmp));
+    octstr_destroy(tmp);
+
+    tmp = gw_regex_subst_pre(regexp, os, sub);
+    debug("regex",0,"RE: regex_subst_pre on <%s> rule <%s>: %s",
+          octstr_get_cstr(os), octstr_get_cstr(sub), octstr_get_cstr(tmp));
 
     gw_regex_destroy(regexp);
+    octstr_destroy(tmp);
     octstr_destroy(re);
     octstr_destroy(os);
     gwlib_shutdown();

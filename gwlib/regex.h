@@ -6,6 +6,8 @@
  * it provides subexpression substitution routines in order to easily
  * substitute strings arround regular expressions.
  *
+ * See regex(3) man page for more details on POSIX regular expressions.
+ *
  * Stipe Tolj <tolj@wapme-systems.de>
  */
 
@@ -17,7 +19,7 @@
 
 /*
  * We handle a maximum of 10 subexpression matches and 
- * substitution escape codes $0 to $9.
+ * substitution escape codes $0 to $9 in gw_regex_sub().
  */
 #define REGEX_MAX_SUB_MATCH 10
 
@@ -33,18 +35,30 @@ void gw_regex_destroy(regex_t *preg);
  * the regular expression type as function result.
  * If the compilation fails, return NULL.
  */
-regex_t *gw_regex_comp(const Octstr *pattern, int cflags);
+regex_t *gw_regex_comp_real(const Octstr *pattern, int cflags, const char *file, 
+                            long line, const char *func);
+#define gw_regex_comp(pattern, cflags) \
+    gw_regex_comp_real(pattern, cflags, __FILE__, __LINE__, __func__)
 
 
 /*
  * Execute a previously compile regular expression on a given
  * string and provide the matches via nmatch and pmatch[].
  */
-int gw_regex_exec(const regex_t *preg, const Octstr *string, size_t nmatch, 
-                  regmatch_t pmatch[], int eflags);
+int gw_regex_exec_real(const regex_t *preg, const Octstr *string, size_t nmatch, 
+                       regmatch_t pmatch[], int eflags, const char *file, long line, 
+                       const char *func);
+#define gw_regex_exec(preg, string, nmatch, pmatch, eflags) \
+    gw_regex_exec_real(preg, string, nmatch, pmatch, eflags, \
+                       __FILE__, __LINE__, __func__)
 
 
+/*
+ * Provide the error description string of an regex operation as
+ * Octstr instead of a char[].
+ */
 Octstr *gw_regex_error(int errcode, const regex_t *preg);
+
 
 /* This function substitutes for $0-$9, filling in regular expression
  * submatches. Pass it the same nmatch and pmatch arguments that you
@@ -57,10 +71,59 @@ Octstr *gw_regex_error(int errcode, const regex_t *preg);
  * It returns the substituted string, or NULL on error.
  *
  * Parts of this code are based on Henry Spencer's regsub(), from his
- * AT&T V8 regexp package. Function borrowed by apache-1.3/src/main/util.c
+ * AT&T V8 regexp package. Function borrowed from apache-1.3/src/main/util.c
  */
 char *gw_regex_sub(const char *input, const char *source,
                    size_t nmatch, regmatch_t pmatch[]);
+
+
+/*
+ * Match directly a given regular expression and a source string. This assumes
+ * that the RE has not been pre-compiled and hence perform the compile and 
+ * exec step in this matching step.
+ * Return 1 if the regular expression is successfully matching, 0 otherwise.
+ */
+int gw_regex_match_real(const Octstr *re, const Octstr *os, const char *file, 
+                        long line, const char *func);
+#define gw_regex_match(re, os) \
+    gw_regex_match_real(re, os, __FILE__, __LINE__, __func__)
+
+
+/*
+ * Match directly a given source string against a previously pre-compiled
+ * regular expression.
+ * Return 1 if the regular expression is successfully matching, 0 otherwise.
+ */
+int gw_regex_match_pre_real(const regex_t *preg, const Octstr *os, const char *file, 
+                            long line, const char *func);
+#define gw_regex_match_pre(preg, os) \
+    gw_regex_match_pre_real(preg, os, __FILE__, __LINE__, __func__)
+
+
+/*
+ * Match directly a given regular expression and a source string. RE has not
+ * been precompiled. Apply substitution rule accoding to Octstr 'rule' and
+ * return the substituted Ocstr as result. Return NULL if failed.
+ * Use \$0 up to \$9 as escape codes for subexpression matchings in the rule.
+ * Ie. os="+4914287756", re="^(00|\+)([0-9]{6,20})$" rule="\$2" would cause
+ * to return "4914287756" because the rule returns only the second regular
+ * expression atom that matched via the expression ([0-9]{6,20}).
+ */
+Octstr *gw_regex_subst_real(const Octstr *re, const Octstr *os, const Octstr *rule, 
+                            const char *file, long line, const char *func);
+#define gw_regex_subst(re, os, rule) \
+    gw_regex_subst_real(re, os, rule, __FILE__, __LINE__, __func__)
+
+/*
+ * Math directly a given source string against a previously pre-compiled
+ * regular expression. Apply substitution rule according to Ocstr 'rule' and
+ * return the substitued Octstr as result. Same as gw_regex_subst() but a 
+ * pre-compiled RE is passed as first argument.
+ */
+Octstr *gw_regex_subst_pre_real(const regex_t *preg, const Octstr *os, const Octstr *rule, 
+                                const char *file, long line, const char *func);
+#define gw_regex_subst_pre(preg, os, rule) \
+    gw_regex_subst_pre_real(preg, os, rule, __FILE__, __LINE__, __func__)
 
 
 #endif

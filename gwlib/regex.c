@@ -6,10 +6,17 @@
  * it provides subexpression substitution routines in order to easily
  * substitute strings arround regular expressions.
  *
+ * See regex(3) man page for more details on POSIX regular expressions.
+ *
  * Stipe Tolj <tolj@wapme-systems.de>
  */
 
 #include "gwlib/gwlib.h"
+
+
+/********************************************************************
+ * Generic regular expression functions.
+ */
 
 void gw_regex_destroy(regex_t *preg)
 {
@@ -19,7 +26,8 @@ void gw_regex_destroy(regex_t *preg)
 }
 
 
-regex_t *gw_regex_comp(const Octstr *pattern, int cflags)
+regex_t *gw_regex_comp_real(const Octstr *pattern, int cflags, const char *file, 
+                            long line, const char *func)
 {
     int rc;
     regex_t *preg;
@@ -29,8 +37,9 @@ regex_t *gw_regex_comp(const Octstr *pattern, int cflags)
     if ((rc = regcomp(preg, pattern ? octstr_get_cstr(pattern) : NULL, cflags)) != 0) {
         char buffer[512];
         regerror(rc, preg, buffer, sizeof(buffer)); 
-        error(0, "RE: regex compilation <%s> failed: %s",
-              octstr_get_cstr(pattern), buffer);
+        error(0, "%s:%ld: %s: regex compilation `%s' failed: %s (Called from %s:%ld:%s.)",
+              __FILE__, (long) __LINE__, __func__, octstr_get_cstr(pattern), buffer, 
+              (file), (long) (line), (func));
         return NULL;
     }
 
@@ -38,13 +47,24 @@ regex_t *gw_regex_comp(const Octstr *pattern, int cflags)
 }
 
 
-int gw_regex_exec(const regex_t *preg, const Octstr *string, size_t nmatch, 
-                  regmatch_t pmatch[], int eflags)
+int gw_regex_exec_real(const regex_t *preg, const Octstr *string, size_t nmatch, 
+                       regmatch_t pmatch[], int eflags, const char *file, long line, 
+                       const char *func)
 {
+    int rc;
+
     gw_assert(preg != NULL);
 
-    return regexec(preg, string ? octstr_get_cstr(string) : NULL, 
-                   nmatch, pmatch, eflags);
+    rc = regexec(preg, string ? octstr_get_cstr(string) : NULL,  nmatch, pmatch, eflags);
+    if (rc != REG_NOMATCH && rc != 0) {
+        char buffer[512];
+        regerror(rc, preg, buffer, sizeof(buffer)); 
+        error(0, "%s:%ld: %s: regex execution on `%s' failed: %s (Called from %s:%ld:%s.)",
+              __FILE__, (long) __LINE__, __func__, octstr_get_cstr(string), buffer,
+              (file), (long) (line), (func));
+    }
+
+    return rc;
 }
 
 
@@ -71,7 +91,7 @@ Octstr *gw_regex_error(int errcode, const regex_t *preg)
  * It returns the substituted string, or NULL on error.
  *
  * Parts of this code are based on Henry Spencer's regsub(), from his
- * AT&T V8 regexp package. Function borrowed by apache-1.3/src/main/util.c
+ * AT&T V8 regexp package. Function borrowed from apache-1.3/src/main/util.c
  */
 char *gw_regex_sub(const char *input, const char *source,
                    size_t nmatch, regmatch_t pmatch[])
@@ -133,5 +153,97 @@ char *gw_regex_sub(const char *input, const char *source,
     *dst = '\0';
 
     return dest;
+}
+
+
+/********************************************************************
+ * Matching and substitution wrapper functions.
+ *
+ * Beware that the regex compilation takes the most significant CPU time,
+ * so always try to have pre-compiled regular expressions that keep being
+ * reused and re-matched on variable string patterns.
+ */
+
+int gw_regex_match_real(const Octstr *re, const Octstr *os, const char *file, 
+                        long line, const char *func)
+{
+    regex_t *regexp;
+    int rc;
+
+    /* compile */
+    regexp = gw_regex_comp_real(re, REG_EXTENDED|REG_ICASE, file, line, func);
+    if (regexp == NULL)
+        return 0;
+
+    /* execute and match */
+    rc = gw_regex_exec_real(regexp, os, 0, NULL, 0, file, line, func);
+
+    gw_regex_destroy(regexp);
+
+    return (rc == 0) ? 1 : 0;
+}
+
+
+int gw_regex_match_pre_real(const regex_t *preg, const Octstr *os, const char *file, 
+                            long line, const char *func)
+{
+    int rc;
+
+    gw_assert(preg != NULL);
+
+    /* execute and match */
+    rc = gw_regex_exec_real(preg, os, 0, NULL, 0, file, line, func);
+
+    return (rc == 0) ? 1 : 0;
+}
+
+
+Octstr *gw_regex_subst_real(const Octstr *re, const Octstr *os, const Octstr *rule, 
+                            const char *file, long line, const char *func)
+{
+    Octstr *result;
+    regex_t *regexp;
+    regmatch_t pmatch[REGEX_MAX_SUB_MATCH];
+    int rc;
+
+    /* compile */
+    regexp = gw_regex_comp_real(re, REG_EXTENDED|REG_ICASE, file, line, func);
+    if (regexp == NULL)
+        return 0;
+
+    /* execute and match */
+    rc = gw_regex_exec_real(regexp, os, REGEX_MAX_SUB_MATCH, &pmatch[0], 0, 
+                            file, line, func);
+    gw_regex_destroy(regexp);
+
+    /* substitute via rule if matched */
+    result = (rc == 0) ? octstr_create(
+        gw_regex_sub(octstr_get_cstr(rule), octstr_get_cstr(os),
+                     REGEX_MAX_SUB_MATCH, &pmatch[0])
+        ) : NULL;
+
+    return result;
+}
+
+Octstr *gw_regex_subst_pre_real(const regex_t *preg, const Octstr *os, const Octstr *rule, 
+                                const char *file, long line, const char *func)
+{
+    Octstr *result;
+    regmatch_t pmatch[REGEX_MAX_SUB_MATCH];
+    int rc;
+
+    gw_assert(preg != NULL);
+
+    /* execute and match */
+    rc = gw_regex_exec_real(preg, os, REGEX_MAX_SUB_MATCH, &pmatch[0], 0, 
+                            file, line, func);
+
+    /* substitute via rule if matched */
+    result = (rc == 0) ? octstr_create(
+        gw_regex_sub(octstr_get_cstr(rule), octstr_get_cstr(os),
+                     REGEX_MAX_SUB_MATCH, &pmatch[0])
+        ) : NULL;
+
+    return result;
 }
 
