@@ -1,3 +1,10 @@
+Fri Jan 28 17:10:12 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c, gw/wsp.h, gw/wsp_events-decl.h, gw/wsp_state-decl.h,
+	gwlib/http.c, gwlib/http.h: Use HTTP headers from Connect or
+	Get PDUs (and add WML and WMLScript content types if they aren't
+	already, and the compiled forms are).
+
 Fri Jan 28 13:14:52 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wapbox.c: Only dump non-heartbeat messages.
