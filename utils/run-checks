@@ -20,5 +20,6 @@ if test -s check.log
 then
 	echo At least one check failed, see \`check.log\'.
 else
-	echo All checks OK.; rm -f check.output.foo
+	echo All checks OK.
+	rm -f check.log
 fi
