@@ -1,3 +1,8 @@
+2000-11-29  Yann Muller  <ymuller@3glab.com>
+
+	* gw/smsc_at.c: removed the UDHL from the encoding of the PDU.
+	The length should already be in the UDH.
+
 2000-11-28  Richard Braakman  <dark@wapit.com>
 
 	* wap/wsp_session.c, wap/wsp_server_session_states.def,
