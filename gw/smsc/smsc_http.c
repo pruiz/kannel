@@ -107,6 +107,7 @@
  *  
  * Kalle Marjola for Project Kannel 2001
  * Stipe Tolj <stolj@wapme.de>
+ * Alexander Malysh <amalysh at kannel.org>
  * Tobias Weber <weber@wapme.de>
  */
 

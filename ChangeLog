@@ -1,4 +1,10 @@
 2004-09-28  Stipe Tolj  <stolj@wapme.de>
+    * gw/urltrans.c: fixed comment block for new account %o escape code. 
+      Thanks to the eagle'd eyes of Alex. :p
+    * gw/smsc/smsc_http.c: added credits to Alex for his improvements to the
+      code and fixes.
+
+2004-09-28  Stipe Tolj  <stolj@wapme.de>
     * gw/smsc/smsc_http.c: fixing 3united (formerly Xidris) HTTP interface for
       binary MT messages. We passed URL-encoced binary string, but server side 
       expected HEX encoded (2 char per byte) version.

@@ -633,7 +633,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
         }
         break;
 	
-    case 'o':  /* billing identifier/information */
+    case 'o':  /* account information (may be operator id for aggregators */
 	    if (octstr_len(request->sms.account)) {
             enc = octstr_duplicate(request->sms.account);
             octstr_url_encode(enc);
