@@ -113,7 +113,7 @@ ROW(INVOKE_RESP_WAIT,
     {
      current_primitive = TRAbortIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     /*wsp_dispatch_event(machine, wsp_event);*/
+     wsp_dispatch_event(machine, wsp_event);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -186,7 +186,7 @@ ROW(RESULT_WAIT,
     {
      current_primitive = TRAbortIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     /*wsp_dispatch_event(machine, wsp_event);*/
+     wsp_dispatch_event(machine, wsp_event);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -218,7 +218,7 @@ ROW(RESULT_WAIT,
     1,
     { 
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TRAbort.abort_type, event->TRAbort.abort_type,
+     wtp_send_abort(event->TRAbort.abort_type, event->TRAbort.abort_reason,
                     machine, event); 
     },
     LISTEN)
@@ -240,7 +240,7 @@ ROW(RESULT_RESP_WAIT,
     {
      current_primitive = TRAbortIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     /*wsp_dispatch_event(machine, wsp_event);*/
+     wsp_dispatch_event(machine, wsp_event);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -250,7 +250,7 @@ ROW(RESULT_RESP_WAIT,
     1,
     { 
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TRAbort.abort_type, event->TRAbort.abort_type,
+     wtp_send_abort(event->TRAbort.abort_type, event->TRAbort.abort_reason,
                     machine, event); 
     },
     LISTEN)
@@ -272,7 +272,7 @@ ROW(RESULT_RESP_WAIT,
      wtp_machine_mark_unused(machine);
      current_primitive = TRAbortIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     /*wsp_dispatch_event(machine, wsp_event);*/
+     wsp_dispatch_event(machine, wsp_event);
     },
     LISTEN)
 

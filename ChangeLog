@@ -3,6 +3,8 @@
 	* wtp_events-decl.h: Added event TRInvokeRequire, removed user_data
 	from TRAbort
 
+	* wtp_state-decl.h: Handling event TRAbort fixed.
+
 Wed Jan 26 18:14:39 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wapbox.c: Fixed SIGINT reactions so it doesn't wait until
