@@ -1,4 +1,11 @@
 2005-02-11  Stipe Tolj  <stolj@wapme.de> 
+    * wap/wsp_headers.c: fixing a generic problem for empty WSP header values.
+      This was initially reported by Paul for the Siemens SX1 device.
+      [Msg-ID: <20050118210227.GA12497@stingr.sgu.ru>]
+      Patch applied is more generic then the one from Paul.
+      [Msg-ID: <41F8D8E5.10400@tolj.org>]
+
+2005-02-11  Stipe Tolj  <stolj@wapme.de> 
     * */*: update LICENSE preamble block to 2005.
     * [various]: update personal email reference to latest address
 

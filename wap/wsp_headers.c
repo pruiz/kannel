@@ -110,7 +110,7 @@ int wsp_field_value(ParseContext *context, int *well_known_value)
     unsigned long len;
 
     val = parse_get_char(context);
-    if (val >= 0 && val < 31) {
+    if (val > 0 && val < 31) {
         *well_known_value = -1;
         parse_limit(context, val);
         return WSP_FIELD_VALUE_DATA;
@@ -126,7 +126,7 @@ int wsp_field_value(ParseContext *context, int *well_known_value)
         *well_known_value = -1;
         /* We already consumed the Quote */
         return WSP_FIELD_VALUE_NUL_STRING;
-    } else {
+    } else {    /* implicite val == 0 */ 
         *well_known_value = -1;
         /* Un-parse the character we just read */
         parse_skip(context, -1);
