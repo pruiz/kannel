@@ -1,3 +1,6 @@
+2002-09-04  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smasi_pdu.c, test/test_cfg.c: fixed compiler warnings
+
 2002-09-03  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smpp_pdu.c: fixed a bug in copy_until_nul() which caused to return
       octstr "" when the null-terminated string contained "\0". The return value
