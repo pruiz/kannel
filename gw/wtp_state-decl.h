@@ -32,7 +32,8 @@
  * Retransmission until acknowledgement guarantees reliability of the transaction,
  * if the peer stays up. It is implemented by using retransmissions controlled by
  * timers and counters. There are two kind of timers, retransmission and acknow-
- * ledgement timers. (Actually, there is one timer iniatilised with two intervals. * But let us keep the language simple). These are used in concert with 
+ * ledgement timers. (Actually, there is one timer iniatilised with two intervals. 
+ * But let us keep the language simple). These are used in concert with 
  * corresponding counters, RCR (retransmission counter) and AEC (acknowledgement 
  * expiration counter). AEC counts expired acknowledgement intervals.
  *
@@ -128,7 +129,6 @@ ROW(LISTEN,
      current_primitive = TR_Invoke_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      wsp_dispatch_event(wsp_event);
-     /*wtp_machine_mark_unused(machine);*/
     },
     LISTEN)
 
@@ -136,7 +136,6 @@ ROW(LISTEN,
     RcvErrorPDU,
     1,
     { 
-     /*wtp_machine_mark_unused(machine);*/
      wtp_send_abort(PROVIDER, PROTOERR, machine, event);
     },
     LISTEN)
@@ -145,7 +144,6 @@ ROW(LISTEN,
     TR_Abort_Req,
     1,
     {
-     /*wtp_machine_mark_unused(machine);*/
      wtp_send_abort(USER, PROTOERR, machine, event);
     },
     LISTEN)
@@ -166,9 +164,7 @@ ROW(TIDOK_WAIT,
 ROW(TIDOK_WAIT,
     RcvAbort,
     1,
-    { 
-     /*wtp_machine_mark_unused(machine);*/
-    },
+    { },
     LISTEN)
 
 ROW(TIDOK_WAIT,
@@ -190,7 +186,6 @@ ROW(TIDOK_WAIT,
     1,
     {
      wtp_send_abort(PROVIDER, PROTOERR, machine, event);
-     /*wtp_machine_mark_unused(machine);*/
     },
     LISTEN)
 
@@ -221,7 +216,6 @@ ROW(INVOKE_RESP_WAIT,
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
      /*wsp_dispatch_event(wsp_event);*/
-     /*wtp_machine_mark_unused(machine);*/
     },
     LISTEN)
 
@@ -229,7 +223,6 @@ ROW(INVOKE_RESP_WAIT,
     TR_Abort_Req,
     1,
     { 
-     /*wtp_machine_mark_unused(machine);*/
      wtp_send_abort(USER, event->TR_Abort_Req.abort_reason,
                     machine, event); 
     },
@@ -266,7 +259,6 @@ ROW(INVOKE_RESP_WAIT,
     TimerTO_A,
     machine->aec == AEC_MAX,
     {
-     /*wtp_machine_mark_unused(machine);*/
      wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
     },
     LISTEN)
@@ -284,7 +276,6 @@ ROW(INVOKE_RESP_WAIT,
     RcvErrorPDU,
     1,
     {
-     /*wtp_machine_mark_unused(machine);*/
      wtp_send_abort(PROVIDER, PROTOERR, machine, event); 
      
      current_primitive = TR_Abort_Ind;
@@ -293,10 +284,6 @@ ROW(INVOKE_RESP_WAIT,
     },
     LISTEN)
 
-/*
- * We must make two copies of the result message: one for sending and another for
- * possible resending.
- */
 ROW(RESULT_WAIT,
     TR_Result_Req,
     1,
@@ -321,7 +308,6 @@ ROW(RESULT_WAIT,
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
      /*wsp_dispatch_event(wsp_event);*/
-     /*wtp_machine_mark_unused(machine);*/
     },
     LISTEN)
 
@@ -350,7 +336,6 @@ ROW(RESULT_WAIT,
     TR_Abort_Req,
     1,
     { 
-     /*wtp_machine_mark_unused(machine);*/
      wtp_send_abort(USER, event->TR_Abort_Req.abort_reason, machine, event); 
     },
     LISTEN)
@@ -359,7 +344,6 @@ ROW(RESULT_WAIT,
     RcvErrorPDU,
     1,
     {
-     /*wtp_machine_mark_unused(machine);*/
      wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
      
      current_primitive = TR_Abort_Ind;
@@ -371,7 +355,9 @@ ROW(RESULT_WAIT,
 ROW(RESULT_WAIT,
     TimerTO_A,
     1,
-    { wtp_send_ack(machine->tid_ve, machine, event);},
+    { 
+     wtp_send_ack(machine->tid_ve, machine, event);
+    },
     RESULT_WAIT)
 
 ROW(RESULT_RESP_WAIT,
@@ -381,7 +367,6 @@ ROW(RESULT_RESP_WAIT,
      current_primitive = TR_Result_Cnf;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      wsp_dispatch_event(wsp_event);
-     /*wtp_machine_mark_unused(machine);*/
     },
     LISTEN)
 
@@ -392,7 +377,6 @@ ROW(RESULT_RESP_WAIT,
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
      /*wsp_dispatch_event(wsp_event);*/
-     /*wtp_machine_mark_unused(machine);*/
     },
     LISTEN)
 
@@ -400,7 +384,6 @@ ROW(RESULT_RESP_WAIT,
     TR_Abort_Req,
     1,
     { 
-     /*wtp_machine_mark_unused(machine);*/
      wtp_send_abort(USER, event->TR_Abort_Req.abort_reason, machine, event); 
     },
     LISTEN)
@@ -428,7 +411,6 @@ ROW(RESULT_RESP_WAIT,
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
      /*wsp_dispatch_event(wsp_event);*/
-     /*wtp_machine_mark_unused(machine);*/
     },
     LISTEN)
 
@@ -465,7 +447,6 @@ ROW(RESULT_RESP_WAIT,
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
      /*wsp_dispatch_event(wsp_event);*/
-     /*wtp_machine_mark_unused(machine);*/
     },
     LISTEN)
 #endif
@@ -474,7 +455,6 @@ ROW(RESULT_RESP_WAIT,
     RcvErrorPDU,
     1,
     {
-     /*wtp_machine_mark_unused(machine);*/
      wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
       
      current_primitive = TR_Abort_Ind;

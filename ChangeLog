@@ -1,3 +1,7 @@
+2000-08-07  Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp_state-decl.h: Removed machine_mark_unused calls
+
 2000-06-07  Richard Braakman  <dark@wapit.com>
 
 	* gw/wtp_send.c: Invert the MSB of the received tid when sending,
