@@ -13,14 +13,17 @@
 #include <unistd.h>
 #include <signal.h>
 
+#include "wapbox.h"
 #include "gwlib.h"
 #include "msg.h"
 #include "wtp.h"
+#include "wtp_timer.h"
 #include "bb.h"
 
 static char *bearerbox_host = BB_DEFAULT_HOST;
 static int bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static int heartbeat_freq = BB_DEFAULT_HEARTBEAT;
+static int timer_freq = WB_DEFAULT_TIMER_TICK;
 static char *logfile = NULL;
 static int logfilelevel = 0;
 
@@ -63,6 +66,8 @@ static void read_config(char *filename) {
 			bearerbox_port = atoi(s);
 		if ((s = config_get(grp, "heartbeat-freq")) != NULL)
 		        heartbeat_freq = atoi(s);
+                if ((s = config_get(grp, "timer-freq")) != NULL)
+                        timer_freq = atoi(s);
 		if ((s = config_get(grp, "log-file")) != NULL)
 		        logfile = s;
 		if ((s = config_get(grp, "log-level")) != NULL)
@@ -118,7 +123,7 @@ static Msg *msg_receive(int s) {
 	msg = msg_unpack(os);
 
         debug("wap", 0, "WAPBOX: message received");
-        msg_dump(msg);
+
 	if (msg == NULL)
 		return NULL;
 	octstr_destroy(os);
@@ -128,24 +133,38 @@ static Msg *msg_receive(int s) {
 
 static void msg_send(int s, Msg *msg) {
 	Octstr *os;
-
+/*
+ * Ifdefs define code for timer testing. This code will disappear
+ */
+#if 0
+        int ret;
+#endif
 	os = msg_pack(msg);
 	if (os == NULL)
 	   panic(0, "msg_pack failed");
-	if (octstr_send(s, os) == -1)
+#if 0
+        if (msg->type == wdp_datagram){ 
+	   ret = octstr_get_char(msg->wdp_datagram.user_data, 0);
+           ret = ret>>3&15;
+           debug("wap", 0, "selecting dropped message %d", ret);
+           if (ret != 2)
+              if (octstr_send(s, os) == -1)
+	         error(0, "wapbox: octstr_send failed");
+	   octstr_destroy(os);
+        } else {
+#endif
+        if (octstr_send(s, os) == -1)
 	   error(0, "wapbox: octstr_send failed");
 	octstr_destroy(os);
 	if (msg->type != heartbeat) {
-		debug("wap", 0, "WAPBOX: Sent message:");
+		debug("wap.msg.send", 0, "WAPBOX: Sent message:");
 		msg_dump(msg);
-	} else {
-		/* avoid overly large, growing memory leak
-		 * As far as I can see msgs are not freed
-		 * right now; heartbeat was static, now we
-		 * need to free them.
-		 */
-		msg_destroy(msg);
 	}
+        /* Yeah, we now allways free the memory allocated to msg.*/
+        msg_destroy(msg);
+#if 0
+        }
+#endif
 }
 
 
@@ -157,12 +176,13 @@ static List *queue = NULL;
 
 
 void init_queue(void) {
-	assert(queue == NULL);
+        assert(queue == NULL);
 	queue = list_create();
 }
 
 
 void put_msg_in_queue(Msg *msg) {
+        debug("wap", 0, "WAPBOX: put message in the queue");
 	list_produce(queue, msg);
 }
 
@@ -184,7 +204,17 @@ static void *send_heartbeat_thread(void *arg) {
 	return NULL;
 }
 
+#if 0
+static void *timer_thread(void *arg) {
 
+       while (run_status == running) {
+             wtp_timer_check();
+             sleep(timer_freq);
+       }
+
+       return NULL;
+}
+#endif
 static void *empty_queue_thread(void *arg) {
 	Msg *msg;
 	int socket;
@@ -274,6 +304,7 @@ int main(int argc, char **argv) {
 
 	wtp_init();
         wtp_tid_cache_init();
+        wtp_timer_init();
 	wsp_init();
 
 	bbsocket = connect_to_bearer_box();
@@ -286,25 +317,27 @@ int main(int argc, char **argv) {
 
 	(void) start_thread(1, send_heartbeat_thread, 0, 0);
 	(void) start_thread(1, empty_queue_thread, &bbsocket, 0);
-	
+#if 0
+        (void) start_thread(1, timer_thread, 0, 0);
+#endif
 	while (run_status == running) {
 		msg = msg_receive(bbsocket);
 		if (msg == NULL)
 			break;
-
-                debug("wap", 0, "WAPBOX: message received");
-
+                debug("wap.msg.received", 0, "WAPBOX: message received");
+                msg_dump(msg);
 		wtp_event = wtp_unpack_wdp_datagram(msg);
-                debug("wap", 0, "WAPBOX: datagram unpacked");
+                debug("wap.event", 0, "WAPBOX: datagram unpacked");
                 wtp_event_dump(wtp_event);
                 if (wtp_event == NULL)
                    continue;
 		wtp_machine = wtp_machine_find_or_create(msg, wtp_event);
-                debug("wap", 0, "WAPBOX: machine created");
+                debug("wap.machine", 0, "WAPBOX: machine created or found");
                 wtp_machine_dump(wtp_machine);
                 if (wtp_machine == NULL)
                    continue;
 	        wtp_handle_event(wtp_machine, wtp_event);
+                debug("wap.handled", 0, "WAPBOX: event handled");
 	}
 	list_remove_producer(queue);
 
