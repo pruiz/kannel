@@ -8,7 +8,7 @@
 2000-06-19  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
         * gw/wsp-session.c: included limits.h to get LONG_MAX
-	* gwlib/utils.c: created kannel_cfmakeraw()
+	* gwlib/utils.c,gwlib/utils.h: created kannel_cfmakeraw()
 	* gw/smsc_emi.c: removed cfmakeraw stub
 	* gw/smsc_emi.c,gw/smsc_at.c,gw/smsc_sema.c: converted calls to
 	  cfmakeraw to kannel_cfmakeraw.
