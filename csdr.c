@@ -33,8 +33,6 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 
 	struct sockaddr_in servaddr;
 
-	debug(0, "CSDR: csdr_open: starting");
-
 	router = malloc(sizeof(CSDRouter));
 	if(router==NULL) goto error;
 
@@ -77,6 +75,7 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 		servaddr.sin_port = htons(9207);
 	} else {
 		error(0, "Illegal configuration '%s' in 'wap-service'.", wap_service);
+		goto error;
 	}
 
 	while( bind(router->fd, &servaddr, sizeof(servaddr)) != 0 ) {
@@ -88,12 +87,13 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	fl = fcntl(router->fd, F_GETFL);
 	fcntl(router->fd, F_SETFL, fl | O_NONBLOCK);
 
-	debug(0, "CSDR: csdr_open: done");
+	debug(0, "csdr_open: Bound to UDP port <%i> service <%s>.",
+		ntohs(servaddr.sin_port), wap_service);
 
 	return router;
 
 error:
-	error(0, "CSDR: csdr_open: phukked up");
+	error(errno, "CSDR: csdr_open: could not open, aborting");
 	free(router);
 	return NULL;
 }
@@ -134,20 +134,6 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	FD_ZERO(&rset);
 	FD_SET(router->fd, &rset);
 
-#if 0
-	/* Block until we get a datagram. */
-	for(;;) {
-		nready = select(router->fd+1, &rset, NULL, NULL, NULL);
-		if(nready == -1) {
-			if(errno==EINTR) continue;
-			if(errno==EAGAIN) continue;
-			goto error;
-		} else {
-			break;
-		}
-	}
-#endif
- 
 	/* Maximum size of UDP datagram == 64*1024 bytes. */
 	length = recvfrom(router->fd, data, sizeof(data), 0, &cliaddr, &len);
 	if(length==-1) {
@@ -158,8 +144,6 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 		error(errno, "Error receiving datagram.");
 		goto error;
 	}
-
-	debug(0, "Hiiohei, got UDP datagram.");
 
 	getsockname(router->fd, (struct sockaddr*)&servaddr, &servlen);
 
@@ -205,15 +189,14 @@ int csdr_send_message(CSDRouter *router, RQueueItem *item)
 
 	memset(&cliaddr, 0, sizeof(struct sockaddr_in));
 
-	/* Can only do 64k of data... */
+	/* Can only do 64k of data... have to def a MIN macro one of these times... -MG */
 	datalen = (sizeof(data)<octstr_len(item->msg->wdp_datagram.user_data)) ? 
 		sizeof(data) : octstr_len(item->msg->wdp_datagram.user_data);
 
 	octstr_get_many_chars(data, item->msg->wdp_datagram.user_data, 0, datalen);
 
 	hostinfo = gethostbyname(octstr_get_cstr(item->msg->wdp_datagram.destination_address));
-	if (hostinfo == NULL)
-		goto error;
+	if (hostinfo == NULL) goto error;
 
         cliaddr.sin_family = AF_INET;
         cliaddr.sin_port = htons(item->msg->wdp_datagram.destination_port);
