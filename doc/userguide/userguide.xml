@@ -518,7 +518,7 @@
 	<para>Installing Kannel</para>
 
 	<para>1. Download the binary RPM packet from the Kannel
-	website.</para>
+	web site.</para>
 	
 	<para>2. Log in as root:</para>
 
@@ -532,7 +532,7 @@
 	<para>Upgrading Kannel</para>
 
 	<para>1. Download the binary RPM packet from the Kannel
-        website.</para>
+        web site.</para>
 
 	<para>2. Log in as root</para>
 	
@@ -754,7 +754,7 @@ admin-password = f00bar
      <entry>port-number</entry>
      <entry valign=bottom>
         The port number in which the bearerbox listens to HTTP
-        adminstration commands. It is NOT the same as the HTTP
+        administration commands. It is NOT the same as the HTTP
         port of the local www server, just invent any port, but
         it must be over 1023 unless you are running Kannel as a
         root process (not recommended)
@@ -826,7 +826,7 @@ admin-password = f00bar
      <entry>IP or '*'</entry>
      <entry valign=bottom>
         If this is set, Kannel listens to WAP UDP packets incoming to
-        ports 9200-9208, bound to given IP. If no spesific IP is
+        ports 9200-9208, bound to given IP. If no specific IP is
         needed, use just an asterisk ('*'). If UDP messages are
         listened to, wapbox-port variable MUST be set.
      </entry></row>
@@ -1091,7 +1091,7 @@ white-list = "http://localhost/whitelist.txt"
      </para></listitem>
      <listitem><para>
  Suspended. The gateway does not accept any new messages from SMS
-   centers nor from UDP ports. Neither does ir accept new sms and wapbox
+   centers nor from UDP ports. Neither does it accept new sms and wapbox
    connections nor sends any messages already in the system
    onward.
 
@@ -1149,7 +1149,7 @@ commands never arrive nor can you restart it via WAP anymore.</para>
    <row><entry><literal>status</literal></entry>
    <entry valign=bottom>
         Get the current status of the gateway. Tells the current state
-        (see above) and total number of messages relied and queuing in
+        (see above) and total number of messages relied and queueing in
         the system right now. Also lists the total number of smsbox
         and wapbox connections. No password required, unless
         <literal>status-password</literal> set, in which case either
@@ -1463,7 +1463,7 @@ bearerbox-host = localhost
         it and any other special non-alphabet characters. 
         This 'id' is written into log files and can be used to
         route SMS messages, and to specify the used SMS-service. 
-        Several smsc'es can have the same id. The name is
+        Several SMSCs can have the same id. The name is
         case-insensitive. Note that if SMS Center connection has an
 	assigned SMSC ID, it does NOT automatically mean that messages
 	with identical SMSC ID are routed to it; instead configuration
@@ -1512,7 +1512,7 @@ bearerbox-host = localhost
      <entry><literal>prefix-list</literal></entry>
      <entry valign=bottom>
         As <literal>denied-prefix</literal>, but SMS messages with receiver starting
-        with any of these prefixes is prefereably sent through this
+        with any of these prefixes is preferably sent through this
         SMSC. In a case of multiple preferences, one is selected at random
         (also if there are preferences, SMSC is selected randomly)
 
@@ -2188,10 +2188,10 @@ url = "http://%S"
         except for error messages. 
      </entry></row>
 
-   <row><entry><literal>concetenation</literal></entry>
+   <row><entry><literal>concatenation</literal></entry>
      <entry>0 or 1</entry>
      <entry valign=bottom>
-        Long messages can be sent as independant SMS messages with
+        Long messages can be sent as independent SMS messages with
         <literal>concatenation = 0</literal> or as concatenated messages
         with <literal>concatenation = 1</literal>. Concatenated messages
         are reassembled into one long message by the receiving device.
@@ -2343,7 +2343,7 @@ footer = ">>>"
 
 group = sms-service
 keyword = default
-text = "No action spesified"
+text = "No action specified"
 </programlisting>
 </para>
 
@@ -2598,7 +2598,7 @@ forced-smsc = SOL
    <row><entry><literal>calltype</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
-       Call type: isdn or analg. Defaults to isdn.
+       Call type: isdn or analog. Defaults to isdn.
      </entry></row>
 
    <row><entry><literal>connection</literal></entry>
@@ -2671,7 +2671,7 @@ concatenation = 1
 
     <para>The basic service system is very limited - it can only
     answer to original requester and it cannot send UDH data, for
-    example. This chapter explains some more sophicated and complex
+    example. This chapter explains some more sophisticated and complex
     SMS service setups.</para>
 
 <sect3>
@@ -2723,9 +2723,9 @@ url = "http://my.applet.machine/Servlet/weather?sender=%p&amp;operator=SOL&amp;t
 
    <para>Sometimes there is a need for Kannel to listen to two (or
    more) distinct SMS centers, and messages must be routed to services
-   according to wherefrom they came, and replies likewise must return
+   according to where they came from, and replies likewise must return
    to same SMSC. This is done via <literal>smsc-id</literal>
-   magics. Here is a shortened sample configuration, which handles to
+   magic. Here is a shortened sample configuration, which handles to
    distinct SMS servers and services:</para>
 
 <programlisting>
@@ -2749,7 +2749,7 @@ url = "..."
 </programlisting>
  
     <para>As can be seen, the <literal>smsc-id</literal> is used to
-    identify the SMS center wherefrom the message came from. Then, the
+    identify the SMS center from which the message came. Then, the
     <literal>denied-smsc-id</literal> variable is used to prevent
     messages originally from the other SMS center from being sent
     through the other one. Finally 'sms-service' groups are defined
@@ -2853,7 +2853,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
    <row><entry><literal>smsc</literal></entry>
    <entry valign=bottom>
-        Optional virtual smsc-id wherefrom the message is supposed to 
+        Optional virtual smsc-id from which the message is supposed to 
 	have arrived. This is used for routing purposes, if any denied
 	or preferred SMS centers are set up in SMS center
 	configuration. This variable can be overridden with a
@@ -3063,7 +3063,7 @@ test/fakesmsc -i 0.1 -m 100 "100 200 text nop" "100 300 text echo this"
 
     <para>This tells fakesmsc to connect to bearerbox at localhost:10000
     (default) and send a hundred messages with an interval of 0.1 seconds.
-    Each message is from number 100, and is ether to number 200 with
+    Each message is from number 100, and is either to number 200 with
     message 'nop' or to 300 with message 'echo this'.</para>
 
     <para>Messages received from bearerbox are shown in the same format
@@ -3194,7 +3194,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 	</userinput>
 	</screen>
 
-	<para>We need to start the pppd automatically when mgetty recieves
+	<para>We need to start the pppd automatically when mgetty receives
 	an AutoPPP request. Add the next line to /etc/mgetty+sendfax/login.config</para>
 
 	<screen>
