@@ -107,15 +107,15 @@ static void sms_receiver(void *arg)
 	}
 	else {
 	    usleep(sleep);
-	    /* XXX: gradually sleep longer and longer times until something starts to
+	    /* gradually sleep longer and longer times until something starts to
 	     * happen - this of course reduces response time, but that's better than
 	     * extensive CPU usage when it is not used
 	     */
-	    if (sleep < 1000000) {
-		sleep *= 100;
-		if (sleep >= 1000000)
-		    sleep = 999999;
-	    }
+	    sleep *= 2;
+	    /* Don't let it go over one second, because usleep might not
+	     * be able to handle that. */
+	    if (sleep >= 1000000)
+		sleep = 999999;
 	}
     }    
     list_remove_producer(incoming_sms);

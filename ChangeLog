@@ -1,3 +1,11 @@
+2000-12-08  Richard Braakman  <dark@wapit.com>
+
+	* gw/bb_smsc.c, function sms_receiver: Made the increase in sleep
+	times much slower (multiply by 2 instead of by 100).  This avoids
+	having the bearerbox sleep a whole second just because the SMSC
+	took longer than 0.01 seconds.  This scenario is pretty common
+	on dialup links.
+
 2000-12-07  Lars Wirzenius  <liw@iki.fi>
 
 	* contrib/{fortune.cgi,ping.cgi,sendsms,smstomail.cgi}: Added
