@@ -1,4 +1,4 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 1.1.1
+NEWS about Kannel: Open Source WAP and SMS Gateway version 1.1.2
 
 This is a DEVELOPMENT version. It should be usable for experimentation
 and testing, and is a release candidate for 1.2. Please do try it out
@@ -7,6 +7,48 @@ or bugs@kannel.org (the bug tracking system).
 
 NOTE: This is not an update to 1.0.  Updates to 1.0 will be numbered 1.0.x,
 until we decide to release 1.2.  See the VERSION file for details.
+
+
+Changes since version 1.1.1:
+
+Compatibility breakers:
+
+ * Format of access log output has changed.
+
+New features:
+
+ * Support for Ericsson GSM modems.
+
+ * smsbox: HTTP responses can now send UDH messages by sending an
+   X-Kannel_UDH header in the reply.
+
+ * smsbox: Added "%b" translation for receiving binary data.
+
+ * Updated and expanding User's Guide.
+
+ * SMPP driver now responds to Enquire Link packets, which will help
+   keep Kannel connected to an SMS center when the connection is idle.
+
+ * Small perl script to read and summarize access log output.
+
+ * wapbox is better at dealing with HTTP responses that are too large
+   for the client, or in the wrong format.
+
+Bugfixes:
+
+ * WMLScript compiler avoids generating zero-length functions, so that
+   the result works on more clients.
+
+ * smsbox: Numerous fixes to the message splitting functions.
+
+ * smsbox: OTA configuration works again.
+
+ * WML compiler: Corrected encodings for "ordered true" and "ordered false".
+
+Development news:
+
+ * WML decompiler improved.
+
 
 Changes since version 1.1:
 
