@@ -31,7 +31,7 @@
 #elif defined(__GNU__)
 #define OSHURD
 #elif defined(SunOS)
-#elif definedd(__FreeBSD__)
+#elif defined(__FreeBSD__)
 #define FreeBSD
 #else
 #error Unknown architecture - cannot build start-stop-daemon
