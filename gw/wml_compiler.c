@@ -226,6 +226,23 @@ int wml_compile(Octstr *wml_text,
 }
 
 
+/*
+ * Initaliation: allocates the octet string tables for the compiler.
+ */
+
+void wml_init()
+{
+}
+
+
+
+/*
+ * Shutdown: Frees the memory allocated by initialization.
+ */
+
+void wml_shutdown()
+{
+}
 
 
 
@@ -1401,8 +1418,9 @@ static List *string_table_add_many(List *sorted, wml_binary_t **wbxml)
 
 static List *string_table_collect_words(List *strings)
 {
+  Octstr *word = NULL;
   string_table_proposal_t *item = NULL;
-  List *list = NULL;
+  List *list = NULL, *temp_list = NULL;
 
   while (list_len(strings))
     {
@@ -1415,7 +1433,12 @@ static List *string_table_collect_words(List *strings)
 	}
       else
 	{
-	  list = list_cat(octstr_split_words(item->string), list);
+	  temp_list = octstr_split_words(item->string);
+
+	  while ((word = list_extract_first(temp_list)) != NULL)
+	    list_append(list, word);
+
+	  list_destroy(temp_list, NULL);
 	  string_table_proposal_destroy(item);
 	}
     }

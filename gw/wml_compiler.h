@@ -43,6 +43,21 @@ int wml_compile(Octstr *wml_text,
  * of Octstrs, where each string is the MIME identifier for one charset.
  */
 
+void wml_init(void);
+
+/*
+ * A function to initialize the wml compiler for use. Allocates memory 
+ * for the tables wml compiler uses.
+ */
+
+void wml_shutdown(void);
+
+/*
+ * A function for shutting down the wml_compiler. Frees the memory used 
+ * by the wml compiler.
+ */
+
+
 List *wml_charsets(void);
 
 #endif
