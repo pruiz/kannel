@@ -2270,6 +2270,18 @@ address-range = ""
 		 Use value 0 to disable this I/O thread.
      </entry></row>
 
+   <row><entry><literal>transceiver-mode</literal></entry>
+     <entry>bool</entry>
+     <entry valign=bottom>
+       Attempt to use a TRANSCEIVER mode connection
+       to the SM-SC. It uses the standard transmit 'port',
+       there is no need to set 'receive-port'.
+       This is a SMPP 3.4 only feature and will not work
+       on an earlier SM-SC.
+       This will try a bind_transceiver only and will not attempt
+       to fall back to doing transmit and receive on the same connection.
+      </entry></row>
+
    <row><entry><literal>receive-port</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign=bottom>
