@@ -50,8 +50,8 @@
 /* Define gateway name */
 #undef GW_NAME
 
-/* the VERSION symbol - for older autoconfs */
-#undef VERSION
+/* Define which version we use */
+#undef GW_VERSION
 
 /* WMLScript debugging. */
 #undef WS_DEBUG
