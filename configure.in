@@ -1,7 +1,64 @@
+dnl /* ==================================================================== 
+dnl  * The Kannel Software License, Version 1.0 
+dnl  * 
+dnl  * Copyright (c) 2001-2004 Kannel Group  
+dnl  * Copyright (c) 1998-2001 WapIT Ltd.   
+dnl  * All rights reserved. 
+dnl  * 
+dnl  * Redistribution and use in source and binary forms, with or without 
+dnl  * modification, are permitted provided that the following conditions 
+dnl  * are met: 
+dnl  * 
+dnl  * 1. Redistributions of source code must retain the above copyright 
+dnl  *    notice, this list of conditions and the following disclaimer. 
+dnl  * 
+dnl  * 2. Redistributions in binary form must reproduce the above copyright 
+dnl  *    notice, this list of conditions and the following disclaimer in 
+dnl  *    the documentation and/or other materials provided with the 
+dnl  *    distribution. 
+dnl  * 
+dnl  * 3. The end-user documentation included with the redistribution, 
+dnl  *    if any, must include the following acknowledgment: 
+dnl  *       "This product includes software developed by the 
+dnl  *        Kannel Group (http://www.kannel.org/)." 
+dnl  *    Alternately, this acknowledgment may appear in the software itself, 
+dnl  *    if and wherever such third-party acknowledgments normally appear. 
+dnl  * 
+dnl  * 4. The names "Kannel" and "Kannel Group" must not be used to 
+dnl  *    endorse or promote products derived from this software without 
+dnl  *    prior written permission. For written permission, please  
+dnl  *    contact org@kannel.org. 
+dnl  * 
+dnl  * 5. Products derived from this software may not be called "Kannel", 
+dnl  *    nor may "Kannel" appear in their name, without prior written 
+dnl  *    permission of the Kannel Group. 
+dnl  * 
+dnl  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED 
+dnl  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
+dnl  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
+dnl  * DISCLAIMED.  IN NO EVENT SHALL THE KANNEL GROUP OR ITS CONTRIBUTORS 
+dnl  * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,  
+dnl  * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT  
+dnl  * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR  
+dnl  * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,  
+dnl  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE  
+dnl  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  
+dnl  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+dnl  * ==================================================================== 
+dnl  * 
+dnl  * This software consists of voluntary contributions made by many 
+dnl  * individuals on behalf of the Kannel Group.  For more information on  
+dnl  * the Kannel Group, please see <http://www.kannel.org/>. 
+dnl  * 
+dnl  * Portions of this software are based upon software originally written at  
+dnl  * WapIT Ltd., Helsinki, Finland for the Kannel project.  
+dnl  */ 
+
+dnl
 dnl configure.in -- main autoconf macro definition file
 dnl
 dnl Process this file with autoconf to produce a configure script.
-dnl This file is part of the Kannel WAP and SMS gateway project.
+dnl
 
 dnl initialization
 
@@ -60,9 +117,13 @@ case "$host" in
     CFLAGS="$CFLAGS -DDARWIN=1" 
     LIBTOOL="libtool -static -o" 
     ;;
-   *-linux-*)
+  *-linux-*)
     CFLAGS="$CFLAGS -D_XOPEN_SOURCE=600 -D_BSD_SOURCE"
     LDFLAGS="$LDFLAGS -rdynamic"
+    ;;
+  *-*-openbsd* | *-*-freebsd*)
+    CFLAGS="$CFLAGS -pthread"
+	AC_CHECK_LIB(c_r, pthread_exit, [LIBS="$LIBS -lc_r -lkse"; pthread="yes"])
     ;;
 esac
 AC_SUBST(EXE_EXT)
@@ -108,9 +169,8 @@ AC_CHECK_LIB(socket, accept)
 AC_CHECK_LIB(nsl, inet_ntoa)
 AC_CHECK_LIB(resolv, inet_ntop)
 AC_CHECK_LIB(bind, inet_ntop)
-AC_CHECK_LIB(pthread, pthread_exit, [LIBS="$LIBS -lpthread"; pthread="yes"])
 if test -z "$pthread"; then
-	AC_CHECK_LIB(c_r, pthread_exit, [LIBS="$LIBS -lc_r"])
+    AC_CHECK_LIB(pthread, pthread_exit, [LIBS="$LIBS -lpthread"])
 fi
 AC_CHECK_LIB(iconv, libiconv, [LIBS="$LIBS -liconv"])   
 
