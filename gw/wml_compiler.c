@@ -619,8 +619,8 @@ int parse_attribute(xmlAttrPtr attr)
 			      octstr_create(wml_attributes[j].attribute))
 		 == 0; j++)
 	    if (wml_attributes[j].a_value != NULL && value != NULL &&
-		octstr_ncompare((val_j = 
-				 octstr_create(wml_attributes[j].a_value)),
+		(val_j = octstr_create(wml_attributes[j].a_value)) == 0 &&
+		octstr_ncompare(val_j,
 				value, 
 				coded_length = octstr_len(val_j)) 
 		== 0)

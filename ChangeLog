@@ -2,6 +2,7 @@
 
 	* gw/wml_compiler.c (parse_text): Empty strings are no more coded.
 	* gw/wml_compiler.c (parse_attribute): Fixed bug with the coded_length.
+	Still something wrong with attribute value encoding with one byte.
 	
 Thu Feb 17 20:27:54 2000  Lars Wirzenius  <liw@wapit.com>
 
