@@ -122,7 +122,9 @@ opt_dead_code(WsCompilerPtr compiler)
     {
       WsAsmIns *j;
 
-      if (i->type != WS_ASM_P_JUMP)
+      if (!(i->type == WS_ASM_P_JUMP ||
+	    i->type == WS_ASM_RETURN ||
+	    i->type == WS_ASM_RETURN_ES))
 	continue;
 
       /* Skip until the next referenced label is found. */
