@@ -17,43 +17,22 @@
  * into WSP format and unpacking them from WSP format. This module contains
  * only packing and unpacking parts.
  *
+ * Some functions are declared non-static to provide them for external use,
+ * ie. the MMS encapsulation encoding and decoding routines implemented in 
+ * other files.
+ *
  * Richard Braakman
+ * Stipe Tolj <tolj@wapme-systems.de>
  */
 
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
 
-
 #include "gwlib/gwlib.h"
 #include "wsp.h"
 #include "wsp_headers.h"
 #include "wsp_strings.h"
-
-
-#define WSP_FIELD_VALUE_NUL_STRING	1
-#define WSP_FIELD_VALUE_ENCODED 	2
-#define WSP_FIELD_VALUE_DATA		3
-#define WSP_FIELD_VALUE_NONE		4 /* secondary_field_value only */
-
-/* The value defined as Quote in 8.4.2.1 */
-#define WSP_QUOTE  127
-
-/* Largest value that will fit in a Short-integer encoding */
-#define MAX_SHORT_INTEGER 127
-
-/* Marker values used in the encoding */
-#define BASIC_AUTHENTICATION 128
-#define ABSOLUTE_TIME 128
-#define RELATIVE_TIME 129
-#define BYTE_RANGE 128
-#define SUFFIX_BYTE_RANGE 129
-
-/* Use this value for Expires headers if we can't parse the expiration
- * date.  It's about one day after the start of the epoch.  We don't
- * use the exact start of the epoch because some clients have trouble
- * with that. */
-#define LONG_AGO_VALUE 100000
 
 /*
  * get field value and return its type as predefined data types
@@ -69,7 +48,7 @@
  *   WSP_FIELD_VALUE_DATA: Leave parsing position at start of data, and set
  *        a parse limit at the end of data.
  */
-static int field_value(ParseContext *context, int *well_known_value)
+int wsp_field_value(ParseContext *context, int *well_known_value)
 {
     int val;
     unsigned long len;
@@ -100,12 +79,12 @@ static int field_value(ParseContext *context, int *well_known_value)
 }
 
 /* Skip over a field_value as defined above. */
-static void skip_field_value(ParseContext *context)
+void wsp_skip_field_value(ParseContext *context)
 {
     int val;
     int ret;
 
-    ret = field_value(context, &val);
+    ret = wsp_field_value(context, &val);
     if (ret == WSP_FIELD_VALUE_DATA) {
         parse_skip_to_limit(context);
         parse_pop_limit(context);
@@ -145,7 +124,7 @@ static long unpack_multi_octet_integer(ParseContext *context, long len)
  * 0-length integers, but the definition of Multi-octet-integer does
  * not, so this is an unclear area of the specification.)
  */
-static int secondary_field_value(ParseContext *context, long *result)
+int wsp_secondary_field_value(ParseContext *context, long *result)
 {
     int val;
     long length;
@@ -176,7 +155,7 @@ static int secondary_field_value(ParseContext *context, long *result)
 }
 
 /* Integer-value is defined in 8.4.2.3 */
-static Octstr *unpack_integer_value(ParseContext *context)
+Octstr *wsp_unpack_integer_value(ParseContext *context)
 {
     Octstr *decoded;
     unsigned long value;
@@ -252,7 +231,7 @@ static Octstr *unpack_q_value(ParseContext *context)
 
 /* Version-value is defined in 8.4.2.3. Encoding-Version uses coding
  * defined in this chapter, see 8.4.2.70.  */
-static Octstr *unpack_version_value(long value)
+Octstr *wsp_unpack_version_value(long value)
 {
     Octstr *result;
     int major, minor;
@@ -280,7 +259,7 @@ static Octstr *unpack_encoding_version(ParseContext *context)
         return NULL;
     }
 
-    return unpack_version_value(((long) ch) - 128);
+    return wsp_unpack_version_value(((long) ch) - 128);
 }
 
 /* Called with the parse limit set to the end of the parameter data,
@@ -294,7 +273,7 @@ static int unpack_parameter(ParseContext *context, Octstr *decoded)
     long type;
     long val;
 
-    ret = secondary_field_value(context, &type);
+    ret = wsp_secondary_field_value(context, &type);
     if (parse_error(context) || ret == WSP_FIELD_VALUE_NONE) {
         warning(0, "bad parameter");
         goto error;
@@ -321,7 +300,7 @@ static int unpack_parameter(ParseContext *context, Octstr *decoded)
     if (type == 0x00) /* q */
         value = unpack_q_value(context);
     else {
-        ret = secondary_field_value(context, &val);
+        ret = wsp_secondary_field_value(context, &val);
         if (parse_error(context)) {
             warning(0, "bad parameter value");
             goto error;
@@ -344,7 +323,7 @@ static int unpack_parameter(ParseContext *context, Octstr *decoded)
                     warning(0, "Unknown charset %04lx.", val);
                 break;
             case 2:  /* level: Version-value */
-                value = unpack_version_value(val);
+                value = wsp_unpack_version_value(val);
                 break;
             case 5:  /* name: Text-string */
             case 6:  /* filename: Text-string */
@@ -403,7 +382,7 @@ error:
     return -1;
 }
 
-static void unpack_all_parameters(ParseContext *context, Octstr *decoded)
+void wsp_unpack_all_parameters(ParseContext *context, Octstr *decoded)
 {
     int ret = 0;
 
@@ -452,7 +431,7 @@ static void unpack_optional_q_value(ParseContext *context, Octstr *decoded)
 }
 
 /* Date-value is defined in 8.4.2.3. */
-static Octstr *unpack_date_value(ParseContext *context)
+Octstr *wsp_unpack_date_value(ParseContext *context)
 {
     unsigned long timeval;
     int length;
@@ -490,7 +469,7 @@ static Octstr *unpack_accept_general_form(ParseContext *context)
      * because its definition of Media-type is identical to Media-range.
      */
 
-    ret = secondary_field_value(context, &val);
+    ret = wsp_secondary_field_value(context, &val);
     if (parse_error(context) || ret == WSP_FIELD_VALUE_NONE) {
         warning(0, "bad media-range or media-type");
         return NULL;
@@ -512,7 +491,7 @@ static Octstr *unpack_accept_general_form(ParseContext *context)
         panic(0, "Unknown secondary field value type %d.", ret);
     }
 
-    unpack_all_parameters(context, decoded);
+    wsp_unpack_all_parameters(context, decoded);
     return decoded;
 }
 
@@ -523,7 +502,7 @@ static Octstr *unpack_accept_charset_general_form(ParseContext *context)
     int ret;
     long val;
 
-    ret = secondary_field_value(context, &val);
+    ret = wsp_secondary_field_value(context, &val);
     if (parse_error(context) || ret == WSP_FIELD_VALUE_NONE) {
         warning(0, "Bad accept-charset-general-form");
         return NULL;
@@ -556,7 +535,7 @@ static Octstr *unpack_accept_language_general_form(ParseContext *context)
     int ret;
     long val;
 
-    ret = secondary_field_value(context, &val);
+    ret = wsp_secondary_field_value(context, &val);
     if (parse_error(context) || ret == WSP_FIELD_VALUE_NONE) {
         warning(0, "Bad accept-language-general-form");
         return NULL;
@@ -716,7 +695,7 @@ static Octstr *unpack_field_name(ParseContext *context)
     int ret;
     int val;
 
-    ret = field_value(context, &val);
+    ret = wsp_field_value(context, &val);
     if (parse_error(context) || ret == WSP_FIELD_VALUE_DATA) {
         warning(0, "Bad field-name encoding");
         return NULL;
@@ -748,7 +727,7 @@ static Octstr *unpack_cache_directive(ParseContext *context)
     int ret;
     int val;
 
-    ret = field_value(context, &val);
+    ret = wsp_field_value(context, &val);
     if (parse_error(context) || ret == WSP_FIELD_VALUE_DATA) {
         warning(0, "Bad cache-directive");
         goto error;
@@ -790,7 +769,7 @@ static Octstr *unpack_cache_directive(ParseContext *context)
         case WSP_CACHE_CONTROL_MIN_FRESH:
             {
                 Octstr *seconds;
-                seconds = unpack_integer_value(context);
+                seconds = wsp_unpack_integer_value(context);
                 if (!seconds) {
                     warning(0, "Bad integer value in cache directive");
                     goto error;
@@ -833,9 +812,9 @@ static Octstr *unpack_retry_after(ParseContext *context)
 
     selector = parse_get_char(context);
     if (selector == ABSOLUTE_TIME) {
-        return unpack_date_value(context);
+        return wsp_unpack_date_value(context);
     } else if (selector == RELATIVE_TIME) {
-        return unpack_integer_value(context);
+        return wsp_unpack_integer_value(context);
     } else {
         warning(0, "Cannot parse retry-after value.");
         return NULL;
@@ -854,7 +833,7 @@ static Octstr *unpack_disposition(ParseContext *context)
         warning(0, "Cannot parse content-disposition value.");
         return NULL;
     }
-    unpack_all_parameters(context, decoded);
+    wsp_unpack_all_parameters(context, decoded);
     return decoded;
 }
 
@@ -910,7 +889,7 @@ static Octstr *unpack_warning_value(ParseContext *context)
     Octstr *warn_text = NULL;
     unsigned char quote = '"';
 
-    warn_code = unpack_integer_value(context);
+    warn_code = wsp_unpack_integer_value(context);
 
     warn_agent = parse_get_nul_string(context);
     if (warn_agent && octstr_get_char(warn_agent, 0) == WSP_QUOTE)
@@ -948,15 +927,15 @@ error:
     return NULL;
 }
 
-static void unpack_well_known_field(List *unpacked, int field_type,
-                                    ParseContext *context)
+void wsp_unpack_well_known_field(List *unpacked, int field_type,
+                                 ParseContext *context)
 {
     int val, ret;
     unsigned char *headername = NULL;
     unsigned char *ch = NULL;
     Octstr *decoded = NULL;
 
-    ret = field_value(context, &val);
+    ret = wsp_field_value(context, &val);
     if (parse_error(context)) {
         warning(0, "Faulty header, skipping remaining headers.");
         parse_skip_to_limit(context);
@@ -1148,7 +1127,7 @@ static void unpack_well_known_field(List *unpacked, int field_type,
         case WSP_HEADER_LAST_MODIFIED:
             /* Back up to get the length byte again */
             parse_skip(context, -1);
-            decoded = unpack_date_value(context);
+            decoded = wsp_unpack_date_value(context);
             break;
 
         case WSP_HEADER_PRAGMA:
@@ -1226,7 +1205,7 @@ value_error:
     octstr_destroy(decoded);
 }
 
-static void unpack_app_header(List *unpacked, ParseContext *context)
+void wsp_unpack_app_header(List *unpacked, ParseContext *context)
 {
     Octstr *header = NULL;
     Octstr *value = NULL;
@@ -1262,8 +1241,8 @@ List *wsp_headers_unpack(Octstr *headers, int content_type_present)
     }
 
     if (content_type_present)
-        unpack_well_known_field(unpacked,
-                                WSP_HEADER_CONTENT_TYPE, context);
+        wsp_unpack_well_known_field(unpacked,
+                                    WSP_HEADER_CONTENT_TYPE, context);
 
     code_page = 1;   /* default */
 
@@ -1285,15 +1264,15 @@ List *wsp_headers_unpack(Octstr *headers, int content_type_present)
             }
         } else if (byte >= 128) {  /* well-known-header */
             if (code_page == 1)
-                unpack_well_known_field(unpacked, byte - 128, context);
+                wsp_unpack_well_known_field(unpacked, byte - 128, context);
             else {
                 debug("wsp", 0, "Skipping field 0x%02x.", byte);
-                skip_field_value(context);
+                wsp_skip_field_value(context);
             }
         } else if (byte > 31 && byte < 127) {
             /* Un-parse the character we just read */
             parse_skip(context, -1);
-            unpack_app_header(unpacked, context);
+            wsp_unpack_app_header(unpacked, context);
         } else {
             warning(0, "Unsupported token or header (start 0x%x)", byte);
             break;
@@ -1315,28 +1294,10 @@ List *wsp_headers_unpack(Octstr *headers, int content_type_present)
     return unpacked;
 }
 
+
 /**********************************************************************/
 /* Start of header packing code (HTTP to WSP)                         */
 /**********************************************************************/
-
-struct parameter
-{
-    Octstr *key;
-    Octstr *value;
-};
-typedef struct parameter Parameter;
-
-typedef int header_pack_func_t(Octstr *packed, Octstr *value);
-
-struct headerinfo
-{
-    /* The WSP_HEADER_* enumeration value for this header */
-    int header;
-    header_pack_func_t *func;
-    /* True if this header type allows multiple elements per
-     * header on the HTTP side. */
-    int allows_list;
-};
 
 static int pack_accept(Octstr *packet, Octstr *value);
 static int pack_accept_charset(Octstr *packet, Octstr *value);
@@ -1347,48 +1308,32 @@ static int pack_challenge(Octstr *packet, Octstr *value);
 static int pack_connection(Octstr *packet, Octstr *value);
 static int pack_content_disposition(Octstr *packet, Octstr *value);
 static int pack_content_range(Octstr *packet, Octstr *value);
-static int pack_content_type(Octstr *packet, Octstr *value);
 static int pack_credentials(Octstr *packet, Octstr *value);
-static int pack_date(Octstr *packet, Octstr *value);
 static int pack_encoding(Octstr *packet, Octstr *value);
 static int pack_expires(Octstr *packet, Octstr *value);
 static int pack_field_name(Octstr *packet, Octstr *value);
 static int pack_if_range(Octstr *packet, Octstr *value);
-static int pack_integer_string(Octstr *packet, Octstr *value);
 static int pack_language(Octstr *packet, Octstr *value);
 static int pack_md5(Octstr *packet, Octstr *value);
 static int pack_method(Octstr *packet, Octstr *value);
 static int pack_pragma(Octstr *packet, Octstr *value);
 static int pack_range(Octstr *packet, Octstr *value);
 static int pack_range_unit(Octstr *packet, Octstr *value);
-static int pack_retry_after(Octstr *packet, Octstr *value);
-static int pack_text(Octstr *packet, Octstr *value);
 static int pack_transfer_encoding(Octstr *packet, Octstr *value);
 static int pack_uri(Octstr *packet, Octstr *value);
 static int pack_warning(Octstr *packet, Octstr *value);
-static int pack_version_value(Octstr *packet, Octstr *value);
+static int pack_content_type(Octstr *packet, Octstr *value);
 
-/* LIST is a comma-separated list such as is described in the "#rule"
- * entry of RFC2616 section 2.1. */
-#define LIST 1
-/* BROKEN_LIST is a list of "challenge" or "credentials" elements
- * such as described in RFC2617.  I call it broken because the
- * parameters are separated with commas, instead of with semicolons
- * like everywhere else in HTTP.  Parsing is more difficult because
- * commas are also used to separate list elements. */
-#define BROKEN_LIST 2
+/* these are used in MMS encapsulation code too */
 
-#define TABLE_SIZE(table) ((long)(sizeof(table) / sizeof(table[0])))
 struct headerinfo headerinfo[] =
     {
-        {
-            WSP_HEADER_ACCEPT, pack_accept, LIST
-        },
+        { WSP_HEADER_ACCEPT, pack_accept, LIST },
         { WSP_HEADER_ACCEPT_CHARSET, pack_accept_charset, LIST },
         { WSP_HEADER_ACCEPT_ENCODING, pack_accept_encoding, LIST },
         { WSP_HEADER_ACCEPT_LANGUAGE, pack_accept_language, LIST },
         { WSP_HEADER_ACCEPT_RANGES, pack_range_unit, LIST },
-        { WSP_HEADER_AGE, pack_integer_string, 0 },
+        { WSP_HEADER_AGE, wsp_pack_integer_string, 0 },
         /* pack_method is slightly too general because Allow is only
          * supposed to encode well-known-methods. */
         { WSP_HEADER_ALLOW, pack_method, LIST },
@@ -1400,45 +1345,46 @@ struct headerinfo headerinfo[] =
         { WSP_HEADER_CONTENT_BASE, pack_uri, 0 },
         { WSP_HEADER_CONTENT_ENCODING, pack_encoding, LIST },
         { WSP_HEADER_CONTENT_LANGUAGE, pack_language, LIST },
-        { WSP_HEADER_CONTENT_LENGTH, pack_integer_string, 0 },
+        { WSP_HEADER_CONTENT_LENGTH, wsp_pack_integer_string, 0 },
         { WSP_HEADER_CONTENT_LOCATION, pack_uri, 0 },
         { WSP_HEADER_CONTENT_MD5, pack_md5, 0 },
         { WSP_HEADER_CONTENT_RANGE, pack_content_range, 0 },
         { WSP_HEADER_CONTENT_TYPE, pack_content_type, 0 },
-        { WSP_HEADER_DATE, pack_date, 0 },
-        { WSP_HEADER_ETAG, pack_text, 0 },
+        { WSP_HEADER_DATE, wsp_pack_date, 0 },
+        { WSP_HEADER_ETAG, wsp_pack_text, 0 },
         { WSP_HEADER_EXPIRES, pack_expires, 0 },
-        { WSP_HEADER_FROM, pack_text, 0 },
-        { WSP_HEADER_HOST, pack_text, 0 },
-        { WSP_HEADER_IF_MODIFIED_SINCE, pack_date, 0 },
-        { WSP_HEADER_IF_MATCH, pack_text, 0 },
-        { WSP_HEADER_IF_NONE_MATCH, pack_text, 0 },
+        { WSP_HEADER_FROM, wsp_pack_text, 0 },
+        { WSP_HEADER_HOST, wsp_pack_text, 0 },
+        { WSP_HEADER_IF_MODIFIED_SINCE, wsp_pack_date, 0 },
+        { WSP_HEADER_IF_MATCH, wsp_pack_text, 0 },
+        { WSP_HEADER_IF_NONE_MATCH, wsp_pack_text, 0 },
         { WSP_HEADER_IF_RANGE, pack_if_range, 0 },
-        { WSP_HEADER_IF_UNMODIFIED_SINCE, pack_date, 0 },
-        { WSP_HEADER_LAST_MODIFIED, pack_date, 0 },
+        { WSP_HEADER_IF_UNMODIFIED_SINCE, wsp_pack_date, 0 },
+        { WSP_HEADER_LAST_MODIFIED, wsp_pack_date, 0 },
         { WSP_HEADER_LOCATION, pack_uri, 0 },
-        { WSP_HEADER_MAX_FORWARDS, pack_integer_string, 0 },
+        { WSP_HEADER_MAX_FORWARDS, wsp_pack_integer_string, 0 },
         { WSP_HEADER_PRAGMA, pack_pragma, LIST },
         { WSP_HEADER_PROXY_AUTHENTICATE, pack_challenge, BROKEN_LIST },
         { WSP_HEADER_PROXY_AUTHORIZATION, pack_credentials, BROKEN_LIST },
         { WSP_HEADER_PUBLIC, pack_method, LIST },
         { WSP_HEADER_RANGE, pack_range, 0 },
         { WSP_HEADER_REFERER, pack_uri, 0 },
-        { WSP_HEADER_RETRY_AFTER, pack_retry_after, 0 },
-        { WSP_HEADER_SERVER, pack_text, 0 },
+        { WSP_HEADER_RETRY_AFTER, wsp_pack_retry_after, 0 },
+        { WSP_HEADER_SERVER, wsp_pack_text, 0 },
         { WSP_HEADER_TRANSFER_ENCODING, pack_transfer_encoding, LIST },
-        { WSP_HEADER_UPGRADE, pack_text, LIST },
-        { WSP_HEADER_USER_AGENT, pack_text, 0 },
+        { WSP_HEADER_UPGRADE, wsp_pack_text, LIST },
+        { WSP_HEADER_USER_AGENT, wsp_pack_text, 0 },
         { WSP_HEADER_VARY, pack_field_name, LIST },
-        { WSP_HEADER_VIA, pack_text, LIST },
+        { WSP_HEADER_VIA, wsp_pack_text, LIST },
         { WSP_HEADER_WARNING, pack_warning, LIST },
         { WSP_HEADER_WWW_AUTHENTICATE, pack_challenge, BROKEN_LIST },
         { WSP_HEADER_CONTENT_DISPOSITION, pack_content_disposition, 0 },
-        { WSP_HEADER_PUSH_FLAG, pack_integer_string, 0 },
-        { WSP_HEADER_X_WAP_CONTENT_URI, pack_uri, 0 },
-        { WSP_HEADER_X_WAP_INITIATOR_URI, pack_uri, 0 },
-        { WSP_HEADER_X_WAP_APPLICATION_ID, pack_integer_string, 0 },
-        { WSP_HEADER_ENCODING_VERSION, pack_version_value, 0 }
+        { WSP_HEADER_PUSH_FLAG, wsp_pack_integer_string, 0},
+        { WSP_HEADER_X_WAP_CONTENT_URI, pack_uri, 0},
+        { WSP_HEADER_X_WAP_INITIATOR_URI, pack_uri, 0},
+        { WSP_HEADER_X_WAP_APPLICATION_ID, wsp_pack_integer_string, 0},
+        { WSP_HEADER_CONTENT_ID, wsp_pack_text, 0},
+        { WSP_HEADER_ENCODING_VERSION, wsp_pack_version_value, 0 }
     };
 
 static Parameter *parm_create(Octstr *key, Octstr *value)
@@ -1461,7 +1407,7 @@ static void parm_destroy(Parameter *parm)
     gw_free(parm);
 }
 
-static void parm_destroy_item(void *parm)
+void parm_destroy_item(void *parm)
 {
     parm_destroy(parm);
 }
@@ -1499,7 +1445,7 @@ static Parameter *parm_parse(Octstr *value)
  * if the parameter was just a key.
  * It returns NULL if there were no parameters.
  */
-static List *strip_parameters(Octstr *value)
+List *strip_parameters(Octstr *value)
 {
     long pos;
     long len;
@@ -1561,7 +1507,7 @@ static List *strip_parameters(Octstr *value)
     return parms;
 }
 
-static int pack_text(Octstr *packed, Octstr *text)
+int wsp_pack_text(Octstr *packed, Octstr *text)
 {
     /* This check catches 0-length strings as well, because
      * octstr_get_char will return -1. */
@@ -1698,7 +1644,7 @@ static int pack_qvalue(Octstr *packed, int qvalue)
 }
 
 /* Pack value as a Value-length followed by the encoded value. */
-static void pack_value(Octstr *packed, Octstr *encoded)
+void pack_value(Octstr *packed, Octstr *encoded)
 {
     long len;
 
@@ -1713,7 +1659,7 @@ static void pack_value(Octstr *packed, Octstr *encoded)
     octstr_append(packed, encoded);
 }
 
-static void pack_long_integer(Octstr *packed, unsigned long integer)
+void pack_long_integer(Octstr *packed, unsigned long integer)
 {
     long oldlen = octstr_len(packed);
     unsigned char octet;
@@ -1737,14 +1683,14 @@ static void pack_long_integer(Octstr *packed, unsigned long integer)
     octstr_insert_data(packed, oldlen, &octet, 1);
 }
 
-static void pack_short_integer(Octstr *packed, unsigned long integer)
+void pack_short_integer(Octstr *packed, unsigned long integer)
 {
     gw_assert(integer <= MAX_SHORT_INTEGER);
 
     octstr_append_char(packed, integer + 0x80);
 }
 
-static void pack_integer_value(Octstr *packed, unsigned long integer)
+void pack_integer_value(Octstr *packed, unsigned long integer)
 {
     if (integer <= MAX_SHORT_INTEGER)
         pack_short_integer(packed, integer);
@@ -1752,7 +1698,7 @@ static void pack_integer_value(Octstr *packed, unsigned long integer)
         pack_long_integer(packed, integer);
 }
 
-static int pack_integer_string(Octstr *packed, Octstr *value)
+int wsp_pack_integer_string(Octstr *packed, Octstr *value)
 {
     unsigned long integer;
     long pos;
@@ -1782,7 +1728,7 @@ overflow:
     return -1;
 }
 
-static int pack_version_value(Octstr *packed, Octstr *version)
+int wsp_pack_version_value(Octstr *packed, Octstr *version)
 {
     long major, minor;
     long pos;
@@ -1805,16 +1751,16 @@ static int pack_version_value(Octstr *packed, Octstr *version)
     return 0;
 
 usetext:
-    pack_text(packed, version);
+    wsp_pack_text(packed, version);
     return 0;
 }
 
-static int pack_constrained_value(Octstr *packed, Octstr *text, long value)
+int pack_constrained_value(Octstr *packed, Octstr *text, long value)
 {
     if (value >= 0)
         pack_short_integer(packed, value);
     else
-        pack_text(packed, text);
+        wsp_pack_text(packed, text);
     return 0;
 }
 
@@ -1856,13 +1802,13 @@ static void pack_parameter(Octstr *packed, Parameter *parm)
                 }
                 break;
             case 2:  /* level */
-                pack_version_value(packed, parm->value);
+                wsp_pack_version_value(packed, parm->value);
                 return;
             case 3:  /* type */
                 if (octstr_check_range(parm->value, 0,
                                        octstr_len(parm->value), 
 				       gw_isdigit) &&
-                    pack_integer_string(packed, parm->value) >= 0)
+                    wsp_pack_integer_string(packed, parm->value) >= 0)
                     return;
                 break;
             case 5:  /* name */
@@ -1884,7 +1830,7 @@ static void pack_parameter(Octstr *packed, Parameter *parm)
         pack_quoted_string(packed, parm->value);
     } else {
         /* Untyped-parameter = Token-text Untyped-value */
-        pack_text(packed, parm->key);
+        wsp_pack_text(packed, parm->key);
         /* Untyped-value = Integer-value | Text-value */
         if (parm->value == NULL) {
             octstr_append_char(packed, 0);  /* No-value */
@@ -1900,7 +1846,7 @@ static void pack_parameter(Octstr *packed, Parameter *parm)
     }
 }
 
-static void pack_parameters(Octstr *packed, List *parms)
+void pack_parameters(Octstr *packed, List *parms)
 {
     long i;
     Parameter *parm;
@@ -1913,7 +1859,7 @@ static void pack_parameters(Octstr *packed, List *parms)
 
 static int pack_uri(Octstr *packed, Octstr *value)
 {
-    pack_text(packed, value);
+    wsp_pack_text(packed, value);
     return 0;
 }
 
@@ -1977,7 +1923,7 @@ static int pack_challenge(Octstr *packed, Octstr *value)
     } else {
         long i;
 
-        pack_text(encoding, scheme);
+        wsp_pack_text(encoding, scheme);
         realmpos = octstr_len(encoding);
 
         /* Find the realm parameter and exclude it */
@@ -2017,7 +1963,7 @@ static int pack_challenge(Octstr *packed, Octstr *value)
     gw_assert(realmpos >= 0);
 
     realmval = octstr_create("");
-    pack_text(realmval, realmparm->value);
+    wsp_pack_text(realmval, realmparm->value);
     octstr_insert(encoding, realmval, realmpos);
 
     pack_value(packed, encoding);
@@ -2086,8 +2032,8 @@ static int pack_credentials(Octstr *packed, Octstr *value)
 
         userid = octstr_copy(cookie, 0, pos);
         password = octstr_copy(cookie, pos + 1, octstr_len(cookie) - pos);
-        pack_text(encoding, userid);
-        pack_text(encoding, password);
+        wsp_pack_text(encoding, userid);
+        wsp_pack_text(encoding, password);
 
         octstr_destroy(cookie);
         octstr_destroy(userid);
@@ -2095,7 +2041,7 @@ static int pack_credentials(Octstr *packed, Octstr *value)
     } else {
         List *parms;
 
-        pack_text(encoding, scheme);
+        wsp_pack_text(encoding, scheme);
         parms = strip_parameters(value);
         pack_parameters(encoding, parms);
         list_destroy(parms, parm_destroy_item);
@@ -2113,7 +2059,7 @@ error:
     return -1;
 }
 
-static int pack_date(Octstr *packed, Octstr *value)
+int wsp_pack_date(Octstr *packed, Octstr *value)
 {
     long timeval;
 
@@ -2156,7 +2102,7 @@ static int pack_language(Octstr *packed, Octstr *value)
     if (language >= 0)
         pack_integer_value(packed, language);
     else
-        pack_text(packed, value);
+        wsp_pack_text(packed, value);
     return 0;
 }
 
@@ -2262,7 +2208,7 @@ static int pack_accept(Octstr *packed, Octstr *value)
         if (media >= 0)
             pack_integer_value(encoding, media);
         else
-            pack_text(encoding, value);
+            wsp_pack_text(encoding, value);
 
         pack_parameters(encoding, parms);
         pack_value(packed, encoding);
@@ -2295,7 +2241,7 @@ static int pack_accept_charset(Octstr *packed, Octstr *value)
         if (charset >= 0)
             pack_integer_value(encoding, charset);
         else
-            pack_text(encoding, value);
+            wsp_pack_text(encoding, value);
 
         if (qvalue != 1000)
             pack_qvalue(encoding, qvalue);
@@ -2358,7 +2304,7 @@ static int pack_accept_language(Octstr *packed, Octstr *value)
         if (language >= 0)
             pack_integer_value(encoding, language);
         else
-            pack_text(encoding, value);
+            wsp_pack_text(encoding, value);
 
         if (qvalue != 1000)
             pack_qvalue(encoding, qvalue);
@@ -2393,7 +2339,7 @@ static int pack_cache_control(Octstr *packed, Octstr *value)
              * this extra Token-text?  I decided to leave it blank.
              *  - Richard Braakman
              */
-            pack_text(encoding, octstr_imm(""));
+            wsp_pack_text(encoding, octstr_imm(""));
             pack_parameter(encoding, parm);
         } else {
             int done = 0;
@@ -2421,7 +2367,7 @@ static int pack_cache_control(Octstr *packed, Octstr *value)
             case WSP_CACHE_CONTROL_MAX_AGE:
             case WSP_CACHE_CONTROL_MAX_STALE:
             case WSP_CACHE_CONTROL_MIN_FRESH:
-                if (pack_integer_string(value_encoding, parm->value) >= 0)
+                if (wsp_pack_integer_string(value_encoding, parm->value) >= 0)
                     done = 1;
                 break;
             }
@@ -2555,7 +2501,7 @@ static int pack_expires(Octstr *packed, Octstr *value)
 {
     int ret;
 
-    ret = pack_date(packed, value);
+    ret = wsp_pack_date(packed, value);
 
     if (ret < 0) {
 	/* Responses with an invalid Expires header should be treated
@@ -2573,9 +2519,9 @@ static int pack_if_range(Octstr *packed, Octstr *value)
     if (octstr_get_char(value, 0) == '"' ||
         (octstr_get_char(value, 0) == 'W' &&
          octstr_get_char(value, 1) == '/')) {
-        return pack_text(packed, value);   /* It's an etag */
+        return wsp_pack_text(packed, value);   /* It's an etag */
     } else {
-        return pack_date(packed, value);
+        return wsp_pack_date(packed, value);
     }
 }
 
@@ -2645,18 +2591,18 @@ error:
 }
 
 /* The value is either a HTTP-date or a delta-seconds (integer). */
-static int pack_retry_after(Octstr *packed, Octstr *value)
+int wsp_pack_retry_after(Octstr *packed, Octstr *value)
 {
     Octstr *encoded = NULL;
 
     encoded = octstr_create("");
     if (isdigit(octstr_get_char(value, 0))) {
         octstr_append_char(encoded, RELATIVE_TIME);
-        if (pack_integer_string(encoded, value) < 0)
+        if (wsp_pack_integer_string(encoded, value) < 0)
             goto error;
     } else {
         octstr_append_char(encoded, ABSOLUTE_TIME);
-        if (pack_date(encoded, value) < 0)
+        if (wsp_pack_date(encoded, value) < 0)
             goto error;
     }
     pack_value(packed, encoded);
@@ -2750,9 +2696,9 @@ static int pack_warning(Octstr *packed, Octstr *value)
         if (warn_text == NULL)
             warn_text = octstr_create("");
 
-	pack_short_integer(encoding, warn_code);
-        pack_text(encoding, warn_agent);
-        pack_text(encoding, warn_text);
+        pack_short_integer(encoding, warn_code);
+        wsp_pack_text(encoding, warn_agent);
+        wsp_pack_text(encoding, warn_text);
         pack_value(packed, encoding);
         octstr_destroy(encoding);
     }
@@ -2769,7 +2715,7 @@ error:
     return -1;
 }
 
-static void pack_separate_content_type(Octstr *packed, List *headers)
+void pack_separate_content_type(Octstr *packed, List *headers)
 {
     Octstr *content_type;
 
@@ -2787,7 +2733,7 @@ static void pack_separate_content_type(Octstr *packed, List *headers)
     octstr_destroy(content_type);
 }
 
-static int pack_list(Octstr *packed, long fieldnum, List *elements, int i)
+int pack_list(Octstr *packed, long fieldnum, List *elements, int i)
 {
     long startpos;
     Octstr *element;
@@ -2870,12 +2816,12 @@ static int pack_application_header(Octstr *packed,
      * header will only be present if we generated it ourselves in the
      * application layer. */
     if (octstr_str_compare(fieldname, "X-WAP.TOD") == 0) {
-	pack_text(packed, fieldname);
-	return pack_date(packed, value);
+        wsp_pack_text(packed, fieldname);
+        return wsp_pack_date(packed, value);
     }
 
-    pack_text(packed, fieldname);
-    pack_text(packed, value);
+    wsp_pack_text(packed, fieldname);
+    wsp_pack_text(packed, value);
     return 0;
 }
 
@@ -2919,5 +2865,11 @@ Octstr *wsp_headers_pack(List *headers, int separate_content_type)
         octstr_destroy(value);
     }
 
+    /*
+    http_header_dump(headers);
+    octstr_dump(packed, 0);
+    */
+
     return packed;
 }
+
