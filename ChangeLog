@@ -1,3 +1,16 @@
+Thu Apr 13 17:14:40 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/bearerbox.c: Commented out extraneous debugging message.
+	
+	* gw/wsp.c: Function transaction_belongs_to_session: Check that
+	neither machine is unused.
+	
+	* test/fakesmsc.c: Always try reading at least once, even if
+	timeout has already occured. This helps in high-load situations.
+	
+	* test/fakewap.c: Print "finished session" messages even if
+	interval is very small.
+
 2000-04-13  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_cimd.c: Fixed message text loading for messages with both

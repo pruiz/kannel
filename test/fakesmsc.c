@@ -140,8 +140,7 @@ int main(int argc, char **argv) {
 				first_sent_at = last_sent_at;
 		}
 
-		while (get_current_time() - last_sent_at < interval ||
-			!(max_send == 0 || num_sent < max_send)) {
+		do {
 			FD_ZERO(&readset);
 			FD_SET(client, &readset);
 			tv = tvinit;
@@ -162,7 +161,8 @@ int main(int argc, char **argv) {
 				if (first_received_at == 0)
 					first_received_at = last_received_at;
 			}
-		}
+		} while (get_current_time() - last_sent_at < interval ||
+			 !(max_send == 0 || num_sent < max_send));
 	}
 	
 	close(client);

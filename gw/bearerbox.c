@@ -883,7 +883,9 @@ static void *smsboxconnection_thread(void *arg)
 		continue;
 	    }
 	}
+#if 0
 	debug("bb", 0, "Sleeping...");
+#endif
 	usleep(10000);
     }
 disconnect:    

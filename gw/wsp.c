@@ -853,10 +853,12 @@ static int transaction_belongs_to_session(void *wsp_ptr, void *wtp_ptr) {
 	wtp = wtp_ptr;
 
 	return
-	  octstr_compare(wtp->source_address, wsp->client_address) == 0 &&
+	  !wsp->unused &&
+	  wtp->in_use &&
 	  wtp->source_port == wsp->client_port &&
-	  octstr_compare(wtp->destination_address, wsp->server_address) == 0 && 
-	  wtp->destination_port == wsp->server_port;
+	  wtp->destination_port == wsp->server_port &&
+	  octstr_compare(wtp->source_address, wsp->client_address) == 0 &&
+	  octstr_compare(wtp->destination_address, wsp->server_address) == 0;
 }
 
 

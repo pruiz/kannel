@@ -515,8 +515,7 @@ client_session( void * arg)
         if (tmp < besttime) besttime = tmp;
         if (tmp > worsttime) worsttime = tmp;
         totaltime += tmp;
-        if (interval > 0.01)
-	    info(0, "fakewap: finished session # %d", i_this);
+	info(0, "fakewap: finished session # %d", i_this);
         mutex_unlock( mutex );
 
         if (tmp < (double)interval) {
