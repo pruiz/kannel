@@ -498,7 +498,7 @@ int main(int argc, char **argv)
     /*
      * initialize smsbox-request module
      */
-    smsbox_req_init(translations, sms_len, global_sender, socket_sender);
+    smsbox_req_init(translations, cfg, sms_len, global_sender, socket_sender);
     
     while(!abort_program) {
 	socket_fd = tcpip_connect_to_server(bb_host, bb_port);

@@ -30,6 +30,7 @@
  */
 
 int smsbox_req_init(URLTranslationList *translations,
+		    Config *config,
 		    int sms_max_length,
 		    char *global_sender,
 		    int (*sender) (Msg *msg));

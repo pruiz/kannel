@@ -1,3 +1,18 @@
+2000-07-21  Yann Muller  <ymuller@3glab.com>
+
+	* gw/smsbox_req.c, smsbox_req.h: messages with or without UDH are
+	now handled in the same way, they can all be sent as multiple
+	messages or concatenated messages if too long.
+	
+	* gw/smsc_at.c: Receiver address fix by Paul Keogh and Marcus
+	Shawcroft. Better support for UDH.
+	
+	* gw/urltrans.c, urltrans.h: Added the concatenation option for
+	SMS messages.
+	
+	* doc/userguide/newconf.txt, userguide.xml: Added a note about the
+	concatenation and removed the limitation about UDH.
+	
 2000-07-20  Richard Braakman  <dark@wapit.com>
 
 	* gw/wtp.c: Fixed memory leak in wtp_unpack_wdp_datagram.
