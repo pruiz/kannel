@@ -1,3 +1,8 @@
+2000-09-01  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+
+	* gwlib/list.c: Added a test for NULL list to list_len since some
+	things want the length of NULL lists.
+
 2000-08-31  Lars Wirzenius  <liw@iki.fi>
 
 	* wmlscript/wsencode.c: Added a typecast to convert a va_arg call
