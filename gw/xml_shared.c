@@ -35,7 +35,10 @@ charset_t character_sets[] = {
 /**************************************************************************** 
  *
  * Implementation of external functions
- *
+ */
+
+
+/*
  * set_charset - if xml doesn't have an <?xml..encoding=something>, 
  * converts body from argument charset to utf-8
  */

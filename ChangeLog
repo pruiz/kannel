@@ -1,3 +1,15 @@
+2003-07-18  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * STATUS: moved issues to http://bugs.kannel.org to concentrate them in
+      one unique place, where everyone (I mean, whoever is registered) can add
+      comments, open new bugs and specially, fix them. 
+    * gw/msg-decl.h, gw/xml_shared.c: space/tabs and other cleaning up
+    * gw/smsbox.c, userguide.xml: mo-recode now also tries to recode to utf-8
+      if iso-8859-1 fails
+    * gw/smsbox.c: sanitize message for request-failed replies. This message 
+      should be a clean text message and shouldn't inherit from original
+      message parameters like coding, pid or others.
+    * gw/wml_compiler.c: don't even try to transcode from utf-8 to itself ;)
+
 2003-07-18  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/mime_decompiler.c: fixed header comment section
     * gw/bb_smscconn.c: fixed an assertion while cleaning up smscconn of 

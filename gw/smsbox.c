@@ -1486,18 +1486,29 @@ static void obey_request_thread(void *arg)
 	    Octstr *text;
 	    text = octstr_duplicate(msg->sms.msgdata);
 
-	    if(0 == octstr_recode (octstr_imm("iso-8859-1"), octstr_imm("UTF-16BE"), text)) {
-		if(octstr_search(text, octstr_imm("&#"), 0) == -1) {
-		    /* XXX I'm trying to search for &#xxxx; text, which indicates that the
-		     * text couldn't be recoded.
-		     * We should use other function to do the recode or detect it using
-		     * other method */
-		    info(0, "MO message converted from UCS2 to ISO-8859-1");
-		    octstr_destroy(msg->sms.msgdata);
-		    msg->sms.msgdata = octstr_duplicate(text);
-		    msg->sms.charset = octstr_create("ISO-8859-1");
-		    msg->sms.coding = DC_7BIT;
-		}
+	    if(0 == octstr_recode (octstr_imm("iso-8859-1"), octstr_imm("UTF-16BE"), text) &&
+               octstr_search(text, octstr_imm("&#"), 0) == -1) {
+                /* XXX I'm trying to search for &#xxxx; text, which indicates that the
+                 * text couldn't be recoded.
+                 * We should use other function to do the recode or detect it using
+                 * other method */
+                info(0, "MO message converted from UCS2 to ISO-8859-1");
+                octstr_destroy(msg->sms.msgdata);
+                msg->sms.msgdata = octstr_duplicate(text);
+                msg->sms.charset = octstr_create("ISO-8859-1");
+                msg->sms.coding = DC_7BIT;
+	    }
+	    else if(0 == octstr_recode (octstr_imm("UTF-8"), octstr_imm("UTF-16BE"), text) &&
+               octstr_search(text, octstr_imm("&#"), 0) == -1) {
+                /* XXX I'm trying to search for &#xxxx; text, which indicates that the
+                 * text couldn't be recoded.
+                 * We should use other function to do the recode or detect it using
+                 * other method */
+                info(0, "MO message converted from UCS2 to UTF-8");
+                octstr_destroy(msg->sms.msgdata);
+                msg->sms.msgdata = octstr_duplicate(text);
+                msg->sms.charset = octstr_create("UTF-8");
+                msg->sms.coding = DC_7BIT;
 	    }
 	    octstr_destroy(text);
 	}
@@ -1525,17 +1536,17 @@ static void obey_request_thread(void *arg)
 	reply_msg->ack.time = msg->sms.time;
 	reply_msg->ack.id = msg->sms.id;
     
-    /* 
-     * no smsbox services when we are doing ppg dlr - so trans would be
-     * NULL in this case.
-     */
-    if (dreport) {
-        if (msg->sms.service == NULL || ppg_service_name == NULL ||
-            octstr_compare(msg->sms.service, ppg_service_name) != 0) {
-            trans = urltrans_find_service(translations, msg);
-        } else {
-            trans = NULL;
-        }
+        /* 
+         * no smsbox services when we are doing ppg dlr - so trans would be
+         * NULL in this case.
+         */
+        if (dreport) {
+            if (msg->sms.service == NULL || ppg_service_name == NULL ||
+                octstr_compare(msg->sms.service, ppg_service_name) != 0) {
+                trans = urltrans_find_service(translations, msg);
+            } else {
+                trans = NULL;
+            }
 
 	    info(0, "Starting delivery report <%s> from <%s>",
 		octstr_get_cstr(msg->sms.service),
@@ -1597,6 +1608,12 @@ static void obey_request_thread(void *arg)
 	           urltranslation */
 	        reply = octstr_duplicate(reply_requestfailed);
 	        trans = NULL;	/* do not use any special translation */
+		/* Sanitize reply */
+		msg->sms.mclass = msg->sms.mwi = msg->sms.coding = 
+		msg->sms.compress = msg->sms.validity = 
+		msg->sms.deferred = msg->sms.dlr_mask = 
+		msg->sms.pid = msg->sms.rpi = 0;
+		O_DESTROY(msg->sms.udhdata);
 		O_DESTROY(msg->sms.service);
 	    }
 	    octstr_destroy(msg->sms.msgdata);

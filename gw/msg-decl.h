@@ -43,9 +43,9 @@ MSG(sms,
 		OCTSTR(dlr_url);
 		INTEGER(pid);
 		INTEGER(alt_dcs);
-        INTEGER(rpi);
+		INTEGER(rpi);
 		OCTSTR(charset);
-        OCTSTR(boxc_id);
+		OCTSTR(boxc_id);
 	})
 
 MSG(ack,

@@ -4375,27 +4375,28 @@ ssl-certkey-file
     <row><entry><literal>mo-recode</literal></entry>
      <entry>boolean</entry>
      <entry valign="bottom">
-        If true, kannel will try to convert UCS2 messages received to ISO-8859-1.
-	If it's possible, the message will have <literal>coding</literal> equal
-	to <literal>7 bits</literal> and <literal>charset</literal> equal to 
-	<literal>iso-8859-1</literal>.
+        If enabled, kannel will try to convert received messages with UCS2 charset
+	to ISO-8859-1 or to UTF-8, simplifying external servers jobs. If Kannel is 
+	able to recode message, it will also change <literal>coding</literal> to 
+	<literal>7 bits</literal> and <literal>charset</literal> to 
+	<literal>iso-8859-1</literal> or to <literal>utf-8</literal>. 
      </entry></row>
 
-	 <row><entry><literal>http-request-retry</literal></entry>
+    <row><entry><literal>http-request-retry</literal></entry>
      <entry>integer</entry>
      <entry valign="bottom">
         If set, specifies how many retries should be performed for failing
-		  HTTP requests of sms-services. Defaults to 0, which means no retries
-		  should be performed and hence no HTTP request queueing is done.
+        HTTP requests of sms-services. Defaults to 0, which means no retries
+        should be performed and hence no HTTP request queueing is done.
      </entry></row>
 
 	 <row><entry><literal>http-queue-delay</literal></entry>
      <entry>integer</entry>
      <entry valign="bottom">
         If set, specifies how many seconds should pass within the HTTP queueing
-		  thread for retrying a failed HTTP request. Defaults to 10 sec. and is
-		  only obeyed if <literal>http-request-retry</literal> is set to a 
-		  non-zero value.
+        thread for retrying a failed HTTP request. Defaults to 10 sec. and is
+        only obeyed if <literal>http-request-retry</literal> is set to a 
+        non-zero value.
      </entry></row>
 
   </tbody>

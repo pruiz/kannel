@@ -296,7 +296,8 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary,
     parse_entities(wml_text);
 
     /* transcode from charset to UTF-8 */
-    if(charset && octstr_len(charset)) {
+    if(charset && octstr_len(charset) && 
+       octstr_case_compare(charset, octstr_imm("UTF-8")) == -1) {
         debug("wml_compile", 0, "WML compiler: Transcoding from <%s> to UTF-8", 
 		    octstr_get_cstr(charset));
         set_charset(wml_text, charset);
