@@ -3586,6 +3586,7 @@ text = "No action specified"
      <entry>SMSPush equivalent</entry>
      <entry>X-Kannel Header</entry>
    </row>
+  </thead>
   <tbody>
    <row><entry><literal>username</literal></entry>
    <entry><literal>X-Kannel-Username</literal></entry></row>
