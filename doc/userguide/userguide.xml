@@ -487,7 +487,9 @@
 	forbidden to connect as WAP or SMS boxes. Syntax is same as for
 	<literal>allowed-hosts</literal>. Kannel first checks
 	<literal>allowed-hosts</literal>, and if it finds the box IP
-	there, it accepts the connection.
+	there, it accepts the connection. Then it checks
+	<literal>denied-hosts</literal>, and if it finds the box there,
+	the connection is denied. Otherwise, it is accepted.
 	</para></listitem>
 
 	<listitem><para><literal>global-prefix</literal>: List of 
