@@ -27,4 +27,7 @@ long counter_increase(Counter *counter);
 /* return the current value of the counter */
 long counter_value(Counter *counter);
 
+/* return the current value of the counter and decrease counter by one */
+long counter_decrease(Counter *counter);
+
 #endif
