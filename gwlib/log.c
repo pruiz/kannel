@@ -96,13 +96,12 @@ void log_set_log_level(enum output_level level)
 {
     int i;
     
-    /* 
-     * start with index 1, because 0 is stderr and
-     * we want to keep that untouched.
-     */
-    for (i = 1; i < num_logfiles; ++i) {
-	    logfiles[i].minimum_output_level = level;
-        info(0, "Changed logfile `%s' to level `%d'.", &logfiles[i].filename, level);
+    /* change everything but stderr */
+    for (i = 0; i < num_logfiles; ++i) {
+        if (logfiles[i].file != stderr) {
+            logfiles[i].minimum_output_level = level;
+            info(0, "Changed logfile `%s' to level `%d'.", logfiles[i].filename, level);
+        }
     }
 }
 
