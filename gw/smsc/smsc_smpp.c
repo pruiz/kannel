@@ -412,32 +412,33 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     /*
      * set data segments and length
      */
-    if (octstr_len(msg->sms.udhdata)) { 
-        pdu->u.submit_sm.short_message = 
-	       octstr_format("%S%S", msg->sms.udhdata, msg->sms.msgdata); 
-    } else { 
-        pdu->u.submit_sm.short_message = octstr_duplicate(msg->sms.msgdata); 
 
+    pdu->u.submit_sm.short_message = octstr_duplicate(msg->sms.msgdata); 
+
+    /* 
+     * only re-encoding if using default smsc charset that is defined via 
+     * alt-charset in smsc group and if MT is not binary
+     */
+    if (pdu->u.submit_sm.data_coding == 0) {
         /* 
-         * only re-encoding if using default smsc charset that is defined via 
-         * alt-charset in smsc group and if MT is not binary
+         * convert to the given alternative charset
+         * otherwise assume to convert to GSM 03.38 7-bit alphabet
          */
-        if (pdu->u.submit_sm.data_coding == 0) {
-            
-            /* 
-             * convert to the given alternative charset
-             * otherwise assume to convert to GSM 03.38 7-bit alphabet
-             */
-            if (smpp->alt_charset) {
-                if (charset_convert(pdu->u.submit_sm.short_message, "ISO-8859-1",
-                                    octstr_get_cstr(smpp->alt_charset)) != 0)
-                    error(0, "Failed to convert msgdata from charset <%s> to <%s>, will send as is.", 
+        if (smpp->alt_charset) {
+            if (charset_convert(pdu->u.submit_sm.short_message, "ISO-8859-1",
+                                octstr_get_cstr(smpp->alt_charset)) != 0)
+                error(0, "Failed to convert msgdata from charset <%s> to <%s>, will send as is.", 
                              "ISO-8859-1", octstr_get_cstr(smpp->alt_charset));
-            } else {
-                charset_latin1_to_gsm(pdu->u.submit_sm.short_message);		 
-            }
-        } 
+        } else {
+            charset_latin1_to_gsm(pdu->u.submit_sm.short_message);		 
+        }
     }
+ 
+    /* prepend udh if present */
+    if (octstr_len(msg->sms.udhdata)) { 
+        octstr_insert(pdu->u.submit_sm.short_message, msg->sms.udhdata, 0);
+    }
+
     pdu->u.submit_sm.sm_length = octstr_len(pdu->u.submit_sm.short_message);
 
     /*
