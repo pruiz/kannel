@@ -736,7 +736,7 @@ white-list = "http://localhost/whitelist.txt"
   <emphasis>MUST</emphasis> start up any <literal>fakesmsc</literal>
   systems before starting the bearerbox, if there is any
   <literal>fake</literal> SMSC groups in configuration file, like
-  there is one in supplied <literal>smskannel.conf</literal>.
+  there is one in supplied <literal>smskannel.conf</literal>.</para>
 
 </sect2>
 
