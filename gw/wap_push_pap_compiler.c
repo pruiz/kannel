@@ -103,68 +103,6 @@ static pap_attributes_t pap_attributes[] = {
 #define NUM_ATTRIBUTES sizeof(pap_attributes)/sizeof(pap_attributes[0])
 
 /*
- * Tables of enumerations used as a pap attribute value field. These are defi-
- * ned (presently) in PAP 9.2.
- */
-static int pap_requirements[] = {
-    PAP_FALSE,
-    PAP_TRUE
-};
-
-#define NUM_REQUIREMENTS sizeof(pap_requirements)/sizeof(pap_requirements[0])
-
-static int pap_priorities[] = {
-    PAP_HIGH,
-    PAP_MEDIUM,
-    PAP_LOW
-};
-
-#define NUM_PRIORITIES sizeof(pap_priorities)/sizeof(pap_priorities[0])
-
-static int pap_delivery_methods[] = {
-    PAP_CONFIRMED,
-    PAP_PREFERCONFIRMED,
-    PAP_UNCONFIRMED,
-    PAP_NOT_SPECIFIED
-};
-
-#define NUM_DELIVERY_METHODS sizeof(pap_delivery_methods)/ \
-                             sizeof(pap_delivery_methods[0])
-
-
-/*
- * Message states defined by the protocol, see PAP, chapter 9.6.
- */
-static int pap_states[] = {
-    PAP_UNDELIVERABLE,
-    PAP_PENDING,
-    PAP_EXPIRED,
-    PAP_DELIVERED,
-    PAP_ABORTED,
-    PAP_TIMEOUT,
-    PAP_CANCELLED
-};
-
-#define NUM_STATES sizeof(pap_states)/sizeof(pap_states[0])
-
-/*
- * PAP status codes are defined in PAP, chapters 9.13 - 9.14. 
- */
-static int pap_codes[] = {
-    PAP_ACCEPTED_FOR_PROCESSING,
-    PAP_BAD_REQUEST, 
-    PAP_FORBIDDEN,
-    PAP_ADDRESS_ERROR,
-    PAP_CAPABILITIES_MISMATCH,
-    PAP_DUPLICATE_PUSH_ID,
-    PAP_TRANSFORMATION_FAILURE,
-    PAP_REQUIRED_BEARER_NOT_AVAILABLE,
-    PAP_ABORT_USERPND
-};
-
-#define NUM_CODES sizeof(pap_codes)/sizeof(pap_codes[0])
-
-/*
  * Possible bearer types. These are defined in WDP, appendix C.
  */
 static char *pap_bearer_types[] = {
@@ -742,17 +680,35 @@ static Octstr *parse_date(Octstr *attr_value)
 
 static int parse_code(Octstr *attr_value)
 {
-    long i,
-         attr_as_number;
+    long attr_as_number;
 
-    attr_as_number = strtol(octstr_get_cstr(attr_value), NULL, 10);
+    attr_as_number = -1;
+    if (octstr_case_compare(attr_value, 
+            octstr_imm("accepted for processing")) == 0)
+        attr_as_number = PAP_ACCEPTED_FOR_PROCESSING;
+    else if (octstr_case_compare(attr_value, octstr_imm("bad request")) == 0)
+        attr_as_number = PAP_BAD_REQUEST;
+    else if (octstr_case_compare(attr_value, octstr_imm("forbidden")) == 0)
+        attr_as_number = PAP_FORBIDDEN;
+    else if (octstr_case_compare(attr_value, octstr_imm("address error")) == 0)
+        attr_as_number = PAP_ADDRESS_ERROR;
+    else if (octstr_case_compare(attr_value, 
+            octstr_imm("capabilities mismatch")) == 0)
+        attr_as_number = PAP_CAPABILITIES_MISMATCH;
+    else if (octstr_case_compare(attr_value, 
+            octstr_imm("duplicate push id")) == 0)
+        attr_as_number = PAP_DUPLICATE_PUSH_ID;
+    else if (octstr_case_compare(attr_value, 
+            octstr_imm("transformation failure")) == 0)
+        attr_as_number = PAP_TRANSFORMATION_FAILURE;
+    else if (octstr_case_compare(attr_value, 
+            octstr_imm("required bearer not available")) == 0)
+        attr_as_number = PAP_REQUIRED_BEARER_NOT_AVAILABLE;
+    else if (octstr_case_compare(attr_value, octstr_imm("abort userpnd")) == 0)
+        attr_as_number = PAP_ABORT_USERPND;
 
-    for (i = 0; i < NUM_CODES; i++) {
-         if (pap_codes[i] == attr_as_number)
-	     return i;
-    }
-
-    return -1;
+    
+    return attr_as_number;
 }
 
 static Octstr *parse_bearer(Octstr *attr_value)
@@ -785,62 +741,71 @@ static Octstr *parse_network(Octstr *attr_value)
 
 static int parse_requirement(Octstr *attr_value)
 {
-    long i,
-         attr_as_number;
+    long attr_as_number;
 
-    attr_as_number = strtol(octstr_get_cstr(attr_value), NULL, 10);
+    attr_as_number = -1;
+    if (octstr_case_compare(attr_value, octstr_imm("false")) == 0)
+        attr_as_number = PAP_FALSE;
+    else if (octstr_case_compare(attr_value, octstr_imm("true")) == 0)
+        attr_as_number = PAP_TRUE;
 
-    for (i = 0; i < NUM_REQUIREMENTS; i++) {
-         if (pap_requirements[i] == attr_as_number)
-	     return i;
-    }
-
-    return -1;
+    return attr_as_number;
 }
 
 static int parse_priority(Octstr *attr_value)
 {
-    long i,
-         attr_as_number;
+    long attr_as_number;
 
-    attr_as_number = strtol(octstr_get_cstr(attr_value), NULL, 10);
+    attr_as_number = -1;
+    if (octstr_case_compare(attr_value, octstr_imm("high")) == 0)
+        attr_as_number = PAP_HIGH;
+    else if (octstr_case_compare(attr_value, octstr_imm("medium")) == 0)
+        attr_as_number = PAP_MEDIUM;
+    else if (octstr_case_compare(attr_value, octstr_imm("low")) == 0)
+        attr_as_number = PAP_LOW;
 
-    for (i = 0; i < NUM_PRIORITIES; i++) {
-         if (pap_priorities[i] == attr_as_number)
-	     return i;
-    }
-
-    return -1;
+    return attr_as_number;
 }
 
 static int parse_delivery_method(Octstr *attr_value)
 {
-    long i,
-         attr_as_number;
+    long attr_as_number;
 
-    attr_as_number = strtol(octstr_get_cstr(attr_value), NULL, 10);
-
-    for (i = 0; i < NUM_DELIVERY_METHODS; i++) {
-         if (pap_delivery_methods[i] == attr_as_number) 
-	     return i;
-    }
-
-    return -1;
+    attr_as_number = -1;
+    if (octstr_case_compare(attr_value, octstr_imm("confirmed")) == 0)
+        attr_as_number = PAP_CONFIRMED;
+    else if (octstr_case_compare(attr_value, 
+            octstr_imm("preferconfirmed")) == 0)
+        attr_as_number = PAP_PREFERCONFIRMED;
+    else if (octstr_case_compare(attr_value, octstr_imm("unconfirmed")) == 0)
+        attr_as_number = PAP_UNCONFIRMED;
+    else if (octstr_case_compare(attr_value, octstr_imm("notspecified")) == 0)
+	attr_as_number = PAP_NOT_SPECIFIED;
+    
+    return attr_as_number;
 }
 
 static int parse_state(Octstr *attr_value)
 {
-    long i,
-         attr_as_number;
+    long attr_as_number;
 
-    attr_as_number = strtol(octstr_get_cstr(attr_value), NULL, 10);
+    attr_as_number = 0;
+    if (octstr_case_compare(attr_value, octstr_imm("undeliverable")) == 0)
+        attr_as_number = PAP_UNDELIVERABLE; 
+    else if (octstr_case_compare(attr_value, octstr_imm("pending")) == 0)
+        attr_as_number = PAP_PENDING; 
+    else if (octstr_case_compare(attr_value, octstr_imm("expired")) == 0)
+        attr_as_number = PAP_EXPIRED;
+    else if (octstr_case_compare(attr_value, octstr_imm("delivered")) == 0)
+        attr_as_number = PAP_DELIVERED;
+    else if (octstr_case_compare(attr_value, octstr_imm("aborted")) == 0)
+        attr_as_number = PAP_ABORTED;
+    else if (octstr_case_compare(attr_value, octstr_imm("timeout")) == 0)
+        attr_as_number = PAP_TIMEOUT;
+    else if (octstr_case_compare(attr_value, octstr_imm("cancelled")) == 0)
+        attr_as_number = PAP_CANCELLED;
 
-    for (i = 0; i < NUM_STATES; i++) {
-         if (pap_states[i] == attr_as_number) 
-	     return i;
-    }
-
-    return -1;
+    return attr_as_number;
 }
 
 /*

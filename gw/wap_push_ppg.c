@@ -400,7 +400,6 @@ no_start:
        remove_push_data(sm, pm, cless);
        if (sm)
            remove_pushless_session(sm);
-       octstr_destroy(type);
        wap_event_destroy(e);
        return;
 /*

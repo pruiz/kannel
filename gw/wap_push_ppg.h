@@ -82,10 +82,10 @@ enum {
  * Delivery method
  */
 enum {
-    PAP_NOT_SPECIFIED,
-    PAP_PREFERCONFIRMED,
-    PAP_UNCONFIRMED,
-    PAP_CONFIRMED
+    PAP_NOT_SPECIFIED = 0,
+    PAP_PREFERCONFIRMED = 1,
+    PAP_UNCONFIRMED = 2,
+    PAP_CONFIRMED = 3
 };
 
 /*
