@@ -614,6 +614,9 @@ Octstr *smsc2_status(int status_type)
             case SMSCCONN_CONNECTING:
                 sprintf(tmp3, "connecting");
                 break;
+            case SMSCCONN_RECONNECTING:
+                sprintf(tmp3, "re-connecting");
+                break;
             case SMSCCONN_DEAD:
                 sprintf(tmp3, "dead");
                 break;
