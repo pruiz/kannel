@@ -80,11 +80,10 @@ static void signal_handler(int signum)
 
 	mutex_lock(status_mutex);
         if (bb_status != BB_SHUTDOWN && bb_status != BB_DEAD) {
-
+	    bb_status = BB_SHUTDOWN;
 	    mutex_unlock(status_mutex);
 	    
             warning(0, "Killing signal received, shutting down...");
-	    bb_shutdown();
             first_kill = time(NULL);
         }
         else if (bb_status == BB_SHUTDOWN) {
@@ -357,12 +356,17 @@ int main(int argc, char **argv)
 
 int bb_shutdown(void)
 {
+    static int called = 0;
+    
     mutex_lock(status_mutex);
     
-    if (bb_status == BB_SHUTDOWN || bb_status == BB_DEAD) {
+    if (called) {
 	mutex_unlock(status_mutex);
 	return -1;
     }
+    debug("bb", 0, "Shutting down Kannel...");
+
+    called = 1;
     if (bb_status == BB_SUSPENDED)
 	list_remove_producer(suspended);
     if (bb_status == BB_SUSPENDED || bb_status == BB_ISOLATED)

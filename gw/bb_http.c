@@ -193,6 +193,8 @@ static void *httpadmin_run(void *arg)
      */
 
     while(bb_status != BB_DEAD) {
+	if (bb_status == BB_SHUTDOWN)
+	    bb_shutdown();
 	if (read_available(http2_socket_fd(httpd), 100000) < 1)
 	    continue;
 	client = http2_server_accept_client(httpd);

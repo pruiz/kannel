@@ -172,6 +172,10 @@ int list_wait_until_nonempty(List *list);
  */
 void list_add_producer(List *list);
 
+/*
+ * Return the current number of producers for the list
+ */
+int list_producer_count(List *list);
 
 /*
  * Remove a producer from the list. If the number of producers drops to

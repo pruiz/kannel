@@ -49,6 +49,7 @@ typedef struct _boxc {
     int   	fd;
     int		is_wap;
     long      	id;
+    int		load;
     Octstr    	*client_ip;
     List      	*incoming;
     List      	*retry;   	/* If sending fails */
@@ -67,7 +68,7 @@ static void boxc_receiver(void *arg)
     Octstr *pack;
     Msg *msg;
     int ret;
-    
+
     /* remove messages from socket until it is closed */
     while(bb_status != BB_DEAD && conn->alive) {
 
@@ -79,12 +80,12 @@ static void boxc_receiver(void *arg)
 	ret = octstr_recv(conn->fd, &pack);
 
 	if (ret < 1) {
-	    debug("bb", 0, "Client <%s> closed connection",
+	    info(0, "Client <%s> closed connection",
 		  octstr_get_cstr(conn->client_ip));
 	    break;
 	}
 	if ((msg = msg_unpack(pack))==NULL) {
-	    debug("bb", 0, "Received garbage from <%s>, ignored",
+	    debug("bb.boxc", 0, "Received garbage from <%s>, ignored",
 		  octstr_get_cstr(conn->client_ip));
 	    octstr_destroy(pack);
 	    continue;
@@ -95,14 +96,17 @@ static void boxc_receiver(void *arg)
 	                  ||
 	    (conn->is_wap && msg_type(msg) == wdp_datagram))
 	{
-	    debug("bb", 0, "boxc: %s message received", conn->is_wap ? "wap" : "sms");
+	    debug("bb.boxc", 0, "boxc_receiver: message from client received");
 	    list_produce(conn->outgoing, msg);
 	} else {
-	    if (msg_type(msg) == heartbeat)
-		debug("bb", 0, "boxc: heartbeat with load value %ld received",
-		      msg->heartbeat.load);
+	    if (msg_type(msg) == heartbeat) {
+		if (msg->heartbeat.load > 0)
+		    debug("bb.boxc", 0, "boxc_receiver: heartbeat with load value %ld received",
+			  msg->heartbeat.load);
+		conn->load = msg->heartbeat.load;
+	    }
 	    else
-		warning(0, "boxc: unknown msg received from <%s>, ignored",
+		warning(0, "boxc_receiver: unknown msg received from <%s>, ignored",
 		  octstr_get_cstr(conn->client_ip));
 	    msg_destroy(msg);
 	}
@@ -133,7 +137,7 @@ static void *boxc_sender(void *arg)
 {
     Msg *msg;
     Boxc *conn = arg;
-    
+
     debug("bb.thread", 0, "START: boxc_sender");
     list_add_producer(flow_threads);
 
@@ -144,16 +148,26 @@ static void *boxc_sender(void *arg)
 	if ((msg = list_consume(conn->incoming)) == NULL)
 	    break;
 
-	debug("bb", 0, "boxc_sender: sending message");
+	gw_assert((!conn->is_wap && msg_type(msg) == smart_sms)
+		                 ||
+		  (conn->is_wap && msg_type(msg) == wdp_datagram));
+	
+	
+
+	debug("bb.boxc", 0, "boxc_sender: sending message");
 	
         if (send_msg(conn->fd, msg) == -1) {
 	    /* if we fail to send, return msg to the list it came from
 	     * before dying off */
+	    debug("bb.boxc", 0, "send failed, let's assume that connection had died");
 	    list_produce(conn->retry, msg);
 	    break;
 	}
 	msg_destroy(msg);
     }
+    /* XXX the client should close the line, instead */
+    conn->alive = 0;
+    
     debug("bb.thread", 0, "EXIT: boxc_sender");
     list_remove_producer(flow_threads);
     return NULL;
@@ -170,6 +184,7 @@ static Boxc *boxc_create(int fd, char *ip)
     
     boxc = gw_malloc(sizeof(Boxc));
     boxc->is_wap = 0;
+    boxc->load = 0;
     boxc->fd = fd;
     boxc->id = boxid++;		/* XXX  MUTEX! fix later... */
     boxc->client_ip = octstr_create(ip);
@@ -314,7 +329,7 @@ static void *run_wapbox(void *arg)
     list_remove_producer(newconn->outgoing);
     list_delete_equal(wapbox_list, newconn);
 
-    if (newconn->alive)
+    while (list_producer_count(newlist) > 0)
 	list_remove_producer(newlist);
 
     newconn->alive = 0;
@@ -447,10 +462,11 @@ static void *wdp_to_wapboxes(void *arg)
 	}
 	list_produce(conn->incoming, msg);
     }
-    while((ap = list_consume(route_info)) != NULL)
+    debug("bb", 0, "wdp_to_wapboxes: destroying lists");
+    while((ap = list_extract_first(route_info)) != NULL)
 	ap_destroy(ap);
     list_destroy(route_info);
-    while((conn = list_consume(wapbox_list)) != NULL) {
+    while((conn = list_extract_first(wapbox_list)) != NULL) {
 	list_remove_producer(conn->incoming);
 	conn->alive = 0;
     }
@@ -650,4 +666,14 @@ int wapbox_start(Config *config)
     return 0;
 }
 
+
+Octstr *boxc_status(void)
+{
+    char tmp[512];
+
+    sprintf(tmp, "Total %ld wapbox and %ld smsbox connections",
+	    list_len(wapbox_list), list_len(smsbox_list));
+
+    return octstr_create(tmp);
+}
 

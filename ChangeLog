@@ -1,3 +1,10 @@
+2000-05-16    <Kalle Marjola <rpr@wapit.com>>
+
+	* gwlib/list.c|h: added function list_producer_count
+
+	* gw/bb_*.c: smsc thingies are now somehow working. Does not work
+	very well with multiple smsces, however.
+
 2000-05-16  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: Memory leaks with variables removed. 

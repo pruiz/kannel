@@ -70,17 +70,18 @@ static void *sms_receiver(void *arg)
 
 	list_consume(isolated);	/* block here if suspended/isolated */
 
-	// XXX mutexes etc are needed, I think?
-
 	ret = smsc_get_message(conn->smsc, &tmp);
 	if (ret == -1)
 	    break;
 
 	if (ret == 1) {
-	    msg = tmp->msg;
+	    msg = msg_duplicate(tmp->msg);
+	    gw_assert(msg_type(msg) == smart_sms);
 	    rqi_delete(tmp);
 	    list_produce(incoming_sms, msg);
 	    /* number normalization? in smsc..? */
+
+	    debug("bb.sms", 0, "smsc: new message received");
 	}
 	else
 	    sleep(1);
@@ -112,12 +113,15 @@ static void *sms_sender(void *arg)
 	if ((msg = list_consume(conn->outgoing_list)) == NULL)
 	    break;
 
+	debug("bb.sms", 0, "sms_sender: sending message");
+	
 	tmp = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
 	tmp->msg = msg;
 	ret = smsc_send_message(conn->smsc, tmp, NULL);
 	
 	/* there should be implicit destroy in sending */
     }
+    debug("bb", 0, "sms_sender: done, waiting in join");
     
     if (pthread_join(conn->receiver, NULL) != 0)
 	error(0, "Join failed in sms_sender");
@@ -158,8 +162,10 @@ static void *sms_router(void *arg)
 	for (i=0; i < list_len(smsc_list); i++) {
 	    si = list_get(smsc_list, i);
 
-	    /* here we _should_ have some good routing system */
+	    /* XXX here we _should_ have some good routing system */
 	    {
+		debug("bb", 0, "sms_router: adding message to <%s>",
+		      smsc_name(si->smsc));
 		list_produce(si->outgoing_list, msg);
 		break;
 	    }
@@ -185,6 +191,7 @@ static Smsc *create_new_smsc(ConfigGroup *grp)
 	return NULL;
     }
     si->outgoing_list = list_create();
+    list_add_producer(si->outgoing_list);
     
     if ((int)(si->receiver = start_thread(0, sms_receiver, si, 0)) == -1)
 	goto error;

@@ -258,6 +258,15 @@ void list_add_producer(List *list) {
 }
 
 
+int list_producer_count(List *list) {
+        int ret;
+	lock(list);
+	ret = list->num_producers;
+	unlock(list);
+	return ret;
+}
+
+
 void list_remove_producer(List *list) {
 	lock(list);
 	gw_assert(list->num_producers > 0);
