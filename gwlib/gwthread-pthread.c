@@ -145,15 +145,8 @@ static void delete_threadinfo(void) {
 	threadinfo = getthreadinfo();
 	pthread_cond_broadcast(&threadinfo->exiting);
 	pthread_cond_destroy(&threadinfo->exiting);
-	
-	/* Cleanup system resources
-	 * Linux treats threads as processes so cleans things up when
-	 * they exit.  Other platforms do not.
-	 */
 	close(threadinfo->wakefd_send);
 	close(threadinfo->wakefd_recv);
-
-
 	/* The main thread may still try call gwthread_self, when
 	 * logging stuff.  So we need to set this to a safe value. */
 	pthread_setspecific(tsd_key, NULL);

@@ -484,6 +484,11 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 
 	smsc = NULL;
 
+	if (type == NULL) {
+		error(0, "Required field 'smsc' missing for smsc group.");
+		return NULL;
+	}
+
 	if (strcmp(type, "fake") == 0) typeno = SMSC_TYPE_FAKE;
 	else if (strcmp(type, "cimd") == 0) typeno = SMSC_TYPE_CIMD;
 	else if (strcmp(type, "cimd2") == 0) typeno = SMSC_TYPE_CIMD2;

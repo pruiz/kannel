@@ -1,3 +1,11 @@
+2000-05-29  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc.c: Made bearerbox not crash if "smsc" field is missing
+	from smsc config.
+
+	* gwlib/gwthread-pthread.c: Comment around previous change was
+	inaccurate; it was an fd leak on Linux too.
+
 2000-05-29  Derry Hamilton  <rasilon@tardis.ed.ac.uk>
 
 	* gwlib/gwthread-pthread.c: Added some system cleanups to 
