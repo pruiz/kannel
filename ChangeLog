@@ -1,3 +1,7 @@
+2001-04-10  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsbox.c: Add no-cache headers to sendsms replies.
+
 2001-04-05  Uoti Urpala  <uau@wapit.com>
 
 	* gwlib/http.c: Fixed a bug in the sending of HTTP replies. It was

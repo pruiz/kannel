@@ -1490,6 +1490,8 @@ static void sendsms_thread(void *arg)
 
     reply_hdrs = http_create_empty_headers();
     http_header_add(reply_hdrs, "Content-type", "text/html");
+    http_header_add(reply_hdrs, "Pragma", "no-cache");
+    http_header_add(reply_hdrs, "Cache-Control", "no-cache");
 
     for (;;) {
     	client = http_accept_request(sendsms_port, &ip, &url, &hdrs, &body, 
