@@ -1,7 +1,8 @@
 Basic Installation
 ==================
 
-   These are generic installation instructions.
+   These are generic installation instructions. For platform specific
+instructions please see the files in the doc/platforms directory.
 
    The `configure' shell script attempts to guess correct values for
 various system-dependent variables used during compilation.  It uses
