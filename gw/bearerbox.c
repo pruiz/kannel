@@ -537,7 +537,7 @@ Octstr *bb_print_status(int xml)
 {
     char *s;
     char buf[1024];
-    Octstr *ret, *str;
+    Octstr *ret, *str, *version;
     time_t t;
 
     if (xml) {
@@ -559,11 +559,13 @@ Octstr *bb_print_status(int xml)
     default:
 	s = "going down";
     }
-    sprintf(buf, "<p>Kannel version %s %s (up %ldd %ldh %ldm %lds), %d threads</p>"
+    version = version_report_string("");
+    sprintf(buf, "<p>%s</p><p>Status: uptime %ldd %ldh %ldm %lds, %s, %d threads</p>"
 	    "<p>WDP: received %ld (%ld still in queue), sent %ld (%ld still in queue)</p>"
 	    "<p>SMS: received %ld (%ld still in queue), sent %ld (%ld still in queue)</p>"
 	    "<p>",
-	    VERSION, s, t/3600/24, t/3600%24, t/60%60, t%60,
+	    octstr_get_cstr(version),
+	    t/3600/24, t/3600%24, t/60%60, t%60, s,
 	    list_producer_count(flow_threads),
 	    counter_value(incoming_wdp_counter),
 	    list_len(incoming_wdp) + boxc_incoming_wdp_queue(),
@@ -574,6 +576,7 @@ Octstr *bb_print_status(int xml)
 	    counter_value(outgoing_sms_counter),
 	    list_len(outgoing_sms) + smsc_outgoing_queue());
 
+    octstr_destroy(version);
     ret = octstr_create(buf);
 
     append_status(ret, str, boxc_status, xml);

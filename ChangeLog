@@ -1,3 +1,7 @@
+2000-10-18  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bearerbox.c: Use new report_version in HTTP admin status, too.
+
 2000-10-18  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/shared.[ch]: Added function version_report_string so that the
