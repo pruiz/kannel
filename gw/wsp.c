@@ -170,9 +170,9 @@ void wsp_dispatch_event(WTPMachine *wtp_sm, WSPEvent *event) {
 	WSPMachine *sm;
 	
 	/* XXX this should probably be moved to a condition function --liw */
-	if (event->type == TRInvokeIndication &&
-	    event->TRInvokeIndication.tcl == 2 &&
-	    wsp_deduce_pdu_type(event->TRInvokeIndication.user_data, 0) == Connect_PDU) {
+	if (event->type == TR_Invoke_Ind &&
+	    event->TR_Invoke_Ind.tcl == 2 &&
+	    wsp_deduce_pdu_type(event->TR_Invoke_Ind.user_data, 0) == Connect_PDU) {
 		/* Client wants to start new session. Igore existing
 		   machines. */
 		sm = NULL;
@@ -296,17 +296,17 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 			}
 		#include "wsp_state-decl.h"
 		
-		if (current_event->type == TRInvokeIndication) {
+		if (current_event->type == TR_Invoke_Ind) {
 			WTPEvent *abort;
 			
 			error(0, "WSP: Can't handle TR-Invoke.ind, aborting transaction.");
-			abort = wtp_event_create(TRAbortRequire);
-			abort->TRAbortRequire.tid = 
-				current_event->TRInvokeIndication.machine->tid;
-			abort->TRAbortRequire.abort_type = 0x01; /* USER */
-			abort->TRAbortRequire.abort_reason = 0x01; /* PROTOERR */
+			abort = wtp_event_create(TR_Abort_Req);
+			abort->TR_Abort_Req.tid = 
+				current_event->TR_Invoke_Ind.machine->tid;
+			abort->TR_Abort_Req.abort_type = 0x01; /* USER */
+			abort->TR_Abort_Req.abort_reason = 0x01; /* PROTOERR */
 
-			wtp_handle_event(current_event->TRInvokeIndication.machine,
+			wtp_handle_event(current_event->TR_Invoke_Ind.machine,
 					 abort);
 			sm->client_port = -1;
 		} else {

@@ -34,7 +34,7 @@ ROW(LISTEN,
     {
      machine->u_ack = event->RcvInvoke.up_flag;
      machine->tcl = event->RcvInvoke.tcl;
-     current_primitive = TRInvokeIndication;
+     current_primitive = TR_Invoke_Ind;
 
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      debug("wap.wtp", 0, "Sending TR-Invoke.ind to WSP, tid being valid");
@@ -57,7 +57,7 @@ ROW(LISTEN,
     
      machine->u_ack = event->RcvInvoke.up_flag;
      machine->tcl = event->RcvInvoke.tcl;
-     current_primitive = TRInvokeIndication;
+     current_primitive = TR_Invoke_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      machine->invoke_indication = wsp_event;
      debug("wtp", 0, "generating invoke indication, tid being invalid");
@@ -69,7 +69,7 @@ ROW(LISTEN,
     RcvInvoke,
     event->RcvInvoke.tcl == 0,
     {
-     current_primitive = TRInvokeIndication;
+     current_primitive = TR_Invoke_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      debug("wap.wtp", 0, "RcvInvoke: generated TR-Invoke.ind for WSP");
      wsp_dispatch_event(machine, wsp_event);
@@ -86,7 +86,7 @@ ROW(LISTEN,
     LISTEN)
 
 ROW(LISTEN,
-    TRAbortRequire,
+    TR_Abort_Req,
     1,
     {
      wtp_machine_mark_unused(machine);
@@ -150,7 +150,7 @@ ROW(INVOKE_RESP_WAIT,
     INVOKE_RESP_WAIT)
 
 ROW(INVOKE_RESP_WAIT,
-    TRInvokeResponse,
+    TR_Invoke_Res,
     machine->tcl == 2,
     { 
      wtp_timer_stop(machine->timer);
@@ -163,7 +163,7 @@ ROW(INVOKE_RESP_WAIT,
     RcvAbort,
     1,
     {
-     current_primitive = TRAbortIndication;
+     current_primitive = TR_Abort_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      /*wsp_dispatch_event(machine, wsp_event);*/
      wtp_timer_destroy(machine->timer);
@@ -172,12 +172,12 @@ ROW(INVOKE_RESP_WAIT,
     LISTEN)
 
 ROW(INVOKE_RESP_WAIT,
-    TRAbortRequire,
+    TR_Abort_Req,
     1,
     { 
      wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TRAbortRequire.abort_type, event->TRAbortRequire.abort_reason,
+     wtp_send_abort(event->TR_Abort_Req.abort_type, event->TR_Abort_Req.abort_reason,
                     machine, event); 
     },
     LISTEN)
@@ -187,7 +187,7 @@ ROW(INVOKE_RESP_WAIT,
  * possible resending.
  */
 ROW(INVOKE_RESP_WAIT,
-    TRResultRequire,
+    TR_Result_Req,
     1,
     {
      machine->rcr = 0;
@@ -236,7 +236,7 @@ ROW(INVOKE_RESP_WAIT,
      wtp_machine_mark_unused(machine);
      wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
      
-     current_primitive = TRAbortIndication;
+     current_primitive = TR_Abort_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      /*wsp_dispatch_event(machine, wsp_event);*/
     },
@@ -247,7 +247,7 @@ ROW(INVOKE_RESP_WAIT,
  * possible resending.
  */
 ROW(RESULT_WAIT,
-    TRResultRequire,
+    TR_Result_Req,
     1,
     {
      machine->rcr = 0;
@@ -265,7 +265,7 @@ ROW(RESULT_WAIT,
     RcvAbort,
     1,
     {
-     current_primitive = TRAbortIndication;
+     current_primitive = TR_Abort_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      /*wsp_dispatch_event(machine, wsp_event);*/
      wtp_timer_destroy(machine->timer);
@@ -296,12 +296,12 @@ ROW(RESULT_WAIT,
     RESULT_WAIT)
 
 ROW(RESULT_WAIT,
-    TRAbortRequire,
+    TR_Abort_Req,
     1,
     { 
      wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TRAbortRequire.abort_type, event->TRAbortRequire.abort_reason,
+     wtp_send_abort(event->TR_Abort_Req.abort_type, event->TR_Abort_Req.abort_reason,
                     machine, event); 
     },
     LISTEN)
@@ -314,7 +314,7 @@ ROW(RESULT_WAIT,
      wtp_machine_mark_unused(machine);
      wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
      
-     current_primitive = TRAbortIndication;
+     current_primitive = TR_Abort_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      /*wsp_dispatch_event(machine, wsp_event);*/
     },
@@ -330,7 +330,7 @@ ROW(RESULT_RESP_WAIT,
     RcvAck,
     1,
     {
-     current_primitive = TRResultConfirmation;
+     current_primitive = TR_Result_Cnf;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      wsp_dispatch_event(machine, wsp_event);
      wtp_timer_destroy(machine->timer);
@@ -342,7 +342,7 @@ ROW(RESULT_RESP_WAIT,
     RcvAbort,
     1,
     {
-     current_primitive = TRAbortIndication;
+     current_primitive = TR_Abort_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      /*wsp_dispatch_event(machine, wsp_event);*/
      wtp_timer_destroy(machine->timer);
@@ -351,12 +351,12 @@ ROW(RESULT_RESP_WAIT,
     LISTEN)
 
 ROW(RESULT_RESP_WAIT,
-    TRAbortRequire,
+    TR_Abort_Req,
     1,
     { 
      wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TRAbortRequire.abort_type, event->TRAbortRequire.abort_reason,
+     wtp_send_abort(event->TR_Abort_Req.abort_type, event->TR_Abort_Req.abort_reason,
                     machine, event); 
     },
     LISTEN)
@@ -381,7 +381,7 @@ ROW(RESULT_RESP_WAIT,
     RcvInvoke,
     machine->rcr == MAX_RCR,
     {
-     current_primitive = TRAbortIndication;
+     current_primitive = TR_Abort_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      /*wsp_dispatch_event(machine, wsp_event);*/
      wtp_machine_mark_unused(machine);
@@ -418,7 +418,7 @@ ROW(RESULT_RESP_WAIT,
     TimerTO_R,
     machine->rcr == MAX_RCR,
     {
-     current_primitive = TRAbortIndication;
+     current_primitive = TR_Abort_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      /*wsp_dispatch_event(machine, wsp_event);*/
      wtp_timer_destroy(machine->timer);
@@ -435,7 +435,7 @@ ROW(RESULT_RESP_WAIT,
      wtp_machine_mark_unused(machine);
      wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
      
-     current_primitive = TRAbortIndication;
+     current_primitive = TR_Abort_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      /*wsp_dispatch_event(machine, wsp_event);*/
     },

@@ -15,7 +15,7 @@
 
 
 
-WSP_EVENT(TRInvokeIndication,
+WSP_EVENT(TR_Invoke_Ind,
           {
           INTEGER(ack_type);
           OCTSTR(user_data);
@@ -25,7 +25,7 @@ WSP_EVENT(TRInvokeIndication,
           WTP_MACHINE(machine);
 	  })
 
-WSP_EVENT(TRInvokeConfirmation,
+WSP_EVENT(TR_Invoke_Cnf,
           {
           OCTSTR(exit_info);
           INTEGER(exit_info_present);
@@ -34,7 +34,7 @@ WSP_EVENT(TRInvokeConfirmation,
           WTP_MACHINE(machine);
           })
 
-WSP_EVENT(TRResultConfirmation,
+WSP_EVENT(TR_Result_Cnf,
 	  {
           OCTSTR(exit_info);
           INTEGER(exit_info_present);
@@ -43,7 +43,7 @@ WSP_EVENT(TRResultConfirmation,
           WTP_MACHINE(machine);
           })
 
-WSP_EVENT(TRAbortIndication,
+WSP_EVENT(TR_Abort_Ind,
           {
           INTEGER(abort_code);
           INTEGER(wsp_pdu);
@@ -51,14 +51,7 @@ WSP_EVENT(TRAbortIndication,
           WTP_MACHINE(machine);
           })
 
-WSP_EVENT(SMethodAbortRequire,
-          {
-          INTEGER(abort_code);
-          INTEGER(wsp_tid);
-          WTP_MACHINE(machine);
-          })
-
-WSP_EVENT(SConnectResponse,
+WSP_EVENT(S_Connect_Res,
 	  {
 	  WTP_MACHINE(machine); /* XXX this is a kludge */
 	  OCTSTR(server_headers);
@@ -73,7 +66,7 @@ WSP_EVENT(Release,
 	  })
 
 #if 0
-WSP_EVENT(SMethodInvokeIndication,
+WSP_EVENT(S_MethodInvoke_Ind,
 	  {
 	  WTP_MACHINE(machine);
 	  OCTSTR(url);
@@ -82,7 +75,7 @@ WSP_EVENT(SMethodInvokeIndication,
 	  })
 #endif
 
-WSP_EVENT(SMethodInvokeResult,
+WSP_EVENT(S_MethodInvoke_Res,
 	  {
 	  WTP_MACHINE(machine);
 	  OCTSTR(url);
@@ -92,7 +85,7 @@ WSP_EVENT(SMethodInvokeResult,
 	  SESSION_MACHINE(session);
 	  })
 
-WSP_EVENT(SMethodResultRequest,
+WSP_EVENT(S_MethodResult_Req,
 	  {
 	  INTEGER(server_transaction_id);
 	  INTEGER(status);

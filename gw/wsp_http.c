@@ -244,13 +244,13 @@ void *wsp_http_thread(void *arg) {
 	debug("wap.wsp.http", 0, "WSP: wsp_http_thread starts");
 
 	event = arg;
-	wtp_sm = event->SMethodInvokeResult.machine;
-	sm = event->SMethodInvokeResult.session;
+	wtp_sm = event->S_MethodInvoke_Res.machine;
+	sm = event->S_MethodInvoke_Res.session;
 	debug("wap.wsp.http", 0, "WSP: Sending S-MethodInvoke.Res to WSP");
 	wsp_dispatch_event(wtp_sm, event);
 
-	wsp_http_map_url(&event->SMethodInvokeResult.url);
-	url = octstr_get_cstr(event->SMethodInvokeResult.url);
+	wsp_http_map_url(&event->S_MethodInvoke_Res.url);
+	url = octstr_get_cstr(event->S_MethodInvoke_Res.url);
 	debug("wap.wsp.http", 0, "WSP: url is <%s>", url);
 
 	body = NULL;
@@ -265,7 +265,7 @@ void *wsp_http_thread(void *arg) {
 			headers = new_h;
 		last = new_h;
 	}
-	for (h = event->SMethodInvokeResult.http_headers; h != NULL; h = h->next) {
+	for (h = event->S_MethodInvoke_Res.http_headers; h != NULL; h = h->next) {
 		new_h = header_create(h->key, h->value);
 		if (last != NULL)
 			last->next = new_h;
@@ -354,7 +354,7 @@ void *wsp_http_thread(void *arg) {
 		body_size = 0;
 	else
 		body_size = octstr_len(body);
-	client_SDU_size = event->SMethodInvokeResult.session->client_SDU_size;
+	client_SDU_size = event->S_MethodInvoke_Res.session->client_SDU_size;
 
 	if (body != NULL && body_size > client_SDU_size) {
 		status = 413; /* XXX requested entity too large */
@@ -364,16 +364,16 @@ void *wsp_http_thread(void *arg) {
 		type = "text/plain";
 	}
 
-	e = wsp_event_create(SMethodResultRequest);
-	e->SMethodResultRequest.server_transaction_id = 
-		event->SMethodInvokeResult.server_transaction_id;
-	e->SMethodResultRequest.status = status;
-	e->SMethodResultRequest.response_type = encode_content_type(type);
-	e->SMethodResultRequest.response_body = body;
-	e->SMethodResultRequest.machine = event->SMethodInvokeResult.machine;
+	e = wsp_event_create(S_MethodResult_Req);
+	e->S_MethodResult_Req.server_transaction_id = 
+		event->S_MethodInvoke_Res.server_transaction_id;
+	e->S_MethodResult_Req.status = status;
+	e->S_MethodResult_Req.response_type = encode_content_type(type);
+	e->S_MethodResult_Req.response_body = body;
+	e->S_MethodResult_Req.machine = event->S_MethodInvoke_Res.machine;
 
 	debug("wap.wsp.http", 0, "WSP: sending S-MethodResult.req to WSP");
-	wsp_dispatch_event(event->SMethodInvokeResult.machine, e);
+	wsp_dispatch_event(event->S_MethodInvoke_Res.machine, e);
 
 	debug("wap.wsp.http", 0, "WSP: wsp_http_thread ends");
 	return NULL;

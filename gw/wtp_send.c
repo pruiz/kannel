@@ -295,14 +295,14 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
  */  
  
     msg->wdp_datagram.user_data = 
-         octstr_duplicate(event->TRResultRequire.user_data);
+         octstr_duplicate(event->TR_Result_Req.user_data);
     
     octet = insert_pdu_type(RESULT, octet);
     octet = indicate_simple_message(octet);
     octet = insert_rid(machine->rid, octet);
     wtp_pdu[first_byte] = octet;
 
-    insert_tid(wtp_pdu, event->TRResultRequire.tid);
+    insert_tid(wtp_pdu, event->TR_Result_Req.tid);
 
     octstr_insert_data(msg->wdp_datagram.user_data, first_byte, wtp_pdu, 3);
     
@@ -333,7 +333,7 @@ static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason,
        octet = insert_abort_type(abort_type, octet);
        wtp_pdu[first_byte] = octet;
 
-       insert_tid(wtp_pdu, event->TRAbortRequire.tid);
+       insert_tid(wtp_pdu, event->TR_Abort_Req.tid);
 
        wtp_pdu[fourth_byte] = abort_reason;
 

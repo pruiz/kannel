@@ -706,7 +706,7 @@ static WTPMachine *wtp_machine_create_empty(void){
         #define ENUM(name) machine->name = LISTEN
         #define MSG(name) machine->name = msg_create(wdp_datagram)
         #define OCTSTR(name) machine->name = octstr_create_empty()
-        #define WSP_EVENT(name) machine->name = wsp_event_create(TRInvokeIndication)
+        #define WSP_EVENT(name) machine->name = wsp_event_create(TR_Invoke_Ind)
         #define MUTEX(name) machine->name = mutex_create()
         #define TIMER(name) machine->name = wtp_timer_create()
         #define NEXT(name) machine->name = NULL
@@ -833,37 +833,37 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
 
          switch (wsp_name){
                 
-	        case TRInvokeIndication:
-                     event->TRInvokeIndication.ack_type = machine->u_ack;
-                     event->TRInvokeIndication.user_data =
+	        case TR_Invoke_Ind:
+                     event->TR_Invoke_Ind.ack_type = machine->u_ack;
+                     event->TR_Invoke_Ind.user_data =
                             octstr_duplicate(wtp_event->RcvInvoke.user_data);
-                     event->TRInvokeIndication.tcl = wtp_event->RcvInvoke.tcl;
-                     event->TRInvokeIndication.wsp_tid = wtp_tid_next();
-                     event->TRInvokeIndication.machine = machine;
+                     event->TR_Invoke_Ind.tcl = wtp_event->RcvInvoke.tcl;
+                     event->TR_Invoke_Ind.wsp_tid = wtp_tid_next();
+                     event->TR_Invoke_Ind.machine = machine;
                 break;
 
-	        case TRInvokeConfirmation:
-                     event->TRInvokeConfirmation.wsp_tid =
-                            event->TRInvokeIndication.wsp_tid;
-                     event->TRInvokeConfirmation.machine = machine;
+	        case TR_Invoke_Cnf:
+                     event->TR_Invoke_Cnf.wsp_tid =
+                            event->TR_Invoke_Ind.wsp_tid;
+                     event->TR_Invoke_Cnf.machine = machine;
                 break;
                 
-	        case TRResultConfirmation:
-                     event->TRResultConfirmation.exit_info =
+	        case TR_Result_Cnf:
+                     event->TR_Result_Cnf.exit_info =
                             wtp_event->RcvInvoke.exit_info;
-                     event->TRResultConfirmation.exit_info_present =
+                     event->TR_Result_Cnf.exit_info_present =
                             wtp_event->RcvInvoke.exit_info_present;
-                     event->TRResultConfirmation.wsp_tid =
-                            event->TRInvokeIndication.wsp_tid;
-                     event->TRResultConfirmation.machine = machine;
+                     event->TR_Result_Cnf.wsp_tid =
+                            event->TR_Invoke_Ind.wsp_tid;
+                     event->TR_Result_Cnf.machine = machine;
                 break;
 
-	        case TRAbortIndication:
-                     event->TRAbortIndication.abort_code =
+	        case TR_Abort_Ind:
+                     event->TR_Abort_Ind.abort_code =
                             wtp_event->RcvAbort.abort_reason;
-                     event->TRResultConfirmation.wsp_tid =
-                            event->TRInvokeIndication.wsp_tid;
-                     event->TRAbortIndication.machine = machine;
+                     event->TR_Abort_Ind.wsp_tid =
+                            event->TR_Invoke_Ind.wsp_tid;
+                     event->TR_Abort_Ind.machine = machine;
                 break;
                 
 	        default:
@@ -1106,7 +1106,7 @@ static WTPEvent *tell_about_error(int type, WTPEvent *event, Msg *msg, long tid)
 
              case no_concatenation:
                   wtp_do_not_start(PROVIDER, UNKNOWN, address, tid);
-                  error(0, "WTP: No connectionless mode nor concatenation supported");
+                  error(0, "WTP: No concatenation supported");
                   gw_free(event);
              return NULL;
      }

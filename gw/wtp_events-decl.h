@@ -13,9 +13,9 @@
  * require. 
  *
  * Fields of an incoming message event corresponds directly with fields of the 
- * message itself. Same apply to the fields of events generates by WSP, they are
- * ones required by specification. However, timer events have a meaningless 
- * dummy field.
+ * message itself (omitting, of course, fields used solyly by WTP). Same apply 
+ * to the fields of events generates by WSP, they are ones required by specifica-
+ * tion. However, timer events have a meaningless dummy field.
  *
  * Data stored in an event is destroyed immediately after the event is handled.
  */
@@ -47,7 +47,7 @@ EVENT(RcvAck,
       INTEGER(rid);
       })
 
-EVENT(TRInvokeRequire,
+EVENT(TR_Invoke_Req,
       {
       OCTSTR(source_address);
       INTEGER(source_port);
@@ -58,20 +58,20 @@ EVENT(TRInvokeRequire,
       OCTSTR(user_data);
       })
 
-EVENT(TRInvokeResponse,
+EVENT(TR_Invoke_Res,
       {
       INTEGER(tid);
       OCTSTR(exit_info);
       INTEGER(exit_info_present);
       })
 
-EVENT(TRResultRequire,
+EVENT(TR_Result_Req,
       {
       INTEGER(tid);
       OCTSTR(user_data);
       })
 
-EVENT(TRAbortRequire,
+EVENT(TR_Abort_Req,
      {
      INTEGER(tid);
      INTEGER(abort_type);
