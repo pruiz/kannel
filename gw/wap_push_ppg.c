@@ -1495,7 +1495,7 @@ static void create_session(WAPEvent *e, PPGPushMachine *pm)
     if (dlr_url != NULL)
         ota_event->u.Pom_SessionRequest_Req.dlr_url = dlr_url;                                    
     else
-        ota_event->u.Pom_SessionRequest_Req.smsc_id = NULL;
+        ota_event->u.Pom_SessionRequest_Req.dlr_url = NULL;
     ota_event->u.Pom_SessionRequest_Req.dlr_mask = e->u.Push_Message.dlr_mask;
     if (smsbox_id != NULL)
         ota_event->u.Pom_SessionRequest_Req.smsbox_id = smsbox_id;

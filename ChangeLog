@@ -1,4 +1,7 @@
 2004-06-20  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/wap_push_ppg.c: fixed typo, see bug#114.
+
+2004-06-20  Alexander Malysh  <a.malysh@centrium.de> 
     * test/test_ppg.c: fixed bug #131.
 
 2004-06-16  Alexander Malysh  <a.malysh@centrium.de> 
