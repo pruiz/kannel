@@ -1,3 +1,11 @@
+2000-04-05  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/octstr.c, gwlib/octstr.h: Added new functions
+	octstr_binary_to_hex, octstr_hex_to_binary,
+	octstr_parse_long, octstr_check_range, and octstr_convert_range.
+	They compile fine and have been tested a little, but none
+	of them have been used in real code yet -- use with care.
+
 Thu Apr  6 17:52:16 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp_http.c: Add X_Network_Info and X-WAP-Session-ID headers.

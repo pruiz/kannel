@@ -272,6 +272,144 @@ char *octstr_get_cstr(Octstr *ostr) {
 }
 
 
+void octstr_binary_to_hex(Octstr *ostr, int uppercase) {
+        unsigned char *hexits;
+	long i;
+
+	seems_valid(ostr);
+        if (ostr->len == 0)
+                return;
+
+        hexits = uppercase ? "0123456789ABCDEF" : "0123456789abcdef";
+	octstr_grow(ostr, ostr->len * 2 + 1);
+
+	/* In-place modification must be done back-to-front to avoid
+	 * overwriting the data while we read it.  Even the order of
+	 * the two assignments is important, to get i == 0 right. */
+	for (i = ostr->len - 1; i >= 0; i--) {
+		ostr->data[i * 2 + 1] = hexits[ostr->data[i] % 16];
+		ostr->data[i * 2] = hexits[(ostr->data[i] / 16) & 0xf];
+	}
+
+	ostr->len = ostr->len * 2;
+	ostr->data[ostr->len] = '\0';
+
+	seems_valid(ostr);
+}
+
+
+int octstr_hex_to_binary(Octstr *ostr) {
+	long len, i;
+	unsigned char *p;
+
+	seems_valid(ostr);
+
+	/* Check if it's in the right format */
+	if (!octstr_check_range(ostr, 0, ostr->len, isxdigit))
+		return -1;
+
+	len = ostr->len;
+
+	/* Convert ascii data to binary values */
+	for (i = 0, p = ostr->data; i < len; i++, p++) {
+		if (*p >= '0' && *p <= '9')
+			*p -= '0';
+		else if (*p >= 'a' && *p <= 'f')
+			*p = *p - 'a' + 10;
+		else if (*p >= 'A' && *p <= 'F')
+			*p = *p - 'A' + 10;
+		else {
+			/* isxdigit checked the whole string, so we should
+			 * not be able to get here. */
+			gw_assert(0);
+			*p = 0;
+		}
+	}
+
+	/* De-hexing will compress data by factor of 2 */
+	len = ostr->len / 2;
+
+	for (i = 0; i < len; i++) {
+		ostr->data[i] = ostr->data[i*2] * 16 | ostr->data[i*2 + 1];
+	}
+
+	ostr->len = len;
+	ostr->data[len] = '\0';
+
+	seems_valid(ostr);
+	return 0;
+}
+
+
+long octstr_parse_long(long *nump, Octstr *ostr, long pos, int base) {
+	/* strtol wants a char *, and we have to compare the result to
+	 * an unsigned char *.  The easiest way to avoid warnings without
+	 * introducing typecasts is to use two variables. */
+	char *endptr;
+	unsigned char *endpos;
+	long number;
+
+	seems_valid(ostr);
+	gw_assert(nump != NULL);
+	gw_assert(base == 0 || (base >= 2 && base <= 36));
+
+	if (pos >= ostr->len) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	errno = 0;
+	number = strtol(ostr->data + pos, &endptr, base);
+	endpos = endptr;
+	if (errno == ERANGE)
+		return -1;
+	if (endpos == ostr->data + pos) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	*nump = number;
+	return endpos - ostr->data;
+}
+
+
+int octstr_check_range(Octstr *ostr, long pos, long len, octstr_func_t filter) {
+	long till = pos + len;
+
+	seems_valid(ostr);
+
+	if (pos >= ostr->len)
+		return 1;
+	if (till >= ostr->len)
+		till = ostr->len - 1;
+
+	for ( ; pos <= till; pos++) {
+		if (!filter(ostr->data[pos]))
+			return 0;
+	}
+
+	return 1;
+}
+
+
+void octstr_convert_range(Octstr *ostr, long pos, long len, octstr_func_t map) {
+	long till = pos + len;
+
+	seems_valid(ostr);
+
+	if (pos >= ostr->len)
+		return;
+	if (till >= ostr->len - 1)
+		till = ostr->len;
+
+	for ( ; pos <= till; pos++) {
+		ostr->data[pos] = map(ostr->data[pos]);
+	}
+
+	seems_valid(ostr);
+}
+
+
 int octstr_compare(Octstr *ostr1, Octstr *ostr2) {
 	int ret;
 	long len;

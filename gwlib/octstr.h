@@ -131,6 +131,53 @@ void octstr_get_many_chars(void *buf, Octstr *ostr, long pos, long len);
 char *octstr_get_cstr(Octstr *ostr);
 
 
+/* Convert the octet string in-place to printable hexadecimal format.
+ * "xyz" would be converted to "78797a".  If the uppercase
+ * flag is set, 'A' through 'F' are used instead of 'a' through 'f'.
+ */
+void octstr_binary_to_hex(Octstr *ostr, int uppercase);
+
+
+/* Convert the octet string in-place from printable hexadecimal
+ * format to binary.  "78797a" or "78797A" would be converted to "xyz".
+ * If the string is not in the expected format, return -1 and leave
+ * the string unchanged.  If all was fine, return 0. */
+int octstr_hex_to_binary(Octstr *ostr);
+
+
+/* Parse a number at position 'pos' in 'ostr', using the same rules as
+ * strtol uses regarding 'base'.  Skip leading whitespace.
+ * 
+ * Return the position of the first character after the number,
+ * or -1 if there was an error.  Return the length of the octet string
+ * if the number ran to the end of the string.
+ * 
+ * Assign the number itself to the location pointed to by 'number', if
+ * there was no error.
+ * 
+ * Possible errno values in case of an error:
+ *    ERANGE    The number did not fit in a long.
+ *    EINVAL    No digits of the appropriate base were found.
+ */
+long octstr_parse_long(long *number, Octstr *ostr, long pos, int base);
+
+
+/* Run the 'filter' function over each character in the specified range.
+ * Return 1 if the filter returned true for all characters, otherwise 0.
+ * The octet string is not changed.
+ * For example: ok = octstr_check_range(o, 1, 10, isdigit);
+ */
+typedef int (*octstr_func_t)(int);
+int octstr_check_range(Octstr *ostr, long pos, long len, octstr_func_t filter);
+
+
+/* Run the 'map' function over each character in the specified range,
+ * replacing each character with the return value of that function.
+ * For example: octstr_convert_range(o, 1, 10, tolower);
+ */
+void octstr_convert_range(Octstr *ostr, long pos, long len, octstr_func_t map);
+
+
 /*
  * Compare two octet strings, returning 0 if they are equal, negative if
  * `ostr1' is less than `ostr2' (when compared octet-value by octet-value),
