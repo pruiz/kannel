@@ -1,3 +1,11 @@
+2002-02-21  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_at2.c: fixing memory leak
+      reported by: "Oded Arbel" <oded@m-wise.com>
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B166D80@exchange.m-wise.com>]
+    * gw/smsbox.c, gwlib/http.c: fixing memory leaks
+      reported by: "Nektarios K. Papadopoulos" <npapadop@inaccessnetworks.com>
+      [Msg-ID: <3C73F986.58353A9F@inaccessnetworks.com>]
+
 2002-02-20  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_at2.c: fixing a list_search() mistake
       reported by: "Nektarios K. Papadopoulos" <npapadop@inaccessnetworks.com>
