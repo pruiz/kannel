@@ -1,6 +1,9 @@
 1999-01-12 Aarno Syvänen <syvanen@wapit.com>
 
-	* fixed a bug in wtp_machine_find
+	* wtp.c: fixed a bug in wtp_machine_find (now it actually does find 
+	a machine)
+
+	* purely estetical changes everywhere (prettier comments, etc.)
 
 1999-30-11 Aarno Syvänen <syvanen@wapit.com>
 
