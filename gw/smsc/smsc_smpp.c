@@ -342,7 +342,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
 
     if (smpp->autodetect_addr) {
         /* lets see if its international or alphanumeric sender */ 
-        if (octstr_get_char(pdu->u.submit_sm.source_addr,0) == '+') { 
+        if (octstr_get_char(pdu->u.submit_sm.source_addr, 0) == '+') { 
             if (!octstr_check_range(pdu->u.submit_sm.source_addr, 1, 256, gw_isdigit)) { 
                 pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_ALPHANUMERIC; /* alphanum */ 
                 pdu->u.submit_sm.source_addr_npi = GSM_ADDR_NPI_UNKNOWN;    /* short code */ 
@@ -1269,7 +1269,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     my_number = alt_charset = NULL; 
     transceiver_mode = 0;
     alt_dcs = 0;
-    autodetect_addr = 0;
+    autodetect_addr = 1;
  
     host = cfg_get(grp, octstr_imm("host")); 
     if (cfg_get_integer(&port, grp, octstr_imm("port")) == -1) 

@@ -2523,8 +2523,9 @@ address-range = ""
       <entry><literal>boolean</literal></entry>
       <entry valign=bottom>
       Optional, if defined tries to scan the source address and 
-		set TON and NPI settings accordingly.
-		(Defaults to no).
+		set TON and NPI settings accordingly. If you don't want to autodetect
+		the source address, turn this off, by setting it to no.
+		(Defaults to yes).
      </entry></row>
 
     <row><entry><literal>dest-addr-ton</literal></entry>
