@@ -22,4 +22,13 @@ struct tm gw_gmtime(time_t t);
 int gw_rand(void);
 int gw_gethostbyname(struct hostent *ret, const char *name);
 
+/*
+ * Make it harder to use these by mistake.
+ */
+#define localtime(t) do_not_use_localtime_directly
+#define gmtime(t) do_not_use_gmtime_directly
+#define rand() do_not_use_rand_directly
+#define gethostbyname() do_not_use_gethostbyname_directly
+
+
 #endif

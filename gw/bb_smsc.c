@@ -262,7 +262,7 @@ static void sms_router(void *arg)
 
 	list_lock(smsc_list);
 
-	s = rand() % list_len(smsc_list);
+	s = gw_rand() % list_len(smsc_list);
 	number = octstr_get_cstr(msg->sms.receiver);
 	backup = NULL;
 	

@@ -9,6 +9,15 @@
 #include "gwlib.h"
 
 
+/*
+ * Undefine the accident protectors.
+ */
+#undef localtime
+#undef gmtime
+#undef rand
+#undef gethostbyname
+
+
 enum {
     LOCALTIME,
     GMTIME,

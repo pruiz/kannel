@@ -28,6 +28,14 @@
 #include "ws.h"
 #include "gwlib/gwlib.h"
 
+
+/* XXX This module, as well, should use the gwmem wrappers. We'll change
+   this later. --liw */
+#undef malloc
+#undef realloc
+#undef free
+
+
 /********************* Prototypes for static functions ******************/
 
 /* Print usage message to the stdout. */

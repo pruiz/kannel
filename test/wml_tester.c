@@ -87,7 +87,7 @@ int main(int argc, char **argv)
     panic(0, "Couldn't read WML source file.");
 
   if (zero)
-    octstr_set_char(wml_text, (1 + (int) (octstr_len(wml_text)*rand()/
+    octstr_set_char(wml_text, (1 + (int) (octstr_len(wml_text)*gw_rand()/
 						    (RAND_MAX+1.0))), '\0');
 
   ret = wml_compile(wml_text, charset, &wml_binary);

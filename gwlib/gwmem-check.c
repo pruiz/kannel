@@ -38,6 +38,12 @@
 
 #include "gwlib.h"
 
+/* In this module, we must use the real versions so let's undefine the
+ * accident protectors. */
+#undef malloc
+#undef realloc
+#undef free
+
 /* Freshly malloced space is filled with NEW_AREA_PATTERN, to break
  * code that assumes it is filled with zeroes. */
 #define NEW_AREA_PATTERN 0xcafebabe

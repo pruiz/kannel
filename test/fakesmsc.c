@@ -64,7 +64,7 @@ static void write_line(int fd, char *line) {
 /* Choose a random message from a table of messages. */
 static char *choose_message(char **msgs, int num_msgs) {
     /* the following doesn't give an even distribution, but who cares */
-    return msgs[rand() % num_msgs];
+    return msgs[gw_rand() % num_msgs];
 }
 
 

@@ -10,6 +10,13 @@
 
 #include "gwlib.h"
 
+/* 
+ * In this module, we must use the real versions so let's undefine the
+ * accident protectors. 
+ */
+#undef malloc
+#undef realloc
+#undef free
 
 void *gw_native_malloc(size_t size)
 {

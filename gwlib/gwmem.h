@@ -87,4 +87,14 @@ void *gw_check_claim_area(void *p,
 #endif
 
 
+/*
+ * Make sure no-one uses the unwrapped functions by mistake.
+ */
+
+#define malloc(n)	do_not_call_malloc_directly
+#define calloc(a, b)	do_not_use_calloc
+#define realloc(p, n)	do_not_call_realloc_directly
+#define free(p)	    	do_not_call_free_directly
+
+
 #endif

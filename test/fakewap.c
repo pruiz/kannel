@@ -223,7 +223,7 @@ static void print_msg( const char * trace, unsigned char * msg,
 /* Choose a random message from a table of messages. */
 static char *choose_message(char **urls, int num_urls) {
     /* the following doesn't give an even distribution, but who cares */
-    return urls[rand() % num_urls];
+    return urls[gw_rand() % num_urls];
 }
 
 

@@ -1,5 +1,20 @@
 2000-10-23  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/gwmem.h, gwlib/protected.h: Wrote macros to make it
+	harder to call the wrapped functions directly.
+
+	* gwlib/gwmem-check.c, gwlib/gwmem-native.c, gwlib/protected.c:
+	Call the wrapped functions anyway. :)
+
+	* gw/bb_smsc.c, test/fakesmsc.c, test/fakewap.c,
+	test/test_cimd2.c, test/wml_tester.c: Use wrappers instead of
+	direct calls to the wrapped functions.
+	
+	* wmlscript/wmlsc.c: Undefine the accident protectors and call
+	the wrapped functions directly. This needs to be fixed later.
+
+2000-10-23  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/utils.[ch]: Wrote gw_isdigit and gw_isxdigit as wrappers
 	around isdigit and isxdigit, to compensate for broken platforms
 	where they are not available as functions.
