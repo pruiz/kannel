@@ -4561,7 +4561,7 @@ bearerbox-host = localhost
      <para>Push proxy gateway is started by simply typing, using separate 
      windows:
      <screen><userinput>
-      gw/bearerbox [confile]
+      gw/bearerbox [conffile]
       gw/wapbox [conffile]
      </userinput></screen>
      You can, of course, use more complex command line options.</para>
@@ -4848,7 +4848,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
                 si-id="1@wiral.com"
                 action="signal-medium"
                 created="1999-06-25T15:23:15Z"
-                si-expires="2002-06-30T00:00:00"&#62;
+                si-expires="2002-06-30T00:00:00Z"&#62;
                 Want to test a fetch?
     &#60;/indication&#62;
 &#60;/si&#62;
