@@ -85,7 +85,7 @@ STATE_NAME(WAIT_TIMEOUT)
 ROW(LISTEN,
     RcvInvoke,
     (event->RcvInvoke.tcl == 2 || event->RcvInvoke.tcl == 1) &&
-    event->RcvInvoke.up_flag == 1 && wtp_tid_is_valid(event, machine) == ok,
+    wtp_tid_is_valid(event, machine) == ok,
     {
      machine->u_ack = event->RcvInvoke.up_flag;
      machine->tcl = event->RcvInvoke.tcl;
@@ -102,7 +102,6 @@ ROW(LISTEN,
 ROW(LISTEN,
     RcvInvoke,
     (event->RcvInvoke.tcl == 2 || event->RcvInvoke.tcl == 1) &&
-    event->RcvInvoke.up_flag == 1 && 
     (wtp_tid_is_valid(event, machine) == fail || 
      wtp_tid_is_valid(event, machine) == no_cached_tid),
     { 
@@ -113,7 +112,7 @@ ROW(LISTEN,
      machine->tcl = event->RcvInvoke.tcl;
      current_primitive = TR_Invoke_Ind;
      machine->invoke_indication = pack_wsp_event(current_primitive, event, machine);
-     debug("wap.wtp", 0, "generating invoke indication, tid being invalid");
+     debug("wap.wtp", 0, "WTP_STAE: generating invoke indication, tid being invalid");
      machine->rid = 1;
     },
     TIDOK_WAIT)
