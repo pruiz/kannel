@@ -1,4 +1,11 @@
 2003-03-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added CIMD2 specific documentation for 
+      Angel's latest CIMD2 re-design patch.
+    * gw/smsc/smsc_cimd2.c: Angel's fix for CPU load consume while idle and
+      minor changes.
+      [Msg-ID: <NCEOLLKPFAEAOBBMHNHEMELPFKAA.afradejas@mediafusion.es>]
+
+2003-03-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_at2.c: added an 'error' warning in case we can't decode 
       the PDU sequence. Thanks to "Bas A. Schulte" <bschulte@zeelandnet.nl>
       for giving us a hint here.
