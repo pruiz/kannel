@@ -545,7 +545,9 @@ static void http_read_thread(void *arg)
                     octstr_get_cstr(url), octstr_get_cstr(ip));
                 goto ferror;
             }
-	} 
+	} else {
+	    username = octstr_imm("");
+	}
 
         info(0, "PPG: Accept request <%s> from <%s>", octstr_get_cstr(url), 
              octstr_get_cstr(ip));
