@@ -371,7 +371,11 @@ int cfg_read(Cfg *cfg)
                     /* check if included file is a directory */
                     lstat(octstr_get_cstr(filename), &filestat);
 
-                    /* is a directory. create a list with files */
+                    /* 
+                     * is a directory, create a list with files of
+                     * this directory and load all as part of the
+                     * whole configuration.
+                     */
                     if (S_ISDIR(filestat.st_mode)) {
                         DIR *dh;
                         struct dirent *diritem;
@@ -403,7 +407,7 @@ int cfg_read(Cfg *cfg)
                     }
 
                     /* include files */
-                    while((file = list_extract_first(files)) != NULL) {
+                    while ((file = list_extract_first(files)) != NULL) {
 
                         list_insert(stack, 0, octstr_duplicate(file)); 
                         debug("gwlib.cfg", 0, "Loading include file `%s' (on line %ld of file %s).",  
@@ -422,10 +426,10 @@ int cfg_read(Cfg *cfg)
                         } 
                  
                         list_destroy(expand, NULL); 
-                        cfgloc_destroy(loc_inc); 
-
+                        cfgloc_destroy(loc_inc);
+                        octstr_destroy(file);
                     }
-                list_destroy(files, octstr_destroy_item);
+                    list_destroy(files, octstr_destroy_item);
                 } 
                 octstr_destroy(filename); 
             }  
