@@ -34,6 +34,7 @@ struct URLTranslation {
     char *suffix;	/* for suffix-cut */
     char *faked_sender;	/* works only with certain services */
     int max_messages;	/* absolute limit of reply messages */
+    int concatenation;	/* send long messages as concatenated SMS's if set to 1 */
     char *split_chars;	/* allowed chars to be used to split message */
     char *split_suffix;	/* chars added to end after each split (not last) */
     int omit_empty;	/* if the reply is empty, is notification send */
@@ -350,6 +351,10 @@ int urltrans_max_messages(URLTranslation *t) {
 	return t->max_messages;
 }
 
+int urltrans_concatenation(URLTranslation *t) {
+	return t->concatenation;
+}
+
 char *urltrans_split_chars(URLTranslation *t) {
 	return t->split_chars;
 }
@@ -389,7 +394,7 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 {
     URLTranslation *ot;
     char *keyword, *aliases, *url, *text, *file;
-    char *prefix, *suffix, *faked_sender, *max_msgs;
+    char *prefix, *suffix, *faked_sender, *max_msgs, *concatenation;
     char *split_chars, *split_suffix, *omit_empty;
     char *username, *password;
     char *header, *footer;
@@ -419,7 +424,8 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     footer = config_get(grp, "footer");
     username = config_get(grp, "username");
     password = config_get(grp, "password");
-
+    concatenation = config_get(grp, "concatenation");
+    
     if (url) {
 	ot->type = TRANSTYPE_URL;
 	ot->pattern = gw_strdup(url);
@@ -481,6 +487,12 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     else
 	ot->max_messages = 1;
 
+    if (concatenation != NULL) {
+	ot->concatenation = atoi(concatenation);
+    }
+    else
+    	 ot->concatenation =  0;
+    	 
     if (header != NULL)
 	if ((ot->header = gw_strdup(header)) == NULL)
 	    goto error;
@@ -519,8 +531,6 @@ static void destroy_onetrans(URLTranslation *ot) {
 		gw_free(ot->split_suffix);
 		gw_free(ot->username);
 		gw_free(ot->password);
-		if(NULL != ot->header) gw_free(ot->header);
-		if(NULL != ot->footer) gw_free(ot->footer);
 		gw_free(ot);
 	}
 }

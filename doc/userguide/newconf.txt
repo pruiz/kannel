@@ -420,8 +420,6 @@ we can perform HTTP Basic authentication.
  #       as header, but not inserted into head but appended to end
  #
 
-
-
 SENDSMS-USER GROUP
 
 For smsbox, if any sendsms-services are used, there must be one or
@@ -446,7 +444,9 @@ more accounts to use it.
  header = <string>
  footer = <string>
  #       As in sms-services
- 
+ #
+ concatenation = <0 or 1>
+ #       If set to 1 enables the concatenation of SMS's for long messages 
 
 
 
