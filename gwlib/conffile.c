@@ -388,3 +388,50 @@ static char *parse_value(char *str) {
 
 	return str2;
 }
+
+
+int config_sanity_check(Config *config)
+{
+    ConfigGroup *grp;
+    char *group;
+    int core, smsbox, wapbox;
+
+    core = smsbox = wapbox = 0;
+    
+    grp = config_first_group(config);
+    while(grp != NULL) {
+	group = config_get(grp, "group");
+	if (group==NULL) {
+	    error(0, "A group without 'group' variable in configuration");
+	    return -1;
+	}
+	else if (strcmp(group, "core")==0)
+	    core++;
+	else if (strcmp(group, "smsbox")==0)
+	    smsbox++;
+	else if (strcmp(group, "wapbox")==0)
+	    wapbox++;
+	else if (strcmp(group, "smsc")!= 0
+		 && strcmp(group, "sms-service")!= 0
+		 && strcmp(group, "sendsms-user")!= 0)
+	{
+	    error(0, "Unknown group '%s' in configuration", group);
+	    return -1;
+	}
+	
+	grp = config_next_group(grp);
+    }
+    if (core == 0) 
+	error(0, "No 'core' group in configuration");
+    else if (core > 1)
+	error(0, "More than one 'core' group in configuration");
+    else if (smsbox > 1)
+	error(0, "More than one 'core' group in configuration");
+    else if (wapbox > 1)
+	error(0, "More than one 'wapbox' group in configuration");
+    else
+	return 0; /* all OK - after initial check */
+
+    return -1;
+}
+    

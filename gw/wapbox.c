@@ -66,8 +66,10 @@ static void read_config(char *filename) {
 	 * first we take the port number in bearerbox from the main
 	 * core group in configuration file
 	 */
-	if ((grp = config_find_first_group(cfg, "group", "core")) == NULL)
-	    panic(0, "No 'core' group in configuration");
+	if (config_sanity_check(cfg)==-1)
+	    panic(0, "Cannot start with malformed configuration");
+
+	grp = config_find_first_group(cfg, "group", "core");
 
 	if ((s = config_get(grp, "wapbox-port")) == NULL)
 	    panic(0, "No 'wapbox-port' in core group");

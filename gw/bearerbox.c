@@ -216,16 +216,14 @@ static int check_config(Config *config)
     ConfigGroup *grp;
     char *smsp, *wapp;
 
-    if ((grp = config_find_first_group(config, "group", "core")) == NULL) {
-	error(0, "No 'core' group in configuration");
+    if (config_sanity_check(config)==-1)
 	return -1;
-    }
+    
+    grp = config_find_first_group(config, "group", "core");
+
     smsp = config_get(grp, "smsbox-port");
     wapp = config_get(grp, "wapbox-port");
     
-    if (config_find_next_group(grp, "group", "core"))
-	warning(0, "multiple 'core' groups in configuration");
-
     grp = config_find_first_group(config, "group", "smsbox");
 
 #ifndef KANNEL_NO_SMS    
@@ -233,8 +231,6 @@ static int check_config(Config *config)
 	error(0, "No 'smsbox' group in configuration, but smsbox-port set");
 	return -1;
     }
-    if (grp != NULL && config_find_next_group(grp, "group", "smsbox"))
-	warning(0, "multiple 'smsbox' groups in configuration");
 #endif
     
 #ifndef KANNEL_NO_WAP	
@@ -243,8 +239,6 @@ static int check_config(Config *config)
 	error(0, "No 'wapbox' group in configuration, but wapbox-port set");
 	return -1;
     }
-    if (grp != NULL && config_find_next_group(grp, "group", "wapbox"))
-	warning(0, "multiple 'wapbox' groups in configuration");
 #endif
     
     return 0;

@@ -1,5 +1,13 @@
 2000-10-04  Kalle Marjola  <rpr@wapit.com>
 
+	* gwlib/conffile.c|h: added new function 'config_sanity_check' to
+	check configuration files for basic errors (like empty lines in
+	the middle of groups).
+
+	* gw/*box.c: modified to use that new function
+	
+2000-10-04  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/smsc.c, gw/smsc_p.h, gw/smsc_emi.c: added configuration
 	variable 'connect-allow-ip' currently used by emi_ip in certain
 	situations - banned connect from other IPs, so you have to set

@@ -277,8 +277,10 @@ static void init_smsbox(Config *cfg)
      * first we take the port number in bearerbox from the main
      * core group in configuration file
      */
-    if ((grp = config_find_first_group(cfg, "group", "core")) == NULL)
-	panic(0, "No 'core' group in configuration");
+    if (config_sanity_check(cfg)==-1)
+	panic(0, "Cannot start with malformed configuration");
+
+    grp = config_find_first_group(cfg, "group", "core");
     
     if ((p = config_get(grp, "smsbox-port")) == NULL)
 	panic(0, "No 'smsbox-port' in core group");

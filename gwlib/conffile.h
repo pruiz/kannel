@@ -95,5 +95,8 @@ void config_set(ConfigGroup *grp, char *name, char *value);
    gwlib/log.h). */
 void config_dump(Config *cfg);
 
+/* This function checks the configuration that is is a (somewhat) proper
+ * Kannel *box configuration. Return -1 if not OK, 0 otherwise. */
+int config_sanity_check(Config *config);
 
 #endif
