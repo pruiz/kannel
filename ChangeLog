@@ -1,3 +1,6 @@
+2004-09-16 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/xmlrpc.c: fixed memory leak.
+
 2004-09-10 Alexander Malysh <amalysh at kannel.org>
     * gwlib/gwlib.h: added 'gw-prioqueue.h'. fixed compile error.
 

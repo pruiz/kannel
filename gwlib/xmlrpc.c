@@ -390,7 +390,7 @@ static Octstr *xmlrpc_fault_print(XMLRPCFault *fault, int level)
                              "%*s<name>faultString</name>\n"
                              "%*s<value><string>%S</string></value>\n"
                            "%*s</member>\n"
-                         "%*s<struct>\n"
+                           "%*s</struct>\n"
                        "%*s</value>\n%*s</fault>\n",
                        level, "", level+2, "", level+4, "", level+6, "", 
                        level+8, "", level+8, "",
@@ -860,9 +860,12 @@ Octstr *xmlrpc_value_print(XMLRPCValue *val, int level)
             return NULL;
     }
 
-    if (os != NULL)
+    if (os != NULL) {
         body = octstr_format("%*s<value>\n%S%*s</value>\n",
                              level, "", os, level, "");
+        octstr_destroy(os);
+    }
+    
     return body;
 }
 
@@ -1403,9 +1406,8 @@ static int parse_document(xmlDocPtr document, XMLRPCDocument *xrdoc)
             status = -1;
         }
         return status;
-    } else 
-    if ((xrdoc->d_type == xr_methodresponse || xrdoc->d_type == xr_undefined)
-        && octstr_case_compare(name, octstr_imm("METHODRESPONSE")) == 0) {
+    } else if ((xrdoc->d_type == xr_methodresponse || xrdoc->d_type == xr_undefined)
+               && octstr_case_compare(name, octstr_imm("METHODRESPONSE")) == 0) {
         
         xrdoc->d_type = xr_methodresponse;
         xrdoc->methodresponse = xmlrpc_response_create();
@@ -2152,10 +2154,10 @@ static int parse_struct_element(xmlDocPtr doc, xmlNodePtr node,
         if (! dict_put_once(members, member->name, member->value)) {
             xrdoc->parse_status = XMLRPC_PARSING_FAILED;
             xrdoc->parse_error = octstr_format("XML-RPC compiler: at least two members have same name.");
-            xmlrpc_member_destroy(member, 0);
+            xmlrpc_member_destroy(member, 1);
             return -1;
         }
-        //xmlrpc_member_destroy(member, 0);
+        xmlrpc_member_destroy(member, 0);
     } else {
         /* we should never be here */
         xrdoc->parse_status = XMLRPC_PARSING_FAILED;
