@@ -608,29 +608,30 @@ static char *istrdup (char *orig) {
 }
 
 static int http_something_accepted(List *headers, char *header_name, char *what) {
-    int found;
-    long i;
-    List *accepts;
-    char *iwhat = istrdup (what);
+	int found;
+	long i;
+	List *accepts;
+	char *iwhat;
 	
-    gwlib_assert_init();
-    gw_assert(headers != NULL);
-    gw_assert(what != NULL);
+	gwlib_assert_init();
+	gw_assert(headers != NULL);
+	gw_assert(what != NULL);
 
-    accepts = http_header_find_all(headers, header_name);
+	iwhat = istrdup(what);
+	accepts = http_header_find_all(headers, header_name);
 	
-    found = 0;
-    for (i = 0; !found && i < list_len(accepts); ++i) {
-	char *header_value = istrdup (octstr_get_cstr(list_get(accepts, i)));
-	if (strstr(header_value, iwhat) != NULL) {
-	    found = 1;
+	found = 0;
+	for (i = 0; !found && i < list_len(accepts); ++i) {
+		char *header_value = istrdup(octstr_get_cstr(
+						list_get(accepts, i)));
+		if (strstr(header_value, iwhat) != NULL)
+			found = 1;
+		gw_free (header_value);
 	}
-	gw_free (header_value);
-    }
 
-    gw_free (iwhat);
-    http_destroy_headers(accepts);
-    return found;
+	gw_free(iwhat);
+	http_destroy_headers(accepts);
+	return found;
 }
 
 

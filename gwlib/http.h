@@ -308,6 +308,11 @@ void http_header_set_content_type(List *headers, Octstr *type,
  */
 int http_type_accepted(List *headers, char *type);
 
+/*
+ * Do the headers indicate that character set `charset' is accepted?
+ */
+int http_charset_accepted(List *headers, char *charset);
+
 
 /*
  * Dump the contents of a header list with debug.

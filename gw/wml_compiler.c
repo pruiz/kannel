@@ -1192,3 +1192,19 @@ static void string_table_output(Octstr *ostr, wml_binary_t **wbxml)
       string_table_destroy(item);
     }
 }
+
+
+List *wml_charsets(void) {
+	int i;
+	List *result;
+	Octstr *charset;
+
+	result = list_create();
+	for (i = 0; character_sets[i].charset != NULL; i++) {
+		charset = octstr_create(character_sets[i].charset);
+		octstr_append_char(charset, '-');
+		octstr_append_cstr(charset, character_sets[i].nro);
+		list_append(result, charset);
+	}
+	return result;
+}

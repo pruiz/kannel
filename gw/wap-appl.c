@@ -43,6 +43,19 @@ static enum { limbo, running, terminating } run_status = limbo;
  */
 static List *queue = NULL;
 
+/*
+ * Charsets supported by WML compiler, queried from wml_compiler.
+ */
+static List *charsets = NULL;
+
+
+struct content {
+	Octstr *body;
+	Octstr *type;
+	Octstr *charset;
+	Octstr *url;
+};
+
 
 /*
  * Private functions.
@@ -52,13 +65,25 @@ static void main_thread(void *);
 static void fetch_thread(void *);
 
 static void  dev_null(const char *data, size_t len, void *context);
-static int encode_content_type(const char *type);
 
-static Octstr *convert_to_self(Octstr *stuff, Octstr *charset, char *url);
-static Octstr *convert_wml_to_wmlc(Octstr *wml, Octstr *charset, char *url);
-static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, 
-					       Octstr *charset, char *url);
+static Octstr *convert_wml_to_wmlc(struct content *content);
+static Octstr *convert_wmlscript_to_wmlscriptc(struct content *content);
 static void wsp_http_map_url(Octstr **osp);
+
+static struct {
+	char *type;
+	char *result_type;
+	Octstr *(*convert)(struct content *);
+} converters[] = {
+	{ "text/vnd.wap.wml",
+		"application/vnd.wap.wmlc",
+		convert_wml_to_wmlc },
+	{ "text/vnd.wap.wmlscript",
+		"application/vnd.wap.wmlscriptc",
+		convert_wmlscript_to_wmlscriptc },
+};
+#define NUM_CONVERTERS ((long)(sizeof(converters) / sizeof(converters[0])))
+
 
 
 /***********************************************************************
@@ -70,6 +95,7 @@ void wap_appl_init(void) {
 	queue = list_create();
 	list_add_producer(queue);
 	run_status = running;
+	charsets = wml_charsets();
 	gwthread_create(main_thread, NULL);
 }
 
@@ -87,6 +113,9 @@ void wap_appl_shutdown(void) {
 	while ((e = list_extract_first(queue)) != NULL)
 		wap_event_destroy(e);
 	list_destroy(queue);
+	while (list_len(charsets) > 0) 
+		octstr_destroy(list_extract_first(charsets));
+	list_destroy(charsets);
 }
 
 
@@ -131,6 +160,33 @@ static void main_thread(void *arg) {
 }
 
 
+static int convert_content(struct content *content) {
+	Octstr *new_body;
+	int failed = 0;
+	int i;
+
+	for (i = 0; i < NUM_CONVERTERS; i++) {
+		if (octstr_str_compare(content->type, converters[i].type) == 0) {
+			new_body = converters[i].convert(content);
+			if (new_body != NULL) {
+				octstr_destroy(content->body);
+				content->body = new_body;
+				octstr_destroy(content->type);
+				content->type = octstr_create(
+					converters[i].result_type);
+				return 1;
+			}
+			failed = 1;
+		}
+	}
+
+	if (failed)
+		return -1;
+	return 0;
+}
+
+
+/* Add a header identifying our gateway version */
 static void add_kannel_version(List *headers) {
 	Octstr *version;
 
@@ -141,50 +197,68 @@ static void add_kannel_version(List *headers) {
 }
 
 
+/* Add Accept-Charset: headers for stuff the WML compiler can
+ * convert to UTF-8. */
+/* XXX This is not really correct, since we will not be able
+ * to handle those charsets for all content types, just WML. */
+static void add_charset_headers(List *headers) {
+	long i, len;
+
+	gw_assert(charsets != NULL);
+	len = list_len(charsets);
+	for (i = 0; i < len; i++) {
+		unsigned char *charset = octstr_get_cstr(list_get(charsets, i));
+		if (!http_charset_accepted(headers, charset))
+			http_header_add(headers, "Accept-Charset", charset);
+	}
+}
+
+
+/* Add Accept: headers for stuff we can convert for the phone */
+static void add_accept_headers(List *headers) {
+	int i;
+
+	for (i = 0; i < NUM_CONVERTERS; i++) {
+		if (http_type_accepted(headers, converters[i].result_type)
+		    && !http_type_accepted(headers, converters[i].type)) {
+			http_header_add(headers, "Accept", converters[i].type);
+		}
+	}
+}
+
+
+static void add_network_info(List *headers, WAPAddrTuple *addr_tuple) {
+	if (octstr_len(addr_tuple->client->address) > 0) {
+		http_header_add(headers, 
+			"X_Network_Info", 
+			octstr_get_cstr(addr_tuple->client->address));
+	}
+}
+
+
+static void add_session_id(List *headers, long session_id) {
+	if (session_id != -1) {
+		char buf[40];
+		sprintf(buf, "%ld", session_id);
+		http_header_add(headers, "X-WAP-Session-ID", buf);
+	}
+}
+
+
 static void fetch_thread(void *arg) {
-	WAPEvent *e;
 	int status;
 	int ret;
-	int i;
-	int converter_failed;
 	WAPEvent *event;
-	unsigned long body_size, client_SDU_size;
-	Octstr *url, *final_url, *resp_body, *body, *os, *type, *charset;
+	long client_SDU_size;
+	Octstr *url, *os;
 	List *session_headers;
 	List *request_headers;
-	List *actual_headers, *resp_headers;
+	List *actual_headers;
+	List *resp_headers;
 	WAPAddrTuple *addr_tuple;
 	long session_id;
+	struct content content;
 	
-	static struct {
-		char *type;
-		char *result_type;
-		Octstr *(*convert)(Octstr *, Octstr *, char *);
-	} converters[] = {
-		{ "text/vnd.wap.wml",
-		  "application/vnd.wap.wmlc",
-		  convert_wml_to_wmlc },
-		{ "application/vnd.wap.wmlc",
-		  "application/vnd.wap.wmlc",
-		  convert_to_self },
-		{ "image/vnd.wap.wbmp",
-		  "image/vnd.wap.wbmp",
-		  convert_to_self },
-		{ "text/vnd.wap.wmlscript",
-		  "application/vnd.wap.wmlscriptc",
-		  convert_wmlscript_to_wmlscriptc },
-		{ "",
-		  "",
-		  convert_to_self },
-		{ "",
-		  "",
-		  convert_to_self },
-		{ "",
-		  "",
-		  convert_to_self },
-	};
-	static int num_converters = sizeof(converters) / sizeof(converters[0]);
-
 	event = arg;
 	if (event->type == S_MethodInvoke_Ind) {
 		struct S_MethodInvoke_Ind *p;
@@ -210,114 +284,43 @@ static void fetch_thread(void *arg) {
 
 	wsp_http_map_url(&url);
 
-	body = NULL;
-
 	actual_headers = list_create();
+
 	if (session_headers != NULL)
 		http_append_headers(actual_headers, session_headers);
-	if (request_headers)
+	if (request_headers != NULL)
 		http_append_headers(actual_headers, request_headers);
 
-	/* We can compile WML to WMLC */
-	if (http_type_accepted(actual_headers, "application/vnd.wap.wmlc")
-	    && !http_type_accepted(actual_headers, "text/vnd.wap.wml")) {
-		http_header_add(actual_headers, "Accept", "text/vnd.wap.wml");
-	}
-
-	/* We can compile WMLScript */
-	if (http_type_accepted(actual_headers,
-		"application/vnd.wap.wmlscriptc")
-	    && !http_type_accepted(actual_headers, "text/vnd.wap.wmlscript")) {
-		http_header_add(actual_headers,
-			"Accept", "text/vnd.wap.wmlscript");
-	}
-
-	if (octstr_len(addr_tuple->client->address) > 0) {
-		http_header_add(actual_headers, 
-			"X_Network_Info", 
-			octstr_get_cstr(addr_tuple->client->address));
-	}
-	if (session_id != -1) {
-		char buf[40];
-		sprintf(buf, "%ld", session_id);
-		http_header_add(actual_headers, "X-WAP-Session-ID", buf);
-	}
-
+	add_accept_headers(actual_headers);
+	add_charset_headers(actual_headers);
+	add_network_info(actual_headers, addr_tuple);
 	add_kannel_version(actual_headers);
+	add_session_id(actual_headers, session_id);
 
-	{
-	    extern struct {
-		char *charset;
-		char *nro;
-		unsigned char MIBenum;
-		unsigned char *utf8map;
-	    } character_sets[];
-	    
-	    for (i = 0; character_sets[i].charset != NULL; i++) {
-	    
-		char charsetname[16];
-
-		strcpy (charsetname, character_sets[i].charset);
-		strcat (charsetname, "-");
-		strcat (charsetname, character_sets[i].nro);
-		
-		if (http_charset_accepted(actual_headers, charsetname)) {
-	/*	    info(0, "WSP: charset %s already accepted.", charsetname); */
-		} else {
-	/*	    info(0, "WSP: charset %s added to accepted list.", charsetname); */
-		    http_header_add(actual_headers, "Accept-Charset", charsetname);
-		}
-
-	    }
-	}
-	
 	http_header_pack(actual_headers);
 
 	ret = http_get_real(url, actual_headers, 
-			     &final_url, &resp_headers, &resp_body);
-	octstr_destroy(final_url);
+			     &content.url, &resp_headers, &content.body);
 
 	if (ret != HTTP_OK) {
 		error(0, "WSP: http_get_real failed (%d), oops.", ret);
 		status = 500; /* Internal server error; XXX should be 503 */
-		type = octstr_create("text/plain");
+		content.type = octstr_create("text/plain");
 	} else {
-		http_header_get_content_type(resp_headers, &type, &charset);
+		http_header_get_content_type(resp_headers,
+				&content.type, &content.charset);
 		info(0, "WSP: Fetched <%s> (%s, charset='%s')", 
-			octstr_get_cstr(url), octstr_get_cstr(type),
-			octstr_get_cstr(charset));
+			octstr_get_cstr(url), octstr_get_cstr(content.type),
+			octstr_get_cstr(content.charset));
 		status = 200; /* OK */
 		
-		converter_failed = 0;
-		for (i = 0; i < num_converters; ++i) {
-			if (octstr_str_compare(type, converters[i].type) == 0) {
-				body = converters[i].convert(resp_body, 
-					charset,
-					octstr_get_cstr(url));
-				if (body != NULL)
-					break;
-				converter_failed = 1;
-			}
-		}
-
-		if (i < num_converters) {
-			octstr_destroy(type);
-			type = octstr_create(converters[i].result_type);
-		} else if (converter_failed) {
+		if (convert_content(&content) < 0) {
 			status = 500; /* XXX */
 			warning(0, "WSP: All converters for `%s' failed.",
-					octstr_get_cstr(type));
-		} else {
-			status = 415; /* Unsupported media type */
-			warning(0, "WSP: Unsupported content type `%s'", 
-				octstr_get_cstr(type));
-			debug("wap.wsp.http", 0, 
-				"Content of unsupported content:");
-			octstr_dump(resp_body, 0);
+					octstr_get_cstr(content.type));
 		}
-		octstr_destroy(charset);
 	}
-	octstr_destroy(resp_body);
+
 	gw_assert(actual_headers);
 	while ((os = list_extract_first(actual_headers)) != NULL)
 		octstr_destroy(os);
@@ -329,29 +332,24 @@ static void fetch_thread(void *arg) {
 		list_destroy(resp_headers);
 	}
 		
-	if (body == NULL)
-		body_size = 0;
-	else
-		body_size = octstr_len(body);
-
-	if (body != NULL && body_size > client_SDU_size) {
+	if (octstr_len(content.body) > client_SDU_size) {
 		status = 413; /* XXX requested entity too large */
 		warning(0, "WSP: Entity at %s too large (size %lu B, limit %lu B)",
-			octstr_get_cstr(url), body_size, client_SDU_size);
-                octstr_destroy(body);
-		body = NULL;
-		octstr_destroy(type);
-		type = octstr_create("text/plain");
+			octstr_get_cstr(url), octstr_len(content.body),
+			client_SDU_size);
+                octstr_destroy(content.body);
+		content.body = octstr_create_empty();
+		octstr_destroy(content.type);
+		content.type = octstr_create("text/plain");
 	}
 
 	if (event->type == S_MethodInvoke_Ind) {
-		e = wap_event_create(S_MethodResult_Req);
+		WAPEvent *e = wap_event_create(S_MethodResult_Req);
 		e->u.S_MethodResult_Req.server_transaction_id = 
 			event->u.S_MethodInvoke_Ind.server_transaction_id;
 		e->u.S_MethodResult_Req.status = status;
-		e->u.S_MethodResult_Req.response_type = 
-			encode_content_type(octstr_get_cstr(type));
-		e->u.S_MethodResult_Req.response_body = body;
+		e->u.S_MethodResult_Req.response_type = content.type;
+		e->u.S_MethodResult_Req.response_body = content.body;
 		e->u.S_MethodResult_Req.mid = event->u.S_MethodInvoke_Ind.mid;
 		e->u.S_MethodResult_Req.tid = event->u.S_MethodInvoke_Ind.tid;
 		e->u.S_MethodResult_Req.msmid = 
@@ -359,22 +357,22 @@ static void fetch_thread(void *arg) {
 	
 		wsp_session_dispatch_event(e);
 	} else {
-		e = wap_event_create(S_Unit_MethodResult_Req);
+		WAPEvent *e = wap_event_create(S_Unit_MethodResult_Req);
 		e->u.S_Unit_MethodResult_Req.addr_tuple = 
 			wap_addr_tuple_duplicate(
 				event->u.S_Unit_MethodInvoke_Ind.addr_tuple);
 		e->u.S_Unit_MethodResult_Req.tid = 
 			event->u.S_Unit_MethodInvoke_Ind.tid;
 		e->u.S_Unit_MethodResult_Req.status = status;
-		e->u.S_Unit_MethodResult_Req.response_type = 
-			encode_content_type(octstr_get_cstr(type));
-		e->u.S_Unit_MethodResult_Req.response_body = body;
+		e->u.S_Unit_MethodResult_Req.response_type = content.type;
+		e->u.S_Unit_MethodResult_Req.response_body = content.body;
 	
 		wsp_unit_dispatch_event(e);
 	}
 
 	wap_event_destroy(event);
-	octstr_destroy(type);
+	octstr_destroy(content.url); /* body and type were re-used above */
+	octstr_destroy(content.charset);
 	octstr_destroy(url);
 }
 
@@ -386,39 +384,11 @@ static void dev_null(const char *data, size_t len, void *context) {
 }
 
 
-static int encode_content_type(const char *type) {
-	static struct {
-		char *type;
-		int shortint;
-	} tab[] = {
-		{ "text/plain", 0x03 },
-		{ "text/vnd.wap.wml", 0x08 },
-		{ "text/vnd.wap.wmlscript", 0x09 },
-		{ "application/vnd.wap.wmlc", 0x14 },
-		{ "application/vnd.wap.wmlscriptc", 0x15 },
-		{ "image/vnd.wap.wbmp", 0x21 },
-	};
-	int num_items = sizeof(tab) / sizeof(tab[0]);
-	int i;
-	
-	for (i = 0; i < num_items; ++i)
-		if (strcmp(type, tab[i].type) == 0)
-			return tab[i].shortint;
-	error(0, "WSP: Unknown content type <%s>, assuming text/plain.", type);
-	return 0x03;
-}
-
-
-static Octstr *convert_to_self(Octstr *stuff, Octstr *charset, char *url) {
-	return octstr_duplicate(stuff);
-}
-
-
-static Octstr *convert_wml_to_wmlc(Octstr *wml, Octstr *charset, char *url) {
+static Octstr *convert_wml_to_wmlc(struct content *content) {
 	Octstr *wmlc;
 	int ret;
 
-	ret = wml_compile(wml, charset, &wmlc);
+	ret = wml_compile(content->body, content->charset, &wmlc);
 	if (ret == 0)
 		return wmlc;
 	warning(0, "WSP: WML compilation failed.");
@@ -426,8 +396,7 @@ static Octstr *convert_wml_to_wmlc(Octstr *wml, Octstr *charset, char *url) {
 }
 
 
-static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, 
-					       Octstr *charset, char *url) {
+static Octstr *convert_wmlscript_to_wmlscriptc(struct content *content) {
 	WsCompilerParams params;
 	WsCompilerPtr compiler;
 	WsResult result;
@@ -453,9 +422,9 @@ static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript,
 	}
 
 	result = ws_compile_data(compiler, 
-				 url,
-				 octstr_get_cstr(wmlscript),
-				 octstr_len(wmlscript),
+				 octstr_get_cstr(content->url),
+				 octstr_get_cstr(content->body),
+				 octstr_len(content->body),
 				 &result_data,
 				 &result_size);
 	if (result != WS_OK) {

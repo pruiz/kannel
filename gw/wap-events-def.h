@@ -74,7 +74,7 @@ WAPEVENT(S_MethodInvoke_Res,
 WAPEVENT(S_MethodResult_Req,
 	  INTEGER(server_transaction_id)
 	  INTEGER(status)
-	  INTEGER(response_type)
+	  OCTSTR(response_type)
 	  OCTSTR(response_body)
 	  INTEGER(tid)
 	  INTEGER(mid)
@@ -161,7 +161,7 @@ WAPEVENT(S_Unit_MethodResult_Req,
 	ADDRTUPLE(addr_tuple)
 	INTEGER(tid)
 	INTEGER(status)
-	INTEGER(response_type)
+	OCTSTR(response_type)
 	HTTPHEADER(response_headers)
 	OCTSTR(response_body)
 	)

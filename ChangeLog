@@ -1,3 +1,30 @@
+2000-06-13  Richard Braakman  <dark@wapit.com>
+
+	* gw/wap-appl.c: Query list of charsets from the WML compiler,
+	and use that instead of accessing the table as an extern.
+
+	* gw/wml_compiler.[ch]: Added wml_charsets function.
+
+	* gw/wap-appl.c: Continued simplifying fetch_thread, broke out
+	a number of smaller functions.  Made converters table only
+	list actual converters, eliminated convert_to_self.
+
+	* gw/wap-events-def.h: Made response_type an octstr.  Convert
+	it to the WSP encoding in the WSP layer, not the application layer.
+	Moved encode_content_type function to wml.c.
+
+	* gwlib/http.c: Reindented http_something_accepted and istrdup
+	to fit with the rest of the code.
+
+	* gwlib/http.h: Added prototype for http_charset_accepted.
+
+	* gw/wap-appl.c: Created "content" struct to describe content
+	body and meta-info.  Made convert functions use it.  Split off
+	content conversion into a separate function that uses the table.
+
+	* gwlib/list.c: Added list_destroy_with() function but don't
+	use it yet.
+
 2000-06-12  Richard Braakman  <dark@wapit.com>
 
 	* Started simplifying fetch_thread function.
