@@ -27,20 +27,13 @@ extern List *smsbox_requests;
  *  String is strdupped
  * 'accept_str' is string of accepted characters in 'to' field in
  *  send-sms request. If NULL, defaults to "0123456789 +-"
- *
- * 'sender' is function pointer to function that does the actual sending,
- *     that is either uses a socket (to bearerbox) or appends into reply
- *     queue (bearerbox thread smsbox). The sender function must free the
- *     message unless it stores it - however, it is now its responsibility.
- *     Sender function must return 0 on success, and -1 on failure
  */
 
 void smsbox_req_init(URLTranslationList *translations,
 		    Config *config,
 		    int sms_max_length,
 		    char *global_sender,
-		    char *accept_str,
-		    void (*sender) (Msg *msg));
+		    char *accept_str);
 
 /*
  * Shut down the request module, must be called last.

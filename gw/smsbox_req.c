@@ -21,9 +21,9 @@
 #include "html.h"
 #include "msg.h"
 
+#include "smsbox.h"
 #include "smsbox_req.h"
 #include "urltrans.h"
-#include "config.h"
 
 #ifdef HAVE_SECURITY_PAM_APPL_H
 #include <security/pam_appl.h>
@@ -56,7 +56,6 @@ static int sms_max_length = -1;		/* not initialized - never modify after
                                          * smsbox_req_init! */
 static char *sendsms_number_chars;
 static char *global_sender = NULL;
-static void (*sender) (Msg *msg) = NULL;
 static Config 	*cfg = NULL;
 
 #define SENDSMS_DEFAULT_CHARS "0123456789 +-"
@@ -285,20 +284,6 @@ error:
 
 
 /*
- * sends the buf, with msg-info - does NO splitting etc. just the sending
- * NOTE: the sender gw_frees the message!
- */
-static void do_sending(Msg *msg)
-{
-    /* sender does the freeing (or uses msg as it sees fit) */
-    sender(msg);
-
-    debug("smsbox_req", 0, "message sent");
-}
-
-
-
-/*
  * Take a Msg structure and send it as a MT SMS message.
  * Parameters: msg: message to send, maxmsgs: limit to the number of parts the
  *     message can be split into, h: header, hl: header length, f: footer,
@@ -418,7 +403,7 @@ static void do_split_send(Msg *msg, int maxmsgs, int maxdatalength,
 	    split->sms.flag_udh = 1;
 	}
 	
-	do_sending(split);
+	smsbox_send_to_bearerbox(split);
 	pos += size;
 	
 	msgseq++; /* sequence number for the next message */
@@ -449,7 +434,8 @@ static int send_sms(URLTranslation *trans, Msg *msg, int max_msgs)
     }
     if (h != NULL)
     	hl = strlen(h);
-    else hl = 0;
+    else
+    	hl = 0;
     if (f != NULL)
     	fl = strlen(f); 
     else
@@ -481,8 +467,10 @@ static int send_sms(URLTranslation *trans, Msg *msg, int max_msgs)
 	    maxdatalength = MAX7BITLENGTH;
 	}
 	if (msg->sms.flag_udh) {
-	/* the length is in 7bit characters! +1 for the length of the UDH. */
-	maxdatalength -= roundup_div(octstr_len(msg->sms.udhdata)*8, 7) + 1;
+	    /* the length is in 7bit characters! 
+	       +1 for the length of the UDH. */
+	    maxdatalength -= 
+	    	roundup_div(octstr_len(msg->sms.udhdata)*8, 7) + 1;
 	}
     }
     
@@ -501,7 +489,7 @@ static int send_sms(URLTranslation *trans, Msg *msg, int max_msgs)
 	    octstr_insert_data(msg->sms.msgdata, 
 	    	    	       octstr_len(msg->sms.msgdata), f, fl);
     
-	do_sending(msg);
+	smsbox_send_to_bearerbox(msg);
 	return 0;
     } else {
 	/*
@@ -546,8 +534,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	if (trans != NULL && urltrans_omit_empty(trans) != 0) {
 	    max_msgs = 0;
 	} else { 
-	    octstr_replace(msg->sms.msgdata, empty, 
-	    strlen(empty));
+	    octstr_replace(msg->sms.msgdata, empty, strlen(empty));
 	}
     }
     if (max_msgs > 0)
@@ -723,13 +710,11 @@ void smsbox_req_init(URLTranslationList *transls,
 		    Config *config,
 		    int sms_max,
 		    char *global,
-		    char *accept_str,
-		    void (*send) (Msg *msg))
+		    char *accept_str)
 {
     translations = transls;
     cfg = config;
     sms_max_length = sms_max;
-    sender = send;
     if (accept_str)
 	sendsms_number_chars = accept_str;
     else

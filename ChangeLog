@@ -1,3 +1,8 @@
+2000-11-28  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/smsbox.[ch], gw/smsbox_req.[ch]: Call function to write
+	message to bearerbox directly, instead of via function pointer.
+
 2000-11-28  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsbox_req.c: fixed that sendsms user is again shown (it

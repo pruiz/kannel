@@ -7,7 +7,7 @@
  *
  * This file is included by a number of other files.
  *
- * Lars Wirzenius <liw@wapit.com>
+ * Lars Wirzenius
  */
 
 MSG(heartbeat,

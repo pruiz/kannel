@@ -89,12 +89,9 @@ static volatile sig_atomic_t abort_program = 0;
 
 
 /*
- * Send Msg to bearerbox.  Called from smsbox_req via a pointer we
- * give during initialization.
- *
- * Will free (or otherwise get rid of) pmsg
+ * Send Msg to bearerbox and destroy it.
  */
-static void write_msg(Msg *pmsg)
+void smsbox_send_to_bearerbox(Msg *pmsg)
 {
     Octstr *pack;
     int ret;
@@ -105,35 +102,62 @@ static void write_msg(Msg *pmsg)
     info(0, "Message sent to bearerbox, receiver <%s>",
          octstr_get_cstr(pmsg->sms.receiver));
    
-#if 0
-    debug("sms", 0, "write <%.*s> [%ld]",
-	  (int) octstr_len(pmsg->sms.msgdata),
-	  octstr_get_cstr(pmsg->sms.msgdata),
-	  octstr_len(pmsg->sms.udhdata));
-#endif
-
     msg_destroy(pmsg);
     octstr_destroy(pack);
 }
 
+
 /*
- * start a new thread for each request
+ * Read an Msg from the bearerbox and send it to the proper receiver
+ * via a List. At the moment all messages are sent to the smsbox_requests
+ * List..
  */
-static void new_request(Octstr *pack)
+static void read_from_bearerbox(void)
 {
+    time_t start, t;
+    int ret, secs;
+    int total = 0;
+    Octstr *pack;
     Msg *msg;
 
-    gw_assert(pack != NULL);
-    msg = msg_unpack(pack);
-    if (msg == NULL)
-	error(0, "Failed to unpack data!");
-    else if (msg_type(msg) != sms) {
-	warning(0, "Received other message than sms, ignoring!");
-	msg_destroy(msg);
-    } else
-    	list_produce(smsbox_requests, msg);
-}
+    start = t = time(NULL);
+    while(!abort_program) {
+	pack = conn_read_withlen(bb_conn);
+	gw_claim_area(pack);
+	if (pack == NULL) {
+	    if (conn_eof(bb_conn)) {
+		info(0, "Connection closed by the Bearerbox");
+		break;
+	    }
 
+            ret = conn_wait(bb_conn, -1.0);
+	    if (ret < 0) {
+		error(0, "Connection to bearerbox broke.");
+		break;
+	    }
+	    continue;
+	}
+
+        if (total == 0)
+	    start = time(NULL);
+	total++;
+
+	msg = msg_unpack(pack);
+	octstr_destroy(pack);
+
+	if (msg == NULL)
+	    error(0, "Failed to unpack data!");
+	else if (msg_type(msg) != sms) {
+	    warning(0, "Received other message than sms, ignoring!");
+	    msg_destroy(msg);
+	} else
+	    list_produce(smsbox_requests, msg);
+    }
+
+    secs = difftime(time(NULL), start);
+    info(0, "Received (and handled?) %d requests in %d seconds "
+    	 "(%.2f per second)", total, secs, (float)total / secs);
+}
 
 
 /*-----------------------------------------------------------
@@ -338,44 +362,6 @@ static void init_smsbox(Config *cfg)
 }
 
 
-static void main_loop(void)
-{
-    time_t start, t;
-    int ret, secs;
-    int total = 0;
-    Octstr *pack;
-
-    start = t = time(NULL);
-    while(!abort_program) {
-	pack = conn_read_withlen(bb_conn);
-	gw_claim_area(pack);
-	if (pack == NULL) {
-	    if (conn_eof(bb_conn)) {
-		info(0, "Connection closed by the Bearerbox");
-		break;
-	    }
-
-            ret = conn_wait(bb_conn, -1.0);
-	    if (ret < 0) {
-		error(0, "Connection to bearerbox broke.");
-		break;
-	    }
-	    continue;
-	}
-
-        if (total == 0)
-	    start = time(NULL);
-	total++;
-	new_request(pack);
-	octstr_destroy(pack);
-    }
-
-    secs = difftime(time(NULL), start);
-    info(0, "Received (and handled?) %d requests in %d seconds (%.2f per second)",
-	 total, secs, (float)total/secs);
-}
-
-
 static int check_args(int i, int argc, char **argv) {
     if (strcmp(argv[i], "-H")==0 || strcmp(argv[i], "--tryhttp")==0) {
 	only_try_http = 1;
@@ -414,11 +400,7 @@ int main(int argc, char **argv)
     if (urltrans_add_cfg(translations, cfg) == -1)
 	panic(errno, "urltrans_add_cfg failed");
 
-    /*
-     * initialize smsbox-request module
-     */
-    smsbox_req_init(translations, cfg, sms_len, global_sender, NULL,
-		    write_msg);
+    smsbox_req_init(translations, cfg, sms_len, global_sender, NULL);
  
     while(!abort_program) {
         bb_conn = conn_open_tcp(bb_host, bb_port);
@@ -429,10 +411,11 @@ int main(int argc, char **argv)
 
     info(0, "Connected to Bearer Box at %s port %d.",
         octstr_get_cstr(bb_host), bb_port);
-    heartbeat_thread =
-        heartbeat_start(write_msg, heartbeat_freq, smsbox_req_count);
+    heartbeat_thread = heartbeat_start(smsbox_send_to_bearerbox, 
+    	    	    	    	       heartbeat_freq,
+				       smsbox_req_count);
 
-    main_loop();
+    read_from_bearerbox();
 
     info(0, "Smsbox terminating.");
 
