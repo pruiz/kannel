@@ -150,7 +150,6 @@ typedef struct _boxc {
 /* forward declaration */
 static void sms_to_smsboxes(void *arg);
 static int send_msg(Boxc *boxconn, Msg *pmsg);
-int route_incoming_to_boxc(Msg *sms);
 static void boxc_sent_push(Boxc*, Msg*);
 static void boxc_sent_pop(Boxc*, Msg*);
 

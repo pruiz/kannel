@@ -115,6 +115,15 @@ int boxc_incoming_wdp_queue(void);
 /* Clean up after box connections have died. */
 void boxc_cleanup(void);
 
+/*
+ * Route the incoming message to one of the following input queues:
+ *   a specific smsbox conn
+ *   a random smsbox conn if no shortcut routing and msg->sms.boxc_id match.
+ * @return -1 if incoming queue full; 0 otherwise.
+ */
+int route_incoming_to_boxc(Msg *msg);
+
+
 /*---------------
  * bb_udp.c (UDP receiver/sender)
  */

@@ -1,4 +1,8 @@
 2004-06-28  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/bearerbox.h, gw/bb_boxc.c: moved declaration for 'route_incoming_to_boxc' from
+      gw/bb_boxc.c to gw/bearerbox.h.
+
+2004-06-28  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/smsc/smsc_smpp.c: commited patch #3 and #4 (in a slightly modified version)
       from bug #129. Thanks to joergent.
 
