@@ -51,6 +51,16 @@ static void dump_pdu(const char *msg, Octstr *id, SMPP_PDU *pdu)
 #define SMPP_RECONNECT_DELAY	    10.0 
 #define SMPP_DEFAULT_VERSION        0x34
 #define SMPP_DEFAULT_PRIORITY       0
+#define SMPP_THROTTLING_SLEEP_TIME  15
+
+/*
+ * Some SMPP error messages we come across
+ */
+
+enum {
+    SMPP_ESME_RMSGQFUL   = 0x00000014,
+    SMPP_ESME_RTHROTTLED = 0x00000058
+} SMPP_ERROR_MESSAGES;
  
  
 /*********************************************************************** 
@@ -86,6 +96,7 @@ typedef struct {
     long reconnect_delay;
     int version;
     int priority;       /* set default priority for messages */    
+    time_t throttling_err_time;
     SMSCConn *conn; 
 } SMPP; 
  
@@ -131,6 +142,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->version = version;
     smpp->priority = priority;
     smpp->conn = conn; 
+    smpp->throttling_err_time = 0; 
      
     return smpp; 
 } 
@@ -226,14 +238,18 @@ static Msg *pdu_to_msg(SMPP_PDU *pdu)
  
 static long smpp_status_to_smscconn_failure_reason(long status) 
 { 
-    enum { 
-        ESME_RMSGQFUL = 0x00000014 
-    }; 
- 
-    if (status == ESME_RMSGQFUL) 
-        return SMSCCONN_FAILED_TEMPORARILY; 
- 
-    return SMSCCONN_FAILED_REJECTED; 
+    switch(status) {
+        case SMPP_ESME_RMSGQFUL:
+            return SMSCCONN_FAILED_TEMPORARILY;
+            break;
+
+        case SMPP_ESME_RTHROTTLED:
+            return SMSCCONN_FAILED_TEMPORARILY; 
+            break;
+
+        default:
+            return SMSCCONN_FAILED_REJECTED; 
+    }
 } 
  
  
@@ -698,9 +714,19 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                       pdu->u.submit_sm_resp.command_status); 
                 reason = smpp_status_to_smscconn_failure_reason( 
                             pdu->u.submit_sm.command_status); 
+
+                /* 
+                 * check to see if we got a "throttling error", in which case we'll just
+                 * sleep for a while 
+                 */
+                if (pdu->u.submit_sm.command_status == SMPP_ESME_RTHROTTLED)
+                    time(&(smpp->throttling_err_time));
+                else
+                    smpp->throttling_err_time = 0;
  
                 /* gen DLR_SMSC_FAIL */		 
-                if (msg->sms.dlr_mask & (DLR_SMSC_FAIL|DLR_FAIL)) { 
+                if (reason == SMSCCONN_FAILED_REJECTED &&
+                    (msg->sms.dlr_mask & (DLR_SMSC_FAIL|DLR_FAIL))) { 
                     Octstr *reply; 
  		 
                     reply = octstr_format("0x%08lx", 
@@ -725,9 +751,9 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                     info(0,"SMPP[%s]: DLR = %s", octstr_get_cstr(smpp->conn->id),
                          octstr_get_cstr(dlrmsg->sms.msgdata)); 
                     bb_smscconn_receive(smpp->conn, dlrmsg); 
-                } else { 
-                    bb_smscconn_send_failed(smpp->conn, msg, reason); 
                 } 
+
+                bb_smscconn_send_failed(smpp->conn, msg, reason);
                 --(*pending_submits); 
             } else {  
                 Octstr *tmp; 
@@ -932,7 +958,11 @@ static void io_thread(void *arg)
                 send_enquire_link(smpp, conn, &last_enquire_sent); 
  
                 /* Make sure we send even if we read a lot */ 
-                if (transmitter) 
+                if (transmitter &&
+                    (!smpp->throttling_err_time || 
+                    ((time(NULL) - smpp->throttling_err_time) > SMPP_THROTTLING_SLEEP_TIME 
+                        && !(smpp->throttling_err_time = 0)))
+                    )
                     send_messages(smpp, conn, &pending_submits); 
             } 
 	     
@@ -942,7 +972,11 @@ static void io_thread(void *arg)
                 break; 
             } 
 	     
-            if (transmitter) 
+            if (transmitter &&
+                (!smpp->throttling_err_time || 
+                ((time(NULL) - smpp->throttling_err_time) > SMPP_THROTTLING_SLEEP_TIME 
+                    && !(smpp->throttling_err_time = 0)))
+                )
                 send_messages(smpp, conn, &pending_submits); 
         } 
 	 
