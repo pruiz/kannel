@@ -45,12 +45,6 @@ Counter *outgoing_wdp_counter;
  */
 List *flow_threads;
 
-/*
- * as above, but these are core threads, and they do not need to
- * exit before we can change status. They may, however.
- */
-List *core_threads;
-
 /* and still more abuse; we use this list to put us into
  * 'suspend' state - if there are any producers (only core adds/removes them)
  * receiver/sender systems just sit, blocked in list_consume
@@ -116,9 +110,14 @@ static void signal_handler(int signum)
             if (time(NULL) - first_kill > 2) {
                 warning(0, "New killing signal received, killing neverthless...");
                 bb_status = BB_DEAD;
+		first_kill = time(NULL);
             }
 	    mutex_unlock(status_mutex);
         }
+        else if (bb_status == BB_DEAD) {
+            if (time(NULL) - first_kill > 1)
+		panic(0, "cannot die by its own will");
+	}
 	else
 	    mutex_unlock(status_mutex);
     } else if (signum == SIGHUP) {
@@ -170,7 +169,6 @@ static void wdp_router(void *arg)
 {
     Msg *msg;
 
-    debug("bb", 0, "START: wdp_router");
     list_add_producer(flow_threads);
     
     while(bb_status != BB_DEAD) {
@@ -189,7 +187,6 @@ static void wdp_router(void *arg)
     udp_die();
     // smsc_endwdp();
 
-    debug("bb", 0, "EXIT: wdp_router");
     list_remove_producer(flow_threads);
 }
 
@@ -400,7 +397,6 @@ int main(int argc, char **argv)
         panic(0, "No configuration, aborting.");
 
     flow_threads = list_create();
-    core_threads = list_create();
     
     starter(cfg);
 
@@ -428,13 +424,11 @@ int main(int argc, char **argv)
 
     smsc_die();
     
-    while(list_consume(core_threads)!=NULL)
-	;
-
+    gwthread_join_all();
+    
     empty_msg_lists();
     
     list_destroy(flow_threads);
-    list_destroy(core_threads);
     list_destroy(suspended);
     list_destroy(isolated);
     mutex_destroy(status_mutex);
@@ -556,8 +550,7 @@ Octstr *bb_print_status(void)
     sprintf(buf, "Kannel version %s %s (up %ldd %ldh %ldm %lds), %d threads<br><br>"
 	    "Received %ld SMS and %ld WDP messages, Sent %ld SMS and %ld WDP messages<br><br>",
 	    VERSION, s, t/3600/24, t/3600%24, t/60%60, t%60,
-	    list_producer_count(flow_threads) +
-	    list_producer_count(core_threads),
+	    list_producer_count(flow_threads),
 	    counter_value(incoming_sms_counter),
 	    counter_value(incoming_wdp_counter),
 	    counter_value(outgoing_sms_counter),

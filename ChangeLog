@@ -1,3 +1,14 @@
+2000-06-09  Kalle Marjola  <Kalle Marjola <rpr@wapit.com>>
+
+	* gw/bb_*.c: removed START and EXIT debug info as they are in new
+	thread wrapper, too
+
+	* gw/bb_boxc.c: fixed bugs in wdp-router and wapbox quit, and
+	re-synchronized shutdown
+
+	* gw/bearerbox.c, gw/bb_http.c: removed core_threads as new thread
+	wrapper can be used to handle that.
+	
 Fri Jun  9 08:31:18 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Separated the method state machine from the session state machine,

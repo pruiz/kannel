@@ -64,7 +64,6 @@ static void udp_receiver(void *arg)
     Msg *msg;
     Udpc *conn = arg;
 
-    debug("bb.thread", 0, "START: udp_receiver");
     list_add_producer(incoming_wdp);
     list_add_producer(flow_threads);
     
@@ -100,7 +99,6 @@ static void udp_receiver(void *arg)
 	counter_increase(incoming_wdp_counter);
     }    
     list_remove_producer(incoming_wdp);
-    debug("bb.thread", 0, "EXIT: udp_receiver");
     list_remove_producer(flow_threads);
 }
 
@@ -129,7 +127,6 @@ static void udp_sender(void *arg)
     Msg *msg;
     Udpc *conn = arg;
 
-    debug("bb.thread", 0, "START: udp_sender");
     list_add_producer(flow_threads);
     while(bb_status != BB_DEAD) {
 
@@ -153,7 +150,6 @@ static void udp_sender(void *arg)
     gwthread_join(conn->receiver);
 
     udpc_destroy(conn);
-    debug("bb.thread", 0, "EXIT: udp_sender");
     list_remove_producer(flow_threads);
 }
 

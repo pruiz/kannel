@@ -142,7 +142,6 @@ static void boxc_sender(void *arg)
     Msg *msg;
     Boxc *conn = arg;
 
-    debug("bb.thread", 0, "START: boxc_sender");
     list_add_producer(flow_threads);
 
     while(bb_status != BB_DEAD && conn->alive) {
@@ -169,7 +168,6 @@ static void boxc_sender(void *arg)
     /* XXX the client should close the line, instead */
     conn->alive = 0;
     
-    debug("bb.thread", 0, "EXIT: boxc_sender");
     list_remove_producer(flow_threads);
 }
 
@@ -247,7 +245,6 @@ static void run_smsbox(void *arg)
     Boxc *newconn;
     long sender;
     
-    debug("bb.thread", 0, "START: run_smsbox");
     list_add_producer(flow_threads);
     fd = (int)arg;
     newconn = accept_boxc(fd);
@@ -274,7 +271,6 @@ cleanup:
     list_delete_equal(smsbox_list, newconn);
     boxc_destroy(newconn);
 
-    debug("bb.thread", 0, "EXIT: run_smsbox");
     list_remove_producer(flow_threads);
 }
 
@@ -287,7 +283,6 @@ static void run_wapbox(void *arg)
     List *newlist;
     long sender;
 
-    debug("bb.thread", 0, "START: run_wapbox");
     list_add_producer(flow_threads);
     fd = (int)arg;
     newconn = accept_boxc(fd);
@@ -337,7 +332,6 @@ cleanup:
     list_destroy(newlist);
     boxc_destroy(newconn);
 
-    debug("bb.thread", 0, "EXIT: run_wapbox");
     list_remove_producer(flow_threads);
 }
 
@@ -401,7 +395,7 @@ route:
 	/* XXX this SHOULD according to load levels! */
 	
 	list_lock(wapbox_list);
-	i = rand() % list_len(wapbox_list);
+	i = gw_rand() % list_len(wapbox_list);
 
 	conn = list_get(wapbox_list, i);
 	list_unlock(wapbox_list);
@@ -441,8 +435,8 @@ static void wdp_to_wapboxes(void *arg)
     Msg *msg;
     int i;
 
-    debug("bb.thread", 0, "START: wdp_to_wapboxes router");
     list_add_producer(flow_threads);
+    list_add_producer(wapbox_list);
 
     route_info = list_create();
 
@@ -458,8 +452,9 @@ static void wdp_to_wapboxes(void *arg)
 
 	conn = route_msg(route_info, msg);
 	if (conn == NULL) {
-	    warning(0, "Cannot route message, exiting router");
-	    break;
+	    warning(0, "Cannot route message, discard it");
+	    msg_destroy(msg);
+	    continue;
 	}
 	list_produce(conn->incoming, msg);
     }
@@ -469,6 +464,7 @@ static void wdp_to_wapboxes(void *arg)
 
     gw_assert(list_len(route_info) == 0);
     list_destroy(route_info);
+
     list_lock(wapbox_list);
     for(i=0; i < list_len(wapbox_list); i++) {
 	conn = list_get(wapbox_list, i);
@@ -477,7 +473,7 @@ static void wdp_to_wapboxes(void *arg)
     }
     list_unlock(wapbox_list);
 
-    debug("bb.thread", 0, "EXIT: wdp_to_wapboxes router");
+    list_remove_producer(wapbox_list);
     list_remove_producer(flow_threads);
 }
 
@@ -529,8 +525,6 @@ static void smsboxc_run(void *arg)
     int fd;
     int port;
 
-    debug("bb.thread", 0, "START: smsboxc_run");
-
     list_add_producer(flow_threads);
     port = (int)arg;
     
@@ -561,7 +555,6 @@ static void smsboxc_run(void *arg)
 
     list_destroy(smsbox_list);
     
-    debug("bb.thread", 0, "EXIT: smsboxc_run");
     list_remove_producer(flow_threads);
 }
 
@@ -569,8 +562,6 @@ static void smsboxc_run(void *arg)
 static void wapboxc_run(void *arg)
 {
     int fd, port;
-
-    debug("bb.thread", 0, "START: wapboxc_run");
 
     list_add_producer(flow_threads);
     port = (int)arg;
@@ -592,12 +583,16 @@ static void wapboxc_run(void *arg)
      */
     
     /* XXX KLUDGE fix when list_wait_until_empty() exists */
-    while(list_wait_until_nonempty(wapbox_list)!= -1)
+
+    
+    while(list_wait_until_nonempty(wapbox_list)== 1)
 	sleep(1);
 
+    while(list_consume(wapbox_list)!=NULL)
+	;
+    
     list_destroy(wapbox_list);
 
-    debug("bb.thread", 0, "EXIT: wapboxc_run");
     list_remove_producer(flow_threads);
 }
 

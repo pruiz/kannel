@@ -19,8 +19,6 @@
 
 extern volatile sig_atomic_t bb_status;
 
-extern List *core_threads;
-
 /* our own thingies */
 
 static volatile sig_atomic_t httpadmin_running;
@@ -130,9 +128,6 @@ static void httpd_serve(void *arg)
     Octstr *url, *body;
     Octstr *reply;
     
-    debug("bb.thread", 0, "START: httpd_serve");
-    list_add_producer(core_threads);
-
     http2_server_get_request(client, &url, &headers, &body, &cgivars);
     
     if (octstr_str_compare(url, "/cgi-bin/status")==0)
@@ -167,8 +162,6 @@ static void httpd_serve(void *arg)
     http2_destroy_cgiargs(cgivars);
 
     http2_server_close_client(client);
-    debug("bb.thread", 0, "EXIT: httpd_serve");
-    list_remove_producer(core_threads);
 }
 
 static void httpadmin_run(void *arg)
@@ -176,8 +169,6 @@ static void httpadmin_run(void *arg)
     HTTPSocket *httpd, *client;
     int port;
 
-    debug("bb.thread", 0, "START: httpadmin_run");
-    list_add_producer(core_threads);
     port = (int)arg;
     
     httpd = http2_server_open(port);
@@ -209,9 +200,6 @@ static void httpadmin_run(void *arg)
     http2_server_close(httpd);
 
     httpadmin_running = 0;
-    
-    debug("bb.thread", 0, "EXIT: httpadmin_run");
-    list_remove_producer(core_threads);
 }
 
 

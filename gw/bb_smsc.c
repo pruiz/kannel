@@ -63,7 +63,6 @@ static void sms_receiver(void *arg)
     Smsc *conn = arg;
     int ret;
 
-    debug("bb.thread", 0, "START: sms_receiver");
     list_add_producer(flow_threads);
     list_add_producer(incoming_sms);
 
@@ -106,7 +105,6 @@ static void sms_receiver(void *arg)
 	    usleep(100000);
     }    
     list_remove_producer(incoming_sms);
-    debug("bb.thread", 0, "EXIT: sms_receiver");
     list_remove_producer(flow_threads);
 }
 
@@ -120,7 +118,6 @@ static void sms_sender(void *arg)
     Smsc *conn = arg;
     int ret;
 
-    debug("bb.thread", 0, "START: sms_sender");
     list_add_producer(flow_threads);
     
     while(bb_status != BB_DEAD) {
@@ -157,7 +154,6 @@ static void sms_sender(void *arg)
     smsc_close(conn->smsc);
 
     gw_free(conn);
-    debug("bb.thread", 0, "EXIT: sms_sender");
     list_remove_producer(flow_threads);
 }
 
@@ -173,7 +169,6 @@ static void sms_router(void *arg)
     char *number;
     int i, s;
 
-    debug("bb.thread", 0, "START: sms_router");
     list_add_producer(flow_threads);
 
     while(bb_status != BB_DEAD) {
@@ -232,7 +227,6 @@ static void sms_router(void *arg)
     }
     smsc_die();
 
-    debug("bb.thread", 0, "EXIT: sms_router");
     list_remove_producer(flow_threads);
 }
 
