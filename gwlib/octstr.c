@@ -374,6 +374,38 @@ void octstr_delete(Octstr *ostr1, size_t pos, size_t len) {
 
 
 
+Octstr *octstr_read_file(const char *filename) {
+	FILE *f;
+	Octstr *os;
+	char buf[128*1024];
+	size_t n;
+	
+	f = fopen(filename, "r");
+	if (f == NULL) {
+		error(errno, "fopen failed: couldn't open `%s'", filename);
+		return NULL;
+	}
+
+	os = octstr_create_empty();
+	if (os == NULL)
+		goto error;
+
+	while ((n = fread(buf, 1, sizeof(buf), f)) > 0) {
+		if (octstr_insert_data(os, octstr_len(os), buf, n) == -1)
+			goto error;
+	}
+	
+	(void) fclose(f);
+	return os;
+
+error:
+	(void) fclose(f);
+	octstr_destroy(os);
+	return NULL;
+}
+
+
+
 OctstrList *octstr_list_create(void) {
 	OctstrList *list;
 	

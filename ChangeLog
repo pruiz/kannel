@@ -1,3 +1,34 @@
+Tue Dec 21 15:17:32 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* README.docbook: Wrote. Includes instructions for getting Docbook
+	working (on Debian and Red Hat; patches for other systems most
+	welcome).
+	
+	* gw/wml.c, gw/wml.h, test/test_wml.c: Added to gateway module
+	from old smsgateway module. Code written by Peter Grönholm.
+	Implements WML compiler.
+	
+	* gw/msg.c, gw/wsp.c, gw/wtp.c: Dumping function only prints
+	out the relevant parts of the structure, not all fields.
+	
+	* gw/anything-related-to-wapbox-wtp-or-wsp: Removed
+	extra debugging stuff to make log files more readable even during
+	debugging. (Put'em back if you need'em.)
+	
+	* gw/wapbox.c: Emptying the queue of message going to the bearer
+	box is in its own thread.
+	
+	* gw/wsp.c, gw/wsp_events-decl.h, gw/wsp_state-decl.h: Implemented
+	some more of the WSP. Now a Get PDU is parsed and a new thread
+	is spawned to do the HTTP fetch (which at the moment just reads
+	from a hardcoded file, but that's trivially fixable later). The
+	thread then sends back a Reply PDU with the contents of the
+	(compiled) WML page. However, the phone doesn't accept it yet,
+	something strange is going on.
+	
+	* gwlib/octstr.[ch]: Wrote function octstr_read_file, which reads
+	the contents of a file into an octet string.
+
 1999-12-20    <rpr@rpr.wapit.com>
 
 	* gwlib/socket.*: added function connect_to_server_with_port which

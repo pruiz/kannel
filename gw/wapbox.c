@@ -24,7 +24,9 @@ static void read_config(char *filename) {
 	cfg = config_create(filename);
 	if (config_read(cfg) == -1)
 		panic(0, "Couldn't read configuration from `%s'.", filename);
+#if 0
 	config_dump(cfg);
+#endif
 	
 	grp = config_first_group(cfg);
 	while (grp != NULL) {
@@ -34,9 +36,6 @@ static void read_config(char *filename) {
 			bearerbox_port = atoi(s);
 		grp = config_next_group(grp);
 	}
-
-	debug(0, "host: %s", bearerbox_host);
-	debug(0, "port: %d", bearerbox_port);
 }
 
 
@@ -93,7 +92,9 @@ void init_queue(void) {
 
 void put_msg_in_queue(Msg *msg) {
 	mutex_lock(queue_mutex);
+#if 0
 	debug(0, "wapbox: putting msg %p in queue", (void *) msg);
+#endif
 	if (queue_len == MAX_MSGS_IN_QUEUE)
 		error(0, "wapbox: message queue full, dropping message");
 	else {
@@ -114,10 +115,26 @@ Msg *remove_msg_from_queue(void) {
 		msg = queue_tab[queue_start];
 		queue_start = (queue_start + 1) % MAX_MSGS_IN_QUEUE;
 		--queue_len;
+#if 0
 		debug(0, "wapbox: removed msg %p in queue", (void *) msg);
+#endif
 	}
 	mutex_unlock(queue_mutex);
 	return msg;
+}
+
+
+static void *empty_queue_thread(void *arg) {
+	Msg *msg;
+	int socket;
+	
+	socket = *(int *) arg;
+
+	for (;;) {
+		msg = remove_msg_from_queue();
+		if (msg != NULL)
+			msg_send(socket, msg);
+	}
 }
 
 
@@ -139,11 +156,16 @@ int main(int argc, char **argv) {
 		
 	bbsocket = connect_to_bearer_box();
 	init_queue();
+	
+	(void) start_thread(1, empty_queue_thread, &bbsocket, 0);
+	
 	for (;;) {
 		msg = msg_receive(bbsocket);
 		if (msg == NULL)
 			break;
+#if 0
 		debug(0, "wapbox: received datagram, unpacking it...");
+#endif
 		wtp_event = wtp_unpack_wdp_datagram(msg);
                 if (wtp_event == NULL)
                    continue;
@@ -154,15 +176,10 @@ int main(int argc, char **argv) {
 		wtp_machine = wtp_machine_find_or_create(msg, wtp_event);
                 if (wtp_machine == NULL)
                    continue;
+#if 0
                 debug(0, "wapbox: returning create machine");
+#endif
 	        wtp_handle_event(wtp_machine, wtp_event);
-
-		for (;;) {
-			msg = remove_msg_from_queue();
-			if (msg == NULL)
-				break;
-			msg_send(bbsocket, msg);
-		}
 	}
 	
 	info(0, "WAP box terminating.");

@@ -70,6 +70,36 @@ WSP_EVENT(SConnectResponse,
 	  OCTSTR(negotiated_capabilities);
 	  })
 
+WSP_EVENT(Release,
+	  {
+	  MACHINE(machine);
+	  OCTSTR(url);
+	  })
+
+WSP_EVENT(SMethodInvokeIndication,
+	  {
+	  MACHINE(machine);
+	  OCTSTR(url);
+	  INTEGER(method);
+	  INTEGER(server_transaction_id);
+	  })
+
+WSP_EVENT(SMethodInvokeResult,
+	  {
+	  MACHINE(machine);
+	  OCTSTR(url);
+	  INTEGER(method);
+	  INTEGER(server_transaction_id);
+	  })
+
+WSP_EVENT(SMethodResultRequest,
+	  {
+	  INTEGER(server_transaction_id);
+	  INTEGER(status);
+	  OCTSTR(response_body);
+	  MACHINE(machine);
+	  })
+
 #undef WSP_EVENT
 #undef OCTSTR
 #undef INTEGER

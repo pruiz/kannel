@@ -185,6 +185,13 @@ void octstr_delete(Octstr *ostr1, size_t pos, size_t len);
 
 
 /*
+ * Read the contents of a named file to an octet string. Return NULL for
+ * failure, pointer to octet string for success.
+ */
+Octstr *octstr_read_file(const char *filename);
+
+
+/*
  * Create an empty list of octet strings. Return pointer to new list, or
  * NULL for failure.
  */

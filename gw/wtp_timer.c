@@ -65,15 +65,19 @@ WTPEvent *e) {
 	timer->interval = interval;
 	timer->machine = sm;
 	timer->event = e;
+#if 0
 	debug(0, "Timer %p started at %ld, duration %ld.", 
 		(void *) timer, timer->start_time, timer->interval);
+#endif
 }
 
 
 void wtp_timer_stop(WTPTimer *timer) {
 	timer->interval = 0;
+#if 0
 	debug(0, "Timer %p stopped at %ld.",
 		(void *) timer, (long) time(NULL));
+#endif
 }
 
 
@@ -82,14 +86,22 @@ void wtp_timer_check(void) {
 	long now;
 
 	now = (long) time(NULL);
+#if 0
 	debug(0, "Checking timers at %ld.", now);
+#endif
 	for (t = list; t != NULL; t = t->next) {
 		if (t->interval == 0)
 			continue;
 		if (t->start_time + t->interval <= now) {
+#if 0
 			debug(0, "Timer %p has elapsed.", (void *) t);
+#endif
 			t->interval = 0;
 		} else
+#if 0
 			debug(0, "Timer %p has not elapsed.", (void *) t);
+#else
+			;
+#endif
 	}
 }

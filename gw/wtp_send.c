@@ -72,12 +72,6 @@ static Msg *wtp_pack_result(WTPMachine *machine, WTPEvent *event){
  *First we transfer address four-tuple
  */
 
-debug(0, "pack_result: machine->src: <%s> <%ld>",
-	octstr_get_cstr(machine->source_address), 
-	machine->source_port);
-debug(0, "pack_result: machine->dst: <%s> <%ld>",
-	octstr_get_cstr(machine->destination_address), 
-	machine->destination_port);
     msg->wdp_datagram.source_address = 
     	octstr_duplicate(machine->destination_address);
     if (msg->wdp_datagram.source_address == NULL)
@@ -89,14 +83,6 @@ debug(0, "pack_result: machine->dst: <%s> <%ld>",
     if (msg->wdp_datagram.destination_address == NULL)
        goto oct_error;
     msg->wdp_datagram.destination_port=machine->source_port;
-
-debug(0, "pack_result: msg->src: <%s> <%ld>",
-	octstr_get_cstr(msg->wdp_datagram.source_address), 
-	msg->wdp_datagram.source_port);
-debug(0, "pack_result: msg->dst: <%s> <%ld>",
-	octstr_get_cstr(msg->wdp_datagram.destination_address), 
-	msg->wdp_datagram.destination_port);
-
 
 /*
  * Then user data. We try to send fixed length result PDU, without segmenta-
@@ -126,7 +112,9 @@ debug(0, "pack_result: msg->dst: <%s> <%ld>",
  */
     tid=event->TRResult.tid^0x8000;
     first_tid=tid>>8;
+#if 0
     debug(0, "first tid was %d", first_tid);
+#endif
     last_tid=event->TRResult.tid&0xff;
     wtp_pdu[1]=first_tid;
     wtp_pdu[2]=last_tid;

@@ -12,6 +12,9 @@ STATE_NAME(CONNECTING)
 STATE_NAME(CONNECTING_2)
 STATE_NAME(CONNECTED)
 STATE_NAME(HOLDING)
+STATE_NAME(REQUESTING)
+STATE_NAME(PROCESSING)
+STATE_NAME(REPLYING)
 
 ROW(NULL_STATE,
 	TRInvokeIndication,
@@ -19,9 +22,6 @@ ROW(NULL_STATE,
 	{
 		WSPEvent *new_event;
 		WTPEvent *wtp_event;
-
-		debug(0, "WSP: Connect PDU:");
-		(void) unpack_connect_pdu(e->user_data);
 
 		/* Send TR-Invoke.res to WTP */
 		wtp_event = wtp_event_create(TRInvoke);
@@ -65,8 +65,6 @@ ROW(CONNECTING,
 
 		/* Make a ConnectReply PDU for WSP. */
 		pdu = make_connectreply_pdu(sm->session_id);
-		debug(0, "WSP: ConnectReply PDU is:");
-		octstr_dump(pdu);
 
 		/* Make a TR-Result.req event for WTP. */
 		wtp_event = wtp_event_create(TRResult);
@@ -78,8 +76,6 @@ ROW(CONNECTING,
 		wtp_handle_event(e->machine, wtp_event);
 
 		/* Release all method transactions in HOLDING state. */
-		 
-		error(0, "State not yet fully implemented.");
 	},
 	CONNECTING_2)
 
@@ -96,36 +92,96 @@ ROW(CONNECTED,
 	e->tcl == 2 && wsp_deduce_pdu_type(e->user_data, 0) == Get_PDU &&
 	sm->n_methods == 0 /* XXX check max from config */,
 	{
+		WSPEvent *new_event;
 		Octstr *url;
 		Octstr *headers;
-		char *type;
-		char *data;
-		size_t size;
 
 		++sm->n_methods;
-		
-		/* 
-		 * XXX
-		 * Here we do things a little bit different from the
-		 * spec, just to get started. We'll fix this later.
-		 * We extract the URL here, and fetch it here. We
-		 * should really do it in a different thread instead,
-		 * so that we can handle events while the fetch is
-		 * happening. What we have here, ladies and gentlemen,
-		 * is a quick and dirty hack to get something fetched,
-		 * just to liven up a Friday night at work.
-		 */
-		
+
 		if (unpack_get_pdu(&url, &headers, e->user_data) == -1)
 			error(0, "Unpacking Get PDU failed, oops.");
-		if (http_get(octstr_get_cstr(url), &type, &data, &size) == -1)
-			error(0, "WSP: http_get failed, oops.");
-		else {
-			debug(0, "WSP: Fetched URL (%s):\n%.*s\n-----",
-				type, (int) size, data);
-		}
+		debug(0, "WSP: sending Release to ourselves");
+		new_event = wsp_event_create(Release);
+		new_event->Release.machine = e->machine;
+		new_event->Release.url = url;
+		wsp_handle_event(sm, new_event);
+
 	},
 	HOLDING)
+
+ROW(CONNECTED,
+	TRInvokeIndication,
+	e->tcl == 0 && wsp_deduce_pdu_type(e->user_data, 0) == Disconnect_PDU,
+	{
+		debug(0, "WSP: Got Disconnect PDU.");
+	},
+	NULL_STATE)
+
+ROW(HOLDING,
+	Release,
+	1,
+	{
+		WSPEvent *new_event;
+
+		/* 
+		 * This is where we start the HTTP fetch.
+		 * We fork a new thread for it; if the fork succeeds,
+		 * the thread sends us a S-MethodInvoke.res event. If
+		 * it fails, then we have a problem.
+		 */
+		 
+		new_event = wsp_event_create(SMethodInvokeResult);
+		new_event->SMethodInvokeResult.machine = e->machine;
+		new_event->SMethodInvokeResult.url = e->url;
+		new_event->SMethodInvokeResult.method = Get_PDU;
+		new_event->SMethodInvokeResult.server_transaction_id = 1;
+		(void) start_thread(1, wsp_http_thread, new_event, 0);
+	},
+	REQUESTING)
+
+ROW(REQUESTING,
+	SMethodInvokeResult,
+	1,
+	{
+		WTPEvent *wtp_event;
+		
+		/* Send TR-Invoke.res to WTP */
+		wtp_event = wtp_event_create(TRInvoke);
+		if (wtp_event == NULL)
+			panic(0, "wtp_event_create failed");
+		wtp_event->TRInvoke.tid = e->machine->tid;
+		wtp_event->TRInvoke.exit_info = NULL;
+		wtp_event->TRInvoke.exit_info_present = 0;
+		debug(0, "WSP: sending TR-Invoke.res event to WTP");
+		wtp_handle_event(e->machine, wtp_event);
+	},
+	PROCESSING)
+
+ROW(PROCESSING,
+	SMethodResultRequest,
+	1,
+	{
+		WTPEvent *wtp_event;
+
+		/* Send TR-Result.req to WTP */
+		wtp_event = wtp_event_create(TRResult);
+		if (wtp_event == NULL)
+			panic(0, "wtp_event_create failed");
+		wtp_event->TRResult.tid = e->machine->tid;
+		wtp_event->TRResult.user_data = 
+			make_reply_pdu(e->status, e->response_body);
+		debug(0, "WSP: sending TR-Result.req event to WTP");
+		wtp_handle_event(e->machine, wtp_event);
+	},
+	REPLYING)
+
+ROW(REPLYING,
+	TRResultConfirmation,
+	1,
+	{
+		--sm->n_methods;
+	},
+	CONNECTED)
 
 #undef ROW
 #undef STATE_NAME

@@ -117,8 +117,9 @@ void wtp_event_dump(WTPEvent *event) {
 	#define OCTSTR(name) \
 		debug(0, "  %s.%s:", t, #name); \
 		octstr_dump(p->name)
-	#define EVENT(type, field) \
-		{ char *t = #type; struct type *p = &event->type; field } 
+	#define EVENT(tt, field) \
+		if (tt == event->type) \
+			{ char *t = #tt; struct tt *p = &event->tt; field } 
 	#include "wtp_events-decl.h"
   	debug(0, "WTPEvent %p ends.", (void *) event); 
 }
@@ -265,12 +266,16 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
 
 	          case RcvInvoke:
                        tid=event->RcvInvoke.tid;
+#if 0
                        debug(0, "WTP: machine_find_or_create: receiving invoke");
+#endif
                   break;
 
 	          case RcvAck: 
                        tid=event->RcvAck.tid;
+#if 0
                        debug(0, "WTP: machine_find_or_create: receiving ack");
+#endif
                   break;
                  
 	          default:
@@ -329,8 +334,10 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
          tid=first_tid;
          tid=(tid << 8) + last_tid;
 
+#if 0
          debug(0, "WTP: first_tid=%d last_tid=%d tid=%d", first_tid, 
                last_tid, tid);
+#endif
 
          this_octet=octet=octstr_get_char(msg->wdp_datagram.user_data, 0);
          if (octet == -1)
@@ -407,8 +414,10 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                event->RcvAck.tid_ok=this_octet>>2&1;
                this_octet=octet;
                event->RcvAck.rid=this_octet&1;
+#if 0
                debug(0, "Ack event packed");
                wtp_event_dump(event);
+#endif
             }
 
 /*
@@ -509,26 +518,32 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
      WSPEvent *wsp_event=NULL;
      WTPTimer *timer=NULL;
 
+#if 0
      debug(0, "wtp_handle_event called");
+#endif
 
 /* 
  * If we're already handling events for this machine, add the event to the 
  * queue.
  */
      if (mutex_try_lock(machine->mutex) == -1) {
+#if 0
 	  debug(0, "wtp_handle_event: machine already locked, queing event");
+#endif
 	  append_to_event_queue(machine, event);
 	  return;
      }
 
+#if 0
      debug(0, "wtp_handle_event: got mutex");
+#endif
 
      do {
-	  debug(0, "wtp_handle_event: state is %s, event is %s.",
+	  debug(0, "WTP: state is %s, event is %s.",
 	  		name_state(machine->state),
 	  		name_event(event->type));
 #if 0
-	  debug(0, "wtp_handle_event: event details:");
+	  debug(0, "WTP: event details:");
 	  wtp_event_dump(event);
 #endif
 	  #define STATE_NAME(state)
@@ -543,14 +558,18 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 		  } else 
 	  #include "wtp_state-decl.h"
 		  {
-			error(0, "wtp_handle_event: unhandled event!");
+			error(0, "WTP: unhandled event!");
+			debug(0, "WTP: Unhandled event was:");
+			wtp_event_dump(event);
 		  }
 
           event = remove_from_event_queue(machine);
      } while (event != NULL);
 
      mutex_unlock(machine->mutex);
+#if 0
      debug(0, "wtp_handle_event: done");
+#endif
      return;
 
 /*
@@ -612,7 +631,9 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
  * We are interested only machines in use, it is, having in_use-flag 1.
  */
            if (list == NULL){
+#if 0
               debug (0, "wtp_machine_find: empty list");
+#endif
               return NULL;
            }
 
@@ -629,7 +650,9 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
 		temp->tid == tid && temp->in_use == 1){
 
                 mutex_unlock(temp->mutex);
+#if 0
                 debug (0, "wtp_machine_find: machine found");
+#endif
                 return temp;
                  
 		} else {
@@ -641,7 +664,9 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
 		      mutex_lock(temp->mutex);
                }              
            }
+#if 0
            debug (0, "wtp_machine_find: machine not found");      
+#endif
            return temp;
 }
 

@@ -24,7 +24,7 @@ ROW(LISTEN,
      wsp_event=pack_wsp_event(current_primitive, event, machine);
      if (wsp_event == NULL)
         goto mem_error;
-     debug(0, "RcvInvoke: generated wsp event");
+     debug(0, "WTP: Sending TR-Invoke.ind to WSP");
      wsp_dispatch_event(machine, wsp_event);
 
      timer=wtp_timer_create();
@@ -33,6 +33,21 @@ ROW(LISTEN,
      wtp_timer_start(timer, L_A_WITH_USER_ACK, machine, event); 
     },
     INVOKE_RESP_WAIT)
+
+ROW(LISTEN,
+    RcvInvoke,
+    event->RcvInvoke.tcl == 0,
+    {
+     current_primitive=TRInvokeIndication;
+     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     if (wsp_event == NULL)
+        goto mem_error;
+     debug(0, "RcvInvoke: generated TR-Invoke.ind for WSP");
+     wsp_dispatch_event(machine, wsp_event);
+    },
+    LISTEN)
+
+
 /*
  * Ignore receiving invoke, when the state of the machine is INVOKE_RESP_WAIT.
  * (Always (1) do nothing ({ }).)
