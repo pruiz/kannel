@@ -17,7 +17,10 @@
 
 #include "smsbox_req.h"
 #include "urltrans.h"
-
+#include "config.h"
+#ifdef HAVE_SECURITY_PAM_APPL_H
+#include <security/pam_appl.h>
+#endif
 /*
  * this module handles the request handling - that is, finding
  * the correct urltranslation, fetching the result and then
@@ -471,42 +474,162 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	return 0;
 }
 
+/* Function that test the authentification via Plugable authentification module*/
+#ifdef HAVE_SECURITY_PAM_APPL_H /*Module for pam authentication */
+
+typedef const struct pam_message pam_message_type;
+
+static const char *PAM_username;
+static const char *PAM_password;
+
+static int PAM_conv (int num_msg, pam_message_type **msg,
+	  struct pam_response **resp,
+	  void *appdata_ptr)
+{
+  int             count = 0, replies = 0;
+  struct pam_response *repl = NULL;
+  int             size = sizeof(struct pam_response);
+
+#define GET_MEM \
+	if (!(repl = (gw_realloc(repl, size)))) \
+  		return PAM_CONV_ERR; \
+	size += sizeof(struct pam_response)
+#define COPY_STRING(s) (s) ? strdup(s) : NULL
+
+  for (count = 0; count < num_msg; count++) {
+    switch (msg[count]->msg_style) {
+    case PAM_PROMPT_ECHO_ON:
+      GET_MEM;
+      repl[replies].resp_retcode = PAM_SUCCESS;
+      repl[replies++].resp = COPY_STRING(PAM_username);
+      /* PAM frees resp */
+      break;
+    case PAM_PROMPT_ECHO_OFF:
+      GET_MEM;
+      repl[replies].resp_retcode = PAM_SUCCESS;
+      repl[replies++].resp = COPY_STRING(PAM_password);
+      /* PAM frees resp */
+      break;
+    case PAM_TEXT_INFO:
+      printf("unexpected message from PAM: %s\n",
+	      msg[count]->msg);
+      break;
+    case PAM_ERROR_MSG:
+    default:
+      /* Must be an error of some sort... */
+      printf("unexpected error from PAM: %s\n",
+	     msg[count]->msg);
+      free(repl);
+      return PAM_CONV_ERR;
+    }
+  }
+  if (repl)
+    *resp = repl;
+  return PAM_SUCCESS;
+}
+
+static struct pam_conv PAM_conversation = {
+  &PAM_conv,
+  NULL
+};
+
+
+int authenticate(const char *login, const char *passwd)
+{
+  pam_handle_t	*pamh;
+  int		pam_error;
+
+  PAM_username = login;
+  PAM_password = passwd;
+
+  pam_error = pam_start("kannel", login, &PAM_conversation, &pamh);
+  if (pam_error != PAM_SUCCESS
+      || (pam_error = pam_authenticate(pamh, 0)) != PAM_SUCCESS) {
+    pam_end(pamh, pam_error);
+    return 0;
+  }
+  pam_end(pamh, PAM_SUCCESS);
+  return 1;
+}
+
 /*
  * Check for matching username and password for requests.
  * Return an URLTranslation if successful NULL otherwise.
  */
-static URLTranslation *authorise_user(List *list, char *client_ip) {
-	URLTranslation *t = NULL;
-	Octstr *val, *user = NULL;
-	
-	if ((user = http_cgi_variable(list, "username")) == NULL
-	    && (user = http_cgi_variable(list, "user")) == NULL)
-		t = urltrans_find_username(translations, "default");
-	else 
-		t = urltrans_find_username(translations, octstr_get_cstr(user));
-    
-	if (((val = http_cgi_variable(list, "password")) == NULL
-	     && (val = http_cgi_variable(list, "pass")) == NULL)
-	    || t == NULL ||
-	    strcmp(octstr_get_cstr(val), urltrans_password(t)) != 0)
-	{
-		/* if the password is not correct, reset the translation. */
-		t = NULL;
-	}
-	if (t) {
-	    Octstr *ip = octstr_create(client_ip);
 
-	    if (is_allowed_ip(urltrans_allow_ip(t),
-			      urltrans_deny_ip(t), ip) == 0)
-	    {
-		warning(0, "Non-allowed connect tried by <%s> from <%s>, ignored",
-			user ? octstr_get_cstr(user) : "default-user" ,
-			client_ip);
-		t = NULL;
-	    }
-	    octstr_destroy(ip);
-	}
-	return t;
+int pam_authorise_user(List *list) {
+  
+  URLTranslation *t = urltrans_find_username(translations,"pam");
+  Octstr *val, *user = NULL;
+  char *pwd, *login;
+  int result;
+  if ( (user=http_cgi_variable(list, "user"))==NULL  &&  (user=http_cgi_variable(list, "username") )==NULL )
+    return 0;
+
+  login =  octstr_get_cstr(user);
+  
+  if ( (val=http_cgi_variable(list, "password"))==NULL  &&  (val=http_cgi_variable(list, "pass"))==NULL )
+    return 0;
+  pwd   =  octstr_get_cstr(val);
+  
+  result=authenticate(login,pwd);
+  
+  return result;
+}
+#endif /* HAVE_SECURITY_PAM_APPL_H */
+
+/*
+ * Authentification whith the data base of kannel 
+ * Check for matching username and password for requests.
+ * Return an URLTranslation if successful NULL otherwise.
+ */
+static URLTranslation *default_authorise_user(List *list, char *client_ip) {
+    URLTranslation *t = NULL;
+    Octstr *val, *user = NULL;
+
+    if ((user = http_cgi_variable(list, "username")) == NULL
+        && (user = http_cgi_variable(list, "user")) == NULL)
+        t = urltrans_find_username(translations, "default");
+    else
+        t = urltrans_find_username(translations, octstr_get_cstr(user));
+
+    if (((val = http_cgi_variable(list, "password")) == NULL
+         && (val = http_cgi_variable(list, "pass")) == NULL)
+        || t == NULL ||
+        strcmp(octstr_get_cstr(val), urltrans_password(t)) != 0)
+    {
+        /* if the password is not correct, reset the translation. */
+        t = NULL;
+    }
+    if (t) {
+        Octstr *ip = octstr_create(client_ip);
+
+        if (is_allowed_ip(urltrans_allow_ip(t),
+                  urltrans_allow_ip(t), ip) == 0)
+        {
+        warning(0, "Non-allowed connect tried by <%s> from <%s>, ignored",
+            user ? octstr_get_cstr(user) : "default-user" ,
+            client_ip);
+        t = NULL;
+        }
+        octstr_destroy(ip);
+    }
+    return t;
+}
+
+static URLTranslation *authorise_user(List *list, char *client_ip) {
+
+#ifdef HAVE_SECURITY_PAM_APPL_H
+  URLTranslation*t=urltrans_find_username(translations,"pam");
+  
+  if (t!=NULL) {
+    if(pam_authorise_user(list)) return t;
+    else return NULL;
+  }
+  
+  else
+#endif
+    return default_authorise_user(list,client_ip);
 }
 
 /*----------------------------------------------------------------*
@@ -533,12 +656,10 @@ void smsbox_req_init(URLTranslationList *transls,
 		global_sender = gw_strdup(global);
 }
 
-
 int smsbox_req_count(void)
 {
 	return (int)req_threads;
 }
-
 
 void smsbox_req_thread(void *arg) {
     Msg *msg;
