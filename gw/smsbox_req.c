@@ -26,12 +26,23 @@
  */
 
 /* Defines */
-
 #define MAX8BITLENGTH	140
 #define MAX7BITLENGTH	160
 
 #define CONCAT_IEI	0
 #define CONCAT_IEL	6
+
+#define	CONN_TEMP	0x60
+#define	CONN_CONT	0x61
+#define	CONN_SECTEMP	0x62
+#define	CONN_SECCONT	0x63
+#define AUTH_NORMAL	0x70
+#define AUTH_SECURE	0x71
+#define BEARER_DATA	0x45
+#define CALL_ISDN	0x73
+#define SPEED_9660	"6B"
+#define SPEED_14400	"6C"
+#define ENDTAG		"01"
 
 /* Global variables */
 
@@ -200,7 +211,7 @@ static int do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslatio
 	int size, total_len, pos;
 
 	int concat;
-	int msglen, msgcount, msgseq = 1;
+	int msgcount, msgseq = 1;
 	static unsigned char msgref = 0;
 
 	gw_assert(msg != NULL);
@@ -570,7 +581,7 @@ char *smsbox_req_sendsms(List *list)
 {
 	Msg *msg = NULL;
 	URLTranslation *t = NULL;
-	Octstr *user = NULL, *val, *from = NULL, *to;
+	Octstr *user = NULL, *from = NULL, *to;
 	Octstr *text = NULL, *udh = NULL;
 	int ret;
 
@@ -636,6 +647,184 @@ char *smsbox_req_sendsms(List *list)
 error:
 	error(0, "sendsms_request: failed");
 	octstr_destroy(from);
+	return "Sending failed.";
+}
+
+
+
+/*****************************************************************************
+ * Creates and sends an SMS OTA (auto configuration) message from an HTTP request
+ * Args: list contains the CGI parameters
+ * 
+ * This will be changed later to use an XML compiler.
+ */
+char *smsbox_req_sendota(List *list)
+{
+	char *url = NULL, *desc = NULL, *ipaddr = NULL, *phonenum = NULL;
+	char *username = NULL, *passwd = NULL;
+	char speed[5];
+	int bearer = -1, calltype = -1;
+	int connection = CONN_CONT, security = 0, authent = AUTH_NORMAL;
+	ConfigGroup *grp;
+	char *p;
+
+	Msg *msg = NULL;
+	URLTranslation *t = NULL;
+	Octstr *user = NULL, *val, *from = NULL, *to;
+	int ret;
+	int i;
+	Octstr *phonenumber = NULL;
+	char temp[10];
+
+	/* check the username and password */
+	t = authorise_user(list);
+	if (t == NULL) {
+	    return "Authorization failed";
+	}
+
+	phonenumber = http_cgi_variable(list, "phonenumber");
+	if(phonenumber == NULL)
+	{
+		error(0, "/cgi-bin/sendota needs a valid phone number.");
+		return "Wrong sendota args.";
+	}
+		
+	grp = config_find_first_group(cfg, "group", "otaconfig");    
+	if ((p = config_get(grp, "location")) != NULL)
+		url = p;
+	if ((p = config_get(grp, "service")) != NULL)
+		desc = p;
+	if ((p = config_get(grp, "ipaddress")) != NULL)
+		ipaddr = p;
+	if ((p = config_get(grp, "phonenumber")) != NULL)
+		phonenum = p;
+	if ((p = config_get(grp, "bearer")) != NULL)
+		bearer = (strcasecmp(p, "data") == 0)? BEARER_DATA : -1;
+	if ((p = config_get(grp, "calltype")) != NULL)
+		calltype = (strcasecmp(p, "isdn") == 0)? CALL_ISDN : -1;
+	strcpy(speed, SPEED_9660);
+	if ((p = config_get(grp, "speed")) != NULL) {
+		if(strcasecmp(p, "14400") == 0)
+			strcpy(speed, SPEED_14400);
+	}
+	/* connection mode and security */
+	if ((p = config_get(grp, "connection")) != NULL)
+		connection = (strcasecmp(p, "temp") == 0)? CONN_TEMP : CONN_CONT;
+	if ((p = config_get(grp, "pppsecurity")) != NULL)
+		security = (strcasecmp(p, "on") == 0)? 1 : 0;
+	if (security == 1)
+		connection = (connection == CONN_CONT)? CONN_SECCONT : CONN_SECTEMP;
+		
+	if ((p = config_get(grp, "authentication")) != NULL)
+		authent = (strcasecmp(p, "secure") == 0)? AUTH_SECURE : AUTH_NORMAL;
+		
+	if ((p = config_get(grp, "login")) != NULL)
+		username = p;
+	if ((p = config_get(grp, "secret")) != NULL)
+		passwd = p;
+	
+	msg = msg_create(smart_sms);
+	if (msg == NULL) goto error;
+
+	msg->smart_sms.udhdata = octstr_create_empty();
+
+	octstr_append_from_hex(msg->smart_sms.udhdata, "0504C34FC002");
+
+	msg->smart_sms.msgdata = octstr_create_empty();
+	/* header for the data part of the message */
+	octstr_append_from_hex(msg->smart_sms.msgdata, "010604039481EA0001");
+	/* unknow field */
+	octstr_append_from_hex(msg->smart_sms.msgdata, "45C60601");
+	/* bearer type */
+	if(bearer != -1) {
+		octstr_append_from_hex(msg->smart_sms.msgdata, "8712");
+		octstr_append_char(msg->smart_sms.msgdata, bearer);
+		octstr_append_from_hex(msg->smart_sms.msgdata, ENDTAG);
+	}
+	/* IP address */
+	if(ipaddr != NULL) {
+		octstr_append_from_hex(msg->smart_sms.msgdata , "87131103");
+		octstr_append_cstr(msg->smart_sms.msgdata, ipaddr);
+		octstr_append_from_hex(msg->smart_sms.msgdata, "0001");
+	}
+	/* connection type */
+	if(connection != -1) {
+		octstr_append_from_hex(msg->smart_sms.msgdata, "8714");
+		octstr_append_char(msg->smart_sms.msgdata, connection);
+		octstr_append_from_hex(msg->smart_sms.msgdata, ENDTAG);
+	}
+	/* phone number */
+	if(phonenum != NULL) {
+		octstr_append_from_hex(msg->smart_sms.msgdata, "87211103");
+		octstr_append_cstr(msg->smart_sms.msgdata, phonenum);
+		octstr_append_from_hex(msg->smart_sms.msgdata, "0001");
+	}
+	/* authentication */
+	octstr_append_from_hex(msg->smart_sms.msgdata, "8722");
+	octstr_append_char(msg->smart_sms.msgdata, authent);
+	octstr_append_from_hex(msg->smart_sms.msgdata, ENDTAG);
+	/* user name */
+	if(username != NULL) {
+		octstr_append_from_hex(msg->smart_sms.msgdata, "87231103");
+		octstr_append_cstr(msg->smart_sms.msgdata, username);
+		octstr_append_from_hex(msg->smart_sms.msgdata, "0001");
+	}
+	/* password */
+	if(passwd != NULL) {
+		octstr_append_from_hex(msg->smart_sms.msgdata, "87241103");
+		octstr_append_cstr(msg->smart_sms.msgdata, passwd);
+		octstr_append_from_hex(msg->smart_sms.msgdata, "0001");
+	}
+	/* data call type */
+	if(calltype != -1) {
+		octstr_append_from_hex(msg->smart_sms.msgdata, "8728");
+		octstr_append_char(msg->smart_sms.msgdata, calltype);
+		octstr_append_from_hex(msg->smart_sms.msgdata, ENDTAG);
+	}
+	/* speed */
+	octstr_append_from_hex(msg->smart_sms.msgdata, "8729");
+	octstr_append_from_hex(msg->smart_sms.msgdata, speed);
+	octstr_append_from_hex(msg->smart_sms.msgdata, ENDTAG);
+	octstr_append_from_hex(msg->smart_sms.msgdata, ENDTAG);
+	/* homepage */
+	if(url != NULL) {
+		octstr_append_from_hex(msg->smart_sms.msgdata, "86071103");
+		octstr_append_cstr(msg->smart_sms.msgdata, url);
+		octstr_append_from_hex(msg->smart_sms.msgdata, "0001");
+	}
+	/* unknow field */
+	octstr_append_from_hex(msg->smart_sms.msgdata, "C60801");
+	/* service description */
+	if(desc != NULL) {
+		octstr_append_from_hex(msg->smart_sms.msgdata, "87151103");
+		octstr_append_cstr(msg->smart_sms.msgdata, desc);
+		octstr_append_from_hex(msg->smart_sms.msgdata, "0001");
+	}
+	/* message footer */
+	octstr_append_from_hex(msg->smart_sms.msgdata, "0101");
+
+	msg->smart_sms.receiver = octstr_duplicate(phonenumber);
+	/* msg->smart_sms.sender = from; */	
+	msg->smart_sms.flag_8bit = 1;
+	msg->smart_sms.flag_udh  = 1;
+
+	msg->smart_sms.time = time(NULL);
+
+	octstr_dump(msg->smart_sms.msgdata, 0);
+
+	info(0, "/cgi-bin/sendota <%s>", octstr_get_cstr(phonenumber) );
+  
+	/* send_message frees the 'msg' */
+	ret = send_message(t, msg); 
+
+	if (ret == -1)
+		goto error;
+
+	return "Sent.";
+    
+error:
+	error(0, "sendsms_request: failed");
+	/*octstr_destroy(from);*/
 	return "Sending failed.";
 }
 
