@@ -25,7 +25,7 @@ ac_help="$ac_help
 ac_help="$ac_help
   --disable-assertions    turn off assertion checking"
 ac_help="$ac_help
-  --with-malloc           select malloc wrapper to use: native/checking"
+  --with-malloc           select malloc wrapper to use: native/checking/slow"
 ac_help="$ac_help
   --enable-mutex-stats    produce information about lock contention"
 ac_help="$ac_help
@@ -2392,6 +2392,16 @@ EOF
 
          echo using checking malloc
          ;;
+  slow) cat >> confdefs.h <<\EOF
+#define USE_GWMEM_CHECK 1
+EOF
+
+        cat >> confdefs.h <<\EOF
+#define USE_GWMEM_SLOW 1
+EOF
+
+        echo using slow malloc
+	;;
   *) echo "Unknown malloc wrapper $withval. Oops."; exit 1 ;;
   esac
 
@@ -2404,6 +2414,16 @@ EOF
 
           echo using native malloc
           ;;
+  slow) cat >> confdefs.h <<\EOF
+#define USE_GWMEM_CHECK 1
+EOF
+
+        cat >> confdefs.h <<\EOF
+#define USE_GWMEM_SLOW 1
+EOF
+
+        echo using slow malloc
+	;;
   *) cat >> confdefs.h <<\EOF
 #define USE_GWMEM_CHECK 1
 EOF

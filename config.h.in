@@ -4,6 +4,7 @@
 /* Define one of these depending on which malloc wrapper you want to use. */
 #undef USE_GWMEM_NATIVE
 #undef USE_GWMEM_CHECK
+#undef USE_GWMEM_SLOW
 
 /* Define if you want information about lock collisions to be collected.
  * These are useful for finding performance bottlenecks. */

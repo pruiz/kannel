@@ -12,6 +12,7 @@
 
 #include "gwlib/gwlib.h"
 #include "shared.h"
+#include "heartbeat.h"
 #include "wap/wap.h"
 #include "wap-appl.h"
 #include "msg.h"
@@ -218,34 +219,6 @@ static void msg_send(int s, Msg *msg)
  */
 static List *queue = NULL;
 
-static void send_heartbeat_thread(void *arg) 
-{
-    time_t last_hb;
-    double hb_freq;
-
-    hb_freq = heartbeat_freq; /* Convert to double */
-    last_hb = 0;
-
-    list_add_producer(queue);
-    while (run_status == running) {
-        /*
-         * Because the sleep can be interrupted, we might end up sending
-	 * heartbeats faster than the configured heartbeat frequency.
-         * This is not bad unless we send them way too fast.  Make sure
-	 * our frequency is not more than twice the configured one.
-         */
-	if (difftime(last_hb, time(NULL)) >= hb_freq / 2) {
-	    Msg *msg = msg_create(heartbeat);
-	    msg->heartbeat.load = wap_appl_get_load();
-            list_produce(queue, msg);
-	    last_hb = time(NULL);
-        }
-	gwthread_sleep(hb_freq);
-    }
-    list_remove_producer(queue);
-}
-
-
 static void empty_queue_thread(void *arg) 
 {
     Msg *msg;
@@ -258,6 +231,11 @@ static void empty_queue_thread(void *arg)
 	    msg_send(socket, msg);
         msg_destroy(msg);
     }
+}
+
+static void put_msg_on_queue(Msg *msg)
+{
+    list_produce(queue, msg);
 }
 
 
@@ -283,7 +261,6 @@ static void signal_handler(int signum)
 	default:
 	    error(0, "SIGINT received, let's die.");
 	    run_status = aborting;
-	    gwthread_wakeup(heartbeat_thread);
 	    break;
 	}
 	break;
@@ -340,7 +317,7 @@ static void dispatch_datagram(WAPEvent *dgram)
         msg->wdp_datagram.user_data = dgram->u.T_DUnitdata_Req.user_data;
 	dgram->u.T_DUnitdata_Req.user_data = NULL;
 
-        list_produce(queue, msg);
+	put_msg_on_queue(msg);
     }
 
     wap_event_destroy(dgram);
@@ -381,7 +358,8 @@ int main(int argc, char **argv)
     
     run_status = running;
     list_add_producer(queue);
-    heartbeat_thread = gwthread_create(send_heartbeat_thread, NULL);
+    heartbeat_thread =
+        heartbeat_start(put_msg_on_queue, heartbeat_freq, wap_appl_get_load);
     gwthread_create(empty_queue_thread, &bbsocket);
 
     while (run_status == running && (msg = msg_receive(bbsocket)) != NULL) {
@@ -401,11 +379,10 @@ int main(int argc, char **argv)
     }
 
     info(0, "WAP box terminating.");
-    gwthread_wakeup(heartbeat_thread);
     
     run_status = aborting;
     list_remove_producer(queue);
-    gwthread_join_every(send_heartbeat_thread);
+    heartbeat_stop(heartbeat_thread);
     gwthread_join_every(empty_queue_thread);
     wtp_initiator_shutdown();
     wtp_resp_shutdown();

@@ -236,10 +236,10 @@ AC_ARG_ENABLE(assertions,
 ])
 
 
-dnl --with-malloc=native/fast/checking
+dnl --with-malloc=native/fast/checking/slow
 
 AC_ARG_WITH(malloc,
-[  --with-malloc           select malloc wrapper to use: native/checking], [
+[  --with-malloc           select malloc wrapper to use: native/checking/slow], [
   case "$withval" in
   native) AC_DEFINE(USE_GWMEM_NATIVE)
           echo using native malloc
@@ -247,6 +247,9 @@ AC_ARG_WITH(malloc,
   check) AC_DEFINE(USE_GWMEM_CHECK)
          echo using checking malloc
          ;;
+  slow) AC_DEFINE(USE_GWMEM_SLOW)
+        echo using slow malloc
+	;;
   *) echo "Unknown malloc wrapper $withval. Oops."; exit 1 ;;
   esac
 ], [
@@ -254,6 +257,9 @@ AC_ARG_WITH(malloc,
   native) AC_DEFINE(USE_GWMEM_NATIVE)
           echo using native malloc
           ;;
+  slow) AC_DEFINE(USE_GWMEM_SLOW)
+        echo using slow malloc
+	;;
   *) AC_DEFINE(USE_GWMEM_CHECK)
      echo using checking malloc
      ;;

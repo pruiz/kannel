@@ -1317,6 +1317,8 @@ void octstr_dump(Octstr *ostr, int level)
     const int octets_per_line = 8;
     int c, this_line_begins_at;
 
+    seems_valid(ostr);
+
     if (ostr == NULL)
         return;
 

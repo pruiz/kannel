@@ -520,6 +520,7 @@ static int read_chunked_body_crlf(HTTPServer *trans)
 	    return -1;
 	return 1;
     }
+    octstr_destroy(os);
     trans->state = reading_chunked_body_len;
     return 0;
 }
@@ -1154,9 +1155,6 @@ struct HTTPClient {
 };
 
 
-static List *clients_in_fdset;
-
-
 static HTTPClient *client_create(Connection *conn, Octstr *ip)
 {
     HTTPClient *p;
@@ -1183,6 +1181,8 @@ static void client_destroy(void *client)
     	return;
 
     p = client;
+    debug("gwlib.http", 0, "HTTP: Destroying HTTPClient area %p.", p);
+    gw_assert_allocated(p, __FILE__, __LINE__, __func__);
     debug("gwlib.http", 0, "HTTP: Destroying HTTPClient for `%s'.",
     	  octstr_get_cstr(p->ip));
     conn_destroy(p->conn);
@@ -1285,7 +1285,6 @@ static void receive_request(Connection *conn, void *data)
 	    if (ret == 0) {
 	    	client->state = request_is_being_handled;
 		conn_unregister(conn);
-		list_delete_equal(clients_in_fdset, client);
 		list_produce(clients_with_requests, client);
 	    }
 	    return;
@@ -1296,7 +1295,6 @@ static void receive_request(Connection *conn, void *data)
     }
     
 error:
-    list_delete_equal(clients_in_fdset, client);
     client_destroy(client);
 }
 
@@ -1343,7 +1341,6 @@ static void server_thread(void *dummy)
 		    conn = conn_wrap_fd(fd);
     	    	    client = client_create(conn, host_ip(addr));
 		    conn_register(conn, server_fdset, receive_request, client);
-		    list_append(clients_in_fdset, client);
 		}
 	    }
 	}
@@ -1406,14 +1403,10 @@ int http_open_server(int port)
 
 void http_close_all_servers(void)
 {
-    HTTPClient *p;
-    
     if (server_thread_id != -1) {
 	keep_servers_open = 0;
 	gwthread_wakeup(server_thread_id);
 	gwthread_join_every(server_thread);
-	while ((p = list_extract_first(clients_in_fdset)) != NULL)
-	    client_destroy(p);
 	fdset_destroy(server_fdset);
 	server_fdset = NULL;
     }
@@ -1527,7 +1520,6 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     else {
 	client_reset(client);
 	conn_register(client->conn, server_fdset, receive_request, client);
-	list_append(clients_in_fdset, client);
     }
 }
 
@@ -1542,7 +1534,6 @@ static void server_init(void)
 {
     new_server_sockets = list_create();
     list_add_producer(new_server_sockets);
-    clients_in_fdset = list_create();
     clients_with_requests = list_create();
     server_thread_lock = mutex_create();
 }
@@ -1561,7 +1552,6 @@ static void server_shutdown(void)
     gwthread_wakeup(server_thread_id);
     gwthread_join_every(server_thread);
     mutex_destroy(server_thread_lock);
-    list_destroy(clients_in_fdset, client_destroy);
     list_destroy(clients_with_requests, client_destroy);
     fdset_destroy(server_fdset);
     list_destroy(new_server_sockets, destroy_int_pointer);

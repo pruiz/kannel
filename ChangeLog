@@ -1,3 +1,41 @@
+2000-11-24  Richard Braakman  <dark@wapi.com>
+
+	* gw/heartbeat.[ch]: New files, contain heartbeat code shared
+	between wapbox and smsbox.
+
+	* gw/wapbox.c, gw/smsbox.c: Use shared heartbeat code.
+
+	* gw/smsbox.c: Use Connection for the link with the bearer box.
+	Made bb_host an Octstr.
+
+	* gw/smsbox_req.c: write_msg() cannot fail, so don't check
+	return codes.
+
+	* gwlib/conn.c: Memory leak debugging: all callers of unlocked_get
+	claim the result as theirs.
+
+	* gwlib/http.c: Fix memory leak in read_chunked_body_crlf().
+
+	* configure.in, config.h.in: Added --with-malloc=slow, which does
+        a more careful (but much slower) check in find_area().  This can
+	sometimes report problems that would otherwise cause a segfault.
+
+	* gwlib/gwmem.h, gwlib/gwmem-check.c: Implement --with-malloc=slow.
+	Also do the careful check if the pointer looks like one of our
+	standard fill patterns.
+
+	* gwlib/octstr.c: Added seems_valid() call in octstr_dump().
+
+	* gwlib/http.c: Get rid of clients_in_fdset list.  This removes
+	a race condition that would cause occasional segmentation faults,
+	but leaves us with some "memory leaks".  (They aren't really,
+	but are reported as such.)
+
+	* gw/smsc_emi.c: Converted previous patch to our coding style
+	wrt parenthesis usage.  emi_open_session: Added missing final
+	return.  emi_fill_ucp60_login: Made ia5passwd dynamically
+	allocated, since variable-length arrays are not standard C.
+
 2000-11-24  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsc.c, gw/smsc_emi.c: applied authentication patch by Joerg

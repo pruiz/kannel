@@ -141,28 +141,33 @@ int emi_close(SMSCenter *smsc)
     return emi_close_ip(smsc);
 }
 
-static int emi_fill_ucp60_login (char *buf, char *OAdC, char *passwd) {
-    int   max_ia5passwd_len = strlen (passwd) * 2 + 1;
-    char  ia5passwd [max_ia5passwd_len];
+static int emi_fill_ucp60_login(char *buf, char *OAdC, char *passwd) {
+    int max_ia5passwd_len;
+    char *ia5passwd;
 
-    if (parse_binary_to_emi(passwd, ia5passwd, strlen (passwd)) < 0) {
+    max_ia5passwd_len = strlen(passwd) * 2 + 1;
+    ia5passwd = gw_malloc(max_ia5passwd_len);
+
+    if (parse_binary_to_emi(passwd, ia5passwd, strlen(passwd)) < 0) {
         error(0, "parse_binary_to_emi failed");
+        gw_free(ia5passwd);
         return -1;
     }
 
-    sprintf (buf, "%s/%c/%c/%c/%s//%s/////",
-	     OAdC,      /* OAdC: Address code originator */
-	     '6',       /* OTON: 6 = Abbreviated number (short number alias) */
-	     '5',       /* ONPI: 5 = Private (TCP/IP address/abbreviated number address) */
-	     '1',       /* STYP: 1 = open session */
-	     ia5passwd, /* PWD:  Current password encoded into IA5 characters */
-	     "0100"     /* VERS: Version number  0100 */
-	     );
+    sprintf(buf, "%s/%c/%c/%c/%s//%s/////",
+	    OAdC,      /* OAdC: Address code originator */
+	    '6',       /* OTON: 6 = Abbreviated number (short number alias) */
+	    '5',       /* ONPI: 5 = Private (TCP/IP address/abbreviated number address) */
+	    '1',       /* STYP: 1 = open session */
+	    ia5passwd, /* PWD:  Current password encoded into IA5 characters */
+	    "0100"     /* VERS: Version number  0100 */
+	    );
 
+    gw_free(ia5passwd);
     return 0;
 }
 
-static int emi_open_session (SMSCenter *smsc)
+static int emi_open_session(SMSCenter *smsc)
 {
     char message_whole  [1024];
     char message_body   [1024];
@@ -171,12 +176,12 @@ static int emi_open_session (SMSCenter *smsc)
     char my_buffer      [1024];
     int length;
 
-    memset (message_whole,  0, sizeof (message_whole));
-    memset (message_body,   0, sizeof (message_body));
-    memset (message_header, 0, sizeof (message_header));
-    memset (message_footer, 0, sizeof (message_footer));
+    memset(message_whole,  0, sizeof(message_whole));
+    memset(message_body,   0, sizeof(message_body));
+    memset(message_header, 0, sizeof(message_header));
+    memset(message_footer, 0, sizeof(message_footer));
 
-    if (emi_fill_ucp60_login (message_body, smsc->emi_username, smsc->emi_password) < 0) {
+    if (emi_fill_ucp60_login(message_body, smsc->emi_username, smsc->emi_password) < 0) {
         error(0, "emi_fill_ucp60_login failed");
         return -1;
     }
@@ -186,23 +191,27 @@ static int emi_open_session (SMSCenter *smsc)
     length += 2;   /* footer (fixed) */
     length += 2;   /* slashes between header, body, footer */
 
-    sprintf(message_header, "%02i/%05i/O/60", (smsc->emi_current_msg_number++ % 100), length);
+    sprintf(message_header, "%02i/%05i/O/60",
+            (smsc->emi_current_msg_number++ % 100), length);
     
     /* FOOTER */
 
-    sprintf (my_buffer, "%s/%s/", message_header, message_body);
+    sprintf(my_buffer, "%s/%s/", message_header, message_body);
     generate_checksum(my_buffer, message_footer);
 
-    sprintf (message_whole, "\x02%s/%s/%s\x03", message_header, message_body, message_footer);
+    sprintf(message_whole, "\x02%s/%s/%s\x03", message_header,
+            message_body, message_footer);
 
     debug("bb.sms.emi", 0, "final UCP60 msg: <%s>", message_whole);
 
-    put_data(smsc, message_whole, strlen (message_whole), 0);
+    put_data(smsc, message_whole, strlen(message_whole), 0);
 
     if (!wait_for_ack(smsc, 60)) {
 	info(0, "emi_open_session: wait for ack failed!");
 	return -1;
     }
+
+    return 0;
 }
 
 
@@ -218,7 +227,7 @@ static int emi_open_connection_ip(SMSCenter *smsc)
         return -1;
 
     if (smsc->emi_username && smsc->emi_password) {
-	return emi_open_session (smsc);
+	return emi_open_session(smsc);
     }
     
     return 0;

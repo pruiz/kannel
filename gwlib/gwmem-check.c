@@ -64,6 +64,9 @@
 
 static int initialized = 0;
 
+/* Use slower, more reliable method of detecting memory corruption. */
+static int slow = 0;
+
 /* We have to use a static mutex here, because otherwise the mutex_create
  * call would try to allocate memory with gw_malloc before we're
  * initialized. */
@@ -257,7 +260,7 @@ static void dump_area(struct area *area)
               area->claimer.lineno);
     }
     if (area->area_size > 0) {
-	long i;
+	size_t i;
 	unsigned char *p;
 	char buf[MAX_DUMP * 3 + 1];
 	
@@ -275,8 +278,28 @@ static struct area *find_area(unsigned char *p)
 {
     long index;
     struct area *area;
+    long suspicious_pointer;
 
     gw_assert(p != NULL);
+
+    suspicious_pointer =
+        (sizeof(p) == sizeof(long) &&
+         (p == NEW_AREA_PATTERN || p == FREE_AREA_PATTERN ||
+	  p == START_MARK_PATTERN || p == END_MARK_PATTERN));
+
+    if (slow || suspicious_pointer) {
+        /* Extra check, which does not touch the (perhaps not allocated)
+	 * memory area.  It's slow, but may help pinpoint problems that
+	 * would otherwise cause segfaults. */
+        for (index = 0; index < num_allocations; index++) {
+            if (allocated[index].area == p)
+                break;
+        }
+        if (index == num_allocations) {
+            error(0, "Area %p not found in allocation table.", p);
+            return NULL;
+        }
+    }
 
     index = check_startmark(p);
     if (index >= 0 && index < num_allocations &&
@@ -390,9 +413,10 @@ static void free_area(struct area *area)
     remove_allocation(area);
 }
 
-void gw_check_init_mem(void)
+void gw_check_init_mem(int slow_flag)
 {
     mutex_init_static(&gwmem_lock);
+    slow = slow_flag;
     initialized = 1;
 }
 

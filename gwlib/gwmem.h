@@ -25,7 +25,7 @@ char *gw_native_strdup(const char *str);
 void gw_native_shutdown(void);
 
 
-void gw_check_init_mem(void);
+void gw_check_init_mem(int slow_flag);
 void gw_check_check_leaks(void);
 void *gw_check_malloc(size_t size, 
 	const char *filename, long line, const char *function);
@@ -40,6 +40,14 @@ long gw_check_area_size(void *p);
 void *gw_check_claim_area(void *p,
 	const char *filename, long line, const char *function);
 void gw_check_shutdown(void);
+
+
+/*
+ * "slow" == "checking" with a small variation.
+ */
+#if USE_GWMEM_SLOW
+#define USE_GWMEM_CHECK 1
+#endif
 
 
 #if USE_GWMEM_NATIVE
@@ -64,7 +72,12 @@ void gw_check_shutdown(void);
  * The `check' wrapper.
  */
 
-#define gw_init_mem() (gw_check_init_mem())
+#ifdef USE_GWMEM_SLOW
+#define gw_init_mem() (gw_check_init_mem(1))
+#else
+#define gw_init_mem() (gw_check_init_mem(0))
+#endif
+
 #define gw_check_leaks() (gw_check_check_leaks())
 #define gw_malloc(size) \
 	(gw_check_malloc(size, __FILE__, __LINE__, __func__))

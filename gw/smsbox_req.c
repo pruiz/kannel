@@ -55,7 +55,7 @@ static int sms_max_length = -1;		/* not initialized - never modify after
                                          * smsbox_req_init! */
 static char *sendsms_number_chars;
 static char *global_sender = NULL;
-static int (*sender) (Msg *msg) = NULL;
+static void (*sender) (Msg *msg) = NULL;
 static Config 	*cfg = NULL;
 
 static volatile sig_atomic_t req_threads = 0;
@@ -182,33 +182,24 @@ error:
 /*
  * sends the buf, with msg-info - does NO splitting etc. just the sending
  * NOTE: the sender gw_frees the message!
- *
- * return -1 on failure, 0 if Ok.
  */
-static int do_sending(Msg *msg)
+static void do_sending(Msg *msg)
 {
-    if (sender(msg) < 0)
-	goto error;
+    /* sender does the freeing (or uses msg as it sees fit) */
+    sender(msg);
 
     debug("smsbox_req", 0, "message sent\n");
-    /* sender does the freeing (or uses msg as it sees fit) */
-
-    return 0;
-error:
-    error(0, "Msg send failed");
-    return -1;
 }
 
 
 
 /*
  * Take a Msg structure and send it as a MT SMS message.
- * Return -1 on failure, 0 if Ok.
  * Parameters: msg: message to send, maxmsgs: limit to the number of parts the
  *     message can be split into, h: header, hl: header length, f: footer,
  *     fl: footer length.
  */
-static int do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslation *trans,
+static void do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslation *trans,
 			 char *h, int hl, char *f, int fl)
 {
 	Msg *split;
@@ -297,8 +288,6 @@ static int do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslatio
 		 * part that we are going to send in this SMS. This is easier
 		 * than creating a new message with almost the same content. */
 		split = msg_duplicate(msg);
-		if(split==NULL)
-			goto error;
 	
 		if (h != NULL) {	/* add header and message */
 			octstr_replace(split->sms.msgdata, h, hl);
@@ -324,10 +313,7 @@ static int do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslatio
 			split->sms.flag_udh = 1;
 		}
 		
-		if (do_sending(split) < 0) {
-			msg_destroy(msg);
-			return -1;
-		}
+		do_sending(split);
 		pos += size;
 
 		msgseq++; /* sequence number for the next message */
@@ -336,12 +322,6 @@ static int do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslatio
 
 	/* Increment the message reference. It is an unsigned value so it will wrap. */
 	msgref++;
-	
-	return 0;
-
-error:
-	msg_destroy(msg); /* we must delete it as it is supposed to be deleted */
-	return -1;
 }
 
 
@@ -409,14 +389,16 @@ static int send_sms(URLTranslation *trans, Msg *msg, int max_msgs)
 			octstr_insert_data(msg->sms.msgdata,
 		                   octstr_len(msg->sms.msgdata), f, fl);
 
-		return do_sending(msg);
+		do_sending(msg);
+		return 0;
 
 	} else {
 		/*
 	 	* we have a message that is longer than what fits in one
 	 	* SMS message and we are allowed to split it
 	 	*/
-		return do_split_send(msg, max_msgs, maxdatalength, trans, h, hl, f, fl);
+		do_split_send(msg, max_msgs, maxdatalength, trans, h, hl, f, fl);
+		return 0;
 	}
 }
 
@@ -629,7 +611,7 @@ void smsbox_req_init(URLTranslationList *transls,
 		    int sms_max,
 		    char *global,
 		    char *accept_str,
-		    int (*send) (Msg *msg))
+		    void (*send) (Msg *msg))
 {
 	translations = transls;
 	cfg = config;
@@ -649,9 +631,9 @@ void smsbox_req_shutdown(void)
     gw_free(global_sender);
 }
 
-int smsbox_req_count(void)
+long smsbox_req_count(void)
 {
-	return (int)req_threads;
+	return req_threads;
 }
 
 void smsbox_req_thread(void *arg) {

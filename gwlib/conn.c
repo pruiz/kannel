@@ -700,6 +700,7 @@ Octstr *conn_read_everything(Connection *conn)
     }
 
     result = unlocked_get(conn, unlocked_inbuf_len(conn));
+    gw_claim_area(result);
     unlock_in(conn);
 
     return result;
@@ -720,6 +721,7 @@ Octstr *conn_read_fixed(Connection *conn, long length)
         }
     }
     result = unlocked_get(conn, length);
+    gw_claim_area(result);
     unlock_in(conn);
 
     return result;
@@ -737,8 +739,7 @@ Octstr *conn_read_line(Connection *conn)
     pos = octstr_search_char(conn->inbuf, 10, conn->inbufpos);
     if (pos < 0) {
         unlocked_read(conn);
-        pos = octstr_search_char(conn->inbuf,
-                                 10, conn->inbufpos);
+        pos = octstr_search_char(conn->inbuf, 10, conn->inbufpos);
         if (pos < 0) {
             unlock_in(conn);
             return NULL;
@@ -746,6 +747,7 @@ Octstr *conn_read_line(Connection *conn)
     }
 
     result = unlocked_get(conn, pos - conn->inbufpos);
+    gw_claim_area(result);
 
     /* Skip the LF, which we left in the buffer */
     conn->inbufpos++;
@@ -793,6 +795,7 @@ retry:
 
         conn->inbufpos += 4;
         result = unlocked_get(conn, length);
+        gw_claim_area(result);
         break;
     }
 
@@ -827,6 +830,7 @@ Octstr *conn_read_packet(Connection *conn, int startmark, int endmark)
             continue;
 
         result = unlocked_get(conn, endpos - startpos + 1);
+        gw_claim_area(result);
         break;
     }
 

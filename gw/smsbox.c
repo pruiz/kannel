@@ -62,6 +62,7 @@
 #include "msg.h"
 #include "bb.h"
 #include "shared.h"
+#include "heartbeat.h"
 
 #include "smsbox_req.h"
 
@@ -71,43 +72,35 @@
 static Config 	*cfg;
 static int 	bb_port;
 static int	sendsms_port = 0;
-static char 	*bb_host;
+static Octstr   *bb_host;
 static char	*pid_file;
 static int	sms_len = 160;
 static char	*global_sender;
 static int	heartbeat_freq;
 static char	*accepted_chars = NULL;
 
-static int 	socket_fd;
 static int	only_try_http = 0;
+
+static Connection *bb_conn;
 
 /* thread handling */
 
-static Mutex	 	*socket_mutex;
-static volatile sig_atomic_t 	abort_program = 0;
+static volatile sig_atomic_t abort_program = 0;
 
 
 /*
- * function to do the actual sending; called from smsbox_req via
- * pointer we give during initialization
+ * Send Msg to bearerbox.  Called from smsbox_req via a pointer we
+ * give during initialization.
  *
- * MUST DO: free (or otherwise get rid of) pmsg, and
- * return 0 if OK, -1 if failed
+ * Will free (or otherwise get rid of) pmsg
  */
-static int socket_sender(Msg *pmsg)
+static void write_msg(Msg *pmsg)
 {
     Octstr *pack;
+    int ret;
 
     pack = msg_pack(pmsg);
-    if (pack == NULL)
-	goto error;
-
-    mutex_lock(socket_mutex);
-    if (octstr_send(socket_fd, pack) < 0) {
-	mutex_unlock(socket_mutex);
-	goto error;
-    }
-    mutex_unlock(socket_mutex);
+    ret = conn_write_withlen(bb_conn, pack);
 
     info(0, "Message sent to bearerbox, receiver <%s>",
          octstr_get_cstr(pmsg->sms.receiver));
@@ -119,15 +112,8 @@ static int socket_sender(Msg *pmsg)
 	  octstr_len(pmsg->sms.udhdata));
 #endif
 
-    octstr_destroy(pack);
-    msg_destroy(pmsg);
-
-    return 0;
-
-error:
     msg_destroy(pmsg);
     octstr_destroy(pack);
-    return -1;
 }
 
 /*
@@ -141,9 +127,10 @@ static void new_request(Octstr *pack)
     msg = msg_unpack(pack);
     if (msg == NULL)
 	error(0, "Failed to unpack data!");
-    else if (msg_type(msg) != sms)
+    else if (msg_type(msg) != sms) {
 	warning(0, "Received other message than sms, ignoring!");
-    else
+	msg_destroy(msg);
+    } else
 	gwthread_create(smsbox_req_thread, msg);
 }
 
@@ -160,7 +147,7 @@ static void http_request_thread(void *arg)
     Octstr *ip, *url, *body, *answer;
     List *hdrs, *args, *reply_hdrs;
 
-    reply_hdrs = list_create();
+    reply_hdrs = http_create_empty_headers();
     http_header_add(reply_hdrs, "Content-type", "text/html");
 
     for (;;) {
@@ -256,7 +243,7 @@ static void init_smsbox(Config *cfg)
 
 
     bb_port = BB_DEFAULT_SMSBOX_PORT;
-    bb_host = BB_DEFAULT_HOST;
+    bb_host = octstr_create(BB_DEFAULT_HOST);
     heartbeat_freq = BB_DEFAULT_HEARTBEAT;
 
     /*
@@ -296,7 +283,7 @@ static void init_smsbox(Config *cfg)
 	panic(0, "No 'smsbox' group in configuration");
 
     if ((p = config_get(grp, "bearerbox-host")) != NULL)
-	bb_host = p;
+	octstr_replace(bb_host, p, strlen(p));
     if ((p = config_get(grp, "sendsms-port")) != NULL)
 	sendsms_port = atoi(p);
     if ((p = config_get(grp, "sms-length")) != NULL)
@@ -351,114 +338,48 @@ static void init_smsbox(Config *cfg)
 }
 
 
-/*
- * send the heartbeat packet
- */
-static int send_heartbeat(void)
-{
-    Msg *msg;
-    Octstr *pack;
-    int ret;
-    
-    msg = msg_create(heartbeat);
-    msg->heartbeat.load = smsbox_req_count();
-    pack = msg_pack(msg);
-
-    if (msg->heartbeat.load > 0)
-	debug("sms", 0, "sending heartbeat load %ld", msg->heartbeat.load); 
-    msg_destroy(msg);
-
-    ret = octstr_send(socket_fd, pack);
-    octstr_destroy(pack);
-    return ret;
-}
-
-
 static void main_loop(void)
 {
     time_t start, t;
     int ret, secs;
     int total = 0;
-    fd_set rf;
-    struct timeval to;
+    Octstr *pack;
 
     start = t = time(NULL);
-    mutex_lock(socket_mutex);
     while(!abort_program) {
-
-	if (time(NULL)-t > heartbeat_freq) {
-	    if (send_heartbeat() == -1)
-		goto error;
-	    t = time(NULL);
-	}
-	FD_ZERO(&rf);
-	FD_SET(socket_fd, &rf);
-	to.tv_sec = 0;
-	to.tv_usec = 0;
-
-	ret = select(FD_SETSIZE, &rf, NULL, NULL, &to);
-
-	if (ret < 0) {
-	    if(errno==EINTR) continue;
-	    if(errno==EAGAIN) continue;
-	    error(errno, "Select failed");
-	    goto error;
-	}
-	else if (ret > 0 && FD_ISSET(socket_fd, &rf)) {
-
-	    Octstr *pack;
-
-	    ret = octstr_recv(socket_fd, &pack);
-	    if (ret == 0) {
+	pack = conn_read_withlen(bb_conn);
+	gw_claim_area(pack);
+	if (pack == NULL) {
+	    if (conn_eof(bb_conn)) {
 		info(0, "Connection closed by the Bearerbox");
 		break;
 	    }
-	    else if (ret == -1) {
-#if 0 /* XXX we assume run_kannel_box will re-start us, yes? --liw */
-		info(0, "Connection to Bearerbox failed, reconnecting");
-	    reconnect:
-		socket_fd = tcpip_connect_to_server(bb_host, bb_port);
-		if (socket_fd > -1)
-		    continue;
-		sleep(10);
-		goto reconnect;
-#else
-		panic(0, "Connection to Bearerbox failed, NOT reconnecting");
-#endif
-	    }
-	    mutex_unlock(socket_mutex);
 
-	    if (total == 0)
-		start = time(NULL);
-	    total++;
-	    new_request(pack);
-	    octstr_destroy(pack);
-	    
-	    mutex_lock(socket_mutex);
+            ret = conn_wait(bb_conn, -1.0);
+	    if (ret < 0) {
+		error(0, "Connection to bearerbox broke.");
+		break;
+	    }
 	    continue;
 	}
-	mutex_unlock(socket_mutex);
-	    
-	usleep(1000);
 
-	mutex_lock(socket_mutex);
+        if (total == 0)
+	    start = time(NULL);
+	total++;
+	new_request(pack);
+	octstr_destroy(pack);
     }
-    secs = time(NULL) - start;
+
+    secs = difftime(time(NULL), start);
     info(0, "Received (and handled?) %d requests in %d seconds (%.2f per second)",
 	 total, secs, (float)total/secs);
-    return;
-
-error:
-    panic(0, "Mutex error, exiting");
 }
 
 
 static int check_args(int i, int argc, char **argv) {
-    if (strcmp(argv[i], "-H")==0 || strcmp(argv[i], "--tryhttp")==0)
-    {
+    if (strcmp(argv[i], "-H")==0 || strcmp(argv[i], "--tryhttp")==0) {
 	only_try_http = 1;
-    }
-    else
+    } else
 	return -1;
 
     return 0;
@@ -469,12 +390,11 @@ int main(int argc, char **argv)
 {
     int cf_index;
     URLTranslationList *translations;
+    long heartbeat_thread;
 
     gwlib_init();
     cf_index = get_and_set_debugs(argc, argv, check_args);
     
-    socket_mutex = mutex_create();
-
     setup_signal_handlers();
     cfg = config_from_file(argv[cf_index], "kannel.conf");
     if (cfg == NULL)
@@ -498,26 +418,32 @@ int main(int argc, char **argv)
      * initialize smsbox-request module
      */
     smsbox_req_init(translations, cfg, sms_len, global_sender, NULL,
-		    socket_sender);
-    
+		    write_msg);
+ 
     while(!abort_program) {
-	socket_fd = tcpip_connect_to_server(bb_host, bb_port);
-	if (socket_fd > -1)
+        bb_conn = conn_open_tcp(bb_host, bb_port);
+	if (bb_conn != NULL)
 	    break;
 	sleep(10);
     }
-    info(0, "Connected to Bearer Box at %s port %d", bb_host, bb_port);
+
+    info(0, "Connected to Bearer Box at %s port %d.",
+        octstr_get_cstr(bb_host), bb_port);
+    heartbeat_thread =
+        heartbeat_start(write_msg, heartbeat_freq, smsbox_req_count);
 
     main_loop();
 
     info(0, "Smsbox terminating.");
 
-    alog_close();
+    heartbeat_stop(heartbeat_thread);
     http_close_all_servers();
     gwthread_join_every(http_request_thread);
-    mutex_destroy(socket_mutex);
+    conn_destroy(bb_conn);
+    alog_close();
     urltrans_destroy(translations);
     smsbox_req_shutdown();
+    octstr_destroy(bb_host);
     config_destroy(cfg);
     gwlib_shutdown();
     return 0;
