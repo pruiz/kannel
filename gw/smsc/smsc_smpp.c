@@ -581,18 +581,19 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
      * only re-encoding if using default smsc charset that is defined via
      * alt-charset in smsc group and if MT is not binary
      */
-    if (pdu->u.submit_sm.data_coding == 0) {
-        /*
-         * convert to the given alternative charset
-         * otherwise assume to convert to GSM 03.38 7-bit alphabet
-         */
-        if (smpp->alt_charset) {
+    if (msg->sms.coding == DC_7BIT || (msg->sms.coding == DC_UNDEF && octstr_len(msg->sms.udhdata))) {
+        /* 0xFX coding is always GSM 03.38 */
+        if ((pdu->u.submit_sm.data_coding & 0xF0) || !smpp->alt_charset) {
+            charset_latin1_to_gsm(pdu->u.submit_sm.short_message);
+        }
+        else {
+            /*
+             * convert to the given alternative charset
+             */
             if (charset_convert(pdu->u.submit_sm.short_message, "ISO-8859-1",
                                 octstr_get_cstr(smpp->alt_charset)) != 0)
                 error(0, "Failed to convert msgdata from charset <%s> to <%s>, will send as is.",
                              "ISO-8859-1", octstr_get_cstr(smpp->alt_charset));
-        } else {
-            charset_latin1_to_gsm(pdu->u.submit_sm.short_message);
         }
     }
 

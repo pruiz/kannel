@@ -1,3 +1,9 @@
+2003-11-05  Stipe Tolj  <tolj@wapme-systems.de>
+	* gw/smsc/smsc_smpp.c: fixed bug for re-encoding character set. Accoding 
+      SMPP spec v3.4 if mclass is set, then data_coding is within 0xF0 range.
+      Which means a normal 7bit text message will be data_coding 0xF1 (241).
+      Thanks a lot to Alexander for preparing this fix and the patch.
+
 2003-11-03  Alexander Malysh  <a.malysh@centrium.de>
     * gw/smsc/smsc_smpp.c: applied yet another workaround for BUFFERED
       DLR's. Thanks to: "Alex Kinch" <alex@alexkinch.com> for patch.
