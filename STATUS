@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.14 2002-03-26 15:13:41 davi Exp $]
+  Last modified at [$Id: STATUS,v 1.15 2002-04-03 10:41:22 stolj Exp $]
 
 Release:
 
@@ -13,6 +13,11 @@ RELEASE SHOWSTOPPERS:
  
 RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
 
+    * WTLS for secure communication
+    Posted by: Stipe Tolj <tolj@wapme-systems.de>
+    Status: basic support has been implemented in wap/wtlks_*.[ch], this needs
+            to be tweaked the way kwtls does things to incorporate the stack
+                   
     * forced-smsc not working with concatenated, probably routing issue 
       between several configured smscs and concatenated messages
     Posted by: Stefan Cars <stefan@globalwire.se>
@@ -27,6 +32,10 @@ RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
     Posted by: Aarno =?iso-8859-1?Q?Syv=E4nen?= <aarno@wiral.com>
     Message-ID: <3C848209.FAE8FCB7@wiral.com>
     Status: Aarno will add it
+
+    * XML-RPC support for sendsms and sendota HTTP interface
+    Posted by: Stipe Tolj <tolj@wapme-systems.de>
+    Status: basic support has been implemented in gwlib/xmlrpc.[ch]
     
 Available Patches:
 

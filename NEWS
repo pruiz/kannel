@@ -9,6 +9,21 @@ NOTE: This is not an update to 1.0.  Updates to 1.0 will be numbered 1.0.x,
 until we decide to release 1.2.  See the VERSION file for details.
 
 
+Changes since version 1.1.6:
+
+Compatibility breakers:
+
+ * GET method variable 'phonenumber' will be replaced by 'to' for the 
+   sendota HTTP interface. Currently we run both, to allow users to 
+   switch steamslessly.
+
+New features:
+
+ * sendota HTTP interface requests can be send in POST method mode
+   containing special X-Kannel HTTP headers for the control information
+   and the OTA XML document as body content.
+
+
 Changes since version 1.1.5:
 
 Compatibility breakers:
