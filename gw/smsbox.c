@@ -1004,8 +1004,18 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 				 int *status, int dlr_mask, Octstr *dlr_url, Octstr *account)
 {				     
     Msg *msg = NULL;
-    Octstr *newfrom, *returnerror;
-    int ret;
+    Octstr *newfrom, *returnerror, *receiv;
+    List *receiver, *failed_id, *allowed, *denied;
+    int no_recv, ret, i;
+    long del;
+
+    /*
+     * Multi-cast messages with several receivers in 'to' are handled
+     * in a loop. We only change sms.time and sms.receiver within the
+     * loop below, because everything else is identical for all receivers.
+     */
+    receiver = octstr_split_words(to);
+    no_recv = list_len(receiver);
 
     /*
      * check if UDH length is legal, or otherwise discard the
@@ -1016,40 +1026,76 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	goto fielderror2;
     }
 
+    /*
+     * Check if there are any illegal characters in the 'to' scheme
+     */
     if (strspn(octstr_get_cstr(to), sendsms_number_chars) < octstr_len(to)) {
 	info(0,"Illegal characters in 'to' string ('%s') vs '%s'",
 	     octstr_get_cstr(to), sendsms_number_chars);
 	returnerror = octstr_create("Garbage 'to' field, rejected.");
 	goto fielderror2;
     }
-    if (urltrans_white_list(t) &&
-	numhash_find_number(urltrans_white_list(t), to) < 1) {
-	info(0, "Number <%s> is not in white-list, message discarded",
-	octstr_get_cstr(to));
-	returnerror = octstr_create("Number is not in white-list.");
-	goto fielderror2;
-    }
-    if (urltrans_black_list(t) &&
-	numhash_find_number(urltrans_black_list(t), to) == 1) {
-	info(0, "Number <%s> is in black-list, message discarded",
-	octstr_get_cstr(to));
-	returnerror = octstr_create("Number is in black-list.");
-	goto fielderror2;
+
+    /*
+     * Check for white and black lists, first for the URLTranlation
+     * lists and then for the global lists.
+     *
+     * Set the 'allowed' and 'denied' lists accordingly to process at
+     * least all allowed receiver messages. This is a constrain
+     * walk through all disallowing rules within the lists.
+     */
+    allowed = list_create();
+    denied = list_create();
+
+    for (i = 0; i < no_recv; i++) {
+        receiv = list_get(receiver, i); 
+            
+        /*
+         * First of all fill the two lists systematicaly by the rules,
+         * then we will revice the lists.
+         */
+        if (urltrans_white_list(t) &&
+            numhash_find_number(urltrans_white_list(t), receiv) < 1) {
+            info(0, "Number <%s> is not in white-list, message discarded",
+                 octstr_get_cstr(receiv));
+            list_append_unique(denied, receiv, octstr_item_match);
+        } else {
+            list_append_unique(allowed, receiv, octstr_item_match);
+        }
+        if (urltrans_black_list(t) &&
+            numhash_find_number(urltrans_black_list(t), receiv) == 1) {
+            info(0, "Number <%s> is in black-list, message discarded",
+                 octstr_get_cstr(receiv));
+            list_append_unique(denied, receiv, octstr_item_match);
+        } else {
+            list_append_unique(allowed, receiv, octstr_item_match);
+        }
+        if (white_list &&
+            numhash_find_number(white_list, receiv) < 1) {
+            info(0, "Number <%s> is not in global white-list, message discarded",
+                 octstr_get_cstr(receiv));
+            list_append_unique(denied, receiv, octstr_item_match);
+        } else {
+            list_append_unique(allowed, receiv, octstr_item_match);
+        }
+        if (black_list &&
+            numhash_find_number(black_list, receiv) == 1) {
+            info(0, "Number <%s> is in global black-list, message discarded",
+                 octstr_get_cstr(receiv));
+            list_append_unique(denied, receiv, octstr_item_match);
+        } else {
+            list_append_unique(allowed, receiv, octstr_item_match);
+        }
     }
     
-    if (white_list &&
-	numhash_find_number(white_list, to) < 1) {
-	info(0, "Number <%s> is not in global white-list, message discarded",
-	octstr_get_cstr(to));
-	returnerror = octstr_create("Number is not in global white-list.");
-	goto fielderror2;
-    }
-    if (black_list &&
-	numhash_find_number(black_list, to) == 1) {
-	info(0, "Number <%s> is in global black-list, message discarded",
-	octstr_get_cstr(to));
-	returnerror = octstr_create("Number is in global black-list.");
-	goto fielderror2;
+    /*
+     * Now we have to revise the 'allowed' and 'denied' lists by walking
+     * the 'denied' list and check if items are also present in 'allowed',
+     * then we will discard them from 'allowed'.
+     */
+    for (i = 0; i < list_len(denied); i++) {
+        receiv = list_get(denied, i);
+        del = list_delete_matching(allowed, receiv, octstr_item_match);
     }
     
     if (urltrans_faked_sender(t) != NULL) {
@@ -1065,22 +1111,21 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     }
 
     info(0, "sendsms sender:<%s:%s> (%s) to:<%s> msg:<%s>",
-	 octstr_get_cstr(urltrans_username(t)),
-	 octstr_get_cstr(newfrom),
-	 octstr_get_cstr(client_ip),
-	 octstr_get_cstr(to),
-	 udh == NULL ? ( text == NULL ? "" : octstr_get_cstr(text) ) : 
+         octstr_get_cstr(urltrans_username(t)),
+         octstr_get_cstr(newfrom),
+         octstr_get_cstr(client_ip),
+         octstr_get_cstr(to),
+         udh == NULL ? ( text == NULL ? "" : octstr_get_cstr(text) ) : 
              octstr_get_cstr(text));
     
     /*
-     * XXX here we should validate and split the 'to' field
-     *   to allow multi-cast. Waiting for octstr_split...
+     * Create the msg structure and fill the types. Note that sms.receiver
+     * and sms.time are set in the multi-cast support loop below.
      */
     msg = msg_create(sms);
     
     msg->sms.service = octstr_duplicate(urltrans_name(t));
     msg->sms.sms_type = mt_push;
-    msg->sms.receiver = octstr_duplicate(to);
     msg->sms.sender = octstr_duplicate(newfrom);
     msg->sms.account = account ? octstr_duplicate(account) : NULL;
     msg->sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
@@ -1154,22 +1199,62 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	goto fielderror;
     }
 
-    msg->sms.time = time(NULL);
-    ret = send_message(t, msg);
+    /* 
+     * All checks are done, now add multi-cast request support by
+     * looping through 'allowed'. This should work for any
+     * number of receivers within 'to'. If the message fails append
+     * it to 'failed_id'.
+     */
+    failed_id = list_create();
+
+    while ((receiv = list_extract_first(allowed)) != NULL) {
+        
+        msg->sms.receiver = octstr_duplicate(receiv);
+        msg->sms.time = time(NULL);
+        ret = send_message(t, msg);
+
+        if (ret == -1) {
+            /* add the receiver to the failed list */
+            list_append(failed_id, receiv);
+        } else {
+            /* log the sending as successfull for this particular message */
+            alog("send-SMS request added - sender:%s:%s %s target:%s request: '%s'",
+	             octstr_get_cstr(urltrans_username(t)),
+                 octstr_get_cstr(newfrom), octstr_get_cstr(client_ip),
+	             octstr_get_cstr(receiv),
+	             udh == NULL ? ( text == NULL ? "" : octstr_get_cstr(text) ) : "<< UDH >>");
+        }
+    }
     msg_destroy(msg);
-    
-    if (ret == -1)
+    list_destroy(receiver, NULL);
+    list_destroy(allowed, NULL);
+
+    /* have all receivers been denied by list rules?! */
+    if (no_recv == list_len(denied)) {
+        returnerror = octstr_create("Number(s) has/have been denied by white- and/or black-lists.");
+        goto fielderror2;
+    }
+
+    if (list_len(failed_id) > 0)
 	goto error;
     
-    alog("send-SMS request added - sender:%s:%s %s target:%s request: '%s'",
-	 octstr_get_cstr(urltrans_username(t)),
-         octstr_get_cstr(newfrom), octstr_get_cstr(client_ip),
-	 octstr_get_cstr(to),
-	 udh == NULL ? ( text == NULL ? "" : octstr_get_cstr(text) ) : "<< UDH >>");
-
+    list_destroy(failed_id, NULL);
     octstr_destroy(newfrom);
     *status = HTTP_ACCEPTED;
-    return octstr_create("Sent.");
+    returnerror = octstr_create("Sent.");
+
+    /* 
+     * Append all denied receivers to the returned body in case this is
+     * a multi-cast send request
+     */
+    if (list_len(denied) > 0) {
+        octstr_format_append(returnerror, " Denied receivers are:");
+        while ((receiv = list_extract_first(denied)) != NULL) {
+            octstr_format_append(returnerror, " %s", octstr_get_cstr(receiv));
+        }
+    }               
+    list_destroy(denied, NULL);  
+    return returnerror;
     
 
 fielderror:
@@ -1178,7 +1263,7 @@ fielderror:
 
 fielderror2:
     alog("send-SMS request failed - %s",
-	 octstr_get_cstr(returnerror));
+         octstr_get_cstr(returnerror));
 
     *status = HTTP_BAD_REQUEST;
     return returnerror;
@@ -1187,7 +1272,23 @@ error:
     error(0, "sendsms_request: failed");
     octstr_destroy(from);
     *status = HTTP_INTERNAL_SERVER_ERROR;
-    return octstr_create("Sending failed.");
+    returnerror = octstr_create("Sending failed.");
+
+    /* 
+     * Append all receivers to the returned body in case this is
+     * a multi-cast send request
+     */
+    if (no_recv > 1) {
+        octstr_format_append(returnerror, " Failed receivers are:");
+        while ((receiv = list_extract_first(failed_id)) != NULL) {
+            octstr_format_append(returnerror, " %s", octstr_get_cstr(receiv));
+        }
+    }
+
+    octstr_destroy(receiv); 
+    list_destroy(failed_id, NULL);
+    list_destroy(denied, NULL);
+    return returnerror;
 }
 
 
