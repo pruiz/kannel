@@ -1,3 +1,10 @@
+2004-02-24 Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: fixed bug that config directive 'sendsms-chars' was not used
+      at all in the logic, only the default remained. Thanks to 
+      "francesco emmi" <francesco.emmi@a-tono.com> for submitting this report
+      and Edwin for acknoledging it.
+      [Msg-ID: <1077126696.1011.49.camel@verne>]
+
 2004-02-19 Stipe Tolj  <tolj@wapme-systems.de>
     * wap/wsp_server_method_states.def: removed the ambicious 0x00 byte removal
       that was device specific for the Siemens S35. Thanks to Paul and 

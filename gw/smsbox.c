@@ -3231,6 +3231,8 @@ static Cfg *init_smsbox(Cfg *cfg)
 
     global_sender = cfg_get(grp, octstr_imm("global-sender"));
     accepted_chars = cfg_get(grp, octstr_imm("sendsms-chars"));
+    sendsms_number_chars = accepted_chars ? 
+        octstr_get_cstr(accepted_chars) : SENDSMS_DEFAULT_CHARS;
     logfile = cfg_get(grp, octstr_imm("log-file"));
 
     cfg_get_integer(&lvl, grp, octstr_imm("log-level"));
@@ -3351,7 +3353,6 @@ int main(int argc, char **argv)
     if (urltrans_add_cfg(translations, cfg) == -1)
 	panic(0, "urltrans_add_cfg failed");
 
-    sendsms_number_chars = SENDSMS_DEFAULT_CHARS;
     caller = http_caller_create();
     smsbox_requests = list_create();
     smsbox_http_requests = list_create();
