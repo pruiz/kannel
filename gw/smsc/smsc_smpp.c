@@ -794,7 +794,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 
                     dlrmsg->sms.msgdata = reply;
 
-                    time(&msg->sms.time); 
+                    time(&dlrmsg->sms.time); 
  			 
                     info(0,"SMPP[%s]: DLR = %s", octstr_get_cstr(smpp->conn->id),
                          octstr_get_cstr(dlrmsg->sms.dlr_url)); 
