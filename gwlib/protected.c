@@ -17,16 +17,16 @@ enum {
 };
 
 
-static Mutex *locks[NUM_LOCKS];
+static Mutex locks[NUM_LOCKS];
 
 
 static void lock(int which) {
-	mutex_lock(locks[which]);
+	mutex_lock(&locks[which]);
 }
 
 
 static void unlock(int which) {
-	mutex_unlock(locks[which]);
+	mutex_unlock(&locks[which]);
 }
 
 
@@ -34,7 +34,7 @@ void gwlib_protected_init(void) {
 	int i;
 
 	for (i = 0; i < NUM_LOCKS; ++i)
-		locks[i] = mutex_create();
+		mutex_init_static(&locks[i]);
 }
 
 
@@ -42,7 +42,7 @@ void gwlib_protected_shutdown(void) {
 	int i;
 
 	for (i = 0; i < NUM_LOCKS; ++i)
-		mutex_destroy(locks[i]);
+		mutex_destroy(&locks[i]);
 }
 
 

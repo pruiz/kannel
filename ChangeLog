@@ -1,3 +1,21 @@
+2000-06-10  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/gwmem-check.c: New implementation.  This fixes the speed
+	bottleneck that the old gwmem-check was, and it provides better
+	checking and some extra features.
+
+	* gwlib/gwmem.h: Slight changes for the new gwmem-check.  New
+	functions gw_check_area_size and gw_check_claim_area, which do
+	not have macro wrappers yet.
+
+	* gwlib/thread.[ch]: Add support for statically allocated Mutex
+	structures.  They are needed to break some dependency loops
+	between the various wrappers (log.c needed protected.c,
+	protected.c needed Mutex, Mutex needed gwmem, gwmem needed log.c)
+	which made it impossible to shut them down correctly.
+
+	* gwlib/protected.c, gwlib/gwmem-check.c: Use the new static mutexes.
+
 2000-06-09  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gwlib/http2.c: A http request headers patch applied.

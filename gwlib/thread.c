@@ -15,10 +15,7 @@
 
 
 #ifdef MUTEX_STATS
-Mutex *mutex_create_measured(unsigned char *filename, int lineno) {
-	Mutex *mutex;
-
-	mutex = mutex_create_real();
+Mutex *mutex_make_measured(Mutex *mutex, unsigned char *filename, int lineno) {
 	mutex->filename = filename;
 	mutex->lineno = lineno;
 	mutex->locks = 0;
@@ -33,6 +30,14 @@ Mutex *mutex_create_real(void) {
 	mutex = gw_malloc(sizeof(Mutex));
 	pthread_mutex_init(&mutex->mutex, NULL);
 	mutex->owner = -1;
+	mutex->dynamic = 1;
+	return mutex;
+}
+
+Mutex *mutex_init_static_real(Mutex *mutex) {
+	pthread_mutex_init(&mutex->mutex, NULL);
+	mutex->owner = -1;
+	mutex->dynamic = 0;
 	return mutex;
 }
 
@@ -49,6 +54,8 @@ void mutex_destroy(Mutex *mutex) {
 #endif
 
 	pthread_mutex_destroy(&mutex->mutex);
+	if (mutex->dynamic == 0)
+		return;
 	gw_free(mutex);
 }
 

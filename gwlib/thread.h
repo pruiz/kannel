@@ -20,6 +20,7 @@
 typedef struct {
 	pthread_mutex_t mutex;
 	long owner;
+	int dynamic;
 #ifdef MUTEX_STATS
 	unsigned char *filename;
 	int lineno;
@@ -33,7 +34,7 @@ typedef struct {
  * Create a Mutex.
  */
 #ifdef MUTEX_STATS
-#define mutex_create() mutex_create_measured(__FILE__, __LINE__)
+#define mutex_create() mutex_make_measured(mutex_create_real(), __FILE__, __LINE__)
 #else
 #define mutex_create() mutex_create_real()
 #endif
@@ -41,8 +42,23 @@ typedef struct {
 /*
  * Create a Mutex.  Call these functions via the macro defined above.
  */
-Mutex *mutex_create_measured(unsigned char *filename, int lineno);
+Mutex *mutex_create_measured(Mutex *mutex, unsigned char *filename, int lineno);
 Mutex *mutex_create_real(void);
+
+
+/*
+ * Initialize a statically allocated Mutex.  We need those inside gwlib
+ * modules that are in turn used by the mutex wrapper, such as "gwmem" and
+ * "protected".
+ */
+#ifdef MUTEX_STATS
+#define mutex_init_static(mutex) mutex_make_measured(mutex_init_static_real(), __FILE__, __LINE__)
+#else
+#define mutex_init_static(mutex) mutex_init_static_real(mutex)
+#endif
+
+Mutex *mutex_init_static_real(Mutex *mutex);
+
 
 /*
  * Destroy a Mutex.
