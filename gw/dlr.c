@@ -386,22 +386,19 @@ Msg *dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int typ)
         return NULL;
     }
 
+#define O_SET(x, val) if (octstr_len(val) > 0) { x = val; val = NULL; }
+
     if ((typ & dlr->mask) > 0) {
         /* its an entry we are interested in */
         msg = msg_create(sms);
         msg->sms.sms_type = report;
-        msg->sms.service = dlr->service;
-        dlr->service = NULL;
         msg->sms.dlr_mask = typ;
-        msg->sms.smsc_id = dlr->smsc;
-        dlr->smsc = NULL;
-        msg->sms.receiver = dlr->destination;
-        dlr->destination = NULL;
-        msg->sms.sender = dlr->source;
-        dlr->source = NULL;
+        O_SET(msg->sms.service, dlr->service);
+        O_SET(msg->sms.smsc_id, dlr->smsc);
+        O_SET(msg->sms.receiver, dlr->destination);
+        O_SET(msg->sms.sender, dlr->source);
         /* if dlr_url was present, recode it here again */
-        msg->sms.dlr_url = dlr->url;
-        dlr->url = NULL;
+        O_SET(msg->sms.dlr_url, dlr->url);
         /* 
          * insert orginal message to the data segment 
          * later in the smsc module 
@@ -411,8 +408,7 @@ Msg *dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int typ)
          * If a boxc_id is available, then instruct bearerbox to 
          * route this msg back to originating smsbox
          */
-        msg->sms.boxc_id = dlr->boxc_id;
-        dlr->boxc_id = NULL;
+        O_SET(msg->sms.boxc_id, dlr->boxc_id);
 
         time(&msg->sms.time);
         debug("dlr.dlr", 0, "DLR[%s]: created DLR message for URL <%s>",
@@ -422,6 +418,8 @@ Msg *dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int typ)
         /* ok that was a status report but we where not interested in having it */
         msg = NULL;
     }
+
+#undef O_SET
  
     /* check for end status and if so remove from storage */
     if ((typ & DLR_BUFFERED) && ((dlr->mask & DLR_SUCCESS) || (dlr->mask & DLR_FAIL))) {
