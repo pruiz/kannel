@@ -1,3 +1,8 @@
+2002-05-27  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/bb_http.c, gw/bearerbox.h: some declaration fixups
+    * gw/bb_smscconn.c: use smscconn_shutdown() instead of _stop and added 
+      global list to hold all smsc groups for later re-start lookups
+
 2002-05-25  Stipe Tolj <tolj@wapme-systems.de>
     * gw/bb_smscconn.c: deleted unnecessary debug lines
 
