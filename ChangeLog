@@ -1,3 +1,7 @@
+1999-12-28 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp_send.c: bug fixing in functions send_ack and send_abort
+
 1999-12-22 Aarno Syvänen <syvanen@wapit.com>
 
 	* spaces around assignment operators added
