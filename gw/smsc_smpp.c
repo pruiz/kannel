@@ -362,41 +362,39 @@ int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 	if(submit_sm == NULL) goto error;
 	memset(submit_sm, 0, sizeof(struct smpp_pdu_submit_sm));
 
-	if(msg_type(msg) == smart_sms) {
-
-		if(msg->smart_sms.flag_8bit == 1) {
-			/* As per GSM 03.38. */
-			submit_sm->esm_class = 67;
-		} else {
-			submit_sm->esm_class = 0;
-		}
-
-		if(msg->smart_sms.flag_udh == 1) {
-			/* As per GSM 03.38. */
-			submit_sm->data_coding = 245;
-		} else {
-			submit_sm->data_coding = 3;
-		}
-
-		strncpy(submit_sm->source_addr, octstr_get_cstr(msg->smart_sms.sender), 21);
-		strncat(submit_sm->dest_addr, octstr_get_cstr(msg->smart_sms.receiver)+2, 21);
-
-		submit_sm->sm_length = octstr_len(msg->smart_sms.udhdata) + 
-			octstr_len(msg->smart_sms.msgdata);
-
-		octstr_get_many_chars(submit_sm->short_message, msg->smart_sms.udhdata, 0, 160);
-
-		octstr_get_many_chars(
-			submit_sm->short_message + octstr_len(msg->smart_sms.udhdata),
-			msg->smart_sms.msgdata, 0, 160 - octstr_len(msg->smart_sms.udhdata));
-
-		charset_iso_to_smpp(submit_sm->short_message);
-
-	} else {
+	if(msg_type(msg) != smart_sms) {
 		error(0, "smpp_submit_sms: Msg is WRONG TYPE");
 		msg_dump(msg);
 		goto error;
 	}
+
+	if(msg->smart_sms.flag_8bit == 1) {
+		/* As per GSM 03.38. */
+		submit_sm->esm_class = 67;
+	} else {
+		submit_sm->esm_class = 0;
+	}
+
+	if(msg->smart_sms.flag_udh == 1) {
+		/* As per GSM 03.38. */
+		submit_sm->data_coding = 245;
+	} else {
+		submit_sm->data_coding = 3;
+	}
+
+	strncpy(submit_sm->source_addr, octstr_get_cstr(msg->smart_sms.sender), 21);
+	strncat(submit_sm->dest_addr, octstr_get_cstr(msg->smart_sms.receiver)+2, 21);
+
+	submit_sm->sm_length = octstr_len(msg->smart_sms.udhdata) +
+		octstr_len(msg->smart_sms.msgdata);
+
+	octstr_get_many_chars(submit_sm->short_message, msg->smart_sms.udhdata, 0, 160);
+
+	octstr_get_many_chars(
+		submit_sm->short_message + octstr_len(msg->smart_sms.udhdata),
+		msg->smart_sms.msgdata, 0, 160 - octstr_len(msg->smart_sms.udhdata));
+
+	charset_iso_to_smpp(submit_sm->short_message);
 
 	submit_sm->source_addr_npi = GSM_ADDR_NPI_UNKNOWN;
 	submit_sm->source_addr_ton = GSM_ADDR_TON_NETWORKSPECIFIC;
@@ -443,7 +441,7 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 	struct smpp_pdu_deliver_sm *deliver_sm = NULL;
 	char *newnum = NULL;
 
-	/* Pop a SMSMessage message from the MSG_MO stack. */
+	/* Pop a Msg message from the MSG_MO stack. */
 	if( fifo_pop(smsc->received_mo, &pdu) == 1 ) {
 
 		deliver_sm = (struct smpp_pdu_deliver_sm*) pdu->message_body;
@@ -721,50 +719,6 @@ error:
 	error(0, "fifo_pop: returing error");
 	return -1;
 }
-
-static int fifo_push_smsmessage(fifostack *fifo, SMSMessage *msg) {
-
-	struct smpp_pdu *pdu = NULL;
-
-	pdu = pdu_new();
-	if(pdu == NULL) goto error;
-	memset(pdu, 0, sizeof(struct smpp_pdu));
-	
-	pdu->smsmsg = msg;
-	fifo_push(fifo, pdu);
-
-	return 1;
-
-error:
-	error(0, "fifo_push_smsmessage: returning error");
-	return -1;
-}
-
-static int fifo_pop_smsmessage(fifostack *fifo, SMSMessage **msg) {
-
-	struct smpp_pdu *pdu = NULL;
-	int ret;
-
-	ret = fifo_pop(fifo, &pdu);
-	if(ret == 0) goto no_msg;
-	if(ret < 0) goto error;
-
-	*msg = pdu->smsmsg;
-	if(*msg == NULL) goto error;
-
-	pdu->smsmsg = NULL;
-	pdu_free(pdu);
-
-	return 1;
-
-no_msg:
-	return 0;
-
-error:
-	error(0, "fifo_pop_smsmessage: returning error");
-	return -1;
-}
-
 
 /******************************************************************************
 * data_pop

@@ -27,11 +27,9 @@
 /******************************************************************************
 * Static functions
 */
-static int internal_emi_modembuffer_get_data(
-	SMSCenter *smsc, char *buff, int length);
+static int get_data(SMSCenter *smsc, char *buff, int length);
 
-static int internal_emi_modembuffer_put_data(
-	SMSCenter *smsc, char *buff, int length, int is_backup);
+static int put_data(SMSCenter *smsc, char *buff, int length, int is_backup);
 
 static int internal_emi_memorybuffer_append_data(
 	SMSCenter *smsc, char *buff, int length);
@@ -45,11 +43,11 @@ static int internal_emi_memorybuffer_has_rawmessage(
 static int internal_emi_memorybuffer_cut_rawmessage(
 	SMSCenter *smsc, char *buff, int length);
 
-static int internal_emi_parse_rawmessage_to_smsmessage(
-	SMSCenter *smsc, SMSMessage **msg, char *rawmessage, int length);
+static int internal_emi_parse_rawmessage_to_msg(
+	SMSCenter *smsc, Msg **msg, char *rawmessage, int length);
 	
-static int internal_emi_parse_smsmessage_to_rawmessage(
-	SMSCenter *smsc, SMSMessage *msg, char *rawmessage, int length);
+static int internal_emi_parse_msg_to_rawmessage(
+	SMSCenter *smsc, Msg *msg, char *rawmessage, int length);
 
 static int internal_emi_acknowledge_from_rawmessage(
 	SMSCenter *smsc, char *rawmessage, int length);
@@ -109,7 +107,7 @@ SMSCenter *emi_open(char *phonenum, char *serialdevice, char *username, char *pa
 		goto error;
 
 	smsc->type = SMSC_TYPE_EMI;
-	smsc->latency = 1000*1000;
+	smsc->latency = 1000*1000; /* 1 second */
 
 	smsc->emi_phonenum = strdup(phonenum);
 	smsc->emi_serialdevice = strdup(serialdevice);
@@ -175,7 +173,7 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
 		goto error;
 
 	smsc->type = SMSC_TYPE_EMI_IP;
-	smsc->latency = 1000*1000;
+	smsc->latency = 1000*1000; /* 1 second */ 
 
 	smsc->emi_hostname = strdup(hostname);
 	smsc->emi_port = port;
@@ -252,7 +250,7 @@ int emi_pending_smsmessage(SMSCenter *smsc) {
 	bzero(tmpbuff, 10*1024);
 
 	/* check for data */
-	n = internal_emi_modembuffer_get_data( smsc, tmpbuff, 1024*10 );
+	n = get_data( smsc, tmpbuff, 1024*10 );
 	if (n > 0)
 	    internal_emi_memorybuffer_insert_data( smsc, tmpbuff, n );
 
@@ -289,21 +287,17 @@ int emi_pending_smsmessage(SMSCenter *smsc) {
 int emi_submit_msg(SMSCenter *smsc, Msg *omsg) {
 
 	char *tmpbuff = NULL;
-	SMSMessage *msg;
 
-	msg = smsmessage_construct(octstr_get_cstr(omsg->smart_sms.sender),
-				   octstr_get_cstr(omsg->smart_sms.receiver),
-				   omsg->smart_sms.msgdata);
-	if (msg == NULL)
-	    goto error;
+	if (smsc == NULL) goto error;
+	if (omsg == NULL) goto error;
 
 	tmpbuff = malloc(10*1024);
 	bzero(tmpbuff, 10*1024);
 
-	if(internal_emi_parse_smsmessage_to_rawmessage( smsc, msg, tmpbuff, 10*1024 ) < 1)
+	if(internal_emi_parse_msg_to_rawmessage( smsc, omsg, tmpbuff, 10*1024 ) < 1)
 		goto error;
 
-	if(internal_emi_modembuffer_put_data( smsc, tmpbuff, strlen(tmpbuff),0) < 0) {
+	if(put_data( smsc, tmpbuff, strlen(tmpbuff),0) < 0) {
 	    info(0, "put_data failed!");
 	    goto error;
 	}
@@ -323,16 +317,13 @@ int emi_submit_msg(SMSCenter *smsc, Msg *omsg) {
 	debug(0, "Submit Ok...");
 	
 	free(tmpbuff);
-	smsmessage_destruct(msg);
 	return 1;
 
 error:
 	debug(0, "Submit Error...");
 
 	free(tmpbuff);
-	smsmessage_destruct(msg);
 	return 0;
-
 }
 
 /******************************************************************************
@@ -342,7 +333,6 @@ int emi_receive_msg(SMSCenter *smsc, Msg **tmsg) {
 
 	char *tmpbuff;
 	Msg *msg = NULL;
-	SMSMessage **smsmsg = NULL;
 
 	*tmsg = NULL;
 	
@@ -352,8 +342,7 @@ int emi_receive_msg(SMSCenter *smsc, Msg **tmsg) {
 
 	/* get and delete message from buffer */
 	internal_emi_memorybuffer_cut_rawmessage(smsc, tmpbuff, 10*1024 );
-	internal_emi_parse_rawmessage_to_smsmessage( smsc,
-						     smsmsg, tmpbuff, strlen(tmpbuff) );
+	internal_emi_parse_rawmessage_to_msg( smsc, &msg, tmpbuff, strlen(tmpbuff) );
 
 	/* yeah yeah, I got the message... */
 	internal_emi_acknowledge_from_rawmessage(smsc, tmpbuff, strlen(tmpbuff));
@@ -361,21 +350,8 @@ int emi_receive_msg(SMSCenter *smsc, Msg **tmsg) {
 	/* return with the joyful news */
 	free(tmpbuff);
 
-	msg = msg_create(smart_sms);
-	if (msg == NULL)
-	    goto error;
+	if (msg == NULL) goto error;
 
-	msg->smart_sms.sender = octstr_create((*smsmsg)->sender);
-	msg->smart_sms.receiver = octstr_create((*smsmsg)->receiver);
-	msg->smart_sms.msgdata = octstr_duplicate((*smsmsg)->text);
-
-	if (msg->smart_sms.sender == NULL ||
-	    msg->smart_sms.receiver == NULL ||
-	    msg->smart_sms.msgdata == NULL)
-
-	    goto error;
-	
-	smsmessage_destruct(*smsmsg);
 	*tmsg = msg;
 	
 	return 1;
@@ -383,7 +359,6 @@ int emi_receive_msg(SMSCenter *smsc, Msg **tmsg) {
 error:
 	free(tmpbuff);
 	msg_destroy(msg);
-	smsmessage_destruct(*smsmsg);
 	return -1;
 }
 
@@ -583,11 +558,13 @@ static int internal_emi_wait_for_ack(SMSCenter *smsc) {
     start = time(NULL);
     do {
 	/* check for data */
-	n = internal_emi_modembuffer_get_data( smsc, tmpbuff, 1024*10 );
+	n = get_data( smsc, tmpbuff, 1024*10 );
 	
 	if(smsc->type == SMSC_TYPE_EMI) {
 		/* At least the X.31 interface wants to append the data.
-		   Kalle, what about the TCP/IP interface? -mg */
+		   Kalle, what about the TCP/IP interface? Am I correct
+		   that you are assuming that the message arrives in a 
+		   single read(2)? -mg */
 		if(n>0) internal_emi_memorybuffer_append_data(smsc, tmpbuff, n);
 		
 	} else if(smsc->type == SMSC_TYPE_EMI_IP) {
@@ -616,8 +593,7 @@ static int internal_emi_wait_for_ack(SMSCenter *smsc) {
  *
  * Reads from main fd, but also from backup-fd - does accept if needed
  */
-static int internal_emi_modembuffer_get_data(SMSCenter *smsc,
-					     char *buff, int length) {
+static int get_data(SMSCenter *smsc, char *buff, int length) {
     
 	int n = 0;
 
@@ -702,10 +678,8 @@ static int internal_emi_modembuffer_get_data(SMSCenter *smsc,
 /******************************************************************************
 * Put the buff data to the modem buffer, return the amount of data put
 */
-static int internal_emi_modembuffer_put_data(SMSCenter *smsc, char *buff,
-					     int length, int is_backup) {
+static int put_data(SMSCenter *smsc, char *buff, int length, int is_backup) {
 
-/*	char *tmpbuff = buff; */
 	size_t len = length;
 	int ret;
 	int fd;
@@ -720,7 +694,7 @@ static int internal_emi_modembuffer_put_data(SMSCenter *smsc, char *buff,
 			smsc->emi_fd = tcpip_connect_to_server(smsc->emi_hostname,
 							       smsc->emi_port);
 			if (smsc->emi_fd == -1) {
-			    error(errno, "modembuffer_put_data: Reopening failed!");
+			    error(errno, "put_data: Reopening failed!");
 			    return -1;
 			}
 		    }
@@ -762,11 +736,7 @@ static int internal_emi_modembuffer_put_data(SMSCenter *smsc, char *buff,
 		usleep(1000);
 	}
 
-
-/*	debug(0, "modem_put = <%s>, <%i> bytes", tmpbuff, length); */
-
 	return 0;
-
 }
 
 /******************************************************************************
@@ -902,10 +872,10 @@ static int internal_emi_memorybuffer_cut_rawmessage(
 }
 
 /******************************************************************************
-* Parse the raw message to the SMSMessage structure
+* Parse the raw message to the Msg structure
 */
-static int internal_emi_parse_rawmessage_to_smsmessage(
-	SMSCenter *smsc, SMSMessage **msg, char *rawmessage, int length) {
+static int internal_emi_parse_rawmessage_to_msg(
+	SMSCenter *smsc, Msg **msg, char *rawmessage, int length) {
 
 	char emivars[128][1024];
 	char *leftslash, *rightslash;
@@ -952,12 +922,19 @@ static int internal_emi_parse_rawmessage_to_smsmessage(
 	    error(0, "HEY WE SHOULD NOT BE HERE!! Type = %s", emivars[3]);
 	    strcpy(isotext, "");
 	}
-	
-	*msg = smsmessage_construct(emivars[5], emivars[4], 
-			octstr_create(isotext));
+
+	*msg = msg_create(smart_sms);
+	if(*msg==NULL) goto error;
+
+	(*msg)->smart_sms.sender = octstr_create(emivars[5]);
+	(*msg)->smart_sms.receiver = octstr_create(emivars[4]);
+	(*msg)->smart_sms.msgdata = octstr_create(isotext);
+	(*msg)->smart_sms.udhdata = NULL;
 
 	return msgnbr;
 
+error:
+	return -1;
 }
 
 /*
@@ -1029,8 +1006,7 @@ static int internal_emi_acknowledge_from_rawmessage(
 	strcpy(receiver, internal_emi_generate_checksum(timestamp) );
 
  	sprintf(sender, "%c%s/%s/%s%c", 0x02, emitext, isotext, receiver, 0x03);
-	internal_emi_modembuffer_put_data(smsc, sender, strlen(sender), is_backup);
-/*	printf("I have formulated this reply: <%s>\n", sender); */
+	put_data(smsc, sender, strlen(sender), is_backup);
 
 	return msgnbr;
 
@@ -1038,9 +1014,9 @@ static int internal_emi_acknowledge_from_rawmessage(
 
 
 /******************************************************************************
-* Parse the SMSMessage structure to the raw message format
+* Parse the Msg structure to the raw message format
 */
-static int internal_emi_parse_smsmessage_to_rawmessage(SMSCenter *smsc, SMSMessage *msg, char *rawmessage, int rawmessage_length) {
+static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char *rawmessage, int rawmessage_length) {
 
 	char message_whole[10*1024];
 	char message_body[10*1024];
@@ -1069,37 +1045,37 @@ static int internal_emi_parse_smsmessage_to_rawmessage(SMSCenter *smsc, SMSMessa
 	/* XXX internal_emi_parse_iso88591_to_emi shouldn't use NUL terminated
 	 * strings, but Octstr directly, or a char* and a length.
 	 */
-	if (msg->has_udh) {
+	if (msg->smart_sms.flag_udh == 1) {
 	  char xserbuf[258];
 	  /* we need a properbly formated UDH here, there first byte contains his length 
 	   * this will be formatted in the xser field of the EMI Protocol
 	   */
-	  udh_len = octstr_get_char(msg->text,0)+1;
+	  udh_len = octstr_get_char(msg->smart_sms.msgdata,0)+1;
 	  xserbuf[0] = 1;
 	  xserbuf[1] = udh_len;
-	  octstr_get_many_chars(&xserbuf[2], msg->text, 0, udh_len);
+	  octstr_get_many_chars(&xserbuf[2], msg->smart_sms.msgdata, 0, udh_len);
 	  internal_emi_parse_binary_to_emi(xserbuf, xser,udh_len+2);	   
 	} else {
 	  udh_len = 0;
 	}
 
-	if (!msg->is_binary) {
+	if (msg->smart_sms.flag_8bit != 1) {
 	  /* skip the probably existing UDH */
-	  octstr_get_many_chars(msgtext, msg->text, udh_len, octstr_len(msg->text) - udh_len);
-	  msgtext[octstr_len(msg->text)] = '\0';
+	  octstr_get_many_chars(msgtext, msg->smart_sms.msgdata, udh_len, octstr_len(msg->smart_sms.msgdata) - udh_len);
+	  msgtext[octstr_len(msg->smart_sms.msgdata)] = '\0';
 	  internal_emi_parse_iso88591_to_emi(msgtext, my_buffer2,
-					     octstr_len(msg->text) - udh_len,
+					     octstr_len(msg->smart_sms.msgdata) - udh_len,
 					     smsc->alt_charset);	  
 
 	  strcpy(snumbits,"");
 	  mt = '3';
 	  strcpy(mcl,"");
 	} else {
-	  octstr_get_many_chars(msgtext, msg->text, udh_len, octstr_len(msg->text) - udh_len);
-	  msgtext[octstr_len(msg->text)] = '\0';
-	  internal_emi_parse_binary_to_emi(msgtext, my_buffer2, octstr_len(msg->text) - udh_len);	  
+	  octstr_get_many_chars(msgtext, msg->smart_sms.msgdata, udh_len, octstr_len(msg->smart_sms.msgdata) - udh_len);
+	  msgtext[octstr_len(msg->smart_sms.msgdata)] = '\0';
+	  internal_emi_parse_binary_to_emi(msgtext, my_buffer2, octstr_len(msg->smart_sms.msgdata) - udh_len);	  
 	  
-	  sprintf(snumbits,"%04d",(octstr_len(msg->text)-udh_len)*8);
+	  sprintf(snumbits,"%04d",(octstr_len(msg->smart_sms.msgdata)-udh_len)*8);
 	  mt = '4';
 	  strcpy(mcl,"1");
 	}
@@ -1107,8 +1083,8 @@ static int internal_emi_parse_smsmessage_to_rawmessage(SMSCenter *smsc, SMSMessa
 	if(smsc->type == SMSC_TYPE_EMI) {
 		sprintf(message_body, 
 		"%s/%s/%s/%s/%s//%s////////////%c/%s/%s////%s//////%s//",
-		msg->receiver,
-		msg->sender,
+		octstr_get_cstr(msg->smart_sms.receiver),
+		octstr_get_cstr(msg->smart_sms.sender),
 		"",
 		"",
 		"",
@@ -1121,8 +1097,8 @@ static int internal_emi_parse_smsmessage_to_rawmessage(SMSCenter *smsc, SMSMessa
 	} else {
 		sprintf(message_body, 
 		"%s/%s/%s/%s/%s//%s////////////%c/%s/%s////%s//////%s//",
-		msg->receiver,
-		msg->sender,
+		octstr_get_cstr(msg->smart_sms.receiver),
+		octstr_get_cstr(msg->smart_sms.sender),
 		"",
 		"",
 		"",

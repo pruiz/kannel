@@ -564,7 +564,7 @@ static int internal_cimd_connect_tcpip(SMSCenter *smsc) {
 	bzero(smsc->buffer, smsc->bufsize);
 	smsc->buflen = 0;
 
-	/* Expect the protocol string "CIMD rel 1.36\n" */
+	/* Expect the protocol string "CIMD rel 1.37\n" */
 	for (;;) {
 		ret = smscenter_read_into_buffer(smsc);
 		if (ret < 0) goto logout;
@@ -593,7 +593,7 @@ static int internal_cimd_connect_tcpip(SMSCenter *smsc) {
 	if(internal_cimd_expect_acknowledge(smsc, &cmd, &err) < 1)
 		goto logout;
 
-	debug(0, "logged in");
+	debug(0, "cimd_connect_tcpip: logged in");
 	
 	free(tmpbuff);
 
@@ -618,7 +618,7 @@ static int internal_cimd_send_acknowledge(SMSCenter *smsc) {
 	int  tmpint;
 
 	if(tmpbuff == NULL) {
-		error(0, "internal_cimd_send_acknowledge: memory allocation failure");
+		error(0, "cimd_send_acknowledge: memory allocation failure");
 		goto error;
 	}
 	
@@ -628,14 +628,14 @@ static int internal_cimd_send_acknowledge(SMSCenter *smsc) {
 	
 	tmpint = write_to_socket(smsc->socket, tmpbuff);
 	if(tmpint == -1) {
-		error(errno, "internal_cimd_send_acknowledge: connection failure");
+		error(errno, "cimd_send_acknowledge: connection failure");
 		goto error;
 	}
 
 	return 0;
 
 error:
-	debug(errno, "internal_cimd_send_acknowledge: failed");
+	debug(errno, "cimd_send_acknowledge: failed");
 	return -1;
 }
 

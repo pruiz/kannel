@@ -317,8 +317,6 @@ static fifostack* fifo_new(void);
 static void fifo_free(fifostack*);
 static int fifo_push(fifostack*, smpp_pdu*);
 static int fifo_pop(fifostack*, smpp_pdu**);
-static int fifo_push_smsmessage(fifostack *, SMSMessage*);
-static int fifo_pop_smsmessage(fifostack *, SMSMessage**);
 
 static int smpp_append_oct(char**, int*, uint32_t);
 static int smpp_read_oct(char**, int*, Octet*);
