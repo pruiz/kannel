@@ -1,5 +1,17 @@
 2000-05-22  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/conn.h, gwlib/conn.c: Made output buffering explicit instead
+	of hidden in the interface.  (We can't hide it with 100% correctness
+	if there are multiple threads using the Connection, not all of which
+	are in a conn_wait loop).
+	Added conn_output_buffering and conn_flush functions.
+
+	* test/drive_wapbox.c: Made the fake httpd return a real wml page,
+	for better testing.  (This exercises the WML compiler).
+	Cleaned up some memory leaks.
+
+2000-05-22  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/conn.h, gwlib/conn.c: Extended to handle end-of-file better.
 	Added conn_eof function.
 

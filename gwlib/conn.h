@@ -8,8 +8,11 @@
  * The operations are designed for non-blocking use.  Blocking can be
  * done explicitly with conn_wait().
  *
- * The write operations will queue the data for sending, and will
- * send whatever queued data can be sent immediately.
+ * The write operations will queue the data for sending.  They will
+ * try to send whatever data can be sent immediately, if there's enough
+ * of it queued.  "Enough" is defined by a value which can be set with
+ * conn_set_output_buffering.  The caller must call either conn_wait
+ * or conn_flush to actually send the data.
  *
  * The read operations will return whatever data is immediately
  * available.  If none is, then the caller should not simply re-try
@@ -67,6 +70,11 @@ long conn_inbuf_len(Connection *conn);
  * wait operation. */
 int conn_eof(Connection *conn);
 
+/* Try to write data in chunks of this size or more.  Set it to 0 to
+ * get an unbuffered connection.  See the discussion on output buffering
+ * at the top of this file for more information. */
+void conn_set_output_buffering(Connection *conn, unsigned int size);
+
 /* Block the thread until one of the following is true:
  *   - The timeout expires
  *   - New data is available for reading
@@ -78,6 +86,11 @@ int conn_eof(Connection *conn);
  * actually blocking.
  */
 int conn_wait(Connection *conn, double seconds);
+
+/* If there is data queued for sending, try to send it.  Return 1 if
+ * this could be done immediately, or 0 if some data could not be sent.
+ * Return -1 if the connection is broken. */
+int conn_flush(Connection *conn);
 
 /* Output functions.  Each of these takes an open connection and some
  * data, formats the data and queues it for sending.  It may also

@@ -20,6 +20,11 @@
 
 #include "gwlib/gwlib.h"
 
+/* This number is chosen to be a compromise between too many small writes,
+ * and too large of a delay before writing.  On many platforms, there's
+ * little speed benefit in using larger chunks than 4096 bytes. */
+#define DEFAULT_OUTPUT_BUFFERING 4096
+
 struct Connection {
 	Mutex *mutex;
 	volatile sig_atomic_t claimed;
@@ -36,6 +41,12 @@ struct Connection {
 	long inbufpos;   /* start of unread data in inbuf */
 
 	int read_eof;    /* we encountered eof on read */
+
+	/* Try to buffer writes until there are this many octets to send.
+	 * The default if 4096, which should cut down on the number of
+	 * syscalls made without delaying the write too much.  Set it
+	 * to 0 to get an unbuffered connection. */
+	unsigned int output_buffering;
 };
 
 /* Lock a Connection, if it is unclaimed */
@@ -98,10 +109,7 @@ static int unlocked_try_write(Connection *conn) {
 	if (len == 0)
 		return 0;
 
-	/* Heuristic: avoid using too many separate write() calls by
-	 * writing only 4kB or larger chunks.  Let conn_wait() flush
-	 * leftover data. */
-	if (len < 4096)
+	if (len < (long) conn->output_buffering)
 		return 1;
 
 	if (unlocked_write(conn) < 0)
@@ -169,6 +177,7 @@ Connection *conn_wrap_fd(int fd) {
 
 	conn->fd = fd;
 	conn->read_eof = 0;
+	conn->output_buffering = DEFAULT_OUTPUT_BUFFERING;
 
 	return conn;
 }
@@ -236,6 +245,12 @@ int conn_eof(Connection *conn) {
 	unlock(conn);
 
 	return eof;
+}
+
+void conn_set_output_buffering(Connection *conn, unsigned int size) {
+	lock(conn);
+	conn->output_buffering = size;
+	unlock(conn);
 }
 
 int conn_wait(Connection *conn, double seconds) {
@@ -323,6 +338,22 @@ int conn_wait(Connection *conn, double seconds) {
 	}
 
 	return 0;
+}
+
+int conn_flush(Connection *conn) {
+	int ret;
+
+	lock(conn);
+	ret = unlocked_write(conn);
+	/* Return 0 or -1 directly.  If ret > 0, it's the number of bytes
+	 * written.  In that case, return 0 if everything was written or
+	 * 1 if there's still unflushed data. */
+	if (ret > 0) {
+		ret = unlocked_outbuf_len(conn) > 0;
+	}
+	unlock(conn);
+
+	return ret;
 }
 
 int conn_write(Connection *conn, Octstr *data) {

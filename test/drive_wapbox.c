@@ -128,10 +128,18 @@ static void *http_thread(void *arg) {
 	List *headers;
 	Octstr *body;
 	List *cgivars;
-	Octstr *reply_body = octstr_create("Nothing interesting");
+	Octstr *reply_body = octstr_create(
+		"<?xml version=\"1.0\"?>\n"
+		"<!DOCTYPE wml PUBLIC \"-//WAPFORUM//DTD WML 1.1//EN\"\n"
+		" \"http://www.wapforum.org/DTD/wml_1.1.xml\">\n"
+		"<wml>\n"
+		"<card id=\"main\" title=\"Hello, world\" newcontext=\"true\">\n"
+		"        <p>Hello, world.</p>\n"
+		"</card></wml>\n");
 	List *reply_headers = list_create();
 
-	list_append(reply_headers, "Content-type: text/plain");
+	list_append(reply_headers,
+		octstr_create("Content-Type: text/vnd.wap.wml"));
 
 	for (;!dying;) {
 		client = http2_server_accept_client(server);
@@ -143,10 +151,12 @@ static void *http_thread(void *arg) {
 				reply_headers, reply_body);
 			while (list_len(headers) > 0)
 				octstr_destroy(list_consume(headers));
+			list_destroy(headers);
 			octstr_destroy(url);
 			octstr_destroy(body);
 			while (list_len(cgivars) > 0)
 				octstr_destroy(list_consume(cgivars));
+			list_destroy(cgivars);
 			
 		}
 		http2_server_close_client(client);
@@ -155,6 +165,7 @@ static void *http_thread(void *arg) {
 	octstr_destroy(reply_body);
 	while (list_len(reply_headers) > 0)
 		octstr_destroy(list_consume(reply_headers));
+	list_destroy(reply_headers);
 	http2_server_close(server);
 	return NULL;
 }
