@@ -226,6 +226,7 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 
 all: progs $(testprogs) $(checkprogs) $(DOCSTARGET)
 progs: $(progs)
+tests: $(testprogs)
 docs: figs ps $(docs)
 no-docs:
 figs: $(figs)
@@ -293,7 +294,7 @@ clean:
 	rm -f $(benchoutputs)
 
 distclean: clean
-	rm -f Makefile config.h config.cache config.log config.status .depend
+	rm -f Makefile config.h config.cache config.log config.status .depend config.sub config.guess
 
 nag:
 	utils/find-long-lines

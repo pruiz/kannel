@@ -1,5 +1,5 @@
 2003-03-07  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
-    * Makefile.in: re-added make tests
+    * Makefile.in: re-added make tests (closes: #3)
     * Makefile.in: clean automatic generated config.sub and config.guess in make
       distclean
 
