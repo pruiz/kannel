@@ -546,7 +546,9 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 	    t = list_get(trans->list, i);
 	    if (t->type != TRANSTYPE_SENDSMS && t->keyword != NULL)
 	    {
-		if (strcasecmp(keyword, t->keyword) == 0 ||
+		if ((strcasecmp(keyword, t->keyword) == 0 &&
+		     strlen(keyword) == strlen(t->keyword))
+		    ||
 		    str_case_str(t->aliases, alias_keyword) != NULL) {
 
 		    if (n - 1 == t->args)

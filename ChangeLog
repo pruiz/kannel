@@ -1,3 +1,8 @@
+2000-07-10  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/urltrans.c (find_translation): fixed string matching of
+	sms-services.
+
 2000-07-07  Tuomas Luttinen  <tuo@wapit.com>
 
 	* configure: Now supprt for libxml 1.8.8 and 2.1.1.
