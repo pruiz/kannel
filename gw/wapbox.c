@@ -26,6 +26,7 @@ static Config *cfg = NULL;
 static char *bearerbox_host = BB_DEFAULT_HOST;
 static int bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static int heartbeat_freq = BB_DEFAULT_HEARTBEAT;
+static long heartbeat_thread;
 static char *logfile = NULL;
 static int logfilelevel = 0;
 static char *http_proxy_host = NULL;
@@ -159,6 +160,7 @@ static int connect_to_bearer_box(void)
     if (s == -1)
 	panic(0, "Couldn't connect to bearer box %s:%d.",
 	      bearerbox_host, bearerbox_port);
+    debug("bbox", 0, "Bearerbox connected");
     return s;
 }
 
@@ -248,7 +250,7 @@ static void send_heartbeat_thread(void *arg)
 	Msg *msg = msg_create(heartbeat);
 	msg->heartbeat.load = wap_appl_get_load();
 	put_msg_in_queue(msg);
-	sleep(heartbeat_freq);
+	gwthread_sleep((double)heartbeat_freq);
     }
     list_remove_producer(queue);
 }
@@ -290,6 +292,7 @@ static void signal_handler(int signum)
 	default:
 	    error(0, "SIGINT received, let's die.");
 	    run_status = aborting;
+	    gwthread_wakeup(heartbeat_thread);
 	    break;
 	}
 	break;
@@ -442,7 +445,7 @@ int main(int argc, char **argv)
     
     run_status = running;
     list_add_producer(queue);
-    gwthread_create(send_heartbeat_thread, NULL);
+    heartbeat_thread = gwthread_create(send_heartbeat_thread, NULL);
     gwthread_create(empty_queue_thread, &bbsocket);
 
     while (run_status == running && (msg = msg_receive(bbsocket)) != NULL) {

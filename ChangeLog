@@ -1,3 +1,10 @@
+2000-10-19  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/wapbox.c: modified send_heartbeat to use gwthread_sleep
+	instead of ordinary sleep, so we can use gwthread_wakeup to wake
+	it up when wapbox is killed - now wapbox dies when it catches
+	kill, not after 0-30 seconds. 
+
 2000-10-18  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: Now checks also attributes for texts that could 
