@@ -2,7 +2,9 @@
     * gw/wap_push_ppg.c: Fixed a bug in get_mime_boundary that would cause 
       it to get into an endless loop if the boundary was not ; terminated.
       changed the HTML entity name of a double quote from &qt; to &quot;
-      and added ';' at the end of HTML entity, in escape_fragment().
+      and added ';' at the end of HTML entity, fixed endless loop bug
+      in escape_fragment().
+      
 2002-09-09  Stipe Tolj  <tolj@wapme-systems.de>
     * config.h.in, configure[.in], gwlib/cfg.c: veto against #define WIN32. 
       This shoould be only used for Win32 native support, *not* for Cygwin

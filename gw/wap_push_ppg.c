@@ -3032,7 +3032,8 @@ static Octstr *escape_fragment(Octstr *fragment)
             replace_octstr_char(fragment, octstr_imm("&gt;"), &i);
         } else if (c == '&') {
             replace_octstr_char(fragment, octstr_imm("&amp;"), &i);
-	    } 
+        }
+        ++i;
     }
 
     return fragment;
