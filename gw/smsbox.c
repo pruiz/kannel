@@ -2576,8 +2576,8 @@ static void init_smsbox(Cfg *cfg)
      */
     if ((sendsms_url = cfg_get(grp, octstr_imm("sendsms-url"))) == NULL)
         sendsms_url = octstr_imm("/cgi-bin/sendsms");
-    if ((sendsms_url = cfg_get(grp, octstr_imm("xmlrpc-url"))) == NULL)
-        sendsms_url = octstr_imm("/cgi-bin/xmlrpc");
+    if ((xmlrpc_url = cfg_get(grp, octstr_imm("xmlrpc-url"))) == NULL)
+        xmlrpc_url = octstr_imm("/cgi-bin/xmlrpc");
     if ((sendota_url = cfg_get(grp, octstr_imm("sendota-url"))) == NULL)
         sendota_url = octstr_imm("/cgi-bin/sendota");
 
