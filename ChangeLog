@@ -1,3 +1,8 @@
+2003-02-16  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
+    * userguide.xml: some xml fixes. Cleaning of debian chapter and added
+      new packages's information. Standardization of configuration blocks, 
+      xml samples and shell commands. Fixed logrotate sample
+
 2003-02-16  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_emi2.c: fixed assigning of non existent field in EMI/UCP
       driver. Thanks to "Michael Mulcahy" <michael.mulcahy@anam.com> for 

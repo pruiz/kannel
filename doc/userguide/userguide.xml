@@ -1,14 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-
-<!--
-<!DOCTYPE book PUBLIC "-//Norman Walsh//DTD DocBk XML V3.1//EN"
-     "dtd/docbook-xml/docbookx.dtd" [
-<!ENTITY figtype "#FIGTYPE#">
-<!ENTITY timestamp "#DATE#">
-]>
--->
-
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V3.1//EN"
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V3.1//EN" ''
      [
 <!ENTITY figtype "#FIGTYPE#">
 <!ENTITY timestamp "#DATE#">
@@ -55,7 +46,7 @@
 		<firstname>Andreas</firstname>
 		<surname>Fink</surname>
 		<affiliation>
-			<jobtitle>Chairman & CTO</jobtitle>
+			<jobtitle>Chairman &amp; CTO</jobtitle>
 			<orgname>Global Networks Inc.</orgname>
 			<address> <email>andreas@fink.org</email>
 			<otheraddr>http://www.smsrelay.com</otheraddr>
@@ -76,7 +67,7 @@
 		<firstname>Stipe</firstname>
 		<surname>Tolj</surname>
 		<affiliation>
-			<jobtitle>CTO & CIO</jobtitle>
+			<jobtitle>CTO &amp; CIO</jobtitle>
 			<orgname>Wapme Systems AG</orgname>
 			<address> <email>tolj@wapme-systems.de</email>
 			<otheraddr>http://www.wapme.de</otheraddr>
@@ -335,8 +326,8 @@
 <sect1>
 <title>Requirements</title>
 
-	<para>Kannel is being developed on Linux systems (Red Hat 6.1 and
-	Debian potato), and should be fairly easy to export to other Unix-like
+	<para>Kannel is being developed on Linux systems,
+	and should be fairly easy to export to other Unix-like
 	systems. However, we don't yet support other platforms, due to lack
 	of time. Kannel requires the following software environment:
 	
@@ -470,8 +461,10 @@
 	or after you have checked out the source code from CVS, enter
 	the following commands:
 	
-<screen><userinput>./configure</userinput>
-<userinput>make</userinput></screen>
+	<screen><userinput>
+        ./configure
+        make
+	</userinput></screen>
 	
 	The <filename>configure</filename> script investigates various
 	things on your computer for the Kannel compilation needs, and
@@ -560,18 +553,21 @@
 	    smsbox.</para></listitem>
 
 	</itemizedlist>
-
 	</para>
 	
 	<para>You may need to add compilations flags to configure:
 
-<screen><userinput>CFLAGS='-pthread' ./configure</userinput></screen>
+	<screen><userinput>
+	CFLAGS='-pthread' ./configure
+	</userinput></screen>
 
 	The above, for instance, seems to be required on FreeBSD. If you
 	want to develop Kannel, you probably want to add CFLAGS that make
 	your compiler use warning messages. For example, for GCC:
 	
-<screen><userinput>CFLAGS='-Wall -O2 -g' ./configure</userinput></screen>
+	<screen><userinput>
+	CFLAGS='-Wall -O2 -g' ./configure
+	</userinput></screen>
 	
 	(You may, at your preference, use even stricter checking options.)
 	</para>
@@ -585,7 +581,9 @@
 	certain programs in a suitable place. This is most easily
 	done by using <command>make</command> again:
 	
-<screen><userinput>make bindir=<replaceable>/path/to/directory</replaceable> install</userinput></screen>
+	<screen><userinput>
+	make bindir=<replaceable>/path/to/directory</replaceable> install
+	</userinput></screen>
 
 	Replace <replaceable>/path/to/directory</replaceable> with the
 	pathname of the actual directory where the programs should be
@@ -626,7 +624,9 @@
 	<para>Before you install Kannel, check that you have libxml2
 	installed on your system:</para>
 
-	<screen><userinput>rpm -q libxml2</userinput></screen>
+	<screen><userinput>
+	rpm -q libxml2
+	</userinput></screen>
 	
 	<para>Installing Kannel</para>
 
@@ -635,11 +635,15 @@
 	
 	<para>2. Log in as root:</para>
 
-	<screen><userinput>su -</userinput></screen>
+	<screen><userinput>
+	su -
+	</userinput></screen>
 
 	<para>3. Install the RPM package:
 
-	<screen><userinput>rpm -ivh kannel-VERSION.i386.rpm</userinput></screen>
+	<screen><userinput>
+	rpm -ivh kannel-VERSION.i386.rpm
+	</userinput></screen>
 	</para>
 
 	<para>Upgrading Kannel</para>
@@ -651,7 +655,9 @@
 	
 	<para>3. Upgrade the RPM package:
 
-        <screen><userinput>rpm -Uvh kannel-VERSION.i386.rpm</userinput></screen>
+        <screen><userinput>
+	rpm -Uvh kannel-VERSION.i386.rpm
+	</userinput></screen>
         </para>
 	
 	<para>Removing Kannel</para>
@@ -660,48 +666,44 @@
 
 	<para>2. Remove the RPM package:
 	
-	<screen><userinput>rpm -e kannel</userinput></screen>
+	<screen><userinput>
+	rpm -e kannel
+	</userinput></screen>
 	</para>
 
 	<para>After you have installed Kannel from the RPM packages you
 x	should now be able to run the Kannel init.d script that will
 	start Kannel as a WAP gateway. Run the script as root.</para>
 
-	<screen>
-	<userinput>/etc/rc.d/init.d/kannel start</userinput>
-	</screen>
+	<screen><userinput>
+	/etc/rc.d/init.d/kannel start
+	</userinput></screen>
 
 	<para>To stop the gateway just run the same script with the
 	stop parameter.</para>
 
-	<screen>
-	<userinput>/etc/rc.d/init.d/kannel stop</userinput>
-	</screen>
+	<screen><userinput>
+	/etc/rc.d/init.d/kannel stop
+	</userinput></screen>
 	
 	<para>If Kannel is already running and you just want to quickly
 	stop and start the gateway,e.g.to set a new configuration option,
 	run the script with the restart parameter.</para>
 
-	<screen>
-	<userinput>/etc/rc.d/init.d/kannel restart</userinput>
-	</screen>
+	<screen><userinput>
+	/etc/rc.d/init.d/kannel restart
+	</userinput></screen>
 	
 	<para>If you want Kannel to run as a daemon, you need to add a
 	symbolic link to the Kannel script from the runlevel you want
 	Kannel to run in. E.g. to run Kannel in runlevel 5 add symbolic
 	links to /etc/rc.d/rc5.d/.</para>
 	
-	<screen>
-	<userinput>cd /etc/rc.d/rc5.d/</userinput>
-	</screen>
-	
-	<screen>
-	<userinput>ln -s ../init.d/kannel S91kannel</userinput>
-	</screen>
-
-	<screen>
-	<userinput>ln -s ../init.d/kannel K91kannel</userinput>
-	</screen>
+	<screen><userinput>
+	cd /etc/rc.d/rc5.d/
+	ln -s ../init.d/kannel S91kannel
+	ln -s ../init.d/kannel K91kannel
+	</userinput></screen>
 
 	<para>To run Kannel as a SMS gateway you need to edit the
 	configuration file which is at /etc/kannel/kannel.conf.
@@ -735,19 +737,27 @@ x	should now be able to run the Kannel init.d script that will
 	<para>Before you install Kannel, check that you have libxml2
 	installed on your system:</para>
 
-	<screen><userinput>dpkg -l libxml2</userinput></screen>
+	<screen><userinput>
+	dpkg -l libxml2
+	</userinput></screen>
 	
 	<para>Installing or upgrading Kannel using APT</para>
 
 	<para>1. Log in as root:</para>
 
-	<screen><userinput>su -</userinput></screen>
+	<screen><userinput>
+	su -
+	</userinput></screen>
 
 	<para>3. Install or upgrade the package:
 
-	<screen><userinput>apt-get install kannel</userinput></screen>
+	<screen><userinput>
+	apt-get install kannel
+	</userinput></screen>
 	</para>
-	
+
+	<para>See http://kannel.org/download.shtml#debian_repository for 
+	informations about kannel repository sources.list</para>
 
 	<para>Installing or upgrading Kannel from a file</para>
 
@@ -756,75 +766,82 @@ x	should now be able to run the Kannel init.d script that will
 	
 	<para>2. Log in as root:</para>
 
-	<screen><userinput>su -</userinput></screen>
+	<screen><userinput>
+	su -
+	</userinput></screen>
 
-	<para>3. Install or upgrade the DEB package:
-	<screen><userinput>dpkg -i kannel-VERSION.deb</userinput></screen>
-	</para>
+	<para>3. Install or upgrade the DEB package:</para>
+	<screen><userinput>
+	dpkg -i kannel-<replaceable>VERSION</replaceable>.deb
+	</userinput></screen>
 
 	<para>Removing Kannel</para>
 	
 	<para>1. Log in as root:</para>
 
-	<para>2. Remove the package maintaining configuration files:
-	<screen><userinput>dpkg --remove kannel</userinput></screen>
-	</para>
+	<para>2. Remove the package keeping configuration files:</para>
+	<screen><userinput>
+	dpkg --remove kannel
+	</userinput></screen>
 
-	<para>3. Remove the package completely:
-	<screen><userinput>dpkg --purge kannel</userinput></screen>
-	</para>
+	<para>3. Remove the package completely:</para>
+	<screen><userinput>
+	dpkg --purge kannel
+	</userinput></screen>
 
 	<para>After you have installed Kannel from the DEB packages you
 	should now be able to run the Kannel init.d script that will
 	start Kannel as a WAP gateway. Run the script as root.</para>
 
-	<screen>
-	<userinput>/etc/init.d/kannel start</userinput>
-	</screen>
+	<screen><userinput>
+	/etc/init.d/kannel start
+	</userinput></screen>
 
 	<para>To stop the gateway just run the same script with the
 	stop parameter.</para>
 
-	<screen>
-	<userinput>/etc/init.d/kannel stop</userinput>
-	</screen>
+	<screen><userinput>
+	/etc/init.d/kannel stop
+	</userinput></screen>
 	
 	<para>If Kannel is already running and you just want to quickly
 	stop and start the gateway,e.g.to set a new configuration option,
 	run the script with the restart parameter.</para>
 
-	<screen>
-	<userinput>/etc/init.d/kannel restart</userinput>
-	</screen>
-	
-	<para>If you want Kannel to run as a daemon, you need to add a
-	symbolic link to the Kannel script from the runlevel you want
-	Kannel to run in. E.g. to run Kannel in default runlevel, 
-	just run: </para>
-	
-	<screen>
-	<userinput>update-rc.d kannel defaults</userinput>
-	</screen>
+	<screen><userinput>
+	/etc/init.d/kannel restart
+	</userinput></screen>
 	
 	<para>If you don't want Kannel to run as a daemon, 
 	run: </para>
 	
-	<screen>
-	<userinput>update-rc.d -f kannel remove</userinput>
-	</screen>
+	<screen><userinput>
+	update-rc.d -f kannel remove
+	</userinput></screen>
+
+	<para>If you want to restore Kannel runing as a daemon, you 
+	need to add a
+	symbolic link to the Kannel script from the runlevel you want
+	Kannel to run in. E.g. to run Kannel in default runlevel, 
+	just run: </para>
 	
+	<screen><userinput>
+	update-rc.d kannel defaults
+	</userinput></screen>
+	
+	<para>Kannel package starts by default with a wapbox daemon.
+	To activate smsbox or select which box you want to start, 
+	edit /etc/default/kannel and comment/uncomment START_xxxBOX.
+	</para>
+
 	<para>To run Kannel as a SMS gateway you need to edit the
 	configuration file which is at /etc/kannel/kannel.conf.
-	In /usr/share/docs/kannel/examples/ there are example files 
+	In /usr/share/docs/kannel/examples/ there are example files. 
 	They have some basic examples of the configuration groups 
 	needed to run Kannel as a SMS gateway. For
 	more detailed information please read the section "SMS gateway
 	configuration" later in this same document.</para>
 
-	<para>The logging is disabled by default and you can enable
-	it from the kannel.conf file. Just add the log-file option
-	to the group of which box you want to log.</para>  
-	
 	<para>The documentation will be installed at 
 	/usr/share/doc/kannel/.</para>
 
@@ -832,6 +849,13 @@ x	should now be able to run the Kannel init.d script that will
 	file called control.html. It is an example file that shows
 	how to use the Kannel http administration interface. It
 	also has a template for sending SMS messages.</para>
+
+	<para>Aditionally to kannel-VERSION.deb, there's now an optional
+	kannel-docs-VERSION.deb with documentation (userguide et al) and
+	a kannel-extras-VERSION.deb with contrib and test stuff.</para>
+
+	<para>If you want to test development version, use the packages
+	called kannel-devel-*.deb.</para>
 
 </sect2>
 
@@ -913,7 +937,7 @@ x	should now be able to run the Kannel init.d script that will
 4    text = "You asked nothing and I did it!"
 5
 6    # Default service.
-4    group = sms-service
+7    group = sms-service
 8    keyword = default
 9    text = "No services defined"
 </programlisting>
@@ -969,9 +993,11 @@ include = "wapbox.conf"
 include = "configurations"
 </programlisting>
 
-	This is the main <literal>kannel.conf</literal> configuration
+	Above is the main <literal>kannel.conf</literal> configuration
 	file that includes the following <literal>wapbox.conf</literal>
-	file with all required directives for the specific box.
+	file with all required directives for the specific box, and a 
+	<literal>configurations</literal> directory which may include 
+	more files to include.
 
 <programlisting>
 group = wapbox
@@ -1019,9 +1045,9 @@ admin-password = f00bar
    <literal>(c)</literal>.</para>
 
 
- <table frame=none>
+ <table frame="none">
   <title>Core Group Variables</title>
-  <tgroup cols=3>
+  <tgroup cols="3">
   <thead>
    <row>
      <entry>Variable</entry>
@@ -1032,13 +1058,13 @@ admin-password = f00bar
   <tbody>
    <row><entry><literal>group (m)</literal></entry>
      <entry><literal>core</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        This is a mandatory variable
      </entry></row>
 
     <row><entry><literal>admin-port (m)</literal></entry>
      <entry>port-number</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         The port number in which the bearerbox listens to HTTP
         administration commands. It is NOT the same as the HTTP
         port of the local www server, just invent any port, but
@@ -1048,7 +1074,7 @@ admin-password = f00bar
 
 	 <row><entry><literal>admin-port-ssl (o)</literal></entry>
      <entry>bool</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If set to true a SSL-enabled administration HTTP server 
 		  will be used instead of the default unsecure plain HTTP 
 		  server. To access the administration pacges you will have
@@ -1059,21 +1085,21 @@ admin-password = f00bar
 
     <row><entry><literal>admin-password (m)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
          Password for HTTP administration commands (see below)
      </entry></row>
    
     <row><entry><literal>status-password</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
          Password to request Kannel status. If not set, no password is
 	 required, and if set, either this or
 	 <literal>admin-password</literal> can be used
      </entry></row>
    
     <row><entry><literal>admin-deny-ip</literal></entry>
-     <entry morerows=1>IP-list</entry>
-     <entry morerows=1 valign=bottom>
+     <entry morerows="1">IP-list</entry>
+     <entry morerows="1" valign="bottom">
         These lists can be used to prevent connection from given IP 
   addresses. Each list can have several addresses, separated with    
   semicolons (';'). An asterisk ('*') can be used
@@ -1085,7 +1111,7 @@ admin-password = f00bar
 
     <row><entry><literal>smsbox-port (c)</literal></entry>
      <entry>port-number</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         This is the port number to which the smsboxes, if any, connect.
         As with admin-port, this can be anything you want. Must be set
         if you want to handle any SMS traffic.
@@ -1093,7 +1119,7 @@ admin-password = f00bar
 	  
 	 <row><entry><literal>smsbox-port-ssl (o)</literal></entry>
      <entry>bool</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     If set to true, the smsbox connection module will be SSL-enabled.
 		  Your smsboxes will have to connect using SSL to the bearerbox
 		  then. This is used to secure communication between bearerbox
@@ -1104,14 +1130,14 @@ admin-password = f00bar
 
     <row><entry><literal>wapbox-port (c)</literal></entry>
      <entry>port-number</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Like smsbox-port, but for wapbox-connections. If not set,
         Kannel cannot handle WAP traffic
      </entry></row>
 
 	 <row><entry><literal>wapbox-port-ssl (o)</literal></entry>
      <entry>bool</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     If set to true, the wapbox connection module will be SSL-enabled.
 		  Your wapboxes will have to connect using SSL to the bearerbox
 		  then. This is used to secure communication between bearerbox
@@ -1121,8 +1147,8 @@ admin-password = f00bar
      </entry></row>
 
     <row><entry><literal>box-deny-ip</literal></entry>
-     <entry morerows=1>IP-list</entry>
-     <entry morerows=1 valign=bottom>
+     <entry morerows="1">IP-list</entry>
+     <entry morerows="1" valign="bottom">
         These lists can be used to prevent box connections from given IP 
         addresses. Each list can have several addresses, 
         separated with semicolons (';'). An asterisk ('*') can be used
@@ -1132,8 +1158,8 @@ admin-password = f00bar
     <row><entry><literal>box-allow-ip</literal></entry></row>
 
     <row><entry><literal>udp-deny-ip</literal></entry>
-     <entry morerows=1>IP-list</entry>
-     <entry morerows=1 valign=bottom>
+     <entry morerows="1">IP-list</entry>
+     <entry morerows="1" valign="bottom">
         These lists can be used to prevent UDP packets from given IP 
         addresses, thus preventing unwanted use of the WAP gateway.
 	Used the same way as <literal>box-deny-ip</literal> and
@@ -1143,7 +1169,7 @@ admin-password = f00bar
 
     <row><entry><literal>wdp-interface-name (c)</literal></entry>
      <entry>IP or '*'</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If this is set, Kannel listens to WAP UDP packets incoming to
         ports 9200-9208, bound to given IP. If no specific IP is
         needed, use just an asterisk ('*'). If UDP messages are
@@ -1152,7 +1178,7 @@ admin-password = f00bar
 
     <row><entry><literal>log-file</literal></entry>
      <entry>filename</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         A file in which to write a log. This in addition to <literal>stdout</literal>
         and any log file defined in command line. Log-file in 'core'
         group is only used by the bearerbox.
@@ -1160,7 +1186,7 @@ admin-password = f00bar
 
     <row><entry><literal>log-level</literal></entry>
      <entry>number 0..5</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Minimum level of logfile events logged. 0 is for 'debug', 1
         'info', 2 'warning, 3 'error' and 4 'panic' (see Command Line
         Options)
@@ -1168,7 +1194,7 @@ admin-password = f00bar
 
     <row><entry><literal>access-log</literal></entry>
      <entry>filename</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         A file in which information about received/sent SMS messages 
         is stored. Access-log in 'core' group is only used by the
         bearerbox.
@@ -1177,7 +1203,7 @@ admin-password = f00bar
 
     <row><entry><literal>unified-prefix</literal></entry>
      <entry>prefix-list</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         String to unify received phone numbers, for SMSC routing and
         to ensure that SMS centers can handle them properly. 
         This is applied to 'sender' number when receiving SMS
@@ -1198,7 +1224,7 @@ admin-password = f00bar
 
     <row><entry><literal>white-list</literal></entry>
      <entry>URL</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Load a list of accepted senders of SMS messages. If a sender
         of an SMS message is not in this list, any message received
         from the SMS Center is discarded. See notes of phone number
@@ -1209,14 +1235,14 @@ admin-password = f00bar
 
     <row><entry><literal>black-list</literal></entry>
      <entry>URL</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         As white-list, but SMS messages to these numbers are
         automatically discarded
      </entry></row>
 
     <row><entry><literal>store-file</literal></entry>
      <entry>filename</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         A file in which any received SMS messages are stored until
         they are successfully handled. By using this variable, no SMS
         messages are lost in Kannel, but theoretically some messages
@@ -1225,7 +1251,7 @@ admin-password = f00bar
 
     <row><entry><literal>http-proxy-host</literal></entry>
      <entry>hostname</entry>
-     <entry morerows=1 valign=bottom>
+     <entry morerows="1" valign="bottom">
         Enable the use of an HTTP proxy for all HTTP requests.
      </entry></row>
     <row><entry><literal>http-proxy-port</literal></entry>
@@ -1233,28 +1259,28 @@ admin-password = f00bar
 
     <row><entry><literal>http-proxy-exceptions</literal></entry>
      <entry>URL-list</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
          A list of excluded hosts from being used via a
          proxy. Separate each entry with space.
      </entry></row>
     
     <row><entry><literal>http-proxy-username</literal></entry>
      <entry>username</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
          Username for authenticating proxy use, for proxies that
 	 require this.
      </entry></row>
     
     <row><entry><literal>http-proxy-password</literal></entry>
      <entry>URL-list</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
          Password for authenticating proxy use, for proxies that
 	 require this.
      </entry></row>
     
     <row><entry><literal>ssl-client-certkey-file (c)</literal></entry>
      <entry>filename</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
       A PEM encoded SSL certificate and private key file to be used
       with SSL client connections. This certificate is used for
   	   the HTTPS client side only, i.e. for SMS service requests to 
@@ -1264,7 +1290,7 @@ admin-password = f00bar
   
 	 <row><entry><literal>ssl-server-cert-file (c)</literal></entry>
      <entry>filename</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
       A PEM encoded SSL certificate file to be used with SSL server
 		connections. This certificate is used for the HTTPS server
 		side only, i.e. for the administration HTTP server and the
@@ -1274,7 +1300,7 @@ admin-password = f00bar
 
 	 <row><entry><literal>ssl-server-key-file (c)</literal></entry>
      <entry>filename</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
       A PEM encoded SSL private key file to be used with SSL server
 		connections. This key is associated to the specified 
 		certificate and is used for the HTTPS server side only.
@@ -1282,7 +1308,7 @@ admin-password = f00bar
     </row>
 	 <row><entry><literal>ssl-trusted-ca-file</literal></entry>
      <entry>filename</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      This file contains the certificates Kannel is willing to trust when
      working as a HTTPS client. If this option is not set, certificates 
      are not validated and those the identity of the server is not proven.
@@ -1291,7 +1317,7 @@ admin-password = f00bar
 
     <row><entry><literal>dlr-storage</literal></entry>
      <entry>type</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Defines the way DLRs are stored. If you have build-in external 
 		  DLR storage support, i.e. using MySQL you may define here the 
 		  alternative storage type like 'mysql'. Supported types are:
@@ -1300,7 +1326,7 @@ admin-password = f00bar
 
      <row><entry><literal>maximum-queue-length</literal></entry>
      <entry>number of messages</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Set maximum size of incoming message queue. After number of messages
         has hit this value, Kannel began to discard them.
         Value 0 means giving strict priority to outgoing messages. -1, 
@@ -1366,7 +1392,9 @@ white-list = "http://localhost/whitelist.txt"
   window for each box you want to start (xterm or screen will do
   fine). To start the bearerbox, give the following command:
 
-<screen><userinput>./bearerbox -v 1 [conffile]</userinput></screen>
+	<screen><userinput>
+	./bearerbox -v 1 [conffile]
+	</userinput></screen>
 
   The <option>-v 1</option> sets the logging level to
   <literal>INFO</literal>. This way, you won't see a large amount of
@@ -1385,11 +1413,15 @@ white-list = "http://localhost/whitelist.txt"
 
   <para>After the bearer box, you can start the WAP box:
 	
-<screen><userinput>./wapbox -v 1 [conffile]</userinput></screen>
+	<screen><userinput>
+	./wapbox -v 1 [conffile]
+	</userinput></screen>
 
   or the SMS box:
 
-<screen><userinput>./smsbox -v 1 [conffile]</userinput></screen>
+	<screen><userinput>
+	./smsbox -v 1 [conffile]
+	</userinput></screen>
 
   or both, of course. The order does not matter, except that you need
   to start the bearer box before the other boxes. Without the bearer
@@ -1403,12 +1435,12 @@ white-list = "http://localhost/whitelist.txt"
  <para>Bearerbox, smsbox and wapbox each accept certain command line options
    and arguments when they are launched. These arguments are:</para>
 
- <table frame=none>
+ <table frame="none">
   <title>Kannel Command Line Options</title>
-  <tgroup cols=2>
+  <tgroup cols="2">
   <tbody>
    <row><entry><literal>-v &lt;level&gt;</literal></entry>
-        <entry morerows=1 valign=bottom>
+        <entry morerows="1" valign="bottom">
              Set verbosity level for stdout (screen) logging. Default is 0,
              which means 'debug'. 1 is 'info, 2 'warning', 3
              'error' and 4 'panic'
@@ -1416,20 +1448,20 @@ white-list = "http://localhost/whitelist.txt"
    <row><entry><literal>--verbosity &lt;level&gt;</literal></entry></row>
 
    <row><entry><literal>-D &lt;places&gt;</literal></entry>
-        <entry morerows=1 valign=bottom>
+        <entry morerows="1" valign="bottom">
              Set debug-places for 'debug' level output. 
         </entry></row>
    <row><entry><literal>--debug &lt;places&gt;</literal></entry></row>
 
    <row><entry><literal>-F &lt;file-name&gt;</literal></entry>
-        <entry morerows=1 valign=bottom>
+        <entry morerows="1" valign="bottom">
               Log to file named file-name, too. Does not overrun or
               affect any logfile defined in configuration file.
         </entry></row>
    <row><entry><literal>--logfile &lt;file-name&gt;</literal></entry></row>
 
    <row><entry><literal>-V &lt;level&gt;</literal></entry>
-        <entry morerows=1 valign=bottom>
+        <entry morerows="1" valign="bottom">
             Set verbosity level for that extra logfile (default 0,
             which means 'debug'). Does not affect verbosity level of
             the logfile defined in configuration file, not verbosity
@@ -1438,21 +1470,21 @@ white-list = "http://localhost/whitelist.txt"
    <row><entry><literal>--fileverbosity &lt;level&gt;</literal></entry></row>
 
    <row><entry><literal>-S</literal></entry>
-        <entry morerows=1 valign=bottom>
+        <entry morerows="1" valign="bottom">
              Start the system initially at SUSPENDED state (see below,
               bearerbox only)
         </entry></row>
    <row><entry><literal>--suspended</literal></entry></row>
 
    <row><entry><literal>-I</literal></entry>
-        <entry morerows=1 valign=bottom>
+        <entry morerows="1" valign="bottom">
              Start the system initially at ISOLATED state (see below,
               bearerbox only)
         </entry></row>
    <row><entry><literal>--isolated</literal></entry></row>
 
    <row><entry><literal>-H</literal></entry>
-        <entry morerows=1 valign=bottom>
+        <entry morerows="1" valign="bottom">
              Only try to open HTTP sendsms interface; if it
              fails, only warn about that, do not exit. (smsbox only)
         </entry></row>
@@ -1470,7 +1502,7 @@ white-list = "http://localhost/whitelist.txt"
     <para>In Kannel, there are four states for the program (which
     currently directly only apply to bearerbox):</para>
  
-    <orderedlist numeration=loweralpha>
+    <orderedlist numeration="loweralpha">
      <listitem><para>
        Running. The gateway accepts, proceeds and relies 
        messages normally. This is the default state for the bearerbox.
@@ -1520,7 +1552,9 @@ above.
 commands are done as normal HTTP queries, so they can be easily done
 from command line like this:
 
-<screen><userinput>% lynx -dump "http://localhost:12345/shutdown?password=bar"</userinput></screen>
+	<screen><userinput>
+	lynx -dump "http://localhost:12345/shutdown?password=bar"
+	</userinput></screen>
 
 ...in which the '12345' is the configured admin-port in Kannel
 configuration file (see above). For most commands, admin-password is required as a
@@ -1532,12 +1566,12 @@ chapter.</para>
 if you use it through the same Kannel, replies to various suspend
 commands never arrive nor can you restart it via WAP anymore.</para>
 
- <table frame=none>
+ <table frame="none">
   <title>Kannel HTTP Administration Commands</title>
-  <tgroup cols=2>
+  <tgroup cols="2">
   <tbody>
    <row><entry><literal>status or status.txt</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Get the current status of the gateway in a text version. Tells the current 
 	state (see above) and total number of messages relied and queueing 
 	in the system right now. Also lists the total number of smsbox
@@ -1546,53 +1580,53 @@ commands never arrive nor can you restart it via WAP anymore.</para>
         that or main admin password must be supplied.
    </entry></row>
    <row><entry><literal>status.html</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         HTML version of status
    </entry></row>
    <row><entry><literal>status.xml</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         XML version of status
    </entry></row>
    <row><entry><literal>status.wml</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         WML version of status
    </entry></row>
 
    <row><entry><literal>store-status or store-status.txt</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Get the current content of the store queue of the gateway 
 		  in a text version. No password required, unless
         <literal>status-password</literal> set, in which case either
         that or main admin password must be supplied.
    </entry></row>
    <row><entry><literal>store-status.html</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         HTML version of store-status
    </entry></row>
    <row><entry><literal>store-status.xml</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         XML version of store-status
    </entry></row>
 
    <row><entry><literal>suspend</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Set Kannel state as 'suspended' (see above). Password
         required.
    </entry></row>
 
    <row><entry><literal>isolate</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Set Kannel state as 'isolated' (see above). Password required.
    </entry></row>
 
    <row><entry><literal>resume</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Set Kannel state as 'running' if it is suspended or isolated.
         Password required.
    </entry></row>
 
    <row><entry><literal>shutdown</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Bring down the gateway, by setting state to 'shutdown'. After
         a shutdown is initiated, there is no other chance to resume
         normal operation. However, 'status' command still works.
@@ -1602,20 +1636,20 @@ commands never arrive nor can you restart it via WAP anymore.</para>
    </entry></row>
 
 	<row><entry><literal>flush-dlr</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         If Kannel state is 'suspended' this will flush all queued DLR
 		  messages in the current storage space. Password required.
    </entry></row>
 
 	<row><entry><literal>start-smsc</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Re-start a single SMSC link. Password required. Additionally
 		  the <literal>smsc</literal> parameter must be given to identify
  		  which <literal>smsc-id</literal> should be re-started.
    </entry></row>
 
   	<row><entry><literal>stop-smsc</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Shutdown a single SMSC link. Password required. Additionally
 		  the <literal>smsc</literal> parameter must be given (see above).
    </entry></row>
@@ -1671,9 +1705,9 @@ bearerbox-host = localhost
    There is, however, multiple optional variables for the 'wapbox'
    group.</para>
 
- <table frame=none>
+ <table frame="none">
   <title>Wapbox Group Variables</title>
-  <tgroup cols=3>
+  <tgroup cols="3">
   <thead>
    <row>
      <entry>Variable</entry>
@@ -1684,25 +1718,25 @@ bearerbox-host = localhost
   <tbody>
    <row><entry><literal>group (m)</literal></entry>
      <entry><literal>wapbox</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        This is mandatory variable
      </entry></row>
 
    <row><entry><literal>bearerbox-host (m)</literal></entry>
      <entry><literal>hostname</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         The machine in which the bearerbox is. 
      </entry></row>
 
     <row><entry><literal>timer-freq</literal></entry>
      <entry>value-in-seconds</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
          The frequency of how often timers are checked out. Default is 1 
      </entry></row>
 
     <row><entry><literal>map-url</literal></entry>
      <entry>URL-pair</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         The pair is separated with space.
         Adds a single mapping for the left side URL to the given destination.
         If you append an asterisk `*' to the left side URL, its prefix
@@ -1717,7 +1751,7 @@ bearerbox-host = localhost
 
     <row><entry><literal>map-url-max</literal></entry>
      <entry>number</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If you need more than one mapping, set this to the highest number
         mapping you need. The default gives you 10 mappings, numbered
         from 0 to 9. Default: 9
@@ -1725,7 +1759,7 @@ bearerbox-host = localhost
 
     <row><entry><literal>map-url-0</literal></entry>
      <entry>URL-pair</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Adds a mapping for the left side URL to the given destination URL.
         Repeat these lines, with 0 replaced by a number up to map-url-max,
         if you need several mappings.
@@ -1733,7 +1767,7 @@ bearerbox-host = localhost
 
     <row><entry><literal>device-home</literal></entry>
      <entry>URL</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Adds a mapping for the URL DEVICE:home (as sent by Phone.com browsers)
         to the given destination URL. There is no default mapping.
         NOTE: the mapping is added with both asterisks, as described above
@@ -1745,7 +1779,7 @@ bearerbox-host = localhost
 
     <row><entry><literal>log-file</literal></entry>
      <entry>filename</entry>
-     <entry morerows=1 valign=bottom>
+     <entry morerows="1" valign="bottom">
        As with bearerbox 'core' group. 
      </entry></row>
 
@@ -1754,7 +1788,7 @@ bearerbox-host = localhost
 
     <row><entry><literal>syslog-level</literal></entry>
      <entry>number</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	 Messages of this log level or higher will also be
 	 sent to syslog, the UNIX system log daemon.  The wapbox
 	 logs under the 'daemon' category.
@@ -1765,7 +1799,7 @@ bearerbox-host = localhost
 
     <row><entry><literal>force-sar</literal></entry>
      <entry>bool</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	 If set wapbox will force to process WTP-SAR connections
 	 even while Kannel does not support this feature now. Some
 	 real phones seem to break connection if fallback to non
@@ -1774,7 +1808,7 @@ bearerbox-host = localhost
 
 	 <row><entry><literal>smart-errorsr</literal></entry>
      <entry>bool</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	 If set wapbox will return a valid WML deck describing the 
 	 eror that occured while processing an WSP request. This may
 	 be used to have a smarter gateway and let the user know what
@@ -1886,9 +1920,9 @@ bearerbox-host = localhost
     <literal>smsc</literal>) are mandatory, but rest can be used if
     needed.</para>
 
- <table frame=none>
+ <table frame="none">
   <title>SMSC Group Variables</title>
-  <tgroup cols=3>
+  <tgroup cols="3">
   <thead>
    <row>
      <entry>Variable</entry>
@@ -1899,13 +1933,13 @@ bearerbox-host = localhost
   <tbody>
    <row><entry><literal>group (m)</literal></entry>
      <entry><literal>smsc</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        This is a mandatory variable
      </entry></row>
 
    <row><entry><literal>smsc (m)</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Identifies the SMS center type. See below
        for a complete list.
      </entry></row>
@@ -1913,7 +1947,7 @@ bearerbox-host = localhost
 
    <row><entry><literal>smsc-id</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         An optional name or id for the smsc. Any string is
         acceptable, but semicolon ';' may cause problems, so avoid
         it and any other special non-alphabet characters. 
@@ -1931,7 +1965,7 @@ bearerbox-host = localhost
 
    <row><entry><literal>denied-smsc-id</literal></entry>
      <entry><literal>id-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         SMS messages with SMSC ID equal to any of the IDs in this list
         are never routed to this SMSC. Multiple entries are separated 
         with semicolons (';')
@@ -1939,7 +1973,7 @@ bearerbox-host = localhost
 
    <row><entry><literal>allowed-smsc-id</literal></entry>
      <entry><literal>id-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         This list is opposite to previous: only SMS messages with SMSC
         ID in this list are ever routed to this SMSC.
         Multiple entries are separated with semicolons (';')
@@ -1947,7 +1981,7 @@ bearerbox-host = localhost
 
    <row><entry><literal>preferred-smsc-id</literal></entry>
      <entry><literal>id-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         SMS messages with SMSC ID from this list are sent to this SMSC
         instead than to SMSC without that ID as preferred. Multiple
         entries are separated with semicolons (';')
@@ -1955,7 +1989,7 @@ bearerbox-host = localhost
 
    <row><entry><literal>allowed-prefix</literal></entry>
      <entry><literal>prefix-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         A list of phone number prefixes which are accepted to be
         sent through this SMSC. Multiple entries are separated with 
         semicolon (';'). For example, "040;050" prevents sending of
@@ -1967,14 +2001,14 @@ bearerbox-host = localhost
 
    <row><entry><literal>denied-prefix</literal></entry>
      <entry><literal>prefix-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         A list of phone number prefixes which are NOT accepted to be
         sent through this SMSC.
      </entry></row>
 
    <row><entry><literal>preferred-prefix</literal></entry>
      <entry><literal>prefix-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         As <literal>denied-prefix</literal>, but SMS messages with receiver starting
         with any of these prefixes is preferably sent through this
         SMSC. In a case of multiple preferences, one is selected at random
@@ -1984,7 +2018,7 @@ bearerbox-host = localhost
 
    <row><entry><literal>unified-prefix</literal></entry>
      <entry>prefix-list</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         String to unify received phone numbers, for SMSC routing and
         to ensure that SMS centers can handle them properly. 
         This is applied to 'sender' number when receiving SMS
@@ -2004,7 +2038,7 @@ bearerbox-host = localhost
 
    <row><entry><literal>alt-charset</literal></entry>
      <entry><literal>number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         As some SMS Centers do not follow the standards in character
         coding, an <literal>alt-charset</literal> character conversion is
         presented. This directive acts different for specific SMSC tyles.
@@ -2058,8 +2092,8 @@ keepalive = 5
 sender-prefix = "12345"
 </programlisting>
 
- <informaltable frame=none>
-  <tgroup cols=3><thead><row>
+ <informaltable frame="none">
+  <tgroup cols="3"><thead><row>
      <entry>Variable</entry>
      <entry>Value</entry>
      <entry>Description</entry>
@@ -2067,32 +2101,32 @@ sender-prefix = "12345"
 
    <row><entry><literal>host (m)</literal></entry>
      <entry><literal>hostname</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Machine that runs the SMSC. As IP (100.100.100.100) 
         or hostname (their.machine.here)
      </entry></row>
 
    <row><entry><literal>port (m)</literal></entry>
      <entry><literal>port-number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Port number in the smsc host machine
      </entry></row>
 
    <row><entry><literal>smsc-username (m)</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Username in the SMSC machine/connection account
      </entry></row>
 
    <row><entry><literal>smsc-password (m)</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Password in the SMSC machine needed to contact SMSC
      </entry></row>
 
    <row><entry><literal>keepalive</literal></entry>
      <entry><literal>number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        SMSC connection will not be left idle for longer than this many
        minutes.  The right value to use depends on how eager the SMSC
        is to close idle connections.  5 minutes is a good guess.  If you
@@ -2102,7 +2136,7 @@ sender-prefix = "12345"
 
    <row><entry><literal>sender-prefix</literal></entry>
       <entry><literal>string</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
         The number that the SMSC will add in front of the sender number
         of all messages sent from Kannel.  If Kannel is asked to send
         a message, it will remove this prefix from the sender number
@@ -2155,8 +2189,8 @@ smsc-username = foo
 smsc-password = bar
 </programlisting>
 
- <informaltable frame=none>
-  <tgroup cols=3><thead><row>
+ <informaltable frame="none">
+  <tgroup cols="3"><thead><row>
      <entry>Variable</entry>
      <entry>Value</entry>
      <entry>Description</entry>
@@ -2164,20 +2198,20 @@ smsc-password = bar
 
    <row><entry><literal>host (c)</literal></entry>
      <entry><literal>hostname</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Machine that runs SMSC. As IP (100.100.100.100) 
         or hostname (their.machine.here)
      </entry></row>
 
    <row><entry><literal>port (c)</literal></entry>
      <entry><literal>port-number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Port number in the SMSC host machine
      </entry></row>
 
    <row><entry><literal>alt-host</literal></entry>
      <entry><literal>hostname</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Optional alternate Machine that runs SMSC. 
 	As IP (100.100.100.100) or hostname (their.machine.here)
 	(If undef but exists alt-port, emi2 would try host:alt-port)
@@ -2185,54 +2219,54 @@ smsc-password = bar
 
    <row><entry><literal>alt-port</literal></entry>
      <entry><literal>port-number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Optional alternate Port number in the SMSC host machine
 	(If undef but exists alt-host, emi2 would try alt-host:port)
      </entry></row>
 
    <row><entry><literal>smsc-username</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Username in the SMSC machine/connection account
      </entry></row>
 
    <row><entry><literal>smsc-password</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Password in the SMSC machine needed to contact SMSC
      </entry></row>
 
    <row><entry><literal>device (c)</literal></entry>
      <entry><literal>device-name</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
           The device the modem is connected to, like <literal>/dev/ttyS0</literal>.
           ISDN connection only.
      </entry></row>
 
    <row><entry><literal>phone (c)</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Phone number to dial to, when connecting over a modem to an
        SMS center.
      </entry></row>
 
    <row><entry><literal>our-host</literal></entry>
      <entry><literal>hostname</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Optional hostname in which to bind the connection in our
      end. TCP/IP connection only.
      </entry></row>
 
    <row><entry><literal>our-port</literal></entry>
      <entry><literal>port-number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Optional port number in which to bind the connection in our
      end. TCP/IP connection only.
      </entry></row>
 
    <row><entry><literal>receive-port</literal></entry>
      <entry><literal>port-number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Optional port number we listen to and to which the SMS center
         connects when it has messages to send. Required if SMS center
 	needs one connection to send and other to receive.
@@ -2241,21 +2275,21 @@ smsc-password = bar
 
    <row><entry><literal>appname</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	    Name of a "Send only" service. Defaults to <literal>send</literal>.
 		 All outgoing messages are routed through this service.
      </entry></row>
 
    <row><entry><literal>connect-allow-ip</literal></entry>
      <entry><literal>IP-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        If set, only connections from these IP addresses are accepted
        to receive-port. TCP/IP connection only.
      </entry></row>
 
     <row><entry><literal>idle-timeout</literal></entry>
       <entry><literal>number (seconds)</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       If this option is set to a value larger than 0, then the connection will
       be closed after the configured amount of seconds without activity. This 
       option interacts with the <literal>keepalive</literal> configuration option.
@@ -2268,7 +2302,7 @@ smsc-password = bar
 
     <row><entry><literal>keepalive</literal></entry>
       <entry><literal>number (seconds)</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
         A keepalive command will be
         sent to the SMSC connection this many seconds after the last
         message. The right value to use depends on how eager the SMSC is
@@ -2280,14 +2314,14 @@ smsc-password = bar
 
     <row><entry><literal>wait-ack</literal></entry>
       <entry><literal>number (seconds)</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
         A message is resent if the acknowledge from SMSC takes more than 
 	this time.  Defaults to 60 seconds.
      </entry></row>
 
     <row><entry><literal>wait-ack-expire</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
         Defines what kind of action should be taken if the the ack of 
 		  a message expires. The options for this value are:
 		  0x00 - disconnect/reconnect, (default) 0x01 - as is now, requeue, 
@@ -2298,7 +2332,7 @@ smsc-password = bar
 
     <row><entry><literal>flow-control</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
 	This SMSC can support two types of flow control. The first type 
 	of flow control is a <literal>stop-and-wait</literal> protocol, 
 	when this parameter equals to '1'. During the handling of commands, 
@@ -2312,7 +2346,7 @@ smsc-password = bar
 
     <row><entry><literal>window</literal></entry>
       <entry><literal>number (messages)</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
         When using <literal>flow-control=0</literal>, emi works in windowed
         flow control mode. This variable defines the size of the window used
         to send messages. (optional, defaults to the maximum - 100)
@@ -2320,14 +2354,14 @@ smsc-password = bar
 
     <row><entry><literal>throughput</literal></entry>
       <entry><literal>number (messages/sec)</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
         If SMSC requires that kannel limits the number of messages per second, 
         use this variable. (optional)
      </entry></row>
 
     <row><entry><literal>retry</literal></entry>
       <entry><literal>boolean</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
         Assuming that kannel is well configured and we had one sucessful
 	connection, if retry is true, kannel will always retry the connection
 	even if some related error ocur.
@@ -2335,7 +2369,7 @@ smsc-password = bar
 
     <row><entry><literal>my-number</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
         If the large account number is different from the short number, assign
 	it with this variable. For example, if short number is 12345 and large account
 	is 0100100100101234 (IP+port), set my-number to 12345 and 
@@ -2344,7 +2378,7 @@ smsc-password = bar
 
    <row><entry><literal>alt-charset</literal></entry>
      <entry><literal>number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Defines which character conversion kludge may be used for this 
 		  specific link. Currently implemented alternative charsets are 
 		  defined in "alt_charsets.h" and new ones can be added.
@@ -2374,8 +2408,8 @@ system-type = "VMA"
 address-range = ""
 </programlisting>
 
-<informaltable frame=none>
-  <tgroup cols=3><thead><row>
+<informaltable frame="none">
+  <tgroup cols="3"><thead><row>
      <entry>Variable</entry>
      <entry>Value</entry>
      <entry>Description</entry>
@@ -2383,14 +2417,14 @@ address-range = ""
 
    <row><entry><literal>host (m)</literal></entry>
      <entry><literal>hostname</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Machine that runs SMSC. As IP (100.100.100.100) 
         or hostname (their.machine.here)
      </entry></row>
 
    <row><entry><literal>port (m)</literal></entry>
      <entry><literal>port-number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        The port number for the TRANSMITTER connection to the SMSC. 
        May be the same as receive-port. 
 		 Use value 0 to disable this I/O thread.
@@ -2398,7 +2432,7 @@ address-range = ""
 
    <row><entry><literal>transceiver-mode</literal></entry>
      <entry>bool</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Attempt to use a TRANSCEIVER mode connection
        to the SM-SC. It uses the standard transmit 'port',
        there is no need to set 'receive-port'.
@@ -2410,7 +2444,7 @@ address-range = ""
 
    <row><entry><literal>receive-port</literal></entry>
      <entry><literal>port-number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        The port number for the RECEIVER connection to the SMSC. 
        May be the same as port.
 		 Use value 0 to disable this I/O thread.
@@ -2418,7 +2452,7 @@ address-range = ""
 
    <row><entry><literal>smsc-username (m)</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        The 'username' of the Messaging Entity connecting to the
        SM-SC. If the SM-SC operator reports that the "TELEPATH
        SYSTEM MANAGER TERMINAL" view "Control.Apps.View" value 
@@ -2432,7 +2466,7 @@ address-range = ""
 
    <row><entry><literal>smsc-password (m)</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        The password matching the "smsc-username" your teleoperator
        provided you with.
      </entry></row>
@@ -2440,14 +2474,14 @@ address-range = ""
 
    <row><entry><literal>system-type (m)</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Usually you can get away with "VMA" which stands for
        Voice Mail Activation.
      </entry></row>
 
    <row><entry><literal>interface-version</literal></entry>
      <entry><literal>number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Change the "interface version" parameter sent from Kannel to
        a value other then 0x34 (for SMPP v3.4). the value entered here
        should be the hexadecimal representation of the interface version
@@ -2457,7 +2491,7 @@ address-range = ""
 
    <row><entry><literal>address-range (m)</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        According to the SMPP 3.4 spec this is supposed to
        affect which MS's can send messages to this account.
        Doesn't seem to work, though.
@@ -2465,7 +2499,7 @@ address-range = ""
 
    <row><entry><literal>our-host</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Specicy the outgoing IP address for connections
        from a multi-homed machine. If this is not defined
        the default device of the machine will be used.
@@ -2473,14 +2507,14 @@ address-range = ""
 
     <row><entry><literal>my-number</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       	Optional smsc short number. Should be set if smsc sends
 	a different one.
      </entry></row>
 
     <row><entry><literal>enquire-link-interval</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       Optional the time lapse allowed between operations after which 
       an SMPP entity should interrogate whether it's peer still has an 
       active session. The default is 30 seconds.  
@@ -2488,7 +2522,7 @@ address-range = ""
 
     <row><entry><literal>max-pending-submits</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       	Optional the maximum number of outstanding (i.e. acknowledged)
         SMPP operations between an ESME and SMSC. This number
         is not specified explicity in the SMPP Protocol Specification
@@ -2499,7 +2533,7 @@ address-range = ""
 
     <row><entry><literal>reconnect-delay</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       Optional the time between attemps to connect an ESME to an SMSC 
       having failed to connect initating or during an SMPP session. 
 		The default is 10 seconds.
@@ -2507,21 +2541,21 @@ address-range = ""
 
     <row><entry><literal>source-addr-ton</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       Optional, source address TON setting for the link.
 		(Defaults to 0).
      </entry></row>
 
     <row><entry><literal>source-addr-npi</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       Optional, source address NPI setting for the link.
 		(Defaults to 1).
      </entry></row>
 
     <row><entry><literal>source-addr-autodetect</literal></entry>
       <entry><literal>boolean</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       Optional, if defined tries to scan the source address and 
 		set TON and NPI settings accordingly. If you don't want to autodetect
 		the source address, turn this off, by setting it to no.
@@ -2530,21 +2564,21 @@ address-range = ""
 
     <row><entry><literal>dest-addr-ton</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       Optional, destination address TON setting for the link.
 		(Defaults to 0).
      </entry></row>
 
     <row><entry><literal>dest-addr-npi</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       Optional, destination address NPI setting for the link.
 		(Defaults to 1).
      </entry></row>
 
    <row><entry><literal>msg-id-type</literal></entry>
      <entry><literal>number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Optional, specifies which number base the SMSC is using for the
 		 message ID numbers in the corresponding <literal>submit_sm_resp</literal> 
 		 and <literal>deliver_sm</literal> PDUs. This is required to make
@@ -2569,7 +2603,7 @@ address-range = ""
 
    <row><entry><literal>alt-charset</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Defines which character encoding is used for this specific smsc link. 
 		  Uses <literal>iconv()</literal> routines to convert from and to that
 		  specific character set encoding. See your local iconv_open(3) manual 
@@ -2599,8 +2633,8 @@ home_nua = (x121 radio pad address)
 wait_report = 0/1 (0 means false, 1 means true)
 </programlisting>
 
-<informaltable frame=none>
-  <tgroup cols=3><thead><row>
+<informaltable frame="none">
+  <tgroup cols="3"><thead><row>
      <entry>Variable</entry>
      <entry>Value</entry>
      <entry>Description</entry>
@@ -2608,27 +2642,27 @@ wait_report = 0/1 (0 means false, 1 means true)
 
    <row><entry><literal>device (m)</literal></entry>
      <entry><literal>device</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         ex: /dev/tty0
      </entry></row>
 
    <row><entry><literal>smsc_nua (m)</literal></entry>
      <entry><literal>X121 smsc address</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        The address of an SMSC for SEMA SMS2000 protocols using an
        X.28 connection.
      </entry></row>
 
    <row><entry><literal>home_nua (m)</literal></entry>
      <entry><literal>X121 radio pad address</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        The address of a radio PAD implementing Sema SMS2000 using
        X.28 connection.
      </entry></row>
 
    <row><entry><literal>wait_report</literal></entry>
      <entry><literal>0 (false)/1 (true)</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Report indicator used by the Sema SMS2000 protocol. Optional.
      </entry></row>
    </tbody></tgroup></informaltable>
@@ -2642,8 +2676,8 @@ receive-port = 10000
 ois-debug-level = 0
 </programlisting>
 
-<informaltable frame=none>
-  <tgroup cols=3><thead><row>
+<informaltable frame="none">
+  <tgroup cols="3"><thead><row>
      <entry>Variable</entry>
      <entry>Value</entry>
      <entry>Description</entry>
@@ -2651,25 +2685,25 @@ ois-debug-level = 0
 
    <row><entry><literal>host (m)</literal></entry>
      <entry><literal>ip</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         SMSC Host name or IP
      </entry></row>
 
    <row><entry><literal>port (m)</literal></entry>
      <entry><literal>port number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        SMSC Port number
      </entry></row>
 
    <row><entry><literal>receive-port (m)</literal></entry>
      <entry><literal>port number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        The port in which the SMSC will contact
      </entry></row>
 
    <row><entry><literal>ois-debug-level</literal></entry>
      <entry><literal>number 0 to 8</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        extra debug, optional, see smsc_ois.c
      </entry></row>
 
@@ -2694,8 +2728,8 @@ smsc-username = foo
 smsc-password = foo
 </programlisting>
 
-<informaltable frame=none>
-  <tgroup cols=3><thead><row>
+<informaltable frame="none">
+  <tgroup cols="3"><thead><row>
      <entry>Variable</entry>
      <entry>Value</entry>
      <entry>Description</entry>
@@ -2703,34 +2737,34 @@ smsc-password = foo
 
    <row><entry><literal>host (m)</literal></entry>
      <entry><literal>hostname</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Machine that runs SMSC. As IP (10.11.12.13) 
         or hostname (host.foobar.com)
      </entry></row>
 
    <row><entry><literal>port (m)</literal></entry>
      <entry><literal>port-number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        The port number for the connection to the SMSC. 
      </entry></row>
 
    <row><entry><literal>smsc-username (m)</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        The 'username' of the Messaging Entity connecting to the
        SMSC. 
      </entry></row>
 
    <row><entry><literal>smsc-password (m)</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        The password matching the "smsc-username" your teleoperator
        provided you with.
      </entry></row>
 
     <row><entry><literal>reconnect-delay</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       Optional, the time between attemps to connect to an SMSC 
       having failed to connect initating or during an session. 
 		The default is 10 seconds.
@@ -2738,35 +2772,35 @@ smsc-password = foo
 
     <row><entry><literal>source-addr-ton</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       Optional, source address TON setting for the link.
 		(Defaults to 1).
      </entry></row>
 
     <row><entry><literal>source-addr-npi</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       Optional, source address NPI setting for the link.
 		(Defaults to 1).
      </entry></row>
 
     <row><entry><literal>dest-addr-ton</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       Optional, destination address TON setting for the link.
 		(Defaults to 1).
      </entry></row>
 
     <row><entry><literal>dest-addr-npi</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       Optional, destination address NPI setting for the link.
 		(Defaults to 1).
      </entry></row>
 
     <row><entry><literal>priority</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       Optional, sets the default priority of messages transmitted 
 		over this smsc link. (Defaults to 0, which is the highest
 		priority)
@@ -2789,8 +2823,8 @@ device = /dev/ttyS0
 pin = 2345
 </programlisting>
 
- <informaltable frame=none>
-  <tgroup cols=3><thead><row>
+ <informaltable frame="none">
+  <tgroup cols="3"><thead><row>
      <entry>Variable</entry>
      <entry>Value</entry>
      <entry>Description</entry>
@@ -2798,20 +2832,20 @@ pin = 2345
 
    <row><entry><literal>modemtype</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Modems from different manufacturers have slightly different
         behaviour. We need to know what type of modem is used.
      </entry></row>
 
    <row><entry><literal>device (m)</literal></entry>
      <entry><literal>device-name</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
           The device the modem is connected to, like <literal>/dev/ttyS0</literal>.
      </entry></row>
 
    <row><entry><literal>pin</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
          This is the PIN number of the SIM card in the GSM modem. You can specify
          this option if your SIM has never been used before and needs to have
          the PIN number entered. The PIN is usually a four digit number.
@@ -2819,7 +2853,7 @@ pin = 2345
 
    <row><entry><literal>validityperiod</literal></entry>
      <entry><literal>integer</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	 How long the message will be valid, i.e., how long the SMS
 	 center (the real one, not the phone acting as one for Kannel)
 	 will try to send the message to the recipient. Encoded as per
@@ -2829,7 +2863,7 @@ pin = 2345
 
    <row><entry><literal>alt-dcs</literal></entry>
      <entry><literal>boolean</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	 When encoding DCS field internally, there are two formats
 	 with similar functionality. The 0x0X (alt-dcs = false or non-present)
 	 or the 0xFX (alt-dcs = true).
@@ -2839,45 +2873,45 @@ pin = 2345
 
    </tbody></tgroup></informaltable>
 
- <informaltable frame=none>
-  <tgroup cols=3><thead><row>
+ <informaltable frame="none">
+  <tgroup cols="3"><thead><row>
      <entry>Modem Type</entry>
      <entry>Modems</entry>
    </row></thead><tbody>
 
    <row><entry><literal>wavecom</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Wavecom
      </entry></row>
 
    <row><entry><literal>premicell</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Nokia Premicell
      </entry></row>
 
    <row><entry><literal>siemens</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Siemens M20 (this modem have some bugs)
      </entry></row>
 
    <row><entry><literal>siemens-tc35</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Siemens TC35
      </entry></row>
 
    <row><entry><literal>falcom</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Falcom
      </entry></row>
 
    <row><entry><literal>nokiaphone</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Nokia 6210, 7110, 8210 (tested). Probably other 
 	   Nokia phones too.
      </entry></row>
 
    <row><entry><literal>ericsson</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Ericsson
      </entry></row>
 
@@ -2900,8 +2934,8 @@ speed = 9600
 pin = 2345
 </programlisting>
 
- <informaltable frame=none>
-  <tgroup cols=3><thead><row>
+ <informaltable frame="none">
+  <tgroup cols="3"><thead><row>
      <entry>Variable</entry>
      <entry>Value</entry>
      <entry>Description</entry>
@@ -2909,7 +2943,7 @@ pin = 2345
 
    <row><entry><literal>modemtype</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Modems from different manufacturers have slightly different
         behaviour. We need to know what type of modem is used. Use "auto"
         or omit parameter to have kannel detect the modem type automatically.
@@ -2918,20 +2952,20 @@ pin = 2345
 
    <row><entry><literal>device (m)</literal></entry>
      <entry><literal>device-name</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
           The device the modem is connected to, like <literal>/dev/ttyS0</literal>.
      </entry></row>
 
    <row><entry><literal>speed</literal></entry>
      <entry><literal>serial speed in bps</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
           The speed in bits per second. Default value 0 means to try to use
 	  speed from modem definition, or if it fails, try to autodetect.
      </entry></row>
 
    <row><entry><literal>pin</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
          This is the PIN number of the SIM card in the GSM modem. You can specify
          this option if your SIM has never been used before and needs to have
          the PIN number entered. The PIN is usually a four digit number.
@@ -2939,7 +2973,7 @@ pin = 2345
 
    <row><entry><literal>validityperiod</literal></entry>
      <entry><literal>integer</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	 How long the message will be valid, i.e., how long the SMS
 	 center (the real one, not the phone acting as one for Kannel)
 	 will try to send the message to the recipient. Encoded as per
@@ -2949,7 +2983,7 @@ pin = 2345
 
     <row><entry><literal>retry</literal></entry>
       <entry><literal>boolean</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
         Assuming that kannel is well configured and we had one sucessful
 	connection, if retry is true, kannel will always retry the connection
 	even if some related error ocur.
@@ -2957,26 +2991,26 @@ pin = 2345
 
     <row><entry><literal>keepalive</literal></entry>
       <entry><literal>seconds</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
         Kannel would "ping" the modem for this many seconds. If the probe fails, 
 	try to reconnect to it.
      </entry></row>
 
     <row><entry><literal>my-number</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       	Optional phone number.
      </entry></row>
 
     <row><entry><literal>sms-center</literal></entry>
       <entry><literal>number</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
       	SMS Center to send messages.
      </entry></row>
 
     <row><entry><literal>sim-buffering</literal></entry>
       <entry><literal>boolean</literal></entry>
-      <entry valign=bottom>
+      <entry valign="bottom">
         Whether to enable the so-called "SIM buffering behaviour" of the GSM module.
                 if assigned a true value, the module will query the message storage memory
                 of the modem and will process and delete any messages found there. this does
@@ -2996,8 +3030,8 @@ pin = 2345
    modems.conf. (See <xref linkend="includes" endterm="includes.title">)
    </para>
 
- <informaltable frame=none>
-  <tgroup cols=3><thead><row>
+ <informaltable frame="none">
+  <tgroup cols="3"><thead><row>
      <entry>Variable</entry>
      <entry>Value</entry>
      <entry>Description</entry>
@@ -3005,34 +3039,34 @@ pin = 2345
 
    <row><entry><literal>group</literal></entry>
      <entry><literal>modems</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	This is a mandatory variable
      </entry></row>
 
    <row><entry><literal>id</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	This is the the id that should be used in
 	<literal>modemtype</literal> variable from AT2
      </entry></row>
 
    <row><entry><literal>name</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	The name of this modem configuration. Used in
 	logs
      </entry></row>
 
    <row><entry><literal>detect-string</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	String to use when trying to detect the modem.
 	See <literal>detect-string2</literal>
      </entry></row>
 
    <row><entry><literal>detect-string2</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Second string to use to detect the modem. For example,
 	if the modem replies with "SIEMENS MODEM M20", 
 	<literal>detect-string</literal> could be "SIEMENS" 
@@ -3041,28 +3075,28 @@ pin = 2345
 
    <row><entry><literal>init-string</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Optional initialization string. Defaults to
 	"AT+CNMI=1,2,0,1,0"
      </entry></row>
 
    <row><entry><literal>speed</literal></entry>
      <entry><literal>number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Serial port hint speed to use. Optional. 
 	Defaults to smsc group speed or autodetect
      </entry></row>
 
    <row><entry><literal>enable-hwhs</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Optional AT command to enable hardware handshake.
 	Defaults to "AT+IFC=2,2"
      </entry></row>
 
    <row><entry><literal>need-sleep</literal></entry>
      <entry><literal>boolean</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Optional. Defaults to false. Some modems needs
 	to sleep after opening the serial port and before
 	first command
@@ -3070,14 +3104,14 @@ pin = 2345
 
    <row><entry><literal>no-pin</literal></entry>
      <entry><literal>boolean</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Optional. Defaults to false. If the modem doesn't
 	support the PIN command, enable this
      </entry></row>
 
    <row><entry><literal>no-smsc</literal></entry>
      <entry><literal>boolean</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Optional. Defaults to false. If the modem doesn't
 	support setting the SMSC directly on the pdu, enable
 	this. (Default is to include a "00" at the beginning
@@ -3087,14 +3121,14 @@ pin = 2345
 
    <row><entry><literal>sendline-sleep</literal></entry>
      <entry><literal>number (miliseconds)</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Optional, defaults to 100 miliseconds. The sleep time
 	after sending a AT command.
      </entry></row>
 
    <row><entry><literal>keepalive-cmd</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Optional, defaults to "AT". If keepalive is activated
 	in AT2 group, this is the command to be sent. If your
 	modem supports it, for example, use "AT+CBC;+CSQ", and
@@ -3105,7 +3139,7 @@ pin = 2345
 
    <row><entry><literal>message-storage</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Message storage memory type to enable for "SIM buffering".
                 Possible values are: "SM" - SIM card memory or "ME" -
                 Mobile equipment memory (may not be suppoerted by your
@@ -3117,7 +3151,7 @@ pin = 2345
 
    <row><entry><literal>enable-mms</literal></entry>
      <entry><literal>boolean</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      	Optional, defaults to false. If enabled, kannel
 	would send an AT+CMMS=2 if it have more than one
 	message on queue and hopefully will be quickier
@@ -3154,8 +3188,8 @@ port = 10000
 connect-allow-ip = 127.0.0.1
 </programlisting>
 
- <informaltable frame=none>
-  <tgroup cols=3><thead><row>
+ <informaltable frame="none">
+  <tgroup cols="3"><thead><row>
      <entry>Variable</entry>
      <entry>Value</entry>
      <entry>Description</entry>
@@ -3163,20 +3197,20 @@ connect-allow-ip = 127.0.0.1
 
    <row><entry><literal>host (m)</literal></entry>
      <entry><literal>hostname</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Machine that runs the SMSC. As IP (100.100.100.100) 
         or hostname (their.machine.here)
      </entry></row>
 
    <row><entry><literal>port (m)</literal></entry>
      <entry><literal>port-number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Port number in smsc host machine
      </entry></row>
 
    <row><entry><literal>connect-allow-ip</literal></entry>
      <entry><literal>IP-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        If set, only connections from these IP addresses are accepted.
      </entry></row>
 
@@ -3203,8 +3237,8 @@ send-url = "http://localhost:20022"
 </programlisting>
 
 
- <informaltable frame=none>
-  <tgroup cols=3><thead><row>
+ <informaltable frame="none">
+  <tgroup cols="3"><thead><row>
      <entry>Variable</entry>
      <entry>Value</entry>
      <entry>Description</entry>
@@ -3212,61 +3246,61 @@ send-url = "http://localhost:20022"
 
    <row><entry><literal>system-type (m)</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Type of HTTP connection. 'kannel' is only system currently
         supported.
      </entry></row>
 
    <row><entry><literal>send-url (m)</literal></entry>
      <entry><literal>url</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Location to send MT messages. This URL is expanded by used
        system, if need to.
      </entry></row>
 
    <row><entry><literal>no-sender</literal></entry>
    <entry><literal>boolean</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
       Do not add variable sender to the send-url.
    </entry></row>
 
    <row><entry><literal>no-coding</literal></entry>
    <entry><literal>boolean</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
       Do not add variable coding to the send-url.
    </entry></row>
 
    <row><entry><literal>no-sep</literal></entry>
    <entry><literal>boolean</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
       Represent udh and text as a numeric string containing the hexdump. For
       instance, text=%2b123 is represented as text=2b313233. 
    </entry></row>
 
    <row><entry><literal>port (m)</literal></entry>
      <entry><literal>port-number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Port number in which Kannel listens to (MO) messages from other
        gateway
      </entry></row>
 
    <row><entry><literal>connect-allow-ip</literal></entry>
      <entry><literal>IP-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        IPs allowed to use this interface. If not set, "127.0.0.1"
      (localhost) is the only host allowed to connect.
      </entry></row>
 
    <row><entry><literal>smsc-username</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Username associated to connection, if needed. 'kannel' requires
        this, and it is the same as send-sms username at other end.
      </entry></row>
 
    <row><entry><literal>smsc-password</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Password for username, if needed.
      </entry></row>
 
@@ -3305,7 +3339,7 @@ features to expect from a driver, and to help identify areas where
 drivers need to be updated.  Currently most of the entries are
 marked as "not tested" because the table is still new.</para>
 
-<table frame=none>
+<table frame="none">
  <title>SMSC driver features</title>
  <tgroup cols="12" align="center">
   <colspec colname="first" colnum="1" align="left">
@@ -3523,7 +3557,7 @@ marked as "not tested" because the table is still new.</para>
  </tgroup>
 </table>
 
-<table frame=none>
+<table frame="none">
  <title>SMSC driver internal features</title>
  <tgroup cols="12" align="center">
   <colspec colname="first" colnum="1" align="left">
@@ -3917,9 +3951,9 @@ ssl-certkey-file
 </programlisting>
    </para>
 
- <table frame=none>
+ <table frame="none">
   <title>Smsbox Group Variables</title>
-  <tgroup cols=3>
+  <tgroup cols="3">
   <thead>
    <row>
      <entry>Variable</entry>
@@ -3930,19 +3964,19 @@ ssl-certkey-file
   <tbody>
    <row><entry><literal>group (m)</literal></entry>
      <entry><literal>smsbox</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        This is a mandatory variable
      </entry></row>
 
    <row><entry><literal>bearerbox-host (m)</literal></entry>
      <entry><literal>hostname</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         The machine in which the bearerbox is. 
      </entry></row>
 
    <row><entry><literal>smsbox-id (o)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Optional smsbox instance identifier. This is used to 
  		  identify an smsbox connected to an bearerbox for the purpose
 		  of having smsbox specific routing inside bearerbox. So if you
@@ -3953,14 +3987,14 @@ ssl-certkey-file
 
     <row><entry><literal>sendsms-port (c)</literal></entry>
      <entry>port-number</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         The port in which any sendsms HTTP requests are done. As with
         other ports in Kannel, can be set as anything desired.
      </entry></row>
 
 	 <row><entry><literal>sendsms-port-ssl (o)</literal></entry>
      <entry>bool</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If set to true, the sendsms HTTP interface will use a
 		  SSL-enabled HTTP server with the specified 
 		  ssl-server-cert-file and ssl-server-key-file from the 
@@ -3969,21 +4003,21 @@ ssl-certkey-file
 
 	 <row><entry><literal>sendsms-url (o)</literal></entry>
      <entry>url</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     URL locating the sendsms service. Defaults to <literal>
         /cgi-bin/sendsms</literal>.
      </entry></row>
 
 	 <row><entry><literal>sendota-url (o)</literal></entry>
      <entry>url</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     URL locating the sendota service. Defaults to <literal>
         /cgi-bin/sendota</literal>.
      </entry></row>
 	
     <row><entry><literal>sendsms-chars</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Only these characters are allowed in 'to' field when send-SMS
         service is requested via HTTP. Naturally, you should allow 
         at least <literal>0123456789</literal>. The
@@ -3996,7 +4030,7 @@ ssl-certkey-file
 
     <row><entry><literal>global-sender</literal></entry>
      <entry>phone-number</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If set, all sendsms originators are set as these before
         proceeding. Note that in a case of most SMS centers you
         cannot set the sender number, but it is automatically set
@@ -4005,7 +4039,7 @@ ssl-certkey-file
 
     <row><entry><literal>log-file</literal></entry>
      <entry>filename</entry>
-     <entry morerows=2 valign=bottom>
+     <entry morerows=2 valign="bottom">
        As with the bearerbox 'core' group. Access-log is used to store
        information about MO and send-sms requests. Can be named same as the 
        'main' access-log (in 'core' group).
@@ -4019,7 +4053,7 @@ ssl-certkey-file
 
     <row><entry><literal>white-list</literal></entry>
      <entry>URL</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Load a list of accepted destinations of SMS messages. If a 
 	destination of an SMS message is not in this list, any message 
 	received from the HTTP interface is rejected. See notes of phone 
@@ -4028,14 +4062,14 @@ ssl-certkey-file
 
     <row><entry><literal>black-list</literal></entry>
      <entry>URL</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         As white-list, but SMS messages to these numbers are
         automatically discarded
      </entry></row>
 
     <row><entry><literal>reply-couldnotfetch</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If set, replaces the SMS message sent back to user when kannel
 	could not fetch content. 
 	Defaults to <literal>Could not fetch content, sorry.</literal>.
@@ -4043,7 +4077,7 @@ ssl-certkey-file
 
     <row><entry><literal>reply-couldnotrepresent</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If set, replaces the SMS message sent back when kannel could not 
 	represent the result as a SMS message. 
 	Defaults to <literal>Result could not be represented as an 
@@ -4052,7 +4086,7 @@ ssl-certkey-file
 
     <row><entry><literal>reply-requestfailed</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If set, replaces the SMS message sent back when kannel could not 
 	contact http service.
 	Defaults to <literal>Request Failed</literal>.
@@ -4060,7 +4094,7 @@ ssl-certkey-file
 
     <row><entry><literal>reply-emptymessage</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If set, replaces the SMS message sent back when message is
 	empty. Set to "" to enable empty messages.
 	Defaults to <literal>&lt;Empty reply from service provider&gt;</literal>.
@@ -4068,7 +4102,7 @@ ssl-certkey-file
 
     <row><entry><literal>mo-recode</literal></entry>
      <entry>boolean</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If true, kannel will try to convert UCS2 messages received to ISO-8859-1.
 	If it's possible, the message will have <literal>coding</literal> equal
 	to <literal>7 bits</literal> and <literal>charset</literal> equal to 
@@ -4077,7 +4111,7 @@ ssl-certkey-file
 
 	 <row><entry><literal>http-request-retry</literal></entry>
      <entry>integer</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If set, specifies how many retries should be performed for failing
 		  HTTP requests of sms-services. Defaults to 0, which means no retries
 		  should be performed and hence no HTTP request queueing is done.
@@ -4085,7 +4119,7 @@ ssl-certkey-file
 
 	 <row><entry><literal>http-queue-delay</literal></entry>
      <entry>integer</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If set, specifies how many seconds should pass within the HTTP queueing
 		  thread for retrying a failed HTTP request. Defaults to 10 sec. and is
 		  only obeyed if <literal>http-request-retry</literal> is set to a 
@@ -4161,9 +4195,9 @@ shortcuts = "1111;2222;3333"
    <para>smsbox-route inherits from core the following fields:
    </para>
 
- <table frame=none>
+ <table frame="none">
   <title>Smsbox-route Group Variables</title>
-  <tgroup cols=3>
+  <tgroup cols="3">
   <thead>
    <row>
      <entry>Variable</entry>
@@ -4174,19 +4208,19 @@ shortcuts = "1111;2222;3333"
   <tbody>
    <row><entry><literal>group (m)</literal></entry>
      <entry><literal>smsbox-route</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        This is a mandatory variable
      </entry></row>
 
    <row><entry><literal>smsbox-id (m)</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Defines for which smsbox instance the routing rules do apply.
      </entry></row>
 
 	 <row><entry><literal>smsc-ids</literal></entry>
      <entry>word-list</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If set, specifies from which smsc-ids all inbound messages should
 		  be routed to this smsbox instance. List contains smsc-ids seperated
 		  by semilon (";"). This rule may be used to pull any smsc specific
@@ -4195,7 +4229,7 @@ shortcuts = "1111;2222;3333"
 
 	 <row><entry><literal>shortcuts</literal></entry>
      <entry>number-list</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If set, specifies which receiver numbers for inbound messages should
 		  be routed to this smsbox instance. List contains numbers seperated
 		  by semilon (";"). This rule may be used to pull receiver number
@@ -4249,9 +4283,9 @@ get-url = "http://%S"
      service is used to reply to user. If unset, message will be 
      discarded.</para>
 
- <table frame=none>
+ <table frame="none">
   <title>SMS-Service Group Variables</title>
-  <tgroup cols=3>
+  <tgroup cols="3">
   <thead>
    <row>
      <entry>Variable</entry>
@@ -4262,13 +4296,13 @@ get-url = "http://%S"
   <tbody>
    <row><entry><literal>group (m)</literal></entry>
      <entry><literal>sms-service</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        This is a mandatory variable
      </entry></row>
 
    <row><entry><literal>keyword (m)</literal></entry>
      <entry>word</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Services are identified by the first word in the SMS Each
         `%s' in the URL corresponds to one word in the SMS message.
          Words are separated with spaces. A keyword is matched only if
@@ -4281,7 +4315,7 @@ get-url = "http://%S"
 
    <row><entry><literal>aliases</literal></entry>
      <entry>word-list</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If the service has aliases, they are listed as a list with 
         each entry separated with a semicolon (';')
 
@@ -4289,14 +4323,14 @@ get-url = "http://%S"
 
    <row><entry><literal>name</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Optional name to identify the service in logs. If unset,
 	<literal>keyword</literal> is used.
      </entry></row>
 
    <row><entry><literal>get-url (c)</literal></entry>
      <entry>URL</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Requested URL. The url can include a list of parameters, which are
         parsed before the url is fetched. See below for these
         parameters. Also works with plain 'url'
@@ -4305,7 +4339,7 @@ get-url = "http://%S"
 
    <row><entry><literal>post-url (c)</literal></entry>
      <entry>URL</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Requested URL. As above, but request is done as POST, not GET.
 	Always matches the keyword, regardless of pattern matching.
 	See notes on POST otherwhere.
@@ -4315,7 +4349,7 @@ get-url = "http://%S"
 
    <row><entry><literal>post-xml (c)</literal></entry>
      <entry>URL</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Requested URL. As above, but request is done as XML POST.
 	Always matches the keyword, regardless of pattern matching.
 	See notes on POST otherwhere and <xref
@@ -4324,7 +4358,7 @@ get-url = "http://%S"
 
    <row><entry><literal>file (c)</literal></entry>
      <entry>filename</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         File read from a local disc. Use this variable only if no
         <literal>url</literal> is set. All escape codes (parameters)
         in <literal>url</literal> are supported in filename. 
@@ -4334,7 +4368,7 @@ get-url = "http://%S"
 
    <row><entry><literal>text (c)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Predefined text answer. Only if there is neither <literal>url</literal> nor 
         <literal>file</literal> set. Escape codes (parameters) are
         usable here, too.
@@ -4343,7 +4377,7 @@ get-url = "http://%S"
 
    <row><entry><literal>exec (c)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Executes the given shell command as the current UID of the
 		  running smsbox user and returns the output to 
 		  <literal>stdout</literal> as reply.
@@ -4356,7 +4390,7 @@ get-url = "http://%S"
 
    <row><entry><literal>accepted-smsc</literal></entry>
      <entry>id-list</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Accept ONLY SMS messages arriving from SMSC with matching ID.
         <footnote><para>Even if this service is denied,
 	kannel still searches for other service which accepts the message,
@@ -4369,7 +4403,7 @@ get-url = "http://%S"
 
    <row><entry><literal>allowed-prefix</literal></entry>
      <entry><literal>prefix-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         A list of phone number prefixes of the sender number which are 
 		  accepted to be received by this service. 
         <footnote><para>Like in accepted-smsc, 
@@ -4386,14 +4420,14 @@ get-url = "http://%S"
 
    <row><entry><literal>denied-prefix</literal></entry>
      <entry><literal>prefix-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         A list of phone number prefixes of the sender number which are 
 		  NOT accepted to be sent through this SMSC.
      </entry></row>
 
    <row><entry><literal>allowed-receiver-prefix</literal></entry>
      <entry><literal>prefix-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         A list of phone number prefixes of the receiver number which are 
 		  accepted to be received by this service. This may be used to
  		  allow only inbound SMS to certain shortcut numbers to be allowed
@@ -4402,7 +4436,7 @@ get-url = "http://%S"
 
    <row><entry><literal>denied-receiver-prefix</literal></entry>
      <entry><literal>prefix-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         A list of phone number prefixes of the receiver number which are 
 		  NOT accepted to be sent through this SMSC.
      </entry></row>
@@ -4410,28 +4444,28 @@ get-url = "http://%S"
 
    <row><entry><literal>catch-all</literal></entry>
      <entry>bool</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Catch keyword regardless of '%s' parameters in pattern.
 
      </entry></row>
 
    <row><entry><literal>send-sender</literal></entry>
      <entry>bool</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Used only with POST. If set to true, number of the handset is
         set, otherwise not.
      </entry></row>
 
    <row><entry><literal>strip-keyword</literal></entry>
      <entry>bool</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
      Used only with POST. Remove matched keyword from message text
         before sending it onward.
      </entry></row>
 
    <row><entry><literal>faked-sender</literal></entry>
      <entry>phone-number</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         This number is set as sender. Most SMS centers ignore this,
         and use their fixed number instead. This option
         overrides all other sender setting methods.
@@ -4439,7 +4473,7 @@ get-url = "http://%S"
 
    <row><entry><literal>max-messages</literal></entry>
      <entry>number</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If the message to be sent is longer than maximum length of an SMS
         it will be split into several parts. <literal>max-messages</literal>
         lets you specify a maximum number of individual SMS messages that
@@ -4450,7 +4484,7 @@ get-url = "http://%S"
 
    <row><entry><literal>accept-x-kannel-headers</literal></entry>
      <entry>bool</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Request reply can include special X-Kannel headers but these
         are only accepted if this variable is set to true. See
 	<xref linkend="xkannel" endterm="xkannel.title">.
@@ -4458,7 +4492,7 @@ get-url = "http://%S"
 
    <row><entry><literal>assume-plain-text</literal></entry>
      <entry>bool</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If client does not set Content-Type for reply, it is normally
         application/octet-stream which is then handled as data in
         kannel. This can be forced to be plain/text to allow backward
@@ -4467,7 +4501,7 @@ get-url = "http://%S"
 
    <row><entry><literal>concatenation</literal></entry>
      <entry>bool</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Long messages can be sent as independent SMS messages with
         <literal>concatenation = false</literal> or as concatenated messages
         with <literal>concatenation = true</literal>. Concatenated messages
@@ -4476,7 +4510,7 @@ get-url = "http://%S"
 
    <row><entry><literal>split-chars</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Allowed characters to split the message into several messages.
         So, with "#!" the message is split from last '#' or '!', which is 
         included in the previous part.
@@ -4485,14 +4519,14 @@ get-url = "http://%S"
 
    <row><entry><literal>split-suffix</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If the message is split into several ones, this string is appended to 
         each message except the last one.
      </entry></row>
 
    <row><entry><literal>omit-empty</literal></entry>
      <entry>bool</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	Normally, Kannel sends a warning to the user if there was an
 	empty reply from the service provider.  If
 	<literal>omit-empty</literal> is set to 'true', Kannel will send
@@ -4502,7 +4536,7 @@ get-url = "http://%S"
 
    <row><entry><literal>header</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If specified, this string is automatically added to each SMS sent with
         this service. If the message is split, it is added to each part.
 
@@ -4510,14 +4544,14 @@ get-url = "http://%S"
 
    <row><entry><literal>footer</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         As header, but not inserted into head but appended to end.
 
      </entry></row>
 
    <row><entry><literal>prefix</literal></entry>
      <entry>string</entry>
-     <entry morerows=1 valign=bottom>
+     <entry morerows="1" valign="bottom">
         Stuff in answer that is cut away, only things between prefix
         and suffix is left. Not case sensitive. Matches the first prefix
         and then the first suffix. These are only used for 
@@ -4530,7 +4564,7 @@ get-url = "http://%S"
 
     <row><entry><literal>white-list</literal></entry>
      <entry>URL</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Load a list of accepted senders of SMS messages. If a 
 	sender of an SMS message is not in this list, any message 
 	received from the SMSC is rejected, unless a <literal>
@@ -4540,7 +4574,7 @@ get-url = "http://%S"
 
     <row><entry><literal>black-list</literal></entry>
      <entry>URL</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         As white-list, but SMS messages from these numbers are
         automatically discarded
      </entry></row>
@@ -4554,9 +4588,9 @@ get-url = "http://%S"
 
 
 
- <table frame=none>
+ <table frame="none">
   <title>Parameters (Escape Codes)</title>
-  <tgroup cols=2>
+  <tgroup cols="2">
   <tbody>
 
 <row><entry><literal>%k</literal></entry><entry>
@@ -4731,9 +4765,9 @@ text = "No action specified"
 	<para>Kannel uses and accepts several X-Kannel headers to be
 	used with SMS-services. </para>
 
- <table frame=none>
+ <table frame="none">
   <title>X-Kannel Headers</title>
-  <tgroup cols=2>
+  <tgroup cols="2">
   <thead>
    <row>
      <entry>SMSPush equivalent</entry>
@@ -4817,9 +4851,9 @@ text = "No action specified"
 	<para>Kannel can do POST if <literal>service</literal> is
 	contains a <literal>post-url="..."</literal>.</para>
 
-<table frame=none>
+<table frame="none">
   <title>X-Kannel Post Headers</title>
-  <tgroup cols=2>
+  <tgroup cols="2">
   <thead>
    <row>
      <entry>Parameter (escape code) equivalent</entry>
@@ -4904,7 +4938,7 @@ text = "No action specified"
 	<para>Kannel can send and receive XML POST with the following
 	format:</para>
 
-<screen><userinput>
+<programlisting>
 &#60;?xml version="1.0"?&#62;
 &#60;!DOCTYPE ...&#62;
 &#60;message&#62;
@@ -4937,7 +4971,7 @@ text = "No action specified"
     &#60;to&#62;service-name&#60;/to&#62;
   &#60;/submit&#62;
 &#60;/message&#62;
-</userinput></screen>
+</programlisting>
 
 	<para>There could be several <literal>da</literal> entries for <literal>sendsms-user
 	</literal> to enable multi-recipient messages. <literal>da</literal> doesn't make
@@ -4982,9 +5016,9 @@ text = "No action specified"
    account, which can be used for the SMS push, via HTTP interface (see
    below)</para>
 
- <table frame=none>
+ <table frame="none">
   <title>SendSMS-User Group Variables</title>
-  <tgroup cols=3>
+  <tgroup cols="3">
   <thead>
    <row>
      <entry>Variable</entry>
@@ -4995,31 +5029,31 @@ text = "No action specified"
   <tbody>
    <row><entry><literal>group (m)</literal></entry>
      <entry><literal>sendsms-user</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        This is a mandatory variable
      </entry></row>
 
    <row><entry><literal>username (m)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Name for the user/account. 
      </entry></row>
 
    <row><entry><literal>password (m)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Password for the user (see HTTP interface, below)
      </entry></row>
 
    <row><entry><literal>name</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        As in 'sms-service' groups.
      </entry></row>
 
    <row><entry><literal>user-deny-ip</literal></entry>
      <entry>IP-list</entry>
-     <entry morerows=1 valign=bottom>
+     <entry morerows="1" valign="bottom">
         As other deny/allow IP lists, but for this user (i.e. this
          user is not allowed to do the SMS push HTTP request from
          other IPs than allowed ones). If not set, there is no
@@ -5030,13 +5064,13 @@ text = "No action specified"
 
    <row><entry><literal>forced-smsc</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
          Force SMSC ID as a 'string' (linked to SMS routing, see 'smsc' groups)
      </entry></row>
 
    <row><entry><literal>default-smsc</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         If no SMSC ID is given with the send-sms request (see below), use
         this one. No idea to use with forced-smsc.
      </entry></row>
@@ -5044,14 +5078,14 @@ text = "No action specified"
 
    <row><entry><literal>default-sender</literal></entry>
      <entry>phone-number</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         This number is set as sender if not set by <literal>from</literal>
 	get/post parameter 
      </entry></row>
 
    <row><entry><literal>faked-sender</literal></entry>
      <entry>phone-number</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         As in 'sms-service' groups
      </entry></row>
 
@@ -5078,7 +5112,7 @@ text = "No action specified"
 
    <row><entry><literal>allowed-prefix</literal></entry>
      <entry><literal>prefix-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         A list of phone number prefixes which are accepted to be
         sent using this username. Multiple entries are separated with 
         semicolon (';'). For example, "040;050" prevents sending of
@@ -5090,14 +5124,14 @@ text = "No action specified"
 
    <row><entry><literal>denied-prefix</literal></entry>
      <entry><literal>prefix-list</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         A list of phone number prefixes which are NOT accepted to be
         sent using this username.
      </entry></row>
 
     <row><entry><literal>white-list</literal></entry>
      <entry>URL</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Load a list of accepted destinations of SMS messages. If a 
 	destination of an SMS message is not in this list, any message 
 	received from the HTTP interface is rejected. See notes of phone 
@@ -5106,14 +5140,14 @@ text = "No action specified"
 
     <row><entry><literal>black-list</literal></entry>
      <entry>URL</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         As white-list, but SMS messages from these numbers are
         automatically rejected.
      </entry></row>
 
     <row><entry><literal>dlr-url</literal></entry>
      <entry>URL</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	URL to be fetched if a <literal>dlrmask</literal> CGI 
 	parameter is present.
      </entry></row>
@@ -5257,9 +5291,9 @@ field-boxc-id = boxc
 	<literal>dlr-db</literal> group as follows:
 	</para>
 
- <table frame=none>
+ <table frame="none">
   <title>DLR Database Field Configuration Group Variables</title>
-  <tgroup cols=3>
+  <tgroup cols="3">
   <thead>
    <row>
      <entry>Variable</entry>
@@ -5270,13 +5304,13 @@ field-boxc-id = boxc
   <tbody>
    <row><entry><literal>group</literal></entry>
      <entry><literal>dlr-db</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        This is a mandatory variable
      </entry></row>
 
    <row><entry><literal>id (m)</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     An id to identify which external connection should be used for
  		  DLR storage. Any string is acceptable, but semicolon ';' may cause 
 		  problems, so avoid it and any other special non-alphabet characters. 
@@ -5284,58 +5318,58 @@ field-boxc-id = boxc
 
    <row><entry><literal>table (m)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         The name of the table that is used to store the DLR information.
      </entry></row>
 
    <row><entry><literal>field-smsc (m)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         The table field that is used for the smsc data.
      </entry></row>
 
    <row><entry><literal>field-timestamp (m)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         The table field that is used for the timestamp data.
      </entry></row>
 
    <row><entry><literal>field-destination (m)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         The table field that is used for the destination number data.
      </entry></row>
 
    <row><entry><literal>field-service (m)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         The table field that is used for the service username data.
      </entry></row>
 
    <row><entry><literal>field-url (m)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         The table field that is used for the DLR URL which is triggered
 		  when the DLR for this message arrives from the SMSC.
      </entry></row>
 
    <row><entry><literal>field-mask (m)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         The table field that is used for the DLR mask that has been set
 		  for a message.
      </entry></row>
 
    <row><entry><literal>field-status (m)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         The table field that is used to reflect the status of the DLR
 		  for a specific message.
      </entry></row>
 
    <row><entry><literal>field-boxc-id (m)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         The table field that is used to store the smsbox connection id
 		  that has passed the message for delivery. This is required in 
 		  cases you want to garantee that DLR messages are routed back to
@@ -5383,9 +5417,9 @@ field-status = status
 	<literal>mysql-connection</literal> group as follows:
 	</para>
 	
- <table frame=none>
+ <table frame="none">
   <title>MySQL Connection Group Variables</title>
-  <tgroup cols=3>
+  <tgroup cols="3">
   <thead>
    <row>
      <entry>Variable</entry>
@@ -5396,13 +5430,13 @@ field-status = status
   <tbody>
    <row><entry><literal>group</literal></entry>
      <entry><literal>mysql-connection</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        This is a mandatory variable
      </entry></row>
 
    <row><entry><literal>id (m)</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     An optional name or id to identify this MySQL connection
 		  for internal reference with other MySQL related configuration
 		  groups. Any string is acceptable, but semicolon ';' may cause 
@@ -5411,25 +5445,25 @@ field-status = status
 
    <row><entry><literal>host (m)</literal></entry>
      <entry>hostname or IP</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Hostname or IP of a server running a MySQL database to connect to.
      </entry></row>
 
     <row><entry><literal>mysql-username (m)</literal></entry>
      <entry>username</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         User name for connecting to MySQL database.
      </entry></row>
 
     <row><entry><literal>mysql-password (m)</literal></entry>
      <entry>password</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Password for connecting to MySQL database.
      </entry></row>
 
     <row><entry><literal>database (m)</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
         Name of database in MySQL database server to connect to.
      </entry></row>
 
@@ -5475,9 +5509,9 @@ database = dlr
    </literal> groups.
    </para>
 
- <table frame=none>
+ <table frame="none">
   <title>OTA Setting Group Variables</title>
-  <tgroup cols=3>
+  <tgroup cols="3">
   <thead>
    <row>
      <entry>Variable</entry>
@@ -5488,13 +5522,13 @@ database = dlr
   <tbody>
    <row><entry><literal>group</literal></entry>
      <entry><literal>ota-setting</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        This is a mandatory variable
      </entry></row>
 
    <row><entry><literal>ota-id</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     An optional name or id for the ota-setting. Any string is
         acceptable, but semicolon ';' may cause problems, so avoid
         it and any other special non-alphabet characters. 
@@ -5502,76 +5536,76 @@ database = dlr
 
    <row><entry><literal>location</literal></entry>
      <entry><literal>URL</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        The address of the HTTP server for your WAP services, i.e. 
 		 <literal>http://wap.company.com</literal>
      </entry></row>
 
    <row><entry><literal>service</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Description of the service
      </entry></row>
 
    <row><entry><literal>ipaddress</literal></entry>
      <entry><literal>IP</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
       IP address of your WAP gateway 
      </entry></row>
 
    <row><entry><literal>phonenumber</literal></entry>
      <entry><literal>phone-number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Phone number used to establish the PPP connection
      </entry></row>
 
    <row><entry><literal>speed</literal></entry>
      <entry><literal>number</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Connection speed: 9600 or 14400. Defaults to 9600.
      </entry></row>
 
    <row><entry><literal>bearer</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Bearer type: data or sms. Defaults to data.
      </entry></row>
 
    <row><entry><literal>calltype</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Call type: isdn or analog. Defaults to isdn.
      </entry></row>
 
    <row><entry><literal>connection</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Connection type: cont or temp. Cont uses TCP port 9201
 		 and Temp uses UDP port 9200. Defaults to cont.
      </entry></row>
 
    <row><entry><literal>pppsecurity</literal></entry>
      <entry><literal>on or off</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Enable CHAP authentication if set to on, PAP otherwise
      </entry></row>
 
    <row><entry><literal>authentication</literal></entry>
      <entry><literal></literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        normal or secure. Indicates wether WTLS should be used 
 		 or not. Defaults to normal.
      </entry></row>
 
    <row><entry><literal>login</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Login name.
      </entry></row>
 
    <row><entry><literal>secret</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Login password
      </entry></row>
 
@@ -5608,9 +5642,9 @@ concatenation = 1
 
   </para>
 
- <table frame=none>
+ <table frame="none">
   <title>OTA Bookmark Group Variables</title>
-  <tgroup cols=3>
+  <tgroup cols="3">
   <thead>
    <row>
      <entry>Variable</entry>
@@ -5621,13 +5655,13 @@ concatenation = 1
   <tbody>
    <row><entry><literal>group</literal></entry>
      <entry><literal>ota-bookmark</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        This is a mandatory variable
      </entry></row>
 
    <row><entry><literal>ota-id</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     An optional name or id for the ota-bookmark. Any string is
         acceptable, but semicolon ';' may cause problems, so avoid
         it and any other special non-alphabet characters. 
@@ -5635,14 +5669,14 @@ concatenation = 1
 
    <row><entry><literal>url</literal></entry>
      <entry><literal>URL</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        The address of the HTTP server for your WAP services, i.e. 
 		 <literal>http://wap.company.com</literal>
      </entry></row>
 
    <row><entry><literal>name</literal></entry>
      <entry><literal>string</literal></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Description of the service
      </entry></row>
 
@@ -5804,13 +5838,13 @@ username=foo&amp;password=bar&amp;to=0123456&amp;text=Hello+world
 	is stuffed into the URL. If you want to use this often via a
 	browser, you probably want to make an HTML form for this.</para>
 
- <table frame=none>
+ <table frame="none">
   <title>SMS Push (send-sms) CGI Variables</title>
-  <tgroup cols=3>
+  <tgroup cols="3">
   <tbody>
    <row><entry><literal>username</literal> (or <literal>user</literal>)</entry>
    <entry><literal>string</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Username or account name. Must be <literal>username</literal> of the one
         'sendsms-user' group in the Kannel configuration,
         or results in 'Authorization failed' reply.
@@ -5818,7 +5852,7 @@ username=foo&amp;password=bar&amp;to=0123456&amp;text=Hello+world
 
    <row><entry><literal>password</literal> (or <literal>pass</literal>)</entry>
    <entry><literal>string</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
        Password associated with given <literal>username</literal>. Must match
  corresponding field in the 'sendsms-user' group of
 the Kannel configuration, or 'Authorization failed' is returned.
@@ -5826,7 +5860,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
    <row><entry><literal>from</literal></entry>
    <entry><literal>string</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Phone number of the sender. This field is usually overridden
         by the SMS Center, or it can be overridden by
         <literal>faked-sender</literal> variable in the
@@ -5836,7 +5870,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
    <row><entry><literal>to</literal></entry>
    <entry><literal>phone number list</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Phone number of the receiver. To send to multiple receivers,
    separate each entry with <emphasis>space</emphasis> (' ', '+'
    url-encoded) - but note that this can be deactivated via
@@ -5845,7 +5879,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
    <row><entry><literal>text</literal></entry>
    <entry><literal>string</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Contents of the message, URL encoded as necessary. The content
         can be more than 160 characters, but then
         <literal>sendsms-user</literal> group must have
@@ -5854,7 +5888,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
    <row><entry><literal>charset</literal></entry>
    <entry><literal>string</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Charset of text message. Used to convert to a format suitable for
 	7 bits or to UCS2. Defaults to ISO-8859-1 if coding is 7bits and
 	UTF16BE if coding is UCS2.
@@ -5862,14 +5896,14 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
    <row><entry><literal>udh</literal></entry>
    <entry><literal>string</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
          Optional User Data Header (UDH) part of the message. Must be
          URL encoded.
    </entry></row>
 
    <row><entry><literal>smsc</literal></entry>
    <entry><literal>string</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Optional virtual smsc-id from which the message is supposed to 
 	have arrived. This is used for routing purposes, if any denied
 	or preferred SMS centers are set up in SMS center
@@ -5881,13 +5915,13 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
    <row><entry><literal>flash</literal></entry>
    <entry><literal>number</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
          Deprecated. See <literal>mclass</literal>.
    </entry></row>
 
    <row><entry><literal>mclass</literal></entry>
    <entry><literal>number</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
          Optional. Sets the Message Class in DCS Field.
 	 Accepts values between 1 and 4, for Message Class 0 to 3, 
 	 A value of 1 sends the message directly to display. mclass=2 sends
@@ -5896,7 +5930,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
    <row><entry><literal>mwi</literal></entry>
    <entry><literal>number</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
          Optional. Sets Message Waiting Indicator bits in DCS field.
 	 If given, the message will be encoded as a Message Waiting
 	 Indicator. The accepted values are 1,2,3 and 4 for activating the
@@ -5911,7 +5945,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
    <row><entry><literal>coding</literal></entry>
    <entry><literal>number</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
          Optional. Sets the coding scheme bits in DCS field.
 	 Accepts values 1 to 3, for 7bit, 8bit or UCS2.
 	 If unset, defaults to 7 bits unless a udh is defined, which sets
@@ -5920,7 +5954,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
    <row><entry><literal>validity</literal></entry>
    <entry><literal>number (minutes)</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
          Optional. If given, kannel will inform SMS Center that it should only
 	 try to send the message for this many minutes. If the destination
 	 mobile is off other situation that it cannot receive the sms, the
@@ -5930,7 +5964,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
    <row><entry><literal>deferred</literal></entry>
    <entry><literal>number (minutes)</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
          Optional. If given, the SMS center will postpone the message to be
 	 delivered at now plus this many minutes.
 	 Note: you must have your kannel box time syncronized with the SMS Center.
@@ -5938,7 +5972,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
    <row><entry><literal>dlrmask</literal></entry>
    <entry><literal>number (bit mask)</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
 	   Optional. Request for delivery reports with the state of the sent 
 	   message. The value is a bit mask composed of: 1: Delivered to phone, 
 	   2: Non-Delivered to Phone, 4: Queued on SMSC, 8: Delivered to SMSC, 
@@ -5949,14 +5983,14 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
    <row><entry><literal>dlrurl</literal></entry>
    <entry><literal>string (url)</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
 	   Optional. If <literal>dlrmask</literal> is given, this is the url to
 	   be fetched. (Must be urlencoded)
    </entry></row>
 
    <row><entry><literal>pid</literal></entry>
    <entry><literal>byte</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
 	   Optional. Sets the PID value. (See ETSI Documentation).
 	   Ex: SIM Toolkit messages would use something like 
 	   <literal>&amp;pid=127&amp;coding=2&amp;alt-dcs=1&amp;mclass=3</literal>
@@ -5964,20 +5998,20 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
    <row><entry><literal>alt-dcs</literal></entry>
    <entry><literal>number</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
 	   Optional. If unset, kannel uses the alt-dcs defined on smsc configuration,
 	   or 0X per default. If equals to 1, uses FX. If equals to 2, force 0X.
    </entry></row>
 
    <row><entry><literal>rpi</literal></entry>
    <entry><literal>number</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
 	   Optional. Sets the Return Path Indicator (RPI) value. (See ETSI Documentation).
    </entry></row>
 
     <row><entry><literal>account</literal></entry>
      <entry>string</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	Account name or number to carry forward for billing purposes.
 	This field is logged as ACT in the log file so it allows you to do some
 	accounting on it if your front end uses the same username for all services
@@ -6011,22 +6045,22 @@ the Kannel configuration, or 'Authorization failed' is returned.
 <sect3>
 <title>GET method for the OTA HTTP interface</title>
 														  
-		 <para>An example URL looks like this (OTA configuration defined in the Kannel 
+		 <para>An example URL (OTA configuration defined in the Kannel 
 		 configuration file):
 	
-<screen><userinput>
-http://smsbox.host.name:13013/cgi-bin/sendota?
-otaid=myconfig&amp;username=foo&amp;password=bar&amp;to=0123456
-</userinput></screen>
+	<screen><userinput>
+	http://smsbox.host.name:13013/cgi-bin/sendota?
+	    otaid=myconfig&amp;username=foo&amp;password=bar&amp;to=0123456
+	</userinput></screen>
 
        URL containing XML document looks like this (you must URL encode it before sending
        it over HTTP): 
 
-<screen><userinput>
-http://smsbox.host.name:13013/cgi-bin/sendota?
-username=foo&amp;password=bar&amp;to=0123456&amp;text=MyURLEncodedXMLdocument&amp;
-type=settings
-</userinput></screen>
+	<screen><userinput>
+	http://smsbox.host.name:13013/cgi-bin/sendota?
+	    username=foo&amp;password=bar&amp;to=0123456&amp;
+	    text=MyURLEncodedXMLdocument&amp;type=settings
+	</userinput></screen>
        
        You can send either settings or bookmark, set CGI variable type accordingly. 
        Default for this variable is settings. 
@@ -6037,45 +6071,45 @@ type=settings
        Here is an example XML document (this one contains CSD settings for logging
        in to a mobile service; note that you must store DTD locally):
 
-<screen><userinput>
+<programlisting>
 &#60;?xml version="1.0"?&#62;
 &#60;!DOCTYPE CHARACTERISTIC-LIST SYSTEM "file://gw/settings.dtd"&#62;
 &#60;CHARACTERISTIC-LIST&#62;
 
-&#60;CHARACTERISTIC TYPE="ADDRESS"&#62;
-&#60;PARM NAME="BEARER" VALUE="GSM/CSD"/&#62;
-&#60;PARM NAME="PROXY" VALUE="10.11.12.13"/&#62;
-&#60;PARM NAME="PORT" VALUE="9201"/&#62;
-&#60;PARM NAME="CSD_DIALSTRING" VALUE="+12345678"/&#62;
-&#60;PARM NAME="PPP_AUTHTYPE" VALUE="PAP"/&#62;
-&#60;PARM NAME="PPP_AUTHNAME" VALUE="yourusername"/&#62;
-&#60;PARM NAME="PPP_AUTHSECRET" VALUE="yourauthsecret"/&#62;
-&#60;PARM NAME="CSD_CALLTYPE" VALUE="ISDN"/&#62;
-&#60;PARM NAME="CSD_CALLSPEED" VALUE="9600"/&#62;
-&#60;/CHARACTERISTIC&#62;
+  &#60;CHARACTERISTIC TYPE="ADDRESS"&#62;
+    &#60;PARM NAME="BEARER" VALUE="GSM/CSD"/&#62;
+    &#60;PARM NAME="PROXY" VALUE="10.11.12.13"/&#62;
+    &#60;PARM NAME="PORT" VALUE="9201"/&#62;
+    &#60;PARM NAME="CSD_DIALSTRING" VALUE="+12345678"/&#62;
+    &#60;PARM NAME="PPP_AUTHTYPE" VALUE="PAP"/&#62;
+    &#60;PARM NAME="PPP_AUTHNAME" VALUE="yourusername"/&#62;
+    &#60;PARM NAME="PPP_AUTHSECRET" VALUE="yourauthsecret"/&#62;
+    &#60;PARM NAME="CSD_CALLTYPE" VALUE="ISDN"/&#62;
+    &#60;PARM NAME="CSD_CALLSPEED" VALUE="9600"/&#62;
+  &#60;/CHARACTERISTIC&#62;
 
-&#60;CHARACTERISTIC TYPE="URL" 
-     VALUE="http://wap.company.com/"/&#62;
+  &#60;CHARACTERISTIC TYPE="URL" 
+                  VALUE="http://wap.company.com/"/&#62;
 
-&#60;CHARACTERISTIC TYPE="NAME"&#62;
-&#60;PARM NAME="NAME" VALUE="Your WAP Company"/&#62;
-&#60;/CHARACTERISTIC&#62;
+  &#60;CHARACTERISTIC TYPE="NAME"&#62;
+    &#60;PARM NAME="NAME" VALUE="Your WAP Company"/&#62;
+  &#60;/CHARACTERISTIC&#62;
 
 &#60;/CHARACTERISTIC-LIST&#62;
-</userinput></screen>
+</programlisting>
 
        A bookmark document looks like this:
 
-<screen><userinput>
+<programlisting>
 &#60;?xml version="1.0"?&#62;
 &#60;!DOCTYPE CHARACTERISTIC_LIST SYSTEM "file://gw/settings.dtd"&#62;
 &#60;CHARACTERISTIC-LIST&#62;
-    &#60;CHARACTERISTIC TYPE="BOOKMARK"&#62;
-        &#60;PARM NAME="NAME" VALUE="WAP Company"/&#62;
-        &#60;PARM NAME="URL" VALUE="http://wap.company.com/"/&#62;
-    &#60;/CHARACTERISTIC&#62;
+  &#60;CHARACTERISTIC TYPE="BOOKMARK"&#62;
+    &#60;PARM NAME="NAME" VALUE="WAP Company"/&#62;
+    &#60;PARM NAME="URL" VALUE="http://wap.company.com/"/&#62;
+  &#60;/CHARACTERISTIC&#62;
 &#60;/CHARACTERISTIC-LIST&#62;
-</userinput></screen>
+</programlisting>
 
        Document type definition (DTD) for these documents is not available ,
        from Internet, you must supply it as a file. Kannel gw directory contains 
@@ -6083,13 +6117,13 @@ type=settings
 
        </para>
 
- <table frame=none>
+ <table frame="none">
   <title>OTA CGI Variables</title>
-  <tgroup cols=3>
+  <tgroup cols="3">
   <tbody>
    <row><entry><literal>otaid</literal></entry>
    <entry><literal>string</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Name or ID of the 'ota-setting' group in Kannel configuration
         that should be sent to the phone. This variable is optional.
         If it is not given the first 'ota-setting' group is sent. This
@@ -6098,14 +6132,14 @@ type=settings
 
    <row><entry><literal>username</literal></entry>
    <entry><literal>string</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Username of the 'sendsms-user' group in Kannel configuration, that has
         been configured to send OTA messages.
    </entry></row>
 
    <row><entry><literal>password</literal></entry>
    <entry><literal>string</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
        Password associated with given <literal>username</literal>. Must match
        corresponding field in 'sendsms-user' group in Kannel configuration, or
        'Authorization failed' is returned.
@@ -6113,13 +6147,13 @@ type=settings
 
    <row><entry><literal>to</literal></entry>
    <entry><literal>number</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
        Number of the phone that is to receive the OTA configuration message.
    </entry></row>
 
    <row><entry><literal>from</literal></entry>
    <entry><literal>string</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
        Phone number of the sender. This field is usually overridden by
        the SMS Center, or it can be overridden by faked-sender
        variable in the sendsms-user group. If this variable is not
@@ -6128,7 +6162,7 @@ type=settings
 
 	<row><entry><literal>smsc</literal></entry>
    <entry><literal>string</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
         Optional virtual smsc-id from which the message is supposed to 
 	have arrived. This is used for routing purposes, if any denied
 	or preferred SMS centers are set up in SMS center
@@ -6140,13 +6174,13 @@ type=settings
 
    <row><entry><literal>text</literal></entry>
    <entry><literal>XML document</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
        An URL encoded XML document, containing either settings or bookmarks.
    </entry></row>
 
    <row><entry><literal>type</literal></entry>
    <entry><literal>string</literal></entry>
-   <entry valign=bottom>
+   <entry valign="bottom">
        Type of the XML document, either "settings" or "bookmarks". Default is 
        "settings".
    </entry></row>
@@ -6216,7 +6250,7 @@ type=settings
      service. You can change this stamp by setting <literal>push-url</literal> 
      configuration variable.
      </para>
-     <screen><userinput>
+<programlisting>
 group = ppg
 ppg-url = /wappush
 ppg-port = 8080
@@ -6225,10 +6259,10 @@ users = 1024
 ppg-allow-ip = 194.100.32.125;127.0.0.1
 ppg-deny-ip = 194.100.32.89;194.100.32.103
 trusted-pi = false
-     </userinput></screen>
-     <table frame=none>
+</programlisting>
+     <table frame="none">
      <title>PPG core group configuration variables</title>
-             <tgroup cols=3><thead><row>
+             <tgroup cols="3"><thead><row>
              <entry>Variable</entry>
              <entry>Value</entry>
              <entry>Description</entry>
@@ -6236,61 +6270,61 @@ trusted-pi = false
              <tbody>
              <row><entry><literal>group</literal></entry>
              <entry><emphasis>ppg</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Mandatory value. Tells that we are configuring the PPG group.
              </entry></row>
              <row><entry><literal>ppg-port</literal></entry>
              <entry><emphasis>number</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              The port PPG is listening at. Default 8080.
              </entry></row>
              <row><entry><literal>ppg-ssl-port (o)</literal></entry>
              <entry><emphasis>number</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Mandatory value for PPG HTTPS support. The port at which PPG listens
              for HTTPS requests. There are no defaults; you must set the value 
              separately.
              </entry></row>
              <row><entry><literal>ssl-server-cert-file</literal></entry>
              <entry><emphasis>string</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Mandatory value for PPG HTTPS support. The file containing server's ssl
              certificate.
              </entry></row>
              <row><entry><literal>ssl-server-key-file</literal></entry>
              <entry><emphasis>string</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Mandatory value for PPG HTTPS support. The file containing server's ssl
              private key.
              </entry></row>
              <row><entry><literal>ppg-url</literal></entry>
              <entry><emphasis>url</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              URL locating PPG services. Default <literal>/wappush
              </literal>.
              </entry></row>
              <row><entry><literal>global-sender</literal></entry>
              <entry><emphasis>string</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Sender phone number required by some protocols.
              </entry></row>
              <row><entry><literal>concurrent-pushes</literal></entry>
              <entry><emphasis>number</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Number of concurrent pushes expected. Note that PPG <emphasis>
              does</emphasis> work even value is too low; it will only be 
              slower. Default 100.
              </entry></row>
              <row><entry><literal>users</literal></entry>
              <entry><emphasis>number</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Number of actually configured user accounts. Note that PPG 
              <emphasis>does</emphasis> work even value is too low; it will 
              only be slower. Default 1024.
              </entry></row>
              <row><entry><literal>trusted-pi</literal></entry>
              <entry><emphasis>boolean</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              If true, PI does authentication for PPG. Obviously, both of them
              must reside inside same firewall. Default true. If this variable
              is true, all security variables are ignored (even though they
@@ -6298,21 +6332,21 @@ trusted-pi = false
              </entry></row>
              <row><entry><literal>ppg-deny-ip</literal></entry>
              <entry><emphasis>ip-list</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              PPG will not accept pushes from these IPs. Wildcards are allowed.
              If this attribute is missing, no IP is denied <emphasis> by this
              list </emphasis>.
              </entry></row>
              <row><entry><literal>ppg-allow-ip</literal></entry>
              <entry><emphasis>ip-list</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              PPG will accept pushes from these, and only these, IPs. Wildcards
              are allowed. Adding this list means that IPs not mentioned are 
              denied, too.
              </entry></row>
 				 <row><entry><literal>default-smsc</literal></entry>
      		    <entry><emphasis>string</emphasis></entry>
-     			 <entry valign=bottom>
+     			 <entry valign="bottom">
         		 If no SMSC ID is given with the wappush HTTP request (see below), use
              this one as default route for all push messages.
      			 </entry></row>
@@ -6333,20 +6367,20 @@ trusted-pi = false
       named here 'picom') allowed to send pushes only from a specified ip.
       </para>
 
-<screen><userinput>
+<programlisting>
 group = wap-push-user
 wap-push-user = picom
 ppg-username = foo
 ppg-password = bar
 allow-ip = 62.254.217.163
-</userinput></screen>
+</programlisting>
 
       <para>It goes without saying that in real systems you must use more
             complex passwords than bar.</para>
 
-      <table frame=none>
+      <table frame="none">
       <title>PPG user group configuration variables</title>
-      <tgroup cols=3><thead><row>
+      <tgroup cols="3"><thead><row>
              <entry>Variable</entry>
              <entry>Value</entry>
              <entry>Description</entry>
@@ -6354,71 +6388,71 @@ allow-ip = 62.254.217.163
              <tbody>
              <row><entry><literal>group</literal></entry>
              <entry><emphasis>wap-push-user</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Mandatory value. Tells that we are configuring the users group.
              </entry></row>
              <row><entry><literal>wap-push-user</literal></entry>
              <entry><emphasis>string</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              (More) human readable name of an user.
              </entry></row>
              <row><entry><literal>ppg-username</literal></entry>
              <entry><emphasis>string</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Username for this user.
              </entry></row>
              <row><entry><literal>ppg-password</literal></entry>
              <entry><emphasis>string</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Password for this user.
              </entry></row>
              <row><entry><literal>allowed-prefix</literal></entry>
              <entry><emphasis>number-list</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Phone number prefixes allowed in pushes coming from this pi. These
              prefixes must conform international phone number format.
              </entry></row>
              <row><entry><literal>denied-prefix</literal></entry>
              <entry><emphasis>number-list</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Phone number prefixes denied in pushes coming from this pi. These
              prefixes must conform international phone number format.
              </entry></row>
              <row><entry><literal>white-list</literal></entry>
              <entry><emphasis>url</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Defines an url wherefrom the whitelist can be fetched. White list
              itself contains list of phone numbers accepting pushes from this 
              pi.
              </entry></row>
              <row><entry><literal>black-list</literal></entry>
              <entry><emphasis>url</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Defines an url wherefrom the blacklist can be fetched. Blacklist 
              itself contains list of phone number not accepting pushes from 
              this pi.
              </entry></row>
              <row><entry><literal>allow-ip</literal></entry>
              <entry><emphasis>ip-list</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Defines ips wherefrom this pi can do pushes. Adding this list 
              means that ips not mentioned are denied.
              </entry></row>
              <row><entry><literal>deny-ip</literal></entry>
              <entry><emphasis>ip-list</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Defines ips wherefrom this pi cannot do pushes. Ips not mentioned
              in either list are denied, too.
              </entry></row>
 			    <row><entry><literal>default-smsc</literal></entry>
      		    <entry><emphasis>string</emphasis></entry>
-     			 <entry valign=bottom>
+     			 <entry valign="bottom">
         		 If no SMSC ID is given with the wappush HTTP request (see below), use
              this one as default route for this specific push user.
      			 </entry></row>
 			    <row><entry><literal>forced-smsc</literal></entry>
      		    <entry><emphasis>string</emphasis></entry>
-     			 <entry valign=bottom>
+     			 <entry valign="bottom">
         		 Allow only routing to a defined SMSC ID for this specific push user.
      			 </entry></row>
 
@@ -6437,7 +6471,7 @@ allow-ip = 62.254.217.163
      example, you may need more complex ones.
      </para>
      <para>Bearerbox setup does not require any new variables:</para>
-<screen><userinput>
+<programlisting>
 group = core
 admin-port = 13000
 smsbox-port = 13001
@@ -6449,23 +6483,23 @@ log-level = 1
 box-deny-ip = "*.*.*.*"
 box-allow-ip = "127.0.0.1"
 unified-prefix = "00358,0"
-</userinput></screen>
+</programlisting>
       <para>You mut set up wapbox, for pulling (fetching) the wap data, and
       of course starting the push itself. No new variables here, either.
       </para> 
-<screen><userinput>
+<programlisting>
 group = wapbox
 bearerbox-host = localhost
 log-file = "filename"
 log-level = 0
 syslog-level = none
-</userinput></screen>
+</programlisting>
       <para>To set up smsc connections, for pushing SI or SL over SMS. Here
       HTTP SMSC is used as an example. Variables no-sender and no-coding 
       simplify HTTP request generated by Kannel. Send-url specifies content 
       gateway, or sendsms service.
       </para>
-<screen><userinput>
+<programlisting>
 group = smsc
 smsc = http
 smsc-id = HTTP
@@ -6476,13 +6510,13 @@ smsc-password = bar
 no-sender = true
 no-coding = true
 send-url = http://host:port/path
-</userinput></screen>
+</programlisting>
      <para>To set up smsbox. This group will eventually disappear, use here
      only necessary configuration variables.</para>
-<screen><userinput>
+<programlisting>
 group = smsbox
 bearerbox-host = localhost
-</userinput></screen>
+</programlisting>
       <para>Kannel sources contain a sample push configuration file 
       <literal>gw/pushkannel.conf</literal>.</para>
 </sect1>
@@ -6490,10 +6524,10 @@ bearerbox-host = localhost
 <title>Running a push proxy gateway</title>
      <para>Push proxy gateway is started by simply typing, using separate 
      windows:
-     <screen><userinput>
-      gw/bearerbox [conffile]
-      gw/wapbox [conffile]
-     </userinput></screen>
+	<screen><userinput>
+	gw/bearerbox [conffile]
+	gw/wapbox [conffile]
+	</userinput></screen>
      You can, of course, use more complex command line options.</para>
 </sect1>
 <sect1>
@@ -6512,13 +6546,13 @@ bearerbox-host = localhost
        cgi variable text contains the url escaped form of a SI document. It is
        usable for testing prototype phones.
        </para>
-<screen><userinput>
-http://matrix:8080/phplib/kannelgw.php?user=*deleted*&amp;pass=*deleted*=
-to=%2B358408676001&amp;text=3D%02%06%17%AE%96localhost%3A8080%00%AF%80%8D%CF%B4
-%80%02%05j%00E%C6%0C%03wap.iobox.fi%00%11%031%40wiral.com%00%07%0A%C3%07%19%
-99%06%25%15%23%15%10%C3%04+%02%060%01%03Want+to+test+a+fetch%3F%00%01%01&amp;
-udh=%06%05%04%0B%84%23%F0
-</userinput></screen>
+	<screen><userinput>
+	http://matrix:8080/phplib/kannelgw.php?user=*deleted*&amp;
+	pass=*deleted*=to=%2B358408676001&amp;text=3D%02%06%17%AE%96localhost
+	%3A8080%00%AF%80%8D%CF%B4%80%02%05j%00E%C6%0C%03wap.iobox.fi%00%11%03
+	1%40wiral.com%00%07%0A%C3%07%19%99%06%25%15%23%15%10%C3%04+%02%060%01
+	%03Want+to+test+a+fetch%3F%00%01%01&amp;udh=%06%05%04%0B%84%23%F0
+	</userinput></screen>
 </sect1>
 
 <sect1>
@@ -6528,17 +6562,16 @@ udh=%06%05%04%0B%84%23%F0
        the address type is a phone number (TYPE=PLMN), network defaults to GSM
        and bearer to SMS; if it is a IP-address (TYPE=IPv4), network defaults
        to GSM and bearer to CSD. So following minimal pap document works:
-<screen><userinput>
+<programlisting>
 &#60;?xml version="1.0"?&#62;
 &#60;!DOCTYPE pap PUBLIC "-//WAPFORUM//DTD PAP//EN"
           "http://www.wapforum.org/DTD/pap_1.0.dtd"&#62;
 &#60;pap&#62;
   &#60;push-message push-id="9fjeo39jf084@pi.com"&#62;
-    &#60;address address-value="WAPPUSH=+358408676001/TYPE=PLMN@ppg.carrier.com"&#62;
-    &#60;/address&#62;
+    &#60;address address-value="WAPPUSH=+358408676001/TYPE=PLMN@ppg.carrier.com"/&#62;
   &#60;/push-message&#62;
 &#60;/pap&#62;
-</userinput></screen>
+</programlisting>
        </para>
 </sect1>
      
@@ -6574,11 +6607,11 @@ udh=%06%05%04%0B%84%23%F0
 	 <title>Using SSL client support</title>
      <para>To use the client support please use the following
 	    configuration directive within the core group</para>
-<screen><userinput>
+<programlisting>
 group = core
 ...
 ssl-client-certkey-file = "filename"
-</userinput></screen>
+</programlisting>
 	  <para>Now you are able to use https:// scheme URLs within 
  	    your WML decks and SMS services.</para>
 	</sect1>	
@@ -6589,14 +6622,14 @@ ssl-client-certkey-file = "filename"
      <para>To use the SSL-enabled HTTP server please use the 
 	    following configuration directive within the core group
 		 </para>
-<screen><userinput>
+<programlisting>
 group = core
 ...
 admin-port-ssl = true
 ...
 ssl-server-cert-file = "filename"
 ssl-server-key-file = "filenane"
-</userinput></screen>
+</programlisting>
 	</sect1>	
 
 	<sect1>
@@ -6606,7 +6639,7 @@ ssl-server-key-file = "filenane"
 	    following configuration directive within the core and 
 		 smsbox groups
 		 </para>
-<screen><userinput>
+<programlisting>
 group = core
 ...
 ssl-server-cert-file = "filename"
@@ -6615,7 +6648,7 @@ ssl-server-key-file = "filenane"
 group = smsbox
 ...
 sendsms-port-ssl = true
-</userinput></screen>
+</programlisting>
 	</sect1>
 
         <sect1>
@@ -6623,13 +6656,13 @@ sendsms-port-ssl = true
         <para>
         If you want use PAP over HTTPS, (it is, a https scheme) add following 
         directives to the ppg core group:
-<screen><userinput>
+<programlisting>
 group = ppg
 ...
 ppg-ssl-port = 8090
 ssl-server-cert-file = "/home/aarno/kannelcvs/gateway/gw/cert1.pem"
 ssl-server-key-file = "/home/aarno/kannelcvs/gateway/gw/key1.pem"
-</userinput></screen>
+</programlisting>
         </para>
         <para>
         PPG uses a separate port for HTTPS traffic, so so you must define it. This
@@ -6834,9 +6867,9 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
    <para>Fake SMS center can be started with various optional command
    line arguments.</para>
 
- <table frame=none>
+ <table frame="none">
   <title>Fakesmsc command line options</title>
-  <tgroup cols=3>
+  <tgroup cols="3">
   <thead>
    <row>
      <entry>Switch</entry>
@@ -6847,28 +6880,28 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
   <tbody>
    <row><entry><literal>-H</literal></entry>
      <entry><emphasis>host</emphasis></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Use host <emphasis>host</emphasis> instead of default
        <literal>localhost</literal>.
      </entry></row>
 
    <row><entry><literal>-p</literal></entry>
      <entry><emphasis>port</emphasis></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Use port number <emphasis>port</emphasis> instead of default
        10000.
      </entry></row>
 
    <row><entry><literal>-i</literal></entry>
      <entry><emphasis>interval</emphasis></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Use message interval <emphasis>interval</emphasis> (in seconds,
        fractions accepted) instead of default interval 1.0 seconds.
      </entry></row>
 
    <row><entry><literal>-m</literal></entry>
      <entry><emphasis>max</emphasis></entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Send a maximum of <emphasis>max</emphasis> messages. Value -1
        means that an unlimited number of messages is sent. Default -1.
        Using 0 can be useful to listen for messages sent via other
@@ -6903,28 +6936,25 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
       <para>
       Here is an example of a push control document, which gives PPG 
       instructions how to do the pushing.
-      <screen><userinput>
+      <programlisting>
 &#60;?xml version="1.0"?&#62;
 &#60;!DOCTYPE pap PUBLIC "-//WAPFORUM//DTD PAP//EN"
           "http://www.wapforum.org/DTD/pap_1.0.dtd"&#62;
 &#60;pap&#62;
   &#60;push-message push-id="9fjeo39jf084@pi.com"
-  deliver-before-timestamp="2001-09-28T06:45:00Z"
-  deliver-after-timestamp="2001-02-28T06:45:00Z"
-  progress-notes-requested="false"&#62;
-    &#60;address address-value="WAPPUSH=+358408676001/TYPE=PLMN@ppg.carrier.com"&#62;
-    &#60;/address&#62;
-    &#60;quality-of-service
-    priority="low"
-    delivery-method="unconfirmed"
-    network-required="true"
-    network="GSM"
-    bearer-required="true"
-    bearer="SMS"&#62;
-    &#60;/quality-of-service&#62;
+                deliver-before-timestamp="2001-09-28T06:45:00Z"
+                deliver-after-timestamp="2001-02-28T06:45:00Z"
+                progress-notes-requested="false"&#62;
+    &#60;address address-value="WAPPUSH=+358408676001/TYPE=PLMN@ppg.carrier.com"/&#62;
+    &#60;quality-of-service priority="low"
+                        delivery-method="unconfirmed"
+                        network-required="true"
+                        network="GSM"
+                        bearer-required="true"
+                        bearer="SMS"/&#62;
   &#60;/push-message&#62;
 &#60;/pap&#62;
-      </userinput></screen>
+      </programlisting>
       Because the push content is sended to the phone over SMS, rigth value for
       <literal>network-required</literal> and <literal>bearer-required
       </literal> is true, for <literal>network</literal> GSM and for <literal>bearer
@@ -6938,20 +6968,20 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
       Essentially, the phone displays, when it receives this SI, the text 
       "Want to test a fetch" and if the user wants, fetches the content 
       located by URL <literal>http://wap.iobox.fi</literal>.
-      <screen><userinput>
+      <programlisting>
 &#60;?xml version="1.0"?&#62;
-    &#60;!DOCTYPE si PUBLIC "-//WAPFORUM//DTD SI 1.0//EN"
-                 "http://www.wapforum.org/DTD/si.dtd"&#62;
+&#60;!DOCTYPE si PUBLIC "-//WAPFORUM//DTD SI 1.0//EN"
+          "http://www.wapforum.org/DTD/si.dtd"&#62;
 &#60;si&#62;
-    &#60;indication href="http://wap.iobox.fi"
-                si-id="1@wiral.com"
-                action="signal-high"
-                created="1999-06-25T15:23:15Z"
-                si-expires="2002-06-30T00:00:00Z"&#62;
-                Want to test a fetch?
-    &#60;/indication&#62;
+  &#60;indication href="http://wap.iobox.fi"
+              si-id="1@wiral.com"
+              action="signal-high"
+              created="1999-06-25T15:23:15Z"
+              si-expires="2002-06-30T00:00:00Z"&#62;
+    Want to test a fetch?
+  &#60;/indication&#62;
 &#60;/si&#62;
-      </userinput></screen>
+      </programlisting>
       Note that the date value of the si-expires attribute contains trailing
       zeroes. They are OK here, because SI tokenizer removes them. But phones
       does not accept them in the final SMS data message. You should probably
@@ -6966,15 +6996,14 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
       </literal> when it receives this document. This sounds quite unsecure, and
       indeed, user invention is probably required before fetching.
 
-      <screen><userinput>
+      <programlisting>
 &#60;?xml version="1.0"?&#62;
-    &#60;!DOCTYPE sl PUBLIC "-//WAPFORUM//DTD SL 1.0//EN"
-                "http://www.wapforum.org/DTD/sl.dtd"&#62;
-&#60;sl
-    href="http://wap.iobox.fi"
+&#60;!DOCTYPE sl PUBLIC "-//WAPFORUM//DTD SL 1.0//EN"
+          "http://www.wapforum.org/DTD/sl.dtd"&#62;
+&#60;sl href="http://wap.iobox.fi"
     action="execute-high"&#62;
 &#60;/sl&#62;
-      </userinput></screen>
+      </programlisting>
       </para>
 
 </sect1>
@@ -6991,17 +7020,17 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
        proxy gateway (setting flag trusted-pi true makes testing easier). 
        This explained in Chapter "Setting up push proxy gateway". Then issue 
        following commands, in Kannel's root directory and in separate windows:
-       <screen><userinput>
-       gw/bearerbox [conffile]
-       gw/wapbox [conffile]
-       </userinput></screen>
+	<screen><userinput>
+	gw/bearerbox [conffile]
+	gw/wapbox [conffile]
+	</userinput></screen>
        Of course you can use more complicated wapbox and bearerbox command
        line options, if necessary.</para>
 
        <para>To run a http smsc,  start http server simulation:
-       <screen><userinput>
-       test/test_http_server -p port
-       </userinput></screen>
+	<screen><userinput>
+	test/test_http_server -p port
+	</userinput></screen>
        You can, of course, select the port at will. Remember, though, that
        PPG listens at the port defined in the ppg configuration file. Other 
        <literal>test_http_server</literal> options are irrelevant here.</para>
@@ -7015,10 +7044,10 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
        see "Setting up push proxy gateway"; q flag here prevents dumping of 
        test_ppg program debugging information):
        </para>
-       <screen><userinput>
-       test/test_ppg -q http://ppg-host-name:ppg-port/ppg-url [content_file] 
-       [control_file]
-       </userinput></screen>
+	<screen><userinput>
+	test/test_ppg -q http://ppg-host-name:ppg-port/ppg-url [content_file] 
+	[control_file]
+	</userinput></screen>
 
        <para> This presumes that you have set trusted-pi true.
        </para>
@@ -7028,14 +7057,14 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
        must have set trusted-pi false and added wap-push-user configuration group):
        </para>
 
-       <screen><userinput>
-       test/test_ppg -q http://ppg-host-name:ppg-port?username=ppg-username'&'
-       password=ppg-password [content_file] [control_file]
-       </userinput></screen>
+	<screen><userinput>
+	test/test_ppg -q http://ppg-host-name:ppg-port?username=ppg-username'&'
+	password=ppg-password [content_file] [control_file]
+	</userinput></screen>
    
-       <table frame=none>
+       <table frame="none">
              <title>Test_ppg's command line options</title>
-             <tgroup cols=3><thead><row>
+             <tgroup cols="3"><thead><row>
              <entry>Switch</entry>
              <entry>Value</entry>
              <entry>Description</entry>
@@ -7043,7 +7072,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              <tbody>
              <row><entry><literal>-c</literal></entry>
              <entry><emphasis>string</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Use content qualifier <emphasis>string</emphasis> instead of 
              default <literal>si</literal> (service indication). Allowed 
              values are wml, si, sl, sia, multipart, nil and scrap. Nil and 
@@ -7052,7 +7081,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              </entry></row>
              <row><entry><literal>-a</literal></entry>
              <entry><emphasis>string</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Use application id <emphasis>string</emphasis> instead of default
              <literal>any</literal>. Application identifies the application in
              the phone that should handle the push request. Sia, ua, mms, nil
@@ -7061,30 +7090,30 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              </entry></row>
              <row><entry><literal>-e</literal></entry>
              <entry><emphasis>string</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Use tranfer encoding when sending a push content. Only base64 is
              currently supported.
              </entry></row>
              <row><entry><literal>-b</literal></entry>
              <entry><emphasis>boolean</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Use headers for authentication, instead of url. Default off.
              </entry></row>
              <row><entry><literal>-i</literal></entry>
              <entry><emphasis>number</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Wait interval <emphasis>number</emphasis> instead of default
              <literal>0</literal> between pushes.
              </entry></row>
              <row><entry><literal>-r</literal></entry>
              <entry><emphasis>number</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Do <emphasis>number</emphasis> requests instead of default
              <literal>1</literal>.
              </entry></row>
              <row><entry><literal>-t</literal></entry>
              <entry><emphasis>number</emphasis></entry>
-             <entry valign=bottom>
+             <entry valign="bottom">
              Use <emphasis>number</emphasis> threads instead of default
              <literal>1</literal>.
              </entry></row>
@@ -7116,25 +7145,22 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
        is to ping your virtual machine name in the dos prompt window). Your
        bearer is in this case IP. An example pap document follows:</para> 
        
-       <screen><userinput>
+       <programlisting>
 &#60;?xml version="1.0"?&#62;
 &#60;!DOCTYPE pap PUBLIC "-//WAPFORUM//DTD PAP//EN"
           "http://www.wapforum.org/DTD/pap_1.0.dtd"&#62;
 &#60;pap&#62;
   &#60;push-message push-id="9fjeo39jf084@pi.com"
-  deliver-before-timestamp="2001-09-28T06:45:00Z"
-  deliver-after-timestamp="2001-02-28T06:45:00Z"
-  progress-notes-requested="false"&#62;
-    &#60;address 
-    address-value="WAPPUSH=192.168.214.1/TYPE=IPV4@ppg.carrier.com"&#62;
-    &#60;/address&#62;
-    &#60;quality-of-service
-    priority="low"
-    delivery-method="unconfirmed"
+                deliver-before-timestamp="2001-09-28T06:45:00Z"
+                deliver-after-timestamp="2001-02-28T06:45:00Z"
+                progress-notes-requested="false"&#62;
+    &#60;address address-value="WAPPUSH=192.168.214.1/TYPE=IPV4@ppg.carrier.com"/&#62;
+    &#60;quality-of-service priority="low"
+                        delivery-method="unconfirmed"
     &#60;/quality-of-service&#62;
   &#60;/push-message&#62;
 &#60;/pap&#62;
-       </userinput></screen>
+       </programlisting>
        <para>Note address-value format. It is contains type and value, 
        because PAP protocol supports different address formats.</para>
        <para>You must use <literal>test_ppg</literal>'s -a and -c flags
@@ -7152,7 +7178,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
         high. Here is a example test_ppg configuration file:
         </para>
  
-<screen><userinput>
+<programlisting>
  group = test-ppg
  retries = 2
  pi-ssl = yes
@@ -7164,19 +7190,19 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
  content-file = /home/aarno/test/si.txt
  username = foo
  password = bar
- </userinput></screen>
+</programlisting>
  
         <para>
         With a configuration file, you can do a push by typing:
         </para>
  
-<screen><userinput>
- test/test_ppg -q [configuration_file]
-</userinput></screen>
+	<screen><userinput>
+        test/test_ppg -q [configuration_file]
+	</userinput></screen>
  
-        <table frame=none>
+        <table frame="none">
               <title>Test_ppg's configuration file directives</title>
-              <tgroup cols=3><thead><row>
+              <tgroup cols="3"><thead><row>
               <entry>Directive</entry>
               <entry>Value</entry>
               <entry>Description</entry>
@@ -7184,62 +7210,62 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
               <tbody>
               <row><entry><literal>group</literal></entry>
               <entry><emphasis>test_ppg</emphasis></entry>
-              <entry valign=bottom>
+              <entry valign="bottom">
               Mandatory parameter. Start of test_ppg's core group.
               </entry></row>
               <row><entry><literal>retries</literal></entry>
               <entry><emphasis>number</emphasis></entry>
-              <entry valign=bottom>
+              <entry valign="bottom">
               The client tries to log in to PPG <emphasis>number</emphasis> times
               before discarding the push request. Default is 2.
               </entry></row>
               <row><entry><literal>pi-ssl</literal></entry>
               <entry><emphasis>boolean</emphasis></entry>
-              <entry valign=bottom>
+              <entry valign="bottom">
               Mandatory parameter for HTTPS connection. Does the client use HTTPS
               connection. Default is no.
               </entry></row>
               <row><entry><literal>ssl-client-certkey-file</literal></entry>
               <entry><emphasis>filename</emphasis></entry>
-              <entry valign=bottom>
+              <entry valign="bottom">
                Mandatory parameter for HTTPS connection. File containing the client's 
                ssl certificate and private key. 
               </entry></row>
                <row><entry><literal>ssl-trusted-ca-file</literal></entry>
               <entry>filename</entry>
-              <entry valign=bottom>
+              <entry valign="bottom">
               Mandatory paramenter for HTTPS connection.This file contains the 
               certificates test_ppg is willing to trust. If this directive is not set, 
               certificates are not validated and HTTPS would not be tested.
 	      </entry></row>
               <row><entry><literal>group</literal></entry>
               <entry><emphasis>configuration</emphasis></entry>
-              <entry valign=bottom>
+              <entry valign="bottom">
               Mandatory parameter. Start of test_ppg's test group.
               </entry></row>
               <row><entry><literal>push-url</literal></entry>
               <entry><emphasis>url</emphasis></entry>
-              <entry valign=bottom>
+              <entry valign="bottom">
               Mandatory value. URL locating PPG's services.
               </entry></row>
               <row><entry><literal>pap-file</literal></entry>
               <entry><emphasis>filename</emphasis></entry>
-              <entry valign=bottom>
+              <entry valign="bottom">
               Mandatory value. File containing pap request's control document.
               </entry></row>
               <row><entry><literal>content-file</literal></entry>
               <entry><emphasis>filename</emphasis></entry>
-              <entry valign=bottom>
+              <entry valign="bottom">
               Mandatory value. File containing pap request's content document.
               </entry></row>
               <row><entry><literal>username</literal></entry>
               <entry><emphasis>string</emphasis></entry>
-              <entry valign=bottom>
+              <entry valign="bottom">
               Mandatory value. PPG service user's username.
               </entry></row>
               <row><entry><literal>password</literal></entry>
               <entry><emphasis>string</emphasis></entry>
-              <entry valign=bottom>
+              <entry valign="bottom">
               Mandatory value. PPG service user's password.
               </entry></row>
               </tbody>
@@ -7266,9 +7292,9 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 
 	<para>Download and install the mgetty package.</para>
 
-	<screen>
-	<userinput>rpm -ivh mgetty-VERSION-rpm</userinput>
-	</screen>	
+	<screen><userinput>
+	rpm -ivh mgetty-VERSION-rpm
+	</userinput></screen>	
 
 	<para>To run mgetty as a daemon, add the following line to
 	/etc/inittab.</para>
@@ -7277,18 +7303,16 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 	example we assume your modem is connected to the serial port ttyS0
 	(COM 1).</para>
 	
-	<screen>
-	<userinput>S0:2345:respawn:/sbin/mgetty ttyS0 -x 6 -D /dev/ttyS0
-	</userinput>
-	</screen>
+	<screen><userinput>
+	S0:2345:respawn:/sbin/mgetty ttyS0 -x 6 -D /dev/ttyS0
+	</userinput></screen>
 
 	<para>We need to start the pppd automatically when mgetty receives
 	an AutoPPP request. Add the next line to /etc/mgetty+sendfax/login.config</para>
 
-	<screen>
-	<userinput>/AutoPPP/ - - /usr/sbin/pppd file /etc/ppp/options.server
-	</userinput>
-	</screen>
+	<screen><userinput>
+	/AutoPPP/ - - /usr/sbin/pppd file /etc/ppp/options.server
+	</userinput></screen>
 
 	<para>In /etc/mgetty+sendfax/mgetty.config you might need to change
 	the connect speed between the computer and the modem. Note: this is
@@ -7297,14 +7321,14 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 	you need to change the speed to 19200. Usually you can just leave the
 	speed to the default value (38400).</para>
 
-	<screen>
-	<userinput>speed 38400</userinput>
-	</screen>
+	<screen><userinput>
+	speed 38400
+	</userinput></screen>
 
 	<para>Add the following lines to /etc/ppp/options.server</para>
 	
-	<screen>
-	<userinput>refuse-chap
+	<screen><userinput>
+	refuse-chap
 	require-pap
 	lock
 	modem
@@ -7312,20 +7336,19 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 	passive
 	192.168.1.10:192.168.1.20
 	debug
-	</userinput>
-	</screen>
+	</userinput></screen>
 
 	<para>In /etc/ppp/pap-secrets add the username and password for the
 	ppp account. The IP address is the one assigned to the phone.</para>
 
-	<screen>
-	<userinput>wapuser * wappswd 192.168.0.20</userinput>
-	</screen>
+	<screen><userinput>
+	wapuser * wappswd 192.168.0.20
+	</userinput></screen>
 
 	<para>Configure your phone (this example is for Nokia 7110)</para>
 
-	<screen>
-	<userinput>homepage http:/yourhost/hello.wml
+	<screen><userinput>
+	homepage http:/yourhost/hello.wml
 	connection type continuous
 	connection security off
 	bearer data
@@ -7336,8 +7359,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 	data call speed 9600
 	username wapuser
 	password wappswd
-	</userinput>
-	</screen>
+	</userinput></screen>
 </sect1>
 
 <sect1>
@@ -7358,13 +7380,13 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 <sect1>
 <title>Bearerbox Access Log</title>
 
-	<screen>
-		<computeroutput>2001-01-01 12:00:00 Sent SMS [SMSC:smsc] [SVC:sms] [from:12345] [to:67890]</computeroutput>
-		<computeroutput>  [flags:0:1:0:0:0] [msg:11:Hello World] [udh:0]</computeroutput>
-	</screen>	
+	<screen><computeroutput>
+	2001-01-01 12:00:00 Sent SMS [SMSC:smsc] [SVC:sms] [from:12345] 
+	    [to:67890] [flags:0:1:0:0:0] [msg:11:Hello World] [udh:0]
+	</computeroutput></screen>	
 
- <informaltable frame=none>
-  <tgroup cols=3>
+ <informaltable frame="none">
+  <tgroup cols="3">
   <thead>
    <row>
      <entry>Variable</entry>
@@ -7375,57 +7397,57 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
   <tbody>
    <row><entry>Date</entry>
      <entry>2001-01-01 12:00:00</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Date
      </entry></row>
 
    <row><entry>Result</entry>
      <entry>Sent SMS</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
        Result: Send, failed, DLR (deliver report), Received, etc.
      </entry></row>
 
    <row><entry>SMSC</entry>
      <entry>smsc</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     Smsc id (<literal>smsc-id</literal>) defined in configuration 
 	     group <literal>smsc</literal> 
      </entry></row>
 
      <row><entry>SVC</entry>
      <entry>sms</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     Service name (<literal>name</literal>) defined in configuration 
 	     group <literal>sendsms-user</literal>
      </entry></row>
 
      <row><entry>from</entry>
      <entry>12345</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     Sender
      </entry></row>
 
      <row><entry>to</entry>
      <entry>67890</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     Recipient
      </entry></row>
 
      <row><entry>Flags</entry>
      <entry>0:1:0:0:0</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     Flags: MClass, Coding, MWI, Compress, DLRMask
      </entry></row>
 
      <row><entry>Message Text</entry>
      <entry>11:Hello World</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     Size of message and message dump (in text or hex if it's binary)
      </entry></row>
 
      <row><entry>User Data Header</entry>
      <entry>0:</entry>
-     <entry valign=bottom>
+     <entry valign="bottom">
 	     Size of UDH and UDH Hex dump 
      </entry></row>
 
@@ -7453,8 +7475,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
         command Kannel will continue to write to the rotated log file.
         </para>
 
-        <screen>
-        <userinput>
+        <screen><userinput>
         /var/log/kannel/*.log {
               daily
               missingok
@@ -7462,14 +7483,13 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
               compress
               delaycompress
               notifempty
-              create 640 root adm
+              create 640 kannel adm
               sharedscripts
               postrotate
-                    killall -HUP bearerbox smsbox wapbox > /dev/null 2> /dev/null
+                    killall -HUP bearerbox smsbox wapbox || true > /dev/null 2> /dev/null
               endscript
         }
-        </userinput>
-        </screen>
+        </userinput></screen>
 </sect1>
 
 </appendix>
