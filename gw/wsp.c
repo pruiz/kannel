@@ -197,16 +197,16 @@ WSPMachine *wsp_machine_create(void) {
 	
 	p = gw_malloc(sizeof(WSPMachine));
 	
-	#define MUTEX(name) p->name = mutex_create()
-	#define INTEGER(name) p->name = 0
-	#define OCTSTR(name) p->name = NULL
-	#define METHOD_POINTER(name) p->name = NULL
-	#define EVENT_POINTER(name) p->name = NULL
-	#define SESSION_POINTER(name) p->name = NULL
+	#define MUTEX(name) p->name = mutex_create();
+	#define INTEGER(name) p->name = 0;
+	#define OCTSTR(name) p->name = NULL;
+	#define METHOD_POINTER(name) p->name = NULL;
+	#define EVENT_POINTER(name) p->name = NULL;
+	#define SESSION_POINTER(name) p->name = NULL;
+	#define HTTPHEADER(name) p->name = NULL;
+	#define LIST(name) p->name = list_create();
 	#define SESSION_MACHINE(fields) fields
 	#define METHOD_MACHINE(fields)
-	#define HTTPHEADER(name) p->name = NULL
-	#define LIST(name) p->name = list_create()
 	#include "wsp_machine-decl.h"
 	
 	p->state = NULL_STATE;
@@ -237,22 +237,22 @@ void wsp_machine_dump(WSPMachine *machine) {
 	p = machine;
 	debug("wap.wsp", 0, "WSPMachine %p dump starts:", (void *) p);
 	#define MUTEX(name) 
-	#define INTEGER(name) debug("wap.wsp", 0, "  %s: %ld", #name, p->name)
+	#define INTEGER(name) debug("wap.wsp", 0, "  %s: %ld", #name, p->name);
 	#define OCTSTR(name) \
 		debug("wap.wsp", 0, "  %s:", #name); \
-		octstr_dump(p->name)
+		octstr_dump(p->name);
 	#define METHOD_POINTER(name) \
-		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name)
+		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name);
 	#define EVENT_POINTER(name) \
-		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name)
+		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name);
 	#define SESSION_POINTER(name) \
-		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name)
+		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name);
+	#define HTTPHEADER(name) \
+		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name);
+	#define LIST(name) \
+		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name);
 	#define SESSION_MACHINE(fields) fields
 	#define METHOD_MACHINE(fields)
-	#define HTTPHEADER(name) \
-		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name)
-	#define LIST(name) \
-		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name)
 	#include "wsp_machine-decl.h"
 	debug("wap.wsp", 0, "WSPMachine dump ends.");
 }

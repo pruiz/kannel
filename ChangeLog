@@ -1,3 +1,10 @@
+Thu Mar 30 01:04:34 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c, gw/wsp.h, gw/wsp_machine-decl.h: Changed
+	METHOD_MACHINE and SESSION_MACHINE macros so that their users
+	provide all punctuation. This will more easily allow certain
+	nifty stuff in the future.
+
 Thu Mar 30 00:57:58 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* utils/attgetopt.c: Added AT&T's public domain implementation of

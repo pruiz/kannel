@@ -16,35 +16,35 @@
 #endif
 
 
-SESSION_MACHINE({
-	INTEGER(state);
-	MUTEX(mutex);
-	INTEGER(n_methods);
-	INTEGER(session_id);
-	METHOD_POINTER(method_machine);
-	LIST(event_queue);
-	OCTSTR(client_address);
-	INTEGER(client_port);
-	OCTSTR(server_address);
-	INTEGER(server_port);
+SESSION_MACHINE(
+	INTEGER(state)
+	MUTEX(mutex)
+	INTEGER(n_methods)
+	INTEGER(session_id)
+	METHOD_POINTER(method_machine)
+	LIST(event_queue)
+	OCTSTR(client_address)
+	INTEGER(client_port)
+	OCTSTR(server_address)
+	INTEGER(server_port)
 
-	INTEGER(set_caps);
-	INTEGER(protocol_options);
-	INTEGER(MOR_method);
-	INTEGER(MOR_push);
-	OCTSTR(aliases);
-	OCTSTR(extended_methods);
-	OCTSTR(header_code_pages);
-	INTEGER(client_SDU_size);
-	INTEGER(server_SDU_size);
+	INTEGER(set_caps)
+	INTEGER(protocol_options)
+	INTEGER(MOR_method)
+	INTEGER(MOR_push)
+	OCTSTR(aliases)
+	OCTSTR(extended_methods)
+	OCTSTR(header_code_pages)
+	INTEGER(client_SDU_size)
+	INTEGER(server_SDU_size)
 	
-	HTTPHEADER(http_headers);
-})
+	HTTPHEADER(http_headers)
+)
 
-METHOD_MACHINE({
-	MUTEX(mutex);
-	SESSION_POINTER(session_machine);
-})
+METHOD_MACHINE(
+	MUTEX(mutex)
+	SESSION_POINTER(session_machine)
+)
 
 
 #undef MUTEX

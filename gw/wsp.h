@@ -67,34 +67,34 @@ struct WSPEvent {
 	#include "wsp_events-decl.h"
 };
 
-struct WSPMachine
-	#define MUTEX(name) Mutex *name
-	#define INTEGER(name) long name
-	#define OCTSTR(name) Octstr *name
-	#define EVENT_POINTER(name) WSPEvent *name
-	#define METHOD_POINTER(name) WSPMethodMachine *name
-	#define SESSION_POINTER(name) WSPMachine *name
+struct WSPMachine {
+	#define MUTEX(name) Mutex *name;
+	#define INTEGER(name) long name;
+	#define OCTSTR(name) Octstr *name;
+	#define EVENT_POINTER(name) WSPEvent *name;
+	#define METHOD_POINTER(name) WSPMethodMachine *name;
+	#define SESSION_POINTER(name) WSPMachine *name;
+	#define HTTPHEADER(name) HTTPHeader *name;
+	#define LIST(name) List *name;
 	#define SESSION_MACHINE(fields) fields
 	#define METHOD_MACHINE(fields)
-	#define HTTPHEADER(name) HTTPHeader *name
-	#define LIST(name) List *name
 	#include "wsp_machine-decl.h"
-;
+};
 
 
-struct WSPMethodMachine
-	#define MUTEX(name) Mutex *name
-	#define INTEGER(name) long name
-	#define OCTSTR(name) Octstr *name
-	#define EVENT_POINTER(name) WSPEvent *name
-	#define METHOD_POINTER(name) WSPMethodMachine *name
-	#define SESSION_POINTER(name) WSPMethodMachine *name
+struct WSPMethodMachine {
+	#define MUTEX(name) Mutex *name;
+	#define INTEGER(name) long name;
+	#define OCTSTR(name) Octstr *name;
+	#define EVENT_POINTER(name) WSPEvent *name;
+	#define METHOD_POINTER(name) WSPMethodMachine *name;
+	#define SESSION_POINTER(name) WSPMethodMachine *name;
+	#define HTTPHEADER(name) HTTPHeader *name;
+	#define LIST(name) List *name;
 	#define SESSION_MACHINE(fields)
 	#define METHOD_MACHINE(fields) fields
-	#define HTTPHEADER(name) HTTPHeader *name
-	#define LIST(name) List *name
 	#include "wsp_machine-decl.h"
-;
+};
 
 
 /*
