@@ -1,3 +1,18 @@
+2000-05-24    <Kalle Marjola <rpr@wapit.com>>
+
+	* doc/userguide/userguide.xml: Removed old configuration file
+	things, read the newconf.txt file. Did same to HTTP adminstration
+	notes, read file newbb.txt
+
+	* doc/arch/arch-bearerbox.xml: Rewrote to reflect the new
+	bearerbox. Have to do it a bit more deeply someday, however. And
+	pictures, too.
+
+	* gw/wsp.c: Applied a short WSP header patch by Joerg Pommnitz to
+	handle broken headers from Timeport
+
+	* test/simple.smsconf: removed
+
 2000-05-24  Richard Braakman  <dark@wapit.com>
 
 	* gw/wsp_http.c: Fixed Accept header scanning in wsp_http_thread.

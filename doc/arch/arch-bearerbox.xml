@@ -1,14 +1,14 @@
 <chapter>
-<title>DRAFT: Bearer box</title>
+<title>Bearerbox architecture</title>
 
-	<para>This chapter describes the internal workings of the bearer
-	box: communication with SMSC's and CSD routers, internal major
+	<para>This chapter describes the internal workings of the bearerbox:
+	communication with SMSC's and UDP routers, internal major
 	modules and data structures, threads, routing, error handling in
 	routins, how it deals with the client box registrations and
 	errors with client connections, and queueing of messages inside
-	the bearer box.</para>
+	the bearerbox.</para>
 	
-	<para>The bearer box connects to the SMSC's in the configuration,
+	<para>The bearerbox connects to the SMSC's in the configuration,
 	and accepts UDP packets at a suitable port. It checks whether SMS
 	messages are normal ones or WDP packets. It routes stuff to appropriate
 	boxes, taking care of load balancing. It keeps unsent messages
@@ -17,208 +17,127 @@
 	when connections break, keeps track of heartbeats).</para>
 
 <sect1>
-<title>Bearer box design</title>
+<title>Bearerbox design</title>
 
 
-	<para>The bearer box is implemented with several threads to
-	simplify program design and to increase efficiency.</para>
+	<para>The bearerbox is implemented with several threads and
+	lists to simplify program design and to increase efficiency.
+	All distinct parts are encapsulated in separate modules which
+	do not interact, thus making it easier to modify and upgared
+	things.</para>
 
-	<figure>
-	<title>Bearer box design. Outer components are described with
-	boldened boxes. Bearer box threads are described with circles.
-	Data streams are marked with arrows.</title>
-	<graphic fileref="arch-bbox&figtype;"></graphic>
-	</figure>
+	<para><emphasis>SMSC module</emphasis> handles all connections
+	with SMS centers, building up the connections, sending and
+	receiving any SMS messages and closing the connections. It
+	also does the required WDP assembly/disassembly when SMS is the
+	WAP bearer (this is under development)</para>
 
-	<para><emphasis>SMSC threads</emphasis> handle connections to
-	the SMS Centers. One thread per SMSC. The thread is
-	responsible for connecting and re-connecting the SMSC, using
-	the appropriate protocol, be it EMI, CMD, SMPP or other. The
-	thread receives messages from SMSC and puts them into
-	<emphasis>Request Queue</emphasis> (see below). Likewise, it
-	picks messages from <emphasis>Reply Queue</emphasis> that are
-	sent via the SMSC it is connected to.</para>
+	<para><emphasis>UDP sender/receiver module</emphasis> receives and sends all
+	WDP packets which are transferred via UDP packets.</para>
 
-	<para><emphasis>CSDR thread</emphasis> (UDP thread) is similar to SMSC
-	thread, but it receives WDP datagrams from CSD Router. If
-	several CSD Routers are used, multiple CSDR threads are used.</para> 
+	<para><emphasis>WAPbox connection module</empasis> acts as a
+	server for WAPboxes, allowing them to contact and
+	sending and receiving messages.</para>
 
-	<para><emphasis>Box connection threads</emphasis> do all the
-	data transfer with SMS and WAP Boxes. Thread picks all
-	appropriate messages from Request Queue and send them to
-	Boxes. Likewise they receive messages from Boxes and put them
-	into Reply Queue, wherefrom the appropriate SMSC or CSDR Thread 
-	reads it.</para>
+	<para><emphasis>SMSbox connection module</empasis> acts as a
+	server for SMSboxes, allowing them to contact and
+	sending and receiving messages.</para>
 
-	<para><emphasis>Main program</emphasis> keeps everything in
-	control. It listens to new Box connection requests and creates
-	new threads for them, listens to HTTP-service port for
-	adminstrative commands and keeps a record of all boxes
-	connected. To achieve this, it listens to 'heartbeat' of other
-	threads, and does necessary actions when heartbeat stops.</para>
+	<para><emphasis>HTTP adminstration module</emphasis> acts as
+	user interface for Kannel. It listens to HTTP commands to
+	suspend, resume and to shutdown the gateway. It is only module
+	calling back the main core of the gateway.</para>
+
+	<para><emphasis>Core module</emphasis> starts up each distict
+	module and is only module calling functions in various other
+	modules. After it has started up the system, it waits until
+	the gateway shuts down.</para>
 
 </sect1>
 
 <sect1>
-<title>Mobile Originated SMS Messages</title>
+<title>Message queues</title>
 
-        <para>Mobile oriented SMS Messages are handled by the SMSC
-        thread, which is connected to corresponding SMS Center. The
-        received message is written, along with any necessary SMS
-        Center specified extra data, into the Request Queue. 
-	Acknowledgement to the SMSC is not immediately sent (NOTE:
-        This is the plan. Now the ACK is immediately sent)</para>
+        <para>Data flow in bearerbox is handled with 4 queues, which
+        are seen by all the modules who would ever need them. This way
+        each module does not need to know anything else about other
+        modules, it simply waits for messages to arrive to queue it is
+        listening to and if the queue is killed, it knows that the
+        system is shutting down and continues the avalanche.</para>
 
-	<para>The SMS Message is then read from the Request Queue by
-	one of the Box Connections, and after it has been successfully
-	transferred to SMS Box, an acknowledgement is written into
-	Reply Queue. If the SMS Box is not available, NACK is written
-	into Reply Queue.</para>
+	<para><emphasis>Incoming SMS</emphasis> is a message queue for
+	non-WAP SMS messages. These messages are received by the SMS
+	Center module, which then puts messages into incoming SMS
+	queue, in wherefrom the SMSbox connection module reads
+	them.</para>
 
-	<para>The SMS Center thread investigates the Reply Queue and
-	pulls the ACK/NACK message from the queue and sends it back to
-	SMS Center (as noted earlier, this is the plan. Current
-	implementation ignores these messages and sends an immediate
-	acknowledgement)</para>
+	<para><emphasis>Outgoing SMS</emphasis> is a message queue
+	read by the SMS Center module. SMSbox connections add any
+	received messages to that queue, and SMS Center module routs
+	them into proper SMS Center connection. Likewise, any WAP
+	messages to be sent as SMS are first deassembled by the SMS
+	Center module and then added to outgoing SMS queue, to be
+	handled like any other messages.</para>
 
-</sect1>
+	<para><emphasis>Incoming WDP</emphasis> is a queue for WAP
+	packets, which have already been reassembled by the SMS Center
+	module or directly received by the UDP sender/receiver
+	module. This queue is read by a router in WAPbox connection
+	module, which routs messages to WAP boxes which are connected
+	to the bearerbox.</para>
 
-<sect1>
-<title>Mobile Terminated SMS Messages</title>
-
-        <para>Mobile terminated SMS Messages are initiated by the SMS
-        Box. It transfers the message into the bearer box via Box
-        Connection. The appropriate SMS Center is determined by the
-        Box Connection and the message is then added to the Reply
-        Queue.</para>
-
-	<para>As with ACK/NACK messages, the SMS Center finds the
-	message from Reply Queue and sends it to SMS Center. However,
-	the message is not removed from the reply queue until an ACK
-	or NACK is received from the SMS Center (NOTE: Actually, the
-	message is first removed, then send and if we crash during
-	that time, tough).</para>
-
-	<para>If a NACK message is received, the SMSC thread either
-	retries later or sends it back to SMS Box via Request Queue
-	and Box connection. This is currently left to the implementation
-	of the SMSC protocol. If the message is sent successfully, an ACK
-	message is put into requet queue to inform the original box
-	that the message has been relied (NOTE: Currently no ACK/NACK 
-	is sent back to SMS Box connection)</para>
+	<para><emphasis>Outgoing WDP</emphasis> is a queue for
+	messages arriving from WAP boxes. Unlike other queues, it is
+	listened in core module, which then routs messages either to
+	UDP sender/receiver module or to SMS Center module for
+	deassembly and SMS sending.</para>
 
 </sect1>
 
 <sect1>
-<title>WAP Message Packets</title>
+<title>Program execution</title>
 
-       <para>WAP message packet handling does not differ from SMS
-       Messages, except that all messages from same WAP Terminal must
-       be sent to same WAP Box as earlier, and likewise replies must
-       be routed back to the same terminal (CSDR)</para>
+        <para>As the bearerbox is tsrated up, it reads the
+        configuration from a file and then starts up any required
+        systems.</para>
 
-</sect1>
+	<para>If any SMS centers are to be listened, it starts SMS
+	Center module and SMSbox connection listener from the box
+	connection module. In addition, if requested, it also starts
+	WAPbox connection listener.
+	Likewise, if the bearerbox is configured to listen to
+	UDP packets, it starts up the UDP sender/receiver module and
+	WAPbox connection module (if it has not yet already).
+	In any case, the HTTP adminstration module is started
+	up, to wait for requests from user.</para>
 
-<sect1>
-<title>Heartbeat</title>
+	<para>Bearerbox is shut down via ctrl-C from keyboard, SIGINT
+	or SIGTERM signal from terminal or other process or by sending
+	a shutdown command via HTTP adminstration interface. The
+	shutdown is started by commanding SMS Center module and UDP
+	sender/receiver module to begin it. These modules stop
+	receiving any new messages from external systems and receive
+	their producer status from incoming SMS and WDP queues.</para>
 
-       <para>The main thread is responsible for knowing which parts
-       of the program still work. The other threads upkeep their
-       personal 'alive' status (heartbeat) and the main thread checks
-       that the other threads have not stopped responding. If the alive
-       status has not been updated for too long a time, the main
-       thread assumes that the other thread has died or is otherwise
-       stopped, and the main thread does necessary actions to destroy
-       or restart it.</para>
+	<para>The avalanche continues in the box connections, which
+	note after they have emptied incoming SMS and WDP queues that
+	there are no more any producers for the queues, and so they
+	send a closing command to connected SMS and WAP
+	boxes. Likewise they remove their producer status from
+	outgoing SMS and WDP queues.</para>
 
-       <para>Likewise each Box Connection keeps their personal
-       connection to SMS or WAP Box alive by listening to the
-       heartbeat from the box. If it stops, the connection is usually
-       considered as lost and the appropriate Box Connection
-       dies.</para>
+	<para>As outgoing message queues empty, SMS Center and UDP
+	sender/receiver module notice that there are no producers
+	anymore, so they close their sending parts, too, and die
+	off.</para>
 
-</sect1>
+	<para>After all message receiver/sender and routing threads
+	and modules have died, the main core thread wakes up from its
+	sleep and sets status to dead, which exits HTTP adminstration
+	and any remaining threads, if there are any. And after they
+	have exited, the main core thread releases all reserved memory
+	areas and exits, killing the program.</para>
 
-<sect1>
-<title>Box Connections</title>
-
-       <para>As bearer box only routes packets coming from SMS Centers
-       and CSD Router, Box Connections are used to connect service
-       providers. Each SMS and WAP Box connects the bearer box with
-       TCP/IP socket. A new Box Connection thread is then generated to
-       handle that specific connection.</para>
-
-       <para>Alternatively, one SMS Box can be run as
-       seperate thread in bearer box. This increases the message
-       response time as no TCP/IP traffic is needed, but increases the
-       total load of the bearer box.</para>
-
-       <para>As a new connection is opened, the bearer box sends any
-       common configurations to the SMS or WAP Box. That way only one
-       configuration file is needed to be edited (NOTE: currently this
-       is not supported, and each box reads its own configuration
-       file).</para>
-</sect1>
-
-<sect1>
-<title>HTTP Monitoring</title>
-
-       <para>The bearer box can be monitored and configured via HTTP
-       interface. The main program handles HTTP-requests.</para>
-
-</sect1>
-
-<sect1>
-<title>Load Balancing</title>
-
-       <para>The bearer box has a simple way to balance the load
-       between several SMS or WAP Boxes. Each Box Connection has a
-       load level, which has been provided by the box it is connected 
-       to. If the load level is considerably higher than the lowest
-       load level of the box connections of the same type (SMS or
-       WAP), the box connection does not pick new requests from the
-       queue until its load level has lowered (or the load level of
-       other box connections have reached its level) (NOTE: Currently
-       the load balance is left to thread system - messages are read
-       as quickly as any thread can pick them from the queue)</para>
-
-</sect1>
-
-<sect1>
-<title>Request Queue</title>
-
-       <para>This queue handles all messages incoming from SMS Centers
-       and CSD Routers. It is not a standard queue, but instead it has
-       many comncurrent queues. All new messages are appended to its 
-       tail (exception: ACK/NACK notifications are put into head), 
-       and similarly messages are pulled from
-       its head. However, threads pull the first message of
-       <emphasis>the right kind</emphasis>, and so this violates the
-       normal concept of the queue.</para>
-
-       <para>Only Box Connections read messages from the queue. The
-       actual reader is determined by the type of the message (SMS
-       message versus WAP SMS or UDP) and load balancing methods (see
-       above). Only SMSC and CSDR threads add messages to this queue.</para>
-</sect1>
-
-<sect1>
-<title>Reply Queue</title>
-
-       <para>The reply queue is similar to request queue in its
-       behaviour. New messages are appended to the end, but old ones
-       can be read from any place. Acknowledgement messages are put
-       into head, so that they read from the queue first.</para>
-
-       <para>Messages to reply queue are added by the box
-       connections. The appropriate box connection doing the append
-       does the necessary routing logics to address the message to
-       corresponding SMSC or CSDR thread.</para>
-
-       <para>Messages from reply queue are read by SMSC and CSDR
-       threads. They are identified by the SMSC or CSDR thread
-       identification number, which is given to them when they are
-       first created.</para>
 
 </sect1>
 

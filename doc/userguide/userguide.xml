@@ -382,23 +382,22 @@
 <title>Using the gateway</title>
 
 	<para>This chapter explains how the gateway configured and used.
-	It covers configuration files, keeping an eye on the gateway
+	It covers configuration file, keeping an eye on the gateway
 	while it is running, and using the HTTP interface to control
 	the gateway or using it for sending SMS messages.</para>
 
-	<para>Each box in Kannel (bearer, SMS, and WAP box) has its own
-	configuration file. Configuration of each box is discussed in its
-	own subsection below.</para>
-	
-
+	<para>There is only one configuration file for all parts of
+	Kalle, although when kannel is distributed to several hosts
+	some lines from the configuration file can be removed in some
+	hosts.</para>
 
 <sect1>
 <title>Configuration file syntax</title>
 
-	<para>All configuration files have the same basic syntax. Each
-	file consists of groups of configuration variables. Groups are
+	<para>A configuration file consists of groups of configuration variables. Groups are
 	separated by empty lines, and each variable is defined on its
-	own line. Comments are lines that begin with a number sign
+	own line. Each group in Kannel configuration is distinguished
+	with a group variable. Comments are lines that begin with a number sign
 	(<literal>#</literal>) and are ignored (they don't, for example,
 	separate groups of variables).</para>
 	
@@ -415,12 +414,14 @@
 
 <programlisting>
 1  # A do-nothing service.
-2  keyword = nop
-3  text = "You asked nothing and I did it!"
-4
-5  # Default service.
-6  keyword = default
-7  text = "No services defined"
+2  group = sms-service
+3  keyword = nop
+4  text = "You asked nothing and I did it!"
+5
+6  # Default service.
+4  group = sms-service
+8  keyword = default
+9  text = "No services defined"
 </programlisting>
 
 	The above snippet defines the keyword <literal>nop</literal>
@@ -428,546 +429,29 @@
 	the keyword in the SMS message does not match any defined
 	service.</para>
 	
-	<para>Lines 1 and 5 are comment lines. Line 4 separates the
-	two groups. The remaining lines define variables. There is
-	no explicit type for a group, instead they are identified
-	by the variables they define. Since the above groups define
-	the variable <literal>keyword</literal>, they are SMS service
-	definition groups.</para>
+	<para>Lines 1 and 6 are comment lines. Line 5 separates the
+	two groups. The remaining lines define variables. The
+	group type is defined by the group variable value.</para>
 	
 	<para>The various variables that are understood in each type
-	of configuration file are explained below.</para>
+	of configuration group are explained below.</para>
 
 </sect1>
 
 <sect1>
-<title>Configuring the bearer box</title>
-
-	<para>The bearer box configuration consists of three parts:
-	general, SMS centers, and WAP connections. The general part
-	contains the following variables:
-	
-	<itemizedlist>
-
-	<listitem><para><literal>max-threads</literal>: Maximum number
-	of threads. Each connection to an SMS center, each WAP port that
-	is open, and each SMS and WAP box that is connected uses up a thread.
-	</para></listitem>
-
-	<listitem><para><literal>http-admin-port</literal>: Port number for
-	HTTP administration tool. Since Kannel is usually not run as
-	<literal>root</literal>, it can't use the normal HTTP port
-	(80), so you have to specify a number larger than 1024. It does
-	not matter which, as long as no other program on the system
-	tries to use it.
-	</para></listitem>
-
-	<listitem><para><literal>admin-username</literal>: Username for
-	authenticating HTTP administration requests.
-	</para></listitem>
-
-	<listitem><para><literal>admin-password</literal>: Password
-	for authenticating HTTP administration requests. Note that you
-	must set both the username and password for adminstration 
-	requests to work.
-	</para></listitem>
-
-	<listitem><para><literal>wapbox-port</literal>: Port number to which
-	WAP boxes connect.
-	</para></listitem>
-
-	<listitem><para><literal>smsbox-port</literal>: Port number to which
-	SMS boxes connect.
-	</para></listitem>
-
-	<listitem><para><literal>allowed-hosts</literal>: Hosts that are
-	allowed to connect as WAP or SMS boxes. A list of
-	IP addresses, separated by semicolons (<literal>;</literal>).
-	Wild card <literal>*</literal> is allowed in a place of any
-	single number, like <literal>*.*.*.*</literal> or 
-	<literal>10.20.30.*;120.30.40.50</literal>.
-	</para></listitem>
-
-	<listitem><para><literal>denied-hosts</literal>: Hosts that are
-	forbidden to connect as WAP or SMS boxes. Syntax is same as for
-	<literal>allowed-hosts</literal>. Kannel first checks
-	<literal>allowed-hosts</literal>, and if it finds the box IP
-	there, it accepts the connection. Then it checks
-	<literal>denied-hosts</literal>, and if it finds the box there,
-	the connection is denied. Otherwise, it is accepted.
-	</para></listitem>
-
-	<listitem><para><literal>global-prefix</literal>: List of 
-	phone number prefixes and their variants. This is used to
-	normalize the phone numbers Kannel receives from various
-	sources. The format is
-	
-<programlisting>official-number,optional-prefix1,optional-prefix2;official-prefix...</programlisting>
-
-	(For example, <literal>0035850,35850,050;0035840,35840,040</literal>.)
-	</para></listitem>
-
-	<listitem><para><literal>heartbeat-freq</literal>: Heartbeat frequency
-	rate. This needs to be the same value in all boxes.
-	</para></listitem>
-
-	<listitem><para><literal>max-queue</literal>: Maximum length of
-	the internal message queue. When the queue grows to this size,
-	the bearerbox will accept no further messages until the queue becomes
-	smaller again.
-	</para></listitem>
-
-	<listitem><para><literal>pid-file</literal>: The file where the
-	bearerbox writes is process ID at startup. If not set (this is
-	the default value), no file is written.
-	</para></listitem>
-
-	<listitem><para><literal>log-file</literal>: Name of log file where
-	log messages are output, in addition to the standard output.
-	</para></listitem>
-
-	<listitem><para><literal>log-level</literal>: Verbosity level for
-	the log file given by <literal>log-file</literal>. Defaults to
-	`0' for DEBUG.	</para></listitem>
-
-	</itemizedlist>
-
-	</para>	
-	
-	<para>Each SMS center gets its own group, with the variables
-	defined depending on the type of SMS center.
-
-	<itemizedlist>	
-
-	<listitem><para><literal>smsc</literal>: The type of the SMS center.
-	Allowed values are <literal>fake</literal>, <literal>emi</literal>, 
-	<literal>emi_ip</literal>, <literal>cimd</literal>,
-	<literal>smpp</literal>.
-	</para></listitem>
-
-	<listitem><para><literal>host</literal>: Domain name or IP number
-	of the SMS center.
-	</para></listitem>
-
-	<listitem><para><literal>port</literal>: Port number of the SMS
-	center.
-	</para></listitem>
-
-	<listitem><para><literal>our-port</literal>: Port number for SMS
-	center connection at bearer box end. This is only needed for
-	if the EMI/IP connection is configured at the SMS center end to
-	accept connections from a specific port.
-	</para></listitem>
-
-	<listitem><para><literal>receive-port</literal>: The secondary
-	port for EMI/IP and (some) SMPP connections. When the SMS
-	center initiates a connection, it will connect to this port
-	number of the bearerbox.
-	</para></listitem>
-
-	<listitem><para><literal>smsc-username</literal>: Username for
-	logging in using the SMS center protocol.
-	</para></listitem>
-
-	<listitem><para><literal>smsc-password</literal>: Password for
-	logging in using the SMS center protocol.
-	</para></listitem>
-
-	<listitem><para><literal>device</literal>: Pathname of device file
-	for EMI modem access. For example, <filename>/dev/ttyS0</filename>.
-	</para></listitem>
-
-	<listitem><para><literal>dial-prefix</literal>: Dial prefix
-	normalization string. XXX this needs explanation, but I'm too
-	tired to get this done at the moment. --liw
-	</para></listitem>
-
-	<listitem><para><literal>route-prefix</literal>: 
-	The SMS is routed to this SMS center if the reciever number
-	matches one of the prefixes given here. Use <literal>;</literal>
-	to separate entries, and <literal>default</literal>
-	to identify the SMS Center used if no SMSC is found.
-	<literal>backup</literal> is the same, but is is only used if
-	default receiver is not available currently (temporarily down)
-	If <literal>default</literal> is not set anywhere, SMS Message
-	with no suitable SMSC is ignored.
-	</para></listitem>
-
-	<listitem><para><literal>alt-charset</literal>: 
-	As some SMS centers do not follow the standards in
-	character coding, an alternative character set kludge is
-	presented. Currently implemented alternative charsets are defined
-	in <filename>gw/alt_charsets.h</filename> and new ones can be
-	added to appropriate SMS center protocol implementation.
-	</para></listitem>
-
-	</itemizedlist>	
-	
-	</para>
-
-	<para>To configure the bearer box for WAP use, you need to
-	define one or more groups of the following variables:
-	
-	<itemizedlist>
-
-	<listitem><para><literal>wdp-udp</literal>: Used to tell that
-	this group configures a UDP port for WAP.
-	</para></listitem>
-
-	<listitem><para><literal>wap-service</literal>: Which UDP port
-	to listen to. One of: <literal>wsp</literal>, 
-	<literal>wsp/wtls</literal>, 
-	<literal>wsp/wtp</literal>, 
-	<literal>wsp/wtp/wtls</literal>, 
-	<literal>vcard</literal>, 
-	<literal>vcard/wtls</literal>, 
-	<literal>vcal</literal>, 
-	<literal>vcal/wtls</literal>. XXX explain the meaning of these
-	</para></listitem>
-
-	<listitem><para><literal>interface-name</literal>: IP number
-	(not hostname) of the host on which the bearer box is running.
-	</para></listitem>
-
-	</itemizedlist>
-	
-	</para>
-
-	<para>A simple configuration as a WAP gateway on UDP only might
-	look like this:
-	
-<programlisting>
- 1  wap-port = 13000
- 2  sms-port = 13001
- 3  heartbeat-freq = 5
- 4  log-file = "bearerbox.log"
- 5  log-level = 0
- 6
- 7  wdp-udp = wap
- 8  interface-name = 127.0.0.1
- 9  wap-service = "wsp"
-10
-11  wdp-udp = wap
-12  interface-name = 127.0.0.1
-13  wap-service = "wsp/wtp"
-</programlisting>
-
-	(Note that you must change the IP numbers for the interface-name
-	variables.)
-	</para>
-
-</sect1>
-
-<sect1>
-<title>Configuring the SMS box</title>
-
-	<para>The SMS box is fairly simple to configure. There are two kinds
-	of things: general things, including the location of the bearer
-	box, and then the services. The general part consists of the
-	following variables:
-	
-	<itemizedlist>
-
-	<listitem><para><literal>bearerbox-host</literal>: A string giving
-	the DNS name or IP number of the machine where the bearer box runs.
-	</para></listitem>
-
-	<listitem><para><literal>bearerbox-port</literal>: The port number
-	where the bearer box listens for WAP box connections. Must be the
-	same as <literal>wap-port</literal> in the bearer box configuration.
-	</para></listitem>
-
-	<listitem><para><literal>heartbeat-freq</literal>: Frequency
-	of heartbeat messages. Must be same value as in the bearer box
-	configuration.	</para></listitem>
-
-	<listitem><para><literal>log-file</literal>: Name of log file where
-	log messages are output, in addition to the standard output.
-	</para></listitem>
-
-	<listitem><para><literal>log-level</literal>: Verbosity level for
-	the log file given by <literal>log-file</literal>. Defaults to
-	`0' for DEBUG.	</para></listitem>
-
-	<listitem><para><literal>sendsms-port</literal>: Port number where
-	the SMS box listens for HTTP requests to send SMS messages. Must
-	be set for this feature to work.
-	</para></listitem>
-
-	<listitem><para><literal>http-allowed-hosts</literal>: List
-	of hosts that are allowed to use the sendsms service.
-	</para></listitem>
-
-	<listitem><para><literal>http-denied-hosts</literal>: List of
-	hosts that are denied access to the sendsms service.
-	</para></listitem>
-
-	<listitem><para><literal>sms-length</literal>: Maximum length
-	of one SMS message. Defaults to 160 characters.
-	</para></listitem>
-
-	<listitem><para><literal>global-sender</literal>: Phone number to
-	set for messages sent to phone. This can be overriden by the
-	service-specific <literal>faked-sender</literal>, the phone number
-	given in an sendsms request, or by the
-	SMS center (the center itself, not its configuration in the
-	bearer box).
-	</para></listitem>
-
-	</itemizedlist>
-
-	</para>
-	
-	<para>Each service is specified by a group with the following
-	variables:
-
-	<itemizedlist>
-
-	<listitem><para><literal>keyword</literal>: The word used to identify
-	the service. One word with alphabetic characters. Not case sensitive.
-	The word <literal>default</literal> is special and is used if no
-	matching keyword is found.
-	</para></listitem>
-
-	<listitem><para><literal>aliases</literal>: List of aliases for the
-	keyword. Separated by a semicolon.
-	</para></listitem>
-
-	<listitem><para><literal>url</literal>: URL to use to fetch the
-	reply to the request. The URL can include a list of parameters,
-	which are filled in before the URL is fetched. These are defined
-	in <xref linkend="url-parameters">.
-	</para></listitem>
-
-	<listitem><para><literal>file</literal>: File read from local
-	disk. Only used if <literal>url</literal> is not set. URL parameters
-	are filled in the filename. The last character of the file
-	(usually linefeed) is removed.
-	</para></listitem>
-
-	<listitem><para><literal>text</literal>: Predefined text answer.
-	Only used if <literal>url</literal> is not set. URL parameters
-	are filled in the text.
-	</para></listitem>
-
-	<listitem><para><literal>prefix</literal> and <literal>suffix</literal>:
-	Remove everything up to the end of a prefix and starting from the
-	beginning of a suffix, if they are both defined and both are present
-	in the response from HTTP server when the URL is fetched. Matches
-	are case insensitive. This is meant for simple parsing of HTML
-	responses.
-	</para></listitem>
-
-	</itemizedlist>
-	
-	</para>
-	
-	<para>If you want to enable the sendsms service, you need to
-	specify a username and password:
-	
-	<itemizedlist>
-
-	<listitem><para><literal>username</literal>: User name. Case
-	sensitive. You can have any number of users, all with different
-	passwords, as long as you define each pair in a different group.
-	</para></listitem>
-
-	<listitem><para><literal>password</literal>: Password associated
-	with the username.
-	</para></listitem>
-
-	</itemizedlist>
-	
-	</para>
-	
-	<para>For both SMS services and variable groups defining sendsms users,
-	you can define some additional characteristics (in the same group
-	as the service or user):
-
-	<itemizedlist>
-
-	<listitem><para><literal>faked-sender</literal>: This number is set
-	as the sender, unless the SMS center is configured to override it.
-	</para></listitem>
-
-	<listitem><para><literal>max-messages</literal>: Maximum number of
-	SMS messages sent in a reply, or via a single sendsms request.
-	Default is 1. If set to 0, no reply is sent, except for error
-	messages. Note that replies are not yet concatenated, but are
-	separate messages.
-	</para></listitem>
-
-	<listitem><para><literal>split-chars</literal>: When a message is
-	split into several messages, split at characters given by this
-	variable. For example, if set to "., ", the message is split
-	at a dot, comma, or space, and the splitting character is ends
-	the part (i.e., it belongs to the first part, not the second part).
-	</para></listitem>
-
-	<listitem><para><literal>split-suffix</literal>: 
-	If the message is split into several ones, this string is appended to
-	each message except the last one.
-	</para></listitem>
-
-	<listitem><para><literal>omit-empty</literal>: 
-	If set to other than '0', 'no data' messages are not sent to receiver
-	in a case of empty reply from the service provider.
-	</para></listitem>
-
-	<listitem><para><literal>header</literal>: 
-	This string is automatically added to each SMS send with
-	this service. If message is split, it is added to each part.
-	</para></listitem>
-
-	<listitem><para><literal>footer</literal>:
-	Same as header, but at the end of each message or part.
-	</para></listitem>
-
-	</itemizedlist>
-	
-	</para>
-	
-
-	<para>A sample simple SMS box configuration file might look
-	like this:
+<title>Configuring the gateway</title>
+
+	<para>The configuration file consists of three parts:
+	bearerbox configurations, smsbox configurations and
+	wapbox configurations. Bearerbox part has one 'core' group
+	and any used SMS center groups, while wapbox part has only
+	one wapbox group. In smsbox part there is one smsbox group and
+	then number of sms-service and sendsms-user groups.
+	Details of all those groups are in file 
+	<filename>newconf.txt.</filename></para>
 
 <programlisting>
- 1  bearerbox-host = localhost
- 2  bearerbox-port = 13001
- 3  sendsms-port = 22022
- 4  heartbeat-freq = 5
- 5  log-file = "/tmp/smsbox.log"
- 6  log-level = 0
- 7  
- 8  username = foo
- 9  password = bar
-10  
-11  keyword = title
-12  url = http://%s
-13  prefix = &lt;title&gt;
-14  suffix = &lt;/title&gt;
-15  
-16  keyword = nop
-17  text = "You asked nothing and I did it!"
-18  
-19  keyword = default
-20  text = "Can't find service %a"
 </programlisting>
-
-	This defines two services. "TITLE" will fetch the title of
-	a WWW page. "NOP" will do nothing, except return a fixed string.
-	The default response is to tell the user that he didn't type the
-	service name correctly.
-	</para>
-
-<sect2 id="url-parameters">
-<title>URL parameters</title>
-
-	<para>The URL specification to SMS services can contain parameters
-	that are filled in from the SMS message or other sources before
-	the page the URL refers to is fetched. The parameters are:
-
-	<itemizedlist>
-
-	<listitem><para><literal>%s</literal>: The next word from the SMS 
-	message, starting with the second one (i.e., the first word, the
-        keyword, is not included); problematic characters
-	for URLs are encoded using URL syntax (e.g., '+' becomes '%2B').
-	</para></listitem>
-
-	<listitem><para><literal>%S</literal>: Same as %s, but 
-	an asterisk (<literal>*</literal>) is converted to a tilde
-	(<literal>~</literal>) and URL encoding is not done. Use this
-	with some care.
-	</para></listitem>
-
-	<listitem><para><literal>%r</literal>: The remaining words not
-	used by %s. For example, if the message is <literal>FOO BAR FOOBAR
-	BAZ</literal>, and there has been one %s, %r will mean<literal>FOOBAR
-	BAZ</literal>.
-	</para></listitem>
-
-	<listitem><para><literal>%a</literal>: All words of the SMS message, 
-	including the keyword.
-	</para></listitem>
-
-	<listitem><para><literal>%t</literal>: The time the SMS message was
-	sent (or received, for such SMS centers that don't provide the
-	send time). Formatted as <literal>YYYY-MM-DD HH:MM</literal>,
-	for example, <literal>1999-09-21 14:18</literal>.
-	</para></listitem>
-
-	<listitem><para><literal>%p</literal>: Phone number of the sender
-	of the SMS message.
-	</para></listitem>
-
-	<listitem><para><literal>%P</literal>: Phone number of the receiver
-	of the SMS message.
-	</para></listitem>
-
-	<listitem><para><literal>%q</literal>: Like %p, but a leading
-	`00' is replaced with `+'.
-	</para></listitem>
-
-	<listitem><para><literal>%Q</literal>: Like %P, but a leading
-	`00' is replaced with `+'.
-	</para></listitem>
-
-	</itemizedlist>
-
-	</para>
-
-</sect2>
-
-</sect1>
-
-<sect1>
-<title>Configuring the WAP box</title>
-
-	<para>The WAP box is very simple to configure. Basically, you just
-	need to tell it where the bearer box is. The WAP box understands
-	the following variables:
-	
-	<itemizedlist>
-
-	<listitem><para><literal>bearerbox-host</literal>: A string giving
-	the DNS name or IP number of the machine where the bearer box runs.
-	</para></listitem>
-
-	<listitem><para><literal>bearerbox-port</literal>: The port number
-	where the bearer box listens for WAP box connections. Must be the
-	same as <literal>wap-port</literal> in the bearer box configuration.
-	</para></listitem>
-
-	<listitem><para><literal>heartbeat-freq</literal>: Frequency
-	of heartbeat messages. Must be same value as in the bearer box
-	configuration.	</para></listitem>
-
-	<listitem><para><literal>log-file</literal>: Name of log file where
-	log messages are output, in addition to the standard output.
-	</para></listitem>
-
-	<listitem><para><literal>log-level</literal>: Verbosity level for
-	the log file given by <literal>log-file</literal>. Defaults to
-	`0' for DEBUG.	</para></listitem>
-
-	</itemizedlist>
-	
-	</para>
-
-	<para>A configuration file for the WAP box might look like this:
-
-<programlisting>
-1  bearerbox-host = localhost
-2  bearerbox-port = 13000
-3  heartbeat-freq = 5
-4
-5  log-file = "wapbox.log"
-6  log-level = 0
-</programlisting>
-
-	This assumes that the bearer box runs on the same machine as the
-	WAP box.</para>
 
 </sect1>
 
@@ -1057,10 +541,10 @@ from=123&amp;to=456&amp;udh=%3a%2f%04&amp;text=%20%00%60%7a%43
 <title>Using the HTTP administrative interface to control the gateway</title>
 
 	<para>Kannel allows certain HTTP requests to monitor and control
-	the gateway, but they are currently not implemented well enough
-	to be useful, thus they won't be described here yet. If you're
-	interested in working on them, see the source code to the bearer
-	box.</para>
+	the gateway. These commands are sent to adminstration port
+	defined in configuration file. Details can be found from file
+	<filename>newbb.txt</filename></para>
+
 
 </sect1>
 

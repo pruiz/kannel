@@ -406,7 +406,7 @@ int wsp_deduce_pdu_type(Octstr *pdu, int connectionless) {
 static void unpack_caps(Octstr *caps, WSPMachine *m)
 {
     int off, flags;
-    unsigned long length, uiv, mor;
+    unsigned long length, uiv, mor, caps_id;
     
     off = 0;
     while (off < octstr_len(caps)) {
@@ -418,8 +418,10 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 	 * capabilities can be identified via one number
 	 */
 
-	off++;
-	switch(octstr_get_char(caps,off-1)) {
+	unpack_uintvar(&caps_id, caps, &off);
+
+	switch(caps_id) {
+	    
 	case WSP_CAPS_CLIENT_SDU_SIZE:
 	    if (unpack_uintvar(&uiv, caps, &off) == -1)
 		warning(0, "Problems getting client SDU size capability");
