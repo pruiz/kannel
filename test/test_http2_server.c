@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
 	for (;;) {
 		client_socket = http2_server_accept_client(httpd_socket);
 		if (client_socket == NULL)
-			panic(0, "http2_server_accpet_client failed");
+			panic(0, "http2_server_accept_client failed");
 		if (use_threads)
 			start_thread(1, client_thread, client_socket, 0);
 		else
