@@ -1,3 +1,14 @@
+2005-02-20 Aarno Syvanen <as@gni.ch>
+    * doc/userguide/userguide.xml: added an example si document
+    * gw/smsbox.c: ppg dlr-url should work now when it is a
+      configuration variable. Fix suggested by Davy Chan
+    * gw/wapbox.c: reload (SIGHUP) does not change value of 
+      configuration variable concatenation
+    * gw/smsc/smsc_at.c: Handle a very slow initialisation. This is
+      a patch by Andreas.
+    * test/test_ppg.c: Added two new push header, used to ask
+    * delivery reports
+
 2005-02-18  Stipe Tolj  <stolj@wapme.de> 
     * gw/wap-appl.c, wap/cookies.c, wap/wsp_session.c: fixing an assertion
       PANIC, while passing a NULLed List* to cookies.c:add_cookie_to_cache().
@@ -13,7 +24,9 @@
       [Msg-ID: <4214F128.4090007@wirelessonenet.com>]
 
 2005-02-17  Stipe Tolj  <stolj@wapme.de> 
-    * test/test_radius_pdu.c: some minor issues, like usage display etc.
+
+    * test/test_radius_pdu.c: some minor issues, like usage display
+etc.
 
 2005-02-17  Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: fixed typo while setting submit_sm.data_coding.
