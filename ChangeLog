@@ -1,3 +1,7 @@
+2001-04-18  Kalle Marjola  <rpr@wapit.com>
+
+	* doc/userguide/userguide.xml: fixed some typos 
+
 2001-04-17  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsc_emi2.c, gw/emimsg.[ch]: Added support for operation type

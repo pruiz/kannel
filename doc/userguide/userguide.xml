@@ -2352,8 +2352,8 @@ get-url = "http://%S"
      <entry>bool</entry>
      <entry valign=bottom>
         Long messages can be sent as independent SMS messages with
-        <literal>concatenation = true</literal> or as concatenated messages
-        with <literal>concatenation = false</literal>. Concatenated messages
+        <literal>concatenation = false</literal> or as concatenated messages
+        with <literal>concatenation = true</literal>. Concatenated messages
         are reassembled into one long message by the receiving device.
      </entry></row>
 
@@ -2638,7 +2638,7 @@ text = "No action specified"
      <entry>number</entry></row>
 
    <row><entry><literal>concatenation</literal></entry>
-     <entry>0 or 1</entry></row>
+     <entry>bool</entry></row>
 
    <row><entry><literal>split-chars</literal></entry>
      <entry>string</entry></row>
@@ -2647,7 +2647,7 @@ text = "No action specified"
      <entry>string</entry></row>
 
    <row><entry><literal>omit-empty</literal></entry>
-     <entry>0 or 1</entry></row>
+     <entry>bool</entry></row>
 
    <row><entry><literal>header</literal></entry>
      <entry>string</entry></row>
@@ -2672,7 +2672,7 @@ password = 76ftY
 user-deny-ip = "*.*.*.*"
 user-allow-ip = "123.234.123.234"
 max-messages = 3
-concatenation = 1
+concatenation = true
 forced-smsc = SOL
 </programlisting>
 
