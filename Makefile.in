@@ -152,7 +152,7 @@ objs = $(srcs:.c=.o)
 
 libs = libgw.a libwmlscript.a libwap.a libgwlib.a
 
-srcdirs = gw gwlib test utils wmlscript checks wap
+srcdirs = gw gw/smsc gwlib test utils wmlscript checks wap
 
 man1pages = utils/seewbmp.1 wmlscript/wmlsc.1 wmlscript/wmlsdasm.1
 man8pages = gw/kannel.8 utils/run_kannel_box.8
