@@ -1,4 +1,8 @@
 2003-01-29  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.c: fixed the missing HTTP Server identifier from previous 
+      commit.
+
+2003-01-29  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.c: fixed a keep-alive lookup problem when using a HTTP proxy.
       Thanks to "Michael Mulcahy" <michael.mulcahy@anam.com> for reporting this.
 
