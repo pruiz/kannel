@@ -43,6 +43,8 @@ Compiling and installing the gateway
 	The short form:
 	
 		./configure
+		touch .depend
+		make depend
 		make
 		make bindir=/somewhere/suitable install
 

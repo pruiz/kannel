@@ -1,3 +1,14 @@
+Wed Jan 26 12:01:17 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/csdr.c, test/udp_send.c: Added missing casts to (struct
+	sockaddr *) for some socket operation calls.
+
+Wed Jan 26 11:44:12 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* README: Added "touch .depend; make depend" to building
+	instructions. Not all makes build missing include files
+	automatically.
+
 2000-01-25    <rpr@rpr.wapit.com>
 
 	* gw/urltrans.c: added some missing initializations which caused

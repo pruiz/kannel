@@ -40,7 +40,8 @@ int main(int argc, char *argv[]) {
         servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	servaddr.sin_port = htons(32323);
 
-        while( bind(fd, &servaddr, sizeof(servaddr)) != 0 ) {
+        while( bind(fd, (struct sockaddr *) &servaddr, sizeof(servaddr)) != 0 ) 
+	{
                 error(errno, "Could not bind to UDP port <%i>.",
                         ntohs(servaddr.sin_port));
                 sleep(1);
@@ -56,7 +57,8 @@ int main(int argc, char *argv[]) {
         cliaddr.sin_port = htons(atoi(argv[2]));
         cliaddr.sin_addr = *(struct in_addr *) hostinfo->h_addr;
 
-	sendto(fd, argv[3], strlen(argv[3]), 0, &cliaddr, clilen);
+	sendto(fd, argv[3], strlen(argv[3]), 0, (struct sockaddr *) &cliaddr, 
+		clilen);
 
 	close(fd);
 

@@ -103,7 +103,7 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 
 	router->port = ntohs(servaddr.sin_port);
 
-	while( bind(router->fd, &servaddr, sizeof(servaddr)) != 0 ) {
+	while( bind(router->fd, (struct sockaddr *) &servaddr, sizeof(servaddr)) != 0 ) {
 
 		error(errno, "Could not bind to UDP port <%i> service <%s>.", 
 			ntohs(servaddr.sin_port), wap_service);
@@ -168,7 +168,8 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 
 	/* Maximum size of UDP datagram == 64*1024 bytes. */
 	clilen = sizeof(cliaddr);
-	length = recvfrom(router->fd, data, sizeof(data), 0, &cliaddr, &clilen);
+	length = recvfrom(router->fd, data, sizeof(data), 0, 
+			(struct sockaddr *) &cliaddr, &clilen);
 	if(length==-1) {
 		if(errno==EAGAIN) {
 			/* No datagram available, don't block. */
@@ -242,7 +243,8 @@ int csdr_send_message(CSDRouter *router, RQueueItem *item)
 
 	clilen = sizeof(cliaddr);
 
-	sendto(router->fd, data, datalen, 0, &cliaddr, clilen);
+	sendto(router->fd, data, datalen, 0, (struct sockaddr *) &cliaddr, 
+		clilen);
 
 	debug(0, "CSDR: Done.");
 
