@@ -147,6 +147,7 @@ int xmlrpc_call_send(XMLRPCMethodCall *call, HTTPCaller *http_ref,
     
     octstr_destroy(body);
     http_destroy_headers(headers);
+    return 0;
 }
 
 /*-------------------------------------
@@ -191,6 +192,7 @@ XMLRPCValue *xmlrpc_value_create(void)
     val->v_scalar = NULL;
     val->v_array = NULL;
     val->v_struct = NULL;
+    return val;
 }
 
 /* Destroy value with its information, recursively if need to */

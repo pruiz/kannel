@@ -65,11 +65,11 @@ Octstr *xmlrpc_call_octstr(XMLRPCMethodCall *call);
  *  spesified headers into given list. 'headers' are always destroyed, and
  * if NULL when this function called, automatically generated
  *
- * Return 0 if all went fine, -1 if failure. As user reference, uses *call
+ * Return 0 if all went fine, -1 if failure. As user reference, uses *void
  */
 /* PARTIALLY IMPLEMENTED, as is based on above function, for example */
 int xmlrpc_call_send(XMLRPCMethodCall *call, HTTPCaller *http_ref,
-		     Octstr *url, List *headers);
+		     Octstr *url, List *headers, void *ref);
 
 
 
