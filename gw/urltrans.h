@@ -78,7 +78,7 @@ void urltrans_destroy(URLTranslationList *list);
  *
  * Return -1 for error, or 0 for OK.
  */
-int urltrans_add_one(URLTranslationList *trans, ConfigGroup *grp);
+int urltrans_add_one(URLTranslationList *trans, CfgGroup *grp);
 
 
 /*
@@ -90,7 +90,7 @@ int urltrans_add_one(URLTranslationList *trans, ConfigGroup *grp);
  * Return -1 for error, 0 for OK. If -1 is returned, the URLTranslation
  * object may have been partially modified.
  */
-int urltrans_add_cfg(URLTranslationList *trans, Config *cfg);
+int urltrans_add_cfg(URLTranslationList *trans, Cfg *cfg);
 
 
 /*

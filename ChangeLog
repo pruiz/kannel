@@ -1,3 +1,11 @@
+2001-01-18  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/smsbox.c, gw/urltrans.[ch]: Converted to use cfg.c instead
+	of conffile.c. This revealed a need to simplify things so that
+	the caller does not have to manually check quite as many things.
+	Will update cfg.c accordingly before continuing with the other
+	programs.
+
 2001-01-18  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsbox.c: fixed 3 memory leaks some pointed out by Uoti, and

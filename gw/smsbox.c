@@ -31,18 +31,18 @@ enum { MAX_SMS_OCTETS = 140 };
 #define SENDSMS_DEFAULT_CHARS "0123456789 +-"
 
 
-static Config *cfg;
-static int bb_port;
-static int sendsms_port = 0;
+static Cfg *cfg;
+static long bb_port;
+static long sendsms_port = 0;
 static Octstr *bb_host;
 static char *pid_file;
 static int heartbeat_freq;
-static char *accepted_chars = NULL;
+static Octstr *accepted_chars = NULL;
 static int only_try_http = 0;
 static URLTranslationList *translations = NULL;
-static int sms_max_length = MAX_SMS_OCTETS;
+static long sms_max_length = MAX_SMS_OCTETS;
 static char *sendsms_number_chars;
-static char *global_sender = NULL;
+static Octstr *global_sender = NULL;
 
 static List *smsbox_requests = NULL;
 
@@ -265,11 +265,9 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	    octstr_replace(msg->sms.msgdata, empty, strlen(empty));
     }
 
-    if (max_msgs == 0) {
-	msg_destroy(msg);
+    if (max_msgs == 0)
     	return 0;
-    }
-    
+
     if (trans == NULL) {
 	header = NULL;
 	footer = NULL;
@@ -554,14 +552,12 @@ static void obey_request_thread(void *arg)
 	    msg_dump(msg, 0);
 		    /* NACK should be returned here if we use such 
 		       things... future implementation! */
-	    msg_destroy(msg);
 	    continue;
 	}
     
 	if (octstr_compare(msg->sms.sender, msg->sms.receiver) == 0) {
 	    info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
 		 octstr_get_cstr(msg->sms.sender));
-	    msg_destroy(msg);
 	    continue;
 	}
     
@@ -595,10 +591,10 @@ static void obey_request_thread(void *arg)
 	if (p != NULL) {
 	    octstr_destroy(msg->sms.sender);
 	    msg->sms.sender = p;
-	} else if (global_sender != NULL)
-	    octstr_replace(msg->sms.sender, global_sender, 
-	    	    	   strlen(global_sender));
-	else {
+	} else if (global_sender != NULL) {
+	    octstr_destroy(msg->sms.sender);
+	    msg->sms.sender = octstr_duplicate(global_sender);
+	} else {
 	    octstr_destroy(msg->sms.sender);
 	    msg->sms.sender = octstr_duplicate(msg->sms.receiver);
 	}
@@ -615,6 +611,7 @@ static void obey_request_thread(void *arg)
 	       urltranslation */
 	    reply = octstr_create("Request failed");
 	    trans = NULL;	/* do not use any special translation */
+    	    break;
 	    
 	case 1:
 	    octstr_destroy(msg->sms.msgdata);
@@ -836,7 +833,7 @@ static char *smsbox_req_sendsms(List *list, char *client_ip)
     /* check the username and password */
     t = authorise_user(list, client_ip);
     if (t == NULL) {
-	return "Authorization failed";
+	return "Authorization failed for sendsms";
     }
     
     udh = http_cgi_variable(list, "udh");
@@ -870,7 +867,7 @@ static char *smsbox_req_sendsms(List *list, char *client_ip)
 	       octstr_len(from) > 0) {
 	from = octstr_duplicate(from);
     } else if (global_sender != NULL) {
-	from = octstr_create(global_sender);
+	from = octstr_duplicate(global_sender);
     } else {
 	return "Sender missing and no global set, rejected";
     }
@@ -964,84 +961,124 @@ error:
  */
 static char *smsbox_req_sendota(List *list, char *client_ip)
 {
-    char *url = NULL, *desc = NULL, *ipaddr = NULL, *phonenum = NULL;
-    char *username = NULL, *passwd = NULL, *id = NULL;
+    Octstr *url, *desc, *ipaddr, *phonenum, *username, *passwd, *id;
     char *speed;
-    int bearer = -1, calltype = -1;
-    int connection = CONN_CONT, security = 0, authent = AUTH_NORMAL;
-    ConfigGroup *grp;
-    char *p;
-    Msg *msg = NULL;
-    URLTranslation *t = NULL;
+    int bearer, calltype, connection, security, authent;
+    CfgGroup *grp;
+    List *grplist;
+    Octstr *p;
+    Msg *msg;
+    URLTranslation *t;
     int ret;
-    Octstr *phonenumber = NULL, *otaid = NULL;
+    Octstr *phonenumber, *otaid;
     
+    url = NULL;
+    desc = NULL;
+    ipaddr = NULL;
+    phonenum = NULL;
+    username = NULL;
+    passwd = NULL;
+    id = NULL;
+    bearer = -1;
+    calltype = -1;
+    connection = CONN_CONT;
+    security = 0;
+    authent = AUTH_NORMAL;
+    phonenumber = NULL;
+    otaid = NULL;
+
     /* check the username and password */
     t = authorise_user(list, client_ip);
-    if (t == NULL) {
-	return "Authorization failed";
-    }
+    if (t == NULL)
+	return "Authorization failed for sendota";
     
     phonenumber = http_cgi_variable(list, "phonenumber");
-    if(phonenumber == NULL) {
+    if (phonenumber == NULL) {
 	error(0, "/cgi-bin/sendota needs a valid phone number.");
 	return "Wrong sendota args.";
     }
     
     /* check if a otaconfig id has been given and decide which OTA
      * properties to be send to the client otherwise send the default */
-    otaid = http_cgi_variable(list, "otaid");
-    if (otaid != NULL)
-	id = octstr_get_cstr(otaid);
+    id = http_cgi_variable(list, "otaid");
     
-    grp = config_find_first_group(cfg, "group", "otaconfig");
-    while (otaid != NULL && grp != NULL) {
-	p = config_get(grp, "ota-id");
-	if (p!= NULL && strcasecmp(p, id) == 0)
+    grplist = cfg_get_multi_group(cfg, octstr_create_immutable("otaconfig"));
+    while ((grp = list_extract_first(grplist)) != NULL) {
+	p = cfg_get(grp, octstr_create_immutable("ota-id"));
+	if (p != NULL && octstr_compare(p, id) == 0)
 	    goto found;
-	grp = config_find_next_group(grp, "group", "otaconfig");
     }
+    list_destroy(grplist, NULL);
     
     if (otaid != NULL) {
 	error(0, "/cgi-bin/sendota can't find otaconfig with ota-id '%s'.", 
-	      id);
+	      octstr_get_cstr(id));
 	return "Missing otaconfig group.";
     }
     
 found:
-    if ((p = config_get(grp, "location")) != NULL)
-	url = p;
-    if ((p = config_get(grp, "service")) != NULL)
-	desc = p;
-    if ((p = config_get(grp, "ipaddress")) != NULL)
-	ipaddr = p;
-    if ((p = config_get(grp, "phonenumber")) != NULL)
-	phonenum = p;
-    if ((p = config_get(grp, "bearer")) != NULL)
-	bearer = (strcasecmp(p, "data") == 0)? BEARER_DATA : -1;
-    if ((p = config_get(grp, "calltype")) != NULL)
-	calltype = (strcasecmp(p, "isdn") == 0)? CALL_ISDN : -1;
+    list_destroy(grplist, NULL);
+    url = cfg_get(grp, octstr_create_immutable("location"));
+    desc = cfg_get(grp, octstr_create_immutable("service"));
+    ipaddr = cfg_get(grp, octstr_create_immutable("ipaddress"));
+    phonenum = cfg_get(grp, octstr_create_immutable("phonenumber"));
+    p = cfg_get(grp, octstr_create_immutable("bearer"));
+    if (p != NULL) {
+	if (strcasecmp(octstr_get_cstr(p), "data") == 0)
+	    bearer = BEARER_DATA;
+	else
+	    bearer = -1;
+	octstr_destroy(p);
+    }
+    p = cfg_get(grp, octstr_create_immutable("calltype"));
+    if (p != NULL) {
+	if (strcasecmp(octstr_get_cstr(p), "calltype") == 0)
+	    calltype = CALL_ISDN;
+	else
+	    calltype = -1;
+	octstr_destroy(p);
+    }
+	
     speed = SPEED_9660;
-    if ((p = config_get(grp, "speed")) != NULL) {
-	if (strcasecmp(p, "14400") == 0)
+    p = cfg_get(grp, octstr_create_immutable("speed"));
+    if (p != NULL) {
+	if (octstr_compare(p, octstr_create_immutable("14400")) == 0)
 	    speed = SPEED_14400;
     }
+
     /* connection mode and security */
-    if ((p = config_get(grp, "connection")) != NULL)
-	connection = (strcasecmp(p, "temp") == 0)? CONN_TEMP : CONN_CONT;
-    if ((p = config_get(grp, "pppsecurity")) != NULL)
-	security = (strcasecmp(p, "on") == 0)? 1 : 0;
+    p = cfg_get(grp, octstr_create_immutable("connection"));
+    if (p != NULL) {
+	if (strcasecmp(octstr_get_cstr(p), "temp") == 0)
+	    connection = CONN_TEMP;
+	else
+	    connection = CONN_CONT;
+	octstr_destroy(p);
+    }
+
+    p = cfg_get(grp, octstr_create_immutable("pppsecurity"));
+    if (p != NULL) {
+	if (strcasecmp(octstr_get_cstr(p), "on") == 0)
+	    security = 1;
+	else
+	    security = CONN_CONT;
+	octstr_destroy(p);
+    }
     if (security == 1)
 	connection = (connection == CONN_CONT)? CONN_SECCONT : CONN_SECTEMP;
     
-    if ((p = config_get(grp, "authentication")) != NULL)
-	authent = (strcasecmp(p, "secure") == 0)? AUTH_SECURE : AUTH_NORMAL;
+    p = cfg_get(grp, octstr_create_immutable("authentication"));
+    if (p != NULL) {
+	if (strcasecmp(octstr_get_cstr(p), "secure") == 0)
+	    authent = AUTH_SECURE;
+	else
+	    authent = AUTH_NORMAL;
+	octstr_destroy(p);
+    }
     
-    if ((p = config_get(grp, "login")) != NULL)
-	username = p;
-    if ((p = config_get(grp, "secret")) != NULL)
-	passwd = p;
-    
+    username = cfg_get(grp, octstr_create_immutable("login"));
+    passwd = cfg_get(grp, octstr_create_immutable("secret"));
+
     msg = msg_create(sms);
     if (msg == NULL)
     	goto error;
@@ -1065,7 +1102,7 @@ found:
     /* IP address */
     if (ipaddr != NULL) {
 	octstr_append_from_hex(msg->sms.msgdata , "87131103");
-	octstr_append_cstr(msg->sms.msgdata, ipaddr);
+	octstr_append(msg->sms.msgdata, ipaddr);
 	octstr_append_from_hex(msg->sms.msgdata, "0001");
     }
     /* connection type */
@@ -1077,7 +1114,7 @@ found:
     /* phone number */
     if (phonenum != NULL) {
 	octstr_append_from_hex(msg->sms.msgdata, "87211103");
-	octstr_append_cstr(msg->sms.msgdata, phonenum);
+	octstr_append(msg->sms.msgdata, phonenum);
 	octstr_append_from_hex(msg->sms.msgdata, "0001");
     }
     /* authentication */
@@ -1087,13 +1124,13 @@ found:
     /* user name */
     if (username != NULL) {
 	octstr_append_from_hex(msg->sms.msgdata, "87231103");
-	octstr_append_cstr(msg->sms.msgdata, username);
+	octstr_append(msg->sms.msgdata, username);
 	octstr_append_from_hex(msg->sms.msgdata, "0001");
     }
     /* password */
     if (passwd != NULL) {
 	octstr_append_from_hex(msg->sms.msgdata, "87241103");
-	octstr_append_cstr(msg->sms.msgdata, passwd);
+	octstr_append(msg->sms.msgdata, passwd);
 	octstr_append_from_hex(msg->sms.msgdata, "0001");
     }
     /* data call type */
@@ -1110,7 +1147,7 @@ found:
     /* homepage */
     if (url != NULL) {
 	octstr_append_from_hex(msg->sms.msgdata, "86071103");
-	octstr_append_cstr(msg->sms.msgdata, url);
+	octstr_append(msg->sms.msgdata, url);
 	octstr_append_from_hex(msg->sms.msgdata, "0001");
     }
     /* unknow field */
@@ -1118,7 +1155,7 @@ found:
     /* service description */
     if (desc != NULL) {
 	octstr_append_from_hex(msg->sms.msgdata, "87151103");
-	octstr_append_cstr(msg->sms.msgdata, desc);
+	octstr_append(msg->sms.msgdata, desc);
 	octstr_append_from_hex(msg->sms.msgdata, "0001");
     }
     /* message footer */
@@ -1133,7 +1170,8 @@ found:
     
     octstr_dump(msg->sms.msgdata, 0);
     
-    info(0, "/cgi-bin/sendota <%s> <%s>", id, octstr_get_cstr(phonenumber));
+    info(0, "/cgi-bin/sendota <%s> <%s>", 
+    	 octstr_get_cstr(id), octstr_get_cstr(phonenumber));
     
     /* send_message frees the 'msg' */
     ret = send_message(t, msg); 
@@ -1239,14 +1277,14 @@ static void setup_signal_handlers(void) {
 
 
 
-static void init_smsbox(Config *cfg)
+static void init_smsbox(Cfg *cfg)
 {
-    ConfigGroup *grp;
-    char *logfile = NULL;
-    char *p;
-    int lvl = 0;
+    CfgGroup *grp;
+    Octstr *logfile;
+    Octstr *p;
+    long lvl;
     Octstr *http_proxy_host = NULL;
-    int http_proxy_port = -1;
+    long http_proxy_port = -1;
     List *http_proxy_exceptions = NULL;
     Octstr *http_proxy_username = NULL;
     Octstr *http_proxy_password = NULL;
@@ -1255,72 +1293,113 @@ static void init_smsbox(Config *cfg)
     bb_port = BB_DEFAULT_SMSBOX_PORT;
     bb_host = octstr_create(BB_DEFAULT_HOST);
     heartbeat_freq = BB_DEFAULT_HEARTBEAT;
+    logfile = NULL;
+    lvl = 0;
 
     /*
-     * first we take the port number in bearerbox from the main
+     * first we take the port number in bearerbox and other values from the
      * core group in configuration file
      */
-    if (config_sanity_check(cfg)==-1)
-	panic(0, "Cannot start with malformed configuration");
 
-    grp = config_find_first_group(cfg, "group", "core");
+    grp = cfg_get_single_group(cfg, octstr_create_immutable("core"));
     
-    if ((p = config_get(grp, "smsbox-port")) == NULL)
+    p = cfg_get(grp, octstr_create_immutable("smsbox-port"));
+    if (p == NULL)
 	panic(0, "No 'smsbox-port' in core group");
-    bb_port = atoi(p);
+    if (octstr_parse_long(&bb_port, p, 0, 0) == -1)
+	panic(0, "Malformed 'smsbox-port' in core group");
+    octstr_destroy(p);
 
-    if ((p = config_get(grp, "http-proxy-host")) != NULL)
-    	http_proxy_host = octstr_create(p);
-    if ((p = config_get(grp, "http-proxy-port")) != NULL)
-    	http_proxy_port = atoi(p);
-    if ((p = config_get(grp, "http-proxy-username")) != NULL)
-    	http_proxy_username = octstr_create(p);
-    if ((p = config_get(grp, "http-proxy-password")) != NULL)
-    	http_proxy_password = octstr_create(p);
-    if ((p = config_get(grp, "http-proxy-exceptions")) != NULL) {
-	    Octstr *os;
-	    
-	    os = octstr_create(p);
-	    http_proxy_exceptions = octstr_split_words(os);
-	    octstr_destroy(os);
+    p = cfg_get(grp, octstr_create_immutable("http-proxy-port"));
+    if (p != NULL) {
+	if (octstr_parse_long(&http_proxy_port, p, 0, 0) == -1)
+	    panic(0, "Malformed 'http-proxy-port' in core group");
+	octstr_destroy(p);
+    }
+
+    http_proxy_host = cfg_get(grp, 
+    	    	    	octstr_create_immutable("http-proxy-host"));
+    http_proxy_username = cfg_get(grp, 
+    	    	    	    octstr_create_immutable("http-proxy-username"));
+    http_proxy_password = cfg_get(grp, 
+    	    	    	    octstr_create_immutable("http-proxy-password"));
+
+    p = cfg_get(grp, octstr_create_immutable("http-proxy-exceptions"));
+    if (p != NULL) {
+	http_proxy_exceptions = octstr_split_words(p);
+	octstr_destroy(p);
     }
 
 
     /*
      * get the remaining values from the smsbox group
      */
-    if ((grp = config_find_first_group(cfg, "group", "smsbox")) == NULL)
+    grp = cfg_get_single_group(cfg, octstr_create_immutable("smsbox"));
+    if (grp == NULL)
 	panic(0, "No 'smsbox' group in configuration");
 
-    if ((p = config_get(grp, "bearerbox-host")) != NULL)
-	octstr_replace(bb_host, p, strlen(p));
-    if ((p = config_get(grp, "sendsms-port")) != NULL)
-	sendsms_port = atoi(p);
-    if ((p = config_get(grp, "sms-length")) != NULL)
-	sms_max_length = atoi(p);
-    /*
-     *if ((p = config_get(grp, "heartbeat-freq")) != NULL)
-     *	heartbeat_freq = atoi(p);
-     *if ((p = config_get(grp, "pid-file")) != NULL)
-     *	pid_file = p; */
-    if ((p = config_get(grp, "global-sender")) != NULL)
+    p = cfg_get(grp, octstr_create_immutable("bearerbox-host"));
+    if (p != NULL) {
+	octstr_destroy(bb_host);
+	bb_host = p;
+    }
+
+    p = cfg_get(grp, octstr_create_immutable("sendsms-port"));
+    if (p != NULL) {
+	if (octstr_parse_long(&sendsms_port, p, 0, 0) == -1)
+	    panic(0, "Malformed 'sendsms-port' in smsbox group");
+	octstr_destroy(p);
+    }
+
+    p = cfg_get(grp, octstr_create_immutable("sms-length"));
+    if (p != NULL) {
+	if (octstr_parse_long(&sms_max_length, p, 0, 0) == -1)
+	    panic(0, "Malformed 'sms-length' in smsbox group");
+	octstr_destroy(p);
+    }
+
+    p = cfg_get(grp, octstr_create_immutable("global-sender"));
+    if (p != NULL) {
+	octstr_destroy(global_sender);
 	global_sender = p;
-    if ((p = config_get(grp, "sendsms-chars")) != NULL)
+    }
+
+    p = cfg_get(grp, octstr_create_immutable("sendsms-chars"));
+    if (p != NULL) {
+	octstr_destroy(accepted_chars);
 	accepted_chars = p;
-    if ((p = config_get(grp, "log-file")) != NULL)
+    }
+
+    p = cfg_get(grp, octstr_create_immutable("log-file"));
+    if (p != NULL) {
+	octstr_destroy(logfile);
 	logfile = p;
-    if ((p = config_get(grp, "log-level")) != NULL)
-	lvl = atoi(p);
+    }
+
+    p = cfg_get(grp, octstr_create_immutable("log-level"));
+    if (p != NULL) {
+	if (octstr_parse_long(&lvl, p, 0, 0) == -1)
+	    panic(0, "Malformed 'log-level' in smsbox group");
+	octstr_destroy(p);
+    }
 
     if (logfile != NULL) {
-	info(0, "Starting to log to file %s level %d", logfile, lvl);
-	log_open(logfile, lvl);
+	info(0, "Starting to log to file %s level %ld", 
+	     octstr_get_cstr(logfile), lvl);
+	log_open(octstr_get_cstr(logfile), lvl);
     }
-    if (global_sender != NULL)
-	info(0, "Service global sender set as '%s'", global_sender);
+    if (global_sender != NULL) {
+	info(0, "Service global sender set as '%s'", 
+	     octstr_get_cstr(global_sender));
+    }
     
-    if ((p = config_get(grp, "access-log")) != NULL)
-	alog_open(p, 1);	/* XXX should be able to use gmtime, too */
+    p = cfg_get(grp, octstr_create_immutable("access-log"));
+    if (p != NULL) {
+	info(0, "Logging accesses to '%s'.", octstr_get_cstr(p));
+	alog_open(octstr_get_cstr(p), 1);
+	    /* XXX should be able to use gmtime, too */
+	octstr_destroy(p);
+    }
 
     if (sendsms_port > 0) {
 	if (http_open_server(sendsms_port) == -1) {
@@ -1330,7 +1409,7 @@ static void init_smsbox(Config *cfg)
 		panic(0, "Failed to open HTTP socket");
 	}
 	else {
-	    info(0, "Set up send sms service at port %d", sendsms_port);
+	    info(0, "Set up send sms service at port %ld", sendsms_port);
 	    gwthread_create(sendsms_thread, NULL);
 	}
     }
@@ -1362,14 +1441,22 @@ int main(int argc, char **argv)
 {
     int cf_index;
     long heartbeat_thread;
+    Octstr *cfg_name;
 
     gwlib_init();
     cf_index = get_and_set_debugs(argc, argv, check_args);
     
     setup_signal_handlers();
-    cfg = config_from_file(argv[cf_index], "kannel.conf");
-    if (cfg == NULL)
-	panic(0, "No configuration, aborting.");
+    
+    if (argv[cf_index] == NULL)
+	cfg_name = octstr_create("kannel.conf");
+    else
+	cfg_name = octstr_create(argv[cf_index]);
+    cfg = cfg_create(cfg_name);
+    octstr_destroy(cfg_name);
+
+    if (cfg_read(cfg) == -1)
+	panic(0, "Error reading configuration file, cannot start.");
 
     report_versions("smsbox");
 
@@ -1420,7 +1507,7 @@ int main(int argc, char **argv)
     dict_destroy(receivers);
     counter_destroy(catenated_sms_counter);
     octstr_destroy(bb_host);
-    config_destroy(cfg);
+    cfg_destroy(cfg);
     gwlib_shutdown();
     return 0;
 }
