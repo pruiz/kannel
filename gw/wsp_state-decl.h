@@ -30,10 +30,10 @@ ROW(NULL_STATE,
 		wtp_event = wap_event_create(TR_Invoke_Res);
 		if (wtp_event == NULL)
 			panic(0, "wap_event_create failed");
-		wtp_event->TR_Invoke_Res.tid = e->machine->tid;
+		wtp_event->TR_Invoke_Res.tid = e->tid;
 		wtp_event->TR_Invoke_Res.exit_info = NULL;
 		wtp_event->TR_Invoke_Res.exit_info_present = 0;
-		wtp_event->TR_Invoke_Res.mid = e->machine->mid;
+		wtp_event->TR_Invoke_Res.mid = e->mid;
 		wtp_dispatch_event(wtp_event);
 
 		sm->n_methods = 0;
@@ -57,7 +57,8 @@ ROW(NULL_STATE,
 		 * ourselves.
 		 */
 		new_event = wap_event_create(S_Connect_Res);
-		new_event->S_Connect_Res.machine = e->machine;
+		new_event->S_Connect_Res.mid = e->mid;
+		new_event->S_Connect_Res.tid = e->tid;
 		wsp_dispatch_event(new_event);
 	},
 	CONNECTING)
@@ -96,9 +97,9 @@ ROW(CONNECTING,
 
 		/* Make a TR-Result.req event for WTP. */
 		wtp_event = wap_event_create(TR_Result_Req);
-		wtp_event->TR_Result_Req.tid = e->machine->tid;
+		wtp_event->TR_Result_Req.tid = e->tid;
 		wtp_event->TR_Result_Req.user_data = ospdu;
-		wtp_event->TR_Result_Req.mid = e->machine->mid;
+		wtp_event->TR_Result_Req.mid = e->mid;
 		wtp_dispatch_event(wtp_event);
 
 		/* Release all method transactions in HOLDING state. */
@@ -129,7 +130,8 @@ ROW(CONNECTED,
 			headers = NULL;
 
 		new_event = wap_event_create(Release);
-		new_event->Release.machine = e->machine;
+		new_event->Release.mid = e->mid;
+		new_event->Release.tid = e->tid;
 		new_event->Release.url = octstr_duplicate(pdu->u.Get.uri);
 		new_event->Release.http_headers = headers;
 		wsp_dispatch_event(new_event);
@@ -146,7 +148,8 @@ ROW(CONNECTED,
 		++sm->n_methods;
 
 		new_event = wap_event_create(Release);
-		new_event->Release.machine = e->machine;
+		new_event->Release.mid = e->mid;
+		new_event->Release.tid = e->tid;
 		new_event->Release.url = octstr_duplicate(pdu->u.Post.uri);
 		wsp_dispatch_event(new_event);
 		/* XXX we should handle headers here as well --liw */
@@ -181,9 +184,9 @@ ROW(CONNECTED,
 
 		/* Make a TR-Result.req event for WTP. */
 		wtp_event = wap_event_create(TR_Result_Req);
-		wtp_event->TR_Result_Req.tid = e->machine->tid;
+		wtp_event->TR_Result_Req.tid = e->tid;
 		wtp_event->TR_Result_Req.user_data = ospdu;
-		wtp_event->TR_Result_Req.mid = e->machine->mid;
+		wtp_event->TR_Result_Req.mid = e->mid;
 		debug("wap.wsp", 0, "WSP: Resuming ...sending TR-Result.req event to old WTPMachine");
 		wtp_dispatch_event(wtp_event);
 
@@ -205,7 +208,8 @@ ROW(HOLDING,
 		 */
 		 
 		new_event = wap_event_create(S_MethodInvoke_Ind);
-		new_event->S_MethodInvoke_Ind.machine = e->machine;
+		new_event->S_MethodInvoke_Ind.mid = e->tid;
+		new_event->S_MethodInvoke_Ind.tid = e->tid;
 		new_event->S_MethodInvoke_Ind.url = octstr_duplicate(e->url);
 		new_event->S_MethodInvoke_Ind.method = Get_PDU;
 		new_event->S_MethodInvoke_Ind.http_headers = 
@@ -225,10 +229,10 @@ ROW(REQUESTING,
 		
 		/* Send TR-Invoke.res to WTP */
 		wtp_event = wap_event_create(TR_Invoke_Res);
-		wtp_event->TR_Invoke_Res.tid = e->machine->tid;
+		wtp_event->TR_Invoke_Res.tid = e->tid;
 		wtp_event->TR_Invoke_Res.exit_info = NULL;
 		wtp_event->TR_Invoke_Res.exit_info_present = 0;
-		wtp_event->TR_Invoke_Res.mid = e->machine->mid;
+		wtp_event->TR_Invoke_Res.mid = e->mid;
 		wtp_dispatch_event(wtp_event);
 	},
 	PROCESSING)
@@ -249,9 +253,9 @@ ROW(PROCESSING,
 
 		/* Send TR-Result.req to WTP */
 		wtp_event = wap_event_create(TR_Result_Req);
-		wtp_event->TR_Result_Req.tid = e->machine->tid;
+		wtp_event->TR_Result_Req.tid = e->tid;
 		wtp_event->TR_Result_Req.user_data = wsp_pdu_pack(new_pdu);
-		wtp_event->TR_Result_Req.mid = e->machine->mid;
+		wtp_event->TR_Result_Req.mid = e->mid;
 		wtp_dispatch_event(wtp_event);
 		wsp_pdu_destroy(new_pdu);
 	},

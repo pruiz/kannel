@@ -35,7 +35,6 @@ struct WAPEvent {
 	#define WAPEVENT(name, fields) struct name { fields } name;
 	#define OCTSTR(name) Octstr *name;
 	#define INTEGER(name) long name;
-	#define WTP_MACHINE(name) WTPMachine *name;
 	#define SESSION_MACHINE(name) WSPMachine *name;
 	#define HTTPHEADER(name) List *name;
 	#include "wap-events-def.h"

@@ -307,6 +307,40 @@ static void setup_signal_handlers(void) {
 }
 
 
+WAPAddr *wap_addr_create(Octstr *address, long port) {
+	WAPAddr *addr;
+	
+	addr = gw_malloc(sizeof(*addr));
+	addr->address = octstr_duplicate(address);
+	addr->port = port;
+	return addr;
+}
+
+
+void wap_addr_destroy(WAPAddr *addr) {
+	octstr_destroy(addr->address);
+	gw_free(addr);
+}
+
+
+WAPAddrTuple *wap_addr_tuple_create(Octstr *cli_addr, long cli_port,
+Octstr *srv_addr, long srv_port) {
+	WAPAddrTuple *tuple;
+	
+	tuple = gw_malloc(sizeof(*tuple));
+	tuple->client = wap_addr_create(cli_addr, cli_port);
+	tuple->server = wap_addr_create(srv_addr, srv_port);
+	return tuple;
+}
+
+
+void wap_addr_tuple_destroy(WAPAddrTuple *tuple) {
+	wap_addr_destroy(tuple->client);
+	wap_addr_destroy(tuple->server);
+	gw_free(tuple);
+}
+
+
 int main(int argc, char **argv) {
 	int bbsocket;
 	int cf_index;

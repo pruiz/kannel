@@ -1,3 +1,22 @@
+Tue Jun  6 11:37:22 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wap-appl.c, gw/wap-events-def.h, gw/wap-events.[ch]: Replaced
+	member `machine' (a pointer to a WTPMachine) to `mid' and `tid'
+	(integers), so as to remove direct references to WTPMachines
+	from outside the WTP layer.
+	
+	* gw/wtp.[ch]: Added function wtp_get_address_of for finding the
+	address of a machine given its id (mid). 
+	
+	* gw/wapbox.[ch]: Added data types WAPAddr and WAPAddrTuple,
+	for holding addresses of phone and gateway, and functions for
+	creating and destroying them.
+	
+	* gw/wsp_state-decl.h: Made use of mid instead of machine.
+	
+	* gw/wsp.c: Made light use of WAPAddrTuple.  Made use of mid
+	everywhere, instead of pointers to WTPMachines.
+
 Tue Jun  6 08:44:13 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* test/decompile.c: Added return type (void) to function

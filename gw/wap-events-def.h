@@ -15,7 +15,8 @@ WAPEVENT(TR_Invoke_Ind,
           INTEGER(tcl)
           INTEGER(wsp_pdu)
           INTEGER(wsp_tid)
-          WTP_MACHINE(machine)
+	  INTEGER(tid)
+	  INTEGER(mid)
 	  )
 
 WAPEVENT(TR_Invoke_Cnf,
@@ -23,7 +24,8 @@ WAPEVENT(TR_Invoke_Cnf,
           INTEGER(exit_info_present)
           INTEGER(wsp_pdu)
           INTEGER(wsp_tid)
-          WTP_MACHINE(machine)
+	  INTEGER(tid)
+	  INTEGER(mid)
           )
 
 WAPEVENT(TR_Result_Cnf,
@@ -31,30 +33,35 @@ WAPEVENT(TR_Result_Cnf,
           INTEGER(exit_info_present)
           INTEGER(wsp_pdu)
           INTEGER(wsp_tid)
-          WTP_MACHINE(machine)
+	  INTEGER(tid)
+	  INTEGER(mid)
           )
 
 WAPEVENT(TR_Abort_Ind,
           INTEGER(abort_code)
           INTEGER(wsp_pdu)
           INTEGER(wsp_tid)
-          WTP_MACHINE(machine)
+	  INTEGER(tid)
+	  INTEGER(mid)
           )
 
 WAPEVENT(S_Connect_Res,
-	  WTP_MACHINE(machine) /* XXX this is a kludge */
+	  INTEGER(tid)
+	  INTEGER(mid)
 	  OCTSTR(server_headers)
 	  OCTSTR(negotiated_capabilities)
 	  )
 
 WAPEVENT(Release,
-	  WTP_MACHINE(machine)
+	  INTEGER(tid)
+	  INTEGER(mid)
 	  OCTSTR(url)
 	  HTTPHEADER(http_headers)
 	  )
 
 WAPEVENT(S_MethodInvoke_Ind,
-	  WTP_MACHINE(machine)
+	  INTEGER(tid)
+	  INTEGER(mid)
 	  OCTSTR(url)
 	  INTEGER(method)
 	  HTTPHEADER(http_headers)
@@ -63,7 +70,8 @@ WAPEVENT(S_MethodInvoke_Ind,
 	  )
 
 WAPEVENT(S_MethodInvoke_Res,
-	  WTP_MACHINE(machine)
+	  INTEGER(tid)
+	  INTEGER(mid)
 	  )
 
 WAPEVENT(S_MethodResult_Req,
@@ -71,7 +79,8 @@ WAPEVENT(S_MethodResult_Req,
 	  INTEGER(status)
 	  INTEGER(response_type)
 	  OCTSTR(response_body)
-	  WTP_MACHINE(machine)
+	  INTEGER(tid)
+	  INTEGER(mid)
 	  )
 
 WAPEVENT(RcvInvoke,
@@ -164,6 +173,5 @@ WAPEVENT(RcvErrorPDU,
 #undef WAPEVENT
 #undef OCTSTR
 #undef INTEGER
-#undef WTP_MACHINE
 #undef SESSION_MACHINE
 #undef HTTPHEADER

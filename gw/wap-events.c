@@ -23,7 +23,6 @@ WAPEvent *wap_event_create(WAPEventName type) {
 		{ struct name *p = &event->name; fields }
 	#define OCTSTR(name) p->name = NULL;
 	#define INTEGER(name) p->name = 0;
-	#define WTP_MACHINE(name) p->name = NULL;
 	#define SESSION_MACHINE(name) p->name = NULL;
 	#define HTTPHEADER(name) p->name = NULL;
 	#include "wap-events-def.h"
@@ -44,7 +43,6 @@ void wap_event_destroy(WAPEvent *event) {
 			{ struct name *p = &event->name; fields; break; }
 	#define OCTSTR(name) octstr_destroy(p->name);
 	#define INTEGER(name) p->name = 0;
-	#define WTP_MACHINE(name) p->name = NULL;
 	#define SESSION_MACHINE(name) p->name = NULL;
 	#define HTTPHEADER(name) http2_destroy_headers(p->name);
 	#include "wap-events-def.h"
@@ -70,7 +68,6 @@ WAPEvent *wap_event_duplicate(WAPEvent *event) {
 		{ struct name *p = &new->name, *q = &event->name; fields }
 	#define OCTSTR(name) p->name = octstr_duplicate(q->name);
 	#define INTEGER(name) p->name = q->name;
-	#define WTP_MACHINE(name) p->name = q->name;
 	#define SESSION_MACHINE(name) p->name = q->name;
 	#define HTTPHEADER(name) p->name = http2_header_duplicate(q->name);
 	#include "wap-events-def.h"
@@ -105,9 +102,6 @@ void wap_event_dump(WAPEvent *event) {
 			octstr_dump(p->name, 1);
 		#define INTEGER(name) \
 			debug("wap.event", 0, "  %s = %ld", #name, p->name);
-		#define WTP_MACHINE(name) \
-			debug("wap.event", 0, "  %s = %p", \
-				#name, (void *) p->name);
 		#define SESSION_MACHINE(name) \
 			debug("wap.event", 0, "  %s = %p", \
 				#name, (void *) p->name);
@@ -136,7 +130,6 @@ void wap_event_assert(WAPEvent *event) {
 	#define OCTSTR(name) octstr_len(p->name);
 	#define INTEGER(name) gw_assert(p != NULL);
 	#define HTTPHEADER(name) gw_assert(p->name != NULL);
-	#define WTP_MACHINE(name) gw_assert(p->name != NULL);
 	#define SESSION_MACHINE(name) gw_assert(p->name != NULL);
 	#include "wap-events-def.h"
 	default:

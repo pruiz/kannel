@@ -108,8 +108,10 @@ static void main_thread(void *arg) {
 		gw_assert(ind->type == S_MethodInvoke_Ind);
 		gwthread_create(fetch_thread, ind);
 		res = wap_event_create(S_MethodInvoke_Res);
-		res->S_MethodInvoke_Res.machine = 
-			ind->S_MethodInvoke_Ind.machine;
+		res->S_MethodInvoke_Res.mid = 
+			ind->S_MethodInvoke_Ind.mid;
+		res->S_MethodInvoke_Res.tid = 
+			ind->S_MethodInvoke_Ind.tid;
 		wsp_dispatch_event(res);
 	}
 }
@@ -124,7 +126,6 @@ static void fetch_thread(void *arg) {
 	int converter_failed;
 	WAPEvent *event;
 	unsigned long body_size, client_SDU_size;
-	WTPMachine *wtp_sm;
 	WSPMachine *sm;
 	int wml_ok, wmlc_ok, wmlscript_ok, wmlscriptc_ok;
 	Octstr *url, *final_url, *resp_body, *body, *os, *type, *charset;
@@ -161,7 +162,6 @@ static void fetch_thread(void *arg) {
 
 	event = arg;
 	gw_assert(event->type == S_MethodInvoke_Ind);
-	wtp_sm = event->S_MethodInvoke_Ind.machine;
 	sm = event->S_MethodInvoke_Ind.session;
 
 	wsp_http_map_url(&event->S_MethodInvoke_Ind.url);
@@ -284,7 +284,8 @@ static void fetch_thread(void *arg) {
 	e->S_MethodResult_Req.response_type = 
 		encode_content_type(octstr_get_cstr(type));
 	e->S_MethodResult_Req.response_body = body;
-	e->S_MethodResult_Req.machine = event->S_MethodInvoke_Ind.machine;
+	e->S_MethodResult_Req.mid = event->S_MethodInvoke_Ind.mid;
+	e->S_MethodResult_Req.tid = event->S_MethodInvoke_Ind.tid;
 
 	wsp_dispatch_event(e);
 

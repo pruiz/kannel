@@ -99,7 +99,7 @@ static Octstr *encode_http_headers(long content_type);
 static long convert_http_status_to_wsp_status(long http_status);
 
 static long new_server_transaction_id(void);
-static int transaction_belongs_to_session(void *session, void *wtp);
+static int transaction_belongs_to_session(void *session, void *tuple);
 static int same_client(void *sm1, void *sm2);
 
 static void main_thread(void *);
@@ -183,43 +183,46 @@ static void main_thread(void *arg) {
 
 static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
 	WSPMachine *sm;
-	WTPMachine *wtp_sm;
+	long mid;
+	WAPAddrTuple *tuple;
+	
+	mid = -1;
 	
 	switch (event->type) {
 	case TR_Invoke_Ind:
-		wtp_sm = event->TR_Invoke_Ind.machine;
+		mid = event->TR_Invoke_Ind.mid;
 		break;
 
 	case TR_Invoke_Cnf:
-		wtp_sm = event->TR_Invoke_Cnf.machine;
+		mid = event->TR_Invoke_Cnf.mid;
 		break;
 
 	case TR_Result_Cnf:
-		wtp_sm = event->TR_Result_Cnf.machine;
+		mid = event->TR_Result_Cnf.mid;
 		break;
 
 	case TR_Abort_Ind:
-		wtp_sm = event->TR_Abort_Ind.machine;
+		mid = event->TR_Abort_Ind.mid;
 		break;
 
 	case S_Connect_Res:
-		wtp_sm = event->S_Connect_Res.machine;
+		mid = event->S_Connect_Res.mid;
 		break;
 
 	case Release:
-		wtp_sm = event->Release.machine;
+		mid = event->Release.mid;
 		break;
 
 	case S_MethodInvoke_Ind:
-		wtp_sm = event->S_MethodInvoke_Ind.machine;
+		mid = event->S_MethodInvoke_Ind.mid;
 		break;
 
 	case S_MethodInvoke_Res:
-		wtp_sm = event->S_MethodInvoke_Res.machine;
+		mid = event->S_MethodInvoke_Res.mid;
 		break;
 
 	case S_MethodResult_Req:
-		wtp_sm = event->S_MethodResult_Req.machine;
+		mid = event->S_MethodResult_Req.mid;
 		break;
 
 	default:
@@ -228,6 +231,14 @@ static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
 		wap_event_dump(event);
 		return NULL;
 	}
+	
+	gw_assert(mid != -1);
+	if (wtp_get_address_tuple(mid, &tuple) == -1) {
+		error(0, "Couldn't find WTP state machine %ld.", mid);
+		error(0, "This is an internal error.");
+		return NULL;
+	}
+	gw_assert(tuple != NULL);
 
 	/* XXX this should probably be moved to a condition function --liw */
 	if (event->type == TR_Invoke_Ind &&
@@ -237,22 +248,19 @@ static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
 		   machines. */
 		sm = NULL;
 	} else {
-		sm = list_search(session_machines, wtp_sm,
+		sm = list_search(session_machines, tuple,
 				 transaction_belongs_to_session);
 	}
 
 	if (sm == NULL) {
 		sm = machine_create();
-#if 0
-		debug("wap.wsp", 0, "WSP: wtp_sm:");
-		wtp_machine_dump(wtp_sm);
-#endif
-		sm->client_address = octstr_duplicate(wtp_sm->source_address);
-		sm->client_port = wtp_sm->source_port;
-		sm->server_address = 
-			octstr_duplicate(wtp_sm->destination_address);
-		sm->server_port = wtp_sm->destination_port;
+		sm->client_address = octstr_duplicate(tuple->client->address);
+		sm->client_port = tuple->client->port;
+		sm->server_address = octstr_duplicate(tuple->server->address);
+		sm->server_port = tuple->server->port;
 	}
+	
+	wap_addr_tuple_destroy(tuple);
 
 	return sm;
 }
@@ -372,12 +380,10 @@ static void handle_event(WSPMachine *sm, WAPEvent *current_event, WSP_PDU *pdu)
 		
 		error(0, "WSP: Can't handle TR-Invoke.ind, aborting transaction.");
 		abort = wap_event_create(TR_Abort_Req);
-		abort->TR_Abort_Req.tid = 
-			current_event->TR_Invoke_Ind.machine->tid;
+		abort->TR_Abort_Req.tid = current_event->TR_Invoke_Ind.tid;
 		abort->TR_Abort_Req.abort_type = 0x01; /* USER */
 		abort->TR_Abort_Req.abort_reason = 0xE0; /* PROTOERR */
-		abort->TR_Abort_Req.mid = 
-			current_event->TR_Invoke_Ind.machine->mid;
+		abort->TR_Abort_Req.mid = current_event->TR_Invoke_Ind.mid;
 
 		wtp_dispatch_event(abort);
 		machine_mark_unused(sm);
@@ -712,20 +718,19 @@ static long new_server_transaction_id(void) {
 }
 
 
-static int transaction_belongs_to_session(void *wsp_ptr, void *wtp_ptr) {
+static int transaction_belongs_to_session(void *wsp_ptr, void *tuple_ptr) {
 	WSPMachine *wsp;
-	WTPMachine *wtp;
+	WAPAddrTuple *tuple;
 	
 	wsp = wsp_ptr;
-	wtp = wtp_ptr;
+	tuple = tuple_ptr;
 
 	return
 	  !wsp->unused &&
-	  wtp->in_use &&
-	  wtp->source_port == wsp->client_port &&
-	  wtp->destination_port == wsp->server_port &&
-	  octstr_compare(wtp->source_address, wsp->client_address) == 0 &&
-	  octstr_compare(wtp->destination_address, wsp->server_address) == 0;
+	  tuple->client->port == wsp->client_port &&
+	  tuple->server->port == wsp->server_port &&
+	  octstr_compare(tuple->client->address, wsp->client_address) == 0 &&
+	  octstr_compare(tuple->server->address, wsp->server_address) == 0;
 }
 
 

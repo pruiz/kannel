@@ -22,6 +22,7 @@ typedef struct Tid_cache Tid_cache;
 #include "wtp_timer.h"
 #include "wtp_send.h"
 #include "wtp_tid.h"
+#include "wapbox.h"
 
 /*
  * For removing the magic
@@ -142,5 +143,7 @@ WAPEvent *wtp_unpack_wdp_datagram(Msg *msg);
 
 
 void wtp_dispatch_event(WAPEvent *event);
+
+int wtp_get_address_tuple(long mid, WAPAddrTuple **tuple);
 
 #endif

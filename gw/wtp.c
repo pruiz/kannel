@@ -127,6 +127,8 @@ static List *queue = NULL;
 
 static void main_thread(void *);
 
+static WTPMachine *find_machine_using_mid(long mid);
+
 
 /******************************************************************************
  *
@@ -251,6 +253,22 @@ void wtp_shutdown(void) {
 void wtp_dispatch_event(WAPEvent *event) {
 	list_produce(queue, event);
 }
+
+int wtp_get_address_tuple(long mid, WAPAddrTuple **tuple) {
+	WTPMachine *sm;
+	
+	sm = find_machine_using_mid(mid);
+	if (sm == NULL)
+		return -1;
+
+	*tuple = wap_addr_tuple_create(sm->source_address, 
+				       sm->source_port,
+				       sm->destination_address,
+				       sm->destination_port);
+
+	return 0;
+}
+
 
 /*****************************************************************************
  *
@@ -566,36 +584,43 @@ static WAPEvent *pack_wsp_event(WAPEventName wsp_name, WAPEvent *wtp_event,
          switch (wsp_name){
                 
 	        case TR_Invoke_Ind:
+		     gw_assert(wtp_event->type == RcvInvoke);
                      event->TR_Invoke_Ind.ack_type = machine->u_ack;
                      event->TR_Invoke_Ind.user_data =
                             octstr_duplicate(wtp_event->RcvInvoke.user_data);
                      event->TR_Invoke_Ind.tcl = wtp_event->RcvInvoke.tcl;
                      event->TR_Invoke_Ind.wsp_tid = wtp_tid_next();
-                     event->TR_Invoke_Ind.machine = machine;
+                     event->TR_Invoke_Ind.tid = machine->tid;
+                     event->TR_Invoke_Ind.mid = machine->mid;
                 break;
 
 	        case TR_Invoke_Cnf:
+		     gw_assert(wtp_event->type == TR_Invoke_Ind);
                      event->TR_Invoke_Cnf.wsp_tid =
                             event->TR_Invoke_Ind.wsp_tid;
-                     event->TR_Invoke_Cnf.machine = machine;
+                     event->TR_Invoke_Cnf.tid = machine->tid;
+                     event->TR_Invoke_Cnf.mid = machine->mid;
                 break;
                 
 	        case TR_Result_Cnf:
-                     event->TR_Result_Cnf.exit_info =
-                            octstr_duplicate(wtp_event->RcvInvoke.exit_info);
-                     event->TR_Result_Cnf.exit_info_present =
-                            wtp_event->RcvInvoke.exit_info_present;
-                     event->TR_Result_Cnf.wsp_tid =
-                            event->TR_Invoke_Ind.wsp_tid;
-                     event->TR_Result_Cnf.machine = machine;
+		     gw_assert(wtp_event->type == RcvAck);
+                     event->TR_Result_Cnf.exit_info = NULL;
+/*                            octstr_duplicate(wtp_event->RcvInvoke.exit_info); */
+                     event->TR_Result_Cnf.exit_info_present = 0;
+/*                            wtp_event->RcvInvoke.exit_info_present; */
+                     event->TR_Result_Cnf.wsp_tid = machine->tid;
+                     event->TR_Result_Cnf.tid = machine->tid;
+                     event->TR_Result_Cnf.mid = machine->mid;
                 break;
 
 	        case TR_Abort_Ind:
+		     gw_assert(wtp_event->type == RcvAbort);
                      event->TR_Abort_Ind.abort_code =
                             wtp_event->RcvAbort.abort_reason;
                      event->TR_Abort_Ind.wsp_tid =
                             event->TR_Invoke_Ind.wsp_tid;
-                     event->TR_Abort_Ind.machine = machine;
+                     event->TR_Abort_Ind.tid = machine->tid;
+                     event->TR_Abort_Ind.mid = machine->mid;
                 break;
                 
 	        default:
@@ -604,3 +629,17 @@ static WAPEvent *pack_wsp_event(WAPEventName wsp_name, WAPEvent *wtp_event,
 
          return event;
 } 
+
+
+static int machine_has_mid(void *a, void *b) {
+	WTPMachine *sm;
+	long mid;
+	
+	sm = a;
+	mid = *(long *) b;
+	return sm->mid == mid;
+}
+
+static WTPMachine *find_machine_using_mid(long mid) {
+	return list_search(machines, &mid, machine_has_mid);
+}
