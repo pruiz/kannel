@@ -163,7 +163,6 @@ Octstr *smpp_pdu_pack(SMPP_PDU *pdu)
     #define INTEGER(name, octets) \
     	append_encoded_integer(os, p->name, octets);
     #define NULTERMINATED(name, max_octets) \
-        gw_assert(octstr_len(p->name) < max_octets); \
         if (p->name != NULL) { \
             if (octstr_len(p->name) >= max_octets) { \
                 warning(0, "SMPP: PDU element <%s> to long " \
