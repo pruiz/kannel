@@ -1,3 +1,7 @@
+2001-11-28  Stipe Tolj  <tolj@wapme-systems.de>
+
+    * gwlib/conn.c: fixed the SSL server shutdown bug reported by Aarno.
+
 2001-11-23 Aarno Syvänen <aarno@wiral.com>
 
     * gw/wap_push_ppg.c: Added calling of SL compiler. Bugfixes. Specially,
