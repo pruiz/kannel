@@ -1157,7 +1157,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
         version = ((version / 10) << 4) + (version % 10);
 
     /* check for any specified priority value in range [0-5] */
-    if (cfg_get_integer(&version, grp, octstr_imm("priority")) == -1)
+    if (cfg_get_integer(&priority, grp, octstr_imm("priority")) == -1)
         priority = SMPP_DEFAULT_PRIORITY;
   
 
