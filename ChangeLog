@@ -1,4 +1,7 @@
 2002-05-21  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c: fixed a octstr_destroy() bug in msg_to_pdu()
+
+2002-05-21  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsc_smpp.c: applied validity and deferred patch by Alex
       [Msg-ID: <Pine.LNX.4.44.0205210856020.17846-200000@samsara.kgbinternet.com>]
 
