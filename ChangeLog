@@ -1,4 +1,11 @@
 2003-03-09  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bearerbox.c: while we receive SIGHUP we shouldn't re-load the store
+      file, because we'd duplicate currently stored messages.
+      Patch provided by Alexander.
+    * contrib/kannel-monitor/index.php: some date calc fixed. Thanks to Alex.
+    * gwlib/octstr[.ch|.debug]: added Alex's octstr_item_case_match() function.
+
+2003-03-09  Stipe Tolj  <tolj@wapme-systems.de>
     * configure[.in], config.h.in, gw/bearerbox.c: added --disable-wap and 
       --disable-sms configure switches to disable parts in bearerbox.c.
       In an extended step these could be used to make a conditional compile
