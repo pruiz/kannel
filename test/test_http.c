@@ -78,7 +78,7 @@ static void start_request(HTTPCaller *caller, List *reqh, long i)
      * urlencoded in the URL itself.
      */
     http_start_request(caller, method,
-                       url, reqh, content, 0, id, ssl_client_certkey_file);
+                       url, reqh, content, 1, id, ssl_client_certkey_file);
 
     debug("", 0, "Started request %ld with url:", *id);
     octstr_url_decode(url);
