@@ -1,3 +1,8 @@
+2000-11-14  Richard Braakman  <dark@wapi.com>
+
+	* doc/CodingStyle: Document our practice of having include files
+	include other files.
+
 2000-11-14  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/http.c: Simplified code a bit by combining the two

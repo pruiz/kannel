@@ -264,6 +264,25 @@ Using integer types
 		the root of the Kannel source tree should be given, thus
 		"gwlib/gwlib.h".
 
+Header files
+
+	When writing header files for Kannel, write them so that they
+	include whatever other header files they need, rather than
+	relying on the caller to do that. An exception can be made for
+	header files that are not normally included directly by a
+	source file, but bundled by another header file (such as gwlib.h).
+
+	This will result in some header files being included multiple
+	times by a source file. Deal with that by using this construct,
+	where HEADERNAME is the filename of the header file:
+
+		#ifndef HEADERNAME_H
+		#define HEADERNAME_H
+
+		... the body of the header file
+
+		#endif
+
 Use of #if, #ifdef, etc
 
 	Try to avoid using the various forms of #if for portability
