@@ -1,3 +1,8 @@
+2004-04-21  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/wml_compiler.c: applied patch that fixes variable substitution.
+      Thanks to Joerg Pommnitz <jpo@condat.de>.
+      [Msg-Id: <4D93AAF95CB5A64E8F622EC796ECF5AC3FC0EB@exil.condat.de>].
+
 2004-04-19  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/smsc/smsc_smpp.c: added 'message_payload' handling.
       Added enhanced DLR parsing and handling of DLR's optional

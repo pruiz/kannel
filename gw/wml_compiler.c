@@ -236,11 +236,11 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
 static int parse_node(xmlNodePtr node, wml_binary_t **wbxml);
 static int parse_element(xmlNodePtr node, wml_binary_t **wbxml);
 static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml);
-static int parse_attr_value(Octstr *attr_value, List *tokens, 
-			    wml_binary_t **wbxml, int charset);
+static int parse_attr_value(Octstr *attr_value, List *tokens,
+			    wml_binary_t **wbxml, int charset, var_esc_t default_esc);
 static int parse_text(xmlNodePtr node, wml_binary_t **wbxml);
 static int parse_cdata(xmlNodePtr node, wml_binary_t **wbxml);
-static int parse_st_octet_string(Octstr *ostr, int cdata, wml_binary_t **wbxml);
+static int parse_st_octet_string(Octstr *ostr, int cdata, var_esc_t default_esc, wml_binary_t **wbxml);
 static void parse_st_end(wml_binary_t **wbxml);
 static void parse_entities(Octstr *wml_source);
 
@@ -248,10 +248,11 @@ static void parse_entities(Octstr *wml_source);
  * Variable functions. These functions are used to find and parse variables.
  */
 
-static int parse_variable(Octstr *text, int start, Octstr **output, 
+static int parse_variable(Octstr *text, int start, var_esc_t default_esc, Octstr **output, 
 			  wml_binary_t **wbxml);
 static Octstr *get_variable(Octstr *text, int start);
-static var_esc_t check_variable_syntax(Octstr *variable);
+static var_esc_t check_variable_syntax(Octstr *variable, var_esc_t default_esc);
+
 
 /*
  * wml_binary-functions. These are used to create, destroy and modify
@@ -775,6 +776,10 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
     }
 
     if (status >= 0) {
+	var_esc_t default_esc;
+
+	default_esc = (octstr_str_compare (name, "href") == 0) ? ESC : NOESC;
+
 	/* The rest of the attribute is coded as a inline string. */
 	if (pattern != NULL && 
 	    coded_length < (int) octstr_len(pattern)) {
@@ -786,10 +791,10 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
 
 	    if (check_if_url(wbxml_hex))
 		status = parse_attr_value(p, wml_URL_values_list,
-					  wbxml, attr->doc->charset);
+					  wbxml, attr->doc->charset, default_esc);
 	    else
 		status = parse_attr_value(p, wml_attr_values_list,
-					  wbxml, attr->doc->charset);
+					  wbxml, attr->doc->charset, default_esc);
 	    if (status != 0)
 		error(0, 
 		      "WML compiler: could not output attribute "
@@ -814,7 +819,7 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
  */
 
 static int parse_attr_value(Octstr *attr_value, List *tokens,
-			    wml_binary_t **wbxml, int charset)
+			    wml_binary_t **wbxml, int charset, var_esc_t default_esc)
 {
     int i, pos, wbxml_hex;
     wml_hash_t *temp = NULL;
@@ -849,7 +854,7 @@ static int parse_attr_value(Octstr *attr_value, List *tokens,
     /* A fast patch to allow reserved names to be variable names. May produce 
        a little longer binary at some points. --tuo */
     if (octstr_search_char(attr_value, '$', 0) >= 0) {
-	if (parse_st_octet_string(attr_value, 0, wbxml) != 0)
+	if (parse_st_octet_string(attr_value, 0, default_esc, wbxml) != 0)
 	    return -1;
     } else {
 
@@ -872,7 +877,7 @@ static int parse_attr_value(Octstr *attr_value, List *tokens,
 		gw_assert(pos <= octstr_len(attr_value));
 	
 		cut_text = octstr_copy(attr_value, 0, pos);
-		if (parse_st_octet_string(cut_text, 0, wbxml) != 0)
+		if (parse_st_octet_string(cut_text, 0, default_esc, wbxml) != 0)
 		    return -1;
 		octstr_destroy(cut_text);
 	    
@@ -891,9 +896,9 @@ static int parse_attr_value(Octstr *attr_value, List *tokens,
 
 	if ((int) octstr_len(attr_value) > 0) {
 	    if (i < list_len(tokens))
-		parse_attr_value(attr_value, tokens, wbxml, charset);
+		parse_attr_value(attr_value, tokens, wbxml, charset, default_esc);
 	    else
-		if (parse_st_octet_string(attr_value, 0, wbxml) != 0)
+		if (parse_st_octet_string(attr_value, 0, default_esc, wbxml) != 0)
 		    return -1;
 	}
     }
@@ -949,7 +954,7 @@ static int parse_text(xmlNodePtr node, wml_binary_t **wbxml)
     if (octstr_len(temp) == 0)
         ret = 0;
     else 
-        ret = parse_st_octet_string(temp, 0, wbxml);
+        ret = parse_st_octet_string(temp, 0, NOESC, wbxml);
 
     /* Memory cleanup. */
     octstr_destroy(temp);
@@ -972,7 +977,7 @@ static int parse_cdata(xmlNodePtr node, wml_binary_t **wbxml)
 
     temp = create_octstr_from_node(node);
 
-    parse_st_octet_string(temp, 1, wbxml);
+    parse_st_octet_string(temp, 1, NOESC, wbxml);
     
     /* Memory cleanup. */
     octstr_destroy(temp);
@@ -993,7 +998,7 @@ static int parse_cdata(xmlNodePtr node, wml_binary_t **wbxml)
  * Parsed variable is returned as an octet string in Octstr **output.
  */
 
-static int parse_variable(Octstr *text, int start, Octstr **output, 
+static int parse_variable(Octstr *text, int start, var_esc_t default_esc, Octstr **output, 
 			  wml_binary_t **wbxml)
 {
     var_esc_t esc;
@@ -1016,7 +1021,7 @@ static int parse_variable(Octstr *text, int start, Octstr **output,
 	else
 	    ret = octstr_len(variable) + 1;
 
-	if ((esc = check_variable_syntax(variable)) != FAILED)
+	if ((esc = check_variable_syntax(variable, default_esc)) != FAILED)
 	    output_variable(variable, output, esc, wbxml);
 	else
 	    octstr_destroy(variable);
@@ -1074,7 +1079,7 @@ static Octstr *get_variable(Octstr *text, int start)
  * escape mode it has. Octstr *variable contains the variable string.
  */
 
-static var_esc_t check_variable_syntax(Octstr *variable)
+static var_esc_t check_variable_syntax(Octstr *variable, var_esc_t default_esc)
 {
     Octstr *escape;
     char ch;
@@ -1104,7 +1109,7 @@ static var_esc_t check_variable_syntax(Octstr *variable)
 	}
 	octstr_destroy(escape);
     } else
-	ret = NOESC;
+	ret = default_esc;
 
     ch = octstr_get_char(variable, 0);
     if (!(isalpha((int)ch)) && ch != '_') {
@@ -1131,7 +1136,7 @@ static var_esc_t check_variable_syntax(Octstr *variable)
  * not. Returns 0 for success, -1 for error.
  */
 
-static int parse_st_octet_string(Octstr *ostr, int cdata, wml_binary_t **wbxml)
+static int parse_st_octet_string(Octstr *ostr, int cdata, var_esc_t default_esc, wml_binary_t **wbxml)
 {
     Octstr *output, *var, *temp = NULL;
     int var_len;
@@ -1157,7 +1162,7 @@ static int parse_st_octet_string(Octstr *ostr, int cdata, wml_binary_t **wbxml)
 		octstr_destroy(temp);
 	    }
 	  
-	    if ((var_len = parse_variable(ostr, pos, &var, wbxml)) > 0)	{
+	    if ((var_len = parse_variable(ostr, pos, default_esc, &var, wbxml)) > 0)	{
 		if (octstr_len(var) > 0) {
 		    if (octstr_get_char(var, 0) == '$')
 			/*
@@ -1563,7 +1568,7 @@ static var_esc_t check_variable_name(xmlNodePtr node)
 	return FAILED;
     }
 
-    ret = check_variable_syntax(name);
+    ret = check_variable_syntax(name, NOESC);
 
     octstr_destroy(name);
     return ret;
