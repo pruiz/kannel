@@ -1,3 +1,7 @@
+2004-11-03 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/dbpool_pgsql.c: fixed double free (PGFinish will destroy
+      connection for us).
+
 2004-10-31 Alexander Malysh <amalysh at kannel.org>
     * gw/msg.c: fixed double free in 'msg_unpack'.
 

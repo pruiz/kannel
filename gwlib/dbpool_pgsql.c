@@ -65,9 +65,6 @@
 #include <libpq-fe.h>
 
 
-#define exit_nicely(conn) do { PQfinish(conn); } while(0)
-
-
 #define add1(str, value) \
     if (value != NULL && octstr_len(value) > 0) { \
         tmp = octstr_format(str, value); \
@@ -102,7 +99,10 @@ static void* pgsql_open_conn(const DBConf *db_conf)
     conn = PQconnectdb(octstr_get_cstr(cs));
 
     octstr_destroy(cs);
-    gw_assert (conn != NULL);
+    if (conn == NULL)
+        goto failed;
+
+    gw_assert(conn != NULL);
 
     if (PQstatus(conn) == CONNECTION_BAD) {
         error(0, "PGSQL: connection to database %s failed!", octstr_get_cstr(conf->dbName)); 
@@ -115,8 +115,7 @@ static void* pgsql_open_conn(const DBConf *db_conf)
     return conn;
 
 failed:
-    exit_nicely(conn);
-    if (conn != NULL) gw_free(conn);
+    PQfinish(conn);
     return NULL;
 }
 
@@ -126,8 +125,7 @@ static void pgsql_close_conn(void *conn)
     if (conn == NULL)
         return;
 
-    exit_nicely(conn);
-    if (conn != NULL) gw_free(conn);
+    PQfinish(conn);
     return;
 }
 
