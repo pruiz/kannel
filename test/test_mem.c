@@ -9,6 +9,7 @@
 
 int main(void) {
 	void *p;
+	long i;
 	
 	gw_init_mem();
 
@@ -18,6 +19,13 @@ int main(void) {
 
 	p = gw_malloc(100);
 	gw_check_leaks();
+	gw_free(p);
+	gw_check_leaks();
+
+	for (i = 0; i < 1000; ++i) {
+		p = gw_malloc(100);
+		debug("", 0, "i = %ld", i);
+	}
 
 	return 0;
 }
