@@ -66,6 +66,9 @@ Memory allocation
 	Never use malloc, calloc, realloc, or free. Use gw_malloc,
 	gw_realloc, and gw_free instead.
 
+	Do not allocate large arrays on the stack, because there
+	are systems where the stack space per thread is quite limited.  
+
 Log messages
 
 	The logging functions in wapitlib.h shall be used, not printf.
