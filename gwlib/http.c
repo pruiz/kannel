@@ -247,7 +247,6 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     
     URL *url = NULL;
     HTTPRequest *request = NULL, *response = NULL;
-    HTTPHeader *hdr = NULL;
     unsigned char *ptr = NULL, tempbuffer[4];
     unsigned char *authorization = NULL;
     int how_many_moves = 0;
@@ -283,6 +282,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     }
     
     
+    
     /* .. the common headers... */
     httprequest_add_header(request, "Host", request->url->host);
     httprequest_add_header(request, "Connection", "close");
@@ -311,17 +311,6 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	httprequest_replace_header(request, header->key, header->value);
 	header = header->next;
     }
-    
-    hdr = request->baseheader; 
-    while(hdr != NULL){
-	if(!(strcasecmp(hdr->key, "Content-Length")) &&/*compare==0 for match */
-	   atoi(hdr->value) == 0){
-	    httprequest_remove_header(request, "Content-Length");
-	    break;
-	}
-	hdr = hdr->next;
-    }
-    
     
     
     

@@ -1,4 +1,9 @@
 2000-03-22 Sanna Seppanen <sanna@wapit.com>
+	
+	* gwlib/http.c: htp_get_u: After furthed investigation,
+	zero-valued "Content-Length" header is valid, changing back.
+
+2000-03-22 Sanna Seppanen <sanna@wapit.com>
 
 	* gwlib/http.c: A minor fix to header_pack(). Check the sprintf
 	return value. header_create() return NULL if fails.
