@@ -21,7 +21,6 @@
 #include "smsc.h"
 #include "smsc_p.h"
 #include "wapitlib.h"
-#include "sms_msg.h"
 #include "smsc_p.h"
 
 
