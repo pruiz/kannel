@@ -1,3 +1,8 @@
+Wed Feb 16 14:38:06 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* test/fakewap.c: Changed test for SOL_TCP to actually test the
+	macro.
+
 2000-02-16 Aarno Syvänen <syvanen@wapit.com>
 
 	* test/fakewap.c: This version was used for testing of wtp error 
