@@ -1334,7 +1334,6 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     long window;
     	/* has to be long because of cfg_get_integer */
     int i;
-    int retry;
 
     privdata = gw_malloc(sizeof(PrivData));
     privdata->outgoing_queue = list_create();
