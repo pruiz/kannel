@@ -920,7 +920,6 @@ static int handle_push_message(WAPEvent *e, int status)
 
     sm = session_find_using_pi_client_address(cliaddr);
     coded_appid_value = check_x_wap_application_id_header(&push_headers);
-    coriented_possible = coriented_deliverable(coded_appid_value);
     cless = cless_accepted(e, sm);
     message_transformable = transform_message(&e, &tuple, push_headers, cless, 
                                               &type);
@@ -932,12 +931,6 @@ static int handle_push_message(WAPEvent *e, int status)
     if (!store_push_data(&pm, sm, e, tuple, cless)) {
         warning(0, "PPG: handle_push_message: duplicate push id");
         response_push_message(pm, PAP_DUPLICATE_PUSH_ID, status);
-        goto no_start;
-    }
-
-    if (!cless && !coriented_possible) {
-        warning(0, "PPG: handle_push_message: wrong app id for confirmed push");
-        response_push_message(pm, PAP_BAD_REQUEST, status);
         goto no_start;
     }
 
@@ -993,10 +986,17 @@ static int handle_push_message(WAPEvent *e, int status)
 	      
         if (session_exists) {
             deliver_confirmed_push(NOT_LAST, pm, sm);   
-        } else {  
+        } else { 
+            coriented_possible = coriented_deliverable(coded_appid_value); 
 	    http_header_remove_all(e->u.Push_Message.push_headers, 
                                    "Content-Type");  
-            create_session(e, pm);
+            if (coriented_possible) {
+                create_session(e, pm);
+            } else {
+                warning(0, "PPG: handle_push_message: wrong app id for confirmed"
+                        " push session creation");
+                response_push_message(pm, PAP_BAD_REQUEST, status);
+            }
         }
     }
 
