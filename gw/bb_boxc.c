@@ -1041,9 +1041,11 @@ Octstr *boxc_status(int status_type)
 		        continue;
 	        t = orig - bi->connect_time;
             if (status_type == BBSTATUS_XML)
-	            octstr_format_append(tmp, "<box>\n\t\t<type>smsbox</type>\n\t\t<IP>%s</IP>\n"
+	            octstr_format_append(tmp, "<box>\n\t\t<type>smsbox</type>\n"
+                    "\t\t<id>%s</id>\n\t\t<IP>%s</IP>\n"
                     "\t\t<status>on-line %ldd %ldh %ldm %lds</status>\n"
                     "\t\t<ssl>%s</ssl>\n\t</box>",
+                    (bi->boxc_id ? octstr_get_cstr(bi->boxc_id) : ""),
 		            octstr_get_cstr(bi->client_ip),
 		            t/3600/24, t/3600%24, t/60%60, t%60,
 #ifdef HAVE_LIBSSL
