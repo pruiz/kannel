@@ -1,3 +1,6 @@
+2002-05-16  Stipe Tolj <tolj@wapme-systems.de>
+    * configure[.in]: fixed --disable-ssl bug reported by Aarno.
+
 2002-05-15 Aarno Syvänen <aarno@wiral.com>
     * doc/userguide/userguide.xml: some clarifications in ppg documentation
 
