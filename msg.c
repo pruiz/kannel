@@ -54,7 +54,7 @@ error:
 }
 
 void msg_destroy(Msg *msg) {
-	#define INTEGER(name) 
+	#define INTEGER(name) p = NULL
 	#define OCTSTR(name) octstr_destroy(p->name)
 	#define MSG(type, stmt) { struct type *p = &msg->type; stmt }
 	#include "msg-decl.h"

@@ -1,3 +1,7 @@
+Thu Nov 11 19:41:40 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* msg.c: Fixed warning of unused variable.
+
 1999-11-11    <rpr@rpr.wapit.com>
 
 	* msg.h, msg.c: added function msg_type.
