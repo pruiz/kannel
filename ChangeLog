@@ -1,5 +1,10 @@
 2000-10-09  Richard Braakman  <dark@wapit.com>
 
+	* wmlscript/wsopt.c: Add an optimization to remove useless tobool
+	conversions.
+
+2000-10-09  Richard Braakman  <dark@wapit.com>
+
 	* wmlscript/wsstree.c: Always convert the result of an && or ||
 	operator to boolean, because the spec requires it for typeof().
 

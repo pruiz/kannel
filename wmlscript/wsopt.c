@@ -241,6 +241,62 @@ static WsBool opt_peephole(WsCompilerPtr compiler)
     return change;
 }
 
+/*
+ * Remove conversions that are followed by an opcode that does
+ * that conversion automatically anyway.
+ */
+static WsBool opt_conv(WsCompilerPtr compiler)
+{
+    WsBool change = WS_FALSE;
+    WsAsmIns *i, *next, *prev;
+
+    ws_info(compiler, "optimize: peephole");
+
+    prev = NULL;
+    i = compiler->asm_head;
+    while (i) {
+        if (i->type == WS_ASM_TOBOOL) {
+	    next = i->next;
+
+            /* Skip labels.  They're not going to affect which instruction
+             * gets executed after this TOBOOL. */
+  	    while (next != NULL && next->type == WS_ASM_P_LABEL)
+	        next = next->next;
+
+   	    if (next != NULL &&
+                (next->type == WS_ASM_P_TJUMP ||
+                 next->type == WS_ASM_NOT ||
+	         next->type == WS_ASM_SCAND ||
+	         next->type == WS_ASM_SCOR ||
+	         next->type == WS_ASM_TOBOOL ||
+	         next->type == WS_ASM_POP)) {
+	        /* The next instruction will automatically convert its
+	         * operand to boolean, or does not care about its operand
+	         * (POP), so the TOBOOL is not necessary.  Delete it.  */
+	        change = WS_TRUE;
+
+	        /* Use i->next here because next might have been incremented
+	         * past a label, which we do not want to delete. */
+	        if (prev)
+	    	    prev->next = i->next;
+	        else
+	    	    compiler->asm_head = i->next;
+
+	        if (i->next)
+                    i->next->prev = prev;
+                else
+                    compiler->asm_tail = prev;
+	    }
+        }
+
+	prev = i;
+	i = i->next;
+    }
+
+    return change;
+}
+
+
 /********************* Global entry point *******************************/
 
 void ws_asm_optimize(WsCompilerPtr compiler)
@@ -251,6 +307,10 @@ void ws_asm_optimize(WsCompilerPtr compiler)
        optimizations. */
     while (change) {
         change = WS_FALSE;
+
+	/* Useless conversions */
+	if (!compiler->params.no_opt_conv && opt_conv(compiler))
+	    change = WS_TRUE;
 
         /* Peephole. */
         if (!compiler->params.no_opt_peephole && opt_peephole(compiler))

@@ -81,6 +81,9 @@ struct WsCompilerParamsRec
     /* Do not remove unreachable code. */
     unsigned int no_opt_dead_code : 1;
 
+    /* Do not remove useless conversions */
+    unsigned int no_opt_conv : 1;
+
     /* Perform expensive optimizations which require liveness
        analyzation of the local variables. */
     unsigned int opt_analyze_variable_liveness : 1;
