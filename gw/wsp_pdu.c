@@ -1,14 +1,15 @@
-/* wtp_pdu.c - pack and unpack WTP packets
+/* wsp_pdu.c - pack and unpack WSP packets
  *
- * Generates packing and unpacking code from wtp_pdu.def.
+ * Generates packing and unpacking code from wsp_pdu.def.
+ * Code is very similar to wsp_pdu.c, please make any changes in both files.
  *
  * Richard Braakman <dark@wapit.com>
  */
 
 #include "gwlib/gwlib.h"
-#include "wtp_pdu.h"
+#include "wsp_pdu.h"
 
-void wtp_pdu_destroy(WTP_PDU *pdu) {
+void wsp_pdu_destroy(WSP_PDU *pdu) {
 	if (pdu == NULL)
 		return;
 
@@ -24,9 +25,7 @@ void wtp_pdu_destroy(WTP_PDU *pdu) {
 #define REST(field, docstring) octstr_destroy(p->field);
 #define TYPE(bits, value)
 #define RESERVED(bits)
-#define TPI(confield)
-#include "wtp_pdu.def"
-#undef TPI
+#include "wsp_pdu.def"
 #undef RESERVED
 #undef TYPE
 #undef REST
@@ -35,105 +34,16 @@ void wtp_pdu_destroy(WTP_PDU *pdu) {
 #undef UINT
 #undef PDU
 	default:
-		warning(0, "Cannot destroy unknown WTP PDU type %d", pdu->type);
+		warning(0, "Cannot destroy unknown WSP PDU type %d", pdu->type);
 		break;
-	}
-
-	if (pdu->options) {
-		while (list_len(pdu->options)) {
-			wtp_tpi_destroy(list_consume(pdu->options));
-		}
-		list_destroy(pdu->options);
 	}
 
 	gw_free(pdu);
 }
 
-void wtp_tpi_destroy(WTP_TPI *p) {
-	if (p == NULL)
-		return;
-
-	octstr_destroy(p->data);
-	gw_free(p);
-}
-
-static long unpack_tpis(Octstr *data, long bitpos, List *tpis) {
-	long length;
-	WTP_TPI *tpi;
-	int another;
-
-	do {
-		tpi = gw_malloc(sizeof(*tpi));
-		another = octstr_get_bits(data, bitpos, 1);
-		tpi->type = octstr_get_bits(data, bitpos + 1, 4);
-		if (octstr_get_bits(data, bitpos + 5, 1)) {
-			/* Long TPI */
-			length = octstr_get_bits(data, bitpos + 8, 8);
-			bitpos += 16;
-		} else {
-			/* Short TPI */
-			length = octstr_get_bits(data, bitpos + 6, 2);
-			bitpos += 8;
-		}
-		gw_assert(bitpos % 8 == 0);
-		tpi->data = octstr_copy(data, bitpos / 8, length);
-		bitpos += 8 * length;
-		list_append(tpis, tpi);
-	} while (another);
-
-	return bitpos;
-}
-
-static long pack_tpis(Octstr *data, long bitpos, List *tpis) {
-	long length;
-	WTP_TPI *tpi;
-	int i;
-	int num_tpis;
-
-	num_tpis = list_len(tpis);
-	for (i = 0; i < num_tpis; i++) {
-		tpi = list_get(tpis, i);
-		length = octstr_len(tpi->data);
-		octstr_set_bits(data, bitpos, 1, i + 1 < num_tpis);
-		octstr_set_bits(data, bitpos + 1, 4, tpi->type);
-		if (length >= 4) {
-			/* Long TPI */
-			octstr_set_bits(data, bitpos + 5, 1, 1);
-			octstr_set_bits(data, bitpos + 8, 8, length);
-			bitpos += 16;
-		} else {
-			/* Short TPI */
-			octstr_set_bits(data, bitpos + 5, 1, 0);
-			octstr_set_bits(data, bitpos + 6, 2, length);
-			bitpos += 8;
-		}
-		gw_assert(bitpos % 8 == 0);
-		octstr_append(data, tpi->data);
-		bitpos += 8 * length;
-	}
-
-	return bitpos;
-}
-
-static void dump_tpis(List *tpis, int level) {
-	int i;
-	int num_tpis;
-	WTP_TPI *tpi;
-
-	if (tpis == NULL)
-		return;
-
-	num_tpis = list_len(tpis);
-	for (i = 0; i < num_tpis; i++) {
-		tpi = list_get(tpis, i);
-		debug("wap.wtp", 0, "%*s TPI type %u:", level, "", tpi->type);
-		octstr_dump(tpi->data, level + 1);
-	}
-}
-
 /* Determine which type of PDU this is, using the TYPE macros in
  * the definition file. */
-static int wtp_pdu_type(Octstr *data) {
+static int wsp_pdu_type(Octstr *data) {
 	long bitpos;
 	long lastpos = -1;
 	long lastnumbits = -1;
@@ -163,9 +73,7 @@ static int wtp_pdu_type(Octstr *data) {
 	lastnumbits = (bits); \
 	lastpos = bitpos;
 #define RESERVED(bits) bitpos += (bits);
-#define TPI(confield)
-#include "wtp_pdu.def"
-#undef TPI
+#include "wsp_pdu.def"
 #undef RESERVED
 #undef TYPE
 #undef REST
@@ -177,16 +85,15 @@ static int wtp_pdu_type(Octstr *data) {
 	return -1;
 }
 
-WTP_PDU *wtp_pdu_unpack(Octstr *data) {
-	WTP_PDU *pdu = NULL;
+WSP_PDU *wsp_pdu_unpack(Octstr *data) {
+	WSP_PDU *pdu = NULL;
 	long bitpos = 0;
 
 	gw_assert(data != NULL);
 
 	pdu = gw_malloc(sizeof(*pdu));
 
-	pdu->type = wtp_pdu_type(data);
-	pdu->options = NULL;
+	pdu->type = wsp_pdu_type(data);
 
 	switch (pdu->type) {
 #define PDU(name, docstring, fields, is_valid) \
@@ -227,13 +134,7 @@ WTP_PDU *wtp_pdu_unpack(Octstr *data) {
 	}
 #define TYPE(bits, value) bitpos += (bits);
 #define RESERVED(bits) bitpos += (bits);
-#define TPI(confield) \
-	if (p->confield) { \
-		pdu->options = list_create(); \
-		bitpos = unpack_tpis(data, bitpos, pdu->options); \
-	}
-#include "wtp_pdu.def"
-#undef TPI
+#include "wsp_pdu.def"
 #undef RESERVED
 #undef TYPE
 #undef REST
@@ -242,19 +143,19 @@ WTP_PDU *wtp_pdu_unpack(Octstr *data) {
 #undef UINT
 #undef PDU
 	default:
-		warning(0, "WTP PDU with unknown type %d", pdu->type);
-		wtp_pdu_destroy(pdu);
+		warning(0, "WSP PDU with unknown type %d", pdu->type);
+		wsp_pdu_destroy(pdu);
 		return NULL;
 	}
 
 	return pdu;
 }
 
-static void fixup_length_fields(WTP_PDU *pdu) {
+static void fixup_length_fields(WSP_PDU *pdu) {
 	switch (pdu->type) {
 #define PDU(name, docstring, fields, is_valid) \
 	case name: { \
-		struct name *p = &pdu->u.name; \
+		struct name *p; p = &pdu->u.name; \
 		fields \
 	} break;
 #define UINT(field, docstring, bits)
@@ -264,10 +165,7 @@ static void fixup_length_fields(WTP_PDU *pdu) {
 #define REST(field, docstring)
 #define TYPE(bits, value)
 #define RESERVED(bits)
-#define TPI(confield) \
-	p->confield = pdu->options != NULL && list_len(pdu->options) > 0;
-#include "wtp_pdu.def"
-#undef TPI
+#include "wsp_pdu.def"
 #undef RESERVED
 #undef TYPE
 #undef REST
@@ -278,7 +176,7 @@ static void fixup_length_fields(WTP_PDU *pdu) {
 	}
 }
 
-Octstr *wtp_pdu_pack(WTP_PDU *pdu) {
+Octstr *wsp_pdu_pack(WSP_PDU *pdu) {
 	Octstr *data;
 	long bitpos;
 
@@ -314,12 +212,7 @@ Octstr *wtp_pdu_pack(WTP_PDU *pdu) {
 	octstr_set_bits(data, bitpos, (bits), (value)); \
 	bitpos += (bits);
 #define RESERVED(bits) bitpos += (bits);
-#define TPI(confield) \
-	if (p->confield) { \
-		bitpos = pack_tpis(data, bitpos, pdu->options); \
-	}
-#include "wtp_pdu.def"
-#undef TPI
+#include "wsp_pdu.def"
 #undef RESERVED
 #undef TYPE
 #undef REST
@@ -328,20 +221,20 @@ Octstr *wtp_pdu_pack(WTP_PDU *pdu) {
 #undef UINT
 #undef PDU
 	default:
-		panic(0, "Packing unknown WTP PDU type %ld", (long) pdu->type);
+		panic(0, "Packing unknown WSP PDU type %ld", (long) pdu->type);
 	}
 
 	return data;
 }
 
-void wtp_pdu_dump(WTP_PDU *pdu, int level) {
-	unsigned char *dbg = "wap.wtp";
+void wsp_pdu_dump(WSP_PDU *pdu, int level) {
+	unsigned char *dbg = "wap.wsp";
 
 	switch (pdu->type) {
 #define PDU(name, docstring, fields, is_valid) \
 	case name: { \
 		struct name *p = &pdu->u.name; \
-		debug(dbg, 0, "%*sWTP %s PDU at %p:", \
+		debug(dbg, 0, "%*sWSP %s PDU at %p:", \
 			level, "", #name, (void *)pdu); \
 		fields \
 	} break;
@@ -357,9 +250,7 @@ void wtp_pdu_dump(WTP_PDU *pdu, int level) {
 	octstr_dump(p->field, level + 1);
 #define TYPE(bits, value)
 #define RESERVED(bits)
-#define TPI(confield) dump_tpis(pdu->options, level);
-#include "wtp_pdu.def"
-#undef TPI
+#include "wsp_pdu.def"
 #undef RESERVED
 #undef TYPE
 #undef REST
@@ -368,7 +259,7 @@ void wtp_pdu_dump(WTP_PDU *pdu, int level) {
 #undef UINT
 #undef PDU
 	default:
-		debug(dbg, 0, "%*sWTP PDU at %p:", level, "", (void *)pdu);
+		debug(dbg, 0, "%*sWSP PDU at %p:", level, "", (void *)pdu);
 		debug(dbg, 0, "%*s unknown type %u", level, "", pdu->type);
 		break;
 	}

@@ -1429,3 +1429,24 @@ const char *function) {
 			filename, lineno, function);
 	}
 }
+
+void octstr_append_uintvar(Octstr *ostr, unsigned long value) {
+	/* A uintvar is defined to be up to 32 bits large, so it will
+	 * fit in 5 octets. */
+	unsigned char octets[5];
+	int i;
+	int start;
+
+	/* Handle last byte separately; it has no continuation bit,
+	 * and must be encoded even if value is 0. */
+	octets[4] = value & 0x7f;
+	value >>= 7;
+
+	for (i = 3; value > 0 && i >= 0; i--) {
+		octets[i] = 0x80 | (value & 0x7f);
+		value >>= 7;
+	}
+	start = i + 1;
+
+	octstr_append_data(ostr, octets + start, 5 - start);
+}

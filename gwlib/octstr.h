@@ -405,4 +405,9 @@ long octstr_get_bits(Octstr *ostr, long bitpos, int numbits);
  */
 void octstr_set_bits(Octstr *ostr, long bitpos, int numbits, unsigned long value);
 
+/* 
+ * Encode value in WSP's uintvar format, and append it to the octstr
+ */
+void octstr_append_uintvar(Octstr *ostr, unsigned long value);
+
 #endif

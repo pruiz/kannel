@@ -1,3 +1,13 @@
+2000-06-03  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/octstr.[ch]: Added octstr_append_uintvar.
+
+	* gw/wsp_pdu.[ch], gw/wsp_pdu.def: Do the same for WSP PDU's.
+
+	* gw/wtp_pdu.c: Bugfixes.
+
+	* test/test_pdu.c: Test WSP data too.
+
 2000-05-31  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/octstr.[ch]: Added octstr_get_bits and octstr_set_bits.
