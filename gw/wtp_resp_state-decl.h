@@ -21,6 +21,11 @@
  * duplicate message and the first one has already changed wtp responder mach-
  * ine. In this case ignoring the event is natural.
  *
+ * State tables use the phrase "abort transaction" many times. In this imple-
+ * mentation this means "clear data structures used for storing transaction 
+ * data". This happens in function resp_event_handle, after included state 
+ * table code.
+ *
  * Commenting the state table is perhaps best done by pointing out how various 
  * services provided by WTP contribute rows to the state table.
  *
@@ -232,8 +237,19 @@ ROW(INVOKE_RESP_WAIT,
     resp_machine->tcl == 2,
     { 
      start_timer_A(resp_machine); 
+     resp_machine->aec = 0;
     },
     RESULT_WAIT)
+
+ROW(INVOKE_RESP_WAIT,
+    TR_Invoke_Res,
+    resp_machine->tcl == 1,
+    {
+      wtp_send_ack(ACKNOWLEDGEMENT, resp_machine->rid, resp_machine->tid, 
+                  resp_machine->addr_tuple);
+      start_timer_W(resp_machine);
+    },
+    WAIT_TIMEOUT_STATE)
 
 ROW(INVOKE_RESP_WAIT,
     RcvAbort,
@@ -285,38 +301,51 @@ ROW(INVOKE_RESP_WAIT,
  */
 ROW(INVOKE_RESP_WAIT,
     TimerTO_A,
-    resp_machine->aec < AEC_MAX && resp_machine->tcl == 2 && 
-    resp_machine->u_ack == 1,
+    resp_machine->aec < AEC_MAX && resp_machine->u_ack == 1,
     { 
      ++resp_machine->aec;
      start_timer_A(resp_machine);
     },
     INVOKE_RESP_WAIT)
 
+ROW(INVOKE_RESP_WAIT,
+    TimerTO_A,
+    (resp_machine->aec < AEC_MAX && resp_machine->u_ack == 0),
+    { 
+     ++resp_machine->aec;
+     start_timer_A(resp_machine);
+     wtp_send_ack(ACKNOWLEDGEMENT, resp_machine->rid, resp_machine->tid, 
+                  resp_machine->addr_tuple);
+     if (resp_machine->ack_pdu_sent == 0)
+         resp_machine->ack_pdu_sent = 1;
+    },
+    RESULT_WAIT)
+
 /*
- * When a transaction is aborted, WSP must surely now this. One of corrections
- * in MOT_WTP_CR_01.
+ * When a transaction is aborted, WSP must surely know this. One of corrections
+ * in MOT_WTP_CR_01. What to do when a counter reaches its maximum value dep-
+ * ends on whether we have opened the connection or not. In previous case, we 
+ * must go to the state WAIT_TIMEOUT_STATE, for instance to prevent bad incarn-
+ * ations.
  */
 ROW(INVOKE_RESP_WAIT,
     TimerTO_A,
-    resp_machine->aec == AEC_MAX,
+    resp_machine->aec == AEC_MAX && resp_machine->tcl == 2,
     {
      wtp_send_abort(PROVIDER, NORESPONSE, resp_machine->tid, 
                     resp_machine->addr_tuple); 
-     wsp_event = create_tr_abort_ind(resp_machine, PROTOERR);
+     wsp_event = create_tr_abort_ind(resp_machine, NORESPONSE);
      wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
 
 ROW(INVOKE_RESP_WAIT,
     TimerTO_A,
-    (resp_machine->tcl == 2 && resp_machine->u_ack == 0),
-    { 
-     wtp_send_ack(ACKNOWLEDGEMENT, resp_machine->rid, resp_machine->tid, 
-                  resp_machine->addr_tuple);
-     resp_machine->ack_pdu_sent = 1;
+    resp_machine->aec == AEC_MAX && resp_machine->tcl == 1,
+    {
+      start_timer_W(resp_machine);
     },
-    RESULT_WAIT)
+    WAIT_TIMEOUT_STATE)
 
 ROW(INVOKE_RESP_WAIT,
     RcvErrorPDU,
@@ -400,17 +429,32 @@ ROW(RESULT_WAIT,
 /*
  * This state follows two possible ones: INVOKE_RESP_WAIT & TR-Invoke.res and 
  * INVOKE_RESP_WAIT & TimerTO_A & Class == 2 & Uack == FALSE. Contrary what 
- * spec says, in first case we are now sending first time. 
+ * spec says, in first case we are now sending first time. We must, too, abort
+ * after AEC_MAX timer periods.
  */
 ROW(RESULT_WAIT,
     TimerTO_A,
-    1,
+    resp_machine->aec < AEC_MAX,
     { 
+     start_timer_A(resp_machine);
      wtp_send_ack(ACKNOWLEDGEMENT, resp_machine->rid, resp_machine->tid, 
                   resp_machine->addr_tuple);
-     resp_machine->ack_pdu_sent = 1;
+     if (resp_machine->ack_pdu_sent == 0)
+        resp_machine->ack_pdu_sent = 1;
+     resp_machine->aec++;
     },
     RESULT_WAIT)
+
+ROW(RESULT_WAIT,
+    TimerTO_A,
+    resp_machine->aec == AEC_MAX,
+    {
+     wtp_send_abort(PROVIDER, NORESPONSE, resp_machine->tid, 
+                    resp_machine->addr_tuple); 
+     wsp_event = create_tr_abort_ind(resp_machine, NORESPONSE);
+     wsp_session_dispatch_event(wsp_event);
+    },
+    LISTEN)
 
 /*
  * A duplicate ack(tidok) caused by a heavy load (the original changed state
@@ -439,25 +483,9 @@ ROW(RESULT_RESP_WAIT,
  */
 ROW(RESULT_RESP_WAIT,
     RcvInvoke,
-    event->u.RcvInvoke.rid == 0,
+    1,
     { },
     RESULT_RESP_WAIT)
-
-ROW(RESULT_RESP_WAIT,
-    RcvInvoke,
-    event->u.RcvInvoke.rid == 1 && resp_machine->ack_pdu_sent == 0,
-    { },
-    RESULT_RESP_WAIT)
-
-ROW(RESULT_RESP_WAIT,
-    RcvInvoke,
-    event->u.RcvInvoke.rid == 1 && resp_machine->ack_pdu_sent == 1,
-    {
-     wtp_send_ack(ACKNOWLEDGEMENT, resp_machine->rid, 
-                  resp_machine->tid, resp_machine->addr_tuple);
-    },
-    RESULT_WAIT)
-
 
 ROW(RESULT_RESP_WAIT,
     RcvAbort,
@@ -492,6 +520,8 @@ ROW(RESULT_RESP_WAIT,
     TimerTO_R,
     resp_machine->rcr == MAX_RCR,
     {
+     wtp_send_abort(USER, NORESPONSE, resp_machine->tid, 
+                    resp_machine->addr_tuple); 
      wsp_event = create_tr_abort_ind(resp_machine, NORESPONSE);
      wsp_session_dispatch_event(wsp_event);
     },
@@ -506,6 +536,63 @@ ROW(RESULT_RESP_WAIT,
       
      wsp_event = create_tr_abort_ind(resp_machine, PROTOERR);
      wsp_session_dispatch_event(wsp_event);
+    },
+    LISTEN)
+
+ROW(WAIT_TIMEOUT_STATE,
+    RcvInvoke,
+    event->u.RcvInvoke.rid == 0,
+    { },
+    WAIT_TIMEOUT_STATE)
+
+ROW(WAIT_TIMEOUT_STATE,
+    RcvInvoke,
+    event->u.RcvInvoke.rid == 1,
+    {
+     wtp_send_ack(ACKNOWLEDGEMENT, resp_machine->rid, 
+                  resp_machine->tid, resp_machine->addr_tuple);
+    },
+    WAIT_TIMEOUT_STATE)
+
+ROW(WAIT_TIMEOUT_STATE,
+    RcvErrorPDU,
+    1,
+    {
+     wtp_send_abort(PROVIDER, PROTOERR, resp_machine->tid, 
+                    resp_machine->addr_tuple); 
+      
+     wsp_event = create_tr_abort_ind(resp_machine, PROTOERR);
+     wsp_session_dispatch_event(wsp_event);
+    },
+    LISTEN)
+
+ROW(WAIT_TIMEOUT_STATE,
+    RcvAbort,
+    1,
+    {
+     wsp_event = create_tr_abort_ind(resp_machine, PROTOERR);
+     wsp_session_dispatch_event(wsp_event);
+    },
+    LISTEN)
+
+/*
+ * Waiting to prevent premature incarnations.
+ */
+ROW(WAIT_TIMEOUT_STATE,
+    TimerTO_W,
+    1,
+    {
+     wsp_event = create_tr_abort_ind(resp_machine, NORESPONSE);
+     wsp_session_dispatch_event(wsp_event); 
+    },
+    LISTEN)
+
+ROW(WAIT_TIMEOUT_STATE,
+    TR_Abort_Req,
+    1,
+    {
+     wtp_send_abort(USER, event->u.TR_Abort_Req.abort_reason, 
+                    resp_machine->tid, resp_machine->addr_tuple);
     },
     LISTEN)
 

@@ -1,3 +1,11 @@
+2000-10-30 Aarno Syvänen <syvanen@wapit.com>
+
+	* gw/wtp_resp_state-decl.h: Added timeout to state RESULT_WAIT: Now
+	we wait for result only for AEC_MAX timer periods.
+
+	* gw/wtp.c, gw/wtp_resp.c, gw/wtp_resp_state-decl.h: Added class 
+	transaction handling. Not much tested, yet.
+
 2000-10-27  Lars Wirzenius  <liw@iki.fi>
 
 	* README.*: Moved information into README. There's no point in

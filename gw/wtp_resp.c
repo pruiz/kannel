@@ -100,6 +100,10 @@ static void start_timer_A(WTPRespMachine *machine);
  */
 static void start_timer_R(WTPRespMachine *machine);
 
+/*
+ * Start timeout interval timer.
+ */
+static void start_timer_W(WTPRespMachine *machine);
 static WTPRespMachine *find_resp_machine_using_mid(long mid);
 static WAPEvent *create_tr_invoke_ind(WTPRespMachine *sm, Octstr *user_data);
 static WAPEvent *create_tr_abort_ind(WTPRespMachine *sm, long abort_reason);
@@ -595,5 +599,14 @@ static void start_timer_R(WTPRespMachine *machine)
     gwtimer_start(machine->timer, L_R_WITH_USER_ACK, timer_event);
 }
 
+/*
+ * Start timeout interval timer
+ */
+static void start_timer_W(WTPRespMachine *machine)
+{
+    WAPEvent *timer_event;
 
-
+    timer_event = wap_event_create(TimerTO_W);
+    timer_event->u.TimerTO_W.handle = machine->mid;
+    gwtimer_start(machine->timer, W_WITH_USER_ACK, timer_event);
+}

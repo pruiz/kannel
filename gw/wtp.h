@@ -46,7 +46,8 @@ enum {
     S_R_WITHOUT_USER_ACK = 3,
     S_R_WITH_USER_ACK = 4,
     G_R_WITHOUT_USER_ACK = 3,
-    G_R_WITH_USER_ACK = 3
+    G_R_WITH_USER_ACK = 3,
+    W_WITH_USER_ACK = 30
 };
 
 /*
