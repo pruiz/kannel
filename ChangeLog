@@ -1,3 +1,9 @@
+2003-05-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added 'xidris' to HTTP SMSC system-type
+      values.
+    * gw/smsc/smsc_http.c: added Xidris HTTP interface as system-type 
+      'xidris'. Yet not tested against server.
+
 2003-05-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/md5.[ch]: added md5digest() function to return the raw 16 bytes
       of the hashed value.
