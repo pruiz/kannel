@@ -1,3 +1,9 @@
+2001-10-11 Andreas Fink <andreas@fink.org>
+	* smsc_at2.c: fixed bugs while sending SMS, autosensing speed
+	* config.guess, config.sub: updated to detect MacOS X correctly
+	Note: MacOS X doesnt support signals being sent to threads so
+	we cant disable them.
+
 2001-10-10 Aarno Syvänen <aarno@wiral.com>
 
 	* doc/userguide/userguide.xml: Some corrections.

@@ -42,7 +42,7 @@ struct modem_def
 {
     char 	*name;
     char	*hwhs;			/* enable hardware handshake */
-    int 	speed;
+    long 	speed;
     char	*init1;
     char	*detect_string1;
     char	*detect_string2;
@@ -66,7 +66,7 @@ struct modem_def
 #define	MAX_MODEM_TYPES		8
 struct modem_def ModemTypes[MAX_MODEM_TYPES] =
 {
-    { "autodetect", 	"AT+IFC=2,2" 	, 9600  , "AT+CNMI=1,2,0,0,0",	NULL,		NULL, 	0, 0, 1, 0, 0	},
+    { "autodetect", 	"AT+IFC=2,2" 	, 0     , "AT+CNMI=1,2,0,0,0",	NULL,		NULL, 	0, 0, 1, 0, 0	},
     { "wavecom", 	"AT+IFC=2,2" 	, 9600  , "AT+CNMI=1,2,0,0,0",	"WAVECOM",	NULL,	0, 0, 1, 1, 1	},
     { "premicell", 	"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"PREMICEL",	NULL,	0, 0, 0, 0, 0	},
     { "siemens-tc35",	"AT\\Q3" 	, 38400 , "AT+CNMI=1,2,0,0,1",	"SIEMENS", 	"TC35",	0, 0, 1, 1, 1	},
@@ -103,7 +103,7 @@ typedef struct PrivAT2data
     int		shutdown;	  /* Internal signal to shut down */
     Octstr	*device;
     int		modemid;
-    int		speed;
+    long	speed;
     int		fd;	/* file descriptor */
     Octstr	*ilb;	/*input line buffer */
     Octstr	*lines; /* the last few lines before OK was seen */
@@ -170,7 +170,7 @@ int	at2_open_device1(PrivAT2data *privdata)
     }
     debug("bb.smsc.at2",0,"AT2[%s]: device opened",octstr_get_cstr(privdata->device));
 
-     return 0;
+    return 0;
 }
 
 
@@ -428,23 +428,28 @@ int  at2_write_line_cstr(PrivAT2data *privdata, char* line)
     s = write(privdata->fd, &eol, 1);
     if( s < 0)
         debug("bb.smsc.at2", 0, "AT2[%s]: write failed with errno %d", octstr_get_cstr(privdata->device), errno);
-    tcdrain (privdata->fd);
+/*    tcdrain (privdata->fd); */
     return i;
 }
 
+#define		at2_write_ctrlz(a)	at2_write(a,"\032")
+
+/*
 int  at2_write_ctrlz(PrivAT2data *privdata)
 {
     int s;
-    char *ctrlz =  "\x1A";
+    char ctrlz[] =  { 26, 13, 0 };
   
-    debug("bb.smsc.at2", 0, "AT2[%s]: --> ^Z", octstr_get_cstr(privdata->device));
+    debug("bb.smsc.at2", 0, "AT2[%s]: --> ^Z^M", octstr_get_cstr(privdata->device));
  
-    s = write(privdata->fd, ctrlz, 1);
+    s = write(privdata->fd, ctrlz, 2);
     if( s < 0)
    	debug("bb.smsc.at2", 0, "AT2[%s]: write failed with errno %d", octstr_get_cstr(privdata->device), errno);
     tcdrain (privdata->fd);
     return s;
 }
+
+*/
 
 int  at2_write(PrivAT2data *privdata, char* line)
 {
@@ -654,12 +659,14 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
            	ret = 2;
            	goto end;
            }
-          if (-1 != octstr_search(line, octstr_imm("OK"), 0))
+           
+           if (-1 != octstr_search(line, octstr_imm("OK"), 0))
            {
 		ret = 0;
 		goto end;
 	   }
-	   if ((gt_flag ) && (-1 != octstr_search(line, octstr_imm(">"), 0)))
+	   
+ 	   if ((gt_flag ) && (-1 != octstr_search(line, octstr_imm(">"), 0)))
            {
 		ret = 1;
 		goto end;
@@ -717,7 +724,13 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
                 }
 		continue;
 	   }
-     	}
+ 
+           if (-1 != octstr_search(line, octstr_imm("ERROR"), 0))
+           {
+		ret = -1;
+		goto end;
+	   }
+    	}
     }
     
     len = octstr_len(privdata->ilb);
@@ -921,6 +934,9 @@ int  smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata = gw_malloc(sizeof(PrivAT2data));
     privdata->outgoing_queue = list_create();
 
+    privdata->speed = 0;
+    cfg_get_integer(&privdata->speed, cfg, octstr_imm("speed"));
+
     privdata->device = cfg_get(cfg, octstr_imm("device"));
     if (privdata->device == NULL)
     {
@@ -938,12 +954,13 @@ int  smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     {
         info(0,"configuration shows modemtype=%s", octstr_get_cstr(modem_type_string));
     	privdata->modemid = at2_modem2id(octstr_get_cstr(modem_type_string));
+    	privdata->speed = ModemTypes[privdata->modemid].speed;
 	octstr_destroy(modem_type_string);
     }
-    info(0,"configured for modemid %d", privdata->modemid);
+    info(0,"configured for modem-id %d", privdata->modemid);
+    info(0,"configured for speed %ld", privdata->speed);
     privdata->ilb = octstr_create("");
     privdata->fd = -1;
-    privdata->speed = 0; /* autobauding */
     privdata->lines = NULL; 
     privdata->pin = cfg_get(cfg, octstr_imm("pin"));
     privdata->pin_ready = 0;
@@ -1286,9 +1303,9 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
     int ret = -1; 
     char sc[3];
     int retries = RETRY_SEND;
-
-    /* Some modem types need a '00' prepended to the PDU
-     * to indicate to use the default SC.
+   
+   /* the standard says you should be prepending the PDU with 00 to indicate to use the default SC.
+      some older modems dont expect this so it can be disabled 
      * NB: This extra padding is not counted in the CMGS byte count */
 
     sc[0] = '\0';
@@ -1300,53 +1317,34 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
     {
    	at2_pdu_encode(msg, &pdu[0], privdata);
    	
-    	sprintf(command, "AT+CMGS=%d", strlen(pdu)/2);
-    	if( (ret = at2_send_modem_command(privdata, command, 5, 1)) == 1) /* got a > */
-    	{
-	    sleep(1);
-
+        ret = -99;
+        retries = RETRY_SEND;
+        while ((ret != 0) && (retries-- > 0))
+        {
+	    /* send the initial command and then wait for > */
+    	    sprintf(command, "AT+CMGS=%d", strlen(pdu)/2);
+    	    ret = at2_send_modem_command(privdata, command, 5, 1);
+	    debug("bb.at", 0, "send command status: %d", ret);
+    	    if(ret != 1) /* > only! */
+    	    	continue;
+    	    /* ok the > has been see now so we can send the PDU now and a control Z but no CR or LF */
 	    sprintf(command, "%s%s", sc, pdu);
+	    sleep(1);
 	    at2_write(privdata,command);
 	    sleep(1);
-	    ret = at2_wait_modem_command(privdata, 10, 1);
-	    if(ret == 1)
-	    	ret = at2_write_ctrlz(privdata);
+	    at2_write_ctrlz(privdata);
+	    ret = at2_wait_modem_command(privdata, 10, 0);
 	    debug("bb.at", 0, "send command status: %d", ret);
-	    while ((ret < 0) && (retries > 0))
-	    {
-		sprintf(command, "AT+CMGS=%d", strlen(pdu)/2);
-		if((ret = at2_send_modem_command(privdata, command, 6, 1)) < 0)
-		    break;
-		sprintf(command, "%s%s", sc, pdu);
-   		at2_write(privdata,command);
-	    	    ret = at2_wait_modem_command(privdata, 10, 1);
-	    	if(ret == 1)
-	    	    ret = at2_write_ctrlz(privdata);
-		ret = at2_wait_modem_command(privdata, 10, 1);
-		debug("bb.at", 0, "send command status: %d", ret);
-		retries--;
-	    }
-	    if(ret >= 0)
-	    {
-	    	counter_increase(privdata->conn->sent);
-	    	bb_smscconn_sent(privdata->conn, msg);
-	    }
-	    else
-	    {
-	    	counter_increase(privdata->conn->failed);
-	    	bb_smscconn_send_failed(privdata->conn,msg,SMSCCONN_FAILED_MALFORMED);
-	    }
-        }
-        else
-        {
+	    if(ret != 0) /* OK only */
+	    	continue;
+	    counter_increase(privdata->conn->sent);
+	    bb_smscconn_sent(privdata->conn, msg);
+	}
+	if(ret != 0)
+	{
 	    counter_increase(privdata->conn->failed);
 	    bb_smscconn_send_failed(privdata->conn,msg,SMSCCONN_FAILED_MALFORMED);
 	}
-    }
-    else
-    {
-        counter_increase(privdata->conn->failed);
-	bb_smscconn_send_failed(privdata->conn,msg,SMSCCONN_FAILED_MALFORMED);
     }
 }
 
@@ -1643,10 +1641,10 @@ int at2_numtext(int num)
 
 void at2_detect_speed(PrivAT2data *privdata)
 {
-    int autospeeds[] = {  19200, 9600 };
+    int autospeeds[] = { 38400, 19200, 9600 };
     int i;
     int res;
-        
+    
     debug("bb.smsc.at2",0,"AT2[%s]: detecting modem speed. ",octstr_get_cstr(privdata->device));
 
     for(i=0;i< (sizeof(autospeeds) / sizeof(int));i++)
