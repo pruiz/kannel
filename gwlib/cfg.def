@@ -165,6 +165,7 @@ MULTI_GROUP(sms-service,
     OCTSTR(denied-prefix)
     OCTSTR(white-list)
     OCTSTR(black-list)
+    OCTSTR(dlr-url)
 )
 
 
@@ -188,6 +189,7 @@ MULTI_GROUP(sendsms-user,
     OCTSTR(denied-prefix)
     OCTSTR(white-list)
     OCTSTR(black-list)
+    OCTSTR(dlr-url)
 )
 
 

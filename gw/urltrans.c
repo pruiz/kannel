@@ -65,6 +65,7 @@ struct URLTranslation {
     int args;
     int has_catchall_arg;
     int catch_all;
+    Octstr *dlr_url;	/* Url to call for delivery reports */
 };
 
 
@@ -73,7 +74,8 @@ struct URLTranslation {
  */
 struct URLTranslationList {
     List *list;
-    Dict *dict;	/* Dict of lowercase Octstr */
+    Dict *dict;		/* Dict of lowercase Octstr keywords*/
+    Dict *names;	/* Dict of lowercase Octstr names */
 };
 
 
@@ -114,6 +116,7 @@ URLTranslationList *urltrans_create(void)
     trans = gw_malloc(sizeof(URLTranslationList));
     trans->list = list_create();
     trans->dict = dict_create(1024, destroy_keyword_list);
+    trans->names = dict_create(1024, destroy_keyword_list);
     return trans;
 }
 
@@ -121,6 +124,7 @@ URLTranslationList *urltrans_create(void)
 void urltrans_destroy(URLTranslationList *trans) 
 {
     list_destroy(trans->list, destroy_onetrans);
+    dict_destroy(trans->names);
     dict_destroy(trans->dict);
     gw_free(trans);
 }
@@ -130,7 +134,7 @@ int urltrans_add_one(URLTranslationList *trans, CfgGroup *grp)
 {
     URLTranslation *ot;
     long i;
-    List *list;
+    List *list, *list2;
     Octstr *alias;
     
     ot = create_onetrans(grp);
@@ -139,6 +143,13 @@ int urltrans_add_one(URLTranslationList *trans, CfgGroup *grp)
 		
     list_append(trans->list, ot);
     
+    list2 = dict_get(trans->names, ot->name);
+    if (list2 == NULL) {
+    	list2 = list_create();
+	dict_put(trans->names, ot->name, list2);
+    }
+    list_append(list2, ot);
+
     if (ot->keyword == NULL || ot->type == TRANSTYPE_SENDSMS)
     	return 0;
 
@@ -158,6 +169,7 @@ int urltrans_add_one(URLTranslationList *trans, CfgGroup *grp)
 	}
 	list_append(list, ot);
     }
+
 
     return 0;
 }
@@ -209,6 +221,21 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
 }
 
 
+URLTranslation *urltrans_find_service(URLTranslationList *trans, Msg *msg)
+{
+    URLTranslation *t;
+    List *list;
+    
+    list = dict_get(trans->names, msg->sms.service);
+    if (list != NULL) {
+       t = list_get(list, 0);
+    } else  {
+       t = NULL;
+    }
+    return t;
+}
+
+
 
 URLTranslation *urltrans_find_username(URLTranslationList *trans, 
 				       Octstr *name)
@@ -250,6 +277,7 @@ static void strip_keyword(Msg *request)
 }
 
 
+
 Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 {
     Octstr *enc;
@@ -257,26 +285,57 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
     struct tm tm;
     int num_words;
     List *word_list;
-    Octstr *result;
+    Octstr *result, *pattern;
     long pattern_len;
     long pos;
     int c;
     long i;
     Octstr *temp;
+    Octstr *url, *reply; /* For and If delivery report */
+
+    url = reply = NULL;
     
-    if (t->type == TRANSTYPE_SENDSMS)
+    if (request->sms.sms_type != report &&
+	t->type == TRANSTYPE_SENDSMS)
 	return octstr_create("");
 
     word_list = octstr_split_words(request->sms.msgdata);
     num_words = list_len(word_list);
-    
+
     result = octstr_create("");
-    pattern_len = octstr_len(t->pattern);
+    if (request->sms.sms_type != report) {
+	pattern = t->pattern;
+    } else {
+	int colon;
+
+	colon = octstr_search_char(request->sms.msgdata, '/', 0);
+	if (colon == 0 )
+	    reply = octstr_create("");
+	else 
+	    reply = octstr_copy(request->sms.msgdata, 0, colon);
+	if (colon == octstr_len(request->sms.msgdata)) 
+	    url = octstr_create("");
+	else
+	    url = octstr_copy(request->sms.msgdata, colon + 1, 
+	              octstr_len(request->sms.msgdata) - colon - 1);
+
+	pattern = url;
+	if (octstr_len(pattern) == 0) {
+	    if(octstr_len(t->dlr_url)) {
+		pattern = t->dlr_url;
+	    } else {
+		list_destroy(word_list, octstr_destroy_item);
+		return octstr_create("");
+	    }
+	}
+    }
+
+    pattern_len = octstr_len(pattern);
     nextarg = 1;
     pos = 0;
     for (;;) {
     	while (pos < pattern_len) {
-	    c = octstr_get_char(t->pattern, pos);
+	    c = octstr_get_char(pattern, pos);
 	    if (c == '%' && pos + 1 < pattern_len)
 	    	break;
 	    octstr_append_char(result, c);
@@ -286,7 +345,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
     	if (pos == pattern_len)
 	    break;
 
-	switch (octstr_get_char(t->pattern, pos + 1)) {
+	switch (octstr_get_char(pattern, pos + 1)) {
 	case 'k':
 	    enc = octstr_duplicate(list_get(word_list, 0));
 	    octstr_url_encode(enc);
@@ -413,13 +472,37 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    octstr_destroy(enc);
 	    break;
 
+	case 'n':
+	    if (request->sms.service == NULL)
+		break;
+	    enc = octstr_duplicate(request->sms.service);
+	    octstr_url_encode(enc);
+	    octstr_append(result, enc);
+	    octstr_destroy(enc);
+	    break;
+
+	case 'd':
+	    enc = octstr_create("");
+	    octstr_append_decimal(enc, request->sms.dlr_mask);
+	    octstr_url_encode(enc);
+	    octstr_append(result, enc);
+	    octstr_destroy(enc);
+	    break;
+
+	case 'A':
+	    enc = octstr_duplicate(reply);
+	    octstr_url_encode(enc);
+	    octstr_append(result, enc);
+	    octstr_destroy(enc);
+	    break;
+
 	case '%':
 	    octstr_format_append(result, "%%");
 	    break;
 
 	default:
 	    octstr_format_append(result, "%%%c",
-	    	    	    	 octstr_get_char(t->pattern, pos + 1));
+	    	    	    	 octstr_get_char(pattern, pos + 1));
 	    break;
 	}
 
@@ -431,6 +514,11 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
      */
     if (t->type == TRANSTYPE_POST_URL && t->strip_keyword)
 	strip_keyword(request);
+
+    if (url != NULL) 
+	octstr_destroy(url);
+    if (reply != NULL)
+	octstr_destroy(reply);
 
     list_destroy(word_list, octstr_destroy_item);
     return result;
@@ -630,6 +718,8 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
     if (is_sms_service) {
 	cfg_get_bool(&ot->catch_all, grp, octstr_imm("catch-all"));
 
+	ot->dlr_url = cfg_get(grp, octstr_imm("dlr-url"));
+	    
 	url = cfg_get(grp, octstr_imm("get-url"));
 	if (url == NULL)
 	    url = cfg_get(grp, octstr_imm("url"));
@@ -713,6 +803,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	ot->catch_all = 1;
 	ot->username = cfg_get(grp, octstr_imm("username"));
 	ot->password = cfg_get(grp, octstr_imm("password"));
+	ot->dlr_url = cfg_get(grp, octstr_imm("dlr-url"));
 	if (ot->password == NULL) {
 	    error(0, "Password required for send-sms user");
 	    goto error;
@@ -798,6 +889,7 @@ static void destroy_onetrans(void *p)
     if (ot != NULL) {
 	octstr_destroy(ot->keyword);
 	list_destroy(ot->aliases, octstr_destroy_item);
+	octstr_destroy(ot->dlr_url);
 	octstr_destroy(ot->pattern);
 	octstr_destroy(ot->prefix);
 	octstr_destroy(ot->suffix);

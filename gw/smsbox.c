@@ -213,9 +213,9 @@ static void *remember_receiver(Msg *msg, URLTranslation *trans)
     receiver->msg->sms.deferred = 0;
     receiver->msg->sms.time = (time_t) -1;
     receiver->msg->sms.smsc_id = octstr_duplicate(msg->sms.smsc_id);
-    receiver->msg->sms.dlr_id = NULL;
-    receiver->msg->sms.dlr_keyword = NULL;
-    receiver->msg->sms.dlr_mask = 0;
+    receiver->msg->sms.dlr_url = NULL;
+    receiver->msg->sms.dlr_mask = msg->sms.dlr_mask; 
+    	/* to remember if it's a DLR http get */
     
     receiver->trans = trans;
 
@@ -271,13 +271,13 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 				      Octstr **smsc, int *mclass, int *mwi, 
 				      int *coding, int *compress, 
 				      int *validity, int *deferred, 
-				      int *dlr_mask, Octstr **dlr_id)
+				      int *dlr_mask, Octstr **dlr_url)
 {
     Octstr *name, *val;
     long l;
 
     *dlr_mask = 0;
-    *dlr_id = NULL;
+    *dlr_url = NULL;
     *mclass = *mwi = *coding = *compress = *validity = *deferred = 0;
     for(l=0; l<list_len(headers); l++) {
 	http_header_get(headers, l, &name, &val);
@@ -316,9 +316,9 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 		*udh = NULL;
 	    }
 	}
-	else if (octstr_case_compare(name, octstr_imm("X-Kannel-DLR-ID")) == 0) {
-	    *dlr_id = octstr_duplicate(val);
-	    octstr_strip_blanks(*dlr_id);
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-DLR-URL")) == 0) {
+	    *dlr_url = octstr_duplicate(val);
+	    octstr_strip_blanks(*dlr_url);
 	}
 	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Flash")) == 0) {
     	    sscanf(octstr_get_cstr(val),"%d", coding);
@@ -355,20 +355,19 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 			 Octstr *from, Octstr *to, Octstr *udh, 
 			 int mclass, int mwi, int coding, int compress,
 			 int validity, int deferred,
-			 Octstr *dlr_id, int dlr_mask)
+			 Octstr *dlr_url, int dlr_mask)
 {    
     msg->sms.msgdata = replytext;
     msg->sms.time = time(NULL);
 
-    if (dlr_id != NULL) {
+    if (dlr_url != NULL) {
 	if (urltrans_accept_x_kannel_headers(trans)) {
-	    octstr_destroy(msg->sms.sender);
-	    msg->sms.dlr_id = dlr_id;
-    	    msg->sms.dlr_keyword = octstr_create("DLR");
+	    octstr_destroy(msg->sms.dlr_url);
+	    msg->sms.dlr_url = dlr_url;
 	} else {
-	    warning(0, "Tried to change dlr_id to '%s', denied.",
-		    octstr_get_cstr(dlr_id));
-	    octstr_destroy(dlr_id);
+	    warning(0, "Tried to change dlr_url to '%s', denied.",
+		    octstr_get_cstr(dlr_url));
+	    octstr_destroy(dlr_url);
 	}
     }
 
@@ -450,8 +449,6 @@ static void fill_message(Msg *msg, URLTranslation *trans,
     if (dlr_mask) {
 	if (urltrans_accept_x_kannel_headers(trans)) {
 	    msg->sms.dlr_mask = dlr_mask;
-	    if(!msg->sms.dlr_keyword)
-	      	    msg->sms.dlr_keyword = octstr_create("DLR");
 	} else
 	    warning(0, "Tried to change dlr_mask to '%d', denied.",
 		    dlr_mask);
@@ -472,14 +469,14 @@ static void url_result_thread(void *arg)
     Octstr *text_wml;
     Octstr *octet_stream;
     Octstr *udh, *from, *to;
-    Octstr *dlr_id;
+    Octstr *dlr_url;
     int dlr_mask;
     int octets;
     int mclass, mwi, coding, compress;
     int validity, deferred;
     
     dlr_mask = 0;
-    dlr_id = NULL;
+    dlr_url = NULL;
     text_html = octstr_imm("text/html");
     text_wml = octstr_imm("text/vnd.wap.wml");
     text_plain = octstr_imm("text/plain");
@@ -509,7 +506,7 @@ static void url_result_thread(void *arg)
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, NULL, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
-					  &deferred, &dlr_mask, &dlr_id);
+					  &deferred, &dlr_mask, &dlr_url);
 	    } else if (octstr_compare(type, text_plain) == 0) {
 		replytext = octstr_duplicate(reply_body);
 		reply_body = NULL;
@@ -517,7 +514,7 @@ static void url_result_thread(void *arg)
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, NULL, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
-					  &deferred, &dlr_mask, &dlr_id);
+					  &deferred, &dlr_mask, &dlr_url);
 	    } else if (octstr_compare(type, octet_stream) == 0) {
 		replytext = octstr_duplicate(reply_body);
 		octets = 1;
@@ -525,7 +522,7 @@ static void url_result_thread(void *arg)
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, NULL, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
-					  &deferred, &dlr_mask, &dlr_id);
+					  &deferred, &dlr_mask, &dlr_url);
 	    } else {
 		replytext = octstr_duplicate(reply_couldnotrepresent); 
 	    }
@@ -539,7 +536,7 @@ static void url_result_thread(void *arg)
 	    replytext = octstr_duplicate(reply_couldnotfetch);
 
 	fill_message(msg, trans, replytext, octets, from, to, udh, mclass,
-			mwi, coding, compress, validity, deferred, dlr_id, 
+			mwi, coding, compress, validity, deferred, dlr_url, 
 			dlr_mask);
 
     	if (final_url == NULL)
@@ -547,22 +544,26 @@ static void url_result_thread(void *arg)
     	if (reply_body == NULL)
 	    reply_body = octstr_imm("");
 
-	alog("SMS HTTP-request sender:%s request: '%s' "
-	     "url: '%s' reply: %d '%s'",
-	     octstr_get_cstr(msg->sms.receiver),
-	     (msg->sms.msgdata != NULL) ? octstr_get_cstr(msg->sms.msgdata) : "",
-	     octstr_get_cstr(final_url),
-	     status,
-	     (status == HTTP_OK) 
+	if (msg->sms.dlr_mask == 0) {
+	    alog("SMS HTTP-request sender:%s request: '%s' "
+		"url: '%s' reply: %d '%s'",
+		octstr_get_cstr(msg->sms.receiver),
+		(msg->sms.msgdata != NULL) ? octstr_get_cstr(msg->sms.msgdata) : "",
+		octstr_get_cstr(final_url),
+		status,
+		(status == HTTP_OK) 
 		? "<< successful >>"
 		: octstr_get_cstr(reply_body));
+	}
 		
     	octstr_destroy(final_url);
 	http_destroy_headers(reply_headers);
 	octstr_destroy(reply_body);
     
-	if (send_message(trans, msg) < 0)
-	    error(0, "failed to send message to phone");
+	if (msg->sms.dlr_mask == 0) {
+	    if ( send_message(trans, msg) < 0)
+		error(0, "failed to send message to phone");
+	}	
 	msg_destroy(msg);
     }
 }
@@ -587,14 +588,20 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
     void *id;
     struct tm tm;
     char p[22];
+    int type;
     
     gw_assert(msg != NULL);
     gw_assert(msg_type(msg) == sms);
     
+    if (msg->sms.sms_type == report)
+	type = TRANSTYPE_GET_URL;
+    else
+	type = urltrans_type(trans);
+
     pattern = urltrans_get_pattern(trans, msg);
     gw_assert(pattern != NULL);
     
-    switch (urltrans_type(trans)) {
+    switch (type) {
     case TRANSTYPE_TEXT:
 	debug("sms", 0, "formatted text answer: <%s>", 
 	      octstr_get_cstr(pattern));
@@ -740,9 +747,14 @@ static void obey_request_thread(void *arg)
     Octstr *tmp, *reply;
     URLTranslation *trans;
     Octstr *p;
-    int ret;
+    int ret, dreport=0;
     
     while ((msg = list_consume(smsbox_requests)) != NULL) {
+	if (msg->sms.sms_type == report)
+	    dreport = 1;
+	else
+	    dreport = 0;
+
 	if (octstr_len(msg->sms.sender) == 0 ||
 	    octstr_len(msg->sms.receiver) == 0) {
 	    error(0, "smsbox_req_thread: no sender/receiver, dump follows:");
@@ -759,56 +771,65 @@ static void obey_request_thread(void *arg)
 	    msg_destroy(msg);
 	    continue;
 	}
-    
+
 	/* create reply message to be sent afterwards */
-	
+
 	reply_msg = msg_create(ack);
 	reply_msg->ack.nack = 0;
 	reply_msg->ack.time = msg->sms.time;
 	reply_msg->ack.id = msg->sms.id;
 
+    
+	if (dreport) {
+	    trans = urltrans_find_service(translations, msg);
 
-	trans = urltrans_find(translations, msg->sms.msgdata, 
+	    info(0, "Starting delivery report <%s> from <%s>",
+		octstr_get_cstr(msg->sms.service),
+		octstr_get_cstr(msg->sms.sender));
+
+	} else {
+	    trans = urltrans_find(translations, msg->sms.msgdata, 
 	    	    	      msg->sms.smsc_id, msg->sms.sender);
-	if (trans == NULL) {
-	    Octstr *t;
-	    warning(0, "No translation found for <%s> from <%s> to <%s>",
+	    if (trans == NULL) {
+		Octstr *t;
+		warning(0, "No translation found for <%s> from <%s> to <%s>",
 		    msg->sms.msgdata != NULL ? octstr_get_cstr(msg->sms.msgdata) : "",
 		    octstr_get_cstr(msg->sms.sender),
 		    octstr_get_cstr(msg->sms.receiver));
-	    t = msg->sms.sender;
-	    msg->sms.sender = msg->sms.receiver;
-	    msg->sms.receiver = t;
-	    goto error;
-	}
+		t = msg->sms.sender;
+		msg->sms.sender = msg->sms.receiver;
+		msg->sms.receiver = t;
+		goto error;
+	    }
     
-	info(0, "Starting to service <%s> from <%s> to <%s>",
-	     octstr_get_cstr(msg->sms.msgdata),
-	     octstr_get_cstr(msg->sms.sender),
-	     octstr_get_cstr(msg->sms.receiver));
+	    info(0, "Starting to service <%s> from <%s> to <%s>",
+		octstr_get_cstr(msg->sms.msgdata),
+		octstr_get_cstr(msg->sms.sender),
+		octstr_get_cstr(msg->sms.receiver));
 
-	/*
-	 * now, we change the sender (receiver now 'cause we swap them later)
-	 * if faked-sender or similar set. Note that we ignore if the 
-	 * replacement fails.
-	 */
-	tmp = octstr_duplicate(msg->sms.sender);
+	    /*
+	     * now, we change the sender (receiver now 'cause we swap them later)
+	     * if faked-sender or similar set. Note that we ignore if the 
+	     * replacement fails.
+	     */
+	    tmp = octstr_duplicate(msg->sms.sender);
 	    
-	p = urltrans_faked_sender(trans);
-	if (p != NULL) {
-	    octstr_destroy(msg->sms.sender);
-	    msg->sms.sender = octstr_duplicate(p);
-	} else if (global_sender != NULL) {
-	    octstr_destroy(msg->sms.sender);
-	    msg->sms.sender = octstr_duplicate(global_sender);
-	} else {
-	    octstr_destroy(msg->sms.sender);
-	    msg->sms.sender = octstr_duplicate(msg->sms.receiver);
+	    p = urltrans_faked_sender(trans);
+	    if (p != NULL) {
+		octstr_destroy(msg->sms.sender);
+		msg->sms.sender = octstr_duplicate(p);
+	    } else if (global_sender != NULL) {
+		octstr_destroy(msg->sms.sender);
+		msg->sms.sender = octstr_duplicate(global_sender);
+	    } else {
+		octstr_destroy(msg->sms.sender);
+		msg->sms.sender = octstr_duplicate(msg->sms.receiver);
+	    }
+	    octstr_destroy(msg->sms.receiver);
+	    msg->sms.receiver = tmp;
+	    msg->sms.sms_type = mt_reply;
 	}
-	octstr_destroy(msg->sms.receiver);
-	msg->sms.receiver = tmp;
-	msg->sms.sms_type = mt_reply;
-    
+
 	/* TODO: check if the sender is approved to use this service */
 
 	ret = obey_request(&reply, trans, msg);
@@ -827,9 +848,12 @@ static void obey_request_thread(void *arg)
 	    msg->sms.coding = 0;
 	    msg->sms.time = time(NULL);	/* set current time */
 	
+	    if (!dreport) {
 	    if (send_message(trans, msg) < 0)
 		error(0, "request_thread: failed");
+	    }
 	}
+
 	write_to_bearerbox(reply_msg); /* implicit msg_destroy */
 
 	msg_destroy(msg);
@@ -964,7 +988,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 				 Octstr *charset, Octstr *udh, Octstr *smsc,
 				 int mclass, int mwi, int coding, int compress, 
 				 int validity, int deferred, 
-				 int *status, int dlr_mask, Octstr *dlr_id)
+				 int *status, int dlr_mask, Octstr *dlr_url)
 {				     
     Msg *msg = NULL;
     Octstr *newfrom, *returnerror;
@@ -1047,8 +1071,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     msg->sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
     msg->sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
     msg->sms.dlr_mask = dlr_mask;
-    msg->sms.dlr_id = dlr_id ? octstr_duplicate(dlr_id) : octstr_create("");
-    msg->sms.dlr_keyword = octstr_create("DLR");
+    msg->sms.dlr_url = dlr_url ? octstr_duplicate(dlr_url) : octstr_create("");
 
     if ( mclass < 0 || mclass > 4 ) {
 	returnerror = octstr_create("MClass field misformed, rejected");
@@ -1231,7 +1254,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     URLTranslation *t = NULL;
     Octstr *from, *to, *charset;
     Octstr *text, *udh, *smsc, *tmp_string;
-    Octstr *dlr_id = NULL;
+    Octstr *dlr_url = NULL;
     int	dlr_mask = 0;
     Octstr *dlr_mask_string;
     int mclass, mwi, coding, compress, validity, deferred;
@@ -1249,7 +1272,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     smsc = http_cgi_variable(args, "smsc");
     from = http_cgi_variable(args, "from");
     to = http_cgi_variable(args, "to");
-    dlr_id = http_cgi_variable(args, "dlrid");
+    dlr_url = http_cgi_variable(args, "dlrurl");
     dlr_mask_string = http_cgi_variable(args, "dlrmask");
 
     if(dlr_mask_string != NULL)
@@ -1305,7 +1328,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
 
     return smsbox_req_handle(t, client_ip, from, to, text, charset, udh, 
 			     smsc, mclass, mwi, coding, compress, validity, 
-			     deferred, status, dlr_mask, dlr_id);
+			     deferred, status, dlr_mask, dlr_url);
     
 }
 
@@ -1321,16 +1344,16 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     Octstr *from, *to, *user, *pass, *udh, *smsc;
     Octstr *ret;
     Octstr *type, *charset;
-    Octstr *dlr_id;
+    Octstr *dlr_url;
     int dlr_mask = 0;
     int mclass, mwi, coding, compress, validity, deferred;
  
-    from = to = user = pass = udh = smsc = dlr_id = NULL;
+    from = to = user = pass = udh = smsc = dlr_url = NULL;
    
     get_x_kannel_from_headers(headers, &from, &to, &udh,
 			      &user, &pass, &smsc, &mclass, &mwi, &coding,
 			      &compress, &validity, &deferred, 
-			      &dlr_mask, &dlr_id);
+			      &dlr_mask, &dlr_url);
     
     ret = NULL;
     
@@ -1373,7 +1396,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	    ret = smsbox_req_handle(t, client_ip, from, to, body, charset,
 				    udh, smsc, mclass, mwi, coding, compress, 
 				    validity, deferred, status, 
-				    dlr_mask, dlr_id);
+				    dlr_mask, dlr_url);
 
 	octstr_destroy(type);
 	octstr_destroy(charset);

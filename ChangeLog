@@ -1,3 +1,42 @@
+2001-10-11 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* dlr: Changed Delivery Reports Code. Instead of having a DLR sms-
+	-service, each service has a dlr-url field where is defined the url
+	to get when a delivery report arrives. DLR are routed based on the
+	existing field "name" of sendsms-user.
+	* userguide.xml: documentation for delivery reports and some minor 
+	corrections
+	* bb_smscconn.c: added dlrmask field to alog; added code to expect 
+	a report type of sms and write to log correctly
+	* bb_store.c: when loading store, ignore all delivery report kind 
+	of messages.  SMSC wouldn't sent them to us anyway.
+	* dlr.c: removed keyword and id variables and added service and url. 
+	Service is the service name (defined by name= on sendsms-user or 
+	sms-service groups) and url is the url to fetch. Added DLR_BUFFERED 
+	awareness (don't delete dlr if it's expecting DLR_SUCCESS or 
+	DLR_FAIL. dlr message text now contains the url, if given by dlrurl 
+	CGI parameter. later the text will be replaced by smsc text 
+	reply (if any) plus '/' separator plus this url.
+	* dlr.h: added DLR_BUFFERED, DLR_SMSC_SUCCESS and DLR_SMSC_FAIL
+	* msg-decl.h, shared.c, smsbox.c: replaced dlr_id and dlr_keyword 
+	for dlr_url
+	* msg.h: added message type 3: report
+	* smsbox.c: if it's a http get for a delivery-report, don't log nor 
+	reply back to user. 
+	* smsc_cimd2.c: added & 0x03 to mantain compatibility.  Someone 
+	please encode the DLR_SMSC_* and DLR_BUFFERED
+	* smsc_emi2.c: added DLR_BUFFERED awareness and code to generate 
+	delivery-reports when message hits SMSC (ACK) or fails (NACK). If 
+	SMSC replyes with text, include it on delivery message as 
+	"smsc-text"/"given-url"
+	* urltrans.c: added a new dict with the service names to able 
+	delivery reports to search back for which service the original 
+	message was sent. Added urltrans_find_service. Changed get_pattern 
+	to be aware of delivery reports and return correct values (pattern 
+	would be the dlr-url); added %n (service name), %d (dlr value) and 
+	%A (smsc reply on delivery  report)
+	* : It's still missing some kind of DLR_SMSC_FAIL reports when a 
+	message cannot be routed
+
 2001-10-11 Andreas Fink <andreas@fink.org>
 	* smsc_at2.c: fixed bugs while sending SMS, autosensing speed
 	* config.guess, config.sub: updated to detect MacOS X correctly

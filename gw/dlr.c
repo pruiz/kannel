@@ -30,8 +30,8 @@ typedef struct	dlr_wle
    Octstr	*smsc;
    Octstr	*timestamp;	
    Octstr	*destination;
-   Octstr	*keyword;
-   Octstr	*id;	
+   Octstr	*service;
+   Octstr	*url;	
    int		mask;
 } dlr_wle;
 
@@ -85,28 +85,28 @@ void dlr_destroy(dlr_wle *dlr)
 	O_DELETE (dlr->smsc);
 	O_DELETE (dlr->timestamp);
 	O_DELETE (dlr->destination);
-	O_DELETE (dlr->keyword);
-	O_DELETE (dlr->id);
+	O_DELETE (dlr->service);
+	O_DELETE (dlr->url);
 	dlr->mask = 0;
 	gw_free(dlr);
 }
 
 
 /* add a new entry to the list */
-void	dlr_add(char *smsc, char *ts, char *dst, char *keyword, char *id, int mask)
+void	dlr_add(char *smsc, char *ts, char *dst, char *service, char *url, int mask)
 {
    dlr_wle	*dlr;
 	
-   info(0,"Adding to DLR list smsc=%s, ts=%s, dst=%s, keyword=%s, id=%s mask=%d",smsc,ts,dst,keyword,id,mask);
-   if ((mask & DLR_SUCCESS) | (mask & DLR_FAIL))
+   info(0,"Adding to DLR list smsc=%s, ts=%s, dst=%s, service=%s, url=%s mask=%d",smsc,ts,dst,service,url,mask);
+   if (mask & 0x1F) 
    {
 	dlr = dlr_new(); 
 	
 	dlr->smsc = octstr_create(smsc);
 	dlr->timestamp = octstr_create(ts);
 	dlr->destination = octstr_create(dst);
-	dlr->keyword = octstr_create(keyword); /* octstr_imm(keyword); */
-	dlr->id = octstr_create(id);
+	dlr->service = octstr_create(service); 
+	dlr->url = octstr_create(url);
 	dlr->mask = mask;
 	list_append(dlr_waiting_list,dlr);
 	info(0,"appended");
@@ -138,41 +138,45 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
 	if(    (strcmp(octstr_get_cstr(dlr->smsc),smsc) == 0) &&
 	       (strcmp(octstr_get_cstr(dlr->timestamp),ts) == 0))
 	{
-	   /* lets save the keyword and dump the rest of the entry */
+	   /* lets save the service and dump the rest of the entry */
 	   info(0,"DLR found!");
 
-	   text = octstr_duplicate(dlr->keyword);	   
-	   if(typ == DLR_SUCCESS)
-                 octstr_append_cstr(text," 1 ");
-           else
-                 octstr_append_cstr(text," 2 ");
-           octstr_append(text,dlr->id);
-           octstr_append_cstr(text," ");
-           octstr_append_cstr(text,smsc);
+	   text = octstr_len(dlr->url) ? octstr_duplicate(dlr->url) : 
+		   octstr_create("");	   
 
 	   dlr_mask = dlr->mask;
-	   list_delete(dlr_waiting_list,i,1);
-	   dlr_destroy(dlr);
 
 	   if((typ & dlr_mask) > 0)
 	   {
 	       	/* its an entry we are interested in */
 	      info(0,"creating DLR message");
 	      msg = msg_create(sms);
+	      msg->sms.service = octstr_duplicate(dlr->service);
+	      msg->sms.dlr_mask = typ;
+	      msg->sms.sms_type = report;
  	      msg->sms.smsc_id = octstr_create(smsc);
-    	      msg->sms.sender  = octstr_create(dst);
+    	      msg->sms.sender = octstr_create(dst);
               msg->sms.receiver = octstr_create("000");
 	      msg->sms.msgdata = text;
+	      time(&msg->sms.time);
 	      info(0,"DLR = %s",octstr_get_cstr(text));
-              return msg;
 	   }
 	   else
 	   {
 	        info(0,"ignoring DLR message because of mask");
 	   	/* ok that was a status report but we where not interested in having it */
 	   	octstr_destroy(text);
-		return NULL;
+		msg=NULL;
 	   }
+	    if ((typ & DLR_BUFFERED) && 
+	       ((dlr_mask & DLR_SUCCESS) || (dlr_mask & DLR_FAIL))) {
+	        info(0,"dlr not destroyed, still waiting for other delivery report"); 
+	    } else {
+		list_delete(dlr_waiting_list,i,1);
+		dlr_destroy(dlr);
+	    }
+
+	    return msg;
 	}
     }
     info(0,"DLR not found!");
@@ -205,16 +209,16 @@ void dump_dlr(dlr_wle *dlr)
     	info(0,"dlr->destination = '%s'",octstr_get_cstr(dlr->destination));
    	
  
-     if(!dlr->keyword)
-	info(0,"dlr->keyword = NULL");
+     if(!dlr->service)
+	info(0,"dlr->service = NULL");
     else
-    	info(0,"dlr->keyword = '%s'",octstr_get_cstr(dlr->keyword));
+    	info(0,"dlr->service = '%s'",octstr_get_cstr(dlr->service));
    	
  
-     if(!dlr->id)
-	info(0,"dlr->id = NULL");
+     if(!dlr->url)
+	info(0,"dlr->url = NULL");
     else
-    	info(0,"dlr->id = '%s'",octstr_get_cstr(dlr->id));
+    	info(0,"dlr->url = '%s'",octstr_get_cstr(dlr->url));
     info(0,"dlr->mask = %d", dlr->mask);
 
 }

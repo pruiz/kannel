@@ -3576,6 +3576,18 @@ like %P, but a leading `00' is replaced with `+'
 the smsc-id of the connection that received the message
 </entry></row>
 
+<row><entry><literal>%d</literal></entry><entry>
+the delivery report value
+</entry></row>
+
+<row><entry><literal>%A</literal></entry><entry>
+the delivery report SMSC reply, if any
+</entry></row>
+
+<row><entry><literal>%n</literal></entry><entry>
+the sendsms-user or sms-service name
+</entry></row>
+
 </tbody>
 </tgroup>
 </table>
@@ -3677,7 +3689,7 @@ text = "No action specified"
    <row><entry><literal>to</literal></entry>
    <entry><literal>X-Kannel-To</literal></entry></row>
 
-   <row><entry><literal>to</literal></entry>
+   <row><entry><literal>text</literal></entry>
    <entry>request body</entry></row>
 
    <row><entry><literal>charset</literal></entry>
@@ -3712,6 +3724,12 @@ text = "No action specified"
 
    <row><entry><literal>deferred</literal></entry>
    <entry><literal>X-Kannel-Deferred</literal></entry></row>
+
+   <row><entry><literal>dlrmask</literal></entry>
+   <entry><literal>X-Kannel-DLR-Mask</literal></entry></row>
+
+   <row><entry><literal>dlrurl</literal></entry>
+   <entry><literal>X-Kannel-DLR-Url</literal></entry></row>
 
   </tbody>
   </tgroup>
@@ -3851,6 +3869,13 @@ text = "No action specified"
      <entry valign=bottom>
         As white-list, but SMS messages from these numbers are
         automatically rejected.
+     </entry></row>
+
+    <row><entry><literal>dlr-url</literal></entry>
+     <entry>URL</entry>
+     <entry valign=bottom>
+	URL to be fetched if a <literal>dlrmask</literal> CGI 
+	parameter is present.
      </entry></row>
 
   </tbody>
@@ -4289,6 +4314,24 @@ the Kannel configuration, or 'Authorization failed' is returned.
          Optional. If given, the SMS center will postpone the message to be
 	 delivered at now plus this many minutes.
 	 Note: you must have your kannel box time syncronized with the SMS Center.
+   </entry></row>
+
+   <row><entry><literal>dlrmask</literal></entry>
+   <entry><literal>number (bit mask)</literal></entry>
+   <entry valign=bottom>
+	   Optional. Request for delivery reports with the state of the sent 
+	   message. The value is a bit mask composed of: 1: Delivered to phone, 
+	   2: Non-Delivered to Phone, 4: Queued on SMSC, 8: Delivered to SMSC, 
+	   16: Non-Delivered to SMSC. Must set <literal>dlr-url</literal> on 
+	   <literal>sendsms-user</literal> group or use the 
+	   <literal>dlrurl</literal> CGI variable. 
+   </entry></row>
+
+   <row><entry><literal>dlrurl</literal></entry>
+   <entry><literal>string (url)</literal></entry>
+   <entry valign=bottom>
+	   Optional. If <literal>dlrmask</literal> is given, this is the url to
+	   be fetched. (Must be urlencoded)
    </entry></row>
 
   </tbody>
@@ -4945,6 +4988,93 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 <title>ISDN terminal</title>
 
 	<para>This section needs to be written</para>
+
+</sect1>
+
+</appendix>
+
+
+<appendix>
+<title>Log files</title>
+
+	<para>This appendix describes the log file format.</para>
+
+<sect1>
+<title>Bearerbox Access Log</title>
+
+	<screen>
+		<computeroutput>2001-01-01 12:00:00 Sent SMS [SMSC:smsc] [SVC:sms] [from:12345] [to:67890]</computeroutput>
+		<computeroutput>  [flags:0:1:0:0:0] [msg:11:Hello World] [udh:0]</computeroutput>
+	</screen>	
+
+ <informaltable frame=none>
+  <tgroup cols=3>
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry>>Date</entry>
+     <entry>2001-01-01 12:00:00</entry>
+     <entry valign=bottom>
+       Date
+     </entry></row>
+
+   <row><entry>Result</entry>
+     <entry>Sent SMS</entry>
+     <entry valign=bottom>
+       Result: Send, failed, DLR (deliver report), Received, etc.
+     </entry></row>
+
+   <row><entry>SMSC</entry>
+     <entry>smsc</entry>
+     <entry valign=bottom>
+	     Smsc id (<literal>smsc-id</literal>) defined in configuration 
+	     group <literal>smsc</literal> 
+     </entry></row>
+
+     <row><entry>SVC</entry>
+     <entry>sms</entry>
+     <entry valign=bottom>
+	     Service name (<literal>name</literal>) defined in configuration 
+	     group <literal>sendsms-user</literal>
+     </entry></row>
+
+     <row><entry>from</entry>
+     <entry>12345</entry>
+     <entry valign=bottom>
+	     Sender
+     </entry></row>
+
+     <row><entry>to</entry>
+     <entry>67890</entry>
+     <entry valign=bottom>
+	     Recipient
+     </entry></row>
+
+     <row><entry>Flags</entry>
+     <entry>0:1:0:0:0</entry>
+     <entry valign=bottom>
+	     Flags: MClass, Coding, MWI, Compress, DLRMask
+     </entry></row>
+
+     <row><entry>Message Text</entry>
+     <entry>11:Hello World</entry>
+     <entry valign=bottom>
+	     Size of message and message dump (in text or hex if it's binary)
+     </entry></row>
+
+     <row><entry>User Data Header</entry>
+     <entry>0:</entry>
+     <entry valign=bottom>
+	     Size of UDH and UDH Hex dump 
+     </entry></row>
+
+   </tbody>
+  </informaltable>
 
 </sect1>
 

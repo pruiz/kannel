@@ -14,6 +14,9 @@
 
 #define	DLR_SUCCESS		0x01
 #define	DLR_FAIL		0x02
+#define	DLR_BUFFERED		0x04
+#define	DLR_SMSC_SUCCESS	0x08
+#define	DLR_SMSC_FAIL		0x10
 
 void	dlr_init();
 void	dlr_shutdown();

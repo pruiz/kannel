@@ -66,7 +66,8 @@ static void log_sms(SMSCConn *conn, Msg *sms, char *message)
 	octstr_binary_to_hex(text, 1);
     octstr_binary_to_hex(udh, 1);
 
-    alog("%s [SMSC:%s] [SVC:%s] [from:%s] [to:%s] [flags:%d:%d:%d:%d] [msg:%d:%s] [udh:%d:%s]",
+    alog("%s [SMSC:%s] [SVC:%s] [from:%s] [to:%s] [flags:%d:%d:%d:%d:%d] [msg:%d:%s]"
+	" [udh:%d:%s]",
 	 message,
 	 conn ? (smscconn_id(conn) ? octstr_get_cstr(smscconn_id(conn)) : "")
 	 : "",
@@ -74,6 +75,7 @@ static void log_sms(SMSCConn *conn, Msg *sms, char *message)
 	 octstr_get_cstr(sms->sms.sender),
 	 octstr_get_cstr(sms->sms.receiver),
 	 sms->sms.mclass, sms->sms.coding, sms->sms.mwi, sms->sms.compress,
+	 sms->sms.dlr_mask,
 	 octstr_len(sms->sms.msgdata), octstr_get_cstr(text),
 	 octstr_len(sms->sms.udhdata), octstr_get_cstr(udh)
     );
@@ -203,13 +205,18 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	msg_destroy(sms);
 	return -1;
     }
-    sms->sms.sms_type = mo;
+
+    if (sms->sms.sms_type != report)
+	sms->sms.sms_type = mo;
     
     /* write to store (if enabled) */
     if (store_save(sms) == -1)
 	return -1;
     
-    log_sms(conn, sms, "Receive SMS");
+    if (sms->sms.sms_type != report)
+	log_sms(conn, sms, "Receive SMS");
+    else
+	log_sms(conn, sms, "DLR SMS");
 
     list_produce(incoming_sms, sms);
     counter_increase(incoming_sms_counter);

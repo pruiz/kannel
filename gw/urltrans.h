@@ -111,6 +111,14 @@ int urltrans_add_cfg(URLTranslationList *trans, Cfg *cfg);
 URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text, 
     	    	    	      Octstr *smsc, Octstr *sender);
 
+/*
+ * Find the translation that corresponds to a given name
+ *
+ * Use the translation with service whose name is the same as the first
+ * word of the text. If no such pattern exists, return NULL.
+ */
+URLTranslation *urltrans_find_service(URLTranslationList *trans, Msg *msg); 
+
 
 /*
  * find matching URLTranslation for the given 'username', or NULL

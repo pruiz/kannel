@@ -37,9 +37,8 @@ MSG(sms,
 		INTEGER(compress);
 		INTEGER(validity);
 		INTEGER(deferred);
-		OCTSTR(dlr_id);
-		OCTSTR(dlr_keyword);
 		INTEGER(dlr_mask);
+		OCTSTR(dlr_url);
 	})
 
 MSG(ack,

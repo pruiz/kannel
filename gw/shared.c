@@ -257,10 +257,8 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
         part = msg_duplicate(orig);
 	if((msgno > 1) && (part->sms.dlr_mask))
         {
-           octstr_destroy(part->sms.dlr_id);
-           octstr_destroy(part->sms.dlr_keyword);
-           part->sms.dlr_id = NULL;
-           part->sms.dlr_keyword = NULL;
+           octstr_destroy(part->sms.dlr_url);
+           part->sms.dlr_url = NULL;
            part->sms.dlr_mask = 0;
         }
 	octstr_destroy(part->sms.msgdata);

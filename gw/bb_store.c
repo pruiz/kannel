@@ -311,19 +311,27 @@ int store_load(void)
 	    continue;
 
 	if (msg_type(msg) == sms) {
+	    if (msg->sms.sms_type == report) {
+		octstr_destroy(pack);
+		continue;
+	    }
 	    key = octstr_format("%d-%d", msg->sms.time, msg->sms.id);
 	    dict_put(msg_hash, key, msg);
 	    octstr_destroy(key);
 	    msgs++;
 	}
 	else if (msg_type(msg) == ack) {
+	    if (msg->sms.sms_type == report) {
+		octstr_destroy(pack);
+		continue;
+	    }
 	    key = octstr_format("%d-%d", msg->ack.time, msg->ack.id);
 	    dmsg = dict_remove(msg_hash, key);
 	    if (dmsg != NULL) 
 		msg_destroy(dmsg);
 	    else
 		info(0, "Acknowledge of non-existant message found '%s', "
-		     "discarded", octstr_get_cstr(key));
+		   "discarded", octstr_get_cstr(key));
 	    msg_destroy(msg);
 	    octstr_destroy(key);
 	} else {
@@ -357,7 +365,8 @@ int store_load(void)
 
 	if (msg->sms.sms_type == mo)
 	    list_produce(incoming_sms, msg);
-	else
+	if (msg->sms.sms_type == mt_push ||
+	    msg->sms.sms_type == mt_reply)
 	    list_produce(outgoing_sms, msg);
 	
 	octstr_destroy(key);

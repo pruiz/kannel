@@ -35,7 +35,8 @@ typedef struct {
 enum {
     mo = 0,
     mt_reply = 1,
-    mt_push = 2
+    mt_push = 2,
+    report = 3
 };
 
 /* admin commands */

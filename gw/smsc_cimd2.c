@@ -1263,7 +1263,7 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix)
      * with those reports anyway. */
     /* ask for the delivery reports if needed*/
 
-    if(msg->sms.dlr_mask)
+    if (msg->sms.dlr_mask & 0x03)
     {
 	packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 14);
     }
@@ -1822,13 +1822,13 @@ int cimd2_submit_msg(SMSCenter *smsc, Msg *msg)
 
     for (tries = 0; tries < 3; tries++) {
         ret = cimd2_request(packet, smsc,&ts);
-        if((ret == 0) && (ts) && (msg->sms.dlr_mask))
+        if((ret == 0) && (ts) && (msg->sms.dlr_mask & 0x03))
         {
             dlr_add(smsc->name,
                 octstr_get_cstr(ts), 
                 octstr_get_cstr(msg->sms.receiver),
-                octstr_get_cstr(msg->sms.dlr_keyword),
-                octstr_get_cstr(msg->sms.dlr_id),
+                octstr_get_cstr(msg->sms.service),
+                octstr_get_cstr(msg->sms.dlr_url),
                 msg->sms.dlr_mask);
             octstr_destroy(ts);
             ts = NULL;		

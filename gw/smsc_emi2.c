@@ -41,6 +41,7 @@ typedef struct privdata {
     time_t	sendtime[100];	/* When we sent out a message with a given
 				 * TRN. Is 0 if the TRN is currently free. */
     int		sendtype[100];	/* OT of message, undefined if time == 0 */
+    int		dlr[100];	/* dlr = DLR_SMSC_SUCCESS || DLR_SMSC_FAIL */
     Msg		*sendmsg[100]; 	/* Corresponding message for OT == 51 */
     int		keepalive; 	/* Seconds to send a Keepalive Command (OT=31) */
     int		flowcontrol;	/* 0=Windowing, 1=Stop-and-Wait */
@@ -360,10 +361,14 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
     /* even the sender might not be interested in delivery or non delivery */
     /* we still need them back to clear out the memory after the message */
     /* has been delivered or non delivery has been confirmed */
-    if(msg->sms.dlr_mask) {
+    if (msg->sms.dlr_mask & 0x07) {
     	emimsg->fields[E50_NRQ] = octstr_create("1");
-	emimsg->fields[E50_NT] = octstr_create("3");
+	emimsg->fields[E50_NT] = octstr_create("");
+	octstr_append_decimal(emimsg->fields[E50_NT], 3 + (msg->sms.dlr_mask & 0x04)); 
     }
+//    DAVI
+	emimsg->fields[E50_RPID] = octstr_create("0127");
+//    DAVI
     return emimsg;
 }
 
@@ -561,7 +566,10 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 			DLR_SUCCESS);
 		break;
 	case 1: /* buffered */
-		msg = NULL;
+		msg = dlr_find(octstr_get_cstr(conn->id), 
+			octstr_get_cstr(emimsg->fields[E50_SCTS]), /* timestamp */
+			octstr_get_cstr(emimsg->fields[E50_OADC]), /* destination */
+			DLR_BUFFERED);
 		break;
 	case 2: /* not delivered */
 		msg = dlr_find(octstr_get_cstr(conn->id), 
@@ -571,6 +579,13 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 		break;
 	}
 	if(msg != NULL) {           
+	    Octstr *reply;
+	    reply = octstr_create("");
+	    octstr_append(reply, emimsg->fields[E50_AMSG]);
+	    octstr_hex_to_binary(reply);
+	    octstr_append_char(reply, '/');
+
+	    octstr_insert(msg->sms.msgdata, reply, 0);
 	    bb_smscconn_receive(conn, msg);
 	}
 	reply = emimsg_create_reply(53, emimsg->trn, 1);
@@ -635,12 +650,32 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 	    emimsg = msg_to_emimsg(msg, nexttrn);
 	    privdata->sendmsg[nexttrn] = msg;
 	    privdata->sendtype[nexttrn] = 51;
-	    privdata->sendtime[nexttrn++] = time(NULL);
-	    privdata->unacked++;
+	    privdata->sendtime[nexttrn] = time(NULL);
 	    if (emimsg_send(server, emimsg) == -1) {
 		emimsg_destroy(emimsg);
 		return;
 	    }
+	    if (msg->sms.dlr_mask & 0x18) {
+		Octstr *ts;
+		ts = octstr_create("");
+		octstr_append(ts, conn->id);
+		octstr_append_char(ts, '-');
+		octstr_append_decimal(ts, nexttrn);
+
+		dlr_add(octstr_get_cstr(conn->id), 
+		    octstr_get_cstr(ts),
+		    octstr_get_cstr(emimsg->fields[E50_ADC]),
+		    octstr_get_cstr(msg->sms.service),
+		    octstr_get_cstr(msg->sms.dlr_url),
+		    msg->sms.dlr_mask);
+		octstr_destroy(ts);
+		privdata->dlr[nexttrn] = 1;
+	    } else {
+		privdata->dlr[nexttrn] = 0;
+	    }
+	    nexttrn++;
+	    privdata->unacked++;
+
 	    emimsg_destroy(emimsg);
 
 	    if ( privdata->keepalive > 0 )
@@ -700,6 +735,43 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 		    privdata->sendtime[emimsg->trn] = 0;
 		    privdata->unacked--;
 		    if (emimsg->ot == 51) {
+
+			if (privdata->dlr[emimsg->trn]) {
+			    Msg *dlrmsg;
+			    Octstr *ts;
+			    Msg *origmsg;
+
+			    origmsg = privdata->sendmsg[emimsg->trn];
+
+			    ts = octstr_create("");
+			    octstr_append(ts, conn->id);
+			    octstr_append_char(ts, '-');
+			    octstr_append_decimal(ts, emimsg->trn);
+
+			    dlrmsg = dlr_find(octstr_get_cstr(conn->id), 
+				octstr_get_cstr(ts), /* timestamp */
+				octstr_get_cstr(origmsg->sms.receiver), /* destination */
+				(octstr_get_char(emimsg->fields[0], 0) == 'A' ? 
+				 DLR_SMSC_SUCCESS : DLR_SMSC_FAIL));
+
+			    octstr_destroy(ts);
+			    if (dlrmsg != NULL) {
+				Octstr *moretext;
+
+				moretext = octstr_create("");
+				if (octstr_get_char(emimsg->fields[0], 0) == 'N') {
+				    octstr_append(moretext, emimsg->fields[1]);
+				    octstr_append_char(moretext, '-');
+				    octstr_append(moretext, emimsg->fields[2]);
+				}
+				octstr_append_char(moretext, '/');
+				octstr_insert(dlrmsg->sms.msgdata, moretext, 0);
+				octstr_destroy(moretext);
+
+				bb_smscconn_receive(conn, dlrmsg);
+			    }
+			}
+
 			if (octstr_get_char(emimsg->fields[0], 0) == 'A')
 			{
 			    /* we got an ack back. We might have to store the */
@@ -720,13 +792,13 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 				    m = privdata->sendmsg[emimsg->trn];
 				    if(m == NULL)
 					info(0,"uhhh m is NULL, very bad");
-				    else if(m->sms.dlr_mask)
+				    else if (m->sms.dlr_mask & 0x7)
 				    {
 					dlr_add(octstr_get_cstr(conn->id), 
 					    octstr_get_cstr(ts),
 					    octstr_get_cstr(adc),
-					    octstr_get_cstr(m->sms.dlr_keyword),
-					    octstr_get_cstr(m->sms.dlr_id),
+					    octstr_get_cstr(m->sms.service),
+					    octstr_get_cstr(m->sms.dlr_url),
 					    m->sms.dlr_mask);
 				    }
 				    octstr_destroy(ts);
@@ -734,6 +806,8 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 				}
 				else
 				    octstr_destroy(ts);
+
+
 			    }
 			    bb_smscconn_sent(conn,
 					     privdata->sendmsg[emimsg->trn]);
@@ -1102,7 +1176,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 	privdata->window = 100;
     else
 	privdata->window = window;
-    if (window > 100) {
+    if (privdata->window > 100) {
 	warning(0, "Value of 'window' should be lesser or equal to 100..");
 	privdata->window = 100;
     }
