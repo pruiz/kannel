@@ -989,9 +989,10 @@ static void handle_transaction(Connection *conn, void *data)
 		 * opening a new socket, but only once.
 		 */
 		if (trans->retrying) {
-            debug("gwlib.http",0,"Failed while retrying");
+                    debug("gwlib.http",0,"Failed while retrying");
 		    goto error;
 		} else {
+                    /* implicit conn_unregister */
 		    conn_destroy(trans->conn);
 		    trans->conn = NULL;
 		    trans->retrying = 1;
@@ -1011,26 +1012,27 @@ static void handle_transaction(Connection *conn, void *data)
 	case reading_entity:
 	    ret = entity_read(trans->response, conn);
 	    if (ret < 0) {
-            debug("gwlib.http",0,"Failed reading entity");
-            goto error;
+	        debug("gwlib.http",0,"Failed reading entity");
+	        goto error;
 	    } else if (ret == 0 && 
                     http_status_class(trans->status) == HTTP_STATUS_PROVISIONAL) {
-            /* This was a provisional reply; get the real one now. */
-            trans->state = reading_status;
-        } else if (ret == 0) {
-            trans->state = transaction_done;
+                /* This was a provisional reply; get the real one now. */
+                trans->state = reading_status;
+                entity_destroy(trans->response);
+                trans->response = NULL;
+            } else if (ret == 0) {
+                trans->state = transaction_done;
 
 #ifdef DUMP_RESPONSE
-            /* Dump the response */
-            debug("wsp.http", 0, "HTTP: Received response:");
-            h = build_response(trans->response->headers, trans->response->body);
-            octstr_dump(h, 0);
-            octstr_destroy(h);
+                /* Dump the response */
+                debug("wsp.http", 0, "HTTP: Received response:");
+                h = build_response(trans->response->headers, trans->response->body);
+                octstr_dump(h, 0);
+                octstr_destroy(h);
 #endif
-
 	    } else {
-            return;
-        }
+                return;
+            }
 	    break;
 
 	default:

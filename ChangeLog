@@ -1,3 +1,8 @@
+2004-01-12  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/http.c: fixed memory and mutex leak. Thanks a lot to:
+      Nuno Ferreira <nuno.ferreira@graycell.biz> for provided patch.
+      Msg-Id: <1073928970.2849.4.camel@taz.graycell.biz>
+
 2004-01-10  Alexander Malysh  <a.malysh@centrium.de>
     * gw-config.h.in, configure[.in], gw/dlr_[mysql|sdb].c, doc/userguide/userguide.xml:
       Applied patch that removes '--with-dlr' configure option and replace:
