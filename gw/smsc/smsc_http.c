@@ -895,12 +895,7 @@ static void wapme_smsproxy_send_sms(SMSCConn *conn, Msg *sms)
 static void wapme_smsproxy_parse_reply(SMSCConn *conn, Msg *msg, int status,
 			       List *headers, Octstr *body)
 {
-    /* Test on three cases:
-     * 1. an smsbox reply of an remote kannel instance
-     * 2. an smsc_http response (if used for MT to MO looping)
-     * 3. an smsbox reply of partly sucessfull sendings */
-    if ((status == HTTP_OK || status == HTTP_ACCEPTED)
-        && (octstr_case_compare(body, octstr_imm("OK")) == 0)) {
+    if (status == HTTP_OK || status == HTTP_ACCEPTED) {
         bb_smscconn_sent(conn, msg, NULL);
     } else {
         bb_smscconn_send_failed(conn, msg,
@@ -1033,6 +1028,11 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     else if (octstr_case_compare(type, octstr_imm("wapme")) == 0) {
         if (conndata->send_url == NULL) {
             error(0, "HTTP[%s]: 'send-url' required for Wapme http smsc",
+                  octstr_get_cstr(conn->id));
+            goto error;
+        }
+        else if (conndata->username == NULL || conndata->password == NULL) {
+            error(0, "HTTP[%s]: 'username' and 'password' required for Wapme http smsc",
                   octstr_get_cstr(conn->id));
             goto error;
         }

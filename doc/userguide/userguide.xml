@@ -2674,7 +2674,9 @@ smsc-password = bar
         If the large account number is different from the short number, assign
 	it with this variable. For example, if short number is 12345 and large account
 	is 0100100100101234 (IP+port), set my-number to 12345 and 
-	every message received will have that receiver.
+	every message received will have that receiver. In addition, if you are bound
+	to the SMSC without an explicite login, use this configuration directive to 
+	enable keep-alive (OP/31) operations. 
      </entry></row>
 
    <row><entry><literal>alt-charset</literal></entry>

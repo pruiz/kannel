@@ -1,3 +1,10 @@
+2003-12-03  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: adding a bit more explanation about the 
+      effect of EMI's 'my-number' config directive for keep-alive (OP/31) PDUs.
+    * gw/smsc/smsc_http.c: removed additional body checking for type 'wapme' 
+      and added username and password requirement for the MO side to act as 
+      sendsms HTTP interface transparently.
+
 2003-12-02 Aarno Syvanen <as@gni.ch>
     * wap/wtp.c: Better debugging in the case of truncated pdu
     * wap/wap_events.[c|h]: Wrapper for checking wap event allocation
