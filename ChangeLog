@@ -1,3 +1,11 @@
+2003-03-09  Stipe Tolj  <tolj@wapme-systems.de>
+    * configure[.in], config.h.in, gw/bearerbox.c: added --disable-wap and 
+      --disable-sms configure switches to disable parts in bearerbox.c.
+      In an extended step these could be used to make a conditional compile
+      process, where the whole WAP gateway libs don't need to be generated.
+    * gwlib/conn.c, gw_bb_store.c: minor debug message beauty.
+    * gwlib/http.c: opening an HTTP server should be 'info' log level.
+
 2003-03-07  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.c: fixed the previous kludge by a clean solution. We call
       parse_url() only once to populate the trans values. Added also dumping
