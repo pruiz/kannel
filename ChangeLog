@@ -1,3 +1,7 @@
+2001-03-19  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsc_http.c: Shutdown state was not initialized. Fixed.
+
 2001-03-19  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/http.c: Made parse_http_version() thread-safe.  (There is

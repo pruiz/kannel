@@ -415,6 +415,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
 	goto error;
 
     conndata->port = portno;
+    conndata->shutdown = 0;
     
     if ((conndata->receive_thread =
 	 gwthread_create(httpsmsc_receiver, conn)) == -1)
