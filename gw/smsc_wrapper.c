@@ -343,16 +343,16 @@ int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
     conn->data = wrap;
     conn->send_msg = wrapper_add_msg;
     
-    if ((wrap->smsc = smsc_open(cfg)) == NULL)
-	goto error;
-
-    conn->name = octstr_create(smsc_name(wrap->smsc));
     
     wrap->outgoing_queue = list_create();
     wrap->stopped = list_create();
     wrap->reconnect_mutex = mutex_create();
     list_add_producer(wrap->outgoing_queue);
     
+    if ((wrap->smsc = smsc_open(cfg)) == NULL)
+	goto error;
+
+    conn->name = octstr_create(smsc_name(wrap->smsc));
     conn->status = SMSCCONN_ACTIVE;
     conn->connect_time = time(NULL);
 
@@ -383,6 +383,7 @@ int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
 
 error:
     error(0, "Failed to create Smsc wrapper");
+    conn->data = NULL;
     smscwrapper_destroy(wrap);
     conn->why_killed = SMSCCONN_KILLED_CANNOT_CONNECT;
     conn->status = SMSCCONN_DEAD;

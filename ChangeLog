@@ -1,3 +1,8 @@
+2001-01-22  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsc_wrapper.c: fixed startup-order, to avoid segmentation
+	fault if smsc startup fails
+
 2001-01-22  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/wap-appl.c: Fixed memory leak (a Mutex was not being
