@@ -259,8 +259,10 @@ static long unlocked_write(Connection *conn)
 #endif /* HAVE_LIBSSL */
         ret = octstr_write_data(conn->outbuf, conn->fd, conn->outbufpos);
 
-    if (ret < 0)
+    if (ret < 0) {
+        conn->io_error = 1;
         return -1;
+    }
 
     conn->outbufpos += ret;
 
@@ -673,8 +675,10 @@ int conn_error(Connection *conn)
     int err;
 
     lock_in(conn);
+    lock_out(conn);
     err = conn->io_error;
     unlock_in(conn);
+    unlock_out(conn);
 
     return err;
 }

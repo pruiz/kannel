@@ -1,3 +1,7 @@
+2004-02-18  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/conn.c: fixed possible race condition. also set io_error for
+      failed write operations.
+
 2004-02-18 Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added Arne's patch to document binfo and
       tariff support within CIMD2 module. Thanks Arne.
