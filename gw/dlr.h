@@ -1,5 +1,5 @@
 /*
- * gwlib/dlr.h
+ * gw/dlr.h
  *
  * Implementation of handling delivery reports (DLRs)
  *
