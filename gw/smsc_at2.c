@@ -1232,7 +1232,6 @@ Msg *at2_pdu_decode(Octstr *data, PrivAT2data *privdata)
 Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
 {
         int len, pos, i, ntype;
-        char origaddr[21];
         int udhi, dcs, udhlen, pid;
         Octstr *origin = NULL;
         Octstr *udh = NULL;
