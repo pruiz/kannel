@@ -1,3 +1,7 @@
+2002-04-18  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/numhash.c: fixed a bug inside numhash_create(),
+      reported from Paul.
+
 2002-04-17  Stipe Tolj <tolj@wapme-systems.de>
     * gw/wap_push_ppg.c: turned default PPG HTTP instance off if no 'ppg'
       group is in config file, for security reasons
