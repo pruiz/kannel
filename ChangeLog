@@ -1,3 +1,8 @@
+2003-01-21  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_http.c: added proxying of the smsc-id attribute to the
+      attached smsbox instance. This allows spreading load from one smsbox
+      to several bearerbox instances.
+
 2003-01-15  Stipe Tolj  <tolj@wapme-systems.de>
 	* doc/userguide/userguide.xml: fixed out-dated 'msg-id-type' directive
 	  explanation. Thanks to Mauricio Ramos <mauricio.ramos@waura.com.br>.
