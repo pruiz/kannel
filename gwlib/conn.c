@@ -1092,7 +1092,6 @@ void conn_init_ssl(void)
     SSL_library_init();
     SSL_load_error_strings();
     global_ssl_context = SSL_CTX_new(SSLv23_method());
-    debug("gwlib.http", 0, "HTTP: SSL library for client side initialized");
 }
 
 void server_ssl_init(void) 
@@ -1113,7 +1112,6 @@ void server_ssl_init(void)
     if (!SSL_CTX_set_default_verify_paths(global_server_ssl_context)) {
 	   panic(0, "can not set default path for server");
     }
-    debug("gwlib.http", 0, "HTTP: SSL library for server side initialized");
 }
 
 void conn_shutdown_ssl(void)

@@ -1,3 +1,23 @@
+2001-12-13 Aarno Syvänen <aarno@wiral.com>
+
+    * test/test_ppg.c: Reading a configuration file, using it. This is for
+      future, command line should work, too. Return 1 for abnormal exit and
+      0 otherwise.
+    * gw/wap_push_ppg.c: A bug and bad design spotted by Jörg Pomnitz correct-
+      ed: do not overload required attributes, use address type for selecting
+      the bearer. Corrected use of any values: in this case, revert to default
+      bearer and network, depending on address type (GSM+CSD or GSM+SMS). IP
+      bearer should work again.
+    * gw/wapbox.c: Related change. Another bugfix.
+    * wap/wsp_unit.c: Related change.
+    * gw/wap_push_ota.c: Related change.
+    * gw/wap_ppg_push_machine.def: Related change. Another bugfix.
+    * checks/check_ppg.sh: Added a shell script for testing ppg.
+    * test/*.txt: Files used by this shell script
+    * gwlib/conn.c: Removed a debug message telling about initialisation of
+      SSL libraries (caller can log this). Make check expect only error logg-
+      ing (problem here are test functions using gwlib).
+
 2001-12-13 Jörg Pommnitz <jpo@condat.de>
     * gw/smsc_emi2.c: fix bug that could cause SMSC flooding under
       heavy load.
