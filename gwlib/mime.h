@@ -97,7 +97,7 @@ typedef struct MIMEEntity {
     List *headers;
     List *multiparts;
     Octstr *body;
-    struct MIMEEntity *start;   /* in case multipart/replated */
+    struct MIMEEntity *start;   /* in case multipart/related */
 } MIMEEntity;
 
 
