@@ -80,6 +80,10 @@ long conn_inbuf_len(Connection *conn);
  * wait operation. */
 int conn_eof(Connection *conn);
 
+/* Return 1 iff there was an error indication from the last read or wait
+ * operation. */
+int conn_read_error(Connection *conn);
+
 /* Try to write data in chunks of this size or more.  Set it to 0 to
  * get an unbuffered connection.  See the discussion on output buffering
  * at the top of this file for more information. */
@@ -150,7 +154,11 @@ int conn_write_withlen(Connection *conn, Octstr *data);
 
 /* Input functions.  Each of these takes an open connection and
  * returns data if it's available, or NULL if it's not.  They will
- * not block. */
+ * not block.  They will try to read in more data if there's not
+ * enough in the buffer to fill the request. */
+
+/* Return whatever data is available. */
+Octstr *conn_read_everything(Connection *conn);
 
 /* Return exactly "length" octets of data, if at least that many
  * are available.  Otherwise return NULL.

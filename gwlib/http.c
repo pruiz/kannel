@@ -695,7 +695,8 @@ static void server_thread(void *dummy)
 	}
 
 	if (gwthread_poll(tab, n, -1.0) == -1) {
-	    warning(0, "HTTP: gwthread_poll failed.");
+	    if (errno != EINTR)
+	        warning(0, "HTTP: gwthread_poll failed.");
 	    continue;
 	}
 
@@ -1919,7 +1920,7 @@ static int client_read_headers(Connection *conn, List *headers)
 static int client_read_body(HTTPTransaction *trans)
 {
     Octstr *h, *os;
-    long n, body_len;
+    long body_len;
 
     h = http_header_find_first(trans->response_headers, "Transfer-Encoding");
     if (h != NULL) {
@@ -1938,15 +1939,15 @@ static int client_read_body(HTTPTransaction *trans)
 	     * No length information available, so the server will signal
              * the end of data by closing the socket.
              */
-	    n = conn_inbuf_len(trans->conn);
-	    if (n == 0)
-	    	return 0;
-	    os = conn_read_fixed(trans->conn, n);
-	    gw_assert(os != NULL);
-	    octstr_append(trans->response_body, os);
+            while ((os = conn_read_everything(trans->conn)) != NULL) {
+	  	octstr_append(trans->response_body, os);
+		octstr_destroy(os);
+	    }
+	    if (conn_read_error(trans->conn))
+		goto error;
 	    if (conn_eof(trans->conn))
-	    	return 0;
-	    return 1;
+	        return 0;
+            return 1;
         } else {
             if (octstr_parse_long(&body_len, h, 0, 10) == -1) {
                 error(0, "HTTP: Content-Length header wrong: <%s>", 

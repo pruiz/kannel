@@ -245,12 +245,27 @@ Msg *remove_msg_from_queue(void)
 
 static void send_heartbeat_thread(void *arg) 
 {
+    time_t last_hb;
+    double hb_freq;
+
+    hb_freq = heartbeat_freq; /* Convert to double */
+    last_hb = 0;
+
     list_add_producer(queue);
     while (run_status == running) {
-	Msg *msg = msg_create(heartbeat);
-	msg->heartbeat.load = wap_appl_get_load();
-	put_msg_in_queue(msg);
-	gwthread_sleep((double)heartbeat_freq);
+        /*
+         * Because the sleep can be interrupted, we might end up sending
+	 * heartbeats faster than the configured heartbeat frequency.
+         * This is not bad unless we send them way too fast.  Make sure
+	 * our frequency is not more than twice the configured one.
+         */
+	if (difftime(last_hb, time(NULL)) >= hb_freq / 2) {
+	    Msg *msg = msg_create(heartbeat);
+	    msg->heartbeat.load = wap_appl_get_load();
+	    put_msg_in_queue(msg);
+	    last_hb = time(NULL);
+        }
+	gwthread_sleep(hb_freq);
     }
     list_remove_producer(queue);
 }

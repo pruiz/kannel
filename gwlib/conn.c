@@ -52,6 +52,7 @@ struct Connection {
 	long inbufpos;   /* start of unread data in inbuf */
 
 	int read_eof;    /* we encountered eof on read */
+	int read_error;  /* we encountered error on read */
 
 	/* Protected by both locks when updating, so you need only one
 	 * of the locks when reading. */
@@ -183,6 +184,7 @@ static void unlocked_read(Connection *conn) {
 		if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
 			return;
 		error(errno, "Error reading from fd %d:", conn->fd);
+		conn->read_error = 1;
 		if (conn->registered)
 			unlocked_register_pollin(conn, 0);
 		return;
@@ -272,6 +274,7 @@ Connection *conn_wrap_fd(int fd) {
 
 	conn->fd = fd;
 	conn->read_eof = 0;
+	conn->read_error = 0;
 	conn->output_buffering = DEFAULT_OUTPUT_BUFFERING;
 
 	conn->registered = NULL;
@@ -351,6 +354,16 @@ int conn_eof(Connection *conn) {
 	return eof;
 }
 
+int conn_read_error(Connection *conn) {
+	int err;
+
+	lock_in(conn);
+	err = conn->read_error;
+	unlock_in(conn);
+
+	return err;
+}
+
 void conn_set_output_buffering(Connection *conn, unsigned int size) {
 	lock_out(conn);
 	conn->output_buffering = size;
@@ -413,7 +426,7 @@ int conn_register(Connection *conn, FDSet *fdset,
             result = -1;
         } else {
 	    events = 0;
-  	    if (!conn->read_eof)
+  	    if (conn->read_eof == 0 && conn->read_error == 0)
 		    events |= POLLIN;
             if (unlocked_outbuf_len(conn) > 0)
             	events |= POLLOUT;
@@ -492,7 +505,7 @@ int conn_wait(Connection *conn, double seconds) {
 
 	/* We need the in lock to query read_eof */
 	lock_in(conn);
-	if (!conn->read_eof || events == 0)
+	if ((conn->read_eof == 0 && conn->read_error == 0) || events == 0)
 		events |= POLLIN;
 	unlock_in(conn);
 
@@ -570,7 +583,7 @@ int conn_wait_multi(List *conns, double seconds, List **active_conns) {
 		unlock_out(conn);
 
 		lock_in(conn);
-		if (!conn->read_eof)
+		if (conn->read_eof == 0 && conn->read_error == 0)
 			fds[i].events |= POLLIN;
 		unlock_in(conn);
 	}
@@ -687,6 +700,24 @@ int conn_write_withlen(Connection *conn, Octstr *data) {
 	unlock_out(conn);
 
 	return ret;
+}
+
+Octstr *conn_read_everything(Connection *conn) {
+	Octstr *result = NULL;
+
+	lock_in(conn);
+	if (unlocked_inbuf_len(conn) == 0) {
+		unlocked_read(conn);
+		if (unlocked_inbuf_len(conn) == 0) {
+			unlock_in(conn);
+			return NULL;
+		}
+	}
+
+	result = unlocked_get(conn, unlocked_inbuf_len(conn));
+	unlock_in(conn);
+
+	return result;
 }
 
 Octstr *conn_read_fixed(Connection *conn, long length) {

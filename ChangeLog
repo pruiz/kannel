@@ -1,3 +1,21 @@
+2000-11-07  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/http.c: Fix memory leak in client_read_body.
+	Make server_thread not warn if gwthread_poll fails with EINTR.
+
+	* gwlib/conn.[ch]: Added conn_read_error(), and a read_error
+	field to the Connection structure.
+	Added conn_read_everything().
+
+	* gwlib/http.c: In client_read_body, use conn_read_everything
+	instead of conn_inbuf_length and conn_read_fixed.  This way
+	it will detect end-of-file.
+
+	* gw/wapbox.c: Make send_heartbeat_thread() not send more
+	heartbeats than twice the usual frequency.  (We can live with
+	sleep() not being exact, but when the wapbox is run inside a
+	debugger it tends to go wild.)
+
 2000-11-07  Lars Wirzenius  <liw@iki.fi>
 
 	* checks/check_sendsms.sh: Sleep for five seconds before starting
