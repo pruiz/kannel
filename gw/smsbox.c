@@ -977,7 +977,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 
     case TRANSTYPE_GET_URL:
 	request_headers = http_create_empty_headers();
-        http_header_add(request_headers, "User-Agent", GW_NAME " " VERSION);
+        http_header_add(request_headers, "User-Agent", GW_NAME "/" VERSION);
 	if (urltrans_send_sender(trans)) {
 	    http_header_add(request_headers, "X-Kannel-From",
 			    octstr_get_cstr(msg->sms.receiver));
@@ -993,7 +993,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 
     case TRANSTYPE_POST_URL:
 	request_headers = http_create_empty_headers();
-	http_header_add(request_headers, "User-Agent", GW_NAME " " VERSION);
+	http_header_add(request_headers, "User-Agent", GW_NAME "/" VERSION);
 	id = remember_receiver(msg, trans);
 	if (msg->sms.coding == DC_8BIT)
 	    http_header_add(request_headers, "Content-Type",
@@ -1128,7 +1128,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	octstr_append(xml, octstr_imm(">\n"));
 
 	request_headers = http_create_empty_headers();
-	http_header_add(request_headers, "User-Agent", GW_NAME " " VERSION);
+	http_header_add(request_headers, "User-Agent", GW_NAME "/" VERSION);
 	id = remember_receiver(msg, trans);
 
 	http_header_add(request_headers, "Content-Type", "text/xml");
