@@ -1,3 +1,8 @@
+2001-11-30 Jörg Pommnitz <jpo@condat.de>
+	* gw/smsc_emi2.c: code cleanup/reorganization, new feature "idle-timeout"
+	* gwlib/cfg.def: add new smsc config option "idle-timeout"
+	* doc/userguide/userguide.xml: document new config option "idle-timeout"
+
 2001-12-05 Andreas Fink
     * gw/smsc_smpp.c, gw/smpp_pdu.h: introduced some constants for number type
 

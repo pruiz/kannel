@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <time.h>
 #include <limits.h>
+#include <float.h>
 
 #include "gwlib/gwlib.h"
 #include "smscconn.h"
@@ -23,6 +24,8 @@
 #include "sms.h"
 #include "emimsg.h"
 #include "dlr.h"
+
+#define EMI2_MAX_TRN 100
 
 typedef struct privdata {
     List	*outgoing_queue;
@@ -38,18 +41,69 @@ typedef struct privdata {
     Octstr	*allow_ip, *deny_ip;
     Octstr	*host, *username, *password;
     int		unacked;	/* Sent messages not acked */
-    time_t	sendtime[100];	/* When we sent out a message with a given
-				 * TRN. Is 0 if the TRN is currently free. */
-    int		sendtype[100];	/* OT of message, undefined if time == 0 */
-    int		dlr[100];	/* dlr = DLR_SMSC_SUCCESS || DLR_SMSC_FAIL */
-    Msg		*sendmsg[100]; 	/* Corresponding message for OT == 51 */
+    struct {
+	time_t	sendtime;	/* When we sent out a message with a given
+				 * TRN. Is 0 if the TRN slot is currently free. */
+	int     sendtype;	/* OT of message, undefined if time == 0 */
+	int	dlr;            /* dlr = DLR_SMSC_SUCCESS || DLR_SMSC_FAIL */
+	Msg     *sendmsg; 	/* Corresponding message for OT == 51 */
+    } slots[EMI2_MAX_TRN];
     int		keepalive; 	/* Seconds to send a Keepalive Command (OT=31) */
     int		flowcontrol;	/* 0=Windowing, 1=Stop-and-Wait */
     int		waitack;	/* Seconds to wait to ack */
     int		throughput;	/* Messages per second */
     int		window;		/* In windowed flow-control, the window size */
+    int         can_write;      /* write = 1, read = 0, for stop-and-wait flow control */
+    int         priv_nexttrn;   /* next TRN, this should never be accessed directly.
+				 * use int emi2_next_trn (SMSCConn *conn) instead.
+				 */
+    time_t	last_activity_time; /* the last time something was sent over the main
+				     * SMSC connection
+				     */
+    time_t      check_time;
+    int         idle_timeout;   /* Seconds a Main connection to the SMSC is allowed to be idle.
+				   If 0, no idle timeout is in effect */
 } PrivData;
 
+typedef enum {
+    EMI2_SENDREQ,  /* somebody asked this driver to send a SMS message */
+    EMI2_SMSCREQ,  /* the SMSC wants something from us */
+    EMI2_CONNERR,  /* an error condition in the SMSC main connection */
+    EMI2_TIMEOUT,  /* timeout on the SMSC main connection */
+} EMI2Event;
+
+#define PRIVDATA(conn) ((PrivData *)((conn)->data))
+
+#define SLOTBUSY(conn,i) (PRIVDATA(conn)->slots[(i)].sendtime != 0)
+
+#define CONNECTIONIDLE(conn)								\
+((PRIVDATA(conn)->unacked == 0) &&							\
+ (PRIVDATA(conn)->idle_timeout ?							\
+  (PRIVDATA(conn)->last_activity_time + PRIVDATA(conn)->idle_timeout) <= time(0):0))
+
+#define emi2_can_send(conn)					\
+((PRIVDATA(conn)->can_write || !PRIVDATA(conn)->flowcontrol) &&	\
+ (PRIVDATA(conn)->unacked < PRIVDATA(conn)->window) &&		\
+ (!PRIVDATA(conn)->shutdown))
+
+#define emi2_needs_keepalive(conn)							\
+(emi2_can_send(conn) &&									\
+ (PRIVDATA(conn)->keepalive > 0) &&							\
+ (time(NULL) > (PRIVDATA(conn)->last_activity_time + PRIVDATA(conn)->keepalive)))
+
+/*
+ * Send an EMI message and update the last_activity_time field.
+ */
+static int emi2_emimsg_send(SMSCConn *conn, Connection *server, struct emimsg *emimsg)
+{
+    int result = emimsg_send(server, emimsg);
+
+    if (result >= 0) {
+	PRIVDATA(conn)->last_activity_time = time (NULL);
+    }
+
+    return result;
+}
 
 /* Wait for a message of type 'ot', sent with TRN 0, to be acked.
  * Timeout after 't' seconds. Any other packets received are ignored.
@@ -177,7 +231,7 @@ static Connection *open_send_connection(SMSCConn *conn)
 
 	if (privdata->username && privdata->password) {
 	    emimsg = make_emi60(privdata);
-	    emimsg_send(server, emimsg);
+	    emi2_emimsg_send(conn, server, emimsg);
 	    emimsg_destroy(emimsg);
 	    result = wait_for_ack(privdata, server, 60, 30);
 	    if (result == -2) {
@@ -427,7 +481,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	msg->sms.smsc_id = octstr_duplicate(conn->id);
 	bb_smscconn_receive(conn, msg);
 	reply = emimsg_create_reply(01, emimsg->trn, 1);
-	if (emimsg_send(server, reply) < 0) {
+	if (emi2_emimsg_send(conn, server, reply) < 0) {
 	    emimsg_destroy(reply);
 	    return -1;
 	}
@@ -546,7 +600,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	counter_increase(conn->received);
 	bb_smscconn_receive(conn, msg);
 	reply = emimsg_create_reply(52, emimsg->trn, 1);
-	if (emimsg_send(server, reply) < 0) {
+	if (emi2_emimsg_send(conn, server, reply) < 0) {
 	    emimsg_destroy(reply);
 	    return -1;
 	}
@@ -592,7 +646,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	    bb_smscconn_receive(conn, msg);
 	}
 	reply = emimsg_create_reply(53, emimsg->trn, 1);
-	if (emimsg_send(server, reply) < 0) {
+	if (emi2_emimsg_send(conn, server, reply) < 0) {
 	    emimsg_destroy(reply);
 	    return -1;
 	}
@@ -605,297 +659,452 @@ static int handle_operation(SMSCConn *conn, Connection *server,
     }
 }
 
+/*
+ * get all unacknowledged messages from the ringbuffer and queue them
+ * for retransmission.
+ */
 static void clear_sent(PrivData *privdata)
 {
     int i;
 
-    for (i = 0; i < 100; i++) {
-	if (privdata->sendtime[i] && privdata->sendtype[i] == 51)
-	    list_produce(privdata->outgoing_queue, privdata->sendmsg[i]);
-	privdata->sendtime[i] = 0;
+    for (i = 0; i < EMI2_MAX_TRN; i++) {
+	if (privdata->slots[i].sendtime && privdata->slots[i].sendtype == 51)
+	    list_produce(privdata->outgoing_queue, privdata->slots[i].sendmsg);
+	privdata->slots[i].sendtime = 0;
     }
     privdata->unacked = 0;
 }
 
-
-static void emi2_send_loop(SMSCConn *conn, Connection *server)
+/*
+ * wait seconds seconds for something to happen (a send SMS request, activity
+ * on the SMSC main connection, an error or timeout) and tell the caller
+ * what happened.
+ */
+static EMI2Event emi2_wait (SMSCConn *conn, Connection *server, double seconds)
 {
-    PrivData *privdata = conn->data;
-    int i, nexttrn = 0;
-    struct emimsg *emimsg;
-    Octstr	*str;
-    Msg		*msg;
-    time_t	current_time, check_time, keepalive_time=0;
-    int write = 1; /* write=1, read=0, for stop-and-wait flow control */
-    double delay = 0;
-
-    if (privdata->throughput) {
-	delay = 1.0 / privdata->throughput;
-	info(0, "Limiting throughput to %d messages per second " 
-		"(delay of %d miliseconds)",
-	         privdata->throughput, (int) (1000.0 * delay));
+    if (list_len(PRIVDATA(conn)->outgoing_queue)) {
+	return EMI2_SENDREQ;
     }
+    
+    if (server != NULL) {
+	switch (conn_wait(server, seconds)) {
+	case 1: return list_len(PRIVDATA(conn)->outgoing_queue) ? EMI2_SENDREQ : EMI2_TIMEOUT;
+	case 0: return EMI2_SMSCREQ;
+	case -1: return EMI2_CONNERR;
+	}
+    } else {
+	gwthread_sleep(seconds);
+	return list_len(PRIVDATA(conn)->outgoing_queue) ? EMI2_SENDREQ : EMI2_TIMEOUT;
+    }
+}
 
-    check_time = time(NULL);
-    while (1) {
+/*
+ * obtain the next free TRN.
+ */
+static int emi2_next_trn (SMSCConn *conn)
+{
+#define INC_TRN(x) ((x)=((x) + 1) % EMI2_MAX_TRN)
+    int result;
+    
+    while (SLOTBUSY(conn,PRIVDATA(conn)->priv_nexttrn))
+	INC_TRN(PRIVDATA(conn)->priv_nexttrn); /* pick unused TRN */
+    
+    result = PRIVDATA(conn)->priv_nexttrn;
+    INC_TRN(PRIVDATA(conn)->priv_nexttrn);
 
-	/* Send messages if there's room in the sending window */
-	while ((write || !privdata->flowcontrol) && 
-	       privdata->unacked < privdata->window && !privdata->shutdown &&
-	       (msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
+    return result;
+#undef INC_TRN
+}
 
-	    if (privdata->throughput)
-		gwthread_sleep(delay);
+/*
+ * send an EMI type 31 message when required.
+ */
+static int emi2_keepalive_handling (SMSCConn *conn, Connection *server)
+{
+    struct emimsg *emimsg;
+    int nexttrn = emi2_next_trn (conn);
+    
+    emimsg = make_emi31(PRIVDATA(conn), nexttrn);
+    PRIVDATA(conn)->slots[nexttrn].sendtype= 31;
+    PRIVDATA(conn)->slots[nexttrn].sendtime = time(NULL);
+    PRIVDATA(conn)->unacked++;
+	
+    if (emi2_emimsg_send(conn, server, emimsg) == -1) {
+	emimsg_destroy(emimsg);
+	return -1;
+    }
+    emimsg_destroy(emimsg);
+	
+    PRIVDATA(conn)->can_write = 0;
 
-	    while (privdata->sendtime[nexttrn % 100] != 0)
-		nexttrn++; /* pick unused TRN */
-	    nexttrn %= 100;
-	    emimsg = msg_to_emimsg(msg, nexttrn);
-	    privdata->sendmsg[nexttrn] = msg;
-	    privdata->sendtype[nexttrn] = 51;
-	    privdata->sendtime[nexttrn] = time(NULL);
-	    if (emimsg_send(server, emimsg) == -1) {
-		emimsg_destroy(emimsg);
-		return;
-	    }
-	    if (msg->sms.dlr_mask & 0x18) {
-		Octstr *ts;
-		ts = octstr_create("");
-		octstr_append(ts, conn->id);
-		octstr_append_char(ts, '-');
-		octstr_append_decimal(ts, nexttrn);
+    return 0;
+}
 
-		dlr_add(octstr_get_cstr(conn->id), 
+/*
+ * a helper function to obtain the human readable name of the EMI2
+ * events.
+ */
+static const char *emi2_eventname (EMI2Event event)
+{
+#define RETURNNAME(e) case (e): return #e
+    
+    switch (event) {
+	RETURNNAME(EMI2_SENDREQ);
+	RETURNNAME(EMI2_SMSCREQ);
+	RETURNNAME(EMI2_CONNERR);
+	RETURNNAME(EMI2_TIMEOUT);
+    }
+#undef RETURNNAME
+}
+
+/*
+ * the actual send logic: Send all queued messages in a burst.
+ */
+static int emi2_do_send (SMSCConn *conn, Connection *server)
+{
+    struct emimsg *emimsg;
+    Octstr	  *str;
+    Msg           *msg;
+    double         delay = 0;
+    int            i;
+
+    if (PRIVDATA(conn)->throughput) {
+	delay = 1.0 / PRIVDATA(conn)->throughput;
+    }
+    
+    /* Send messages if there's room in the sending window */
+    while ((msg = list_extract_first(PRIVDATA(conn)->outgoing_queue)) != NULL) {
+	int nexttrn = emi2_next_trn (conn);
+
+	if (PRIVDATA(conn)->throughput)
+	    gwthread_sleep(delay);
+
+	/* convert the generic Kannel message into an EMI type message */
+	emimsg = msg_to_emimsg(msg, nexttrn);
+
+	/* remember the message for retransmission or DLR */
+	PRIVDATA(conn)->slots[nexttrn].sendmsg = msg;
+	PRIVDATA(conn)->slots[nexttrn].sendtype = 51;
+	PRIVDATA(conn)->slots[nexttrn].sendtime = time(NULL);
+
+	/* send the message */
+	if (emi2_emimsg_send(conn, server, emimsg) == -1) {
+	    emimsg_destroy(emimsg);
+	    return -1;
+	}
+
+	/* report the submission to the DLR code */
+	if (msg->sms.dlr_mask & 0x18) {
+	    Octstr *ts;
+	    ts = octstr_create("");
+	    octstr_append(ts, conn->id);
+	    octstr_append_char(ts, '-');
+	    octstr_append_decimal(ts, nexttrn);
+
+	    dlr_add(octstr_get_cstr(conn->id), 
 		    octstr_get_cstr(ts),
 		    octstr_get_cstr(emimsg->fields[E50_ADC]),
 		    octstr_get_cstr(msg->sms.service),
 		    octstr_get_cstr(msg->sms.dlr_url),
 		    msg->sms.dlr_mask);
-		octstr_destroy(ts);
-		privdata->dlr[nexttrn] = 1;
+	    
+	    octstr_destroy(ts);
+	    PRIVDATA(conn)->slots[nexttrn].dlr = 1;
+	} else {
+	    PRIVDATA(conn)->slots[nexttrn].dlr = 0;
+	}
+
+	/* we just sent a message */
+	PRIVDATA(conn)->unacked++;
+
+	emimsg_destroy(emimsg);
+
+	/*
+	 * remember that there is an open request for stop-wait flow control
+	 * FIXME: couldn't this be done with the unacked field as well? After
+	 * all stop-wait is just a window of size 1.
+	 */
+	PRIVDATA(conn)->can_write = 0;
+    }
+
+    return 0;
+}
+
+static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
+{
+    Octstr	  *str;
+    struct emimsg *emimsg;
+    
+    /* Read acks/nacks/ops from the server */
+    while ((str = conn_read_packet(server, 2, 3))) {
+	debug("smsc.emi2", 0, "Got packet from the main socket");
+
+	/* parse the msg */
+	emimsg = get_fields(str);
+	octstr_destroy(str);
+	
+	if (emimsg == NULL) {
+	    continue; /* The parse functions logged errors */
+	}
+	
+	if (emimsg->or == 'O') {
+	    /* If the SMSC wants to send operations through this
+	     * socket, we'll have to read them because there
+	     * might be ACKs too. We just drop them while stopped,
+	     * hopefully the SMSC will resend them later. */
+	    if (!conn->is_stopped) {
+		if (handle_operation(conn, server, emimsg) < 0)
+		    return -1; /* Connection broke */
 	    } else {
-		privdata->dlr[nexttrn] = 0;
+		info(0, "Ignoring operation from main socket "
+		     "because the connection is stopped.");
 	    }
-	    nexttrn++;
-	    privdata->unacked++;
+	} else {   /* Already checked to be 'O' or 'R' */
+	    if (!SLOTBUSY(conn,emimsg->trn) ||
+		emimsg->ot != PRIVDATA(conn)->slots[emimsg->trn].sendtype) {
+		error(0, "Emi2: Got ack for TRN %d, don't remember sending O?", emimsg->trn);
+	    } else {
+		PRIVDATA(conn)->can_write = 1;
+		PRIVDATA(conn)->slots[emimsg->trn].sendtime = 0;
+		PRIVDATA(conn)->unacked--;
+		
+		if (emimsg->ot == 51) {
+		    if (PRIVDATA(conn)->slots[emimsg->trn].dlr) {
+			Msg *dlrmsg;
+			Octstr *ts;
+			Msg *origmsg;
 
-	    emimsg_destroy(emimsg);
+			origmsg = PRIVDATA(conn)->slots[emimsg->trn].sendmsg;
 
-	    if ( privdata->keepalive > 0 )
-		keepalive_time = time(NULL);
+			ts = octstr_create("");
+			octstr_append(ts, conn->id);
+			octstr_append_char(ts, '-');
+			octstr_append_decimal(ts, emimsg->trn);
 
-	    write = 0;
-	}
+			dlrmsg = dlr_find(octstr_get_cstr(conn->id), 
+					  octstr_get_cstr(ts), /* timestamp */
+					  octstr_get_cstr(origmsg->sms.receiver), /* destination */
+					  (octstr_get_char(emimsg->fields[0], 0) == 'A' ? 
+					   DLR_SMSC_SUCCESS : DLR_SMSC_FAIL));
 
-	/* Send keepalive if there's room in the sending window */
-	if ((write || !privdata->flowcontrol) && privdata->keepalive > 0 
-	    && time(NULL) > keepalive_time + privdata->keepalive &&
-	    privdata->unacked < privdata->window && !privdata->shutdown ) {
-	    while (privdata->sendtime[nexttrn % 100] != 0)
-		nexttrn++; /* pick unused TRN */
-	    nexttrn %= 100;
-	    emimsg = make_emi31(privdata, nexttrn);
-	    privdata->sendtype[nexttrn]= 31;
-	    privdata->sendtime[nexttrn++] = time(NULL);
-	    privdata->unacked++;
-	    if (emimsg_send(server, emimsg) == -1) {
-		emimsg_destroy(emimsg);
-		return;
-	    }
-	    emimsg_destroy(emimsg);
-	    if (privdata->keepalive)
-		keepalive_time = time(NULL);
-	    write = 0;
-	}
+			octstr_destroy(ts);
+			if (dlrmsg != NULL) {
+			    Octstr *moretext;
 
-	/* Read acks/nacks from the server */
-	while ((str = conn_read_packet(server, 2, 3))) {
-	    debug("smsc.emi2", 0, "Got packet from the main socket");
-	    emimsg = get_fields(str);
-	    octstr_destroy(str);
-	    if (emimsg == NULL) {
-		continue; /* The parse functions logged errors */
-	    }
-	    if (emimsg->or == 'O') {
-		/* If the SMSC wants to send operations through this
-		 * socket, we'll have to read them because there
-		 * might be ACKs too. We just drop them while stopped,
-		 * hopefully the SMSC will resend them later. */
-		if (!conn->is_stopped) {
-		    if (handle_operation(conn, server, emimsg) < 0)
-			return; /* Connection broke */
-		}
-		else
-		    info(0, "Ignoring operation from main socket "
-			 "because the connection is stopped.");
-	    }
-	    else {   /* Already checked to be 'O' or 'R' */
-		if (!privdata->sendtime[emimsg->trn] ||
-		    emimsg->ot != privdata->sendtype[emimsg->trn])
-		    error(0, "Emi2: Got ack, don't remember sending O?");
-		else {
-		    write = 1;
-		    privdata->sendtime[emimsg->trn] = 0;
-		    privdata->unacked--;
-		    if (emimsg->ot == 51) {
-
-			if (privdata->dlr[emimsg->trn]) {
-			    Msg *dlrmsg;
-			    Octstr *ts;
-			    Msg *origmsg;
-
-			    origmsg = privdata->sendmsg[emimsg->trn];
-
-			    ts = octstr_create("");
-			    octstr_append(ts, conn->id);
-			    octstr_append_char(ts, '-');
-			    octstr_append_decimal(ts, emimsg->trn);
-
-			    dlrmsg = dlr_find(octstr_get_cstr(conn->id), 
-				octstr_get_cstr(ts), /* timestamp */
-				octstr_get_cstr(origmsg->sms.receiver), /* destination */
-				(octstr_get_char(emimsg->fields[0], 0) == 'A' ? 
-				 DLR_SMSC_SUCCESS : DLR_SMSC_FAIL));
-
-			    octstr_destroy(ts);
-			    if (dlrmsg != NULL) {
-				Octstr *moretext;
-
-				moretext = octstr_create("");
-				if (octstr_get_char(emimsg->fields[0], 0) == 'N') {
-				    octstr_append(moretext, emimsg->fields[1]);
-				    octstr_append_char(moretext, '-');
-				    octstr_append(moretext, emimsg->fields[2]);
-				}
-				octstr_append_char(moretext, '/');
-				octstr_insert(dlrmsg->sms.msgdata, moretext, 0);
-				octstr_destroy(moretext);
-
-				bb_smscconn_receive(conn, dlrmsg);
+			    moretext = octstr_create("");
+			    if (octstr_get_char(emimsg->fields[0], 0) == 'N') {
+				octstr_append(moretext, emimsg->fields[1]);
+				octstr_append_char(moretext, '-');
+				octstr_append(moretext, emimsg->fields[2]);
 			    }
-			}
+			    octstr_append_char(moretext, '/');
+			    octstr_insert(dlrmsg->sms.msgdata, moretext, 0);
+			    octstr_destroy(moretext);
 
-			if (octstr_get_char(emimsg->fields[0], 0) == 'A')
-			{
-			    /* we got an ack back. We might have to store the */
-			    /* timestamp for delivery notifications now */
-			    Octstr *ts, *adc;
-			    int	i;
-			    Msg *m;
+			    bb_smscconn_receive(conn, dlrmsg);
+			}
+		    }
+
+		    if (octstr_get_char(emimsg->fields[0], 0) == 'A') {
+			/* we got an ack back. We might have to store the */
+			/* timestamp for delivery notifications now */
+			Octstr *ts, *adc;
+			int	i;
+			Msg *m;
 			  
-			    ts = octstr_duplicate(emimsg->fields[2]);
-			    if (octstr_len(ts)) {
-				i = octstr_search_char(ts,':',0);
-				if (i>0)
-				{
-				    octstr_delete(ts,0,i+1);
-				    adc = octstr_duplicate(emimsg->fields[2]);
-				    octstr_truncate(adc,i);
+			ts = octstr_duplicate(emimsg->fields[2]);
+			if (octstr_len(ts)) {
+			    i = octstr_search_char(ts,':',0);
+			    if (i>0) {
+				octstr_delete(ts,0,i+1);
+				adc = octstr_duplicate(emimsg->fields[2]);
+				octstr_truncate(adc,i);
 			        
-				    m = privdata->sendmsg[emimsg->trn];
-				    if(m == NULL)
-					info(0,"uhhh m is NULL, very bad");
-				    else if (m->sms.dlr_mask & 0x7)
-				    {
-					dlr_add(octstr_get_cstr(conn->id), 
+				m = PRIVDATA(conn)->slots[emimsg->trn].sendmsg;
+				if(m == NULL) {
+				    info(0,"uhhh m is NULL, very bad");
+				} else if (m->sms.dlr_mask & 0x7) {
+				    dlr_add(octstr_get_cstr(conn->id), 
 					    octstr_get_cstr(ts),
 					    octstr_get_cstr(adc),
 					    octstr_get_cstr(m->sms.service),
 					    octstr_get_cstr(m->sms.dlr_url),
 					    m->sms.dlr_mask);
-				    }
-				    octstr_destroy(ts);
-				    octstr_destroy(adc);
 				}
-				else
-				    octstr_destroy(ts);
-
-
+				octstr_destroy(ts);
+				octstr_destroy(adc);
+			    } else {
+				octstr_destroy(ts);
 			    }
-			    bb_smscconn_sent(conn,
-					     privdata->sendmsg[emimsg->trn]);
+
+			    
 			}
-			else
-			    bb_smscconn_send_failed(conn,
-						privdata->sendmsg[emimsg->trn],
+			/*
+			 * report the successful transmission to the generic bb code.
+			 */
+			bb_smscconn_sent(conn,
+					 PRIVDATA(conn)->slots[emimsg->trn].sendmsg);
+		    } else {
+			bb_smscconn_send_failed(conn,
+						PRIVDATA(conn)->slots[emimsg->trn].sendmsg,
 						SMSCCONN_FAILED_REJECTED);
 		    }
-		    else if (emimsg->ot == 31)
-			;
-			/* We don't use the data in the reply */
-		    else
-			panic(0, "Bug, ACK handler missing for sent packet");
+		} else if (emimsg->ot == 31) {
+		    /* We don't use the data in the reply */
+		    ;
+		} else {
+		    panic(0, "Bug, ACK handler missing for sent packet");
 		}
 	    }
-	    emimsg_destroy(emimsg);
 	}
+	emimsg_destroy(emimsg);
+    }
 
-	if (conn_read_error(server)) {
-	    error(0, "emi2: Error trying to read ACKs from SMSC");
-	    return;
-	}
-	if (conn_eof(server)) {
-	    info(0, "emi2: Main connection closed by SMSC");
-	    return;
-	}
-	/* Check whether there are messages the server hasn't acked in a
-	 * reasonable time */
-	current_time = time(NULL);
-	if (privdata->unacked && current_time > check_time + 30) {
-	    check_time = current_time;
-	    for (i = 0; i < 100; i++)
-		if (privdata->sendtime[i]
-		    && privdata->sendtime[i] < current_time - privdata->waitack) {
-		    privdata->sendtime[i] = 0;
-		    privdata->unacked--;
-		    if (privdata->sendtype[i] == 51) {
-			warning(0, "smsc_emi2: received neither ACK nor NACK for message %d " 
-				"in %d seconds, resending message", i, privdata->waitack);
-			list_produce(privdata->outgoing_queue,
-				     privdata->sendmsg[i]);
-			if (privdata->flowcontrol) write=1;
-			/* Wake up this same thread to send again
-			 * (simpler than avoiding sleep) */
-			gwthread_wakeup(privdata->sender_thread);
-		    }
-		    else if (privdata->sendtype[i] == 31) {
-			warning(0, "smsc_emi2: Alert (operation 31) was not "
-				"ACKed within %d seconds", privdata->waitack);
-			if (privdata->flowcontrol) write=1;
-		    } else
-			panic(0, "Bug, no timeout handler for sent packet");
+    if (conn_read_error(server)) {
+	error(0, "emi2: Error trying to read ACKs from SMSC");
+	return -1;
+    }
+    
+    if (conn_eof(server)) {
+	info(0, "emi2: Main connection closed by SMSC");
+	return -1;
+    }
+
+    return 0;
+}
+
+static void emi2_idleprocessing(SMSCConn *conn)
+{
+    time_t current_time;
+    int i;
+    
+    /*
+     * Check whether there are messages the server hasn't acked in a
+     * reasonable time
+     */
+    current_time = time(NULL);
+    
+    if (PRIVDATA(conn)->unacked && (current_time > (PRIVDATA(conn)->check_time + 30))) {
+	PRIVDATA(conn)->check_time = current_time;
+	for (i = 0; i < EMI2_MAX_TRN; i++) {
+	    if (SLOTBUSY(conn,i)
+		&& PRIVDATA(conn)->slots[i].sendtime < (current_time - PRIVDATA(conn)->waitack)) {
+		PRIVDATA(conn)->slots[i].sendtime = 0;
+		PRIVDATA(conn)->unacked--;
+		if (PRIVDATA(conn)->slots[i].sendtype == 51) {
+		    warning(0, "smsc_emi2: received neither ACK nor NACK for message %d " 
+			    "in %d seconds, resending message", i, PRIVDATA(conn)->waitack);
+		    list_produce(PRIVDATA(conn)->outgoing_queue,
+				 PRIVDATA(conn)->slots[i].sendmsg);
+		    if (PRIVDATA(conn)->flowcontrol) PRIVDATA(conn)->can_write=1;
+		    /* Wake up this same thread to send again
+		     * (simpler than avoiding sleep) */
+		    gwthread_wakeup(PRIVDATA(conn)->sender_thread);
+		} else if (PRIVDATA(conn)->slots[i].sendtype == 31) {
+		    warning(0, "smsc_emi2: Alert (operation 31) was not "
+			    "ACKed within %d seconds", PRIVDATA(conn)->waitack);
+		    if (PRIVDATA(conn)->flowcontrol) PRIVDATA(conn)->can_write=1;
+		} else {
+		    panic(0, "Bug, no timeout handler for sent packet");
 		}
-	}
-
-	/* During shutdown, wait until we know whether the messages we just
-	 * sent were accepted by the SMSC */
-	if (privdata->shutdown && privdata->unacked == 0)
-	    break;
-
-	/* If the server doesn't ack our messages, wake up to resend them */
-	if (privdata->flowcontrol && write && list_len(privdata->outgoing_queue))
-	    ;
-	else if (privdata->unacked == 0) {
-	    if (privdata->keepalive > 0)
-		conn_wait(server, privdata->keepalive + 1);
-	    else
-		conn_wait(server, -1);
-	} else 
-	    if (privdata->keepalive > 0 && privdata->keepalive < 40)
-		conn_wait(server, privdata->keepalive + 1);
-	    else
-		conn_wait(server, 40);
-	if (conn_read_error(server)) {
-	    warning(0, "emi2: Error reading from the main connection");
-	    return;
-	}
-	if (conn_eof(server)) {
-	    info(0, "emi2: Main connection closed by SMSC");
-	    return;
+	    }
 	}
     }
 }
 
+static void emi2_idletimeout_handling (SMSCConn *conn, Connection **server)
+{
+    /*
+     * close the connection if there was no activity.
+     */
+    if ((*server != NULL) && CONNECTIONIDLE(conn)) {
+	info(0, "emi2: closing idle connection.");
+	conn_destroy(*server);
+	*server = NULL;
+    }
+}
+
+/*
+ * this function calculates the new timeouttime.
+ */
+static double emi2_get_timeouttime (SMSCConn *conn, Connection *server)
+{
+    double ka_timeouttime = PRIVDATA(conn)->keepalive ? PRIVDATA(conn)->keepalive + 1 : DBL_MAX;
+    double idle_timeouttime = (PRIVDATA(conn)->idle_timeout && server) ? PRIVDATA(conn)->idle_timeout : DBL_MAX;
+    double result = ka_timeouttime < idle_timeouttime ? ka_timeouttime : idle_timeouttime;
+
+    if (result == DBL_MAX)
+	result = 30;
+
+    return result;
+}
+
+/*
+ * the main event processing loop.
+ */
+static void emi2_send_loop(SMSCConn *conn, Connection **server)
+{
+    for (;;) {
+	double timeouttime = emi2_get_timeouttime (conn, *server);
+	
+	EMI2Event event = emi2_wait (conn, *server, timeouttime);
+	debug("smsc.emi2", 0, "emi2_wait returned %s", emi2_eventname (event));
+	
+	switch (event) {
+	case EMI2_CONNERR:
+	    return;
+	    
+	case EMI2_SENDREQ:
+	    if (emi2_can_send (conn)) {
+		if (*server == NULL) {
+		    return; /* reopen the connection */
+		}
+		
+		if (emi2_do_send (conn, *server) < 0) {
+		    return; /* reopen the connection */
+		}
+	    }
+	    break;
+	    
+	case EMI2_SMSCREQ:
+	    if (emi2_handle_smscreq (conn, *server) < 0) {
+		return; /* reopen the connection */
+	    }
+	    break;
+	    
+	case EMI2_TIMEOUT:
+	    break;
+	}
+	
+	if (emi2_needs_keepalive (conn)) {
+	    if (*server == NULL) {
+		return; /* reopen the connection */
+	    }
+	    
+	    emi2_keepalive_handling (conn, *server);
+	}
+	
+	emi2_idleprocessing (conn);
+	emi2_idletimeout_handling (conn, server);
+
+	if (PRIVDATA(conn)->shutdown && (PRIVDATA(conn)->unacked == 0)) {
+	    /* shutdown and no open messages */
+	    break;
+	}
+
+	if (*server != NULL) {
+	    if (conn_read_error(*server)) {
+		warning(0, "emi2: Error reading from the main connection");
+		break;
+	    }
+	
+	    if (conn_eof(*server)) {
+		info(0, "emi2: Main connection closed by SMSC");
+		break;
+	    }
+	}
+    }
+}
 
 static void emi2_sender(void *arg)
 {
@@ -911,9 +1120,12 @@ static void emi2_sender(void *arg)
 		gwthread_wakeup(privdata->receiver_thread);
 	    break;
 	}
-	emi2_send_loop(conn, server);
+	emi2_send_loop(conn, &server);
 	clear_sent(privdata);
-	conn_destroy(server);
+
+	if (server != NULL) {
+	    conn_destroy(server);
+	}
     }
 
     while((msg = list_extract_first(privdata->outgoing_queue)) != NULL)
@@ -1128,7 +1340,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 {
     PrivData *privdata;
     Octstr *allow_ip, *deny_ip, *host;
-    long portno, our_port, keepalive, flowcontrol, waitack, throughput; 
+    long portno, our_port, keepalive, flowcontrol, waitack, throughput, idle_timeout; 
     long window;
     	/* has to be long because of cfg_get_integer */
     int i;
@@ -1136,6 +1348,15 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata = gw_malloc(sizeof(PrivData));
     privdata->outgoing_queue = list_create();
     privdata->listening_socket = -1;
+    privdata->can_write = 1;
+    privdata->priv_nexttrn = 0;
+    privdata->last_activity_time = 0;
+
+    
+    if (cfg_get_integer(&idle_timeout, cfg, octstr_imm("idle-timeout")) == -1)
+	idle_timeout = 0;
+    
+    privdata->idle_timeout = idle_timeout;
 
     if (cfg_get_integer(&portno, cfg, octstr_imm("port")) == -1)
 	portno = 0;
@@ -1176,12 +1397,12 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 	privdata->throughput = throughput;
 
     if (cfg_get_integer(&window, cfg, octstr_imm("window")) < 0)
-	privdata->window = 100;
+	privdata->window = EMI2_MAX_TRN;
     else
 	privdata->window = window;
-    if (privdata->window > 100) {
-	warning(0, "Value of 'window' should be lesser or equal to 100..");
-	privdata->window = 100;
+    if (privdata->window > EMI2_MAX_TRN) {
+	warning(0, "Value of 'window' should be lesser or equal to %d..", EMI2_MAX_TRN);
+	privdata->window = EMI2_MAX_TRN;
     }
 
     if (cfg_get_integer(&waitack, cfg, octstr_imm("wait-ack")) < 0)
@@ -1222,8 +1443,8 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 
     privdata->shutdown = 0;
 
-    for (i = 0; i < 100; i++)
-	privdata->sendtime[i] = 0;
+    for (i = 0; i < EMI2_MAX_TRN; i++)
+	privdata->slots[i].sendtime = 0;
     privdata->unacked = 0;
 
     conn->status = SMSCCONN_CONNECTING;

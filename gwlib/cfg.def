@@ -165,6 +165,7 @@ MULTI_GROUP(smsc,
     OCTSTR(alt-dcs)
     OCTSTR(throughput)
     OCTSTR(window)
+    OCTSTR(idle-timeout)
 )
 
 

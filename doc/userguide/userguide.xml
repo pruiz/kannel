@@ -1893,6 +1893,7 @@ smsc-password = bar
 keepalive = 55
 our-port = 600 (optional bind in our end)
 receive-port = 700 (the port in which the SMSC will contact)
+idle-timeout = 30
 
 group = smsc
 smsc = emi
@@ -1970,6 +1971,19 @@ smsc-password = bar
      <entry valign=bottom>
        If set, only connections from these IP addresses are accepted
        to receive-port. TCP/IP connection only.
+     </entry></row>
+
+    <row><entry><literal>idle-timeout</literal></entry>
+      <entry><literal>number (seconds)</literal></entry>
+      <entry valign=bottom>
+      If this option is set to a value larger than 0, then the connection will
+      be closed after the configured amount of seconds without activity. This 
+      option interacts with the <literal>keepalive</literal> configuration option.
+      If <literal>keepalive</literal> is smaller than <literal>idle-timeout</literal>,
+      then the connection will never be idle and those this option has no effect.
+      If <literal>keepalive</literal> is larger than <literal>idle-timeout</literal>,
+      than <literal>keepalive</literal> reopens the connection. This allows one to poll
+      for pending mobile originated Short Messages at the SMSC.
      </entry></row>
 
     <row><entry><literal>keepalive</literal></entry>
