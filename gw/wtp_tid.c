@@ -76,7 +76,7 @@ int wtp_tid_is_valid(WTPEvent *event, WTPMachine *machine){
     long rcv_tid = -1,
          last_tid = -1;
 
-    info(0, "WTP_TID: starting validation");
+    debug("wap.wtp.tid", 0, "starting validation");
     rcv_tid = machine->tid;
    
     if (event->RcvInvoke.tid_new == 0) {
@@ -84,15 +84,18 @@ int wtp_tid_is_valid(WTPEvent *event, WTPMachine *machine){
        if ((last_tid = last_tid_exists(machine)) == no_cache) {
           if (event->RcvInvoke.no_cache_supported == 1)
              return no_cached_tid;
-          else {    
+          else {
+             debug("wap.wtp.tid", 0, "empty cache");    
 	     add_tid(machine, rcv_tid);
              return ok;
          }
       }
       
-      if (tid_in_window(rcv_tid, last_tid) == 0)
+      if (tid_in_window(rcv_tid, last_tid) == 0){
+         debug("wap.wtp.tid", 0, "tid out of the window");
          return fail;
-      else {
+      } else {
+         debug("wap.wtp.tid", 0, "tid in the window");
          set_tid(rcv_tid);
          return ok;
       }
@@ -109,37 +112,44 @@ int wtp_tid_is_valid(WTPEvent *event, WTPMachine *machine){
      
       return fail;
     }
+    panic(0, "This return is unnecessary but our compiler demands it");
     return fail;
 }
 
 /*
  * Internal functions:
  *
- * Checks whether the received tid is inside the window of acceptable ones. 
- * The size of the window is a half of the tid space. 
+ * Checks whether the received tid is inside the window of acceptable ones. The size 
+ * of the window is a half of the tid space. 
  *
- * Inputs: stored tid, received tid. Output 0, if tid is outside the window,
- * 1. if it is inside.
+ * Inputs: stored tid, received tid. Output 0, if received tid is outside the window,
+ * 1, if it is inside.
  */
 static int tid_in_window(long rcv_tid, long last_tid){
 
+       debug("wap.wtp.tid", 0, "tids were %ld and %ld", rcv_tid, last_tid); 
        if (last_tid == rcv_tid) {
           return 0;
-       } else {
-          if (rcv_tid > last_tid) {
-	     if (rcv_tid - last_tid < window_size) {
-                return 1;
-             } else {
-	        if (rcv_tid < last_tid) {
-		   if (rcv_tid - last_tid > window_size){
-                      return 1;
-                   }
-                }
-             }
-         }
-      }
-      
-      return 0;
+       } 
+
+       if (rcv_tid > last_tid) {
+	  if (abs(rcv_tid - last_tid) <= window_size) {
+             return 1;
+          } else {
+             return 0;
+          }
+       }
+       
+       if (rcv_tid < last_tid) {
+	  if (abs(rcv_tid - last_tid) >= window_size){
+             return 1;
+          } else {
+             return 0;
+          }
+       }
+
+       panic(0, "following return is unnecessary but our compiler demands it");
+       return 0;
 }
 
 static WTPCached_tid *cache_item_create_empty(void){
@@ -166,13 +176,13 @@ static void cache_item_destroy(WTPCached_tid *item){
 
 static void cache_item_dump(WTPCached_tid *item){
 
-       debug("wap.wtp", 0, "WTP_TID: dumping of a cache item starts");
-       debug("wap.wtp", 0, "source address");
+       debug("wap.wtp.tid", 0, "WTP_TID: dumping of a cache item starts");
+       debug("wap.wtp.tid", 0, "source address");
        octstr_dump(item->source_address);
-       debug("wap.wtp", 0, "source port %ld", item->source_port);
+       debug("wap.wtp.tid", 0, "source port %ld", item->source_port);
        debug (0, "destination address");
        octstr_dump(item->destination_address);
-       debug("wap.wtp", 0, "destination port %ld", item->destination_port);
+       debug("wap.wtp.tid", 0, "destination port %ld", item->destination_port);
 }
 #endif
 /*
@@ -204,7 +214,7 @@ static int tid_cached(WTPMachine *machine){
 		 machine->destination_port){
                
                mutex_unlock(tid_cache.lock);
-               return machine->tid;
+               return this_item->tid;
 
 	     } else {
                this_item = this_item->next;
@@ -261,6 +271,11 @@ static int last_tid_exists(WTPMachine *machine){
        else
 	  return no_cache;
 }
+
+
+
+
+
 
 
 

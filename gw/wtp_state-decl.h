@@ -22,7 +22,7 @@ ROW(LISTEN,
      current_primitive = TRInvokeIndication;
 
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     debug("wap.wtp", 0, "WTP: Sending TR-Invoke.ind to WSP");
+     debug("wap.wtp", 0, "Sending TR-Invoke.ind to WSP, tid being valid");
      wsp_dispatch_event(machine, wsp_event);
 
      timer = wtp_timer_create();
@@ -45,7 +45,7 @@ ROW(LISTEN,
      current_primitive = TRInvokeIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      machine->invoke_indication = wsp_event;
-
+     debug("wtp", 0, "generating invoke indication, tid being invalid");
      machine->ack_pdu_sent = 1;
     },
     TIDOK_WAIT)

@@ -1,3 +1,8 @@
+2000-02-17 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp_tid.c : Fixed a bug in the function tid_cached. Tid_in_window 
+	rewritten for simplicity.
+
 2000-02-16 Sanna Seppanen <sanna@wapit.com>
 	
 	* gwlib/http.c: created the new function httpresponse_wrap, copy of 

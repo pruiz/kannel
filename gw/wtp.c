@@ -241,9 +241,9 @@ void wtp_machine_mark_unused(WTPMachine *machine){
 }
 
 /* 
- * Removes from the machines list all machines having in_use-flag cleared. Panics  if 
- * machines list is empty. If machines list is busy, does nothing (garbage collection 
- * will eventually start again).
+ * Removes from the machines list all machines having in_use-flag cleared. Does nothing,
+ * if machines list is empty, nor if machines list is busy (garbage collection will 
+ * eventually start again).
  */
 void wtp_machines_list_clear(void){
 
@@ -255,7 +255,7 @@ void wtp_machines_list_clear(void){
 
      else {
         if (machines.list == NULL){
-           panic(0, "WTP: wtp_machines_list_clear: list is empty");
+           info(0, "WTP: wtp_machines_list_clear: list is empty");
            return;
         }
 
@@ -283,7 +283,7 @@ void wtp_machine_dump(WTPMachine *machine){
 	   #define INTEGER(name) \
 	           debug("wap.wtp", 0, "  %s: %ld", #name, machine->name)
            #define MSG(name) \
-                   debug("wap.wtp", 0, "Result field %s: ", #name); \
+                   debug("wap.wtp", 0, "Field %s: ", #name); \
                    msg_dump(machine->name)
            #define WSP_EVENT(name) \
                    debug("wap.wtp", 0, "WSP event %s:", #name); \
