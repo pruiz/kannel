@@ -278,10 +278,11 @@ static int check_args(int i, int argc, char **argv) {
         cfg_dump_all();
         exit(0);
     }
-	return -1;
+    else
+        return -1;
 
     return 0;
-} 
+}
 
 
 static Cfg *init_bearerbox(Cfg *cfg)
@@ -294,7 +295,7 @@ static Cfg *init_bearerbox(Cfg *cfg)
     Octstr *ssl_server_key_file;
     int ssl_enabled = 0;
 #endif /* HAVE_LIBSSL */
- 
+
 	
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
 

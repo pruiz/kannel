@@ -1,4 +1,7 @@
 2003-05-26  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bearerbox.c: bugfix from previous commit.
+
+2003-05-26  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/cfg.[ch], gw/bearerbox.c, doc/userguide/userguide.xml:
       added new command line option ("-g" or "--generate") to bearebox.
       This option just dump all known config
