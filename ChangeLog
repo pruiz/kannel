@@ -1,3 +1,7 @@
+2003-08-29  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/log.c: fixed bug indroduced by Stipe that no system error 
+      strings were shown in the logs.
+
 2003-08-28  Stipe Tolj  <tolj@wapme-systems.de>
     * wap/wsp.h: added WSP_1_x enumeration values to identify which WSP 
       Encoding-Version is used within a session.

@@ -357,7 +357,7 @@ static void kannel_syslog(char *format, va_list args, int level)
 	    va_list args; \
 	    \
 	    add_stderr(); \
-	    format(buf, level, place, e, fmt); \
+	    format(buf, level, place, err, fmt); \
 	    for (i = 0; i < num_logfiles; ++i) { \
 		if (logfiles[i].exclusive == GW_NON_EXCL && \
             level >= logfiles[i].minimum_output_level && \
@@ -380,7 +380,7 @@ static void kannel_syslog(char *format, va_list args, int level)
 	    va_list args; \
 	    \
 	    add_stderr(); \
-	    format(buf, level, place, 0, fmt); \
+	    format(buf, level, place, err, fmt); \
         if (logfiles[e].exclusive == GW_EXCL && \
             level >= logfiles[e].minimum_output_level && \
             logfiles[e].file != NULL) { \
@@ -391,7 +391,7 @@ static void kannel_syslog(char *format, va_list args, int level)
 	} while (0)
 
 
-void gw_panic(int e, const char *fmt, ...) 
+void gw_panic(int err, const char *fmt, ...) 
 {
     /* 
      * we don't want PANICs to spread accross smsc logs, so
@@ -402,8 +402,10 @@ void gw_panic(int e, const char *fmt, ...)
 }
 
 
-void error(int e, const char *fmt, ...) 
+void error(int err, const char *fmt, ...) 
 {
+    int e;
+    
     if ((e = thread_to[thread_slot()])) {
         FUNCTION_GUTS_EXCL(GW_ERROR, "");
     } else {
@@ -412,8 +414,10 @@ void error(int e, const char *fmt, ...)
 }
 
 
-void warning(int e, const char *fmt, ...) 
+void warning(int err, const char *fmt, ...) 
 {
+    int e;
+    
     if ((e = thread_to[thread_slot()])) {
         FUNCTION_GUTS_EXCL(GW_WARNING, "");
     } else {
@@ -422,8 +426,10 @@ void warning(int e, const char *fmt, ...)
 }
 
 
-void info(int e, const char *fmt, ...) 
+void info(int err, const char *fmt, ...) 
 {
+    int e;
+    
     if ((e = thread_to[thread_slot()])) {
         FUNCTION_GUTS_EXCL(GW_INFO, "");
     } else {
@@ -473,8 +479,10 @@ static int place_is_not_logged(const char *place)
 }
 
 
-void debug(const char *place, int e, const char *fmt, ...) 
+void debug(const char *place, int err, const char *fmt, ...) 
 {
+    int e;
+    
     if (place_should_be_logged(place) && place_is_not_logged(place) == 0) {
 	/*
 	 * Note: giving `place' to FUNCTION_GUTS makes log lines
