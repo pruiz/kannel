@@ -110,6 +110,8 @@ static void msg_send(int s, Msg *msg) {
 	if (octstr_send(s, os) == -1)
 		error(0, "wapbox: octstr_send failed");
 	octstr_destroy(os);
+	debug(0, "WAPBOX: Sent message:");
+	msg_dump(msg);
 }
 
 

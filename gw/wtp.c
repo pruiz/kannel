@@ -512,7 +512,8 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
      }
 
      do {
-	  debug(0, "WTP: handle_event: state is %s, event is %s.",
+	  debug(0, "WTP: handle_event: machine %p, state %s, event %s.",
+	  		(void *) machine,
 	  		name_state(machine->state),
 	  		name_event(event->type));
 
