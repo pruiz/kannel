@@ -392,6 +392,15 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 				 tm.tm_min);
 	    break;
 
+	case 'i':
+	    if (request->sms.smsc_id == NULL)
+		break;
+	    enc = octstr_duplicate(request->sms.smsc_id);
+	    octstr_url_encode(enc);
+	    octstr_append(result, enc);
+	    octstr_destroy(enc);
+	    break;
+
 	case '%':
 	    octstr_format_append(result, "%%");
 	    break;

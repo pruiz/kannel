@@ -2525,6 +2525,10 @@ like %p, but a leading `00' is replaced with `+'
 like %P, but a leading `00' is replaced with `+'
 </entry></row>
 
+<row><entry><literal>%i</literal></entry><entry>
+the smsc-id of the connection that received the message
+</entry></row>
+
 </tbody>
 </tgroup>
 </table>

@@ -1,3 +1,10 @@
+2001-05-17  Uoti Urpala  <uau@wapit.com>
+
+	* gw/urltrans.c: Added a new sms-service escape, %i, that adds the
+	smsc-id of the message.
+
+	* doc/userguide/userguide.xml: Documented above change.
+
 2001-05-17  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/thread.h: Wrap gw_claim_area() around mutex_create(),
