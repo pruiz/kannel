@@ -1,5 +1,10 @@
 2000-10-03  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/bb_smsc.c: Fixed a nice bug that appeared only with severe
+	load. 
+	
+2000-10-03  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bb-smsc.c: added SMS multi-send. This is achieved via
 	multiple phone numbers at 'to' field in send-SMS request, each
 	separated with space (currently, possibly changed later). This is

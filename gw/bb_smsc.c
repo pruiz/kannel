@@ -62,7 +62,7 @@ static void sms_receiver(void *arg)
     Msg *msg;
     Smsc *conn = arg;
     int ret;
-    int sleep = 1000;
+    int sleep = 100;
 
     list_add_producer(flow_threads);
     list_add_producer(incoming_sms);
@@ -97,15 +97,15 @@ static void sms_receiver(void *arg)
 		msg_destroy(msg);
 		continue;
 	    }
-	    list_produce(incoming_sms, msg);
-
-	    counter_increase(incoming_sms_counter);
-	    debug("bb.sms", 0, "smsc: new message received");
 	    alog("Received a message - SMSC:%s sender:%s msg: '%s'",
 		 smsc_id(conn->smsc),
 		 octstr_get_cstr(msg->smart_sms.sender),
 		 octstr_get_cstr(msg->smart_sms.msgdata));
-	    sleep = 1000;
+	    list_produce(incoming_sms, msg);
+
+	    counter_increase(incoming_sms_counter);
+	    debug("bb.sms", 0, "smsc: new message received");
+	    sleep = 100;
 	}
 	else {
 	    usleep(sleep);
@@ -113,7 +113,7 @@ static void sms_receiver(void *arg)
 	     * happen - this of course reduces response time, but that's better than
 	     * extensive CPU usage when it is not used
 	     */
-	    if (sleep < 1000000) sleep *= 10;
+	    if (sleep < 1000000) sleep *= 100;
 	}
     }    
     list_remove_producer(incoming_sms);
