@@ -1,3 +1,10 @@
+2003-03-11  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_boxc.c, gw/bb_smscconn.c, gw/msg.h, gw/smsbox.c: added Alexander's
+      ACK/NACK patch to provide smsbox connections with accurate ACK'ing data.
+      [Msg-ID: <200303092018.30806.a.malysh@centrium.de>]
+      We'll have to decide now on how to react on inbound ACK messages within
+      smsbox.
+
 2003-03-09  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bearerbox.c: while we receive SIGHUP we shouldn't re-load the store
       file, because we'd duplicate currently stored messages.
