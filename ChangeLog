@@ -1,3 +1,9 @@
+2000-06-14  Kalle Marjola <rpr@wapit.com>
+
+	* gw/html.c: fixed parsing bug in html_to_sms
+
+	* utils/kannel-init.d: made to worship new configuration files
+
 2000-06-14 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_send.c|h: wtp_do_not_send uses WAPAddrTuple type, too

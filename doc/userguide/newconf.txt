@@ -142,6 +142,21 @@ Mandatory variables in smsc group are following ones:
  smsc = <smsc-type>
  #       Identifies the smsc type. Currently supported ones are:
  #       fake, emi, emi_ip, cimd, cimd2, smpp and sema
+
+Message routing can be used to route SMS messages to be sent:
+
+ denied-prefix = <prefix-list>
+ #       A list of phone number prefixes which are NOT accepted to be
+ #       sent through this SMSC. Multiple entries are separated with 
+ #       semicolon (';'). For example, "040;050" permits sending of
+ #       any SMS message with prefix of 040 or 050 through this SMSC
+ #
+ preferred-prefix = <prefix-list>
+ #       As denied-prefix, but SMS messages with receiver starting
+ #       with any of these prefixes is prefereably sent through this
+ #       SMSC. In a case of multiple preferred, random one is selected
+ #       (likewise if there is none preferred, random SMSC is selected
+ #        from the existing ones)
  
 Remaining variables are smsc-dependant. FILL THESE LATER
 
@@ -178,19 +193,6 @@ Remaining variables are smsc-dependant. FILL THESE LATER
  #
  wait_report = 0/1 (0 means false, 1 means true)
  #       used by sms2000 protocol 
- #
- denied-prefix = <prefix-list>
- #       A list of phone number prefixes which are NOT accepted to be
- #       sent through this SMSC. Multiple entries are separated with 
- #       semicolon (';'). For example, "040;050" permits sending of
- #       any SMS message with prefix of 040 or 050 through this SMSC
- #
- preferred-prefix = <prefix-list>
- #       As denied-prefix, but SMS messages with receiver starting
- #       with any of these prefixes is prefereably sent through this
- #       SMSC. In a case of multiple preferred, random one is selected
- #       (likewise if there is none preferred, random SMSC is selected
- #        from the existing ones)
  #
  alt-charset = (number)
  #       As some SMS Centers do not follow the standards in character

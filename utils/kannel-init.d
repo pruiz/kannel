@@ -9,8 +9,7 @@
 
 BOXPATH=/usr/bin
 PIDFILES=/var/run
-BBCONF=/etc/kannel/kannel.conf
-WAPCONF=/etc/kannel/kannel.wapconf
+CONF=/etc/kannel/kannel.conf
 
 PATH=$BOXPATH:$PATH
 
@@ -23,9 +22,9 @@ test -x $BOXPATH/bearerbox || exit 0
 case "$1" in
   start)
     echo -n "Starting WAP gateway: bearerbox"
-    start-stop-daemon --start --quiet --pidfile $PIDFILES/kannel_bearerbox.pid --exec $BOXPATH/run_kannel_box -- --pidfile $PIDFILES/kannel_bearerbox.pid bearerbox -- $BBCONF
+    start-stop-daemon --start --quiet --pidfile $PIDFILES/kannel_bearerbox.pid --exec $BOXPATH/run_kannel_box -- --pidfile $PIDFILES/kannel_bearerbox.pid bearerbox -- $CONF
     echo -n " wapbox"
-    start-stop-daemon --start --quiet --pidfile $PIDFILES/kannel_wapbox.pid --exec $BOXPATH/run_kannel_box -- --pidfile $PIDFILES/kannel_wapbox.pid wapbox -- $WAPCONF
+    start-stop-daemon --start --quiet --pidfile $PIDFILES/kannel_wapbox.pid --exec $BOXPATH/run_kannel_box -- --pidfile $PIDFILES/kannel_wapbox.pid wapbox -- $CONF
     echo "."
     ;;
 

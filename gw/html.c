@@ -219,7 +219,7 @@ Octstr *html_to_sms(Octstr *html) {
 	Octstr *sms;
 	
 	sms = octstr_create_empty();
-	len = octstr_len(sms);
+	len = octstr_len(html);
 	i = 0;
 	while (i < len) {
 		c = octstr_get_char(html, i);
@@ -239,7 +239,6 @@ Octstr *html_to_sms(Octstr *html) {
 			break;
 		}
 	}
-
 	octstr_shrink_blank(sms);
 	octstr_strip_blank(sms);
 	return sms;
