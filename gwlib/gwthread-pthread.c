@@ -307,6 +307,15 @@ static void *new_thread(void *arg)
  * *old_set_storage.
  * Return 0 for success, or -1 if an error occurred.
  */
+ 
+ /* 
+  * This does not work in Darwin alias MacOS X alias Mach kernel,
+  * however. So we define a dummy function doing nothing.
+  */
+#if defined(DARWIN_OLD)
+    static int pthread_sigmask();
+#endif
+  
 static int block_user_signals(sigset_t *old_set_storage)
 {
     int ret;
@@ -315,7 +324,7 @@ static int block_user_signals(sigset_t *old_set_storage)
     ret = sigemptyset(&block_signals);
     if (ret != 0) {
         error(errno, "gwthread-pthread: Couldn't initialize signal set");
-	return -1;
+	    return -1;
     }
     ret = sigaddset(&block_signals, SIGHUP);
     ret |= sigaddset(&block_signals, SIGTERM);
@@ -323,7 +332,7 @@ static int block_user_signals(sigset_t *old_set_storage)
     ret |= sigaddset(&block_signals, SIGINT);
     if (ret != 0) {
         error(0, "gwthread-pthread: Couldn't add signal to signal set");
-	return -1;
+	    return -1;
     }
     ret = pthread_sigmask(SIG_BLOCK, &block_signals, old_set_storage);
     if (ret != 0) {
@@ -409,7 +418,7 @@ long gwthread_create_real(gwthread_func_t *func, const char *name, void *arg)
      * should be queued by the operating system.
      */
     if (gwthread_self() == MAIN_THREAD_ID)
-	sigtrick = block_user_signals(&old_signal_set) == 0;
+	    sigtrick = block_user_signals(&old_signal_set) == 0;
 
     thread_id = spawn_thread(func, name, arg);
 
@@ -419,7 +428,7 @@ long gwthread_create_real(gwthread_func_t *func, const char *name, void *arg)
      * the old one back.
      */
     if (sigtrick)
- 	restore_user_signals(&old_signal_set);
+ 	    restore_user_signals(&old_signal_set);
     
     return thread_id;
 }
@@ -668,7 +677,7 @@ int gwthread_shouldhandlesignal(int signal){
 }
 #else
 
-/* Somewhat broken pthreads */
+/* Somewhat broken pthreads */ 
 int gwthread_shouldhandlesignal(int signal){
     return (gwthread_self() == MAIN_THREAD_ID);
 }
@@ -680,27 +689,27 @@ int gwthread_dumpsigmask(void) {
 
     /* Grab the signal set data from our thread */
     if (pthread_sigmask(SIG_BLOCK, NULL, &signal_set) != 0) {
-	warning(0, "gwthread_dumpsigmask: Couldn't get signal mask.");
-	return -1;
+	    warning(0, "gwthread_dumpsigmask: Couldn't get signal mask.");
+	    return -1;
     }
     
     /* For each signal normally defined (there are usually only 32),
      * print a message if we don't block it. */
     for (signum = 1; signum <= 32; signum++) {
-	if (!sigismember(&signal_set, signum)) {
-	    debug("gwlib", 0,
-		"gwthread_dumpsigmask: Signal Number %d will be caught.", 
-		signum);
-	}
+	     if (!sigismember(&signal_set, signum)) {
+	         debug("gwlib", 0,
+		     "gwthread_dumpsigmask: Signal Number %d will be caught.", 
+		     signum);
+	     }
     }
     return 0;
 }
 
-/* DARVIN alias MacOS X doesnt have pthread_sigmask in its pthreads implementation */
+/* DARWIN alias MacOS X doesnt have pthread_sigmask in its pthreads implementation */
 
-#if defined(DARVIN)
-pthread_sigmask()
+#if defined(DARWIN_OLD)
+static int pthread_sigmask()
 {
+    return 0;
 }
 #endif
-
