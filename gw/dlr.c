@@ -560,7 +560,7 @@ static Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
     
     sql = octstr_format("SELECT %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s';",
                         octstr_get_cstr(field_mask), octstr_get_cstr(field_serv), 
-                        octstr_get_cstr(field_url), octstr_get_cstr(field_source),
+                        octstr_get_cstr(field_url), octstr_get_cstr(field_src),
                         octstr_get_cstr(table), octstr_get_cstr(field_smsc),
                         smsc, octstr_get_cstr(field_ts), ts);
 
@@ -705,7 +705,7 @@ static Msg *dlr_find_sdb(char *smsc, char *ts, char *dst, int typ)
     
     sql = octstr_format("SELECT %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s'",
                         octstr_get_cstr(field_mask), octstr_get_cstr(field_serv), 
-                        octstr_get_cstr(field_url), octstr_get_cstr(field_source), 
+                        octstr_get_cstr(field_url), octstr_get_cstr(field_src), 
                         octstr_get_cstr(table), octstr_get_cstr(field_smsc),
                         smsc, octstr_get_cstr(field_ts), ts);
 
