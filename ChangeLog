@@ -1,3 +1,10 @@
+2002-03-12  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsc_at2.c: increased timeout when sending the +CPIN? command; added
+      a colon to +CMT so kannel doesn't interpret +CMTI; added alphanumeric
+      sender interpretation to received messages; added interpretation of
+      international sender to received messages, adding a '+' on it; added
+      setting pid field in message received; 
+
 2002-03-09  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsc_emi2.c, gwlib/cfg.h: fixed some compilation warnings
 

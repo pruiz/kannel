@@ -543,7 +543,7 @@ int	at2_init_device(PrivAT2data *privdata)
      * This is not supported by the Nokia Premicell */
     if(ModemTypes[privdata->modemid].pin_support)
     {
-        ret = at2_send_modem_command(privdata, "AT+CPIN?", 0, 0);
+        ret = at2_send_modem_command(privdata, "AT+CPIN?", 10, 0);
         if(ret == -1)
 	    return -1;
         if(ret == 2)
@@ -730,7 +730,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
 	   	ret = 1;
 	   	goto end;
 	   }
-           if (-1 != octstr_search(line, octstr_imm("+CMT"), 0))
+           if (-1 != octstr_search(line, octstr_imm("+CMT:"), 0))
            {
            	line2 = at2_wait_line(privdata,1,0);
  
@@ -1231,9 +1231,9 @@ Msg *at2_pdu_decode(Octstr *data, PrivAT2data *privdata)
  */
 Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
 {
-        int len, pos, i;
+        int len, pos, i, ntype;
         char origaddr[21];
-        int udhi, dcs, udhlen;
+        int udhi, dcs, udhlen, pid;
         Octstr *origin = NULL;
         Octstr *udh = NULL;
         Octstr *text = NULL, *tmpstr;
@@ -1253,15 +1253,32 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
 
         /* originating address */
         len = octstr_get_char(pdu, 1);
+	ntype = octstr_get_char(pdu, 2);
         pos = 3;
-        for(i=0; i<len; i+=2, pos++) {
-                origaddr[i] = (octstr_get_char(pdu, pos) & 15) + 48 ;
-                origaddr[i+1] = (octstr_get_char(pdu, pos) >> 4) + 48;
-        }
-        origaddr[i] = '\0';
-        origin = octstr_create_from_data(origaddr, len);
+	if((ntype & 0xD0) == 0xD0) {
+	    /* Alphanumeric sender */
+	    origin = octstr_create("");
+	    tmpstr = octstr_copy(pdu, 3, len);
+	    at2_decode7bituncompressed(tmpstr, ((len * 4 - 3)/7), origin, 0);
+	    octstr_destroy(tmpstr);
+	    debug("bb.smsc.at2", 0, "AT2[%s]: Alphanumeric sender \"%s\"", octstr_get_cstr(privdata->name), octstr_get_cstr(origin));
+	    pos += ceil(len / 2);
+	} else {
+	    origin = octstr_create("");
+	    if((ntype & 0x90) == 0x90) {
+		/* International number */
+		octstr_append_char(origin, '+');
+	    }
+	    for(i=0; i<len; i+=2, pos++) {
+		octstr_append_char(origin, (octstr_get_char(pdu, pos) & 15) + 48);
+		if(i+1 < len)
+		    octstr_append_char(origin, (octstr_get_char(pdu, pos) >> 4) + 48);
+	    }
+	    debug("bb.smsc.at2", 0, "AT2[%s]: Numberic sender %s \"%s\"", octstr_get_cstr(privdata->name), ((ntype & 0x90) == 0x90 ? "(international)" : ""), octstr_get_cstr(origin));
+	}
 
-        /* skip the PID for now */
+        /* PID */
+	pid = octstr_get_char(pdu, pos);
         pos++;
 	
         /* DCS */
@@ -1303,6 +1320,8 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
 	    dcs_to_fields(&message, 0);
 	}
 
+	message->sms.pid = pid;
+
         /* deal with the user data -- 7 or 8 bit encoded */     
         tmpstr = octstr_copy(pdu,pos,len);
         if(message->sms.coding == DC_8BIT || message->sms.coding == DC_UCS2) {
@@ -1325,7 +1344,6 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
             /* Put a dummy address in the receiver for now (SMSC requires one) */
 	    message->sms.receiver = octstr_create_from_data("1234", 4);
 	}
-        /*message->sms.receiver = destination;*/
         if (udhi) {
                 message->sms.udhdata = udh;
         }
@@ -1435,6 +1453,11 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
     char sc[3];
     int retries = RETRY_SEND;
    
+    if(octstr_len(privdata->my_number)) {
+	octstr_destroy(msg->sms.sender);
+	msg->sms.sender = octstr_duplicate(privdata->my_number);
+    }
+
    /* the standard says you should be prepending the PDU with 00 to indicate to use the default SC.
       some older modems dont expect this so it can be disabled 
      * NB: This extra padding is not counted in the CMGS byte count */
