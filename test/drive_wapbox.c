@@ -275,6 +275,7 @@ static void add_wsp_get(Octstr *pdu) {
 				       (long) http_port);
 		octstr_append_uintvar(pdu, octstr_len(urlbuf));
 		octstr_append(pdu, urlbuf);
+		octstr_destroy(urlbuf);
 	}
 }
 

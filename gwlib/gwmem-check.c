@@ -59,6 +59,9 @@
 /* The marker beyond an area is filled with END_MARK_PATTERN. */
 #define END_MARK_PATTERN 0xadadafec
 
+/* How many bytes to dump when listing unfreed areas. */
+#define MAX_DUMP 16
+
 static int initialized = 0;
 
 /* We have to use a static mutex here, because otherwise the mutex_create
@@ -252,6 +255,19 @@ static void dump_area(struct area *area)
               area->claimer.function,
               area->claimer.filename,
               area->claimer.lineno);
+    }
+    if (area->area_size > 0) {
+	long i;
+	unsigned char *p;
+	char buf[MAX_DUMP * 3 + 1];
+	
+    	p = area->area;
+	buf[0] = '\0';
+	for (i = 0; i < area->area_size && i < MAX_DUMP; ++i)
+	    sprintf(strchr(buf, '\0'), "%02x ", p[i]);
+    	debug("gwlib.gwmem", 0, "Contents of area (first %d bytes):",
+	      MAX_DUMP);
+	debug("gwlib.gwmem", 0, "  %s", buf);
     }
 }
 
