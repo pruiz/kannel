@@ -1,3 +1,6 @@
+2003-10-15  Alexander Malysh  <a.malysh@centrium.de>
+    * Makefile.in: fixed 'make install' errors.
+
 2003-10-14  Alexander Malysh  <a.malysh@centrium.de>
     * radius/radius_acct.c, radius/radius_pdu.c: applied Vjacheslav's memleak patch.
       Thanks to Vjacheslav Chekushin <slava@lmt.lv>. For more details see:
