@@ -633,6 +633,11 @@ int smsc_receiver(SMSCenter *smsc, char *number)
 
     p = smsc->route_prefix;
 
+	if(p==NULL) {
+		error(0, "smsc_receiver: no route prefix");
+		return 0;
+	}
+
     while(*p != '\0') {
 	b = number;
 	for(b = number; *b != '\0'; b++, p++) {

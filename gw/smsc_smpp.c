@@ -540,7 +540,6 @@ error:
 
 int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 
-	Msg *newmsg = NULL;
 	struct smpp_pdu *pdu = NULL;
 	struct smpp_pdu_deliver_sm *deliver_sm = NULL;
 	char *newnum = NULL;
@@ -559,28 +558,32 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 		strncat(deliver_sm->source_addr, newnum, sizeof(deliver_sm->source_addr)-2);
 		free(newnum);
 
-		newmsg = msg_create(smart_sms);
-		if(newmsg==NULL) goto error;
+		*msg = NULL;
+		*msg = msg_create(smart_sms);
 
-		if( (deliver_sm->esm_class == 67) && (deliver_sm->data_coding == 245) ) {
-			newmsg->smart_sms.flag_8bit = 1;
-			newmsg->smart_sms.flag_udh = 1;
-		} else if( (deliver_sm->esm_class == 3) && (deliver_sm->data_coding == 0) ) {
-			newmsg->smart_sms.flag_8bit = 0;
-			newmsg->smart_sms.flag_udh = 0;
+		if(*msg==NULL) goto error;
+
+		debug(0, "3: deliver_sm->source_addr = <%s>", deliver_sm->source_addr);
+
+		if( (deliver_sm->esm_class == 67) || (deliver_sm->data_coding == 245) ) {
+			(*msg)->smart_sms.flag_8bit = 1;
+			(*msg)->smart_sms.flag_udh = 1;
+		} else if( (deliver_sm->esm_class == 3) || (deliver_sm->data_coding == 0) ) {
+			(*msg)->smart_sms.flag_8bit = 0;
+			(*msg)->smart_sms.flag_udh = 0;
 		} else {
 			debug(0, "problemss....");
-			newmsg = NULL;
+			msg_destroy(*msg);
+			*msg = NULL;
 		}
 
-		newmsg->smart_sms.receiver = octstr_create(deliver_sm->dest_addr);
-		newmsg->smart_sms.sender = octstr_create(deliver_sm->source_addr);
-		newmsg->smart_sms.msgdata = octstr_create(deliver_sm->short_message);
-		newmsg->smart_sms.udhdata = octstr_create("");
+		(*msg)->smart_sms.sender = octstr_create(deliver_sm->source_addr);
+		(*msg)->smart_sms.receiver = octstr_create(deliver_sm->dest_addr);
+		(*msg)->smart_sms.msgdata = octstr_create(deliver_sm->short_message);
+		(*msg)->smart_sms.udhdata = octstr_create_empty();
 
-		msg_dump(newmsg);
-
-		*msg = newmsg;
+		debug(0, "smpp_receive_mgs: dumping msg:");
+		msg_dump(*msg);
 
 		return 1;
 	}
@@ -588,7 +591,7 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 	return 0;
 error:
 	error(errno, "smpp_receive_msg: error");
-	msg_destroy(newmsg);
+	msg_destroy(*msg);
 	return -1;
 }
 
@@ -1716,8 +1719,12 @@ static int pdu_act_deliver_sm(SMSCenter *smsc, smpp_pdu *pdu) {
 	/* Convert message from the Default Charset to ISO-8859-1. */
 	charset_smpp_to_iso(deliver_sm->short_message);
 
-	/* Push the SMSMessage structure on the smsc->received_mo fifostack. */
-	fifo_push(smsc->received_mo, pdu);
+	/* Push a copy of the PDU on the smsc->received_mo fifostack. */
+	newpdu = pdu_new();
+	if(newpdu == NULL) goto error;
+	memcpy(newpdu, pdu, sizeof(struct smpp_pdu));
+	pdu->message_body = NULL;
+	fifo_push(smsc->received_mo, newpdu);
 
 	/* Push a DELIVER_SM_RESP structure on the smsc->fifo_r_out fifostack. */
 	newpdu = pdu_new();
