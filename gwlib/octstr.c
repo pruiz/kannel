@@ -285,7 +285,7 @@ int octstr_search_char(Octstr *ostr, char ch) {
 	return -1; 
     else if(tmp_int > -1)
 	return pos;
-    
+    return -1;    
 }
 
 
