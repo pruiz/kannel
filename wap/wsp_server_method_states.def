@@ -16,8 +16,6 @@ STATE_NAME(REPLYING)
 
 /* MISSING: TR_Invoke.ind, N_Methods == MOM */
 
-/* XXX The code for Get and Post is similar, and should probably be merged. */
-
 ROW(NULL_METHOD,
 	TR_Invoke_Ind,
 	e->tcl == 2 && pdu->type == Get,
@@ -36,12 +34,12 @@ ROW(NULL_METHOD,
 		invoke = wap_event_create(S_MethodInvoke_Ind);
 		invoke->u.S_MethodInvoke_Ind.server_transaction_id =
 			msm->transaction_id;
-		/* This 0x40 is the GET type ; XXX avoid magic numbers */
-		invoke->u.S_MethodInvoke_Ind.method = 0x40 + pdu->u.Get.subtype;
+		invoke->u.S_MethodInvoke_Ind.method =
+                        GET_METHODS + pdu->u.Get.subtype;
 		invoke->u.S_MethodInvoke_Ind.url =
 			octstr_duplicate(pdu->u.Get.uri);
 		invoke->u.S_MethodInvoke_Ind.http_headers = headers;
-		invoke->u.S_MethodInvoke_Ind.body = NULL; /* Use for POST */
+		invoke->u.S_MethodInvoke_Ind.body = NULL;
 		invoke->u.S_MethodInvoke_Ind.session_headers =
 			http_header_duplicate(sm->http_headers);
 		invoke->u.S_MethodInvoke_Ind.addr_tuple =
@@ -74,9 +72,8 @@ ROW(NULL_METHOD,
 		invoke = wap_event_create(S_MethodInvoke_Ind);
 		invoke->u.S_MethodInvoke_Ind.server_transaction_id =
 			msm->transaction_id;
-		/* XXX This 0x60 is the POST type and the subtype indicates whether a
-		 * POST or a PUT. */
-		invoke->u.S_MethodInvoke_Ind.method = 0x60 + pdu->u.Post.subtype;
+		invoke->u.S_MethodInvoke_Ind.method =
+                        POST_METHODS + pdu->u.Post.subtype;
 		invoke->u.S_MethodInvoke_Ind.url =
 			octstr_duplicate(pdu->u.Post.uri);
 		invoke->u.S_MethodInvoke_Ind.http_headers = headers;

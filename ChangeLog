@@ -1,3 +1,12 @@
+2000-11-23  Richard Braakman  <dark@wapi.com>
+
+	* wap/wsp.h, wsp/wsp_headers.c, wap/wsp_session.c:
+	Changed some "XXX" comments.
+
+	* wap/wsp_pdu.h, wap/wsp_server_method_states.def, wap/wsp_unit.c:
+	Introduced GET_METHODS and POST_METHODS identifiers to avoid using
+	0x40 and 0x60 as magic numbers.
+
 2000-11-23  Yann Muller  <ymuller@3glab.com>
 
 	* gw/smsc_at.c: reverted default GSM alphabet patch and added

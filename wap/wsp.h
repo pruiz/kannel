@@ -10,7 +10,7 @@
  * int WSP_accepted_header_code_pages[] = { -1 };
  */
 
-/* See Table 35; XXX of what? */
+/* See Table 35 of the WSP standard */
 enum wsp_abort_values {
 	WSP_ABORT_PROTOERR = 0xe0,
 	WSP_ABORT_DISCONNECT = 0xe1,

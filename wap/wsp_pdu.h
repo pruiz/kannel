@@ -11,6 +11,15 @@
 
 #include "gwlib/gwlib.h"
 
+/* The Get and Post PDUs contain a "subtype" field.  Sometimes we
+ * have to reconstruct the full method number.  For methods encoded
+ * in Get PDUs, this is GET_METHODS + subtype.  For methods encoded
+ * in Post PDUs, this is POST_METHODS + subtype. */
+enum {
+    GET_METHODS = 0x40,
+    POST_METHODS = 0x60
+};
+
 /* Enumerate the symbolic names of the PDUs */
 enum wsp_pdu_types {
 #define PDU(name, docstring, fields, is_valid) name,

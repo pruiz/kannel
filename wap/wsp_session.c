@@ -359,7 +359,7 @@ static void cant_handle_event(WSPMachine *sm, WAPEvent *event) {
 		 * event than abort. */
 		/* Currently that means TR-Result.cnf, because we already
 		 * tested for Invoke. */
-		/* XXX We need a better way to get at event values than
+		/* FIXME We need a better way to get at event values than
 		 * by hardcoding the types. */
 		if (event->type == TR_Result_Cnf) {
 			wsp_send_abort(WSP_ABORT_PROTOERR,

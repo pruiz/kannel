@@ -110,7 +110,8 @@ static WAPEvent *unpack_datagram(WAPEvent *datagram) {
 	switch (pdu->type) {
 	case Get:
 		debug("wap.wsp", 0, "Connectionless Get request received.");
-		event->u.S_Unit_MethodInvoke_Ind.method = 0x40 + pdu->u.Get.subtype;
+		event->u.S_Unit_MethodInvoke_Ind.method =
+                        GET_METHODS + pdu->u.Get.subtype;
 		event->u.S_Unit_MethodInvoke_Ind.request_uri = 
 			octstr_duplicate(pdu->u.Get.uri);
 		event->u.S_Unit_MethodInvoke_Ind.request_headers = 
@@ -119,7 +120,8 @@ static WAPEvent *unpack_datagram(WAPEvent *datagram) {
 		break;
 	case Post:
 		debug("wap.wsp", 0, "Connectionless Post request received.");
-		event->u.S_Unit_MethodInvoke_Ind.method = 0x60 + pdu->u.Post.subtype;
+		event->u.S_Unit_MethodInvoke_Ind.method =
+                        POST_METHODS + pdu->u.Post.subtype;
 		event->u.S_Unit_MethodInvoke_Ind.request_uri = 
 			octstr_duplicate(pdu->u.Post.uri);
 		event->u.S_Unit_MethodInvoke_Ind.request_headers = 

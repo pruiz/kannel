@@ -1000,7 +1000,7 @@ static void unpack_well_known_field(List *unpacked, int field_type,
         case WSP_HEADER_PUBLIC:
             ch = wsp_method_to_cstr(val);
             if (!ch) {
-                /* XXX Support extended methods */
+                /* FIXME Support extended methods */
                 warning(0, "Unknown method 0x%02x.", val);
             }
             break;
