@@ -435,8 +435,7 @@ static WSPMethodMachine *find_method_machine(WAPEvent *event) {
 		break;
 
 	case TR_Result_Cnf:
-		pat.addr_tuple = wap_addr_tuple_duplicate(
-				event->u.TR_Result_Cnf.addr_tuple);
+		pat.addr_tuple = event->u.TR_Result_Cnf.addr_tuple;
 		pat.tid = event->u.TR_Result_Cnf.tid;
 		break;
 
