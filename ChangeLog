@@ -1,3 +1,7 @@
+2000-09-25  Kalle Marjola  <rpr@wapit.com>
+
+	* gwlib/utils.c (get_and_set_debugs): fixed '--' parsing
+
 2000-09-22  Kalle Marjola  <rpr@wapit.com>
 
 	* gwlib/utils.c: set that command line option '--' ends option
