@@ -6,6 +6,7 @@
 
 
 #include <string.h>
+#include <limits.h>
 
 #include "gwlib/gwlib.h"
 #include "wsp.h"
