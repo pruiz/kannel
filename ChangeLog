@@ -1,3 +1,12 @@
+2003-03-31  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_cimd2.c: re-patching Angel's fix from 2003-03-27.
+
+2003-03-31  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.c: fixing a serious bug in the HTTP client code causing 
+      smsbox to crash if the connection is closed directly by the HTTP server.
+      Thanks to "Michael Mulcahy" <michael.mulcahy@anam.com> for a fix!
+      [Msg-ID: <000a01c2f555$6c920790$6100a8c0@synge.anam.com>]
+
 2003-03-29  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_emi2.c: fixed a typo for 'wait-ack-expire' handling.
       Thanks to Angel who reported this.
