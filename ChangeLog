@@ -1,3 +1,7 @@
+Fri Mar 17 17:49:38 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Making release 0.6.1.
+
 2000-03-17    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/*.*, gwlib/*.*: numerous little code lookup fixes
