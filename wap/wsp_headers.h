@@ -149,6 +149,12 @@ void wsp_pack_parameters(Octstr *packed, List *parms);
 int wsp_pack_list(Octstr *packed, long fieldnum, List *elements, int i);
 void wsp_pack_short_integer(Octstr *packed, unsigned long integer);
 void wsp_pack_separate_content_type(Octstr *packed, List *headers);
+Octstr *wsp_unpack_accept_general_form(ParseContext *context);
+Octstr *wsp_unpack_accept_charset_general_form(ParseContext *context);
+int wsp_pack_content_type(Octstr *packet, Octstr *value);
+int wsp_pack_application_header(Octstr *packed,
+				Octstr *fieldname, Octstr *value);
+void wsp_pack_long_integer(Octstr *packed, unsigned long integer);
 
 /* Return an HTTPHeader linked list which must be freed by the caller
  * (see http.h for details of HTTPHeaders). Cannot fail.
