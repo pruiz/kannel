@@ -1,3 +1,7 @@
+2002-08-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smasi_pdu.c: fixed a parsing bug in decode_type() and switched
+      some error levels from error to warning for the sake of the logs.
+
 2002-08-15  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added new SMSC type section for the SM/ASI
       protocoll.
