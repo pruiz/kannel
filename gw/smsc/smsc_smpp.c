@@ -298,7 +298,9 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     /* check if intl. and digit only; assume number is larger then 7 chars */
     if (ton == GSM_ADDR_TON_INTERNATIONAL &&
         octstr_len(pdu->u.deliver_sm.source_addr) >= 7 &&
-        octstr_check_range(pdu->u.deliver_sm.source_addr, 0, 256, gw_isdigit)) {
+        ((octstr_get_char(pdu->u.deliver_sm.source_addr, 0) == '+' &&
+         octstr_check_range(pdu->u.deliver_sm.source_addr, 1, 256, gw_isdigit)) ||
+        octstr_check_range(pdu->u.deliver_sm.source_addr, 0, 256, gw_isdigit))) {
 
         /* check if we received leading '00', then remove it*/
         if (octstr_search(pdu->u.deliver_sm.source_addr, octstr_imm("00"), 0) == 0)
