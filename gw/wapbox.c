@@ -469,6 +469,7 @@ int main(int argc, char **argv)
 	msg_destroy(msg);
     }
     info(0, "WAP box terminating.");
+    gwthread_wakeup(heartbeat_thread);
     
     run_status = aborting;
     list_remove_producer(queue);

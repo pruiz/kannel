@@ -1,5 +1,9 @@
 2000-10-19  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/wapbox.c: send that wakeup when bearerbox exits, too.
+	
+2000-10-19  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/wapbox.c: modified send_heartbeat to use gwthread_sleep
 	instead of ordinary sleep, so we can use gwthread_wakeup to wake
 	it up when wapbox is killed - now wapbox dies when it catches
