@@ -59,7 +59,6 @@
 
 #include "gwlib/gwlib.h"
 
-#include "cgi.h"
 #include "msg.h"
 #include "bb.h"
 #include "shared.h"

@@ -1,5 +1,11 @@
 2000-11-21  Richard Braakman  <dark@wapi.com>
 
+	* gw/cgi.[ch]: Removed, they are no longer used.
+
+	* gw/smsbox.c, gw/smsbox_req.[ch]: Removed inclusion of cgi.h.
+
+2000-11-21  Richard Braakman  <dark@wapi.com>
+
 	* gwlib/gwthread-pthread.c, gwlib/conn.c, gwlib/list.c,
 	gwlib/utils.c (roundup_div): Formatted according to our coding style.
 	All of gwlib/ is now converted.

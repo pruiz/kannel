@@ -11,7 +11,6 @@
  */
 
 #include "urltrans.h"
-#include "cgi.h"
 
 /*
  * Initialization routine. MUST be called first

@@ -12,7 +12,6 @@
 
 #include "gwlib/gwlib.h"
 #include "html.h"
-#include "cgi.h"
 #include "msg.h"
 
 #include "smsbox_req.h"
