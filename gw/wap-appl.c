@@ -325,6 +325,13 @@ static void main_thread(void *arg)
 }
 
 
+/*
+ * Tries to convert or compile a specific content-type to
+ * it's complementing one.
+ * Returns 1 if an convertion has been successfull,
+ * -1 if an convertion failed and 0 if no convertion routine
+ * was maching this content-type
+ */
 static int convert_content(struct content *content) 
 {
     Octstr *new_body;
@@ -332,23 +339,20 @@ static int convert_content(struct content *content)
     int i;
     
     for (i = 0; i < NUM_CONVERTERS; i++) {
-	if (octstr_str_compare(content->type, converters[i].type) == 0) {
-	    new_body = converters[i].convert(content);
-	    if (new_body != NULL) {
-		octstr_destroy(content->body);
-		content->body = new_body;
-		octstr_destroy(content->type);
-		content->type = octstr_create(
-		converters[i].result_type);
-		return 1;
-	    }
-	    failed = 1;
-	}
+        if (octstr_str_compare(content->type, converters[i].type) == 0) {
+            new_body = converters[i].convert(content);
+            if (new_body != NULL) {
+                octstr_destroy(content->body);
+                octstr_destroy(content->type);
+                content->body = new_body;
+                content->type = octstr_create(converters[i].result_type);
+                return 1;
+            }
+            failed = 1;
+        }
     }
     
-    if (failed)
-	return -1;
-    return 0;
+    return (failed ? -1 : 0);
 }
 
 
@@ -595,9 +599,27 @@ static void return_reply(int status, Octstr *content_body, List *headers,
 
         converted = convert_content(&content);
         if (converted < 0) {
-            warning(0, "WSP: All converters for `%s' failed.",
-                    octstr_get_cstr(content.type));
-            /* Don't change status; just send the client what we did get. */
+            warning(0, "WSP: All converters for `%s' at `%s' failed.",
+                    octstr_get_cstr(content.type), octstr_get_cstr(url));
+
+            /* 
+             * Don't change status; just send the client what we did get.
+             * Or if smart error messages are configured, send a wmlc deck
+             * with accurate information.
+             */
+            if (wsp_smart_errors) {
+                octstr_destroy(content.body);
+                octstr_destroy(content.charset);
+                content.body = error_converting(url, content.type);
+                content.charset = octstr_create("UTF-8");
+                
+                debug("wap.wsp",0,"WSP: returning smart error WML deck for failed converters");
+
+                converted = convert_content(&content);
+                if (converted == 1)
+                    http_header_mark_transformation(headers, content.body, content.type);
+
+            }
         }
         if (converted == 1) {
             http_header_mark_transformation(headers, content.body, content.type);
@@ -617,6 +639,8 @@ static void return_reply(int status, Octstr *content_body, List *headers,
                 }
             }
         }
+
+        /* if converted == 0 then we pass the content wihtout modification */
     }
 
     if (headers == NULL)
@@ -861,10 +885,12 @@ static Octstr *convert_wml_to_wmlc(struct content *content)
 {
     Octstr *wmlc;
     int ret;
-    
+   
+    /* content->charset is passed from the HTTP header parsing */
     ret = wml_compile(content->body, content->charset, &wmlc);
     if (ret == 0)
-	return wmlc;
+        return wmlc;
+
     warning(0, "WSP: WML compilation failed.");
     return NULL;
 }
