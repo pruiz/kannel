@@ -1,4 +1,8 @@
 2002-05-21  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c: applied validity and deferred patch by Alex
+      [Msg-ID: <Pine.LNX.4.44.0205210856020.17846-200000@samsara.kgbinternet.com>]
+
+2002-05-21  Stipe Tolj <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml, gw/smsc_smpp.c, gwlib/cfg.def:
       applied interface version configuration patch from Oded
       [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B167F6B@exchange.m-wise.com>]
