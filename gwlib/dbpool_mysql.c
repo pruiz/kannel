@@ -1,7 +1,7 @@
 /* ==================================================================== 
  * The Kannel Software License, Version 1.0 
  * 
- * Copyright (c) 2001-2004 Kannel Group  
+ * Copyright (c) 2001-2005 Kannel Group  
  * Copyright (c) 1998-2001 WapIT Ltd.   
  * All rights reserved. 
  * 
@@ -57,7 +57,7 @@
 /*
  * dbpool_mysql.c - implement MySQL operations for generic database connection pool
  *
- * Stipe Tolj <tolj@wapme-systems.de>
+ * Stipe Tolj <stolj@wapme.de>
  *      2003 Initial version.
  * Alexander Malysh <a.malysh@centrium.de>
  *      2003 Made dbpool more generic.

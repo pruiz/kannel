@@ -1,7 +1,7 @@
 /* ==================================================================== 
  * The Kannel Software License, Version 1.0 
  * 
- * Copyright (c) 2001-2004 Kannel Group  
+ * Copyright (c) 2001-2005 Kannel Group  
  * Copyright (c) 1998-2001 WapIT Ltd.   
  * All rights reserved. 
  * 
@@ -82,7 +82,7 @@
  * Using the MIMEEntity representation structure it is easier to handle the 
  * subsequent MIME entities in case we have a cubed structure in the document.
  *
- * Stipe Tolj <tolj@wapme-systems.de>
+ * Stipe Tolj <stolj@wapme.de>
  */
 
 #ifndef MIME_H

@@ -1,7 +1,7 @@
 /* ==================================================================== 
  * The Kannel Software License, Version 1.0 
  * 
- * Copyright (c) 2001-2004 Kannel Group  
+ * Copyright (c) 2001-2005 Kannel Group  
  * Copyright (c) 1998-2001 WapIT Ltd.   
  * All rights reserved. 
  * 
@@ -64,7 +64,7 @@
  * Jarkko Kovala <jarkko.kovala@iki.fi>
  *
  * SSL server implementation contributed by
- * Stipe Tolj <tolj@wapme-systems.de> for Wapme Systems AG
+ * Stipe Tolj <stolj@wapme.de> for Wapme Systems AG
  */
 
 /* TODO: unlocked_close() on error */

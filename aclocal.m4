@@ -12,7 +12,7 @@ dnl in a whole complex if statement.
 dnl
 dnl AC_CHECK_VERSION(installed, required, [do-if-success], [do-if-tail])
 dnl
-dnl Written by Stipe Tolj <tolj@wapme-systems.de> 
+dnl Written by Stipe Tolj <stolj@wapme.de> 
  
 AC_DEFUN(AC_CHECK_VERSION, 
 [ 

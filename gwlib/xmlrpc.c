@@ -1,7 +1,7 @@
 /* ==================================================================== 
  * The Kannel Software License, Version 1.0 
  * 
- * Copyright (c) 2001-2004 Kannel Group  
+ * Copyright (c) 2001-2005 Kannel Group  
  * Copyright (c) 1998-2001 WapIT Ltd.   
  * All rights reserved. 
  * 
@@ -61,7 +61,7 @@
  * and is defined at http://www.xml-rpc.org
  *
  * Kalle Marjola 2001 for project Kannel
- * Stipe Tolj <tolj@wapme-systems.de>
+ * Stipe Tolj <stolj@wapme.de>
  * Robert Ga³ach <robert.galach@my.tenbit.pl> 
  */
  

@@ -1,7 +1,7 @@
 /* ==================================================================== 
  * The Kannel Software License, Version 1.0 
  * 
- * Copyright (c) 2001-2004 Kannel Group  
+ * Copyright (c) 2001-2005 Kannel Group  
  * Copyright (c) 1998-2001 WapIT Ltd.   
  * All rights reserved. 
  * 
@@ -60,7 +60,7 @@
  * Taken from gw/smsc/smpp_pdu.c writen by Lars Wirzenius.
  * This makes heavy use of C pre-processor macro magic.
  *
- * Stipe Tolj <tolj@wapme-systems.de>
+ * Stipe Tolj <stolj@wapme.de>
  */
 
 

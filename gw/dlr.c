@@ -1,7 +1,7 @@
 /* ==================================================================== 
  * The Kannel Software License, Version 1.0 
  * 
- * Copyright (c) 2001-2004 Kannel Group  
+ * Copyright (c) 2001-2005 Kannel Group  
  * Copyright (c) 1998-2001 WapIT Ltd.   
  * All rights reserved. 
  * 
@@ -60,17 +60,17 @@
  * Implementation of handling delivery reports (DLRs)
  *
  * Andreas Fink <andreas@fink.org>, 18.08.2001
- * Stipe Tolj <tolj@wapme-systems.de>, 22.03.2002
+ * Stipe Tolj <stolj@wapme.de>, 22.03.2002
  * Alexander Malysh <a.malysh@centrium.de> 2003
  *
  * Changes:
  * 2001-12-17: andreas@fink.org:
  *     implemented use of mutex to avoid two mysql calls to run at the same time
- * 2002-03-22: tolj@wapme-systems.de:
+ * 2002-03-22: stolj@wapme.de:
  *     added more abstraction to fit for several other storage types
- * 2002-08-04: tolj@wapme-systems.de:
+ * 2002-08-04: stolj@wapme.de:
  *     added simple database library (sdb) support
- * 2002-11-14: tolj@wapme-systems.de:
+ * 2002-11-14: stolj@wapme.de:
  *     added re-routing info for DLRs to route via bearerbox to the same smsbox
  *     instance. This is required if you use state conditioned smsboxes or smppboxes
  *     via one bearerbox. Previously bearerbox was simple ignoring to which smsbox

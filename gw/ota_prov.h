@@ -1,7 +1,7 @@
 /* ==================================================================== 
  * The Kannel Software License, Version 1.0 
  * 
- * Copyright (c) 2001-2004 Kannel Group  
+ * Copyright (c) 2001-2005 Kannel Group  
  * Copyright (c) 1998-2001 WapIT Ltd.   
  * All rights reserved. 
  * 
@@ -61,7 +61,7 @@
  * creation and manipulation for the sendota HTTP interface.
  *
  * Official Nokia and Ericsson WAP OTA configuration settings coded 
- * by Stipe Tolj <tolj@wapme-systems.de>, Wapme Systems AG.
+ * by Stipe Tolj <stolj@wapme.de>, Wapme Systems AG.
  * 
  * XML compiler by Aarno Syvänen <aarno@wiral.com>, Wiral Ltd.
  */

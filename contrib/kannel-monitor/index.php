@@ -8,7 +8,7 @@
  * status and message flow. It is the first step to provide an
  * external Kannel Control Center interface via HTTP.
  *
- * Stipe Tolj <tolj@wapme-systems.de>
+ * Stipe Tolj <stolj@wapme.de>
  * Copyright (c) 2003 Kannel Group.
  */
 

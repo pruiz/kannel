@@ -1,7 +1,7 @@
 /* ==================================================================== 
  * The Kannel Software License, Version 1.0 
  * 
- * Copyright (c) 2001-2004 Kannel Group  
+ * Copyright (c) 2001-2005 Kannel Group  
  * Copyright (c) 1998-2001 WapIT Ltd.   
  * All rights reserved. 
  * 
@@ -62,7 +62,7 @@
  * to bearerbox as if it would be a smsbox and issues the SMS sequentially
  * to bearerbox.
  *
- * Stipe Tolj <tolj@wapme-systems.de>
+ * Stipe Tolj <stolj@wapme.de>
  *
  * XXX add udh (etc.) capabilities. Currently we handle only 7-bit.
  * XXX add ACK handling by providing a queue and retrying if failed.

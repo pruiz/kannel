@@ -1,7 +1,7 @@
 /* ==================================================================== 
  * The Kannel Software License, Version 1.0 
  * 
- * Copyright (c) 2001-2004 Kannel Group  
+ * Copyright (c) 2001-2005 Kannel Group  
  * Copyright (c) 1998-2001 WapIT Ltd.   
  * All rights reserved. 
  * 
@@ -60,7 +60,7 @@
  * Implementation of handling delivery reports (DLRs)
  *
  * Andreas Fink <andreas@fink.org>, 18.08.2001
- * Stipe Tolj <tolj@wapme-systems.de>, 22.03.2002
+ * Stipe Tolj <stolj@wapme.de>, 22.03.2002
  */
 
 #ifndef	DLR_H

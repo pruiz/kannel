@@ -1,7 +1,7 @@
 /* ==================================================================== 
  * The Kannel Software License, Version 1.0 
  * 
- * Copyright (c) 2001-2004 Kannel Group  
+ * Copyright (c) 2001-2005 Kannel Group  
  * Copyright (c) 1998-2001 WapIT Ltd.   
  * All rights reserved. 
  * 
@@ -959,7 +959,7 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
 /*----------------------------------------------------------------
  * Wapme SMS Proxy
  *
- * Stipe Tolj <tolj@wapme-systems.de>
+ * Stipe Tolj <stolj@wapme.de>
  */
 
 static void wapme_smsproxy_send_sms(SMSCConn *conn, Msg *sms)

@@ -1,23 +1,23 @@
-2003-01-05  Stipe Tolj  <tolj@wapme-systems.de>
+2003-01-05  Stipe Tolj  <stolj@wapme.de>
     * doc/userguide/userguide.xml: some credits for Aarno and me.
 
-2003-01-04  Stipe Tolj  <tolj@wapme-systems.de>
+2003-01-04  Stipe Tolj  <stolj@wapme.de>
     * gw/bb_store.c: fixed possible race conditioning in store_save().
       Thanks to Alexander for pointing this out and providing a patch.
       [Msg-ID: <200301040008.44151.a.malysh@centrium.de>]
     * gw/wapbox.c, gw/wap-appl.c: added device_home global to allow returning
       to the device-home URL if smart-errors are activated.
 
-2003-01-02  Stipe Tolj  <tolj@wapme-systems.de>
+2003-01-02  Stipe Tolj  <stolj@wapme.de>
     * gw/smsc/smsc_smpp.c: fixed typo from last commit.
     * gwlib/charset.c: fixed compiler warning.
 
-2003-01-01  Stipe Tolj  <tolj@wapme-systems.de>
+2003-01-01  Stipe Tolj  <stolj@wapme.de>
     * gw/bb_store.c: fixed a if statement clause. Thanks to Alexander.
     * gw/smsc/smsc_smpp.c: applied Nisan's generick_nack changes.
       [Msg-ID: <5.1.0.14.0.20021211132822.00ab3da0@amagoblin.ialien.co.za>]
 
-2003-01-01  Stipe Tolj  <tolj@wapme-systems.de>
+2003-01-01  Stipe Tolj  <stolj@wapme.de>
     * gw/smsc/smsc_smpp.c: Added Alexander's patch to support clean suspend
       mode for the SMPP module.
       [Msg-ID: <200212111207.23455.a.malysh@centrium.de>]
@@ -26,21 +26,21 @@
     * gw/smsc/smsc_emi2.c: Added Nisan's wait-ack-expire patch to handle 
       msg was not acked event.
 
-2002-12-31  Stipe Tolj  <tolj@wapme-systems.de>
+2002-12-31  Stipe Tolj  <stolj@wapme.de>
     * gw/smsbox.c: added account to fill_message(). Thanks to Paul.
       [Msg-ID: <005701c2b0c0$4140cb50$0300a8c0@anam.com>]
     * gw/heartbeat.c: fixed difftime calculation to make heartbeat work again.
       Patch provided by Alexander Malysh <a.malysh@centrium.de>
       [Msg-ID: <200212262253.18847.a.malysh@centrium.de>]
 
-2002-12-27  Stipe Tolj  <tolj@wapme-systems.de>
+2002-12-27  Stipe Tolj  <stolj@wapme.de>
     * gw/bb_store.c: fixed assertion panic when admin URI /store-status is 
       called while there is *no* store-file used. Bug has been reported by
       Mauricio Ramos <mauricio.ramos@waura.com.br>. Patch based on submission
       by Alexander Malysh <a.malysh@centrium.de>.
       [Msg-ID: <200212261844.46127.a.malysh@centrium.de>]
 
-2002-12-26  Stipe Tolj  <tolj@wapme-systems.de>
+2002-12-26  Stipe Tolj  <stolj@wapme.de>
     * gwlib/http.c: added some more debugging output and fixed missing NULLing
       of reused trans->host for parse_url().
     * gw/smsbox.c: fixed missing destruction of structures in http client retry
@@ -65,11 +65,11 @@
 	  Thanks to Aarno Syvanen <as@gni.ch>
 	  [Message-Id: <A9D4ABF6-0E7F-11D7-9221-0003937AE746@gni.ch>]
 
-2002-12-10  Stipe Tolj  <tolj@wapme-systems.de>
+2002-12-10  Stipe Tolj  <stolj@wapme.de>
     * gw/smsbox.c: fixed a bug in url_result_thread() which caused no reply
       if HTTP request queueing was used. Thanks to Paul for this.
 
-2002-12-07  Stipe Tolj  <tolj@wapme-systems.de>
+2002-12-07  Stipe Tolj  <stolj@wapme.de>
     * config.h.in, configure[.in]: added iconv support and detection
     * gwlib/charset.[ch]: added charset_convert() routine as wrapper
       for iconv calls to convert from a known charset encoding to
@@ -80,7 +80,7 @@
       is used by a specific smsc.
     * doc/userguide/userguide.xml: added 'alt-charset' documentation.
 
-2002-12-07  Stipe Tolj  <tolj@wapme-systems.de>
+2002-12-07  Stipe Tolj  <stolj@wapme.de>
     * gwlib/conn.c: fixed reentrant bugs in conn_shutdown_ssl() and
       server_shutdown_ssl(). Thanks to Paul for pointing this out.
     * test/wapproxy.c: fixed a couple of compiler warnings.
@@ -101,23 +101,23 @@
       the problem with nokia 7210
       [Message-ID: <3DD34FED.5010305@lmt.lv>]
 
-2002-12-03  Stipe Tolj  <tolj@wapme-systems.de>
+2002-12-03  Stipe Tolj  <stolj@wapme.de>
     * gw/bb_smscconn.c: fixed memory leak in smsc2_restart_smsc(),
       thanks to Nisan for spotting this.
 
-2002-12-02  Stipe Tolj  <tolj@wapme-systems.de>
+2002-12-02  Stipe Tolj  <stolj@wapme.de>
     * gw/dlr.c: fixed race condition due to unlocked list. Thanks to
       Alexander Malysh <a.malysh@centrium.de> for this patch
       [Msg-ID: <200212021737.55308.a.malysh@centrium.de>]
 
-2002-12-02  Stipe Tolj  <tolj@wapme-systems.de>
+2002-12-02  Stipe Tolj  <stolj@wapme.de>
     * gwlib/conn.c: added openssl free'ing stuff reported by Paul in 
       conn_shutdown_ssl() and server_shutdown_ssl().
 
-2002-12-02  Stipe Tolj  <tolj@wapme-systems.de>
+2002-12-02  Stipe Tolj  <stolj@wapme.de>
     * test/wapproxy.c: added our wap packet proxy debugging tool to kannel
 
-2002-12-02  Stipe Tolj  <tolj@wapme-systems.de>
+2002-12-02  Stipe Tolj  <stolj@wapme.de>
     * gw/smsc/smsc_emi2.c, gwlib/http.h, gwlib/charset.h: fixed some minor
       compiler warnings.
 
@@ -130,45 +130,45 @@
     * gw/smsc/smsc_at2.c, gw/smsc/smsc_at2.h: patch to fix swap_nibbles to
       use unsigned char. Patch provided by Sindunata Sudarmaji <software@dygsp.com>.
 
-2002-11-20  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-20  Stipe Tolj  <stolj@wapme.de>
     * gw/bb_http.c, gw/smsbox.c, gwlib/cfg.def: patch to allow to bind to
       a specific interface for smsbox's sendsms interface and bearerbox's 
       admin HTTP server. Patch provided by Nisan Bloch <nisof@amagoblin.co.za>.
       [Msg-ID: <5.1.0.14.0.20021118225946.024d51a0@amagoblin.ialien.co.za>]
 
-2002-11-20  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-20  Stipe Tolj  <stolj@wapme.de>
     * gwlib/charset.c: fixing a compiler warning, thanks to 
       Ignat Vassilev <ozzy@declera.com> for providing patch
 
-2002-11-18  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-18  Stipe Tolj  <stolj@wapme.de>
     * gwlib/cfg.def: added missing 'field-boxc-id' field in 'dlr-db' grou.
       Thanks to Ignat Vassilev <ozzy@declera.com> for pointing this out.
 
-2002-11-18  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-18  Stipe Tolj  <stolj@wapme.de>
     * gwlib/http.c: added http_open_port_if() to bind to specific interface.
       Thanks to Nisan for this patch.
 
-2002-11-18  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-18  Stipe Tolj  <stolj@wapme.de>
     * gw/bb_smscconn.c: processing now number normalization on smsc basis first
       and for the global define rules.
     * gwlib/http.c: HTTP basic auth is supported, so fixed the comments.
     * gw/alt_charsets.h, gw/smsc/smsc_emi2.c, gwlib/charset.c: added NCR
       ISO 21 German for german umlauts to be used with 'alt-charset' directive.
 
-2002-11-15  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-15  Stipe Tolj  <stolj@wapme.de>
     * doc/userguide/userguide.xml: added explanation about 'field-boxc-id'
       directive in 'dlr-db' group.
     * gw/wap-appl.c: fixed a bug if 'smart-errors' was on in wapbox group and 
       the HTTP lookup failed, reported by Peter Löfman <petlof75@hotmail.com>.
       
-2002-11-14  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-14  Stipe Tolj  <stolj@wapme.de>
     * gw/shared.[ch]: added wrapper for connecting to bearerbox from external
       boxes and return the connection itself if successfull.
 
-2002-11-14  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-14  Stipe Tolj  <stolj@wapme.de>
     * gw/smsc/smpp_pdu.c, wap/wtp_resp.c: fixed compiler warnings.
 
-2002-11-14  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-14  Stipe Tolj  <stolj@wapme.de>
     * doc/userguide/userguide.xml: added 'smsbox-id' directive and 'smsbox-route'
       group documentation
     * gw/bb_boxc.c, gw/bb_smscconn.c: added smsbox specific identified handling
@@ -193,29 +193,29 @@
     act as EMI/UCP or SMPP proxies.
     [Msg-ID: <3D790901.B126AAC9@wapme-systems.de>]
 
-2002-11-14  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-14  Stipe Tolj  <stolj@wapme.de>
     * gw/smsc/smpp_pdu[ch,def], gw/smsc/smpp_pdu_opt.def, gw/smsc/smsc_smpp.c:
       Added SMPP v3.4 optional field support. This is a first prelimiary 
       version, but has been proven at Wapme to work in production.
 
-2002-11-13  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-13  Stipe Tolj  <stolj@wapme.de>
     * gwlib/conn.[ch], gwlib/http.c, gwlib/socket.[ch]: applied non-blocking
       patch for http connections, submited by Vjacheslav Chekushin <slava@lmt.lv>
       [Msg-ID: <3DD1103B.7000405@lmt.lv>]
 
-2002-11-13  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-13  Stipe Tolj  <stolj@wapme.de>
     * wap/wtp_resp_states.def: fixed compiler warning
 
-2002-11-12  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-12  Stipe Tolj  <stolj@wapme.de>
     * gwlib/http.c: fixed a bug in basic auth userid and password handling,
       reported by Vjacheslav Chekushin <slava@lmt.lv>
 
-2002-11-12  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-12  Stipe Tolj  <stolj@wapme.de>
     * gw/smsc/smsc_at2.c: fixed a bug in date pdu deocding, patch 
       submited by Sindunata Sudarmaji <software@dygsp.com>
       [Msg-ID: <20021023132104.A4594@top4>]
 
-2002-11-12  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-12  Stipe Tolj  <stolj@wapme.de>
     * gw/wapbox.c, gwlib/cfg.def, wap/wap_events.def, wap/wtp.[ch],
       wap/wtp_pack.[ch], wap/wtp_pdu.c, wap/wtp_resp.[ch], 
       wap/wtp_resp_machine.def, wap/wtp_resp_states.def:
@@ -223,7 +223,7 @@
       Igor Ivoilov <igor@francoudi.com> for this.
       [Msg-ID: <7AAE7951AE8F1C41902D5BBC4129D42701E5FD39@limex2k.francoudi.com>]
 
-2002-11-11  Stipe Tolj  <tolj@wapme-systems.de>
+2002-11-11  Stipe Tolj  <stolj@wapme.de>
     * gw/smsc/smsc_smpp.c: fixing a thread handling bug, reported by Paul.
 
 2002-11-07  Oded Arbel  <odeda@m-wise.com>
@@ -238,14 +238,14 @@
     * gw/smsc/smsc_at2.c: added speed 115200 if system supports; added
       simple protection against malformed PDUs in decode_deliver_sm.
 
-2002-10-22  Stipe Tolj  <tolj@wapme-systems.de>
+2002-10-22  Stipe Tolj  <stolj@wapme.de>
     * Re-creating stable release 1.2.1.
 
-2002-10-22  Stipe Tolj  <tolj@wapme-systems.de>
+2002-10-22  Stipe Tolj  <stolj@wapme.de>
     * gw/smsc/smsc_at2.c: fixed a major bug in 7bit encoding. Thanks a lot 
       to "Rodrigo Sousa Coutinho" <rodrigo.coutinho@outsystems.com> for patch.
       [Msg-ID: <004c01c279da$5d6a3c70$ca00a8c0@domain.outsystems.com>]
 
-2002-10-20  Stipe Tolj  <tolj@wapme-systems.de>
+2002-10-20  Stipe Tolj  <stolj@wapme.de>
     * Making stable release 1.2.1.
 

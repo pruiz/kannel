@@ -9,7 +9,7 @@
 #
 # Derived from Ulric Eriksson <ulric@siag.nu> from the libsdb project.
 #
-# Stipe Tolj <tolj@wapme-systems.de>
+# Stipe Tolj <stolj@wapme.de>
 #
 
 cat << EOF
