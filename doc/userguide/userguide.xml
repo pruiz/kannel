@@ -2457,7 +2457,30 @@ address-range = ""
       <entry><literal>number</literal></entry>
       <entry valign=bottom>
       Optional the time between attemps to connect an ESME to an SMSC 
-      having failed to connect initating or during an SMPP session. The default is 10 seconds.
+      having failed to connect initating or during an SMPP session. 
+		The default is 10 seconds.
+     </entry></row>
+
+   <row><entry><literal>msg-id-type</literal></entry>
+     <entry><literal>number</literal></entry>
+     <entry valign=bottom>
+       Optional, specifies which number base the SMSC is using for the
+		 message ID numbers in the corresponding <literal>submit_sm_resp</literal> 
+		 and <literal>deliver_sm</literal> PDUs. This is required to make
+		 delivery reports (DLR) work on SMSC that behave differently. The number
+		 is a combined set of bit 1 and bit 2 that indicate as follows:
+		 bit 1: type for <literal>submit_sm_resp</literal>, bit 2: type for 
+		 <literal>deliver_sm</literal>. If the bit is set then the  value is 
+		 in hex otherwise in decimal number base. Which means the following
+		 combinations are possible and valid: 
+		 0x00 <literal>deliver_sm</literal> decimal, 
+		 <literal>submit_sm_resp</literal> decimal;
+		 0x01 (default) <literal>deliver_sm</literal> decimal, 
+		 <literal>submit_sm_resp</literal> hex;
+		 0x02 <literal>deliver_sm</literal> hex, 
+		 <literal>submit_sm_resp</literal> decimal;
+		 0x03 <literal>deliver_sm</literal> hex, 
+		 <literal>submit_sm_resp</literal> hex.
      </entry></row>
 
    </tbody></tgroup></informaltable>
