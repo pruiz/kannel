@@ -233,7 +233,7 @@ static List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
 /*
  * Send a message to the bearerbox for delivery to a phone. Use
  * configuration from `trans' to format the message before sending.
- * Destroy `msg'. Return 0 for success, -1 for failure.
+ * Return 0 for success, -1 for failure.  Does not destroy the msg.
  */
 static int send_message(URLTranslation *trans, Msg *msg)
 {
@@ -254,19 +254,17 @@ static int send_message(URLTranslation *trans, Msg *msg)
     
     if (max_msgs == 0) {
 	info(0, "No reply sent, denied.");
-	msg_destroy(msg);
 	return 0;
     }
     
+    /* Empty message?  Either ignore it or substitute the "empty"
+     * warning defined above. */
     if (msg->sms.flag_udh == 0 && octstr_len(msg->sms.msgdata) == 0) {
-	if (trans != NULL && urltrans_omit_empty(trans) != 0)
-	    max_msgs = 0;
-	else
+	if (trans != NULL && urltrans_omit_empty(trans))
+            return 0;
+        else
 	    msg->sms.msgdata = octstr_create(empty);
     }
-
-    if (max_msgs == 0)
-    	return 0;
 
     if (trans == NULL) {
 	header = NULL;
@@ -289,8 +287,6 @@ static int send_message(URLTranslation *trans, Msg *msg)
 
     list = sms_split(msg, header, footer, suffix, split_chars, catenate,
     	    	     msg_sequence, max_msgs, sms_max_length);
-    msg_destroy(msg);
-
     while ((part = list_extract_first(list)) != NULL)
 	write_to_bearerbox(part);
     list_destroy(list, NULL);
@@ -461,6 +457,7 @@ static void url_result_thread(void *arg)
     
 	if (send_message(trans, msg) < 0)
 	    error(0, "failed to send message to phone");
+	msg_destroy(msg);
     }
 }
 
@@ -480,7 +477,6 @@ static void url_result_thread(void *arg)
 static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 {
     Octstr *pattern;
-    Octstr *url;
     List *request_headers;
     long id;
     
@@ -511,10 +507,9 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	break;
     
     case TRANSTYPE_URL:
-	url = pattern;
 	request_headers = list_create();
-	id = http_start_request(caller, url, request_headers, NULL, 1);
-	octstr_destroy(url);
+	id = http_start_request(caller, pattern, request_headers, NULL, 1);
+	octstr_destroy(pattern);
 	http_destroy_headers(request_headers);
 	if (id == -1)
 	    goto error;
@@ -527,6 +522,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	alog("SMS request sender:%s request: '%s' FAILED bad translation",
 	     octstr_get_cstr(msg->sms.receiver),
 	     octstr_get_cstr(msg->sms.msgdata));
+	octstr_destroy(pattern);
 	goto error;
     
     default:
@@ -534,6 +530,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	alog("SMS request sender:%s request: '%s' FAILED unknown translation",
 	     octstr_get_cstr(msg->sms.receiver),
 	     octstr_get_cstr(msg->sms.msgdata));
+	octstr_destroy(pattern);
 	goto error;
     }
     
@@ -550,21 +547,23 @@ static void obey_request_thread(void *arg)
     Octstr *tmp, *reply;
     URLTranslation *trans;
     Octstr *p;
+    int ret;
     
     while ((msg = list_consume(smsbox_requests)) != NULL) {
 	if (octstr_len(msg->sms.sender) == 0 ||
-	    octstr_len(msg->sms.receiver) == 0) 
-	{
+	    octstr_len(msg->sms.receiver) == 0) {
 	    error(0, "smsbox_req_thread: no sender/receiver, dump follows:");
 	    msg_dump(msg, 0);
-		    /* NACK should be returned here if we use such 
-		       things... future implementation! */
+	    /* NACK should be returned here if we use such 
+	       things... future implementation! */
+	    msg_destroy(msg);
 	    continue;
 	}
     
 	if (octstr_compare(msg->sms.sender, msg->sms.receiver) == 0) {
 	    info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
 		 octstr_get_cstr(msg->sms.sender));
+	    msg_destroy(msg);
 	    continue;
 	}
     
@@ -609,18 +608,17 @@ static void obey_request_thread(void *arg)
 	msg->sms.receiver = tmp;
     
 	/* TODO: check if the sender is approved to use this service */
-    
-	switch (obey_request(&reply, trans, msg)) {
-	case -1:
+
+	ret = obey_request(&reply, trans, msg);
+	if (ret != 0) {
+	    if (ret == -1) {
     error:
-	    error(0, "request failed");
-	    /* XXX this can be something different, according to 
-	       urltranslation */
-	    reply = octstr_create("Request failed");
-	    trans = NULL;	/* do not use any special translation */
-    	    break;
-	    
-	case 1:
+	        error(0, "request failed");
+	        /* XXX this can be something different, according to 
+	           urltranslation */
+	        reply = octstr_create("Request failed");
+	        trans = NULL;	/* do not use any special translation */
+	    }
 	    octstr_destroy(msg->sms.msgdata);
 	    msg->sms.msgdata = reply;
 	
@@ -630,11 +628,8 @@ static void obey_request_thread(void *arg)
 	
 	    if (send_message(trans, msg) < 0)
 		error(0, "request_thread: failed");
-    	    break;
-    	
-	default:
-	    msg_destroy(msg);
 	}
+	msg_destroy(msg);
     }
 }
 
@@ -916,6 +911,7 @@ static char *smsbox_req_sendsms(List *list, char *client_ip)
     msg->sms.time = time(NULL);
     
     ret = send_message(t, msg);
+    msg_destroy(msg);
     
     if (ret == -1)
 	goto error;
@@ -924,8 +920,8 @@ static char *smsbox_req_sendsms(List *list, char *client_ip)
 	 urltrans_username(t), octstr_get_cstr(from), client_ip,
 	 octstr_get_cstr(to),
 	 udh == NULL ? octstr_get_cstr(text) : "<< UDH >>");
-	 octstr_destroy(from);
-    
+
+    octstr_destroy(from);
     return "Sent.";
     
 error:
@@ -1161,7 +1157,6 @@ found:
     octstr_append_from_hex(msg->sms.msgdata, "0101");
     
     msg->sms.receiver = octstr_duplicate(phonenumber);
-    /* msg->sms.sender = from; */	
     msg->sms.flag_8bit = 1;
     msg->sms.flag_udh  = 1;
     
@@ -1172,8 +1167,8 @@ found:
     info(0, "/cgi-bin/sendota <%s> <%s>", 
     	 octstr_get_cstr(id), octstr_get_cstr(phonenumber));
     
-    /* send_message frees the 'msg' */
     ret = send_message(t, msg); 
+    msg_destroy(msg);
     
     if (ret == -1)
 	goto error;
@@ -1182,7 +1177,6 @@ found:
     
 error:
     error(0, "sendota_request: failed");
-    /*octstr_destroy(from);*/
     return "Sending failed.";
 }
 

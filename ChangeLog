@@ -1,5 +1,13 @@
 2001-02-01  Richard Braakman  <dark@wapit.com>
 
+	* gw/smsbox.c: cleanup.  send_message does not destroy its msg
+	anymore, leaves that to caller (fixes memory leaks). 
+	obey_request always destroys the pattern it creates.
+	obey_request_thread actually sends "Requests failed" messages
+	and is simplified a little.
+
+2001-02-01  Richard Braakman  <dark@wapit.com>
+
 	* gw/smsc_cimd2.c: Update to version 2-0 en.
 	Added definitions for new parameter numbers 26, 28, 44, and 62.
 	Corrected range of "status report request" parameter from 0..32
