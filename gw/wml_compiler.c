@@ -264,6 +264,7 @@ static unsigned long string_table_add(Octstr *ostr, wml_binary_t **wbxml);
 static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml);
 static void string_table_output(Octstr *ostr, wml_binary_t **wbxml);
 
+
 /***********************************************************************
  * Implementations of the functions declared in wml_compiler.h.
  */
@@ -272,9 +273,8 @@ static void string_table_output(Octstr *ostr, wml_binary_t **wbxml);
  * The actual compiler function. This operates as interface to the compiler.
  * For more information, look wml_compiler.h. 
  */
-
 int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary,
-		Octstr *version)
+                Octstr *version)
 {
     int ret = 0;
     size_t size;
@@ -287,25 +287,23 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary,
     wbxml = wml_binary_create();
 
     /* Remove the extra space from start and the end of the WML Document. */
-
     octstr_strip_blanks(wml_text);
 
     /* Check the WML-code for \0-characters and for WML entities. Fast patch.
        -- tuo */
-
     parse_entities(wml_text);
 
     /* transcode from charset to UTF-8 */
-    if(charset && octstr_len(charset) && 
-       octstr_case_compare(charset, octstr_imm("UTF-8")) == -1) {
+    if (charset && octstr_len(charset) && 
+        octstr_case_compare(charset, octstr_imm("UTF-8")) == -1) {
         debug("wml_compile", 0, "WML compiler: Transcoding from <%s> to UTF-8", 
-		    octstr_get_cstr(charset));
+              octstr_get_cstr(charset));
         set_charset(wml_text, charset);
     }
 
     /* 
      * If we did not set the character set encoding yet, then obviously
-     * threre was no charset argument in the Content-Type HTTP reply header.
+     * there was no charset argument in the Content-Type HTTP reply header.
      * We have to scan the xml preamble line for an explicite encoding
      * definition to allow transcoding from UTF-8 to that charset after 
      * libxml2 did all it's parsing magic. (Keep in mind libxml2 uses UTF-8
@@ -511,9 +509,8 @@ static int parse_node(xmlNodePtr node, wml_binary_t **wbxml)
  * The function outputs the WBXML version, WML public id and the
  * character set values into start of the wbxml.
  */
-
-static int parse_document(xmlDocPtr document, Octstr *charset, 
-			  wml_binary_t **wbxml, Octstr *version)
+static int parse_document(xmlDocPtr document, Octstr *charset,
+                          wml_binary_t **wbxml, Octstr *version)
 {
     xmlNodePtr node;
     Octstr *externalID;
@@ -524,7 +521,6 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
         error(0, "Most probably an error in the WML source.");
         return -1;
     }
-
 
     /* Return WBXML version dependent on device given Encoding-Version */
     if (version == NULL) {

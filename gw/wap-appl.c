@@ -351,7 +351,8 @@ static void main_thread(void *arg)
 
 /*
  * Tries to convert or compile a specific content-type to
- * it's complementing one.
+ * it's complementing one. It does not convert if the client has explicitely
+ * told us via Accept: header that a specific type is supported.
  * Returns 1 if an convertion has been successfull,
  * -1 if an convertion failed and 0 if no convertion routine
  * was maching this content-type
@@ -366,7 +367,7 @@ static int convert_content(struct content *content, List *request_headers,
     for (i = 0; i < NUM_CONVERTERS; i++) {
         if (octstr_str_compare(content->type, converters[i].type) == 0 &&
             !http_type_accepted(request_headers, octstr_get_cstr(content->type))) {
-            debug("wap.convert",0,"WSP convert: Tring to convert from <%s> to <%s>", 
+            debug("wap.convert",0,"WSP: Converting from <%s> to <%s>", 
                   octstr_get_cstr(content->type), converters[i].result_type);
             /* 
              * Note: if request is HEAD, body is empty and we still need to adapt
@@ -374,6 +375,7 @@ static int convert_content(struct content *content, List *request_headers,
              */
             if (allow_empty && octstr_len(content->body) == 0) 
                 return 1;
+
             new_body = converters[i].convert(content);
             if (new_body != NULL) {
                 long s = octstr_len(content->body);
@@ -381,13 +383,13 @@ static int convert_content(struct content *content, List *request_headers,
                 octstr_destroy(content->type);
                 content->body = new_body;
                 content->type = octstr_create(converters[i].result_type);
-                debug("wap.convert",0,"WSP convert: Success, content-type is "
-                      "now <%s>, size %ld->%ld", 
-                      converters[i].result_type, s, octstr_len(new_body));
+                debug("wap.convert",0,"WSP: Content-type is "
+                      "now <%s>, size %ld bytes (before: %ld bytes), content body is:", 
+                      converters[i].result_type, octstr_len(new_body), s);
                 octstr_dump(new_body, 0);
                 return 1;
             }
-            debug("wap.convert",0,"WSP convert: Failed!");
+            debug("wap.convert",0,"WSP: Content convertion failed!");
             failed = 1;
         }
     }
@@ -893,7 +895,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
             octstr_destroy(charset);
         }
 
-        /* for wml->wmlc conversion, send max wbxml version supported */
+        /* set WBXML Encoding-Version for wml->wmlc conversion */
         if (sm != NULL) {
             content.version = http_header_value(sm->http_headers, 
                                                 octstr_imm("Encoding-Version"));
