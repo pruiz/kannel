@@ -1,4 +1,4 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 1.1.3
+NEWS about Kannel: Open Source WAP and SMS Gateway version 1.1.4
 
 This is a DEVELOPMENT version. It should be usable for experimentation
 and testing, and is a release candidate for 1.2. Please do try it out
@@ -7,6 +7,105 @@ or bugs@kannel.org (the bug tracking system).
 
 NOTE: This is not an update to 1.0.  Updates to 1.0 will be numbered 1.0.x,
 until we decide to release 1.2.  See the VERSION file for details.
+
+Changes since version 1.1.3:
+
+Security:
+
+ * smsbox: X-Kannel-UDH headers in HTTP responses are no longer accepted,
+   unless accept-x-kannel-headers is configured for the service.  This
+   prevents possibly untrusted sites from setting strange UDH values.
+
+ * Bugfix: An empty POST request from a client could crash the wapbox.
+
+Compatibility breakers:
+
+ * smsbox: HTTP responses with content-type application/octet-stream (or
+   no content-type at all) will be sent as "octet data" instead of assumed
+   to be text/plain.  This makes it possible to send for example ring tones
+   in response to user messages.
+
+ * smsbox: The "user" field is now required in all sendsms services.
+
+ * Kannel now uses the same "data coding scheme" values in all SMSC
+   protocols that use them.  It is now used only to set the alphabet,
+   and leaves the message class alone.  This affects the Phone-as-SMSC,
+   CIMD2, OIS, and SMPP modules.
+
+ * Compiling Kannel now requires libxml 2.2.5 or later.
+
+New features:
+
+ * New sms-service type "posturl", which makes a POST request
+   containing the message in the body and other information in X-Kannel-
+   headers.  The sendsms interface also accepts POST requests in this format.
+   Not documented yet.
+
+ * Sendsms services also accept POST requests.
+
+ * smsbox: X-Kannel-From and X-Kannel-To headers can be used in HTTP
+   responses to set the sender and receiver numbers, if
+   accept-x-kannel-headers is configured for the service.
+
+ * New, improved module for UCP/EMI SMSC protocol, called "emi2".
+   It will replace the emi and emi_ip modules in the future, but coexists
+   with them in this release.
+
+ * New configuration variable catch-all in sms-service configuration
+   groups.  If this is set, the service will be used for all messages
+   that match its keyword, instead of only messages that have the right
+   number of words.  Useful for defining service-specific error replies.
+
+ * Configuration variables such as "concatenation" can now be set to
+   yes/no or true/false instead of just 0 or 1.
+
+ * Kannel can be configured to store incoming SMS messages in a file
+   until they have been processed, so that they can not be lost in a crash.
+
+ * Improved portability to MacOS X.
+
+ * SMPP SMSC module will send enquire_link packets at regular intervals.
+   This is needed to stay connected with some SMSCs.
+
+ * Significant improvements to the SMPP SMSC module.  It should now be
+   ready for serious use.
+
+ * Phone-as-SMSC module will retry a few times if sending a message fails.
+   This works around many temporary problems.
+
+Bugfixes:
+
+ * Support libxml versions that install xml2-config instead of xml-config.
+
+ * Several memory leaks fixed.
+
+ * Fixed panic if faked-sender configuration variable is used in a sendsms
+   service.
+
+ * Sendsms replies now have no-cache headers to prevent proxies from
+   trying to cache sendsms queries.
+
+ * Some PDU encoding errors in the Phone-as-SMSC module were fixed.
+
+ * CIMD2 SMSC module works around a bug in some SMSCs that could cause
+   messages to be received multiple times.
+
+ * HTTP module can (again) handle "100 Continue" responses from servers.
+
+ * Lots of minor bugfixes.
+
+Development news:
+
+ * More work on WAP Push.
+
+Known problems:
+
+ * New POST-based interface for SMS is not documented.
+
+ * The CIMD2 SMSC module can sometimes send multiple "alive" requests
+   at a time, which breaks the protocol and confuses the SMSC.
+
+ * Concatenated text messages don't work with all protocols.
 
 
 Changes since version 1.1.2:
