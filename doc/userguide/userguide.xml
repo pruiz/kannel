@@ -4817,6 +4817,10 @@ the time the message was sent, formatted as
                          "YYYY-MM-DD HH:MM", e.g., "1999-09-21 14:18"
 </entry></row>
 
+<row><entry><literal>%T</literal></entry><entry>
+the time the message was sent, in UNIX epoch timestamp format
+</entry></row>
+
 <row><entry><literal>%p</literal></entry><entry>
 the phone number of the sender of the SMS message
 </entry></row>

@@ -474,6 +474,12 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 				 tm.tm_sec);
 	    break;
 
+	case 'T':
+	    if (request->sms.time == -1)
+		break;
+	    octstr_format_append(result, "%ld", request->sms.time);
+	    break;
+
 	case 'i':
 	    if (request->sms.smsc_id == NULL)
 		break;
