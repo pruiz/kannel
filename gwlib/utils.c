@@ -304,9 +304,6 @@ void kannel_cfmakeraw (struct termios *tio){
     /* Enable Implementation defined stuff on the output stream*/
     tio->c_oflag      &= ~OPOST;
 }
-#else
-/* If it does exist, call cfmakeraw rather than the internal one*/
-#define kannel_cfmakeraw cfmakeraw
 #endif
 
 

@@ -387,7 +387,7 @@ Octstr *smsc_status(void)
     
     if (!smsc_running) return octstr_create("No SMSC connections<br>");
 
-    sprintf(tmp, "<br>%d SMSC connections:<br>", list_len(smsc_list));
+    sprintf(tmp, "<br>%ld SMSC connections:<br>", list_len(smsc_list));
     
     for(i=0; i < list_len(smsc_list); i++) {
 	si = list_get(smsc_list, i);

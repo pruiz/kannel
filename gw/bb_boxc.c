@@ -683,18 +683,37 @@ int wapbox_start(Config *config)
 
 Octstr *boxc_status(void)
 {
-    char tmp[512];
-
+    char tmp[1024];
+    int i;
+    Boxc *bi;
+    
     /*
      * XXX: this will cause segmentation fault if this is called
      *    between 'destroy_list and setting list to NULL calls.
      *    Ok, this has to be fixed, but now I am too tired.
      */
     
-    sprintf(tmp, "Total %ld wapbox and %ld smsbox connections<BR>",
-	    wapbox_list ? list_len(wapbox_list) : 0,
-	    smsbox_list ? list_len(smsbox_list) : 0);
+    sprintf(tmp, "Box connections:<BR>\n");
 
+    if (wapbox_list) {
+	list_lock(wapbox_list);
+	for(i=0; i < list_len(wapbox_list); i++) {
+	    bi = list_get(wapbox_list, i);
+	    strcat(tmp, "<br>&nbsp;&nbsp;&nbsp;&nbsp;(wapbox) ");
+	    strcat(tmp, octstr_get_cstr(bi->client_ip));
+	}
+	list_unlock(wapbox_list);
+    }
+    if (smsbox_list) {
+	list_lock(smsbox_list);
+	for(i=0; i < list_len(smsbox_list); i++) {
+	    bi = list_get(smsbox_list, i);
+	    strcat(tmp, "<br>&nbsp;&nbsp;&nbsp;&nbsp;(smsbox) ");
+	    strcat(tmp, octstr_get_cstr(bi->client_ip));
+	}
+	list_unlock(smsbox_list);
+    }
+    strcat(tmp, "<br>\n");
     return octstr_create(tmp);
 }
 

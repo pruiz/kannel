@@ -110,6 +110,14 @@ long decode_network_long(unsigned char *data);
  */
 void encode_network_long(unsigned char *data, unsigned long value);
 
+
 /* kannel implementation of cfmakeraw*/
+#if !HAVE_CFMAKERAW
 void kannel_cfmakeraw (struct termios *tio);
+#else
+/* If it does exist, call cfmakeraw rather than the internal one*/
+#define kannel_cfmakeraw cfmakeraw
+#endif
+
+
 #endif

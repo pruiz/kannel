@@ -1,3 +1,12 @@
+2000-06-20  Kalle Marjola  <rpr@wapit.com>
+
+	* gwlib/utils.c, gwlib/utils.h: moved #ifdef of cfmakeraw into
+	header file so that it will compile in (my) system with cfmakeraw 
+
+	* gw/bb_boxc.c: updated output information of bocx_status
+
+	* gw/bb_smsc.c: fixed compiler warning
+	
 2000-06-19  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_boxc.c: fixed one very-infrequently striking lockout
