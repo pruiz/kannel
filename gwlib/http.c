@@ -1637,11 +1637,12 @@ void http_start_request(HTTPCaller *caller, int method, Octstr *url, List *heade
 			  certkeyfile);
 
     if (id == NULL)
-	/* We don't leave this NULL so http_receive_result can use NULL
-	 * to signal no more requests */
-	trans->request_id = http_start_request;
+        /* We don't leave this NULL so http_receive_result can use NULL
+         * to signal no more requests */
+        trans->request_id = http_start_request;
     else
-	trans->request_id = id;
+        trans->request_id = id;
+        
     gwlist_produce(pending_requests, trans);
     start_client_threads();
 }
@@ -1710,9 +1711,11 @@ static void client_shutdown(void)
 {
     gwlist_remove_producer(pending_requests);
     gwthread_join_every(write_request_thread);
+    client_threads_are_running = 0;
     gwlist_destroy(pending_requests, server_destroy);
     mutex_destroy(client_thread_lock);
     fdset_destroy(client_fdset);
+    client_fdset = NULL;
     octstr_destroy(http_interface);
     http_interface = NULL;
 }
@@ -2316,6 +2319,7 @@ void http_close_all_ports(void)
         keep_servers_open = 0;
         gwthread_wakeup(server_thread_id);
         gwthread_join_every(server_thread);
+        server_thread_is_running = 0;
         fdset_destroy(server_fdset);
         server_fdset = NULL;
     }
@@ -2554,11 +2558,13 @@ static void server_shutdown(void)
 {
     gwlist_remove_producer(new_server_sockets);
     if (server_thread_id != -1) {
-	gwthread_wakeup(server_thread_id);
-	gwthread_join_every(server_thread);
+        gwthread_wakeup(server_thread_id);
+        gwthread_join_every(server_thread);
+        server_thread_is_running = 0;
     }
     mutex_destroy(server_thread_lock);
     fdset_destroy(server_fdset);
+    server_fdset = NULL;
     gwlist_destroy(new_server_sockets, destroy_struct_server);
     gwlist_destroy(closed_server_sockets, destroy_int_pointer);
 }
@@ -3338,7 +3344,7 @@ void http_init(void)
 #endif /* HAVE_LIBSSL */
     proxy_init();
     client_init();
-    conn_pool_init();
+    conn_pool_init();   
     port_init();
     server_init();
 #ifdef HAVE_LIBSSL

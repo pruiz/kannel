@@ -1,3 +1,9 @@
+2005-03-21  Stipe Tolj  <stolj@wapme.de> 
+    * gwlib/http.c: fixing server and client thread state variables in order to 
+      make modules usable in other code where http_init() and http_shutdown()
+      is called several times. Thanks to Paul for pointing to this.
+      [Msg-Id: <F808656A265C82458A21CCA505A2B12E3E3B87@MACKEN.anam.com>]
+
 2005-03-17  Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: applied patch that implements relaxed source_addr
       checks in SMPP and adds additionally error reporting why kannel rejected
