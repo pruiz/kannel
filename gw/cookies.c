@@ -76,7 +76,15 @@ int get_cookies (List *headers, const WSPMachine *sm)
 	Cookie *cookie = NULL;
 	long pos = 0;
 
-	gw_assert (sm != NULL);
+	/* This can happen if the user aborts while the HTTP request is pending from the server.
+	 * In that case, the session machine is destroyed and is not available to this function
+	 * for cookie caching.
+	 */
+
+	if (sm == NULL) {
+		info (0, "No session machine for cookie retrieval");
+		return 0;
+	}
 
 	for (pos = 0; pos < list_len (headers); pos++) {
 		header = list_get(headers, pos);
