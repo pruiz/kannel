@@ -345,6 +345,15 @@ ChangeLog
 	Kannel development without having to wade through millions of
 	lines of patches per year.
 
+CVS and tags
+
+	We use CVS tags for releases. If the version number is X.Y.Z,
+	then the corresponding tag is version_X_Y_Z. Stable branches
+	are called stable_X_Y, where X.Y is the stable version that
+	started the branch.  If you want to use tags for other things,
+	use some other naming scheme. For private use, prefix tags with
+	your CVS login name.
+
 Initialization of automatic variables
 
 	Try to avoid embedding initialization of automatic variables in

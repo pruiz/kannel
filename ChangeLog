@@ -1,3 +1,7 @@
+2001-04-17  Lars Wirzenius  <liw@iki.fi>
+
+	* doc/CodingStyle: Added a paragraph about CVS tags.
+
 2001-04-16  Richard Braakman  <dark@wapit.com>
 
 	* gw/wap_push_ota.c: Removed <arpa/inet.h> and <netinet/in.h>
