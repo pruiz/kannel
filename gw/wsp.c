@@ -962,6 +962,8 @@ error:
 		} else {
 			status = 415; /* Unsupported media type */
 			warning(0, "Unsupported content type `%s'", type);
+			debug(0, "Content of unsupported content:\n%.*s",
+				(int) size, data);
 		}
 	}
 		
