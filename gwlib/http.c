@@ -11,6 +11,8 @@
 /* XXX give maximum input size */
 /* XXX kill http_get, http_get_real, and http_post */
 /* XXX the proxy exceptions list should be a dict, I guess */
+/* XXX set maximum number of concurrent connections to same host, total? */
+/* XXX basic auth is missing */
 
 #include <ctype.h>
 #include <errno.h>
@@ -26,6 +28,12 @@
 /***********************************************************************
  * Stuff used in several sub-modules.
  */
+
+
+/*
+ * Default port to connect to for HTTP connections.
+ */
+enum { HTTP_PORT = 80 };
 
 
 /*

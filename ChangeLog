@@ -1,3 +1,8 @@
+2000-11-10  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/http.[ch]: Updated documentation, moved HTTP_PORT to .c,
+	since no-one else needs to know it.
+
 2000-11-09  Yann Muller  <ymuller@3glab.com>
 
 	* gw/smsc_at.c: encode 7 bit messages in the default GSM alphabet

@@ -28,8 +28,7 @@
  * so that it is possible to make several HTTP requests over a single
  * TCP connection. This makes it much more efficient in high-load situations.
  * On the other hand, if one request takes long, the library will still
- * use several connections to the same server anyway. The maximal number of
- * concurrently open servers can be set.
+ * use several connections to the same server anyway.
  * 
  * The library user can specify an HTTP proxy to be used. There can be only
  * one proxy at a time, but it is possible to specify a list of hosts for
@@ -38,11 +37,9 @@
  * Server functionality
  * ====================
  * 
- * The library allows the implementation of a (simple) HTTP server by
- * implementing functions for creating the well-known port for the
- * server, and accepting and processing client connections. The functions
- * for handling client connections are designed so that they allow 
- * multiple requests from the same client - this is necessary for speed.
+ * The library allows the implementation of an HTTP server by having
+ * functions to specify which ports should be open, and receiving requests
+ * from those ports.
  * 
  * Header manipulation
  * ===================
@@ -68,13 +65,6 @@
  *
  * Design: Lars Wirzenius, Richard Braakman
  * Implementation: Lars Wirzenius
- *
- * To do
- * =====
- *
- * - add functions that make it easy to check a list of headers for
- *   a valid Basic Authentication and add an Authentication header
- *   given username and password
  */
 
 
@@ -86,20 +76,13 @@
 
 
 /*
- * Default port to connect to for HTTP connections.
- */
-enum { HTTP_PORT = 80 };
-
-
-/*
  * Well-known return values from HTTP servers. This is not a complete
  * list, but it includes the values that Kannel needs to handle
  * specially.
  */
 
 /*
- * Need to support some extra return values for POST support.
- *
+ * XXX Need to support some extra return values for POST support.
  */
 
 enum {
@@ -160,20 +143,25 @@ void http_close_proxy(void);
  * code of the request as a numeric value, or -1 if a response from the
  * server was not received. If return value is not -1, reply_headers and
  * reply_body are set and MUST be destroyed by caller.
+ *
+ * XXX these are going away in the future
  */
 int http_get(Octstr *url, List *request_headers, 
 		List **reply_headers, Octstr **reply_body);
 int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
 		  List **reply_headers, Octstr **reply_body);
-
-
 int http_post(Octstr *url, List *request_headers, Octstr *request_body,
 		List **reply_headers, Octstr **reply_body);
 
 
+/***********************************************************************
+ * HTTP client interface.
+ */
+
+
 /*
- * An identification for a caller of HTTP. This is used with http_start_get,
- * http_start_post, and http_receive_result to route results to the right
+ * An identification for a caller of HTTP. This is used with
+ * http_start_request, and http_receive_result to route results to the right
  * callers.
  *
  * Implementation note: We use a List as the type so that we can use
@@ -217,27 +205,83 @@ long http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
     	    	    	 List **headers, Octstr **body);
 
 
+/***********************************************************************
+ * HTTP server interface.
+ */
+
+
+/*
+ * Data structure representing an HTTP client that has connected to
+ * the server we implement. It is used to route responses correctly.
+ */
 typedef struct HTTPClient HTTPClient;
+
+
+/*
+ * Open an HTTP server at a given port. Return -1 for errors (invalid
+ * port number, etc), 0 for OK. This will also start a background thread
+ * to listen for connections to that port and read the requests from them.
+ */
 int http_open_server(int port);
+
+
+/*
+ * Accept a request from a client to any currently open port. Return NULL
+ * if all ports are closed, otherwise a pointer to a client descriptor.
+ * Return the IP number (as a string) and other related information about
+ * the request via arguments if function return value is non-NULL. The
+ * caller is responsible for destroying the values returned via arguments,
+ * the caller descriptor is destroyed by http_send_reply.
+ *
+ * The requests are actually read by a background thread handled by the
+ * HTTP implementation, so it is not necessary by the HTTP user to have
+ * many threads to be fast. The HTTP user should use a single thread,
+ * unless requests can block.
+ */
 HTTPClient *http_accept_request(Octstr **client_ip, Octstr **url, 
     	    	    	    	List **headers, Octstr **body, 
 				List **cgivars);
-void http_send_reply(HTTPClient *client, int status, List *headers, 
-    	    	     Octstr *body);
-void http_close_client(HTTPClient *client);
-void http_close_all_servers(void);
-/* XXX http_close_port(port); http_close_all_ports(); */
 
 
 /*
- * destroy args given up by the get_request. Non-thread safe
+ * Send a reply to a previously accepted request. The caller is responsible
+ * for destroying the headers and body after the call to http_send_reply
+ * finishes. This allows using them in several replies in an efficient way.
+ */
+void http_send_reply(HTTPClient *client, int status, List *headers, 
+    	    	     Octstr *body);
+
+
+/*
+ * Don't send a reply to a previously accepted request, but only close
+ * the connection to the client. This can be used to reject requests from
+ * clients that are not authorized to access us.
+ */
+void http_close_client(HTTPClient *client);
+
+
+/*
+ * Close all currently open servers and stop background threads.
+ */
+void http_close_all_servers(void);
+
+
+/*
+ * Destroy a list of HTTPCGIVar objects.
  */
 void http_destroy_cgiargs(List *args);
 
+
 /*
- * return reference to cgi argument 'name', or NULL if not matching
+ * Return reference to CGI argument 'name', or NULL if not matching.
  */
 Octstr *http_cgi_variable(List *list, char *name);
+
+
+/***********************************************************************
+ * HTTP header interface.
+ */
+
 
 /*
  * Functions for manipulating a list of headers. You can use a list of
@@ -260,6 +304,7 @@ List *http_header_duplicate(List *headers);
 void http_header_pack(List *headers);
 void http_append_headers(List *to, List *from);
 Octstr *http_header_value(Octstr *header);
+
 
 /*
  * Append all headers from new_headers to old_headers.  Headers from
@@ -287,6 +332,7 @@ void http_header_combine(List *old_headers, List *new_headers);
  */
 long http_header_quoted_string_len(Octstr *header, long pos);
 
+
 /*
  * Take the value part of a header that has a format that allows
  * multiple comma-separated elements, and split it into a list of
@@ -294,6 +340,7 @@ long http_header_quoted_string_len(Octstr *header, long pos);
  * results for values of headers that are not in this format.
  */
 List *http_header_split_value(Octstr *value);
+
 
 /*
  * The same as http_header_split_value, except that it splits 
@@ -303,16 +350,13 @@ List *http_header_split_value(Octstr *value);
  */
 List *http_header_split_auth_value(Octstr *value);
 
-#if LIW_TODO
-List *http_parse_header_string(Octstr *headers_as_string);
-Octstr *http_generate_header_string(List *headers_as_list);
-#endif
 
 /*
  * Remove all headers with name 'name' from the list.  Return the
  * number of headers removed.
  */
 long http_header_remove_all(List *headers, char *name);
+
 
 /*
  * Remove the hop-by-hop headers from a header list.  These are the
@@ -321,12 +365,13 @@ long http_header_remove_all(List *headers, char *name);
  */
 void http_remove_hop_headers(List *headers);
 
+
 /*
  * Update the headers to reflect that a transformation has been
  * applied to the entity body.
  */
-void http_header_mark_transformation(List *headers,
-Octstr *new_body, Octstr *new_type);
+void http_header_mark_transformation(List *headers, Octstr *new_body, 
+    	    	    	    	     Octstr *new_type);
 
 
 /*
@@ -344,11 +389,6 @@ List *http_header_find_all(List *headers, char *name);
 void http_header_get_content_type(List *headers, Octstr **type, 
 	Octstr **charset);
 
-#if LIW_TODO
-void http_header_set_content_type(List *headers, Octstr *type, 
-	Octstr *charset);
-#endif
-
 
 /*
  * Do the headers indicate that MIME type `type' is accepted?
@@ -360,6 +400,7 @@ int http_type_accepted(List *headers, char *type);
  * Dump the contents of a header list with debug.
  */
 void http_header_dump(List *headers);
+
 
 /*
  * Check for acceptable charset
