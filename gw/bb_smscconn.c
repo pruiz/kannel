@@ -59,7 +59,8 @@ static void log_sms(SMSCConn *conn, Msg *sms, char *message)
 {
     alog("%s [SMSC:%s] [from:%s] [to:%s] [msg:%s]",
 	 message,
-	 smscconn_id(conn) ? octstr_get_cstr(smscconn_id(conn)) : "",
+	 conn ? (smscconn_id(conn) ? octstr_get_cstr(smscconn_id(conn)) : "")
+	 : "",
 	 octstr_get_cstr(sms->sms.sender),
 	 octstr_get_cstr(sms->sms.receiver),
 	 sms->sms.flag_udh ? "<<UDH>>" :
@@ -222,6 +223,7 @@ static void sms_router(void *arg)
         s = gw_rand() % list_len(smsc_list);
 	best_preferred = best_ok = best_bad = NULL;
 
+	conn = NULL;
         for (i=0; i < list_len(smsc_list); i++) {
             conn = list_get(smsc_list,  (i+s) % list_len(smsc_list));
 
