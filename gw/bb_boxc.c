@@ -71,6 +71,7 @@ typedef struct _boxc {
     List       	*outgoing;
     volatile sig_atomic_t alive;
     Octstr *boxc_id; /* identifies the connected smsbox instance */
+    Mutex *boxc_id_mutex; /* stops boxc_sender until smsbox identification*/
 } Boxc;
 
 
@@ -187,24 +188,34 @@ static void boxc_receiver(void *arg)
             }
             /* if this is an identification message from an smsbox instance */
             else if (msg_type(msg) == admin && msg->admin.command == cmd_identify) {
-                List *newlist;
-
-                /* and add the boxc_ud into conn for boxc_status() output */
-                if (conn->boxc_id == NULL)
-                    conn->boxc_id = octstr_duplicate(msg->admin.boxc_id);
+                
                 /* 
-                 * re-link the incoming queue for this connection to an independent
+                 * any smsbox sends this command even if boxc_id is NULL,
+                 * but we will only consider real identified boxes
                  */
-                newlist = list_create();
-                list_add_producer(newlist);
-                conn->incoming = newlist;
-                conn->retry = newlist;
+                if (msg->admin.boxc_id != NULL) {
+                    List *newlist;
 
-                /* add this identified smsbox to the dictionary */       
-                dict_put(smsbox_by_id, msg->admin.boxc_id, conn);
-                debug("bb.boxc", 0, "boxc_receiver: got boxc_id <%s> from <%s>",
-                octstr_get_cstr(msg->admin.boxc_id),
-                octstr_get_cstr(conn->client_ip));
+                    /* and add the boxc_ud into conn for boxc_status() output */
+                    if (conn->boxc_id == NULL)
+                        conn->boxc_id = octstr_duplicate(msg->admin.boxc_id);
+                    /* 
+                     * re-link the incoming queue for this connection to 
+                     * an own independent queue
+                     */
+                    newlist = list_create();
+                    list_add_producer(newlist);
+                    conn->incoming = newlist;
+                    conn->retry = newlist;
+
+                    /* add this identified smsbox to the dictionary */       
+                    dict_put(smsbox_by_id, msg->admin.boxc_id, conn);
+                    debug("bb.boxc", 0, "boxc_receiver: got boxc_id <%s> from <%s>",
+                          octstr_get_cstr(msg->admin.boxc_id),
+                          octstr_get_cstr(conn->client_ip));
+                }
+                debug("bb.boxc", 0, "boxc_receiver: unlocking sender");
+                mutex_unlock(conn->boxc_id_mutex);
             }
             else
                 warning(0, "boxc_receiver: unknown msg received from <%s>, "
@@ -224,6 +235,8 @@ static int send_msg(Boxc *boxconn, Msg *pmsg)
     Octstr *pack;
 
     pack = msg_pack(pmsg);
+    debug("bb.boxc", 0, "send_msg: sending msg to boxc: <%s>", 
+          octstr_get_cstr(boxconn->boxc_id));
     if (conn_write_withlen(boxconn->conn, pack) == -1) {
     	error(0, "Couldn't write Msg to box <%s>, disconnecting",
 	      octstr_get_cstr(boxconn->client_ip));
@@ -240,6 +253,12 @@ static void boxc_sender(void *arg)
     Boxc *conn = arg;
 
     list_add_producer(flow_threads);
+
+    /* wait for smsbox identification */
+    if (bb_status != BB_DEAD && conn->alive) {
+        mutex_lock(conn->boxc_id_mutex);
+        debug("bb.boxc", 0, "boxc_sender: sender unlocked");
+    }
 
     while(bb_status != BB_DEAD && conn->alive) {
 
@@ -303,6 +322,8 @@ static Boxc *boxc_create(int fd, Octstr *ip, int ssl)
     boxc->client_ip = ip;
     boxc->alive = 1;
     boxc->connect_time = time(NULL);
+    boxc->boxc_id_mutex = mutex_create();
+    mutex_lock(boxc->boxc_id_mutex);
     boxc->boxc_id = NULL;
     return boxc;
 }    
@@ -318,6 +339,7 @@ static void boxc_destroy(Boxc *boxc)
 	    conn_destroy(boxc->conn);
     octstr_destroy(boxc->client_ip);
     octstr_destroy(boxc->boxc_id);
+    mutex_destroy(boxc->boxc_id_mutex);
     gw_free(boxc);
 }    
 

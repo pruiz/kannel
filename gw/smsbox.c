@@ -79,19 +79,18 @@ long get_tag(Octstr *body, Octstr *tag, Octstr **value, long pos, int nostrip);
 
 
 /* 
- * If we have a smsbox-id set, identify to bearerbox for smsbox-specific
- * routing inside bearerbox.
+ * Identify ourself to bearerbox for smsbox-specific routing inside bearerbox.
+ * Do this even while no smsbox-id is given to unlock the sender thread in
+ * bearerbox.
  */
 static void identify_to_bearerbox(void)
 {
     Msg *msg;
     
-    if (smsbox_id != NULL) {
-        msg = msg_create(admin);
-        msg->admin.command = cmd_identify;
-        msg->admin.boxc_id = octstr_duplicate(smsbox_id);
-        write_to_bearerbox(msg);
-    }
+    msg = msg_create(admin);
+    msg->admin.command = cmd_identify;
+    msg->admin.boxc_id = octstr_duplicate(smsbox_id);
+    write_to_bearerbox(msg);
 }
 
 
