@@ -33,6 +33,7 @@
 #include "sms.h"
 #include "dlr.h"
 
+
 /******************************************************************************
  * Types of GSM modems (as used in kannel.conf: modemtype=xxxx)
  */
@@ -71,7 +72,7 @@ struct modem_def ModemTypes[MAX_MODEM_TYPES] =
     { "siemens-tc35",	"AT\\Q3" 	, 38400 , "AT+CNMI=1,2,0,0,1",	"SIEMENS", 	"TC35",	0, 0, 1, 1, 1	},
     { "siemens",	"AT\\Q3" 	, 38400 , "AT+CNMI=1,2,0,0,0",	"SIEMENS", 	"M20",	0, 0, 1, 1, 1	},
     { "nokiaphone",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"NokiaPhone" ,	NULL,	0, 1, 1, 1, 1	},
-    { "falcom",		"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"FALCOM",	NULL,	0, 0, 1, 0, 0	},
+    { "falcom",		"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"Falcom",	NULL,	0, 0, 1, 0, 0	},
     { "ericcson",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=3,2,0,0",	"R520m",	NULL,	0, 0, 1, 1, 1	}
 };
 
@@ -1690,7 +1691,7 @@ int at2_detect_modem_type(PrivAT2data *privdata)
         info(0,"AT2[%s]: Modemtype set to NOKIAPHONE",octstr_get_cstr(privdata->device));
 	privdata->modemid = AT2_NOKIAPHONE;
     }
-    else if (-1 != octstr_search(privdata->lines, octstr_imm("FALCOM"), 0))
+    else if (-1 != octstr_search(privdata->lines, octstr_imm("Falcom"), 0))
     {
         debug("bb.smsc.at2",0,"AT2[%s]: its a FALCOM",octstr_get_cstr(privdata->device));
         info(0,"AT2[%s]: Modemtype set to FALCOM",octstr_get_cstr(privdata->device));

@@ -1,3 +1,9 @@
+2001-09-07 Andreas Fink <andreas@fink.org>
+	* gw/smsc_at2.c
+	fixed to wait for OK while sending
+	AT+CNMS to acknowledge the received
+	packet. Changed the doc
+
 2001-09-06 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* userguide.xml, bb_smscconn.c, control.html, msg-decl.h, sms.c, smsbox.c,
 	smsc_http.c, smsc_ois.c: replaced "class" to "mclass" to avoid future C++
