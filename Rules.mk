@@ -1,13 +1,13 @@
 # Common makefile stuff.
 
 # Uncomment the following for Debian GNU/Linux
-#HTML_DSL = /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/html/docbook.dsl
-#TEX_DSL = /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/print/docbook.dsl
+HTML_DSL = /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/html/docbook.dsl
+TEX_DSL = /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/print/docbook.dsl
 # XML_DECL = not used at the moment
 
 # Uncomment the following for Red Hat Linux
-HTML_DSL = /usr/lib/sgml/stylesheets/nwalsh-modular/html/docbook.dsl
-TEX_DSL = /usr/lib/sgml/stylesheets/nwalsh-modular/print/docbook.dsl
+#HTML_DSL = /usr/lib/sgml/stylesheets/nwalsh-modular/html/docbook.dsl
+#TEX_DSL = /usr/lib/sgml/stylesheets/nwalsh-modular/print/docbook.dsl
 
 .xml.html:
 	sed "s/#FIGTYPE#/.png/;\

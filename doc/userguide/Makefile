@@ -12,7 +12,7 @@ include ../../Rules.mk
 userguide.html: userguide.timestamp $(docs) $(subdocs)
 userguide.ps: userguide.timestamp $(docs) $(subdocs)
 
-$(docs:.xml=.timestamp): $(docs) $(subdocs) $(figs)
+userguide.timestamp: $(docs) $(subdocs) $(figs)
 	touch -r `ls -1 -t $(docs) $(subdocs) $(figs)` $@
 
 clean:

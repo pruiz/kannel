@@ -1,3 +1,8 @@
+Wed Nov 24 13:31:44 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* Makefile, Rules.mk, doc/*/Makefile: Modifications so it works
+	on Red Hat and gets timestamps OK.
+
 Wed Nov 24 12:30:46 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wapbox.c: wapbox.conf renamed to wapbox.wapconf.
