@@ -131,40 +131,20 @@ void wsp_dispatch_event(WTPMachine *wtp_sm, WSPEvent *event) {
 	
 	WSPMachine *sm;
 	
-#if 0
-	debug(0, "wsp_dispatch_event called");
-#endif
-
 	for (sm = session_machines; sm != NULL; sm = sm->next)
 		if (transaction_belongs_to_session(wtp_sm, sm))
 			break;
 
 	if (sm == NULL) {
 		sm = wsp_machine_create();
-#if 0
-		debug(0, "wsp_dispatch_event: machine %p created", 
-			(void *) sm);
-#endif
-
 		sm->client_address = octstr_duplicate(wtp_sm->source_address);
 		sm->client_port = wtp_sm->source_port;
 		sm->server_address = 
 			octstr_duplicate(wtp_sm->destination_address);
 		sm->server_port = wtp_sm->destination_port;
-#if 0
-		debug(0, "wsp_dispatch_event: machine initialized");
-#endif
-	} else
-#if 0
-		debug(0, "wsp_dispatch_event: found machine %p", (void *) sm);
-#else
-		;
-#endif
+	}
 
 	wsp_handle_event(sm, event);
-#if 0
-	debug(0, "wsp_dispatch_event: done");
-#endif
 }
 
 
@@ -212,26 +192,15 @@ void wsp_machine_dump(WSPMachine *machine) {
 
 
 void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
-#if 0
-	debug(0, "wsp_handle_event called");
-#endif
-
 	/* 
 	 * If we're already handling events for this machine, add the
 	 * event to the queue.
 	 */
 	if (mutex_try_lock(sm->mutex) == -1) {
-#if 0
-		debug(0, "wsp_handle_event: machine already locked, queing event");
-#endif
 		append_to_event_queue(sm, current_event);
 		return;
 	}
 
-#if 0
-	debug(0, "wsp_handle_event: got mutex");
-#endif
-	
 	do {
 		debug(0, "WSP: state is %s, event is %s",
 			wsp_state_to_string(sm->state), 
@@ -266,14 +235,8 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 	end:
 		current_event = remove_from_event_queue(sm);
 	} while (current_event != NULL);
-#if 0
-	debug(0, "wsp_handle_event: done handling events");
-#endif
 	
 	mutex_unlock(sm->mutex);
-#if 0
-	debug(0, "wsp_handle_event: done");
-#endif
 }
 
 
@@ -289,10 +252,6 @@ int wsp_deduce_pdu_type(Octstr *pdu, int connectionless) {
 		off = 0;
 	if (unpack_uint8(&o, pdu, &off) == -1)
 		o = Bad_PDU;
-#if 0
-	debug(0, "wsp_deduce_pdu_type: 0x%02lx (connectionless: %d)", o,
-		connectionless);
-#endif
 	return o;
 }
 
@@ -658,7 +617,11 @@ static void *wsp_http_thread(void *arg) {
 						wmlc_data->wml_length);
 			if (body == NULL)
 				panic(0, "octstr_create_from_data failed, oops");
-		} else /* if (strcmp(type, "image/vnd.wap.wbmp") != 0) */
+		} else if (strcmp(type, "image/vnd.wap.wbmp") == 0) {
+			body = octstr_create_from_data(data, size);
+			if (body == NULL)
+				panic(0, "XXX octstr_create_data failed");
+		} else
 			status = 415; /* Unsupported media type */
 	}
 		

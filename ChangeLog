@@ -1,3 +1,8 @@
+Mon Jan 10 07:36:36 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c: Fixed function wsp_http_thread so that is handles
+	WBMP images correctly (i.e., sends them to the phone).
+
 2000-01-07    <rpr@rpr.wapit.com>
 
 	* gw/wsp*.c: initial code to handle capabilities. Not finished.
