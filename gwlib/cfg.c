@@ -9,6 +9,7 @@
 
 
 struct CfgGroup {
+    Octstr *name;
     Dict *vars;
 };
 
@@ -18,6 +19,7 @@ static CfgGroup *create_group(void)
     CfgGroup *grp;
     
     grp = gw_malloc(sizeof(*grp));
+    grp->name = NULL;
     grp->vars = dict_create(64, octstr_destroy_item);
     return grp;
 }
@@ -28,6 +30,7 @@ static void destroy_group(void *arg)
     
     if (arg != NULL) {
 	grp = arg;
+	octstr_destroy(grp->name);
 	dict_destroy(grp->vars);
 	gw_free(grp);
     }
@@ -37,6 +40,13 @@ static void destroy_group(void *arg)
 static void destroy_group_list(void *arg)
 {
     list_destroy(arg, destroy_group);
+}
+
+
+static void set_group_name(CfgGroup *grp, Octstr *name)
+{
+    octstr_destroy(grp->name);
+    grp->name = octstr_duplicate(name);
 }
 
 
@@ -99,9 +109,10 @@ static int add_group(Cfg *cfg, CfgGroup *grp)
     
     groupname = cfg_get(grp, octstr_imm("group"));
     if (groupname == NULL) {
-	error(0, "Group does not contain variable 'group'.");
+	error(0, "Group doens not contain variable 'group'.");
     	return -1;
     }
+    set_group_name(grp, groupname);
 
     names = dict_keys(grp->vars);
     while ((name = list_extract_first(names)) != NULL) {
@@ -294,9 +305,19 @@ List *cfg_get_multi_group(Cfg *cfg, Octstr *name)
 }
 
 
+Octstr *cfg_get_group_name(CfgGroup *grp)
+{
+    return octstr_duplicate(grp->name);
+}
+
+
 Octstr *cfg_get(CfgGroup *grp, Octstr *varname)
 {
     Octstr *os;
+
+    if (grp->name != NULL && !is_allowed_in_group(grp->name, varname))
+    	panic(0, "Trying to fetch variable `%s' in group `%s', not allowed.",
+	      octstr_get_cstr(varname), octstr_get_cstr(grp->name));
 
     os = dict_get(grp->vars, varname);
     if (os == NULL)
@@ -349,7 +370,11 @@ static void dump_group(CfgGroup *grp)
     Octstr *name;
     Octstr *value;
 
-    debug("gwlib.cfg", 0, "  dumping group:");
+    if (grp->name == NULL)
+	debug("gwlib.cfg", 0, "  dumping group (name not set):");
+    else
+	debug("gwlib.cfg", 0, "  dumping group (%s):",
+	      octstr_get_cstr(grp->name));
     names = dict_keys(grp->vars);
     while ((name = list_extract_first(names)) != NULL) {
 	value = cfg_get(grp, name);

@@ -87,7 +87,6 @@ static void read_config(Octstr *filename)
 	panic(0, "No 'wapbox' group in configuration.");
     
     bearerbox_host = cfg_get(grp, octstr_imm("bearerbox-host"));
-    cfg_get_integer(&heartbeat_freq, grp, octstr_imm("heartbeat-freq"));
     
     logfile = cfg_get(grp, octstr_imm("log-file"));
     if (cfg_get_integer(&logfilelevel, grp, octstr_imm("log-level")) == -1)

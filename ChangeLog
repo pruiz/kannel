@@ -1,3 +1,20 @@
+2001-01-23  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/cfg.c: Implemented a check that makes sure a CfgGroup is
+	only queried for variables that it can legally contain. This 
+	showed some bugs, which have been corrected by the changes below.
+	
+	* gwlib/cfg.[ch]: Wrote function cfg_get_group_name, needed by
+	urltrans.c changes.
+	
+	* gw/urltrans.c: Fixed the code so it doesn't try to get the value
+	of every variable from every group. The resulting code should be
+	somewhat cleaner and easier to follow, as well.
+	
+	* gw/wapbox.c: Don't query the variable "heartbeat-freq",
+	because it isn't documented anywhere, no other box uses it,
+	and there is no need to make the value configurable.
+
 2001-01-23  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bearerbox.c: switched smsbox/smsc startup to avoid hangup
