@@ -254,5 +254,8 @@
 
 /* Define version of used libpcre */
 #undef LIBPCRE_VERSION
+
+/* Define if you have pthread_spinlock_t type and spinlock support. */
+#undef HAVE_PTHREAD_SPINLOCK_T
                      
 #endif

@@ -1,3 +1,33 @@
+2004-01-05  Alexander Malysh  <a.malysh@centrium.de>
+    * configure, configure.in, gw-config.h.in, gwlib/counter.c: added pthread_spinlock support.
+      Here some benchmarks (factor 6 faster):
+	Counter benchmark (loop 10000000 with counter_[in|de]crease):
+	w/ spinlock support:
+	real    0m1.665s
+	user    0m1.340s
+	sys     0m0.035s
+
+	real    0m1.513s
+	user    0m1.365s
+	sys     0m0.000s
+
+	real    0m1.501s
+	user    0m1.360s
+	sys     0m0.005s
+
+	w/o spinlock support (mutex based):
+	real    0m6.685s
+	user    0m6.255s
+	sys     0m0.010s
+
+	real    0m6.687s
+	user    0m6.230s
+	sys     0m0.030s
+
+	real    0m6.703s
+	user    0m6.270s
+	sys     0m0.010s
+
 2003-12-18  Stipe Tolj  <tolj@wapme-systems.de>
     * contrib/kannel-monitor/index.php: fixed fread() problem if XML output is
       too big. Thanks to Angel for this quick patch.

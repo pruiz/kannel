@@ -59,6 +59,10 @@ case "$host" in
   *apple-darwin*) 
     CFLAGS="$CFLAGS -DDARWIN=1" 
     LIBTOOL="libtool -static -o" 
+    ;;
+   *-linux-*)
+    CFLAGS="$CFLAGS -D_XOPEN_SOURCE=500 -D_BSD_SOURCE"
+    ;;
 esac
 AC_SUBST(EXE_EXT)
 AC_SUBST(LIBTOOL)
@@ -209,6 +213,18 @@ void testpid(void* foo){
     }
 }
 ],echo yes , echo no ;CFLAGS="$CFLAGS -DBROKEN_PTHREADS=1", echo  Cross compiling - assuming they work)
+
+dnl
+dnl Checking pthread_spin support
+dnl
+AC_MSG_CHECKING([for pthread_spinlock support])
+AC_TRY_COMPILE([#include <pthread.h>], [
+pthread_spinlock_t lock;
+pthread_spin_init(&lock, 0);
+pthread_spin_lock(&lock);
+pthread_spin_unlock(&lock);
+pthread_spin_destroy(&lock);
+], [AC_MSG_RESULT(yes); AC_DEFINE(HAVE_PTHREAD_SPINLOCK_T)], AC_MSG_RESULT(no));
 
 
 dnl Check if we have libxml2 installed and which version it is.

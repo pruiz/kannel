@@ -73,7 +73,11 @@
 
 struct Counter
 {
+#ifdef HAVE_PTHREAD_SPINLOCK_T
+    pthread_spinlock_t lock;
+#else
     Mutex *lock;
+#endif
     unsigned long n;
 };
 
@@ -82,7 +86,12 @@ Counter *counter_create(void)
     Counter *counter;
 
     counter = gw_malloc(sizeof(Counter));
+#ifdef HAVE_PTHREAD_SPINLOCK_T
+    pthread_spin_init(&counter->lock, 0);
+#else
     counter->lock = mutex_create();
+#endif
+
     counter->n = 0;
     return counter;
 }
@@ -90,7 +99,11 @@ Counter *counter_create(void)
 
 void counter_destroy(Counter *counter)
 {
+#ifdef HAVE_PTHREAD_SPINLOCK_T
+    pthread_spin_destroy(&counter->lock);
+#else
     mutex_destroy(counter->lock);
+#endif
     gw_free(counter);
 }
 
@@ -98,10 +111,18 @@ unsigned long counter_increase(Counter *counter)
 {
     unsigned long ret;
 
+#ifdef HAVE_PTHREAD_SPINLOCK_T
+    pthread_spin_lock(&counter->lock);
+#else
     mutex_lock(counter->lock);
+#endif
     ret = counter->n;
     ++counter->n;
+#ifdef HAVE_PTHREAD_SPINLOCK_T
+    pthread_spin_unlock(&counter->lock);
+#else
     mutex_unlock(counter->lock);
+#endif
     return ret;
 }
 
@@ -109,10 +130,18 @@ unsigned long counter_increase_with(Counter *counter, unsigned long value)
 {
     unsigned long ret;
 
+#ifdef HAVE_PTHREAD_SPINLOCK_T
+    pthread_spin_lock(&counter->lock);
+#else
     mutex_lock(counter->lock);
+#endif
     ret = counter->n;
     counter->n += value;
+#ifdef HAVE_PTHREAD_SPINLOCK_T
+    pthread_spin_unlock(&counter->lock);
+#else
     mutex_unlock(counter->lock);
+#endif
     return ret;
 }
 
@@ -120,9 +149,17 @@ unsigned long counter_value(Counter *counter)
 {
     unsigned long ret;
 
+#ifdef HAVE_PTHREAD_SPINLOCK_T
+    pthread_spin_lock(&counter->lock);
+#else
     mutex_lock(counter->lock);
+#endif
     ret = counter->n;
+#ifdef HAVE_PTHREAD_SPINLOCK_T
+    pthread_spin_unlock(&counter->lock);
+#else
     mutex_unlock(counter->lock);
+#endif
     return ret;
 }
 
@@ -130,11 +167,19 @@ unsigned long counter_decrease(Counter *counter)
 {
     unsigned long ret;
 
+#ifdef HAVE_PTHREAD_SPINLOCK_T
+    pthread_spin_lock(&counter->lock);
+#else
     mutex_lock(counter->lock);
+#endif
     ret = counter->n;
     if (counter->n > 0)
         --counter->n;
+#ifdef HAVE_PTHREAD_SPINLOCK_T
+    pthread_spin_unlock(&counter->lock);
+#else
     mutex_unlock(counter->lock);
+#endif
     return ret;
 }
 
@@ -142,9 +187,17 @@ unsigned long counter_set(Counter *counter, unsigned long n)
 {
     unsigned long ret;
 
+#ifdef HAVE_PTHREAD_SPINLOCK_T
+    pthread_spin_lock(&counter->lock);
+#else
     mutex_lock(counter->lock);
+#endif
     ret = counter->n;
     counter->n = n;
+#ifdef HAVE_PTHREAD_SPINLOCK_T
+    pthread_spin_unlock(&counter->lock);
+#else
     mutex_unlock(counter->lock);
+#endif
     return ret;
 }
