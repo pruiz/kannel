@@ -1,3 +1,7 @@
+2003-03-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * contrib/kannel-monitor/index.php: some minor changes contributed by
+      Alexander.
+
 2003-03-06  Stipe Tolj  <tolj@wapme-systems.de>
     * contrib/kannel-monitor/*: a simple php application to summerize sms
       traffic accross several bearerbox instances, including automatic
