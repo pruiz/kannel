@@ -1,3 +1,9 @@
+Tue Dec 14 17:05:05 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wtp_send.c: Set destination address as the phone, not the
+	gateway (and source address as the gateway, not the phone) when
+	sending a message to the phone.
+
 Tue Dec 14 16:34:39 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c, gw/wtp.c: Fixed calls to mytex_try_lock (which

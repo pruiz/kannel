@@ -66,18 +66,33 @@ static Msg *pack_result(WTPMachine *machine, WTPEvent *event){
 /*
  *First we transfer address four-tuple
  */
-    msg->wdp_datagram.source_address=
-         octstr_copy(machine->source_address, 0, 
-         octstr_len(machine->source_address));
+
+debug(0, "pack_result: machine->src: <%s> <%ld>",
+	octstr_get_cstr(machine->source_address), 
+	machine->source_port);
+debug(0, "pack_result: machine->dst: <%s> <%ld>",
+	octstr_get_cstr(machine->destination_address), 
+	machine->destination_port);
+    msg->wdp_datagram.source_address = 
+    	octstr_duplicate(machine->destination_address);
     if (msg->wdp_datagram.source_address == NULL)
        goto oct_error;
-    msg->wdp_datagram.source_port=machine->source_port;
-    msg->wdp_datagram.destination_address=
-        octstr_copy(machine->destination_address, 0, 
-        octstr_len(machine->destination_address));
+    msg->wdp_datagram.source_port=machine->destination_port;
+
+    msg->wdp_datagram.destination_address = 
+    	octstr_duplicate(machine->source_address);
     if (msg->wdp_datagram.destination_address == NULL)
        goto oct_error;
-    msg->wdp_datagram.destination_port=machine->destination_port;
+    msg->wdp_datagram.destination_port=machine->source_port;
+
+debug(0, "pack_result: msg->src: <%s> <%ld>",
+	octstr_get_cstr(msg->wdp_datagram.source_address), 
+	msg->wdp_datagram.source_port);
+debug(0, "pack_result: msg->dst: <%s> <%ld>",
+	octstr_get_cstr(msg->wdp_datagram.destination_address), 
+	msg->wdp_datagram.destination_port);
+
+
 /*
  * Then user data. We try to send fixed length result PDU, without segmenta-
  * tion. Only inputs are the rid field (which tells are we resending or not), 
