@@ -10,6 +10,7 @@
 #define HTTP_H
 
 #include <stddef.h>
+#include "octstr.h"
 
 enum http_results {
     HTTP_RESULT_OK = 200,
@@ -71,13 +72,14 @@ typedef struct HTTPRequest {
     
     int action;
     int status;       /* server status code */
-    enum http_method method_type;
+    enum http_method method_type; /* whether GET, POST ...*/
     int http_version_major, http_version_minor;
     URL *url;
     char temp[1024];
-    struct HTTPHeader *baseheader; /* if nonempty points to the last element of the list */
+    struct HTTPHeader *baseheader;
     char   *data;
     size_t data_length;
+    int counter;
     
 } HTTPRequest;
 
@@ -96,12 +98,21 @@ typedef struct HTTPHeader {
 } HTTPHeader;
 
 
+/**********************************************
+ * httpclient_request
+ * does the dirty work of sending the request and
+ * cheking the response
+ */
+
+int httpclient_request(HTTPRequest *request, Octstr *entity);
+
+
 
 
 /******************************************
  * http_get
- Fetch the document specified by an URL Return -1 for error, or 0 for OK.
- If ok, return the type, contents and size via type, data. and size.
+ * Fetch the document specified by an URL Return -1 for error, or 0 for OK.
+ * If ok, return the type, contents and size via type, data. and size.
 */
 
 int http_get(char *url, char **type, char **data, size_t *size);
@@ -110,23 +121,16 @@ int http_get(char *url, char **type, char **data, size_t *size);
 
 /******************************************
  * http_get_u - GET with user defined headers
- *
- Fetch the document specified by an URL. Takes arbitrary number of headers.   
- Return -1 for error, or 0 for OK.
- If ok, return the type, contents and size via type, data. and size.
- *
- User gives the url, pointers to type, data, size and to the beginning of the header list.
- Type is for client. It returns the value of the response Content-type -header. NULL if undefined.
- Data and size stands for response content and size respectively.
- User provides the headers of the request. User defines the headers.
- Header -argument is a pointer to the beginning of the list.
+ * Fetch the document specified by an URL. Takes arbitrary number of the
+ * headers as input. Return -1 for error, or 0 for OK. Type is for client.
+ * Data and size stands for response content and size respectively.
+ * User provides the headers of the request. Header -argument is a pointer to the beginning of the list.
 */
 
 int http_get_u(char *url, char **type, char **data, size_t *size, HTTPHeader *header);
 
 /********************************
- *http_post - POSTs an entity to server
- *
+ * http_post - POSTs an entity to server
  * user provides headers and data. http_post counts the length of the data to send it to server.
  * pointer 'size' points to the size of the data returned by the server.
  */
@@ -192,13 +196,6 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 
 
 
-/******************************************
- * httpserver_answer
- */
-int httpserver_answer(int socket, char* text);
-
-
-
 
 
 /******************************************
@@ -211,47 +208,67 @@ URL* internal_url_relative_to_absolute(URL* baseURL, char *relativepath);
 
 
 
+
 /******************************************
-int httpserver_answer_100_continue(int socket, char* text);
-int httpserver_answer_101_switching_protocols(int socket, char* text);
+ * http-server answers
+ */
+
+int httpserver_answer(int socket, char* text);
+
+
+/*
+  int httpserver_answer_100_continue(int socket, char* text);
+  int httpserver_answer_101_switching_protocols(int socket, char* text);
+*/
+
 
 int httpserver_answer_200_ok(int socket, char* text);
-int httpserver_answer_201_created(int socket, char* text);
-int httpserver_answer_202_accepted(int socket, char* text);
-int httpserver_answer_203_non_authoritative_information(int socket, char* text);
-int httpserver_answer_204_no_contents(int socket, char* text);
-int httpserver_answer_205_reset_content(int socket, char* text);
 
-int httpserver_answer_300_multiple_choices(int socket, char* text);
-int httpserver_answer_301_moved_permanently(int socket, char* text);
-int httpserver_answer_302_found(int socket, char* text);
-int httpserver_answer_303_see_other(int socket, char* text);
-int httpserver_answer_304_not_modified(int socket, char* text);
-int httpserver_answer_305_use_proxy(int socket, char* text);
-int httpserver_answer_307_temporary_redirect(int socket, char* text);
 
-int httpserver_answer_400_bad_request(int socket, char* text);
-int httpserver_answer_401_unauthorized(int socket, char* text);
-int httpserver_answer_402_payment_required(int socket, char* text);
-int httpserver_answer_403_forbidden(int socket, char* text);
+/*int httpserver_answer_201_created(int socket, char* text);
+  int httpserver_answer_202_accepted(int socket, char* text);
+  int httpserver_answer_203_non_authoritative_information(int socket, char* text);
+  int httpserver_answer_204_no_contents(int socket, char* text);
+  int httpserver_answer_205_reset_content(int socket, char* text);
+  
+  int httpserver_answer_300_multiple_choices(int socket, char* text);
+  int httpserver_answer_301_moved_permanently(int socket, char* text);
+  int httpserver_answer_302_found(int socket, char* text);
+  int httpserver_answer_303_see_other(int socket, char* text);
+  int httpserver_answer_304_not_modified(int socket, char* text);
+  int httpserver_answer_305_use_proxy(int socket, char* text);
+  int httpserver_answer_307_temporary_redirect(int socket, char* text);
+  
+  int httpserver_answer_400_bad_request(int socket, char* text);
+  int httpserver_answer_401_unauthorized(int socket, char* text);
+  int httpserver_answer_402_payment_required(int socket, char* text);
+  int httpserver_answer_403_forbidden(int socket, char* text);
+*/
+
 int httpserver_answer_404_not_found(int socket, char* text);
+
 int httpserver_answer_405_method_not_allowed(int socket, char* text);
-int httpserver_answer_406_not_acceptable(int socket, char* text);
-int httpserver_answer_407_proxy_authentication_required(int socket, char* text);
-int httpserver_answer_408_request_timeout(int socket, char* text);
-int httpserver_answer_409_conflict(int socket, char* text);
-int httpserver_answer_410_gone(int socket, char* text);
-int httpserver_answer_411_length_required(int socket, char* text);
-int httpserver_answer_412_precondition_failed(int socket, char* text);
-int httpserver_answer_413_request_entity_too_large(int socket, char* text);
-int httpserver_answer_414_request_uri_too_long(int socket, char* text);
-int httpserver_answer_415_unsupported_media_type(int socket, char* text);
-int httpserver_answer_416_requested_range_not_satisfiable(int socket, char* text);
-int httpserver_answer_417_expectation_failed(int socket, char* text);
+
+/*
+  int httpserver_answer_406_not_acceptable(int socket, char* text);
+  int httpserver_answer_407_proxy_authentication_required(int socket, char* text);
+  int httpserver_answer_408_request_timeout(int socket, char* text);
+  int httpserver_answer_409_conflict(int socket, char* text);
+  int httpserver_answer_410_gone(int socket, char* text);
+  int httpserver_answer_411_length_required(int socket, char* text);
+  int httpserver_answer_412_precondition_failed(int socket, char* text);
+  int httpserver_answer_413_request_entity_too_large(int socket, char* text);
+  int httpserver_answer_414_request_uri_too_long(int socket, char* text);
+  int httpserver_answer_415_unsupported_media_type(int socket, char* text);
+  int httpserver_answer_416_requested_range_not_satisfiable(int socket, char* text);
+  int httpserver_answer_417_expectation_failed(int socket, char* text);
+*/
 
 int httpserver_answer_500_internal_server_error(int socket, char* text);
+
 int httpserver_answer_501_not_implemented(int socket, char* text);
-int httpserver_answer_502_bad_gateway(int socket, char* text);
+
+/*int httpserver_answer_502_bad_gateway(int socket, char* text);
 int httpserver_answer_503_service_unavailable(int socket, char* text);
 int httpserver_answer_504_gateway_timeout(int socket, char* text);
 int httpserver_answer_505_http_version_not_supported(int socket, char* text);
@@ -298,11 +315,12 @@ httpserver_listen
  * functions for request handling
  */
 
+HTTPRequest *httpresponse_wrap(Octstr *from, size_t size);
 HTTPRequest* httprequest_create(URL *url, char *payload);
-int httprequest_destroy(HTTPRequest *request);
 HTTPRequest* httprequest_execute(HTTPRequest *request);
 HTTPRequest* httprequest_wrap(char *from, size_t size);
 char* httprequest_unwrap(HTTPRequest *from);
+int httprequest_destroy(HTTPRequest *request);
 
 
 /******************************************
