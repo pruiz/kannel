@@ -294,7 +294,7 @@ clean:
 	rm -f $(benchoutputs)
 
 distclean: clean
-	rm -f Makefile config.h config.cache config.log config.status .depend config.sub config.guess
+	rm -f Makefile config.h config.cache config.log config.status .depend
 
 nag:
 	utils/find-long-lines
