@@ -1,3 +1,8 @@
+2000-11-28  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/smsbox_req.c: Accept WML responses as well as plain text
+	and HTML responses.
+
 2000-11-28	Paul Keogh	<paul.keogh@anam.com>
 
 	* gwlib/gwmem-check.c: Removed compiler warning of

@@ -145,7 +145,8 @@ static void url_result_thread(void *arg)
     	get_receiver(id, &msg, &trans);
 
 	http_header_get_content_type(reply_headers, &type, &charset);
-	if (octstr_str_compare(type, "text/html") == 0) {
+	if (octstr_str_compare(type, "text/html") == 0 ||
+	    octstr_str_compare(type, "text/vnd.wap.wml") == 0) {
 	    if (urltrans_prefix(trans) != NULL &&
 		urltrans_suffix(trans) != NULL) {
 		temp = html_strip_prefix_and_suffix(reply_body,
