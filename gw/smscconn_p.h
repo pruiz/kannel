@@ -163,16 +163,16 @@ struct smscconn {
     Counter *failed;
 
     /* SMSCConn variables set in smscconn.c */
-    int 	is_stopped;
+    volatile sig_atomic_t 	is_stopped;
 
     Octstr *name;		/* Descriptive name filled from connection info */
     Octstr *id;			/* Abstract name specified in configuration and
 				   used for logging and routing */
-    Octstr *allowed_smsc_id;
+    List *allowed_smsc_id;
+    List *denied_smsc_id;
+    List *preferred_smsc_id;
     regex_t *allowed_smsc_id_regex;
-    Octstr *denied_smsc_id;
     regex_t *denied_smsc_id_regex;
-    Octstr *preferred_smsc_id;
     regex_t *preferred_smsc_id_regex;
 
     Octstr *allowed_prefix;
@@ -182,7 +182,7 @@ struct smscconn {
     Octstr *preferred_prefix;
     regex_t *preferred_prefix_regex;
     Octstr *unified_prefix;
-    
+
     Octstr *our_host;   /* local device IP to bind for TCP communication */
 
     /* Our smsc specific log-file data */
@@ -191,7 +191,7 @@ struct smscconn {
     int log_idx;    /* index position within the global logfiles[] array in gwlib/log.c */
 
     long reconnect_delay; /* delay in seconds while re-connect attempts */
-    
+
     int alt_dcs; /* use alternate DCS 0xFX */
 
     int throughput;     /* message thoughput per sec. to be delivered to SMSC */

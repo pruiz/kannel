@@ -1,4 +1,10 @@
 2004-06-20  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/smscconn.c, gw/smscconn_p.h: more speedup. Changed 
+      [allowed|denied|preferred]_smsc_id from 'Octstr' to 'List'.
+      So we have no need allways to parse the whole string and split it
+      into the list. Now we just split it while starting only once.
+
+2004-06-20  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/smscconn.[ch], gw/smscconn_p.h: made status/killed enums named.
       Teached 'struct StatusInfo' to use named enums for status/killed.
       Changed return value to 'const Octstr* for 'smscconn_name' and 'smscconn_id'

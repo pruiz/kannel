@@ -74,7 +74,7 @@
 /*
  * Some defaults
  */
-#define SMSCCONN_RECONNECT_DELAY     10.0 
+#define SMSCCONN_RECONNECT_DELAY     10.0
 
 
 /*
@@ -159,39 +159,32 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     if (grp == NULL)
 	return NULL;
 
-    conn = gw_malloc(sizeof(SMSCConn));
+    conn = gw_malloc(sizeof(*conn));
+    memset(conn, 0, sizeof(*conn));
 
     conn->why_killed = SMSCCONN_ALIVE;
     conn->status = SMSCCONN_CONNECTING;
     conn->connect_time = -1;
-    conn->load = 0;
     conn->is_stopped = start_as_stopped;
+
     conn->received = counter_create();
     conn->sent = counter_create();
     conn->failed = counter_create();
     conn->flow_mutex = mutex_create();
-    conn->name = NULL;
-    conn->shutdown = NULL;
-    conn->queued = NULL;
-    conn->send_msg = NULL;
-    conn->stop_conn = NULL;
-    conn->start_conn = NULL;
-    conn->log_idx = 0;
-    conn->reroute = 0;
-    conn->reroute_to_smsc = NULL;
-    conn->reroute_by_receiver = NULL;
-    conn->allowed_smsc_id_regex = NULL;
-    conn->denied_smsc_id_regex = NULL;
-    conn->allowed_prefix_regex = NULL;
-    conn->denied_prefix_regex = NULL;
-    conn->preferred_prefix_regex = NULL;
 
 #define GET_OPTIONAL_VAL(x, n) x = cfg_get(grp, octstr_imm(n))
-    
+#define SPLIT_OPTIONAL_VAL(x, n) \
+        do { \
+                Octstr *tmp = cfg_get(grp, octstr_imm(n)); \
+                if (tmp) x = octstr_split(tmp, octstr_imm(";")); \
+                else x = NULL; \
+                octstr_destroy(tmp); \
+        }while(0)
+
     GET_OPTIONAL_VAL(conn->id, "smsc-id");
-    GET_OPTIONAL_VAL(conn->allowed_smsc_id, "allowed-smsc-id");
-    GET_OPTIONAL_VAL(conn->denied_smsc_id, "denied-smsc-id");
-    GET_OPTIONAL_VAL(conn->preferred_smsc_id, "preferred-smsc-id");
+    SPLIT_OPTIONAL_VAL(conn->allowed_smsc_id, "allowed-smsc-id");
+    SPLIT_OPTIONAL_VAL(conn->denied_smsc_id, "denied-smsc-id");
+    SPLIT_OPTIONAL_VAL(conn->preferred_smsc_id, "preferred-smsc-id");
     GET_OPTIONAL_VAL(conn->allowed_prefix, "allowed-prefix");
     GET_OPTIONAL_VAL(conn->denied_prefix, "denied-prefix");
     GET_OPTIONAL_VAL(conn->preferred_prefix, "preferred-prefix");
@@ -199,7 +192,7 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     GET_OPTIONAL_VAL(conn->our_host, "our-host");
     GET_OPTIONAL_VAL(conn->log_file, "log-file");
     cfg_get_bool(&conn->alt_dcs, grp, octstr_imm("alt-dcs"));
-             
+
     GET_OPTIONAL_VAL(allowed_smsc_id_regex, "allowed-smsc-id-regex");
     if (allowed_smsc_id_regex != NULL) 
         if ((conn->allowed_smsc_id_regex = gw_regex_comp(allowed_smsc_id_regex, REG_EXTENDED)) == NULL)
@@ -220,10 +213,10 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     if (preferred_prefix_regex != NULL) 
         if ((conn->preferred_prefix_regex = gw_regex_comp(preferred_prefix_regex, REG_EXTENDED)) == NULL)
             panic(0, "Could not compile pattern '%s'", octstr_get_cstr(preferred_prefix_regex));
-             
+
     if (cfg_get_integer(&throughput, grp, octstr_imm("throughput")) == -1)
         conn->throughput = 0;   /* defaults to no throughtput limitation */
-    else 
+    else
         conn->throughput = (int) throughput;
 
     /* configure the internal rerouting rules for this smsc id */
@@ -231,11 +224,13 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
 
     if (cfg_get_integer(&conn->log_level, grp, octstr_imm("log-level")) == -1)
         conn->log_level = 0;
-   
+
     /* open a smsc-id specific log-file in exlusive mode */
     if (conn->log_file)
         conn->log_idx = log_open(octstr_get_cstr(conn->log_file), 
                                  conn->log_level, GW_EXCL); 
+#undef GET_OPTIONAL_VAL
+#undef SPLIT_OPTIONAL_VAL
 
     if (conn->allowed_smsc_id && conn->denied_smsc_id)
 	warning(0, "Both 'allowed-smsc-id' and 'denied-smsc-id' set, deny-list "
@@ -244,10 +239,10 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
         warning(0, "Both 'allowed-smsc-id_regex' and 'denied-smsc-id_regex' set, deny-regex "
                 "automatically ignored");
 
-    if (cfg_get_integer(&conn->reconnect_delay, grp, 
+    if (cfg_get_integer(&conn->reconnect_delay, grp,
                         octstr_imm("reconnect-delay")) == -1)
         conn->reconnect_delay = SMSCCONN_RECONNECT_DELAY;
-    
+
     smsc_type = cfg_get(grp, octstr_imm("smsc"));
     if (smsc_type == NULL) {
         error(0, "Required field 'smsc' missing for smsc group.");
@@ -331,9 +326,9 @@ int smscconn_destroy(SMSCConn *conn)
 
     octstr_destroy(conn->name);
     octstr_destroy(conn->id);
-    octstr_destroy(conn->allowed_smsc_id);
-    octstr_destroy(conn->denied_smsc_id);
-    octstr_destroy(conn->preferred_smsc_id);
+    list_destroy(conn->allowed_smsc_id, octstr_destroy_item);
+    list_destroy(conn->denied_smsc_id, octstr_destroy_item);
+    list_destroy(conn->preferred_smsc_id, octstr_destroy_item);
     octstr_destroy(conn->denied_prefix);
     octstr_destroy(conn->allowed_prefix);
     octstr_destroy(conn->preferred_prefix);
@@ -349,10 +344,10 @@ int smscconn_destroy(SMSCConn *conn)
 
     octstr_destroy(conn->reroute_to_smsc);
     dict_destroy(conn->reroute_by_receiver);
-    
+
     mutex_unlock(conn->flow_mutex);
     mutex_destroy(conn->flow_mutex);
-    
+
     gw_free(conn);
     return 0;
 }
@@ -369,11 +364,11 @@ int smscconn_stop(SMSCConn *conn)
 	return -1;
     }
     conn->is_stopped = 1;
+    mutex_unlock(conn->flow_mutex);
 
     if (conn->stop_conn)
 	conn->stop_conn(conn);
-    
-    mutex_unlock(conn->flow_mutex);
+
     return 0;
 }
 
@@ -387,10 +382,10 @@ void smscconn_start(SMSCConn *conn)
 	return;
     }
     conn->is_stopped = 0;
-
-    if (conn->start_conn)
-	conn->start_conn(conn);
     mutex_unlock(conn->flow_mutex);
+    
+     if (conn->start_conn)
+	conn->start_conn(conn);
 }
 
 
@@ -410,35 +405,24 @@ const Octstr *smscconn_id(SMSCConn *conn)
 
 int smscconn_usable(SMSCConn *conn, Msg *msg)
 {
-    List *list;
-
     gw_assert(conn != NULL);
+    gw_assert(msg != NULL && msg_type(msg) == sms);
+
     if (conn->status == SMSCCONN_DEAD || conn->why_killed != SMSCCONN_ALIVE)
 	return -1;
 
     /* if allowed-smsc-id set, then only allow this SMSC if message
      * smsc-id matches any of its allowed SMSCes
      */
-    if (conn->allowed_smsc_id) {
-	if (msg->sms.smsc_id == NULL)
-	    return -1;
-
-        list = octstr_split(conn->allowed_smsc_id, octstr_imm(";"));
-        if (list_search(list, msg->sms.smsc_id, octstr_item_match) == NULL) {
-	    list_destroy(list, octstr_destroy_item);
-	    return -1;
-	}
-	list_destroy(list, octstr_destroy_item);
+    if (conn->allowed_smsc_id && (msg->sms.smsc_id == NULL ||
+         list_search(conn->allowed_smsc_id, msg->sms.smsc_id, octstr_item_match) == NULL)) {
+        return -1;
     }
     /* ..if no allowed-smsc-id set but denied-smsc-id and message smsc-id
      * is set, deny message if smsc-ids match */
-    else if (conn->denied_smsc_id && msg->sms.smsc_id != NULL) {
-        list = octstr_split(conn->denied_smsc_id, octstr_imm(";"));
-        if (list_search(list, msg->sms.smsc_id, octstr_item_match) != NULL) {
-	    list_destroy(list, octstr_destroy_item);
-	    return -1;
-	}
-	list_destroy(list, octstr_destroy_item);
+    else if (conn->denied_smsc_id && msg->sms.smsc_id != NULL &&
+                 list_search(conn->denied_smsc_id, msg->sms.smsc_id, octstr_item_match) != NULL) {
+        return -1;
     }
 
     if (conn->allowed_smsc_id_regex) {
@@ -457,7 +441,7 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
     if (conn->allowed_prefix && ! conn->denied_prefix && 
        (does_prefix_match(conn->allowed_prefix, msg->sms.receiver) != 1))
 	return -1;
-
+    
     if (conn->allowed_prefix_regex && ! conn->denied_prefix_regex) {
         if (gw_regex_matches(conn->allowed_prefix_regex, msg->sms.receiver) == NO_MATCH)
             return -1;
@@ -486,15 +470,11 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
     }
     
     /* then see if it is preferred one */
-
-    if (conn->preferred_smsc_id && msg->sms.smsc_id != NULL) {
-        list = octstr_split(conn->preferred_smsc_id, octstr_imm(";"));
-        if (list_search(list, msg->sms.smsc_id, octstr_item_match) != NULL) {
-	    list_destroy(list, octstr_destroy_item);
-	    return 1;
-	}
-	list_destroy(list, octstr_destroy_item);
+    if (conn->preferred_smsc_id && msg->sms.smsc_id != NULL &&
+         list_search(conn->preferred_smsc_id, msg->sms.smsc_id, octstr_item_match) != NULL) {
+        return 1;
     }
+
     if (conn->preferred_prefix)
 	if (does_prefix_match(conn->preferred_prefix, msg->sms.receiver) == 1)
 	    return 1;
@@ -525,7 +505,7 @@ int smscconn_send(SMSCConn *conn, Msg *msg)
     normalize_number(uf, &(msg->sms.receiver));
 
     ret = conn->send_msg(conn, msg);
-	mutex_unlock(conn->flow_mutex);
+    mutex_unlock(conn->flow_mutex);
     return ret;
 }
 
@@ -544,7 +524,7 @@ int smscconn_info(SMSCConn *conn, StatusInfo *infotable)
 	return -1;
 
     mutex_lock(conn->flow_mutex);
-    
+
     infotable->status = conn->status;
     infotable->killed = conn->why_killed;
     infotable->is_stopped = conn->is_stopped;
