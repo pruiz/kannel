@@ -339,7 +339,15 @@
 	<listitem><para>The Gnome XML library (known as
 	gnome-xml and libxml), version 2.2.5 or newer. See <ulink
 	url="http://xmlsoft.org/xml.html">http://xmlsoft.org/xml.html</ulink>.
-	</para></listitem>
+	</para>
+	<para>
+	If you are installing it from your distribution's packages, you'll need
+	<literal>libxml2-dev</literal> in addition to run-time <literal>libxml2</literal> package
+	libraries.
+	</para>
+
+	</listitem>
+	
 
 	<listitem><para>GNU Make.</para></listitem>
 
@@ -379,7 +387,7 @@
 
 	<para>The source code to
 	Kannel is available for download at <ulink
-	url="http://www.kannel.3glab.org/download.shtml">http://www.kannel.3glab.org/download.shtml</ulink>.
+	url="http://www.kannel.org/download.shtml">http://www.kannel.org/download.shtml</ulink>.
 	It is available in various formats and you can choose to download
 	either the latest release version or the daily snapshot of the
 	development source tree for the next release version, depending
@@ -407,8 +415,8 @@
 		you're reading at the moment.</para></listitem>
 	<listitem><para><citetitle>Architecture and
 		Design</citetitle>, in <filename>doc/arch</filename> or
-		at <ulink url="http://www.kannel.3glab.org/arch.shtml">
-		http://www.kannel.3glab.org/arch.shtml</ulink></para></listitem>
+		at <ulink url="http://www.kannel.org/arch.shtml">
+		http://www.kannel.org/arch.shtml</ulink></para></listitem>
 	<listitem><para>The <filename>README</filename> and various other
 		text files in the source tree.</para></listitem>
 	</orderedlist>
@@ -6854,7 +6862,7 @@ ssl-server-key-file = "/home/aarno/kannelcvs/gateway/gw/key1.pem"
 	related to the gateway, and the preferred procedure for reporting
 	bugs and sending corrections to them.</para>
 	
-	<para>The Kannel development mailing list is devel@kannel.3glab.org.  To subscribe, send mail to <ulink url="mailto:devel-subscribe@kannel.3glab.org">devel-subscribe@kannel.3glab.org</ulink>.
+	<para>The Kannel development mailing list is devel@kannel.org.  To subscribe, send mail to <ulink url="mailto:devel-subscribe@kannel.org">devel-subscribe@kannel.org</ulink>.
 	This is currently the best location for asking help and reporting
 	bugs. Please include configuration file and version number.</para>
 	
