@@ -602,6 +602,25 @@ static int entity_read(HTTPEntity *ent, Connection *conn)
  * HTTP client interface.
  */
 
+/*
+ * Internal lists of completely unhandled requests and requests for which
+ * a request has been sent but response has not yet been read.
+ */
+static List *pending_requests = NULL;
+
+
+/*
+ * Have background threads been started?
+ */
+static Mutex *client_thread_lock = NULL;
+static volatile sig_atomic_t client_threads_are_running = 0;
+
+
+/*
+ * Set of all connections to all servers. Used with conn_register to
+ * do I/O on several connections with a single thread.
+ */
+static FDSet *client_fdset = NULL;
 
 /*
  * Maximum number of HTTP redirections to follow. Making this infinite
@@ -630,7 +649,7 @@ typedef struct {
     List *request_headers;
     Octstr *request_body;   /* NULL for GET or HEAD, non-NULL for POST */
     enum {
-      connecting,
+	connecting,
 	request_not_sent,
 	reading_status,
 	reading_entity,
@@ -708,17 +727,13 @@ static void server_destroy(void *p)
  * Pool of open, but unused connections to servers or proxies. Key is
  * "servername:port", value is List with Connection objects.
  */
-static Dict *conn_pool = NULL;
-static Mutex *conn_pool_lock = NULL;
+static Dict *conn_pool;
+static Mutex *conn_pool_lock;
 
 
 static void conn_pool_item_destroy(void *item)
 {
-    Connection *conn;
-    
-    while ((conn = list_extract_first(item)) != NULL)
-    	conn_destroy(conn);
-    list_destroy(item, NULL);
+    list_destroy(item, (void(*)(void*))conn_destroy);
 }
 
 static void conn_pool_init(void)
@@ -735,7 +750,7 @@ static void conn_pool_shutdown(void)
 }
 
 
-static Octstr *conn_pool_key(Octstr *host, int port)
+static inline Octstr *conn_pool_key(Octstr *host, int port)
 {
     return octstr_format("%S:%d", host, port);
 }
@@ -745,48 +760,94 @@ static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certke
 		Octstr *our_host)
 {
     Octstr *key;
-    List *list;
-    Connection *conn;
+    List *list = NULL;
+    Connection *conn = NULL;
+    int retry = 0;
 
-    mutex_lock(conn_pool_lock);
-    key = conn_pool_key(host, port);
-    list = dict_get(conn_pool, key);
-    octstr_destroy(key);
-    if (list == NULL)
-    	conn = NULL;
-    else {
-	while (1) {
-	    conn = list_extract_first(list);
-	    if (conn == NULL)
-		break;
-	    /* Check whether the server has closed the connection while
-	     * it has been in the pool. */
-	    conn_wait(conn, 0);
-	    if (!conn_eof(conn) && !conn_error(conn))
-		break;
-	    conn_destroy(conn);
-	}
-    }
-    mutex_unlock(conn_pool_lock);
+    do {
+        mutex_lock(conn_pool_lock);
+        key = conn_pool_key(host, port);
+        list = dict_get(conn_pool, key);
+        octstr_destroy(key);
+        if (list != NULL)
+            conn = list_extract_first(list);
+        mutex_unlock(conn_pool_lock);
+        /*
+         * Note: we don't hold conn_pool_lock when we check/destroy/unregister
+         *       connection because otherwise we can deadlock! And it's even better
+         *       not to delay other threads while we check connection.
+         */
+        if (conn != NULL) {
+#ifdef USE_KEEPALIVE
+            /* unregister our server disconnect callback */
+            conn_unregister(conn);
+#endif 
+            /*
+             * Check whether the server has closed the connection while
+             * it has been in the pool.
+             */
+            conn_wait(conn, 0);
+            if (conn_eof(conn) || conn_error(conn)) {
+                conn_destroy(conn);
+                retry = 1;
+                conn = NULL;
+            }
+        }
+    } while(retry == 1);
     
     if (conn == NULL) {
 #ifdef HAVE_LIBSSL
-	if (ssl) 
-	    conn = conn_open_ssl(host, port, certkeyfile, our_host);
-	else
+        if (ssl) 
+            conn = conn_open_ssl(host, port, certkeyfile, our_host);
+        else
 #endif /* HAVE_LIBSSL */
-	    conn = conn_open_tcp_nb(host, port, our_host);
-	debug("gwlib.http", 0, "HTTP: Opening connection to `%s:%d' (fd=%d).",
-	      octstr_get_cstr(host), port, conn_get_id(conn));
+            conn = conn_open_tcp_nb(host, port, our_host);
+            debug("gwlib.http", 0, "HTTP: Opening connection to `%s:%d' (fd=%d).",
+                  octstr_get_cstr(host), port, conn_get_id(conn));
     } else {
-	debug("gwlib.http", 0, "HTTP: Reusing connection to `%s:%d' (fd=%d).",
-	      octstr_get_cstr(host), port, conn_get_id(conn)); 
+        debug("gwlib.http", 0, "HTTP: Reusing connection to `%s:%d' (fd=%d).",
+              octstr_get_cstr(host), port, conn_get_id(conn)); 
     }
     
     return conn;
 }
 
 #ifdef USE_KEEPALIVE
+static void check_pool_conn(Connection *conn, void *data)
+{
+    Octstr *key = data;
+    
+    if (run_status != running) {
+        conn_unregister(conn);
+        return;
+    }
+    /* check if connection still ok */
+    conn_wait(conn, 0);
+    if (conn_error(conn) || conn_eof(conn)) {
+        List *list;
+        mutex_lock(conn_pool_lock);
+        list = dict_get(conn_pool, key);
+        if (list_delete_equal(list, conn) > 0) {
+            /*
+             * ok, connection was still within pool. So it's
+             * safe to destroy this connection.
+             */
+            debug("gwlib.http", 0, "HTTP: Server closed connection, destroying it <%s><%p>.",
+                  octstr_get_cstr(key), conn);
+            /* implicit conn_unregister */
+            conn_destroy(conn);
+        }
+        /*
+         * it's perfectly valid if connection was not found in connection pool because
+         * in 'conn_pool_get' we first removed connection from pool with conn_pool_lock locked
+         * and then check connection for errors with conn_pool_lock unlocked. In the meantime
+         * fdset's poller may call us. So just ignore such "dummy" call.
+        */
+        mutex_unlock(conn_pool_lock);
+    }
+}
+
+
 static void conn_pool_put(Connection *conn, Octstr *host, int port)
 {
     Octstr *key;
@@ -800,31 +861,11 @@ static void conn_pool_put(Connection *conn, Octstr *host, int port)
         dict_put(conn_pool, key, list);
     }
     list_append(list, conn);
-    octstr_destroy(key);
+    /* register connection to get server disconnect */
+    conn_register_real(conn, client_fdset, check_pool_conn, key, octstr_destroy_item);
     mutex_unlock(conn_pool_lock);
 }
 #endif
-
-
-/*
- * Internal lists of completely unhandled requests and requests for which
- * a request has been sent but response has not yet been read.
- */
-static List *pending_requests = NULL;
-
-
-/*
- * Have background threads been started?
- */
-static Mutex *client_thread_lock = NULL;
-static volatile sig_atomic_t client_threads_are_running = 0;
-
-
-/*
- * Set of all connections to all servers. Used with conn_register to
- * do I/O on several connections with a single thread.
- */
-static FDSet *client_fdset = NULL;
 
 
 HTTPCaller *http_caller_create(void)
@@ -1026,7 +1067,7 @@ static void handle_transaction(Connection *conn, void *data)
 
 #ifdef DUMP_RESPONSE
                 /* Dump the response */
-                debug("wsp.http", 0, "HTTP: Received response:");
+                debug("gwlib.http", 0, "HTTP: Received response:");
                 h = build_response(trans->response->headers, trans->response->body);
                 octstr_dump(h, 0);
                 octstr_destroy(h);
@@ -1052,11 +1093,11 @@ static void handle_transaction(Connection *conn, void *data)
     if (trans->persistent) {
         if (proxy_used_for_host(trans->host))
             conn_pool_put(trans->conn, proxy_hostname, proxy_port);
-        else
+        else 
             conn_pool_put(trans->conn, trans->host, trans->port);
     } else
 #endif
-    	conn_destroy(trans->conn);
+        conn_destroy(trans->conn);
 
     trans->conn = NULL;
 
@@ -1423,12 +1464,10 @@ static void parse2trans(HTTPURLParse *p, HTTPServer *t)
 
 static Connection *get_connection(HTTPServer *trans) 
 {
-    Connection *conn;
+    Connection *conn = NULL;
     Octstr *host;
     HTTPURLParse *p;
     int port;
-
-    conn = NULL;
 
     /* if the parsing has not yet been done, then do it now */
     if (!trans->host && trans->port == 0 && trans->url != NULL) {
@@ -1448,26 +1487,17 @@ static Connection *get_connection(HTTPServer *trans)
         port = trans->port;
     }
 
-    if (trans->retrying) {
-#ifdef HAVE_LIBSSL
-    if (trans->ssl) conn = conn_open_ssl(host, port, trans->certkeyfile, http_interface);
-        else
-#endif /* HAVE_LIBSSL */
-      conn = conn_open_tcp_nb(host, port, http_interface);
-            debug("gwlib.http", 0, "HTTP: Opening NEW connection to `%s:%d' (fd=%d).",
-                  octstr_get_cstr(host), port, conn_get_id(conn));
-    } else
     conn = conn_pool_get(host, port, trans->ssl, trans->certkeyfile,
                          http_interface);
     if (conn == NULL)
         goto error;
 
-  return conn;
+    return conn;
 
- error:
-  conn_destroy(conn);
-  error(0, "Couldn't send request to <%s>", octstr_get_cstr(trans->url));
-  return NULL;
+error:
+    conn_destroy(conn);
+    error(0, "Couldn't send request to <%s>", octstr_get_cstr(trans->url));
+    return NULL;
 }
 
 
@@ -1477,47 +1507,47 @@ static Connection *get_connection(HTTPServer *trans)
  */
 static int send_request(HTTPServer *trans)
 {
-  Octstr *request;
+    Octstr *request;
 
-  request = NULL;
+    request = NULL;
 
-  /* 
-   * we have to assume all values in trans are already set
-   * by parse_url() before calling this.
-   */
+    /* 
+    * we have to assume all values in trans are already set
+    * by parse_url() before calling this.
+    */
 
-  if (trans->username != NULL)
-    http_add_basic_auth(trans->request_headers, trans->username,
-			trans->password);
+    if (trans->username != NULL)
+        http_add_basic_auth(trans->request_headers, trans->username,
+                            trans->password);
 
-  if (proxy_used_for_host(trans->host)) {
-    proxy_add_authentication(trans->request_headers);
-    request = build_request(http_method2name(trans->method),
-			    trans->url, trans->host, trans->port, 
-			    trans->request_headers, 
-			    trans->request_body);
-  } else {
-    request = build_request(http_method2name(trans->method), trans->uri, 
-			    trans->host, trans->port,
-			    trans->request_headers,
-			    trans->request_body);
-  }
+    if (proxy_used_for_host(trans->host)) {
+        proxy_add_authentication(trans->request_headers);
+        request = build_request(http_method2name(trans->method),
+                                trans->url, trans->host, trans->port, 
+                                trans->request_headers, 
+                                trans->request_body);
+    } else {
+        request = build_request(http_method2name(trans->method), trans->uri, 
+                                trans->host, trans->port,
+                                trans->request_headers,
+                                trans->request_body);
+    }
   
-    debug("wsp.http", 0, "HTTP: Sending request:");
+    debug("gwlib.http", 0, "HTTP: Sending request:");
     octstr_dump(request, 0);
-  if (conn_write(trans->conn, request) == -1)
+    if (conn_write(trans->conn, request) == -1)
         goto error;
 
     octstr_destroy(request);
 
-  return 0;
+    return 0;
 
- error:
-  conn_destroy(trans->conn);
-  trans->conn = NULL;
+error:
+    conn_destroy(trans->conn);
+    trans->conn = NULL;
     octstr_destroy(request);
     error(0, "Couldn't send request to <%s>", octstr_get_cstr(trans->url));
-  return -1;
+    return -1;
 }
 
 
@@ -1545,46 +1575,43 @@ static void write_request_thread(void *arg)
          */
         trans->conn = get_connection(trans);
 
-	if (trans->conn == NULL)
-	  list_produce(trans->caller, trans);
-        else {
-          if (conn_is_connected(trans->conn) == 0) {
-	    debug("gwlib.http", 0, "Socket connected at once");
+        if (trans->conn == NULL)
+            list_produce(trans->caller, trans);
+        else if (conn_is_connected(trans->conn) == 0) {
+            debug("gwlib.http", 0, "Socket connected at once");
 
-        if (trans->method == HTTP_METHOD_POST) {
-            /* 
-             * Add a Content-Length header.  Override an existing one, if
-             * necessary.  We must have an accurate one in order to use the
-             * connection for more than a single request.
-             */
-            http_header_remove_all(trans->request_headers, "Content-Length");
-            sprintf(buf, "%ld", octstr_len(trans->request_body));
-            http_header_add(trans->request_headers, "Content-Length", buf);
-        } 
+            if (trans->method == HTTP_METHOD_POST) {
+                /* 
+                * Add a Content-Length header.  Override an existing one, if
+                * necessary.  We must have an accurate one in order to use the
+                * connection for more than a single request.
+                */
+                http_header_remove_all(trans->request_headers, "Content-Length");
+                sprintf(buf, "%ld", octstr_len(trans->request_body));
+                http_header_add(trans->request_headers, "Content-Length", buf);
+            } 
             /* 
              * ok, this has to be an GET or HEAD request method then,
              * if it contains a body, then this is not HTTP conform, so at
              * least warn the user 
              */
-        else if (trans->request_body != NULL) {
-            warning(0, "HTTP: GET or HEAD method request contains body:");
-            octstr_dump(trans->request_body, 0);
-        }
-	    if ((rc = send_request(trans)) == 0) {
-            trans->state = reading_status;
-              conn_register(trans->conn, client_fdset, handle_transaction, 
-                            trans);
+            else if (trans->request_body != NULL) {
+                warning(0, "HTTP: GET or HEAD method request contains body:");
+                octstr_dump(trans->request_body, 0);
+            }
+            if ((rc = send_request(trans)) == 0) {
+                trans->state = reading_status;
+                conn_register(trans->conn, client_fdset, handle_transaction, 
+                                trans);
             } else {
-              list_produce(trans->caller, trans);
+                list_produce(trans->caller, trans);
             }
 
-          } else { /* Socket not connected, wait for connection */
+        } else { /* Socket not connected, wait for connection */
             debug("gwlib.http", 0, "Socket connecting");
             trans->state = connecting;
             conn_register(trans->conn, client_fdset, handle_transaction, trans);
         }
-	  
-	}
     }
 }
 
@@ -1610,7 +1637,7 @@ static void start_client_threads(void)
 
 void http_set_interface(const Octstr *our_host)
 {
-  http_interface = octstr_duplicate(our_host);
+    http_interface = octstr_duplicate(our_host);
 }
 
 
@@ -2657,7 +2684,7 @@ Octstr *http_header_value(List *headers, Octstr *name)
 List *http_header_duplicate(List *headers)
 {
     List *new;
-    long i;
+    long i, len;
 
     gwlib_assert_init();
 
@@ -2665,13 +2692,14 @@ List *http_header_duplicate(List *headers)
         return NULL;
 
     new = http_create_empty_headers();
-    for (i = 0; i < list_len(headers); ++i)
+    len = list_len(headers);
+    for (i = 0; i < len; ++i)
         list_append(new, octstr_duplicate(list_get(headers, i)));
     return new;
 }
 
 
-#define MAX_HEADER_LENGHT 256
+#define MAX_HEADER_LENGTH 256
 /*
  * Aggregate header in one (or more) lines with several parameters separated
  * by commas, instead of one header per parameter
@@ -2698,7 +2726,7 @@ void http_header_pack(List *headers)
             http_header_get(headers, j, &name2, &value2);
 
             if(octstr_case_compare(name, name2) == 0) {
-                if(octstr_len(value) + 2 + octstr_len(value2) > MAX_HEADER_LENGHT) {
+                if(octstr_len(value) + 2 + octstr_len(value2) > MAX_HEADER_LENGTH) {
 		    octstr_destroy(name2);
 		    octstr_destroy(value2);
                     break;
@@ -3279,8 +3307,8 @@ void http_shutdown(void)
 
     run_status = terminating;
 
-    conn_pool_shutdown();
     port_shutdown();
+    conn_pool_shutdown();
     client_shutdown();
     server_shutdown();
     proxy_shutdown();

@@ -1,4 +1,15 @@
 2004-12-23  Alexander Malysh <amalysh at kannel.org>
+    * gwlib/http.c: applied 'http client timeouts part1 (v4)' patch.
+      This patch fixes a problem with dead connections in http client
+      connection pool. It's only a first part of fixes that we need
+      (we still need to kill inactive connection after timeout expired).
+      How it works:
+      1) before putting connection into connection pool register dummy callback
+      2) if dummy callback called (we will receive error poll event) check if
+         connection still ok and if not destroy it
+      3) before return connection from pool, unregister dummy callback
+
+2004-12-23  Alexander Malysh <amalysh at kannel.org>
     * gwlib/conn.[ch]: added 'conn_register_real' that takes callback data
       and data-destroyer function pointer. When conn_destroy/conn_unregister
       called and Connection has data_destroyer fn-pointer that will be called
