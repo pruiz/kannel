@@ -1,3 +1,8 @@
+2003-04-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * utils/mtbatch.c: added MT batch utility. This application connects to
+      bearerbox via smsbox interface and sequentially sends a pulk of MT messages 
+      to a speficied range of receiver numbers. Currently 7-bit only.
+
 2003-04-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_http.c: harmonized smsc output to be in same style as others.
       Fixed expected MO parameters to 'username' and 'password' instead of 'user'
