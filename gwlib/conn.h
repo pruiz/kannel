@@ -52,6 +52,10 @@ typedef void conn_callback_t(Connection *conn, void *data);
  * and log the problem. */
 Connection *conn_open_tcp(Octstr *host, int port);
 
+/* As above, but binds our end to 'our_port'. If 'our_port' is 0, uses
+ * any port like conn_open_tcp. */
+Connection *conn_open_tcp_with_port(Octstr *host, int port, int our_port);
+
 /* Create a Connection structure around the given file descriptor.
  * The file descriptor must not be used for anything else after this;
  * it must always be accessed via the Connection operations.  This

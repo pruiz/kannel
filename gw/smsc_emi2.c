@@ -28,6 +28,8 @@ typedef struct privdata {
     int		listening_socket; /* File descriptor */
     int		send_socket;
     int		port;		  /* SMSC port */
+    int		our_port;	  /* Optional local port number in which to
+				   * bind our end of send connection */
     int		rport;		  /* Receive-port to listen */
     Octstr	*allow_ip, *deny_ip;
     Octstr	*host, *username, *password;
@@ -118,9 +120,12 @@ static Connection *open_send_connection(SMSCConn *conn)
     Msg *msg;
 
     while (!privdata->shutdown) {
-	server = conn_open_tcp(privdata->host, privdata->port);
-	if (privdata->shutdown)
+	server = conn_open_tcp_with_port(privdata->host, privdata->port,
+					 privdata->our_port);
+	if (privdata->shutdown) {
+	    conn_destroy(server);
 	    return NULL;
+	}
 	if (server == NULL) {
 	    if (conn->status == SMSCCONN_ACTIVE) {
 		mutex_lock(conn->flow_mutex);
@@ -724,7 +729,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 {
     PrivData *privdata;
     Octstr *allow_ip, *deny_ip, *host;
-    long portno; /* has to be long because of cfg_get_integer */
+    long portno, our_port; /* has to be long because of cfg_get_integer */
 
     privdata = gw_malloc(sizeof(PrivData));
     privdata->outgoing_queue = list_create();
@@ -733,6 +738,10 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     if (cfg_get_integer(&portno, cfg, octstr_imm("port")) == -1)
 	portno = 0;
     privdata->port = portno;
+    if (cfg_get_integer(&our_port, cfg, octstr_imm("our-port")) == -1)
+	privdata->our_port = 0; /* 0 means use any port */
+    else
+	privdata->our_port = our_port;
     if (cfg_get_integer(&portno, cfg, octstr_imm("receive-port")) < 0)
 	portno = 0;
     privdata->rport = portno;

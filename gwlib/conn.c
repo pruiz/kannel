@@ -263,14 +263,21 @@ static void unlocked_register_pollout(Connection *conn, int onoff)
 
 Connection *conn_open_tcp(Octstr *host, int port)
 {
+    return conn_open_tcp_with_port(host, port, 0);
+}
+
+
+Connection *conn_open_tcp_with_port(Octstr *host, int port, int our_port)
+{
     int sockfd;
 
-    sockfd = tcpip_connect_to_server(octstr_get_cstr(host), port);
+    sockfd = tcpip_connect_to_server_with_port(octstr_get_cstr(host), port,
+					       our_port);
     if (sockfd < 0)
-        return NULL;
-
+	return NULL;
     return conn_wrap_fd(sockfd);
 }
+
 
 Connection *conn_wrap_fd(int fd)
 {
