@@ -1,3 +1,20 @@
+2000-06-06  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wsp.c: append_uintvar removed, calls to it were changed to
+	octstr_append_uintvar.
+
+	* gw/utf8map_win1257.h: A new file from the Latvian localisation 
+	patch.
+
+	* utils/win1257unicode.txt: A new file from the Latvian localisation 
+	patch.
+
+	* utils/utf8map.pl: A new file from the Latvian localisation patch.
+
+	* gw/wml_definitions.h: Latvian localisation patch applied.
+
+	* gw/wml_compiler.c: Latvian localisation patch applied.
+
 Tue Jun  6 15:43:31 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp_state-decl.h: Bugfix. The mid for a S_MethodInvoke_Ind

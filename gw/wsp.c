@@ -90,7 +90,6 @@ static char *wsp_state_to_string(WSPState state);
 static long wsp_next_session_id(void);
 
 static void append_uint8(Octstr *pdu, long n);
-static void append_uintvar(Octstr *pdu, long n);
 static void append_octstr(Octstr *pdu, Octstr *os);
 
 static Octstr *make_connectreply_pdu(WSPMachine *m, long session_id);
