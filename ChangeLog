@@ -1,5 +1,17 @@
 2000-08-31  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/wapbox.c, gw/log.c: Moved syslog opening internals to log.c,
+	where it belongs. Introduced new function set_syslog to do this.
+	
+	* gw/log.c: Cleaned up formatting, etc, a bit. syslog support
+	(internals of kannel_syslog (now static, btw)) is compiled on
+	all platforms, not just SunOS.
+	
+	* gw/log.h: Added note that opening and closing of log files is
+	not thread safe.
+
+2000-08-31  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/list.[ch]: Some further cleanups:
 	
 		- list_delete_all and list_extract_all were named in a

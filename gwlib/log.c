@@ -1,3 +1,8 @@
+/*
+ * log.c - implement logging functions
+ */
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -8,8 +13,6 @@
 
 #include "gwlib.h"
 
-int sysloglevel;
-char dosyslog = 0;
 /*
  * List of currently open log files.
  */
@@ -29,6 +32,11 @@ static int num_logfiles = 0;
 static char *loggable_places[MAX_LOGGABLE_PLACES];
 static int num_places = 0;
 
+/*
+ * Syslog support.
+ */
+static int sysloglevel;
+static int dosyslog = 0;
 
 /* Make sure stderr is included in the list. */
 static void add_stderr(void) {
@@ -52,6 +60,17 @@ void set_output_level(enum output_level level) {
 			logfiles[i].minimum_output_level = level;
 			break;
 		}
+	}
+}
+
+
+void set_syslog(const char *ident, int syslog_level) {
+	if (ident == NULL)
+		dosyslog = 0;
+	else {
+		dosyslog = 1;
+		sysloglevel = syslog_level;
+		openlog(ident, LOG_PID, LOG_DAEMON);
 	}
 }
 
@@ -169,24 +188,13 @@ static void output(FILE *f, char *buf, va_list args) {
 }
 
 
-/* Almost all of the message printing functions are identical, except for
-   the output level they use. This macro contains the identical parts of
-   the functions so that the code needs to exist only once. It's a bit
-   more awkward to edit, but that can't be helped. The "do {} while (0)"
-   construct is a gimmick to be more like a function call in all syntactic
-   situation. */
-
-/* I'm implementing the syslogging bit under Solaris, it should work elsewhere
- * but you can add your own platform
- */
-
-void kannel_syslog(char *format, va_list args,int level){
-#ifdef SunOS
+static void kannel_syslog(char *format, va_list args,int level){
     char buf[4096];/* Trying to syslog more han 4K could be bad */
     int translog;
 
     if(level >= sysloglevel && dosyslog){
 	vsnprintf( buf,sizeof(buf),format, args);
+	/* XXX vsnprint not 100% portable */
 	switch(level){
 	    case DEBUG:
 	    	translog = LOG_DEBUG;
@@ -204,16 +212,16 @@ void kannel_syslog(char *format, va_list args,int level){
 		translog = LOG_INFO;
 	}
 	syslog(translog,buf);
-
     }
-#endif
 }
 
-void instrument_foo(char* location){
-	/* Somwhere to stick a breakpoint*/
-	int foobar=0;
-	if(foobar){foobar = 1;};
-}
+
+/* Almost all of the message printing functions are identical, except for
+   the output level they use. This macro contains the identical parts of
+   the functions so that the code needs to exist only once. It's a bit
+   more awkward to edit, but that can't be helped. The "do {} while (0)"
+   construct is a gimmick to be more like a function call in all syntactic
+   situation. */
 
 #define FUNCTION_GUTS(level, place) \
 	do { \
@@ -228,11 +236,11 @@ void instrument_foo(char* location){
 				output(logfiles[i].file, buf, args); \
 				va_end(args); \
 			} \
-		if(dosyslog){ \
-			va_start(args, fmt); \
-			kannel_syslog(buf,args,level); \
-			va_end(args); \
-		} \
+			if(dosyslog){ \
+				va_start(args, fmt); \
+				kannel_syslog(buf,args,level); \
+				va_end(args); \
+			} \
 		} \
 	} while (0)
 

@@ -1,7 +1,8 @@
 /*
  * log.h - logging functions
  *
- * Kalle 'rpr' Marjola 1999
+ * Please note that opening and closing of log files are not thread safe.
+ * Don't do it unless you're in single-thread mode.
  */
 
 #ifndef GWLOG_H
@@ -79,6 +80,11 @@ void set_debug_places(const char *places);
    level are not printed to standard error, but may be printed to files
    (see below). */
 void set_output_level(enum output_level level);
+
+/*
+ * Set syslog usage. If `ident' is NULL, syslog is not used.
+ */
+void set_syslog(const char *ident, int syslog_level);
 
 /* Start logging to a file as well. The file will get messages at least of
    level `level'. There is no need and no way to close the log file;

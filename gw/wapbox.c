@@ -10,7 +10,6 @@
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
-#include <syslog.h>
 #ifdef HAVE_GETLOADAVG
 #include <sys/loadavg.h>
 #endif
@@ -110,17 +109,15 @@ static void read_config(char *filename) {
 	/* Get syslog parameters */
 	if ((s = config_get(grp, "syslog-level")) != NULL){
 	    if(!strcmp(s,"none")){
-		dosyslog = 0;
+		set_syslog(NULL, 0);
 		debug("bbox",0,"syslog parameter is none");
 	    }else{
-		openlog("wapbox",LOG_PID,LOG_DAEMON);
-		dosyslog = 1;
-		sysloglevel = atoi(s); 
-		debug("bbox",0,"syslog parameter is %d",sysloglevel);
+		set_syslog("wapbox", atoi(s));
+		debug("bbox",0,"syslog parameter is %d", atoi(s));
 	    }
 
 	}else{
-	    dosyslog = 0;
+	    set_syslog(NULL, 0);
 	    debug("bbox",0,"no syslog parameter");
 	}
 	    
