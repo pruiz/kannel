@@ -1,4 +1,7 @@
 2002-05-22  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c: fixed destruction of a octstr in msg_to_pdu()
+
+2002-05-22  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsc_smpp.c: added 'smsc-id' output at debug lines, reformat source to 
       be CodingStyle compliant
     * gw/smsc_fake.c: reformat source to be CodingStyle compliant
