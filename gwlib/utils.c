@@ -235,6 +235,35 @@ int connect_denied(Octstr *allow_ip, Octstr *ip)
 }
 
 
+int does_prefix_match(Octstr *prefix, Octstr *number)
+{
+    /* XXX modify to use just octstr operations
+     */
+    char *b, *p, *n;
+
+    gw_assert(prefix != NULL);
+    gw_assert(number != NULL);
+
+    p = octstr_get_cstr(prefix);
+    n = octstr_get_cstr(number);
+    
+
+    while (*p != '\0') {
+        b = n;
+        for (b = n; *b != '\0'; b++, p++) {
+            if (*p == ';' || *p == '\0') {
+                return 1;
+            }
+            if (*p != *b) break;
+        }
+        while (*p != '\0' && *p != ';')
+            p++;
+        while (*p == ';') p++;
+    }
+    return 0;
+}
+
+
 int normalize_number(char *dial_prefixes, Octstr **number)
 {
     char *t, *p, *official, *start;

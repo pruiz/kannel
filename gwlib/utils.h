@@ -74,6 +74,15 @@ int is_allowed_ip(Octstr *allow_ip, Octstr *deny_ip, Octstr *ip);
 int connect_denied(Octstr *allow_ip, Octstr *ip);
 
 /*
+ * Checks if a given prefix list seperated with semicolon does match
+ * a given number.
+ *
+ * This is mainly used for the allowed-prefix, denied-prefix configuration
+ * directives.
+ */
+int does_prefix_match(Octstr *prefix, Octstr *number);
+
+/*
  * Normalize 'number', like change number "040500" to "0035840500" if
  * the dial-prefix is like "0035840,040;0035850,050"
  *

@@ -99,7 +99,6 @@ static URLTranslation *find_default_translation(URLTranslationList *trans,
 						int *reject);
 static URLTranslation *find_black_list_translation(URLTranslationList *trans,
 						Octstr *smsc);
-static int does_prefix_match(Octstr *prefix, Octstr *number);
 
 
 /***********************************************************************
@@ -1199,30 +1198,3 @@ static long count_occurences(Octstr *str, Octstr *pat)
     return count;
 }
 
-static int does_prefix_match(Octstr *prefix, Octstr *number)
-{
-    /* XXX modify to use just octstr operations
-     */
-    char *b, *p, *n;
-
-    gw_assert(prefix != NULL);
-    gw_assert(number != NULL);
-
-    p = octstr_get_cstr(prefix);
-    n = octstr_get_cstr(number);
-
-
-    while (*p != '\0') {
-        b = n;
-        for (b = n; *b != '\0'; b++, p++) {
-            if (*p == ';' || *p == '\0') {
-                return 1;
-            }
-            if (*p != *b) break;
-        }
-        while (*p != '\0' && *p != ';')
-            p++;
-        while (*p == ';') p++;
-    }
-    return 0;
-}
