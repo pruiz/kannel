@@ -1,5 +1,5 @@
 /*
- * smsc_at2.c
+ * smsc_at.c
  * 
  * New driver for serial connected AT based
  * devices.
@@ -34,7 +34,7 @@
 #include "msg.h"
 #include "sms.h"
 #include "dlr.h"
-#include "smsc_at2.h"
+#include "smsc_at.h"
 
 static int at2_open_device1(PrivAT2data *privdata)
 {

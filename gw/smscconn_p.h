@@ -191,7 +191,7 @@ int smsc_fake_create(SMSCConn *conn, CfgGroup *cfg);
 /* Responsible file: smsc/smsc_cimd2.c */
 int smsc_cimd2_create(SMSCConn *conn, CfgGroup *cfg);
 
-/* Responsible file: smsc/smsc_emi2.c */
+/* Responsible file: smsc/smsc_emi.c */
 int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg);
 
 /* Responsible file: smsc/smsc_http.c */
@@ -203,7 +203,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *cfg);
 /* Responsible file: smsc/smsc_cgw.c */
 int smsc_cgw_create(SMSCConn *conn, CfgGroup *cfg);
 
-/* Responsible file: smsc/smsc_at2.c. */
+/* Responsible file: smsc/smsc_at.c. */
 int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg);
 
 /* Responsible file: smsc/smsc_smasi.c */

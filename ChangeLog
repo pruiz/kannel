@@ -1,7 +1,19 @@
 2003-07-20  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smscconn{.c,_p.h}: renamed <emi2> to <emi> and <at2> to <at>
+    * gw/smsc/smsc.c: removed <at> and <emi_ip> (<emi> alias); renamed 
+      <emi> to <emi_x25>
+    * gw/smsc/smsc_at.c: change comment and include directive 
+    * gw/smsc/smsc_p.h: renamed EMI to EMI_X25 and removed EMI_IP and non
+      existant EMI_X31
+    * gw/smsc/smsc_emi_x25.c: removed emi_ip code
+    * doc/userguide/userguide.xml: changed emi/emi2 and at/at2 sections and
+      added a new appendix to include important information for upgrades
+
+2003-07-20  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * : The "clean up old modules and break everything" patch ;)
     * gw/smsc: removed smsc_at, moved smsc_at2 to smsc_at; moved smsc_emi
       to smsc_emi_x25 and smsc_emi2 to smsc_emi.
+      No changes were made to these files.
       Kannel should be broken now until I commit other changes 
 
 2003-07-20  Alexander Malysh  <a.malysh@centrium.de>

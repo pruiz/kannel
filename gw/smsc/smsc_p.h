@@ -23,13 +23,10 @@
 enum {
 	SMSC_TYPE_DELETED,
 	SMSC_TYPE_CIMD,
-	SMSC_TYPE_EMI,
-	SMSC_TYPE_EMI_X31,
-	SMSC_TYPE_EMI_IP,
+	SMSC_TYPE_EMI_X25,
 	SMSC_TYPE_SEMA_X28,
 	SMSC_TYPE_OIS,
-    SMSC_TYPE_AT,
-    SMSC_TYPE_OISD
+	SMSC_TYPE_OISD
 };
 
 /*
@@ -89,7 +86,7 @@ struct SMSCenter {
 	time_t cimd_last_spoke;
 	int cimd_config_bits;
 
-	/* EMI */
+	/* EMI_X25 */
 	int emi_fd;
 	FILE *emi_fp;
 	char *emi_phonenum;
@@ -100,7 +97,6 @@ struct SMSCenter {
 	char *emi_password;
 	int emi_current_msg_number;
 	time_t emi_last_spoke;
-
 	int emi_backup_fd;
         int emi_backup_port;		/* different one! rename! */
         char *emi_backup_allow_ip;     
@@ -129,25 +125,15 @@ struct SMSCenter {
         size_t ois_buflen;
         Octstr *sender_prefix;
     
-	/* AT Commands (wireless modems...) */
-	char *at_serialdevice;
-	int at_fd;
-	char *at_modemtype;
-	char *at_pin;
-	List *at_received;
-	Octstr *at_inbuffer;
-	char *at_validityperiod;
-	int at_alt_dcs;
-
-    /* SEMA SMSC G8.1 OIS 5.8 (TCP/IP Direct Access) */
-    Octstr *oisd_hostname;
-    int oisd_port;
-    unsigned long oisd_send_seq;
-    unsigned long oisd_receive_seq;
-    Octstr *oisd_inbuffer;
-    List *oisd_received;
-    int oisd_error;
-    time_t oisd_next_ping;	
+	/* SEMA SMSC G8.1 OIS 5.8 (TCP/IP Direct Access) */
+	Octstr *oisd_hostname;
+	int oisd_port;
+	unsigned long oisd_send_seq;
+	unsigned long oisd_receive_seq;
+	Octstr *oisd_inbuffer;
+	List *oisd_received;
+	int oisd_error;
+	time_t oisd_next_ping;	
 
 	/* For buffering input. */
 	char *buffer;
@@ -196,7 +182,7 @@ int cimd_submit_msg(SMSCenter *smsc, Msg *msg);
 int cimd_receive_msg(SMSCenter *smsc, Msg **msg);
 
 /*
- * Interface to CMG SMS centers using EMI.
+ * Interface to CMG SMS centers using EMI_X25.
  */
 SMSCenter *emi_open(char *phonenum, char *serialdevice, char *username, char *password);
 int emi_reopen(SMSCenter *smsc);
@@ -233,17 +219,6 @@ int ois_submit_msg(SMSCenter *smsc, const Msg *msg);
 int ois_receive_msg(SMSCenter *smsc, Msg **msg);
 void ois_delete_queue(SMSCenter *smsc);
 
-
-/*
- * Interface to wireless modems using AT commands.
- */
-SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin,
-    	    	   char *validityperiod, int alt_dcs);
-int at_reopen(SMSCenter *smsc);
-int at_close(SMSCenter *smsc);
-int at_pending_smsmessage(SMSCenter *smsc);
-int at_submit_msg(SMSCenter *smsc, Msg *msg);
-int at_receive_msg(SMSCenter *smsc, Msg **msg);
 
 /*
  * Interface to Sema SMS centers using OIS 5.8 (Direct Access)

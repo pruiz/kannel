@@ -73,23 +73,13 @@ SMSCenter *smscenter_construct(void)
     smsc->cimd_username = NULL;
     smsc->cimd_password = NULL;
 
-    /* EMI */
+    /* EMI_X25 */
     smsc->emi_phonenum = NULL;
     smsc->emi_serialdevice = NULL;
     smsc->emi_username = NULL;
     smsc->emi_password = NULL;
 
-    /* EMI IP */
-    smsc->emi_hostname = NULL;
-    smsc->emi_port = -1;
-    smsc->emi_backup_fd = -1;
-    smsc->emi_backup_port = -1;
-    smsc->emi_backup_allow_ip = NULL;
-    smsc->emi_our_port = -1;
-    smsc->emi_secondary_fd = -1;
-
     /* SEMA SMS2000 */
-
     smsc->sema_smscnua = NULL;
     smsc->sema_homenua = NULL;
     smsc->sema_serialdevice = NULL;
@@ -106,17 +96,6 @@ SMSCenter *smscenter_construct(void)
     smsc->ois_buflen = 0;
     smsc->ois_bufsize = 0;
     smsc->ois_buffer = 0;
-
-    /* AT Wireless modems  (GSM 03.40 version 7.4.0) */
-
-    smsc->at_serialdevice = NULL;
-    smsc->at_fd = -1;
-    smsc->at_modemtype = NULL;
-    smsc->at_received = NULL;
-    smsc->at_inbuffer = NULL;
-    smsc->at_pin = NULL;
-    smsc->at_validityperiod = NULL;
-    smsc->at_alt_dcs = 0;
 
     /* SEMA SMSC G8.1 OIS 5.8 (TCP/IP Direct Access) */
     smsc->oisd_hostname = NULL;
@@ -152,15 +131,11 @@ void smscenter_destruct(SMSCenter *smsc)
     gw_free(smsc->cimd_username);
     gw_free(smsc->cimd_password);
 
-    /* EMI */
+    /* EMI_X25 */
     gw_free(smsc->emi_phonenum);
     gw_free(smsc->emi_serialdevice);
     gw_free(smsc->emi_username);
     gw_free(smsc->emi_password);
-
-    /* EMI IP */
-    gw_free(smsc->emi_hostname);
-    gw_free(smsc->emi_backup_allow_ip);
 
     /* SEMA */
     gw_free(smsc->sema_smscnua);
@@ -170,13 +145,6 @@ void smscenter_destruct(SMSCenter *smsc)
     /* OIS */
     ois_delete_queue(smsc);
     gw_free(smsc->ois_buffer);
-
-    /* AT */
-    gw_free(smsc->at_serialdevice);
-    gw_free(smsc->at_modemtype);
-    gw_free(smsc->at_pin);
-    list_destroy(smsc->at_received, NULL);
-    gw_free(smsc->at_inbuffer);
 
     /* SEMA SMSC G8.1 OIS 5.8 (Direct Access) */
     octstr_destroy(smsc->oisd_hostname);
@@ -208,8 +176,7 @@ int smscenter_submit_msg(SMSCenter *smsc, Msg *msg)
             goto error;
         break;
 
-    case SMSC_TYPE_EMI:
-    case SMSC_TYPE_EMI_IP:
+    case SMSC_TYPE_EMI_X25:
         if (emi_submit_msg(smsc, msg) == -1)
             goto error;
         break;
@@ -221,11 +188,6 @@ int smscenter_submit_msg(SMSCenter *smsc, Msg *msg)
 
     case SMSC_TYPE_OIS:
         if (ois_submit_msg(smsc, msg) == -1)
-            goto error;
-        break;
-
-    case SMSC_TYPE_AT:
-        if (at_submit_msg(smsc, msg) == -1)
             goto error;
         break;
 
@@ -264,8 +226,7 @@ int smscenter_receive_msg(SMSCenter *smsc, Msg **msg)
             goto error;
         break;
 
-    case SMSC_TYPE_EMI:
-    case SMSC_TYPE_EMI_IP:
+    case SMSC_TYPE_EMI_X25:
         ret = emi_receive_msg(smsc, msg);
         if (ret == -1)
             goto error;
@@ -280,12 +241,6 @@ int smscenter_receive_msg(SMSCenter *smsc, Msg **msg)
 
     case SMSC_TYPE_SEMA_X28:
         ret = sema_receive_msg(smsc, msg);
-        if (ret == -1)
-            goto error;
-        break;
-
-    case SMSC_TYPE_AT:
-        ret = at_receive_msg(smsc, msg);
         if (ret == -1)
             goto error;
         break;
@@ -328,8 +283,7 @@ int smscenter_pending_smsmessage(SMSCenter *smsc)
             goto error;
         break;
 
-    case SMSC_TYPE_EMI:
-    case SMSC_TYPE_EMI_IP:
+    case SMSC_TYPE_EMI_X25:
         ret = emi_pending_smsmessage(smsc);
         if (ret == -1)
             goto error;
@@ -343,12 +297,6 @@ int smscenter_pending_smsmessage(SMSCenter *smsc)
 
     case SMSC_TYPE_OIS:
         ret = ois_pending_smsmessage(smsc);
-        if (ret == -1)
-            goto error;
-        break;
-
-    case SMSC_TYPE_AT:
-        ret = at_pending_smsmessage(smsc);
         if (ret == -1)
             goto error;
         break;
@@ -477,7 +425,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
     Octstr *preferred_prefix, *allowed_prefix, *denied_prefix;
     Octstr *alt_chars, *allow_ip;
     Octstr *sema_smscnua, *sema_homenua, *sema_report;
-    Octstr *at_modemtype, *at_pin, *at_validityperiod;
     Octstr *sender_prefix;
 
     long iwaitreport;
@@ -495,16 +442,12 @@ SMSCenter *smsc_open(CfgGroup *grp)
     }
     if (octstr_compare(type, octstr_imm("cimd")) == 0)
     	typeno = SMSC_TYPE_CIMD;
-    else if (octstr_compare(type, octstr_imm("emi")) == 0)
-    	typeno = SMSC_TYPE_EMI;
-    else if (octstr_compare(type, octstr_imm("emi_ip")) == 0)
-    	typeno = SMSC_TYPE_EMI_IP;
+    else if (octstr_compare(type, octstr_imm("emi_x25")) == 0)
+    	typeno = SMSC_TYPE_EMI_X25;
     else if (octstr_compare(type, octstr_imm("sema")) == 0)
     	typeno = SMSC_TYPE_SEMA_X28;
     else if (octstr_compare(type, octstr_imm("ois")) == 0)
     	typeno = SMSC_TYPE_OIS;
-    else if (octstr_compare(type, octstr_imm("at")) == 0)
-    	typeno = SMSC_TYPE_AT;
     else if (octstr_compare(type, octstr_imm("oisd")) == 0)
         typeno = SMSC_TYPE_OISD;
     else {
@@ -550,10 +493,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
     if (cfg_get_integer(&ois_debug, grp, octstr_imm("ois-debug-level")) == -1)
     	ois_debug = 0;
 
-    at_modemtype = cfg_get(grp, octstr_imm("modemtype"));
-    at_pin = cfg_get(grp, octstr_imm("pin"));
-    at_validityperiod = cfg_get(grp, octstr_imm("validityperiod"));
-
     sender_prefix = cfg_get(grp, octstr_imm("sender-prefix"));
     if (sender_prefix == NULL)
         sender_prefix = octstr_create("never");
@@ -571,28 +510,15 @@ SMSCenter *smsc_open(CfgGroup *grp)
 			     octstr_get_cstr(password));
         break;
 
-    case SMSC_TYPE_EMI:
+    case SMSC_TYPE_EMI_X25:
         if (phone == NULL || device == NULL || username == NULL ||
             password == NULL)
-            error(0, "Required field missing for EMI center.");
+            error(0, "Required field missing for EMI_X25 center.");
         else
             smsc = emi_open(octstr_get_cstr(phone), 
 	    	    	    octstr_get_cstr(device), 
 			    octstr_get_cstr(username), 
 			    octstr_get_cstr(password));
-        break;
-
-    case SMSC_TYPE_EMI_IP:
-        if (host == NULL || port == 0)
-            error(0, "Required field missing for EMI IP center.");
-        else
-	    smsc = emi_open_ip(octstr_get_cstr(host), 
-	    	    	       port, 
-			       username ? octstr_get_cstr(username) : 0, 
-			       password ? octstr_get_cstr(password) : 0,
-                               receive_port, 
-			       allow_ip ? octstr_get_cstr(allow_ip) : 0, 
-			       our_port);
         break;
 
     case SMSC_TYPE_SEMA_X28:
@@ -613,18 +539,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
 	    	    	    octstr_get_cstr(host), 
 			    port, 
 	    	    	    ois_debug);
-        break;
-
-    case SMSC_TYPE_AT:
-        if (device == NULL)
-            error(0, "Required field missing for AT virtual center.");
-        else
-            smsc = at_open(octstr_get_cstr(device), 
-	    	    	   at_modemtype ? octstr_get_cstr(at_modemtype) : 0, 
-			   at_pin ? octstr_get_cstr(at_pin) : 0,
-	    	    	   at_validityperiod ? 
-			       octstr_get_cstr(at_validityperiod) : 0,
-			       alt_dcs);
         break;
 
     case SMSC_TYPE_OISD:
@@ -673,9 +587,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
     octstr_destroy(sema_smscnua);
     octstr_destroy(sema_homenua);
     octstr_destroy(sema_report);
-    octstr_destroy(at_modemtype);
-    octstr_destroy(at_pin);
-    octstr_destroy(at_validityperiod);
     octstr_destroy(sender_prefix);
     return smsc;
 }
@@ -695,10 +606,7 @@ int smsc_reopen(SMSCenter *smsc)
     case SMSC_TYPE_CIMD:
         ret = cimd_reopen(smsc);
 	break;
-    case SMSC_TYPE_EMI_IP:
-        ret = emi_reopen_ip(smsc);
-	break;
-    case SMSC_TYPE_EMI:
+    case SMSC_TYPE_EMI_X25:
         ret = emi_reopen(smsc);
 	break;
     case SMSC_TYPE_SEMA_X28:
@@ -706,9 +614,6 @@ int smsc_reopen(SMSCenter *smsc)
 	break;
     case SMSC_TYPE_OIS:
         ret = ois_reopen(smsc);
-	break;
-    case SMSC_TYPE_AT:
-        ret = at_reopen(smsc);
 	break;
     case SMSC_TYPE_OISD:
         ret = oisd_reopen(smsc);
@@ -744,13 +649,8 @@ int smsc_close(SMSCenter *smsc)
             errors = 1;
         break;
 
-    case SMSC_TYPE_EMI:
+    case SMSC_TYPE_EMI_X25:
         if (emi_close(smsc) == -1)
-            errors = 1;
-        break;
-
-    case SMSC_TYPE_EMI_IP:
-        if (emi_close_ip(smsc) == -1)
             errors = 1;
         break;
 
@@ -761,11 +661,6 @@ int smsc_close(SMSCenter *smsc)
 
     case SMSC_TYPE_OIS:
         if (ois_close(smsc) == -1)
-            errors = 1;
-        break;
-
-    case SMSC_TYPE_AT:
-        if (at_close(smsc) == -1)
             errors = 1;
         break;
 

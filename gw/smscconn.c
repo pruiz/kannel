@@ -100,13 +100,13 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
 	ret = smsc_fake_create(conn, grp);
     else if (octstr_compare(smsc_type, octstr_imm("cimd2")) == 0)
 	ret = smsc_cimd2_create(conn, grp);
-    else if (octstr_compare(smsc_type, octstr_imm("emi2")) == 0)
+    else if (octstr_compare(smsc_type, octstr_imm("emi")) == 0)
 	ret = smsc_emi2_create(conn, grp);
     else if (octstr_compare(smsc_type, octstr_imm("http")) == 0)
 	ret = smsc_http_create(conn, grp);
     else if (octstr_compare(smsc_type, octstr_imm("smpp")) == 0)
 	ret = smsc_smpp_create(conn, grp);
-    else if (octstr_compare(smsc_type, octstr_imm("at2")) == 0)
+    else if (octstr_compare(smsc_type, octstr_imm("at")) == 0)
 	ret = smsc_at2_create(conn,grp);
     else if (octstr_compare(smsc_type, octstr_imm("cgw")) == 0)
 	ret = smsc_cgw_create(conn,grp);

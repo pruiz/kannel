@@ -3,7 +3,7 @@
 * Mikael Gueck for WapIT Ltd.
 */
 
-/* This file implements two smsc interfaces: EMI and EMI_IP */
+/* This file implements two smsc interfaces: EMI_X25 */
 
 #include <errno.h>
 #include <string.h>
@@ -237,59 +237,6 @@ static int emi_open_connection_ip(SMSCenter *smsc)
 }
 
 
-/******************************************************************************
-* Open the connection and log in
-*/
-SMSCenter *emi_open_ip(char *hostname, int port, char *username,
-                       char *password, int receive_port, char *allow_ip,
-		       int our_port)
-{
-
-    SMSCenter *smsc;
-
-    smsc = smscenter_construct();
-    if (smsc == NULL)
-        goto error;
-
-    smsc->type = SMSC_TYPE_EMI_IP;
-
-    smsc->emi_hostname = gw_strdup(hostname);
-    smsc->emi_port = port;
-    smsc->emi_username = username ? gw_strdup(username) : NULL;
-    smsc->emi_password = password ? gw_strdup(password) : NULL;
-    smsc->emi_backup_port = receive_port;
-    smsc->emi_backup_allow_ip = allow_ip ? gw_strdup(allow_ip) : NULL;
-    smsc->emi_our_port = our_port;
-
-    if (receive_port > 0 && allow_ip == NULL)
-	warning(0, "EMI IP: receive-port set but no IPs allowed to connect!");
-
-    smsc->emi_current_msg_number = 0;
-
-    if (emi_open_connection_ip(smsc) < 0)
-        goto error;
-
-    sprintf(smsc->name, "EMIIP:%s:%s", smsc->emi_hostname,
-            username ? smsc->emi_username : "n/a");
-
-    /* if receive-port is defined, set it ready */
-
-    if (receive_port > 0) {
-        if ((smsc->emi_backup_fd = make_server_socket(receive_port, NULL)) <= 0)
-		/* XXX add interface_name if required */
-            goto error;
-
-        debug("bb.sms.emi", 0, "EMI IP backup port at %d opened", receive_port);
-    }
-    return smsc;
-
-error:
-    error(0, "emi_open_ip failed");
-    smscenter_destruct(smsc);
-    return NULL;
-
-}
-
 int emi_reopen_ip(SMSCenter *smsc)
 {
     emi_close_ip(smsc);
@@ -386,15 +333,7 @@ int emi_submit_msg(SMSCenter *smsc, Msg *omsg)
         goto error;
     }
 
-    if (smsc->type == SMSC_TYPE_EMI_IP) {
-        if (!wait_for_ack(smsc, 51)) {
-            info(0, "emi_submit_smsmessage: wait for ack failed!");
-            goto error;
-        }
-    }
-
-    if (smsc->type == SMSC_TYPE_EMI_X25)
-        wait_for_ack(smsc, 51);
+    wait_for_ack(smsc, 51);
 
     /*	smsc->emi_current_msg_number += 1; */
     debug("bb.sms.emi", 0, "Submit Ok...");
@@ -456,11 +395,6 @@ error:
 static int guarantee_link(SMSCenter *smsc)
 {
     int need_to_connect = 0;
-
-    if (smsc->type == SMSC_TYPE_EMI_IP) {
-        /* We don't currently guarantee TCP connections. */
-        return 0;
-    }
 
     /* If something is obviously wrong. */
     if (strstr(smsc->buffer, "OK")) need_to_connect = 1;
@@ -624,17 +558,12 @@ static int wait_for_ack(SMSCenter *smsc, int op_type)
         /* check for data */
         n = get_data(smsc, tmpbuff, 1024 * 10);
 
-        if (smsc->type == SMSC_TYPE_EMI_X25) {
-            /* At least the X.31 interface wants to append the data.
-               Kalle, what about the TCP/IP interface? Am I correct
-               that you are assuming that the message arrives in a 
-               single read(2)? -mg */
-            if (n > 0)
-		memorybuffer_append_data(smsc, tmpbuff, n);
-        } else if (smsc->type == SMSC_TYPE_EMI_IP) {
-            if (n > 0)
-		memorybuffer_insert_data(smsc, tmpbuff, n);
-        }
+	/* At least the X.31 interface wants to append the data.
+	   Kalle, what about the TCP/IP interface? Am I correct
+	   that you are assuming that the message arrives in a 
+	   single read(2)? -mg */
+	if (n > 0)
+	    memorybuffer_append_data(smsc, tmpbuff, n);
 
         /* act on data */
         if (memorybuffer_has_rawmessage(smsc, op_type, 'R') > 0) {
@@ -755,26 +684,8 @@ static int put_data(SMSCenter *smsc, char *buff, int length, int is_backup)
     int ret;
     int fd = -1;
 
-    if (smsc->type == SMSC_TYPE_EMI_IP) {
-        if (is_backup) {
-            fd = smsc->emi_secondary_fd;
-            info(0, "Writing into secondary (backup) fd!");
-        } else {
-            if (smsc->emi_fd == -1) {
-                info(0, "Reopening connection to SMSC");
-		if (emi_open_connection_ip(smsc) < 0) {
-                    error(0, "put_data: Reopening failed!");
-                    return -1;
-		}
-            }
-            fd = smsc->emi_fd;
-        }
-    }
-
-    if (smsc->type == SMSC_TYPE_EMI_X25) {
-        fd = smsc->emi_fd;
-        tcdrain(smsc->emi_fd);
-    }
+    fd = smsc->emi_fd;
+    tcdrain(smsc->emi_fd);
 
     /* Write until all data has been successfully written to the fd. */
     while (len > 0) {
@@ -783,11 +694,6 @@ static int put_data(SMSCenter *smsc, char *buff, int length, int is_backup)
             if (errno == EINTR) continue;
             if (errno == EAGAIN) continue;
             error(errno, "Writing to fd failed");
-            if (fd == smsc->emi_fd && smsc->type == SMSC_TYPE_EMI_IP) {
-                close(fd);
-                smsc->emi_fd = -1;
-                info(0, "Closed main EMI socket.");
-            }
             return -1;
         }
         /* ret may be less than len, if the writing
@@ -1022,20 +928,10 @@ static int acknowledge_from_rawmessage(SMSCenter *smsc,
         leftslash = rightslash;
     }
 
-
     /* BODY */
-    if (smsc->type == SMSC_TYPE_EMI_X25) {
-        sprintf(isotext, "A//%s:%s", emivars[4], emivars[18]);
-        sprintf(isotext, "A//%s:", emivars[5]);
-        is_backup = 0;
-    }
-
-    if (smsc->type == SMSC_TYPE_EMI_IP) {
-        if (strcmp(emivars[3], "01") == 0)
-            sprintf(isotext, "A/%s:", emivars[4]);
-        else
-            sprintf(isotext, "A//%s:%s", emivars[4], emivars[18]);
-    }
+    sprintf(isotext, "A//%s:%s", emivars[4], emivars[18]);
+    sprintf(isotext, "A//%s:", emivars[5]);
+    is_backup = 0;
 
     /* HEADER */
 

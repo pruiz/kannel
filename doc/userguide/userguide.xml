@@ -19,38 +19,14 @@
 
 <authorgroup>
 	<author>
-		<firstname>Lars</firstname>
-		<surname>Wirzenius</surname>
-		<affiliation>
-			<jobtitle>Gateway architect</jobtitle>
-			<orgname>Wapit Ltd</orgname>
-			<address> <email>liw@wapit.com</email>
-			<otheraddr>http://www.wapit.com</otheraddr>
-			<otheraddr>http://www.kannel.org</otheraddr>
-			</address>
-		</affiliation>
-	</author>
-	<author>
-		<firstname>Kalle</firstname>
-		<surname>Marjola</surname>
-		<affiliation>
-			<jobtitle>Manager</jobtitle>
-			<orgname>Wapit Ltd</orgname>
-			<address> <email>rpr@wapit.com</email>
-			<otheraddr>http://www.wapit.com</otheraddr>
-			<otheraddr>http://www.kannel.org</otheraddr>
-			</address>
-		</affiliation>
-	</author>
-	<author>
 		<firstname>Andreas</firstname>
 		<surname>Fink</surname>
 		<affiliation>
 			<jobtitle>Chairman &amp; CTO</jobtitle>
 			<orgname>Global Networks Inc.</orgname>
 			<address> <email>andreas@fink.org</email>
-			<otheraddr>http://www.smsrelay.com</otheraddr>
-			<otheraddr>http://www.gni.ch</otheraddr>
+				<otheraddr>http://www.smsrelay.com</otheraddr>
+				<otheraddr>http://www.gni.ch</otheraddr>
 			</address>
 		</affiliation>
 	</author>
@@ -58,8 +34,9 @@
 		<firstname>Bruno</firstname>
 		<surname>Rodrigues</surname>
 		<affiliation>
-			<address> <email>bruno.rodrigues@litux.org</email>
-			<otheraddr>http://litux.org/bruno</otheraddr>
+			<address> 
+				<email>bruno.rodrigues@litux.org</email>
+				<otheraddr>http://litux.org/bruno</otheraddr>
 			</address>
 		</affiliation>
 	</author>
@@ -69,9 +46,9 @@
 		<affiliation>
 			<jobtitle>CTO &amp; CIO</jobtitle>
 			<orgname>Wapme Systems AG</orgname>
-			<address> <email>tolj@wapme-systems.de</email>
-			<otheraddr>http://www.wapme.de</otheraddr>
-			<otheraddr>http://www.kannel.org</otheraddr>
+			<address> 
+				<email>tolj@wapme-systems.de</email>
+				<otheraddr>http://www.wapme.de</otheraddr>
 			</address>
 		</affiliation>
 	</author>
@@ -81,11 +58,35 @@
 		<affiliation>
 			<jobtitle>Chief MMS Developer</jobtitle>
 			<orgname>Global Networks Inc.</orgname>
-			<address> <email>as@gni.ch</email>
-			<otheraddr>http://www.gni.ch</otheraddr>
+			<address> 
+				<email>as@gni.ch</email>
+				<otheraddr>http://www.gni.ch</otheraddr>
 			</address>
 		</affiliation>
 	</author>
+	<author>
+		<firstname>Lars</firstname>
+		<surname>Wirzenius</surname>
+		<affiliation>
+			<jobtitle>Gateway architect</jobtitle>
+			<orgname>former Wapit Ltd</orgname>
+			<!--<address> <email>liw@wapit.com</email>
+			<otheraddr>http://www.wapit.com</otheraddr>-->
+			</address>
+		</affiliation>
+	</author>
+	<author>
+		<firstname>Kalle</firstname>
+		<surname>Marjola</surname>
+		<affiliation>
+			<jobtitle>Manager</jobtitle>
+			<orgname>former Wapit Ltd</orgname>
+			<!--<address> <email>rpr@wapit.com</email>
+			<otheraddr>http://www.wapit.com</otheraddr>-->
+			</address>
+		</affiliation>
+	</author>
+
 </authorgroup>
 
 	<abstract>
@@ -329,7 +330,11 @@
 	<para>Kannel is being developed on Linux systems,
 	and should be fairly easy to export to other Unix-like
 	systems. However, we don't yet support other platforms, due to lack
-	of time. Kannel requires the following software environment:
+	of time, although it should be working without major problems on 
+	Windows (through Cygwin), Solaris and FreeBSD.
+	</para>
+	
+	<para>Kannel requires the following software environment:
 	
 	<itemizedlist>
 
@@ -381,6 +386,13 @@
 	binary version. The goal of this chapter is to get the gateway
 	compiled and all the files in the correct places; the next
 	chapter will explain how the gateway is configured.</para>
+
+<sect1>
+<title>Upgrading from previous versions</title>
+	<para>If you are upgrading from a previous version, please look at
+	<xref linkend="upgrading_notes"> for any pertinent information.
+	</para>
+</sect1>
 
 <sect1>
 <title>Getting the source code</title>
@@ -2364,24 +2376,22 @@ my-number = "12345"
 </sect3>
 
 <sect3>
-<title>CMG UCP/EMI 4.0</title>
+<title>CMG UCP/EMI 4.0 and 3.5</title>
 
+  <warning><para>See <xref linkend="upgrading_notes"> for changes.</para></warning>
   <para>Kannel supports two types of connections with CMG SMS centers:
-  direct TCP/IP connections (<literal>emi_ip</literal> or
-  <literal>emi2</literal>) and ISDN/modem (X.25 over D channel ISDN is
-  called X.31) connection
-  (<literal>emi</literal>). <literal>emi2</literal> is a new
-  implementation of the EMI protocol that supports more features and
-  should work more reliably than the old one. It is the recommended
-  one to use with TCP/IP connections. Sample 
-  configurations for these are:</para>
+  direct TCP/IP connections ( <literal>emi</literal>) and ISDN/modem 
+  (X.25) connection (<literal>emi_x25</literal>).</para>
+  <note><para><literal>emi_x25</literal> is an old implementation and supports less 
+  features than it's IP counterpart. If you still need this module, please tell
+  us to <literal>devel@kannel.org</literal> so we can fix it.</para></note> 
+  <para>Sample configurations for these are:</para>
   
 <programlisting>
 group = smsc
-smsc = emi2
-#smsc = emi_ip to use the old implementation
+smsc = emi
 host = 103.102.101.100
-port = 600
+port = 6000
 smsc-username = foo
 smsc-password = bar
 keepalive = 55
@@ -2390,8 +2400,7 @@ receive-port = 700 (the port in which the SMSC will contact)
 idle-timeout = 30
 
 group = smsc
-smsc = emi
-host = 100.102.100.102
+smsc = emi_x25
 phone = ...
 device = /dev/tty0
 smsc-username = foo
@@ -3059,121 +3068,14 @@ smsc-password = foo
 <sect3>
 <title>GSM modem</title>
 
-   <para>Kannel can use a GSM modem as an SMS center.</para>
+  <warning><para>See <xref linkend="upgrading_notes"> for changes.</para></warning>
+
+  <para>This driver allows a GSM Modem or Phone to be connected to Kannel 
+  and work as a virtual SMSC</para>
 
 <programlisting>
 group = smsc
 smsc = at
-modemtype = wavecom
-device = /dev/ttyS0
-pin = 2345
-</programlisting>
-
- <informaltable frame="none">
-  <tgroup cols="3"><thead><row>
-     <entry>Variable</entry>
-     <entry>Value</entry>
-     <entry>Description</entry>
-   </row></thead><tbody>
-
-   <row><entry><literal>modemtype</literal></entry>
-     <entry><literal>string</literal></entry>
-     <entry valign="bottom">
-        Modems from different manufacturers have slightly different
-        behaviour. We need to know what type of modem is used.
-     </entry></row>
-
-   <row><entry><literal>device (m)</literal></entry>
-     <entry><literal>device-name</literal></entry>
-     <entry valign="bottom">
-          The device the modem is connected to, like <literal>/dev/ttyS0</literal>.
-     </entry></row>
-
-   <row><entry><literal>pin</literal></entry>
-     <entry><literal>string</literal></entry>
-     <entry valign="bottom">
-         This is the PIN number of the SIM card in the GSM modem. You can specify
-         this option if your SIM has never been used before and needs to have
-         the PIN number entered. The PIN is usually a four digit number.
-     </entry></row>
-
-   <row><entry><literal>validityperiod</literal></entry>
-     <entry><literal>integer</literal></entry>
-     <entry valign="bottom">
-     	 How long the message will be valid, i.e., how long the SMS
-	 center (the real one, not the phone acting as one for Kannel)
-	 will try to send the message to the recipient. Encoded as per
-	 the GSM 03.40 standard, section 9.2.3.12. Default is
-	 167, meaning 24 hours.
-     </entry></row>
-
-   <row><entry><literal>alt-dcs</literal></entry>
-     <entry><literal>boolean</literal></entry>
-     <entry valign="bottom">
-     	 When encoding DCS field internally, there are two formats
-	 with similar functionality. The 0x0X (alt-dcs = false or non-present)
-	 or the 0xFX (alt-dcs = true).
-	 If you have a buggy modem (like Siemens M20) that don't like to 
-	 send binary messages, try setting alt-dcs to true.
-     </entry></row>
-
-   </tbody></tgroup></informaltable>
-
- <informaltable frame="none">
-  <tgroup cols="3"><thead><row>
-     <entry>Modem Type</entry>
-     <entry>Modems</entry>
-   </row></thead><tbody>
-
-   <row><entry><literal>wavecom</literal></entry>
-     <entry valign="bottom">
-     	Wavecom
-     </entry></row>
-
-   <row><entry><literal>premicell</literal></entry>
-     <entry valign="bottom">
-     	Nokia Premicell
-     </entry></row>
-
-   <row><entry><literal>siemens</literal></entry>
-     <entry valign="bottom">
-     	Siemens M20 (this modem have some bugs)
-     </entry></row>
-
-   <row><entry><literal>siemens-tc35</literal></entry>
-     <entry valign="bottom">
-     	Siemens TC35
-     </entry></row>
-
-   <row><entry><literal>falcom</literal></entry>
-     <entry valign="bottom">
-     	Falcom
-     </entry></row>
-
-   <row><entry><literal>nokiaphone</literal></entry>
-     <entry valign="bottom">
-     	Nokia 6210, 7110, 8210 (tested). Probably other 
-	   Nokia phones too.
-     </entry></row>
-
-   <row><entry><literal>ericsson</literal></entry>
-     <entry valign="bottom">
-     	Ericsson
-     </entry></row>
-
-   </tbody></tgroup></informaltable>
-</sect3>
-
-<sect3>
-<title>GSM modem 2</title>
-
-   <para>This new driver is replacing the old GSM Modem driver from Kannel. 
-   It allows a GSM Modem or Phone to be connected to Kannel and work as a
-   virtual SMSC</para>
-
-<programlisting>
-group = smsc
-smsc = at2
 modemtype = auto
 device = /dev/ttyS0
 speed = 9600
@@ -3624,13 +3526,11 @@ marked as "not tested" because the table is still new.</para>
      <entry>cimd</entry>
      <entry>cimd2</entry>
      <entry>emi</entry>
-     <entry>emi_ip</entry>
-     <entry>emi2</entry>
+     <entry>emi_x25</entry>
      <entry>smpp</entry>
      <entry>sema</entry>
      <entry>ois</entry>
      <entry>at</entry>
-     <entry>at2</entry>
      <entry>http</entry>
      <entry>fake</entry>
    </row>
@@ -3643,11 +3543,9 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>n</entry>
     <entry>y?</entry>
-    <entry>n</entry>
-    <entry>n</entry>
     <entry>y</entry>
-    <entry>y?</entry>
     <entry>n</entry>
+    <entry>y?</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
@@ -3661,8 +3559,6 @@ marked as "not tested" because the table is still new.</para>
    </row>
    <row>
     <entry></entry>
-    <entry>?</entry>
-    <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>y</entry>
@@ -3679,8 +3575,6 @@ marked as "not tested" because the table is still new.</para>
    </row>
    <row>
     <entry></entry>
-    <entry>n</entry>
-    <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>y</entry>
@@ -3700,8 +3594,6 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>?</entry>
     <entry>?</entry>
-    <entry>?</entry>
-    <entry>?</entry>
     <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -3717,8 +3609,6 @@ marked as "not tested" because the table is still new.</para>
    </row>
    <row>
     <entry></entry>
-    <entry>?</entry>
-    <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>y</entry>
@@ -3738,11 +3628,9 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>n</entry>
     <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>y</entry>
     <entry>y</entry>
     <entry>n</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>y</entry>
@@ -3754,14 +3642,12 @@ marked as "not tested" because the table is still new.</para>
     <entry spanname="feature">Can set RPI</entry>
    </row>
    <row>
-	 <entry></entry>
-    <entry>n</entry>
-    <entry>n</entry>
+    <entry></entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>y</entry>
-    <entry>y</entry>
     <entry>n</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
@@ -3774,8 +3660,6 @@ marked as "not tested" because the table is still new.</para>
    </row>
    <row>
     <entry></entry>
-    <entry>?</entry>
-    <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>y</entry>
@@ -3795,8 +3679,6 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>?</entry>
     <entry>?</entry>
-    <entry>?</entry>
-    <entry>?</entry>
     <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -3812,8 +3694,6 @@ marked as "not tested" because the table is still new.</para>
    </row>
    <row>
     <entry></entry>
-    <entry>?</entry>
-    <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>y</entry>
@@ -3841,13 +3721,11 @@ marked as "not tested" because the table is still new.</para>
      <entry>Feature</entry>
      <entry>cimd</entry>
      <entry>cimd2</entry>
-     <entry>emi</entry>
-     <entry>emi_ip</entry>
      <entry>emi2</entry>
+     <entry>emi_x25</entry>
      <entry>smpp</entry>
      <entry>sema</entry>
      <entry>ois</entry>
-     <entry>at2</entry>
      <entry>at</entry>
      <entry>http</entry>
      <entry>fake</entry>
@@ -3862,14 +3740,12 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>n</entry>
     <entry>y?</entry>
-    <entry>n</entry>
-    <entry>n</entry>
     <entry>y</entry>
+    <entry>n</entry>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>y</entry>
-    <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
    </row>
@@ -3883,14 +3759,12 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>n</entry>
     <entry>y?</entry>
-    <entry>y?</entry>
-    <entry>y?</entry>
     <entry>y</entry>
+    <entry>y?</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>y?</entry>
     <entry>y</entry>
-    <entry>?</entry>
     <entry>n</entry>
     <entry>y?<footnote id="nomarkod"><para>Does not mark it as octet data</para></footnote></entry>
    </row>
@@ -3902,14 +3776,12 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>N</entry>
     <entry>y?</entry>
-    <entry>y?</entry>
-    <entry>y?</entry>
     <entry>y</entry>
+    <entry>y?</entry>
     <entry>y?</entry>
     <entry>n</entry>
     <entry>?</entry>
     <entry>y</entry>
-    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?<footnoteref linkend="nomarkod"></entry>
    </row>
@@ -3921,14 +3793,12 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>n</entry>
     <entry>y?</entry>
-    <entry>y?</entry>
-    <entry>y?</entry>
     <entry>y</entry>
+    <entry>y?</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>?</entry>
     <entry>y</entry>
-    <entry>?</entry>
     <entry>n</entry>
     <entry>y?</entry>
    </row>
@@ -3940,14 +3810,12 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>n</entry>
     <entry>y?</entry>
-    <entry>n</entry>
-    <entry>n</entry>
     <entry>y</entry>
+    <entry>n</entry>
     <entry>n</entry>
     <entry>y?<footnote><para>However, it looks like the <literal>sema</literal> driver can't receive <emphasis>text</emphasis> data.</para></footnote></entry>
     <entry>y?</entry>
     <entry>y</entry>
-    <entry>?</entry>
     <entry>n</entry>
     <entry>n</entry>
    </row>
@@ -3959,14 +3827,12 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>n</entry>
     <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
     <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
+    <entry>n</entry>
     <entry>y</entry>
-    <entry>?</entry>
     <entry>n</entry>
     <entry>n</entry>
    </row>
@@ -3978,14 +3844,12 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>n</entry>
     <entry>y?</entry>
-    <entry>n</entry>
-    <entry>n</entry>
     <entry>y</entry>
+    <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>N</entry>
     <entry>y</entry>
-    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -3997,14 +3861,12 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>n</entry>
     <entry>y?</entry>
-    <entry>n</entry>
-    <entry>n</entry>
     <entry>y</entry>
+    <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>N</entry>
     <entry>y</entry>
-    <entry>?</entry>
     <entry>n</entry>
     <entry>n</entry>
    </row>
@@ -4016,14 +3878,12 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>y?</entry>
     <entry>y?</entry>
-    <entry>?</entry>
-    <entry>?</entry>
     <entry>y</entry>
+    <entry>?</entry>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y</entry>
-    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -4035,14 +3895,12 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>y?</entry>
     <entry>y?</entry>
-    <entry>?</entry>
-    <entry>?</entry>
     <entry>y</entry>
+    <entry>?</entry>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y</entry>
-    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -4054,14 +3912,12 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>n</entry>
     <entry>y?</entry>
-    <entry>?</entry>
-    <entry>?</entry>
     <entry>y</entry>
+    <entry>?</entry>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>n</entry>
     <entry>N<footnote><para>Miscalculates message length</para></footnote></entry>
-    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -4073,14 +3929,12 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>y?</entry>
     <entry>y?</entry>
-    <entry>?</entry>
-    <entry>?</entry>
     <entry>y</entry>
+    <entry>?</entry>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y</entry>
-    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -4092,14 +3946,12 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>y?</entry>
     <entry>y?</entry>
-    <entry>?</entry>
-    <entry>?</entry>
     <entry>y</entry>
+    <entry>?</entry>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
-    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -4111,14 +3963,12 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>n</entry>
     <entry>y?</entry>
-    <entry>?</entry>
-    <entry>?</entry>
     <entry>y</entry>
+    <entry>?</entry>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>n</entry>
     <entry>y?</entry>
-    <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -4130,11 +3980,9 @@ marked as "not tested" because the table is still new.</para>
     <entry></entry>
     <entry>n</entry>
     <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
     <entry>y</entry>
     <entry>n</entry>
-    <entry>?</entry>
+    <entry>n</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -4497,7 +4345,7 @@ shortcuts = "1111;2222;3333"
      <entry valign="bottom">
         If set, specifies from which smsc-ids all inbound messages should
 		  be routed to this smsbox instance. List contains smsc-ids seperated
-		  by semilon (";"). This rule may be used to pull any smsc specific
+		  by semicolon (";"). This rule may be used to pull any smsc specific
 		  message stream to an smsbox instance.
      </entry></row>
 
@@ -4506,7 +4354,7 @@ shortcuts = "1111;2222;3333"
      <entry valign="bottom">
         If set, specifies which receiver numbers for inbound messages should
 		  be routed to this smsbox instance. List contains numbers seperated
-		  by semilon (";"). This rule may be used to pull receiver number
+		  by semicolon (";"). This rule may be used to pull receiver number
 		  specific message streams to an smsbox instance.
      </entry></row>
 
@@ -7145,7 +6993,7 @@ ssl-server-key-file = "/home/aarno/kannelcvs/gateway/gw/key1.pem"
 	<para>
 	An example transaction would work as following.
 	<itemizedlist>
-	<listitem><para>1. you send a message using dlrmaks=7 and dlrurl=www.xyz.com/cgi/dlr.php?type=%d</para></listitem>
+	<listitem><para>1. you send a message using dlrmaks=7 and dlrurl=http://www.xyz.com/cgi/dlr.php?type=%d</para></listitem>
 	<listitem><para>2. Kannel forwards the message to the SMSC and keeps track of the message</para></listitem>
 	<listitem><para>3. The SMSC can not reach the phone and thus returns a buffered message</para></listitem>
 	<listitem><para>4. Kannel calls http://www.xyz.com/cgi/dlr.php?type=4 to indicate the message being buffered</para></listitem>
@@ -7170,6 +7018,25 @@ ssl-server-key-file = "/home/aarno/kannelcvs/gateway/gw/key1.pem"
 	bugs. Please include configuration file and version number.</para>
 	
 </chapter>
+
+<appendix id="upgrading_notes">
+<title>Upgrading notes</title>
+
+	<para>This appendix includes pertinent information about required
+	changes on upgrades.
+	</para>
+
+<sect1>
+	<title>From 1.2.x or 1.3.1 to 1.3.2 and later</title>
+	<para>
+		<itemizedlist>
+		<listitem><para>1. <literal>at</literal> module was dropped and <literal>at2</literal> module is now called <literal>at</literal></para></listitem>
+		<listitem><para>2. <literal>emi</literal> module was renamed to <literal>emi_x25</literal>, <literal>emi_ip</literal> sub-module was dropped and <literal>emi2</literal> is now called <literal>emi</literal>.</para></listitem>
+		</itemizedlist>
+	</para>
+</sect1>
+
+</appendix>
 
 <appendix>
 <title>Using the fake WAP sender</title>
