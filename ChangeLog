@@ -1,4 +1,10 @@
 2003-03-21  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_emi2.c: fixed a re-connection bug cause by last commit.
+      Thanks to Angel for this one.
+      [Msg-ID: <NCEOLLKPFAEAOBBMHNHEEEAKFKAA.afradejas@mediafusion.es>]
+    * utils/makedist: added creation of bzip2 tarball and md5 sums.
+
+2003-03-21  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/log.c: fixed a possible bug, when a logging file is opened twice.
       Now we search for the filename in the open table and simply pass the 
       file descriptor of that already opened log file to the new logger.
