@@ -9,6 +9,7 @@
 #include "gwmem.h"
 #include "log.h"
 #include "thread.h"
+#include "gwassert.h"
 
 
 
@@ -80,6 +81,8 @@ void mutex_lock(Mutex *mutex)
 {
     if (pthread_mutex_lock(&mutex->mutex) != 0)
 	panic(errno, "mutex_lock: Mutex failure!");
+    if (mutex->owner == pthread_self())
+        panic(0, "mutex_lock: Managed to lock the mutex twice!");
     mutex->owner = pthread_self();
 }
 

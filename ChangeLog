@@ -1,3 +1,8 @@
+Sat Apr 15 18:31:55 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/thread.c: mutex_lock now checks that it doesn't lock the
+	mutex twice and panics if it does.
+
 Sat Apr 15 18:01:39 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/smsc_emi.c: If B115200 is not defined, use B38400 instead.
