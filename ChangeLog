@@ -1,3 +1,8 @@
+2000-10-05  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsbox_req.c: made sure that when max_msgs == 0 then no
+	messages are sent.
+
 2000-10-05  Richard Braakman  <dark@wapit.com>
 
 	* gw/wsp_headers.c: Bugfix in pack_integer_string, use ULONG_MAX

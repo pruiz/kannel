@@ -466,8 +466,8 @@ static int send_message(URLTranslation *trans, Msg *msg)
 				       strlen(empty));
 		}
 	}
-    
-    return send_sms(trans, msg, max_msgs);
+	if (max_msgs > 0)
+	    return send_sms(trans, msg, max_msgs);
 }
 
 /*
