@@ -53,6 +53,7 @@ else
 	*2.0.0[)] [;;] 
 	*2.1.1[)] [;;] 
 	*2.2.0[)] [;;] 
+	*2.2.1[)] [;;] 
 	*[)] echo "Libxml is too old. You need at least 1.8.6." [;] exit 1 [;;] 
 	esac
 	LIBS="$LIBS `$XML_CONFIG --libs`"

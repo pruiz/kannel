@@ -1,3 +1,7 @@
+2000-07-23  Tuomas Luttinen  <tuo@wapit.com>
+
+	* configure.[in]: libxml 2.2.1 added.
+
 2000-07-21  Paul Keogh   <paul.keogh@anam.com>
 	* gw/bb_udp.c: Added check for NULL ptr return from udpc_create() in
 	function add_service() to prevent subsequent NULL dereference and crash.
@@ -35,7 +39,7 @@
 
 2000-07-19  Tuomas Luttinen  <tuo@wapit.com>
 
-	* configure.in: libxml 1.8.9 and 2.2.0 added. Fixes bug #97.
+	* configure[.in]: libxml 1.8.9 and 2.2.0 added. Fixes bug #97.
 
 2000-07-18  Richard Braakman  <dark@wapit.com>
 
