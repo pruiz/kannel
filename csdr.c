@@ -33,6 +33,8 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 
 	struct sockaddr_in servaddr;
 
+	debug(0, "CSDR: csdr_open: starting");
+
 	router = malloc(sizeof(CSDRouter));
 	if(router==NULL) goto error;
 
@@ -86,9 +88,12 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	fl = fcntl(router->fd, F_GETFL);
 	fcntl(router->fd, F_SETFL, fl | O_NONBLOCK);
 
+	debug(0, "CSDR: csdr_open: done");
+
 	return router;
 
 error:
+	error(0, "CSDR: csdr_open: phukked up");
 	free(router);
 	return NULL;
 }
@@ -116,6 +121,8 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 
 	struct sockaddr_in cliaddr, servaddr;
 	socklen_t len, servlen;
+
+/*	debug(0, "CSDR: csdr_get_message: starting"); */
 
 	/* Initialize datasets. */
 	memset(data, 0, sizeof(data));
@@ -146,11 +153,13 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	if(length==-1) {
 		if(errno==EAGAIN) {
 			/* No datagram available, don't block. */
-			goto error;
+			goto no_msg;
 		}
 		error(errno, "Error receiving datagram.");
 		goto error;
 	}
+
+	debug(0, "Hiiohei, got UDP datagram.");
 
 	getsockname(router->fd, (struct sockaddr*)&servaddr, &servlen);
 
@@ -167,14 +176,20 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	item = rqi_new(R_MSG_CLASS_WAP, R_MSG_TYPE_MO);
 	if(item==NULL) goto error;
 
+	item->msg = msg_create(wdp_datagram);
+	if(item->msg==NULL) goto error;
+
 	item->msg->wdp_datagram.source_address = octstr_create(client_ip);
 	item->msg->wdp_datagram.source_port    = atoi(client_port);
 	item->msg->wdp_datagram.destination_address = octstr_create(server_ip);
 	item->msg->wdp_datagram.destination_port    = atoi(server_port);
 	item->msg->wdp_datagram.user_data = octstr_create_from_data(data, length);
 
+	debug(0, "CSDR: csdr_get_message: done");
+
 	return item;
 
+no_msg:
 error:
 	return NULL;
 }
