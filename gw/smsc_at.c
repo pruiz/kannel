@@ -639,6 +639,7 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
         pos++;
 
         /* if there is a UDH */
+    	udhlen = 0;
         if(udhi) {
                 udhlen = octstr_get_char(pdu, pos);
                 pos++;
@@ -900,6 +901,7 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded,int offs
         if (offset > 0) {
                 unsigned char nextdrop, lastdrop;
 
+    	    	nextdrop = lastdrop = 0;
                 for (i = 0; i < encpos; i++) {
                         nextdrop = enc7bit[i] >> (8 - offset);          /* This drops off by shifting */
                         if (i == 0)
