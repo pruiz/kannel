@@ -1,5 +1,9 @@
 2001-05-04  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/octstr.c: Fix an edge case in octstr_get_bits().
+
+2001-05-04  Richard Braakman  <dark@wapit.com>
+
 	* gw/smsc_cimd2.c: Made packet_encode_message() cope if the
         sender field is not set.
 

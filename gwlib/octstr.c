@@ -1507,7 +1507,7 @@ long octstr_get_bits(Octstr *ostr, long bitpos, int numbits)
         bitpos = 0;
         pos++;
         if (pos >= ostr->len)
-            return result << numbits;
+            return (result << numbits) & mask;
     }
 
     gw_assert(bitpos == 0);
