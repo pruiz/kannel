@@ -1,4 +1,7 @@
 2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/dlr.c: fixed a typo in dlr_init() from the previous commit.
+
+2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/dlr.[ch]: restructuring the DLR MySQL support to fit the new general
       MySQL connection configuration sections.
     * gwlib/cfg.def: changed config directives to support general MySQL 
