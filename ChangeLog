@@ -1,3 +1,7 @@
+2002-12-10  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: fixed a bug in url_result_thread() which caused no reply
+      if HTTP request queueing was used. Thanks to Paul for this.
+
 2002-12-07  Stipe Tolj  <tolj@wapme-systems.de>
     * config.h.in, configure[.in]: added iconv support and detection
     * gwlib/charset.[ch]: added charset_convert() routine as wrapper
