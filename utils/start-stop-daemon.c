@@ -558,7 +558,6 @@ pid_is_cmd(int pid, const char *name)
 {
    char buf[32];
    FILE *f;
-   int c;
    psinfo_t pid_info;
 
    sprintf(buf, "/proc/%d/psinfo", pid);
