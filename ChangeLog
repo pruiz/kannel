@@ -1,4 +1,4 @@
-2003-07-24  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+2003-08-08  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * utils/vimrc: example vim configuration to have 4 space tabs and no tab
       characters
     * gw/wap-map.c: removed \r chars (no DOS text files please)
