@@ -1,3 +1,7 @@
+2001-09-12 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* bb_store.c: don't try to rename store.lock to store.lock.bak if
+	store.lock does not exists
+
 2001-09-10 Andreas Fink <andreas@fink.org>
 	* gw/smsc_at2.c gw/smsc_emi2.c
 	incoming messages where counted twice.

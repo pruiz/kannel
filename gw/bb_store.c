@@ -72,10 +72,15 @@ static int open_file(Octstr *name)
 
 static int rename_store(void)
 {
-    if (rename(octstr_get_cstr(filename), octstr_get_cstr(bakfile)) == -1) {
-	error(errno, "Failed to rename old store '%s' as '%s'",
-	      octstr_get_cstr(filename), octstr_get_cstr(bakfile));
-	return -1;
+    static FILE *f = NULL;
+    
+    if ((f = fopen(octstr_get_cstr(filename), "r")) != NULL) {
+	fclose(f);
+	if (rename(octstr_get_cstr(filename), octstr_get_cstr(bakfile)) == -1) {
+	   error(errno, "Failed to rename old store '%s' as '%s'",
+	   octstr_get_cstr(filename), octstr_get_cstr(bakfile));
+	    return -1;
+	}
     }
     if (rename(octstr_get_cstr(newfile), octstr_get_cstr(filename)) == -1) {
 	error(errno, "Failed to rename new store '%s' as '%s'",
@@ -276,6 +281,7 @@ int store_load(void)
 	return retval;
     }
 
+    info(0, "Loading store file %s", octstr_get_cstr(store_file));
     info(0, "Store-file size %ld, starting to unpack%s", octstr_len(store_file),
 	 octstr_len(store_file) > 10000 ? " (may take awhile)" : "");
 
