@@ -1,4 +1,13 @@
 2003-03-28  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.c: fixed a bug while HTTP redirecting (BUG#12). Also added
+      HTTP response code 307 for redirection. Some source code formating.
+      Thanks to Angel for reporting and providing a fix ;)
+    * test/test_http.c: allow client to follow HTTP redirects.
+    * test/test_http_server.c: added a special URI /redirect/ that can be
+      used to test the redirection handling and reorganized the thread to
+      be more clean.
+
+2003-03-28  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap_push_pap_compile.c: fixing a *possible* inconsistence with PAP
       and PPG specs. The constants "WAPPUSH" and "TYPE" should?! be in upper
       case as defined in specs. But the specs also use examples with lower 
