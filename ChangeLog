@@ -1,10 +1,16 @@
-2003-06-19  Alexander Malysh  <a.malysh@centrium.de>
-   * test/test_dbpool.c, gwlib/http.c: fixed compiler warning
+2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_emi2.c: added initialization of privdata->check_time.
+    * gwlib/gwthread-pthread.c: added cleaner initalization of pollfds.
+    Thanks to "Nuno Ferreira" <nuno.ferreira@graycell.biz> for these.
+    [Msg-ID: <005601c314a1$005b00c0$0b01010a@GRAYCELL.BIZ>]
 
 2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_cimd2.c: fixed a bug inside CIMD2 module.
       Thanks to Per Skaglund <per.skaglund@dialtone.fi> for the patch.
       [Msg-ID: <1383.62.61.70.221.1054632009.squirrel@mail.dialtone.fi>]
+
+2003-06-19  Alexander Malysh  <a.malysh@centrium.de>
+   * test/test_dbpool.c, gwlib/http.c: fixed compiler warning
 
 2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/octstr.c[.debug]: fixed a possible segmenation fault in 
