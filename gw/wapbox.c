@@ -37,11 +37,14 @@ enum {
 
 enum { MAX_SMS_OCTETS = 140 };
 
+enum { DEFAULT_TIMER_FREQ = 1};
+
 static Octstr *bearerbox_host;
 static long bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static int bearerbox_ssl = 0;
 static Counter *sequence_counter = NULL;
 int wsp_smart_errors = 0;
+static long timer_freq = DEFAULT_TIMER_FREQ;
 
 #ifdef HAVE_WTLS_OPENSSL
 RSA* private_key = NULL;
@@ -104,6 +107,8 @@ static Cfg *init_wapbox(Cfg *cfg)
         panic(0, "No 'wapbox' group in configuration.");
     
     bearerbox_host = cfg_get(grp, octstr_imm("bearerbox-host"));
+    if (cfg_get_integer(&timer_freq, grp, octstr_imm("timer-freq")) == -1)
+        timer_freq = DEFAULT_TIMER_FREQ;
     
     logfile = cfg_get(grp, octstr_imm("log-file"));
     if (cfg_get_integer(&logfilelevel, grp, octstr_imm("log-level")) == -1)
@@ -443,10 +448,11 @@ int main(int argc, char **argv)
                          &wtp_resp_dispatch_event);
     
     if (cfg)
-        wtp_initiator_init(&dispatch_datagram, &wsp_session_dispatch_event);
+        wtp_initiator_init(&dispatch_datagram, &wsp_session_dispatch_event,
+                           timer_freq);
 
     wtp_resp_init(&dispatch_datagram, &wsp_session_dispatch_event,
-                  &wsp_push_client_dispatch_event);
+                  &wsp_push_client_dispatch_event, timer_freq);
     wap_appl_init(cfg);
 
 #if (HAVE_WTLS_OPENSSL)
