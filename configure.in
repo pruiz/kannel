@@ -1,4 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
+dnl This file is part of the Kannel WAP and SMS gateway project.
 
 dnl initialization
 
@@ -8,24 +9,39 @@ AC_INIT(gw/alt_charsets.h)
 AC_CONFIG_HEADER(config.h)
 AC_SUBST(SHELL)
 AC_CONFIG_AUX_DIR(.)
-dnl Gateway version number.
 
-AC_DEFINE_UNQUOTED(VERSION, "`head -1 VERSION`")
+dnl Check gateway version number.
+VERSION=`head -1 VERSION`
+AC_DEFINE_UNQUOTED(VERSION, "$VERSION")
+echo "configuring for Kannel gateway version... $VERSION"
+if test "x$VERSION" = "xcvs"; then
+  AC_MSG_CHECKING([cvs checkout date])
+  AC_MSG_RESULT([`ls -cdla --full-time . | awk '{print $6,$7,$8,$9,$10}'`])
+fi
+
+dnl Solaris pkgadd support definitions
+PKGADD_PKG="KANNELgateway"
+PKGADD_NAME="Kannel - WAP and SMS gateway"
+PKGADD_VENDOR="www.kannel.3glab.org"
+AC_SUBST(PKGADD_PKG)
+AC_SUBST(PKGADD_NAME)
+AC_SUBST(PKGADD_VENDOR)
 
 dnl Target installation directory for documentation
-
 AC_SUBST(docdir)
 docdir='${prefix}/share/doc/kannel'
 
-dnl Checks System Type.
+dnl Checks system type.
 AC_CANONICAL_HOST
 
+dnl Apply system specific rules.
 case "$host" in
-*-sun-solaris*) CFLAGS="$CFLAGS -DSunOS=1";;
+  *-sun-solaris*) 
+    CFLAGS="$CFLAGS -DSunOS=1"
+    ;;
 esac
 
 dnl Checks for programs.
-
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_RANLIB
@@ -44,54 +60,30 @@ if test -z "$pthread"; then
 	AC_CHECK_LIB(c_r, pthread_exit, [LIBS="$LIBS -lc_r"])
 fi
 
+dnl Check if we have libxml2 installed and which version it is.
+dnl Kannel requires currently at least version 2.2.5 of libxml2.
+
 AC_PATH_PROGS(XML_CONFIG, xml2-config xml-config, no)
 if test "$XML_CONFIG" = "no"; then
-	echo "You MUST have the gnome-xml library installed"; exit 1
+  AC_MSG_ERROR([You MUST have the libxml2 (aka gnome-xml) library installed])
 else
-        AC_MSG_CHECKING([libxml version])
-	xml_version=`$XML_CONFIG --version`
-	AC_MSG_RESULT([$xml_version])
-	changequote(<<, >>)dnl
-	case $xml_version in 
-	*2.2.[5-9]*) ;;
-	*2.2.[1-9][0-9]*) ;;
-	*2.[3-9].[0-9]*) ;;
-	*) AC_MSG_ERROR(<<Libxml is too old. You need at least 2.2.5>>) ;;
-	esac
-	changequote([, ])dnl
-	LIBS="$LIBS `$XML_CONFIG --libs`"
-	CFLAGS="$CFLAGS `$XML_CONFIG --cflags`"
+  AC_MSG_CHECKING([libxml version])
+  xml_version=`$XML_CONFIG --version`
+  AC_MSG_RESULT([$xml_version])
+  changequote(<<, >>)dnl
+  case $xml_version in 
+    *2.2.[5-9]*) ;;
+    *2.2.[1-9][0-9]*) ;;
+    *2.[3-9].[0-9]*) ;;
+    *) AC_MSG_ERROR(<<libxml2 version $xml_version is too old. You need at least 2.2.5>>) ;;
+  esac
+  changequote([, ])dnl
+  LIBS="$LIBS `$XML_CONFIG --libs`"
+  CFLAGS="$CFLAGS `$XML_CONFIG --cflags`"
 fi
 
 AC_CHECK_LIB(resolv, inet_ntop)
 AC_CHECK_LIB(bind, inet_ntop)
-
-
-dnl Check to see if we should do the WTLS thing, and which version to use
-
-AC_ARG_WITH(wtls,
-[  --with-wtls             select wtls version to use: openssl/baltimore], [
-  case "$withval" in
-  openssl) echo "OpenSSL WTLS selected, attempting to find libraries..."
-	OLDLIBS="$LIBS"
-	LIBS="$LIBS -L/usr/local/ssl/lib -lcrypto"
-	AC_CHECK_LIB(crypto, RSA_new,
-	[
-		echo "OpenSSL found; WTLS enabled"
-		CFLAGS="$CFLAGS -I/usr/local/ssl/include"
-		AC_DEFINE(HAVE_WTLS_OPENSSL)
-	],
-	[
-		LIBS=$OLDLIBS
-		echo "OpenSSL not found; WTLS disabled"
-	]
-	)
-	;;
-  baltimore) echo "Baltimore WTLS not available" ;;
-  *) echo "Unknown wtls version $withval. Oops."; exit 1 ;;
-  esac
-]
-)
 
 
 dnl Checks for header files.
@@ -175,8 +167,7 @@ void testpid(void* foo){
     }
 }
 ],echo yes , echo no ;CFLAGS="$CFLAGS -DBROKEN_PTHREADS=1", echo  Cross compiling - assuming they work)
-
-
+                                       
 
 dnl DocBook stuff
 
@@ -204,10 +195,11 @@ do
 done
 
 
-dnl Implement --with-defaults option.
+dnl Implement --with-defaults=speed/debug option.
 
 AC_ARG_WITH(defaults,
-[  --with-defaults         set default configure options: speed/debug], [
+[  --with-defaults         set default configure options: speed/debug (default: debug)
+                          this will set assertion checking and malloc wrapper accordingly], [
   case "$withval" in
   speed) assertiondefault=no
          mallocdefault=native
@@ -224,6 +216,82 @@ AC_ARG_WITH(defaults,
   assertiondefault=yes
   mallocdefault=check
 ])
+
+
+dnl Implement --with-malloc=native/check/slow option.
+
+AC_ARG_WITH(malloc,
+[  --with-malloc           select malloc wrapper to use: native/check/slow (default: check)], [
+  case "$withval" in
+  native) AC_DEFINE(USE_GWMEM_NATIVE)
+          echo using native malloc
+          ;;
+  check) AC_DEFINE(USE_GWMEM_CHECK)
+         echo using checking malloc
+         ;;
+  slow) AC_DEFINE(USE_GWMEM_SLOW)
+        echo using slow malloc
+	;;
+  *) echo "Unknown malloc wrapper $withval. Oops."; exit 1 ;;
+  esac
+], [
+  case "$mallocdefault" in
+  native) AC_DEFINE(USE_GWMEM_NATIVE)
+          echo using native malloc
+          ;;
+  slow) AC_DEFINE(USE_GWMEM_SLOW)
+        echo using slow malloc
+	;;
+  *) AC_DEFINE(USE_GWMEM_CHECK)
+     echo using checking malloc
+     ;;
+  esac
+])
+
+
+dnl Implement --disable-assertions option.
+
+AC_ARG_ENABLE(assertions,
+[  --disable-assertions    turn off assertion checking], [
+  if test "$enableval" = "no"
+  then
+    echo disabling assertion checking
+    AC_DEFINE(NO_GWASSERT)
+  fi
+], [
+  if test "$assertiondefault" = "no"
+  then
+    echo disabling assertion checking
+    AC_DEFINE(NO_GWASSERT)
+  fi
+])
+
+
+dnl Check to see if we should do the WTLS thing, and which version to use
+
+AC_ARG_WITH(wtls,
+[  --with-wtls             select wtls version to use: openssl/baltimore], [
+  case "$withval" in
+  openssl) echo "OpenSSL WTLS selected, attempting to find libraries..."
+	OLDLIBS="$LIBS"
+	LIBS="$LIBS -L/usr/local/ssl/lib -lcrypto"
+	AC_CHECK_LIB(crypto, RSA_new,
+	[
+		echo "OpenSSL found; WTLS enabled"
+		CFLAGS="$CFLAGS -I/usr/local/ssl/include"
+		AC_DEFINE(HAVE_WTLS_OPENSSL)
+	],
+	[
+		LIBS=$OLDLIBS
+		echo "OpenSSL not found; WTLS disabled"
+	]
+	)
+	;;
+  baltimore) echo "Baltimore WTLS not available" ;;
+  *) echo "Unknown wtls version $withval. Oops."; exit 1 ;;
+  esac
+]
+)
 
 
 dnl Implement --enable-docs option.
@@ -249,47 +317,6 @@ case "$DOCSTARGET" in
 no-docs) echo Not building documentation. ;;
 docs) echo Documentation will be built as well. ;;
 esac
-
-
-dnl Implement the --with-mysql option. This will set HAVE_MYSQL in config.h
-dnl accordingly and enable the usage of the libmysqlclient routines.
-
-AC_ARG_WITH(mysql,
-[  --with-mysql[=DIR]      where to look for MySQL libs and header files
-                          DIR points to the installation [/usr/local]],
-[AC_MSG_CHECKING(for MySQL client support in)
- if test "$withval" = "yes"; then
-   loc="/usr/local"
- else
-   loc="$withval"
- fi
- AC_MSG_RESULT($loc)
- AC_CHECK_FILE("$loc/include/mysql/mysql.h", 
-   [CFLAGS="$CFLAGS -I$loc/include/mysql"; LIBS="$LIBS -L$loc/lib/mysql"],
-   [AC_CHECK_FILE("$loc/include/mysql.h", 
-     [CFLAGS="$CFLAGS -I$loc/include"; LIBS="$LIBS -L$loc/lib"],
-     [AC_MSG_ERROR(Unable to find mysql.h under $loc)]
-    )]
- )
- AC_CHECK_HEADERS(mysql/mysql.h mysql/mysql_com.h mysql/mysql_version.h)
- AC_CHECK_LIB(mysqlclient, mysql_init, [LIBS="$LIBS -lmysqlclient"]) 
- AC_DEFINE(HAVE_MYSQL)
- MYSQL="yes"
-])
-
-
-dnl Implement the --enable-mysql-dlr option. 
-AC_ARG_ENABLE(mysql-dlr,
-[  --enable-mysql-dlr      enable MySQL support for DLR (default: disabled)], 
-[if test "$enableval" = "yes"; then
-   if test "$MYSQL" != "yes"; then
-     AC_MSG_ERROR(Option --enable-mysql-dlr requires MySQL client support)
-   else
-     echo enabling MySQL support for DLR
-   fi
-   AC_DEFINE(MYSQL_DLR)
- fi
-])
 
 
 dnl Implement the --enable-pam option.
@@ -335,56 +362,6 @@ AC_ARG_ENABLE(localtime,
 ])
 
 
-dnl Implement --disable-assertions option.
-
-
-AC_ARG_ENABLE(assertions,
-[  --disable-assertions    turn off assertion checking], [
-  if test "$enableval" = "no"
-  then
-    echo disabling assertion checking
-    AC_DEFINE(NO_GWASSERT)
-  fi
-], [
-  if test "$assertiondefault" = "no"
-  then
-    echo disabling assertion checking
-    AC_DEFINE(NO_GWASSERT)
-  fi
-])
-
-
-dnl --with-malloc=native/fast/checking/slow
-
-AC_ARG_WITH(malloc,
-[  --with-malloc           select malloc wrapper to use: native/checking/slow], [
-  case "$withval" in
-  native) AC_DEFINE(USE_GWMEM_NATIVE)
-          echo using native malloc
-          ;;
-  check) AC_DEFINE(USE_GWMEM_CHECK)
-         echo using checking malloc
-         ;;
-  slow) AC_DEFINE(USE_GWMEM_SLOW)
-        echo using slow malloc
-	;;
-  *) echo "Unknown malloc wrapper $withval. Oops."; exit 1 ;;
-  esac
-], [
-  case "$mallocdefault" in
-  native) AC_DEFINE(USE_GWMEM_NATIVE)
-          echo using native malloc
-          ;;
-  slow) AC_DEFINE(USE_GWMEM_SLOW)
-        echo using slow malloc
-	;;
-  *) AC_DEFINE(USE_GWMEM_CHECK)
-     echo using checking malloc
-     ;;
-  esac
-])
-
-
 dnl --enable-mutex-stats option.
 
 AC_ARG_ENABLE(mutex-stats,
@@ -406,39 +383,135 @@ AC_ARG_ENABLE(start-stop-daemon,
 AC_SUBST(STARTSTOPDAEMONSRC)
 
 
-dnl --disable-ssl option.
+dnl Implement --enable-ssl option.
 
-SSL="ssl"
-
+AC_MSG_CHECKING([whether to compile with SSL support])
 AC_ARG_ENABLE(ssl,
-[  --enable-ssl  enable support for ssl and https (default: enabled)], [
+[  --enable-ssl            enable SSL client and server support (default: enabled)], [
   if test "$enableval" = no ; then
-    echo Disabling SSL support.
-	  SSL="no-ssl";
-	fi
+    AC_MSG_RESULT(disabled)
+  fi
+],[
+  for loc in /usr/lib /usr/local/ssl/lib /usr/local/openssl/lib; do 
+    if test -f "$loc/libssl.a"; then
+      ssllib="$loc"
+    fi
+  done
+  for loc in /usr/include/ssl /usr/include/openssl /usr/local/ssl/include \
+             /usr/local/openssl/include; do
+    if test -d "$loc"; then
+      sslinc="$loc"
+    fi
+  done
+  AC_MSG_RESULT($ssllib $sslinc)
 ])
 
-if test "x$SSL" = "xssl" ; then
-  echo Attempting to compile with SSL support.
-  AC_CHECK_LIB(ssl, SSL_library_init,
-  [ AC_MSG_CHECKING(whether the OpenSSL library is multithread-enabled)
-    AC_TRY_RUN([ #define OPENSSL_THREAD_DEFINES
-                 #include <openssl/opensslconf.h>
-                 int main(void) {
-                 #if defined(THREADS)
-                  exit(0);
-                 #else
-                  exit(1);
-                 #endif
-                 }
-              ], echo yes;AC_DEFINE(HAVE_LIBSSL)
-              LIBS="$LIBS -lssl",
-              echo no;echo Either get a multithread-enabled SSL or configure with --disable-ssl;
-              exit 1,
-              echo "Cross-compiling; make sure your SSL library is multithread-enabled"
-              )
+
+dnl Implement the --with-ssl option. 
+
+AC_ARG_WITH(ssl,
+[  --with-ssl[=DIR]        where to look for OpenSSL libs and header files
+                          DIR points to the installation [/usr/local/ssl]],
+[ if test -d "$withval"; then 
+    ssllib="$withval/lib"; 
+    sslinc="$withval/include"
+  else
+    AC_MSG_ERROR(Unable to find OpenSSL libs and/or directories at $withval)
+  fi
+])
+
+
+dnl Implement the SSL library checking routine. 
+dnl This will define HAVE_LIBSSL in config.h
+
+if test "x$ssllib" != "x" && test "x$sslinc" != "x"; then
+  CFLAGS="$CFLAGS -I$sslinc"
+  LIBS="$LIBS -L$ssllib"
+
+  AC_PATH_PROG(OPENSSL, openssl, no)
+  if test "$OPENSSL" != "yes"; then
+    AC_MSG_CHECKING([openssl version])
+    AC_MSG_RESULT(`$OPENSSL version | awk '{print $2}'`)
+  fi
+  AC_CHECK_LIB(crypto, CRYPTO_lock,
+  [ LIBS="$LIBS -lcrypto"
+    AC_CHECK_LIB(ssl, SSL_library_init,
+    [ AC_CHECK_LIB(ssl, SSL_connect)
+      AC_CHECK_HEADERS(openssl/x509.h openssl/rsa.h openssl/crypto.h \
+                       openssl/pem.h openssl/ssl.h openssl/err.h)
+      AC_MSG_CHECKING(whether the OpenSSL library is multithread-enabled)
+      AC_TRY_RUN([ 
+        #define OPENSSL_THREAD_DEFINES
+        #include <openssl/opensslconf.h>
+        int main(void) {
+        #if defined(THREADS)
+          exit(0);
+        #else
+          exit(1);
+        #endif
+        }
+      ], [
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(HAVE_LIBSSL)
+        LIBS="$LIBS -lssl"
+      ], [
+        AC_ARG_ENABLE(ssl-thread-test,
+        [  --disable-ssl-thread-test disable the multithread test for the OpenSSL library
+                          this will force to continue even if the test fails],
+        [ if test "$enableval" = no ; then
+            AC_MSG_RESULT([no, continue forced])
+          fi
+        ], [
+          AC_MSG_RESULT(no)
+          AC_MSG_ERROR(Either get a multithread-enabled SSL or configure with --disable-ssl)
+        ])
+      ], echo "Cross-compiling; make sure your SSL library is multithread-enabled"
+      )
+    ])
   ])
 fi
+
+
+dnl Implement the --with-mysql option. This will set HAVE_MYSQL in config.h
+dnl accordingly and enable the usage of the libmysqlclient routines.
+
+AC_ARG_WITH(mysql,
+[  --with-mysql[=DIR]      where to look for MySQL libs and header files
+                          DIR points to the installation [/usr/local]],
+[AC_MSG_CHECKING(for MySQL client support in)
+ if test "$withval" = "yes"; then
+   loc="/usr/local"
+ else
+   loc="$withval"
+ fi
+ AC_MSG_RESULT($loc)
+ AC_CHECK_FILE("$loc/include/mysql/mysql.h", 
+   [CFLAGS="$CFLAGS -I$loc/include/mysql"; LIBS="$LIBS -L$loc/lib/mysql"],
+   [AC_CHECK_FILE("$loc/include/mysql.h", 
+     [CFLAGS="$CFLAGS -I$loc/include"; LIBS="$LIBS -L$loc/lib"],
+     [AC_MSG_ERROR(Unable to find mysql.h under $loc)]
+    )]
+ )
+ AC_CHECK_HEADERS(mysql/mysql.h mysql/mysql_com.h mysql/mysql_version.h)
+ AC_CHECK_LIB(mysqlclient, mysql_init, [LIBS="$LIBS -lmysqlclient"]) 
+ AC_DEFINE(HAVE_MYSQL)
+ MYSQL="yes"
+])
+
+
+dnl Implement the --enable-mysql-dlr option. 
+AC_ARG_ENABLE(mysql-dlr,
+[  --enable-mysql-dlr      enable MySQL support for DLR (default: disabled)], 
+[if test "$enableval" = "yes"; then
+   if test "$MYSQL" != "yes"; then
+     AC_MSG_ERROR(Option --enable-mysql-dlr requires MySQL client support)
+   else
+     echo enabling MySQL support for DLR
+   fi
+   AC_DEFINE(MYSQL_DLR)
+ fi
+])
+
 
 dnl Final Output
 
