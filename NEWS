@@ -1,12 +1,78 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 1.1.6
+NEWS about Kannel: Open Source WAP and SMS Gateway version 1.2.0
 
-This is a DEVELOPMENT version. It should be usable for experimentation
-and testing, and is a release candidate for 1.2. Please do try it out
-and report problems to devel@kannel.3glab.org (the development mailing 
-list). The bug tracking system is currently offline.
+This is a STABLE version. It should be usable for production systems.
+Please do report problems to devel@kannel.3glab.org (the development 
+mailing list). The bug tracking system is currently offline.
 
-NOTE: This is not an update to 1.0.  Updates to 1.0 will be numbered 1.0.x,
-until we decide to release 1.2.  See the VERSION file for details.
+
+Changes since version 1.1.6:
+
+Compatibility breakers:
+
+ * configure now uses the --enable-localtime as default. This will log
+   file stamps in local time, not GMT. Beware if you need other timezone 
+   date logging to switch this off.
+
+ * configure now uses the --with-malloc=native as default. This is more
+   suitable for production environments then the limited malloc checking
+   counterpart.
+
+ * Use the 'to' HTTP GET variable to specify the destination MSISDN of 
+   outbound messages for both sendsms and sendota HTTP interfaces.
+
+ * wapbox does not any longer start a PPG HTTP server thread if no ppg
+   group is specified in the configuration file.
+
+New features:
+
+ * Harmonized logging output for EMI2 and SMPP module.
+
+ * Added on-the-fly shutdown and re-start for specific smsc-ids via the
+   administrative HTTP interface URIs 'stop-smsc' and 'start-smsc'.
+
+ * Added traffic statistics of inbound and output SMS on the status page.
+
+ * Added 'interface-version' config directive for SMPP module.
+
+ * Added timing configuration directives for SMPP module to specify 
+   reconnect delays and timeout values.
+
+ * Added alternative DCS support for SMPP module to define alternative DCS
+   value via sendsms's alt-dcs flag.
+
+ * Added support for XML POSTs of SMS messages on the basis of the IETF
+   draft http://search.ietf.org/internet-drafts/draft-koponen-sms-xml-03.txt.
+
+ * Added transceiver mode for SMPP links.
+
+ * Added wapbox directive 'smart-errors' for smarter WSP error messages to
+   the handset device.
+
+ * Added wapbox directive 'force-sar' for forced processing of segmentation
+   and reassembly (WTP-SAR) packages.
+
+Bugfixes:
+
+ * Fixed compiler warning for gcc 3.x for compiler macros.
+
+ * Fixed a couple of memory leaks in various modules.
+
+ * Improved the output of the status page and fixed the status condition
+   if an SMPP link is only used as receiver.
+
+ * Fixed validity issues in the SMPP module.
+
+ * Fixed a possible segv bug in SSL connection opening call.
+
+ * Fixed handling of application ids in the PPG module.
+
+ * Implemented a queue limit for outbound messages. This should hold up the
+   situation that there are infinitely more messages injected to the queue
+   then there are outflowing to the SMSC connections.
+
+ * Further improvements in the AT2 module.
+
+ * Fixed some MySQL related problems while processing DLRs to databases.
 
 
 Changes since version 1.1.6:
@@ -15,7 +81,7 @@ Compatibility breakers:
 
  * GET method variable 'phonenumber' will be replaced by 'to' for the 
    sendota HTTP interface. Currently we run both, to allow users to 
-   switch steamslessly.
+   switch seamlessly.
 
 New features:
 
@@ -41,7 +107,7 @@ New features:
    Development in this area is still needed.
 
  * Flash SMS support added.
-   Messages that arive at mobile terminals are displayed directly to the
+   Messages that arrive at mobile terminals are displayed directly to the
    user interface and usually they can not be saved to the inbox.
 
  * 3G Lab contributed the XML files for their Alligata.
@@ -56,7 +122,7 @@ New features:
 
  * Added DLR (delivery report) support for SMSC modules.
    Delivery reports are returned by SMSCs and can trigger a defined URL in 
-   order to inform the pushing application of a successfull transmission of
+   order to inform the pushing application of a successful transmission of
    the message. URLs can be set on a per-message request basis and hence 
    semantics of the message ID is kept by the requesting application.
 
@@ -70,12 +136,12 @@ New features:
    
  * DLRs may be stored to external storage.
    Using the --with-dlr configure flag external storage spaces may be used 
-   for the DLRs. This is usefull in cases you take your boxes down and 
+   for the DLRs. This is useful in cases you take your boxes down and 
    do not want to loose all pending DLR messages. 
    Currently MySQL is supported as external storage.
  
  * SSL-enabled HTTP servers are now available for any HTTP interface.
-   Users may relly now on secured HTTPS scheme communication between HTTP
+   Users may rely now on secured HTTPS scheme communication between HTTP
    clients and Kannel's HTTP servers. This is used for the sendsms and the
    administration HTTP interface.
 
@@ -105,7 +171,7 @@ New features:
    
  * Added SMSC interface implementation to Sonera ContentGateway. 
 
- * Solaris packageing added.
+ * Solaris packaging added.
 
  * Added 'exec' translation type to sms-service.
    This allows to execute arbitrary external code and pass the output as 
@@ -139,7 +205,7 @@ Bugfixes:
 
 Development news:
 
- * WTLS is the next major challange.
+ * WTLS is the next major challenge.
    At least --with-wtls=openssl configure leads to a clean make process.
    3ui's kwtls package seems to be good enough as sample for the missing
    WTLS parts.
@@ -383,7 +449,7 @@ New features:
    It can be started and stopped while Kannel is running, which makes
    it easier to use.  It also supports udh.
 
- * validityperiod option for phone-as-SMSC, see usersguide for details.
+ * validityperiod option for phone-as-SMSC, see user guide for details.
 
  * User's Guide has section on how to use pre-compiled Kannel packages.
 
