@@ -35,7 +35,9 @@
 
 /**** End of preprocessor magic.  Tables start here. ****/
 
-/* Table 39. Header Field Name Assignments */
+/* Table 39. Header Field Name Assignments. Note that headers Accept-Charset, Accept-Encoding,
+ * Cache-Control and Content-Range are defined twice. First ones should be used only for com-
+ * pability reasons. */
 NAMED(header,
 NSTRING("Accept", WSP_HEADER_ACCEPT)
 NSTRING("Accept-Charset", WSP_HEADER_ACCEPT_CHARSET)
@@ -93,6 +95,18 @@ NSTRING("Push-Flag", WSP_HEADER_PUSH_FLAG)
 NSTRING("Profile", WSP_HEADER_PROFILE)
 NSTRING("Profile-Diff", WSP_HEADER_PROFILE_DIFF)
 NSTRING("Profile-Warning", WSP_HEADER_PROFILE_WARNING)
+NSTRING("Expect", WSP_HEADER_EXPECT)
+NSTRING("TE", WSP_HEADER_TE)
+NSTRING("Trailer", WSP_HEADER_TRAILER)
+NSTRING("Accept-Charset", WSP_HEADER_ACCEPT_CHARSET_V13)
+NSTRING("Accept-Encoding", WSP_HEADER_ACCEPT_ENCODING_V13)
+NSTRING("Cache-Control", WSP_HEADER_CACHE_CONTROL_V13)
+NSTRING("Content-Range", WSP_HEADER_CONTENT_RANGE_V13)
+NSTRING("X-WAP-Tod", WSP_HEADER_X_WAP_TOD)
+NSTRING("Content-ID", WSP_HEADER_CONTENT_ID)
+NSTRING("Set-Cookie", WSP_HEADER_SET_COOKIE)
+NSTRING("Cookie", WSP_HEADER_COOKIE)
+NSTRING("Encoding-Version", WSP_HEADER_ENCODING_VERSION)
 )
 
 /* Table 40. Content Type Assignments */
@@ -194,6 +208,14 @@ ASSIGN("name", 5)
 ASSIGN("filename", 6)
 ASSIGN("differences", 7)
 ASSIGN("padding", 8)
+ASSIGN("type", 9)
+ASSIGN("start", 10)
+ASSIGN("start-info", 11)
+ASSIGN("comment", 12)
+ASSIGN("domain", 13)
+ASSIGN("max-age", 14)
+ASSIGN("path", 15)
+ASSIGN("secure", 16)
 )
 
 /* 8.4.2.18, Content encoding field */
