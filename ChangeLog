@@ -1,3 +1,10 @@
+2002-12-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_store.c: fixed assertion panic when admin URI /store-status is 
+      called while there is *no* store-file used. Bug has been reported by
+      Mauricio Ramos <mauricio.ramos@waura.com.br>. Patch based on submission
+      by Alexander Malysh <a.malysh@centrium.de>.
+      [Msg-ID: <200212261844.46127.a.malysh@centrium.de>]
+
 2002-12-26  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.c: added some more debugging output and fixed missing NULLing
       of reused trans->host for parse_url().
