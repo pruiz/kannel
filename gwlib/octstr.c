@@ -318,6 +318,17 @@ char *octstr_get_cstr(Octstr *ostr)
 }
 
 
+void octstr_append_from_hex(Octstr *ostr, char *hex) {
+	Octstr *output;
+	
+	seems_valid(ostr);
+	
+	output = octstr_create(hex);
+	octstr_hex_to_binary(output);
+	octstr_append(ostr, output);
+}
+
+
 void octstr_binary_to_hex(Octstr *ostr, int uppercase)
 {
     unsigned char *hexits;
