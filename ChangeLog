@@ -3,6 +3,11 @@
 	* gwlib/conn.c: Make conn_read_line() work more than once.
 	Thanks to mulix@actcom.co.il for reporting this.
 
+	* gw/wtp_send.[ch], gw/wtp_state-decl.h: Removed "event"
+	parameter from wtp_send_abort and wtp_send_ack.  There were
+	assertions for this (otherwise unused) parameter which caused
+	the function to fail if the event was for example a timeout.
+
 2000-09-25  Lars Wirzenius  <liw@iki.fi>
 
 	* checks/check_http.sh: Check for "ERROR:" in log file.

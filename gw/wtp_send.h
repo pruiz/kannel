@@ -30,8 +30,7 @@ void wtp_resend_result(Msg *result, long rid);
  * data. Fetches SDU from WTP event, address four-tuple from WTP machine. 
  * Handles all errors by itself.
  */
-void wtp_send_abort(long abort_type, long abort_reson, WTPMachine *machine, 
-     WAPEvent *event);
+void wtp_send_abort(long abort_type, long abort_reson, WTPMachine *machine);
 
 /*
  * Same as previous, expect now abort type and reason, reply address and trans-
@@ -48,7 +47,7 @@ void wtp_do_not_start(long abort_type, long abort_reason, WAPAddrTuple*address,
  * verification or not. Handles all errors by itself.
  */
 
-void wtp_send_ack(long ack_type, WTPMachine *machine, WAPEvent *event);
+void wtp_send_ack(long ack_type, WTPMachine *machine);
 
 void wtp_send_group_ack(Address *address, int tid, int retransmission_status, 
                         unsigned char packet_sequence_number); 

@@ -106,7 +106,7 @@ ROW(LISTEN,
      wtp_tid_is_valid(event, machine) == no_cached_tid),
     { 
      machine->rid = 0;
-     wtp_send_ack(TID_VERIFICATION, machine, event);
+     wtp_send_ack(TID_VERIFICATION, machine);
      machine->rid = 1;
     
      machine->u_ack = event->u.RcvInvoke.up_flag;
@@ -132,7 +132,7 @@ ROW(LISTEN,
     RcvErrorPDU,
     1,
     { 
-     wtp_send_abort(PROVIDER, PROTOERR, machine, event);
+     wtp_send_abort(PROVIDER, PROTOERR, machine);
     },
     LISTEN)
 
@@ -170,7 +170,7 @@ ROW(TIDOK_WAIT,
     RcvInvoke,
     event->u.RcvInvoke.rid == 1,
     { 
-     wtp_send_ack(TID_VERIFICATION, machine, event); 
+     wtp_send_ack(TID_VERIFICATION, machine); 
     },
     TIDOK_WAIT)
 
@@ -178,7 +178,7 @@ ROW(TIDOK_WAIT,
     RcvErrorPDU,
     1,
     {
-     wtp_send_abort(PROVIDER, PROTOERR, machine, event);
+     wtp_send_abort(PROVIDER, PROTOERR, machine);
     },
     LISTEN)
 
@@ -213,8 +213,7 @@ ROW(INVOKE_RESP_WAIT,
     TR_Abort_Req,
     1,
     { 
-     wtp_send_abort(USER, event->u.TR_Abort_Req.abort_reason,
-                    machine, event); 
+     wtp_send_abort(USER, event->u.TR_Abort_Req.abort_reason, machine); 
     },
     LISTEN)
 
@@ -245,7 +244,7 @@ ROW(INVOKE_RESP_WAIT,
     TimerTO_A,
     machine->aec == AEC_MAX,
     {
-     wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
+     wtp_send_abort(PROVIDER, NORESPONSE, machine); 
      wsp_event = create_tr_abort_ind(machine, PROTOERR);
      wsp_session_dispatch_event(wsp_event);
     },
@@ -255,7 +254,7 @@ ROW(INVOKE_RESP_WAIT,
     TimerTO_A,
     (machine->tcl == 2 && machine->u_ack == 0),
     { 
-     wtp_send_ack(ACKNOWLEDGEMENT, machine, event);
+     wtp_send_ack(ACKNOWLEDGEMENT, machine);
      machine->u_ack = 1;
     },
     RESULT_WAIT)
@@ -264,7 +263,7 @@ ROW(INVOKE_RESP_WAIT,
     RcvErrorPDU,
     1,
     {
-     wtp_send_abort(PROVIDER, PROTOERR, machine, event); 
+     wtp_send_abort(PROVIDER, PROTOERR, machine); 
      
      wsp_event = create_tr_abort_ind(machine, PROTOERR);
      wsp_session_dispatch_event(wsp_event);
@@ -312,7 +311,7 @@ ROW(RESULT_WAIT,
     event->u.RcvInvoke.rid == 1 && machine->ack_pdu_sent == 1,
     {
      machine->rid = event->u.RcvInvoke.rid;
-     wtp_send_ack(machine->tid_ve, machine, event);
+     wtp_send_ack(machine->tid_ve, machine);
     },
     RESULT_WAIT)
 
@@ -320,7 +319,7 @@ ROW(RESULT_WAIT,
     TR_Abort_Req,
     1,
     { 
-     wtp_send_abort(USER, event->u.TR_Abort_Req.abort_reason, machine, event); 
+     wtp_send_abort(USER, event->u.TR_Abort_Req.abort_reason, machine); 
     },
     LISTEN)
 
@@ -328,7 +327,7 @@ ROW(RESULT_WAIT,
     RcvErrorPDU,
     1,
     {
-     wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
+     wtp_send_abort(PROVIDER, NORESPONSE, machine); 
      
      wsp_event = create_tr_abort_ind(machine, PROTOERR);
      wsp_session_dispatch_event(wsp_event);
@@ -339,7 +338,7 @@ ROW(RESULT_WAIT,
     TimerTO_A,
     1,
     { 
-     wtp_send_ack(machine->tid_ve, machine, event);
+     wtp_send_ack(machine->tid_ve, machine);
     },
     RESULT_WAIT)
 
@@ -365,7 +364,7 @@ ROW(RESULT_RESP_WAIT,
     TR_Abort_Req,
     1,
     { 
-     wtp_send_abort(USER, event->u.TR_Abort_Req.abort_reason, machine, event); 
+     wtp_send_abort(USER, event->u.TR_Abort_Req.abort_reason, machine); 
     },
     LISTEN)
 
@@ -398,7 +397,7 @@ ROW(RESULT_RESP_WAIT,
     RcvErrorPDU,
     1,
     {
-     wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
+     wtp_send_abort(PROVIDER, NORESPONSE, machine); 
       
      wsp_event = create_tr_abort_ind(machine, PROTOERR);
      wsp_session_dispatch_event(wsp_event);

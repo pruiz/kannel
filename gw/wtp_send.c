@@ -120,13 +120,10 @@ void wtp_resend_result(Msg *result, long rid){
  * data. Fetches address four-tuple from WTP machine, tid from wtp event, abort 
  * type and reason from direct input. Handles all errors by itself.
  */
-void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine, 
-     WAPEvent *event){
-
+void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine) {
      Msg *msg = NULL;
      WTP_PDU *pdu;
 
-     gw_assert(event->type == TR_Abort_Req || event->type == RcvErrorPDU);
      pdu = wtp_pdu_create(Abort);
      pdu->u.Abort.con = 0;
      pdu->u.Abort.abort_type = abort_type;
@@ -176,7 +173,7 @@ void wtp_do_not_start(long abort_type, long abort_reason, WAPAddrTuple *address,
      return;
 }
 
-void wtp_send_ack(long ack_type, WTPMachine *machine, WAPEvent *event){
+void wtp_send_ack(long ack_type, WTPMachine *machine){
 
      Msg *msg = NULL;
      WTP_PDU *pdu;
