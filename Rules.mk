@@ -19,7 +19,7 @@ TEX_DSL = /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/print/docbook.dsl
 		    mkdir $*; \
 		    cd $*; \
 		    jade -t sgml -d $(HTML_DSL) $(XML_DECL) ../temp.xml; \
-		    ln -s book1.html index.html; \
+		    ln -s book1.htm* index.html; \
 		    cd ..; \
 		    if test "$(figspng)"; then cp $(figspng) $*; fi; \
 		fi

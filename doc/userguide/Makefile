@@ -34,7 +34,7 @@ cvsignore:
 public: all
 	rm -rf $(instdir)/userguide
 	mkdir -p $(instdir)/userguide
-	cp index.html $(docs) $(docsps) $(docshtml) $(figspng) $(figsps) \
+	cp $(docs) $(docsps) $(docshtml) $(figspng) $(figsps) \
 		$(instdir)/userguide
 	for dir in $(docs:.xml=); do \
 		if [ -d $$dir ]; then cp -r $$dir $(instdir)/userguide; fi; done
