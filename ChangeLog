@@ -3,6 +3,7 @@ Tue May  9 Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	* gw/wapbox.c,configure.in,configure: Updated getloadavg bits to
 	search for getloadavg, rather than just assume that it exists
 	on Solaris.
+	* utils/start-stop-daemon.c: Fixed typo.
 
 Tue May  9 23:03:26 2000  Lars Wirzenius  <liw@wapit.com>
 
