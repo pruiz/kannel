@@ -1,5 +1,16 @@
 1999-11-12    <rpr@rpr.wapit.com>
 
+	* smsc.h, smsc.c, bearerbox.c: added re-connecting functions to
+	smsc_get_message, and changed interface a bit
+
+	* smsbox.c, smsbox.conf: fixed multiple sms sending. Changed that
+	when 'split-chars' are used, the splitting character is included
+	in previous part, not the following one.
+	
+	* simple.conf: two sample sendsms users
+
+1999-11-12    <rpr@rpr.wapit.com>
+
 	* bb_msg.h, bb_msg.c: added functions _last_mod and
 	_oldest_message for better queue control, and total number of
 	added messages to queue length

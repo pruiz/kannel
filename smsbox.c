@@ -245,11 +245,16 @@ static int do_split_send(Msg *msg, char *str, int maxmsgs,
     if (suf != NULL)
 	slen = strlen(suf);
 
-    for(p = str; maxmsgs > 1; maxmsgs--) {
+    for(p = str; maxmsgs > 1 && strlen(p) > sms_len; maxmsgs--) {
 	size = sms_len - slen;	/* leave room to split-suffix */
 
+	/*
+	 * if we use split chars, find the first from starting from
+	 * the end of sms message and return partion _before_ that
+	 */
+
 	if (sc)
-	    size = str_reverse_seek(p, size, sc);
+	    size = str_reverse_seek(p, size, sc) + 1;
 
 	/* do not accept a bit too small fractions... */
 	if (size < sms_len/2)

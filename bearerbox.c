@@ -342,8 +342,12 @@ static void *smscenter_thread(void *arg)
 	if (bbox->abort_program == 0 &&
 	    rq_queue_len(bbox->request_queue, NULL) < bbox->max_queue) {
 
-	    msg = smsc_get_message(us->smsc);
-	    if (msg) {
+	    ret = smsc_get_message(us->smsc, &msg);
+	    if (ret == -1) {
+		error(0, "SMSC: [%d] failed permanently, killing thread", us->id);
+		break;		/* kill us */
+	    }
+	    if (ret == 1) {
 		normalize_numbers(msg, us->smsc);
 		route_msg(us, msg);
 	    
@@ -848,10 +852,10 @@ static void print_queues(char *buffer)
     if (ret != 0)
 	goto error;
 
-    sprintf(buffer,"Request queue length %d, mean %.1f, total %d messages, oldest %ds old\n"
-	    "Reply queue length %d, mean %.1f, total %d messages, oldest %ds old",
-	    rq, bbox->mean_req_ql, totq, (int)(now-trq),
-	    rp, bbox->mean_rep_ql, totp, (int)(now-trp));
+    sprintf(buffer,"Request queue length %d, oldest %ds old; mean %.1f, total %d messages\n"
+	    "Reply queue length %d; oldest %ds old; mean %.1f, total %d messages",
+	    rq, (int)(now-trq), bbox->mean_req_ql, totq, 
+	    rp, (int)(now-trp), bbox->mean_rep_ql, totp);
 	    
     ret = pthread_mutex_unlock(&bbox->mutex);
     if (ret != 0)
@@ -890,9 +894,9 @@ static void update_queue_watcher()
 	 * interface the program will never die. So we should send a
 	 * kill notification to boxes, too... TODO
 	 */
-	limit = time(NULL) - 2;
-	if (rq_last_mod(bbox->request_queue) < limit  ||
-	    rq_last_mod(bbox->reply_queue) < limit)
+	limit = time(NULL);
+	if (rq_last_mod(bbox->request_queue) < limit-3  ||
+	    rq_last_mod(bbox->reply_queue) < limit-2)
 
 	    bbox->abort_program = 2;     	/* time to die... */
     }

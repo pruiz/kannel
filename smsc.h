@@ -71,15 +71,19 @@ int smsc_close(SMSCenter *smsc);
 
 
 /* Send an SMS message via an SMS center. If the message is not an ACK/NACK,
-   add ACK or NACK according to status intp request queue
-
-   Return -1 for error, 0 for OK. */
+ *  add ACK or NACK according to status intp request queue
+ *
+ *  Return -1 for error, 0 for OK.
+ */
 int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue);
 
 
-/* receive a message from SMS center and return it. Return NULL on problem
-*/
-RQueueItem *smsc_get_message(SMSCenter *smsc);
+/* receive a message from SMS center.
+ * Return -1 if smsc fails and cannot re-connected
+ * 0 if nothing new (or message creation fails) and 1 if new message,
+ * which is then set to 'new', which is otherwise set as NULL
+ */
+int smsc_get_message(SMSCenter *smsc, RQueueItem **new);
 
 
 

@@ -661,19 +661,24 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 }
 
 
-RQueueItem *smsc_get_message(SMSCenter *smsc)
+int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
 {
     SMSMessage *sms_msg;
     RQueueItem *msg;
     int ret;
     
-
+    *new = NULL;
+    
     if (smscenter_pending_smsmessage(smsc) == 1) {
 
 	ret = smscenter_receive_smsmessage(smsc, &sms_msg);
 	if (ret < 1) {
-	    error(0, "Failed to receive the message, ignore...");
+	    error(0, "Failed to receive the message, reconnecting...");
 	    /* reopen the connection etc. invisible to other end */
+
+	    if (smsc_reopen(smsc) == -1)
+		return -1;
+	    return 0;		/* iterate */
 	}
 	/* hm, what about ACK/NACK? - leave that to above */
 
@@ -693,14 +698,14 @@ RQueueItem *smsc_get_message(SMSCenter *smsc)
 	
 	msg->client_data = sms_msg;	/* keep the data for ACK/NACK */
 	
-	
-	return msg;		/* ok, quite empty one */
+	*new = msg;
+	return 1;
     }
-    return NULL;
+    return 0;
 error:
     error(0, "Failed to create message");
     rqi_delete(msg);
-    return NULL;
+    return 0;
 }
 
 
