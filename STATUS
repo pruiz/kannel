@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.20 2002-04-16 11:10:05 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.21 2002-04-16 11:17:13 stolj Exp $]
 
 Release:
 
@@ -27,7 +27,7 @@ RELEASE SHOWSTOPPERS:
       octstr_copy_real() throughs len >= 0 assert exception, maybe in 
       smsbox.c:obey_request_thread()
     Posted by: Stefan Cars <stefan@globalwire.se>
-    Message-ID:
+    Message-ID: <Pine.LNX.4.40.0203201829460.2113-100000@tjatte.globalwire.se>
     Status:
 
 RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
