@@ -1631,16 +1631,22 @@ keepalive = 5
 </sect3>
 
 <sect3>
-<title>CMG UCP/EMI 2.0</title>
+<title>CMG UCP/EMI 3.5</title>
 
   <para>Kannel supports two types of connections with CMG SMS centers:
-  direct TCP/IP connections (<literal>emi_ip</literal>) and
-  ISDN/modem (X.25 over D channel ISDN is called X.31) connection 
-  (<literal>emi</literal>). Sample  configurations for these are:</para>
+  direct TCP/IP connections (<literal>emi_ip</literal> or
+  <literal>emi2</literal>) and ISDN/modem (X.25 over D channel ISDN is
+  called X.31) connection
+  (<literal>emi</literal>). <literal>emi2</literal> is a new
+  implementation of the EMI protocol that supports more features and
+  should work more reliably than the old one. It is the recommended
+  one to use with TCP/IP connections. Sample 
+  configurations for these are:</para>
   
 <programlisting>
 group = smsc
-smsc = emi_ip
+smsc = emi2
+#smsc = emi_ip to use the old implementation
 host = 103.102.101.100
 port = 600
 smsc-username = foo
@@ -1722,7 +1728,7 @@ smsc-password = bar
      <entry><literal>IP-list</literal></entry>
      <entry valign=bottom>
        If set, only connections from these IP addresses are accepted
-       to receiver-port. TCP/IP connection only.
+       to receive-port. TCP/IP connection only.
      </entry></row>
 
    </tbody></tgroup></informaltable>
