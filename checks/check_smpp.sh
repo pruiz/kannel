@@ -3,6 +3,7 @@
 # Use `test/drive_smpp' to test SMPP driver.
 
 set -e
+#set -x
 
 times=1000
 
@@ -25,7 +26,7 @@ do
 done
 
 kill $bbpid
-wait
+sleep 5
 
 if grep 'WARNING:|ERROR:|PANIC:' check_smpp*.log >/dev/null
 then
@@ -35,3 +36,12 @@ then
 fi
 
 rm check_smpp_drive.log check_smpp_bb.log
+
+exit 0
+
+
+
+
+
+
+
