@@ -1,3 +1,6 @@
+2003-07-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap-appl.c, gw/wap_compiler.c: some source beautification.
+
 2003-07-14  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/wap-appl.c: if devices doesn't support requested content-type, return
       406 Not Accepted instead. This is configurable through a #define but it
