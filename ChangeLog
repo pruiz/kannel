@@ -1,4 +1,10 @@
 2002-01-03  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added documentation entries for
+      "sendsms-url" and "sendota-url" directives within the smsbox
+      group. Added optional (o) flag to all ssl-enabling boolean
+      directives.
+
+2002-01-03  Stipe Tolj  <tolj@wapme-systems.de>
     * aclocal.m4: added file for autoconf macros. Included 
       AC_CHECK_VERSION macro which is capable of comparing 
       installed and required version strings for software
