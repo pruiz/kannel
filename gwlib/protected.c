@@ -199,8 +199,10 @@ int gw_gethostbyname(struct hostent *ent, const char *name, char **buff)
 	*buff = (char*) gw_realloc(*buff, bufflen);
     }
 
-    if (res != 0) {
+    if (res != 0 || tmphp == NULL) {
         error(herr, "Error while gw_gethostbyname occurs.");
+        gw_free(*buff);
+        *buff = NULL;
         res = -1;
     }
     else {
@@ -219,7 +221,6 @@ int gw_gethostbyname(struct hostent *ent, const char *name, char **buff)
     struct hostent *tmphp = NULL;
 
     *buff = gw_malloc(bufflen);
-
     while ((tmphp = gethostbyname_r(name, ent, *buff, bufflen, &herr)) == NULL && (errno == ERANGE)) {
         /* Enlarge the buffer. */
         bufflen *= 2;
@@ -228,6 +229,8 @@ int gw_gethostbyname(struct hostent *ent, const char *name, char **buff)
 
     if (tmphp == NULL) {
         error(herr, "Error while gw_gethostbyname occurs.");
+        gw_free(*buff);
+        *buff = NULL;
         res = -1;
     }
 
