@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include "gwlib/gwlib.h"
 #include "gw/smpp_pdu.h"
-
+#include <string.h>
 
 /***********************************************************************
  * Configurable stuff.

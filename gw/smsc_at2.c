@@ -299,7 +299,7 @@ void	at2_read_buffer(PrivAT2data *privdata)
     ret = select(privdata->fd + 1, &read_fd, NULL, NULL, &tv);
     if (ret == -1) {
 	if (! (errno == EINTR || errno == EAGAIN))
-	    error(errno, "AT2[%s]: error on select");
+	    error(errno, "AT2[%s]: error on select",octstr_get_cstr(privdata->device));
 	return;
     }
 
@@ -419,9 +419,8 @@ Octstr *at2_read_line(PrivAT2data *privdata, int gt_flag)
 
 int  at2_write_line(PrivAT2data *privdata, char* line)
 {
-    int i=0;
     int count;
-    int s;
+    int s=0;
     Octstr *linestr = NULL;
     
     linestr = octstr_format("%s\r");
@@ -530,7 +529,7 @@ int	at2_init_device(PrivAT2data *privdata)
     
     /* enable hardware handshake */
     if(at2_send_modem_command(privdata, ModemTypes[privdata->modemid].hwhs, 0, 0) == -1)
-	info(0,"AT2[%s]: cannot enable hardware handshake");
+	info(0,"AT2[%s]: cannot enable hardware handshake",octstr_get_cstr(privdata->device));
  
     /* Check does the modem require a PIN and, if so, send it
      * This is not supported by the Nokia Premicell */
@@ -1676,7 +1675,7 @@ void at2_detect_speed(PrivAT2data *privdata)
 	}
 	at2_close_device(privdata);
     }
-    info(0, "AT2[%s]: detect speed is %d",octstr_get_cstr(privdata->device),privdata->speed);
+    info(0, "AT2[%s]: detect speed is %ld",octstr_get_cstr(privdata->device),privdata->speed);
 }
 
 /**********************************************************************

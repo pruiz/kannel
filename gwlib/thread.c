@@ -88,7 +88,7 @@ int mutex_unlock_real(Mutex *mutex, char *file, int line)
     if(mutex == NULL)
     {
        error(0,"trying to unlock a NULL mutex from %s at line %d",file,line);
-       return;
+       return -1;
     }
      gw_assert(mutex != NULL);
      mutex->owner = -1;

@@ -989,7 +989,7 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
 {
     Octstr *prefix, *prefix_https;
     long prefix_len;
-    int host_len, colon, slash, at, auth_sep;
+    int host_len, colon, slash, at, auth_sep=0;
 
     prefix = octstr_imm("http://");
     prefix_https = octstr_imm("https://");

@@ -32,6 +32,7 @@
 #include <debugXML.h>
 #include <encoding.h>
 #include <ctype.h>
+#include <string.h>
 
 #include "shared.h"
 #include "wap_push_pap_compiler.h"

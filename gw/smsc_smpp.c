@@ -413,7 +413,8 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
          if ((pdu->u.deliver_sm.esm_class == 0x02 || pdu->u.deliver_sm.esm_class == 0x04))
          {
  	    Octstr *reply, *respstr;    	
- 	    Octstr *msgid, *stat;
+ 	    Octstr *msgid = NULL;
+ 	    Octstr *stat = NULL;
  	    int dlrstat;
  	    long curr=0, vpos=0;
      		

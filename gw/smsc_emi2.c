@@ -690,7 +690,7 @@ static EMI2Event emi2_wait (SMSCConn *conn, Connection *server, double seconds)
 	switch (conn_wait(server, seconds)) {
 	case 1: return list_len(PRIVDATA(conn)->outgoing_queue) ? EMI2_SENDREQ : EMI2_TIMEOUT;
 	case 0: return EMI2_SMSCREQ;
-	case -1: return EMI2_CONNERR;
+	default: return EMI2_CONNERR;
 	}
     } else {
 	gwthread_sleep(seconds);
@@ -740,22 +740,6 @@ static int emi2_keepalive_handling (SMSCConn *conn, Connection *server)
     return 0;
 }
 
-/*
- * a helper function to obtain the human readable name of the EMI2
- * events.
- */
-static const char *emi2_eventname (EMI2Event event)
-{
-#define RETURNNAME(e) case (e): return #e
-    
-    switch (event) {
-	RETURNNAME(EMI2_SENDREQ);
-	RETURNNAME(EMI2_SMSCREQ);
-	RETURNNAME(EMI2_CONNERR);
-	RETURNNAME(EMI2_TIMEOUT);
-    }
-#undef RETURNNAME
-}
 
 /*
  * the actual send logic: Send all queued messages in a burst.
@@ -763,10 +747,8 @@ static const char *emi2_eventname (EMI2Event event)
 static int emi2_do_send (SMSCConn *conn, Connection *server)
 {
     struct emimsg *emimsg;
-    Octstr	  *str;
     Msg           *msg;
     double         delay = 0;
-    int            i;
 
     if (PRIVDATA(conn)->throughput) {
 	delay = 1.0 / PRIVDATA(conn)->throughput;

@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <signal.h>
+#include <string.h>
 
 #include "gwlib/gwlib.h"
 

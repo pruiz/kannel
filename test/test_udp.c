@@ -7,6 +7,7 @@
  */
 
 #include "gwlib/gwlib.h"
+#include <string.h>
 
 static char usage[] = "\
 Usage: test_udp client server_port\n\

@@ -1,3 +1,9 @@
+2002-01-09 Andreas Fink <andreas@fink.org>
+    *gw/smsc_at2.c, gw/smsc_emi2.c, gw/smsc_smpp.c, gw/wap_push_pap_compiler.c
+    gwlib/conn.c, gwlib/conn.h, gwlib/date.c, gwlib/gwthread-pthread.c
+    gwlib/http.c. gwlib/thread.c, test/test_smsc.c, test/test_udp.c
+    minor cleanups to remove some compilation warnings.
+
 2002-01-08 Andreas Fink <andreas@fink.org>
     * gw/smsc_at2.c: cleaned up a few things. introduced line sleep
     to replace old debugging sleep(1)'s in the code.

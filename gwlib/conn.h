@@ -55,6 +55,7 @@ typedef void conn_callback_t(Connection *conn, void *data);
  */
 Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
 		Octstr *our_host);
+void server_ssl_init(void); /* used by http.c */
 #endif /* HAVE_LIBSSL */
 
 /*
