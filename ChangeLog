@@ -1,3 +1,6 @@
+2003-0-06 Aarno Syvänen <aarno@gni.ch>
+     * doc/userguide/userguide.xml: Now userguide even compiles!
+
 2003-08-08  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap-appl.c: some debug output harmonization. No logic change.
 

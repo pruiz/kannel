@@ -6820,30 +6820,30 @@ smsbox-id = dlrbox
        <table frame="none">
        <title>Kannel headers used by PPG</title>
        <tgroup cols="3">
-       <thead><row>Variable</row>
-       <row>Value</row>
-       <row>Description</row></thead>
+       <thead><row><entry>Variable</entry>
+       <entry>Value</entry>
+       <entry>Description</entry></row></thead>
        <tbody>
-       <entry><literal>X-Kannel-SMSC</literal></entry>
-       <entry></emphasis>string</emphasis></entry>
+       <row><entry><literal>X-Kannel-SMSC</literal></entry>
+       <entry><emphasis>string</emphasis></entry>
        <entry valign="bottom">Name of smsc used to deliver this push.
        Smsc configuration must contain some of corresponding variables, 
-       see </entry>
-       <entry><literal>X-Kannel-DLR-URL</literal></entry>
+       see </entry></row>
+       <row><entry><literal>X-Kannel-DLR-URL</literal></entry>
        <entry><emphasis>url</emphasis></entry>
        <entry valign="bottom">Url smsbox would call this url when doing 
        the delivery report. Note that it can contain all Kannel escapes.
-       See table 6.7 for details.</entry>
-       <entry><literal>X-Kannel-DLR-Mask</literal></entry>
+       See table 6.7 for details.</entry></row>
+       <row><entry><literal>X-Kannel-DLR-Mask</literal></entry>
        <entry><emphasis>number</emphasis></entry>
        <entry valign="bottom">Mask telling smsbox when it should do
        the delivery reports. Values are same as used by smsbox, see
-       chapter Delivery Reports for details.</entry>
-       <entry><literal>X-Kannel-Smsbox-Id</literal></entry>
+       chapter Delivery Reports for details.</entry></row>
+       <row><entry><literal>X-Kannel-Smsbox-Id</literal></entry>
        <entry><emphasis>string</emphasis></entry>
        <entry valign="bottom">Tells which smsbox does the delivery
        report. Smsbox configuration must contain corresponding 
-       variable.</entry>
+       variable.</entry></row>
        </tbody>
        </tgroup>
        </table>
@@ -6860,10 +6860,10 @@ smsbox-id = dlrbox
        smsbox one. See chapter Delivery Reports for details.</para>
 
        <para> For ppg sms delivery reports you will need a fully working 
-       smsbox. Add configuration variable <literal>smsbox-id<\literal> to
-       <literal>smsbox<\literal> group (it is necessary, because there
+       smsbox. Add configuration variable <literal>smsbox-id</literal> to
+       <literal>smsbox</literal> group (it is necessary, because there
        is no MT from any smsbox corresponding the delivery report 
-       bearerbox is receiving):<\para>
+       bearerbox is receiving):</para>
 
 <programlisting>
        group = smsbox
@@ -6872,33 +6872,33 @@ smsbox-id = dlrbox
        log-file = "/var/log/kannel/smsbox-core.log"
        log-level = 0
        access-log = "/var/log/kannel/smsbox-access.log"
-<\programlisting>
+</programlisting>
 
        <para> Start smsbox normal way after updating the configuration
-       file. <\para>
+       file. </para>
 
        <para> You must add to PPG configuration file two less obvious
-       variables: <literal>ppg-smsbox-id<\literal> and <literal>
-       service-name<\literal>. <literal>Ppg-smsbox-id<\literal> 
+       variables: <literal>ppg-smsbox-id</literal> and <literal>
+       service-name</literal>. <literal>Ppg-smsbox-id</literal> 
        defines smsbox through which you want to route delivery reports,
-       <literal>service-name<\literal> makes possible for smsbox to
-       handle wap pushes as a separate sms service.<\para>
+       <literal>service-name</literal> makes possible for smsbox to
+       handle wap pushes as a separate sms service.</para>
 
-       <para>Setting <literal>ppg-smsbox-id<\literal> will route all
+       <para>Setting <literal>ppg-smsbox-id</literal> will route all
        ppg messages through same smsbox. You can route delivery 
        reports of separate user through separate smsboxes, by using
-       configuration variable <literal>smsbox-id<\literal> in group
+       configuration variable <literal>smsbox-id</literal> in group
        wap push user. Or you can use <literal>X-Kannel-Smsbox-Id
-      <\literal>. This means routing every message separately. <\para>
+      </literal>. This means routing every message separately. </para>
 
        <para> You can supply dlr url and dlr mask as kannel header, or
        as a configuration variable in ppg user or ppg core group. (This
        is order of precedence, too.) First one is valid for only one
        message, second for a specific user, and third for every ppg
-       user. <\para>
+       user. </para>
 
        <para> So following is a minimum ppg core group for sms delivery
-       reports:<\para>
+       reports:</para>
 
 <programlisting>
 group = ppg
@@ -6909,7 +6909,7 @@ trusted-pi = true
 users = 1024
 service-name = ppg
 ppg-smsbox-id = dlrbox
-<\programlisting>
+</programlisting>
 
        <para>And you can add Kannel headers to http post request. Here
        an example code snippet (C using Kannel gwlib; this example asks
@@ -6919,7 +6919,7 @@ ppg-smsbox-id = dlrbox
 http_header_add(push_headers, "X-Kannel-SMSC", "link0");
 http_header_add(push_headers, "X-Kannel-DLR-Url",
                 "http://193.53.0.56:8001/notification-dlr?smsc-id=%i"
-                "&status=%d&answer=%A&to=%P&from=%p&ts=%t);
+                "&amp;status=%d&amp;answer=%A&amp;to=%P&amp;from=%p&amp;ts=%t);
 http_header_add(push_headers, "X-Kannel-DLR-Mask",
                 octstr_get_cstr(dos = octstr_format("%d", 31)));
 http_header_add(push_headers, "X-Kannel-Smsbox-Id", "dlrbox"));
@@ -6930,7 +6930,7 @@ http_header_add(push_headers, "X-Kannel-Smsbox-Id", "dlrbox"));
        Other ones are needed to map delivery report to original wap
        push.</para>
 
-       <para>With these  you can use with following http post request<\para>
+       <para>With these  you can use with following http post request</para>
 
 <screen><userinput>
        http://193.53.0.56:8080/phplib/kannelgw.php?user=*deleted*&amp;
@@ -6938,16 +6938,16 @@ http_header_add(push_headers, "X-Kannel-Smsbox-Id", "dlrbox"));
        %3A8080%00%AF%80%8D%CF%B4%80%02%05j%00E%C6%0C%03wap.iobox.fi%00%11%03
        1%40wiral.com%00%07%0A%C3%07%19%99%06%25%15%23%15%10%C3%04+%02%060%01
        %03Want+to+test+a+fetch%3F%00%01%01&amp;udh=%06%05%04%0B%84%23%F0
-<\userinput><\screen>
+</userinput></screen>
 
        <para>Note that you can use all sms service escapes in dlrur, see
-       Parameters (Escape Codes) for details.<\para>
+       Parameters (Escape Codes) for details.</para>
 
        <para> If you want to set dlr url for a spesific user, you must set
-       configuration variable <literal>dlr-url<\literal>in <literal>
-       wap-push-user<\literal>, if for entire ppg, <literal>default-dlr-url
-       <\literal> in group <literal>ppg<\literal>. Value must naturally match
-       with one used in group smsc.<\para>
+       configuration variable <literal>dlr-url</literal>in <literal>
+       wap-push-user</literal>, if for entire ppg, <literal>default-dlr-url
+       </literal> in group <literal>ppg</literal>. Value must naturally match
+       with one used in group smsc.</para>
 </sect1>
 
 <sect1>
@@ -7550,37 +7550,6 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              Use <emphasis>number</emphasis> threads instead of default
              <literal>1</literal>.
              </entry></row>
-<<<<<<< userguide.xml
-             <row><entry><literal>-s</literal></entry>
-             <entry><emphasis>string</emphasis></entry>
-             <entry valign="bottom">
-             Use <literal>string<\literal> as a X-WAP-Application-Id
-             header (You must supply whole header).
-             </entry></row>
-             <row><entry><literal>-B</literal></entry>
-             <entry><emphasis>boolean</emphasis></entry>
-             <entry valign="bottom">
-             If set, accept binary content. Default is off.
-             <literal>1</literal>.
-             </entry></row>
-             <row><entry><literal>-d</literal></entry>
-             <entry><emphasis>enumerated string</emphasis></entry>
-             <entry valign="bottom">
-             Set delimiter to be used. Acceptable values are crlf anf
-             lf. Default is <literal>crlf<\literal>.
-             </entry></row>
-             <row><entry><literal>-p</literal></entry>
-             <entry><emphasis>boolean</emphasis></entry>
-             <entry valign="bottom">
-             If set, add an preamble (hardcoded one). Default
-             is off.
-             </entry></row>
-             <row><entry><literal>-E</literal></entry>
-             <entry><emphasis>boolean</emphasis></entry>
-             <entry valign="bottom">
-             if set, add an epilogue (hardcoded). Default is off.
-             </entry></row>
-=======
              <row><entry><literal>-s</literal></entry>
              <entry><emphasis>string</emphasis></entry>
              <entry valign="bottom">
@@ -7610,7 +7579,6 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              <entry valign="bottom">
              if set, add an epilogue (hardcoded). Default is off.
              </entry></row>
->>>>>>> 1.228
              </tbody>
              </tgroup>
        </table>
