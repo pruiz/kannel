@@ -1,14 +1,15 @@
-/* 
- * wml_compiler.c - compiling WML to WML binary
+/*
+ * mime_decompiler.c - decompiling application/vnd.wap.multipart.* 
+ *                     to multipart/ *
  *
- * This is an implemention for WML compiler for compiling the WML text 
- * format to WML binary format, which is used for transmitting the 
- * decks to the mobile terminal to decrease the use of the bandwidth.
+ * This is a header for Mime decompiler for decompiling binary mime
+ * format to text mime format, which is used for transmitting POST  
+ * data from mobile terminal to decrease the use of the bandwidth.
  *
+ * See comments below for explanations on individual functions.
  *
- * Tuomas Luttinen for Wapit Ltd.
+ * Bruno Rodrigues
  */
-
 
 #include "config.h"
 
@@ -112,3 +113,4 @@ int mime_decompile(Octstr *binary_mime, Octstr **mime)
 
     return 0;
 }
+
