@@ -150,7 +150,7 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
     size_t pdu_len;
     char *wtp_pdu; 
     
-    pdu_len = 3;
+    pdu_len = 4;
     wtp_pdu = malloc(pdu_len);
     if (wtp_pdu == NULL){
        tell_send_error(oct_error, msg);

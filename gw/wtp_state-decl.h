@@ -137,7 +137,8 @@ ROW(INVOKE_RESP_WAIT,
     1,
     { 
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TRAbort.abort_type, machine, event); 
+     wtp_send_abort(event->TRAbort.abort_type, event->TRAbort.abort_reason,
+                    machine, event); 
     },
     LISTEN)
 
@@ -156,6 +157,30 @@ ROW(INVOKE_RESP_WAIT,
      machine->rid = 1;
     },
     RESULT_RESP_WAIT)
+
+ROW(INVOKE_RESP_WAIT,
+    TimerTO_A,
+    machine->aec < AEC_MAX,
+    { 
+     ++machine->aec;
+     wtp_timer_start(timer, L_R_WITH_USER_ACK, machine, event);
+    },
+    INVOKE_RESP_WAIT)
+
+ROW(INVOKE_RESP_WAIT,
+    TimerTO_A,
+    machine->aec == AEC_MAX,
+    {
+     wtp_machine_mark_unused(machine);
+     wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
+    },
+    LISTEN)
+
+ROW(INVOKE_RESP_WAIT,
+    TimerTO_A,
+    (machine->tcl == 2 && machine->u_ack == 0),
+    { wtp_send_ack(ACKNOWLEDGEMENT, machine, event);},
+    RESULT_WAIT)
 
 ROW(RESULT_WAIT,
     TRResult,
@@ -213,7 +238,8 @@ ROW(RESULT_WAIT,
     1,
     { 
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TRAbort.abort_type, machine, event); 
+     wtp_send_abort(event->TRAbort.abort_type, event->TRAbort.abort_type,
+                    machine, event); 
     },
     LISTEN)
 
@@ -248,7 +274,8 @@ ROW(RESULT_RESP_WAIT,
     1,
     { 
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TRAbort.abort_type, machine, event); 
+     wtp_send_abort(event->TRAbort.abort_type, event->TRAbort.abort_type,
+                    machine, event); 
     },
     LISTEN)
 
