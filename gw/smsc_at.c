@@ -736,10 +736,10 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
         }
         
         /* protocol identifier */
-        /* 0x1F GSM 03.40 default value */
-        pdu[pos] = numtext(1);
+        /* 0x00 implicit */
+        pdu[pos] = numtext(0);
         pos++;
-        pdu[pos] = numtext(15);
+        pdu[pos] = numtext(0);
         pos++;
         
         /* data coding scheme */

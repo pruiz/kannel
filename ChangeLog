@@ -1,5 +1,12 @@
 2001-04-25  Richard Braakman  <dark@wapit.com>
 
+	* gw/smsc_at.c: In pdu_encode(), revert to using a Protocol-ID
+        of 0 (implicit) rather than 0x1F (which doesn't seem to be
+        defined).  This might be the key to the problems people have
+        had with this module.  Please let us know.
+
+2001-04-25  Richard Braakman  <dark@wapit.com>
+
 	* doc/TESTCASES: Removed, we have "make check" now.
 
 2001-04-24  Uoti Urpala  <uau@wapit.com>
