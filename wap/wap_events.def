@@ -438,6 +438,15 @@ WAPEVENT(RcvInvoke, "RcvInvoke",
 	ADDRTUPLE(addr_tuple)
 	)
 
+WAPEVENT(RcvResult, "RcvResult",
+	OCTSTR(user_data)
+	INTEGER(tid)
+	INTEGER(rid)
+	INTEGER(gtr)
+	INTEGER(ttr)
+	ADDRTUPLE(addr_tuple)
+	)
+
 WAPEVENT(RcvAbort, "RcvAbort",
 	INTEGER(tid)
 	INTEGER(abort_type)

@@ -26,6 +26,7 @@ static int deduce_tid(Octstr *user_data);
 static int concatenated_message(Octstr *user_data);
 static int truncated_datagram(WAPEvent *event);
 static WAPEvent *unpack_invoke(WTP_PDU *pdu, WAPAddrTuple *addr_tuple);
+static WAPEvent *unpack_result(WTP_PDU *pdu, WAPAddrTuple *addr_tuple);
 static WAPEvent *unpack_ack(WTP_PDU *pdu, WAPAddrTuple *addr_tuple);
 static WAPEvent *unpack_abort(WTP_PDU *pdu, WAPAddrTuple *addr_tuple);
 static WAPEvent *pack_error(WAPEvent *datagram);
@@ -101,19 +102,22 @@ int wtp_event_is_for_responder(WAPEvent *event)
      case RcvInvoke:
          return event->u.RcvInvoke.tid < INITIATOR_TID_LIMIT;
 
+     case RcvResult:
+         return event->u.RcvResult.tid < INITIATOR_TID_LIMIT;
+
      case RcvAck:
-	 return event->u.RcvAck.tid < INITIATOR_TID_LIMIT;
+        return event->u.RcvAck.tid < INITIATOR_TID_LIMIT;
 
      case RcvAbort:
-	 return event->u.RcvAbort.tid < INITIATOR_TID_LIMIT;
+        return event->u.RcvAbort.tid < INITIATOR_TID_LIMIT;
 
      case RcvErrorPDU:
-         return event->u.RcvErrorPDU.tid < INITIATOR_TID_LIMIT;
+        return event->u.RcvErrorPDU.tid < INITIATOR_TID_LIMIT;
 
      default:
-	 error(1, "Received an erroneous PDU corresponding an event");
-         wap_event_dump(event);
-	 return -1;
+        error(1, "Received an erroneous PDU corresponding an event");
+        wap_event_dump(event);
+        return -1;
      }
 }
 
@@ -152,6 +156,22 @@ static WAPEvent *unpack_invoke(WTP_PDU *pdu, WAPAddrTuple *addr_tuple)
     event->u.RcvInvoke.gtr = pdu->u.Invoke.gtr;
     event->u.RcvInvoke.ttr = pdu->u.Invoke.ttr;
     event->u.RcvInvoke.addr_tuple = wap_addr_tuple_duplicate(addr_tuple);
+
+    return event;
+}
+
+static WAPEvent *unpack_result(WTP_PDU *pdu, WAPAddrTuple *addr_tuple)
+{
+    WAPEvent *event;
+
+    event = wap_event_create(RcvResult);
+    event->u.RcvResult.user_data = 
+        octstr_duplicate(pdu->u.Result.user_data);
+    event->u.RcvResult.tid = pdu->u.Result.tid;
+    event->u.RcvResult.rid = pdu->u.Result.rid;
+    event->u.RcvResult.gtr = pdu->u.Result.gtr;
+    event->u.RcvResult.ttr = pdu->u.Result.ttr;
+    event->u.RcvResult.addr_tuple = wap_addr_tuple_duplicate(addr_tuple);
 
     return event;
 }
@@ -222,6 +242,7 @@ WAPEvent *unpack_wdp_datagram_real(WAPEvent *datagram)
 	return NULL;
 
     pdu = wtp_pdu_unpack(data);
+
 /*
  * Wtp_pdu_unpack returned NULL, we build a rcv error event. 
  */
@@ -236,18 +257,26 @@ WAPEvent *unpack_wdp_datagram_real(WAPEvent *datagram)
     switch (pdu->type) {
 
     case Invoke:
-	event = unpack_invoke(pdu, datagram->u.T_DUnitdata_Ind.addr_tuple);
-/*
- * If an initiator gets invoke, it would be an illegal pdu.
- */
+        event = unpack_invoke(pdu, datagram->u.T_DUnitdata_Ind.addr_tuple);
+        /* if an WTP initiator gets invoke, it would be an illegal pdu. */
         if (!wtp_event_is_for_responder(event)){
             debug("wap.wtp", 0, "Invoke when initiator. Message was");
             wap_event_destroy(event);
             event = pack_error(datagram);
         }
-	break;
+        break;
 
-        case Ack:
+    case Result:
+        event = unpack_result(pdu, datagram->u.T_DUnitdata_Ind.addr_tuple);
+        /* if an WTP responder gets result, it would be an illegal pdu. */
+        if (wtp_event_is_for_responder(event)){
+            debug("wap.wtp", 0, "Result when responder. Message was");
+            wap_event_destroy(event);
+            event = pack_error(datagram);
+        }
+        break;
+
+    case Ack:
 	    event = unpack_ack(pdu, datagram->u.T_DUnitdata_Ind.addr_tuple);    
         break;
 
