@@ -1,3 +1,9 @@
+2003-07-24  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * utils/vimrc: example vim configuration to have 4 space tabs and no tab
+      characters
+    * gw/wap-map.c: removed \r chars (no DOS text files please)
+    * gw/wap-map.c: added missing .h
+
 2003-08-07  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bearerbox.c: store_shutdown() _must_ be called after all services
       that make use of it are down.

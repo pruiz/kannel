@@ -5,6 +5,7 @@
  */
 
 #include "gwlib/gwlib.h"
+#include "wap-maps.h"
 
 struct url_map_struct {
     Octstr *name;
