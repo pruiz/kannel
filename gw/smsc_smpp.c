@@ -853,10 +853,19 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     octstr_destroy(address_range);
 
     conn->status = SMSCCONN_CONNECTING;
-    smpp->transmitter = gwthread_create(io_thread, io_arg_create(smpp, 1));
-    smpp->receiver = gwthread_create(io_thread, io_arg_create(smpp, 0));
+      
+    /*
+     * I/O threads are only started if the corresponding ports
+     * have been configured with positive numbers. Use 0 to 
+     * disable the creation of the corresponding thread.
+     */
+    if (port != 0)
+        smpp->transmitter = gwthread_create(io_thread, io_arg_create(smpp, 1));
+    if (receive_port != 0)
+        smpp->receiver = gwthread_create(io_thread, io_arg_create(smpp, 0));
     
-    if (smpp->transmitter == -1 || smpp->receiver == -1) {
+    if ((port != 0 && smpp->transmitter == -1) || 
+        (receive_port != 0 && smpp->receiver == -1)) {
     	error(0, "SMPP: Couldn't start I/O threads.");
 	smpp->quitting = 1;
 	if (smpp->transmitter != -1) {
