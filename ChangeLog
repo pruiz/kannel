@@ -1,3 +1,8 @@
+2000-03-08  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gw/wml_compiler.c: Bug fix: no more squares (ie tabulator 
+	characters) in the compiler output.
+
 2000-03-08    <rpr@rpr.wapit.com>
 
 	* gw/smsbox_req.c: started re-working on UDHs, all new code

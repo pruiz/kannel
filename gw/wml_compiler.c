@@ -7,6 +7,7 @@ until libxml is installed everywhere we do development. --liw */
 int wml_compiler_not_implemented = 1;
 #else
 
+#include <assert.h>
 #include "wml_compiler.h"
 
 /***********************************************************************
@@ -292,7 +293,7 @@ var_esc_t check_variable_syntax(Octstr *variable);
 
 /* Functions to get rid of extra white space. */
 
-Octstr *text_strip_blank(Octstr *text);
+void text_strip_blank(Octstr *text);
 void text_shrink_blank(Octstr *text);
 
 /* Output into the wbxml_string. */
@@ -325,19 +326,18 @@ int wml_compile(Octstr *wml_text,
 		Octstr **wml_binary,
 		Octstr **wml_scripts)
 {
-  Octstr *stripped_text;
   int i, ret = 0;
   size_t size;
   char *wml_c_text;
 
   /* Remove the extra space from start and the end of the WML Document. */
 
-  stripped_text = text_strip_blank(wml_text);
+  text_strip_blank(wml_text);
 
   /* Check the WML-code for \0-characters. */
 
-  size = octstr_len(stripped_text);
-  wml_c_text = octstr_get_cstr(stripped_text);
+  size = octstr_len(wml_text);
+  wml_c_text = octstr_get_cstr(wml_text);
 
   for (i = 0; i < size; i++)
     {
@@ -360,8 +360,6 @@ int wml_compile(Octstr *wml_text,
 
   *wml_binary = octstr_duplicate(wbxml_string);
   *wml_scripts = octstr_create_empty();
-
-  octstr_destroy(stripped_text);
 
   return ret;
 }
@@ -740,9 +738,9 @@ int parse_text(xmlNodePtr node)
   text_strip_blank(temp);
 
   if (octstr_len(temp) == 0)
-    return 0;
-
-  ret = parse_octet_string(temp);
+    ret = 0;
+  else
+    ret = parse_octet_string(temp);
 
   /* Memory cleanup. */
   octstr_destroy(temp);
@@ -803,9 +801,12 @@ int parse_variable(Octstr *text, int start, Octstr **output)
 
 Octstr *get_variable(Octstr *text, int start)
 {
-  Octstr *var;
+  Octstr *var = NULL;
   size_t end;
   char ch;
+
+  assert(text != NULL);
+  assert(start >= 0 && start <= octstr_len(text));
 
   ch = octstr_get_char(text, start);
 
@@ -832,7 +833,9 @@ Octstr *get_variable(Octstr *text, int start)
 
       var = octstr_copy(text, start, end - start);
     }
-     
+
+  assert(var != NULL);
+
   return var;
 }
 
@@ -921,7 +924,7 @@ var_esc_t check_variable_syntax(Octstr *variable)
 
 int parse_octet_string(Octstr *ostr)
 {
-  Octstr *output, *temp1, *temp2, *var;
+  Octstr *output, *temp1, *temp2 = NULL, *var;
   int var_len;
   int start = 0, pos = 0, len;
 
@@ -1123,21 +1126,30 @@ Octstr *output_variable(Octstr *variable, var_esc_t escaped)
  * string.
  */
 
-Octstr *text_strip_blank(Octstr *text)
+void text_strip_blank(Octstr *text)
 {
-  int start = 0, end;
+  int start = 0, end, len = 0;
 
   /* Remove white space from the beginning of the text */
   while (isspace(octstr_get_char(text, start)))
     start ++;
 
+  if(start > 0)
+    octstr_delete(text, 0, start);
+
   /* and from the end. */
-  end = octstr_len(text);
 
-  while (isspace(octstr_get_char(text, end)))
-    end--;
+  if ((len = octstr_len(text)) > 0)
+    {
+      end = len = len - 1;
 
-  return octstr_copy(text, start, end);
+      while (isspace(octstr_get_char(text, end)))
+	end--;
+
+      octstr_delete(text, end + 1, len - end);
+    }
+
+  return;
 }
 
 
