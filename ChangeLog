@@ -1,4 +1,14 @@
 2002-01-29  Stipe Tolj  <tolj@wapme-systems.de>
+    * STATUS: added Alex Judd's smsc_smpps.c TON patch and added 
+      an open issue for re-connect trying of smsc_emi2.c
+    * gw/smsc_smpp.c: Applied patch for checking host config directive
+      submited by Alex Judd <ajudd@jantar.kgbinternet.com>
+      [Msg-ID: <Pine.LNX.4.33.0201290420170.22043-100000@jantar.kgbinternet.com>]
+      Applied patch fixing timestamping of messages 
+      submited by "Angel Fradejas" <afradejas@mediafusion.es>
+      [Msg-ID: <FMEKKCFKIGBADHGIJKPJAEBNCNAA.afradejas@mediafusion.es>]
+
+2002-01-29  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/thread.c: minimal debug output change in
       mutex_unlock_real() to be of same style as others.
 
