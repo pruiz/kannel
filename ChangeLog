@@ -1,3 +1,9 @@
+Wed Mar 29 23:01:15 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/list.c: Changed assert to gw_assert.
+	
+	* test/test_list.c: Cleanups.
+
 Wed Mar 29 21:59:53 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile.in: Removed installation of test_wml, since it's obsolete.

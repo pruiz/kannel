@@ -29,10 +29,10 @@
  * Lars Wirzenius <liw@wapit.com>
  */
 
-#include <assert.h>
 #include <string.h>
 #include <unistd.h>
 
+#include "gwassert.h"
 #include "config.h"
 #include "list.h"
 #include "log.h"
@@ -106,8 +106,8 @@ void list_insert(List *list, long pos, void *item) {
 	long i;
 
 	lock(list);
-	assert(pos >= 0);
-	assert(pos <= list->len);
+	gw_assert(pos >= 0);
+	gw_assert(pos <= list->len);
 
 	make_bigger(list, 1);
 	for (i = list->len; i > pos; --i)
@@ -169,8 +169,8 @@ void *list_get(List *list, long pos) {
 	void *item;
 
 	lock(list);
-	assert(pos >= 0);
-	assert(pos < list->len);
+	gw_assert(pos >= 0);
+	gw_assert(pos < list->len);
 	item = GET(list, pos);
 	unlock(list);
 	return item;
@@ -253,7 +253,7 @@ void list_add_producer(List *list) {
 
 void list_remove_producer(List *list) {
 	lock(list);
-	assert(list->num_producers > 0);
+	gw_assert(list->num_producers > 0);
 	--list->num_producers;
 	pthread_cond_broadcast(&list->nonempty);
 	unlock(list);
@@ -401,7 +401,7 @@ static void make_bigger(List *list, long items) {
 	 *		     start+len       start
 	 */		
 
-	assert(list->start < old_size || (list->start == 0 && old_size == 0));
+	gw_assert(list->start < old_size || (list->start == 0 && old_size == 0));
 	if (list->start + list->len > old_size) {
 		len_at_end = old_size - list->start;
 		len_at_beginning = list->len - len_at_end;
@@ -431,10 +431,10 @@ static void make_bigger(List *list, long items) {
 static void delete_items_from_list(List *list, long pos, long count) {
 	long i, from, to;
 
-	assert(pos >= 0);
-	assert(pos < list->len);
-	assert(count >= 0);
-	assert(pos + count <= list->len);
+	gw_assert(pos >= 0);
+	gw_assert(pos < list->len);
+	gw_assert(count >= 0);
+	gw_assert(pos + count <= list->len);
 
 	/*
 	 * There are four cases:

@@ -5,7 +5,7 @@
  */
  
 #ifndef TRACE
-#define TRACE 100000
+#define TRACE (100*1000)
 #endif
 
 #ifndef THREADS
@@ -81,7 +81,8 @@ static void *producer(void *arg) {
 		list_produce(list, new_item(id, i, index));
 #if TRACE
 		if ((i % TRACE) == 0)
-			info(0, "Put: %ld, %ld, %ld", id, i, index);
+			info(0, "Put: producer==%ld item=%ld index=%ld", 
+				id, i, index);
 #endif
 	}
 	info(0, "producer dies");
@@ -105,8 +106,8 @@ static void *consumer(void *arg) {
 			break;
 #if TRACE
 		if ((i % TRACE) == 0)
-			info(0, "Got %ld: %ld, %ld, %ld", i, item->producer, 
-					item->num, item->index);
+			info(0, "Got %ld: producer=%ld item=%ld index=%ld", 
+				i, item->producer, item->num, item->index);
 #endif
 		received[item->index] = 1;
 		gw_free(item);
@@ -118,24 +119,34 @@ static void *consumer(void *arg) {
 }
 
 
+static void init_received(void) {
+	memset(received, 0, sizeof(received));
+}
+
 static void check_received(void) {
-	int p, n;
+	long p, n, index;
 	
-	for (p = 0; p < NUM_PRODUCERS; ++p)
-		for (n = 0; n < NUM_ITEMS_PER_PRODUCER; ++n)
-			if (!received[p*NUM_ITEMS_PER_PRODUCER + n])
-				error(0, "Not received: %d %d", p, n);
+	for (p = 0; p < NUM_PRODUCERS; ++p) {
+		for (n = 0; n < NUM_ITEMS_PER_PRODUCER; ++n) {
+			index = p * NUM_ITEMS_PER_PRODUCER + n;
+			if (!received[index]) {
+				error(0, "Not received: producer=%ld item=%ld "
+				         "index=%ld", producers[p], n, index);
+			}
+		}
+	}
 }
 
 
 #if THREADS
-static void main_with_threads(void) {
+static void main_for_producer_and_consumer(void) {
 	List *list;
 	int i;
 	void *ret;
 	Item *item;
 	
 	list = list_create();
+	init_received();
 	
 	for (i = 0; i < NUM_PRODUCERS; ++i)
 		producers[i] = start_thread(0, producer, list, 0);
@@ -159,21 +170,24 @@ static void main_with_threads(void) {
 	info(0, "main ends");
 	
 	check_received();
+	info(0, "main_with_threads done.");
 }
-#endif
-
-
-static void main_without_threads(void) {
+#else
+static void main_for_producer_and_consumer(void) {
 	List *list;
 	Item *item;
+	long i;
 	
 	list = list_create();
-
-	producers[0] = (long) pthread_self();
-	consumers[0] = (long) pthread_self();
-	
-	producer(list);
-	consumer(list);
+	init_received();
+	for (i = 0; i < NUM_PRODUCERS; ++i) {
+		producers[i] = (long) pthread_self();
+		producer(list);
+	}
+	for (i = 0; i < NUM_PRODUCERS; ++i) {
+		consumers[i] = (long) pthread_self();
+		consumer(list);
+	}
 
 	while (list_len(list) > 0) {
 		item = list_get(list, 0);
@@ -184,7 +198,9 @@ static void main_without_threads(void) {
 	info(0, "main ends");
 	
 	check_received();
+	info(0, "main_without_threads done.");
 }
+#endif
 
 
 static int compare_cstr(void *item, void *pat) {
@@ -287,9 +303,6 @@ static void main_for_extract(void) {
 int main(void) {
 	main_for_list_add_and_delete();
 	main_for_extract();
-	main_without_threads();
-#if THREADS
-	main_with_threads();
-#endif
+	main_for_producer_and_consumer();
 	return 0;
 }
