@@ -724,8 +724,8 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
     mclass = mwi = coding = validity = deferred = 0;
     retmsg = NULL;
 
-    user = http_cgi_variable(cgivars, "username");
-    pass = http_cgi_variable(cgivars, "password");
+    user = http_cgi_variable(cgivars, "app_id");
+    pass = http_cgi_variable(cgivars, "key");
     from = http_cgi_variable(cgivars, "source_addr");
     to = http_cgi_variable(cgivars, "dest_addr");
     text = http_cgi_variable(cgivars, "message");
@@ -737,7 +737,7 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
     if (user == NULL || pass == NULL ||
 	    octstr_compare(user, conndata->username) != 0 ||
 	    octstr_compare(pass, conndata->password) != 0) {
-        error(0, "HTTP[%s]: Authorization failure. app_id was <%s>.",
+        error(0, "HTTP[%s]: Authorization failure. username was <%s>.",
               octstr_get_cstr(conn->id), octstr_get_cstr(user));
         retmsg = octstr_create("Authorization failed for MO submission.");
         status = HTTP_UNAUTHORIZED;
