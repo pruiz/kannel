@@ -633,6 +633,28 @@ void http_append_headers(List *to, List *from)
 }
 
 
+void http_header_combine(List *old_headers, List *new_headers)
+{
+    long i;
+    Octstr *name;
+    Octstr *value;
+
+    /*
+     * Avoid doing this scan if old_headers is empty anyway.
+     */
+    if (list_len(old_headers) > 0) {
+        for (i = 0; i < list_len(new_headers); i++) {
+  	    http_header_get(new_headers, i, &name, &value);
+	    http_header_remove_all(old_headers, octstr_get_cstr(name));
+            octstr_destroy(name);
+            octstr_destroy(value);
+        }
+    }
+
+    http_append_headers(old_headers, new_headers);
+}
+
+
 Octstr *http_header_find_first(List *headers, char *name)
 {
     long i, name_len;

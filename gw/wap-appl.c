@@ -365,9 +365,9 @@ static void fetch_thread(void *arg) {
 	actual_headers = list_create();
 
 	if (session_headers != NULL)
-		http_append_headers(actual_headers, session_headers);
+		http_header_combine(actual_headers, session_headers);
 	if (request_headers != NULL)
-		http_append_headers(actual_headers, request_headers);
+		http_header_combine(actual_headers, request_headers);
 
         http_remove_hop_headers(actual_headers);
 	add_accept_headers(actual_headers);

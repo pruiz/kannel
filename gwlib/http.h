@@ -284,6 +284,25 @@ void http_append_headers(List *to, List *from);
 Octstr *http_header_value(Octstr *header);
 
 /*
+ * Append all headers from new_headers to old_headers.  Headers from
+ * new_headers _replace_ the ones in old_headers if they have the same
+ * name.  For example, if you have:
+ * old_headers
+ *    Accept: text/html
+ *    Accept: text/plain
+ *    Accept: image/jpeg
+ *    Accept-Language: en
+ * new_headers
+ *    Accept: text/html
+ *    Accept: text/plain
+ * then after the operation, old_headers will have
+ *    Accept-Language: en
+ *    Accept: text/html
+ *    Accept: text/plain
+ */
+void http_header_combine(List *old_headers, List *new_headers);
+
+/*
  * Return the length of the quoted-string (a HTTP field element)
  * starting at position pos in the header.  Return -1 if there
  * is no quoted-string at that position.

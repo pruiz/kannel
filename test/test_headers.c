@@ -13,6 +13,48 @@
 #include "gw/wsp-strings.h"
 
 
+/* Test the http_header_combine function. */
+static void test_header_combine(void)
+{
+    List *old;
+    List *new;
+    List *tmp;
+
+    old = http_create_empty_headers();
+    new = http_create_empty_headers();
+    tmp = http_create_empty_headers();
+
+    http_header_add(old, "Accept", "text/html");
+    http_header_add(old, "Accept", "text/plain");
+    http_header_add(old, "Accept-Language", "en");
+    http_header_add(old, "Accept", "image/jpeg");
+
+    http_header_combine(tmp, old);
+    if (list_len(tmp) != 4) {
+        error(0, "http_combine_header with an empty 'old' did not just append.");
+    }
+
+    http_header_combine(old, new);
+    if (list_len(old) != 4) {
+        error(0, "http_combine_header with an empty 'new' changed 'old'.");
+    }
+
+    http_header_add(new, "Accept", "text/html");
+    http_header_add(new, "Accept", "text/plain");
+    
+    http_header_combine(old, new);
+    if (list_len(old) != 3 ||
+        octstr_compare(list_get(old, 0),
+                       octstr_create_immutable("Accept-Language: en")) != 0 ||
+        octstr_compare(list_get(old, 1),
+                       octstr_create_immutable("Accept: text/html")) != 0 ||
+        octstr_compare(list_get(old, 2),
+                       octstr_create_immutable("Accept: text/plain")) != 0) {
+        error(0, "http_header_combine failed.");
+    }
+}
+ 
+
 static void split_headers(Octstr *headers, List **split, List **expected)
 {
     long start;
@@ -88,6 +130,8 @@ int main(int argc, char **argv)
             }
         }
     }
+
+    test_header_combine();
 
     octstr_destroy(headers);
     list_destroy(split, octstr_destroy_item);

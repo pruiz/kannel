@@ -1,3 +1,13 @@
+2000-10-26  Richard Braakman  <dark@wapit.com>
+
+	* gw/wap-appl.c: Use http_header_combine instead of
+	http_append_headers to combine session and request headers,
+	to get the semantics right according to WAE section 8.
+
+	* gwlib/http.c: Implemented http_header_combine.
+
+	* test/test_headers.c: Added a test of http_header_combine.
+
 2000-10-26  Lars Wirzenius  <liw@iki.fi>
 
     	* gwlib/dict.[ch]: Wrote.
