@@ -37,6 +37,11 @@ void smsbox_req_init(URLTranslationList *translations,
 		    int (*sender) (Msg *msg));
 
 /*
+ * Shut down the request module, must be called last.
+ */
+void smsbox_req_shutdown(void);
+
+/*
  * return the total number of request threads currently running
  */
 int smsbox_req_count(void);

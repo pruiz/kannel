@@ -79,12 +79,6 @@ static int	heartbeat_freq;
 static char	*accepted_chars = NULL;
 
 static int 	socket_fd;
-static char 	*http_proxy_host = NULL;
-static int  	http_proxy_port = -1;
-static List 	*http_proxy_exceptions = NULL;
-static Octstr	*http_proxy_username = NULL;
-static Octstr	*http_proxy_password = NULL;
-
 static int	only_try_http = 0;
 
 /* thread handling */
@@ -194,6 +188,8 @@ static void http_request_thread(void *arg)
 	http_destroy_cgiargs(args);
 	
 	http_send_reply(client, HTTP_OK, reply_hdrs, answer);
+
+	octstr_destroy(answer);
     }
 
     http_destroy_headers(reply_hdrs);
@@ -252,6 +248,12 @@ static void init_smsbox(Config *cfg)
     char *logfile = NULL;
     char *p;
     int lvl = 0;
+    Octstr *http_proxy_host = NULL;
+    int http_proxy_port = -1;
+    List *http_proxy_exceptions = NULL;
+    Octstr *http_proxy_username = NULL;
+    Octstr *http_proxy_password = NULL;
+
 
     bb_port = BB_DEFAULT_SMSBOX_PORT;
     bb_host = BB_DEFAULT_HOST;
@@ -271,7 +273,7 @@ static void init_smsbox(Config *cfg)
     bb_port = atoi(p);
 
     if ((p = config_get(grp, "http-proxy-host")) != NULL)
-    	http_proxy_host = p;
+    	http_proxy_host = octstr_create(p);
     if ((p = config_get(grp, "http-proxy-port")) != NULL)
     	http_proxy_port = atoi(p);
     if ((p = config_get(grp, "http-proxy-username")) != NULL)
@@ -337,13 +339,15 @@ static void init_smsbox(Config *cfg)
     }
 
     if (http_proxy_host != NULL && http_proxy_port > 0) {
-	Octstr *os;
-	
-	os = octstr_create(http_proxy_host);
-    	http_use_proxy(os, http_proxy_port, http_proxy_exceptions,
-	    	       http_proxy_username, http_proxy_password);
-	octstr_destroy(os);
+    	http_use_proxy(http_proxy_host, http_proxy_port,
+		       http_proxy_exceptions, http_proxy_username,
+                       http_proxy_password);
     }
+
+    octstr_destroy(http_proxy_host);
+    octstr_destroy(http_proxy_username);
+    octstr_destroy(http_proxy_password);
+    list_destroy(http_proxy_exceptions, octstr_destroy_item);
 }
 
 
@@ -510,8 +514,10 @@ int main(int argc, char **argv)
 
     alog_close();
     http_close_all_servers();
+    gwthread_join_every(http_request_thread);
     mutex_destroy(socket_mutex);
     urltrans_destroy(translations);
+    smsbox_req_shutdown();
     config_destroy(cfg);
     gwlib_shutdown();
     return 0;

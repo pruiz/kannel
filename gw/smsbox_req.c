@@ -644,6 +644,11 @@ void smsbox_req_init(URLTranslationList *transls,
 		global_sender = gw_strdup(global);
 }
 
+void smsbox_req_shutdown(void)
+{
+    gw_free(global_sender);
+}
+
 int smsbox_req_count(void)
 {
 	return (int)req_threads;

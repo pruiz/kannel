@@ -1,3 +1,14 @@
+2000-11-23  Richard Braakman  <dark@wapi.com>
+
+	* gw/smsbox.c: Moved http_proxy_ variables into init_smsbox, since
+	they are used only there.  Made http_proxy_host an Octstr.
+
+	* gw/smsbox.c: Wait for http_request_thread to terminate, when
+	shutting down the box.
+
+	* gw/smsbox_req.[ch], gw/smsbox.c: Added smsbox_req_shutdown(),
+	so that it can clean up its copy of global_sender.
+
 2000-11-23  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/http.c: Deal with HTTP version numbers above 1.1 also
