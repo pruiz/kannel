@@ -16,6 +16,12 @@ Tue Mar  7 16:40:49 CET 2000	Patrick Schaaf	<bof@bof.de>
 	headers. This gets rid of the duplicate User-Agent: header, which
 	convinces some sites to send wml instead of html.
 
+2000-03-07  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gw/wml_compiler.c (text_shrink_blank): A little bug fix. The first 
+	white space character in a row of them is now converted into a space, 
+	the rest are deleted before compiling.
+
 2000-03-07    <rpr@rpr.wapit.com>
 
 	* gw/kannel.*conf: fixed hearbeat as heartbeat
