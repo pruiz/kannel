@@ -7,7 +7,7 @@
 
 #include "wap/wap.h"
 
-void wap_appl_init(void);
+void wap_appl_init(Cfg *cfg);
 void wap_appl_dispatch(WAPEvent *event);
 void wap_appl_shutdown(void);
 long wap_appl_get_load(void);
