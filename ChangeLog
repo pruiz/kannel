@@ -1,5 +1,10 @@
 2000-10-09  Richard Braakman  <dark@wapit.com>
 
+	* wmlscript/wsgram.y: Compile unary + such that it performs the
+	required type conversions.
+
+2000-10-09  Richard Braakman  <dark@wapit.com>
+
 	* wmlscript/wsasm.c: Fixed error in jump distance calculation when
 	jumping backward over a forward jump.  This messed up "continue"
 	statements among other things.

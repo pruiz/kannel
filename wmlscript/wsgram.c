@@ -299,9 +299,9 @@ static const short yyrline[] = { 0,
    544,   548,   550,   554,   556,   560,   562,   566,   568,   570,
    574,   576,   578,   580,   582,   586,   588,   590,   592,   596,
    598,   600,   604,   606,   608,   610,   612,   616,   618,   620,
-   622,   624,   626,   650,   652,   654,   658,   660,   662,   666,
-   668,   678,   680,   684,   687,   689,   691,   693,   695,   697,
-   699,   703,   706,   710,   716
+   622,   624,   626,   642,   644,   646,   650,   652,   654,   658,
+   660,   670,   672,   676,   679,   681,   683,   685,   687,   689,
+   691,   695,   698,   702,   708
 };
 #endif
 
@@ -1572,51 +1572,43 @@ case 122:
 case 123:
 #line 627 "wmlscript/wsgram.y"
 {
-		    /* TODO: The WMLScript specification do not say how
-                     * unary `+' expressions should be compiled.
-                     * Basically we have three alternatives:
-                     *
-		     *   1. Do nothing: just pass the UnaryExpression
-		     *      forward
-                     *
-		     *   2. Convert the `+UnaryExpression' to binary
-		     *      expression: `UnaryExpression + 0'.  This
-		     *      would force type conversion and we would get
-		     *      the possible type check errors from the
-		     *      correct location.
-                     *
-		     *   3. Convert the `+UnaryExpression' to:
-		     *      `--UnaryExpression'.  This would also
-		     *      perform the possible type conversion.
-                     *
-		     * Since this is an open issue, we select the most
-		     * compact form which is the case 1.
+                    /* There is no direct way to compile unary `+'.
+                     * It doesn't do anything except require type conversion
+		     * (section 7.2, 7.3.2), and we do that by converting
+		     * it to a binary expression: `UnaryExpression - 0'.
+                     * Using `--UnaryExpression' would not be correct because
+                     * it might overflow if UnaryExpression is the smallest
+                     * possible integer value (see 6.2.7.1).
+                     * Using `UnaryExpression + 0' would not be correct
+                     * because binary `+' accepts strings, which makes the
+		     * type conversion different.
                      */
-		    yyval.expr = yyvsp[0].expr;
+                    yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_SUB, yyvsp[0].expr,
+                              ws_expr_const_integer(pctx, yylsp[-1].first_line, 0));
 		;
     break;}
 case 124:
-#line 651 "wmlscript/wsgram.y"
+#line 643 "wmlscript/wsgram.y"
 { yyval.expr = ws_expr_unary(pctx, yylsp[-1].first_line, WS_ASM_UMINUS, yyvsp[0].expr); ;
     break;}
 case 125:
-#line 653 "wmlscript/wsgram.y"
+#line 645 "wmlscript/wsgram.y"
 { yyval.expr = ws_expr_unary(pctx, yylsp[-1].first_line, WS_ASM_B_NOT, yyvsp[0].expr); ;
     break;}
 case 126:
-#line 655 "wmlscript/wsgram.y"
+#line 647 "wmlscript/wsgram.y"
 { yyval.expr = ws_expr_unary(pctx, yylsp[-1].first_line, WS_ASM_NOT, yyvsp[0].expr); ;
     break;}
 case 128:
-#line 661 "wmlscript/wsgram.y"
+#line 653 "wmlscript/wsgram.y"
 { yyval.expr = ws_expr_postfix_var(pctx, yylsp[-1].first_line, WS_TRUE, yyvsp[-1].identifier); ;
     break;}
 case 129:
-#line 663 "wmlscript/wsgram.y"
+#line 655 "wmlscript/wsgram.y"
 { yyval.expr = ws_expr_postfix_var(pctx, yylsp[-1].first_line, WS_FALSE, yyvsp[-1].identifier); ;
     break;}
 case 131:
-#line 669 "wmlscript/wsgram.y"
+#line 661 "wmlscript/wsgram.y"
 {
 		    WsFunctionHash *f = ws_function_hash(pctx, yyvsp[-1].identifier);
 
@@ -1628,62 +1620,62 @@ case 131:
 		;
     break;}
 case 132:
-#line 679 "wmlscript/wsgram.y"
+#line 671 "wmlscript/wsgram.y"
 { yyval.expr = ws_expr_call(pctx, yylsp[-1].first_line, '#', yyvsp[-3].identifier, yyvsp[-1].identifier, yyvsp[0].list); ;
     break;}
 case 133:
-#line 681 "wmlscript/wsgram.y"
+#line 673 "wmlscript/wsgram.y"
 { yyval.expr = ws_expr_call(pctx, yylsp[-1].first_line, '.', yyvsp[-3].identifier, yyvsp[-1].identifier, yyvsp[0].list); ;
     break;}
 case 134:
-#line 686 "wmlscript/wsgram.y"
+#line 678 "wmlscript/wsgram.y"
 { yyval.expr = ws_expr_symbol(pctx, yylsp[0].first_line, yyvsp[0].identifier); ;
     break;}
 case 135:
-#line 688 "wmlscript/wsgram.y"
+#line 680 "wmlscript/wsgram.y"
 { yyval.expr = ws_expr_const_invalid(pctx, yylsp[0].first_line); ;
     break;}
 case 136:
-#line 690 "wmlscript/wsgram.y"
+#line 682 "wmlscript/wsgram.y"
 { yyval.expr = ws_expr_const_true(pctx, yylsp[0].first_line); ;
     break;}
 case 137:
-#line 692 "wmlscript/wsgram.y"
+#line 684 "wmlscript/wsgram.y"
 { yyval.expr = ws_expr_const_false(pctx, yylsp[0].first_line); ;
     break;}
 case 138:
-#line 694 "wmlscript/wsgram.y"
+#line 686 "wmlscript/wsgram.y"
 { yyval.expr = ws_expr_const_integer(pctx, yylsp[0].first_line, yyvsp[0].integer); ;
     break;}
 case 139:
-#line 696 "wmlscript/wsgram.y"
+#line 688 "wmlscript/wsgram.y"
 { yyval.expr = ws_expr_const_float(pctx, yylsp[0].first_line, yyvsp[0].vfloat); ;
     break;}
 case 140:
-#line 698 "wmlscript/wsgram.y"
+#line 690 "wmlscript/wsgram.y"
 { yyval.expr = ws_expr_const_string(pctx, yylsp[0].first_line, yyvsp[0].string); ;
     break;}
 case 141:
-#line 700 "wmlscript/wsgram.y"
+#line 692 "wmlscript/wsgram.y"
 { yyval.expr = yyvsp[-1].expr; ;
     break;}
 case 142:
-#line 705 "wmlscript/wsgram.y"
+#line 697 "wmlscript/wsgram.y"
 { yyval.list = ws_list_new(pctx); ;
     break;}
 case 143:
-#line 707 "wmlscript/wsgram.y"
+#line 699 "wmlscript/wsgram.y"
 { yyval.list = yyvsp[-1].list; ;
     break;}
 case 144:
-#line 712 "wmlscript/wsgram.y"
+#line 704 "wmlscript/wsgram.y"
 {
 		    yyval.list = ws_list_new(pctx);
 		    ws_list_append(pctx, yyval.list, yyvsp[0].expr);
 		;
     break;}
 case 145:
-#line 717 "wmlscript/wsgram.y"
+#line 709 "wmlscript/wsgram.y"
 { ws_list_append(pctx, yyvsp[-2].list, yyvsp[0].expr); ;
     break;}
 }
@@ -1908,7 +1900,7 @@ yyerrhandle:
     }
   return 1;
 }
-#line 720 "wmlscript/wsgram.y"
+#line 712 "wmlscript/wsgram.y"
 
 
 void

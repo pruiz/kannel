@@ -625,27 +625,19 @@ UnaryExpression:
 		{ $$ = ws_expr_unary_var(pctx, @1.first_line, WS_FALSE, $2); }
 	| '+' UnaryExpression
 		{
-		    /* TODO: The WMLScript specification do not say how
-                     * unary `+' expressions should be compiled.
-                     * Basically we have three alternatives:
-                     *
-		     *   1. Do nothing: just pass the UnaryExpression
-		     *      forward
-                     *
-		     *   2. Convert the `+UnaryExpression' to binary
-		     *      expression: `UnaryExpression + 0'.  This
-		     *      would force type conversion and we would get
-		     *      the possible type check errors from the
-		     *      correct location.
-                     *
-		     *   3. Convert the `+UnaryExpression' to:
-		     *      `--UnaryExpression'.  This would also
-		     *      perform the possible type conversion.
-                     *
-		     * Since this is an open issue, we select the most
-		     * compact form which is the case 1.
+                    /* There is no direct way to compile unary `+'.
+                     * It doesn't do anything except require type conversion
+		     * (section 7.2, 7.3.2), and we do that by converting
+		     * it to a binary expression: `UnaryExpression - 0'.
+                     * Using `--UnaryExpression' would not be correct because
+                     * it might overflow if UnaryExpression is the smallest
+                     * possible integer value (see 6.2.7.1).
+                     * Using `UnaryExpression + 0' would not be correct
+                     * because binary `+' accepts strings, which makes the
+		     * type conversion different.
                      */
-		    $$ = $2;
+                    $$ = ws_expr_binary(pctx, @1.first_line, WS_ASM_SUB, $2,
+                              ws_expr_const_integer(pctx, @1.first_line, 0));
 		}
 	| '-' UnaryExpression
 		{ $$ = ws_expr_unary(pctx, @1.first_line, WS_ASM_UMINUS, $2); }
