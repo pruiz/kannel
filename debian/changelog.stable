@@ -1,10 +1,25 @@
+kannel (1.2.1-4) unstable; urgency=low
+
+  * New maintainer (Closes: #185224)
+  * Updated Standards-Version to 3.5.9
+
+ -- Bruno Rodrigues <bruno.rodrigues@litux.org>  Tue, 18 Mar 2003 23:33:49 +0000
+
+kannel (1.2.1-3) unstable; urgency=low
+
+  * Moved debian dir from orig to diff
+  * Added debian/compat
+  * Tidy up
+
+ -- Bruno Rodrigues <bruno.rodrigues@litux.org>  Mon, 17 Mar 2003 18:42:36 +0000
+
 kannel (1.2.1-2) unstable; urgency=low
 
-  * Updated Standards-Version
+  * Updated Standards-Version to 3.5.8
 
  -- Bruno Rodrigues <bruno.rodrigues@litux.org>  Sun, 26 Jan 2003 17:05:13 +0100
 
-kannel (1.2.1-1) unstable; urgency=low
+kkannel (1.2.1-1) unstable; urgency=low
 
   * New upstream version
 

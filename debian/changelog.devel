@@ -1,8 +1,21 @@
-kannel-devel (1.3.1-0) unstable; urgency=low
+kannel-devel (1.3.1-3) unstable; urgency=low
 
-  * New upstream version (development) 
+  * New package (Closes: #185381) 
 
- -- Bruno Rodrigues <bruno.rodrigues@litux.org>  Fri, 14 Feb 2003 22:20:01 +0000
+ -- Bruno Rodrigues <bruno.rodrigues@litux.org>  Wed, 19 Mar 2003 00:04:44 +0000
+
+kannel-devel (1.3.1-2) unstable; urgency=low
+
+  * Moved debian dir from orig.tar.gz to diff
+  * Tidy up debian/ files
+
+ -- Bruno Rodrigues <bruno.rodrigues@litux.org>  Mon, 17 Mar 2003 21:20:19 +0000
+
+kannel-devel (1.3.1-1) unstable; urgency=low
+
+  * New upstream version (development)
+
+ -- Bruno Rodrigues <bruno.rodrigues@litux.org>  Tue, 18 Feb 2003 05:52:44 +0000
 
 kannel-devel (1.3.0-2) unstable; urgency=low
 

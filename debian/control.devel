@@ -11,24 +11,32 @@ Section: net
 Priority: optional
 Depends: ${shlibs:Depends}
 Replaces: kannel
-Description: WAP and SMS gateway
+Description: WAP and SMS gateway - development
  Kannel is a gateway for connecting WAP (Wireless Application Protocol)
  phones to the Internet. It also works as an SMS gateway, for providing
  SMS based services for GSM phones.
  .
  Compiled with ssl, mysql and native malloc
+ .
+ Development and/or CVS versions are stable enough and encouraged to use
+ to enable constant testing. CVS bugs are usually fixed in one or to days
+ and a lot of developers use stable CVS versions in production.
 
 Package: kannel-devel-docs
 Architecture: any
 Section: net
 Priority: optional
 Replaces: kannel-docs
-Description: WAP and SMS gateway documentation
+Description: WAP and SMS gateway documentation - development
  Kannel is a gateway for connecting WAP (Wireless Application Protocol)
  phones to the Internet. It also works as an SMS gateway, for providing
  SMS based services for GSM phones.
  .
- Documentation
+ Development and/or CVS versions are stable enough and encouraged to use
+ to enable constant testing. CVS bugs are usually fixed in one or to days
+ and a lot of developers use stable CVS versions in production.
+ .
+ Documentation in html, ps, rtf and pdf format
 
 Package: kannel-devel-extras
 Architecture: any
@@ -37,9 +45,13 @@ Priority: optional
 Suggests: python
 Replaces: kannel-extras
 Depends: ${shlibs:Depends}
-Description: WAP and SMS gateway extras
+Description: WAP and SMS gateway extras - development
  Kannel is a gateway for connecting WAP (Wireless Application Protocol)
  phones to the Internet. It also works as an SMS gateway, for providing
  SMS based services for GSM phones.
+ .
+ Development and/or CVS versions are stable enough and encouraged to use
+ to enable constant testing. CVS bugs are usually fixed in one or to days
+ and a lot of developers use stable CVS versions in production.
  .
  test and check utilities

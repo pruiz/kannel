@@ -1,3 +1,14 @@
+2003-04-05  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
+    * debian/*: syncronized with .diff files
+    * debian: now defaults to generating a kannel-cvs package for building
+      daily snapshots. To build stable or devel, rename
+      {changelog,control}.{stable,devel} to {changelog,control}
+    * debian/.cvsignore: also ignore kannel-cvs temporary directories
+    * debian/*.postinst: fixed chown /var/run bug
+    * config.{guess,sub}: updated to new files - hope it won't break anything
+    * gw/sms.c: also set alt_dcs=0, improvement to Alexander patch at Mar 04
+    * Note: kannel 1.2.1 and 1.3.1 are about to enter debian :)))))
+
 2003-04-05  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_http.c: fixed compiler warning.
 

@@ -88,6 +88,7 @@ int dcs_to_fields(Msg **msg, int dcs) {
     
     /* Non-MWI Mode 0 */
     else if ((dcs & 0xC0) == 0x00) { 
+        (*msg)->sms.alt_dcs = 0;
         (*msg)->sms.compress = ((dcs & 0x20) == 0x20) ? 1 : 0; /* grab bit 5 */
         (*msg)->sms.mclass = ((dcs & 0x10) == 0x10) ? 1 + (dcs & 0x03) : 0; 
 	    /* grab bit 0,1 if bit 4 is on */
@@ -96,6 +97,7 @@ int dcs_to_fields(Msg **msg, int dcs) {
 
     /* MWI */
     else if ((dcs & 0xC0) == 0xC0) { 
+        (*msg)->sms.alt_dcs = 0;
         (*msg)->sms.coding = ((dcs & 0x30) == 0x30) ? DC_UCS2 : DC_7BIT;
         if (dcs & 0x08)
             dcs |= 0x04; /* if bit 3 is active, have mwi += 4 */
