@@ -50,7 +50,6 @@ static void dump_pdu(const char *msg, Octstr *id, SMASI_PDU *pdu)
 /************************************************************************/
 
 #define SMASI_DEFAULT_PORT          21500
-#define SMASI_RECONNECT_DELAY       10.0
 #define SMASI_DEFAULT_PRIORITY      0
 #define MAX_PENDING_SUBMITS         10
 #define SMASI_THROTTLING_SLEEP_TIME 15
@@ -93,7 +92,6 @@ typedef struct {
     long source_addr_npi;
     long dest_addr_ton;
     long dest_addr_npi;
-    long reconnect_delay;
     long priority;
     time_t throttling_err_time;
     int quitting;
@@ -123,7 +121,6 @@ static SMASI *smasi_create(SMSCConn *conn)
     smasi->dest_addr_npi = -1;
     smasi->my_number = NULL;
     smasi->port = 21500;
-    smasi->reconnect_delay = 10;
     smasi->quitting = 0;
     smasi->logged_off = 0;
     smasi->priority = 0;
@@ -869,9 +866,9 @@ static void smasi_thread(void *arg)
         if (conn == NULL) {
             error(0, "SMASI[%s]: Could not connect to SMSC center " \
                   "(retrying in %ld seconds).",
-                  octstr_get_cstr(smasi->conn->id), smasi->reconnect_delay);
+                  octstr_get_cstr(smasi->conn->id), smasi->conn->reconnect_delay);
 
-            gwthread_sleep(smasi->reconnect_delay);
+            gwthread_sleep(smasi->conn->reconnect_delay);
             smasi->conn->status = SMSCCONN_RECONNECTING;
             continue;
         }
@@ -1026,9 +1023,6 @@ static int init_configuration(SMASI *smasi, CfgGroup *config)
     smasi->my_number = cfg_get(config, octstr_imm("my-number"));
     if (cfg_get_integer(&smasi->port, config, octstr_imm("port")) == -1)
         smasi->port = SMASI_DEFAULT_PORT;
-    if (cfg_get_integer(&smasi->reconnect_delay, config,
-      octstr_imm("reconnect-delay")) == -1)
-        smasi->reconnect_delay = SMASI_RECONNECT_DELAY;
     if (cfg_get_integer(&smasi->source_addr_ton, config,
       octstr_imm("source-addr-ton")) == -1)
         smasi->source_addr_ton = SMASI_OVERRIDE_SOURCE_TON;

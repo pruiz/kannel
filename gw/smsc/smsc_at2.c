@@ -826,8 +826,7 @@ void at2_device_thread(void *arg)
 {
     SMSCConn *conn = arg;
     PrivAT2data	*privdata = conn->data;
-
-    int l, wait = 0;
+    int l, reconnecting = 0;
     long idle_timeout, memory_poll_timeout = 0;
 
     conn->status = SMSCCONN_CONNECTING;
@@ -838,20 +837,16 @@ void at2_device_thread(void *arg)
 reconnect:
 
     do {
-        if (wait) {
+        if (reconnecting) {
             if (conn->status == SMSCCONN_ACTIVE) {
                 mutex_lock(conn->flow_mutex);
                 conn->status = SMSCCONN_RECONNECTING;
                 mutex_unlock(conn->flow_mutex);
             }
-            info(0, "AT2[%s]: waiting for %d %s before trying to connect again", 
-                 octstr_get_cstr(privdata->name), (wait < 60 ? wait : wait / 60),
-                 (wait < 60 ? "seconds" : "minutes"));
-            gwthread_sleep(wait);
-            wait = wait > (privdata->retry ? 3600 : 600) ? 
-                (privdata->retry ? 3600 : 600) : wait * 2;
-        } else
-            wait = 15;
+            error(0, "AT2[%s]: Couldn't connect (retrying in %ld seconds).",
+                     octstr_get_cstr(privdata->name), conn->reconnect_delay);
+            gwthread_sleep(conn->reconnect_delay);
+        }
 
         /* If modems->speed is defined, try to use it, else autodetect */
         if (privdata->speed == 0 && privdata->modem != NULL && 
@@ -869,45 +864,28 @@ reconnect:
 	    }
 	}
 
-        if (privdata->speed == 0) {
-	    if (at2_detect_speed(privdata) == -1) {
-		if (!privdata->retry)
-		    return;
-		else
-		    continue;
-            }
+        if (privdata->speed == 0 && at2_detect_speed(privdata) == -1) {
+            continue;
         }
 
-        if (privdata->modem == NULL) {
-            if (at2_detect_modem_type(privdata) == -1) {
-                if (!privdata->retry)
-                    return;
-                else
-                    continue;
-            }
+        if (privdata->modem == NULL && at2_detect_modem_type(privdata) == -1) {
+            continue;
         }
 
         if (at2_open_device(privdata)) {
             error(errno, "AT2[%s]: at2_device_thread: open_at2_device failed. Terminating", 
                   octstr_get_cstr(privdata->name));
-            if (!privdata->retry)
-                return;
-            else
-                continue;
+            continue;
         }
 
         if (at2_init_device(privdata) != 0) {
             error(0, "AT2[%s]: Opening failed. Terminating", octstr_get_cstr(privdata->name));
-            if (!privdata->retry) {
-                privdata->shutdown = 1;
-                //return;
-            } else
-                continue;
+            continue;
         }
 
         /* If we got here, then the device is opened */
         break;
-    } while (privdata->retry && !privdata->shutdown);
+    } while (!privdata->shutdown);
 
     conn->status = SMSCCONN_ACTIVE;
     bb_smscconn_connected(conn);
@@ -927,7 +905,7 @@ reconnect:
                 octstr_get_cstr(privdata->modem->keepalive_cmd), 5, 0) < 0) {
                 at2_close_device(privdata);
                 conn->status = SMSCCONN_RECONNECTING;
-                wait = 15;
+                reconnecting = 1;
                 goto reconnect;
             }
             idle_timeout = time(NULL);
@@ -1067,7 +1045,6 @@ int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
             privdata->sms_memory_poll_interval = AT2_DEFAULT_SMS_POLL_INTERVAL;
     }
 
-    cfg_get_bool(&privdata->retry, cfg, octstr_imm("retry"));
     privdata->my_number = cfg_get(cfg, octstr_imm("my-number"));
     privdata->sms_center = cfg_get(cfg, octstr_imm("sms-center"));
     modem_type_string = cfg_get(cfg, octstr_imm("modemtype"));

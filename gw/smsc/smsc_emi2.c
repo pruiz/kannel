@@ -34,7 +34,6 @@ typedef struct privdata {
     List	*outgoing_queue;
     long	receiver_thread;
     long	sender_thread;
-    int		retry;	  	/* Retry always to connect to smsc */
     int		shutdown;	  /* Internal signal to shut down */
     int		listening_socket; /* File descriptor */
     int		send_socket;
@@ -207,7 +206,7 @@ static struct emimsg *make_emi60(PrivData *privdata)
 static Connection *open_send_connection(SMSCConn *conn)
 {
     PrivData *privdata = conn->data;
-    int result, wait, alt_host, do_alt_host;
+    int result, alt_host, do_alt_host;
     struct emimsg *emimsg;
     Connection *server;
     Msg *msg;
@@ -215,34 +214,26 @@ static Connection *open_send_connection(SMSCConn *conn)
     do_alt_host = octstr_len(privdata->alt_host) != 0 || 
 	    privdata->alt_port != 0;
 
-    wait = 0;
-    alt_host = -1; /* to avoid waiting in first cicle */
+    alt_host = do_alt_host ? 1 : 0;
 
     mutex_lock(conn->flow_mutex);
     conn->status = SMSCCONN_RECONNECTING;
     mutex_unlock(conn->flow_mutex);
+
     while (!privdata->shutdown) {
-	/* Change status only if the first attempt to form a
-	 * connection fails, as it's possible that the SMSC closed the
-	 * connection because of idle timeout and a new one will be
-	 * created quickly. */
-	if (wait) {
-	    while ((msg = list_extract_first(privdata->outgoing_queue))) {
-		bb_smscconn_send_failed(conn, msg,
-					SMSCCONN_FAILED_TEMPORARILY);
-	    }
-	    if(alt_host == 0) {
-		info(0, "EMI2[%s]: waiting for %d %s before trying to "
-			    "connect again", octstr_get_cstr(privdata->name), 
-			    (wait < 60 ? wait : wait/60), 
-			    (wait < 60 ? "seconds" : "minutes"));
-		gwthread_sleep(wait);
-		wait = wait > (privdata->retry ? 3600 : 600) ?
-		    (privdata->retry ? 3600 : 600) : wait * 2;
-	    }
-	}
-	else
-	    wait = 15; 
+
+    while ((msg = list_extract_first(privdata->outgoing_queue))) {
+        bb_smscconn_send_failed(conn, msg,
+                                SMSCCONN_FAILED_TEMPORARILY);
+    }
+
+    /* if there is no alternative host, sleep and try to re-connect */
+    if(alt_host == 0) {
+        error(0, "EMI2[%s]: Couldn't connect to SMS center (retrying in %ld seconds).",
+              octstr_get_cstr(privdata->name), conn->reconnect_delay);
+        gwthread_sleep(conn->reconnect_delay);
+        continue;
+    }
 
 	if(alt_host != 1) {
 	    info(0, "EMI2[%s]: connecting to Primary SMSC", 
@@ -275,37 +266,32 @@ static Connection *open_send_connection(SMSCConn *conn)
 	    continue;
 	}
 
-	if (privdata->username && privdata->password) {
-	    emimsg = make_emi60(privdata);
-	    emi2_emimsg_send(conn, server, emimsg);
+    if (privdata->username && privdata->password) {
+        emimsg = make_emi60(privdata);
+        emi2_emimsg_send(conn, server, emimsg);
 	    emimsg_destroy(emimsg);
-	    result = wait_for_ack(privdata, server, 60, 30);
-	    if (result == -2) {
-		/* Are SMSCs going to return any temporary errors? If so,
-		 * testing for those error codes should be added here. */
-		error(0, "EMI2[%s]: Server rejected our login, giving up",
-		      octstr_get_cstr(privdata->name));
-		conn_destroy(server);
-		if(! privdata->retry)  {
-		    conn->why_killed = SMSCCONN_KILLED_WRONG_PASSWORD;
-		    return NULL;
-		} else
-		    continue;
-	    }
-	    else if (result == 0) {
-		error(0, "EMI2[%s]: Got no reply to login attempt "
-		      "within 30 s", octstr_get_cstr(privdata->name));
-		conn_destroy(server);
-		continue;
-	    }
-	    else if (result == -1) { /* Broken connection, already logged */
-		conn_destroy(server);
-		continue;
-	    }
-	    privdata->last_activity_time = 0; /* to force keepalive after login */
-	    privdata->can_write = 1;
-
-	}
+        result = wait_for_ack(privdata, server, 60, 30);
+        if (result == -2) {
+            /* 
+             * Are SMSCs going to return any temporary errors? If so,
+             * testing for those error codes should be added here. 
+             */
+            error(0, "EMI2[%s]: Server rejected our login",
+                  octstr_get_cstr(privdata->name));
+            conn_destroy(server);
+            continue;
+        } else if (result == 0) {
+            error(0, "EMI2[%s]: Got no reply to login attempt "
+                     "within 30 seconds", octstr_get_cstr(privdata->name));
+            conn_destroy(server);
+            continue;
+        } else if (result == -1) { /* Broken connection, already logged */
+            conn_destroy(server);
+            continue;
+        }
+        privdata->last_activity_time = 0; /* to force keepalive after login */
+        privdata->can_write = 1;
+    }
 
 	mutex_lock(conn->flow_mutex);
 	conn->status = SMSCCONN_ACTIVE;
@@ -1631,10 +1617,6 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->npid = cfg_get(cfg, octstr_imm("notification-pid"));
     privdata->nadc = cfg_get(cfg, octstr_imm("notification-addr"));
     
-    cfg_get_bool(&privdata->retry, cfg, octstr_imm("retry"));
-    if(privdata->retry < 0) 
-	privdata->retry = 0;
-
     if ( (privdata->username == NULL && privdata->my_number == NULL)
          || cfg_get_integer(&keepalive, cfg, octstr_imm("keepalive")) < 0)
 	privdata->keepalive = 0;
