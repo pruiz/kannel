@@ -46,7 +46,7 @@ static int reconnect(SMSCConn *conn)
     int wait = 1;
 
     /* disable double-reconnect
-     * NOTE: it is still possible that we do oduble-connect if
+     * NOTE: it is still possible that we do double-connect if
      *   first thread gets through this if-statement and then
      *   execution switches to another thread.. this can be avoided
      *   via double-mutex system, but I do not feel it is worth it,
