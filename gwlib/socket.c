@@ -544,18 +544,12 @@ Octstr *gw_netaddr_to_octstr4(unsigned char* src)
 
 Octstr *gw_netaddr_to_octstr6(unsigned char* src)
 {
-    char tmp[4];
-    int pos;
-    Octstr *address, *byte_in_hex;
+    Octstr *address;
 
-    address = octstr_create("");
+    address=octstr_format("%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x",
+	src[0],src[1],src[2],src[3],src[4],src[5],src[6],src[7],src[8],
+	src[9],src[10],src[11],src[12],src[13],src[14],src[15]);
     
-    for(pos=0;pos < INET6_OCTETS;++pos){
-	snprintf(tmp,2,"%x:",src[pos]);
-	byte_in_hex = octstr_create(tmp);
-	octstr_append(address,byte_in_hex);
-	octstr_destroy(byte_in_hex);
-    }
     return address;
 }
 #endif

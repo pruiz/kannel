@@ -1,3 +1,8 @@
+2001-01-17  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+
+	* gwlib/socket.c: Removed the ugly loop from gw_netaddr_to_octstr6
+	since octstr_format does support hex format after all.
+
 2001-01-17  Lars Wirzenius  <liw@iki.fi>
 
 	* configure.in, configure: Remove checking for -lz. Richard is
