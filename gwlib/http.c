@@ -1716,6 +1716,7 @@ static void server_thread(void *dummy)
     int addrlen;
     Connection *conn;
     HTTPClient *client;
+    int ret;
 
     n = 0;
     while (run_status == running && keep_servers_open) {
@@ -1733,7 +1734,7 @@ static void server_thread(void *dummy)
 	    gw_free(p);
 	}
 
-	if (gwthread_poll(tab, n, -1.0) == -1) {
+	if ((ret = gwthread_poll(tab, n, -1.0)) == -1) {
 	    if (errno != EINTR)
 	        warning(0, "HTTP: gwthread_poll failed.");
 	    continue;
@@ -2555,6 +2556,22 @@ void http_header_dump(List *headers)
     debug("gwlib.http", 0, "End of dump.");
 }
 
+void http_cgivar_dump(List *cgiargs)
+{
+    long i;
+    Octstr *arg;
+
+    gwlib_assert_init();
+
+    debug("gwlib.http", 0, "Dumping %ld cgi variables:", list_len(cgiargs));
+    for (i = 0; cgiargs != NULL && i < list_len(cgiargs); ++i) {
+         if (octstr_len(arg = list_get(cgiargs, i)) != 0)
+             octstr_dump(arg, 0);
+         else
+	     debug("gwlib.http", 0, "Got an empty cgi arg");
+    }
+    debug("gwlib.http", 0, "End of dump.");
+}
 
 /* XXX this needs to go away */
 static char *istrdup(char *orig)
