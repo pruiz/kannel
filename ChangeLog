@@ -1,3 +1,9 @@
+Thu Mar 23 19:22:18 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* README: Changed requirement for libxml to at least 1.8.6,
+	since 1.8.5 resulted in problems (last character of WML source
+	was mangled).
+
 2000-03-23  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: The global variable for the binary removed, now
