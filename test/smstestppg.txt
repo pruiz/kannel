@@ -6,7 +6,7 @@
   deliver-before-timestamp="2005-11-15T06:45:00Z"
   deliver-after-timestamp="2001-02-28T06:45:00Z"
   progress-notes-requested="false">
-    <address address-value="WAPPUSH=+358408676005/TYPE=PLMN@ppg.carrier.com">
+    <address address-value="WAPPUSH=+358408201681/TYPE=PLMN@ppg.carrier.com">
     </address>
     <quality-of-service
     priority="low"
