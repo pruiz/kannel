@@ -1,13 +1,13 @@
 # Common makefile stuff.
 
 # Uncomment the following for Debian GNU/Linux
-HTML_DSL = /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/html/docbook.dsl
-TEX_DSL = /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/print/docbook.dsl
+#HTML_DSL = /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/html/docbook.dsl
+#TEX_DSL = /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/print/docbook.dsl
 # XML_DECL = not used at the moment
 
 # Uncomment the following for Red Hat Linux
-#HTML_DSL = /usr/lib/sgml/stylesheets/nwalsh-modular/html/docbook.dsl
-#TEX_DSL = /usr/lib/sgml/stylesheets/nwalsh-modular/print/docbook.dsl
+HTML_DSL = /usr/lib/sgml/stylesheets/nwalsh-modular/html/docbook.dsl
+TEX_DSL = /usr/lib/sgml/stylesheets/nwalsh-modular/print/docbook.dsl
 
 .xml.html:
 	sed "s/#FIGTYPE#/.png/;\
@@ -27,7 +27,7 @@ TEX_DSL = /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/print/docbook.dsl
 
 .xml.ps:
 	sed "s/#FIGTYPE#/.ps/;\
-		s/#DATE#/`date -r userguide.timestamp +'%B %e, %Y'`/" $< > temp.xml
+		s/#DATE#/`date -r $*.timestamp +'%B %e, %Y'`/" $< > temp.xml
 	jade -o $*.tex -t tex -d $(TEX_DSL) $(XML_DECL) temp.xml
 	jadetex $*.tex >/dev/null
 	jadetex $*.tex >/dev/null
@@ -36,10 +36,10 @@ TEX_DSL = /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/print/docbook.dsl
 	rm -f $*.dvi $*.tex $*.aux $*.log temp.xml
 
 .fig.png:
-	fig2dev -Lpng $< > $@
+	fig2dev -Lpng $< $@
 
 .fig.ps:
-	fig2dev -Lps $< > $@
+	fig2dev -Lps $< $@
 
 .SUFFIXES: $(SUFFIXES) .xml .html .ps .fig .png
 

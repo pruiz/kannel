@@ -82,12 +82,12 @@ all: progs tests
 progs: $(progs)
 tests: $(testprogs)
 docs:
-	for dir in $(docdirs); do set -e; (cd $$dir && make); done
+	for dir in $(docdirs); do set -e; (cd $$dir && $(MAKE)); done
 
 clean:
 	rm -f core $(progs) $(objs) *.a gateway.pid
 	find . -name .cvsignore | xargs rm -f
-	for dir in $(docdirs); do set -e; (cd $$dir && make clean); done
+	for dir in $(docdirs); do set -e; (cd $$dir && $(MAKE) clean); done
 
 depend .depend:
 	$(MKDEPEND) */*.c > .depend
@@ -118,9 +118,9 @@ cvsignore:
 	echo .depend >> .cvsignore
 	for prog in $(progs) $(testprogs); do \
 		echo `basename $$prog` >> `dirname $$prog`/.cvsignore; done
-	for dir in $(docdirs); do set -e; (cd $$dir && make clean); done
+	for dir in $(docdirs); do set -e; (cd $$dir && $(MAKE) clean); done
 
 install: all
 	mkdir -p $(bindir)
 	install $(progs) $(bindir)
-	for dir in $(docdirs); do set -e; (cd $$dir && make install); done
+	for dir in $(docdirs); do set -e; (cd $$dir && $(MAKE) install); done
