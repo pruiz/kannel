@@ -49,22 +49,17 @@ int httpserver_setup(int port) {
 
 int httpserver_get_request(int socket, char **client_ip, char **path, char **args) {
 
-    socklen_t len;
+    int len, connfd = 0;
     struct sockaddr_in cliaddr;
-    int connfd = 0;
     char accept_ip[NI_MAXHOST];
-
+    
     char *eol = NULL, *ptr = NULL;
     int done_with_looping = 0,  done_with_status = 0, request = -1;
     int tmpint = 0, i = 0, k = 0;
-	
     char *growingbuff = NULL, *newbuff = NULL, *temp = NULL;
     int gbsize = 0, readthisfar = 0;
-
     URL *url = NULL;
-
-
-
+    
     
     /* accept the connection */
     len = sizeof(cliaddr);
@@ -1387,8 +1382,9 @@ error:
 
 
 
-/************/
-
+/**********************************************
+ * header-functions
+ */
 HTTPHeader *header_create(char *key, char *value) {
 	HTTPHeader *h;
 	
@@ -1401,13 +1397,12 @@ HTTPHeader *header_create(char *key, char *value) {
 
 /************/
 
-int header_dump(HTTPHeader *hdr)
+void header_dump(HTTPHeader *hdr)
 {
     while(hdr != NULL) {
 	debug("gwlib.http", 0, "%s: %s", hdr->key, hdr->value);
 	hdr = hdr->next;
     }
-    return 0;
 }
 
 
@@ -1427,13 +1422,14 @@ int header_destroy(HTTPHeader *hdr)
 }
 
 
-/************/
+/*
+ * header_pack
+ */
 
 int header_pack(HTTPHeader *hdr)
 {
     HTTPHeader *ptr, *prev;
     char buf[1024];
-    int ret = 0;
     
     while(hdr != NULL) {
 
@@ -1442,11 +1438,10 @@ int header_pack(HTTPHeader *hdr)
 	for(prev = hdr, ptr = hdr->next; ptr != NULL; ptr = ptr->next) {
 	    if (strcasecmp(hdr->key, ptr->key)==0) {
 
-		ret = sprintf(buf, "%s, %s", hdr->value, ptr->value);
-		if(ret != 2) return -1;
+		sprintf(buf, "%s, %s", hdr->value, ptr->value);
 		gw_free(hdr->value);
 		hdr->value = gw_strdup(buf);
-		
+
 		prev->next = ptr->next;
 		gw_free(ptr->key);
 		gw_free(ptr->value);
