@@ -1,4 +1,11 @@
 2003-11-26  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added HTTP SMSC type 'wapme'.
+    * gw/smsc/smsc_http.c: harmonizing kannel_receive_sms() to behave the same
+      way as smsbox's sendsms interface. We run into code duplication here.
+      Have to think on how this can be done better, in sense of modularization.
+      Added Wapme SMS Proxy type 'wapme' as HTTP content/SMS gateway interface.
+
+2003-11-26  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/cfg.def: added 'access-log-time' and 'access-log-clean' directives
       to smsbox and wapbox groups. Thanks to Alex Kinch for reporting this.
 

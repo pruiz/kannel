@@ -312,7 +312,9 @@ static void httpsmsc_send_cb(void *arg)
  * Kannel
  */
 
-enum {HEX_NOT_UPPERCASE = 0};
+enum { HEX_NOT_UPPERCASE = 0 };
+enum { MAX_SMS_OCTETS = 140 };
+
 
 static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 {
@@ -456,7 +458,18 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
               octstr_get_cstr(conn->id));
         retmsg = octstr_create("Insufficient args, rejected");
     }
+    else if (udh != NULL && (octstr_len(udh) != octstr_get_char(udh, 0) + 1)) {
+        error(0, "HTTP[%s]: UDH field misformed, rejected",
+              octstr_get_cstr(conn->id));
+        retmsg = octstr_create("UDH field misformed, rejected");
+    }
+    else if (udh != NULL && octstr_len(udh) > MAX_SMS_OCTETS) {
+        error(0, "HTTP[%s]: UDH field is too long, rejected",
+              octstr_get_cstr(conn->id));
+        retmsg = octstr_create("UDH field is too long, rejected");
+    }
     else {
+
 	Msg *msg;
 	msg = msg_create(sms);
 
@@ -481,13 +494,13 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 	if (ret == -1)
 	    retmsg = octstr_create("Not accepted");
 	else
-	    retmsg = octstr_create("Ok.");
+	    retmsg = octstr_create("Sent.");
     }
     reply_headers = list_create();
     http_header_add(reply_headers, "Content-Type", "text/plain");
     debug("smsc.http.kannel", 0, "HTTP[%s]: Sending reply",
           octstr_get_cstr(conn->id));
-    http_send_reply(client, HTTP_OK, reply_headers, retmsg);
+    http_send_reply(client, HTTP_ACCEPTED, reply_headers, retmsg);
 
     octstr_destroy(retmsg);
     http_destroy_headers(reply_headers);
@@ -850,6 +863,61 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
 }
 
 
+/*----------------------------------------------------------------
+ * Wapme SMS Proxy
+ *
+ * Stipe Tolj <tolj@wapme-systems.de>
+ */
+
+static void wapme_smsproxy_send_sms(SMSCConn *conn, Msg *sms)
+{
+    ConnData *conndata = conn->data;
+    Octstr *url;
+    List *headers;
+
+    url = octstr_format("%S?command=forward&smsText=%E&phoneNumber=%E"
+                        "&serviceNumber=%E&smsc=%E",
+                        conndata->send_url,
+                        sms->sms.msgdata, sms->sms.sender, sms->sms.receiver,
+                        sms->sms.smsc_id);
+
+    headers = list_create();
+    debug("smsc.http.wapme", 0, "HTTP[%s]: Start request",
+          octstr_get_cstr(conn->id));
+    http_start_request(conndata->http_ref, HTTP_METHOD_GET, url, headers, 
+                       NULL, 0, sms, NULL);
+
+    octstr_destroy(url);
+    http_destroy_headers(headers);
+
+}
+
+static void wapme_smsproxy_parse_reply(SMSCConn *conn, Msg *msg, int status,
+			       List *headers, Octstr *body)
+{
+    /* Test on three cases:
+     * 1. an smsbox reply of an remote kannel instance
+     * 2. an smsc_http response (if used for MT to MO looping)
+     * 3. an smsbox reply of partly sucessfull sendings */
+    if ((status == HTTP_OK || status == HTTP_ACCEPTED)
+        && (octstr_case_compare(body, octstr_imm("OK")) == 0)) {
+        bb_smscconn_sent(conn, msg, NULL);
+    } else {
+        bb_smscconn_send_failed(conn, msg,
+	            SMSCCONN_FAILED_MALFORMED, octstr_duplicate(body));
+    }
+}
+
+/*
+ * static void wapme_smsproxy_receive_sms(SMSCConn *conn, HTTPClient *client,
+ *                                List *headers, Octstr *body, List *cgivars)
+ *
+ * The HTTP server for MO messages will act with the same interface as smsbox's 
+ * sendsms interface, so that the logical difference is hidden and SMS Proxy 
+ * can act transparently. So there is no need for an explicite implementation
+ * here.
+ */
+
 
 /*-----------------------------------------------------------------
  * functions to implement various smscconn operations
@@ -961,6 +1029,16 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
         conndata->receive_sms = xidris_receive_sms;
         conndata->send_sms = xidris_send_sms;
         conndata->parse_reply = xidris_parse_reply;
+    }
+    else if (octstr_case_compare(type, octstr_imm("wapme")) == 0) {
+        if (conndata->send_url == NULL) {
+            error(0, "HTTP[%s]: 'send-url' required for Wapme http smsc",
+                  octstr_get_cstr(conn->id));
+            goto error;
+        }
+        conndata->receive_sms = kannel_receive_sms; /* emulate sendsms interface */
+        conndata->send_sms = wapme_smsproxy_send_sms;
+        conndata->parse_reply = wapme_smsproxy_parse_reply;
     }
     /*
      * ADD NEW HTTP SMSC TYPES HERE
