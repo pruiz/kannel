@@ -1,4 +1,8 @@
 2003-05-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_http.c: fixed parse_xml_tag() function. This may be of 
+      abstractive use inside gwlib/octstr.[ch]?!
+
+2003-05-16  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added 'xidris' to HTTP SMSC system-type
       values.
     * gw/smsc/smsc_http.c: added Xidris HTTP interface as system-type 
