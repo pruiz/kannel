@@ -71,9 +71,20 @@ static void client_thread(void *arg) {
 }
 
 static void help(void) {
-	info(0, "Usage: test_http [-r repeats] url ...\n"
-		"where -r means the number of times the fetches should be\n"
-		"repeated.");
+	info(0, "Usage: test_http [options] url ...");
+	info(0, "where options are:");
+	info(0, "-v number");
+	info(0, "    set log level for stderr logging");
+	info(0, "-q");
+	info(0, "    don't print the body of the HTTP response");
+	info(0, "-r number");
+	info(0, "    make `number' requests, repeating URLs as necessary");
+	info(0, "-p domain.name");
+	info(0, "    use `domain.name' as a proxy");
+	info(0, "-P portnumber");
+	info(0, "    connect to proxy at port `portnumber'");
+	info(0, "-e domain1:domain2:...");
+	info(0, "    set exception list for proxy use");
 }
 
 int main(int argc, char **argv) {

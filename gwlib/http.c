@@ -147,6 +147,7 @@ static int proxy_used_for_host(Octstr *host)
 void http_use_proxy(Octstr *hostname, int port, List *exceptions,
     	    	    Octstr *username, Octstr *password)
 {
+    Octstr *e;
     int i;
 
     gw_assert(run_status == running);
@@ -156,15 +157,22 @@ void http_use_proxy(Octstr *hostname, int port, List *exceptions,
 
     http_close_proxy();
     mutex_lock(proxy_mutex);
+    debug("gwlib.http", 0, "HTTP: Using proxy `%s:%d'.",
+    	  octstr_get_cstr(hostname), port);
+
     proxy_hostname = octstr_duplicate(hostname);
     proxy_port = port;
-    for (i = 0; i < list_len(exceptions); ++i)
-        list_append(proxy_exceptions,
-                    octstr_duplicate(list_get(exceptions, i)));
+    for (i = 0; i < list_len(exceptions); ++i) {
+        e = list_get(exceptions, i);
+	debug("gwlib.http", 0, "HTTP: Proxy exception `%s'.",
+	      octstr_get_cstr(e));
+        list_append(proxy_exceptions, octstr_duplicate(e));
+    }
     proxy_username = octstr_duplicate(username);
     proxy_password = octstr_duplicate(password);
     debug("gwlib.http", 0, "Using proxy <%s:%d>", 
     	  octstr_get_cstr(proxy_hostname), proxy_port);
+
     mutex_unlock(proxy_mutex);
 }
 
@@ -334,6 +342,13 @@ static Connection *conn_pool_get(Octstr *host, int port)
     else
     	conn = list_extract_first(list);
     mutex_unlock(conn_pool_lock);
+    
+    if (conn == NULL) {
+	debug("gwlib.http", 0, "HTTP: Opening connection to `%s:%d'.",
+	      octstr_get_cstr(host), port);
+    	conn = conn_open_tcp(host, port);
+    }
+    
     return conn;
 }
 
@@ -837,15 +852,11 @@ static Connection *send_request(HTTPServer *trans, char *method_name)
 	    	    	    	trans->request_headers, 
 				trans->request_body, method_name);
     	conn = conn_pool_get(proxy_hostname, proxy_port);
-	if (conn == NULL)
-	    conn = conn_open_tcp(proxy_hostname, proxy_port);
     } else {
         request = build_request(path, trans->host, trans->port, 
 	    	    	    	trans->request_headers,
                                 trans->request_body, method_name);
     	conn = conn_pool_get(trans->host, trans->port);
-	if (conn == NULL)
-	    conn = conn_open_tcp(trans->host, trans->port);
     }
     if (conn == NULL)
         goto error;

@@ -1,3 +1,10 @@
+2000-11-14  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/http.c: Report when connections to servers are opened
+	and when a proxy is being used (via debug).
+	
+	* test/test_http.c: More informative output with -h.
+
 2000-11-14  Yann Muller  <ymuller@3glab.com>
 
 	* gw/smsc_at.c: phone numbers starting with '+' or '00' are
