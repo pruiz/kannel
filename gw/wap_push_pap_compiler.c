@@ -18,6 +18,8 @@
  * containing lots of additional data, see ppg, 7.1. We do not yet support 
  * user defined addresses.
  *
+ * After compiling, some semantic analysing of the resulted event.
+ *
  * By Aarno Syvänen for Wapit Ltd and for Wiral Ltd.
  */
 
@@ -177,12 +179,13 @@ static char *pap_network_types[] = {
  */
 
 static int parse_document(xmlDocPtr doc_p, WAPEvent **e);
-static int parse_node(xmlNodePtr node, WAPEvent **e);  
-static int parse_element(xmlNodePtr node, WAPEvent **e); 
+static int parse_node(xmlNodePtr node, WAPEvent **e, int *type_of_address);  
+static int parse_element(xmlNodePtr node, WAPEvent **e, int *type_of_address); 
 static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute, 
-                           WAPEvent **e);
+                           WAPEvent **e, int *type_of_address);
 static int parse_attr_value(Octstr *element_name, Octstr *attr_name, 
-                            Octstr *attr_value, WAPEvent **e);
+                            Octstr *attr_value, WAPEvent **e,
+                            int *type_of_address);
 static int set_attribute_value(Octstr *element_name, Octstr *attr_value, 
                                Octstr *attr_name, WAPEvent **e);
 static int return_flag(Octstr *ros);
@@ -190,7 +193,7 @@ static void wap_event_accept_or_create(Octstr *element_name, WAPEvent **e);
 static int parse_push_message_value(Octstr *attr_name, Octstr *attr_value,
                                      WAPEvent **e);
 static int parse_address_value(Octstr *attr_name, Octstr *attr_value, 
-                               WAPEvent **e);
+                               WAPEvent **e, int *type_of_address);
 static int parse_quality_of_service_value(Octstr *attr_name, 
                                           Octstr *attr_value, WAPEvent **e);
 static int parse_push_response_value(Octstr *attr_name, Octstr *attr_value,
@@ -208,10 +211,12 @@ static int parse_requirement(Octstr *attr_value);
 static int parse_priority(Octstr *attr_value);
 static int parse_delivery_method(Octstr *attr_value);
 static int parse_state(Octstr *attr_value);
-static int parse_address(Octstr **attr_value);
-static long parse_wappush_client_address(Octstr **address, long pos);
+static int parse_address(Octstr **attr_value, int *type_of_address);
+static long parse_wappush_client_address(Octstr **address, long pos,
+                                         int *type_of_address);
 static long parse_ppg_specifier(Octstr **address, long pos);
-static long parse_client_specifier(Octstr **address, long pos);
+static long parse_client_specifier(Octstr **address, long pos, 
+                                   int *type_of_address);
 static long parse_constant(const char *field_name, Octstr **address, long pos);
 static long parse_dom_fragment(Octstr **address, long pos);
 static long drop_character(Octstr **address, long pos);
@@ -237,6 +242,13 @@ static long accept_escaped(Octstr **address, long pos);
 static long handle_two_terminators (Octstr **address, long pos, 
     unsigned char comma, unsigned char point, unsigned char c, 
     long fragment_parsed, long fragment_length);
+static int uses_gsm_msisdn_address(long network_required, Octstr *network, 
+                                   long bearer_required, Octstr *bearer);
+static int uses_ipv4_address(long network_required, long bearer_required,
+                             Octstr *bearer);
+static int uses_ipv6_address(long network_required, long bearer_required,
+                             Octstr *bearer);
+static int event_semantically_valid(WAPEvent *e, int type_of_address);
 
 /*
  * Macro for creating an octet string from a node content. This has two 
@@ -250,10 +262,15 @@ static long handle_two_terminators (Octstr **address, long pos,
 
 /****************************************************************************
  *
- * Implementation of the external function. Note that entities in the DTD 
- * are parameter entities and they can appear only in DTD (See site http:
- * //www.w3.org/TR/REC-xml, Chapter 4.1). So we do not need to worry about
- * them in the document itself.
+ * Compile PAP control document to a corresponding Kannel event. Checks vali-
+ * dity of the document. The caller must initialize wap event to NULL. In add-
+ * ition, it must free memory allocated by this function. 
+ *
+ * After compiling, some semantic analysing of the resulted event. 
+ *
+ * Note that entities in the DTD are parameter entities and they can appear 
+ * only in DTD (See site http://www.w3.org/TR/REC-xml, Chapter 4.1). So we do 
+ * not need to worry about them in the document itself.
  *
  * Returns 0, when success
  *        -1, when a non-implemented pap feature is asked for
@@ -261,6 +278,7 @@ static long handle_two_terminators (Octstr **address, long pos,
  * In addition, returns a newly created wap event corresponding the pap 
  * control message, if success, wap event NULL otherwise.
  */
+
 
 int pap_compile(Octstr *pap_content, WAPEvent **e)
 {
@@ -308,6 +326,7 @@ error:
  *
  * Parse the document node of libxml syntax tree. FIXME: Add parsing of pap
  * version.
+ * After parsing, some semantic analysing of the resulted event. 
  * 
  * Returns 0, when success
  *        -1, when a non-implemented pap feature is requested
@@ -315,28 +334,169 @@ error:
  * In addition, return a newly created wap event corresponding the pap 
  * control message, if success, or partially parsed pap document, if not.
  */
+
+
 static int parse_document(xmlDocPtr doc_p, WAPEvent **e)
 {
     xmlNodePtr node;
-    int ret;
+    int ret, 
+        type_of_address;
 
     gw_assert(doc_p);
     node = xmlDocGetRootElement(doc_p);
-    ret = parse_node(node, e);
-    return ret;
+    if ((ret = parse_node(node, e, &type_of_address)) < 0)
+        return ret;
+
+    if (!event_semantically_valid(*e, type_of_address)) {
+        warning(0, "wrong type of address for requested bearer");
+        return -2;
+    }
+
+    return 0;
 }
+
+/* 
+ * Possible address types
+ */
+enum {
+    ADDR_USER,
+    ADDR_PLMN,
+    ADDR_IPV4,
+    ADDR_IPV6,
+    ADDR_WINA
+};
+
+/*
+ * Do semantic analysis, when the event was Push_Message. Do not accept an IP 
+ * address, when a non-IP bearer is requested, and a phone number, when an IP
+ * bearer is requested. Note that if network and bearer are not specified, an
+ * IPv4 bearer is assumed. Do not, either, a document with network_required 
+ * and bearer_required having different values. 
+ */
+
+static int event_semantically_valid(WAPEvent *e, int type_of_address)
+{
+    if (e->type != Push_Message)
+        return 1;
+
+    if (e->u.Push_Message.network_required != 
+            e->u.Push_Message.bearer_required)
+       return 0;
+
+    if (type_of_address == ADDR_PLMN && 
+            !uses_gsm_msisdn_address(e->u.Push_Message.network_required,
+                                     e->u.Push_Message.network,
+                                     e->u.Push_Message.bearer_required,
+                                     e->u.Push_Message.bearer))
+        return 0;
+
+    if (type_of_address == ADDR_IPV4 && 
+            !uses_ipv4_address(e->u.Push_Message.network_required,
+                               e->u.Push_Message.bearer_required,
+                               e->u.Push_Message.bearer))
+        return 0;
+
+    if (type_of_address == ADDR_IPV6 && 
+            (!uses_ipv4_address(e->u.Push_Message.network_required,
+                                e->u.Push_Message.bearer_required,
+                                e->u.Push_Message.bearer) || 
+	    !uses_ipv6_address(e->u.Push_Message.network_required,
+                               e->u.Push_Message.bearer_required,
+                               e->u.Push_Message.bearer)))
+        return 0;
+
+    return 1;
+}
+
+/*
+ * Bearers accepting IP addresses. These are defined in wdp, appendix c. Note
+ * that when ipv6 bearers begin to appear, they must be added to the following
+ * table. Currently none are specified.
+ */
+static char *ip6_bearers[] = {
+    "Any"
+};
+
+#define NUMBER_OF_IP6_BEARERS sizeof(ip6_bearers)/sizeof(ip6_bearers[0])
+
+static char *ip4_bearers[] = {
+    "Any",
+    "CSD",
+    "Packet Data",
+    "GPRS",
+    "USSD"
+};
+
+#define NUMBER_OF_IP4_BEARERS sizeof(ip4_bearers)/sizeof(ip4_bearers[0])
+
+/*
+ * Networks and bearers accepting gsm msisdn addresses are defined in wdp,
+ * appendix c.
+ */
+static int uses_gsm_msisdn_address(long network_required, Octstr *network, 
+                                   long bearer_required, Octstr *bearer)
+{
+    if (!network_required || !bearer_required)
+        return 0;
+
+    return (octstr_compare(network, octstr_imm("GSM")) == 0 &&
+	   octstr_compare(bearer, octstr_imm("SMS")) == 0) ||
+           (octstr_compare(network, octstr_imm("ANSI-136")) == 0 &&
+	   octstr_compare(bearer, octstr_imm("GHOST/R_DATA")) == 0);
+}
+
+static int uses_ipv4_address(long network_required, long bearer_required,
+                            Octstr *bearer)
+{
+    long i;
+
+    if (!network_required && !bearer_required) {
+        return 1;
+    }
+
+    i = 0;
+    while (i < NUMBER_OF_IP4_BEARERS) {
+        if (octstr_compare(bearer, octstr_imm(ip4_bearers[i])) == 0) {
+	    return 1;
+        }
+        ++i;
+    }
+
+    return 0;
+}
+
+static int uses_ipv6_address(long network_required, long bearer_required,
+                             Octstr *bearer)
+{
+    long i;
+
+    if (!network_required || !bearer_required)
+        return 0;
+
+    i = 0;
+    while (i < NUMBER_OF_IP6_BEARERS) {
+        if (octstr_compare(bearer, octstr_imm(ip6_bearers[i])) == 0) {
+	    return 1;
+        }
+        ++i;
+    }
+
+    return 0;
+}
+
 
 /*
  * Parse node of the syntax tree. DTD, as defined in pap, chapter 9, contains
  * only elements (entities are restricted to DTDs). 
  *
+ * Output: a) a newly created wap event containing attributes from pap 
+ *         document node, if success; partially parsed node, if not. 
+ *         b) the type of of the client address 
  * Returns 0, when success
  *        -1, when a non-implemented feature is requested
  *        -2, when error
- * In addition, return a newly created wap event containing attributes from
- * pap document node, if success; partially parsed node, if not. 
  */
-static int parse_node(xmlNodePtr node, WAPEvent **e)
+static int parse_node(xmlNodePtr node, WAPEvent **e, int *type_of_address)
 {
     int ret;
 
@@ -347,7 +507,7 @@ static int parse_node(xmlNodePtr node, WAPEvent **e)
     break;
 
     case XML_ELEMENT_NODE:
-        if ((ret = parse_element(node, e)) < 0) {
+        if ((ret = parse_element(node, e, type_of_address)) < 0) {
 	    return ret;
         }
     break;
@@ -358,12 +518,12 @@ static int parse_node(xmlNodePtr node, WAPEvent **e)
     }
 
     if (node->children != NULL)
-        if ((ret = parse_node(node->children, e)) < 0) {
+        if ((ret = parse_node(node->children, e, type_of_address)) < 0) {
             return ret;
 	}
 
     if (node->next != NULL)
-        if ((ret = parse_node(node->next, e)) < 0) {
+        if ((ret = parse_node(node->next, e, type_of_address)) < 0) {
             return ret;
         }
     
@@ -371,14 +531,17 @@ static int parse_node(xmlNodePtr node, WAPEvent **e)
 }
 
 /*
- * Parse elements of PAP source. 
+ * Parse elements of a PAP source. 
+ *
+ * Output: a) a newly created wap event containing attributes from the
+ *         element, if success; containing some unparsed attributes, if not.
+ *         b) the type of the client address
  * Returns 0, when success
  *        -1, when a non-implemented feature is requested
  *        -2, when error
- * In addition, return a newly created wap event containing attributes from the
- * element, if success; containing some unparsed attributes, if not.
+ * In addition, return 
  */
-static int parse_element(xmlNodePtr node, WAPEvent **e)
+static int parse_element(xmlNodePtr node, WAPEvent **e, int *type_of_address)
 {
     Octstr *name;
     xmlAttrPtr attribute;
@@ -406,7 +569,8 @@ static int parse_element(xmlNodePtr node, WAPEvent **e)
     if (node->properties != NULL) {
         attribute = node->properties;
         while (attribute != NULL) {
-	    if ((ret = parse_attribute(name, attribute, e)) < 0) {
+	    if ((ret = parse_attribute(name, attribute, e, 
+                   type_of_address)) < 0) {
 	        octstr_destroy(name);
                 return ret;
             }
@@ -428,14 +592,15 @@ static int parse_element(xmlNodePtr node, WAPEvent **e)
  * legal values are stored in the attributes table. Otherwise, call a separate
  * parsing function. If an attribute value is empty, use value "erroneous".
  * 
+ * Output: a) a newly created wap event containing parsed attribute from pap 
+ *         source, if successfull, an uncomplete wap event otherwise.
+ *         b) the type of the client address 
  * Returns 0, when success
  *        -1, when a non-implemented feature is requested
  *        -2, when error
- * In addition, return a newly created wap event containing parsed attribute
- * from pap source, if successfull, an uncomplete wap event otherwise.
  */
 static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute, 
-                           WAPEvent **e)
+                           WAPEvent **e, int *type_of_address)
 {
     Octstr *attr_name, *value, *nameos;
     size_t i;
@@ -464,7 +629,8 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
  * enumeration. Legal values are defined in pap, chapter 9. 
  */
     if (pap_attributes[i].value == NULL) {
-        ret = parse_attr_value(element_name, attr_name, value, e);
+        ret = parse_attr_value(element_name, attr_name, value, e, 
+                               type_of_address);
 	if (ret == -2) {
 	    goto error;
         } else {
@@ -552,9 +718,12 @@ static int parse_push_message_value(Octstr *attr_name, Octstr *attr_value,
  * unsuccessfull or an unimplemented address format was requested by the push
  * initiator) we use value "erroneous". This is necessary, because this a 
  * mandatory field.
+ *
+ * Output a) a newly created wap event
+ *        b) the type of the client address
  */
 static int parse_address_value(Octstr *attr_name, Octstr *attr_value, 
-                               WAPEvent **e)
+                               WAPEvent **e, int *type_of_address)
 {
     int ret;
 
@@ -562,7 +731,7 @@ static int parse_address_value(Octstr *attr_name, Octstr *attr_value,
     if (octstr_compare(attr_name, octstr_imm("address-value")) == 0) {
         octstr_destroy((**e).u.Push_Message.address_value);
 	(**e).u.Push_Message.address_value = 
-             (ret = parse_address(&attr_value)) > -1 ? 
+             (ret = parse_address(&attr_value, type_of_address)) > -1 ? 
              octstr_duplicate(attr_value) : octstr_imm("erroneous");
         return ret;
     } 
@@ -716,14 +885,17 @@ static int return_flag(Octstr *ros)
  * Validates non-enumeration attributes and stores their value to a newly
  * created wap event e. (Even when attribute value parsing was not success-
  * full.) We do not accept NULL or empty attributes (if this kind of an 
- * attribute is implied, we just drop it from the tokenised document).
+ * attribute is optional, we just drop it from the tokenised document).
+ *
+ * Output: a) a wap event, as created by subroutines
+ *         b) the type of the client address
  * Returns 0, when success,
  *        -1, when a non-implemented feature requested.
  *        -2, when an error
- * In addition, return event as created by subroutines.
  */
 static int parse_attr_value(Octstr *element_name, Octstr *attr_name, 
-                            Octstr *attr_value, WAPEvent **e)
+                            Octstr *attr_value, WAPEvent **e, 
+                            int *type_of_address)
 {
     if (octstr_compare(attr_value, octstr_imm("erroneous")) == 0) {
         return -2;
@@ -734,7 +906,7 @@ static int parse_attr_value(Octstr *element_name, Octstr *attr_name,
     if (octstr_compare(element_name, octstr_imm("push-message")) == 0) {
         return parse_push_message_value(attr_name, attr_value, e);
     } else if (octstr_compare(element_name, octstr_imm("address")) == 0) {
-        return parse_address_value(attr_name, attr_value, e);
+        return parse_address_value(attr_name, attr_value, e, type_of_address);
     } else if (octstr_compare(element_name, 
                    octstr_imm("quality-of-service")) == 0) {
         return parse_quality_of_service_value(attr_name, attr_value, e);
@@ -955,12 +1127,13 @@ static int parse_state(Octstr *attr_value)
  * client address usable in Kannel wap address tuple data type. The grammar 
  * for client address is specified in ppg, chapter 7.1.
  *
+ * Output: the address type of the client address
  * Returns:   0, when success
  *           -1, a non-implemented pap feature requested by pi
  *           -2, address parsing error  
  */
 
-static int parse_address(Octstr **address)
+static int parse_address(Octstr **address, int *type_of_address)
 {
     long pos;
 
@@ -976,7 +1149,8 @@ static int parse_address(Octstr **address)
         return -2;
     }
 
-    if ((pos = parse_wappush_client_address(address, pos)) == -2) {
+    if ((pos = parse_wappush_client_address(address, pos, 
+            type_of_address)) == -2) {
         warning(0, "PAP_COMPILER: parse_address: illegal client address");
         return -2;
     } else if (pos == -1) {
@@ -987,9 +1161,13 @@ static int parse_address(Octstr **address)
     return pos;
 }
 
-static long parse_wappush_client_address(Octstr **address, long pos)
+/*
+ * Output: the type of the client address
+ */
+static long parse_wappush_client_address(Octstr **address, long pos, 
+                                         int *type_of_address)
 {
-    if ((pos = parse_client_specifier(address, pos)) < 0) {
+    if ((pos = parse_client_specifier(address, pos, type_of_address)) < 0) {
         return pos;
     }
 
@@ -1031,7 +1209,14 @@ static long parse_ppg_specifier(Octstr **address, long pos)
     return pos;
 }
 
-static long parse_client_specifier(Octstr **address, long pos)
+/*
+ * Output: the type of a client address.
+ *
+ * Return a negative value, when error, positive (the position of the parsing 
+ * cursor) otherwise.
+ */
+static long parse_client_specifier(Octstr **address, long pos, 
+                                   int *type_of_address)
 {
     Octstr *type_value;
 
@@ -1047,25 +1232,31 @@ static long parse_client_specifier(Octstr **address, long pos)
         goto parse_error;
     }
 
-    if (octstr_compare(type_value, octstr_imm("USER")) == 0)
+    if (octstr_compare(type_value, octstr_imm("USER")) == 0) {
+        *type_of_address = ADDR_USER;
         goto not_implemented;
+    }
 
     if ((pos = parse_ext_qualifiers(address, pos, type_value)) < 0)
         goto parse_error;
 
     if (octstr_compare(type_value, octstr_imm("PLMN")) == 0) {
+        *type_of_address = ADDR_PLMN;
         pos = parse_global_phone_number(address, pos);
     }
 
     else if (octstr_compare(type_value, octstr_imm("IPv4")) == 0) {
+        *type_of_address = ADDR_IPV4;
         pos = parse_ipv4(address, pos);
     }
 
     else if (octstr_compare(type_value, octstr_imm("IPv6")) == 0) {
+        *type_of_address = ADDR_IPV6;
         pos = parse_ipv6(address, pos);
     }
 
     else if (wina_bearer_identifier(type_value)) {
+        *type_of_address = ADDR_WINA;
         pos = parse_escaped_value(address, pos); 
     }    
 
