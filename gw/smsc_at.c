@@ -9,7 +9,7 @@
  * to be able to use the AT SMSC:
  *     group = smsc
  *     smsc = at
- *     modemtype = wavecom | premicell | siemens | falcom |
+ *     modemtype = wavecom | premicell | siemens | siemens-tc35 | falcom |
  *                 nokiaphone | ericsson
  *     device = /dev/xxx 
  */
@@ -67,6 +67,7 @@ static int numtext(int num);
 #define WAVECOM         "wavecom"
 #define PREMICELL       "premicell"
 #define SIEMENS         "siemens"
+#define SIEMENS_TC35	"siemens-tc35"
 #define FALCOM          "falcom"
 #define NOKIAPHONE      "nokiaphone"
 #define ERICSSON        "ericsson"
@@ -103,6 +104,7 @@ static int at_open_connection(SMSCenter *smsc) {
 
         tcgetattr(fd, &tios);
         if((strcmp(smsc->at_modemtype, SIEMENS) == 0) 
+	   || (strcmp(smsc->at_modemtype, SIEMENS_TC35) == 0)
            || (strcmp(smsc->at_modemtype, NOKIAPHONE) == 0)) {
                 cfsetospeed(&tios, B19200);  /* check radio pad parameter*/
                 cfsetispeed(&tios, B19200);
@@ -211,6 +213,12 @@ SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin,
                 if(send_modem_command(smsc->at_fd, "AT+CNMI=3,2,0,0", 0) == -1)
                         goto error;
         }
+        else if(strcmp(smsc->at_modemtype, SIEMENS_TC35) == 0) {
+                if(send_modem_command(smsc->at_fd, "AT+CSMS=1", 0) == -1)
+                        goto error;
+                if(send_modem_command(smsc->at_fd, "AT+CNMI=1,2,0,0,1",0)== -1)
+			goto error;
+	}
         else {
                 if(send_modem_command(smsc->at_fd, "AT+CNMI=1,2,0,0,0", 0) == -1)
                         goto error;
@@ -339,6 +347,7 @@ int at_submit_msg(SMSCenter *smsc, Msg *msg) {
         sc[0] = '\0';
         if((strcmp(smsc->at_modemtype, WAVECOM ) == 0) || 
            (strcmp(smsc->at_modemtype, SIEMENS ) == 0) ||
+           (strcmp(smsc->at_modemtype, SIEMENS_TC35 ) == 0) ||
            (strcmp(smsc->at_modemtype, NOKIAPHONE ) == 0) ||
            (strcmp(smsc->at_modemtype, ERICSSON ) == 0))
                 strcpy(sc, "00");

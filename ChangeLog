@@ -1,3 +1,6 @@
+2001-08-13 Andreas Fink <andreas@fink.org>
+	* gw/smsc_at: added new modem type siemens-tc35
+	
 2001-08-08  Aarno Syvänen <aarno@wiral.com>
 
 	* test/test_ppg.c: Better help. Added option to set push application

@@ -3235,6 +3235,18 @@ Example:</para>
 													<literal moreinfo="none">siemens</literal>
 												</entry>
 											</row>
+        <row>
+
+                <entry>Siemens TC35</entry>
+
+                <entry>
+
+                        <literal moreinfo="none">siemens-tc35</literal>
+
+                </entry>
+
+        </row>
+
 											<row>
 												<entry>Phone with GSM modem</entry>
 												<entry>

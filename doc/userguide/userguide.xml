@@ -1954,7 +1954,7 @@ pin = 2345
         Modems from different manufacturers have slightly different
         behaviour. We need to know what type of modem is used.
         Supported types are: <literal>wavecom</literal>, 
-        <literal>premicell</literal>, <literal>siemens</literal>.
+        <literal>premicell</literal>, <literal>siemens</literal>, <literal>siemens-tc35</literal>.
      </entry></row>
 
    <row><entry><literal>device (m)</literal></entry>
