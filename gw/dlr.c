@@ -474,6 +474,7 @@ Msg* create_dlr_from_msg(const Octstr *smsc, const Msg *msg, const Octstr *reply
     dlrmsg->sms.receiver = octstr_duplicate(msg->sms.receiver);
     dlrmsg->sms.dlr_url = octstr_duplicate(msg->sms.dlr_url);
     dlrmsg->sms.msgdata = octstr_duplicate(reply);
+    dlrmsg->sms.boxc_id = octstr_duplicate(msg->sms.boxc_id);
     time(&dlrmsg->sms.time);
 
     debug("dlr.dlr", 0,"SMSC[%s]: DLR = %s",

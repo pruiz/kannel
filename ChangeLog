@@ -1,3 +1,8 @@
+2004-02-19 Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/dlr.c: fixed MO boxc routing in case we have an directly received
+      NACK from SMSC. The DLR message wouldn't be returned to the same 
+      smsbox-id connection.
+
 2004-02-19  Igor Ivoilov <igor@francoudi.com>
     * test/fakewap.c: added header "Accept: */*" to connect request to make 
       wapgateway happy and reply with status of 200.
