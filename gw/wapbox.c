@@ -141,34 +141,6 @@ static Cfg *read_config(Octstr *filename)
 	log_set_syslog(NULL, 0);
 	debug("wap", 0, "no syslog parameter");
     }
-    
-
-#if (HAVE_WTLS_OPENSSL)
-    /* Load up the necessary keys */
-    if ((s = cfg_get(grp, octstr_imm("certificate-file"))) != NULL) {
-        if (octstr_compare(s, octstr_imm("none")) == 0) {
-            debug("bbox", 0, "certificate file not set");
-        } else {
-            /* Load the certificate into the necessary parameter */
-            get_cert_from_file(s, &x509_cert);
-            gw_assert(x509_cert != NULL);
-            debug("bbox", 0, "certificate parameter is %s", s);
-        }
-    }
-
-    if ((s = cfg_get(grp, octstr_imm("privatekey-file"))) != NULL) {
-        Octstr *password;
-        password = cfg_get(grp, octstr_imm("privatekey-password"));
-        if (octstr_compare(s, octstr_imm("none")) == 0) {
-            debug("bbox", 0, "privatekey-file not set");
-        } else {
-            /* Load the private key into the necessary parameter */
-            get_privkey_from_file(s, &private_key,password);
-            gw_assert(private_key != NULL);
-            debug("bbox", 0, "certificate parameter is %s", s);
-        }        
-    }
-#endif
 
     /* configure URL mappings */
     map_url_max = -1;
@@ -194,9 +166,47 @@ static Cfg *read_config(Octstr *filename)
     }
     wsp_http_map_url_config_info();	/* debugging aid */
 
-/*
- * We pass ppg configuration groups to the ppg module.
- */   
+    /* configure the 'wtls' group */
+#if (HAVE_WTLS_OPENSSL)
+    /* Load up the necessary keys */
+    grp = cfg_get_single_group(cfg, octstr_imm("wtls"));
+  
+    if (grp != NULL) {
+        if ((s = cfg_get(grp, octstr_imm("certificate-file"))) != NULL) {
+            if (octstr_compare(s, octstr_imm("none")) == 0) {
+                debug("bbox", 0, "certificate file not set");
+            } else {
+                /* Load the certificate into the necessary parameter */
+                get_cert_from_file(s, &x509_cert);
+                gw_assert(x509_cert != NULL);
+                debug("bbox", 0, "certificate parameter is %s", s);
+            }
+            octstr_destroy(s);
+        } else
+            panic(0, "No 'certificate-file' in wtls group");
+
+        if ((s = cfg_get(grp, octstr_imm("privatekey-file"))) != NULL) {
+            Octstr *password;
+            password = cfg_get(grp, octstr_imm("privatekey-password"));
+            if (octstr_compare(s, octstr_imm("none")) == 0) {
+                debug("bbox", 0, "privatekey-file not set");
+            } else {
+                /* Load the private key into the necessary parameter */
+                get_privkey_from_file(s, &private_key, password);
+                gw_assert(private_key != NULL);
+                debug("bbox", 0, "certificate parameter is %s", s);
+            }
+            if (password != NULL)
+                octstr_destroy(password);
+            octstr_destroy(s);
+        } else
+            panic(0, "No 'privatekey-file' in wtls group");
+    }
+#endif
+
+    /*
+     * We pass ppg configuration groups to the ppg module.
+     */   
     grp = cfg_get_single_group(cfg, octstr_imm("ppg"));
     if (grp == NULL) { 
         cfg_destroy(cfg);

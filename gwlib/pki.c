@@ -65,7 +65,7 @@ void get_privkey_from_file(Octstr* s, RSA** priv_key, Octstr* passwd)
         Octstr* foo;
 
 		filename = octstr_get_cstr(s);
-		password = octstr_get_cstr(passwd);
+		password = passwd != NULL ? octstr_get_cstr(passwd) : NULL;
         
 		/* Open the file specified by "s" */
         fp = fopen(filename,"r");
