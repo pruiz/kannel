@@ -304,12 +304,13 @@ int read_available(int fd, long wait_usec)
     fd_set rf;
     struct timeval to;
     int ret;
+    div_t waits;
 
     FD_ZERO(&rf);
     FD_SET(fd, &rf);
-    to.tv_sec = 0;
-    to.tv_usec = wait_usec;
-
+    waits = div(wait_usec,1000000);
+    to.tv_sec = waits.quot;
+    to.tv_usec = waits.rem;
 retry:
     ret = select(FD_SETSIZE, &rf, NULL, NULL, &to);
     if (ret > 0 && FD_ISSET(fd, &rf))
@@ -318,10 +319,35 @@ retry:
 	/* In most select() implementations, to will now contain the
 	 * remaining time rather than the original time.  That is exactly
 	 * what we want when retrying after an interrupt. */
-	if (errno==EINTR)
-		goto retry;
-	if (errno==EAGAIN)
-		return 0;
+	switch(errno){
+	/*The first two entries here are OK*/
+	case EINTR:
+	    goto retry;
+	case EAGAIN:
+	    return 1;
+	/* We are now sucking mud, figure things out here
+	 * as much as possible before it gets lost under
+	 * layers of abstraction.  */
+	case EBADF:
+	    if(!FD_ISSET(fd, &rf)){
+		info(0,"Tried to select on fd %d, not in the set!\n",fd);
+	    }else{
+		info(0,"Tried to select on invalid fd %d!\n",fd);
+	    }
+	    break;
+	case EINVAL:
+	    /* Solaris catchall "It didn't work" error, lets apply
+	     * some tests and see if we can catch it. */
+
+	    /* First up, try invalid timeout*/
+	    if(to.tv_sec > 10000000)
+		info(0,"Wait more than three years for a select?\n");
+	    if(to.tv_usec >1000000)
+		info(0,"There are only 1000000 usec in a second...\n");
+	    break;
+	    
+
+	}
 	return -1;	/* some error */
     }
     return 0;
