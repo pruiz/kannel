@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.24 2002-07-04 12:46:49 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.25 2002-07-05 12:51:59 stolj Exp $]
 
 Release:
 
@@ -75,16 +75,6 @@ Available Patches:
     Posted by: Alan McNatty <alan@catalyst.net.nz>
     Message-ID: <1025042471.1173.526.camel@euclid>
     Status: Oded: +1
-
-    * SMPP priority flag setting
-    Posted by: Ignat Vassilev <ozzy@declera.com>
-    Message-ID: <3D1A586B.3070308@declera.com>
-    Status: Stipe: +1 for dev branch
-
-    * SMPP UNBIND operation support
-    Posted by: Ignat Vassilev <ozzy@declera.com>
-    Message-ID: <3D17E046.1060806@declera.com>
-    Status: Oded: +1 for dev branch
 
     * DLR handling logic change 
     Posted by: Oded Arbel <oded@m-wise.com>
