@@ -59,22 +59,24 @@ static int initialized = 0;
  * they would in turn try to use gw_malloc. */
 static Mutex gwmem_lock;
 
-struct location {
-	const char *filename;
-	long lineno;
-	const char *function;
+struct location
+{
+    const char *filename;
+    long lineno;
+    const char *function;
 };
 
 /* Duplicating the often-identical location information in every table
  * entry uses a lot of memory, but saves the effort of maintaining a
  * data structure for it, and keeps access to it fast. */
-struct area {
-	void *area;   /* The allocated memory area, as seen by caller */
-	size_t area_size;  /* Size requested by caller */
-	size_t max_size;   /* Size we can expand area to when reallocing */
-	struct location allocator;    /* Caller that alloced area */
-	struct location reallocator;  /* Caller that last realloced area */
-	struct location claimer;      /* Owner of area, set by caller */
+struct area
+{
+    void *area;    /* The allocated memory area, as seen by caller */
+    size_t area_size;   /* Size requested by caller */
+    size_t max_size;    /* Size we can expand area to when reallocing */
+    struct location allocator;     /* Caller that alloced area */
+    struct location reallocator;   /* Caller that last realloced area */
+    struct location claimer;       /* Owner of area, set by caller */
 };
 
 /* Number of bytes to reserve on either side of each allocated area,
@@ -113,434 +115,461 @@ static long total_size;
 
 /* Static functions */
 
-static void lock(void) {
-	mutex_lock(&gwmem_lock);
+static void lock(void)
+{
+    mutex_lock(&gwmem_lock);
 }
 
-static void unlock(void) {
-	mutex_unlock(&gwmem_lock);
+static void unlock(void)
+{
+    mutex_unlock(&gwmem_lock);
 }
 
-static unsigned long round_pow2(unsigned long num) {
-	unsigned long i;
+static unsigned long round_pow2(unsigned long num)
+{
+    unsigned long i;
 
-	if (num <= 16)
-		return 16;
+    if (num <= 16)
+        return 16;
 
-	for (i = 32; i < 0x80000000L; i <<= 1) {
-		if (num <= i)
-			return i;
-	}
+    for (i = 32; i < 0x80000000L; i <<= 1) {
+        if (num <= i)
+            return i;
+    }
 
-	/* We have to handle this case separately; the loop cannot go that
-	 * far because i would overflow. */
-	if (num <= 0x80000000L)
-		return 0x80000000L;
+    /* We have to handle this case separately; the loop cannot go that
+     * far because i would overflow. */
+    if (num <= 0x80000000L)
+        return 0x80000000L;
 
-	return 0xffffffffL;
+    return 0xffffffffL;
 }
 
 /* Fill a memory area with a bit pattern */
-static void fill(unsigned char *p, size_t bytes, long pattern) {
-	while (bytes > sizeof(pattern)) {
-		memcpy(p, &pattern, sizeof(pattern));
-		p += sizeof(pattern);
-		bytes -= sizeof(pattern);
-	}
-	if (bytes > 0)
-		memcpy(p, &pattern, bytes);
+static void fill(unsigned char *p, size_t bytes, long pattern)
+{
+    while (bytes > sizeof(pattern)) {
+        memcpy(p, &pattern, sizeof(pattern));
+        p += sizeof(pattern);
+        bytes -= sizeof(pattern);
+    }
+    if (bytes > 0)
+        memcpy(p, &pattern, bytes);
 }
 
 /* Check that a filled memory area has not changed */
-static int untouched(unsigned char *p, size_t bytes, long pattern) {
-	while (bytes > sizeof(pattern)) {
-		if (memcmp(p, &pattern, sizeof(pattern)) != 0)
-			return 0;
-		p += sizeof(pattern);
-		bytes -= sizeof(pattern);
-	}
-	if (bytes > 0 && memcmp(p, &pattern, bytes) != 0)
-		return 0;
-	return 1;
+static int untouched(unsigned char *p, size_t bytes, long pattern)
+{
+    while (bytes > sizeof(pattern)) {
+        if (memcmp(p, &pattern, sizeof(pattern)) != 0)
+            return 0;
+        p += sizeof(pattern);
+        bytes -= sizeof(pattern);
+    }
+    if (bytes > 0 && memcmp(p, &pattern, bytes) != 0)
+        return 0;
+    return 1;
 }
 
 /* Fill the end marker for this area */
-static void endmark(unsigned char *p, size_t size) {
-	fill(p + size, MARKER_SIZE, END_MARK_PATTERN);
+static void endmark(unsigned char *p, size_t size)
+{
+    fill(p + size, MARKER_SIZE, END_MARK_PATTERN);
 }
 
 /* Fill the start marker for this area, and assign an number to the
  * area which can be used for quick lookups later.  The number must
  * not be negative. */
-static void startmark(unsigned char *p, long number) {
-	gw_assert(MARKER_SIZE >= sizeof(long));
-	gw_assert(number >= 0);
+static void startmark(unsigned char *p, long number)
+{
+    gw_assert(MARKER_SIZE >= sizeof(long));
+    gw_assert(number >= 0);
 
-	fill(p - MARKER_SIZE, sizeof(long), number);
-	fill(p - MARKER_SIZE + sizeof(long),
-		MARKER_SIZE - sizeof(long), START_MARK_PATTERN);
+    fill(p - MARKER_SIZE, sizeof(long), number);
+    fill(p - MARKER_SIZE + sizeof(long),
+         MARKER_SIZE - sizeof(long), START_MARK_PATTERN);
 }
 
 /* Check that the start marker for this area are intact, and return the
  * marker number if it seems intact.  Return a negative number if
  * it does not seem intact. */
-static long check_startmark(unsigned char *p) {
-	long number;
-	if (!untouched(p - MARKER_SIZE + sizeof(long),
-			MARKER_SIZE - sizeof(long), START_MARK_PATTERN))
-		return -1;
-	memcpy(&number, p - MARKER_SIZE, sizeof(number));
-	return number;
+static long check_startmark(unsigned char *p)
+{
+    long number;
+    if (!untouched(p - MARKER_SIZE + sizeof(long),
+                   MARKER_SIZE - sizeof(long), START_MARK_PATTERN))
+        return -1;
+    memcpy(&number, p - MARKER_SIZE, sizeof(number));
+    return number;
 }
 
-static int check_endmark(unsigned char *p, size_t size) {
-	if (!untouched(p + size, MARKER_SIZE, END_MARK_PATTERN))
-		return -1;
-	return 0;
+static int check_endmark(unsigned char *p, size_t size)
+{
+    if (!untouched(p + size, MARKER_SIZE, END_MARK_PATTERN))
+        return -1;
+    return 0;
 }
 
-static int check_marks(struct area *area, long index) {
-	int result = 0;
+static int check_marks(struct area *area, long index)
+{
+    int result = 0;
 
-	if (check_startmark(area->area) != index) {
-		error(0, "Start marker was damaged for area %ld", index);
-		result = -1;
-	}
-	if (check_endmark(area->area, area->area_size) < 0) {
-		error(0, "End marker was damaged for area %ld", index);
-		result = -1;
-	}
-	
-	return result;
+    if (check_startmark(area->area) != index) {
+        error(0, "Start marker was damaged for area %ld", index);
+        result = -1;
+    }
+    if (check_endmark(area->area, area->area_size) < 0) {
+        error(0, "End marker was damaged for area %ld", index);
+        result = -1;
+    }
+
+    return result;
 }
 
-static void dump_area(struct area *area) {
-	debug("gwlib.gwmem", 0, "Area %p, size %ld, max_size %ld",
-		area->area, (long) area->area_size, (long) area->max_size);
-	debug("gwlib.gwmem", 0, "Allocated by %s at %s:%ld",
-		area->allocator.function,
-		area->allocator.filename,
-		area->allocator.lineno);
-	if (area->reallocator.function) {
-		debug("gwlib.gwmem", 0, "Re-allocated by %s at %s:%ld",
-			area->reallocator.function,
-			area->reallocator.filename,
-			area->reallocator.lineno);
-	}
-	if (area->claimer.function) {
-		debug("gwlib.gwmem", 0, "Claimed by %s at %s:%ld",
-			area->claimer.function,
-			area->claimer.filename,
-			area->claimer.lineno);
-	}
-}
-	
-static struct area *find_area(unsigned char *p) {
-	long index;
-	struct area *area;
-
-	gw_assert(p != NULL);
-
-	index = check_startmark(p);
-	if (index >= 0 && index < num_allocations &&
-	    allocated[index].area == p) {
-		area = &allocated[index];
-		if (check_endmark(p, area->area_size) < 0) {
-			error(0, "End marker was damaged for area %p", p);
-			dump_area(area);
-		}
-		return area;
-	}
-
-	error(0, "Start marker was damaged for area %p", p);
-	for (index = 0; index < num_allocations; index++) {
-		if (allocated[index].area == p) {
-			area = &allocated[index];
-			dump_area(area);
-			return area;
-		}
-	}
-
-	error(0, "Could not find area information.");
-	return NULL;
+static void dump_area(struct area *area)
+{
+    debug("gwlib.gwmem", 0, "Area %p, size %ld, max_size %ld",
+          area->area, (long) area->area_size, (long) area->max_size);
+    debug("gwlib.gwmem", 0, "Allocated by %s at %s:%ld",
+          area->allocator.function,
+          area->allocator.filename,
+          area->allocator.lineno);
+    if (area->reallocator.function) {
+        debug("gwlib.gwmem", 0, "Re-allocated by %s at %s:%ld",
+              area->reallocator.function,
+              area->reallocator.filename,
+              area->reallocator.lineno);
+    }
+    if (area->claimer.function) {
+        debug("gwlib.gwmem", 0, "Claimed by %s at %s:%ld",
+              area->claimer.function,
+              area->claimer.filename,
+              area->claimer.lineno);
+    }
 }
 
-static void change_total_size(long change) {
-	total_size += change;
-	if (total_size > highest_total_size)
-		highest_total_size = total_size;
+static struct area *find_area(unsigned char *p)
+{
+    long index;
+    struct area *area;
+
+    gw_assert(p != NULL);
+
+    index = check_startmark(p);
+    if (index >= 0 && index < num_allocations &&
+        allocated[index].area == p) {
+        area = &allocated[index];
+        if (check_endmark(p, area->area_size) < 0) {
+            error(0, "End marker was damaged for area %p", p);
+            dump_area(area);
+        }
+        return area;
+    }
+
+    error(0, "Start marker was damaged for area %p", p);
+    for (index = 0; index < num_allocations; index++) {
+        if (allocated[index].area == p) {
+            area = &allocated[index];
+            dump_area(area);
+            return area;
+        }
+    }
+
+    error(0, "Could not find area information.");
+    return NULL;
+}
+
+static void change_total_size(long change)
+{
+    total_size += change;
+    if (total_size > highest_total_size)
+        highest_total_size = total_size;
 }
 
 static struct area *record_allocation(unsigned char *p, size_t size,
-		const char *filename, long lineno, const char *function) {
-	struct area *area;
-	static struct area empty_area;
+                                                  const char *filename, long lineno, const char *function)
+{
+    struct area *area;
+    static struct area empty_area;
 
-	if (num_allocations == MAX_ALLOCATIONS) {
-		panic(0, "Cannot have more than %ld allocations at once",
-			MAX_ALLOCATIONS);
-	}
+    if (num_allocations == MAX_ALLOCATIONS) {
+        panic(0, "Cannot have more than %ld allocations at once",
+              MAX_ALLOCATIONS);
+    }
 
-	area = &allocated[num_allocations];
-	*area = empty_area;
-	area->area = p;
-	area->area_size = size;
-	area->max_size = size;
-	area->allocator.filename = filename;
-	area->allocator.lineno = lineno;
-	area->allocator.function = function;
+    area = &allocated[num_allocations];
+    *area = empty_area;
+    area->area = p;
+    area->area_size = size;
+    area->max_size = size;
+    area->allocator.filename = filename;
+    area->allocator.lineno = lineno;
+    area->allocator.function = function;
 
-	startmark(area->area, num_allocations);
-	endmark(area->area, area->area_size);
+    startmark(area->area, num_allocations);
+    endmark(area->area, area->area_size);
 
-	num_allocations++;
-	if (num_allocations > highest_num_allocations)
-		highest_num_allocations = num_allocations;
-	change_total_size(size);
+    num_allocations++;
+    if (num_allocations > highest_num_allocations)
+        highest_num_allocations = num_allocations;
+    change_total_size(size);
 
-	return area;
+    return area;
 }
 
-static void remove_allocation(struct area *area) {
-	change_total_size(- area->area_size);
-	num_allocations--;
-	if (area == &allocated[num_allocations])
-		return;
-	check_marks(&allocated[num_allocations], num_allocations);
-	*area = allocated[num_allocations];
-	startmark(area->area, area - allocated);
+static void remove_allocation(struct area *area)
+{
+    change_total_size(-area->area_size);
+    num_allocations--;
+    if (area == &allocated[num_allocations])
+        return;
+    check_marks(&allocated[num_allocations], num_allocations);
+    *area = allocated[num_allocations];
+    startmark(area->area, area - allocated);
 }
 
-static void drop_from_free_ring(long index) {
-	struct area *area;
+static void drop_from_free_ring(long index)
+{
+    struct area *area;
 
-	area = &free_ring[index];
-	if (check_marks(area, index) < 0 ||
-	    !untouched(area->area, area->area_size, FREE_AREA_PATTERN)) {
-		error(0, "Freed area %p has been tampered with.", area->area);
-		dump_area(area);
-	}
-	free((unsigned char *)area->area - MARKER_SIZE);
+    area = &free_ring[index];
+    if (check_marks(area, index) < 0 ||
+        !untouched(area->area, area->area_size, FREE_AREA_PATTERN)) {
+        error(0, "Freed area %p has been tampered with.", area->area);
+        dump_area(area);
+    }
+    free((unsigned char *)area->area - MARKER_SIZE);
 }
 
-static void put_on_free_ring(struct area *area) {
-	/* Simple case: We're still filling the free ring. */
-	if (free_ring_len < FREE_RING_SIZE) {
-		free_ring[free_ring_len] = *area;
-		startmark(area->area, free_ring_len);
-		free_ring_len++;
-		return;
-	}
+static void put_on_free_ring(struct area *area)
+{
+    /* Simple case: We're still filling the free ring. */
+    if (free_ring_len < FREE_RING_SIZE) {
+        free_ring[free_ring_len] = *area;
+        startmark(area->area, free_ring_len);
+        free_ring_len++;
+        return;
+    }
 
-	/* Normal case: We need to check and release a free ring entry,
-	 * then put this one in its place. */
+    /* Normal case: We need to check and release a free ring entry,
+     * then put this one in its place. */
 
-	drop_from_free_ring(free_ring_start);
-	free_ring[free_ring_start] = *area;
-	startmark(area->area, free_ring_start);
-	free_ring_start = (free_ring_start + 1) % FREE_RING_SIZE;
+    drop_from_free_ring(free_ring_start);
+    free_ring[free_ring_start] = *area;
+    startmark(area->area, free_ring_start);
+    free_ring_start = (free_ring_start + 1) % FREE_RING_SIZE;
 }
 
-static void free_area(struct area *area) {
-	fill(area->area, area->area_size, FREE_AREA_PATTERN);
-	put_on_free_ring(area);
-	remove_allocation(area);
+static void free_area(struct area *area)
+{
+    fill(area->area, area->area_size, FREE_AREA_PATTERN);
+    put_on_free_ring(area);
+    remove_allocation(area);
 }
-	
-void gw_check_init_mem(void) {
-	mutex_init_static(&gwmem_lock);
-	initialized = 1;
+
+void gw_check_init_mem(void)
+{
+    mutex_init_static(&gwmem_lock);
+    initialized = 1;
 }
 
 void *gw_check_malloc(size_t size, const char *filename, long lineno,
-			const char *function) {
-	unsigned char *p;
-	
-	gw_assert(initialized);
-	
-	/* ANSI C89 says malloc(0) is implementation-defined.  Avoid it. */
-	gw_assert(size > 0);
-	
-	p = malloc(size + 2 * MARKER_SIZE);
-	if (p == NULL)
-		panic(errno, "Memory allocation of %lu bytes failed", 
-			(unsigned long) size);
-	p += MARKER_SIZE;
+                      const char *function)
+{
+    unsigned char *p;
 
-	lock();
-	fill(p, size, NEW_AREA_PATTERN);
-	record_allocation(p, size, filename, lineno, function);
-	unlock();
+    gw_assert(initialized);
 
-	return p;
+    /* ANSI C89 says malloc(0) is implementation-defined.  Avoid it. */
+    gw_assert(size > 0);
+
+    p = malloc(size + 2 * MARKER_SIZE);
+    if (p == NULL)
+        panic(errno, "Memory allocation of %lu bytes failed",
+              (unsigned long) size);
+    p += MARKER_SIZE;
+
+    lock();
+    fill(p, size, NEW_AREA_PATTERN);
+    record_allocation(p, size, filename, lineno, function);
+    unlock();
+
+    return p;
 }
 
 void *gw_check_realloc(void *p, size_t size, const char *filename,
-			long lineno, const char *function) {
-	struct area *area;
+                       long lineno, const char *function)
+{
+    struct area *area;
 
-	if (p == NULL)
-		return gw_check_malloc(size, filename, lineno, function);
+    if (p == NULL)
+        return gw_check_malloc(size, filename, lineno, function);
 
-	gw_assert(initialized);
-	gw_assert(size > 0);
+    gw_assert(initialized);
+    gw_assert(size > 0);
 
-	lock();
-	area = find_area(p);
-	if (!area) {
-		unlock();
-		panic(0, "Realloc called on non-allocated area %p", p);
-	}
+    lock();
+    area = find_area(p);
+    if (!area) {
+        unlock();
+        panic(0, "Realloc called on non-allocated area %p", p);
+    }
 
-	if (size == area->area_size) {
-		/* No changes */
-	} if (size <= area->max_size) {
-		change_total_size(size - area->area_size);
-		area->area_size = size;
-		endmark(p, size);
-	} else if (size > area->max_size) {
-		/* The current block is not large enough for the reallocation.
-		 * We will allocate a new block, copy the data over, and free
-		 * the old block.  We round the size up to a power of two,
-		 * to prevent frequent reallocations. */
-		struct area *new_area;
-		size_t new_size;
-		unsigned char *new_p;
+    if (size == area->area_size) {
+        /* No changes */
+    } else if (size <= area->max_size) {
+        change_total_size(size - area->area_size);
+        area->area_size = size;
+        endmark(p, size);
+    } else if (size > area->max_size) {
+        /* The current block is not large enough for the reallocation.
+         * We will allocate a new block, copy the data over, and free
+         * the old block.  We round the size up to a power of two,
+         * to prevent frequent reallocations. */
+        struct area *new_area;
+        size_t new_size;
+        unsigned char *new_p;
 
-		new_size = round_pow2(size + 2 * MARKER_SIZE);
-		new_p = malloc(new_size);
-		new_size -= 2 * MARKER_SIZE;
-		new_p += MARKER_SIZE;
-		memcpy(new_p, p, area->area_size);
-		fill(new_p + area->area_size, size - area->area_size,
-		     NEW_AREA_PATTERN);
-		new_area = record_allocation(new_p, size,
-				area->allocator.filename,
-				area->allocator.lineno,
-				area->allocator.function);
-		new_area->max_size = new_size;
-		free_area(area);
+        new_size = round_pow2(size + 2 * MARKER_SIZE);
+        new_p = malloc(new_size);
+        new_size -= 2 * MARKER_SIZE;
+        new_p += MARKER_SIZE;
+        memcpy(new_p, p, area->area_size);
+        fill(new_p + area->area_size, size - area->area_size,
+             NEW_AREA_PATTERN);
+        new_area = record_allocation(new_p, size,
+                                     area->allocator.filename,
+                                     area->allocator.lineno,
+                                     area->allocator.function);
+        new_area->max_size = new_size;
+        free_area(area);
 
-		p = new_p;
-		area = new_area;
-	} 
-	
-	area->reallocator.filename = filename;
-	area->reallocator.lineno = lineno;
-	area->reallocator.function = function;
-	unlock();
-	return p;
+        p = new_p;
+        area = new_area;
+    }
+
+    area->reallocator.filename = filename;
+    area->reallocator.lineno = lineno;
+    area->reallocator.function = function;
+    unlock();
+    return p;
 }
 
 void gw_check_free(void *p, const char *filename, long lineno,
-			const char *function) {
-	struct area *area;
-	gw_assert(initialized);
+                   const char *function)
+{
+    struct area *area;
+    gw_assert(initialized);
 
-	if (p == NULL)
-		return;
+    if (p == NULL)
+        return;
 
-	lock();
-	area = find_area(p);
-	if (!area) {
-		unlock();
-		panic(0, "Free called on non-allocated area %p", p);
-	}
+    lock();
+    area = find_area(p);
+    if (!area) {
+        unlock();
+        panic(0, "Free called on non-allocated area %p", p);
+    }
 
-	free_area(area);
-	unlock();
+    free_area(area);
+    unlock();
 }
 
 char *gw_check_strdup(const char *str, const char *filename, long lineno,
-		const char *function) {
-	char *copy;
-	
-	gw_assert(initialized);
-	gw_assert(str != NULL);
+                      const char *function)
+{
+    char *copy;
 
-	copy = gw_check_malloc(strlen(str) + 1, filename, lineno, function);
-	strcpy(copy, str);
-	return copy;
+    gw_assert(initialized);
+    gw_assert(str != NULL);
+
+    copy = gw_check_malloc(strlen(str) + 1, filename, lineno, function);
+    strcpy(copy, str);
+    return copy;
 }
 
 void *gw_check_claim_area(void *p, const char *filename, long lineno,
-		const char *function) {
-	struct area *area;
+                          const char *function)
+{
+    struct area *area;
 
-	/* Allow this for the convenience of wrapper macros. */
-	if (p == NULL)
-		return NULL;
+    /* Allow this for the convenience of wrapper macros. */
+    if (p == NULL)
+        return NULL;
 
-	lock();
-	area = find_area(p);
-	if (!area) {
-		unlock();
-		panic(0, "Claim_area called on non-allocated area %p", p);
-	}
+    lock();
+    area = find_area(p);
+    if (!area) {
+        unlock();
+        panic(0, "Claim_area called on non-allocated area %p", p);
+    }
 
-	area->claimer.filename = filename;
-	area->claimer.lineno = lineno;
-	area->claimer.function = function;
-	unlock();
+    area->claimer.filename = filename;
+    area->claimer.lineno = lineno;
+    area->claimer.function = function;
+    unlock();
 
-	/* For convenience of calling macros */
-	return p;
+    /* For convenience of calling macros */
+    return p;
 }
 
-void gw_check_check_leaks(void) {
-	long calculated_size;
-	long index;
+void gw_check_check_leaks(void)
+{
+    long calculated_size;
+    long index;
 
-	gw_assert(initialized);
-	lock();
+    gw_assert(initialized);
+    lock();
 
-	for (index = 0; index < free_ring_len; index++) {
-		drop_from_free_ring(index);
-	}
-	free_ring_len = 0;
+    for (index = 0; index < free_ring_len; index++) {
+        drop_from_free_ring(index);
+    }
+    free_ring_len = 0;
 
-	calculated_size = 0;
-	for (index = 0; index < num_allocations; index++) {
-		calculated_size += allocated[index].area_size;
-	}
-	gw_assert(calculated_size == total_size);
+    calculated_size = 0;
+    for (index = 0; index < num_allocations; index++) {
+        calculated_size += allocated[index].area_size;
+    }
+    gw_assert(calculated_size == total_size);
 
-	debug("gwlib.gwmem", 0, "Current allocations: %ld areas, %ld bytes",
-		num_allocations, total_size);
-	debug("gwlib.gwmem", 0, "Highest number of allocations: %ld areas",
-		highest_num_allocations);
-	debug("gwlib.gwmem", 0, "Highest memory usage: %ld bytes",
-		highest_total_size);
-	for (index = 0; index < num_allocations; index++) {
-		check_marks(&allocated[index], index);
-		dump_area(&allocated[index]);
-	}
+    debug("gwlib.gwmem", 0, "Current allocations: %ld areas, %ld bytes",
+          num_allocations, total_size);
+    debug("gwlib.gwmem", 0, "Highest number of allocations: %ld areas",
+          highest_num_allocations);
+    debug("gwlib.gwmem", 0, "Highest memory usage: %ld bytes",
+          highest_total_size);
+    for (index = 0; index < num_allocations; index++) {
+        check_marks(&allocated[index], index);
+        dump_area(&allocated[index]);
+    }
 
-	unlock();
-	mutex_destroy(&gwmem_lock);
+    unlock();
+    mutex_destroy(&gwmem_lock);
 }
 
-int gw_check_is_allocated(void *p) {
-	struct area *area;
+int gw_check_is_allocated(void *p)
+{
+    struct area *area;
 
-	lock();
-	area = find_area(p);
-	unlock();
-	return area != NULL;
+    lock();
+    area = find_area(p);
+    unlock();
+    return area != NULL;
 }
 
-long gw_check_area_size(void *p) {
-	struct area *area;
-	size_t size;
+long gw_check_area_size(void *p)
+{
+    struct area *area;
+    size_t size;
 
-	lock();
-	area = find_area(p);
-	if (!area) {
-		unlock();
-		warning(0, "Area_size called on non-allocated area %p", p);
-		return -1;
-	}
-	size = area->area_size;
-	unlock();
-	return size;
+    lock();
+    area = find_area(p);
+    if (!area) {
+        unlock();
+        warning(0, "Area_size called on non-allocated area %p", p);
+        return -1;
+    }
+    size = area->area_size;
+    unlock();
+    return size;
 }

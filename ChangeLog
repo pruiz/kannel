@@ -1,5 +1,12 @@
 2000-10-18  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/charset.c, gwlib/conffile.c, gwlib/counter.c,
+	gwlib/counter.c, gwlib/gwmem-check.c, gwlib/gwmem-native.c,
+	gwlib/gwstr.c, gwlib/parse.c, gwlib/protected.c, gwlib/socket.c,
+	gwlib/thread.c: Reformatted.
+
+2000-10-18  Richard Braakman  <dark@wapit.com>
+
 	* configure.in, config.h.in: New test for HAVE_SYS_POLL_H.
 
 	* gwlib/gwpoll.h, gwlib/gwpoll.c: Files that either include 

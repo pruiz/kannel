@@ -222,72 +222,75 @@ const static int latin1_to_gsm[256] = {
 };
 
 
-void charset_gsm_to_latin1(Octstr *ostr) {
-	long pos, len;
+void charset_gsm_to_latin1(Octstr *ostr)
+{
+    long pos, len;
 
-	len = octstr_len(ostr);
-	for (pos = 0; pos < len; pos++) {
-		int c, new, i;
+    len = octstr_len(ostr);
+    for (pos = 0; pos < len; pos++) {
+	int c, new, i;
 
-		c = octstr_get_char(ostr, pos);
-		if (c == 27 && pos + 1 < len) {
-			/* GSM escape code.  Delete it, then process
-			 * the next character specially. */
-			octstr_delete(ostr, pos, 1);
-			len--;
-			c = octstr_get_char(ostr, pos);
-			for (i = 0; gsm_escapes[i].gsmesc >= 0; i++) {
-				if (gsm_escapes[i].gsmesc == c)
-					break;
-			}
-			if (gsm_escapes[i].gsmesc == c)
-				new = gsm_escapes[i].latin1;
-			else if (c < 128)
-				new = gsm_to_latin1[c];
-			else
-				continue;
-		} else if (c < 128) {
-			new = gsm_to_latin1[c];
-		} else {
-			continue;
-		}
-		if (new != c)
-			octstr_set_char(ostr, pos, new);
+	c = octstr_get_char(ostr, pos);
+	if (c == 27 && pos + 1 < len) {
+	    /* GSM escape code.  Delete it, then process the next
+             * character specially. */
+	    octstr_delete(ostr, pos, 1);
+	    len--;
+	    c = octstr_get_char(ostr, pos);
+	    for (i = 0; gsm_escapes[i].gsmesc >= 0; i++) {
+		if (gsm_escapes[i].gsmesc == c)
+	  	    break;
+	    }
+	    if (gsm_escapes[i].gsmesc == c)
+		new = gsm_escapes[i].latin1;
+	    else if (c < 128)
+		new = gsm_to_latin1[c];
+	    else
+		continue;
+	} else if (c < 128) {
+            new = gsm_to_latin1[c];
+	} else {
+	    continue;
 	}
+	if (new != c)
+	    octstr_set_char(ostr, pos, new);
+    }
 }
 
-void charset_latin1_to_gsm(Octstr *ostr) {
-	long pos, len;
-	int c, new;
-	unsigned char esc = 27;
+void charset_latin1_to_gsm(Octstr *ostr)
+{
+    long pos, len;
+    int c, new;
+    unsigned char esc = 27;
 
-	len = octstr_len(ostr);
-	for (pos = 0; pos < len; pos++) {
-		c = octstr_get_char(ostr, pos);
-		gw_assert(c >= 0);
-		gw_assert(c <= 256);
-		new = latin1_to_gsm[c];
-		if (new < 0) {
-			/* Escaped GSM code */
-			octstr_insert_data(ostr, pos, &esc, 1);
-			pos++;
-			len++;
-			new = -new;
-		}
-		if (new != c)
-			octstr_set_char(ostr, pos, new);
+    len = octstr_len(ostr);
+    for (pos = 0; pos < len; pos++) {
+	c = octstr_get_char(ostr, pos);
+	gw_assert(c >= 0);
+	gw_assert(c <= 256);
+	new = latin1_to_gsm[c];
+	if (new < 0) {
+   	     /* Escaped GSM code */
+	    octstr_insert_data(ostr, pos, &esc, 1);
+	    pos++;
+	    len++;
+	    new = -new;
 	}
+	if (new != c)
+	    octstr_set_char(ostr, pos, new);
+    }
 }
 
-int charset_gsm_truncate(Octstr *gsm, long max) {
-	if (octstr_len(gsm) > max) {
-		/* If the last GSM character was an escaped character,
-		 * then chop off the escape as well as the character. */
-		if (octstr_get_char(gsm, max - 1) == 27)
-			octstr_truncate(gsm, max - 1);
-		else
-			octstr_truncate(gsm, max);
-		return 1;
-	}
-	return 0;
+int charset_gsm_truncate(Octstr *gsm, long max)
+{
+    if (octstr_len(gsm) > max) {
+	/* If the last GSM character was an escaped character,
+	 * then chop off the escape as well as the character. */
+	if (octstr_get_char(gsm, max - 1) == 27)
+  	    octstr_truncate(gsm, max - 1);
+	else
+	    octstr_truncate(gsm, max);
+	return 1;
+    }
+    return 0;
 }
