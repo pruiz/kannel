@@ -1,7 +1,7 @@
 /*
- *wtp_send.c - WTP message module implementation
+ * wtp_send.c - WTP message sending module implementation
  *
- *By Aarno Syvänen for WapIT Ltd.
+ * By Aarno Syvänen for WapIT Ltd.
  */
 
 #include "wtp_send.h"
@@ -13,7 +13,7 @@
  *PROTOTYPES OF INTERNAL FUNCTIONS
  */
 
-static Msg *pack_result(WTPMachine *machine, WTPEvent *event);
+static Msg *wtp_pack_result(WTPMachine *machine, WTPEvent *event);
 
 /*****************************************************************************
  *
@@ -25,20 +25,22 @@ static Msg *pack_result(WTPMachine *machine, WTPEvent *event);
  * all errors by itself.
  */
 void wtp_send_result(WTPMachine *machine, WTPEvent *event){
-     Msg *msg;
 
-     msg=pack_result(machine, event);
+     Msg *msg=NULL;
+
+     msg=wtp_pack_result(machine, event);
      if (msg == NULL)
-        goto error;
+        goto msg_error;
 
      put_msg_in_queue(msg);
+
      return;
 
 /*
  *Abort(CAPTEMPEXCEEDED)
  */
-error:
-     error(errno, "pack_msg: out of memory");
+msg_error:
+     error(errno, "wtp_send_result: out of memory");
      free(msg); 
      return;
 }
@@ -53,12 +55,15 @@ error:
  * errors by itself.
  */
 
-static Msg *pack_result(WTPMachine *machine, WTPEvent *event){
+static Msg *wtp_pack_result(WTPMachine *machine, WTPEvent *event){
 
     Msg *msg;
     int octet,
         first_tid,
-        last_tid;
+        last_tid,
+        tid;
+
+    char wtp_pdu[3];
 
     msg=msg_create(wdp_datagram);
     if (msg == NULL)
@@ -101,22 +106,33 @@ debug(0, "pack_result: msg->dst: <%s> <%ld>",
     msg->wdp_datagram.user_data=octstr_copy(event->TRResult.user_data, 0,
          octstr_len(event->TRResult.user_data));
     if (msg->wdp_datagram.user_data == NULL)
-       goto oct_error;
-
+       goto error;
+/*
+ * First we set pdu type
+ */
     octet=0x02;
     octet<<=3;
-
-    octet|=0x6;
-    octet+=machine->rid;
-    
-    octstr_set_char(event->TRResult.user_data, 0, octet);  
 /*
- *A responder turns on the first bit of the tid field, as an identification.
+ * Then GTR and TTR flags on
  */
-    first_tid=event->TRResult.tid>>8^0x8000;
+    octet|=0x6;
+/*
+ * And the value of rid
+ */
+    octet+=machine->rid;
+    wtp_pdu[0]=octet;
+/*
+ * A responder turns on the first bit of the tid field, as an identification.
+ */
+    tid=event->TRResult.tid^0x8000;
+    first_tid=tid>>8;
+    debug(0, "first tid was %d", first_tid);
     last_tid=event->TRResult.tid&0xff;
-    octstr_set_char(event->TRResult.user_data, 1, first_tid);
-    octstr_set_char(event->TRResult.user_data, 2, last_tid); 
+    wtp_pdu[1]=first_tid;
+    wtp_pdu[2]=last_tid;
+
+    if (octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 3) == -1)
+       goto oct_error; 
  
     return msg;
 /*
