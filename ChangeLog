@@ -1,4 +1,7 @@
 2003-03-05  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/log.c: fixed compiler warning.
+
+2003-03-05  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/octstr.c[.debug], gwlib/log.c: fixed some compiler warnings.
 
 2003-03-04  Stipe Tolj  <tolj@wapme-systems.de>
