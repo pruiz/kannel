@@ -1,3 +1,7 @@
+2000-12-19  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/dict.c: Improve description of Dict fields.
+
 2000-12-19  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsc_wrapper.c: it is ready - to be tested out. Next: new

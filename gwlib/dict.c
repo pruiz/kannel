@@ -50,14 +50,16 @@ static int item_has_key(void *item, void *key)
 
 /*
  * The dictionary itself is a very simple hash table.
+ * `tab' is an array of Lists of Items, in which empty Lists may be
+ * represented as NULL.  `size' is the number of elements allocated
+ * for the array, and `key_count' is the number of Items currently
+ * in the table.  `key_count' is kept up to date by the put and remove
+ * functions, and is used to make dict_key_count() faster.
  */
 
 struct Dict {
-    /* Array of Lists of Items.  Empty lists may be represented by NULL. */
     List **tab;
-    /* Size of tab array */
     long size;
-    /* Number of keys currently in the table */
     long key_count;
     void (*destroy_value)(void *);
     Mutex *lock;
