@@ -79,7 +79,7 @@ long date_convert_universal(struct universaltime *t)
     leapyears = (year / 4) - (year / 100) + (year / 400) - 477;
     date += leapyears * DAY;
 
-    date += monthstart[t->month-1] * DAY;
+    date += monthstart[t->month] * DAY;
     date += (t->day - 1) * DAY;
     date += t->hour * HOUR;
     date += t->minute * MINUTE;
