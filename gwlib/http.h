@@ -33,7 +33,6 @@ enum http_action {
     HTTP_SERVER,
     HTTP_GATEWAY,
     HTTP_CACHE,
-  
 };
 
 
@@ -124,46 +123,52 @@ int http_get(char *url, char **type, char **data, size_t *size);
  * Fetch the document specified by an URL. Takes arbitrary number of the
  * headers as input. Return -1 for error, or 0 for OK. Type is for client.
  * Data and size stands for response content and size respectively.
- * User provides the headers of the request. Header -argument is a pointer to the beginning of the list.
+ * User provides the headers of the request. Header -argument is a pointer
+ * to the beginning of the list.
 */
 
-int http_get_u(char *url, char **type, char **data, size_t *size, HTTPHeader *header);
+int http_get_u(char *url, char **type, char **data, size_t *size,
+	       HTTPHeader *header);
 
 /********************************
- * http_post - POSTs an entity to server
- * user provides headers and data. http_post counts the length of the data to send it to server.
+ * http_post - POST an entity to server
+ * user provides headers and data. http_post counts the length of the data
+ * to send it to server.
  * pointer 'size' points to the size of the data returned by the server.
  */
 
-int http_post(char *urltext, char **type, char **data, size_t *size, HTTPHeader *header);
+int http_post(char *urltext, char **type, char **data, size_t *size,
+	      HTTPHeader *header);
 
 
-/**********************************************************
- * header_create - create a header
+/*
+ * header_create - create a header. If any of the input equals NULL
+ * return NULL, otherwise return new header with given values..
  */
 
 HTTPHeader *header_create(char *key, char *value);
     
-/**********************************************************
- * header_dump - dump headers
- * Dump all headers into debug().
+/*
+ * header_dump -  dump all headers into debug().
  */
 
 void header_dump(HTTPHeader *hdr);
-    
-/******************************************************
- * destroy entire header data. Returns 0 always.
- */
 
+  
+/*
+ * header_destroy - destroy given header. return 0 for done, -1 for errors.
+ */
 int header_destroy(HTTPHeader *header);
 
 /***************************************************************
  * pack the header by combining all similar headers, i.e.
  * Accept-language: en Accept-language: fi -> Accept-language: en, fi
- * Returns 0 always.
+ * Return 0 if done, -1 if given header value string too long (doesnt fit
+ * in 1024B).
  */
 
 int header_pack(HTTPHeader *header);
+
 
 
 
@@ -192,7 +197,8 @@ int httpserver_setup(int port);
    for now. 
 */
 
-int httpserver_get_request(int socket, char **client_ip, char **path, char **args);
+int httpserver_get_request(int socket, char **client_ip, char **path,
+			   char **args);
 
 
 
@@ -227,7 +233,8 @@ int httpserver_answer_200_ok(int socket, char* text);
 
 /*int httpserver_answer_201_created(int socket, char* text);
   int httpserver_answer_202_accepted(int socket, char* text);
-  int httpserver_answer_203_non_authoritative_information(int socket, char* text);
+  int httpserver_answer_203_non_authoritative_information(int socket,
+  char* text);
   int httpserver_answer_204_no_contents(int socket, char* text);
   int httpserver_answer_205_reset_content(int socket, char* text);
   
@@ -251,7 +258,8 @@ int httpserver_answer_405_method_not_allowed(int socket, char* text);
 
 /*
   int httpserver_answer_406_not_acceptable(int socket, char* text);
-  int httpserver_answer_407_proxy_authentication_required(int socket, char* text);
+  int httpserver_answer_407_proxy_authentication_required(int socket,
+  char* text);
   int httpserver_answer_408_request_timeout(int socket, char* text);
   int httpserver_answer_409_conflict(int socket, char* text);
   int httpserver_answer_410_gone(int socket, char* text);
@@ -260,7 +268,8 @@ int httpserver_answer_405_method_not_allowed(int socket, char* text);
   int httpserver_answer_413_request_entity_too_large(int socket, char* text);
   int httpserver_answer_414_request_uri_too_long(int socket, char* text);
   int httpserver_answer_415_unsupported_media_type(int socket, char* text);
-  int httpserver_answer_416_requested_range_not_satisfiable(int socket, char* text);
+  int httpserver_answer_416_requested_range_not_satisfiable(int socket,
+  char* text);
   int httpserver_answer_417_expectation_failed(int socket, char* text);
 */
 
@@ -274,41 +283,47 @@ int httpserver_answer_504_gateway_timeout(int socket, char* text);
 int httpserver_answer_505_http_version_not_supported(int socket, char* text);
 */
 
-/******************************************
-tcpip_create_client_socket
-tcpip_create_server_socket
-tcpip_close_socket
-tcpip_read_from_socket
-tcpip_write_to_socket
+/*
+* some tcpip functions
+*/
 
-buffer_create
-buffer_destroy
-buffer_append
-buffer_copy
-buffer_cut
-buffer_insert
+int tcpip_create_client_socket(int socket, char **client_ip);
+    
+/*tcpip_create_server_socket();
+  tcpip_close_socket();
+  tcpip_read_from_socket();
+  tcpip_write_to_socket();
+  
+  buffer_create();
+  buffer_destroy();
+  buffer_append();
+  buffer_copy();
+  buffer_cut();
+  buffer_insert();
+*/
 
-httpsession_create
-httpsession_destroy
-httpsession_lock
-httpsession_unlock
-
-httprequest_create
-httprequest_destroy
-httprequest_header_get
-httprequest_header_put
-
-httpclient_session_open
-httpclient_session_close
-httpclient_session_join
-httpclient_speak
-httpclient_listen
-
-httpserver_session_open
-httpserver_session_close
-httpserver_session_join
-httpserver_speak
-httpserver_listen
+/*
+  httpsession_create
+  httpsession_destroy
+  httpsession_lock
+  httpsession_unlock
+  
+  httprequest_create
+  httprequest_destroy
+  httprequest_header_get
+  httprequest_header_put
+  
+  httpclient_session_open
+  httpclient_session_close
+  httpclient_session_join
+  httpclient_speak
+  httpclient_listen
+  
+  httpserver_session_open
+  httpserver_session_close
+  httpserver_session_join
+  httpserver_speak
+  httpserver_listen
 */
 
 /******************************************
@@ -324,7 +339,7 @@ int httprequest_destroy(HTTPRequest *request);
 
 
 /******************************************
- *functions for header handling
+ * functions for request header handling
  */
 
 int httprequest_add_header(HTTPRequest *request, char *key, char *value);
@@ -334,7 +349,3 @@ char* httprequest_get_header_value(HTTPRequest *request, char *key);
 
 
 #endif
-
-
-
-

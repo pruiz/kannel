@@ -1299,24 +1299,33 @@ int httprequest_replace_header(HTTPRequest *request, char *key, char *value)
     return 0;
 }
 
-
-
-
-/**********************************************
- * header-functions
+/***************************
+ * header functions
  */
-HTTPHeader *header_create(char *key, char *value) {
-	HTTPHeader *h;
-	
-	h = gw_malloc(sizeof(HTTPHeader));
-	if(h == NULL)return NULL;
-	h->key = gw_strdup(key);
-	h->value = gw_strdup(value);
-	h->next = NULL;
-	return h;
+
+/*
+ * header_create - create http header
+ */
+HTTPHeader *header_create(char *key, char *value)
+{
+    HTTPHeader *h;
+
+    if(key == NULL || value == NULL){
+	error(0,"header_create: Bad input.");
+	return NULL;
+    }
+
+    h = gw_malloc(sizeof(HTTPHeader));
+    h->key = gw_strdup(key);
+    h->value = gw_strdup(value);
+    h->next = NULL;
+
+    return h;
 }
 
-/************/
+/*
+ * header_dump - dump all headers into debug()
+ */
 
 void header_dump(HTTPHeader *hdr)
 {
@@ -1327,20 +1336,29 @@ void header_dump(HTTPHeader *hdr)
 }
 
 
-/************/
+/*
+ * header_destroy - destroy the given header. user must take care of the
+ * previous item, we don't have a clue who's pointing the hdr and where.
+ */
 
 int header_destroy(HTTPHeader *hdr)
 {
-    HTTPHeader *ptr;
-    while(hdr != NULL) {
-	ptr = hdr;
-	hdr = hdr->next;
-	gw_free(ptr->key);
-	gw_free(ptr->value);
-	gw_free(ptr);
+    HTTPHeader *ptr = NULL;
+    
+    if(hdr == NULL){
+	error(0,"header_destroy: Bad input (empty).");
+	return -1;
     }
-    return 0;
+    
+    ptr = hdr;
+    gw_free(ptr->key);
+    gw_free(ptr->value);
+    gw_free(ptr);
+    
+    return 0;	
 }
+
+ 
 
 
 /*
@@ -1361,8 +1379,6 @@ int header_pack(HTTPHeader *hdr)
 		len = strlen(hdr->value) + 2 + strlen(ptr->value); 
 		buf = gw_malloc(len);
 		ret = sprintf(buf, "%s, %s", hdr->value, ptr->value);
-		debug("gwlib.http",0,"header_pack: ret:<%d> len:<%d>",
-		      ret, len);
 		if(ret < len) return -1;
 		gw_free(hdr->value);
 		hdr->value = gw_strdup(buf);
@@ -1394,7 +1410,7 @@ int httprequest_remove_header(HTTPRequest *request, char *key) {
     HTTPHeader *hdr = NULL, *prev = NULL;
 
     if(request==NULL || key==NULL){
-	error(0, "httprequest_remove_header: Bad input.");
+	error(0, "httprequest_remove_header: Bad input (empty).");
 	return -1;
     }
     hdr = request->baseheader;
