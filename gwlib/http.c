@@ -25,16 +25,17 @@ enum { HTTP_MAX_FOLLOW = 5 };
 
 
 /*
- * The definition for the HTTPSocket data type.
+ * The definition for the HTTPSocket data type. It is a server socket
+ * if conn == NULL.
  */
 struct HTTPSocket {
     int in_use;
     int use_version_1_0;
     time_t last_used;
-    int socket;
+    int server_socket;
     Octstr *host;
     int port;
-    Octstr *buffer;
+    Connection *conn;
 };
 
 
@@ -115,8 +116,6 @@ static void pool_shutdown(void);
 static HTTPSocket *pool_allocate(Octstr *host, int port);
 static void pool_free(HTTPSocket *p);
 static void pool_free_and_close(HTTPSocket *p);
-static int pool_socket_is_alive(HTTPSocket *p);
-static int pool_socket_reopen(HTTPSocket *p);
 static void pool_kill_old_ones(void);
 static int pool_socket_old_and_unused(void *a, void *b);
 
@@ -380,7 +379,7 @@ int http_socket_fd(HTTPSocket *socket)
 {
     gwlib_assert_init();
     gw_assert(socket != NULL);
-    return socket->socket;
+    return socket->server_socket;
 }
 
 
@@ -1101,12 +1100,6 @@ static HTTPSocket *pool_allocate(Octstr *host, int port)
         list_lock(pool);
         pool_kill_old_ones();
         list_append(pool, p);
-    } else {
-        gw_assert(p != NULL);
-        if (!pool_socket_is_alive(p) && pool_socket_reopen(p) == -1) {
-            list_unlock(pool);
-            return NULL;
-        }
     }
 
     p->in_use = 1;
@@ -1134,37 +1127,6 @@ static void pool_free_and_close(HTTPSocket *p)
     list_unlock(pool);
 
     socket_destroy(p);
-}
-
-
-static int pool_socket_is_alive(HTTPSocket *p)
-{
-    if (p->socket < 0)
-        return 0;
-
-    switch (read_available(p->socket, 0)) {
-    case -1:
-        return 0;
-
-    case 0:
-        return 1;
-
-    default:
-        if (octstr_append_from_socket(p->buffer, p->socket) <= 0)
-            return 0;
-        return 1;
-    }
-}
-
-
-static int pool_socket_reopen(HTTPSocket *p)
-{
-    debug("gwlib.http", 0, "HTTP: Re-opening socket.");
-    (void) close(p->socket);
-    p->socket = tcpip_connect_to_server(octstr_get_cstr(p->host), p->port);
-    if (p->socket == -1)
-        return -1;
-    return 0;
 }
 
 
@@ -1212,19 +1174,19 @@ static HTTPSocket *socket_create_client(Octstr *host, int port)
     debug("gwlib.http", 0, "HTTP: Creating a new client socket <%s:%d>.",
           octstr_get_cstr(host), port);
     p = gw_malloc(sizeof(HTTPSocket));
-    p->socket = tcpip_connect_to_server(octstr_get_cstr(host), port);
+    p->conn = conn_open_tcp(host, port);
 
-    if (p->socket == -1) {
+    if (p->conn == NULL) {
         gw_free(p);
         return NULL;
     }
 
+    p->server_socket = -1;
     p->in_use = 0;
     p->use_version_1_0 = 0;
     p->last_used = (time_t) - 1;
     p->host = octstr_duplicate(host);
     p->port = port;
-    p->buffer = octstr_create("");
 
     return p;
 }
@@ -1240,19 +1202,19 @@ static HTTPSocket *socket_create_server(int port)
     debug("gwlib.http", 0, "HTTP: Creating a new server socket <%d>.",
           port);
     p = gw_malloc(sizeof(HTTPSocket));
-    p->socket = make_server_socket(port);
+    p->server_socket = make_server_socket(port);
 
-    if (p->socket == -1) {
+    if (p->server_socket == -1) {
         gw_free(p);
         return NULL;
     }
 
+    p->conn = NULL;
     p->in_use = 0;
     p->use_version_1_0 = 0;
     p->last_used = (time_t) - 1;
     p->host = octstr_create("server socket");
     p->port = port;
-    p->buffer = octstr_create("");
 
     return p;
 }
@@ -1267,10 +1229,11 @@ static void socket_destroy(HTTPSocket *p)
 
     debug("gwlib.http", 0, "HTTP: Closing socket <%s:%d>",
           octstr_get_cstr(p->host), p->port);
-    if (p->socket != -1 && close(p->socket) == -1)
+    if (p->server_socket != -1 && close(p->server_socket) == -1)
     	error(errno, "HTTP: Closing of socket failed.");
+    if (p->conn != NULL)
+    	conn_destroy(p->conn);
     octstr_destroy(p->host);
-    octstr_destroy(p->buffer);
     gw_free(p);
 }
 
@@ -1282,9 +1245,13 @@ static void socket_destroy(HTTPSocket *p)
  */
 static void socket_close(HTTPSocket *p)
 {
-    if (close(p->socket) == -1)
+    if (p->server_socket != -1 && close(p->server_socket) == -1)
     	error(errno, "HTTP: Closing of socket failed.");
-    p->socket = -1;
+    p->server_socket = -1;
+    if (p->conn != NULL) {
+    	conn_destroy(p->conn);
+	p->conn = NULL;
+    }
 }
 
 
@@ -1297,10 +1264,10 @@ static HTTPSocket *socket_accept(HTTPSocket *server)
     struct sockaddr_in addr;
     HTTPSocket *client;
 
-    gw_assert(server->socket != -1);
+    gw_assert(server->server_socket != -1);
 
     addrlen = sizeof(addr);
-    s = accept(server->socket, (struct sockaddr *) & addr, &addrlen);
+    s = accept(server->server_socket, (struct sockaddr *) & addr, &addrlen);
     if (s == -1) {
         error(errno, "HTTP: Error accepting a client.");
         return NULL;
@@ -1308,10 +1275,10 @@ static HTTPSocket *socket_accept(HTTPSocket *server)
     client = gw_malloc(sizeof(HTTPSocket));
     client->in_use = 1;
     client->last_used = (time_t) - 1;
-    client->socket = s;
+    client->server_socket = -1;
+    client->conn = conn_wrap_fd(s);
     client->host = host_ip(addr);
     client->port = 0;
-    client->buffer = octstr_create("");
 
     debug("gwlib.http", 0, "HTTP: Accepted client from <%s>",
           octstr_get_cstr(client->host));
@@ -1324,32 +1291,24 @@ static HTTPSocket *socket_accept(HTTPSocket *server)
  * line from the buffer. Fill the buffer with new data from the socket,
  * if the buffer did not already have enough.
  *
- * Return -1 for error, 0 for EOF, >0 for line. The will will have its
+ * Return 0 for EOF, -1 for error, >0 for line. The line will will have its
  * line endings (\r\n or \n) removed.
  */
 static int socket_read_line(HTTPSocket *p, Octstr **line)
 {
-    int newline;
-
-    if (p->socket == -1)
+    gw_assert(p->server_socket == -1);
+    if (p->conn == NULL)
     	return 0;
 
-    while ((newline = octstr_search_char(p->buffer, '\n', 0)) == -1) {
-        switch (octstr_append_from_socket(p->buffer, p->socket)) {
-        case -1:
-            return -1;
-        case 0:
-            return 0;
-        }
+    for (;;) {
+	*line = conn_read_line(p->conn);
+	if (*line != NULL)
+	    return 1;
+	if (conn_wait(p->conn, -1) == -1)
+	    return -1;
+	if (conn_eof(p->conn))
+	    return 0;
     }
-
-    if (newline > 0 && octstr_get_char(p->buffer, newline - 1) == '\r')
-        *line = octstr_copy(p->buffer, 0, newline - 1);
-    else
-        *line = octstr_copy(p->buffer, 0, newline);
-    octstr_delete(p->buffer, 0, newline + 1);
-
-    return 1;
 }
 
 
@@ -1361,20 +1320,19 @@ static int socket_read_line(HTTPSocket *p, Octstr **line)
  */
 static int socket_read_bytes(HTTPSocket *p, Octstr **os, long bytes)
 {
-    if (p->socket == -1)
+    gw_assert(p->server_socket == -1);
+    if (p->conn == NULL)
     	return 0;
 
-    while (octstr_len(p->buffer) < bytes) {
-        switch (octstr_append_from_socket(p->buffer, p->socket)) {
-        case -1:
-            return -1;
-        case 0:
-            return 0;
-        }
+    for (;;) {
+	*os = conn_read_fixed(p->conn, bytes);
+	if (*os != NULL)
+	    return 1;
+	if (conn_wait(p->conn, -1) == -1)
+	    return -1;
+    	if (conn_eof(p->conn))
+	    return 0;
     }
-    *os = octstr_copy(p->buffer, 0, bytes);
-    octstr_delete(p->buffer, 0, bytes);
-    return 1;
 }
 
 
@@ -1384,19 +1342,16 @@ static int socket_read_bytes(HTTPSocket *p, Octstr **os, long bytes)
  */
 static int socket_read_to_eof(HTTPSocket *p, Octstr **os)
 {
-    if (p->socket == -1)
+    gw_assert(p->server_socket == -1);
+    if (p->conn == NULL)
     	return -1;
     
-    for (; ; ) {
-        switch (octstr_append_from_socket(p->buffer, p->socket)) {
-        case -1:
-            return -1;
-        case 0:
-            *os = octstr_duplicate(p->buffer);
-            octstr_delete(p->buffer, 0, octstr_len(p->buffer));
-            return 0;
-        }
-    }
+    do {
+	if (conn_wait(p->conn, -1) == -1)
+	    return -1;
+    } while (!conn_eof(p->conn));
+    *os = conn_read_fixed(p->conn, conn_inbuf_len(p->conn));
+    return 0;
 }
 
 
@@ -1405,9 +1360,11 @@ static int socket_read_to_eof(HTTPSocket *p, Octstr **os)
  */
 static int socket_write(HTTPSocket *p, Octstr *os)
 {
-    if (p->socket == -1)
+    gw_assert(p->server_socket == -1);
+    gw_assert(p->conn != NULL);
+    if (conn_write(p->conn, os) == -1)
     	return -1;
-    return octstr_write_to_socket(p->socket, os);
+    return 0;
 }
 
 
@@ -1652,7 +1609,7 @@ static int read_headers(HTTPSocket *p, List **headers)
 
     *headers = list_create();
     prev = NULL;
-    for (; ; ) {
+    for (;;) {
         if (socket_read_line(p, &line) <= 0) {
             error(0, "HTTP: Incomplete response from server.");
             goto error;
@@ -1674,6 +1631,7 @@ static int read_headers(HTTPSocket *p, List **headers)
 
 error:
     list_destroy(*headers, octstr_destroy_item);
+    *headers = NULL;
     return -1;
 }
 
