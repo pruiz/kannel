@@ -264,7 +264,7 @@ static void sms_router(void *arg)
 	else {
             warning(0, "Cannot find SMSCConn for message to <%s>, discarded.",
 		    octstr_get_cstr(msg->sms.receiver));
-	    log_sms(conn, sms, "FAILED Routing SMS");
+	    log_sms(conn, msg, "FAILED Routing SMS");
 	    ret = 0;
 	}
 
