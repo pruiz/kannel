@@ -221,6 +221,8 @@ error:
 }
 
 static int append_string(Octstr *os, Octstr *field) {
+	if (field == NULL && append_integer(os, -1) == -1)
+		return -1;
 	if (append_integer(os, octstr_len(field)) == -1)
 		return -1;
 	if (octstr_insert(os, field, octstr_len(os)) == -1)
@@ -248,6 +250,11 @@ static int parse_string(Octstr **os, Octstr *packed, int *off) {
 
 	if (parse_integer(&len, packed, off) == -1)
 		return -1;
+	
+	if (len == -1) {
+		*os = NULL;
+		return 0;
+	}
 
 	/* XXX check that len is ok */
 
