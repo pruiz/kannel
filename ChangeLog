@@ -1,3 +1,8 @@
+2001-02-13  Richard Braakman  <dark@wapit.com>
+
+	* gw/wml_definitions.h: Applied patch from Aymerick Jéhanne
+	to correct encodings for "ordered true" and "ordered false".
+
 2001-02-12  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_smscconn.c, gw/bb_boxc.c, gw/bearerbox.h: Modified so that
