@@ -2480,6 +2480,18 @@ send-url = "http://localhost:20022"
        system, if need to.
      </entry></row>
 
+   <row><entry><literal>no-sender</literal></entry>
+   <entry><literal>boolean</literal></entry>
+   <entry valign=bottom>
+      Do not add variable sender to the send-url.
+   </entry></row>
+
+   <row><entry><literal>no-coding</literal></entry>
+   <entry><literal>boolean</literal></entry>
+   <entry valign=bottom>
+      Do not add variable coding to the send-url.
+   </entry></row>
+
    <row><entry><literal>port (m)</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign=bottom>

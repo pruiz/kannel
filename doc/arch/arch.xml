@@ -6,7 +6,7 @@
 
 <bookinfo>
 	<title>Kannel Architecture and Design</title>
-	<subtitle>$Revision: 1.15 $</subtitle>
+	<subtitle>$Revision: 1.16 $</subtitle>
 	<author>
 	<firstname>Lars</firstname>
 	<surname>Wirzenius</surname>
@@ -391,12 +391,13 @@
 	<para>The WAP Forum, which creates and maintains the WAP
 	specifications, was founded in June, 1997 by Ericsson, Nokia,
 	Motorola, and Unwired Planet (later Phone.com, later Openwave
-	Systems). The 1.0 specification was published in April,
+	Systems). The  1.0 specification was published in April,
 	1998, but wasn't implemented in phones. The 1.1 specification
 	came out in July, 1999, and was the first one implemented in
-	publically available phones. Since then, even newer versions
-	of the specification have appeared, adding new features, but
-	keeping backwards compatibility.</para>
+	publically available phones. 1.2.1 came out in June 2000, and 
+        phones implementing it (and especially push) are now available, 
+        too. Work on WAP 2.0 is closing. It will converge WAP with Internet 
+        protocols and W3C markup languages.</para>
 
 	<para>The goal of the WAP Forum is to develop an open, freely
 	licensed specification that is not tied to any network technology,
@@ -415,7 +416,11 @@
 	makes it possible to implement services using hyper-text,
 	similar to the World Wide Web.</para>
 
-	<para>WAP does not bring the existing content of the Internet
+        <para>Here WAP Push and Pull are handled separately, because 
+        they are, indeed, very different services. Meaning of these 
+        terms will, hopefully, come clear later.</para>
+
+	<para>WAP pull does not bring the existing content of the Internet
 	directly to the phone.	As discussed in <xref linkend="sec.prewap"
 	endterm="sec.prewap">, existing content is unlikely to display
 	properly on a phone anyway.  Instead, WAP defines a completely
@@ -625,6 +630,161 @@
 	
 </sect1>
 
+<sect1>
+<title>WAP Push Architecture</title>
+       <para>Previous chapters defined pull mode of operation: a phone starts 
+       everything and a content server acts passively. It is, however,
+       sometimes usefull that the server can start a transaction. Email 
+       notifications, news services and stock quotes are some examples of
+       this mode of service.</para>
+
+       <para>However, simple pushing a content to the phone causes problems.
+       User experience is badly detoriated, if incoming push messages can
+       interrupt ongoing tasks. So instead an actual content, one pushes
+       Service Indication, which tells that a service has become available
+       and contains an URL telling where the user can found it. Then the user
+       can accept or reject the service. The phone may confirm that is has
+       received the push content.</para>
+
+       <para>In addition of this basic service, <glossterm>PAP document
+       </glossterm> defines way to control the push operation. A push 
+       initiator can select network and bearer used, set delivery time 
+       restrictions and define quality of service.</para>
+
+       <para>SI document contains, too, some additional attributes defining
+       more complex services than one defined before. For instance, a push
+       initiator can force a SI content to appear on the screen of a 
+       phone immediately the phone receives it, or instruct the phone
+       to put it into box, so that the user can read it later. It is 
+       possible, too, to define a expiring time for a content.</para>
+
+       <para>WAP Push uses established document defining standards, like 
+       XML and MIME and its protocols operates over well establised ones 
+       like HTTP and WSP (well, you can argue with that). This shortens 
+       the development cycle and reduces errors.</para>
+
+       <para>WAP Push is an application layer protocol, and so in principle
+       totally independent the transport layer used. So WAP 1 uses WSP/WTP
+       and WAP 2 HTTP/TCP.</para>
+</sect1>
+
+<sect1>
+<title>WAP Push Protocols</title>
+       <para> WAP Push suite defines protocols for sending content from server
+       to a push capable phone. Confirmed push includes sending a confirmation
+       from the phone to the gateway, and, if this is asked for, from the 
+       gateway to the initiator. There are two protocols: Push Over the Air 
+       Protocol and Push Access Protocol.
+       </para>
+
+       <itemizedlist>
+       <listitem><para>
+       OTA (Over The Air) protocol. Lightweight protocol used for sending
+       content from gateway to the phone. It maps quite directly to WSP, but
+       it is possible to use it with other protocols.
+       </para></listitem>
+
+       <listitem><para>
+       PAP (Push Access Protocol) used for communications between a push 
+       initiator and a gateway. Protocol headers and protocol data are packed
+       into XML documents, and, if necessary, MIME multipart messages and 
+       these documents or messages are exchanged over HTTP.
+       </para></listitem>
+       </itemizedlist>
+
+       <para> Push can be unconfirmed or confirmed. Unconfirmed one goes 
+       following way (fetching the user may ask for is omitted):
+       <orderedlist>
+       <listitem><para>
+       A push initiator send PAP message to a gateway, requesting a 
+       unconfirmed push of a content to the phone.
+       </para></listitem>
+
+       <listitem><para>
+       The gateway makes an OTA request for pushing the data to the phone.
+       It is delivered using WSP sessionless services.
+       <para></listitem>
+       </orderedlist>
+
+       and confirmed (and session-oriented) one, see <xref 
+       linkend="conf-push-session">:
+
+       <orderedlist>
+       <listitem><para>
+       A push initiator send PAP message to a gateway, requesting a confirmed
+       push of a content to a phone.
+       </para></listitem>
+
+       <listitem><para>
+       The gateway sends an OTA request to the phone, asking it to establish
+       a session with it (a gateway cannot do this by itself), if there is
+       no session already open.
+       </para></listitem>
+
+       <listitem><para>
+       The phone establish a session using WAP protocol stack mechanisms.
+       </para></listitem>
+
+       <listitem><para>
+       The gateway sends the content to the phone.
+       </para></listitem>
+
+       <listitem><para>
+       The phone sends a confirmation to the gateway.
+       </para></listitem>
+
+       <listitem><para>
+       The gateway sends a result notification, meaning a confirmation to 
+       the push initiator.
+       </para></listitem>
+
+       </orderedlist> 
+
+       <figure id="conf-push-session">
+       <title>A confirmed WAP push</title>
+       <graphic fileref="conf-push-session#FIGTYPE#"></graphic>
+       </figure>
+       </para>
+</sect1>
+
+<sect1>
+<title>WAP Push XML languages</title>
+       <para>PAP protocol data is packed into a XML document. Language used 
+       for this is called PAP. User data can be of any MIME type, however,
+       there are specific contents expressed with specific languages:
+       Service Indication and Service Loading. </para>
+
+       <itemizedlist>
+       <listitem><para>
+       Service Indication (SI). A gateway sends this type of a document to a
+       phone for a push initiator. It tells to the user that a service has
+       come available. He can reject, accept or postpone pulling of it. The
+       indication may not interrupt the currently running task of the phone.
+       </para></listitem>
+      
+       <listitem><para>
+       Service Loading (SL). This is for a quite similar service, except now
+       pulling in principle starts without an user intervention. However, the
+       phone may implement a security mechanism suggested by SL specification
+       and ask the user does he want to start pulling.
+       </para></listitem>
+       </itemizedlist>
+</sect1>
+
+<sect1>
+<title>Duties of Push Proxy Gateway</title>
+       <para>These are similar to WAP Gateway, because when pushing,
+       the push application forms the external interface of a gateway. 
+       However, there is a possibility that PPG works very closely with PI, 
+       which does storing, billing and other similar services for it. This is 
+       a quite realistic alternative, because PI has the content and so it, 
+       not a "simple" gateway, provides visible services to the user. </para>
+
+       <para>Of course, PPG must spare bandwith, too. Even though SI and
+       SL documents are small (url being their main content) they must be
+       delivered to the phone overs SMS. Difference between one and two
+       SMS messages can be truly great indeed.</para>
+</sect1>
 
 </chapter>
 
@@ -801,10 +961,12 @@
 	<listitem><para>SMS centers, using various protocols.
 	</para></listitem>
 
-	<listitem><para>HTTP servers, to fetch WAP and SMS content.
+	<listitem><para>HTTP servers, to fetch WAP and SMS content and to 
+        push WAP Content. The pull protocol is HTTP, push PAP.
 	</para></listitem>
 
-	<listitem><para>WAP phones, using the WAP protocol stack.
+	<listitem><para>WAP phones, implementing the WAP protocol stack and
+        (for push) WAP Push client.
 	</para></listitem>
 
 	</itemizedlist>
@@ -864,8 +1026,8 @@
 	performance, but the basic flavor of the protocol is still
 	the same.</para>
 	
-	<para>The WAP protocol stack has already been briefly described
-	above.</para>
+	<para>The WAP protocol stack and WAP Push have already been briefly 
+        described above.</para>
 	
 	<para>In order to achieve maximum throughput, Kannel needs to
 	be able to communicate with each external agent independently
@@ -918,8 +1080,8 @@
 
 	<listitem><para>The <glossterm>bearerbox</glossterm> implements
 	the bearer level of WAP (the WDP layer). As part of this, it
-	connects to the SMS centers. Although Kannel does not yet
-	implement SMS as a WAP bearer, when it does, its SMS gateway
+	connects to the SMS centers. Kannel currently implements SMS only 
+        as a WAP push bearer. When it does this fully, its SMS gateway
 	functionality will have to interact with the WDP layer: it
 	needs to be possible to use a single SMS center connection
 	for both textual SMS based services and as a WAP bearer.
@@ -932,17 +1094,21 @@
 	way.
 	</para></listitem>
 
-	<listitem><para>The <glossterm>wapbox</glossterm> implements
-	the rest of the WAP stack, i.e., everything above the WDP
-	layer.
+	<listitem><para>The <glossterm>wapbox</glossterm> implements 
+        WAP protocol stack and WAP Push (an application level protocol). 
+        If wapbox is used for pushing, it is called <glossterm> Push
+        Proxy Gateway</glossterm> or <glossterm>PPG</glossterm> Another
+        term for fetching data is <glossterm>pulling</glossterm> For
+        Kannel box structure for pulling, see <xref linkend="pull-boxes">,
+        and for pushing, see <xref linkend="push-boxes">.
 	</para></listitem>
 
 	</itemizedlist>
 	
 	</para>
 	
-	<figure>
-	<title>Boxes of Kannel</title>
+	<figure id="pull-boxes">
+	<title>Boxes of pull Kannel</title>
 	<graphic fileref="kannel-boxes#FIGTYPE#"></graphic>
 	</figure>
 	
@@ -969,6 +1135,11 @@
 	separate thread. The thread structures in each box are fairly
 	static: the threads are mostly spawned at startup, instead of
 	spawning a new one for each message. </para>
+
+        <figure id="push-boxes">
+	<title>Boxes of push Kannel</title>
+	<graphic fileref="kannel-push-boxes#FIGTYPE#"></graphic>
+	</figure>
 	
 </sect2>
 
@@ -1008,7 +1179,9 @@
     the WAP protocol stack. In the future, it will support SMS messages
     as well. The bearerbox already implements the necessary SMS center
     connections, but they are used for SMS gateway functionality only,
-    and are thus ignored for this thesis.
+    and are thus ignored for this thesis. (This is true in spite of an
+    implemented WAP Push. Using SMS as a pull bearer requires reassembly
+    of SMS messages and routing them to one of wapboxes.)
     
 	<footnote><para>Once the thesis is submitted to the university,
 	descriptions of the SMS gateway functionality will be
@@ -1099,83 +1272,148 @@
   
 	<highlights>
 	<para>This section explains how the WAP box works. It lists the
-	features of WTP and WSP that are implemented. It covers internal
-	architecture: data structures (state machines, events), thread
-	structure, code modules, inter-module and inter-state machine
+	features of WTP, WSP and WAP Push that are implemented. It covers 
+        internal architecture: data structures (state machines, events), 
+        thread structure, code modules, inter-module and inter-state machine
 	communication, and probably explains the preprocessor trick used
 	to ease the implementation immensely.</para>
 	</highlights>
 	
-	<para>The wapbox reads messages from the bearerbox, maintains internal
-	state for each client and makes HTTP requests on behalf of
-	clients. It responds to messages according to WAP specs.
-	The basic duties are pretty simple, but things become
-	somewhat more complex when need to deal with large loads.</para>
+	<para>When pulling, wapbox reads messages from the bearerbox, 
+        maintains internal state for each client and makes HTTP requests on 
+        behalf of clients. It responds to messages according to WAP specs.
+	The basic duties are pretty simple, but things become somewhat more 
+        complex when need to deal with large loads.</para>
 	
 	<para>Only WTP and WSP are implemented. WTLS exists as a patch,
 	but is not covered by this thesis. Only the UDP bearer for WDP
 	is supported at the moment, which means that the Wireless Control
 	Message Protocol (WCMP) is not implemented.</para>
 
+        <para>Push can be confirmed or unconfirmed. Unconfirmed is simple:
+        PPG sends the push content to the bearerbox (essentially asks it to
+        do a sms push). If confirmed push is session-oriented, the gateway 
+        first asks the phone to establish a session with it. PPG maintains
+        session and push data for initiators and send confirmations (result
+        notifications) to them, if they have asked it. After both kind of 
+        pushes, Kannel <emphasis>can</emphasis> work as a pull gateway.
+        </para>
+
+        <para>Both unconfirmed and confirmed push are implemented, but only
+        unconfirmed one is tested with a real phone. Wapbox does push over
+        SMS, but resulting fetch uses an IP bearer.</para>
+
 <sect2>
 <title>Thread structure</title>
 
-   	<para>Each WAP protocol stack layer is implemented in its own
-	thread:
+   	<para>Each WAP protocol stack layer has its own thread. Push OTA
+        protocol implementation is divided between OTA layer (requests)
+        and application (indications and confirmations) layer. There are two 
+        threads corresponding PAP protocol, one communicating with OTA layer 
+        and other accepting push requests from a push initiator:
 	
 	    <itemizedlist>
 	    
 	    <listitem><para>Bearerbox communication layer. This layer
-	    corresponds to the WDP layer inside the wapbox; WDP is really
-	    implemented in the bearerbox.</para></listitem>
+	    corresponds to the WDP layer inside the wapbox; network related
+            parts of WDP are implemented in the bearerbox. Wapbox segmentates 
+            the push content before it sends it to the bearerbox. This layer
+            is used for both pushing and pulling.
+            </para></listitem>
 	    
-	    <listitem><para>WTP layer. This layer exchanges messages with
-	    the bearerbox communication thread and the session mode WSP
-	    thread, and manages WTP state machines.</para></listitem>
+	    <listitem><para>WTP responder layer. This layer exchanges messages
+            with the bearerbox communication thread and the session mode WSP
+	    thread, and manages WTP responder state machines. Messages coming
+            from the phone are routed to this layer. This layer is used for
+            pulling.</para></listitem>
+
+            <listitem><para>WTP initiator layer. This is similar to WTP 
+            responder, but now the gateway starts the transaction. This layer
+            is used for pushing.</para></listitem>
 	    
-	    <listitem><para>Session mode WSP layer. This layer
-	    exchanges messages with the WTP layer and the application
-	    layer, and manages the WSP session and method state
-	    machines.</para></listitem>
+	    <listitem><para>Session mode WSP layer. This layer exchanges 
+            messages with the WTP responder, WTP initiator, the application
+            layer and OTA layer, and manages the WSP session, method and 
+            push state machines. This is used for both push and pull.</para>
+            </listitem>
 	    
-	    <listitem><para>Sessionless WSP layer. This layer
-	    exchanges messages with the bearerbox communication layer and the
-	    application layer. It has no state machines as such,
-	    so it is very simple. It is completely independent of
-	    the WTP and session mode WSP layers, despite the name
-	    similarity.</para></listitem>
+	    <listitem><para>Sessionless WSP layer. This layer exchanges 
+            messages with the bearerbox communication layer, the application 
+            layer and OTA layer. It has no state machines as such, so it is 
+            very simple. It is completely independent of the WTP and session 
+            mode WSP layers, despite the name similarity. It can do both push
+            and pull.</para></listitem>
 	    
 	    <listitem><para>Application layer. This layer exchanges
-	    messages with the two WSP layers and makes HTTP requests
-	    on their behalf.</para></listitem>
+	    messages with two WSP layers and makes HTTP requests on their 
+            behalf. In addition, it implements indications and confirmations 
+            of push OTA protocol for confirmed push, sending them to OTA
+            layer. So it is used btoh for pushing and pulling.
+            </para></listitem>
 	    
-	    <listitem><para>HTTP layer. This layer implements the
-	    actual HTTP requests. It is independent of WAP, and only
-	    implements the HTTP protocol.</para></listitem>
-	    
-	    </itemizedlist>
-	
-	</para>
+	    <listitem><para>HTTP client layer. This layer implements the
+	    actual HTTP requests. It is independent of WAP protocol stack, 
+            and only implements the HTTP protocol. This layer is used for
+            pulling, and it belongs to the application layer.</para></listitem>
 
-	<figure>
-	<title>Wapbox thread structure</title>
+            <listitem><para>OTA layer. This layer receives messages from
+            PAP layer and makes OTA requests to sessionless and session mode 
+            WSP layers. It is used for pushing.</para></listitem>
+
+            <listitem><para>PAP layer. This layer consists of two threads:
+            <literal>ota_read_thread</literal> and <literal>http_read_thread
+            </literal>.</para>
+            <para><literal>ota_read_thread</literal> communicates with 
+            application layer. It sends push confirmations (called result
+            notifications) to the push initiator.</para>
+
+            <para><literal>http_read_thread</literal> accepts pushes from 
+            the push initiator, parses MIME content sended, compiles pap 
+            control document, implements required PPG services and converts 
+            push content to the tokenized form. It informs push iniatiator, 
+            by sending relevant PAP messages to it, errors happened during 
+            these processess and communicates with OTA layer.
+            </para></listitem>
+
+            </itemizedlist>
+         </para>
+        <para>Push application (PAP and OTA layers) layer are in principle 
+        independent of WAP protocol stack, but they do use WTP initiator 
+        and WSP pushing facitilies. This means that only WSP session 
+        facilities are common with push and pull. For usage of threads when
+        pulling, see <xref linkend="wapbox-threads"> and when pushing, see
+        <xref linkend="pushbox-threads">. Here arrows marked with '1' refer 
+        session establishment, ones marked with '2' content pushing and ones 
+        marked with '3' push confirmation.
+        </para>
+
+	<figure id ="wapbox-threads">
+	<title>Wapbox thread structure for pulling</title>
 	<graphic fileref="wapbox-threads#FIGTYPE#"></graphic>
 	</figure>
 	
-	<para>All communication between threads is via message queues.
-	The layers (and therefore the threads) send events to each other,
-	no other form of communication is used. Only the event data
-	structures are exposed by each layer: all other data is internal
-	to the layer, and is only manipulated by the single thread that
-	implements that layer. This reduces the need for locking data
-	structures, which both simplifies the program code and makes
-	execution faster.</para>
+	<para>All communication between internal (ones communicating with
+        other Kannel layers) threads is via message queues. These layers 
+        (and therefore the threads) send events to each other, no other 
+        form of communication is used. Only the event data structures are 
+        exposed by each layer: all other data is internal to the layer, 
+        and is only manipulated by the single thread that implements that 
+        layer. This reduces the need for locking datastructures, which 
+        both simplifies the program code and makes execution faster.</para>
+
+        <para> One layer of WAP Push (PAP) forms the external interface to 
+        the push initiator. Therefore it includes a HTTP server thread, 
+        which has an external originator for its events. In addition, Push
+        implementation has an internal layer (OTA). </para>
 	
 	<para>The events used correspond to the ones used in the
-	WAP protocol specification. There are minor differences due
-	to implementation details, but it has been a goal to make the
-	implementation follow the specification as closely as possible
-	to reduce errors.</para>
+	WAP protocol specification. Events related PAP protocol correspond 
+        attributes of XML document.There are minor differences due to 
+        implementation details, but it has been a goal to make the
+        implementation follow the specification as closely as possible to 
+        reduce errors. However, making push over SMS requires adding quite 
+        many additional fields, but these are well separated from 
+        ones corresponding protocol primitives.</para>
 	
 	<para>An earlier design for the gateway spawned a new thread for
 	each incoming WDP packet, had all data structures available to all
@@ -1203,6 +1441,11 @@
 	so the time spent waiting for a lock is short.
 	</para>
 
+        <figure id="pushbox-threads">
+	<title>Wapbox thread structure for pushing.</title>
+	<graphic fileref="pushbox-threads#FIGTYPE#"></graphic>
+	</figure>
+
 </sect2>
 
 
@@ -1228,14 +1471,23 @@
 </sect2>
 
 <sect2>
+<title>Implementation of push sessions</title>
+       <para>WAP Push architecture makes possible for a push initiator to
+       establish a connected session with a phone, so that it is unnecessary
+       to reconnect every time. This session data is stored in a data 
+       structure similar to protocol state machines. Currently connectionless
+       pushes are, too, implemented using a push machine. This will, however,
+       change.</para>
+</sect2>
+
+<sect2>
 <title>Efficient implementation of HTTP requests</title>
 
 	<para>It is necessary for a WAP gateway to implement HTTP requests
-	at high usage levels efficiently. HTTP requests are essentially
-	the only useful thing the gateway does on behalf of the client,
-	and there are potentially a very large number of clients, so the
-	quality of the HTTP implementation affects gateway performance
-	a lot.</para>
+	at high usage levels efficiently. This is the only useful thing the 
+        WAP pull gateway does on behalf of the client, and there are 
+        potentially a very large number of clients, so the quality of the HTTP
+        implementation affects gateway performance a lot.</para>
 
 	<para>The straightforward solution would be to implement each
 	HTTP request in a separate thread. This keeps the implementation
@@ -1244,12 +1496,11 @@
 	a new request every fifteen seconds, on average, and each request
 	taking one second, on average, there are about 670 concurrent
 	requests at any one time. On Linux, each thread uses
-	8 kilobytes of kernel memory,
-	minimum, so 670 threads would use over 5 meagbytes of extra
-	memory, in addition to userspace memory requirements such as
-	stack. In addition, starting and stopping threads has a cost,
-	and having lots of threads will cause more context switches,
-	an additional CPU cost.</para>
+	8 kilobytes of kernel memory, minimum, so 670 threads would use 
+        over 5 meagbytes of extra memory, in addition to userspace memory 
+        requirements such as stack. In addition, starting and stopping 
+        threads has a cost, and having lots of threads will cause more 
+        context switches, an additional CPU cost.</para>
 	
 	<para>Thus, while it works well at low usage levels, the
 	straightforward solution will cause too much overhead at
@@ -1410,7 +1661,7 @@
 </sect1>
 
 <sect1>
-<title>Converting WML and WMLScript to binary</title>
+<title>Converting XML languages and WMLScript to binary</title>
   
 	<para>The conversion of WML and WMLScript to their binary forms
 	is done by two fairly independent conversion modules. They are
@@ -1441,6 +1692,11 @@
 	minimized. The decision as to how the string table is filled
 	needs to string compression techniques, which complicate the
 	WML compiler somewhat.</para>
+
+        <para>Push XML languages (SI, SL, CO) are similar to WML, but their 
+        compilation is even simpler (no variables here, for instance). They do
+        not use a string table either, because push documents, which are 
+        sended over SMS, <emphasis> must</emphasis> be small. </para>
 	
 	<para>The WMLScript compiler is a more traditional programming
 	language compiler. The binary output format is a bytecode,
@@ -1770,8 +2026,7 @@ bad:
 	the software is being employed. Among the missing features are
 	the WAP security layer (WTLS), features from new versions of
 	the WAP specification (WAP 1.2 and the June 2000 versions),
-	especially WAP push, and using other WAP bearers than UDP,
-	especially SMS messages.</para>
+	and using other WAP bearers than UDP, especially SMS messages.</para>
 	
 	<para>Some of the work for these is already going on. There is
 	an implementation of WTLS for Kannel, provided by 3UI.COM, but
@@ -1781,24 +2036,14 @@ bad:
 	USA and other countries, are solved, or can easily be solved,
 	and WTLS is now being added to the Kannel source repository.</para>
 	
-	<para>WAP push is being worked on by several people, and will
-	hopefully be usable within the spring of 2001. The concept is
-	simple, but because of some technical issues and the complicated
-	design adopted by the WAP Forum, push technology requires some
-	effort to implement. It will, however, unlikely have a large
-	effect on the architectural design of Kannel.</para>
-	
 	<para>Using SMS messages as a bearer for WAP, i.e., implementing
 	WDP over SMS, will require implementing the Wireless Control
 	Message Protocol (WCMP) as well. Since SMS messages are so small
 	compared to UDP messages, it is then also necessary to implement
 	segmentation and reassembly of WDP packets into multiple SMS
-	messages, and this will result in a substantial WDP layer. The
-	existing WDP layer is a very thin wrapper around UDP, but SMS
-	will require implementing much more. According to the Kannel
-	architecture, WDP is implemented in the bearerbox, but since it
-	is pointless to burden the bearerbox unnecessarily, parts of
-	WDP will probably be added to the wapbox.</para>
+	messages, and this will result in a substantial WDP layer. Wapbox 
+        does segmentation for WAP Push, but reassembly of received SMS
+        remains to be implemented.</para>
 	
 </sect1>
 

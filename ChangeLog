@@ -1,3 +1,8 @@
+2001-10-10 Aarno Syvänen <aarno@wiral.com>
+
+	* doc/userguide/userguide.xml: Some corrections.
+	* doc/arch/arch.xml: Wrote document about push architecture. 
+
 2001-10-08 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* gwlib/http.c: When url was like http://user:pass@site, the first
 	colon was changed to @ to differentiate from the colon for port

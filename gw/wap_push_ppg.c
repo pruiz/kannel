@@ -779,7 +779,6 @@ static void handle_internal_event(WAPEvent *e)
 
 /*
  * We do not set session id here: it is told to us by wsp.
- * FIXME: Preferconfirmed value is hard coded to PAP_NOT_SPECIFIED
  */
 static PPGSessionMachine *session_machine_create(WAPAddrTuple *tuple, 
                                                  WAPEvent *e)
@@ -802,7 +801,7 @@ static PPGSessionMachine *session_machine_create(WAPAddrTuple *tuple,
     m->addr_tuple = wap_addr_tuple_duplicate(tuple);
     m->assumed_capabilities = 
         wsp_cap_duplicate_list(e->u.Push_Message.pi_capabilities);
-    m->preferconfirmed_value = PAP_NOT_SPECIFIED;    
+    m->preferconfirmed_value = PAP_CONFIRMED;    
 
     list_append(ppg_machines, m);
     debug("wap.push.ppg", 0, "PPG: Created PPGSessionMachine %ld",
@@ -1687,7 +1686,7 @@ static void deliver_confirmed_push(long last, PPGPushMachine *pm,
 /*
  * Ppg, chapter 6.1.2.2 , subchapter delivery, says that if push is unconform-
  * ed, we can use either Po-Unit-Push.req or Po-Push.req primitive. We use Po-
- * Push.req, if have an already established session (other words, sm == NULL).
+ * Push.req, if have an already established session (other words, sm != NULL).
  * In addition, update PAP attribute. Return pointer to the updated push mach-
  * ine.
  */
