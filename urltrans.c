@@ -422,7 +422,7 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     if (aliases) {
 	ot->aliases = malloc(strlen(aliases)+2);
 	if (ot->aliases != NULL)
-	    sprintf(ot->aliases, "%s:", aliases);
+	    sprintf(ot->aliases, "%s;", aliases);
     }
     else
 	ot->aliases = strdup("");
@@ -431,6 +431,7 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 	ot->pattern == NULL || ot->aliases == NULL)
 	goto error;
     if (prefix != NULL && suffix != NULL) {
+
 	ot->prefix = strdup(prefix);
 	ot->suffix = strdup(suffix);
 	if (ot->prefix == NULL || ot->suffix == NULL)
@@ -504,7 +505,8 @@ static void destroy_onetrans(URLTranslation *ot) {
 static URLTranslation *find_translation(URLTranslationList *trans, 
 	OctstrList *words)
 {
-	char *keyword, alias_keyword[1024];
+	char *keyword;
+	char alias_keyword[1024];
 	int n;
 	URLTranslation *t;
 
@@ -517,7 +519,7 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 	for (t = trans->list; t != NULL; t = t->next) {
 	    if (t->keyword != NULL) {
 		if (strcasecmp(keyword, t->keyword) == 0 ||
-		    strstr(t->aliases, alias_keyword) != NULL) {
+		    str_case_str(t->aliases, alias_keyword) != NULL) {
 
 		    if (n - 1 == t->args)
 			break;

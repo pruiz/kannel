@@ -1,3 +1,13 @@
+1999-11-12    <rpr@rpr.wapit.com>
+
+	* html.c: modified html_strip_suffix_and_prefix to use
+	str_case-str
+
+	* urltrans.c, smsbox.c: fixed aliases
+
+	* wapitlib.c, bearerbox.c: modified select to understand certain
+	signals
+
 Fri Nov 12 17:06:52 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* wapitlib.c and .h: Added str_case_str.

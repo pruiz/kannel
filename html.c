@@ -230,11 +230,11 @@ void html_to_sms(char *sms, size_t smsmax, char *html) {
 char *html_strip_prefix_and_suffix(char *html, char *prefix, char *suffix) {
 	char *p, *q;
 
-	p = strstr(html, prefix);
+	p = str_case_str(html, prefix);
 	if (p == NULL)
 		return strdup(html);	/* return original, if no prefix */
 	p += strlen(prefix);
-	q = strstr(p, suffix);
+	q = str_case_str(p, suffix);
 	if (q == NULL)
 		return strdup(html);	/* return original, if no suffix */
 	return strndup(p, q - p);

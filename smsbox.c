@@ -157,7 +157,7 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
     case HTTP_TYPE_HTML:
 	if (urltrans_prefix(trans) != NULL &&
 	    urltrans_suffix(trans) != NULL) {
-	    
+
 	    tmpdata = html_strip_prefix_and_suffix(data,
 		       urltrans_prefix(trans), urltrans_suffix(trans));
 	    free(data);	
@@ -671,9 +671,12 @@ void main_loop()
 
 	ret = select(FD_SETSIZE, &rf, NULL, NULL, &to);
 
-	if (ret < 0)
+	if (ret < 0) {
+	    if(errno==EINTR) continue;
+	    if(errno==EAGAIN) continue;
+	    error(errno, "Select failed");
 	    goto error;
-	if (ret > 0 && http_accept_pending == 0 && FD_ISSET(http_fd, &rf)) {
+	} if (ret > 0 && http_accept_pending == 0 && FD_ISSET(http_fd, &rf)) {
 
 	    http_accept_pending = 1;
 	    http_start_thread();

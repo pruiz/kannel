@@ -288,6 +288,8 @@ int smscenter_read_into_buffer(SMSCenter *smsc) {
 		tv = tvinit;
 		ret = select(smsc->socket + 1, &read_fd, NULL, NULL, &tv);
 		if (ret == -1) {
+	                if(errno==EINTR) goto got_data;
+                        if(errno==EAGAIN) goto got_data;
 			error(errno, "Error doing select for socket");
 			goto error;
 		} else if (ret == 0)

@@ -391,8 +391,11 @@ int read_available(int fd)
     ret = select(FD_SETSIZE, &rf, NULL, NULL, &to);
     if (ret > 0 && FD_ISSET(fd, &rf))
 	return 1;
-    if (ret < 0)
+    if (ret < 0) {
+	if(errno==EINTR) return 0;
+	if(errno==EAGAIN) return 0;
 	return -1;	/* some error */
+    }
     return 0;
 }
 

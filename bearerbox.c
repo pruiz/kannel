@@ -1061,9 +1061,11 @@ static void main_program(void)
 
 	    sleep(1);	/* sleep for a while... work around this */
 	}
-	else if (ret < 0)
-	    /* error */
-	    ;
+	else if (ret < 0) {
+	    if(errno==EINTR) continue;
+	    if(errno==EAGAIN) continue;
+	    error(errno, "Main select failed");
+	}
     }
     sleep(1);		/* some time for threads to die */
     check_threads();
