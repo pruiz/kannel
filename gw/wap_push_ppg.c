@@ -2867,10 +2867,7 @@ static int type_is(Octstr *content_header, char *name)
     if (octstr_case_search(content_header, osname, 0) >= 0)
         return 1;
 
-    quoted_type = octstr_create("");
-    octstr_format_append(quoted_type, "%c", '\"');
-    octstr_append(quoted_type, osname);
-    octstr_format_append(quoted_type, "%c", '\"');
+    quoted_type = octstr_format("\"%S\"", osname);
 
     if (octstr_case_search(content_header, quoted_type, 0) >= 0) {
         octstr_destroy(quoted_type);
@@ -2891,6 +2888,7 @@ static int get_mime_boundary(List *push_headers, Octstr *content_header,
     long pos;
     Octstr *bos;
     int c, quoted = 0;
+    long bstart;
 
     pos = 0;
     if ((pos = octstr_case_search(content_header, 
@@ -2904,13 +2902,14 @@ static int get_mime_boundary(List *push_headers, Octstr *content_header,
         ++pos;
         quoted = 1;
     }
-    *boundary = octstr_create("");
+    
+    bstart = pos;
     while ((c = octstr_get_char(content_header, pos)) != -1) {
         if (c == ';' || (quoted && c == '"') || (!quoted && c == ' '))
                 break;
-            octstr_format_append(*boundary, "%c", c);
         ++pos;
     }
+    *boundary = octstr_copy(content_header, bstart, pos - bstart);
 
     return 0;
 }

@@ -941,6 +941,33 @@ int octstr_case_search(Octstr *haystack, Octstr *needle, long pos)
     return -1;    
 }
 
+int octstr_case_nsearch(Octstr *haystack, Octstr *needle, long pos, long n)
+{
+    long i, j;
+    int c1, c2;
+
+    seems_valid(haystack);
+    seems_valid(needle);
+    gw_assert(pos >= 0);
+
+    /* Always "find" an empty string */
+    if (needle->len == 0)
+        return 0;
+
+    for (i = pos; i <= haystack->len - needle->len && i < n; ++i) {
+        for (j = 0; j < needle->len && j < n; ++j) {
+            c1 = toupper(haystack->data[i + j]);
+            c2 = toupper(needle->data[j]);
+            if (c1 != c2)
+                break;
+        }
+        if (j == needle->len)
+            return i;
+    }
+
+    return -1;
+}
+
 
 int octstr_print(FILE *f, Octstr *ostr)
 {

@@ -307,6 +307,10 @@ int octstr_search(Octstr *haystack, Octstr *needle, long pos);
  */
 int octstr_case_search(Octstr *haystack, Octstr *needle, long pos);
 
+/*
+ * Like octstr_case_search, but searchs only first n octets.
+ */
+int octstr_case_nsearch(Octstr *haystack, Octstr *needle, long pos, long n);
 
 /*
  * Write contents of octet string to a file, in human readable form. 

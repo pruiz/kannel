@@ -1,3 +1,12 @@
+2003-11-11  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bearerbox.c: remove "no-op" debug output.
+    * gw/wap_push_[ppg|pap_mime].c: various Ocstr call improvements for the PPG
+      handling, MIME parsing routines.
+    * gwlib/octstr.[ch]: added function octstr_case_nsearch() to allow searching
+      for octstr in a specific range.
+      Patch posted by Aarno. Thanks a lot.
+      [Msg-ID: <76D52118-0ED8-11D8-B1D6-0003937AE746@gni.ch>]
+
 2003-11-10 Stipe Tolj  <tolj@wapme-systems.de>
     * Makefile.in: adding gw-config to be removed when target clean is called.
 

@@ -542,7 +542,6 @@ int main(int argc, char **argv)
         /* debug("bb", 0, "Main Thread: woken up."); */
 
         if (bb_todo == 0) {
-            debug("bb", 0, "Main Thread: Nothing todo.");
             continue;
         }
 

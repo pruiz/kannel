@@ -26,10 +26,10 @@ static int parse_encapsulation(Octstr **mime_content, Octstr *boundary,
                                Octstr **push_data, List **content_headers,
 			       Octstr **rdf_content);
 static int check_control_headers(Octstr **body_part);
-static int check_control_content_type_header(Octstr **body_part);
-static int drop_optional_header(Octstr **body_part, char *name);
+static int check_control_content_type_header(Octstr **body_part, Octstr *boundary);
+static int drop_optional_header(Octstr **body_part, char *name, Octstr *boundary);
 static int drop_header_true(Octstr **body_part, long content_pos);
-static int drop_extension_headers(Octstr **mime_content);
+static int drop_extension_headers(Octstr **mime_content, Octstr *boundary);
 static long parse_field_value(Octstr *pap_content, long pos);
 static long parse_field_name(Octstr *pap_content, long pos);
 static void octstr_split_by_pos(Octstr **mime_content, Octstr **pap_content, 
@@ -38,11 +38,10 @@ static Octstr *make_close_delimiter(Octstr *boundary);
 static Octstr *make_part_delimiter(Octstr *boundary);
 static Octstr *make_start_delimiter(Octstr *dash_boundary);
 static int pass_data_headers(Octstr **body_part, List **data_headers);
-static int check_data_content_type_header(Octstr **body_part, 
-                                          List **data_headers);
-static int pass_optional_header(Octstr **body_part, char *name, 
-                                List **content_headers);
-static int pass_extension_headers(Octstr **body_part, List **data_headers);
+static int check_data_content_type_header(Octstr **body_part, List **data_headers, Octstr *boundary);
+static int pass_optional_header(Octstr **body_part, char *name, List **content_headers,
+                                Octstr *boundary);
+static int pass_extension_headers(Octstr **body_part, List **data_headers, Octstr *boundary);
 static long pass_field_name(Octstr **body_part, Octstr **content_header, 
 			    long pos);
 static long pass_field_value(Octstr **body_part, Octstr **content_header, 
@@ -249,7 +248,6 @@ static int parse_body_part (Octstr **multipart, Octstr *boundary,
 
     boundary_pos = octstr_search(*multipart, part_delimiter, 0);
     if (boundary_pos == close_delimiter_pos) {
-        *body_part = octstr_create("");
         octstr_split_by_pos(multipart, body_part, close_delimiter_pos);
         if ((epilogue_pos = 
                 parse_close_delimiter(close_delimiter, *multipart, 0)) < 0)
@@ -259,7 +257,6 @@ static int parse_body_part (Octstr **multipart, Octstr *boundary,
 	goto last_part;
     }
 
-    *body_part = octstr_create("");
     octstr_split_by_pos(multipart, body_part, boundary_pos);
 
     if (parse_tail(multipart, part_delimiter, 0, &next_part_pos) < 0) {
@@ -290,6 +287,9 @@ last_part:
  * entity (containing the push message). So we must have at least one body
  * part here, and at most two (MIME grammar in rfc 2046, appendix A sets no 
  * limitations here).
+ * Input: mime content, part boundary
+ * Output: Push content, rdf content if present, content headers. In addi-
+ * tion, modified mime content (without parsed parts).
  * Returns 1, if rdf content was present
  *         0, if it was absent
  *         -1, when error
@@ -326,15 +326,8 @@ static int parse_encapsulation(Octstr **mime_content, Octstr *boundary,
 static void octstr_split_by_pos(Octstr **os1, Octstr **os2, 
                                 long boundary_pos)
 {
-    long i;
-    
-    for (i = 0; i < boundary_pos; i++) {
-        octstr_format_append(*os2, "%c", octstr_get_char(*os1, i));   
-    }         
-
-    for (i = 0; i < boundary_pos; i++) {
-        octstr_delete(*os1, 0, 1);
-    }
+    *os2 = octstr_copy(*os1, 0, boundary_pos);
+    octstr_delete(*os1, 0, boundary_pos);
 }
 
 static Octstr *make_close_delimiter(Octstr *boundary) 
@@ -351,10 +344,7 @@ static Octstr *make_part_delimiter(Octstr *dash_boundary)
 {
     Octstr *part_delimiter;
 
-    part_delimiter = octstr_create("");
-    octstr_format_append(part_delimiter, "%c", '\r');
-    octstr_format_append(part_delimiter, "%c", '\n');
-    octstr_format_append(part_delimiter, "%s", "--");
+    part_delimiter = octstr_create("\r\n--");
     octstr_append(part_delimiter, dash_boundary);
     
     return part_delimiter;
@@ -364,8 +354,7 @@ static Octstr *make_start_delimiter(Octstr *dash_boundary)
 {
     Octstr *start_delimiter;
 
-    start_delimiter = octstr_create("");
-    octstr_format_append(start_delimiter, "%s", "--");
+    start_delimiter = octstr_create("--");
     octstr_append(start_delimiter, dash_boundary);
 
     return start_delimiter;
@@ -376,31 +365,35 @@ static Octstr *make_start_delimiter(Octstr *dash_boundary)
  * Rfc 2045, Appendix A does not specify the order of entity headers and states
  * that all rfc 822 headers having a string "Content" in their field-name must
  * be accepted. Rfc 822 grammar is capitulated in appendix D.
+ * Message starts after the first null line, so only something after it can be
+ * an extension header (or any header).
  */
 static int check_control_headers(Octstr **body_part)
 {
-    if (check_control_content_type_header(body_part) == 0)
+    if (check_control_content_type_header(body_part, octstr_imm("\r\n\r\n")) == 0)
         return 0;
-    if (drop_optional_header(body_part, "Content-Transfer-Encoding:") == 0)
+    if (drop_optional_header(body_part, "Content-Transfer-Encoding:",
+            octstr_imm("\r\n\r\n")) == 0)
         return 0;
-    if (drop_optional_header(body_part, "Content-ID:") == 0)
+    if (drop_optional_header(body_part, "Content-ID:", octstr_imm("\r\n\r\n")) == 0)
         return 0;
-    if (drop_optional_header(body_part, "Content-Description:") == 0)
+    if (drop_optional_header(body_part, "Content-Description:", octstr_imm("\r\n\r\n")) == 0)
         return 0;
-    if (drop_extension_headers(body_part) == 0)
+    if (drop_extension_headers(body_part, octstr_imm("\r\n\r\n")) == 0)
         return 0;
 
     return 1;
 }
 
-static int check_control_content_type_header(Octstr **body_part)
+static int check_control_content_type_header(Octstr **body_part, Octstr *boundary)
 {
     long content_pos;
+    long message_start_pos;
 
-    if ((content_pos = octstr_case_search(*body_part, 
-            octstr_imm("Content-Type:"), 0)) < 0 || 
-            octstr_case_search(*body_part, 
-                octstr_imm("application/xml"), 0) < 0) {
+    message_start_pos = octstr_search(*body_part, boundary, 0);
+    if ((content_pos = octstr_case_nsearch(*body_part, octstr_imm("Content-Type:"), 0,
+            message_start_pos)) < 0 || 
+            octstr_case_search(*body_part, octstr_imm("application/xml"), 0) < 0) {
         return 0;
     }
 
@@ -429,13 +422,15 @@ static int drop_header_true(Octstr **body_part, long content_pos)
     return 1;
 }
 
-static int drop_optional_header(Octstr **body_part, char *name)
+static int drop_optional_header(Octstr **body_part, char *name, Octstr *boundary)
 {
     long content_pos;
+    long message_start_pos;
          
     content_pos = -1;
-    if ((content_pos = octstr_case_search(*body_part, 
-             octstr_imm(name), 0)) < 0)
+    message_start_pos = octstr_search(*body_part, boundary, 0);
+
+    if ((content_pos = octstr_case_nsearch(*body_part, octstr_imm(name), 0, message_start_pos)) < 0)
         return 1;
     
     if (drop_header_true(body_part, content_pos) < 0)
@@ -447,16 +442,19 @@ static int drop_optional_header(Octstr **body_part, char *name)
 /*
  * Extension headers are defined in rfc 822, Appendix D, as fields. We must
  * parse all rfc 822 headers containing a string "Content". These headers 
- * are optional, too.
+ * are optional, too. For general definition of message parts see chapter 4.1.
+ * Specifically: "everything after first null line is message body".
  */
-static int drop_extension_headers(Octstr **body_part)
+static int drop_extension_headers(Octstr **body_part, Octstr *boundary)
 {
     long content_pos,
          next_header_pos;  
+    long next_content_part_pos;
 
+    next_content_part_pos = octstr_case_search(*body_part, boundary, 0);
     do {
-        if ((content_pos = octstr_case_search(*body_part, 
-                 octstr_imm("Content"), 0)) < 0)
+        if ((content_pos = octstr_case_nsearch(*body_part, octstr_imm("Content"), 0,
+                next_content_part_pos)) < 0)
             return 1;
         if ((next_header_pos = parse_field_name(*body_part, content_pos)) < 0)
             return 0;
@@ -520,20 +518,20 @@ static int pass_data_headers(Octstr **body_part, List **data_headers)
 {
     *data_headers = http_create_empty_headers();
 
-    if (check_data_content_type_header(body_part, data_headers) == 0) {
+    if (check_data_content_type_header(body_part, data_headers, octstr_imm("\r\n\r\n")) == 0) {
         warning(0, "MIME: pass_data_headers: Content-Type header missing"); 
         return 0;
     }
         
-    if (pass_optional_header(body_part, "Content-Transfer-Encoding", 
-                             data_headers) < 0)
+    if (pass_optional_header(body_part, "Content-Transfer-Encoding", data_headers,
+            octstr_imm("\r\n\r\n")) < 0)
         goto operror;
-    if (pass_optional_header(body_part, "Content-ID", data_headers) < 0)
+    if (pass_optional_header(body_part, "Content-ID", data_headers, octstr_imm("\r\n\r\n")) < 0)
         goto operror;
-    if (pass_optional_header(body_part, "Content-Description", 
-                         data_headers) < 0)
+    if (pass_optional_header(body_part, "Content-Description", data_headers, 
+            octstr_imm("\r\n\r\n")) < 0)
         goto operror;
-    if (pass_extension_headers(body_part, data_headers) == 0)
+    if (pass_extension_headers(body_part, data_headers, octstr_imm("\r\n\r\n")) == 0)
         goto operror;
    
     return 1;
@@ -545,28 +543,30 @@ operror:
 
 /*
  * Checks if body_part contains a Content-Type header. Tranfers this header to
- * a list content_headers.
+ * a list content_headers. (Only part before 'boundary').
  * Return 1, when Content-Type headers was found, 0 otherwise
  */
-static int check_data_content_type_header(Octstr **body_part, 
-                                          List **content_headers)
+static int check_data_content_type_header(Octstr **body_part, List **content_headers,
+                                          Octstr *boundary)
 {
     long header_pos,
          next_header_pos;
     Octstr *content_header;
+    long message_start_pos;
 
     header_pos = next_header_pos = -1;
     content_header = octstr_create("Content-Type");
+    message_start_pos = octstr_search(*body_part, boundary, 0);
     
-    if ((header_pos = octstr_case_search(*body_part, content_header, 0)) < 0) {
+    if ((header_pos = octstr_case_nsearch(*body_part, content_header, 0,
+             message_start_pos)) < 0) {
         goto error;
     }
     if ((next_header_pos = pass_field_value(body_part, &content_header, 
 	    header_pos + octstr_len(content_header))) < 0) {
         goto error;
     }
-    if ((next_header_pos = 
-	     parse_terminator(*body_part, next_header_pos)) < 0) {
+    if ((next_header_pos = parse_terminator(*body_part, next_header_pos)) < 0) {
         goto error;
     }
 
@@ -584,20 +584,23 @@ error:
 /*
  * We try to find an optional header, so a failure to find one is not an 
  * error. Return -1 when error, 0 when header name not found, 1 otherwise.
+ * Search only until 'boundary'.
  */
-static int pass_optional_header(Octstr **body_part, char *name, 
-                                List **content_headers)
+static int pass_optional_header(Octstr **body_part, char *name, List **content_headers,
+                                Octstr *boundary)
 {
     long content_pos,
          next_header_pos;
     Octstr *osname,
            *osvalue;
+    long message_start_pos;
 
     content_pos = next_header_pos = -1;
     osname = octstr_create(name);
     osvalue = octstr_create("");
+    message_start_pos = octstr_search(*body_part, boundary, 0);
 
-    if ((content_pos = octstr_case_search(*body_part, osname, 0)) < 0) 
+    if ((content_pos = octstr_case_nsearch(*body_part, osname, 0, message_start_pos)) < 0) 
         goto noheader;
     if ((next_header_pos = pass_field_value(body_part, &osvalue, 
 	     content_pos + octstr_len(osname))) < 0)
@@ -656,23 +659,26 @@ static long octstr_drop_leading_blanks(Octstr **header_value)
 /*
  * Extension headers are optional, see Push Message, chapter 6.2. Field struc-
  * ture is defined in rfc 822, chapter 3.2. Extension headers are defined in 
- * rfc 2045, chapter 9, grammar in appendix A.
+ * rfc 2045, chapter 9, grammar in appendix A. (Only to the next null line).
  * Return 0 when error, 1 otherwise.
  */
-static int pass_extension_headers(Octstr **body_part, List **content_headers)
+static int pass_extension_headers(Octstr **body_part, List **content_headers, Octstr *boundary)
 {
     long next_field_part_pos,
          count;  
     Octstr *header_name,
            *header_value; 
+    long next_content_part_pos;
 
     header_name = octstr_create("");
     header_value = octstr_create("");
     count = 0;
     next_field_part_pos = 0;
+    next_content_part_pos = octstr_search(*body_part, boundary, 0);
 
     do {
-        if ((octstr_case_search(*body_part, octstr_imm("Content"), 0)) < 0)
+        if ((octstr_case_nsearch(*body_part, octstr_imm("Content"), 0,
+                next_content_part_pos)) < 0)
             goto end; 
         if ((next_field_part_pos = pass_field_name(body_part, &header_name,
                  next_field_part_pos)) < 0)
@@ -709,16 +715,23 @@ static long pass_field_value(Octstr **body_part, Octstr **header,
                              long pos)
 {
     int c;
+    long start;
+    Octstr *field = NULL;
 
+    start = pos;
     while (!is_cr(c = octstr_get_char(*body_part, pos)) &&
              pos < octstr_len(*body_part)) {
-        octstr_format_append(*header, "%c", c);
         ++pos;
     }
  
-    if (pos == octstr_len(*body_part))
+    if (pos == octstr_len(*body_part)) {
         return -1;
+    }
 
+    field = octstr_copy(*body_part, start, pos - start);
+    octstr_append(*header, field);
+
+    octstr_destroy(field);
     return pos;
 }
 
@@ -726,16 +739,23 @@ static long pass_field_name(Octstr **body_part, Octstr **field_part,
                             long pos)
 {
     int c;
+    long start;
+    Octstr *name = NULL;
 
+    start = pos;
     while (((c = octstr_get_char(*body_part, pos)) != ':') &&
             pos < octstr_len(*body_part)) {
-        octstr_format_append(*field_part, "%c", c);
         ++pos;
     }
 
-    if (pos == octstr_len(*body_part))
+    if (pos == octstr_len(*body_part)) {
         return -1;
+    }
 
+    name = octstr_copy(*body_part, start, pos - start);
+    octstr_append(*field_part, name);
+
+    octstr_destroy(name);
     return pos;
 }
 
