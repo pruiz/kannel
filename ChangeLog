@@ -1,5 +1,11 @@
 2001-01-18  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/octstr.[ch]: Renamed the horribly long name
+	octstr_create_immutable to octstr_imm. This should make it a
+	bit more palatable.
+
+2001-01-18  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/cfg.[ch]: Wrote functions cfg_get_integer and cfg_get_list
 	to allow easier access to non-octet-string variables. No explicit
 	typing in cfg.def, though. That may come later.
