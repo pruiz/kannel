@@ -1,3 +1,7 @@
+2002-02-23  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_emi2.c: removed unused variable `retry' to make 
+      kannel-nag script happy again.
+      
 2002-02-22  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsc_emi2.c, gw/smsc_at2.c, gwlib/cfg.def: Added retry configuration
     boolean value to force these to smsc to always try to reconnect.  The 
