@@ -476,7 +476,7 @@ void octstr_truncate(Octstr *ostr, int new_len) {
 	seems_valid(ostr);
 	gw_assert(new_len >= 0);
 	if (new_len >= ostr->len)
-	    return 
+	    return;
 
 	ostr->len = new_len;
 	ostr->data[new_len] = '\0';
