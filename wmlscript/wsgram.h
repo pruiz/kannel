@@ -7,7 +7,8 @@ typedef union
 
     WsBool boolean;
     WsList *list;
-    WsPair *pair;
+    WsFormalParm *parm;
+    WsVarDec *vardec;
 
     WsPragmaMetaBody *meta_body;
 

@@ -19,18 +19,34 @@
 
 /********************* Misc syntax tree structures **********************/
 
-WsPair *ws_pair_new(WsCompilerPtr compiler, void *car, void *cdr)
+WsVarDec *ws_variable_declaration(WsCompilerPtr compiler,
+                                  char *name, WsExpression *expr)
 {
-    WsPair *pair = ws_f_malloc(compiler->pool_stree, sizeof(*pair));
+    WsVarDec *vardec = ws_f_malloc(compiler->pool_stree, sizeof(*vardec));
 
-    if (pair == NULL)
+    if (vardec == NULL)
         ws_error_memory(compiler);
     else {
-        pair->car = car;
-        pair->cdr = cdr;
+        vardec->name = name;
+        vardec->expr = expr;
     }
 
-    return pair;
+    return vardec;
+}
+
+WsFormalParm *ws_formal_parameter(WsCompilerPtr compiler,
+                                  WsUInt32 line, char *name)
+{
+    WsFormalParm *parm = ws_f_malloc(compiler->pool_stree, sizeof(*parm));
+
+    if (parm == NULL)
+        ws_error_memory(compiler);
+    else {
+        parm->line = line;
+        parm->name = name;
+    }
+
+    return parm;
 }
 
 /********************* Linked list **************************************/
@@ -1044,12 +1060,11 @@ static void linearize_variable_init(WsCompiler *compiler, WsList *list,
 
     /* For each variable, declared with this list. */
     for (li = list->head; li; li = li->next) {
-        char * name = ((WsPair *) li->data)->car;
-        WsExpression *e = ((WsPair *) li->data)->cdr;
+        WsVarDec *vardec = li->data;
 
-        ns = ws_variable_define(compiler, line, WS_TRUE, name);
-        if (ns && e) {
-            ws_expr_linearize(compiler, e);
+        ns = ws_variable_define(compiler, line, WS_TRUE, vardec->name);
+        if (ns && vardec->expr) {
+            ws_expr_linearize(compiler, vardec->expr);
 
             /* Emit an instruction to store the initialization
                value to the variable. */

@@ -389,11 +389,9 @@ static WsResult compile_stream(WsCompilerPtr compiler, const char *input_name,
 
         /* Define the formal arguments to the namespace. */
         for (li = func->params->head; li; li = li->next) {
-            WsPair * pair = (WsPair *) li->data;
+            WsFormalParm *parm = li->data;
 
-            /* The pair is `(linenumber . identifier)'.  */
-            ws_variable_define(compiler, (WsUInt32) pair->car, WS_FALSE,
-                               (char *) pair->cdr);
+            ws_variable_define(compiler, parm->line, WS_FALSE, parm->name);
         }
 
         WS_CHECK_COMPILE_ERROR();

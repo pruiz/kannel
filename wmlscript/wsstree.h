@@ -15,20 +15,6 @@
 #ifndef WSSTREE_H
 #define WSSTREE_H
 
-/********************* Misc syntax tree structures **********************/
-
-/* A pair to bind two items together. */
-struct WsPairRec
-{
-    void *car;
-    void *cdr;
-};
-
-typedef struct WsPairRec WsPair;
-
-/* Create a new pair and set its car and cdr slots. */
-WsPair *ws_pair_new(WsCompilerPtr compiler, void *car, void *cdr);
-
 /********************* Linked list for syntax tree items ****************/
 
 /* A list item. */
@@ -416,6 +402,35 @@ WsExpression *ws_expr_const_float(WsCompilerPtr compiler, WsUInt32 linenum,
 /* An UTF-8 encoded string. */
 WsExpression *ws_expr_const_string(WsCompilerPtr compiler, WsUInt32 linenum,
                                    WsUtf8String *string);
+
+/********************* Misc syntax tree structures **********************/
+
+/* A variable declaration */
+struct WsVarDecRec
+{
+    char *name;
+    WsExpression *expr;
+};
+
+typedef struct WsVarDecRec WsVarDec;
+
+/* Create a new variable declaration */
+WsVarDec *ws_variable_declaration(WsCompilerPtr compiler,
+                                  char *name, WsExpression *expr);
+
+/* A function formal parameter */
+struct WsFormalParmRec
+{
+    WsUInt32 line;
+    char *name;
+};
+
+typedef struct WsFormalParmRec WsFormalParm;
+
+/* Create a new formal parameter */
+WsFormalParm *ws_formal_parameter(WsCompilerPtr compiler,
+                                  WsUInt32 line, char *name);
+
 
 /********************* Statements ***************************************/
 

@@ -1,5 +1,12 @@
 2000-10-10  Richard Braakman  <dark@wapit.com>
 
+	* wmlscript/{ws.c, wsgram.y, wsstree.[ch]}: Remove WsPair and
+        replace it with more specific types WsVarDec and WsFormalParm.
+        This gets rid of an assumption that a long will fit in a (void *)
+	field, which tends not to be true on 64-bit platforms.
+
+2000-10-10  Richard Braakman  <dark@wapit.com>
+
 	* wmlscript/wsencode.c: Fix va_arg type bug for all platforms,
 	not just sparc.  Removed SPARC_ABI conditionals.
 

@@ -39,7 +39,8 @@ WsCompilerPtr global_compiler = NULL;
 
     WsBool boolean;
     WsList *list;
-    WsPair *pair;
+    WsFormalParm *parm;
+    WsVarDec *vardec;
 
     WsPragmaMetaBody *meta_body;
 
@@ -90,7 +91,7 @@ WsCompilerPtr global_compiler = NULL;
 %type <list> StatementListOpt StatementList
 %type <list> Block Arguments ArgumentList VariableDeclarationList
 
-%type <pair> VariableDeclaration
+%type <vardec> VariableDeclaration
 
 %type <stmt> Statement ReturnStatement VariableStatement IfStatement
 %type <stmt> IterationStatement ForStatement
@@ -331,33 +332,37 @@ SemicolonOpt:
 FormalParameterList:
 	  tIDENTIFIER
 		{
-		    char *id = ws_f_strdup(((WsCompiler *) pctx)->pool_stree,
-					    $1);
-		    WsPair *pair = ws_pair_new(pctx, (void *) @1.first_line, id);
+                    char *id;
+                    WsFormalParm *parm;
+
+		    id = ws_f_strdup(((WsCompiler *) pctx)->pool_stree, $1);
+                    parm = ws_formal_parameter(pctx, @1.first_line, id);
 
 		    ws_lexer_free_block(pctx, $1);
 
-		    if (id == NULL || pair == NULL) {
+		    if (id == NULL || parm == NULL) {
 		        ws_error_memory(pctx);
 		        $$ = NULL;
 		    } else {
 		        $$ = ws_list_new(pctx);
-		        ws_list_append(pctx, $$, pair);
+		        ws_list_append(pctx, $$, parm);
 		    }
 		}
 	| FormalParameterList ',' tIDENTIFIER
 		{
-		    char *id = ws_f_strdup(((WsCompiler *) pctx)->pool_stree,
-					   $3);
-		    WsPair *pair = ws_pair_new(pctx, (void *) @1.first_line, id);
+                    char *id;
+                    WsFormalParm *parm;
+
+		    id = ws_f_strdup(((WsCompiler *) pctx)->pool_stree, $3);
+                    parm = ws_formal_parameter(pctx, @1.first_line, id);
 
 		    ws_lexer_free_block(pctx, $3);
 
-		    if (id == NULL || pair == NULL) {
+		    if (id == NULL || parm == NULL) {
 		        ws_error_memory(pctx);
 		        $$ = NULL;
 		    } else
-		        ws_list_append(pctx, $1, pair);
+		        ws_list_append(pctx, $1, parm);
 		}
 	;
 
@@ -445,7 +450,7 @@ VariableDeclaration:
 		        ws_error_memory(pctx);
 		        $$ = NULL;
 		    } else
-		        $$ = ws_pair_new(pctx, id, $2);
+		        $$ = ws_variable_declaration(pctx, id, $2);
 		}
 	;
 
