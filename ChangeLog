@@ -1,4 +1,7 @@
 2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/dlr.c: fixed SQL statement in dlr_flush() for MySQL storage
+
+2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bearerbox.[ch], gw/dlr.c: fixed the way mutex are locked for 
       flushing the DLR queue
 
