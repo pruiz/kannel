@@ -10,6 +10,8 @@ problem, fix it, and re-start from beginning:
 		* Make sure everything is working.
 		
 		* Make sure documentation is up to date.
+		
+		* Make sure NEWS is up to date.
 	
 	* Add an entry to ChangeLog that says you're making release
 	  such and such.

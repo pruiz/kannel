@@ -1,41 +1,48 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.8
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.9
 
-This is a fairly stable beta version. It is not completely stable, but
-good enough for at least light production use. Further stabilization
-requires fairly large changes and we wanted to release this version
-before we do those.
+This is a DEVELOPMENT version. It is stable, but should be good enough
+for testing things out. Please do try it out and report problems to
+devel@kannel.org (the development mailing list) or bugs@kannel.org
+(the bug tracking system).
 
-This is now the stable branch, meaning that if any serious bug fixes
-need to be made, we will make them (and only them) and release 0.8.1.
-Actual development of new features and other large changes happen in
-the development branch, 0.9.x.
+Change summary from version 0.8:
 
-Change summary from version 0.7.1:
+* Uses new HTTP implementation in smsbox and wapbox. Bearerbox will follow
+  later, when it is re-written. Internal sendsms in internal smsbox in
+  old bearerbox commented out.
 
-* Bearer box returns its version in the status report.
+* Beginnings of new bearerbox added, gw/bb_core.c.
 
-* Fixes to SEMA SMSC protocol implementation, from Hao Shi.
+* CIMD2 SMS center protocol. UDH works.
 
-* Memory allocation checking can be selected with configure, instead of
-  editing gwmem.c.
+* SEMA SMS center protocol: Fixes and updates from Hao Shi.
 
-* Log file timestamps can be configured at compile time to be written in
-  the local time zone, instead of GMT.
+* WML compiler has support for 8-bit character sets that are not ISO 8859-1.
 
-* Various code cleanups and minor fixes.
+* EMI implementation should support UDH now. Also, initialization of TRN
+  fixed.
 
-* Portability fixes:
+* Octstr conversions between binary and base64.
 
-	- Mutexes now can't be locked twice by the same thread, even
-	  on platforms (Linux) where it is the default operation.
+* mutex_lock panics if it locks the same mutex twice. Needed for
+  portability.
 
-	- Use B38400 (highest standard value) instead of B115200 
-	  (non-standard, but common) if the latter is not available.
+* smsbox_req.c uses Octstr's more than before, instead of C strings.
 
-	- No longer assumes a pthread_t is compatible with long
-	  (test_list program mainly).
+* gwlib now had gwlib_init and gwlib_shutdown, instead of having to
+  call each library module init and shutdown separately.
 
-* A new HTTP implementation, alpha version, and not yet used, but included
-  for review.
+* contrib directory added. Now has a Perl script to convert HTML to WML.
+
+* configure option --enable-mutex-stats added, for logging mutex sleeps.
+
+* Bug fixes:
+
+	* Memory leak when smscenter_receive_message fails.
+	* gwmem-check.c does arithmetic with long* instead of void*.
+	* list_destroy, conffile.c silently ignores NULL argument.
+	* pthread errno handling.
+	* log.c: pthread_self cast to long rather than int for printing.
+	* wtp.c: memory leak fixed in tell_about_error.
 
 See ChangeLog for detailed information.
