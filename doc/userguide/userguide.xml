@@ -2457,6 +2457,18 @@ forced-smsc = SOL
    <row><entry><literal>bearer</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
+       Bearer type: data or sms. Defaults to data.
+     </entry></row>
+
+   <row><entry><literal>calltype</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       Call type: isdn or analg. Defaults to isdn.
+     </entry></row>
+
+   <row><entry><literal>connection</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
        Connection type: cont or temp. Defaults to cont.
      </entry></row>
 

@@ -1,3 +1,8 @@
+2001-02-08  Richard Braakman  <dark@wapit.com>
+
+	* Applied Stipe Tolj's patch to cfg.def and userguide, to
+	fix OTA configuration parsing.
+
 2001-02-07  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_boxc.c: kludged to use internal heartbeat to wakeup sender

@@ -157,6 +157,8 @@ MULTI_GROUP(otaconfig,
     OCTSTR(ipaddress)
     OCTSTR(phonenumber)
     OCTSTR(bearer)
+    OCTSTR(connection)
+    OCTSTR(calltype)
     OCTSTR(pppsecurity)
     OCTSTR(authentication)
     OCTSTR(login)
