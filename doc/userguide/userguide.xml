@@ -1996,6 +1996,13 @@ smsc-password = bar
 	TCP/IP connection only.
      </entry></row>
 
+   <row><entry><literal>appname</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+	    Name of a "Send only" service. Defaults to <literal>send</literal>.
+		 All outgoing messages are routed through this service.
+     </entry></row>
+
    <row><entry><literal>connect-allow-ip</literal></entry>
      <entry><literal>IP-list</literal></entry>
      <entry valign=bottom>
