@@ -44,9 +44,7 @@ static WSPMachine *session_machines = NULL;
 static void append_to_event_queue(WSPMachine *machine, WSPEvent *event);
 static WSPEvent *remove_from_event_queue(WSPMachine *machine);
 
-#if 0
-static int unpack_connect_pdu(Octstr *pdu);
-#endif
+static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data);
 static int unpack_get_pdu(Octstr **url, Octstr **headers, Octstr *pdu);
 
 static int unpack_uint8(unsigned long *u, Octstr *os, int *off);
@@ -187,6 +185,14 @@ WSPMachine *wsp_machine_create(void) {
 	
 	p->state = NULL_STATE;
 
+	/* set capabilities to default values */
+
+	p->client_SDU_size = 1400;
+	p->server_SDU_size = 1400;
+        /* p->protocol_options = 0x00;	 */
+	p->MOR_method = 1;
+	p->MOR_push = 1;
+	
 	/* XXX this should be locked */
 	p->next = session_machines;
 	session_machines = p;
@@ -326,13 +332,13 @@ static WSPEvent *remove_from_event_queue(WSPMachine *machine) {
 }
 
 
-#if 0
-static int unpack_connect_pdu(Octstr *user_data) {
-	int off;
+static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
+	int off, flags;
 	unsigned long version, caps_len, headers_len;
+	unsigned long length, uiv, mor, type;
 	Octstr *caps, *headers;
 
-	off = 0;
+	off = 1;	/* ignore PDU type */
 	if (unpack_uint8(&version, user_data, &off) == -1 ||
 	    unpack_uintvar(&caps_len, user_data, &off) == -1 ||
 	    unpack_uintvar(&headers_len, user_data, &off) == -1 ||
@@ -348,9 +354,78 @@ static int unpack_connect_pdu(Octstr *user_data) {
 	debug(0, "  headers:");
 	octstr_dump(headers);
 	debug(0, "Connect PDU dump done.");
+
+	off = 0;
+	unpack_uintvar(&length, caps, &off);
+
+	/* XXX
+	 * capablity identifier is defined as 'multiple octets'
+	 * and encoded as Field-Name, but current supported
+	 * capabilities can be identified via one number
+	 */
+
+	/* XXX if the clients sends multiple optional capabilities,
+	 * this system currently selects the last one. FIX XXX
+	 */
+	
+	off++;
+	switch(octstr_get_char(caps,off-1)) {
+	case 0x00:
+	    if (unpack_uintvar(&uiv, caps, &off) == -1)
+		warning(0, "Problems getting client SDU size capability");
+	    else {
+		debug(0, "Client SDU size %lu", uiv);
+		m->client_SDU_size = uiv;
+	    }
+	    break;
+	case 0x01:
+	    if (unpack_uintvar(&uiv, caps, &off) == -1)
+		warning(0, "Problems getting server SDU size capability");
+	    else {
+		debug(0, "Server SDU size %lu", uiv);
+		m->server_SDU_size = uiv;
+	    }
+	    break;
+	case 0x02:
+	    /* XXX should be taken as octstr or something */
+	    flags = (octstr_get_char(caps,off));
+	    debug(0, "Receiver flags %0xd", flags);
+	    /* currently our server does not serve any of these, but
+	     * save them until we answer */
+	    m->protocol_options = flags;
+	    break;
+	case 0x03:
+	    if (unpack_uint8(&mor, caps, &off) == -1)
+		warning(0, "Problems getting MOR methods capability");
+	    else {
+		debug(0, "MOR methods %lu", mor);
+		m->MOR_method = 0;
+	    }
+	    break;
+	case 0x04:
+	    if (unpack_uint8(&mor, caps, &off) == -1)
+		warning(0, "Problems getting MOR push capability");
+	    else {
+		debug(0, "MOR push %lu", mor);
+		m->MOR_push = 0;
+	    }
+	    break;
+	case 0x05:
+	    /* extended methods */
+	    break;
+	case 0x06:
+	    /* header code pages */
+	    break;
+	case 0x07:
+	    /* aliases */
+	    break;
+	default:
+	    /* unassigned */
+	    break;
+	}
+	
 	return 0;
 }
-#endif
 
 
 

@@ -419,7 +419,6 @@ int main(int argc, char **argv)
 
     cf_index = get_and_set_debugs(argc, argv, NULL);
 
-    warning(0, "Gateway SMS BOX version %s starting", VERSION);
 
     socket_mutex = mutex_create();
 
@@ -429,6 +428,9 @@ int main(int argc, char **argv)
 	panic(0, "No configuration, aborting.");
 
     init_smsbox(cfg);
+
+    debug(0, "----------------------------------------------");
+    debug(0, "Gateway SMS BOX version %s starting", VERSION);
     write_pid_file();
 
     translations = urltrans_create();

@@ -21,6 +21,15 @@ SESSION_MACHINE({
 	OCTSTR(server_address);
 	INTEGER(server_port);
 	SESSION_POINTER(next);
+
+	INTEGER(protocol_options);
+	INTEGER(MOR_method);
+	INTEGER(MOR_push);
+	OCTSTR(aliases);
+	OCTSTR(extended_methods);
+	OCTSTR(header_code_pages);
+	INTEGER(client_SDU_size);
+	INTEGER(server_SDU_size);
 })
 
 METHOD_MACHINE({

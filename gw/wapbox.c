@@ -185,16 +185,14 @@ int main(int argc, char **argv) {
 
 	cf_index = get_and_set_debugs(argc, argv, NULL);
 	
-	open_logfile("wapbox.log", DEBUG);
-
-	info(0, "------------------------------------------------------------");
-	info(0, "WAP box starting up.");
-
 	if (argc > cf_index)
 		read_config(argv[cf_index]);
 	else
 		read_config("wapbox.wapconf");
 		
+	info(0, "------------------------------------------------------------");
+	info(0, "WAP box starting up.");
+
 	bbsocket = connect_to_bearer_box();
 	init_queue();
 	

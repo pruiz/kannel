@@ -1,3 +1,13 @@
+2000-01-07    <rpr@rpr.wapit.com>
+
+	* gw/wsp*.c: initial code to handle capabilities. Not finished.
+
+	* gw/wapbox.c: removed double logging (use log-file in
+	configuration)
+
+	* gw/bearerbox.c: fixed WAP routing (no more crashes because of
+	WAP traffic while connected to SMSC)
+
 Fri Jan  7 18:06:38 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/boxc.c, gwlib/http.c, gw/wapbox.c, gw/wtp.c: Made sure

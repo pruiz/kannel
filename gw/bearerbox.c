@@ -427,7 +427,9 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 			break;
 		    }
 		}
-		if (thr->type == BB_TTYPE_SMSC)
+		if (thr->type == BB_TTYPE_SMSC &&
+		    msg->msg_class == R_MSG_CLASS_SMS) /* no SMS wap, yet */
+
 		    ret = smsc_receiver(thr->smsc,
 		       octstr_get_cstr(msg->msg->smart_sms.receiver));
 		else
