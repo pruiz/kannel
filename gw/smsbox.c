@@ -1337,7 +1337,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
      * we expect cgi var text to be defined, even if it may be
      * empty to allow empty messages, st.
      */
-    if (to == NULL || text == NULL) {
+    if (to == NULL) {
 	error(0, "%s got insufficient headers",octstr_get_cstr(sendsms_url));
 	*status = HTTP_BAD_REQUEST;
 	return octstr_create("Insufficient headers, rejected");
