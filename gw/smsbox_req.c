@@ -538,23 +538,23 @@ void smsbox_req_thread(void *arg) {
     msg = arg;
     req_threads++;	/* possible overflow */
     
-    if ((octstr_len(msg->smart_sms.msgdata) == 0 &&
-	octstr_len(msg->smart_sms.udhdata) == 0) ||
-	octstr_len(msg->smart_sms.sender) == 0 ||
+    if (octstr_len(msg->smart_sms.sender) == 0 ||
 	octstr_len(msg->smart_sms.receiver) == 0) 
     {
 
-	error(0, "smsbox_req_thread: EMPTY Msg, dump follows:");
+	error(0, "smsbox_req_thread: no sender/receiver, dump follows:");
 	msg_dump(msg, 0);
 		/* NACK should be returned here if we use such 
 		   things... future implementation! */
-	   
+
+	req_thread--;
 	return;
     }
 
     if (octstr_compare(msg->smart_sms.sender, msg->smart_sms.receiver) == 0) {
 	info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
 	     octstr_get_cstr(msg->smart_sms.sender));
+	req_thread--;
 	return;
     }
 

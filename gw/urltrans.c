@@ -45,7 +45,7 @@ struct URLTranslation {
     
     char *username;	/* send sms username */
     char *password;	/* password associated */
-    char *forced_smsc;	/* if smsc id is forcxet to certain for this user */
+    char *forced_smsc;	/* if smsc id is forcet to certain for this user */
     char *default_smsc; /* smsc id if none given in http send-sms request */
     char *allow_ip;	/* allowed IPs to request send-sms with this account */
     char *deny_ip;	/* denied IPs to request send-sms with this account */
@@ -147,8 +147,6 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
 	URLTranslation *t;
 	
 	words = octstr_split_words(text);
-	if (words == NULL)
-	    return NULL;
 
 	t = find_translation(trans, words, smsc);
 	list_destroy(words, octstr_destroy_item);
