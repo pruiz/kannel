@@ -1,3 +1,7 @@
+2003-02-23  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smpp.c: fixed a mistakely deleted increament of msg_id_counter
+      in smpp_create() for sequence_numbers starting 0x0000001.
+
 2003-02-21  David Holland  <david.holland@3glab.com>
     * gw/smsc/smpp_pdu.def: fixed generic_nack definition (thanks to
       Alexander Malysh)
