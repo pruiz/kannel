@@ -1,5 +1,9 @@
 2001-05-07  Richard Braakman  <dark@wapit.com>
 
+	* Making release 1.1.4.
+
+2001-05-07  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/list.h: list_len(NULL) returns 0.  This has been true
 	for some time now.  Make it part of the documented interface.
 
