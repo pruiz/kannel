@@ -1,6 +1,10 @@
 2003-04-17  Stipe Tolj  <tolj@wapme-systems.de>
     * configure[.in]: removed checking of libiconv.a. Some systems, like Linux
       contains iconv functions inside glibc. We check the for the header only.
+    * configure[.in]: seems I'm wacky today. Of course we need the checking 
+      still, otherwise systems that need linking against the lib will fail the
+      build process, ie. Cygwin. So I'm adding this again, but without 
+      explicite warning message.
 
 2003-04-17  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_http.c: fixing a missing urldecode in brunet_send_sms().
