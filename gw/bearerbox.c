@@ -525,11 +525,15 @@ int bb_restart(void)
 
 
 
+#define append_status(r, s, f) { s = f(); octstr_append(r, s); \
+                                 octstr_destroy(s); }
+
+
 Octstr *bb_print_status(void)
 {
     char *s;
     char buf[512];
-    Octstr *ret, *boxc;
+    Octstr *ret, *str;
     time_t t;
 
     t = time(NULL) - start_time;
@@ -557,9 +561,10 @@ Octstr *bb_print_status(void)
 	    counter_value(outgoing_wdp_counter));
 
     ret = octstr_create(buf);
-    boxc = boxc_status();
-    octstr_append(ret, boxc);
-    octstr_destroy(boxc);
 
+    append_status(ret, str, boxc_status);
+    append_status(ret, str, smsc_status);
+    
     return ret;
 }
+

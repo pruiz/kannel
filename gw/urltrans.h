@@ -41,10 +41,10 @@ typedef struct URLTranslationList URLTranslationList;
 typedef struct URLTranslation URLTranslation;
 
 enum {
-    TRANSTYPE_URL,
-    TRANSTYPE_TEXT,
-    TRANSTYPE_FILE,
-    TRANSTYPE_SENDSMS
+    TRANSTYPE_URL = 0,
+    TRANSTYPE_TEXT = 1,
+    TRANSTYPE_FILE = 2,
+    TRANSTYPE_SENDSMS =3
 };
 
 /*

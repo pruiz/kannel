@@ -81,7 +81,7 @@ int get_cookies (List *headers, const WSPMachine *sm)
 	for (pos = 0; pos < list_len (headers); pos++) {
 		header = list_get(headers, pos);
 		debug ("wap.wsp.http", 0, "get_cookies: Examining header (%s)", octstr_get_cstr (header));
-		if (strnicmp ("set-cookie", octstr_get_cstr (header), strlen ("set-cookie")) == 0) {		
+		if (strcasecmp ("set-cookie", octstr_get_cstr (header)) == 0) {		
 			debug ("wap.wsp.http", 0, "Caching cookie (%s)", octstr_get_cstr (header));
 
 			if ((value = get_header_value (header)) == NULL) {
@@ -234,25 +234,25 @@ static Cookie *parse_cookie (Octstr *cookiestr)
 	while (p != NULL) {
 		while (isspace (*p)) p++;		/* Skip leading whitespace */
 
-		if (strnicmp ("version", p, strlen ("version")) == 0)
+		if (strcasecmp ("version", p) == 0)
 			f = &c -> version;
-		else if (strnicmp ("path", p, strlen ("path")) == 0)
+		else if (strcasecmp ("path", p) == 0)
 			f = &c -> path;
-		else if (strnicmp ("domain", p, strlen ("domain")) == 0)
+		else if (strcasecmp ("domain", p) == 0)
 			f = &c -> domain;
-		else if (strnicmp ("max-age", p, strlen ("max-age")) == 0) {
+		else if (strcasecmp ("max-age", p) == 0) {
 			c -> max_age = atol (strrchr (p, '=') + 1);
 			p = strtok (NULL, ";");
 			continue;
 		}
-		else if (strnicmp ("expires", p, strlen ("expires")) == 0) {
+		else if (strcasecmp ("expires", p) == 0) {
 			delta = parse_http_date (p);
 			if (delta != -1) c -> max_age = delta;
 			p = strtok (NULL, ";");
 			continue;
 		}
-		else if (strnicmp ("comment", p, strlen ("comment")) == 0 ||
-				 strnicmp ("secure", p, strlen ("secure")) == 0) {
+		else if (strcasecmp ("comment", p) == 0 ||
+				 strcasecmp ("secure", p) == 0) {
 			p = strtok (NULL, ";");
 			continue;
 		}

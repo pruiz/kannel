@@ -544,7 +544,8 @@ static URLTranslation *find_translation(URLTranslationList *trans,
         t = NULL;
 	for (i = 0; i < list_len(trans->list); ++i) {
 	    t = list_get(trans->list, i);
-	    if (t->keyword != NULL) {
+	    if (t->type != TRANSTYPE_SENDSMS && t->keyword != NULL)
+	    {
 		if (strcasecmp(keyword, t->keyword) == 0 ||
 		    str_case_str(t->aliases, alias_keyword) != NULL) {
 
@@ -554,6 +555,7 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 			break;
 		}
 	    }
+	    t = NULL;
 	}
 	
 	return t;
@@ -568,7 +570,8 @@ static URLTranslation *find_default_translation(URLTranslationList *trans)
     t = NULL;
     for (i = 0; i < list_len(trans->list); ++i) {
 	t = list_get(trans->list, i);
-	if (t->keyword != NULL && strcasecmp("default", t->keyword) == 0)
+	if (t->keyword != NULL && t->type != TRANSTYPE_SENDSMS
+	    && strcasecmp("default", t->keyword) == 0)
 	    break;
     }
     return t;

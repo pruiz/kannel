@@ -691,7 +691,7 @@ Octstr *boxc_status(void)
      *    Ok, this has to be fixed, but now I am too tired.
      */
     
-    sprintf(tmp, "Total %ld wapbox and %ld smsbox connections",
+    sprintf(tmp, "Total %ld wapbox and %ld smsbox connections<BR>",
 	    wapbox_list ? list_len(wapbox_list) : 0,
 	    smsbox_list ? list_len(smsbox_list) : 0);
 

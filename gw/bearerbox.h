@@ -70,6 +70,7 @@ int smsc_die(void);	/* called when router dies */
 /* as udp_addwdp() */
 int smsc_addwdp(Msg *msg);
 
+Octstr *smsc_status(void);
 
 
 /*---------------

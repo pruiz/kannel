@@ -376,3 +376,23 @@ int smsc_die(void)
     return 0;
 }
 
+
+Octstr *smsc_status(void)
+{
+    char tmp[512];
+    int i;
+    Smsc *si;
+    
+    if (!smsc_running) return octstr_create("No SMSC connections<br>");
+
+    sprintf(tmp, "<br>%d SMSC connections:<br>", list_len(smsc_list));
+    
+    for(i=0; i < list_len(smsc_list); i++) {
+	si = list_get(smsc_list, i);
+	strcat(tmp, "&nbsp;&nbsp;&nbsp;&nbsp;");
+	strcat(tmp, smsc_name(si->smsc));
+	strcat(tmp, "<br>");
+    }
+    return octstr_create(tmp);
+}
+

@@ -100,7 +100,7 @@ int fake_pending_smsmessage(SMSCenter *smsc) {
 		return -1;
 	}
 	if (ret == 0)
-		return 1; /* yes, 1; next call to receive will signal EOF */
+	    return 1; /* yes, 1; next call to receive will signal EOF */
 
 	if (memchr(smsc->buffer, '\n', smsc->buflen) != NULL)
 		return 1;
@@ -131,7 +131,7 @@ int fake_receive_msg(SMSCenter *smsc, Msg **msg) {
 			break;
 		ret = smscenter_read_into_buffer(smsc);
 		if (ret <= 0)
-			return ret;
+			return -1;
 	}
 	
 	*newline = '\0';
