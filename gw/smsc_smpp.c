@@ -591,7 +591,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 		       pdu->u.submit_sm.sequence_number);
 	} else if (pdu->u.submit_sm_resp.command_status != 0)
 	{
-	    error(0, "SMPP: SMSC returned error code 0x%08lu "
+        error(0, "SMPP: SMSC returned error code 0x%08lx "
 		     "in response to submit_sm.",
 		     pdu->u.submit_sm_resp.command_status);
 	    reason = smpp_status_to_smscconn_failure_reason(
@@ -602,7 +602,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
  	    {
  		Octstr *reply;
  		
- 		reply = octstr_format("0x%08lu",pdu->u.submit_sm_resp.command_status);
+ 		reply = octstr_format("0x%08lx",pdu->u.submit_sm_resp.command_status);
  		/* generate DLR */
  		info(0,"creating DLR message");
  		dlrmsg = msg_create(sms);
@@ -649,7 +649,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
  	    {
  		Octstr *reply;
  		
- 		reply = octstr_format("0x%08lu",pdu->u.submit_sm_resp.command_status);
+ 		reply = octstr_format("0x%08lx",pdu->u.submit_sm_resp.command_status);
  
  		dlrmsg = dlr_find(octstr_get_cstr(smpp->conn->id), 
  		    octstr_get_cstr(tmp), /* smsc message id */
