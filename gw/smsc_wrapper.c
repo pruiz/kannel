@@ -218,6 +218,8 @@ static void wrapper_sender(void *arg)
              */
             List *nlist = octstr_split_words(msg->sms.receiver);
 
+	    debug("bb.sms", 0, "Handling multi-receiver message");
+
             for(i=0; i < list_len(nlist); i++) {
 
 		newmsg = msg_duplicate(msg);

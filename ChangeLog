@@ -1,3 +1,10 @@
+2001-01-22  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/wapbox.c: fixed read-config and map_url_max which caused
+	wapbox to stuck and never start
+
+	* gw/smsc_wrapper.c: added one debug message
+
 2001-01-22  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/gwthread-pthread.c: Split gwthread_create_real() into

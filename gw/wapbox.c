@@ -116,7 +116,9 @@ static void read_config(Octstr *filename)
     }
     
     /* configure URL mappings */
+    map_url_max = -1;
     cfg_get_integer(&map_url_max, grp, octstr_imm("map-url-max"));
+	
     if ((s = cfg_get(grp, octstr_imm("device-home"))) != NULL) {
 	wsp_http_map_url_config_device_home(octstr_get_cstr(s));
 	octstr_destroy(s);
@@ -125,6 +127,8 @@ static void read_config(Octstr *filename)
 	wsp_http_map_url_config(octstr_get_cstr(s));
 	octstr_destroy(s);
     }
+    debug("wap", 0, "map_url_max = %ld", map_url_max);
+
     for (i = 0; i <= map_url_max; i++) {
 	Octstr *name;
 	
