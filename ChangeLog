@@ -1,3 +1,7 @@
+2004-06-22  Alexander Malysh  <a.malysh@centrium.de> 
+    * doc/userguide/userguide.xml: fixed typo bug#133. additionaly reviewed and fixed
+      deprecated 'dlrurl' and 'dlrmask' params.
+
 2004-06-21  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/smsc/smsc_smpp.c: added "more messages to send" support.
 

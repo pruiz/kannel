@@ -5878,10 +5878,10 @@ text = "No action specified"
    <row><entry><literal>deferred</literal></entry>
    <entry><literal>X-Kannel-Deferred</literal></entry></row>
 
-   <row><entry><literal>dlrmask</literal></entry>
+   <row><entry><literal>dlr-mask</literal></entry>
    <entry><literal>X-Kannel-DLR-Mask</literal></entry></row>
 
-   <row><entry><literal>dlrurl</literal></entry>
+   <row><entry><literal>dlr-url</literal></entry>
    <entry><literal>X-Kannel-DLR-Url</literal></entry></row>
 
    <row><entry><literal>account</literal></entry>
@@ -6220,7 +6220,7 @@ text = "No action specified"
     <row><entry><literal>dlr-url</literal></entry>
      <entry>URL</entry>
      <entry valign="bottom">
-	URL to be fetched if a <literal>dlrmask</literal> CGI 
+	URL to be fetched if a <literal>dlr-mask</literal> CGI 
 	parameter is present.
      </entry></row>
 
@@ -7773,14 +7773,14 @@ ssl-server-key-file = "/etc/kannel/key1.pem"
 	<listitem><para>16: smsc reject</para></listitem>
 	</itemizedlist>
 	If you want multiple report types, you simply add the values togeter. For example if you want to get delivery success and/or failure
-	you set the dlrmask value to 1+2. and so on. If you specify dlrmask on the URL you pass on to
-	Kannel you also need to specify dlrurl. dlrurlshould contain the URL to which
+	you set the <literal>dlr-mask</literal> value to 1+2. and so on. If you specify <literal>dlr-mask</literal> on the URL you pass on to
+	Kannel you also need to specify <literal>dlr-url</literal>. <literal>dlr-url</literal> should contain the URL to which
 	Kannel should place a HTTP requests once the delivery report is ready to be delivered back to your system.
 	</para>
 	<para>
 	An example transaction would work as following.
 	<itemizedlist>
-	<listitem><para>1. you send a message using dlrmaks=7 and dlrurl=http://www.xyz.com/cgi/dlr.php?type=%d</para></listitem>
+	<listitem><para>1. you send a message using dlr-mask=7 and dlr-url=http://www.xyz.com/cgi/dlr.php?type=%d</para></listitem>
 	<listitem><para>2. Kannel forwards the message to the SMSC and keeps track of the message</para></listitem>
 	<listitem><para>3. The SMSC can not reach the phone and thus returns a buffered message</para></listitem>
 	<listitem><para>4. Kannel calls http://www.xyz.com/cgi/dlr.php?type=4 to indicate the message being buffered</para></listitem>
