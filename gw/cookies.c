@@ -84,7 +84,7 @@ int get_cookies (List *headers, const WSPMachine *sm)
 	for (pos = 0; pos < list_len (headers); pos++) {
 		header = list_get(headers, pos);
 		debug ("wap.wsp.http", 0, "get_cookies: Examining header (%s)", octstr_get_cstr (header));
-		if (strcasecmp ("set-cookie", octstr_get_cstr (header)) == 0) {		
+		if (strncasecmp ("set-cookie", octstr_get_cstr (header),10) == 0) {		
 			debug ("wap.wsp.http", 0, "Caching cookie (%s)", octstr_get_cstr (header));
 
 			if ((value = get_header_value (header)) == NULL) {
@@ -338,8 +338,7 @@ static int have_cookie (List *cookies, Cookie *cookie)
 	while (pos < list_len (cookies)) {
 		value = list_get (cookies, pos);
 
-		/* Worrying - octstr_compare returns 0 on MIN (len1, len2) == 0 - but this
-		   behaviour marked as a bug ! */
+		/* octstr_compare() now only returns 0 on an exact match or if both args are 0 */
 
 		if (((value -> name) && octstr_compare (value -> name, cookie -> name) == 0) &&
 			((value -> path) && octstr_compare (value -> path, cookie -> path) == 0) &&
