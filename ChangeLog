@@ -1,3 +1,8 @@
+2000-03-31 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp.c: Tell_about_error: remove debuggung statements causing 
+	segfaults. In addition, locks to serialise reassemby.
+
 2000-03-31  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/octstr.c: Made octstr_decode_url not segfault on empty
