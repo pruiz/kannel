@@ -7,6 +7,7 @@
 
 
 #include <assert.h>
+#include <string.h>
 
 #include "gwlib.h"
 #include "wsp.h"
@@ -844,6 +845,7 @@ static void *wsp_http_thread(void *arg) {
 	WTPMachine *wtp_sm;
 	WSPMachine *sm;
 	HTTPHeader *headers, *last, *h, *new_h;
+	int wml_ok, wmlc_ok, wmlscript_ok, wmlscriptc_ok;
 
 	debug(0, "WSP: wsp_http_thread starts");
 
@@ -876,6 +878,34 @@ static void *wsp_http_thread(void *arg) {
 			headers = new_h;
 		last = new_h;
 	}
+	header_pack(headers);
+	wml_ok = 0;
+	wmlc_ok = 0;
+	wmlscript_ok = 0;
+	wmlscriptc_ok = 0;
+	for (h = headers; h != NULL; h = h->next) {
+		if (strcasecmp(h->key, "Accept") == 0) {
+			if (strstr(h->value, "text/vnd.wap.wml") != NULL)
+				wml_ok = 1;
+			if (strstr(h->value, "text/vnd.wap.wmlscript") != NULL)
+				wmlscript_ok = 1;
+			if (strstr(h->value, "application/vnd.wap.wmlc") != NULL)
+				wmlc_ok = 1;
+			if (strstr(h->value, "application/vnd.wap.wmlscriptc") != NULL)
+				wmlscriptc_ok = 1;
+		}
+	}
+	if (wmlc_ok && !wml_ok) {
+		new_h = header_create("Accept", "text/vnd.wap.wml");
+		headers->next = new_h;
+		headers = new_h;
+	}
+	if (wmlscriptc_ok && !wmlscript_ok) {
+		new_h = header_create("Accept", "text/vnd.wap.wmlscript");
+		headers->next = new_h;
+		headers = new_h;
+	}
+	header_pack(headers);
 
 	ret = http_get_u(url, &type, &data, &size, headers);
 	if (ret == -1) {
