@@ -1265,6 +1265,7 @@ int httprequest_add_header(HTTPRequest *request, char *key, char *value) {
 	return -1;
     }
     hdr = request->baseheader;
+
     
     if(hdr == NULL){
 	hdr = header_create(key, value);
@@ -1279,8 +1280,8 @@ int httprequest_add_header(HTTPRequest *request, char *key, char *value) {
 }
 
 /*****************************************************************************
- * httprequest_replace_header - replace the existing header and return 0. If
- * header doesn't exist create it. Return -1 for errors.
+ * httprequest_replace_header - replace the existing header 'key' 'value'
+ * and return 0. If header doesn't exist create it. Return -1 for errors.
  */
 int httprequest_replace_header(HTTPRequest *request, char *key, char *value)
 {
@@ -1292,19 +1293,19 @@ int httprequest_replace_header(HTTPRequest *request, char *key, char *value)
 	return -1;
     }
     hdr = request->baseheader;
-    while(hdr != NULL ){
+    
+    while(hdr != NULL){
 	if(strcasecmp(hdr->key, key) == 0 ){
 	    /* match */
 	    old = hdr->value;
 	    hdr->value = gw_strdup(value);
 	    gw_free(old);
+	    
 	    return 0;
-       	}
+	}
 	hdr = hdr->next;
     }
-    hdr = header_create(key, value);
-    assert(hdr!=NULL);
-    return 0;
+    return httprequest_add_header(request,key,value);
 }
 
 /***************************
@@ -1343,25 +1344,27 @@ void header_dump(HTTPHeader *hdr)
 
 
 /*
- * header_destroy - destroy the given header. user must take care of the
- * previous item, we don't have a clue who's pointing the hdr and where.
+ * header_destroy - destroy the given header. return the pointer to the
+ * next header.
  */
 
-int header_destroy(HTTPHeader *hdr)
+HTTPHeader *header_destroy(HTTPHeader *hdr)
 {
-    HTTPHeader *ptr = NULL;
+    HTTPHeader *next = NULL;
     
     if(hdr == NULL){
-	error(0,"header_destroy: Bad input (empty).");
-	return -1;
+	info(0,"header_destroy: Input was empty.");
+	return NULL;
     }
-    
-    ptr = hdr;
-    gw_free(ptr->key);
-    gw_free(ptr->value);
-    gw_free(ptr);
-    
-    return 0;	
+    else{
+	next = hdr->next;
+
+	gw_free(hdr->key);
+	gw_free(hdr->value);
+	gw_free(hdr);
+
+	return next;
+    }
 }
 
  
@@ -1427,22 +1430,30 @@ int httprequest_remove_header(HTTPRequest *request, char *key) {
 	error(0, "httprequest_remove_header: Bad input (empty).");
 	return -1;
     }
-    hdr = request->baseheader;
-    while(hdr!=NULL){
-	if(strcasecmp(hdr->key, key) == 0){
-	    /* match */
-	    prev->next = hdr->next;
-	    gw_free(hdr->key);
-	    gw_free(hdr->value);
-	    gw_free(hdr);
-	    hdr = prev->next;
+    
+    if(request->baseheader == NULL)
+	/* list is empty */;
+    else{
+	while(strcasecmp(request->baseheader->key, key) == 0)
+	    if((request->baseheader = header_destroy(request->baseheader)) ==
+	       NULL)
+		/* emptied the list */
+		break;
+	
+	prev = hdr = request->baseheader;
+	/* let's look inside the list*/
+	while(hdr != NULL){
+	    if(strcasecmp(hdr->key, key) == 0){
+		/* match */
+		prev->next = header_destroy(hdr);
+		hdr = prev;   /* rewind */    
+	    }
+	    prev = hdr;
+	    hdr = hdr->next;
 	}
-	prev = hdr;
-	hdr = hdr->next;
-    }
+    }/* mathces else */
     return 0;
 }
-
 
 /*
  * httprequets_get_header_value - find the given header and return the value.
@@ -1465,6 +1476,7 @@ char* httprequest_get_header_value(HTTPRequest *request, char *key) {
     }
     return NULL;
 }
+
 
 
 

@@ -1,3 +1,8 @@
+2000-03-24 Sanna Seppänen <sanna@wapit.com>
+
+	* gwlib/http.c,h: header_destroy returns now a pointer to the
+	next header. tested and debugged httprequest_remove_header().
+
 Thu Mar 23 19:58:44 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/bb_msg.h, gw/bearerbox.c, gw/msg.c, gw/msg.h, gw/urltrans.h,

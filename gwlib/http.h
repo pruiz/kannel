@@ -156,9 +156,10 @@ void header_dump(HTTPHeader *hdr);
 
   
 /*
- * header_destroy - destroy given header. return 0 for done, -1 for errors.
+ * header_destroy - destroy given header. return a pointer to the next
+ * header or NULL. NULL if fails.
  */
-int header_destroy(HTTPHeader *header);
+HTTPHeader *header_destroy(HTTPHeader *header);
 
 /***************************************************************
  * pack the header by combining all similar headers, i.e.
