@@ -168,10 +168,18 @@ static struct emimsg *make_emi31(PrivData *privdata, int trn)
 {
     struct emimsg *emimsg;
 
-    emimsg = emimsg_create_op(31, trn, privdata->name);
-    emimsg->fields[0] = octstr_duplicate(privdata->username);
-    emimsg->fields[1] = octstr_create("0539");
-    return emimsg;
+    if(octstr_len(privdata->username) || octstr_len(privdata->my_number)) {
+        emimsg = emimsg_create_op(31, trn, privdata->name);
+        if(octstr_len(privdata->username)) {
+            emimsg->fields[0] = octstr_duplicate(privdata->username);
+	} else {
+            emimsg->fields[0] = octstr_duplicate(privdata->my_number);
+	}
+        emimsg->fields[1] = octstr_create("0539");
+        return emimsg;
+    } else {
+        return NULL;
+    }
 }
 
 
@@ -801,15 +809,17 @@ static int emi2_keepalive_handling (SMSCConn *conn, Connection *server)
     int nexttrn = emi2_next_trn (conn);
     
     emimsg = make_emi31(PRIVDATA(conn), nexttrn);
-    PRIVDATA(conn)->slots[nexttrn].sendtype= 31;
-    PRIVDATA(conn)->slots[nexttrn].sendtime = time(NULL);
-    PRIVDATA(conn)->unacked++;
+    if(emimsg) {
+        PRIVDATA(conn)->slots[nexttrn].sendtype= 31;
+        PRIVDATA(conn)->slots[nexttrn].sendtime = time(NULL);
+        PRIVDATA(conn)->unacked++;
 	
-    if (emi2_emimsg_send(conn, server, emimsg) == -1) {
-	emimsg_destroy(emimsg);
-	return -1;
+        if (emi2_emimsg_send(conn, server, emimsg) == -1) {
+           emimsg_destroy(emimsg);
+           return -1;
+        }
+        emimsg_destroy(emimsg);
     }
-    emimsg_destroy(emimsg);
 	
     PRIVDATA(conn)->can_write = 0;
 
@@ -1556,7 +1566,8 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     if(privdata->retry < 0) 
 	privdata->retry = 0;
 
-    if (privdata->username == NULL || cfg_get_integer(&keepalive, cfg, octstr_imm("keepalive")) < 0)
+    if ( (privdata->username == NULL && privdata->my_number == NULL)
+         || cfg_get_integer(&keepalive, cfg, octstr_imm("keepalive")) < 0)
 	privdata->keepalive = 0;
     else
 	privdata->keepalive = keepalive;

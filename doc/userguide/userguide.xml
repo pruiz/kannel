@@ -2244,12 +2244,13 @@ smsc-password = bar
     <row><entry><literal>keepalive</literal></entry>
       <entry><literal>number (seconds)</literal></entry>
       <entry valign=bottom>
-        (Ignored if username is undefined). A keepalive command will be
+        A keepalive command will be
         sent to the SMSC connection this many seconds after the last
         message. The right value to use depends on how eager the SMSC is
         to close idle connections.  50 seconds is a good guess. If you
         see many unexplained reconnects, try lowering this value. Set it
         to 0 to disable this feature.
+	Requires username or my-number to be set.
      </entry></row>
 
     <row><entry><literal>wait-ack</literal></entry>
