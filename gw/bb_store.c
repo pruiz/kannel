@@ -268,20 +268,27 @@ int store_load(void)
     }
     
     store_file = octstr_read_file(octstr_get_cstr(filename));
-    if (store_file == NULL)
+    if (store_file != NULL)
+	info(0, "Loading store file %s", octstr_get_cstr(filename));
+    else {
 	store_file = octstr_read_file(octstr_get_cstr(newfile));
-    if (store_file == NULL)
-	store_file = octstr_read_file(octstr_get_cstr(bakfile));
-    if (store_file == NULL) {
-	info(0, "Cannot open any store file, starting new one");
-	retval = open_file(filename);
-	list_unlock(sms_store);
-	list_unlock(ack_store);
-	mutex_unlock(file_mutex);
-	return retval;
+	if (store_file != NULL)
+	    info(0, "Loading store file %s", octstr_get_cstr(newfile));
+	else {
+	    store_file = octstr_read_file(octstr_get_cstr(bakfile));
+	    if (store_file != NULL)
+		info(0, "Loading store file %s", octstr_get_cstr(bakfile));
+	    else {
+		info(0, "Cannot open any store file, starting new one");
+		retval = open_file(filename);
+		list_unlock(sms_store);
+		list_unlock(ack_store);
+		mutex_unlock(file_mutex);
+		return retval;
+	    }
+	}
     }
 
-    info(0, "Loading store file %s", octstr_get_cstr(store_file));
     info(0, "Store-file size %ld, starting to unpack%s", octstr_len(store_file),
 	 octstr_len(store_file) > 10000 ? " (may take awhile)" : "");
 

@@ -1,3 +1,10 @@
+2001-09-17 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* gw/sms.c: Fixed a bug in mode=1 dcs encoding and some other in
+	dcs_to_fields ('cause mclass and coding starts with 1, not 0)
+	* gw/bb_store.c: When I added a line saying which store file was
+	kannel reading, I had a mistake. Instead of printint the filename, 
+	I was printing the file. Ops, sorry. Fixed now.
+
 2001-09-14 Andreas Fink <andreas@fink.org>
 	* gw/smsc_at2.c
 	added some callbacks to bb_smscconn_sent and 
