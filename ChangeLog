@@ -1,4 +1,8 @@
 2002-10-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * wap/wsp_headers.c: fixed a bug in WSP header packing that breaked MMS
+      notification sending via PPG.
+
+2002-10-16  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added documentation to SMPP's directives
       [source|dest]-addr-[ton|npi] and source-addr-autodetect.
     * gw/smsc/smsc_smpp.c: changed DLR msg_id behaviour. SMPP spec says msg
