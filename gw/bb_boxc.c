@@ -301,14 +301,19 @@ static void boxc_sender(void *arg)
         mutex_unlock(conn->boxc_id_mutex);
     }
 
-    while(bb_status != BB_DEAD && conn->alive) {
+    while (bb_status != BB_DEAD && conn->alive) {
 
-	/* Make sure there's no data left in the outgoing connection before
-	 * doing the potentially blocking list_consume()s */
+        /* Make sure there's no data left in the outgoing connection before
+         * doing the potentially blocking list_consume()s */
 	    conn_flush(conn->conn);
 
 	    list_consume(suspended);	/* block here if suspended */
 
+        /*
+         * XXX This list_comsume() makes us block until *all* producers of 
+         * it have been removed, which is sort of a problem, because this
+         * thread keeps running, until there are no more clients connected.
+         */
 	    if ((msg = list_consume(conn->incoming)) == NULL) {
 
 	    /* tell sms/wapbox to die */
@@ -463,6 +468,7 @@ static void run_smsbox(void *arg)
     boxc_receiver(newconn);
     list_remove_producer(newconn->outgoing);
 
+    list_remove_producer(newconn->incoming);
     gwthread_join(sender);
 
 cleanup:    
