@@ -22,6 +22,13 @@
 static Octstr *official_name = NULL;
 static Octstr *official_ip = NULL;
 
+/*
+ * FreeBSD is not happy with our approach of allocating a sockaddr
+ * and then filling in the fields.  It has private fields that need
+ * to be initialized to 0.  This structure is used for that.
+ */
+static const struct sockaddr_in empty_sockaddr_in;
+
 #ifndef UDP_PACKET_MAX_SIZE
 #define UDP_PACKET_MAX_SIZE (64*1024)
 #endif
@@ -39,6 +46,7 @@ int make_server_socket(int port)
         goto error;
     }
 
+    addr = empty_sockaddr_in;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -94,6 +102,7 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port)
         goto error;
     }
 
+    addr = empty_sockaddr_in;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr = *(struct in_addr *) hostinfo.h_addr;
@@ -101,6 +110,7 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port)
     if (our_port > 0) {
         int reuse;
 
+        o_addr = empty_sockaddr_in;
         o_addr.sin_family = AF_INET;
         o_addr.sin_port = htons(our_port);
         o_addr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -266,6 +276,7 @@ int udp_bind(int port, const char *interface_name)
         return -1;
     }
 
+    sa = empty_sockaddr_in;
     sa.sin_family = AF_INET;
     sa.sin_port = htons(port);
     if (strcmp(interface_name, "*") == 0)
@@ -293,7 +304,7 @@ Octstr *udp_create_address(Octstr *host_or_ip, int port)
     struct sockaddr_in sa;
     struct hostent h;
 
-    memset(&sa, 0, sizeof(sa));
+    sa = empty_sockaddr_in;
     sa.sin_family = AF_INET;
     sa.sin_port = htons(port);
 

@@ -1,3 +1,8 @@
+2001-04-23  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/socket.c: Clear sockaddr_in structure before using it,
+	to make FreeBSD happier.
+
 2001-04-21  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsc_emi2.c: Fixed a stupid bug in the previous fix.
