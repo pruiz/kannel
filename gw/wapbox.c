@@ -386,16 +386,13 @@ static void dispatch_datagram(WAPEvent *dgram)
 	    msg = pack_ip_datagram(dgram);
             write_to_bearerbox(msg);
         } else {
-	    debug("wap", 0, "sending a message");
-            octstr_dump(msg->sms.msgdata, 0);
 	    msg = pack_sms_datagram(dgram);
             msg_sequence = counter_increase(sequence_counter) & 0xff;
             msg_len = octstr_len(msg->sms.msgdata);
             max_msgs = (msg_len / MAX_SMS_OCTETS) + 1; 
-            debug("wap", 0, "WDP (wapbox): Message length was %ld, sending"
-                  " %ld messages", msg_len, max_msgs);
             sms_datagrams = sms_split(msg, NULL, NULL, NULL, NULL, 1, 
                                       msg_sequence, max_msgs, MAX_SMS_OCTETS);
+
             while ((part = list_extract_first(sms_datagrams)) != NULL)
 	            write_to_bearerbox(part);
 
