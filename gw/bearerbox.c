@@ -494,10 +494,9 @@ static int normalize_number(char *dial_prefixes, Octstr **number)
 		    nstr = octstr_create_limited(official, official_len);
 		    if (nstr == NULL)
 			goto error;
-		    if (octstr_insert_data(nstr, official_len,
+		    octstr_insert_data(nstr, official_len,
 					   octstr_get_cstr(*number) + len,
-					   octstr_len(*number) - len) < 0)
-			goto error;
+					   octstr_len(*number) - len);
 		    octstr_destroy(*number);
 		    *number = nstr;
 		}

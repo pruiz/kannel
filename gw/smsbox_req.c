@@ -496,8 +496,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	|| max_msgs == 1) {
 
 	if (h != NULL)	/* if header set */
-	    if (octstr_insert_data(msg->smart_sms.msgdata, 0, h, hl)== -1)
-		goto error;
+	    octstr_insert_data(msg->smart_sms.msgdata, 0, h, hl);
 	/*
 	 * truncate if the message is too long one (this only happens if
 	 *  max_msgs == 1)
@@ -506,9 +505,8 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	    octstr_truncate(msg->smart_sms.msgdata, sms_max_length - fl);
 	    
 	if (f != NULL)	/* if footer set */
-	    if (octstr_insert_data(msg->smart_sms.msgdata,
-				   octstr_len(msg->smart_sms.msgdata), f, fl)== -1)
-		goto error;
+	    octstr_insert_data(msg->smart_sms.msgdata,
+				   octstr_len(msg->smart_sms.msgdata), f, fl);
 
 	if (do_sending(msg) < 0)
 	    goto error;

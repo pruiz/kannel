@@ -1,3 +1,22 @@
+Thu Jan 13 12:19:15 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/bearerbox.c, gw/msg.c, gw/smsbox_req.c, gw/wtp_send.c,
+	gwlib/octstr.c, gwlib/octstr.h, gw/wtp_state-decl.h, gw/wsp.c:
+	Removed some now unnecessary error checking.  Since we use
+	gw_malloc, octet string functions (among others) won't fail,
+	so there's no need to check and handle that. This simplifies
+	code a bit.
+	
+	* gw/wsp.c: Added (currently commented out) code to run WML
+	compiler as a separate process, to work around a bug that crashes
+	it sometimes when compiling several pages during a session.
+	(New compiler being written from scratch, so I didn't want to
+	debug the current one too much.)
+	
+	* gwlib/thread.h: Added "include #config.h"" so that we a
+	definition for HAVE_PTHREAD_H is included properly. This fixes
+	the bug that reported thread id always is 0.
+	
 2000-01-12    <rpr@rpr.wapit.com>
 
 	* gw/bearerbox.c: added some usleeps

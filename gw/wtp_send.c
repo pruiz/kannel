@@ -8,13 +8,6 @@
 #include "msg.h"
 #include "wapbox.h"
 
-enum {
-     basic_error,
-     addr_error,
-     user_error,
-     oct_error
-};
-
 /*****************************************************************************
  *
  * Prototypes of internal functions
@@ -29,8 +22,6 @@ static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine,
                      WTPEvent *event);
 
 static Msg *add_datagram_address(Msg *msg, WTPMachine *machine);
-
-static void tell_send_error(int type, Msg *msg);
 
 static char insert_pdu_type(int type, char octet);
 
@@ -58,24 +49,10 @@ void wtp_send_result(WTPMachine *machine, WTPEvent *event){
      Msg *msg = NULL;
 
      msg = msg_create(wdp_datagram);
-     if (msg == NULL){
-        tell_send_error(basic_error, msg);
-        return;
-     }
-
-     if ((msg = add_datagram_address(msg, machine)) == NULL){
-       tell_send_error(addr_error, msg);
-       return;
-     }
+     msg = add_datagram_address(msg, machine);
      debug(0, "WTP: packing result pdu");
      msg = pack_result(msg, machine, event);
      debug(0,"WTP: result pdu packed");
-    
-     if (msg == NULL){
-        tell_send_error(oct_error, msg);
-        return;
-     }
-
      put_msg_in_queue(msg);
 
      return;
@@ -87,23 +64,8 @@ void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine,
      Msg *msg = NULL;
 
      msg = msg_create(wdp_datagram);
-     if (msg == NULL){
-        tell_send_error(basic_error, msg);
-        return;
-     }
-
-     if ((msg = add_datagram_address(msg, machine)) == NULL){
-       tell_send_error(addr_error, msg);
-       return;
-     }
-
+     msg = add_datagram_address(msg, machine);
      msg = pack_abort(msg, abort_type, abort_reason, machine, event);
-    
-     if (msg == NULL){
-        tell_send_error(oct_error, msg);
-        return;
-     }
-
      put_msg_in_queue(msg);
 
      return;
@@ -114,22 +76,8 @@ void wtp_send_ack(long ack_type, WTPMachine *machine, WTPEvent *event){
      Msg *msg = NULL;
 
      msg = msg_create(wdp_datagram);
-     if (msg == NULL){
-        tell_send_error(basic_error, msg);
-        return;
-     }
-
-     if ((msg = add_datagram_address(msg, machine)) == NULL){
-       tell_send_error(addr_error, msg);
-       return;
-     }
-
+     msg = add_datagram_address(msg, machine);
      msg = pack_ack(msg, ack_type, machine, event);
-     if (msg == NULL){
-        tell_send_error(oct_error, msg);
-        return;
-     }
-
      put_msg_in_queue(msg); 
 
      return;
@@ -160,12 +108,7 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
  * are the rid field (which tells are we resending or not), and the tid.
  */  
  
-    msg->wdp_datagram.user_data = octstr_copy(event->TRResult.user_data, 0,
-                                  octstr_len(event->TRResult.user_data));
-    if (msg->wdp_datagram.user_data == NULL){
-       tell_send_error(basic_error, msg);
-       return NULL;
-    }
+    msg->wdp_datagram.user_data = octstr_duplicate(event->TRResult.user_data);
     
     octet = insert_pdu_type(RESULT, octet);
     octet = indicate_simple_message(octet);
@@ -174,10 +117,7 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
     debug(0, "WTP: inserting tid");
     insert_tid(wtp_pdu, event->TRResult.tid);
     
-    if (octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 3) == -1){
-       tell_send_error(oct_error, msg);
-       return NULL;
-    }
+    octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 3);
  
     return msg;
 
@@ -197,13 +137,7 @@ static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason,
  * PDU). Inputs are abort type, abort reason and tid.
  */  
  
-       msg->wdp_datagram.user_data = octstr_copy(event->TRAbort.user_data, 0,
-                                     octstr_len(event->TRAbort.user_data));
-       if (msg->wdp_datagram.user_data == NULL){
-          tell_send_error(user_error, msg);
-          return NULL;
-       }
-
+       msg->wdp_datagram.user_data = octstr_duplicate(event->TRAbort.user_data);
        octet = insert_pdu_type(ABORT, octet);
        octet = insert_abort_type(abort_type, octet);
        wtp_pdu[0] = octet;
@@ -212,10 +146,7 @@ static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason,
 
        wtp_pdu[3] = abort_reason;
 
-       if (octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 4) == -1){
-           tell_send_error(oct_error, msg);
-           return NULL;
-       }
+       octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 4);
 
        return msg;
 }
@@ -240,15 +171,8 @@ static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine,
 
     insert_tid(wtp_pdu, machine->tid);
 
-    if ((msg->wdp_datagram.user_data = octstr_create_empty()) == NULL){
-       tell_send_error(user_error, msg);
-       return NULL;
-    }
-
-    if (octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 3) == -1){
-       tell_send_error(user_error, msg);
-       return NULL;
-    }
+    msg->wdp_datagram.user_data = octstr_create_empty();
+    octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 3);
 
     return msg;
 }
@@ -257,60 +181,15 @@ static Msg *add_datagram_address(Msg *msg, WTPMachine *machine){
 
        msg->wdp_datagram.source_address = 
     	    octstr_duplicate(machine->destination_address);
-       if (msg->wdp_datagram.source_address == NULL){
-          tell_send_error(oct_error, msg);
-          return NULL;
-       }
 
        msg->wdp_datagram.source_port = machine->destination_port;
 
        msg->wdp_datagram.destination_address = 
     	    octstr_duplicate(machine->source_address);
        
-       if (msg->wdp_datagram.destination_address == NULL){
-          tell_send_error(oct_error, msg);
-          return NULL;
-       }
-       
        msg->wdp_datagram.destination_port = machine->source_port;
 
        return msg;
-}
-
-static void tell_send_error(int type, Msg *msg){
-
-       switch (type){
-/*
- * Abort(CAPTEMPEXCEEDED)
- */
-              case addr_error:
-                   error(0, "WTP: out of memory when trying to send a 
-                         message");
-                   gw_free(msg->wdp_datagram.source_address);
-                   gw_free(msg->wdp_datagram.destination_address);
-                   gw_free(msg);
-              break;
-
-              case oct_error:
-                   error(0, "WTP: out of memory when trying to send a 
-                         message");
-                   gw_free(msg->wdp_datagram.user_data);
-                   gw_free(msg->wdp_datagram.source_address);
-                   gw_free(msg->wdp_datagram.destination_address);
-                   gw_free(msg);
-             break;
-
-             case user_error:
-                  error(0, "WTP: out of memory");
-                  gw_free(msg->wdp_datagram.user_data);
-                  gw_free(msg);
-             break;
-
-             case basic_error:
-                  error(0, "WTP: out of memory when trying to send a message");
-                  gw_free(msg);
-             break;
-       }
 }
 
 static char insert_pdu_type (int type, char octet) {

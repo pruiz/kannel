@@ -310,7 +310,7 @@ void octstr_truncate(Octstr *ostr, int new_len) {
 }
 
 
-int octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
+void octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
 	size_t needed;
 	char *p;
 	
@@ -325,8 +325,6 @@ int octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
 	memcpy(ostr->data + pos, data, len);
 	ostr->len += len;
 	ostr->data[ostr->len] = '\0';
-	
-	return 0;
 }
 
 
@@ -360,10 +358,8 @@ Octstr *octstr_read_file(const char *filename) {
 	if (os == NULL)
 		goto error;
 
-	while ((n = fread(buf, 1, sizeof(buf), f)) > 0) {
-		if (octstr_insert_data(os, octstr_len(os), buf, n) == -1)
-			goto error;
-	}
+	while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
+		octstr_insert_data(os, octstr_len(os), buf, n);
 	
 	(void) fclose(f);
 	return os;

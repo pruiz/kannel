@@ -5,6 +5,7 @@
 #ifndef _GW_THREAD_H
 #define _GW_THREAD_H
 
+#include "config.h"
 
 
 #if HAVE_PTHREAD_H

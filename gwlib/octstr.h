@@ -165,7 +165,7 @@ void octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos);
  * gives the position in `ostr' where `data' should be inserted. `len'
  * gives the number of characters in `data'.
  */
-int octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len);
+void octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len);
 
 
 /*

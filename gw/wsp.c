@@ -492,8 +492,6 @@ static Octstr *make_connectionmode_pdu(long type) {
 	Octstr *pdu;
 	
 	pdu = octstr_create_empty();
-	if (pdu == NULL)
-		panic(0, "octstr_create failed, out of memory");
 	append_uint8(pdu, type);
 	return pdu;
 }
@@ -503,8 +501,7 @@ static void append_uint8(Octstr *pdu, long n) {
 	unsigned char c;
 	
 	c = (unsigned char) n;
-	if (octstr_insert_data(pdu, octstr_len(pdu), &c, 1) == -1)
-		panic(0, "octstr_insert_data failed, out of memory");
+	octstr_insert_data(pdu, octstr_len(pdu), &c, 1);
 }
 
 
@@ -659,7 +656,9 @@ static void *wsp_http_thread(void *arg) {
 	Octstr *body;
 	WSPEvent *e;
 	int status;
+#if 1
 	struct wmlc *wmlc_data;
+#endif
 	char *url;
 	WSPEvent *event;
 
@@ -685,21 +684,61 @@ static void *wsp_http_thread(void *arg) {
 		status = 200; /* OK */
 		
 		if (strcmp(type, "text/vnd.wap.wml") == 0) {
+			debug(0, "WSP: Compiling WML");
 			type = "application/vnd.wap.wmlc";
 			data = gw_realloc(data, size + 1);
 			data[size] = '\0';
 
+#if 1
+/* It seems wmo2wmlc can't handle multiple calls per process lifetime. Ooops. */
+			debug(0, "WSP: calling wml2wmlc");
 			wmlc_data = wml2wmlc(data);
-			if (wmlc_data == NULL)
-				panic(0, "Out of memory");
-			body = octstr_create_from_data(wmlc_data->wbxml, 
-						wmlc_data->wml_length);
-			if (body == NULL)
-				panic(0, "octstr_create_from_data failed, oops");
+			debug(0, "WSP: wml2wmlc done, %p", (void *) wmlc_data);
+			if (wmlc_data == NULL) {
+				error(0, "Out of memory or WML syntax error");
+				status = 415; /* XXX wrong code! */
+			} else {
+				body = octstr_create_from_data(wmlc_data->wbxml,
+							wmlc_data->wml_length);
+				debug(0, "WSP: Compile OK.");
+			}
+#else
+{
+	char name[10*1024];
+	char cmd[20*1024];
+	FILE *f;
+	char wmlc[100*1024];
+	size_t n;
+	
+	tmpnam(name);
+	f = fopen(name, "w");
+	if (f == NULL)
+		goto error;
+	if (fwrite(data, 1, size, f) == -1)
+		goto error;
+	fclose(f);
+	
+	sprintf(cmd, "./test_wml %s", name);
+	debug(0, "WSP: WML cmd: <%s>", cmd);
+	f = popen(cmd, "r");
+	if (f == NULL)
+		goto error;
+	n = fread(wmlc, 1, sizeof(wmlc), f);
+	debug(0, "WSP: Read %lu bytes of compiled WMLC", (unsigned long) n);
+	fclose(f);
+	body = octstr_create_from_data(wmlc, n);
+	debug(0, "WML: Compiled WML:");
+	octstr_dump(body);
+
+	if (0) {
+error:
+	panic(errno, "Couldn't write temp file for WML compilation.");
+	}
+}
+#endif
+			debug(0, "WSP: WML done.");
 		} else if (strcmp(type, "image/vnd.wap.wbmp") == 0) {
 			body = octstr_create_from_data(data, size);
-			if (body == NULL)
-				panic(0, "XXX octstr_create_data failed");
 		} else if (strcmp(type, "text/vnd.wap.wmlscript") == 0) {
 			status = 415;
 			error(0, "WMLScript not yet implemented.");

@@ -22,14 +22,10 @@ ROW(LISTEN,
      current_primitive = TRInvokeIndication;
 
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     if (wsp_event == NULL)
-        goto mem_error;
      debug(0, "WTP: Sending TR-Invoke.ind to WSP");
      wsp_dispatch_event(machine, wsp_event);
 
      timer = wtp_timer_create();
-     if (timer == NULL)
-        goto mem_error;
      wtp_timer_start(timer, L_A_WITH_USER_ACK, machine, event); 
     },
     INVOKE_RESP_WAIT)
@@ -51,8 +47,6 @@ ROW(LISTEN,
     {
      current_primitive=TRInvokeIndication;
      wsp_event=pack_wsp_event(current_primitive, event, machine);
-     if (wsp_event == NULL)
-        goto mem_error;
      debug(0, "RcvInvoke: generated TR-Invoke.ind for WSP");
      wsp_dispatch_event(machine, wsp_event);
     },
@@ -64,14 +58,10 @@ ROW(TIDOK_WAIT,
     { 
      current_primitive=TRInvokeIndication;
      wsp_event=pack_wsp_event(current_primitive, event, machine);
-     if (wsp_event == NULL)
-        goto mem_error;
      debug(0, "RcvAck: generated TR-Invoke.ind for WSP");
      wsp_dispatch_event(machine, wsp_event);
      
      timer = wtp_timer_create();
-     if (timer == NULL)
-        goto mem_error;
      wtp_timer_start(timer, L_A_WITH_USER_ACK, machine, event); 
     },
     INVOKE_RESP_WAIT)
@@ -113,8 +103,6 @@ ROW(INVOKE_RESP_WAIT,
     machine->tcl == 2,
     { 
      timer = wtp_timer_create();
-     if (timer == NULL)
-        goto mem_error;
      wtp_timer_start(timer, L_A_WITH_USER_ACK, machine, event); 
     },
     RESULT_WAIT)
@@ -125,8 +113,6 @@ ROW(INVOKE_RESP_WAIT,
     {
      current_primitive = TRAbortIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     if (wsp_event == NULL)
-        goto mem_error;
      /*wsp_dispatch_event(machine, wsp_event);*/
      wtp_machine_mark_unused(machine);
     },
@@ -149,8 +135,6 @@ ROW(INVOKE_RESP_WAIT,
      machine->rcr = 0;
 
      timer = wtp_timer_create();
-     if (timer == NULL)
-        goto mem_error;
      wtp_timer_start(timer, L_R_WITH_USER_ACK, machine, event);
      debug(0, "WTP: sending results");
      wtp_send_result(machine, event); 
@@ -189,8 +173,6 @@ ROW(RESULT_WAIT,
      machine->rcr = 0;
 
      timer = wtp_timer_create();
-     if (timer == NULL)
-        goto mem_error;
      wtp_timer_start(timer, L_R_WITH_USER_ACK, machine, event);
 
      wtp_send_result(machine, event); 
@@ -204,8 +186,6 @@ ROW(RESULT_WAIT,
     {
      current_primitive = TRAbortIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     if (wsp_event == NULL)
-        goto mem_error;
      /*wsp_dispatch_event(machine, wsp_event);*/
      wtp_machine_mark_unused(machine);
     },
@@ -249,8 +229,6 @@ ROW(RESULT_RESP_WAIT,
     {
      current_primitive = TRResultConfirmation;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     if (wsp_event == NULL)
-        goto mem_error;
      wsp_dispatch_event(machine, wsp_event);
      wtp_machine_mark_unused(machine);
     },
@@ -262,8 +240,6 @@ ROW(RESULT_RESP_WAIT,
     {
      current_primitive = TRAbortIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     if (wsp_event == NULL)
-        goto mem_error;
      /*wsp_dispatch_event(machine, wsp_event);*/
      wtp_machine_mark_unused(machine);
     },
