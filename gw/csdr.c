@@ -67,10 +67,10 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	/* Select which network interface (IP) to bind to. */
 	if(inet_aton(interface_name, &bindaddr) != 0) {
 		servaddr.sin_addr = bindaddr;
-		router->ip = interface_name;
+		router->ip = strdup(interface_name);
 	} else {
 		servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-		router->ip = "0.0.0.0";
+		router->ip = strdup("0.0.0.0");
 	}
 
 	if(strcmp(wap_service, "wsp") == 0) {
@@ -90,9 +90,12 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	} else if( strcmp(wap_service, "vcal/wtls") == 0 ) {
 		servaddr.sin_port = htons(9207);
 	} else {
-		error(0, "Illegal configuration '%s' in 'wap-service'.", wap_service);
+		error(0, "Illegal configuration '%s' in 'wap-service'.",
+			wap_service);
 		goto error;
 	}
+
+	router->port = ntohs(servaddr.sin_port);
 
 	while( bind(router->fd, &servaddr, sizeof(servaddr)) != 0 ) {
 
@@ -100,7 +103,8 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 			ntohs(servaddr.sin_port), wap_service);
 
 		if(errno==EACCES) {
-			error(0, "csdr_open: could not bind to the interface");
+			error(0, "csdr_open: could not bind to interface <%s:%d>",
+				router->ip, router->port);
 			goto error;
 		}
 		
@@ -112,8 +116,6 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 		sleep(1);
 
 	}
-
-	router->port = ntohs(servaddr.sin_port);
 
 	fl = fcntl(router->fd, F_GETFL);
 	fcntl(router->fd, F_SETFL, fl | O_NONBLOCK);
