@@ -1,3 +1,6 @@
+2003-02-28  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/log.c: fixed minor problems from last commit. Thanks to Angel.
+
 2003-02-27  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: move 'our-host' from SMSC specific config 
       sections to global SMSC section and added HTTP admin command 'loglevel'.
