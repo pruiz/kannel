@@ -1,3 +1,12 @@
+Tue Jan 18 14:06:09 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* wmlscript/wmlsc.c, wmlscript/wsalloc.c,
+	wmlscript/wsstream_data.c: Put in patch from Markku Rossi, to
+	fix bug in function that compiles from data instead of file,
+	and various helpfulness to wmlsc.
+
+	* gw/wsp.c: Use internal WMLScript compiler.
+
 Tue Jan 18 12:55:36 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: Use WMLScript compiler as an external process. This

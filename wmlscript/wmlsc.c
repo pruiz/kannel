@@ -18,6 +18,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <ws.h>
 
@@ -25,11 +27,24 @@
  * Prototypes for static functions.
  */
 
+/* Print usage message to the stdout. */
+static void usage(void);
+
 /* A callback functio to receive the meta-pragmas. */
 static void pragma_meta(const WsUtf8String *property_name,
 			const WsUtf8String *content,
 			const WsUtf8String *scheme,
 			void *context);
+
+/*
+ * Static variables.
+ */
+
+/* The name of the compiler program. */
+static char *program;
+
+/* Use ws_compile_data() instead of ws_compile_file(). */
+int eval_data = 0;
 
 
 /*
@@ -43,6 +58,34 @@ main(int argc, char *argv[])
   WsCompilerParams params;
   WsCompilerPtr compiler;
   WsResult result;
+  int opt;
+
+  program = strrchr(argv[0], '/');
+  if (program)
+    program++;
+  else
+    program = argv[0];
+
+  /* Process command line arguments. */
+  while ((opt = getopt(argc, argv, "dh")) != -1)
+    {
+      switch (opt)
+	{
+	case 'd':
+	  eval_data = 1;
+	  break;
+
+	case 'h':
+	  usage();
+	  exit(0);
+	  break;
+
+	case '?':
+	  printf("Usage `%s -h' for a complete list of options.\n",
+		 program);
+	  exit(1);
+	}
+    }
 
   /* Create a compiler. */
 
@@ -66,7 +109,7 @@ main(int argc, char *argv[])
       exit(1);
     }
 
-  for (i = 1; i < argc; i++)
+  for (i = optind; i < argc; i++)
     {
       FILE *ifp, *ofp;
       char *outname;
@@ -98,7 +141,58 @@ main(int argc, char *argv[])
 	  exit(1);
 	}
 
-      result = ws_compile_file(compiler, argv[i], ifp, ofp);
+      if (eval_data)
+	{
+	  /* Use the ws_compile_data() interface. */
+	  struct stat stat_st;
+	  unsigned char *data;
+	  unsigned char *output;
+	  size_t output_len;
+
+	  if (stat(argv[i], &stat_st) == -1)
+	    {
+	      fprintf(stderr, "wsc: could not stat input file `%s': %s\n",
+		      argv[i], strerror(errno));
+	      exit(1);
+	    }
+
+	  /* Allocate the input buffer. */
+	  data = malloc(stat_st.st_size);
+	  if (data == NULL)
+	    {
+	      fprintf(stderr, "wsc: could not allocate input buffer: %s\n",
+		      strerror(errno));
+	      exit(1);
+	    }
+	  if (fread(data, 1, stat_st.st_size, ifp) < stat_st.st_size)
+	    {
+	      fprintf(stderr, "wsc: could not read data: %s\n",
+		      strerror(errno));
+	      exit(1);
+	    }
+	  result = ws_compile_data(compiler, argv[i], data, stat_st.st_size,
+				   &output, &output_len);
+	  if (result == WS_OK)
+	    {
+	      /* Save the output to `ofp'. */
+	      if (fwrite(output, 1, output_len, ofp) != output_len)
+		{
+		  fprintf(stderr,
+			  "wsc: could not save output to file `%s': %s\n",
+			  outname, strerror(errno));
+		  exit(1);
+		}
+	    }
+	  free(data);
+	  ws_free_byte_code(output);
+	}
+      else
+	{
+	  /* Use the ws_compile_file() interface. */
+	  result = ws_compile_file(compiler, argv[i], ifp, ofp);
+	}
+
+      /* Common cleanup. */
       fclose(ifp);
       fclose(ofp);
 
@@ -120,6 +214,17 @@ main(int argc, char *argv[])
 /*
  * Static functions.
  */
+
+static void
+usage(void)
+{
+  printf("Usage: %s OPTION... FILE...\n\
+\n\
+  -d		use ws_eval_data() function instead of ws_eval_file()\n\
+  -h            print this message and exit successfully\n\
+\n",
+	 program);
+}
 
 static void
 pragma_meta(const WsUtf8String *property_name, const WsUtf8String *content,

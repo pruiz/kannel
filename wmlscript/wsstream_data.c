@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 Markku Rossi, etc.
  *		 All rights reserved.
  *
  * Implementation of the data streams.
@@ -58,6 +58,9 @@ ws_stream_new_data_input(const unsigned char *data, size_t data_len)
 
   if (ctx == NULL)
     return NULL;
+
+  ctx->data = data;
+  ctx->data_len = data_len;
 
   stream = ws_stream_new(ctx, data_input, NULL, data_close);
 

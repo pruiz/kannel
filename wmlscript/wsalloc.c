@@ -291,7 +291,7 @@ ws_dump_blocks(void)
 {
   WsMemBlockHdr *b;
 
-  fprintf(stderr, "ws: maximum memory usage: %u blocks,  %ld bytes\n",
+  fprintf(stderr, "ws: maximum memory usage: %u blocks, %ld bytes\n",
 	  max_num_blocks, (long) max_balance);
   fprintf(stderr, "ws: number of allocs: %u\n", alloc_number);
 

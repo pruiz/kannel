@@ -763,7 +763,8 @@ error:
 		} else if (strcmp(type, "text/vnd.wap.wmlscript") == 0) {
 			debug(0, "WSP: Compiling WMLScript");
 			type = "application/vnd.wap.wmlscriptc";
-#if 0
+#if 1
+{
 			WsCompilerParams params;
 			WsCompilerPtr compiler;
 			WsResult result;
@@ -772,7 +773,7 @@ error:
 
 			memset(&params, 0, sizeof(params));
 			params.use_latin1_strings = 0;
-			params.print_symbolic_assembler = 1;
+			params.print_symbolic_assembler = 0;
 			params.print_assembler = 0;
 			params.meta_name_cb = NULL;
 			params.meta_name_cb_context = NULL;
@@ -794,9 +795,8 @@ error:
 			} else {
 				body = octstr_create_from_data(result_data,
 								result_size);
-				error(0, "WSP: WMLScript not supported yet.");
-				status = 415;
 			}
+}
 #else
 {
 	FILE *f;
