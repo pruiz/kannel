@@ -2,7 +2,9 @@
 
 	* configure.in: Tweaked the libxml checking. It should now be
 	slightly cleaner and should work with upcoming 2.2.x versions
-	of the library without changing configure.in.
+	of the library without changing configure.in. Thanks to Geir
+	Johannessen, whose mail prompted me to look at this, even though
+	I didn't use his patch directly.
 
 2000-08-31  Lars Wirzenius  <liw@iki.fi>
 
