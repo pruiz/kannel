@@ -491,7 +491,7 @@ int charset_convert(Octstr *string, char *charset_from, char *charset_to)
     outbytes = sizeof(char) *octstr_len(string) * 4;
     pointer = to_buf = gw_malloc(outbytes + 1);
     memset(to_buf, 0, outbytes + 1);
-    ret = iconv(cd, (const char**)&from_buf, &inbytes, &pointer, &outbytes);
+    ret = iconv(cd, (char**)&from_buf, &inbytes, &pointer, &outbytes);
     iconv_close(cd);
     if (ret != -1) {
         /* conversion succeeded */
