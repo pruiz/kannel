@@ -354,14 +354,11 @@ List *list_cat(List *list1, List *list2)
 {
     void *item;
     
-    lock(list1);
-    lock(list2);
-    
     while((item = list_extract_first(list2)) != NULL)
 	list_append(list1, item);
 
     list_destroy(list2);
-    unlock(list1);
+    
     return list1;    
 }
 
@@ -515,3 +512,4 @@ static void delete_items_from_list(List *list, long pos, long count) {
 		list->len -= count;
 	}
 }
+
