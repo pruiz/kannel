@@ -1,3 +1,9 @@
+2004-03-08  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bb_alog.c: fixed custom & default access_log. Now we try to determine SMSC-ID
+      as follows: 1) smscconn_id(conn); 2) smscconn_name(conn); 3) msg->sms.smsc_id.
+      Made functions conn NULL pointer aware.
+    * gw/bb_smscconn.c: made bb_smscconn_failed(...) SMSCConn NULL pointer aware.
+
 2004-03-06  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/protected.c: restored GETHOSTBYNAME mutex, that was accidental
       removed by last commit.

@@ -235,9 +235,12 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, char *message)
 	    break;
 
 	case 'i':
-	    if (msg->sms.smsc_id == NULL)
-            break;
-	    octstr_append(result, msg->sms.smsc_id);
+	    if (conn && smscconn_id(conn))
+	        octstr_append(result, smscconn_id(conn));
+	    else if (conn && smscconn_name(conn))
+	        octstr_append(result, smscconn_name(conn));
+	    else if (msg->sms.smsc_id)
+	        octstr_append(result, msg->sms.smsc_id);
 	    break;
 
 	case 'I':
@@ -331,15 +334,25 @@ void bb_alog_init(Octstr *format)
 
 void bb_alog_sms(SMSCConn *conn, Msg *sms, char *message)
 {
-    Octstr *text, *udh;
-
-    text = udh = NULL;
+    Octstr *text = NULL;
 
     /* if we don't have any custom log, then use our "default" one */
     
     if (custom_log_format == NULL) {
+        Octstr *udh, *cid;
+
         text = sms->sms.msgdata ? octstr_duplicate(sms->sms.msgdata) : octstr_create("");
         udh = sms->sms.udhdata ? octstr_duplicate(sms->sms.udhdata) : octstr_create("");
+
+        if (conn && smscconn_id(conn))
+            cid = smscconn_id(conn);
+        else if (conn && smscconn_name(conn))
+            cid = smscconn_name(conn);
+        else if (sms->sms.smsc_id)
+            cid = sms->sms.smsc_id;
+        else
+            cid = octstr_imm("");
+
         if ((sms->sms.coding == DC_8BIT || sms->sms.coding == DC_UCS2))
             octstr_binary_to_hex(text, 1);
         octstr_binary_to_hex(udh, 1);
@@ -347,7 +360,7 @@ void bb_alog_sms(SMSCConn *conn, Msg *sms, char *message)
         alog("%s [SMSC:%s] [SVC:%s] [ACT:%s] [BINF:%s] [from:%s] [to:%s] [flags:%d:%d:%d:%d:%d] "
              "[msg:%d:%s] [udh:%d:%s]",
              message,
-             conn ? (smscconn_id(conn) ? octstr_get_cstr(smscconn_id(conn)) : "") : "",
+             octstr_get_cstr(cid),
              sms->sms.service ? octstr_get_cstr(sms->sms.service) : "",
              sms->sms.account ? octstr_get_cstr(sms->sms.account) : "",
              sms->sms.binfo ? octstr_get_cstr(sms->sms.binfo) : "",
@@ -359,12 +372,12 @@ void bb_alog_sms(SMSCConn *conn, Msg *sms, char *message)
              octstr_len(sms->sms.udhdata), octstr_get_cstr(udh)
         );
 
+        octstr_destroy(udh);
     } else {
         text = get_pattern(conn, sms, message);
-        alog("%s", octstr_get_cstr(text));
+        alog(octstr_get_cstr(text));
     }
 
-    octstr_destroy(udh);
     octstr_destroy(text);
 }
 

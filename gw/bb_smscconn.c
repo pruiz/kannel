@@ -227,7 +227,7 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply
 	        reply = octstr_create("");
 
 	    octstr_insert_data(reply, 0, "NACK/", 5);
-            dlrmsg = create_dlr_from_msg((conn->id?conn->id:conn->name), sms,
+            dlrmsg = create_dlr_from_msg((conn ? (conn->id?conn->id:conn->name) : NULL), sms,
 	                                 reply, DLR_SMSC_FAIL);
             if (dlrmsg != NULL) {
                 bb_smscconn_receive(conn, dlrmsg);
@@ -867,6 +867,10 @@ int smsc2_rout(Msg *msg)
 
 static int route_incoming_to_smsc(SMSCConn *conn, Msg *msg)
 {
+    /* sanity check */
+    if (!conn || !msg)
+        return 0;
+
     /* 
      * Check if we have any "reroute" rules to obey. Which means msg gets 
      * transported internally from MO to MT msg.
