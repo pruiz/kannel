@@ -18,16 +18,14 @@
 #include "smsc.h"
 #include "smsc_smpp.h"
 
+static int actively_bind(SMSCenter*);
+static int deliver_sm_to_msg(Msg**, smpp_pdu_deliver_sm*);
+static int smpp_extract_message_udh(Octstr**, Octstr*);
+
 SMSCenter *smpp_open(char *host, int port, char *system_id, char *password,
 		     char* system_type, char *address_range, int receive_port) {
 
-	SMSCenter *smsc = NULL;
-	struct smpp_pdu *pdu = NULL;
-	struct smpp_pdu_bind_receiver *bind_receiver = NULL;
-	struct smpp_pdu_bind_transmitter *bind_transmitter = NULL;
-
-	smsc = smscenter_construct();
-	if(smsc==NULL) goto error;
+	SMSCenter *smsc = smscenter_construct();
 
 	smsc->type = SMSC_TYPE_SMPP_IP;
 	sprintf(smsc->name, "SMPP:%s:%i/%i:%s:%s", host, port,
@@ -40,39 +38,22 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password,
 	smsc->smpp_system_id = (system_id != NULL) ? gw_strdup(system_id) : NULL;
 	smsc->smpp_system_type = (system_type != NULL) ? gw_strdup(system_type) : NULL;
 	smsc->smpp_password = (password != NULL) ? gw_strdup(password) : NULL;
-	smsc->smpp_address_range = (address_range != NULL) ? gw_strdup(address_range) : NULL;
+	smsc->smpp_address_range = 
+		(address_range != NULL) ? gw_strdup(address_range) : NULL;
 
 	/* Create FIFO stacks */
-	smsc->unsent_mt = fifo_new();
-	if(smsc->unsent_mt == NULL) goto error;
-
-	smsc->sent_mt = fifo_new();
-	if(smsc->sent_mt == NULL) goto error;
-
-	smsc->delivered_mt = fifo_new();
-	if(smsc->delivered_mt == NULL) goto error;
-
-	smsc->received_mo = fifo_new();
-	if(smsc->received_mo == NULL) goto error;
-
-	smsc->fifo_t_in = fifo_new();
-	if(smsc->fifo_t_in == NULL) goto error;
-
-	smsc->fifo_t_out = fifo_new();
-	if(smsc->fifo_t_out == NULL) goto error;
-
-	smsc->fifo_r_in = fifo_new();
-	if(smsc->fifo_r_in == NULL) goto error;
-
-	smsc->fifo_r_out = fifo_new();
-	if(smsc->fifo_r_out == NULL) goto error;
+	smsc->unsent_mt    = list_create();
+	smsc->sent_mt      = list_create();
+	smsc->delivered_mt = list_create();
+	smsc->received_mo  = list_create();
+	smsc->fifo_t_in    = list_create();
+	smsc->fifo_t_out   = list_create();
+	smsc->fifo_r_in    = list_create();
+	smsc->fifo_r_out   = list_create();
 
 	/* Create buffers */
 	smsc->data_t = data_new();
-	if(smsc->data_t == NULL) goto error;
-
 	smsc->data_r = data_new();
-	if(smsc->data_r == NULL) goto error;
 
 	/* Open the transmitter connection */
 	smsc->fd_t = tcpip_connect_to_server(smsc->hostname, smsc->port);
@@ -84,52 +65,23 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password,
 	if(smsc->fd_r == -1) goto error;
 	smsc->smpp_r_state = SMPP_STATE_CONNECTED;
 
-	/* Push a BIND_RECEIVER PDU on the [smsc->unsent] stack. */
-	pdu = pdu_new();
-	if(pdu == NULL) goto error;
-	pdu->id = SMPP_BIND_RECEIVER;
-	smsc->seq_r = 1;
-	pdu->sequence_no = 1;
-	bind_receiver = gw_malloc(sizeof(struct smpp_pdu_bind_receiver));
-	memset(bind_receiver, 0, sizeof(struct smpp_pdu_bind_receiver));
-	strncpy(bind_receiver->system_id, system_id, 16);
-	strncpy(bind_receiver->password, password, 9);
-	strncpy(bind_receiver->system_type, system_type, 13);
-	strncpy(bind_receiver->address_range, address_range, 41);
-	pdu->message_body = bind_receiver;
-	fifo_push(smsc->fifo_r_out, pdu);
-
-	/* Push a BIND_TRANSMITTER PDU on the [smsc->unsent] stack. */
-	pdu = pdu_new();
-	if(pdu == NULL) goto error;
-	pdu->id = SMPP_BIND_TRANSMITTER;
-	smsc->seq_t = 1;
-	pdu->sequence_no = 1;
-	bind_transmitter = gw_malloc(sizeof(struct smpp_pdu_bind_transmitter));
-	memset(bind_transmitter, 0, sizeof(struct smpp_pdu_bind_transmitter));
-	strncpy(bind_transmitter->system_id, system_id, 16);
-	strncpy(bind_transmitter->password, password, 9);
-	strncpy(bind_transmitter->system_type, system_type, 13);
-	strncpy(bind_transmitter->address_range, address_range, 41);
-	pdu->message_body = bind_transmitter;
-	fifo_push(smsc->fifo_t_out, pdu);
+	actively_bind(smsc);
 
 	/* Done, return */
 	return smsc;
 
 error:
 	error(0, "smpp_open: could not open");
-	pdu_free(pdu);
 
 	/* Destroy FIFO stacks. */
-	fifo_free(smsc->unsent_mt);
-	fifo_free(smsc->sent_mt);
-	fifo_free(smsc->delivered_mt);
-	fifo_free(smsc->received_mo);
-	fifo_free(smsc->fifo_t_in);
-	fifo_free(smsc->fifo_t_out);
-	fifo_free(smsc->fifo_r_in);
-	fifo_free(smsc->fifo_r_out);
+	list_destroy(smsc->unsent_mt, NULL);
+	list_destroy(smsc->sent_mt, NULL);
+	list_destroy(smsc->delivered_mt, NULL);
+	list_destroy(smsc->received_mo, NULL);
+	list_destroy(smsc->fifo_t_in, NULL);
+	list_destroy(smsc->fifo_t_out, NULL);
+	list_destroy(smsc->fifo_r_in, NULL);
+	list_destroy(smsc->fifo_r_out, NULL);
 
 	/* Destroy buffers */
 	data_free(smsc->data_t);
@@ -141,21 +93,7 @@ error:
 
 int smpp_reopen(SMSCenter *smsc) {
 
-	struct smpp_pdu *pdu = NULL;
-	struct smpp_pdu_bind_receiver *bind_receiver = NULL;
-	struct smpp_pdu_bind_transmitter *bind_transmitter = NULL;
-
-	if(smsc==NULL) goto error;
-
-	/* Destroy FIFO stacks. */
-	fifo_free(smsc->unsent_mt);
-	fifo_free(smsc->sent_mt);
-	fifo_free(smsc->delivered_mt);
-	fifo_free(smsc->received_mo);
-	fifo_free(smsc->fifo_t_in);
-	fifo_free(smsc->fifo_t_out);
-	fifo_free(smsc->fifo_r_in);
-	fifo_free(smsc->fifo_r_out);
+	gw_assert(smsc==NULL);
 
 	/* Destroy buffers */
 	data_free(smsc->data_t);
@@ -164,38 +102,6 @@ int smpp_reopen(SMSCenter *smsc) {
 	/* Close sockets */
 	close(smsc->fd_t);
 	close(smsc->fd_r);
-
-	/* Create FIFO stacks */
-	smsc->unsent_mt = fifo_new();
-	if(smsc->unsent_mt == NULL) goto error;
-
-	smsc->sent_mt = fifo_new();
-	if(smsc->sent_mt == NULL) goto error;
-
-	smsc->delivered_mt = fifo_new();
-	if(smsc->delivered_mt == NULL) goto error;
-
-	smsc->received_mo = fifo_new();
-	if(smsc->received_mo == NULL) goto error;
-
-	smsc->fifo_t_in = fifo_new();
-	if(smsc->fifo_t_in == NULL) goto error;
-
-	smsc->fifo_t_out = fifo_new();
-	if(smsc->fifo_t_out == NULL) goto error;
-
-	smsc->fifo_r_in = fifo_new();
-	if(smsc->fifo_r_in == NULL) goto error;
-
-	smsc->fifo_r_out = fifo_new();
-	if(smsc->fifo_r_out == NULL) goto error;
-
-	/* Create buffers */
-	smsc->data_t = data_new();
-	if(smsc->data_t == NULL) goto error;
-
-	smsc->data_r = data_new();
-	if(smsc->data_r == NULL) goto error;
 
 	/* Open the transmitter connection */
 	smsc->fd_t = tcpip_connect_to_server(smsc->hostname, smsc->port);
@@ -207,53 +113,23 @@ int smpp_reopen(SMSCenter *smsc) {
 	if(smsc->fd_r == -1) goto error;
 	smsc->smpp_r_state = SMPP_STATE_CONNECTED;
 
-	/* Push a BIND_RECEIVER PDU on the [smsc->unsent] stack. */
-	pdu = pdu_new();
-	if(pdu == NULL) goto error;
-	pdu->id = SMPP_BIND_RECEIVER;
-	smsc->seq_r = 1;
-	pdu->sequence_no = 1;
-	bind_receiver = gw_malloc(sizeof(struct smpp_pdu_bind_receiver));
-	memset(bind_receiver, 0, sizeof(struct smpp_pdu_bind_receiver));
-	strncpy(bind_receiver->system_id, smsc->smpp_system_id, 16);
-	strncpy(bind_receiver->password, smsc->smpp_password, 9);
-	strncpy(bind_receiver->system_type, smsc->smpp_system_type, 13);
-	strncpy(bind_receiver->address_range, smsc->smpp_address_range, 41);
-	pdu->message_body = bind_receiver;
-	fifo_push(smsc->fifo_r_out, pdu);
-
-	/* Push a BIND_TRANSMITTER PDU on the [smsc->unsent] stack. */
-	pdu = pdu_new();
-	if(pdu == NULL) goto error;
-	pdu->id = SMPP_BIND_TRANSMITTER;
-	smsc->seq_t = 1;
-	pdu->sequence_no = 1;
-	bind_transmitter = gw_malloc(sizeof(struct smpp_pdu_bind_transmitter));
-	memset(bind_transmitter, 0, sizeof(struct smpp_pdu_bind_transmitter));
-	strncpy(bind_transmitter->system_id, smsc->smpp_system_id, 16);
-	strncpy(bind_transmitter->password, smsc->smpp_password, 9);
-	strncpy(bind_transmitter->system_type, smsc->smpp_system_type, 13);
-	strncpy(bind_transmitter->address_range, smsc->smpp_address_range, 41);
-	pdu->message_body = bind_transmitter;
-	fifo_push(smsc->fifo_t_out, pdu);
-
+	actively_bind(smsc);
+	
 	/* Done, return */
 	return 1;
 
 error:
 	error(0, "smpp_reopen: could not open");
 
-	pdu_free(pdu);
-
 	/* Destroy FIFO stacks. */
-	fifo_free(smsc->unsent_mt);
-	fifo_free(smsc->sent_mt);
-	fifo_free(smsc->delivered_mt);
-	fifo_free(smsc->received_mo);
-	fifo_free(smsc->fifo_t_in);
-	fifo_free(smsc->fifo_t_out);
-	fifo_free(smsc->fifo_r_in);
-	fifo_free(smsc->fifo_r_out);
+	list_destroy(smsc->unsent_mt, NULL);
+	list_destroy(smsc->sent_mt, NULL);
+	list_destroy(smsc->delivered_mt, NULL);
+	list_destroy(smsc->received_mo, NULL);
+	list_destroy(smsc->fifo_t_in, NULL);
+	list_destroy(smsc->fifo_t_out, NULL);
+	list_destroy(smsc->fifo_r_in, NULL);
+	list_destroy(smsc->fifo_r_out, NULL);
 
 	/* Destroy buffers */
 	data_free(smsc->data_t);
@@ -264,49 +140,70 @@ error:
 	return -1;
 }
 
-
-int smpp_close(SMSCenter *smsc) {
+static int actively_bind(SMSCenter *smsc) {
 
 	struct smpp_pdu *pdu = NULL;
+	struct smpp_pdu_bind_receiver *bind_receiver = NULL;
+	struct smpp_pdu_bind_transmitter *bind_transmitter = NULL;
 
+	/* Push a BIND_RECEIVER PDU on the [smsc->unsent] stack. */
+	pdu = pdu_new();
+	pdu->id = SMPP_BIND_RECEIVER;
+	smsc->seq_r = 1;
+	pdu->sequence_no = 1;
+	bind_receiver = gw_malloc(sizeof(struct smpp_pdu_bind_receiver));
+	memset(bind_receiver, 0, sizeof(struct smpp_pdu_bind_receiver));
+	strncpy(bind_receiver->system_id, smsc->smpp_system_id, 16);
+	strncpy(bind_receiver->password, smsc->smpp_password, 9);
+	strncpy(bind_receiver->system_type, smsc->smpp_system_type, 13);
+	strncpy(bind_receiver->address_range, smsc->smpp_address_range, 41);
+	pdu->message_body = bind_receiver;
+	list_produce(smsc->fifo_r_out, pdu);
+
+	/* Push a BIND_TRANSMITTER PDU on the [smsc->unsent] stack. */
+	pdu = pdu_new();
+	pdu->id = SMPP_BIND_TRANSMITTER;
+	smsc->seq_t = 1;
+	pdu->sequence_no = 1;
+	bind_transmitter = gw_malloc(sizeof(struct smpp_pdu_bind_transmitter));
+	memset(bind_transmitter, 0, sizeof(struct smpp_pdu_bind_transmitter));
+	strncpy(bind_transmitter->system_id, smsc->smpp_system_id, 16);
+	strncpy(bind_transmitter->password, smsc->smpp_password, 9);
+	strncpy(bind_transmitter->system_type, smsc->smpp_system_type, 13);
+	strncpy(bind_transmitter->address_range, smsc->smpp_address_range, 41);
+	pdu->message_body = bind_transmitter;
+	list_produce(smsc->fifo_t_out, pdu);
+	
+	return 1;
+}
+
+int smpp_close(SMSCenter *smsc) {
+	struct smpp_pdu *pdu = NULL;
+
+	gw_assert(smsc != NULL);
+	
 	debug("bb.sms.smpp", 0, "smpp_close: closing");
 
 	/* Push a UNBIND PDU on the [smsc->fifo_r_out] stack. */
 	pdu = pdu_new();
-	if(pdu == NULL) goto error;
 	pdu->id = SMPP_UNBIND;
 	pdu->length = 16;
 	pdu->status = 0;
 	pdu->sequence_no = 1;
 	pdu->message_body = NULL;
-	fifo_push(smsc->fifo_r_out, pdu);
+	list_produce(smsc->fifo_r_out, pdu);
 
 	/* Push a UNBIND PDU on the [smsc->fifo_t_out] stack. */
 	pdu = pdu_new();
-	if(pdu == NULL) goto error;
 	pdu->id = SMPP_UNBIND;
 	pdu->length = 16;
 	pdu->status = 0;
 	pdu->sequence_no = 1;
 	pdu->message_body = NULL;
-	fifo_push(smsc->fifo_t_out, pdu);
+	list_produce(smsc->fifo_t_out, pdu);
 
 	/* Write out the UNBIND PDUs. */
 	smpp_pending_smsmessage(smsc);
-
-	/* Check states */
-
-#if 0
-/*  XXX LATER, WHEN THIS IS IMPLEMENTED IN SMSGATEWAY.C XXX */
-	/* If states are BOUND then push UNBIND messages to
-	   fifostack and return a failure. */
-
-	if(smsc->smpp_t_state == 1)
-		return 0;
-
-	if(smsc->smpp_r_state == 1)
-		return 0;
-#endif
 
 	/* Close transmitter connection. */
 	close(smsc->fd_t);
@@ -315,54 +212,46 @@ int smpp_close(SMSCenter *smsc) {
 	close(smsc->fd_r);
 
 	/* Destroy FIFO stacks. */
-	fifo_free(smsc->unsent_mt);
-	fifo_free(smsc->sent_mt);
-	fifo_free(smsc->delivered_mt);
-	fifo_free(smsc->received_mo);
-	fifo_free(smsc->fifo_t_in);
-	fifo_free(smsc->fifo_t_out);
-	fifo_free(smsc->fifo_r_in);
-	fifo_free(smsc->fifo_r_out);
+	list_destroy(smsc->unsent_mt, NULL);
+	list_destroy(smsc->sent_mt, NULL);
+	list_destroy(smsc->delivered_mt, NULL);
+	list_destroy(smsc->received_mo, NULL);
+	list_destroy(smsc->fifo_t_in, NULL);
+	list_destroy(smsc->fifo_t_out, NULL);
+	list_destroy(smsc->fifo_r_in, NULL);
+	list_destroy(smsc->fifo_r_out, NULL);
 
 	/* Destroy buffers */
 	data_free(smsc->data_t);
 	data_free(smsc->data_r);
 
 	return 0;
-
-error:
-	return -1;
 }
 
 int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 
-
+	Octstr *msgtogether = NULL;
 	struct smpp_pdu *pdu = NULL;
 	struct smpp_pdu_submit_sm *submit_sm = NULL;
 
 	/* Validate *msg. */
-	if(smsc == NULL) goto error;
-	if(msg == NULL) goto error;
-
-	msg_dump(msg, 0);
+	gw_assert(smsc != NULL);
+	gw_assert(msg  != NULL);
+	gw_assert(msg_type(msg) == sms);
 
 	/* If we cannot really send yet, push message to
 	   smsc->unsent_mt where it will stay until
 	   smpp_pdu_act_bind_transmitter_resp is called. */
 
-	/* Push a SUBMIT_SM PDU on the smsc->fifo_t_out fifostack. */
+	/* Push a SUBMIT_SM PDU on the smsc->fifo_t_out List. */
 	pdu = pdu_new();
-	if(pdu == NULL) goto error;
 	memset(pdu, 0, sizeof(struct smpp_pdu));
 
 	submit_sm = gw_malloc(sizeof(struct smpp_pdu_submit_sm));
 	memset(submit_sm, 0, sizeof(struct smpp_pdu_submit_sm));
 
-	if(msg_type(msg) != sms) {
-		error(0, "smpp_submit_sms: Msg is WRONG TYPE");
-		msg_dump(msg, 0);
-		goto error;
-	}
+	octstr_get_many_chars(submit_sm->source_addr, msg->sms.sender, 0, 20);
+	octstr_get_many_chars(submit_sm->dest_addr, msg->sms.receiver, 0, 20);
 
 	if(msg->sms.flag_8bit == 1) {
 		/* As per GSM 03.38. */
@@ -374,28 +263,37 @@ int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 	if(msg->sms.flag_udh == 1) {
 		/* As per GSM 03.38. */
 		submit_sm->data_coding = 245;
+
+		submit_sm->sm_length = octstr_len(msg->sms.udhdata) +
+					octstr_len(msg->sms.msgdata);
+
+		submit_sm->sm_length = submit_sm->sm_length > 140 ?
+					140 : submit_sm->sm_length;
+		
+		msgtogether = octstr_cat(msg->sms.udhdata, msg->sms.msgdata);
+		
+		octstr_get_many_chars(submit_sm->short_message, 
+			msgtogether, 0, submit_sm->sm_length);
+
+		octstr_destroy(msgtogether);
 	} else {
-		submit_sm->data_coding = 3;
+
+		submit_sm->data_coding = 0;
+		
+		submit_sm->sm_length = octstr_len(msg->sms.msgdata);
+		
+		submit_sm->sm_length = submit_sm->sm_length > 160 ?
+					160 : submit_sm->sm_length;
+
+		charset_latin1_to_gsm(msg->sms.msgdata);
+
+		octstr_get_many_chars(submit_sm->short_message, 
+				msg->sms.msgdata, 0, submit_sm->sm_length);
 	}
-
-	strncpy(submit_sm->source_addr, octstr_get_cstr(msg->sms.sender), 21);
-	strncat(submit_sm->dest_addr, octstr_get_cstr(msg->sms.receiver)+2, 21);
-
-	submit_sm->sm_length = octstr_len(msg->sms.udhdata) +
-		octstr_len(msg->sms.msgdata);
-
-	octstr_get_many_chars(submit_sm->short_message, msg->sms.udhdata, 0, 160);
-
-	octstr_get_many_chars(
-		submit_sm->short_message + octstr_len(msg->sms.udhdata),
-		msg->sms.msgdata, 0, 160 - octstr_len(msg->sms.udhdata));
-
-	charset_iso_to_smpp(submit_sm->short_message);
 
 	submit_sm->source_addr_npi = GSM_ADDR_NPI_UNKNOWN;
 	submit_sm->source_addr_ton = GSM_ADDR_TON_UNKNOWN;
 
-	/* Notice that the +2 is to get rid of the 00 start. */
 	submit_sm->dest_addr_npi = GSM_ADDR_NPI_E164;
 	submit_sm->dest_addr_ton = GSM_ADDR_TON_INTERNATIONAL;
 
@@ -417,58 +315,28 @@ int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 
 	if( smsc->smpp_t_state == SMPP_STATE_BOUND ) {
 		/* The message can be sent immediately. */
-		fifo_push(smsc->fifo_t_out, pdu);
+		list_produce(smsc->fifo_t_out, pdu);
 	} else {
 		/* The message has to be queued and sent
 	   	   upon receiving a BIND_TRANSMITTER_RESP. */
-		fifo_push(smsc->unsent_mt, pdu);
+		list_produce(smsc->unsent_mt, pdu);
 	}
 
 	return 1;
-
-error:
-	error(errno, "smpp_submit_msg: error");
-	return -1;
 }
 
 int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 
 	struct smpp_pdu *pdu = NULL;
 	struct smpp_pdu_deliver_sm *deliver_sm = NULL;
-	char *newnum = NULL;
 
 	/* Pop a Msg message from the MSG_MO stack. */
-	if( fifo_pop(smsc->received_mo, &pdu) == 1 ) {
+	if ((pdu = list_extract_first(smsc->received_mo))) {
 
 		deliver_sm = (struct smpp_pdu_deliver_sm*) pdu->message_body;
 		if(deliver_sm==NULL) goto error;
-
-		/* Change the number format on msg->sender. */
-		newnum = gw_malloc(strlen(deliver_sm->source_addr)+1);
-		strcpy(newnum, deliver_sm->source_addr);
-		strcpy(deliver_sm->source_addr, "00");
-		strncat(deliver_sm->source_addr, newnum, sizeof(deliver_sm->source_addr)-2);
-		gw_free(newnum);
-
-		*msg = msg_create(sms);
-		if(*msg==NULL) goto error;
-
-		if( (deliver_sm->esm_class == 67) || (deliver_sm->data_coding == 245) ) {
-			(*msg)->sms.flag_8bit = 1;
-			(*msg)->sms.flag_udh = 1;
-		} else if( (deliver_sm->esm_class == 3) || (deliver_sm->data_coding == 0) ) {
-			(*msg)->sms.flag_8bit = 0;
-			(*msg)->sms.flag_udh = 0;
-		} else {
-			debug("bb.sms.smpp", 0, "problemss....");
-			msg_destroy(*msg);
-			*msg = NULL;
-		}
-
-		(*msg)->sms.sender = octstr_create(deliver_sm->source_addr);
-		(*msg)->sms.receiver = octstr_create(deliver_sm->dest_addr);
-		(*msg)->sms.msgdata = octstr_create(deliver_sm->short_message);
-		(*msg)->sms.udhdata = octstr_create("");
+		deliver_sm_to_msg(msg, deliver_sm);
+		pdu_free(pdu);
 
 		return 1;
 	}
@@ -477,6 +345,70 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 error:
 	error(errno, "smpp_receive_msg: error");
 	msg_destroy(*msg);
+	return -1;
+}
+
+static int deliver_sm_to_msg(Msg **msg, smpp_pdu_deliver_sm *deliver_sm) {
+
+	Octstr *udhdata = NULL;
+	Octstr *msgdata = NULL;
+	
+	*msg = msg_create(sms);
+
+	msgdata = octstr_create_from_data(deliver_sm->short_message,
+			deliver_sm->sm_length);
+
+	if((deliver_sm->esm_class & 0x40) == 0x40) {
+		(*msg)->sms.flag_udh = 1;
+		smpp_extract_message_udh(&udhdata, msgdata);
+	} else {
+		(*msg)->sms.flag_udh = 0;
+		udhdata = octstr_create("");
+	}
+
+	if(	(deliver_sm->data_coding == 0xF5) || 
+		(deliver_sm->data_coding == 0x02) || 
+		(deliver_sm->data_coding == 0x04) ) 
+	{
+		(*msg)->sms.flag_8bit = 1;
+	}
+	else 
+	{
+		(*msg)->sms.flag_8bit = 0;
+		/* This _should_ work according to the spec, but
+		 * doesn't seem to work with a RL Telepath...
+		if(deliver_sm->data_coding == 0x00) {
+			octstr_dump(msgdata, 0);
+			charset_gsm_to_latin1(msgdata);
+			octstr_dump(msgdata, 0);
+		}
+		*/
+		octstr_dump(msgdata, 0);
+	}
+
+	(*msg)->sms.sender = octstr_create(deliver_sm->source_addr);
+	(*msg)->sms.receiver = octstr_create(deliver_sm->dest_addr);
+	(*msg)->sms.msgdata = msgdata;
+	(*msg)->sms.udhdata = udhdata;
+
+	return 1;
+}
+
+static int smpp_extract_message_udh(Octstr **udh, Octstr *message) {
+
+	long udhlen = octstr_get_char(message, 0) + 1;
+
+	if(udhlen > octstr_len(message)) {
+		goto error;
+	}
+
+	*udh = octstr_copy(message, 0, udhlen);
+	octstr_delete(message, 0, udhlen);
+	
+	return 0;
+
+error:
+	error(0, "smsc.bb.smpp: got improperly formatted UDH from SMSC");
 	return -1;
 }
 
@@ -489,7 +421,7 @@ int smpp_pending_smsmessage(SMSCenter *smsc) {
 	/* Process the MT messages. */
 
 	/* Send whatever we need to send */
-	while( fifo_pop(smsc->fifo_t_out, &pdu) == 1 ) {
+	while ((pdu = list_extract_first(smsc->fifo_t_out))) {
 		/* Encode the PDU to raw data. */
 		if( pdu_encode(pdu, &data) == 1 ) {
 			/* Send the PDU data. */
@@ -509,7 +441,7 @@ int smpp_pending_smsmessage(SMSCenter *smsc) {
 	}
 
 	/* Interpret the raw data */
-	while( data_pop(smsc->data_t, &data) == 1 ) {
+	while( data_pop(smsc->data_t, &data) == 1 ) { 
 		/* Decode the PDU from raw data. */
 		if( (ret = pdu_decode(&pdu, data)) ) {
 			/* Act on PDU. */
@@ -528,7 +460,7 @@ int smpp_pending_smsmessage(SMSCenter *smsc) {
 		smpp_reopen(smsc);
 	}
 
-	while( fifo_pop(smsc->fifo_r_out, &pdu) == 1 ) {
+	while ((pdu = list_extract_first(smsc->fifo_r_out))) {
 		/* Encode the PDU to raw data. */
 		if( (ret = pdu_encode(pdu, &data)) ) {
 			/* Send the PDU data. */
@@ -552,7 +484,7 @@ int smpp_pending_smsmessage(SMSCenter *smsc) {
 	}
 
 	/* Signal that we got a MO message */
-	if(smsc->received_mo->left != NULL) funcret = 1;
+	if(list_len(smsc->received_mo) > 0) funcret = 1;
 
 	/* If it's been a "long time" (defined elsewhere) since
 	   the last message, actively check the link status by
@@ -601,112 +533,6 @@ static int data_free(Octstr *str) {
 	octstr_destroy(str);
 
 	return 1;
-}
-
-static fifostack* fifo_new(void) {
-
-	struct fifostack *fifo = NULL;
-
-	fifo = gw_malloc(sizeof(struct fifostack));
-	memset(fifo, 0, sizeof(struct fifostack));
-
-	fifo->left = NULL;
-	fifo->right = NULL;
-
-	return fifo;
-}
-
-static void fifo_free(fifostack *fifo) {
-
-	struct smpp_pdu *pdu = NULL;
-
-	if(fifo == NULL) return;
-
-	/* Drain the leftover PDUs to the bit sink. */
-	while( fifo_pop(fifo, &pdu) == 1 )  {
-		if(pdu==NULL) break;
-		pdu_free(pdu);
-		pdu = NULL;
-	}
-
-	gw_free(fifo);
-
-	return;
-}
-
-static int fifo_push(fifostack *fifo, smpp_pdu *pdu) {
-
-	if(fifo == NULL) {
-		error(0, "fifo_push: NULL input");
-		goto error;
-	}
-
-	if(pdu == NULL) {
-		error(0, "fifo_push: NULL input");
-		goto error;
-	}
-
-	/* If fifostack is completely empty. */
-	if( fifo->left == NULL ) {
-		fifo->left = pdu;
-		fifo->right = pdu;
-		pdu->left = NULL;
-		pdu->right = NULL;
-		goto a_ok;
-	}
-
-	/* Ok, insert the pdu on the left side. */
-	pdu->left = NULL;
-	(fifo->left)->left = pdu;
-	fifo->left = pdu;
-
-a_ok:
-	return 1;
-error:
-	error(0, "fifo_push: error");
-	return -1;
-
-}
-
-static int fifo_pop(fifostack *fifo, smpp_pdu **pdu) {
-
-	if(fifo == NULL) {
-		error(0, "fifo_pop: NULL input");
-		goto error;
-	}
-
-	if(pdu == NULL) {
-		error(0, "fifo_pop: NULL input");
-		goto error;
-	}
-
-	/* If fifostack is completely empty. */
-	if( (fifo->left == NULL) && (fifo->right == NULL) ) {
-		goto no_msgs;
-	}
-
-	/* Drop a message from the right side. */
-	*pdu = fifo->right;
-
-	/* If this was the last PDU and the fifostack is now empty. */
-	if((fifo->right)->left == NULL) {
-		fifo->right = NULL;
-		fifo->left = NULL;
-	} else {
-		/* Set the new right edge. */
-		fifo->right = (fifo->right)->left;
-		/* Terminate. */
-		(fifo->right)->right = NULL;
-	}
-
-	return 1;
-
-no_msgs:
-	return 0;
-
-error:
-	error(0, "fifo_pop: returing error");
-	return -1;
 }
 
 /******************************************************************************
@@ -781,14 +607,13 @@ error:
 static int data_receive(int fd, Octstr *to) {
 
 	long length;
-	char   data[1024];
-	Octstr *newstr = NULL;
+	char data[1024];
 
 	fd_set rf;
 	struct timeval tox;
 	int ret;
 
-	memset(&data, 0, sizeof(data));
+	memset(data, 0, sizeof(data));
 
 	FD_ZERO(&rf);
 	FD_SET(fd, &rf);
@@ -806,20 +631,17 @@ static int data_receive(int fd, Octstr *to) {
 	}
 
 	/* Create temp data structures. */
-	length = read(fd, &data, sizeof(data)-1);
+	length = read(fd, data, sizeof(data)-1);
 
 	if(length == -1) {
 /*		if(errno==EWOULDBLOCK) return -1; */
 		goto error;
 	} else if(length == 0) {
-		debug("bb.sms.smpp", 0, "soketti <%i> kloused", fd);
+		debug("bb.sms.smpp", 0, "other side closed socket <%i>", fd);
 		goto error;
 	}
 
-	newstr = octstr_create_from_data(data, length);
-
-	if(newstr == NULL) goto error;
-	octstr_insert(to, newstr, octstr_len(to));
+	octstr_append_data(to, data, length);
 
 	/* Okay, done */
 	return 1;
@@ -990,14 +812,6 @@ static int pdu_act(SMSCenter *smsc, smpp_pdu *pdu) {
 		ret = pdu_act_generic_nak(smsc, pdu);
 		break;
 
-/*	case SMPP_QUERY_LAST_MSGS_RESP:
-		ret = pdu_act_query_last_msgs_resp(smsc, pdu);
-		break;
-
-	case SMPP_QUERY_MSG_DETAILS_RESP:
-		ret = pdu_act_query_msg_details_resp(smsc, pdu);
-		break;
-*/
 	}
 
 	return ret;
@@ -1047,46 +861,6 @@ static int pdu_decode(smpp_pdu **pdu, Octstr *from) {
 	case SMPP_SUBMIT_SM_RESP:
 		ret = pdu_decode_submit_sm_resp(newpdu, from);
 		break;
-#if 0
-
-	case SMPP_SUBMIT_MULTI_RESP:
-		ret = pdu_decode_submit_multi_resp(smsc, pdu);
-		break;
-
-	case SMPP_QUERY_SM_RESP:
-		ret = pdu_decode_query_sm_resp(smsc, pdu);
-		break;
-
-/*
-	case SMPP_QUERY_LAST_MSGS_RESP:
-		ret = pdu_decode_query_last_msgs_resp(smsc, pdu);
-		break;
-
-	case SMPP_QUERY_MSG_DETAILS_RESP:
-		ret = pdu_decode_query_msg_details_resp(smsc, pdu);
-		break;
-*/
-
-	case SMPP_CANCEL_SM_RESP:
-		ret = pdu_decode_cancel_sm_resp(smsc, pdu);
-		break;
-
-	case SMPP_REPLACE_SM_RESP:
-		ret = pdu_decode_replace_sm_resp(smsc, pdu);
-		break;
-
-	case SMPP_ENQUIRE_LINK:
-		ret = pdu_decode_enquire_link(smsc, pdu);
-		break;
-
-	case SMPP_ENQUIRE_LINK_RESP:
-		ret = pdu_decode_enquire_link_resp(smsc, pdu);
-		break;
-
-	case SMPP_GENERIC_NAK:
-		ret = pdu_decode_generic_nak(smsc, pdu);
-		break;
-#endif
 	}
 
 	*pdu = newpdu;
@@ -1109,7 +883,7 @@ static int pdu_decode(smpp_pdu **pdu, Octstr *from) {
 */
 static int pdu_encode(smpp_pdu *pdu, Octstr **rawdata) {
 
-	struct Octstr *body = NULL, *header = NULL, *whole = NULL;
+	struct Octstr *body = NULL, *header = NULL;
 	int ret;
 
 	switch(pdu->id) {
@@ -1142,61 +916,20 @@ static int pdu_encode(smpp_pdu *pdu, Octstr **rawdata) {
 		ret = pdu_encode_submit_sm(pdu, &body);
 		break;
 
-#if 0
-	case SMPP_SUBMIT_MULTI:
-		ret = pdu_encode_submit_multi(pdu, &body);
-		break;
-
-	case SMPP_QUERY_SM:
-		ret = pdu_encode_query_sm(pdu, &body);
-		break;
-
-/*
-	case SMPP_QUERY_LAST_MSGS:
-		ret = pdu_encode_query_last_msgs(pdu, &body);
-		break;
-
-	case SMPP_QUERY_MSG_DETAILS:
-		ret = pdu_encode_query_msg_details(pdu, &body);
-		break;
-*/
-
-	case SMPP_CANCEL_SM:
-		ret = pdu_encode_cancel_sm(pdu, &body);
-		break;
-
-	case SMPP_REPLACE_SM:
-		ret = pdu_encode_replace_sm(pdu, &body);
-		break;
-
-	case SMPP_ENQUIRE_LINK:
-		ret = pdu_encode_enquire_link(pdu, &body);
-		break;
-
-	case SMPP_ENQUIRE_LINK_RESP:
-		ret = pdu_encode_enquire_link_resp(pdu, &body);
-		break;
-
-	case SMPP_GENERIC_NAK:
-		ret = pdu_encode_generic_nak(pdu, &body);
-		break;
-#endif
-
+	default:
+		debug("smsc.bb.smpp", 0, "can't encode PDU, just doing the"
+			       			" header");
 	}
 
 	pdu_header_encode(pdu, &header);
 
 	if(body != NULL) {
-		whole = octstr_cat(header, body);
+		*rawdata = octstr_cat(header, body);
+		octstr_destroy(header);
+		octstr_destroy(body);
 	} else {
-		whole = header;
-		header = NULL;
+		*rawdata = header;
 	}
-
-	octstr_destroy(header);
-	octstr_destroy(body);
-
-	*rawdata = whole;
 
 	return 1;
 }
@@ -1205,8 +938,8 @@ static int pdu_encode(smpp_pdu *pdu, Octstr **rawdata) {
 static int pdu_header_decode(smpp_pdu *pdu, Octstr *str) {
 	unsigned char header[16];
 
-	if(pdu == NULL) goto error;
-	if(str == NULL) goto error;
+	gw_assert(pdu != NULL);
+	gw_assert(str != NULL);
 
 	/* Read the header */
 	octstr_get_many_chars(header, str, 0, 16);
@@ -1218,8 +951,6 @@ static int pdu_header_decode(smpp_pdu *pdu, Octstr *str) {
 
 	return 1;
 
-error:
-	return -1;
 }
 
 static int pdu_header_encode(smpp_pdu *pdu, Octstr **rawdata) {
@@ -1244,7 +975,6 @@ static int pdu_encode_bind(smpp_pdu *pdu, Octstr **str) {
 
 	int length = 0;
 	char *data = NULL, *where = NULL;
-	Octstr *body_encoded;
 	int left;
 
 	struct smpp_pdu_bind_receiver *bind_receiver;
@@ -1332,9 +1062,7 @@ static int pdu_encode_bind(smpp_pdu *pdu, Octstr **str) {
 
 	pdu->length = length + 16;
 
-	body_encoded = octstr_create_from_data(data, length);
-
-	*str = body_encoded;
+	*str = octstr_create_from_data(data, length);
 
 	gw_free(data);
 
@@ -1350,22 +1078,20 @@ static int pdu_act_bind_transmitter_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 	struct smpp_pdu *newpdu = NULL;
 
 	/* Validate *msg. */
-	if(smsc == NULL) goto error;
-	if(pdu == NULL) goto error;
+	gw_assert(smsc != NULL);
+	gw_assert(pdu != NULL);
 
 	smsc->smpp_t_state = SMPP_STATE_BOUND;
 
 	/* Process any messages that were sent through the HTTP
 	   interface while the transmitter connection was not
 	   bound. */
-	while( fifo_pop(smsc->unsent_mt, &newpdu) == 1 ) {
-		fifo_push(smsc->fifo_t_out, newpdu);
+	while ((newpdu = list_extract_first(smsc->unsent_mt))) {
+		list_produce(smsc->fifo_t_out, newpdu);
 	}
 
 	return 0;
 
-error:
-	return -1;
 }
 
 /******************************************************************************
@@ -1384,10 +1110,6 @@ static int pdu_act_bind_receiver_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 *  UNBIND, UNBIND_RESP
 */
 static int pdu_act_unbind_resp(SMSCenter *smsc, smpp_pdu *pdu) {
-
-/*	debug("bb.sms.smpp", 0, "pdu_act_unbind_resp: start"); */
-
-	/* Remove the status flag CAN_RECEIVE or CAN_SEND */
 
 	return -1;
 }
@@ -1416,7 +1138,6 @@ static int pdu_encode_submit_sm(smpp_pdu* pdu, Octstr** str) {
 	long length;
 	int left;
 	char *data = NULL, *where = NULL;
-	Octstr *newstr = NULL;
 
 	submit_sm = (struct smpp_pdu_submit_sm*) pdu->message_body;
 
@@ -1452,13 +1173,10 @@ static int pdu_encode_submit_sm(smpp_pdu* pdu, Octstr** str) {
 	smpp_append_oct(&where, &left, submit_sm->data_coding);
 	smpp_append_oct(&where, &left, submit_sm->sm_default_msg_id);
 	smpp_append_oct(&where, &left, submit_sm->sm_length);
-	/* To preserver 8bit do memcpy... don't care about &where since
-	   this is the last variable... */
 	memcpy(where, submit_sm->short_message, submit_sm->sm_length);
 
-	newstr = octstr_create_from_data(data, length);
-
-	*str = newstr;
+	*str = octstr_create_from_data(data, length);
+	gw_free(data);
 
 	return 1;
 }
@@ -1476,9 +1194,6 @@ static int pdu_decode_submit_sm_resp(smpp_pdu* pdu, Octstr* str) {
 static int pdu_act_submit_multi_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 
 	debug("bb.sms.smpp", 0, "pdu_act_submit_multi_resp: start");
-
-	/* Mark messages reffer to by the SUBMIT_MULTI_RESP as
-	   acknowledged and remove them from smsc->fifostack. */
 
 	return -1;
 }
@@ -1498,19 +1213,15 @@ static int pdu_act_deliver_sm(SMSCenter *smsc, smpp_pdu *pdu) {
 	deliver_sm = (struct smpp_pdu_deliver_sm*) pdu->message_body;
 	if(deliver_sm==NULL) goto error;
 
-	/* Convert message from the Default Charset to ISO-8859-1. */
-	charset_smpp_to_iso(deliver_sm->short_message);
-
 	/* Push a copy of the PDU on the smsc->received_mo fifostack. */
 	newpdu = pdu_new();
-	if(newpdu == NULL) goto error;
 	memcpy(newpdu, pdu, sizeof(struct smpp_pdu));
+	newpdu->message_body = pdu->message_body;
 	pdu->message_body = NULL;
-	fifo_push(smsc->received_mo, newpdu);
+	list_produce(smsc->received_mo, newpdu);
 
-	/* Push a DELIVER_SM_RESP structure on the smsc->fifo_r_out fifostack. */
+	/* Push a DELIVER_SM_RESP structure on the smsc->fifo_r_out List. */
 	newpdu = pdu_new();
-	if(newpdu == NULL) goto error;
 	memset(newpdu, 0, sizeof(struct smpp_pdu));
 
 	deliver_sm_resp = gw_malloc(sizeof(struct smpp_pdu_deliver_sm_resp));
@@ -1522,7 +1233,7 @@ static int pdu_act_deliver_sm(SMSCenter *smsc, smpp_pdu *pdu) {
 	newpdu->sequence_no = pdu->sequence_no;
 	newpdu->message_body = deliver_sm_resp;
 
-	fifo_push(smsc->fifo_r_out, newpdu);
+	list_produce(smsc->fifo_r_out, newpdu);
 
 	return 1;
 
@@ -1554,8 +1265,8 @@ static int pdu_decode_deliver_sm(smpp_pdu* pdu, Octstr* str) {
 	struct smpp_pdu_deliver_sm *deliver_sm;
 	Octet oct;
 
-	if(pdu==NULL) goto error;
-	if(str==NULL) goto error;
+	gw_assert(pdu != NULL);
+	gw_assert(str != NULL);
 
 	if(octstr_len(str) < 16) {
 		warning(0, "pdu_decode_deliver_sm: incorrect input");
@@ -1644,46 +1355,63 @@ static int pdu_decode_deliver_sm(smpp_pdu* pdu, Octstr* str) {
 	   of max short_message size. */
 	end = start + strlen(start);
 	memcpy(deliver_sm->short_message, start,
-		(deliver_sm->sm_length > (int) sizeof(deliver_sm->short_message)) ?
-			sizeof(deliver_sm->short_message) : deliver_sm->sm_length);
+		(deliver_sm->sm_length > 
+		 	(int) sizeof(deliver_sm->short_message)) ?
+		sizeof(deliver_sm->short_message) : deliver_sm->sm_length);
 	start = end+1;
 
 	gw_free(buff);
 
-	debug("bb.sms.smpp", 0, "pdu->service_type == %s", deliver_sm->service_type);
+#ifdef SMPP_DEBUG
+	debug("bb.sms.smpp", 0, "pdu->service_type == %s", 
+			deliver_sm->service_type);
+	debug("bb.sms.smpp", 0, "pdu->source_addr_ton == %i", 
+			deliver_sm->source_addr_ton);
+	debug("bb.sms.smpp", 0, "pdu->source_addr_npi == %i", 
+			deliver_sm->source_addr_npi);
+	debug("bb.sms.smpp", 0, "pdu->source_addr == %s", 
+			deliver_sm->source_addr);
+	debug("bb.sms.smpp", 0, "pdu->dest_addr_ton == %i", 
+			deliver_sm->dest_addr_ton);
+	debug("bb.sms.smpp", 0, "pdu->dest_addr_npi == %i", 
+			deliver_sm->dest_addr_npi);
+	debug("bb.sms.smpp", 0, "pdu->dest_addr == %s", 
+			deliver_sm->dest_addr);
+	debug("bb.sms.smpp", 0, "pdu->esm_class == %i", 
+			deliver_sm->esm_class);
+	debug("bb.sms.smpp", 0, "pdu->protocol_id == %i", 
+			deliver_sm->protocol_id);
+	debug("bb.sms.smpp", 0, "pdu->priority_flag == %i", 
+			deliver_sm->priority_flag);
 
-	debug("bb.sms.smpp", 0, "pdu->source_addr_ton == %i", deliver_sm->source_addr_ton);
-	debug("bb.sms.smpp", 0, "pdu->source_addr_npi == %i", deliver_sm->source_addr_npi);
-	debug("bb.sms.smpp", 0, "pdu->source_addr == %s", deliver_sm->source_addr);
+	debug("bb.sms.smpp", 0, "pdu->schedule_delivery_time == %s", 
+			deliver_sm->schedule_delivery_time);
+	debug("bb.sms.smpp", 0, "pdu->validity_period == %s", 
+			deliver_sm->validity_period);
 
-	debug("bb.sms.smpp", 0, "pdu->dest_addr_ton == %i", deliver_sm->dest_addr_ton);
-	debug("bb.sms.smpp", 0, "pdu->dest_addr_npi == %i", deliver_sm->dest_addr_npi);
-	debug("bb.sms.smpp", 0, "pdu->dest_addr == %s", deliver_sm->dest_addr);
-
-	debug("bb.sms.smpp", 0, "pdu->esm_class == %i", deliver_sm->esm_class);
-	debug("bb.sms.smpp", 0, "pdu->protocol_id == %i", deliver_sm->protocol_id);
-	debug("bb.sms.smpp", 0, "pdu->priority_flag == %i", deliver_sm->priority_flag);
-
-	debug("bb.sms.smpp", 0, "pdu->schedule_delivery_time == %s", deliver_sm->schedule_delivery_time);
-	debug("bb.sms.smpp", 0, "pdu->validity_period == %s", deliver_sm->validity_period);
-
-	debug("bb.sms.smpp", 0, "pdu->registered_delivery_flag == %i", deliver_sm->registered_delivery_flag);
-	debug("bb.sms.smpp", 0, "pdu->replace_if_present_flag == %i", deliver_sm->replace_if_present_flag);
-	debug("bb.sms.smpp", 0, "pdu->data_coding == %i", deliver_sm->data_coding);
-	debug("bb.sms.smpp", 0, "pdu->sm_default_msg_id == %i", deliver_sm->sm_default_msg_id);
+	debug("bb.sms.smpp", 0, "pdu->registered_delivery_flag == %i", 
+			deliver_sm->registered_delivery_flag);
+	debug("bb.sms.smpp", 0, "pdu->replace_if_present_flag == %i", 
+			deliver_sm->replace_if_present_flag);
+	debug("bb.sms.smpp", 0, "pdu->data_coding == %i", 
+			deliver_sm->data_coding);
+	debug("bb.sms.smpp", 0, "pdu->sm_default_msg_id == %i", 
+			deliver_sm->sm_default_msg_id);
 	debug("bb.sms.smpp", 0, "pdu->sm_length == %i", deliver_sm->sm_length);
 
 	start = gw_malloc( 4 );
 	end = gw_malloc( (deliver_sm->sm_length*3) + 1 );
 	memset(end, 0, (deliver_sm->sm_length*3) + 1);
 	for(oct=0; oct < deliver_sm->sm_length; oct++) {
-		sprintf(start, "%02x ", (unsigned char) deliver_sm->short_message[oct]);
+		sprintf(start, "%02x ", (unsigned char) 
+				deliver_sm->short_message[oct]);
 		strcat(end, start);
 	}
 	debug("bb.sms.smpp", 0, "pdu->short_message == %s", end);
 
 	gw_free(start);
 	gw_free(end);
+#endif
 
 	return 1;
 
@@ -1702,24 +1430,6 @@ static int pdu_act_query_sm_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 
 	return -1;
 }
-
-#if 0
-static int pdu_act_query_last_msgs_resp(SMSCenter *smsc, smpp_pdu *pdu) {
-
-	/* Ignore, this version doesn't send messages which
-	   get these responses. */
-
-	return -1;
-}
-
-static int pdu_act_query_msg_details_resp(SMSCenter *smsc, smpp_pdu *pdu) {
-
-	/* Ignore, this version doesn't send messages which
-	   get these responses. */
-
-	return -1;
-}
-#endif
 
 static int pdu_act_cancel_sm_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 
@@ -1753,10 +1463,10 @@ static int pdu_act_enquire_link(SMSCenter *smsc, smpp_pdu *pdu) {
 
 	if(pdu->fd == smsc->fd_t) {
 		newpdu->sequence_no = smsc->seq_t++;
-		fifo_push(smsc->fifo_t_out, newpdu);
+		list_produce(smsc->fifo_t_out, newpdu);
 	} else if(pdu->fd == smsc->fd_r) {
 		newpdu->sequence_no = smsc->seq_r++;
-		fifo_push(smsc->fifo_r_out, newpdu);
+		list_produce(smsc->fifo_r_out, newpdu);
 	}
 
 	return 1;
@@ -1784,44 +1494,4 @@ static int pdu_act_generic_nak(SMSCenter *smsc, smpp_pdu *pdu) {
 	/* Panic  */
 
 	return -1;
-}
-
-static int charset_smpp_to_iso(unsigned char *data) {
-
-	int i;
-
-	while(*data != '\0') {
-		i = 0;
-		/* The translation table is 0 terminated. */
-		while( translation_table[i].iso != 0 ) {
-			if( translation_table[i].smpp == *data ) {
-				*data = translation_table[i].iso;
-				break;
-			}
-			i++;
-		}
-		data++;
-	}
-
-	return 1;
-}
-
-static int charset_iso_to_smpp(unsigned char *data) {
-
-	int i;
-
-	while(*data != '\0') {
-		i = 0;
-		/* The translation table is 0 terminated. */
-		while( translation_table[i].iso != 0 ) {
-			if( translation_table[i].iso == *data ) {
-				*data = translation_table[i].smpp;
-				break;
-			}
-			i++;
-		}
-		data++;
-	}
-
-	return 1;
 }

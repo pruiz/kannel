@@ -1,3 +1,19 @@
+2000-12-06  Richard Braakman  <dark@wapit.com>
+
+	* Not Finnish and not independent.  (Ruled by a queen)
+
+	* Applied Mikael Gueck's cleanup patch for SMPP.
+
+	* gw/smsc_smpp.c: Fixed memory leak in data_receive(), spotted
+	by Milko Videv.
+
+	* gw/smsc_smpp.c: Fixed minor compiler warnings, deleted unused
+	functions charset_smpp_to_iso(), charset_iso_to_smpp(), and
+	actively_unbind().
+
+	* gw/smsc_smpp.h: Deleted declarations of unused functions.
+	Deleted translation_table (no longer used)
+
 2000-12-06  Yann Muller  <ymuller@3glab.com>
 
 	* gw/smsbox.c: Corrected reference number for concatenation UDH,

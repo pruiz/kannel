@@ -131,9 +131,9 @@ struct SMSCenter {
 	char *smpp_system_id, *smpp_password;
 	char *smpp_system_type, *smpp_address_range;
 	int smpp_t_state, smpp_r_state;
-	struct fifostack *unsent_mt, *sent_mt, *delivered_mt, *received_mo;
-	struct fifostack *fifo_t_in, *fifo_t_out;
-	struct fifostack *fifo_r_in, *fifo_r_out;
+	List *unsent_mt, *sent_mt, *delivered_mt, *received_mo;
+	List *fifo_t_in, *fifo_t_out;
+	List *fifo_r_in, *fifo_r_out;
 	Octstr *data_t, *data_r;
 	int fd_t, fd_r;
 	int seq_t, seq_r;
