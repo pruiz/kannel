@@ -1,4 +1,8 @@
 2002-04-03  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/xmlrpc.[ch]: some minor improvements and parsing routines
+    * test/test_xmlrpc.c: added testing application for the xmlrpc calls
+
+2002-04-03  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/ota_prov.c: make output a bit more semantical
     * gw/smsbox.c: bug fixing of destroyed variables
     * test/test_http.c: fixed typo and minor bug when sending non-POST 
