@@ -109,9 +109,10 @@ int socket_sender(Msg *pmsg)
 
     mutex_lock(socket_mutex);
 
-    if (octstr_send(socket_fd, pack) < 0)
+    if (octstr_send(socket_fd, pack) < 0) {
+	mutex_unlock(socket_mutex);
 	goto error;
-
+    }
     mutex_unlock(socket_mutex);
 
     debug("sms", 0, "write <%s>", octstr_get_cstr(pmsg->smart_sms.msgdata));

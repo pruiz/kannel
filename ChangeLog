@@ -1,3 +1,15 @@
+2000-03-28    <Kalle Marjola <rpr@wapit.com>>
+
+	* gw/smsbox_req.c: added UDH sending code alpha test. Use field
+	'udh' in sendsms http interface
+
+	* gw/smsbox.c: fixed one mutex problem which only occured if there
+	was some problems
+
+	* gw/msg.h: marked that most functions do not fail, but panic
+
+	* gw/msg-decl.h: removed plain_sms, which was not used anymore
+
 2000-03-27 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp*: Added some comments. Made code review changes. Added code for

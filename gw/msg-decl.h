@@ -15,14 +15,6 @@ MSG(heartbeat,
 		INTEGER(load);
 	})
 
-MSG(plain_sms,
-	{
-		OCTSTR(sender);
-		OCTSTR(receiver);
-		OCTSTR(text);
-		INTEGER(time);
-	})
-
 MSG(smart_sms,
 	{
 		OCTSTR(sender);

@@ -140,7 +140,6 @@ error:
 
 /*
  * sends the buf, with msg-info - does NO splitting etc. just the sending
- *
  * NOTE: the sender gw_frees the message!
  *
  * return -1 on failure, 0 if Ok.
@@ -161,43 +160,34 @@ error:
 }
 
 
+
 /*
  * Take a Msg structure and send it as a MT SMS message.
+ * Works only with plain sms messages, discards UDH
  *
  * Return -1 on failure, 0 if Ok.
  */
-static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
+static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans,
+			 char *h, int hl, char *f, int fl)
 {
     Msg *split;
 
     char *p, *suf, *sc;
     int slen = 0;
     int size, total_len, loc;
-    char *h, *f;
-    int fl, hl;
 
     assert(trans != NULL);
     
-    h = urltrans_header(trans);
-    f = urltrans_footer(trans);
-    if (h != NULL) hl = strlen(h); else hl = 0;
-    if (f != NULL) fl = strlen(f); else fl = 0;
-
     suf = urltrans_split_suffix(trans);
+    if (suf != NULL) slen = strlen(suf);
     sc = urltrans_split_chars(trans);
-    if (suf != NULL)
-	slen = strlen(suf);
 
-    if(msg->smart_sms.flag_udh) {
-	warning(0, "Cannot send too long UDH!");
-	return 0;
-    }
     total_len = octstr_len(msg->smart_sms.msgdata);
     
     for(loc = 0, p = octstr_get_cstr(msg->smart_sms.msgdata);
 	maxmsgs > 0 && loc < total_len;
-	maxmsgs--) {
-
+	maxmsgs--)
+    {
 	if (maxmsgs == 1 || total_len-loc < sms_max_length-fl-hl) {
 	    slen = 0;
 	    suf = NULL;
@@ -215,9 +205,7 @@ static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
 	if (size < sms_max_length/2)
 	    size = sms_max_length - slen -hl -fl;
 
-	if ((split = msg_duplicate(msg))==NULL)
-	    goto error;
-
+	split = msg_duplicate(msg);
 	
 	if (h != NULL) {	/* add header and message */
 	    octstr_replace(split->smart_sms.msgdata, h, hl);
@@ -231,20 +219,316 @@ static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
 	if (f != NULL)	/* add footer */
 	    octstr_insert_data(split->smart_sms.msgdata, size+hl, f, fl);
 
-	if (do_sending(split) < 0)
+	if (do_sending(split) < 0) {
+	    msg_destroy(msg);
 	    return -1;
-
+	}
 	loc += size;
     }
     msg_destroy(msg);	/* we must delete at as it is supposed to be deleted */
     return 0;
-
-error:
-    error(0, "Memory allocation failed!");
-    msg_destroy(msg);
-    return -1;
-    
 }
+
+
+
+/*
+ * send UDH message (or messages) according to data in *msg
+ */
+static int send_udh_sms(URLTranslation *trans, Msg *msg, int max_msgs)
+{
+    /*
+     * TODO XXX
+     * maybe we should truncate the message herein
+     */
+
+    octstr_truncate(msg->smart_sms.msgdata, sms_max_length);
+    
+    /*
+     * TODO XXX : UDH split send?
+     */
+    
+    return do_sending(msg);
+}
+
+
+/*
+ * send SMS without UDH, with all those fancy bits and parts
+ */
+static int send_plain_sms(URLTranslation *trans, Msg *msg, int max_msgs)
+{    
+    int hl, fl;
+    char *h, *f;
+
+    h = urltrans_header(trans);
+    f = urltrans_footer(trans);
+
+    if (h != NULL) hl = strlen(h); else hl = 0;
+    if (f != NULL) fl = strlen(f); else fl = 0;
+
+    if (octstr_len(msg->smart_sms.msgdata) <= (sms_max_length - fl - hl)
+	|| max_msgs == 1) {
+
+	if (h != NULL)	/* if header set */
+	    octstr_insert_data(msg->smart_sms.msgdata, 0, h, hl);
+	/*
+	 * truncate if the message is too long one (this only happens if
+	 *  max_msgs == 1)
+	 */
+
+	if (octstr_len(msg->smart_sms.msgdata)+fl > sms_max_length)
+	    octstr_truncate(msg->smart_sms.msgdata, sms_max_length - fl);
+	    
+	if (f != NULL)	/* if footer set */
+	    octstr_insert_data(msg->smart_sms.msgdata,
+				   octstr_len(msg->smart_sms.msgdata), f, fl);
+
+	return do_sending(msg);
+
+    } else {
+	/*
+	 * we have a message that is longer than what fits in one
+	 * SMS message and we are allowed to split it
+	 */
+
+	return do_split_send(msg, max_msgs, trans, h, hl, f, fl);
+    }
+}
+
+
+
+/*
+ * send the 'reply', according to settings in 'trans' and 'msg'
+ * return -1 if failed utterly, 0 otherwise
+ */
+static int send_message(URLTranslation *trans, Msg *msg)
+{
+    int max_msgs;
+    static char *empty = "<Empty reply from service provider>";
+
+    max_msgs = urltrans_max_messages(trans);
+
+    if(msg_type(msg) != smart_sms) {
+	error(0, "Weird messagetype for send_message!");
+	msg_destroy(msg);
+	return -1;
+    }
+
+    if (octstr_len(msg->smart_sms.msgdata)==0) {
+	if (urltrans_omit_empty(trans) != 0) {
+	    max_msgs = 0;
+	} else { 
+	    octstr_replace(msg->smart_sms.msgdata, empty, strlen(empty));
+	}
+    }
+    if (max_msgs == 0) {
+	info(0, "No reply sent, denied.");
+	msg_destroy(msg);
+	return 0;
+    }
+
+    if(msg->smart_sms.flag_udh)
+	return send_udh_sms(trans, msg, 1);
+    else
+	return send_plain_sms(trans, msg, max_msgs);
+}
+
+
+
+/*----------------------------------------------------------------*
+ * PUBLIC FUNCTIONS
+ */
+
+int smsbox_req_init(URLTranslationList *transls,
+		    int sms_max,
+		    char *global,
+		    int (*send) (Msg *msg))
+{
+	translations = transls;
+	sms_max_length = sms_max;
+	sender = send;
+	if (global != NULL) {
+		global_sender = gw_strdup(global);
+	}
+	return 0;
+}
+
+
+int smsbox_req_count(void)
+{
+	return (int)req_threads;
+}
+
+
+void *smsbox_req_thread(void *arg) {
+    unsigned long id;
+    Msg *msg;
+    Octstr *tmp;
+    URLTranslation *trans;
+    char *reply = NULL, *p;
+    
+    msg = arg;
+    id = (unsigned long) pthread_self();
+
+    req_threads++;	/* possible overflow */
+    
+    if (octstr_len(msg->smart_sms.msgdata) == 0 ||
+	octstr_len(msg->smart_sms.sender) == 0 ||
+	octstr_len(msg->smart_sms.receiver) == 0) 
+    {
+
+	error(0, "smsbox_req_thread: EMPTY Msg, dump follows:");
+	msg_dump(msg);
+		/* NACK should be returned here if we use such 
+		   things... future implementation! */
+	   
+	return NULL;
+    }
+
+    if (octstr_compare(msg->smart_sms.sender, msg->smart_sms.receiver) == 0) {
+	info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
+	     octstr_get_cstr(msg->smart_sms.sender));
+	return NULL;
+    }
+
+    trans = urltrans_find(translations, msg->smart_sms.msgdata);
+    if (trans == NULL) goto error;
+
+    info(0, "Starting to service <%s> from <%s> to <%s>",
+	 octstr_get_cstr(msg->smart_sms.msgdata),
+	 octstr_get_cstr(msg->smart_sms.sender),
+	 octstr_get_cstr(msg->smart_sms.receiver));
+
+	/*
+	 * now, we change the sender (receiver now 'cause we swap them later)
+	 * if faked-sender or similar set. Note that we ignore if the replacement
+	 * fails.
+	 */
+    tmp = octstr_duplicate(msg->smart_sms.sender);
+    if (tmp == NULL) goto error;
+	
+    p = urltrans_faked_sender(trans);
+    if (p != NULL)
+	octstr_replace(msg->smart_sms.sender, p, strlen(p));
+    else if (global_sender != NULL)
+	octstr_replace(msg->smart_sms.sender, global_sender, strlen(global_sender));
+    else {
+	Octstr *t = msg->smart_sms.sender;
+	msg->smart_sms.sender = msg->smart_sms.receiver;
+	msg->smart_sms.receiver = t;
+    }
+    octstr_destroy(msg->smart_sms.receiver);
+    msg->smart_sms.receiver = tmp;
+
+    /* TODO: check if the sender is approved to use this service */
+
+    reply = obey_request(trans, msg);
+    if (reply == NULL) {
+		error(0, "request failed");
+		reply = gw_strdup("Request failed");
+		goto error;
+    }
+
+    octstr_replace(msg->smart_sms.msgdata, reply, strlen(reply));
+
+    msg->smart_sms.time = time(NULL);	/* set current time */
+
+	/* send_message frees the 'msg' */
+    if(send_message(trans, msg) < 0)
+		error(0, "request_thread: failed");
+    
+    gw_free(reply);
+    req_threads--;
+    return NULL;
+error:
+    error(0, "Request_thread: failed");
+    msg_destroy(msg);
+    gw_free(reply);
+    req_threads--;
+    return NULL;
+}
+
+
+char *smsbox_req_sendsms(CGIArg *list)
+{
+	Msg *msg = NULL;
+	URLTranslation *t = NULL;
+	char *user = NULL, *val, *from, *to, *text;
+	char *udh = NULL;
+	int ret;
+
+	if (cgiarg_get(list, "username", &user) == -1)
+		t = urltrans_find_username(translations, "default");
+	else 
+		t = urltrans_find_username(translations, user);
+    
+	if (t == NULL || 
+		cgiarg_get(list, "password", &val) == -1 ||
+		strcmp(val, urltrans_password(t)) != 0) {
+		return "Authorization failed";
+	}
+
+	cgiarg_get(list, "udh", &udh);
+
+	if (cgiarg_get(list, "to", &to) == -1 ||
+		cgiarg_get(list, "text", &text) == -1)
+	{
+		error(0, "/cgi-bin/sendsms got wrong args");
+		return "Wrong sendsms args.";
+	}
+
+	if (urltrans_faked_sender(t) != NULL) {
+		from = urltrans_faked_sender(t);
+	} else if (cgiarg_get(list, "from", &from) == 0 &&
+	       *from != '\0') 
+	{
+		/* Do nothing. */
+	} else if (global_sender != NULL) {
+		from = global_sender;
+	} else {
+		return "Sender missing and no global set";
+	}
+    
+	info(0, "/cgi-bin/sendsms <%s:%s> <%s> <%s>", user ? user : "default",
+	     from, to, text);
+  
+	msg = msg_create(smart_sms);
+	if (msg == NULL) goto error;
+
+	msg->smart_sms.receiver = octstr_create(to);
+	msg->smart_sms.sender = octstr_create(from);
+	msg->smart_sms.msgdata = octstr_create(text);
+	msg->smart_sms.udhdata = octstr_create(udh ? udh : "");
+
+	if(udh==NULL) {
+		msg->smart_sms.flag_8bit = 0;
+		msg->smart_sms.flag_udh  = 0;
+	} else {
+		msg->smart_sms.flag_8bit = 1;
+		msg->smart_sms.flag_udh  = 1;
+	}
+
+	msg->smart_sms.time = time(NULL);
+   
+	/* send_message frees the 'msg' */
+	ret = send_message(t, msg);
+
+    if (ret == -1)
+	goto error;
+
+    return "Sent.";
+    
+error:
+    error(0, "sendsms_request: failed");
+    return "Sending failed.";
+}
+
+
+
+
+
+
+
+
 
 
 #if 0
@@ -462,275 +746,6 @@ error:
 	msg_destroy(msg);
 
 #endif    
-
-
-
-/*
- * send the 'reply', according to settings in 'trans' and 'msg'
- *
- * return -1 if failed utterly, 0 otherwise
- */
-static int send_message(URLTranslation *trans, Msg *msg)
-{
-    int max_msgs;
-    int hl, fl;
-    char *h, *f;
-    static char *empty = "<Empty reply from service provider>";
-
-    max_msgs = urltrans_max_messages(trans);
-
-    if(msg_type(msg) != smart_sms) {
-	error(0, "Weird messagetype for send_message!");
-	goto error;
-    }
-
-    if (octstr_len(msg->smart_sms.msgdata)==0) {
-	if (urltrans_omit_empty(trans) != 0) {
-	    max_msgs = 0;
-	} else { 
-	    octstr_replace(msg->smart_sms.msgdata, empty, strlen(empty));
-	}
-    }
-
-    if (max_msgs == 0) {
-	info(0, "No reply sent, denied.");
-	msg_destroy(msg);
-	return 0;
-    }
-
-    h = urltrans_header(trans);
-    f = urltrans_footer(trans);
-
-    if (h != NULL) hl = strlen(h); else hl = 0;
-    if (f != NULL) fl = strlen(f); else fl = 0;
-
-    if (octstr_len(msg->smart_sms.msgdata) <= (sms_max_length - fl - hl)
-	|| max_msgs == 1) {
-
-	if (h != NULL)	/* if header set */
-	    octstr_insert_data(msg->smart_sms.msgdata, 0, h, hl);
-	/*
-	 * truncate if the message is too long one (this only happens if
-	 *  max_msgs == 1)
-	 */
-
-	if (octstr_len(msg->smart_sms.msgdata)+fl > sms_max_length)
-	    octstr_truncate(msg->smart_sms.msgdata, sms_max_length - fl);
-	    
-	if (f != NULL)	/* if footer set */
-	    octstr_insert_data(msg->smart_sms.msgdata,
-				   octstr_len(msg->smart_sms.msgdata), f, fl);
-
-	if (do_sending(msg) < 0)
-	    goto error;
-
-    } else {
-	/*
-	 * we have a message that is longer than what fits in one
-	 * SMS message and we are allowed to split it
-	 */
-
-	if (do_split_send(msg, max_msgs, trans) < 0)
-	    goto error;
-    }
-
-    return 0;
-
-error:
-    error(0, "send message failed");
-    msg_destroy(msg);
-    return -1;
-}
-
-
-/*----------------------------------------------------------------*
- * PUBLIC FUNCTIONS
- */
-
-int smsbox_req_init(URLTranslationList *transls,
-		    int sms_max,
-		    char *global,
-		    int (*send) (Msg *msg))
-{
-	translations = transls;
-	sms_max_length = sms_max;
-	sender = send;
-	if (global != NULL) {
-		global_sender = gw_strdup(global);
-	}
-	return 0;
-}
-
-
-int smsbox_req_count(void)
-{
-	return (int)req_threads;
-}
-
-
-void *smsbox_req_thread(void *arg) {
-    unsigned long id;
-    Msg *msg;
-    Octstr *tmp;
-    URLTranslation *trans;
-    char *reply = NULL, *p;
-    
-    msg = arg;
-    id = (unsigned long) pthread_self();
-
-    req_threads++;	/* possible overflow */
-    
-    if (octstr_len(msg->smart_sms.msgdata) == 0 ||
-	octstr_len(msg->smart_sms.sender) == 0 ||
-	octstr_len(msg->smart_sms.receiver) == 0) 
-    {
-
-	error(0, "smsbox_req_thread: EMPTY Msg, dump follows:");
-	msg_dump(msg);
-		/* NACK should be returned here if we use such 
-		   things... future implementation! */
-	   
-	return NULL;
-    }
-
-    if (octstr_compare(msg->smart_sms.sender, msg->smart_sms.receiver) == 0) {
-	info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
-	     octstr_get_cstr(msg->smart_sms.sender));
-	return NULL;
-    }
-
-    trans = urltrans_find(translations, msg->smart_sms.msgdata);
-    if (trans == NULL) goto error;
-
-    info(0, "Starting to service <%s> from <%s> to <%s>",
-	 octstr_get_cstr(msg->smart_sms.msgdata),
-	 octstr_get_cstr(msg->smart_sms.sender),
-	 octstr_get_cstr(msg->smart_sms.receiver));
-
-	/*
-	 * now, we change the sender (receiver now 'cause we swap them later)
-	 * if faked-sender or similar set. Note that we ignore if the replacement
-	 * fails.
-	 */
-    tmp = octstr_duplicate(msg->smart_sms.sender);
-    if (tmp == NULL) goto error;
-	
-    p = urltrans_faked_sender(trans);
-    if (p != NULL)
-	octstr_replace(msg->smart_sms.sender, p, strlen(p));
-    else if (global_sender != NULL)
-	octstr_replace(msg->smart_sms.sender, global_sender, strlen(global_sender));
-    else {
-	Octstr *t = msg->smart_sms.sender;
-	msg->smart_sms.sender = msg->smart_sms.receiver;
-	msg->smart_sms.receiver = t;
-    }
-    octstr_destroy(msg->smart_sms.receiver);
-    msg->smart_sms.receiver = tmp;
-
-    /* TODO: check if the sender is approved to use this service */
-
-    reply = obey_request(trans, msg);
-    if (reply == NULL) {
-		error(0, "request failed");
-		reply = gw_strdup("Request failed");
-		goto error;
-    }
-
-    octstr_replace(msg->smart_sms.msgdata, reply, strlen(reply));
-
-    msg->smart_sms.time = time(NULL);	/* set current time */
-
-	/* send_message frees the 'msg' */
-    if(send_message(trans, msg) < 0)
-		error(0, "request_thread: failed");
-    
-    gw_free(reply);
-    req_threads--;
-    return NULL;
-error:
-    error(0, "Request_thread: failed");
-    msg_destroy(msg);
-    gw_free(reply);
-    req_threads--;
-    return NULL;
-}
-
-
-char *smsbox_req_sendsms(CGIArg *list)
-{
-	Msg *msg = NULL;
-	URLTranslation *t = NULL;
-	char *user = NULL, *val, *from, *to, *text;
-	char *udh = NULL;
-	int ret;
-
-	if (cgiarg_get(list, "username", &user) == -1)
-		t = urltrans_find_username(translations, "default");
-	else 
-		t = urltrans_find_username(translations, user);
-    
-	if (t == NULL || 
-		cgiarg_get(list, "password", &val) == -1 ||
-		strcmp(val, urltrans_password(t)) != 0) {
-		return "Authorization failed";
-	}
-
-	cgiarg_get(list, "udh", &udh);
-
-	if (cgiarg_get(list, "to", &to) == -1 ||
-		cgiarg_get(list, "text", &text) == -1)
-	{
-		error(0, "/cgi-bin/sendsms got wrong args");
-		return "Wrong sendsms args.";
-	}
-
-	if (urltrans_faked_sender(t) != NULL) {
-		from = urltrans_faked_sender(t);
-	} else if (cgiarg_get(list, "from", &from) == 0 &&
-	       *from != '\0') 
-	{
-		/* Do nothing. */
-	} else if (global_sender != NULL) {
-		from = global_sender;
-	} else {
-		return "Sender missing and no global set";
-	}
-    
-	info(0, "/cgi-bin/sendsms <%s:%s> <%s> <%s>", user ? user : "default",
-	     from, to, text);
-  
-	msg = msg_create(smart_sms);
-	if (msg == NULL) goto error;
-
-	msg->smart_sms.receiver = octstr_create(to);
-	msg->smart_sms.sender = octstr_create(from);
-	msg->smart_sms.msgdata = octstr_create(text);
-	msg->smart_sms.udhdata = octstr_create("");
-
-	if(udh==NULL) {
-		msg->smart_sms.flag_8bit = 0;
-		msg->smart_sms.flag_udh  = 0;
-	} else {
-		msg->smart_sms.flag_8bit = 1;
-		msg->smart_sms.flag_udh  = 1;
-	}
-
-	msg->smart_sms.time = time(NULL);
-   
-	/* send_message frees the 'msg' */
-	ret = send_message(t, msg);
-
-    if (ret == -1)
-	goto error;
-
-    return "Sent.";
-    
-error:
-    error(0, "sendsms_request: failed");
-    return "Sending failed.";
-}
-
 
 
 

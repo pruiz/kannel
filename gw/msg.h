@@ -31,15 +31,14 @@ typedef struct {
 
 
 /*
- * Create a new, empty Msg object. Return NULL for failure, otherwise a
- * pointer to the object.
+ * Create a new, empty Msg object. Panics if fails.
  */
 Msg *msg_create(enum msg_type type);
 
 
 /*
- * Create a new Msg object that is a copy of an existing one. Return NULL
- * for failure, otherwise a pointer to the new object.
+ * Create a new Msg object that is a copy of an existing one.
+ * Panics if fails.
  */
 Msg *msg_duplicate(Msg *msg);
 
@@ -64,9 +63,8 @@ void msg_dump(Msg *msg);
 
 
 /*
- * Pack an Msg into an Octstr. Return NULL for failure, otherwise a pointer
- * to the Octstr.
- */
+ * Pack an Msg into an Octstr. Panics if fails.
+  */
 Octstr *msg_pack(Msg *msg);
 
 
