@@ -897,12 +897,12 @@ static void *wsp_http_thread(void *arg) {
 	}
 	if (wmlc_ok && !wml_ok) {
 		new_h = header_create("Accept", "text/vnd.wap.wml");
-		headers->next = new_h;
+		new_h->next = headers;
 		headers = new_h;
 	}
 	if (wmlscriptc_ok && !wmlscript_ok) {
 		new_h = header_create("Accept", "text/vnd.wap.wmlscript");
-		headers->next = new_h;
+		new_h->next = headers;
 		headers = new_h;
 	}
 	header_pack(headers);
