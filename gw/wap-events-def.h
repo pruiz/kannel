@@ -169,15 +169,15 @@ WAPEVENT(TR_Abort_Req,
 	) 
 
 WAPEVENT(TimerTO_A,
-	INTEGER(dummy)
+	INTEGER(handle)
 	)
 
 WAPEVENT(TimerTO_R,
-	INTEGER(dummy)
+	INTEGER(handle)
 	)
 
 WAPEVENT(TimerTO_W,
-	INTEGER(dummy)
+	INTEGER(handle)
 	)
 
 WAPEVENT(RcvErrorPDU,

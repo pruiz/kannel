@@ -15,15 +15,9 @@
 #include "msg.h"
 #include "wtp.h"
 #include "wsp.h"
-#include "wtp_timer.h"
 #include "bb.h"
 #include "wsp-strings.h"
 
-/*
- * Shortest timer tick (in seconds, being shortest defined time amongst 
- * protocol timers) is currently defined. 
- */
-#define WB_DEFAULT_TIMER_TICK 1
 #define CONNECTIONLESS_PORT 9200
 
 
@@ -31,7 +25,6 @@ static Config *cfg = NULL;
 static char *bearerbox_host = BB_DEFAULT_HOST;
 static int bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static int heartbeat_freq = BB_DEFAULT_HEARTBEAT;
-static int timer_freq = WB_DEFAULT_TIMER_TICK;
 static char *logfile = NULL;
 static int logfilelevel = 0;
 static char *http_proxy_host = NULL;
@@ -96,8 +89,6 @@ static void read_config(char *filename) {
 	if ((s = config_get(grp, "http-proxy-port")) != NULL)
 		http_proxy_port = atoi(s);
 	
-	if ((s = config_get(grp, "timer-freq")) != NULL)
-	    timer_freq = atoi(s);
 	if ((s = config_get(grp, "log-file")) != NULL)
 	    logfile = s;
 	if ((s = config_get(grp, "log-level")) != NULL)
@@ -175,12 +166,6 @@ static Msg *msg_receive(int s) {
 
 static void msg_send(int s, Msg *msg) {
 	Octstr *os;
-/*
- * Ifdefs define code for timer testing. This code will disappear
- */
-#if 0
-        int ret;
-#endif
 
 #if 0
 	if (msg->type != heartbeat) {
@@ -191,25 +176,11 @@ static void msg_send(int s, Msg *msg) {
 	os = msg_pack(msg);
 	if (os == NULL)
 	   panic(0, "msg_pack failed");
-#if 0
-        if (msg->type == wdp_datagram){ 
-	   ret = octstr_get_char(msg->wdp_datagram.user_data, 0);
-           ret = ret>>3&15;
-           debug("wap", 0, "selecting dropped message %d", ret);
-           if (ret != 2)
-              if (octstr_send(s, os) == -1)
-	         error(0, "wapbox: octstr_send failed");
-	   octstr_destroy(os);
-        } else {
-#endif
         if (octstr_send(s, os) == -1)
 	   error(0, "wapbox: octstr_send failed");
 	octstr_destroy(os);
         /* Yeah, we now allways free the memory allocated to msg.*/
         msg_destroy(msg);
-#if 0
-        }
-#endif
 }
 
 
@@ -252,14 +223,6 @@ static void send_heartbeat_thread(void *arg) {
 	list_remove_producer(queue);
 }
 
-#if 0
-static void timer_thread(void *arg) {
-	while (run_status == running) {
-		wtp_timer_check();
-		sleep(timer_freq);
-	}
-}
-#endif
 
 static void empty_queue_thread(void *arg) {
 	Msg *msg;
@@ -419,7 +382,6 @@ int main(int argc, char **argv) {
 
 	wtp_init();
         wtp_tid_cache_init();
-        wtp_timer_init();
 	wsp_strings_init();
 	wsp_session_init();
 	wsp_unit_init();
@@ -434,9 +396,6 @@ int main(int argc, char **argv) {
 
 	gwthread_create(send_heartbeat_thread, NULL);
 	gwthread_create(empty_queue_thread, &bbsocket);
-#if 0
-	gwthread_create(timer_thread, 0);
-#endif
 	wap_appl_init();
 	for (; run_status == running; msg_destroy(msg)) {
 		msg = msg_receive(bbsocket);
@@ -467,7 +426,6 @@ int main(int argc, char **argv) {
 	wsp_session_shutdown();
 	destroy_queue();
 	wtp_shutdown();
-	wtp_timer_shutdown();
 	wtp_tid_cache_shutdown();
 	wsp_strings_shutdown();
 	config_destroy(cfg);

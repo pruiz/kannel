@@ -19,7 +19,7 @@ typedef struct Tid_cache Tid_cache;
 #include "msg.h"
 #include "wsp.h"
 #include "wap-events.h"
-#include "wtp_timer.h"
+#include "timers.h"
 #include "wtp_send.h"
 #include "wtp_tid.h"
 #include "wapbox.h"
@@ -38,6 +38,7 @@ typedef struct Tid_cache Tid_cache;
 
 #define L_A_WITH_USER_ACK 4
 #define L_R_WITH_USER_ACK 7
+#define L_W_WITH_USER_ACK 40
 
 /*
  * Maximum values for counters (for retransmissions and acknowledgement waiting
@@ -87,7 +88,7 @@ struct WTPMachine {
         #define OCTSTR(name) Octstr *name;
         #define QUEUE(name) WTPEvent *name;
         #define WSP_EVENT(name) WAPEvent *name;
-	#define TIMER(name) WTPTimer *name;
+	#define TIMER(name) Timer *name;
 	#define ADDRTUPLE(name) WAPAddrTuple *name;
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"

@@ -94,8 +94,7 @@ ROW(LISTEN,
      wsp_event = create_tr_invoke_ind(machine, event->u.RcvInvoke.user_data);
      wsp_session_dispatch_event(wsp_event);
 
-     timer_event = wap_event_create(TimerTO_A);
-     wtp_timer_start(machine->timer, L_A_WITH_USER_ACK, machine, timer_event); 
+     start_timer_A(machine);
      machine->ack_pdu_sent = 0;
     },
     INVOKE_RESP_WAIT)
@@ -150,8 +149,7 @@ ROW(TIDOK_WAIT,
      
      wtp_tid_set_by_machine(machine, event->u.RcvAck.tid);
 
-     timer_event = wap_event_create(TimerTO_A);
-     wtp_timer_start(machine->timer, L_A_WITH_USER_ACK, machine, timer_event); 
+     start_timer_A(machine);
      machine->ack_pdu_sent = 0;
     },
     INVOKE_RESP_WAIT)
@@ -198,9 +196,7 @@ ROW(INVOKE_RESP_WAIT,
     TR_Invoke_Res,
     machine->tcl == 2,
     { 
-     wtp_timer_stop(machine->timer);
-     timer_event = wap_event_create(TimerTO_A);
-     wtp_timer_start(machine->timer, L_A_WITH_USER_ACK, machine, timer_event); 
+     start_timer_A(machine);
     },
     RESULT_WAIT)
 
@@ -228,9 +224,7 @@ ROW(INVOKE_RESP_WAIT,
     {
      machine->rcr = 0;
 
-     wtp_timer_stop(machine->timer);
-     timer_event = wap_event_create(TimerTO_R);
-     wtp_timer_start(machine->timer, L_R_WITH_USER_ACK, machine, timer_event);
+     start_timer_R(machine);
      msg_destroy(machine->result);
      machine->rid = 0;
      machine->result = wtp_send_result(machine, event);
@@ -243,9 +237,7 @@ ROW(INVOKE_RESP_WAIT,
     machine->aec < AEC_MAX && machine->tcl == 2 && machine->u_ack == 1,
     { 
      ++machine->aec;
-     wtp_timer_stop(machine->timer);
-     timer_event = wap_event_create(TimerTO_A);
-     wtp_timer_start(machine->timer, L_A_WITH_USER_ACK, machine, timer_event);
+     start_timer_A(machine);
     },
     INVOKE_RESP_WAIT)
 
@@ -285,9 +277,7 @@ ROW(RESULT_WAIT,
     {
      machine->rcr = 0;
 
-     wtp_timer_stop(machine->timer);
-     timer_event = wap_event_create(TimerTO_R);
-     wtp_timer_start(machine->timer, L_R_WITH_USER_ACK, machine, timer_event);
+     start_timer_R(machine);
 
      msg_destroy(machine->result);
      machine->rid = 0;
@@ -389,9 +379,7 @@ ROW(RESULT_RESP_WAIT,
     TimerTO_R,
     machine->rcr < MAX_RCR,
     {
-     wtp_timer_stop(machine->timer);
-     timer_event = wap_event_create(TimerTO_R);
-     wtp_timer_start(machine->timer, L_R_WITH_USER_ACK, machine, timer_event);
+     start_timer_R(machine);
      wtp_resend_result(machine->result, machine->rid);
      ++machine->rcr;
     },

@@ -145,9 +145,10 @@ void list_delete(List *list, long pos, long count) {
 }
 
 
-void list_delete_matching(List *list, void *pat, list_item_matches_t *matches)
+long list_delete_matching(List *list, void *pat, list_item_matches_t *matches)
 {
 	long i;
+	long count;
 
 	lock(list);
 	
@@ -155,18 +156,24 @@ void list_delete_matching(List *list, void *pat, list_item_matches_t *matches)
 	   consecutive items to be removed, but leave that for later.
 	   --liw */
 	i = 0;
+	count = 0;
 	while (i < list->len) {
-		if (matches(GET(list, i), pat))
+		if (matches(GET(list, i), pat)) {
 			delete_items_from_list(list, i, 1);
-		else
+			count++;
+		} else {
 			++i;
+		}
 	}
 	unlock(list);
+
+	return count;
 }
 
 
-void list_delete_equal(List *list, void *item) {
+long list_delete_equal(List *list, void *item) {
 	long i;
+	long count;
 
 	lock(list);
 	
@@ -174,13 +181,18 @@ void list_delete_equal(List *list, void *item) {
 	   consecutive items to be removed, but leave that for later.
 	   --liw */
 	i = 0;
+	count = 0;
 	while (i < list->len) {
-		if (GET(list, i) == item)
+		if (GET(list, i) == item) {
 			delete_items_from_list(list, i, 1);
-		else
+			count++;
+		} else {
 			++i;
+		}
 	}
 	unlock(list);
+
+	return count;
 }
 
 
@@ -357,6 +369,23 @@ List *list_search_all(List *list, void *pattern, int (*cmp)(void *, void *)) {
 	}
 	
 	return new_list;
+}
+
+
+void list_swap(List *list, long pos1, long pos2) {
+	void *item;
+
+	lock(list);
+	gw_assert(list != NULL);
+	gw_assert(pos1 >= 0);
+	gw_assert(pos1 < list->len);
+	gw_assert(pos2 >= 0);
+	gw_assert(pos2 < list->len);
+
+	item = GET(list, pos1);
+	list->tab[INDEX(list, pos1)] = GET(list, pos2);
+	list->tab[INDEX(list, pos2)] = item;
+	unlock(list);
 }
 
 

@@ -1,5 +1,36 @@
 2000-09-19  Richard Braakman  <dark@wapit.com>
 
+	* gw/timers.c, gw/timers.h: New timers.  Faster, better, and
+	they actually time out.
+
+	* gw/wtp_timer.c, gw/wtp_timer.h: Removed.  (Remnants of old
+	timer code).
+
+	* gw/wapbox.c: Removed references to old timer code.  It's now
+	completely hidden in the wtp layer.  Other layers can get their
+	own timers.
+
+	* gw/wtp.c: Use new timers.  Added some convenience functions
+	(start_timer_A and start_timer_R).  Handle TimerTO_* events.
+	There's no start_timer_W yet because we don't use it yet.
+
+	* gw/wtp.h: Use new timers.
+
+	* gw/wap-events-def.h: TimerTO_* events get a machine handle
+	instead of a dummy field, so that the WTP layer knows which
+	machine timed out.
+
+	* gw/wtp_state-decl.h: Use new timers, by calling the
+	convenience functions.  There's no real timer code left in
+	the state machines.
+
+	* gw/list.c, gw/list.h: Made list_delete_matching and
+	list_delete_equal return the count of items deleted.
+	Getting that info from an atomic operation is useful
+	for the timer code.  Also added list_swap function.
+
+2000-09-19  Richard Braakman  <dark@wapit.com>
+
 	* gw/wtp.[ch], gw/wtp_machine_decl.h: Removed unused field
 	type LIST from state machines.
 

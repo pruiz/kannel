@@ -44,6 +44,12 @@ static Counter *machine_id_counter = NULL;
 
 
 /*
+ * Timers used by WTP, all in one set.
+ */
+static Timerset *wtp_timers = NULL;
+
+
+/*
  * Give the status the module:
  *
  *	limbo
@@ -129,6 +135,8 @@ static WAPEvent *create_tr_invoke_ind(WTPMachine *sm, Octstr *user_data);
 static WAPEvent *create_tr_result_cnf(WTPMachine *sm);
 static WAPEvent *create_tr_abort_ind(WTPMachine *sm, long abort_reason);
 static WAPEvent *create_rcv_error_pdu(Msg *msg);
+static void start_timer_A(WTPMachine *machine);
+static void start_timer_R(WTPMachine *machine);
 
 static int deduce_tid(Octstr *user_data);
 static int concatenated_message(Octstr *user_data);
@@ -303,6 +311,8 @@ void wtp_init(void) {
      queue = list_create();
      list_add_producer(queue);
 
+     wtp_timers = timerset_create(queue);
+
      gw_assert(run_status == limbo);
      run_status = running;
      gwthread_create(main_thread, NULL);
@@ -316,6 +326,7 @@ void wtp_shutdown(void) {
 
      debug("wap.wtp", 0, "wtp_shutdown: %ld machines left",
      	   list_len(machines));
+     timerset_destroy(wtp_timers);
      list_destroy(machines, wtp_machine_destroy);
      list_destroy(queue, wap_event_destroy_item);
      counter_destroy(machine_id_counter);
@@ -381,7 +392,6 @@ static unsigned char *name_state(int s){
  */
 static void wtp_handle_event(WTPMachine *machine, WAPEvent *event){
      WAPEvent *wsp_event = NULL;
-     WAPEvent *timer_event = NULL;
 
      debug("wap.wtp", 0, "WTP: machine %ld, state %s, event %s.", 
 	   machine->mid, 
@@ -461,6 +471,18 @@ static WTPMachine *wtp_machine_find_or_create(WAPEvent *event){
 
 		  case TR_Abort_Req:
 			mid = event->u.TR_Abort_Req.handle;
+			break;
+
+		  case TimerTO_A:
+			mid = event->u.TimerTO_A.handle;
+			break;
+
+		  case TimerTO_R:
+			mid = event->u.TimerTO_R.handle;
+			break;
+
+		  case TimerTO_W:
+			mid = event->u.TimerTO_W.handle;
 			break;
 
                   default:
@@ -555,7 +577,7 @@ WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl) {
         #define MSG(name) machine->name = msg_create(wdp_datagram);
         #define OCTSTR(name) machine->name = NULL;
         #define WSP_EVENT(name) machine->name = NULL;
-        #define TIMER(name) machine->name = wtp_timer_create();
+        #define TIMER(name) machine->name = timer_create(wtp_timers);
 	#define ADDRTUPLE(name) machine->name = NULL;
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
@@ -592,7 +614,7 @@ static void wtp_machine_destroy(void *p){
         #define MSG(name) msg_destroy(machine->name);
         #define OCTSTR(name) octstr_destroy(machine->name);
         #define WSP_EVENT(name) machine->name = NULL;
-        #define TIMER(name) wtp_timer_destroy(machine->name);
+        #define TIMER(name) timer_destroy(machine->name);
 	#define ADDRTUPLE(name) wap_addr_tuple_destroy(machine->name);
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
@@ -662,6 +684,30 @@ static WAPEvent *create_rcv_error_pdu(Msg *msg){
                                          msg->wdp_datagram.destination_port);
        return event;
 }
+
+/*
+ * Start acknowledgement interval timer
+ */
+static void start_timer_A(WTPMachine *machine) {
+	WAPEvent *timer_event;
+
+	timer_event = wap_event_create(TimerTO_A);
+	timer_event->u.TimerTO_A.handle = machine->mid;
+	timer_start(machine->timer, L_A_WITH_USER_ACK, timer_event);
+}
+
+
+/*
+ * Start retry interval timer
+ */
+static void start_timer_R(WTPMachine *machine) {
+	WAPEvent *timer_event;
+
+	timer_event = wap_event_create(TimerTO_R);
+	timer_event->u.TimerTO_R.handle = machine->mid;
+	timer_start(machine->timer, L_R_WITH_USER_ACK, timer_event);
+}
+
 
 static int machine_has_mid(void *a, void *b) {
 	WTPMachine *sm;

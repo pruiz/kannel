@@ -116,14 +116,16 @@ void list_delete(List *list, long pos, long count);
 /*
  * Delete all items from the list that match `pattern'. Like list_delete,
  * the items are removed from the list, but are not destroyed themselves.
+ * Return the number of items deleted.
  */
-void list_delete_matching(List *list, void *pat, list_item_matches_t *cmp);
+long list_delete_matching(List *list, void *pat, list_item_matches_t *cmp);
 
 
 /*
  * Delete all items from the list whose pointer value is exactly `item'.
+ * Return the number of items deleted.
  */
-void list_delete_equal(List *list, void *item);
+long list_delete_equal(List *list, void *item);
 
 
 /*
@@ -221,5 +223,11 @@ void *list_search(List *list, void *pattern, list_item_matches_t *cmp);
  * non-zero, the items are equal.
  */
 List *list_search_all(List *list, void *pattern, list_item_matches_t *cmp);
+
+
+/*
+ * Exchange to items in the list.
+ */
+void list_swap(List *list, long pos1, long pos2);
 
 #endif
