@@ -451,11 +451,11 @@ static SMASI_PDU *msg_to_pdu(SMASI *smasi, Msg *msg)
 
     /* Set encoding. */
     if (msg->sms.coding != 0) {
-        if (msg->sms.coding == 1)
+        if (msg->sms.coding == DC_7BIT)
             pdu->u.SubmitReq.MsEncoding = octstr_create("7bit");
-        else if (msg->sms.coding == 2)
+        else if (msg->sms.coding == DC_8BIT)
             pdu->u.SubmitReq.MsEncoding = octstr_create("8bit");
-        else if (msg->sms.coding == 2)
+        else if (msg->sms.coding == DC_UCS2)
             pdu->u.SubmitReq.MsEncoding = octstr_create("16bit");
 
         /* Everything else will default to 7bit. */
@@ -508,7 +508,7 @@ static Msg *pdu_to_msg(SMASI_PDU *pdu)
     gw_assert(pdu->u.DeliverReq.Destination);
     gw_assert(pdu->u.DeliverReq.Body);
 
-    msg = msg_create(sms);;
+    msg = msg_create(sms);
 
     msg->sms.sender = octstr_duplicate(pdu->u.DeliverReq.Originator);
     msg->sms.receiver = octstr_duplicate(pdu->u.DeliverReq.Destination);
@@ -533,39 +533,39 @@ static Msg *pdu_to_msg(SMASI_PDU *pdu)
             msg->sms.pid = 0;
 
     /* Read Coding. */
-    if (pdu->u.SubmitReq.MsEncoding) {
+    if (pdu->u.DeliverReq.MsEncoding) {
 
         /* Use specified coding. */
-        if (octstr_str_compare(pdu->u.SubmitReq.MsEncoding, "7bit") == 0)
-            msg->sms.coding = 1;
-        else if (octstr_str_compare(pdu->u.SubmitReq.MsEncoding, "8bit") == 0)
-            msg->sms.coding = 2;
-        else if (octstr_str_compare(pdu->u.SubmitReq.MsEncoding, "UCS2") == 0)
-            msg->sms.coding = 3;
-        else if (octstr_str_compare(pdu->u.SubmitReq.MsEncoding, "transparent") == 0)
-            msg->sms.coding = 2;
+        if (octstr_str_compare(pdu->u.DeliverReq.MsEncoding, "7bit") == 0)
+            msg->sms.coding = DC_7BIT;
+        else if (octstr_str_compare(pdu->u.DeliverReq.MsEncoding, "8bit") == 0)
+            msg->sms.coding = DC_8BIT;
+        else if (octstr_str_compare(pdu->u.DeliverReq.MsEncoding, "UCS2") == 0)
+            msg->sms.coding = DC_UCS2;
+        else if (octstr_str_compare(pdu->u.DeliverReq.MsEncoding, "transparent") == 0)
+            msg->sms.coding = DC_8BIT;
     } else {
 
         /* Determine specified coding according to udhdata presence. */
-        if (pdu->u.SubmitReq.UserDataHeader)
-            msg->sms.coding = 2;
+        if (pdu->u.DeliverReq.UserDataHeader)
+            msg->sms.coding = DC_8BIT;
         else
-            msg->sms.coding = 1;
+            msg->sms.coding = DC_7BIT;
     }
 
     /* Read message class. */
-    if (pdu->u.SubmitReq.Class) {
+    if (pdu->u.DeliverReq.Class) {
         if (octstr_parse_long(&msg->sms.mclass, 
-                              pdu->u.SubmitReq.Class, 0, 10) == -1)
+                              pdu->u.DeliverReq.Class, 0, 10) == -1)
             msg->sms.mclass = 0;    /* Set to unspecified. */
         else
             msg->sms.mclass++;      /* Correct value mapping. */
     }
 
     /* Read protocol ID. */
-    if (pdu->u.SubmitReq.ProtocolID)
+    if (pdu->u.DeliverReq.ProtocolId)
         if (octstr_parse_long(&msg->sms.pid, 
-                              pdu->u.SubmitReq.ProtocolID, 0, 10) == -1)
+                              pdu->u.DeliverReq.ProtocolId, 0, 10) == -1)
             msg->sms.pid = 0;
 
     return msg;
