@@ -1,4 +1,10 @@
 2004-05-18  Alexander Malysh  <a.malysh@centrium.de> 
+    * doc/userguide/userguide.xml, doc/examples/dlr-sdb.conf: userguide
+      documentation for LibSDB dbpool support.
+      Thanks to Guillaume Cottenceau for the patch.
+      [Msg-Id: <878yfpx3rs.fsf@meuh.mnc.ch>].
+
+2004-05-18  Alexander Malysh  <a.malysh@centrium.de> 
     * gwlib/dbpool_sdb.c, gwlib/dbpool.c, gwlib/cfg.def, gw/dlr_sdb.c:
       applied patch, in a slightly modified version, that adds dbpool support
       for LibSDB. Thanks to Guillaume Cottenceau for the patch.

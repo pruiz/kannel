@@ -626,7 +626,7 @@
         <listitem><para><literal>--with-sdb</literal>
 
             Enable using LibSDB libraries for dlr support.
-            <emphasis>Attention: No DBPool support.</emphasis></para></listitem>
+            </para></listitem>
 
         <listitem><para><literal>--with-oracle</literal>
 
@@ -4588,15 +4588,16 @@ max-connections = 1
 	defines the LibSDB ressource itself.
 	</para>
 	<para>Here is the example configuration from
-	<literal>doc/examples/dlr-sdb.conf</literal> using a MySQL ressource:
+	<literal>doc/examples/dlr-sdb.conf</literal> using a PostgreSQL ressource:
 
 <programlisting>
 group = sdb-connection
-id = mydlr
-url = "mysql:host=localhost:db=dlr:uid=foo:pwd=bar"
+id = pgdlr
+url = "postgres:host=localhost:db=myapp:port=1234"
+max-connections = 1
 
 group = dlr-db
-id = mydlr
+id = pgdlr
 table = dlr
 field-smsc = smsc
 field-timestamp = ts
