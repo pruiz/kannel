@@ -85,6 +85,9 @@ FIG2DEV=@FIG2DEV@
 HTML_DSL=@HTML_DSL@
 TEX_DSL=@TEX_DSL@
 
+# Set this to something if you want all installed binaries to have a suffix.
+# Version number if common.
+suffix = -$(VERSION)
 
 #
 # You probably don't need to touch anything below this, if you're just
@@ -163,9 +166,11 @@ no-docs:
 figs: $(figs)
 
 install: all
-	for prog in $(progs); do $(INSTALL) $$prog $(bindir)/$$prog$(suffix)
+	for prog in $(progs); do \
+		$(INSTALL) $$prog $(bindir)/`basename $$prog`$(suffix); \
+	done
 # The following is a temporary kludge until we get a new WML compiler.
-	$(INSTALL) test/test_wml $(bindir)
+	$(INSTALL) test/test_wml $(bindir)/test_wml$(suffix)
 
 install-docs:
 	rm -rf $(docdir)

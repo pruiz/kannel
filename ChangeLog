@@ -1,3 +1,9 @@
+Mon Jan 24 21:01:50 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Makefile.in: Fixed install target.
+	
+	* VERSION: Marked as non-release version.
+
 Mon Jan 24 20:53:47 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c, gw/wsp.h, gw/wsp_events-decl.h, wsp_state-decl.h:
