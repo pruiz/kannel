@@ -11,6 +11,12 @@
  * Please don't use this code for anything real.
  * Richard Braakman */
 
+/*
+ * TODO: If log level is high and activity level is low, there will be
+ * "SND" log entries for packets that are not sent, which is confusing
+ * and should be fixed.
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
