@@ -824,12 +824,28 @@ reconnect:
         } else
             wait = 15;
 
+	/* If modems->speed is defined, try to use it, else autodetect */
+        if (privdata->speed == 0 && privdata->modem != NULL && 
+	    privdata->modem->speed != 0) {
+
+	    info(0, "AT2[%s]: trying to use speed <%d> from modem definition", 
+	         privdata->name, privdata->modem->speed);
+	    if(0 == at2_test_speed(privdata, privdata->modem->speed)) { 
+		privdata->speed = privdata->modem->speed;
+		info(0, "AT2[%s]: speed is %ld", 
+		     octstr_get_cstr(privdata->name), privdata->speed);
+	    } else {
+		info(0, "AT2[%s]: speed in modem definition don't work, will autodetect", 
+		     octstr_get_cstr(privdata->name));
+	    }
+	}
+
         if (privdata->speed == 0) {
-            if (at2_detect_speed(privdata) == -1) {
-                if (!privdata->retry)
-                    return;
-                else
-                    continue;
+	    if (at2_detect_speed(privdata) == -1) {
+		if (!privdata->retry)
+		    return;
+		else
+		    continue;
             }
         }
 
@@ -1034,8 +1050,6 @@ int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
             info(0, "AT2[%s]: read modem definition for <%s>",
                  octstr_get_cstr(privdata->name),
                  octstr_get_cstr(privdata->modem->name));
-            if (privdata->speed == 0)
-                privdata->speed = privdata->modem->speed;
         }
         O_DESTROY(modem_type_string);
     }
@@ -1789,7 +1803,6 @@ int at2_numtext(int num)
 int at2_detect_speed(PrivAT2data *privdata)
 {
     int i;
-    int res;
 #ifdef	B57600
     int autospeeds[] = { 57600, 38400, 19200, 9600 };
 #else
@@ -1800,23 +1813,10 @@ int at2_detect_speed(PrivAT2data *privdata)
           octstr_get_cstr(privdata->name));
 
     for (i = 0; i < (sizeof(autospeeds) / sizeof(int)); i++) {
-        if (at2_open_device1(privdata) == -1)
-            return -1;
-
-        at2_set_speed(privdata, autospeeds[i]);
-        /* send a return so the modem can detect the speed */
-        res = at2_send_modem_command(privdata, "", 1, 0); 
-        res = at2_send_modem_command(privdata, "AT", 0, 0);
-
-        if (res != 0)
-            res = at2_send_modem_command(privdata, "AT", 0, 0);
-        if (res != 0)
-            res = at2_send_modem_command(privdata, "AT", 0, 0);
-        if (res == 0) {
-            privdata->speed = autospeeds[i];
-            i = 99; /* skip out of loop */
-        }
-        at2_close_device(privdata);
+	if(at2_test_speed(privdata, autospeeds[i]) == 0) {
+	    privdata->speed = autospeeds[i];
+	    break;
+	}
     }
     if (privdata->speed == 0) {
         info(0, "AT2[%s]: cannot detect speed", octstr_get_cstr(privdata->name));
@@ -1824,6 +1824,27 @@ int at2_detect_speed(PrivAT2data *privdata)
     }
     info(0, "AT2[%s]: detect speed is %ld", octstr_get_cstr(privdata->name), privdata->speed);
     return 0;
+}
+
+int at2_test_speed(PrivAT2data *privdata, long speed) {
+
+    int res;
+
+    if (at2_open_device1(privdata) == -1)
+	return -1;
+
+    at2_set_speed(privdata, speed);
+    /* send a return so the modem can detect the speed */
+    res = at2_send_modem_command(privdata, "", 1, 0); 
+    res = at2_send_modem_command(privdata, "AT", 0, 0);
+
+    if (res != 0)
+	res = at2_send_modem_command(privdata, "AT", 0, 0);
+    if (res != 0)
+	res = at2_send_modem_command(privdata, "AT", 0, 0);
+    at2_close_device(privdata);
+
+    return res;
 }
 
 

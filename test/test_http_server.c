@@ -188,6 +188,7 @@ int main(int argc, char **argv) {
     else
     	file_contents = octstr_read_file(filename);
 
+#ifdef HAVE_LIBSSL
     /*
      * check if we are doing a SSL-enabled server version here
      * load the required cert and key file
@@ -201,6 +202,7 @@ int main(int argc, char **argv) {
             panic(0, "certificate and public key need to be given!");
         }
     }
+#endif
      
     if (http_open_port(port, ssl) == -1)
 	panic(0, "http_open_server failed");

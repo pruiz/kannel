@@ -1,4 +1,11 @@
 2002-03-27  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * test/test_http_server.c: Disable SSL checking if #SSL is disabled in 
+      configure
+    * NEWS, Changelog: some minor fixes ;)
+    * gw/smsc_at2.[ch]: changed speed behaviour. If speed is unset in smsc 
+      group, kannel try to use modem->speed and if it fails, autodetects
+
+2002-03-27  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gwlib/http.c: Disabled keepalive until someone fixes it for good
 
 2002-03-27  Stipe Tolj  <tolj@wapme-systems.de>
@@ -13,14 +20,13 @@
       fix from Bruno.
 
 2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
-	* Making release 1.1.6.
+    * Making release 1.1.6.
 
 2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
     * Updated NEWS to prepare for 1.1.6.
 
 2002-03-26  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gwlib/cfg.c: fixed bug when including several include files
-    * gwlib/date.c: fixed testing sec < 60
     * gw/urltrans.c: added seconds to "%t"
 
 2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>

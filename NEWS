@@ -2,7 +2,7 @@ NEWS about Kannel: Open Source WAP and SMS Gateway version 1.1.6
 
 This is a DEVELOPMENT version. It should be usable for experimentation
 and testing, and is a release candidate for 1.2. Please do try it out
-and report problems to devel@kannel.3glab.oorg (the development mailing 
+and report problems to devel@kannel.3glab.org (the development mailing 
 list). The bug tracking system is currently offline.
 
 NOTE: This is not an update to 1.0.  Updates to 1.0 will be numbered 1.0.x,

@@ -256,6 +256,11 @@ int at2_numtext(int num);
 int	at2_detect_speed(PrivAT2data *privdata);
 
 /*
+ * Test modem speed
+ */
+int	at2_test_speed(PrivAT2data *privdata, long speed);
+
+/*
  * Try to detect modem type
  */
 int	at2_detect_modem_type(PrivAT2data *privdata);
