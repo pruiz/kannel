@@ -1491,7 +1491,7 @@ static Parameter *parm_parse(Octstr *value)
  * if the parameter was just a key.
  * It returns NULL if there were no parameters.
  */
-List *strip_parameters(Octstr *value)
+List *wsp_strip_parameters(Octstr *value)
 {
     long pos;
     long len;
@@ -1736,7 +1736,7 @@ void pack_short_integer(Octstr *packed, unsigned long integer)
     octstr_append_char(packed, integer + 0x80);
 }
 
-void pack_integer_value(Octstr *packed, unsigned long integer)
+void wsp_pack_integer_value(Octstr *packed, unsigned long integer)
 {
     if (integer <= MAX_SHORT_INTEGER)
         pack_short_integer(packed, integer);
@@ -1765,7 +1765,7 @@ int wsp_pack_integer_string(Octstr *packed, Octstr *value)
         integer += digit;
     }
 
-    pack_integer_value(packed, integer);
+    wsp_pack_integer_value(packed, integer);
     return 0;
 
 overflow:
@@ -1826,7 +1826,7 @@ static void pack_parameter(Octstr *packed, Parameter *parm)
     if (keytoken >= 0) {
         /* Typed-parameter = Well-known-parameter-token Typed-value */
         /* Well-known-parameter-token = Integer-value */
-        pack_integer_value(packed, keytoken);
+        wsp_pack_integer_value(packed, keytoken);
         /* Typed-value = Compact-value | Text-value */
         /* First try to pack as Compact-value or No-value.
          * If that fails, pack as Text-value. */
@@ -1846,7 +1846,7 @@ static void pack_parameter(Octstr *packed, Parameter *parm)
             case 1:  /* charset */
                 tmp = wsp_string_to_charset(parm->value);
                 if (tmp >= 0) {
-                    pack_integer_value(packed, tmp);
+                    wsp_pack_integer_value(packed, tmp);
                     return;
                 }
                 break;
@@ -1888,7 +1888,7 @@ static void pack_parameter(Octstr *packed, Parameter *parm)
         /* If we can pack as integer, do so. */
         if (octstr_parse_long(&tmp, parm->value, 0, 10)
             == octstr_len(parm->value)) {
-            pack_integer_value(packed, tmp);
+            wsp_pack_integer_value(packed, tmp);
         } else {
             pack_quoted_string(packed, parm->value);
         }
@@ -1976,7 +1976,7 @@ static int pack_challenge(Octstr *packed, Octstr *value)
         realmpos = octstr_len(encoding);
 
         /* Find the realm parameter and exclude it */
-        parms = strip_parameters(value);
+        parms = wsp_strip_parameters(value);
         for (i = 0; i < list_len(parms); i++) {
             Parameter *parm = list_get(parms, i);
             if (octstr_case_compare(realm, parm->key) == 0) {
@@ -2091,7 +2091,7 @@ static int pack_credentials(Octstr *packed, Octstr *value)
         List *parms;
 
         wsp_pack_text(encoding, scheme);
-        parms = strip_parameters(value);
+        parms = wsp_strip_parameters(value);
         pack_parameters(encoding, parms);
         list_destroy(parms, parm_destroy_item);
     }
@@ -2152,7 +2152,7 @@ static int pack_language(Octstr *packed, Octstr *value)
      * language does not necessarily fit in a Short-integer. */
     language = wsp_string_to_language(value);
     if (language >= 0)
-        pack_integer_value(packed, language);
+        wsp_pack_integer_value(packed, language);
     else
         wsp_pack_text(packed, value);
     return 0;
@@ -2248,7 +2248,7 @@ static int pack_accept(Octstr *packed, Octstr *value)
     List *parms;
     long media;
 
-    parms = strip_parameters(value);
+    parms = wsp_strip_parameters(value);
     /* XXX we need to obey which WSP encoding-version to use */
     /* media = wsp_string_to_content_type(value); */
     media = wsp_string_to_versioned_content_type(value, WSP_1_2);
@@ -2260,7 +2260,7 @@ static int pack_accept(Octstr *packed, Octstr *value)
         Octstr *encoding = octstr_create("");
 
         if (media >= 0)
-            pack_integer_value(encoding, media);
+            wsp_pack_integer_value(encoding, media);
         else
             wsp_pack_text(encoding, value);
 
@@ -2279,7 +2279,7 @@ static int pack_accept_charset(Octstr *packed, Octstr *value)
     long charset;
     long qvalue;
 
-    parms = strip_parameters(value);
+    parms = wsp_strip_parameters(value);
     charset = wsp_string_to_charset(value);
     qvalue = 1000;
     if (parms)
@@ -2293,7 +2293,7 @@ static int pack_accept_charset(Octstr *packed, Octstr *value)
         Octstr *encoding = octstr_create("");
 
         if (charset >= 0)
-            pack_integer_value(encoding, charset);
+            wsp_pack_integer_value(encoding, charset);
         else
             wsp_pack_text(encoding, value);
 
@@ -2318,7 +2318,7 @@ static int pack_accept_encoding(Octstr *packed, Octstr *value)
 
     qvalue = 1000;   /* default */
 
-    parms = strip_parameters(value);
+    parms = wsp_strip_parameters(value);
     if (parms)
         qvalue = get_qvalue(parms, qvalue);
     list_destroy(parms, parm_destroy_item);
@@ -2341,7 +2341,7 @@ static int pack_accept_language(Octstr *packed, Octstr *value)
     long language;
     long qvalue;
 
-    parms = strip_parameters(value);
+    parms = wsp_strip_parameters(value);
     language = wsp_string_to_language(value);
     qvalue = 1000;
     if (parms)
@@ -2356,7 +2356,7 @@ static int pack_accept_language(Octstr *packed, Octstr *value)
         Octstr *encoding = octstr_create("");
 
         if (language >= 0)
-            pack_integer_value(encoding, language);
+            wsp_pack_integer_value(encoding, language);
         else
             wsp_pack_text(encoding, value);
 
@@ -2449,7 +2449,7 @@ static int pack_content_disposition(Octstr *packed, Octstr *value)
     List *parms;
     long disposition;
 
-    parms = strip_parameters(value);
+    parms = wsp_strip_parameters(value);
     disposition = wsp_string_to_disposition(value);
 
     if (disposition >= 0) {

@@ -71,7 +71,7 @@ int wsp_field_value(ParseContext *context, int *well_known_value);
 void wsp_skip_field_value(ParseContext *context);
 int wsp_secondary_field_value(ParseContext *context, long *result);
 void parm_destroy_item(void *parm);
-List *strip_parameters(Octstr *value);
+List *wsp_strip_parameters(Octstr *value);
 /* unpacking */
 Octstr *wsp_unpack_integer_value(ParseContext *context);
 Octstr *wsp_unpack_version_value(long value);
@@ -81,6 +81,7 @@ void wsp_unpack_well_known_field(List *unpacked, int field_type,
                                  ParseContext *context);
 void wsp_unpack_app_header(List *unpacked, ParseContext *context);
 /* packing */
+void wsp_pack_integer_value(Octstr *packed, unsigned long integer);
 int wsp_pack_date(Octstr *packet, Octstr *value);
 int wsp_pack_retry_after(Octstr *packet, Octstr *value);
 int wsp_pack_text(Octstr *packet, Octstr *value);
