@@ -116,7 +116,10 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 .SUFFIXES: $(SUFFIXES) .xml .html .ps .fig .png
 
 .xml.html:
-	$(srcdir)/utils/docbook-to-html $<
+	cd `dirname $<`
+	sed "s/#FIGTYPE#/.png/" $< > $*.tmp
+	jade -V nochunks -t sgml -d $HTML_DSL $*.tmp > $@
+	rm -f $*.tmp
 
 .xml.ps:
 	$(srcdir)/utils/docbook-to-ps $<

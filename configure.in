@@ -99,12 +99,14 @@ AC_CHECK_PROG(JADETEX, jadetex, jadetex, :)
 AC_CHECK_PROG(DVIPS, dvips, dvips, :)
 AC_CHECK_PROG(FIG2DEV, fig2dev, fig2dev, :)
 AC_SUBST(HTML_DSL)
-for file in /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/html/docbook.dsl
+for file in /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/html/docbook.dsl \
+	/usr/lib/sgml/stylesheets/nwalsh-modular/html/docbook.dsl
 do
 	AC_CHECK_FILE($file,HTML_DSL=$file)
 done
 AC_SUBST(TEX_DSL)
-for file in /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/print/docbook.dsl
+for file in /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/print/docbook.dsl \
+	/usr/lib/sgml/stylesheets/nwalsh-modular/print/docbook.dsl
 do
 	AC_CHECK_FILE($file,TEX_DSL=$file)
 done
