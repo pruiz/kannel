@@ -641,7 +641,8 @@ int at2_send_modem_command(PrivAT2data *privdata,char *cmd, time_t timeout, int 
 
 int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
 {
-    Octstr *line, *line2;
+    Octstr *line = NULL;
+    Octstr *line2 = NULL;
     Octstr *pdu = NULL;
     int ret;
     time_t end_time;
@@ -668,6 +669,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
            if (-1 != octstr_search(line, octstr_imm("SIM PIN"), 0))
            {
            	ret = 2;
+           	
            	goto end;
            }
            
@@ -713,7 +715,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
 		{
        		    octstr_append_cstr(line,"\n");
            	    octstr_append(line,line2);
-           	    octstr_destroy(line2);
+           	    O_DESTROY(line2);
     		    at2_pdu_extract(privdata, &pdu, line);
 
 		    if(pdu == NULL)
@@ -730,7 +732,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
                     	}
                     	if(privdata->phase2plus)
 		    	    at2_write_line(privdata,"AT+CNMA");
-			octstr_destroy(pdu);
+			O_DESTROY(pdu);
 		    }
                 }
 		continue;
@@ -750,12 +752,17 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
     	 privdata->lines ? octstr_get_cstr(privdata->lines) : "<nothing>", len,
     	 privdata->ilb ? octstr_get_cstr(privdata->ilb) : "<nothing>");
 */
+    O_DESTROY(line);
+    O_DESTROY(line2);
+    O_DESTROY(pdu);
     return -10; /* timeout */
 
 end:
     octstr_append(privdata->lines,line);
     octstr_append_cstr(privdata->lines,"\n");
-    octstr_destroy(line);
+    O_DESTROY(line);
+    O_DESTROY(line2);
+    O_DESTROY(pdu);
     return ret;
 }
 
@@ -1069,11 +1076,12 @@ int at2_pdu_extract(PrivAT2data *privdata, Octstr **pdu, Octstr *line)
     
     /* copy the PDU then remove it from the input buffer*/
     *pdu = octstr_copy(buffer, pos, len*2);
-    octstr_delete(buffer, 0, pos+len*2);
 
+    octstr_destroy(buffer);
     return 1;
 
  nomsg:
+    octstr_destroy(buffer);
     return 0;
 }
 

@@ -1,3 +1,9 @@
+2002-01-23 Andreas Fink <andreas@fink.org>
+    * Makefile.in, solaris/mk-solaris-package.sh, solaris/pkginfo,
+    solaris/pkginfo.tmpl: updated packaging for solaris8.
+    You now can type "make pkg"
+    * gw/smsc_at2.c: fixed memory leaks as inidcated by Oded Arbel <oded@m-wise.com>
+
 2002-01-22  Stipe Tolj  <tolj@wapme-systems.de>
     * configure.in: added /usr/local tree checking for docbook.dsl.
       Reported by "Bernino Lind" <lind@catpipe.net>
