@@ -325,15 +325,14 @@ static int have_cookie(List *cookies, Cookie *cookie)
                octstr_get_cstr(cookie->domain), octstr_get_cstr(value->domain));
 
         /* Match on no value or value and value equality for name, path and domain */
-        if ((value->name == NULL || 
-            ((value->name != NULL && cookie->name != NULL) && 
-                octstr_compare(value->name, cookie->name) == 0)) &&
-            (value->path == NULL ||
-            ((value->path != NULL && cookie->path != NULL) && 
-                octstr_compare(value->path, cookie->path) == 0)) &&
-            (value->domain == NULL) ||
-            (((value->domain != NULL && cookie->domain != NULL) && 
-                octstr_compare(value->domain, cookie->domain) == 0))) {
+        if ( 
+            (value->name == NULL || 
+                ((value->name != NULL && cookie->name != NULL) && octstr_compare(value->name, cookie->name) == 0)) &&
+            (value->path == NULL || 
+                ((value->path != NULL && cookie->path != NULL) && octstr_compare(value->path, cookie->path) == 0)) &&
+            (value->domain == NULL || 
+                ((value->domain != NULL && cookie->domain != NULL) && octstr_compare(value->domain, cookie->domain) == 0))
+           ) {
 			
             /* We have a match according to 4.3.3 - discard the old one */
             cookie_destroy(value);
