@@ -459,7 +459,7 @@ static int read_ppg_config(Cfg *cfg)
          global_sender = octstr_imm("1234");
 
 #ifdef HAVE_LIBSSL
-     cfg_get_integer(&ppg_ssl_port, grp, octstr_imm("ppg-port-ssl"));
+     cfg_get_integer(&ppg_ssl_port, grp, octstr_imm("ppg-ssl-port"));
      ssl_server_cert_file = cfg_get(grp, octstr_imm("ssl-server-cert-file"));
      ssl_server_key_file = cfg_get(grp, octstr_imm("ssl-server-key-file"));
      if (ppg_ssl_port == -1) 
