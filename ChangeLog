@@ -1,4 +1,9 @@
 2003-10-13  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsc/smsc_http.c: changed 'dlrurl' -> 'dlr-url' , 
+      'dlrmask' -> 'dlr-mask' in order to reflect changes made
+      by Bruno for smsbox. Thanks to adi <adi@imt.co.id> for patch.
+
+2003-10-13  Alexander Malysh  <a.malysh@centrium.de>
     * .cvsignore: added gw-config.h, gw-config.
 
 2003-10-12  Alexander Malysh  <a.malysh@centrium.de>
