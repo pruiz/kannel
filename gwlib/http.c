@@ -77,10 +77,52 @@ static int socket_write(HTTPSocket *p, Octstr *os);
  * Other operations.
  */
 static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path);
+
+#ifdef POST_SUPPORT
+
+/*
+ * 
+ * These are the build request operations as defined by Lars.
+ *
+
+static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port, 
+	List *headers, List *form_fields, char* method_name);
+static HTTPSocket *send_request(Octstr *url, List *request_headers, List *form_fields,
+	char* method_name);
+ *
+ *
+ * The build request specified below use an octet string as opposed to a 
+ * list for passing the message body. A list may be a better alternative 
+ * for future use, but for now all that is required is passing the octet 
+ * string to the http server.
+ *
+ * Extra parameters:
+ * Octstr *form_fields: This contains the message body which is passed in from the 
+ *						wap client.
+ *
+ * char *method_name:	This is the name of the request, whether it is a "GET" request
+ *						or a "POST" request.
+ *
+ */
+
+static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port, 
+	List *headers, Octstr *request_body, char* method_name);
+
+static HTTPSocket *send_request(Octstr *url, List *request_headers, Octstr *request_body,
+	char* method_name);
+
+#else	/* POST_SUPPORT */
+
 static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port, 
 	List *headers);
 static int parse_status(Octstr *statusline);
 static HTTPSocket *send_request(Octstr *url, List *request_headers);
+
+#endif	/* POST_SUPPORT */
+
+
+
+
 static int read_status(HTTPSocket *p);
 static int read_headers(HTTPSocket *p, List **headers);
 static int read_body(HTTPSocket *p, List *headers, Octstr **body);
@@ -161,14 +203,36 @@ List **reply_headers, Octstr **reply_body)  {
 	*reply_headers = NULL;
 	*reply_body = NULL;
 
+#ifdef POST_SUPPORT
+
+/*
+	As it is a GET message, can pass NULL for the message body.
+*/
+	p = send_request(url, request_headers, NULL, "GET");
+
+#else	/* POST_SUPPORT */
+
 	p = send_request(url, request_headers);
+
+#endif	/* POST_SUPPORT */
+
 	if (p == NULL)
 		goto error;
 	
 	status = read_status(p);
 	if (status < 0) {
 		pool_free_and_close(p);
-		p = send_request(url, request_headers);
+
+#ifdef POST_SUPPORT
+
+			p = send_request(url, request_headers, NULL, "GET");
+
+#else	/* POST_SUPPORT */
+
+	p = send_request(url, request_headers);
+
+#endif	/* POST_SUPPORT */
+
 		if (p == NULL)
 			goto error;
 		status = read_status(p);
@@ -212,7 +276,10 @@ List **reply_headers, Octstr **reply_body) {
 	gw_assert(reply_body != NULL);
 
 	ret = -1;
-	
+#ifdef POST_SUPPORT
+	http_header_add(request_headers, "Content-Length", "0");
+#endif
+
 	*final_url = octstr_duplicate(url);
 	for (i = 0; i < HTTP_MAX_FOLLOW; ++i) {
 		ret = http_get(*final_url, request_headers, reply_headers, 
@@ -240,6 +307,185 @@ List **reply_headers, Octstr **reply_body) {
 	
 	return ret;
 }
+
+#ifdef POST_SUPPORT
+
+
+	/*
+	 * 
+	 * The POST functionality is implemented by sending the request headers first with
+	 * an expect clause to wait for the http 100 response from the server before sending 
+	 * the request body on.
+	 *
+	 */
+
+
+int http_post(Octstr *url, List *request_headers, Octstr *request_body,
+			  List **reply_headers, Octstr **reply_body) {
+	int status;
+	HTTPSocket *p;
+	List *tmp_headers;
+	
+	gwlib_assert_init();
+	gw_assert(url != NULL);
+	gw_assert(request_headers != NULL);
+	gw_assert(request_body != NULL);
+	gw_assert(reply_headers != NULL);
+	gw_assert(reply_body != NULL);
+
+	*reply_headers = NULL;
+	*reply_body = NULL;
+
+	p = send_request(url, request_headers, NULL, "POST");
+	
+	if (p == NULL)
+		goto error;
+	
+	status = read_status(p);
+	debug("gwlib.http", 0, "Status of Send: %d", status);
+
+	if (status < 0) {
+		pool_free_and_close(p);
+
+		p = send_request(url, request_headers, NULL, "POST");
+		if (p == NULL)
+			goto error;
+
+		status = read_status(p);
+		debug("gwlib.http", 0, "Status of Send: %d", status);
+		if (status < 0)
+			goto error;
+
+	}
+
+	if (status == 100) {
+
+		/* 
+		 * This is to remove header information in the network buffer. 
+		 */
+		if (read_headers(p, &tmp_headers) == -1) {
+			goto error;
+		}
+		
+		/* 
+		 * send the request_body to the http server
+		 */
+		debug("gwlib.http", 0, "Dumping HTTP Request Body:");
+		octstr_dump(request_body, 0);
+		if (socket_write(p, request_body) == -1)
+			goto error;
+
+		status = read_status(p);
+		if (status < 0)
+			goto error;
+	}
+
+	if (read_headers(p, reply_headers) == -1)
+		goto error;
+
+	switch (read_body(p, *reply_headers, reply_body)) {
+	case -1:
+		goto error;
+	case 0:
+		pool_free_and_close(p);
+		break;
+	default:
+		pool_free(p);
+	}
+
+	if( tmp_headers != NULL)
+		list_destroy(tmp_headers);
+
+	return status;
+
+error:
+	if (p != NULL)
+		pool_free(p);
+
+	if( tmp_headers != NULL)
+		list_destroy(tmp_headers);
+
+	error(0, "Couldn't fetch <%s>", octstr_get_cstr(url));
+	return -1;
+}
+
+
+int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
+				   Octstr **final_url, List **reply_headers, Octstr **reply_body) {
+	int i, ret, len;
+	Octstr *h;
+	char buf[16];
+
+	gwlib_assert_init();
+	gw_assert(url != NULL);
+	gw_assert(final_url != NULL);
+	gw_assert(request_headers != NULL);
+	gw_assert(request_body != NULL);
+	gw_assert(reply_headers != NULL);
+	gw_assert(reply_body != NULL);
+
+
+	/* 
+	 * it is necessary to add some headers to support the Post request.
+	 * Having it here instead of the http_post function means it is 
+	 * only called once.
+	 * 
+	 * The Content-Length is added to the Post request so that the
+	 * receiver will be calculate the length of the request body.
+	 *  
+	 * The Expect header is added to check whether the server can handle this 
+	 * request or not. 
+	 */
+
+	if (NULL != request_body) {
+		len = octstr_len(request_body);	
+	} else {
+		len = 0;
+	}
+	sprintf(buf, "%ld", len);
+	http_header_add(request_headers, "Content-Length", buf);
+	http_header_add(request_headers, "Expect", "100-continue");
+
+	ret = -1;
+	
+	*final_url = octstr_duplicate(url);
+	for (i = 0; i < HTTP_MAX_FOLLOW; ++i) {
+		ret = http_post(*final_url, request_headers, request_body, reply_headers, 
+				reply_body);
+		/*
+		 * POST_SUPPORT
+		 * Added the HTTP_CREATED and HTTP_TEMPORARY_REDIRECT return values 
+		 * If the return value is any of these values then the url to return to
+		 * the caller is in the Location field and must be extracted.
+		 */
+		if (ret != HTTP_MOVED_PERMANENTLY && 
+			ret != HTTP_FOUND &&
+		    ret != HTTP_SEE_OTHER
+			)
+			break;
+		h = http_header_find_first(*reply_headers, "Location");
+		if (h == NULL) {
+			ret = -1;
+			break;
+		}
+		octstr_strip_blank(h);
+		octstr_destroy(*final_url);
+		*final_url = h;
+		while ((h = list_extract_first(*reply_headers)) != NULL)
+			octstr_destroy(h);
+		list_destroy(*reply_headers);
+		octstr_destroy(*reply_body);
+	}
+	if (ret == -1) {
+		octstr_destroy(*final_url);
+		*final_url = NULL;
+	}
+	
+	return ret;
+}
+
+#endif	/* POST_SUPPORT */
+
 
 
 HTTPSocket *http_server_open(int port) {
@@ -1108,15 +1354,37 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path) {
  * Add Host: and Content-Length: headers (and others that may be necessary).
  * Return the request as an Octstr.
  */
+
+#ifdef POST_SUPPORT
+
+static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port,
+List *headers, Octstr *request_body, char *method_name) {
+
+#else	/* POST_SUPPORT */
+
 static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port,
 List *headers) {
+
+#endif	/* POST_SUPPORT */
+
 /* XXX headers missing */
 	Octstr *request;
 	char buf[1024];
 	int i;
 
 	request = octstr_create_empty();
+
+#ifdef POST_SUPPORT
+
+	octstr_append_cstr(request, method_name);
+	octstr_append_cstr(request, " ");
+
+#else	/* POST_SUPPORT */
+
 	octstr_append_cstr(request, "GET ");
+
+#endif	/* POST_SUPPORT */
+	
 	octstr_append_cstr(request, octstr_get_cstr(path_or_url));
 	octstr_append_cstr(request, " HTTP/1.1\r\nHost: ");
 	octstr_append_cstr(request, octstr_get_cstr(host));
@@ -1124,12 +1392,32 @@ List *headers) {
 		sprintf(buf, ":%ld", port);
 		octstr_append_cstr(request, buf);
 	}
+
+#ifdef POST_SUPPORT
+
+	octstr_append_cstr(request, "\r\n");
+
+#else	/* POST_SUPPORT */
+
 	octstr_append_cstr(request, "\r\nContent-Length: 0\r\n");
+
+#endif /* POST_SUPPORT */
+
 	for (i = 0; headers != NULL && i < list_len(headers); ++i) {
 		octstr_append(request, list_get(headers, i));
 		octstr_append_cstr(request, "\r\n");
 	}
 	octstr_append_cstr(request, "\r\n");
+
+#ifdef POST_SUPPORT
+
+	if (NULL!=request_body) {
+		octstr_append(request, request_body);
+	}
+
+#endif	/* POST_SUPPORT */
+
+
 	return request;
 }
 
@@ -1174,7 +1462,18 @@ static int parse_status(Octstr *statusline) {
  * Build and send the HTTP request. Return socket from which the
  * response can be read or -1 for error.
  */
+
+#ifdef POST_SUPPORT
+
+static HTTPSocket *send_request(Octstr *url, List *request_headers, 
+						Octstr *request_body, char *method_name) {
+
+#else	/* POST_SUPPORT */
+
 static HTTPSocket *send_request(Octstr *url, List *request_headers) {
+
+#endif	/* POST_SUPPORT */
+
 	Octstr *host, *path, *request;
 	long port;
 	HTTPSocket *p;
@@ -1188,10 +1487,20 @@ static HTTPSocket *send_request(Octstr *url, List *request_headers) {
 		goto error;
 
 	if (proxy_used_for_host(host)) {
+
+#ifdef POST_SUPPORT
+		request = build_request(url, host, port, request_headers, request_body, method_name);
+#else	/* POST_SUPPORT */
 		request = build_request(url, host, port, request_headers);
+#endif	/* POST_SUPPORT */
+
 		p = pool_allocate(proxy_hostname, proxy_port);
 	} else {
+#ifdef POST_SUPPORT
+		request = build_request(path, host, port, request_headers, request_body, method_name);
+#else	/* POST_SUPPORT */
 		request = build_request(path, host, port, request_headers);
+#endif	/* POST_SUPPORT */
 		p = pool_allocate(host, port);
 	}
 	if (p == NULL)
