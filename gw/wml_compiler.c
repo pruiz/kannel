@@ -1522,7 +1522,7 @@ static int only_blanks(const char *text)
     int len = strlen(text);
 
     while ((j<len) && blank) {
-	blank = blank && isspace(text[j]);
+	blank = blank && isspace((int)text[j]);
 	j++;
     }
  

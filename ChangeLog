@@ -1,3 +1,14 @@
+2001-03-19  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: Fixed a warning.
+
+	* checks/check_compiler.sh: A simple script added that takes a WML 
+	source, runs it through the WML compiler and the decompiler and 
+	diffes the original file to the output and reports an error if 
+	they do differ.
+
+	* test/testcase.wml: A testcase for the check_compiler added.
+
 2001-03-19  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsc_http.c: Shutdown state was not initialized. Fixed.
