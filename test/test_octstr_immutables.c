@@ -2,23 +2,31 @@
  * test_octstr_immutables.c - simple testing of octstr_imm()
  */
 
+#include <stdio.h>   
+
 #include "gwlib/gwlib.h"
 
-int main(void) {
-	Octstr *os;
+int main(int argc, char **argv) 
+{
+    Octstr *os;
 
-	gwlib_init();
+    gwlib_init();
 	
-	os = octstr_imm("foo");
+    if (optind >= argc) {
+        os = octstr_imm("foo");
+    } else {
+        os = octstr_imm(argv[optind]);
+    }
 
-	/* 
-	 * Note: don't destroy this, check that the log file has no
-	 * memory leaks.
-	 */
+    /* 
+     * Note: don't destroy this, check that the log file has no
+     * memory leaks.
+     */
 	
-	octstr_dump(os, 0);
+    octstr_dump(os, 0);
 	
-	gwlib_shutdown();
+    gwlib_shutdown();
 
-	return 0;
+    return 0;
 }
+
