@@ -50,6 +50,7 @@ dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/ioctl.h sys/time.h sys/types.h unistd.h)
 AC_CHECK_HEADERS(pthread.h getopt.h)
+AC_CHECK_HEADER(sys/strsun.h, CFLAGS="$CFLAGS -DSunOS=1") 
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 
@@ -58,7 +59,6 @@ dnl Checks for library functions.
 AC_CHECK_FUNCS(gettimeofday select socket strdup cfmakeraw getopt_long)
 AC_CHECK_FUNC(getopt, , LIBOBJS="$LIBOBJS utils/attgetopt.o")
 AC_SUBST(LIBOBJS)
-
 
 dnl Extra feature checks
 
