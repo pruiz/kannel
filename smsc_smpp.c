@@ -533,6 +533,7 @@ int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 	return 1;
 
 error:
+	error(errno, "smpp_submit_msg: error");
 	return -1;
 }
 
@@ -547,6 +548,7 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 	if( fifo_pop(smsc->received_mo, &pdu) == 1 ) {
 
 		deliver_sm = (struct smpp_pdu_deliver_sm*) pdu->message_body;
+		if(deliver_sm==NULL) goto error;
 
 		/* Change the number format on msg->sender. */
 		newnum = malloc(strlen(deliver_sm->source_addr)+1);
@@ -567,6 +569,7 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 			newmsg->smart_sms.receiver = octstr_create(deliver_sm->dest_addr);
 			newmsg->smart_sms.sender = octstr_create(deliver_sm->source_addr);
 			newmsg->smart_sms.msgdata = octstr_create(deliver_sm->short_message);
+			newmsg->smart_sms.udhdata = octstr_create("");
 
 		} else if( deliver_sm->esm_class == 3 ) {
 
@@ -591,7 +594,7 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 
 	return 0;
 error:
-	error(errno, "smpp_receive_smsmessage: error");
+	error(errno, "smpp_receive_msg: error");
 	msg_destroy(newmsg);
 	return -1;
 }
