@@ -1,5 +1,11 @@
 2000-06-19  Kalle Marjola  <rpr@wapit.com>
 
+	* gwlib/http.c: parse_url() modified to change start of the url
+	tolower() so that comprasion to http:// succeeds even with
+	HTTP://
+
+2000-06-19  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bb_smsc.c: added suspend-mode to sms_router to synchronize
 	start-up
 
