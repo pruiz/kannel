@@ -101,12 +101,14 @@ WAPEvent *wsp_unit_unpack_wdp_datagram(Msg *msg) {
 				msg->wdp_datagram.source_port,
 				msg->wdp_datagram.destination_address,
 				msg->wdp_datagram.destination_port);
-	event->u.S_Unit_MethodInvoke_Ind.tid = tid_byte;
-	event->u.S_Unit_MethodInvoke_Ind.method = pdu->type;
+	event->u.S_Unit_MethodInvoke_Ind.transaction_id = tid_byte;
+	/* FIXME: This only works for Get pdus. */
+	event->u.S_Unit_MethodInvoke_Ind.method = 0x40 + pdu->u.Get.subtype;
 	event->u.S_Unit_MethodInvoke_Ind.request_uri = 
 		octstr_duplicate(pdu->u.Get.uri);
 	event->u.S_Unit_MethodInvoke_Ind.request_headers = 
 		unpack_headers(pdu->u.Get.headers);
+	event->u.S_Unit_MethodInvoke_Ind.request_body = NULL;
 	
 	return event;
 
@@ -167,7 +169,7 @@ static Msg *pack_into_datagram(WAPEvent *event) {
 		return NULL;
 
 	os = octstr_create_empty();
-	octstr_append_char(os, p->tid);
+	octstr_append_char(os, p->transaction_id);
 	octstr_append(os, ospdu);
 	octstr_destroy(ospdu);
 

@@ -139,18 +139,56 @@ static void main_thread(void *arg) {
 			gwthread_create(fetch_thread, ind);
 
 			res = wap_event_create(S_MethodInvoke_Res);
-			res->u.S_MethodInvoke_Res.mid = 
-				ind->u.S_MethodInvoke_Ind.mid;
-			res->u.S_MethodInvoke_Res.tid = 
-				ind->u.S_MethodInvoke_Ind.tid;
-			res->u.S_MethodInvoke_Res.msmid = 
-				ind->u.S_MethodInvoke_Ind.msmid;
+			res->u.S_MethodInvoke_Res.server_transaction_id =
+				ind->u.S_MethodInvoke_Ind.server_transaction_id;
+			res->u.S_MethodInvoke_Res.session_id =
+				ind->u.S_MethodInvoke_Ind.session_id;
 			wsp_session_dispatch_event(res);
-
 			break;
+
 		case S_Unit_MethodInvoke_Ind:
 			gwthread_create(fetch_thread, ind);
 			break;
+
+		case S_Connect_Ind:
+			res = wap_event_create(S_Connect_Res);
+			/* FIXME: Not yet used by WSP layer */
+			res->u.S_Connect_Res.server_headers = NULL;
+			/* FIXME: Not yet used by WSP layer */
+			res->u.S_Connect_Res.negotiated_capabilities = NULL;
+			res->u.S_Connect_Res.session_id =
+				ind->u.S_Connect_Ind.session_id;
+			wsp_session_dispatch_event(res);
+			wap_event_destroy(ind);
+			break;
+
+		case S_Disconnect_Ind:
+			wap_event_destroy(ind);
+			break;
+
+		case S_Suspend_Ind:
+			wap_event_destroy(ind);
+			break;
+
+		case S_Resume_Ind:
+			res = wap_event_create(S_Resume_Res);
+			/* FIXME: Not yet used by WSP layer */
+			res->u.S_Resume_Res.server_headers = NULL;
+			res->u.S_Resume_Res.session_id =
+				ind->u.S_Resume_Ind.session_id;
+			wsp_session_dispatch_event(res);
+			wap_event_destroy(ind);
+			break;
+
+		case S_MethodResult_Cnf:
+			wap_event_destroy(ind);
+			break;
+
+		case S_MethodAbort_Ind:
+			/* XXX Interrupt the fetch thread somehow */
+			wap_event_destroy(ind);
+			break;
+
 		default:
 			panic(0, "APPL: Can't handle %s event",
 				wap_event_name(ind->type));
@@ -349,11 +387,10 @@ static void fetch_thread(void *arg) {
 			event->u.S_MethodInvoke_Ind.server_transaction_id;
 		e->u.S_MethodResult_Req.status = status;
 		e->u.S_MethodResult_Req.response_type = content.type;
+		/* XXX Fill these in */
+		e->u.S_MethodResult_Req.response_headers = NULL;
 		e->u.S_MethodResult_Req.response_body = content.body;
-		e->u.S_MethodResult_Req.mid = event->u.S_MethodInvoke_Ind.mid;
-		e->u.S_MethodResult_Req.tid = event->u.S_MethodInvoke_Ind.tid;
-		e->u.S_MethodResult_Req.msmid = 
-			event->u.S_MethodInvoke_Ind.msmid;
+		e->u.S_MethodResult_Req.session_id = session_id;
 	
 		wsp_session_dispatch_event(e);
 	} else {
@@ -361,10 +398,12 @@ static void fetch_thread(void *arg) {
 		e->u.S_Unit_MethodResult_Req.addr_tuple = 
 			wap_addr_tuple_duplicate(
 				event->u.S_Unit_MethodInvoke_Ind.addr_tuple);
-		e->u.S_Unit_MethodResult_Req.tid = 
-			event->u.S_Unit_MethodInvoke_Ind.tid;
+		e->u.S_Unit_MethodResult_Req.transaction_id = 
+			event->u.S_Unit_MethodInvoke_Ind.transaction_id;
 		e->u.S_Unit_MethodResult_Req.status = status;
 		e->u.S_Unit_MethodResult_Req.response_type = content.type;
+		/* XXX Fill these in */
+		e->u.S_Unit_MethodResult_Req.response_headers = NULL;
 		e->u.S_Unit_MethodResult_Req.response_body = content.body;
 	
 		wsp_unit_dispatch_event(e);

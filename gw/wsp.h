@@ -35,6 +35,21 @@
 #define WSP_HCP_SET	64
 #define WSP_A_SET	128
 
+/* See Table 35 */
+enum wsp_abort_values {
+	WSP_ABORT_PROTOERR = 0xe0,
+	WSP_ABORT_DISCONNECT = 0xe1,
+	WSP_ABORT_SUSPEND = 0xe2,
+	WSP_ABORT_RESUME = 0xe3,
+	WSP_ABORT_CONGESTION = 0xe4,
+	WSP_ABORT_CONNECTERR = 0xe5,
+	WSP_ABORT_MRUEXCEEDED = 0xe6,
+	WSP_ABORT_MOREXCEEDED = 0xe7,
+	WSP_ABORT_PEERREQ = 0xe8,
+	WSP_ABORT_NETERR = 0xe9,
+	WSP_ABORT_USERREQ = 0xea
+};
+
 
 typedef struct WSPMachine WSPMachine;
 typedef struct WSPMethodMachine WSPMethodMachine;
@@ -49,6 +64,7 @@ struct WSPMachine {
 	#define OCTSTR(name) Octstr *name;
 	#define HTTPHEADERS(name) List *name;
 	#define ADDRTUPLE(name) WAPAddrTuple *name;
+	#define METHODMACHINES(name) List *name;
 	#define MACHINE(fields) fields
 	#include "wsp-session-machine.h"
 };
@@ -57,6 +73,7 @@ struct WSPMachine {
 struct WSPMethodMachine {
 	#define INTEGER(name) long name;
 	#define ADDRTUPLE(name) WAPAddrTuple *name;
+	#define EVENT(name) WAPEvent *name;
 	#define MACHINE(fields) fields
 	#include "wsp-method-machine.h"
 };

@@ -344,7 +344,7 @@ static void wtp_handle_event(WTPMachine *machine, WAPEvent *event){
 		(condition)) { \
 		action \
 		machine->state = next_state; \
-		debug("wap.wtp", 0, "WTP: New state %s", #next_state); \
+		debug("wap.wtp", 0, "WTP %ld: New state %s", machine->mid, #next_state); \
 	     } else 
      #include "wtp_state-decl.h"
 	     {
@@ -395,12 +395,21 @@ static WTPMachine *wtp_machine_find_or_create(WAPEvent *event){
 		       tuple = event->u.RcvErrorPDU.addr_tuple;
                   break;
 
+		  case TR_Invoke_Req:
+			/* XXX We don't support this yet, we have to
+			 * be WTP Initiator too to get this right. */
+			break;
+
 		  case TR_Invoke_Res:
-		  	mid = event->u.TR_Invoke_Res.mid;
+		  	mid = event->u.TR_Invoke_Res.handle;
 			break;
 
 		  case TR_Result_Req:
-		  	mid = event->u.TR_Result_Req.mid;
+		  	mid = event->u.TR_Result_Req.handle;
+			break;
+
+		  case TR_Abort_Req:
+			mid = event->u.TR_Abort_Req.handle;
 			break;
 
                   default:
@@ -546,10 +555,9 @@ static WAPEvent *create_tr_invoke_ind(WTPMachine *sm, Octstr *user_data) {
 	event->u.TR_Invoke_Ind.ack_type = sm->u_ack;
 	event->u.TR_Invoke_Ind.user_data = octstr_duplicate(user_data);
 	event->u.TR_Invoke_Ind.tcl = sm->tcl;
-	event->u.TR_Invoke_Ind.tid = sm->tid;
-	event->u.TR_Invoke_Ind.mid = sm->mid;
 	event->u.TR_Invoke_Ind.addr_tuple = 
 		wap_addr_tuple_duplicate(sm->addr_tuple);
+	event->u.TR_Invoke_Ind.handle = sm->mid;
 	return event;
 }
 
@@ -561,9 +569,9 @@ static WAPEvent *create_tr_result_cnf(WTPMachine *sm) {
 	WAPEvent *event;
 	
 	event = wap_event_create(TR_Result_Cnf);
-	event->u.TR_Result_Cnf.tid = sm->tid;
 	event->u.TR_Result_Cnf.addr_tuple = 
 		wap_addr_tuple_duplicate(sm->addr_tuple);
+	event->u.TR_Result_Cnf.handle = sm->mid;
 	return event;
 }
 
@@ -577,10 +585,9 @@ static WAPEvent *create_tr_abort_ind(WTPMachine *sm, long abort_reason) {
 	event = wap_event_create(TR_Abort_Ind);
 
 	event->u.TR_Abort_Ind.abort_code = abort_reason;
-	event->u.TR_Abort_Ind.tid = sm->tid;
-	event->u.TR_Abort_Ind.mid = sm->mid;
 	event->u.TR_Abort_Ind.addr_tuple = 
 		wap_addr_tuple_duplicate(sm->addr_tuple);
+	event->u.TR_Abort_Ind.handle = sm->mid;
 
 	return event;
 }

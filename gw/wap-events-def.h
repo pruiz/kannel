@@ -13,72 +13,111 @@ WAPEVENT(TR_Invoke_Ind,
         INTEGER(ack_type)
         OCTSTR(user_data)
         INTEGER(tcl)
-	INTEGER(tid)
-	INTEGER(mid)
 	ADDRTUPLE(addr_tuple)
+	INTEGER(handle)
 	)
 
 WAPEVENT(TR_Result_Cnf,
 	ADDRTUPLE(addr_tuple)
-	INTEGER(tid)
+	INTEGER(handle)
         )
 
 WAPEVENT(TR_Abort_Ind,
         INTEGER(abort_code)
-	INTEGER(tid)
-	INTEGER(mid)
 	ADDRTUPLE(addr_tuple)
+	INTEGER(handle)
         )
 
-WAPEVENT(S_Connect_Res,
-	INTEGER(tid)
-	INTEGER(mid)
-	OCTSTR(server_headers)
-	OCTSTR(negotiated_capabilities)
+WAPEVENT(S_Connect_Ind,
+	ADDRTUPLE(addr_tuple)
+	HTTPHEADER(client_headers)
+	OCTSTR(requested_capabilities)
+	INTEGER(session_id)
 	)
 
-WAPEVENT(Release,
-	INTEGER(tid)
-	INTEGER(mid)
-	INTEGER(msmid)
-	OCTSTR(url)
-	HTTPHEADER(http_headers)
-
-	HTTPHEADER(session_headers)
-	ADDRTUPLE(addr_tuple)
+WAPEVENT(S_Connect_Res,
+	HTTPHEADER(server_headers)
+	OCTSTR(negotiated_capabilities)
 	INTEGER(session_id)
-	INTEGER(client_SDU_size)
+	)
+
+WAPEVENT(S_Disconnect_Ind,
+	INTEGER(reason_code)
+	INTEGER(redirect_security)
+	INTEGER(redirect_addresses)
+	OCTSTR(error_headers)
+	OCTSTR(error_body)
+	INTEGER(session_id)
+	)
+
+WAPEVENT(S_Suspend_Ind,
+	INTEGER(reason)
+	INTEGER(session_id)
+	)
+
+WAPEVENT(S_Resume_Ind,
+	ADDRTUPLE(addr_tuple)
+	HTTPHEADER(client_headers)
+	INTEGER(session_id)
+	)
+
+WAPEVENT(S_Resume_Res,
+	HTTPHEADER(server_headers)
+	INTEGER(session_id)
+	)
+
+WAPEVENT(Disconnect_Event,
+	INTEGER(session_id)
+	)
+
+WAPEVENT(Suspend_Event,
+	INTEGER(session_id)
+	)
+
+WAPEVENT(Release_Event,
+	INTEGER(dummy)
+	)
+
+WAPEVENT(Abort_Event,
+	INTEGER(reason)
 	)
 
 WAPEVENT(S_MethodInvoke_Ind,
-	INTEGER(tid)
-	INTEGER(mid)
-	OCTSTR(url)
-	INTEGER(method)
-	HTTPHEADER(http_headers)
 	INTEGER(server_transaction_id)
+	INTEGER(method)
+	OCTSTR(url)
+	HTTPHEADER(http_headers)
+	OCTSTR(body)
 
-	INTEGER(msmid)
 	HTTPHEADER(session_headers)
 	ADDRTUPLE(addr_tuple)
-	INTEGER(session_id)
 	INTEGER(client_SDU_size)
+	INTEGER(session_id)
 	)
 
 WAPEVENT(S_MethodInvoke_Res,
-	INTEGER(tid)
-	INTEGER(mid)
-	INTEGER(msmid)
+	INTEGER(server_transaction_id)
+	INTEGER(session_id)
 	)
 
 WAPEVENT(S_MethodResult_Req,
 	INTEGER(server_transaction_id)
 	INTEGER(status)
 	OCTSTR(response_type)
+	OCTSTR(response_headers)
 	OCTSTR(response_body)
-	INTEGER(tid)
-	INTEGER(mid)
-	INTEGER(msmid)
+	INTEGER(session_id)
+	)
+
+WAPEVENT(S_MethodResult_Cnf,
+	INTEGER(server_transaction_id)
+	INTEGER(session_id)
+	)
+
+WAPEVENT(S_MethodAbort_Ind,
+	INTEGER(transaction_id)
+	INTEGER(reason)
+	INTEGER(session_id)
 	)
 
 WAPEVENT(RcvInvoke,
@@ -109,26 +148,24 @@ WAPEVENT(RcvAck,
 WAPEVENT(TR_Invoke_Req,
 	ADDRTUPLE(addr_tuple)
 	INTEGER(ack_type)
-	INTEGER(tcl)
 	OCTSTR(user_data)
+	INTEGER(tcl)
+	INTEGER(handle)
 	)
 
 WAPEVENT(TR_Invoke_Res,
-	INTEGER(tid)
-	INTEGER(mid);
+	INTEGER(handle)
 	)
 
 WAPEVENT(TR_Result_Req,
-	INTEGER(tid)
 	OCTSTR(user_data)
-	INTEGER(mid)
+	INTEGER(handle)
 	)
 
 WAPEVENT(TR_Abort_Req,
-	INTEGER(tid)
 	INTEGER(abort_type)
 	INTEGER(abort_reason)
-	INTEGER(mid)
+	INTEGER(handle)
 	) 
 
 WAPEVENT(TimerTO_A,
@@ -150,7 +187,7 @@ WAPEVENT(RcvErrorPDU,
 
 WAPEVENT(S_Unit_MethodInvoke_Ind,
 	ADDRTUPLE(addr_tuple)
-	INTEGER(tid)
+	INTEGER(transaction_id)
 	INTEGER(method)
 	OCTSTR(request_uri)
 	HTTPHEADER(request_headers)
@@ -159,13 +196,12 @@ WAPEVENT(S_Unit_MethodInvoke_Ind,
 
 WAPEVENT(S_Unit_MethodResult_Req,
 	ADDRTUPLE(addr_tuple)
-	INTEGER(tid)
+	INTEGER(transaction_id)
 	INTEGER(status)
 	OCTSTR(response_type)
 	HTTPHEADER(response_headers)
 	OCTSTR(response_body)
 	)
-
 
 #undef WAPEVENT
 #undef OCTSTR

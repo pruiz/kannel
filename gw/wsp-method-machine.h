@@ -6,18 +6,21 @@
 
 #if 	!defined(INTEGER) || \
 	!defined(ADDRTUPLE) || \
+	!defined(EVENT) || \
 	!defined(MACHINE)
 #error "Some required macro is missing."
 #endif
 
 MACHINE(
-	INTEGER(id)
+	INTEGER(transaction_id)
 	INTEGER(state)
 	ADDRTUPLE(addr_tuple)
-	INTEGER(tid)
+	EVENT(invoke)
+	INTEGER(session_id)
 )
 
 
 #undef INTEGER
 #undef ADDRTUPLE
+#undef EVENT
 #undef MACHINE

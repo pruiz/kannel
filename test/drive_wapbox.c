@@ -80,7 +80,7 @@ struct client_status {
 	/* -1 if we're not connected */
 	long wsp_session_id;
 
-	/* Number of successful page fetches */
+	/* Number of successful page fetches this session */
 	int pages_fetched;
 
 	/* Source port to use for this client; should be unique. */
@@ -369,6 +369,7 @@ static void send_invoke_get(Connection *boxc, Client *client) {
 static void record_disconnect(Client *client) {
 	client->wsp_connected = 0;
 	client->wsp_session_id = -1;
+	client->pages_fetched = 0;
 	increment_tid(client);
 }
 

@@ -16,39 +16,106 @@ STATE_NAME(REQUESTING)
 STATE_NAME(PROCESSING)
 STATE_NAME(REPLYING)
 
+/* MISSING: TR_Invoke.ind, N_Methods == MOM */
+
 ROW(NULL_METHOD,
-	Release,
+	TR_Invoke_Ind,
+	e->tcl == 2 && pdu->type == Get,
+	{
+		List *headers;
+		WAPEvent *invoke;
+
+		/* Prepare the MethodInvoke here, because we have all
+		 * the information nicely available. */
+
+		if (octstr_len(pdu->u.Get.headers) > 0)
+			headers = unpack_headers(pdu->u.Get.headers);
+		else
+			headers = NULL;
+
+		invoke = wap_event_create(S_MethodInvoke_Ind);
+		invoke->u.S_MethodInvoke_Ind.server_transaction_id =
+			msm->transaction_id;
+		/* XXX This 0x40 is the GET type, must fix it for POST/PUT */
+		invoke->u.S_MethodInvoke_Ind.method = 0x40 + pdu->u.Get.subtype;
+		invoke->u.S_MethodInvoke_Ind.url =
+			octstr_duplicate(pdu->u.Get.uri);
+		invoke->u.S_MethodInvoke_Ind.http_headers = headers;
+		invoke->u.S_MethodInvoke_Ind.body = NULL; /* Use for POST */
+		invoke->u.S_MethodInvoke_Ind.session_headers =
+			http_header_duplicate(sm->http_headers);
+		invoke->u.S_MethodInvoke_Ind.addr_tuple =
+			wap_addr_tuple_duplicate(sm->addr_tuple);
+		invoke->u.S_MethodInvoke_Ind.client_SDU_size =
+			sm->client_SDU_size;
+		invoke->u.S_MethodInvoke_Ind.session_id =
+			msm->session_id;
+
+		msm->invoke = invoke;
+	},
+	HOLDING)
+		
+ROW(HOLDING,
+	Release_Event,
 	1,
 	{
-		WAPEvent *new_event;
-
-		/* 
-		 * This is where we start the HTTP fetch.
-		 * We fork a new thread for it; if the fork succeeds,
-		 * the thread sends us a S-MethodInvoke.res event. If
-		 * it fails, then we have a problem.
-		 */
-		 
-		new_event = wap_event_create(S_MethodInvoke_Ind);
-		new_event->u.S_MethodInvoke_Ind.mid = e->mid;
-		new_event->u.S_MethodInvoke_Ind.tid = e->tid;
-		new_event->u.S_MethodInvoke_Ind.url = octstr_duplicate(e->url);
-		new_event->u.S_MethodInvoke_Ind.method = Get_PDU;
-		new_event->u.S_MethodInvoke_Ind.http_headers = 
-			http_header_duplicate(e->http_headers);
-		new_event->u.S_MethodInvoke_Ind.server_transaction_id = 
-			new_server_transaction_id();
-		new_event->u.S_MethodInvoke_Ind.msmid = msm->id;
-		new_event->u.S_MethodInvoke_Ind.session_headers = 
-			http_header_duplicate(e->session_headers);
-		new_event->u.S_MethodInvoke_Ind.addr_tuple = 
-			wap_addr_tuple_duplicate(e->addr_tuple);
-		new_event->u.S_MethodInvoke_Ind.session_id = e->session_id;
-		new_event->u.S_MethodInvoke_Ind.client_SDU_size = 
-			e->client_SDU_size;
-		wap_appl_dispatch(new_event);
+		/* S-MethodInvoke.ind */
+		wap_appl_dispatch(msm->invoke);
+		msm->invoke = NULL;
 	},
 	REQUESTING)
+
+ROW(HOLDING,
+	Abort_Event,
+	1,
+	{
+		/* Decrement N_Methods; we don't do that */
+		/* Tr-Abort.req(abort reason) the method */
+		wsp_method_abort(msm, e->reason);
+	},
+	NULL_METHOD)
+
+ROW(HOLDING,
+	TR_Abort_Ind,
+	e->abort_code == WSP_ABORT_DISCONNECT,
+	{
+		WAPEvent *wsp_event;
+
+		/* Disconnect the session */
+		wsp_event = wap_event_create(Disconnect_Event);
+		wsp_event->u.Disconnect_Event.session_id = msm->session_id;
+		/* We put this on the queue instead of doing it right away,
+		 * because the session machine is currently our caller and
+		 * we don't want to recurse.  We put it in the front of
+		 * the queue because the state machine definitions expect
+		 * an event to be handled completely before the next is
+		 * started. */
+		list_insert(queue, 0, wsp_event);
+	},
+	HOLDING)
+
+ROW(HOLDING,
+	TR_Abort_Ind,
+	e->abort_code = WSP_ABORT_SUSPEND,
+	{
+		WAPEvent *wsp_event;
+
+		/* Suspend the session */
+		wsp_event = wap_event_create(Suspend_Event);
+		wsp_event->u.Suspend_Event.session_id = msm->session_id;
+		/* See story for Disconnect, above */
+		list_insert(queue, 0, wsp_event);
+	},
+	HOLDING)
+
+ROW(HOLDING,
+	TR_Abort_Ind,
+	e->abort_code != WSP_ABORT_DISCONNECT
+	&& e->abort_code != WSP_ABORT_SUSPEND,
+	{
+		/* Decrement N_Methods; we don't do that */
+	},
+	NULL_METHOD)
 
 ROW(REQUESTING,
 	S_MethodInvoke_Res,
@@ -58,11 +125,64 @@ ROW(REQUESTING,
 		
 		/* Send TR-Invoke.res to WTP */
 		wtp_event = wap_event_create(TR_Invoke_Res);
-		wtp_event->u.TR_Invoke_Res.tid = e->tid;
-		wtp_event->u.TR_Invoke_Res.mid = e->mid;
+		wtp_event->u.TR_Invoke_Res.handle = msm->transaction_id;
 		wtp_dispatch_event(wtp_event);
 	},
 	PROCESSING)
+
+/* MISSING: REQUESTING, S-MethodAbort.req */
+
+ROW(REQUESTING,
+	Abort_Event,
+	1,
+	{
+		/* Decrement N_Methods; we don't do that */
+
+		/* TR-Abort.req(abort reason) the method */
+		wsp_method_abort(msm, e->reason);
+
+		/* S-MethodAbort.ind(abort reason) */
+		wsp_indicate_method_abort(msm, e->reason);
+	},
+	NULL_METHOD)
+
+ROW(REQUESTING,
+	TR_Abort_Ind,
+	e->abort_code == WSP_ABORT_DISCONNECT,
+	{
+		WAPEvent *wsp_event;
+
+		/* Disconnect the session */
+		wsp_event = wap_event_create(Disconnect_Event);
+		wsp_event->u.Disconnect_Event.session_id = msm->session_id;
+		list_insert(queue, 0, wsp_event);
+	},
+	REQUESTING)
+
+ROW(REQUESTING,
+	TR_Abort_Ind,
+	e->abort_code = WSP_ABORT_SUSPEND,
+	{
+		WAPEvent *wsp_event;
+
+		/* Suspend the session */
+		wsp_event = wap_event_create(Suspend_Event);
+		wsp_event->u.Suspend_Event.session_id = msm->session_id;
+		list_insert(queue, 0, wsp_event);
+	},
+	REQUESTING)
+
+ROW(REQUESTING,
+	TR_Abort_Ind,
+	e->abort_code != WSP_ABORT_DISCONNECT
+	&& e->abort_code != WSP_ABORT_SUSPEND,
+	{
+		/* Decrement N_Methods; we don't do that */
+
+		/* S-MethodAbort.ind(abort reason) */
+		wsp_indicate_method_abort(msm, e->abort_code);
+	},
+	NULL_METHOD)
 
 ROW(PROCESSING,
 	S_MethodResult_Req,
@@ -70,7 +190,8 @@ ROW(PROCESSING,
 	{
 		WAPEvent *wtp_event;
 		WSP_PDU *new_pdu;
-		
+
+		/* TR-Result.req */
 		new_pdu = wsp_pdu_create(Reply);
 		new_pdu->u.Reply.status = 
 			wsp_convert_http_status_to_wsp_status(e->status);
@@ -80,20 +201,138 @@ ROW(PROCESSING,
 
 		/* Send TR-Result.req to WTP */
 		wtp_event = wap_event_create(TR_Result_Req);
-		wtp_event->u.TR_Result_Req.tid = e->tid;
 		wtp_event->u.TR_Result_Req.user_data = wsp_pdu_pack(new_pdu);
-		wtp_event->u.TR_Result_Req.mid = e->mid;
+		wtp_event->u.TR_Result_Req.handle = msm->transaction_id;
 		wtp_dispatch_event(wtp_event);
 		wsp_pdu_destroy(new_pdu);
 	},
 	REPLYING)
 
+/* MISSING: PROCESSING, S-MethodAbort.req */
+
+ROW(PROCESSING,
+	Abort_Event,
+	1,
+	{
+		/* Decrement N_Methods; we don't do that */
+
+		/* TR-Abort.req(abort reason) the method */
+		wsp_method_abort(msm, e->reason);
+
+		/* S-MethodAbort.ind(abort reason) */
+		wsp_indicate_method_abort(msm, e->reason);
+	},
+	NULL_METHOD)
+
+ROW(PROCESSING,
+	TR_Abort_Ind,
+	e->abort_code == WSP_ABORT_DISCONNECT,
+	{
+		WAPEvent *wsp_event;
+
+		/* Disconnect the session */
+		wsp_event = wap_event_create(Disconnect_Event);
+		wsp_event->u.Disconnect_Event.session_id = msm->session_id;
+		list_insert(queue, 0, wsp_event);
+	},
+	PROCESSING)
+
+ROW(PROCESSING,
+	TR_Abort_Ind,
+	e->abort_code = WSP_ABORT_SUSPEND,
+	{
+		WAPEvent *wsp_event;
+
+		/* Suspend the session */
+		wsp_event = wap_event_create(Suspend_Event);
+		wsp_event->u.Suspend_Event.session_id = msm->session_id;
+		list_insert(queue, 0, wsp_event);
+	},
+	PROCESSING)
+
+ROW(PROCESSING,
+	TR_Abort_Ind,
+	e->abort_code != WSP_ABORT_DISCONNECT
+	&& e->abort_code != WSP_ABORT_SUSPEND,
+	{
+		/* Decrement N_Methods; we don't do that */
+
+		/* S-MethodAbort.ind(abort reason) */
+		wsp_indicate_method_abort(msm, e->abort_code);
+	},
+	NULL_METHOD)
+
+/* MISSING: REPLYING, S-MethodAbort.req */
+
+ROW(REPLYING,
+	Abort_Event,
+	1,
+	{
+		/* Decrement N_Methods; we don't do that */
+
+		/* TR-Abort.req(abort reason) the method */
+		wsp_method_abort(msm, e->reason);
+
+		/* S-MethodAbort.ind(abort reason) */
+		wsp_indicate_method_abort(msm, e->reason);
+	},
+	NULL_METHOD)
+
 ROW(REPLYING,
 	TR_Result_Cnf,
 	1,
 	{
+		WAPEvent *new_event;
+
+		/* Decrement N_Methods; we don't do that */
+
+		/* S-MethodResult.cnf */
+		/* We don't do acknowledgement headers */
+		new_event = wap_event_create(S_MethodResult_Cnf);
+		new_event->u.S_MethodResult_Cnf.server_transaction_id =
+			msm->transaction_id;
+		new_event->u.S_MethodResult_Cnf.session_id = msm->session_id;
+		wap_appl_dispatch(new_event);
 	},
 	NULL_METHOD)
+
+ROW(REPLYING,
+	TR_Abort_Ind,
+	e->abort_code == WSP_ABORT_DISCONNECT,
+	{
+		WAPEvent *wsp_event;
+
+		/* Disconnect the session */
+		wsp_event = wap_event_create(Disconnect_Event);
+		wsp_event->u.Disconnect_Event.session_id = msm->session_id;
+		list_insert(queue, 0, wsp_event);
+	},
+	REPLYING)
+
+ROW(REPLYING,
+	TR_Abort_Ind,
+	e->abort_code = WSP_ABORT_SUSPEND,
+	{
+		WAPEvent *wsp_event;
+
+		/* Suspend the session */
+		wsp_event = wap_event_create(Suspend_Event);
+		wsp_event->u.Suspend_Event.session_id = msm->session_id;
+		list_insert(queue, 0, wsp_event);
+	},
+	REPLYING)
+
+ROW(REPLYING,
+	TR_Abort_Ind,
+	e->abort_code != WSP_ABORT_DISCONNECT
+	&& e->abort_code != WSP_ABORT_SUSPEND,
+	{
+		/* Decrement N_Methods; we don't do that */
+
+		/* S-MethodAbort.ind(abort reason) */
+		wsp_indicate_method_abort(msm, e->abort_code);
+	},
+	REPLYING)
 
 #undef ROW
 #undef STATE_NAME

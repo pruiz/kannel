@@ -86,7 +86,6 @@ Msg *wtp_send_result(WTPMachine *machine, WAPEvent *event){
      pdu->u.Result.gtr = 1;
      pdu->u.Result.ttr = 1;
      pdu->u.Result.rid = 0;
-     gw_assert(event->u.TR_Result_Req.tid == machine->tid);
      pdu->u.Result.tid = send_tid(machine);
      pdu->u.Result.user_data = 
      	octstr_duplicate(event->u.TR_Result_Req.user_data);
@@ -131,7 +130,6 @@ void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine,
      pdu = wtp_pdu_create(Abort);
      pdu->u.Abort.con = 0;
      pdu->u.Abort.abort_type = abort_type;
-     gw_assert(event->u.TR_Abort_Req.tid == machine->tid);
      pdu->u.Abort.tid = send_tid(machine);
      pdu->u.Abort.abort_reason = abort_reason;
 

@@ -1,3 +1,31 @@
+2000-06-14  Richard Braakman  <dark@wapit.com>
+
+	* Filled in WSP state tables.  Defined lots of new events.
+	Sanitized event routing: WTP to WSP events get an addr_tuple.
+	WSP to WTP events get a "handle" (as defined in the spec) which
+	happens to be equal to the mid.  WSP to APPL events contain the
+	session id, and possibly a transaction id (as defined in the spec),
+	which can be returned in the APPL to WSP events.  No more mid
+	or msmid fields.  The transaction id is set equal to the handle
+	gotten from the WTP layer, because that one's already unique.
+
+	* Still missing: Push and Suspend/Resume.
+
+	* gw/wap-appl.c: Handle all the new S- events and send back
+	the proper replies.
+
+	* gw/wsp-session.c: Moved method machines into the session machines.
+	They can only be addressed via a session id and transaction id.
+	The session machine can send events to all its method machines.
+	Also added support functions for the WSP state tables.
+	Implemented pre- and post- state machine checks, for more accurate
+	handling of events without sessions, etc.
+
+	* gw/wsp.h: Defined an enum for all the possible abort values.
+
+	* test/drive_wapbox.c: Really disconnect clients after the right
+	number of page fetches.  (Used to do this only once per client.)
+
 2000-06-14  Yann Muller  <ymuller@3glab.com>
 
 	* smsc_at.c: Fixed a memory leak in pdu_extract. Removed unused
