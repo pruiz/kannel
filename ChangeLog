@@ -1,4 +1,9 @@
 2002-08-23  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.c: fixed HTTP persistent connection misbehaviour in
+      http_send_reply() which caused to do keep-alives, even while the client
+      requested to close the connection.
+
+2002-08-23  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_at2.c, gwlib/http.c: fixed a minor compiler warnings
     * gw/smsc/smsc_smpp.c: fixed a type in handle_pdu(), reported by 
       Vibhu Mohindra <vibhu@dialogsl.net>
