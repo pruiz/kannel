@@ -175,7 +175,7 @@ ROW(RESULT_WAIT,
      timer = wtp_timer_create();
      wtp_timer_start(timer, L_R_WITH_USER_ACK, machine, event);
 
-     wtp_send_result(machine, event); 
+     machine->result = wtp_send_result(machine, event); 
      machine->rid = 1;
     },
     RESULT_RESP_WAIT)
@@ -256,23 +256,26 @@ ROW(RESULT_RESP_WAIT,
     LISTEN)
 
 /* 
- * Specs do not spesify what to do when we get RcvInvoke event when the state
- * is RESULT_RESP_WAIT. In our system, this event is not impossible: when 
- * one wapbox goes down, bearerbox routes all its traffic to another wapbox,
- * which state is indeterminable. In this case, we abort the transaction and
- * indicate WSP.
+ * We resend the packet, obviously the previous one does not reach the client.
+ * (Yes, we will have timers ..)
  */
 ROW(RESULT_RESP_WAIT,
     RcvInvoke,
-    1,
+    machine->rcr < MAX_RCR,
+    { 
+     wtp_resend_result(machine->result);
+     ++machine->rcr;
+    },
+    RESULT_RESP_WAIT)
+
+ROW(RESULT_RESP_WAIT,
+    RcvInvoke,
+    machine->rcr == MAX_RCR,
     {
-     wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TRAbort.abort_type, event->TRAbort.abort_reason,
-                    machine, event); 
-     
      current_primitive = TRAbortIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      /*wsp_dispatch_event(machine, wsp_event);*/
+     wtp_machine_mark_unused(machine);
     },
     LISTEN)
 

@@ -20,6 +20,7 @@ MACHINE(INTEGER(in_use);
         INTEGER(u_ack);
         INTEGER(hold_on);
         INTEGER(rid);
+        MSG(result);
         INTEGER(ack_pdu_sent);
         TIMER(timer_data);
         MUTEX(mutex);
@@ -37,4 +38,5 @@ MACHINE(INTEGER(in_use);
 #undef QUEUE
 #undef MUTEX
 #undef NEXT
+#undef MSG
 

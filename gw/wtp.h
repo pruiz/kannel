@@ -35,7 +35,7 @@ typedef struct WTPSegment WTPSegment;
  * Maximum values for counters
  */
 #define AEC_MAX 4
-#define MAX_RCR 4
+#define MAX_RCR  4
 
 /*
  * Types of WTP PDUs and numbers assigned for them
@@ -87,6 +87,7 @@ typedef enum states states;
 struct WTPMachine {
         #define INTEGER(name) long name
         #define ENUM(name) states name
+        #define MSG(name) Msg *name
         #define OCTSTR(name) Octstr *name
         #define QUEUE(name) WTPEvent *name
 	#define TIMER(name) WTPTimer *name

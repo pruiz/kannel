@@ -282,6 +282,9 @@ void wtp_machine_dump(WTPMachine *machine){
            debug(0, "WTPMachine %p: dump starting", (void *) machine); 
 	   #define INTEGER(name) \
 	           debug(0, "  %s: %ld", #name, machine->name)
+           #define MSG(name) \
+                   debug(0, "Result field %s: ", #name); \
+                   msg_dump(machine->name)
            #define ENUM(name) debug(0, "  state = %s.", name_state(machine->name))
 	   #define OCTSTR(name)  debug(0, "  Octstr field %s :", #name); \
                                  octstr_dump(machine->name)
@@ -621,7 +624,7 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
 
 /*
  * Iniatilizes the global lock for inserting and removing machines. If machines 
- * list is busy, puts the machine to be inserted in the corresponding list.
+ * list is busy, just wait.
  */
 static WTPMachine *wtp_machine_create_empty(void){
 
@@ -632,6 +635,7 @@ static WTPMachine *wtp_machine_create_empty(void){
         
         #define INTEGER(name) machine->name = 0
         #define ENUM(name) machine->name = LISTEN
+        #define MSG(name) machine->name = msg_create(wdp_datagram)
         #define OCTSTR(name) machine->name = octstr_create_empty();\
                              if (machine->name == NULL)\
                                 goto error
@@ -680,6 +684,8 @@ static WTPMachine *wtp_machine_create_empty(void){
  error:  if (machine != NULL) {
             #define INTEGER(name)
             #define ENUM(name)
+            #define MSG(name) if (machine->name != NULL)\
+                                 msg_destroy(machine->name)
             #define OCTSTR(name) if (machine->name != NULL)\
                                     octstr_destroy(machine->name)
             #define QUEUE(name)  
@@ -1327,7 +1333,8 @@ static void destroy_machine(WTPMachine *machine, WTPMachine *previous){
      }
 
      #define INTEGER(name)
-     #define ENUM(name)        
+     #define ENUM(name)  
+     #define MSG(name) msg_destroy(machine->name)     
      #define OCTSTR(name) octstr_destroy(machine->name)
      #define TIMER(name) wtp_timer_destroy(machine->name)
      #define QUEUE(name) if (machine->name != NULL) \

@@ -9,6 +9,7 @@
 
 #include "wtp.h"
 
+
 /*
  * Send a message object, of wdp datagram type, having result PDU as user 
  * data. Fetches SDU from WTP event, address four-tuple and machine state 
@@ -16,7 +17,12 @@
  * errors by itself.
  */
 
-void wtp_send_result(WTPMachine *machine, WTPEvent *event); 
+Msg *wtp_send_result(WTPMachine *machine, WTPEvent *event); 
+
+/*
+ * Resend an already packed packet
+ */
+void wtp_resend_result(Msg *result);
 
 /*
  * Send a message object, of wdp datagram type, having abort PDU as user 

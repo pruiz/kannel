@@ -68,26 +68,34 @@ static char insert_tpi_length(int tpi_length, char octet);
  * information (are we resending the packet or not) from WTP machine. Handles 
  * all errors by itself.
  */
-void wtp_send_result(WTPMachine *machine, WTPEvent *event){
+Msg *wtp_send_result(WTPMachine *machine, WTPEvent *event){
 
      Msg *msg = NULL;
 
      msg = msg_create(wdp_datagram);
      msg = add_datagram_address(msg, machine);
-#ifdef debug
+#ifdef d
      debug(0, "WTP: packing result pdu");
 #endif
      msg = pack_result(msg, machine, event);
-#ifdef debug
+#ifdef d
      debug(0,"WTP: result pdu packed");
 #endif   
      if (msg == NULL){
-        return;
+        return NULL;
      }
 
      put_msg_in_queue(msg);
 
-     return;
+     return msg;
+}
+
+/*
+ * Resend an already packed packet
+ */
+void wtp_resend_result(Msg *result){
+
+     put_msg_in_queue(result);
 }
 
 void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine, 
@@ -194,12 +202,12 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
     octet = indicate_simple_message(octet);
     octet = insert_rid(machine->rid, octet);
     wtp_pdu[0] = octet;
-#ifdef debug
+#ifdef d
     debug(0, "WTP: inserting tid");
 #endif
     insert_tid(wtp_pdu, event->TRResult.tid);
     octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 3);
-#ifdef debug
+#ifdef d
     debug(0,"WTP: sending a result message");
     msg_dump(msg);
 #endif
@@ -208,6 +216,11 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
 
 }
 
+/*
+ * Packs a message object, of wdp datagram type, consisting of Abort PDU header.
+ * Fetches abort type and reason from direct input, tid from WTP event. Handles all 
+ * errors by itself.
+ */
 static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason, 
        WTPMachine *machine, WTPEvent *event){
 
@@ -219,17 +232,8 @@ static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason,
        wtp_pdu = gw_malloc(pdu_len);
        octet = -42;
 
-#if 0 /* XXX actually, no user_data is needed for WTP Abort PDU, since
-         a WSP Disconnect PDU is not sent via Abort PDU. */
-/*
- * User data includes, when we are speaking of abort PDU, a WSP PDU (Disconnect 
- * PDU). Inputs are abort type, abort reason and tid.
- */  
- 
-       msg->wdp_datagram.user_data = octstr_duplicate(event->TRAbort.user_data);
-#else
        msg->wdp_datagram.user_data = octstr_create_empty();
-#endif
+
        octet = insert_pdu_type(ABORT, octet);
        octet = insert_abort_type(abort_type, octet);
        wtp_pdu[0] = octet;

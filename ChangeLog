@@ -1,3 +1,9 @@
+2000-1-27 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp_state-decl.h: Added a row receiving RcvInvoke when the state is
+	RESULT_RESP_WAIT. In this case, we simulate a timer: we resend MAX_RCR
+	times and then abort the transaction.
+
 Thu Jan 27 17:34:53 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/bearerbox.c, gw/html.c, gw/smsbox.c, gw/smsc_emi.c, gw/wml.c,
