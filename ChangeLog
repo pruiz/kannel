@@ -1,3 +1,9 @@
+Fri Feb 18 19:54:12 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/octstr.c: octstr_dump now also prints the printable characters
+	of the string as themselves, so that it becomes easier to read the
+	output. The hexacodes are still printed for all characters, of course.
+
 Fri Feb 18 16:40:44 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp_http.c: Remove temporary files. Oops.

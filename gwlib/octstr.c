@@ -569,8 +569,10 @@ OctstrList *octstr_split_words(Octstr *ostr) {
 
 
 void octstr_dump(Octstr *ostr) {
-	char *p, buf[40];
+	char *p, buf[1024];
 	size_t pos;
+	const int octets_per_line = 8;
+	int c, i, this_line_begins_at;
 
 	if (ostr == NULL)
 		return;
@@ -581,13 +583,26 @@ void octstr_dump(Octstr *ostr) {
 
 	buf[0] = '\0';
 	p = buf;
-	for (pos = 0; pos < octstr_len(ostr); ++pos) {
+	this_line_begins_at = 0;
+	for (pos = 0; pos < octstr_len(ostr); ) {
 		sprintf(p, "%02x ", octstr_get_char(ostr, pos));
 		p = strchr(p, '\0');
-		if (p - buf > sizeof(buf) - 5) {
+		++pos;
+		if (pos - this_line_begins_at == octets_per_line) {
+			sprintf(p, "  ");
+			p = strchr(p, '\0');
+			for (i = this_line_begins_at; i < pos; ++i) {
+				c = octstr_get_char(ostr, i);
+				if (isprint(c))
+					*p++ = c;
+				else
+					*p++ = '.';
+			}
+			*p = '\0';
 			debug("gwlib.octstr", 0, "  data: %s", buf);
 			buf[0] = '\0';
 			p = buf;
+			this_line_begins_at = pos;
 		}
 	}
 	debug("gwlib.octstr", 0, "  data: %s", buf);
