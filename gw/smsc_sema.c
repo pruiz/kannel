@@ -229,10 +229,7 @@ int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 	else
 	    submit_sm->statusreportrequest = 0;/* no report */
 	/* we support submit invoke only in IA5 line encoding*/
-	if(octstr_len(msg->smart_sms.msgdata) > 120)
-	    submit_sm->textsizeoctect = submit_sm->textsizeseptet = 120;
-	else
-	    submit_sm->textsizeoctect = submit_sm->textsizeseptet =
+	submit_sm->textsizeoctect = submit_sm->textsizeseptet =
 		octstr_len(msg->smart_sms.msgdata);
 	/*copy msg buffer*/
 	submit_sm->shortmsg = octstr_copy(msg->smart_sms.msgdata,
@@ -338,7 +335,7 @@ int sema_pending_smsmessage(SMSCenter *smsc)
 	if(strlen(data) > 0){
 	    if(strstr(data,clrbuff) != NULL ||
 	       strstr(data,errbuff) != NULL){
-		debug("smsc.sema", 0, "sk_pending_msg: read X28 command info %s",data);
+		debug("smsc.sema", 0, "sema_pending_msg: Radio Pad Command line-%s",data);
 	    }
 	    else{   
 		ret = sema_msg_session_mo(smsc, data);
@@ -907,7 +904,7 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
     int isrcved = 0, iTrcved = 0, decoderesult = 0;
     time_t tstart;
 
-    submit_invoke=(struct sm_submit_invoke*)(*pmsg->msgbody);
+    submit_invoke=(struct sm_submit_invoke*)(*(pmsg->msgbody));
     if(submit_invoke == NULL) goto error;
 	
     /*encode first*/
@@ -999,7 +996,7 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 	    if(strlen(data) > 0){
 		if(strstr(data,cerr) != NULL ||
 		   strstr(data,cclr) != NULL){
-		    info(0,"sema_mt_session: read command: %s",data);
+		  debug("smsc.sema", 0, "sema_mt_session: Radio Pad Command line-%s",data);
 		    goto sendlink_error;
 		}
 		/* decode msg*/      
@@ -1109,7 +1106,7 @@ mo_return:
     }
     return moret;      	
 sendlink_error:
-    info(0,"sema_mt_session: X28 send link has broken");
+    info(0,"sema_mt_session: X28 data link has broken");
     if(mtrmsg != NULL)
 	sema_msg_free(mtrmsg);
     return 0;
@@ -1468,13 +1465,12 @@ error_msg:
 static int sema_encode_msg(sema_msg* pmsg, char* str) {
     struct sm_submit_invoke *submit_sm = NULL;
     Octstr *IA5msg = NULL;
-    unsigned char oc1byte[1];
-
+    unsigned char oc1byte[10];
     IA5msg = octstr_create_empty();	
     switch(pmsg->type)
     {
     case 'S':
-	submit_sm = (struct sm_submit_invoke *)(*pmsg->msgbody); 
+	submit_sm = (struct sm_submit_invoke *)(*(pmsg->msgbody)); 
 	write_variable_value(submit_sm->msisdnlen, oc1byte); /*msisdn len*/
 	line_append_hex_IA5(IA5msg, oc1byte,1);
 	line_append_hex_IA5(IA5msg, 

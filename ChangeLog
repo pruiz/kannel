@@ -1,3 +1,10 @@
+2000-03-29    <Kalle Marjola <rpr@wapit.com>>
+
+	* gw/smsbox_req.c: some simple truncation to UDH sending (not
+	sufficient but should help a bit) and little flag fix
+
+	* gw/smsc_sema.c: fix of 120 char problem by Hao Shi
+
 2000-03-29  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_smpp.h: Removed definitions of unused empty structures
