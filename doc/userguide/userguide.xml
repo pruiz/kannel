@@ -2001,10 +2001,9 @@ bearerbox-host = localhost
      <entry><literal>number</literal></entry>
      <entry valign=bottom>
         As some SMS Centers do not follow the standards in character
-        coding, an <literal>alt-charset</literal> kludge is
-        presented. Currently implemented
-        alternative charsets are defined in "alt_charsets.h" and new ones
-        can be added to appropriate smsc-code.
+        coding, an <literal>alt-charset</literal> character conversion is
+        presented. This directive acts different for specific SMSC tyles.
+		  Please see your SMSC module type you want to use for more details.
      </entry></row>
 
   </tbody>
@@ -2327,6 +2326,14 @@ smsc-password = bar
 	every message received will have that receiver.
      </entry></row>
 
+   <row><entry><literal>alt-charset</literal></entry>
+     <entry><literal>number</literal></entry>
+     <entry valign=bottom>
+        Defines which character conversion kludge may be used for this 
+		  specific link. Currently implemented alternative charsets are 
+		  defined in "alt_charsets.h" and new ones can be added.
+     </entry></row>
+
    </tbody></tgroup></informaltable>
    
 
@@ -2540,9 +2547,17 @@ address-range = ""
 		 <literal>submit_sm_resp</literal> hex.
      </entry></row>
 
-   </tbody></tgroup></informaltable>
- 
+   <row><entry><literal>alt-charset</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+        Defines which character encoding is used for this specific smsc link. 
+		  Uses <literal>iconv()</literal> routines to convert from and to that
+		  specific character set encoding. See your local iconv_open(3) manual 
+		  page for the supported character encodings and the type strings that
+		  should be presented for this directive.
+     </entry></row>
 
+   </tbody></tgroup></informaltable>
 
 </sect3>
 
