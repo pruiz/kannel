@@ -1,3 +1,7 @@
+2000-01-18    <rpr@rpr.wapit.com>
+
+	* test/fakewap.c: Added new program by Antti Saarenheimo
+
 Tue Jan 18 14:06:09 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* wmlscript/wmlsc.c, wmlscript/wsalloc.c,
