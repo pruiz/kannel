@@ -5227,10 +5227,19 @@ text = "No action specified"
       &#60;alt-dcs&#62;alt-dcs&#60;/alt-dcs&#62;
     &#60;/dcs&#62;
     &#60;pid&#62;pid&#60;/pid&#62;
+    &#60;rpi&#62;rpi&#60;/rpi&#62;
+    &#60;vp&#62;
+      &#60;delay&#62;validity time in minutes&#60;/delay&#62;
+    &#60;/vp&#62;
+    &#60;timing&#62;
+      &#60;delay&#62;deferred time in minutes&#60;/delay&#62;
+    &#60;/timing&#62;
     &#60;statusrequest&#62;
       &#60;dlr-mask&#62;dlr-mask&#60;/dlr-mask&#62;
       &#60;dlr-url&#62;dlr-url&#60;/dlr-url&#62;
     &#60;/statusrequest&#62;
+
+    &#60;!-- request from kannel to application --&#62;
     &#60;from&#62;
       &#60;user&#62;username&#60;/user&#62;
       &#60;username&#62;username&#60;/username&#62; 
@@ -5239,8 +5248,11 @@ text = "No action specified"
       &#60;account&#62;account&#60;/account&#62;
     &#60;/from&#62;
     &#60;to&#62;smsc-id&#60;/to&#62;
+
+    &#60;!-- request from application to kannel --&#62;
     &#60;from&#62;smsc-id&#60;/from&#62;
     &#60;to&#62;service-name&#60;/to&#62;
+
   &#60;/submit&#62;
 &#60;/message&#62;
 </programlisting>
