@@ -138,7 +138,7 @@ static void format(char *buf, int level, const char *place, int e,
 		tm->tm_hour, tm->tm_min, tm->tm_sec);
 
 	p = strchr(p, '\0');
-	sprintf(p, "[%d] ", (int) pthread_self());
+	sprintf(p, "[%ld] ", (long) pthread_self());
 
 	p = strchr(p, '\0');
 	if (level < 0 || level >= tab_size)

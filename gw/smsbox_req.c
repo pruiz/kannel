@@ -361,15 +361,12 @@ int smsbox_req_count(void)
 
 
 void *smsbox_req_thread(void *arg) {
-    unsigned long id;
     Msg *msg;
     Octstr *tmp;
     URLTranslation *trans;
     char *reply = NULL, *p;
     
     msg = arg;
-    id = (unsigned long) pthread_self();
-
     req_threads++;	/* possible overflow */
     
     if ((octstr_len(msg->smart_sms.msgdata) == 0 &&

@@ -1,5 +1,23 @@
 2000-04-27  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/thread.c: Unlike every other C library function, 
+	the pthread functions return their error code rather than
+	setting errno.  Changed all uses of errno in this file to
+	use the returned values instead.
+	While I was there, made all functions use the same indentation
+	width (the file was mixed).
+
+	* gwlib/thread.c: Made mutex_try_lock panic if it managed
+	to lock the same mutex twice, rather than trying to cope.
+	This is consistent with mutex_lock, and helps us stay portable.
+
+	* gw/smsbox_req.c: Removed unused call to pthread_self.
+
+	* gwlib/log.c: Cast pthread_self() to long rather than to int,
+	for printing.
+
+2000-04-27  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/octstr.c, gwlib/octstr.h: New functions 
 	octstr_binary_to_base64 and octstr_base64_to_binary.
 	Also made octstr_grow reserve space for the terminating NUL,
