@@ -3025,7 +3025,7 @@ static Octstr *escape_fragment(Octstr *fragment)
     i = 0;
     while (i < octstr_len(fragment)) {
         if ((c = octstr_get_char(fragment, i)) == '"') {
-            replace_octstr_char(fragment, octstr_imm("&qt"), &i);
+            replace_octstr_char(fragment, octstr_imm("&quot"), &i);
         } else if (c == '<') {
             replace_octstr_char(fragment, octstr_imm("&lt"), &i);
         } else if (c == '>') {
