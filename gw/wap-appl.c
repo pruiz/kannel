@@ -551,111 +551,37 @@ static void add_x_wap_tod(List *headers)
 
 
 /* Add MSISDN provisioning information to HTTP header */
-static void add_msisdn(List *headers, WAPAddrTuple *addr_tuple, Octstr **url,
-                       Octstr *send_msisdn_query, Octstr *send_msisdn_header,
-                       Octstr *send_msisdn_format) 
+static void add_msisdn(List *headers, WAPAddrTuple *addr_tuple, 
+                       Octstr *send_msisdn_header) 
 {
     Octstr *msisdn = NULL;
-    Octstr *proxy_auth = NULL;
+    Octstr *value = NULL;
 
-    if (octstr_len(send_msisdn_query) == 0 && 
-        octstr_len(send_msisdn_header) == 0)
+    if (send_msisdn_header == NULL || octstr_len(send_msisdn_header) == 0)
         return;
-	
+
     /* 
-     * Security precautions. Check if the client is already passing our 
-     * MSISDN provisioning HTTP header or a GET query parameter within the 
-     * request. If yes, then issue an warning and remove the header or the 
-     * parameter from the query before processing further.
+     * Security considerations. If there are headers with the header name we
+     * use to pass on the MSISDN number, then remove them.
      */
-    if (octstr_len(send_msisdn_header)) { 
-        Octstr *value = NULL;
-        if ((value = http_header_value(headers, send_msisdn_header)) != NULL)
-            warning(0, "MSISDN header <%s> already present on request, "
-                       "probably a security attack (url=<%s>, header value=<%s>)", 
-                    octstr_get_cstr(send_msisdn_header), 
-                    octstr_get_cstr(*url), octstr_get_cstr(value));
+    if ((value = http_header_value(headers, send_msisdn_header)) != NULL) {
+        warning(0, "MSISDN header <%s> already present on request, "
+                   "header value=<%s>", octstr_get_cstr(send_msisdn_header), 
+                  octstr_get_cstr(value));
         http_header_remove_all(headers, octstr_get_cstr(send_msisdn_header));
     }
-    if (octstr_len(send_msisdn_query)) {
-        if (octstr_case_search(*url, send_msisdn_query, 0) != -1)
-            warning(0, "MSISDN parameter <%s> already present on query "
-                       "string, probably a security attack (url=<%s>)", 
-                    octstr_get_cstr(send_msisdn_query), 
-                    octstr_get_cstr(*url));
-        /* XXX DAVI: search and remove it from query */
+
+    /* 
+     * XXX Add generic msisdn provisioning cleanly in here!
+     * See revision 1.89 for Bruno's try.
+     */
+
+    /* We do not accept NULL values to be added to the HTTP header */
+    if ((msisdn = radius_acct_get_msisdn(addr_tuple->remote->address)) != NULL) {
+        http_header_add(headers, octstr_get_cstr(send_msisdn_header), octstr_get_cstr(msisdn));
     }
 
-    /* Process proxy authorization first. */
-    if ((proxy_auth = 
-         http_header_find_first(headers, "Proxy-Authorization")) != NULL) {
-        Octstr *user, *pass;
-        long i;
-
-        if ((i = octstr_search_char(proxy_auth, ':', 0)) < 0) {
-            warning(0, "AUTH: Invalid Proxy-Authentication <%s>", 
-                    octstr_get_cstr(proxy_auth));
-        } else {
-            user = octstr_copy(proxy_auth, 0, i);
-            pass = octstr_copy(proxy_auth, i + 1, octstr_len(proxy_auth) - i + 2);
-            if (octstr_len(user) < 1 || octstr_len(pass) < 1) {
-                warning(0, "AUTH: Invalid Proxy-Authentication <%s>", 
-                        octstr_get_cstr(proxy_auth));
-            } 
-            else if (wap_map_user(&msisdn, user, pass) != 1) {
-                warning(0, "AUTH: Invalid user or password <%s>", 
-                        octstr_get_cstr(proxy_auth));
-            } else {
-                debug("add_msisdn", 0, "AUTH: User <%s> is <%s>",
-                octstr_get_cstr(proxy_auth), octstr_get_cstr(msisdn));
-            }
-            octstr_destroy(user);
-            octstr_destroy(pass);
-        }
-        octstr_destroy(proxy_auth);
-    } else {
-        /* otherwise relly on the RADIUS acct proxy */
-        msisdn = radius_acct_get_msisdn(addr_tuple->remote->address);
-    }
-
-    /* convert to vendor specific MSISDN formating behaviour */
-    if (msisdn != NULL && send_msisdn_format != NULL) {
-        if (octstr_case_compare(send_msisdn_format, octstr_imm("ericsson")) == 0) {
-            octstr_binary_to_hex(msisdn, 1);
-        } 
-        else if (octstr_case_compare(send_msisdn_format, octstr_imm("hash")) == 0) {
-
-            /* XXX more types, ie. MD5, SHA1 etc. hashed versions of MSISDN */
-
-            octstr_append(msisdn, octstr_imm("-hashed"));
-        }
-
-        /* 
-         * If send_msisdn_query is defined, then use this as GET query 
-         * parameter for transmitting the MSISDN to the HTTP server.
-         */
-        if (send_msisdn_query != NULL) {
-            /* XXX DAVI: this needs to be refactored 
-             * for "#" char in url! */
-            if (octstr_search_char(*url, '?', 7) > 0) {
-                octstr_append(*url, octstr_imm("&"));
-            } else {
-                octstr_append(*url, octstr_imm("?"));
-            }
-            octstr_append(*url, send_msisdn_query);
-            octstr_append(*url, octstr_imm("="));
-            octstr_append(*url, msisdn);
-        }
-
-        /* 
-         * Otherwise encapsulate it in the HTTP request as header using the
-         * send_msisdn_header header name. (or even both).
-         */
-        if (send_msisdn_header != NULL)
-            http_header_add(headers, octstr_get_cstr(send_msisdn_header), 
-                            octstr_get_cstr(msisdn));
-    }
-
+    octstr_destroy(value);
     octstr_destroy(msisdn);
 }
 
@@ -1145,9 +1071,16 @@ static void start_fetch(WAPEvent *event)
     }
     info(0, "Fetching <%s>", octstr_get_cstr(url));
 
+    /* 
+     * XXX this URL mapping needs to be rebuild! st. 
+     */
+
     /* try to rewrite URL */
     wap_map_url(&url, &send_msisdn_query, &send_msisdn_header,
                 &send_msisdn_format, &accept_cookies);
+    /* if no mapping found, then use our RADIUS acct proxy header */
+    if (send_msisdn_header == NULL)
+        send_msisdn_header = octstr_create("X-WAP-Network-Client-MSISDN");
 
     actual_headers = list_create();
     
@@ -1190,8 +1123,7 @@ static void start_fetch(WAPEvent *event)
     add_kannel_version(actual_headers);
     add_session_id(actual_headers, session_id);
 
-    add_msisdn(actual_headers, addr_tuple, &url, send_msisdn_query, 
-	       send_msisdn_header, send_msisdn_format);
+    add_msisdn(actual_headers, addr_tuple, send_msisdn_header);
     octstr_destroy(send_msisdn_query);
     octstr_destroy(send_msisdn_header);
     octstr_destroy(send_msisdn_format);
