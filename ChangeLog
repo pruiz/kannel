@@ -1,4 +1,9 @@
 2004-03-11 Stipe Tolj  <tolj@wapme-systems.de> 
+    * gw/smsc/smsc_cimd2.c: fixing wrong parameter length for "service 
+      description" field according to Nokia CIMD spec.
+      Thanks to <dido@imperium.ph> for pointing to this.
+
+2004-03-11 Stipe Tolj  <tolj@wapme-systems.de> 
     * gw/smsc/smsc_smpp.c: fixing race conditions amonst status and connect_time 
       while set in various threads. Thanks to Nisan for pointing to this. 
       [Msg-ID: <6.0.0.22.0.20040305000910.02f37008@amagoblin.ialien.co.za>] 

@@ -243,7 +243,7 @@ parameters[] = {
     { "status error code", P_STATUS_ERROR_CODE, 3, P_INT, 0, 999 },
     { "discharge time", P_DISCHARGE_TIME, 12, P_TIME },
     { "tariff class", P_TARIFF_CLASS, 2, P_INT, 0, 99 },
-    { "service description", P_SERVICE_DESCRIPTION, 1, P_INT, 0, 9 },
+    { "service description", P_SERVICE_DESCRIPTION, 2, P_INT, 0, 9 },
     { "message count", P_MESSAGE_COUNT, 3, P_INT, 0, 999 },
     { "priority", P_PRIORITY, 1, P_INT, 1, 9 },
     { "delivery request mode", P_DELIVERY_REQUEST_MODE, 1, P_INT, 0, 2 },
