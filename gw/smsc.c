@@ -46,9 +46,7 @@ SMSCenter *smscenter_construct(void) {
 	SMSCenter *smsc;
 	static int next_id = 1;
 
-	smsc = malloc(sizeof(SMSCenter));
-	if (smsc == NULL)
-		goto error;
+	smsc = gw_malloc(sizeof(SMSCenter));
 
 	smsc->killed = 0;
 	smsc->type = SMSC_TYPE_DELETED;
@@ -85,17 +83,10 @@ SMSCenter *smscenter_construct(void) {
 	/* Memory */
 	smsc->buflen = 0;
 	smsc->bufsize = 10*1024;
-	smsc->buffer = malloc(smsc->bufsize);
-	if (smsc->buffer == NULL)
-		goto error;
+	smsc->buffer = gw_malloc(smsc->bufsize);
 	bzero(smsc->buffer, smsc->bufsize);
 
 	return smsc;
-
-error:
-	error(errno, "smscenter_construct: memory allocation failed");
-	smscenter_destruct(smsc);	
-	return NULL;
 }
 
 
@@ -104,25 +95,25 @@ void smscenter_destruct(SMSCenter *smsc) {
 		return;
 
 	/* FAKE */
-	free(smsc->hostname);
+	gw_free(smsc->hostname);
 
 	/* CIMD */
-	free(smsc->cimd_hostname);
-	free(smsc->cimd_username);
-	free(smsc->cimd_password);
+	gw_free(smsc->cimd_hostname);
+	gw_free(smsc->cimd_username);
+	gw_free(smsc->cimd_password);
 
 	/* EMI */
-	free(smsc->emi_phonenum);
-	free(smsc->emi_serialdevice);
-	free(smsc->emi_username);
-	free(smsc->emi_password);
+	gw_free(smsc->emi_phonenum);
+	gw_free(smsc->emi_serialdevice);
+	gw_free(smsc->emi_username);
+	gw_free(smsc->emi_password);
 
 	/* EMI IP */
-	free(smsc->emi_hostname);
+	gw_free(smsc->emi_hostname);
 
 	/* Memory */
-	free(smsc->buffer);
-	free(smsc);
+	gw_free(smsc->buffer);
+	gw_free(smsc);
 }
 
 
@@ -291,12 +282,7 @@ int smscenter_read_into_buffer(SMSCenter *smsc) {
 			goto got_data;
 
 		if (smsc->buflen == smsc->bufsize) {
-			p = realloc(smsc->buffer, smsc->bufsize * 2);
-			if (p == NULL) {
-				error(errno, 
-					"Couldn't allocate read buffer");
-				goto error;
-			}
+			p = gw_realloc(smsc->buffer, smsc->bufsize * 2);
 			smsc->buffer = p;
 			smsc->bufsize *= 2;
 		}

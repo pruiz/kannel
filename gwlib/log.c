@@ -7,6 +7,7 @@
 
 #include "log.h"
 #include "thread.h"
+#include "gwmem.h"
 
 
 /*
@@ -77,15 +78,9 @@ void open_logfile(char *filename, int level) {
 	
 	logfiles[num_logfiles].file = f;
 	logfiles[num_logfiles].minimum_output_level = level;
-	logfiles[num_logfiles].filename = strdup(filename);
-	if (logfiles[num_logfiles].filename == NULL) {
-	    error(errno, "Couldn't strdup filename");
-	    fclose(f);
-	}
-	else {
-	    ++num_logfiles;
-	    info(0, "Added logfile `%s' with level `%d'.", filename, level);
-	}
+	logfiles[num_logfiles].filename = gw_strdup(filename);
+	++num_logfiles;
+	info(0, "Added logfile `%s' with level `%d'.", filename, level);
 }
 
 

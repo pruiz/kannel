@@ -32,13 +32,13 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password, char
 	sprintf(smsc->name, "SMPP:%s:%i:%s:%s", host, port, system_id, system_type);
 	smsc->latency = 100*1000;
 
-	smsc->hostname = strdup(host);
+	smsc->hostname = gw_strdup(host);
 	smsc->port = port;
 
-	smsc->smpp_system_id = (system_id != NULL) ? strdup(system_id) : NULL;
-	smsc->smpp_system_type = (system_type != NULL) ? strdup(system_type) : NULL;
-	smsc->smpp_password = (password != NULL) ? strdup(password) : NULL;
-	smsc->smpp_address_range = (address_range != NULL) ? strdup(address_range) : NULL;
+	smsc->smpp_system_id = (system_id != NULL) ? gw_strdup(system_id) : NULL;
+	smsc->smpp_system_type = (system_type != NULL) ? gw_strdup(system_type) : NULL;
+	smsc->smpp_password = (password != NULL) ? gw_strdup(password) : NULL;
+	smsc->smpp_address_range = (address_range != NULL) ? gw_strdup(address_range) : NULL;
 
 	/* Create FIFO stacks */
 	smsc->unsent_mt = fifo_new();
@@ -88,8 +88,7 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password, char
 	pdu->id = SMPP_BIND_RECEIVER;
 	smsc->seq_r = 1;
 	pdu->sequence_no = 1;
-	bind_receiver = malloc(sizeof(struct smpp_pdu_bind_receiver));
-	if(bind_receiver==NULL) goto error;
+	bind_receiver = gw_malloc(sizeof(struct smpp_pdu_bind_receiver));
 	memset(bind_receiver, 0, sizeof(struct smpp_pdu_bind_receiver));
 	strncpy(bind_receiver->system_id, system_id, 16);
 	strncpy(bind_receiver->password, password, 9);
@@ -104,8 +103,7 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password, char
 	pdu->id = SMPP_BIND_TRANSMITTER;
 	smsc->seq_t = 1;
 	pdu->sequence_no = 1;
-	bind_transmitter = malloc(sizeof(struct smpp_pdu_bind_transmitter));
-	if(bind_transmitter==NULL) goto error;
+	bind_transmitter = gw_malloc(sizeof(struct smpp_pdu_bind_transmitter));
 	memset(bind_transmitter, 0, sizeof(struct smpp_pdu_bind_transmitter));
 	strncpy(bind_transmitter->system_id, system_id, 16);
 	strncpy(bind_transmitter->password, password, 9);
@@ -213,8 +211,7 @@ int smpp_reopen(SMSCenter *smsc) {
 	pdu->id = SMPP_BIND_RECEIVER;
 	smsc->seq_r = 1;
 	pdu->sequence_no = 1;
-	bind_receiver = malloc(sizeof(struct smpp_pdu_bind_receiver));
-	if(bind_receiver==NULL) goto error;
+	bind_receiver = gw_malloc(sizeof(struct smpp_pdu_bind_receiver));
 	memset(bind_receiver, 0, sizeof(struct smpp_pdu_bind_receiver));
 	strncpy(bind_receiver->system_id, smsc->smpp_system_id, 16);
 	strncpy(bind_receiver->password, smsc->smpp_password, 9);
@@ -229,8 +226,7 @@ int smpp_reopen(SMSCenter *smsc) {
 	pdu->id = SMPP_BIND_TRANSMITTER;
 	smsc->seq_t = 1;
 	pdu->sequence_no = 1;
-	bind_transmitter = malloc(sizeof(struct smpp_pdu_bind_transmitter));
-	if(bind_transmitter==NULL) goto error;
+	bind_transmitter = gw_malloc(sizeof(struct smpp_pdu_bind_transmitter));
 	memset(bind_transmitter, 0, sizeof(struct smpp_pdu_bind_transmitter));
 	strncpy(bind_transmitter->system_id, smsc->smpp_system_id, 16);
 	strncpy(bind_transmitter->password, smsc->smpp_password, 9);
@@ -357,8 +353,7 @@ int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 	if(pdu == NULL) goto error;
 	memset(pdu, 0, sizeof(struct smpp_pdu));
 
-	submit_sm = malloc(sizeof(struct smpp_pdu_submit_sm));
-	if(submit_sm == NULL) goto error;
+	submit_sm = gw_malloc(sizeof(struct smpp_pdu_submit_sm));
 	memset(submit_sm, 0, sizeof(struct smpp_pdu_submit_sm));
 
 	if(msg_type(msg) != smart_sms) {
@@ -447,12 +442,11 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 		if(deliver_sm==NULL) goto error;
 
 		/* Change the number format on msg->sender. */
-		newnum = malloc(strlen(deliver_sm->source_addr)+1);
-		if(newnum==NULL) goto error;
+		newnum = gw_malloc(strlen(deliver_sm->source_addr)+1);
 		strcpy(newnum, deliver_sm->source_addr);
 		strcpy(deliver_sm->source_addr, "00");
 		strncat(deliver_sm->source_addr, newnum, sizeof(deliver_sm->source_addr)-2);
-		free(newnum);
+		gw_free(newnum);
 
 		*msg = msg_create(smart_sms);
 		if(*msg==NULL) goto error;
@@ -573,7 +567,7 @@ static smpp_pdu* pdu_new(void) {
 
 	struct smpp_pdu *newpdu = NULL;
 
-	newpdu = malloc(sizeof(struct smpp_pdu));
+	newpdu = gw_malloc(sizeof(struct smpp_pdu));
 	memset(newpdu, 0, sizeof(struct smpp_pdu));
 
 	return newpdu;
@@ -584,8 +578,8 @@ static int pdu_free(smpp_pdu *pdu) {
 	if(pdu == NULL) return 0;
 
 	smsmessage_destruct(pdu->smsmsg);
-	free(pdu->message_body);
-	free(pdu);
+	gw_free(pdu->message_body);
+	gw_free(pdu);
 
 	return 1;
 }
@@ -612,18 +606,13 @@ static fifostack* fifo_new(void) {
 
 	struct fifostack *fifo = NULL;
 
-	fifo = malloc(sizeof(struct fifostack));
-	if(fifo == NULL) goto error;
+	fifo = gw_malloc(sizeof(struct fifostack));
 	memset(fifo, 0, sizeof(struct fifostack));
 
 	fifo->left = NULL;
 	fifo->right = NULL;
 
 	return fifo;
-
-error:
-	error(0, "fifo_new: memory allocation error");
-	return NULL;
 }
 
 static void fifo_free(fifostack *fifo) {
@@ -639,7 +628,7 @@ static void fifo_free(fifostack *fifo) {
 		pdu = NULL;
 	}
 
-	free(fifo);
+	gw_free(fifo);
 
 	return;
 }
@@ -866,8 +855,7 @@ static int data_send(int fd, Octstr *from) {
 	length = octstr_len(from);
 	if(length <= 0) return 0;
 
-	willy = malloc(length);
-	if(willy == NULL) goto error;
+	willy = gw_malloc(length);
 
 	octstr_get_many_chars(willy, from, 0, length);
 
@@ -889,17 +877,17 @@ static int data_send(int fd, Octstr *from) {
 	}
 
 	/* Okay, done */
-	free(willy);
+	gw_free(willy);
 	return 1;
 
 socket_b0rken:
 	debug(0, "data_send: broken socket!!!");
-	free(willy);
+	gw_free(willy);
 	return -1;
 
 error:
 	debug(0, "data_send: ERROR!!!");
-	free(willy);
+	gw_free(willy);
 	return -1;
 }
 
@@ -1317,8 +1305,7 @@ static int pdu_encode_bind(smpp_pdu *pdu, Octstr **str) {
 			 strlen(bind_receiver->system_type) + 1 +
 			 1 + 1 + 1 +
 			 strlen(bind_receiver->address_range) + 1;
-		data = malloc(length);
-		if(data == NULL) goto error;
+		data = gw_malloc(length);
 		memset(data, 0, length);
 		where = data;
 
@@ -1334,8 +1321,7 @@ static int pdu_encode_bind(smpp_pdu *pdu, Octstr **str) {
 
 	case SMPP_BIND_RECEIVER_RESP:
 		length = strlen(bind_receiver_resp->system_id) + 1;
-		data = malloc(length);
-		if(data == NULL) goto error;
+		data = gw_malloc(length);
 		memset(data, 0, length);
 		where = data;
 
@@ -1351,8 +1337,7 @@ static int pdu_encode_bind(smpp_pdu *pdu, Octstr **str) {
 			 1 + 1 + 1 +
 			 strlen(bind_transmitter->address_range) + 1;
 
-		data = malloc(length);
-		if(data == NULL) goto error;
+		data = gw_malloc(length);
 		memset(data, 0, length);
 		where = data;
 
@@ -1369,8 +1354,7 @@ static int pdu_encode_bind(smpp_pdu *pdu, Octstr **str) {
 	case SMPP_BIND_TRANSMITTER_RESP:
 		bind_transmitter_resp = (smpp_pdu_bind_transmitter_resp*) pdu->message_body;
 		length = strlen(bind_transmitter_resp->system_id) + 1;
-		data = malloc(length);
-		if(data == NULL) goto error;
+		data = gw_malloc(length);
 
 		smpp_append_cstr(&where, &left, bind_transmitter_resp->system_id);
 
@@ -1394,11 +1378,9 @@ static int pdu_encode_bind(smpp_pdu *pdu, Octstr **str) {
 
 	*str = body_encoded;
 
-	free(data);
+	gw_free(data);
 
 	return 1;
-error:
-	return -1;
 }
 
 /******************************************************************************
@@ -1493,8 +1475,7 @@ static int pdu_encode_submit_sm(smpp_pdu* pdu, Octstr** str) {
 		 1 + 1 + 1 + 1 + 1 +
 		 submit_sm->sm_length + 1;
 
-	data = malloc(length);
-	if(data == NULL) goto error;
+	data = gw_malloc(length);
 	memset(data, 0, length);
 	where = data;
 
@@ -1524,8 +1505,6 @@ static int pdu_encode_submit_sm(smpp_pdu* pdu, Octstr** str) {
 	*str = newstr;
 
 	return 1;
-error:
-	return -1;
 }
 
 static int pdu_decode_submit_sm_resp(smpp_pdu* pdu, Octstr* str) {
@@ -1578,8 +1557,7 @@ static int pdu_act_deliver_sm(SMSCenter *smsc, smpp_pdu *pdu) {
 	if(newpdu == NULL) goto error;
 	memset(newpdu, 0, sizeof(struct smpp_pdu));
 
-	deliver_sm_resp = malloc(sizeof(struct smpp_pdu_deliver_sm_resp));
-	if(deliver_sm_resp == NULL) goto error;
+	deliver_sm_resp = gw_malloc(sizeof(struct smpp_pdu_deliver_sm_resp));
 	memset(deliver_sm_resp, 0, sizeof(struct smpp_pdu_deliver_sm_resp));
 
 	newpdu->length = 17;
@@ -1628,13 +1606,11 @@ static int pdu_decode_deliver_sm(smpp_pdu* pdu, Octstr* str) {
 		goto error;
 	}
 
-	deliver_sm = malloc(sizeof(struct smpp_pdu_deliver_sm));
-	if(deliver_sm==NULL) goto error;
+	deliver_sm = gw_malloc(sizeof(struct smpp_pdu_deliver_sm));
 	memset(deliver_sm, 0, sizeof(struct smpp_pdu_deliver_sm));
 	pdu->message_body = deliver_sm;
 
-	buff = malloc(octstr_len(str));
-	if(buff == NULL) goto error;
+	buff = gw_malloc(octstr_len(str));
 
 	octstr_get_many_chars(buff, str, 0, octstr_len(str));
 	start = buff + 16;
@@ -1716,7 +1692,7 @@ static int pdu_decode_deliver_sm(smpp_pdu* pdu, Octstr* str) {
 			sizeof(deliver_sm->short_message) : deliver_sm->sm_length);
 	start = end+1;
 
-	free(buff);
+	gw_free(buff);
 
 	debug(0, "pdu->service_type == %s", deliver_sm->service_type);
 	
@@ -1741,10 +1717,8 @@ static int pdu_decode_deliver_sm(smpp_pdu* pdu, Octstr* str) {
 	debug(0, "pdu->sm_default_msg_id == %i", deliver_sm->sm_default_msg_id);
 	debug(0, "pdu->sm_length == %i", deliver_sm->sm_length);
 
-	start = malloc( 4 );
-	end = malloc( (deliver_sm->sm_length*3) + 1 );
-	if(start == NULL) goto error;
-	if(end == NULL) goto error;
+	start = gw_malloc( 4 );
+	end = gw_malloc( (deliver_sm->sm_length*3) + 1 );
 	memset(end, 0, (deliver_sm->sm_length*3) + 1);
 	for(oct=0; oct < deliver_sm->sm_length; oct++) {
 		sprintf(start, "%02x ", (unsigned char) deliver_sm->short_message[oct]);
@@ -1752,8 +1726,8 @@ static int pdu_decode_deliver_sm(smpp_pdu* pdu, Octstr* str) {
 	}
 	debug(0, "pdu->short_message == %s", end);
 
-	free(start);
-	free(end);	
+	gw_free(start);
+	gw_free(end);	
 
 	return 1;
 

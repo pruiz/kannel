@@ -44,11 +44,7 @@ SMSCenter *fake_open(char *hostname, int port) {
 	smsc->latency = 1000*1000;
 	smsc->type = SMSC_TYPE_FAKE;
 	smsc->port = port;
-	smsc->hostname = strdup(hostname);
-	if (smsc->hostname == NULL) {
-		error(errno, "strdup failed while creating SMSCenter object");
-		goto error;
-	}
+	smsc->hostname = gw_strdup(hostname);
 	if (fake_open_connection(smsc) < 0)
 	    goto error;
 	

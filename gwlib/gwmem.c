@@ -1,9 +1,9 @@
-
 #include "gwlib.h"
 #include "gwmem.h"
 #include "thread.h"
 #include <stdlib.h>
 #include <errno.h>
+#include <string.h>
 
 void *gw_malloc(size_t size)
 {
@@ -35,3 +35,12 @@ void  gw_free(void *ptr)
 }
 
 
+char *gw_strdup(const char *str)
+{
+    char *copy;
+    
+    copy = strdup(str);
+    if (copy == NULL)
+        panic(errno, "Memory allocation for string copy failed.");
+    return copy;
+}

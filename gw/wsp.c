@@ -97,7 +97,7 @@ void wsp_event_destroy(WSPEvent *event) {
 			{ struct name *p = &event->name; fields }
 		#include "wsp_events-decl.h"
 
-		free(event);
+		gw_free(event);
 	}
 }
 
@@ -527,8 +527,7 @@ static void append_uintvar(Octstr *pdu, long n) {
 
 
 static void append_octstr(Octstr *pdu, Octstr *os) {
-	if (octstr_insert(pdu, os, octstr_len(pdu)) == -1)
-		panic(0, "octstr_insert failed, out of memory");
+	octstr_insert(pdu, os, octstr_len(pdu));
 }
 
 

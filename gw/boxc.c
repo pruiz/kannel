@@ -32,9 +32,7 @@ BOXC *boxc_open(int fd, char *allow_ip, char *deny_ip)
     char accept_ip[NI_MAXHOST];
     int ret;
 
-    nb = malloc(sizeof(BOXC));
-    if (nb == NULL)
-	goto error;
+    nb = gw_malloc(sizeof(BOXC));
 
     if (fd < 0) {
 	debug(0, "BOXC: Started an internal SMS BOX Thread");
@@ -59,11 +57,11 @@ BOXC *boxc_open(int fd, char *allow_ip, char *deny_ip)
 	    if (check_ip(deny_ip, accept_ip, NULL) == 1) {
 		warning(0, "Non-allowed connect tried from <%s>, disconnected",
 			accept_ip);
-		free(nb);
+		gw_free(nb);
 		return NULL;
 	    }
 	
-        nb->client_ip = strdup(accept_ip);
+        nb->client_ip = gw_strdup(accept_ip);
 	if (nb->client_ip == NULL) 
 	    goto error;
 	info(0, "BOXC: Client connected from <%s>", accept_ip);
@@ -76,7 +74,7 @@ BOXC *boxc_open(int fd, char *allow_ip, char *deny_ip)
     
 error:
     error(errno, "BOXC: Failed to create and open Box connection");
-    free(nb);
+    gw_free(nb);
     return NULL;
 
 }
@@ -89,7 +87,7 @@ int boxc_close(BOXC *boxc)
     if (boxc->fd >= 0)
 	close(boxc->fd);
 
-    free(boxc);
+    gw_free(boxc);
     return 0;
 }
 

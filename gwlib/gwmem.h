@@ -19,6 +19,7 @@
 void *gw_malloc(size_t size);
 void *gw_realloc(void *ptr, size_t size);
 void  gw_free(void *ptr);
+char *gw_strdup(const char *str);
 
 
 

@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 	fwrite(wmlc_data->wbxml, wmlc_data->wml_length, 1, stdout);
 #endif
 
-	free (wmlc_data);
+	gw_free (wmlc_data);
 	
 	return 0;
 	

@@ -88,7 +88,7 @@ char * white_space_del (char *from) {
 		return from;
 	}
 
-	temp = strdup(from);
+	temp = gw_strdup(from);
 	if(temp==NULL) goto error;
 
 	/* delete spaces from beginning of string */
@@ -101,13 +101,12 @@ char * white_space_del (char *from) {
 
 	if (string_len == 1) {	
 		/* allocate memory only the needed amount */
-		to =(char *) calloc(++string_len, sizeof(char));
-		if(to==NULL) goto error;
+		to =(char *) gw_malloc(++string_len);
 		bzero(to,string_len);
 
 		strncpy(to, &temp[string_len2], string_len);
 
-		free (temp);
+		gw_free (temp);
 		return(to);
 	} /* if */
 
@@ -122,17 +121,17 @@ char * white_space_del (char *from) {
 
 	string_len = strlen(temp);
 
-	to =(char *) calloc(++string_len, sizeof(char));
+	to = gw_malloc(++string_len);
 
 	bzero(to,string_len);
 
 	strncpy(to, &temp[string_len2], string_len);
 
-	free (temp);
+	gw_free (temp);
 	return(to);
 
 error:
-	free(temp);
+	gw_free(temp);
 	return NULL;
 }
 
@@ -771,8 +770,8 @@ char * attribute_space(char *temp, int *count, struct wmlc *binary_string, struc
 	bzero (tag,1000);
 	bzero (attribute,1000);
 
-	hex_temp = malloc(sizeof(unsigned char));
-	tag_end = malloc(sizeof(unsigned char));
+	hex_temp = gw_malloc(sizeof(unsigned char));
+	tag_end = gw_malloc(sizeof(unsigned char));
 	hex_temp_memory = hex_temp;
 	tag_end_memory = tag_end;
 	
@@ -791,7 +790,7 @@ char * attribute_space(char *temp, int *count, struct wmlc *binary_string, struc
 	if (tag_hex==0x04)
 	{	printf("Unknown tag cannot continue!\n");
 		printf("The tag was: %s\n", tag);
-		free(hex_temp_memory);free(tag_end_memory);
+		gw_free(hex_temp_memory);gw_free(tag_end_memory);
 		exit(1);}
 		
 	hex_input_test = tag_hex;
@@ -957,9 +956,9 @@ char * attribute_space(char *temp, int *count, struct wmlc *binary_string, struc
 	}
 	binary_string->wbxml[*count]=0x01; /**** END of attributes ********/
 	(*count)++;
-	/* free(hex_temp); */
-	free(tag_end_memory);
-	free(hex_temp_memory);
+	/* gw_free(hex_temp); */
+	gw_free(tag_end_memory);
+	gw_free(hex_temp_memory);
 
 	if (extra_tag == 1)
 	{	temp++;
@@ -1053,7 +1052,7 @@ int main(int argc, char *argv[])
 	{	printf("%02x\t",wmlc_data->wbxml[i]);			/** print the result **/
 		i++;}
 	printf("\n(%d) bytes\n",wmlc_data->wml_length);			/** how many bytes **/
-	free (wmlc_data);
+	gw_free (wmlc_data);
 	
 	return 0;
 	
@@ -1105,8 +1104,8 @@ struct wmlc * wml2wmlc(char *string_pointer_from) {
 	{	printf("No wml content\n");
 		return NULL;}
 	
-	binary_string = malloc(sizeof(struct wmlc));		/** allocate memory for binary string struct **/
-	temp = malloc(sizeof(unsigned char)); 			/** allocate memory for temp **/
+	binary_string = gw_malloc(sizeof(struct wmlc));		/** allocate memory for binary string struct **/
+	temp = gw_malloc(sizeof(unsigned char)); 			/** allocate memory for temp **/
 	temp_memory=temp;
 
 	newcr_to_space ( string_pointer_from, string_pointer_to ); 		/** convert \n and \t to white space **/
@@ -1324,7 +1323,7 @@ end:
 
 	variable_temp = variable_memory->next;	 /*free memory which were used for variables*/
 	while (variable_memory != NULL) {
-		free ( variable_memory );
+		gw_free ( variable_memory );
 		variable_memory = variable_temp;
 		if (variable_temp != NULL)
 		variable_temp = variable_temp->next;
@@ -1332,13 +1331,13 @@ end:
 
 	string_table_temp = string_table_memory->next;	 /*free memory which were used for strings*/
 	while (string_table_memory != NULL) {
-		free ( string_table_memory );
+		gw_free ( string_table_memory );
 		string_table_memory = string_table_temp;
 		if (string_table_temp != NULL)
 		string_table_temp = string_table_temp->next;
 	}
 
-	free (temp_memory);
+	gw_free (temp_memory);
 
 	return (binary_string);
 }
@@ -1401,14 +1400,8 @@ char * put_variable_in_memory ( char * temp, struct variable * variable, struct 
 struct string_reference * make_new_table_string (void)
 {	
 	struct string_reference *pointer;
-	pointer = (struct string_reference *) calloc ( 1, sizeof( struct string_reference));
-	if (pointer==NULL)
-	{	
-		printf("Out of memory");
-		exit(1);
-	}
-	else
-		return pointer;
+	pointer = gw_malloc ( sizeof( struct string_reference));
+	return pointer;
 }
 
 /***********************************************************************************/
@@ -1430,14 +1423,8 @@ void init_new_table_string ( struct string_reference * pointer, int * offset, un
 struct variable * make_new_variable (void)
 {	
 	struct variable *pointer;
-	pointer = (struct variable *) calloc ( 1, sizeof( struct variable));
-	if (pointer==NULL)
-	{	
-		printf("Out of memory");
-		exit(1);
-	}
-	else
-		return pointer;
+	pointer = gw_malloc ( sizeof( struct variable));
+	return pointer;
 }
 
 /***********************************************************************************/

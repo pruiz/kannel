@@ -14,26 +14,22 @@ OTAbitmap *OTAbitmap_create_empty(void)
 {
     OTAbitmap *new;
 
-    new = malloc(sizeof(OTAbitmap));
-    if (new == NULL) {
-	error(errno, "Memory allocation at create_empty()");
-	return NULL;
-    }
+    new = gw_malloc(sizeof(OTAbitmap));
     bzero(new, sizeof(OTAbitmap));
     return new;
 }
 
 void OTAbitmap_delete(OTAbitmap *pic)
 {
-    free(pic->ext_fields);
-    free(pic->main_image);
+    gw_free(pic->ext_fields);
+    gw_free(pic->main_image);
     if (pic->animated_image) {
 	int i;
 	for(i=0; i < pic->animimg_count; i++)
-	    free(pic->animated_image[i]);
-	free(pic->animated_image);
+	    gw_free(pic->animated_image[i]);
+	gw_free(pic->animated_image);
     }
-    free(pic);
+    gw_free(pic);
 }
 
 OTAbitmap *OTAbitmap_create(int width, int height, int depth,
@@ -44,8 +40,6 @@ OTAbitmap *OTAbitmap_create(int width, int height, int depth,
     Octet val;
     
     new = OTAbitmap_create_empty();
-    if (new == NULL)
-	return new;
 
     if (width > 255 || height > 255)
 	new->infofield = 0x10;		/* set bit */
@@ -57,12 +51,7 @@ OTAbitmap *OTAbitmap_create(int width, int height, int depth,
 
     siz = (width * height + 7)/8;
     
-    new->main_image = malloc(siz);
-    if (new->main_image == NULL) {
-	error(errno, "Memory allocation at OTAbitmap_create()");
-	free(new);
-	return NULL;
-    }
+    new->main_image = gw_malloc(siz);
     osiz = (width+7)/8 * height;
     for(i=j=0; i<osiz; i++, j+=8) {
 	val = data[i];
@@ -107,11 +96,7 @@ int OTAbitmap_create_stream(OTAbitmap *pic, Octet **stream)
     
     pic_size = (pic->width * pic->height + 7)/8;
 
-    *stream = malloc(pic_size+pic_size);
-    if (*stream == NULL) {
-	error(errno, "Memory allocation at create_stream()");
-	return -1;
-    }
+    *stream = gw_malloc(pic_size+pic_size);
     memcpy(*stream, tmp_header, hdr_len);
     memcpy(*stream + hdr_len, pic->main_image, pic_size);
 

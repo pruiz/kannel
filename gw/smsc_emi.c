@@ -119,16 +119,11 @@ SMSCenter *emi_open(char *phonenum, char *serialdevice, char *username, char *pa
 	smsc->type = SMSC_TYPE_EMI;
 	smsc->latency = 1000*1000; /* 1 second */
 
-	smsc->emi_phonenum = strdup(phonenum);
-	smsc->emi_serialdevice = strdup(serialdevice);
-	smsc->emi_username = strdup(username);
-	smsc->emi_password = strdup(password);
+	smsc->emi_phonenum = gw_strdup(phonenum);
+	smsc->emi_serialdevice = gw_strdup(serialdevice);
+	smsc->emi_username = gw_strdup(username);
+	smsc->emi_password = gw_strdup(password);
 
-	if (smsc->emi_phonenum == NULL || smsc->emi_serialdevice == NULL || 
-	    smsc->emi_username == NULL || smsc->emi_password == NULL) {
-		error(errno, "strdup failed");
-		goto error;
-	}
 	if (emi_open_connection(smsc) < 0)
 	    goto error;
 
@@ -186,18 +181,12 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
 	smsc->type = SMSC_TYPE_EMI_IP;
 	smsc->latency = 1000*1000; /* 1 second */ 
 
-	smsc->emi_hostname = strdup(hostname);
+	smsc->emi_hostname = gw_strdup(hostname);
 	smsc->emi_port = port;
-	smsc->emi_username = strdup(username);
-	smsc->emi_password = strdup(password);
+	smsc->emi_username = gw_strdup(username);
+	smsc->emi_password = gw_strdup(password);
 	smsc->emi_backup_port = backup_port;
 	smsc->emi_our_port = our_port;
-
-	if (smsc->emi_hostname == NULL || smsc->emi_username == NULL ||
-	    smsc->emi_password == NULL) {
-	        error(errno, "strdup failed");
-		goto error;
-	}
 
 	if (emi_open_connection_ip(smsc) < 0)
 	    goto error;
@@ -260,7 +249,7 @@ int emi_pending_smsmessage(SMSCenter *smsc) {
 	    internal_emi_memorybuffer_has_rawmessage(smsc, 1, 'O') > 0 )
 	        return 1;
 
-	tmpbuff = malloc(10*1024);
+	tmpbuff = gw_malloc(10*1024);
 	bzero(tmpbuff, 10*1024);
 
 	/* check for data */
@@ -273,7 +262,7 @@ int emi_pending_smsmessage(SMSCenter *smsc) {
 	       internal_emi_memorybuffer_has_rawmessage( smsc, 1, 'R' ) > 0)
 	    internal_emi_memorybuffer_cut_rawmessage( smsc, tmpbuff, 10*1024 );
 
-	free(tmpbuff);
+	gw_free(tmpbuff);
 
 	/* If we have MO-message, then act (return 1) */
 	
@@ -305,7 +294,7 @@ int emi_submit_msg(SMSCenter *smsc, Msg *omsg) {
 	if (smsc == NULL) goto error;
 	if (omsg == NULL) goto error;
 
-	tmpbuff = malloc(10*1024);
+	tmpbuff = gw_malloc(10*1024);
 	bzero(tmpbuff, 10*1024);
 
 	if(internal_emi_parse_msg_to_rawmessage( smsc, omsg, tmpbuff, 10*1024 ) < 1)
@@ -330,13 +319,13 @@ int emi_submit_msg(SMSCenter *smsc, Msg *omsg) {
 /*	smsc->emi_current_msg_number += 1; */
 	debug(0, "Submit Ok...");
 	
-	free(tmpbuff);
+	gw_free(tmpbuff);
 	return 1;
 
 error:
 	debug(0, "Submit Error...");
 
-	free(tmpbuff);
+	gw_free(tmpbuff);
 	return 0;
 }
 
@@ -350,8 +339,7 @@ int emi_receive_msg(SMSCenter *smsc, Msg **tmsg) {
 
 	*tmsg = NULL;
 	
-	tmpbuff = malloc(10*1024);
-	if(tmpbuff==NULL) goto error;
+	tmpbuff = gw_malloc(10*1024);
 	bzero(tmpbuff, 10*1024);
 
 	/* get and delete message from buffer */
@@ -362,7 +350,7 @@ int emi_receive_msg(SMSCenter *smsc, Msg **tmsg) {
 	internal_emi_acknowledge_from_rawmessage(smsc, tmpbuff, strlen(tmpbuff));
 
 	/* return with the joyful news */
-	free(tmpbuff);
+	gw_free(tmpbuff);
 
 	if (msg == NULL) goto error;
 
@@ -371,7 +359,7 @@ int emi_receive_msg(SMSCenter *smsc, Msg **tmsg) {
 	return 1;
 
 error:
-	free(tmpbuff);
+	gw_free(tmpbuff);
 	msg_destroy(msg);
 	return -1;
 }
@@ -567,7 +555,7 @@ static int internal_emi_wait_for_ack(SMSCenter *smsc) {
     int n;
     time_t start;
 
-    tmpbuff = malloc(10*1024);
+    tmpbuff = gw_malloc(10*1024);
     bzero(tmpbuff, 10*1024);
     start = time(NULL);
     do {
@@ -597,7 +585,7 @@ static int internal_emi_wait_for_ack(SMSCenter *smsc) {
 	}
     } while ((!found) && ((time(NULL) - start) < 5));
 
-    free(tmpbuff);  
+    gw_free(tmpbuff);  
     return found;
 }
 
@@ -764,12 +752,7 @@ static int internal_emi_memorybuffer_append_data(SMSCenter *smsc, char *buff, in
         char *p;
 
 	while( smsc->bufsize < (smsc->buflen + length) ) { /* buffer too small */
-	        p = realloc(smsc->buffer, smsc->bufsize * 2);
-		if (p == NULL) {
-		    error(errno, 
-			  "Couldn't allocate read buffer, using original (too small)");
-		    return -1;
-		}
+	        p = gw_realloc(smsc->buffer, smsc->bufsize * 2);
 		smsc->buffer = p;
 		smsc->bufsize *= 2;
 	}
@@ -790,12 +773,7 @@ static int internal_emi_memorybuffer_insert_data(SMSCenter *smsc, char *buff, in
     char *p;
     
     while( smsc->bufsize < (smsc->buflen + length) ) { /* buffer too small */
-	p = realloc(smsc->buffer, smsc->bufsize * 2);
-	if (p == NULL) {
-	    error(errno, 
-		  "Couldn't allocate read buffer, using original (too small)");
-	    return -1;
-	}
+	p = gw_realloc(smsc->buffer, smsc->bufsize * 2);
 	smsc->buffer = p;
 	smsc->bufsize *= 2;
     }

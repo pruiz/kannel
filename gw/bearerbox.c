@@ -271,17 +271,13 @@ static int add_receiver(RQueue *queue, RQueueItem *msg, int old_id, int new_id)
     int ret, index;
     char *p;
 
-    p = strdup(msg->routing_info);
-    if (p == NULL) {
-	error(errno, "Failed to allocate room for router");
-	return -1;
-    }
+    p = gw_strdup(msg->routing_info);
     mutex_lock(route_mutex);
 
     ret = bsearch_receiver(msg->routing_info, &index);
     if (ret == 0) {
 	warning(0, "Trying to re-insert already known");
-	free(p);
+	gw_free(p);
 	goto end;
     }
     /*
@@ -290,12 +286,7 @@ static int add_receiver(RQueue *queue, RQueueItem *msg, int old_id, int new_id)
     
     if (route_count >= route_limit) {
 	route_limit += 1024;
-	new = realloc(route_info, route_limit * sizeof(RouteInfo));
-	if (new == NULL) {
-	    error(errno, "Failed to add a new receiver routing info");
-	    ret = -1;
-	    goto end;
-	}
+	new = gw_realloc(route_info, route_limit * sizeof(RouteInfo));
 	route_info = new;
     }
     /*
@@ -951,11 +942,7 @@ int find_bbt_index(void)
 	    return i;
     }
     ns = bbox->thread_limit * 2;
-    new = realloc(bbox->threads, sizeof(BBThread *) * ns);
-    if (new == NULL) {
-	error(0, "Failed to realloc thread space!");
-	return -1;
-    }
+    new = gw_realloc(bbox->threads, sizeof(BBThread *) * ns);
     in = i;
     bbox->thread_limit = ns;
     for(; i < bbox->thread_limit; i++)
@@ -996,11 +983,7 @@ static BBThread *create_bbt(int type)
     
     BBThread	*nt;
     
-    nt = malloc(sizeof(BBThread));
-    if (nt == NULL) {
-	error(errno, "Malloc failed at create_bbt");
-	return NULL;
-    }
+    nt = gw_malloc(sizeof(BBThread));
     nt->type = type;
     nt->status = BB_STATUS_CREATED;
     nt->heartbeat = time(NULL);
@@ -1030,7 +1013,7 @@ static void del_bbt(BBThread *thr)
     smsc_close(thr->smsc);
     csdr_close(thr->csdr);
     boxc_close(thr->boxc);
-    free(thr);
+    gw_free(thr);
 }
 
 
@@ -1291,9 +1274,9 @@ static void *http_request_thread(void *arg)
 
     /* answer closes the socket */
 done:
-    free(path);
-    free(args);
-    free(client_ip);
+    gw_free(path);
+    gw_free(args);
+    gw_free(client_ip);
     return NULL;
 }
 
@@ -1344,9 +1327,9 @@ static void *sendsms_thread(void *arg)
 	error(0, "Error responding to client. Too bad.");
 
     /* answer closes the socket */
-    free(path);
-    free(args);
-    free(client_ip);
+    gw_free(path);
+    gw_free(args);
+    gw_free(client_ip);
     return NULL;
 }
 
@@ -1715,9 +1698,7 @@ static void init_bb(Config *cfg)
     char *p;
     int i, lvl = 0;
     
-    bbox = malloc(sizeof(BearerBox));
-    if (bbox == NULL)
-	goto error;
+    bbox = gw_malloc(sizeof(BearerBox));
 
     bbox->num_threads = 0;
     bbox->id_max = 1;
@@ -1781,9 +1762,7 @@ static void init_bb(Config *cfg)
 	      bbox->thread_limit);
 	bbox->thread_limit = 5;
     }
-    bbox->threads = malloc(sizeof(BBThread *) * bbox->thread_limit);
-    if (bbox->threads == NULL)
-	goto error;
+    bbox->threads = gw_malloc(sizeof(BBThread *) * bbox->thread_limit);
     bbox->request_queue = rq_new();
     bbox->reply_queue = rq_new();
     if (bbox->request_queue == NULL || bbox->reply_queue == NULL) {

@@ -10,7 +10,9 @@
  *
  * Several octet strings can also be placed in a list, OctstrList.
  *
- * See comments below for explanations on individual functions.
+ * See comments below for explanations on individual functions. Note that
+ * all functions use gw_malloc and friends, so they won't return if the
+ * memory allocations fail.
  *
  * Lars Wirzenius for WapIT Ltd.
  */
@@ -24,15 +26,14 @@ typedef struct Octstr Octstr;
 typedef struct OctstrList OctstrList;
 
 /*
- * Create an empty octet string. Return pointer to the new object, or NULL
- * if the operation failed.
+ * Create an empty octet string. Return pointer to the new object.
  */
 Octstr *octstr_create_empty(void);
 
 
 /*
  * Create an octet string from a NUL-terminated C string. Return pointer to
- * the new object, or NULL if the operation failed.
+ * the new object.
  */
 Octstr *octstr_create(char *cstr);
 
@@ -62,9 +63,9 @@ size_t octstr_len(Octstr *ostr);
 
 /*
  * Create a new octet string by copying part of an existing one. Return 
- * pointer to the new object, or NULL if the operation failed. If `from'
- * is after end of `ostr', an empty octet string is created. If `from+len'
- * is after the end of `ostr', `len' is reduced appropriately.
+ * pointer to the new object. If `from' is after end of `ostr', an empty
+ * octet string is created. If `from+len' is after the end of `ostr', 
+ * `len' is reduced appropriately.
  */
 Octstr *octstr_copy(Octstr *ostr, size_t from, size_t len);
 
@@ -77,7 +78,7 @@ Octstr *octstr_duplicate(Octstr *ostr);
 
 /*
  * Create a new octet string by catenating two existing ones. Return 
- * pointer to the new object, or NULL if the operation failed.
+ * pointer to the new object.
  */
 Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2);
 
@@ -147,24 +148,20 @@ int octstr_write_to_socket(int socket, Octstr *ostr);
 
 
 /*
- * Replace current contents of the octstr with given data. Return 0
- * for OK, -1 if new data needs more room and allocation fails, in
- * which case the octstr is not modified
+ * Replace current contents of the octstr with given data.
  */
-int octstr_replace(Octstr *ostr, char *data, size_t len);
+void octstr_replace(Octstr *ostr, char *data, size_t len);
 
 
 /*
- * Insert one octet string into another. Return 0 for OK, -1 for failure.
- * In case of failure, `ostr1' is not modified. `pos' gives the position
+ * Insert one octet string into another. `pos' gives the position
  * in `ostr1' where `ostr2' should be inserted.
  */
-int octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos);
+void octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos);
 
 
 /*
- * Insert characters from C array into an octet string. Return 0 for OK, 
- * -1 for failure. In case of failure, `ostr' is not modified. `pos' 
+ * Insert characters from C array into an octet string. `pos' 
  * gives the position in `ostr' where `data' should be inserted. `len'
  * gives the number of characters in `data'.
  */
@@ -179,21 +176,20 @@ void octstr_truncate(Octstr *ostr, int new_len);
 
 
 /*
- * Delete part of an octet string. This operation cannot fail.
+ * Delete part of an octet string.
  */
 void octstr_delete(Octstr *ostr1, size_t pos, size_t len);
 
 
 /*
- * Read the contents of a named file to an octet string. Return NULL for
- * failure, pointer to octet string for success.
+ * Read the contents of a named file to an octet string. Return pointer to
+ * octet string.
  */
 Octstr *octstr_read_file(const char *filename);
 
 
 /*
- * Create an empty list of octet strings. Return pointer to new list, or
- * NULL for failure.
+ * Create an empty list of octet strings. Return pointer to new list.
  */
 OctstrList *octstr_list_create(void);
 
@@ -212,10 +208,9 @@ size_t octstr_list_len(OctstrList *list);
 
 
 /*
- * Append a new octet string to end of list. Return -1 for failure, 0 for OK.
- * In case of failure, the list is not modified.
+ * Append a new octet string to end of list.
  */
-int octstr_list_append(OctstrList *list, Octstr *ostr);
+void octstr_list_append(OctstrList *list, Octstr *ostr);
 
 
 /*
@@ -227,7 +222,7 @@ Octstr *octstr_list_get(OctstrList *list, size_t index);
 
 /*
  * Split an octet string into words at whitespace, and return a list
- * containing the new octet strings. Return NULL if the operation fails.
+ * containing the new octet strings.
  */
 OctstrList *octstr_split_words(Octstr *ostr);
 

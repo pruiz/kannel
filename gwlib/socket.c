@@ -247,9 +247,7 @@ int read_to_eof(int fd, char **data, size_t *len) {
 	for (;;) {
 		if (*len == size) {
 			size += 16*1024;
-			p = realloc(*data, size);
-			if (p == NULL)
-				goto error;
+			p = gw_realloc(*data, size);
 			*data = p;
 		}
 		ret = read(fd, *data + *len, size - *len);
@@ -267,7 +265,7 @@ int read_to_eof(int fd, char **data, size_t *len) {
 	return 0;
 
 error:
-	free(*data);
+	gw_free(*data);
 	return -1;
 }
 

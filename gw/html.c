@@ -232,10 +232,10 @@ char *html_strip_prefix_and_suffix(char *html, char *prefix, char *suffix) {
 
 	p = str_case_str(html, prefix);
 	if (p == NULL)
-		return strdup(html);	/* return original, if no prefix */
+		return gw_strdup(html);	/* return original, if no prefix */
 	p += strlen(prefix);
 	q = str_case_str(p, suffix);
 	if (q == NULL)
-		return strdup(html);	/* return original, if no suffix */
+		return gw_strdup(html);	/* return original, if no suffix */
 	return strndup(p, q - p);
 }

@@ -14,11 +14,7 @@ WBMP *wbmp_create_empty(void)
 {
     WBMP *new;
 
-    new = malloc(sizeof(WBMP));
-    if (new == NULL) {
-	error(errno, "Memory allocation at create_empty()");
-	return NULL;
-    }
+    new = gw_malloc(sizeof(WBMP));
     bzero(new, sizeof(WBMP));
     return new;
 }
@@ -27,15 +23,15 @@ WBMP *wbmp_create_empty(void)
 
 void wbmp_delete(WBMP *pic)
 {
-    free(pic->ext_header_field);
-    free(pic->main_image);
+    gw_free(pic->ext_header_field);
+    gw_free(pic->main_image);
     if (pic->animated_image) {
 	int i;
 	for(i=0; i < pic->animimg_count; i++)
-	    free(pic->animated_image[i]);
-	free(pic->animated_image);
+	    gw_free(pic->animated_image[i]);
+	gw_free(pic->animated_image);
     }
-    free(pic);
+    gw_free(pic);
 }
 
 
@@ -46,8 +42,6 @@ WBMP *wbmp_create(int type, int width, int height, Octet *data, int flags)
     Octet val;
     
     new = wbmp_create_empty();
-    if (new == NULL)
-	return new;
 
     new->type_field = type;
     if (type == 0) {
@@ -60,12 +54,7 @@ WBMP *wbmp_create(int type, int width, int height, Octet *data, int flags)
     new->height = height;
     siz = (width+7)/8 * height;
     
-    new->main_image = malloc(siz);
-    if (new->main_image == NULL) {
-	error(errno, "Memory allocation at wbmp_create()");
-	free(new);
-	return NULL;
-    }
+    new->main_image = gw_malloc(siz);
     for(i=0; i < siz; i++) {
 	if (flags & REVERSE) val = reverse_octet(data[i]);
 	else val = data[i];
@@ -93,11 +82,7 @@ int wbmp_create_stream(WBMP *pic, Octet **stream)
 	error(0, "Unknown WBMP type %d, cannot convert", pic->type_field);
 	return -1;
     }
-    *stream = malloc(2+wl+hl+pic_size);
-    if (*stream == NULL) {
-	error(errno, "Memory allocation at create_empty()");
-	return -1;
-    }
+    *stream = gw_malloc(2+wl+hl+pic_size);
     sprintf(*stream, "%c%c", 0x00, 0x00); 
     memcpy(*stream+2, tmp_w, wl);
     memcpy(*stream+2+wl, tmp_h, hl);

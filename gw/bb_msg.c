@@ -23,11 +23,7 @@
 RQueue *rq_new(void)
 {
     RQueue *nr;
-    nr = malloc(sizeof(RQueue));
-    if (nr == NULL) {
-	error(errno, "Failed to malloc new RQueue");
-	return NULL;
-    }
+    nr = gw_malloc(sizeof(RQueue));
     nr->first = nr->last = NULL;
     nr->mutex = mutex_create();
     nr->id_max = 1;
@@ -288,9 +284,7 @@ time_t rq_last_mod(RQueue *queue)
 RQueueItem *rqi_new(int class, int type)
 {
     RQueueItem *nqi;
-    nqi = malloc(sizeof(RQueueItem));
-    if (nqi == NULL)
-	goto error;
+    nqi = gw_malloc(sizeof(RQueueItem));
     
     nqi->id = -1;
     nqi->msg_class = class;
@@ -305,19 +299,14 @@ RQueueItem *rqi_new(int class, int type)
     nqi->next = NULL;
 
     return nqi;
-
-error:
-    error(0, "Failed to create new RQueueItem");
-    free(nqi);
-    return NULL;
 }
 
 
 void rqi_delete(RQueueItem *msg)
 {
     msg_destroy(msg->msg);
-    free(msg->routing_info);
-    free(msg);
+    gw_free(msg->routing_info);
+    gw_free(msg);
 }
 
 

@@ -58,8 +58,7 @@ static int cimd_open_connection(SMSCenter *smsc) {
 	int cmd = 0, err = 0;
 
 	/* allocate some spare space */
-	tmpbuff = malloc(10*1024);
-	if(tmpbuff == NULL) goto error;
+	tmpbuff = gw_malloc(10*1024);
 	bzero(tmpbuff, 10*1024);
 
 	/* connect */
@@ -105,7 +104,7 @@ static int cimd_open_connection(SMSCenter *smsc) {
 
 	debug(0, "logged in");
 	
-	free(tmpbuff);
+	gw_free(tmpbuff);
 	return 0;
 
 logout:
@@ -113,7 +112,7 @@ logout:
 
 error:
 	error(errno, "cimd_open: could not open/handshake");
-	free(tmpbuff);
+	gw_free(tmpbuff);
 	return -1;
 }
 
@@ -131,16 +130,10 @@ SMSCenter *cimd_open(char *hostname, int port, char *username, char *password) {
 	smsc = smscenter_construct();
 	if (smsc == NULL) goto error;
 	smsc->type = SMSC_TYPE_CIMD;
-	smsc->cimd_hostname = strdup(hostname);
+	smsc->cimd_hostname = gw_strdup(hostname);
 	smsc->cimd_port = port;
-	smsc->cimd_username = strdup(username);
-	smsc->cimd_password = strdup(password);
-
-	if (smsc->cimd_hostname == NULL || smsc->cimd_username == NULL || 
-	    smsc->cimd_password == NULL) {
-		error(errno, "strdup failed");
-		goto error;
-	}
+	smsc->cimd_username = gw_strdup(username);
+	smsc->cimd_password = gw_strdup(password);
 
 	ret = cimd_open_connection(smsc);
 	if (ret < 0)
@@ -189,8 +182,7 @@ int cimd_close(SMSCenter *smsc) {
 	    debug(0, "Trying to close cimd while already closed!");
 	    return 0;
 	}
-	cbuff = malloc(2*1024);
-	if(cbuff == NULL) goto error;
+	cbuff = gw_malloc(2*1024);
 
 	sprintf(cbuff, "%c%s%c%s%c%c", 0x02, "02", 0x09, "11", 0x03, 0x0A);
 
@@ -200,14 +192,14 @@ int cimd_close(SMSCenter *smsc) {
 	/* this time we don't block waiting for acknowledge */	
 	recv(smsc->socket, cbuff, 2*1024, 0);
 
-	free(cbuff);
+	gw_free(cbuff);
 
 	ret = close(smsc->socket);
 	smsc->socket = -1;
 	return ret;
 	
 error:
-	free(cbuff);
+	gw_free(cbuff);
 	return -1;	
 }
 
@@ -231,8 +223,7 @@ int cimd_pending_smsmessage(SMSCenter *smsc) {
 	smsc->cimd_last_spoke = thetime;
 
 	/* allocate some spare space */
-	tmpbuff = malloc(10*1024);
-	if(tmpbuff == NULL) goto error;
+	tmpbuff = gw_malloc(10*1024);
 	bzero(tmpbuff, 10*1024);
 
 	sprintf(tmpbuff, "%c%s%c%s%c%c", 
@@ -293,17 +284,17 @@ int cimd_pending_smsmessage(SMSCenter *smsc) {
 	}
 
 	/* miracle of miracles, we got a message */
-	free(tmpbuff);
+	gw_free(tmpbuff);
 	return 1;
 
 no_messages:
-	free(tmpbuff);
+	gw_free(tmpbuff);
 	return 0;
 
 error:
 	
 	debug(0, "smscenter_pending_smsmessage: returning error");
-	free(tmpbuff);
+	gw_free(tmpbuff);
 	return -1;
 }
 
@@ -345,13 +336,8 @@ int cimd_submit_msg(SMSCenter *smsc, Msg *msg) {
 		goto okay; /* THIS IS NOT OKAY!!!! XXX */
 	}
 
-	tmpbuff = malloc(10*1024);
-	tmptext = malloc(10*1024);
-
-	if( (tmpbuff==NULL) || (tmptext==NULL) ) {
-		debug(0, "cimd_submit_smsmessage: out of memory");
-		goto error;
-	}
+	tmpbuff = gw_malloc(10*1024);
+	tmptext = gw_malloc(10*1024);
 
 	bzero(tmpbuff, 10*1024);
 	bzero(tmptext, 10*1024);
@@ -417,14 +403,14 @@ int cimd_submit_msg(SMSCenter *smsc, Msg *msg) {
 	}
 
 okay:
-	free(tmpbuff);
-	free(tmptext);
+	gw_free(tmpbuff);
+	gw_free(tmptext);
 	return 0;
 
 error:
 	debug(0, "cimd_submit_smsmessage: returning error");
-	free(tmpbuff);
-	free(tmptext);	
+	gw_free(tmpbuff);
+	gw_free(tmptext);	
 	return -1;
 
 }
@@ -444,15 +430,11 @@ int cimd_receive_msg(SMSCenter *smsc, Msg **msg) {
 	   way into the memory buffer (smsc->buffer) */
 
 	/* we want to temporarily store some data */
-	tmpbuff = malloc(10*1024);
-	sender = malloc(10*1024);
-	receiver = malloc(10*1024);
-	text = malloc(10*1024);
-	scts = malloc(10*1024);
-
-	if( (tmpbuff==NULL) || (sender==NULL) || (receiver==NULL) ||
-		(text==NULL) || (scts==NULL) )
-		goto error;
+	tmpbuff = gw_malloc(10*1024);
+	sender = gw_malloc(10*1024);
+	receiver = gw_malloc(10*1024);
+	text = gw_malloc(10*1024);
+	scts = gw_malloc(10*1024);
 
 	bzero(tmpbuff, 10*1024);
 	bzero(sender, 10*1024);
@@ -498,11 +480,11 @@ int cimd_receive_msg(SMSCenter *smsc, Msg **msg) {
 
 	/* Free and Finish */
 
-	free(tmpbuff);
-	free(sender);
-	free(receiver);
-	free(text);
-	free(scts);
+	gw_free(tmpbuff);
+	gw_free(sender);
+	gw_free(receiver);
+	gw_free(text);
+	gw_free(scts);
 
 	debug(0, "cimd_receive_smsmessage: return ok");
 
@@ -510,11 +492,11 @@ int cimd_receive_msg(SMSCenter *smsc, Msg **msg) {
 
 error:
 	debug(errno, "cimd_receive_smsmessage: failed");
-	free(tmpbuff);
-	free(sender);
-	free(receiver);
-	free(text);
-	free(scts);
+	gw_free(tmpbuff);
+	gw_free(sender);
+	gw_free(receiver);
+	gw_free(text);
+	gw_free(scts);
 
 	debug(0, "cimd_receive_smsmessage: return failed");
 
@@ -541,8 +523,7 @@ static int internal_cimd_connect_tcpip(SMSCenter *smsc) {
 	debug(0, "reconnecting to <%s>", smsc->name);
 
 	/* allocate some spare space */
-	tmpbuff = malloc(10*1024);
-	if(tmpbuff == NULL) goto error;
+	tmpbuff = gw_malloc(10*1024);
 	bzero(tmpbuff, 10*1024);
 
 	/* Close connection */
@@ -595,17 +576,13 @@ static int internal_cimd_connect_tcpip(SMSCenter *smsc) {
 
 	debug(0, "cimd_connect_tcpip: logged in");
 	
-	free(tmpbuff);
+	gw_free(tmpbuff);
 
 	return 1;
 
 logout:
 	close(smsc->socket);
-
-error:
-	error(errno, "internal_cimd_connect: could not connect");
-	free(tmpbuff);
-
+	gw_free(tmpbuff);
 	return 0;
 }
 

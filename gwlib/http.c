@@ -4,6 +4,7 @@
 */
 
 
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -72,15 +73,10 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	getnameinfo((struct sockaddr*)&cliaddr, len,
 			accept_ip, sizeof(accept_ip), 
 			NULL, 0, NI_NUMERICHOST);
-	*client_ip = strdup(accept_ip);
+	*client_ip = gw_strdup(accept_ip);
 
 	gbsize = 1024;
-	growingbuff = malloc(gbsize);
-	if(growingbuff==NULL) {
-		error(errno, "memory allocation error");
-		goto error;
-	}
-	
+	growingbuff = gw_malloc(gbsize);
 	bzero(growingbuff, gbsize);
 
 	errno = 0;
@@ -109,11 +105,11 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 			eol = strstr(growingbuff, "\r\n");
 			if(eol != NULL) {
 				*eol = '\0';
-				newbuff = strdup(growingbuff);
+				newbuff = gw_strdup(growingbuff);
 				sscanf(growingbuff, "GET %s HTTP/%i.%i", 
 					newbuff, &tmpint, &tmpint);
 				url = internal_url_create(newbuff);
-				free(newbuff);
+				gw_free(newbuff);
 				*eol = '\r';
 				done_with_status = 1;
 				done_with_looping = 1;
@@ -127,23 +123,22 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	} /* for */
 
 	if(url->abs_path != NULL)
-		*path = strdup(url->abs_path);
+		*path = gw_strdup(url->abs_path);
 	else
 		*path = NULL;
 
 	if(url->query != NULL)
-		*args = strdup(url->query);
+		*args = gw_strdup(url->query);
 	else
 		*args = NULL;
 
 	internal_url_destroy(url);
-	free(growingbuff);
+	gw_free(growingbuff);
 	return connfd;
 
 error:
-	free(growingbuff);
+	gw_free(growingbuff);
 	return -1;
-
 }
 
 int httpserver_answer(int socket, char *text) {
@@ -152,16 +147,11 @@ int httpserver_answer(int socket, char *text) {
 	int tmpint = 0;
 	size_t bufsize = 0;
 
-	if( (socket < 0) || (text == NULL) )
-		goto error;
+	assert(socket >= 0);
+	assert(text != NULL);
 
 	bufsize = strlen(text) + 1024;
-	bigbuff = malloc(bufsize);
-
-	if(bigbuff == NULL) {
-		error(errno, "memory allocation error");
-		goto error;
-	}
+	bigbuff = gw_malloc(bufsize);
 
 	sprintf(bigbuff, "HTTP/1.1 200 OK\r\nContent-Type:text/html\r\nContent-Length: %i\r\n\r\n", strlen(text));
 	strcat(bigbuff, text);
@@ -170,16 +160,12 @@ int httpserver_answer(int socket, char *text) {
 
 	if(tmpint == -1) {
 		error(errno, "error sending to socket");
-		goto error;
+		gw_free(bigbuff);
+		return -1;
 	}
 
-	free(bigbuff);
+	gw_free(bigbuff);
 	return close(socket);
-	
-error:
-	free(bigbuff);
-	return -1;
-	
 }
 
 /*****************************************************************************
@@ -224,16 +210,15 @@ int http_get(char *urltext, char **type, char **data, size_t *size) {
 	httprequest_add_header(request, "Connection", "close");
 	httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
 	if(request->url->username!=NULL) {
-		ptr = malloc(1024);
-		if(ptr==NULL) goto error;
+		ptr = gw_malloc(1024);
 		sprintf(ptr, "%s:%s", 
 			request->url->username, request->url->password);
 		authorization = internal_base6t4(ptr);
 		if(authorization==NULL) goto error;
 		sprintf(ptr, "Basic %s", authorization);
 		httprequest_add_header(request, "Authorization", ptr);
-		free(authorization);
-		free(ptr);
+		gw_free(authorization);
+		gw_free(ptr);
 	}
 
 	for(;;) {
@@ -290,15 +275,14 @@ int http_get(char *urltext, char **type, char **data, size_t *size) {
 	/* Check the content of the "Content-Type" header. */
 	ptr = httprequest_get_header_value(response, "Content-Type");
 	if(ptr != NULL) {
-		*type = strdup(ptr);
+		*type = gw_strdup(ptr);
 	} else {
 		*type = NULL;
 	}
 
 	/* Fill in the variables which we return. */
 	if( (response->data != NULL) && (response->data_length > 0) ) {
-		*data = malloc(response->data_length+1);
-		if(*data==NULL) goto error;
+		*data = gw_malloc(response->data_length+1);
 		memset(*data, 0, response->data_length+1);
 		memcpy(*data, response->data, response->data_length);
 		*size = response->data_length;
@@ -349,15 +333,12 @@ URL* internal_url_create(char *text) {
 	}
 
 	/* make a copy of the input string for myself */
-	mycopy = strdup(text);
+	mycopy = gw_strdup(text);
 	if(mycopy == NULL) {
 		goto error;
 	}
 	
-	tmpURL = malloc(sizeof(struct URL));
-	if(tmpURL == NULL) {
-		goto error;
-	}
+	tmpURL = gw_malloc(sizeof(struct URL));
 	bzero(tmpURL, sizeof(struct URL));
 
 	tmpURL->scheme = NULL;
@@ -374,11 +355,7 @@ URL* internal_url_create(char *text) {
 	if(query_start == NULL) { /* no query this time */
 		tmpURL->query = NULL;
 	} else { /* cut off the query part */
-		tmpURL->query = strdup(query_start+1);
-		if(tmpURL->query==NULL) {
-			error(errno, "url_create: memory allocation error");
-			goto error;
-		}
+		tmpURL->query = gw_strdup(query_start+1);
 		*query_start = '\0';
 	}
 
@@ -389,18 +366,10 @@ URL* internal_url_create(char *text) {
 	if (scheme_end != NULL) { /* awrighty! */
 		scheme_start = mycopy;
 		*scheme_end   = '\0';
-		tmpURL->scheme = strdup(scheme_start);
-		if(tmpURL->scheme==NULL) {
-			error(errno, "url_create: memory allocation error");
-			goto error;
-		}
+		tmpURL->scheme = gw_strdup(scheme_start);
 		host_start = scheme_end + 3;
 	} else { /* no scheme found, default to http */
-		tmpURL->scheme = strdup("http");
-		if(tmpURL->scheme==NULL) {
-			error(errno, "url_create: memory allocation error");
-			goto error;
-		}
+		tmpURL->scheme = gw_strdup("http");
 		host_start = mycopy;
 	}
 
@@ -409,18 +378,10 @@ URL* internal_url_create(char *text) {
 	/* after: "username:password@server:port" */
 	abs_path_start = strchr(host_start, '/');
 	if(abs_path_start != NULL) { /* the hostname is followed by path */
-		tmpURL->abs_path = strdup(abs_path_start);
-		if(tmpURL->abs_path==NULL) {
-			error(errno, "url_create: memory allocation error");
-			goto error;
-		}
+		tmpURL->abs_path = gw_strdup(abs_path_start);
 		*abs_path_start = '\0';
 	} else { /* default per RFC2616/3.2.2 */
-		tmpURL->abs_path = strdup("/");
-		if(tmpURL->abs_path==NULL) {
-			error(errno, "url_create: memory allocation error");
-			goto error;
-		}
+		tmpURL->abs_path = gw_strdup("/");
 	}
 
 	/* cut off the cport */
@@ -459,12 +420,12 @@ URL* internal_url_create(char *text) {
 
 			if( (password_start != NULL) && (password_end!=NULL) ) {
 				*password_end = '\0';
-				tmpURL->password = strdup(password_start);
+				tmpURL->password = gw_strdup(password_start);
 			}
 
 			if( (username_start != NULL) && (username_end!=NULL) ) {
 				*username_end = '\0';
-				tmpURL->username = strdup(username_start);
+				tmpURL->username = gw_strdup(username_start);
 			}
 
 
@@ -476,18 +437,14 @@ URL* internal_url_create(char *text) {
 
 	/* before: "server" */
 	/* after: "" */
-	tmpURL->host = strdup(host_start);
-	if(tmpURL->host==NULL) {
-		error(errno, "url_create: memory allocation error");
-		goto error;
-	}
+	tmpURL->host = gw_strdup(host_start);
 
-	free(mycopy);
+	gw_free(mycopy);
 	return tmpURL;
 
 error:
 	debug(errno, "url_create: failed");
-	free(mycopy);
+	gw_free(mycopy);
 	internal_url_destroy(tmpURL);
 	return NULL;
 }
@@ -500,13 +457,13 @@ int internal_url_destroy(URL *url) {
 
 	if(url==NULL) return -1;
 
-	free(url->username);
-	free(url->password);
-	free(url->scheme);
-	free(url->host);
-	free(url->abs_path);
-	free(url->query);
-	free(url);
+	gw_free(url->username);
+	gw_free(url->password);
+	gw_free(url->scheme);
+	gw_free(url->host);
+	gw_free(url->abs_path);
+	gw_free(url->query);
+	gw_free(url);
 
 	return 0;
 
@@ -520,54 +477,36 @@ URL* url_duplicate(URL* url) {
 
 	URL *newurl = NULL;
 
-	newurl = malloc(sizeof(struct URL));
-	if(newurl == NULL) {
-		error(errno, "url_duplicate: memory allocation error");
-		goto error;
-	}
+	newurl = gw_malloc(sizeof(struct URL));
 	bzero(newurl, sizeof(struct URL));
 
 	if(url->username != NULL) {
-		newurl->username = strdup(url->username);
-		if(newurl->username == NULL) goto mallocerror;
+		newurl->username = gw_strdup(url->username);
 	}
 
 	if(url->password != NULL) {
-		newurl->password = strdup(url->password);
-		if(newurl->password == NULL) goto mallocerror;
+		newurl->password = gw_strdup(url->password);
 	}
 
 	if(url->scheme != NULL) {
-		newurl->scheme = strdup(url->scheme);
-		if(newurl->scheme == NULL) goto mallocerror;
+		newurl->scheme = gw_strdup(url->scheme);
 	}
 
 	if(url->host != NULL) {
-		newurl->host = strdup(url->host);
-		if(newurl->host == NULL) goto mallocerror;
+		newurl->host = gw_strdup(url->host);
 	}
 
 	if(url->abs_path != NULL) {
-		newurl->abs_path = strdup(url->abs_path);
-		if(newurl->abs_path == NULL) goto mallocerror;
+		newurl->abs_path = gw_strdup(url->abs_path);
 	}
 
 	if(url->query != NULL) {
-		newurl->query = strdup(url->query);
-		if(newurl->query == NULL) goto mallocerror;
+		newurl->query = gw_strdup(url->query);
 	}
 
 	newurl->port = url->port;
 
 	return newurl;
-
-mallocerror:
-	error(errno, "url_duplicate: memory allocation error");
-	internal_url_destroy(newurl);
-	return NULL;
-
-error:
-	return NULL;
 }
 
 URL* internal_url_relative_to_absolute(URL* baseURL, char *relativepath) {
@@ -583,34 +522,24 @@ HTTPRequest* httprequest_create(URL *url, char *payload) {
 	HTTPRequest *request = NULL;
 
 	/* initialize the variable to be returned */
-	request = malloc(sizeof(struct HTTPRequest));
-	if(request==NULL) {
-		error(errno, "httprequest_create: memory allocation error");
-		return NULL;
-	}
+	request = gw_malloc(sizeof(struct HTTPRequest));
 	bzero(request, sizeof(struct HTTPRequest));
 
 	if(url == NULL) {
 		request->url = NULL;
 	} else {
 		request->url = url_duplicate(url);
-		if(request->url == NULL) goto mallocerror;
 	}
 
 	if(payload == NULL) {
 		request->data = NULL;
 	} else {
-		request->data = strdup(payload);
-		if(request->data == NULL) goto mallocerror;
+		request->data = gw_strdup(payload);
 	}
 
 	request->baseheader = NULL;
 
 	return request;
-
-mallocerror:
-	httprequest_destroy(request);
-	return NULL;
 }
 
 
@@ -633,17 +562,17 @@ int httprequest_destroy(HTTPRequest *request) {
 	for(;;) {
 		if(thisheader==NULL) break;
 		nextheader = thisheader->next;
-		free(thisheader->key);
-		free(thisheader->value);
-		free(thisheader);
+		gw_free(thisheader->key);
+		gw_free(thisheader->value);
+		gw_free(thisheader);
 		thisheader = nextheader;
 	}
 	
 	/* free data */
-	free(request->data);
+	gw_free(request->data);
 
 	/* free the structure */
-	free(request);
+	gw_free(request);
 	
 	return 0;
 }
@@ -663,17 +592,11 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 		goto error;
 	}
 
-	mycopy = malloc(size);
-	if(mycopy == NULL) goto error;
+	mycopy = gw_malloc(size);
 	memcpy(mycopy, from, size);
 
-	request = malloc(sizeof(HTTPRequest));
-	tmpbuff = malloc(10*1024);
-
-	if( (mycopy==NULL) || (request==NULL) || (tmpbuff==NULL) ) {
-		error(errno, "httprequest_wrap: memory allocation error 1");
-		goto error;
-	}
+	request = gw_malloc(sizeof(HTTPRequest));
+	tmpbuff = gw_malloc(10*1024);
 
 	bzero(request, sizeof(request));
 	bzero(tmpbuff, 10*1024);
@@ -746,12 +669,7 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 			request->data_length = atoi(httprequest_get_header_value(request, "Content-Length"));
 
 		/* No need to check Content-Length, just read it all in. */
-		request->data = malloc(request->data_length+1);
-		if(request->data==NULL) {
-			error(errno, 
-				"httprequest_wrap: memory allocation error 2");
-			goto error;
-		}
+		request->data = gw_malloc(request->data_length+1);
 		bzero(request->data, request->data_length);
 		memcpy(request->data, ptr, request->data_length);
 		request->data[request->data_length] = '\0';
@@ -759,12 +677,7 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 	} else if(strstr(midptr, "chunked") != NULL) {
 
 		/* Get enough space to hold all the data. */
-		request->data = malloc(request->data_length);
-		if(request->data==NULL) {
-			error(errno,
-				"httprequest_wrap: memory allocation error");
-			goto error;
-		}
+		request->data = gw_malloc(request->data_length);
 		bzero(request->data, request->data_length);
 
 		/* Convert RFC2616/3.6.1 chunked data to normal. */
@@ -790,8 +703,7 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 		request->data_length = tmpint2;
 		
 		/* Shrink the buffer to the real size */
-		request->data = realloc(request->data, request->data_length+1);
-		if(request->data == NULL) goto error;
+		request->data = gw_realloc(request->data, request->data_length+1);
 		request->data[request->data_length] = '\0';
 
 	} else { /* Transfer-Encoding set to an unknown value */
@@ -803,16 +715,16 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 	}
 	
 	/* done */
-	free(tmpbuff);
-	free(mycopy);
+	gw_free(tmpbuff);
+	gw_free(mycopy);
 
 	return request;
 
 error:
 	debug(errno, "httprequest_wrap: failed");
 	httprequest_destroy(request);
-	free(mycopy);
-	free(tmpbuff);
+	gw_free(mycopy);
+	gw_free(tmpbuff);
 	return NULL;
 }
 
@@ -826,14 +738,9 @@ char* httprequest_unwrap(HTTPRequest *request) {
 
 	if(request==NULL) goto error; /* PEBKaC */
 
-	bigbuff = malloc(16*1024);
-	tmpbuff = malloc(1024);
-	tmpline = malloc(1024);
-
-	if( (bigbuff==NULL) || (tmpbuff==NULL) || (tmpline==NULL) ) {
-		error(errno, "httprequest_unwrap: memory allocation error");
-		goto error;
-	}
+	bigbuff = gw_malloc(16*1024);
+	tmpbuff = gw_malloc(1024);
+	tmpline = gw_malloc(1024);
 
 	bzero(bigbuff, 16*1024);
 	bzero(tmpbuff, 1024);
@@ -875,22 +782,18 @@ char* httprequest_unwrap(HTTPRequest *request) {
 	}
 
 	/* done */
-	finalbuff = strdup(bigbuff);
-	if(finalbuff==NULL) {
-		error(errno, "httprequest_unwrap: memory allocation error");
-		goto error;
-	}
-	free(bigbuff);
-	free(tmpbuff);
-	free(tmpline);
+	finalbuff = gw_strdup(bigbuff);
+	gw_free(bigbuff);
+	gw_free(tmpbuff);
+	gw_free(tmpline);
 
 	return finalbuff;
 
 error:
 	debug(errno, "httprequest_unwrap: failed");
-	free(bigbuff);
-	free(tmpbuff);
-	free(tmpline);
+	gw_free(bigbuff);
+	gw_free(tmpbuff);
+	gw_free(tmpline);
 	return NULL;
 }
 
@@ -947,15 +850,15 @@ HTTPRequest* httprequest_execute(HTTPRequest *request) {
 	result = httprequest_wrap(datareceive, size);
 
 	/* return the result */	
-	free(datasend);
-	free(datareceive);
+	gw_free(datasend);
+	gw_free(datareceive);
 	return result;
 
 error:
 	error(errno, "httprequest_execute: failed");
 	close(s);
-	free(datasend);
-	free(datareceive);
+	gw_free(datasend);
+	gw_free(datareceive);
 	return NULL;
 }
 
@@ -974,14 +877,11 @@ int httprequest_add_header(HTTPRequest *request, char *key, char *value) {
 
 	if(thisheader == NULL) {
 
-		thisheader = malloc(sizeof(HTTPHeader));
-		if(thisheader==NULL) goto error;
+		thisheader = gw_malloc(sizeof(HTTPHeader));
 		
-		thisheader->key = strdup(key);
-		if(thisheader->key==NULL) goto error;
+		thisheader->key = gw_strdup(key);
 		
-		thisheader->value = strdup(value);
-		if(thisheader->value==NULL) goto error;
+		thisheader->value = gw_strdup(value);
 		
 		thisheader->next = NULL;
 		request->baseheader = thisheader;
@@ -995,13 +895,12 @@ int httprequest_add_header(HTTPRequest *request, char *key, char *value) {
 
 		if(thisheader == NULL) {
 
-			thisheader = malloc(sizeof(HTTPHeader));
-			if(thisheader==NULL) goto error;
+			thisheader = gw_malloc(sizeof(HTTPHeader));
 
-			thisheader->key = strdup(key);
+			thisheader->key = gw_strdup(key);
 			if(thisheader->key==NULL) goto error;
 
-			thisheader->value = strdup(value);
+			thisheader->value = gw_strdup(value);
 			if(thisheader->value==NULL) goto error;
 
 			thisheader->next = NULL;
@@ -1088,8 +987,7 @@ static char *internal_base6t4(char *pass) {
 	long twentyfour;
 	char base64[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-	result = malloc(strlen(pass) + strlen(pass) / 4 + strlen(pass) % 4 + 5);
-	if(result==NULL) goto error;
+	result = gw_malloc(strlen(pass) + strlen(pass) / 4 + strlen(pass) % 4 + 5);
 	result[0] = 0;
 
 	twentyfour = 0;
@@ -1140,8 +1038,5 @@ static char *internal_base6t4(char *pass) {
 	}
 
 	return result;
-
-error:
-	return NULL;	
 }
 

@@ -75,9 +75,9 @@ void cgiarg_destroy_list(CGIArg *list) {
 		CGIArg *p;
 		p = list;
 		list = list->next;
-		free(p->name);
-		free(p->value);
-		free(p);
+		gw_free(p->name);
+		gw_free(p->value);
+		gw_free(p);
 	}
 }
 
@@ -99,24 +99,11 @@ int cgiarg_get(CGIArg *list, char *name, char **value) {
 static CGIArg *new_cgiarg(char *name, char *value) {
 	CGIArg *new;
 	
-	new = malloc(sizeof(CGIArg));
-	if (new == NULL)
-		goto error;
-	new->name = strdup(name);
-	new->value = strdup(value);
-	if (new->name == NULL || new->value == NULL)
-		goto error;
+	new = gw_malloc(sizeof(CGIArg));
+	new->name = gw_strdup(name);
+	new->value = gw_strdup(value);
 
 	url_decode(new->value);	      
 	new->next = NULL;
 	return new;
-
-error:
-	error(errno, "Out of memory allocating CGI-BIN argument.");
-	if (new != NULL) {
-		free(new->name);
-		free(new->value);
-		free(new);
-	}
-	return NULL;
 }

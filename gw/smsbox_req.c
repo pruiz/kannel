@@ -79,7 +79,7 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 		close(fd);
 		replytext[len-1] = '\0';	/* remove trailing '\n' */
 
-		return strdup(replytext);
+		return gw_strdup(replytext);
 	}
 
 	/* URL */
@@ -87,18 +87,13 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 	debug(0, "formatted url: <%s>", pattern);
 
 	if (http_get(pattern, &type, &data, &size) == -1) {
-		free(pattern);
+		gw_free(pattern);
 		goto error;
 	}
-	free(pattern);		/* no longer needed */
+	gw_free(pattern);		/* no longer needed */
 	
 	/* Make sure the data is NUL terminated. */
-	tmpdata = realloc(data, size + 1);
-	if (tmpdata == NULL) {
-		error(errno, "Out of memory allocating HTTP response.");
-		free(data);
-		goto error;
-	}
+	tmpdata = gw_realloc(data, size + 1);
 	data = tmpdata;
 	data[size] = '\0';
 
@@ -109,7 +104,7 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 
 		    tmpdata = html_strip_prefix_and_suffix(data,
 			       urltrans_prefix(trans), urltrans_suffix(trans));
-		    free(data);	
+		    gw_free(data);	
 		    data = tmpdata;
 		}
 		html_to_sms(replytext, sizeof(replytext), data);
@@ -125,13 +120,13 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 
 	}
 
-	free(data);
-	free(type);
+	gw_free(data);
+	gw_free(type);
 
 	if (strlen(replytext)==0)
-		return strdup("");
+		return gw_strdup("");
 
-	return strdup(replytext);
+	return gw_strdup(replytext);
 
 error:
     return NULL;
@@ -141,7 +136,7 @@ error:
 /*
  * sends the buf, with msg-info - does NO splitting etc. just the sending
  *
- * NOTE: the sender frees the message!
+ * NOTE: the sender gw_frees the message!
  *
  * return -1 on failure, 0 if Ok.
  */
@@ -482,9 +477,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	if (urltrans_omit_empty(trans) != 0) {
 	    max_msgs = 0;
 	} else { 
-	    if (octstr_replace(msg->smart_sms.msgdata,
-			       empty, strlen(empty)) == -1)
-		goto error;
+	    octstr_replace(msg->smart_sms.msgdata, empty, strlen(empty));
 	}
     }
 
@@ -551,7 +544,7 @@ int smsbox_req_init(URLTranslationList *transls,
 	sms_max_length = sms_max;
 	sender = send;
 	if (global != NULL) {
-		global_sender = strdup(global);
+		global_sender = gw_strdup(global);
 		if (global_sender == NULL)
 		    return -1;
 	}
@@ -630,12 +623,11 @@ void *smsbox_req_thread(void *arg) {
     reply = obey_request(trans, msg);
     if (reply == NULL) {
 		error(0, "request failed");
-		reply = strdup("Request failed");
+		reply = gw_strdup("Request failed");
 		goto error;
     }
 
-    if (octstr_replace(msg->smart_sms.msgdata, reply, strlen(reply)) == -1)
-		goto error;
+    octstr_replace(msg->smart_sms.msgdata, reply, strlen(reply));
 
     msg->smart_sms.time = time(NULL);	/* set current time */
 
@@ -643,13 +635,13 @@ void *smsbox_req_thread(void *arg) {
     if(send_message(trans, msg) < 0)
 		error(0, "request_thread: failed");
     
-    free(reply);
+    gw_free(reply);
     req_threads--;
     return NULL;
 error:
     error(0, "Request_thread: failed");
     msg_destroy(msg);
-    free(reply);
+    gw_free(reply);
     req_threads--;
     return NULL;
 }

@@ -31,11 +31,7 @@ pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size)
 	if (size == 0)
 		copy = arg;
 	else {
-		copy = malloc(size);
-		if (copy == NULL) {
-			error(errno, "malloc failed");
-			goto error;
-		}
+		copy = gw_malloc(size);
 		memcpy(copy, arg, size);
 	}
 	

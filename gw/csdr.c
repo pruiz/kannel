@@ -43,8 +43,7 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	memset(server_ip, 0, sizeof(server_ip));
 	memset(server_port, 0, sizeof(server_port));
 
-	router = malloc(sizeof(CSDRouter));
-	if(router==NULL) goto error;
+	router = gw_malloc(sizeof(CSDRouter));
 	memset(router, 0, sizeof(CSDRouter));
 
         interface_name = config_get(grp, "interface-name");
@@ -70,10 +69,10 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	/* Select which network interface (IP) to bind to. */
 	if(inet_aton(interface_name, &bindaddr) != 0) {
 		servaddr.sin_addr = bindaddr;
-		router->ip = strdup(interface_name);
+		router->ip = gw_strdup(interface_name);
 	} else if(strcmp(interface_name, "*") == 0) {
 		servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-		router->ip = strdup("0.0.0.0");
+		router->ip = gw_strdup("0.0.0.0");
 	} else {
 		error(0, "csdr_open: could not resolve interface <%s>",
 			interface_name);
@@ -134,7 +133,7 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 
 error:
 	error(errno, "CSDR: csdr_open: could not open, aborting");
-	free(router);
+	gw_free(router);
 	return NULL;
 }
 
@@ -145,8 +144,8 @@ int csdr_close(CSDRouter *router)
 
 	close(router->fd);
 
-	free(router->ip);
-	free(router);
+	gw_free(router->ip);
+	gw_free(router);
 	
 	return 0;
 }
@@ -200,9 +199,7 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 
 	/* set routing info: use client IP and port
 	 */
-	item->routing_info = malloc(strlen(client_ip)+strlen(client_port)+2);
-	if (item->routing_info == NULL)
-	    goto error;
+	item->routing_info = gw_malloc(strlen(client_ip)+strlen(client_port)+2);
 	sprintf(item->routing_info, "%s:%s", client_ip, client_port);
 
 	

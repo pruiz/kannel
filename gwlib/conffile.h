@@ -1,29 +1,27 @@
 /*
  * conffile.h - configuration file handling
-
-This file supports configuration files that consist of groups of
-variables.  For example, a configuration file for SMS services might
-look like this:
-
-	smsc = idefix.radiolinja.fi
-	protocol = cimd
-	port = 12345
-	username = foo
-	password = bar
-
-	smsc = localhost
-	protocol = fake
-	port = 8989
-
-	service = default
-	url = %s
-	
-Each group of variables is stored in a separate object, and each group
-can have its own set of variables.
-
-
- *
- * Lars Wirzenius for WapIT Ltd.
+ * 
+ * This file supports configuration files that consist of groups of
+ * variables.  For example, a configuration file for SMS services might
+ * look like this:
+ * 
+ * 	smsc = idefix.radiolinja.fi
+ * 	protocol = cimd
+ * 	port = 12345
+ * 	username = foo
+ * 	password = bar
+ * 
+ * 	smsc = localhost
+ * 	protocol = fake
+ * 	port = 8989
+ * 
+ * 	service = default
+ * 	url = %s
+ * 	
+ * Each group of variables is stored in a separate object, and each group
+ * can have its own set of variables.
+ * 
+ * Lars Wirzenius <liw@wapit.com>
  */
 
 #ifndef CONFIG_H
@@ -89,7 +87,7 @@ char *config_get(ConfigGroup *grp, char *name);
 /* Set the value of a variable in a group. The variable need not exist
    before. `value' is copied, so caller does not have to worry about
    not tampering with `value'. */
-int config_set(ConfigGroup *grp, char *name, char *value);
+void config_set(ConfigGroup *grp, char *name, char *value);
 
 /* For debugging: dump contents of a Config object (using info() in 
    gwlib/log.h). */

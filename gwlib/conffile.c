@@ -22,41 +22,25 @@ static char *parse_value(char *str);
 Config *config_create(char *filename) {
 	Config *cfg;
 	
-	cfg = malloc(sizeof(Config));
-	if (cfg == NULL)
-		goto error;
-	
-	cfg->filename = strdup(filename);
-	if (cfg->filename == NULL) {
-	        free(cfg);
-		goto error;
-	}
+	cfg = gw_malloc(sizeof(Config));
+	cfg->filename = gw_strdup(filename);
 	cfg->grouplist = NULL;
 	cfg->lastgroup = NULL;
 	return cfg;
-
-error:
-	error(errno, "config_create: Out of memory error");
-	return NULL;
 }
 
 
 void config_destroy(Config *cfg) {
 	config_clear(cfg);
-	free(cfg->filename);
-	free(cfg);
+	gw_free(cfg->filename);
+	gw_free(cfg);
 }
 
 
 ConfigGroup *config_add_group(Config *cfg) {
 	ConfigGroup *grp;
 	
-	grp = malloc(sizeof(ConfigGroup));
-	if (grp == NULL) {
-		error(errno, "config.c/create_group: Out of memory error");
-		return NULL;
-	}
-	
+	grp = gw_malloc(sizeof(ConfigGroup));
 	grp->next = NULL;
 	grp->varlist = NULL;
 	grp->lastvar = NULL;
@@ -91,11 +75,11 @@ void config_remove_group(Config *cfg, ConfigGroup *grp) {
 	}
 	for (var = grp->varlist; var != NULL; var = next) {
 		next = var->next;
-		free(var->name);
-		free(var->value);
-		free(var);
+		gw_free(var->name);
+		gw_free(var->value);
+		gw_free(var);
 	}
-	free(grp);
+	gw_free(grp);
 }
 
 
@@ -109,25 +93,21 @@ char *config_get(ConfigGroup *grp, char *name) {
 }
 
 
-int config_set(ConfigGroup *grp, char *name, char *value) {
+void config_set(ConfigGroup *grp, char *name, char *value) {
 	ConfigVar *var, *newvar;
 	char *newvalue;
 
 	if (value == NULL)
-		return 0;
+		return;
 
 	newvar = NULL;
 	var = find_var(grp, name);
 	if (var == NULL) {
-		newvar = malloc(sizeof(ConfigVar));
-		if (newvar == NULL)
-			goto error;
+		newvar = gw_malloc(sizeof(ConfigVar));
 
 		newvar->value = NULL;
 		newvar->next = NULL;
-		newvar->name = strdup(name);
-		if (newvar->name == NULL)
-			goto error;
+		newvar->name = gw_strdup(name);
 
 		if (grp->varlist == NULL) {
 			grp->varlist = newvar;
@@ -140,23 +120,10 @@ int config_set(ConfigGroup *grp, char *name, char *value) {
 		var = newvar;
 	}
 
-	newvalue = strdup(value);
-	if (newvalue == NULL)
-		goto error;
+	newvalue = gw_strdup(value);
 	if (var->value != NULL)
-		free(var->value);
+		gw_free(var->value);
 	var->value = newvalue;
-	
-	return 0;
-
-error:
-	error(errno, "config.c/config_set: Out of memory error.");
-	if (newvar != NULL) {
-		free(newvar->name);
-		free(newvar->value);
-		free(newvar);
-	}
-	return -1;
 }
 
 
@@ -168,11 +135,11 @@ void config_clear(Config *cfg) {
 		grp_next = grp->next;
 		for (var = grp->varlist; var != NULL; var = var_next) {
 			var_next = var->next;
-			free(var->name);
-			free(var->value);
-			free(var);
+			gw_free(var->name);
+			gw_free(var->value);
+			gw_free(var);
 		}
-		free(grp);
+		gw_free(grp);
 	}
 	cfg->grouplist = NULL;
 	cfg->lastgroup = NULL;
@@ -230,12 +197,9 @@ int config_read(Config *cfg) {
 
 		if (grp == NULL) {
 			grp = config_add_group(cfg);
-			if (grp == NULL)
-				goto error;
 		}
-		if (config_set(grp, s, value) == -1)
-			goto error;
-		free(value);
+		config_set(grp, s, value);
+		gw_free(value);
 		value = NULL;
 	}
 
@@ -248,7 +212,7 @@ int config_read(Config *cfg) {
 error:
 	if (f != NULL)
 		fclose(f);
-	free(value);
+	gw_free(value);
 	config_clear(cfg);
 	return -1;
 }
@@ -377,9 +341,7 @@ static char *parse_value(char *str) {
 	str = trim_ends(str);
 
 	if (*str == '"') {
-		str2 = malloc(strlen(str) + 1);
-		if (str2 == NULL)
-			goto error;
+		str2 = gw_malloc(strlen(str) + 1);
 		++str;	/* skip leading '"' */
 		p = str2;
 		while (*str != '"' && *str != '\0') {
@@ -412,14 +374,8 @@ static char *parse_value(char *str) {
 		}
 		*p = '\0';
 	} else {
-		str2 = strdup(str);
-		if (str2 == NULL)
-			goto error;
+		str2 = gw_strdup(str);
 	}
 
 	return str2;
-
-error:
-	error(errno, "Out of memory allocating parsed value");
-	return NULL;
 }

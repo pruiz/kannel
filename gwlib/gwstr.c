@@ -4,6 +4,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "gwmem.h"
 #include "gwstr.h"
 #include "log.h"
 
@@ -61,9 +62,7 @@ int count_occurences(char *str, char *pat) {
 char *strndup(char *str, size_t n) {
 	char *p;
 	
-	p = malloc(n + 1);
-	if (p == NULL)
-		return NULL;
+	p = gw_malloc(n + 1);
 	memcpy(p, str, n);
 	p[n] = '\0';
 	return p;
@@ -155,7 +154,3 @@ int str_reverse_case_seek(const char *s, int start_offset, const char *accept)
     }
     return -1;		/* not found */
 }
-
-
-
-

@@ -117,9 +117,7 @@ static void tell_about_error(int type, WTPEvent *event);
 WTPEvent *wtp_event_create(enum event_name type) {
 	WTPEvent *event;
 	
-	event = malloc(sizeof(WTPEvent));
-	if (event == NULL)
-		goto error;
+	event = gw_malloc(sizeof(WTPEvent));
 
 	event->type = type;
 	event->next = NULL;
@@ -140,7 +138,7 @@ error:
                                 octstr_destroy(p->name)
         #define EVENT(type, field) { struct type *p = &event->type; field }
         #include "wtp_events-decl.h"
-        free(event);
+        gw_free(event);
 	error(errno, "WTP: event_create: Out of memory.");
 	return NULL;
 }
@@ -157,7 +155,7 @@ void wtp_event_destroy(WTPEvent *event) {
 	        #define EVENT(type, field) { struct type *p = &event->type; field } 
 	        #include "wtp_events-decl.h"
 	
-		free(event);
+		gw_free(event);
 	}
 #endif
 }
@@ -268,7 +266,7 @@ void wtp_machine_destroy(WTPMachine *machine){
         #include "wtp_machine-decl.h"
 
 #if 0
-        free(temp);
+        gw_free(temp);
         mutex_unlock(&machine->next->mutex);
 	mutex_unlock(&machine->mutex);
 #endif
@@ -316,6 +314,7 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
            long tid;
 
           machine = NULL;
+	  tid = -1;
           switch (event->type){
 
 	          case RcvInvoke:
@@ -470,6 +469,9 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
            debug(0, "WTP: unpack_wdp_datagram: variable headers not implemented");
            return NULL;
 	 } /* if message_header_fixed false */   
+	 
+	 panic(0, "WTP: this should never be reached or else there's a return statement missing here in " __FILE__);
+	 return NULL; /* this is an assumption */
 } /* function*/
 
 /*
@@ -528,8 +530,8 @@ mem_error:
         wtp_timer_destroy(timer);
      if (wsp_event != NULL)
         wsp_event_destroy(wsp_event);
-     free(timer);
-     free(wsp_event);
+     gw_free(timer);
+     gw_free(wsp_event);
      mutex_unlock(machine->mutex);
 }
 
@@ -612,9 +614,7 @@ static WTPMachine *wtp_machine_create_empty(void){
 
         WTPMachine *machine;
 
-        machine = malloc(sizeof(WTPMachine));
-        if (machine == NULL)
-           goto error;
+        machine = gw_malloc(sizeof(WTPMachine));
         
         #define INTEGER(name) machine->name = 0
         #define ENUM(name) machine->name = LISTEN
@@ -663,7 +663,7 @@ static WTPMachine *wtp_machine_create_empty(void){
             #define MACHINE(field) field
             #include "wtp_machine-decl.h"
         }
-        free(machine);
+        gw_free(machine);
         error(errno, "WTP: machine_create_empty: Out of memory");
         return NULL;
 }
@@ -707,7 +707,7 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
  */
          if (event == NULL){
             debug(0, "WTP: pack_wsp_event: Out of memory");
-            free(event);
+            gw_free(event);
             return NULL;
          }
          
@@ -961,35 +961,35 @@ static void tell_about_error(int type, WTPEvent *event){
  * TDB: Send Abort(WTPVERSIONZERO)
  */
               case wrong_version:
-                   free(event);
+                   gw_free(event);
                    error(0, "WTP: Version not supported");
               break;
 /*
  * Send Abort(NOTIMPLEMENTEDSAR)
  */
               case no_segmentation:
-                   free(event);
+                   gw_free(event);
                    error(0, "WTP: No segmentation implemented");
               break;
 /*
  *TBD: Send Abort(PROTOERR). Add necessary indications! 
  */
              case illegal_header:
-                  free(event);
+                  gw_free(event);
                   error(0, "WTP: Illegal header structure");
              break;
 /*
  * TBD: Send Abort(CAPTEMPEXCEEDED), too.
  */
             case memory_error:
-                 free(event);
+                 gw_free(event);
                  error(0, "WTP: Out of memory");
             break;
 /*
  * TBD: Reason to panic?
  */
            case no_datagram:   
-                free(event);
+                gw_free(event);
                 error(0, "WTP: No datagram received");
            break;
      }

@@ -1,12 +1,11 @@
 /*
- * This is a simple malloc()-wrapper. It does not return NULLs but
- * instead panics. It also introduces mutex wrappers
+ * log.h - logging functions
  *
  * Kalle 'rpr' Marjola 1999
  */
 
-#ifndef _GWLOG_H
-#define _GWLOG_H
+#ifndef GWLOG_H
+#define GWLOG_H
 
 /* If we're using GCC, we can get it to check log function arguments. */
 #ifdef __GNUC__

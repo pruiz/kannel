@@ -85,12 +85,7 @@ static void encode_for_url(char *buf, char *str);
 URLTranslationList *urltrans_create(void) {
 	URLTranslationList *trans;
 	
-	trans = malloc(sizeof(URLTranslationList));
-	if (trans == NULL) {
-		error(errno, "Couldn't create URLTranslationList object");
-		return NULL;
-	}
-	
+	trans = gw_malloc(sizeof(URLTranslationList));
 	trans->list = NULL;
 	return trans;
 }
@@ -181,7 +176,7 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	int n;
 
 	if (t->type == TRANSTYPE_SENDSMS)
-	    return strdup("");
+	    return gw_strdup("");
 	
 	word_list = octstr_split_words(request->smart_sms.msgdata);
 	if (word_list == NULL)
@@ -214,13 +209,8 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 			octstr_len(request->smart_sms.receiver) * ENCODED_LEN;
 	len += count_occurences(pattern, "%t") * strlen("YYYY-MM-DD+HH:MM");
 
-	buf = malloc(len + 1);
-	enc = malloc(len + 1);
-	if (buf == NULL || enc == NULL) {
-		free(buf);
-		free(enc);
-		return NULL;
-	}
+	buf = gw_malloc(len + 1);
+	enc = gw_malloc(len + 1);
 
 	*buf = '\0';
 	s = buf;
@@ -315,7 +305,7 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 		pattern = p + 2;
 	}
 	
-	free(enc);
+	gw_free(enc);
 	return buf;
 }
 
@@ -384,9 +374,7 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     char *username, *password;
     char *header, *footer;
     
-    ot = malloc(sizeof(URLTranslation));
-    if (ot == NULL)
-	goto error;
+    ot = gw_malloc(sizeof(URLTranslation));
 
     ot->keyword = ot->aliases = ot->pattern = NULL;
     ot->prefix = ot->suffix = ot->faked_sender = NULL;
@@ -412,46 +400,45 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 
     if (url) {
 	ot->type = TRANSTYPE_URL;
-	ot->pattern = strdup(url);
+	ot->pattern = gw_strdup(url);
     } else if (file) {
 	ot->type = TRANSTYPE_FILE;
-	ot->pattern = strdup(file);
+	ot->pattern = gw_strdup(file);
     } else if (text) {
 	ot->type = TRANSTYPE_TEXT;
-	ot->pattern = strdup(text);
+	ot->pattern = gw_strdup(text);
     } else if (username) {
 	ot->type = TRANSTYPE_SENDSMS;
-	ot->pattern = strdup("");
-	ot->username = strdup(username);
+	ot->pattern = gw_strdup("");
+	ot->username = gw_strdup(username);
 	if (password)
-	    ot->password = strdup(password);
+	    ot->password = gw_strdup(password);
     } else {
 	error(0, "No url, file or text spesified");
 	goto error;
     }
     if (keyword)
-	ot->keyword = strdup(keyword);
+	ot->keyword = gw_strdup(keyword);
 
     if (aliases) {
-	ot->aliases = malloc(strlen(aliases)+2);
-	if (ot->aliases != NULL)
-	    sprintf(ot->aliases, "%s;", aliases);
+	ot->aliases = gw_malloc(strlen(aliases)+2);
+	sprintf(ot->aliases, "%s;", aliases);
     }
     else
-	ot->aliases = strdup("");
+	ot->aliases = gw_strdup("");
     
     if ((ot->keyword == NULL && (ot->username == NULL || ot->password == NULL)) ||
 	ot->pattern == NULL || ot->aliases == NULL)
 	goto error;
     if (prefix != NULL && suffix != NULL) {
 
-	ot->prefix = strdup(prefix);
-	ot->suffix = strdup(suffix);
+	ot->prefix = gw_strdup(prefix);
+	ot->suffix = gw_strdup(suffix);
 	if (ot->prefix == NULL || ot->suffix == NULL)
 	    goto error;
     }
     if (faked_sender != NULL) {
-	ot->faked_sender = strdup(faked_sender);
+	ot->faked_sender = gw_strdup(faked_sender);
 	if (ot->faked_sender == NULL)
 	    goto error;
     }
@@ -459,12 +446,12 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     if (max_msgs != NULL) {
 	ot->max_messages = atoi(max_msgs);
 	if (split_chars != NULL) {
-	    ot->split_chars = strdup(split_chars);
+	    ot->split_chars = gw_strdup(split_chars);
 	    if (ot->split_chars == NULL)
 		goto error;
 	}
 	if (split_suffix != NULL) {
-	    ot->split_suffix = strdup(split_suffix);
+	    ot->split_suffix = gw_strdup(split_suffix);
 	    if (ot->split_suffix == NULL)
 		goto error;
 	}
@@ -473,10 +460,10 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 	ot->max_messages = 1;
 
     if (header != NULL)
-	if ((ot->header = strdup(header)) == NULL)
+	if ((ot->header = gw_strdup(header)) == NULL)
 	    goto error;
     if (footer != NULL)
-	if ((ot->footer = strdup(footer)) == NULL)
+	if ((ot->footer = gw_strdup(footer)) == NULL)
 	    goto error;
 
     if (omit_empty != NULL)
@@ -502,15 +489,15 @@ error:
  */
 static void destroy_onetrans(URLTranslation *ot) {
 	if (ot != NULL) {
-		free(ot->keyword);
-		free(ot->aliases);
-		free(ot->pattern);
-		free(ot->prefix);
-		free(ot->suffix);
-		free(ot->faked_sender);
-		free(ot->split_chars);
-		free(ot->split_suffix);
-		free(ot);
+		gw_free(ot->keyword);
+		gw_free(ot->aliases);
+		gw_free(ot->pattern);
+		gw_free(ot->prefix);
+		gw_free(ot->suffix);
+		gw_free(ot->faked_sender);
+		gw_free(ot->split_chars);
+		gw_free(ot->split_suffix);
+		gw_free(ot);
 	}
 }
 

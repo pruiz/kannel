@@ -190,9 +190,9 @@ static void *http_request_thread(void *arg)
 
 done:    
     /* answer closes the socket */
-    free(path);
-    free(args);
-    free(client_ip);
+    gw_free(path);
+    gw_free(args);
+    gw_free(client_ip);
     return NULL;
 }
 

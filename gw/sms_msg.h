@@ -65,10 +65,8 @@ SMSMessage *smsmessage_construct(char *sender, char *receiver, Octstr *text);
  * 140 8-bit octets).
  *
  * XXX the length should be checked and an error returned if too long
- *
- * Return -1 for errors, 0 for OK.
  */
-int smsmessage_add_udh(SMSMessage *sms, int id, Octstr *data);
+void smsmessage_add_udh(SMSMessage *sms, int id, Octstr *data);
 
 
 /*

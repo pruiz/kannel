@@ -19,9 +19,9 @@
  * Prototypes for private functions.
  */
 
-static int append_integer(Octstr *os, int32 i);
-static int prepend_integer(Octstr *os, int32 i);
-static int append_string(Octstr *os, Octstr *field);
+static void append_integer(Octstr *os, int32 i);
+static void prepend_integer(Octstr *os, int32 i);
+static void append_string(Octstr *os, Octstr *field);
 
 static int parse_integer(int32 *i, Octstr *packed, int *off);
 static int parse_string(Octstr **os, Octstr *packed, int *off);
@@ -36,9 +36,7 @@ static char *type_as_str(Msg *msg);
 Msg *msg_create(enum msg_type type) {
 	Msg *msg;
 	
-	msg = malloc(sizeof(Msg));
-	if (msg == NULL)
-		goto error;
+	msg = gw_malloc(sizeof(Msg));
 	
 	msg->type = type;
 
@@ -48,10 +46,6 @@ Msg *msg_create(enum msg_type type) {
 	#include "msg-decl.h"
 
 	return msg;
-
-error:
-	error(errno, "Out of memory.");
-	return NULL;
 }
 
 Msg *msg_duplicate(Msg *msg) {
@@ -90,7 +84,7 @@ void msg_destroy(Msg *msg) {
 	#define MSG(type, stmt) { struct type *p = &msg->type; stmt }
 	#include "msg-decl.h"
 
-	free(msg);
+	gw_free(msg);
 }
 
 void msg_dump(Msg *msg) {
@@ -116,30 +110,19 @@ Octstr *msg_pack(Msg *msg) {
 	Octstr *os;
 	
 	os = octstr_create_empty();
-	if (os == NULL)
-		goto error;
+	append_integer(os, msg->type);
 
-	if (append_integer(os, msg->type) == -1)
-		goto error;
-
-	#define INTEGER(name) \
-		if (append_integer(os, p->name) == -1) goto error
-	#define OCTSTR(name) \
-		if (append_string(os, p->name) == -1) goto error
+	#define INTEGER(name) append_integer(os, p->name)
+	#define OCTSTR(name) append_string(os, p->name)
 	#define MSG(type, stmt) \
 		case type: { struct type *p = &msg->type; stmt } break;
 	switch (msg->type) {
 		#include "msg-decl.h"
 	}
 	
-	if (prepend_integer(os, octstr_len(os)) == -1)
-		goto error;
+	prepend_integer(os, octstr_len(os));
 
 	return os;
-
-error:
-	error(errno, "Out of memory.");
-	return NULL;
 }
 
 
@@ -185,53 +168,31 @@ error:
  */
 
 
-static int append_integer(Octstr *os, int32 i) {
+static void append_integer(Octstr *os, int32 i) {
 	Octstr *temp;
 	
 	i = htonl(i);
 	temp = octstr_create_from_data((char *) &i, sizeof(i));
-	if (temp == NULL)
-		goto error;
-	if (octstr_insert(os, temp, octstr_len(os)) == -1)
-		goto error;
-	
+	octstr_insert(os, temp, octstr_len(os));
 	octstr_destroy(temp);
-	return 0;
-
-error:
-	octstr_destroy(temp);
-	return -1;
 }
 
-static int prepend_integer(Octstr *os, int32 i) {
+static void prepend_integer(Octstr *os, int32 i) {
 	Octstr *temp;
 	
 	i = htonl(i);
 	temp = octstr_create_from_data((char *) &i, sizeof(i));
-	if (temp == NULL)
-		goto error;
-	if (octstr_insert(os, temp, 0) == -1)
-		goto error;
-	
+	octstr_insert(os, temp, 0);
 	octstr_destroy(temp);
-	return 0;
-
-error:
-	octstr_destroy(temp);
-	return -1;
 }
 
-static int append_string(Octstr *os, Octstr *field) {
-	if (field == NULL) {
-		if (append_integer(os, -1) == -1)
-			return -1;
-		return 0;
+static void append_string(Octstr *os, Octstr *field) {
+	if (field == NULL)
+		append_integer(os, -1);
+	else {
+		append_integer(os, octstr_len(field));
+		octstr_insert(os, field, octstr_len(os));
 	}
-	if (append_integer(os, octstr_len(field)) == -1)
-		return -1;
-	if (octstr_insert(os, field, octstr_len(os)) == -1)
-		return -1;
-	return 0;
 }
 
 

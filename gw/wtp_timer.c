@@ -24,17 +24,10 @@ static WTPTimer *list = NULL;
 WTPTimer *wtp_timer_create(void) {
 	WTPTimer *timer;
 	
-	timer = malloc(sizeof(WTPTimer));
-	if (timer == NULL) {
-		error(errno, "Out of memory creating timer.");
-		return NULL;
-	}
-
+	timer = gw_malloc(sizeof(WTPTimer));
 	timer->interval = 0;
-
 	timer->next = list;
 	list = timer;
-
 	return timer;
 }
 
@@ -55,7 +48,7 @@ void wtp_timer_destroy(WTPTimer *timer) {
 		t->next = timer->next;
 	}
 
-	free(timer);
+	gw_free(timer);
 }
 
 

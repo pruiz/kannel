@@ -5,6 +5,11 @@ Wed Jan 12 15:16:49 2000  Lars Wirzenius  <liw@wapit.com>
 	and friends directly. It shall henceforth be considered an
 	error for anything but gwlib/gwmem.c to call malloc or friends
 	directly. (Six unchecked malloc calls found during this cleanup.)
+	
+	This does mean that the gateway won't report an out-of-memory
+	condition to the phone, but at this point that's a better option
+	than randomly using or not using gw_malloc and randomly checking
+	or not checking whether it succeeded.
 
 2000-01-11    <rpr@rpr.wapit.com>
 

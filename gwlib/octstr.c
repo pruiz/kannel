@@ -81,14 +81,10 @@ struct OctstrList {
 Octstr *octstr_create_empty(void) {
 	Octstr *ostr;
 	
-	ostr = malloc(sizeof(Octstr));
-	if (ostr == NULL)
-		error(errno, "Couldn't create empty octet string.");
-	else {
-		ostr->data = NULL;
-		ostr->size = 0;
-		ostr->len = 0;
-	}
+	ostr = gw_malloc(sizeof(Octstr));
+	ostr->data = NULL;
+	ostr->size = 0;
+	ostr->len = 0;
 	return ostr;
 }
 
@@ -114,12 +110,7 @@ Octstr *octstr_create_from_data(char *data, size_t len) {
 	if (ostr != NULL) {
 		ostr->len = len;
 		ostr->size = len + 1;
-		ostr->data = malloc(ostr->size);
-		if (ostr->data == NULL) {
-			error(errno, "Couldn't create octet string.");
-			octstr_destroy(ostr);
-			return NULL;
-		}
+		ostr->data = gw_malloc(ostr->size);
 		memcpy(ostr->data, data, len);
 		ostr->data[len] = '\0';
 	}
@@ -129,8 +120,8 @@ Octstr *octstr_create_from_data(char *data, size_t len) {
 
 void octstr_destroy(Octstr *ostr) {
 	if (ostr != NULL) {
-		free(ostr->data);
-		free(ostr);
+		gw_free(ostr->data);
+		gw_free(ostr);
 	}
 }
 
@@ -165,12 +156,7 @@ Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2) {
 
 	ostr->len = ostr1->len + ostr2->len;
 	ostr->size = ostr->len + 1;
-	ostr->data = malloc(ostr->size);
-	if (ostr->data == NULL) {
-		error(errno, "Couldn't allocate memory for catenate.");
-		octstr_destroy(ostr);
-		return NULL;
-	}
+	ostr->data = gw_malloc(ostr->size);
 	
 	memcpy(ostr->data, ostr1->data, ostr1->len);
 	memcpy(ostr->data + ostr1->len, ostr2->data, ostr2->len);
@@ -280,17 +266,13 @@ int octstr_write_to_socket(int socket, Octstr *ostr) {
 }
 
 
-int octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos) {
+void octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos) {
 	size_t needed;
 	char *p;
 	
 	needed = ostr1->len + ostr2->len + 1;
 	if (ostr1->size < needed) {
-		p = realloc(ostr1->data, needed);
-		if (p == NULL) {
-			error(errno, "octstr_insert: Out of memory");
-			return -1;
-		}
+		p = gw_realloc(ostr1->data, needed);
 		ostr1->size = needed;
 		ostr1->data = p;
 	}
@@ -300,30 +282,22 @@ int octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos) {
 	memcpy(ostr1->data + pos, ostr2->data, ostr2->len);
 	ostr1->len += ostr2->len;
 	ostr1->data[ostr1->len] = '\0';
-	
-	return 0;
 }
 
 
-int octstr_replace(Octstr *ostr, char *data, size_t len) {
+void octstr_replace(Octstr *ostr, char *data, size_t len) {
 	size_t needed;
 	char *p;
 	
 	needed = len + 1;
 	if (ostr->size < needed) {
-	    p = realloc(ostr->data, needed);
-	    if (p == NULL) {
-		error(errno, "octstr_replace: Out of memory");
-		return -1;
-	    }
+	    p = gw_realloc(ostr->data, needed);
 	    ostr->size = needed;
 	    ostr->data = p;
 	}
 	memcpy(ostr->data, data, len);
 	ostr->len = len;
 	ostr->data[len] = '\0';
-	
-	return 0;
 }
 
 
@@ -342,11 +316,7 @@ int octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
 	
 	needed = ostr->len + len + 1;
 	if (ostr->size < needed) {
-		p = realloc(ostr->data, needed);
-		if (p == NULL) {
-			error(errno, "octstr_insert_data: Out of memory");
-			return -1;
-		}
+		p = gw_realloc(ostr->data, needed);
 		ostr->size = needed;
 		ostr->data = p;
 	}
@@ -409,15 +379,9 @@ error:
 OctstrList *octstr_list_create(void) {
 	OctstrList *list;
 	
-	list = malloc(sizeof(OctstrList));
-	if (list == NULL) {
-		error(errno, "Couldn't create octet string list.");
-		return NULL;
-	}
-	
+	list = gw_malloc(sizeof(OctstrList));
 	list->head = NULL;
 	list->tail = NULL;
-
 	return list;
 }
 
@@ -428,9 +392,9 @@ void octstr_list_destroy(OctstrList *list, int strings_also) {
 		list->head = list->head->next;
 		if (strings_also)
 			octstr_destroy(n->ostr);
-		free(n);
+		gw_free(n);
 	}
-	free(list);
+	gw_free(list);
 }
 
 
@@ -444,14 +408,10 @@ size_t octstr_list_len(OctstrList *list) {
 }
 
 
-int octstr_list_append(OctstrList *list, Octstr *ostr) {
+void octstr_list_append(OctstrList *list, Octstr *ostr) {
 	Node *n;
 	
-	n = malloc(sizeof(Node));
-	if (n == NULL) {
-		error(errno, "Couldn't create new list node.");
-		return -1;
-	}
+	n = gw_malloc(sizeof(Node));
 
 	n->ostr = ostr;
 	n->next = NULL;
@@ -462,8 +422,6 @@ int octstr_list_append(OctstrList *list, Octstr *ostr) {
 		list->tail->next = n;
 		list->tail = n;
 	}
-
-	return 0;
 }
 
 
@@ -485,8 +443,6 @@ OctstrList *octstr_split_words(Octstr *ostr) {
 	size_t i, start, end;
 	
 	list = octstr_list_create();
-	if (list == NULL)
-		return NULL;
 
 	p = ostr->data;
 	i = 0;
@@ -508,18 +464,10 @@ OctstrList *octstr_split_words(Octstr *ostr) {
 			
 		word = octstr_create_from_data(ostr->data + start, 
 						end - start);
-		if (word == NULL)
-			goto error;
-		
-		if (octstr_list_append(list, word) == -1)
-			goto error;
+		octstr_list_append(list, word);
 	}
 	
 	return list;
-
-error:
-	octstr_list_destroy(list, 1);
-	return NULL;
 }
 
 
@@ -556,8 +504,7 @@ int octstr_send(int fd, Octstr *ostr) {
 
 	length = htonl(octstr_len(ostr));
 	datalength = octstr_len(ostr)+sizeof(uint32_t);
-	data = malloc(datalength);
-	if(data==NULL) goto error;
+	data = gw_malloc(datalength);
 	memcpy(data, &length, sizeof(uint32_t));
 	octstr_get_many_chars(data+sizeof(uint32_t), ostr, 0, octstr_len(ostr));
 	
@@ -574,11 +521,11 @@ int octstr_send(int fd, Octstr *ostr) {
 		}
 	}
 
-	free(data);
+	gw_free(data);
 	return 0;
 
 error:
-	free(data);
+	gw_free(data);
 	error(errno, "octstr_send: failed");
 	return -1;	
 }
@@ -606,8 +553,7 @@ int octstr_recv(int fd, Octstr **ostr) {
 	}
 	length = ntohl(length);
 
-	data = malloc(length);
-	if(data==NULL) goto error;
+	data = gw_malloc(length);
 
 	/* Read the real data. */
 	readlength = 0;
@@ -627,13 +573,13 @@ int octstr_recv(int fd, Octstr **ostr) {
 	newostr = octstr_create_from_data(data, length);
 
 	*ostr = newostr;
-	free(data);
+	gw_free(data);
 	return 1;
 eof:
-	free(data);
+	gw_free(data);
 	return 0;
 error:
-	free(data);
+	gw_free(data);
 	return -1;
 }
 
