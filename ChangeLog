@@ -1,3 +1,8 @@
+2002-09-09  Stipe Tolj  <tolj@wapme-systems.de>
+    * config.h.in, configure[.in], gwlib/cfg.c: veto against #define WIN32. 
+      This shoould be only used for Win32 native support, *not* for Cygwin
+      support.
+
 2002-09-08  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * doc/userguide/userguide.xml: fix
 
