@@ -162,8 +162,10 @@ Message routing can be used to route SMS messages to be sent:
  smsc-id = <id>
  #       An optional name or id for the smsc. Any string is
  #       acceptable, but semicolon ';' may cause problems, so avoid
- #	 it. This 'id' is written into log files and can be used to
- #	 route SMS messages. Several smsc'es can have same id. 
+ #	 it, as you should any special non-alphabet characters. 
+ #       This 'id' is written into log files and can be used to
+ #	 route SMS messages, and to specify used SMS-service. 
+ #       Several smsc'es can have same id. 
  #
  denied-prefix = <prefix-list>
  #       A list of phone number prefixes which are NOT accepted to be
@@ -404,6 +406,12 @@ we can perform HTTP Basic authentication.
  #       predefined text answer. Only if not url or file set. Escape codes are
  #       usable here, too.
  #
+ accepted-smsc = <list>
+ #       accept ONLY sms messages arriving from smsc with matching Id.
+ #       Separate multiple entries with ';'. EXAMPLE: If accepted-smsc
+ #       is "RL;SON", accept messages which originate from SMSC with
+ #       ID set as 'RL' or 'SON'
+ #
  prefix = <prefix>
  suffix = <suffix> 
  #       stuff in answer that is cut away, only things between prefix
@@ -467,9 +475,15 @@ more accounts to use it.
  #
  concatenation = <0 or 1>
  #       If set to 1 enables the concatenation of SMS's for long messages 
-
-
-
+ #
+ forced-smsc = <name>
+ #       Force smsc id as 'name' (linked to SMS routing, which is not
+ #       yet supported)
+ #
+ default-smsc = <name>
+ #       If no smsc id given with send-sms request, use this one. No
+ #       idea to use with forced-smsc.
+ #
 
 
 SAMPLE CONFIGURATION

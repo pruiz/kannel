@@ -99,8 +99,11 @@ int urltrans_add_cfg(URLTranslationList *trans, Config *cfg);
  * has words after the first one. If no such pattern exists, use the
  * pattern whose keyword is "default". If there is no such pattern, either,
  * return NULL.
+ *
+ * If 'smsc' is set, only accept translation with no 'accepted-smsc' set or
+ * with matching smsc in that list.
  */
-URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text);
+URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text, Octstr *smsc);
 
 /*
  * find matching URLTranslation for the given 'username', or NULL
@@ -183,6 +186,15 @@ char *urltrans_footer(URLTranslation *t);
  *  TRANSTYPE_SENDSMS)
  */
 char *urltrans_password(URLTranslation *t);
+
+/* Return forced smsc ID for send-sms user, if set */
+char *urltrans_forced_smsc(URLTranslation *t);
+
+/* Return default smsc ID for send-sms user, if set */
+char *urltrans_default_smsc(URLTranslation *t);
+
+/* Return list of approved SMSC IDs, if set */
+char *urltrans_approved_smsc(URLTranslation *t);
 
 
 #endif

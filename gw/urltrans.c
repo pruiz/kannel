@@ -40,10 +40,13 @@ struct URLTranslation {
     int omit_empty;	/* if the reply is empty, is notification send */
     char *header;	/* string to be inserted to each SMS */
     char *footer;	/* string to be appended to each SMS */
-
+    char *accepted_smsc; /* smsc id's allowed to use this service. If not set,
+			    all messages can use this service */
     
     char *username;	/* send sms username */
     char *password;	/* password associated */
+    char *forced_smsc;	/* if smsc id is forcxet to certain for this user */
+    char *default_smsc; /* smsc id if none given in http send-sms request */
     
     int args;
     int has_catchall_arg;
@@ -72,7 +75,7 @@ struct URLTranslationList {
 static URLTranslation *create_onetrans(ConfigGroup *grp);
 static void destroy_onetrans(void *ot);
 static URLTranslation *find_translation(URLTranslationList *trans, 
-					List *words);
+					List *words, Octstr *smsc);
 static URLTranslation *find_default_translation(URLTranslationList *trans);
 static void encode_for_url(char *buf, char *str);
 
@@ -136,7 +139,8 @@ int urltrans_add_cfg(URLTranslationList *trans, Config *cfg) {
 }
 
 
-URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text) {
+URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
+			      Octstr *smsc) {
 	List *words;
 	URLTranslation *t;
 	
@@ -144,7 +148,7 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text) {
 	if (words == NULL)
 	    return NULL;
 
-	t = find_translation(trans, words);
+	t = find_translation(trans, words, smsc);
 	list_destroy(words, octstr_destroy_item);
 	if (t == NULL)
 	    t = find_default_translation(trans);
@@ -365,6 +369,18 @@ char *urltrans_password(URLTranslation *t) {
 	return t->password;
 }
 
+char *urltrans_forced_smsc(URLTranslation *t) {
+	return t->forced_smsc;
+}
+
+char *urltrans_default_smsc(URLTranslation *t) {
+	return t->default_smsc;
+}
+
+char *urltrans_accepted_smsc(URLTranslation *t) {
+	return t->accepted_smsc;
+}
+
 
 
 
@@ -385,6 +401,7 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     char *split_chars, *split_suffix, *omit_empty;
     char *username, *password;
     char *header, *footer;
+    char *accepted_smsc, *forced_smsc, *default_smsc;
     
     ot = gw_malloc(sizeof(URLTranslation));
 
@@ -394,6 +411,7 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     ot->footer = ot->header = NULL;
     ot->username = ot->password = NULL;
     ot->omit_empty = 0;
+    ot->accepted_smsc = ot->forced_smsc = ot->default_smsc = NULL;
     
     keyword = config_get(grp, "keyword");
     aliases = config_get(grp, "aliases");
@@ -412,6 +430,11 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     username = config_get(grp, "username");
     password = config_get(grp, "password");
     concatenation = config_get(grp, "concatenation");
+
+    accepted_smsc = config_get(grp, "accepted-smsc");
+    forced_smsc = config_get(grp, "forced-smsc");
+    default_smsc = config_get(grp, "default-smsc");
+    
     
     if (url) {
 	ot->type = TRANSTYPE_URL;
@@ -428,48 +451,67 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 	ot->username = gw_strdup(username);
 	if (password)
 	    ot->password = gw_strdup(password);
+	else {
+	    error(0, "Password required for send-sms user");
+	    goto error;
+	}
+	if (forced_smsc) {
+	    if (default_smsc)
+		info(0, "Redundant default-smsc for send-sms user %s", username);
+	    ot->forced_smsc = gw_strdup(forced_smsc);
+	} else if (default_smsc) {
+	    ot->default_smsc = gw_strdup(default_smsc);
+	}
     } else {
 	error(0, "No url, file or text spesified");
 	goto error;
     }
-    if (keyword)
-	ot->keyword = gw_strdup(keyword);
 
-    if (aliases) {
-	ot->aliases = gw_malloc(strlen(aliases)+2);
-	sprintf(ot->aliases, "%s;", aliases);
+    if (ot->type != TRANSTYPE_SENDSMS) {	/* sms-service */
+	if (keyword)
+	    ot->keyword = gw_strdup(keyword);
+	else {
+	    error(0, "keyword required for sms-service");
+	    goto error;
+	}
+	if (aliases) {
+	    ot->aliases = gw_malloc(strlen(aliases)+2);
+	    sprintf(ot->aliases, "%s;", aliases);
+	}
+	else
+	    ot->aliases = gw_strdup("");
+
+	if (accepted_smsc)
+	    ot->accepted_smsc = gw_strdup(accepted_smsc);
+	    
+	if (prefix != NULL && suffix != NULL) {
+
+	    ot->prefix = gw_strdup(prefix);
+	    ot->suffix = gw_strdup(suffix);
+	}
+
+	ot->args = count_occurences(ot->pattern, "%s");
+	ot->args += count_occurences(ot->pattern, "%S");
+	ot->has_catchall_arg = (count_occurences(ot->pattern, "%r") > 0) ||
+	    (count_occurences(ot->pattern, "%a") > 0);
     }
-    else
-	ot->aliases = gw_strdup("");
+    else { 		/* send-sms user */
+	ot->args = 0;
+	ot->has_catchall_arg = 0;
+    }
+
+    /* things that apply to both */
     
-    if ((ot->keyword == NULL && (ot->username == NULL || ot->password == NULL)) ||
-	ot->pattern == NULL || ot->aliases == NULL)
-	goto error;
-    if (prefix != NULL && suffix != NULL) {
-
-	ot->prefix = gw_strdup(prefix);
-	ot->suffix = gw_strdup(suffix);
-	if (ot->prefix == NULL || ot->suffix == NULL)
-	    goto error;
-    }
-    if (faked_sender != NULL) {
+    if (faked_sender != NULL)
 	ot->faked_sender = gw_strdup(faked_sender);
-	if (ot->faked_sender == NULL)
-	    goto error;
-    }
 
     if (max_msgs != NULL) {
 	ot->max_messages = atoi(max_msgs);
-	if (split_chars != NULL) {
+	if (split_chars != NULL)
 	    ot->split_chars = gw_strdup(split_chars);
-	    if (ot->split_chars == NULL)
-		goto error;
-	}
-	if (split_suffix != NULL) {
+
+	if (split_suffix != NULL)
 	    ot->split_suffix = gw_strdup(split_suffix);
-	    if (ot->split_suffix == NULL)
-		goto error;
-	}
     }
     else
 	ot->max_messages = 1;
@@ -481,20 +523,15 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     	 ot->concatenation =  0;
     	 
     if (header != NULL)
-	if ((ot->header = gw_strdup(header)) == NULL)
-	    goto error;
+	ot->header = gw_strdup(header);
+
     if (footer != NULL)
-	if ((ot->footer = gw_strdup(footer)) == NULL)
-	    goto error;
+	ot->footer = gw_strdup(footer);
 
     if (omit_empty != NULL)
 	ot->omit_empty = atoi(omit_empty);
-    
-    ot->args = count_occurences(ot->pattern, "%s");
-    ot->args += count_occurences(ot->pattern, "%S");
-    ot->has_catchall_arg = (count_occurences(ot->pattern, "%r") > 0) ||
-	(count_occurences(ot->pattern, "%a") > 0);
 
+    
     return ot;
 error:
     error(errno, "Couldn't create a URLTranslation.");
@@ -521,6 +558,9 @@ static void destroy_onetrans(void *p) {
 		gw_free(ot->split_suffix);
 		gw_free(ot->username);
 		gw_free(ot->password);
+		gw_free(ot->accepted_smsc);
+		gw_free(ot->forced_smsc);
+		gw_free(ot->default_smsc);
 		gw_free(ot);
 	}
 }
@@ -530,10 +570,9 @@ static void destroy_onetrans(void *p) {
  * Find the appropriate translation 
  */
 static URLTranslation *find_translation(URLTranslationList *trans, 
-	List *words)
+	List *words, Octstr *smsc)
 {
 	char *keyword;
-	char alias_keyword[1024];
 	int i, n;
 	URLTranslation *t;
 
@@ -541,7 +580,6 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 	if (n == 0)
 		return NULL;
 	keyword = octstr_get_cstr(list_get(words, 0));
-	sprintf(alias_keyword, "%s;", keyword);
 
         t = NULL;
 	for (i = 0; i < list_len(trans->list); ++i) {
@@ -551,8 +589,19 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 		if ((strcasecmp(keyword, t->keyword) == 0 &&
 		     strlen(keyword) == strlen(t->keyword))
 		    ||
-		    str_case_str(t->aliases, alias_keyword) != NULL) {
-
+		    str_find_substr(t->aliases, keyword, ";") == 1)
+		{
+		    /* if smsc_id set and accepted_smsc exist, accept
+		     * translation only if smsc id is in accept string
+		     */
+		    if (smsc && t->accepted_smsc) {
+			if (str_find_substr(t->accepted_smsc,
+					    octstr_get_cstr(smsc), ";")==0)
+			{
+			    t = NULL;
+			    continue;
+			}
+		    }
 		    if (n - 1 == t->args)
 			break;
 		    if (t->has_catchall_arg && n - 1 >= t->args)

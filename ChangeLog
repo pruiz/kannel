@@ -1,5 +1,19 @@
 2000-09-25  Kalle Marjola  <rpr@wapit.com>
 
+	* gwlib/utils.c: added str_find_substr
+
+	* gw/urltrans.c|h: added 'smsc' to find_translations, and
+	forced-smsc, default-smsc and accepted-smsc for translation
+	groups. Accepted-smsc is now in full use, so if you need
+	sms-services linked to used SMSC, use it (and smsc-id for
+	corresponding SMSC)
+
+	* gw/smsbox_req.c: set smsc_id for send-sms requests
+
+	* doc/userguide/newconf.txt: added new attributes here
+
+2000-09-25  Kalle Marjola  <rpr@wapit.com>
+
 	* gwlib/utils.c (get_and_set_debugs): fixed '--' parsing
 
 2000-09-22  Kalle Marjola  <rpr@wapit.com>

@@ -545,7 +545,8 @@ void smsbox_req_thread(void *arg) {
 	return;
     }
 
-    trans = urltrans_find(translations, msg->smart_sms.msgdata);
+    trans = urltrans_find(translations, msg->smart_sms.msgdata,
+			  msg->smart_sms.smsc_id);
     if (trans == NULL) goto error;
 
     info(0, "Starting to service <%s> from <%s> to <%s>",
@@ -651,9 +652,22 @@ char *smsbox_req_sendsms(List *list)
 	msg->smart_sms.sender = from;  	/* duplication */
 	msg->smart_sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
 	msg->smart_sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
+
 	/* new smsc-id argument - we should check this one, if able,
 	   but that's advanced logics -- Kalle */
-	msg->smart_sms.smsc_id = smsc ? octstr_duplicate(smsc) : NULL;
+
+	if (urltrans_forced_smsc(t)) {
+	    msg->smart_sms.smsc_id = octstr_create(urltrans_forced_smsc(t));
+	    if (smsc)
+		info(0, "send-sms request smsc id ignored, as smsc id forced to %s",
+		     urltrans_forced_smsc(t));
+	} else if (smsc) {
+	    msg->smart_sms.smsc_id = octstr_duplicate(smsc);
+	} else if (urltrans_default_smsc(t)) {
+	    msg->smart_sms.smsc_id = octstr_create(urltrans_default_smsc(t));
+	} else
+	    msg->smart_sms.smsc_id = NULL;
+	    
 
 	if(udh==NULL) {
 		msg->smart_sms.flag_8bit = 0;
