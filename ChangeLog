@@ -1,3 +1,9 @@
+2002-04-03  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/ota_prov.c: make output a bit more semantical
+    * gw/smsbox.c: bug fixing of destroyed variables
+    * test/test_http.c: fixed typo and minor bug when sending non-POST 
+      request, which of course does not have any content.
+
 2002-04-02  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: added new smsbox_sendota_post() to handke POST method of 
       sendota function. Now you can use the same POST semantic as for sendsms.
