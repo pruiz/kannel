@@ -2555,12 +2555,15 @@ address-range = ""
 		 combinations are possible and valid: 
 		 0x00 <literal>deliver_sm</literal> decimal, 
 		 <literal>submit_sm_resp</literal> decimal;
-		 0x01 (default) <literal>deliver_sm</literal> decimal, 
+		 0x01 <literal>deliver_sm</literal> decimal, 
 		 <literal>submit_sm_resp</literal> hex;
 		 0x02 <literal>deliver_sm</literal> hex, 
 		 <literal>submit_sm_resp</literal> decimal;
 		 0x03 <literal>deliver_sm</literal> hex, 
-		 <literal>submit_sm_resp</literal> hex.
+		 <literal>submit_sm_resp</literal> hex. 
+		 In accordance to the SMPP v3.4 specs the default will be a C string 
+		 literal if no of the above values is explicitly indicated using the 
+		 config directive.
      </entry></row>
 
    <row><entry><literal>alt-charset</literal></entry>
