@@ -1,5 +1,10 @@
 2000-12-04  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsc_emi.c: Avoid NULL pointer dereference if sender has
+	not been set. Thanks to Armin Hurm for finding this.
+
+2000-12-04  Lars Wirzenius  <liw@iki.fi>
+
 	* doc/userguide/userguide.xml: Explain the syslog-level variable
 	for wabpox.
 
