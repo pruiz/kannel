@@ -1220,7 +1220,7 @@ void octstr_insert_char(Octstr *ostr, long pos, const char c)
     
     octstr_grow(ostr, ostr->len + 1);
     if (ostr->len > pos)
-        memmove(ostr->data + 1, ostr->data + pos, ostr->len - pos);
+        memmove(ostr->data + pos + 1, ostr->data + pos, ostr->len - pos);
     memcpy(ostr->data + pos, &c, 1);
     ostr->len += 1;
     ostr->data[ostr->len] = '\0';
