@@ -107,8 +107,7 @@ int socket_sender(Msg *pmsg)
 
     mutex_unlock(&socket_mutex);
 
-    if(msg_type(pmsg) == smart_sms)
-	debug(0, "write smart <%s>", octstr_get_cstr(pmsg->smart_sms.msgdata));
+    debug(0, "write <%s>", octstr_get_cstr(pmsg->smart_sms.msgdata));
     octstr_destroy(pack);
 
     msg_destroy(pmsg);

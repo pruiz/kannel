@@ -149,8 +149,10 @@ error:
  */
 static int do_sending(Msg *msg)
 {
-    if (sms_max_length < 0) return -1;
+    debug(0, "Sending msg");
 
+    if (sms_max_length < 0) return -1;
+    
     if (sender(msg) < 0)
 	goto error;
 
@@ -170,7 +172,6 @@ error:
  */
 static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
 {
-    Octstr *text;
     Msg *split;
     
     char *p, *suf, *sc;
@@ -182,16 +183,13 @@ static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
     if (suf != NULL)
 	slen = strlen(suf);
 
-    if(msg_type(msg) == smart_sms) {
+    if(msg->smart_sms.flag_udh) {
 	warning(0, "Cannot send too long UDH!");
 	return 0;
     }
-    else 
-	return -1;
-
-    total_len = octstr_len(text);
+    total_len = octstr_len(msg->smart_sms.msgdata);
     
-    for(loc = 0, p = octstr_get_cstr(text);
+    for(loc = 0, p = octstr_get_cstr(msg->smart_sms.msgdata);
 	maxmsgs > 0 && loc < total_len;
 	maxmsgs--) {
 
@@ -240,51 +238,54 @@ error:
  */
 static int send_message(URLTranslation *trans, Msg *msg)
 {
-	int max_msgs;
-	static char *empty = "<Empty reply from service provider>";
+    int max_msgs;
+    static char *empty = "<Empty reply from service provider>";
     
-	max_msgs = urltrans_max_messages(trans);
-
-	if(msg_type(msg) != smart_sms)
+    max_msgs = urltrans_max_messages(trans);
+	
+    if(msg_type(msg) != smart_sms) {
+	info(0, "msgtype failed");
+	goto error;
+    }    
+    if (octstr_len(msg->smart_sms.msgdata)==0) {
+	if (urltrans_omit_empty(trans) != 0) {
+	    max_msgs = 0;
+	} else { 
+	    if (octstr_replace(msg->smart_sms.msgdata, empty, strlen(empty)) == -1) {
+		info(0, "replace failed");
 		goto error;
-    
-	if (octstr_len(msg->smart_sms.msgdata)==0) {
-
-		if (urltrans_omit_empty(trans) != 0) {
-			max_msgs = 0;
-		} else { 
-			if (octstr_replace(msg->smart_sms.msgdata, empty, strlen(empty)) == -1) 
-				goto error;
-		}
-
+	    }
 	}
+    }
+    if (max_msgs == 0)
+	info(0, "No reply sent, denied.");
+	
+    else if (octstr_len(msg->smart_sms.msgdata) <= sms_max_length) {
+	if (do_sending(msg) < 0)
+	    goto error;
 
-	if (max_msgs == 0) {
+    } else if (octstr_len(msg->smart_sms.msgdata) > sms_max_length &&
+	       max_msgs == 1) {
 
-		info(0, "No reply sent, denied.");
+	/* truncate reply */
+	    
+	octstr_truncate(msg->smart_sms.msgdata, sms_max_length);	
+	if (do_sending(msg) < 0)
+	    goto error;
 
-	} else if (octstr_len(msg->smart_sms.msgdata) <= sms_max_length) {
-
-		if (do_sending(msg) < 0) goto error;
-
-	} else if (octstr_len(msg->smart_sms.msgdata) > sms_max_length && max_msgs == 1) {
-
-		octstr_truncate(msg->smart_sms.msgdata, sms_max_length);	/* truncate reply */
-		if (do_sending(msg) < 0) goto error;
-
-	} else {
-		/*
-		 * we have a message that is longer than what fits in one
-		 * SMS message and we are allowed to split it
-		 */
-		if (do_split_send(msg, max_msgs, trans) < 0)
-			goto error;
-	}
-	return 0;
+    } else {
+	/*
+	 * we have a message that is longer than what fits in one
+	 * SMS message and we are allowed to split it
+	 */
+	if (do_split_send(msg, max_msgs, trans) < 0)
+	    goto error;
+    }
+    return 0;
 
 error:
-	error(0, "send message failed");
-	return -1;
+    error(0, "send message failed");
+    return -1;
 }
 
 
@@ -371,9 +372,6 @@ void *smsbox_req_thread(void *arg) {
 	msg->smart_sms.receiver = tmp;
 
 	/* TODO: check if the sender is approved to use this service */
-
-	info(0, "creating service request, dump follows:");
-	msg_dump(msg);
 
 	reply = obey_request(trans, msg);
 	if (reply == NULL) {
