@@ -207,14 +207,15 @@ OctstrList *octstr_split_words(Octstr *ostr);
 void octstr_dump(Octstr *ostr);
 
 /*
- * write given octstr into 'fd', possibly blocking. Return -1
- * if failed, 0 otherwise
+ * Send(2) given octstr into 'fd', possibly blocking. 
+ * Return -1 if failed, 0 otherwise.
  */
 int octstr_send(int fd, Octstr *ostr);
 
 /*
- * read one octet string from 'fd'. Blocks until complete octet is
- * read, returns -1 on error (fd closed etc.)
+ * Read recv(2) one Octstr from (socket) 'fd'. Blocks 
+ * until the whole Octstr is read.
+ * Return -1 if failed, 0 otherwise.
  */
 int octstr_recv(int fd, Octstr **ostr);
 

@@ -495,7 +495,7 @@ int octstr_send(int fd, Octstr *ostr) {
 	}
 
 	free(data);
-	return 1;
+	return 0;
 
 error:
 	free(data);
@@ -544,7 +544,7 @@ int octstr_recv(int fd, Octstr **ostr) {
 
 	*ostr = newostr;
 	free(data);
-	return 1;
+	return 0;
 error:
 	octstr_destroy(newostr);
 	free(data);
