@@ -1,3 +1,9 @@
+2000-01-25    <rpr@rpr.wapit.com>
+
+	* gw/bearerbox.c: Some optimization to queue watchers, now it
+	should not do updates with no effect, hopefully reducing CPU usage
+	in a long run.
+
 Mon Jan 24 21:23:43 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* README: Updated a bit.

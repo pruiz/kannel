@@ -190,7 +190,8 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 
 	    if (msg_type(pmsg) == heartbeat) {
 		boxc->load = pmsg->heartbeat.load;
-		debug(0, "BOXC: Load factor %d received", boxc->load);
+		if (boxc->load > 0)
+		    debug(0, "BOXC: Load factor %d received", boxc->load);
 
 		octstr_destroy(os);
 		msg_destroy(pmsg);

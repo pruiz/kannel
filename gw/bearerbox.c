@@ -1517,8 +1517,11 @@ static void update_queue_watcher()
 {
     static int req_ql[10], rep_ql[10];
     static int index = 0;
+    static int start = 1;
+    static int id = 0;
     static int c = 0;
-    int i, id;
+    static int empty_rep = 0, empty_req = 0;
+    int i;
     int req, rep;
     time_t limit;
     
@@ -1540,14 +1543,21 @@ static void update_queue_watcher()
 				     rq_last_mod(bbox->reply_queue) < limit-2))
 	    bbox->abort_program = 2;     	/* time to die... */
     }
+    /*
+     * we may return immediately if nothing to update
+     */
+    if (!start && rep == 0 && req == 0 && empty_rep && empty_req)
+	return;
+
     req_ql[index%10] = req;
     rep_ql[index%10] = rep;
     index++;
-    if (index > ID_MAX)
-	index=10;
+    if (index > ID_MAX) index=10;   /* reset */
 
-    id = (index > 10) ? 10 : index;
-
+    if (start) {
+	if (index < 10) id = index;
+	else { id = 10; start = 0; }
+    }
     req = rep = 0;
     for(i=0; i<id; i++) {
 	req += req_ql[i];
@@ -1556,27 +1566,18 @@ static void update_queue_watcher()
     mutex_lock(bbox->mutex);
 
     bbox->mean_req_ql = req / id;
+    if (bbox->mean_req_ql == 0 && !start) empty_req = 1;
+    else empty_req = 0;
+
     bbox->mean_rep_ql = rep / id;
+    if (bbox->mean_rep_ql == 0 && !start) empty_rep = 1;
+    else empty_rep = 0;
 
     mutex_unlock(bbox->mutex);
 
     c++;
-    if (c % 20 == 19)
+    if (c % 20 == 19 && (rep > 0 || req > 0))
 	check_queues();
-
-    if (c >= 40) {
-	limit = time(NULL) - 35;
-	
-	if (rq_last_mod(bbox->request_queue) > limit ||
-	    rq_last_mod(bbox->reply_queue) > limit) {
-
-	    char buf[1024];
-	    print_queues(buf, 0);
-	    debug(0, "\n%s", buf);
-	    c = 0;
-	}
-	else c = 20;
-    }
 }
 
 /*
@@ -1710,7 +1711,7 @@ static void main_program(void)
 	    update_queue_watcher();
 	    last_sec = now;
 	}
-	if (now - last > bbox->heartbeat_freq) {
+	if (now - last > (bbox->heartbeat_freq*2)) {
 	    check_threads();		/* destroy killed */
 	    check_heartbeats();		/* check if need to be marked as killed */
 	    ret = check_receivers();
@@ -1721,7 +1722,7 @@ static void main_program(void)
 	}
 
 	if (bbox->accept_pending) {
-	    usleep(10000);
+	    usleep(100000);
 	    continue;
 	}
 	FD_ZERO(&rf);
@@ -1752,7 +1753,7 @@ static void main_program(void)
 
 		sendsms_start_thread();
 
-	    sleep(1);	/* sleep for a while... work around this */
+	    sleep(1);	/* XXX sleep for a while... work around this */
 	}
 	else if (ret < 0) {
 	    if(errno==EINTR) continue;
