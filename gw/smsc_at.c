@@ -736,14 +736,21 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	
 	/* udh */
 	if(msg->sms.flag_udh != 0) {
-		len = octstr_len(msg->sms.udhdata);
+            if(msg->sms.flag_8bit == 0)
+                len = roundup_div(octstr_len(msg->sms.udhdata)*8, 7);
+            else
+                len = octstr_len(msg->sms.udhdata);
+
 		/* udh length */
 		pdu[pos] = numtext((len & 240) >> 4);
 		pos++;
 		pdu[pos] = numtext(len & 15);
 		pos++;
-		/* FIXME: problem with 7bit encoding */
-		pos += encode8bituncompressed(msg->sms.udhdata, &pdu[pos]);
+
+        if(msg->sms.flag_8bit == 0)
+            pos += encode7bituncompressed(msg->sms.udhdata, &pdu[pos]);
+        else
+            pos += encode8bituncompressed(msg->sms.udhdata, &pdu[pos]);
 	}
 
 	/* user data */
