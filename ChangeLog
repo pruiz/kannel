@@ -1,4 +1,8 @@
 2003-04-24  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsc/smsc_smpp.c: added using of smpp_error_to_string
+      function for error log entries.
+
+2003-04-24  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/md5.[ch]: fixed compiler warnings about static functions.
 
 2003-04-24  Alexander Malysh  <a.malysh@centrium.de>

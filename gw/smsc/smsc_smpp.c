@@ -849,10 +849,11 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                         octstr_get_cstr(smpp->conn->id),
                         pdu->u.submit_sm_resp.sequence_number); 
             } else if (pdu->u.submit_sm_resp.command_status != 0) { 
-                error(0, "SMPP[%s]: SMSC returned error code 0x%08lx " 
+                error(0, "SMPP[%s]: SMSC returned error code 0x%08lx (%s) " 
                       "in response to submit_sm.",
                       octstr_get_cstr(smpp->conn->id),
-                      pdu->u.submit_sm_resp.command_status); 
+                      pdu->u.submit_sm_resp.command_status,
+		      smpp_error_to_string(pdu->u.submit_sm_resp.command_status)); 
                 reason = smpp_status_to_smscconn_failure_reason( 
                             pdu->u.submit_sm_resp.command_status); 
 
@@ -953,9 +954,10 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
         case bind_transmitter_resp: 
             if (pdu->u.bind_transmitter_resp.command_status != 0) { 
                 error(0, "SMPP[%s]: SMSC rejected login to transmit, " 
-		              "code 0x%08lx.",
+		              "code 0x%08lx (%s).",
                       octstr_get_cstr(smpp->conn->id),
-                      pdu->u.bind_transmitter_resp.command_status); 
+                      pdu->u.bind_transmitter_resp.command_status,
+		      smpp_error_to_string(pdu->u.bind_transmitter_resp.command_status)); 
                 if (pdu->u.bind_transmitter_resp.command_status == SMPP_ESME_RINVSYSID ||
                     pdu->u.bind_transmitter_resp.command_status == SMPP_ESME_RINVPASWD)
                     smpp->quitting = 1;
@@ -970,9 +972,10 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
         case bind_transceiver_resp: 
             if (pdu->u.bind_transceiver_resp.command_status != 0) { 
                 error(0, "SMPP[%s]: SMSC rejected login to transmit, " 
-                      "code 0x%08lx.",
+                      "code 0x%08lx (%s).",
                       octstr_get_cstr(smpp->conn->id),
-                      pdu->u.bind_transceiver_resp.command_status); 
+                      pdu->u.bind_transceiver_resp.command_status,
+		      smpp_error_to_string(pdu->u.bind_transceiver_resp.command_status)); 
                 if (pdu->u.bind_transceiver_resp.command_status == SMPP_ESME_RINVSYSID ||
                     pdu->u.bind_transceiver_resp.command_status == SMPP_ESME_RINVPASWD)
                     smpp->quitting = 1;
@@ -987,9 +990,10 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
         case bind_receiver_resp: 
             if (pdu->u.bind_receiver_resp.command_status != 0) { 
                 error(0, "SMPP[%s]: SMSC rejected login to receive, " 
-                      "code 0x%08lx.", 
+                      "code 0x%08lx (%s).", 
                       octstr_get_cstr(smpp->conn->id),
-                      pdu->u.bind_receiver_resp.command_status); 
+                      pdu->u.bind_receiver_resp.command_status,
+		      smpp_error_to_string(pdu->u.bind_receiver_resp.command_status)); 
                 if (pdu->u.bind_receiver_resp.command_status == SMPP_ESME_RINVSYSID ||
                     pdu->u.bind_receiver_resp.command_status == SMPP_ESME_RINVPASWD)
                     smpp->quitting = 1;
@@ -1042,9 +1046,10 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                     bb_smscconn_send_failed(smpp->conn, msg, reason);
                     --(*pending_submits);
                 } else {
-                    error(0, "SMPP[%s]: SMSC sent generic_nack type 0x%08lx, code 0x%08lx.",
+                    error(0, "SMPP[%s]: SMSC sent generic_nack type 0x%08lx, code 0x%08lx (%s).",
                           octstr_get_cstr(smpp->conn->id), pdu->type,
-                          pdu->u.generic_nack.command_status);
+                          pdu->u.generic_nack.command_status,
+			  smpp_error_to_string(pdu->u.generic_nack.command_status));
                     reason = smpp_status_to_smscconn_failure_reason(-1);
                     bb_smscconn_send_failed(smpp->conn, msg, reason);
                     --(*pending_submits);
