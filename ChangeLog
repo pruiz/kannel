@@ -1,3 +1,10 @@
+2000-07-06  Richard Braakman  <dark@wapit.com>
+
+	* Making release 0.10.1.
+
+	* Extended NEWS.  Removed NEWS.devel, we won't need it until
+	we start on 0.11.
+
 2000-07-06  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsc_ois.c: (hopefully) fixed warnings from FreeBSD

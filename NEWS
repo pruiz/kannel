@@ -1,8 +1,16 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.10
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.10.1
 
-This is a STABLE version. It should be usable for production use.
+This is a STABLE version. We will maintain it and make bugfix
+releases until the next stable version, which will be numbered 0.12.
 Please do try it out and report problems to devel@kannel.org (the 
 development mailing list) or bugs@kannel.org (the bug tracking system).
+
+Changes since version 0.10:
+
+* Corrections to user's guide.
+* Various bugfixes and memory leak fixes.
+* WMLScript compiler supports WTAI standard library function calls.
+* Added support for SEMA SMS2000 (G6.0) OIS 5.0 over X.25.
 
 Change summary from version 0.8:
 
