@@ -2763,7 +2763,7 @@ pin = 2345
 	sending the messages.
      </entry></row>
 
-   <row><entry><literal>need-sleep</literal></entry>
+   <row><entry><literal>need-sleep</literal></entry></row>
    </tbody></tgroup></informaltable>
 </sect3>
 
