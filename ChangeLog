@@ -1,4 +1,7 @@
 2003-10-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * radius/radius_acct.c, wap/wsp_session.c: fixing compiler warnings.
+
+2003-10-07  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wml_compiler.c: fixed DOS bug within wml deck as described in the 
       mailing list post. Thanks to Vjacheslav for providing this fix.
       [Msg-ID: <3F7BCE92.9080401@lmt.lv>]
