@@ -16,6 +16,7 @@
 #include "heartbeat.h"
 #include "wap/wap.h"
 #include "wap-appl.h"
+#include "wap-maps.h"
 #include "wap_push_ota.h"
 #include "wap_push_ppg.h"
 #include "gw/msg.h"
@@ -503,16 +504,16 @@ static void config_reload(int reload) {
         warn_map_url = 1;
 
     if (reload) { /* clear old map */
-        wsp_http_map_destroy();
-        wsp_http_map_user_destroy();
+        wap_map_destroy();
+        wap_map_user_destroy();
     }
 	
     if ((device_home = cfg_get(grp, octstr_imm("device-home"))) != NULL) {
-        wsp_http_map_url_config_device_home(octstr_get_cstr(device_home));
+        wap_map_url_config_device_home(octstr_get_cstr(device_home));
     }
     if ((s = cfg_get(grp, octstr_imm("map-url"))) != NULL) {
         warn_map_url = 1;
-        wsp_http_map_url_config(octstr_get_cstr(s));
+        wap_map_url_config(octstr_get_cstr(s));
         octstr_destroy(s);
     }
     debug("wap", 0, "map_url_max = %ld", map_url_max);
@@ -521,7 +522,7 @@ static void config_reload(int reload) {
         Octstr *name;
         name = octstr_format("map-url-%d", i);
         if ((s = cfg_get(grp, name)) != NULL)
-            wsp_http_map_url_config(octstr_get_cstr(s));
+            wap_map_url_config(octstr_get_cstr(s));
         octstr_destroy(name);
     }
 
@@ -547,11 +548,11 @@ static void config_reload(int reload) {
             accept_cookies = -1;
             cfg_get_bool(&accept_cookies, grp, octstr_imm("accept-cookies"));
 
-            wsp_http_url_map(name, url, map_url, send_msisdn_query, send_msisdn_header,
-                             send_msisdn_format, accept_cookies);
+            wap_map_add_url(name, url, map_url, send_msisdn_query, send_msisdn_header,
+                            send_msisdn_format, accept_cookies);
         }
     }
-    wsp_http_map_url_config_info();	/* debugging aid */
+    wap_map_url_config_info();	/* debugging aid */
     list_destroy(groups, NULL);
 
     /* configure wap-user-map */
@@ -565,10 +566,10 @@ static void config_reload(int reload) {
             pass = cfg_get(grp, octstr_imm("pass"));
             msisdn = cfg_get(grp, octstr_imm("msisdn"));
             
-            wsp_http_user_map(name, user, pass, msisdn);
+            wap_map_add_user(name, user, pass, msisdn);
         }
     }
-    wsp_http_map_user_config_info();	/* debugging aid */
+    wap_map_user_config_info();	/* debugging aid */
     list_destroy(groups, NULL);
 
     cfg_destroy(cfg);
@@ -723,8 +724,8 @@ int main(int argc, char **argv)
 
     wml_shutdown();
     close_connection_to_bearerbox();
-    wsp_http_map_destroy();
-    wsp_http_map_user_destroy();
+    wap_map_destroy();
+    wap_map_user_destroy();
     octstr_destroy(device_home);
     octstr_destroy(bearerbox_host);
     octstr_destroy(config_filename);
