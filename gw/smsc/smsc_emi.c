@@ -55,9 +55,15 @@
  */ 
 
 /*
- * smsc_emi2.c - interface to EMI SMS centers
+ * smsc_emi.c - interface to EMI/UCP SMS centers
  *
  * Uoti Urpala 2001
+ * Alexander Malysh and Stipe Tolj 2002-2003
+ *
+ * References:
+ *
+ *   [1] Short Message Sergice Centre 4.0 EMI - UCP Interface Specification
+ *       document version 4.2, May 2001, CMG Wireless Data Solutions.
  */
 
 /* Doesn't warn about unrecognized configuration variables */
@@ -572,6 +578,11 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 
 
     switch(emimsg->ot) {
+
+    /*
+     * Handle OP/01 call input operation. This operation delivery MO messages
+     * from SMSC to SMT according to [1], section 4.2, p. 9.
+     */
     case 01:
 	msg = msg_create(sms);
 	if (emimsg->fields[E01_AMSG] == NULL)
@@ -637,6 +648,10 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	emimsg_destroy(reply);
 	return 1;
 
+    /*
+     * Handle OP/52 delivery short message. This is the MO side of the protocol
+     * implementation. See [1], section 5.4, p. 40.
+     */
     case 52:
 	msg = msg_create(sms);
 	/* AMSG is the same field as TMSG */
@@ -814,7 +829,11 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	}
 	emimsg_destroy(reply);
 	return 1;
-    case 53: /* delivery notification */	    
+
+    /*
+     * Handle OP/53 delivery notification. See [1], section 5.5, p. 43.
+     */
+    case 53: 	    
 	st_code = atoi(octstr_get_cstr(emimsg->fields[E50_DST]));
 	switch(st_code)
 	{
@@ -857,6 +876,21 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	}
 	emimsg_destroy(reply);
 	return 1;
+
+    /* 
+     * Handle OP/31 from SMSC side. This is not "purely" spec conform since,
+     * the protocoll says "This operation can be used by a SMT to alert the SC.",
+     * which implies semantically only the opposite way. For the sake of EMI/UCP
+     * server implementations that send alert messages to SMTs we handle this 
+     * without breaking any core protocoll concept.
+     *
+     * See [1], section 4.6, p. 19.
+     */
+    case 31:
+        reply = emimsg_create_reply(31, emimsg->trn, 1, privdata->name);
+        st_code = emi2_emimsg_send(conn, server, reply);
+        emimsg_destroy(reply);
+        return (st_code < 0 ? -1 : 1);
 
     default:
 	error(0, "EMI2[%s]: I don't know how to handle operation type %d", 

@@ -1,4 +1,9 @@
 2003-12-03  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_emi.c: added OP/31 handling for the sake of EMI/UCP 
+      implementations that use this construct as server-side initiated 
+      keep-alive mechanism.
+
+2003-12-03  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: adding a bit more explanation about the 
       effect of EMI's 'my-number' config directive for keep-alive (OP/31) PDUs.
     * gw/smsc/smsc_http.c: removed additional body checking for type 'wapme' 
