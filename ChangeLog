@@ -1,3 +1,9 @@
+2000-06-14  Yann Muller  <ymuller@3glab.com>
+
+	* smsc_at.c: New SMSC for wireless modems (AT commands).
+	
+	* smsc.c, smsc_p.h: Added support for new AT SMSC.
+
 2000-06-13  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_boxc.c: (somehow) fixed pointer error pointed out by Paul
@@ -4900,6 +4906,6 @@ Thu Nov 11 19:41:40 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* initial release. Copied several files from old smsgateway
 	project, added new protypes and commented thigns out so that
-	they cvan be compiled. This does NOT do anything, yet.
+	they can be compiled. This does NOT do anything, yet.
 
 	* VERSION: version 0.1 set
