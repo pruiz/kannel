@@ -1,5 +1,10 @@
 2001-04-23  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/http.[ch]: Added support for HEAD method, supplied
+	by Jarkko Kovala.
+
+2001-04-23  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/socket.c: Clear sockaddr_in structure before using it,
 	to make FreeBSD happier.
 

@@ -1472,6 +1472,8 @@ static int parse_request_line(int *method, Octstr **url,
 	*method = HTTP_METHOD_GET;
     else if (octstr_compare(method_str, octstr_imm("POST")) == 0)
 	*method = HTTP_METHOD_POST;
+    else if (octstr_compare(method_str, octstr_imm("HEAD")) == 0)
+	*method = HTTP_METHOD_HEAD;
     else
         goto error;
 
@@ -1809,12 +1811,12 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     	response = octstr_format("HTTP/1.1 %d Foo\r\n", status);
 
     octstr_format_append(response, "Content-Length: %ld\r\n",
-    	    	    	 octstr_len(body));
+			 octstr_len(body));
     for (i = 0; i < list_len(headers); ++i)
     	octstr_format_append(response, "%S\r\n", list_get(headers, i));
     octstr_format_append(response, "\r\n");
     
-    if (body != NULL)
+    if (body != NULL && client->method != HTTP_METHOD_HEAD)
     	octstr_append(response, body);
 	
     ret = conn_write(client->conn, response);

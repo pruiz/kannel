@@ -117,11 +117,11 @@ enum {
 /*
  * Methods supported by this HTTP library.  Currently not public but
  * probably should be.
- * XXX Support for HEAD is required by RFC2616.
  */
 enum {
 	HTTP_METHOD_GET = 1,
-	HTTP_METHOD_POST = 2
+	HTTP_METHOD_POST = 2,
+	HTTP_METHOD_HEAD = 3
 };
 
 /*
