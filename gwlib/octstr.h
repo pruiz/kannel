@@ -377,6 +377,10 @@ void octstr_truncate(Octstr *ostr, int new_len);
  */
 void octstr_strip_blanks(Octstr *ostr);
 
+/*
+ * Strip CR and LF from start and end of a octet string.
+ */
+void octstr_strip_crlfs(Octstr *ostr);
 
 /*
  * Strip non-alphanums from start and end of a octet string.

@@ -456,6 +456,11 @@ int http_type_accepted(List *headers, char *type);
  */
 void http_header_dump(List *headers);
 
+/* 
+ * Ditto with cgi variables. Do not panic, when an empty are found from the 
+ * list.
+ */
+void http_cgivar_dump(List *cgiargs);
 
 /*
  * Check for acceptable charset
