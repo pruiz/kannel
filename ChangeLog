@@ -1,4 +1,8 @@
 2002-04-04  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.c: changed the server side Server HTTP header, to look the
+      same as the client side.
+
+2002-04-04  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.c: added User-Agent HTTP header to HTTP client requests to
       identify itself by the string 'Kannel/<ver>', where <ver> is the 
       version string from VERSION.
