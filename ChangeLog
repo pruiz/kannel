@@ -1,6 +1,12 @@
+2002-04-24  Stipe Tolj <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added 'transceiver-mode' section
+    * gw/smpp_pdu.def, gw/smsc_smpp.c, gwlib/cfg.def: added SMPP
+      transceiver mode patch submited by Simon Beale <simon.beale@ngame.com>
+      [Msg-ID: <004201c1e0b3$c9490c20$c80a0a0a@ngame.com>]
+
 2002-04-23  Stipe Tolj <tolj@wapme-systems.de>
     * gwlib/cfg.def: added missing 'xmlrpc-url' for XML-RPC URI
-      tringger to be used.
+      trigger to be used.
 
 2002-04-22  Stipe Tolj <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added 'smart-errors' section
