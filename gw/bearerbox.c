@@ -867,6 +867,7 @@ static void *smsboxconnection_thread(void *arg)
 	
 	if (us->boxc->fd == BOXC_THREAD) {
 	    written--;
+	    usleep(10000);
 	    continue;
 	}
 	

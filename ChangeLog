@@ -1,5 +1,10 @@
 2000-01-25    <rpr@rpr.wapit.com>
 
+	* gw/bearerbox.c: One fix more, now the internal smsbox does not
+	consume all the CPU it can
+
+2000-01-25    <rpr@rpr.wapit.com>
+
 	* gw/bearerbox.c: Some optimization to queue watchers, now it
 	should not do updates with no effect, hopefully reducing CPU usage
 	in a long run.
