@@ -1,5 +1,10 @@
 2000-12-22  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
+	* config.sub,config.guess,configure.in,configure: added the host 
+	determination files and removed the dependancy on /usr/share/autoconf.
+	
+2000-12-22  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+
 	* config.h.in,configure,configure.in,gwlib/gwthread-pthread.c:
 	Cleaned up host system determination and tests for broken pthreads.
 	

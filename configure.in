@@ -7,7 +7,7 @@ AC_PREREQ(2.13)
 AC_INIT(gw/alt_charsets.h)
 AC_CONFIG_HEADER(config.h)
 AC_SUBST(SHELL)
-AC_CONFIG_AUX_DIR(/usr/share/automake)
+AC_CONFIG_AUX_DIR(.)
 dnl Gateway version number.
 
 AC_DEFINE_UNQUOTED(VERSION, "`head -1 VERSION`")
