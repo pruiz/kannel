@@ -1,3 +1,10 @@
+2001-04-26  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/smsc.c, gw/smsc_p.h, gw/smsc_smpp.c, gw/smscconn.c,
+	gw/smscconn_p.h: Converted SMPP driver to use the SMSCConn
+	interface. This is needed to improve reliablity of the driver,
+	which will happen next.
+
 2001-04-26  Richard Braakman  <dark@wapit.com>
 
         * gw/smsc_cimd2.c: Reopen connection if SMSC does not respond

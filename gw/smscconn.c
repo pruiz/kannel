@@ -72,6 +72,8 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
 	ret = smsc_emi2_create(conn, grp);
     else if (octstr_compare(smsc_type, octstr_imm("http")) == 0)
 	ret = smsc_http_create(conn, grp);
+    else if (octstr_compare(smsc_type, octstr_imm("smpp")) == 0)
+	ret = smsc_smpp_create(conn, grp);
     else
 	ret = smsc_wrapper_create(conn, grp);
 

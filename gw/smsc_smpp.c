@@ -17,6 +17,8 @@
 #include "msg.h"
 #include "smsc_p.h"
 #include "smpp_pdu.h"
+#include "smscconn_p.h"
+#include "bb_smscconn_cb.h"
 
 
 /*
@@ -50,10 +52,11 @@ static void dump_pdu(const char *msg, SMPP_PDU *pdu)
 enum { MAX_PENDING_SUBMITS = 10 };
 
 
-struct SMPP {
+typedef struct {
     Connection *transmission;
     Connection *reception;
     List *msgs_to_send;
+    Dict *sent_msgs;
     List *received_msgs;
     Counter *message_id_counter;
     Octstr *host;
@@ -66,11 +69,12 @@ struct SMPP {
     long receive_reader;
     long writer;
     Semaphore *send_semaphore;
-};
+    SMSCConn *conn;
+} SMPP;
 
 
-static SMPP *smpp_create(Octstr *host, int transmit_port, int receive_port,
-    	    	    	 Octstr *username, Octstr *password)
+static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port, 
+    	    	    	 int receive_port, Octstr *username, Octstr *password)
 {
     SMPP *smpp;
     
@@ -78,6 +82,7 @@ static SMPP *smpp_create(Octstr *host, int transmit_port, int receive_port,
     smpp->transmission = NULL;
     smpp->reception = NULL;
     smpp->msgs_to_send = list_create();
+    smpp->sent_msgs = dict_create(16, NULL);
     list_add_producer(smpp->msgs_to_send);
     smpp->received_msgs = list_create();
     smpp->message_id_counter = counter_create();
@@ -91,6 +96,7 @@ static SMPP *smpp_create(Octstr *host, int transmit_port, int receive_port,
     smpp->receive_reader = -1;
     smpp->writer = -1;
     smpp->send_semaphore = semaphore_create(0);
+    smpp->conn = conn;
     
     return smpp;
 }
@@ -102,6 +108,7 @@ static void smpp_destroy(SMPP *smpp)
 	conn_destroy(smpp->transmission);
 	conn_destroy(smpp->reception);
 	list_destroy(smpp->msgs_to_send, msg_destroy_item);
+	dict_destroy(smpp->sent_msgs);
 	list_destroy(smpp->received_msgs, msg_destroy_item);
 	counter_destroy(smpp->message_id_counter);
 	octstr_destroy(smpp->host);
@@ -229,6 +236,19 @@ static void destroy_reader_arg(struct reader_arg *arg)
 }
 
 
+static long smpp_status_to_smscconn_failure_reason(long status)
+{
+    enum {
+	ESME_RMSGQFUL = 0x00000014
+    };
+
+    if (status == ESME_RMSGQFUL)
+	return SMSCCONN_FAILED_TEMPORARILY;
+
+    return SMSCCONN_FAILED_REJECTED;
+}
+
+
 static void read_thread(void *pointer)
 {
     long len;
@@ -240,6 +260,9 @@ static void read_thread(void *pointer)
     Connection *conn;
     struct reader_arg *arg;
     long i;
+    Msg *msg;
+    long reason;
+    Octstr *os;
     
     arg = pointer;
     smpp = arg->smpp;
@@ -259,7 +282,8 @@ static void read_thread(void *pointer)
 	    switch (pdu->type) {
 	    case deliver_sm:
     	    	/* XXX UDH */
-		list_produce(smpp->received_msgs, pdu_to_msg(pdu));
+		/* XXX handle error return */
+		bb_smscconn_receive(smpp->conn, pdu_to_msg(pdu));
 		
 		resp = smpp_pdu_create(deliver_sm_resp, 
 					pdu->u.deliver_sm.sequence_number);
@@ -282,12 +306,25 @@ static void read_thread(void *pointer)
 	    	break;
 
 	    case submit_sm_resp:
-		if (pdu->u.submit_sm_resp.command_status != 0) {
+	    	os = octstr_format("%ld", pdu->u.submit_sm.sequence_number);
+    	    	msg = dict_remove(smpp->sent_msgs, os);
+		octstr_destroy(os);
+    	    	if (msg == NULL) {
+		    warning(0, "SMPP: SMSC sent submit_sm_resp "
+		    	       "with wrong sequence number");
+		} else if (pdu->u.submit_sm_resp.command_status != 0) {
 		    error(0, "SMPP: SMSC returned error code 0x%08lu "
 		    	     "in response to submit_sm.",
 			     pdu->u.submit_sm_resp.command_status);
+
+    	    	    reason = smpp_status_to_smscconn_failure_reason(
+			    	pdu->u.submit_sm.command_status);
+    	    	    bb_smscconn_send_failed(smpp->conn, msg, reason);
+		    semaphore_up(smpp->send_semaphore);
+		} else {
+		    bb_smscconn_sent(smpp->conn, msg);
+		    semaphore_up(smpp->send_semaphore);
 		}
-		semaphore_up(smpp->send_semaphore);
 		break;
     
 	    case bind_transmitter_resp:
@@ -347,6 +384,28 @@ static void write_enquire_link_thread(void *arg)
 }
 
 
+static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
+{
+    SMPP_PDU *pdu;
+    
+    pdu = smpp_pdu_create(submit_sm, 
+    	    	    	  counter_increase(smpp->message_id_counter));
+    pdu->u.submit_sm.source_addr = octstr_duplicate(msg->sms.sender);
+    pdu->u.submit_sm.destination_addr = octstr_duplicate(msg->sms.receiver);
+    if (msg->sms.flag_udh) {
+	pdu->u.submit_sm.short_message =
+	    octstr_format("%S%S", msg->sms.udhdata, msg->sms.msgdata);
+	pdu->u.submit_sm.esm_class = SMPP_ESM_CLASS_UDH_INDICATOR;
+	pdu->u.submit_sm.data_coding = SMPP_DATA_CODING_FOR_UDH;
+    } else {
+	pdu->u.submit_sm.short_message = octstr_duplicate(msg->sms.msgdata);
+	charset_latin1_to_gsm(pdu->u.submit_sm.short_message);
+    }
+    
+    return pdu;
+}
+
+
 static void write_thread(void *arg)
 {
     Msg *msg;
@@ -367,23 +426,10 @@ static void write_thread(void *arg)
 	if (msg == NULL)
 	    break;
 
-	pdu = smpp_pdu_create(submit_sm, 
-	    	    	       counter_increase(smpp->message_id_counter));
-	pdu->u.submit_sm.source_addr = msg->sms.sender;
-	msg->sms.sender = NULL;
-	pdu->u.submit_sm.destination_addr = msg->sms.receiver;
-	msg->sms.receiver = NULL;
-    	if (msg->sms.flag_udh) {
-	    pdu->u.submit_sm.short_message =
-	    	octstr_format("%S%S", msg->sms.udhdata, msg->sms.msgdata);
-	    pdu->u.submit_sm.esm_class = SMPP_ESM_CLASS_UDH_INDICATOR;
-	    pdu->u.submit_sm.data_coding = SMPP_DATA_CODING_FOR_UDH;
-	} else {
-	    pdu->u.submit_sm.short_message = msg->sms.msgdata;
-    	    charset_latin1_to_gsm(pdu->u.submit_sm.short_message);
-	    msg->sms.msgdata = NULL;
-	}
-	msg_destroy(msg);
+    	pdu = msg_to_pdu(smpp, msg);
+	os = octstr_format("%ld", pdu->u.submit_sm.sequence_number);
+	dict_put(smpp->sent_msgs, os, msg);
+	octstr_destroy(os);
 	
 	os = smpp_pdu_pack(pdu);
 	conn_write(smpp->transmission, os);
@@ -414,6 +460,7 @@ static int smpp_reconnect(SMPP *smpp)
     SMPP_PDU *bind;
     Octstr *os;
 
+    smpp->conn->status = SMSCCONN_CONNECTING;
     smpp_quit(smpp);
 
     smpp->transmission = conn_open_tcp(smpp->host, smpp->transmit_port);
@@ -462,79 +509,114 @@ static int smpp_reconnect(SMPP *smpp)
 	    	    	create_reader_arg(smpp, smpp->reception));
     smpp->writer = gwthread_create(write_thread, smpp);
     
+    smpp->conn->status = SMSCCONN_ACTIVE;
+    smpp->conn->connect_time = time(NULL);
+    
+    bb_smscconn_connected(smpp->conn);
+
+    return 0;
+}
+
+
+/***********************************************************************
+ * Functions called by smscconn.c via the SMSCConn function pointers.
+ */
+ 
+
+static long queued_cb(SMSCConn *conn)
+{
+    SMPP *smpp;
+
+    smpp = conn->data;
+    conn->load = list_len(smpp->msgs_to_send);
+    return conn->load;
+}
+
+
+static int send_msg_cb(SMSCConn *conn, Msg *msg)
+{
+    SMPP *smpp;
+    
+    smpp = conn->data;
+    list_produce(smpp->msgs_to_send, msg_duplicate(msg));
+    return 0;
+}
+
+
+static int shutdown_cb(SMSCConn *conn, int finish_sending)
+{
+    SMPP *smpp;
+
+    debug("bb.smpp", 0, "Shutting down SMSCConn %s (%s)",
+    	  octstr_get_cstr(conn->name),
+	  finish_sending ? "slow" : "instant");
+
+    conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
+
+    /* XXX implement finish_sending */
+
+    smpp = conn->data;
+    smpp_quit(smpp);
+    smpp_destroy(smpp);
+    
+    debug("bb.smpp", 0, "SMSCConn %s shut down.", 
+    	  octstr_get_cstr(conn->name));
+    conn->status = SMSCCONN_DEAD;
+    bb_smscconn_killed();
     return 0;
 }
 
 
 /***********************************************************************
  * Public interface. This version is suitable for the Kannel bearerbox
- * SMSC interface from the summer of 1999.
+ * SMSCConn interface.
  */
 
 
-SMSCenter *smpp_open(char *host, int port, char *system_id, char *password,
-    	    	     char *system_type, char *address_range,
-		     int receive_port)
+int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
 {
-    SMSCenter *smsc;
-    Octstr *os_host, *os_username, *os_password;
+    Octstr *host;
+    long port;
+    long receive_port;
+    Octstr *username;
+    Octstr *password;
+    Octstr *system_id;
+    Octstr *system_type;
     
-    smsc = smscenter_construct();
-    smsc->type = SMSC_TYPE_SMPP_IP;
-    sprintf(smsc->name, "SMPP:%s:%i/%i:%s:%s", host, port,
-	    (receive_port ? receive_port : port), system_id, system_type);
+    host = cfg_get(grp, octstr_imm("host"));
+    if (cfg_get_integer(&port, grp, octstr_imm("port")) == -1)
+    	port = 0;
+    if (cfg_get_integer(&receive_port, grp, octstr_imm("receive-port")) == -1)
+    	receive_port = 0;
+    username = cfg_get(grp, octstr_imm("smsc-username"));
+    password = cfg_get(grp, octstr_imm("smsc-password"));
+    system_id = cfg_get(grp, octstr_imm("system-id"));
+    system_type = cfg_get(grp, octstr_imm("system-type"));
+    
+    /* XXX check that config is OK */
+    /* XXX implement address-range */
 
-    os_host = octstr_create(host);
-    os_username = octstr_create(system_id);
-    os_password = octstr_create(password);
-    smsc->smpp = smpp_create(os_host, port, receive_port, os_username, 
-    	    	       os_password);
-    octstr_destroy(os_host);
-    octstr_destroy(os_username);
-    octstr_destroy(os_password);
-    
-    if (smpp_reconnect(smsc->smpp) == -1) {
-	smpp_destroy(smsc->smpp);
-    	smscenter_destruct(smsc);
-	return NULL;
+    conn->data = smpp_create(conn, host, port, receive_port, 
+    	    	    	     username, password);
+    conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S", 
+    	    	    	       host, port,
+			       (receive_port ? receive_port : port), 
+			       system_id, system_type);
+
+    octstr_destroy(host);
+    octstr_destroy(username);
+    octstr_destroy(password);
+    octstr_destroy(system_id);
+    octstr_destroy(system_type);
+
+    if (smpp_reconnect(conn->data) == -1) {
+	smpp_destroy(conn->data);
+	return -1;
     }
 
-    return smsc;
-}
+    conn->shutdown = shutdown_cb;
+    conn->queued = queued_cb;
+    conn->send_msg = send_msg_cb;
 
-
-int smpp_reopen(SMSCenter *smsc)
-{
-    return smpp_reconnect(smsc->smpp);
-}
-
-
-int smpp_close(SMSCenter *smsc)
-{
-    smpp_quit(smsc->smpp);
-    smpp_destroy(smsc->smpp);
-    smscenter_destruct(smsc);
     return 0;
-}
-
-
-int smpp_submit_msg(SMSCenter *smsc, Msg *msg)
-{
-    list_produce(smsc->smpp->msgs_to_send, msg_duplicate(msg));
-    return 0;
-}
-
-
-int smpp_receive_msg(SMSCenter *smsc, Msg **msg)
-{
-    *msg = list_consume(smsc->smpp->received_msgs);
-    if (*msg == NULL)
-    	return -1;
-    return 1;
-}
-
-
-int smpp_pending_smsmessage(SMSCenter *smsc)
-{
-    return list_len(smsc->smpp->received_msgs) > 0;
 }

@@ -221,11 +221,6 @@ int smscenter_submit_msg(SMSCenter *smsc, Msg *msg)
             goto error;
         break;
 
-    case SMSC_TYPE_SMPP_IP:
-        if (smpp_submit_msg(smsc, msg) == -1)
-            goto error;
-        break;
-
     case SMSC_TYPE_SEMA_X28:
         if (sema_submit_msg(smsc, msg) == -1)
             goto error;
@@ -280,12 +275,6 @@ int smscenter_receive_msg(SMSCenter *smsc, Msg **msg)
     case SMSC_TYPE_EMI:
     case SMSC_TYPE_EMI_IP:
         ret = emi_receive_msg(smsc, msg);
-        if (ret == -1)
-            goto error;
-        break;
-
-    case SMSC_TYPE_SMPP_IP:
-        ret = smpp_receive_msg(smsc, msg);
         if (ret == -1)
             goto error;
         break;
@@ -353,13 +342,6 @@ int smscenter_pending_smsmessage(SMSCenter *smsc)
         if (ret == -1)
             goto error;
         break;
-
-    case SMSC_TYPE_SMPP_IP:
-        ret = smpp_pending_smsmessage(smsc);
-        if (ret == -1)
-            goto error;
-        break;
-
 
     case SMSC_TYPE_SEMA_X28:
         ret = sema_pending_smsmessage(smsc);
@@ -496,7 +478,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
     Octstr *type, *host, *username, *password, *phone, *device;
     Octstr *preferred_prefix, *denied_prefix;
     Octstr *alt_chars, *allow_ip;
-    Octstr *smpp_system_id, *smpp_system_type, *smpp_address_range;
     Octstr *sema_smscnua, *sema_homenua, *sema_report;
     Octstr *at_modemtype, *at_pin, *at_validityperiod;
 
@@ -520,8 +501,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
     	typeno = SMSC_TYPE_EMI;
     else if (octstr_compare(type, octstr_imm("emi_ip")) == 0)
     	typeno = SMSC_TYPE_EMI_IP;
-    else if (octstr_compare(type, octstr_imm("smpp")) == 0)
-    	typeno = SMSC_TYPE_SMPP_IP;
     else if (octstr_compare(type, octstr_imm("sema")) == 0)
     	typeno = SMSC_TYPE_SEMA_X28;
     else if (octstr_compare(type, octstr_imm("ois")) == 0)
@@ -550,10 +529,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
     alt_chars = cfg_get(grp, octstr_imm("alt-charset"));
 
     allow_ip = cfg_get(grp, octstr_imm("connect-allow-ip"));
-
-    smpp_system_id = cfg_get(grp, octstr_imm("system-id"));
-    smpp_system_type = cfg_get(grp, octstr_imm("system-type"));
-    smpp_address_range = cfg_get(grp, octstr_imm("address-range"));
 
     sema_smscnua = cfg_get(grp, octstr_imm("smsc_nua"));
     sema_homenua = cfg_get(grp, octstr_imm("home_nua"));
@@ -621,21 +596,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
 			       our_port);
         break;
 
-    case SMSC_TYPE_SMPP_IP:
-        if (host == NULL || port == 0 || smpp_system_type == NULL ||
-            smpp_address_range == NULL || smpp_system_id == NULL ||
-            password == NULL)
-            error(0, "Required field missing for SMPP center.");
-        else
-            smsc = smpp_open(octstr_get_cstr(host), 
-	    	    	     port, 
-	    	    	     octstr_get_cstr(smpp_system_id),
-                             octstr_get_cstr(password), 
-			     octstr_get_cstr(smpp_system_type),
-                             octstr_get_cstr(smpp_address_range), 
-			     receive_port);
-        break;
-
     case SMSC_TYPE_SEMA_X28:
         if (device == NULL || sema_smscnua == NULL || sema_homenua == NULL)
             error(0, "Required field missing for SEMA center.");
@@ -698,9 +658,6 @@ SMSCenter *smsc_open(CfgGroup *grp)
     octstr_destroy(denied_prefix);
     octstr_destroy(alt_chars);
     octstr_destroy(allow_ip);
-    octstr_destroy(smpp_system_id);
-    octstr_destroy(smpp_system_type);
-    octstr_destroy(smpp_address_range);
     octstr_destroy(sema_smscnua);
     octstr_destroy(sema_homenua);
     octstr_destroy(sema_report);
@@ -733,9 +690,6 @@ int smsc_reopen(SMSCenter *smsc)
 	break;
     case SMSC_TYPE_EMI:
         ret = emi_reopen(smsc);
-	break;
-    case SMSC_TYPE_SMPP_IP:
-        ret = smpp_reopen(smsc);
 	break;
     case SMSC_TYPE_SEMA_X28:
         ret = sema_reopen(smsc);
@@ -789,11 +743,6 @@ int smsc_close(SMSCenter *smsc)
 
     case SMSC_TYPE_EMI_IP:
         if (emi_close_ip(smsc) == -1)
-            errors = 1;
-        break;
-
-    case SMSC_TYPE_SMPP_IP:
-        if (smpp_close(smsc) == -1)
             errors = 1;
         break;
 

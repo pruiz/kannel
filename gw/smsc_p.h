@@ -27,13 +27,10 @@ enum {
 	SMSC_TYPE_EMI,
 	SMSC_TYPE_EMI_X31,
 	SMSC_TYPE_EMI_IP,
-	SMSC_TYPE_SMPP_IP,
 	SMSC_TYPE_SEMA_X28,
 	SMSC_TYPE_OIS,
 	SMSC_TYPE_AT
 };
-
-typedef struct SMPP SMPP;
 
 /*
  * The implementation of the SMSCenter object. 
@@ -70,7 +67,7 @@ struct SMSCenter {
 	/* TCP/IP */
 	char *hostname;
 	int port;
-        int receive_port; /* if used, with EMI 2.0/SMPP 3.3/OIS 4.5 */
+        int receive_port; /* if used, with EMI 2.0/OIS 4.5 */
 	
 	/* PSTN/ISDN */
 	char *phonenum;
@@ -120,9 +117,6 @@ struct SMSCenter {
         char *emi_backup_allow_ip;     
         int emi_our_port;		/* port to bind us when connecting smsc */
         int emi_secondary_fd;
-
-    	/* SMPP */
-    	SMPP *smpp;
 
         /* SEMA SMS2000 OIS 4.5 X28 */
 
@@ -223,17 +217,6 @@ int emi_close_ip(SMSCenter *smsc);
 int emi_pending_smsmessage(SMSCenter *smsc);
 int emi_submit_msg(SMSCenter *smsc, Msg *msg);
 int emi_receive_msg(SMSCenter *smsc, Msg **msg);
-
-/*
- * Interface to Aldiscon SMS centers using SMPP 3.3.
- */
-SMSCenter *smpp_open(char *hostname, int port, char*, char*, char*, char*,
-		     int receiveport);
-int smpp_reopen(SMSCenter *smsc);
-int smpp_close(SMSCenter *smsc);
-int smpp_pending_smsmessage(SMSCenter *smsc);
-int smpp_submit_msg(SMSCenter *smsc, Msg *msg);
-int smpp_receive_msg(SMSCenter *smsc, Msg **msg);
 
 /*
  * Interface to Sema SMS centers using SM2000

@@ -180,6 +180,9 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg);
 /* Responsible file: smsc_http.c */
 int smsc_http_create(SMSCConn *conn, CfgGroup *cfg);
 
+/* Responsible file: smsc_smpp.c */
+int smsc_smpp_create(SMSCConn *conn, CfgGroup *cfg);
+
 /* ADD NEW CREATE FUNCTIONS HERE
  *
  * int smsc_xxx_create(SMSCConn *conn, CfgGroup *cfg);
