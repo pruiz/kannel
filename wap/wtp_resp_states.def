@@ -310,8 +310,6 @@ ROW(INVOKE_RESP_WAIT,
      TR_Result_Req,
      resp_machine->sar != NULL,
      {
-      WAPEvent *result;
-
       resp_machine->rcr = 0;
 
       start_timer_R(resp_machine);
@@ -424,7 +422,6 @@ ROW(RESULT_WAIT,
     TR_Result_Req,
     resp_machine->sar != NULL,
     {
-     WAPEvent *result;
      resp_machine->rcr = 0;
 
      start_timer_R(resp_machine);
