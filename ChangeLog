@@ -1,5 +1,11 @@
+2003-04-08  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smpp.c: fixed some more typos. Thanks again to 
+      "Rachman Chavik" <rachman.chavik@radius-ed.com> for this.
+    * contrib/mon/kannel.monitor: fixing problems for perl 5.8.0 release with
+      reference hashes. Thanks to "Dariusz Markowicz" <dariuszm@tenbit.pl>.
+
 2003-04-07  Stipe Tolj  <tolj@wapme-systems.de>
-    * gw/smsc/smsc_smpp.c: fixed an obivious type. Patch provided by 
+    * gw/smsc/smsc_smpp.c: fixed an obivious typo. Patch provided by 
       "Rachman Chavik" <rchavik@attglobal.net>. Thanks a lot.
 
 2003-04-06  Stipe Tolj  <tolj@wapme-systems.de>
