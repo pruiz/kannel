@@ -354,21 +354,23 @@ int conn_wait(Connection *conn, double seconds) {
 	}
 
 	if (ret & (POLLOUT | POLLIN)) {
-		lock_out(conn);
-
 		/* If POLLOUT is on, then we must have wanted
 		 * to write something. */
-		if (ret & POLLOUT)
+		if (ret & POLLOUT) {
+			lock_out(conn);
 			unlocked_write(conn);
+			unlock_out(conn);
+		}
 
 		/* Since we normally select for reading, we must
 		 * try to read here.  Otherwise, if the caller loops
 		 * around conn_wait without making conn_read* calls
 		 * in between, we will keep polling this same data. */
-		if (ret & POLLIN)
+		if (ret & POLLIN) {
+			lock_in(conn);
 			unlocked_read(conn);
-
-		unlock_out(conn);
+			unlock_in(conn);
+		}
 	}
 
 	return 0;
