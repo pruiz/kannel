@@ -52,7 +52,7 @@ Mutex *mutex_create_real(void);
  * "protected".
  */
 #ifdef MUTEX_STATS
-#define mutex_init_static(mutex) mutex_make_measured(mutex_init_static_real(), __FILE__, __LINE__)
+#define mutex_init_static(mutex) mutex_make_measured(mutex_init_static_real(mutex), __FILE__, __LINE__)
 #else
 #define mutex_init_static(mutex) mutex_init_static_real(mutex)
 #endif

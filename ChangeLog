@@ -1,3 +1,8 @@
+2000-09-18  Derry Hamilton  <rasilon@tardis.ed.ac.uk>
+
+	* gwlib/thread.h: changed the call to mutex_init_static_real
+	to actually pass the mutex when MUTEX_STATS are required.
+
 2000-09-18  Kalle Marjola  <rpr@wapit.com>
 
 	* gwlib/utils.c (get_and_set_debugs): PANIC if unknown option is
