@@ -1255,8 +1255,12 @@ bearerbox-host = localhost
     <row><entry><literal>syslog-level</literal></entry>
      <entry>number</entry>
      <entry valign=bottom>
-         Minimum log level for messages sent to syslog, the UNIX
-	 system log daemon.
+	 Messages of this log level or higher will also be
+	 sent to syslog, the UNIX system log daemon.  The wapbox
+	 logs under the 'daemon' category.
+	 The default is not to use syslog, and you can set that
+	 explicitly by setting <literal>syslog-level</literal>
+	 to 'none'.
      </entry></row>
 
 

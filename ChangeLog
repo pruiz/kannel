@@ -1,3 +1,7 @@
+2001-02-20  Richard Braakman  <dark@wapit.com>
+
+	* userguide: Explained more about syslog-level.
+
 2001-02-16  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsbox.c: Fix a potential buffer overflow in sms_split(),
