@@ -1,6 +1,7 @@
 /*****************************************************************************
 * smsc_smpp.c - Short Message Peer to Peer Provisioning Protocol 3.3
 * Mikael Gueck for WapIT Ltd.
+* $Revision: 1.2 $
 */
 
 #include <errno.h>
