@@ -8,7 +8,6 @@
 #include <string.h>
 #include "smpp_pdu.h"
 
-
 #define MIN_SMPP_PDU_LEN    (4*4)
 #define MAX_SMPP_PDU_LEN    (1024)
 
@@ -17,7 +16,7 @@ static unsigned long decode_integer(Octstr *os, long pos, int octets)
 {
     unsigned long u;
     int i;
-    
+
     gw_assert(octstr_len(os) >= pos + octets);
 
     u = 0;
@@ -60,11 +59,14 @@ static Octstr *copy_until_nul(Octstr *os, long *pos, long max_octets)
 SMPP_PDU *smpp_pdu_create(unsigned long type, unsigned long seq_no)
 {
     SMPP_PDU *pdu;
-    
+
     pdu = gw_malloc(sizeof(*pdu));
     pdu->type = type;
-    
+
     switch (type) {
+    #define OPTIONAL_BEGIN(num_expected) p->optional_parameters = dict_create(num_expected, (void (*)(void *))octstr_destroy);
+    #define TLV(tag_id, min_len, max_len)
+    #define OPTIONAL_END
     #define INTEGER(name, octets) \
    	if (strcmp(#name, "command_id") == 0) p->name = type; \
     	else if (strcmp(#name, "sequence_number") == 0) p->name = seq_no; \
@@ -83,7 +85,7 @@ SMPP_PDU *smpp_pdu_create(unsigned long type, unsigned long seq_no)
     	gw_free(pdu);
 	return NULL;
     }
-    
+
     return pdu;
 }
 
@@ -94,6 +96,9 @@ void smpp_pdu_destroy(SMPP_PDU *pdu)
     	return;
 
     switch (pdu->type) {
+    #define OPTIONAL_BEGIN(num_expected) dict_destroy(p->optional_parameters);
+    #define TLV(tag_id, min_len, max_len)
+    #define OPTIONAL_END
     #define INTEGER(name, octets) p->name = 0; /* Make sure "p" is used */
     #define NULTERMINATED(name, max_octets) octstr_destroy(p->name);
     #define OCTETS(name, field_giving_octets) octstr_destroy(p->name);
@@ -111,13 +116,18 @@ Octstr *smpp_pdu_pack(SMPP_PDU *pdu)
 {
     Octstr *os;
     Octstr *temp;
-    
+
     os = octstr_create("");
+
+    gw_assert(pdu != NULL);
 
     /*
      * Fix lengths of octet string fields.
      */
     switch (pdu->type) {
+    #define OPTIONAL_BEGIN(num_expected)
+    #define TLV(tag_id, min_len, max_len)
+    #define OPTIONAL_END
     #define INTEGER(name, octets) p = *(&p);
     #define NULTERMINATED(name, max_octets) p = *(&p);
     #define OCTETS(name, field_giving_octets) \
@@ -130,9 +140,29 @@ Octstr *smpp_pdu_pack(SMPP_PDU *pdu)
     }
 
     switch (pdu->type) {
+    #define OPTIONAL_BEGIN(num_expected)
+    #define TLV(tag_id, min_len, max_len)                                               \
+        {   /* Add optional parameter - if existing */                                  \
+            short tag_id_buffer = tag_id;                                               \
+            Octstr *opt_tag = octstr_create_from_data_real((char*) &tag_id_buffer, 2);  \
+            Octstr *opt_val = dict_get(p->optional_parameters, opt_tag);                \
+            if (opt_val != NULL) {                                                      \
+                long opt_len = octstr_len(opt_val);                                     \
+                debug("smpp_pdu", 0, "Packing optional parameter "                      \
+                                     "(tag = %d, val = %s, len = %ld)",                 \
+                      tag_id, octstr_get_cstr(opt_val), opt_len);                       \
+                gw_assert(min_len == -1 || (min_len <= opt_len && opt_len <= max_len)); \
+                octstr_append(os, opt_tag);                                             \
+                octstr_append_data(os, (char*) &opt_len, 2);                            \
+                octstr_append(os, opt_val);                                             \
+            }                                                                           \
+            octstr_destroy(opt_tag);                                                    \
+        } 
+    #define OPTIONAL_END
     #define INTEGER(name, octets) \
     	append_encoded_integer(os, p->name, octets);
     #define NULTERMINATED(name, max_octets) \
+        gw_assert(octstr_len(p->name) < max_octets); \
         if (p->name != NULL) { \
             if (octstr_len(p->name) >= max_octets) { \
                 warning(0, "SMPP: PDU element <%s> to long " \
@@ -167,22 +197,58 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
 {
     SMPP_PDU *pdu;
     unsigned long type;
-    long pos;
-    
-    if (octstr_len(data_without_len) < 4) {
-	error(0, "SMPP: PDU was too short (%ld bytes).", 
-	      octstr_len(data_without_len));
-	return NULL;
+    long len, pos;
+
+    len = octstr_len(data_without_len);
+
+    if (len < 4) {
+        error(0, "SMPP: PDU was too short (%ld bytes).",
+              octstr_len(data_without_len));
+        return NULL;
     }
 
     type = decode_integer(data_without_len, 0, 4);
     pdu = smpp_pdu_create(type, 0);
     if (pdu == NULL)
-    	return NULL;
-    
+        return NULL;
+
     pos = 0;
 
     switch (type) {
+    #define OPTIONAL_BEGIN(num_expected)                                                \
+        {   /* Rread optional parameters */                                             \
+            while (pos < len) {                                                         \
+                Octstr *opt_tag = NULL;                                                 \
+                Octstr *opt_val = NULL;                                                 \
+                Octstr *tag_str = NULL;                                                 \
+                int opt_len = 0;                                                        \
+                int tag_id_buffer = 0;                                                  \
+                opt_tag = octstr_copy(data_without_len, pos, 2); pos += 2;              \
+                opt_len = octstr_get_char(data_without_len, pos); pos++;                \
+                //opt_len += octstr_get_char(data_without_len, pos) * 256; pos++;       \
+                debug("smpp_pdu", 0, "Optional parameter length read as %d", opt_len);  \
+                opt_val = octstr_copy(data_without_len, pos, opt_len); pos += opt_len;
+    #define TLV(tag_id, min_len, max_len)                                               \
+                tag_id_buffer = tag_id;                                                 \
+                tag_str = octstr_create_from_data_real((char*) &tag_id_buffer, 2);      \
+                if (octstr_compare(opt_tag, tag_str) == 0) {                            \
+                    debug("smpp_pdu", 0, "PDU type = %ld /// opt_len = %d "             \
+                                         "(min = %d, max = %d) opt_val = %s",           \
+                          type, opt_len, min_len, max_len, octstr_get_cstr(opt_val));   \
+                    if (min_len == -1 || (min_len <= opt_len && opt_len <= max_len)) {  \
+                        dict_put(p->optional_parameters, opt_tag,                       \
+                                 octstr_duplicate(opt_val));                            \
+                    } else {                                                            \
+                        debug("smpp_pdu", 0, "Optional field (%d) with invalid "        \
+                                             "length dropped.", tag_id);                \
+                    }                                                                   \
+                }                                                                       \
+                octstr_destroy(tag_str);
+    #define OPTIONAL_END                                                                \
+                octstr_destroy(opt_val);                                                \
+                octstr_destroy(opt_tag);                                                \
+            }                                                                           \
+        } 
     #define INTEGER(name, octets) \
     	p->name = decode_integer(data_without_len, pos, octets); \
 	pos += octets;
@@ -191,9 +257,14 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
     #define OCTETS(name, field_giving_octets) \
     	p->name = octstr_copy(data_without_len, pos, \
 	    	    	      p->field_giving_octets); \
-    	gw_assert(p->field_giving_octets == \
-	    	  (unsigned long) octstr_len(p->name)); \
-	pos += p->field_giving_octets;
+        if (p->field_giving_octets != (unsigned long) octstr_len(p->name)) { \
+            error(0, "smpp_pdu: error while unpacking 'short_message', " \
+                     "len is %ld but should have been %ld, dropping.", \
+                     octstr_len(p->name), p->field_giving_octets); \
+            return NULL; \
+        } else { \
+            pos += p->field_giving_octets; \
+        }
     #define PDU(name, id, fields) \
     	case id: { struct name *p = &pdu->u.name; fields } break;
     #include "smpp_pdu.def"
@@ -210,6 +281,9 @@ void smpp_pdu_dump(SMPP_PDU *pdu)
     debug("sms.smpp", 0, "SMPP PDU %p dump:", (void *) pdu);
     debug("sms.smpp", 0, "  type_name: %s", pdu->type_name);
     switch (pdu->type) {
+    #define OPTIONAL_BEGIN(num_expected)
+    #define TLV(tag_id, min_len, max_len)
+    #define OPTIONAL_END
     #define INTEGER(name, octets) \
     	debug("sms.smpp", 0, "  %s: %lu = 0x%08lx", #name, p->name, p->name);
     #define NULTERMINATED(name, max_octets) \
@@ -232,7 +306,7 @@ long smpp_pdu_read_len(Connection *conn)
     Octstr *os;
     char buf[4];    /* The length is 4 octets. */
     long len;
-    
+
     os = conn_read_fixed(conn, sizeof(buf));
     if (os == NULL)
     	return 0;
@@ -256,7 +330,7 @@ long smpp_pdu_read_len(Connection *conn)
 Octstr *smpp_pdu_read_data(Connection *conn, long len)
 {
     Octstr *os;
-    
+
     os = conn_read_fixed(conn, len - 4);    /* `len' includes itself. */
     return os;
 }

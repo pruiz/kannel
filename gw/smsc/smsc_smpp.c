@@ -1,7 +1,8 @@
 /* 
  * smsc_smpp.c - SMPP v3.3 and v3.4 implementation 
  * 
- * Lars Wirzenius 
+ * Lars Wirzenius
+ * Stipe Tolj <tolj@wapme-systems.de>
  */ 
   
 /* XXX check SMSCConn conformance */ 
@@ -311,7 +312,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     if (smpp->dest_addr_ton > -1 && smpp->dest_addr_npi > -1) { 
         pdu->u.submit_sm.dest_addr_ton = smpp->dest_addr_ton; 
         pdu->u.submit_sm.dest_addr_npi = smpp->dest_addr_npi; 
-        debug("bb.sms.smpp", 0, "SMPP[%s]: Manually forced dest addr ton = %d, source add npi = %d", 
+        debug("bb.sms.smpp", 0, "SMPP[%s]: Manually forced dest addr ton = %d, dest add npi = %d", 
               octstr_get_cstr(smpp->conn->id), smpp->dest_addr_ton, 
               smpp->dest_addr_npi); 
     } else { 

@@ -5,6 +5,15 @@
  */
 
 /*
+ * Remarks by Daniel Lukic <lukic@vivatech.de>:
+ * 
+ * 1. submit_multi does not handle unsuccess_sme(s). A "MULTIPLE" macro would be
+ * needed. No time for that now. Maybe switch to some kind of reg-ex handling?
+ */
+
+#include "smpp_pdu_opt.def"
+
+/*
  * XXX Implementation note:
  * 
  * The PDUs bind_transmitter_resp, bind_receiver_resp, and submit_sm_resp
@@ -31,6 +40,18 @@
 
 #ifndef OCTETS
 #error Macro OCTETS not defined.
+#endif
+
+#ifndef OPTIONAL_BEGIN
+#error Macro OPTIONAL_BEGIN not defined.
+#endif
+
+#ifndef TLV
+#error Macro TLV not defined.
+#endif
+
+#ifndef OPTIONAL_END
+#error Macro OPTIONAL_END not defined.
 #endif
 
 /*
@@ -62,7 +83,10 @@ PDU(bind_transmitter,
 PDU(bind_transmitter_resp,
     0x80000002,
     HEADER
-    /* XXX not included for now: NULTERMINATED(system_id, 16) */
+    NULTERMINATED(system_id, 16)
+    OPTIONAL_BEGIN(1)
+    TLV(SMPP_SC_interface_version, 1, 1)
+    OPTIONAL_END
 )
 
 PDU(bind_receiver,
@@ -80,7 +104,10 @@ PDU(bind_receiver,
 PDU(bind_receiver_resp,
     0x80000001,
     HEADER
-    /* XXX not included for now: NULTERMINATED(system_id, 16) */
+    NULTERMINATED(system_id, 16)
+    OPTIONAL_BEGIN(1)
+    TLV(SMPP_SC_interface_version, 1, 1)
+    OPTIONAL_END
 )
 
 PDU(bind_transceiver,
@@ -98,7 +125,17 @@ PDU(bind_transceiver,
 PDU(bind_transceiver_resp,
     0x80000009,
     HEADER
-    /* XXX not included for now: NULTERMINATED(system_id, 16) */
+    NULTERMINATED(system_id, 16)
+    OPTIONAL_BEGIN(1)
+    TLV(SMPP_SC_interface_version, 1, 1)
+    OPTIONAL_END
+)
+
+PDU(outbind,
+    0x0000000B,
+    HEADER
+    NULTERMINATED(system_id, 16)
+    NULTERMINATED(password, 9)
 )
 
 PDU(unbind,
@@ -108,6 +145,11 @@ PDU(unbind,
 
 PDU(unbind_resp,
     0x80000006,
+    HEADER
+)
+
+PDU(generic_nack,
+    0x00000000,
     HEADER
 )
 
@@ -132,12 +174,95 @@ PDU(submit_sm,
     INTEGER(sm_default_msg_id, 1)
     INTEGER(sm_length, 1)
     OCTETS(short_message, sm_length)
+    OPTIONAL_BEGIN(28)
+    TLV(SMPP_user_message_reference, 2, 2)
+    TLV(SMPP_source_port, 2, 2)
+    TLV(SMPP_source_addr_subunit, 1, 1)
+    TLV(SMPP_destination_port, 2, 2)
+    TLV(SMPP_dest_addr_subunit, 1, 1)
+    TLV(SMPP_sar_msg_ref_num, 2, 2)
+    TLV(SMPP_sar_total_segments, 1, 1)
+    TLV(SMPP_sar_segment_seqnum, 1, 1)
+    TLV(SMPP_more_messages_to_send, 1, 1)
+    TLV(SMPP_payload_type, 1, 1)
+    TLV(SMPP_message_payload, 0, 65536)
+    TLV(SMPP_privacy_indicator, 1, 1)
+    TLV(SMPP_callback_num, 4, 19)
+    TLV(SMPP_callback_num_pres_ind, 1, 1)
+    TLV(SMPP_callback_num_atag, 0, 65)
+    TLV(SMPP_source_subaddress, 2, 23)
+    TLV(SMPP_dest_subaddress, 2, 23)
+    TLV(SMPP_user_response_code, 1, 1)
+    TLV(SMPP_display_time, 1, 1)
+    TLV(SMPP_sms_signal, 2, 2)
+    TLV(SMPP_ms_validity, 1, 1)
+    TLV(SMPP_ms_msg_wait_facilities, 1, 1)
+    TLV(SMPP_number_of_messages, 1, 1)
+    TLV(SMPP_alert_on_message_delivery, 0, 0)
+    TLV(SMPP_language_indicator, 1, 1)
+    TLV(SMPP_its_reply_type, 1, 1)
+    TLV(SMPP_its_session_info, 2, 2)
+    TLV(SMPP_ussd_service_op, 1, 1)
+    OPTIONAL_END
 )
 
 PDU(submit_sm_resp,
     0x80000004,
     HEADER
     NULTERMINATED(message_id, 65)
+)
+
+PDU(submit_multi,
+    0x00000021,
+    HEADER
+    NULTERMINATED(service_type, 6)
+    INTEGER(source_addr_ton, 1)
+    INTEGER(source_addr_npi, 1)
+    NULTERMINATED(source_addr, 21)
+    INTEGER(number_of_dests, 1)
+    NULTERMINATED(dest_address_es, 254 * 24)
+    INTEGER(esm_class, 1)
+    INTEGER(protocol_id, 1)
+    INTEGER(priority_flag, 1)
+    NULTERMINATED(schedule_delivery_time, 17)
+    NULTERMINATED(validity_period, 17)
+    INTEGER(registered_delivery, 1)
+    INTEGER(replace_if_present_flag, 1)
+    INTEGER(data_coding, 1)
+    INTEGER(sm_default_msg_id, 1)
+    INTEGER(sm_length, 1)
+    OCTETS(short_message, sm_length)
+    OPTIONAL_BEGIN(22)
+    TLV(SMPP_user_message_reference, 2, 2)
+    TLV(SMPP_source_port, 2, 2)
+    TLV(SMPP_source_addr_subunit, 1, 1)
+    TLV(SMPP_destination_port, 2, 2)
+    TLV(SMPP_dest_addr_subunit, 1, 1)
+    TLV(SMPP_sar_msg_ref_num, 2, 2)
+    TLV(SMPP_sar_total_segments, 1, 1)
+    TLV(SMPP_sar_segment_seqnum, 1, 1)
+    TLV(SMPP_payload_type, 1, 1)
+    TLV(SMPP_message_payload, 0, 65536)
+    TLV(SMPP_privacy_indicator, 1, 1)
+    TLV(SMPP_callback_num, 4, 19)
+    TLV(SMPP_callback_num_pres_ind, 1, 1)
+    TLV(SMPP_callback_num_atag, 0, 65)
+    TLV(SMPP_source_subaddress, 2, 23)
+    TLV(SMPP_dest_subaddress, 2, 23)
+    TLV(SMPP_display_time, 1, 1)
+    TLV(SMPP_sms_signal, 2, 2)
+    TLV(SMPP_ms_validity, 1, 1)
+    TLV(SMPP_ms_msg_wait_facilities, 1, 1)
+    TLV(SMPP_alert_on_message_delivery, 0, 0)
+    TLV(SMPP_language_indicator, 1, 1)
+    OPTIONAL_END
+)
+
+PDU(submit_multi_resp,
+    0x80000021,
+    HEADER
+    NULTERMINATED(message_id, 65)
+    INTEGER(no_unsuccess, 1)
 )
 
 PDU(deliver_sm,
@@ -161,12 +286,156 @@ PDU(deliver_sm,
     INTEGER(sm_default_msg_id, 1)
     INTEGER(sm_length, 1)
     OCTETS(short_message, sm_length)
+    OPTIONAL_BEGIN(18)
+    TLV(SMPP_user_message_reference, 2, 2)
+    TLV(SMPP_source_port, 2, 2)
+    TLV(SMPP_destination_port, 2, 2)
+    TLV(SMPP_sar_msg_ref_num, 2, 2)
+    TLV(SMPP_sar_total_segments, 1, 1)
+    TLV(SMPP_sar_segment_seqnum, 1, 1)
+    TLV(SMPP_user_response_code, 1, 1)
+    TLV(SMPP_privacy_indicator, 1, 1)
+    TLV(SMPP_payload_type, 1, 1)
+    TLV(SMPP_message_payload, 0, 65536)
+    TLV(SMPP_callback_num, 4, 19)
+    TLV(SMPP_source_subaddress, 2, 23)
+    TLV(SMPP_dest_subaddress, 2, 23)
+    TLV(SMPP_language_indicator, 1, 1)
+    TLV(SMPP_its_session_info, 2, 2)
+    TLV(SMPP_network_error_code, 3, 3)
+    TLV(SMPP_message_state, 1, 1)
+    TLV(SMPP_receipted_message_id, 1, 65)
+    OPTIONAL_END
 )
 
 PDU(deliver_sm_resp,
     0x80000005,
     HEADER
     NULTERMINATED(message_id, 1)
+)
+
+PDU(data_sm,
+    0x00000103,
+    HEADER
+    NULTERMINATED(service_type, 6)
+    INTEGER(source_addr_ton, 1)
+    INTEGER(source_addr_npi, 1)
+    NULTERMINATED(source_addr, 65)
+    INTEGER(dest_addr_ton, 1)
+    INTEGER(dest_addr_npi, 1)
+    NULTERMINATED(destination_addr, 65)
+    INTEGER(esm_class, 1)
+    INTEGER(registered_delivery, 1)
+    INTEGER(data_coding, 1)
+    OPTIONAL_BEGIN(38)
+    TLV(SMPP_source_port, 2, 2)
+    TLV(SMPP_source_addr_subunit, 1, 1)
+    TLV(SMPP_source_network_type, 1, 1)
+    TLV(SMPP_source_bearer_type, 1, 1)
+    TLV(SMPP_source_telematics_id, 1, 1)
+    TLV(SMPP_destination_port, 2, 2)
+    TLV(SMPP_dest_addr_subunit, 1, 1)
+    TLV(SMPP_dest_network_type, 1, 1)
+    TLV(SMPP_dest_bearer_type, 1, 1)
+    TLV(SMPP_dest_telematics_id, 2, 2)
+    TLV(SMPP_sar_msg_ref_num, 2, 2)
+    TLV(SMPP_sar_total_segments, 1, 1)
+    TLV(SMPP_sar_segment_seqnum, 1, 1)
+    TLV(SMPP_more_messages_to_send, 1, 1)
+    TLV(SMPP_qos_time_to_live, 4, 4)
+    TLV(SMPP_payload_type, 1, 1)
+    TLV(SMPP_message_payload, 0, 65536)
+    TLV(SMPP_set_dpf, 1, 1)
+    TLV(SMPP_receipted_message_id, 1, 65)
+    TLV(SMPP_message_state, 1, 1)
+    TLV(SMPP_network_error_code, 3, 3)
+    TLV(SMPP_user_message_reference, 2, 2)
+    TLV(SMPP_privacy_indicator, 1, 1)
+    TLV(SMPP_callback_num, 4, 19)
+    TLV(SMPP_callback_num_pres_ind, 1, 1)
+    TLV(SMPP_callback_num_atag, 0, 65)
+    TLV(SMPP_source_subaddress, 2, 23)
+    TLV(SMPP_dest_subaddress, 2, 23)
+    TLV(SMPP_user_response_code, 1, 1)
+    TLV(SMPP_display_time, 1, 1)
+    TLV(SMPP_sms_signal, 2, 2)
+    TLV(SMPP_ms_validity, 1, 1)
+    TLV(SMPP_ms_msg_wait_facilities, 1, 1)
+    TLV(SMPP_number_of_messages, 1, 1)
+    TLV(SMPP_alert_on_message_delivery, 0, 0)
+    TLV(SMPP_language_indicator, 1, 1)
+    TLV(SMPP_its_reply_type, 1, 1)
+    TLV(SMPP_its_session_info, 2, 2)
+    OPTIONAL_END
+)
+
+PDU(data_sm_resp,
+    0x80000103,
+    HEADER
+    NULTERMINATED(message_id, 65)
+    OPTIONAL_BEGIN(28)
+    TLV(SMPP_delivery_failure_reason, 1, 1)
+    TLV(SMPP_network_error_code, 3, 3)
+    TLV(SMPP_additional_status_info_text, 1, 256)
+    TLV(SMPP_dpf_result, 1, 1)
+    OPTIONAL_END
+)
+
+PDU(query_sm,
+    0x00000003,
+    HEADER
+    NULTERMINATED(message_id, 65)
+    INTEGER(source_addr_ton, 1)
+    INTEGER(source_addr_npi, 1)
+    NULTERMINATED(source_addr, 21)
+)
+
+PDU(query_sm_resp,
+    0x80000003,
+    HEADER
+    NULTERMINATED(message_id, 65)
+    NULTERMINATED(final_date, 17)
+    INTEGER(message_state, 1)
+    INTEGER(error_code, 1)
+)
+
+PDU(cancel_sm,
+    0x00000008,
+    HEADER
+    NULTERMINATED(service_type, 6)
+    NULTERMINATED(message_id, 65)
+    INTEGER(source_addr_ton, 1)
+    INTEGER(source_addr_npi, 1)
+    NULTERMINATED(source_addr, 21)
+    INTEGER(dest_addr_ton, 1)
+    INTEGER(dest_addr_npi, 1)
+    NULTERMINATED(destination_addr, 65)
+)
+
+PDU(cancel_sm_resp,
+    0x80000008,
+    HEADER
+)
+
+PDU(replace_sm,
+    0x00000007,
+    HEADER
+    NULTERMINATED(service_type, 6)
+    NULTERMINATED(message_id, 65)
+    INTEGER(source_addr_ton, 1)
+    INTEGER(source_addr_npi, 1)
+    NULTERMINATED(source_addr, 21)
+    NULTERMINATED(schedule_delivery_time, 17)
+    NULTERMINATED(validity_period, 17)
+    INTEGER(registered_delivery, 1)
+    INTEGER(sm_default_msg_id, 1)
+    INTEGER(sm_length, 1)
+    OCTETS(short_message, sm_length)
+)
+
+PDU(replace_sm_resp,
+    0x80000007,
+    HEADER
 )
 
 PDU(enquire_link,
@@ -179,9 +448,18 @@ PDU(enquire_link_resp,
     HEADER
 )
 
-PDU(generic_nack_resp,
-    0x80000000,
+PDU(alert_notification,
+    0x00000102,
     HEADER
+    INTEGER(source_addr_ton, 1)
+    INTEGER(source_addr_npi, 1)
+    NULTERMINATED(source_addr, 21)
+    INTEGER(esme_addr_ton, 1)
+    INTEGER(esme_addr_npi, 1)
+    NULTERMINATED(esme_addr, 65)
+    OPTIONAL_BEGIN(1)
+    TLV(SMPP_ms_availability_status, 1, 1)
+    OPTIONAL_END
 )
 
 #undef PDU
@@ -189,3 +467,7 @@ PDU(generic_nack_resp,
 #undef NULTERMINATED
 #undef OCTETS
 #undef HEADER
+#undef OPTIONAL_BEGIN
+#undef TLV
+#undef OPTIONAL_END
+

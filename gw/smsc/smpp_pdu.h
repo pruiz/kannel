@@ -10,9 +10,13 @@
 
 
 #include "gwlib/gwlib.h"
+#include "gwlib/dict.h"
 
 
 enum {
+    #define OPTIONAL_BEGIN(num_expected)
+    #define TLV(tag_id, min_len, max_len)
+    #define OPTIONAL_END
     #define INTEGER(name, octets)
     #define NULTERMINATED(name, max_octets)
     #define OCTETS(name, field_giving_octets)
@@ -27,6 +31,9 @@ struct SMPP_PDU {
     unsigned long type;
     const char *type_name;
     union {
+	#define OPTIONAL_BEGIN(num_expected) Dict * optional_parameters;
+	#define TLV(tag_id, min_len, max_len)
+	#define OPTIONAL_END
 	#define INTEGER(name, octets) unsigned long name;
 	#define NULTERMINATED(name, max_octets) Octstr *name;
 	#define OCTETS(name, field_giving_octets) Octstr *name;
@@ -37,7 +44,7 @@ struct SMPP_PDU {
 
 
 /******************************************************************************
-* Numering Plan Indicator and Type of Number codes from 
+* Numering Plan Indicator and Type of Number codes from
 * GSM 03.40 Version 5.3.0 Section 9.1.2.5.
 * http://www.etsi.org/
 */
@@ -51,7 +58,7 @@ struct SMPP_PDU {
 #define GSM_ADDR_TON_EXTENSION        0x00000007 /* Reserved */
 
 #define GSM_ADDR_NPI_UNKNOWN          0x00000000
-#define GSM_ADDR_NPI_E164             0x00000001 
+#define GSM_ADDR_NPI_E164             0x00000001
 #define GSM_ADDR_NPI_X121             0x00000003
 #define GSM_ADDR_NPI_TELEX            0x00000004
 #define GSM_ADDR_NPI_NATIONAL         0x00000008
