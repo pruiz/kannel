@@ -451,7 +451,7 @@ int smsc2_stop_smsc(Octstr *id)
     }
     conn = list_get(smsc_list, i);
     if (conn != NULL && conn->status == SMSCCONN_DEAD) {
-        error(0, "HTTP: Could not shutdown already deaed smsc-id `%s'", 
+        error(0, "HTTP: Could not shutdown already dead smsc-id `%s'", 
               octstr_get_cstr(id));
         return -1;
     }
