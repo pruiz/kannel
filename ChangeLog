@@ -1,3 +1,9 @@
+2002-04-06  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsc_emi2.c: Fixed (I hope) a bug when smsc disconnects us and
+      kannel tries to connect to primary and alternate smsc (it's hard to
+      duplicate the error)
+    * gw/urltrans.c: some identation cleaning
+
 2002-04-04  Stipe Tolj  <tolj@wapme-systems.de>
     * test/test_xmlrpc.c: fixed some memory leaks
 
