@@ -389,6 +389,20 @@ int http_post(Octstr *url, List *request_headers, Octstr *request_body,
     *reply_headers = NULL;
     *reply_body = NULL;
 
+    /* Add a Content-Length header.  Override an existing one, if
+     * necessary.  We must have an accurate one in order to use the
+     * connection for more than a single request. */
+    /* XXX: Modifying the caller-supplied headers is evil.  Perhaps
+     * build_request should take care of this? */
+    http_header_remove_all(request_headers, "Content-Length");
+    if (request_body == NULL) {
+        http_header_add(request_headers, "Content-Length", "0");
+    } else {
+        char buf[128];
+        sprintf(buf, "%ld", octstr_len(request_body));
+        http_header_add(request_headers, "Content-Length", buf);
+    }
+
     p = send_request(url, request_headers, request_body, "POST");
 
     if (p == NULL)
@@ -473,9 +487,7 @@ int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
 		   Octstr **reply_body)
 {
     int i, ret;
-    long len;
     Octstr *h;
-    char buf[16];
 
     gwlib_assert_init();
     gw_assert(url != NULL);
@@ -484,25 +496,6 @@ int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
     gw_assert(request_body != NULL);
     gw_assert(reply_headers != NULL);
     gw_assert(reply_body != NULL);
-
-
-    /*
-     * it is necessary to add some headers to support the Post request.
-     * Having it here instead of the http_post function means it is 
-     * only called once.
-     * 
-     * The Content-Length is added to the Post request so that the
-     * receiver will be calculate the length of the request body.
-     *  
-     */
-
-    if (request_body != NULL) {
-        len = octstr_len(request_body);
-    } else {
-        len = 0;
-    }
-    sprintf(buf, "%ld", len);
-    http_header_add(request_headers, "Content-Length", buf);
 
     ret = -1;
 

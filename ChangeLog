@@ -1,3 +1,8 @@
+2000-10-23  Richard Braakman  <dark@wapit.com>
+
+	* Bugfix: HTTP POST requests have a Content-Length again.
+	Thanks to Stipe Tolj for spotting the problem.
+
 2000-10-20  Kalle Marjola  <rpr@wapit.com>
 
 	* doc/userguide/userguide.xml: wrote appendix B, using fake SMS
