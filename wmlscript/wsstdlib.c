@@ -204,6 +204,23 @@ static WsStdLibFuncReg lib_crypto_functions[] =
         {"signText", 4, 16},
     };
 
+static WsStdLibFuncReg lib_efi_functions[] =
+    {
+        {"set", 3, 0},
+        {"get", 2, 1},
+        {"getFirstName", 1, 2},
+        {"getNextName", 2, 3},
+        {"getAllAttributes", 1, 4},
+        {"getAttribute", 2, 5},
+        {"getClassProperty", 2, 6},
+        {"getUnits", 1, 7},
+        {"query", 1, 8},
+        {"invoke", 3, 9},
+        {"call", 3, 10},
+        {"status", 1, 11},
+        {"control", 3, 12},
+    };
+
 static WsStdLibReg libraries[] =
     {
         {"Lang", 0, NF(lib_lang_functions), lib_lang_functions},
@@ -214,6 +231,7 @@ static WsStdLibReg libraries[] =
          lib_wmlbrowser_functions},
         {"Dialogs", 5, NF(lib_dialogs_functions), lib_dialogs_functions},
         {"Crypto", 6, NF(lib_crypto_functions), lib_crypto_functions},
+        {"EFI", 7, NF(lib_efi_functions), lib_efi_functions},
         {"WTAPublic", 512, NF(lib_wtapublic_functions), lib_wtapublic_functions},
         {"WTAVoiceCall", 513, NF(lib_wtavoicecall_functions), lib_wtavoicecall_functions},
         {"WTANetText", 514, NF(lib_wtanettext_functions), lib_wtanettext_functions},
