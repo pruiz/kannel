@@ -1,3 +1,9 @@
+2000-10-24  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/urltrans.c: added missing (disappeared?) room reservation for
+	%q and %Q in get_pattern, and added note why sender and receiver
+	is switched. Thanks for Juho-Pekka Virolainen for noticing this.
+
 2000-10-24  Yann Muller  <ymuller@3glab.com>
 
 	* gw/smsc_at.c: Added support for Falcom A2D modem, thanks to
