@@ -1,4 +1,4 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.9
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.9.1
 
 This is a DEVELOPMENT version. It is stable, but should be good enough
 for testing things out. Please do try it out and report problems to
@@ -7,11 +7,14 @@ devel@kannel.org (the development mailing list) or bugs@kannel.org
 
 Change summary from version 0.8:
 
-* Uses new HTTP implementation in smsbox and wapbox. Bearerbox will follow
-  later, when it is re-written. Internal sendsms in internal smsbox in
-  old bearerbox commented out.
+* New HTTP implementation.
 
-* Beginnings of new bearerbox added, gw/bb_core.c.
+* New, faster bearerbox.
+
+* All boxes now share a single configuration file, with a new format.
+
+* Wapbox mostly rewritten.  New version is closer to the standard,
+  less buggy, and will be easier to improve further.
 
 * CIMD2 SMS center protocol. UDH works.
 
@@ -19,8 +22,15 @@ Change summary from version 0.8:
 
 * WML compiler has support for 8-bit character sets that are not ISO 8859-1.
 
+* WML compiler now uses string table to compress its output, so that it
+  fits better in size limit.
+
 * EMI implementation should support UDH now. Also, initialization of TRN
   fixed.
+
+* New test utility drive_wapbox, to test wapbox in isolation.
+
+* New test utility test_cimd2, which emulates a CIMD2 server.
 
 * Octstr conversions between binary and base64.
 
@@ -36,6 +46,21 @@ Change summary from version 0.8:
 
 * configure option --enable-mutex-stats added, for logging mutex sleeps.
 
+* New gwlib wrapper for sockets, to do high speed non-blocking I/O.
+  Not in use yet.
+
+* New gwlib wrapper for threads, both to encapsulate them for portability
+  and to provide a "wakeup" feature whereby threads that are blocked or
+  sleeping can be woken by other threads.  Will be used to improve the
+  shutdown sequence in all boxes, and the suspend feature in the bearerbox.
+
+* New approach for packing and unpacking WTP and WSP PDUs.
+
+* Improved portability to Solaris and FreeBSD.
+
+* Thread-safe wrappers around system library functions known to be not
+  thread-safe.
+
 * Bug fixes:
 
 	* Memory leak when smscenter_receive_message fails.
@@ -44,5 +69,20 @@ Change summary from version 0.8:
 	* pthread errno handling.
 	* log.c: pthread_self cast to long rather than int for printing.
 	* wtp.c: memory leak fixed in tell_about_error.
+	* wsp_http.c no longer crashes wapbox after every request.
+	* WTP layer correctly sets retransmission flag.
+	* CIMD2: handle text messages longer than 140 characters correctly.
+	* fakewap: fixed tid handling.
+	* http: header names are compared case-insensitively.
+	* wsp: corrected capability parsing for Motorola Timeport.
+
+* Known problems:
+
+	* Still "cannot handle TR-Invoke.ind" in the logfiles.
+	* drive_wapbox with more than 1 client crashes the wapbox
+	  for some people.
+	* "checking" memory allocator is slow; configure --with-malloc=native
+	  if you want Kannel to handle more than three requests per second.
+	* bearerbox/wapbox shutdown sometimes gets stuck and requires kill -9.
 
 See ChangeLog for detailed information.

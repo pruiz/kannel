@@ -1,11 +1,11 @@
-cvs
+0.9.1
 This file contains the version number of the gateway.
 It is stored on the first line. Nothing else should
 be there.
 
-Note that if you get this file from CVS, it tends to
-give the latest release version number, not the version
-number for whatever junk happens to be current in CVS.
+Note that if you get this file from CVS, it will just
+say "cvs" instead of a version number.  This is intentional,
+it avoids confusion with real releases.
 
 Starting with version 0.8, version numbers that have an even
 second part are STABLE versions and those with odd ones are
