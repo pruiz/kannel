@@ -1,3 +1,9 @@
+2003-11-21  Stipe Tolj  <tolj@wapme-systems.de>
+    * wap/wtp_resp_states.def: fixing PANIC output in case object is larger
+      then maximum SAR limit of 256 packets.
+      Thanks to "Vjacheslav Chekushin" <slava@lmt.lv> for providing patch.
+      [Msg-ID: <3FBDC5BF.2000702@lmt.lv>]
+
 2003-11-20 Aarno Syvanen <as@gni.ch>
     * gw/wap_push_pap_mime.c: Fixed parsing. Now there must be empty
       line between headers and message.

@@ -476,7 +476,7 @@ ROW(RESULT_WAIT,
  */
 ROW(RESULT_WAIT,
     TR_Result_Req,
-    resp_machine->sar != NULL,
+    (resp_machine->sar != NULL) && ((octstr_len(event->u.TR_Result_Req.user_data)-1)/SAR_SEGM_SIZE < 255),
     {
      resp_machine->rcr = 0;
 
@@ -487,6 +487,18 @@ ROW(RESULT_WAIT,
      begin_sar_result(resp_machine, event);	
     },
     RESULT_RESP_WAIT)
+
+ROW(RESULT_WAIT,
+    TR_Result_Req,
+    (resp_machine->sar != NULL) && ((octstr_len(event->u.TR_Result_Req.user_data)-1)/SAR_SEGM_SIZE >= 255),
+    {
+     send_abort(resp_machine, PROVIDER, NOTIMPLEMENTEDESAR);
+     wsp_event = create_tr_abort_ind(resp_machine, NOTIMPLEMENTEDESAR);
+     wsp_session_dispatch_event(wsp_event);
+
+     wap_event_destroy(resp_machine->result);
+    },
+    LISTEN)
 
 ROW(RESULT_WAIT,
     RcvAbort,
