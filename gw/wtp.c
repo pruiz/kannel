@@ -9,25 +9,21 @@
 
 #include "wtp.h"
 
-/*
- * Note that the outer {} for the struct definition come from the MACHINE
- * macro call in wtp_machine-decl.h and that a preprocessor option HAVE_THREADS
- * can be enabled or disabled 
- */
-struct WTPMachine
+struct WTPMachine {
         #define INTEGER(name) long name
+        #define ENUM(name) states name
         #define OCTSTR(name) Octstr *name
         #define QUEUE(name) /* XXX event queue to be implemented later */
 	#define TIMER(name) WTPTimer *name
 /*#if HAVE_THREADS
         #define MUTEX(name) pthread_mutex_t name
 #else*/
-        #define MUTEX(name) int name
+        #define MUTEX(name) long name
 /*#endif*/
         #define NEXT(name) struct WTPMachine *name
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
-;
+};
 
 
 struct WTPEvent {
@@ -57,22 +53,20 @@ struct WSPEvent {
        #include "wsp_events-decl.h"
 };
 
-enum states{
-
-    #define ROW(state, event, condition, action, next_state) state,
-    #include "wtp_state-decl.h"
-};
-
 static WTPMachine *list = NULL;
 
 /*****************************************************************************
  *
  *Prototypes of internal functions:
  *
- *Give an event a readable name.
+ *Give events and the state a readable name.
  */
 
 static char *name_event(int name);
+
+static char *name_wsp_event(int name);
+
+static char *name_state(int name);
 
 /*
  * Create and initialize a WTPMachine structure. Return a pointer to it,
@@ -111,7 +105,7 @@ void wsp_event_dump(WSPEvent *event);
 WSPEvent *pack_wsp_event(wsp_event wsp_name, WTPEvent *wtp_event, 
          WTPMachine *machine);
 
-int wtp_tid_is_valid(int tid);
+int wtp_tid_is_valid(WTPEvent *event);
 
 /******************************************************************************
  *
@@ -251,7 +245,8 @@ void wtp_machine_destroy(WTPMachine *machine){
           temp->next=machine->next;
 	}
 
-        #define INTEGER(name)        
+        #define INTEGER(name)
+        #define ENUM(name)        
         #define OCTSTR(name) octstr_destroy(temp->name)
         #define TIMER(name) wtp_timer_destroy(temp->name)
         #define QUEUE(name) /*queue to be implemented later*/
@@ -285,6 +280,7 @@ void wtp_machine_dump(WTPMachine  *machine){
            debug(0, "The machine was %p:", (void *) machine); 
 	   #define INTEGER(name) \
            debug(0, "Integer field %s,%ld:", #name, machine->name)
+           #define ENUM(name) debug(0, "state=%s.", name_state(machine->name))
 	   #define OCTSTR(name)  debug(0, "Octstr field %s :", #name);\
                                  octstr_dump(machine->name)
            #define TIMER(name)   debug(0, "Machine timer %p:", (void *) \
@@ -553,7 +549,8 @@ no_datagram:
  */
 WSPEvent *wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 
-     long current_state=machine->state;
+     
+     states current_state=machine->state;
      long current_event=event->type;
      enum wsp_event current_primitive;
      WSPEvent *wsp_event=NULL;
@@ -563,11 +560,12 @@ WSPEvent *wtp_handle_event(WTPMachine *machine, WTPEvent *event){
      if (timer == NULL)
         goto mem_error;
 
-     #define ROW(state, event, condition, action, next_state)\
-             if (current_state == state && current_event == event &&\
+     debug(0,"handle_event: current state=%s.",name_state(machine->state));
+     #define ROW(wtp_state, event, condition, action, next_state) \
+             if (current_state == wtp_state && current_event == event &&\
                 (condition)){\
                 action\
-                current_state=next_state;\
+                machine->state=next_state;\
              } else 
      #include "wtp_state-decl.h"
              {debug(0, "handle_event: out of synch error");}
@@ -611,6 +609,17 @@ static char *name_wsp_event(int s){
                       return "unknown event";
        }
  }
+
+static char *name_state(int s){
+
+       switch (s){
+              #define ROW(state, event, condition, action, new_state) \
+                      case state: return #state;
+              #include "wtp_state-decl.h"
+              default:
+                      return "unknown state";
+       }
+}
 
 
 WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
@@ -666,6 +675,7 @@ WTPMachine *wtp_machine_create(void){
            goto error;
         
         #define INTEGER(name) machine->name=0
+        #define ENUM(name) machine->name=LISTEN
         #define OCTSTR(name) machine->name=octstr_create_empty();\
                              if (machine->name == NULL)\
                                 goto error
@@ -702,6 +712,7 @@ WTPMachine *wtp_machine_create(void){
  */
  error:  if (machine != NULL) {
             #define INTEGER(name)
+            #define ENUM(name)
             #define OCTSTR(name) if (machine->name != NULL)\
                                     octstr_destroy(machine->name)
             #define QUEUE(name)  /*to be implemented later*/
@@ -852,12 +863,11 @@ WSPEvent *pack_wsp_event(wsp_event wsp_name, WTPEvent *wtp_event,
 	        default:
                 break;
          }
-         debug(0, "wtp.c: wsp event packed");
-         wsp_event_dump(event);
+         debug(0, "pack_wsp_event: packed");
          return event;
 } 
 
-int wtp_tid_is_valid(int tid){
+int wtp_tid_is_valid(WTPEvent *event){
 
     return 1;
 }

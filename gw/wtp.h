@@ -30,6 +30,12 @@ enum event_name {
      #include "wtp_events-decl.h"
 };
 
+enum states {
+    #define ROW(state, event, condition, action, next_state) state, 
+    #include "wtp_state-decl.h"
+};
+
+typedef enum states states;
 
 /*
  * Create a WTPEvent structure and initialize it to be empty. Return a
