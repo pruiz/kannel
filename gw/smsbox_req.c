@@ -209,12 +209,14 @@ static int do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslatio
 	static unsigned char msgref = 0;
 
 	gw_assert(msg != NULL);
-	gw_assert(trans != NULL);
 	gw_assert(maxmsgs > 1);
 	gw_assert(hl >= 0);
 	gw_assert(fl >= 0);
-	
-	concat = urltrans_concatenation(trans);
+
+	if (trans != NULL)
+	    concat = urltrans_concatenation(trans);
+	else
+	    concat = 0;
 	/* The concatenation adds some information in the UDH so the maximum length
 	 * of the data goes down */
 	if(concat) {
@@ -229,11 +231,16 @@ static int do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslatio
 		}
 	}
 	
-	suf = urltrans_split_suffix(trans);
-	if (suf != NULL) {
-		suflen = strlen(suf);
+	if (trans != NULL) {
+	        suf = urltrans_split_suffix(trans);
+		if (suf != NULL) {
+		        suflen = strlen(suf);
+		}
+		sc = urltrans_split_chars(trans);
+	} else {
+	    suf = NULL;
+	    sc = NULL;
 	}
-	sc = urltrans_split_chars(trans);
 
 	total_len = octstr_len(msg->smart_sms.msgdata) + octstr_len(msg->smart_sms.udhdata);
 
@@ -334,9 +341,12 @@ static int send_sms(URLTranslation *trans, Msg *msg, int max_msgs)
 	char *h, *f;
 	int maxdatalength;
 
-	h = urltrans_header(trans);
-	f = urltrans_footer(trans);
-
+	if (trans != NULL) {
+	    h = urltrans_header(trans);
+	    f = urltrans_footer(trans);
+	} else {
+	    h = f = NULL;
+	}
 	if (h != NULL) hl = strlen(h); else hl = 0;
 	if (f != NULL) fl = strlen(f); else fl = 0;
 
@@ -406,11 +416,13 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	int max_msgs;
 	static char *empty = "<Empty reply from service provider>";
 
-	gw_assert(trans != NULL);
 	gw_assert(msg != NULL);
 	
-	max_msgs = urltrans_max_messages(trans);
-
+	if (trans != NULL)
+	    max_msgs = urltrans_max_messages(trans);
+	else
+	    max_msgs = 1;
+	
 	if(msg_type(msg) != smart_sms) {
 		error(0, "Weird message type for send_message!");
 		msg_destroy(msg);
@@ -425,7 +437,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
 
 	if((msg->smart_sms.flag_udh == 0) 
 	   && (octstr_len(msg->smart_sms.msgdata)==0)) {
-		if (urltrans_omit_empty(trans) != 0) {
+	        if (trans != NULL && urltrans_omit_empty(trans) != 0) {
 			max_msgs = 0;
 		} else { 
 			octstr_replace(msg->smart_sms.msgdata, empty, 
@@ -548,7 +560,18 @@ void smsbox_req_thread(void *arg) {
     if (reply == NULL) {
 error:
 	error(0, "request failed");
+	/* XXX this can be something different, according to urltranslation */
 	reply = gw_strdup("Request failed");
+	trans = NULL;	/* do not use any special translation */
+
+	alog("SMS request FAILED - sender:%s request: '%s'",
+	     octstr_get_cstr(msg->smart_sms.receiver),
+	     octstr_get_cstr(msg->smart_sms.msgdata));
+    }
+    else {
+	alog("SMS request completed - sender:%s request: '%s' reply: '%s'",
+	     octstr_get_cstr(msg->smart_sms.receiver),
+	     octstr_get_cstr(msg->smart_sms.msgdata), reply);
     }
 
     octstr_replace(msg->smart_sms.msgdata, reply, strlen(reply));
@@ -638,6 +661,11 @@ char *smsbox_req_sendsms(List *list)
 
 	if (ret == -1)
 		goto error;
+
+	alog("send-SMS request added - sender:%s:%s target:%s request: '%s'",
+	     user ? octstr_get_cstr(user) : "default",
+	     octstr_get_cstr(from), octstr_get_cstr(to),
+	     text ? octstr_get_cstr(text) : "<< UDH >>");
 
 	return "Sent.";
     

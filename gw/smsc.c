@@ -858,7 +858,6 @@ retry:
      * XXX put ACK to queue.. in the future!
      */
 
-    msg_destroy(msg);
     return 0;
 }
 

@@ -90,6 +90,10 @@ used:
  #	 Minimum level of logfile events logged. 0 is for debug, 1
  #       info etc.
  #
+ access-log = <file-name>
+ #       A file in which information about received/sent SMS messages 
+ #       is stored.
+ #
  box-deny-ip = <IP-list>
  box-allow-ip = <IP-list>
  #       These lists can be used to prevent connection from given IP 
@@ -327,6 +331,10 @@ with one or more of the following variables:
  log-level = <number 0..5>
  #       As with bearerbox (core) logfile
  #
+ access-log = <file-name>
+ #       A file in which information about MO and send-sms requests
+ #       is stored. Can be named same as main access-log.
+ #
 
 
 
@@ -483,7 +491,7 @@ admin-deny-ip = "*.*.*.*"
 admin-allow-ip = "127.0.0.1"
 unified-prefix = "+358,00358,0;+,00"
 white-list = "http://localhost/whitelist.txt"
-
+access-log = kannel_access.log
 
 group = smsc
 smsc = fake
@@ -500,6 +508,7 @@ bearerbox-host = localhost
 group = smsbox
 bearerbox-host = localhost
 sendsms-port = 13013
+access-log = kannel_access.log
 
 
 group = sms-service

@@ -335,6 +335,9 @@ static void init_smsbox(Config *cfg)
     if (global_sender != NULL)
 	info(0, "Service global sender set as '%s'", global_sender);
     
+    if ((p = config_get(grp, "access-log")) != NULL)
+	alog_open(p, 1);	/* XXX should be able to use gmtime, too */
+
     if (sendsms_port > 0) {
 	http_server_socket = http_server_open(sendsms_port);
 	if (http_server_socket == NULL) {
@@ -531,6 +534,7 @@ int main(int argc, char **argv)
 
     info(0, "Smsbox terminating.");
 
+    alog_close();
     http_server_close(http_server_socket);
     mutex_destroy(socket_mutex);
     urltrans_destroy(translations);

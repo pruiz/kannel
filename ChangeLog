@@ -1,3 +1,21 @@
+2000-09-22  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsbox.c: added opening/closing of access log
+
+	* gw/smsbox_req.c: added access log entries for requests (send-sms
+	and MO), and modified the entire MO SMS lifetime so that 'request
+	failed' replies to max-messages = 0 translations still get that
+	answer
+
+	* gw/smsc.c|h: changed so that smsc_send_message does not destroy
+	the msg
+
+	* gw/bb_smsc.c: updated access log entry
+
+	* doc/userguide/newconf.txt: added access-log into
+	variables. Still missing smsc-id, as the implementation is not
+	finalized.
+
 2000-09-21  Kalle Marjola  <rpr@wapit.com>
 
 	* gwlib/accesslog.c|h: added first version of access log system

@@ -69,8 +69,7 @@ int smsc_close(SMSCenter *smsc);
 
 
 /* Send an SMS message via an SMS center.
- *  Return -1 for FATAL error (msg is not destroyed),
- *  0 for OK/message ignored, in which case msg is destroyed
+ *  Return -1 for FATAL error, 0 for OK/message ignored
  */
 int smsc_send_message(SMSCenter *smsc, Msg *msg);
 

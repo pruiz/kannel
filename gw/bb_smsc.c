@@ -141,18 +141,22 @@ static void sms_sender(void *arg)
 
 	debug("bb.sms", 0, "sms_sender: sending message");
 	
-	alog("Sending a message - SMSC:%s receiver:%s msg: '%s'",
-	     smsc_id(conn->smsc),
-	     octstr_get_cstr(msg->smart_sms.receiver),
-	     octstr_get_cstr(msg->smart_sms.msgdata));
-	
 	ret = smsc_send_message(conn->smsc, msg);
 	if (ret == -1) {
-	    /* XXX: do not discard! */
-	    error(0, "sms_sender: failed, message discarded for now");
-	    msg_destroy(msg);
+	    alog("Send FAILED (retrying) - SMSC:%s receiver:%s msg: '%s'",
+		 smsc_id(conn->smsc),
+		 octstr_get_cstr(msg->smart_sms.receiver),
+		 octstr_get_cstr(msg->smart_sms.msgdata));
+
+	    error(0, "sms_sender: failed, appending back to outgoing list");
+	    list_produce(outgoing_sms, msg);
 	} else {
-	    /* send_message destroys both the tmp and msg */
+	    alog("Sent a message - SMSC:%s receiver:%s msg: '%s'",
+		 smsc_id(conn->smsc),
+		 octstr_get_cstr(msg->smart_sms.receiver),
+		 octstr_get_cstr(msg->smart_sms.msgdata));
+	
+	    msg_destroy(msg);
 	    counter_increase(outgoing_sms_counter);
 	}
     }
