@@ -1,3 +1,26 @@
+2002-04-26 Aarno Syvänen <aarno@wiral.com>
+    * gwlib/cfg.def: Added new configuration variables.
+    * checks/check_sendsms.sh: Added tsting for empty cgi vars.
+    * gw/wap_push_ppg.c: Use variable global-sender. HTTPS support added. 
+      Changed push-url default.
+    * gwlib/octstr.[ch]: Added function octstr_strip_crlfs.
+    * gw/smsc_cimd2.c: Fixed a memory leak.
+    * gw/smsbox.c: Fixed a memory leak happening with stranger return types.
+      Kannel accepts 202 return code.
+    * gw/bb_smscconn.c: Logsms works without sender/receiver. Implement 
+      queue limit.
+    * test/test_http_server: Response body changed to "Sent".
+    * gw/wap_push_si_compiler.c: Fixed a memory leak.
+    * gwlib/http.[ch]: Library function http_cgiargs_dump.
+    * gw/bearerbox.c: A minor memory leak fixed.
+    * doc/userguide/userguide.xml: Documented PPG HTTPS support. Added docu-
+      mentation for global-sender. Changed default push URL, previous one
+      caused lot questions.
+    * doc/arch/arch.xml: Documented architecture change caused by HTTPS 
+      support.
+    * gw/wap_push_pap_compiler.c: Values of reserved words case-insensitive.
+    * checks/chech_ppg.sh: Better debugging for failed cases.
+
 2002-04-25  Stipe Tolj <tolj@wapme-systems.de>
     * gw/wap_push_ppg.c: fix in coriented_deliverable() to return 
       the right boolean, thanks to Paul
