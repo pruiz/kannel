@@ -1,3 +1,6 @@
+2002-04-30 Aarno Syvänen <aarno@wiral.com>
+    * wap/wsp_server_session_machine.def: Fixed a compiler warning
+
 2002-04-29  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsbox.c: xml-post: moved auth tag to from tag
     * doc/userguide/userguide.xml: updated
