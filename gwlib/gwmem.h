@@ -66,6 +66,7 @@ void gw_check_shutdown(void);
 #define gw_claim_area(ptr) (ptr)
 #define gw_claim_area_for(ptr, file, line, func) (ptr)
 #define gwmem_shutdown()
+#define gwmem_type() (octstr_imm("native"))
 
 #elif USE_GWMEM_CHECK
 
@@ -75,8 +76,10 @@ void gw_check_shutdown(void);
 
 #ifdef USE_GWMEM_SLOW
 #define gw_init_mem() (gw_check_init_mem(1))
+#define gwmem_type() (octstr_imm("slow"))
 #else
 #define gw_init_mem() (gw_check_init_mem(0))
+#define gwmem_type() (octstr_imm("checking"))
 #endif
 
 #define gw_check_leaks() (gw_check_check_leaks())

@@ -1,3 +1,10 @@
+2001-02-02  Richard Braakman  <dark@wapit.com>
+
+	* Added gwmem_type() function that returns the name of the 
+	malloc wrapper used.
+
+	* gw/shared.c: Report gwmem_type in the version string.
+
 2001-02-01  Richard Braakman  <dark@wapit.com>
 
 	* Updated doc/release.txt to better reflect actual procedure.

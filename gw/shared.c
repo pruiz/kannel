@@ -32,12 +32,14 @@ Octstr *version_report_string(const char *boxname)
     return octstr_format("Kannel %s version `%s'.\n"
     	    	    	 "System %s, release %s, version %s, machine %s.\n"
 			 "Hostname %s, IP %s.\n"
-			 "Libxml version %s.\n",
+			 "Libxml version %s.\n"
+                         "Using %s malloc.\n",
 			 boxname, VERSION,
 			 u.sysname, u.release, u.version, u.machine,
 			 octstr_get_cstr(get_official_name()),
 			 octstr_get_cstr(get_official_ip()),
-			 LIBXML_VERSION_STRING);
+			 LIBXML_VERSION_STRING,
+                         octstr_get_cstr(gwmem_type()));
 }
 
 
