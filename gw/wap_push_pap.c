@@ -172,7 +172,7 @@ static void http_read_thread(void *arg)
         info(0, "PAP: http_read_thread: Request received from <%s: %s>", 
              octstr_get_cstr(url), octstr_get_cstr(ip));
         octstr_destroy(ip);
-         
+        
         if (!headers_acceptable(push_headers, &content_header)) {
             send_bad_message_response(client, content_header, PAP_BAD_REQUEST);
 	    goto herror;
@@ -303,12 +303,18 @@ static void handle_pap_event(WAPEvent *e)
  * Pi uses multipart/related content type when communicating with ppg. (see 
  * PAP, Chapter 8) and subtype application/xml.
  * Check if push headers are acceptable according this rule. In addition, 
- * return the field value of Content-Type header.
+ * return the field value of Content-Type header, if any and error string if
+ * none (this string is used by send_bad_message_response).
  */
 static int headers_acceptable(List *push_headers, Octstr **content_header)
 {
     gw_assert(push_headers);
     *content_header = http_header_find_first(push_headers, "Content-Type");
+
+    if (*content_header == NULL) {
+        *content_header = octstr_format("%s", "no content type header found");
+        goto error;
+    }
     
     if (!type_is(*content_header, "multipart/related")) {
         goto error;
@@ -392,7 +398,7 @@ static void change_header_value(List **push_headers, char *name, char *value)
 
 /*
  * Badmessage-response element is redefined in PAP, Implementation Note, 
- * chapter 5.
+ * chapter 5. Do not add to the document a fragment being NULL or empty.
  */
 static void send_bad_message_response(HTTPClient *c, Octstr *fragment, 
                                       int code)
@@ -409,11 +415,15 @@ static void send_bad_message_response(HTTPClient *c, Octstr *fragment,
     octstr_format_append(reply_body, "%s", "\""
                   " desc=\"");
     octstr_format_append(reply_body, "%s", "Not understood due to malformed"
-                                            " syntax");
-    octstr_format_append(reply_body, "%s", "\""
-                  " bad-message-fragment=\"");
-    octstr_format_append(reply_body, "%S", escape_fragment(fragment));
+                                           " syntax");
     octstr_format_append(reply_body, "%s", "\"");
+
+    if (fragment != NULL && octstr_len(fragment) != 0) {
+        octstr_format_append(reply_body, "%s", " bad-message-fragment=\"");
+        octstr_format_append(reply_body, "%S", escape_fragment(fragment));
+        octstr_format_append(reply_body, "%s", "\"");
+    }
+
     octstr_format_append(reply_body, "%s", ">"
               "</badmessage-response>"
          "</pap>");

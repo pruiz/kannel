@@ -39,8 +39,10 @@ static void add_content_type(Octstr *content_flag, Octstr **wap_content)
     else if (octstr_compare(content_flag, octstr_imm("multipart")) == 0)
         *wap_content = octstr_format("%s",
             "Content-Type: multipart/related; boundary=fsahgwruijkfldsa\r\n");
-    else if (octstr_compare(content_flag, octstr_imm("nil")) == 0)
+    else if (octstr_compare(content_flag, octstr_imm("scrap")) == 0)
         *wap_content = octstr_format("%s", "no type at all\r\n"); 
+    else if (octstr_compare(content_flag, octstr_imm("nil")) == 0)
+        *wap_content = octstr_create("");
 
     octstr_destroy(content_flag);
 }
@@ -275,7 +277,6 @@ push_failed:
     return -1;
 
 parse_error:
-    octstr_destroy(final_url);
     octstr_destroy(reply_body);
     http_destroy_headers(reply_headers);
     wap_event_destroy(e);
@@ -342,9 +343,9 @@ static void help(void)
     info(0, "-h");
     info(0, "print this info");
     info(0, "-c content qualifier");
-    info(0, "Define content type of the push content. Wml, multipart, nil"); 
-    info(0, "and si accepted. Wml is default, nil (no content type at all)");
-    info(0, "is used for debugging");
+    info(0, "Define content type of the push content. Wml, multipart, nil,"); 
+    info(0, "scrap and si accepted. Wml is default, nil (no content type at");
+    info(0, " all) and scrap (random string) are used for debugging");
     info(0, "-v number");
     info(0, "    Set log level for stderr logging. Default 0 (debug)");
     info(0, "-q");
@@ -401,6 +402,7 @@ int main(int argc, char **argv)
                 if (octstr_compare(content_flag, octstr_imm("wml")) != 0 && 
                     octstr_compare(content_flag, octstr_imm("si")) != 0 &&
                     octstr_compare(content_flag, octstr_imm("nil")) != 0 &&
+                    octstr_compare(content_flag, octstr_imm("scrap")) != 0 &&
                     octstr_compare(content_flag, 
                         octstr_imm("multipart")) != 0){
 		    octstr_destroy(content_flag);

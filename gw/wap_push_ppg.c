@@ -401,6 +401,7 @@ store_push:
         return;
 
 no_start:
+        octstr_destroy(type);
         wap_addr_tuple_destroy(tuple);
         remove_push_data(sm, pm, cless);
         if (sm)

@@ -337,8 +337,9 @@ static int parse_node(xmlNodePtr node, WAPEvent **e)
     break;
 
     case XML_ELEMENT_NODE:
-        if ((ret = parse_element(node, e)) < 0)
-            return ret;
+        if ((ret = parse_element(node, e)) < 0) {
+	    return ret;
+        }
     break;
 
     default:
@@ -347,12 +348,14 @@ static int parse_node(xmlNodePtr node, WAPEvent **e)
     }
 
     if (node->children != NULL)
-	if ((ret = parse_node(node->children, e)) < 0)
-	    return ret;
+        if ((ret = parse_node(node->children, e)) < 0) {
+            return ret;
+	}
 
     if (node->next != NULL)
-        if ((ret = parse_node(node->next, e)) < 0)
-	    return ret;
+        if ((ret = parse_node(node->next, e)) < 0) {
+            return ret;
+        }
     
     return 0;
 }
@@ -373,7 +376,7 @@ static int parse_element(xmlNodePtr node, WAPEvent **e)
     int ret;
 
     name = octstr_create(node->name);
-
+    
     i = 0;
     while (i < NUM_ELEMENTS) {
         if (octstr_compare(name, octstr_imm(pap_elements[i])) == 0)
@@ -382,7 +385,7 @@ static int parse_element(xmlNodePtr node, WAPEvent **e)
     }
 
     if (i == NUM_ELEMENTS) {
-      octstr_destroy(name);
+        octstr_destroy(name);
         return -2;
     }
 
@@ -409,13 +412,13 @@ static int parse_element(xmlNodePtr node, WAPEvent **e)
  * Parse attribute updates corresponding fields of the  wap event. Check that 
  * both attribute name and value are papwise legal. If value is enumerated, 
  * legal values are stored in the attributes table. Otherwise, call a separate
- * parsing function. 
+ * parsing function. If an attribute value is empty, use value "erroneous".
  * 
  * Returns 0, when success
  *        -1, when a non-implemented feature is requested
  *        -2, when error
  * In addition, return a newly created wap event containing parsed attribute
- * from pap sorce, if successfull, unparsed otherwise.
+ * from pap source, if successfull, an uncomplete wap event otherwise.
  */
 static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute, 
                            WAPEvent **e)
@@ -429,7 +432,7 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
     if (attribute->children != NULL)
         value = create_octstr_from_node(attribute->children);
     else
-        value = NULL;
+        value = octstr_imm("erroneous");
 
     i = 0;
     while (i < NUM_ATTRIBUTES) {
@@ -448,7 +451,11 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
  */
     if (pap_attributes[i].value == NULL) {
         ret = parse_attr_value(element_name, attr_name, value, e);
-	goto parsed;
+	if (ret == -2) {
+	    goto error;
+        } else {
+	    goto parsed;
+        }
     }
 
     while (octstr_compare(attr_name, 
@@ -486,9 +493,8 @@ parsed:
 
 /* 
  * Value parsing functions return the newly created wap event containing 
- * attribute value from pap source, if successfull; filler value if not 
- * (mandatory fields of a wap event must be non-NULL). Value types of attribu-
- * tes are defined in PAP, chapter 9.  
+ * attribute value from pap source, if successfull; NULL otherwise . Value 
+ * types of attributes are defined in PAP, chapter 9.  
  */
 
 static int parse_push_message_value(Octstr *attr_name, Octstr *attr_value, 
@@ -498,10 +504,11 @@ static int parse_push_message_value(Octstr *attr_name, Octstr *attr_value,
 
     ros = octstr_imm("erroneous");
     if (octstr_compare(attr_name, octstr_imm("push-id")) == 0) {
+        octstr_destroy((**e).u.Push_Message.pi_push_id);
 	(**e).u.Push_Message.pi_push_id = octstr_duplicate(attr_value);
         return 0;
     } else if (octstr_compare(attr_name, 
-             octstr_imm("deliver-before-timestamp"))== 0) {
+             octstr_imm("deliver-before-timestamp")) == 0) {
 	(**e).u.Push_Message.deliver_before_timestamp = 
              (ros = parse_date(attr_value)) ? 
              octstr_duplicate(attr_value) : NULL;  
@@ -533,9 +540,10 @@ static int parse_address_value(Octstr *attr_name, Octstr *attr_value,
 
     ret = -2;
     if (octstr_compare(attr_name, octstr_imm("address-value")) == 0) {
+        octstr_destroy((**e).u.Push_Message.address_value);
 	(**e).u.Push_Message.address_value = 
              (ret = parse_address(&attr_value)) > -2 ? 
-             octstr_duplicate(attr_value) : octstr_imm("not successfull");
+             octstr_duplicate(attr_value) : NULL;
         return ret;
     } 
 
@@ -572,6 +580,7 @@ static int parse_push_response_value(Octstr *attr_name, Octstr *attr_value,
     ros = octstr_imm("erroneous");
 
     if (octstr_compare(attr_name, octstr_imm("push-id")) == 0) {
+        octstr_destroy((**e).u.Push_Response.pi_push_id);
 	(**e).u.Push_Response.pi_push_id = octstr_duplicate(attr_value);
         return 0;
     } else if (octstr_compare(attr_name, octstr_imm("sender-address")) == 0) {
@@ -638,10 +647,9 @@ static int parse_bad_message_response_value(Octstr *attr_name,
 
 /*
  * Do not create multiple events. If *e points to NULL, we have not yet creat-
- * ed a wap event.
- * Some values are just validated - their value is not used by the event. 
- * Character data does not always require validation. Note that multiple add-
- * resses are not yet supported.
+ * ed a wap event. Create a wap event mandatory fields set to error values 
+ * (these will be latter overwritten). This hack will disappear when we have
+ * PAP validation.
  */
 
 static void wap_event_accept_or_create(Octstr *element_name, WAPEvent **e)
@@ -649,9 +657,12 @@ static void wap_event_accept_or_create(Octstr *element_name, WAPEvent **e)
     if (octstr_compare(element_name, octstr_imm("push-message")) == 0 
             && *e == NULL) {         
         *e = wap_event_create(Push_Message); 
+        (**e).u.Push_Message.pi_push_id = octstr_format("%s", "erroneous");
+        (**e).u.Push_Message.address_value = octstr_format("%s", "erroneous");
     } else if (octstr_compare(element_name, octstr_imm("push-response")) == 0 
             && *e == NULL) {
         *e = wap_event_create(Push_Response);
+        (**e).u.Push_Response.pi_push_id = octstr_format("%s", "erroneous");
     } else if (octstr_compare(element_name, octstr_imm("progress-note")) == 0 
             && *e == NULL) {
         *e = wap_event_create(Progress_Note);
@@ -673,7 +684,8 @@ static int return_flag(Octstr *ros)
 /*
  * Validates non-enumeration attributes and stores their value to a newly
  * created wap event e. (Even when attribute value parsing was not success-
- * full.)
+ * full.) We do not accept NULL or empty attributes (if an attribute is
+ * implied, just drop it from the document)
  * Returns 0, when success,
  *        -1, when a non-implemented feature requested.
  *        -2, when an error
@@ -682,6 +694,10 @@ static int return_flag(Octstr *ros)
 static int parse_attr_value(Octstr *element_name, Octstr *attr_name, 
                             Octstr *attr_value, WAPEvent **e)
 {
+    if (octstr_compare(attr_value, octstr_imm("erroneous")) == 0) {
+        return -2;
+    }
+
     wap_event_accept_or_create(element_name, e);
 
     if (octstr_compare(element_name, octstr_imm("push-message")) == 0) {
@@ -779,7 +795,7 @@ error:
 
 /*
  * We must recognize status class and treat unrecognized codes as a x000 code,
- * see 9.13, p 27.
+ * see PAP, 9.13, p 27.
  */
 static int parse_code(Octstr *attr_value)
 {
