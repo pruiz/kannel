@@ -54,6 +54,67 @@ ROW(NULL_METHOD,
 		msm->invoke = invoke;
 	},
 	HOLDING)
+
+#ifdef POST_SUPPORT
+
+ROW(NULL_METHOD,
+	TR_Invoke_Ind,
+	e->tcl == 2 && pdu->type == Post,
+	{
+		List *headers;
+		WAPEvent *invoke;
+		int req_body_size;
+
+		/* Prepare the MethodInvoke here, because we have all
+		 * the information nicely available. */
+
+		if (octstr_len(pdu->u.Post.headers) > 0)
+			headers = unpack_post_headers(pdu->u.Post.headers);
+		else
+			headers = NULL;
+
+		invoke = wap_event_create(S_MethodInvoke_Ind);
+		invoke->u.S_MethodInvoke_Ind.server_transaction_id =
+			msm->transaction_id;
+		/* XXX This 0x60 is the POST type and the subtype indicates whether a
+		 * POST or a PUT. */
+		invoke->u.S_MethodInvoke_Ind.method = 0x60 + pdu->u.Post.subtype;
+		invoke->u.S_MethodInvoke_Ind.url =
+			octstr_duplicate(pdu->u.Post.uri);
+		invoke->u.S_MethodInvoke_Ind.http_headers = headers;
+		
+/*******			POST_SUPPORT			********/
+/*******			Siemens Fix				********/
+/*
+ * The Siemens S35 adds an extra Null character to the end of the 
+ * request body which may not work with certain cgi scripts. It is 
+ * removed here by truncating the length.
+ *
+ */
+		req_body_size = octstr_len(pdu->u.Post.data);
+		if(octstr_get_char(pdu->u.Post.data,(req_body_size - 1)) == 0)
+			octstr_truncate(pdu->u.Post.data,(req_body_size - 1));
+
+/*******			Siemens Fix				********/
+
+		invoke->u.S_MethodInvoke_Ind.body = 
+			octstr_duplicate(pdu->u.Post.data);
+
+
+		invoke->u.S_MethodInvoke_Ind.session_headers =
+			http_header_duplicate(sm->http_headers);
+		invoke->u.S_MethodInvoke_Ind.addr_tuple =
+			wap_addr_tuple_duplicate(sm->addr_tuple);
+		invoke->u.S_MethodInvoke_Ind.client_SDU_size =
+			sm->client_SDU_size;
+		invoke->u.S_MethodInvoke_Ind.session_id =
+			msm->session_id;
+
+		msm->invoke = invoke;
+	},
+	HOLDING)
+
+#endif	/* POST_SUPPORT */
 		
 ROW(HOLDING,
 	Release_Event,
