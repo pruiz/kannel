@@ -1,3 +1,14 @@
+2000-09-27  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/wapbox.c: moved http-proxy-host and http-proxy-port into
+	"core" from "wapbox" section. (That's where they were for the
+	smsbox as well.) Also added the code that actually makes use
+	of the proxy support, by calling http_use_proxy.
+	
+	* gwlib/http.c: Allow the list of exceptions to be NULL, to
+	simplify the case when no exceptions are wanted. Also report
+	when a proxy is being used.
+
 2000-09-27  Richard Braakman  <dark@wapit.com>
 
 	* gw/wsp.c: Encode all known content types, not just the

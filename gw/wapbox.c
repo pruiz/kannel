@@ -71,8 +71,12 @@ static void read_config(char *filename) {
 
 	if ((s = config_get(grp, "wapbox-port")) == NULL)
 	    panic(0, "No 'wapbox-port' in core group");
-
 	bearerbox_port = atoi(s);
+
+	if ((s = config_get(grp, "http-proxy-host")) != NULL)
+		http_proxy_host = s;
+	if ((s = config_get(grp, "http-proxy-port")) != NULL)
+		http_proxy_port = atoi(s);
 
 	/*
 	 * get the remaining values from the wapbox group
@@ -85,11 +89,6 @@ static void read_config(char *filename) {
 	if ((s = config_get(grp, "heartbeat-freq")) != NULL)
 		heartbeat_freq = atoi(s);
 
-	if ((s = config_get(grp, "http-proxy-host")) != NULL)
-		http_proxy_host = s;
-	if ((s = config_get(grp, "http-proxy-port")) != NULL)
-		http_proxy_port = atoi(s);
-	
 	if ((s = config_get(grp, "log-file")) != NULL)
 	    logfile = s;
 	if ((s = config_get(grp, "log-level")) != NULL)
@@ -128,6 +127,14 @@ static void read_config(char *filename) {
 	        info(0, "Starting to log to file %s level %d", logfile, logfilelevel);
 	}
 	wsp_http_map_url_config_info();	/* debugging aid */
+	
+    	if (http_proxy_host != NULL && http_proxy_port > 0) {
+	    	Octstr *os;
+
+		os = octstr_create(http_proxy_host);
+		http_use_proxy(os, http_proxy_port, NULL);
+		octstr_destroy(os);
+	}
 }
 
 

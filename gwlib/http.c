@@ -121,7 +121,6 @@ void http_use_proxy(Octstr *hostname, int port, List *exceptions)
     gw_assert(hostname != NULL);
     gw_assert(octstr_len(hostname) > 0);
     gw_assert(port > 0);
-    gw_assert(exceptions != NULL);
 
     http_close_proxy();
     mutex_lock(proxy_mutex);
@@ -130,6 +129,8 @@ void http_use_proxy(Octstr *hostname, int port, List *exceptions)
     for (i = 0; i < list_len(exceptions); ++i)
         list_append(proxy_exceptions,
                     octstr_duplicate(list_get(exceptions, i)));
+    debug("gwlib.http", 0, "Using proxy <%s:%d>", 
+    	  octstr_get_cstr(proxy_hostname), proxy_port);
     mutex_unlock(proxy_mutex);
 }
 
