@@ -922,7 +922,7 @@ static int ois_append_submission_options(char *raw, const Msg *msg)
     if (octstr_len(msg->sms.udhdata)) {
 	raw[0] |= (char) 0x02;
     }
-    if (msg->sms.coding == DC_8BIT) { /* XXX UCS2? */
+    if (msg->sms.coding == DC_8BIT) { /* XXX and UCS2? */
 	raw[0] |= (char) 0x10;
     }
     return 1;
@@ -937,7 +937,7 @@ static int ois_append_sm_text(char *raw, const Msg *msg)
 
     SAY(3, "ois_append_sm_text");
 
-    if (msg->sms.coding == DC_7BIT) {
+    if (msg->sms.coding == DC_7BIT || msg->sms.coding == DC_UNDEF) {
         charset_latin1_to_gsm(msg->sms.udhdata);
         charset_latin1_to_gsm(msg->sms.msgdata);
     }
@@ -1175,8 +1175,8 @@ static int ois_adjust_data_coding_scheme(Msg *msg, const char *raw)
 {
     SAY(3, "ois_adjust_data_coding_scheme");
 
-    /* we set the value only temporarily: */
-    /* ois_adjust_sm_text will set the correct value */
+    /* we're using this variable temporarily: 
+     * ois_adjust_sm_text will set the correct value */
 
     msg->sms.coding = (raw[0] & 0xff) + 1;
 
@@ -1198,10 +1198,8 @@ static int ois_adjust_additional_information(Msg *msg, const char *raw)
 {
     SAY(3, "ois_adjust_additional_information");
 
-    /* we set the value only temporarily: */
-    /* ois_adjust_sm_text will set the correct value */
-
-    /* XXX I used mc temporarily. use fields_to_dcs! */
+    /* we're using this variable temporarily: 
+     * ois_adjust_sm_text will set the correct value */
     msg->sms.mclass = raw[0] & 0xff;
 
     return 1;
@@ -1221,7 +1219,7 @@ static int ois_adjust_sm_text(Msg *msg, const char *raw)
 
     /* copy text, note: flag contains temporarily the raw type description */
 
-    switch ((msg->sms.coding - 1) & 0xff) {
+    switch ((msg->sms.coding - 1) & 0xff) { 
     case 0x00: /* gsm7 */
 	ois_expand_gsm7(buffer, &raw[2], msglen7);
 	ois_convert_to_iso88591(buffer, msglen7);
