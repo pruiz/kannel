@@ -650,8 +650,7 @@ error:
 }
 
 int octstr_recv(int fd, Octstr **ostr) {
-
-	uint32_t length;
+	long length;
 	char *data = NULL;
 	Octstr *newostr = NULL;
 	int ret = 0, readlength = 0;
@@ -673,10 +672,11 @@ int octstr_recv(int fd, Octstr **ostr) {
 		}
 	}
 	if ((char)length > '\0') {
+	    unsigned char *u;
+	    u = (unsigned char *) &length;
 	    warning(0, "Possible garbage received by octsr_recv, length %ld "
-		    "data %02x %02x %02x %02x ...", ntohl(length),
-		    (unsigned char)length, *((unsigned char *)&length+1),
-		    *((unsigned char *)&length+2),*((unsigned char *)&length+3));
+		    "data %02x %02x %02x %02x ...", (long) ntohl(length),
+		    u[0], u[1], u[2], u[3]);
 	    return -1;
 	} else {
 	    length = ntohl(length);

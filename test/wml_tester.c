@@ -1,9 +1,9 @@
 /* XXX The #ifdef HAVE_LIBXML is a stupid hack to make this not break things
 until libxml is installed everywhere we do development. --liw */
 
-#include "config.h"
+#include "gwlib.h"
 
-#if HAVE_LIBXML
+#if HAVE_LIBXML || 0
 
 /* FOR TESTING */ 
 
@@ -73,5 +73,6 @@ int main(int argc, char **argv)
 #else
 int main(void) {
 	panic(0, "HAVE_LIBXML not available, can't do anything.");
+	return 0;
 }
 #endif

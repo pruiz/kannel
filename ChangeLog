@@ -1,3 +1,7 @@
+Fri Mar  3 14:31:28 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/octstr.c, test/wml_tester.c: Minor fixes to silence warnings.
+
 Fri Mar  3 13:32:30 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/thread.c (mutex_destroy): Destroy the pthread_mutex_t
