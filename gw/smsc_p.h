@@ -29,7 +29,8 @@ enum {
 	SMSC_TYPE_EMI_X31,
 	SMSC_TYPE_EMI_IP,
 	SMSC_TYPE_SMPP_IP,
-	SMSC_TYPE_SEMA_X28
+	SMSC_TYPE_SEMA_X28,
+	SMSC_TYPE_AT
 };
 
 /*
@@ -134,6 +135,12 @@ struct SMSCenter {
         struct sema_msglist *sema_mt, *sema_mo;
         int sema_fd; 
     
+	/* AT Commands (wireless modems...) */
+	char *at_serialdevice;
+	int at_fd;
+	List *at_received;
+	Octstr *at_inbuffer;
+	
 	/* For buffering input. */
 	char *buffer;
 	size_t bufsize;
@@ -232,6 +239,16 @@ int sema_close(SMSCenter *smsc);
 int sema_pending_smsmessage(SMSCenter *smsc);
 int sema_submit_msg(SMSCenter *smsc, Msg *msg);
 int sema_receive_msg(SMSCenter *smsc, Msg **msg);
+
+/*
+ * Interface to wireless modems using AT commands.
+ */
+SMSCenter *at_open(char *serialdevice);
+int at_reopen(SMSCenter *smsc);
+int at_close(SMSCenter *smsc);
+int at_pending_smsmessage(SMSCenter *smsc);
+int at_submit_msg(SMSCenter *smsc, Msg *msg);
+int at_receive_msg(SMSCenter *smsc, Msg **msg);
 
 
 #endif

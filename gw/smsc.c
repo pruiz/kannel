@@ -100,6 +100,13 @@ SMSCenter *smscenter_construct(void) {
 	smsc->sema_serialdevice = NULL;
 	smsc->sema_fd = -1;
 	
+	/* AT Wireless modems  (GSM 03.40 version 7.4.0) */
+
+	smsc->at_serialdevice = NULL;
+	smsc->at_fd = -1;
+	smsc->at_received = NULL;
+	smsc->at_inbuffer = NULL;
+	
 	 /* add new SMSCes here */
 
 	/* Memory */
@@ -144,6 +151,11 @@ void smscenter_destruct(SMSCenter *smsc) {
 	gw_free(smsc->sema_smscnua);
 	gw_free(smsc->sema_homenua);
 	gw_free(smsc->sema_serialdevice);
+	
+	/* AT */
+	gw_free(smsc->at_serialdevice);
+	list_destroy(smsc->at_received);
+	gw_free(smsc->at_inbuffer);
 	
 	 /* add new SMSCes here */
 
@@ -190,6 +202,11 @@ int smscenter_submit_msg(SMSCenter *smsc, Msg *msg) {
 
 	case SMSC_TYPE_SEMA_X28:
                 if(sema_submit_msg(smsc,msg) == -1)
+		        goto error;
+		break;
+	    
+	case SMSC_TYPE_AT:
+                if(at_submit_msg(smsc,msg) == -1)
 		        goto error;
 		break;
 	    
@@ -250,6 +267,12 @@ int smscenter_receive_msg(SMSCenter *smsc, Msg **msg)
 	
     case SMSC_TYPE_SEMA_X28:
 	ret = sema_receive_msg(smsc, msg);
+	if(ret == -1)
+	    goto error;
+	break;
+    
+    case SMSC_TYPE_AT:
+	ret = at_receive_msg(smsc, msg);
 	if(ret == -1)
 	    goto error;
 	break;
@@ -315,6 +338,12 @@ int smscenter_pending_smsmessage(SMSCenter *smsc)
 
     case SMSC_TYPE_SEMA_X28:
 	ret = sema_pending_smsmessage(smsc);
+	if(ret == -1)
+	    goto error;
+	break;
+
+    case SMSC_TYPE_AT:
+	ret = at_pending_smsmessage(smsc);
 	if(ret == -1)
 	    goto error;
 	break;
@@ -496,6 +525,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 	else if (strcmp(type, "emi_ip") == 0) typeno = SMSC_TYPE_EMI_IP;
 	else if (strcmp(type, "smpp") == 0) typeno = SMSC_TYPE_SMPP_IP;
 	else if (strcmp(type, "sema") == 0) typeno = SMSC_TYPE_SEMA_X28;
+	else if (strcmp(type, "at") == 0) typeno = SMSC_TYPE_AT;
 	else {
 	    error(0, "Unknown SMSC type '%s'", type);
 	    return NULL;
@@ -563,6 +593,13 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 				 iwaitreport);
 	    break;    
 	    
+	case SMSC_TYPE_AT:
+	    if (device == NULL)
+		error(0, "Required field missing for AT virtual center.");
+	    else
+		smsc = at_open(device);
+	    break;    
+	    
 	 /* add new SMSCes here */
 
 	default:		/* Unknown SMSC type */
@@ -596,6 +633,8 @@ int smsc_reopen(SMSCenter *smsc) {
 	    return smpp_reopen(smsc);
 	case SMSC_TYPE_SEMA_X28:
 	    return sema_reopen(smsc);
+	case SMSC_TYPE_AT:
+	    return at_reopen(smsc);
 	 /* add new SMSCes here */
 	default:		/* Unknown SMSC type */
 	    return -2;		/* no use */
@@ -687,6 +726,11 @@ int smsc_close(SMSCenter *smsc)
 
     case SMSC_TYPE_SEMA_X28:
 	if(sema_close(smsc) == -1)
+	    errors = 1;
+	break;
+		
+    case SMSC_TYPE_AT:
+	if(at_close(smsc) == -1)
 	    errors = 1;
 	break;
 		
