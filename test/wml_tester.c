@@ -54,9 +54,12 @@ int main(int argc, char **argv)
 
   if (ret == 0)
     {
+      octstr_dump(wml_text);
+      printf("\n");
+
       printf("Here's the binary output: \n\n");
       octstr_dump(wml_binary);
-      printf("\n\n");
+      printf("\n");
 
       printf("And as a text: \n\n");
       octstr_pretty_print(stdout, wml_binary);

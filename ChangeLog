@@ -1,3 +1,10 @@
+2000-03-23  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: The global variable for the binary removed, now
+	should be thread safe.
+
+	* test/wml_tester.c : Minor formatting changes.
+
 2000-03-23 Sanna Seppanen <sanna@wapit.com>
 
 	*gwlib/http.c: corrected error in httprequest_add_header. hope
