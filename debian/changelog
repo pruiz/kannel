@@ -1,3 +1,10 @@
+kannel (1.2.0-1) unstable; urgency=low
+
+  * New upstream version
+  * Non-Official Package
+
+ -- Bruno Rodrigues <bruno.rodrigues@litux.org>  Thu, 18 Jul 2002 10:30:39 +0100
+
 kannel (1.1.6cvs-20020426) unstable; urgency=low
 
   * Daily Build
