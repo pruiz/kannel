@@ -186,6 +186,7 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
                              List *push_headers, int connected, Octstr **type);
 static long check_x_wap_application_id_header(List **push_headers);
 static int pap_convert_content(struct content *content);
+static int pap_get_content(struct content *content);
 static int select_bearer_network(WAPEvent **e);
 static int delivery_time_constraints(WAPEvent *e, PPGPushMachine *pm);
 static void deliver_confirmed_push(long last, PPGPushMachine *pm, 
@@ -1373,6 +1374,18 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
     if (content.body == NULL)
         goto no_transform;
 
+    content.type = http_header_find_first(push_headers, "Content-Transfer-Encoding");
+
+    if (content.type) {
+	octstr_strip_blanks(content.type);
+	debug("wap.push.ppg", 0, "PPG: Content-Transfer-Encoding is \"%s\"",
+	      octstr_get_cstr (content.type));
+	message_deliverable = pap_get_content(&content);
+	if (!message_deliverable) {
+	    goto error;
+	}
+    }
+
     http_header_get_content_type(push_headers, &content.type,
                                  &content.charset);   
     message_deliverable = pap_convert_content(&content);
@@ -1510,6 +1523,13 @@ static Octstr *convert_si_to_sic(struct content *content)
     return NULL;
 }
 
+static Octstr *extract_base64(struct content *content)
+{
+    Octstr *orig = octstr_duplicate(content->body);
+    octstr_base64_to_binary(orig);
+    return orig;
+}
+
 static struct {
     char *type;
     char *result_type;
@@ -1524,6 +1544,16 @@ static struct {
 };
 
 #define NUM_CONVERTERS ((long) (sizeof(converters) / sizeof(converters[0])))
+
+static struct {
+    char *transfer_encoding;
+    Octstr *(*extract) (struct content *);
+} extractors[] = {
+    { "base64",
+      extract_base64 }
+};
+
+#define NUM_EXTRACTORS ((long) (sizeof(extractors) / sizeof(extractors[0])))
 
 /*
  * Compile wap defined contents, accept others without modifications. Push
@@ -1544,6 +1574,34 @@ static int pap_convert_content(struct content *content)
             content->body = new_body;
             octstr_destroy(content->type); 
             content->type = octstr_create(converters[i].result_type);
+            return 1;
+        }
+    }
+
+    return 1;
+}
+
+/*
+ * MIME specifies a number of content transfer encodings.
+ * This function tries to get the original version of the
+ * content.
+ */
+static int pap_get_content(struct content *content)
+{
+    long i;
+    Octstr *new_body;
+
+    for (i = 0; i < NUM_EXTRACTORS; i++) {
+        if (octstr_case_compare(content->type, 
+				octstr_imm(extractors[i].transfer_encoding)) == 0) {
+	    
+	    new_body = extractors[i].extract(content);
+            if (new_body == NULL)
+	        return 0;
+            octstr_destroy(content->body);
+            content->body = new_body;
+	    octstr_destroy(content->type);
+	    content->type = NULL;
             return 1;
         }
     }

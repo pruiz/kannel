@@ -32,6 +32,7 @@ static char **push_data = NULL;
 static char *boundary = NULL;
 static Octstr *content_flag = NULL;
 static Octstr *appid_flag = NULL;
+static Octstr *content_transfer_encoding = NULL;
 
 static void add_push_application_id(List **push_headers, Octstr *appid_flag)
 {
@@ -68,6 +69,26 @@ static void add_content_type(Octstr *content_flag, Octstr **wap_content)
     else if (octstr_compare(content_flag, octstr_imm("nil")) == 0)
         *wap_content = octstr_create("");
 }
+
+static void add_content_transfer_encoding_type(Octstr *content_flag, Octstr *wap_content)
+{
+    if (!content_flag)
+	return;
+
+    if (octstr_compare(content_flag, octstr_imm("base64")) == 0)
+	octstr_append_cstr(wap_content, "Content-transfer-encoding: base64\r\n");
+}
+
+static void transfer_encode (Octstr *cte, Octstr *content)
+{
+    if (!cte)
+	return;
+    
+    if (octstr_compare(cte, octstr_imm("base64")) == 0) {
+	octstr_binary_to_base64(content);
+    }
+}
+
 
 /*
  * Add boundary value to the multipart header.
@@ -147,7 +168,7 @@ static void start_push(HTTPCaller *caller, long i)
                              " \"http://www.wapforum.org/DTD/pap_1.0.dtd\">"
                   "<pap>"
                         "<push-message push-id=\"9fjeo39jf084@pi.com\""
-                          " deliver-before-timestamp=\"2001-11-01T06:45:00Z\""
+                          " deliver-before-timestamp=\"2001-12-01T06:45:00Z\""
                           " deliver-after-timestamp=\"2000-02-27T06:45:00Z\""
                           " progress-notes-requested=\"false\">"
 			     "<address address-value=\"WAPPUSH=+358408676001/"
@@ -185,8 +206,11 @@ static void start_push(HTTPCaller *caller, long i)
         octstr_destroy(mos);
         content_file = push_data[1];
         add_content_type(content_flag, &wap_content);
+        add_content_transfer_encoding_type(content_transfer_encoding, wap_content);
         if ((wap_file_content = octstr_read_file(content_file)) == NULL)
 	    panic(0, "Stopping");
+
+	transfer_encode (content_transfer_encoding, wap_file_content);
         octstr_append(wap_content, wap_file_content);
         octstr_destroy(wap_file_content);
 
@@ -391,6 +415,9 @@ static void help(void)
     info(0, "    Make `number' requests. Default one request");
     info(0, "-i seconds");
     info(0, "    Wait 'seconds' seconds between pushes. Default: do not wait");
+    info(0, "-e transfer encoding");
+    info(0, "    use transfer encoding to send push contents.");
+    info(0, "    Currently supported is base64.");
     info(0, "-H");
     info(0, "Use hardcoded MIME message, containing a pap control document");
     info(0, "Default: read components from files");
@@ -411,7 +438,7 @@ int main(int argc, char **argv)
     gwlib_init();
     num_threads = 1;
 
-    while ((opt = getopt(argc, argv, "Hhv:qr:t:c:a:i:")) != EOF) {
+    while ((opt = getopt(argc, argv, "Hhv:qr:t:c:a:i:e:")) != EOF) {
         switch(opt) {
 	    case 'v':
 	        log_set_output_level(atoi(optarg));
@@ -468,6 +495,17 @@ int main(int argc, char **argv)
 		    help();
                     exit(0);
                 }
+	    break;
+
+	    case 'e':
+		content_transfer_encoding = octstr_create(optarg);
+                if (octstr_compare(content_transfer_encoding, octstr_imm("base64")) != 0) {
+		    octstr_destroy(content_transfer_encoding);
+		    error(0, "TEST_PPG: unknown content transfer encoding \"%s\"",
+			  octstr_get_cstr(content_transfer_encoding));
+		    help();
+                    exit(0);
+		}
 	    break;
 
 	    case 'h':
