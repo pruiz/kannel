@@ -801,6 +801,11 @@ void at2_set_speed(PrivAT2data *privdata, int bps)
         speed = B57600;
         break;
 #endif
+#ifdef B115200
+    case 115200:
+        speed = B115200;
+        break;
+#endif
     default:
         speed = B9600;
     }
@@ -1292,6 +1297,9 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
               octstr_get_cstr(origin));
     }
 
+    if (pos > octstr_len(pdu))
+        goto msg_error;
+
     /* PID */
     pid = octstr_get_char(pdu, pos);
     pos++;
@@ -1353,6 +1361,9 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
         len -= udhlen + 1;
     }
 
+    if (pos > octstr_len(pdu))
+        goto msg_error;
+
     /* build the message */
     message = msg_create(sms);
     if (!dcs_to_fields(&message, dcs)) {
@@ -1398,6 +1409,13 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
     octstr_destroy(tmpstr);
 
     return message;
+    
+msg_error:
+    O_DESTROY(udh);
+    O_DESTROY(origin);
+    O_DESTROY(text);
+    O_DESTROY(pdu);
+    return NULL;
 }
 
 Msg *at2_pdu_decode_report_sm(Octstr *data, PrivAT2data *privdata)
@@ -1466,25 +1484,25 @@ Msg *at2_pdu_decode_report_sm(Octstr *data, PrivAT2data *privdata)
 	 */
     type = type & 0xE0; /* filter out everything but the 7th, 6th and 5th bits */
     switch (type) {
-	case 0x00:
-	    /* 0 0 : success class */
-	    type = DLR_SUCCESS;
-	    tmpstr = octstr_create("Success/");
-	    break;
-	case 0x20:
-	    /* 0 1 : buffered class (temporary error) */
-	    type = DLR_BUFFERED;
-	    tmpstr = octstr_create("Buffered/");
-	    break;
-	case 0x40:
-	case 0x60:
-	default:
-	    /* 1 0 : failed class */
-	    /* 1 1 : failed class (actually, temporary error but timed out) */
-	    /* and any other value (can't think of any) is considered failure */
-	    type = DLR_FAIL;
-	    tmpstr = octstr_create("Failed/");
-	    break;
+        case 0x00:
+            /* 0 0 : success class */
+            type = DLR_SUCCESS;
+            tmpstr = octstr_create("Success");
+            break;
+        case 0x20:
+            /* 0 1 : buffered class (temporary error) */
+            type = DLR_BUFFERED;
+            tmpstr = octstr_create("Buffered");
+            break;
+        case 0x40:
+        case 0x60:
+        default:
+            /* 1 0 : failed class */
+            /* 1 1 : failed class (actually, temporary error but timed out) */
+            /* and any other value (can't think of any) is considered failure */
+            type = DLR_FAIL;
+            tmpstr = octstr_create("Failed");
+            break;
     }
     /* Actually, the above implementation is not correct, as the reference says that implementations should consider
      * any "reserved" values to be "failure", but most reserved values fall into one of the three categories. it will catch
