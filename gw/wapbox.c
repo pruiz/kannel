@@ -10,6 +10,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
+#include <syslog.h>
 #ifdef HAVE_GETLOADAVG
 #include <sys/loadavg.h>
 #endif
@@ -29,6 +30,8 @@ static int heartbeat_freq = BB_DEFAULT_HEARTBEAT;
 static int timer_freq = WB_DEFAULT_TIMER_TICK;
 static char *logfile = NULL;
 static int logfilelevel = 0;
+extern char dosyslog;
+extern int sysloglevel;
 
 
 static enum {
@@ -103,6 +106,24 @@ static void read_config(char *filename) {
 	    if ((s = config_get(grp, buf)) != NULL)
 		wsp_http_map_url_config(s);
 	}
+	/* Get syslog parameters */
+	if ((s = config_get(grp, "syslog-level")) != NULL){
+	    if(!strcmp(s,"none")){
+		dosyslog = 0;
+		debug("bbox",0,"syslog parameter is none");
+	    }else{
+		openlog("wapbox",LOG_PID,LOG_DAEMON);
+		dosyslog = 1;
+		sysloglevel = atoi(s); 
+		debug("bbox",0,"syslog parameter is %d",sysloglevel);
+	    }
+
+	}else{
+	    dosyslog = 0;
+	    debug("bbox",0,"no syslog parameter");
+	}
+	    
+
 	if (logfile != NULL) {
 		open_logfile(logfile, logfilelevel);
 	        info(0, "Starting to log to file %s level %d", logfile, logfilelevel);

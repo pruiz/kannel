@@ -4,10 +4,12 @@
 #include <time.h>
 #include <stdarg.h>
 #include <string.h>
+#include <syslog.h>
 
 #include "gwlib.h"
 
-
+int sysloglevel;
+char dosyslog = 0;
 /*
  * List of currently open log files.
  */
@@ -173,6 +175,46 @@ static void output(FILE *f, char *buf, va_list args) {
    more awkward to edit, but that can't be helped. The "do {} while (0)"
    construct is a gimmick to be more like a function call in all syntactic
    situation. */
+
+/* I'm implementing the syslogging bit under Solaris, it should work elsewhere
+ * but you can add your own platform
+ */
+
+void kannel_syslog(char *format, va_list args,int level){
+#ifdef SunOS
+    char buf[4096];/* Trying to syslog more han 4K could be bad */
+    int translog;
+
+    if(level >= sysloglevel && dosyslog){
+	vsnprintf( buf,sizeof(buf),format, args);
+	switch(level){
+	    case DEBUG:
+	    	translog = LOG_DEBUG;
+	    case INFO:
+	    	translog = LOG_INFO;
+	    case WARNING:
+	    	translog = LOG_WARNING;
+	    case ERROR:
+	    	translog = LOG_ERR;
+	    case PANIC:
+	    	translog = LOG_ALERT;
+	    case LOG:
+	    	translog = LOG_NOTICE;
+	    default:
+		translog = LOG_INFO;
+	}
+	syslog(translog,buf);
+
+    }
+#endif
+}
+
+void instrument_foo(char* location){
+	/* Somwhere to stick a breakpoint*/
+	int foobar=0;
+	if(foobar){foobar = 1;};
+}
+
 #define FUNCTION_GUTS(level, place) \
 	do { \
 		int i; \
@@ -186,6 +228,11 @@ static void output(FILE *f, char *buf, va_list args) {
 				output(logfiles[i].file, buf, args); \
 				va_end(args); \
 			} \
+		if(dosyslog){ \
+			va_start(args, fmt); \
+			kannel_syslog(buf,args,level); \
+			va_end(args); \
+		} \
 		} \
 	} while (0)
 
