@@ -3275,7 +3275,8 @@ send-url = "http://localhost:20022"
    <row><entry><literal>system-type (m)</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign="bottom">
-        Type of HTTP connection. Currently supported are: 'kannel', 'brunet'.
+        Type of HTTP connection. Currently supported are: 'kannel', 
+		  'brunet', 'xidris'.
      </entry></row>
 
    <row><entry><literal>send-url (m)</literal></entry>
