@@ -1,3 +1,12 @@
+2002-04-02  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: added new smsbox_sendota_post() to handke POST method of 
+      sendota function. Now you can use the same POST semantic as for sendsms.
+ 
+2002-04-02  Stipe Tolj  <tolj@wapme-systems.de>
+    * test/test_http.c: added POST method support for the HTTP client test
+      program. Mainly this may be used to test POST enabled HTTP servers
+      within the single boxes, like PPG, sendsms, sendota.
+
 2002-04-01  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_at2.c, gwlib/http.c: fixed minor kannel-nag warnings
 
