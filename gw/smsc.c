@@ -614,10 +614,10 @@ SMSCenter *smsc_open(CfgGroup *grp)
         else
 	    smsc = emi_open_ip(octstr_get_cstr(host), 
 	    	    	       port, 
-			       octstr_get_cstr(username), 
-			       octstr_get_cstr(password),
+			       username ? octstr_get_cstr(username) : 0, 
+			       password ? octstr_get_cstr(password) : 0,
                                receive_port, 
-			       octstr_get_cstr(allow_ip), 
+			       allow_ip ? octstr_get_cstr(allow_ip) : 0, 
 			       our_port);
         break;
 

@@ -1,3 +1,9 @@
+2001-02-13  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsc.c: Fixed octstr_get_cstr(NULL) when username, password
+	or allow_ip wasn't specified in emi_ip smsc group. This bug
+	probably appeared when smsc.c was converted to use cfg.c.
+
 2001-02-13  Richard Braakman  <dark@wapit.com>
 
 	* gw/wml_definitions.h: Applied patch from Aymerick Jéhanne
