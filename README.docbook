@@ -50,6 +50,7 @@ DocBook installation on Redhat
 		stylesheets
 		jade
 		jadetex
+		transfig
 	
 	Then apply this change to /usr/share/texmf/web2c/texmf.cnf:
 	

@@ -1,3 +1,7 @@
+Wed Apr  5 18:38:20 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* README.docbook: Added note about transfig being needed.
+
 Wed Apr  5 18:20:52 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* csdr.[ch] renamed to wdp_udp.[ch] and other files modified
