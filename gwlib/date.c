@@ -227,50 +227,59 @@ error:
 int date_parse_iso (struct universaltime *ut, Octstr *os)
 {
     long pos = 0;
-	int c;
+    int c;
 
-	/* assign defaults */
-	ut->month = 0;
-	ut->day = 1;
-	ut->hour = 0;
-	ut->minute = 0;
-	ut->second = 0;
+    /* assign defaults */
+    ut->month = 0;
+    ut->day = 1;
+    ut->hour = 0;
+    ut->minute = 0;
+    ut->second = 0;
 
     if ((pos = octstr_parse_long(&(ut->year), os, pos, 10)) < 0)
-		return -1;
-	if (ut->year < 70)
-	    ut->year += 2000;
-	else if (ut->year < 100)
-		ut->year += 1900;
+        return -1;
+    if (ut->year < 70)
+        ut->year += 2000;
+    else if (ut->year < 100)
+	ut->year += 1900;
 
-	while ((c = octstr_get_char(os, pos++)) != -1 && !gw_isdigit(c));
-	if ((pos = octstr_parse_long(&(ut->month), os, pos, 10)) < 0)
-		return 0;
-
-	while ((c = octstr_get_char(os, pos++)) != -1 && !gw_isdigit(c));
-	if ((pos = octstr_parse_long(&(ut->day), os, pos, 10)) < 0)
-		return 0;
-
-	while ((c = octstr_get_char(os, pos++)) != -1 && !gw_isdigit(c));
-	if ((pos = octstr_parse_long(&(ut->hour), os, pos, 10)) < 0)
-		return 0;
-
-	while ((c = octstr_get_char(os, pos++)) != -1 && !gw_isdigit(c));
-	if ((pos = octstr_parse_long(&(ut->minute), os, pos, 10)) < 0)
-		return 0;
-
-	while ((c = octstr_get_char(os, pos++)) != -1 && !gw_isdigit(c));
-	if ((pos = octstr_parse_long(&(ut->second), os, pos, 10)) < 0)
-		return 0;
-
+    while ((c = octstr_get_char(os, pos)) != -1 && !gw_isdigit(c))
+	pos++;
+    if ((pos = octstr_parse_long(&(ut->month), os, pos, 10)) < 0)
 	return 0;
+
+    /* 0-based months */
+    if (ut->month > 0)
+        ut->month--;
+
+    while ((c = octstr_get_char(os, pos)) != -1 && !gw_isdigit(c))
+        pos++;
+    if ((pos = octstr_parse_long(&(ut->day), os, pos, 10)) < 0)
+	return 0;
+
+    while ((c = octstr_get_char(os, pos)) != -1 && !gw_isdigit(c))
+        pos++;
+    if ((pos = octstr_parse_long(&(ut->hour), os, pos, 10)) < 0)
+	return 0;
+
+    while ((c = octstr_get_char(os, pos)) != -1 && !gw_isdigit(c))
+        pos++;
+    if ((pos = octstr_parse_long(&(ut->minute), os, pos, 10)) < 0)
+	return 0;
+
+    while ((c = octstr_get_char(os, pos)) != -1 && !gw_isdigit(c))
+        pos++;
+    if ((pos = octstr_parse_long(&(ut->second), os, pos, 10)) < 0)
+	return 0;
+
+    return 0;
 }
 
 Octstr* date_create_iso(time_t unixtime) 
 {
     struct tm tm;
 
-    tm = gw_localtime((time_t) unixtime);
+    tm = gw_gmtime(unixtime);
     
     return octstr_format("%d-%02d-%02dT%02d:%02d:%02dZ", 
         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);    

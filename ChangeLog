@@ -1,3 +1,8 @@
+2004-07-20 Alexander Malysh <olek2002 at hotmail.com>
+    * gwlib/date.c: fixed 'date_parse_iso' and 'date_create_iso'.
+      date_create_iso: 'Z' at the and menas UTC time and not local time.
+      date_parse_iso: never works?!
+
 2004-07-18 Alexander Malysh <olek2002 at hotmail.com>
     * gw/smsc/smsc_smpp.c: fixed bug #143.
 
