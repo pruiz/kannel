@@ -29,6 +29,7 @@
 
 #include "gwlib/gwlib.h"
 #include "smsc_p.h"
+#include "sms.h"
 
 #ifndef CIMD2_TRACE
 #define CIMD2_TRACE 0
@@ -1202,6 +1203,7 @@ static struct packet *packet_encode_message(Msg *msg)
     Octstr *text;
     int spaceleft;
     long truncated;
+    int dcs = DCS_GSM_TEXT;  /* Data coding scheme, as in GSM 03.38 */
 
     gw_assert(msg != NULL);
     gw_assert(msg->type == sms);
@@ -1268,9 +1270,7 @@ static struct packet *packet_encode_message(Msg *msg)
             octstr_truncate(text, spaceleft);
         }
         packet_add_hex_parm(packet, P_USER_DATA_BINARY, text);
-        /* 245 is 8-bit-data, message class "User 1 defined",
-         * whatever that means. */
-        packet_add_int_parm(packet, P_DATA_CODING_SCHEME, 245);
+        dcs = DCS_OCTET_DATA;
     } else {
 #if CIMD2_TRACE
         debug("bb.sms.cimd2", 0, "CIMD2 sending message.  Text:");
@@ -1287,7 +1287,11 @@ static struct packet *packet_encode_message(Msg *msg)
         octstr_dump(text, 0);
 #endif
         packet_add_sms_parm(packet, P_USER_DATA, text);
+        dcs = DCS_GSM_TEXT;
     }
+
+    if (dcs != 0)
+        packet_add_int_parm(packet, P_DATA_CODING_SCHEME, dcs);
 
     if (truncated > 0) {
         warning(0, "CIMD2: truncating message text to fit "

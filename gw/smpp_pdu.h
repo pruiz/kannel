@@ -14,7 +14,6 @@
 
 enum {
     SMPP_ESM_CLASS_UDH_INDICATOR = 0x43,
-    SMPP_DATA_CODING_FOR_UDH = 0xF5
 };
 
 

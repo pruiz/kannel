@@ -1102,7 +1102,6 @@ static int parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char *rawmessage, 
     }
 
     if (msg->sms.flag_8bit != 1) {
-        /* skip the probably existing UDH */
         octstr_get_many_chars(msgtext, msg->sms.msgdata, 0, octstr_len(msg->sms.msgdata));
         msgtext[octstr_len(msg->sms.msgdata)] = '\0';
         parse_iso88591_to_emi(msgtext, my_buffer2,

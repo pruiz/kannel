@@ -66,6 +66,7 @@
 #include "smsc.h"
 #include "smsc_p.h"
 #include "gwlib/gwlib.h"
+#include "sms.h"
 
 
 /* 'private:' */
@@ -879,9 +880,10 @@ static int ois_append_data_coding_scheme(char *raw, const Msg *msg)
 {
     SAY(3, "ois_append_data_coding_scheme");
 
-    /* 0x0f=ia5=gsm in 8bits, 0x00=gsm, */
-    /* 0xf4=8bits to display, 0xf5=to memory, 0xf6=to sim, 0xf7=to terminal */
-    raw[0] = (char) (msg->sms.flag_8bit ? 0xf4 : 0x0f);
+    /* 0x0f is a special code for ASCII text, the SMSC will convert
+     * this to GSM and set the DCS to 0.
+     * FIXME: Convert to GSM ourselves and use DCS_GSM_TEXT. */
+    raw[0] = (char) (msg->sms.flag_8bit ? DCS_OCTET_DATA : 0x0f);
     return 1;
 }
 

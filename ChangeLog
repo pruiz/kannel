@@ -1,3 +1,11 @@
+2001-04-30  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_{at,cimd2,ois,smpp}.c, gw/sms.h, gw/smpp_pdu.h:
+        Standardized on two data coding scheme values, called DCS_GSM_TEXT
+        and DCS_OCTET_DATA.  Not all protocols can use these, but at least
+	the ones that do will all use the same values.  Both have now been
+        chosen to set only the alphabet, and leave message class alone.
+
 2001-04-29  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
 	* configure.in,configure: Allow libxml versions between

@@ -36,6 +36,7 @@
 #include "gwlib/charset.h"
 #include "smsc.h"
 #include "smsc_p.h"
+#include "sms.h"
 
 #ifndef CRTSCTS
 #define CRTSCTS 0
@@ -672,6 +673,7 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
         int pos = 0, i,len, setvalidity;
         int ntype = PNT_UNKNOWN; /* number type default */
         int nstartpos = 0;       /* offset for the phone number */
+        int dcs;  /* data coding scheme (GSM 03.38) */
         
         /* The message is encoded directly in the text representation of 
          * the hex values that will be sent to the modem.
@@ -743,11 +745,10 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
         pos++;
         
         /* data coding scheme */
-        /* coding group bits: 1111 */
-        pdu[pos] = numtext(15);
+        dcs = msg->sms.flag_8bit ? DCS_OCTET_DATA : DCS_GSM_TEXT;
+        pdu[pos] = numtext(dcs >> 4);
         pos++;
-        /* data coding/message class: class 1 */
-        pdu[pos] = numtext(msg->sms.flag_8bit << 2) + 1;
+        pdu[pos] = numtext(dcs % 16);
         pos++;
 
         /* Validity-Period (TP-VP)

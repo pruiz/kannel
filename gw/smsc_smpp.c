@@ -19,6 +19,7 @@
 #include "smpp_pdu.h"
 #include "smscconn_p.h"
 #include "bb_smscconn_cb.h"
+#include "sms.h"
 
 
 /*
@@ -396,11 +397,14 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
 	pdu->u.submit_sm.short_message =
 	    octstr_format("%S%S", msg->sms.udhdata, msg->sms.msgdata);
 	pdu->u.submit_sm.esm_class = SMPP_ESM_CLASS_UDH_INDICATOR;
-	pdu->u.submit_sm.data_coding = SMPP_DATA_CODING_FOR_UDH;
     } else {
 	pdu->u.submit_sm.short_message = octstr_duplicate(msg->sms.msgdata);
 	charset_latin1_to_gsm(pdu->u.submit_sm.short_message);
     }
+    if (msg->sms.flag_8bit)
+        pdu->u.submit_sm.data_coding = DCS_OCTET_DATA;
+    else
+        pdu->u.submit_sm.data_coding = DCS_GSM_TEXT;
     
     return pdu;
 }
