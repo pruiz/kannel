@@ -2136,7 +2136,7 @@ url = "http://%S"
      <entry valign=bottom>
         Allowed characters to split the message into several messages.
         So, with "#!" the message is split from last '#' or '!', which is 
-        included in the previous part
+        included in the previous part.
 
      </entry></row>
 
@@ -2144,14 +2144,16 @@ url = "http://%S"
      <entry>string</entry>
      <entry valign=bottom>
         If the message is split into several ones, this string is appended to 
-        each message except the last one
+        each message except the last one.
      </entry></row>
 
    <row><entry><literal>omit-empty</literal></entry>
      <entry>0 or 1</entry>
      <entry valign=bottom>
-        If set to other than '0', 'no data' messages are not sent to receiver
-        in case of an empty reply from the service provider.
+	Normally, Kannel sends a warning to the user if there was an
+	empty reply from the service provider.  If
+	<literal>omit-empty</literal> is set to 1, Kannel will send
+	nothing at all in such a case.
 
      </entry></row>
 

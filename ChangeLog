@@ -11,6 +11,9 @@
 
 	* userguide: Describe when prefix and suffix are used.
 
+	* userguide: Improve description of "omit-empty".  (Suggested
+	by Gildas Perrot.)
+
 2001-02-16  Richard Braakman  <dark@wapit.com>
 
 	* gw/bb_smscconn.c, gw/urltrans.c: Deal with cfg_get_multi_group()
