@@ -1,3 +1,8 @@
+2000-10-26  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsbox_req.c: fixed that messages with no translation are
+	handled correctly
+
 2000-10-25  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/wml_definitions.h: Commented out OPAQUE, since Cygwin

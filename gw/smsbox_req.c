@@ -569,7 +569,17 @@ void smsbox_req_thread(void *arg) {
     }
 
     trans = urltrans_find(translations, msg->sms.msgdata, msg->sms.smsc_id);
-    if (trans == NULL) goto error;
+    if (trans == NULL) {
+	Octstr *t;
+	warning(0, "No translation found for <%s> from <%s> to <%s>",
+		octstr_get_cstr(msg->sms.msgdata),
+		octstr_get_cstr(msg->sms.sender),
+		octstr_get_cstr(msg->sms.receiver));
+	t = msg->sms.sender;
+	msg->sms.sender = msg->sms.receiver;
+	msg->sms.receiver = t;
+	goto error;
+    }
 
     info(0, "Starting to service <%s> from <%s> to <%s>",
 	 octstr_get_cstr(msg->sms.msgdata),
@@ -589,9 +599,7 @@ void smsbox_req_thread(void *arg) {
     else if (global_sender != NULL)
 	octstr_replace(msg->sms.sender, global_sender, strlen(global_sender));
     else {
-	Octstr *t = msg->sms.sender;
 	msg->sms.sender = msg->sms.receiver;
-	msg->sms.receiver = t;
     }
     octstr_destroy(msg->sms.receiver);
     msg->sms.receiver = tmp;
