@@ -73,8 +73,8 @@ fakesmsc: fakesmsc.o libgw.a
 bearerbox: $(BBOBJS) libgw.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bearerbox $(BBOBJS) libgw.a $(LIBS)
 
-smsbox: smsbox.o msg.o libgw.a
-	$(CC) $(CFLAGS) $(LDFLAGS) -o smsbox smsbox.o msg.o libgw.a $(LIBS)
+smsbox: smsbox.o smsbox_req.o msg.o libgw.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o smsbox smsbox.o smsbox_req.o msg.o libgw.a $(LIBS)
 
 wapbox: wapbox.o msg.o libgw.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o wapbox wapbox.o msg.o libgw.a $(LIBS)

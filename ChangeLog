@@ -1,3 +1,11 @@
+1999-11-16    <rpr@rpr.wapit.com>
+
+	* smsbox_req.c, smsbox_reg.h, smsbox.c, Makefile: separated 
+	request handling to own module so that it can be used as thread 
+	in bearerbox (implemented later)
+
+	* bearerbox.c: someone has messed with print_threads
+
 1999-11-15    <mikael@wapit.com>
 
 	* smsc*.(c|h), *box.c: getting rid of the SMSMessage structure

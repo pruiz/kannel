@@ -1235,14 +1235,10 @@ error:
 static void print_threads(char *buffer)
 {
     BBThread *thr;
-    int i, ret, num;
-    int smsbox, wapbox, smsc, csdr;
+    int i, ret;
     char buf[1024];
 
-    smsbox = wapbox = smsc = csdr = 0;
-    num = 0;
-
-    buffer[0] = '\0';	/* if no threads */
+    buffer[0] = '\0';
     
     ret = pthread_mutex_lock(&bbox->mutex);
     if (ret != 0)
@@ -1269,7 +1265,7 @@ static void print_threads(char *buffer)
 			thr->boxc->client_ip, bbt_status_name(thr->status));
 		break;
 	    default:
-		sprintf(buf, "Unknown connection type");
+		sprintf(buf, "Unknown connection type\n");
 	    }
 	    strcat(buffer, buf);
 	}
@@ -1277,10 +1273,6 @@ static void print_threads(char *buffer)
     ret = pthread_mutex_unlock(&bbox->mutex);
     if (ret != 0)
 	goto error;
-
-    sprintf(buffer, "Total %d receiver threads, of which...\n"
-	    "active ones: %d SMSC, %d CSDR, %d SMS BOX, %d WAP BOX",
-	    num, smsc, csdr, smsbox,wapbox);
 
     if (bbox->http_port > -1) {
 	sprintf(buf, "[n/a] HTTP-Adminstration at port %d\n", bbox->http_port);
