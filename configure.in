@@ -64,6 +64,7 @@ else
 fi
 
 AC_CHECK_LIB(resolv, inet_ntop)
+AC_CHECK_LIB(bind, inet_ntop)
 
 
 dnl Check to see if we should do the WTLS thing, and which version to use
@@ -250,15 +251,46 @@ docs) echo Documentation will be built as well. ;;
 esac
 
 
-# Check whether mysqlclient library is present. gw/dlr.c might need it
-echo $ac_n "checking for /usr/lib/libmysqlclient.so... " 1>&6
-if [ -f /usr/lib/libmysqlclient.so ]
-then
-    echo "found"
-    LIBS="$LIBS -lmysqlclient "
-else
-    echo "not found"
-fi
+dnl Implement the --with-mysql option. This will set HAVE_MYSQL in config.h
+dnl accordingly and enable the usage of the libmysqlclient routines.
+
+AC_ARG_WITH(mysql,
+[  --with-mysql[=DIR]      where to look for MySQL libs and header files
+                          DIR points to the installation [/usr/local]],
+[AC_MSG_CHECKING(for MySQL client support in)
+ if test "$withval" = "yes"; then
+   loc="/usr/local"
+ else
+   loc="$withval"
+ fi
+ AC_MSG_RESULT($loc)
+ AC_CHECK_FILE("$loc/include/mysql/mysql.h", 
+   [CFLAGS="$CFLAGS -I$loc/include/mysql"; LIBS="$LIBS -L$dir/lib/mysql"],
+   [AC_CHECK_FILE("$loc/include/mysql.h", 
+     [CFLAGS="$CFLAGS -I$loc/include"; LIBS="$LIBS -L$dir/lib"],
+     [AC_MSG_ERROR(Unable to find mysql.h under $loc)]
+    )]
+ )
+ AC_CHECK_HEADERS(mysql/mysql.h mysql/mysql_com.h mysql/mysql_version.h)
+ AC_CHECK_LIB(mysqlclient, mysql_init, [LIBS="$LIBS -lmysqlclient"]) 
+ AC_DEFINE(HAVE_MYSQL)
+ MYSQL="yes"
+])
+
+
+dnl Implement the --enable-mysql-dlr option. 
+AC_ARG_ENABLE(mysql-dlr,
+[  --enable-mysql-dlr      enable MySQL support for DLR (default: disabled)], 
+[if test "$enableval" = "yes"; then
+   if test "$MYSQL" != "yes"; then
+     AC_MSG_ERROR(Option --enable-mysql-dlr requires MySQL client support)
+   else
+     echo enabling MySQL support for DLR
+   fi
+   AC_DEFINE(MYSQL_DLR)
+ fi
+])
+
 
 dnl Implement the --enable-pam option.
 
