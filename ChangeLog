@@ -1,3 +1,8 @@
+2004-08-11  Stipe Tolj  <stolj@wapme.de>
+    * gw/smsc/smpp_pdu.c: fixing a warning statement, for nulterminated string
+      length checking of PDU elements. This should be not confusing users.
+      Thanks to Alan McNatty for pointing to this.
+
 2004-08-09 Alexander Malysh <olek2002 at hotmail.com>
     * gwlib/gw-rwlock.c: catch 'pthread_rwlock_init' errors too.
 
