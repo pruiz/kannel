@@ -1532,7 +1532,7 @@ static PPGPushMachine *find_ppg_push_machine_using_pi_push_id(
     gw_assert(pi_push_id);
     session_machine_assert(sm);
 
-    pm = list_search(sm->push_machines, &pi_push_id, push_has_pi_push_id);
+    pm = list_search(sm->push_machines, pi_push_id, push_has_pi_push_id);
 
     return pm;
 }
