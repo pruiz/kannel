@@ -904,7 +904,6 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
     char *tmpbuff = NULL;
     int tmpint = 0, tmpint2 = 0;
     HTTPRequest *request = NULL;
-    size_t len = 0;
     
     if( (from==NULL) || (size==0) ) {
 	error(0, "httprequest_wrap: faulty input");
@@ -912,10 +911,9 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
     }
     
     /* do not use the variable 'size' here, it's evil */
-    len = strlen(from) + 1;
-    mycopy = gw_malloc(len);
-    memcpy(mycopy, from, len);
- 
+    mycopy = gw_malloc(size + 1);
+    memcpy(mycopy, from, size);
+    mycopy[size] = '\0';
     
     request = gw_malloc(sizeof(HTTPRequest));
     tmpbuff = gw_malloc(10*1024 + 1);
