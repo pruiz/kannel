@@ -149,8 +149,6 @@ void wap_push_ota_bb_address_set(Octstr *in)
     mutex_lock(bearerbox->mutex);
     bearerbox->address = name(in);
     mutex_unlock(bearerbox->mutex);
-
-    octstr_destroy(in);
 }
 
 /**************************************************************************

@@ -105,8 +105,6 @@ static void udp_receiver(void *arg)
 		       octstr_get_cstr(ip));
     	    octstr_destroy(datagram);
 	} else {
-	    octstr_destroy(ip);
-    
 	    debug("bb.udp", 0, "datagram received");
 	    msg = msg_create(wdp_datagram);
     

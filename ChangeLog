@@ -1,6 +1,10 @@
 2001-01-31  Uoti Urpala  <uau@wapit.com>
 
-	gwlib/http.c: Don't try to wake up the server thread at shutdown
+	* gw/bb_udp.c, gw/wap_push_ota.c: Fixed double octstr_destroy() calls.
+
+2001-01-31  Uoti Urpala  <uau@wapit.com>
+
+	* gwlib/http.c: Don't try to wake up the server thread at shutdown
 	if it was never created.
 
 2001-01-31  Peter Grönholm  <peter@wapit.com>
