@@ -1,3 +1,8 @@
+2000-03-21  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gwlib/octstr.c: a bug fixed in the octstr_delete; now the 
+	\0-character is added in the end.
+
 Tue Mar 21 14:41:01 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* utils/kannel-nag, utils/changelog-report, utils/daily-patch:

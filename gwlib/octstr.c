@@ -501,6 +501,7 @@ void octstr_delete(Octstr *ostr1, size_t pos, size_t len) {
 		memmove(ostr1->data + pos, ostr1->data + pos + len,
 			ostr1->len - pos - len);
 		ostr1->len -= len;
+	        ostr1->data[ostr1->len] = '\0';
 	}
 }
 
