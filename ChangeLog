@@ -1,3 +1,9 @@
+2003-01-24  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_boxc.c, gw/smsbox.c: fixed a un-locked mutex bug while waiting
+      for smsbox indenitificatio msgs. Bug identified and patch provided
+      by "Robert Galach" <kanelek@tenbit.pl>.
+      [Msg-ID: <018001c2c158$f864beb0$3200000a@tenbit.com>]
+
 2003-01-21  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smpp_pdu.c: fixed a bug in smpp_pdu_unpack() when an PDU 
       contains optional parameters with len < 0, octstr_copy() would 
