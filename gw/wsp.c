@@ -599,24 +599,6 @@ static void append_uint8(Octstr *pdu, long n) {
 }
 
 
-static void append_uintvar(Octstr *pdu, long n) {
-	long bytes[5];
-	unsigned long u;
-	int i;
-	
-	u = n;
-	for (i = 4; i >= 0; --i) {
-		bytes[i] = u & 0x7F;
-		u >>= 7;
-	}
-	for (i = 0; i < 4 && bytes[i] == 0; ++i)
-		continue;
-	for (; i < 4; ++i)
-		append_uint8(pdu, 0x80 | bytes[i]);
-	append_uint8(pdu, bytes[4]);
-}
-
-
 static void append_octstr(Octstr *pdu, Octstr *os) {
 	octstr_insert(pdu, os, octstr_len(pdu));
 }
@@ -640,27 +622,27 @@ static Octstr *make_connectreply_pdu(WSPMachine *m, long session_id) {
 		if (m->set_caps & WSP_CSDU_SET) {
 			octstr_truncate(tmp, 0);
 			append_uint8(tmp, WSP_CAPS_SERVER_SDU_SIZE);
-			append_uintvar(tmp, m->client_SDU_size);
+			octstr_append_uintvar(tmp, m->client_SDU_size);
 		
-			append_uintvar(caps, octstr_len(tmp));
+			octstr_append_uintvar(caps, octstr_len(tmp));
 			append_octstr(caps, tmp);
 		}
 		if (m->set_caps & WSP_SSDU_SET) {
 			octstr_truncate(tmp, 0);
 			append_uint8(tmp, WSP_CAPS_SERVER_SDU_SIZE);
-			append_uintvar(tmp, m->server_SDU_size);
+			octstr_append_uintvar(tmp, m->server_SDU_size);
 		
-			append_uintvar(caps, octstr_len(tmp));
+			octstr_append_uintvar(caps, octstr_len(tmp));
 			append_octstr(caps, tmp);
 		}
 		
 		if (m->set_caps & WSP_MMOR_SET) {
-			append_uintvar(caps, 2);
+			octstr_append_uintvar(caps, 2);
 			append_uint8(caps, WSP_CAPS_METHOD_MOR);
 			append_uint8(caps, m->MOR_method);
 		}
 		if (m->set_caps & WSP_PMOR_SET) {
-			append_uintvar(caps, 2);
+			octstr_append_uintvar(caps, 2);
 			append_uint8(caps, WSP_CAPS_PUSH_MOR);
 			append_uint8(caps, m->MOR_push);
 		}
