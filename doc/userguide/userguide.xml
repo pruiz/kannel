@@ -1189,7 +1189,8 @@ bearerbox-host = localhost
     <row><entry><literal>syslog-level</literal></entry>
      <entry>number</entry>
      <entry valign=bottom>
-         <emphasis>Somebody needs to explain this a bit...</emphasis>
+         Minimum log level for messages sent to syslog, the UNIX
+	 system log daemon.
      </entry></row>
 
 

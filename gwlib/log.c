@@ -78,6 +78,7 @@ void log_set_syslog(const char *ident, int syslog_level)
 	dosyslog = 1;
 	sysloglevel = syslog_level;
 	openlog(ident, LOG_PID, LOG_DAEMON);
+	debug("gwlib.log", 0, "Syslog logging enabled.");
     }
 }
 
