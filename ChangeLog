@@ -1,4 +1,8 @@
 2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/dlr.c: added octstr_get_cstr() wrapping for global Octstr* of
+      the SQL statements
+
+2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/dlr.c: removed call to mysql_get_proto_info()
 
 2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
