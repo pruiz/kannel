@@ -325,7 +325,7 @@ ROW(INVOKE_RESP_WAIT,
      if (resp_machine->ack_pdu_sent == 0)
          resp_machine->ack_pdu_sent = 1;
     },
-    RESULT_WAIT)
+    INVOKE_RESP_WAIT)
 
 /*
  * When a transaction is aborted, WSP must surely know this. One of corrections

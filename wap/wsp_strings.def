@@ -387,17 +387,6 @@ LINEAR(transfer_encoding,
 STRING("chunked")
 )
 
-/* 
- * Application ids, from http://www.wapforum.org/wina/push-app-id.htm. "*"
- * means "any".
- */
-NUMBERED(application_id,
-ASSIGN("*", 0x00)          
-ASSIGN("push.sia", 0x01)    
-ASSIGN("wml.ua", 0x02)      
-ASSIGN("push.mms", 0x04)
-)
-
 /* Well-known bearer type codes, from WDP Appendix C */
 LINEAR(bearer_indication,
 STRING("any_ipv4")
@@ -430,6 +419,17 @@ STRING("paging_network_reflex_reflex_isdn")
 STRING("gsm_ussd_gsm_msisdn")
 STRING("mobitex_mpak_man")
 STRING("ansi-136_ghost/r_data_gsm_isdn")
+)
+
+/*
+ * Well known push application ids, from http://www.wapforum.org/wina/
+ * push-app-id.htm.
+ */
+NUMBERED(application_id,
+ASSIGN("*", 0x00)
+ASSIGN("push.sia", 0x01)
+ASSIGN("wml.ua", 0x02)
+ASSIGN("push.mms", 0x04)
 )
 
 /**** More preprocessor magic ****/

@@ -78,7 +78,7 @@ static WAPEvent *create_tr_abort_ind(WTPInitMachine *sm, long abort_reason);
  * Creates TR-Invoke.cnf event 
  */
 static WAPEvent *create_tr_invoke_cnf(WTPInitMachine *machine);
-static int tid_wrapped(unsigned short new_tid, unsigned short old_tid);
+static int tid_wrapped(unsigned short tid);
 
 /*
  * Create a datagram with an Abort PDU and send it to the WDP layer.
@@ -317,7 +317,7 @@ static WTPInitMachine *init_machine_find(WAPAddrTuple *tuple, long tid,
  * In the case of TR-Invoke.req a new machine is created, in the case of 
  * TR-Abort.req we have a serious error. We must create a new tid for a new
  * transaction here, because machines are identified by an address tuple and a
- * tid. This tid is GenTID (WTP 10.4.2), which is used only by the iniator 
+ * tid. This tid is GenTID (WTP 10.4.2), which is used only by the wtp iniator 
  * thread.
  * Note that as internal tid representation, module uses RcvTID (as required
  * by module wtp_pack). So we we turn the first bit of the tid stored by the
@@ -327,8 +327,7 @@ static WTPInitMachine *init_machine_find_or_create(WAPEvent *event)
 {
     WTPInitMachine *machine = NULL;
     long mid;
-    static unsigned short old_tid = 0;
-    static unsigned short tid = -1;
+    static long tid = -1; 
     WAPAddrTuple *tuple;
 
     mid = -1;
@@ -336,7 +335,7 @@ static WTPInitMachine *init_machine_find_or_create(WAPEvent *event)
 
     switch (event->type) {
     case RcvAck:
-	tid = event->u.RcvAck.tid;
+        tid = event->u.RcvAck.tid;
         tuple = event->u.RcvAck.addr_tuple;
     break;
 
@@ -346,6 +345,7 @@ static WTPInitMachine *init_machine_find_or_create(WAPEvent *event)
     break;
 
     case RcvErrorPDU:
+        mid = event->u.RcvErrorPDU.tid;
         tid = event->u.RcvErrorPDU.tid;
         tuple = event->u.RcvErrorPDU.addr_tuple;
     break;
@@ -355,27 +355,27 @@ static WTPInitMachine *init_machine_find_or_create(WAPEvent *event)
  * first bit turned.
  */
     case TR_Invoke_Req:
-        old_tid = tid;
 	++tid;
-        if (tid_wrapped(tid, old_tid))
+        if (tid_wrapped(tid)) {
 	    tidnew = 1;
+            tid = 0;
+        }
                    
-        tid = rcv_tid(tid);
-	tuple = event->u.TR_Invoke_Req.addr_tuple;
+	tid = rcv_tid(tid);
+        tuple = event->u.TR_Invoke_Req.addr_tuple;
         mid = event->u.TR_Invoke_Req.handle;
     break;
 
     case TR_Abort_Req:
-        mid = event->u.TR_Abort_Req.handle;
+        tid = event->u.TR_Abort_Req.handle;
     break;
 
     case TimerTO_R:
-	mid = event->u.TimerTO_A.handle;
+        mid = event->u.TimerTO_A.handle;
     break;
 
     default:
-	error(0, "WTP_INIT: machine_find_or_create, unhandled"
-              "event");
+	error(0, "WTP_INIT: machine_find_or_create: unhandled event");
         wap_event_dump(event);
         return NULL;
     }
@@ -430,7 +430,7 @@ static WTPInitMachine *init_machine_find_or_create(WAPEvent *event)
             wap_event_dump(event);
         break; 
         }
-   } /* if machine == NULL */
+   } 
 
    return machine;
 }
@@ -471,9 +471,9 @@ static WAPEvent *create_tr_abort_ind(WTPInitMachine *sm, long abort_reason)
 }
 
 
-static int tid_wrapped(unsigned short new_tid, unsigned short old_tid)
+static int tid_wrapped(unsigned short tid)
 {
-    return new_tid < old_tid;
+    return tid > (1 << 15);
 }
 
 static unsigned short rcv_tid(unsigned short tid)

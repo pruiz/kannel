@@ -177,7 +177,7 @@ static void main_thread(void *arg) {
 
                 case S_Unit_Push_Req:
 		        newevent = pack_into_push_datagram(e);
-                        if (newevent != NULL)
+                        if (newevent != NULL) 
 				dispatch_to_wdp(newevent);
 		        break;
 	
@@ -231,6 +231,7 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
         Octstr *ospdu;
 	unsigned char push_id;
 
+        debug("wap.wsp_unit", 0, "Connectionless session request accepted");
         gw_assert(event->type == S_Unit_Push_Req);
         pdu = wsp_pdu_create(Push);
 	pdu->u.Push.headers = wsp_headers_pack(
@@ -240,7 +241,7 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
         ospdu = wsp_pdu_pack(pdu);
 	wsp_pdu_destroy(pdu);
 	if (ospdu == NULL)
-		return NULL;
+	  return NULL;
 
         push_id = event->u.S_Unit_Push_Req.push_id;
 	octstr_insert_data(ospdu, 0, &push_id, 1);

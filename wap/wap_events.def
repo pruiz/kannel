@@ -480,8 +480,7 @@ WAPEVENT(S_Unit_Push_Ind, "S-Unit-Push.ind",
 WAPEVENT(Pom_SessionRequest_Req, "Pom-SessionRequest.req",
         ADDRTUPLE(addr_tuple)
         HTTPHEADER(push_headers)
-        HTTPHEADER(sia)
-
+        
         INTEGER(push_id)
         )
 
@@ -493,10 +492,13 @@ WAPEVENT(Pom_Connect_Ind, "Pom-Connect.ind",
          HTTPHEADER(bearer_indication)
 
          INTEGER(session_id)
+         INTEGER(push_id)
         )
 
 WAPEVENT(Pom_Connect_Res, "Pom-Connect.res",
          CAPABILITIES(negotiated_capabilities)
+
+         INTEGER(session_id)
         )
 
 WAPEVENT(Pom_Disconnect_Ind, "Pom-Disconnect.ind",
@@ -574,6 +576,59 @@ WAPEVENT(Po_PushAbort_Ind, "Po-PushAbort.ind",
 	 INTEGER(session_handle)
         )
 
+/*
+ * Following events are used communicating between PPG main module (implement-
+ * ing main logic of PPG) and PAP module. These are defined in Push Access 
+ * Protocol, chapter 9.
+ * Note here is one address, one group of push headers, one push body and one
+ * group of capabilities. We should use list of address_values  for multiple 
+ * addresses (optional) and Lists of push headers, push data and capabilities 
+ * for multipart (non-nested mandatory). 
+ * Optional fields, if PAP control message originally does not contain one, 
+ * should be set NULL.
+ */
+
+WAPEVENT(Push_Message, "push-message",
+         OCTSTR(pi_push_id)
+         OPTIONAL_OCTSTR(deliver_before_timestamp)/* using PAP format */
+         OPTIONAL_OCTSTR(deliver_after_timestamp) /* ditto */
+         OPTIONAL_OCTSTR(source_referance)
+         OPTIONAL_OCTSTR(ppg_notify_requested_to)
+         INTEGER(progress_notes_requested)
+         OCTSTR(address_value)                    /* as unparsed PAP */
+         INTEGER(priority)
+         INTEGER(delivery_method)
+         OPTIONAL_OCTSTR(network)
+         INTEGER(network_required)
+         OPTIONAL_OCTSTR(bearer)
+         INTEGER(bearer_required)
+         HTTPHEADER(push_headers)
+         OPTIONAL_OCTSTR(push_data)
+         CAPABILITIES(pi_capabilities)
+)
+
+/*
+ * Push response element indicates that there will be no more progress notes,
+ * see Push Access Protocol, 9.3.2.
+ */
+WAPEVENT(Push_Response, "push-response",
+         OCTSTR(pi_push_id)
+         OPTIONAL_OCTSTR(sender_name)
+         OPTIONAL_OCTSTR(reply_time)
+         INTEGER(code)
+         OPTIONAL_OCTSTR(desc)
+        )
+
+/*
+ * This is for debugging PIs. One note per stage. See Push Access Protocol,
+ * 9.3.1.PPG main module sends these separately to PAP. 
+ */
+WAPEVENT(Progress_Note, "progress-note",
+         OCTSTR(stage)
+         OPTIONAL_OCTSTR(note)
+         OPTIONAL_OCTSTR(time)
+)
+
 #undef WAPEVENT
 #undef OCTSTR
 #undef OPTIONAL_OCTSTR
@@ -581,5 +636,8 @@ WAPEVENT(Po_PushAbort_Ind, "Po-PushAbort.ind",
 #undef HTTPHEADER
 #undef ADDRTUPLE
 #undef CAPABILITIES
+
+
+
 
 

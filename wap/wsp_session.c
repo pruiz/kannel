@@ -89,8 +89,8 @@ static long next_wsp_session_id(void);
 static List *make_capabilities_reply(WSPMachine *m);
 static Octstr *make_connectreply_pdu(WSPMachine *m);
 static Octstr *make_resume_reply_pdu(WSPMachine *m, List *headers);
-static WSP_PDU *make_confirmedpush_pdu(WSPMachine *m, WAPEvent *e);
-static WSP_PDU *make_push_pdu(WSPMachine *m, WAPEvent *e);
+static WSP_PDU *make_confirmedpush_pdu(WAPEvent *e);
+static WSP_PDU *make_push_pdu(WAPEvent *e);
 
 static int transaction_belongs_to_session(void *session, void *tuple);
 static int find_by_session_id(void *session, void *idp);
@@ -595,8 +595,8 @@ static void handle_push_event(WSPMachine *sm, WSPPushMachine *pm,
 		return;
 	}
 
-        debug("wap.wsp", 0, "WSP: push %ld, state %s, event %s",
-		pm->transaction_id, state_name(pm->state), 
+        debug("wap.wsp", 0, "WSP(tid/pid): push %ld/%ld, state %s, event %s",
+		pm->transaction_id, pm->server_push_id, state_name(pm->state), 
 		wap_event_name(current_event->type));
 	gw_assert(sm->session_id == pm->session_id);
 
@@ -624,7 +624,7 @@ end:
 }
 
 static WSPPushMachine *push_machine_create(WSPMachine *sm, 
-        long wtp_handle)
+        long pid)
 {
         WSPPushMachine *m;
 
@@ -636,7 +636,8 @@ static WSPPushMachine *push_machine_create(WSPMachine *sm,
         #define MACHINE(fields) fields
         #include "wsp_server_push_machine.def"
 
-        m->transaction_id = wtp_handle;
+        m->server_push_id = pid;
+        m->transaction_id = pid;
 	m->state = SERVER_PUSH_NULL_STATE;
 	m->addr_tuple = wap_addr_tuple_duplicate(sm->addr_tuple);
 	m->session_id = sm->session_id;
@@ -652,14 +653,12 @@ static void push_machine_destroy(void *p)
 
 	if (p == NULL)
 	       return;  
-
+        m = p;
         debug("wap.wsp", 0, "Destroying WSPPushMachine %ld",
 			m->transaction_id);
-        m = p;  
-
         #define INTEGER(name) 
-        #define ADDRTUPLE(addr_tuple) wap_addr_tuple_destroy(m->addr_tuple);
-        #define HTTPHEADER(push_header) http_destroy_headers(m->push_header);
+        #define ADDRTUPLE(name) wap_addr_tuple_destroy(m->name);
+        #define HTTPHEADER(name) http_destroy_headers(m->name);
         #define MACHINE(fields) fields
         #include "wsp_server_push_machine.def"
 
@@ -990,7 +989,7 @@ static Octstr *make_resume_reply_pdu(WSPMachine *m, List *headers) {
 	return os;
 }
 
-static WSP_PDU *make_confirmedpush_pdu(WSPMachine *m, WAPEvent *e)
+static WSP_PDU *make_confirmedpush_pdu(WAPEvent *e)
 {
         WSP_PDU *pdu;
         List *headers;
@@ -999,13 +998,13 @@ static WSP_PDU *make_confirmedpush_pdu(WSPMachine *m, WAPEvent *e)
 /*
  * Both push headers and push body are optional. 
  */
-        if (m->http_headers == NULL) {
+        if (e->u.S_ConfirmedPush_Req.push_headers == NULL) {
 	    headers = http_create_empty_headers();
             pdu->u.ConfirmedPush.headers = wsp_headers_pack(headers, 1);
             http_destroy_headers(headers);
         } else
             pdu->u.ConfirmedPush.headers = 
-                wsp_headers_pack(m->http_headers, 1);
+                wsp_headers_pack(e->u.S_ConfirmedPush_Req.push_headers, 1);
    
         if (e->u.S_ConfirmedPush_Req.push_body == NULL)
 	    pdu->u.ConfirmedPush.data = octstr_create("");
@@ -1016,7 +1015,7 @@ static WSP_PDU *make_confirmedpush_pdu(WSPMachine *m, WAPEvent *e)
         return pdu;
 }
 
-static WSP_PDU *make_push_pdu(WSPMachine *m, WAPEvent *e)
+static WSP_PDU *make_push_pdu(WAPEvent *e)
 {
         WSP_PDU *pdu;
         List *headers;
@@ -1025,13 +1024,13 @@ static WSP_PDU *make_push_pdu(WSPMachine *m, WAPEvent *e)
 /*
  * Both push headers and push body are optional
  */
-        if (m->http_headers == NULL) {
+        if (e->u.S_Push_Req.push_headers == NULL) {
 	    headers = http_create_empty_headers();
             pdu->u.Push.headers = wsp_headers_pack(headers, 1);
             http_destroy_headers(headers);
         } else
             pdu->u.Push.headers = 
-                wsp_headers_pack(m->http_headers, 1);
+                wsp_headers_pack(e->u.S_Push_Req.push_headers, 1);
    
         if (e->u.S_Push_Req.push_body == NULL)
 	    pdu->u.Push.data = octstr_create("");
@@ -1157,7 +1156,7 @@ static void send_abort_to_initiator(long reason, long handle)
 
 /*
  * The server sends invoke (to be exact, makes TR-Invoke.req) only when it is 
- * pushing or disconnecting. Here we handle only the push events. 
+ * pushing. (Only the client disconnects sessions.)
  */ 
 static void send_invoke(WSPMachine *m, WSP_PDU *pdu, WAPEvent *e, long class)
 {
@@ -1176,11 +1175,10 @@ static void send_invoke(WSPMachine *m, WSP_PDU *pdu, WAPEvent *e, long class)
         if (e->type == S_ConfirmedPush_Req)
            wtp_event->u.TR_Invoke_Req.handle = 
                e->u.S_ConfirmedPush_Req.server_push_id;
-	wtp_event->u.TR_Invoke_Req.user_data = 
-            octstr_duplicate(wsp_pdu_pack(pdu));
+	wtp_event->u.TR_Invoke_Req.user_data = wsp_pdu_pack(pdu);
 
-        dispatch_to_wtp_init(wtp_event);
         wsp_pdu_destroy(pdu);
+        dispatch_to_wtp_init(wtp_event);
 }
 
 static void indicate_disconnect(WSPMachine *sm, long reason) {
@@ -1220,12 +1218,23 @@ static void indicate_resume(WSPMachine *sm,
 
 static void indicate_pushabort(WSPPushMachine *spm, long reason)
 {
-        debug("wap.wsp", 0, "pot not yet supported");
+       WAPEvent *ota_event;
+ 
+       ota_event = wap_event_create(S_PushAbort_Ind);
+       ota_event->u.S_PushAbort_Ind.push_id = spm->server_push_id;
+       ota_event->u.S_PushAbort_Ind.reason = reason;
+       ota_event->u.S_PushAbort_Ind.session_id = spm->session_id;
+       dispatch_to_appl(ota_event);
 }
 
 static void confirm_push(WSPPushMachine *m)
 {
-        debug("wap.wsp", 0, "pot not yet supported");
+       WAPEvent *ota_event;
+
+       ota_event = wap_event_create(S_ConfirmedPush_Cnf);
+       ota_event->u.S_ConfirmedPush_Cnf.server_push_id = m->server_push_id;
+       ota_event->u.S_ConfirmedPush_Cnf.session_id = m->session_id;
+       dispatch_to_appl(ota_event);
 }
 
 static void method_abort(WSPMethodMachine *msm, long reason) {

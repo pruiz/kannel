@@ -18,6 +18,7 @@
 #include "wap-appl.h"
 #include "wap_push_ota.h"
 #include "wap_push_ppg.h"
+#include "wap_push_pap.h"
 #include "msg.h"
 #include "bb.h"
 
@@ -201,6 +202,7 @@ static void dispatch_datagram(WAPEvent *dgram)
         wap_event_dump(dgram);
     } else {
 	WAPAddrTuple *tuple;
+     
         msg = msg_create(wdp_datagram);
 	tuple = dgram->u.T_DUnitdata_Req.addr_tuple;
         msg->wdp_datagram.source_address =
@@ -214,7 +216,7 @@ static void dispatch_datagram(WAPEvent *dgram)
         msg->wdp_datagram.user_data =
 	    octstr_duplicate(dgram->u.T_DUnitdata_Req.user_data);
 
-	write_to_bearerbox(msg);
+        write_to_bearerbox(msg);
     }
 
     wap_event_destroy(dgram);
@@ -256,7 +258,10 @@ int main(int argc, char **argv)
                   &wsp_push_client_dispatch_event);
     wap_appl_init();
     wap_push_ota_init(&wsp_session_dispatch_event, &wsp_unit_dispatch_event);
-    wap_push_ppg_init(&wap_push_ota_dispatch_event);
+    wap_push_ppg_init(&wap_push_ota_dispatch_event, 
+                      &wap_push_pap_dispatch_event,
+                      &wap_appl_dispatch);
+    wap_push_pap_init(&wap_push_ppg_dispatch_event);
 
     wml_init();
     
@@ -294,7 +299,7 @@ int main(int argc, char **argv)
 	    dgram->u.T_DUnitdata_Ind.user_data = msg->wdp_datagram.user_data;
 	    msg->wdp_datagram.user_data = NULL;
 
-	    wap_dispatch_datagram(dgram);
+            wap_dispatch_datagram(dgram); 
 	} else {
 	    warning(0, "Received other message than wdp/admin, ignoring!");
 	}
@@ -313,6 +318,7 @@ int main(int argc, char **argv)
     wap_appl_shutdown();
     wap_push_ota_shutdown();
     wap_push_ppg_shutdown();
+    wap_push_pap_shutdown();
     wml_shutdown();
     close_connection_to_bearerbox();
     wsp_http_map_destroy();

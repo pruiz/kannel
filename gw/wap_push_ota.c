@@ -168,6 +168,8 @@ static void main_thread(void *arg)
 
 static void handle_ota_event(WAPEvent *e)
 {
+    debug("wap.push.ota", 0, "OTA: event arrived");
+
     switch (e->type) {
     case Pom_SessionRequest_Req:
         make_session_request(e);
@@ -182,7 +184,7 @@ static void handle_ota_event(WAPEvent *e)
     break;
 
     case Po_Unit_Push_Req:
-        make_unit_push_request(e);;
+        make_unit_push_request(e);
     break;
 
     case Po_PushAbort_Req:
@@ -190,7 +192,7 @@ static void handle_ota_event(WAPEvent *e)
     break;
 
     default:
-        debug("wap.push.ota", 0, "Unhandled ota event");
+        debug("wap.push.ota", 0, "OTA: unhandled event");
         wap_event_dump(e);
     break;
     }
@@ -209,14 +211,18 @@ static void make_session_request(WAPEvent *e)
     check_session_request_headers(push_headers);
 
     wsp_event = wap_event_create(S_Unit_Push_Req);
+    wsp_event->u.S_Unit_Push_Req.push_id = 
+        e->u.Pom_SessionRequest_Req.push_id;
     wsp_event->u.S_Unit_Push_Req.addr_tuple = 
         wap_addr_tuple_duplicate(e->u.Pom_SessionRequest_Req.addr_tuple);
-    wsp_event->u.S_Unit_Push_Req.push_id = e->u.Pom_SessionRequest_Req.push_id;
     wsp_event->u.S_Unit_Push_Req.push_headers = 
         http_header_duplicate(push_headers);
 
     appid_headers = http_header_find_all(push_headers, "X-WAP-Application-Id");
     wsp_event->u.S_Unit_Push_Req.push_body = pack_sia(appid_headers);
+    
+    debug("wap.push.ota", 0, "OTA: making a connectionless session request for"
+          " creating a session");
 
     dispatch_to_wsp_unit(wsp_event);
 }
@@ -230,7 +236,7 @@ static void make_push_request(WAPEvent *e)
     push_headers = add_push_flag(e);
     
     wsp_event = wap_event_create(S_Push_Req);
-    wsp_event->u.S_Push_Req.push_headers = http_header_duplicate(push_headers);
+    wsp_event->u.S_Push_Req.push_headers = push_headers;
     if (e->u.Po_Push_Req.push_body != NULL)
         wsp_event->u.S_Push_Req.push_body = 
             octstr_duplicate(e->u.Po_Push_Req.push_body);
@@ -248,12 +254,11 @@ static void make_confirmed_push_request(WAPEvent *e)
 
     gw_assert(e->type == Po_ConfirmedPush_Req);
     push_headers = add_push_flag(e);
-
+    
     wsp_event = wap_event_create(S_ConfirmedPush_Req);
     wsp_event->u.S_ConfirmedPush_Req.server_push_id = 
         e->u.Po_ConfirmedPush_Req.server_push_id;
-    wsp_event->u.S_ConfirmedPush_Req.push_headers =
-        http_header_duplicate(push_headers);
+    wsp_event->u.S_ConfirmedPush_Req.push_headers = push_headers;
 
     if (e->u.Po_ConfirmedPush_Req.push_body != NULL)
         wsp_event->u.S_ConfirmedPush_Req.push_body =
@@ -263,7 +268,8 @@ static void make_confirmed_push_request(WAPEvent *e)
      
     wsp_event->u.S_ConfirmedPush_Req.session_id = 
         e->u.Po_ConfirmedPush_Req.session_handle;
-
+    debug("wap.push.ota", 0, "OTA: making confirmed push request to wsp");
+    
     dispatch_to_wsp(wsp_event);
 }
 
@@ -279,8 +285,7 @@ static void make_unit_push_request(WAPEvent *e)
     wsp_event->u.S_Unit_Push_Req.addr_tuple = 
         wap_addr_tuple_duplicate(e->u.Po_Unit_Push_Req.addr_tuple);
     wsp_event->u.S_Unit_Push_Req.push_id = e->u.Po_Unit_Push_Req.push_id;
-    wsp_event->u.S_Unit_Push_Req.push_headers = 
-        http_header_duplicate(push_headers);
+    wsp_event->u.S_Unit_Push_Req.push_headers = push_headers;
 
     if (e->u.Po_Unit_Push_Req.push_body != NULL)
         wsp_event->u.S_Unit_Push_Req.push_body =
@@ -289,6 +294,8 @@ static void make_unit_push_request(WAPEvent *e)
         wsp_event->u.S_Unit_Push_Req.push_body = NULL;
 
     dispatch_to_wsp_unit(wsp_event);
+    debug("wap.push.ota", 0, "OTA: made connectionless session service"
+          " request");
 }
 
 static void abort_push(WAPEvent *e)
@@ -314,10 +321,10 @@ static void abort_push(WAPEvent *e)
  */
 static List *add_push_flag(WAPEvent *e)
 {
-    unsigned char push_flag,
-    trusted,
-    authenticated,
-    last;
+    int push_flag,
+        trusted,
+        authenticated,
+        last;
 
     Octstr *buf;
     List *headers;
@@ -347,15 +354,15 @@ static List *add_push_flag(WAPEvent *e)
             e->u.Po_ConfirmedPush_Req.push_headers);
 
     } else {
-        debug("wap.ota", 0, "no push flag when the event is: \n");
+        debug("wap.ota", 0, "OTA: no push flag when the event is: \n");
         wap_event_dump(e);
         return NULL;
     }
 
-    push_flag = 0x00;
+    push_flag = 0;
     push_flag = push_flag | authenticated | trusted | last;
-
-    buf = octstr_format("%c", push_flag);
+    
+    buf = octstr_format("%d", push_flag);
     http_header_add(headers, "Push-Flag", octstr_get_cstr(buf)); 
     octstr_destroy(buf);
 
@@ -372,7 +379,7 @@ static void flags_assert(WAPEvent *e)
         gw_assert(e->u.Po_Unit_Push_Req.last == 0 || 
             e->u.Po_Unit_Push_Req.last == 1);
 
-    } else if (Po_Push_Req) {
+    } else if (e->type == Po_Push_Req) {
         gw_assert(e->u.Po_Push_Req.trusted == 0 || 
             e->u.Po_Push_Req.trusted == 1);
         gw_assert(e->u.Po_Push_Req.authenticated == 0 || 
@@ -380,7 +387,7 @@ static void flags_assert(WAPEvent *e)
         gw_assert(e->u.Po_Push_Req.last == 0 || 
             e->u.Po_Push_Req.last == 1);
 
-    } else if (Po_ConfirmedPush_Req) {
+    } else if (e->type == Po_ConfirmedPush_Req) {
         gw_assert(e->u.Po_ConfirmedPush_Req.trusted == 0 || 
             e->u.Po_ConfirmedPush_Req.trusted == 1);
         gw_assert(e->u.Po_ConfirmedPush_Req.authenticated == 0 || 
@@ -404,34 +411,17 @@ static void reason_assert(long reason)
  * When server is requesting a session with a client, content type and applic-
  * ation headers must be present (this behaviour is defined in PushOTA, p. 14).
  * We check headers for them and add them if they are not already present. 
- * Default client application is wml ua (see PushOTA, s. 14) Application ids 
- * are defined in http://www.wapforum.org/wina/push-app-id.htm.
- * 
+ * X-WAP-Application-Id has been added by ppg module.
  */
 static void check_session_request_headers(List *headers)
 {
-    List *appid_headers;
-    unsigned char wml_ua_id;
-
-    Octstr *buf;
-
     if (!http_type_accepted(headers, "application/wnd.wap.sia"))
          http_header_add(headers, "Content-Type", "application/vnd.wap.sia"); 
-
-    appid_headers = http_header_find_all(headers, "X-Wap-Application-Id");
-    
-    if (list_len(appid_headers) == 0) {
-       wml_ua_id = 0x02;
-       buf = octstr_format("%c", wml_ua_id);
-       http_header_add(headers, "X-WAP-Application-Id", 
-                       octstr_get_cstr(buf)); 
-       octstr_destroy(buf);
-    }
 }
 
 /*
- * Pack contact points and application id list into sia contentn type. It is 
- * defined in PushOTA, p. 18. Uses wsp_pdu functions.
+ * Pack contact points and application id list into sia content type. It is 
+ * defined in PushOTA, p. 18. 
  */
 static Octstr *pack_sia(List *headers)
 {
@@ -444,7 +434,7 @@ static Octstr *pack_sia(List *headers)
     pdu->u.sia.application_id_list = pack_appid_list(headers);
     pdu->u.sia.contactpoints = pack_server_address();
     sia_content = wsp_pdu_pack(pdu);
-
+    
     wsp_pdu_destroy(pdu);
     http_destroy_headers(headers);
 
@@ -452,11 +442,11 @@ static Octstr *pack_sia(List *headers)
 }
 
 /*
- * Turns list of Accept-Application headers into the numeric form. Push-
- * OTA defines that header name is Accept-Application (p. 18).
+ * Turns list of X-Wap-Application-Id headers into the numeric form.
  *
- * Input: List of headers containing only Accept-Application headers
- * Output: Octstr containing them in a numeric format.
+ * Input: List of headers containing only X-Wap-Application-Id headers
+ * Output: Octstr containing them in a numeric format. (Ppg module does coding
+ * of the header value part of the X-WAP-Application-Id header).
  *
  * Returns: Octstr containing headers, if succesful, otherwise an empty 
  * octstr.
@@ -466,43 +456,24 @@ static Octstr *pack_appid_list(List *headers)
     Octstr *appid_os,
            *header_name,
            *header_value;
-    char header_token,
-         value_token;
     long i,
          j;
 
-    header_token = 0x32;                 /* token for Accept-Application */
     i = j = 0;
     appid_os = octstr_create("");
-/*
- * Wml ua is the default client application to connect.
- */
-    if (list_len(headers) == 0) {
-        value_token = 0x02;              /* token for wml ua */
-        octstr_append_char(appid_os, header_token);
-        octstr_append_char(appid_os, value_token);
-        return appid_os;
-    }
+
+    gw_assert(list_len(headers));
 
     while (i < list_len(headers)) {
-        ++i;
         http_header_get(headers, i, &header_name, &header_value);
-        gw_assert(octstr_str_compare(header_name, "Accept-Application") == 0);
-        
-        value_token = wsp_string_to_application_id(header_value);       
-
-        if (value_token != -1) {
-            octstr_append_char(appid_os, header_token);
-            octstr_append_char(appid_os, value_token);
-        } else
-	    error(0, "Unknown application name %s, skipping", 
-                  octstr_get_cstr(header_value));
-
+        gw_assert(octstr_compare(header_name, 
+                  octstr_imm("X-WAP-Application-Id")) == 0);
+        octstr_format_append(appid_os, "%S", header_value);
         octstr_destroy(header_name);
         octstr_destroy(header_value);
+        ++i;
     }
     
-    http_destroy_headers(headers);
     return appid_os;
 }
 
@@ -512,11 +483,11 @@ static Octstr *pack_appid_list(List *headers)
  */
 static Octstr *pack_server_address(void)
 {
-    Octstr *address = NULL;
+    Octstr *address,
+           *ip_address;
     unsigned char address_len;
     long port;
-    char *ip_address,
-         bearer_type;
+    int bearer_type;
 
     bearer_type = GSM_CSD_IPV4;
     port = CONNECTED_PORT;
@@ -526,12 +497,14 @@ static Octstr *pack_server_address(void)
     address_len = octstr_len(bearerbox->address);
     mutex_unlock(bearerbox->mutex);  
 
+    address = octstr_create("");
     octstr_append_char(address, address_len);
     octstr_set_bits(address, 0, 1, 1); /* bearer type included */
     octstr_set_bits(address, 1, 1, 1); /* port number included */
     octstr_append_char(address, bearer_type);
     octstr_append_decimal(address, port);
-    octstr_append_cstr(address, ip_address);
+    octstr_append(address, ip_address);
+    octstr_destroy(ip_address);
     
     return address;
 }

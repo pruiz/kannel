@@ -66,10 +66,7 @@ WAPEvent *wtp_pack_invoke(WTPInitMachine *machine, WAPEvent *event)
     pdu->u.Invoke.ttr = 1;
     pdu->u.Invoke.rid = 0;
     pdu->u.Invoke.version = 0;
-/* 
- * Now SendTID = GenTID (See WTP 10.5)
- */
-    pdu->u.Invoke.tid = (unsigned short) machine->tid;
+    pdu->u.Invoke.tid = send_tid(machine->tid);
     pdu->u.Invoke.tidnew = machine->tidnew;
     pdu->u.Invoke.user_data =
 	    octstr_duplicate(event->u.TR_Invoke_Req.user_data);
@@ -169,3 +166,11 @@ static unsigned short send_tid(unsigned short tid)
 }
 
 /****************************************************************************/
+
+
+
+
+
+
+
+

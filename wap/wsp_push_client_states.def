@@ -1,5 +1,6 @@
 /*
- * wsp-push-client-state.h: Macros defining wsp push client state table rows.
+ * wsp_push_client_states.def: Macros defining wsp push client state table 
+ * rows.
  * See documentation for guidance how to use and update these.
  * 1 means an unconditional action, {} an ignored event.
  *

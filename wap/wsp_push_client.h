@@ -34,6 +34,7 @@ struct WSPPushClientMachine {
     long cpid;
     #define INTEGER(name) long name;
     #define HTTPHEADERS(name) List *name;
+    #define OCTSTR(name) Octstr *name;
     #define MACHINE(fields) fields
     #include "wsp_push_client_machine.def"
 };

@@ -11,7 +11,116 @@
 #include "wap/wap.h"
 #include "wap/wap_addr.h"
 
-void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch);
+typedef struct PPGSessionMachine PPGSessionMachine;
+typedef struct PPGPushMachine PPGPushMachine;
+
+/*
+ * Enumerations used by PPG main module for PAP attribute, see PPG Services, 
+ * Chapter 6.
+ *
+ * Message state
+ */
+enum {
+    UNDELIVERABLE,         /* general message status */
+    UNDELIVERABLE1,        /* transformation failure */
+    UNDELIVERABLE2,        /* no bearer support */
+    PENDING,
+    EXPIRED,
+    DELIVERED,             /* general message status */
+    DELIVERED1,            /* for unconfirmed push, PPG internal */
+    DELIVERED2,            /* for confirmed push, PPG internal  */
+    ABORTED,
+    TIMEOUT,
+    CANCELLED
+};
+
+/*
+ * PAP protocol status codes used by PPG main module. See Push Access Protocol,
+ * 9.13 and 9.14. 
+ */
+enum {
+    ACCEPTED_FOR_PROCESSING = 1001,
+    BAD_REQUEST = 2000, 
+    FORBIDDEN = 2001,
+    ADDRESS_ERROR = 2002,
+    CAPABILITIES_MISMATCH = 2005,
+    DUPLICATE_PUSH_ID = 2007,
+    TRANSFORMATION_FAILURE = 3006,
+    REQUIRED_BEARER_NOT_AVAIBLE = 3010,
+    PAP_ABORT_USERPND = 5028
+};
+
+/*
+ * Values for last attribute (it is, is this message last using this bearer).
+ */
+enum {
+    NOT_LAST,
+    LAST
+};
+
+/*
+ * Enumerations used by PAP message fields, see Push Access Protocol, Chapter
+ * 9.
+ *
+ * Simple answer to question is something required or not
+ */
+enum {
+    FALSE,
+    TRUE
+};
+
+/*
+ * Priority
+ */
+enum {
+    HIGH,
+    MEDIUM,
+    LOW
+};
+
+/*
+ * Delivery method
+ */
+enum {
+    CONFIRMED,
+    PREFERCONFIRMED,
+    UNCONFIRMED,
+    NOT_SPECIFIED
+};
+
+/*
+ * Port number definitions
+ */
+enum {
+    CONNECTIONLESS_PUSH_CLIPORT = 2948,
+    CONNECTIONLESS_SERVPORT = 9200,
+    CONNECTED_CLIPORT = 9209,
+    CONNECTED_SERVPORT = 9201
+};
+
+struct PPGSessionMachine {
+    #define OCTSTR(name) Octstr *name;
+    #define ADDRTUPLE(name) WAPAddrTuple *name;
+    #define INTEGER(name) long name;
+    #define PUSHMACHINES(name) List *name;
+    #define CAPABILITIES(name) List *name;
+    #define MACHINE(fields) fields
+    #include "wap_ppg_session_machine.def"
+};
+
+struct PPGPushMachine {
+    #define OCTSTR(name) Octstr *name;
+    #define INTEGER(name) long name;
+    #define ADDRTUPLE(name) WAPAddrTuple *name;
+    #define HTTPHEADER(name) List *name;
+    #define CAPABILITIES(name) List *name;
+    #define MACHINE(fields) fields
+    #include "wap_ppg_push_machine.def"
+};
+
+void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
+                       wap_dispatch_func_t *pap_dispatch,
+                       wap_dispatch_func_t *appl_dispatch);
 void wap_push_ppg_shutdown(void);
 void wap_push_ppg_dispatch_event(WAPEvent *e);
 
@@ -20,12 +129,12 @@ void wap_push_ppg_dispatch_event(WAPEvent *e);
  * Initiators are identified by their address tuple (ppg main module does not
  * know wsp sessions until told. 
  */
-int wap_push_ppg_have_push_session_for(WAPAddrTuple *tuple);
+PPGSessionMachine *wap_push_ppg_have_push_session_for(WAPAddrTuple *tuple);
 
 /*
  * Now iniator are identified by their session id. This function is used after
  * the session is established.
  */
-int wap_push_ppg_have_push_session_for_sid(long sid);
+PPGSessionMachine *wap_push_ppg_have_push_session_for_sid(long sid);
 
 #endif

@@ -3,7 +3,7 @@
  * table. See the documentation for guidance how to use and update these.
  *
  * Note that NULL state is called here SERVER_PUSH_NULL_STATE. Condition 1
- * means that action is unconditional.
+ * means that an action is unconditional.
  *
  * By Aarno Syvänen for Wapit Ltd
  */
@@ -17,7 +17,7 @@ ROW(SERVER_PUSH_NULL_STATE,
     {
      WSP_PDU *pdu;
 
-     pdu = make_confirmedpush_pdu(sm, current_event);
+     pdu = make_confirmedpush_pdu(current_event);
      send_invoke(sm, pdu, current_event, TRANSACTION_CLASS_1);
     },
     SERVER_PUSH_PUSHING)

@@ -4,7 +4,8 @@
  * The application layer is reads events from its event queue, fetches the 
  * corresponding URLs and feeds back events to the WSP layer (pull). In addi-
  * tion, the layer forwards WSP events related to push to the module wap_push
- * ppg, implementing indications and conformations of OTA protocol.
+ * ppg and wsp, implementing indications, responses  and conformations of OTA 
+ * protocol.
  *
  * Note that push header encoding and decoding are divided two parts:
  * first decoding and encoding numeric values and then packing these values
@@ -127,6 +128,7 @@ static void indicate_push_abort(WAPEvent *e);
 static void split_header_list(List **headers, List **new_headers, char *name);
 static void check_application_headers(List **headers, List **app_headers);
 static void decode_bearer_indication(List **headers, List **bearer_headers);
+static void response_push_connection(WAPEvent *e);
 
 /***********************************************************************
  * The public interface to the application layer.
@@ -212,10 +214,10 @@ static void main_thread(void *arg)
 	    break;
 
 	case S_Connect_Ind:
-            tuple = ind->u.S_Connect_Ind.addr_tuple;
+            tuple  = ind->u.S_Connect_Ind.addr_tuple;
 
-	    if (wap_push_ppg_have_push_session_for(tuple)) {
-                indicate_push_connection(ind);
+            if (wap_push_ppg_have_push_session_for(tuple)) {
+	        indicate_push_connection(ind);
             } else {
 	        res = wap_event_create(S_Connect_Res);
 	    /* FIXME: Not yet used by WSP layer */
@@ -280,6 +282,11 @@ static void main_thread(void *arg)
         case S_PushAbort_Ind:
             indicate_push_abort(ind);
             wap_event_destroy(ind);
+	    break;
+
+        case Pom_Connect_Res:
+	    response_push_connection(ind);
+	    wap_event_destroy(ind);
 	    break;
 	
 	default:
@@ -1032,7 +1039,8 @@ static void check_application_headers(List **headers,
     if (*headers == NULL || list_len(inh) == 0) {
         http_header_add(*application_headers, "Accept-Application", "wml ua");
         debug("wap.appl.push", 0, "OTA: No push application, assuming wml ua");
-        http_destroy_headers(inh);
+        if (*headers != NULL)
+            http_destroy_headers(inh);
         return;
     }
 
@@ -1082,21 +1090,21 @@ static void decode_bearer_indication(List **headers, List **bearer_headers)
     unsigned char coded_value;
 
     if (*headers == NULL) {
-        debug("wap.appl.push", 0, "No client headers, continuing");
+        debug("wap.appl", 0, "OTA: no client headers, continuing");
         return;
     }
 
     split_header_list(headers, &inb, "Bearer-Indication");
 
     if (list_len(inb) == 0) {
-        debug("wap.appl.push", 0, "OTA: No bearer indication headers,"
+        debug("wap.appl.push", 0, "APPL: No bearer indication headers,"
               " continuing");
         http_destroy_headers(inb);
         return;  
     }
 
     if (list_len(inb) > 1) {
-        error(0, "OTA: To many bearer indication header(s), skipping"
+        error(0, "APPL: To many bearer indication header(s), skipping"
               " them");
         http_destroy_headers(inb);
         return;
@@ -1170,6 +1178,7 @@ static void indicate_push_connection(WAPEvent *e)
 
     ppg_event->u.Pom_Connect_Ind.push_headers = push_headers;
     ppg_event->u.Pom_Connect_Ind.session_id = e->u.S_Connect_Ind.session_id;
+    debug("wap.appl", 0, "APPL: making OTA connection indication to PPG");
 
     wap_push_ppg_dispatch_event(ppg_event);
 }
@@ -1204,6 +1213,7 @@ static void confirm_push(WAPEvent *e)
     ppg_event->u.Po_ConfirmedPush_Cnf.session_handle = 
          e->u.S_ConfirmedPush_Cnf.session_id;
 
+    debug("wap.appl", 0, "OTA: confirming push for ppg");
     wap_push_ppg_dispatch_event(ppg_event);
 }
 
@@ -1217,6 +1227,7 @@ static void indicate_push_abort(WAPEvent *e)
     ppg_event->u.Po_PushAbort_Ind.session_handle = 
         e->u.S_PushAbort_Ind.session_id;
 
+    debug("wap.push.ota", 0, "OTA: making push abort indication for ppg");
     wap_push_ppg_dispatch_event(ppg_event);
 }
 
@@ -1262,3 +1273,21 @@ static void indicate_push_resume(WAPEvent *e)
     wap_push_ppg_dispatch_event(ppg_event);
 }
 
+/*
+ * Server headers are mentioned in table in OTA 6.4.1, but none of the primit-
+ * ives use them. They are optional in S_Connect_Res, so we do not use them.
+ */
+static void response_push_connection(WAPEvent *e)
+{
+    WAPEvent *wsp_event;
+
+    gw_assert(e->type = Pom_Connect_Res);
+
+    wsp_event = wap_event_create(S_Connect_Res);
+    wsp_event->u.S_Connect_Res.session_id = e->u.Pom_Connect_Res.session_id;
+    wsp_event->u.S_Connect_Res.negotiated_capabilities =
+        wsp_cap_duplicate_list(e->u.Pom_Connect_Res.negotiated_capabilities);
+    debug("wap.appl", 0, "OTA: making pushconnect response");
+
+    wsp_session_dispatch_event(wsp_event);
+}

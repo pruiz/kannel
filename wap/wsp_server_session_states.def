@@ -259,7 +259,7 @@ ROW(CONNECTING_2,
         {
                 WSP_PDU *pdu;
 
-                pdu = make_push_pdu(sm, current_event);
+                pdu = make_push_pdu(current_event);
                 send_invoke(sm, pdu, current_event, TRANSACTION_CLASS_0);
         },
         CONNECTING_2)
@@ -520,7 +520,7 @@ ROW(CONNECTED,
         {
                WSP_PDU *pdu;
 
-               pdu = make_push_pdu(sm, current_event);
+               pdu = make_push_pdu(current_event);
                send_invoke(sm, pdu, current_event, TRANSACTION_CLASS_0);
         },
         CONNECTED)
@@ -677,7 +677,6 @@ ROW(CONNECTED,
  * Event TR-Abort.ind has a separate flag telling is the indicator the 
  * initiator or the responder.
  */
-
 ROW(CONNECTED,
 	TR_Abort_Ind,
 	e->handle != sm->connect_handle  && e->ir_flag == RESPONDER_INDICATION,
@@ -690,7 +689,7 @@ ROW(CONNECTED,
 	},
 	CONNECTED)
 
-ROW(CONNECTING_2,
+ROW(CONNECTED,
 	TR_Abort_Ind,
 	e->handle != sm->connect_handle && e->ir_flag == INITIATOR_INDICATION,
 	{
@@ -700,7 +699,7 @@ ROW(CONNECTING_2,
 		m = find_push_machine(sm, e->handle);
 		handle_push_event(sm, m, current_event);
 	},
-	CONNECTING_2)
+	CONNECTED)
 
 /* MISSING: SUSPENDED, S-Disconnect.req */
 
@@ -944,7 +943,7 @@ ROW(RESUMING_2,
         {
                 WSP_PDU *pdu;
 
-                pdu = make_push_pdu(sm, current_event);
+                pdu = make_push_pdu(current_event);
                 send_invoke(sm, pdu, current_event, TRANSACTION_CLASS_0);
         },
         RESUMING_2)

@@ -1,0 +1,38 @@
+/*
+ * wap_ppg_session_machine.def: Macro call to store data about push sessions.
+ * See documentation for details how to use and updata this.
+ *
+ * By Aarno Syvänen for Wapit Ltd
+ */
+
+#if !defined(MACHINE)
+    #error "Macro MACHINE is missing"
+#elif !defined(ADDRTUPLE)
+    #error "Macro ADDRTUPLE is missing"
+#elif !defined(INTEGER)
+    #error "Macro INTEGER is missing"
+#elif !defined(PUSHMACHINES)
+    #error "Macro PUSHMACHINES not defined"
+#elif !defined(CAPABILITIES)
+    #error "Macro CAPABILITIES not defined"
+#endif
+
+MACHINE(
+        OCTSTR(pi_client_address)    /* client address in PAP format */
+        OCTSTR(sender_address)       /* PPG's address */
+        ADDRTUPLE(addr_tuple)        /* addresses using gw format */
+        INTEGER(session_id)
+        PUSHMACHINES(push_machines)  /* pushes belonging to this session */
+        CAPABILITIES(client_capabilities) /* Client capabilities. These can be
+                                             queried by PI */    
+        CAPABILITIES(assumed_capabilities) /* capabilities assumed by PI */ 
+        INTEGER(preferconfirmed_value)  /* previously stored value of the 
+                                           delivery method attribute */
+)
+
+#undef MACHINE
+#undef ADDRTUPLE
+#undef INTEGER
+#undef PUSHMACHINES
+#undef CAPABILITIES
+#undef OCTSTR

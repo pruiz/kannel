@@ -28,3 +28,4 @@ MACHINE(
 #undef INTEGER
 #undef ADDRTUPLE
 #undef HTTPHEADER
+#undef OCTSTR
