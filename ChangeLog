@@ -1,5 +1,9 @@
 2001-06-11  Aarno Syvänen <aarno@wiral.com>
 
+	* gw/wap_push_pap.c: Testing normally disabled
+
+2001-06-11  Aarno Syvänen <aarno@wiral.com>
+
 	* gw/wap_push_pap_mime.[ch]: Added MIME parser for PAP module (no 
 	multipart push messages yet)
 
