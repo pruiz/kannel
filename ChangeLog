@@ -1,3 +1,7 @@
+2000-05-02    <Kalle Marjola <rpr@wapit.com>>
+
+	* doc/userguide/userguide.xml: added notes on UDH sending
+
 2000-05-02 Aarno Syvänen <syvanen@wapit.com>
 
 	* wsp_state-decl.h: Commented how implementation state machine 
