@@ -489,8 +489,10 @@
 	need to start the bearer box before the other boxes. Without
 	the bearer box, the other boxes won't even start.</para>
 	
-	<para>The 'gw.conf' above is a name of the configuration
-	file. For fast startup, Kannel is supplied with two trivial
+	<para>The 'my_conf.conf' above is a name of the configuration
+	file. There is NO configuration file named 'my_conf.file' 
+        in Kannel sources, so replace it with name of your own
+        configuration file. For fast startup, Kannel is supplied with two trivial
 	simple configuration files, <literal>smskannel.conf</literal>
 	and <literal>wapkannel.conf</literal>. The first one is for
 	testing out the SMS side, and it requires, in addition to

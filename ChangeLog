@@ -1,3 +1,8 @@
+2000-09-28  Kalle Marjola  <rpr@wapit.com>
+
+	* doc/userguide/userguide.xml: fixed mismatch and put some extra
+	words about 'my_conf.conf'. More update coming tomorrow...
+
 2000-09-28 Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wsp-session.c: Calling wtp_resp_dispatch event and wtp_resp_get_
