@@ -8,7 +8,7 @@
  * Repetitions and use of multiple threads can be requested, in addition of 
  * setting of some headers. 
  *
- * By Aarno Syvänen for Wiral Ltd
+ * By Aarno Syvänen for Wiral Ltd and Global Networks Inc.
  */
 
 #define MAX_THREADS 1024
@@ -72,8 +72,8 @@ static void read_test_ppg_config(Octstr *name)
         if (ssl_client_certkey_file != NULL) {
             use_global_client_certkey_file(ssl_client_certkey_file);
         } else { 
-             error(0, "cannot set up SSL without client certkey file");
-             exit(1);
+            error(0, "cannot set up SSL without client certkey file");
+            exit(1);
         }
     }
 #endif
@@ -95,15 +95,12 @@ static void add_push_application_id(List **push_headers, Octstr *appid_flag)
     if (octstr_compare(appid_flag, octstr_imm("any")) == 0)
         http_header_add(*push_headers, "X-WAP-Application-Id", 
                         "http://www.wiral.com:*");
-    else if (octstr_compare(appid_flag, octstr_imm("sia")) == 0)
-        http_header_add(*push_headers, "X-WAP-Application-Id", 
-                        "http://www.wiral.com:push.sia");
     else if (octstr_compare(appid_flag, octstr_imm("ua")) == 0)
         http_header_add(*push_headers, "X-WAP-Application-Id", 
                         "http://www.wiral.com:wml.ua");
     else if (octstr_compare(appid_flag, octstr_imm("mms")) == 0)
         http_header_add(*push_headers, "X-WAP-Application-Id", 
-                        "http://www.wiral.com:mms.ua");
+                        "mms.ua");
     else if (octstr_compare(appid_flag, octstr_imm("scrap")) == 0)
         http_header_add(*push_headers, "X-WAP-Application-Id", 
                         "no appid at all");
@@ -115,17 +112,14 @@ static void add_content_type(Octstr *content_flag, Octstr **wap_content)
         *wap_content = octstr_format("%s", 
             "Content-Type: text/vnd.wap.wml\r\n");
     else if (octstr_compare(content_flag, octstr_imm("si")) == 0)
-	*wap_content = octstr_format("%s",
+	    *wap_content = octstr_format("%s",
             "Content-Type: text/vnd.wap.si\r\n");
     else if (octstr_compare(content_flag, octstr_imm("sl")) == 0)
-	*wap_content = octstr_format("%s",
+	    *wap_content = octstr_format("%s",
             "Content-Type: text/vnd.wap.sl\r\n");
     else if (octstr_compare(content_flag, octstr_imm("multipart")) == 0)
         *wap_content = octstr_format("%s",
             "Content-Type: multipart/related; boundary=fsahgwruijkfldsa\r\n");
-    else if (octstr_compare(content_flag, octstr_imm("sia")) == 0)
-	*wap_content = octstr_format("%s",
-            "Content-Type: application/vnd.wap.sia\r\n");
     else if (octstr_compare(content_flag, octstr_imm("mms")) == 0) 
         *wap_content = octstr_format("%s", 
             "Content-Type: application/vnd.wap.mms-message\r\n"); 
@@ -139,10 +133,10 @@ static void add_content_transfer_encoding_type(Octstr *content_flag,
                                                Octstr *wap_content)
 {
     if (!content_flag)
-	return;
+	     return;
 
     if (octstr_compare(content_flag, octstr_imm("base64")) == 0)
-	octstr_append_cstr(wap_content, "Content-transfer-encoding: base64\r\n");
+	    octstr_append_cstr(wap_content, "Content-transfer-encoding: base64\r\n");
 }
 
 static void add_connection_header(Octstr *connection, Octstr *wap_content)
@@ -159,10 +153,10 @@ static void add_connection_header(Octstr *connection, Octstr *wap_content)
 static void transfer_encode (Octstr *cte, Octstr *content)
 {
     if (!cte)
-	return;
+	    return;
     
     if (octstr_compare(cte, octstr_imm("base64")) == 0) {
-	octstr_binary_to_base64(content);
+	    octstr_binary_to_base64(content);
     }
 }
 
@@ -216,8 +210,7 @@ static Octstr *make_close_delimiter(Octstr *boundary)
 static List *push_headers_create(size_t content_len)
 {
     List *push_headers;
-    Octstr *cos,
-           *mos;
+    Octstr *mos;
 
     mos = NULL;
     push_headers = http_create_empty_headers();
@@ -230,9 +223,7 @@ static List *push_headers_create(size_t content_len)
     if (use_headers)
         http_add_basic_auth(push_headers, username, password);
     add_push_application_id(&push_headers, appid_flag);
-    http_header_add(push_headers, "Content-Length: ", 
-                    octstr_get_cstr(cos = octstr_format("%d", content_len)));
-    octstr_destroy(cos);
+
     octstr_destroy(mos);
 
     return push_headers;
@@ -285,7 +276,7 @@ static Octstr *push_content_create(void)
                           " si-id=\"1@wiral.com\""
                           " action=\"signal-high\""
                           " created=\"1999-06-25T15:23:15Z\""
-                          " si-expires=\"2002-06-30T00:00:00Z\">"
+                          " si-expires=\"2002-12-30T00:00:00Z\">"
                           "Want to test a fetch?"
                       "</indication>"
                    "</si>\r\n\r\n"
@@ -299,21 +290,21 @@ static Octstr *push_content_create(void)
 
         if ((wap_file_content = 
                 octstr_read_file(octstr_get_cstr(content_file))) == NULL)
-	    panic(0, "Stopping");
+	         panic(0, "Stopping");
 
-	transfer_encode (content_transfer_encoding, wap_file_content);
+	    transfer_encode (content_transfer_encoding, wap_file_content);
         octstr_append(wap_content, wap_file_content);
         octstr_destroy(wap_file_content);
 
         pap_content = octstr_format("%s", "Content-Type: application/xml\r\n");
         if ((pap_file_content = 
                 octstr_read_file(octstr_get_cstr(pap_file))) ==  NULL)
-	    panic(0, "Stopping");
+	        panic(0, "Stopping");
         octstr_append(pap_content, pap_file_content);
         octstr_destroy(pap_file_content);
 
         if (wap_content == NULL || pap_content == NULL)
-	    panic(0, "Cannot open the push content files");
+	        panic(0, "Cannot open the push content files");
 
         push_content = octstr_create("");
         octstr_append(push_content, 
@@ -360,10 +351,10 @@ static void start_push(HTTPCaller *caller, long i)
     id = gw_malloc(sizeof(long));
     *id = i;
     make_url(&push_url);
-    http_start_request(caller, HTTP_METHOD_GET, push_url, push_headers, 
+    debug("test.ppg", 0, "TEST_PPG: starting to push job %ld", i);
+    http_start_request(caller, HTTP_METHOD_POST, push_url, push_headers, 
                        push_content, 0, id, ssl_client_certkey_file);
-    debug("test.ppg", 0, "TEST_PPG: started pushing job %ld", i);
-
+    debug("test.ppg", 0, "push done");
     octstr_destroy(push_content);
     http_destroy_headers(push_headers);
 }
@@ -408,7 +399,7 @@ static int receive_push_reply(HTTPCaller *caller)
         http_add_basic_auth(retry_headers, username, password);
         trid = gw_malloc(sizeof(long));
         *trid = tries;
-        http_start_request(caller, HTTP_METHOD_GET, final_url, retry_headers, 
+        http_start_request(caller, HTTP_METHOD_POST, final_url, retry_headers, 
                            push_content, 0, trid, NULL);
         debug("test.ppg ", 0, "TEST_PPG: doing response to %s", 
               octstr_get_cstr(final_url));
@@ -446,7 +437,7 @@ static int receive_push_reply(HTTPCaller *caller)
         if (use_headers)
             error(0, "tried %ld times, stopping", retries);
         else
-	    error(0, "push failed, authorisation failure");
+	        error(0, "push failed, authorisation failure");
         goto push_failed;
     }
         
@@ -477,11 +468,11 @@ static int receive_push_reply(HTTPCaller *caller)
 
     switch (e->type) {
         case Push_Response:
-	    debug("test.ppg", 0, "TEST_PPG: and type push response");
-	break;
+	        debug("test.ppg", 0, "TEST_PPG: and type push response");
+	    break;
 
         case Bad_Message_Response:
-	    debug("test.ppg", 0, "TEST_PPG: and type bad message response");
+	        debug("test.ppg", 0, "TEST_PPG: and type bad message response");
         break;
 
         default:
@@ -523,20 +514,20 @@ static void push_thread(void *arg)
 
     for (;;) {
         while (in_queue < MAX_IN_QUEUE) {
-	    i = counter_increase(counter);
+	        i = counter_increase(counter);
             if (i >= max_pushes)
-	        goto receive_rest;
-        start_push(caller, i);
-        if (wait)
-            gwthread_sleep(wait_seconds);
-        ++in_queue;
+	            goto receive_rest;
+            start_push(caller, i);
+            if (wait)
+                gwthread_sleep(wait_seconds);
+            ++in_queue;
         }
 
         while (in_queue >= MAX_IN_QUEUE) {
-	    if (receive_push_reply(caller) == -1)
-	        ++failed;
+	        if (receive_push_reply(caller) == -1)
+	            ++failed;
             else
-	        ++succeeded;
+	            ++succeeded;
             --in_queue;
         }
     }
@@ -544,9 +535,9 @@ static void push_thread(void *arg)
 receive_rest:
     while (in_queue > 0) {
         if (receive_push_reply(caller) == -1)
-	    ++failed;
+	        ++failed;
         else
-	    ++succeeded;
+	        ++succeeded;
         --in_queue;
     }
 
@@ -578,11 +569,11 @@ static void help(void)
     info(0, "print this info");
     info(0, "-c content qualifier");
     info(0, "Define content type of the push content. Wml, multipart, nil,"); 
-    info(0, "scrap, sl, sia and si accepted. Si is default, nil (no content"); 
+    info(0, "scrap, sl, and si accepted. Si is default, nil (no content"); 
     info(0, " type at all) and scrap (random string) are used for debugging");
     info(0, "-a application id");
     info(0, "Define the client application that will handle the push. Any,"); 
-    info(0, "sia, ua, mms, nil and scrap accepted, default any.");
+    info(0, "ua, mms, nil and scrap accepted, default ua.");
     info(0, "-b");
     info(0, "If true, send username/password in headers. Default false");
     info(0, "-v number");
@@ -639,80 +630,78 @@ int main(int argc, char **argv)
             
 	    case 'i': 
 	        wait = 1;
-                wait_seconds = atof(optarg);
+            wait_seconds = atof(optarg);
 	    break;
 
-            case 't': 
+        case 't': 
 	        num_threads = atoi(optarg);
-                if (num_threads > MAX_THREADS)
-		    num_threads = MAX_THREADS;
+            if (num_threads > MAX_THREADS)
+		        num_threads = MAX_THREADS;
 	    break;
 
-	    case 'H':
+	    case 'H': 
 	        use_hardcoded = 1;
 	    break;
 
 	    case 'c':
 	        content_flag = octstr_create(optarg);
-                if (octstr_compare(content_flag, octstr_imm("wml")) != 0 && 
+            if (octstr_compare(content_flag, octstr_imm("wml")) != 0 && 
                     octstr_compare(content_flag, octstr_imm("si")) != 0 &&
-                    octstr_compare(content_flag, octstr_imm("sia")) != 0 &&
                     octstr_compare(content_flag, octstr_imm("sl")) != 0 &&
                     octstr_compare(content_flag, octstr_imm("nil")) != 0 &&
                     octstr_compare(content_flag, octstr_imm("mms")) != 0 &&
                     octstr_compare(content_flag, octstr_imm("scrap")) != 0 &&
                     octstr_compare(content_flag, 
-                        octstr_imm("multipart")) != 0){
-		    octstr_destroy(content_flag);
-		    error(0, "TEST_PPG: Content type not known");
-		    help();
-                    exit(1);
-                }
+                    octstr_imm("multipart")) != 0){
+		        octstr_destroy(content_flag);
+		        error(0, "TEST_PPG: Content type not known");
+		        help();
+                exit(1);
+            }
 	    break;
 
 	    case 'a':
 	        appid_flag = octstr_create(optarg);
-                if (octstr_compare(appid_flag, octstr_imm("any")) != 0 && 
-                    octstr_compare(appid_flag, octstr_imm("sia")) != 0 &&
+            if (octstr_compare(appid_flag, octstr_imm("any")) != 0 && 
                     octstr_compare(appid_flag, octstr_imm("ua")) != 0 &&
                     octstr_compare(appid_flag, octstr_imm("mms")) != 0 &&
                     octstr_compare(appid_flag, octstr_imm("nil")) != 0 &&
                     octstr_compare(appid_flag, octstr_imm("scrap")) != 0) {
-		    octstr_destroy(appid_flag);
-		    error(0, "TEST_PPG: Push application id not known");
-		    help();
-                    exit(1);
-                }
+		        octstr_destroy(appid_flag);
+		        error(0, "TEST_PPG: Push application id not known");
+		        help();
+                exit(1);
+           }
 	    break;
 
 	    case 'e':
-		content_transfer_encoding = octstr_create(optarg);
-                if (octstr_compare(content_transfer_encoding, 
-                                   octstr_imm("base64")) != 0) {
-		    octstr_destroy(content_transfer_encoding);
-		    error(0, "TEST_PPG: unknown content transfer" 
-                          " encoding \"%s\"",
-			  octstr_get_cstr(content_transfer_encoding));
-		    help();
-                    exit(1);
-		}
+		    content_transfer_encoding = octstr_create(optarg);
+            if (octstr_compare(content_transfer_encoding, 
+                               octstr_imm("base64")) != 0) {
+		        octstr_destroy(content_transfer_encoding);
+		        error(0, "TEST_PPG: unknown content transfer" 
+                      " encoding \"%s\"",
+			          octstr_get_cstr(content_transfer_encoding));
+		        help();
+                exit(1);
+		    }
 	    break;
 
 	    case 'k':
 	        connection = octstr_create(optarg);
-                if (octstr_compare(connection, octstr_imm("close")) != 0 && 
+            if (octstr_compare(connection, octstr_imm("close")) != 0 && 
                     octstr_compare(connection, 
                         octstr_imm("keep-alive")) != 0) {
-		    octstr_destroy(connection);
-		    error(0, "TEST_PPG: Connection-header unacceptable");
-		    help();
-                    exit(1);
-                }
+		        octstr_destroy(connection);
+		        error(0, "TEST_PPG: Connection-header unacceptable");
+		        help();
+                exit(1);
+           }
 	    break;
 
 	    case 'h':
 	        help();
-                exit(1);
+            exit(1);
 
 	    case 'b':
 	        use_headers = 1;
@@ -721,9 +710,9 @@ int main(int argc, char **argv)
 	    case '?':
 	    default:
 	        error(0, "TEST_PPG: Invalid option %c", opt);
-                help();
-                error(0, "Stopping");
-                exit(1);
+            help();
+            error(0, "Stopping");
+            exit(1);
         }
     }
 
@@ -739,7 +728,7 @@ int main(int argc, char **argv)
         content_flag = octstr_imm("si");
 
     if (appid_flag == NULL)
-        appid_flag = octstr_imm("any");
+        appid_flag = octstr_imm("ua");
 
     if (use_hardcoded) {
         username = octstr_imm("troo");
@@ -766,8 +755,8 @@ int main(int argc, char **argv)
 
     if (!use_hardcoded && !use_config && push_data[1] != NULL) {
         if (push_data[2] == NULL) {
-	   error(0, "no pap control document, stopping");
-           exit(1);
+	        error(0, "no pap control document, stopping");
+            exit(1);
         } else {
            info(0, "an input without a configuration file assumed");
            content_file = octstr_create(push_data[1]);
@@ -785,9 +774,9 @@ int main(int argc, char **argv)
         push_thread(http_caller_create());
     else {
         for (i = 0; i < num_threads; ++i)
-	    threads[i] = gwthread_create(push_thread, http_caller_create());
-	for (i = 0; i < num_threads; ++i)
-	    gwthread_join(threads[i]);
+	        threads[i] = gwthread_create(push_thread, http_caller_create());
+	    for (i = 0; i < num_threads; ++i)
+	        gwthread_join(threads[i]);
     }
     time(&end);
     run_time = difftime(end, start);
