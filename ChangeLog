@@ -1,3 +1,7 @@
+2003-02-21  David Holland  <david.holland@3glab.com>
+    * gw/smsc/smpp_pdu.def: fixed generic_nack definition (thanks to
+      Alexander Malysh)
+
 2003-02-18  David Holland  <david.holland@3glab.com>
     * gw/smsc/smsc_smpp.c, gwlib/cfg.def, doc/userguide/userguide.xml:
       added facility to specify SMPP SMSC service type with

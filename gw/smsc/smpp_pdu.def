@@ -149,7 +149,7 @@ PDU(unbind_resp,
 )
 
 PDU(generic_nack,
-    0x00000000,
+    0x80000000,
     HEADER
 )
 
