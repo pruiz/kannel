@@ -2013,10 +2013,11 @@ keyword = www
 url = "http://%S"
 </programlisting>
      
-     This service grabs any SMS with two words and 'www' as the first word, and then
-     does an HTTP request to an URL which is taken from the rest of the
-     message. Any result is sent back to the phone (or requester), but is
-     truncated to 160 characters, naturally.</para>
+     This service grabs any SMS with two words and 'www' as the first
+     word, and then does an HTTP request to an URL which is taken from
+     the rest of the message. Any result is sent back to the phone
+     (or requester), but is truncated to the 160 characters that will
+     fit into an SMS message, naturally.</para>
 
      <para>Service group <literal>default</literal> has a special
      meaning: if the incoming message is not routed to any other
@@ -2273,6 +2274,59 @@ text = "No action spesified"
 
 
 </sect2>
+
+
+<sect2>
+<title>How sms-service interprets the HTTP response</title>
+
+    <para>When an <literal>sms-service</literal> requests a document
+    via HTTP, it will accept one of four types of content types:
+
+    	<informaltable frame="none">
+	<tgroup cols="2">
+	<tbody>
+	
+	<row>
+	<entry><literal>text/plain</literal></entry>
+	<entry>Blanks are squeezed into one, rest is chopped to fit an
+	SMS message.</entry>
+	</row>
+	
+	<row>
+	<entry><literal>text/html</literal></entry>
+	<entry>Tags are removed, rest is chopped to fit an
+	SMS message.</entry>
+	</row>
+	
+	<row>
+	<entry><literal>text/vnd.wap.wml</literal></entry>
+	<entry>Processed like HTML.</entry>
+	</row>
+	
+	<row>
+	<entry><literal>application/octet-stream</literal></entry>
+	<entry>The body will be transmitted as the SMS message, without
+	modification.</entry>
+	</row>
+	
+	</tbody>
+	</tgroup>
+	</informaltable>
+	
+	In addition, the reply message may be prefixed with User Data
+	Headers (UDH), which tell the phone the type of the message. These
+	can be set with the <literal>X-Kannel-UDH</literal> header in
+	the HTTP response. The header contents contains the UDH encoded
+	in a hexadecimal form:
+	
+<screen>X-Kannel-UDH: 034C4957</screen>
+
+    	The above example is nonsense, though. UDH is mostly used with
+	Nokia Smart Messaging, the specifications of which are not
+	open, so we can't give a proper example.</para>
+	
+</sect2>
+
 
 <sect2>
 <title>SendSMS-user configurations</title>

@@ -1,3 +1,8 @@
+2001-02-14  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/smsbox.c, doc/userguide/userguide.xml: Implemented
+	X-Kannel-UDH header in responses to keyword fetches.
+
 2001-02-13  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsc.c: Fixed octstr_get_cstr(NULL) when username, password

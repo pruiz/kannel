@@ -401,6 +401,23 @@ static void strip_prefix_and_suffix(Octstr *html, Octstr *prefix,
 }
 
 
+static Octstr *get_udh_from_headers(List *headers)
+{
+    Octstr *os;
+    
+    os = http_header_find_first(headers, "X-Kannel-UDH");
+    if (os != NULL) {
+	octstr_strip_blanks(os);
+	if (octstr_hex_to_binary(os) == -1) {
+	    octstr_destroy(os);
+	    os = NULL;
+	}
+    }
+
+    return os;
+}
+
+
 static void url_result_thread(void *arg)
 {
     Octstr *final_url, *reply_body, *type, *charset, *replytext;
@@ -412,10 +429,13 @@ static void url_result_thread(void *arg)
     Octstr *text_html;
     Octstr *text_plain;
     Octstr *text_wml;
+    Octstr *octet_stream;
+    Octstr *udh;
 
     text_html = octstr_imm("text/html");
     text_wml = octstr_imm("text/vnd.wap.wml");
     text_plain = octstr_imm("text/plain");
+    octet_stream = octstr_imm("application/octet-stream");
 
     for (;;) {
     	id = http_receive_result(caller, &status, &final_url, &reply_headers,
@@ -425,6 +445,7 @@ static void url_result_thread(void *arg)
     	
     	get_receiver(id, &msg, &trans);
 
+    	udh = NULL;
     	if (status == HTTP_OK) {
 	    http_header_get_content_type(reply_headers, &type, &charset);
 	    if (octstr_compare(type, text_html) == 0 ||
@@ -433,9 +454,17 @@ static void url_result_thread(void *arg)
 					urltrans_prefix(trans), 
 					urltrans_suffix(trans));
 		replytext = html_to_sms(reply_body);
+		octstr_strip_blanks(replytext);
+    	    	udh = get_udh_from_headers(reply_headers);
 	    } else if (octstr_compare(type, text_plain) == 0) {
 		replytext = reply_body;
 		reply_body = NULL;
+		octstr_strip_blanks(replytext);
+    	    	udh = get_udh_from_headers(reply_headers);
+	    } else if (octstr_compare(type, octet_stream) == 0) {
+		replytext = reply_body;
+		reply_body = NULL;
+    	    	udh = get_udh_from_headers(reply_headers);
 	    } else {
 		replytext = octstr_create("Result could not be represented "
 					  "as an SMS message.");
@@ -445,9 +474,13 @@ static void url_result_thread(void *arg)
 	} else
 	    replytext = octstr_create("Could not fetch content, sorry.");
     
-	octstr_strip_blanks(replytext);
 	msg->sms.msgdata = replytext;
 	msg->sms.time = time(NULL);
+	if (udh != NULL) {
+	    msg->sms.flag_udh = 1;
+	    msg->sms.udhdata = udh;
+	    udh = NULL;
+	}
     
     	if (final_url == NULL)
 	    final_url = octstr_imm("");
