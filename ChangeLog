@@ -1,5 +1,11 @@
 2001-05-14  Lars Wirzenius  <liw@iki.fi>
 
+	* test/fakewap.c: Applied (after two months of waiting!) Neil
+	Hunter's patch for making fakewap more suitable for benchmarking
+	WAP gateways.
+
+2001-05-14  Lars Wirzenius  <liw@iki.fi>
+
 	* benchmarks/bench_sms.conf: Add smsc-username, which is now
 	used instead of system-id.
 	

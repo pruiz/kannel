@@ -433,7 +433,8 @@ static void client_session( void * arg)
     int fd;
     int ret;
     int url_len = 0, url_off = 0;
-    double nowsec, lastsec, tmp;
+    double nowsec, lastsec, tmp, sleepTime;
+    long	uSleepTime;
     struct timeval now;
     struct timezone tz;
     char * url;
@@ -452,13 +453,15 @@ static void client_session( void * arg)
     if (fd == -1)
         panic(0, "Couldn't create socket.");
 
-    gettimeofday(&now, &tz);
-    lastsec = (double) now.tv_sec + now.tv_usec / 1e6;
-
     /*
     **  Loop until all URLs have been requested
     */
     for (;;) {
+		/*
+		 ** Get start time of this request
+		 */
+    	gettimeofday(&now, &tz);
+    	lastsec = (double) now.tv_sec + now.tv_usec / 1e6;
 
         /*
         **  Get next transaction number or exit if too many transactions
@@ -549,20 +552,33 @@ static void client_session( void * arg)
            if (ret == -1) break;
         }
 
+		/*
+		 ** Get end time of the request
+		 */
         gettimeofday(&now, &tz);
         nowsec = (double) now.tv_sec + now.tv_usec / 1e6;
-        tmp = nowsec - lastsec;
-        lastsec = nowsec;
+        tmp = nowsec - lastsec;	/* Duration of request */
+		sleepTime = interval-tmp;	/* Amount of time left to sleep */
+		uSleepTime = sleepTime * 1e6;
 
         mutex_lock( mutex );
         if (tmp < besttime) besttime = tmp;
         if (tmp > worsttime) worsttime = tmp;
         totaltime += tmp;
-	info(0, "fakewap: finished session # %d", i_this);
         mutex_unlock( mutex );
 
+		if (verbose == 1)
+		{
+			info(0, "fakewap: finished session # %d", i_this);
+		}
+
+		/*
+		 ** If we've done all the requests, then don't bother to sleep
+		 */
+        if (i_this >= max_send) break;
+
         if (tmp < (double)interval) {
-            usleep( (long)(((double)interval - tmp) * 1e6) );
+            usleep( uSleepTime );
         }
     }
     close(fd);
@@ -675,6 +691,10 @@ int main(int argc, char **argv)
     if (optind >= argc)
         panic(0, "%s", usage);
 
+	if (verbose != 1)
+	{
+		log_set_output_level (GW_INFO);
+	}
     WSP_Connect[3] += (proto_version&3)<<6;
     WSP_Connect[0] += (pdu_type&15)<<3;
     WSP_Connect[3] += tcl&3;
