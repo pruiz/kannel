@@ -92,6 +92,8 @@ Octstr *octstr_create_empty(void) {
 static void octstr_grow(Octstr *ostr, long size) {
 	seems_valid(ostr);
 	gw_assert(size >= 0);
+
+	size++;  /* make room for the invisible terminating NUL */
 	
 	if (size > ostr->size) {
 		ostr->data = gw_realloc(ostr->data, size);
@@ -268,7 +270,7 @@ void octstr_binary_to_hex(Octstr *ostr, int uppercase) {
                 return;
 
         hexits = uppercase ? "0123456789ABCDEF" : "0123456789abcdef";
-	octstr_grow(ostr, ostr->len * 2 + 1);
+	octstr_grow(ostr, ostr->len * 2);
 
 	/* In-place modification must be done back-to-front to avoid
 	 * overwriting the data while we read it.  Even the order of
@@ -290,6 +292,9 @@ int octstr_hex_to_binary(Octstr *ostr) {
 	unsigned char *p;
 
 	seems_valid(ostr);
+
+	if (ostr->len == 0)
+		return 0;
 
 	/* Check if it's in the right format */
 	if (!octstr_check_range(ostr, 0, ostr->len, isxdigit))
@@ -325,6 +330,200 @@ int octstr_hex_to_binary(Octstr *ostr) {
 
 	seems_valid(ostr);
 	return 0;
+}
+
+
+void octstr_binary_to_base64(Octstr *ostr) {
+	static const unsigned char base64[64] =
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	long triplets;
+	long lines;
+	long orig_len;
+	unsigned char *data;
+	long from, to;
+	int left_on_line;
+
+	seems_valid(ostr);
+
+	if (ostr->len == 0) {
+		/* Always terminate with CR LF */
+		octstr_replace(ostr, "\015\012", 2);
+		return;
+	}
+
+	/* The lines must be 76 characters each (or less), and each
+	 * triplet will expand to 4 characters, so we can fit 19
+	 * triplets on one line.  We need a CR LF after each line,
+	 * which will add 2 octets per 19 triplets (rounded up). */
+	triplets = (ostr->len + 2) / 3;  /* round up */
+	lines = (triplets + 18) / 19;
+
+	octstr_grow(ostr, triplets * 4 + lines * 2);
+	orig_len = ostr->len;
+	data = ostr->data;
+
+	ostr->len = triplets * 4 + lines * 2;
+	data[ostr->len] = '\0';
+
+	/* This function works back-to-front, so that encoded data will
+	 * not overwrite source data.
+	 * from points to the start of the last triplet (which may be
+	 * an odd-sized one), and to points to the start of where the
+	 * last quad should go.  */
+	from = (triplets - 1) * 3;
+	to = (triplets - 1) * 4 + (lines - 1) * 2;
+
+	/* First write the CR LF after the last quad */
+	data[to + 5] = 10;  /* LF */
+	data[to + 4] = 13;  /* CR */
+	left_on_line = triplets - ((lines - 1) * 19);
+
+	/* base64 encoding is in 3-octet units.  To handle leftover
+	 * octets, conceptually we have to zero-pad up to the next
+	 * 6-bit unit, and pad with '=' characters for missing 6-bit
+	 * units.
+	 * We do it by first completing the first triplet with 
+	 * zero-octets, and after the loop replacing some of the
+	 * result characters with '=' characters.
+	 * There is enough room for this, because even with a 1 or 2
+	 * octet source string, space for four octets of output
+	 * will be reserved.
+	 */
+	switch (orig_len % 3) {
+	case 0: break;
+	case 1: data[orig_len] = 0;
+		data[orig_len + 1] = 0;
+		break;
+	case 2: data[orig_len + 1] = 0;
+		break;
+	}
+
+	/* Now we only have perfect triplets. */
+	while (from >= 0) {
+		long whole_triplet;
+
+		/* Add a newline, if necessary */
+		if (left_on_line == 0) {
+			to -= 2;
+			data[to + 5] = 10; /* LF */
+			data[to + 4] = 13; /* CR */
+			left_on_line = 19;
+		}
+		
+		whole_triplet = (data[from] << 16) |
+				(data[from + 1] << 8) |
+				data[from + 2];
+		data[to + 3] = base64[whole_triplet % 64];
+		data[to + 2] = base64[(whole_triplet >> 6) % 64];
+		data[to + 1] = base64[(whole_triplet >> 12) % 64];
+		data[to] = base64[(whole_triplet >> 18) % 64];
+
+		to -= 4;
+		from -= 3;
+		left_on_line--;
+	}
+
+	gw_assert(left_on_line == 0);
+	gw_assert(from == -3);
+	gw_assert(to == -4);
+
+	/* Insert padding characters in the last quad.  Remember that
+	 * there is a CR LF between the last quad and the end of the
+	 * string. */
+	switch (orig_len % 3) {
+	case 0: break;
+	case 1: gw_assert(data[ostr->len - 3] == 'A');
+		gw_assert(data[ostr->len - 4] == 'A');
+		data[ostr->len - 3] = '=';
+		data[ostr->len - 4] = '=';
+		break;
+	case 2: gw_assert(data[ostr->len - 3] == 'A');
+		data[ostr->len - 3] = '=';
+		break;
+	}
+
+	seems_valid(ostr);
+}
+
+	
+void octstr_base64_to_binary(Octstr *ostr) {
+	long triplet;
+	long pos, len;
+	long to;
+	int quadpos = 0;
+	int warned = 0;
+	unsigned char *data;
+
+	seems_valid(ostr);
+	len = ostr->len;
+	data = ostr->data;
+
+	if (len == 0)
+		return;
+
+	to = 0;
+	triplet = 0;
+	quadpos = 0;
+	for (pos = 0; pos < len; pos++) {
+		int c = data[pos];
+		int sixbits;
+
+		if (c >= 'A' && c <= 'Z') {
+			sixbits = c - 'A';
+		} else if (c >= 'a' && c <= 'z') {
+			sixbits = 26 + c - 'a';
+		} else if (c >= '0' && c <= '9') {
+			sixbits = 52 + c - '0';
+		} else if (c == '+') {
+			sixbits = 62;
+		} else if (c == '/') {
+			sixbits = 63;
+		} else if (c == '=') {
+			/* These can only occur at the end of encoded
+			 * text.  RFC 2045 says we can assume it really
+			 * is the end. */
+			break;
+		} else if (isspace(c)) {
+			/* skip whitespace */
+			continue;
+		} else {
+			if (!warned) {
+				warning(0, "Unusual characters in base64 "
+					   "encoded text.");
+				warned = 1;
+			}
+			continue;
+		}
+
+		triplet = (triplet << 6) | sixbits;
+		quadpos++;
+
+		if (quadpos == 4) {
+			data[to++] = (triplet >> 16) & 0xff;
+			data[to++] = (triplet >> 8) & 0xff;
+			data[to++] = triplet & 0xff;
+			quadpos = 0;
+		}
+	}
+
+	/* Deal with leftover octets */
+	switch (quadpos) {
+	case 0: break;
+	case 3: /* triplet has 18 bits, we want the first 16 */
+		data[to++] = (triplet >> 10) & 0xff;
+		data[to++] = (triplet >> 2) & 0xff;
+		break;
+	case 2: /* triplet has 12 bits, we want the first 8 */
+		data[to++] = (triplet >> 4) & 0xff;
+		break;
+	case 1: warning(0, "Bad padding in base64 encoded text.");
+		break;
+	}
+
+	ostr->len = to;
+	data[to] = '\0';
+
+	seems_valid(ostr);
 }
 
 
@@ -625,7 +824,7 @@ void octstr_insert(Octstr *ostr1, Octstr *ostr2, long pos) {
 	if (ostr2->len == 0)
 		return;
 	
-	octstr_grow(ostr1, ostr1->len + ostr2->len + 1);
+	octstr_grow(ostr1, ostr1->len + ostr2->len);
 	memmove(ostr1->data + pos + ostr2->len, ostr1->data + pos,
 		ostr1->len - pos);
 	memcpy(ostr1->data + pos, ostr2->data, ostr2->len);
@@ -640,7 +839,7 @@ void octstr_replace(Octstr *ostr, char *data, long len) {
 	seems_valid(ostr);
 	gw_assert(data != NULL);
 
-	octstr_grow(ostr, len + 1);
+	octstr_grow(ostr, len);
 	if (len > 0)
 		memcpy(ostr->data, data, len);
 	ostr->len = len;
@@ -721,7 +920,7 @@ void octstr_insert_data(Octstr *ostr, long pos, char *data, long len) {
 	if (len == 0)
 		return;
 	
-	octstr_grow(ostr, ostr->len + len + 1);
+	octstr_grow(ostr, ostr->len + len);
 	if (ostr->len > pos) {	/* only if neccessary */
 		memmove(ostr->data+pos+len, ostr->data+pos, ostr->len - pos);
 	}

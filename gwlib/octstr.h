@@ -138,6 +138,17 @@ void octstr_binary_to_hex(Octstr *ostr, int uppercase);
 int octstr_hex_to_binary(Octstr *ostr);
 
 
+/* Base64-encode the octet string in-place, using the MIME base64
+ * encoding defined in RFC 2045.  Note that the result may be
+ * multi-line and is always terminated with a CR LF sequence.  */
+void octstr_binary_to_base64(Octstr *ostr);
+
+
+/* Base64-decode the octet string in-place, using the MIME base64
+ * encoding defined in RFC 2045. */
+void octstr_base64_to_binary(Octstr *ostr);
+
+
 /* Parse a number at position 'pos' in 'ostr', using the same rules as
  * strtol uses regarding 'base'.  Skip leading whitespace.
  * 

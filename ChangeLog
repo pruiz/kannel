@@ -1,5 +1,12 @@
 2000-04-27  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/octstr.c, gwlib/octstr.h: New functions 
+	octstr_binary_to_base64 and octstr_base64_to_binary.
+	Also made octstr_grow reserve space for the terminating NUL,
+	so that the caller doesn't have to and can't forget.
+
+2000-04-27  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/list.c: Make list_destroy() silently ignore a NULL
 	argument, like all the other destroy functions.
 
