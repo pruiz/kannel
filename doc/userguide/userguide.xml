@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<!DOCTYPE book PUBLIC "-//Norman Walsh//DTD DocBk XML V3.1//EN"
+     "dtd/docbook-xml/docbookx.dtd" [
+<!ENTITY figtype "#FIGTYPE#">
+<!ENTITY timestamp "#DATE#">
+]>
+
+<book>
+
+<bookinfo>
+	<title>Open Source WAP Gateway User's Guide</title>
+	<subtitle>&timestamp;</subtitle>
+	<author>
+		<firstname>Lars</firstname>
+		<surname>Wirzenius</surname>
+		<affiliation>
+			<jobtitle>Gateway architect</jobtitle>
+			<orgname>WapIT Ltd</orgname>
+			<address>
+			<street>Atomitie 5 C</street>
+			<postcode>Fin-00370 Helsinki</postcode>
+			<country>Finland</country>
+			<phone>GSM: +358-50 300 0019</phone>
+			<fax>FAX: +358-9 694 7007</fax>
+			<email>liw@wapit.com</email>
+			<otheraddr>http://www.wapit.com</otheraddr>
+			<otheraddr>http://www.wapgateway.org</otheraddr>
+			</address>
+		</affiliation>
+	</author>
+	<abstract>
+		<title>Abstract</title>
+		<para>This document describes how to install and use
+		the Open Source WAP Gateway produced by WapIT Ltd.
+		</para>
+	</abstract>
+</bookinfo>
+
+
+<chapter>
+<title>Introduction</title>
+
+	<para>This chapter introduces WAP in general terms, and explains the
+	role of the gateway in WAP, outlining its duties and features.</para>
+
+<sect1><title>Why yet another gateway?</title><para>xxx</para></sect1>
+<sect1><title>Why open source?</title><para>xxx</para></sect1>
+<sect1><title>Features of the gateway</title><para>xxx</para></sect1>
+</chapter>
+
+<chapter>
+<title>Installing the gateway</title>
+
+	<para>This chapter explains how the gateway can be installed,
+	either from a source code package or by using a pre-compiled
+	binary version. The goal of this chapter is to get the gateway
+	compiled and all the files in the correct places; the next
+	chapter will explain how the gateway is configured.</para>
+
+<sect1><title>Getting the source code</title><para>xxx</para></sect1>
+<sect1><title>Finding the documentation</title><para>xxx</para></sect1>
+<sect1><title>Compiling the gateway</title><para>xxx</para></sect1>
+<sect1><title>Using pre-compiled binary packages</title><para>xxx</para></sect1>
+</chapter>
+
+<chapter>
+<title>Using the gateway</title>
+
+	<para>This chapter explains how the gateway configured and used.
+	It covers configuration files, keeping an eye on the gateway
+	while it is running, and using the HTTP interface to control
+	the gateway or using it for sending SMS messages.</para>
+
+<sect1><title>Configuring the gateway</title><para>xxx</para></sect1>
+<sect1><title>Starting the gateway</title><para>xxx</para></sect1>
+<sect1><title>Using the HTTP interface to send SMS messages</title><para>xxx</para></sect1>
+</chapter>
+
+<chapter>
+<title>Getting help and reporting bugs</title>
+
+	<para>This chapter explains where to find help with problems
+	related to the gateway, and the preferred procedure for reporting
+	bugs and sending corrections to them.</para>
+
+</chapter>
+
+<appendix>
+<title>Using the fake SMS center</title>
+
+	<para>This appendix explains how to use the fake SMS center
+	to test the gateway.</para>
+
+</appendix>
+
+
+</book>

@@ -116,6 +116,8 @@ cvsignore:
 	echo .depend >> .cvsignore
 	for prog in $(progs) $(testprogs); do \
 		echo `basename $$prog` >> `dirname $$prog`/.cvsignore; done
+	cd doc/arch && $(MAKE) cvsignore
+	cd doc/userguide && $(MAKE) cvsignore
 
 install: all
 	mkdir -p $(bindir)

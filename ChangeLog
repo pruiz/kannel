@@ -1,6 +1,8 @@
 Mon Nov 22 11:37:39 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* doc/userguide: Wrote draft outline of user's guide.
+	
+	* Makefile: Added stuff for docs.
 
 1999-11-19 Aarno Syvänen <syvanen@wapit.com>
 
