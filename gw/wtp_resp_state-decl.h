@@ -118,8 +118,8 @@ ROW(LISTEN,
      resp_machine->tcl = event->u.RcvInvoke.tcl;
      resp_machine->invoke_indication = create_tr_invoke_ind(resp_machine, 
                                        event->u.RcvInvoke.user_data);
-     debug("wap.wtp", 0, "WTP_STATE: generating invoke indication, tid being 
-           invalid");
+     debug("wap.wtp", 0, "WTP_STATE: generating invoke indication, tid being" 
+           "invalid");
     },
     TIDOK_WAIT)
 
@@ -165,8 +165,10 @@ ROW(TIDOK_WAIT,
     INVOKE_RESP_WAIT)
 
 /*
- * Here we just abort tranaction. Because wtp machines are destroyed when their
- * state return to LISTEN, there is no need to do anything here.
+ * When we get a negative answer to tid verification, we just abort trans-
+ * action. Because wtp machines are destroyed when their state return to 
+ * LISTEN and because no transaction is yet started, there is no need to do 
+ * anything here.
  */
 ROW(TIDOK_WAIT,
     RcvAbort,

@@ -1,3 +1,7 @@
+2000-10-16 Aarno Syvänen <syvanen@wapit.com>
+
+	* gw/wtp_resp_state-decl.h: Removed CR inside a string.
+
 2000-10-13  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: parse_entities added as a fast patch to fullfill 
