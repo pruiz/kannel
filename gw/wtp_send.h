@@ -1,7 +1,7 @@
 /*
- *wtp_send.h - WTP implementation, message module header
+ * wtp_send.h - WTP implementation, message module header
  *
- *By Aarno Syvänen for WapIT Ltd.
+ * By Aarno Syvänen for WapIT Ltd.
  */
 
 #ifndef WTP_SEND_H
@@ -20,7 +20,7 @@ void wtp_send_result(WTPMachine *machine, WTPEvent *event);
 
 /*
  * Send a message object, of wdp datagram type, having abort PDU as user 
- * data. Creates SDU by itself, fetches address four-tuple from WTP machine. 
+ * data. Fetches SDU from WTP event, address four-tuple from WTP machine. 
  * Handles all errors by itself.
  */
 void wtp_send_abort(long abort_type, WTPMachine *machine, WTPEvent *event);

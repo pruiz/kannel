@@ -151,7 +151,7 @@ ROW(INVOKE_RESP_WAIT,
      if (timer == NULL)
         goto mem_error;
      wtp_timer_start(timer, L_R_WITH_USER_ACK, machine, event);
-     
+     debug(0, "WTP: sending results");
      wtp_send_result(machine, event); 
      machine->rid = 1;
     },

@@ -1,3 +1,20 @@
+2000-01-10 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp_events-decl.h: added user_data to primitive TRAbort (WSP PDU will
+	use it).
+
+        * wtp_send.c: Corresponding change to function pack_abort. Module 
+	reorganised by adding static functions tell_send_error, insert_pdu_
+	type, indicate_simple_message, insert_tid, insert_rid, insert_abort_
+	type, insert_ack_type
+
+	* wtp.c: Function wtp_machine_find_or_create reorganised. Now it can 
+        handle event RcvAbort, too.  Function wtp_unpack_wdp_datagram 
+	reorganised by adding static functions deduce_tid, message_header_
+	fixed, deduce_pdu_type, single_message, protocol_version, unpack_ack, 
+	unpack_abort, unpack_invoke and tell_about_error.
+
+
 Mon Jan 10 15:48:17 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wml.c: Applied patch from Petri Ahonen <peahonen@ahonen.net>

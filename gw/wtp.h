@@ -28,6 +28,22 @@ typedef struct WTPEvent WTPEvent;
 #define L_A_WITH_USER_ACK 4
 #define L_R_WITH_USER_ACK 7
 
+/*
+ * Types of WTP PDUs
+ */
+
+enum {
+
+     NOT_ALLOWED = 0x00,
+     INVOKE = 0x01,
+     RESULT = 0x02,
+     ACK = 0x03,
+     ABORT = 0x04,
+     SEGMENTED_INVOKE = 0x05,
+     SEGMENTED_RESULT = 0x06,
+     NEGATIVE_ACK = 0x07
+};
+
 enum event_name {
      #define EVENT(name, field) name,
      #include "wtp_events-decl.h"
@@ -101,6 +117,15 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg);
 WTPMachine *wtp_machine_create(Octstr *srcaddr, long srcport, 
 				Octstr *destaddr, long destport, long tid,
 				long tcl);
+
+/* 
+ * Checks whether wtp machines data structure includes a spesific machine.
+ * The machine in question is identified with with source and destination
+ * address and port and tid. Address information is fetched from message 
+ * fields, tid from an field of the event. If the machine does not exist and
+ * the event is RcvInvoke, a new machine is created and added in the machines
+ * data structure. If the event was RcvAck or RcvAbort, the function panics.
+ */
 WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event);
 
 
