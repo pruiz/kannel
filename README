@@ -93,6 +93,15 @@ For developers only: autoconf, configure, config.status, and Makefile
 	problem with the Makefile, run "make clean all". If that solves
 	it, report it as a bug (see the end of this README).
 
+For developers only: adding new SMS Center protocol support
+
+	As Kannel does not support all the SMSC protocols that exists,
+	it might become necessary to add new kind of protocols, 
+	including support to use mobile phones as SMSCes.
+
+	When doing this, use file gw/smsc_interface.def as guideline on 
+	how to do it. 
+
 Configuring and running the gateway
 
 	See the user guide in doc/userguide or on the web at
