@@ -1,6 +1,7 @@
 2000-18-07 Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	
 	* solaris/mk-solaris-package.sh: Changed default optimisation level.
+	* solaris/etc/kannel.conf: Kannel needs an admin port to start
 	
 2000-16-07 Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	
