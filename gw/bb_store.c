@@ -340,7 +340,7 @@ long store_messages(void)
 }
 
 
-int store_to_dict(Msg *msg)
+static int store_to_dict(Msg *msg)
 {
     Msg *copy;
     Octstr *uuid_os;

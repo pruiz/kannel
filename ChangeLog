@@ -1,4 +1,7 @@
 2005-03-06  Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_store.c, gw/wap-appl.c: fixed compiler warnings.
+
+2005-03-06  Alexander Malysh <amalysh at kannel.org>
     * gw/wap-appl.c: Fix empty device_headers with request_headers == NULL
       and session_headers != NULL and small memory leak with connection-oriented wap
       Thanks to "Paul P Komkoff Jr <i at stingr.net>" for the patch.
