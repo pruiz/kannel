@@ -1,3 +1,11 @@
+2003-05-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/md5.[ch]: added md5digest() function to return the raw 16 bytes
+      of the hashed value.
+    * gw/smsc/smsc_http.c: bruNET MT needs a 32 byte transaction id. Hence
+      we use MD5 to generate an transaction id.
+    * gw/smsc/smpp_pdu.c: removed assetion checking inside parsing function.
+      bearerbox should not panic on malformed PDU packets.
+
 2003-05-04  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
     * debian/*.init: fix bug (Closes: #25)
 
