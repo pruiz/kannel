@@ -43,8 +43,6 @@ static void pool_socket_destroy(PoolSocket *p);
 static PoolSocket *pool_allocate(Octstr *host, int port);
 static void pool_free(PoolSocket *p);
 static void pool_free_and_close(PoolSocket *p);
-static Octstr *pool_get_buffer(PoolSocket *p);
-static int pool_same_socket(void *, void *);
 static int pool_socket_is_alive(PoolSocket *p);
 static int pool_socket_reopen(PoolSocket *p);
 static void pool_kill_old_ones(void);
@@ -128,8 +126,15 @@ List **reply_headers, Octstr **reply_body)  {
 		goto error;
 	
 	status = read_status(p);
-	if (status < 0)
-		goto error;
+	if (status < 0) {
+		pool_free_and_close(p);
+		p = send_request(url, request_headers);
+		if (p == NULL)
+			goto error;
+		status = read_status(p);
+		if (status < 0)
+			goto error;
+	}
 	
 	if (read_headers(p, reply_headers) == -1)
 		goto error;
@@ -369,7 +374,7 @@ static PoolSocket *pool_allocate(Octstr *host, int port) {
 	pool_len = list_len(pool);
 	for (i = 0; i < pool_len; ++i) {
 		p = list_get(pool, i);
-		if (p->in_use && p->port == port &&
+		if (!p->in_use && p->port == port &&
 		    octstr_compare(p->host, host) == 0) {
 			break;
 		}
@@ -417,22 +422,6 @@ static void pool_free_and_close(PoolSocket *p) {
 }
 
 
-static Octstr *pool_get_buffer(PoolSocket *p) {
-	gw_assert(p != NULL);
-	return p->buffer;
-}
-
-
-static int pool_same_socket(void *a, void *b) {
-	int socket;
-	PoolSocket *p;
-	
-	p = a;
-	socket = *(int *) b;
-	return p->socket == socket;
-}
- 
- 
 static int pool_socket_is_alive(PoolSocket *p) {
 	switch (read_available(p->socket, 0)) {
 	case -1:
@@ -766,7 +755,7 @@ static int read_status(PoolSocket *p) {
 	long status;
 
 	if (socket_read_line(p, &line) <= 0) {
-		error(0, "HTTP2: Couldn't read status line from server.");
+		warning(0, "HTTP2: Couldn't read status line from server.");
 		return -1;
 	}
 	status = parse_status(line);

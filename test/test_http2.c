@@ -11,6 +11,46 @@
 #include "gwlib/gwlib.h"
 #include "gwlib/http2.h"
 
+#define MAX_THREADS 1024
+
+static Counter *counter = NULL;
+static long max_requests = 1;
+static char **urls = NULL;
+static int num_urls = 0;
+
+static void *client_thread(void *arg) {
+	int ret;
+	Octstr *url, *final_url, *replyb, *os;
+	List *replyh;
+	long i, succeeded, failed;
+	
+	succeeded = 0;
+	failed = 0;
+	while ((i = counter_get(counter)) < max_requests) {
+		if ((i % 1000) == 0)
+			info(0, "Starting fetch %ld", i);
+		url = octstr_create(urls[i % num_urls]);
+		ret = http2_get_real(url, NULL, &final_url, &replyh, &replyb);
+		if (ret == -1) {
+			++failed;
+			error(0, "http2_get failed");
+		} else {
+			++succeeded;
+			octstr_print(stdout, replyb);
+			while ((os = list_extract_first(replyh)) 
+			       != NULL) {
+				octstr_destroy(os);
+			}
+			list_destroy(replyh);
+			octstr_destroy(replyb);
+			octstr_destroy(url);
+			octstr_destroy(final_url);
+		}
+	}
+	info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
+	return NULL;
+}
+
 static void help(void) {
 	info(0, "Usage: test_http2 [-r repeats] url ...\n"
 		"where -r means the number of times the fetches should be\n"
@@ -18,29 +58,37 @@ static void help(void) {
 }
 
 int main(int argc, char **argv) {
-	int i, opt, ret, source;
-	Octstr *os, *url, *final_url, *replyb, *type, *charset, *proxy;
-	List *replyh, *exceptions;
-	long repeats, proxy_port;
+	int i, opt, num_threads;
+	Octstr *os, *proxy;
+	List *exceptions;
+	long proxy_port;
 	char *p;
+	pthread_t threads[MAX_THREADS];
+	time_t start, end;
+	double run_time;
 	
 	gw_init_mem();
 	http2_init();
 
-	repeats = 1;
-	source = 0;
 	proxy = NULL;
 	proxy_port = -1;
 	exceptions = list_create();
+	num_threads = 0;
 
-	while ((opt = getopt(argc, argv, "hsr:p:P:e:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hv:r:p:P:e:t:")) != EOF) {
 		switch (opt) {
-		case 'r':
-			repeats = atoi(optarg);
+		case 'v':
+			set_output_level(atoi(optarg));
 			break;
 
-		case 's':
-			source = 1;
+		case 'r':
+			max_requests = atoi(optarg);
+			break;
+
+		case 't':
+			num_threads = atoi(optarg);
+			if (num_threads > MAX_THREADS)
+				num_threads = MAX_THREADS;
 			break;
 
 		case 'h':
@@ -71,59 +119,35 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	if (source)
-		set_output_level(PANIC);
-
 	if (proxy != NULL && proxy_port > 0)
 		http2_use_proxy(proxy, proxy_port, exceptions);
 	octstr_destroy(proxy);
 	while ((os = list_extract_first(exceptions)) != NULL)
 		octstr_destroy(os);
 	list_destroy(exceptions);
-
-	while (repeats-- > 0) {
-		for (i = optind; i < argc; ++i) {
-			url = octstr_create(argv[i]);
-			ret = http2_get_real(url, NULL, &final_url, 
-				&replyh, &replyb);
-			if (ret == -1)
-				panic(0, "http2_get failed");
-			if (source) {
-				octstr_print(stdout, replyb);
-				while ((os = list_extract_first(replyh)) 
-				       != NULL) {
-					octstr_destroy(os);
-				}
-				list_destroy(replyh);
-			} else {
-				info(0, "http_get2 returned %d", ret);
-				info(0, "location=<%s>", 
-					octstr_get_cstr(final_url));
-				http2_header_get_content_type(replyh, 
-						&type, &charset);
-				info(0, "type=<%s>", octstr_get_cstr(type));
-				info(0, "charset=<%s>", 
-					octstr_get_cstr(charset));
-				octstr_destroy(type);
-				octstr_destroy(charset);
-				debug("", 0, "Reply headers:");
-				while ((os = list_extract_first(replyh)) 
-				       != NULL) {
-					octstr_dump(os, 1);
-					octstr_destroy(os);
-				}
-				list_destroy(replyh);
-				debug("", 0, "Reply body:");
-				octstr_dump(replyb, 1);
-			}
-			octstr_destroy(replyb);
-			octstr_destroy(url);
-			octstr_destroy(final_url);
-		}
-	}
 	
+	counter = counter_create();
+	urls = argv + optind;
+	num_urls = argc - optind;
+	
+	time(&start);
+	if (num_threads == 0)
+		client_thread(NULL);
+	else {
+		for (i = 0; i < num_threads; ++i)
+			threads[i] = start_thread(0, client_thread, NULL, 0);
+		for (i = 0; i < num_threads; ++i)
+			pthread_join(threads[i], NULL);
+	}
+	time(&end);
+
+	counter_destroy(counter);
 	http2_shutdown();
 	gw_check_leaks();
+	
+	run_time = difftime(end, start);
+	info(0, "%ld requests in %f seconds, %f requests/s.",
+		max_requests, run_time, max_requests / run_time);
 	
 	return 0;
 }

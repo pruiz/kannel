@@ -1,3 +1,20 @@
+Sat Apr 22 19:28:52 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/gwmem.c: Turned memory checks back on by default.
+	
+	* gwlib/http2.c: If reading the status fails, close the connection
+	and open a new one. If that also fails, *then* report to caller.
+	It seems sometimes at least Apache manages to close the connection
+	(even though it hasn't been idle for several milliseconds) *after*
+	we have sent the request. This masks such a temporary error from
+	the library user.
+	
+	Also, bug fix: We look for an *unused* PoolSocket instead of a
+	used when, when allocating.
+	
+	* test/test_http2.c: Made it possible to run many threads do many
+	client operations.
+
 Sat Apr 22 02:57:22 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* test/run-http2-tests, test/test_http.c: Added -s option to
