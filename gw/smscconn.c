@@ -85,14 +85,14 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
 void smscconn_shutdown(SMSCConn *conn, int finish_sending)
 {
     gw_assert(conn != NULL);
-    if (conn->status == SMSCCONN_KILLED)
+    if (conn->status == SMSCCONN_DEAD)
 	return;
 
     /* Call SMSC specific destroyer */
     if (conn->shutdown)
 	conn->shutdown(conn, finish_sending);
-    
-    conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
+    else
+	conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
     return;
 }
 
@@ -101,8 +101,10 @@ int smscconn_destroy(SMSCConn *conn)
 {
     if (conn == NULL)
 	return 0;
-    if (conn->status != SMSCCONN_KILLED)
+    if (conn->status != SMSCCONN_DEAD)
 	return -1;
+    mutex_lock(conn->flow_mutex);
+
     counter_destroy(conn->received);
     counter_destroy(conn->sent);
     counter_destroy(conn->failed);
@@ -115,6 +117,7 @@ int smscconn_destroy(SMSCConn *conn)
     octstr_destroy(conn->denied_prefix);
     octstr_destroy(conn->preferred_prefix);
     
+    mutex_unlock(conn->flow_mutex);
     mutex_destroy(conn->flow_mutex);
     
     gw_free(conn);
@@ -125,7 +128,7 @@ int smscconn_destroy(SMSCConn *conn)
 int smscconn_stop(SMSCConn *conn)
 {
     gw_assert(conn != NULL);
-    if (conn->status == SMSCCONN_KILLED || conn->is_stopped
+    if (conn->status == SMSCCONN_DEAD || conn->is_stopped
 	|| conn->why_killed != SMSCCONN_ALIVE)
 	return -1;
 
@@ -143,7 +146,7 @@ int smscconn_stop(SMSCConn *conn)
 void smscconn_start(SMSCConn *conn)
 {
     gw_assert(conn != NULL);
-    if (conn->status == SMSCCONN_KILLED || conn->is_stopped == 0)
+    if (conn->status == SMSCCONN_DEAD || conn->is_stopped == 0)
 	return;
 
     mutex_lock(conn->flow_mutex);
@@ -201,7 +204,7 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
     List *list;
 
     gw_assert(conn != NULL);
-    if (conn->status == SMSCCONN_KILLED || conn->why_killed != SMSCCONN_ALIVE)
+    if (conn->status == SMSCCONN_DEAD || conn->why_killed != SMSCCONN_ALIVE)
 	return -1;
 
     /* if allowed-smsc-id set, then only allow this SMSC if message
@@ -254,7 +257,7 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
 int smscconn_send(SMSCConn *conn, Msg *msg)
 {
     gw_assert(conn != NULL);
-    if (conn->status == SMSCCONN_KILLED || conn->why_killed != SMSCCONN_ALIVE)
+    if (conn->status == SMSCCONN_DEAD || conn->why_killed != SMSCCONN_ALIVE)
 	return -1;
     return conn->send_msg(conn, msg);
 }

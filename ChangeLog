@@ -1,3 +1,10 @@
+2001-01-11  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/*smscconn*.*: changed SMSCCONN_KILLED to SMSCCONN_DEAD, and
+	clarified some callbacks
+
+	* gw/smsc_wrapper.c: fixed so that _sender does not suspend
+
 2001-01-11  Lars Wirzenius  <liw@iki.fi>
 
 	* utils/chlog-stats: Wrote.

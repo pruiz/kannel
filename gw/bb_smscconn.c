@@ -71,7 +71,7 @@ void bb_smscconn_ready(SMSCConn *conn)
 
 void bb_smscconn_killed(void)
 {
-    /* NOTE: after status has been set to KILLED, bearerbox
+    /* NOTE: after status has been set to SMSCCONN_DEAD, bearerbox
      *   is free to release/delete 'conn'
      */
     list_remove_producer(incoming_sms);
@@ -392,7 +392,8 @@ Octstr *smsc2_status(int status_type)
         conn = list_get(smsc_list, i);
 	smscconn_info(conn, &info);
 
-	if (info.status == SMSCCONN_KILLED)
+	if (info.status == SMSCCONN_DEAD)
+	    /* XXX  we could delete the SMSC now */
 	    continue;
 
 	if (status_type == BBSTATUS_HTML)

@@ -20,9 +20,9 @@ void bb_smscconn_ready(SMSCConn *conn);
 
 /* called after SMSCConn is shutdown or it kills itself
  * because of non-recoverable problems. SMSC Connection has already
- * destroyed all its private data areas and set status as KILLED.
- * Note that after this has been called the bearerbox can call final
- * destroy for the connection
+ * destroyed all its private data areas and set status as SMSCCONN_DEAD.
+ * Calling this function must be the last thing done by SMSC Connection
+ * before exiting with the last thread
  */
 void bb_smscconn_killed(void);
 

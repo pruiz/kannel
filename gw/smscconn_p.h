@@ -52,8 +52,8 @@
 
  3) SMSC Connection MUST fill up SMSCConn structure as needed to, and is
     responsible for any concurrency timings. SMSCConn->status MAY NOT be
-    set to KILLED until the connection is really that. Use why_killed to
-    make internally dead, supplied with reason.
+    set to SMSCCONN_DEAD until the connection is really that.
+    Use why_killed to make internally dead, supplied with reason.
 
  4) When SMSC Connection shuts down (shutdown called), it MUST try to send
     all messages so-far relied to it to be sent if 'finish_sending' is set
@@ -63,7 +63,7 @@
     After everything is ready (it can happen in different thread), before
     calling callback function bb_smscconn_killed it MUST release all memory it
     has taken except for basic SMSCConn structure, and set status to
-    SMSCCONN_KILLED so it can be finally deleted.
+    SMSCCONN_DEAD so it can be finally deleted.
 
  5) Callback bb_smscconn_ready is automatically called by main
     smscconn_create. New implementation MAY NOT call it directly
@@ -81,7 +81,9 @@ struct smscconn {
     /* variables set by appropriate SMSCConn driver */
     int		status;		/* see smscconn.h */
     int 	load;	       	/* load factor, 0 = no load */
-    int		why_killed;	/* time to die with reason */
+    int		why_killed;	/* time to die with reason (this is set to
+				   SHUTDOWN in smscconn.c when
+				   smscconn_shutdown called) */
     time_t 	connect_time;	/* When connection to SMSC was established */
 
     /* connection specific counters (created in smscconn.c, updated

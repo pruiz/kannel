@@ -184,9 +184,7 @@ static void wrapper_sender(void *arg)
 
     /* send messages to SMSC until our putgoing_list is empty and
      * no producer anymore (we are set to shutdown) */
-    while(conn->status != SMSCCONN_KILLED) {
-
-        list_consume(wrap->stopped); /* block here if suspended/isolated */
+    while(conn->status != SMSCCONN_DEAD) {
 
 	if ((msg = list_consume(wrap->outgoing_queue)) == NULL)
             break;
@@ -237,7 +235,7 @@ static void wrapper_sender(void *arg)
     
     mutex_lock(conn->flow_mutex);
 
-    conn->status = SMSCCONN_KILLED;
+    conn->status = SMSCCONN_DEAD;
 
     while((msg = list_extract_first(wrap->outgoing_queue))!=NULL) {
 	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
@@ -247,7 +245,6 @@ static void wrapper_sender(void *arg)
     smsc_close(wrap->smsc);
     gw_free(wrap);
     conn->data = NULL;
-    conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
     
     mutex_unlock(conn->flow_mutex);
 
@@ -373,7 +370,7 @@ error:
 	smsc_close(wrap->smsc);
     gw_free(wrap);
     conn->why_killed = SMSCCONN_KILLED_CANNOT_CONNECT;
-    conn->status = SMSCCONN_KILLED;
+    conn->status = SMSCCONN_DEAD;
     return -1;
 }
 

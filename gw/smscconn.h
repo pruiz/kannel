@@ -122,7 +122,7 @@ enum {
     SMSCCONN_ACTIVE,
     SMSCCONN_RECONNECTING,
     SMSCCONN_DISCONNECTED,
-    SMSCCONN_KILLED	/* ready to be cleaned */
+    SMSCCONN_DEAD	/* ready to be cleaned */
 };
 
 enum {
