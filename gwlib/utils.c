@@ -258,6 +258,7 @@ int normalize_number(char *dial_prefixes, Octstr **number)
                     Octstr *nstr;
 		    long n;
 		    
+		    if ( official[0] == '-' ) official_len=0;
 		    n = official_len;
 		    if (strlen(official) < n)
 		    	n = strlen(official);
