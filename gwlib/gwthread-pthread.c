@@ -4,9 +4,6 @@
  * Richard Braakman <dark@wapit.com>
  */
 
-/* TODO: Fail gracefully if there is no space in the thread table,
- * rather than creating a thread anyway and then panicking */
-
 #include <unistd.h>
 #include <errno.h>
 #include <sys/poll.h>
@@ -39,6 +36,9 @@ struct new_thread_args {
  * thread number allocation code makes sure that there are no collisions. */
 static struct threadinfo *threadtable[THREADTABLE_SIZE];
 #define THREAD(t) (threadtable[(t) % THREADTABLE_SIZE])
+
+/* Number of threads currently in the thread table. */
+static long active_threads = 0;
 
 /* Number to use for the next thread created.  The actual number used
  * may be higher than this, in order to avoid collisions in the threadtable.
@@ -83,12 +83,14 @@ static void flushpipe(int fd) {
 /* Allocate and fill a threadinfo structure for a new thread, and store
  * it in a free slot in the thread table.  The thread table must already
  * be locked by the caller.  Return the thread number chosen for this
- * thread. */
+ * thread.  The caller must make sure that there is room in the table. */
 static long fill_threadinfo(pthread_t id, const char *name, Threadfunc *func,
 struct threadinfo *ti) {
 	int pipefds[2];
 	long first_try;
 	int ret;
+
+	gw_assert(active_threads < THREADTABLE_SIZE);
 
 	ti->self = id;
 	ti->name = name;
@@ -119,6 +121,8 @@ struct threadinfo *ti) {
 	} while (THREAD(ti->number) != NULL);
 	THREAD(ti->number) = ti;
 
+	active_threads++;
+
 	return ti->number;
 }
 
@@ -145,6 +149,7 @@ static void delete_threadinfo(void) {
 	 * logging stuff.  So we need to set this to a safe value. */
 	pthread_setspecific(tsd_key, NULL);
 	THREAD(threadinfo->number) = NULL;
+	active_threads--;
 	gw_free(threadinfo);
 }
 
@@ -174,6 +179,7 @@ void gwthread_init(void) {
 	for (i = 0; i < THREADTABLE_SIZE; i++) {
 		threadtable[i] = NULL;
 	}
+	active_threads = 0;
 
 	create_threadinfo_main();
 }
@@ -266,11 +272,18 @@ long gwthread_create_real(Threadfunc *func, const char *name, void *arg) {
 	 * we have entered it in the thread table. */
 	lock();
 
+	if (active_threads >= THREADTABLE_SIZE) {
+		unlock();
+		warning(0, "Too many threads, could not create new thread.");
+		gw_free(p);
+		return -1;
+	}
+
 	ret = pthread_create(&id, NULL, &new_thread, p);
 	if (ret != 0) {
+		unlock();
 		error(ret, "Could not create new thread.");
 		gw_free(p);
-		unlock();
 		return -1;
 	}
 	ret = pthread_detach(id);
