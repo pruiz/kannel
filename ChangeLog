@@ -1,3 +1,8 @@
+2000-09-18  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/octstr.c: Shut up char/unsigned char implicit conversion
+	warning by adding a cast.
+
 2000-09-18  Derry Hamilton  <rasilon@tardis.ed.ac.uk>
 
 	* gwlib/thread.h: changed the call to mutex_init_static_real

@@ -1554,7 +1554,7 @@ static void format_width(struct format *format, const char **fmt,
 	if (**fmt == '*') {
 		format->min_width = va_arg(*args, int);
 		++(*fmt);
-	} else if (isdigit(**fmt)) {
+	} else if (isdigit(**(const unsigned char **) fmt)) {
 		format->min_width = strtol(*fmt, &end, 10);
 		*fmt = end;
 		/* XXX error checking is missing from here */
