@@ -1,5 +1,10 @@
 2000-09-22  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smsbox_req.c: edited access log entries, now the HTTP request
+	status is logged etc.
+
+2000-09-22  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/smsbox.c: added opening/closing of access log
 
 	* gw/smsbox_req.c: added access log entries for requests (send-sms

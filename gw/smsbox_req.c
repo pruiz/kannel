@@ -77,7 +77,7 @@ static int roundup_div(int a, int b)
  * a pattern, if it is an URL, fetch it, and return a string, which must
  * be free'ed by the caller
  */
-static char *obey_request(URLTranslation *trans, Msg *sms)
+static char *obey_request(URLTranslation *trans, Msg *msg)
 {
 	char *pattern, *ret;
 	Octstr *url, *final_url, *reply_body, *type, *charset,
@@ -85,16 +85,20 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 	List *request_headers, *reply_headers;
 	int status;
 
-	gw_assert(sms != NULL);
-	gw_assert(msg_type(sms) == smart_sms);
+	gw_assert(msg != NULL);
+	gw_assert(msg_type(msg) == smart_sms);
 
-	pattern = urltrans_get_pattern(trans, sms);
+	pattern = urltrans_get_pattern(trans, msg);
 	gw_assert(pattern != NULL);
 
 	switch (urltrans_type(trans)) {
 	case TRANSTYPE_TEXT:
 		debug("sms", 0, "formatted text answer: <%s>", pattern);
 		ret = pattern;
+		alog("SMS request sender:%s request: '%s' fixed answer: '%s'",
+		     octstr_get_cstr(msg->smart_sms.receiver),
+		     octstr_get_cstr(msg->smart_sms.msgdata),
+		     pattern);
 		break;
 
 	case TRANSTYPE_FILE:
@@ -102,6 +106,10 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 		gw_free(pattern);
 		ret = gw_strdup(octstr_get_cstr(replytext));
 		octstr_destroy(replytext);
+		alog("SMS request sender:%s request: '%s' file answer: '%s'",
+		     octstr_get_cstr(msg->smart_sms.receiver),
+		     octstr_get_cstr(msg->smart_sms.msgdata),
+		     ret);
 		break;
 
 	case TRANSTYPE_URL:
@@ -109,7 +117,15 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 		request_headers = list_create();
 		status = http_get_real(url, request_headers, &final_url,
 					&reply_headers, &reply_body);
+		alog("SMS HTTP-request sender:%s request: '%s' url: '%s' reply: %d '%s'",
+		     octstr_get_cstr(msg->smart_sms.receiver),
+		     octstr_get_cstr(msg->smart_sms.msgdata),
+		     pattern, status,
+		     (status == 200) ? "<< successful >>"
+		     : octstr_get_cstr(reply_body));
+		
 		gw_free(pattern);		/* no longer needed */
+
 		octstr_destroy(url);
 		octstr_destroy(final_url);
 		list_destroy(request_headers, NULL);
@@ -156,6 +172,9 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 	default:
 		error(0, "Unknown URL translation type %d", 
 			urltrans_type(trans));
+		alog("SMS request sender:%s request: '%s' FAILED unknown translation",
+		     octstr_get_cstr(msg->smart_sms.receiver),
+		     octstr_get_cstr(msg->smart_sms.msgdata));
 		return NULL;
 	}
 	
@@ -563,15 +582,6 @@ error:
 	/* XXX this can be something different, according to urltranslation */
 	reply = gw_strdup("Request failed");
 	trans = NULL;	/* do not use any special translation */
-
-	alog("SMS request FAILED - sender:%s request: '%s'",
-	     octstr_get_cstr(msg->smart_sms.receiver),
-	     octstr_get_cstr(msg->smart_sms.msgdata));
-    }
-    else {
-	alog("SMS request completed - sender:%s request: '%s' reply: '%s'",
-	     octstr_get_cstr(msg->smart_sms.receiver),
-	     octstr_get_cstr(msg->smart_sms.msgdata), reply);
     }
 
     octstr_replace(msg->smart_sms.msgdata, reply, strlen(reply));
