@@ -1,4 +1,10 @@
 2003-02-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smpp.c: adding handling of invaid userid and/or passwd to 
+      shutdown SMSC connection rather then retrying to reconnect.
+      Thanks to Alexander for this patch.
+      [Msg-ID: <200302271127.55572.a.malysh@centrium.de>]
+
+2003-02-27  Stipe Tolj  <tolj@wapme-systems.de>
     * configure[.in]: added checking of --[enable|disable]-docs switch.
       Thanks to Alan for the reminder and the patch.
     * gw/smscconn_p.h, gw/smscconn.c, gw/smsc_[smpp|smasi|http|fake|emi2|cgw].c:
