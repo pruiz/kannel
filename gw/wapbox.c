@@ -87,7 +87,7 @@ static Cfg *init_wapbox(Cfg *cfg)
     /* load parameters that could be later reloaded */
     config_reload(0);
     
-    conn_config_ssl (grp);
+    conn_config_ssl(grp);
 
     /*
      * And the rest of the pull info comes from the wapbox group.
@@ -479,6 +479,7 @@ static void config_reload(int reload) {
     
     if (cfg_get_integer(&new_value, grp, octstr_imm("log-level")) != -1) {
         reload_int(reload, octstr_imm("log level"), &logfilelevel, &new_value);
+        logfilelevel = new_value;
         log_set_log_level(new_value);
     }
 
@@ -532,44 +533,51 @@ static void config_reload(int reload) {
                    "please use wap-url-map group");
 
     /* configure wap-url-map */
-    if ((groups = cfg_get_multi_group(cfg, octstr_imm("wap-url-map"))) != NULL) {
-        for (i = 0; i < list_len(groups); i++) {
-            Octstr *name, *url, *map_url, *send_msisdn_query;
-            Octstr *send_msisdn_header, *send_msisdn_format;
-            int accept_cookies;
+    groups = cfg_get_multi_group(cfg, octstr_imm("wap-url-map"));
+    while (groups && (grp = list_extract_first(groups)) != NULL) {
+        Octstr *name, *url, *map_url, *send_msisdn_query;
+        Octstr *send_msisdn_header, *send_msisdn_format;
+        int accept_cookies;
 
-            grp = list_get(groups, i);
-            name = cfg_get(grp, octstr_imm("name"));
-            url = cfg_get(grp, octstr_imm("url"));
-            map_url = cfg_get(grp, octstr_imm("map-url"));
-            send_msisdn_query = cfg_get(grp, octstr_imm("send-msisdn-query"));
-            send_msisdn_header = cfg_get(grp, octstr_imm("send-msisdn-header"));
-            send_msisdn_format = cfg_get(grp, octstr_imm("send-msisdn-format"));
-            accept_cookies = -1;
-            cfg_get_bool(&accept_cookies, grp, octstr_imm("accept-cookies"));
+        name = cfg_get(grp, octstr_imm("name"));
+        url = cfg_get(grp, octstr_imm("url"));
+        map_url = cfg_get(grp, octstr_imm("map-url"));
+        send_msisdn_query = cfg_get(grp, octstr_imm("send-msisdn-query"));
+        send_msisdn_header = cfg_get(grp, octstr_imm("send-msisdn-header"));
+        send_msisdn_format = cfg_get(grp, octstr_imm("send-msisdn-format"));
+        accept_cookies = -1;
+        cfg_get_bool(&accept_cookies, grp, octstr_imm("accept-cookies"));
 
-            wap_map_add_url(name, url, map_url, send_msisdn_query, send_msisdn_header,
-                            send_msisdn_format, accept_cookies);
-        }
+        wap_map_add_url(name, url, map_url, send_msisdn_query, send_msisdn_header,
+                        send_msisdn_format, accept_cookies);
+
+        info(0, "Added wap-url-map <%s> with url <%s>, map-url <%s>, "
+                "send-msisdn-query <%s>, send-msisdn-header <%s>, "
+                "send-msisdn-format <%s>, accept-cookies <%s>", 
+             octstr_get_cstr(name), octstr_get_cstr(url), 
+             octstr_get_cstr(map_url), octstr_get_cstr(send_msisdn_query), 
+             octstr_get_cstr(send_msisdn_header), 
+             octstr_get_cstr(send_msisdn_format), (accept_cookies ? "yes" : "no"));
     }
-    wap_map_url_config_info();	/* debugging aid */
     list_destroy(groups, NULL);
 
     /* configure wap-user-map */
-    if ((groups = cfg_get_multi_group(cfg, octstr_imm("wap-user-map"))) != NULL) {
-        for (i = 0; i < list_len(groups); i++) {
-            Octstr *name, *user, *pass, *msisdn;
+    groups = cfg_get_multi_group(cfg, octstr_imm("wap-user-map"));
+    while (groups && (grp = list_extract_first(groups)) != NULL) {
+        Octstr *name, *user, *pass, *msisdn;
 
-            grp = list_get(groups, i);
-            name = cfg_get(grp, octstr_imm("name"));
-            user = cfg_get(grp, octstr_imm("user"));
-            pass = cfg_get(grp, octstr_imm("pass"));
-            msisdn = cfg_get(grp, octstr_imm("msisdn"));
-            
-            wap_map_add_user(name, user, pass, msisdn);
-        }
+        name = cfg_get(grp, octstr_imm("name"));
+        user = cfg_get(grp, octstr_imm("user"));
+        pass = cfg_get(grp, octstr_imm("pass"));
+        msisdn = cfg_get(grp, octstr_imm("msisdn"));
+           
+        wap_map_add_user(name, user, pass, msisdn);
+
+        info(0,"Added wap-user-map <%s> with credentials <%s:%s> "
+               "and MSISDN <%s>", octstr_get_cstr(name),
+             octstr_get_cstr(user), octstr_get_cstr(pass),
+             octstr_get_cstr(msisdn));
     }
-    wap_map_user_config_info();	/* debugging aid */
     list_destroy(groups, NULL);
 
     cfg_destroy(cfg);
