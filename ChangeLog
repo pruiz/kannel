@@ -1,3 +1,11 @@
+2002-05-02  Stipe Tolj <tolj@wapme-systems.de>
+    * configure[.in], config.h.in: changed VERSION definition to have 
+      a more readable date format and added GW_NAME define to allow 
+      vendor specific naming.
+    * gw/bb_http.c, gw/bearerbox.c, gw/shared.c, gw/smsbox.c, 
+      gw/wap-appl.c, gw/wap-error, gw/wap_push_ppg.c, gw/wapbox.c,
+      gwlib/http.c, gwlib/socket.c: added GW_NAME macro
+
 2002-05-02: Aarno Syvänen <aarno@wiral.com>
     * gw/bb_smscconn.c: Dropped outgoing sms queue test when handling para-
     meter maximum-queue-length. 
