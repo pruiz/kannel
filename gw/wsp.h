@@ -6,6 +6,7 @@
 #define WSP_H
 
 typedef struct WSPMachine WSPMachine;
+typedef struct WSPMethodMachine WSPMethodMachine;
 typedef struct WSPEvent WSPEvent;
 
 #include "octstr.h"
@@ -18,6 +19,7 @@ typedef enum {
 
 struct WSPEvent {
 	WSPEventType type;
+	WSPEvent *next;
 
 	#define INTEGER(name) int name
 	#define OCTSTR(name) Octstr *name
@@ -25,6 +27,28 @@ struct WSPEvent {
 	#define WSP_EVENT(name, fields) struct name fields name;
 	#include "wsp_events-decl.h"
 };
+
+struct WSPMachine
+	#define MUTEX(name) pthread_mutex_t name
+	#define INTEGER(name) long name
+	#define EVENT_POINTER(name) WSPEvent *name
+	#define METHOD_POINTER(name) WSPMethodMachine *name
+	#define SESSION_POINTER(name) WSPMethodMachine *name
+	#define SESSION_MACHINE(fields) fields
+	#define METHOD_MACHINE(fields)
+	#include "wsp_machine-decl.h"
+;
+
+
+struct WSPMethodMachine
+	#define MUTEX(name) pthread_mutex_t name
+	#define INTEGER(name) long name
+	#define METHOD_POINTER(name) WSPMethodMachine *name
+	#define SESSION_POINTER(name) WSPMethodMachine *name
+	#define SESSION_MACHINE(fields)
+	#define METHOD_MACHINE(fields) fields
+	#include "wsp_machine-decl.h"
+;
 
 
 /*
@@ -51,6 +75,36 @@ char *wsp_event_name(WSPEventType type);
  * the fields of that type.
  */
 void wsp_event_dump(WSPEvent *event);
+
+
+
+
+/*
+ * Create a WSPMachine structure and initialize it to be empty. Return a
+ * pointer to the structure or NULL if there was a failure.
+ */
+WSPMachine *wsp_machine_create(void);
+
+
+/*
+ * Destroy a WSPMachine structure, including all its members.
+ */
+void wsp_machine_destroy(WSPMachine *machine);
+
+
+/*
+ * Output (with `debug' in wapitlib.h) a WSPMachine and its fields.
+ */
+void wsp_machine_dump(WSPMachine *machine);
+
+
+
+
+/*
+ * Feed a WSPEvent to a WSPMachine. Handle errors, do not report them to
+ * the caller.
+ */
+void wsp_handle_event(WSPMachine *machine, WSPEvent *event);
 
 
 int wsp_deduce_pdu_type(Octstr *pdu, int connectionless);

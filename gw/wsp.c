@@ -5,6 +5,7 @@
  */
 
 
+#include "gwlib.h"
 #include "wsp.h"
 
 enum {
@@ -27,7 +28,15 @@ enum {
 	Put_PDU = 0x61,
 };
 
+typedef enum {
+	#define STATE_NAME(name) name,
+	#define ROW(state, event, condition, action, next_state)
+	#include "wsp_state-decl.h"
+} WSPState;
 
+
+static void append_to_event_queue(WSPMachine *machine, WSPEvent *event);
+static WSPEvent *remove_from_event_queue(WSPMachine *machine);
 
 static int unpack_uint8(unsigned long *u, Octstr *os, int *off);
 static int unpack_uintvar(unsigned long *u, Octstr *os, int *off);
@@ -43,6 +52,7 @@ WSPEvent *wsp_event_create(WSPEventType type) {
 		goto error;
 	
 	event->type = type;
+	event->next = NULL;
 
 	#define INTEGER(name) p->name = 0
 	#define OCTSTR(name) p->name = NULL
@@ -96,6 +106,70 @@ void wsp_event_dump(WSPEvent *event) {
 }
 
 
+WSPMachine *wsp_machine_create(void) {
+	WSPMachine *p;
+	
+	p = gw_malloc(sizeof(WSPMachine));
+	
+	#define MUTEX(name) \
+		pthread_mutex_init(&p->name, 0)
+	#define INTEGER(name) p->name = 0
+	#define METHOD_POINTER(name) p->name = NULL
+	#define EVENT_POINTER(name) p->name = NULL
+	#define SESSION_POINTER(name) p->name = NULL
+	#define SESSION_MACHINE(fields) fields
+	#define METHOD_MACHINE(fields)
+	#include "wsp_machine-decl.h"
+	
+	return p;
+}
+
+
+void wsp_machine_destroy(WSPMachine *machine) {
+	debug(0, "Destroying WSPMachine not yet implemented.");
+}
+
+
+void wsp_machine_dump(WSPMachine *machine) {
+	debug(0, "Dumping WSPMachine not yet implemented.");
+}
+
+
+void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
+	/* 
+	 * If we're already handling events for this machine, add the
+	 * event to the queue.
+	 */
+	if (mutex_try_lock(&sm->mutex) == EBUSY) {
+		append_to_event_queue(sm, current_event);
+		return;
+	}
+	
+	do {
+		#define STATE_NAME(name)
+		#define ROW(state_name, event, condition, action, next_state) \
+			{ \
+				struct event *e = &current_event->event; \
+				if (sm->state == state_name && \
+				    current_event->type == event && \
+				    (condition)) { \
+					action \
+					sm->state = next_state; \
+					goto end; \
+				} \
+			}
+		#include "wsp_state-decl.h"
+
+	end:
+		current_event = remove_from_event_queue(sm);
+	} while (current_event != NULL);
+	
+	mutex_unlock(&sm->mutex);
+}
+
+
+
+
 int wsp_deduce_pdu_type(Octstr *pdu, int connectionless) {
 	int off;
 	unsigned long o;
@@ -132,6 +206,42 @@ int wsp_unpack_connect_pdu(Octstr *user_data) {
 	octstr_dump(headers);
 	debug(0, "Connect PDU dump done.");
 	return 0;
+}
+
+
+
+/***********************************************************************
+ * Local functions
+ */
+
+
+static void append_to_event_queue(WSPMachine *machine, WSPEvent *event) {
+	mutex_lock(&machine->queue_lock);
+	if (machine->event_queue_head == NULL) {
+		machine->event_queue_head = event;
+		machine->event_queue_tail = event;
+		event->next = NULL;
+	} else {
+		machine->event_queue_tail->next = event;
+		machine->event_queue_tail = event;
+		event->next = NULL;
+	}
+	mutex_unlock(&machine->queue_lock);
+}
+
+static WSPEvent *remove_from_event_queue(WSPMachine *machine) {
+	WSPEvent *event;
+	
+	mutex_lock(&machine->queue_lock);
+	if (machine->event_queue_head == NULL)
+		event = NULL;
+	else {
+		event = machine->event_queue_head;
+		machine->event_queue_head = event->next;
+		event->next = NULL;
+	}
+	mutex_unlock(&machine->queue_lock);
+	return event;
 }
 
 

@@ -33,6 +33,12 @@ pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size);
 void mutex_lock(pthread_mutex_t *mutex);
 
 
+/* lock given mutex. PANICS if fails (non-initialized mutex or other
+ * coding error). Same as mutex_lock, except returns 0 if the lock was
+ * made and -1 if not. */ 
+int mutex_try_lock(pthread_mutex_t *mutex);
+
+
 /* unlock given mutex, PANICX if fails (so do not call for non-locked)
  */
 void mutex_unlock(pthread_mutex_t *mutex);

@@ -1,3 +1,10 @@
+Tue Nov 30 16:33:29 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c, gw/wsp.h: Implemented wsp_handle_event (doesn't really
+	work yet, needs wsp_state-decl.h first).
+	
+	* gwlib/thread.[ch]: Added mutex_try_lock.
+
 Tue Nov 30 14:51:01 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile: fixed "make depend" to add the directory of the object

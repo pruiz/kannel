@@ -71,6 +71,19 @@ void mutex_lock(pthread_mutex_t *mutex)
 }
 
 
+int mutex_try_lock(pthread_mutex_t *mutex)
+{
+    int ret;
+    
+    ret = pthread_mutex_trylock(mutex);
+    if (ret == EBUSY)
+	ret = -1;
+    else if (ret != 0)
+        panic(errno, "Mutex failure!");
+    return ret;
+}
+
+
 void mutex_unlock(pthread_mutex_t *mutex)
 {
     if (pthread_mutex_unlock(mutex) != 0)
