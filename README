@@ -18,11 +18,11 @@ Introduction
 	
 Requirements
 
-	You need a Unix-like operating system that supports Posix threads
-	(pthreads.h). We use Red Hat Linux and Debian systems.
+	You need a Unix-like operating system that supports POSIX threads
+	(pthreads.h). We use RedHat Linux and Debian GNU/Linux systems.
 
-    There is also support for the Cygwin 1.x POSIX.1 emulation layer
-    for the Win32 platforms using the pthreads-win32 library.
+    There is also support for the Cygwin 1.x POSIX emulation layer
+    for the Win32 platforms.
 	
 	You need GNU make, other make's tend not to work. For example,
 	the FreeBSD and Solaris versions of make do not work. Check the
@@ -31,6 +31,12 @@ Requirements
 	
 	On Solaris, you probably want to install gcc, GNU make and GNU
 	binutils from www.sunfreeware.com.
+
+    On MacOS X, you may have problems in compiling the latest libxml
+    (2.4.23). There may be linking errors for those library. A work-
+    arround is either using an older version of libxml (2.3.9 for 
+    example) or to build it as static library without the dynamic one 
+    being built.
 
 Documentation
 
@@ -85,7 +91,7 @@ Documentation
 Getting the gateway sources
 
 	You can download the sources from
-	http://www.kannel.3glab.org/download.shtml.
+	http://www.kannel.org/download.shtml.
 	
 	Note that you also need the Gnome-xml library from
 	http://xmlsoft.org/xml.html. That one probably requires zlib,
@@ -104,7 +110,7 @@ Compiling and installing the gateway
 		make bindir=/somewhere/suitable install
 
 	See the User Guide (doc/userguide/ or
-	http://www.kannel.3glab.org/userguide.shtml) for Kannel specific
+	http://www.kannel.org/userguide.shtml) for Kannel specific
 	options to configure.
 
 For developers only: autoconf, configure, config.status, and Makefile
@@ -211,7 +217,7 @@ For developers only: WMLScript references
 Configuring and running the gateway
 
 	See the user guide in doc/userguide or on the web at
-	http://www.kannel.3glab.org/doc.shtml.
+	http://www.kannel.org/doc.shtml.
 	
 	For test use, you can see sample configurations
 	gw/smskannel.conf (SMS gateway) and gw/wapkannel.conf (WAP gateway).
@@ -222,27 +228,17 @@ Using the gateway with a Nokia 7110
 	following (note that you need to provide your own dialup
 	line):
 	
-		Home page: http://www.wapit.com/~liw/hello.wml
+		Home page: http://www.kannel.org/wap/hello.wml
 		(or any other WML page)
-		
 		Connection type: continuous
-		
 		Connection security: off
-		
 		Bearer: data
-		
 		Dial-up number: <your dialup line>
-		
 		IP address: <IP number of the host running bearer box>
-		
 		Authentication type: normal
-		
 		Data call type: <analog or isdn, depending on your line>
-		
 		Data call speed: 9600
-		
 		User name: <username for your dialup line>
-		
 		Password: <password for your dialup line>
 		
 	After you have modified the profile, activate it and load the
@@ -271,8 +267,8 @@ Modifications to old Kannel (0.8 and older)
 Feedback and more information
 
 	You may want to subscribe the announce and devel lists at
-	kannel.3glab.org if you need help or want to participate in the
-	development of Kannel. Send e-mail to
+	kannel.3glab.org (aka kannel.org) if you need help or want to 
+    participate in the development of Kannel. Send e-mail to
 	
 		announce-subscribe@kannel.3glab.org
 		devel-subscribe@kannel.3glab.org
