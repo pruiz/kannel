@@ -1,3 +1,9 @@
+2005-02-15  Stipe Tolj  <stolj@wapme.de> 
+    * gwlib/http.c: fixing bug #68 reported by Aarno. Thanks to Rune Saetre 
+      <rune.saetre@netcom-gsm.no> for providing a patch. Applied in variation
+      of the Rune's patch, in order to reduce code.
+      [Msg-ID: <Pine.LNX.4.58.0502150957370.9546@pingle.local.rsnet>]
+
 2005-02-11  Stipe Tolj  <stolj@wapme.de> 
     * wap/wsp_headers.c: fixing a generic problem for empty WSP header values.
       This was initially reported by Paul for the Siemens SX1 device.

@@ -2987,6 +2987,15 @@ void http_header_get_content_type(List *headers, Octstr **type,
             octstr_strip_blanks(h);
             *type = h;
         }
+
+        /* 
+         * According to HTTP/1.1 (RFC 2616, section 3.7.1) we have to ensure
+         * to return charset 'iso-8859-1' in case of no given encoding and
+         * content-type is a 'text' subtype. 
+         */
+        if (octstr_len(*charset) == 0 && 
+            octstr_ncompare(*type, octstr_imm("text"), 4) == 0)
+            octstr_append_cstr(*charset, "ISO-8859-1");
     }
 }
 
