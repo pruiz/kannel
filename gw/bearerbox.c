@@ -65,7 +65,7 @@ volatile sig_atomic_t bb_status;
 static Mutex *status_mutex;
 Mutex *boxid_mutex;
 static time_t start_time;
-
+int restart = 0;
 
 
 /* to avoid copied code */
@@ -524,6 +524,9 @@ int main(int argc, char **argv)
     dlr_shutdown();
     gwlib_shutdown();
 
+    if (restart == 1)
+        execvp(argv[0],argv);
+
     return 0;
 }
 
@@ -636,7 +639,8 @@ int bb_restart_smsc(Octstr *id)
 
 int bb_restart(void)
 {
-    return -1;
+    restart = 1;
+    return bb_shutdown();
 }
 
 

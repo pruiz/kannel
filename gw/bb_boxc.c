@@ -738,6 +738,9 @@ static void smsboxc_run(void *arg)
     while(list_wait_until_nonempty(smsbox_list)!= -1)
 	    sleep(1);
 
+    /* close listen socket */
+    close(fd);
+
     list_destroy(smsbox_list, NULL);
     smsbox_list = NULL;
 
@@ -786,6 +789,9 @@ static void wapboxc_run(void *arg)
     while(list_consume(wapbox_list)!=NULL)
 	;
     
+    /* close listen socket */
+    close(fd);   
+ 
     list_destroy(wapbox_list, NULL);
     wapbox_list = NULL;
     

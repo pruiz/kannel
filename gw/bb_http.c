@@ -142,6 +142,21 @@ static Octstr *httpd_resume(List *cgivars)
 	return octstr_create("Running resumed");
 }
 
+static Octstr *httpd_restart(List *cgivars)
+{
+    Octstr *reply;
+    if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
+    if ((reply = httpd_check_status())!= NULL) return reply;
+ 
+    if (bb_status == BB_SHUTDOWN) {
+        bb_status = BB_DEAD;
+        gwthread_wakeup_all();
+        return octstr_create("Trying harder to restart");
+    }
+    bb_restart();
+    return octstr_create("Restarting.....");
+}
+
 static Octstr *httpd_flush_dlr(List *cgivars)
 {
     Octstr *reply;
@@ -258,6 +273,9 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
     } else if (octstr_str_compare(url, "/cgi-bin/resume")==0
 	       || octstr_str_compare(url, "/resume")==0) {
 	reply = httpd_resume(cgivars);
+    } else if (octstr_str_compare(url, "/cgi-bin/restart")==0
+           || octstr_str_compare(url, "/restart")==0) {
+    reply = httpd_restart(cgivars);
     } else if (octstr_str_compare(url, "/cgi-bin/flush-dlr")==0
 	       || octstr_str_compare(url, "/flush-dlr")==0) {
 	reply = httpd_flush_dlr(cgivars);
@@ -268,7 +286,7 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
 	       || octstr_str_compare(url, "/start-smsc")==0) {
 	reply = httpd_restart_smsc(cgivars);
     /*
-     * reconfig? restart?
+     * reconfig?
      */
     } else  {
 	reply = octstr_format("Unknown command %S", url);
