@@ -1,4 +1,4 @@
-2003-03-05  Stipe Tolj  <tolj@wapme-systems.de>
+2003-03-06  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/log.c: fixed compiler warning.
 
 2003-03-05  Stipe Tolj  <tolj@wapme-systems.de>
