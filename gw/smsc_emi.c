@@ -29,6 +29,10 @@
 #include "gwlib/gwlib.h"
 #include "alt_charsets.h"
 
+#ifndef CRTSCTS
+#define CRTSCTS 0
+#endif
+
 /******************************************************************************
 * Static functions
 */

@@ -449,20 +449,25 @@ int udp_recvfrom(int s, Octstr **datagram, Octstr **addr)
 {
     struct sockaddr_in sa;
     int salen;
-    char buf[UDP_PACKET_MAX_SIZE];
+    char *buf;
     int bytes;
 
+    buf = gw_malloc(UDP_PACKET_MAX_SIZE);
+
     salen = sizeof(sa);
-    bytes = recvfrom(s, &buf, (int) sizeof(buf), 0,
+    bytes = recvfrom(s, buf, UDP_PACKET_MAX_SIZE, 0,
                      (struct sockaddr *) &sa, &salen);
     if (bytes == -1) {
         if (errno != EAGAIN)
             error(errno, "Couldn't receive UDP packet");
+	gw_free(buf);
         return -1;
     }
 
     *datagram = octstr_create_from_data(buf, bytes);
     *addr = octstr_create_from_data((char *) &sa, salen);
+    
+    gw_free(buf);
 
     return 0;
 }

@@ -33,6 +33,10 @@
 #include "smsc.h"
 #include "smsc_p.h"
 
+#ifndef CRTSCTS
+#define CRTSCTS 0
+#endif
+
 /******************************************************************************
  * Prototypes for private functions
  */

@@ -1,5 +1,19 @@
 2000-10-23  Lars Wirzenius  <liw@iki.fi>
 
+	* configure{.in,}: Don't compile start-stop-daemon, unless the
+	--enable-start-stop-daemon option is used.
+	
+	* gw/smsc_at.c, gw/smsc_emi.c, gw/smsc_sema.c: Define CRTSCTS as
+	zero if it is not defined.
+	
+	* gwlib/socket.c: Allocate the 64 kilobyte buffer dynamically,
+	instead of from the stack.
+	
+	* These changes were prompted by a report of HP/UX compilation
+	changes by Timo Siirainen.
+
+2000-10-23  Lars Wirzenius  <liw@iki.fi>
+
 	* ChangeLog: Formatted long lines.
 
 2000-10-23  Kalle Marjola  <rpr@wapit.com>

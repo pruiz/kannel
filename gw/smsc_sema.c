@@ -44,6 +44,9 @@
 #include "alt_charsets.h"
 #include "smsc_sema.h"
 
+#ifndef CRTSCTS
+#define CRTSCTS 0
+#endif
 
 
 static unsigned char sema_counter[4] = "0000";
