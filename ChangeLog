@@ -1,3 +1,6 @@
+2004-09-10 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/gwlib.h: added 'gw-prioqueue.h'. fixed compile error.
+
 2004-09-08 Alexander Malysh <amalysh at kannel.org>
     * gw/sms.[ch], gw/smsc/smsc_at.[ch], gw/smsc/smsc_emi.c: applied patch
       that adds usage of priority queue and priority flag in smsc_at & smsc_emi.

@@ -102,6 +102,7 @@
 #include "md5.h"
 #include "gw_uuid.h"
 #include "gw-rwlock.h"
+#include "gw-prioqueue.h"
 
 void gwlib_assert_init(void);
 void gwlib_init(void);
