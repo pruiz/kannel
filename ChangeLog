@@ -1,3 +1,10 @@
+2000-05-16  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: Memory leaks with variables removed. 
+	String table code mostly done, nrext thing is to start to use it.
+
+	* gwlib/octstr.[ch]: octstr_create_tolower removed as unnecessary.
+
 2000-05-15  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/conn.[ch]: Found some more things to fix while writing
