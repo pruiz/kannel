@@ -532,9 +532,8 @@ text=text+of+message+using+URL+encoding+as+necessary
 
        <para>SMS messages can be sent with optional UDH (user data
        header) field. Add an 'udh=udh+data' to the URL requested. Note
-       that a) automatic message splitting does not work and b) you
-       should encode all bytes in UDH (and remaining text-field) for
-       UDH to work correctly. An example URL is like this:
+       that you should encode all bytes in UDH (and remaining text-field)
+       for UDH to work correctly. An example URL is like this:
 
 <programlisting>
 http://localhost:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
