@@ -1409,7 +1409,7 @@ static WTPEvent *duplicate_event(WTPEvent *original){
        #include "wtp_events-decl.h"
        return copy;
 }
-
+#if 0
 static int machine_not_in_use(void *a, void *b){
 
 	WTPMachine *machine;
@@ -1417,7 +1417,7 @@ static int machine_not_in_use(void *a, void *b){
 	
 	machine = a;
         remove_pat = b;
-        return machine.in_use == remove_pat.in_use;
+        return machine.in_use == remove_pat;
 }
 
 /*
@@ -1442,5 +1442,5 @@ static void destroy_machine(WTPMachine *machine, WTPMachine *previous){
 
      return;
 }
-
+#endif
 /**********************************************************************************/
