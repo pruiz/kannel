@@ -12,11 +12,13 @@ base=gateway-$version
 
 rm -rf $base $base.tar.gz README-$version design-$version design-$version.ps
 cvs -Q export -r $tag -d $base gateway
-make -C $base/doc -s
+(cd $base && ./configure) > /dev/null
+# make -C $base/doc -s
 tar -c -z -f $base.tar.gz $base
 zip -9qr $base.zip $base/*
-cp -a $base/doc/design.html design-$version
-zip -9qr design-$version.zip design-$version/*
-cp $base/doc/design.ps design-$version.ps
+# cp -a $base/doc/design.html design-$version
+# zip -9qr design-$version.zip design-$version/*
+# cp $base/doc/design.ps design-$version.ps
+cp $base/Release-$version .
 cp $base/README README-$version
 cp $base/ChangeLog ChangeLog-$version
