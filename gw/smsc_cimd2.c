@@ -1541,7 +1541,8 @@ retransmit:
         goto io_error;
 
 next_reply:
-    reply = cimd2_get_packet(smsc,ts);
+    /*reply = cimd2_get_packet(smsc,ts);*/
+    reply = cimd2_get_packet(smsc, NULL);
     if (!reply)
         goto io_error;
 
