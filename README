@@ -22,12 +22,17 @@ Introduction
 	not supported. Only the data call bearer (UDP) is supported,
 	not SMS.
 	
+	NOTE: At release time, we found our that you can't run both
+	the SMS and WAP boxes at the same time, because then the bearer
+	box crashes during a WAP session. Oops. We'll fix this in the
+	next release.
+	
 	This gateway was formerly known as "smsgateway", but has now been
 	rewritten to a new architectural design and is thus called just
 	"gateway" (a better name is fortcoming, suggestions welcome).
 	The old smsgateway becomes complely unsupported as of this
 	release.
-
+	
 Requirements
 
 	You need a Unix-like operating system that supports Posix threads
