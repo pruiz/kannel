@@ -1,3 +1,7 @@
+2001-04-20  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsc_emi2.c: Fixed a bug in SMSC time stamp parsing.
+
 2001-04-19  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsbox.c: Fixed bad assertion in prepend_catenation_udh().

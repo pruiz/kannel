@@ -435,8 +435,10 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	notime:
 	    time(&msg->sms.time);
 	}
-	else
+	else {
+	    unitime->year += 2000; /* Conversion function expects full year */
 	    msg->sms.time = date_convert_universal(&unitime);
+	}
 
 	msg->sms.smsc_id = octstr_duplicate(conn->id);
 	counter_increase(conn->received);
