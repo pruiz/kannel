@@ -671,7 +671,6 @@ static void handle_transaction(Connection *conn, void *data)
 		if (trans->retrying) {
 		    goto error;
 		} else {
-		    conn_unregister(trans->conn);
 		    conn_destroy(trans->conn);
 		    trans->conn = NULL;
 		    trans->retrying = 1;
@@ -748,7 +747,6 @@ static void handle_transaction(Connection *conn, void *data)
 	octstr_destroy(trans->response_body);
 	trans->response_body = octstr_create("");
 	--trans->follow_remaining;
-	conn_unregister(trans->conn);
 	conn_destroy(trans->conn);
 	trans->conn = NULL;
 	list_produce(pending_requests, trans);
@@ -757,7 +755,6 @@ static void handle_transaction(Connection *conn, void *data)
     return;
 
 error:
-    conn_unregister(trans->conn);
     conn_destroy(trans->conn);
     trans->conn = NULL;
     error(0, "Couldn't fetch <%s>", octstr_get_cstr(trans->url));

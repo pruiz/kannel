@@ -318,6 +318,8 @@ void conn_destroy(Connection *conn) {
 }
 
 void conn_claim(Connection *conn) {
+	gw_assert(conn != NULL);
+
 	if (conn->claimed)
 		panic(0, "Connection is being claimed twice!");
 	conn->claimed = 1;
@@ -412,6 +414,8 @@ int conn_register(Connection *conn, FDSet *fdset,
 	int events;
 	int result = 0;
 
+	gw_assert(conn != NULL);
+
 	if (conn->fd < 0)
 		return -1;
 
@@ -451,6 +455,8 @@ int conn_register(Connection *conn, FDSet *fdset,
 }
 
 void conn_unregister(Connection *conn) {
+	gw_assert(conn != NULL);
+
 	if (conn->fd < 0)
 		return;
 

@@ -1,4 +1,13 @@
+2000-11-16  Richard Braakman  <dark@wapi.com>
+
+	* gwlib/http.c: Removed calls to conn_unregister that were followed
+	by calls to conn_destroy.  It's redundant, and in one case the
+	connection might be NULL.
+
+	* gwlib/conn.c: Add some conn != NULL assertions.
+
 2000-11-16  Yann Muller  <ymuller@3glab.com>
+
 	* gw/smsc_at.c: In function at_open_connection() added parity
 	line for this modem type. In function at_open() adding sleep
 	period only for this modem type, may be expanded. In function
