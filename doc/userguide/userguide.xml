@@ -180,16 +180,18 @@
       initiated by SMS message to certain (usually short) phone
       number, which then answers with requested content, if available.</para>
 
-      <para>When SMS services are used, the client sends an SMS
+      <para>When SMS services are used, the client (mobile terminal) 
+      sends an SMS
       message to certain number, usually a very short specialized
-      number, which is the number of an SMS center. This SMS center
+      number, which points to specific SMS center responsible
+      for that number (plus possibly many others). This SMS center
       then sends the message onward to specified receiver in intra- or
       Internet, using an SMS center specific protocol. For example, a
       Nokia SMS center uses CIMD protocol.</para>
 
-      <para>As every different kind of SMS center uses different
+      <para>As practically every different kind of SMS center uses different
       protocol, an <emphasis>SMS gateway</emphasis> is used to handle
-      connections with SMS centers and to rely them onward in an
+      connections with SMS centers and to relay them onward in an
       unified form.</para>
 
         <figure>
@@ -197,21 +199,21 @@
         <graphic fileref="sms-gateway&figtype;"></graphic>
         </figure>
 
-      <para>An SMS gateway can also be used to rely SMS messages from
+      <para>An SMS gateway can also be used to relay SMS messages from
       one GSM network to another, if the networks do not roam messages
       normally.</para>
 
       <para>Kannel works as an SMS gateway, talking with many
-      different kind of SMS centers, and relying the messages onward
+      different kind of SMS centers, and relaying the messages onward
       to content providers, as HTTP queries. Content providers then
       answer to this HTTP query and the answer is sent back to mobile
-      terminal, with specified SMS center connections using SMS center
+      terminal, with appropriate SMS center connection using SMS center
       specific protocol.</para>
 
       <para>In addition to serving mobile originated (MO) SMS messages
       Kannel also works as an SMS push gateway - content providers can
       request Kannel to send SMS messages to terminals. Kannel then
-      determines the correct SMS center to rely the SMS message and
+      determines the correct SMS center to relay the SMS message and
       sends the SMS message to that SMS center, again using SMS center
       specific protocol. This way the content provider does not need
       to know any SMS center specific protocol, just unified Kannel

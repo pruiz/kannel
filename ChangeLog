@@ -1,3 +1,7 @@
+2000-11-23  Kalle Marjola  <rpr@wapit.com>
+
+	* doc/userguide/userguide.xml: some corrections to just written
+
 2000-11-23  Richard Braakman  <dark@wapi.com>
 
 	* gw/smsc_at.c, gw/smsbox_req.c: Replaced some strcpys with
