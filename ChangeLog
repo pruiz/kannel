@@ -1,3 +1,9 @@
+2001-05-14  Nick Clarey  <nclarey@3glab.com>
+
+	* gw/smsc_at.c: 7-bit messages plus UDH now encoded correctly. 
+	Thanks to Paul Keogh for the patch, as well as Richard Braakman for
+	supervising the change to the UDL calculation code.
+
 2001-05-11  Uoti Urpala  <uau@wapit.com>
 
 	* gw/urltrans.c: accept-x-kannel-headers and assume-plain-text

@@ -56,9 +56,9 @@ static Msg *pdu_decode_deliver_sm(Octstr *data);
 static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc);
 static Octstr *convertpdu(Octstr *pdutext);
 static int hexchar(int hexc);
-static int encode7bituncompressed(Octstr *input, unsigned char *encoded);
+static int encode7bituncompressed(Octstr *input, unsigned char *encoded, int offset);
 static int encode8bituncompressed(Octstr *input, unsigned char *encoded);
-static void decode7bituncompressed(Octstr *input, int len, Octstr *decoded);
+static void decode7bituncompressed(Octstr *input, int len, Octstr *decoded, int offset);
 static int numtext(int num);
 
 /******************************************************************************
@@ -652,8 +652,14 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
         if(eightbit == 1) {
                 text = octstr_duplicate(tmpstr);
         } else {
+                int offset=0;
                 text = octstr_create("");
-                decode7bituncompressed(tmpstr, len, text);
+                if (udhi && !eightbit) {
+                        int nbits;
+                        nbits = (udhlen + 1)*8;
+                        offset = (((nbits/7)+1)*7-nbits)%7;     /* Fill bits for UDH to septet boundary */
+                }
+                decode7bituncompressed(tmpstr, len, text, offset);
         }
 
         /* build the message */         
@@ -706,6 +712,7 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
         pos++;
         
         /* destination address */
+        octstr_strip_blanks(msg->sms.receiver); /* strip blanks before length calculation */
         len = octstr_len(msg->sms.receiver);
 
         /* Check for international numbers
@@ -785,11 +792,20 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
         pos++;
 
         /* user data length - include length of UDH if it exists*/
-        /* This is wrong; it needs to be calculated dependent on 8-bit/non-8-bit */
         len = octstr_len(msg->sms.msgdata);
+
         if(msg->sms.flag_udh != 0) {
+                if (msg->sms.flag_8bit) {
                 len += octstr_len(msg->sms.udhdata);
+                } else {
+                        /* The reason we branch here is because UDH data length is determined
+                           in septets if we are in GSM coding, otherwise it's in octets. Adding 6
+                           will ensure that for an octet length of 0, we get septet length 0,
+                           and for octet length 1 we get septet length 2.*/
+                        len += (((8*octstr_len(msg->sms.udhdata)) + 6)/7);                
         }
+        }
+
         pdu[pos] = numtext((len & 240) >> 4);
         pos++;
         pdu[pos] = numtext(len & 15);
@@ -805,7 +821,13 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
         if(msg->sms.flag_8bit == 1) {
                 pos += encode8bituncompressed(msg->sms.msgdata, &pdu[pos]);
         } else {
-                pos += encode7bituncompressed(msg->sms.msgdata, &pdu[pos]);
+                int offset=0;
+
+                if (msg->sms.flag_udh != 0) {                                   /* Have UDH */
+                        int nbits = octstr_len(msg->sms.udhdata)*8;     /* Includes UDH length byte */
+                        offset = (((nbits/7)+1)*7-nbits)%7;                     /* Fill bits */
+                }
+                pos += encode7bituncompressed(msg->sms.msgdata, &pdu[pos],offset);
         }
         pdu[pos] = 0;
 
@@ -833,14 +855,15 @@ static Octstr *convertpdu(Octstr *pdutext) {
  */
 int ermask[8] = { 0, 1, 3, 7, 15, 31, 63, 127 };
 int elmask[8] = { 0, 64, 96, 112, 120, 124, 126, 127 };
-
-static int encode7bituncompressed(Octstr *input, unsigned char *encoded) {
+static int encode7bituncompressed(Octstr *input, unsigned char *encoded,int offset) {
         unsigned char prevoctet, tmpenc;
         int i;
         int c = 1;
         int r = 7;
         int pos = 0;
         int len;
+        unsigned char enc7bit[256];
+        int j,encpos = 0;
 
         charset_latin1_to_gsm(input);
         len = octstr_len(input);
@@ -852,8 +875,7 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded) {
                 /* a byte is encoded with what is left of the previous character
                  * and filled with as much as possible of the current one. */
                 tmpenc = prevoctet + ((octstr_get_char(input,i) & ermask[c]) << r);
-                encoded[pos] = numtext((tmpenc & 240) >> 4); pos++;
-                encoded[pos] = numtext(tmpenc & 15); pos++;
+                enc7bit[encpos] = tmpenc; encpos++;
                 c = (c>6)? 1 : c+1;
                 r = (r<2)? 7 : r-1;
 
@@ -871,8 +893,33 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded) {
          * are finished. Otherwise prevoctet still contains part of a 
          * character so we add it. */
         if((len/8)*8 != len) {
-                encoded[pos] = numtext((prevoctet & 240) >> 4); pos++;
-                encoded[pos] = numtext(prevoctet & 15); pos++;
+                enc7bit[encpos] = prevoctet;encpos++;
+        }
+
+        /* Now shift the buffer by the offset */
+        if (offset > 0) {
+                unsigned char nextdrop, lastdrop;
+
+                for (i = 0; i < encpos; i++) {
+                        nextdrop = enc7bit[i] >> (8 - offset);          /* This drops off by shifting */
+                        if (i == 0)
+                                enc7bit[i] = enc7bit[i] << offset;              /* This drops off by shifting */
+                        else
+                                enc7bit[i] = (enc7bit[i] << offset) | lastdrop;
+                        lastdrop = nextdrop;
+                }
+
+                if (offset > ((len*7) % 8)) {
+                        enc7bit [i] = nextdrop;
+                        i++;
+                }
+        }
+        else
+                i = encpos;
+
+        for (j = 0; j < i; j++) {
+                encoded[pos] = numtext((enc7bit [j] & 240) >> 4); pos++;
+                encoded[pos] = numtext(enc7bit [j] & 15); pos++;
         }
         return pos;
                 
@@ -900,13 +947,24 @@ static int encode8bituncompressed(Octstr *input, unsigned char *encoded) {
 int rmask[8] = { 0, 1, 3, 7, 15, 31, 63, 127 };
 int lmask[8] = { 0, 128, 192, 224, 240, 248, 252, 254 };
 
-static void decode7bituncompressed(Octstr *input, int len, Octstr *decoded) {
+static void decode7bituncompressed(Octstr *input, int len, Octstr *decoded, int offset) {
         unsigned char septet, octet, prevoctet;
         int i;
         int r = 1;
         int c = 7;
         int pos = 0;
         
+        /* Shift the buffer offset bits to the left */
+        if (offset > 0) {
+                unsigned char *ip;
+                for (i = 0, ip = octstr_get_cstr(input); i < octstr_len(input); i++) {
+                        if (i == octstr_len(input) - 1)
+                                *ip = *ip >> offset;
+                        else
+                                *ip = (*ip >> offset) | (*(ip + 1) << (8 - offset));
+                        ip++;
+                }
+        }
         octet = octstr_get_char(input, pos);
         prevoctet = 0;
         for(i=0; i<len; i++) {
