@@ -109,12 +109,13 @@ static unsigned long get_varint(Octstr *pdu, int pos) {
 }
 
 static void http_thread(void *arg) {
-	HTTPSocket *server = arg;
-	HTTPSocket *client;
+	HTTPClient *client;
+	Octstr *ip;
 	Octstr *url;
 	List *headers;
 	Octstr *body;
 	List *cgivars;
+	HTTPCGIVar *v;
 	Octstr *reply_body = octstr_create(
 		"<?xml version=\"1.0\"?>\n"
 		"<!DOCTYPE wml PUBLIC \"-//WAPFORUM//DTD WML 1.1//EN\"\n"
@@ -129,43 +130,40 @@ static void http_thread(void *arg) {
 		octstr_create("Content-Type: text/vnd.wap.wml"));
 
 	for (;!dying;) {
-		client = http_server_accept_client(server);
+		client = http_accept_request(&ip, &url, &headers, &body,
+		    	    	    	     &cgivars);
 		if (client == NULL)
-			continue;
-		while (http_server_get_request(client, &url, &headers,
-					&body, &cgivars) == 1) {
-			http_server_send_reply(client, 200,
-				reply_headers, reply_body);
-			list_destroy(headers, octstr_destroy_item);
-			octstr_destroy(url);
-			octstr_destroy(body);
-			list_destroy(cgivars, octstr_destroy_item);
-			
+			break;
+		http_send_reply(client, 200, reply_headers, reply_body);
+		list_destroy(headers, octstr_destroy_item);
+		octstr_destroy(ip);
+		octstr_destroy(url);
+		octstr_destroy(body);
+		while ((v = list_extract_first(cgivars)) != NULL) {
+		    octstr_destroy(v->name);
+		    octstr_destroy(v->value);
+		    gw_free(v);
 		}
-		http_server_close_client(client);
 	}
 
 	octstr_destroy(reply_body);
 	list_destroy(reply_headers, octstr_destroy_item);
-	http_server_close(server);
 }
 	
 
 static long http_thread_id;
 
 static int start_http_thread(void) {
-	HTTPSocket *server = NULL;
 	unsigned short port;
 
 	for (port = 40000; port < 41000; port += 13) {
-		server = http_server_open(port);
-		if (server)
-			break;
+		if (http_open_server(port) != -1)
+		    break;
 	}
-	if (!server)
+	if (port == 41000)
 		panic(0, "No ports available for http server");
 
-	http_thread_id = gwthread_create(http_thread, server);
+	http_thread_id = gwthread_create(http_thread, NULL);
 	if (http_thread_id == -1) 
 		panic(0, "Cannot start http thread");
 	return port;
@@ -663,6 +661,7 @@ int main(int argc, char **argv) {
 		run_time, max_requests / run_time);
 
 	dying = 1;
+	http_close_all_servers();
 	if (!http_url)
 		gwthread_join(http_thread_id);
 
