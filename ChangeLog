@@ -1,5 +1,10 @@
 2000-12-21  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smsc_wrapper.c: added some mutex operations so that reconnect
+	should now work without segfault
+	
+2000-12-21  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bearerbox.c, gw/bb_smscconn.c, gw/smsc_wrapper.c: updated
 	status output information 
 

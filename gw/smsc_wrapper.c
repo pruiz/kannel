@@ -30,19 +30,33 @@ static int reconnect(SMSCConn *conn)
     int ret;
     int wait = 1;
 
+    /* disable double-reconnect */
+    if (conn->status == SMSCCONN_RECONNECTING) {
+	mutex_lock(conn->flow_mutex);
+	mutex_unlock(conn->flow_mutex);
+	return 0;
+    }
+    mutex_lock(conn->flow_mutex);
+
+    debug("bb.sms", 0, "smsc_wrapper (%s): reconnect started",
+	  octstr_get_cstr(conn->name));
+
     conn->status = SMSCCONN_RECONNECTING;
+    
 
     while(conn->is_killed == 0) {
 	ret = smsc_reopen(wrap->smsc);
 	if (ret == 0) {
 	    conn->status = SMSCCONN_ACTIVE;
 	    conn->connect_time = time(NULL);
+	    mutex_unlock(conn->flow_mutex);
 	    return 0;
 	}
 	else if (ret == -2) {
 	    error(0, "Re-open of %s failed permanently",
 		  octstr_get_cstr(conn->name));
 	    conn->status = SMSCCONN_DISCONNECTED;
+	    mutex_unlock(conn->flow_mutex);
 	    return -1;
 	}
 	else {
@@ -53,6 +67,7 @@ static int reconnect(SMSCConn *conn)
 	    wait = wait > 10 ? 10 : wait * 2 + 1;
 	}
     }
+    mutex_unlock(conn->flow_mutex);
     return 0;
 }
 
@@ -213,6 +228,8 @@ static void wrapper_sender(void *arg)
 
     /* call 'failed' to all messages still in queue */
     
+    mutex_lock(conn->flow_mutex);
+
     conn->status = SMSCCONN_KILLED;
 
     while((msg = list_extract_first(wrap->outgoing_queue))!=NULL) {
@@ -222,6 +239,8 @@ static void wrapper_sender(void *arg)
     smsc_close(wrap->smsc);
     gw_free(wrap);
     conn->data = NULL;
+
+    mutex_unlock(conn->flow_mutex);
 
     bb_smscconn_killed(SMSCCONN_KILLED_SHUTDOWN);
 }
