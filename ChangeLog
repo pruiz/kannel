@@ -1,3 +1,8 @@
+Thu Dec 30 17:55:22 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* Makefile, */Makefile: Removed from CVS, since they're supposed
+	to be generated, and not included in the distribution.
+
 1999-12-30    <rpr@rpr.wapit.com>
 
 	* gw/smsbox.smsconf: improved documentation
