@@ -65,6 +65,7 @@
 #include "smscconn_p.h"
 #include "bb_smscconn_cb.h"
 #include "msg.h"
+#include "sms.h"
 
 typedef struct conndata {
     HTTPCaller *http_ref;
