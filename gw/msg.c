@@ -88,11 +88,12 @@ static char *type_as_str(Msg *msg);
  * Implementations of the exported functions.
  */
 
-Msg *msg_create(enum msg_type type)
+Msg *msg_create_real(enum msg_type type, const char *file, long line,
+                     const char *func)
 {
     Msg *msg;
 
-    msg = gw_malloc(sizeof(Msg));
+    msg = gw_malloc_trace(sizeof(Msg), file, line, func);
 
     msg->type = type;
 #define INTEGER(name) p->name = MSG_PARAM_UNDEFINED;
@@ -185,13 +186,13 @@ Octstr *msg_pack(Msg *msg)
 }
 
 
-Msg *msg_unpack(Octstr *os)
+Msg *msg_unpack_real(Octstr *os, const char *file, long line, const char *func)
 {
     Msg *msg;
     int off;
     long i;
 
-    msg = msg_create(0);
+    msg = msg_create_real(0, file, line, func);
     if (msg == NULL)
         goto error;
 
@@ -219,6 +220,7 @@ Msg *msg_unpack(Octstr *os)
 
 error:
     error(0, "Msg packet was invalid.");
+    msg_destroy(msg);
     return NULL;
 }
 

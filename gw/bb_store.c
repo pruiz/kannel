@@ -448,6 +448,7 @@ int store_load(void)
 	if (msg_type(msg) == sms) {
 	    if (msg->sms.sms_type == report) {
 		octstr_destroy(pack);
+                msg_destroy(msg);
 		continue;
 	    }
 	    key = octstr_format("%d-%d", msg->sms.time, msg->sms.id);

@@ -76,14 +76,20 @@ void wap_dispatch_datagram(WAPEvent *dgram)
     }
 
     /* XXX Assumption does not hold for client side */
-    if (dgram->u.T_DUnitdata_Ind.addr_tuple->local->port
-        == CONNECTIONLESS_PORT) {
+    if (dgram->u.T_DUnitdata_Ind.addr_tuple->local->port == CONNECTIONLESS_PORT) {
 	wsp_unit_dispatch_event(dgram);
     } else {
         List *events;
 
         events = wtp_unpack_wdp_datagram(dgram);
-	wap_event_destroy(dgram);
+
+        if (!events) {
+            debug("wap.wap", 0, "ignoring truncated datagram");
+            wap_event_dump(dgram);
+            wap_event_destroy(dgram);
+            return;
+        }
+
         while (list_len(events) > 0) {
 	    WAPEvent *event;
 
@@ -93,6 +99,8 @@ void wap_dispatch_datagram(WAPEvent *dgram)
             else
                 wtp_initiator_dispatch_event(event);
         }
+
+        wap_event_destroy(dgram);
         list_destroy(events, NULL);
     }
 }
