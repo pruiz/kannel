@@ -1,3 +1,7 @@
+2003-04-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smpp.c: fixed an obivious type. Patch provided by 
+      "Rachman Chavik" <rchavik@attglobal.net>. Thanks a lot.
+
 2003-04-06  Stipe Tolj  <tolj@wapme-systems.de>
     * configure[.in]: fixed a bug from previous commit.
 
