@@ -1,3 +1,8 @@
+2000-06-30  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/http.c: Change some of the locking according to Joerg
+	Pommnitz's suggestions, to deal more smoothly with slow connects.
+
 2000-06-30  Derry Hamilton  <rasilon@tardis.ed.ac.uk>
 
 	* Makefile.in: made .depend depend on config.h.  This should

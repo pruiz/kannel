@@ -677,13 +677,21 @@ static int octstr_str_ncompare(Octstr *os, char *cstr) {
 int proxy_used_for_host(Octstr *host) {
 	int i;
 	
-	if (proxy_hostname == NULL)
+	mutex_lock(proxy_mutex);
+
+	if (proxy_hostname == NULL) {
+		mutex_unlock(proxy_mutex);
 		return 0;
+	}
 
-	for (i = 0; i < list_len(proxy_exceptions); ++i)
-		if (octstr_compare(host, list_get(proxy_exceptions, i)) == 0)
+	for (i = 0; i < list_len(proxy_exceptions); ++i) {
+		if (octstr_compare(host, list_get(proxy_exceptions, i)) == 0) {
+			mutex_unlock(proxy_mutex);
 			return 0;
+		}
+	}
 
+	mutex_unlock(proxy_mutex);
 	return 1;
 }
 
@@ -731,11 +739,15 @@ static HTTPSocket *pool_allocate(Octstr *host, int port) {
 	}
 
 	if (i == pool_len) {
+		/* Temporarily unlock pool, because socket_create_client
+		 * can block for a long time.  We can do this safely because
+		 * we don't rely on the values i and p, and pool_len
+		 * currently have. */
+		list_unlock(pool);
 		p = socket_create_client(host, port);
-		if (p == NULL) {
-			list_unlock(pool);
+		if (p == NULL)
 			return NULL;
-		}
+		list_lock(pool);
 		pool_kill_old_ones();
 		list_append(pool, p);
 	} else {
@@ -1175,7 +1187,6 @@ static HTTPSocket *send_request(Octstr *url, List *request_headers) {
 	if (parse_url(url, &host, &port, &path) == -1)
 		goto error;
 
-	mutex_lock(proxy_mutex);
 	if (proxy_used_for_host(host)) {
 		request = build_request(url, host, port, request_headers);
 		p = pool_allocate(proxy_hostname, proxy_port);
@@ -1183,7 +1194,6 @@ static HTTPSocket *send_request(Octstr *url, List *request_headers) {
 		request = build_request(path, host, port, request_headers);
 		p = pool_allocate(host, port);
 	}
-	mutex_unlock(proxy_mutex);
 	if (p == NULL)
 		goto error;
 	
