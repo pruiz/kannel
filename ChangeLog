@@ -1,5 +1,9 @@
 2001-01-22  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/wapbox.c: Converted to use new config file module in gwlib.
+
+2001-01-22  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/accesslog.c: Made the output buffer be allocated via
 	dynamic memory to avoid overflowing the stack with large local
 	variables.
