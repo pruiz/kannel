@@ -12,9 +12,9 @@
 #include "http2.h"
 
 
-/*
+/*++++
  * The definition for the HTTPSocket data type.
- */
+ ++++*/
 struct HTTPSocket {
 	int in_use;
 	time_t last_used;
@@ -366,10 +366,10 @@ Octstr **charset) {
  */
  
  
-/*
+/*++++
  * Like octstr_str_compare, but compare only strlen(cstr) first bytes of
  * the octet string.
- */
+ ++++*/
 static int octstr_str_ncompare(Octstr *os, char *cstr) {
 	long i, len;
 	unsigned char *p;

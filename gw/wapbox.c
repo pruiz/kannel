@@ -289,7 +289,7 @@ int main(int argc, char **argv) {
 	WTPEvent *wtp_event = NULL;
         WTPMachine *wtp_machine = NULL;
 
-	gw_init_mem();
+	gwlib_init();
 	cf_index = get_and_set_debugs(argc, argv, NULL);
 	
 	if (argc > cf_index)
@@ -347,6 +347,7 @@ int main(int argc, char **argv) {
 	wtp_timer_shutdown();
 	wtp_tid_cache_shutdown();
 	config_destroy(cfg);
+	gwlib_shutdown();
 	gw_check_leaks();
 	return 0;
 }

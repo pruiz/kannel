@@ -1,4 +1,6 @@
 /*
+ * gwlib.h - public interface to gwlib
+ *
  * This is general header file to include all gwlib subparts.
  * As they are usually all needed, this eases the need of
  * lots of includes in modules
@@ -33,6 +35,9 @@
 #include "counter.h"
 #include "charset.h"
 #include "conn.h"
+
+void gwlib_init(void);
+void gwlib_shutdown(void);
 
 
 #endif

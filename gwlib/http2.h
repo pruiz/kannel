@@ -1,4 +1,4 @@
-/*
+/*++++
  * http2.h - HTTP protocol implementation
  *
  * This header file defines the interface to the HTTP implementation

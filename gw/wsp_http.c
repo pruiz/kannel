@@ -17,9 +17,6 @@ static void  dev_null(const char *data, size_t len, void *context);
 static int encode_content_type(const char *type);
 
 static Octstr *convert_to_self(Octstr *stuff, char *url);
-#if 0
-static Octstr *convert_wml_to_wmlc_old(Octstr *wml, char *url);
-#endif
 static Octstr *convert_wml_to_wmlc(Octstr *wml, char *url);
 static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, char *url);
 
@@ -158,10 +155,6 @@ static struct wsp_http_map *wsp_http_map_find(char *s)
 			break;
 	if (run) {
 		debug("wap.wsp.http", 0, "WSP: found mapping for url <%s>", s);
-#if 0
-	} else {
-		debug("wap.wsp.http", 0, "WSP: no mapping for url <%s>", s);
-#endif
 	}
 	return run;
 }
@@ -193,21 +186,19 @@ static void wsp_http_map_url(Octstr **osp)
 /* here comes the main processing */
 
 void *wsp_http_thread(void *arg) {
-	char *type, *data, *aux_type;
-	size_t size;
-	Octstr *body, *input;
 	WSPEvent *e;
 	int status;
 	int ret;
 	int i;
 	int converter_failed;
-	char *url;
 	WSPEvent *event;
 	unsigned long body_size, client_SDU_size;
 	WTPMachine *wtp_sm;
 	WSPMachine *sm;
-	HTTPHeader *headers, *last, *h, *new_h;
+	HTTPHeader *h;
 	int wml_ok, wmlc_ok, wmlscript_ok, wmlscriptc_ok;
+	Octstr *url, *final_url, *resp_body, *body, *os, *type, *charset;
+	List *req_headers, *resp_headers;
 	
 	static struct {
 		char *type;
@@ -217,11 +208,6 @@ void *wsp_http_thread(void *arg) {
 		{ "text/vnd.wap.wml",
 		  "application/vnd.wap.wmlc",
 		  convert_wml_to_wmlc },
-#if 0
-		{ "text/vnd.wap.wml",
-		  "application/vnd.wap.wmlc",
-		  convert_wml_to_wmlc_old },
-#endif
 		{ "application/vnd.wap.wmlc",
 		  "application/vnd.wap.wmlc",
 		  convert_to_self },
@@ -250,35 +236,22 @@ void *wsp_http_thread(void *arg) {
 		/* XXX shouldn't this duplicate the event? */
 
 	wsp_http_map_url(&event->S_MethodInvoke_Res.url);
-	url = octstr_get_cstr(event->S_MethodInvoke_Res.url);
+	url = event->S_MethodInvoke_Res.url;
 
 	body = NULL;
 
-	headers = NULL;
-	last = NULL;
-	for (h = sm->http_headers; h != NULL; h = h->next) {
-		new_h = header_create(h->key, h->value);
-		if (last != NULL)
-			last->next = new_h;
-		else
-			headers = new_h;
-		last = new_h;
-	}
-	for (h = event->S_MethodInvoke_Res.http_headers; h != NULL; h = h->next) {
-		new_h = header_create(h->key, h->value);
-		if (last != NULL)
-			last->next = new_h;
-		else
-			headers = new_h;
-		last = new_h;
-	}
-	header_pack(headers);
 	wml_ok = 0;
 	wmlc_ok = 0;
 	wmlscript_ok = 0;
 	wmlscriptc_ok = 0;
-	for (h = headers; h != NULL; h = h->next) {
-		if (strcasecmp(h->key, "Accept") == 0) {
+	
+	req_headers = list_create();
+	for (h = sm->http_headers; h != NULL; h = h->next) {
+		os = octstr_create(h->key);
+		octstr_append_cstr(os, ": ");
+		octstr_append_cstr(os, h->value);
+		list_append(req_headers, os);
+		if (strcasecmp(h->key, "Accept")) {
 			if (strstr(h->value, "text/vnd.wap.wml") != NULL)
 				wml_ok = 1;
 			if (strstr(h->value, "text/vnd.wap.wmlscript") != NULL)
@@ -289,65 +262,65 @@ void *wsp_http_thread(void *arg) {
 				wmlscriptc_ok = 1;
 		}
 	}
+	for (h = event->S_MethodInvoke_Res.http_headers; h != NULL; h = h->next) {
+		os = octstr_create(h->key);
+		octstr_append_cstr(os, ": ");
+		octstr_append_cstr(os, h->value);
+		list_append(req_headers, os);
+		if (strcasecmp(h->key, "Accept")) {
+			if (strstr(h->value, "text/vnd.wap.wml") != NULL)
+				wml_ok = 1;
+			if (strstr(h->value, "text/vnd.wap.wmlscript") != NULL)
+				wmlscript_ok = 1;
+			if (strstr(h->value, "application/vnd.wap.wmlc") != NULL)
+				wmlc_ok = 1;
+			if (strstr(h->value, "application/vnd.wap.wmlscriptc") != NULL)
+				wmlscriptc_ok = 1;
+		}
+	}
+
 	if (wmlc_ok && !wml_ok) {
-		new_h = header_create("Accept", "text/vnd.wap.wml");
-		new_h->next = headers;
-		headers = new_h;
+		list_append(req_headers, 
+			octstr_create("Accept: text/vnd.wap.wml"));
 	}
 	if (wmlscriptc_ok && !wmlscript_ok) {
-		new_h = header_create("Accept", "text/vnd.wap.wmlscript");
-		new_h->next = headers;
-		headers = new_h;
+		list_append(req_headers, 
+			octstr_create("Accept: text/vnd.wap.wmlscript"));
 	}
 	if (octstr_len(sm->client_address) > 0) {
-		new_h = header_create("X_Network_Info",
-				octstr_get_cstr(sm->client_address));
-		new_h->next = headers;
-		headers = new_h;
+		os = octstr_create("X_Network_Info: ");
+		octstr_append_cstr(os, octstr_get_cstr(sm->client_address));
+		list_append(req_headers, os);
 	}
 	{
 		char buf[1024];
 		
+		os = octstr_create("X-WAP-Session-ID: ");
 		sprintf(buf, "%ld", sm->session_id);
-		new_h = header_create("X-WAP-Session-ID", buf);
-		new_h->next = headers;
-		headers = new_h;
+		octstr_append_cstr(os, buf);
+		list_append(req_headers, os);
 	}
-	header_pack(headers);
-#if 0
-	debug("wap.wsp.http", 0, "WSP: Headers used for request:");
-	header_dump(headers);
-#endif
 
-	type = NULL;
-	data = NULL;
-	ret = http_get_u(url, &type, &data, &size, headers);
-	if (ret == -1) {
+	ret = http2_get_real(url, req_headers, 
+			     &final_url, &resp_headers, &resp_body);
+	octstr_destroy(final_url);
+
+	if (ret != HTTP_OK) {
 		error(0, "WSP: http_get failed, oops.");
 		status = 500; /* Internal server error; XXX should be 503 */
-		gw_free(data);
-		gw_free(type);
-		type = gw_strdup("text/plain");
+		type = octstr_create("text/plain");
 	} else {
-		info(0, "WSP: Fetched <%s> (%s)", url, type);
+		http2_header_get_content_type(resp_headers, &type, &charset);
+		octstr_destroy(charset);
+		info(0, "WSP: Fetched <%s> (%s)", 
+			octstr_get_cstr(url), octstr_get_cstr(type));
 		status = 200; /* OK */
 		
-		if (strchr(type, ';') != NULL) {
-			*strchr(type, ';') = '\0';
-			aux_type = gw_strdup(trim_ends(type));
-			gw_free(type);
-			type = aux_type;
-			debug("wap.wsp.http", 0, 
-			      "WSP: Type without params: <%s>", type);
-		}
-		
-		input = octstr_create_from_data(data, size);
-		gw_free(data);
-
 		converter_failed = 0;
 		for (i = 0; i < num_converters; ++i) {
-			if (strcmp(type, converters[i].type) == 0) {
-				body = converters[i].convert(input, url);
+			if (octstr_str_compare(type, converters[i].type) == 0) {
+				body = converters[i].convert(resp_body, 
+					octstr_get_cstr(url));
 				if (body != NULL)
 					break;
 				converter_failed = 1;
@@ -355,20 +328,25 @@ void *wsp_http_thread(void *arg) {
 		}
 
 		if (i < num_converters) {
-			gw_free(type);
-			type = gw_strdup(converters[i].result_type);
+			octstr_destroy(type);
+			type = octstr_create(converters[i].result_type);
 		} else if (converter_failed) {
 			status = 500; /* XXX */
 			warning(0, "WSP: All converters for `%s' failed.",
-					type);
+					octstr_get_cstr(type));
 		} else {
 			status = 415; /* Unsupported media type */
-			warning(0, "WSP: Unsupported content type `%s'", type);
-			debug("wap.wsp.http", 0, "Content of unsupported content:");
-			octstr_dump(input, 0);
+			warning(0, "WSP: Unsupported content type `%s'", 
+				octstr_get_cstr(type));
+			debug("wap.wsp.http", 0, 
+				"Content of unsupported content:");
+			octstr_dump(resp_body, 0);
 		}
-		octstr_destroy(input);
 	}
+	octstr_destroy(resp_body);
+	while ((os = list_extract_first(resp_headers)) != NULL)
+		octstr_destroy(os);
+	list_destroy(resp_headers);
 		
 	if (body == NULL)
 		body_size = 0;
@@ -379,26 +357,26 @@ void *wsp_http_thread(void *arg) {
 	if (body != NULL && body_size > client_SDU_size) {
 		status = 413; /* XXX requested entity too large */
 		warning(0, "WSP: Entity at %s too large (size %lu B, limit %lu B)",
-			url, body_size, client_SDU_size);
+			octstr_get_cstr(url), body_size, client_SDU_size);
                 octstr_destroy(body);
 		body = NULL;
-		type = gw_strdup("text/plain");
+		octstr_destroy(type);
+		type = octstr_create("text/plain");
 	}
 
 	e = wsp_event_create(S_MethodResult_Req);
 	e->S_MethodResult_Req.server_transaction_id = 
 		event->S_MethodInvoke_Res.server_transaction_id;
 	e->S_MethodResult_Req.status = status;
-	e->S_MethodResult_Req.response_type = encode_content_type(type);
+	e->S_MethodResult_Req.response_type = 
+		encode_content_type(octstr_get_cstr(type));
 	e->S_MethodResult_Req.response_body = body;
 	e->S_MethodResult_Req.machine = event->S_MethodInvoke_Res.machine;
 
 	wsp_dispatch_event(event->S_MethodInvoke_Res.machine, e);
 
-#if 1
 	wsp_event_destroy(event);
-#endif
-	gw_free(type);
+	octstr_destroy(type);
 
 	return NULL;
 }
@@ -406,7 +384,7 @@ void *wsp_http_thread(void *arg) {
 
 
 /* Shut up WMLScript compiler status/trace messages. */
-static void  dev_null(const char *data, size_t len, void *context) {
+static void dev_null(const char *data, size_t len, void *context) {
   /* nothing */
 }
 
@@ -437,66 +415,6 @@ static int encode_content_type(const char *type) {
 static Octstr *convert_to_self(Octstr *stuff, char *url) {
 	return octstr_duplicate(stuff);
 }
-
-
-#if 0
-/* XXX This is commented out, because the old compiler is now officially
-   unsupported. I keep the code here so we can un-unsupport it easily in
-   case of emergencies. --liw */
-static Octstr *convert_wml_to_wmlc_old(Octstr *wml, char *url) {
-	char name[10*1024];
-	char cmd[20*1024];
-	char *test_wml;
-	FILE *f;
-	char data[100*1024];
-	size_t n;
-	Octstr *wmlc;
-	int e;
-	
-	test_wml = getenv("TEST_WML");
-	if (test_wml == NULL) {
-		error(0, "TEST_WML not specified.");
-		return NULL;
-	}
-
-	tmpnam(name);
-	f = fopen(name, "w");
-	if (f == NULL) {
-		e = errno;
-		goto error;
-	}
-	if (fwrite(octstr_get_cstr(wml), 1, octstr_len(wml), f) == -1) {
-		e = errno;
-		goto error;
-	}
-	fclose(f);
-	
-	sprintf(cmd, "%s %s", test_wml, name);
-	debug("wap.wsp.http", 0, "WSP: WML cmd: <%s>", cmd);
-	f = popen(cmd, "r");
-	if (f == NULL) {
-		e = errno;
-		goto error;
-	}
-	n = fread(data, 1, sizeof(data), f);
-	debug("wap.wsp.http", 0, "WSP: Read %lu bytes of compiled WMLC", (unsigned long) n);
-	fclose(f);
-	(void) remove(name);
-
-	wmlc = octstr_create_from_data(data, n);
-	debug("wap.wsp.http", 0, "WML: Compiled WML:");
-	octstr_dump(wmlc);
-
-	debug("wap.wsp.http", 0, "WSP: WML compilation done.");
-	
-	return wmlc;
-
-error:
-	(void) remove(name);
-	panic(e, "Couldn't write temp file for WML compilation.");
-	return NULL;
-}
-#endif
 
 
 static Octstr *convert_wml_to_wmlc(Octstr *wml, char *url) {

@@ -1,3 +1,17 @@
+Wed May  3 12:20:32 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/gwlib.c: New file to hold new functions gwlib_init and
+	gwlib_shutdown.
+
+	* gwlib/gwlib.h: Added prototypes for gwlib_init and
+	gwlib_shutdown.
+	
+	* gw/wapbox.c: Call gwlib_init (instead of gw_init_mem) and
+	gwlib_shutdown.
+	
+	* gw/wsp_http.c: Removed commented out code that called old
+	WML compiler. Converted to use new HTTP code.
+
 Tue May  2 22:01:06 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/bearerbox.c: sendsms_thread in internal smsbox commented
