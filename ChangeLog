@@ -1,4 +1,9 @@
 2004-06-08  Alexander Malysh  <a.malysh@centrium.de> 
+    * gwlib/dbpool_pgsql.c: added pgsql_[update|select] functions. Those were partially
+      picked from below named SQLBox patch.
+      Thanks a lot to "Rene Kluwen" <rene.kluwen (at) chimit.nl>.
+
+2004-06-08  Alexander Malysh  <a.malysh@centrium.de> 
     * configure, configure.in, gw-config.h.in, gwlib/dbpool_pgsql.c, gwlib/dbpool.[ch]:
       added PostgreSQL dbpool support. Patch picked from sqlbox.patch posted by
       "Rene Kluwen" <rene.kluwen (at) chimit.nl>. Thanks a lot for the patch!

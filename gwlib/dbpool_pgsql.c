@@ -161,11 +161,86 @@ static void pgsql_conf_destroy(DBConf *db_conf)
 }
 
 
+static int pgsql_update(void *theconn, const Octstr *sql, List *binds)
+{
+    int	rows;
+    PGresult *res = NULL;
+    PGconn *conn = (PGconn*) theconn;
+
+    res = PQexec(conn, octstr_get_cstr(sql));
+    if (res == NULL)
+        return -1;
+
+    switch(PQresultStatus(res)) {
+    case PGRES_BAD_RESPONSE:
+    case PGRES_NONFATAL_ERROR:
+    case PGRES_FATAL_ERROR:
+	error(0, "PGSQL: %s", octstr_get_cstr(sql));
+	error(0, "PGSQL: %s", PQresultErrorMessage(res));
+	PQclear(res);
+        return -1;
+    default: /* for compiler please */
+        break;
+    }
+    rows = atoi(PQcmdTuples(res));
+    PQclear(res);
+
+    return rows;
+}
+
+
+static int pgsql_select(void *theconn, const Octstr *sql, List *binds, List **list)
+{
+    int	nTuples, nFields, row_loop, field_loop;
+    PGresult *res = NULL;
+    List *fields;
+    PGconn *conn = (PGconn*) theconn;
+
+    gw_assert(list != NULL);
+    *list = NULL;
+
+    res = PQexec(conn, octstr_get_cstr(sql));
+    if (res == NULL)
+        return -1;
+
+    switch(PQresultStatus(res)) {
+    case PGRES_EMPTY_QUERY:
+    case PGRES_BAD_RESPONSE:
+    case PGRES_NONFATAL_ERROR:
+    case PGRES_FATAL_ERROR:
+        error(0, "PGSQL: %s", PQresultErrorMessage(res));
+	PQclear(res);
+        return -1;
+    default: /* for compiler please */
+        break;
+    }
+
+    nTuples = PQntuples(res);
+    nFields = PQnfields(res);
+    *list = list_create();
+    for (row_loop = 0; row_loop < nTuples; row_loop++) {
+	fields = list_create();
+    	for (field_loop = 0; field_loop < nFields; field_loop++) {
+            if (PQgetisnull(res, row_loop, field_loop))
+                list_produce(fields, octstr_create(""));
+            else 
+	        list_produce(fields, octstr_create(PQgetvalue(res, row_loop, field_loop)));
+	}
+	list_produce(*list, fields);
+    }
+    PQclear(res);
+
+    return 0;
+}
+
+
 static struct db_ops pgsql_ops = {
     .open = pgsql_open_conn,
     .close = pgsql_close_conn,
     .check = pgsql_check_conn,
-    .conf_destroy = pgsql_conf_destroy
+    .conf_destroy = pgsql_conf_destroy,
+    .update = pgsql_update,
+    .select = pgsql_select
 };
 
 #endif /* HAVE_PGSQL */
