@@ -444,7 +444,7 @@ static void brunet_send_sms(SMSCConn *conn, Msg *sms)
      * Construct TransactionId like this: <timestamp>-<receiver msisdn>-<msg.id> 
      * to garantee uniqueness. 
      */
-    tid = octstr_format("%d-%S-%d", time(NULL), sms->sms.receiver, sms->sms.id);
+    tid = octstr_format("%d%S%d", time(NULL), sms->sms.receiver, sms->sms.id);
 
     /* format the URL for call */
     url = octstr_format("%S?"
