@@ -11,7 +11,7 @@
 #include "shared.h"
 #include "sms.h"
 
-#ifdef HAVE_LIBSSL 
+#if defined(HAVE_LIBSSL) || defined(HAVE_WTLS_OPENSSL) 
 #include <openssl/opensslv.h>
 #endif
 #ifdef HAVE_MYSQL 
@@ -42,7 +42,11 @@ Octstr *version_report_string(const char *boxname)
 			 "Hostname %s, IP %s.\n"
 			 "Libxml version %s.\n"
 #ifdef HAVE_LIBSSL
-             "Using %s.\n"
+             "Using "
+#ifdef HAVE_WTLS_OPENSSL
+             "WTLS library "
+#endif
+             "%s.\n"
 #endif
 #ifdef HAVE_MYSQL
              "Using MySQL %s.\n"
