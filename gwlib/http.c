@@ -58,7 +58,7 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
     int done_with_looping = 0,  done_with_status = 0, request = -1;
     int tmpint = 0, i = 0, k = 0;
 	
-    char *growingbuff = NULL, *newbuff = NULL, temp[4]="\0\0\0\0";
+    char *growingbuff = NULL, *newbuff = NULL, *temp = NULL;
     int gbsize = 0, readthisfar = 0;
 
     URL *url = NULL;
@@ -132,32 +132,19 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 
 
 
-		/* so what do we have here */
-		if( sscanf(growingbuff, "GET %s HTTP/%i.%i", newbuff, &tmpint, &tmpint) == 3 ){
-		    debug("gwlib.http",0,"httpserver_get_request: we have a get request");/* then its GET */
-		    debug("gwlib.http", 0, "http_get_request: the first line: abs_url <%s>", newbuff);
-		    
-		    url = internal_url_create(newbuff);
-		    gw_free(newbuff);
-		    *eol = '\r';
-		    done_with_status = 1;
-		    done_with_looping = 1;
-		    request = 1; /*designating GET*/
-		    debug("gwlib.http", 0, "http_get_request: continue");
-		    continue;
-		}
-		else if( sscanf(growingbuff, "POST %s HTTP/%i.%i", newbuff, &tmpint, &tmpint) == 3 ){
-		    debug("gwlib.http",0,"httpserver_get_request: we have a post request"); /* then its POST */
-		    debug("gwlib.http", 0, "http_get_request: the first line: abs_url <%s>", newbuff);
-		    
-		    url = internal_url_create(newbuff);
-		    gw_free(newbuff);
-		    *eol = '\r';
-		    done_with_status = 1;
-		    done_with_looping = 1;
-		    request = 2; /*designating POST*/
-		    continue;
-		}
+		/* check the request method type */
+		if( sscanf(growingbuff, "GET %s HTTP/%i.%i", newbuff, &tmpint, &tmpint) == 3 )
+		    request = 1; /*designating GET*/ 
+		else if( sscanf(growingbuff, "POST %s HTTP/%i.%i", newbuff, &tmpint, &tmpint) == 3 )		    request = 2; /*designating POST*/
+		
+		
+		url = internal_url_create(newbuff);
+		gw_free(newbuff);
+		*eol = '\r';
+		done_with_status = 1;
+		done_with_looping = 1;
+		
+		continue;		
 		
 	    }
 	    
@@ -173,7 +160,6 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
     } /* for */
 
 
-    debug("gwlib.http",0,"httpserver_get_request: rest of the request: \n%s",growingbuff);
 
     if( request == 2 ){/* POST */
 	eol = strstr(growingbuff,"Content-Length:");
@@ -181,11 +167,17 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	eol = eol+16;
 
 	/* get the content-length*/
+	temp = gw_malloc(sizeof(int));
+	memset(temp, 0, sizeof(int));
+	i = 0;
 	while( *eol != '\r' && *eol != '\n' ){
 	    temp[i++] = *eol;
 	    eol++;
 	}
+
+
 	
+	i=0;
 	i = atoi(temp);
 	
 	/* advance to start of data- cut off the whitespaces */
@@ -194,29 +186,29 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	    eol++;
 	
 	newbuff = gw_malloc(i);
-
+	
 	for( k=0; k<i; k++ ){
 	    newbuff[k] = *eol;
 	    eol++;	
 	}
-	debug("gwlib.http",0,"httpserver_get_request: the query: \n%s",newbuff);
+
 	*args = gw_strdup(newbuff);
 	gw_free(newbuff);
     }
+
     else if( request == 1 ){/* GET */
-	if(url->abs_path != NULL) *path = gw_strdup(url->abs_path);
-	else *path = NULL;
-	
 	if(url->query != NULL) *args = gw_strdup(url->query);
 	else *args = NULL;
     }
     
-    
-    
-    internal_url_destroy(url);
-    gw_free(growingbuff);
-    return connfd;
-    
+	if(url->abs_path != NULL) *path = gw_strdup(url->abs_path);
+	else *path = NULL;    
+	
+	internal_url_destroy(url);
+	gw_free(growingbuff);
+	
+	return connfd;
+	
 
 
     
@@ -385,6 +377,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	if(response->status == 200) break;
        
 
+
 	 /* We are redirected to another URL */
 	 else if( (response->status == 301) || 
 		  (response->status == 302) || 
@@ -443,14 +436,14 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	     /* ..the user defined headers */
 	     for(;;){
 		 if(header == NULL)break;
-		 httprequest_replace_header(request, header->key, header->value);
+		 httprequest_add_header(request, header->key, header->value);
 		 header = header->next;
 	     }
 	     
 	     
-	 } /* redirection handling ends */
-	
-	
+	 } /* redirection handling ends*/
+
+
 	/* Server returned "404 Authorization Required" */
 	else if(response->status == 401) break;
 	
@@ -1231,57 +1224,77 @@ HTTPRequest* httprequest_execute(HTTPRequest *request) {
 /* prepare data to be sent to server */
     request->action = HTTP_CLIENT;
     datasend = httprequest_unwrap(request);
-    if(datasend==NULL) goto error;
+    if(datasend==NULL){
+	gw_free(datasend);
+	goto error;
+    }
     
 /* open socket */
     s = tcpip_connect_to_server(request->url->host, request->url->port);
     if (s == -1) {
-	error(errno, "Couldn't HTTP connect to <%s>", request->url->host);
+	warning(0, "Couldn't open socket.");
+	gw_free(datasend);
 	goto error;
     }
-
+    
 /* write data to socket */
     if (write_to_socket(s, datasend) == -1) {
-	error(errno, "Error writing request to server");
-	goto error;
+	warning(0, "Couldn't write to socket.");
+	gw_free(datasend);
+	goto close_socket;
     }
-
+    gw_free(datasend);
+    
 /* make socket readonly */
     if (shutdown(s, 1) == -1) {
-	error(errno, "Error closing writing end of socket");
-	goto error;
+	error(errno, "Error closing writing end of socket.");
+	goto close_socket;
     }
-
+    
 /* read from socket */
     if (read_to_eof(s, &datareceive, &size) == -1) {
-	error(errno, "Error receiving data from HTTP server");
-	goto error;
+	warning(errno, "Couldn't read from socket.");
+	gw_free(datareceive);
+	goto close_socket;
     }
-
+    gw_free(datareceive);
+    
 /* close socket */
     if (close(s) == -1) {
-	error(errno, "Error closing connection to HTTP server");
+	error(errno, "Error closing connection to HTTP server.");
 	goto error;
     }
 
-    
 /* parse the results */
     result = httprequest_wrap(datareceive, size);
+    assert(result != NULL);
     
 /* return the result */	
-    gw_free(datasend);
-    gw_free(datareceive);
     return result;
     
+
+
+    
+close_socket:
+    /* close socket */
+    if (close(s) == -1) 
+	error(errno, "Closing connection to an HTTP server failed.");
+    goto error;
+    
 error:
-    error(errno, "httprequest_execute: failed");
-    close(s);
+    warning(0, "httprequest_execute: failed");
+    
 #if 0 /* XXX these cause segfaults in some situations, no idea why.
          we'll fix this later, causing a memory leak is just a workaround.
 	 --liw */
+    
+    /* I think I solved the problem: you cant free a memory, which isn't allocated.
+       Added gw_free() -functions to appropriate places. Hope it helped :)
+       -sanna- */
     gw_free(datasend);
     gw_free(datareceive);
 #endif
+    
     return NULL;   
 }
 
