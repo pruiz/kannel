@@ -2,6 +2,10 @@
     * gw/smsc/smpp_pdu.c: removed gw_assert() checking within smpp_pdu_pack() 
       in order not to crash bearerbox. Thanks to <Jason.Pell@Callista.com.au>
       for point this out again.
+    * gwlib/octstr.[ch][.debug]: added two new functions: octstr_is_all_hex()
+      to check if given Octstr* is in hex notation and 
+      octstr_delete_matching() to delete matching segments within an Octstr*.
+      Thanks to Aarno for providing these implementations.
 
 2003-04-08  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
     * debian/*: more updates - update Standards to 3.5.9; build "-docs"
