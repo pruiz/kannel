@@ -490,9 +490,12 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
  	}
  	else /* MO-SMS */
  	{
-	    (void) bb_smscconn_receive(smpp->conn, pdu_to_msg(pdu));
+        /* ensure the smsc-id is set */
+        msg = pdu_to_msg(pdu);
+        msg->sms.smsc_id = octstr_duplicate(smpp->conn->id);
+	    (void) bb_smscconn_receive(smpp->conn, msg);
 	    resp = smpp_pdu_create(deliver_sm_resp, 
-		pdu->u.deliver_sm.sequence_number);
+		                       pdu->u.deliver_sm.sequence_number);
 	}
 	break;
 	
