@@ -1,3 +1,8 @@
+2001-03-12  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsc_fake.c: Added test for errno == EINTR after
+	gwthread_pollfd().
+
 2001-03-07  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
 	* mk-solaris-package.sh, prototype.tmpl, prototype: modified

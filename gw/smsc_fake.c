@@ -226,7 +226,9 @@ static void fake_listener(void *arg)
     while (1) {
 	client_addr_len = sizeof(client_addr);
 	ret = gwthread_pollfd(privdata->listening_socket, POLLIN, -1);
-	if (ret == -1) {	/* This should be very unlikely? */
+	if (ret == -1) {
+	    if (errno == EINTR)
+		continue;
 	    error(0, "Poll for fakesmsc connections failed, shutting down");
 	    break;
 	}
