@@ -1,3 +1,8 @@
+2000-11-07  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/http.c: Massive rearranging and some renaming, but no real
+	changes. The code is now much cleaner and easier to understand.
+
 2000-11-07  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gwlib/octstr.c: Added some protection against endless loops in 

@@ -10,6 +10,7 @@
 /* XXX implement http_abort */
 /* XXX give maximum input size */
 /* XXX kill http_get, http_get_real, and http_post */
+/* XXX the proxy exceptions list should be a dict, I guess */
 
 #include <ctype.h>
 #include <errno.h>
@@ -22,17 +23,163 @@
 #include "gwlib.h"
 
 
+/***********************************************************************
+ * Stuff used in several sub-modules.
+ */
+
+
 /*
- * Maximum number of HTTP redirections to follow.
+ * Status of this module.
+ */
+static enum { 
+    limbo, 
+    running, 
+    terminating 
+} run_status = limbo;
+
+
+/*
+ * Read some headers, i.e., until the first empty line (read and discard
+ * the empty line as well). Return -1 for error, 0 for all headers read,
+ * 1 for more headers to follow.
+ */
+static int read_some_headers(Connection *conn, List *headers)
+{
+    Octstr *line, *prev;
+
+    if (list_len(headers) == 0)
+        prev = NULL;
+    else
+    	prev = list_get(headers, list_len(headers) - 1);
+
+    for (;;) {
+	line = conn_read_line(conn);
+	if (line == NULL) {
+	    if (conn_eof(conn))
+	    	return -1;
+	    return 1;
+	}
+        if (octstr_len(line) == 0) {
+            octstr_destroy(line);
+            break;
+        }
+        if (isspace(octstr_get_char(line, 0)) && prev != NULL) {
+            octstr_append(prev, line);
+            octstr_destroy(line);
+        } else {
+            list_append(headers, line);
+            prev = line;
+        }
+    }
+
+    return 0;
+}
+
+
+/***********************************************************************
+ * Proxy support.
+ */
+
+
+/*
+ * Data and functions needed to support proxy operations. If proxy_hostname 
+ * is NULL, no proxy is used.
+ */
+static Mutex *proxy_mutex = NULL;
+static Octstr *proxy_hostname = NULL;
+static int proxy_port = 0;
+static List *proxy_exceptions = NULL;
+
+
+static void proxy_init(void)
+{
+    proxy_mutex = mutex_create();
+    proxy_exceptions = list_create();
+}
+
+
+static void proxy_shutdown(void)
+{
+    http_close_proxy();
+    list_destroy(proxy_exceptions, NULL);
+    mutex_destroy(proxy_mutex);
+    proxy_mutex = NULL;
+}
+
+
+static int proxy_used_for_host(Octstr *host)
+{
+    int i;
+
+    mutex_lock(proxy_mutex);
+
+    if (proxy_hostname == NULL) {
+        mutex_unlock(proxy_mutex);
+        return 0;
+    }
+
+    for (i = 0; i < list_len(proxy_exceptions); ++i) {
+        if (octstr_compare(host, list_get(proxy_exceptions, i)) == 0) {
+            mutex_unlock(proxy_mutex);
+            return 0;
+        }
+    }
+
+    mutex_unlock(proxy_mutex);
+    return 1;
+}
+
+
+void http_use_proxy(Octstr *hostname, int port, List *exceptions)
+{
+    int i;
+
+    gw_assert(run_status == running);
+    gw_assert(hostname != NULL);
+    gw_assert(octstr_len(hostname) > 0);
+    gw_assert(port > 0);
+
+    http_close_proxy();
+    mutex_lock(proxy_mutex);
+    proxy_hostname = octstr_duplicate(hostname);
+    proxy_port = port;
+    for (i = 0; i < list_len(exceptions); ++i)
+        list_append(proxy_exceptions,
+                    octstr_duplicate(list_get(exceptions, i)));
+    debug("gwlib.http", 0, "Using proxy <%s:%d>", 
+    	  octstr_get_cstr(proxy_hostname), proxy_port);
+    mutex_unlock(proxy_mutex);
+}
+
+
+void http_close_proxy(void)
+{
+    Octstr *p;
+
+    gw_assert(run_status == running || run_status == terminating);
+
+    mutex_lock(proxy_mutex);
+    if (proxy_hostname != NULL) {
+        octstr_destroy(proxy_hostname);
+        proxy_hostname = NULL;
+    }
+    proxy_port = 0;
+    while ((p = list_extract_first(proxy_exceptions)) != NULL)
+        octstr_destroy(p);
+    mutex_unlock(proxy_mutex);
+}
+
+
+/***********************************************************************
+ * HTTP client interface.
+ */
+
+
+/*
+ * Maximum number of HTTP redirections to follow. Making this infinite
+ * could cause infinite looping if the redirections loop.
  */
 enum { HTTP_MAX_FOLLOW = 5 };
-
-
-/*
- * Internal lists of completely unhandled requests and requests for which
- * a request has been sent but response has not yet been read.
- */
-static List *pending_requests = NULL;
 
 
 /*
@@ -42,16 +189,7 @@ static Counter *request_id_counter = NULL;
 
 
 /*
- * Have background threads been started?
- */
-static Mutex *background_threads_lock = NULL;
-static volatile sig_atomic_t background_threads_are_running = 0;
-static volatile sig_atomic_t server_thread_is_running = 0;
-static long server_thread_id = -1;
-
-
-/*
- * Data associated with the client end of an HTTP transaction.
+ * Information about a server we've connected to.
  */
 typedef struct {
     HTTPCaller *caller;
@@ -79,223 +217,67 @@ typedef struct {
 	reading_trailer
     } chunked_body_state;
     long chunked_body_chunk_len;
-} HTTPTransaction;
+} HTTPServer;
 
-static HTTPTransaction *transaction_create(HTTPCaller *caller, Octstr *url, 
+
+static HTTPServer *server_create(HTTPCaller *caller, Octstr *url,
     	    	    	    	    	   List *headers, Octstr *body,
-					   int follow_remaining);
-static void transaction_destroy(void *trans);
+					   int follow_remaining)
+{
+    HTTPServer *trans;
+    
+    trans = gw_malloc(sizeof(*trans));
+    trans->caller = caller;
+    trans->request_id = counter_increase(request_id_counter);
+    trans->url = octstr_duplicate(url);
+    trans->request_headers = http_header_duplicate(headers);
+    trans->request_body = octstr_duplicate(body);
+    trans->state = request_not_sent;
+    trans->status = -1;
+    trans->response_headers = list_create();
+    trans->response_body = octstr_create("");
+    trans->conn = NULL;
+    trans->retrying = 0;
+    trans->follow_remaining = follow_remaining;
+    trans->chunked_body_state = reading_chunk_len;
+    trans->chunked_body_chunk_len = 0;
+    return trans;
+}
+
+
+static void server_destroy(void *p)
+{
+    HTTPServer *trans;
+    
+    trans = p;
+    octstr_destroy(trans->url);
+    http_destroy_headers(trans->request_headers);
+    octstr_destroy(trans->request_body);
+    http_destroy_headers(trans->response_headers);
+    octstr_destroy(trans->response_body);
+    gw_free(trans);
+}
 
 
 /*
- * Server end of HTTP transaction.
+ * Internal lists of completely unhandled requests and requests for which
+ * a request has been sent but response has not yet been read.
  */
-struct HTTPClient {
-    Connection *conn;
-    Octstr *ip;
-    enum {
-       reading_request_line,
-       reading_request_headers,
-       request_is_being_handled
-    } state;
-    Octstr *url;
-    int use_version_1_0;
-    List *headers;
-    Octstr *body;
-};
+static List *pending_requests = NULL;
 
-static FDSet *server_fdset = NULL;
+
+/*
+ * Have background threads been started?
+ */
+static Mutex *client_thread_lock = NULL;
+static volatile sig_atomic_t client_threads_are_running = 0;
+
+
+/*
+ * Set of all connections to all servers. Used with conn_register to
+ * do I/O on several connections with a single thread.
+ */
 static FDSet *client_fdset = NULL;
-static List *clients_with_requests = NULL;
-
-static HTTPClient *client_create(Connection *conn, Octstr *ip)
-{
-    HTTPClient *p;
-    
-    p = gw_malloc(sizeof(*p));
-    p->conn = conn;
-    p->ip = ip;
-    p->state = reading_request_line;
-    p->url = NULL;
-    p->use_version_1_0 = 0;
-    p->headers = list_create();
-    p->body = NULL;
-    return p;
-}
-
-static void client_destroy(void *client)
-{
-    HTTPClient *p;
-    
-    p = client;
-    conn_destroy(p->conn);
-    octstr_destroy(p->ip);
-    octstr_destroy(p->url);
-    http_destroy_headers(p->headers);
-    octstr_destroy(p->body);
-    gw_free(p);
-}
-
-
-/*
- * XXX
- */
-enum { MAX_SERVERS = 32 };
-static List *new_server_sockets = NULL;
-static int keep_servers_open = 0;
-
-
-/*
- * Status of this module.
- */
-static enum { limbo, running, terminating } run_status = limbo;
-
-
-/*
- * XXX
- */
-static void start_server_thread(void);
-static void start_background_threads(void);
-static void server_thread(void *);
-static void write_request_thread(void *);
-
-
-/*
- * Data and functions needed to support proxy operations. If proxy_hostname 
- * is NULL, no proxy is used.
- */
-static Mutex *proxy_mutex = NULL;
-static Octstr *proxy_hostname = NULL;
-static int proxy_port = 0;
-static List *proxy_exceptions;
-/* XXX the proxy exceptions list should be a dict, I guess */
-
-static int proxy_used_for_host(Octstr *host);
-
-
-/*
- * Declarations for the socket pool.
- */
-static void pool_init(void);
-static void pool_shutdown(void);
-#if 0
-static HTTPSocket *pool_get(Octstr *host, int port);
-static void pool_put(HTTPSocket *p);
-#endif
-
-
-/*
- * Other operations.
- */
-static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path);
-
-static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port,
-                             List *headers, Octstr *request_body, 
-			     char* method_name);
-
-static Connection *send_request(Octstr *url, List *request_headers,
-                                Octstr *request_body, char *method_name);
-
-
-
-static int client_read_status(Connection *p);
-static int client_read_headers(Connection *p, List *headers);
-static int client_read_body(HTTPTransaction *trans);
-static int client_read_chunked_body(HTTPTransaction *trans);
-
-static List *parse_cgivars(Octstr *url);
-static int header_is_called(Octstr *header, char *name);
-static int http_something_accepted(List *headers, char *header_name, 
-    	    	    	    	   char *what);
-
-
-
-void http_init(void)
-{
-    gw_assert(proxy_mutex == NULL);
-    proxy_mutex = mutex_create();
-    proxy_exceptions = list_create();
-    pool_init();
-    pending_requests = list_create();
-    list_add_producer(pending_requests);
-    request_id_counter = counter_create();
-    background_threads_lock = mutex_create();
-    
-    new_server_sockets = list_create();
-    list_add_producer(new_server_sockets);
-    clients_with_requests = list_create();
-
-    run_status = running;
-}
-
-
-void http_shutdown(void)
-{
-    gwlib_assert_init();
-
-    run_status = terminating;
-
-    list_remove_producer(pending_requests);
-    gwthread_join_every(write_request_thread);
-
-    list_remove_producer(new_server_sockets);
-    gwthread_wakeup(server_thread_id);
-    gwthread_join_every(server_thread);
-
-    http_close_proxy();
-    list_destroy(proxy_exceptions, NULL);
-    mutex_destroy(proxy_mutex);
-    proxy_mutex = NULL;
-    pool_shutdown();
-    counter_destroy(request_id_counter);
-    list_destroy(pending_requests, transaction_destroy);
-    mutex_destroy(background_threads_lock);
-    /* XXX destroy caller ids */
-    
-    list_destroy(clients_with_requests, client_destroy);
-    fdset_destroy(server_fdset);
-    fdset_destroy(client_fdset);
-}
-
-
-void http_use_proxy(Octstr *hostname, int port, List *exceptions)
-{
-    int i;
-
-    gwlib_assert_init();
-    gw_assert(hostname != NULL);
-    gw_assert(octstr_len(hostname) > 0);
-    gw_assert(port > 0);
-
-    http_close_proxy();
-    mutex_lock(proxy_mutex);
-    proxy_hostname = octstr_duplicate(hostname);
-    proxy_port = port;
-    for (i = 0; i < list_len(exceptions); ++i)
-        list_append(proxy_exceptions,
-                    octstr_duplicate(list_get(exceptions, i)));
-    debug("gwlib.http", 0, "Using proxy <%s:%d>", 
-    	  octstr_get_cstr(proxy_hostname), proxy_port);
-    mutex_unlock(proxy_mutex);
-}
-
-
-void http_close_proxy(void)
-{
-    Octstr *p;
-
-    gwlib_assert_init();
-
-    mutex_lock(proxy_mutex);
-    if (proxy_hostname != NULL) {
-        octstr_destroy(proxy_hostname);
-        proxy_hostname = NULL;
-    }
-    proxy_port = 0;
-    while ((p = list_extract_first(proxy_exceptions)) != NULL)
-        octstr_destroy(p);
-    mutex_unlock(proxy_mutex);
-}
 
 
 HTTPCaller *http_caller_create(void)
@@ -310,14 +292,547 @@ HTTPCaller *http_caller_create(void)
 
 void http_caller_destroy(HTTPCaller *caller)
 {
-    list_destroy(caller, transaction_destroy);
+    list_destroy(caller, server_destroy);
+}
+
+
+static Octstr *get_redirection_location(HTTPServer *trans)
+{
+    if (trans->status < 0 || trans->follow_remaining <= 0)
+    	return NULL;
+    if (trans->status != HTTP_MOVED_PERMANENTLY &&
+    	trans->status != HTTP_FOUND && trans->status != HTTP_SEE_OTHER)
+	return NULL;
+    return http_header_find_first(trans->response_headers, "Location");
+}
+
+
+/*
+ * Read body that has been Transfer-Encoded as "chunked". Return -1 for
+ * error, 0 for OK. If there are any trailing headers (see RFC 2616, 3.6.1)
+ * they are appended to `headers'.
+ */
+static int client_read_chunked_body(HTTPServer *trans)
+{
+    Octstr *os;
+    long len;
+    int ret;
+
+    for (;;) {
+	switch (trans->chunked_body_state) {
+	case reading_chunk_len:
+	    os = conn_read_line(trans->conn);
+	    if (os == NULL) {
+		if (conn_eof(trans->conn))
+		    return -1;
+		return 1;
+	    }
+	    if (octstr_parse_long(&len, os, 0, 16) == -1) {
+		octstr_destroy(os);
+		return -1;
+	    }
+	    octstr_destroy(os);
+	    if (len == 0)
+		trans->chunked_body_state = reading_trailer;
+	    else {
+		trans->chunked_body_state = reading_chunk;
+		trans->chunked_body_chunk_len = len;
+	    }
+	    break;
+	    
+	case reading_chunk:
+	    os = conn_read_fixed(trans->conn, trans->chunked_body_chunk_len);
+	    if (os == NULL) {
+		if (conn_eof(trans->conn))
+		    return -1;
+		return 1;
+	    }
+	    octstr_append(trans->response_body, os);
+	    octstr_destroy(os);
+	    trans->chunked_body_state = reading_chunk_crlf;
+	    break;
+	    
+	case reading_chunk_crlf:
+	    os = conn_read_line(trans->conn);
+	    if (os == NULL) {
+		if (conn_eof(trans->conn))
+		    return -1;
+		return 1;
+	    }
+	    trans->chunked_body_state = reading_chunk_len;
+	    break;
+	    
+	case reading_trailer:
+	    ret = read_some_headers(trans->conn, trans->response_headers);
+	    if (ret == -1)
+	    	return -1;
+	    else if (ret == 0)
+	    	return 0;
+	    break;
+	    
+	default:
+	    panic(0, "Internal error: "
+		  "HTTPServer invaluded chunked body state.");
+	}
+    }
+}
+
+
+/*
+ * Read the body of a response. Return -1 for error, 0 for body received,
+ * 1 for waiting for more body.
+ */
+static int client_read_body(HTTPServer *trans)
+{
+    Octstr *h, *os;
+    long body_len;
+
+    h = http_header_find_first(trans->response_headers, "Transfer-Encoding");
+    if (h != NULL) {
+        octstr_strip_blanks(h);
+        if (octstr_str_compare(h, "chunked") != 0) {
+            error(0, "HTTP: Unknown Transfer-Encoding <%s>",
+                  octstr_get_cstr(h));
+            goto error;
+        }
+        octstr_destroy(h);
+        return client_read_chunked_body(trans);
+    } else {
+        h = http_header_find_first(trans->response_headers, "Content-Length");
+        if (h == NULL) {
+	    /*
+	     * No length information available, so the server will signal
+             * the end of data by closing the socket.
+             */
+            while ((os = conn_read_everything(trans->conn)) != NULL) {
+	  	octstr_append(trans->response_body, os);
+		octstr_destroy(os);
+	    }
+	    if (conn_read_error(trans->conn))
+		goto error;
+	    if (conn_eof(trans->conn))
+	        return 0;
+            return 1;
+        } else {
+            if (octstr_parse_long(&body_len, h, 0, 10) == -1) {
+                error(0, "HTTP: Content-Length header wrong: <%s>", 
+		      octstr_get_cstr(h));
+                goto error;
+            }
+            octstr_destroy(h);
+	    os = conn_read_fixed(trans->conn, body_len);
+	    if (os == NULL)
+	    	return 1;
+	    octstr_destroy(trans->response_body);
+	    trans->response_body = os;
+            return 0;
+        }
+    }
+
+    panic(0, "This location in code must never be reached.");
+
+error:
+    octstr_destroy(h);
+    return -1;
+}
+
+
+/*
+ * Parse the status line returned by an HTTP server and return the
+ * status code. Return -1 if the status line was unparseable.
+ */
+static int parse_status(Octstr *statusline)
+{
+    static char *versions[] = {
+        "HTTP/1.1 ",
+        "HTTP/1.0 ",
+    };
+    static int num_versions = sizeof(versions) / sizeof(versions[0]);
+    long status;
+    int i;
+
+    for (i = 0; i < num_versions; ++i) {
+        if (octstr_search(statusline,
+                          octstr_create_immutable(versions[i]),
+                          0) == 0)
+            break;
+    }
+    if (i == num_versions) {
+        error(0, "HTTP: Server responds with unknown HTTP version.");
+        debug("gwlib.http", 0, "Status line: <%s>",
+              octstr_get_cstr(statusline));
+        return -1;
+    }
+
+    if (octstr_parse_long(&status, statusline,
+                          strlen(versions[i]), 10) == -1) {
+        error(0, "HTTP: Malformed status line from HTTP server: <%s>",
+              octstr_get_cstr(statusline));
+        return -1;
+    }
+
+    return status;
+}
+
+
+
+/*
+ * Read and parse the status response line from an HTTP server.
+ * Return the parsed status code. Return -1 for error. Return 0 for
+ * status code not yet available.
+ */
+static int client_read_status(Connection *conn)
+{
+    Octstr *line;
+    long status;
+
+    line = conn_read_line(conn);
+    if (line == NULL) {
+	if (conn_eof(conn))
+	    return -1;
+    	return 0;
+    }
+
+    status = parse_status(line);
+    octstr_destroy(line);
+    return status;
+}
+
+
+static void handle_transaction(Connection *conn, void *data)
+{
+    HTTPServer *trans;
+    int ret;
+    Octstr *h;
+    
+    trans = data;
+
+    if (run_status != running) {
+	conn_unregister(conn);
+	return;
+    }
+
+    while (trans->state != transaction_done) {
+	switch (trans->state) {
+	case reading_status:
+	    trans->status = client_read_status(trans->conn);
+	    if (trans->status < 0) {
+		/*
+		 * Couldn't read the status from the socket. This may mean that 
+		 * the socket had been closed by the server after an idle 
+		 * timeout, so we close the connection and try again, opening a 
+		 * new socket, but only once.
+		 */
+		if (trans->retrying) {
+		    goto error;
+		} else {
+		    conn_unregister(trans->conn);
+		    conn_destroy(trans->conn);
+		    trans->conn = NULL;
+		    trans->retrying = 1;
+		    trans->state = request_not_sent;
+		    list_produce(pending_requests, trans);
+		    return;
+		}
+	    } else if (trans->status > 0) {
+		/* Got the status, go read headers next. */
+		trans->state = reading_headers;
+	    } else
+		return;
+	    break;
+	    
+	case reading_headers:
+	    ret = read_some_headers(trans->conn, 
+				      trans->response_headers);
+	    if (ret == -1)
+		goto error;
+	    else if (ret == 0)
+		trans->state = reading_body;
+	    else
+		return;
+	    break;
+	    
+	case reading_body:
+	    ret = client_read_body(trans);
+	    if (ret == -1)
+		goto error;
+	    else if (ret == 0) {
+		conn_unregister(trans->conn);
+		conn_destroy(trans->conn);
+		trans->conn = NULL;
+		trans->state = transaction_done;
+	    } else 
+		return;
+	    break;
+    
+	default:
+	    panic(0, "Internal error: Invalid HTTPServer state.");
+	}
+    }
+
+    h = get_redirection_location(trans);
+    if (h != NULL) {
+	octstr_strip_blanks(h);
+	octstr_destroy(trans->url);
+	trans->url = h;
+	trans->state = request_not_sent;
+	http_destroy_headers(trans->response_headers);
+	trans->response_headers = list_create();
+	octstr_destroy(trans->response_body);
+	trans->response_body = octstr_create("");
+	--trans->follow_remaining;
+	conn_unregister(trans->conn);
+	conn_destroy(trans->conn);
+	trans->conn = NULL;
+	list_produce(pending_requests, trans);
+    } else
+	list_produce(trans->caller, trans);
+    return;
+
+error:
+    conn_unregister(trans->conn);
+    conn_destroy(trans->conn);
+    trans->conn = NULL;
+    error(0, "Couldn't fetch <%s>", octstr_get_cstr(trans->url));
+    trans->status = -1;
+    list_produce(trans->caller, trans);
+}
+
+
+/*
+ * Build a complete HTTP request given the host, port, path and headers. 
+ * Add Host: and Content-Length: headers (and others that may be necessary).
+ * Return the request as an Octstr.
+ */
+static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port,
+                             List *headers, Octstr *request_body, 
+			     char *method_name)
+{
+
+    /* XXX headers missing */
+    Octstr *request;
+    int i;
+
+    request = octstr_format("%s %S HTTP/1.1\r\n",
+                            method_name, path_or_url);
+
+    octstr_format_append(request, "Host: %S", host);
+    if (port != HTTP_PORT)
+        octstr_format_append(request, ":%ld", port);
+    octstr_append(request, octstr_create_immutable("\r\n"));
+
+    for (i = 0; headers != NULL && i < list_len(headers); ++i) {
+        octstr_append(request, list_get(headers, i));
+        octstr_append(request, octstr_create_immutable("\r\n"));
+    }
+    octstr_append(request, octstr_create_immutable("\r\n"));
+
+    if (request_body != NULL)
+        octstr_append(request, request_body);
+
+    return request;
+}
+
+
+/*
+ * Parse the URL to get the hostname and the port to connect to and the
+ * path within the host.
+ *
+ * Return -1 if the URL seems malformed.
+ *
+ * We assume HTTP URLs of the form specified in "3.2.2 http URL" in
+ * RFC 2616:
+ * 
+ *  http_URL = "http:" "//" host [ ":" port ] [ abs_path [ "?" query ]]
+ */
+static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path)
+{
+    Octstr *prefix;
+    long prefix_len;
+    int host_len, colon, slash;
+
+    prefix = octstr_create_immutable("http://");
+    prefix_len = octstr_len(prefix);
+
+    if (octstr_case_search(url, prefix, 0) != 0) {
+        error(0, "URL <%s> doesn't start with `%s'",
+              octstr_get_cstr(url), octstr_get_cstr(prefix));
+        return -1;
+    }
+
+    if (octstr_len(url) == prefix_len) {
+        error(0, "URL <%s> is malformed.", octstr_get_cstr(url));
+        return -1;
+    }
+
+    colon = octstr_search_char(url, ':', prefix_len);
+    slash = octstr_search_char(url, '/', prefix_len);
+    if (colon == prefix_len || slash == prefix_len) {
+        error(0, "URL <%s> is malformed.", octstr_get_cstr(url));
+        return -1;
+    }
+
+    if (slash == -1 && colon == -1) {
+        /* Just the hostname, no port or path. */
+        host_len = octstr_len(url) - prefix_len;
+        *port = HTTP_PORT;
+    } else if (slash == -1) {
+        /* Port, but not path. */
+        host_len = colon - prefix_len;
+        if (octstr_parse_long(port, url, colon + 1, 10) == -1) {
+            error(0, "URL <%s> has malformed port number.",
+                  octstr_get_cstr(url));
+            return -1;
+        }
+    } else if (colon == -1 || colon > slash) {
+        /* Path, but not port. */
+        host_len = slash - prefix_len;
+        *port = HTTP_PORT;
+    } else if (colon < slash) {
+        /* Both path and port. */
+        host_len = colon - prefix_len;
+        if (octstr_parse_long(port, url, colon + 1, 10) == -1) {
+            error(0, "URL <%s> has malformed port number.",
+                  octstr_get_cstr(url));
+            return -1;
+        }
+    } else {
+        error(0, "Internal error in URL parsing logic.");
+        return -1;
+    }
+
+    *host = octstr_copy(url, prefix_len, host_len);
+    if (slash == -1)
+        *path = octstr_create("/");
+    else
+        *path = octstr_copy(url, slash, octstr_len(url) - slash);
+
+    return 0;
+}
+
+
+/*
+ * Build and send the HTTP request. Return socket from which the
+ * response can be read or -1 for error.
+ */
+
+static Connection *send_request(Octstr *url, List *request_headers,
+                                Octstr *request_body, char *method_name)
+{
+    Octstr *host, *path, *request;
+    long port;
+    Connection *conn;
+
+    host = NULL;
+    path = NULL;
+    request = NULL;
+    conn = NULL;
+
+    if (parse_url(url, &host, &port, &path) == -1)
+        goto error;
+
+    if (proxy_used_for_host(host)) {
+        request = build_request(url, host, port, request_headers,
+                                request_body, method_name);
+        conn = conn_open_tcp(proxy_hostname, proxy_port);
+    } else {
+        request = build_request(path, host, port, request_headers,
+                                request_body, method_name);
+        conn = conn_open_tcp(host, port);
+    }
+    if (conn == NULL)
+        goto error;
+
+    debug("wsp.http", 0, "HTTP: Sending request:");
+    octstr_dump(request, 0);
+    if (conn_write(conn, request) == -1)
+        goto error;
+
+    octstr_destroy(host);
+    octstr_destroy(path);
+    octstr_destroy(request);
+
+    return conn;
+
+error:
+    conn_destroy(conn);
+    octstr_destroy(host);
+    octstr_destroy(path);
+    octstr_destroy(request);
+    error(0, "Couldn't send request to <%s>", octstr_get_cstr(url));
+    return NULL;
+}
+
+
+/*
+ * This thread starts the transaction: it connects to the server and sends
+ * the request. It then sends the transaction to the read_response_thread
+ * via started_requests_queue.
+ */
+static void write_request_thread(void *arg)
+{
+    HTTPServer *trans;
+    char *method;
+    char buf[128];    
+
+    while (run_status == running) {
+	trans = list_consume(pending_requests);
+	if (trans == NULL)
+	    break;
+
+    	gw_assert(trans->state == request_not_sent);
+
+    	if (trans->request_body == NULL)
+	    method = "GET";
+	else {
+	    method = "POST";
+	    /* 
+	     * Add a Content-Length header.  Override an existing one, if
+	     * necessary.  We must have an accurate one in order to use the
+	     * connection for more than a single request.
+	     */
+	    http_header_remove_all(trans->request_headers, "Content-Length");
+	    sprintf(buf, "%ld", octstr_len(trans->request_body));
+	    http_header_add(trans->request_headers, "Content-Length", buf);
+	}
+
+	trans->conn = send_request(trans->url, trans->request_headers,  
+				   trans->request_body, method);
+    	if (trans->conn == NULL)
+	    list_produce(trans->caller, trans);
+	else {
+	    trans->state = reading_status;
+	    conn_register(trans->conn, client_fdset, handle_transaction, 
+	    	    	  trans);
+	}
+    }
+}
+
+
+static void start_client_threads(void)
+{
+    if (!client_threads_are_running) {
+	/* 
+	 * To be really certain, we must repeat the test, but use the
+	 * lock first. If the test failed, however, we _know_ we've
+	 * already initialized. This strategy of double testing avoids
+	 * using the lock more than a few times at startup.
+	 */
+	mutex_lock(client_thread_lock);
+	if (!client_threads_are_running) {
+	    client_fdset = fdset_create();
+	    gwthread_create(write_request_thread, NULL);
+	    client_threads_are_running = 1;
+	}
+	mutex_unlock(client_thread_lock);
+    }
 }
 
 
 long http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
     	    	    	Octstr *body, int follow)
 {
-    HTTPTransaction *trans;
+    HTTPServer *trans;
     long id;
     int follow_remaining;
     
@@ -326,10 +841,10 @@ long http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
     else
     	follow_remaining = 0;
 
-    trans = transaction_create(caller, url, headers, body, follow_remaining);
+    trans = server_create(caller, url, headers, body, follow_remaining);
     id = trans->request_id;
     list_produce(pending_requests, trans);
-    start_background_threads();
+    start_client_threads();
     return id;
 }
 
@@ -337,7 +852,7 @@ long http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
 long http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
     	    	    	 List **headers, Octstr **body)
 {
-    HTTPTransaction *trans;
+    HTTPServer *trans;
     long request_id;
 
     trans = list_consume(caller);
@@ -361,7 +876,7 @@ long http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
 	*body = NULL;
     }
 
-    transaction_destroy(trans);
+    server_destroy(trans);
     return request_id;
 }
 
@@ -421,6 +936,97 @@ int http_post(Octstr *url, List *request_headers, Octstr *request_body,
 }
 
 
+static void client_init(void)
+{
+    pending_requests = list_create();
+    list_add_producer(pending_requests);
+    request_id_counter = counter_create();
+    client_thread_lock = mutex_create();
+}
+
+
+static void client_shutdown(void)
+{
+    list_remove_producer(pending_requests);
+    gwthread_join_every(write_request_thread);
+    counter_destroy(request_id_counter);
+    list_destroy(pending_requests, server_destroy);
+    mutex_destroy(client_thread_lock);
+    fdset_destroy(client_fdset);
+}
+
+
+/***********************************************************************
+ * HTTP server interface.
+ */
+
+
+/*
+ * Information about a client that has connected to the server we implement.
+ */
+struct HTTPClient {
+    Connection *conn;
+    Octstr *ip;
+    enum {
+       reading_request_line,
+       reading_request_headers,
+       request_is_being_handled
+    } state;
+    Octstr *url;
+    int use_version_1_0;
+    List *headers;
+    Octstr *body;
+};
+
+
+static HTTPClient *client_create(Connection *conn, Octstr *ip)
+{
+    HTTPClient *p;
+    
+    p = gw_malloc(sizeof(*p));
+    p->conn = conn;
+    p->ip = ip;
+    p->state = reading_request_line;
+    p->url = NULL;
+    p->use_version_1_0 = 0;
+    p->headers = list_create();
+    p->body = NULL;
+    return p;
+}
+
+
+static void client_destroy(void *client)
+{
+    HTTPClient *p;
+    
+    p = client;
+    conn_destroy(p->conn);
+    octstr_destroy(p->ip);
+    octstr_destroy(p->url);
+    http_destroy_headers(p->headers);
+    octstr_destroy(p->body);
+    gw_free(p);
+}
+
+
+/*
+ * Maximum number of servers (ports) we have open at the same time.
+ */
+enum { MAX_SERVERS = 32 };
+
+
+/*
+ * Variables related to server side implementation.
+ */
+static Mutex *server_thread_lock = NULL;
+static volatile sig_atomic_t server_thread_is_running = 0;
+static long server_thread_id = -1;
+static FDSet *server_fdset = NULL;
+static List *clients_with_requests = NULL;
+static List *new_server_sockets = NULL;
+static int keep_servers_open = 0;
+
+
 static int parse_request(Octstr **url, int *use_version_1_0, Octstr *line)
 {
     long space;
@@ -476,7 +1082,7 @@ static void receive_request(Connection *conn, void *data)
 	    break;
 	    
 	case reading_request_headers:
-	    ret = client_read_headers(conn, client->headers);
+	    ret = read_some_headers(conn, client->headers);
 	    if (ret == -1)
 	    	goto error;
 	    if (ret == 0) {
@@ -558,6 +1164,27 @@ static void server_thread(void *dummy)
 }
 
 
+static void start_server_thread(void)
+{
+    if (!server_thread_is_running) {
+	/* 
+	 * To be really certain, we must repeat the test, but use the
+	 * lock first. If the test failed, however, we _know_ we've
+	 * already initialized. This strategy of double testing avoids
+	 * using the lock more than a few times at startup.
+	 */
+	mutex_lock(server_thread_lock);
+	if (!server_thread_is_running) {
+	    server_fdset = fdset_create();
+	    list_add_producer(clients_with_requests);
+	    server_thread_id = gwthread_create(server_thread, NULL);
+	    server_thread_is_running = 1;
+	}
+	mutex_unlock(server_thread_lock);
+    }
+}
+
+
 int http_open_server(int port)
 {
     int *p;
@@ -587,6 +1214,54 @@ void http_close_all_servers(void)
 	fdset_destroy(server_fdset);
 	server_fdset = NULL;
     }
+}
+
+
+/*
+ * Parse CGI variables from the path given in a GET. Return a list
+ * of HTTPCGIvar pointers. Modify the url so that the variables are
+ * removed.
+ */
+static List *parse_cgivars(Octstr *url)
+{
+    HTTPCGIVar *v;
+    List *list;
+    int query, et, equals;
+    Octstr *arg, *args;
+
+    query = octstr_search_char(url, '?', 0);
+    if (query == -1)
+        return list_create();
+
+    args = octstr_copy(url, query + 1, octstr_len(url));
+    octstr_truncate(url, query);
+
+    list = list_create();
+
+    while (octstr_len(args) > 0) {
+        et = octstr_search_char(args, '&', 0);
+        if (et == -1)
+            et = octstr_len(args);
+        arg = octstr_copy(args, 0, et);
+        octstr_delete(args, 0, et + 1);
+
+        equals = octstr_search_char(arg, '=', 0);
+        if (equals == -1)
+            equals = octstr_len(arg);
+
+        v = gw_malloc(sizeof(HTTPCGIVar));
+        v->name = octstr_copy(arg, 0, equals);
+        v->value = octstr_copy(arg, equals + 1, octstr_len(arg));
+        octstr_url_decode(v->name);
+        octstr_url_decode(v->value);
+
+        octstr_destroy(arg);
+
+        list_append(list, v);
+    }
+    octstr_destroy(args);
+
+    return list;
 }
 
 
@@ -666,6 +1341,31 @@ void http_close_client(HTTPClient *client)
 }
 
 
+static void server_init(void)
+{
+    new_server_sockets = list_create();
+    list_add_producer(new_server_sockets);
+    clients_with_requests = list_create();
+    server_thread_lock = mutex_create();
+}
+
+
+static void server_shutdown(void)
+{
+    list_remove_producer(new_server_sockets);
+    gwthread_wakeup(server_thread_id);
+    gwthread_join_every(server_thread);
+    mutex_destroy(server_thread_lock);
+    fdset_destroy(server_fdset);
+    list_destroy(clients_with_requests, client_destroy);
+}
+
+
+/***********************************************************************
+ * CGI variable manipulation.
+ */
+
+
 void http_destroy_cgiargs(List *args)
 {
     HTTPCGIVar *v;
@@ -699,6 +1399,24 @@ Octstr *http_cgi_variable(List *list, char *name)
             return v->value;
     }
     return NULL;
+}
+
+
+/***********************************************************************
+ * Header manipulation.
+ */
+
+
+static int header_is_called(Octstr *header, char *name)
+{
+    long colon;
+
+    colon = octstr_search_char(header, ':', 0);
+    if (colon == -1)
+        return 0;
+    if ((long) strlen(name) != colon)
+        return 0;
+    return strncasecmp(octstr_get_cstr(header), name, colon) == 0;
 }
 
 
@@ -1206,828 +1924,30 @@ int http_charset_accepted(List *headers, char *charset)
 
 
 /***********************************************************************
- * Proxy support functions.
+ * Module initialization and shutdown.
  */
 
 
-static int proxy_used_for_host(Octstr *host)
+void http_init(void)
 {
-    int i;
+    gw_assert(run_status == limbo);
 
-    mutex_lock(proxy_mutex);
-
-    if (proxy_hostname == NULL) {
-        mutex_unlock(proxy_mutex);
-        return 0;
-    }
-
-    for (i = 0; i < list_len(proxy_exceptions); ++i) {
-        if (octstr_compare(host, list_get(proxy_exceptions, i)) == 0) {
-            mutex_unlock(proxy_mutex);
-            return 0;
-        }
-    }
-
-    mutex_unlock(proxy_mutex);
-    return 1;
-}
-
-
-/***********************************************************************
- * Socket pool management.
- */
-
-
-#if 1
-static void pool_init(void) { }
-static void pool_shutdown(void) { }
-#if 0
-static HTTPSocket *pool_get(Octstr *host, int port)
-{
-    return socket_create_client(host, port);
-}
-static void pool_put(HTTPSocket *p)
-{
-    socket_destroy(p);
-}
-#endif
-#else
-
-
-static Dict *pool = NULL;
-static Mutex *pool_lock = NULL;
-
-
-static void pool_destroy_item(void *list)
-{
-    HTTPSocket *p;
+    proxy_init();
+    client_init();
+    server_init();
     
-    while ((p = list_extract_first(list)) != NULL)
-    	socket_destroy(p);
-    list_destroy(list, NULL);
+    run_status = running;
 }
 
 
-static void pool_init(void)
+void http_shutdown(void)
 {
-    pool = dict_create(1024, pool_destroy_item);
-    pool_lock = mutex_create();
-}
+    gwlib_assert_init();
+    gw_assert(run_status == running);
 
+    run_status = terminating;
 
-static void pool_shutdown(void)
-{
-    dict_destroy(pool);
-    mutex_destroy(pool_lock);
-}
-
-
-static HTTPSocket *pool_get(Octstr *host, int port)
-{
-    Octstr *key;
-    List *list;
-    HTTPSocket *p;
-    
-    key = octstr_format("%S:%d", host, port);
-
-    mutex_lock(pool_lock);
-    list = dict_get(pool, key);
-    if (list == NULL)
-    	p = NULL;
-    else
-	p = list_extract_first(list);
-    mutex_unlock(pool_lock);
-	
-    if (p == NULL)
-	p = socket_create_client(host, port);
-
-    octstr_destroy(key);
-    return p;
-}
-
-
-static void pool_put(HTTPSocket *p)
-{
-    Octstr *key;
-    List *list;
-
-    key = octstr_format("%S:%d", p->host, p->port);
-
-    mutex_lock(pool_lock);
-    list = dict_get(pool, key);
-    if (list == NULL) {
-    	list = list_create();
-	list_append(list, p);
-	dict_put(pool, key, list);
-    } else
-    	list_append(list, p);
-    mutex_unlock(pool_lock);
-    
-    octstr_destroy(key);
-}
-#endif
-
-
-/***********************************************************************
- * Other local functions.
- */
-
-
-/*
- * Parse the URL to get the hostname and the port to connect to and the
- * path within the host.
- *
- * Return -1 if the URL seems malformed.
- *
- * We assume HTTP URLs of the form specified in "3.2.2 http URL" in
- * RFC 2616:
- * 
- *  http_URL = "http:" "//" host [ ":" port ] [ abs_path [ "?" query ]]
- */
-static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path)
-{
-    Octstr *prefix;
-    long prefix_len;
-    int host_len, colon, slash;
-
-    prefix = octstr_create_immutable("http://");
-    prefix_len = octstr_len(prefix);
-
-    if (octstr_case_search(url, prefix, 0) != 0) {
-        error(0, "URL <%s> doesn't start with `%s'",
-              octstr_get_cstr(url), octstr_get_cstr(prefix));
-        return -1;
-    }
-
-    if (octstr_len(url) == prefix_len) {
-        error(0, "URL <%s> is malformed.", octstr_get_cstr(url));
-        return -1;
-    }
-
-    colon = octstr_search_char(url, ':', prefix_len);
-    slash = octstr_search_char(url, '/', prefix_len);
-    if (colon == prefix_len || slash == prefix_len) {
-        error(0, "URL <%s> is malformed.", octstr_get_cstr(url));
-        return -1;
-    }
-
-    if (slash == -1 && colon == -1) {
-        /* Just the hostname, no port or path. */
-        host_len = octstr_len(url) - prefix_len;
-        *port = HTTP_PORT;
-    } else if (slash == -1) {
-        /* Port, but not path. */
-        host_len = colon - prefix_len;
-        if (octstr_parse_long(port, url, colon + 1, 10) == -1) {
-            error(0, "URL <%s> has malformed port number.",
-                  octstr_get_cstr(url));
-            return -1;
-        }
-    } else if (colon == -1 || colon > slash) {
-        /* Path, but not port. */
-        host_len = slash - prefix_len;
-        *port = HTTP_PORT;
-    } else if (colon < slash) {
-        /* Both path and port. */
-        host_len = colon - prefix_len;
-        if (octstr_parse_long(port, url, colon + 1, 10) == -1) {
-            error(0, "URL <%s> has malformed port number.",
-                  octstr_get_cstr(url));
-            return -1;
-        }
-    } else {
-        error(0, "Internal error in URL parsing logic.");
-        return -1;
-    }
-
-    *host = octstr_copy(url, prefix_len, host_len);
-    if (slash == -1)
-        *path = octstr_create("/");
-    else
-        *path = octstr_copy(url, slash, octstr_len(url) - slash);
-
-    return 0;
-}
-
-
-
-/*
- * Build a complete HTTP request given the host, port, path and headers. 
- * Add Host: and Content-Length: headers (and others that may be necessary).
- * Return the request as an Octstr.
- */
-
-static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port,
-                             List *headers, Octstr *request_body, 
-			     char *method_name)
-{
-
-    /* XXX headers missing */
-    Octstr *request;
-    int i;
-
-    request = octstr_format("%s %S HTTP/1.1\r\n",
-                            method_name, path_or_url);
-
-    octstr_format_append(request, "Host: %S", host);
-    if (port != HTTP_PORT)
-        octstr_format_append(request, ":%ld", port);
-    octstr_append(request, octstr_create_immutable("\r\n"));
-
-    for (i = 0; headers != NULL && i < list_len(headers); ++i) {
-        octstr_append(request, list_get(headers, i));
-        octstr_append(request, octstr_create_immutable("\r\n"));
-    }
-    octstr_append(request, octstr_create_immutable("\r\n"));
-
-    if (request_body != NULL)
-        octstr_append(request, request_body);
-
-    return request;
-}
-
-
-/*
- * Parse the status line returned by an HTTP server and return the
- * status code. Return -1 if the status line was unparseable.
- */
-static int parse_status(Octstr *statusline)
-{
-    static char *versions[] = {
-        "HTTP/1.1 ",
-        "HTTP/1.0 ",
-    };
-    static int num_versions = sizeof(versions) / sizeof(versions[0]);
-    long status;
-    int i;
-
-    for (i = 0; i < num_versions; ++i) {
-        if (octstr_search(statusline,
-                          octstr_create_immutable(versions[i]),
-                          0) == 0)
-            break;
-    }
-    if (i == num_versions) {
-        error(0, "HTTP: Server responds with unknown HTTP version.");
-        debug("gwlib.http", 0, "Status line: <%s>",
-              octstr_get_cstr(statusline));
-        return -1;
-    }
-
-    if (octstr_parse_long(&status, statusline,
-                          strlen(versions[i]), 10) == -1) {
-        error(0, "HTTP: Malformed status line from HTTP server: <%s>",
-              octstr_get_cstr(statusline));
-        return -1;
-    }
-
-    return status;
-}
-
-
-
-/*
- * Build and send the HTTP request. Return socket from which the
- * response can be read or -1 for error.
- */
-
-static Connection *send_request(Octstr *url, List *request_headers,
-                                Octstr *request_body, char *method_name)
-{
-    Octstr *host, *path, *request;
-    long port;
-    Connection *conn;
-
-    host = NULL;
-    path = NULL;
-    request = NULL;
-    conn = NULL;
-
-    if (parse_url(url, &host, &port, &path) == -1)
-        goto error;
-
-    if (proxy_used_for_host(host)) {
-        request = build_request(url, host, port, request_headers,
-                                request_body, method_name);
-        conn = conn_open_tcp(proxy_hostname, proxy_port);
-    } else {
-        request = build_request(path, host, port, request_headers,
-                                request_body, method_name);
-        conn = conn_open_tcp(host, port);
-    }
-    if (conn == NULL)
-        goto error;
-
-    debug("wsp.http", 0, "HTTP: Sending request:");
-    octstr_dump(request, 0);
-    if (conn_write(conn, request) == -1)
-        goto error;
-
-    octstr_destroy(host);
-    octstr_destroy(path);
-    octstr_destroy(request);
-
-    return conn;
-
-error:
-    conn_destroy(conn);
-    octstr_destroy(host);
-    octstr_destroy(path);
-    octstr_destroy(request);
-    error(0, "Couldn't send request to <%s>", octstr_get_cstr(url));
-    return NULL;
-}
-
-
-/*
- * Read and parse the status response line from an HTTP server.
- * Return the parsed status code. Return -1 for error. Return 0 for
- * status code not yet available.
- */
-static int client_read_status(Connection *conn)
-{
-    Octstr *line;
-    long status;
-
-    line = conn_read_line(conn);
-    if (line == NULL) {
-	if (conn_eof(conn))
-	    return -1;
-    	return 0;
-    }
-
-    status = parse_status(line);
-    octstr_destroy(line);
-    return status;
-}
-
-
-/*
- * Read some headers, i.e., until the first empty line (read and discard
- * the empty line as well). Return -1 for error, 0 for all headers read,
- * 1 for more headers to follow.
- */
-static int client_read_headers(Connection *conn, List *headers)
-{
-    Octstr *line, *prev;
-
-    if (list_len(headers) == 0)
-        prev = NULL;
-    else
-    	prev = list_get(headers, list_len(headers) - 1);
-
-    for (;;) {
-	line = conn_read_line(conn);
-	if (line == NULL) {
-	    if (conn_eof(conn))
-	    	return -1;
-	    return 1;
-	}
-        if (octstr_len(line) == 0) {
-            octstr_destroy(line);
-            break;
-        }
-        if (isspace(octstr_get_char(line, 0)) && prev != NULL) {
-            octstr_append(prev, line);
-            octstr_destroy(line);
-        } else {
-            list_append(headers, line);
-            prev = line;
-        }
-    }
-
-    return 0;
-}
-
-
-/*
- * Read the body of a response. Return -1 for error, 0 for body received,
- * 1 for waiting for more body.
- */
-static int client_read_body(HTTPTransaction *trans)
-{
-    Octstr *h, *os;
-    long body_len;
-
-    h = http_header_find_first(trans->response_headers, "Transfer-Encoding");
-    if (h != NULL) {
-        octstr_strip_blanks(h);
-        if (octstr_str_compare(h, "chunked") != 0) {
-            error(0, "HTTP: Unknown Transfer-Encoding <%s>",
-                  octstr_get_cstr(h));
-            goto error;
-        }
-        octstr_destroy(h);
-        return client_read_chunked_body(trans);
-    } else {
-        h = http_header_find_first(trans->response_headers, "Content-Length");
-        if (h == NULL) {
-	    /*
-	     * No length information available, so the server will signal
-             * the end of data by closing the socket.
-             */
-            while ((os = conn_read_everything(trans->conn)) != NULL) {
-	  	octstr_append(trans->response_body, os);
-		octstr_destroy(os);
-	    }
-	    if (conn_read_error(trans->conn))
-		goto error;
-	    if (conn_eof(trans->conn))
-	        return 0;
-            return 1;
-        } else {
-            if (octstr_parse_long(&body_len, h, 0, 10) == -1) {
-                error(0, "HTTP: Content-Length header wrong: <%s>", 
-		      octstr_get_cstr(h));
-                goto error;
-            }
-            octstr_destroy(h);
-	    os = conn_read_fixed(trans->conn, body_len);
-	    if (os == NULL)
-	    	return 1;
-	    octstr_destroy(trans->response_body);
-	    trans->response_body = os;
-            return 0;
-        }
-    }
-
-    panic(0, "This location in code must never be reached.");
-
-error:
-    octstr_destroy(h);
-    return -1;
-}
-
-
-/*
- * Read body that has been Transfer-Encoded as "chunked". Return -1 for
- * error, 0 for OK. If there are any trailing headers (see RFC 2616, 3.6.1)
- * they are appended to `headers'.
- */
-static int client_read_chunked_body(HTTPTransaction *trans)
-{
-    Octstr *os;
-    long len;
-    int ret;
-
-    for (;;) {
-	switch (trans->chunked_body_state) {
-	case reading_chunk_len:
-	    os = conn_read_line(trans->conn);
-	    if (os == NULL) {
-		if (conn_eof(trans->conn))
-		    return -1;
-		return 1;
-	    }
-	    if (octstr_parse_long(&len, os, 0, 16) == -1) {
-		octstr_destroy(os);
-		return -1;
-	    }
-	    octstr_destroy(os);
-	    if (len == 0)
-		trans->chunked_body_state = reading_trailer;
-	    else {
-		trans->chunked_body_state = reading_chunk;
-		trans->chunked_body_chunk_len = len;
-	    }
-	    break;
-	    
-	case reading_chunk:
-	    os = conn_read_fixed(trans->conn, trans->chunked_body_chunk_len);
-	    if (os == NULL) {
-		if (conn_eof(trans->conn))
-		    return -1;
-		return 1;
-	    }
-	    octstr_append(trans->response_body, os);
-	    octstr_destroy(os);
-	    trans->chunked_body_state = reading_chunk_crlf;
-	    break;
-	    
-	case reading_chunk_crlf:
-	    os = conn_read_line(trans->conn);
-	    if (os == NULL) {
-		if (conn_eof(trans->conn))
-		    return -1;
-		return 1;
-	    }
-	    trans->chunked_body_state = reading_chunk_len;
-	    break;
-	    
-	case reading_trailer:
-	    ret = client_read_headers(trans->conn, trans->response_headers);
-	    if (ret == -1)
-	    	return -1;
-	    else if (ret == 0)
-	    	return 0;
-	    break;
-	    
-	default:
-	    panic(0, "Internal error: "
-		  "HTTPTransaction invaluded chunked body state.");
-	}
-    }
-}
-
-
-/*
- * Parse CGI variables from the path given in a GET. Return a list
- * of HTTPCGIvar pointers. Modify the url so that the variables are
- * removed.
- */
-static List *parse_cgivars(Octstr *url)
-{
-    HTTPCGIVar *v;
-    List *list;
-    int query, et, equals;
-    Octstr *arg, *args;
-
-    query = octstr_search_char(url, '?', 0);
-    if (query == -1)
-        return list_create();
-
-    args = octstr_copy(url, query + 1, octstr_len(url));
-    octstr_truncate(url, query);
-
-    list = list_create();
-
-    while (octstr_len(args) > 0) {
-        et = octstr_search_char(args, '&', 0);
-        if (et == -1)
-            et = octstr_len(args);
-        arg = octstr_copy(args, 0, et);
-        octstr_delete(args, 0, et + 1);
-
-        equals = octstr_search_char(arg, '=', 0);
-        if (equals == -1)
-            equals = octstr_len(arg);
-
-        v = gw_malloc(sizeof(HTTPCGIVar));
-        v->name = octstr_copy(arg, 0, equals);
-        v->value = octstr_copy(arg, equals + 1, octstr_len(arg));
-        octstr_url_decode(v->name);
-        octstr_url_decode(v->value);
-
-        octstr_destroy(arg);
-
-        list_append(list, v);
-    }
-    octstr_destroy(args);
-
-    return list;
-}
-
-
-static int header_is_called(Octstr *header, char *name)
-{
-    long colon;
-
-    colon = octstr_search_char(header, ':', 0);
-    if (colon == -1)
-        return 0;
-    if ((long) strlen(name) != colon)
-        return 0;
-    return strncasecmp(octstr_get_cstr(header), name, colon) == 0;
-}
-
-
-/***********************************************************************
- * Internal threads.
- */
- 
- 
-static HTTPTransaction *transaction_create(HTTPCaller *caller, Octstr *url,
-    	    	    	    	    	   List *headers, Octstr *body,
-					   int follow_remaining)
-{
-    HTTPTransaction *trans;
-    
-    trans = gw_malloc(sizeof(*trans));
-    trans->caller = caller;
-    trans->request_id = counter_increase(request_id_counter);
-    trans->url = octstr_duplicate(url);
-    trans->request_headers = http_header_duplicate(headers);
-    trans->request_body = octstr_duplicate(body);
-    trans->state = request_not_sent;
-    trans->status = -1;
-    trans->response_headers = list_create();
-    trans->response_body = octstr_create("");
-    trans->conn = NULL;
-    trans->retrying = 0;
-    trans->follow_remaining = follow_remaining;
-    trans->chunked_body_state = reading_chunk_len;
-    trans->chunked_body_chunk_len = 0;
-    return trans;
-}
-
-
-static void transaction_destroy(void *p)
-{
-    HTTPTransaction *trans;
-    
-    trans = p;
-    octstr_destroy(trans->url);
-    http_destroy_headers(trans->request_headers);
-    octstr_destroy(trans->request_body);
-    http_destroy_headers(trans->response_headers);
-    octstr_destroy(trans->response_body);
-    gw_free(trans);
-}
-
-
-static Octstr *get_redirection_location(HTTPTransaction *trans)
-{
-    if (trans->status < 0 || trans->follow_remaining <= 0)
-    	return NULL;
-    if (trans->status != HTTP_MOVED_PERMANENTLY &&
-    	trans->status != HTTP_FOUND && trans->status != HTTP_SEE_OTHER)
-	return NULL;
-    return http_header_find_first(trans->response_headers, "Location");
-}
-
-
-static void handle_transaction(Connection *conn, void *data)
-{
-    HTTPTransaction *trans;
-    int ret;
-    Octstr *h;
-    
-    trans = data;
-
-    if (run_status != running) {
-	conn_unregister(conn);
-	return;
-    }
-
-    while (trans->state != transaction_done) {
-	switch (trans->state) {
-	case reading_status:
-	    trans->status = client_read_status(trans->conn);
-	    if (trans->status < 0) {
-		/*
-		 * Couldn't read the status from the socket. This may mean that 
-		 * the socket had been closed by the server after an idle 
-		 * timeout, so we close the connection and try again, opening a 
-		 * new socket, but only once.
-		 */
-		if (trans->retrying) {
-		    goto error;
-		} else {
-		    conn_unregister(trans->conn);
-		    conn_destroy(trans->conn);
-		    trans->conn = NULL;
-		    trans->retrying = 1;
-		    trans->state = request_not_sent;
-		    list_produce(pending_requests, trans);
-		    return;
-		}
-	    } else if (trans->status > 0) {
-		/* Got the status, go read headers next. */
-		trans->state = reading_headers;
-	    } else
-		return;
-	    break;
-	    
-	case reading_headers:
-	    ret = client_read_headers(trans->conn, 
-				      trans->response_headers);
-	    if (ret == -1)
-		goto error;
-	    else if (ret == 0)
-		trans->state = reading_body;
-	    else
-		return;
-	    break;
-	    
-	case reading_body:
-	    ret = client_read_body(trans);
-	    if (ret == -1)
-		goto error;
-	    else if (ret == 0) {
-		conn_unregister(trans->conn);
-		conn_destroy(trans->conn);
-		trans->conn = NULL;
-		trans->state = transaction_done;
-	    } else 
-		return;
-	    break;
-    
-	default:
-	    panic(0, "Internal error: Invalid HTTPTransaction state.");
-	}
-    }
-
-    h = get_redirection_location(trans);
-    if (h != NULL) {
-	octstr_strip_blanks(h);
-	octstr_destroy(trans->url);
-	trans->url = h;
-	trans->state = request_not_sent;
-	http_destroy_headers(trans->response_headers);
-	trans->response_headers = list_create();
-	octstr_destroy(trans->response_body);
-	trans->response_body = octstr_create("");
-	--trans->follow_remaining;
-	conn_unregister(trans->conn);
-	conn_destroy(trans->conn);
-	trans->conn = NULL;
-	list_produce(pending_requests, trans);
-    } else
-	list_produce(trans->caller, trans);
-    return;
-
-error:
-    conn_unregister(trans->conn);
-    conn_destroy(trans->conn);
-    trans->conn = NULL;
-    error(0, "Couldn't fetch <%s>", octstr_get_cstr(trans->url));
-    trans->status = -1;
-    list_produce(trans->caller, trans);
-}
-
-
-/*
- * This thread starts the transaction: it connects to the server and sends
- * the request. It then sends the transaction to the read_response_thread
- * via started_requests_queue.
- */
-static void write_request_thread(void *arg)
-{
-    HTTPTransaction *trans;
-    char *method;
-    char buf[128];    
-
-    while (run_status == running) {
-	trans = list_consume(pending_requests);
-	if (trans == NULL)
-	    break;
-
-    	gw_assert(trans->state == request_not_sent);
-
-    	if (trans->request_body == NULL)
-	    method = "GET";
-	else {
-	    method = "POST";
-	    /* 
-	     * Add a Content-Length header.  Override an existing one, if
-	     * necessary.  We must have an accurate one in order to use the
-	     * connection for more than a single request.
-	     */
-	    http_header_remove_all(trans->request_headers, "Content-Length");
-	    sprintf(buf, "%ld", octstr_len(trans->request_body));
-	    http_header_add(trans->request_headers, "Content-Length", buf);
-	}
-
-	trans->conn = send_request(trans->url, trans->request_headers,  
-				   trans->request_body, method);
-    	if (trans->conn == NULL)
-	    list_produce(trans->caller, trans);
-	else {
-	    trans->state = reading_status;
-	    conn_register(trans->conn, client_fdset, handle_transaction, 
-	    	    	  trans);
-	}
-    }
-}
-
-
-static void start_background_threads(void)
-{
-    if (!background_threads_are_running) {
-	/* 
-	 * To be really certain, we must repeat the test, but use the
-	 * lock first. If the test failed, however, we _know_ we've
-	 * already initialized. This strategy of double testing avoids
-	 * using the lock more than a few times at startup.
-	 */
-	mutex_lock(background_threads_lock);
-	if (!background_threads_are_running) {
-	    client_fdset = fdset_create();
-	    gwthread_create(write_request_thread, NULL);
-	    background_threads_are_running = 1;
-	}
-	mutex_unlock(background_threads_lock);
-    }
-}
-
-
-
-static void start_server_thread(void)
-{
-    if (!server_thread_is_running) {
-	/* 
-	 * To be really certain, we must repeat the test, but use the
-	 * lock first. If the test failed, however, we _know_ we've
-	 * already initialized. This strategy of double testing avoids
-	 * using the lock more than a few times at startup.
-	 */
-	mutex_lock(background_threads_lock);
-	if (!server_thread_is_running) {
-	    server_fdset = fdset_create();
-	    list_add_producer(clients_with_requests);
-	    server_thread_id = gwthread_create(server_thread, NULL);
-	    server_thread_is_running = 1;
-	}
-	mutex_unlock(background_threads_lock);
-    }
+    client_shutdown();
+    server_shutdown();
+    proxy_shutdown();
 }
