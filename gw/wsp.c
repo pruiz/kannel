@@ -347,7 +347,7 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 	    if (unpack_uintvar(&uiv, caps, &off) == -1)
 		warning(0, "Problems getting client SDU size capability");
 	    else {
-		if (WSP_MAX_CLIENT_SDU && uiv < WSP_MAX_CLIENT_SDU) {
+		if (WSP_MAX_CLIENT_SDU && uiv > WSP_MAX_CLIENT_SDU) {
 		    debug("wap.wsp", 0, "Client tried client SDU size %lu larger "
 			  "than our max %d", uiv, WSP_MAX_CLIENT_SDU);
 		} else if (!(m->set_caps & WSP_CSDU_SET)) {
@@ -361,7 +361,7 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 	    if (unpack_uintvar(&uiv, caps, &off) == -1)
 		warning(0, "Problems getting server SDU size capability");
 	    else {
-		if (WSP_MAX_SERVER_SDU && uiv < WSP_MAX_SERVER_SDU) {
+		if (WSP_MAX_SERVER_SDU && uiv > WSP_MAX_SERVER_SDU) {
 		    debug("wap.wsp", 0, "Client tried server SDU size %lu larger "
 			  "than our max %d", uiv, WSP_MAX_SERVER_SDU);
 		} else if (!(m->set_caps & WSP_SSDU_SET)) {
@@ -390,7 +390,7 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 	    if (unpack_uint8(&mor, caps, &off) == -1)
 		warning(0, "Problems getting MOR methods capability");
 	    else {
-		if (mor < WSP_MAX_METHOD_MOR) {
+		if (mor > WSP_MAX_METHOD_MOR) {
 		    debug("wap.wsp", 0, "Client tried method MOR %lu larger "
 			  "than our max %d", mor, WSP_MAX_METHOD_MOR);
 		} else if (!(m->set_caps & WSP_MMOR_SET)) {
@@ -404,7 +404,7 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 	    if (unpack_uint8(&mor, caps, &off) == -1)
 		warning(0, "Problems getting MOR push capability");
 	    else {
-		if (mor < WSP_MAX_PUSH_MOR) {
+		if (mor > WSP_MAX_PUSH_MOR) {
 		    debug("wap.wsp", 0, "Client tried push MOR %lu larger "
 			  "than our max %d", mor, WSP_MAX_PUSH_MOR);
 		} else if (!(m->set_caps & WSP_PMOR_SET)) {

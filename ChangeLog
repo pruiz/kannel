@@ -1,3 +1,7 @@
+2000-02-16    <rpr@rpr.wapit.com>
+
+	* gw/wsp.c (unpack_caps): fix
+
 Wed Feb 16 14:38:06 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* test/fakewap.c: Changed test for SOL_TCP to actually test the
