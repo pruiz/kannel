@@ -1,5 +1,9 @@
 2000-09-20  Richard Braakman  <dark@wapit.com>
 
+	* gw/timers.c: Reformatted according to new layout standard.
+
+2000-09-20  Richard Braakman  <dark@wapit.com>
+
 	* gw/timers.c: Implement the heap structure using a C array,
 	instead of using List.  This has less overhead and removes the
 	need for list_swap.
