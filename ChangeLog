@@ -1,3 +1,9 @@
+2001-10-16 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* smsc_emi2.c: corrected a bug when username and keepalive aren't
+	defined and timeout would be undefined
+	* smsc_at2.c: changed position of speed config reading to be able
+	to force a serial speed
+
 2001-10-16 Aarno Syvänen <aarno@wiral.com>
 
 	* gw/wap_push_pap_compiler.c: Reject wrong address type for a

@@ -1150,7 +1150,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->username = cfg_get(cfg, octstr_imm("smsc-username"));
     privdata->password = cfg_get(cfg, octstr_imm("smsc-password"));
 
-    if (privdata->username && cfg_get_integer(&keepalive, cfg, octstr_imm("keepalive")) < 0)
+    if (privdata->username == NULL || cfg_get_integer(&keepalive, cfg, octstr_imm("keepalive")) < 0)
 	privdata->keepalive = 0;
     else
 	privdata->keepalive = keepalive;

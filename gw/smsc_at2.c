@@ -518,7 +518,7 @@ int	at2_init_device(PrivAT2data *privdata)
     
     /* enable hardware handshake */
     if(at2_send_modem_command(privdata, ModemTypes[privdata->modemid].hwhs, 0, 0) == -1)
-	return -1;
+	info(0,"AT2[%s]: cannot enable hardware handshake");
  
     /* Check does the modem require a PIN and, if so, send it
      * This is not supported by the Nokia Premicell */
@@ -954,7 +954,8 @@ int  smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     {
         info(0,"configuration shows modemtype=%s", octstr_get_cstr(modem_type_string));
     	privdata->modemid = at2_modem2id(octstr_get_cstr(modem_type_string));
-    	privdata->speed = ModemTypes[privdata->modemid].speed;
+    	if (privdata->speed == 0)
+	    privdata->speed = ModemTypes[privdata->modemid].speed;
 	octstr_destroy(modem_type_string);
     }
     info(0,"configured for modem-id %d", privdata->modemid);
