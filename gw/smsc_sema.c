@@ -1845,7 +1845,7 @@ static unsigned char pack_continous_byte(int encode,
     char bin[4];
     int value;
 
-    bzero(bin, 4);
+    memset(bin, 0, 4);
     value = 0;
 
     if(isfirst == 1)

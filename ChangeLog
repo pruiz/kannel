@@ -1,8 +1,13 @@
 2000-03-25 Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	* Makefile.in: Added -Iutils to CFLAGS
 	* utils/start-stop-daemon.c: Added short option only stuff.
+	  Cast pid_t to int so that printf gets it right
 	* utils/kannel-nag: Now asks for bash specifically rather than assuming
 	  that /bin/sh is actually bash
+	* gw/smsc_sema.c: Replaced bzero with memset
+	* gw/wml_compiler.c: Cast arguments to isalpha and isalnum to int 
+	  (are char)
+	* gwlib/http.c: similar, for isspace
 
 Fri Mar 24 16:43:16 2000  Lars Wirzenius  <liw@wapit.com>
 

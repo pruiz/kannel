@@ -880,7 +880,7 @@ static var_esc_t check_variable_syntax(Octstr *variable)
     ret = NOESC;
 
   ch = octstr_get_char(variable, 0);
-  if (!(isalpha(ch)) && ch != '_')
+  if (!(isalpha((int)ch)) && ch != '_')
     {
       buf = gw_malloc(70);
       if (sprintf(buf, 
@@ -893,7 +893,7 @@ static var_esc_t check_variable_syntax(Octstr *variable)
     }
   else
     for (i = 1; i < octstr_len(variable); i++)
-      if (!isalnum((ch = octstr_get_char(variable, 0))) && ch != '_')
+      if (!isalnum((int)(ch = octstr_get_char(variable, 0))) && ch != '_')
 	{
 	  error(0, "WML compiler: syntax error in variable.");
 	  return FAILED;

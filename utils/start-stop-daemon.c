@@ -777,7 +777,7 @@ main(int argc, char **argv)
 		if (pidf == NULL)
 			fatal("Unable to open pidfile `%s' for writing: %s", pidfile,
 				strerror(errno));
-		fprintf(pidf, "%d\n", pidt);
+		fprintf(pidf, "%d\n", (int)pidt);
 		fclose(pidf);
 	}
 	execv(startas, argv);

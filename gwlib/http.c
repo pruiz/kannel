@@ -152,7 +152,7 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	
 	/* advance to start of data- cut off the whitespaces */
 	eol = strstr(growingbuff, "\r\n\r\n");
-	while(isspace(*eol))
+	while(isspace((char)*eol))
 	    eol++;
 	
 	newbuff = gw_malloc(i+1);
@@ -975,7 +975,7 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 	if(eol != NULL) *eol = '\0';
 	if(midptr != NULL) *midptr = '\0';
 	midptr++;
-	while(isspace(*midptr)) midptr++;
+	while(isspace((int)*midptr)) midptr++;
 	/* advance to start of data- cut off the whitespaces */
 	if( (eol!=NULL) && (midptr!=NULL) )
 	    httprequest_add_header(request, ptr, midptr);
