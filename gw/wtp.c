@@ -233,6 +233,9 @@ void wtp_shutdown(void) {
      while (list_len(machines) > 0)
 	wtp_machine_destroy(list_extract_first(machines));
      list_destroy(machines);
+     while (list_len(queue) > 0)
+	wap_event_destroy(list_extract_first(queue));
+     list_destroy(queue);
      counter_destroy(machine_id_counter);
      mutex_destroy(wtp_tid_lock);
 }
