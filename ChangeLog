@@ -1,5 +1,15 @@
 2000-09-14  Lars Wirzenius  <liw@iki.fi>
 
+	* config.h.in, configure, configure.in, gwlib/utils.[ch]: Always
+	use kannel_cfmakeraw, instead of the libc one. This simplifies
+	configuration, and lets us not have to worry about having another
+	cfmakeraw in a non-glibc library that does something else than
+	the glibc one. Or about the glibc one changing behavior sometime
+	in the future. (Oh the joys of using extensions to the standard
+	libraries...)
+
+2000-09-14  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/wap-appl.c, gw/wsp.h: Added function wap_appl_get_load,
 	which gives a current load average for the application layer
 	(which is essentially the only sensible place to look for load
