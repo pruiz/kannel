@@ -1,5 +1,16 @@
 2000-09-18  Lars Wirzenius  <liw@iki.fi>
 
+	* ChangeLog, debian/init, gw/bb_boxc.c, gw/bb_http.c, gw/html.h,
+	gw/msg.c, gw/urltrans.c, gwlib/conffile.c, gwlib/conffile.h,
+	gwlib/gwassert.h, gwlib/gwstr.h, gwlib/gwthread-pthread.c,
+	gwlib/http.c, gwlib/http.h, gwlib/list.c, gwlib/list.h,
+	gwlib/log.h, gwlib/octstr.c, gwlib/octstr.h, gwlib/socket.c,
+	gwlib/thread.c, gwlib/thread.h, gwlib/utils.c: Folded some long
+	lines (see utils/find-long-lines).
+
+
+2000-09-18  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/octstr.c: Shut up char/unsigned char implicit conversion
 	warning by adding a cast.
 
@@ -553,8 +564,10 @@ Mon Aug 21 18:32:04 2000  Lars Wirzenius  <liw@iki.fi>
 	* configure.[in]: libxml 2.2.1 added.
 
 2000-07-21  Paul Keogh   <paul.keogh@anam.com>
-	* gw/bb_udp.c: Added check for NULL ptr return from udpc_create() in
-	function add_service() to prevent subsequent NULL dereference and crash.
+
+	* gw/bb_udp.c: Added check for NULL ptr return from udpc_create()
+	in function add_service() to prevent subsequent NULL dereference
+	and crash.
 
 2000-07-21  Yann Muller  <ymuller@3glab.com>
 
@@ -690,11 +703,12 @@ Mon Aug 21 18:32:04 2000  Lars Wirzenius  <liw@iki.fi>
 
 	* configure: Now support for libxml 1.8.8 and 2.1.1.
 
-	* gw/wml_compiler.c: Support for libxml version 2 and above now ready.
+	* gw/wml_compiler.c: Support for libxml version 2 and above
+	now ready.
 
-	* gw/wml_compiler.c (parse_attribute): Patch by Holger Casties applied
-	to eliminate a segmentation fault with NULL pointer passed as a second 
-	argument to strcmp.
+	* gw/wml_compiler.c (parse_attribute): Patch by Holger Casties
+	applied to eliminate a segmentation fault with NULL pointer
+	passed as a second argument to strcmp.
 
 2000-07-07  Kalle Marjola  <rpr@wapit.com>
 
@@ -795,9 +809,9 @@ Mon Aug 21 18:32:04 2000  Lars Wirzenius  <liw@iki.fi>
 
 2000-06-29  Paul Keogh <paul.keogh@anam.ie>
 
-	* gwlib/list.c: Removed unnecessary calls to lock() and unlock() 
-	in the list_cat() function as the called functions do the required locking.
-	Locking the same lock twice causes a panic().
+	* gwlib/list.c: Removed unnecessary calls to lock() and unlock()
+	in the list_cat() function as the called functions do the
+	required locking.  Locking the same lock twice causes a panic().
 
 2000-06-29  Richard Braakman  <dark@wapit.com>
 
@@ -898,10 +912,11 @@ Mon Aug 21 18:32:04 2000  Lars Wirzenius  <liw@iki.fi>
 2000-06-19  Yann Muller  <ymuller@3glab.com>
 
 	* gw/smsc.c, gw/smsc_p.h, gw/smsc_at.c: Applied Denis Hennessy's
-	patch to support Siemens M20: connect at 19200 baud, added a 
-	'pin = xxxx' entry to the conf file,  fixed missing trailing null char
-	in encode_pdu, added a dummy receiver address since smsbox requires one,
-	added the dummy "00" SC prefix for the M20 (like the wavecom).
+	patch to support Siemens M20: connect at 19200 baud, added a
+	'pin = xxxx' entry to the conf file,  fixed missing trailing
+	null char in encode_pdu, added a dummy receiver address since
+	smsbox requires one, added the dummy "00" SC prefix for the M20
+	(like the wavecom).
 
 2000-06-17  Richard Braakman  <dark@wapit.com>
 
@@ -972,8 +987,9 @@ Mon Aug 21 18:32:04 2000  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/wsp-session-machine.h: Added COOKIES field to session MACHINE
 
-	* gw/wsp-session.c: Added cookie support to machine_create(), machine_destroy (). Also
-	added id_belongs_to_session() function for use by cookie functions.
+	* gw/wsp-session.c: Added cookie support to machine_create(),
+	machine_destroy (). Also added id_belongs_to_session() function
+	for use by cookie functions.
 
 	* gw/wsp.h: Added cookie support to struct WSPMachine.
 
@@ -1350,9 +1366,9 @@ Fri Jun  9 02:46:53 2000  Lars Wirzenius  <liw@wapit.com>
 
 2000-06-07  Derry Hamilton  <rasilon@tardis.ed.ac.uk>
 
-	* test/fakewap.c: Running fakewap too quickly messes up thread-control 
-	signal handling under Solaris.  Ignore SIGALRMs, they are not meant 
-	for us.
+	* test/fakewap.c: Running fakewap too quickly messes up
+	thread-control signal handling under Solaris.  Ignore SIGALRMs,
+	they are not meant for us.
 	
 2000-06-06  Richard Braakman  <dark@wapit.com>
 
@@ -2094,9 +2110,9 @@ Thu May 25 16:52:22 2000  Lars Wirzenius  <liw@wapit.com>
 
 2000-05-17  Aarno Syvänen <syvanen@wapit.com>
 
-	* wtp_state-decl.h: Two bugfixes: rid to 0, when the result is sended
-	first time (thanks to Oliver Lau), conditions checking whether u/p-flag
-	is up corrected.
+	* wtp_state-decl.h: Two bugfixes: rid to 0, when the result is
+	sended first time (thanks to Oliver Lau), conditions checking
+	whether u/p-flag is up corrected.
 
 2000-05-16    <Kalle Marjola <rpr@wapit.com>>
 
@@ -2472,8 +2488,8 @@ Tue May  2 20:19:45 2000  Lars Wirzenius  <liw@wapit.com>
 
 2000-05-02 Aarno Syvänen <syvanen@wapit.com>
 
-	* wtp.c: In function add_segment_to_message, removed a static variable.
-	in function tell_about_error, fixed a memory leak, 
+	* wtp.c: In function add_segment_to_message, removed a static
+	variable.  in function tell_about_error, fixed a memory leak,
 
 2000-05-02    <Kalle Marjola <rpr@wapit.com>>
 
@@ -3549,10 +3565,10 @@ Tue Mar 28 16:14:49 2000  Lars Wirzenius  <liw@wapit.com>
 
 2000-03-27 Aarno Syvänen <syvanen@wapit.com>
 
-	* wtp*: Added some comments. Made code review changes. Added code for
-	timers (This is,  how ever, still commented out. It must be tested with
-	a new version of fakewap.). Corrected some of memory leaks pointed out
-	by Paul Keogh.
+	* wtp*: Added some comments. Made code review changes. Added
+	code for timers (This is,  how ever, still commented out. It
+	must be tested with a new version of fakewap.). Corrected some
+	of memory leaks pointed out by Paul Keogh.
 
 	* wtp.c: Added lock for the global wtp transaction identifier.
 
@@ -3579,8 +3595,8 @@ Tue Mar 28 16:14:49 2000  Lars Wirzenius  <liw@wapit.com>
 	* Makefile.in: Added -Iutils to CFLAGS
 	* utils/start-stop-daemon.c: Added short option only stuff.
 	  Cast pid_t to int so that printf gets it right
-	* utils/kannel-nag: Now asks for bash specifically rather than assuming
-	  that /bin/sh is actually bash
+	* utils/kannel-nag: Now asks for bash specifically rather than 
+	  assuming that /bin/sh is actually bash
 	* gw/smsc_sema.c: Replaced bzero with memset
 	* gw/wml_compiler.c: Cast arguments to isalpha and isalnum to int 
 	  (are char)
@@ -4215,8 +4231,9 @@ Fri Feb 18 16:40:44 2000  Lars Wirzenius  <liw@wapit.com>
 2000-02-18  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c (parse_text): Empty strings are no more coded.
-	* gw/wml_compiler.c (parse_attribute): Fixed bug with the coded_length.
-	Still something wrong with attribute value encoding with one byte.
+	* gw/wml_compiler.c (parse_attribute): Fixed bug with the 
+	  coded_length. Still something wrong with attribute value encoding 
+	  with one byte.
 
 Thu Feb 17 20:27:54 2000  Lars Wirzenius  <liw@wapit.com>
 
@@ -4264,8 +4281,9 @@ Thu Feb 17 17:35:11 2000  Lars Wirzenius  <liw@wapit.com>
 
 2000-02-16 Sanna Seppanen <sanna@wapit.com>
 
-	* gwlib/http.c: created the new function httpresponse_wrap, copy of
-	httprequest_wrap using octstr. haven't tested it with chunked entities.
+	* gwlib/http.c: created the new function httpresponse_wrap,
+	copy of httprequest_wrap using octstr. haven't tested it with
+	chunked entities.
 
 2000-02-16    <rpr@rpr.wapit.com>
 
@@ -4407,8 +4425,9 @@ Thu Feb  3 18:40:38 2000  Lars Wirzenius  <liw@wapit.com>
 	char & string.
 
 2000-02-02  Derry Hamilton  <rasilon@tardis.ed.ac.uk>
-       * gw/smsc.c, gw/smsc_cimd.c, gw/smsc_emi.c, gw/wml.c, utils/OTAbitmap.c,
-         utils/wbmp.c: all bzero functions changed to memset.
+       * gw/smsc.c, gw/smsc_cimd.c, gw/smsc_emi.c, gw/wml.c, 
+         utils/OTAbitmap.c, utils/wbmp.c: all bzero functions changed to 
+	 memset.
 
 2000-02-02  Tuomas Luttinen  <tuo@wapit.com>
 
@@ -4652,8 +4671,8 @@ Wed Jan 26 15:13:25 2000  Lars Wirzenius  <liw@wapit.com>
 	* wtp_send.c: Added parameter abort_reason to parameter list of
 	wtp_send_abort (so that function call conforms closely with specs.)
 
-	* wtp.c: Locks added to functions wtp_machine_mark_unused, wtp_machine_
-	destroy, wtp_machine_create_empty and wtp_machine_find.
+	* wtp.c: Locks added to functions wtp_machine_mark_unused, 
+	wtp_machine_destroy, wtp_machine_create_empty and wtp_machine_find.
 
 Wed Jan 26 12:01:17 2000  Lars Wirzenius  <liw@wapit.com>
 
@@ -5009,8 +5028,8 @@ Wed Jan 12 15:16:49 2000  Lars Wirzenius  <liw@wapit.com>
 
 2000-01-10 Aarno Syvänen <syvanen@wapit.com>
 
-	* wtp_events-decl.h: added user_data to primitive TRAbort (WSP PDU will
-	use it).
+	* wtp_events-decl.h: added user_data to primitive TRAbort (WSP
+	PDU will use it).
 
         * wtp_send.c: Corresponding change to function pack_abort. Module
 	reorganised by adding static functions tell_send_error, insert_pdu_
@@ -5576,8 +5595,9 @@ Mon Nov 29 17:17:44 1999  Lars Wirzenius  <liw@wapit.com>
 
 1999-11-25  Aarno Syvänen <syvanen@wapit.com>
 
-	*wtp.c: Fixed another bug in the function handle_event. No it generates
-	only one indication, even though it receives many invoke messages.
+	*wtp.c: Fixed another bug in the function handle_event. No it
+	generates only one indication, even though it receives many
+	invoke messages.
 
 1999-11-25    <rpr@rpr.wapit.com>
 
