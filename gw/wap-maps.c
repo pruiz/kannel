@@ -210,7 +210,6 @@ void wap_map_url(Octstr **osp, Octstr **send_msisdn_query,
 
 int wap_map_user(Octstr **msisdn, Octstr *user, Octstr *pass)
 {
-    long i;
     struct user_map_struct *entry;
 
     entry = dict_get(user_map, user);

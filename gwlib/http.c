@@ -1177,7 +1177,7 @@ HTTPURLParse *parse_url(Octstr *url)
 {
     HTTPURLParse *p;
     Octstr *prefix, *prefix_https;
-    long prefix_len, portnum;
+    long prefix_len;
     int host_len, colon, slash, at, auth_sep, query;
     host_len = colon = slash = at = auth_sep = query = 0;
 
@@ -1294,7 +1294,7 @@ HTTPURLParse *parse_url(Octstr *url)
     /* there was an authenticator seperator, so try to parse 
      * the username and password credentials */
     if (at != -1) {
-        int at2, i;
+        int at2;
 
         at2 = octstr_search_char(url, '@', prefix_len);
         p->user = octstr_copy(url, prefix_len, at2 - prefix_len);
@@ -1302,11 +1302,7 @@ HTTPURLParse *parse_url(Octstr *url)
 
         if (auth_sep != -1)
             octstr_set_char(url, auth_sep, ':');
-        /*
-        for (i = at2 + 1; i < at ; i++)
-            octstr_set_char(url, i, '*');
-        */
-
+  
         host_len = host_len - at + prefix_len - 1;
         prefix_len = at + 1;
     }

@@ -1338,21 +1338,24 @@ static Octstr *convert_wmlscript_to_wmlscriptc(struct content *content)
     return wmlscriptc;
 }
 
+
+/* 
+ * XXX There's a big bug in http_get_content_type that 
+ * assumes that header parameter is charset without looking at
+ * parameter key. Good!. I'll use its value to catch boundary
+ * value for now
+ * ie. "Content-Type: (foo/bar);something=(value)" it gets value
+ * without caring about what is "something" 
+ * /
+
 /* DAVI: To-Do
 static Octstr *convert_multipart_mixed(struct content *content)
 {
     Octstr *result = NULL;
 
-    /* XXX There's a big bug in http_get_content_type that 
-     * assumes that header parameter is charset without looking at
-     * parameter key. Good!. I'll use its value to catch boundary
-     * value for now
-     * Ex: "Content-Type: (foo/bar);something=(value)" it gets value
-     * without caring about what is "something" * /
     debug("wap.wsp.multipart.mixed", 0, "WSP.Multipart.Mixed, boundary=[%s]", 
           octstr_get_cstr(content->charset));
 
-    / * XXX DAVI: To Implement * /
     result = octstr_duplicate(content->body);
     return result;
 }
