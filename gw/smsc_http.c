@@ -235,6 +235,8 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 	octstr_format_append(url, "&coding=%d", sms->sms.coding);
     if (sms->sms.mwi)
 	octstr_format_append(url, "&mwi=%d", sms->sms.mwi);
+    if (sms->sms.account) /* prepend account with local username */
+	octstr_format_append(url, "&account=%E:%E", sms->sms.service, sms->sms.account);
 
     headers = list_create();
     debug("smsc.http.kannel", 0, "start request");
@@ -258,7 +260,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 			       List *headers, Octstr *body, List *cgivars)
 {
     ConnData *conndata = conn->data;
-    Octstr *user, *pass, *from, *to, *text, *udh, *tmp_string;
+    Octstr *user, *pass, *from, *to, *text, *udh, *account, *tmp_string;
     Octstr *retmsg;
     int	mclass, mwi, coding, validity, deferred;
     List *reply_headers;
@@ -272,6 +274,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     to = http_cgi_variable(cgivars, "to");
     text = http_cgi_variable(cgivars, "text");
     udh = http_cgi_variable(cgivars, "udh");
+    account = http_cgi_variable(cgivars, "account");
 
     tmp_string = http_cgi_variable(cgivars, "flash");
     if(tmp_string) {
@@ -329,7 +332,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 	msg->sms.coding = coding;
 	msg->sms.validity = validity;
 	msg->sms.deferred = deferred;
-
+        msg->sms.account = account;
 	ret = bb_smscconn_receive(conn, msg);
 	if (ret == -1)
 	    retmsg = octstr_create("Not accepted");

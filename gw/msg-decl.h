@@ -29,6 +29,7 @@ MSG(sms,
 		INTEGER(time);
 		OCTSTR(smsc_id);
 		OCTSTR(service);
+		OCTSTR(account);
 		INTEGER(id);
 		INTEGER(sms_type);
 		INTEGER(mclass);

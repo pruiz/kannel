@@ -666,7 +666,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 static void clear_sent(PrivData *privdata)
 {
     int i;
-
+    debug("smsc.emi2", 0, "clear_sent called");
     for (i = 0; i < EMI2_MAX_TRN; i++) {
 	if (privdata->slots[i].sendtime && privdata->slots[i].sendtype == 51)
 	    list_produce(privdata->outgoing_queue, privdata->slots[i].sendmsg);
@@ -1049,7 +1049,6 @@ static void emi2_send_loop(SMSCConn *conn, Connection **server)
 	double timeouttime = emi2_get_timeouttime (conn, *server);
 	
 	EMI2Event event = emi2_wait (conn, *server, timeouttime);
-	debug("smsc.emi2", 0, "emi2_wait returned %s", emi2_eventname (event));
 	
 	switch (event) {
 	case EMI2_CONNERR:
@@ -1074,6 +1073,9 @@ static void emi2_send_loop(SMSCConn *conn, Connection **server)
 	case EMI2_TIMEOUT:
 	    break;
 	}
+        if (emi2_handle_smscreq (conn, *server) < 0) {
+            return; /* reopen the connection */
+        }
 	
 	if (emi2_needs_keepalive (conn)) {
 	    if (*server == NULL) {

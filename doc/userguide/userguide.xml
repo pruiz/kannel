@@ -3794,6 +3794,9 @@ text = "No action specified"
    <row><entry><literal>dlrurl</literal></entry>
    <entry><literal>X-Kannel-DLR-Url</literal></entry></row>
 
+   <row><entry><literal>account</literal></entry>
+   <entry><literal>X-Kannel-account</literal></entry></row>
+
   </tbody>
   </tgroup>
  </table>
@@ -3941,6 +3944,16 @@ text = "No action specified"
 	parameter is present.
      </entry></row>
 
+    <row><entry><literal>account</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+	Account name or number to carry forward for billing purposes.
+	This field is logged as ACT in the log file so it allows you to do some
+	accounting on it if your front end uses the same username for all services
+	but wants to distinguish them in the log. In the case of a HTTP SMSC
+	type the account name is prepended with the servicename (username) and a colon (:)
+	and forwarded to the next insta ce of kannel. This allows hierarchical accounting.
+     </entry></row>
   </tbody>
   </tgroup>
  </table>

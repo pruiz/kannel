@@ -273,7 +273,7 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 				      Octstr **smsc, int *mclass, int *mwi, 
 				      int *coding, int *compress, 
 				      int *validity, int *deferred, 
-				      int *dlr_mask, Octstr **dlr_url)
+				      int *dlr_mask, Octstr **dlr_url, Octstr **account)
 {
     Octstr *name, *val;
     long l;
@@ -321,6 +321,9 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 	else if (octstr_case_compare(name, octstr_imm("X-Kannel-DLR-URL")) == 0) {
 	    *dlr_url = octstr_duplicate(val);
 	    octstr_strip_blanks(*dlr_url);
+	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Account")) == 0) {
+	    *account = octstr_duplicate(val);
 	}
 	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Flash")) == 0) {
     	    sscanf(octstr_get_cstr(val),"%d", coding);
@@ -472,6 +475,7 @@ static void url_result_thread(void *arg)
     Octstr *octet_stream;
     Octstr *udh, *from, *to;
     Octstr *dlr_url;
+    Octstr *account;
     int dlr_mask;
     int octets;
     int mclass, mwi, coding, compress;
@@ -495,6 +499,7 @@ static void url_result_thread(void *arg)
     	from = to = udh = NULL;
 	octets = mclass = mwi = coding = compress = 0;
 	validity = deferred = 0;
+	account = NULL;
 	
     	if (status == HTTP_OK) {
 	    http_header_get_content_type(reply_headers, &type, &charset);
@@ -508,7 +513,7 @@ static void url_result_thread(void *arg)
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, NULL, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
-					  &deferred, &dlr_mask, &dlr_url);
+					  &deferred, &dlr_mask, &dlr_url, &account);
 	    } else if (octstr_case_compare(type, text_plain) == 0) {
 		replytext = octstr_duplicate(reply_body);
 		reply_body = NULL;
@@ -516,7 +521,7 @@ static void url_result_thread(void *arg)
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, NULL, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
-					  &deferred, &dlr_mask, &dlr_url);
+					  &deferred, &dlr_mask, &dlr_url, &account);
 	    } else if (octstr_case_compare(type, octet_stream) == 0) {
 		replytext = octstr_duplicate(reply_body);
 		octets = 1;
@@ -524,7 +529,7 @@ static void url_result_thread(void *arg)
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, NULL, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
-					  &deferred, &dlr_mask, &dlr_url);
+					  &deferred, &dlr_mask, &dlr_url, &account);
 	    } else {
 		replytext = octstr_duplicate(reply_couldnotrepresent); 
 	    }
@@ -990,7 +995,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 				 Octstr *charset, Octstr *udh, Octstr *smsc,
 				 int mclass, int mwi, int coding, int compress, 
 				 int validity, int deferred, 
-				 int *status, int dlr_mask, Octstr *dlr_url)
+				 int *status, int dlr_mask, Octstr *dlr_url, Octstr *account)
 {				     
     Msg *msg = NULL;
     Octstr *newfrom, *returnerror;
@@ -1070,6 +1075,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     msg->sms.sms_type = mt_push;
     msg->sms.receiver = octstr_duplicate(to);
     msg->sms.sender = octstr_duplicate(newfrom);
+    msg->sms.account = account ? octstr_duplicate(account) : NULL;
     msg->sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
     msg->sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
     msg->sms.dlr_mask = dlr_mask;
@@ -1257,6 +1263,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     Octstr *from, *to, *charset;
     Octstr *text, *udh, *smsc, *tmp_string;
     Octstr *dlr_url = NULL;
+    Octstr *account = NULL;
     int	dlr_mask = 0;
     Octstr *dlr_mask_string;
     int mclass, mwi, coding, compress, validity, deferred;
@@ -1274,6 +1281,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     smsc = http_cgi_variable(args, "smsc");
     from = http_cgi_variable(args, "from");
     to = http_cgi_variable(args, "to");
+    account = http_cgi_variable(args,"account");
     dlr_url = http_cgi_variable(args, "dlrurl");
     dlr_mask_string = http_cgi_variable(args, "dlrmask");
 
@@ -1330,7 +1338,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
 
     return smsbox_req_handle(t, client_ip, from, to, text, charset, udh, 
 			     smsc, mclass, mwi, coding, compress, validity, 
-			     deferred, status, dlr_mask, dlr_url);
+			     deferred, status, dlr_mask, dlr_url, account);
     
 }
 
@@ -1347,15 +1355,16 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     Octstr *ret;
     Octstr *type, *charset;
     Octstr *dlr_url;
+    Octstr *account;
     int dlr_mask = 0;
     int mclass, mwi, coding, compress, validity, deferred;
  
-    from = to = user = pass = udh = smsc = dlr_url = NULL;
+    from = to = user = pass = udh = smsc = dlr_url = account = NULL;
    
     get_x_kannel_from_headers(headers, &from, &to, &udh,
 			      &user, &pass, &smsc, &mclass, &mwi, &coding,
 			      &compress, &validity, &deferred, 
-			      &dlr_mask, &dlr_url);
+			      &dlr_mask, &dlr_url, &account);
     
     ret = NULL;
     
@@ -1393,7 +1402,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	    ret = smsbox_req_handle(t, client_ip, from, to, body, charset,
 				    udh, smsc, mclass, mwi, coding, compress, 
 				    validity, deferred, status, 
-				    dlr_mask, dlr_url);
+				    dlr_mask, dlr_url, account);
 
 	octstr_destroy(type);
 	octstr_destroy(charset);
@@ -1404,6 +1413,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     octstr_destroy(pass);
     octstr_destroy(udh);
     octstr_destroy(smsc);
+    octstr_destroy(account);
     return ret;
 }
 

@@ -1,3 +1,9 @@
+2001-12-20: Andreas Fink <andreas@fink.org>
+   * gw/smsc_emi2.c: fixed a problem resulting in timing out at high load.
+   *gw/bb_smscconn.c, gw/msg-decl.h, gw/smsbox.c:
+      introduced field "account" for accounting purposes.
+   *docs/userguide/userguide.xml: updated documentation for &access=...
+
 2001-12-19 Andreas Fink <andreas@fink.org>
     *configure.in: added changes made to configure too.
 
