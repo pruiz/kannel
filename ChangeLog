@@ -1,3 +1,11 @@
+2002-11-12  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wapbox.c, gwlib/cfg.def, wap/wap_events.def, wap/wtp.[ch],
+      wap/wtp_pack.[ch], wap/wtp_pdu.c, wap/wtp_resp.[ch], 
+      wap/wtp_resp_machine.def, wap/wtp_resp_states.def:
+      long awaited WTP-SAR support, a huge special thanks goes out to 
+      Igor Ivoilov <igor@francoudi.com> for this.
+      [Msg-ID: <7AAE7951AE8F1C41902D5BBC4129D42701E5FD39@limex2k.francoudi.com>]
+
 2002-11-11  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: fixing a thread handling bug, reported by Paul.
 
