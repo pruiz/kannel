@@ -993,7 +993,7 @@ static void url_result_thread(void *arg)
             }
             octstr_destroy(type);
             octstr_destroy(charset);
-        } else if (max_http_retries > 0) {
+        } else if (max_http_retries > retries) {
             id = remember_receiver(msg, trans, method, req_url, req_headers, req_body, retries);
             list_produce(smsbox_http_requests, id);
             queued++;
