@@ -16,36 +16,36 @@ ac_help="$ac_help
 ac_help="$ac_help
   --with-libs=FLAGS       use FLAGS for extra libraries"
 ac_help="$ac_help
-  --enable-warnings       enable compilation warnings (default: disabled)"
+  --enable-warnings       enable compilation warnings [disabled]"
 ac_help="$ac_help
-  --enable-docs           enable building of documentation (default: enabled)"
+  --enable-docs           enable building of documentation [enabled]"
 ac_help="$ac_help
-  --enable-drafts         enable building of documentation drafts (default: disabled)"
+  --enable-drafts         enable building of documentation drafts [disabled]"
 ac_help="$ac_help
-  --with-suffix           set suffix for binaries (default: -\$VERSION)"
+  --with-suffix           set suffix for binaries [foobox-\$VERSION]"
 ac_help="$ac_help
-  --enable-suffix         enable suffix for binaries (default: disabled)"
+  --enable-suffix         enable suffix for binaries [disabled]"
 ac_help="$ac_help
-  --with-defaults         set default configure options: speed/debug (default: native malloc + assertions)
+  --with-defaults         set default configure options: speed/debug [native malloc + assertions]
                           this will set assertion checking and malloc wrapper accordingly
 			  speed = native malloc + no assertions
 			  debug = checking malloc + assertions"
 ac_help="$ac_help
-  --with-malloc           select malloc wrapper to use: native/check/slow (default: native)"
+  --with-malloc           select malloc wrapper to use: native/check/slow [native]"
 ac_help="$ac_help
   --disable-assertions    turn off assertion checking"
 ac_help="$ac_help
-  --enable-pam	          enable pam authentication (default: disabled)"
+  --enable-pam	          enable pam authentication [disabled]"
 ac_help="$ac_help
-  --enable-debug	  enable non-reentrant debugging for wmls compiler (default: disabled)"
+  --enable-debug	  enable non-reentrant debugging for wmls compiler [disabled]"
 ac_help="$ac_help
-  --enable-localtime	  log file time stamps in local time, not GMT (default: enabled)"
+  --enable-localtime	  log file time stamps in local time, not GMT [enabled]"
 ac_help="$ac_help
   --enable-mutex-stats    produce information about lock contention"
 ac_help="$ac_help
-  --enable-cookies        enable cookie support for WSP (default: disabled)"
+  --enable-cookies        enable cookie support for WSP [disabled]"
 ac_help="$ac_help
-  --enable-start-stop-daemon  compile the start-stop-daemon program"
+  --enable-start-stop-daemon  compile the start-stop-daemon program [disabled]"
 ac_help="$ac_help
   --disable-wap           disables WAP gateway parts in bearerbox"
 ac_help="$ac_help
@@ -54,7 +54,7 @@ ac_help="$ac_help
   --with-ssl[=DIR]        where to look for OpenSSL libs and header files
                           DIR points to the installation [/usr/local/ssl]"
 ac_help="$ac_help
-  --enable-ssl            enable SSL client and server support (default: enabled)"
+  --enable-ssl            enable SSL client and server support [enabled]"
 ac_help="$ac_help
   --disable-ssl-thread-test  disable the multithread test for the OpenSSL library
                           this will force to continue even if the test fails"
@@ -62,11 +62,11 @@ ac_help="$ac_help
   --with-mysql[=DIR]      where to look for MySQL libs and header files
                           DIR points to the installation [/usr/local/mysql]"
 ac_help="$ac_help
-  --enable-mysql          enable MySQL storage (default: disabled)"
+  --enable-mysql          enable MySQL storage [disabled]"
 ac_help="$ac_help
-  --enable-sdb            enable LibSDB storage (default: disabled)"
+  --enable-sdb            enable LibSDB storage [disabled]"
 ac_help="$ac_help
-  --with-dlr[=TYPE TYPE]  select DLR storage to use: internal/mysql/sdb (default: internal)"
+  --with-dlr[=TYPE TYPE]  select DLR storage to use: internal/mysql/sdb [internal]"
 ac_help="$ac_help
   --with-wtls[=TYPE]      select WTLS version to use: openssl/baltimore"
 
@@ -3920,13 +3920,12 @@ if test "${with_dlr+set}" = set; then
 '
   echo "${nl}${T_MD}Configuring DLR support ...${T_ME}"
  
-  for myval in $withval
-  do
-      echo $ac_n "checking for DLR storage type $myval""... $ac_c" 1>&6
-echo "configure:3927: checking for DLR storage type $myval" >&5
-      case "$myval" in
+  for myval in $withval; do
+    echo $ac_n "checking for DLR storage type $myval""... $ac_c" 1>&6
+echo "configure:3926: checking for DLR storage type $myval" >&5
+    case "$myval" in
       internal)
-          ;;
+        ;;
       mysql)
         if test "$MYSQL" != "yes"; then
           { echo "configure: error: Option --with-dlr=mysql requires MySQL client support" 1>&2; exit 1; }
@@ -3953,7 +3952,7 @@ EOF
         { echo "configure: error: Unknown DLR storage support!" 1>&2; exit 1; }
         exit 1 
         ;;
-      esac
+    esac
   done
 
 fi
@@ -3970,14 +3969,14 @@ if test "${with_wtls+set}" = set; then
   echo "${nl}${T_MD}Configuring WTLS support ...${T_ME}"
  
   echo $ac_n "checking for WTLS library""... $ac_c" 1>&6
-echo "configure:3974: checking for WTLS library" >&5
+echo "configure:3973: checking for WTLS library" >&5
   echo "$ac_t""$withval" 1>&6
   case "$withval" in
   openssl) 
  	OLDLIBS="$LIBS"
 	LIBS="$LIBS -L/usr/local/ssl/lib -lcrypto"
     echo $ac_n "checking for RSA_new in -lcrypto""... $ac_c" 1>&6
-echo "configure:3981: checking for RSA_new in -lcrypto" >&5
+echo "configure:3980: checking for RSA_new in -lcrypto" >&5
 ac_lib_var=`echo crypto'_'RSA_new | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -3985,7 +3984,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lcrypto  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 3989 "configure"
+#line 3988 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -3996,7 +3995,7 @@ int main() {
 RSA_new()
 ; return 0; }
 EOF
-if { (eval echo configure:4000: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:3999: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -4015,17 +4014,17 @@ if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
-echo "configure:4019: checking for $ac_hdr" >&5
+echo "configure:4018: checking for $ac_hdr" >&5
 if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 4024 "configure"
+#line 4023 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:4029: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:4028: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
 if test -z "$ac_err"; then
   rm -rf conftest*

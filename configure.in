@@ -241,7 +241,7 @@ done
 dnl Implement --enable-warnings option.
 
 AC_ARG_ENABLE(warnings,
-[  --enable-warnings       enable compilation warnings (default: disabled)], [
+[  --enable-warnings       enable compilation warnings [disabled]], [
   echo enabling compilation warnings
   if test -n "$GCC"; then
     CFLAGS="$CFLAGS -Wall"
@@ -260,7 +260,7 @@ dnl Implement --enable-docs option.
 AC_SUBST(DOCSTARGET)
 
 AC_ARG_ENABLE(docs,
-[  --enable-docs           enable building of documentation (default: enabled)], [
+[  --enable-docs           enable building of documentation [enabled]], [
   if test "$enableval" = "yes"
   then
       DOCSTARGET="docs"
@@ -294,7 +294,7 @@ AC_SUBST(DOCDRAFTS)
 DOCDRAFTS="IGNORE"
 
 AC_ARG_ENABLE(drafts,
-[  --enable-drafts         enable building of documentation drafts (default: disabled)], [
+[  --enable-drafts         enable building of documentation drafts [disabled]], [
   if test "$enableval" = "yes"
   then
       DOCDRAFTS="INCLUDE"
@@ -317,7 +317,7 @@ dnl Implement --with-suffix=version option.
 SUFFIX=""
 
 AC_ARG_WITH(suffix,
-[  --with-suffix           set suffix for binaries (default: -\$VERSION)], [
+[  --with-suffix           set suffix for binaries [foobox-\$VERSION]], [
   if test "x$withval" != "x" ; then
   	SUFFIX=$withval
   fi
@@ -326,7 +326,7 @@ AC_ARG_WITH(suffix,
 dnl Implement --enable-suffix option.
 
 AC_ARG_ENABLE(suffix,
-[  --enable-suffix         enable suffix for binaries (default: disabled)], [
+[  --enable-suffix         enable suffix for binaries [disabled]], [
   if test "$enableval" = "yes" ; then
     SUFFIX="-$VERSION"
   else
@@ -346,7 +346,7 @@ AC_SUBST(SUFFIX)
 dnl Implement --with-defaults=speed/debug option.
 
 AC_ARG_WITH(defaults,
-[  --with-defaults         set default configure options: speed/debug (default: native malloc + assertions)
+[  --with-defaults         set default configure options: speed/debug [native malloc + assertions]
                           this will set assertion checking and malloc wrapper accordingly
 			  speed = native malloc + no assertions
 			  debug = checking malloc + assertions], [
@@ -372,7 +372,7 @@ dnl Implement --with-malloc=[native|check|slow] option.
 
 AC_MSG_CHECKING(which malloc to use)
 AC_ARG_WITH(malloc,
-[  --with-malloc           select malloc wrapper to use: native/check/slow (default: native)], [
+[  --with-malloc           select malloc wrapper to use: native/check/slow [native]], [
   case "$withval" in
   native) AC_DEFINE(USE_GWMEM_NATIVE)
           AC_MSG_RESULT(native malloc)
@@ -421,7 +421,7 @@ AC_ARG_ENABLE(assertions,
 dnl Implement the --enable-pam option.
 
 AC_ARG_ENABLE(pam,
-[  --enable-pam	          enable pam authentication (default: disabled)], [
+[  --enable-pam	          enable pam authentication [disabled]], [
     if test "$enableval" = "yes"
     then
 	AC_CHECK_LIB(pam, pam_end)
@@ -441,7 +441,7 @@ esac
 dnl Implement --enable-debug option.
 
 AC_ARG_ENABLE(debug,
-[  --enable-debug	  enable non-reentrant debugging for wmls compiler (default: disabled)], [
+[  --enable-debug	  enable non-reentrant debugging for wmls compiler [disabled]], [
   echo enabling WMLScript compiler debugging
   if test -n "$GCC"; then
     CFLAGS="$CFLAGS -Wall"
@@ -453,7 +453,7 @@ AC_ARG_ENABLE(debug,
 dnl Implement --enable-localtime option.
 
 AC_ARG_ENABLE(localtime,
-[  --enable-localtime	  log file time stamps in local time, not GMT (default: enabled)], [
+[  --enable-localtime	  log file time stamps in local time, not GMT [enabled]], [
   if test "$enableval" = yes; then
       echo enabling local time
       AC_DEFINE(LOG_TIMESTAMP_LOCALTIME)
@@ -477,7 +477,7 @@ AC_ARG_ENABLE(mutex-stats,
 dnl --enable-cookies option.
 
 AC_ARG_ENABLE(cookies,
-[  --enable-cookies        enable cookie support for WSP (default: disabled)], [
+[  --enable-cookies        enable cookie support for WSP [disabled]], [
   if test "$enableval" = yes; then
       AC_DEFINE(ENABLE_COOKIES)
   fi
@@ -487,7 +487,7 @@ AC_ARG_ENABLE(cookies,
 dnl --enable-start-stop-daemon option.
 
 AC_ARG_ENABLE(start-stop-daemon,
-[  --enable-start-stop-daemon  compile the start-stop-daemon program], [
+[  --enable-start-stop-daemon  compile the start-stop-daemon program [disabled]], [
   if test "$enableval" = yes; then
      STARTSTOPDAEMONSRC="utils/start-stop-daemon.c"
   fi
@@ -535,7 +535,7 @@ dnl Implement --enable-ssl option.
 
 AC_MSG_CHECKING([whether to compile with SSL support])
 AC_ARG_ENABLE(ssl,
-[  --enable-ssl            enable SSL client and server support (default: enabled)], [
+[  --enable-ssl            enable SSL client and server support [enabled]], [
   if test "$enableval" = no ; then
     AC_MSG_RESULT(disabled)
     ssl=no
@@ -656,7 +656,7 @@ dnl accordingly and enable the usage of the libmysqlclient routines.
 
 AC_MSG_CHECKING([whether to compile with MySQL support])
 AC_ARG_ENABLE(mysql,
-[  --enable-mysql          enable MySQL storage (default: disabled)], [
+[  --enable-mysql          enable MySQL storage [disabled]], [
   if test "$enableval" != yes ; then
     AC_MSG_RESULT(disabled)
 else
@@ -718,7 +718,7 @@ dnl accordingly and enable the usage of the libsdb routines.
 
 AC_MSG_CHECKING([whether to compile with LibSDB support])
 AC_ARG_ENABLE(sdb,
-[  --enable-sdb            enable LibSDB storage (default: disabled)], [
+[  --enable-sdb            enable LibSDB storage [disabled]], [
   if test "$enableval" != yes; then
     AC_MSG_RESULT(disabled)
   else
@@ -749,14 +749,13 @@ dnl Implement the --with-dlr option.
 dnl Checks which external DLR storage should be used. 
 
 AC_ARG_WITH(dlr,
-[  --with-dlr[=TYPE TYPE]  select DLR storage to use: internal/mysql/sdb (default: internal)], 
+[  --with-dlr[=TYPE TYPE]  select DLR storage to use: internal/mysql/sdb [internal]], 
 [ AC_CONFIG_SECTION([Configuring DLR support]) 
-  for myval in $withval
-  do
-      AC_MSG_CHECKING([for DLR storage type $myval])
-      case "$myval" in
+  for myval in $withval; do
+    AC_MSG_CHECKING([for DLR storage type $myval])
+    case "$myval" in
       internal)
-          ;;
+        ;;
       mysql)
         if test "$MYSQL" != "yes"; then
           AC_MSG_ERROR(Option --with-dlr=mysql requires MySQL client support)
@@ -777,7 +776,7 @@ AC_ARG_WITH(dlr,
         AC_MSG_ERROR(Unknown DLR storage support!)
         exit 1 
         ;;
-      esac
+    esac
   done
 ])
 
