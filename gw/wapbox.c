@@ -68,7 +68,9 @@ static Msg *msg_receive(int s) {
 int main(int argc, char **argv) {
 	int bbsocket;
 	Msg *msg;
-	WTPEvent *event;
+	WTPEvent *wtp_event = NULL;
+        WTPMachine *wtp_machine = NULL;
+        WSPEvent *wsp_event = NULL;
 
 	info(0, "WAP box starting up.");
 
@@ -82,14 +84,17 @@ int main(int argc, char **argv) {
 		msg = msg_receive(bbsocket);
 		if (msg == NULL)
 			break;
-		msg_dump(msg);
-		event = wtp_unpack_wdp_datagram(msg);
-                debug(0, "Datagram unpacked");
-                return 0;
-#if 0
-		machine = create_or_find_wtp_machine(event);
-		debug(0, "Ignoring stuff since implementation isn't done.");
-#endif
+		wtp_event = wtp_unpack_wdp_datagram(msg);
+                if (wtp_event == NULL)
+                   continue;
+		wtp_machine = create_or_find_wtp_machine(msg, wtp_event);
+                if (wtp_machine == NULL)
+                   continue;
+                debug(0, "wapbox: returning create machine");
+	        wsp_event = wtp_handle_event(wtp_machine, wtp_event);
+                debug(0,"wapbox: returning handle_event");
+                if (wsp_event == NULL)
+		   continue;
 	}
 	
 	info(0, "WAP box terminating.");

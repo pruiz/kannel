@@ -1,3 +1,8 @@
+1999-11-25  Aarno Syvänen <syvanen@wapit.com>
+
+	*wtp.c: Fixed another bug in the function handle_event. No it generates
+	only one indication, even though it receives many invoke messages.
+
 1999-11-25    <rpr@rpr.wapit.com>
 
 	* gwlib/gwlib.h: added general gwlib header, which includes all
