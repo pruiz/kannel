@@ -20,6 +20,73 @@
 #define SMSCCONN_RECONNECT_DELAY     10.0 
 
 
+/*
+ * Add reroute information to the connection data. Where the priority
+ * is in the order: reroute, reroute-smsc-id, reroute-receiver.
+ */
+static void init_reroute(SMSCConn **conn, CfgGroup *grp)
+{
+    Octstr *rule = NULL;
+    unsigned int i, j;
+
+    if (cfg_get_bool(&(*conn)->reroute, grp, octstr_imm("reroute")) != -1) {
+        debug("smscconn",0,"Adding general internal routing for smsc id <%s>",
+              octstr_get_cstr((*conn)->id));
+        return;
+    }
+
+    if (((*conn)->reroute_to_smsc 
+         = cfg_get(grp, octstr_imm("reroute-smsc-id"))) != NULL) {
+
+         /* reroute all messages to a specific smsc-id */
+         debug("smscconn",0,"Adding internal routing: smsc id <%s> to smsc id <%s>",
+               octstr_get_cstr((*conn)->id), octstr_get_cstr((*conn)->reroute_to_smsc));
+        return;
+    }
+
+    if ((rule = cfg_get(grp, octstr_imm("reroute-receiver"))) != NULL) {
+        List *routes = NULL;
+
+        /* create hash disctionary for this smsc-id */
+        (*conn)->reroute_by_receiver = dict_create(10, (void(*)(void *)) octstr_destroy);
+        
+        routes = octstr_split(rule, octstr_imm(";"));
+        for (i = 0; i < list_len(routes); i++) {
+            Octstr *item = list_get(routes, i);
+            Octstr *smsc = NULL;
+            List *receivers = NULL;
+    
+            /* first word is the smsc-id, all other are the receivers */
+            receivers = octstr_split(item, octstr_imm(","));
+            smsc = list_len(receivers) > 0 ? 
+                octstr_duplicate(list_get(receivers, 0)) : NULL;
+            if (smsc)
+                octstr_strip_blanks(smsc);
+
+            for (j = 0; j < list_len(receivers); j++) {
+                Octstr *n = list_get(receivers, j);
+
+                if (j != 0) {
+                    Octstr *r = octstr_duplicate(n);
+                    octstr_strip_blanks(r);
+                    debug("smscconn",0,"Adding internal routing for smsc id <%s>: "
+                          "receiver <%s> to smsc id <%s>",
+                          octstr_get_cstr((*conn)->id), octstr_get_cstr(r), 
+                          octstr_get_cstr(smsc));
+
+                    dict_put((*conn)->reroute_by_receiver, r, octstr_duplicate(smsc));
+                    octstr_destroy(r);
+                }
+            }
+            octstr_destroy(smsc);
+            list_destroy(receivers, octstr_destroy_item);
+        }
+        octstr_destroy(rule);
+        list_destroy(routes, octstr_destroy_item);
+    }
+}
+
+
 SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
 {
     SMSCConn *conn;
@@ -29,7 +96,7 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
 
     if (grp == NULL)
 	return NULL;
-    
+
     conn = gw_malloc(sizeof(SMSCConn));
 
     conn->why_killed = SMSCCONN_ALIVE;
@@ -37,21 +104,20 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     conn->connect_time = -1;
     conn->load = 0;
     conn->is_stopped = start_as_stopped;
-
     conn->received = counter_create();
     conn->sent = counter_create();
     conn->failed = counter_create();
     conn->flow_mutex = mutex_create();
-
     conn->name = NULL;
-
     conn->shutdown = NULL;
     conn->queued = NULL;
     conn->send_msg = NULL;
     conn->stop_conn = NULL;
     conn->start_conn = NULL;
-
     conn->log_idx = 0;
+    conn->reroute = 0;
+    conn->reroute_to_smsc = NULL;
+    conn->reroute_by_receiver = NULL;
 
 #define GET_OPTIONAL_VAL(x, n) x = cfg_get(grp, octstr_imm(n))
     
@@ -66,15 +132,18 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     GET_OPTIONAL_VAL(conn->our_host, "our-host");
     GET_OPTIONAL_VAL(conn->log_file, "log-file");
     cfg_get_bool(&conn->alt_dcs, grp, octstr_imm("alt-dcs"));
-    
-    if (cfg_get_integer(&conn->log_level, grp, octstr_imm("log-level")) == -1)
-        conn->log_level = 0;
-
+             
     if (cfg_get_integer(&throughput, grp, octstr_imm("throughput")) == -1)
         conn->throughput = 0;   /* defaults to no throughtput limitation */
     else 
         conn->throughput = (int) throughput;
 
+    /* configure the internal rerouting rules for this smsc id */
+    init_reroute(&conn, grp);
+
+    if (cfg_get_integer(&conn->log_level, grp, octstr_imm("log-level")) == -1)
+        conn->log_level = 0;
+   
     /* open a smsc-id specific log-file in exlusive mode */
     if (conn->log_file)
         conn->log_idx = log_open(octstr_get_cstr(conn->log_file), 
@@ -90,40 +159,40 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     
     smsc_type = cfg_get(grp, octstr_imm("smsc"));
     if (smsc_type == NULL) {
-	error(0, "Required field 'smsc' missing for smsc group.");
-	smscconn_destroy(conn);
-	octstr_destroy(smsc_type);
-	return NULL;
+        error(0, "Required field 'smsc' missing for smsc group.");
+        smscconn_destroy(conn);
+        octstr_destroy(smsc_type);
+        return NULL;
     }
 
     if (octstr_compare(smsc_type, octstr_imm("fake")) == 0)
-	ret = smsc_fake_create(conn, grp);
+        ret = smsc_fake_create(conn, grp);
     else if (octstr_compare(smsc_type, octstr_imm("cimd2")) == 0)
 	ret = smsc_cimd2_create(conn, grp);
     else if (octstr_compare(smsc_type, octstr_imm("emi")) == 0)
 	ret = smsc_emi2_create(conn, grp);
     else if (octstr_compare(smsc_type, octstr_imm("http")) == 0)
-	ret = smsc_http_create(conn, grp);
+        ret = smsc_http_create(conn, grp);
     else if (octstr_compare(smsc_type, octstr_imm("smpp")) == 0)
 	ret = smsc_smpp_create(conn, grp);
     else if (octstr_compare(smsc_type, octstr_imm("at")) == 0)
 	ret = smsc_at2_create(conn,grp);
     else if (octstr_compare(smsc_type, octstr_imm("cgw")) == 0)
-	ret = smsc_cgw_create(conn,grp);
+        ret = smsc_cgw_create(conn,grp);
     else if (octstr_compare(smsc_type, octstr_imm("smasi")) == 0)
-	ret = smsc_smasi_create(conn, grp);
+        ret = smsc_smasi_create(conn, grp);
     else
-	ret = smsc_wrapper_create(conn, grp);
+        ret = smsc_wrapper_create(conn, grp);
 
     octstr_destroy(smsc_type);
     if (ret == -1) {
-	smscconn_destroy(conn);
-	return NULL;
+        smscconn_destroy(conn);
+        return NULL;
     }
     gw_assert(conn->send_msg != NULL);
 
     bb_smscconn_ready(conn);
-    
+
     return conn;
 }
 
@@ -170,6 +239,9 @@ int smscconn_destroy(SMSCConn *conn)
     octstr_destroy(conn->unified_prefix);
     octstr_destroy(conn->our_host);
     octstr_destroy(conn->log_file);
+
+    octstr_destroy(conn->reroute_to_smsc);
+    dict_destroy(conn->reroute_by_receiver);
     
     mutex_unlock(conn->flow_mutex);
     mutex_destroy(conn->flow_mutex);
