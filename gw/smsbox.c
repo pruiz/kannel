@@ -171,7 +171,7 @@ static void delayed_http_reply(Msg *msg)
 	  
     uuid_unparse(msg->ack.id, id);
     os = octstr_create(id);
-    debug("sms.http", 0, "Got ACK (%d) of %s", msg->ack.nack, octstr_get_cstr(os));
+    debug("sms.http", 0, "Got ACK (%ld) of %s", msg->ack.nack, octstr_get_cstr(os));
     client = dict_remove(client_dict, os);
     if (client == NULL) {
         debug("sms.http", 0, "No client - multi-send or ACK to pull-reply");

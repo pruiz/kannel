@@ -1,4 +1,8 @@
 2005-01-28  Kalle Marjola  <kmarjola@enpocket.com>
+    * doc/userguide/userguide.xml: added HTTP status codes and contents
+      to sendsms entry
+	
+2005-01-28  Kalle Marjola  <kmarjola@enpocket.com>
     * gw/smsbox.c: in sendsms, wait for bearerbox reply before
       replying to HTTP client. NOTE: compatbility breaker if the
       HTTP client is reading the reply content, plus Kannel can now

@@ -6729,6 +6729,50 @@ username=foo&amp;password=bar&amp;to=0123456&amp;text=Hello+world
 	is stuffed into the URL. If you want to use this often via a
 	browser, you probably want to make an HTML form for this.</para>
 
+  <para>
+     Kannel will answer to sendsms request with following codes and
+     body texts:</para>
+  
+ <table frame="none">
+  <title>SMS Push reply codes</title>
+      <tgroup cols="3"><thead><row>
+             <entry>Status</entry>
+             <entry>Body</entry>
+             <entry>Meaning</entry>
+             </row></thead>
+  <tbody>
+   <row><entry><literal>202</literal></entry>
+   <entry><literal>0: Accepted for delivery</literal></entry>
+   <entry valign="bottom">
+        The message has been accepted and is delivered onward to a SMSC
+        driver. Note that this status does not ensure that the
+        intended recipient receives the message.
+   </entry></row>
+   <row><entry><literal>202</literal></entry>
+   <entry><literal>3: Queued for later delivery</literal></entry>
+   <entry valign="bottom">
+        The bearerbox accepted and stored the message, but there was
+        temporarily no SMSC driver to accept the message so it was
+        queued. However, it should be delivered later on.
+   </entry></row>
+   <row><entry><literal>4xx</literal></entry>
+   <entry>(varies)</entry>
+   <entry valign="bottom">
+        There was something wrong in the request or Kannel was so
+      configured that the message cannot be in any circumstances
+      delivered. Check the request and Kannel configuration.
+   </entry></row>
+   <row><entry><literal>503</literal></entry>
+   <entry><literal>Temporal failure, try again later.</literal></entry>
+   <entry valign="bottom">
+        There was temporal failure in Kannel. Try again later.
+   </entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
+
+
  <table frame="none">
   <title>SMS Push (send-sms) CGI Variables</title>
   <tgroup cols="3">
