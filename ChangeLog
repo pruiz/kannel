@@ -1,4 +1,7 @@
 2002-01-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added 'ota-bookmark' documentation
+
+2002-01-27  Stipe Tolj  <tolj@wapme-systems.de>
     * Incorporated a patch for fixing GSM 7 bit escape issue, 
       submited by "Oded Arbel" <oded@m-wise.com>
       [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B166D19@exchange.m-wise.com>]
