@@ -41,6 +41,12 @@ struct WTPTimer {
 void wtp_timer_init(void);
 
 /*
+ * Shut down all timers. This function MUST be called after timers aren't
+ * needed anymore.
+ */
+void wtp_timer_shutdown(void);
+
+/*
  * Create and initialize a WTPTimer object.
  */
 WTPTimer *wtp_timer_create(void);
@@ -77,7 +83,3 @@ void wtp_timer_check(void);
 void wtp_timer_dump(WTPTimer *timer);
 
 #endif
-
-
-
-

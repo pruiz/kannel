@@ -33,6 +33,12 @@ enum {
 
 void wtp_tid_cache_init(void);
 
+
+/*
+ * Shut down the tid cache. MUST be called after tid cache isn't used anymore.
+ */
+void wtp_tid_cache_shutdown(void);
+
 /*
  * Does the tid validation test, by using a simple window mechanism
  *

@@ -193,7 +193,7 @@ static void wsp_http_map_url(Octstr **osp)
 /* here comes the main processing */
 
 void *wsp_http_thread(void *arg) {
-	char *type, *data;
+	char *type, *data, *aux_type;
 	size_t size;
 	Octstr *body, *input;
 	WSPEvent *e;
@@ -247,6 +247,7 @@ void *wsp_http_thread(void *arg) {
 	wtp_sm = event->S_MethodInvoke_Res.machine;
 	sm = event->S_MethodInvoke_Res.session;
 	wsp_dispatch_event(wtp_sm, event);
+		/* XXX shouldn't this duplicate the event? */
 
 	wsp_http_map_url(&event->S_MethodInvoke_Res.url);
 	url = octstr_get_cstr(event->S_MethodInvoke_Res.url);
@@ -322,19 +323,22 @@ void *wsp_http_thread(void *arg) {
 	if (ret == -1) {
 		error(0, "WSP: http_get failed, oops.");
 		status = 500; /* Internal server error; XXX should be 503 */
-		type = "text/plain";
+		type = gw_strdup("text/plain");
 	} else {
 		info(0, "WSP: Fetched <%s> (%s)", url, type);
 		status = 200; /* OK */
 		
 		if (strchr(type, ';') != NULL) {
 			*strchr(type, ';') = '\0';
-			type = trim_ends(type);
+			aux_type = gw_strdup(trim_ends(type));
+			gw_free(type);
+			type = aux_type;
 			debug("wap.wsp.http", 0, 
 			      "WSP: Type without params: <%s>", type);
 		}
 		
 		input = octstr_create_from_data(data, size);
+		gw_free(data);
 
 		converter_failed = 0;
 		for (i = 0; i < num_converters; ++i) {
@@ -347,7 +351,7 @@ void *wsp_http_thread(void *arg) {
 		}
 
 		if (i < num_converters)
-			type = converters[i].result_type;
+			type = gw_strdup(converters[i].result_type);
 		else if (converter_failed) {
 			status = 500; /* XXX */
 			warning(0, "WSP: All converters for `%s' failed.",
@@ -358,6 +362,7 @@ void *wsp_http_thread(void *arg) {
 			debug("wap.wsp.http", 0, "Content of unsupported content:");
 			octstr_dump(input, 0);
 		}
+		octstr_destroy(input);
 	}
 		
 	if (body == NULL)
@@ -370,8 +375,9 @@ void *wsp_http_thread(void *arg) {
 		status = 413; /* XXX requested entity too large */
 		warning(0, "WSP: Entity at %s too large (size %lu B, limit %lu B)",
 			url, body_size, client_SDU_size);
+                octstr_destroy(body);
 		body = NULL;
-		type = "text/plain";
+		type = gw_strdup("text/plain");
 	}
 
 	e = wsp_event_create(S_MethodResult_Req);
@@ -383,6 +389,11 @@ void *wsp_http_thread(void *arg) {
 	e->S_MethodResult_Req.machine = event->S_MethodInvoke_Res.machine;
 
 	wsp_dispatch_event(event->S_MethodInvoke_Res.machine, e);
+
+#if 0
+	wsp_event_destroy(event);
+#endif
+	gw_free(type);
 
 	return NULL;
 }
@@ -486,19 +497,8 @@ error:
 static Octstr *convert_wml_to_wmlc(Octstr *wml, char *url) {
 	Octstr *wmlc;
 	int ret;
-#if 0
-	static Mutex *kludge = NULL;
-	
-	/* XXX This initializion code isn't thread safe, but ignore. */
-	if (kludge == NULL)
-		kludge = mutex_create();
-	mutex_lock(kludge);
-#endif
 
 	ret = wml_compile(wml, &wmlc);
-#if 0
-	mutex_unlock(kludge);
-#endif
 	if (ret == 0)
 		return wmlc;
 	warning(0, "WSP: WML compilation failed.");

@@ -1,3 +1,49 @@
+Sat Apr  8 22:31:45 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/smsbox.c: Added informational message that smsbox is
+	terminating.
+
+	* gw/wapbox.c: Added more destruction and freeing things to end of
+	main. This helps debugging memory leaks.
+
+	* gw/wtp.h, gw/wtp_tid.h, gw/wtp_timer.h, gw/wtp_timer.c: Added
+	shutdown functions.
+
+	* test/wml_tester.c: Added call to gw_check_leaks to help debug
+	memory leaks (none found in WML compiler, however).
+
+	* gw/wsp.h, gw/wsp.c: Removed `next' element of WSPEvent structure,
+	since it was unused. Also added a wsp_event_duplicate function.
+
+	* gw/wsp.c: Really implemented wsp_machine_destroy. It's now used
+	by the wsp_shutdown function, the client_port element is still set
+	to -1 to signal an unused WSPMachine.
+
+	* gw/wsp_http.c: Memory leak fixes. The type string returned by
+	http_get_u is now freed, as is the data it returns and the Octstr
+	copy made of it.
+
+	* gw/wtp.c: Memory leak fixes. Implemented wtp_machine_destroy as
+	a static function. Changed initializations of OCTSTR and WSP_EVENT
+	type fields in WTPMachine so that empty things aren't allocated
+	unnecessarily (and then leaked by overwriting the pointer without
+	freeing the always unused empty things allocated).
+
+	* gw/wtp_send.c: Possible memory leak fixes (though not necessarily
+	actual, but that might be a problem in my testing): destroy Octstrs
+	before overwriting the pointer with a new one.
+
+	* gw/wtp_state-decl.h: Memory leak fixes: freeing things before
+	overwriting the pointer to them. In some cases not allocating
+	a thing that isn't going to be used at all.
+
+	* gwlib/http.c: Memory leak fixes.
+
+	* gwlib/octstr.[ch]: Commented out octstr_search_str since it isn't
+	being used and seems suspicious. Also fixed seems_valid_real to
+	report the name of the function as the name of the function instead
+	of reporting the name of the file as the name of the function.
+
 2000-04-08  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/gwassert.h: Updated NDEBUG version of gw_asswert_place

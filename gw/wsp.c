@@ -108,7 +108,9 @@ WSPEvent *wsp_event_create(WSPEventType type) {
 	
 	event = gw_malloc(sizeof(WSPEvent));
 	event->type = type;
+#if 0
 	event->next = NULL;
+#endif
 
 	#define INTEGER(name) p->name = 0
 	#define OCTSTR(name) p->name = NULL
@@ -120,6 +122,36 @@ WSPEvent *wsp_event_create(WSPEventType type) {
 	#include "wsp_events-decl.h"
 
 	return event;
+}
+
+
+WSPEvent *wsp_event_duplicate(WSPEvent *event) {
+	WSPEvent *copy;
+	
+	copy = gw_malloc(sizeof(WSPEvent));
+	copy->type = event->type;
+
+	#define INTEGER(name) p->name = q->name
+	#define OCTSTR(name) p->name = octstr_duplicate(q->name)
+	#define WTP_MACHINE(name) p->name = q->name
+	#define SESSION_MACHINE(name) p->name = q->name
+	#define WSP_EVENT(name, fields) \
+		{ struct name *p = &copy->name; \
+		  struct name *q = &event->name; \
+		  fields }
+	#define HTTPHEADER(name) \
+		{ HTTPHeader *hh, *h = q->name; \
+		  p->name = NULL; \
+		  while (h != NULL) { \
+		    hh = header_create(h->key, h->value); \
+		    hh->next = p->name; \
+		    p->name = hh; \
+		    h = h->next; \
+		  } \
+		}
+	#include "wsp_events-decl.h"
+
+	return copy;
 }
 
 
@@ -236,8 +268,19 @@ WSPMachine *wsp_machine_create(void) {
 }
 
 
-void wsp_machine_destroy(WSPMachine *machine) {
-	machine->client_port = -1;
+void wsp_machine_destroy(WSPMachine *p) {
+	#define MUTEX(name) mutex_destroy(p->name);
+	#define INTEGER(name) p->name = 0;
+	#define OCTSTR(name) octstr_destroy(p->name);
+	#define METHOD_POINTER(name) p->name = NULL;
+	#define EVENT_POINTER(name) p->name = NULL;
+	#define SESSION_POINTER(name) p->name = NULL;
+	#define HTTPHEADER(name) header_destroy_all(p->name);
+	#define LIST(name) list_destroy(p->name);
+	#define SESSION_MACHINE(fields) fields
+	#define METHOD_MACHINE(fields)
+	#include "wsp_machine-decl.h"
+	gw_free(p);
 }
 
 
@@ -319,6 +362,9 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 		}
 
 	end:
+#if 0
+		wsp_event_destroy(current_event);
+#endif
 		current_event = remove_from_event_queue(sm);
 	} while (current_event != NULL);
 	

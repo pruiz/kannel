@@ -490,6 +490,8 @@ int main(int argc, char **argv)
 
     main_loop();
 
+    info(0, "Smsbox terminating.");
+
     mutex_destroy(socket_mutex);
     urltrans_destroy(translations);
     config_destroy(cfg);

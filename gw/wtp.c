@@ -102,6 +102,7 @@ static Segments *segments = NULL;
  */
 
 static WTPMachine *wtp_machine_create_empty(void);
+static void wtp_machine_destroy(WTPMachine *sm);
 
 /*
  * Functions for handling segments
@@ -227,7 +228,7 @@ WTPEvent *wtp_event_create(enum event_name type) {
 	event->next = NULL;
 	
 	#define INTEGER(name) p->name = 0
-	#define OCTSTR(name) p->name = octstr_create_empty()
+	#define OCTSTR(name) p->name = NULL
 	#define EVENT(type, field) { struct type *p = &event->type; field } 
 	#include "wtp_events-decl.h"
         return event;
@@ -618,6 +619,14 @@ void wtp_init(void) {
      segments = segment_lists_create_empty();
 }
 
+void wtp_shutdown(void) {
+     while (list_len(machines) > 0)
+	wtp_machine_destroy(list_extract_first(machines));
+     list_destroy(machines);
+     segment_lists_destroy(segments);
+     mutex_destroy(wtp_tid_lock);
+}
+
 /*****************************************************************************
  *
  * INTERNAL FUNCTIONS:
@@ -706,8 +715,8 @@ static WTPMachine *wtp_machine_create_empty(void){
         #define INTEGER(name) machine->name = 0
         #define ENUM(name) machine->name = LISTEN
         #define MSG(name) machine->name = msg_create(wdp_datagram)
-        #define OCTSTR(name) machine->name = octstr_create_empty()
-        #define WSP_EVENT(name) machine->name = wsp_event_create(TR_Invoke_Ind)
+        #define OCTSTR(name) machine->name = NULL
+        #define WSP_EVENT(name) machine->name = NULL
         #define MUTEX(name) machine->name = mutex_create()
         #define TIMER(name) machine->name = wtp_timer_create()
         #define NEXT(name) machine->name = NULL
@@ -718,6 +727,25 @@ static WTPMachine *wtp_machine_create_empty(void){
 	list_append(machines, machine);
 
         return machine;
+}
+
+/*
+ * Destroys a WTPMachine. Assumes it is safe to do so. Assumes it has already
+ * been deleted from the machines list.
+ */
+static void wtp_machine_destroy(WTPMachine *machine){
+        #define INTEGER(name) machine->name = 0
+        #define ENUM(name) machine->name = LISTEN
+        #define MSG(name) msg_destroy(machine->name)
+        #define OCTSTR(name) octstr_destroy(machine->name)
+        #define WSP_EVENT(name) machine->name = NULL
+        #define MUTEX(name) mutex_destroy(machine->name)
+        #define TIMER(name) wtp_timer_destroy(machine->name)
+        #define NEXT(name) machine->name = NULL
+        #define MACHINE(field) field
+	#define LIST(name) list_destroy(machine->name)
+        #include "wtp_machine-decl.h"
+	gw_free(machine);
 }
 
 /*
@@ -1231,6 +1259,7 @@ static WTPEvent *unpack_invoke_flags(WTPEvent *event, Msg *msg, long tid,
 
          tcl = this_octet&3; 
          if (tcl > NUMBER_OF_TRANSACTION_CLASSES-1){
+/* XXX this is a potential memory leak, yes? --liw */
             event = tell_about_error(illegal_header, event, msg, tid);
             return event;
          }
@@ -1263,6 +1292,7 @@ static WTPSegment *add_segment_to_message(long tid, Octstr *data, unsigned char
        segments_list = create_segment();
        segments_list->tid = tid;
        segments_list->packet_sequence_number = position;
+       octstr_destroy(segments_list->data);
        segments_list->data = data;
 
        if (first == NULL){

@@ -62,5 +62,6 @@ int main(int argc, char **argv)
 
   octstr_destroy(wml_text);
   octstr_destroy(wml_binary);
+  gw_check_leaks();
   return ret;
 }

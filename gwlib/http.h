@@ -161,6 +161,8 @@ void header_dump(HTTPHeader *hdr);
  */
 HTTPHeader *header_destroy(HTTPHeader *header);
 
+void header_destroy_all(HTTPHeader *header);
+
 /***************************************************************
  * pack the header by combining all similar headers, i.e.
  * Accept-language: en Accept-language: fi -> Accept-language: en, fi

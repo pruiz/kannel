@@ -19,6 +19,7 @@
 #include "wtp_timer.h"
 #include "bb.h"
 
+static Config *cfg = NULL;
 static char *bearerbox_host = BB_DEFAULT_HOST;
 static int bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static int heartbeat_freq = BB_DEFAULT_HEARTBEAT;
@@ -47,7 +48,6 @@ static enum {
 static int map_url_max = 9;
 
 static void read_config(char *filename) {
-	Config *cfg;
 	ConfigGroup *grp;
 	char *s;
 	int i;
@@ -171,6 +171,13 @@ static List *queue = NULL;
 void init_queue(void) {
         gw_assert(queue == NULL);
 	queue = list_create();
+}
+
+
+static void destroy_queue(void) {
+	while (list_len(queue) > 0)
+		msg_destroy(list_extract_first(queue));
+	list_destroy(queue);
 }
 
 
@@ -332,7 +339,12 @@ int main(int argc, char **argv) {
 	list_remove_producer(queue);
 
 	info(0, "WAP box terminating.");
+	destroy_queue();
+	wtp_shutdown();
 	wsp_shutdown();
+	wtp_timer_shutdown();
+	wtp_tid_cache_shutdown();
+	config_destroy(cfg);
 	gw_check_leaks();
 	return 0;
 }

@@ -65,6 +65,10 @@ void wtp_tid_cache_init(void) {
      tid_cache.lock = mutex_create();
 }
 
+void wtp_tid_cache_shutdown(void) {
+     mutex_destroy(tid_cache.lock);
+}
+
 /*
  * Tid verification is invoked, when tid_new flag of the incoming message is 
  * on. It is not, if the iniator is not yet cached. If iniator is cached, the
@@ -257,8 +261,10 @@ static void add_tid(WTPMachine *machine, long tid){
        WTPCached_tid *new_item = NULL;
        
        new_item = cache_item_create_empty(); 
+       octstr_destroy(new_item->source_address);
        new_item->source_address = octstr_duplicate(machine->source_address);
        new_item->source_port = machine->source_port;
+       octstr_destroy(new_item->destination_address);
        new_item->destination_address = 
                  octstr_duplicate(machine->destination_address);
        new_item->destination_port = machine->destination_port;

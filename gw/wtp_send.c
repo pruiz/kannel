@@ -293,6 +293,7 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
  * are the rid field (which tells are we resending or not), and the tid.
  */  
  
+    octstr_destroy(msg->wdp_datagram.user_data);
     msg->wdp_datagram.user_data = 
          octstr_duplicate(event->TR_Result_Req.user_data);
     
@@ -326,6 +327,7 @@ static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason,
        wtp_pdu = gw_malloc(pdu_len);
        octet = 0;
 
+       octstr_destroy(msg->wdp_datagram.user_data);
        msg->wdp_datagram.user_data = octstr_create_empty();
 
        octet = insert_pdu_type(ABORT, octet);
@@ -355,6 +357,7 @@ static Msg *pack_stop(Msg *msg, long abort_type, long abort_reason, int tid){
        wtp_pdu = gw_malloc(pdu_len);
        octet = 0;
 
+       octstr_destroy(msg->wdp_datagram.user_data);
        msg->wdp_datagram.user_data = octstr_create_empty();
 
        octet = insert_pdu_type(ABORT, octet);
@@ -391,6 +394,7 @@ static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine,
 
     insert_tid(wtp_pdu, machine->tid);
 
+    octstr_destroy(msg->wdp_datagram.user_data);
     msg->wdp_datagram.user_data = octstr_create_empty();
     octstr_insert_data(msg->wdp_datagram.user_data, first_byte, wtp_pdu, fourth_byte);
 
@@ -423,6 +427,7 @@ static Msg *pack_negative_ack(Msg *msg, int tid, int retransmission_status,
 
        insert_missing_segments_list(wtp_pdu, missing_segments);
 
+       octstr_destroy(msg->wdp_datagram.user_data);
        msg->wdp_datagram.user_data = octstr_create_empty();
        octstr_insert_data(msg->wdp_datagram.user_data, first_byte, wtp_pdu, 
                           segments_missing + 4);
@@ -463,6 +468,7 @@ static Msg *pack_group_ack(Msg *msg, int tid, int retransmission_status,
 
        wtp_pdu[5] = packet_sequence_number;
 
+       octstr_destroy(msg->wdp_datagram.user_data);
        msg->wdp_datagram.user_data = octstr_create_empty();
        octstr_insert_data(msg->wdp_datagram.user_data, first_byte, wtp_pdu, 5);
 

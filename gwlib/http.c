@@ -324,7 +324,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,
     for(;;){
 	if(header == NULL)break;
 	httprequest_replace_header(request, header->key, header->value);
-	header = header->next;
+	header = header_destroy(header);
     }
     
     
@@ -1385,6 +1385,13 @@ HTTPHeader *header_destroy(HTTPHeader *hdr)
 
 	return next;
     }
+}
+
+
+void header_destroy_all(HTTPHeader *hdr)
+{
+	while (hdr != NULL)
+		hdr = header_destroy(hdr);
 }
 
  

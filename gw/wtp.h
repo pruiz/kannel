@@ -159,6 +159,12 @@ struct WTPSegment {
 void wtp_init(void);
 
 /*
+ * Shut down the WTP subsystem. MUST be called after the subsystem isn't
+ * used anymore.
+ */
+void wtp_shutdown(void);
+
+/*
  * Create a WTPEvent structure and initialize it to be empty. Return a
  * pointer to the structure or NULL if there was a failure.
  */

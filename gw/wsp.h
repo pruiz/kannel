@@ -56,7 +56,9 @@ typedef enum {
 
 struct WSPEvent {
 	WSPEventType type;
+#if 0
 	WSPEvent *next;
+#endif
 
 	#define INTEGER(name) int name
 	#define OCTSTR(name) Octstr *name
@@ -116,6 +118,12 @@ void wsp_shutdown(void);
  * pointer to the structure or NULL if there was a failure.
  */
 WSPEvent *wsp_event_create(WSPEventType type);
+
+
+/*
+ * Duplicate a WSPEvent structure.
+ */
+WSPEvent *wsp_event_duplicate(WSPEvent *event);
 
 
 /*

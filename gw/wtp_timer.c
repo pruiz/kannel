@@ -199,6 +199,13 @@ void wtp_timer_dump(WTPTimer *timer){
 	list_unlock(timers);
 }
 
-void wtp_timer_init(void){
+void wtp_timer_init(void) {
 	timers = list_create();
+}
+
+
+void wtp_timer_shutdown(void) {
+	while (list_len(timers) > 0)
+		wtp_timer_destroy(list_extract_first(timers));
+	list_destroy(timers);
 }

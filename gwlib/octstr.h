@@ -223,7 +223,9 @@ int octstr_search_char_from(Octstr *ostr, int ch, long pos);
  * Search the string from octet string. Returns the start position (index) of
  * the substring, -1 if not found.
  */
+#if 0
 int octstr_search_str(Octstr *ostr, char *str) ;
+#endif
 
 
 /*

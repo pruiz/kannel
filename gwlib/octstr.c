@@ -499,6 +499,7 @@ int octstr_search_char_from(Octstr *ostr, int ch, long pos) {
 
 
 
+#if 0
 int octstr_search_str(Octstr *ostr, char *str) {
 	long pos_a, pos_b = 0, len_c = 0, len_o =0, a=0, b=0; 
 	Octstr *char_to_oct = NULL;
@@ -507,7 +508,8 @@ int octstr_search_str(Octstr *ostr, char *str) {
 	gw_assert(str != NULL);
 
 	len_o = octstr_len(ostr);
-	len_c = octstr_len( char_to_oct = octstr_create(str) );
+	char_to_oct = octstr_create(str);
+	len_c = octstr_len(char_to_oct);
 	/* XXX the above is a memory leak --liw */
 	
 	for (pos_a = 0; pos_a < len_o; pos_a++) {
@@ -530,6 +532,7 @@ int octstr_search_str(Octstr *ostr, char *str) {
 	/* string wasn't there*/
 	return -1;
 }
+#endif
 
 
 
@@ -1018,22 +1021,22 @@ error:
 static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
 const char *function) {
 	gw_assert_place(ostr != NULL, 
-		filename, lineno, filename);
+		filename, lineno, function);
 	gw_assert_place(ostr->len >= 0,
-		filename, lineno, filename);
+		filename, lineno, function);
 	gw_assert_place(ostr->size >= 0,
-		filename, lineno, filename);
+		filename, lineno, function);
 	if (ostr->size == 0) {
 		gw_assert_place(ostr->len == 0,
-			filename, lineno, filename);
+			filename, lineno, function);
 		gw_assert_place(ostr->data == NULL, 
-			filename, lineno, filename);
+			filename, lineno, function);
 	} else {
 		gw_assert_place(ostr->len + 1 <= ostr->size, 
-			filename, lineno, filename);
+			filename, lineno, function);
 		gw_assert_place(ostr->data != NULL,
-			filename, lineno, filename);
+			filename, lineno, function);
 		gw_assert_place(ostr->data[ostr->len] == '\0',
-			filename, lineno, filename);
+			filename, lineno, function);
 	}
 }
