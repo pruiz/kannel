@@ -111,8 +111,16 @@ AC_CHECK_FUNCS(gettimeofday select socket strdup getopt_long localtime_r gmtime_
 AC_CHECK_FUNC(getopt, , LIBOBJS="$LIBOBJS utils/attgetopt.o")
 AC_SUBST(LIBOBJS)
 
-dnl check if we have reentrant gethostbyname and wich
-AC_FUNC_WHICH_GETHOSTBYNAME_R
+dnl Check if we have reentrant gethostbyname and which one
+dnl Unfortunatly Cygwin seems to get trapped in the checking, so avoid
+case "$host" in
+  *-cygwin*)
+    ac_cv_func_which_gethostname_r="no"
+    ;;
+  *) 
+    AC_FUNC_WHICH_GETHOSTBYNAME_R
+    ;;
+esac
 
 if test "$ac_cv_func_which_gethostname_r" = "no" ; then
     dnl no gethostbyname_r found try to find gethostbyname
