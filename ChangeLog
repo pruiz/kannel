@@ -1,4 +1,7 @@
 2002-12-02  Stipe Tolj  <tolj@wapme-systems.de>
+    * test/wapproxy.c: added our wap packet proxy debugging tool to kannel
+
+2002-12-02  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_emi2.c, gwlib/http.h, gwlib/charset.h: fixed some minor
       compiler warnings.
 
