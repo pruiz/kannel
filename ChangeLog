@@ -1,4 +1,7 @@
 2003-10-11  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/sms.c: hmm, seems some of us don't know, what a pointers are for :)
+
+2003-10-11  Alexander Malysh  <a.malysh@centrium.de>
     * gw/dlr_sdb.c: fixed bug #87.
 
 2003-10-10  Stipe Tolj  <tolj@wapme-systems.de>

@@ -144,10 +144,8 @@ int sms_swap(Msg *msg)
     Octstr *sender = NULL;
 
     if (msg->sms.sender != NULL && msg->sms.receiver != NULL) {
-        sender = octstr_duplicate(msg->sms.sender);
-        octstr_destroy(msg->sms.sender);
-        msg->sms.sender = octstr_duplicate(msg->sms.receiver);
-        octstr_destroy(msg->sms.receiver);
+        sender = msg->sms.sender;
+        msg->sms.sender = msg->sms.receiver;
         msg->sms.receiver = sender;
 
         return 1;
