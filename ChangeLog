@@ -1,3 +1,9 @@
+Sat Apr 22 02:57:22 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* test/run-http2-tests, test/test_http.c: Added -s option to
+	old HTTP tester as well, and made test/run-http2-tests compare
+	the results of the old and new ones as well as lynx.
+
 Sat Apr 22 02:40:38 2000  Lars Wirzenius  <liw@wapit.com>
 
 	*  gwlib/http2.[ch]: Wrote. This is the beginning of the new
