@@ -1,5 +1,9 @@
 2001-04-10  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/bb_store.c: Bugfix: comprasion was wrong way around...
+	
+2001-04-10  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bb_store.c: Updated to use double-memory buffering and to do
 	frequent dumps out of that data. Now it is fast and does not take
 	much disk space. Interval is currently fixed (5 secs), and there

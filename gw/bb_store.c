@@ -28,7 +28,7 @@ extern List *flow_threads;
 
 
 /* growing number to be given to messages */
-static int msg_id = 1;
+static Counter *msg_id;
 
 static FILE *file = NULL;
 static Octstr *filename = NULL;
@@ -114,16 +114,16 @@ static int do_dump(void)
 
 
 static int cmp_msgs(void *item, void *pattern) {
-    Msg *sms, *ack;
+    Msg *smsm, *ackm;
 
-    ack = pattern;
-    sms = item;
+    ackm = pattern;
+    smsm = item;
 
-    if (   ack->ack.time == sms->sms.time
-	&& ack->ack.id == sms->sms.id)
-	return 0;
+    if (   ackm->ack.time == smsm->sms.time
+	&& ackm->ack.id == smsm->sms.id)
+	return 1;
     else
-	return -1;
+	return 0;
 }
 
 
@@ -149,6 +149,9 @@ static void store_cleanup(void *arg)
 		    "from store, strange?");
 	    continue;
 	}
+	if (list_len(match) > 1)
+	    warning(0, "bb-store cleanup: Found %ld matches!?",
+		    list_len(match));
 	list_destroy(match, msg_destroy_item);
 
 	now = time(NULL);
@@ -168,7 +171,8 @@ static void store_cleanup(void *arg)
     octstr_destroy(newfile);
     octstr_destroy(bakfile);
     mutex_destroy(file_mutex);
-
+    counter_destroy(msg_id);
+    
     list_destroy(ack_store, msg_destroy_item);
     list_destroy(sms_store, msg_destroy_item);
 
@@ -193,11 +197,10 @@ int store_save(Msg *msg)
 	return 0;
 
     if (msg_type(msg) == sms) {
-	msg->sms.id = msg_id;
-	if (msg_id == 1000000)   /* limit to 1,000,000 distinct msg/s */
-	    msg_id = 1;
-	else
-	    msg_id++;
+	msg->sms.id = counter_increase(msg_id);
+	if (counter_value(msg_id) >= 1000000)   /* limit to 1,000,000
+						 * distinct msg/s */
+	    counter_set(msg_id, 1);
 
 	copy = msg_duplicate(msg);
 	list_produce(sms_store, copy);
@@ -380,6 +383,8 @@ int store_init(Octstr *fname)
     newfile = octstr_format("%s.new", octstr_get_cstr(filename));
     bakfile = octstr_format("%s.bak", octstr_get_cstr(filename));
 
+    msg_id = counter_create();
+    counter_set(msg_id, 1);
     sms_store = list_create();
     ack_store = list_create();
 
