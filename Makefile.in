@@ -254,7 +254,7 @@ install-docs:
 	done
 clean:
 	rm -f */*.o *.a core $(progs) $(testprogs) $(checkprogs) $(docs)
-	rm -f $(figs) $(docs)
+	rm -f $(figs) $(ps) $(docs)
 	rm -f $(benchoutputs)
 
 distclean: clean
