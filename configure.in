@@ -31,6 +31,7 @@ AC_PROG_INSTALL
 AC_PROG_RANLIB
 AC_PROG_YACC
 AC_PROG_LEX
+AC_PATH_PROG(CONVERT, convert)
 AC_PATH_PROG(PERL, perl)
 
 dnl Checks for libraries.
@@ -182,6 +183,7 @@ AC_CHECK_PROG(JADE, jade, jade, :)
 AC_CHECK_PROG(JADETEX, jadetex, jadetex, :)
 AC_CHECK_PROG(DVIPS, dvips, dvips, :)
 AC_CHECK_PROG(FIG2DEV, fig2dev, fig2dev, :)
+AC_CHECK_PROG(CONVERT, convert, convert, :)
 AC_CHECK_PROG(PS2PDF, ps2pdf, ps2pdf, :)
 AC_SUBST(HTML_DSL)
 for file in /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/html/docbook.dsl \
@@ -234,7 +236,7 @@ else
 fi
 
 AC_ARG_ENABLE(docs,
-[  --enable-docs           enable building of documentation], [
+[  --enable-docs           enable building of documentation (default: enabled)], [
   if test "$enableval" = "yes"
   then
       DOCSTARGET="docs"
@@ -251,8 +253,7 @@ esac
 dnl Implement the --enable-pam option.
 
 AC_ARG_ENABLE(pam,
-[  --enable-pam	          enable pam authentication
-  --disable-pam	          disable pam authentication ], [
+[  --enable-pam	          enable pam authentication (default: disabled)], [
     if test "$enableval" = "yes"
     then
 	AC_CHECK_LIB(pam, pam_end)
@@ -265,14 +266,14 @@ AC_ARG_ENABLE(pam,
 ])
 case "$PAMTARGET" in
 no-pam) echo pam authentication is disabled. ;;
-pam) echo pam authetication is enabled. ;;
+pam) echo pam authentication is enabled. ;;
 esac
 
 
 dnl Implement --enable-debug option.
 
 AC_ARG_ENABLE(debug,
-[  --enable-debug	  enable non-reentrant debugging for wmls compiler], [
+[  --enable-debug	  enable non-reentrant debugging for wmls compiler (default: disabled)], [
   echo enabling WMLScript compiler debugging
   if test -n "$GCC"; then
     CFLAGS="$CFLAGS -Wall"
@@ -284,8 +285,9 @@ AC_ARG_ENABLE(debug,
 dnl Implement --enable-localtime option.
 
 AC_ARG_ENABLE(localtime,
-[  --enable-localtime	  log file time stamps in local time, not GMT], [
+[  --enable-localtime	  log file time stamps in local time, not GMT (default: disabled)], [
   if test "$enableval" = yes; then
+      echo enabling local time
       AC_DEFINE(LOG_TIMESTAMP_LOCALTIME)
   fi
 ])
@@ -364,32 +366,37 @@ AC_SUBST(STARTSTOPDAEMONSRC)
 
 dnl --disable-ssl option.
 
+SSL="ssl"
+
 AC_ARG_ENABLE(ssl,
-[  --disable-ssl  disable support for ssl and https], [
-  echo Disabling SSL support.
-], [
+[  --enable-ssl  enable support for ssl and https (default: enabled)], [
+  if test "$enableval" = no ; then
+    echo Disabling SSL support.
+	  SSL="no-ssl";
+	fi
+])
+
+if test "x$SSL" = "xssl" ; then
   echo Attempting to compile with SSL support.
   AC_CHECK_LIB(ssl, SSL_library_init,
   [ AC_MSG_CHECKING(whether the OpenSSL library is multithread-enabled)
     AC_TRY_RUN([ #define OPENSSL_THREAD_DEFINES
-		 #include <openssl/opensslconf.h>
-		 int main(void) {
-		 #if defined(THREADS)
-		  exit(0);
-		 #else
-		  exit(1);
-		 #endif
-		 }
-	      ], echo yes;AC_DEFINE(HAVE_LIBSSL) 
+                 #include <openssl/opensslconf.h>
+                 int main(void) {
+                 #if defined(THREADS)
+                  exit(0);
+                 #else
+                  exit(1);
+                 #endif
+                 }
+              ], echo yes;AC_DEFINE(HAVE_LIBSSL)
               LIBS="$LIBS -lssl",
-	      echo no;echo Either get a multithread-enabled SSL or configure with --disable-ssl;
-	      exit 1,
-	      echo "Cross-compiling; make sure your SSL library is multithread-enabled"
+              echo no;echo Either get a multithread-enabled SSL or configure with --disable-ssl;
+              exit 1,
+              echo "Cross-compiling; make sure your SSL library is multithread-enabled"
               )
   ])
-])
-
-
+fi
 
 dnl Final Output
 

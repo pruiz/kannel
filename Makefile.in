@@ -82,6 +82,7 @@ JADE=@JADE@
 JADETEX=@JADETEX@
 DVIPS=@DVIPS@
 FIG2DEV=@FIG2DEV@
+CONVERT=@CONVERT@
 PS2PDF=@PS2PDF@
 
 HTML_DSL=@HTML_DSL@
@@ -157,26 +158,35 @@ man1pages = utils/seewbmp.1 wmlscript/wmlsc.1 wmlscript/wmlsdasm.1
 man8pages = gw/kannel.8 utils/run_kannel_box.8
 
 docsrcs = $(wildcard grep -l '<!DOCTYPE ' doc/*/*.xml)
-docs = $(docsrcs:.xml=.html) $(docsrcs:.xml=.ps) $(docsrcs:.xml=.pdf)
+docs = $(docsrcs:.xml=.html) $(docsrcs:.xml=.rtf) $(docsrcs:.xml=.ps) $(docsrcs:.xml=.pdf)
 DOCSTARGET=@DOCSTARGET@
 
-figsrcs = $(wildcard doc/*/*.fig)
+pssrcs = $(wildcard doc/alligata/*.png doc/wtls/*.png)
+ps = $(pssrcs:.png=.ps)  
+
+figsrcs = $(wildcard doc/userguide/*.fig doc/arch/*.fig)
 figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 
 
-.SUFFIXES: $(SUFFIXES) .xml .html .ps .fig .png .y .c .o .pdf
+.SUFFIXES: $(SUFFIXES) .xml .html .rtf .ps .fig .png .y .c .o .pdf
 
 .xml.html:
-	sed "s/#FIGTYPE#/.png/;s/#VERSION#/`head -1 VERSION`/" $< > $*.tmp
-	jade -V nochunks -t sgml -d $(HTML_DSL) $*.tmp > $@
+	sed "s/#FIGTYPE#/.png/;s/#VERSION#/`head -1 VERSION`/;s/#DATE#/`date +%Y.%m.%d`/" $< > $*.tmp
+	${JADE} -V nochunks -t sgml -d $(HTML_DSL) $*.tmp > $@
+	rm -f $*.tmp
+
+.xml.rtf:
+	sed "s/#FIGTYPE#/.ps/;s/#VERSION#/`head -1 VERSION`/;s/#DATE#/`date +%Y.%m.%d`/" $< > $*.tmp
+	cd `dirname $<` && $(JADE) -o `basename $*`.rtf -t rtf -d $(TEX_DSL) `basename $*`.tmp
 	rm -f $*.tmp
 
 .xml.ps:
-	sed "s/#FIGTYPE#/.ps/;s/#VERSION#/`head -1 VERSION`/" $< > $*.tmp
-	jade -o $*.tex -t tex -d $(TEX_DSL) $*.tmp
-	cd `dirname $<` && jadetex `basename $*`.tex >/dev/null
-	cd `dirname $<` && jadetex `basename $*`.tex >/dev/null
-	cd `dirname $<` && jadetex `basename $*`.tex >/dev/null
+	sed "s/#FIGTYPE#/.ps/;s/#VERSION#/`head -1 VERSION`/;s/#DATE#/`date +%Y.%m.%d`/" $< > $*.tmp
+	$(JADE) -o $*.tex -t tex -d $(TEX_DSL) $*.tmp
+	echo Check `dirname $<`/`basename $*`.log for errors
+	cd `dirname $<` && $(JADETEX) `basename $*`.tex >/dev/null || /bin/true
+	cd `dirname $<` && $(JADETEX) `basename $*`.tex >/dev/null || /bin/true
+	cd `dirname $<` && $(JADETEX) `basename $*`.tex >/dev/null
 	cd `dirname $<` && dvips -q -o `basename $*`.ps `basename $*`.dvi
 	rm -f $*.dvi $*.tex $*.aux $*.log $*.tmp
 
@@ -184,10 +194,13 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 	$(PS2PDF) $< $@
 
 .fig.png:
-	fig2dev -Lpng $< $@
+	$(FIG2DEV) -Lpng $< $@
 
 .fig.ps:
-	fig2dev -Lps $< $@
+	$(FIG2DEV) -Lps $< $@
+
+.png.ps:
+	$(CONVERT) $< $@
 
 .y.c:
 	$(YACC) $(YFLAGS) $< && mv y.tab.c $*.c
@@ -201,9 +214,10 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 all: progs tests $(checkprogs) $(DOCSTARGET)
 progs: $(progs)
 tests: $(testprogs)
-docs: figs $(docs)
+docs: figs ps $(docs)
 no-docs:
 figs: $(figs)
+ps: $(ps)
 
 check: all
 	utils/run-checks $(checks)
@@ -230,11 +244,14 @@ install: all
 	$(INSTALL) $(man8pages) $(DESTDIR)$(mandir)/man8
 
 install-docs:
-	$(INSTALL) -d $(DESTDIR)$(docdir)/userguide
-	$(INSTALL) doc/userguide/userguide.ps $(DESTDIR)$(docdir)/userguide
-	$(INSTALL) doc/userguide/userguide.html $(DESTDIR)$(docdir)/userguide
-	$(INSTALL) doc/userguide/*.png $(DESTDIR)$(docdir)/userguide
-
+	for docfile in userguide alligata wtls ; do \
+		$(INSTALL) -d $(DESTDIR)$(docdir)/$$docfile ; \
+		$(INSTALL) doc/$$docfile/$$docfile.ps $(DESTDIR)$(docdir)/$$docfile ; \
+		$(INSTALL) doc/$$docfile/$$docfile.html $(DESTDIR)$(docdir)/$$docfile ; \
+		$(INSTALL) doc/$$docfile/$$docfile.rtf $(DESTDIR)$(docdir)/$$docfile ; \
+		$(INSTALL) doc/$$docfile/$$docfile.pdf $(DESTDIR)$(docdir)/$$docfile ; \
+		$(INSTALL) doc/$$docfile/*.png $(DESTDIR)$(docdir)/$$docfile ; \
+	done
 clean:
 	rm -f */*.o *.a core $(progs) $(testprogs) $(checkprogs) $(docs)
 	rm -f $(figs) $(docs)

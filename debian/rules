@@ -6,7 +6,8 @@ build: Makefile
 
 Makefile:
 	dh_testdir
-	CFLAGS='-Wall -O2 -g' ./configure --enable-docs \
+	CFLAGS='-Wall -O2 -g' ./configure \
+	--enable-docs --enable-ssl --enable-localtime --enable-pam \
 	--mandir='$${prefix}/share/man'
 
 clean:
@@ -37,7 +38,7 @@ binary-arch: build install
 #	dh_installexamples
 	dh_installinit
 #	dh_installcron
-#	dh_installmanpages utils/start-stop-daemon.8
+	dh_installmanpages utils/start-stop-daemon.8
 	cd debian/tmp/usr/share/man/man8 && \
 	    for box in bearerbox wapbox smsbox; do \
 	    	ln -s kannel.8 $$box.8; \

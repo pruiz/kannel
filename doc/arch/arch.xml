@@ -6,7 +6,7 @@
 
 <bookinfo>
 	<title>Kannel Architecture and Design</title>
-	<subtitle>$Revision: 1.14 $</subtitle>
+	<subtitle>$Revision: 1.15 $</subtitle>
 	<author>
 	<firstname>Lars</firstname>
 	<surname>Wirzenius</surname>
@@ -22,7 +22,7 @@
 	<abstract>
 
 		<para>This document examines the purpose of a gateway in
-		the Wirelss Application Protocol (WAP) architecture. WAP
+		the Wireless Application Protocol (WAP) architecture. WAP
 		is a technology for implementing services on moible phones
 		using hypertext similar to the World WideWeb (WWW). We
 		examine a particular WAP gateway, called Kannel and will

@@ -676,7 +676,7 @@ static void url_result_thread(void *arg)
 		replytext = reply_couldnotrepresent; 
 	    }
 
-	    if (! charset_processing(charset, &replytext, coding)) {
+	    if (charset_processing(charset, &replytext, coding) == -1) {
 		replytext = reply_couldnotrepresent;
 	    }
 	    octstr_destroy(type);
@@ -1251,7 +1251,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     } else
 	msg->sms.smsc_id = NULL;
 
-    if (! charset_processing(charset, &msg->sms.msgdata, msg->sms.coding)) {
+    if (charset_processing(charset, &msg->sms.msgdata, msg->sms.coding) == -1) {
 	returnerror = octstr_create("Charset or body misformed, rejected");
 	goto fielderror;
     }
@@ -1490,21 +1490,21 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	http_header_get_content_type(headers, &type, &charset);
 
 	if (octstr_compare(type,
-			   octstr_imm("application/octet-stream")) == 0)
+			   octstr_imm("application/octet-stream")) == 0) {
 	    if (coding == DC_UNDEF)
 		coding = DC_8BIT; /* XXX Force UCS2 with DC Field */
-	else if (octstr_compare(type,
-				octstr_imm("text/plain")) == 0)
+	} else if (octstr_compare(type,
+				octstr_imm("text/plain")) == 0) {
 	    if (coding == DC_UNDEF)
 		coding = DC_7BIT;
-	else {
+	} else {
 	    error(0, "/sendsms got weird content type %s",
 		  octstr_get_cstr(type));
 	    *status = 415;
 	    ret = octstr_create("Unsupported content-type, rejected");
 	}
 
-	if (! charset_processing(charset, &body, coding)) {
+	if (charset_processing(charset, &body, coding) == -1) {
 	    *status = 415;
 	    ret = octstr_create("Charset or body misformed, rejected");
 	}
@@ -2184,7 +2184,7 @@ octstr_dump(*body, 0);
 
 debug("sms.http", 0, "error on 7bit/ to utf8");
 
-		    return 0;
+		    return -1;
 		}
 	    }
 						
@@ -2230,7 +2230,7 @@ octstr_dump(*body, 0);
 
 debug("sms.http", 0, "error on ucs2/ to utf8");
 
-		    return 0;
+		    return -1;
 		}
 	    }
 						
@@ -2250,9 +2250,9 @@ octstr_dump(*body, 0);
 debug("sms.http", 0, "error on ucs2/ to ucs2");
 
 		octstr_destroy(tempcharset);
-		return 0;
+		return -1;
 	    }
 	}
     }
-    return 1;
+    return 0;
 }

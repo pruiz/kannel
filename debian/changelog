@@ -1,3 +1,9 @@
+kannel (1.1.5.cvs-20010903) unstable; urgency=low
+
+  * Daily CVS Version
+
+ -- Bruno Rodrigues <bruno.rodrigues@litux.org>  Mon, 03 Sep 2001 16:07:00 +0100
+
 kannel (0.11.3.cvs-1) unstable; urgency=low
 
   * New upstream version 0.11.3. This Debian package has a few additional

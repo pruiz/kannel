@@ -1,3 +1,18 @@
+2001-09-03 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* documentation: Corrected Makefiles, xml and other files so now 
+	all documentation should compile
+	* Makefile.in: Added RTF generation of documentation; install-docs
+	now install userguide, alligata and wtls files; tweaks in jade lines
+	* configure.in (and configure): changed --disable-ssl code, ssl is
+	still enable per-default, but before --enable-ssl would triger 
+	incorrectly --disable-ssl; 
+	* debian/changelog, debian/rules: some tweaks to generate CVS deb file
+	* user2.1.xml and wtls.xml: moved to own directories and renamed 
+	user2.1 to alligata. Present on doc/alligata and doc/wtls
+	* alligata and wtls: added "convert" dependency to generated .ps files 
+	from .png to be able to compile documents and done some tweaks to xml
+	* smsbox.c: charset_processing now returns -1 for error and 0 for ok
+
 2001-09-02 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* userguide.xml: Written information about latest patch. Added 
 	"Installing Kannel from DEB packages" section. Added info about

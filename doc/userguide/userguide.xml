@@ -51,6 +51,13 @@
 		produced by Wapit Ltd.
 		</para>
 	</abstract>
+  <revhistory>
+    <revision>
+      <revnumber>&version;</revnumber>
+      <date>&timestamp;</date>
+    </revision>
+  </revhistory>
+
 </bookinfo>
 
 
