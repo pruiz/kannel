@@ -1,3 +1,9 @@
+2000-11-05  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/http.c: Make the interface of client_read_body() match the
+	rest of the design.  This makes the http module work with HTTP/1.1
+	servers again.
+
 2000-11-03  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: A conformance patch: card and template elements 

@@ -1909,9 +1909,9 @@ static int client_read_headers(Connection *conn, List *headers)
 }
 
 
-/* XXX
- * Read the body of a response. Return -1 for error, 0 for OK (EOF on
- * socket reached) or 1 for OK (socket can be used for another transaction).
+/*
+ * Read the body of a response. Return -1 for error, 0 for body received,
+ * 1 for waiting for more body.
  */
 static int client_read_body(HTTPTransaction *trans)
 {
@@ -1927,15 +1927,17 @@ static int client_read_body(HTTPTransaction *trans)
             goto error;
         }
         octstr_destroy(h);
-        if (client_read_chunked_body(trans) == -1)
-            goto error;
-        return 1;
+        return client_read_chunked_body(trans);
     } else {
         h = http_header_find_first(trans->response_headers, "Content-Length");
         if (h == NULL) {
+	    /*
+	     * No length information available, so the server will signal
+             * the end of data by closing the socket.
+             */
 	    n = conn_inbuf_len(trans->conn);
 	    if (n == 0)
-	    	return 1;
+	    	return 0;
 	    os = conn_read_fixed(trans->conn, n);
 	    gw_assert(os != NULL);
 	    octstr_append(trans->response_body, os);
