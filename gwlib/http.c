@@ -1109,31 +1109,77 @@ static Octstr *build_response(List *headers, Octstr *body)
 }
 
 
+HTTPURLParse *http_urlparse_create(void)
+{
+    HTTPURLParse *p;
+
+    p = gw_malloc(sizeof(HTTPURLParse));
+    p->url = NULL;
+    p->scheme = NULL;
+    p->host = NULL;
+    p->port = 0;
+    p->user = NULL;
+    p->pass = NULL;
+    p->path = NULL;
+    p->query = NULL;
+    p->fragment = NULL;
+    
+    return p;
+}
+
+
+void http_urlparse_destroy(HTTPURLParse *p)
+{
+    gw_assert(p != NULL);
+
+    octstr_destroy(p->url);
+    octstr_destroy(p->scheme);
+    octstr_destroy(p->host);
+    octstr_destroy(p->user);
+    octstr_destroy(p->pass);
+    octstr_destroy(p->path);
+    octstr_destroy(p->query);
+    octstr_destroy(p->fragment);
+    gw_free(p);
+}
+
+
+void parse_dump(HTTPURLParse *p) 
+{
+    if (p == NULL)
+        return;
+    debug("http.parse_url",0,"Parsing URL `%s':", octstr_get_cstr(p->url));
+    debug("http.parse_url",0,"  Scheme: %s", octstr_get_cstr(p->scheme));  
+    debug("http.parse_url",0,"  Host: %s", octstr_get_cstr(p->host));  
+    debug("http.parse_url",0,"  Port: %ld", p->port);  
+    debug("http.parse_url",0,"  Username: %s", octstr_get_cstr(p->user));  
+    debug("http.parse_url",0,"  Password: %s", octstr_get_cstr(p->pass));  
+    debug("http.parse_url",0,"  Path: %s", octstr_get_cstr(p->path));  
+    debug("http.parse_url",0,"  Query: %s", octstr_get_cstr(p->query));  
+    debug("http.parse_url",0,"  Fragment: %s", octstr_get_cstr(p->fragment));  
+}
+
+
 /*
- * Parse the URL to get the hostname and the port to connect to and the
- * path within the host.
+ * Parse the URL to get all components, which are: scheme, hostname, 
+ * port, username, password, path (URI), query (the CGI parameter list), 
+ * fragment (#).
  *
- * Return -1 if the URL seems malformed.
+ * On success return the HTTPURLParse structure, otherwise NULL if the URL 
+ * seems malformed.
  *
  * We assume HTTP URLs of the form specified in "3.2.2 http URL" in
  * RFC 2616:
  * 
  *  http_URL = "http:" "//" [ userid : password "@"] host [ ":" port ] [ abs_path [ "?" query ]] 
  */
-int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path, 
-		     int *ssl, Octstr **username, Octstr **password)
+HTTPURLParse *parse_url(Octstr *url)
 {
+    HTTPURLParse *p;
     Octstr *prefix, *prefix_https;
     long prefix_len, portnum;
-    int host_len, colon, slash, at, auth_sep, isssl;
-    host_len = colon = slash = at = auth_sep = isssl = 0;
-
-    if(ssl) *ssl=0;
-    if(port) *port=80;
-    if(host) *host=NULL;
-    if(path) *path=NULL;
-    if(username) *username=NULL;
-    if(password) *password=NULL;
+    int host_len, colon, slash, at, auth_sep, query;
+    host_len = colon = slash = at = auth_sep = query = 0;
 
     prefix = octstr_imm("http://");
     prefix_https = octstr_imm("https://");
@@ -1145,141 +1191,192 @@ int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
             debug("gwlib.http", 0, "HTTPS URL; Using SSL for the connection");
             prefix = prefix_https;
             prefix_len = octstr_len(prefix_https);	
-	    isssl = 1;
-            if(ssl != NULL)
-		*ssl = isssl;
 #else
             error(0, "Attempt to use HTTPS <%s> but SSL not compiled in", 
                   octstr_get_cstr(url));
-            return -1;
+            return NULL;
 #endif
         } else {
             error(0, "URL <%s> doesn't start with `%s' nor `%s'",
             octstr_get_cstr(url), octstr_get_cstr(prefix),
             octstr_get_cstr(prefix_https));
-            return -1;
+            return NULL;
         }
     }
 
+    /* an URL should be more (at least one charset) then the scheme itself */
     if (octstr_len(url) == prefix_len) {
         error(0, "URL <%s> is malformed.", octstr_get_cstr(url));
-        return -1;
+        return NULL;
     }
 
+    /* check if colon and slashes are within scheme */
     colon = octstr_search_char(url, ':', prefix_len);
     slash = octstr_search_char(url, '/', prefix_len);
     if (colon == prefix_len || slash == prefix_len) {
         error(0, "URL <%s> is malformed.", octstr_get_cstr(url));
-        return -1;
+        return NULL;
     }
 
+    /* create struct and add values succesively while parsing */
+    p = http_urlparse_create();
+    p->url = octstr_duplicate(url);
+    p->scheme = octstr_duplicate(prefix);
+
+    /* try to parse authentication seperator */
     at = octstr_search_char(url, '@', prefix_len);
-    if ( at != -1 ) {
-	if ((slash == -1 || ( slash != -1 && at < slash))) {
-	    auth_sep = octstr_search_char(url, ':', prefix_len);
-
-	    if (auth_sep != -1 && (auth_sep < at)) {
-		octstr_set_char(url, auth_sep, '@');
-		colon = octstr_search_char(url, ':', prefix_len);
-	    }
-	} else {
-	    at = -1;
-	}
+    if (at != -1) {
+        if ((slash == -1 || ( slash != -1 && at < slash))) {
+            auth_sep = octstr_search_char(url, ':', prefix_len);
+            if (auth_sep != -1 && (auth_sep < at)) {
+                octstr_set_char(url, auth_sep, '@');
+                colon = octstr_search_char(url, ':', prefix_len);
+            }
+        } else {
+            at = -1;
+        }
     }
+
+    /*
+     * We have to watch out here for 4 cases:
+     *  a) hostname, no port or path
+     *  b) hostname, port, no path
+     *  c) hostname, path, no port
+     *  d) hostname, port and path
+     */
     
+    /* we only have the hostname, no port or path. */
     if (slash == -1 && colon == -1) {
-        /* Just the hostname, no port or path. */
         host_len = octstr_len(url) - prefix_len;
-	if(port != NULL)
 #ifdef HAVE_LIBSSL
-            *port = isssl ? HTTPS_PORT : HTTP_PORT;
+        p->port = (octstr_compare(p->scheme, octstr_imm("https://")) == 0) ? 
+            HTTPS_PORT : HTTP_PORT;
 #else
-            *port = HTTP_PORT;
+        p->port = HTTP_PORT;
 #endif /* HAVE_LIBSSL */
-    } else if (slash == -1) {
-        /* Port, but not path. */
+    } 
+    /* we have a port, but no path. */
+    else if (slash == -1) {
         host_len = colon - prefix_len;
-	if( octstr_parse_long(&portnum, url, colon + 1, 10) == -1) {
+        if (octstr_parse_long(&(p->port), url, colon + 1, 10) == -1) {
             error(0, "URL <%s> has malformed port number.",
                   octstr_get_cstr(url));
-            return -1;
+            http_urlparse_destroy(p);
+            return NULL;
         }
-	if(port != NULL)
-	    *port = portnum;
-    } else if (colon == -1 || colon > slash) {
-        /* Path, but not port. */
+    } 
+    /* we have a path, but no port. */
+    else if (colon == -1 || colon > slash) {
         host_len = slash - prefix_len;
-	if(port != NULL)
 #ifdef HAVE_LIBSSL
-            *port = isssl ? HTTPS_PORT : HTTP_PORT;
+        p->port = (octstr_compare(p->scheme, octstr_imm("https://")) == 0) ? 
+            HTTPS_PORT : HTTP_PORT;
 #else
-            *port = HTTP_PORT;
+        p->port = HTTP_PORT;
 #endif /* HAVE_LIBSSL */
-    } else if (colon < slash) {
-        /* Both path and port. */
+    } 
+    /* we have both, path and port. */
+    else if (colon < slash) {
         host_len = colon - prefix_len;
-        if (octstr_parse_long(&portnum, url, colon + 1, 10) == -1) {
+        if (octstr_parse_long(&(p->port), url, colon + 1, 10) == -1) {
             error(0, "URL <%s> has malformed port number.",
                   octstr_get_cstr(url));
-            return -1;
+            http_urlparse_destroy(p);
+            return NULL;
         }
-	if(port != NULL)
-	    *port = portnum;
+    /* none of the above, so there is something wrong here */
     } else {
         error(0, "Internal error in URL parsing logic.");
-        return -1;
+        http_urlparse_destroy(p);
+        return NULL;
     }
 
-
+    /* there was an authenticator seperator, so try to parse 
+     * the username and password credentials */
     if (at != -1) {
-	int at2, i;
-	at2 = octstr_search_char(url, '@', prefix_len);
-	if(username != NULL)
-	    *username = octstr_copy(url, prefix_len, at2 - prefix_len);
+        int at2, i;
 
-	if(password != NULL) {
-	    if (at2 != at)
-	        *password = octstr_copy(url, at2 + 1, at - at2 - 1);
-	    else
-	        *password = NULL;
-	}
+        at2 = octstr_search_char(url, '@', prefix_len);
+        p->user = octstr_copy(url, prefix_len, at2 - prefix_len);
+        p->pass = (at2 != at) ? octstr_copy(url, at2 + 1, at - at2 - 1) : NULL;
 
         if (auth_sep != -1)
             octstr_set_char(url, auth_sep, ':');
-    
-	for(i = at2 + 1; i < at ; i++)
-	    octstr_set_char(url, i, '*');
+        /*
+        for (i = at2 + 1; i < at ; i++)
+            octstr_set_char(url, i, '*');
+        */
 
-	host_len = host_len - at + prefix_len - 1;
-	prefix_len = at + 1;
+        host_len = host_len - at + prefix_len - 1;
+        prefix_len = at + 1;
     }
 
-    if(host != NULL)
-        *host = octstr_copy(url, prefix_len, host_len);
-
-    if(path != NULL) {
-        if (slash == -1)
-            *path = octstr_create("/");
-        else
-            *path = octstr_copy(url, slash, octstr_len(url) - slash);
+    /* query (CGI vars) */
+    query = octstr_search_char(url, '?', (slash == -1) ? prefix_len : slash);
+    if (query != -1) {
+        p->query = octstr_copy(url, query + 1, octstr_len(url));
     }
 
-    return 0;
+    /* path */
+    p->path = (slash == -1) ? 
+        octstr_create("/") : ((query != -1) && (query > slash) ? 
+            octstr_copy(url, slash, query - slash) :
+            octstr_copy(url, slash, octstr_len(url) - slash)); 
+
+    /* hostname */
+    p->host = octstr_copy(url, prefix_len, 
+        (query == -1 || slash != -1) ? host_len : query - prefix_len);
+
+    /* XXX add fragment too */
+   
+    /* dump components */
+    parse_dump(p);
+
+    return p;
+}
+
+/* copy all relevant parsed data to the server info struct */
+static void parse2trans(HTTPURLParse *p, HTTPServer *t)
+{
+    if (p == NULL || t == NULL)
+        return;
+
+    if (p->user && !t->username)
+        t->username = octstr_duplicate(p->user);
+    if (p->pass && !t->password)
+        t->password = octstr_duplicate(p->pass);
+    if (p->host && !t->host) 
+        t->host = octstr_duplicate(p->host);
+    if (p->port && !t->port)
+        t->port = p->port;
+    if (p->path && !t->uri) {
+        t->uri = octstr_duplicate(p->path);
+        if (p->query) { /* add the query too */
+            octstr_append_char(t->uri, '?');
+            octstr_append(t->uri, p->query);
+        }
+    }
+    t->ssl = (p->scheme && (octstr_compare(p->scheme, octstr_imm("https://")) == 0) 
+              && !t->ssl) ? 1 : 0;
 }
 
 static Connection *get_connection(HTTPServer *trans) 
 {
     Connection *conn;
     Octstr *host, *our_host = NULL;
+    HTTPURLParse *p;
     int port;
 
     conn = NULL;
 
     /* if the parsing has not yet been done, then do it now */
-    if (!trans->host && trans->port == 0) {
-        if (parse_url(trans->url, &trans->host, &trans->port, &trans->uri, &trans->ssl,
-                      &trans->username, &trans->password) == -1)
+    if (!trans->host && trans->port == 0 && trans->url != NULL) {
+        if ((p = parse_url(trans->url)) != NULL) {
+            parse2trans(p, trans);
+            http_urlparse_destroy(p);
+        } else {
             goto error;
+        }
     }
 
     if (proxy_used_for_host(trans->host)) {
@@ -1314,86 +1411,9 @@ static Connection *get_connection(HTTPServer *trans)
 
 
 /*
- * Parse the URL's path to get the request_base, page, query
- *
- * Return -1 if the URL's path seems malformed.
- *
- * We assume HTTP URLs of the form specified in "3.2.2 http URL" in
- * RFC 2616:
- * 
- *  http_URL = "http:" "//" [ userid : password "@"] host [ ":" port ] [ abs_path [ "?" query ]] 
- */
-int parse_url_path(Octstr *path, Octstr **base_dir, Octstr **page,
-                 Octstr **query_string, Octstr **anchor)
-{
-    Octstr *tmp;
-    long i, j;
-
-    if(base_dir) *base_dir=NULL;
-    if(page) *page=NULL;
-    if(query_string) *query_string=NULL;
-    if(anchor) *anchor=NULL;
-
-
-    if(octstr_len(path) < 1) {
-	if(base_dir) *base_dir = octstr_create("/");
-	return 0;
-    }
-
-    tmp = octstr_duplicate(path);
-    debug("DAVI", 0, "url_path: processing <%s>", octstr_get_cstr(tmp));
-
-    i = octstr_search_char(tmp, '?', 0);
-    if(i>=0) {
-	/* XXX no query_string grabbign for now */
-	octstr_truncate(tmp, i);
-        debug("DAVI", 0, "url_path: without query <%s>", octstr_get_cstr(tmp));
-    }
-    i = octstr_search_char(tmp, '#', 0);
-    if(i>=0) {
-	/* XXX no query_string grabbign for now */
-	octstr_truncate(tmp, i);
-        debug("DAVI", 0, "url_path: without anchor <%s>", octstr_get_cstr(tmp));
-    }
-
-    debug("DAVI", 0, "url_path: final path <%s>", octstr_get_cstr(tmp));
-
-    if(octstr_len(tmp) < 1) {
-	if(base_dir) *base_dir = octstr_create("/");
-	octstr_destroy(tmp);
-	return 0;
-    }
-
-    j=0;
-    while(j>=0) {
-	i=j+1;
-    	j = octstr_search_char(tmp, '/', i);
-    }
-
-    if(base_dir) {
-	   if(i==1) {
-	    	*base_dir = octstr_create("/");
-	   } else {
-		*base_dir = octstr_copy(tmp, 0, i);
-	   }
-        debug("DAVI", 0, "url_path: base_dir anchor <%s>", octstr_get_cstr(*base_dir));
-    }
-
-    if(page && i != octstr_len(tmp)) {
-	*page = octstr_copy(tmp, i, octstr_len(tmp)-i);
-        debug("DAVI", 0, "url_path: page anchor <%s>", octstr_get_cstr(*page));
-    }
-
-    octstr_destroy(tmp);
-    return 0;
-}
-
-
-/*
  * Build and send the HTTP request. Return socket from which the
  * response can be read or -1 for error.
  */
-
 static int send_request(HTTPServer *trans)
 {
   Octstr *request;
@@ -1438,6 +1458,7 @@ static int send_request(HTTPServer *trans)
     error(0, "Couldn't send request to <%s>", octstr_get_cstr(trans->url));
   return -1;
 }
+
 
 /*
  * This thread starts the transaction: it connects to the server and sends
@@ -1637,12 +1658,13 @@ struct HTTPClient {
         reading_request_line,
         reading_request,
         request_is_being_handled,
-	sending_reply
+        sending_reply
     } state;
     int method;  /* HTTP_METHOD_ value */
     Octstr *url;
     int use_version_1_0;
     int persistent_conn;
+    unsigned long conn_time; /* store time for timeouting */
     HTTPEntity *request;
 };
 
@@ -1667,6 +1689,7 @@ static HTTPClient *client_create(int port, Connection *conn, Octstr *ip)
     p->url = NULL;
     p->use_version_1_0 = 0;
     p->persistent_conn = 1;
+    p->conn_time = time(NULL);
     p->request = NULL;
     return p;
 }
@@ -1697,6 +1720,7 @@ static void client_reset(HTTPClient *p)
     debug("gwlib.http", 0, "HTTP: Resetting HTTPClient for `%s'.",
     	  octstr_get_cstr(p->ip));
     p->state = reading_request_line;
+    p->conn_time = time(NULL);
     gw_assert(p->request == NULL);
 }
 
@@ -1998,83 +2022,88 @@ static void server_thread(void *dummy)
 
     n = 0;
     while (run_status == running && keep_servers_open) {
-	if (n == 0 || (n < MAX_SERVERS && list_len(new_server_sockets) > 0)) {
-	    p = list_consume(new_server_sockets);
-	    if (p == NULL) {
-		debug("gwlib.http", 0, "HTTP: No new servers. Quitting.");
-	    	break;
-	    }
-	    tab[n].fd = p->fd;
-	    tab[n].events = POLLIN;
-	    ports[n] = p->port;
-        ssl[n] = p->ssl;
-	    ++n;
-	    gw_free(p);
-	}
 
-	if ((ret = gwthread_poll(tab, n, -1.0)) == -1) {
-	    if (errno != EINTR)
-	        warning(0, "HTTP: gwthread_poll failed.");
-	    continue;
-	}
-
-    	for (i = 0; i < n; ++i) {
-	    if (tab[i].revents & POLLIN) {
-		addrlen = sizeof(addr);
-		fd = accept(tab[i].fd, (struct sockaddr *) &addr, &addrlen);
-		if (fd == -1) {
-		    error(errno, "HTTP: Error accepting a client.");
-    	    	    (void) close(tab[i].fd);
-		    port_remove(ports[i]);
-		    tab[i].fd = -1;
-		    ports[i] = -1;
-            ssl[i] = 0;
-		} else {
-            /*
-             * Be aware that conn_wrap_fd() will return NULL if SSL handshake
-             * has failed, so we only client_create() if there is an conn.
-             */             
-            if ((conn = conn_wrap_fd(fd, ssl[i]))) {
-    	        client = client_create(ports[i], conn, host_ip(addr));
-		        conn_register(conn, server_fdset, receive_request, 
-		    	    	      client);
-            } else {
-                error(0, "HTTP: unsuccessfull SSL handshake for client `%s'",
-                      octstr_get_cstr(host_ip(addr)));
+        if (n == 0 || (n < MAX_SERVERS && list_len(new_server_sockets) > 0)) {
+            p = list_consume(new_server_sockets);
+            if (p == NULL) {
+                debug("gwlib.http", 0, "HTTP: No new servers. Quitting.");
+                break;
             }
-		}
-	    }
-	}
+            tab[n].fd = p->fd;
+            tab[n].events = POLLIN;
+            ports[n] = p->port;
+            ssl[n] = p->ssl;
+            ++n;
+            gw_free(p);
+        }
+
+        if ((ret = gwthread_poll(tab, n, -1.0)) == -1) {
+            if (errno == EINTR) /* a signal was caught during poll() function */
+                break;
+            warning(0, "HTTP: gwthread_poll failed.");
+            continue;
+        }
+
+        for (i = 0; i < n; ++i) {
+            if (tab[i].revents & POLLIN) {
+                addrlen = sizeof(addr);
+                fd = accept(tab[i].fd, (struct sockaddr *) &addr, &addrlen);
+                if (fd == -1) {
+                    error(errno, "HTTP: Error accepting a client.");
+                    (void) close(tab[i].fd);
+                    port_remove(ports[i]);
+                    tab[i].fd = -1;
+                    ports[i] = -1;
+                    ssl[i] = 0;
+                } else {
+                    /*
+                     * Be aware that conn_wrap_fd() will return NULL if SSL 
+                     * handshake has failed, so we only client_create() if
+                     * there is an conn.
+                     */             
+                    if ((conn = conn_wrap_fd(fd, ssl[i]))) {
+                        client = client_create(ports[i], conn, host_ip(addr));
+                        conn_register(conn, server_fdset, receive_request, client);
+                    } else {
+                        error(0, "HTTP: unsuccessfull SSL handshake for client `%s'",
+                        octstr_get_cstr(host_ip(addr)));
+                    }
+                }
+            }
+        }
 	
-	while ((portno = list_extract_first(closed_server_sockets)) != NULL) {
-	    for (i = 0; i < n; ++i) {
-		if (ports[i] == *portno) {
-		    (void) close(tab[i].fd);
-		    port_remove(ports[i]);
-		    tab[i].fd = -1;
-		    ports[i] = -1;
-            ssl[i] = 0;
-		}
-	    }
-	    gw_free(portno);
-	}
+        while ((portno = list_extract_first(closed_server_sockets)) != NULL) {
+            for (i = 0; i < n; ++i) {
+                if (ports[i] == *portno) {
+                    (void) close(tab[i].fd);
+                    port_remove(ports[i]);
+                    tab[i].fd = -1;
+                    ports[i] = -1;
+                    ssl[i] = 0;
+                }
+            }
+            gw_free(portno);
+        }
        
-    	j = 0;
-	for (i = 0; i < n; ++i) {
-	    if (tab[i].fd != -1) {
-	    	tab[j] = tab[i];
-		ports[j] = ports[i];
-        ssl[j] = ssl[i];
-		++j;
-	    }
-	}
-	n = j;
+        j = 0;
+        for (i = 0; i < n; ++i) {
+            if (tab[i].fd != -1) {
+                tab[j] = tab[i];
+                ports[j] = ports[i];
+                ssl[j] = ssl[i];
+                ++j;
+            }
+        }
+        n = j;
     }
     
+    /* make sure we close all ports */
     for (i = 0; i < n; ++i) {
-	(void) close(tab[i].fd);
-	port_remove(ports[i]);
+        (void) close(tab[i].fd);
+        port_remove(ports[i]);
     }
+
+    server_thread_id = -1;
 }
 
 
@@ -2145,11 +2174,11 @@ void http_close_port(int port)
 void http_close_all_ports(void)
 {
     if (server_thread_id != -1) {
-	keep_servers_open = 0;
-	gwthread_wakeup(server_thread_id);
-	gwthread_join_every(server_thread);
-	fdset_destroy(server_fdset);
-	server_fdset = NULL;
+        keep_servers_open = 0;
+        gwthread_wakeup(server_thread_id);
+        gwthread_join_every(server_thread);
+        fdset_destroy(server_fdset);
+        server_fdset = NULL;
     }
 }
 
@@ -2273,20 +2302,27 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     ret = conn_write(client->conn, response);
     octstr_destroy(response);
 
-    if (ret == 0) {	/* Sent already */
-	if (!client->persistent_conn)
-	    client_destroy(client);
-	else {
-	    client_reset(client);
-	    conn_register(client->conn, server_fdset, receive_request, client);
-	}
+    /* obey return code of conn_write() */
+    /* sending response was successfull */
+    if (ret == 0) { 
+        /* HTTP/1.0 or 1.1, hence keep-alive or keep-alive */
+        if (!client->persistent_conn) {
+            client_destroy(client);     
+        } else {
+            /* XXX mark this HTTPClient in the keep-alive cleaner thread */
+            client_reset(client);
+            conn_register(client->conn, server_fdset, receive_request, client);
+        }
     }
-    else if (ret == 1) {      /* Queued for sending, we don't want to block */
-	client->state = sending_reply;
-	conn_register(client->conn, server_fdset, receive_request, client);
+    /* queued for sending, we don't want to block */
+    else if (ret == 1) {    
+        client->state = sending_reply;
+        conn_register(client->conn, server_fdset, receive_request, client);
     }
-    else	/* Error */
-	client_destroy(client);
+    /* error while sending response */
+    else {     
+        client_destroy(client);
+    }
 }
 
 

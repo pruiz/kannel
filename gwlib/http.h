@@ -154,6 +154,47 @@ void http_shutdown(void);
 
 
 /***********************************************************************
+ * HTTP URL parsing.
+ */
+
+/*
+ * A structure describing a full URL with it's components.
+ */
+typedef struct {
+    Octstr *url;
+    Octstr *scheme;
+    Octstr *host;
+    unsigned long port;
+    Octstr *user;
+    Octstr *pass;
+    Octstr *path;
+    Octstr *query;
+    Octstr *fragment;
+} HTTPURLParse;
+
+/* 
+ * Create an URL parsing structure.
+ */
+HTTPURLParse *http_urlparse_create(void);
+
+/* 
+ * Destroy an URL parsing structure. 
+ */
+void http_urlparse_destroy(HTTPURLParse *p);
+
+/* 
+ * Parse the given URL and return a parsed struct containing all
+ * parsed components. If parsing failed, returns NULL.
+ */
+HTTPURLParse *parse_url(Octstr *url);
+
+/* 
+ * Dump the parsed struct to debug log level. 
+ */
+void parse_dump(HTTPURLParse *p);
+
+
+/***********************************************************************
  * HTTP proxy interface.
  */
 
@@ -367,10 +408,6 @@ List *http_header_duplicate(List *headers);
 void http_header_pack(List *headers);
 void http_append_headers(List *to, List *from);
 Octstr *http_header_value(List *headers, Octstr *header);
-int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
-              int *ssl, Octstr **username, Octstr **password);
-int parse_url_path(Octstr *path, Octstr **base_dir, Octstr **page,
-              Octstr **query_string, Octstr **anchor);
 
 
 /*
