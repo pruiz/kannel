@@ -80,10 +80,14 @@ void wap_shutdown(void);
  * and these event types to the session layer:
  *
  *   TR_Invoke_Ind, TR_Result_Cnf, TR_Abort_Ind
+ *
+ * Timer_freq is the timer 'tick' used. All wtp responder timers are 
+ * multiplies of this value.
  */
 void wtp_resp_init(wap_dispatch_func_t *datagram_dispatch,
                    wap_dispatch_func_t *session_dispatch,
-                   wap_dispatch_func_t *push_dispatch);
+                   wap_dispatch_func_t *push_dispatch, 
+                   long timer_freq);
 void wtp_resp_dispatch_event(WAPEvent *event);
 void wtp_resp_shutdown(void);
 
@@ -105,9 +109,13 @@ void wtp_resp_shutdown(void);
  * and these event types to the session layer:
  *
  *   TR_Invoke_Cnf, TR_Abort_Ind
+ *
+ * Timer_freq is a timer 'tick'. All initiator timer values are multiplies 
+ * of it.
  */
 void wtp_initiator_init(wap_dispatch_func_t *datagram_dispatch,
-                        wap_dispatch_func_t *session_dispatch);
+                        wap_dispatch_func_t *session_dispatch,
+                        long timer_freq);
 void wtp_initiator_dispatch_event(WAPEvent *event);
 void wtp_initiator_shutdown(void);
 
