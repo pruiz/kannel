@@ -278,6 +278,12 @@ int octstr_search(Octstr *haystack, Octstr *needle, long pos);
 
 
 /*
+ * Like octstr_search, but ignores 8-bit byte case.
+ */
+int octstr_case_search(Octstr *haystack, Octstr *needle, long pos);
+
+
+/*
  * Write contents of octet string to a file, in human readable form. 
  * Return -1 for error, 0 for OK. Octets that are not printable characters
  * are printed using C-style escape notation.

@@ -1,5 +1,5 @@
 /*
- * test_octstr.c - simple testing of octstr functions
+ * check_octstr.c - checking of octet string functions
  */
 
 #include <string.h>
@@ -57,6 +57,7 @@ static void check_comparisons(void)
 
 int main(void)
 {
+    set_output_level(INFO);
     gwlib_init();
     check_comparisons();
     gwlib_shutdown();
