@@ -146,10 +146,10 @@ HTTPHeader *header_create(char *key, char *value);
     
 /**********************************************************
  * header_dump - dump headers
- * Dump all headers into debug(). Return 0.
+ * Dump all headers into debug().
  */
 
-int header_dump(HTTPHeader *header);
+void header_dump(HTTPHeader *hdr);
     
 /******************************************************
  * destroy entire header data. Returns 0 always.
