@@ -2,8 +2,8 @@
 
 	* gw/bb_http.c, gw/bearerbox.c: modified so that every reply to
 	HTTP admin is formatted according to client Accept: -header, with
-	preference as HTML > WML > plain text.
-	
+	preference as WML > HTML > plain text.
+
 2000-12-28  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_http.c: modified so that cgi-bin/status returns the reply
