@@ -1,3 +1,13 @@
+Wed Jan 26 20:44:26 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c: If an unhandled event is TR-Invoke.ind, then send
+	a TRAbort.req to WTP so that the phone will know something's
+	wrong.
+
+	* gw/wtp_send.c: Don't pack user_data into Abort PDU, since it
+	isn't in TRAbort event anymore. (Related to Aarno's change
+	below.)
+
 2000-01-26 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_events-decl.h: Added event TRInvokeRequire, removed user_data

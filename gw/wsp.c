@@ -249,9 +249,24 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 				} \
 			}
 		#include "wsp_state-decl.h"
-		error(0, "WSP: Can't handle event.");
-		debug(0, "WSP: The unhandled event:");
-		wsp_event_dump(current_event);
+		
+		if (current_event->type == TRInvokeIndication) {
+			WTPEvent *abort;
+			
+			error(0, "WSP: Can't handle TR-Inovke.ind, aborting transaction.");
+			abort = wtp_event_create(TRAbort);
+			abort->TRAbort.tid = 
+				current_event->TRInvokeIndication.machine->tid;
+			abort->TRAbort.abort_type = 0x01; /* USER */
+			abort->TRAbort.abort_reason = 0x01; /* PROTOERR */
+
+			wtp_handle_event(current_event->TRInvokeIndication.machine,
+					 abort);
+		} else {
+			error(0, "WSP: Can't handle event.");
+			debug(0, "WSP: The unhandled event:");
+			wsp_event_dump(current_event);
+		}
 
 	end:
 		current_event = remove_from_event_queue(sm);

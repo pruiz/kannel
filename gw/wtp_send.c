@@ -218,12 +218,18 @@ static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason,
        pdu_len = 4;
        wtp_pdu = gw_malloc(pdu_len);
        octet = -42;
+
+#if 0 /* XXX actually, no user_data is needed for WTP Abort PDU, since
+         a WSP Disconnect PDU is not sent via Abort PDU. */
 /*
  * User data includes, when we are speaking of abort PDU, a WSP PDU (Disconnect 
  * PDU). Inputs are abort type, abort reason and tid.
  */  
  
        msg->wdp_datagram.user_data = octstr_duplicate(event->TRAbort.user_data);
+#else
+       msg->wdp_datagram.user_data = octstr_create_empty();
+#endif
        octet = insert_pdu_type(ABORT, octet);
        octet = insert_abort_type(abort_type, octet);
        wtp_pdu[0] = octet;
@@ -233,6 +239,7 @@ static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason,
        wtp_pdu[3] = abort_reason;
 
        octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 4);
+
        return msg;
 }
 
