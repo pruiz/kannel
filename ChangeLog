@@ -1,3 +1,7 @@
+2000-01-14    <rpr@rpr.wapit.com>
+
+	* gw/*box.c: Added SIGPIPE as ignored signal 
+
 Thu Jan 13 19:12:11 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp.c: Renamed memory_error to pdu_too_short error, since it

@@ -239,6 +239,7 @@ static void setup_signal_handlers(void) {
         act.sa_flags = 0;
         sigaction(SIGINT, &act, NULL);
         sigaction(SIGHUP, &act, NULL);
+	sigaction(SIGPIPE, &act, NULL);
 }
 
 
