@@ -1,3 +1,11 @@
+2002-05-14  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/shared.[ch], gw/smsbox.c, gw/smscconn.h, gw/wapbox.c,
+      gwlib/counter.[ch], test/drive_smpp.c, test/test_http.c, 
+      test/test_ppg.c, wap/wsp_session.c, wap/wtls.h, wap/wtp_init.h,
+      wap/wtp_resp.h: applied long vs. unsigned long patch from
+      Harrie Hazewinkel <harrie@mod-snmp.com>
+      [Msg-ID: <10110987.1021046787@localhost>]
+
 2002-05-13  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * : The "Why don't you love me anymore?" patch
     * gw/smsc_emi2.c: if SMSC reply with a NACK and error 04, we should 
