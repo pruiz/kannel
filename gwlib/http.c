@@ -550,7 +550,6 @@ static char *http_methods[] = {
     "GET", "POST", "HEAD"
 };
 
-
 /*
  * Information about a server we've connected to.
  */
@@ -562,6 +561,7 @@ typedef struct {
     List *request_headers;
     Octstr *request_body;   /* NULL for GET or HEAD, non-NULL for POST */
     enum {
+      connecting,
 	request_not_sent,
 	reading_status,
 	reading_entity,
@@ -581,6 +581,8 @@ typedef struct {
     Octstr *password;
 } HTTPServer;
 
+
+static int send_request(HTTPServer *trans);
 
 static HTTPServer *server_create(HTTPCaller *caller, int method, Octstr *url,
                                  List *headers, Octstr *body, int follow_remaining,
@@ -698,7 +700,7 @@ static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certke
 	    conn = conn_open_ssl(host, port, certkeyfile, our_host);
 	else
 #endif /* HAVE_LIBSSL */
-	    conn = conn_open_tcp(host, port, our_host);
+	    conn = conn_open_tcp_nb(host, port, our_host);
 	debug("gwlib.http", 0, "HTTP: Opening connection to `%s:%d' (fd=%d).",
 	      octstr_get_cstr(host), port, conn_get_id(conn));
     } else {
@@ -851,6 +853,8 @@ static void handle_transaction(Connection *conn, void *data)
     HTTPServer *trans;
     int ret;
     Octstr *h;
+    int rc;
+    char buf[128];
     
     trans = data;
 
@@ -861,6 +865,43 @@ static void handle_transaction(Connection *conn, void *data)
 
     while (trans->state != transaction_done) {
 	switch (trans->state) {
+	case connecting:
+	  debug("gwlib.http", 0, "Get info about connecting socket");
+          if (conn_get_connect_result(trans->conn) != 0) {
+            debug("gwlib.http", 0, "Socket not connected");
+            conn_unregister(conn);
+            goto error;
+          }
+
+          if (trans->method == HTTP_METHOD_POST) {
+            /* 
+             * Add a Content-Length header.  Override an existing one, if
+             * necessary.  We must have an accurate one in order to use the
+             * connection for more than a single request.
+             */
+            http_header_remove_all(trans->request_headers, "Content-Length");
+            sprintf(buf, "%ld", octstr_len(trans->request_body));
+            http_header_add(trans->request_headers, "Content-Length", buf);
+          } 
+          /* 
+           * ok, this has to be an GET or HEAD request method then,
+           * if it contains a body, then this is not HTTP conform, so at
+           * least warn the user 
+           */
+          else if (trans->request_body != NULL) {
+            warning(0, "HTTP: GET or HEAD method request contains body:");
+            octstr_dump(trans->request_body, 0);
+          }
+
+          if ((rc = send_request(trans)) == 0) {
+            trans->state = reading_status;
+            conn_register(trans->conn, client_fdset, handle_transaction, 
+                          trans);
+          } else {
+            list_produce(trans->caller, trans);
+          }
+          break;
+
 	case reading_status:
 	    ret = client_read_status(trans);
 	    if (ret < 0) {
@@ -1122,83 +1163,109 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
     return 0;
 }
 
-
-/*
- * Build and send the HTTP request. Return socket from which the
- * response can be read or -1 for error.
- */
-
-static Connection *send_request(HTTPServer *trans)
+static Connection *get_connection(HTTPServer *trans) 
 {
-    Octstr *path, *request;
+  Octstr *path;
     Connection *conn;
     Octstr *host, *our_host = NULL;
     int port;
 
-    path = NULL;
-    request = NULL;
     conn = NULL;
+  path = NULL;
 
     /* May not be NULL if we're retrying this transaction. */
     octstr_destroy(trans->host);
     trans->host = NULL;
 
-    if(trans->request_headers == NULL)
-    	trans->request_headers = http_create_empty_headers();
-
     if (parse_url(trans->url, &trans->host, &trans->port, &path, &trans->ssl,
                   &trans->username, &trans->password) == -1)
         goto error;
-    if (trans->username != NULL)
-        http_add_basic_auth(trans->request_headers, trans->username,
-                            trans->password);
+
+
     if (proxy_used_for_host(trans->host)) {
-        proxy_add_authentication(trans->request_headers);
-        request = build_request(http_method2name(trans->method), 
-                                trans->url, trans->host, trans->port, 
-                                trans->request_headers, trans->request_body);
         host = proxy_hostname;
         port = proxy_port;
     } else {
-        request = build_request(http_method2name(trans->method), path, trans->host, 
-                                trans->port, trans->request_headers,
-                                trans->request_body);
         host = trans->host;
         port = trans->port;
     }
 
     if (trans->retrying) {
 #ifdef HAVE_LIBSSL
-        if (trans->ssl) 
-            conn = conn_open_ssl(host, port, trans->certkeyfile, our_host);
+    if (trans->ssl) conn = conn_open_ssl(host, port, trans->certkeyfile, our_host);
         else
 #endif /* HAVE_LIBSSL */
-            conn = conn_open_tcp(host, port, our_host);
+      conn = conn_open_tcp_nb(host, port, our_host);
             debug("gwlib.http", 0, "HTTP: Opening NEW connection to `%s:%d' (fd=%d).",
                   octstr_get_cstr(host), port, conn_get_id(conn));
     } else
-        conn = conn_pool_get(host, port, trans->ssl, trans->certkeyfile, our_host);
+    conn = conn_pool_get(host, port, trans->ssl, trans->certkeyfile,
+                         our_host);
     if (conn == NULL)
         goto error;
 
+  octstr_destroy(path);
+
+  return conn;
+
+ error:
+  conn_destroy(conn);
+  octstr_destroy(path);
+  error(0, "Couldn't send request to <%s>", octstr_get_cstr(trans->url));
+  return NULL;
+}
+
+/*
+ * Build and send the HTTP request. Return socket from which the
+ * response can be read or -1 for error.
+ */
+
+static int send_request(HTTPServer *trans)
+{
+  Octstr *path, *request;
+
+  path = NULL;
+  request = NULL;
+
+  if (parse_url(trans->url, &trans->host, &trans->port, &path, &trans->ssl,
+		&trans->username, &trans->password) == -1)
+    goto error;
+
+  if (trans->username != NULL)
+    http_add_basic_auth(trans->request_headers, trans->username,
+			trans->password);
+
+  if (proxy_used_for_host(trans->host)) {
+    proxy_add_authentication(trans->request_headers);
+    request = build_request(http_method2name(trans->method),
+			    trans->url, trans->host, trans->port, 
+			    trans->request_headers, 
+			    trans->request_body);
+  } else {
+    request = build_request(http_method2name(trans->method),path, 
+			    trans->host, trans->port,
+			    trans->request_headers,
+			    trans->request_body);
+  }
+  
     debug("wsp.http", 0, "HTTP: Sending request:");
     octstr_dump(request, 0);
-    if (conn_write(conn, request) == -1)
+  if (conn_write(trans->conn, request) == -1)
         goto error;
 
     octstr_destroy(path);
     octstr_destroy(request);
 
-    return conn;
+  return 0;
 
-error:
-    conn_destroy(conn);
+ error:
+  conn_destroy(trans->conn);
+  trans->conn = NULL;
     octstr_destroy(path);
     octstr_destroy(request);
     error(0, "Couldn't send request to <%s>", octstr_get_cstr(trans->url));
-    return NULL;
+  return -1;
 }
-
 
 /*
  * This thread starts the transaction: it connects to the server and sends
@@ -1209,6 +1276,7 @@ static void write_request_thread(void *arg)
 {
     HTTPServer *trans;
     char buf[128];    
+    int rc;
 
     while (run_status == running) {
         trans = list_consume(pending_requests);
@@ -1216,6 +1284,14 @@ static void write_request_thread(void *arg)
             break;
 
         gw_assert(trans->state == request_not_sent);
+
+	trans->conn = get_connection(trans);
+
+	if (trans->conn == NULL)
+	  list_produce(trans->caller, trans);
+        else {
+          if (conn_is_connected(trans->conn) == 0) {
+	    debug("gwlib.http", 0, "Socket connected at once");
 
         if (trans->method == HTTP_METHOD_POST) {
             /* 
@@ -1236,14 +1312,21 @@ static void write_request_thread(void *arg)
             warning(0, "HTTP: GET or HEAD method request contains body:");
             octstr_dump(trans->request_body, 0);
         }
-
-        trans->conn = send_request(trans);
-        if (trans->conn == NULL)
-            list_produce(trans->caller, trans);
-        else {
+	    if ((rc = send_request(trans)) == 0) {
             trans->state = reading_status;
+              conn_register(trans->conn, client_fdset, handle_transaction, 
+                            trans);
+            } else {
+              list_produce(trans->caller, trans);
+            }
+
+          } else { /* Socket not connected, wait for connection */
+            debug("gwlib.http", 0, "Socket connecting");
+            trans->state = connecting;
             conn_register(trans->conn, client_fdset, handle_transaction, trans);
         }
+	  
+	}
     }
 }
 

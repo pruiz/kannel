@@ -75,6 +75,23 @@ Connection *conn_open_tcp(Octstr *host, int port, Octstr *our_host);
 Connection *conn_open_tcp_with_port(Octstr *host, int port, int our_port,
 		Octstr *our_host);
 
+/* Open a TCP/IP connection to the given host and port.  Return NULL in case of
+ * error. Overwise return new Connection. */
+Connection *conn_open_tcp_nb(Octstr *host, int port, Octstr *our_host);
+
+/* As above, but binds our end to 'our_port'. If 'our_port' is 0, uses
+ * any port like conn_open_tcp. */
+Connection *conn_open_tcp_nb_with_port(Octstr *host, int port, int our_port,
+				       Octstr *our_host);
+
+/* Returns 0 if socket is connected, -1 overwise */
+int conn_is_connected(Connection *conn);
+
+/* If socket is in the 'connecting' state, it must be listen by poller.
+ * After poller returns, connection must be checked for connection 
+ * procedure's result. Return 0 if connection done successfully */
+int conn_get_connect_result(Connection *conn);
+
 /* Create a Connection structure around the given file descriptor.
  * The file descriptor must not be used for anything else after this;
  * it must always be accessed via the Connection operations.  This

@@ -38,6 +38,15 @@ int tcpip_connect_to_server(char *hostname, int port, const char *interface_name
 int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port,
 		const char *interface_name);
 
+/* Open a client socket in nonblocking mode, done is 0 if socket 
+   connected  immediatly, overwise done is 1 */
+int tcpip_connect_nb_to_server(char *hostname, int port, const char *interface_name,
+                               int *done);
+
+/* As above, but binds our end to 'our_port' */
+int tcpip_connect_nb_to_server_with_port(char *hostname, int port, int our_port,
+                                         const char *interface_name, int *done);
+
 /* Write string to socket. */
 int write_to_socket(int socket, char *str);
 

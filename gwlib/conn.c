@@ -62,6 +62,9 @@ struct Connection
     /* fd value is read-only and is not locked */
     int fd;
 
+  /* socket state */
+  enum {yes,no} connected;
+
     /* Protected by outlock */
     Octstr *outbuf;
     long outbufpos;   /* start of unwritten data in outbuf */
@@ -460,6 +463,51 @@ Connection *conn_open_tcp(Octstr *host, int port, Octstr *our_host)
     return conn_open_tcp_with_port(host, port, 0, our_host);
 }
 
+Connection *conn_open_tcp_nb(Octstr *host, int port, Octstr *our_host)
+{
+  return conn_open_tcp_nb_with_port(host, port, 0, our_host);
+}
+
+Connection *conn_open_tcp_nb_with_port(Octstr *host, int port, int our_port,
+				       Octstr *our_host)
+{
+  int sockfd;
+  int done = -1;
+  Connection *c;
+  
+  sockfd = tcpip_connect_nb_to_server_with_port(octstr_get_cstr(host), port,
+						our_port, our_host == NULL ?
+						NULL : octstr_get_cstr(our_host), &done);
+  if (sockfd < 0)
+    return NULL;
+  c = conn_wrap_fd(sockfd, 0);
+  if (done != 0) {
+    c->connected = no;
+  }
+  return c;
+}
+
+int conn_is_connected(Connection *conn) 
+{
+  if (conn->connected == yes) return 0;
+  return -1;
+}
+
+int conn_get_connect_result(Connection *conn) 
+{
+  int err,len;
+  len = sizeof(len);
+  if (getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
+    return -1;
+  }
+  
+  if (err) {
+    return -1;
+  }
+  
+  conn->connected = yes;
+  return 0;
+}
 
 Connection *conn_open_tcp_with_port(Octstr *host, int port, int our_port,
 		Octstr *our_host)
@@ -493,6 +541,7 @@ Connection *conn_wrap_fd(int fd, int ssl)
     conn->inbufpos = 0;
 
     conn->fd = fd;
+    conn->connected = yes;
     conn->read_eof = 0;
     conn->read_error = 0;
     conn->output_buffering = DEFAULT_OUTPUT_BUFFERING;
@@ -746,6 +795,13 @@ static void poll_callback(int fd, int revents, void *data)
         return;
     }
 
+    /* Get result of nonblocking connect, before any reads and writes
+     * we must check result (it must be handled in initial callback) */
+    if (conn->connected == no) {
+      conn->callback(conn, conn->callback_data);
+      return;
+    }
+
     /* If unlocked_write manages to write all pending data, it will
      * tell the fdset to stop listening for POLLOUT. */
     if (revents & POLLOUT) {
@@ -794,10 +850,16 @@ int conn_register(Connection *conn, FDSet *fdset,
         result = -1;
     } else {
         events = 0;
+	/* For nonconnected socket we must lesten both directions */
+        if (conn->connected == yes) {
         if (conn->read_eof == 0 && conn->read_error == 0)
             events |= POLLIN;
         if (unlocked_outbuf_len(conn) > 0)
             events |= POLLOUT;
+        } else {
+          events |= POLLIN;
+          events |= POLLOUT;
+        }
 
         conn->registered = fdset;
         conn->callback = callback;

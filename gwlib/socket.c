@@ -160,6 +160,92 @@ error:
     return -1;
 }
 
+int tcpip_connect_nb_to_server(char *hostname, int port, const char *interface_name, int *done)
+{
+  return tcpip_connect_nb_to_server_with_port(hostname, port, 0, interface_name, done);
+}
+
+int tcpip_connect_nb_to_server_with_port(char *hostname, int port, int our_port, const char *interface_name, int *done) 
+{
+  struct sockaddr_in addr;
+  struct sockaddr_in o_addr;
+  struct hostent hostinfo;
+  struct hostent o_hostinfo;
+  int s;
+  int flags,rc;
+
+  *done = 1;
+  
+  s = socket(PF_INET, SOCK_STREAM, 0);
+  if (s == -1) {
+    error(errno, "Couldn't create new socket.");
+    goto error;
+  }
+  
+  if (gw_gethostbyname(&hostinfo, hostname) == -1) {
+    error(errno, "gethostbyname failed");
+    goto error;
+  }
+  
+  addr = empty_sockaddr_in;
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+  addr.sin_addr = *(struct in_addr *) hostinfo.h_addr;
+  
+  if (our_port > 0 || (interface_name != NULL && strcmp(interface_name, "*") != 0)) {
+    int reuse;
+    
+    o_addr = empty_sockaddr_in;
+    o_addr.sin_family = AF_INET;
+    o_addr.sin_port = htons(our_port);
+    if (interface_name == NULL || strcmp(interface_name, "*") == 0)
+      o_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    else {
+      if (gw_gethostbyname(&o_hostinfo, interface_name) == -1) {
+	error(errno, "gethostbyname failed");
+	goto error;
+      }
+      o_addr.sin_addr = *(struct in_addr *) o_hostinfo.h_addr;
+    }
+    
+    reuse = 1;
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &reuse,
+		   sizeof(reuse)) == -1) {
+      error(errno, "setsockopt failed before bind");
+      goto error;
+    }
+    if (bind(s, (struct sockaddr *) &o_addr, sizeof(o_addr)) == -1) {
+      error(errno, "bind to local port %d failed", our_port);
+      goto error;
+    }
+  }
+
+  flags = fcntl(s, F_GETFL, 0);
+  fcntl(s, F_SETFL, flags | O_NONBLOCK);
+
+  if ((rc = connect(s, (struct sockaddr *) &addr, sizeof(addr))) < 0) {
+    if (errno != EINPROGRESS) {
+      error(errno, "nonblocking connect failed");
+      goto error;
+    }
+  }
+  
+  /* May be connected immediatly
+   * (if we connecting to localhost for example) */
+  if (rc == 0) { 
+    *done = 0;
+  }
+
+  return s;
+  
+ error:
+  error(0, "error connecting to server `%s' at port `%d'",
+	hostname, port);
+  if (s >= 0)
+    close(s);
+  return -1;
+}
+
 
 int write_to_socket(int socket, char *str)
 {
