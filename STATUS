@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.10 2002-03-22 11:20:59 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.11 2002-03-22 11:57:57 stolj Exp $]
 
 Release:
 
@@ -29,11 +29,6 @@ RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
     Status: Aarno will add it
     
 Available Patches:
-
-    * smsc_smpp.c source and destination TON
-    Posted by: Alex Judd <ajudd@jantar.kgbinternet.com
-    Message-ID: <Pine.LNX.4.33.0201291225380.22043-200000@jantar.kgbinternet.com>
-    Status:
 
     * Weighted round-robin SMS load balancer
     Posted by: Choong Hong Cheng <chc79@yahoo.com>
