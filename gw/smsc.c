@@ -367,17 +367,18 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 	SMSCenter *smsc;
         char *type, *host, *port, *username, *password, *phone, *device;
         char *dial_prefix, *route_prefix;
-        char *backup_port;      /* EMI IP */
+        char *backup_port, *our_port;      /* EMI IP */
         char *alt_chars;
         char *smpp_system_id, *smpp_system_type, *smpp_address_range;
 
-        int typeno, portno, backportno;
+        int typeno, portno, backportno, ourportno;
 
 
         type = config_get(grp, "smsc");
         host = config_get(grp, "host");
         port = config_get(grp, "port");
         backup_port = config_get(grp, "backup-port");
+        our_port = config_get(grp, "our-port");
         username = config_get(grp, "username");
         password = config_get(grp, "password");
         phone = config_get(grp, "phone");
@@ -392,6 +393,7 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 
 	portno = (port != NULL ? atoi(port) : 0);
 	backportno = (backup_port != NULL ? atoi(backup_port) : 0);
+	ourportno = (our_port != NULL ? atoi(our_port) : 0);
 
 	smsc = NULL;
 
@@ -435,7 +437,7 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 		error(0, "Required field missing for EMI IP center.");
             else
 		smsc = emi_open_ip(host, portno, username, password,
-				   backportno);
+				   backportno, ourportno);
 	    break;
 
 	case SMSC_TYPE_SMPP_IP:

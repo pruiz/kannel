@@ -1,3 +1,11 @@
+1999-12-20    <rpr@rpr.wapit.com>
+
+	* gwlib/socket.*: added function connect_to_server_with_port which
+	binds our end of the socket to given port number.
+
+	* gw/smsc_emi.c, gw/smsc.c: added 'our-port' configuration
+	variable to the EMI IP code.
+
 1999-20-12	Mikael Gueck <mikael.gueck@wapit.com>
 
 	* gw/smsbox_req.c: Dropped in a replacement for split_send()

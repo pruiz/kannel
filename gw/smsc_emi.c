@@ -151,8 +151,9 @@ int emi_close(SMSCenter *smsc) {
 
 static int emi_open_connection_ip(SMSCenter *smsc)
 {
-    smsc->emi_fd = tcpip_connect_to_server(smsc->emi_hostname, 
-					   smsc->emi_port);
+    smsc->emi_fd =
+	tcpip_connect_to_server_with_port(smsc->emi_hostname, 
+					  smsc->emi_port, smsc->emi_our_port);
     if (smsc->emi_fd < 0)
 	return -1;
     return 0;
@@ -163,7 +164,7 @@ static int emi_open_connection_ip(SMSCenter *smsc)
 * Open the connection and log in
 */
 SMSCenter *emi_open_ip(char *hostname, int port, char *username,
-		       char *password, int backup_port) {
+		       char *password, int backup_port, int our_port) {
 
 	SMSCenter *smsc;
 
@@ -180,6 +181,7 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
 	smsc->emi_username = strdup(username);
 	smsc->emi_password = strdup(password);
 	smsc->emi_backup_port = backup_port;
+	smsc->emi_our_port = our_port;
 
 	if (smsc->emi_hostname == NULL || smsc->emi_username == NULL ||
 	    smsc->emi_password == NULL) {
@@ -631,8 +633,6 @@ static int get_data(SMSCenter *smsc, char *buff, int length) {
 
 
 	if (ret > 0) {
-	    debug(0, "select at get_data %d", ret);
-	    
 	    if (secondary_fd >= 0 && FD_ISSET(secondary_fd, &rf)) {
 		n = read(secondary_fd, buff, length-1);
 
@@ -660,8 +660,6 @@ static int get_data(SMSCenter *smsc, char *buff, int length) {
 		}
 	    }
 	    if (FD_ISSET(smsc->emi_backup_fd, &rf)) {
-
-		debug(0, "Connection try to backup-port"); 
 
 		if (secondary_fd == -1) {
 		    /* well we actually should check if the connector is really

@@ -61,7 +61,14 @@ error:
 
 
 int tcpip_connect_to_server(char *hostname, int port) {
+
+    return tcpip_connect_to_server_with_port(hostname, port, 0);
+}
+
+
+int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
 	struct sockaddr_in addr;
+	struct sockaddr_in o_addr;
 	struct hostent *hostinfo;
 	struct linger dontlinger;
 	int s;
@@ -90,6 +97,17 @@ int tcpip_connect_to_server(char *hostname, int port) {
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
         addr.sin_addr = *(struct in_addr *) hostinfo->h_addr;
+
+	if (our_port > 0) {
+	    o_addr.sin_family = AF_INET;
+	    o_addr.sin_port = htons(our_port);
+	    o_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	    if (bind(s, &o_addr, sizeof(o_addr)) == -1) {
+		error(0, "bind to local port %d failed", our_port);
+		goto error;
+	    }
+	}
 	
 	if (connect(s, (struct sockaddr *) &addr, sizeof(addr)) == -1)
 		goto error;

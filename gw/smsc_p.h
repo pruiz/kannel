@@ -99,6 +99,7 @@ struct SMSCenter {
 
 	int emi_backup_fd;
         int emi_backup_port;	/* different one! */
+        int emi_our_port;	/* port to bind us when connecting smsc */
 
 	/* SMPP */
 	char *smpp_system_id, *smpp_password;
@@ -173,7 +174,7 @@ SMSCenter *emi_open(char *phonenum, char *serialdevice, char *username, char *pa
 int emi_reopen(SMSCenter *smsc);
 int emi_close(SMSCenter *smsc);
 SMSCenter *emi_open_ip(char *hostname, int port, char *username, char *password,
-		       int backup_port);
+		       int backup_port, int our_port);
 int emi_reopen_ip(SMSCenter *smsc);
 int emi_close_ip(SMSCenter *smsc);
 int emi_pending_smsmessage(SMSCenter *smsc);
