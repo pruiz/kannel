@@ -1,5 +1,9 @@
 2000-09-30  Kalle Marjola  <rpr@wapit.com>
 
+	* doc/userguide/userguide.xml: some update
+	 
+2000-09-30  Kalle Marjola  <rpr@wapit.com>
+
 	* doc/userguide/userguide.xml: little update for SMS center
 	groups. Still missing values and meanings for some attributes.
 

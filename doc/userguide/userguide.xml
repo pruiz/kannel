@@ -1038,6 +1038,12 @@ bearerbox-host = localhost
     <row><entry><literal>log-level</literal></entry>
      <entry>number 0..5</entry></row>
 
+    <row><entry><literal>syslog-level</literal></entry>
+     <entry>number</entry>
+     <entry valign=bottom>
+         <emphasis>Somebody needs to explain this a bit...</emphasis>
+     </entry></row>
+
 
   </tbody>
   </tgroup>
@@ -1213,7 +1219,7 @@ bearerbox-host = localhost
 
 
 <sect3>
-<title>CIMD 1.37</title>
+<title>CIMD 1.37 and 2.0</title>
 
 <programlisting>
 group = smsc
@@ -1222,6 +1228,14 @@ host = 100.101.102.103
 port = 600
 smsc-username = foo
 smsc-password = bar
+
+group = smsc
+smsc = cimd2
+host = 100.101.102.103
+port = 600
+smsc-username = foo
+smsc-password = bar
+keepalive = ...
 </programlisting>
 
  <informaltable frame=none>
@@ -1256,27 +1270,18 @@ smsc-password = bar
         Password in the SMSC machine needed to contact SMSC
      </entry></row>
 
+   <row><entry><literal>keepalive</literal></entry>
+     <entry><literal>number</literal></entry>
+     <entry valign=bottom>
+       <emphasis>Dark, can you explain this a bit..?</emphasis>
+     </entry></row>
+
    </tbody></tgroup></informaltable>
    
 </sect3>
 
 <sect3>
-<title>CIMD 2</title>
-             <para></para>
-<programlisting>
-group = smsc
-smsc = cimd2
-host = 100.101.102.103
-port = 600
-smsc-username = foo
-smsc-password = bar
-keepalive = ...
-</programlisting>
-
-</sect3>
-
-<sect3>
-<title>CMG EMI 2.0</title>
+<title>CMG UCP/EMI 2.0</title>
 
   <para>Kannel supports two types of connections with CMG EMI 2.0 SMS
   centers: direct TCP/IP connections (<literal>emi_ip</literal>) and
@@ -1367,8 +1372,12 @@ address-range = "" (regex of received numbers)
 </sect3>
 
 <sect3>
-<title>OIS 4.0 SMS2000</title>
-
+<title>OIS 4.0 SMS2000 Over Radio PAD</title>
+ 
+   <para>This implementation is over Radio PAD. Following
+   configuration variables are needed, and if you find out the more
+   exact meaning, please send a report.</para>
+  
 <programlisting>
 group = smsc
 smsc = sema
@@ -1387,7 +1396,7 @@ wait_report = 0/1 (0 means false, 1 means true)
 </sect3>
 
 <sect3>
-<title>OIS 5.0 SMS2000</title>
+<title>OIS 5.0 SMS2000 Over X.25</title>
 
 <programlisting>
 group = smsc
@@ -1395,13 +1404,15 @@ smsc = ois
 host = 103.102.101.100
 port = 10000
 receive-port = 10000 (the port in which the SMSC will contact)
-ois-debug-level = ...  (extra debug, optional)
+ois-debug-level = number 0 to 8  (extra debug, optional, see smsc_ois.c)
 </programlisting>
 
 </sect3>
 
 <sect3>
 <title>GSM Modem</title>
+
+   <para>Kannel can use a GSM modem as SMS center.</para>
 
 <programlisting>
 group = smsc
@@ -1431,6 +1442,12 @@ pin = ...     (Optional)
      <entry><literal>device-name</literal></entry>
      <entry valign=bottom>
           The device the modem is connected to, like /dev/ttyS0.
+     </entry></row>
+
+   <row><entry><literal>pin</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+         <emphasis>Nick or somebody, can you explain this?</emphasis>
      </entry></row>
 
    </tbody></tgroup></informaltable>
