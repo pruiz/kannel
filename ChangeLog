@@ -1,6 +1,6 @@
 2001-09-03 Bruno Rodrigues <bruno.rodrigues@litux.org>
-	* documentation: Corrected Makefiles, xml and other files so now 
-	all documentation should compile
+	* Makefile.in, docs/*/*.xml: Corrected Makefiles, xml and other 
+	files so now all documentation should compile
 	* Makefile.in: Added RTF generation of documentation; install-docs
 	now install userguide, alligata and wtls files; tweaks in jade lines
 	* configure.in (and configure): changed --disable-ssl code, ssl is
@@ -9,9 +9,9 @@
 	* debian/changelog, debian/rules: some tweaks to generate CVS deb file
 	* user2.1.xml and wtls.xml: moved to own directories and renamed 
 	user2.1 to alligata. Present on doc/alligata and doc/wtls
-	* alligata and wtls: added "convert" dependency to generated .ps files 
+	* Makefile.in: added "convert" dependency to generated .ps files 
 	from .png to be able to compile documents and done some tweaks to xml
-	* smsbox.c: charset_processing now returns -1 for error and 0 for ok
+	* gw/smsbox.c: charset_processing now returns -1 for error and 0 for ok
 
 2001-09-02 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* userguide.xml: Written information about latest patch. Added 
@@ -26,54 +26,60 @@
 	list.
 	* gw/control.html: Added new fields to form and included some 
 	javascript (I hope it's ok) to select host and port to compose URL.
-	* smsbox.c: Added charset processing to sms-service (and hopefully
+	* gw/smsbox.c: Added charset processing to sms-service (and hopefully
 	to sendsms push). Tested sms-service functionality. 
-	* Unicode Patch: I need help to test and improve the code using other
-	charsets.
+	* gw/smsbox.c: Unicode Patch: I need help to test and improve the 
+	code using other charsets.
 	* doc/kannel.conf: Added ALL possible fields, commented, so it's
 	easier to see what we want and uncomment it.
 
 2001-09-01 Bruno Rodrigues <bruno.rodrigues@litux.org>
-	* "charset", "class" and "coding" patch. Use class to define Message
-	Class (older flash). Use coding to select manually 7/8bit or UCS2. 
-	Use charset to tell kannel which charset the text is.
-	* Removed mwimessages (udh string will be included on userguide)
-	* Added compress field (compress code not yet included)
-	* Added fields_to_dcs and dcs_to_fields to encode/decode DCS field
-	according to ETSI GSM 03.38 in new sms.c. Added MC_*, MWI_* and DC_*
-	* Added reply-requestfailed and reply-emptymessage configuration 
-	strings.
-	* coding (older flag_8bit) is retro-compatible. If unset, defaults to
-	7 bit, or 8 bit if udh is set. 
-	* charset defines which charset text field is. default to ISO-8859-1 
-	for coding=DC_7BIT, UTF16BE for DC_UCS2 (%00%33%00%34) or raw (ignored)
-	for DC_8BIT
-	* Tested in emi2. Added fields_to_dcs to AT too, so everything should 
-	work with it.
-	* Added validity field to AT code. If unset, uses older validity 
-	configuration value. If modem is a Siemens, use F* kind of DCS.
-	* If message is empty, in cimd, change to a one-space message. (Can't
-	cimd send empty messages ?)
-	* In old emi, is DCS defined in XSER2 like in emi2 ?
-	* Added allowed/denied-prefix to sms-service too. Just like accepted-
-	-smsc, if a number prefix is denied on one service, kannel will search
-	for other service. This way, we can have one service for 91 started 
-	numbers and other for other prefixes.
-	* Added black/white list to urltranslations. If rejected, search for a
-	"black-list" service (just like default works)
+	* gw/smsbox.c, gw/msg-decl.h, gw/smsc_*.c: "charset", "class" and 
+	"coding" patch. Use class to define Message Class (older flash). 
+	Use coding to select manually 7/8bit or UCS2.  Use charset to tell 
+	kannel which charset the text is.
+	* gw/smsbox.c, gw/smsc_emi2.c, gw/msg-decl.h: Removed mwimessages 
+	(udh string will be included on userguide)
+	* gw/smsbox.c, gw/msg-decl.h: Added compress field (compress code not 
+	yet included)
+	* gw/sms.c, gw/smsc.h: Added fields_to_dcs and dcs_to_fields to 
+	encode/decode DCS field according to ETSI GSM 03.38 in new sms.c. 
+	Added MC_*, MWI_* and DC_*
+	* gw/smsbox.c: Added reply-requestfailed and reply-emptymessage 
+	configuration strings.
+	* gw/smsc_*.c: coding (older flag_8bit) is retro-compatible. 
+	* gw/smsbox.c, gw/urltrans.c: If unset, defaults to 7 bit, or 8 bit 
+	if udh is set. 
+	* gw/smsbox.c: charset defines which charset text field is. default 
+	to ISO-8859-1 for coding=DC_7BIT, UTF16BE for DC_UCS2 (%00%33%00%34) 
+	or raw (ignored) for DC_8BIT
+	* gw/smsc_emi2.c: Tested in emi2. 
+	* gw/smsc_at.c: Changed dcs processing using fields_to_dcs. 
+	* gw/smsc_at.c: Added validity field to AT code. If unset, uses older 
+	validity configuration value. 
+	* gw/smsc_at.c: If modem is a Siemens, use Fx mode of DCS.
+	* gw/smsc_cimd.c: If message is empty, in cimd, change to a one-space 
+	message. (Can't cimd send empty messages ?)
+	* gw/smsc_emi.c: In old emi, is DCS defined in XSER2 like in emi2 ?
+	* gw/urltrans.c: Added allowed/denied-prefix to sms-service too. Just 
+	like accepted-smsc, if a number prefix is denied on one service, kannel 
+	will search for other service. This way, we can have one service for 91 
+	started numbers and other for other prefixes.
+	* gw/urltrans.c: Added black/white list to urltranslations. If rejected, 
+	search for a "black-list" service (just like default works)
 	* Just try 
 	http://...&class=0&text=%00%33&coding=3
 	http://...&class=0&text=усч&coding=3&charset=ISO-8859-1
-	* Gonna check userguide and write this all to it now.
 
 2001-08-31 Bruno Rodrigues <bruno.rodrigues@litux.org>
-	* If message is NACKed, write it to store so message got
-	out of queue.
-	* Added white/black-list send filter to sms-user and global 
-	smsbox.
-	* Added allowed-prefix send filter to smsc (besides denied-prefix)
-	* Added more fields to bearerbox_access.log
-	* Added dlr.h and dlr.c from Andreas Fink <andreas@fink.org> as of
+	* gw/bb_smscconn.c: If message is NACKed, write it to store so 
+	message got out of queue.
+	* gw/smsbox.c, gwlib/cfg.def: Added white/black-list send filter to 
+	sms-user and global smsbox.
+	* gw/smscconn.c, gw/smsc.c: Added allowed-prefix send filter to 
+	smsc (besides denied-prefix)
+	* gw/bb_smscconn.c: Added more fields to bearerbox_access.log
+	* gw/: Added dlr.h and dlr.c from Andreas Fink <andreas@fink.org> as of
 	Message-Id: <p05100301b7b0fc812c5c@[x]> [delivery reports (update)]
 	* Corrected some glitches, cleaning some warnings when using gcc -Wall
 
