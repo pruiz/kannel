@@ -247,6 +247,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     
     URL *url = NULL;
     HTTPRequest *request = NULL, *response = NULL;
+    HTTPHeader *hdr = NULL;
     unsigned char *ptr = NULL, tempbuffer[4];
     unsigned char *authorization = NULL;
     int how_many_moves = 0;
@@ -311,11 +312,18 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	header = header->next;
     }
     
+    hdr = request->baseheader; 
+    while(hdr != NULL){
+	if(!(strcasecmp(hdr->key, "Content-Length")) &&/*compare==0 for match */
+	   atoi(hdr->value) == 0){
+	    httprequest_remove_header(request, "Content-Length");
+	    break;
+	}
+	hdr = hdr->next;
+    }
     
     
     
-
-
     
     for(;;) {
 	
@@ -1312,6 +1320,7 @@ HTTPHeader *header_create(char *key, char *value) {
 	HTTPHeader *h;
 	
 	h = gw_malloc(sizeof(HTTPHeader));
+	if(h == NULL)return NULL;
 	h->key = gw_strdup(key);
 	h->value = gw_strdup(value);
 	h->next = NULL;
@@ -1352,20 +1361,26 @@ int header_destroy(HTTPHeader *hdr)
 int header_pack(HTTPHeader *hdr)
 {
     HTTPHeader *ptr, *prev;
-    char buf[1024];
+    char *buf = NULL;
+    size_t size = 0;
+    int ret = 0;
     
     while(hdr != NULL) {
 	/* find identical headers and merge them */
 	for(prev = hdr, ptr = hdr->next; ptr != NULL; ptr = ptr->next) {
 	    if (strcasecmp(hdr->key, ptr->key)==0) {
-		sprintf(buf, "%s, %s", hdr->value, ptr->value);
+		size = strlen(hdr->value) + 2 + strlen(ptr->value);
+		buf = malloc(size);
+		ret = sprintf(buf, "%s, %s", hdr->value, ptr->value);
+		if(ret < size) return -1;
+		debug("",0,"ret<%d>, len<%d>",ret,size);
 		gw_free(hdr->value);
 		hdr->value = gw_strdup(buf);
-
 		prev->next = ptr->next;
 		gw_free(ptr->key);
 		gw_free(ptr->value);
 		gw_free(ptr);
+		gw_free(buf);
 
 		ptr = prev;     /* rewind */
 	    }
