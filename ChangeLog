@@ -1,4 +1,9 @@
 2003-10-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wml_compiler.c: fixed DOS bug within wml deck as described in the 
+      mailing list post. Thanks to Vjacheslav for providing this fix.
+      [Msg-ID: <3F7BCE92.9080401@lmt.lv>]
+
+2003-10-07  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: changed example and behaviour description
       according to the following patch.
     * radius/radius_acct.c: Vjacheslav's patch to allow running RADIUS acct

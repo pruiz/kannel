@@ -639,7 +639,7 @@ static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
 		add_end_tag = 1;
 	}
 	output_st_char(wbxml_hex, wbxml);
-	output_st_char(string_table_add(octstr_duplicate(name), wbxml), wbxml);
+	octstr_append_uintvar((*wbxml)->wbxml_string,string_table_add(octstr_duplicate(name), wbxml));
 	warning(0, "WML compiler: Unknown tag in WML source: <%s>", 
 		octstr_get_cstr(name));
     }
@@ -715,7 +715,7 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
 	   string. */
 	wbxml_hex = WBXML_LITERAL;
 	output_st_char(wbxml_hex, wbxml);
-	output_st_char(string_table_add(octstr_duplicate(name), wbxml), wbxml);
+	octstr_append_uintvar((*wbxml)->wbxml_string,string_table_add(octstr_duplicate(name), wbxml));
 	warning(0, "WML compiler: Unknown attribute in WML source: <%s>", 
 		octstr_get_cstr(name));
     }
