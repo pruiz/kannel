@@ -212,7 +212,8 @@ static int add_service(int port, char *interface_name)
 {
     Udpc *udpc;
     
-    udpc = udpc_create(port, interface_name);
+    if ((udpc = udpc_create(port, interface_name)) == NULL)
+	goto error;
     list_add_producer(udpc->outgoing_list);
 
     udpc->receiver = gwthread_create(udp_receiver, udpc);
