@@ -56,12 +56,6 @@ unsigned char gsm_alpha(unsigned char value);
 
 
 /******************************************************************************
- * Message types defines
- */
-#define AT_DELIVER_SM	0
-#define AT_SUBMIT_SM	1
-
-/******************************************************************************
  * Types of GSM modems (as used in kannel.conf: at_type=xxxx)
  */
 #define WAVECOM		"wavecom"
@@ -69,6 +63,19 @@ unsigned char gsm_alpha(unsigned char value);
 #define SIEMENS		"siemens"
 #define FALCOM		"falcom"
 #define NOKIAPHONE	"nokiaphone"
+
+/******************************************************************************
+ * Message types defines
+ */
+#define AT_DELIVER_SM	0
+#define AT_SUBMIT_SM	1
+
+/******************************************************************************
+ * type of phone number defines
+ */
+#define PNT_UNKNOWN	0
+#define PNT_INTER	1
+#define PNT_NATIONAL	2
 
 /******************************************************************************
  * ETSI GSM 03.38, version 6.0.1, section 6.2.1; Default alphabet 
@@ -384,7 +391,7 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 	ostr = octstr_create("");
 
 	/* debug */
-	/*printf("Command: %s\n", cmd);*/
+	printf("Command: %s\n", cmd);
 	
 	/* DEBUG !!! - pretend to send but just return success (0)*/
 	/* return 0; */
@@ -627,6 +634,8 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
  */
 static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	int pos = 0, i,len;
+	int ntype = PNT_UNKNOWN; /* number type default */
+	int nstartpos = 0;	 /* offset for the phone number */
 	
 	/* The message is encoded directly in the text representation of 
 	 * the hex values that will be sent to the modem.
@@ -644,23 +653,41 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	pdu[pos] = numtext(0);
 	pos++;
 	
-	/* destination address
-	 * The numbering type needs to be fixed so
-	 * we use international for now */
-	pdu[pos] = numtext((octstr_len(msg->sms.receiver) & 240) >> 4);
+	/* destination address */
+	len = octstr_len(msg->sms.receiver);
+
+	/* Check for international numbers
+	 * number starting with '+' or '00' are international,
+	 * others are national. */
+	if (strncmp(octstr_get_cstr(msg->sms.receiver), "+", 1) == 0) {
+		debug("AT", 0, "international starting with + (%s)",octstr_get_cstr(msg->sms.receiver) );
+		nstartpos++;
+		ntype = PNT_INTER; /* international */
+	} else if (strncmp(octstr_get_cstr(msg->sms.receiver), "00", 2) == 0) {
+		debug("AT", 0, "international starting with 00 (%s)",octstr_get_cstr(msg->sms.receiver) );
+		nstartpos += 2;
+		ntype = PNT_INTER; /* international */
+	}
+	
+	/* address length */
+	pdu[pos] = numtext(((len - nstartpos) & 240) >> 4);
 	pos++;
-	pdu[pos] = numtext(octstr_len(msg->sms.receiver) & 15);
+	pdu[pos] = numtext((len - nstartpos) & 15);
 	pos++;
-	pdu[pos] = numtext(8 + 1);
+			
+	/* Type of number */
+	pdu[pos] = numtext(8 + ntype);
 	pos++;
+	/* numbering plan: ISDN/Telephone numbering plan */
 	pdu[pos] = numtext(1);
 	pos++;
-
+	
+	debug("AT", 0, "nstartpos: %d", nstartpos);
+	
 	/* make sure there is no blank in the phone number and encode
 	 * an even number of digits */
 	octstr_strip_blanks(msg->sms.receiver);
-	len = octstr_len(msg->sms.receiver);
-	for(i=0; i<len; i+=2) {
+	for(i=nstartpos; i<len; i+=2) {
 		if (i+1 < len) {
 			pdu[pos] = octstr_get_char(msg->sms.receiver, i+1);
 		} else {
