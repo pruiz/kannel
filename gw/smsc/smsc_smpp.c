@@ -617,7 +617,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
      * if MWI is set.
      */
     if (msg->sms.mwi == MWI_UNDEF && msg->sms.mclass != MC_UNDEF)
-        pdu->u.deliver_sm.data_coding = fields_to_dcs(msg, 1); /* force alt_dcs */
+        pdu->u.submit_sm.data_coding = fields_to_dcs(msg, 1); /* force alt_dcs */
     else
         pdu->u.submit_sm.data_coding = fields_to_dcs(msg,
             (msg->sms.alt_dcs != SMS_PARAM_UNDEFINED ?
