@@ -35,6 +35,7 @@ struct URLTranslation {
     Octstr *prefix;	/* for prefix-cut */
     Octstr *suffix;	/* for suffix-cut */
     Octstr *faked_sender;/* works only with certain services */
+    Octstr *default_sender;/* Default sender to sendsms-user */
     long max_messages;	/* absolute limit of reply messages */
     int concatenation;	/* send long messages as concatenated SMS's if true */
     Octstr *split_chars;/* allowed chars to be used to split message */
@@ -575,6 +576,11 @@ Octstr *urltrans_suffix(URLTranslation *t)
     return t->suffix;
 }
 
+Octstr *urltrans_default_sender(URLTranslation *t) 
+{
+    return t->default_sender;
+}
+
 Octstr *urltrans_faked_sender(URLTranslation *t) 
 {
     return t->faked_sender;
@@ -732,6 +738,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
     ot->prefix = NULL;
     ot->suffix = NULL;
     ot->faked_sender = NULL;
+    ot->default_sender = NULL;
     ot->split_chars = NULL;
     ot->split_suffix = NULL;
     ot->footer = NULL;
@@ -776,9 +783,9 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	} else if (text != NULL) {
 	    ot->type = TRANSTYPE_TEXT;
 	    ot->pattern = text;
-    } else if (exec != NULL) {
-        ot->type = TRANSTYPE_EXECUTE;
-        ot->pattern = exec;
+	} else if (exec != NULL) {
+	    ot->type = TRANSTYPE_EXECUTE;
+	    ot->pattern = exec;
 	} else {
 	    error(0, "Configuration group `sms-service' "
 	    	     "did not specify get-url, post-url, file or text.");
@@ -865,6 +872,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 
 	ot->deny_ip = cfg_get(grp, octstr_imm("user-deny-ip"));
 	ot->allow_ip = cfg_get(grp, octstr_imm("user-allow-ip"));
+	ot->default_sender = cfg_get(grp, octstr_imm("default-sender"));
 
     }
     ot->allowed_prefix = cfg_get(grp, octstr_imm("allowed-prefix"));
@@ -932,6 +940,7 @@ static void destroy_onetrans(void *p)
 	octstr_destroy(ot->pattern);
 	octstr_destroy(ot->prefix);
 	octstr_destroy(ot->suffix);
+	octstr_destroy(ot->default_sender);
 	octstr_destroy(ot->faked_sender);
 	octstr_destroy(ot->split_chars);
 	octstr_destroy(ot->split_suffix);

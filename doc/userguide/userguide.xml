@@ -873,7 +873,7 @@ x	should now be able to run the Kannel init.d script that will
 </sect2>
 
 <sect2 id="includes">
-<title>Inclusion of configuration files</title>
+<title id="includes.title">Inclusion of configuration files</title>
 
 	<para>A configuration file may contain a special directive 
 	called <literal>include</literal> to include an other 
@@ -4261,6 +4261,13 @@ text = "No action specified"
         this one. No idea to use with forced-smsc.
      </entry></row>
 
+
+   <row><entry><literal>default-sender</literal></entry>
+     <entry>phone-number</entry>
+     <entry valign=bottom>
+        This number is set as sender if not set by <literal>from</literal>
+	get/post parameter 
+     </entry></row>
 
    <row><entry><literal>faked-sender</literal></entry>
      <entry>phone-number</entry>

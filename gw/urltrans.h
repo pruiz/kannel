@@ -159,6 +159,12 @@ Octstr *urltrans_suffix(URLTranslation *t);
 
 
 /*
+ * Return default sender number, or NULL if not set.
+ */
+Octstr *urltrans_default_sender(URLTranslation *t);
+
+
+/*
  * Return (a recommended) faked sender number, or NULL if not set.
  */
 Octstr *urltrans_faked_sender(URLTranslation *t);

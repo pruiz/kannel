@@ -1,3 +1,13 @@
+2002-03-21  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsbox.c: Fixed sms.service display in bearerbox_access.log: it were
+      only displayed in get/post url, not in text
+    * gw/urltrans.[ch], gwlib/cfg.def: added default-sender to sendsms-user to
+      be used if from field is unset and per-user
+    * doc/userguide/userguide.xml: added default-sender information
+    * doc/userguide/userguide.xml: Added an id parameter to a section title, to
+      fix the link warning
+    * gw/smsbox.c: Added X-Kannel-SMSC to smsbox -> appl HTTP POST
+
 2002-03-20  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_at2.c: fixed compiler warning
 

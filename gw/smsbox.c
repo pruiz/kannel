@@ -343,7 +343,7 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Coding")) == 0) {
     	    sscanf(octstr_get_cstr(val),"%d", coding);
 	}
-	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Pid")) == 0) {
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-PID")) == 0) {
     	    sscanf(octstr_get_cstr(val),"%d", pid);
 	}
 	else if (octstr_case_compare(name, octstr_imm("X-Kannel-MWI")) == 0) {
@@ -431,7 +431,7 @@ static void fill_message(Msg *msg, URLTranslation *trans,
         if (urltrans_accept_x_kannel_headers(trans))
 	    msg->sms.pid = pid;	  
 	else 
-	    warning(0, "Tried to set Pid field, denied.");
+	    warning(0, "Tried to set PID field, denied.");
     }
     if (alt_dcs) {
         if (urltrans_accept_x_kannel_headers(trans))
@@ -728,6 +728,14 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 			    octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
+	if (octstr_len(msg->sms.smsc_id)) {
+	    Octstr *os;
+	    os = octstr_duplicate(msg->sms.smsc_id);
+	    http_header_add(request_headers, "X-Kannel-SMSC",
+	                    octstr_get_cstr(os));
+	    octstr_destroy(os);
+	}
+
 	if(msg->sms.mclass) {
 	    Octstr *os;
 	    os = octstr_format("%d",msg->sms.mclass);
@@ -738,7 +746,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	if(msg->sms.pid) {
 	    Octstr *os;
 	    os = octstr_format("%d",msg->sms.pid);
-	    http_header_add(request_headers, "X-Kannel-Pid", 
+	    http_header_add(request_headers, "X-Kannel-PID", 
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
@@ -940,6 +948,8 @@ static void obey_request_thread(void *arg)
 	    }
 	    octstr_destroy(msg->sms.msgdata);
 	    msg->sms.msgdata = reply;
+	    if(msg->sms.service == NULL && trans != NULL)
+		msg->sms.service = octstr_duplicate(urltrans_name(trans));
 	
 	    msg->sms.coding = 0;
 	    msg->sms.time = time(NULL);	/* set current time */
@@ -1187,6 +1197,8 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	newfrom = octstr_duplicate(urltrans_faked_sender(t));
     } else if (octstr_len(from) > 0) {
 	newfrom = octstr_duplicate(from);
+    } else if (urltrans_default_sender(t) != NULL) {
+	newfrom = octstr_duplicate(urltrans_default_sender(t));
     } else if (global_sender != NULL) {
 	newfrom = octstr_duplicate(global_sender);
     } else {
@@ -1223,7 +1235,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     msg->sms.mclass = mclass;
     
     if ( pid < 0 || pid > 255 ) {
-	returnerror = octstr_create("Pid field misformed, rejected");
+	returnerror = octstr_create("PID field misformed, rejected");
 	goto fielderror;
     }
     msg->sms.pid = pid;
@@ -1688,6 +1700,8 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
     } else if ((from = http_cgi_variable(list, "from")) != NULL &&
 	       octstr_len(from) > 0) {
 	from = octstr_duplicate(from);
+    } else if (urltrans_default_sender(t) != NULL) {
+	from = octstr_duplicate(urltrans_default_sender(t));
     } else if (global_sender != NULL) {
 	from = octstr_duplicate(global_sender);
     } else {
@@ -1841,7 +1855,7 @@ static void sendsms_thread(void *arg)
          * decide if this is a GET or POST request and let the 
          * related routine handle the checking
          */
-        if (body == NULL)
+	    if (body == NULL)
 		answer = smsbox_req_sendsms(args, ip, &status);
 	    else
 		answer = smsbox_sendsms_post(hdrs, body, ip, &status);
@@ -1849,7 +1863,7 @@ static void sendsms_thread(void *arg)
 	else if (octstr_compare(url, sendota_url) == 0)
 	{
 	    answer = smsbox_req_sendota(args, ip, &status);
-    }
+	}
 	else {
 	    answer = octstr_create("Unknown request.");
 	    status = HTTP_NOT_FOUND;
