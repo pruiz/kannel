@@ -54,6 +54,8 @@ static Octstr *unified_prefix;
 static Numhash *black_list;
 static Numhash *white_list;
 
+static long maximum_queue_length;
+
 static long router_thread = -1;
 
 static void log_sms(SMSCConn *conn, Msg *sms, char *message)
@@ -62,7 +64,7 @@ static void log_sms(SMSCConn *conn, Msg *sms, char *message)
     
     text = sms->sms.msgdata ? octstr_duplicate(sms->sms.msgdata) : octstr_create("");
     udh = sms->sms.udhdata ? octstr_duplicate(sms->sms.udhdata) : octstr_create("");
-    if (sms->sms.coding == DC_8BIT || sms->sms.coding == DC_UCS2)
+    if ((sms->sms.coding == DC_8BIT || sms->sms.coding == DC_UCS2))
 	octstr_binary_to_hex(text, 1);
     octstr_binary_to_hex(udh, 1);
 
@@ -73,8 +75,8 @@ static void log_sms(SMSCConn *conn, Msg *sms, char *message)
 	 : "",
 	 sms->sms.service ? octstr_get_cstr(sms->sms.service) : "",
 	 sms->sms.account ? octstr_get_cstr(sms->sms.account) : "",
-	 octstr_get_cstr(sms->sms.sender),
-	 octstr_get_cstr(sms->sms.receiver),
+	 sms->sms.sender ? octstr_get_cstr(sms->sms.sender) : "",
+	 sms->sms.receiver ? octstr_get_cstr(sms->sms.receiver) : "",
 	 sms->sms.mclass, sms->sms.coding, sms->sms.mwi, sms->sms.compress,
 	 sms->sms.dlr_mask,
 	 octstr_len(sms->sms.msgdata), octstr_get_cstr(text),
@@ -166,20 +168,31 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason)
 	else
 	    log_sms(conn, sms, "FAILED Send SMS");
 	msg_destroy(sms);
-    }
+    } 
 }    
-
 
 int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 {
     char *uf;
 
-    /* do some queue control *
-     * if (list_len(incoming_sms) > 200) {
-     *	msg_destroy(sms);
-     *	return -1;
-     * }
-     * else if (list_len(incoming_sms) > 100)
+    /* do some queue control */
+    if (bb_status == BB_FULL && maximum_queue_length != -1 && 
+            list_len(incoming_sms) <= maximum_queue_length) {
+        bb_status = BB_RUNNING;
+        warning(0, "started to accept messages again");
+    }
+
+    if (maximum_queue_length != -1 && list_len(outgoing_sms) > 0 &&
+            list_len(incoming_sms) > maximum_queue_length) {
+        if (bb_status != BB_FULL)
+            bb_status = BB_FULL;
+        warning(0, "incoming messages queue too long, dropping a message");
+        log_sms(conn, sms, "DROPPED Received SMS");
+        gwthread_sleep(0.1); /* letting the queue go down */
+     	return -1;
+    }
+
+    /* else if (list_len(incoming_sms) > 100)
      *	gwthread_sleep(0.5);
      */
     
@@ -307,6 +320,9 @@ int smsc2_start(Cfg *cfg)
 
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
     unified_prefix = cfg_get(grp, octstr_imm("unified-prefix"));
+    if (cfg_get_integer(&maximum_queue_length, grp, 
+                           octstr_imm("maximum-queue-length")) == -1)
+        maximum_queue_length = -1;
 
     white_list = black_list = NULL;
     os = cfg_get(grp, octstr_imm("white-list"));
@@ -610,6 +626,8 @@ int smsc2_rout(Msg *msg)
     msg_destroy(msg);
     return 1;
 }
+
+
 
 
 
