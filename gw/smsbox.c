@@ -128,18 +128,17 @@ static void prepend_catenation_udh(Msg *sms, int part_no, int num_messages,
 static Octstr *extract_msgdata_part(Octstr *msgdata, Octstr *split_chars,
     	    	    	    	    int max_part_len)
 {
-    long i, j, len;
+    long i, len;
     Octstr *part;
 
-    len = -1;
-    for (i = 0; i < octstr_len(split_chars); ++i) {
-	j = octstr_search_char(msgdata, octstr_get_char(split_chars, i), 0);
-	if (len < j && j <= max_part_len)
-	    len = j;
-    }
-    if (len == -1)
-    	len = max_part_len;
-	
+    len = max_part_len;
+    if (split_chars != NULL)
+	for (i = max_part_len; i > 0; i--)
+	    if (octstr_search_char(split_chars,
+				   octstr_get_char(msgdata, i - 1), 0) != -1) {
+		len = i;
+		break;
+	    }
     part = octstr_copy(msgdata, 0, len);
     octstr_delete(msgdata, 0, len);
     return part;
@@ -179,53 +178,66 @@ static List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
 		       int catenate, int msg_sequence, int max_messages,
 		       int max_octets)
 {
-    long max_part_len;
-    long i, num_messages;
+    long max_part_len, udh_len, hf_len, nlsuf_len;
+    long total_messages, msgno, last;
     List *list;
-    Msg *part;
+    Msg *part, *partlist[256];
     Octstr *msgdata;
 
-    /* Compute maximum number of unpacked octets in each part. */
-    if (orig->sms.flag_8bit)
-    	max_part_len = max_octets;
-    else
-    	max_part_len = (max_octets * 8) / 7;
-    max_part_len -= octstr_len(header) + octstr_len(footer);
+    hf_len = octstr_len(header) + octstr_len(footer);
+    nlsuf_len = octstr_len(nonlast_suffix);
     if (orig->sms.flag_udh)
-    	max_part_len -= octstr_len(orig->sms.udhdata);
-    if (catenate) {
-        max_part_len -= CATENATE_UDH_LEN;
-        if (!orig->sms.flag_udh)
-            max_part_len--; /* -1 for the lenght of the UDH */
+	udh_len = octstr_len(orig->sms.udhdata);
+    else
+	udh_len = 0;
+    /* First check whether the message is under one-part maximum */
+    if (orig->sms.flag_8bit)
+	max_part_len = max_octets - udh_len - hf_len;
+    else
+	max_part_len = max_octets * 8 / 7 - (udh_len * 8 + 6) / 7 - hf_len;
+    if (octstr_len(orig->sms.msgdata) > max_part_len && catenate) {
+	/* Change part length to take concatenation overhead into account */
+	if (udh_len == 0)
+	    udh_len = 1;  /* To add the udh total length octet */
+	udh_len += CATENATE_UDH_LEN;
+	if (orig->sms.flag_8bit)
+	    max_part_len = max_octets - udh_len - hf_len;
+	else
+	    max_part_len = max_octets * 8 / 7 - (udh_len * 8 + 6) / 7 - hf_len;
     }
 
-    /* Compute the number of output messages. */
-    num_messages = roundup_div(octstr_len(orig->sms.msgdata), max_part_len);
-    if (num_messages > max_messages)
-    	num_messages = max_messages;
-
-    /* Do the actual splitting. */
-    list = list_create();
     msgdata = octstr_duplicate(orig->sms.msgdata);
-    for (i = 0; i < num_messages; ++i) {
+    msgno = 0;
+    do {
+	msgno++;
 	part = msg_duplicate(orig);
 	octstr_destroy(part->sms.msgdata);
-	part->sms.msgdata = extract_msgdata_part(msgdata, split_chars,
-	    	    	    	    	    	 max_part_len);
+	if (octstr_len(msgdata) <= max_part_len || msgno == max_messages) {
+	    part->sms.msgdata = octstr_copy(msgdata, 0, max_part_len);
+	    last = 1;
+	}
+	else {
+	    part->sms.msgdata = extract_msgdata_part(msgdata, split_chars,
+						     max_part_len - nlsuf_len);
+	    last = 0;
+	}
 	if (header)
 	    octstr_insert(part->sms.msgdata, header, 0);
 	if (footer)
 	    octstr_append(part->sms.msgdata, footer);
-	if (i+1 < num_messages && nonlast_suffix)
+	if (!last && nonlast_suffix)
 	    octstr_append(part->sms.msgdata, nonlast_suffix);
-	
-	if (catenate)
-	    prepend_catenation_udh(part, i+1, num_messages, msg_sequence);
-	
+	partlist[msgno] = part;
+    } while (!last);
+    total_messages = msgno;
+    octstr_destroy(msgdata);
+    list = list_create();
+    for (msgno = 1; msgno <= total_messages; msgno++) {
+	part = partlist[msgno];
+	if (catenate && total_messages > 1)
+	    prepend_catenation_udh(part, msgno, total_messages, msg_sequence);
 	list_append(list, part);
     }
-    octstr_destroy(msgdata);
-    
     return list;
 }
 

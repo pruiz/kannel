@@ -1,3 +1,9 @@
+2001-02-06  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsbox.c: Rewrote message-splitting functions because they
+	had lots and lots of bugs. Basically they didn't work if
+	split-chars, split-suffix or concatenation was defined.
+
 2001-02-05  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/octstr.c: Fixed off-by-one error in octstr_case_search(),
