@@ -16,7 +16,7 @@
 #include "heartbeat.h"
 #include "html.h"
 #include "urltrans.h"
-#include "wap_ota_prov.h"
+#include "ota_prov_attr.h"
 #include "ota_prov.h"
 #include "ota_compiler.h"
 
