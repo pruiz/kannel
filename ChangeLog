@@ -44,7 +44,6 @@
 	* test/test_smsc.c, gwlib/date.[ch]: Moved function
 	date_universal_now from test_smsc.c to date.c.
 	
->>>>>>> 1.1469
 2001-05-03  Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wap_push_pap_compiler.[ch]: A compiler for compiling pap control
