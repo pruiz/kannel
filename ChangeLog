@@ -1,3 +1,12 @@
+2002-12-23 Aarno Syvänen <aarno@gni.ch>
+
+    * timer-freq patch:
+    * gw/wapbox.c: added reading of timer-freq values
+    * wap/wap.h: wtp_initiator_init and wtp_responder_init passes
+      timer-freq values
+    * wap/wtp_resp.c, wap/wtp_init.c: use timer-freq configuration
+      variable as a 'timer tick'.
+
 2002-12-13  Igor Ivoiov <igor@francoudi.com>
 	* wap/wtp_pack.c: fixed a bug in wtp_pack_sar_ack() with sprintf 
 	  into char that could cause a segfault.
