@@ -1,4 +1,8 @@
 2003-09-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * wap/wsp_headers.[ch]: relabeled strip_parameters() and 
+      pack_integeer_value() to have "wsp_" prefix. for cleaner prototypes.
+
+2003-09-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap-appl.c: veto against Bruno's changes for WAP URL mapping added
       in revision 1.89. This needs to be more abstracted and cleanly bound
       with HTTP and RADIUS acct proxy lookups before commited as change.
