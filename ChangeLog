@@ -1,3 +1,8 @@
+2001-03-23  Tuomas Luttinen  <tuo@wapit.com>
+
+	* utils/kannel-stable-rh*.spec (Requires): Now requires libxml2 >= 
+	libxml2-2.2.0. 
+
 2001-03-22  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsc_http.c: put smsc-id to correct place
