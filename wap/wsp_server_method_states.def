@@ -22,6 +22,8 @@ ROW(NULL_METHOD,
 	{
 		List *headers;
 		WAPEvent *invoke;
+		int method;
+		Octstr *method_name;
 
 		/* Prepare the MethodInvoke here, because we have all
 		 * the information nicely available. */
@@ -34,12 +36,15 @@ ROW(NULL_METHOD,
 		invoke = wap_event_create(S_MethodInvoke_Ind);
 		invoke->u.S_MethodInvoke_Ind.server_transaction_id =
 			msm->transaction_id;
-		invoke->u.S_MethodInvoke_Ind.method =
-                        GET_METHODS + pdu->u.Get.subtype;
-		invoke->u.S_MethodInvoke_Ind.url =
+		method = GET_METHODS + pdu->u.Get.subtype;
+		method_name = wsp_method_to_string(method);
+		if (method_name == NULL)
+			method_name = octstr_format("UNKNOWN%02X", method);
+		invoke->u.S_MethodInvoke_Ind.method = method_name;
+		invoke->u.S_MethodInvoke_Ind.request_uri =
 			octstr_duplicate(pdu->u.Get.uri);
-		invoke->u.S_MethodInvoke_Ind.http_headers = headers;
-		invoke->u.S_MethodInvoke_Ind.body = NULL;
+		invoke->u.S_MethodInvoke_Ind.request_headers = headers;
+		invoke->u.S_MethodInvoke_Ind.request_body = NULL;
 		invoke->u.S_MethodInvoke_Ind.session_headers =
 			http_header_duplicate(sm->http_headers);
 		invoke->u.S_MethodInvoke_Ind.addr_tuple =
@@ -60,6 +65,8 @@ ROW(NULL_METHOD,
 		List *headers;
 		WAPEvent *invoke;
 		int req_body_size;
+		int method;
+		Octstr *method_name;
 
 		/* Prepare the MethodInvoke here, because we have all
 		 * the information nicely available. */
@@ -72,11 +79,14 @@ ROW(NULL_METHOD,
 		invoke = wap_event_create(S_MethodInvoke_Ind);
 		invoke->u.S_MethodInvoke_Ind.server_transaction_id =
 			msm->transaction_id;
-		invoke->u.S_MethodInvoke_Ind.method =
-                        POST_METHODS + pdu->u.Post.subtype;
-		invoke->u.S_MethodInvoke_Ind.url =
+		method = POST_METHODS + pdu->u.Get.subtype;
+		method_name = wsp_method_to_string(method);
+		if (method_name == NULL)
+			method_name = octstr_format("UNKNOWN%02X", method);
+		invoke->u.S_MethodInvoke_Ind.method = method_name;
+		invoke->u.S_MethodInvoke_Ind.request_uri =
 			octstr_duplicate(pdu->u.Post.uri);
-		invoke->u.S_MethodInvoke_Ind.http_headers = headers;
+		invoke->u.S_MethodInvoke_Ind.request_headers = headers;
 
 		/*
 		 * The Siemens S35 adds an extra NUL character to the end
@@ -87,7 +97,7 @@ ROW(NULL_METHOD,
 		if(octstr_get_char(pdu->u.Post.data,(req_body_size - 1)) == 0)
 			octstr_truncate(pdu->u.Post.data,(req_body_size - 1));
 
-		invoke->u.S_MethodInvoke_Ind.body = 
+		invoke->u.S_MethodInvoke_Ind.request_body = 
 			octstr_duplicate(pdu->u.Post.data);
 
 
@@ -134,7 +144,7 @@ ROW(HOLDING,
 
 		/* Disconnect the session */
 		wsp_event = wap_event_create(Disconnect_Event);
-		wsp_event->u.Disconnect_Event.session_id = msm->session_id;
+		wsp_event->u.Disconnect_Event.session_handle = msm->session_id;
 		/* We put this on the queue instead of doing it right away,
 		 * because the session machine is currently our caller and
 		 * we don't want to recurse.  We put it in the front of
@@ -153,7 +163,7 @@ ROW(HOLDING,
 
 		/* Suspend the session */
 		wsp_event = wap_event_create(Suspend_Event);
-		wsp_event->u.Suspend_Event.session_id = msm->session_id;
+		wsp_event->u.Suspend_Event.session_handle = msm->session_id;
 		/* See story for Disconnect, above */
 		list_insert(queue, 0, wsp_event);
 	},
@@ -207,7 +217,7 @@ ROW(REQUESTING,
 
 		/* Disconnect the session */
 		wsp_event = wap_event_create(Disconnect_Event);
-		wsp_event->u.Disconnect_Event.session_id = msm->session_id;
+		wsp_event->u.Disconnect_Event.session_handle = msm->session_id;
 		list_insert(queue, 0, wsp_event);
 	},
 	REQUESTING)
@@ -220,7 +230,7 @@ ROW(REQUESTING,
 
 		/* Suspend the session */
 		wsp_event = wap_event_create(Suspend_Event);
-		wsp_event->u.Suspend_Event.session_id = msm->session_id;
+		wsp_event->u.Suspend_Event.session_handle = msm->session_id;
 		list_insert(queue, 0, wsp_event);
 	},
 	REQUESTING)
@@ -287,7 +297,7 @@ ROW(PROCESSING,
 
 		/* Disconnect the session */
 		wsp_event = wap_event_create(Disconnect_Event);
-		wsp_event->u.Disconnect_Event.session_id = msm->session_id;
+		wsp_event->u.Disconnect_Event.session_handle = msm->session_id;
 		list_insert(queue, 0, wsp_event);
 	},
 	PROCESSING)
@@ -300,7 +310,7 @@ ROW(PROCESSING,
 
 		/* Suspend the session */
 		wsp_event = wap_event_create(Suspend_Event);
-		wsp_event->u.Suspend_Event.session_id = msm->session_id;
+		wsp_event->u.Suspend_Event.session_handle = msm->session_id;
 		list_insert(queue, 0, wsp_event);
 	},
 	PROCESSING)
@@ -362,7 +372,7 @@ ROW(REPLYING,
 
 		/* Disconnect the session */
 		wsp_event = wap_event_create(Disconnect_Event);
-		wsp_event->u.Disconnect_Event.session_id = msm->session_id;
+		wsp_event->u.Disconnect_Event.session_handle = msm->session_id;
 		list_insert(queue, 0, wsp_event);
 	},
 	REPLYING)
@@ -375,7 +385,7 @@ ROW(REPLYING,
 
 		/* Suspend the session */
 		wsp_event = wap_event_create(Suspend_Event);
-		wsp_event->u.Suspend_Event.session_id = msm->session_id;
+		wsp_event->u.Suspend_Event.session_handle = msm->session_id;
 		list_insert(queue, 0, wsp_event);
 	},
 	REPLYING)

@@ -4,6 +4,14 @@
  * This file uses a pre-processor trick to define the structure of
  * structures. See the documentation.
  *
+ * Fields of type HTTPHEADER, CAPABILITIES, and OPTIONAL_OCTSTR may
+ * be NULL.  All other fields must be filled in, unless they are
+ * otherwise marked.
+ *
+ * Fields described in the appropriate spec are listed first.  Fields
+ * specific to Kannel are introduced with an empty line.  In some events,
+ * we have combined fields to form an "address tuple" (see wap_addr.h).
+ *
  * Aarno Syvänen
  * Lars Wirzenius
  */
@@ -43,11 +51,11 @@ WAPEVENT(TR_Invoke_Ind,
 	INTEGER(handle)
 	)
 
-WAPEVENT(TR_Invoke_Cnf,
+WAPEVENT(TR_Invoke_Res,
 	INTEGER(handle)
 	)
 
-WAPEVENT(TR_Invoke_Res,
+WAPEVENT(TR_Invoke_Cnf,
 	INTEGER(handle)
 	)
 
@@ -57,8 +65,9 @@ WAPEVENT(TR_Result_Req,
 	)
 
 WAPEVENT(TR_Result_Cnf,
-	ADDRTUPLE(addr_tuple)
 	INTEGER(handle)
+
+	ADDRTUPLE(addr_tuple)
         )
 
 WAPEVENT(TR_Abort_Req,
@@ -69,50 +78,103 @@ WAPEVENT(TR_Abort_Req,
 
 WAPEVENT(TR_Abort_Ind,
         INTEGER(abort_code)
-	ADDRTUPLE(addr_tuple)
 	INTEGER(handle)
+
+	ADDRTUPLE(addr_tuple)
         )
 
 /*
- * Session layer (WSP)
+ * Session layer (WSP), server side
+ * These events use the session id as a handle.
  */
 
 WAPEVENT(S_Connect_Ind,
 	ADDRTUPLE(addr_tuple)
 	HTTPHEADER(client_headers)
 	CAPABILITIES(requested_capabilities)
+
 	INTEGER(session_id)
 	)
 
 WAPEVENT(S_Connect_Res,
 	HTTPHEADER(server_headers)
 	CAPABILITIES(negotiated_capabilities)
-	INTEGER(session_id)
-	)
 
-WAPEVENT(S_Disconnect_Ind,
-	INTEGER(reason_code)
-	INTEGER(redirect_security)
-	INTEGER(redirect_addresses)
-	OCTSTR(error_headers)
-	OCTSTR(error_body)
 	INTEGER(session_id)
 	)
 
 WAPEVENT(S_Suspend_Ind,
 	INTEGER(reason)
+
 	INTEGER(session_id)
 	)
 
 WAPEVENT(S_Resume_Ind,
 	ADDRTUPLE(addr_tuple)
 	HTTPHEADER(client_headers)
+
 	INTEGER(session_id)
 	)
 
 WAPEVENT(S_Resume_Res,
 	HTTPHEADER(server_headers)
+
 	INTEGER(session_id)
+	)
+
+/*
+ * Session layer (WSP), client side
+ */
+
+WAPEVENT(S_Connect_Req,
+	ADDRTUPLE(addr_tuple)
+	HTTPHEADER(client_headers)
+	CAPABILITIES(requested_capabilities)
+
+	INTEGER(session_handle)
+	)
+
+WAPEVENT(S_Suspend_Req,
+
+	INTEGER(session_handle)
+	)
+
+WAPEVENT(S_Resume_Req,
+	ADDRTUPLE(addr_tuple)
+	HTTPHEADER(client_headers)
+
+	INTEGER(session_handle)
+	)
+
+WAPEVENT(S_Resume_Cnf,
+	HTTPHEADER(server_headers)
+
+	INTEGER(session_handle)
+	)
+
+/*
+ * Session layer (WSP), events shared between server and client side
+ * On the server side, the "handle" field is always the session id.
+ */
+
+WAPEVENT(S_Disconnect_Req,
+	INTEGER(reason_code)
+	INTEGER(redirect_security)	/* Only meaningful if redirecting */
+	INTEGER(redirect_addresses)	/* FIXME: Wrong type, not used */
+	OPTIONAL_OCTSTR(error_headers)
+	OPTIONAL_OCTSTR(error_body)
+
+	INTEGER(session_handle)
+	)
+
+WAPEVENT(S_Disconnect_Ind,
+	INTEGER(reason_code)
+	INTEGER(redirect_security)	/* Only meaningful if redirecting */
+	INTEGER(redirect_addresses)	/* FIXME: Wrong type, not used */
+	OPTIONAL_OCTSTR(error_headers)
+	OPTIONAL_OCTSTR(error_body)
+
+	INTEGER(session_handle)
 	)
 
 /*
@@ -120,14 +182,17 @@ WAPEVENT(S_Resume_Res,
  */
 
 WAPEVENT(Disconnect_Event,
-	INTEGER(session_id)
+
+	INTEGER(session_handle)
 	)
 
 WAPEVENT(Suspend_Event,
-	INTEGER(session_id)
+
+	INTEGER(session_handle)
 	)
 
 WAPEVENT(Release_Event,
+
 	INTEGER(dummy)
 	)
 
@@ -136,15 +201,15 @@ WAPEVENT(Abort_Event,
 	)
 
 /*
- * Per-method events for session layer
+ * Per-method events for session layer, server side
  */
 
 WAPEVENT(S_MethodInvoke_Ind,
 	INTEGER(server_transaction_id)
-	INTEGER(method)
-	OCTSTR(url)
-	HTTPHEADER(http_headers)
-	OCTSTR(body)
+	OCTSTR(method)				/* All caps */
+	OCTSTR(request_uri)
+	HTTPHEADER(request_headers)
+	OPTIONAL_OCTSTR(request_body)
 
 	HTTPHEADER(session_headers)
 	ADDRTUPLE(addr_tuple)
@@ -154,6 +219,7 @@ WAPEVENT(S_MethodInvoke_Ind,
 
 WAPEVENT(S_MethodInvoke_Res,
 	INTEGER(server_transaction_id)
+
 	INTEGER(session_id)
 	)
 
@@ -161,20 +227,70 @@ WAPEVENT(S_MethodResult_Req,
 	INTEGER(server_transaction_id)
 	INTEGER(status)
 	HTTPHEADER(response_headers)
-	OCTSTR(response_body)
+	OPTIONAL_OCTSTR(response_body)
+
 	INTEGER(session_id)
 	)
 
 WAPEVENT(S_MethodResult_Cnf,
 	INTEGER(server_transaction_id)
+
 	INTEGER(session_id)
+	)
+
+/*
+ * Per-method events for session layer, client side
+ */
+
+WAPEVENT(S_MethodInvoke_Req,
+	INTEGER(client_transaction_id)
+	OCTSTR(method)
+	OCTSTR(request_uri)
+	HTTPHEADER(request_headers)
+	OPTIONAL_OCTSTR(request_body)
+
+	INTEGER(session_handle)
+	)
+
+WAPEVENT(S_MethodInvoke_Cnf,
+	INTEGER(client_transaction_id)
+
+	INTEGER(session_handle)
+	)
+
+WAPEVENT(S_MethodResult_Ind,
+	INTEGER(client_transaction_id)
+	INTEGER(status)
+	HTTPHEADER(response_headers)
+	OPTIONAL_OCTSTR(response_body)
+
+	INTEGER(session_handle)
+	)
+
+WAPEVENT(S_MethodResult_Res,
+	INTEGER(client_transaction_id)
+
+	INTEGER(session_handle)
+	)
+
+/*
+ * Per-method events used by the session layer
+ * These events are used by both client and server side.
+ */
+
+WAPEVENT(S_MethodAbort_Req,
+	INTEGER(transaction_id)
+
+	INTEGER(session_hande)
 	)
 
 WAPEVENT(S_MethodAbort_Ind,
 	INTEGER(transaction_id)
 	INTEGER(reason)
-	INTEGER(session_id)
+
+	INTEGER(session_handle)
 	)
+
 /*
  * Per-push events used by the session layer
  */
@@ -260,13 +376,22 @@ WAPEVENT(RcvErrorPDU,
  * Events used by connectionless session protocol (WSP)
  */
 
+WAPEVENT(S_Unit_MethodInvoke_Req,
+	ADDRTUPLE(addr_tuple)
+	INTEGER(transaction_id)
+	OCTSTR(method)
+	OCTSTR(request_uri)
+	HTTPHEADER(request_headers)
+	OPTIONAL_OCTSTR(request_body)
+	)
+
 WAPEVENT(S_Unit_MethodInvoke_Ind,
 	ADDRTUPLE(addr_tuple)
 	INTEGER(transaction_id)
-	INTEGER(method)
+	OCTSTR(method)				/* All caps */
 	OCTSTR(request_uri)
 	HTTPHEADER(request_headers)
-	OCTSTR(request_body)
+	OPTIONAL_OCTSTR(request_body)
 	)
 
 WAPEVENT(S_Unit_MethodResult_Req,
@@ -274,11 +399,20 @@ WAPEVENT(S_Unit_MethodResult_Req,
 	INTEGER(transaction_id)
 	INTEGER(status)
 	HTTPHEADER(response_headers)
-	OCTSTR(response_body)
+	OPTIONAL_OCTSTR(response_body)
+	)
+
+WAPEVENT(S_Unit_MethodResult_Ind,
+	ADDRTUPLE(addr_tuple)
+	INTEGER(transaction_id)
+	INTEGER(status)
+	HTTPHEADER(response_headers)
+	OPTIONAL_OCTSTR(response_body)
 	)
 
 #undef WAPEVENT
 #undef OCTSTR
+#undef OPTIONAL_OCTSTR
 #undef INTEGER
 #undef HTTPHEADER
 #undef ADDRTUPLE

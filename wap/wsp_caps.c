@@ -72,6 +72,10 @@ List *wsp_cap_duplicate_list(List *caps_list) {
 	long i;
 
 	new_list = list_create();
+
+	if (caps_list == NULL)
+		return new_list;
+
 	for (i = 0; i < list_len(caps_list); i++) {
 		cap = list_get(caps_list, i);
 		list_append(new_list, wsp_cap_duplicate(cap));
@@ -97,6 +101,9 @@ List *wsp_cap_unpack_list(Octstr *caps) {
 	long pos, capslen;
 
 	caps_list = list_create();
+	if (caps == NULL)
+		return caps_list;
+
 	capslen = octstr_len(caps);
 	pos = 0;
 	while (pos < capslen) {

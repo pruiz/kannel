@@ -190,10 +190,9 @@ static void main_thread(void *arg)
 	    /* FIXME: Not yet used by WSP layer */
 	    res->u.S_Connect_Res.server_headers = NULL;
 	    res->u.S_Connect_Res.negotiated_capabilities =
-	    negotiate_capabilities(
-	    ind->u.S_Connect_Ind.requested_capabilities);
-	    res->u.S_Connect_Res.session_id =
-	    ind->u.S_Connect_Ind.session_id;
+	        negotiate_capabilities(
+	            ind->u.S_Connect_Ind.requested_capabilities);
+	    res->u.S_Connect_Res.session_id = ind->u.S_Connect_Ind.session_id;
 	    wsp_session_dispatch_event(res);
 	    wap_event_destroy(ind);
 	    break;
@@ -540,7 +539,7 @@ static void start_fetch(WAPEvent *event)
     long session_id;
     struct content content;
     static struct content empty_content;
-    int method;		/* type of request, normally a get or a post */
+    Octstr *method;	    /* type of request, normally a get or a post */
     Octstr *request_body;
     int x_wap_tod;          /* X-WAP.TOD header was present in request */
     Octstr *magic_url;
@@ -557,12 +556,12 @@ static void start_fetch(WAPEvent *event)
     
 	p = &event->u.S_MethodInvoke_Ind;
 	session_headers = p->session_headers;
-	request_headers = p->http_headers;
-	url = octstr_duplicate(p->url);
+	request_headers = p->request_headers;
+	url = octstr_duplicate(p->request_uri);
 	addr_tuple = p->addr_tuple;
 	session_id = p->session_id;
 	client_SDU_size = p->client_SDU_size;
-	request_body = octstr_duplicate(p->body);
+	request_body = octstr_duplicate(p->request_body);
 	method = p->method;
     } else {
 	struct S_Unit_MethodInvoke_Ind *p;
@@ -608,7 +607,8 @@ static void start_fetch(WAPEvent *event)
     http_header_pack(actual_headers);
     
     magic_url = octstr_create_immutable("kannel:alive");
-    if (method == 0x40 && octstr_compare(url, magic_url) == 0) {
+    if (octstr_str_compare(method, "GET")  == 0 &&
+        octstr_compare(url, magic_url) == 0) {
 	ret = HTTP_OK;
 	resp_headers = list_create();
 	http_header_add(resp_headers, "Content-Type", "text/vnd.wap.wml");
@@ -617,13 +617,13 @@ static void start_fetch(WAPEvent *event)
 	octstr_destroy(request_body);
 	return_reply(ret, content, resp_headers, client_SDU_size,
 		     event, session_id, url, x_wap_tod);
-    } else if (method == 0x40 || method == 0x60) {
-	if (method == 0x40 && request_body != NULL) {
+    } else if (octstr_str_compare(method, "GET") == 0 ||
+               octstr_str_compare(method, "POST") == 0) {
+	if (request_body != NULL && octstr_str_compare(method, "GET") == 0) {
 	    octstr_destroy(request_body);
 	    request_body = NULL;
 	}
-	id = http_start_request(caller, url, actual_headers, 
-	request_body, 0);
+	id = http_start_request(caller, url, actual_headers, request_body, 0);
 	http_destroy_headers(actual_headers);
 	octstr_destroy(request_body);
 	
@@ -637,7 +637,7 @@ static void start_fetch(WAPEvent *event)
 	dict_put(id_to_request_data, idstr, p);
 	octstr_destroy(idstr);
     } else {
-	error(0, "WSP: Method %d not supported.", method);
+	error(0, "WSP: Method %s not supported.", octstr_get_cstr(method));
 	content.body = octstr_create("");
 	resp_headers = NULL;
 	ret = HTTP_NOT_IMPLEMENTED;

@@ -26,6 +26,7 @@ WAPEvent *wap_event_create(WAPEventName type) {
 			{ struct name *p = &event->u.name; fields } \
 			break;
 	#define OCTSTR(name) p->name = NULL;
+	#define OPTIONAL_OCTSTR(name) p->name = NULL;
 	#define INTEGER(name) p->name = 0;
 	#define HTTPHEADER(name) p->name = NULL;
 	#define ADDRTUPLE(name) p->name = NULL;
@@ -51,6 +52,7 @@ void wap_event_destroy(WAPEvent *event) {
 			{ struct name *p = &event->u.name; fields; } \
 			break;
 	#define OCTSTR(name) octstr_destroy(p->name);
+	#define OPTIONAL_OCTSTR(name) octstr_destroy(p->name);
 	#define INTEGER(name) p->name = 0;
 	#define HTTPHEADER(name) http_destroy_headers(p->name);
 	#define ADDRTUPLE(name) wap_addr_tuple_destroy(p->name);
@@ -87,6 +89,7 @@ WAPEvent *wap_event_duplicate(WAPEvent *event) {
 			  fields } \
 			break;
 	#define OCTSTR(name) p->name = octstr_duplicate(q->name);
+	#define OPTIONAL_OCTSTR(name) p->name = octstr_duplicate(q->name);
 	#define INTEGER(name) p->name = q->name;
 	#define HTTPHEADER(name) p->name = http_header_duplicate(q->name);
 	#define ADDRTUPLE(name) p->name = wap_addr_tuple_duplicate(q->name);
@@ -124,9 +127,20 @@ void wap_event_dump(WAPEvent *event) {
 		#define OCTSTR(name) \
 			debug("wap.event", 0, "%s =", #name); \
 			octstr_dump(p->name, 1);
+		#define OPTIONAL_OCTSTR(name) \
+			if (p->name == NULL) \
+				debug("wap.event", 0, "%s = NULL", #name); \
+			else { \
+				debug("wap.event", 0, "%s =", #name); \
+				octstr_dump(p->name, 1); \
+			}
 		#define INTEGER(name) \
 			debug("wap.event", 0, "  %s = %ld", #name, p->name);
-		#define HTTPHEADER(name)    http_header_dump(p->name);
+		#define HTTPHEADER(name) \
+			if (p->name == NULL) \
+				debug("wap.event", 0, "%s = NULL", #name); \
+			else \
+			    http_header_dump(p->name);
 		#define ADDRTUPLE(name)     wap_addr_tuple_dump(p->name);
 		#define CAPABILITIES(name)  wsp_cap_dump_list(p->name);
 		#include "wap_events.def"
@@ -138,9 +152,28 @@ void wap_event_dump(WAPEvent *event) {
 }
 
 
-
 void wap_event_assert(WAPEvent *event) {
 	gw_assert(event != NULL),
 	gw_assert(event->type >= 0);
 	gw_assert(event->type < WAPEventNameCount);
+
+	switch (event->type) {
+#define WAPEVENT(name, fields) \
+	case name: \
+	{ struct name *p = &event->u.name; fields; p = NULL; break; }
+#define OCTSTR(name) \
+	gw_assert(p->name != NULL); \
+	/* This is a trick to make the Octstr module run its assertions */ \
+	gw_assert(octstr_len(p->name) >= 0);
+#define OPTIONAL_OCTSTR(name) \
+	gw_assert(p->name == NULL || octstr_len(p->name) >= 0);
+#define INTEGER(name)
+#define HTTPHEADER(name)
+#define ADDRTUPLE(name) \
+	gw_assert(p->name != NULL);
+#define CAPABILITIES(name)
+#include "wap_events.def"
+	default:
+		debug("wap.event", 0, "Unknown type");
+	}
 }

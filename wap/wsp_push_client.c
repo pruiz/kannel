@@ -61,7 +61,7 @@ static void push_client_machine_destroy(void *a);
 static WSPPushClientMachine *push_client_machine_find_or_create(WAPEvent *e);
 
 /*
- * Ditto, expect do not create the machine and look after machine with a 
+ * Ditto, except do not create the machine and look for machine with a 
  * specific identification number.
  */
 static WSPPushClientMachine push_client_machine_find_using_cpid(long cpid);
@@ -172,7 +172,7 @@ static void push_client_event_handle(WSPPushClientMachine *cpm,
                                      WAPEvent *e)
 {
     WAPEvent *wtp_event;
-    WSP_PDU *pdu;
+    WSP_PDU *pdu = NULL;
 
     wap_event_assert(e);
     gw_assert(cpm);
@@ -217,9 +217,7 @@ static void push_client_event_handle(WSPPushClientMachine *cpm,
              return;
          }
 
-    if (e->type == TR_Invoke_Ind)
-	wsp_pdu_destroy(pdu);
-
+    wsp_pdu_destroy(pdu);
     wap_event_destroy(e);
     
     if (cpm->state == PUSH_CLIENT_NULL_STATE)
@@ -315,8 +313,15 @@ static WSPPushClientMachine *push_client_machine_find_or_create(WAPEvent *e)
 	    error(0, "WSP_PUSH_CLIENT: WTP abort to a nonexisting push client"
                   " machine");
 	break;
+
+	default:
+	    error(0, "WSP_PUSH_CLIENT: Cannot handle event type %s",
+		wap_event_name(e->type));
+	break;
         }
     }
+
+    return cpm;
 }
 
 static WSPPushClientMachine *push_client_machine_create(long transid)

@@ -314,8 +314,8 @@ static void dispatch_datagram(WAPEvent *dgram)
             octstr_duplicate(dgram->u.T_DUnitdata_Req.addr_tuple->remote->address);
         msg->wdp_datagram.destination_port =
             dgram->u.T_DUnitdata_Req.addr_tuple->remote->port;
-        msg->wdp_datagram.user_data = dgram->u.T_DUnitdata_Req.user_data;
-	dgram->u.T_DUnitdata_Req.user_data = NULL;
+        msg->wdp_datagram.user_data =
+	    octstr_duplicate(dgram->u.T_DUnitdata_Req.user_data);
 
 	put_msg_on_queue(msg);
     }

@@ -221,11 +221,11 @@ static WSPMachine *find_session_machine(WAPEvent *event, WSP_PDU *pdu) {
 		break;
 
 	case Disconnect_Event:
-		session_id = event->u.Disconnect_Event.session_id;
+		session_id = event->u.Disconnect_Event.session_handle;
 		break;
 
 	case Suspend_Event:
-		session_id = event->u.Suspend_Event.session_id;
+		session_id = event->u.Suspend_Event.session_handle;
 		break;
 
 	case S_MethodInvoke_Res:
@@ -847,7 +847,13 @@ static Octstr *make_resume_reply_pdu(WSPMachine *m, List *headers) {
 
 	/* Not specified for Resume replies */
 	pdu->u.Reply.status = wsp_convert_http_status_to_wsp_status(HTTP_OK);
-	pdu->u.Reply.headers = wsp_headers_pack(headers, 1);
+	if (headers == NULL) {
+		headers = http_create_empty_headers();
+		pdu->u.Reply.headers = wsp_headers_pack(headers, 1);
+		http_destroy_headers(headers);
+	} else {
+		pdu->u.Reply.headers = wsp_headers_pack(headers, 1);
+	}
 	pdu->u.Reply.data = octstr_create("");
 
 	os = wsp_pdu_pack(pdu);
@@ -953,7 +959,7 @@ static void wsp_indicate_disconnect(WSPMachine *sm, long reason) {
 	new_event->u.S_Disconnect_Ind.redirect_addresses = 0;
 	new_event->u.S_Disconnect_Ind.error_headers = NULL;
 	new_event->u.S_Disconnect_Ind.error_body = NULL;
-	new_event->u.S_Disconnect_Ind.session_id = sm->session_id;
+	new_event->u.S_Disconnect_Ind.session_handle = sm->session_id;
 	dispatch_to_appl(new_event);
 }
 
@@ -1006,7 +1012,7 @@ static void wsp_indicate_method_abort(WSPMethodMachine *msm, long reason) {
 	new_event = wap_event_create(S_MethodAbort_Ind);
 	new_event->u.S_MethodAbort_Ind.transaction_id = msm->transaction_id;
 	new_event->u.S_MethodAbort_Ind.reason = reason;
-	new_event->u.S_MethodAbort_Ind.session_id = msm->session_id;
+	new_event->u.S_MethodAbort_Ind.session_handle = msm->session_id;
 	dispatch_to_appl(new_event);
 }
 

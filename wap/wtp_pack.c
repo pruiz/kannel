@@ -71,8 +71,8 @@ WAPEvent *wtp_pack_invoke(WTPInitMachine *machine, WAPEvent *event)
  */
     pdu->u.Invoke.tid = (unsigned short) machine->tid;
     pdu->u.Invoke.tidnew = machine->tidnew;
-    pdu->u.Invoke.user_data = octstr_duplicate(
-        event->u.TR_Invoke_Req.user_data);
+    pdu->u.Invoke.user_data =
+	    octstr_duplicate(event->u.TR_Invoke_Req.user_data);
     pdu->u.Invoke.class = event->u.TR_Invoke_Req.tcl;
     pdu->u.Invoke.uack = event->u.TR_Invoke_Req.up_flag;
 

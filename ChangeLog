@@ -1,3 +1,35 @@
+2000-11-28  Richard Braakman  <dark@wapit.com>
+
+	* wap/wap_events.def: Added WSP client-side events (not used yet).
+
+	* Renamed "session_id" to "session_handle" for WSP session events
+	that are used by both client and server side.  The client side does
+	not know the session id until after it is connected, so it can not
+	use that as a handle.
+
+	* Made "method" an OCTSTR field instead of INTEGER.  Now the 
+	application layer need no longer worry about method encoding
+	values.  This is a first step toward supporting extended methods,
+	which have no fixed number.
+
+	* Renamed S_MethodInvoke_Ind fields to be closer to the spec.
+
+	* Introduced OPTIONAL_OCTSTR, and require that OCTSTR and
+	ADDRTUPLE fields never be NULL.  wap_event_assert now checks this.
+	HTTPHEADER, CAPABILITIES, and OPTIONAL_OCTSTR fields can be NULL.	
+	All uses have been checked to see if they can deal with this,
+	and some have been adjusted.
+
+	* wap/wap_events.def: Formalized distinction between fields in
+	the spec and fields added by Kannel.
+
+	* wap/wsp_push_client.c: In push_client_machine_find_or_create,
+	add default case to handle unexpected event types, and always
+	destroy "pdu" variable (to avoid gcc warnings).
+
+	* wap/wsp_push_client.h: Define INTEGER fields as long, just like
+	everywhere else.
+
 2000-11-28  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/smsbox.[ch], gw/smsbox_req.[ch]: Call function to write

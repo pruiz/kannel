@@ -77,6 +77,8 @@ static WAPEvent *unpack_datagram(WAPEvent *datagram) {
 	Octstr *os;
 	WSP_PDU *pdu;
 	long tid_byte;
+	int method;
+	Octstr *method_name;
 
 	gw_assert(datagram->type == T_DUnitdata_Ind);
 	
@@ -110,18 +112,17 @@ static WAPEvent *unpack_datagram(WAPEvent *datagram) {
 	switch (pdu->type) {
 	case Get:
 		debug("wap.wsp", 0, "Connectionless Get request received.");
-		event->u.S_Unit_MethodInvoke_Ind.method =
-                        GET_METHODS + pdu->u.Get.subtype;
+		method = GET_METHODS + pdu->u.Get.subtype;
 		event->u.S_Unit_MethodInvoke_Ind.request_uri = 
 			octstr_duplicate(pdu->u.Get.uri);
 		event->u.S_Unit_MethodInvoke_Ind.request_headers = 
 			wsp_headers_unpack(pdu->u.Get.headers, 0);
 		event->u.S_Unit_MethodInvoke_Ind.request_body = NULL;
 		break;
+
 	case Post:
 		debug("wap.wsp", 0, "Connectionless Post request received.");
-		event->u.S_Unit_MethodInvoke_Ind.method =
-                        POST_METHODS + pdu->u.Post.subtype;
+                method = POST_METHODS + pdu->u.Post.subtype;
 		event->u.S_Unit_MethodInvoke_Ind.request_uri = 
 			octstr_duplicate(pdu->u.Post.uri);
 		event->u.S_Unit_MethodInvoke_Ind.request_headers = 
@@ -129,10 +130,16 @@ static WAPEvent *unpack_datagram(WAPEvent *datagram) {
 		event->u.S_Unit_MethodInvoke_Ind.request_body = 
 			octstr_duplicate(pdu->u.Post.data);
 		break;
+
 	default:
 		warning(0, "WSP UNIT: Unsupported PDU type %d", pdu->type);
 		goto error;
 	}
+
+	method_name = wsp_method_to_string(method);
+	if (method_name == NULL)
+		method_name = octstr_format("UNKNOWN%02X", method);
+	event->u.S_Unit_MethodInvoke_Ind.method = method_name;
 
 	octstr_destroy(os);
 	wsp_pdu_destroy(pdu);

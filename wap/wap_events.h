@@ -33,6 +33,7 @@ struct WAPEvent {
 	union {
 	#define WAPEVENT(name, fields) struct name { fields } name;
 	#define OCTSTR(name) Octstr *name;
+	#define OPTIONAL_OCTSTR(name) Octstr *name; /* May be NULL */
 	#define INTEGER(name) long name;
 	#define HTTPHEADER(name) List *name;
 	#define ADDRTUPLE(name) WAPAddrTuple *name;
