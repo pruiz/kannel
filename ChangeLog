@@ -1,3 +1,8 @@
+2003-02-24  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bearerbox.c, gw/bb_boxc.c, gw/bb_http.c: admin HTTP command 'restart' added
+      to restart bearerbox. Patch by Alexander.
+      [Msg-ID: <200302222202.55347.a.malysh@centrium.de>]
+
 2003-02-23  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: fixed a mistakely deleted increament of msg_id_counter
       in smpp_create() for sequence_numbers starting 0x0000001.
