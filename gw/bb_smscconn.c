@@ -237,7 +237,7 @@ static void sms_router(void *arg)
 	if (ret == -1) {
             warning(0, "No SMSCes to receive message, discarding it!");
             alog("SMS DISCARDED - SMSC:%s receiver:%s msg: '%s'",
-                 (msg->sms.smsc_id) == NULL ?
+                 (msg->sms.smsc_id) != NULL ?
                  octstr_get_cstr(msg->sms.smsc_id) : "unknown",
                  octstr_get_cstr(msg->sms.receiver),
                  octstr_get_cstr(msg->sms.msgdata));

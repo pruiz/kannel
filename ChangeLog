@@ -1,3 +1,8 @@
+2001-03-21  Uoti Urpala  <uau@wapit.com>
+
+	* gw/bb_smscconn.c: Fixed incorrect test in sms_router, the
+	smsc_id of a discarded message was logged only if it _was_ NULL.
+
 2001-03-20  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/http.c: Server side now accepts POST requests.  This
