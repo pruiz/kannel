@@ -85,11 +85,11 @@ AC_CHECK_LIB(socket, accept)
 AC_CHECK_LIB(nsl, inet_ntoa)
 AC_CHECK_LIB(resolv, inet_ntop)
 AC_CHECK_LIB(bind, inet_ntop)
-AC_CHECK_LIB(pthread, pthread_exit, [pthread="yes"])
+AC_CHECK_LIB(pthread, pthread_exit, [LIBS="$LIBS -lpthread"; pthread="yes"])
 if test -z "$pthread"; then
 	AC_CHECK_LIB(c_r, pthread_exit, [LIBS="$LIBS -lc_r"])
 fi
-AC_CHECK_LIB(iconv, libiconv, [iconv="yes"])
+AC_CHECK_LIB(iconv, libiconv, [LIBS="$LIBS -liconv"; iconv="yes"])
 if test -z "$iconv"; then
   AC_MSG_WARN([*** No iconv() on your system. Can't use character set convertion!])
 fi

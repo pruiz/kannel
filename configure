@@ -1504,7 +1504,7 @@ LIBS="$ac_save_LIBS"
 fi
 if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
   echo "$ac_t""yes" 1>&6
-  pthread="yes"
+  LIBS="$LIBS -lpthread"; pthread="yes"
 else
   echo "$ac_t""no" 1>&6
 fi
@@ -1586,7 +1586,7 @@ LIBS="$ac_save_LIBS"
 fi
 if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
   echo "$ac_t""yes" 1>&6
-  iconv="yes"
+  LIBS="$LIBS -liconv"; iconv="yes"
 else
   echo "$ac_t""no" 1>&6
 fi
