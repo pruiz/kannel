@@ -2,6 +2,8 @@
     * gw/bb_store.c: fixed possible race conditioning in store_save().
       Thanks to Alexander for pointing this out and providing a patch.
       [Msg-ID: <200301040008.44151.a.malysh@centrium.de>]
+    * gw/wapbox.c, gw/wap-appl.c: added device_home global to allow returning
+      to the device-home URL if smart-errors are activated.
 
 2003-01-02  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: fixed typo from last commit.
