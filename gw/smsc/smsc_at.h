@@ -115,7 +115,7 @@ typedef struct ModemDef {
 } ModemDef;
 
 typedef struct PrivAT2data {
-    List *outgoing_queue;
+    gw_prioqueue_t *outgoing_queue;
     ModemDef *modem;
     long device_thread;
     int	shutdown; /* Internal signal to shut down */

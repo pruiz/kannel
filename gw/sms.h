@@ -191,4 +191,10 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
                 Octstr *nonlast_suffix, Octstr *split_chars, int catenate,
                 unsigned long msg_sequence, int max_messages, int max_octets);
 
+/**
+ * Compare priority and time of two sms's.
+ * @return -1 of a < b; 0 a = b; 1 a > b
+ */
+int sms_priority_compare(const void *a, const void *b);
+
 #endif

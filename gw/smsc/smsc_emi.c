@@ -93,7 +93,7 @@
 
 typedef struct privdata {
     Octstr	*name;
-    List	*outgoing_queue;
+    gw_prioqueue_t *outgoing_queue;
     long	receiver_thread;
     long	sender_thread;
     int		shutdown;	  /* Internal signal to shut down */
@@ -284,7 +284,7 @@ static Connection *open_send_connection(SMSCConn *conn)
 
     while (!privdata->shutdown) {
 
-    while ((msg = list_extract_first(privdata->outgoing_queue))) {
+    while ((msg = gw_prioqueue_remove(privdata->outgoing_queue))) {
         bb_smscconn_send_failed(conn, msg,
                          SMSCCONN_FAILED_TEMPORARILY, NULL);
     }
@@ -909,7 +909,7 @@ static void clear_sent(PrivData *privdata)
 	  octstr_get_cstr(privdata->name));
     for (i = 0; i < EMI2_MAX_TRN; i++) {
 	if (privdata->slots[i].sendtime && privdata->slots[i].sendtype == 51)
-	    list_produce(privdata->outgoing_queue, privdata->slots[i].sendmsg);
+	    gw_prioqueue_produce(privdata->outgoing_queue, privdata->slots[i].sendmsg);
 	privdata->slots[i].sendtime = 0;
     }
     privdata->unacked = 0;
@@ -922,19 +922,19 @@ static void clear_sent(PrivData *privdata)
  */
 static EMI2Event emi2_wait (SMSCConn *conn, Connection *server, double seconds)
 {
-    if (emi2_can_send(conn) && list_len(PRIVDATA(conn)->outgoing_queue)) {
+    if (emi2_can_send(conn) && gw_prioqueue_len(PRIVDATA(conn)->outgoing_queue)) {
 	return EMI2_SENDREQ;
     }
     
     if (server != NULL) {
 	switch (conn_wait(server, seconds)) {
-	case 1: return list_len(PRIVDATA(conn)->outgoing_queue) ? EMI2_SENDREQ : EMI2_TIMEOUT;
+	case 1: return gw_prioqueue_len(PRIVDATA(conn)->outgoing_queue) ? EMI2_SENDREQ : EMI2_TIMEOUT;
 	case 0: return EMI2_SMSCREQ;
 	default: return EMI2_CONNERR;
 	}
     } else {
 	gwthread_sleep(seconds);
-	return list_len(PRIVDATA(conn)->outgoing_queue) ? EMI2_SENDREQ : EMI2_TIMEOUT;
+	return gw_prioqueue_len(PRIVDATA(conn)->outgoing_queue) ? EMI2_SENDREQ : EMI2_TIMEOUT;
     }
 }
 
@@ -998,7 +998,7 @@ static int emi2_do_send(SMSCConn *conn, Connection *server)
     
     /* Send messages if there's room in the sending window */
     while (emi2_can_send(conn) &&
-           (msg = list_extract_first(PRIVDATA(conn)->outgoing_queue)) != NULL) {
+           (msg = gw_prioqueue_remove(PRIVDATA(conn)->outgoing_queue)) != NULL) {
         int nexttrn = emi2_next_trn(conn);
 
         if (conn->throughput)
@@ -1205,7 +1205,7 @@ static void emi2_idleprocessing(SMSCConn *conn, Connection **server)
 		    warning(0, "EMI2[%s]: received neither ACK nor NACK for message %d " 
 			    "in %d seconds, resending message", octstr_get_cstr(privdata->name),
 			    i, PRIVDATA(conn)->waitack);
-		    list_produce(PRIVDATA(conn)->outgoing_queue,
+		    gw_prioqueue_produce(PRIVDATA(conn)->outgoing_queue,
 				 PRIVDATA(conn)->slots[i].sendmsg);
                         PRIVDATA(conn)->slots[i].sendtime = 0;
                         PRIVDATA(conn)->unacked--;
@@ -1363,7 +1363,7 @@ static void emi2_sender(void *arg)
 	}
     }
 
-    while((msg = list_extract_first(privdata->outgoing_queue)) != NULL)
+    while((msg = gw_prioqueue_remove(privdata->outgoing_queue)) != NULL)
 	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
     if (privdata->rport > 0)
 	gwthread_join(privdata->receiver_thread);
@@ -1374,7 +1374,7 @@ static void emi2_sender(void *arg)
     debug("bb.sms", 0, "EMI2[%s]: connection has completed shutdown.",
 	  octstr_get_cstr(privdata->name));
 
-    list_destroy(privdata->outgoing_queue, NULL);
+    gw_prioqueue_destroy(privdata->outgoing_queue, NULL);
     octstr_destroy(privdata->name);
     octstr_destroy(privdata->allow_ip);
     octstr_destroy(privdata->deny_ip);
@@ -1533,7 +1533,7 @@ static int add_msg_cb(SMSCConn *conn, Msg *sms)
     Msg *copy;
 
     copy = msg_duplicate(sms);
-    list_produce(privdata->outgoing_queue, copy);
+    gw_prioqueue_produce(privdata->outgoing_queue, copy);
     gwthread_wakeup(privdata->sender_thread);
 
     return 0;
@@ -1556,7 +1556,7 @@ static int shutdown_cb(SMSCConn *conn, int finish_sending)
 
     if (finish_sending == 0) {
 	Msg *msg;
-	while((msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
+	while((msg = gw_prioqueue_remove(privdata->outgoing_queue)) != NULL) {
 	    bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
 	}
     }
@@ -1584,7 +1584,7 @@ static long queued_cb(SMSCConn *conn)
     PrivData *privdata = conn->data;
     long ret;
 
-    ret = (privdata ? list_len(privdata->outgoing_queue) : 0);
+    ret = (privdata ? gw_prioqueue_len(privdata->outgoing_queue) : 0);
 
     /* use internal queue as load, maybe something else later */
 
@@ -1606,7 +1606,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     allow_ip = deny_ip = host = alt_host = NULL; 
 
     privdata = gw_malloc(sizeof(PrivData));
-    privdata->outgoing_queue = list_create();
+    privdata->outgoing_queue = gw_prioqueue_create(sms_priority_compare);
     privdata->listening_socket = -1;
     privdata->can_write = 1;
     privdata->priv_nexttrn = 0;
@@ -1800,7 +1800,7 @@ error:
     error(0, "EMI2[%s]: Failed to create emi2 smsc connection",
 	  octstr_get_cstr(privdata->name));
     if (privdata != NULL) {
-	list_destroy(privdata->outgoing_queue, NULL);
+	gw_prioqueue_destroy(privdata->outgoing_queue, NULL);
     }
     gw_free(privdata);
     octstr_destroy(allow_ip);

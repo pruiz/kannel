@@ -384,3 +384,27 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
     return list;
 }
 
+
+int sms_priority_compare(const void *a, const void *b)
+{
+    int ret;
+    Msg *msg1 = (Msg*)a, *msg2 = (Msg*)b;
+    gw_assert(msg_type(msg1) == sms);
+    gw_assert(msg_type(msg2) == sms);
+    
+    if (msg1->sms.priority > msg2->sms.priority)
+        ret = 1;
+    else if (msg1->sms.priority < msg2->sms.priority)
+        ret = -1;
+    else {
+        if (msg1->sms.time > msg2->sms.time)
+            ret = 1;
+        else if (msg1->sms.time < msg2->sms.time)
+            ret = -1;
+        else
+            ret = 0;
+    }
+    
+    return ret;
+}
+

@@ -1108,7 +1108,7 @@ reconnect:
 
     idle_timeout = 0;
     while (!privdata->shutdown) {
-        l = list_len(privdata->outgoing_queue);
+        l = gw_prioqueue_len(privdata->outgoing_queue);
         if (l > 0) {
             at2_send_messages(privdata);
             idle_timeout = time(NULL);
@@ -1155,7 +1155,7 @@ reconnect:
     octstr_destroy(privdata->sms_center);
     octstr_destroy(privdata->name);
     octstr_destroy(privdata->configfile);
-    list_destroy(privdata->outgoing_queue, NULL);
+    gw_prioqueue_destroy(privdata->outgoing_queue, NULL);
     list_destroy(privdata->pending_incoming_messages, octstr_destroy_item);
     gw_free(conn->data);
     conn->data = NULL;
@@ -1187,7 +1187,7 @@ int at2_shutdown_cb(SMSCConn *conn, int finish_sending)
      */
     if (finish_sending == 0) {
         Msg *msg;
-        while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
+        while ((msg = gw_prioqueue_remove(privdata->outgoing_queue)) != NULL) {
             bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
         }
     }
@@ -1205,7 +1205,7 @@ long at2_queued_cb(SMSCConn *conn)
     if (conn->status == SMSCCONN_DEAD) /* I'm dead, why would you care ? */
 	return -1;
 
-    ret = list_len(privdata->outgoing_queue);
+    ret = gw_prioqueue_len(privdata->outgoing_queue);
 
     /* use internal queue as load, maybe something else later */
 
@@ -1232,7 +1232,7 @@ int at2_add_msg_cb(SMSCConn *conn, Msg *sms)
     Msg *copy;
 
     copy = msg_duplicate(sms);
-    list_produce(privdata->outgoing_queue, copy);
+    gw_prioqueue_produce(privdata->outgoing_queue, copy);
     gwthread_wakeup(privdata->device_thread);
     return 0;
 }
@@ -1244,7 +1244,7 @@ int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     Octstr *modem_type_string;
 
     privdata = gw_malloc(sizeof(PrivAT2data));
-    privdata->outgoing_queue = list_create();
+    privdata->outgoing_queue = gw_prioqueue_create(sms_priority_compare);
     privdata->pending_incoming_messages = list_create();
 
     privdata->configfile = cfg_get_configfile(cfg);
@@ -1341,7 +1341,7 @@ error:
     error(0, "AT2[%s]: Failed to create at2 smsc connection",
           octstr_len(privdata->name) ? octstr_get_cstr(privdata->name) : "");
     if (privdata != NULL) {
-        list_destroy(privdata->outgoing_queue, NULL);
+        gw_prioqueue_destroy(privdata->outgoing_queue, NULL);
     }
     gw_free(privdata);
     conn->why_killed = SMSCCONN_KILLED_CANNOT_CONNECT;
@@ -1817,10 +1817,10 @@ void at2_send_messages(PrivAT2data *privdata)
 
     do {
         if (privdata->modem->enable_mms && 
-			list_len(privdata->outgoing_queue) > 1)
+			gw_prioqueue_len(privdata->outgoing_queue) > 1)
             at2_send_modem_command(privdata, "AT+CMMS=2", 0, 0);
 
-        if ((msg = list_extract_first(privdata->outgoing_queue)))
+        if ((msg = gw_prioqueue_remove(privdata->outgoing_queue)))
             at2_send_one_message(privdata, msg);
     } while (msg);
 }
