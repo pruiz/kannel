@@ -42,7 +42,9 @@ static List	*wapbox_list = NULL;
 static List	*smsbox_list = NULL;
 
 static long	smsbox_port;
+static int smsbox_port_ssl = 0;
 static long	wapbox_port;
+static int wapbox_port_ssl = 0;
 
 static Octstr *box_allow_ip;
 static Octstr *box_deny_ip;
@@ -250,14 +252,14 @@ static void boxc_sender(void *arg)
  */
 
 
-static Boxc *boxc_create(int fd, Octstr *ip)
+static Boxc *boxc_create(int fd, Octstr *ip, int ssl)
 {
     Boxc *boxc;
     
     boxc = gw_malloc(sizeof(Boxc));
     boxc->is_wap = 0;
     boxc->load = 0;
-    boxc->conn = conn_wrap_fd(fd, 0);
+    boxc->conn = conn_wrap_fd(fd, ssl);
     boxc->id = boxid++;		/* XXX  MUTEX! fix later... */
     boxc->client_ip = ip;
     boxc->alive = 1;
@@ -280,7 +282,7 @@ static void boxc_destroy(Boxc *boxc)
 
 
 
-static Boxc *accept_boxc(int fd)
+static Boxc *accept_boxc(int fd, int ssl)
 {
     Boxc *newconn;
     Octstr *ip;
@@ -303,9 +305,20 @@ static Boxc *accept_boxc(int fd)
 	octstr_destroy(ip);
 	return NULL;
     }
-    newconn = boxc_create(newfd, ip);
+    newconn = boxc_create(newfd, ip, ssl);
     
-    info(0, "Client connected from <%s>", octstr_get_cstr(ip));
+    /*
+     * check if the SSL handshake was successfull, otherwise
+     * this is no valid box connection any more
+     */
+    if (ssl && !conn_get_ssl(newconn->conn))
+        return NULL;
+
+    if (ssl)
+        info(0, "Client connected from <%s> using SSL", octstr_get_cstr(ip));
+    else
+        info(0, "Client connected from <%s>", octstr_get_cstr(ip));
+        
 
     /* XXX TODO: do the hand-shake, baby, yeah-yeah! */
 
@@ -322,7 +335,7 @@ static void run_smsbox(void *arg)
     
     list_add_producer(flow_threads);
     fd = (int)arg;
-    newconn = accept_boxc(fd);
+    newconn = accept_boxc(fd, smsbox_port_ssl);
     if (newconn == NULL) {
 	list_remove_producer(flow_threads);
 	return;
@@ -363,7 +376,7 @@ static void run_wapbox(void *arg)
 
     list_add_producer(flow_threads);
     fd = (int)arg;
-    newconn = accept_boxc(fd);
+    newconn = accept_boxc(fd, wapbox_port_ssl);
     if (newconn == NULL) {
 	list_remove_producer(flow_threads);
 	return;
@@ -721,6 +734,13 @@ int smsbox_start(Cfg *cfg)
 	error(0, "Missing smsbox-port variable, cannot start smsboxes");
 	return -1;
     }
+#ifdef HAVE_LIBSSL
+    cfg_get_bool(&smsbox_port_ssl, grp, octstr_imm("smsbox-port-ssl"));
+#endif /* HAVE_LIBSSL */
+
+    if (smsbox_port_ssl)
+        debug("bb", 0, "smsbox connection module is SSL-enabled");
+
     
     smsbox_list = list_create();	/* have a list of connections */
     list_add_producer(outgoing_sms);
@@ -761,6 +781,10 @@ int wapbox_start(Cfg *cfg)
 	error(0, "Missing wapbox-port variable, cannot start WAP");
 	return -1;
     }
+#ifdef HAVE_LIBSSL
+    cfg_get_bool(&wapbox_port_ssl, grp, octstr_imm("wapbox-port-ssl"));
+#endif /* HAVE_LIBSSL */
+  
     box_allow_ip = cfg_get(grp, octstr_imm("box-allow-ip"));
     if (box_allow_ip == NULL)
     	box_allow_ip = octstr_create("");
@@ -830,15 +854,28 @@ Octstr *boxc_status(int status_type)
 	    t = orig - bi->connect_time;
             if (status_type == BBSTATUS_XML)
 	        octstr_format_append(tmp,
-		    "<box>\n\t\t<type>wapbox</type>\n\t\t<IP>%s</IP>\n\t\t<status>"
-                                 "on-line %ldd %ldh %ldm %lds</status>\n\t</box>\n",
+		    "<box>\n\t\t<type>wapbox</type>\n\t\t<IP>%s</IP>\n"
+            "\t\t<status>on-line %ldd %ldh %ldm %lds</status>\n"
+            "\t\t<ssl>%s</ssl>\n\t</box>\n",
 				 octstr_get_cstr(bi->client_ip),
-				 t/3600/24, t/3600%24, t/60%60, t%60);
+				 t/3600/24, t/3600%24, t/60%60, t%60,
+#ifdef HAVE_LIBSSL
+                 conn_get_ssl(bi->conn) != NULL ? "yes" : "no"
+#else 
+                 "not installed"
+#endif
+                 );
             else
 	        octstr_format_append(tmp,
-		    "%swapbox %s (on-line %ldd %ldh %ldm %lds)%s",
+		    "%swapbox, IP %s (on-line %ldd %ldh %ldm %lds) %s %s",
 				 ws, octstr_get_cstr(bi->client_ip),
-				 t/3600/24, t/3600%24, t/60%60, t%60, lb);
+				 t/3600/24, t/3600%24, t/60%60, t%60, 
+#ifdef HAVE_LIBSSL
+                 conn_get_ssl(bi->conn) != NULL ? "using SSL" : "",
+#else
+                 "",
+#endif 
+                 lb);
 	    boxes++;
 	}
 	list_unlock(wapbox_list);
@@ -851,14 +888,27 @@ Octstr *boxc_status(int status_type)
 		continue;
 	    t = orig - bi->connect_time;
             if (status_type == BBSTATUS_XML)
-	        octstr_format_append(tmp, "<box>\n\t\t<type>smsbox</type>\n\t\t<IP>%s</IP>\n\t\t<status>"
-                    "on-line %ldd %ldh %ldm %lds</status>\n\t\t</box>",
+	        octstr_format_append(tmp, "<box>\n\t\t<type>smsbox</type>\n\t\t<IP>%s</IP>\n"
+                    "\t\t<status>on-line %ldd %ldh %ldm %lds</status>\n"
+                    "\t\t<ssl>%s</ssl>\n\t</box>",
 		    octstr_get_cstr(bi->client_ip),
-		    t/3600/24, t/3600%24, t/60%60, t%60);
+		    t/3600/24, t/3600%24, t/60%60, t%60,
+#ifdef HAVE_LIBSSL
+                 conn_get_ssl(bi->conn) != NULL ? "yes" : "no"
+#else 
+                 "not installed"
+#endif
+            );
             else
-	        octstr_format_append(tmp, "%ssmsbox %s (on-line %ldd %ldh %ldm %lds)%s",
+	        octstr_format_append(tmp, "%ssmsbox, IP %s (on-line %ldd %ldh %ldm %lds) %s %s",
 		    ws, octstr_get_cstr(bi->client_ip),
-		    t/3600/24, t/3600%24, t/60%60, t%60, lb);
+		    t/3600/24, t/3600%24, t/60%60, t%60, 
+#ifdef HAVE_LIBSSL
+                 conn_get_ssl(bi->conn) != NULL ? "using SSL" : "",
+#else
+                 "",
+#endif 
+            lb);
 	    boxes++;
 	}
 	list_unlock(smsbox_list);
