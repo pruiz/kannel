@@ -39,7 +39,7 @@ AC_SEARCH_LIBS(inet_aton, c resolv)
 dnl Checks for header files.
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS(fcntl.h limits.h sys/ioctl.h sys/time.h unistd.h stdint.h string.h stdlib.h unistd.h stdarg.h pthread.h gnome-xml/parser.h)
+AC_CHECK_HEADERS(fcntl.h limits.h sys/ioctl.h sys/time.h sys/types.h unistd.h stdint.h string.h stdlib.h unistd.h stdarg.h pthread.h gnome-xml/parser.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 
@@ -63,7 +63,11 @@ dnl Extra feature checks
 dnl GW_HAVE_TYPE_FROM(HDRNAME, TYPE, HAVENAME, DESCRIPTION)
 AC_DEFUN(GW_HAVE_TYPE_FROM, [
 	AC_CACHE_CHECK([for $2 in <$1>], gw_cv_type_$3,
-		AC_TRY_COMPILE([#include <$1>], [$2 foo;],
+		AC_TRY_COMPILE([#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#include <$1>
+], [$2 foo;],
 			gw_cv_type_$3=yes, gw_cv_type_$3=no))
 	if test $gw_cv_type_$3 = yes; then
 		AC_DEFINE($3, 1, $4)
@@ -92,7 +96,11 @@ GW_HAVE_TYPE_FROM(stdint.h,
 	uint32_t,
 	HAVE_TYPE_UINT32_T_IN_STDINT_H,
 	[Defined if there is a uint32_t in <stdint.h>])
-if test "$gw_cv_type_HAVE_TYPE_UINT32_T_IN_TYPES_H" = yes -o "$gw_cv_type_HAVE_TYPE_UINT32_T_IN_STDINT_H" = yes; then
+GW_HAVE_TYPE_FROM(inttypes.h,
+	uint32_t,
+	HAVE_TYPE_UINT32_T_IN_INTTYPES_H,
+	[Defined if there is a uint32_t in <inttypes.h>])
+if test "$gw_cv_type_HAVE_TYPE_UINT32_T_IN_TYPES_H" = yes -o "$gw_cv_type_HAVE_TYPE_UINT32_T_IN_STDINT_H" = yes -o "$gw_cv_type_HAVE_TYPE_UINT32_T_IN_INTTYPES_H" = yes; then
 	AC_DEFINE(HAVE_TYPE_UINT32_T, 1,
 		[Defined if we have uint32_t in <sys/types.h> or <stdint.h>])
 fi

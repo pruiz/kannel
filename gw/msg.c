@@ -36,9 +36,9 @@ static char *type_as_str(Msg *msg);
 
 Msg *msg_create(enum msg_type type) {
 	Msg *msg;
-	
+
 	msg = gw_malloc(sizeof(Msg));
-	
+
 	msg->type = type;
 
 	#define INTEGER(name) p->name = 0
@@ -102,7 +102,7 @@ enum msg_type msg_type(Msg *msg) {
 
 Octstr *msg_pack(Msg *msg) {
 	Octstr *os;
-	
+
 	os = octstr_create_empty();
 	append_integer(os, msg->type);
 
@@ -113,7 +113,7 @@ Octstr *msg_pack(Msg *msg) {
 	switch (msg->type) {
 		#include "msg-decl.h"
 	}
-	
+
 	prepend_integer(os, octstr_len(os));
 
 	return os;
@@ -124,7 +124,7 @@ Msg *msg_unpack(Octstr *os) {
 	Msg *msg;
 	int off;
 	int32 i;
-	
+
 	msg = msg_create(0);
 	if (msg == NULL)
 		goto error;
@@ -148,7 +148,7 @@ Msg *msg_unpack(Octstr *os) {
 	switch (msg->type) {
 		#include "msg-decl.h"
 	}
-	
+
 	return msg;
 
 error:
@@ -164,7 +164,7 @@ error:
 
 static void append_integer(Octstr *os, int32 i) {
 	Octstr *temp;
-	
+
 	i = htonl(i);
 	temp = octstr_create_from_data((char *) &i, sizeof(i));
 	octstr_insert(os, temp, octstr_len(os));
@@ -173,7 +173,7 @@ static void append_integer(Octstr *os, int32 i) {
 
 static void prepend_integer(Octstr *os, int32 i) {
 	Octstr *temp;
-	
+
 	i = htonl(i);
 	temp = octstr_create_from_data((char *) &i, sizeof(i));
 	octstr_insert(os, temp, 0);
@@ -209,7 +209,7 @@ static int parse_string(Octstr **os, Octstr *packed, int *off) {
 
 	if (parse_integer(&len, packed, off) == -1)
 		return -1;
-	
+
 	if (len == -1) {
 		*os = NULL;
 		return 0;

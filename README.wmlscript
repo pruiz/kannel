@@ -5,9 +5,13 @@
 
   - ANSI-C compiler supporting `stdarg.h'.
 
-  - GNU bison-1.28.  Older versions (at least 1.25) do not work
-    without giving bogus prototype errors from the `bison.simple'
-    library file.
+  - GNU bison-1.28.  The yacc will not work since the compiler must be
+    reentrant and the grammar file uses Bison's `%pure_parser'
+    feature.
+
+    Older versions of GNU bison (at least 1.25) do not work without
+    giving bogus prototype errors from the `bison.simple' library
+    file.
 
 * Documentation
 
@@ -27,3 +31,8 @@
 		The official names for character sets that may be used
 		in the Internet and may be referred to in Internet
 		Documentation.
+
+  ANSI/IEEE Std 754-1985
+		IEEE Standard for Binary Floating-Point Arithmetic.
+		Institute of Electrical and Electronics Engineers, New
+		York (1985).

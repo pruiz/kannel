@@ -18,3 +18,6 @@
 
 /* the VERSION symbol - for older autoconfs */
 #undef VERSION
+
+/* WMLScript debugging. */
+#undef WS_DEBUG

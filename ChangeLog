@@ -1,3 +1,11 @@
+2000-01-31  Markku Rossi  <mtr@iki.fi>
+
+	* wmlscript: Lots of code review changes.  Implemented IEEE 754
+	binary floating point encoding and decoding.  Implemented
+	WMLScript byte-code disassembler.
+
+	* configure.in: Ported to NetBSD.
+
 2000-01-30  Patrick Schaaf <bof@bof.de>
 
 	* gw/wapbox.c: synchronize put_msg / remove_msg using a mutex,
@@ -15,13 +23,13 @@
 2000-01-28  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
 	* gw/wml_compiler.c : Some little fixes.
-	* test/wml_tester.c : Some bug fixes, no more core dump, not 
+	* test/wml_tester.c : Some bug fixes, no more core dump, not
 	working yet correctly thou.
 
 2000-1-28 Aarno Syvänen <syvanen@wapit.com>
 
-        * wtp.c: Important trivial change: error message "no concatenation 
-	supported" changed to "no connectionless mode nor concatenation 
+        * wtp.c: Important trivial change: error message "no concatenation
+	supported" changed to "no connectionless mode nor concatenation
 	supported"
 
 Fri Jan 28 17:13:47 2000  Lars Wirzenius  <liw@wapit.com>
@@ -38,34 +46,34 @@ Fri Jan 28 17:10:12 2000  Lars Wirzenius  <liw@wapit.com>
 Fri Jan 28 13:14:52 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wapbox.c: Only dump non-heartbeat messages.
-	
+
 	* gw/wsp_events-decl.h, gw/wsp_machine-decl.h: Now these headers
 	check at top of file that the required macros are defined and
 	complain with #error otherwise. Related changes to files that
 	include the headers.
-	
+
 	* gw/wsp.c: Headers from Connect PDU are stored in the WSPMachine,
 	and used in the HTTP request.
-	
+
 	* gwlib/http.c: Removed User-Agent header from those we add to
 	the request.
 
 2000-01-27 Sanna Seppanen <sanna@wapit.com>
 
-	*gwlib/http.c, gwlib/http.h implementation of http_post. all bzero 
+	*gwlib/http.c, gwlib/http.h implementation of http_post. all bzero
 	-functions changed to memset.
 
-	*gwlib/http.c, gwlib/http.h  http_get changed to use http_get_u 
+	*gwlib/http.c, gwlib/http.h  http_get changed to use http_get_u
 	with NULL header pointer.
-	
+
 Thu Jan 27 20:09:23 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp.c, gw/wtp.h: Fixed locking of WTPMachine list (the previous
 	code had race conditions in it). Introduced wtp_init function.
-	
+
 	* gw/wsp.c, gw/wsp.h: Similarly for WSPMachine list (it was unlocked
 	completely) and wsp_init. Also minor cleanup.
-	
+
 	* gw/wapbox.c: Call wtp_init and wsp_init at startup.
 
 2000-01-27  Tuomas Luttinen  <tuo@tuo.wapit.fi>
@@ -82,7 +90,7 @@ Thu Jan 27 20:09:23 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* wtp_machine-decl.h: Attribute result, for result message, added.
 
-	* wtp.c: Constructors, destructors and debugging functions for 
+	* wtp.c: Constructors, destructors and debugging functions for
 	wtp machine rewritten with the previous attribute added.
 
 	* wtp_send.c|h: function wtp_resend_result added. Function send_result
@@ -113,7 +121,7 @@ Thu Jan 27 13:47:34 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/msg.c, gw/wtp.h, gwlib/socket.h: Added includes for
 	<sys/types.h>, which is required for <netinet/in.h> on some
-	platforms (Linux makes it harder to write this portably, 
+	platforms (Linux makes it harder to write this portably,
 	since it works with or without it).
 
 Thu Jan 27 13:43:12 2000  Lars Wirzenius  <liw@wapit.com>
@@ -138,19 +146,19 @@ Wed Jan 26 22:19:21 2000  Lars Wirzenius  <liw@wapit.com>
 	for data without busylooping too tightly (only once per second),
 	but it will still notice when SIGINT is received (with up to a
 	one second wait).
-	
+
 	* gw/csdr.c: If we get ECONNREFUSED, re-try the recvfrom. The
 	error is caused by a previous syscall for sending a packet to an
 	unknown destination, but because it's not possible to wait until
 	the error is received, network latencies being rather long, the
 	error is received by a later syscall. We just ignore it now.
-	
+
 	* gw/wsp.c: Handle "application/vnc.wap.wmlc" by passing it
 	directly to the user.
-	
+
 	* test/fakewap.c: Added calculation of average number of messages
 	per second, and minor error message fixes.
-	
+
 Wed Jan 26 20:44:26 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: If an unhandled event is TR-Invoke.ind, then send
@@ -180,7 +188,7 @@ Wed Jan 26 17:57:32 2000  Lars Wirzenius  <liw@wapit.com>
 	about unused or uninitialized variables. Had to comment out
 	Reconnect handling, because it doesn't seem to work at all,
 	and I don't have time to investigate.
- 
+
 Wed Jan 26 16:28:05 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wml_compiler.[ch]: Comment out everything if HAVE_LIBXML
@@ -191,16 +199,16 @@ Wed Jan 26 15:13:25 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* configure.in: Check for gnome-xml library, which is needed by
 	the new WML compiler.
-	
+
 	* README: Documented need for the gnome-xml library. (Sorry about
 	that, I promise not to document anything again.)
 
 2000-01-26  Tuomas Luttinen  <tuo@tuo.wapit.com>
 
 	* octstr.h: functions added: octstr_create_tolower, octstr_ncompare
-	* octstr.c: implementation of the new functions octstr_create_tolower, 
+	* octstr.c: implementation of the new functions octstr_create_tolower,
 	octstr_ncompare added.
-	
+
 	* gw/wml_compiler.h: header for the new WML compiler added
 	* gw/wml_compiler.c: the new WML compiler added
 
@@ -211,11 +219,11 @@ Wed Jan 26 15:13:25 2000  Lars Wirzenius  <liw@wapit.com>
 	* wtp_state-decl.h: Added timer rows (now only missing event is Error
 	PDU)
 
-	* wtp_send.c: Added parameter abort_reason to parameter list of 
+	* wtp_send.c: Added parameter abort_reason to parameter list of
 	wtp_send_abort (so that function call conforms closely with specs.)
 
 	* wtp.c: Locks added to functions wtp_machine_mark_unused, wtp_machine_
-	destroy, wtp_machine_create_empty and wtp_machine_find. 
+	destroy, wtp_machine_create_empty and wtp_machine_find.
 
 Wed Jan 26 12:01:17 2000  Lars Wirzenius  <liw@wapit.com>
 
@@ -260,7 +268,7 @@ Tue Jan 25 14:59:05 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* utils/seewbmp.c: Added to CVS. Simple debugging tool written by
 	Richard Braakman.
-	
+
 	* Makefile.in: Related changes.
 
 2000-01-25    <rpr@rpr.wapit.com>
@@ -293,7 +301,7 @@ Mon Jan 24 21:23:43 2000  Lars Wirzenius  <liw@wapit.com>
 Mon Jan 24 21:01:50 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile.in: Fixed install target.
-	
+
 	* VERSION: Marked as non-release version.
 
 Mon Jan 24 20:53:47 2000  Lars Wirzenius  <liw@wapit.com>
@@ -306,16 +314,16 @@ Mon Jan 24 20:53:47 2000  Lars Wirzenius  <liw@wapit.com>
 2000-01-24	Sanna Seppanen <sanna@wapit.com>
 	*gwlib/http.h: function added: header_dump.
 	*gwlig/http.c: implementation of header_dump
-	
+
 
 Mon Jan 24 19:06:58 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* configure.in, configure: Look for -lresolv if it is necessary.
 	(From Derry Hamilton <derry.hamilton@pa.press.net>)
-	
+
 	* gwlib/socket.c: Portability kludge for Solaris. Should be fixed
 	later. (Likewise from Derry.)
-	
+
 	* test/fakewap.c: Moved definition of `ret' inside #ifdef so that
 	it doesn't cause an "unused variable" warning.
 
@@ -335,10 +343,10 @@ Mon Jan 24 19:06:58 2000  Lars Wirzenius  <liw@wapit.com>
 2000-01-21   Sanna Seppanen <sanna@wapit.com>
         * gwlib/http.h: function added: http_get_u.
 
-	* gwlib/http.h: implemented http_get_u. 
+	* gwlib/http.h: implemented http_get_u.
 	shortened code for some functions.
 
-	
+
 Fri Jan 21 19:05:35 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Making release 0.4.
@@ -366,7 +374,7 @@ Fri Jan 21 13:42:57 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile.in, doc/arch/arch.xml: Put version number (from
 	VERSION) into DocBook documents.
-	
+
 	* doc/arch/*.xml: Minor corrections.
 
 
@@ -392,7 +400,7 @@ Fri Jan 21 13:42:57 2000  Lars Wirzenius  <liw@wapit.com>
 2000-01-20    <rpr@rpr.wapit.com>
 
 	* gw/bearerbox.c: added missing accept_pending initialization and
-	commented SIGINT handling procedure 
+	commented SIGINT handling procedure
 
 	* gw/wsp.h: moved WSP header definitions to wsp.c
 
@@ -421,7 +429,7 @@ Wed Jan 19 10:33:39 2000  Lars Wirzenius  <liw@wapit.com>
 Wed Jan 19 10:21:39 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: Silence WMLScript compiler tracing info.
-	
+
 	* gwlib/getnameinfo.h: Bugfix: use #ifdef, not #if, to test whether
 	a macro is defined.
 
@@ -451,7 +459,7 @@ Tue Jan 18 12:55:36 2000  Lars Wirzenius  <liw@wapit.com>
 	* gw/wsp.c: Use WMLScript compiler as an external process. This
 	works, the internal one has problems (or else I have problems
 	using it).
-	
+
 	* gw/wsp_state-decl.h: Commented out, at least temporarily, rows
 	that handle method invocations before session has been opened.
 
@@ -463,7 +471,7 @@ Mon Jan 17 17:47:37 2000  Lars Wirzenius  <liw@wapit.com>
 
 2000-01-17 Aarno Syvänen <syvanen@wapit.com>
 
-	* wtp.c: Removed goto branches made unnecessary by introduction of 
+	* wtp.c: Removed goto branches made unnecessary by introduction of
 	gw_malloc. Unused variables removed, too.
 
 	* Segmentation work began.
@@ -487,7 +495,7 @@ Mon Jan 17 11:33:22 2000  Lars Wirzenius  <liw@wapit.com>
 
 2000-01-14    <rpr@rpr.wapit.com>
 
-	* gw/*box.c: Added SIGPIPE as ignored signal 
+	* gw/*box.c: Added SIGPIPE as ignored signal
 
 Thu Jan 13 19:12:11 2000  Lars Wirzenius  <liw@wapit.com>
 
@@ -498,10 +506,10 @@ Thu Jan 13 19:12:11 2000  Lars Wirzenius  <liw@wapit.com>
 Thu Jan 13 18:39:46 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile.in: Added stuff to compile documents.
-	
+
 	* configure.in, configure: Added stuff to check for jade and docbook
 	stuff.
-	
+
 	* doc/*/Makefile: Removed.
 
 Thu Jan 13 17:28:50 2000  Lars Wirzenius  <liw@wapit.com>
@@ -509,9 +517,9 @@ Thu Jan 13 17:28:50 2000  Lars Wirzenius  <liw@wapit.com>
 	* gw/wsp.c: Enabled code to use external WML compiler. Name of
 	compiler is "./test_wml" or given in the TEST_WML environment
 	variable.
-	
+
 	This is a temporary solution until the new compiler works.
-	
+
 	* Makefile.in: Added (trivial) install target.
 
 2000-01-13    <rpr@rpr.wapit.com>
@@ -527,17 +535,17 @@ Thu Jan 13 12:19:15 2000  Lars Wirzenius  <liw@wapit.com>
 	gw_malloc, octet string functions (among others) won't fail,
 	so there's no need to check and handle that. This simplifies
 	code a bit.
-	
+
 	* gw/wsp.c: Added (currently commented out) code to run WML
 	compiler as a separate process, to work around a bug that crashes
 	it sometimes when compiling several pages during a session.
 	(New compiler being written from scratch, so I didn't want to
 	debug the current one too much.)
-	
+
 	* gwlib/thread.h: Added "include #config.h"" so that we a
 	definition for HAVE_PTHREAD_H is included properly. This fixes
 	the bug that reported thread id always is 0.
-	
+
 2000-01-12    <rpr@rpr.wapit.com>
 
 	* gw/bearerbox.c: added some usleeps
@@ -553,7 +561,7 @@ Wed Jan 12 15:16:49 2000  Lars Wirzenius  <liw@wapit.com>
 	and friends directly. It shall henceforth be considered an
 	error for anything but gwlib/gwmem.c to call malloc or friends
 	directly. (Six unchecked malloc calls found during this cleanup.)
-	
+
 	This does mean that the gateway won't report an out-of-memory
 	condition to the phone, but at this point that's a better option
 	than randomly using or not using gw_malloc and randomly checking
@@ -574,15 +582,15 @@ Wed Jan 12 15:16:49 2000  Lars Wirzenius  <liw@wapit.com>
 	* wtp_events-decl.h: added user_data to primitive TRAbort (WSP PDU will
 	use it).
 
-        * wtp_send.c: Corresponding change to function pack_abort. Module 
+        * wtp_send.c: Corresponding change to function pack_abort. Module
 	reorganised by adding static functions tell_send_error, insert_pdu_
 	type, indicate_simple_message, insert_tid, insert_rid, insert_abort_
 	type, insert_ack_type
 
-	* wtp.c: Function wtp_machine_find_or_create reorganised. Now it can 
-        handle event RcvAbort, too.  Function wtp_unpack_wdp_datagram 
+	* wtp.c: Function wtp_machine_find_or_create reorganised. Now it can
+        handle event RcvAbort, too.  Function wtp_unpack_wdp_datagram
 	reorganised by adding static functions deduce_tid, message_header_
-	fixed, deduce_pdu_type, single_message, protocol_version, unpack_ack, 
+	fixed, deduce_pdu_type, single_message, protocol_version, unpack_ack,
 	unpack_abort, unpack_invoke and tell_about_error.
 
 
@@ -624,11 +632,11 @@ Fri Jan  7 18:06:38 2000  Lars Wirzenius  <liw@wapit.com>
 	* gw/boxc.c, gwlib/http.c, gw/wapbox.c, gw/wtp.c: Made sure
 	variables are initialized (compiled with gcc -Wall -O2, which
 	hasn't been done for a while), or removed unused variables.
-	
+
 	* gw/wsp_events-decl.h, gw/wsp_state-decl.h: Added response_type
 	member to SMethodResultRequest so that the Content-Type header
 	can be communicated to the phone.
-	
+
 	* gw/wsp.c: Set response_type according to what the HTTP server
 	returns as Content-Type. Also, don't blindly assume everything
 	is WML.
@@ -641,9 +649,9 @@ Fri Jan  7 12:01:09 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* AUTHORS, NEWS, README, Release-0.2, VERSION, gw/bearerbox.conf:
 	Preparing for release.
-	
+
 	* Makefile.am, Makefile.in: Removed stuff from EXTRA_DIST.
-	
+
 	* doc/fakewap-packets.txt: Wrote. This explains the packets that
 	the upcoming fakewap program will use.
 
@@ -694,7 +702,7 @@ Thu Dec 30 17:04:40 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* */Makefile, configure: Ran automake and autoconf and configure,
 	thus some file re-generated.
-	
+
 	* NEWS, AUTHORS: Added empty ones. automake requires them.
 
 Thu Dec 30 16:57:50 1999  Lars Wirzenius  <liw@wapit.com>
@@ -726,25 +734,25 @@ Wed Dec 29 22:06:22 1999  Lars Wirzenius  <liw@wapit.com>
 	* gw/wsp.c: Three bugs in Reply PDU fixed: status code should
 	be encoded (200 is encoded as 0x20); the length of the content
 	type field should be included; and the high bit of the octet
-	that tells the content type should be set. 
-	
+	that tells the content type should be set.
+
 	After these modifications, a trivial "Hello, world" WML page is
 	now successfully transferred to a 7110 phone. Yesh. Any year
 	now we will really have a WAP gateway.
 
 1999-12-29 Aarno Syvänen <syvanen@wapit.com>
 
-	* wtp.c, wtp_send.c: Added label WTP and function names in error 
+	* wtp.c, wtp_send.c: Added label WTP and function names in error
 	messages.
 
 	* wtp_state-decl.h: More rows added. Now all events expect timer and
 	error are handled.
 
-	* wtp_send.c: Added abort_type in the argument list of the function 
-	send_abort. 
+	* wtp_send.c: Added abort_type in the argument list of the function
+	send_abort.
 
-	* wsp_state-decl.h: Added rows for handling Get and Disconnect PDUs 
-	when the state is NULL_STATE (these are needed for restarting the 
+	* wsp_state-decl.h: Added rows for handling Get and Disconnect PDUs
+	when the state is NULL_STATE (these are needed for restarting the
 	wapbox.
 
 1999-12-28    <rpr@rpr.wapit.com>
@@ -763,17 +771,17 @@ Wed Dec 29 22:06:22 1999  Lars Wirzenius  <liw@wapit.com>
 	* wtp.c: function machine_find_or_create rewritten. We should not
 	create a new machine when we are not receiving an invoke pdu.
 
-	* wtp.c, wtp_events-decl.h: TRResult has now wsp_tid amongst its 
+	* wtp.c, wtp_events-decl.h: TRResult has now wsp_tid amongst its
 	attributes
 
 	* wsp_events-decl.h: Superflous events removed
 
 	* wtp_send.c: Internal function wtp_add_datagram_address added, send*
-	functions changed respectively. Added functions send_ack and 
+	functions changed respectively. Added functions send_ack and
 	send_abort
 
-        * wtp_machine-decl.h: added attribute tid_ve, which tells are we 
-	doing tid verification or normal acknowledgement 
+        * wtp_machine-decl.h: added attribute tid_ve, which tells are we
+	doing tid verification or normal acknowledgement
 
 	* wtp_state-decl.h: added rows for handling receiving invoke pdu, when
 	state is result_wait
@@ -785,7 +793,7 @@ Wed Dec 29 22:06:22 1999  Lars Wirzenius  <liw@wapit.com>
 	future HTTP adminstration in mind.
 
 1999-12-22    <rpr@rpr.wapit.com>
-	
+
 	* gw/smsbox_req.c (do_split_send): returned old code until Mikael
 	fixes his new one.
 
@@ -802,21 +810,21 @@ Tue Dec 21 15:17:32 1999  Lars Wirzenius  <liw@wapit.com>
 	* README.docbook: Wrote. Includes instructions for getting Docbook
 	working (on Debian and Red Hat; patches for other systems most
 	welcome).
-	
+
 	* gw/wml.c, gw/wml.h, test/test_wml.c: Added to gateway module
 	from old smsgateway module. Code written by Peter Grönholm.
 	Implements WML compiler.
-	
+
 	* gw/msg.c, gw/wsp.c, gw/wtp.c: Dumping function only prints
 	out the relevant parts of the structure, not all fields.
-	
+
 	* gw/anything-related-to-wapbox-wtp-or-wsp: Removed
 	extra debugging stuff to make log files more readable even during
 	debugging. (Put'em back if you need'em.)
-	
+
 	* gw/wapbox.c: Emptying the queue of message going to the bearer
 	box is in its own thread.
-	
+
 	* gw/wsp.c, gw/wsp_events-decl.h, gw/wsp_state-decl.h: Implemented
 	some more of the WSP. Now a Get PDU is parsed and a new thread
 	is spawned to do the HTTP fetch (which at the moment just reads
@@ -824,7 +832,7 @@ Tue Dec 21 15:17:32 1999  Lars Wirzenius  <liw@wapit.com>
 	thread then sends back a Reply PDU with the contents of the
 	(compiled) WML page. However, the phone doesn't accept it yet,
 	something strange is going on.
-	
+
 	* gwlib/octstr.[ch]: Wrote function octstr_read_file, which reads
 	the contents of a file into an octet string.
 
@@ -846,10 +854,10 @@ Fri Dec 17 20:08:56 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp_state-decl.h: State RESULT_RESP_WAIT actually sends the
 	TRResultConfirmation event to WSP.
-	
+
 	* gw/wsp_state-decl.h: State CONNECTING_2 implemented. This required
 	rather a little work, since there is no action. :-)
-	
+
 	* gw/wsp_state-decl.h: State CONNECTED implemented, sort of. Well,
 	not really. What happens is that the phone sends a Get PDU, and
 	we receive it and unpack it in this state, do the http_get call,
@@ -857,7 +865,7 @@ Fri Dec 17 20:08:56 1999  Lars Wirzenius  <liw@wapit.com>
 	to make sure that the PDU is unpacked correctly and the protocol
 	works well enough that the phone thinks the session is open and
 	it can make S-MethodInvokes. Whee.
-	
+
 	The next step is to implement things correctly, so that events
 	are handled while the URL fetch is happening, and so on.
 
@@ -880,10 +888,10 @@ Fri Dec 17 17:25:18 1999  Lars Wirzenius  <liw@wapit.com>
 Wed Dec 15 18:43:27 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wapbox.c: Dump message to be sent to bearerbox, for debugging.
-	
+
 	* gw/wsp.c: Fixed generation of variable length integers for
 	WSP PDU's.  Old code didn't even resemble correct working.
-	
+
 1999-14-12 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_send.c: in function wtp_pack_result, fix errors in packing wtp
@@ -915,36 +923,36 @@ Mon Dec 13 19:31:56 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wapbox.c, gw/wapbox.h (new file): Wrote functions for
 	keeping a queue of messages to be sent to the bearer box.
-	
+
 	* gw/wtp_send.c: Made use of the message enqueueing function.
 
 Mon Dec 13 18:43:54 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: WSPMachine now remembers its own address and port as
 	well as the client's; also added session_id field.
-	
+
 	* gw/wsp.c: Wrote code for creating WSP PDU's. Now creates a
 	trivial ConnectionReply PDU.
-	
+
 	* gw/wsp_events-decl.h, gw/wsp_state-decl.h: Added field `machine'
 	to SConnectResponse event to store the machine to which the
 	SConnectResponse handler should send WTP requests. This is
 	a kludge but it was (temporarily) easier to do than fixing
 	wtp_find_or_create_machine.
-	
+
 	* gw/wsp_state-decl.h: Implemented most of SConnectResponse.
-	
+
 	* gw/wtp.c, gw/wtp.h: : Wrote function wtp_machine_create, which
 	gets all relevant information via the argument list. This is
 	mostly just reorganizing and renaming the internal name_machine
 	function.  This involved changing wtp_machine_find_or_create
 	as well.
-	
+
 	* gw/wtp.c: Removed locking of WTPMachine list, since it was
 	incorrect and needs to be re-done in a different way. The current
 	code has no locking, but at least it works if we're really,
 	really careful.
-	
+
 	* gw/wtp_send.c: Commented away the calls to msg_destroy and
 	octstr_destroy, since they caused segmentation faults (free
 	called to often, or too early). This means yet another memory
@@ -954,9 +962,9 @@ Mon Dec 13 18:43:54 1999  Lars Wirzenius  <liw@wapit.com>
 Mon Dec 13 16:36:34 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile: test programs are also removed by "make clean".
-	
+
 	* gw/wapbox.c: Uses a log file (wapbox.log). Debug messages tweaked.
-	
+
 	* gw/wtp.c: Minor tweaking and bug fixing. Fixed wtp_next_tid:
 	It shouldn't get the next or current tid as its argument,
 	but use a static variable instead.  wtp_event_destroy is
@@ -971,16 +979,16 @@ Mon Dec 13 16:36:34 1999  Lars Wirzenius  <liw@wapit.com>
 	wtp_handle_event so it uses machine->state and event->type
 	(instead of separate variables that need to be kept up to date
 	separately).
-	
+
 	* gw/wtp.h: Fixed prototype for wtp_tid_next.
-	
+
 	* gw/wtp_state-decl.h, state LISTEN: Actually sends the WSPEvent
 	it generates to WSP, using wsp_dispatch_event (new function,
 	see below).
-	
+
 	* gw/wtp_machine-decl.h: Added field `locker' as part of kludge
 	for pthread_mutex_trylock.
-	
+
 	* gw/wsp.c: Lots of changes. Keeps list of WSPMachines (but
 	doesn't use it yet). WSPEvent dumping improved. Wrote function
 	wsp_dispatch_event to make it simpler for WTP to send events
@@ -989,24 +997,24 @@ Mon Dec 13 16:36:34 1999  Lars Wirzenius  <liw@wapit.com>
 	sprinkled throughout the code. Added similar pthread_mutex_trylock
 	kludge as for WTP in wsp_handle_event. Fixed bug in identifying
 	the type of a WSP packet (got 0 and 1 wrong, stupid me).
-	
+
 	* gw/wsp.h: Added prototype for wsp_dispatch_event and missing
 	#defines for WSPMachine definition.
-	
+
 	* gw/wsp_events-decl.h: Added event SConnectResponse.
-	
+
 	* gw/wsp_state-decl.h: NULL_STATE now implemented (only a lot of
 	states more...).
-	
+
 	* gw/wsp_machine-decl.h: Added new fields for client address
 	and port (for wsp_dispatch_event routing), locker (for kludge)
 	and next (for keeping a list of WSPMachines).
 
 	* gwlib/thread.c: Removed unnecessary empty lines from end.
-	
+
 1999-07-12 Aarno Syvänen <syvanen@wapit.com>
 
-	* wtp.c: fixed locking bugs in functions wtp_machine_* 
+	* wtp.c: fixed locking bugs in functions wtp_machine_*
 
 	* wtp.c, wtp.h, wtp_state-decl.h: fixed wsp handle
 
@@ -1016,14 +1024,14 @@ Mon Dec 13 16:36:34 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/thread.c: added function mutex_destroy
 
-	* wtp.c: Added (uncommented) list locks in functions wtp_machine_*. 
+	* wtp.c: Added (uncommented) list locks in functions wtp_machine_*.
 	Now these functions panic when mutexes are not iniatilized.
 
 	* wtp.h: updated external function comments
 
 1999-01-12 Aarno Syvänen <syvanen@wapit.com>
 
-	* wtp.c: fixed a bug in wtp_machine_find (now it actually does find 
+	* wtp.c: fixed a bug in wtp_machine_find (now it actually does find
 	a machine)
 
 	* wtp.c: implemented wtp_tid_next and added global variable gen_tid
@@ -1048,7 +1056,7 @@ Tue Nov 30 16:33:29 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c, gw/wsp.h: Implemented wsp_handle_event (doesn't really
 	work yet, needs wsp_state-decl.h first).
-	
+
 	* gwlib/thread.[ch]: Added mutex_try_lock.
 
 Tue Nov 30 14:51:01 1999  Lars Wirzenius  <liw@wapit.com>
@@ -1058,8 +1066,8 @@ Tue Nov 30 14:51:01 1999  Lars Wirzenius  <liw@wapit.com>
 
 1999-11-30 Aarno Syvänen <syvanen@wapit.com>
 
-	* wsp_events-decl.h: added fields for wsp pdu type and event handle 
-	(unnecessary but mandatory). WSPEvent data structure represents both 
+	* wsp_events-decl.h: added fields for wsp pdu type and event handle
+	(unnecessary but mandatory). WSPEvent data structure represents both
 	WTP primitive and WSP event.
 
 Mon Nov 29 19:33:42 1999  Lars Wirzenius  <liw@wapit.com>
@@ -1069,10 +1077,10 @@ Mon Nov 29 19:33:42 1999  Lars Wirzenius  <liw@wapit.com>
 	to void. Moved WTPTimer definition back to wtp_timer.h. Simplified
 	code by only using the pthreads version places where there was a
 	choice. Added wtp_machine_create and wtp_tid_next prototypes.
-	
+
 	* gw/wtp.c, gw/wtp_timer.h, gw/wapbox.c, gw/wtp_machine-decl.h:
 	Related changes.
-	
+
 	* gw/wtp_send.c: Added static to local function.
 
 	* gw/wsp_state-decl.h: Replaced pseudo code function with more
@@ -1087,13 +1095,13 @@ Mon Nov 29 17:17:44 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/bearerbox.conf: Replaced interface-name's IP number with *,
 	so that it works on other machines as well.
-	
+
 	* gw/wsp.c, gw/wsp.h, gw/wsp_machine-decl.h, gw/wsp_state-decl.h:
 	Wrote.
-	
+
 	* gw/wtp.c, gw/wtp.h: Moved and renamed things for wsp stuff.
-	
-	* 
+
+	*
 
 1999-11-29 Aarno Syvänen <syvanen@wapit.cm>
 
@@ -1104,7 +1112,7 @@ Mon Nov 29 17:17:44 1999  Lars Wirzenius  <liw@wapit.com>
 1999-11-29    <rpr@rpr.wapit.com>
 
 	* gwlib/octstr.c, gw/*box.c: modified octstr_recv to return 1 for
-	data and 0 for EOF. Changed boxes accordingly 
+	data and 0 for EOF. Changed boxes accordingly
 
 1999-11-29    <rpr@rpr.wapit.com>
 
@@ -1121,7 +1129,7 @@ Mon Nov 29 17:17:44 1999  Lars Wirzenius  <liw@wapit.com>
 	* gw/urltrans.c: fixed swapped receiver and sender
 
 	* gwlib/*.*: split wapitlib into several parts, some splitting
-	still possibly. All projects should work but those including 
+	still possibly. All projects should work but those including
 	wapitlib.h should be converted to use gwlib.h instead
 
 1999-11-26    <rpr@rpr.wapit.com>
@@ -1134,7 +1142,7 @@ Mon Nov 29 17:17:44 1999  Lars Wirzenius  <liw@wapit.com>
 1999-11-26  Aarno Syvänen <syvanen@wapit.com>
 
 	*wtp_state-decl.h: Added new rows in the state table (enough to run
-	wtp proto). 
+	wtp proto).
 
 1999-11-25  Aarno Syvänen <syvanen@wapit.com>
 
@@ -1181,7 +1189,7 @@ Wed Nov 24 12:30:46 1999  Lars Wirzenius  <liw@wapit.com>
 
 1999-11-23 Aarno Syvänen <syvanen@wapit.com>
 
-	* header files: fixed few bugs in files wtp_machine-decl.h and 
+	* header files: fixed few bugs in files wtp_machine-decl.h and
 	wtp_state-decl.h
 
 	* wtp.c: fixed bugs in various functions
@@ -1189,10 +1197,10 @@ Wed Nov 24 12:30:46 1999  Lars Wirzenius  <liw@wapit.com>
 Tue Nov 23 12:07:03 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile: Added more stuff for docs.
-	
+
 	* Rules.mk, doc/*/Makefile: Moved common stuff to new Rules.mk,
 	which is included by the individual makefiles.
-	
+
 	* doc/*/*.xml: Converted to use the SGML identifier of DocBook,
 	instead of the XML one, because we have the SGML version of
 	DocBook on Red Hat machines.
@@ -1210,11 +1218,11 @@ Tue Nov 23 12:07:03 1999  Lars Wirzenius  <liw@wapit.com>
 	time.
 
 	* gw/bb.h: changed default heartbeat-frequency to 30 seconds.
-	
+
 Mon Nov 22 11:37:39 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* doc/userguide: Wrote draft outline of user's guide.
-	
+
 	* Makefile: Added stuff for docs.
 
 1999-11-19 Aarno Syvänen <syvanen@wapit.com>
@@ -1228,8 +1236,8 @@ Mon Nov 22 11:37:39 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/bearerbox.c: separated 'sendsms' to port of the internal SMS
 	Box, if any. And fixed number normalization, it failed in some
-	cases. (MG: does CIMD strip the first character in receiever number?) 
-	
+	cases. (MG: does CIMD strip the first character in receiever number?)
+
 1999-11-19    <rpr@rpr.wapit.com>
 
 	* gw/smsbox_req.c: returned info about new service starting, fixed
@@ -1260,7 +1268,7 @@ Mon Nov 22 11:37:39 1999  Lars Wirzenius  <liw@wapit.com>
 1999-11-19    <rpr@rpr.wapit.com>
 
 	* gw/smsbox_req.c, gw/smsbox_re.h, gw/smsbox.c: Did some bugfixing
-	and updated header file comments (documentation) 
+	and updated header file comments (documentation)
 
 Fri Nov 19 11:13:17 1999  Lars Wirzenius  <liw@wapit.com>
 
@@ -1295,14 +1303,14 @@ Fri Nov 19 11:13:17 1999  Lars Wirzenius  <liw@wapit.com>
 Thu Nov 18 15:13:44 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* doc/arch/arch-smsbox.xml: Fixed DocBook syntax errors.
-	
+
 	* gw/msg.c, gw/msg.h, test/test_msg.c: Wrote function msg_duplicate.
-	
+
 	* Makefile: Fixed typo in libtest.a rule.
 
 1999-11-17 Aarno Syvänen <syvanen@wapit.com>
 
-	* wtp.c: some bug fixing in function wtp_unpack_wdp_datagram 
+	* wtp.c: some bug fixing in function wtp_unpack_wdp_datagram
 
 1999-11-17    <rpr@rpr.wapit.com>
 
@@ -1313,13 +1321,13 @@ Thu Nov 18 15:13:44 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* bearerbox.c, smsbox.c, bb_msg.c: modified to use new mutex_lock
 	and unlock functions
-	
+
 1999-11-17    <rpr@rpr.wapit.com>
 
 	* gw/bearerbox.c: fixed heartbeat bug
 
 	* gw/smsbox.c: added debug information
-	
+
 1999-11-17    <rpr@rpr.wapit.com>
 
 	* gwlib/wapitlib.c: catched signal interrupts in read
@@ -1351,7 +1359,7 @@ Tue Nov 16 17:32:34 1999  Lars Wirzenius  <liw@wapit.com>
 Tue Nov 16 15:40:59 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile: Added compilation of test programs.
-	
+
 	* test/test_msg.c: Added a call to msg_dump.c.
 
 Tue Nov 16 14:57:55 1999  Lars Wirzenius  <liw@wapit.com>
@@ -1375,8 +1383,8 @@ Tue Nov 16 12:21:41 1999  Lars Wirzenius  <liw@wapit.com>
 
 1999-11-16    <rpr@rpr.wapit.com>
 
-	* smsbox_req.c, smsbox_reg.h, smsbox.c, Makefile: separated 
-	request handling to own module so that it can be used as thread 
+	* smsbox_req.c, smsbox_reg.h, smsbox.c, Makefile: separated
+	request handling to own module so that it can be used as thread
 	in bearerbox (implemented later)
 
 	* bearerbox.c: someone has messed with print_threads
@@ -1393,7 +1401,7 @@ Tue Nov 16 12:21:41 1999  Lars Wirzenius  <liw@wapit.com>
 	adminstration command 'disconnect'
 
 	* boxc.c, boxc.h: added 'client_ip' information
-	
+
 1999-11-15    <rpr@rpr.wapit.com>
 
 	* control.html: added simple control tool
@@ -1402,7 +1410,7 @@ Tue Nov 16 12:21:41 1999  Lars Wirzenius  <liw@wapit.com>
 	HTTP-adminstration and watching routines
 
 	* smsbox.c: updated comments
-	
+
 1999-11-15    <rpr@rpr.wapit.com>
 
 	* bearerbox.c, boxc.c: Basic routing for WAP messages. Does not
@@ -1411,7 +1419,7 @@ Tue Nov 16 12:21:41 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* bb_msg.c, bb_msg.h: initiated better routing systems for
 	WAP-messages, but implementation not ready
-	
+
 	* smsbox.c: file urltrans-request fixed.
 
 1999-11-15 Mikael Gueck <mikael.gueck@wapit.com>
@@ -1434,14 +1442,14 @@ Mon Nov 15 12:04:37 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* wapbox.c, wapbox.conf: Wrote. This is the main module of
 	the WAP box.
-	
+
 	* wapbox_feeder.c: Trivial test program for wapbox.c.
-	
+
 	* Makefile: related changes.
-	
+
 	* octstr.c: removed debugging message telling argument was NULL.
 	Now a NULL argument is silently ignored.
-	
+
 	* msg.c: Added name of message type to message dump.
 
 1999-11-12    <rpr@rpr.wapit.com>
@@ -1476,7 +1484,7 @@ Fri Nov 12 17:06:52 1999  Lars Wirzenius  <liw@wapit.com>
 	* smsbox.c, smsbox.conf: fixed multiple sms sending. Changed that
 	when 'split-chars' are used, the splitting character is included
 	in previous part, not the following one.
-	
+
 	* simple.conf: two sample sendsms users
 
 1999-11-12    <rpr@rpr.wapit.com>
@@ -1486,11 +1494,11 @@ Fri Nov 12 17:06:52 1999  Lars Wirzenius  <liw@wapit.com>
 	added messages to queue length
 
 	* bearerbox.c, boxc.c: some performance fixes
-	
+
 1999-11-12    <rpr@rpr.wapit.com>
 
 	* Release-0.1: added file to list modifications to SMSGateway 0.6
-	This is updated as the gateway is improved.	
+	This is updated as the gateway is improved.
 
 	* octstr.c, octstr.h: added function octstr_replace, so that
 	unnecessary destroy/create can be avoided
@@ -1523,7 +1531,7 @@ Thu Nov 11 19:41:40 1999  Lars Wirzenius  <liw@wapit.com>
 	* msg.h, msg.c: added function msg_type.
 
 	* octstr.h, octstr.c: functions octstr_duplicate, octstr_send ja
-	octstr_recv added. 
+	octstr_recv added.
 
 	* unlimited number of improvements, bugfixing and enhancements in
 	other modules. Too many.

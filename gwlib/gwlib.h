@@ -14,6 +14,10 @@
 
 #include "config.h"
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
 #include "gwstr.h"
 #include "gwmem.h"
 #include "utils.h"

@@ -7,7 +7,7 @@
 
 typedef struct WTPMachine WTPMachine;
 typedef struct WTPEvent WTPEvent;
-typedef struct Address Address; 
+typedef struct Address Address;
 typedef struct WTPSegment WTPSegment;
 
 #include <errno.h>
@@ -16,15 +16,15 @@ typedef struct WTPSegment WTPSegment;
 #include <stdlib.h>
 
 #include "gwlib.h"
-#include "msg.h" 
-#include "wsp.h" 
-#include "wtp_timer.h" 
+#include "msg.h"
+#include "wsp.h"
+#include "wtp_timer.h"
 #include "wtp_send.h"
 
 #define NUMBER_OF_ABORT_REASONS 9
 /*
  * For now, timers are defined. They will depend on bearer information fetched
- * from address (or from a header field of the protocol speaking with the 
+ * from address (or from a header field of the protocol speaking with the
  * bearerbox).
  */
 
@@ -105,7 +105,7 @@ struct WTPEvent {
     #define INTEGER(name) long name
     #define OCTSTR(name) Octstr *name
     #define EVENT(name, field) struct name field name;
-    #include "wtp_events-decl.h" 
+    #include "wtp_events-decl.h"
 };
 
 struct Address {
@@ -161,14 +161,14 @@ void wtp_event_dump(WTPEvent *event);
 WTPEvent *wtp_unpack_wdp_datagram(Msg *msg);
 
 
-WTPMachine *wtp_machine_create(Octstr *srcaddr, long srcport, 
+WTPMachine *wtp_machine_create(Octstr *srcaddr, long srcport,
 				Octstr *destaddr, long destport, long tid,
 				long tcl);
 
-/* 
+/*
  * Checks whether wtp machines data structure includes a spesific machine.
  * The machine in question is identified with with source and destination
- * address and port and tid. Address information is fetched from message 
+ * address and port and tid. Address information is fetched from message
  * fields, tid from an field of the event. If the machine does not exist and
  * the event is RcvInvoke, a new machine is created and added in the machines
  * data structure. If the event was RcvAck or RcvAbort, the function panics.
@@ -201,7 +201,7 @@ void wtp_machine_dump(WTPMachine  *machine);
 
 /*
  * Feed an event to a WTP state machine. Handle all errors yourself,
- * and report them to the caller. Generate a pointer to WSP event, if an 
+ * and report them to the caller. Generate a pointer to WSP event, if an
  * indication or a confirmation is required.
  */
 void wtp_handle_event(WTPMachine *machine, WTPEvent *event);
@@ -212,4 +212,3 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event);
 unsigned long wtp_tid_next(void);
 
 #endif
-

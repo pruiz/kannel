@@ -83,13 +83,13 @@ int make_server_socket(int port) {
 		error(errno, "socket failed");
 		goto error;
 	}
-	
+
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	reuse = 1;
-	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &reuse, 
+	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &reuse,
 		       sizeof(reuse)) == -1)
 	{
 		error(errno, "setsockopt failed for server address");
@@ -100,7 +100,7 @@ int make_server_socket(int port) {
 		error(errno, "bind failed");
 		goto error;
 	}
-	
+
 	if (listen(s, 10) == -1) {
 		error(errno, "listen failed");
 		goto error;
@@ -127,17 +127,17 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
 	struct hostent *hostinfo;
 	struct linger dontlinger;
 	int s;
-	
+
 	s = socket(AF_INET, SOCK_STREAM, 0);
 	if (s == -1)
 		goto error;
 
 	dontlinger.l_onoff = 1;
 	dontlinger.l_linger = 0;
-#ifdef BSD
+#if defined(BSD) && !defined(__NetBSD__)
 	setsockopt(s, SOL_TCP, SO_LINGER, &dontlinger, sizeof(dontlinger));
 #else
-{ 
+{
 	#include <netdb.h>
 	/* XXX no error trapping */
 	struct protoent *p = getprotobyname("tcp");
@@ -148,20 +148,20 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
 	hostinfo = gethostbyname(hostname);
 	if (hostinfo == NULL)
 		goto error;
-	
+
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
         addr.sin_addr = *(struct in_addr *) hostinfo->h_addr;
 
 	if (our_port > 0) {
 	    int reuse;
-	    
+
 	    o_addr.sin_family = AF_INET;
 	    o_addr.sin_port = htons(our_port);
 	    o_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	    reuse = 1;
-	    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &reuse, 
+	    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &reuse,
 			   sizeof(reuse)) == -1) {
 		error(errno, "setsockopt failed before bind");
 		goto error;
@@ -171,10 +171,10 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
 		goto error;
 	    }
 	}
-	
+
 	if (connect(s, (struct sockaddr *) &addr, sizeof(addr)) == -1)
 		goto error;
-	
+
 	return s;
 
 error:
@@ -246,7 +246,7 @@ int read_to_eof(int fd, char **data, size_t *len) {
 	size_t size;
 	int ret;
 	char *p;
-	
+
 	*len = 0;
 	size = 0;
 	*data = NULL;

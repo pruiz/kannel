@@ -19,6 +19,10 @@
 #include <stdint.h>
 #endif
 
+#if HAVE_TYPE_UINT32_T_IN_INTTYPES_H
+#include <inttypes.h>
+#endif
+
 #if !HAVE_TYPE_UINT32_T
 typedef unsigned long uint32_t;
 #endif

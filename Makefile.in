@@ -67,7 +67,7 @@ YFLAGS = -d -p ws_yy_
 
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = config.h
-CONFIG_CLEAN_FILES = 
+CONFIG_CLEAN_FILES =
 
 VERSION=$(shell head -1 VERSION)
 
@@ -99,6 +99,7 @@ progsrcs = \
 	gw/smsbox.c \
 	gw/wapbox.c \
 	wmlscript/wmlsc.c \
+	wmlscript/wmlsdasm.c \
 	utils/seewbmp.c
 progobjs = $(progsrcs:.c=.o)
 progs = $(progsrcs:.c=)

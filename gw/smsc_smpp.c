@@ -68,7 +68,7 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password, char
 	/* Create buffers */
 	smsc->data_t = data_new();
 	if(smsc->data_t == NULL) goto error;
-	
+
 	smsc->data_r = data_new();
 	if(smsc->data_r == NULL) goto error;
 
@@ -96,7 +96,7 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password, char
 	strncpy(bind_receiver->address_range, address_range, 41);
 	pdu->message_body = bind_receiver;
 	fifo_push(smsc->fifo_r_out, pdu);
-	
+
 	/* Push a BIND_TRANSMITTER PDU on the [smsc->unsent] stack. */
 	pdu = pdu_new();
 	if(pdu == NULL) goto error;
@@ -191,7 +191,7 @@ int smpp_reopen(SMSCenter *smsc) {
 	/* Create buffers */
 	smsc->data_t = data_new();
 	if(smsc->data_t == NULL) goto error;
-	
+
 	smsc->data_r = data_new();
 	if(smsc->data_r == NULL) goto error;
 
@@ -219,7 +219,7 @@ int smpp_reopen(SMSCenter *smsc) {
 	strncpy(bind_receiver->address_range, smsc->smpp_address_range, 41);
 	pdu->message_body = bind_receiver;
 	fifo_push(smsc->fifo_r_out, pdu);
-	
+
 	/* Push a BIND_TRANSMITTER PDU on the [smsc->unsent] stack. */
 	pdu = pdu_new();
 	if(pdu == NULL) goto error;
@@ -278,7 +278,7 @@ int smpp_close(SMSCenter *smsc) {
 	pdu->sequence_no = 1;
 	pdu->message_body = NULL;
 	fifo_push(smsc->fifo_r_out, pdu);
-	
+
 	/* Push a UNBIND PDU on the [smsc->fifo_t_out] stack. */
 	pdu = pdu_new();
 	if(pdu == NULL) goto error;
@@ -401,7 +401,7 @@ int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 	pdu->status = 0;
 	pdu->sequence_no = smsc->seq_t++;
 	pdu->message_body = submit_sm;
-	pdu->length = 16 + 
+	pdu->length = 16 +
 		strlen(submit_sm->service_type) + 1 +
 		1 + 1 +
 		strlen(submit_sm->source_addr) + 1 +
@@ -507,7 +507,7 @@ int smpp_pending_smsmessage(SMSCenter *smsc) {
 	}
 
 	/* Interpret the raw data */
-	while( data_pop(smsc->data_t, &data) == 1 ) {	
+	while( data_pop(smsc->data_t, &data) == 1 ) {
 		/* Decode the PDU from raw data. */
 		if( (ret = pdu_decode(&pdu, data)) ) {
 			/* Act on PDU. */
@@ -554,7 +554,7 @@ int smpp_pending_smsmessage(SMSCenter *smsc) {
 
 	/* If it's been a "long time" (defined elsewhere) since
 	   the last message, actively check the link status by
-	   sending a LINK_STATUS pdu to the SMSC, thereby 
+	   sending a LINK_STATUS pdu to the SMSC, thereby
 	   (maybe) resetting the close-if-no-traffic timer.
 	   Note: in practise we won't need this. */
 
@@ -715,7 +715,7 @@ error:
 *  to: The Octstr to create and paste to
 *
 * Description:
-*  
+*
 * Returns:
 *  1 if a PDU was found
 *  0 if no PDU found
@@ -768,7 +768,7 @@ error:
 *
 * Description:
 *  Receive data from [fd] and append it to [to].
-*  
+*
 * Returns:
 *  1 if a PDU was found
 *  0 if no PDU found
@@ -814,7 +814,7 @@ static int data_receive(int fd, Octstr *to) {
 	}
 
 	newstr = octstr_create_from_data(data, length);
-	
+
 	if(newstr == NULL) goto error;
 	octstr_insert(to, newstr, octstr_len(to));
 
@@ -837,7 +837,7 @@ error:
 *
 * Description:
 *  Write all the data from [from] to [fd].
-*  
+*
 * Returns:
 *  1 if a PDU was found
 *  0 if no PDU found
@@ -1046,7 +1046,7 @@ static int pdu_decode(smpp_pdu **pdu, Octstr *from) {
 	ret = pdu_header_decode(newpdu, from);
 
 	switch(newpdu->id) {
-	
+
 	case SMPP_BIND_RECEIVER_RESP:
 		ret = pdu_decode_bind(newpdu, from);
 		break;
@@ -1260,7 +1260,7 @@ static int pdu_header_encode(smpp_pdu *pdu, Octstr **rawdata) {
 
 	memcpy(tempptr, &length, 4);
 	tempptr += 4;
-	
+
 	memcpy(tempptr, &id, 4);
 	tempptr += 4;
 
@@ -1288,7 +1288,7 @@ static int pdu_encode_bind(smpp_pdu *pdu, Octstr **str) {
 	char *data = NULL, *where = NULL;
 	Octstr *body_encoded;
 	int left;
-	
+
 	struct smpp_pdu_bind_receiver *bind_receiver;
 	struct smpp_pdu_bind_receiver_resp *bind_receiver_resp;
 	struct smpp_pdu_bind_transmitter *bind_transmitter;
@@ -1442,7 +1442,7 @@ static int pdu_act_submit_sm_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 
 	debug(0, "pdu_act_submit_sm_resp: start");
 
-	/* Mark message the SUBMIT_SM_RESP refers to as 
+	/* Mark message the SUBMIT_SM_RESP refers to as
 	   acknowledged and remove it from smsc->smpp_fifostack. */
 
 	debug(0, "pdu->length == %08x", pdu->length);
@@ -1687,27 +1687,27 @@ static int pdu_decode_deliver_sm(smpp_pdu* pdu, Octstr* str) {
 	   won't break our application with the new definition
 	   of max short_message size. */
 	end = start + strlen(start);
-	memcpy(deliver_sm->short_message, start, 
-		(deliver_sm->sm_length > sizeof(deliver_sm->short_message)) ? 
+	memcpy(deliver_sm->short_message, start,
+		(deliver_sm->sm_length > sizeof(deliver_sm->short_message)) ?
 			sizeof(deliver_sm->short_message) : deliver_sm->sm_length);
 	start = end+1;
 
 	gw_free(buff);
 
 	debug(0, "pdu->service_type == %s", deliver_sm->service_type);
-	
+
 	debug(0, "pdu->source_addr_ton == %i", deliver_sm->source_addr_ton);
 	debug(0, "pdu->source_addr_npi == %i", deliver_sm->source_addr_npi);
 	debug(0, "pdu->source_addr == %s", deliver_sm->source_addr);
-	
+
 	debug(0, "pdu->dest_addr_ton == %i", deliver_sm->dest_addr_ton);
 	debug(0, "pdu->dest_addr_npi == %i", deliver_sm->dest_addr_npi);
 	debug(0, "pdu->dest_addr == %s", deliver_sm->dest_addr);
-	
+
 	debug(0, "pdu->esm_class == %i", deliver_sm->esm_class);
 	debug(0, "pdu->protocol_id == %i", deliver_sm->protocol_id);
 	debug(0, "pdu->priority_flag == %i", deliver_sm->priority_flag);
-	
+
 	debug(0, "pdu->schedule_delivery_time == %s", deliver_sm->schedule_delivery_time);
 	debug(0, "pdu->validity_period == %s", deliver_sm->validity_period);
 
@@ -1727,7 +1727,7 @@ static int pdu_decode_deliver_sm(smpp_pdu* pdu, Octstr* str) {
 	debug(0, "pdu->short_message == %s", end);
 
 	gw_free(start);
-	gw_free(end);	
+	gw_free(end);
 
 	return 1;
 
@@ -1755,7 +1755,7 @@ static int pdu_act_query_last_msgs_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 
 	return -1;
 }
-	
+
 static int pdu_act_query_msg_details_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 
 	/* Ignore, this version doesn't send messages which
@@ -1869,4 +1869,3 @@ static int charset_iso_to_smpp(char* data) {
 
 	return 1;
 }
-

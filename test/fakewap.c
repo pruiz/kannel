@@ -6,40 +6,40 @@
  *
  * The protocol:
  *
- *    
+ *
  *    A)    Fakewap -> Gateway
  *
  *        WTP: Invoke PDU
  *        WSP: Connect PDU
- *    
+ *
  *    B)    Gateway -> Fakewap
- *    
+ *
  *        WTP: Result PDU
  *        WSP: ConnectReply PDU
- *    
+ *
  *    C)    Fakewap -> Gateway
- *    
+ *
  *        WTP: Ack PDU
- *    
+ *
  *    D)    Fakewap -> Gateway
- *    
+ *
  *        WTP: Invoke PDU
  *        WSP: Get PDU (data: URL)
- *        
+ *
  *    E)    Gateway -> Fakewap
- *    
+ *
  *        WTP: Result PDU (data: WML page)
  *        WSP: Reply PDU
- *        
+ *
  *    F)    Fakewap -> Gateway
- *    
+ *
  *        WTP: Ack PDU
- *        
+ *
  *    G)    Fakewap -> Gateway
- *    
+ *
  *        WTP: Invoke PDU
  *        WSP: Disconnect PDU
- *    
+ *
  *
  *    Packets A-C open a WAP session. Packets D-F fetch a WML page.
  *    Packet G closes the session.
@@ -49,10 +49,10 @@
  *
  * Antti Saarenheimo for WapIT Ltd.
  */
- 
+
 #define MAX_SEND (0)
 
-static char usage[] = 
+static char usage[] =
 "Usage: \n\
 fakewap [-v] <my port> <host> <port> <max> <interval> <thrds> <url1> <url2>...\n\
 \n\
@@ -153,13 +153,13 @@ static char *choose_message(char **urls, int num_urls) {
 static unsigned short get_tid() {
     static  unsigned tid = 0;
     return tid++ & 0x7fff;
-}    
+}
 
-/* 
-**  if -v option has been defined, function prints the trace message and  
-**  the first bytes in the message header 
+/*
+**  if -v option has been defined, function prints the trace message and
+**  the first bytes in the message header
 */
-void print_msg( unsigned short port, const char * trace, unsigned char * msg, 
+void print_msg( unsigned short port, const char * trace, unsigned char * msg,
                 int msg_len ) {
     int i;
     if (verbose) {
@@ -212,10 +212,10 @@ int ReadVarIntLen( const unsigned char *buf )
 
 /*
 **  Function sends message to WAP GW
-*/  
+*/
 int
-wap_msg_send( unsigned short port, SOCKET fd, const unsigned char * hdr, 
-            int hdr_len, const unsigned short * tid, unsigned char * data, 
+wap_msg_send( unsigned short port, SOCKET fd, const unsigned char * hdr,
+            int hdr_len, const unsigned short * tid, unsigned char * data,
             int data_len )
 {
     int ret;
@@ -247,19 +247,19 @@ wap_msg_send( unsigned short port, SOCKET fd, const unsigned char * hdr,
         print_msg( port, "Sent packet", msg, msg_len );
     }
     return ret;
-}              
+}
 
 /*
-**  Function receives a wap wtl/wsp message. If the headers has been 
+**  Function receives a wap wtl/wsp message. If the headers has been
 **  given, it must match with the received message.
 **  Return value:
 **      >  0 => length of received data
 **      == 0 => got acknowlengement or abort but not the expected data
-**      < 0  => error, 
+**      < 0  => error,
 */
 int
-wap_msg_recv( unsigned short port, SOCKET fd, const char * hdr, int hdr_len, 
-              unsigned short tid, unsigned char * data, int data_len, 
+wap_msg_recv( unsigned short port, SOCKET fd, const char * hdr, int hdr_len,
+              unsigned short tid, unsigned char * data, int data_len,
               int timeout )
 {
     int ret;
@@ -289,32 +289,32 @@ wap_msg_recv( unsigned short port, SOCKET fd, const char * hdr, int hdr_len,
             }
         }
         ret = recv( fd, msg, sizeof(msg), 0 );
-    
+
         if (ret == -1) {
             error(errno, "recv() from socket failed");
             return -1;
         }
         msg_len = ret;
-        
+
         if (hdr != NULL) {
-            /* 
-            **  Ignore extra header bits, WAP GWs return different values 
+            /*
+            **  Ignore extra header bits, WAP GWs return different values
             */
-            if (msg_len >= hdr_len && 
+            if (msg_len >= hdr_len &&
                 GET_WTP_PDU_TYPE(msg) == GET_WTP_PDU_TYPE(hdr) &&
                 (hdr_len <= 3 || !memcmp( msg+3, hdr+3, hdr_len-3 ))) {
                 break;
             }
             /*
-            **  Handle TID test, the answer is: Yes, we have an outstanding 
+            **  Handle TID test, the answer is: Yes, we have an outstanding
             **  transaction with this tid
             */
-            else if (GET_WTP_PDU_TYPE(msg) == WTP_PDU_ACK && 
+            else if (GET_WTP_PDU_TYPE(msg) == WTP_PDU_ACK &&
                      GET_TID(msg) == tid) {
                 print_msg( port, "Received tid verification", msg, msg_len );
-                wap_msg_send( port, fd, WTP_Ack, sizeof(WTP_Ack), &tid, 
+                wap_msg_send( port, fd, WTP_Ack, sizeof(WTP_Ack), &tid,
                               NULL, 0 );
-            } 
+            }
             else if (GET_WTP_PDU_TYPE(msg) == WTP_PDU_ABORT) {
                 print_msg( port, "Received WTP Abort", msg, msg_len );
             }
@@ -343,15 +343,15 @@ wap_msg_recv( unsigned short port, SOCKET fd, const char * hdr, int hdr_len,
 **  Function initializes and binds datagram socket.
 */
 
-SOCKET connect_to_server_with_port(char *hostname, unsigned short port, 
-                                         unsigned short our_port) 
+SOCKET connect_to_server_with_port(char *hostname, unsigned short port,
+                                         unsigned short our_port)
 {
     struct sockaddr_in addr;
     struct sockaddr_in o_addr;
     struct hostent * hostinfo;
     struct linger dontlinger;
     SOCKET s;
-    
+
     s = socket(AF_INET, SOCK_DGRAM, 0);
     if (s == -1) {
 	error(errno, "socket failed");
@@ -360,10 +360,10 @@ SOCKET connect_to_server_with_port(char *hostname, unsigned short port,
 
     dontlinger.l_onoff = 1;
     dontlinger.l_linger = 0;
-#ifdef BSD
+#if defined(BSD) && !defined(__NetBSD__)
     setsockopt(s, SOL_TCP, SO_LINGER, &dontlinger, sizeof(dontlinger));
 #else
-{ 
+{
     /* XXX no error trapping */
     struct protoent *p = getprotobyname("tcp");
     setsockopt(s, p->p_proto, SO_LINGER, (void *)&dontlinger, sizeof(dontlinger));
@@ -374,7 +374,7 @@ SOCKET connect_to_server_with_port(char *hostname, unsigned short port,
 	error(errno, "gethostbyname failed");
         goto error;
     }
-    
+
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr = *(struct in_addr *) hostinfo->h_addr;
@@ -395,7 +395,7 @@ SOCKET connect_to_server_with_port(char *hostname, unsigned short port,
 	    hostname, port);
         goto error;
     }
-    
+
     return s;
 
 error:
@@ -408,10 +408,10 @@ error:
 /*
 **  We cannot use wapit library in Windows
 */
-void panic(int level, const char * args, ...) 
+void panic(int level, const char * args, ...)
 {
     va_list ap;
-    
+
     va_start(ap, args);
     vprintf( args, ap );
     va_end( ap );
@@ -419,10 +419,10 @@ void panic(int level, const char * args, ...)
     exit(level);
 }
 
-void error(int level, const char * args, ...) 
+void error(int level, const char * args, ...)
 {
     va_list ap;
-    
+
     printf("Last socket error=%d\n", WSAGetLastError());
     va_start(ap, args);
     vprintf( args, ap );
@@ -430,10 +430,10 @@ void error(int level, const char * args, ...)
     printf( "\n");
 }
 
-void info(int level, const char * args, ...) 
+void info(int level, const char * args, ...)
 {
     va_list ap;
-    
+
     va_start(ap, args);
     vprintf( args, ap );
     va_end( ap );
@@ -442,7 +442,7 @@ void info(int level, const char * args, ...)
 
 /*
 **  UNCHECKED! mappings to WINAPI
-*/ 
+*/
 Mutex *mutex_create() {
     return (Mutex *)CreateMutex( NULL, FALSE, NULL );
 }
@@ -471,11 +471,11 @@ int get_next_transaction() {
 }
 
 /*
-**  Function (or thread) sets up a dgram socket.  Then it loops: WTL/WSP 
+**  Function (or thread) sets up a dgram socket.  Then it loops: WTL/WSP
 **  Connect, Get a url and Disconnect until all requests are have been done.
 */
 void *
-client_session( void * arg ) 
+client_session( void * arg )
 {
     SOCKET fd;
     unsigned short  our_port = 0;
@@ -495,7 +495,7 @@ client_session( void * arg )
     int i_this;
 
     our_port = (unsigned short)(unsigned)arg;
-    
+
     fd = connect_to_server_with_port( hostname, port, our_port);
     if (fd == -1)
         panic(0, "couldn't connect host ");
@@ -519,17 +519,17 @@ client_session( void * arg )
         **  Connect, save sid from reply and finally ack the reply
         */
         tid = get_tid();
-        ret = wap_msg_send( our_port, fd, WSP_Connect, sizeof(WSP_Connect), 
+        ret = wap_msg_send( our_port, fd, WSP_Connect, sizeof(WSP_Connect),
                             &tid, NULL, 0 );
 
         if (ret == -1) panic(0, "Send WSP_Connect failed");
 
         CONSTRUCT_EXPECTED_REPLY_HDR( reply_hdr, WSP_ConnectReply, tid );
-        ret = wap_msg_recv( our_port, fd, reply_hdr, sizeof(WSP_ConnectReply), 
+        ret = wap_msg_recv( our_port, fd, reply_hdr, sizeof(WSP_ConnectReply),
                             tid, buf, sizeof(buf), timeout );
-        
+
         if (ret == -1) panic(0, "Receive WSP_ConnectReply failed");
-        
+
         if (ret > 2)
         {
             sid_len = ReadVarIntLen(buf);
@@ -542,14 +542,14 @@ client_session( void * arg )
             if (connection_retries++ > 3) {
                 panic(0, "Cannot connect WAP GW!");
             }
-            wap_msg_send( our_port, fd, WTP_Abort, sizeof(WTP_Abort), &tid, 
+            wap_msg_send( our_port, fd, WTP_Abort, sizeof(WTP_Abort), &tid,
                           NULL, 0 );
             continue;
-        } 
+        }
         else {
             connection_retries = 0;
         }
-        ret = wap_msg_send( our_port, fd, WTP_Ack, sizeof(WTP_Ack), &tid, 
+        ret = wap_msg_send( our_port, fd, WTP_Ack, sizeof(WTP_Ack), &tid,
                             NULL, 0 );
 
         if (ret == -1) panic(0, "Send WTP_Ack failed");
@@ -562,16 +562,16 @@ client_session( void * arg )
         url_len = strlen(url);
         url_off = StoreVarInt( buf, url_len );
         memcpy( buf+url_off, url, url_len );
-        ret = wap_msg_send( our_port, fd, WSP_Get, sizeof(WSP_Get), &tid, buf, 
+        ret = wap_msg_send( our_port, fd, WSP_Get, sizeof(WSP_Get), &tid, buf,
                             url_len+3 );
         if (ret == -1) break;
 
         CONSTRUCT_EXPECTED_REPLY_HDR( reply_hdr, WSP_Reply, tid );
-        ret = wap_msg_recv( our_port, fd, reply_hdr, sizeof(WSP_Reply), 
+        ret = wap_msg_recv( our_port, fd, reply_hdr, sizeof(WSP_Reply),
                             tid, buf, sizeof(buf), timeout );
         if (ret == -1) break;
 
-        ret = wap_msg_send( our_port, fd, WTP_Ack, sizeof(WTP_Ack), &tid, NULL, 
+        ret = wap_msg_send( our_port, fd, WTP_Ack, sizeof(WTP_Ack), &tid, NULL,
                             0 );
 
         if (ret == -1) break;
@@ -579,7 +579,7 @@ client_session( void * arg )
         /*
         **  Finally disconnect with the sid returned by connect reply
         */
-        ret = wap_msg_send( our_port, fd, WSP_Disconnect, 
+        ret = wap_msg_send( our_port, fd, WSP_Disconnect,
                             sizeof(WSP_Disconnect), &tid, sid, sid_len );
 
         if (ret == -1) break;
@@ -615,7 +615,7 @@ client_session( void * arg )
 
 
 /* The main program. */
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
     unsigned short our_port;
     int     i, org_threads;
@@ -634,7 +634,7 @@ int main(int argc, char **argv)
         WORD wVersionRequested = MAKEWORD( 2, 0 );
         WSADATA wsaData;
 	int ret;
- 
+
         ret = WSAStartup( wVersionRequested, &wsaData );
         if ( ret != 0 ) {
             panic( 0, "Windows socket api version is not supported, v2,0 is required\n");
@@ -652,20 +652,20 @@ int main(int argc, char **argv)
     max_send = atoi(argv[4]);
     interval = atof(argv[5]);
     threads = atoi(argv[6]);
-        
+
     urls = argv + 7;
     num_urls = argc - 7;
     srand((unsigned int) time(NULL));
 
     mutex = mutex_create();
-    
+
     info(0, "fakewap starting...\n");
 
     if (threads < 1) threads = 1;
     org_threads = threads;
 
     /*
-    **  Start 'extra' client threads and finally execute the 
+    **  Start 'extra' client threads and finally execute the
     **  session of main thread
     */
     for (i = 1; i < threads; i++) {
@@ -678,14 +678,13 @@ int main(int argc, char **argv)
     **  Wait the other sessions to complete
     */
     while (threads > 0) usleep( 1000 );
-    
+
     info(0, "\nfakewap complete.");
     info( 0, "fakewap: %d client threads made total %d transactions.", org_threads, num_sent );
     delta = difftime(end_time, start_time);
     info( 0, "fakewap: total running time %.1f seconds", delta);
     info( 0, "fakewap: %.1f messages/seconds on average", num_sent / delta);
-    info( 0, "fakewap: time of best, worst and average transaction: %.1f s, %.1f s, %.1f s", 
+    info( 0, "fakewap: time of best, worst and average transaction: %.1f s, %.1f s, %.1f s",
          besttime, worsttime, totaltime / num_sent );
     return 0;
 }
-
