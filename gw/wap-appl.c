@@ -742,9 +742,14 @@ static void return_reply(int status, Octstr *content_body, List *headers,
     content.body = content_body;
     content.version = NULL;
 
-    /* get session machine for this session */
+    /* Get session machine for this session. If this was a connection-less
+     * request be obviously will not find any session machine entry. */
     sm = find_session_machine_by_id(session_id);
-    device_headers = (sm ? sm->http_headers : request_headers);
+
+    /* ensure we pass only the orginal headers to the convertion routine */
+    device_headers = (orig_event->type == S_MethodInvoke_Ind) ?
+        orig_event->u.S_MethodInvoke_Ind.request_headers :
+        orig_event->u.S_Unit_MethodInvoke_Ind.request_headers;
     if (device_headers == NULL)
         device_headers = list_create();
 
