@@ -1,3 +1,10 @@
+2000-07-12  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: Little bug fixes with variables:
+	- no more empty	string before variable reference to string table
+	- double $ won't eat a character after them
+	- a little memory leak mentioned below corrected
+
 2000-07-12  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_http.c: oops, return value for HTTP admin was not checked,

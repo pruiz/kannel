@@ -931,8 +931,9 @@ static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 		/* The string is output as a inline string and the variable 
 		   as a inline variable reference. */
 		{
-		  if (output_terminated_string(output, wbxml) == -1)
-		    return -1;
+		  if (octstr_len(output) > 0)
+		    if (output_terminated_string(output, wbxml) == -1)
+		      return -1;
 		  octstr_truncate(output, 0);
 		  output_plain_string(var, wbxml);
 		}
@@ -951,7 +952,10 @@ static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
   if (start < pos)
     {
       if (octstr_len(output) == 0)
-	output = octstr_copy(ostr, start, pos - start);
+	{
+	  octstr_destroy(output);
+	  output = octstr_copy(ostr, start, pos - start);
+	}
       else
 	{
 	  temp = octstr_copy(ostr, start, pos - start);
