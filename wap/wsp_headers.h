@@ -143,6 +143,12 @@ int wsp_pack_retry_after(Octstr *packet, Octstr *value);
 int wsp_pack_text(Octstr *packet, Octstr *value);
 int wsp_pack_integer_string(Octstr *packet, Octstr *value);
 int wsp_pack_version_value(Octstr *packet, Octstr *value);
+int wsp_pack_constrained_value(Octstr *packed, Octstr *text, long value);
+void wsp_pack_value(Octstr *packed, Octstr *encoded);
+void wsp_pack_parameters(Octstr *packed, List *parms);
+int wsp_pack_list(Octstr *packed, long fieldnum, List *elements, int i);
+void wsp_pack_short_integer(Octstr *packed, unsigned long integer);
+void wsp_pack_separate_content_type(Octstr *packed, List *headers);
 
 /* Return an HTTPHeader linked list which must be freed by the caller
  * (see http.h for details of HTTPHeaders). Cannot fail.

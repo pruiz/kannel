@@ -1746,7 +1746,7 @@ static int pack_qvalue(Octstr *packed, int qvalue)
 }
 
 /* Pack value as a Value-length followed by the encoded value. */
-static void pack_value(Octstr *packed, Octstr *encoded)
+void wsp_pack_value(Octstr *packed, Octstr *encoded)
 {
     long len;
 
@@ -1785,7 +1785,7 @@ static void pack_long_integer(Octstr *packed, unsigned long integer)
     octstr_insert_data(packed, oldlen, &octet, 1);
 }
 
-static void pack_short_integer(Octstr *packed, unsigned long integer)
+void wsp_pack_short_integer(Octstr *packed, unsigned long integer)
 {
     gw_assert(integer <= MAX_SHORT_INTEGER);
 
@@ -1795,7 +1795,7 @@ static void pack_short_integer(Octstr *packed, unsigned long integer)
 void wsp_pack_integer_value(Octstr *packed, unsigned long integer)
 {
     if (integer <= MAX_SHORT_INTEGER)
-        pack_short_integer(packed, integer);
+        wsp_pack_short_integer(packed, integer);
     else
         pack_long_integer(packed, integer);
 }
@@ -1849,7 +1849,7 @@ int wsp_pack_version_value(Octstr *packed, Octstr *version)
             goto usetext;
     }
 
-    pack_short_integer(packed, major << 4 | minor);
+    wsp_pack_short_integer(packed, major << 4 | minor);
     return 0;
 
 usetext:
@@ -1857,10 +1857,10 @@ usetext:
     return 0;
 }
 
-static int pack_constrained_value(Octstr *packed, Octstr *text, long value)
+int wsp_pack_constrained_value(Octstr *packed, Octstr *text, long value)
 {
     if (value >= 0)
-        pack_short_integer(packed, value);
+        wsp_pack_short_integer(packed, value);
     else
         wsp_pack_text(packed, text);
     return 0;
@@ -1927,7 +1927,7 @@ static void pack_parameter(Octstr *packed, Parameter *parm)
                 if (octstr_parse_long(&tmp, parm->value, 0, 10)
                     == octstr_len(parm->value) &&
                     tmp >= 0 && tmp <= MAX_SHORT_INTEGER) {
-                    pack_short_integer(packed, tmp);
+                    wsp_pack_short_integer(packed, tmp);
                     return;
                 }
                 break;
@@ -1951,7 +1951,7 @@ static void pack_parameter(Octstr *packed, Parameter *parm)
     }
 }
 
-static void pack_parameters(Octstr *packed, List *parms)
+void wsp_pack_parameters(Octstr *packed, List *parms)
 {
     long i;
     Parameter *parm;
@@ -2042,7 +2042,7 @@ static int pack_challenge(Octstr *packed, Octstr *value)
             }
         }
 
-        pack_parameters(encoding, parms);
+        wsp_pack_parameters(encoding, parms);
     }
 
     /*
@@ -2071,7 +2071,7 @@ static int pack_challenge(Octstr *packed, Octstr *value)
     wsp_pack_text(realmval, realmparm->value);
     octstr_insert(encoding, realmval, realmpos);
 
-    pack_value(packed, encoding);
+    wsp_pack_value(packed, encoding);
 
     octstr_destroy(encoding);
     octstr_destroy(scheme);
@@ -2148,11 +2148,11 @@ static int pack_credentials(Octstr *packed, Octstr *value)
 
         wsp_pack_text(encoding, scheme);
         parms = wsp_strip_parameters(value);
-        pack_parameters(encoding, parms);
+        wsp_pack_parameters(encoding, parms);
         list_destroy(parms, parm_destroy_item);
     }
 
-    pack_value(packed, encoding);
+    wsp_pack_value(packed, encoding);
     octstr_destroy(encoding);
     octstr_destroy(scheme);
 
@@ -2181,14 +2181,14 @@ int wsp_pack_date(Octstr *packed, Octstr *value)
 
 static int pack_connection(Octstr *packed, Octstr *value)
 {
-    return pack_constrained_value(packed, value,
-                                  wsp_string_to_connection(value));
+    return wsp_pack_constrained_value(packed, value,
+                                      wsp_string_to_connection(value));
 }
 
 static int pack_encoding(Octstr *packed, Octstr *value)
 {
-    return pack_constrained_value(packed, value,
-                                  wsp_string_to_encoding(value));
+    return wsp_pack_constrained_value(packed, value,
+                                      wsp_string_to_encoding(value));
 }
 
 static int pack_field_name(Octstr *packed, Octstr *value)
@@ -2196,8 +2196,8 @@ static int pack_field_name(Octstr *packed, Octstr *value)
     /* XXX we need to obey which WSP encoding-version to use */
     /* return pack_constrained_value(packed, value,
                                   wsp_string_to_header(value)); */
-    return pack_constrained_value(packed, value,
-                                  wsp_string_to_versioned_header(value, WSP_1_2));
+    return wsp_pack_constrained_value(packed, value,
+                                      wsp_string_to_versioned_header(value, WSP_1_2));
 }
 
 static int pack_language(Octstr *packed, Octstr *value)
@@ -2219,15 +2219,15 @@ static int pack_method(Octstr *packed, Octstr *value)
 {
     /* In the future, we will need some way to refer to extended
      * method names negotiated for this session. */ 
-    return pack_constrained_value(packed, value,
-                                  wsp_string_to_method(value));
+    return wsp_pack_constrained_value(packed, value,
+                                      wsp_string_to_method(value));
 }
 
 /* Encode value as Accept-ranges-value */
 static int pack_range_unit(Octstr *packed, Octstr *value)
 {
-    return pack_constrained_value(packed, value,
-                                  wsp_string_to_ranges(value));
+    return wsp_pack_constrained_value(packed, value,
+                                      wsp_string_to_ranges(value));
 }
 
 /* Encode byte-range-spec | suffix-byte-range-spec as Range-value.
@@ -2271,7 +2271,7 @@ static int pack_range_value(Octstr *packed, Octstr *value, long pos)
         octstr_append_uintvar(encoding, first_byte_pos);
         if (last_byte_pos >= 0)
             octstr_append_uintvar(encoding, last_byte_pos);
-        pack_value(packed, encoding);
+        wsp_pack_value(packed, encoding);
         octstr_destroy(encoding);
     } else if (octstr_get_char(value, pos) == '-') {
         /* suffix-byte-range-spec */
@@ -2284,7 +2284,7 @@ static int pack_range_value(Octstr *packed, Octstr *value, long pos)
         encoding = octstr_create("");
         octstr_append_char(encoding, SUFFIX_BYTE_RANGE);
         octstr_append_uintvar(encoding, suffix_length);
-        pack_value(packed, encoding);
+        wsp_pack_value(packed, encoding);
         octstr_destroy(encoding);
     } else
         return -1;
@@ -2294,8 +2294,8 @@ static int pack_range_value(Octstr *packed, Octstr *value, long pos)
 
 static int pack_transfer_encoding(Octstr *packed, Octstr *value)
 {
-    return pack_constrained_value(packed, value,
-                                  wsp_string_to_transfer_encoding(value));
+    return wsp_pack_constrained_value(packed, value,
+                                      wsp_string_to_transfer_encoding(value));
 }
 
 /* Also used by pack_content_type  */
@@ -2311,7 +2311,7 @@ static int pack_accept(Octstr *packed, Octstr *value)
 
     /* See if we can fit this in a Constrained-media encoding */
     if (parms == NULL && media <= MAX_SHORT_INTEGER) {
-        pack_constrained_value(packed, value, media);
+        wsp_pack_constrained_value(packed, value, media);
     } else {
         Octstr *encoding = octstr_create("");
 
@@ -2320,8 +2320,8 @@ static int pack_accept(Octstr *packed, Octstr *value)
         else
             wsp_pack_text(encoding, value);
 
-        pack_parameters(encoding, parms);
-        pack_value(packed, encoding);
+        wsp_pack_parameters(encoding, parms);
+        wsp_pack_value(packed, encoding);
         octstr_destroy(encoding);
     }
 
@@ -2344,7 +2344,7 @@ static int pack_accept_charset(Octstr *packed, Octstr *value)
 
     /* See if we can fit this in a Constrained-charset encoding */
     if (qvalue == 1000 && charset <= MAX_SHORT_INTEGER) {
-        pack_constrained_value(packed, value, charset);
+        wsp_pack_constrained_value(packed, value, charset);
     } else {
         Octstr *encoding = octstr_create("");
 
@@ -2355,7 +2355,7 @@ static int pack_accept_charset(Octstr *packed, Octstr *value)
 
         if (qvalue != 1000)
             pack_qvalue(encoding, qvalue);
-        pack_value(packed, encoding);
+        wsp_pack_value(packed, encoding);
         octstr_destroy(encoding);
     }
 
@@ -2407,7 +2407,7 @@ static int pack_accept_language(Octstr *packed, Octstr *value)
     /* See if we can fit this in a Constrained-language encoding. */
     /* Note that our language table already includes Any-language */
     if (qvalue == 1000 && language <= MAX_SHORT_INTEGER) {
-        pack_constrained_value(packed, value, language);
+        wsp_pack_constrained_value(packed, value, language);
     } else {
         Octstr *encoding = octstr_create("");
 
@@ -2418,7 +2418,7 @@ static int pack_accept_language(Octstr *packed, Octstr *value)
 
         if (qvalue != 1000)
             pack_qvalue(encoding, qvalue);
-        pack_value(packed, encoding);
+        wsp_pack_value(packed, encoding);
         octstr_destroy(encoding);
     }
 
@@ -2433,8 +2433,8 @@ static int pack_cache_control(Octstr *packed, Octstr *value)
     parm = parm_parse(value);
 
     if (parm->value == NULL) {
-        pack_constrained_value(packed, value,
-                               wsp_string_to_cache_control(parm->key));
+        wsp_pack_constrained_value(packed, value,
+                                   wsp_string_to_cache_control(parm->key));
     } else {
         Octstr *encoding = octstr_create("");
 
@@ -2483,7 +2483,7 @@ static int pack_cache_control(Octstr *packed, Octstr *value)
             }
 
             if (done) {
-                pack_short_integer(encoding, tmp);
+                wsp_pack_short_integer(encoding, tmp);
                 octstr_append(encoding, value_encoding);
             } else {
                 /* See note above */
@@ -2492,7 +2492,7 @@ static int pack_cache_control(Octstr *packed, Octstr *value)
             octstr_destroy(value_encoding);
         }
 
-        pack_value(packed, encoding);
+        wsp_pack_value(packed, encoding);
         octstr_destroy(encoding);
     }
 
@@ -2511,9 +2511,9 @@ static int pack_content_disposition(Octstr *packed, Octstr *value)
     if (disposition >= 0) {
         Octstr *encoding = octstr_create("");
 
-        pack_short_integer(encoding, disposition);
-        pack_parameters(encoding, parms);
-        pack_value(packed, encoding);
+        wsp_pack_short_integer(encoding, disposition);
+        wsp_pack_parameters(encoding, parms);
+        wsp_pack_value(packed, encoding);
         octstr_destroy(encoding);
     } else {
         warning(0, "WSP: Cannot encode Content-Disposition '%s'.",
@@ -2584,7 +2584,7 @@ static int pack_content_range(Octstr *packed, Octstr *value)
     encoding = octstr_create("");
     octstr_append_uintvar(encoding, firstbyte);
     octstr_append_uintvar(encoding, instancelen);
-    pack_value(packed, encoding);
+    wsp_pack_value(packed, encoding);
     octstr_destroy(encoding);
 
     return 0;
@@ -2641,7 +2641,7 @@ static int pack_pragma(Octstr *packed, Octstr *value)
 
     nocache = octstr_imm("no-cache");
     if (octstr_case_compare(value, nocache) == 0)
-        pack_short_integer(packed, WSP_CACHE_CONTROL_NO_CACHE);
+        wsp_pack_short_integer(packed, WSP_CACHE_CONTROL_NO_CACHE);
     else {
         Parameter *parm;
         Octstr *encoding;
@@ -2649,7 +2649,7 @@ static int pack_pragma(Octstr *packed, Octstr *value)
         encoding = octstr_create("");
         parm = parm_parse(value);
         pack_parameter(encoding, parm);
-        pack_value(packed, encoding);
+        wsp_pack_value(packed, encoding);
         octstr_destroy(encoding);
         parm_destroy(parm);
     }
@@ -2689,7 +2689,7 @@ static int pack_range(Octstr *packed, Octstr *value)
             break;
         pos++;
 
-        pack_short_integer(packed, WSP_HEADER_RANGE);
+        wsp_pack_short_integer(packed, WSP_HEADER_RANGE);
     }
 
     return 0;
@@ -2715,7 +2715,7 @@ int wsp_pack_retry_after(Octstr *packed, Octstr *value)
         if (wsp_pack_date(encoded, value) < 0)
             goto error;
     }
-    pack_value(packed, encoded);
+    wsp_pack_value(packed, encoded);
 
     octstr_destroy(encoded);
     return 0;
@@ -2796,7 +2796,7 @@ static int pack_warning(Octstr *packed, Octstr *value)
 
     if (warn_agent == NULL && warn_text == NULL) {
         /* Simple encoding */
-        pack_short_integer(packed, warn_code);
+        wsp_pack_short_integer(packed, warn_code);
     } else {
         /* General encoding */
         Octstr *encoding = octstr_create("");
@@ -2806,10 +2806,10 @@ static int pack_warning(Octstr *packed, Octstr *value)
         if (warn_text == NULL)
             warn_text = octstr_create("");
 
-        pack_short_integer(encoding, warn_code);
+        wsp_pack_short_integer(encoding, warn_code);
         wsp_pack_text(encoding, warn_agent);
         wsp_pack_text(encoding, warn_text);
-        pack_value(packed, encoding);
+        wsp_pack_value(packed, encoding);
         octstr_destroy(encoding);
     }
 
@@ -2825,7 +2825,7 @@ error:
     return -1;
 }
 
-static void pack_separate_content_type(Octstr *packed, List *headers)
+void wsp_pack_separate_content_type(Octstr *packed, List *headers)
 {
     Octstr *content_type;
 
@@ -2843,7 +2843,7 @@ static void pack_separate_content_type(Octstr *packed, List *headers)
     octstr_destroy(content_type);
 }
 
-static int pack_list(Octstr *packed, long fieldnum, List *elements, int i)
+int wsp_pack_list(Octstr *packed, long fieldnum, List *elements, int i)
 {
     long startpos;
     Octstr *element;
@@ -2851,7 +2851,7 @@ static int pack_list(Octstr *packed, long fieldnum, List *elements, int i)
     while ((element = list_consume(elements))) {
         startpos = octstr_len(packed);
 
-        pack_short_integer(packed, fieldnum);
+        wsp_pack_short_integer(packed, fieldnum);
         if (headerinfo[i].func(packed, element) < 0) {
             /* Remove whatever we added */
             octstr_delete(packed, startpos,
@@ -2892,10 +2892,10 @@ static int pack_known_header(Octstr *packed, long fieldnum, Octstr *value)
         elements = NULL;
 
     if (elements != NULL) {
-        if (pack_list(packed, fieldnum, elements, i) < 0)
+        if (wsp_pack_list(packed, fieldnum, elements, i) < 0)
             goto error;
     } else {
-        pack_short_integer(packed, fieldnum);
+        wsp_pack_short_integer(packed, fieldnum);
         if (headerinfo[i].func(packed, value) < 0)
             goto error;
     }
@@ -2943,7 +2943,7 @@ Octstr *wsp_headers_pack(List *headers, int separate_content_type, int wsp_versi
 
     packed = octstr_create("");
     if (separate_content_type)
-        pack_separate_content_type(packed, headers);
+        wsp_pack_separate_content_type(packed, headers);
 
     len = list_len(headers);
     for (i = 0; i < len; i++) {

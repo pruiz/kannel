@@ -1,3 +1,7 @@
+2003-12-09  Stipe Tolj  <tolj@wapme-systems.de>
+    * wap/wsp_headers.[ch]: fixing prototype declarations of depending routines
+      for external applications using WSP header functions.
+
 2003-12-09  Alexander Malysh  <a.malysh@centrium.de>
     * gw/dlr.[ch], gw/dlr_p.h, gwlib/cfg.[ch], gwlib/log.[ch], gwlib/mime.h,
       radius/radius_acct.c, wap/wsp_headers.c: fixed compiler warnings.
