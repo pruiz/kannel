@@ -20,11 +20,12 @@
  * This function compiles the WML to WML binary. The arguments are 
  * the following: 
  *   wml_text: the WML text to be compiled
+ *   charset: the character set as HTTP headers declare it
  *   wml_binary: buffer for the compiled WML binary
- *   wml_scripts: pointer to possible wml scripts buffer
  *
- * The function takes care for memory allocation for the wml_binary and 
- * wml_scripts. The caller is responsible for freeing this space.
+ * The wml_text and charset are allocated by the caller and should also be
+ * freed by the caller. The function takes care for memory allocation for
+ * the wml_binary. The caller is responsible for freeing this space. 
  * 
  * Return: 0 for ok, -1 for an error
  * 
@@ -33,6 +34,7 @@
 
 
 int wml_compile(Octstr *wml_text,
+		Octstr *charset,
 		Octstr **wml_binary);
 
 

@@ -16,9 +16,10 @@
 static void  dev_null(const char *data, size_t len, void *context);
 static int encode_content_type(const char *type);
 
-static Octstr *convert_to_self(Octstr *stuff, char *url);
-static Octstr *convert_wml_to_wmlc(Octstr *wml, char *url);
-static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, char *url);
+static Octstr *convert_to_self(Octstr *stuff, Octstr *charset, char *url);
+static Octstr *convert_wml_to_wmlc(Octstr *wml, Octstr *charset, char *url);
+static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, 
+					       Octstr *charset, char *url);
 
 /* The following code implements the map-url mechanism */
 
@@ -203,7 +204,7 @@ void *wsp_http_thread(void *arg) {
 	static struct {
 		char *type;
 		char *result_type;
-		Octstr *(*convert)(Octstr *, char *);
+		Octstr *(*convert)(Octstr *, Octstr *, char *);
 	} converters[] = {
 		{ "text/vnd.wap.wml",
 		  "application/vnd.wap.wmlc",
@@ -320,6 +321,7 @@ void *wsp_http_thread(void *arg) {
 		for (i = 0; i < num_converters; ++i) {
 			if (octstr_str_compare(type, converters[i].type) == 0) {
 				body = converters[i].convert(resp_body, 
+					charset,
 					octstr_get_cstr(url));
 				if (body != NULL)
 					break;
@@ -415,16 +417,16 @@ static int encode_content_type(const char *type) {
 }
 
 
-static Octstr *convert_to_self(Octstr *stuff, char *url) {
+static Octstr *convert_to_self(Octstr *stuff, Octstr *charset, char *url) {
 	return octstr_duplicate(stuff);
 }
 
 
-static Octstr *convert_wml_to_wmlc(Octstr *wml, char *url) {
+static Octstr *convert_wml_to_wmlc(Octstr *wml, Octstr *charset, char *url) {
 	Octstr *wmlc;
 	int ret;
 
-	ret = wml_compile(wml, &wmlc);
+	ret = wml_compile(wml, charset, &wmlc);
 	if (ret == 0)
 		return wmlc;
 	warning(0, "WSP: WML compilation failed.");
@@ -432,7 +434,8 @@ static Octstr *convert_wml_to_wmlc(Octstr *wml, char *url) {
 }
 
 
-static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, char *url) {
+static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, 
+					       Octstr *charset, char *url) {
 	WsCompilerParams params;
 	WsCompilerPtr compiler;
 	WsResult result;
