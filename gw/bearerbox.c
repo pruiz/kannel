@@ -69,11 +69,13 @@ static time_t start_time;
 
 static void set_shutdown_status(void)
 {
-    if (bb_status == BB_SUSPENDED)
-	list_remove_producer(suspended);
-    if (bb_status == BB_SUSPENDED || bb_status == BB_ISOLATED)
-	list_remove_producer(isolated);
+    sig_atomic_t old = bb_status;
     bb_status = BB_SHUTDOWN;
+    
+    if (old == BB_SUSPENDED)
+	list_remove_producer(suspended);
+    if (old == BB_SUSPENDED || old == BB_ISOLATED)
+	list_remove_producer(isolated);
 }
 
 
@@ -462,7 +464,7 @@ int bb_shutdown(void)
     smsc_shutdown();
 #endif
 #ifndef KANNEL_NO_WAP
-    debug("bb", 0, "shutting down upd");
+    debug("bb", 0, "shutting down udp");
     udp_shutdown();
 #endif
     

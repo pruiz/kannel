@@ -1,3 +1,9 @@
+2000-09-18  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsbox.c (init_smsbox): fixed bug reported by Paul Keogh.
+
+	* gw/bearerbox.c: some fix to shutdown order
+
 2000-09-14  Lars Wirzenius  <liw@iki.fi>
 
 	* utils/source-stats: Wrote.

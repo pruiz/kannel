@@ -292,12 +292,13 @@ static void init_smsbox(Config *cfg)
     
     if ((p = config_get(grp, "smsbox-port")) == NULL)
 	panic(0, "No 'smsbox-port' in core group");
+    bb_port = atoi(p);
+
     if ((p = config_get(grp, "http-proxy-host")) != NULL)
     	http_proxy_host = p;
     if ((p = config_get(grp, "http-proxy-port")) != NULL)
     	http_proxy_port = atoi(p);
 
-    bb_port = atoi(p);
 
     /*
      * get the remaining values from the smsbox group

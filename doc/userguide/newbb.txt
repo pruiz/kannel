@@ -40,8 +40,7 @@ and arguments when they are launched. These arguments are:
  --debug
 
  -F <file-name>   Log to file named file-name, too. Does not overrun nor
- --logfile	  affect any extra logfile defined in configuration
-		  file.
+ --logfile	  affect any logfile defined in configuration file.
  
  -V <level>	  Set verbosity level for that extra logfile (default 0)
  --fileverbosity
