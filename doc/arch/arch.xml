@@ -6,7 +6,7 @@
 
 <bookinfo>
 	<title>Kannel Architecture and Design</title>
-	<subtitle>$Revision: 1.12 $</subtitle>
+	<subtitle>$Revision: 1.13 $</subtitle>
 	<author>
 	<firstname>Lars</firstname>
 	<surname>Wirzenius</surname>
@@ -1870,6 +1870,8 @@ bad:
 	transactions tend to be very small, spreading the load only
 	at the start of the transactions is probably enough. This needs
 	benchmarking and profiling.</para>
+
+</sect1>
 
 </chapter>
 

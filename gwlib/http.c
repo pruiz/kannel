@@ -201,6 +201,7 @@ void http_use_proxy(Octstr *hostname, int port, List *exceptions,
 
     proxy_hostname = octstr_duplicate(hostname);
     proxy_port = port;
+    proxy_exceptions = list_create();
     for (i = 0; i < list_len(exceptions); ++i) {
         e = list_get(exceptions, i);
 	debug("gwlib.http", 0, "HTTP: Proxy exception `%s'.",

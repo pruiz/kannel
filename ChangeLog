@@ -1,3 +1,9 @@
+2001-01-24  Lars Wirzenius  <liw@iki.fi>
+
+	* doc/arch/arch.xml: Added missing </sect1>.
+	
+	* gwlib/http.c: Added creation of http exceptions list.
+
 2001-01-24  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsbox.c, gw/smsc.c, gw/smsc_p.h: Fixed memory leaks.
