@@ -5,11 +5,8 @@
 #include "bb_msg.h"
 
 typedef struct csdrouter {
-
-    char *ip;	/* The IP address the socket is bound to. */
-    int port;	/* The port number of the socket. */
-    int fd;
-
+	Octstr *addr;
+	int fd;
 } CSDRouter;
 
 /*

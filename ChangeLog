@@ -1,3 +1,11 @@
+Fri Mar 31 03:35:59 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/csdr.[ch]: Changed to use Octstrs and udp_* functions
+	from gwlib.
+	
+	* gwlib/socket.c: Changed udp_create_address so that it accepts
+	"*" as a hostname alias for INADDR_ANY.
+
 Fri Mar 31 02:17:52 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/socket.c: Changed PF_INET to AF_INET.

@@ -343,16 +343,21 @@ Octstr *udp_create_address(Octstr *host_or_ip, int port) {
 	struct sockaddr_in sa;
 	struct hostent *h;
 	
-	h = gethostbyname(octstr_get_cstr(host_or_ip));
-	if (h == NULL) {
-		error(0, "Couldn't find the IP number of `%s'", 
-			octstr_get_cstr(host_or_ip));
-		return NULL;
-	}
-
+	memset(&sa, 0, sizeof(sa));
 	sa.sin_family = AF_INET;
 	sa.sin_port = htons(port);
-	sa.sin_addr = *(struct in_addr *) h->h_addr_list[0];
+
+	if (strcmp(octstr_get_cstr(host_or_ip), "*") == 0) {
+		sa.sin_addr.s_addr = INADDR_ANY;
+	} else {
+		h = gethostbyname(octstr_get_cstr(host_or_ip));
+		if (h == NULL) {
+			error(0, "Couldn't find the IP number of `%s'", 
+				octstr_get_cstr(host_or_ip));
+			return NULL;
+		}
+		sa.sin_addr = *(struct in_addr *) h->h_addr_list[0];
+	}
 	
 	return octstr_create_from_data(&sa, sizeof(sa));
 }
@@ -400,7 +405,8 @@ int udp_recvfrom(int s, Octstr **datagram, Octstr **addr) {
 	bytes = recvfrom(s, &buf, (int) sizeof(buf), 0,
 			 (struct sockaddr *) &sa, &salen);
 	if (bytes == -1) {
-		error(errno, "Couldn't receive UDP packet");
+		if (errno != EAGAIN)
+			error(errno, "Couldn't receive UDP packet");
 		return -1;
 	}
 	
