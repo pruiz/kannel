@@ -1,3 +1,8 @@
+2000-08-30  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: The octet string memory leaks in the string table
+	code plugged.
+
 2000-08-29  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: Plugging the huge memory leaks of the string 

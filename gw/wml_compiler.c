@@ -1283,6 +1283,8 @@ static void string_table_collect_strings(xmlNodePtr node, List *strings)
 
 	if (octstr_len(string) > STRING_TABLE_MIN)
 	  list_append(strings, string);
+	else 
+	  octstr_destroy(string);
       }
     break;
   default:
