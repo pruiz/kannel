@@ -1,8 +1,10 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.29 2002-09-04 08:58:50 syvanen Exp $]
+  Last modified at [$Id: STATUS,v 1.30 2003-01-06 00:27:32 stolj Exp $]
 
 Release:
 
+    1.3.0: development version, released Jan 06, 2003.
+    1.2.1: update to stable, released Nov 02, 2002.
     1.2.0: update to stable, released Jul 04, 2002.
     1.1.6: development version, released Mar 28, 2002.
     1.1.5: development version, released May 31, 2001.
