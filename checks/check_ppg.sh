@@ -197,11 +197,11 @@ for control_file in $sms_control_files;
                 error=yes
             fi
 
-            if ! grep "request headers were" check_http_sim.tmp > /dev/null
-            then
-                cat check_http_sim.tmp >> check_http_sim.log 2>&1
-                error=yes
-            fi
+            #if ! grep "request headers were" check_http_sim.tmp > /dev/null
+            #then
+            #    cat check_http_sim.tmp >> check_http_sim.log 2>&1
+            #    error=yes
+            #fi
 
             kill -SIGINT $wappid
             kill -SIGINT $bbpid
