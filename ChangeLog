@@ -1,3 +1,11 @@
+2003-11-30  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/conn.[ch]: applied conn-ssl-cleanup.patch. This patch does:
+	1) removes ssl_mutex
+	2) corrects SSL_[read|write] operations
+	3) removes SSL_connect and SSL_accept because these handled by openssl 
+	   library trasparent while SSL_[read|write] operations.
+      See Msg-Id: <200311261813.34824.a.malysh@centrium.de>.
+
 2003-11-27  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/accesslog.c: fixed compiler warning about zero-length format string.
       Got rid of buffer allocation, just allocate on the stack.

@@ -278,11 +278,6 @@ Octstr *conn_read_packet(Connection *conn, int startmark, int endmark);
  */
 X509 *get_peer_certificate(Connection *conn);
 
-/* Sets OpenSSL locking for callback within conn.c (client SSL) and 
- * http.c (server SSL).
- */
-void openssl_locking_function(int mode, int n, const char *file, int line);
-
 /* These are called to initialize and shutdown the OpenSSL mutex locks.
  * They should be called before the _init_ssl, _shutdown_ssl functions.
  */
@@ -325,8 +320,6 @@ SSL *conn_get_ssl(Connection *conn);
 
 
 X509 *conn_get_peer_certificate(Connection *conn);
-RSA *tmp_rsa_callback(SSL *ssl, int export, int key_len);
-void openssl_server_locking_function(int mode, int n, const char *file, int line);
 #endif /* HAVE_LIBSSL */
 
 int conn_get_id(Connection *conn);

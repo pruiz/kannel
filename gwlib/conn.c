@@ -85,10 +85,8 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-SSL_CTX *global_ssl_context = NULL;
-SSL_CTX *global_server_ssl_context = NULL;
-X509 *ssl_public_cert;
-RSA *ssl_private_key;
+static SSL_CTX *global_ssl_context = NULL;
+static SSL_CTX *global_server_ssl_context = NULL;
 #endif /* HAVE_LIBSSL */
 
 typedef unsigned long (*CRYPTO_CALLBACK_PTR)(void);
@@ -118,8 +116,8 @@ struct Connection
     /* fd value is read-only and is not locked */
     int fd;
 
-  /* socket state */
-  enum {yes,no} connected;
+    /* socket state */
+    enum {yes,no} connected;
 
     /* Protected by outlock */
     Octstr *outbuf;
@@ -149,7 +147,6 @@ struct Connection
 #ifdef HAVE_LIBSSL
     SSL *ssl;
     X509 *peer_certificate;
-    Mutex *ssl_mutex;
 #endif /* HAVE_LIBSSL */
 };
 
@@ -238,33 +235,26 @@ static long unlocked_inbuf_len(Connection *conn)
  * of bytes written, or -1 in case of error. */
 static long unlocked_write(Connection *conn)
 {
-    long ret;
+    long ret = 0;
 
 #ifdef HAVE_LIBSSL
     if (conn->ssl != NULL) {
-        mutex_lock(conn->ssl_mutex);
-        ret = SSL_write(conn->ssl, 
-                        octstr_get_cstr(conn->outbuf) + conn->outbufpos, 
+        if (octstr_len(conn->outbuf) - conn->outbufpos > 0)
+            ret = SSL_write(conn->ssl,
+                        octstr_get_cstr(conn->outbuf) + conn->outbufpos,
                         octstr_len(conn->outbuf) - conn->outbufpos);
 
         if (ret < 0) {
-            int SSL_error = SSL_get_error(conn->ssl, ret); 
+            int SSL_error = SSL_get_error(conn->ssl, ret);
 
-            if (SSL_error == SSL_ERROR_WANT_READ) {
-                SSL_read(conn->ssl, NULL, 0);
-                mutex_unlock(conn->ssl_mutex);
-                return 0;
-            } else if (SSL_error == SSL_ERROR_WANT_WRITE) {
-                mutex_unlock(conn->ssl_mutex);
-                return 0;
+            if (SSL_error == SSL_ERROR_WANT_READ || SSL_error == SSL_ERROR_WANT_WRITE) {
+                  ret = 0; /* no error */
             } else {
-                error(0, "SSL write failed: OpenSSL error %d: %s", 
+                error(errno, "SSL write failed: OpenSSL error %d: %s",
                       SSL_error, ERR_error_string(SSL_error, NULL));
-                mutex_unlock(conn->ssl_mutex);
                 return -1;
             }
         }
-        mutex_unlock(conn->ssl_mutex);
     } else
 #endif /* HAVE_LIBSSL */
         ret = octstr_write_data(conn->outbuf, conn->fd, conn->outbufpos);
@@ -323,24 +313,7 @@ static void unlocked_read(Connection *conn)
 
 #ifdef HAVE_LIBSSL
     if (conn->ssl != NULL) {
-        mutex_lock(conn->ssl_mutex);
         len = SSL_read(conn->ssl, buf, sizeof(buf));
-
-        if (len < 0) { 
-            int SSL_error = SSL_get_error(conn->ssl, len);
-
-            if (SSL_error == SSL_ERROR_WANT_WRITE) {
-                len = SSL_write(conn->ssl, NULL, 0);
-                mutex_unlock(conn->ssl_mutex);
-                return;
-            } else if (SSL_error == SSL_ERROR_WANT_READ) {
-                mutex_unlock(conn->ssl_mutex);
-                return;
-            } else
-                error(0, "SSL read failed: OpenSSL error %d: %s",
-                      SSL_error, ERR_error_string(SSL_error, NULL));
-        }
-        mutex_unlock(conn->ssl_mutex);
     } else
 #endif /* HAVE_LIBSSL */
         len = read(conn->fd, buf, sizeof(buf));
@@ -348,7 +321,17 @@ static void unlocked_read(Connection *conn)
     if (len < 0) {
         if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
             return;
-        error(errno, "Error reading from fd %d:", conn->fd);
+#ifdef HAVE_LIBSSL
+        if (conn->ssl) {
+            int SSL_error = SSL_get_error(conn->ssl, len);
+            if (SSL_error == SSL_ERROR_WANT_WRITE || SSL_error == SSL_ERROR_WANT_READ)
+                return; /* no error */
+            error(errno, "SSL read failed: OpenSSL error %d: %s",
+                      SSL_error, ERR_error_string(SSL_error, NULL));
+        }
+        else
+#endif /* HAVE_LIBSSL */
+            error(errno, "Error reading from fd %d:", conn->fd);
         conn->read_error = 1;
         if (conn->registered)
             unlocked_register_pollin(conn, 0);
@@ -420,9 +403,6 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
 			  Octstr *our_host)
 {
     Connection *ret;
-    int SSL_ret = 0;
-    int connected = 0;
-    time_t timeout;
 
     /* open the TCP connection */
     if (!(ret = conn_open_tcp(host, port, our_host))) {
@@ -430,13 +410,18 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
     }
 
     ret->ssl = SSL_new(global_ssl_context);
-    ret->ssl_mutex = mutex_create();
-    
-    SSL_set_connect_state(ret->ssl);
+
+    /*
+     * The current thread's error queue must be empty before
+     * the TLS/SSL I/O operation is attempted, or SSL_get_error()
+     * will not work reliably.
+     */
+    ERR_clear_error();
+
     if (certkeyfile != NULL) {
         SSL_use_certificate_file(ret->ssl, octstr_get_cstr(certkeyfile),
                                  SSL_FILETYPE_PEM);
-        SSL_use_PrivateKey_file(ret->ssl, octstr_get_cstr(certkeyfile), 
+        SSL_use_PrivateKey_file(ret->ssl, octstr_get_cstr(certkeyfile),
                                 SSL_FILETYPE_PEM);
         if (SSL_check_private_key(ret->ssl) != 1) {
             error(0, "conn_open_ssl: private key isn't consistent with the "
@@ -445,15 +430,13 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
             goto error;
         }
     }
-    
-    SSL_set_fd(ret->ssl, ret->fd);
 
-    /*
-     * The current thread's error queue must be empty before
-     * the TLS/SSL I/O operation is attempted, or SSL_get_error()
-     * will not work reliably.
-     */
-    ERR_clear_error();
+    /* SSL_set_fd can fail, so check it */
+    if (SSL_set_fd(ret->ssl, ret->fd) == 0) {
+        /* SSL_set_fd failed, log error */
+        error(errno, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
+        goto error;
+    }
 
     /*
      * make sure the socket is non-blocking while we do SSL_connect
@@ -464,51 +447,10 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
     BIO_set_nbio(SSL_get_rbio(ret->ssl), 1);
     BIO_set_nbio(SSL_get_wbio(ret->ssl), 1);
 
-    /* record current time */
-    timeout = time(NULL);
+    SSL_set_connect_state(ret->ssl);
 
-    while(!connected && (timeout + SSL_CONN_TIMEOUT > time(NULL))) {
-        /* Attempt to connect as long as the timeout hasn't run down */
-        SSL_ret = SSL_connect(ret->ssl);
-        switch(SSL_get_error(ret->ssl,SSL_ret)) {
-            case SSL_ERROR_WANT_READ:
-            case SSL_ERROR_WANT_WRITE:
-                /* non-blocking socket wants more time to read or write */
-                gwthread_sleep(0.01F);
-                continue;
-            default:
-                /* we're connected to the server successfuly */
-                connected++;
-        }
-    }
-
-    if (!connected) {
-        /* connection timed out - this probably means that something is terrible wrong */
-        int SSL_error = SSL_get_error (ret->ssl, SSL_ret);
-        error(0,"SSL connection timeout: OpenSSL error %d: %s",
-                SSL_error, ERR_error_string(SSL_error, NULL));
-        goto error;
-    }
-    
-    /* 
-     * XXX - restore the non-blocking state
-     * we don't need this since we use non-blocking operations
-     * anyway before doing SSL_connect(), right?!
-     */
-    /*
-    if (socket_set_blocking(ret->fd, 0) < 0) {
-        goto error;
-    }
-    */
-
-    if (SSL_ret != 1) {
-        int SSL_error = SSL_get_error (ret->ssl, SSL_ret); 
-        error(0, "SSL connect failed: OpenSSL error %d: %s", 
-                  SSL_error, ERR_error_string(SSL_error, NULL));
-        goto error;
-    }
-    
     return ret;
+
 error:
     conn_destroy(ret);
     return NULL;
@@ -532,7 +474,7 @@ Connection *conn_open_tcp_nb_with_port(Octstr *host, int port, int our_port,
   int sockfd;
   int done = -1;
   Connection *c;
-  
+
   sockfd = tcpip_connect_nb_to_server_with_port(octstr_get_cstr(host), port,
 						our_port, our_host == NULL ?
 						NULL : octstr_get_cstr(our_host), &done);
@@ -545,13 +487,13 @@ Connection *conn_open_tcp_nb_with_port(Octstr *host, int port, int our_port,
   return c;
 }
 
-int conn_is_connected(Connection *conn) 
+int conn_is_connected(Connection *conn)
 {
   if (conn->connected == yes) return 0;
   return -1;
 }
 
-int conn_get_connect_result(Connection *conn) 
+int conn_get_connect_result(Connection *conn)
 {
   int err,len;
   len = sizeof(len);
@@ -614,16 +556,13 @@ Connection *conn_wrap_fd(int fd, int ssl)
      * do all the SSL magic for this connection
      */
     if (ssl) {
-        int rc;
-
         conn->ssl = SSL_new(global_server_ssl_context);
-        conn->ssl_mutex = mutex_create();
         conn->peer_certificate = NULL;
 
         /* SSL_set_fd can fail, so check it */
         if (SSL_set_fd(conn->ssl, conn->fd) == 0) {
             /* SSL_set_fd failed, log error and return NULL */
-            error(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
+            error(errno, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
             conn_destroy(conn);
             return NULL;
         }
@@ -633,101 +572,11 @@ Connection *conn_wrap_fd(int fd, int ssl)
         BIO_set_nbio(SSL_get_rbio(conn->ssl), 1);
         BIO_set_nbio(SSL_get_wbio(conn->ssl), 1);
 
-        /*
-         * now enter the SSL handshake phase
-         */
-
-        /*
-         * For non-blocking BIO we may return from SSL_accept(). In this 
-         * case we check for SSL_get_error() = SSL_ERROR_WANT_[READ|WRITE]
-         * and loop the SSL_accept() until we have come through.
-         */
-        while (((rc = SSL_accept(conn->ssl)) <= 0) && 
-               ((SSL_get_error(conn->ssl, rc) == SSL_ERROR_WANT_READ) ||
-                (SSL_get_error(conn->ssl, rc) == SSL_ERROR_WANT_WRITE))) {
-            /* busy waiting */
-            gwthread_sleep(0.02);
-        }
-	  	     
-        /*
-         * If SSL_accept() has failed then check which reason it may 
-         * have been and log the error.
-         */
-        if (rc <= 0) {
-             
-            if (SSL_get_error(conn->ssl, rc) == SSL_ERROR_ZERO_RETURN) {
-                /*
-                 * The case where the connection was closed before any data
-                 * was transferred. That's not a real error and can occur
-                 * sporadically with some clients.
-                 */
-                error(0, "SSL: handshake stopped: connection was closed");
-                error(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
-
-                SSL_set_shutdown(conn->ssl, SSL_RECEIVED_SHUTDOWN);
-                SSL_smart_shutdown(conn->ssl);
-             }
-             else if (ERR_GET_REASON(ERR_peek_error()) == SSL_R_HTTP_REQUEST) {
-                /*
-                 * The case where OpenSSL has recognized a HTTP request:
-                 * This means the client speaks plain HTTP on our HTTPS
-                 * port. Hmmmm...  At least for this error we can be more friendly
-                 * and try to provide him with a HTML error page. We have only one
-                 * problem: OpenSSL has already read some bytes from the HTTP
-                 * request. So we have to skip the request line manually.
-                 */
-                char ca[2];
-                int rv;
-
-                error(0, "SSL: handshake failed: HTTP spoken on HTTPS port");
-                error(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
-                    
-                /* first: skip the remaining bytes of the request line */
-                do {
-                    do {
-                        rv = read(conn->fd, ca, 1);
-                    } while (rv == -1 && errno == EINTR);
-                } while (rv > 0 && ca[0] != '\012' /*LF*/);
-
-                /* second: kick away the SSL stuff */
-                SSL_set_shutdown(conn->ssl, SSL_SENT_SHUTDOWN|SSL_RECEIVED_SHUTDOWN);
-                SSL_smart_shutdown(conn->ssl);
-
-                /* tell the user how to access using the HTTPS scheme */
-                /* SSL_http_hint(conn, HTTP_BAD_REQUEST); */
-             }   
-             else if (SSL_get_error(conn->ssl, rc) == SSL_ERROR_SYSCALL) {
-                if (errno > 0)
-                    warning(0, "SSL: handshake interrupted by system (stop button pressed in browser?!)");
-                else
-                    warning(0, "SSL: spurious handshake interrupt (one of OpenSSL confusions?!)");
-                error(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
-
-                SSL_set_shutdown(conn->ssl, SSL_RECEIVED_SHUTDOWN);
-                SSL_smart_shutdown(conn->ssl);
-             } 
-             else {
-                /*
-                 * ok, anything else is a fatal error
-                 */
-                error(0, "SSL: handshake failed with fatal error");
-                error(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
-                
-                SSL_set_shutdown(conn->ssl, SSL_RECEIVED_SHUTDOWN);
-                SSL_smart_shutdown(conn->ssl);
-             }
-
-             warning(0, "SSL: disconnecting.");
-  
-             conn_destroy(conn);
-             return NULL;
-  
-        } /* SSL error */
-     
+        /* set accept state , SSL-Handshake will be handled transparent while SSL_[read|write] */
+         SSL_set_accept_state(conn->ssl);
     } else {
         conn->ssl = NULL;
         conn->peer_certificate = NULL;
-        conn->ssl_mutex = NULL;
     }
 #endif /* HAVE_LIBSSL */
 
@@ -748,23 +597,17 @@ void conn_destroy(Connection *conn)
         fdset_unregister(conn->registered, conn->fd);
 
     if (conn->fd >= 0) {
-        /* Try to flush any remaining data, only in case this is
-         * not a SSL connection. Otherwise this crashes the bearerbox
-         * at least on the Cygwin platform
-         */
+        /* Try to flush any remaining data */
+        unlocked_try_write(conn);
+
 #ifdef HAVE_LIBSSL
         if (conn->ssl != NULL) {
-            mutex_lock(conn->ssl_mutex);
-            SSL_shutdown(conn->ssl);
+            SSL_smart_shutdown(conn->ssl);
             SSL_free(conn->ssl);
             if (conn->peer_certificate != NULL)
                 X509_free(conn->peer_certificate);
-            mutex_unlock(conn->ssl_mutex);
-            mutex_destroy(conn->ssl_mutex);
 	}
-        else
 #endif /* HAVE_LIBSSL */
-            unlocked_write(conn);
 
         ret = close(conn->fd);
         if (ret < 0)
@@ -1308,16 +1151,19 @@ Octstr *conn_read_packet(Connection *conn, int startmark, int endmark)
 #ifdef HAVE_LIBSSL
 X509 *conn_get_peer_certificate(Connection *conn) 
 {
-    mutex_lock(conn->ssl_mutex);
-    if (conn->peer_certificate == NULL && conn->ssl != NULL) 
+    /* Don't know if it needed to be locked , but better safe as crash */
+    lock_in(conn);
+    lock_out(conn);
+    if (conn->peer_certificate == NULL && conn->ssl != NULL)
         conn->peer_certificate = SSL_get_peer_certificate(conn->ssl);
-    mutex_unlock(conn->ssl_mutex);
-    return(conn->peer_certificate);
+    unlock_in(conn);
+    unlock_out(conn);
+    return conn->peer_certificate;
 }
 
-RSA *tmp_rsa_callback(SSL *ssl, int export, int key_len) 
+static RSA *tmp_rsa_callback(SSL *ssl, int export, int key_len)
 {
-    static RSA *rsa = NULL; 
+    static RSA *rsa = NULL;
     debug("gwlib.http", 0, "SSL: Generating new RSA key (export=%d, keylen=%d)", export, key_len);
     if (export) {
 	   rsa = RSA_generate_key(key_len, RSA_F4, NULL, NULL);
@@ -1327,10 +1173,10 @@ RSA *tmp_rsa_callback(SSL *ssl, int export, int key_len)
     return rsa;
 }
 
-Mutex **ssl_static_locks = NULL;
+static Mutex **ssl_static_locks = NULL;
 
 /* the call-back function for the openssl crypto thread locking */
-void openssl_locking_function(int mode, int n, const char *file, int line) 
+static void openssl_locking_function(int mode, int n, const char *file, int line)
 {
     if (mode & CRYPTO_LOCK)
         mutex_lock(ssl_static_locks[n-1]);
@@ -1345,7 +1191,7 @@ void openssl_init_locks(void)
     gw_assert(ssl_static_locks == NULL);
 
     ssl_static_locks = gw_malloc(sizeof(Mutex *) * maxlocks);
-    for (c = 0; c < maxlocks; c++) 
+    for (c = 0; c < maxlocks; c++)
         ssl_static_locks[c] = mutex_create();
 
     /* after the mutexes have been created, apply the call-back to it */
@@ -1371,7 +1217,7 @@ void conn_init_ssl(void)
 {
     SSL_library_init();
     SSL_load_error_strings();
-    global_ssl_context = SSL_CTX_new(SSLv23_method());
+    global_ssl_context = SSL_CTX_new(SSLv23_client_method());
     SSL_CTX_set_mode(global_ssl_context, 
         SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 }
