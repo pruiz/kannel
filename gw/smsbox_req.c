@@ -1,9 +1,10 @@
 /*
  * smsbox_req.c - fulfill sms requests from users
  *
- * this module handles the request handling - that is, finding
- * the correct urltranslation, fetching the result and then
- * splitting it into several messages if needed to
+ * This module handles the request handling - that is, finding
+ * the correct urltranslation, fetching the result, then
+ * splitting it into several messages if necessary, and sending
+ * the messages to the phone.
  */
 
 #include <errno.h>
@@ -31,11 +32,6 @@
 
 
 /* Defines */
-#define MAX8BITLENGTH	140
-#define MAX7BITLENGTH	160
-
-#define CONCAT_IEI	0
-#define CONCAT_IEL	6
 
 #define	CONN_TEMP	0x60
 #define	CONN_CONT	0x61
@@ -52,8 +48,8 @@
 /* Global variables */
 
 static URLTranslationList *translations = NULL;
-static int sms_max_length = -1;		/* not initialized - never modify after 
-                                         * smsbox_req_init! */
+static int sms_max_length = -1;		/* not initialized - never modify
+                                         * after smsbox_req_init! */
 static char *sendsms_number_chars;
 static char *global_sender = NULL;
 static Config 	*cfg = NULL;
@@ -67,6 +63,7 @@ List *smsbox_requests = NULL;
 /***********************************************************************
  * SMS splitting.
  */
+
 
 /*
  * Number of octets in the catenation UDH part.
