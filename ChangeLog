@@ -1,3 +1,28 @@
+Fri Dec 17 20:08:56 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wtp_state-decl.h: State RESULT_RESP_WAIT actually sends the
+	TRResultConfirmation event to WSP.
+	
+	* gw/wsp_state-decl.h: State CONNECTING_2 implemented. This required
+	rather a little work, since there is no action. :-)
+	
+	* gw/wsp_state-decl.h: State CONNECTED implemented, sort of. Well,
+	not really. What happens is that the phone sends a Get PDU, and
+	we receive it and unpack it in this state, do the http_get call,
+	and dump with debug() the result to the log file. This is enough
+	to make sure that the PDU is unpacked correctly and the protocol
+	works well enough that the phone thinks the session is open and
+	it can make S-MethodInvokes. Whee.
+	
+	The next step is to implement things correctly, so that events
+	are handled while the URL fetch is happening, and so on.
+
+	* gw/wsp.c: Fixed unpack_octstr (it used offset 0, instead of
+	what it got as an argument). Changed wsp_dispatch_event so that
+	it tries to find an existing, correct WSPMachine instead of always
+	creating a new one. Made wsp_unpack_connect_pdu an internal
+	function, since it's not going to be used from outside wsp.c.
+
 Fri Dec 17 17:25:18 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: use TID of the machine that receives the event,

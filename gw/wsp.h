@@ -115,7 +115,6 @@ void wsp_handle_event(WSPMachine *machine, WSPEvent *event);
 
 
 int wsp_deduce_pdu_type(Octstr *pdu, int connectionless);
-int wsp_unpack_connect_pdu(Octstr *pdu);
 
 
 #if 0

@@ -41,6 +41,9 @@ static WSPMachine *session_machines = NULL;
 static void append_to_event_queue(WSPMachine *machine, WSPEvent *event);
 static WSPEvent *remove_from_event_queue(WSPMachine *machine);
 
+static int unpack_connect_pdu(Octstr *pdu);
+static int unpack_get_pdu(Octstr **url, Octstr **headers, Octstr *pdu);
+
 static int unpack_uint8(unsigned long *u, Octstr *os, int *off);
 static int unpack_uintvar(unsigned long *u, Octstr *os, int *off);
 static int unpack_octstr(Octstr **ret, int len, Octstr *os, int *off);
@@ -52,6 +55,8 @@ static Octstr *make_connectionmode_pdu(long type);
 static void append_uint8(Octstr *pdu, long n);
 static void append_uintvar(Octstr *pdu, long n);
 static Octstr *make_connectreply_pdu(long session_id);
+
+static int transaction_belongs_to_session(WTPMachine *wtp, WSPMachine *session);
 
 
 
@@ -116,13 +121,25 @@ void wsp_dispatch_event(WTPMachine *wtp_sm, WSPEvent *event) {
 	WSPMachine *sm;
 	
 	debug(0, "wsp_dispatch_event called");
-	sm = wsp_machine_create();
-	debug(0, "wsp_dispatch_event: machine created");
-	sm->client_address = octstr_duplicate(wtp_sm->source_address);
-	sm->client_port = wtp_sm->source_port;
-	sm->server_address = octstr_duplicate(wtp_sm->destination_address);
-	sm->server_port = wtp_sm->destination_port;
-	debug(0, "wsp_dispatch_event: machine initialized");
+
+	for (sm = session_machines; sm != NULL; sm = sm->next)
+		if (transaction_belongs_to_session(wtp_sm, sm))
+			break;
+
+	if (sm == NULL) {
+		sm = wsp_machine_create();
+		debug(0, "wsp_dispatch_event: machine %p created", 
+			(void *) sm);
+
+		sm->client_address = octstr_duplicate(wtp_sm->source_address);
+		sm->client_port = wtp_sm->source_port;
+		sm->server_address = 
+			octstr_duplicate(wtp_sm->destination_address);
+		sm->server_port = wtp_sm->destination_port;
+		debug(0, "wsp_dispatch_event: machine initialized");
+	} else
+		debug(0, "wsp_dispatch_event: found machine %p", (void *) sm);
+
 	wsp_handle_event(sm, event);
 	debug(0, "wsp_dispatch_event: done");
 }
@@ -164,8 +181,6 @@ void wsp_machine_dump(WSPMachine *machine) {
 
 
 void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
-	int done;
-	
 	debug(0, "wsp_handle_event called");
 
 	/* 
@@ -184,30 +199,32 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 		debug(0, "wsp_handle_event: current state is %s, event is %s",
 			wsp_state_to_string(sm->state), 
 			wsp_event_name(current_event->type));
-#if 0
+#if 1
 		debug(0, "wsp_handle_event: event is:");
 		wsp_event_dump(current_event);
 #endif
 
-		done = 0;
 		#define STATE_NAME(name)
 		#define ROW(state_name, event, condition, action, next_state) \
 			{ \
 				struct event *e; \
 				e = &current_event->event; \
-				if (!done && sm->state == state_name && \
+				if (sm->state == state_name && \
 				   current_event->type == event && \
 				   (condition)) { \
-				   action \
-                                   sm->state = next_state; \
-				   done = 1; \
-				   goto end; \
+					debug(0, "WSP: Doing action for %s", \
+						#state_name); \
+					action \
+					debug(0, "WSP: Setting state to %s", \
+						#next_state); \
+					sm->state = next_state; \
+					goto end; \
 				} \
 			}
 		#include "wsp_state-decl.h"
-		if (!done) {
-			error(0, "wsp_handle_event: Can't handle event.");
-		}
+		error(0, "wsp_handle_event: Can't handle event.");
+		debug(0, "wsp_handle_event: The unhandled event:");
+		wsp_event_dump(current_event);
 
 	end:
 		current_event = remove_from_event_queue(sm);
@@ -235,32 +252,6 @@ int wsp_deduce_pdu_type(Octstr *pdu, int connectionless) {
 		connectionless);
 	return o;
 }
-
-
-int wsp_unpack_connect_pdu(Octstr *user_data) {
-	int off;
-	unsigned long version, caps_len, headers_len;
-	Octstr *caps, *headers;
-
-	off = 0;
-	if (unpack_uint8(&version, user_data, &off) == -1 ||
-	    unpack_uintvar(&caps_len, user_data, &off) == -1 ||
-	    unpack_uintvar(&headers_len, user_data, &off) == -1 ||
-	    unpack_octstr(&caps, caps_len, user_data, &off) == -1 ||
-	    unpack_octstr(&headers, headers_len, user_data, &off) == -1)
-		return -1;
-	debug(0, "Unpacked Connect PDU:");
-	debug(0, "  version=%lu", version);
-	debug(0, "  caps_len=%lu", caps_len);
-	debug(0, "  headers_len=%lu", headers_len);
-	debug(0, "  caps:");
-	octstr_dump(caps);
-	debug(0, "  headers:");
-	octstr_dump(headers);
-	debug(0, "Connect PDU dump done.");
-	return 0;
-}
-
 
 
 /***********************************************************************
@@ -298,9 +289,53 @@ static WSPEvent *remove_from_event_queue(WSPMachine *machine) {
 }
 
 
-static int unpack_uint8(unsigned long *u, Octstr *os, int *off) {
-	if (*off >= octstr_len(os))
+static int unpack_connect_pdu(Octstr *user_data) {
+	int off;
+	unsigned long version, caps_len, headers_len;
+	Octstr *caps, *headers;
+
+	off = 0;
+	if (unpack_uint8(&version, user_data, &off) == -1 ||
+	    unpack_uintvar(&caps_len, user_data, &off) == -1 ||
+	    unpack_uintvar(&headers_len, user_data, &off) == -1 ||
+	    unpack_octstr(&caps, caps_len, user_data, &off) == -1 ||
+	    unpack_octstr(&headers, headers_len, user_data, &off) == -1)
 		return -1;
+	debug(0, "Unpacked Connect PDU:");
+	debug(0, "  version=%lu", version);
+	debug(0, "  caps_len=%lu", caps_len);
+	debug(0, "  headers_len=%lu", headers_len);
+	debug(0, "  caps:");
+	octstr_dump(caps);
+	debug(0, "  headers:");
+	octstr_dump(headers);
+	debug(0, "Connect PDU dump done.");
+	return 0;
+}
+
+
+
+static int unpack_get_pdu(Octstr **url, Octstr **headers, Octstr *pdu) {
+	unsigned long url_len;
+	int off;
+
+	off = 1; /* Offset 0 has type octet. */
+	if (unpack_uintvar(&url_len, pdu, &off) == -1 ||
+	    unpack_octstr(url, url_len, pdu, &off) == -1)
+		return -1;
+	if (off < octstr_len(pdu))
+		error(0, "unpack_get_pdu: Get PDU has headers, ignored them");
+	*headers = NULL;
+	debug(0, "WSP: Get PDU had URL <%s>", octstr_get_cstr(*url));
+	return 0;
+}
+
+
+static int unpack_uint8(unsigned long *u, Octstr *os, int *off) {
+	if (*off >= octstr_len(os)) {
+		error(0, "WSP: Trying to unpack uint8 past PDU");
+		return -1;
+	}
 	*u = octstr_get_char(os, *off);
 	++(*off);
 	return 0;
@@ -312,8 +347,10 @@ static int unpack_uintvar(unsigned long *u, Octstr *os, int *off) {
 	
 	*u = 0;
 	do {
-		if (unpack_uint8(&o, os, off) == -1)
+		if (unpack_uint8(&o, os, off) == -1) {
+			error(0, "WSP: unpack_uint failed in unpack_uintvar");
 			return -1;
+		}
 		*u = ((*u) << 7) | (o & 0x7F);
 	} while ((o & 0x80) == 1);
 
@@ -322,9 +359,13 @@ static int unpack_uintvar(unsigned long *u, Octstr *os, int *off) {
 
 
 static int unpack_octstr(Octstr **ret, int len, Octstr *os, int *off) {
-	if (*off + len > octstr_len(os))
+	debug(0, "unpack_octstr: *off=%d, len=%d, len(os)=%d",
+		*off, len, (int) octstr_len(os));
+	if (*off + len > octstr_len(os)) {
+		error(0, "WSP: Trying to unpack string past PDU");
 		return -1;
-	*ret = octstr_copy(os, 0, len);
+	}
+	*ret = octstr_copy(os, *off, len);
 	*off += len;
 	return 0;
 }
@@ -392,4 +433,14 @@ static Octstr *make_connectreply_pdu(long session_id) {
 	append_uintvar(pdu, 0);
 	append_uintvar(pdu, 0);
 	return pdu;
+}
+
+
+static int transaction_belongs_to_session(WTPMachine *wtp, WSPMachine *session)
+{
+	return 
+	  octstr_compare(wtp->source_address, session->client_address) == 0 &&
+	  wtp->source_port == session->client_port &&
+	  octstr_compare(wtp->destination_address, session->server_address) == 0 && 
+	  wtp->destination_port == session->server_port;
 }
