@@ -38,6 +38,8 @@ static Cfg *cfg;
 static long bb_port;
 static int bb_ssl = 0;
 static long sendsms_port = 0;
+static Octstr *sendsms_url = NULL;
+static Octstr *sendota_url = NULL;
 static Octstr *bb_host;
 static char *pid_file;
 static int heartbeat_freq;
@@ -953,7 +955,7 @@ static int authenticate(const char *login, const char *passwd)
 	return 0;
     }
     pam_end(pamh, PAM_SUCCESS);
-    info(0, "/sendsms used by <%s>", login);
+    info(0, "sendsms used by <%s>", login);
     return 1;
 }
 
@@ -1162,7 +1164,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	 udh == NULL ? ( text == NULL ? "" : octstr_get_cstr(text) ) : "<< UDH >>");
 
     octstr_destroy(newfrom);
-    *status = 202;
+    *status = HTTP_ACCEPTED;
     return octstr_create("Sent.");
     
 
@@ -1174,13 +1176,13 @@ fielderror2:
     alog("send-SMS request failed - %s",
 	 octstr_get_cstr(returnerror));
 
-    *status = 400;
+    *status = HTTP_BAD_REQUEST;
     return returnerror;
 
 error:
     error(0, "sendsms_request: failed");
     octstr_destroy(from);
-    *status = 500;
+    *status = HTTP_INTERNAL_SERVER_ERROR;
     return octstr_create("Sending failed.");
 }
 
@@ -1272,7 +1274,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     /* check the username and password */
     t = authorise_user(args, client_ip);
     if (t == NULL) {
-	*status = 403;
+	*status = HTTP_FORBIDDEN;
 	return octstr_create("Authorization failed for sendsms");
     }
     
@@ -1331,10 +1333,20 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
         sscanf(octstr_get_cstr(tmp_string),"%d", &deferred);
     }
 
-    if (to == NULL) {
-	error(0, "/sendsms got wrong args");
-	*status = 400;
-	return octstr_create("Wrong sendsms args, rejected");
+    /*
+     * we expect cgi var text to be defined, even if it may be
+     * empty to allow empty messages, st.
+     */
+    if (to == NULL || text == NULL) {
+	error(0, "%s got insufficient headers",octstr_get_cstr(sendsms_url));
+	*status = HTTP_BAD_REQUEST;
+	return octstr_create("Insufficient headers, rejected");
+    } 
+    else if (octstr_case_compare(to,
+				octstr_imm("")) == 0) {
+	error(0, "%s got empty to cgi variable", octstr_get_cstr(sendsms_url));
+	*status = HTTP_BAD_REQUEST;
+	return octstr_create("Empty receiver number not allowed, rejected");
     }
 
     return smsbox_req_handle(t, client_ip, from, to, text, charset, udh, 
@@ -1372,14 +1384,21 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     /* check the username and password */
     t = authorise_username(user, pass, client_ip);
     if (t == NULL) {
-	*status = 403;
+	*status = HTTP_FORBIDDEN;
 	ret = octstr_create("Authorization failed for sendsms");
     }
     else if (to == NULL) {
-	error(0, "/sendsms got insufficient headers");
-	*status = 400;
+	error(0, "%s got insufficient headers", octstr_get_cstr(sendsms_url));
+	*status = HTTP_BAD_REQUEST;
 	ret = octstr_create("Insufficient headers, rejected");
-    } else {
+    } 
+    else if (octstr_case_compare(to,
+				octstr_imm("")) == 0) {
+	error(0, "%s got empty to cgi variable", octstr_get_cstr(sendsms_url));
+	*status = HTTP_BAD_REQUEST;
+	return octstr_create("Empty receiver number not allowed, rejected");
+    } 
+    else {
 	/* XXX here we should take into account content-type of body
 	 */
 	http_header_get_content_type(headers, &type, &charset);
@@ -1393,9 +1412,9 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	    if (coding == DC_UNDEF)
 		coding = DC_7BIT;
 	} else {
-	    error(0, "/sendsms got weird content type %s",
+	    error(0, "%s got weird content type %s", octstr_get_cstr(sendsms_url),
 		  octstr_get_cstr(type));
-	    *status = 415;
+	    *status = HTTP_UNSUPPORTED_MEDIA_TYPE;
 	    ret = octstr_create("Unsupported content-type, rejected");
 	}
 
@@ -1458,14 +1477,14 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
     /* check the username and password */
     t = authorise_user(list, client_ip);
     if (t == NULL) {
-	*status = 403;
+	*status = HTTP_FORBIDDEN;
 	return octstr_create("Authorization failed for sendota");
     }
     
     phonenumber = http_cgi_variable(list, "phonenumber");
     if (phonenumber == NULL) {
-	error(0, "/cgi-bin/sendota needs a valid phone number.");
-	*status = 400;
+	error(0, "%s needs a valid phone number.", octstr_get_cstr(sendota_url));
+	*status = HTTP_BAD_REQUEST;
 	return octstr_create("Wrong sendota args.");
     }
 
@@ -1477,7 +1496,7 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
     } else if (global_sender != NULL) {
 	from = octstr_duplicate(global_sender);
     } else {
-	*status = 400;
+	*status = HTTP_BAD_REQUEST;
 	return octstr_create("Sender missing and no global set, rejected");
     }
 
@@ -1495,12 +1514,12 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
 
     list_destroy(grplist, NULL);
     if (id != NULL)
-	error(0, "/cgi-bin/sendota can't find otaconfig with ota-id '%s'.", 
-	      octstr_get_cstr(id));
+	error(0, "%s can't find otaconfig with ota-id '%s'.", 
+          octstr_get_cstr(sendota_url), octstr_get_cstr(id));
     else
-	error(0, "/cgi-bin/sendota can't find any otaconfig group.");
+	error(0, "%s can't find any otaconfig group.", octstr_get_cstr(sendota_url));
     octstr_destroy(from);
-    *status = 400;
+    *status = HTTP_BAD_REQUEST;
     return octstr_create("Missing otaconfig group.");
 
 found:
@@ -1754,7 +1773,7 @@ found:
     
     octstr_dump(msg->sms.msgdata, 0);
     
-    info(0, "/cgi-bin/sendota <%s> <%s>", 
+    info(0, "%s <%s> <%s>", octstr_get_cstr(sendota_url), 
     	 id ? octstr_get_cstr(id) : "<default>", octstr_get_cstr(phonenumber));
     
     ret = send_message(t, msg); 
@@ -1769,11 +1788,11 @@ found:
 
     if (ret == -1) {
 	error(0, "sendota_request: failed");
-	*status = 500;
+	*status = HTTP_INTERNAL_SERVER_ERROR;
 	return octstr_create("Sending failed.");
     }
 
-    *status = 202;
+    *status = HTTP_ACCEPTED;
     return octstr_create("Sent.");
 }
 
@@ -1799,19 +1818,29 @@ static void sendsms_thread(void *arg)
 	info(0, "smsbox: Got HTTP request <%s> from <%s>",
 	    octstr_get_cstr(url), octstr_get_cstr(ip));
 
-	if (octstr_str_compare(url, "/cgi-bin/sendsms") == 0
-	    || octstr_str_compare(url, "/sendsms") == 0)
+    /*
+     * determine which kind of HTTP request this is any
+     * call the necessary routine for it
+     */
+
+   	if (octstr_compare(url, sendsms_url) == 0)
 	{
-	    if (body == NULL)
+        /* 
+         * decide if this is a GET or POST request and let the 
+         * related routine handle the checking
+         */
+        if (body == NULL)
 		answer = smsbox_req_sendsms(args, ip, &status);
 	    else
 		answer = smsbox_sendsms_post(hdrs, body, ip, &status);
 	}
-	else if (octstr_str_compare(url, "/cgi-bin/sendota") == 0)
+	else if (octstr_compare(url, sendota_url) == 0)
+	{
 	    answer = smsbox_req_sendota(args, ip, &status);
+    }
 	else {
-	    answer = octstr_create("Unknown request.\n");
-	    status = 404;
+	    answer = octstr_create("Unknown request.");
+	    status = HTTP_NOT_FOUND;
 	}
         debug("sms.http", 0, "Status: %d Answer: <%s>", status,
 	      octstr_get_cstr(answer));
@@ -1925,7 +1954,9 @@ static void init_smsbox(Cfg *cfg)
     http_proxy_exceptions = cfg_get_list(grp,
     	    	    	    octstr_imm("http-proxy-exceptions"));
 
-    conn_config_ssl (grp);
+#ifdef HAVE_LIBSSL
+    conn_config_ssl(grp);
+#endif 
     
     /*
      * get the remaining values from the smsbox group
@@ -1976,6 +2007,15 @@ static void init_smsbox(Cfg *cfg)
 #ifdef HAVE_LIBSSL
     cfg_get_bool(&ssl, grp, octstr_imm("sendsms-port-ssl"));
 #endif /* HAVE_LIBSSL */
+
+    /*
+     * load the configuration settings for the sendsms and sendota URIs
+     * else assume the default URIs, st.
+     */
+    if ((sendsms_url = cfg_get(grp, octstr_imm("sendsms-url"))) == NULL)
+        sendsms_url = octstr_imm("/cgi-bin/sendsms");
+    if ((sendota_url = cfg_get(grp, octstr_imm("sendota-url"))) == NULL)
+        sendota_url = octstr_imm("/cgi-bin/sendota");
 
     global_sender = cfg_get(grp, octstr_imm("global-sender"));
     accepted_chars = cfg_get(grp, octstr_imm("sendsms-chars"));
