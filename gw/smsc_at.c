@@ -548,8 +548,8 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
 	Octstr *text = NULL, *tmpstr;
 	Octstr *pdu = NULL;
 	Msg *message = NULL;
-	struct tm mtime;	/* time structure */
-	time_t stime;		/* time in seconds */
+	struct universaltime mtime;	/* time structure */
+	long stime;		/* time in seconds */
 
 	/* Note: some parts of the PDU are not decoded because they are
 	 * not needed for the Msg type. */
@@ -577,15 +577,16 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
 	pos++;
 	
 	/* get the timestamp */
-	mtime.tm_year = octstr_get_char(pdu, pos) + 100; pos++;
-	mtime.tm_mon  = octstr_get_char(pdu, pos); pos++;
-	mtime.tm_mday = octstr_get_char(pdu, pos); pos++;
-	mtime.tm_hour = octstr_get_char(pdu, pos); pos++;
-	mtime.tm_min  = octstr_get_char(pdu, pos); pos++;
-	mtime.tm_sec = octstr_get_char(pdu, pos); pos++;
+	mtime.year   = octstr_get_char(pdu, pos) + 1900; pos++;
+	mtime.month  = octstr_get_char(pdu, pos); pos++;
+	mtime.day    = octstr_get_char(pdu, pos); pos++;
+	mtime.hour   = octstr_get_char(pdu, pos); pos++;
+	mtime.minute = octstr_get_char(pdu, pos); pos++;
+	mtime.second = octstr_get_char(pdu, pos); pos++;
 	/* time zone: */
-	mtime.tm_hour += octstr_get_char(pdu, pos); pos++;
-	stime = mktime(&mtime);
+        /* XXX handle negative time zones */
+	mtime.hour  += octstr_get_char(pdu, pos); pos++;
+	stime = date_convert_universal(&mtime);
 	
 	/* get data length */
 	len = octstr_get_char(pdu, pos);
@@ -621,7 +622,7 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
 	}
 	message->sms.flag_8bit = eightbit;
 	message->sms.msgdata = text;
-	message->sms.time = (int)stime;
+	message->sms.time = stime;
 
 	/* cleanup */
 	octstr_destroy(pdu);

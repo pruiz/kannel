@@ -1,3 +1,15 @@
+2001-02-15  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_at.c: Corrected timestamp calculation.  mktime()
+	uses local time, and it got a GMT time.  Converted to use
+	date_convert_universal() from gwlib/date.c instead.
+	(There is no function in the C library for this task.)
+	It probably still doesn't work for negative timezones,
+	I'll have to check the specs for that.
+
+	* gwlib/date.[ch]: Make date_convert_universal() a public
+	function.
+
 2001-02-14  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/octstr.[ch]: Changed the octstr_create_urlcoded to be

@@ -6,6 +6,25 @@
 
 #include "gwlib.h"
 
+/* Broken-down time structure without timezone.  The values are
+ * longs because that makes them easier to use with octstr_parse_long().
+ */
+struct universaltime
+{
+    long day;      /* 1-31 */
+    long month;    /* 0-11 */
+    long year;     /* 1970- */
+    long hour;     /* 0-23 */
+    long minute;   /* 0-59 */
+    long second;   /* 0-59 */
+};
+
+
+/* Calculate the unix time value (seconds since 1970) given a broken-down
+ * date structure in GMT. */
+long date_convert_universal(struct universaltime *t);
+
+
 /*
  * Convert a unix time value to a value of the form
  * Sun, 06 Nov 1994 08:49:37 GMT
@@ -13,6 +32,7 @@
  * and it is defined in RFC 822 as updated by RFC 1123.
  */
 Octstr *date_format_http(unsigned long unixtime);
+
 
 /*
  * Convert a date string as defined by the HTTP protocol (RFC 2616)

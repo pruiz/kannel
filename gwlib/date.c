@@ -29,19 +29,6 @@ static int monthstart[12] = {
 #define HOUR (60 * MINUTE)
 #define DAY (24 * HOUR)
 
-/* Broken-down time structure without timezone.  The values are
- * longs because that makes them easier to use with octstr_parse_long().
- */
-struct universaltime
-{
-    long day;      /* 1-31 */
-    long month;    /* 0-11 */
-    long year;     /* 1970- */
-    long hour;     /* 0-23 */
-    long minute;   /* 0-59 */
-    long second;   /* 0-59 */
-};
-
 Octstr *date_format_http(unsigned long unixtime)
 {
     struct tm tm;
@@ -71,9 +58,7 @@ Octstr *date_format_http(unsigned long unixtime)
     return octstr_create(buffer);
 }
 
-/* Calculate the unix time value (seconds since 1970) given a broken-down
- * date structure in GMT. */
-static long date_convert_universal(struct universaltime *t)
+long date_convert_universal(struct universaltime *t)
 {
     long date;
     int leapyears;
