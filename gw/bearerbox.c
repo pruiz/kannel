@@ -334,6 +334,7 @@ static int starter(Cfg *cfg)
     val = cfg_get(grp, octstr_imm("wdp-interface-name"));
     if (val != NULL && octstr_len(val) > 0)
 	start_udp(cfg);
+    octstr_destroy(val);
 
     if (cfg_get_single_group(cfg, octstr_imm("wapbox")) != NULL)
 	start_wap(cfg);
@@ -452,6 +453,7 @@ int main(int argc, char **argv)
     
     gwthread_join_all();
 
+    boxc_cleanup();
     smsc2_cleanup();
     empty_msg_lists();
     

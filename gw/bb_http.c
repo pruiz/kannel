@@ -306,4 +306,12 @@ void httpadmin_stop(void)
 {
     http_close_all_servers();
     gwthread_join_every(httpadmin_run);
+    octstr_destroy(ha_password);
+    octstr_destroy(ha_status_pw);
+    octstr_destroy(ha_allow_ip);
+    octstr_destroy(ha_deny_ip);
+    ha_password = NULL;
+    ha_status_pw = NULL;
+    ha_allow_ip = NULL;
+    ha_deny_ip = NULL;
 }

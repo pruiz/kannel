@@ -273,6 +273,8 @@ int udp_start(Cfg *cfg)
     /* add_service(9206, octstr_get_cstr(interface_name));  * vcard/wtls */
     /* add_service(9207, octstr_get_cstr(interface_name));  * vcal/wtls	*/
     
+    octstr_destroy(interface_name);
+    
     list_add_producer(incoming_wdp);
     udp_running = 1;
     return 0;

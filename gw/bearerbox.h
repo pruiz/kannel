@@ -53,6 +53,9 @@ Octstr *boxc_status(int status_type);
 /* tell total number of messages in seperate wapbox incoming queues */
 int boxc_incoming_wdp_queue(void);
 
+/* Clean up after box connections have died. */
+void boxc_cleanup(void);
+
 /*---------------
  * bb_udp.c (UDP receiver/sender)
  */

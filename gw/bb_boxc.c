@@ -811,3 +811,11 @@ int boxc_incoming_wdp_queue(void)
     return q;
 }
 
+
+void boxc_cleanup(void)
+{
+    octstr_destroy(box_allow_ip);
+    octstr_destroy(box_deny_ip);
+    box_allow_ip = NULL;
+    box_deny_ip = NULL;
+}
