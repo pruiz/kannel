@@ -1,4 +1,9 @@
 2002-04-04  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.c: added User-Agent HTTP header to HTTP client requests to
+      identify itself by the string 'Kannel/<ver>', where <ver> is the 
+      version string from VERSION.
+
+2002-04-04  Stipe Tolj  <tolj@wapme-systems.de>
     * test/test_http.c: fixed unitialized var usage for the POST content   
 
 2002-04-04  Stipe Tolj  <tolj@wapme-systems.de>
