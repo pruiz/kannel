@@ -1,3 +1,6 @@
+2002-04-27 Aarno Syvänen <aarno@wiral.com>
+    * gw/wap_push_ppg.c: Fixed HTTP return statuses.
+	
 2002-04-36  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * debian/*: fixed some issues, add mysql and ssl support to debian
       packages (not that crypto is not an issue and ssl has moved from
