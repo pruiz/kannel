@@ -303,6 +303,8 @@ pthread_rwlock_destroy(&lock);
 AC_MSG_RESULT(Cross compiling - assuming suuported) ; AC_DEFINE(HAVE_PTHREAD_RWLOCK)])
 
 dnl checking for native semaphore support
+dnl Solaris & HP-UX needs librt.
+AC_CHECK_LIB(rt, sem_init)
 AC_MSG_CHECKING([for semaphore support])
 AC_TRY_RUN([#include <semaphore.h>
 int main(void) {

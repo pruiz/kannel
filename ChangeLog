@@ -1,3 +1,7 @@
+2004-10-06 Alexander Malysh <amalysh at kannel.org>
+    * configure.in, configure: added check for 'sem_init' in librt.
+      This needs on Solaris & HP-UX.
+
 2004-09-28  Stipe Tolj  <stolj@wapme.de>
     * doc/userguide/userguide.xml: added section for account %o escape code
       for the sms-service url translation.
