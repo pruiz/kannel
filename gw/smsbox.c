@@ -657,7 +657,7 @@ static void url_result_thread(void *arg)
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_id);
 	    } else if (octstr_compare(type, text_plain) == 0) {
-		replytext = reply_body;
+		replytext = octstr_duplicate(reply_body);
 		reply_body = NULL;
 		octstr_strip_blanks(replytext);
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
@@ -665,7 +665,7 @@ static void url_result_thread(void *arg)
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_id);
 	    } else if (octstr_compare(type, octet_stream) == 0) {
-		replytext = reply_body;
+		replytext = octstr_duplicate(reply_body);
 		octets = 1;
 		reply_body = NULL;
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
@@ -673,16 +673,16 @@ static void url_result_thread(void *arg)
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_id);
 	    } else {
-		replytext = reply_couldnotrepresent; 
+		replytext = octstr_duplicate(reply_couldnotrepresent); 
 	    }
 
 	    if (charset_processing(charset, &replytext, coding) == -1) {
-		replytext = reply_couldnotrepresent;
+		replytext = octstr_duplicate(reply_couldnotrepresent);
 	    }
 	    octstr_destroy(type);
 	    octstr_destroy(charset);
 	} else
-	    replytext = reply_couldnotfetch;
+	    replytext = octstr_duplicate(reply_couldnotfetch);
 
 	fill_message(msg, trans, replytext, octets, from, to, udh, mclass,
 			mwi, coding, compress, validity, deferred, dlr_id, 
@@ -692,6 +692,7 @@ static void url_result_thread(void *arg)
 	    final_url = octstr_imm("");
     	if (reply_body == NULL)
 	    reply_body = octstr_imm("");
+
 	alog("SMS HTTP-request sender:%s request: '%s' "
 	     "url: '%s' reply: %d '%s'",
 	     octstr_get_cstr(msg->sms.receiver),
