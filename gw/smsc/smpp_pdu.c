@@ -13,12 +13,13 @@
 #define MAX_SMPP_PDU_LEN    (7424) 
 
 
-static unsigned long decode_integer(Octstr *os, long pos, int octets)
+static long decode_integer(Octstr *os, long pos, int octets)
 {
     unsigned long u;
     int i;
 
-    gw_assert(octstr_len(os) >= pos + octets);
+    if (octstr_len(os) < pos + octets) 
+        return -1;
 
     u = 0;
     for (i = 0; i < octets; ++i)
@@ -207,7 +208,11 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
         return NULL;
     }
 
-    type = decode_integer(data_without_len, 0, 4);
+    /* get the PDU type */
+    if ((type = decode_integer(data_without_len, 0, 4)) == -1)
+        return NULL;
+
+    /* create a coresponding representation structure */
     pdu = smpp_pdu_create(type, 0);
     if (pdu == NULL)
         return NULL;
