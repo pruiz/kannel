@@ -1,3 +1,10 @@
+2000-03-28  Richard Braakman  <dark@wapit.com>
+
+	* utils/start-stop-daemon.c: Put conditional OSLinux || OSHURD
+	around the definitions for pid_is_user and pid_is_cmd, because
+	those functions are not defined for OSSunos.  This is probably
+	not the last of the changes needed; we'll see.
+
 2000-03-28    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/smsbox_req.c: added UDH sending code alpha test. Use field

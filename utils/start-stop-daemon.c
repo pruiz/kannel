@@ -110,8 +110,10 @@ static void *xmalloc(int size);
 static void push(struct pid_list **list, int pid);
 static void do_help(void);
 static void parse_options(int argc, char * const *argv);
+#if defined(OSLinux) || defined(OSHURD)
 static int pid_is_user(int pid, int uid);
 static int pid_is_cmd(int pid, const char *name);
+#endif
 static void check(int pid);
 static void do_pidfile(const char *name);
 static int do_stop(void);
