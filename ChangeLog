@@ -1,3 +1,8 @@
+2005-03-04  Stipe Tolj  <stolj@wapme.de> 
+    * gw/wap-appl.c: added <ip:port> output in info() log line for fetching
+      the requested client URL. Thanks to Jonathan for this.
+      [Msg-ID: <422880B3.90805@wirelessonenet.com>]
+
 2005-03-02  Stipe Tolj  <stolj@wapme.de> 
     * doc/userguide/userguide.xml: fixed some typos and added sections for
       URL escape codes %m and %M for sms-service group.

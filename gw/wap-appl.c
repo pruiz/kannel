@@ -1140,9 +1140,9 @@ static void start_fetch(WAPEvent *event)
         method = p->method;
     }
 
-    msisdn = radius_acct_get_msisdn(addr_tuple->remote->address);
-    info(0, "Fetching URL <%s> for MSISDN <%s>", octstr_get_cstr(url),
-         msisdn ? octstr_get_cstr(msisdn) : "");
+    info(0, "Fetching URL <%s> for MSISDN <%s>, IP <%s:%d>", octstr_get_cstr(url),
+         msisdn ? octstr_get_cstr(msisdn) : "", octstr_get_cstr(addr_tuple->remote->address),
+         addr_tuple->remote->port);
 
     /* 
      * XXX this URL mapping needs to be rebuild! st. 
