@@ -1,3 +1,13 @@
+Sat Apr 22 02:40:38 2000  Lars Wirzenius  <liw@wapit.com>
+
+	*  gwlib/http2.[ch]: Wrote. This is the beginning of the new
+	HTTP implementation.
+
+	* test/http2-test-urls, test/run-http2-tests, test/test_http2.c:
+	Testing harness for the new HTTP implementation.
+
+	* gwlib/octstr.h: Fixed comment explaining error return.
+
 2000-04-20  Richard Braakman  <dark@wapit.com>
 
 	* Made read_to_eof set its output parameter to NULL on error,

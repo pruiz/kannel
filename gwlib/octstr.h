@@ -244,7 +244,7 @@ int octstr_write_to_socket(int socket, Octstr *ostr);
  * Read available data from socket and return it as an octstr.
  * Block if no data is available.  If a lot of data is available,
  * read only up to an internal limit.
- * Return NULL for error.
+ * Return -1 for error.
  */
 int octstr_append_from_socket(Octstr *ostr, int socket);
 

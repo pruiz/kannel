@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+# Compare lynx -source output and test_http2 output on a number of URLs.
+#
+# Lars Wirzenius
+
+for url in `cat test/http2-test-urls`
+do
+	echo "Testing $url..."
+	lynx -source "$url" > lynx.tmp
+	test/test_http2 -s "$url" > http2.tmp
+	if diff -u lynx.tmp http2.tmp >/dev/null
+	then
+		:
+	else
+		echo "Lynx and test_http2 disagree. Oops."
+		echo "URL is <$url>."
+		echo "See lynx.tmp and http2.tmp."
+		exit 1
+	fi
+done
+echo "All tests passed. Very good."
+# rm -f lynx.tmp http2.tmp
