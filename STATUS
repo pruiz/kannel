@@ -1,8 +1,9 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.32 2003-02-05 23:54:11 stolj Exp $]
+    Last modified at [$Id: STATUS,v 1.33 2003-03-08 12:16:59 stolj Exp $]
 
 Release:
 
+    1.3.1: development version, released Feb 17, 2003.
     1.3.0: development version, released Jan 06, 2003.
     1.2.1: update to stable, released Nov 02, 2002.
     1.2.0: update to stable, released Jul 04, 2002.
@@ -28,18 +29,6 @@ RELEASE SHOWSTOPPERS:
 
 
 RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
-
-    * DLRs crash smsbox using CIMD2 
-      octstr_copy_real() throughs len >= 0 assert exception, maybe in 
-      smsbox.c:obey_request_thread()
-    Posted by: Stefan Cars <stefan@globalwire.se>
-    Message-ID: <Pine.LNX.4.40.0203201829460.2113-100000@tjatte.globalwire.se>
-    Status:
-
-    * WTLS for secure communication
-    Posted by: Stipe Tolj <tolj@wapme-systems.de>
-    Status: basic support has been implemented in wap/wtls_*.[ch], this needs
-            to be tweaked the way kwtls does things to incorporate the stack
                    
     * forced-smsc not working with concatenated, probably routing issue 
       between several configured smscs and concatenated messages
@@ -47,7 +36,7 @@ RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
     Message-ID: <Pine.LNX.4.40.0201281929290.3610-100000@tjatte.globalwire.se>
     Status: Stipe: workaround see <3C55D821.B930320C@wapme-systems.de>
 
-    * incoming concatenation ;)
+    * incoming concatenation, derive from Netikos version 
     Posted by: Bruno Rodrigues <bruno.rodrigues@litux.org>
     Status: 
 
@@ -56,27 +45,10 @@ RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
     Message-ID: <3C848209.FAE8FCB7@wiral.com>
     Status: Done
 
-    * XML-RPC support for sendsms and sendota HTTP interface
+    * finalize XML-RPC support for sendsms and sendota HTTP interface
     Posted by: Stipe Tolj <tolj@wapme-systems.de>
     Status: basic support has been implemented in gwlib/xmlrpc.[ch]
 
-    * SMSC routing for PPG originating messages
-    Posted by: Aarno Syvänen <aarno@wiral.com>
-    Message-ID: <3CAAD32F.C44A5956@wiral.com>
-    Status: Aarno has this on his TODO list
-    
-    * sms-service might not reply back the sms 
-      when http keepalive is activated
-    Posted by: Alex Judd <ajudd@skywire.co.uk>
-    Message-ID: <Pine.LNX.4.44.0202270925420.23783-100000@samsara.kgbinternet.com>
-    Status: Bruno Rodrigues: I've disabled http keepalive until it gets fixed
-
-    * wap-push-user specific smsc-id routing via 'forced-smsc' directive
-      This would allows to route WAP Push messages that use SMS as transport bearer
-      to pre-defined smsc-id's that are running within the scope of bearerbox
-    Posted by: Stipe Tolj <tolj@wapme-systems.de>
-    Status: minor parts have been added. Transportation of the smsc-id accross the 
-            WAP layers have to be implemented now.
  
 Available Patches:
 
@@ -105,25 +77,52 @@ Available Patches:
     Message-ID: <20011228013937.25092.qmail@web13805.mail.yahoo.com>
     Status:
 
-    * SMSC specific default-sender and forced-sender 
-    Posted by: "Angel Fradejas" <afradejas@mediafusion.es>
-    Message-ID: <FMEKKCFKIGBADHGIJKPJGENPCKAA.afradejas@mediafusion.es>
-    Updated: <FMEKKCFKIGBADHGIJKPJAEFECPAA.afradejas@mediafusion.es>
-    Status: Stipe -1 (conceptual clash to global-sender?!)
-
     * CIMD2: rewrite to smscconn style 
     Posted by: Kalle Marjola <kalle.marjola@netikos.fi>
     Message-ID: <Pine.LNX.4.44.0209241539470.32671-200000@mail.netikos.fi>
     Status: Stipe: requested another diff -u patch against current cvs from Kalle.
 
-Open issues:
 
-    * Clashing unified-prefix when several SMSCs send their incoming messages
-      with or without international prefix. 
-      Suggested solution: introduce unified-prefix on smsc group level
-    Posted by: jakob.gaardsted@coment.dk
-    Message-ID: <OF7A262989.8F1B64DC-ON41256B4C.002DEDAD@coment.dk>
-    Status:
+TODOs:
+
+    * WTLS for secure communication, this is a major issue
+    Posted by: Stipe Tolj <tolj@wapme-systems.de>
+    Status: basic support has been implemented in wap/wtls_*.[ch], this needs
+            to be tweaked the way kwtls does things to incorporate the stack
+
+    * MMS centers require WAP 1.2.1 (June Conformance Release) support. So 
+      Kannel must have this. (Note this does *not* mean that Kannel will be 
+      able work as MMSC. An MMSC is a more complex system. Kannel will *only* 
+      provide the MMSC proxying itself.)
+
+        - WAP push: We must test can PPG send a properly tokenised MMS 
+          notification (I have a MMS message for you, can you fetch it). 
+          If there are bugs, we must correct them. 
+
+        - MMS language is SMIL, not WML or WMLScript. SMIL should go through 
+          the gateway unmodified, and the phone should be able to present it. 
+          So, as long as repsesentation language is concerned, work well. Of 
+          course it would be nice to have WML and WMLScript 1.2.1. We must test 
+          can MMS phone send a MMS through Kannel (eventually it must be able 
+          to do a WAP fetch to a MMSC, it is WSP POST to it).
+
+        - From WSP (WAP-203-WSP-20000504-a.pdf and corrections) requires another
+          optional feature, multipart headers. We must add this. In addition, 
+          we must add encoding of new headers, WSP version control and content 
+          types.
+
+        - User Agent Profiling (WAP-174-UAProf-19991110-a.pdf and corrections 
+          (SINs) to it) defines how the phone can tell its capabilities to MMSC. 
+          This is  usefull when MMSC is trying to send something to a non MMS 
+          capable phone and must do some conversions. I think we can do this when 
+          previous ones are implemented. (Translation: having this will take quite 
+          long time, if somebody else does not volunteer.)
+
+      If you are interested one of above tasks, I can give you pointers to relevant
+      chapters of the specs. (I being Aarno <as@gni.ch>)
+    Posted by: Aarno Syvänen <as@gni.ch>
+    Message-ID: 
+    Status: Stipe: WTP-SAR (segmentation and re-assembly) has been inplemented.
 
     * Configuring 2 HTTP interfaces for sendsms, one SSL-enabled and one not.
       Config may look like this:
@@ -148,17 +147,24 @@ Open issues:
             own solutions, needs to be revised and cleaned up.
 
     * AT2 module fails to open serial ports after system startup.
-      The reason is that the default serial port parameters are not peroper
-      for connecting to modems. to work around the problem you can open the modem
+      The reason is that the default serial port parameters are not proper set
+      for connecting to modems. To work around the problem you can open the modem
       port with a terminal program, make sure it works, close the terminal
       program and use the stty program (available on linux and other unixes. check 
-      your system's documentation for an equivilent program) to record the port parameters :
-      stty -g -F /dev/<serial device>
-      and then write a startup script to setup the port with those parameters :
-      stty -F /dev/<serial device> <output of stty -g>
+      your system's documentation for an equivilent program) to record the port 
+      parameters:
+      
+        $ stty -g -F /dev/<serial device>
+
+      and then write a startup script to setup the port with those parameters:
+      
+        $ stty -F /dev/<serial device> <output of stty -g>
+
       The following line "works for me"(tm) on a Linux Mandrake 8.2 with wavecom modem
       connected to a USB port extender:
-      stty -F /dev/usb/tts/0 1:0:800008bd:0:3:1c:7f:15:4:5:1:0:11:13:1a:0:12:f:17:16:0:0:2f:0:0:0:0:0:0:0:0:0:0:0:0:0  
+
+        $ stty -F /dev/usb/tts/0 1:0:800008bd:0:3:1c:7f:15:4:5:1:0:11:13:1a:0:12:f:17:16:0:0:2f:0:0:0:0:0:0:0:0:0:0:0:0:0  
+
     Posted by: Oded Arbel <odeda@m-wise.com>
     Message-ID: <2CFC21DAF860CC49AF57333C4459DD4B167F99@exchange.m-wise.com>
     Status: Oded: AT2 module should be fixed to do that internally
