@@ -254,7 +254,7 @@ static int StoreVarInt( unsigned char *buf, unsigned long varInt )
     */
     for (i = 0; i < len; i++)
     {
-        buf[i] = (unsigned char)(varInt >> (non_zero_bits-7)) & 0x7f;
+        buf[i] = ((unsigned char)(varInt >> (non_zero_bits-7)) & 0x7f) | 0x80;
         non_zero_bits -= 7;
     }
     buf[len-1] &= 0x7f;

@@ -1,3 +1,11 @@
+2000-10-05  Richard Braakman  <dark@wapit.com>
+
+	* gw/wap-appl.c: Bugfix, don't panic if resp_headers is NULL
+	(i.e. the HTTP request failed).
+
+	* gw/fakewap.c: Correctly encode requests with urls longer than
+	128 bytes.
+
 2000-10-05  Kalle Marjola  <rpr@wapit.com>
 
 	* test/fakesmsc.c: use info level to inform that all messages have

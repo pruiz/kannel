@@ -450,6 +450,8 @@ static void fetch_thread(void *arg) {
 
 	list_destroy(actual_headers, octstr_destroy_item);
 	/* resp_headers will be re-used below */
+	if (resp_headers == NULL)
+	    resp_headers = http_create_empty_headers();
 
 	http_remove_hop_headers(resp_headers);
 		
