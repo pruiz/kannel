@@ -1,4 +1,9 @@
 2002-11-06  Oded Arbel  <odeda@m-wise.com>
+    * gw/smsc/smsc_at2.c: added detection of invalid TP-OA address 
+      length in decode_deliver_sm(); added logging in case of 
+      decode_deliver_sm() failure.
+
+2002-11-06  Oded Arbel  <odeda@m-wise.com>
     * gw/smsc/smsc_at2.c: added speed 115200 if system supports; added
       simple protection against malformed PDUs in decode_deliver_sm.
 

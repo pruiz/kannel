@@ -1269,6 +1269,8 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
 
     /* originating address */
     len = octstr_get_char(pdu, 1);
+    if (len > 20) /* maximum valid number of semi-octets in Address-Value field */
+        goto msg_error;
     ntype = octstr_get_char(pdu, 2);
 
     pos = 3;
@@ -1411,6 +1413,8 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
     return message;
     
 msg_error:
+    error(1,"AT2[%s]: Invalid DELIVER-SMS pdu !",
+	privdata->name);
     O_DESTROY(udh);
     O_DESTROY(origin);
     O_DESTROY(text);
