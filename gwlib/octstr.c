@@ -958,11 +958,17 @@ int octstr_search_char(const Octstr *ostr, int ch, long pos)
 int octstr_search_chars(const Octstr *ostr, const Octstr *chars, long pos)
 {
     long i, j;
-    for(i=0; i < octstr_len(chars); i++) {
-	j = octstr_search_char(ostr, octstr_get_char(chars, i), 0);
-	if(j != -1)
+
+    seems_valid(ostr);
+    seems_valid(chars);
+    gw_assert(pos >= 0);
+
+    for (i = 0; i < octstr_len(chars); i++) {
+	j = octstr_search_char(ostr, octstr_get_char(chars, i), pos);
+	if (j != -1)
 	    return j;
     }
+
     return -1;
 }
 

@@ -1,3 +1,9 @@
+2004-04-19  Alexander Malysh  <a.malysh@centrium.de> 
+    * gwlib/octstr.c: applied patch that allows octstr_search_chars
+      to not ignore its `pos' parameter.
+      Thanks to Guillaume Cottenceau <guillaume.cottenceau@mnc.ch>.
+      [Msg-Id: <84d6642ok9.fsf@frozen.mnc.ch>].
+
 2004-04-18  Alexander Malysh  <a.malysh@centrium.de> 
     * README: adds docbook entries for Gentoo and Mandrake.
     * doc/userguide/userguide.xml: replaces `README.docbook'
