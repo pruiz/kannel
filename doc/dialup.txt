@@ -109,3 +109,38 @@ password <blank>
 Hope this helps,
 --
 Roger
+
+
+
+When you access a "web page" using a PC based browser, the 
+"web server" tells your PC browser what kind of document it
+should expect. This is done by using something called MIME-types.
+The common MIME type for a plain HTML document is "text/html".
+However, for a WAP micro browser, which cannot read HTML, the
+MIME type has to be different. 
+
+The MIME types for serving WML contents are: 
+
+     Document type             MIME type                       Typicalextension
+     Plain WML documents       text/vnd.wap.wml                .wml
+     Wireless Bitmap Images    image/vnd.wap.wbmp              .wbmp
+     Compiled WML documents    application/vnd.wap.wmlc        .wmlc
+     WMLScripts                text/vnd.wap.wmlscript .wmls    .wmls
+     Compiled WML Scripts      application/vnd.wap.wmlscriptc  .wmlsc
+
+To add the above MIME types to the Apache HTTP server,
+here's what you do: 
+
+Edit the srm.conf file (usually in /etc/httpd/conf) 
+Locate the AddType section, and add the following
+section to the file: 
+
+     # MIME Types for WAP
+     AddType text/vnd.wap.wml .wml
+     AddType image/vnd.wap.wbmp .wbmp
+     AddType application/vnd.wap.wmlc .wmlc
+     AddType text/vnd.wap.wmlscript .wmls
+     AddType application/vnd.wap.wmlscriptc .wmlsc
+
+Save the file and restart the Apache HTTPd. 
+
