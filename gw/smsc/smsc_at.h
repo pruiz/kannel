@@ -101,6 +101,7 @@ typedef struct ModemDef {
     Octstr *detect_string;
     Octstr *detect_string2;
     Octstr *init_string;
+    Octstr *reset_string;
     long speed;
     Octstr *enable_hwhs;
     int	need_sleep;
@@ -138,6 +139,7 @@ typedef struct PrivAT2data {
     int	sms_memory_capacity;
     int	sms_memory_usage;
     List *pending_incoming_messages;
+    int        max_error_count;
 } PrivAT2data;
 
 
@@ -340,7 +342,7 @@ static void at2_destroy_modem(ModemDef *modem);
 /*
  * Checks whether any messages are buffered in message storage and extract them.
  */
-static void at2_read_sms_memory(PrivAT2data *privdata);
+static int at2_read_sms_memory(PrivAT2data *privdata);
 
 /*
  * Memory capacity and usage check

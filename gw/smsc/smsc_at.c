@@ -95,6 +95,11 @@
 static int at2_open_device1(PrivAT2data *privdata)
 {
     info(0, "AT2[%s]: opening device", octstr_get_cstr(privdata->name));
+    if (privdata->fd > 0) {
+        warning(0, "AT2[%s]: trying to open device with not closed device!!! Please report!!!",
+                 octstr_get_cstr(privdata->name));
+        at2_close_device(privdata);
+    }
     privdata->fd = open(octstr_get_cstr(privdata->device), 
                         O_RDWR | O_NONBLOCK | O_NOCTTY);
     if (privdata->fd == -1) {
@@ -160,6 +165,11 @@ void at2_close_device(PrivAT2data *privdata)
     info(0, "AT2[%s]: closing device", octstr_get_cstr(privdata->name));
     close(privdata->fd);
     privdata->fd = -1;
+    privdata->pin_ready = 0;
+    privdata->phase2plus = 0;
+    if (privdata->ilb != NULL)
+        octstr_destroy(privdata->ilb);
+    privdata->ilb = octstr_create("");
 }
 
 
@@ -397,22 +407,21 @@ void at2_flush_buffer(PrivAT2data *privdata)
 
 int	at2_init_device(PrivAT2data *privdata)
 {
-    int res;
     int ret;
     Octstr *setpin;
 
     info(0, "AT2[%s]: init device", octstr_get_cstr(privdata->name));
 
     at2_set_speed(privdata, privdata->speed);
-    res = at2_send_modem_command(privdata, "AT", 0, 0);
-    if (res == -1) {
-        /* 
-         * first try failed, maybe we need another one 
-         * after just having changed the speed 
-         */
-        res = at2_send_modem_command(privdata, "AT", 0, 0);
-    }
-    if (res == -1) {
+    /* sleep 10 ms in order to get device some time to accept speed */
+    gwthread_sleep(0.10);
+
+    /* reset the modem */
+    if (at2_send_modem_command(privdata, "ATZ", 0, 0) == -1)
+        return -1;
+
+    /* check if the modem responded */
+    if (at2_send_modem_command(privdata, "AT", 0, 0) == -1) {
         error(0, "AT2[%s]: no answer from modem", octstr_get_cstr(privdata->name));
         return -1;
     }
@@ -822,12 +831,12 @@ void at2_read_pending_incoming_messages(PrivAT2data* privdata)
     octstr_destroy(current_storage);
 }
 
-void at2_read_sms_memory(PrivAT2data* privdata)
+static int at2_read_sms_memory(PrivAT2data* privdata)
 {
     /* get memory status */
     if (at2_check_sms_memory(privdata) == -1) {
         debug("bb.smsc.at2", 0, "AT2[%s]: memory check error", octstr_get_cstr(privdata->name));
-        return ;
+        return -1;
     }
 
     if (privdata->sms_memory_usage) {
@@ -880,6 +889,7 @@ void at2_read_sms_memory(PrivAT2data* privdata)
     /*
     at2_send_modem_command(privdata, ModemTypes[privdata->modemid].init1, 0, 0);
     */
+    return 0;
 }
 
 
@@ -1011,7 +1021,7 @@ void at2_device_thread(void *arg)
 {
     SMSCConn *conn = arg;
     PrivAT2data	*privdata = conn->data;
-    int l, reconnecting = 0;
+    int l, reconnecting = 0, error_count = 0;
     long idle_timeout, memory_poll_timeout = 0;
 
     conn->status = SMSCCONN_CONNECTING;
@@ -1063,16 +1073,37 @@ reconnect:
             continue;
         }
 
+        if (privdata->max_error_count > 0 && error_count > privdata->max_error_count &&
+             privdata->modem != NULL && privdata->modem->reset_string != NULL) {
+            error_count = 0;
+            if (at2_send_modem_command(privdata,
+                 octstr_get_cstr(privdata->modem->reset_string), 0, 0) != 0) {
+                error(0, "AT2[%s]: Reset of modem failed.", octstr_get_cstr(privdata->name));
+                at2_close_device(privdata);
+                continue;
+            }
+            else {
+                info(0, "AT2[%s]: Modem reseted.", octstr_get_cstr(privdata->name));
+            }
+        }
+
         if (at2_init_device(privdata) != 0) {
             error(0, "AT2[%s]: Opening failed. Terminating", octstr_get_cstr(privdata->name));
+            at2_close_device(privdata);
+            error_count++;
             continue;
         }
+        else
+            error_count = 0;
 
         /* If we got here, then the device is opened */
         break;
     } while (!privdata->shutdown);
 
+    mutex_lock(conn->flow_mutex);
     conn->status = SMSCCONN_ACTIVE;
+    conn->connect_time = time(NULL);
+    mutex_unlock(conn->flow_mutex);
     bb_smscconn_connected(conn);
 
     idle_timeout = 0;
@@ -1093,7 +1124,6 @@ reconnect:
             if (at2_send_modem_command(privdata, 
                 octstr_get_cstr(privdata->modem->keepalive_cmd), 5, 0) < 0) {
                 at2_close_device(privdata);
-                conn->status = SMSCCONN_RECONNECTING;
                 reconnecting = 1;
                 goto reconnect;
             }
@@ -1102,12 +1132,18 @@ reconnect:
 
         if (privdata->sms_memory_poll_interval &&
             memory_poll_timeout + privdata->sms_memory_poll_interval < time(NULL)) {
-            at2_read_sms_memory(privdata);
+            if (at2_read_sms_memory(privdata) == -1) {
+                at2_close_device(privdata);
+                reconnecting = 1;
+                goto reconnect;
+            }
             memory_poll_timeout = time(NULL);
         }
     }
     at2_close_device(privdata);
+    mutex_lock(conn->flow_mutex);
     conn->status = SMSCCONN_DISCONNECTED;
+    mutex_unlock(conn->flow_mutex);
     /* maybe some cleanup here? */
     at2_destroy_modem(privdata->modem);
     octstr_destroy(privdata->device);
@@ -1123,8 +1159,10 @@ reconnect:
     list_destroy(privdata->pending_incoming_messages, octstr_destroy_item);
     gw_free(conn->data);
     conn->data = NULL;
+    mutex_lock(conn->flow_mutex);
     conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
     conn->status = SMSCCONN_DEAD;
+    mutex_unlock(conn->flow_mutex);
     bb_smscconn_killed();
 }
 
@@ -1276,9 +1314,12 @@ int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->conn = conn;
     privdata->phase2plus = 0;
     privdata->validityperiod = cfg_get(cfg, octstr_imm("validityperiod"));
+    if (cfg_get_integer((long*)&privdata->max_error_count, cfg, octstr_imm("max-error-count")) == -1)
+        privdata->max_error_count = -1;
 
     conn->data = privdata;
     conn->name = octstr_format("AT2[%s]", octstr_get_cstr(privdata->name));
+    conn->status = SMSCCONN_CONNECTING;
 
     privdata->shutdown = 0;
 
@@ -1357,8 +1398,7 @@ int at2_pdu_extract(PrivAT2data *privdata, Octstr **pdu, Octstr *line)
               + at2_hexchar(octstr_get_char(buffer, pos + 1));
         if (tmp < 0)
             goto nomsg;
-        tmp = 2 + tmp * 2;
-        pos += tmp;
+        pos += 2 + tmp * 2;
     }
 
     /* check if the buffer is long enough to contain the full message */
@@ -1519,13 +1559,17 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
 
     stime = date_convert_universal(&mtime);
 
-    /* get data length */
+    /* get data length
+     * XXX: Is it allowed to have length = 0 ??? (alex)
+     */
     len = octstr_get_char(pdu, pos);
     pos++;
 
+    debug("bb.smsc.at2", 0, "AT2[%s]: User data length read as (%d)", octstr_get_cstr(privdata->name), len);
+
     /* if there is a UDH */
     udhlen = 0;
-    if (udhi) {
+    if (udhi && len > 0) {
         udhlen = octstr_get_char(pdu, pos);
         pos++;
         if (udhlen + 1 > len)
@@ -1533,9 +1577,13 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
         udh = octstr_copy(pdu, pos, udhlen);
         pos += udhlen;
         len -= udhlen + 1;
-    }
+    } else if (len <= 0) /* len < 0 is impossible, but sure is sure */
+        udhi = 0;
 
-    if (pos > octstr_len(pdu))
+    debug("bb.smsc.at2", 0, "AT2[%s]: Udh decoding done len=%d udhi=%d udhlen=%d udh='%s'",
+          octstr_get_cstr(privdata->name), len, udhi, udhlen, (udh?octstr_get_cstr(udh):""));
+
+    if (pos > octstr_len(pdu) || len < 0)
         goto msg_error;
 
     /* build the message */
@@ -2077,11 +2125,14 @@ int at2_numtext(int num)
 int at2_detect_speed(PrivAT2data *privdata)
 {
     int i;
-#ifdef	B57600
-    int autospeeds[] = { 57600, 38400, 19200, 9600 };
-#else
-    int autospeeds[] = { 38400, 19200, 9600 };
+    int autospeeds[] = { 
+#ifdef B115200
+	115200,
 #endif
+#ifdef	B57600
+	57600, 
+#endif
+	38400, 19200, 9600 };
 
     debug("bb.smsc.at2", 0, "AT2[%s]: detecting modem speed. ", 
           octstr_get_cstr(privdata->name));
@@ -2104,7 +2155,7 @@ int at2_test_speed(PrivAT2data *privdata, long speed) {
 
     int res;
 
-    if (at2_open_device1(privdata) == -1)
+    if (at2_open_device(privdata) == -1)
 	return -1;
 
     at2_set_speed(privdata, speed);
@@ -2130,7 +2181,7 @@ int at2_detect_modem_type(PrivAT2data *privdata)
 
     debug("bb.smsc.at2", 0, "AT2[%s]: detecting modem type", octstr_get_cstr(privdata->name));
 
-    if (at2_open_device1(privdata) == -1)
+    if (at2_open_device(privdata) == -1)
         return -1;
 
     at2_set_speed(privdata, privdata->speed);
@@ -2302,6 +2353,8 @@ ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int i
         if (modem->init_string == NULL)
             modem->init_string = octstr_create("AT+CNMI=1,2,0,1,0");
 
+        modem->reset_string = cfg_get(grp, octstr_imm("reset-string"));
+
         modem->speed = 9600;
         cfg_get_integer(&modem->speed, grp, octstr_imm("speed"));
 
@@ -2354,6 +2407,7 @@ void at2_destroy_modem(ModemDef *modem)
         O_DESTROY(modem->enable_hwhs);
         O_DESTROY(modem->keepalive_cmd);
         O_DESTROY(modem->message_storage);
+        O_DESTROY(modem->reset_string);
         gw_free(modem);
     }
 }

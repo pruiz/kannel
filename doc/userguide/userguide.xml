@@ -3321,6 +3321,14 @@ pin = 2345
                 Modems known to work with this setting are Wavecom WM02/M1200 and the Siemens M20.
      </entry></row>
 
+     <row><entry><literal>max-error-count</literal></entry>
+       <entry><literal>integer</literal></entry>
+       <entry valign="bottom">
+          Maximal error count for opening modem device or initializing of the modem before
+          <literal>reset-string</literal> will be executed. This is usefull when modem crashed and needs
+          hard reset. Default disabled.
+       </entry></row>
+
    </tbody></tgroup></informaltable>
 
    <para>Modem definitions are now multiple groups present in kannel.conf,
@@ -3455,6 +3463,14 @@ pin = 2345
 	message on queue and hopefully will be quickier
 	sending the messages.
      </entry></row>
+
+   <row><entry><literal>reset-string</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+        Which reset string to execute when <literal>max-error-count</literal> reached.
+        Example for Falcom: AT+CFUN=1
+     </entry></row>
+
 
    </tbody></tgroup></informaltable>
 

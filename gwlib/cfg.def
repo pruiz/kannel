@@ -343,6 +343,7 @@ MULTI_GROUP(smsc,
     OCTSTR(msg-id-type)
     OCTSTR(no-dlr)
     OCTSTR(connection-timeout)
+    OCTSTR(max-error-count)
 )
 
 
@@ -450,6 +451,7 @@ MULTI_GROUP(modems,
     OCTSTR(broken)
     OCTSTR(message-storage)
     OCTSTR(enable-mms)
+    OCTSTR(reset-string)
 )
 
 

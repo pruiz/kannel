@@ -1,3 +1,11 @@
+2004-01-14  Alexander Malysh  <a.malysh@centrium.de>
+    * doc/userguide/userguide.xml, gw/smsc/smsc_at.[ch], gwlib/cfg.def: applied
+      at-merging.patch. This patch adds propperly reconnect for modem device. Fixes
+      a few race conditions and adds 2 new config options 'max-error-count', 'reset-string'.
+      These options adds facility for hard reset of the modem when modem crashed.
+      Additionaly a few fixes here and there.
+      Msg-Id: <200401121508.00508.a.malysh@centrium.de>.
+
 2004-01-12  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/http.c: fixed memory and mutex leak. Thanks a lot to:
       Nuno Ferreira <nuno.ferreira@graycell.biz> for provided patch.
