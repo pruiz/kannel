@@ -81,6 +81,7 @@ static int 	socket_fd;
 static HTTPSocket *http_server_socket;
 static char 	*http_proxy_host = NULL;
 static int  	http_proxy_port = -1;
+static List 	*http_proxy_exceptions = NULL;
 
 static int	only_try_http = 0;
 
@@ -286,6 +287,13 @@ static void init_smsbox(Config *cfg)
     	http_proxy_host = p;
     if ((p = config_get(grp, "http-proxy-port")) != NULL)
     	http_proxy_port = atoi(p);
+    if ((p = config_get(grp, "http-proxy-exceptions")) != NULL) {
+	    Octstr *os;
+	    
+	    os = octstr_create(p);
+	    http_proxy_exceptions = octstr_split_words(os);
+	    octstr_destroy(os);
+    }
 
 
     /*
@@ -339,7 +347,7 @@ static void init_smsbox(Config *cfg)
 	Octstr *os;
 	
 	os = octstr_create(http_proxy_host);
-    	http_use_proxy(os, http_proxy_port, NULL);
+    	http_use_proxy(os, http_proxy_port, http_proxy_exceptions);
 	octstr_destroy(os);
     }
     

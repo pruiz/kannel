@@ -137,6 +137,13 @@ variables:
  http-proxy-host = <hostname>
  http-proxy-port = <portnumber>
 
+If you wish to exclude some hosts from being used via a proxy, add
+this variable:
+
+    http-proxy-exceptions = "www.foo.bar www.plimpeli.plom.com"
+
+(Replace the hostnames above with the actual ones, or course.)
+
 No other configuration variables for core group are currently
 supported. A sample core group is shown at the end of the file.
 

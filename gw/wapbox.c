@@ -30,6 +30,7 @@ static char *logfile = NULL;
 static int logfilelevel = 0;
 static char *http_proxy_host = NULL;
 static int http_proxy_port = -1;
+static List *http_proxy_exceptions = NULL;
 
 
 static enum {
@@ -77,6 +78,13 @@ static void read_config(char *filename) {
 		http_proxy_host = s;
 	if ((s = config_get(grp, "http-proxy-port")) != NULL)
 		http_proxy_port = atoi(s);
+	if ((s = config_get(grp, "http-proxy-exceptions")) != NULL) {
+	    	Octstr *os;
+		
+		os = octstr_create(s);
+	    	http_proxy_exceptions = octstr_split_words(os);
+		octstr_destroy(os);
+	}
 
 	/*
 	 * get the remaining values from the wapbox group
@@ -132,7 +140,7 @@ static void read_config(char *filename) {
 	    	Octstr *os;
 
 		os = octstr_create(http_proxy_host);
-		http_use_proxy(os, http_proxy_port, NULL);
+		http_use_proxy(os, http_proxy_port, http_proxy_exceptions);
 		octstr_destroy(os);
 	}
 }
