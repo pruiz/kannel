@@ -627,7 +627,7 @@ Connection *conn_wrap_fd(int fd, int ssl)
                 SSL_smart_shutdown(conn->ssl);
 
                 /* tell the user how to access using the HTTPS scheme */
-                //SSL_http_hint(conn, HTTP_BAD_REQUEST);
+                /* SSL_http_hint(conn, HTTP_BAD_REQUEST); */
              }   
              else if (SSL_get_error(conn->ssl, rc) == SSL_ERROR_SYSCALL) {
                 if (errno > 0)

@@ -413,12 +413,12 @@ static void AddStringNode(P_WBXML_INFO buffer, char* string)
 
 static void AddVariableStringNode(P_WBXML_INFO buffer, char* string, WBXML_VARIABLE_TYPE type)
 {
-	// TODO: add this node
+	/* TODO: add this node */
 }
 
 static void AddVariableIndexNode(P_WBXML_INFO buffer, char* string, WBXML_VARIABLE_TYPE type)
 {
-	// TODO: add this node
+	/* TODO: add this node */
 }
 
 
@@ -1742,11 +1742,11 @@ static void DumpNode(P_WBXML_NODE node, int indent, BOOL *inattrs, BOOL hasconte
 			break;
 
 		case NODE_VARIABLE_STRING:
-			// TODO: output variable string
+			/* TODO: output variable string */
 			break;
 
 		case NODE_VARIABLE_INDEX:
-			// TODO: output variable string
+			/* TODO: output variable string */
 			break;
 
 		default:

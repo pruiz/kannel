@@ -211,7 +211,7 @@ static Octstr *cgwop_tostr(struct cgwop *cgwop)
     int len = cgwop->num_fields;
     Octstr *str;
 
-    if (cgw_ops[cgwop->op] == NULL) return NULL;     // invalid operation
+    if (cgw_ops[cgwop->op] == NULL) return NULL;     /* invalid operation */
 
     str = octstr_create("");
 
@@ -263,12 +263,12 @@ static Octstr *cgw_encode_msg(Octstr* str)
        length is under 160 chars (the checking could probably be done better) */
 
     while ((i = octstr_search_char(str, 0x80, 0)) != -1) {    
-        octstr_delete(str, i, 1);     // delete Euro char
+        octstr_delete(str, i, 1);     /* delete Euro char */
 	if (octstr_len(str) < 160) {
-	    octstr_insert_data(str, i, &esc, 1);  // replace with ESC + e
+	    octstr_insert_data(str, i, &esc, 1);  /* replace with ESC + e */
 	    octstr_insert_data(str, i+1, &e, 1);  
 	} else {
-	    octstr_insert_data(str, i, &e, 1);  // no room for ESC + e, just replace with an e
+	    octstr_insert_data(str, i, &e, 1);  /* no room for ESC + e, just replace with an e */
         }
     }
 
@@ -279,12 +279,12 @@ static Octstr *cgw_encode_msg(Octstr* str)
     }
     /* Remove Line Feed characters */
     while ((i = octstr_search_char(str, CGW_EOL, 0)) != -1) {
-        octstr_delete(str, i, 1);     // delete EOL char
+        octstr_delete(str, i, 1);     /* delete EOL char */
         octstr_insert(str, octstr_imm("\\n"), i);
     }
     /* Remove Carriage return characters */
     while ((i = octstr_search_char(str, 13, 0)) != -1) {
-        octstr_delete(str, i, 1);     // delete EOL char
+        octstr_delete(str, i, 1);     /* delete EOL char */
         octstr_insert(str, octstr_imm("\\r"), i);
     }
 
@@ -301,12 +301,12 @@ static Octstr *cgw_decode_msg(Octstr* str)
 
     /* make \n -> linefeed */
     while ((i = octstr_search(str, octstr_imm("\\n"), 0)) != -1) {
-        octstr_delete(str, i, 2);     // delete "\n" str
+        octstr_delete(str, i, 2);     /* delete "\n" str */
         octstr_insert(str, octstr_imm("\n"), i);
     }
     /* make \r -> carriage return */
     while ((i = octstr_search(str, octstr_imm("\\r"), 0)) != -1) {
-        octstr_delete(str, i, 2);     // delete EOL char
+        octstr_delete(str, i, 2);     /* delete EOL char */
         octstr_insert(str, octstr_imm("\r"), i);
     }
     /* remove double backslashes */
@@ -573,7 +573,7 @@ static void cgw_sender(void *arg)
 
     while (!privdata->shutdown) {
 
-        // check that connection is active
+        /* check that connection is active */
         if (conn->status != SMSCCONN_ACTIVE) {
             if ((server = cgw_open_send_connection(conn)) == NULL) {
                 privdata->shutdown = 1;
@@ -861,10 +861,10 @@ struct cgwop *cgw_read_op(PrivData *privdata, SMSCConn *conn, Connection *server
             if (op != CGW_OP_NOP) {
                 /* All commands have to be inside an op:xx ... end:xx statement */
 
-                if (octstr_compare(name, octstr_imm("end")) == 0) { // found end of op
+                if (octstr_compare(name, octstr_imm("end")) == 0) { /* found end of op */
                     finished = 1;
                 } else {
-                    // store in name/value fields in cgwop
+                    /* store in name/value fields in cgwop */
                     if (cgwop != NULL) {
                         cgwop_add(cgwop, name, value);
                     }
@@ -1057,7 +1057,7 @@ static int cgw_handle_op(SMSCConn *conn, Connection *server, struct cgwop *cgwop
 
         reply = cgwop_create(CGW_OP_OK, -1);
         cgwop_add(reply, octstr_imm("session-id"), sid);
-        cgwop_send(server, reply);     // send reply
+        cgwop_send(server, reply);     /* send reply */
 
         cgwop_destroy(reply);
 

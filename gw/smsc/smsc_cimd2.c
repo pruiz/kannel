@@ -1671,7 +1671,7 @@ retransmit:
         goto io_error;
 
 next_reply:
-    packet_destroy(reply);  // destroy old, if any
+    packet_destroy(reply);  /* destroy old, if any */
     reply = cimd2_get_packet(pdata, ts);
     if (!reply)
         goto io_error;

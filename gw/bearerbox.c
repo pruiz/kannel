@@ -187,14 +187,16 @@ static void wdp_router(void *arg)
 
 	gw_assert(msg_type(msg) == wdp_datagram);
 	
-	// if (msg->list == sms)
-	// smsc_addwdp(msg);
-	// else
+	/*
+	if (msg->list == sms)
+	    smsc_addwdp(msg);
+	else
+	*/
 
 	udp_addwdp(msg);
     }
     udp_die();
-    // smsc_endwdp();
+    /* smsc_endwdp(); */
 
     list_remove_producer(flow_threads);
 }

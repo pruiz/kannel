@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     octstr_dump_short(pdu->u.Accounting_Request.authenticator,0, "PDU authenticator");
 
     /* XXX authenticator md5 check does not work?! */
-    //radius_authenticate_pdu(pdu, data, octstr_imm("radius")); 
+    /* radius_authenticate_pdu(pdu, data, octstr_imm("radius")); */
 
     /* create response PDU */
     r = radius_pdu_create(0x05, pdu);

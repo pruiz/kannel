@@ -269,7 +269,7 @@ static Cookie *parse_cookie(Octstr *cookiestr)
 	}
 
 	/* Process version - 4.3.4 
-        /* XXX DAVI: Altough it seems to be "MUST" in RFC, no one sends a Version 
+         * XXX DAVI: Altough it seems to be "MUST" in RFC, no one sends a Version 
          * tag when it's value is "0" 
 	if (c->version == NULL) {
 		c->version = octstr_create("");

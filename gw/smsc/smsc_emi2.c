@@ -1103,7 +1103,7 @@ static void emi2_idleprocessing(SMSCConn *conn, Connection **server)
 
                 if (PRIVDATA(conn)->slots[i].sendtype == 51) {
                     if (PRIVDATA(conn)->waitack_expire == 0x00) {
-                        // 0x00 - disconnect/reconnect
+                        /* 0x00 - disconnect/reconnect */
                         warning(0, "EMI2[%s]: received neither ACK nor NACK for message %d "
                             "in %d seconds, disconnecting and reconnection",
                             octstr_get_cstr(privdata->name), i, PRIVDATA(conn)->waitack);
@@ -1115,7 +1115,7 @@ static void emi2_idleprocessing(SMSCConn *conn, Connection **server)
                         *server = NULL;
                         break;
                     } else if (PRIVDATA(conn)->waitack_expire == 0x01) {
-                        // 0x01 - resend
+                        /* 0x01 - resend */
 		    warning(0, "EMI2[%s]: received neither ACK nor NACK for message %d " 
 			    "in %d seconds, resending message", octstr_get_cstr(privdata->name),
 			    i, PRIVDATA(conn)->waitack);
@@ -1128,7 +1128,7 @@ static void emi2_idleprocessing(SMSCConn *conn, Connection **server)
 		     * (simpler than avoiding sleep) */
 		    gwthread_wakeup(PRIVDATA(conn)->sender_thread);
                     } else if (PRIVDATA(conn)->waitack_expire == 0x02) {
-                        // 0x02 - carry on waiting
+                        /* 0x02 - carry on waiting */
                            warning(0, "EMI2[%s]: received neither ACK nor NACK for message %d "
                                 "in %d seconds, carrying on waiting", octstr_get_cstr(privdata->name),
                                 i, PRIVDATA(conn)->waitack);

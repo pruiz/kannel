@@ -106,7 +106,7 @@ static void server(int lport, int pport)
         info(0, "PDU type: %s", pdu->type_name);
 
         /* XXX authenticator md5 check does not work?! */
-        //radius_authenticate_pdu(pdu, data, octstr_imm("radius")); 
+        /* radius_authenticate_pdu(pdu, data, octstr_imm("radius")); */
 
         /* store to hash table if not present yet */
         forward = update_table(pdu, &radius_table);

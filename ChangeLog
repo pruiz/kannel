@@ -1,3 +1,6 @@
+2003-07-14  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * *: fix comment style from "//" to "/* */"
+
 2003-07-13  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * Every comment with DAVI is a mental note for me to finish or fix that
     * code

@@ -585,8 +585,8 @@ static int parse_member_element(xmlDocPtr doc, xmlNodePtr node,
      */
     if (i == 0) {
         /* this has been a <member> tag */
-        //if (parse_name(doc, node->xmlChildrenNode, msg) == -1)
-        //    return -1;
+        /*if (parse_name(doc, node->xmlChildrenNode, msg) == -1)
+            return -1; */
     } else {
         /* we should never be here */
         (*msg)->parse_status = XMLRPC_PARSING_FAILED;
@@ -786,7 +786,7 @@ static int parse_value_element(xmlDocPtr doc, xmlNodePtr node,
                                                     octstr_get_cstr(value));
                 return -1;
             }
-            //xmlrpc_call_add_int((*msg), lval);
+            /* xmlrpc_call_add_int((*msg), lval); */
             xmlrpc_call_add_scalar((*msg), xr_int, (void *) lval);
             debug("", 0, "XML-RPC: added int %ld", lval);
             break;
@@ -798,25 +798,25 @@ static int parse_value_element(xmlDocPtr doc, xmlNodePtr node,
                                                     octstr_get_cstr(value));
                 return -1;
             }
-            //xmlrpc_call_add_bool((*msg), (int) lval);
+            /* xmlrpc_call_add_bool((*msg), (int) lval); */
             xmlrpc_call_add_scalar((*msg), xr_bool, (void *) lval);
             debug("", 0, "XML-RPC: added boolean %d", (int) lval);
             break;
 
         case xr_string:
-            //xmlrpc_call_add_string((*msg), value);
+            /* xmlrpc_call_add_string((*msg), value); */
             xmlrpc_call_add_scalar((*msg), xr_string, (void *) value);
             debug("", 0, "XML-RPC: added string %s", octstr_get_cstr(value));
             break;
 
         case xr_date:
-            //xmlrpc_call_add_date((*msg), value);
+            /* xmlrpc_call_add_date((*msg), value); */
             xmlrpc_call_add_scalar((*msg), xr_date, (void *) value);
             debug("", 0, "XML-RPC: added date %s", octstr_get_cstr(value));
             break;
 
         case xr_base64:
-            //xmlrpc_call_add_base64((*msg), value);
+            /* xmlrpc_call_add_base64((*msg), value); */
             xmlrpc_call_add_scalar((*msg), xr_base64, (void *) value);
             debug("", 0, "XML-RPC: added base64 %s", octstr_get_cstr(value));
             break;
@@ -824,11 +824,11 @@ static int parse_value_element(xmlDocPtr doc, xmlNodePtr node,
         case xr_struct:
             if (parse_struct(doc, node->xmlChildrenNode, msg) == -1) {
                 debug("", 0, "%s", octstr_get_cstr((*msg)->parse_error));
-                //(*msg)->parse_status = XMLRPC_PARSING_FAILED;
-                //(*msg)->parse_error = octstr_format("XML-RPC compiler: could not parse struct"); 
+                /* (*msg)->parse_status = XMLRPC_PARSING_FAILED; */
+                /* (*msg)->parse_error = octstr_format("XML-RPC compiler: could not parse struct"); */
                 return -1;
             }
-            //debug("", 0, "XML-RPC: added struct %s", octstr_get_cstr(value));
+            /* debug("", 0, "XML-RPC: added struct %s", octstr_get_cstr(value)); */
             break;
 
         case xr_double:

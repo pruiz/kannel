@@ -505,14 +505,14 @@ long get_tag(Octstr *body, Octstr *tag, Octstr **value, long pos, int nostrip) {
 	    return -1;
 	}
     } else {
-	// debug("sms", 0, "XMLParsing: tag <%s> not found", octstr_get_cstr(tag));
+	/* debug("sms", 0, "XMLParsing: tag <%s> not found", octstr_get_cstr(tag)); */
 	return -1;
     }
 }
 
-// requesttype = mt_reply or mt_push. for example, auth is only read on mt_push
-// parse body and populate fields, including replacing body for <ud> value and
-// type to text/plain
+/* requesttype = mt_reply or mt_push. for example, auth is only read on mt_push
+ * parse body and populate fields, including replacing body for <ud> value and
+ * type to text/plain */
 static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body, 
                                   List *headers, Octstr **from,
                                   Octstr **to, Octstr **udh,
@@ -3217,8 +3217,8 @@ int charset_processing (Octstr *charset, Octstr *body, int coding) {
     int resultcode = 0;
     
     if (octstr_len(charset)) {
-	// debug("sms.http", 0, "enter charset, coding=%d, msgdata is %s", coding, octstr_get_cstr(body));
-	// octstr_dump(body, 0);
+	/* debug("sms.http", 0, "enter charset, coding=%d, msgdata is %s", coding, octstr_get_cstr(body));
+	octstr_dump(body, 0); */
 
 	if (coding == DC_7BIT) {
 	    /*
@@ -3236,8 +3236,8 @@ int charset_processing (Octstr *charset, Octstr *body, int coding) {
 	    }
 	}
 	
-	// debug("sms.http", 0, "exit charset, coding=%d, msgdata is %s", coding, octstr_get_cstr(body));
-	// octstr_dump(body, 0);
+	/* debug("sms.http", 0, "exit charset, coding=%d, msgdata is %s", coding, octstr_get_cstr(body));
+	octstr_dump(body, 0); */
     }
     
     return resultcode;
