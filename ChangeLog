@@ -1,3 +1,7 @@
+2003-02-15  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
+    * configure, configure.in: added detection of OPENSSL_THREADS to enable
+      compiling kannel with openssl 0.9.7
+
 2003-02-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/*.conf: harmonized the example config files. Deleted espacially 
       developer specific config values that are of no use for a normal user.

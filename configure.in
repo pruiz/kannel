@@ -562,6 +562,8 @@ if test "x$ssllib" != "x" && test "x$sslinc" != "x"; then
         int main(void) {
         #if defined(THREADS)
           exit(0);
+        #elif defined(OPENSSL_THREADS)
+          exit(0);
         #else
           exit(1);
         #endif
