@@ -1,3 +1,10 @@
+2001-01-29  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/protected.h: Undefine the protection macros before
+	defining them, to avoid problems with multiple definitions on
+	platforms that define them as macros instead of (or in addition
+	to) functions.
+
 2001-01-26  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/octstr.[ch], gw/smsbox.c: Killed the almost-unused
