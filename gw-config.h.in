@@ -166,9 +166,6 @@
 /* Define if you have the <netinet/in.h> header file. */
 #undef HAVE_NETINET_IN_H
 
-/* Define if you have the <semaphore.h> header file. */
-#undef HAVE_SEMAPHORE_H
-
 /* Define if you have the m library (-lm).  */
 #undef HAVE_LIBM
 
@@ -257,6 +254,9 @@
 
 /* Define if you have pthread_rwlock_t type and reader/writer lock support. */
 #undef HAVE_PTHREAD_RWLOCK_T
+
+/* Define if you have working semaphore (sem_t). */
+#undef HAVE_SEMAPHORE
 
 /* If we're using GCC, we can get it to check format function arguments. */
 #ifdef __GNUC__

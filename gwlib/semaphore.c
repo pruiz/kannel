@@ -64,17 +64,13 @@
 
 #include "gwlib/gwlib.h"
 
-#ifdef	DARWIN
-#undef	HAVE_SEMAPHORE_H
-#endif
-
-#ifdef HAVE_SEMAPHORE_H
+#ifdef HAVE_SEMAPHORE
 #include <semaphore.h>
 #include <errno.h>
 #endif
 
 struct Semaphore {
-#ifdef HAVE_SEMAPHORE_H
+#ifdef HAVE_SEMAPHORE
     sem_t sem;
 #else
     List *list;
@@ -85,13 +81,13 @@ struct Semaphore {
 Semaphore *semaphore_create(long n)
 {
     Semaphore *semaphore;
-#ifndef HAVE_SEMAPHORE_H
+#ifndef HAVE_SEMAPHORE
     static char item;
 #endif
     
     semaphore = gw_malloc(sizeof(*semaphore));
 
-#ifdef HAVE_SEMAPHORE_H
+#ifdef HAVE_SEMAPHORE
     if (sem_init(&semaphore->sem, 0, (unsigned int) n) != 0)
         panic(errno, "Couldnot initialize semaphore.");
 #else
@@ -108,7 +104,7 @@ Semaphore *semaphore_create(long n)
 void semaphore_destroy(Semaphore *semaphore)
 {
     if (semaphore != NULL) {
-#ifdef HAVE_SEMAPHORE_H
+#ifdef HAVE_SEMAPHORE
         if (sem_destroy(&semaphore->sem) != 0)
             panic(errno, "Destroing semaphore while some threads are waiting.");
 #else
@@ -121,7 +117,7 @@ void semaphore_destroy(Semaphore *semaphore)
 
 void semaphore_up(Semaphore *semaphore)
 {
-#ifndef HAVE_SEMAPHORE_H
+#ifndef HAVE_SEMAPHORE
     static char item;
     gw_assert(semaphore != NULL);
     list_produce(semaphore->list, &item);
@@ -136,7 +132,7 @@ void semaphore_up(Semaphore *semaphore)
 void semaphore_down(Semaphore *semaphore)
 {
     gw_assert(semaphore != NULL);
-#ifdef HAVE_SEMAPHORE_H
+#ifdef HAVE_SEMAPHORE
     sem_wait(&semaphore->sem);
 #else
     list_consume(semaphore->list);
@@ -147,7 +143,7 @@ void semaphore_down(Semaphore *semaphore)
 long semaphore_getvalue(Semaphore *semaphore)
 {
     gw_assert(semaphore != NULL);
-#ifdef HAVE_SEMAPHORE_H
+#ifdef HAVE_SEMAPHORE
     {
         int val;
         if (sem_getvalue(&semaphore->sem, &val) != 0)

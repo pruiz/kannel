@@ -179,7 +179,7 @@ dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/ioctl.h sys/time.h sys/types.h unistd.h sys/poll.h)
 AC_CHECK_HEADERS(pthread.h getopt.h syslog.h iconv.h zlib.h execinfo.h stdlib.h)
-AC_CHECK_HEADERS(sys/socket.h sys/sockio.h net/if.h netinet/in.h semaphore.h)
+AC_CHECK_HEADERS(sys/socket.h sys/sockio.h net/if.h netinet/in.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 
@@ -287,7 +287,7 @@ pthread_spin_init(&lock, 0);
 pthread_spin_lock(&lock);
 pthread_spin_unlock(&lock);
 pthread_spin_destroy(&lock);
-], [AC_MSG_RESULT(yes); AC_DEFINE(HAVE_PTHREAD_SPINLOCK_T)], AC_MSG_RESULT(no));
+], [AC_MSG_RESULT(yes); AC_DEFINE(HAVE_PTHREAD_SPINLOCK_T)], AC_MSG_RESULT(no))
 
 dnl checking pthread_rwlock support
 AC_MSG_CHECKING([for pthread_rwlock support])
@@ -299,8 +299,24 @@ pthread_rwlock_unlock(&lock);
 pthread_rwlock_wrlock(&lock);
 pthread_rwlock_unlock(&lock);
 pthread_rwlock_destroy(&lock);
-], [AC_MSG_RESULT(yes); AC_DEFINE(HAVE_PTHREAD_RWLOCK_T)], AC_MSG_RESULT(no));
+], [AC_MSG_RESULT(yes); AC_DEFINE(HAVE_PTHREAD_RWLOCK_T)], AC_MSG_RESULT(no))
 
+dnl checking for native semaphore support
+AC_MSG_CHECKING([for semaphore support])
+AC_TRY_RUN([#include <semaphore.h>
+int main(void) {
+    sem_t s;
+    int val;
+    /* DARWNIN doesn't implement native sem_init */
+    if (sem_init(&s, 0, 1) != 0)
+        return 1;
+    sem_wait(&s);
+    sem_post(&s);
+    sem_getvalue(&s, &val);
+    sem_destroy(&s);
+    return 0;
+}
+], [AC_MSG_RESULT(yes); AC_DEFINE(HAVE_SEMAPHORE)], AC_MSG_RESULT(no))
 
 dnl Check if we have libxml2 installed and which version it is.
 dnl Kannel requires currently at least version 2.2.5 of libxml2.

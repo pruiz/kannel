@@ -1,3 +1,10 @@
+2004-08-25 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/semaphore.c: changed 'HAVE_SEMAPHORE_H' to 'HAVE_SEMAPHORE' and
+      removed workaround for DARWIN.
+    * configure, configure.in, gw-config.h.in: changed 'HAVE_SEMAPHORE_H'
+      to 'HAVE_SEMAPHORE' and added configure check for working sem_init and
+      friends.
+
 2004-08-24 Alexander Malysh <amalysh at kannel.org>
     * Makefile.in: remove 'gwlib/gw_uuid_types.h' by distclean too.
 
