@@ -4,6 +4,7 @@
 	(via some Windows header) defines it, and it isn't being used,
 	anyway.  This is an intermin solution, a better one would be to
 	add something like a WML_ or WBXML_ prefix to all those tokens.
+	Thanks to Stipe Tolj for pointing this out.
 
 2000-10-25  Lars Wirzenius  <liw@iki.fi>
 

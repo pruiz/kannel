@@ -31,7 +31,9 @@
 #define EXT_0       0xC0
 #define EXT_1       0xC1
 #define EXT_2       0xC2
+#if 0
 #define OPAQUE      0xC3
+#endif
 #define LITERAL_AC  0xC4
 
 #define STR_END     0x00
