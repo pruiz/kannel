@@ -1,3 +1,8 @@
+2000-05-02  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_cimd2.c: Do not specify sms sender on outgoing messages.
+	Explanation is in the code.
+
 2000-05-02 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp.c: In function add_segment_to_message, removed a static variable.
