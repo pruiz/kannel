@@ -1,9 +1,12 @@
-2002-06-11  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+2002-06-17  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gwlib/gwmem.h, gwlib/gwmem-native.h: forgot gw_claim_area_for
+
+2002-06-15  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * configure.in: Added --enable-warnings that enables -Wall -O2 -g
       to gcc
     * gwlib/gwmem.h, gwlib/gwmem-native.h: fix compilation warnings
 
-2002-06-11  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+2002-06-12  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * configure.in: WARNING: defaults to localtime
     * gw/smsc_emi2.c: some cleaning
     * utils/find-long-lines: added rtf, pdf and html to ignored files

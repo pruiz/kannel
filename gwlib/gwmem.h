@@ -66,7 +66,7 @@ void gw_check_shutdown(void);
 #define gw_strdup(str) (gw_native_strdup(str))
 #define gw_assert_allocated(ptr, file, line, function)
 #define gw_claim_area(ptr) (gw_native_noop(ptr))
-#define gw_claim_area_for(ptr, file, line, func) (ptr)
+#define gw_claim_area_for(ptr, file, line, func) (gw_native_noop(ptr))
 #define gwmem_shutdown()
 #define gwmem_type() (octstr_imm("native"))
 
