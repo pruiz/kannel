@@ -527,6 +527,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
 {
     struct content content;
     int converted;
+    WSPMachine *sm;
 
     content.url = url;
     content.body = content_body;
@@ -600,7 +601,12 @@ static void return_reply(int status, Octstr *content_body, List *headers,
             if (session_id != -1) {
                 debug("wap.wsp.http",0,"WSP: Setting Referer URL to <%s>", 
                       octstr_get_cstr(url));
-                set_referer_url(url, find_session_machine_by_id(session_id));
+                if ((sm = find_session_machine_by_id(session_id)) != NULL) {
+                    set_referer_url(url, sm);
+                } else {
+                    error("wap.wsp",0,"WSP: Failed to find session machine for ID %ld",
+                          session_id);
+                }
             }
         }
     }
