@@ -876,7 +876,7 @@ char *smsbox_req_sendota(List *list, char *client_ip)
 {
 	char *url = NULL, *desc = NULL, *ipaddr = NULL, *phonenum = NULL;
 	char *username = NULL, *passwd = NULL, *id = NULL;
-	char speed[5];
+	char *speed;
 	int bearer = -1, calltype = -1;
 	int connection = CONN_CONT, security = 0, authent = AUTH_NORMAL;
 	ConfigGroup *grp;
@@ -932,10 +932,10 @@ found:
 		bearer = (strcasecmp(p, "data") == 0)? BEARER_DATA : -1;
 	if ((p = config_get(grp, "calltype")) != NULL)
 		calltype = (strcasecmp(p, "isdn") == 0)? CALL_ISDN : -1;
-	strcpy(speed, SPEED_9660);
+	speed = SPEED_9660;
 	if ((p = config_get(grp, "speed")) != NULL) {
 		if(strcasecmp(p, "14400") == 0)
-			strcpy(speed, SPEED_14400);
+			speed = SPEED_14400;
 	}
 	/* connection mode and security */
 	if ((p = config_get(grp, "connection")) != NULL)

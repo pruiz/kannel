@@ -288,15 +288,15 @@ error:
 int at_submit_msg(SMSCenter *smsc, Msg *msg) {
 	unsigned char command[500], pdu[500];
 	int ret = -1; 
-	char sc[3];
+        char *sc;
 
 	/* Some modem types need a '00' prepended to the PDU
 	 * to indicate to use the default SC. */
-	sc[0] = '\0';
+	sc = "";
 	if((strcmp(smsc->at_modemtype, WAVECOM) == 0) || 
        (strcmp(smsc->at_modemtype, SIEMENS) == 0) ||
 	   (strcmp(smsc->at_modemtype, NOKIAPHONE) == 0))
-		strcpy(sc, "00");
+		sc = "00";
 	
 	if(msg_type(msg)==sms) {
 		pdu_encode(msg, &pdu[0]);

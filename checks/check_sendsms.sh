@@ -41,4 +41,4 @@ then
 	exit 1
 fi
 
-# rm check_sendsms*.log
+rm check_sendsms*.log

@@ -2624,7 +2624,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
        concatenated messages if too long. An example URL is like this:	
 
 <programlisting>
-http://smsbox.host.name:13013/cgi-bin/sendota?otaid=myconfig&username=foo&amp;password=bar&amp;phonenumber=0123456
+http://smsbox.host.name:13013/cgi-bin/sendota?otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
 </programlisting>
        </para>
 
