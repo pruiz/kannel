@@ -1,3 +1,7 @@
+2003-01-25  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap_push_pap_compiler.c: fixed infinite loop bug if /TYPE=xxx is 
+      missing in the PAP document. Thanks to Paul for pointing this out.
+
 2003-01-24  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_boxc.c, gw/smsbox.c: fixed a un-locked mutex bug while waiting
       for smsbox indenitificatio msgs. Bug identified and patch provided
