@@ -1,7 +1,7 @@
 /*
  * Push PPG main module header
  *
- * By Aarno Syvänen for Wapit Ltd.
+ * By Aarno Syvänen for Wapit Ltd and for Wiral Ltd.
  */
 
 #ifndef WAP_PUSH_PPG_H
@@ -123,7 +123,6 @@ struct PPGPushMachine {
 };
 
 void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
-                       wap_dispatch_func_t *pap_dispatch,
                        wap_dispatch_func_t *appl_dispatch);
 void wap_push_ppg_shutdown(void);
 void wap_push_ppg_dispatch_event(WAPEvent *e);

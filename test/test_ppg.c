@@ -2,9 +2,11 @@
  * Very simple push initiator for testing push proxy gateway
  *
  * Read pap control content and push content from files, pack them into a PAP
- * protocol MIME message and push this content to a specified url. Use a hard-
- * coded message boundary (asdlfkjiurwgasf), for simpler command line inter-
- * face.
+ * protocol MIME message and invoke push services specified by an url. Use a 
+ * hardcoded message boundary (asdlfkjiurwgasf), for simpler command line 
+ * interface.
+ * Repetitions, using multiple threads can be requested, in addition of sett-
+ * ing of some MIME headers. 
  *
  * By Aarno Syvänen for Wiral Ltd
  */
@@ -372,8 +374,8 @@ static void help(void)
     info(0, "-v number");
     info(0, "    Set log level for stderr logging. Default 0 (debug)");
     info(0, "-q");
-    info(0, "    Don't print the body nor headers of the HTTP response");
-    info(0, "Default: print them");
+    info(0, "    Do not print debugging information");
+    info(0, "Default: print it");
     info(0, "-r number");
     info(0, "    Make `number' requests. Default one request");
     info(0, "-H");

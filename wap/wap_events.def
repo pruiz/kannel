@@ -667,6 +667,8 @@ WAPEVENT(Push_Response, "push-response",
          OPTIONAL_OCTSTR(sender_name)
          OPTIONAL_OCTSTR(reply_time)
          OPTIONAL_OCTSTR(sender_address)
+         INTEGER(code)
+         OPTIONAL_OCTSTR(desc)
         )
 
 /*

@@ -18,7 +18,6 @@
 #include "wap-appl.h"
 #include "wap_push_ota.h"
 #include "wap_push_ppg.h"
-#include "wap_push_pap.h"
 #include "gw/msg.h"
 #include "bb.h"
 
@@ -46,7 +45,7 @@ X509* x509_cert = NULL;
 static void read_config(Octstr *filename) 
 {
     CfgGroup *grp;
-    Octstr *s, *password=NULL;
+    Octstr *s/*, *password=NULL*/;
     long i;
     Cfg *cfg;
     Octstr *logfile;
@@ -236,7 +235,7 @@ static void setup_signal_handlers(void)
 static void dispatch_datagram(WAPEvent *dgram)
 {
     Msg *msg;
-    WAPEvent *event = NULL;
+    /*WAPEvent *event = NULL;*/
 
     gw_assert(dgram != NULL);
     if (dgram->type != T_DUnitdata_Req) {
@@ -305,11 +304,8 @@ int main(int argc, char **argv)
     wtls_init();
 #endif
     
-	wap_push_ota_init(&wsp_session_dispatch_event, &wsp_unit_dispatch_event);
-    wap_push_ppg_init(&wap_push_ota_dispatch_event, 
-                      &wap_push_pap_dispatch_event,
-                      &wap_appl_dispatch);
-    wap_push_pap_init(&wap_push_ppg_dispatch_event);
+    wap_push_ota_init(&wsp_session_dispatch_event, &wsp_unit_dispatch_event);
+    wap_push_ppg_init(&wap_push_ota_dispatch_event, &wap_appl_dispatch);
 		
     wml_init();
     
@@ -319,7 +315,7 @@ int main(int argc, char **argv)
 
     wap_push_ota_bb_address_set(bearerbox_host);
 	    
-	program_status = running;
+    program_status = running;
     heartbeat_thread = heartbeat_start(write_to_bearerbox, heartbeat_freq, 
     	    	    	    	       wap_appl_get_load);
 
@@ -363,7 +359,7 @@ int main(int argc, char **argv)
         default:
                 panic(0,"Bad packet received! This shouldn't happen!");
                 break;
-        } /* switch */
+        } 
 	} else {
 	    warning(0, "Received other message than wdp/admin, ignoring!");
 	}
@@ -382,7 +378,6 @@ int main(int argc, char **argv)
     wap_appl_shutdown();
     wap_push_ota_shutdown();
     wap_push_ppg_shutdown();
-    wap_push_pap_shutdown();
     wml_shutdown();
     close_connection_to_bearerbox();
     wsp_http_map_destroy();
@@ -390,3 +385,4 @@ int main(int argc, char **argv)
     gwlib_shutdown();
     return 0;
 }
+

@@ -10,7 +10,7 @@
  * containing lots of additional data, see PPG, 7.1. We do not yet support 
  * user defined addresses.
  *
- * By Aarno Syvänen for Wapit Ltd.
+ * By Aarno Syvänen for Wapit Ltd and for Wiral Ltd.
  */
 
 #include <xmlmemory.h>
@@ -191,6 +191,8 @@ static int parse_progress_note_value(Octstr *attr_name, Octstr *attr_value,
                                      WAPEvent **e);
 static int parse_bad_message_response_value(Octstr *attr_name, 
                                             Octstr *attr_value, WAPEvent **e);
+static int parse_response_result_value(Octstr *attr_name, 
+                                      Octstr *attr_value, WAPEvent **e);
 static int parse_code(Octstr *attr_value);
 static Octstr *parse_bearer(Octstr *attr_value);
 static Octstr *parse_network(Octstr *attr_value);
@@ -588,14 +590,14 @@ static int parse_push_response_value(Octstr *attr_name, Octstr *attr_value,
 	(**e).u.Push_Response.pi_push_id = octstr_duplicate(attr_value);
         return 0;
     } else if (octstr_compare(attr_name, octstr_imm("sender-address")) == 0) {
-	(**e).u.Push_Response.sender_name = octstr_duplicate(attr_value);
+	(**e).u.Push_Response.sender_address = octstr_duplicate(attr_value);
         return 0;
     } else if (octstr_compare(attr_name, octstr_imm("reply-time")) == 0) {
 	(**e).u.Push_Response.reply_time = (ros = parse_date(attr_value)) ?
              octstr_duplicate(attr_value) : NULL;
         return return_flag(ros);
     } else if (octstr_compare(attr_name, octstr_imm("sender-name")) == 0) {
-	(**e).u.Push_Response.sender_address = octstr_duplicate(attr_value);
+	(**e).u.Push_Response.sender_name = octstr_duplicate(attr_value);
         return 0;
     }
 
@@ -630,9 +632,6 @@ static int parse_progress_note_value(Octstr *attr_name, Octstr *attr_value,
 static int parse_bad_message_response_value(Octstr *attr_name, 
                                             Octstr *attr_value, WAPEvent **e)
 {
-    int ret;
-
-    ret = -2;
     if (octstr_compare(attr_name, octstr_imm("code")) == 0) {
 	(**e).u.Bad_Message_Response.code = parse_code(attr_value);
         return 0;
@@ -648,6 +647,20 @@ static int parse_bad_message_response_value(Octstr *attr_name,
 
     return -2;
 }
+
+static int parse_response_result_value(Octstr *attr_name, 
+                                      Octstr *attr_value, WAPEvent **e)
+{
+    if (octstr_compare(attr_name, octstr_imm("code")) == 0) {
+	(**e).u.Push_Response.code = parse_code(attr_value);
+        return 0;
+    } else if (octstr_compare(attr_name, octstr_imm("desc")) == 0) {
+	(**e).u.Push_Response.desc = octstr_duplicate(attr_value);
+        return 0;
+    }
+
+    return -2;
+} 
 
 /*
  * Do not create multiple events. If *e points to NULL, we have not yet creat-
@@ -720,6 +733,9 @@ static int parse_attr_value(Octstr *element_name, Octstr *attr_name,
     } else if (octstr_compare(element_name, 
                    octstr_imm("badmessage-response")) == 0) {
         return parse_bad_message_response_value(attr_name, attr_value, e);
+    } else if (octstr_compare(element_name, 
+                   octstr_imm("response-result")) == 0) {
+        return parse_response_result_value(attr_name, attr_value, e);
     }
 
     return -2; 
