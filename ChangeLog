@@ -1,5 +1,6 @@
 2003-01-02  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: fixed typo from last commit.
+    * gwlib/charset.c: fixed compiler warning.
 
 2003-01-01  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_store.c: fixed a if statement clause. Thanks to Alexander.
