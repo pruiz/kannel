@@ -1,3 +1,10 @@
+2003-12-05  Stipe Tolj  <tolj@wapme-systems.de>
+    * wap/wtp_resp_states.def: fixing BUG#102. In RESULT_RESP_WAIT state, when
+      TimerTO_R occures and MAX_RCR, we should send Abort PDU with type PROVIDER
+      instead of USER. According to WAP-224-WTP-20010710, sec 8.3.4.1, p.43.
+      Thanks to "Noritoshi Demizu" <demizu@access.co.jp> for providing patch
+      and the bug report.
+      
 2003-12-04  Alexander Malysh  <a.malysh@centrium.de>
     * gw/smsc/smsc_smpp.c: fixed bug that source-autodetect was 'false' if
       not defined in the config although userguide mentioned 'true'.

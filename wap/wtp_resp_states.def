@@ -666,7 +666,7 @@ ROW(RESULT_RESP_WAIT,
     TimerTO_R,
     resp_machine->rcr == MAX_RCR,
     {
-     send_abort(resp_machine, USER, NORESPONSE);
+     send_abort(resp_machine, PROVIDER, NORESPONSE);
      wsp_event = create_tr_abort_ind(resp_machine, NORESPONSE);
      wsp_session_dispatch_event(wsp_event);
     },
