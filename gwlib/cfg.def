@@ -118,6 +118,8 @@ MULTI_GROUP(sms-service,
     OCTSTR(keyword)
     OCTSTR(aliases)    
     OCTSTR(url)
+    OCTSTR(get-url)
+    OCTSTR(post-url)
     OCTSTR(file)
     OCTSTR(text)
     OCTSTR(accepted-smsc)
@@ -131,6 +133,11 @@ MULTI_GROUP(sms-service,
     OCTSTR(footer)
     OCTSTR(prefix)
     OCTSTR(suffix)
+    OCTSTR(assume-plain-text)
+    OCTSTR(accept-x-kannel-headers)
+    OCTSTR(strip-keyword)
+    OCTSTR(send-sender)
+    OCTSTR(catch-all)
 )
 
 

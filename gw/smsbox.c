@@ -395,6 +395,7 @@ static void strip_prefix_and_suffix(Octstr *html, Octstr *prefix,
 }
 
 
+/*
 static Octstr *get_udh_from_headers(List *headers)
 {
     Octstr *os;
@@ -410,6 +411,76 @@ static Octstr *get_udh_from_headers(List *headers)
 
     return os;
 }
+*/
+
+static void *get_x_kannel_from_headers(List *headers, Octstr **from,
+				       Octstr **to, Octstr **udh)
+{
+    Octstr *name, *val;
+    long l;
+
+    for(l=0; l<list_len(headers); l++) {
+	http_header_get(headers, l, &name, &val);
+
+	if (octstr_case_compare(name, octstr_imm("X-Kannel-From")) == 0) {
+	    *from = octstr_duplicate(val);
+	    octstr_strip_blanks(*from);
+	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-To")) == 0) {
+	    *to = octstr_duplicate(val);
+	    octstr_strip_blanks(*to);
+	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-UDH")) == 0) {
+	    *udh = octstr_duplicate(val);
+	    octstr_strip_blanks(*udh);
+	    if (octstr_hex_to_binary(*udh) == -1) {
+		octstr_destroy(*udh);
+		*udh = NULL;
+	    }
+	}
+    }
+}
+
+static void fill_message(Msg *msg, URLTranslation *trans,
+			 Octstr *replytext, int octet_stream,
+			 Octstr *from, Octstr *to, Octstr *udh)
+{    
+    msg->sms.msgdata = replytext;
+    if (octet_stream && urltrans_assume_plain_text(trans)==0)
+	msg->sms.flag_8bit = 1;
+    
+    msg->sms.time = time(NULL);
+
+    if (from != NULL) {
+	if (urltrans_accept_x_kannel_headers(trans)) {
+	    octstr_destroy(msg->sms.sender);
+	    msg->sms.sender = from;
+	} else {
+	    warning(0, "Tried to change sender to '%s', denied.",
+		    octstr_get_cstr(from));
+	    octstr_destroy(from);
+	}
+    }
+    if (to != NULL) {
+	if (urltrans_accept_x_kannel_headers(trans)) {
+	    octstr_destroy(msg->sms.receiver);
+	    msg->sms.receiver = to;
+	} else {
+	    warning(0, "Tried to change receiver to '%s', denied.",
+		    octstr_get_cstr(to));
+	    octstr_destroy(to);
+	}
+    }
+    if (udh != NULL) {
+	if (urltrans_accept_x_kannel_headers(trans)) {
+	    msg->sms.flag_udh = 1;
+	    msg->sms.udhdata = udh;
+	} else {
+	    warning(0, "Tried to set UDH field, denied.");
+	    octstr_destroy(udh);
+	}
+    }
+}
 
 
 static void url_result_thread(void *arg)
@@ -424,8 +495,9 @@ static void url_result_thread(void *arg)
     Octstr *text_plain;
     Octstr *text_wml;
     Octstr *octet_stream;
-    Octstr *udh;
-
+    Octstr *udh, *from, *to;
+    int octets;
+    
     text_html = octstr_imm("text/html");
     text_wml = octstr_imm("text/vnd.wap.wml");
     text_plain = octstr_imm("text/plain");
@@ -439,7 +511,9 @@ static void url_result_thread(void *arg)
     	
     	get_receiver(id, &msg, &trans);
 
-    	udh = NULL;
+    	from = to = udh = NULL;
+	octets = 0;
+	
     	if (status == HTTP_OK) {
 	    http_header_get_content_type(reply_headers, &type, &charset);
 	    if (octstr_compare(type, text_html) == 0 ||
@@ -449,16 +523,17 @@ static void url_result_thread(void *arg)
 					urltrans_suffix(trans));
 		replytext = html_to_sms(reply_body);
 		octstr_strip_blanks(replytext);
-    	    	udh = get_udh_from_headers(reply_headers);
+    	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh);
 	    } else if (octstr_compare(type, text_plain) == 0) {
 		replytext = reply_body;
 		reply_body = NULL;
 		octstr_strip_blanks(replytext);
-    	    	udh = get_udh_from_headers(reply_headers);
+    	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh);
 	    } else if (octstr_compare(type, octet_stream) == 0) {
 		replytext = reply_body;
+		octets = 1;
 		reply_body = NULL;
-    	    	udh = get_udh_from_headers(reply_headers);
+    	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh);
 	    } else {
 		replytext = octstr_create("Result could not be represented "
 					  "as an SMS message.");
@@ -467,15 +542,9 @@ static void url_result_thread(void *arg)
 	    octstr_destroy(charset);
 	} else
 	    replytext = octstr_create("Could not fetch content, sorry.");
-    
-	msg->sms.msgdata = replytext;
-	msg->sms.time = time(NULL);
-	if (udh != NULL) {
-	    msg->sms.flag_udh = 1;
-	    msg->sms.udhdata = udh;
-	    udh = NULL;
-	}
-    
+
+	fill_message(msg, trans, replytext, octets, from, to, udh);
+	
     	if (final_url == NULL)
 	    final_url = octstr_imm("");
     	if (reply_body == NULL)
@@ -545,7 +614,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	     octstr_get_cstr(*result));
 	break;
     
-    case TRANSTYPE_URL:
+    case TRANSTYPE_GET_URL:
 	request_headers = list_create();
 	id = remember_receiver(msg, trans);
 	http_start_request(caller, pattern, request_headers, NULL, 1, id);

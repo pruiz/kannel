@@ -344,6 +344,37 @@ int cfg_get_integer(long *n, CfgGroup *grp, Octstr *varname)
 }
 
 
+int cfg_get_bool(int *n, CfgGroup *grp, Octstr *varname)
+{
+    Octstr *os;
+
+    os = cfg_get(grp, varname);
+    if (os == NULL) {
+	*n = 0;
+    	return -1;
+    }
+    if (octstr_case_compare(os, octstr_imm("true")) == 0
+	|| octstr_case_compare(os, octstr_imm("yes")) == 0
+	|| octstr_case_compare(os, octstr_imm("on")) == 0
+	|| octstr_case_compare(os, octstr_imm("1")) == 0)
+    {	    
+	*n = 1;
+    } else if (octstr_case_compare(os, octstr_imm("false")) == 0
+	|| octstr_case_compare(os, octstr_imm("no")) == 0
+	|| octstr_case_compare(os, octstr_imm("off")) == 0
+	|| octstr_case_compare(os, octstr_imm("0")) == 0)
+    {
+	*n = 0;
+    }
+    else {
+	*n = 1;
+	warning(0, "bool variable set to strange value, assuming 'true'");
+    }
+    octstr_destroy(os);
+    return 0;
+}
+
+
 List *cfg_get_list(CfgGroup *grp, Octstr *varname)
 {
     Octstr *os;

@@ -1,3 +1,26 @@
+2001-03-27  Kalle Marjola  <rpr@wapit.com>
+
+	* gwlib/cfg.h|c: added new function cfg_get_bool, taking
+	true/false, on/off, yes/no or 0/1
+
+	* urltrans.c: modified to use new bool type with concatenation,
+	omit-empty and some new variables (theoretical compatibility breaker)
+
+	* urltrans.c|h: added new variables for sms-service group:
+	catch-all (should work as %a or %r in pattern),
+	accept-x-kannel-headers (see below) and some variables for POST
+	use
+
+	* smsbox.c: Compatibility breaker: modified to allow from, to and
+	UDH field set by SMS service, as X-Kannel- header, if
+	accept-x-kannel-headers set for sms-service. The compatibility
+	breaker is that X-Kannel-UDH does not work anymore unless
+	accept-x-kannel-headers is set
+
+	* smsbox.c: Compatibility breaker: if sms-service HTTP fetch reply
+	is of content-type application/octet-stream set flag 8bit on. This
+	can be prevented by setting assume-plain-text on for the service.
+
 2001-03-27  Tuomas Luttinen  <tuo@wapit.com>
 
 	* configure.in: Removed the earlier patch, the test was just on the 

@@ -26,6 +26,12 @@ Octstr *cfg_get_real(CfgGroup *grp, Octstr *varname, const char *file,
 #define cfg_get(grp, varname) \
     cfg_get_real(grp, varname, __FILE__, __LINE__, __func__)
 int cfg_get_integer(long *n, CfgGroup *grp, Octstr *varname);
+
+/* Return -1 and set n to 0 if no varname found
+ * otherwise return 0 and set n to 0 if value is no, false, off or 0,
+ * and 1 if it is true, yes, on or 1. Set n to 1 for other values, too
+ */
+int cfg_get_bool(int *n, CfgGroup *grp, Octstr *varname);
 List *cfg_get_list(CfgGroup *grp, Octstr *varname);
 void cfg_set(CfgGroup *grp, Octstr *varname, Octstr *value);
 

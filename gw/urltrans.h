@@ -42,10 +42,11 @@ typedef struct URLTranslationList URLTranslationList;
 typedef struct URLTranslation URLTranslation;
 
 enum {
-    TRANSTYPE_URL = 0,
-    TRANSTYPE_TEXT = 1,
-    TRANSTYPE_FILE = 2,
-    TRANSTYPE_SENDSMS = 3
+    TRANSTYPE_GET_URL = 0,
+    TRANSTYPE_POST_URL,
+    TRANSTYPE_TEXT,
+    TRANSTYPE_FILE,
+    TRANSTYPE_SENDSMS
 };
 
 
@@ -219,5 +220,11 @@ Octstr *urltrans_default_smsc(URLTranslation *t);
 Octstr *urltrans_allow_ip(URLTranslation *t);
 Octstr *urltrans_deny_ip(URLTranslation *t);
 
+/* Return value of true (!0) or false (0) variables */
+int urltrans_assume_plain_text(URLTranslation *t);
+int urltrans_accept_x_kannel_headers(URLTranslation *t);
+
+int urltrans_strip_keyword(URLTranslation *t);
+int urltrans_send_sender(URLTranslation *t);
 
 #endif

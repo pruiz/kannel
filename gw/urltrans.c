@@ -35,10 +35,10 @@ struct URLTranslation {
     Octstr *suffix;	/* for suffix-cut */
     Octstr *faked_sender;/* works only with certain services */
     long max_messages;	/* absolute limit of reply messages */
-    long concatenation;	/* send long messages as concatenated SMS's if true */
+    int concatenation;	/* send long messages as concatenated SMS's if true */
     Octstr *split_chars;/* allowed chars to be used to split message */
     Octstr *split_suffix;/* chars added to end after each split (not last) */
-    long omit_empty;	/* if the reply is empty, is notification send */
+    int omit_empty;	/* if the reply is empty, is notification send */
     Octstr *header;	/* string to be inserted to each SMS */
     Octstr *footer;	/* string to be appended to each SMS */
     List *accepted_smsc; /* smsc id's allowed to use this service. If not set,
@@ -51,9 +51,15 @@ struct URLTranslation {
     Octstr *allow_ip;	/* allowed IPs to request send-sms with this 
     	    	    	   account */
     Octstr *deny_ip;	/* denied IPs to request send-sms with this account */
+
+    int assume_plain_text; /* for type: octet-stream */
+    int accept_x_kannel_headers; /* do we accept special headers in reply */
+    int strip_keyword;	/* POST body */
+    int send_sender;	/* POST headers */
     
     int args;
     int has_catchall_arg;
+    int catch_all;
 };
 
 
@@ -226,7 +232,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
     
     if (t->type == TRANSTYPE_SENDSMS)
 	return octstr_create("");
-    
+
     word_list = octstr_split_words(request->sms.msgdata);
     num_words = list_len(word_list);
     
@@ -235,6 +241,11 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
     nextarg = 1;
     pos = 0;
     for (;;) {
+	/* hack to avoid running out of arguments
+	 */
+	if (nextarg >= num_words)
+	    nextarg = num_words - 1;
+	
     	while (pos < pattern_len) {
 	    c = octstr_get_char(t->pattern, pos);
 	    if (c == '%' && pos + 1 < pattern_len)
@@ -463,6 +474,27 @@ Octstr *urltrans_deny_ip(URLTranslation *t)
     return t->deny_ip;
 }
 
+int urltrans_assume_plain_text(URLTranslation *t) 
+{
+    return t->assume_plain_text;
+}
+
+int urltrans_accept_x_kannel_headers(URLTranslation *t) 
+{
+    return t->accept_x_kannel_headers;
+}
+
+int urltrans_strip_keyword(URLTranslation *t) 
+{
+    return t->strip_keyword;
+}
+
+int urltrans_send_sender(URLTranslation *t) 
+{
+    return t->send_sender;
+}
+
+
 
 /***********************************************************************
  * Internal functions.
@@ -475,7 +507,7 @@ Octstr *urltrans_deny_ip(URLTranslation *t)
 static URLTranslation *create_onetrans(CfgGroup *grp)
 {
     URLTranslation *ot;
-    Octstr *aliases, *url, *text, *file;
+    Octstr *aliases, *url, *post_url, *text, *file;
     Octstr *accepted_smsc, *forced_smsc, *default_smsc;
     Octstr *grpname, *sendsms_user, *sms_service;
     int is_sms_service;
@@ -518,12 +550,22 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
     ot->deny_ip = NULL;
     
     if (is_sms_service) {
-	url = cfg_get(grp, octstr_imm("url"));
+	cfg_get_bool(&ot->catch_all, grp, octstr_imm("catch-all"));
+
+	url = cfg_get(grp, octstr_imm("get-url"));
+	if (url == NULL)
+	    url = cfg_get(grp, octstr_imm("url"));
+	    
+	post_url = cfg_get(grp, octstr_imm("post-url"));
 	file = cfg_get(grp, octstr_imm("file"));
 	text = cfg_get(grp, octstr_imm("text"));
 	if (url != NULL) {
-	    ot->type = TRANSTYPE_URL;
+	    ot->type = TRANSTYPE_GET_URL;
 	    ot->pattern = url;
+	} else if (post_url != NULL) {
+	    ot->type = TRANSTYPE_POST_URL;
+	    ot->pattern = post_url;
+	    ot->catch_all = 1;
 	} else if (file != NULL) {
 	    ot->type = TRANSTYPE_FILE;
 	    ot->pattern = file;
@@ -532,7 +574,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	    ot->pattern = text;
 	} else {
 	    error(0, "Configuration group `sms-service' "
-	    	     "did not specify url, file or text.");
+	    	     "did not specify get-url, post-url, file or text.");
     	    goto error;
 	}
 
@@ -565,6 +607,13 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	    octstr_destroy(accepted_smsc);
 	}
 
+	cfg_get_bool(&ot->assume_plain_text, grp, 
+		     octstr_imm("assume-plain-text"));
+	cfg_get_bool(&ot->assume_plain_text, grp, 
+		     octstr_imm("accept-x-kannel-headers"));
+	cfg_get_bool(&ot->strip_keyword, grp, octstr_imm("strip-keyword"));
+	cfg_get_bool(&ot->send_sender, grp, octstr_imm("send-sender"));
+	
 	ot->prefix = cfg_get(grp, octstr_imm("prefix"));
 	ot->suffix = cfg_get(grp, octstr_imm("suffix"));
 	
@@ -573,11 +622,13 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	ot->has_catchall_arg = 
 	    (count_occurences(ot->pattern, octstr_imm("%r")) > 0) ||
 	    (count_occurences(ot->pattern, octstr_imm("%a")) > 0);
+
     } else {
 	ot->type = TRANSTYPE_SENDSMS;
 	ot->pattern = octstr_create("");
 	ot->args = 0;
 	ot->has_catchall_arg = 0;
+	ot->catch_all = 1;
 	ot->username = cfg_get(grp, octstr_imm("username"));
 	ot->password = cfg_get(grp, octstr_imm("password"));
 	if (ot->password == NULL) {
@@ -604,13 +655,11 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
     if (cfg_get_integer(&ot->max_messages, grp, 
     	    	    	octstr_imm("max-messages")) == -1)
 	ot->max_messages = 1;
-    if (cfg_get_integer(&ot->concatenation, grp, 
-    	    	    	octstr_imm("concatenation")) == -1)
-	ot->concatenation = 0;
-    if (cfg_get_integer(&ot->omit_empty, grp, 
-			octstr_imm("omit-empty")) == -1)
-	ot->omit_empty = 0;
-
+    cfg_get_bool(&ot->concatenation, grp, 
+		 octstr_imm("concatenation"));
+    cfg_get_bool(&ot->omit_empty, grp, 
+		 octstr_imm("omit-empty"));
+    
     ot->header = cfg_get(grp, octstr_imm("header"));
     ot->footer = cfg_get(grp, octstr_imm("footer"));
     ot->faked_sender = cfg_get(grp, octstr_imm("faked-sender"));
@@ -623,9 +672,9 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 		   " if both are set.", octstr_get_cstr(ot->keyword));
     }
     if ((ot->prefix != NULL || ot->suffix != NULL) &&
-        ot->type != TRANSTYPE_URL) {
+        ot->type != TRANSTYPE_GET_URL) {
 	warning(0, "Service <%s>: suffix and prefix are only used"
-                   " if type is 'url'.", octstr_get_cstr(ot->keyword));
+                   " if type is 'get-url'.", octstr_get_cstr(ot->keyword));
     }
     
     return ot;
@@ -700,6 +749,9 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 		continue;
 	    }
 	}
+	if (t->catch_all)
+	    break;
+
 	if (n - 1 == t->args)
 	    break;
 	if (t->has_catchall_arg && n - 1 >= t->args)
