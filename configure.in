@@ -89,10 +89,6 @@ AC_CHECK_LIB(pthread, pthread_exit, [LIBS="$LIBS -lpthread"; pthread="yes"])
 if test -z "$pthread"; then
 	AC_CHECK_LIB(c_r, pthread_exit, [LIBS="$LIBS -lc_r"])
 fi
-AC_CHECK_LIB(iconv, libiconv, [LIBS="$LIBS -liconv"; iconv="yes"])
-if test -z "$iconv"; then
-  AC_MSG_WARN([*** No iconv() on your system. Can't use character set convertion!])
-fi
 
 dnl Checks for header files.
 
