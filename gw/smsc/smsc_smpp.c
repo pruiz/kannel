@@ -3,6 +3,7 @@
  *
  * Lars Wirzenius
  * Stipe Tolj <tolj@wapme-systems.de>
+ * Alexander Malysh  <a.malysh@centrium.de>
  */
 
 /* XXX check SMSCConn conformance */
@@ -268,10 +269,16 @@ static int read_pdu(SMPP *smpp, Connection *conn, long *len, SMPP_PDU **pdu)
 }
 
 
+/*
+ * Convert SMPP PDU to internal Msgs structure.
+ * Return the Msg if all was fine and NULL otherwise, while getting 
+ * the failing reason delivered back in *reason.
+ * XXX semantical check on the incoming values can be extended here.
+ */
 static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
 {
     Msg *msg;
-    int udh_offset = 0;
+    int ton, npi;
 
     gw_assert(pdu->type == deliver_sm);
 
@@ -279,14 +286,65 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     gw_assert(msg != NULL);
     *reason = SMPP_ESME_ROK;
 
+    /* 
+     * Reset source addr to have a prefixed '+' in case we have an 
+     * intl. TON to allow backend boxes (ie. smsbox) to distinguish
+     * between national and international numbers.
+     */
+    ton = pdu->u.deliver_sm.source_addr_ton;
+    npi = pdu->u.deliver_sm.source_addr_npi;
+
+    /* check if intl. and digit only; assume number is larger then 7 chars */
+    if (ton == GSM_ADDR_TON_INTERNATIONAL &&
+        octstr_len(pdu->u.deliver_sm.source_addr) >= 7 &&
+        octstr_check_range(pdu->u.deliver_sm.source_addr, 0, 256, gw_isdigit)) {
+
+        /* check if we received leading '00', then remove it*/
+        if (octstr_search(pdu->u.deliver_sm.source_addr, octstr_imm("00"), 0) == 0)
+            octstr_delete(pdu->u.deliver_sm.source_addr, 0, 2);
+
+        /* international, insert '+' if not already here */
+        if (octstr_get_char(pdu->u.deliver_sm.source_addr, 0) != '+')
+            octstr_insert_char(pdu->u.deliver_sm.source_addr, 0, '+');
+    }
+    else if ((ton == GSM_ADDR_TON_ALPHANUMERIC ||
+             !octstr_check_range(pdu->u.deliver_sm.source_addr, 0, 256, gw_isdigit)) &&
+	         octstr_len(pdu->u.deliver_sm.source_addr) > 11) {
+        /* alphanum sender, max. allowed length is 11 (according to GSM specs) */
+        *reason = SMPP_ESME_RINVSRCADR;
+        goto error;
+    }
     msg->sms.sender = pdu->u.deliver_sm.source_addr;
     pdu->u.deliver_sm.source_addr = NULL;
 
-    /* follows smpp spec. v3.4. issue 1.2 it's not allowed to have destination_addr NULL */
+    /* 
+     * Follows SMPP spec. v3.4. issue 1.2 
+     * it's not allowed to have destination_addr NULL 
+     */
     if (pdu->u.deliver_sm.destination_addr == NULL) {
         *reason = SMPP_ESME_RINVDSTADR;
-        msg_destroy(msg);
-        return NULL;
+        goto error;
+    }
+
+    /* Same reset of destination number as for source */
+    ton = pdu->u.deliver_sm.dest_addr_ton;
+    npi = pdu->u.deliver_sm.dest_addr_npi;
+
+    /* check destination ton and destination addr */
+    if (ton == GSM_ADDR_TON_INTERNATIONAL &&
+        octstr_get_char(pdu->u.deliver_sm.destination_addr, 0) != '+') {
+
+        /* check for leading '00' and delete them */
+        if (octstr_search(pdu->u.deliver_sm.destination_addr, octstr_imm("00"), 0) == 0)
+            octstr_delete(pdu->u.deliver_sm.destination_addr, 0, 2);
+        /* add leading '+'*/
+        octstr_insert_char(pdu->u.deliver_sm.destination_addr, 0, '+');
+    }
+
+    /* now check dest addr range */
+    if (!octstr_check_range(pdu->u.deliver_sm.destination_addr, 1, 256, gw_isdigit)) {
+        *reason = SMPP_ESME_RINVDSTADR;
+        goto error;
     }
     msg->sms.receiver = pdu->u.deliver_sm.destination_addr;
     pdu->u.deliver_sm.destination_addr = NULL;
@@ -294,35 +352,29 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     if (pdu->u.deliver_sm.esm_class & ESM_CLASS_SUBMIT_RPI)
         msg->sms.rpi = 1;
 
-     /*
-      * Encode udh if udhi set
-      * for reference see GSM03.40 section 9.2.3.24
-      */
+    /*
+     * Encode udh if udhi set
+     * for reference see GSM03.40, section 9.2.3.24
+     */
     if (pdu->u.deliver_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR) {
-        udh_offset = octstr_get_char(pdu->u.deliver_sm.short_message, 0) + 1;
-        /* check if the UDH offset is of acceptable length, or discard */
-        if (udh_offset <= octstr_len(pdu->u.deliver_sm.short_message)) {
-            msg->sms.udhdata =
-                octstr_copy(pdu->u.deliver_sm.short_message, 0, udh_offset);
-            msg->sms.msgdata =
-                octstr_copy(pdu->u.deliver_sm.short_message, udh_offset,
-                            octstr_len(pdu->u.deliver_sm.short_message) - udh_offset);
-            octstr_destroy(pdu->u.deliver_sm.short_message);
-        } else {
-            /* discard message if UDH length indicator is obvious corrupt */
+        int udhl;
+        udhl = octstr_get_char(pdu->u.deliver_sm.short_message, 0) + 1;
+        debug("bb.sms.smpp",0,"SMPP[%s]: UDH length read as %d", 
+              octstr_get_cstr(smpp->conn->id), udhl);
+        if (udhl > octstr_len(pdu->u.deliver_sm.short_message)) {
             error(0, "SMPP[%s]: Mallformed UDH length indicator 0x%03x while message length "
                      "0x%03x. Discarding MO message.", octstr_get_cstr(smpp->conn->id),
-                     udh_offset, (unsigned int)octstr_len(pdu->u.deliver_sm.short_message));
-            msg_destroy(msg);
+                     udhl, (unsigned int)octstr_len(pdu->u.deliver_sm.short_message));
             *reason = SMPP_ESME_RINVESMCLASS;
-            return NULL;
+            goto error;
         }
-    } else {
-        msg->sms.msgdata = pdu->u.deliver_sm.short_message;
+        msg->sms.udhdata = octstr_copy(pdu->u.deliver_sm.short_message, 0, udhl);
+        octstr_delete(pdu->u.deliver_sm.short_message, 0, udhl);
     }
+    msg->sms.msgdata = pdu->u.deliver_sm.short_message;
     pdu->u.deliver_sm.short_message = NULL;
-
     dcs_to_fields(&msg, pdu->u.deliver_sm.data_coding);
+
     /* handle default data coding */
     switch (pdu->u.deliver_sm.data_coding) {
         case 0x00: /* default SMSC alphabet */
@@ -342,12 +394,12 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
             break;
         case 0x01: /* ASCII or IA5 - not sure if I need to do anything */
         case 0x03: /* ISO-8859-1 - do nothing */
-                msg->sms.coding = DC_7BIT; break;
+            msg->sms.coding = DC_7BIT; break;
         case 0x02: /* 8 bit binary - do nothing */
         case 0x04: /* 8 bit binary - do nothing */
-                msg->sms.coding = DC_8BIT; break;
+            msg->sms.coding = DC_8BIT; break;
         case 0x05: /* JIS - what do I do with that ? */
-                break;
+            break;
         case 0x06: /* Cyrllic - iso-8859-5, I'll convert to unicode */
             if (charset_convert(msg->sms.msgdata, "ISO-8859-5", "UCS-2BE") != 0)
                 error(0, "Failed to convert msgdata from cyrllic to UCS-2, will leave as is");
@@ -363,6 +415,7 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
              * don't much care about the others,
              * you implement them if you feel like it
              */
+
         default:
             /*
              * some of smsc send with dcs from GSM 03.38 , but these are reserved in smpp spec.
@@ -379,6 +432,10 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     msg->sms.pid = pdu->u.deliver_sm.protocol_id;
 
     return msg;
+
+error:
+    msg_destroy(msg);
+    return NULL;
 }
 
 
