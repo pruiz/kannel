@@ -161,6 +161,8 @@ ws_bc_encode(WsBc *bc, unsigned char **data_return, size_t *data_len_return)
 
 	    default:
 	      ws_fatal("ws_bc_encode(): internal inconsistency");
+	      /* NOTREACHED */
+	      p = NULL;		/* Initialized to keep compiler quiet. */
 	      break;
 	    }
 
