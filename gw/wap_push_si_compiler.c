@@ -187,7 +187,8 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
  */
 static int parse_element(xmlNodePtr node, simple_binary_t **sibxml)
 {
-    Octstr *name;
+    Octstr *name,
+           *outos;
     size_t i;
     unsigned char status_bits,
              si_hex;
@@ -195,6 +196,7 @@ static int parse_element(xmlNodePtr node, simple_binary_t **sibxml)
     xmlAttrPtr attribute;
 
     name = octstr_create(node->name);
+    outos = NULL;
     if (octstr_len(name) == 0) {
         octstr_destroy(name);
         return -1;
@@ -231,7 +233,7 @@ static int parse_element(xmlNodePtr node, simple_binary_t **sibxml)
 		add_end_tag = 1;
 	}
 	output_char(si_hex, sibxml);
-        output_octet_string(octstr_duplicate(name), sibxml);
+        output_octet_string(outos = octstr_duplicate(name), sibxml);
     }
 
     if (node->properties != NULL) {
@@ -243,6 +245,7 @@ static int parse_element(xmlNodePtr node, simple_binary_t **sibxml)
 	parse_end(sibxml);
     }
 
+    octstr_destroy(outos);
     octstr_destroy(name);
     return add_end_tag;
 }
