@@ -1,3 +1,7 @@
+Fri Mar 31 04:58:20 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/gwmem.c: Formatting and other minor changes.
+
 Fri Mar 31 03:35:59 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/csdr.[ch]: Changed to use Octstrs and udp_* functions

@@ -38,72 +38,69 @@ static void fill(void *p, size_t bytes, long pattern);
 
 void gw_init_mem(void) {
 #if GWMEM_CHECK
-    pthread_mutex_init(&mutex, NULL);
+	pthread_mutex_init(&mutex, NULL);
 #endif
-    initialized = 1;
+	initialized = 1;
 }
 
-void *gw_malloc(size_t size)
-{
-    void *ptr;
-
-    gw_assert(initialized);
-
-    /* ANSI C89 says malloc(0) is implementation-defined.  Avoid it. */
-    gw_assert(size > 0);
-
-    ptr = malloc(size);
-    if (ptr == NULL)
-	panic(errno, "Memory allocation of %lu bytes failed", (unsigned long) size);
-
-    fill(ptr, size, 0xbabecafe);
-    remember(ptr, size);
-
-    return ptr;
-}
-
-
-void *gw_realloc(void *ptr, size_t size)
-{
-    void *new_ptr;
-
-    gw_assert(initialized);
-
-    gw_assert(size > 0);
-    new_ptr = realloc(ptr, size);
-    if (new_ptr == NULL)
-	panic(errno, "Memory re-allocation of %lu bytes failed", (unsigned long) size);
-    
-    if (new_ptr != ptr) {
-	remember(new_ptr, size);
-	if (ptr != NULL)
-	        forget(ptr);
-    }
-
-    return new_ptr;
+void *gw_malloc(size_t size) {
+	void *ptr;
+	
+	gw_assert(initialized);
+	
+	/* ANSI C89 says malloc(0) is implementation-defined.  Avoid it. */
+	gw_assert(size > 0);
+	
+	ptr = malloc(size);
+	if (ptr == NULL)
+		panic(errno, "Memory allocation of %lu bytes failed", 
+			(unsigned long) size);
+	
+	fill(ptr, size, 0xbabecafe);
+	remember(ptr, size);
+	
+	return ptr;
 }
 
 
-void  gw_free(void *ptr)
-{
-    gw_assert(initialized);
-
-    forget(ptr);
-    free(ptr);
+void *gw_realloc(void *ptr, size_t size) {
+	void *new_ptr;
+	
+	gw_assert(initialized);
+	
+	gw_assert(size > 0);
+	new_ptr = realloc(ptr, size);
+	if (new_ptr == NULL)
+		panic(errno, "Memory re-allocation of %lu bytes failed", 
+			(unsigned long) size);
+	
+	if (new_ptr != ptr) {
+		remember(new_ptr, size);
+		forget(ptr);
+	}
+	
+	return new_ptr;
 }
 
 
-char *gw_strdup(const char *str)
-{
-    char *copy;
-    
-    gw_assert(initialized);
+void  gw_free(void *ptr) {
+	gw_assert(initialized);
+#if 0
+	forget(ptr);
+	free(ptr);
+#endif
+}
 
-    gw_assert(str != NULL);
-    copy = strdup(str);
-    if (copy == NULL)
-        panic(errno, "Memory allocation for string copy failed.");
-    return copy;
+
+char *gw_strdup(const char *str) {
+	char *copy;
+	
+	gw_assert(initialized);
+	
+	gw_assert(str != NULL);
+	copy = gw_malloc(strlen(str) + 1);
+	strcpy(copy, str);
+	return copy;
 }
 
 
@@ -166,6 +163,7 @@ static long unlocked_find(void *p) {
 	gw_assert(ptr < tab + num_allocations);
 	return ptr - tab;
 }
+
 #endif
 
 
@@ -184,7 +182,6 @@ static void remember(void *p, size_t size) {
 	tab[num_allocations].size = size;
 	++num_allocations;
 	qsort(tab, num_allocations, sizeof(struct mem), compare_mem);
-	dump();
 	unlock();
 #endif
 }
@@ -197,15 +194,22 @@ static void forget(void *p) {
 #if GWMEM_CHECK
 	long i;
 
+	if (p == NULL)
+		return;
+
 	lock();
 	i = unlocked_find(p);
 	if (i == -1) {
-#if GWMEM_TRACE
-		debug("gwlib.gwmem", 0, "forgetting %p", p);
+		error(0, "Trying to free a memory area that isn't allocated.");
+		error(0, "Area is %p", p);
 		dump();
-#endif
-		panic(0, "Trying to free a memory area that isn't allocated.");
+		panic(0, "Can't deal with memory allocation problems. DIE!");
 	}
+#if 1
+	gw_assert(p == tab[i].p);
+	gw_assert(tab[i].size > 0);
+	fill(p, tab[i].size, 0xdeadbeef);
+#endif
 	memmove(tab + i, 
 	        tab + i + 1,
 	        (num_allocations - i - 1) * sizeof(struct mem));
@@ -233,13 +237,11 @@ static void check_leaks(void) {
 
 #if GWMEM_CHECK
 static void dump(void) {
-#if 0
 	long i;
 
 	for (i = 0; i < num_allocations; ++i)
 		debug("gwlib.gwmem", 0, "area %ld at %p, %lu bytes",
 			i, tab[i].p, (unsigned long) tab[i].size);
-#endif
 }
 #endif
 
@@ -264,11 +266,12 @@ static void unlock(void) {
 static void fill(void *p, size_t bytes, long pattern) 
 {
 #if GWMEM_CHECK
-    while (bytes > sizeof(long)) {
-	memcpy(p, &pattern, sizeof(long));
-	p += sizeof(long);
-	bytes -= sizeof(long);
-    }
-    memcpy(p, &pattern, bytes);
+	while (bytes > sizeof(long)) {
+		memcpy(p, &pattern, sizeof(long));
+		p += sizeof(long);
+		bytes -= sizeof(long);
+	}
+	if (bytes > 0)
+		memcpy(p, &pattern, bytes);
 #endif
 }
