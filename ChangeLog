@@ -1,5 +1,12 @@
 2000-05-08  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/conn.c: Commented static functions.
+	Added unlocked_outbuf_len and unlocked_inbuf_len helper functions.
+	Added unlocked_try_write helper function, to implement output
+	buffering.  Implemented conn_wait.
+
+2000-05-08  Richard Braakman  <dark@wapit.com>
+
 	* test/fakewap.c: Fixed -n flag.
 
 2000-05-07    Derry Hamilton <rasilon@tardis.ed.ac.uk>
