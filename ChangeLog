@@ -1,4 +1,13 @@
 2004-01-20  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bearerbox.[ch], gw/bb_store.c: applied bb-store-fixes.patch that:
+      1) remove check for report while loading of store-file (this check has no 
+         sense to me because if bearerbox crashed or was down, we want deliver
+         DLR's to smsbox instead of silently deleting)
+      2) improve store status query
+      3) fixes some race conditions
+      Msg-Id: <200401151937.35566.a.malysh@centrium.de>.
+
+2004-01-20  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_smscconn.c, gw/bb_store.c, gw/dlr.c, gw/msg.h,
     * gw/smsbox.c, gw/urltrans.c, gw/smsc/smsc_emi.c, gw/smsc/smsc_fake.c,
     * gw/smsc/smsc_oisd.c, gw/smsc/smsc_smpp.c: applied add-report-mt.patch

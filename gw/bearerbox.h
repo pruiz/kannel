@@ -190,7 +190,7 @@ int store_dump(void);
 
 /* initialize system. Return -1 if fname is baad (too long), otherwise
  * load data from disk */
-int store_init(Octstr *fname);
+int store_init(const Octstr *fname);
 
 /* init shutdown (system dies when all acks have been processed) */
 void store_shutdown(void);

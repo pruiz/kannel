@@ -392,17 +392,11 @@ static Cfg *init_bearerbox(Cfg *cfg)
     }
 
     log = cfg_get(grp, octstr_imm("store-file"));
-    /*
-     * Store must be always initialized, even if no store file defined,
-     * because store create message id's and timestamp for all sms's
-     * handled in bearerbox! If no store file defained in config then no
-     * files will be opened and no cleanup thread started.
-     * NOTE: I believe store file must be mandatory parameter, because
-     * otherwise all queued messages in bearerbox are loss while shutdown
-     * or restart ! (alex)
-     */
-    store_init(log);
-    if (log != NULL) octstr_destroy(log);
+    /* initialize the store file */
+    if (log != NULL) {
+        store_init(log);
+        octstr_destroy(log);
+    }
 
     conn_config_ssl (grp);
 
