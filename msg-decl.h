@@ -23,6 +23,17 @@ MSG(plain_sms,
 		INTEGER(time);
 	})
 
+MSG(smart_sms,
+	{
+		OCTSTR(sender);
+		OCTSTR(receiver);
+		INTEGER(flag_8bit);
+		INTEGER(flag_udh);
+		OCTSTR(udhdata);
+		OCTSTR(msgdata);
+		INTEGER(time);
+	})
+
 MSG(wdp_datagram,
 	{
 		OCTSTR(source_address);
