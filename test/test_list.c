@@ -310,5 +310,6 @@ int main(void) {
 	main_for_list_add_and_delete();
 	main_for_extract();
 	main_for_producer_and_consumer();
+	close_all_logfiles();
 	return 0;
 }

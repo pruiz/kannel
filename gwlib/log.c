@@ -69,6 +69,17 @@ void reopen_log_files(void) {
 	    }		
 }
 
+
+void close_all_logfiles(void) {
+	while (num_logfiles > 0) {
+		--num_logfiles;
+		if (logfiles[num_logfiles].file != stderr)
+			fclose(logfiles[num_logfiles].file);
+		logfiles[num_logfiles].file = NULL;
+	}
+}
+
+
 void open_logfile(char *filename, int level) {
 	FILE *f;
 	
