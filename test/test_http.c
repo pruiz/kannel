@@ -21,21 +21,30 @@ static int print_body = 1;
 
 static void client_thread(void *arg) {
 	int ret;
-	Octstr *url, *final_url, *replyb, *os, *type, *charset;
+	Octstr *url, *replyb, *os, *type, *charset;
 	List *reqh, *replyh;
-	long i, succeeded, failed;
+	long i, id, succeeded, failed;
+	HTTPCaller *caller;
+	char buf[1024];
 	
+    	caller = arg;
+
 	succeeded = 0;
 	failed = 0;
 	reqh = list_create();
+	sprintf(buf, "%ld", (long) gwthread_self());
+	http_header_add(reqh, "X-Thread", buf);
 	while ((i = counter_increase(counter)) < max_requests) {
 		if ((i % 1000) == 0)
 			info(0, "Starting fetch %ld", i);
 		url = octstr_create(urls[i % num_urls]);
-		ret = http_get_real(url, reqh, &final_url, &replyh, &replyb);
-		if (ret == -1) {
+		id = http_start_get(caller, url, reqh);
+		debug("", 0, "Started request %ld", id);
+		id = http_receive_result(caller, &ret, &replyh, &replyb);
+		debug("", 0, "Done with reqest %ld", id);
+		if (id == -1 || ret == -1) {
 			++failed;
-			error(0, "http_get failed");
+			error(0, "http GET failed");
 		} else {
 			++succeeded;
 			http_header_get_content_type(replyh, &type, &charset);
@@ -44,8 +53,7 @@ static void client_thread(void *arg) {
 			octstr_destroy(type);
 			octstr_destroy(charset);
 			debug("", 0, "Reply headers:");
-			while ((os = list_extract_first(replyh)) 
-			       != NULL) {
+			while ((os = list_extract_first(replyh)) != NULL) {
 				octstr_dump(os, 1);
 				octstr_destroy(os);
 			}
@@ -53,11 +61,11 @@ static void client_thread(void *arg) {
 			if (print_body)
 				octstr_print(stdout, replyb);
 			octstr_destroy(replyb);
-			octstr_destroy(final_url);
 		}
 		octstr_destroy(url);
 	}
 	list_destroy(reqh, NULL);
+	http_caller_destroy(caller);
 	info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
 }
 
@@ -143,10 +151,11 @@ int main(int argc, char **argv) {
 	
 	time(&start);
 	if (num_threads == 0)
-		client_thread(NULL);
+		client_thread(http_caller_create());
 	else {
 		for (i = 0; i < num_threads; ++i)
-			threads[i] = gwthread_create(client_thread, NULL);
+			threads[i] = gwthread_create(client_thread, 
+			    	    	    	     http_caller_create());
 		for (i = 0; i < num_threads; ++i)
 			gwthread_join(threads[i]);
 	}

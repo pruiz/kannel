@@ -181,6 +181,48 @@ int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
 
 
 /*
+ * An identification for a caller of HTTP. This is used with http_start_get,
+ * http_start_post, and http_receive_result to route results to the right
+ * callers.
+ *
+ * Implementation note: We use a List as the type so that we can use
+ * that list for communicating the results. This makes it unnecessary
+ * to map the caller identifier to a List internally in the HTTP module.
+ */
+typedef List HTTPCaller;
+
+
+/*
+ * Create an HTTP caller identifier.
+ */
+HTTPCaller *http_caller_create(void);
+
+
+/*
+ * Destroy an HTTP caller identifier. Those that aren't destroyed
+ * explicitly are destroyed by http_shutdown.
+ */
+void http_caller_destroy(HTTPCaller *caller);
+
+
+/*
+ * Start a GET request. It will be completed in the background, and
+ * the result will eventually be received by http_receive_result. The
+ * return value is the request identifier; http_receive_result will
+ * return the same request identifier, and the caller can use this to
+ * keep track of which request and which response belong together.
+ */
+long http_start_get(HTTPCaller *caller, Octstr *url, List *headers);
+
+
+/*
+ * Get the result of a GET or a POST request.
+ */
+long http_receive_result(HTTPCaller *caller, int *status, List **headers,
+    	    	    	 Octstr **body);
+
+
+/*
  * Functions for controlling the well-known port of the server.
  * http_server_open sets it up, http_server_close closes it.
  */

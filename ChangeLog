@@ -1,3 +1,12 @@
+2000-10-12  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/http.[ch]: Added a prototype implementation for the new
+	start/receive-result interface to HTTP requests (see functions
+	http_start_get and http_receive_result). Don't use this yet,
+	it needs to be implemented properly.
+	
+	* test/test_http.c: Modified to use the new interface.
+
 2000-10-11  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/gwassert.h: Added parentheses around the panic(...), 0

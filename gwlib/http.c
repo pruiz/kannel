@@ -17,8 +17,7 @@
 /*
  * The definition for the HTTPSocket data type.
  */
-struct HTTPSocket
-{
+struct HTTPSocket {
     int in_use;
     int use_version_1_0;
     time_t last_used;
@@ -27,6 +26,63 @@ struct HTTPSocket
     int port;
     Octstr *buffer;
 };
+
+
+/*
+ * An item in the request queue and operations on one.
+ */
+typedef struct {
+    HTTPCaller *caller;
+    long id;
+    Octstr *url;
+    List *headers;
+    Octstr *body;   /* NULL for GET, non-NULL for POST */
+} HTTPRequest;
+
+
+static HTTPRequest *request_create(HTTPCaller *caller, Octstr *url, 
+    	    	    	    	   List *headers, Octstr *body);
+static void request_destroy(void *request);
+
+
+/*
+ * Internal list of unhandled requests.
+ */
+static List *pending_requests = NULL;
+
+
+/*
+ * Counter for request identifiers.
+ */
+static Counter *request_id_counter = NULL;
+
+
+/*
+ * An item in the response list (HTTPCaller), and operations on one.
+ */
+typedef struct {
+    HTTPRequest *request;
+    int status;
+    List *headers;
+    Octstr *body;
+} HTTPResponse;
+
+
+static HTTPResponse *response_create(HTTPRequest *request, int status,
+    	    	    	    	     List *headers, Octstr *body);
+static void response_destroy(HTTPResponse *response);
+
+
+/*
+ * Status of this module.
+ */
+static enum { limbo, running, terminating } run_status = limbo;
+
+
+/*
+ * XXX
+ */
+static void start_request_thread(void *);
 
 
 /*
@@ -101,17 +157,31 @@ void http_init(void)
     proxy_mutex = mutex_create();
     proxy_exceptions = list_create();
     pool_init();
+    pending_requests = list_create();
+    list_add_producer(pending_requests);
+    request_id_counter = counter_create();
+    
+    run_status = running;
+    gwthread_create(start_request_thread, NULL);
 }
 
 
 void http_shutdown(void)
 {
     gwlib_assert_init();
+
+    run_status = terminating;
+    list_remove_producer(pending_requests);
+    gwthread_join_every(start_request_thread);
+
     http_close_proxy();
     list_destroy(proxy_exceptions, NULL);
     mutex_destroy(proxy_mutex);
     proxy_mutex = NULL;
     pool_shutdown();
+    counter_destroy(request_id_counter);
+    list_destroy(pending_requests, request_destroy);
+    /* XXX destroy caller ids */
 }
 
 
@@ -152,6 +222,52 @@ void http_close_proxy(void)
     while ((p = list_extract_first(proxy_exceptions)) != NULL)
         octstr_destroy(p);
     mutex_unlock(proxy_mutex);
+}
+
+
+HTTPCaller *http_caller_create(void)
+{
+    HTTPCaller *caller;
+    
+    caller = list_create();
+    list_add_producer(caller);
+    return caller;
+}
+
+
+void http_caller_destroy(HTTPCaller *caller)
+{
+    list_destroy(caller, NULL); /* XXX destroy items */
+}
+
+
+long http_start_get(HTTPCaller *caller, Octstr *url, List *headers)
+{
+    HTTPRequest *request;
+    
+    request = request_create(caller, url, headers, NULL);
+    list_produce(pending_requests, request);
+    return request->id;
+}
+
+
+long http_receive_result(HTTPCaller *caller, int *status, List **headers,
+    	    	    	 Octstr **body)
+{
+    HTTPResponse *response;
+    long request_id;
+
+    response = list_consume(caller);
+    if (response == NULL)
+    	return -1;
+
+    *status = response->status;
+    *headers = response->headers;
+    *body = response->body;
+    request_id = response->request->id;
+    response_destroy(response);
+
+    return request_id;
 }
 
 
@@ -1911,4 +2027,90 @@ static int header_is_called(Octstr *header, char *name)
     if ((long) strlen(name) != colon)
         return 0;
     return strncasecmp(octstr_get_cstr(header), name, colon) == 0;
+}
+
+
+/***********************************************************************
+ * Internal threads.
+ */
+ 
+ 
+static HTTPRequest *request_create(HTTPCaller *caller, Octstr *url,
+    	    	    	    	   List *headers, Octstr *body)
+{
+    HTTPRequest *request;
+    
+    request = gw_malloc(sizeof(*request));
+    request->caller = caller;
+    request->id = counter_increase(request_id_counter);
+    request->url = octstr_duplicate(url);
+    request->headers = http_header_duplicate(headers);
+    request->body = octstr_duplicate(body);
+    return request;
+}
+
+
+static void request_destroy(void *p)
+{
+    HTTPRequest *request;
+    
+    request = p;
+    octstr_destroy(request->url);
+    http_destroy_headers(request->headers);
+    octstr_destroy(request->url);
+    gw_free(request);
+}
+
+
+static HTTPResponse *response_create(HTTPRequest *request, int status,
+    	    	    	    	     List *headers, Octstr *body)
+{
+    HTTPResponse *response;
+    
+    response = gw_malloc(sizeof(*response));
+    response->request = request;
+    response->status = status;
+    response->headers = headers;
+    response->body = body;
+    return response;
+}
+
+
+static void response_destroy(HTTPResponse *response)
+{
+    request_destroy(response->request);
+    /* Note: response->list and response->body MUST NOT be destroyed here. */
+    gw_free(response);
+}
+
+
+/*
+ * 
+ */
+static void kludge_do_one_request(void *arg)
+{
+    HTTPRequest *request;
+    HTTPResponse *response;
+    List *hdrs;
+    Octstr *body;
+    int status;
+    
+    request = arg;
+    status = http_get(request->url, request->headers, &hdrs, &body);
+    debug("xxx", 0, "Got response from http_get");
+    response = response_create(request, status, hdrs, body);
+    list_produce(request->caller, response);
+}
+
+/*
+ * 
+ */
+static void start_request_thread(void *arg)
+{
+    HTTPRequest *request;
+    
+    while (run_status == running && 
+    	   (request = list_consume(pending_requests)) != NULL) {
+	gwthread_create(kludge_do_one_request, request);
+    }
 }
