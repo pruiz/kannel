@@ -1,3 +1,8 @@
+2001-05-03  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c (parse_text): A bug fix: added a check that around 
+	text emphasis the white space is not removed.
+
 2001-05-03  Lars Wirzenius  <liw@iki.fi>
 
 	* Makefile.in, configure.in: applied patch from Craig Emery to

@@ -213,6 +213,7 @@ static int check_do_elements(xmlNodePtr node);
 static var_esc_t check_variable_name(xmlNodePtr node);
 static Octstr *get_do_element_name(xmlNodePtr node);
 static int check_if_url(int hex);
+static int check_if_emphasis(xmlNodePtr node);
 static int only_blanks(const char *text);
 static void set_charset(Octstr *document, Octstr* charset);
 
@@ -753,7 +754,8 @@ static int parse_text(xmlNodePtr node, wml_binary_t **wbxml)
     temp = create_octstr_from_node(node);
 
     octstr_shrink_blanks(temp);
-    octstr_strip_blanks(temp);
+    if (!check_if_emphasis(node->prev) && !check_if_emphasis(node->next))
+	octstr_strip_blanks(temp);
 
     if (octstr_len(temp) == 0)
 	ret = 0;
@@ -1511,6 +1513,36 @@ static int check_if_url(int hex)
 
 
 /*
+ * check_if_emphasis - checks if the node is an emphasis element. 
+ * Returns 1 for an emphasis and 0 otherwise.
+ */
+
+static int check_if_emphasis(xmlNodePtr node)
+{
+    if (node == NULL)
+	return 0;
+
+    if (strcmp(node->name, "b") == 0)
+	return 1;
+    if (strcmp(node->name, "big") == 0)
+	return 1;
+    if (strcmp(node->name, "em") == 0)
+	return 1;
+    if (strcmp(node->name, "i") == 0)
+	return 1;
+    if (strcmp(node->name, "small") == 0)
+	return 1;
+    if (strcmp(node->name, "strong") == 0)
+	return 1;
+    if (strcmp(node->name, "u") == 0)
+	return 1;
+
+    return 0;
+}
+
+
+
+/*
  * only_blanks - checks if a text node contains only white space, when it can 
  * be left out as a element content.
  */
@@ -1994,4 +2026,3 @@ List *wml_charsets(void) {
 	}
 	return result;
 }
-
