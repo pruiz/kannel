@@ -5,11 +5,10 @@
  * (the "interval").  They can be stopped before elapsing, and the
  * interval can be changed.
  *
- * Timers are associated with timer sets.  Each set uses a thread
- * and has a single internal lock.  An "output list" is defined for
- * each timer set.  When a timer elapses, an event is generated on
- * this list.  The event may be removed from this list if the timer
- * is destroyed or extended before the event is consumed.
+ * An "output list" is defined for each timer.  When it elapses, an
+ * event is generated on this list.  The event may be removed from
+ * the output list if the timer is destroyed or extended before the
+ * event is consumed.
  *
  * The event to use when a timer elapses is provided by the caller.
  * The timer module will "own" it, and be responsible for deallocation.
@@ -19,7 +18,7 @@
  * the timer module might still take it back.  This won't be a problem
  * as long as you access the event only by consuming it.
  *
- * Timers work best if the thread that manipulates the timers (the
+ * Timers work best if the thread that manipulates the timer (the
  * "calling thread") is the same thread that consumes the output list.
  * This way, it can be guaranteed that the calling thread will not
  * see a timer elapse after being destroyed, or while being extended,
@@ -29,26 +28,23 @@
 #ifndef TIMERS_H
 #define TIMERS_H
 
-typedef struct Timerset Timerset;
 typedef struct Timer Timer;
 
 /*
- * Create a new timer set and return it.  Make it use the specified list
- * to report timer elapse events.
+ * Start up the timer system.
  */
-Timerset *timerset_create(List *outputlist);
+void timers_init(void);
 
 /*
- * Destroy a timer set and free its resources.  Stop all timers
- * associated with it, but do not destroy them.
+ * Stop all timers and shut down the timer system.
  */
-void timerset_destroy(Timerset *set);
+void timers_shutdown(void);
 
 /*
- * Create a timer and associate it with the specified timer set.
- * Do not start it yet.  Return the new timer.
+ * Create a timer and tell it to use the specified output list when
+ * it elapses.  Do not start it yet.  Return the new timer.
  */
-Timer *timer_create(Timerset *set);
+Timer *timer_create(List *outputlist);
 
 /*
  * Destroy this timer and free its resources.  Stop it first, if needed.

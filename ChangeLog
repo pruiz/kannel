@@ -1,3 +1,15 @@
+2000-09-20  Richard Braakman  <dark@wapit.com>
+
+	* gw/timers.[ch]: Removed timersets from the interface.  The choice
+	of what timers should be handled by a single thread is a performance
+	issue, not an interface issue.  All timers are now handled by a
+	single timer thread.  The choice of output list is now specified
+	per timer, instead of per timer set.
+	Added timer_init and timer_shutdown functions that should be
+	called before creating any timers.
+
+	* gw/wapbox.c, gw/wtp.c: Adjust to new timers interface.
+
 2000-09-19  Richard Braakman  <dark@wapit.com>
 
 	* gw/timers.c, gw/timers.h: New timers.  Faster, better, and

@@ -17,6 +17,7 @@
 #include "wsp.h"
 #include "bb.h"
 #include "wsp-strings.h"
+#include "timers.h"
 
 #define CONNECTIONLESS_PORT 9200
 
@@ -380,6 +381,7 @@ int main(int argc, char **argv) {
 	info(0, "------------------------------------------------------------");
 	info(0, "WAP box version %s starting up.", VERSION);
 
+	timers_init();
 	wtp_init();
         wtp_tid_cache_init();
 	wsp_strings_init();
@@ -427,6 +429,7 @@ int main(int argc, char **argv) {
 	destroy_queue();
 	wtp_shutdown();
 	wtp_tid_cache_shutdown();
+	timers_shutdown();
 	wsp_strings_shutdown();
 	config_destroy(cfg);
 	gwlib_shutdown();

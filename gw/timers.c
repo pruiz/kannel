@@ -10,23 +10,9 @@
 #include "gw/wap-events.h"
 #include "gw/timers.h"
 
-/*
- * Internal functions
- */
-static void abort_elapsed(Timer *timer);
-static void heap_delete(List *heap, long index);
-static int heap_adjust(List *heap, long index);
-static void heap_insert(List *heap, Timer *timer);
-static void heap_swap(List *heap, long index1, long index2);
-static void lock(Timerset *set);
-static void unlock(Timerset *set);
-static void watch_timers(void *arg);  /* The timer thread */
-static void elapse_timer(Timer *timer);
-
-
 struct Timerset {
 	/*
-	 * This field is used to control the timer thread.
+	 * This field is set to true when the timer thread should shut down.
 	 */
 	volatile sig_atomic_t stopping;
 	/*
@@ -47,8 +33,16 @@ struct Timerset {
 	 */
 	List *heap;
 	/*
-	 * All timers contain an opaque pointer to caller's data.
-	 * This pointer is produced on the output list when the
+	 * The thread that watches the top of the heap, and processes
+	 * timers that have elapsed.
+	 */
+	long thread;
+};
+typedef struct Timerset Timerset;
+
+struct Timer {
+	/*
+	 * An event is produced on the output list when the
 	 * timer elapses.  The timer is not considered to have
 	 * elapsed completely until that pointer has also been
 	 * consumed from this list (by the caller, presumably).
@@ -56,14 +50,6 @@ struct Timerset {
 	 * removes a pointer from the output list.
 	 */
 	List *output;
-	long timer_thread;
-};
-
-struct Timer {
-	/*
-	 * The set this timer is associated with.
-	 */
-	Timerset *set;
 	/*
 	 * The timer is set to elapse at this time, expressed in
 	 * Unix time format.  This field is set to -1 if the timer
@@ -91,59 +77,89 @@ struct Timer {
 	long index;
 };
 
-Timerset *timerset_create(List *outputlist) {
-	Timerset *set;
+/*
+ * Currently we have one timerset (and thus one heap and one thread)
+ * for all timers.  This might change in the future in order to tune
+ * performance.  In that case, it will be necessary to add a "set"
+ * field to the Timer structure.
+ */
+static Timerset *timers;
 
-	set = gw_malloc(sizeof(*set));
-	set->mutex = mutex_create();
-	set->heap = list_create();
-	set->output = outputlist;
-	list_add_producer(outputlist);
-	set->stopping = 0;
-	set->timer_thread = gwthread_create(watch_timers, set);
+/*
+ * Used by timer functions to assert that the timer module has been
+ * intialized.
+ */
+static int initialized = 0;
 
-	return set;
+/*
+ * Internal functions
+ */
+static void abort_elapsed(Timer *timer);
+static void heap_delete(List *heap, long index);
+static int heap_adjust(List *heap, long index);
+static void heap_insert(List *heap, Timer *timer);
+static void heap_swap(List *heap, long index1, long index2);
+static void lock(Timerset *set);
+static void unlock(Timerset *set);
+static void watch_timers(void *arg);  /* The timer thread */
+static void elapse_timer(Timer *timer);
+
+
+void timers_init(void) {
+	timers = gw_malloc(sizeof(*timers));
+	timers->mutex = mutex_create();
+	timers->heap = list_create();
+	timers->stopping = 0;
+	timers->thread = gwthread_create(watch_timers, timers);
+	initialized = 1;
 }
 
-void timerset_destroy(Timerset *set) {
-	if (set == NULL)
-		return;
-
-	/* Stop all timers.  */
-	while (list_len(set->heap) > 0)
-		timer_stop(list_get(set->heap, 0));
+void timers_shutdown(void) {
+	/* Stop all timers. */
+	if (list_len(timers->heap) > 0)
+		warning(0, "Timers shutting down with %ld active timers.",
+			list_len(timers->heap));
+	while (list_len(timers->heap) > 0)
+		timer_stop(list_get(timers->heap, 0));
 
 	/* Kill timer thread */
-	set->stopping = 1;
-	gwthread_wakeup(set->timer_thread);
-	gwthread_join(set->timer_thread);
+	timers->stopping = 1;
+	gwthread_wakeup(timers->thread);
+	gwthread_join(timers->thread);
+
+	initialized = 0;
 
 	/* Free resources */
-	list_remove_producer(set->output);
-	list_destroy(set->heap, NULL);
-	mutex_destroy(set->mutex);
-	gw_free(set);
+	list_destroy(timers->heap, NULL);
+	mutex_destroy(timers->mutex);
+	gw_free(timers);
 }
 	
 
-Timer *timer_create(Timerset *set) {
+Timer *timer_create(List *outputlist) {
 	Timer *t;
 
+	gw_assert(initialized);
+
 	t = gw_malloc(sizeof(*t));
-	t->set = set;
 	t->elapses = -1;
 	t->event = NULL;
 	t->elapsed_event = NULL;
 	t->index = -1;
+	t->output = outputlist;
+	list_add_producer(outputlist);
 
 	return t;
 }
 
 void timer_destroy(Timer *timer) {
+	gw_assert(initialized);
+
 	if (timer == NULL)
 		return;
 
 	timer_stop(timer);
+	list_remove_producer(timer->output);
 	wap_event_destroy(timer->event);
 	gw_free(timer);
 }
@@ -151,10 +167,11 @@ void timer_destroy(Timer *timer) {
 void timer_start(Timer *timer, int interval, WAPEvent *event) {
 	int wakeup = 0;
 
+	gw_assert(initialized);
 	gw_assert(timer != NULL);
 	gw_assert(event != NULL || timer->event != NULL);
 
-	lock(timer->set);
+	lock(timers);
 
 	/* Convert to absolute time */
 	interval += time(NULL);
@@ -165,8 +182,8 @@ void timer_start(Timer *timer, int interval, WAPEvent *event) {
 		if (interval < timer->elapses && timer->index == 0)
 			wakeup = 1;
 		timer->elapses = interval;
-		gw_assert(list_get(timer->set->heap, timer->index) == timer);
-		wakeup |= heap_adjust(timer->set->heap, timer->index);
+		gw_assert(list_get(timers->heap, timer->index) == timer);
+		wakeup |= heap_adjust(timers->heap, timer->index);
 
 		/* Then set its new event, if necessary. */
 		if (event != NULL) {
@@ -182,19 +199,20 @@ void timer_start(Timer *timer, int interval, WAPEvent *event) {
 		/* Then activate the timer. */
 		timer->elapses = interval;
 		gw_assert(timer->index < 0);
-		heap_insert(timer->set->heap, timer);
+		heap_insert(timers->heap, timer);
 		wakeup = timer->index == 0; /* Do we have a new top? */
 	}
 
-	unlock(timer->set);
+	unlock(timers);
 
 	if (wakeup)
-		gwthread_wakeup(timer->set->timer_thread);
+		gwthread_wakeup(timers->thread);
 }
 
 void timer_stop(Timer *timer) {
+	gw_assert(initialized);
 	gw_assert(timer != NULL);
-	lock(timer->set);
+	lock(timers);
 
 	/*
 	 * If the timer is active, make it inactive and remove it from
@@ -202,13 +220,13 @@ void timer_stop(Timer *timer) {
 	 */
 	if (timer->elapses > 0) {
 		timer->elapses = -1;
-		gw_assert(list_get(timer->set->heap, timer->index) == timer);
-		heap_delete(timer->set->heap, timer->index);
+		gw_assert(list_get(timers->heap, timer->index) == timer);
+		heap_delete(timers->heap, timer->index);
 	}
 
 	abort_elapsed(timer);
 
-	unlock(timer->set);
+	unlock(timers);
 }
 
 static void lock(Timerset *set) {
@@ -233,9 +251,12 @@ static void abort_elapsed(Timer *timer) {
 	if (timer->elapsed_event == NULL)
 		return;
 
-	count = list_delete_equal(timer->set->output, timer->elapsed_event);
-	if (count > 0)
+	count = list_delete_equal(timer->output, timer->elapsed_event);
+	if (count > 0) {
+		debug("timers", 0, "Aborting %s timer.",
+			wap_event_name(timer->elapsed_event->type));
 		wap_event_destroy(timer->elapsed_event);
+	}
 	timer->elapsed_event = NULL;
 }
 
@@ -362,13 +383,15 @@ static int heap_adjust(List *heap, long index) {
  */
 static void elapse_timer(Timer *timer) {
 	gw_assert(timer != NULL);
-	gw_assert(timer->set != NULL);
+	gw_assert(timers != NULL);
 	/* This must be true because abort_elapsed is always called
 	 * before a timer is activated. */
 	gw_assert(timer->elapsed_event == NULL);
 
+	debug("timers", 0, "%s elapsed.", wap_event_name(timer->event->type));
+
 	timer->elapsed_event = wap_event_duplicate(timer->event);
-	list_produce(timer->set->output, timer->elapsed_event);
+	list_produce(timer->output, timer->elapsed_event);
 	timer->elapses = -1;
 }
 

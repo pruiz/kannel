@@ -44,12 +44,6 @@ static Counter *machine_id_counter = NULL;
 
 
 /*
- * Timers used by WTP, all in one set.
- */
-static Timerset *wtp_timers = NULL;
-
-
-/*
  * Give the status the module:
  *
  *	limbo
@@ -311,8 +305,6 @@ void wtp_init(void) {
      queue = list_create();
      list_add_producer(queue);
 
-     wtp_timers = timerset_create(queue);
-
      gw_assert(run_status == limbo);
      run_status = running;
      gwthread_create(main_thread, NULL);
@@ -326,7 +318,6 @@ void wtp_shutdown(void) {
 
      debug("wap.wtp", 0, "wtp_shutdown: %ld machines left",
      	   list_len(machines));
-     timerset_destroy(wtp_timers);
      list_destroy(machines, wtp_machine_destroy);
      list_destroy(queue, wap_event_destroy_item);
      counter_destroy(machine_id_counter);
@@ -577,7 +568,7 @@ WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl) {
         #define MSG(name) machine->name = msg_create(wdp_datagram);
         #define OCTSTR(name) machine->name = NULL;
         #define WSP_EVENT(name) machine->name = NULL;
-        #define TIMER(name) machine->name = timer_create(wtp_timers);
+        #define TIMER(name) machine->name = timer_create(queue);
 	#define ADDRTUPLE(name) machine->name = NULL;
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
