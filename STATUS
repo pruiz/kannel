@@ -1,16 +1,10 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.13 2002-03-24 19:13:00 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.14 2002-03-26 15:13:41 davi Exp $]
 
 Release:
 
 
 RELEASE SHOWSTOPPERS:
-
-    * configuration directive 'include' is broken. Only *one* include per config
-      seems to work. Additional include statements cause damaged start markers.
-    Posted by: Stipe Tolj <tolj@wapme-systems.de>
-    Message-ID: <3C9E2553.5B40EB8C@wapme-systems.de>
-    Status:
 
     * sms-service might not reply back the sms 
     Posted by: Alex Judd <ajudd@skywire.co.uk>

@@ -46,7 +46,7 @@ Octstr *date_format_http(unsigned long unixtime)
         tm.tm_year < 0 ||
         tm.tm_hour < 0 || tm.tm_hour > 23 ||
         tm.tm_min < 0 || tm.tm_min > 59 ||
-        tm.tm_sec < 0 || tm.tm_sec > 59) {
+        tm.tm_sec < 0 || tm.tm_sec > 61) {
         warning(0, "Bad date for timestamp %lu, cannot format.",
                 unixtime);
         return NULL;
