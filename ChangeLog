@@ -3,7 +3,8 @@
 	* gw/wml_definitions.h: STRING_TABLE_MIN defined
 
 	* gw/wml_compiler.c: The first attemp to use string table more 
-	efficiently.
+	efficiently. For a reason or another hangs up when compiled with 
+	checking-malloc on the check phase into a allocation lock.
 
 	* gw/wml_compiler.c: The patch to fix a bug in the libxml-1.8.6 is 
 	removed.

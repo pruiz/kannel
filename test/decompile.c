@@ -369,6 +369,16 @@ void AddStringNode(P_WBXML_INFO buffer, char* string)
 	newnode->m_data = strdup(string);
 }
 
+void AddVariableStringNode(P_WBXML_INFO buffer, char* string, WBXML_VARIABLE_TYPE type)
+{
+	// TODO: add this node
+}
+
+void AddVariableIndexNode(P_WBXML_INFO buffer, char* string, WBXML_VARIABLE_TYPE type)
+{
+	// TODO: add this node
+}
+
 
 /****************
  * Flow Control *
@@ -413,6 +423,28 @@ void ParseError(WBXML_PARSE_ERROR error)
   }
 
   exit(error);
+}
+
+void ParseWarning(WBXML_PARSE_WARNING warning)
+{
+  switch (warning)
+  {
+    case WARN_FUTURE_EXPANSION_EXT_0:
+      Message("Token EXT_0 encountered. This token is reserved for future expansion.");
+      break;
+
+    case WARN_FUTURE_EXPANSION_EXT_1:
+      Message("Token EXT_1 encountered. This token is reserved for future expansion.");
+      break;
+
+    case WARN_FUTURE_EXPANSION_EXT_2:
+      Message("Token EXT_2 encountered. This token is reserved for future expansion.");
+      break;
+
+    default:
+      Message("Unknown warning.");
+      break;
+  }
 }
 
 WBXML_LENGTH BytesLeft(P_WBXML_INFO buffer)
@@ -779,7 +811,7 @@ void OutputEncodedString(const unsigned char* str)
 		if ((*str < 0x20) || (*str > 0x7F))
 		{
 			/* Out of range... encode */
-			printf("&#x%2x", *str);
+			printf("&#x%02x;", *str);
 		}
 		else
 		{
@@ -1029,18 +1061,30 @@ void Read_extension  (P_WBXML_INFO buffer)
 
 	if (IsTag(buffer, TAG_EXT_I_0))
 	{
+		char* str = NULL;
+
 		ReadFixedTag(buffer, TAG_EXT_I_0);
-		Read_termstr(buffer);
+		Read_termstr_rtn(buffer, &str);
+
+		AddVariableStringNode(buffer, str, VAR_ESCAPED); 
 	}
 	else if (IsTag(buffer, TAG_EXT_I_1))
 	{
+		char* str = NULL;
+
 		ReadFixedTag(buffer, TAG_EXT_I_1);
-		Read_termstr(buffer);
+		Read_termstr_rtn(buffer, &str);
+
+		AddVariableStringNode(buffer, str, VAR_UNESCAPED); 
 	}
 	else if (IsTag(buffer, TAG_EXT_I_2))
 	{
+		char* str = NULL;
+
 		ReadFixedTag(buffer, TAG_EXT_I_2);
-		Read_termstr(buffer);
+		Read_termstr_rtn(buffer, &str);
+
+		AddVariableStringNode(buffer, str, VAR_UNCHANGED); 
 	}
 	else if (IsTag(buffer, TAG_EXT_T_0))
 	{
@@ -1048,6 +1092,8 @@ void Read_extension  (P_WBXML_INFO buffer)
 
 		ReadFixedTag(buffer, TAG_EXT_T_0);
 		Read_index(buffer, &index);
+
+		AddVariableIndexNode(buffer, index, VAR_ESCAPED);
 	}
 	else if (IsTag(buffer, TAG_EXT_T_1))
 	{
@@ -1055,6 +1101,8 @@ void Read_extension  (P_WBXML_INFO buffer)
 
 		ReadFixedTag(buffer, TAG_EXT_T_1);
 		Read_index(buffer, &index);
+
+		AddVariableIndexNode(buffer, index, VAR_UNESCAPED);
 	}
 	else if (IsTag(buffer, TAG_EXT_T_2))
 	{
@@ -1062,18 +1110,26 @@ void Read_extension  (P_WBXML_INFO buffer)
 
 		ReadFixedTag(buffer, TAG_EXT_T_2);
 		Read_index(buffer, &index);
+
+		AddVariableIndexNode(buffer, index, VAR_UNCHANGED);
 	}
 	else if (IsTag(buffer, TAG_EXT_0))
 	{
 		ReadFixedTag(buffer, TAG_EXT_0);
+
+		ParseWarning(WARN_FUTURE_EXPANSION_EXT_0);
 	}
 	else if (IsTag(buffer, TAG_EXT_1))
 	{
 		ReadFixedTag(buffer, TAG_EXT_1);
+
+		ParseWarning(WARN_FUTURE_EXPANSION_EXT_1);
 	}
 	else if (IsTag(buffer, TAG_EXT_2))
 	{
 		ReadFixedTag(buffer, TAG_EXT_2);
+
+		ParseWarning(WARN_FUTURE_EXPANSION_EXT_2);
 	}
 	else
 	{
@@ -1188,7 +1244,7 @@ void Read_charset    (P_WBXML_INFO buffer)
   Read_mb_u_int32(buffer, &result);
 }
 
-void Read_termstr    (P_WBXML_INFO buffer)
+void Read_termstr_rtn(P_WBXML_INFO buffer, char** result)
 {
 
 #define STRING_BLOCK_SIZE 256
@@ -1196,6 +1252,9 @@ void Read_termstr    (P_WBXML_INFO buffer)
 	int buflen = STRING_BLOCK_SIZE;
 	char* strbuf = (char*) malloc(buflen);
 	int i = 0;
+
+	if (!result)
+		ParseError(ERR_INTERNAL_BAD_PARAM);
 
 	while ( (BytesLeft(buffer) >= 1) && (*(buffer->m_curpos) != 0) )
 	{
@@ -1212,6 +1271,18 @@ void Read_termstr    (P_WBXML_INFO buffer)
 
 	strbuf[i] = 0;
 	buffer->m_curpos++;
+
+	if (*result)
+		free(*result);
+
+	*result = strbuf;
+}
+
+void Read_termstr    (P_WBXML_INFO buffer)
+{
+	char* strbuf = NULL;
+
+	Read_termstr_rtn(buffer, &strbuf);
 
 	AddStringNode(buffer, strbuf);
 
@@ -1416,14 +1487,17 @@ void CodepageAttrvalueName(WBXML_CODEPAGE page, WBXML_TAG tag, char** value)
 	}
 
 	/* concatenate the value */
-	if (*value)
+	if (CodepageAttrvalueNames[i].m_name)
 	{
-		*value = realloc(*value, strlen(*value) + strlen(CodepageAttrvalueNames[i].m_name) + 1);
-		strcat(*value, CodepageAttrvalueNames[i].m_name);
-	}
-	else
-	{
-		*value = strdup(CodepageAttrvalueNames[i].m_name);
+		if (*value)
+		{
+			*value = realloc(*value, strlen(*value) + strlen(CodepageAttrvalueNames[i].m_name) + 1);
+			strcat(*value, CodepageAttrvalueNames[i].m_name);
+		}
+		else
+		{
+			*value = strdup(CodepageAttrvalueNames[i].m_name);
+		}
 	}
 }
 
@@ -1568,12 +1642,18 @@ void DumpNode(P_WBXML_NODE node, int indent, BOOL *inattrs, BOOL hascontent, cha
 				/* concatenate the value */
 				if (*value)
 				{
-					*value = realloc(*value, strlen(*value) + strlen((char*) node->m_data) + 1);
-					strcat(*value, (char*) node->m_data);
+					if (node->m_data)
+					{
+						*value = realloc(*value, strlen(*value) + strlen((char*) node->m_data) + 1);
+						strcat(*value, (char*) node->m_data);
+					}
 				}
 				else
 				{
-					*value = strdup((char*) node->m_data);
+					if (node->m_data)
+					{
+						*value = strdup((char*) node->m_data);
+					}
 				}
 			}
 			else
@@ -1581,6 +1661,14 @@ void DumpNode(P_WBXML_NODE node, int indent, BOOL *inattrs, BOOL hascontent, cha
 				OutputEncodedString((unsigned char*) node->m_data);
 				printf("\n");
 			}
+			break;
+
+		case NODE_VARIABLE_STRING:
+			// TODO: output variable string
+			break;
+
+		case NODE_VARIABLE_INDEX:
+			// TODO: output variable string
 			break;
 
 		default:

@@ -74,7 +74,9 @@ typedef enum
 	NODE_ATTREND,
 	NODE_STRING,
 	NODE_DTD_TYPE,
-	NODE_STRING_TABLE
+	NODE_STRING_TABLE,
+	NODE_VARIABLE_STRING,
+	NODE_VARIABLE_INDEX
 
 } WBXML_NODE_TYPE;
 
@@ -91,6 +93,14 @@ typedef struct tagWBXML_NODE
 } WBXML_NODE;
 
 typedef WBXML_NODE* P_WBXML_NODE;
+
+typedef enum
+{
+	VAR_ESCAPED,
+	VAR_UNESCAPED,
+	VAR_UNCHANGED
+
+} WBXML_VARIABLE_TYPE;
 
 typedef unsigned char       WBXML_U_INT8;
 typedef WBXML_U_INT8*       P_WBXML_U_INT8;
@@ -150,6 +160,14 @@ typedef enum tagWBXML_PARSE_ERROR
 
 } WBXML_PARSE_ERROR;
 
+typedef enum tagWBXML_PARSE_WARNING
+{
+  WARN_FUTURE_EXPANSION_EXT_0,
+  WARN_FUTURE_EXPANSION_EXT_1,
+  WARN_FUTURE_EXPANSION_EXT_2
+
+} WBXML_PARSE_WARNING;
+
 typedef struct tagDTD_TYPE_LIST
 {
 	long  m_id;
@@ -193,6 +211,7 @@ typedef CODEPAGE_ATTRVALUE_NAME_LIST* P_CODEPAGE_ATTRVALUE_NAME_LIST;
 void Message(char* msg);
 
 void ParseError(WBXML_PARSE_ERROR error);
+void ParseWarning(WBXML_PARSE_WARNING warning);
 
 WBXML_LENGTH BytesLeft(P_WBXML_INFO buffer);
 
@@ -246,6 +265,7 @@ void Read_version    (P_WBXML_INFO buffer);
 void Read_publicid   (P_WBXML_INFO buffer);
 void Read_charset    (P_WBXML_INFO buffer);
 void Read_termstr    (P_WBXML_INFO buffer);
+void Read_termstr_rtn(P_WBXML_INFO buffer, char** result);
 void Read_index      (P_WBXML_INFO buffer, P_WBXML_MB_U_INT32 result);
 void Read_length     (P_WBXML_INFO buffer, P_WBXML_MB_U_INT32 result);
 void Read_zero       (P_WBXML_INFO buffer);
