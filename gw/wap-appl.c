@@ -204,17 +204,6 @@ long wap_appl_get_load(void)
     return counter_value(fetches) + list_len(queue);
 }
 
-static void log_wap(struct request_data *p, Octstr *method, int status)
-{
-    if (p) {
-        alog("\"%s %s\" %d %d", 
-             (method ? octstr_get_cstr(method) : ""),
-             octstr_get_cstr(p->url),
-             status, p->client_SDU_size);
-    }
-}
-
-
 
 /***********************************************************************
  * Private functions.
@@ -585,6 +574,9 @@ static void return_reply(int status, Octstr *content_body, List *headers,
     } else {
 
         http_header_get_content_type(headers, &content.type, &content.charset);
+        alog("<%s> (%s, charset='%s') %d", 
+             octstr_get_cstr(url), octstr_get_cstr(content.type),
+             octstr_get_cstr(content.charset), status);
 
 #ifdef ENABLE_COOKIES
         if (session_id != -1)
@@ -704,7 +696,6 @@ static void return_replies_thread(void *arg)
         return_reply(status, body, headers, p->client_SDU_size,
                      p->event, p->session_id, p->url, p->x_wap_tod,
                      p->request_headers);
-        log_wap(p, NULL, status);
         wap_event_destroy(p->event);
         http_destroy_headers(p->request_headers);
         gw_free(p);
@@ -739,7 +730,7 @@ static void start_fetch(WAPEvent *event)
     Octstr *request_body;
     int x_wap_tod;          /* X-WAP.TOD header was present in request */
     Octstr *magic_url;
-    struct request_data *p = NULL;
+    struct request_data *p;
     
     counter_increase(fetches);
     
@@ -814,7 +805,6 @@ static void start_fetch(WAPEvent *event)
         octstr_destroy(request_body);
         return_reply(ret, content_body, resp_headers, client_SDU_size,
                      event, session_id, url, x_wap_tod, actual_headers);
-        log_wap(p, method, ret);
         wap_event_destroy(event);
         http_destroy_headers(actual_headers);
     } else if (octstr_str_compare(method, "GET") == 0 ||
@@ -841,7 +831,6 @@ static void start_fetch(WAPEvent *event)
         octstr_destroy(request_body);
         return_reply(ret, content_body, resp_headers, client_SDU_size,
                      event, session_id, url, x_wap_tod, actual_headers);
-        log_wap(p, method, ret);
         wap_event_destroy(event);
         http_destroy_headers(actual_headers);
     }
