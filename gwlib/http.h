@@ -138,7 +138,8 @@ void http_shutdown(void);
  * http_close_proxy closes the current proxy connection, after any
  * pending requests have been served.
  */
-void http_use_proxy(Octstr *hostname, int port, List *exceptions);
+void http_use_proxy(Octstr *hostname, int port, List *exceptions,
+    	    	    Octstr *username, Octstr *password);
 void http_close_proxy(void);
 
 

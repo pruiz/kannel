@@ -96,7 +96,14 @@ static int read_some_headers(Connection *conn, List *headers)
 static Mutex *proxy_mutex = NULL;
 static Octstr *proxy_hostname = NULL;
 static int proxy_port = 0;
+static Octstr *proxy_username = NULL;
+static Octstr *proxy_password = NULL;
 static List *proxy_exceptions = NULL;
+
+
+static void proxy_add_authentication(List *headers)
+{
+}
 
 
 static void proxy_init(void)
@@ -109,7 +116,6 @@ static void proxy_init(void)
 static void proxy_shutdown(void)
 {
     http_close_proxy();
-    list_destroy(proxy_exceptions, NULL);
     mutex_destroy(proxy_mutex);
     proxy_mutex = NULL;
 }
@@ -138,7 +144,8 @@ static int proxy_used_for_host(Octstr *host)
 }
 
 
-void http_use_proxy(Octstr *hostname, int port, List *exceptions)
+void http_use_proxy(Octstr *hostname, int port, List *exceptions,
+    	    	    Octstr *username, Octstr *password)
 {
     int i;
 
@@ -154,6 +161,8 @@ void http_use_proxy(Octstr *hostname, int port, List *exceptions)
     for (i = 0; i < list_len(exceptions); ++i)
         list_append(proxy_exceptions,
                     octstr_duplicate(list_get(exceptions, i)));
+    proxy_username = octstr_duplicate(username);
+    proxy_password = octstr_duplicate(password);
     debug("gwlib.http", 0, "Using proxy <%s:%d>", 
     	  octstr_get_cstr(proxy_hostname), proxy_port);
     mutex_unlock(proxy_mutex);
@@ -162,18 +171,18 @@ void http_use_proxy(Octstr *hostname, int port, List *exceptions)
 
 void http_close_proxy(void)
 {
-    Octstr *p;
-
     gw_assert(run_status == running || run_status == terminating);
 
     mutex_lock(proxy_mutex);
-    if (proxy_hostname != NULL) {
-        octstr_destroy(proxy_hostname);
-        proxy_hostname = NULL;
-    }
     proxy_port = 0;
-    while ((p = list_extract_first(proxy_exceptions)) != NULL)
-        octstr_destroy(p);
+    octstr_destroy(proxy_hostname);
+    octstr_destroy(proxy_username);
+    octstr_destroy(proxy_password);
+    proxy_hostname = NULL;
+    proxy_username = NULL;
+    proxy_password = NULL;
+    list_destroy(proxy_exceptions, octstr_destroy_item);
+    proxy_exceptions = NULL;
     mutex_unlock(proxy_mutex);
 }
 
@@ -823,6 +832,7 @@ static Connection *send_request(HTTPServer *trans, char *method_name)
         goto error;
 
     if (proxy_used_for_host(trans->host)) {
+	proxy_add_authentication(trans->request_headers);
         request = build_request(trans->url, trans->host, trans->port, 
 	    	    	    	trans->request_headers, 
 				trans->request_body, method_name);

@@ -81,6 +81,8 @@ int main(int argc, char **argv) {
 	Octstr *proxy;
 	List *exceptions;
 	long proxy_port;
+	Octstr *proxy_username;
+	Octstr *proxy_password;
 	char *p;
 	long threads[MAX_THREADS];
 	time_t start, end;
@@ -91,6 +93,8 @@ int main(int argc, char **argv) {
 	proxy = NULL;
 	proxy_port = -1;
 	exceptions = list_create();
+	proxy_username = NULL;
+	proxy_password = NULL;
 	num_threads = 0;
 
 	while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:")) != EOF) {
@@ -146,9 +150,13 @@ int main(int argc, char **argv) {
 	    exit(0);
 	}
 
-	if (proxy != NULL && proxy_port > 0)
-		http_use_proxy(proxy, proxy_port, exceptions);
+	if (proxy != NULL && proxy_port > 0) {
+		http_use_proxy(proxy, proxy_port, exceptions,
+		    	       proxy_username, proxy_password);
+	}
 	octstr_destroy(proxy);
+	octstr_destroy(proxy_username);
+	octstr_destroy(proxy_password);
 	list_destroy(exceptions, octstr_destroy_item);
 	
 	counter = counter_create();

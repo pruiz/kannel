@@ -1,5 +1,13 @@
 2000-11-13  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsbox.c, gw/wapbox.c, gwlib/http.[ch], test/test_http.c:
+	Changed the HTTP proxy configuration interface so that the access
+	to the proxy can be authenticated. The actual implementation
+	is still lacking, but the interface changed to http_use_proxy()
+	is done.
+
+2000-11-13  Lars Wirzenius  <liw@iki.fi>
+
 	* Makefile.in: Use $(DESTDIR) in the install targets.
 
 2000-11-13  Richard Braakman  <dark@wapi.com>
