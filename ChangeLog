@@ -1,5 +1,9 @@
 2000-12-13  Richard Braakman  <dark@wapit.com>
 
+	* Making release 0.13.1.
+
+2000-12-13  Richard Braakman  <dark@wapit.com>
+
 	* Updated NEWS file.  Compare 0.13 with 0.12 series instead of
 	with 0.11 series, on the assumption that people who use development
 	versions will still read the release notes for stable versions.

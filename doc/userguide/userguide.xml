@@ -425,10 +425,13 @@
 
 	<listitem><para><literal>--with-malloc=</literal><replaceable>type</replaceable>
 
-	    Select malloc wrapper to use: <replaceable>type</replaceable>
-	    is either <literal>native</literal> or
-	    <literal>checking</literal>. For production use, you probably
-	    want <literal>native</literal>.</para></listitem>
+	    Select memory allocation module to use:
+	    <replaceable>type</replaceable> is <literal>native</literal>,
+            <literal>checking</literal> (the default), or
+            <literal>slow</literal>.  For production use you probably
+	    want <literal>native</literal>.  The <literal>slow</literal>
+            module is more thorough than <literal>checking</literal>,
+	    but much slower.</para></listitem>
 
 	<listitem><para><literal>--enable-mutex-stats</literal>
 

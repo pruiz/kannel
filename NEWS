@@ -1,17 +1,68 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.13
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.13.1
 
 This is a DEVELOPMENT version. It should be usable for experimentation
 and testing, and is a release candidate for 0.14. Please do try it out
 and report problems to devel@kannel.org (the development mailing list)
 or bugs@kannel.org (the bug tracking system).
 
-Changes since version 0.11.3:
+
+Changes since version 0.13:
+
+
+New features:
+
+ * WTP and WSP protocol stacks are now separate, so that other projects
+   than Kannel can make use of them.
+
+ * Redesigned smsbox to have a stable number of threads.  It is much
+   more stable now, handles more requests at a time, and shuts down
+   more cleanly.
+
+ * sendota interface accepts more than one OTA configuration.
+
+ * Driver for UCP/EMI SMSCs supports authenticated sessions.
+
+ * smsbox accepts WML responses as well as plain text and HTML responses.
+
+
+Bugfixes:
+
+ * Improved HTTP module's support for HTTP/1.0 clients and servers.
+
+ * Fixed UDH encoding in Phone-as-SMSC module.
+
+ * Fixed splitting of SMS messages that have UDH.
+
+ * HTML to SMS conversion now deals with entities like &#1234; correctly.
+   (Also fixed in 0.12.3)
+
+ * Several bugs and memory leaks fixed in SMPP module.
+
+ * Bearerbox detection of inactive SMSCs is less trigger-happy.
+   This greatly improves throughput if the roundtrip to the SMSC is
+   slower than 10 milliseconds.  (Also fixed in 0.12.3)
+
+ * Detect libxml 2.2.10 and above as part of the 2.2.x series.
+   (Also fixed in 0.12.3)
+
+ * Fixed some memory leaks.
+
+
+Development news:
+
+ * Checking malloc now displays some of the contents of the memory leaks
+   it finds, which makes it much easier to track them down.
+
+ * Started building support for WAP Push.
+
+
+Changes compared to version 0.12.3:
+
 
 New features:
 
  * HTTP module restructured to use a fixed number of threads.  This makes
-   it able to handle many more requests at a time.  This is used by the
-   wapbox, not yet by the smsbox.
+   it able to handle many more requests at a time.
 
  * Kannel boxes report version numbers of themselves and their components
    (such as libxml) when starting up.
@@ -23,10 +74,6 @@ New features:
  * Phone-as-SMSC module now also supports Falcom A2D modem and Nokia 7110.
 
  * Added configure option --with-defaults=speed for production systems.
-
- * WSP: Support for X-WAP.TOD header, needed for WAP 1.1 conformance.
-
- * Support for Debian packages of Kannel.
 
  * Updated documentation.
 
@@ -45,36 +92,6 @@ New features:
 
 Bugfixes:
 
- * In smsbox configuration, %t, %p, %P, %q, and %Q work again in url fields.
-
- * URL escaping uses a better set of "safe" characters.
-
- * HTTP POST requests have a Content-Length again.
-
- * In wapbox, request headers should actually override session headers of
-   the same name, rather than just being appended.  This has been corrected.
-
- * WSP: Corrected handling of invalid Expires headers to conform to RFC2068.
-
- * WSP: Corrected encoding of date values that are exactly the start of
-   the epoch (Thu, 01 Jan 1970 00:00:00 GMT).
-
- * WML compiler now allows reserved words as variable names, such
-   as $(password).
-
- * WML compiler accepts &nbsp; and &shy;.
-
- * Made WMLScript compiler work on 64-bit architectures.
-
- * WMLScript compiler can now handle the number -2147483648.
-
- * When wapbox is killed, it dies immediately.
-   
- * Fixed memory leaks.
-
- * Fixed small bugs and conformance issues in WMLScript compiler,
-   WML compiler, WTP, and WSP.
-
  * Fixed several bugs in Phone-as-SMSC module.
 
  * Fixed the problem that switching malloc wrappers required a "make clean"
@@ -90,7 +107,8 @@ Development news:
  * New Dict module in gwlib, for Octstr -> value hash tables.
 
  * New FDSet module in gwlib, for efficient polling of large sets of
-   file descriptors.  Connection module has extensions for using it.
+   file descriptors.  Used by HTTP module.  Connection module has
+   extensions for it.
 
 
 See ChangeLog for detailed information.
