@@ -71,8 +71,8 @@
 			<jobtitle>Gateway architect</jobtitle>
 			<orgname>former Wapit Ltd</orgname>
 			<!--<address> <email>liw@wapit.com</email>
-			<otheraddr>http://www.wapit.com</otheraddr>-->
-			</address>
+			<otheraddr>http://www.wapit.com</otheraddr>
+			</address>-->
 		</affiliation>
 	</author>
 	<author>
@@ -82,8 +82,8 @@
 			<jobtitle>Manager</jobtitle>
 			<orgname>former Wapit Ltd</orgname>
 			<!--<address> <email>rpr@wapit.com</email>
-			<otheraddr>http://www.wapit.com</otheraddr>-->
-			</address>
+			<otheraddr>http://www.wapit.com</otheraddr>
+			</address>-->
 		</affiliation>
 	</author>
 
@@ -390,7 +390,7 @@
 <sect1>
 <title>Upgrading from previous versions</title>
 	<para>If you are upgrading from a previous version, please look at
-	<xref linkend="upgrading_notes"> for any pertinent information.
+	<xref linkend="upgrading-notes"> for any pertinent information.
 	</para>
 </sect1>
 
@@ -2378,7 +2378,7 @@ my-number = "12345"
 <sect3>
 <title>CMG UCP/EMI 4.0 and 3.5</title>
 
-  <warning><para>See <xref linkend="upgrading_notes"> for changes.</para></warning>
+  <warning><para>See <xref linkend="upgrading-notes"> for changes.</para></warning>
   <para>Kannel supports two types of connections with CMG SMS centers:
   direct TCP/IP connections ( <literal>emi</literal>) and ISDN/modem 
   (X.25) connection (<literal>emi_x25</literal>).</para>
@@ -3068,7 +3068,7 @@ smsc-password = foo
 <sect3>
 <title>GSM modem</title>
 
-  <warning><para>See <xref linkend="upgrading_notes"> for changes.</para></warning>
+  <warning><para>See <xref linkend="upgrading-notes"> for changes.</para></warning>
 
   <para>This driver allows a GSM Modem or Phone to be connected to Kannel 
   and work as a virtual SMSC</para>
@@ -7019,7 +7019,7 @@ ssl-server-key-file = "/home/aarno/kannelcvs/gateway/gw/key1.pem"
 	
 </chapter>
 
-<appendix id="upgrading_notes">
+<appendix id="upgrading-notes">
 <title>Upgrading notes</title>
 
 	<para>This appendix includes pertinent information about required
