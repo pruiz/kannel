@@ -614,8 +614,10 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag,
                 continue;
             }
             if ( -1 != octstr_search(line, octstr_imm("+CMS ERROR"), 0)) {
-                error(0, "AT2[%s]: CMS ERROR: %s", octstr_get_cstr(privdata->name), 
-                      octstr_get_cstr(line));
+                int errcode;
+                sscanf(octstr_get_cstr(line), "+CMS ERROR: %d", &errcode);
+                error(0, "AT2[%s]: CMS ERROR: %s (%s)", octstr_get_cstr(privdata->name), 
+                      octstr_get_cstr(line), at2_error_string(errcode));
                 ret = 1;
                 goto end;
             }
@@ -680,6 +682,10 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag,
             }
 
             if ( -1 != octstr_search(line, octstr_imm("ERROR"), 0)) {
+                int errcode;
+                sscanf(octstr_get_cstr(line), "ERROR: %d", &errcode);
+                error(0, "AT2[%s]: Error occurs: %s (%s)", octstr_get_cstr(privdata->name),
+                      octstr_get_cstr(line), at2_error_string(errcode));
                 ret = -1;
                 goto end;
             }
@@ -1764,8 +1770,8 @@ Octstr *at2_convertpdu(Octstr *pdutext)
 }
 
 
-int at2_rmask[8] = { 0, 1, 3, 7, 15, 31, 63, 127 };
-int at2_lmask[8] = { 0, 128, 192, 224, 240, 248, 252, 254 };
+static int at2_rmask[8] = { 0, 1, 3, 7, 15, 31, 63, 127 };
+static int at2_lmask[8] = { 0, 128, 192, 224, 240, 248, 252, 254 };
 
 void at2_decode7bituncompressed(Octstr *input, int len, Octstr *decoded, int offset)
 {
@@ -2418,6 +2424,7 @@ int swap_nibbles(unsigned char byte)
     return ( ( byte & 15 ) * 10 ) + ( byte >> 4 );
 }
 
+
 Octstr* at2_format_address_field(Octstr* msisdn)
 {
     int ntype = PNT_UNKNOWN;
@@ -2462,6 +2469,7 @@ Octstr* at2_format_address_field(Octstr* msisdn)
     return out;	
 }
 
+
 int at2_set_message_storage(PrivAT2data* privdata, Octstr* memory_name)
 {
     Octstr *temp;
@@ -2473,7 +2481,158 @@ int at2_set_message_storage(PrivAT2data* privdata, Octstr* memory_name)
     temp = octstr_format("AT+CPMS=\"%S\"", memory_name);
     ret = at2_send_modem_command(privdata, octstr_get_cstr(temp), 0, 0);
     octstr_destroy(temp);
-    if (ret != 0)
-            return -1;
-    return 0;
+
+    return !ret ? 0 : -1;
 }
+
+
+const char *at2_error_string(int code)
+{
+    switch (code) {
+    case 8:
+        return "Operator determined barring";
+    case 10:
+        return "Call barred";
+    case 21:
+        return "Short message transfer rejected";
+    case 27:
+        return "Destination out of service";
+    case 28:
+        return "Unidentified subscriber";
+    case 29:
+        return "Facility rejected";
+    case 30:
+        return "Unknown subscriber";
+    case 38:
+        return "Network out of order";
+    case 41:
+        return "Temporary failure";
+    case 42:
+        return "Congestion";
+    case 47:
+        return "Resources unavailable, unspecified";
+    case 50:
+        return "Requested facility not subscribed";
+    case 69:
+        return "Requested facility not implemented";
+    case 81:
+        return "Invalid short message transfer reference value";
+    case 95:
+        return "Invalid message, unspecified";
+    case 96:
+        return "Invalid mandatory information";
+    case 97:
+        return "Message type non-existent or not implemented";
+    case 98:
+        return "Message not compatible with short message protocol state";
+    case 99:
+        return "Information element non-existent or not implemented";
+    case 111:
+        return "Protocol error, unspecified";
+    case 127:
+        return "Interworking, unspecified";
+    case 128:
+        return "Telematic interworking not supported";
+    case 129:
+        return "Short message Type 0 not supported";
+    case 130:
+        return "Cannot replace short message";
+    case 143:
+        return "Unspecified TP-PID error";
+    case 144:
+        return "Data coding scheme (alphabet not supported";
+    case 145:
+        return "Message class not supported";
+    case 159:
+        return "Unspecified TP-DCS error";
+    case 160:
+        return "Command cannot be actioned";
+    case 161:
+        return "Command unsupported";
+    case 175:
+        return "Unspecified TP-Command error";
+    case 176:
+        return "TPDU not supported";
+    case 192:
+        return "SC busy";
+    case 193:
+        return "No SC subscription";
+    case 194:
+        return "SC system failure";
+    case 195:
+        return "Invalid SME address";
+    case 196:
+        return "Destination SME barred";
+    case 197:
+        return "SM Rejected-Duplicate SM";
+    case 198:
+        return "TP-VPF not supported";
+    case 199:
+        return "TP-VP not supported";
+    case 208:
+        return "D0 SIM SMS storage full";
+    case 209:
+        return "No SMS storage capability in SIM";
+    case 210:
+        return "Error in MS";
+    case 211:
+        return "D0 SIM SMS storage full";
+    case 212:
+        return "SIM Application Toolkit Busy";
+    case 213:
+        return "SIM data download error";
+    case 255:
+        return "Unspecified error cause";
+    case 300:
+        return "ME failure";
+    case 301:
+        return "SMS service of ME reserved";
+    case 302:
+        return "Operation not allowed";
+    case 303:
+        return "Operation not supported";
+    case 304:
+        return "Invalid PDU mode parameter";
+    case 305:
+        return "Invalid text mode parameter";
+    case 310:
+        return "SIM not inserted";
+    case 311:
+        return "SIM PIN required";
+    case 312:
+        return "PH-SIM PIN required";
+    case 313:
+        return "SIM failure";
+    case 314:
+        return "SIM busy";
+    case 315:
+        return "SIM wrong";
+    case 316:
+        return "SIM PUK required";
+    case 317:
+        return "SIM PIN2 required";
+    case 318:
+        return "SIM PUK2 required";
+    case 320:
+        return "Memory failure";
+    case 321:
+        return "Invalid memory index -> don't worry, just memory fragmentation.";
+    case 322:
+        return "Memory full";
+    case 330:
+        return "SMSC address unknown";
+    case 331:
+        return "No network service";
+    case 332:
+        return "Network timeout";
+    case 340:
+        return "NO +CNMA ACK EXPECTED";
+    case 500:
+        return "Unknown error. -> maybe Sim storage is full? I'll have a look at it.";
+    case 512:
+        return "User abort";
+    default:
+        return "error number not known to us. ask google and add it.";
+    }
+}
+
