@@ -3,7 +3,7 @@
  *
  * Yann Muller - 3G Lab, 2000.
  *
- * $Id: smsc_at.c,v 1.1 2000-06-14 10:03:08 3glab Exp $
+ * $Id: smsc_at.c,v 1.2 2000-06-14 13:06:39 3glab Exp $
  * 
  * Make sure your kannel configuration file contains the following lines
  * to be able to use the AT SMSC:
@@ -20,6 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include <termios.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -242,7 +243,6 @@ error:
  * Reads from the modem
  */
 static int at_data_read(int fd, Octstr *ostr) {
-	char *p = NULL;
 	int ret;
 	fd_set read_fd;
 	struct timeval tv;
@@ -324,15 +324,19 @@ static int send_modem_command(int fd, char *cmd) {
 		
 		ret = octstr_search_cstr(ostr, "OK");
 		if(ret != -1) {
+			octstr_destroy(ostr);
 			return 0;
 		}
 		ret = octstr_search_cstr(ostr, "ERROR");
-		if(ret != -1)
+		if(ret != -1) {
+			octstr_destroy(ostr);
 			return -1;
+		}
 	}
 	return -1;
 	
 error:
+	octstr_destroy(ostr);
 	return -1;
 }
 
@@ -343,7 +347,7 @@ error:
 static int pdu_extract(Octstr *buffer, Octstr **pdu) {
 	long len = 0;
 	int pos = 0;
-	int i; /* just for debug */
+	/*int i;  just for debug */
 
 	/* debug info */
 	/*printf("Extracting: ");
@@ -396,7 +400,7 @@ nomsg:
  */
 
 static Msg *pdu_decode(Octstr *data) {
-	int type, ret;
+	int type;
 	int i;
 	Msg *msg = NULL;
 
@@ -617,7 +621,7 @@ int ermask[8] = { 0, 1, 3, 7, 15, 31, 63, 127 };
 int elmask[8] = { 0, 64, 96, 112, 120, 124, 126, 127 };
 
 static int encode7bituncompressed(Octstr *input, unsigned char *encoded, int maxlen) {
-	unsigned char septet, octet, prevoctet, tmpenc;
+	unsigned char prevoctet, tmpenc;
 	int i;
 	int c = 1;
 	int r = 7;
@@ -654,18 +658,14 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded, int max
  * Encode 8bit uncompressed user data
  */
 static int encode8bituncompressed(Octstr *input, unsigned char *encoded, int maxlen) {
-	int i;
 	int len;
 
 	len = octstr_len(input);
 	if( len > maxlen)
 		len = maxlen;
 	
-	/*for(i=0; i<len; i++) {
-		encoded[i] = octstr_get_char(input, i);
-	}*/
 	octstr_get_many_chars(encoded, input, 0, len);
-	return i;
+	return len;
 }
 
 /**********************************************************************
