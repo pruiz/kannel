@@ -1,3 +1,7 @@
+2002-03-13 Jörg Pommnitz <jpo@condat.de>
+    * fix AT2 to work with Wavecom modem again. This should not hurt 
+      anything else.
+
 2002-03-12  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsc_at2.c: fixed a typo, removed ceil function and fixed len in 
       alphanumeric text

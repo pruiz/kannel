@@ -544,26 +544,34 @@ int	at2_init_device(PrivAT2data *privdata)
     if(ModemTypes[privdata->modemid].pin_support)
     {
         ret = at2_send_modem_command(privdata, "AT+CPIN?", 10, 0);
-        if(ret == -1)
-	    return -1;
-        if(ret == 2)
-        {
-            if(privdata->pin == NULL)
-                return -1;
-            setpin = octstr_format("AT+CPIN=%s", octstr_get_cstr(privdata->pin));
-	    ret = at2_send_modem_command(privdata, octstr_get_cstr(setpin), 0, 0);
-	    octstr_destroy(setpin);
-	    if(ret !=0 )
-	    	return -1;
-        }
+
+	if (!privdata->pin_ready)
+	{
+	    if(ret == 2)
+	    {
+		if(privdata->pin == NULL)
+		    return -1;
+		setpin = octstr_format("AT+CPIN=%s", octstr_get_cstr(privdata->pin));
+		ret = at2_send_modem_command(privdata, octstr_get_cstr(setpin), 0, 0);
+		octstr_destroy(setpin);
+		if(ret !=0 )
+		    return -1;
+	    } else if(ret == -1)
+		return -1;
+	}
+
  
  	/* we have to wait until +CPIN: READY appears before issuing
     	the next command. 10 sec should be suficient */
     	if(!privdata->pin_ready)
     	{
-   	   ret = at2_wait_modem_command(privdata,10, 0);
-    	   if(ret == -1) /* timeout */
-    	       return -1;
+   	   at2_wait_modem_command(privdata,10, 0);
+    	   if(!privdata->pin_ready) {
+	       at2_send_modem_command(privdata, "AT+CPIN?", 10, 0);
+	       if(!privdata->pin_ready) {
+		   return -1; /* give up */
+	       }
+	   }
     	}
     } 
     // Set the GSM SMS message center address if supplied
