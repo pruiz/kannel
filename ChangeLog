@@ -1,3 +1,7 @@
+2003-09-11  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsc/smsc_smpp.c,gw/smscconn.c: applied smpp properly shutdown sequence
+      patch. For details see: Message-Id: <200309021706.51057.a.malysh@centrium.de>
+
 2003-09-11  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/mime.c, test/test_mime_multipart.c: fixed compiler warnings.
 

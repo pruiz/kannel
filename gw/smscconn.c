@@ -207,11 +207,19 @@ void smscconn_shutdown(SMSCConn *conn, int finish_sending)
     }
 
     /* Call SMSC specific destroyer */
-    if (conn->shutdown)
+    if (conn->shutdown) {
+        /* 
+         * we must unlock here, because module manipulate their state
+         * and will try to lock this mutex.Otherwise we have deadlock!
+         */
+        mutex_unlock(conn->flow_mutex);
 	conn->shutdown(conn, finish_sending);
-    else
+    }
+    else {
 	conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
-    mutex_unlock(conn->flow_mutex);
+        mutex_unlock(conn->flow_mutex);
+    }
+
     return;
 }
 

@@ -57,6 +57,7 @@ static void dump_pdu(const char *msg, Octstr *id, SMPP_PDU *pdu)
 #define SMPP_THROTTLING_SLEEP_TIME  15
 #define SMPP_DEFAULT_CONNECTION_TIMEOUT  10 * SMPP_ENQUIRE_LINK_INTERVAL
 #define SMPP_DEFAULT_WAITACK        60
+#define SMPP_DEFAULT_SHUTDOWN_TIMEOUT 30
 
 
 /* 
@@ -1366,23 +1367,30 @@ static void io_thread(void *arg)
             timeout = last_enquire_sent + smpp->enquire_link_interval
                         - date_universal_now();
 
+            if (conn_wait(conn, timeout) == -1)
+                break;
+
             /* unbind
-             * TODO: read so long as unbind_resp received. Otherwise we have
+             * Read so long as unbind_resp received or timeout passed. Otherwise we have
              * double delivered messages.
              */
             if (smpp->quitting) {
                 send_unbind(smpp, conn);
-                while ((ret = read_pdu(smpp, conn, &len, &pdu)) == 1) {
-                    dump_pdu("Got PDU:", smpp->conn->id, pdu);
-                    handle_pdu(smpp, conn, pdu, &pending_submits);
-                    smpp_pdu_destroy(pdu);
+                last_response = time(NULL);
+                while(conn_wait(conn, 1.00) != -1 &&
+                      difftime(time(NULL), last_response) < SMPP_DEFAULT_SHUTDOWN_TIMEOUT &&
+                      smpp->conn->status != SMSCCONN_DISCONNECTED) {
+                    if (read_pdu(smpp, conn, &len, &pdu) == 1) {
+                        dump_pdu("Got PDU:", smpp->conn->id, pdu);
+                        handle_pdu(smpp, conn, pdu, &pending_submits);
+                        smpp_pdu_destroy(pdu);
+                    }
                 }
                 debug("bb.sms.smpp", 0, "SMPP[%s]: %s: break and shutting down",
                       octstr_get_cstr(smpp->conn->id), __PRETTY_FUNCTION__);
-            }
 
-            if (smpp->quitting || conn_wait(conn, timeout) == -1)
                 break;
+            }
 
             send_enquire_link(smpp, conn, &last_enquire_sent);
 
