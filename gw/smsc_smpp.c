@@ -332,27 +332,30 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
         localtime = gw_localtime(time(NULL));
         gwqdiff = ((localtime.tm_hour - gmtime.tm_hour) * 4)
                   + ((localtime.tm_min - gmtime.tm_min) / 15);
-        if (gwqdiff >= 0)
+        
+        if (gwqdiff >= 0) {
             relation_UTC_time = octstr_create("+");
-        else
+        } else {
             relation_UTC_time = octstr_create("-");
+            gwqdiff *= -1;  /* make absolute */
+        }
 
         if (msg->sms.validity) {
             tm = gw_localtime(time(NULL) + msg->sms.validity * 60);
-            buffer = octstr_format("%02d%02d%02d%02d%02d%02d0%01d%02d%1s",
+            buffer = octstr_format("%02d%02d%02d%02d%02d%02d0%02d%1s",
                     tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
                     tm.tm_hour, tm.tm_min, tm.tm_sec,
-                    0, gwqdiff, octstr_get_cstr(relation_UTC_time));
+                    gwqdiff, octstr_get_cstr(relation_UTC_time));
             pdu->u.submit_sm.validity_period = octstr_copy(buffer,0,16);
             octstr_destroy(buffer);
         }
 
         if (msg->sms.deferred) {
             tm = gw_localtime(time(NULL) + msg->sms.deferred * 60);
-            buffer = octstr_format("%02d%02d%02d%02d%02d%02d0%01d%02d%1s",
+            buffer = octstr_format("%02d%02d%02d%02d%02d%02d0%02d%1s",
                     tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
                     tm.tm_hour, tm.tm_min, tm.tm_sec,
-                    0, gwqdiff, octstr_get_cstr(relation_UTC_time));
+                    gwqdiff, octstr_get_cstr(relation_UTC_time));
             pdu->u.submit_sm.schedule_delivery_time = octstr_copy(buffer,0,16);
             octstr_destroy(buffer);
         }
