@@ -72,7 +72,7 @@ struct modem_def ModemTypes[MAX_MODEM_TYPES] =
     { "siemens",	"AT\\Q3" 	, 19200 , "AT+CNMI=1,2,0,0,0",	"SIEMENS", 	"M20",	0, 1, 1, 1, 1	},
     { "nokiaphone",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"NokiaPhone" ,	NULL,	0, 1, 1, 1, 1	},
     { "falcom",		"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"Falcom",	NULL,	0, 0, 1, 0, 0	},
-    { "ericcson",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=3,2,0,0",	"R520m",	NULL,	0, 0, 1, 1, 1	}
+    { "ericsson",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=3,2,0,0",	"R520m",	NULL,	0, 0, 1, 1, 1	}
 };
 
 /* maximum data to attempt to read in one go */
