@@ -1,4 +1,9 @@
 2001-12-25  Stipe Tolj  <tolj@wapme-systems.de>
+    * utils/attgetopt.c: exclude implementation of getopt() if config.h
+      has HAVE_GETOPT_IN_STDIO_H defined. This fixes make run bug
+      for Solaris 2.6 (at least).
+
+2001-12-25  Stipe Tolj  <tolj@wapme-systems.de>
     * configure.in: fixed -L/<path> linked flag option for configure's
       --with-mysql option [thanks to Abd Rahman Johari 
       <ajohari@man.iwpowerhouse.com> for pointing this out]
