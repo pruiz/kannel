@@ -51,7 +51,15 @@
  *    A)   Fakewap -> Gateway
  *
  *         Either WSP Connect PDU with tid_new flag set on or same PDU with a 
- *         wrapped up tid (only WTP header affected).
+ *         *seriously* wrapped up tid (only WTP header affected). Seriously
+ *         means tid being out of the window:
+ *
+ *         |----------------------------|
+ *                  tid space
+ *
+ *         |-------------|
+ *          wrapping up
+ *          tid window
  *
  *    B)   Gateway -> Fakewap
  *
@@ -83,6 +91,7 @@ where options are:\n\
 -T pdu-type	PDU type, as an integer (default: 1)\n\
 -t tcl		transaction class, as an integer (default: 2)\n\
 -n		set tid_new flag in packets, forces gateway to flush cache\n\
+                (default: off)\n\
 -d difference	difference between successive tid numbers (default: 1)\n\
 -F		Accept failure and continue rather than exiting\n\
 \n\
@@ -127,8 +136,10 @@ Octstr *hostname = NULL;
 Octstr *gateway_addr = NULL;
 double interval = 1.0;
 unsigned short port = 9201;
-int max_send = 1;
-unsigned short tid_addition = 1; 
+int max_send = 1,
+    tid_new = 0;
+unsigned short tid_addition = 1,
+         tid = 0; 
 Mutex *mutex;
 int threads = 1;
 int num_sent = 0;
@@ -201,11 +212,19 @@ static char *choose_message(char **urls, int num_urls) {
     return urls[rand() % num_urls];
 }
 /* returns TID */
-static unsigned short get_tid(void) {
-/* XXX this is not thread safe. --liw */
-    static unsigned short tid = 0;
+static unsigned short get_tid(void){ 
+    unsigned short old_tid;
+/* Mutexes are not enough to make tids thread-safe. In addition, every thread
+   must have a tid space of its own, otherwise spurious duplicates will be
+   generated. */
+    old_tid = tid;
     tid += tid_addition;
+/* When tid is wrapped-up, we must turn on the tid_new-flag*/   
+    if (tid < old_tid)
+       tid_new = 1;
+
     tid %= 1 << 15;
+
     return tid;
 }
 
