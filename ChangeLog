@@ -1,3 +1,17 @@
+2003-02-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_emi2.c: fixed assigning of non existent field in EMI/UCP
+      driver. Thanks to "Michael Mulcahy" <michael.mulcahy@anam.com> for 
+      reporting and Alexander for providing a patch.
+      [Msg-ID: <200302031916.32796.a.malysh@centrium.de>]
+    * configure[.in]: Modified doc building checking. Alan provided this
+      patch, thanks a lot. Now docs are only build if all requiries are meet.
+      [Msg-ID: <1044948632.1131.71.camel@terpsichore>]
+    * gwlib/pki.h: fixed minor compiler warning
+
+2003-02-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: fixed malformed xml tag from previous 
+      commit.
+
 2003-02-15  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
     * configure, configure.in: added detection of OPENSSL_THREADS to enable
       compiling kannel with openssl 0.9.7
@@ -19,6 +33,7 @@
 2003-02-14  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: Alan provided some documentation about 
       log file roation.
+      [Msg-ID: <1044948652.1108.73.camel@terpsichore>]
 
 2003-02-14  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap_push_ppg_pushuser.c, gwlib/cfg.def: bouncing back to use unique
