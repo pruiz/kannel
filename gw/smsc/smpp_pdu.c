@@ -218,7 +218,7 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
     switch (type) {
     #define OPTIONAL_BEGIN(num_expected)                                                \
         {   /* Read optional parameters */                                              \
-            while (pos+4 < len) {                                                       \
+            while (pos+4 <= len) {                                                      \
                 unsigned long opt_tag, opt_len;                                         \
                 Octstr *opt_val = NULL;                                                 \
                 Octstr *tag_str = NULL;                                                 \
