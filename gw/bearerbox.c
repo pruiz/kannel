@@ -79,7 +79,7 @@ enum {
 typedef struct bb_t {
     int	type;
     int id;		/* id number */
-    sig_atomic_t status;
+    volatile sig_atomic_t status;
 
     pthread_t thread;
 
@@ -119,11 +119,11 @@ typedef struct bb_s {
     float	mean_req_ql;  	/* mean request queue length */
     float	mean_rep_ql;  	/* mean reply queue length */
 
-    sig_atomic_t	abort_program;	/* 0 nothing, 1 not receiving new, 2 queus
+    volatile sig_atomic_t	abort_program;	/* 0 nothing, 1 not receiving new, 2 queus
 					 * emptied */
 
-    sig_atomic_t	suspended;
-    sig_atomic_t	accept_pending;
+    volatile sig_atomic_t	suspended;
+    volatile sig_atomic_t	accept_pending;
 
     int	heartbeat_freq;		/* basic heartbeat writing frequency
 				 * (in seconds) - double this and we kill */

@@ -815,6 +815,8 @@ long octstr_write_data(Octstr *ostr, int fd, long from) {
 	ret = write(fd, ostr->data + from, ostr->len - from);
 
 	if (ret < 0) {
+		if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+			return 0;
 		error(errno, "Error writing %ld octets to fd %d:",
 			ostr->len - from, fd);
 		return -1;

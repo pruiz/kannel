@@ -57,7 +57,7 @@ struct SMSCenter {
 	Mutex *mutex;
 
         /* for dying */
-        sig_atomic_t killed;
+        volatile sig_atomic_t killed;
 
 	/* General IO device */
 	int socket;

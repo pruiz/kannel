@@ -1,7 +1,15 @@
-/* TODO: file header */
+/* conn.c - implement Connection type
+ *
+ * This file implements the interface defined in conn.h.
+ *
+ * Richard Braakman <dark@wapit.com>
+ */
+
 /* TODO: unlocked_close() on error */
 /* TODO: have I/O functions check if connection is open */
 /* TODO: handle eof when reading */
+/* TODO: implement conn_open_tcp */
+/* TODO: implement conn_read_packet */
 
 #include <signal.h>
 #include <unistd.h>
@@ -9,6 +17,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/poll.h>
 
 #include "gwlib/gwlib.h"
 
@@ -28,6 +37,7 @@ struct Connection {
 	long inbufpos;   /* start of unread data in inbuf */
 };
 
+/* Lock a Connection, if it is unclaimed */
 static void lock(Connection *conn) {
 	gw_assert(conn != NULL);
 
@@ -37,6 +47,7 @@ static void lock(Connection *conn) {
 		mutex_lock(conn->mutex);
 }
 
+/* Unlock a Connection, if it is unclaimed */
 static void unlock(Connection *conn) {
 	gw_assert(conn != NULL);
 
@@ -44,6 +55,18 @@ static void unlock(Connection *conn) {
 		mutex_unlock(conn->mutex);
 }
 
+/* Return the number of bytes in the Connection's output buffer */
+static long unlocked_outbuf_len(Connection *conn) {
+	return octstr_len(conn->outbuf) - conn->outbufpos;
+}
+
+/* Return the number of bytes in the Connection's input buffer */
+static long unlocked_inbuf_len(Connection *conn) {
+	return octstr_len(conn->inbuf) - conn->inbufpos;
+}
+
+/* Send as much data as can be sent without blocking.  Return the number
+ * of bytes written, or -1 in case of error. */
 static long unlocked_write(Connection *conn) {
 	long ret;
 
@@ -65,6 +88,31 @@ static long unlocked_write(Connection *conn) {
 	return ret;
 }
 
+/* Try to empty the output buffer without blocking.  Return 0 for success,
+ * 1 if there is still data left in the buffer, and -1 for errors. */
+static int unlocked_try_write(Connection *conn) {
+	long len;
+
+	len = unlocked_outbuf_len(conn);
+	if (len == 0)
+		return 0;
+
+	/* Heuristic: avoid using too many separate write() calls by
+	 * writing only 4kB or larger chunks.  Let conn_wait() flush
+	 * leftover data. */
+	if (len < 4096)
+		return 1;
+
+	if (unlocked_write(conn) < 0)
+		return -1;
+
+	if (unlocked_outbuf_len(conn) > 0)
+		return 1;
+
+	return 0;
+}
+
+/* Read whatever data is currently available, up to an internal maximum. */
 static void unlocked_read(Connection *conn) {
 	unsigned char buf[4096];
 	long len;
@@ -85,10 +133,11 @@ static void unlocked_read(Connection *conn) {
 	octstr_append_data(conn->inbuf, buf, len);
 }
 
+/* Cut "length" octets from the input buffer and return them as an Octstr */
 static Octstr *unlocked_get(Connection *conn, long length) {
 	Octstr *result = NULL;
 
-	gw_assert(octstr_len(conn->outbuf) - conn->outbufpos >= length);
+	gw_assert(unlocked_outbuf_len(conn) >= length);
 	result = octstr_copy(conn->outbuf, conn->outbufpos, length);
 	conn->outbufpos += length;
 
@@ -153,7 +202,7 @@ long conn_outbuf_len(Connection *conn) {
 	long len;
 
 	lock(conn);
-	len = octstr_len(conn->outbuf) - conn->outbufpos;
+	len = unlocked_outbuf_len(conn);
 	unlock(conn);
 
 	return len;
@@ -163,23 +212,91 @@ long conn_inbuf_len(Connection *conn) {
 	long len;
 
 	lock(conn);
-	len = octstr_len(conn->inbuf) - conn->inbufpos;
+	len = unlocked_inbuf_len(conn);
 	unlock(conn);
 
 	return len;
 }
 
 int conn_wait(Connection *conn, double seconds) {
-	panic(0, "conn_write not implemented");
+	struct pollfd pollinfo;
+	int milliseconds;
+	int ret;
+
+	lock(conn);
+
+	/* Try to write any data that might still be waiting to be sent */
+	if (unlocked_write(conn) < 0)
+		goto error_unlock;
+
+	/* Normally, we block until there is more data available.  But
+	 * if any data still needs to be sent, we block until we can
+	 * send it (or there is more data available). */
+	if (unlocked_outbuf_len(conn) > 0)
+		pollinfo.events = POLLIN | POLLOUT;
+	else
+		pollinfo.events = POLLIN;
+	pollinfo.fd = conn->fd;
+
+	/* Don't keep the connection locked while we wait */
+	unlock(conn);
+
+	milliseconds = seconds * 1000;
+	ret = poll(&pollinfo, 1, milliseconds);
+	if (ret < 0) {
+		if (errno == EINTR)
+			return 0;
+		error(errno, "conn_wait: poll failed on fd %d:", pollinfo.fd);
+		return -1;
+	}
+
+	if (pollinfo.revents & POLLNVAL) {
+		error(0, "conn_wait: fd %d not open.", pollinfo.fd);
+		return -1;
+	}
+
+	if (pollinfo.revents & (POLLERR | POLLHUP)) {
+		/* Call unlocked_read report the specific error,
+		 * and handle the results of the error.  We can't be
+		 * certain that the error still exists, because we
+		 * released the lock for a while. */
+		lock(conn);
+		unlocked_read(conn);
+		unlock(conn);
+		return -1;
+	}
+
+	if (pollinfo.revents & (POLLOUT | POLLIN)) {
+		lock(conn);
+
+		/* If POLLOUT was on, then we must have wanted
+		 * to write something. */
+		if (pollinfo.revents & POLLOUT)
+			unlocked_write(conn);
+
+		/* Since we always select for reading, we must always
+		 * try to read here.  Otherwise, if the caller loops
+		 * around conn_wait without making conn_read* calls
+		 * in between, we will keep polling this same data. */
+		if (pollinfo.revents & POLLIN)
+			unlocked_read(conn);
+
+		unlock(conn);
+	}
+
+	return 0;
+
+error_unlock:
+	unlock(conn);
 	return -1;
 }
 
 int conn_write(Connection *conn, Octstr *data) {
-	long ret;
+	long ret = 1;
 
 	lock(conn);
 	octstr_append(conn->outbuf, data);
-	ret = unlocked_write(conn);
+	ret = unlocked_try_write(conn);
 	unlock(conn);
 
 	return ret;
@@ -190,7 +307,7 @@ int conn_write_data(Connection *conn, unsigned char *data, long length) {
 
 	lock(conn);
 	octstr_append_data(conn->outbuf, data, length);
-	ret = unlocked_write(conn);
+	ret = unlocked_try_write(conn);
 	unlock(conn);
 
 	return ret;
@@ -202,9 +319,9 @@ Octstr *conn_read_fixed(Connection *conn, long length) {
 	/* See if the data is already available.  If not, try a read(),
 	 * then see if we have enough data after that.  If not, give up. */
 	lock(conn);
-	if (octstr_len(conn->inbuf) - conn->inbufpos < length) {
+	if (unlocked_inbuf_len(conn) < length) {
 		unlocked_read(conn);
-		if (octstr_len(conn->inbuf) - conn->inbufpos < length) {
+		if (unlocked_inbuf_len(conn) < length) {
 			unlock(conn);
 			return NULL;
 		}

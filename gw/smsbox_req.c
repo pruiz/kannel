@@ -32,7 +32,7 @@ static int sms_max_length = -1;		/* not initialized */
 static char *global_sender = NULL;
 static int (*sender) (Msg *msg) = NULL;
 
-static sig_atomic_t req_threads = 0;
+static volatile sig_atomic_t req_threads = 0;
 
 
 /*-------------------------------------------------------------------*

@@ -85,8 +85,8 @@ static char 	*http_deny_ip = NULL;
 /* thread handling */
 
 static Mutex	 	*socket_mutex;
-static sig_atomic_t 	http_accept_pending = 0;
-static sig_atomic_t 	abort_program = 0;
+static volatile sig_atomic_t 	http_accept_pending = 0;
+static volatile sig_atomic_t 	abort_program = 0;
 
 
 /*
