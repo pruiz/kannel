@@ -325,12 +325,10 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	split_chars = NULL;
 	catenate = 0;
     } else {
-#define CREATE(cstr) ((cstr) ? octstr_create(cstr) : NULL)
-    	header = CREATE(urltrans_header(trans));
-	footer = CREATE(urltrans_footer(trans));
-	suffix = CREATE(urltrans_split_suffix(trans));
-	split_chars = CREATE(urltrans_split_chars(trans));
-#undef CREATE
+    	header = urltrans_header(trans);
+	footer = urltrans_footer(trans);
+	suffix = urltrans_split_suffix(trans);
+	split_chars = urltrans_split_chars(trans);
 	catenate = urltrans_concatenation(trans);
     }
 
@@ -340,10 +338,6 @@ static int send_message(URLTranslation *trans, Msg *msg)
     list = sms_split(msg, header, footer, suffix, split_chars, catenate,
     	    	     max_msgs, sms_max_length);
     msg_destroy(msg);
-    octstr_destroy(header);
-    octstr_destroy(footer);
-    octstr_destroy(suffix);
-    octstr_destroy(split_chars);
 
     while ((part = list_extract_first(list)) != NULL)
 	write_to_bearerbox(part);
@@ -432,22 +426,22 @@ static long outstanding_requests(void)
  */
 
 
-static void strip_prefix_and_suffix(Octstr *html, char *prefix, char *suffix)
+static void strip_prefix_and_suffix(Octstr *html, Octstr *prefix, 
+    	    	    	    	    Octstr *suffix)
 {
-    char *p, *q, *data;
+    long prefix_end, suffix_start;
 
     if (prefix == NULL || suffix == NULL)
     	return;
-    data = octstr_get_cstr(html);
-    p = str_case_str(data, prefix);
-    if (p == NULL)
+    prefix_end = octstr_case_search(html, prefix, 0);
+    if (prefix_end == -1)
         return;
-    p += strlen(prefix);
-    q = str_case_str(p, suffix);
-    if (q == NULL)
+    prefix_end += octstr_len(prefix);
+    suffix_start = octstr_case_search(html, suffix, prefix_end);
+    if (suffix_start == -1)
         return;
-    octstr_delete(html, 0, p - data);
-    octstr_truncate(html, q - p);
+    octstr_delete(html, 0, prefix_end);
+    octstr_truncate(html, suffix_start - prefix_end);
 }
 
 
@@ -468,10 +462,8 @@ static void url_result_thread(void *arg)
     text_plain = octstr_create_immutable("text/plain");
 
     for (;;) {
-debug("", 0, "calling http_receive_result");
     	id = http_receive_result(caller, &status, &final_url, &reply_headers,
 	    	    	    	 &reply_body);
-debug("", 0, "http_receive_result returned %ld", id);
     	if (id == -1)
 	    break;
     	
@@ -602,7 +594,7 @@ static void obey_request_thread(void *arg)
     Msg *msg;
     Octstr *tmp, *reply;
     URLTranslation *trans;
-    char *p;
+    Octstr *p;
     
     while ((msg = list_consume(smsbox_requests)) != NULL) {
 	if (octstr_len(msg->sms.sender) == 0 ||
@@ -648,15 +640,15 @@ static void obey_request_thread(void *arg)
 	tmp = octstr_duplicate(msg->sms.sender);
 	    
 	p = urltrans_faked_sender(trans);
-	if (p != NULL)
-	    octstr_replace(msg->sms.sender, p, strlen(p));
-	else if (global_sender != NULL)
+	if (p != NULL) {
+	    octstr_destroy(msg->sms.sender);
+	    msg->sms.sender = p;
+	} else if (global_sender != NULL)
 	    octstr_replace(msg->sms.sender, global_sender, 
 	    	    	   strlen(global_sender));
 	else {
-	    octstr_replace(msg->sms.sender, 
-	    	    	   octstr_get_cstr(msg->sms.receiver),
-			   octstr_len(msg->sms.receiver));
+	    octstr_destroy(msg->sms.sender);
+	    msg->sms.sender = octstr_duplicate(msg->sms.receiver);
 	}
 	octstr_destroy(msg->sms.receiver);
 	msg->sms.receiver = tmp;
@@ -821,28 +813,38 @@ static URLTranslation *default_authorise_user(List *list, char *client_ip)
 
     if ((user = http_cgi_variable(list, "username")) == NULL
         && (user = http_cgi_variable(list, "user")) == NULL)
-        t = urltrans_find_username(translations, "default");
+        t = urltrans_find_username(translations, 
+	    	    	    	   octstr_create_immutable("default"));
     else
-        t = urltrans_find_username(translations, octstr_get_cstr(user));
+        t = urltrans_find_username(translations, user);
 
     if (((val = http_cgi_variable(list, "password")) == NULL
          && (val = http_cgi_variable(list, "pass")) == NULL)
         || t == NULL ||
-        strcmp(octstr_get_cstr(val), urltrans_password(t)) != 0)
+        octstr_compare(val, urltrans_password(t)) != 0)
     {
         /* if the password is not correct, reset the translation. */
         t = NULL;
     }
     if (t) {
         Octstr *ip = octstr_create(client_ip);
-
-        if (is_allowed_ip(urltrans_allow_ip(t),
-                  urltrans_allow_ip(t), ip) == 0)
-        {
-        warning(0, "Non-allowed connect tried by <%s> from <%s>, ignored",
-            user ? octstr_get_cstr(user) : "default-user" ,
-            client_ip);
-        t = NULL;
+	Octstr *allow_ip = urltrans_allow_ip(t);
+	Octstr *deny_ip = urltrans_deny_ip(t);
+	char *p, *q;
+	
+    	if (allow_ip == NULL)
+	    p = NULL;
+	else
+	    p = octstr_get_cstr(allow_ip);
+    	if (deny_ip == NULL)
+	    q = NULL;
+	else
+	    q = octstr_get_cstr(deny_ip);
+        if (is_allowed_ip(p, q, ip) == 0) {
+	    warning(0, "Non-allowed connect tried by <%s> from <%s>, ignored",
+		    user ? octstr_get_cstr(user) : "default-user" ,
+		    client_ip);
+	    t = NULL;
         }
         octstr_destroy(ip);
     }
@@ -852,8 +854,9 @@ static URLTranslation *default_authorise_user(List *list, char *client_ip)
 static URLTranslation *authorise_user(List *list, char *client_ip) 
 {
 #ifdef HAVE_SECURITY_PAM_APPL_H
-    URLTranslation *t = urltrans_find_username(translations, "pam");
+    URLTranslation *t;
     
+    t = urltrans_find_username(translations, octstr_create_immutable("pam"));
     if (t != NULL) {
 	if (pam_authorise_user(list))
 	    return t;
@@ -911,7 +914,7 @@ char *smsbox_req_sendsms(List *list, char *client_ip)
     }
     
     if (urltrans_faked_sender(t) != NULL) {
-	from = octstr_create(urltrans_faked_sender(t));
+	from = octstr_duplicate(urltrans_faked_sender(t));
     } else if ((from = http_cgi_variable(list, "from")) != NULL &&
 	       octstr_len(from) > 0) {
 	from = octstr_duplicate(from);
@@ -922,7 +925,9 @@ char *smsbox_req_sendsms(List *list, char *client_ip)
     }
     
     info(0, "/cgi-bin/sendsms sender:<%s:%s> (%s) to:<%s> msg:<%s>",
-	 urltrans_username(t), octstr_get_cstr(from), client_ip,
+	 octstr_get_cstr(urltrans_username(t)),
+	 octstr_get_cstr(from),
+	 client_ip,
 	 octstr_get_cstr(to),
 	 udh == NULL ? octstr_get_cstr(text) : "<< UDH >>");
     
@@ -941,15 +946,15 @@ char *smsbox_req_sendsms(List *list, char *client_ip)
        but that's advanced logics -- Kalle */
     
     if (urltrans_forced_smsc(t)) {
-	msg->sms.smsc_id = octstr_create(urltrans_forced_smsc(t));
+	msg->sms.smsc_id = octstr_duplicate(urltrans_forced_smsc(t));
 	if (smsc)
 	    info(0, "send-sms request smsc id ignored, "
 	    	    "as smsc id forced to %s",
-		    urltrans_forced_smsc(t));
+		    octstr_get_cstr(urltrans_forced_smsc(t)));
     } else if (smsc) {
 	msg->sms.smsc_id = octstr_duplicate(smsc);
     } else if (urltrans_default_smsc(t)) {
-	msg->sms.smsc_id = octstr_create(urltrans_default_smsc(t));
+	msg->sms.smsc_id = octstr_duplicate(urltrans_default_smsc(t));
     } else
 	msg->sms.smsc_id = NULL;
     

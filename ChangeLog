@@ -1,5 +1,15 @@
 2000-12-04  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/urltrans.[ch]: Change function call interfaces to use Octstr
+	instead of C strings.
+
+	* gw/smsbox.c: Related changes.
+	
+	* gw/smsbox.c: When checking whether sendsms is allowed, call
+	is_allowed_ip properly, with deny_ip, not instead of allow_ip.
+
+2000-12-04  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/urltrans.[ch]: Reformatted for new coding style.
 
 2000-12-04  Lars Wirzenius  <liw@iki.fi>

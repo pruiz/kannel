@@ -114,7 +114,7 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
  * if not found. Password must be checked afterwards
  */
 URLTranslation *urltrans_find_username(URLTranslationList *trans, 
-    	    	    	    	       char *name);
+    	    	    	    	       Octstr *name);
 
 
 /*
@@ -142,14 +142,14 @@ int urltrans_type(URLTranslation *t);
 /*
  * Return prefix and suffix of translations, if they have been set.
  */
-char *urltrans_prefix(URLTranslation *t);
-char *urltrans_suffix(URLTranslation *t);
+Octstr *urltrans_prefix(URLTranslation *t);
+Octstr *urltrans_suffix(URLTranslation *t);
 
 
 /*
  * Return (a recommended) faked sender number, or NULL if not set.
  */
-char *urltrans_faked_sender(URLTranslation *t);
+Octstr *urltrans_faked_sender(URLTranslation *t);
 
 
 /*
@@ -170,14 +170,14 @@ int urltrans_concatenation(URLTranslation *t);
  * Return (recommended) delimiter characters when splitting long
  * replies into several messages
  */
-char *urltrans_split_chars(URLTranslation *t);
+Octstr *urltrans_split_chars(URLTranslation *t);
 
 
 /*
  * return a string that should be added after each sms message if it is
  * except for the last one.
  */
-char *urltrans_split_suffix(URLTranslation *t);
+Octstr *urltrans_split_suffix(URLTranslation *t);
 
 
 /*
@@ -189,38 +189,38 @@ int urltrans_omit_empty(URLTranslation *t);
 /*
  * return a string that should be inserted to each SMS, if any
  */
-char *urltrans_header(URLTranslation *t);
+Octstr *urltrans_header(URLTranslation *t);
 
 
 /*
  * return a string that should be appended to each SMS, if any
  */
-char *urltrans_footer(URLTranslation *t);
+Octstr *urltrans_footer(URLTranslation *t);
 
 
 /*
  * return the username or password string, or NULL if not set
  * (used only with TRANSTYPE_SENDSMS)
  */
-char *urltrans_username(URLTranslation *t);
-char *urltrans_password(URLTranslation *t);
+Octstr *urltrans_username(URLTranslation *t);
+Octstr *urltrans_password(URLTranslation *t);
 
 
 /* Return forced smsc ID for send-sms user, if set */
-char *urltrans_forced_smsc(URLTranslation *t);
+Octstr *urltrans_forced_smsc(URLTranslation *t);
 
 
 /* Return default smsc ID for send-sms user, if set */
-char *urltrans_default_smsc(URLTranslation *t);
+Octstr *urltrans_default_smsc(URLTranslation *t);
 
 
 /* Return list of accepted SMSC IDs, if set */
-char *urltrans_accepted_smsc(URLTranslation *t);
+Octstr *urltrans_accepted_smsc(URLTranslation *t);
 
 
 /* Return allow and deny IP strings, if set. */
-char *urltrans_allow_ip(URLTranslation *t);
-char *urltrans_deny_ip(URLTranslation *t);
+Octstr *urltrans_allow_ip(URLTranslation *t);
+Octstr *urltrans_deny_ip(URLTranslation *t);
 
 
 #endif

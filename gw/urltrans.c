@@ -30,25 +30,25 @@ struct URLTranslation {
     char *aliases;	/* separated with ':', after each (inc. last one) */
     int type;		/* see enumeration in header file */
     char *pattern;	/* url, text or file-name pattern */
-    char *prefix;	/* for prefix-cut */
-    char *suffix;	/* for suffix-cut */
-    char *faked_sender;	/* works only with certain services */
+    Octstr *prefix;	/* for prefix-cut */
+    Octstr *suffix;	/* for suffix-cut */
+    Octstr *faked_sender;/* works only with certain services */
     int max_messages;	/* absolute limit of reply messages */
     int concatenation;	/* send long messages as concatenated SMS's if true */
-    char *split_chars;	/* allowed chars to be used to split message */
-    char *split_suffix;	/* chars added to end after each split (not last) */
+    Octstr *split_chars;/* allowed chars to be used to split message */
+    Octstr *split_suffix;/* chars added to end after each split (not last) */
     int omit_empty;	/* if the reply is empty, is notification send */
-    char *header;	/* string to be inserted to each SMS */
-    char *footer;	/* string to be appended to each SMS */
-    char *accepted_smsc; /* smsc id's allowed to use this service. If not set,
+    Octstr *header;	/* string to be inserted to each SMS */
+    Octstr *footer;	/* string to be appended to each SMS */
+    Octstr *accepted_smsc; /* smsc id's allowed to use this service. If not set,
 			    all messages can use this service */
     
-    char *username;	/* send sms username */
-    char *password;	/* password associated */
-    char *forced_smsc;	/* if smsc id is forcet to certain for this user */
-    char *default_smsc; /* smsc id if none given in http send-sms request */
-    char *allow_ip;	/* allowed IPs to request send-sms with this account */
-    char *deny_ip;	/* denied IPs to request send-sms with this account */
+    Octstr *username;	/* send sms username */
+    Octstr *password;	/* password associated */
+    Octstr *forced_smsc;/* if smsc id is forcet to certain for this user */
+    Octstr *default_smsc; /* smsc id if none given in http send-sms request */
+    Octstr *allow_ip;	/* allowed IPs to request send-sms with this account */
+    Octstr *deny_ip;	/* denied IPs to request send-sms with this account */
     
     int args;
     int has_catchall_arg;
@@ -163,15 +163,16 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
 
 
 URLTranslation *urltrans_find_username(URLTranslationList *trans, 
-				       char *name)
+				       Octstr *name)
 {
     URLTranslation *t;
     int i;
 
+    gw_assert(name != NULL);
     for (i = 0; i < list_len(trans->list); ++i) {
 	t = list_get(trans->list, i);
 	if (t->type == TRANSTYPE_SENDSMS) {
-	    if (strcmp(name, t->username) == 0)
+	    if (octstr_compare(name, t->username) == 0)
 		return t;
 	}
     }
@@ -351,17 +352,17 @@ int urltrans_type(URLTranslation *t)
     return t->type;
 }
 
-char *urltrans_prefix(URLTranslation *t) 
+Octstr *urltrans_prefix(URLTranslation *t) 
 {
     return t->prefix;
 }
 
-char *urltrans_suffix(URLTranslation *t) 
+Octstr *urltrans_suffix(URLTranslation *t) 
 {
     return t->suffix;
 }
 
-char *urltrans_faked_sender(URLTranslation *t) 
+Octstr *urltrans_faked_sender(URLTranslation *t) 
 {
     return t->faked_sender;
 }
@@ -376,12 +377,12 @@ int urltrans_concatenation(URLTranslation *t)
     return t->concatenation;
 }
 
-char *urltrans_split_chars(URLTranslation *t) 
+Octstr *urltrans_split_chars(URLTranslation *t) 
 {
     return t->split_chars;
 }
 
-char *urltrans_split_suffix(URLTranslation *t) 
+Octstr *urltrans_split_suffix(URLTranslation *t) 
 {
     return t->split_suffix;
 }
@@ -391,47 +392,47 @@ int urltrans_omit_empty(URLTranslation *t)
     return t->omit_empty;
 }
 
-char *urltrans_header(URLTranslation *t) 
+Octstr *urltrans_header(URLTranslation *t) 
 {
     return t->header;
 }
 
-char *urltrans_footer(URLTranslation *t) 
+Octstr *urltrans_footer(URLTranslation *t) 
 {
     return t->footer;
 }
 
-char *urltrans_username(URLTranslation *t) 
+Octstr *urltrans_username(URLTranslation *t) 
 {
     return t->username;
 }
 
-char *urltrans_password(URLTranslation *t) 
+Octstr *urltrans_password(URLTranslation *t) 
 {
     return t->password;
 }
 
-char *urltrans_forced_smsc(URLTranslation *t) 
+Octstr *urltrans_forced_smsc(URLTranslation *t) 
 {
     return t->forced_smsc;
 }
 
-char *urltrans_default_smsc(URLTranslation *t) 
+Octstr *urltrans_default_smsc(URLTranslation *t) 
 {
     return t->default_smsc;
 }
 
-char *urltrans_accepted_smsc(URLTranslation *t) 
+Octstr *urltrans_accepted_smsc(URLTranslation *t) 
 {
     return t->accepted_smsc;
 }
 
-char *urltrans_allow_ip(URLTranslation *t) 
+Octstr *urltrans_allow_ip(URLTranslation *t) 
 {
     return t->allow_ip;
 }
 
-char *urltrans_deny_ip(URLTranslation *t) 
+Octstr *urltrans_deny_ip(URLTranslation *t) 
 {
     return t->deny_ip;
 }
@@ -459,7 +460,8 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     ot = gw_malloc(sizeof(URLTranslation));
 
     ot->keyword = ot->aliases = ot->pattern = NULL;
-    ot->prefix = ot->suffix = ot->faked_sender = NULL;
+    ot->prefix = ot->suffix = NULL;
+    ot->faked_sender = NULL;
     ot->split_chars = ot->split_suffix = NULL;
     ot->footer = ot->header = NULL;
     ot->username = ot->password = NULL;
@@ -504,9 +506,9 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     } else if (username) {
 	ot->type = TRANSTYPE_SENDSMS;
 	ot->pattern = gw_strdup("");
-	ot->username = gw_strdup(username);
+	ot->username = octstr_create(username);
 	if (password)
-	    ot->password = gw_strdup(password);
+	    ot->password = octstr_create(password);
 	else {
 	    error(0, "Password required for send-sms user");
 	    goto error;
@@ -514,14 +516,14 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 	if (forced_smsc) {
 	    if (default_smsc)
 		info(0, "Redundant default-smsc for send-sms user %s", username);
-	    ot->forced_smsc = gw_strdup(forced_smsc);
+	    ot->forced_smsc = octstr_create(forced_smsc);
 	} else if (default_smsc) {
-	    ot->default_smsc = gw_strdup(default_smsc);
+	    ot->default_smsc = octstr_create(default_smsc);
 	}
 	if (allow_ip)
-	    ot->allow_ip = gw_strdup(allow_ip);
+	    ot->allow_ip = octstr_create(allow_ip);
 	if (deny_ip)
-	    ot->deny_ip = gw_strdup(deny_ip);
+	    ot->deny_ip = octstr_create(deny_ip);
 	
     } else {
 	error(0, "No url, file or text spesified");
@@ -543,12 +545,11 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 	    ot->aliases = gw_strdup("");
 
 	if (accepted_smsc)
-	    ot->accepted_smsc = gw_strdup(accepted_smsc);
+	    ot->accepted_smsc = octstr_create(accepted_smsc);
 	    
 	if (prefix != NULL && suffix != NULL) {
-
-	    ot->prefix = gw_strdup(prefix);
-	    ot->suffix = gw_strdup(suffix);
+	    ot->prefix = octstr_create(prefix);
+	    ot->suffix = octstr_create(suffix);
 	}
 
 	ot->args = count_occurences(ot->pattern, "%s");
@@ -564,15 +565,15 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     /* things that apply to both */
     
     if (faked_sender != NULL)
-	ot->faked_sender = gw_strdup(faked_sender);
+	ot->faked_sender = octstr_create(faked_sender);
 
     if (max_msgs != NULL) {
 	ot->max_messages = atoi(max_msgs);
 	if (split_chars != NULL)
-	    ot->split_chars = gw_strdup(split_chars);
+	    ot->split_chars = octstr_create(split_chars);
 
 	if (split_suffix != NULL)
-	    ot->split_suffix = gw_strdup(split_suffix);
+	    ot->split_suffix = octstr_create(split_suffix);
     }
     else
 	ot->max_messages = 1;
@@ -584,10 +585,10 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     	 ot->concatenation =  0;
     	 
     if (header != NULL)
-	ot->header = gw_strdup(header);
+	ot->header = octstr_create(header);
 
     if (footer != NULL)
-	ot->footer = gw_strdup(footer);
+	ot->footer = octstr_create(footer);
 
     if (omit_empty != NULL)
 	ot->omit_empty = atoi(omit_empty);
@@ -613,17 +614,18 @@ static void destroy_onetrans(void *p)
 	gw_free(ot->keyword);
 	gw_free(ot->aliases);
 	gw_free(ot->pattern);
-	gw_free(ot->prefix);
-	gw_free(ot->suffix);
-	gw_free(ot->faked_sender);
-	gw_free(ot->split_chars);
-	gw_free(ot->split_suffix);
-	gw_free(ot->username);
-	gw_free(ot->password);
-	gw_free(ot->accepted_smsc);
-	gw_free(ot->forced_smsc);
-	gw_free(ot->default_smsc);
-	gw_free(ot->deny_ip);
+	octstr_destroy(ot->prefix);
+	octstr_destroy(ot->suffix);
+	octstr_destroy(ot->faked_sender);
+	octstr_destroy(ot->split_chars);
+	octstr_destroy(ot->split_suffix);
+	octstr_destroy(ot->username);
+	octstr_destroy(ot->password);
+	octstr_destroy(ot->accepted_smsc);
+	octstr_destroy(ot->forced_smsc);
+	octstr_destroy(ot->default_smsc);
+	octstr_destroy(ot->allow_ip);
+	octstr_destroy(ot->deny_ip);
 	gw_free(ot);
     }
 }
@@ -657,7 +659,7 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 		 * translation only if smsc id is in accept string
 		 */
 		if (smsc && t->accepted_smsc) {
-		    if (str_find_substr(t->accepted_smsc,
+		    if (str_find_substr(octstr_get_cstr(t->accepted_smsc),
 					octstr_get_cstr(smsc), ";")==0)
 		    {
 			t = NULL;
