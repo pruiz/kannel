@@ -1,3 +1,14 @@
+2001-10-17 Aarno Syvänen <aarno@wiral.com>
+
+	* gw/wapbox.c: Added ppg configuration group. This is passed to the
+	ppg module. Currently enough for a ppg working with a trusted pi.
+	* gwlib/cfg.def: Added ppg configuration group definitions.
+	* gw/wap_push_ppg.c: Read ppg group. Use it for program control.
+	* gw/wap_push_ppg.h: Changed the prototype of function wap_push_ppg_
+	init.
+	* gw/pushkannel.conf: Updated the sample configuration file.
+	* doc/userguide/userguide.xml: Document ppg configuration group.
+
 2001-10-16 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* smsc_emi2.c: corrected a bug when username and keepalive aren't
 	defined and timeout would be undefined
