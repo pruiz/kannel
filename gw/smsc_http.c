@@ -182,7 +182,6 @@ static void httpsmsc_send_cb(void *arg)
     debug("http-smsc", 0, "httpsmsc_send_cb dying");
     conndata->shutdown = 1;
 
-    conndata->http_ref = NULL;
     gwthread_join(conndata->receive_thread);
 
     conn->data = NULL;
