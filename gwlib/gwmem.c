@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <assert.h>
 #include "gwlib.h"
 #include "gwmem.h"
 #include "thread.h"
@@ -8,6 +9,9 @@
 void *gw_malloc(size_t size)
 {
     void *ptr;
+
+    /* ANSI C89 says malloc(0) is implementation-defined.  Avoid it. */
+    assert(size > 0);
 
     ptr = malloc(size);
     if (ptr == NULL)
