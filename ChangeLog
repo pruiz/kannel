@@ -1,3 +1,9 @@
+2002-03-22  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml, gw/smsc_smpp.c, gwlib/socket.c: added
+      support for multi-homed bearerbox machines to select outgoing
+      ethernet device, patch contributed by Simon Beale <simon.beale@ngame.com>
+      [Msg-ID: <006801c1d101$86f525f0$c80a0a0a@ngame.com>]
+
 2002-03-21  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_cgw.c: bug and stability fixes, patch contributed by
       "Anders Lindh" <alindh@flyerone.com>
