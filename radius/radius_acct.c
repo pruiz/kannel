@@ -9,9 +9,9 @@
 #include "gwlib/gwlib.h"
 #include "radius/radius_pdu.h"
 
-static Dict *radius_table;      /* maps client ip -> msisdn */
-static Dict *session_table;     /* maps session id -> client ip */
-static Dict *client_table;      /* maps client ip -> session id */
+static Dict *radius_table = NULL;      /* maps client ip -> msisdn */
+static Dict *session_table = NULL;     /* maps session id -> client ip */
+static Dict *client_table = NULL;      /* maps client ip -> session id */
 
 /* we will initialize hash tables in the size of our NAS ports */
 #define RADIUS_NAS_PORTS    30
@@ -256,7 +256,8 @@ Octstr *radius_acct_get_msisdn(Octstr *client_ip)
     Octstr *m, *r;
     char *uf;
 
-    if (client_ip == NULL)
+    /* if no proxy thread is running, then pass NULL as result */
+    if (radius_table == NULL || client_ip == NULL)
         return NULL;
 
     mutex_lock(radius_mutex);
@@ -267,8 +268,6 @@ Octstr *radius_acct_get_msisdn(Octstr *client_ip)
     /* apply number normalization */
     uf = unified_prefix ? octstr_get_cstr(unified_prefix) : NULL;
     normalize_number(uf, &r);
-
-    debug("",0,"XXX after normalize: %s", octstr_get_cstr(r));
 
     return r;
 }
