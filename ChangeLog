@@ -1,3 +1,31 @@
+2001-03-27 Aarno Syvänen <syvanen@wapit.com>
+
+	* gw/wap_push_pap.c|h. Testing  version of the pap module
+
+	* gw/wap_ppg_push_machine.def, gw/wap_ppg_session_machine.def:
+	Machines to store push data.
+
+	* gw/wap_push_ppg.c|h: push proxy gateway main module
+
+	* gw/wap_push_ota.c: Lots of bugfixes. Courtesy to Peter Galluc,
+	Derry Hamilton and Uoti. (There were other bugs, too.) Trans-
+	ferred handling of header X-Wap-Application-Id to module ppg.
+        Fixing memory leaks.
+
+	* wap/wap_events.def: push_id removed from Pom-Connect.req.
+
+	* gw/wapbox.c: Initing and shutdown of new modules, include new
+	headers.
+
+	* gw/wap-appl.c: Added handling of the event Pom-Connect.req
+
+	* wap/wsp_server_session_states.def: Corrected a typo spotted by
+	Aymerick Jehanne.
+
+	* wap/wsp_session.c: Added functions to create events for push 
+	abort and confirmation, fixed bugs in functions make_confirmed_push
+	pdu and make_push_pdu. Fixed memory leaks.
+
 2001-03-27  Tuomas Luttinen  <tuo@wapit.com>
 
 	* configure.in: Replaced the earlier way to detect xml2-config with 
