@@ -19,6 +19,7 @@
       data for rerouting.
     * gwlib/cfg.def: added rerouting config directives 'reroute', 
       'reroute-smsc-id' and 'reroute-receiver' to multi-group 'smsc'.
+    * doc/userguide/userguide.xml: added reroute documentation to smsc group.
 
 2003-07-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wapbox.c, gw/wap-appl.c: re-organized Burno's 'wap-url-map' and 
