@@ -116,7 +116,7 @@ static int socket_sender(Msg *pmsg)
     mutex_unlock(socket_mutex);
 
     info(0, "Message sent to <%s>",
-         octstr_get_cstr(pmsg->smart_sms.receiver);
+         octstr_get_cstr(pmsg->sms.receiver));
    
 #if 0
     debug("sms", 0, "write <%.*s> [%ld]",
