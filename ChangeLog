@@ -1,3 +1,8 @@
+Wed Jan 19 13:22:13 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* doc/dialup.txt: Added. E-mail from Roger Willcocks describing
+	how to set up a dialup line for use with the gateway.
+
 Wed Jan 19 13:18:22 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/gwlib.h: Added #include "config.h".

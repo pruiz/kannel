@@ -1,0 +1,111 @@
+From: Roger Willcocks <Roger.Willcocks@LOOT.com>
+To: devel@wapgateway.org
+Subject: RE: WAPGateway
+Date: Mon, 17 Jan 2000 18:39:58 -0000
+
+Here's a list of the changes I had to make to RedHat 6.1 'out of the box' to
+get the WAPGateway 0.2 up and running ...
+
+My modems serial line rate is fixed at 9600 baud.
+
+
+Install the mgetty package:
+
+rpm --install mgetty-<version>-RPM
+
+In /etc/inittab add a line:
+
+S0:2345:respawn:/sbin/mgetty ttyS0 -x 6 -D /dev/ttyS0
+
+
+In bearerbox.conf add (the IP address is the address of the Linux box)
+
+csdr = wap
+interface-name = 192.9.200.100
+wap-service = "wsp/wtp"
+
+
+In wapbox.wapconf change the heartbeat-frequency to the same as in
+bearerbox.conf
+
+heartbeat-freq = 5
+
+
+Add /etc/ppp/options.server (first IP address is server address, 2nd is
+assigned phone address):
+
+-detach
+default-asyncmap
+modem
+crtscts
+lock
++pap
+-chap
+proxyarp
+noauth
+passive
+192.9.200.100:192.9.200.200
+debug
+
+
+In /etc/mgetty+sendfax/login.config change about line fifty to say:
+
+/AutoPPP/ - - /usr/sbin/pppd 9600 file /etc/ppp/options.server
+
+
+in /etc/mgetty+sendfax/mgetty.config change the connect speed (was 38400):
+
+speed 9600
+
+
+Add hello.wml in the root html directory of your http server (RedHat 6.1
+supplies Apache)
+
+<?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" 
+ "http://www.wapforum.org/DTD/wml_1.1.xml">
+<wml>
+
+<card id="main" title="Hello, world" newcontext="true">
+ <p>Hello, this is a message from Roger's Linux WAP server :-)</p>
+</card>
+
+</wml>
+
+
+In /etc/hosts add 'x' as an alias for the local server:
+
+127.0.0.1	x localhost
+
+
+In /etc/syslog.conf add a line saying (to enable ppp debug messages):
+
+daemon.*	/dev/console
+
+
+In /etc/ppp/pap-secrets add a line saying (ip address is phone's assigned
+address):
+
+wap * "" 192.9.200.200
+
+---
+
+Now configure your phone (mine is 7110) with
+
+homepage http:/x/hello.wml
+connection type continuous
+connection security off
+bearer data
+dial up number <your modem>
+ip address 192.9.200.200 (or whatever)
+auth type normal
+data call type analogue
+data call speed 9600
+username wap
+password <blank>
+
+--
+
+Hope this helps,
+--
+Roger

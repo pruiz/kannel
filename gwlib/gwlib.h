@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <stddef.h>
 
+#include "config.h"
+
 #include "gwstr.h"
 #include "gwmem.h"
 #include "utils.h"
