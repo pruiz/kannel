@@ -86,7 +86,7 @@ docs:
 	for dir in $(docdirs); do set -e; (cd $$dir && $(MAKE)); done
 
 clean:
-	rm -f core $(progs) $(objs) *.a gateway.pid
+	rm -f core $(progs) $(testprogs) $(objs) *.a gateway.pid
 	find . -name .cvsignore | xargs rm -f
 	for dir in $(docdirs); do set -e; (cd $$dir && $(MAKE) clean); done
 

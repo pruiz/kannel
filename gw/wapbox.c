@@ -71,22 +71,29 @@ int main(int argc, char **argv) {
 	WTPEvent *wtp_event = NULL;
         WTPMachine *wtp_machine = NULL;
 
+	open_logfile("wapbox.log", DEBUG);
+
+	info(0, "------------------------------------------------------------");
 	info(0, "WAP box starting up.");
 
 	if (argc > 1)
 		read_config(argv[1]);
 	else
 		read_config("wapbox.wapconf");
-
+		
 	bbsocket = connect_to_bearer_box();
 	for (;;) {
 		msg = msg_receive(bbsocket);
 		if (msg == NULL)
 			break;
+		debug(0, "wapbox: received datagram, unpacking it...");
 		wtp_event = wtp_unpack_wdp_datagram(msg);
-                debug(0, "wapbox:datagram unpacked");
                 if (wtp_event == NULL)
                    continue;
+#if 0
+                debug(0, "wapbox: datagram unpacked:");
+		wtp_event_dump(wtp_event);
+#endif
 		wtp_machine = wtp_machine_find_or_create(msg, wtp_event);
                 if (wtp_machine == NULL)
                    continue;
