@@ -58,12 +58,14 @@ wml_table_t wml_elements[] = {
 
 
 /*
- * Attributes as defined by attribute code page 0.
+ * Attributes as defined by WAP-191-WML-20000219a 
+ * section 14.3.3 Attribute Start Tokens
  */
 
 static
 wml_table3_t wml_attributes[] = {
   { "accept-charset", NULL, 0x05 },
+  { "accesskey", NULL, 0x5E },
   { "align", NULL, 0x52 },
   { "align", "bottom", 0x06 },
   { "align", "center", 0x07 },
@@ -72,6 +74,7 @@ wml_table3_t wml_attributes[] = {
   { "align", "right", 0x0A },
   { "align", "top", 0x0B },
   { "alt", NULL, 0x0C },
+  { "cache-control", "no-cache", 0x64 },
   { "class", NULL, 0x54 },
   { "columns", NULL, 0x53 },
   { "content", NULL, 0x0D },
@@ -79,6 +82,9 @@ wml_table3_t wml_attributes[] = {
   { "domain", NULL, 0x0F },
   { "emptyok", "false", 0x10 },
   { "emptyok", "true", 0x11 },
+  { "enctype", NULL, 0x5F },
+  { "enctype", "application/x-www-form-urlencoded", 0x60 },
+  { "enctype", "multipart/form-data", 0x61 },
   { "format", NULL, 0x12 },
   { "forua", "false", 0x56 },
   { "forua", "true", 0x57 },
@@ -141,6 +147,8 @@ wml_table3_t wml_attributes[] = {
   { "vspace", NULL, 0x4E },
   { "width", NULL, 0x4F },
   { "xml:lang", NULL, 0x50 },
+  { "xml:space", "preserve", 0x62 },
+  { "xml:space", "default", 0x63 },
   { NULL }
 };
 
@@ -183,6 +191,11 @@ wml_table_t wml_URL_values[] = {
   { ".edu/", 0x86 },
   { ".net/", 0x87 },
   { ".org/", 0x88 },
+  { "http://", 0x8E },
+  { "http://www.", 0x8F },
+  { "https://", 0x90 },
+  { "https://www.", 0x91 },
+  { "Www.", 0xA1 },
   { NULL }
 };
 
