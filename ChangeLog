@@ -1,5 +1,10 @@
 2000-11-15  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/bb_boxc.c: added wapbox load based balancing, based on
+	ofiginal patch by Rishi Lal and Priya Patil
+
+2000-11-15  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/smsc_wrapper.c, gw/smscconn_p.h: Added.
 
 	* gw/smscconn.c: moved wrapping stuff into smsc_wrapper.c, and

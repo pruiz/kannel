@@ -4,7 +4,7 @@
  * handles start/restart/stop/suspend/die operations of the sms and
  * wapbox connections
  *
- * Kalle Marjola <rpr@wapit.com> 2000 for project Kannel
+ * Kalle Marjola 2000 for project Kannel
  */
 
 #include <errno.h>
@@ -107,7 +107,7 @@ static void boxc_receiver(void *arg)
 	    list_produce(conn->outgoing, msg);
 	} else {
 	    if (msg_type(msg) == heartbeat) {
-		if (msg->heartbeat.load > 0)
+		if (msg->heartbeat.load != conn->load)
 		    debug("bb.boxc", 0, "boxc_receiver: heartbeat with "
 			  "load value %ld received", msg->heartbeat.load);
 		conn->load = msg->heartbeat.load;
@@ -391,8 +391,8 @@ static int cmp_boxc(void *bc, void *ap)
 static Boxc *route_msg(List *route_info, Msg *msg)
 {
     AddrPar *ap;
-    Boxc *conn;
-    int i;
+    Boxc *conn, *best;
+    int i, b, len;
     
     ap = list_search(route_info, msg, cmp_route);
     if (ap == NULL) {
@@ -403,18 +403,30 @@ route:
 	if (list_len(wapbox_list) == 0)
 	    return NULL;
 
-	/* XXX this SHOULD according to load levels! */
-	
 	list_lock(wapbox_list);
-	i = gw_rand() % list_len(wapbox_list);
 
-	conn = list_get(wapbox_list, i);
-	if (conn == NULL) {
+	/* take random wapbox from list, and then check all wapboxes
+	 * and select the one with lowest load level - if tied, the first
+	 * one
+	 */
+	len = list_len(wapbox_list);
+	b = gw_rand() % len;
+	best = list_get(wapbox_list, b);
+
+	for(i = 0; i < list_len(wapbox_list); i++) {
+	    conn = list_get(wapbox_list, (i+b) % len);
+	    if (conn != NULL && best != NULL)
+		if (conn->load < best->load)
+		    best = conn;
+	}
+	if (best == NULL) {
 	    warning(0, "wapbox_list empty!");
 	    list_unlock(wapbox_list);
 	    return NULL;
 	}
-
+	conn = best;
+	conn->load++;	/* simulate new client until we get new values */
+	
 	ap = gw_malloc(sizeof(AddrPar));
 	ap->address = octstr_duplicate(msg->wdp_datagram.source_address);
 	ap->port = msg->wdp_datagram.source_port;
