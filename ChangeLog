@@ -1,3 +1,9 @@
+2001-01-06  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/log.c: Added a missing include for <limits.h> so that
+	CHAR_BIT is defined. The over-eagerness of Linux headers to
+	define everything strikes again.
+
 2001-01-05  Lars Wirzenius  <liw@iki.fi>
 
 	* Started to convert logging functions to use octstr_format instead
