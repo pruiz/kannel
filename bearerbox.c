@@ -72,10 +72,17 @@ typedef struct bb_s {
     RQueue	*request_queue;
     RQueue	*reply_queue;
 
+    int max_queue;		/* limit to queue length. If reached, no
+				 * further messages accepted until room available
+				 */
+    
     float	mean_req_ql;  	/* mean request queue length */
     float	mean_rep_ql;  	/* mean reply queue length */
 
-    sig_atomic_t	abort_program;
+    sig_atomic_t	abort_program;	/* 0 nothing, 1 not receiving new, 2 queus
+					 * emptied */
+
+    
     sig_atomic_t	suspended;
 
     int	heartbeat_freq;		/* basic heartbeat writing frequency
@@ -312,7 +319,7 @@ static void *smscenter_thread(void *arg)
 
     info(0, "smscenter thread [%d/%s]..", us->id, smsc_name(us->smsc));
     
-    while(!bbox->abort_program) {
+    while(bbox->abort_program < 2) {
 	wait = 1;
 	if (us->status == BB_STATUS_KILLED) break;
 	HEARTBEAT_UPDATE(our_time, last_time, us);
@@ -327,20 +334,24 @@ static void *smscenter_thread(void *arg)
 	}
 	/* check for any new messages from SMSC
 	 */
-	msg = smsc_get_message(us->smsc);
-	if (msg) {
-	    normalize_numbers(msg, us->smsc);
-	    route_msg(us, msg);
-	    
-	    rq_push_msg(bbox->request_queue, msg);
-	    info(0, "Got message [%d] from %s", msg->id, smsc_name(us->smsc));
-	    wait = 0;
-	}
+	if (bbox->abort_program == 0 &&
+	    rq_queue_len(bbox->request_queue) < bbox->max_queue) {
 
+	    msg = smsc_get_message(us->smsc);
+	    if (msg) {
+		normalize_numbers(msg, us->smsc);
+		route_msg(us, msg);
+	    
+		rq_push_msg(bbox->request_queue, msg);
+		debug(0, "Got message [%d] from %s", msg->id, smsc_name(us->smsc));
+		wait = 0;
+	    }
+	}
 	if (wait)
 	    usleep(1000);
     }
     us->status = BB_STATUS_DEAD;
+    smsc_close(us->smsc);
     return NULL;
 }
 
@@ -437,7 +448,8 @@ static void *smsboxconnection_thread(void *arg)
     us->boxc = boxc_open(bbox->sms_fd);
     us->status = BB_STATUS_OK;
     
-    while(us->boxc != NULL && !bbox->abort_program) {
+    while(us->boxc != NULL && bbox->abort_program < 2) {
+	
 	if (us->status == BB_STATUS_KILLED) break;
 	/* update heartbeat if too much from the last update
 	 * die if forced to, closing the socket */
@@ -555,7 +567,6 @@ static BBThread *create_bbt(int type)
 {
     int id;
     int index;
-    char buffer[12000];
     
     BBThread	*nt;
     
@@ -577,8 +588,6 @@ static BBThread *create_bbt(int type)
     nt->id = id;
     bbox->threads[index] = nt;
 
-    print_threads(buffer);
-    info(0, "Did thread id %d:\n%s", id, buffer);
 
     bbox->id_max = id;
     return nt;
@@ -787,7 +796,7 @@ static void check_heartbeats(void)
 			i, thr->id, thr->type);
 
 		if (thr->status != BB_STATUS_DEAD)
-		    thr->status == BB_STATUS_KILLED;
+		    thr->status = BB_STATUS_KILLED;
 	    }
 	}
     }
@@ -799,48 +808,6 @@ static void check_heartbeats(void)
     
 error:
     error(ret, "Failed to check heartbeats");
-    return;
-}
-
-/*
- * function to update average queue length function. Takes
- * value each heartbeat moment and the value is average of last 10
- * heartbeats
- */
-static void update_queue_watcher()
-{
-    static int req_ql[10], rep_ql[10];
-    static int index = 0;
-    int i, id, ret;
-    int req, rep;
-    
-    req_ql[index%10] = rq_queue_len(bbox->request_queue);
-    rep_ql[index%10] = rq_queue_len(bbox->reply_queue);
-    index++;
-    if (index > ID_MAX)
-	index=10;
-
-    id = (index > 10) ? 10 : index;
-    
-    for(i=0; i<id; i++) {
-	req += req_ql[i];
-	rep += rep_ql[i];
-    }
-    ret = pthread_mutex_lock(&bbox->mutex);
-    if (ret != 0)
-	goto error;
-
-    bbox->mean_req_ql = req / id;
-    bbox->mean_rep_ql = rep / id;
-
-    ret = pthread_mutex_unlock(&bbox->mutex);
-    if (ret != 0)
-	goto error;
-
-    return;	      
-    
-error:
-    error(ret, "Failed to update mean queue lengths");
     return;
 }
 
@@ -860,8 +827,8 @@ static void print_queues(char *buffer)
     if (ret != 0)
 	goto error;
 
-    sprintf(buffer, "Request queue length %2d messages, mean %.1f\n"
-	    "Reply queue length %2d messages, mean %.1f",
+    sprintf(buffer, "Request queue length %d messages, mean %.1f\n"
+	    "Reply queue length %d messages, mean %.1f",
 	    rq, bbox->mean_req_ql, rp, bbox->mean_rep_ql);
 	    
     ret = pthread_mutex_unlock(&bbox->mutex);
@@ -872,6 +839,63 @@ static void print_queues(char *buffer)
 
 error:
     error(ret, "Failed to print queues");
+}
+
+/*
+ * function to update average queue length function. Takes
+ * value each heartbeat moment and the value is average of last 10
+ * heartbeats
+ */
+static void update_queue_watcher()
+{
+    static int req_ql[10], rep_ql[10];
+    static int index = 0;
+    static int c = 0;
+    int i, id, ret;
+    int req, rep;
+    
+    req = rq_queue_len(bbox->request_queue);
+    rep = rq_queue_len(bbox->reply_queue);
+
+    if (bbox->abort_program == 1 && req == 0 && rep == 0)
+	bbox->abort_program = 2;		/* time to die... */
+	
+    req_ql[index%10] = req;
+    rep_ql[index%10] = rep;
+    index++;
+    if (index > ID_MAX)
+	index=10;
+
+    id = (index > 10) ? 10 : index;
+
+    req = rep = 0;
+    for(i=0; i<id; i++) {
+	req += req_ql[i];
+	rep += rep_ql[i];
+    }
+    ret = pthread_mutex_lock(&bbox->mutex);
+    if (ret != 0)
+	goto error;
+
+    bbox->mean_req_ql = req / id;
+    bbox->mean_rep_ql = rep / id;
+
+    ret = pthread_mutex_unlock(&bbox->mutex);
+    if (ret != 0)
+	goto error;
+
+    c++;
+    if (c == 20) {
+	char buf[1024];
+	print_queues(buf);
+	info(0, "\n%s", buf);
+	c = 0;
+    }
+    return;	      
+    
+error:
+    error(ret, "Failed to update mean queue lengths");
+    return;
 }
 
 /*
@@ -928,12 +952,12 @@ static void main_program(void)
     struct timeval tv;
     fd_set rf;
     int ret;
-    time_t last, now;
-
+    time_t last, now, last_sec;
+    int c = 0;
     
-    last = time(NULL);
+    last = last_sec = time(NULL);
     
-    while(!bbox->abort_program) {
+    while(bbox->abort_program < 2) {
 
 	/* check heartbeat of all threads; if no response for a
 	 * long time, delete thread. This also requires that
@@ -942,14 +966,27 @@ static void main_program(void)
 	 */
 
 	now = time(NULL);
+	if (now != last_sec) {		/* once a second or so */
+	    update_queue_watcher();
+	    last_sec = now;
+	}
 	if (now - last > bbox->heartbeat_freq) {
 	    check_threads();		/* destroy killed */
 	    check_heartbeats();		/* check if need to be marked as killed */
 	    last = now;
 
-	    update_queue_watcher();
+	    c++;
+	    if (c == 10) {
+		char buf[1024];
+		print_threads(buf);
+		info(0, "Threads:\n%s", buf);
+		c = 0;
+	    }
 	}
 
+	if (bbox->abort_program > 0)	/* no new connections if */
+	    continue;			/* we are being tewrminated */
+	
 	FD_ZERO(&rf);
 	FD_SET(bbox->http_fd, &rf);
 	FD_SET(bbox->wap_fd, &rf);
@@ -977,7 +1014,9 @@ static void main_program(void)
 	    /* error */
 	    ;
     }
-
+    check_threads();
+    warning(0, "Bearer box terminating.. hopefully threads, too");
+    sleep(1);
 }
 
 
@@ -1010,6 +1049,7 @@ static void init_bb(Config *cfg)
     bbox->wapbox_port = BB_DEFAULT_WAPBOX_PORT;
     bbox->smsbox_port = BB_DEFAULT_SMSBOX_PORT;
     bbox->heartbeat_freq = BB_DEFAULT_HEARTBEAT;
+    bbox->max_queue = BB_DEFAULT_MAX_QUEUE;
     bbox->pid_file = NULL;
     bbox->global_prefix = NULL;
     
@@ -1091,7 +1131,7 @@ static void signal_handler(int signum)
 {
     if (signum == SIGINT) {
 	if (bbox->abort_program == 0) {
-	    error(0, "SIGINT received, aborting program...");
+	    error(0, "SIGINT received, emptying queues...");
 	    bbox->abort_program = 1;
 	}
     } else if (signum == SIGHUP) {

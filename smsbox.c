@@ -393,7 +393,6 @@ static void new_request(char *buf)
 	    }
 	}
     }
-    info(0, "sender = '%s', receiver = '%s'", sender, receiver);
     msg = smsmessage_construct(sender, receiver, octstr_create(text));
     if (msg != NULL) {
 	msg->id = id;

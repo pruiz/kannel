@@ -110,6 +110,9 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 	char buffer[1025];
 	
 	if (read_available(boxc->fd) > 0) {
+
+	    boxc->box_heartbeat = time(NULL);	/* update heartbeat */
+	    
 	    /*
 	     * Note: the following blocks the connection if there is
 	     * data without a linefeed. But that's life, smsbox would not
@@ -120,7 +123,6 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 	    if (ret < 1)
 		return -1;	/* time to die */
 	    
-	    boxc->box_heartbeat = time(NULL);		/* update heartbeat */
 	    
 	    if (*buffer == 'A' || *buffer == 'N') {	/* ignore ack/nack */
 		debug(0, "BOXC: ACK/NACK read < %s >, ignore", buffer);
@@ -131,7 +133,7 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 		debug(0, "BOXC: Load factor %d received", boxc->load);
 		return 0;
 	    }
-	    info(0, "BOXC:read: < %s >", buffer);
+	    debug(0, "BOXC:read: < %s >", buffer);
 	    
 	    msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
 	    if (msg == NULL) {

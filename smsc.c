@@ -626,7 +626,7 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 	ret = 0;
     }  else if (msg->msg_type == R_MSG_TYPE_MT) {
 
-	info(0, "Send SMS Message [%d] to SMSC", msg->id);
+	debug(0, "Send SMS Message [%d] to SMSC", msg->id);
 	
 	sms_msg = smsmessage_construct(msg->sender, msg->receiver, msg->msg);
     
