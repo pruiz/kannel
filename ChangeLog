@@ -3,9 +3,9 @@
 	* gw/wml_definitions.h: some data types unified.
 
 	* gw/wml_compiler.c: Code updated to the new coding style.
-	Old character set conversion code mostly removed, some skeletons still 
-	in the closet. Hash table code added, wml_init and wml_shutdown written,
-	but not yet used or tested.
+	Old character set conversion code mostly removed, some skeletons
+	still in the closet. Hash table code added, wml_init and
+	wml_shutdown written, but not yet used or tested.
 
 	* gwlib/octstr.[ch]: octstr_hash_key-function added.
 
