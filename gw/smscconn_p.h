@@ -25,6 +25,9 @@
     c) MUST set up send_msg dynamic function to handle messages
        to-be-sent. This function MAY NOT block.
     d) CAN set up private shutdown function, which MAY NOT block
+    e) SHOULD set private function to return number of queued messages
+       to-be-sent inside the driver
+    f) MUST set SMSCConn->name
        
  2) Each SMSC Connection MUST call certain BB callback functions when
     certain things occur:

@@ -1,3 +1,7 @@
+2000-12-27  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smscconn_p.h, gw/smsc_wrapper.c: a bit more commented code 
+
 2000-12-22  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
 	* config.sub,config.guess,configure.in,configure: added the host 

@@ -30,15 +30,21 @@ static int reconnect(SMSCConn *conn)
     int ret;
     int wait = 1;
 
-    /* disable double-reconnect */
+    /* disable double-reconnect
+     * NOTE: it is still possible that we do oduble-connect if
+     *   first thread gets through this if-statement and then
+     *   execution switches to another thread.. this can be avoided
+     *   via double-mutex system, but I do not feel it is worth it,
+     *   maybe later --rpr
+     */
     if (conn->status == SMSCCONN_RECONNECTING) {
-	mutex_lock(conn->flow_mutex);
+	mutex_lock(conn->flow_mutex);	/* wait here */
 	mutex_unlock(conn->flow_mutex);
 	return 0;
     }
     mutex_lock(conn->flow_mutex);
 
-    debug("bb.sms", 0, "smsc_wrapper (%s): reconnect started",
+    debug("bb.sms", 0, "smsc_wrapper <%s>: reconnect started",
 	  octstr_get_cstr(conn->name));
 
     conn->status = SMSCCONN_RECONNECTING;
@@ -49,15 +55,14 @@ static int reconnect(SMSCConn *conn)
 	if (ret == 0) {
 	    conn->status = SMSCCONN_ACTIVE;
 	    conn->connect_time = time(NULL);
-	    mutex_unlock(conn->flow_mutex);
-	    return 0;
+	    break;
 	}
 	else if (ret == -2) {
 	    error(0, "Re-open of %s failed permanently",
 		  octstr_get_cstr(conn->name));
 	    conn->status = SMSCCONN_DISCONNECTED;
 	    mutex_unlock(conn->flow_mutex);
-	    return -1;
+	    return -1;	/* permanent failure */
 	}
 	else {
 	    error(0, "Re-open to <%s> failed, retrying after %d minutes...",
@@ -321,8 +326,13 @@ int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
     conn->status = SMSCCONN_ACTIVE;
     conn->connect_time = time(NULL);
 
-    /* XXX here we could fail things... especialöly if the second one
-     *     fails.. so fix this ASAP */
+    /* XXX here we could fail things... especially if the second one
+     *     fails.. so fix this ASAP
+     *
+     * moreover, open should be in sender/receiver, so that we can continue
+     * while tyring to open... maybe move this, or just wait for new
+     * implementations of various SMSC protocols
+     */
     
     if ((wrap->receiver_thread = gwthread_create(wrapper_receiver, conn))==-1)
 	goto error;
