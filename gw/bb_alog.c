@@ -346,7 +346,8 @@ void bb_alog_sms(SMSCConn *conn, Msg *msg, const char *message)
     /* if we don't have any custom log, then use our "default" one */
     
     if (custom_log_format == NULL) {
-        Octstr *udh, *cid;
+        Octstr *udh;
+        const Octstr *cid;
 
         text = msg->sms.msgdata ? octstr_duplicate(msg->sms.msgdata) : octstr_create("");
         udh = msg->sms.udhdata ? octstr_duplicate(msg->sms.udhdata) : octstr_create("");

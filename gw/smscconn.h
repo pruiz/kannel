@@ -93,6 +93,35 @@
 
 typedef struct smscconn SMSCConn;
 
+typedef enum {
+    SMSCCONN_CONNECTING,
+    SMSCCONN_ACTIVE,
+    SMSCCONN_ACTIVE_RECV,
+    SMSCCONN_RECONNECTING,
+    SMSCCONN_DISCONNECTED,
+    SMSCCONN_DEAD	/* ready to be cleaned */
+} smscconn_status_t;
+
+typedef enum {
+    SMSCCONN_ALIVE = 0,
+    SMSCCONN_KILLED_WRONG_PASSWORD = 1,
+    SMSCCONN_KILLED_CANNOT_CONNECT = 2,
+    SMSCCONN_KILLED_SHUTDOWN = 3
+} smscconn_killed_t;
+
+typedef struct smsc_state {
+    smscconn_status_t status;	/* see enumeration, below */
+    smscconn_killed_t killed;	/* if we are killed, why */
+    int is_stopped;	/* is connection currently in stopped state? */
+    unsigned long received;	/* total number */
+    unsigned long sent;		/* total number */
+    unsigned long failed;	/* total number */
+    long queued;	/* set our internal outgoing queue length */
+    long online;	/* in seconds */
+    int load;		/* subjective value 'how loaded we are' for
+			 * routing purposes, similar to sms/wapbox load */
+} StatusInfo;
+
 /* create new SMS center connection from given configuration group,
  * or return NULL if failed.
  *
@@ -132,10 +161,10 @@ int smscconn_stop(SMSCConn *smscconn);
 void smscconn_start(SMSCConn *smscconn);
 
 /* Return name of the SMSC, as reference - caller may not free it! */
-Octstr *smscconn_name(SMSCConn *smscconn);
+const Octstr *smscconn_name(SMSCConn *smscconn);
 
 /* Return ID of the SMSC, as reference - caller may not free it! */
-Octstr *smscconn_id(SMSCConn *conn);
+const Octstr *smscconn_id(SMSCConn *conn);
 
 /* Check if this SMSC Connection is usable as sender for given
  * message. The bearerbox must then select the good SMSC for sending
@@ -160,41 +189,10 @@ int smscconn_send(SMSCConn *smsccconn, Msg *msg);
 /* Return just status as defined below */
 int smscconn_status(SMSCConn *smscconn);
 
-typedef struct smsc_state {
-    int	status;		/* see enumeration, below */
-    int killed;		/* if we are killed, why */
-    int is_stopped;	/* is connection currently in stopped state? */
-    unsigned long received;	/* total number */
-    unsigned long sent;		/* total number */
-    unsigned long failed;	/* total number */
-    long queued;	/* set our internal outgoing queue length */
-    long online;	/* in seconds */
-    int load;		/* subjective value 'how loaded we are' for
-			 * routing purposes, similar to sms/wapbox load */
-} StatusInfo;
-
-
-enum {
-    SMSCCONN_CONNECTING,
-    SMSCCONN_ACTIVE,
-    SMSCCONN_ACTIVE_RECV,
-    SMSCCONN_RECONNECTING,
-    SMSCCONN_DISCONNECTED,
-    SMSCCONN_DEAD	/* ready to be cleaned */
-};
-
-enum {
-    SMSCCONN_ALIVE = 0,
-    SMSCCONN_KILLED_WRONG_PASSWORD = 1,
-    SMSCCONN_KILLED_CANNOT_CONNECT = 2,
-    SMSCCONN_KILLED_SHUTDOWN = 3
-};
-
 /* return current status of the SMSC connection, filled to infotable.
  * For unknown numbers, put -1. Return -1 if either argument was NULL.
  */
 int smscconn_info(SMSCConn *smscconn, StatusInfo *infotable);
-
 
 
 #endif

@@ -394,14 +394,16 @@ void smscconn_start(SMSCConn *conn)
 }
 
 
-Octstr *smscconn_name(SMSCConn *conn)
+const Octstr *smscconn_name(SMSCConn *conn)
 {
+    gw_assert(conn != NULL);
     return conn->name;
 }
 
 
-Octstr *smscconn_id(SMSCConn *conn)
+const Octstr *smscconn_id(SMSCConn *conn)
 {
+    gw_assert(conn != NULL);
     return conn->id;
 }
 

@@ -664,8 +664,8 @@ Octstr *smsc2_status(int status_type)
     int i, para = 0;
     SMSCConn *conn;
     StatusInfo info;
-    Octstr *conn_id = NULL;
-    Octstr *conn_name = NULL;
+    const Octstr *conn_id = NULL;
+    const Octstr *conn_name = NULL;
 
     if ((lb = bb_status_linebreak(status_type)) == NULL)
         return octstr_create("Un-supported format");

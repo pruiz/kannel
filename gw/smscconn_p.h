@@ -147,9 +147,9 @@
 
 struct smscconn {
     /* variables set by appropriate SMSCConn driver */
-    int		status;		/* see smscconn.h */
+    smscconn_status_t status;		/* see smscconn.h */
     int 	load;	       	/* load factor, 0 = no load */
-    int		why_killed;	/* time to die with reason, set when
+    smscconn_killed_t why_killed;	/* time to die with reason, set when
 				* shutdown called */
     time_t 	connect_time;	/* When connection to SMSC was established */
 

@@ -1,4 +1,11 @@
 2004-06-20  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/smscconn.[ch], gw/smscconn_p.h: made status/killed enums named.
+      Teached 'struct StatusInfo' to use named enums for status/killed.
+      Changed return value to 'const Octstr* for 'smscconn_name' and 'smscconn_id'
+      functions, so the caller see that those _may_ _not_ be freed.
+    * gw/bb_alog.c gw/bb_smscconn.c: fixed const identifier warnings.
+
+2004-06-20  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/wap_push_ota.c: fixed attempt to destroy locked mutex.
 
 2004-06-20  Alexander Malysh  <a.malysh@centrium.de> 
