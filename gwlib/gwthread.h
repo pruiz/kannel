@@ -47,9 +47,6 @@ void gwthread_join_all(void);
  * and after it had been shut down. */
 long gwthread_self(void);
 
-/* Return the threadtable slot that is used by this thread. */
-long gwthread_table_slot(void);
-
 /* If the other thread is currently in gwthread_pollfd or gwthread_sleep,
  * make it return immediately.  Otherwise, make it return immediately, the
  * next time it calls one of those functions. */
