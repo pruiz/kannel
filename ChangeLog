@@ -1,3 +1,9 @@
+2000-03-17  Richard Braakman  <dark@wapit.fi>
+
+	* wmlscript/wsopt.c: Compress "const_es; return" to "return_es",
+	and leave it out entirely at the end of a function (where returning
+	the empty string is the default).
+
 Fri Mar 17 10:55:37 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp_http.c: Protect calls to wml_compiler with a mutex to work

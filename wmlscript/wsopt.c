@@ -160,6 +160,7 @@ opt_peephole(WsCompilerPtr compiler)
 {
   WsBool change = WS_FALSE;
   WsAsmIns *i, *i2, *prev;
+  WsAsmIns *new;
 
   ws_info(compiler, "optimize: peephole");
 
@@ -203,11 +204,53 @@ opt_peephole(WsCompilerPtr compiler)
 		i = i2->next;
 		continue;
 	      }
+
+	  /*
+  	   * const_es           =>      return_es
+	   * return
+	   */
+	  if (i2->type == WS_ASM_RETURN && i->type == WS_ASM_CONST_ES)
+	    {
+	      /* Replace with WS_ASM_RETURN_ES */
+	      new = ws_asm_ins(compiler, i->line, WS_ASM_RETURN_ES);
+	      if (new)
+	        {
+	          change = WS_TRUE;
+
+		  if (prev)
+		    prev->next = new;
+		  else
+		    compiler->asm_head = new;
+
+		  new->prev = prev;
+		  new->next = i2->next;
+
+		  if (new->next)
+		    new->next->prev = new;
+		  else
+		    compiler->asm_tail = new;
+
+		  i = new;
+		  continue;
+	        }
+	    }
 	}
 
       /* Move forward. */
       prev = i;
       i = i->next;
+    }
+
+  /* The interpreter will by default return the empty string if a
+   * function ends without a return statement, so returning the
+   * empty string at the end of a function is never useful. */
+  if (compiler->asm_tail && compiler->asm_tail->type == WS_ASM_RETURN_ES)
+    {
+      compiler->asm_tail = compiler->asm_tail->prev;
+      if (compiler->asm_tail == NULL)
+	compiler->asm_head = NULL;
+      else
+        compiler->asm_tail->next = NULL;
     }
 
   return change;
