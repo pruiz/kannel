@@ -888,7 +888,7 @@ error:
 char *smsbox_req_sendota(List *list, char *client_ip)
 {
 	char *url = NULL, *desc = NULL, *ipaddr = NULL, *phonenum = NULL;
-	char *username = NULL, *passwd = NULL;
+	char *username = NULL, *passwd = NULL, *id = NULL;
 	char speed[5];
 	int bearer = -1, calltype = -1;
 	int connection = CONN_CONT, security = 0, authent = AUTH_NORMAL;
@@ -898,7 +898,7 @@ char *smsbox_req_sendota(List *list, char *client_ip)
 	Msg *msg = NULL;
 	URLTranslation *t = NULL;
 	int ret;
-	Octstr *phonenumber = NULL;
+	Octstr *phonenumber = NULL, *otaid = NULL;
 
 	/* check the username and password */
 	t = authorise_user(list, client_ip);
@@ -912,8 +912,27 @@ char *smsbox_req_sendota(List *list, char *client_ip)
 		error(0, "/cgi-bin/sendota needs a valid phone number.");
 		return "Wrong sendota args.";
 	}
-		
-	grp = config_find_first_group(cfg, "group", "otaconfig");    
+
+    /* check if a otaconfig id has been given and decide which OTA
+     * properties to be send to the client otherwise send the default */
+	otaid = http_cgi_variable(list, "otaid");
+    if (otaid != NULL)
+        id = octstr_get_cstr(otaid);
+ 
+    grp = config_find_first_group(cfg, "group", "otaconfig");
+    while ((otaid != NULL) && (grp != NULL)) {
+	    if (((p = config_get(grp, "ota-id")) != NULL) && 
+            (strcasecmp(p, id) == 0))
+            goto found;
+	    grp = config_find_next_group(grp, "group", "otaconfig");
+	}
+
+    if (otaid != NULL) {
+        error(0, "/cgi-bin/sendota can't find otaconfig with ota-id '%s'.", id);
+		return "Missing otaconfig group.";
+    }
+
+found:
 	if ((p = config_get(grp, "location")) != NULL)
 		url = p;
 	if ((p = config_get(grp, "service")) != NULL)
@@ -1036,7 +1055,7 @@ char *smsbox_req_sendota(List *list, char *client_ip)
 
 	octstr_dump(msg->sms.msgdata, 0);
 
-	info(0, "/cgi-bin/sendota <%s>", octstr_get_cstr(phonenumber) );
+	info(0, "/cgi-bin/sendota <%s> <%s>", id, octstr_get_cstr(phonenumber) );
   
 	/* send_message frees the 'msg' */
 	ret = send_message(t, msg); 
