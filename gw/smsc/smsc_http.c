@@ -805,9 +805,18 @@ static int httpsmsc_send(SMSCConn *conn, Msg *msg)
 {
     ConnData *conndata = conn->data;
     Msg *sms = msg_duplicate(msg);
+    double delay = 0;
+
+    if (conn->throughput) {
+        delay = 1.0 / conn->throughput;
+    }
 
     conndata->open_sends++;
     conndata->send_sms(conn, sms);
+
+    /* obey throughput speed limit, if any */
+    if (conn->throughput)
+        gwthread_sleep(delay);
 
     return 0;
 }

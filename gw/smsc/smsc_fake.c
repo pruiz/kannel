@@ -171,6 +171,11 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
     PrivData *privdata = conn->data;
     Octstr *line;
     Msg	*msg;
+    double delay = 0;
+
+    if (conn->throughput) {
+        delay = 1.0 / conn->throughput;
+    }
 
     while (1) {
         while (!conn->is_stopped && !privdata->shutdown &&
@@ -193,6 +198,10 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
                 bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_REJECTED);
                 goto error;
             }
+
+            /* obey throughput speed limit, if any */
+            if (conn->throughput)
+                gwthread_sleep(delay);
         }
         if (privdata->shutdown) {
             debug("bb.sms", 0, "smsc_fake shutting down, closing client socket");
