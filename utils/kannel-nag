@@ -20,7 +20,7 @@
 set -e
 
 addr=""
-CVSROOT=":pserver:anonymous@cvs.kannel.org:/home/cvs"
+CVSROOT=":pserver:anonymous@cvs.kannel.3glab.org:/home/cvs"
 
 dir="kannel-nag-dir"
 
@@ -58,7 +58,7 @@ then
 	fi
 	echo "Output of 'CFLAGS='-Wall -O2 -g' ./configure':"
 	cat config.output
-	) | mail -s "Kannel automatic compilation test" $addr
+	) | mail -s "Kannel automatic compilation test for `uname -s`" $addr
 fi
 
 cd /var/tmp
