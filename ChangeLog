@@ -1,5 +1,11 @@
 2000-04-20  Richard Braakman  <dark@wapit.com>
 
+	* Made read_to_eof set its output parameter to NULL on error,
+	instead of leaving garbage in it.  This fixes PR#52 reported
+	by Paul Keogh.
+
+2000-04-20  Richard Braakman  <dark@wapit.com>
+
 	* doc/arch/.cvsignore, doc/userguide/.cvsignore: New files.
 
 	* gw/smsc_smpp.c, gw/smsc_smpp.h: Got rid of all uses of uint32_t.
@@ -10,7 +16,7 @@
 	uint32_t as an "exactly 4 octets" type.
 
 	* gwlib/gwstdint.h: Removed.  No code refers to uint32_t (or any
-	of its cousins) anymore.
+	of its cousins) anymore.  This fixes PR#50, reported by David Reid.
 
 	* config.h.in, configure.in, README.autoconf: Removed tests
 	for uint32_t and stdint.h.  Re-ran autoconf.

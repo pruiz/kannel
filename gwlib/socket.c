@@ -307,6 +307,7 @@ int read_to_eof(int fd, char **data, size_t *len) {
 
 error:
 	gw_free(*data);
+	*data = NULL;
 	return -1;
 }
 
