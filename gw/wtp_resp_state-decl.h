@@ -391,6 +391,16 @@ ROW(RESULT_WAIT,
     },
     RESULT_WAIT)
 
+/*
+ * A duplicate ack(tidok) caused by a heavy load (the original changed state
+ * from TIDOK_WAIT).
+ */
+ROW(RESULT_WAIT,
+    RcvAck,
+    event->u.RcvAck.tid_ok,
+    {},
+    RESULT_WAIT)
+
 ROW(RESULT_RESP_WAIT,
     RcvAck,
     1,

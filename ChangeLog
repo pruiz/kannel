@@ -1,3 +1,11 @@
+2000-10-09 Aarno Syvänen <syvanen@wapit.com>
+
+	* gw/wtp_state-decl.h: Incorporated CR-Nokia-WTP-20-March-2000/2.
+	In plain words, when load is heavy, Ack(TidOK) may be delayed so 
+	much that initiator will retransmit it and the responder will re-
+	ceive the original when its state is RESULT_WAIT. This Ack must 
+	be ignored. This corrects bug reported by David.
+
 2000-10-09  Richard Braakman  <dark@wapit.com>
 
 	* wmlscript/wsgram.y: Compile unary + such that it performs the
