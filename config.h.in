@@ -103,4 +103,7 @@
 /* Define if the PAM headers are on the local machine */
 #undef HAVE_SECURITY_PAM_APPL_H
 
+/* Define if you want to turn off assertion checking */
+#undef NDEBUG
+
 #endif

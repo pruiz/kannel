@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <pthread.h>
 
-#include <gwlib/gwlib.h>
+#include "gwlib/gwlib.h"
 
 /* Maximum number of live threads we can support at once.  Increasing
  * this will increase the size of the threadtable.  Use powers of two

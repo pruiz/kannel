@@ -126,6 +126,29 @@ do
 	AC_CHECK_FILE($file,TEX_DSL=$file)
 done
 
+
+dnl Implement --with-defaults option.
+
+AC_ARG_WITH(defaults,
+[  --with-defaults         set default configure options: speed/debug], [
+  case "$withval" in
+  speed) assertiondefault=no
+         mallocdefault=native
+         ;;
+  debug) assertiondefault=yes
+         mallocdefault=check
+         ;;
+  *) echo "unknown --with-defaults parameter $withval"
+     exit 1
+     ;;
+  esac
+], [
+  dnl Same as debug
+  assertiondefault=yes
+  mallocdefault=check
+])
+
+
 dnl Implement --enable-docs option.
 
 AC_SUBST(DOCSTARGET)
@@ -137,7 +160,7 @@ else
 fi
 
 AC_ARG_ENABLE(docs,
-[  --enable-docs	  enable building of documentation], [
+[  --enable-docs           enable building of documentation], [
   if test "$enableval" = "yes"
   then
       DOCSTARGET="docs"
@@ -154,8 +177,8 @@ esac
 dnl Implement the --enable-pam option.
 
 AC_ARG_ENABLE(pam,
-[  --enable-pam	enable pam authentication
-  --disable-pam	disable pam authentication ], [
+[  --enable-pam	          enable pam authentication
+  --disable-pam	          disable pam authentication ], [
     if test "$enableval" = "yes"
     then
 	AC_CHECK_LIB(pam, pam_end)
@@ -172,16 +195,17 @@ pam) echo pam authetication is enabled. ;;
 esac
 
 
-dnl Implement --enable-debug option.
+dnl Implement --enable-ws-debug option.
 
-AC_ARG_ENABLE(debug,
-[  --enable-debug	  enable non-reentrant development time debugging], [
-  echo enabling debugging
+AC_ARG_ENABLE(ws-debug,
+[  --enable-ws-debug	  enable non-reentrant debugging for wmls compiler], [
+  echo enabling WMLScript compiler debugging
   if test -n "$GCC"; then
     CFLAGS="$CFLAGS -Wall"
   fi
   AC_DEFINE(WS_DEBUG)
 ])
+
 
 dnl Implement --enable-localtime option.
 
@@ -192,27 +216,60 @@ AC_ARG_ENABLE(localtime,
   fi
 ])
 
+
+dnl Implement --disable-assertions option.
+
+
+AC_ARG_ENABLE(assertions,
+[  --disable-assertions    turn off assertion checking], [
+  if test "$enableval" = "no"
+  then
+    echo disabling assertion checking
+    AC_DEFINE(NDEBUG)
+  fi
+], [
+  if test "$assertiondefault" = "no"
+  then
+    echo disabling assertion checking
+    AC_DEFINE(NDEBUG)
+  fi
+])
+
+
 dnl --with-malloc=native/fast/checking
 
 AC_ARG_WITH(malloc,
-[  --with-malloc	 select malloc wrapper to use: native/checking], [
+[  --with-malloc           select malloc wrapper to use: native/checking], [
   case "$withval" in
-  native) AC_DEFINE(USE_GWMEM_NATIVE) ;;
-  check) AC_DEFINE(USE_GWMEM_CHECK) ;;
+  native) AC_DEFINE(USE_GWMEM_NATIVE)
+          echo using native malloc
+          ;;
+  check) AC_DEFINE(USE_GWMEM_CHECK)
+         echo using checking malloc
+         ;;
   *) echo "Unknown malloc wrapper $withval. Oops."; exit 1 ;;
   esac
 ], [
-  AC_DEFINE(USE_GWMEM_CHECK)
+  case "$mallocdefault" in
+  native) AC_DEFINE(USE_GWMEM_NATIVE)
+          echo using native malloc
+          ;;
+  *) AC_DEFINE(USE_GWMEM_CHECK)
+     echo using checking malloc
+     ;;
+  esac
 ])
+
 
 dnl --enable-mutex-stats option.
 
 AC_ARG_ENABLE(mutex-stats,
-[  --enable-mutex-stats  produce information about lock contention], [
+[  --enable-mutex-stats    produce information about lock contention], [
   if test "$enableval" = yes; then
       AC_DEFINE(MUTEX_STATS)
   fi
 ])
+
 
 dnl --enable-start-stop-daemon option.
 

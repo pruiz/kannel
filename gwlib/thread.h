@@ -70,26 +70,14 @@ Mutex *mutex_init_static_real(Mutex *mutex);
 void mutex_destroy(Mutex *mutex);
 
 
-/* lock given mutex. PANICS if fails (non-initialized mutex or other
- *  coding error) */ 
+/* lock given mutex. PANIC if fails (non-initialized mutex or other
+ * coding error) */ 
 void mutex_lock(Mutex *mutex);
 
 
-/* lock given mutex. PANICS if fails (non-initialized mutex or other
- * coding error). Same as mutex_lock, except returns 0 if the lock was
- * made and -1 if not. */ 
-int mutex_try_lock(Mutex *mutex);
-
-
-/* unlock given mutex, PANICX if fails (so do not call for non-locked)
- */
+/* unlock given mutex, PANIC if fails (so do not call for non-locked) */
 void mutex_unlock(Mutex *mutex);
 
-
-/* delete mutex data structures (in case if Linux, just check whether it is 
- * locked).
- */
-void mutex_destroy(Mutex *mutex);
 
 #endif
 

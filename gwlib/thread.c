@@ -82,41 +82,6 @@ void mutex_lock(Mutex *mutex)
 }
 
 
-int mutex_try_lock(Mutex *mutex)
-{
-    int ret;
-
-    gw_assert(mutex != NULL);
-
-    /* Let's try to lock it. */
-    ret = pthread_mutex_trylock(&mutex->mutex);
-
-    if (ret == EBUSY)
-        return -1;  /* Oops, didn't succeed, someone else locked it. */
-
-    if (ret != 0) {
-        /* Oops, some real error occured. The only known case
-         * where this happens is when a mutex object is
-         * initialized badly or not at all. In that case,
-         * we're stupid and don't deserve to live. */
-        panic(ret, "mutex_try_lock: Mutex failure!");
-    }
-
-    if (mutex->owner == gwthread_self()) {
-        /* The lock succeeded, but some thread systems allow
-         * the locking thread to lock it a second time.  We
-         * don't want that because it's not portable, so we
-         * pretend it didn't happen. */
-        pthread_mutex_unlock(&mutex->mutex);
-        return -1;
-    }
-
-    /* Hey, it's ours! Let's remember that... */
-    mutex->owner = gwthread_self();
-    return 0;
-}
-
-
 void mutex_unlock(Mutex *mutex)
 {
     int ret;

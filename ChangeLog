@@ -1,3 +1,32 @@
+2000-11-10  Richard Braakman  <dark@wapi.com>
+
+	* configure.in: Added --with-defaults to make it possible to
+	configure for speed or for debugging, with one option.
+	Added --disable-assertions to set NDEBUG.  Made --with-malloc
+	and --disable-assertions use the default set by --with-defaults. 
+	Changed some whitespace to make ./configure --help align nicely.
+
+	* config.h.in: Added NDEBUG option
+
+	* gwlib/gwthread-pthread.c: Include "gwlib/gwlib.h", not
+	<gwlib/gwlib.h>.  The latter made "make depend" skip the
+	inclusion.  This fixes the problem of needing to run
+	"make clean" after switching malloc wrappers.
+
+	* gwlib/thread.[ch]: Remove mutex_try_lock().  It's not longer
+	used, and it had portability issues.
+
+	* gwlib/conn.c: If conn_set_output_buffering is called, react
+	to the new buffer size immediately.
+
+	* gwlib/conn.[ch]: Remove conn_wait_multi().  It's not used
+	and will not be needed by the new HTTP design.
+
+	* gwlib/conn.c: Fix conn_flush to conform to its description
+	and to manage its lock right.
+
+	* gwlib/conn.c: Make unbuffered connections the default.
+
 2000-11-10  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smscconn.h|c: Added. New SMSC connection interface with stub

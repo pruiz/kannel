@@ -18,10 +18,14 @@
 
 #include "gwlib/gwlib.h"
 
-/* This number is chosen to be a compromise between too many small writes,
- * and too large of a delay before writing.  On many platforms, there's
- * little speed benefit in using larger chunks than 4096 bytes. */
-#define DEFAULT_OUTPUT_BUFFERING 4096
+/*
+ * This used to be 4096.  It is now 0 so that callers don't have to
+ * deal with the complexities of buffering (i.e. deciding when to
+ * flush) unless they want to.
+ * FIXME: Figure out how to combine buffering sensibly with use of
+ * conn_register.
+ */
+#define DEFAULT_OUTPUT_BUFFERING 0
 
 struct Connection {
 	/* We use separate locks for input and ouput fields, so that
@@ -42,9 +46,7 @@ struct Connection {
 	long outbufpos;  /* start of unwritten data in outbuf */
 
 	/* Try to buffer writes until there are this many octets to send.
-	 * The default if 4096, which should cut down on the number of
-	 * syscalls made without delaying the write too much.  Set it
-	 * to 0 to get an unbuffered connection. */
+	 * Set it to 0 to get an unbuffered connection. */
 	unsigned int output_buffering;
 
 	/* Protected by inlock */
@@ -367,6 +369,8 @@ int conn_read_error(Connection *conn) {
 void conn_set_output_buffering(Connection *conn, unsigned int size) {
 	lock_out(conn);
 	conn->output_buffering = size;
+	/* If the buffer size is smaller, we may have to write immediately. */
+	unlocked_try_write(conn);
 	unlock_out(conn);
 }
 
@@ -557,71 +561,6 @@ int conn_wait(Connection *conn, double seconds) {
 	return 0;
 }
 
-int conn_wait_multi(List *conns, double seconds, List **active_conns) {
-	List *active;
-	struct pollfd *fds;
-	long len;
-	long i;
-	Connection *conn;
-	int ret;
-
-	/* Default value, until we're sure of a successful poll. */
-	*active_conns = NULL;
-
-	len = list_len(conns);
-	fds = gw_malloc(len * sizeof(*fds));
-
-	/* Fill the fd array */
-	for (i = 0; i < len; i++) {
-		conn = list_get(conns, i);
-		fds[i].fd = conn->fd;
-		fds[i].events = 0;
-
-		lock_out(conn);
-		if (unlocked_outbuf_len(conn) > 0)
-			fds[i].events |= POLLOUT;
-		unlock_out(conn);
-
-		lock_in(conn);
-		if (conn->read_eof == 0 && conn->read_error == 0)
-			fds[i].events |= POLLIN;
-		unlock_in(conn);
-	}
-
-	ret = gwthread_poll(fds, len, seconds);
-	if (ret < 0) {
-		if (errno == EINTR)
-			return 0;
-		return -1;
-	}
-
-	if (ret == 0)
-		return 1;
-
-	*active_conns = active = list_create();
-	for (i = 0; i < len; i++) {
-		if (fds[i].revents != 0) {
-			conn = list_get(conns, i);
-			if (fds[i].revents & POLLOUT) {
-				lock_out(conn);
-				unlocked_write(conn);
-				unlock_out(conn);
-			}
-			if (fds[i].revents & POLLIN) {
-				lock_in(conn);
-				unlocked_read(conn);
-				unlock_in(conn);
-			}
-			/* POLLNVAL, POLLHUP, and POLLERR will take care
-			 * of themselves when the caller tries to use the
-			 * connection. */
-			list_append(active, conn);
-		}
-	}
-
-	return 0;
-}
-
 int conn_flush(Connection *conn) {
 	int ret;
 	int revents;
@@ -637,15 +576,23 @@ int conn_flush(Connection *conn) {
 	while (unlocked_outbuf_len(conn) != 0) {
 		fd = conn->fd;
 
+		unlock_out(conn);
 		revents = gwthread_pollfd(fd, POLLOUT, -1.0);
 
+		/* Note: Make sure we have the "out" lock when
+		 * going through the loop again, because the 
+		 * loop condition needs it. */
+
 		if (revents < 0) {
-			if (errno == EINTR) {
-				lock_out(conn);
-				continue;
-			}
+			if (errno == EINTR)
+				return 1;
 			error(0, "conn_flush: poll failed on fd %d:", fd);
 			return -1;
+		}
+
+		if (revents == 0) {
+			/* We were woken up */
+			return 1;
 		}
 
 		if (revents & POLLNVAL) {
@@ -653,8 +600,9 @@ int conn_flush(Connection *conn) {
 			return -1;
 		}
 
+		lock_out(conn);
+
 		if (revents & (POLLOUT | POLLERR | POLLHUP)) {
-			lock_out(conn);
 			ret = unlocked_write(conn);
 			if (ret < 0) {
 				unlock_out(conn);
