@@ -1,6 +1,9 @@
 2003-07-18  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/mime_decompiler.c: fixed header comment section
+
+2003-07-18  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap_push_pap_compiler.[ch]: Redeclared parse_address() to make it
-      publically abailable for other modules, ie. MMS encoder/decoder.
+      publically available for other modules, ie. MMS encoder/decoder.
     * wap/wsp.h: added enum type for WSP Encoding-Version
     * wap/wsp_headers.[ch]: moved type definitions and declarations from .c
       to .h file. Redeclared some (un)pack funcitons to be publically available
