@@ -1551,7 +1551,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
  */
 static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
 {
-    Octstr *id, *from, *phonenumber, *ota_doc, *doc_type;
+    Octstr *id, *from, *phonenumber, *smsc, *ota_doc, *doc_type;
     CfgGroup *grp;
     List *grplist;
     Octstr *p;
@@ -1559,8 +1559,7 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
     Msg *msg;
     int ret, ota_type;
     
-    id = NULL;
-    phonenumber = NULL;
+    id = phonenumber = smsc = NULL;
 
     /* check the username and password */
     t = authorise_user(list, client_ip);
@@ -1587,7 +1586,20 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
 	*status = HTTP_BAD_REQUEST;
 	return octstr_create("Sender missing and no global set, rejected");
     }
-
+    
+    smsc = http_cgi_variable(list, "smsc");
+    if (urltrans_forced_smsc(t)) {
+        msg->sms.smsc_id = octstr_duplicate(urltrans_forced_smsc(t));
+        if (smsc)
+            info(0, "send-sms request smsc id ignored, as smsc id forced to %s",
+                 octstr_get_cstr(urltrans_forced_smsc(t)));
+    } else if (smsc) {
+        msg->sms.smsc_id = octstr_duplicate(smsc);
+    } else if (urltrans_default_smsc(t)) {
+        msg->sms.smsc_id = octstr_duplicate(urltrans_default_smsc(t));
+    } else
+        msg->sms.smsc_id = NULL;
+        
     /* check does we have an external XML source for configuration */
     if ((ota_doc = http_cgi_variable(list, "text")) != NULL) {
         
