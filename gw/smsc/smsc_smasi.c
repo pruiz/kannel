@@ -1034,10 +1034,10 @@ static int init_configuration(SMASI *smasi, CfgGroup *config)
         smasi->source_addr_npi = SMASI_OVERRIDE_SOURCE_NPI;
     if (cfg_get_integer(&smasi->dest_addr_ton, config,
       octstr_imm("dest-addr-ton")) == -1)
-        smasi->source_addr_ton = SMASI_OVERRIDE_DEST_TON;
+        smasi->dest_addr_ton = SMASI_OVERRIDE_DEST_TON;
     if (cfg_get_integer(&smasi->dest_addr_npi, config,
       octstr_imm("dest-addr-npi")) == -1)
-        smasi->source_addr_npi = SMASI_OVERRIDE_DEST_NPI;
+        smasi->dest_addr_npi = SMASI_OVERRIDE_DEST_NPI;
     if (cfg_get_integer(&smasi->priority, config,
       octstr_imm("priority")) == -1)
         smasi->priority = SMASI_DEFAULT_PRIORITY;
