@@ -10,6 +10,8 @@
  * Tuomas Luttinen for WapIT Ltd.
  */
 
+#ifdef HAVE_LIBXML
+
 #ifndef WML_COMPILER_H
 #define WML_COMPILER_H
 
@@ -52,6 +54,9 @@
 int wml_compile(Octstr *wml_text,
 		Octstr **wml_binary,
 		Octstr **wml_scripts);
+
+
+#endif
 
 
 #endif

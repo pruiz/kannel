@@ -1,3 +1,10 @@
+/* XXX The #ifdef HAVE_LIBXML is a stupid hack to make this not break things
+until libxml is installed everywhere we do development. --liw */
+
+#ifndef HAVE_LIBXML
+int wml_compiler_not_implemented = 1;
+#else
+
 #include "wml_compiler.h"
 
 /***********************************************************************
@@ -753,3 +760,6 @@ void text_shrink_blank(Octstr *text)
   return;
 }
 
+
+
+#endif

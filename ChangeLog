@@ -1,3 +1,9 @@
+Wed Jan 26 16:28:05 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wml_compiler.[ch]: Comment out everything if HAVE_LIBXML
+	is not defined by configure. This is needed until everyone doing
+	development has libxml installed.
+
 Wed Jan 26 15:13:25 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* configure.in: Check for gnome-xml library, which is needed by
