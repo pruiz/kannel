@@ -1,7 +1,13 @@
+2003-07-20  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * : The "clean up old modules and break everything" patch ;)
+    * gw/smsc: removed smsc_at, moved smsc_at2 to smsc_at; moved smsc_emi
+      to smsc_emi_x25 and smsc_emi2 to smsc_emi.
+      Kannel should be broken now until I commit other changes 
+
 2003-07-20  Alexander Malysh  <a.malysh@centrium.de>
     * gw/dlr.c: changed ugly Octstr* cast.
-    * gw/msg-decl.h: added new fields: auth_code,hplmn. These where missed from Bruno's last
-      commit.
+    * gw/msg-decl.h: added new fields: auth_code,hplmn. These where missed 
+      from Bruno's last commit.
     * gwlib/octstr.[ch]: added more const identifiers.
 
 2003-07-20  Oded Arbel  <odeda@m-wise.com>
