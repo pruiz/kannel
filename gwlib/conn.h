@@ -197,6 +197,7 @@ Octstr *conn_read_packet(Connection *conn, int startmark, int endmark);
 #ifdef HAVE_LIBSSL
 
 #include <openssl/x509.h>
+#include <openssl/ssl.h>
 
 /* Returns the SSL peer certificate for the given Connection or NULL
  * if none. 
@@ -230,4 +231,16 @@ void use_global_client_certkey_file(Octstr *certkeyfile);
  * key matches with the certificate and will panic if it doesn't.
  */
 void use_global_server_certkey_file(Octstr *certfile, Octstr *keyfile); 
+
+/* Configures all global variables for client and server SSL mode 
+ * from the values specified within the configuration file.
+ */
+void conn_config_ssl(CfgGroup *grp);
+
+/* Returns the pointer to the SSL structure of the Connection given.
+ * This should be used for determining if certain connections are 
+ * SSL enabled outside of the scope of conn.c.
+ */
+SSL *conn_get_ssl(Connection *conn);
+  
 #endif /* HAVE_LIBSSL */
