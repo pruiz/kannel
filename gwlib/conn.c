@@ -493,7 +493,12 @@ Octstr *conn_read_line(Connection *conn) {
 	}
 		
 	result = unlocked_get(conn, pos - conn->inbufpos);
-	/* Check if it was a CR LF */
+
+	/* Skip the LF, which we left in the buffer */
+	conn->inbufpos++;
+
+	/* If the line was terminated with CR LF, we have to remove
+	 * the CR from the result. */
 	if (octstr_len(result) > 0 &&
 	    octstr_get_char(result, octstr_len(result) - 1) == 13)
 		octstr_delete(result, octstr_len(result) - 1, 1);
