@@ -1,3 +1,8 @@
+2002-11-14  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smpp_pdu[ch,def], gw/smsc/smpp_pdu_opt.def, gw/smsc/smsc_smpp.c:
+      Added SMPP v3.4 optional field support. This is a first prelimiary 
+      version, but has been proven at Wapme to work in production.
+
 2002-11-13  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/conn.[ch], gwlib/http.c, gwlib/socket.[ch]: applied non-blocking
       patch for http connections, submited by Vjacheslav Chekushin <slava@lmt.lv>
