@@ -3,8 +3,6 @@
 
 #include "log.h"  /* for panic() */
 
-#ifndef _GWASSERT_H
-
 /* If NDEBUG is defined, assert does nothing. */
 
 #ifdef NDEBUG
@@ -14,5 +12,3 @@
 			panic(0, "%s:%d: %s: Assertion `%s' failed.", \
 			      __FILE__, __LINE__, __FUNCTION__, #expr), 0))
 #endif
-
-#endif  /* _GW_ASSERT_H */

@@ -1,3 +1,8 @@
+Mon Apr  3 18:52:48 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/gwassert.h: Remove unnecessary and disfunctional #ifndef
+	wrapper.
+
 2000-04-03  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/octstr.c: Made octstr_write_to_socket() retry after EINTR.
