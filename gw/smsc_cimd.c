@@ -634,6 +634,92 @@ error:
 
 
 int cimd_receive_msg(SMSCenter *smsc, Msg **msg) {
+
+	char *tmpbuff = NULL, *sender = NULL;
+	char *receiver = NULL, *text = NULL, *scts = NULL;
+	char *tmpchar = NULL;
+
+	debug(0, "cimd_receive_smsmessage: starting");
+
+	/* the PENDING function has previously requested for
+	   the message and checked that it safely found its 
+	   way into the memory buffer (smsc->buffer) */
+
+	/* we want to temporarily store some data */
+	tmpbuff = malloc(10*1024);
+	sender = malloc(10*1024);
+	receiver = malloc(10*1024);
+	text = malloc(10*1024);
+	scts = malloc(10*1024);
+
+	if( (tmpbuff==NULL) || (sender==NULL) || (receiver==NULL) ||
+		(text==NULL) || (scts==NULL) )
+		goto error;
+
+	bzero(tmpbuff, 10*1024);
+	bzero(sender, 10*1024);
+	bzero(receiver, 10*1024);
+	bzero(text, 10*1024);
+	bzero(scts, 10*1024);
+
+	/* cut the raw message out from the message buffer */
+	tmpchar = memchr(smsc->buffer, 0x0A, smsc->buflen);
+	if(tmpchar == NULL) {
+		tmpchar = memchr(smsc->buffer, 0x03, smsc->buflen);
+		if(tmpchar == NULL) goto error;
+	}	
+
+	strncpy(tmpbuff, smsc->buffer, tmpchar - smsc->buffer);
+	smscenter_remove_from_buffer(smsc, tmpchar - smsc->buffer + 1);
+
+	/* Parse the raw message */
+	sscanf(tmpbuff, 
+	 "\x02\x06\tC:05\t%[^\t]\t%[^\t]\t%[^\t]\t%[^\t]\t11\x03\x0A",
+	 receiver, sender, text, scts);
+
+	sscanf(tmpbuff, 
+	 "\x02\x06\tC:05\t%[^\t]\t%[^\t]\t%[^\t]\t%[^\t]\t11\x03",
+	 receiver, sender, text, scts);
+
+	/* Translate from the CIMD character set to iso8859-1 */
+	internal_cimd_parse_cimd_to_iso88591( text, tmpbuff, 10*1024 );
+	strncpy(text, tmpbuff, 480);
+
+	/* create a smsmessage structure out of the components */
+	*msg = msg_create(plain_sms);
+	if (*msg == NULL) return -1;
+	(*msg)->plain_sms.sender = octstr_create(sender);
+	(*msg)->plain_sms.receiver = octstr_create(receiver);
+	(*msg)->plain_sms.text = octstr_create(text);
+
+	/* Send acknowledge */
+	internal_cimd_send_acknowledge(smsc);
+
+	/* We got a message so we can instantly check for a new one. */
+	smsc->cimd_last_spoke -= 5;
+
+	/* Free and Finish */
+
+	free(tmpbuff);
+	free(sender);
+	free(receiver);
+	free(text);
+	free(scts);
+
+	debug(0, "cimd_receive_smsmessage: return ok");
+
+	return 1;
+
+error:
+	debug(errno, "cimd_receive_smsmessage: failed");
+	free(tmpbuff);
+	free(sender);
+	free(receiver);
+	free(text);
+	free(scts);
+
+	debug(0, "cimd_receive_smsmessage: return failed");
+
 	return -1;
 }
 
