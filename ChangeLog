@@ -1,5 +1,9 @@
 2000-11-21  Richard Braakman  <dark@wapi.com>
 
+	* wmlscript/wserror.c: Fixed some assertions with side effects.
+
+2000-11-21  Richard Braakman  <dark@wapi.com>
+
 	* gw/html.c, convert_html_entity(): Made conversion of entities
 	like &#1234; work.
 

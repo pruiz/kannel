@@ -50,7 +50,7 @@ void ws_fatal(char *fmt, ...)
 
 void ws_error_memory(WsCompilerPtr compiler)
 {
-    gw_assert(compiler->magic = COMPILER_MAGIC);
+    gw_assert(compiler->magic == COMPILER_MAGIC);
 
     if (compiler->errors & WS_ERROR_B_MEMORY)
         /* We have already reported this error. */
@@ -63,7 +63,7 @@ void ws_error_memory(WsCompilerPtr compiler)
 
 void ws_error_syntax(WsCompilerPtr compiler, WsUInt32 line)
 {
-    gw_assert(compiler->magic = COMPILER_MAGIC);
+    gw_assert(compiler->magic == COMPILER_MAGIC);
 
     if (compiler->errors & WS_ERROR_B_MEMORY)
         /* It makes no sense to report syntax errors when we have run out
@@ -90,7 +90,7 @@ void ws_src_error(WsCompilerPtr compiler, WsUInt32 line, char *message, ...)
 {
     va_list ap;
 
-    gw_assert(compiler->magic = COMPILER_MAGIC);
+    gw_assert(compiler->magic == COMPILER_MAGIC);
 
     if (line == 0)
         line = compiler->linenum;
@@ -113,7 +113,7 @@ void ws_src_warning(WsCompilerPtr compiler, WsUInt32 line, char *message, ...)
 {
     va_list ap;
 
-    gw_assert(compiler->magic = COMPILER_MAGIC);
+    gw_assert(compiler->magic == COMPILER_MAGIC);
 
     if (line == 0)
         line = compiler->linenum;
