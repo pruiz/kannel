@@ -219,6 +219,7 @@ MULTI_GROUP(smsc,
     OCTSTR(priority)
     OCTSTR(notification-pid)
     OCTSTR(notification-addr)
+    OCTSTR(msg-id-type)
 )
 
 

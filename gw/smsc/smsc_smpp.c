@@ -26,6 +26,8 @@
  * stable releases. 
  */ 
 
+#define DEBUG 1
+
 #ifndef DEBUG 
 /* This version doesn't dump. */ 
 static void dump_pdu(const char *msg, Octstr *id, SMPP_PDU *pdu) 
@@ -52,6 +54,8 @@ static void dump_pdu(const char *msg, Octstr *id, SMPP_PDU *pdu)
 #define SMPP_DEFAULT_VERSION        0x34
 #define SMPP_DEFAULT_PRIORITY       0
 #define SMPP_THROTTLING_SLEEP_TIME  15
+#define SMPP_MSG_ID_TYPE            0x01  /* deliver_sm decimal, submit_sm_resp hex */
+
 
 /*
  * Some SMPP error messages we come across
@@ -97,6 +101,7 @@ typedef struct {
     int version;
     int priority;       /* set default priority for messages */    
     time_t throttling_err_time;
+    int smpp_msg_id_type;  /* msg id in hex or decimal */
     SMSCConn *conn; 
 } SMPP; 
  
@@ -109,7 +114,8 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
                          int dest_addr_ton, int dest_addr_npi, 
                          int alt_dcs, int enquire_link_interval, 
                          int max_pending_submits, int reconnect_delay,
-                         int version, int priority, Octstr *my_number) 
+                         int version, int priority, Octstr *my_number,
+                         int smpp_msg_id_type) 
 { 
     SMPP *smpp; 
      
@@ -143,7 +149,8 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->priority = priority;
     smpp->conn = conn; 
     smpp->throttling_err_time = 0; 
-     
+    smpp->smpp_msg_id_type = smpp_msg_id_type;    
+ 
     return smpp; 
 } 
  
@@ -656,8 +663,26 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                     dlrstat = DLR_FAIL; 
  			 
                 if (msgid != NULL) { 
-                    Octstr *tmp; 
-                    tmp = octstr_format("%ld", strtol(octstr_get_cstr(msgid), NULL, 10)); 
+                    Octstr *tmp;
+                    
+                    /* 
+                     * Obey which SMPP msg_id type this SMSC is using, where we 
+                     * have the following semantics for the variable smpp_msg_id:
+                     *
+                     * bit 1: type for submit_sm_resp, bit 2: type for deliver_sm 
+                     *
+                     * if bit is set value is hex otherwise dec
+                     *
+                     * 0x00 deliver_sm dec, submit_sm_resp dec
+                     * 0x01 (default) deliver_sm dec, submit_sm_resp hex
+                     * 0x02 deliver_sm hex, submit_sm_resp dec
+                     * 0x03 deliver_sm hex, submit_sm_resp hex *
+                     */
+                    if (smpp->smpp_msg_id_type & 0x02)                         
+                        tmp = octstr_format("%ld", strtol(octstr_get_cstr(msgid), NULL, 16));
+                    else
+                        tmp = octstr_format("%ld", strtol(octstr_get_cstr(msgid), NULL, 10));
+ 
                     dlrmsg = dlr_find(octstr_get_cstr(smpp->conn->id),  
                                       octstr_get_cstr(tmp), /* smsc message id */ 
                                       octstr_get_cstr(pdu->u.deliver_sm.destination_addr), /* destination */ 
@@ -773,9 +798,14 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
             } else {  
                 Octstr *tmp; 
 	 
-                /* deliver gives mesg id in decimal, submit_sm in hex.. */ 
-                tmp = octstr_format("%ld", strtol(
-                        octstr_get_cstr(pdu->u.submit_sm_resp.message_id), NULL, 16)); 
+                /* check if msg_id is decimal or hex for this SMSC */
+                if (smpp->smpp_msg_id_type & 0x01)
+                    tmp = octstr_format("%ld", strtol(
+                            octstr_get_cstr(pdu->u.submit_sm_resp.message_id), NULL, 16));
+                else
+                    tmp = octstr_format("%ld", strtol(
+                            octstr_get_cstr(pdu->u.submit_sm_resp.message_id), NULL, 10));
+ 
                 /* SMSC ACK.. now we have the message id. */ 
  				 
                 if (msg->sms.dlr_mask & (DLR_SMSC_SUCCESS|DLR_SUCCESS|DLR_FAIL|DLR_BUFFERED)) 
@@ -855,13 +885,6 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
             } 
             break; 
  
-        case generic_nack_resp:
-            error(0, "SMPP[%s]: NACK PDU type 0x%08lx, "
-                  "code 0x%08lx.",
-                  octstr_get_cstr(smpp->conn->id), pdu->type,
-                  pdu->u.generic_nack_resp.command_status);
-            break;
-
         case unbind:
             break;          
  
@@ -1089,7 +1112,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     long reconnect_delay;
     long version;
     long priority;
-
+    long smpp_msg_id_type;
  
     my_number = NULL; 
     transceiver_mode = 0;
@@ -1179,14 +1202,19 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     /* check for any specified priority value in range [0-5] */
     if (cfg_get_integer(&priority, grp, octstr_imm("priority")) == -1)
         priority = SMPP_DEFAULT_PRIORITY;
-  
+
+    /* set the msg_id type variable for this SMSC */
+    if (cfg_get_integer(&smpp_msg_id_type, grp, octstr_imm("msg-id-type")) == -1)
+        smpp_msg_id_type = SMPP_MSG_ID_TYPE;
+    if (smpp_msg_id_type < 0 || smpp_msg_id_type > 3)
+        panic(0,"SMPP: Invlid value for msg-id-type directive in configuraton"); 
 
     smpp = smpp_create(conn, host, port, receive_port, system_type,  
     	    	       username, password, address_range, our_host, 
                        source_addr_ton, source_addr_npi, dest_addr_ton,  
                        dest_addr_npi, alt_dcs, enquire_link_interval, 
                        max_pending_submits, reconnect_delay, 
-                       version, priority, my_number); 
+                       version, priority, my_number, smpp_msg_id_type); 
  
     conn->data = smpp; 
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S",  
