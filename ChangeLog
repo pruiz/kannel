@@ -1,4 +1,8 @@
 2002-01-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: added multi-cast support in smsbox_req_handle(), see 
+      [Msg-ID: <3C45F6E8.F677C8D1@wapme-systems.de>]
+
+2002-01-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap_ota_prov.h: moved to gw/ota_prov_attr.h and added MMSURL type
     * gw/ota_prov.c, gw/smsbox.c: changed header include to ota_prov_attr.h.
     * gw/ota_compiler.c: added MMSURL type.
