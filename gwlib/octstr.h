@@ -588,10 +588,10 @@ void octstr_format_append(Octstr *os, const char *fmt, ...);
 unsigned long octstr_hash_key(Octstr *ostr);
 
 /*
- * return an Octstr encoded in chrset named tocode created from the data
+ * return an Octstr encoded in charset named tocode created from the data
  * in the Octstr orig that is encoded in the charset fromcode.
  */
-int octstr_recode (Octstr *tocode, Octstr *fromcode, Octstr *orig);
+int octstr_recode(Octstr *tocode, Octstr *fromcode, Octstr *orig);
 
 /*
  * Strip all occurence of char ch from start of Octstr
