@@ -1,3 +1,8 @@
+2000-01-05    <rpr@rpr.wapit.com>
+
+	* gw/bearerbox.c: fixed memmove calls (thanks to Yuri for pointing
+	them out)
+
 2000-01-04    <rpr@rpr.wapit.com>
 
 	* gw/wapbox.c: removed automatic logfile opening and instead added

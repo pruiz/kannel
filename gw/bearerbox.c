@@ -251,7 +251,8 @@ static int del_receiver_id(int id)
 
     for(index=0; index < route_count; index++) {
 	if (route_info[index].receiver_id == id) {
-	    memmove(route_info+index, route_info+index+1, route_count-index-1);
+	    memmove(route_info+index, route_info+index+1,
+		    sizeof(RouteInfo) * (route_count-index-1));
 	    route_count--;
 	    index--;
 	    del++;
@@ -301,10 +302,12 @@ static int add_receiver(RQueue *queue, RQueueItem *msg, int old_id, int new_id)
      * insert the new one
      */
     if (ret < 0) {
-	memmove(route_info+index+2, route_info+index+1, route_count-index-1);
+	memmove(route_info+index+2, route_info+index+1,
+		sizeof(RouteInfo) * (route_count-index-1));
 	index++;
     } else
-	memmove(route_info+index+1, route_info+index, route_count-index);
+	memmove(route_info+index+1, route_info+index,
+		sizeof(RouteInfo) * (route_count-index));
     
     route_info[index].route_match = p;
     route_info[index].receiver_id = new_id;
@@ -342,7 +345,8 @@ static int check_receivers()
     
     for(i=0; i < route_count; i++)
 	if (route_info[i].tag + 600 < now) {
-	    memmove(route_info+i, route_info+i+1, route_count-i-1);
+	    memmove(route_info+i, route_info+i+1,
+		    sizeof(RouteInfo) * (route_count-i-1));
 	    route_count--;
 	    i--;
 	    tot++;
