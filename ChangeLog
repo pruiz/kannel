@@ -1,3 +1,7 @@
+2000-10-09  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_cimd2.c: Converted to new formatting style.
+
 2000-10-09 Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wtp_state-decl.h: Incorporated CR-Nokia-WTP-20-March-2000/2.
