@@ -1192,7 +1192,6 @@ static char *http_admin_command(char *command, CGIArg *list, char *extrabuf)
     char *val;
 
     assert(command != NULL);
-    assert(list != NULL);
     
     if (cgiarg_get(list, "username", &val) == -1 ||
 	bbox->admin_username == NULL ||

@@ -1,5 +1,10 @@
 2000-03-21  Richard Braakman  <dark@wapit.com>
 
+	* gw/bearerbox.c: Deleted assertion in http_admin_command.  It is
+	valid for `list' to be NULL if there are no CGI arguments.
+
+2000-03-21  Richard Braakman  <dark@wapit.com>
+
 	* utils/kannel-init.d: Added some configuration options at the top.
 	It now controls my local Kannel setup without problems.
 
