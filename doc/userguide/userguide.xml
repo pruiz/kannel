@@ -2425,7 +2425,57 @@ smsc-password = bar
 		  defined in "alt_charsets.h" and new ones can be added.
      </entry></row>
 
-   </tbody></tgroup></informaltable>
+   <row><entry><literal>notification-pid</literal></entry>
+     <entry><literal>4 num char.</literal></entry>
+     <entry valign="bottom">
+        Notification PID value. See below for a complete list and other notes.
+	Example: 0539
+       <footnote id="notification-pid-note"><para>If you set 
+       <literal>notification-pid</literal>, you should also set 
+       <literal>notification-addr</literal>.</para></footnote>
+     </entry></row>
+
+   <row><entry><literal>notification-addr</literal></entry>
+     <entry><literal>string (max 16)</literal></entry>
+     <entry valign="bottom">
+        Notification Address. Example: 0100110120131234.
+       <footnote id="notification-addr-note"><para>If you set 
+       <literal>notification-addr</literal>, you should also set 
+       <literal>notification-pid</literal>.</para></footnote>
+     </entry></row>
+
+ </tbody></tgroup></informaltable>
+
+ <para>
+   You should use <literal>notification-pid</literal> and 
+   <literal>notification-addr</literal> if you need to inform
+   your exact "address" to your smsc. For example, if you have a
+   <literal>Multiple-Address (MA)</literal> account with several
+   connections to the same <literal>short number</literal>, you may 
+   need to tell your smsc to send delivery reports to the exact instance
+   that sent the message. This is required because if you send a message
+   with instance 1, your instance 2 wouldn't know about it, unless you
+   use a shared DB store for delivery reports.
+ </para>
+
+ <informaltable frame="none">
+  <tgroup cols="2"><thead><row>
+     <entry>Notification PID Value</entry>
+     <entry>Description</entry>
+   </row></thead><tbody>
+
+   <row><entry>0100</entry><entry>Mobile Station</entry></row>
+   <row><entry>0122</entry><entry>Fax Group 3</entry></row>
+   <row><entry>0131</entry><entry>X.400</entry></row>
+   <row><entry>0138</entry><entry>Menu over PSTN</entry></row>
+   <row><entry>0139</entry><entry>PC appl. over PSTN (E.164)</entry></row>
+   <row><entry>0339</entry><entry>PC appl. over X.25 (X.121)</entry></row>
+   <row><entry>0439</entry><entry>PC appl. over ISDN (E.164)</entry></row>
+   <row><entry>0539</entry><entry>PC appl. over TCP/IP</entry></row>
+
+ </tbody></tgroup></informaltable>
+
+
    
 
 </sect3>
@@ -3409,11 +3459,11 @@ features to expect from a driver, and to help identify areas where
 drivers need to be updated.  Currently most of the entries are
 marked as "not tested" because the table is still new.</para>
 
-<table frame="none">
+<table frame="ALL">
  <title>SMSC driver features</title>
- <tgroup cols="12" align="center">
-  <colspec colname="first" colnum="1" align="left">
-  <colspec colname="last" colnum="12">
+ <tgroup cols="13" align="center">
+  <colspec colname="first" colnum="1" align="center">
+  <colspec colname="last" colnum="13">
   <spanspec spanname="feature" namest="first" nameend="last">
   <thead>
    <row>
@@ -3627,11 +3677,11 @@ marked as "not tested" because the table is still new.</para>
  </tgroup>
 </table>
 
-<table frame="none">
+<table frame="ALL">
  <title>SMSC driver internal features</title>
- <tgroup cols="12" align="center">
-  <colspec colname="first" colnum="1" align="left">
-  <colspec colname="last" colnum="12">
+ <tgroup cols="13" align="center">
+  <colspec colname="first" colnum="1" align="center">
+  <colspec colname="last" colnum="13">
   <spanspec spanname="feature" namest="first" nameend="last">
   <thead>
    <row>
@@ -3686,7 +3736,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>y?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>n</entry>
     <entry>y?<footnote id="nomarkod"><para>Does not mark it as octet data</para></footnote></entry>
@@ -3705,7 +3755,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>n</entry>
     <entry>?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y?<footnoteref linkend="nomarkod"></entry>
@@ -3724,7 +3774,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>n</entry>
     <entry>y?</entry>
@@ -3743,7 +3793,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>y?<footnote><para>However, it looks like the <literal>sema</literal> driver can't receive <emphasis>text</emphasis> data.</para></footnote></entry>
     <entry>y?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>n</entry>
     <entry>n</entry>
@@ -3758,11 +3808,11 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>n</entry>
     <entry>n</entry>
@@ -3781,7 +3831,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>N</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
@@ -3800,7 +3850,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>N</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>n</entry>
     <entry>n</entry>
@@ -3819,7 +3869,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>y?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
@@ -3838,7 +3888,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>y?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
@@ -3876,7 +3926,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>y?</entry>
-    <entry>y?</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
@@ -3945,7 +3995,7 @@ marked as "not tested" because the table is still new.</para>
 
 <informaltable frame="none">
  <tgroup cols="2">
-  <colspec colnum="1" align="center">
+  <colspec colnum="1" align="left">
   <thead>
    <row><entry>Symbol</entry><entry>Meaning</entry></row>
   </thead>

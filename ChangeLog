@@ -1,3 +1,9 @@
+2003-05-29  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * config.{guess,sub}: updated from autotools-dev 20030519.1
+    * userguide.xml: added missing documentation for notification-pid
+      and notification-addr for UCP/EMI. Code patched on Aug 05 2002
+    * userguide.xml: added frames to y/n tables; updated at2 capabilities
+
 2003-05-28  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_http.c: some fixes for system-types 'brunet' and
       'xidris'.
