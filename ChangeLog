@@ -1,4 +1,7 @@
 2002-04-24  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c: fixed debug output to be hex, thanks to Simon
+
+2002-04-24  Stipe Tolj <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added 'transceiver-mode' section
     * gw/smpp_pdu.def, gw/smsc_smpp.c, gwlib/cfg.def: added SMPP
       transceiver mode patch submited by Simon Beale <simon.beale@ngame.com>
