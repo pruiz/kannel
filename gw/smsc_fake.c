@@ -76,6 +76,7 @@ int fake_close(SMSCenter *smsc) {
 	      smsc->hostname, smsc->port);
 	return -1;
     }
+    smscenter_destruct(smsc);
     return 0;
 }
 

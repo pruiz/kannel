@@ -337,7 +337,8 @@ static void *run_wapbox(void *arg)
     if (pthread_join(sender, NULL) != 0)
 	error(0, "Join failed in wapbox");
 
-cleanup:    
+cleanup:
+    gw_assert(list_len(newlist) == 0);
     list_destroy(newlist);
     boxc_destroy(newconn);
 
@@ -465,6 +466,8 @@ static void *wdp_to_wapboxes(void *arg)
     debug("bb", 0, "wdp_to_wapboxes: destroying lists");
     while((ap = list_extract_first(route_info)) != NULL)
 	ap_destroy(ap);
+
+    gw_assert(list_len(route_info) == 0);
     list_destroy(route_info);
     while((conn = list_extract_first(wapbox_list)) != NULL) {
 	list_remove_producer(conn->incoming);

@@ -83,9 +83,10 @@ static Octstr *httpd_shutdown(List *cgivars)
 {
     Octstr *reply;
     if ((reply = httpd_check_authorization(cgivars))!= NULL) return reply;
-    if ((reply = httpd_check_status())!= NULL) return reply;
-
-    bb_shutdown();
+    if (bb_status == BB_SHUTDOWN)
+	bb_status = BB_DEAD;
+    else
+	bb_shutdown();
     return octstr_create("Bringing system down");
 }
 
@@ -207,6 +208,8 @@ static void *httpadmin_run(void *arg)
     }
     http2_server_close(httpd);
 
+    httpadmin_running = 0;
+    
     debug("bb.thread", 0, "EXIT: httpadmin_run");
     list_remove_producer(core_threads);
     return NULL;
@@ -227,10 +230,9 @@ int httpadmin_start(Config *config)
 
 
     grp = config_find_first_group(config, "group", "core");
-    if ((p = config_get(grp, "admin-port")) == NULL) {
-	error(0, "Missing admin-port variable, cannot start HTTP admin");
-	return -1;
-    }
+    if ((p = config_get(grp, "admin-port")) == NULL)
+	panic(0, "Missing admin-port variable, cannot start HTTP admin");
+
     ha_password = config_get(grp, "admin-password");
     if (ha_password == NULL)
 	warning(0, "No HTTP admin password set");

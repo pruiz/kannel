@@ -1,3 +1,10 @@
+2000-05-17    <Kalle Marjola <rpr@wapit.com>>
+
+	* gw/bb_*.c: Some final cleanup added
+
+	* gw/smsc_fake.c: smsc_close now destroyes eveyrhing. Should add
+	this functionality to other SMSCes, too, and rename it as _destroy
+
 2000-05-17  Richard Braakman  <dark@wapit.com>
 
 	* test/drive_wapbox.c: Memory leak now fixed.  Added includes

@@ -64,6 +64,19 @@ static Mutex *status_mutex;
 static time_t start_time;
 
 
+
+/* to avoid copied code */
+
+static void set_shutdown_status(void)
+{
+    if (bb_status == BB_SUSPENDED)
+	list_remove_producer(suspended);
+    if (bb_status == BB_SUSPENDED || bb_status == BB_ISOLATED)
+	list_remove_producer(isolated);
+    bb_status = BB_SHUTDOWN;
+}
+
+
 /*-------------------------------------------------------
  * signals
  */
@@ -80,7 +93,10 @@ static void signal_handler(int signum)
 
 	mutex_lock(status_mutex);
         if (bb_status != BB_SHUTDOWN && bb_status != BB_DEAD) {
-	    bb_status = BB_SHUTDOWN;
+	    set_shutdown_status();
+
+	    /* shutdown smsc/udp is called by the http admin thread */
+	    
 	    mutex_unlock(status_mutex);
 	    
             warning(0, "Killing signal received, shutting down...");
@@ -275,7 +291,7 @@ static int starter(Config *config)
     setup_signal_handlers();
 
     
-    /* XXX do we require this? or not? */
+    /* http-admin is REQUIRED */
     httpadmin_start(config);
     
     if (config_find_first_group(config, "group", "smsc"))
@@ -293,6 +309,39 @@ static int starter(Config *config)
     return 0;
 }
 
+
+static void empty_msg_lists(void)
+{
+    Msg *msg;
+
+
+    if (list_len(incoming_wdp) > 0 || list_len(outgoing_wdp) > 0)
+	debug("bb", 0, "Remaining WDP: %ld incoming, %ld outgoing",
+	      list_len(incoming_wdp), list_len(outgoing_wdp));
+
+    while((msg = list_extract_first(incoming_wdp))!=NULL)
+	msg_destroy(msg);
+    while((msg = list_extract_first(outgoing_wdp))!=NULL)
+	msg_destroy(msg);
+
+    list_destroy(incoming_wdp);
+    list_destroy(outgoing_wdp);
+
+    /* XXX we should record these so that they are not forever lost...
+     */
+    if (list_len(incoming_sms) > 0 || list_len(outgoing_sms) > 0)
+	debug("bb", 0, "Remaining SMS: %ld incoming, %ld outgoing",
+	      list_len(incoming_sms), list_len(outgoing_sms));
+
+    while((msg = list_extract_first(incoming_sms))!=NULL)
+	msg_destroy(msg);
+    while((msg = list_extract_first(outgoing_sms))!=NULL)
+	msg_destroy(msg);
+    
+    list_destroy(incoming_sms);
+    list_destroy(outgoing_sms);
+    
+}
 
 int main(int argc, char **argv)
 {
@@ -330,10 +379,7 @@ int main(int argc, char **argv)
     while(list_consume(core_threads)!=NULL)
 	;
 
-    list_destroy(incoming_wdp);
-    list_destroy(outgoing_wdp);
-    list_destroy(incoming_sms);
-    list_destroy(outgoing_sms);
+    empty_msg_lists();
     
     list_destroy(flow_threads);
     list_destroy(core_threads);
@@ -342,8 +388,8 @@ int main(int argc, char **argv)
     mutex_destroy(status_mutex);
 
     config_destroy(cfg);
-    gw_check_leaks();
     gwlib_shutdown();
+    gw_check_leaks();
 
     return 0;
 }
@@ -367,11 +413,7 @@ int bb_shutdown(void)
     debug("bb", 0, "Shutting down Kannel...");
 
     called = 1;
-    if (bb_status == BB_SUSPENDED)
-	list_remove_producer(suspended);
-    if (bb_status == BB_SUSPENDED || bb_status == BB_ISOLATED)
-	list_remove_producer(isolated);
-    bb_status = BB_SHUTDOWN;
+    set_shutdown_status();
     mutex_unlock(status_mutex);
 
     debug("bb", 0, "shutting down smsc");
@@ -437,6 +479,7 @@ int bb_restart(void)
 }
 
 
+
 Octstr *bb_print_status(void)
 {
     char *s;
@@ -458,7 +501,9 @@ Octstr *bb_print_status(void)
     default:
 	s = "going down";
     }
-    sprintf(buf, "Kannel version %s %s (up %ldd %ldh %ldm %lds)", VERSION, s,
-	    t/3600/24, t/3600%24, t/60%60, t%60);
+    sprintf(buf, "Kannel version %s %s (up %ldd %ldh %ldm %lds), %d threads",
+	    VERSION, s, t/3600/24, t/3600%24, t/60%60, t%60,
+	    list_producer_count(flow_threads) +
+	    list_producer_count(core_threads));
     return octstr_create(buf);
 }

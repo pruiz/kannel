@@ -203,6 +203,7 @@ static void udpc_destroy(Udpc *udpc)
     if (udpc->fd >= 0)
 	close(udpc->fd);
     octstr_destroy(udpc->addr);
+    gw_assert(list_len(udpc->outgoing_list) == 0);
     list_destroy(udpc->outgoing_list);
 
     gw_free(udpc);
@@ -302,6 +303,9 @@ int udp_addwdp(Msg *msg)
 
 int udp_shutdown(void)
 {
+    if (!udp_running) return -1;
+
+    debug("bb.thread", 0, "udp_shutdown: Starting avalanche");
     list_remove_producer(incoming_wdp);
     return 0;
 }
