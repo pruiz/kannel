@@ -345,7 +345,7 @@ static void fetch_thread(void *arg) {
 	int status;
 	int ret;
 	WAPEvent *event;
-	long client_SDU_size;
+	long client_SDU_size; /* 0 means no limit */
 	Octstr *url;
 	List *session_headers;
 	List *request_headers;
@@ -386,7 +386,7 @@ static void fetch_thread(void *arg) {
 		url = octstr_duplicate(p->request_uri);
 		addr_tuple = p->addr_tuple;
 		session_id = -1;
-		client_SDU_size = 1024*1024; /* XXX */
+		client_SDU_size = 0; /* No limit */
 		request_body = octstr_duplicate(p->request_body);
 		method = p->method;
 	}
@@ -501,8 +501,8 @@ static void fetch_thread(void *arg) {
 	http_header_remove_all(resp_headers, "X-WAP.TOD");
 	if (x_wap_tod)
 		add_x_wap_tod(resp_headers);
-		
-	if (octstr_len(content.body) > client_SDU_size) {
+
+	if (octstr_len(content.body) > client_SDU_size && client_SDU_size > 0) {
 		/* XXX: This is the wrong status.  It says that the
 		 * client sent us a too large entity (for example with
 		 * POST).  There seems to be no way to indicate that the

@@ -1,3 +1,10 @@
+2000-11-08  Richard Braakman  <dark@wapi.com>
+
+	* gw/wap-appl.c: Deal with client_SDU_size being 0, which means
+	there is no limit.  Thanks to Ruud Schramp for pointing this out.
+	Also made connectionless mode set it to 0 instead of an arbitrary
+	value.
+
 2000-11-08  Lars Wirzenius  <liw@iki.fi>
 
 	* Makefile.in, configure.in: Made "make install" work in a more
