@@ -1,3 +1,19 @@
+2001-08-08  Aarno Syvänen <aarno@wiral.com>
+
+	* test/test_ppg.c: Better help. Added option to set push application
+	id. Set content type default to si.
+	* gw/wml_definitions.h, gw/xml_definitions.h: Created a file for
+	definitions common to all xml compilers.
+	* gw/wap_push_pap_compiler.c: A bugfix
+	* gw/shared.[ch], gw/wap_push_pap_compiler.c: Transferred OSI date
+	validation. Made it more picky.
+	* gw/wap_push_si_compiler.[ch]: Wrote si tokenizer
+	* gw/wap_push_ppg.c: Added calling of the si compiler. Set push 
+	application id wml.ua, when this header is missing or unparsable.
+	* gw/xml_shared.[ch], gw/wml_compiler.c: Transferred function common
+	to xml compilers to a specific file.
+	* gw/wap_push_pap.c: Called push server listening port to 8080.
+
 2001-08-02  Tuomas Luttinen  <Tuomas.Luttinen@reach-u.com>
 
 	* gw/wml_compiler.c (parse_attribute): A bug reported by Bernard 
