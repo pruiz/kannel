@@ -1,3 +1,7 @@
+2001-07-16 Andreas Fink <andreas@fink.org
+	* gw/smsbox.c gw/smsc_http.c: fixed some uninitialized values for flash
+	* gw/bb_smscconn.c: changed status page to include SMSC name
+
 2001-07-16  Tuomas Luttinen  <Tuomas.Luttinen@reach-u.com>
 
 	* doc/userguide/userguide.xml: Updated the information about the 

@@ -421,11 +421,17 @@ Octstr *smsc2_status(int status_type)
 	    /* XXX  we could delete the SMSC now */
 	    continue;
 
-	if (status_type == BBSTATUS_HTML)
-	    octstr_append_cstr(tmp, "&nbsp;&nbsp;&nbsp;&nbsp;");
+	if (status_type == BBSTATUS_HTML) {
+	    octstr_append_cstr(tmp, "&nbsp;&nbsp;&nbsp;&nbsp;<b>");
+	    octstr_append(tmp,smscconn_id(conn));
+	    octstr_append_cstr(tmp, "</b>&nbsp;&nbsp;&nbsp;&nbsp;");
+	}
 	else if (status_type == BBSTATUS_TEXT)
+	{
 	    octstr_append_cstr(tmp, "    ");
-
+	    octstr_append(tmp,smscconn_id(conn));
+	    octstr_append_cstr(tmp, "    ");
+	}
 	if (status_type == BBSTATUS_XML) {
             octstr_append_cstr(tmp, "<smsc>\n\t\t<name>");
             octstr_append(tmp,  smscconn_name(conn));

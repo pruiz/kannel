@@ -39,7 +39,6 @@ Msg *msg_create(enum msg_type type)
     msg = gw_malloc(sizeof(Msg));
 
     msg->type = type;
-
 #define INTEGER(name) p->name = 0
 #define OCTSTR(name) p->name = NULL
 #define MSG(type, stmt) { struct type *p = &msg->type; stmt }

@@ -267,6 +267,8 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     if(flash_string) {
 	sscanf(octstr_get_cstr(flash_string),"%d",&flash);
 	octstr_destroy(flash_string);
+    } else {
+    flash = 0;
     }
     debug("smsc.http.kannel", 0, "Received an HTTP request");
     

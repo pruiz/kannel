@@ -422,6 +422,7 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
     Octstr *name, *val;
     long l;
 
+    *flash = 0;
     for(l=0; l<list_len(headers); l++) {
 	http_header_get(headers, l, &name, &val);
 
@@ -459,7 +460,7 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 		*udh = NULL;
 	    }
 	}
-        else if (octstr_case_compare(name, octstr_imm("X-Kannel-Flash")) == 0) {
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Flash")) == 0) {
     	    sscanf(octstr_get_cstr(val),"%d",flash);
         }
 	octstr_destroy(name);
