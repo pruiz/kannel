@@ -1,4 +1,15 @@
 2002-01-23  Stipe Tolj  <tolj@wapme-systems.de>
+    * configure.in: added another docbook.dsl path to test for, there are
+      for some BSD systems, reported by "Bernino Lind" <lind@catpipe.net>
+      [Msg-ID: <OPEOKAFGKKMPLPGLEINCAEBGCGAA.lind@catpipe.net>]
+    * configure: the resulting outout of configure.in produced
+      by autoconf 2.13.
+    * Makefile.in: changed target .xml.ps to call true(1) without absolute
+      path. Some systems have /bin/true (i.e. Linux), some have /usr/bin/true
+      (i.e. Cygwin). Usually true(1) should be in $PATH and hence we don't
+      need any absolute path here I guess.
+
+2002-01-23  Stipe Tolj  <tolj@wapme-systems.de>
     * Makefile.in: fixed tab layout error from previous commit (Andreas) for 
       target pkg. This has broken make.
     * solaris/mk-solaris-package.sh: fixing obviously type in referencing
