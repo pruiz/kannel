@@ -1,3 +1,8 @@
+2003-09-02  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/socket.c: fixed a segmentation bug. If setup_official_name()
+      did not have a successfull gw_gethostbyname() call, then 
+      gw_netaddr_to_octstr4() would cause to cause segmentation fault.
+      
 2003-09-01  Stipe Tolj  <tolj@wapme-systems.de>
     * configure[.in], config.h.in: added --enable-sqlite switch to enable 
       SQLite support and #defines.
