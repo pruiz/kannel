@@ -348,6 +348,7 @@ int smsc2_start(Cfg *cfg)
         list_append(smsc_list, conn);
     }
     */
+    list_add_producer(smsc_list);
     for (i = 0; i < list_len(smsc_groups) && 
         (grp = list_get(smsc_groups, i)) != NULL; i++) {
         conn = smscconn_create(grp, 1); 
@@ -355,6 +356,7 @@ int smsc2_start(Cfg *cfg)
             panic(0, "Cannot start with SMSC connection failing");
         list_append(smsc_list, conn);
     }
+    list_remove_producer(smsc_list);
     
     if ((router_thread = gwthread_create(sms_router, NULL)) == -1)
 	panic(0, "Failed to start a new thread for SMS routing");
@@ -370,12 +372,14 @@ static int smsc2_find(Octstr *id)
     SMSCConn *conn = NULL;
     int i;
 
+    list_lock(smsc_list);
     for (i = 0; i < list_len(smsc_list); i++) {
         conn = list_get(smsc_list, i);
         if (conn != NULL && octstr_compare(conn->id, id) == 0) {
             break;
         }
     }
+    list_unlock(smsc_list);
     if (i >= list_len(smsc_list))
         i = -1;
     return i;
@@ -388,57 +392,68 @@ int smsc2_stop_smsc(Octstr *id)
 
     /* find the specific smsc via id */
     if ((i = smsc2_find(id)) == -1) {
-        error(0,"HTTP: Could not shutdown smsc-id `%s'", octstr_get_cstr(id));
+        error(0, "HTTP: Could not shutdown smsc-id `%s'", octstr_get_cstr(id));
+        return -1;
+    }
+    conn = list_get(smsc_list, i);
+    if (conn != NULL && conn->status == SMSCCONN_DEAD) {
+        error(0, "HTTP: Could not shutdown already deaed smsc-id `%s'", 
+              octstr_get_cstr(id));
         return -1;
     }
     info(0,"HTTP: Shutting down smsc-id `%s'", octstr_get_cstr(id));
-    conn = list_get(smsc_list, i);
+    debug("",0,"XXX shutdown conn->status %d", conn->status);
     smscconn_shutdown(conn, 1);   /* shutdown the smsc */
-    list_delete(smsc_list, i, 1); /* drop it from the active smsc list */
-	smscconn_destroy(conn);       /* destroy the connection */
+    //list_delete(smsc_list, i, 1); /* drop it from the active smsc list */
+	//smscconn_destroy(conn);       /* destroy the connection */
     return 0;
 }
 
-int smsc2_start_smsc(Octstr *id)
+int smsc2_restart_smsc(Octstr *id)
 {
     CfgGroup *grp;
     SMSCConn *conn;
     Octstr *smscid;
     int i;
-    
-    /* check if smsc is started already */
-    list_lock(smsc_list);
-    for (i = 0; i < list_len(smsc_list); i++) {
-        conn = list_get(smsc_list, i);
-        if (conn != NULL && octstr_compare(conn->id, id) == 0) {
-            error(0, "HTTP: Could not re-start already running smsc-id `%s'", 
-                  octstr_get_cstr(id));
-            list_unlock(smsc_list);
-            return -1;
-        }
+
+    /* find the specific smsc via id */
+    if ((i = smsc2_find(id)) == -1) {
+        error(0, "HTTP: Could not re-start non defined smsc-id `%s'", 
+              octstr_get_cstr(id));
+        return -1;
     }
-    list_unlock(smsc_list);
+
+    /* check if smsc is online status already */
+    conn = list_get(smsc_list, i);
+    if (conn != NULL && conn->status != SMSCCONN_DEAD) {
+        error(0, "HTTP: Could not re-start already running smsc-id `%s'", 
+              octstr_get_cstr(id));
+        return -1;
+    }
+  
+    list_delete(smsc_list, i, 1); /* drop it from the active smsc list */
+	smscconn_destroy(conn);       /* destroy the connection */
 
     /* find the group with smsc id */
     grp = NULL;
+    list_lock(smsc_groups);
     for (i = 0; i < list_len(smsc_groups) && 
         (grp = list_get(smsc_groups, i)) != NULL; i++) {
         smscid = cfg_get(grp, octstr_imm("smsc-id"));
         if (smscid != NULL && octstr_compare(smscid, id) == 0) {
-            info(0,"HTTP: Re-starting smsc-id `%s'", octstr_get_cstr(smscid));
             break;
         }
     }
+    list_unlock(smsc_groups);
     if (i > list_len(smsc_groups))
         return -1;
+    
+    info(0,"HTTP: Re-starting smsc-id `%s'", octstr_get_cstr(id));
 
     conn = smscconn_create(grp, 1); 
     if (conn == NULL)
-        panic(0, "Cannot start with SMSC connection failing");
+        error(0, "Cannot start with SMSC connection failing");
     list_append(smsc_list, conn);
-    
-    if ((router_thread = gwthread_create(sms_router, NULL)) == -1)
-	   panic(0, "Failed to start a new thread for SMS routing");
 
     smscconn_start(conn);
     if (router_thread >= 0)
@@ -452,9 +467,9 @@ void smsc2_resume(void)
     SMSCConn *conn;
     int i;
     
-    for(i=0; i < list_len(smsc_list); i++) {
+    for (i = 0; i < list_len(smsc_list); i++) {
         conn = list_get(smsc_list, i);
-	smscconn_start(conn);
+        smscconn_start(conn);
     }
     if (router_thread >= 0)
 	gwthread_wakeup(router_thread);
@@ -466,10 +481,12 @@ void smsc2_suspend(void)
     SMSCConn *conn;
     int i;
     
-    for(i=0; i < list_len(smsc_list); i++) {
+    list_lock(smsc_list);
+    for (i = 0; i < list_len(smsc_list); i++) {
         conn = list_get(smsc_list, i);
-	smscconn_stop(conn);
+        smscconn_stop(conn);
     }
+    list_unlock(smsc_list);
 }
 
 
@@ -511,10 +528,12 @@ void smsc2_cleanup(void)
 
     debug("smscconn", 0, "final clean-up for SMSCConn");
     
-    for(i=0; i < list_len(smsc_list); i++) {
+    list_lock(smsc_list);
+    for (i = 0; i < list_len(smsc_list); i++) {
         conn = list_get(smsc_list, i);
-	smscconn_destroy(conn);
+        smscconn_destroy(conn);
     }
+    list_unlock(smsc_list);
     list_destroy(smsc_list, NULL);
     list_destroy(smsc_groups, NULL);
     octstr_destroy(unified_prefix);    
@@ -557,9 +576,13 @@ Octstr *smsc2_status(int status_type)
     for (i = 0; i < list_len(smsc_list); i++) {
         conn = list_get(smsc_list, i);
 
-        if ((smscconn_info(conn, &info) == -1) || (info.status == SMSCCONN_DEAD))
-            /* XXX  we could delete the SMSC now */
+        if ((smscconn_info(conn, &info) == -1)) {
+            /* 
+             * we do not delete SMSCs from the list 
+             * this way we can show in the status which links are dead
+             */
             continue;
+        }
 
         conn_id = conn ? smscconn_id(conn) : octstr_imm("unknown");
         conn_name = conn ? smscconn_name(conn) : octstr_imm("unknown");
@@ -591,8 +614,14 @@ Octstr *smsc2_status(int status_type)
             case SMSCCONN_DISCONNECTED:
                 sprintf(tmp3, "disconnected");
                 break;
-            default:
+            case SMSCCONN_CONNECTING:
                 sprintf(tmp3, "connecting");
+                break;
+            case SMSCCONN_DEAD:
+                sprintf(tmp3, "dead");
+                break;
+            default:
+                sprintf(tmp3, "unknown");
         }
 	
         if (status_type == BBSTATUS_XML)
