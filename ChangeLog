@@ -1,3 +1,6 @@
+2004-10-31 Alexander Malysh <amalysh at kannel.org>
+    * gw/msg.c: fixed double free in 'msg_unpack'.
+
 2004-10-28  Stipe Tolj  <stolj@wapme.de>
     * gwlib/utils.[ch]: source code reformating of get_and_set_debugs().
       No logic change. Added global arguments to header file.

@@ -241,7 +241,6 @@ Msg *msg_unpack_real(Octstr *os, const char *file, long line, const char *func)
 error:
     if (msg != NULL) msg_destroy(msg);
     error(0, "Msg packet was invalid.");
-    msg_destroy(msg);
     return NULL;
 }
 
