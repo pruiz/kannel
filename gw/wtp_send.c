@@ -130,7 +130,7 @@ debug(0, "pack_result: msg->dst: <%s> <%ld>",
     last_tid=event->TRResult.tid&0xff;
     wtp_pdu[1]=first_tid;
     wtp_pdu[2]=last_tid;
-
+    
     if (octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 3) == -1)
        goto oct_error; 
  

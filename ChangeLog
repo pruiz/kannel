@@ -1,3 +1,10 @@
+Wed Dec 15 18:43:27 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wapbox.c: Dump message to be sent to bearerbox, for debugging.
+	
+	* gw/wsp.c: Fixed generation of variable length integers for
+	WSP PDU's.  Old code didn't even resemble correct working.
+	
 1999-14-12 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_send.c: in function wtp_pack_result, fix errors in packing wtp

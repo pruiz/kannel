@@ -371,18 +371,20 @@ static void append_uint8(Octstr *pdu, long n) {
 
 
 static void append_uintvar(Octstr *pdu, long n) {
-	if (n == 0)
-		append_uint8(pdu, 0);
-	else {
-		while ((n & 0xFE000000) == 0)
-			n <<= 7;
-		while ((n & 0x01FFFFFF) != 0) {
-			append_uint8(pdu, 0x80 | ((n & 0xFE000000) >> 25));
-			n <<= 7;
-		}
-		if (n != 0)
-			append_uint8(pdu, (n & 0xFE000000) >> 25);
+	long bytes[5];
+	unsigned long u;
+	int i;
+	
+	u = n;
+	for (i = 4; i >= 0; --i) {
+		bytes[i] = u & 0x7F;
+		u >>= 7;
 	}
+	for (i = 0; i < 4 && bytes[i] == 0; ++i)
+		continue;
+	for (; i < 4; ++i)
+		append_uint8(pdu, 0x80 | bytes[i]);
+	append_uint8(pdu, bytes[4]);
 }
 
 
