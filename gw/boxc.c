@@ -37,6 +37,7 @@ BOXC *boxc_open(int fd, char *allow_ip, char *deny_ip)
     if (fd < 0) {
 	debug("bb", 0, "BOXC: Started an internal SMS BOX Thread");
 	nb->fd = BOXC_THREAD;
+	nb->client_ip = NULL;
     } else {
 	debug("bb", 0, "BOXC: Accepting a new client...");
 
@@ -62,8 +63,6 @@ BOXC *boxc_open(int fd, char *allow_ip, char *deny_ip)
 	    }
 	
         nb->client_ip = gw_strdup(accept_ip);
-	if (nb->client_ip == NULL) 
-	    goto error;
 	info(0, "BOXC: Client connected from <%s>", accept_ip);
 
 	/* TODO: do the hand-shake, baby, yeah-yeah! */
@@ -84,6 +83,7 @@ int boxc_close(BOXC *boxc)
 {
     if (boxc == NULL)
 	return 0;
+    gw_free(boxc->client_ip);
     if (boxc->fd >= 0)
 	close(boxc->fd);
 
@@ -218,6 +218,7 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 		msg->msg = pmsg;
 		debug("bb", 0, "BOXC: Read < WAP >");
 	    }
+	    octstr_destroy(os);
 	}
     }
     if (msg) {

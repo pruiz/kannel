@@ -44,6 +44,7 @@
 #include <time.h>
 #include <string.h>
 #include <signal.h>
+#include <assert.h>
 
 #include "gwlib.h"
 
@@ -206,6 +207,9 @@ static int bsearch_receiver(char *str, int *index)
     int cmp = -1;
     *index = -1;
 
+    assert(str != NULL);
+    assert(index != NULL);
+    
     while(hi >= lo) {
 	*index = (lo+hi)/2 - 1;
 	cmp = strcmp(str, route_info[*index].route_match);
@@ -223,7 +227,8 @@ static int bsearch_receiver(char *str, int *index)
 static int find_receiver(RQueueItem *rqi)
 {
     int i, ret;
-    
+
+    assert(rqi != NULL);
     if (rqi->routing_info == NULL)
 	return -1;
 
@@ -251,6 +256,8 @@ static int del_receiver_id(int id)
 
     for(index=0; index < route_count; index++) {
 	if (route_info[index].receiver_id == id) {
+	    gw_free(route_info[index].route_match);
+	    
 	    memmove(route_info+index, route_info+index+1,
 		    sizeof(RouteInfo) * (route_count-index-1));
 	    route_count--;
@@ -361,6 +368,9 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
     int backup_backup = -1;
     int bad_choice = -1;
 
+    assert(bbt != NULL);
+    assert(msg != NULL);
+    
     if (msg->source > -1)	/* if we have already routed message */
 	return 0;
     if (bbt != NULL)
@@ -485,6 +495,8 @@ static int normalize_number(char *dial_prefixes, Octstr **number)
     t = official = dial_prefixes;
     official_len = 0;
 
+    assert(number != NULL);
+    
     while(1) {
 
 	for(p = octstr_get_cstr(*number), start = t, len = 0; ; t++, p++, len++) {
@@ -524,6 +536,9 @@ static void normalize_numbers(RQueueItem *msg, SMSCenter *from)
     char *p;
     int sr, rr;
 
+    assert(msg != NULL);
+    assert(from != NULL);
+    
     sr = rr = 0;
     if (from != NULL) {
 	p = smsc_dial_prefix(from);
@@ -539,7 +554,7 @@ static void normalize_numbers(RQueueItem *msg, SMSCenter *from)
 
 
 /*----------------------------------------------------
- * MAIN THREAD FDUNCTIONS
+ * MAIN THREAD FUNCTIONS
  *
  * (although these are similar currently they are separated because
  *  there is no guarentee that they shall remain so identical)
@@ -626,6 +641,8 @@ static void *smscenter_thread(void *arg)
     }
     warning(0, "SMSC: Closing and dying...");
     mutex_lock(bbox->mutex);
+
+    assert(us != NULL);
     smsc_close(us->smsc);
     us->smsc = NULL;
     us->status = BB_STATUS_DEAD;
@@ -685,6 +702,7 @@ static void *csdrouter_thread(void *arg)
     warning(0, "CSDR: Closing and dying...");
     mutex_lock(bbox->mutex);
 
+    assert(us != NULL);
     csdr_close(us->csdr);
     us->csdr = NULL;
     us->status = BB_STATUS_DEAD;
@@ -762,6 +780,7 @@ static void *wapboxconnection_thread(void *arg)
 	    error(0, "WAPBOXC: [%d] get message failed, killing", us->id);
 	    break;
 	} else if (ret > 0) {
+	    assert(msg != NULL);
 	    route_msg(us, msg);
 	    rq_push_msg(bbox->reply_queue, msg);
 	    continue;
@@ -787,6 +806,7 @@ disconnect:
     
     mutex_lock(bbox->mutex);
     
+    assert(us != NULL);
     boxc_close(us->boxc);
     us->boxc = NULL;
     us->status = BB_STATUS_DEAD;
@@ -845,6 +865,7 @@ static void *smsboxconnection_thread(void *arg)
 	 * NOTE: there should be something load balance here?
 	 */
 
+	assert(us->boxc != NULL);
 	if (written + us->boxc->load < 100) {
 	    msg = rq_pull_msg(bbox->request_queue, us->id);
 	    if (msg == NULL) {
@@ -879,6 +900,7 @@ static void *smsboxconnection_thread(void *arg)
 	    error(0, "SMSBOXC: [%d] get message failed, killing", us->id);
 	    break;
 	} else if (ret > 0) {
+	    assert(msg != NULL);
 	    normalize_numbers(msg, NULL);
 	    route_msg(us, msg);
 	    rq_push_msg(bbox->reply_queue, msg);
@@ -892,6 +914,7 @@ disconnect:
     warning(0, "SMSBOXC: Closing and dying...");
     mutex_lock(bbox->mutex);
 
+    assert(us != NULL);
     boxc_close(us->boxc);
     us->boxc = NULL;
     us->status = BB_STATUS_DEAD;
@@ -909,6 +932,7 @@ int thread_writer(Msg *msg)
 {
     RQueueItem *rqi;
 
+    assert(msg != NULL);
     rqi = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
     if (rqi == NULL) {
 	msg_destroy(msg);
@@ -926,7 +950,7 @@ int thread_writer(Msg *msg)
 
 
 /*---------------------------------------------------------------------
- * BEARER BOX THREAD FUNCTIONS (utitilies)
+ * BEARER BOX THREAD FUNCTIONS (utilities)
  */
 
 /*
@@ -1024,7 +1048,8 @@ static void del_bbt(BBThread *thr)
 static void new_bbt_smsc(SMSCenter *smsc)
 {
     BBThread *nt;
-    
+
+    assert(smsc != NULL);
     nt = create_bbt(BB_TTYPE_SMSC);
     if (nt != NULL) {
 	nt->smsc = smsc;
@@ -1043,6 +1068,7 @@ static void new_bbt_csdr(CSDRouter *csdr)
 {
     BBThread *nt;
     
+    assert(csdr != NULL);
     nt = create_bbt(BB_TTYPE_CSDR);
     if (nt != NULL) {
 	nt->csdr = csdr;
@@ -1169,6 +1195,9 @@ static BBThread *internal_smsbox(void)
 static char *http_admin_command(char *command, CGIArg *list, char *extrabuf)
 {
     char *val;
+
+    assert(command != NULL);
+    assert(list != NULL);
     
     if (cgiarg_get(list, "username", &val) == -1 ||
 	bbox->admin_username == NULL ||
@@ -1239,7 +1268,7 @@ static void *http_request_thread(void *arg)
     char answerbuf[10*1024];
     char *answer = answerbuf;
     CGIArg *arglist = NULL;
-    
+
     client = httpserver_get_request(bbox->http_fd, &client_ip, &path, &args);
     bbox->accept_pending--;
     if (client == -1) {
@@ -1258,6 +1287,9 @@ static void *http_request_thread(void *arg)
 	}
     /* print client information */
 
+    assert(path != NULL);
+    assert(client_ip != NULL);
+    
     info(0, "Get HTTP request < %s > from < %s >", path, client_ip);
     
     if (strcmp(path, "/cgi-bin/status") == 0) {
@@ -1425,8 +1457,10 @@ static void check_threads(void)
 		 * doomed re-opens (or not perhaps doomed, but you got the
 		 * point, righto?)
 		 */
-		if (thr->type == BB_TTYPE_SMSC && bbox->abort_program > 0)
+		if (thr->type == BB_TTYPE_SMSC && bbox->abort_program > 0) {
+		    assert(thr->smsc != NULL);
 		    smsc_set_killed(thr->smsc, 1);
+		}
 	    }
 	}
     }
@@ -1483,7 +1517,7 @@ static void print_queues(char *buffer, int in_xml)
     mutex_lock(bbox->mutex);
 
     if (in_xml)
-    sprintf(buffer,
+	sprintf(buffer,
 	    "<MsgQueueIn> <QueueStatus> "
 	    "<ThroughPut>%d</ThroughPut> "
 	    "<QueueLen>%d</QueueLen> "
@@ -1591,6 +1625,7 @@ static void print_threads(char *buffer, int in_xml)
     int i;
     char buf[1024];
 
+    assert(buffer != NULL);
     buffer[0] = '\0';
 
     if (in_xml)
@@ -1808,7 +1843,8 @@ static void init_bb(Config *cfg)
     bbox->global_prefix = NULL;
     bbox->allow_ip = NULL;
     bbox->deny_ip = NULL;
-    
+
+    assert(cfg != NULL);
     grp = config_first_group(cfg);
     while(grp != NULL) {
 	if ((p = config_get(grp, "max-threads")) != NULL)
@@ -1841,7 +1877,7 @@ static void init_bb(Config *cfg)
 	grp = config_next_group(grp);
     }
     if (bbox->heartbeat_freq == -600)
-	panic(0, "Apparently someone is using SAMPLE configuration without "
+	panic(0, "Apparently someone is using DOCUMENTATION configuration without "
 		"editing it first - well, hopefully he or she now reads it");
 
     
@@ -1962,6 +1998,12 @@ static void open_all_receivers(Config *cfg)
 	    
 	    if (smsc == NULL) {
 		error(0, "Problems connecting to an SMSC, skipping.");
+/*
+ * XXX this should NOT be treated thiw way, but instead leave it
+ * to background, trying to establish the connection again and
+ * again, or alternatively panicking the system (except for fakesmsc)
+ */
+		
 	    } else {
 		new_bbt_smsc(smsc);
 	    }

@@ -1,3 +1,10 @@
+2000-03-07    <rpr@rpr.wapit.com>
+
+	* gw/kannel.*conf: fixed hearbeat as heartbeat
+
+	* gw/bearerbox.c, gw/boxc.c: fixed some memory leaks pointed out
+	by Paul Keogh, and added many assertions.
+
 Tue Mar  7 12:51:35 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/thread.c: Added missing #include for <string.h>.

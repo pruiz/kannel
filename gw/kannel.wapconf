@@ -71,7 +71,7 @@ bearerbox-host = localhost
 bearerbox-port = 13000
 #heartbeat-freq = 30
 # this is here to prevent people from using this without editing
-hearbeat-freq = -600   
+heartbeat-freq = -600   
 # pid-file = "/tmp/wapbox.pid"
 # log-file = "/tmp/wapbox.log"
 log-level = 0
