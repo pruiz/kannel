@@ -9,6 +9,7 @@
 	!defined(INTEGER) || \
 	!defined(OCTSTR) || \
 	!defined(ADDRTUPLE) || \
+	!defined(COOKIES) || \
 	!defined(METHODMACHINES) || \
 	!defined(MACHINE)
 #error "Some required macro is missing."
@@ -32,7 +33,7 @@ MACHINE(
 	INTEGER(server_SDU_size)
 	
 	HTTPHEADERS(http_headers)
-
+	COOKIES(cookies)
 	METHODMACHINES(methodmachines)
 )
 
@@ -42,3 +43,4 @@ MACHINE(
 #undef ADDRTUPLE
 #undef METHODMACHINES
 #undef MACHINE
+#undef COOKIES
