@@ -89,7 +89,7 @@ Octstr *octstr_create_empty(void) {
 }
 
 
-Octstr *octstr_create(char *cstr) {
+Octstr *octstr_create(const char *cstr) {
     return octstr_create_from_data(cstr, strlen(cstr));
 }
 

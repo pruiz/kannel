@@ -1,3 +1,8 @@
+2000-02-28  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gwlib/octstr.c&h: octstr_create(char *)->octstr_create(const char *)
+	* gw/wml_compiler.c: Bug fixes: entities are now supported, no more 
+	changing URLs into lower case.
 
 at Feb 26 16:57:40 CET 2000	Patrick Schaaf	<bof@bof.de>
 

@@ -533,7 +533,7 @@ int parse_element(xmlNodePtr node)
   xmlAttrPtr attribute;
   Octstr *name;
 
-  name = octstr_create_tolower(node->name);
+  name = octstr_create(node->name);
 
   /* Check, if the tag can be found from the code page. */
 
@@ -621,9 +621,9 @@ int parse_attribute(xmlAttrPtr attr)
   unsigned char wbxml_hex = 0x00;
   Octstr *attribute, *value, *attr_i, *val_j;
 
-  attribute = octstr_create_tolower(attr->name);
+  attribute = octstr_create(attr->name);
   if (attr->val != NULL)
-    value = octstr_create_tolower(attr->val->content);
+    value = octstr_create(attr->val->content);
   else 
     value = NULL;
 
@@ -926,7 +926,7 @@ int parse_octet_string(Octstr *ostr)
 
   /* No variables? Ok, let's take the easy way... */
 
-  if (octstr_search_char(ostr, '$') < 0 && octstr_search_char(ostr, '&') < 0)
+  if (octstr_search_char(ostr, '$') < 0)
     return output_octet_string(ostr);
 
   len = octstr_len(ostr);
@@ -974,22 +974,24 @@ int parse_octet_string(Octstr *ostr)
 	  else
 	    return -1;
 	}
-      else if (octstr_get_char(ostr, pos) == '&')
-	/* Entities are not yet supported. */
-	{
-	  return -1;
-	}
     }
   
-  start ++;
+  start;
 
   /* Was there still something after the last variable? */
-  if (start != pos)
-    {
-      temp1 = octstr_cat(output, temp2);
-      output = octstr_duplicate(temp1);
-      octstr_destroy(temp1);
-    }
+  if (start < pos - 1)
+    if (octstr_len(output) != 0)
+      {
+	temp1 = octstr_cat(output, temp2);
+	output = octstr_duplicate(temp1);
+	octstr_destroy(temp1);
+      }
+    else
+      {
+	temp1 = octstr_copy(ostr, start, pos - start);
+	output_octet_string(temp1);
+	octstr_destroy(temp1);
+      }
 
   if (octstr_len(output) > 0)
     if (output_octet_string(output) == -1)

@@ -35,7 +35,7 @@ Octstr *octstr_create_empty(void);
  * Create an octet string from a NUL-terminated C string. Return pointer to
  * the new object.
  */
-Octstr *octstr_create(char *cstr);
+Octstr *octstr_create(const char *cstr);
 
 /*
  * as above except that the string is truncated after max_len
