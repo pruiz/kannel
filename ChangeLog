@@ -1,3 +1,7 @@
+2000-01-12    <rpr@rpr.wapit.com>
+
+	* gw/bearerbox.c: added some usleeps
+
 Wed Jan 12 16:06:01 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Making release 0.2.2.

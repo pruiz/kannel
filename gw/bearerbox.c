@@ -623,7 +623,7 @@ static void *smscenter_thread(void *arg)
 		continue;
 	    }
 	}
-	usleep(1000);
+	usleep(10000);
     }
     warning(0, "SMSC: Closing and dying...");
     mutex_lock(bbox->mutex);
@@ -681,7 +681,7 @@ static void *csdrouter_thread(void *arg)
 		continue;	/* is this necessary? */
 	    }
 	}
-	usleep(1000);
+	usleep(10000);
     }
     warning(0, "CSDR: Closing and dying...");
     mutex_lock(bbox->mutex);
@@ -767,6 +767,7 @@ static void *wapboxconnection_thread(void *arg)
 	    rq_push_msg(bbox->reply_queue, msg);
 	    continue;
 	}
+	usleep(10000);
     }
 disconnect:    
     warning(0, "WAPBOXC: Closing and dying...");
@@ -885,7 +886,7 @@ static void *smsboxconnection_thread(void *arg)
 	    continue;
 	}
 	written--;
-	usleep(1000);
+	usleep(10000);
     }
 disconnect:    
     warning(0, "SMSBOXC: Closing and dying...");
@@ -1635,9 +1636,10 @@ static void main_program(void)
 	    last = now;
 	}
 
-	if (bbox->accept_pending)
+	if (bbox->accept_pending) {
+	    usleep(10000);
 	    continue;
-	
+	}
 	FD_ZERO(&rf);
 	FD_SET(bbox->http_fd, &rf);
 	if (!bbox->abort_program && http_sendsms_fd >= 0)
