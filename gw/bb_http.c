@@ -148,7 +148,7 @@ static void httpd_serve(void *arg)
      * reconfig? restart?
      */
     else 
-	reply = octstr_create("Unknown command %s"); /* ,url */
+	reply = octstr_format("Unknown command %S", url);
 
     gw_assert(reply != NULL);
     
