@@ -1,5 +1,17 @@
 2001-03-27  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smsbox.c: combatibility breaker: do not allow default sendsms
+	user anymore (guess I thought that that has been disabled years
+	ago...)
+
+	* gw/smsbox.c: added POST support for send-sms, too. Hopefully
+	works. Use is automatic, if request to Kannel is POST, body is
+	used as message text, otherwise cgi-args are parsed. Username,
+	password, receiver number etc. are taken from X-Kannel headers
+	(like X-Kannel-Password) and are documented real soon...  
+
+2001-03-27  Kalle Marjola  <rpr@wapit.com>
+
 	* doc/userguide/userguide.txt: added new configuration variables,
 	but missing X-Kannel header definations. Will add these later.
 

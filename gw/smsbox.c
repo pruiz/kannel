@@ -414,7 +414,9 @@ static Octstr *get_udh_from_headers(List *headers)
 */
 
 static void get_x_kannel_from_headers(List *headers, Octstr **from,
-				       Octstr **to, Octstr **udh)
+				      Octstr **to, Octstr **udh,
+				      Octstr **user, Octstr **pass,
+				      Octstr **smsc)
 {
     Octstr *name, *val;
     long l;
@@ -429,6 +431,24 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 	else if (octstr_case_compare(name, octstr_imm("X-Kannel-To")) == 0) {
 	    *to = octstr_duplicate(val);
 	    octstr_strip_blanks(*to);
+	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Username")) == 0) {
+	    if (user != NULL) {
+		*user = octstr_duplicate(val);
+		octstr_strip_blanks(*user);
+	    }
+	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Password")) == 0) {
+	    if (pass != NULL) {
+		*pass = octstr_duplicate(val);
+		octstr_strip_blanks(*pass);
+	    }
+	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-SMSC")) == 0) {
+	    if (smsc != NULL) {
+		*smsc = octstr_duplicate(val);
+		octstr_strip_blanks(*smsc);
+	    }
 	}
 	else if (octstr_case_compare(name, octstr_imm("X-Kannel-UDH")) == 0) {
 	    *udh = octstr_duplicate(val);
@@ -523,17 +543,20 @@ static void url_result_thread(void *arg)
 					urltrans_suffix(trans));
 		replytext = html_to_sms(reply_body);
 		octstr_strip_blanks(replytext);
-    	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh);
+    	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
+					  NULL, NULL, NULL);
 	    } else if (octstr_compare(type, text_plain) == 0) {
 		replytext = reply_body;
 		reply_body = NULL;
 		octstr_strip_blanks(replytext);
-    	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh);
+    	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
+					  NULL, NULL, NULL);
 	    } else if (octstr_compare(type, octet_stream) == 0) {
 		replytext = reply_body;
 		octets = 1;
 		reply_body = NULL;
-    	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh);
+    	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
+					  NULL, NULL, NULL);
 	    } else {
 		replytext = octstr_create("Result could not be represented "
 					  "as an SMS message.");
@@ -905,92 +928,18 @@ static int pam_authorise_user(List *list)
 #endif /* HAVE_SECURITY_PAM_APPL_H */
 
 
-/*
- * Authentication whith the database of Kannel.
- * Check for matching username and password for requests.
- * Return an URLTranslation if successful NULL otherwise.
- */
-static URLTranslation *default_authorise_user(List *list, Octstr *client_ip) 
-{
-    URLTranslation *t = NULL;
-    Octstr *val, *user = NULL;
-
-    if ((user = http_cgi_variable(list, "username")) == NULL
-        && (user = http_cgi_variable(list, "user")) == NULL)
-        t = urltrans_find_username(translations, 
-	    	    	    	   octstr_imm("default"));
-    else
-        t = urltrans_find_username(translations, user);
-
-    if (((val = http_cgi_variable(list, "password")) == NULL
-         && (val = http_cgi_variable(list, "pass")) == NULL)
-        || t == NULL ||
-        octstr_compare(val, urltrans_password(t)) != 0)
-    {
-        /* if the password is not correct, reset the translation. */
-        t = NULL;
-    }
-    if (t) {
-	Octstr *allow_ip = urltrans_allow_ip(t);
-	Octstr *deny_ip = urltrans_deny_ip(t);
-	
-        if (is_allowed_ip(allow_ip, deny_ip, client_ip) == 0) {
-	    warning(0, "Non-allowed connect tried by <%s> from <%s>, ignored",
-		    user ? octstr_get_cstr(user) : "default-user" ,
-		    octstr_get_cstr(client_ip));
-	    t = NULL;
-        }
-    }
-    return t;
-}
-
-static URLTranslation *authorise_user(List *list, Octstr *client_ip) 
-{
-#ifdef HAVE_SECURITY_PAM_APPL_H
-    URLTranslation *t;
-    
-    t = urltrans_find_username(translations, octstr_imm("pam"));
-    if (t != NULL) {
-	if (pam_authorise_user(list))
-	    return t;
-	else 
-	    return NULL;
-    } else
-	return default_authorise_user(list, client_ip);
-#else
-    return default_authorise_user(list, client_ip);
-#endif
-}
 
 
-/*
- * Create and send an SMS message from an HTTP request.
- * Args: list contains the CGI parameters
- */
-static Octstr *smsbox_req_sendsms(List *list, Octstr *client_ip)
-{
+
+
+static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
+				 Octstr *from, Octstr *to,
+				 Octstr *text, Octstr *udh, Octstr *smsc)
+{				     
     Msg *msg = NULL;
-    URLTranslation *t = NULL;
-    Octstr *from = NULL, *to;
-    Octstr *text = NULL, *udh = NULL, *smsc = NULL;
+    Octstr *newfrom;
     int ret;
-    
-    /* check the username and password */
-    t = authorise_user(list, client_ip);
-    if (t == NULL) {
-	return octstr_create("Authorization failed for sendsms");
-    }
-    
-    udh = http_cgi_variable(list, "udh");
-    text = http_cgi_variable(list, "text");
-    smsc = http_cgi_variable(list, "smsc");
-    
-    if ((to = http_cgi_variable(list, "to")) == NULL ||
-	(text == NULL && udh == NULL)) {
-	error(0, "/cgi-bin/sendsms got wrong args");
-	return octstr_create("Wrong sendsms args, rejected");
-    }
-    
+
     /*
      * check if UDH length is legal, or otherwise discard the
      * message, to prevent intentional buffer overflow schemes
@@ -1007,19 +956,19 @@ static Octstr *smsbox_req_sendsms(List *list, Octstr *client_ip)
     }
     
     if (urltrans_faked_sender(t) != NULL) {
-	from = octstr_duplicate(urltrans_faked_sender(t));
-    } else if ((from = http_cgi_variable(list, "from")) != NULL &&
-	       octstr_len(from) > 0) {
-	from = octstr_duplicate(from);
+	/* discard previous from */
+	newfrom = octstr_duplicate(urltrans_faked_sender(t));
+    } else if (octstr_len(from) > 0) {
+	newfrom = octstr_duplicate(from);
     } else if (global_sender != NULL) {
-	from = octstr_duplicate(global_sender);
+	newfrom = octstr_duplicate(global_sender);
     } else {
 	return octstr_create("Sender missing and no global set, rejected");
     }
     
     info(0, "/cgi-bin/sendsms sender:<%s:%s> (%s) to:<%s> msg:<%s>",
 	 octstr_get_cstr(urltrans_username(t)),
-	 octstr_get_cstr(from),
+	 octstr_get_cstr(newfrom),
 	 octstr_get_cstr(client_ip),
 	 octstr_get_cstr(to),
 	 udh == NULL ? octstr_get_cstr(text) : "<< UDH >>");
@@ -1031,7 +980,7 @@ static Octstr *smsbox_req_sendsms(List *list, Octstr *client_ip)
     msg = msg_create(sms);
     
     msg->sms.receiver = octstr_duplicate(to);
-    msg->sms.sender = octstr_duplicate(from);
+    msg->sms.sender = octstr_duplicate(newfrom);
     msg->sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
     msg->sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
     
@@ -1070,11 +1019,11 @@ static Octstr *smsbox_req_sendsms(List *list, Octstr *client_ip)
     
     alog("send-SMS request added - sender:%s:%s %s target:%s request: '%s'",
 	 octstr_get_cstr(urltrans_username(t)),
-         octstr_get_cstr(from), octstr_get_cstr(client_ip),
+         octstr_get_cstr(newfrom), octstr_get_cstr(client_ip),
 	 octstr_get_cstr(to),
 	 udh == NULL ? octstr_get_cstr(text) : "<< UDH >>");
 
-    octstr_destroy(from);
+    octstr_destroy(newfrom);
     return octstr_create("Sent.");
     
 error:
@@ -1082,6 +1031,147 @@ error:
     octstr_destroy(from);
     return octstr_create("Sending failed.");
 }
+
+
+/*
+ * new authorisation, usable by POST and GET
+ */
+static URLTranslation *authorise_username(Octstr *username, Octstr *password,
+					  Octstr *client_ip) 
+{
+    URLTranslation *t = NULL;
+
+    if (username == NULL || password == NULL)
+	return NULL;
+    
+    if ((t = urltrans_find_username(translations, username))==NULL)
+	return NULL;
+
+    if (octstr_compare(password, urltrans_password(t))!=0)
+	return NULL;
+    else {
+	Octstr *allow_ip = urltrans_allow_ip(t);
+	Octstr *deny_ip = urltrans_deny_ip(t);
+	
+        if (is_allowed_ip(allow_ip, deny_ip, client_ip) == 0) {
+	    warning(0, "Non-allowed connect tried by <%s> from <%s>, ignored",
+		    octstr_get_cstr(username), octstr_get_cstr(client_ip));
+	    return NULL;
+        }
+    }
+    return t;
+}
+
+/*
+ * Authentication whith the database of Kannel.
+ * Check for matching username and password for requests.
+ * Return an URLTranslation if successful NULL otherwise.
+ */
+static URLTranslation *default_authorise_user(List *list, Octstr *client_ip) 
+{
+    Octstr *pass, *user = NULL;
+
+    if ((user = http_cgi_variable(list, "username")) == NULL)
+        user = http_cgi_variable(list, "user");
+
+    if ((pass = http_cgi_variable(list, "password")) == NULL)
+	pass = http_cgi_variable(list, "pass");
+
+    return authorise_username(user, pass, client_ip);
+}
+
+
+static URLTranslation *authorise_user(List *list, Octstr *client_ip) 
+{
+#ifdef HAVE_SECURITY_PAM_APPL_H
+    URLTranslation *t;
+    
+    t = urltrans_find_username(translations, octstr_imm("pam"));
+    if (t != NULL) {
+	if (pam_authorise_user(list))
+	    return t;
+	else 
+	    return NULL;
+    } else
+	return default_authorise_user(list, client_ip);
+#else
+    return default_authorise_user(list, client_ip);
+#endif
+}
+
+
+/*
+ * Create and send an SMS message from an HTTP request.
+ * Args: args contains the CGI parameters
+ */
+static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip)
+{
+    URLTranslation *t = NULL;
+    Octstr *from = NULL, *to;
+    Octstr *text = NULL, *udh = NULL, *smsc = NULL;
+    
+    /* check the username and password */
+    t = authorise_user(args, client_ip);
+    if (t == NULL) {
+	return octstr_create("Authorization failed for sendsms");
+    }
+    
+    udh = http_cgi_variable(args, "udh");
+    text = http_cgi_variable(args, "text");
+    smsc = http_cgi_variable(args, "smsc");
+    from = http_cgi_variable(args, "from");
+    to = http_cgi_variable(args, "to");
+    
+    if (to == NULL || (text == NULL && udh == NULL)) {
+	error(0, "/sendsms got wrong args");
+	return octstr_create("Wrong sendsms args, rejected");
+    }
+    
+    return smsbox_req_handle(t, client_ip, from, to, text, udh, smsc);
+    
+}
+
+
+/*
+ * Create and send an SMS message from an HTTP request.
+ * Args: args contains the CGI parameters
+ */
+static Octstr *smsbox_sendsms_post(List *headers, Octstr *body, Octstr *client_ip)
+{
+    URLTranslation *t = NULL;
+    Octstr *from, *to, *user, *pass, *udh, *smsc;
+    Octstr *ret;
+
+    from = to = user = pass = udh = smsc = NULL;
+
+    get_x_kannel_from_headers(headers, &from, &to, &udh,
+			      &user, &pass, &smsc);
+    
+    
+    /* check the username and password */
+    t = authorise_username(user, pass, client_ip);
+    if (t == NULL)
+	ret = octstr_create("Authorization failed for sendsms");
+
+    else if (to == NULL) {
+	error(0, "/sendsms got insufficient headers");
+	ret = octstr_create("Insufficient headers, rejected");
+    } else
+	/* XXX here we should take into account content-type of body
+	 */
+	ret = smsbox_req_handle(t, client_ip, from, to, body, udh, smsc);
+
+    octstr_destroy(from);
+    octstr_destroy(to);
+    octstr_destroy(user);
+    octstr_destroy(pass);
+    octstr_destroy(udh);
+    octstr_destroy(smsc);
+    return ret;
+}
+
+
+
 
 
 /*
@@ -1371,8 +1461,14 @@ static void sendsms_thread(void *arg)
 	info(0, "smsbox: Got HTTP request <%s> from <%s>",
 	    octstr_get_cstr(url), octstr_get_cstr(ip));
 
-	if (octstr_str_compare(url, "/cgi-bin/sendsms") == 0)
-	    answer = smsbox_req_sendsms(args, ip);
+	if (octstr_str_compare(url, "/cgi-bin/sendsms") == 0
+	    || octstr_str_compare(url, "/sendsms") == 0)
+	{
+	    if (body == NULL)
+		answer = smsbox_req_sendsms(args, ip);
+	    else
+		answer = smsbox_sendsms_post(hdrs, body, ip);
+	}
 	else if (octstr_str_compare(url, "/cgi-bin/sendota") == 0)
 	    answer = smsbox_req_sendota(args, ip);
 	else
