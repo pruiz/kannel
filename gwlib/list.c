@@ -36,8 +36,8 @@
 #include "config.h"
 #include "list.h"
 #include "log.h"
-#include "gwmem.h"
 #include "thread.h"
+#include "gwmem.h"
 
 
 struct List {

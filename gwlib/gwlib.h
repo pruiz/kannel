@@ -19,11 +19,11 @@
 #include "gwpoll.h"
 
 #include "gwstr.h"
-#include "gwmem.h"
 #include "utils.h"
 #include "log.h"
 #include "thread.h"
 #include "gwthread.h"
+#include "gwmem.h"
 #include "socket.h"
 #include "conffile.h"
 #include "date.h"
