@@ -176,7 +176,7 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
     smsc->emi_username = gw_strdup(username);
     smsc->emi_password = gw_strdup(password);
     smsc->emi_backup_port = receive_port;
-    smsc->emi_backup_allow_ip = gw_strdup(allow_ip);
+    smsc->emi_backup_allow_ip = allow_ip ? gw_strdup(allow_ip) : NULL;
     smsc->emi_our_port = our_port;
 
     if (receive_port > 0 && allow_ip == NULL)

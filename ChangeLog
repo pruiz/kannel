@@ -1,3 +1,8 @@
+2000-11-06  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsc_emi.c (emi_open_ip): check if allow_ip set. Thanks for
+	Juho-Pekka Virolainen for noticing this.
+
 2000-11-06  Yann Muller <ymuller@3glab.com>
 
 	* gw/smsc_at.c: fixed Premicell bug. Added sleep(1) for nokiaphone.
