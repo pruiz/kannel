@@ -1105,30 +1105,63 @@ error:
 
 
 
-/**********************************************************
- *header_dump - dump headers
- *
- */
+/************/
 
-int header_dump(HTTPHeader *header){
-    
-    HTTPHeader *thisheader = NULL;
-    int i;
-    
-    thisheader = header;
-    
-    if(thisheader == NULL) goto error;
+int header_dump(HTTPHeader *hdr)
+{
+    while(hdr != NULL) {
+	debug(0, "%s: %s", hdr->key, hdr->value);
+	hdr = hdr->next;
+    }
+    return 0;
+}
 
-    if( (i = fprintf(0, "%s %s", thisheader->key, thisheader->value)) > -1 )
-	thisheader = thisheader->next;
-    else goto error;
 
-    return 1;
+/************/
 
+int header_destroy(HTTPHeader *hdr)
+{
+    HTTPHeader *ptr;
+    while(hdr != NULL) {
+	ptr = hdr;
+	hdr = hdr->next;
+	gw_free(ptr->key);
+	gw_free(ptr->value);
+	gw_free(ptr);
+    }
+    return 0;
+}
+
+
+/************/
+
+int header_pack(HTTPHeader *hdr)
+{
+    HTTPHeader *ptr, *prev;
+    char buf[1024];
     
-error:
-    error(errno, "header_dump: failed");
-    return -1;
+    while(hdr != NULL) {
+
+	/* find identical headers and merge them */
+	
+	for(prev = hdr, ptr = hdr->next; ptr != NULL; ptr = ptr->next) {
+	    if (strcasecmp(hdr->key, ptr->key)==0) {
+
+		sprintf(buf, "%s, %s", hdr->value, ptr->value);
+		gw_free(hdr->value);
+		hdr->value = gw_strdup(buf);
+
+		prev->next = ptr->next;
+		gw_free(ptr->key);
+		gw_free(ptr->value);
+		gw_free(ptr);
+
+		ptr = prev;     /* rewind */
+	    }
+	}	    
+	hdr = hdr->next;
+    }
+    return 0;
 }
 
 

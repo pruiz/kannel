@@ -126,11 +126,24 @@ int http_post(char *urltext, char **type, char **data, size_t *size, HTTPHeader 
 
 /**********************************************************
  * header_dump - dump headers
- * function to test headers 
+ * Dump all headers into debug(). Return 0.
  */
 
 int header_dump(HTTPHeader *header);
     
+/******************************************************
+ * destroy entire header data. Returns 0 always.
+ */
+
+int header_destroy(HTTPHeader *header);
+
+/***************************************************************
+ * pack the header by combining all similar headers, i.e.
+ * Accept-language: en Accept-language: fi -> Accept-language: en, fi
+ * Returns 0 always.
+ */
+
+int header_pack(HTTPHeader *header);
 
 
 
