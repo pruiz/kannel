@@ -144,7 +144,7 @@ main(int argc, char *argv[])
 	      switch (bc->constants[j].type)
 		{
 		case WS_BC_CONST_TYPE_INT:
-		  printf("%d\n", bc->constants[j].u.v_int);
+		  printf("%ld\n", (long) bc->constants[j].u.v_int);
 		  break;
 
 		case WS_BC_CONST_TYPE_FLOAT32:

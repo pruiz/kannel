@@ -62,24 +62,8 @@ typedef unsigned char WsUInt8;
 typedef signed short WsInt16;
 typedef unsigned short WsUInt16;
 
-#if SIZEOF_INT == 4
-
-typedef signed int WsInt32;
-typedef unsigned int WsUInt32;
-
-#else /* SIZEOF_INT != 4 */
-
-#if SIZEOF_LONG == 4
-
 typedef signed long WsInt32;
 typedef unsigned long WsUInt32;
-
-#else /* SIZEOF_LONG != 4 */
-
-#error "do not know what integer type is 32 bits long"
-
-#endif /* SIZEOF_LONG != 4 */
-#endif /* SIZEOF_INT != 4 */
 
 /* Internally we use as good floating point numbers as possible.  This
    way we avoid losing data in constant folding, etc. */

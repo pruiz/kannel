@@ -19,12 +19,6 @@
 /* WMLScript debugging. */
 #undef WS_DEBUG
 
-/* The number of bytes in a int.  */
-#undef SIZEOF_INT
-
-/* The number of bytes in a long.  */
-#undef SIZEOF_LONG
-
 /* Define if you have the cfmakeraw function.  */
 #undef HAVE_CFMAKERAW
 

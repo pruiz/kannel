@@ -1,3 +1,18 @@
+2000-04-03  Richard Braakman  <dark@wapit.com>
+
+	* wmlscript/wsint.h: Always define WsInt32 to long and WsUInt32
+	to unsigned long, rather than looking for a type of exactly four
+	bytes.
+
+	* wmlscript/wslexer.c: Pass ws_stream_getc a pointer to 'WsUInt32',
+	like it asks, rather than 'unsigned int', which might be smaller.
+
+	* wmlscript/wmlsdasm.c: Print a v_int constant as a long, rather
+	than int.
+
+	* config.h.in, configure.in, configure: Completely got rid of
+	SIZEOF_INT and SIZEOF_LONG constants.
+
 2000-03-31 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp.c: Tell_about_error: remove debuggung statements causing 
