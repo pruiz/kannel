@@ -1,3 +1,8 @@
+2002-05-01  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * configure.in: configure now defaults to --disable-mysql 
+    * gw/smsbox.c: http reply, when text/plain, doesn't strip_blanks. Needed
+      to be able to send smscards with spaces in first line
+
 2002-05-02  Stipe Tolj <tolj@wapme-systems.de>
     * configure[.in], config.h.in: changed VERSION definition to have 
       a more readable date format and added GW_NAME define to allow 

@@ -822,7 +822,7 @@ static void url_result_thread(void *arg)
 		replytext = octstr_duplicate(reply_body);
                 octstr_destroy(reply_body);
 		reply_body = NULL;
-		octstr_strip_blanks(replytext);
+		// XXX full text octstr_strip_blanks(replytext);
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, &smsc, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
