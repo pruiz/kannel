@@ -295,6 +295,20 @@ SINGLE_GROUP(webbox,
        OCTSTR(log-level)
 )
 
+MULTI_GROUP(modems,
+    OCTSTR(id)
+    OCTSTR(name)
+    OCTSTR(detect-string)
+    OCTSTR(detect-string2)
+    OCTSTR(init-string)
+    OCTSTR(speed)
+    OCTSTR(enable-hwhs)
+    OCTSTR(need-sleep)
+    OCTSTR(no-pin)
+    OCTSTR(no-smsc)
+    OCTSTR(sendline-sleep)
+    OCTSTR(keepalive-cmd)
+)
 
 #undef OCTSTR
 #undef SINGLE_GROUP

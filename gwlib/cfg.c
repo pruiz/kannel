@@ -385,7 +385,7 @@ int cfg_read(Cfg *cfg)
                  * This may be referenced in several other places, 
                  * i.e. dump_group() 
                  */ 
-		if(octstr_len(grp->configfile) == 0) {
+		if(grp->configfile == NULL) {
 		    grp->configfile = octstr_duplicate(loc->filename); 
                     grp->line = loc->line_no; 
 		} 
@@ -442,6 +442,11 @@ List *cfg_get_multi_group(Cfg *cfg, Octstr *name)
 Octstr *cfg_get_group_name(CfgGroup *grp)
 {
     return octstr_duplicate(grp->name);
+}
+
+Octstr *cfg_get_configfile(CfgGroup *grp)
+{
+    return octstr_duplicate(grp->configfile);
 }
 
 

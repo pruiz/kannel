@@ -33,51 +33,21 @@
 #include "sms.h"
 #include "dlr.h"
 
-/******************************************************************************
- * Types of GSM modems (as used in kannel.conf: modemtype=xxxx)
- */
-
-struct modem_def
-{
-    char 	*name;
-    char	*hwhs;			/* enable hardware handshake */
-    long 	speed;
-    char	*init1;
-    char	*detect_string1;
-    char	*detect_string2;
-    int		enable_parity; 		/* needs to set PARITY */
-    int		need_sleep;		/* sleep 1 sec after opening port */
-    int		pin_support;
-    int		skip_smsc_addr;
-    int		prepend_zero_smsc;
-    double	send_line_sleep;	/* wait seconds after having sent a line */
-};
-
-/* indexes into table below. Has to match ! */
-#define	AT2_AUTODETECT		0
-#define	AT2_WAVECOM		1
-#define	AT2_PREMICELL		2
-#define	AT2_SIEMENS_TC35	3
-#define	AT2_SIEMENS		4
-#define	AT2_NOKIAPHONE		5
-#define	AT2_FALCOM		6
-#define	AT2_ERICSSON		7
-#define AT2_ALCATEL         8
-
-#define	MAX_MODEM_TYPES		9
-struct modem_def ModemTypes[MAX_MODEM_TYPES] =
-{
-    { "autodetect", 	"AT+IFC=2,2" 	, 0     , "AT+CNMI=1,2,0,0,0",	NULL,		NULL, 	0, 0, 1, 0, 0, 0.1 },
-    { "wavecom", 	"AT+IFC=2,2" 	, 9600  , "AT+CNMI=1,2,0,0,0",	"WAVECOM",	NULL,	0, 0, 1, 1, 1, 0.1 },
-    { "premicell", 	"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"PREMICEL",	NULL,	0, 0, 0, 0, 0, 0.1 },
-    { "siemens-tc35",	"AT\\Q3" 	, 19200 , "AT+CNMI=1,2,0,0,1",	"SIEMENS", 	"TC35",	0, 1, 1, 1, 1, 0.1 },
-    { "siemens",	"AT\\Q3" 	, 19200 , "AT+CNMI=1,2,0,0,0",	"SIEMENS", 	"M20",	0, 1, 1, 1, 1, 0.1 },
-    { "nokiaphone",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"NokiaPhone" ,	NULL,	0, 1, 1, 1, 1, 0.1 },
-    { "falcom",		"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"Falcom",	NULL,	0, 0, 1, 0, 0, 0.1 },
-    { "ericsson",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=3,2,0,0",	"R520m",	NULL,	0, 0, 1, 1, 1, 0.1 },
-    { "alcatel",	"AT+IFC=2,2"    , 9600  , "AT+CNMI=1,3,0,0,0",  "Alcatel",  NULL,   0, 0, 1, 1, 1, 0.1 } 
-};
-
+typedef struct ModemDef {
+    Octstr	*id;
+    Octstr	*name;
+    Octstr	*detect_string;
+    Octstr	*detect_string2;
+    Octstr	*init_string;
+    long	speed;
+    Octstr	*enable_hwhs;
+    int		need_sleep;
+    int		no_pin;
+    int		no_smsc;
+    long	sendline_sleep;
+    Octstr	*keepalive_cmd;
+} ModemDef;
+ 
 /* maximum data to attempt to read in one go */
 #define	MAX_READ	1023
 
@@ -102,10 +72,10 @@ struct modem_def ModemTypes[MAX_MODEM_TYPES] =
 typedef struct PrivAT2data
 {
     List	*outgoing_queue;
+    ModemDef	*modem;
     long	device_thread;
     int		shutdown;	  /* Internal signal to shut down */
     Octstr	*device;
-    int		modemid;
     long	speed;
     int		keepalive;
     int		fd;	/* file descriptor */
@@ -121,6 +91,7 @@ typedef struct PrivAT2data
     Octstr	*my_number;
     Octstr	*sms_center;
     Octstr	*name;
+    Octstr	*configfile;
 } PrivAT2data;
 
 
@@ -157,7 +128,8 @@ int	at2_encode8bituncompressed(Octstr *input, unsigned char *encoded);
 int 	at2_numtext(int num);
 int	at2_detect_speed(PrivAT2data *privdata);
 int	at2_detect_modem_type(PrivAT2data *privdata);
-int	at2_modem2id(char *name);
+ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int idnumber);
+void	at2_destroy_modem(ModemDef *modem);
 
 /******************************************************************************
 ** For debugging purposes octstr_destroy might be a macro,
@@ -201,8 +173,6 @@ int	at2_open_device(PrivAT2data *privdata)
     
     if(0 !=  (ret=at2_open_device1(privdata)))
     	return ret;
-
-    at2_set_speed(privdata,ModemTypes[privdata->modemid].speed);
 
     tcgetattr(privdata->fd, &tios);
 
@@ -252,7 +222,7 @@ int	at2_open_device(PrivAT2data *privdata)
 
    /* Nokia 7110 and 6210 need some time between opening
     * the connection and sending the first AT commands */
-    if ( ModemTypes[privdata->modemid].need_sleep )
+    if ( privdata->modem->need_sleep )
     	sleep(1);
     debug("bb.smsc.at2",0,"AT2[%s]: device opened",octstr_get_cstr(privdata->name));
     return 0;
@@ -444,7 +414,7 @@ int  at2_write_line(PrivAT2data *privdata, char* line)
    	return s;
     }
     tcdrain (privdata->fd);
-    gwthread_sleep( ModemTypes[privdata->modemid].send_line_sleep );
+    gwthread_sleep( (double) (privdata->modem == NULL ? 100 : privdata->modem->sendline_sleep) / 1000);
     return s;
 }
 
@@ -464,7 +434,7 @@ int  at2_write_ctrlz(PrivAT2data *privdata)
    	return s;
     }
     tcdrain (privdata->fd);
-    gwthread_sleep( ModemTypes[privdata->modemid].send_line_sleep );
+    gwthread_sleep( (double) privdata->modem->sendline_sleep / 1000);
     return s;
 }
 
@@ -509,7 +479,7 @@ int	at2_init_device(PrivAT2data *privdata)
     int res;
     int ret;
     Octstr *setpin;
-    
+
     info(0,"AT2[%s]: init device",octstr_get_cstr(privdata->name));
 
     at2_set_speed(privdata,privdata->speed);
@@ -536,12 +506,14 @@ int	at2_init_device(PrivAT2data *privdata)
     at2_flush_buffer(privdata);
     
     /* enable hardware handshake */
-    if(at2_send_modem_command(privdata, ModemTypes[privdata->modemid].hwhs, 0, 0) == -1)
-	info(0,"AT2[%s]: cannot enable hardware handshake",octstr_get_cstr(privdata->name));
+    if(octstr_len(privdata->modem->enable_hwhs)) {
+	if(at2_send_modem_command(privdata, octstr_get_cstr(privdata->modem->enable_hwhs), 0, 0) == -1)
+	    info(0,"AT2[%s]: cannot enable hardware handshake",octstr_get_cstr(privdata->name));
+    }
  
     /* Check does the modem require a PIN and, if so, send it
      * This is not supported by the Nokia Premicell */
-    if(ModemTypes[privdata->modemid].pin_support)
+    if(! privdata->modem->no_pin)
     {
         ret = at2_send_modem_command(privdata, "AT+CPIN?", 10, 0);
 
@@ -640,7 +612,7 @@ int	at2_init_device(PrivAT2data *privdata)
     /* The Ericsson GM12 modem requires different new message 
      * indication options from the other modems
      */ 
-     ret = at2_send_modem_command(privdata, ModemTypes[privdata->modemid].init1, 0, 0);
+     ret = at2_send_modem_command(privdata, octstr_get_cstr(privdata->modem->init_string), 0, 0);
     	if(ret != 0)
     	    return -1;
     info(0, "AT2[%s]: AT SMSC successfully opened.", octstr_get_cstr(privdata->name));
@@ -783,7 +755,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
     
     len = octstr_len(privdata->ilb);
 /*
-    error(0,"AT2[%s]: timeout. received \"%s\" until now, buffer size is %d, buf=%s",octstr_get_cstr(privdata->name),
+    error(0,"AT2[%s]: timeout. received <%s> until now, buffer size is %d, buf=%s",octstr_get_cstr(privdata->name),
     	 privdata->lines ? octstr_get_cstr(privdata->lines) : "<nothing>", len,
     	 privdata->ilb ? octstr_get_cstr(privdata->ilb) : "<nothing>");
 */
@@ -906,7 +878,7 @@ reconnect:
 	    }
 	}
     	
-	if(privdata->modemid == AT2_AUTODETECT) {
+	if(privdata->modem == NULL) {
 	    if(-1 == at2_detect_modem_type(privdata)) {
 		if(!privdata->retry)
 		    return;
@@ -950,7 +922,7 @@ reconnect:
 
 	if(privdata->keepalive && 
 	   idle_timeout + privdata->keepalive < time(NULL)) {
-	    if(at2_send_modem_command(privdata, "AT", 5, 0) < 0) { 
+	    if(at2_send_modem_command(privdata, octstr_get_cstr(privdata->modem->keepalive_cmd), 5, 0) < 0) { 
 		at2_close_device(privdata);
 		conn->status = SMSCCONN_RECONNECTING;
 		wait = 15;
@@ -962,6 +934,7 @@ reconnect:
     at2_close_device(privdata);
     conn->status = SMSCCONN_DISCONNECTED;
     /* maybe some cleanup here?*/
+    at2_destroy_modem(privdata->modem);
     gw_free(conn->data);
     conn->data = NULL;
     conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
@@ -1040,9 +1013,10 @@ int  smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     Octstr *modem_type_string;
     long alt_dcs = 0, temp;
    
-
     privdata = gw_malloc(sizeof(PrivAT2data));
     privdata->outgoing_queue = list_create();
+
+    privdata->configfile = cfg_get_configfile(cfg);
 
     privdata->device = cfg_get(cfg, octstr_imm("device"));
     if (privdata->device == NULL)
@@ -1072,26 +1046,39 @@ int  smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->sms_center = cfg_get(cfg, octstr_imm("sms-center"));
 
     modem_type_string = cfg_get(cfg, octstr_imm("modemtype"));
+    privdata->modem = NULL;
+
+    if(modem_type_string != NULL) {
+	if(octstr_compare(modem_type_string, octstr_imm("auto")) ||
+	   octstr_compare(modem_type_string, octstr_imm("autodetect")))
+	    octstr_destroy(modem_type_string);
+    }
+
     if(modem_type_string == NULL)
     {
         info(0,"AT2[%s]: configuration doesn't show modemtype. will autodetect",
 	     octstr_get_cstr(privdata->name));
-    	privdata->modemid = AT2_AUTODETECT;
     }
     else
     {
-        info(0,"AT2[%s]: configuration shows modemtype=%s", 
+        info(0,"AT2[%s]: configuration shows modemtype <%s>", 
 	     octstr_get_cstr(privdata->name),
 	     octstr_get_cstr(modem_type_string));
-    	privdata->modemid = at2_modem2id(octstr_get_cstr(modem_type_string));
-    	if (privdata->speed == 0)
-	    privdata->speed = ModemTypes[privdata->modemid].speed;
+	privdata->modem = at2_read_modems(privdata, privdata->configfile,
+		modem_type_string, 0);
+	if(privdata->modem == NULL) {
+	    info(0,"AT2[%s]: modemtype not found, revert to autodetect",
+	    	octstr_get_cstr(privdata->name));
+	} else {
+	    info(0,"AT2[%s]: read modem definition for <%s>",
+		 octstr_get_cstr(privdata->name),
+		 octstr_get_cstr(privdata->modem->name));
+	    if (privdata->speed == 0)
+		privdata->speed = privdata->modem->speed;
+	}
 	octstr_destroy(modem_type_string);
     }
-    info(0,"AT2[%s]: configured for modem-id %d", 
-	 octstr_get_cstr(privdata->name), privdata->modemid);
-    info(0,"AT2[%s]: configured for speed %ld", 
-	 octstr_get_cstr(privdata->name), privdata->speed);
+
     privdata->ilb = octstr_create("");
     privdata->fd = -1;
     privdata->lines = NULL; 
@@ -1175,7 +1162,7 @@ int at2_pdu_extract(PrivAT2data *privdata, Octstr **pdu, Octstr *line)
 	pos++;
     
     /* skip the SMSC address on some modem types */
-    if(ModemTypes[privdata->modemid].skip_smsc_addr)
+    if(! privdata->modem->no_smsc)
     {
 	tmp = at2_hexchar(octstr_get_char(buffer, pos))*16
 	    + at2_hexchar(octstr_get_char(buffer, pos+1));
@@ -1262,6 +1249,7 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
         /* originating address */
         len = octstr_get_char(pdu, 1);
 	ntype = octstr_get_char(pdu, 2);
+
         pos = 3;
 	if((ntype & 0xD0) == 0xD0) {
 	    /* Alphanumeric sender */
@@ -1269,7 +1257,7 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
 	    tmpstr = octstr_copy(pdu, 3, len);
 	    at2_decode7bituncompressed(tmpstr, ((len * 4 - 3)/7) + 1, origin, 0);
 	    octstr_destroy(tmpstr);
-	    debug("bb.smsc.at2", 0, "AT2[%s]: Alphanumeric sender \"%s\"", octstr_get_cstr(privdata->name), octstr_get_cstr(origin));
+	    debug("bb.smsc.at2", 0, "AT2[%s]: Alphanumeric sender <%s>", octstr_get_cstr(privdata->name), octstr_get_cstr(origin));
 	    pos += (len + 1) / 2;
 	} else {
 	    origin = octstr_create("");
@@ -1282,11 +1270,11 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
 		if(i+1 < len)
 		    octstr_append_char(origin, (octstr_get_char(pdu, pos) >> 4) + 48);
 	    }
-	    debug("bb.smsc.at2", 0, "AT2[%s]: Numeric sender %s \"%s\"", octstr_get_cstr(privdata->name), ((ntype & 0x90) == 0x90 ? "(international)" : ""), octstr_get_cstr(origin));
+	    debug("bb.smsc.at2", 0, "AT2[%s]: Numeric sender %s <%s>", octstr_get_cstr(privdata->name), ((ntype & 0x90) == 0x90 ? "(international)" : ""), octstr_get_cstr(origin));
 	}
 
         /* PID */
-	pid = octstr_get_char(pdu, pos);
+	pid = octstr_get_char(pdu, pos); 
         pos++;
 	
         /* DCS */
@@ -1465,14 +1453,13 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 	octstr_destroy(msg->sms.sender);
 	msg->sms.sender = octstr_duplicate(privdata->my_number);
     }
-
    /* the standard says you should be prepending the PDU with 00 to indicate to use the default SC.
       some older modems dont expect this so it can be disabled 
      * NB: This extra padding is not counted in the CMGS byte count */
 
     sc[0] = '\0';
 
-    if(ModemTypes[privdata->modemid].prepend_zero_smsc)
+    if(! privdata->modem->no_smsc)
     	strcpy(sc, "00");
 
     if(msg_type(msg)==sms)
@@ -1860,6 +1847,8 @@ int at2_detect_speed(PrivAT2data *privdata)
 int at2_detect_modem_type(PrivAT2data *privdata)
 {
     int res;
+    ModemDef *modem;
+    int i;
     
     debug("bb.smsc.at2",0,"AT2[%s]: detecting modem type",octstr_get_cstr(privdata->name));
  
@@ -1884,54 +1873,39 @@ int at2_detect_modem_type(PrivAT2data *privdata)
 
     /* we try to detect the modem automatically */
 
-    if (-1 != octstr_search(privdata->lines, octstr_imm("SIEMENS"), 0))
-    {
-    	debug("bb.smsc.at2",0,"AT2[%s]: its some kind of SIEMENS",octstr_get_cstr(privdata->name));
-     	if (-1 != octstr_search(privdata->lines, octstr_imm("TC35"), 0))
-     	{
-            info(0,"AT2[%s]: Modemtype set to SIEMENS TC35",octstr_get_cstr(privdata->name));
-	    privdata->modemid = AT2_SIEMENS_TC35;
-    	}
-  	else if (-1 != octstr_search(privdata->lines, octstr_imm("M20"), 0))
-        {
-     	    info(0,"AT2[%s]: Modemtype set to SIEMENS M20",octstr_get_cstr(privdata->name));
-	    privdata->modemid = AT2_SIEMENS;
-        }
-        else
-        {
-            info(0,"AT2[%s]: Modemtype set to SIEMENS",octstr_get_cstr(privdata->name));
-	    privdata->modemid = AT2_SIEMENS;
-    	}
+
+    i=1;
+    while(NULL != (modem = at2_read_modems(privdata, privdata->configfile, NULL, i++))) {
+
+	if(octstr_len(modem->detect_string) == 0) {
+	    at2_destroy_modem(modem);
+	    continue; 
+	}
+
+    	/* debug("bb.smsc.at2",0,"AT2[%s]: searching for %s",octstr_get_cstr(privdata->name), octstr_get_cstr(modem->name)); */
+
+	if (-1 != octstr_search(privdata->lines, modem->detect_string, 0)) {
+	    if(octstr_len(modem->detect_string2) == 0) {
+		debug("bb.smsc.at2",0,"AT2[%s]: found string <%s>, using modem definition <%s>",octstr_get_cstr(privdata->name), octstr_get_cstr(modem->detect_string), octstr_get_cstr(modem->name));
+		privdata->modem = modem;
+		break;
+	    } else {
+		if (-1 != octstr_search(privdata->lines, modem->detect_string2, 0)) {
+		    debug("bb.smsc.at2",0,"AT2[%s]: found string <%s> plus <%s>, using modem definition <%s>",octstr_get_cstr(privdata->name), octstr_get_cstr(modem->detect_string), octstr_get_cstr(modem->detect_string2), octstr_get_cstr(modem->name));
+		    privdata->modem = modem;
+		    break;
+		}
+	    } 
+	}
     }
-    else if (-1 != octstr_search(privdata->lines, octstr_imm("WAVECOM"), 0))
-    {
-        debug("bb.smsc.at2",0,"AT2[%s]: its a WAVECOM",octstr_get_cstr(privdata->name));
-        info(0,"AT2[%s]: Modemtype set to WAVECOM",octstr_get_cstr(privdata->name));
-	privdata->modemid = AT2_WAVECOM;
-    }
-    else if (-1 != octstr_search(privdata->lines, octstr_imm("ERICSSON"), 0))
-    {
-        debug("bb.smsc.at2",0,"AT2[%s]: its a ERICSSON",octstr_get_cstr(privdata->name));
-        info(0,"AT2[%s]: Modemtype set to ERICSSON",octstr_get_cstr(privdata->name));
-	privdata->modemid = AT2_ERICSSON;
-    }
-    else if (-1 != octstr_search(privdata->lines, octstr_imm("PREMICELL"), 0))
-    {
-        debug("bb.smsc.at2",0,"AT2[%s]: its a PREMICELL",octstr_get_cstr(privdata->name));
-        info(0,"AT2[%s]: Modemtype set to PREMICELL",octstr_get_cstr(privdata->name));
-	privdata->modemid = AT2_PREMICELL;
-    }
-    else if (-1 != octstr_search(privdata->lines, octstr_imm("Nokia Mobile Phones"), 0))
-    {
-        debug("bb.smsc.at2",0,"AT2[%s]: its a NOKIAPHONE",octstr_get_cstr(privdata->name));
-        info(0,"AT2[%s]: Modemtype set to NOKIAPHONE",octstr_get_cstr(privdata->name));
-	privdata->modemid = AT2_NOKIAPHONE;
-    }
-    else if (-1 != octstr_search(privdata->lines, octstr_imm("Falcom"), 0))
-    {
-        debug("bb.smsc.at2",0,"AT2[%s]: its a FALCOM",octstr_get_cstr(privdata->name));
-        info(0,"AT2[%s]: Modemtype set to FALCOM",octstr_get_cstr(privdata->name));
-	privdata->modemid = AT2_FALCOM;
+
+    if(privdata->modem == NULL) {
+	debug("bb.smsc.at2",0,"AT2[%s]: Cannot detect modem, using generic", octstr_get_cstr(privdata->name));
+	if(NULL == (modem = at2_read_modems(privdata, privdata->configfile, octstr_imm("generic"), 0))) {
+	    panic(0,"AT2[%s]: Cannot detect modem and generic not found", octstr_get_cstr(privdata->name));
+	} else {
+	    privdata->modem = modem;
+	}
     }
 
     /* lets see if it supports GSM SMS 2+ mode */
@@ -1967,22 +1941,121 @@ int at2_detect_modem_type(PrivAT2data *privdata)
     }
     if(privdata->phase2plus)
     	info(0,"AT2[%s]: Phase 2+ is supported",octstr_get_cstr(privdata->name));
-    info(0,"AT2[%s]: Modemtype set to %s",octstr_get_cstr(privdata->name), ModemTypes[privdata->modemid].name);
     at2_close_device(privdata);
     return 0;
 }
 
-int	at2_modem2id(char *name1)
-{
-    int i;
-    for(i=0;i< MAX_MODEM_TYPES; i++)
-    {
-    	if (strcmp(ModemTypes[i].name,name1)==0)
-    	{
-    	    return i;
-    	 }
+ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int idnumber) {
+
+    Cfg *cfg;
+    List *grplist;
+    CfgGroup *grp;
+    Octstr *p;
+    ModemDef *modem;
+    int i=0;
+
+    if(octstr_len(id) == 0 && idnumber == 0)
+	return NULL;
+
+    debug("bb.smsc.at2",0,"AT2[%s]: Reading modem definitions from <%s>", octstr_get_cstr(privdata->name), octstr_get_cstr(file));
+    cfg = cfg_create(file);
+
+    if(cfg_read(cfg) == -1)
+	panic(0, "Cannot read modem definition file");
+
+
+    grplist = cfg_get_multi_group(cfg, octstr_imm("modems"));
+    debug("bb.smsc.at2",0,"AT2[%s]: Found <%d> modems in config", octstr_get_cstr(privdata->name), grplist == NULL ? 0 : list_len(grplist));
+    if(grplist == NULL)
+	panic(0, "Where are the modem definitions ?!?!");
+
+    grp = NULL;
+    while (grplist && (grp = list_extract_first(grplist)) != NULL) {
+	p = cfg_get(grp, octstr_imm("id"));
+	if(p == NULL) {
+		info(0, "Modems group without id, bad");
+		continue;
+	}
+	/* Check by id */
+	if (octstr_len(id) != 0 && octstr_compare(p, id) == 0) {
+	    octstr_destroy(p);
+	    break;
+	}
+	/* Check by idnumber */
+	if (octstr_len(id) == 0 && idnumber == i) {
+	    octstr_destroy(p);
+	    break;
+	}
+	octstr_destroy(p);
+	i++;
+	grp = NULL;
     }
-    return 0;
+    if(grplist != NULL)
+	list_destroy(grplist, NULL);
+
+    if(grp != NULL) {
+	modem = gw_malloc(sizeof(ModemDef));
+
+	modem->id = cfg_get(grp, octstr_imm("id"));
+
+	modem->name = cfg_get(grp, octstr_imm("name"));
+	if(modem->name == NULL)
+	    modem->name = octstr_duplicate(modem->id);
+
+	modem->detect_string = cfg_get(grp, octstr_imm("detect-string"));
+	modem->detect_string2 = cfg_get(grp, octstr_imm("detect-string2"));
+
+	modem->init_string = cfg_get(grp, octstr_imm("init-string"));
+	if(modem->init_string == NULL)
+	    modem->init_string = octstr_create("AT+CNMI=1,2,0,0,0");
+
+	cfg_get_integer(&modem->speed, grp, octstr_imm("speed"));
+	if(modem->speed <= 0)
+	    modem->speed = 9600;
+
+	cfg_get_bool(&modem->need_sleep, grp, octstr_imm("need-sleep"));
+	if(modem->need_sleep < 0)
+	    modem->need_sleep = 0;
+
+	modem->enable_hwhs = cfg_get(grp, octstr_imm("enable-hwhs"));
+	if(modem->enable_hwhs == NULL)
+	    modem->enable_hwhs = octstr_create("AT+IFC=2,2");
+
+	cfg_get_bool(&modem->no_pin, grp, octstr_imm("no-pin"));
+	if(modem->no_pin < 0)
+	    modem->no_pin = 0;
+
+	cfg_get_bool(&modem->no_smsc, grp, octstr_imm("no-smsc"));
+	if(modem->no_smsc < 0)
+	    modem->no_smsc = 0;
+
+	cfg_get_integer(&modem->sendline_sleep, grp, octstr_imm("sendline-sleep"));
+	if(modem->sendline_sleep < 0)
+	    modem->sendline_sleep = 100;
+
+	modem->keepalive_cmd = cfg_get(grp, octstr_imm("keepalive-cmd"));
+	if(modem->keepalive_cmd == NULL)
+	    modem->keepalive_cmd = octstr_create("AT");
+
+	cfg_destroy(cfg);
+	return modem;
+    } else {
+	cfg_destroy(cfg);
+	return NULL;
+    }
 }
 
+
+void at2_destroy_modem(ModemDef *modem) {
+    if(modem != NULL) {
+	octstr_destroy(modem->id);
+	octstr_destroy(modem->name);
+	octstr_destroy(modem->detect_string);
+	octstr_destroy(modem->detect_string2);
+	octstr_destroy(modem->init_string);
+	octstr_destroy(modem->enable_hwhs);
+	octstr_destroy(modem->keepalive_cmd);
+	gw_free(modem);
+    }
+}
 

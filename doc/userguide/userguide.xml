@@ -872,7 +872,7 @@ x	should now be able to run the Kannel init.d script that will
 	
 </sect2>
 
-<sect2>
+<sect2 id="includes">
 <title>Inclusion of configuration files</title>
 
 	<para>A configuration file may contain a special directive 
@@ -2594,46 +2594,117 @@ pin = 2345
 
    </tbody></tgroup></informaltable>
 
+   <para>Modem definitions are now multiple groups present in kannel.conf,
+   either directly or, for example, by including the example
+   modems.conf. (See <xref linkend="includes" endterm="includes.title">)
+   </para>
+
  <informaltable frame=none>
   <tgroup cols=3><thead><row>
-     <entry>Modem Type</entry>
-     <entry>Modems</entry>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
    </row></thead><tbody>
 
-   <row><entry><literal>wavecom</literal></entry>
+   <row><entry><literal>group</literal></entry>
+     <entry><literal>modems</literal></entry>
      <entry valign=bottom>
-     	Wavecom
+     	This is a mandatory variable
      </entry></row>
 
-   <row><entry><literal>premicell</literal></entry>
+   <row><entry><literal>id</literal></entry>
+     <entry><literal>string</literal></entry>
      <entry valign=bottom>
-     	Nokia Premicell
+     	This is the the id that should be used in
+	<literal>modemtype</literal> variable from AT2
      </entry></row>
 
-   <row><entry><literal>siemens</literal></entry>
+   <row><entry><literal>name</literal></entry>
+     <entry><literal>string</literal></entry>
      <entry valign=bottom>
-     	Siemens M20 (this modem have some bugs)
+     	The name of this modem configuration. Used in
+	logs
      </entry></row>
 
-   <row><entry><literal>siemens-tc35</literal></entry>
+   <row><entry><literal>detect-string</literal></entry>
+     <entry><literal>string</literal></entry>
      <entry valign=bottom>
-     	Siemens TC35
+     	String to use when trying to detect the modem.
+	See <literal>detect-string2</literal>
      </entry></row>
 
-   <row><entry><literal>falcom</literal></entry>
+   <row><entry><literal>detect-string2</literal></entry>
+     <entry><literal>string</literal></entry>
      <entry valign=bottom>
-     	Falcom
+     	Second string to use to detect the modem. For example,
+	if the modem replies with "SIEMENS MODEM M20", 
+	<literal>detect-string</literal> could be "SIEMENS" 
+	and <literal>detect-strign2</literal> "M20"
      </entry></row>
 
-   <row><entry><literal>nokiaphone</literal></entry>
+   <row><entry><literal>init-string</literal></entry>
+     <entry><literal>string</literal></entry>
      <entry valign=bottom>
-     	Nokia 6210, 7210, 8210 (tested). Probably other 
-	nokia phones too.
+     	Optional initialization string. Defaults to 
+	"AT+CNMI=1,2,0,0,0"
      </entry></row>
 
-   <row><entry><literal>ericsson</literal></entry>
+   <row><entry><literal>speed</literal></entry>
+     <entry><literal>number</literal></entry>
      <entry valign=bottom>
-     	Ericsson
+     	Serial port speed to use. Optional. 
+	Ommit to use default 9600 or speed defined in
+	at2 group. Use 0 to autodetect speed.
+     </entry></row>
+
+   <row><entry><literal>enable-hwhs</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+     	Optional AT command to enable hardware handshake.
+	Defaults to "AT+IFC=2,2"
+     </entry></row>
+
+   <row><entry><literal>need-sleep</literal></entry>
+     <entry><literal>boolean</literal></entry>
+     <entry valign=bottom>
+     	Optional. Defaults to false. Some modems needs
+	to sleep after opening the serial port and before
+	first command
+     </entry></row>
+
+   <row><entry><literal>no-pin</literal></entry>
+     <entry><literal>boolean</literal></entry>
+     <entry valign=bottom>
+     	Optional. Defaults to false. If the modem doesn't
+	support the PIN command, enable this
+     </entry></row>
+
+   <row><entry><literal>no-smsc</literal></entry>
+     <entry><literal>boolean</literal></entry>
+     <entry valign=bottom>
+     	Optional. Defaults to false. If the modem doesn't
+	support setting the SMSC directly on the pdu, enable
+	this. (Default is to include a "00" at the beginning
+	of the PDU to say it's the default smsc, and remove
+	the "00" when receiving)
+     </entry></row>
+
+   <row><entry><literal>sendline-sleep</literal></entry>
+     <entry><literal>number (miliseconds)</literal></entry>
+     <entry valign=bottom>
+     	Optional, defaults to 100 miliseconds. The sleep time
+	after sending a AT command.
+     </entry></row>
+
+   <row><entry><literal>keepalive-cmd</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+     	Optional, defaults to "AT". If keepalive is activated
+	in AT2 group, this is the command to be sent. If your
+	modem supports it, for example, use "AT+CBC;+CSQ", and
+	see in logs the reply "+CBC: 0,64" (0=On batery, 64% 
+	full) and "+CSQ: 14,99" (0-31, 0-7: signal strenght and
+	channel bit error rate; 99 for unknown). See 3GPP 27007.
      </entry></row>
 
    </tbody></tgroup></informaltable>

@@ -21,6 +21,7 @@ int cfg_read(Cfg *cfg);
 CfgGroup *cfg_get_single_group(Cfg *cfg, Octstr *name);
 List *cfg_get_multi_group(Cfg *cfg, Octstr *name);
 Octstr *cfg_get_group_name(CfgGroup *grp);
+Octstr *cfg_get_configfile(CfgGroup *grp);
 
 Octstr *cfg_get_real(CfgGroup *grp, Octstr *varname, const char *file,
     	    	     long line, const char *func);

@@ -1,4 +1,15 @@
 2002-03-14  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gwlib/cfg.[ch]: added cfg_get_configfile to return the config filename of
+      the Cfg grp we are using; fixed a small glitch
+    * gwlib/cfg.def: added modems multi-group variables
+    * doc/modems.conf: added a default configuration with modem definitions, the
+      same values that were hard-coded in smsc_at2. Should be included in main
+      kannel.conf, using include = "modems.conf"
+    * gw/smsc_at2.c: removed hard-coded modem definitions and added reading the
+      modems.conf groups included in kannel.conf 
+    * doc/userguide/userguide.xml: added information for modems group 
+
+2002-03-14  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsc_emi2.c: force sending a UCP-31 after login (thus reseting the
       last_activity_time) - sometimes emi2 login and don't send keepalives,
       specially if it can't connect at the first time
