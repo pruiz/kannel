@@ -1,5 +1,21 @@
 2001-03-19  Kalle Marjola  <rpr@wapit.com>
 
+	* doc/userguide/userguide.xml: added HTTP SMSC chapter
+
+	* gw/smskannel.conf: added sms-service and send-sms for relay use
+
+	* gw/other_smskannel.conf: Added. For client Kannel in Kannel
+	relay tests
+
+	* gw/smsc_http.c: little bugfizes/updates
+
+	* checks/check_httpsmsc_kannel.sh. Added. Note that currently
+	there is a BUG in gwlib/http.c and/or gw/smsc_http.c and this
+	tests always FAILS as client bearerbox (using other_smskannel.conf)
+	never exits (HTTP client side thread does not die?)
+	
+2001-03-19  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/http.c: Bugfix. Make shutdown work for multiple servers
 
 2001-03-19  Kalle Marjola  <rpr@wapit.com>

@@ -1935,6 +1935,77 @@ connect-allow-ip = 127.0.0.1
 
 
 <sect3>
+<title>HTTP-based relay and content gateways</title>
+ 
+   <para>This special "SMSC" is used for HTTP based connections with
+   other gateways and various other relay services, when direct SMSC
+   is not available.</para>
+  
+<programlisting>
+group = smsc
+smsc = http
+system-type = kannel
+username = nork
+password = z0rK
+port = 13015
+send-url = "http://localhost:20022"
+</programlisting>
+
+
+ <informaltable frame=none>
+  <tgroup cols=3><thead><row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row></thead><tbody>
+
+   <row><entry><literal>system-type (m)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+        Type of HTTP connection. 'kannel' is only system currently
+        supported.
+     </entry></row>
+
+   <row><entry><literal>send-url (m)</literal></entry>
+     <entry><literal>url</literal></entry>
+     <entry valign=bottom>
+       Location to send MT messages. This URL is expanded by used
+       system, if need to.
+     </entry></row>
+
+   <row><entry><literal>port (m)</literal></entry>
+     <entry><literal>port-number</literal></entry>
+     <entry valign=bottom>
+       Port number in which Kannel listens to (MO) messages from other
+       gateway
+     </entry></row>
+
+   <row><entry><literal>connect-allow-ip</literal></entry>
+     <entry><literal>IP-list</literal></entry>
+     <entry valign=bottom>
+       IPs allowed to use this interface. If not set, "127.0.0.1"
+     (localhost) is the only host allowed to connect.
+     </entry></row>
+
+   <row><entry><literal>username</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       Username associated to connection, if needed. 'kannel' requires
+       this, and it is the same as send-sms username at other end.
+     </entry></row>
+
+   <row><entry><literal>password</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       Password for username, if needed.
+     </entry></row>
+
+   </tbody></tgroup></informaltable>
+
+
+</sect3>
+
+<sect3>
 <title>Using multiple SMS centers</title>
 
     <para>If you have several SMS center connections (multiple

@@ -120,7 +120,7 @@ static void httpsmsc_receiver(void *arg)
     
     while(conndata->shutdown == 0) {
 
-	/* if conn->is_stopped, do not receive new messages.. */
+	/* XXX if conn->is_stopped, do not receive new messages.. */
 	
 	client = http_accept_request(conndata->port, &ip, &url,
 				     &headers, &body, &cgivars);
@@ -148,6 +148,7 @@ static void httpsmsc_receiver(void *arg)
 
     conndata->shutdown = 1;
     http_close_port(conndata->port);
+    http_caller_signal_shutdown(conndata->http_ref);
 }
 
 
@@ -266,9 +267,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 	   || octstr_compare(user, conndata->username)!= 0
 	   || octstr_compare(pass, conndata->password)!= 0) {
 
-	debug("smsc.http.kannel", 0, "Authorization failure '%s' vs '%s' and '%s' vs '%s' ",
-	      octstr_get_cstr(user), octstr_get_cstr(conndata->username),
-	      octstr_get_cstr(pass), octstr_get_cstr(conndata->password));
+	debug("smsc.http.kannel", 0, "Authorization failure");
 	retmsg = octstr_create("Authorization failed for sendsms");
     }
     else if (from == NULL || to == NULL || text == NULL) {
@@ -326,7 +325,7 @@ static int httpsmsc_send(SMSCConn *conn, Msg *msg)
 {
     ConnData *conndata = conn->data;
     Msg *sms = msg_duplicate(msg);
-    
+
     conndata->send_sms(conn, sms);
 
     return 0;
@@ -343,10 +342,11 @@ static long httpsmsc_queued(SMSCConn *conn)
 static int httpsmsc_shutdown(SMSCConn *conn, int finish_sending)
 {
     ConnData *conndata = conn->data;
+
+    debug("httpsmsc_shutdown", 0, "httpsmsc: shutting down");
     conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
     conndata->shutdown = 1;
 
-    http_caller_signal_shutdown(conndata->http_ref);
     http_close_port(conndata->port);
     return 0;
 }
