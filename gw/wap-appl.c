@@ -100,6 +100,10 @@ struct request_data {
  */
 extern int wsp_smart_errors;
 
+/*
+ *
+ */
+static int have_ppg = 0;
 
 /*
  * Private functions.
@@ -149,7 +153,7 @@ static void response_push_connection(WAPEvent *e);
  * The public interface to the application layer.
  */
 
-void wap_appl_init(void) 
+void wap_appl_init(Cfg *cfg) 
 {
     gw_assert(run_status == limbo);
     queue = list_create();
@@ -160,6 +164,11 @@ void wap_appl_init(void)
     caller = http_caller_create();
     gwthread_create(main_thread, NULL);
     gwthread_create(return_replies_thread, NULL);
+
+    if (cfg != NULL)
+        have_ppg = 1;
+    else
+        have_ppg = 0;
 }
 
 
@@ -205,6 +214,7 @@ long wap_appl_get_load(void)
  * Because Accept-Application and Bearer-Indication are optional, we cannot 
  * rely on them. We must ask ppg main module do we have an open push session 
  * for this initiator. Push is identified by push id.
+ * If there is no ppg configured, do not refer to ppg's sessions' list.
  */
 static void main_thread(void *arg) 
 {
@@ -231,7 +241,7 @@ static void main_thread(void *arg)
 	case S_Connect_Ind:
             tuple  = ind->u.S_Connect_Ind.addr_tuple;
 
-            if (wap_push_ppg_have_push_session_for(tuple)) {
+            if (have_ppg && wap_push_ppg_have_push_session_for(tuple)) {
 	        indicate_push_connection(ind);
             } else {
 	        res = wap_event_create(S_Connect_Res);
@@ -251,7 +261,7 @@ static void main_thread(void *arg)
 	case S_Disconnect_Ind:
 	    sid = ind->u.S_Disconnect_Ind.session_handle;
 
-            if (wap_push_ppg_have_push_session_for_sid(sid)) 
+            if (have_ppg && wap_push_ppg_have_push_session_for_sid(sid)) 
                 indicate_push_disconnect(ind);
 	    wap_event_destroy(ind);
 	    break;
@@ -267,7 +277,7 @@ static void main_thread(void *arg)
 	case S_Resume_Ind:
 	    sid = ind->u.S_Resume_Ind.session_id;
 
-            if (wap_push_ppg_have_push_session_for_sid(sid)) 
+            if (have_ppg && wap_push_ppg_have_push_session_for_sid(sid)) 
                 indicate_push_resume(ind);
             else {
 	        res = wap_event_create(S_Resume_Res);
