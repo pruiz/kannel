@@ -1,4 +1,11 @@
-/* dlr.h
+/*
+** dlr.h
+** Implementation of Delivery Reports
+** Andreas Fink <afink@smsrelay.com>
+** this version is very simple by keeping the DLR entries
+** in a list in memory. Database versions will follow later
+** 04-SEP-2001
+**
 */
 
 
@@ -17,3 +24,4 @@ void	dlr_save(const char *filename);
 void	dlr_load(const char *filename);
 
 #endif
+
