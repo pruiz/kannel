@@ -29,21 +29,6 @@ enum { HTTP_MAX_FOLLOW = 5 };
 
 
 /*
- * The definition for the HTTPSocket data type. It is a server socket
- * if conn == NULL.
- */
-struct HTTPSocket {
-    int in_use;
-    int use_version_1_0;
-    time_t last_used;
-    int server_socket;
-    Octstr *host;
-    int port;
-    Connection *conn;
-};
-
-
-/*
  * Internal lists of completely unhandled requests and requests for which
  * a request has been sent but response has not yet been read.
  */
@@ -200,17 +185,6 @@ static void pool_put(HTTPSocket *p);
 
 
 /*
- * Operations on HTTPSockets.
- */
-static HTTPSocket *socket_create_server(int port);
-static void socket_close(HTTPSocket *p);
-static void socket_destroy(HTTPSocket *p);
-static HTTPSocket *socket_accept(HTTPSocket *p);
-static int socket_read_line(HTTPSocket *p, Octstr **line);
-static int socket_write(HTTPSocket *p, Octstr *os);
-
-
-/*
  * Other operations.
  */
 static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path);
@@ -228,8 +202,6 @@ static int client_read_status(Connection *p);
 static int client_read_headers(Connection *p, List *headers);
 static int client_read_body(HTTPTransaction *trans);
 static int client_read_chunked_body(HTTPTransaction *trans);
-
-static int read_headers(HTTPSocket *p, List **headers);
 
 static List *parse_cgivars(Octstr *url);
 static int header_is_called(Octstr *header, char *name);
@@ -446,151 +418,6 @@ int http_post(Octstr *url, List *request_headers, Octstr *request_body,
     if (ret == -1)
     	return -1;
     return status;
-}
-
-
-HTTPSocket *http_server_open(int port)
-{
-    gwlib_assert_init();
-    gw_assert(port > 0);
-    return socket_create_server(port);
-}
-
-
-void http_server_close(HTTPSocket *socket)
-{
-    gwlib_assert_init();
-    gw_assert(socket != NULL);
-    socket_destroy(socket);
-}
-
-
-int http_socket_fd(HTTPSocket *socket)
-{
-    gwlib_assert_init();
-    gw_assert(socket != NULL);
-    return socket->server_socket;
-}
-
-
-Octstr *http_socket_ip(HTTPSocket *socket)
-{
-    gwlib_assert_init();
-    gw_assert(socket != NULL);
-    return socket->host;
-}
-
-
-HTTPSocket *http_server_accept_client(HTTPSocket *socket)
-{
-    gwlib_assert_init();
-    gw_assert(socket != NULL);
-    return socket_accept(socket);
-}
-
-
-void http_server_close_client(HTTPSocket *socket)
-{
-    gwlib_assert_init();
-    gw_assert(socket != NULL);
-    socket_destroy(socket);
-}
-
-
-int http_server_get_request(HTTPSocket *socket, Octstr **url, List **headers,
-                            Octstr **body, List **cgivars)
-{
-    Octstr *line;
-    long space;
-
-    gwlib_assert_init();
-    gw_assert(socket != NULL);
-    gw_assert(url != NULL);
-    gw_assert(headers != NULL);
-    gw_assert(body != NULL);
-    gw_assert(cgivars != NULL);
-
-    line = NULL;
-    *url = NULL;
-    *headers = NULL;
-    *body = NULL;
-    *cgivars = NULL;
-
-    switch (socket_read_line(socket, &line)) {
-    case -1:
-        goto error;
-    case 0:
-        return 0;
-    }
-    if (octstr_search(line, octstr_create_immutable("GET "), 0) != 0)
-        goto error;
-    octstr_delete(line, 0, 4);
-    space = octstr_search_char(line, ' ', 0);
-    if (space <= 0)
-        goto error;
-    *url = octstr_copy(line, 0, space);
-    octstr_delete(line, 0, space + 1);
-
-    if (octstr_str_compare(line, "HTTP/1.0") == 0)
-    	socket->use_version_1_0 = 1;
-    else if (octstr_str_compare(line, "HTTP/1.1") == 0)
-    	socket->use_version_1_0 = 0;
-    else
-    	goto error;
-
-    *cgivars = parse_cgivars(*url);
-
-    if (read_headers(socket, headers) == -1)
-        goto error;
-
-    octstr_destroy(line);
-    return 1;
-
-error:
-    octstr_destroy(line);
-    octstr_destroy(*url);
-    list_destroy(*headers, octstr_destroy_item);
-    list_destroy(*cgivars, octstr_destroy_item);
-    return -1;
-}
-
-
-int http_server_send_reply(HTTPSocket *socket, int status, List *headers,
-                           Octstr *body)
-{
-    Octstr *response;
-    int i, ret;
-    long len;
-
-    gwlib_assert_init();
-    gw_assert(status >= 100);
-    gw_assert(status < 1000);
-    gw_assert(headers != NULL);
-    gw_assert(body != NULL);
-
-    if (socket->use_version_1_0)
-	response = octstr_format("HTTP/1.0 %d Foo\r\n", status);
-    else
-        response = octstr_format("HTTP/1.1 %d Foo\r\n", status);
-    if (body == NULL)
-        len = 0;
-    else
-        len = octstr_len(body);
-    octstr_format_append(response, "Content-Length: %ld\r\n", len);
-    for (i = 0; headers != NULL && i < list_len(headers); ++i) {
-        octstr_format_append(response, "%S\r\n",
-                             list_get(headers, i));
-    }
-    octstr_format_append(response, "\r\n");
-    if (body != NULL)
-        octstr_append(response, body);
-    ret = socket_write(socket, response);
-    octstr_destroy(response);
-    
-    if (socket->use_version_1_0)
-    	socket_close(socket);
-    
-    return ret;
 }
 
 
@@ -1502,146 +1329,6 @@ static void pool_put(HTTPSocket *p)
 
 
 /***********************************************************************
- * Operations on HTTPSockets, whether from the socket pool or not.
- */
-
-
-
-
-/*
- * Create a new server side HTTPSocket.
- */
-static HTTPSocket *socket_create_server(int port)
-{
-    HTTPSocket *p;
-
-    debug("gwlib.http", 0, "HTTP: Creating a new server socket <%d>.",
-          port);
-    p = gw_malloc(sizeof(HTTPSocket));
-    p->server_socket = make_server_socket(port);
-
-    if (p->server_socket == -1) {
-        gw_free(p);
-        return NULL;
-    }
-
-    p->conn = NULL;
-    p->in_use = 0;
-    p->use_version_1_0 = 0;
-    p->last_used = (time_t) - 1;
-    p->host = octstr_create("server socket");
-    p->port = port;
-
-    return p;
-}
-
-
-/*
- * Destroy an HTTPSocket.
- */
-static void socket_destroy(HTTPSocket *p)
-{
-    gw_assert(p != NULL);
-
-    debug("gwlib.http", 0, "HTTP: Closing socket <%s:%d>",
-          octstr_get_cstr(p->host), p->port);
-    if (p->server_socket != -1 && close(p->server_socket) == -1)
-    	error(errno, "HTTP: Closing of socket failed.");
-    if (p->conn != NULL)
-    	conn_destroy(p->conn);
-    octstr_destroy(p->host);
-    gw_free(p);
-}
-
-
-/*
- * Close an HTTPSocket, but don't destroy it. Further I/O operations on
- * the socket will fail, but it still needs to be destroyed with
- * socket_destroy.
- */
-static void socket_close(HTTPSocket *p)
-{
-    if (p->server_socket != -1 && close(p->server_socket) == -1)
-    	error(errno, "HTTP: Closing of socket failed.");
-    p->server_socket = -1;
-    if (p->conn != NULL) {
-    	conn_destroy(p->conn);
-	p->conn = NULL;
-    }
-}
-
-
-/*
- * Accept a new client from a server socket.
- */
-static HTTPSocket *socket_accept(HTTPSocket *server)
-{
-    int s, addrlen;
-    struct sockaddr_in addr;
-    HTTPSocket *client;
-
-    gw_assert(server->server_socket != -1);
-
-    addrlen = sizeof(addr);
-    s = accept(server->server_socket, (struct sockaddr *) & addr, &addrlen);
-    if (s == -1) {
-        error(errno, "HTTP: Error accepting a client.");
-        return NULL;
-    }
-    client = gw_malloc(sizeof(HTTPSocket));
-    client->in_use = 1;
-    client->last_used = (time_t) - 1;
-    client->server_socket = -1;
-    client->conn = conn_wrap_fd(s);
-    client->host = host_ip(addr);
-    client->port = 0;
-
-    debug("gwlib.http", 0, "HTTP: Accepted client from <%s>",
-          octstr_get_cstr(client->host));
-
-    return client;
-}
-
-/*
- * Read a line from a socket and/or its associated buffer. Remove the
- * line from the buffer. Fill the buffer with new data from the socket,
- * if the buffer did not already have enough.
- *
- * Return 0 for EOF, -1 for error, >0 for line. The line will will have its
- * line endings (\r\n or \n) removed.
- */
-static int socket_read_line(HTTPSocket *p, Octstr **line)
-{
-    gw_assert(p->server_socket == -1);
-    if (p->conn == NULL)
-    	return 0;
-
-    for (;;) {
-	*line = conn_read_line(p->conn);
-	if (*line != NULL)
-	    return 1;
-	if (conn_wait(p->conn, -1) == -1)
-	    return -1;
-	if (conn_eof(p->conn))
-	    return 0;
-    }
-}
-
-
-/*
- * Write an octet string to a socket.
- */
-static int socket_write(HTTPSocket *p, Octstr *os)
-{
-    gw_assert(p->server_socket == -1);
-    gw_assert(p->conn != NULL);
-    if (conn_write(p->conn, os) == -1)
-    	return -1;
-    return 0;
-}
-
-
-/***********************************************************************
  * Other local functions.
  */
 
@@ -2040,43 +1727,6 @@ static int client_read_chunked_body(HTTPTransaction *trans)
 		  "HTTPTransaction invaluded chunked body state.");
 	}
     }
-}
-
-
-/*
- * Read the headers, i.e., until the first empty line (read and discard
- * the empty line as well). Return -1 for error, 0 for OK.
- */
-static int read_headers(HTTPSocket *p, List **headers)
-{
-    Octstr *line, *prev;
-
-    *headers = list_create();
-    prev = NULL;
-    for (;;) {
-        if (socket_read_line(p, &line) <= 0) {
-            error(0, "HTTP: Incomplete response from server.");
-            goto error;
-        }
-        if (octstr_len(line) == 0) {
-            octstr_destroy(line);
-            break;
-        }
-        if (isspace(octstr_get_char(line, 0)) && prev != NULL) {
-            octstr_append(prev, line);
-            octstr_destroy(line);
-        } else {
-            list_append(*headers, line);
-            prev = line;
-        }
-    }
-
-    return 0;
-
-error:
-    list_destroy(*headers, octstr_destroy_item);
-    *headers = NULL;
-    return -1;
 }
 
 

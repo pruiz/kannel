@@ -230,40 +230,6 @@ void http_close_all_servers(void);
 
 
 /*
- * Functions for controlling the well-known port of the server.
- * http_server_open sets it up, http_server_close closes it.
- */
-typedef struct HTTPSocket HTTPSocket;	/* XXX move to beginning of file */
-HTTPSocket *http_server_open(int port);
-void http_server_close(HTTPSocket *socket);
-
-
-/*
- * Functions for dealing with a connection to a single client.
- * http_server_client_accept waits for a new client, and returns a
- * new socket that corresponds to the client. http_server_client_close
- * closes that connection.
- *
- * http_server_client_get_request reads the request from a client
- * connection and http_server_client_send_reply sends the reply. Note
- * that there can be several requests made on the same client socket:
- * the server MUST respond to them in order.
- *
- * http_server_client_get_request returns, among other things, a parsed
- * list of CGI-BIN arguments/variables as a List whose elements are 
- * pointers to HTTPCGIVar structures (see beginning of file).
- */
-HTTPSocket *http_server_accept_client(HTTPSocket *socket);
-void http_server_close_client(HTTPSocket *client_socket);
-int http_server_get_request(HTTPSocket *client_socket, Octstr **url, 
-	List **headers, Octstr **body, List **cgivars);
-int http_server_send_reply(HTTPSocket *client_socket, int status, 
-	List *headers, Octstr *body);
-int http_socket_fd(HTTPSocket *socket);
-/* return reference to IP of the client */
-Octstr *http_socket_ip(HTTPSocket *socket);
-
-/*
  * destroy args given up by the get_request. Non-thread safe
  */
 void http_destroy_cgiargs(List *args);

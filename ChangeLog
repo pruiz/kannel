@@ -1,5 +1,9 @@
 2000-11-07  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/http.[ch]: Removed old server API.
+
+2000-11-07  Lars Wirzenius  <liw@iki.fi>
+
 	* test/drive_wapbox.c: Converted to use new HTTP server API.
 
 2000-11-07  Richard Braakman  <dark@wapit.com>
