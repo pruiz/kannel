@@ -80,6 +80,13 @@ SMSCenter *smscenter_construct(void) {
 	smsc->emi_hostname = NULL;
 	smsc->emi_port = -1;
 
+	/* SEMA SMS2000 */
+
+	smsc->sema_smscnua = NULL;
+	smsc->sema_homenua = NULL;
+	smsc->sema_serialdevice = NULL;
+	smsc->sema_fd = -1;
+	
 	 /* add new SMSCes here */
 
 	/* Memory */
@@ -113,6 +120,11 @@ void smscenter_destruct(SMSCenter *smsc) {
 	/* EMI IP */
 	gw_free(smsc->emi_hostname);
 
+	/* SEMA */
+	gw_free(smsc->sema_smscnua);
+	gw_free(smsc->sema_homenua);
+	gw_free(smsc->sema_serialdevice);
+	
 	 /* add new SMSCes here */
 
 	/* Memory */
@@ -148,6 +160,11 @@ int smscenter_submit_msg(SMSCenter *smsc, Msg *msg) {
 			goto error;
 		break;
 
+	case SMSC_TYPE_SEMA_X28:
+                if(sema_submit_msg(smsc,msg) == -1)
+		        goto error;
+		break;
+	    
 	 /* add new SMSCes here */
 		
 	default:
@@ -164,44 +181,50 @@ error:
 
 
 
-int smscenter_receive_msg(SMSCenter *smsc, Msg **msg) {
-	int ret;
+int smscenter_receive_msg(SMSCenter *smsc, Msg **msg)
+{
+    int ret;
 
-	smscenter_lock(smsc);
+    smscenter_lock(smsc);
 
-	switch (smsc->type) {
+    switch (smsc->type) {
 
-	case SMSC_TYPE_FAKE:
-		ret = fake_receive_msg(smsc, msg);
-		if (ret == -1)
-			goto error;
-		break;
+    case SMSC_TYPE_FAKE:
+	ret = fake_receive_msg(smsc, msg);
+	if (ret == -1)
+	    goto error;
+	break;
 
-	case SMSC_TYPE_CIMD:
-		ret = cimd_receive_msg(smsc, msg);
-		if (ret == -1)
-			goto error;
-		break;
+    case SMSC_TYPE_CIMD:
+	ret = cimd_receive_msg(smsc, msg);
+	if (ret == -1)
+	    goto error;
+	break;
 	
-	case SMSC_TYPE_EMI:
-	case SMSC_TYPE_EMI_IP:
-		ret = emi_receive_msg(smsc, msg);
-		if (ret == -1)
-			goto error;
-		break;
+    case SMSC_TYPE_EMI:
+    case SMSC_TYPE_EMI_IP:
+	ret = emi_receive_msg(smsc, msg);
+	if (ret == -1)
+	    goto error;
+	break;
 
-	case SMSC_TYPE_SMPP_IP:
-		ret = smpp_receive_msg(smsc, msg);
-		if (ret == -1)
-			goto error;
-		break;
+    case SMSC_TYPE_SMPP_IP:
+	ret = smpp_receive_msg(smsc, msg);
+	if (ret == -1)
+	    goto error;
+	break;
+	
+    case SMSC_TYPE_SEMA_X28:
+	ret = sema_receive_msg(smsc, msg);
+	if(ret == -1)
+	    goto error;
+	break;
+    
+    default:
+	goto error;
 
-	default:
-		goto error;
-
-	}
-
-	smscenter_unlock(smsc);
+    }
+    smscenter_unlock(smsc);
 	
 	/* Fix the time if the SMSC didn't tell us it. */
 /*
@@ -209,56 +232,64 @@ int smscenter_receive_msg(SMSCenter *smsc, Msg **msg) {
 		time(&(*msg)->time);
 */
 
-	return ret;
+    return ret;
 
 error:
-	smscenter_unlock(smsc);
-	return -1;
+    smscenter_unlock(smsc);
+    return -1;
 }
 
 
-int smscenter_pending_smsmessage(SMSCenter *smsc) {
-	int ret;
+int smscenter_pending_smsmessage(SMSCenter *smsc)
+{
+    int ret;
 
-	smscenter_lock(smsc);
+    smscenter_lock(smsc);
 
-	switch (smsc->type) {
-	case SMSC_TYPE_FAKE:
-		ret = fake_pending_smsmessage(smsc);
-		if (ret == -1)
-			goto error;
-		break;
+    switch (smsc->type) {
+    case SMSC_TYPE_FAKE:
+	ret = fake_pending_smsmessage(smsc);
+	if (ret == -1)
+	    goto error;
+	break;
 	
-	case SMSC_TYPE_CIMD:
-		ret = cimd_pending_smsmessage(smsc);
-		if (ret == -1)
-			goto error;
-		break;
+    case SMSC_TYPE_CIMD:
+	ret = cimd_pending_smsmessage(smsc);
+	if (ret == -1)
+	    goto error;
+	break;
 
-	case SMSC_TYPE_EMI:
-	case SMSC_TYPE_EMI_IP:
-		ret = emi_pending_smsmessage(smsc);
-		if (ret == -1)
-			goto error;
-		break;
+    case SMSC_TYPE_EMI:
+    case SMSC_TYPE_EMI_IP:
+	ret = emi_pending_smsmessage(smsc);
+	if (ret == -1)
+	    goto error;
+	break;
 
-	case SMSC_TYPE_SMPP_IP:
-		ret = smpp_pending_smsmessage(smsc);
-		if (ret == -1)
-			goto error;
-		break;
+    case SMSC_TYPE_SMPP_IP:
+	ret = smpp_pending_smsmessage(smsc);
+	if (ret == -1)
+	    goto error;
+	break;
 
-	default:
-		goto error;
-	}
 
-	smscenter_unlock(smsc);
-	return ret;
+    case SMSC_TYPE_SEMA_X28:
+	ret = sema_pending_smsmessage(smsc);
+	if(ret == -1)
+	    goto error;
+	break;
+
+    default:
+	goto error;
+    }
+
+    smscenter_unlock(smsc);
+    return ret;
 
 error:
-	error(0, "smscenter_pending_smsmessage is failing");
-	smscenter_unlock(smsc);
-	return -1;
+    error(0, "smscenter_pending_smsmessage is failing");
+    smscenter_unlock(smsc);
+    return -1;
 }
 
 
@@ -355,15 +386,17 @@ static void smscenter_unlock(SMSCenter *smsc) {
  */
 
 
-SMSCenter *smsc_open(ConfigGroup *grp) {
+SMSCenter *smsc_open(ConfigGroup *grp)
+{
 	SMSCenter *smsc;
         char *type, *host, *port, *username, *password, *phone, *device;
         char *dial_prefix, *route_prefix;
         char *backup_port, *receive_port, *our_port; 
         char *alt_chars;
         char *smpp_system_id, *smpp_system_type, *smpp_address_range;
+	char *sema_smscnua, *sema_homenua, *sema_report;
 
-        int typeno, portno, backportno, ourportno, receiveportno;
+        int typeno, portno, backportno, ourportno, receiveportno, iwaitreport;
 
 
         type = config_get(grp, "smsc");
@@ -384,6 +417,11 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
         smpp_system_type = config_get(grp, "system-type");
         smpp_address_range = config_get(grp, "address-range");
 
+	sema_smscnua = config_get(grp, "smsc_nua");
+	sema_homenua = config_get(grp, "home_nua");
+	sema_report = config_get(grp, "wait_report");
+	iwaitreport = (sema_report != NULL ? atoi(sema_report) : 1);
+	
 	if (backup_port)
 	    warning(0, "Depricated SMSC config variable 'backup-port' used, "
 		    "'receive-port' recommended (but backup-port functions"); 
@@ -407,6 +445,7 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 	else if (strcmp(type, "emi") == 0) typeno = SMSC_TYPE_EMI;
 	else if (strcmp(type, "emi_ip") == 0) typeno = SMSC_TYPE_EMI_IP;
 	else if (strcmp(type, "smpp") == 0) typeno = SMSC_TYPE_SMPP_IP;
+	else if (strcmp(type, "sema") == 0) typeno = SMSC_TYPE_SEMA_X28;
 	else {
 	    error(0, "Unknown SMSC type '%s'", type);
 	    return NULL;
@@ -455,6 +494,15 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 				 smpp_address_range, receiveportno);
 	    break;
 
+	case SMSC_TYPE_SEMA_X28:
+	    if (device == NULL || sema_smscnua == NULL ||
+		sema_homenua == NULL)
+		error(0, "Required field missing for SEMA center.");
+	    else
+		smsc = sema_open(sema_smscnua, sema_homenua, device,
+				 iwaitreport);
+	    break;    
+	    
 	 /* add new SMSCes here */
 
 	default:		/* Unknown SMSC type */
@@ -484,6 +532,8 @@ int smsc_reopen(SMSCenter *smsc) {
 	    return emi_reopen(smsc);
 	case SMSC_TYPE_SMPP_IP:
 	    return smpp_reopen(smsc);
+	case SMSC_TYPE_SEMA_X28:
+	    return sema_reopen(smsc);
 	 /* add new SMSCes here */
 	default:		/* Unknown SMSC type */
 	    return -2;		/* no use */
@@ -536,53 +586,58 @@ int smsc_receiver(SMSCenter *smsc, char *number)
 }
 
 
-int smsc_close(SMSCenter *smsc) {
-	int errors = 0;
+int smsc_close(SMSCenter *smsc)
+{
+    int errors = 0;
 
-	if (smsc == NULL)
-	    return 0;
-	
-	smscenter_lock(smsc);
-	
-	switch (smsc->type) {
-	case SMSC_TYPE_FAKE:	/* Our own fake SMSC */
-		if (fake_close(smsc) == -1)
-			errors = 1;
-		break;
-
-	case SMSC_TYPE_CIMD:
-		if (cimd_close(smsc) == -1)
-			errors = 1;
-		break;
-
-	case SMSC_TYPE_EMI:
-		if (emi_close(smsc) == -1)
-			errors = 1;
-		break;
-
-	case SMSC_TYPE_EMI_IP:
-		if (emi_close_ip(smsc) == -1)
-			errors = 1;
-		break;
-
-	case SMSC_TYPE_SMPP_IP:
-		if (smpp_close(smsc) == -1)
-			errors = 1;
-		break;
-
-	 /* add new SMSCes here */
-
-	default:		/* Unknown SMSC type */
-		break;
-	}
-
-	smsc->type = SMSC_TYPE_DELETED;
-	smscenter_unlock(smsc);
-
-	if (errors)
-		return -1;
-
+    if (smsc == NULL)
 	return 0;
+	
+    smscenter_lock(smsc);
+	
+    switch (smsc->type) {
+    case SMSC_TYPE_FAKE:	/* Our own fake SMSC */
+	if (fake_close(smsc) == -1)
+	    errors = 1;
+	break;
+
+    case SMSC_TYPE_CIMD:
+	if (cimd_close(smsc) == -1)
+	    errors = 1;
+	break;
+
+    case SMSC_TYPE_EMI:
+	if (emi_close(smsc) == -1)
+	    errors = 1;
+	break;
+
+    case SMSC_TYPE_EMI_IP:
+	if (emi_close_ip(smsc) == -1)
+	    errors = 1;
+	break;
+
+    case SMSC_TYPE_SMPP_IP:
+	if (smpp_close(smsc) == -1)
+	    errors = 1;
+	break;
+
+    case SMSC_TYPE_SEMA_X28:
+	if(sema_close(smsc) == -1)
+	    errors = 1;
+	break;
+		
+	/* add new SMSCes here */
+
+    default:		/* Unknown SMSC type */
+	break;
+    }
+    smsc->type = SMSC_TYPE_DELETED;
+    smscenter_unlock(smsc);
+
+    if (errors)
+	return -1;
+
+    return 0;
 }
 
 

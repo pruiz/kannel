@@ -428,7 +428,7 @@ int main(int argc, char **argv)
     socket_mutex = mutex_create();
 
     setup_signal_handlers();
-    cfg = config_from_file(argv[cf_index], "smsbox.smsconf");
+    cfg = config_from_file(argv[cf_index], "kannel.smsconf");
     if (cfg == NULL)
 	panic(0, "No configuration, aborting.");
 

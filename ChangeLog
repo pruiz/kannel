@@ -1,3 +1,17 @@
+2000-03-02    <rpr@rpr.wapit.com>
+
+	* gw/*.*conf: renamed old bearerbox.conf, smsbox.smsconf and
+	wapbox.wapconf as kannel.conf, kannel.smsconf and kannel.wapconf. 
+
+	* gw/*box.c: modified default configuration files accordingly
+
+	* README, doc/dialup.txt: updated documentation accordingly
+
+	* gw/smsc.c, gw/smsc_p.h: added calls to SEMA SMS2000 code
+
+	* gw/smsc_sema.c|h: added support code to SEMA SMS2000 via X28
+	link by Hao Shi
+
 Thu Mar  2 12:36:22 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* doc/userguide/userguide.xml: Fixed syntax error (added missing

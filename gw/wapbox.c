@@ -307,7 +307,7 @@ int main(int argc, char **argv) {
 	if (argc > cf_index)
 		read_config(argv[cf_index]);
 	else
-		read_config("wapbox.wapconf");
+		read_config("kannel.wapconf");
 		
 	setup_signal_handlers();
 

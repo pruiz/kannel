@@ -26,7 +26,7 @@ typedef struct SMSCenter SMSCenter;
 
 
 /* Open the connection to an SMS center. 'grp' is a configgroup which determines
-   the sms center. See details from sample configuration file 'bearerbox.conf'
+   the sms center. See details from sample configuration file 'kannel.conf'
 
    The operation returns NULL for error and the pointer
    to the new SMSCenter structure for OK.

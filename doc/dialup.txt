@@ -18,15 +18,15 @@ In /etc/inittab add a line:
 S0:2345:respawn:/sbin/mgetty ttyS0 -x 6 -D /dev/ttyS0
 
 
-In bearerbox.conf add (the IP address is the address of the Linux box)
+In kannel.conf add (the IP address is the address of the Linux box)
 
 csdr = wap
 interface-name = 192.9.200.100
 wap-service = "wsp/wtp"
 
 
-In wapbox.wapconf change the heartbeat-frequency to the same as in
-bearerbox.conf
+In kannel.wapconf change the heartbeat-frequency to the same as in
+kannel.conf
 
 heartbeat-freq = 5
 

@@ -2,7 +2,7 @@
 # SAMPLE configuration for SMS use
 #
 # For futher configuration variables etc. see the file
-# gw/smsbox.smsconf
+# gw/kannel.smsconf
 #
 bearerbox-host = "localhost"
 bearerbox-port = 20001

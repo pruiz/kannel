@@ -87,7 +87,7 @@ For developers only: autoconf, configure, config.status, and Makefile
 
 Configuring the gateway
 
-	The gw/bearerbox.conf, gw/smsbox.smsconf, and gw/wapbox.wapconf
+	The gw/kannel.conf, gw/kannel.smsconf, and gw/kannel.wapconf
 	files configure the gateway. The defination configuration files
 	contain explanations for changing them. As sample configuration 
 	files, there is files test/sample.conf, test/sample.wapconf and 

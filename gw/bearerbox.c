@@ -2069,7 +2069,7 @@ int main(int argc, char **argv)
     cf_index = get_and_set_debugs(argc, argv, NULL);
 
     setup_signal_handlers();
-    cfg = config_from_file(argv[cf_index], "bearerbox.conf");
+    cfg = config_from_file(argv[cf_index], "kannel.conf");
     if (cfg == NULL)
 	panic(0, "No configuration, aborting.");
     
@@ -2078,7 +2078,7 @@ int main(int argc, char **argv)
     open_all_receivers(cfg);
 
     if (cf_index+1 < argc) {
-	cfg = config_from_file(argv[cf_index+1], "smsbox.smsconf");
+	cfg = config_from_file(argv[cf_index+1], "kannel.smsconf");
 	if (cfg == NULL)
 	    info(0, "No internal SMS BOX");
 	else

@@ -29,6 +29,7 @@ enum {
 	SMSC_TYPE_EMI_X31,
 	SMSC_TYPE_EMI_IP,
 	SMSC_TYPE_SMPP_IP,
+	SMSC_TYPE_SEMA_X28
 };
 
 /*
@@ -112,6 +113,14 @@ struct SMSCenter {
 	Octstr *data_t, *data_r;
 	int fd_t, fd_r;
 	int seq_t, seq_r;
+
+        /* SEMA SMS2000 OIS 4.5 X28 */
+
+        char * sema_smscnua;
+        char * sema_homenua;
+        char * sema_serialdevice;
+        struct sema_msglist *sema_mt, *sema_mo;
+        int sema_fd; 
     
 	/* For buffering input. */
 	char *buffer;
@@ -191,5 +200,16 @@ int smpp_close(SMSCenter *smsc);
 int smpp_pending_smsmessage(SMSCenter *smsc);
 int smpp_submit_msg(SMSCenter *smsc, Msg *msg);
 int smpp_receive_msg(SMSCenter *smsc, Msg **msg);
+
+/*
+ * Interface to Sema SMS centers using SM2000
+ */
+SMSCenter *sema_open(char *smscnua,  char *homenua, char* serialdevice ,int waitreport);
+int sema_reopen(SMSCenter *smsc);
+int sema_close(SMSCenter *smsc);
+int sema_pending_smsmessage(SMSCenter *smsc);
+int sema_submit_msg(SMSCenter *smsc, Msg *msg);
+int sema_receive_msg(SMSCenter *smsc, Msg **msg);
+
 
 #endif

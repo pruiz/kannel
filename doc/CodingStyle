@@ -110,6 +110,7 @@ Log message at the `debug' level: naming convention for `place'
 		bb.sms.cimd	CIMD implementation
 		bb.sms.emi	EMI/UCP implementation
 		bb.sms.smpp	SMPP implementation
+		bb.sms.sema	SEMA/SMS2000 implementation
 		
 		sms		SMS box
 		
