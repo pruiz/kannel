@@ -100,7 +100,7 @@ SMSCenter *smscenter_construct(void) {
 
 
 void smscenter_destruct(SMSCenter *smsc) {
-	if(smsc == NULL)
+	if (smsc == NULL)
 		return;
 
 	/* FAKE */
@@ -126,6 +126,9 @@ void smscenter_destruct(SMSCenter *smsc) {
 	gw_free(smsc->sema_serialdevice);
 	
 	 /* add new SMSCes here */
+
+	/* Other fields */
+	mutex_destroy(smsc->mutex);
 
 	/* Memory */
 	gw_free(smsc->buffer);

@@ -1,3 +1,11 @@
+2000-04-11  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/thread.c: Made mutex_destroy silently handle a NULL mutex,
+	like other destroy functions.
+
+	* gw/smsc.c: In smscenter_destruct(), also destroy smsc->mutex,
+	to fix memory leak.  (Thanks to Paul Keogh)
+
 2000-04-10  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/octstr.c: Corrected off-by-one errors in octstr_convert_range

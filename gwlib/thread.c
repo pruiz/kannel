@@ -75,6 +75,9 @@ Mutex *mutex_create(void) {
 
 
 void mutex_destroy(Mutex *mutex) {
+	if (mutex == NULL)
+		return;
+
 	pthread_mutex_destroy(&mutex->mutex);
 	gw_free(mutex);
 }
