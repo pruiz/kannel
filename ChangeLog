@@ -1,3 +1,6 @@
+2003-04-05  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_http.c: fixed compiler warning.
+
 2003-04-04  Stipe Tolj  <tolj@wapme-systems.de>
     * test/test_headers.c: changed to take an argument as filename instead
       of the hard-coded filename.
