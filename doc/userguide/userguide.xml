@@ -5470,6 +5470,7 @@ table = dlr
 field-smsc = smsc
 field-timestamp = ts
 field-destination = destination
+field-source = source
 field-service = service
 field-url = url
 field-mask = mask
@@ -5507,6 +5508,7 @@ table = dlr
 field-smsc = smsc
 field-timestamp = ts
 field-destination = destination
+field-source = source
 field-service = service
 field-url = url
 field-mask = mask
@@ -5549,6 +5551,7 @@ table = dlr
 field-smsc = smsc
 field-timestamp = ts
 field-destination = destination
+fiel-source = source
 field-service = service
 field-url = url
 field-mask = mask
@@ -5615,6 +5618,12 @@ field-boxc-id = boxc
      <entry>string</entry>
      <entry valign="bottom">
         The table field that is used for the destination number data.
+     </entry></row>
+
+   <row><entry><literal>field-source (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+        The table field that is used for the source number data.
      </entry></row>
 
    <row><entry><literal>field-service (m)</literal></entry>

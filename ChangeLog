@@ -1,4 +1,9 @@
 2003-09-02  Alexander Malysh  <a.malysh@centrium.de>
+    * doc/userguide/userguide.xml,doc/examples/dlr-*.conf: added required
+      'field-source' to the documentation.
+      Thanks to "Bill Brigden" <bill@baghead.co.uk> for pointing this.
+
+2003-09-02  Alexander Malysh  <a.malysh@centrium.de>
     * doc/userguide/userguide.xml,gwlib/cfg.def,gw/smsc/smsc_smpp.c:
       applied SMPP inactivity+transaction timeouts patch. For description
       see: Message-Id: <200308202001.50721.a.malysh@centrium.de>
