@@ -87,18 +87,18 @@ int mutex_unlock_real(Mutex *mutex, char *file, int line, char *func)
 {
      int ret;
     
-    if(mutex == NULL)
-    {
-       error(0,"trying to unlock a NULL mutex from %s at line %d",file,line);
+    if (mutex == NULL) {
+        error(0, "%s:%ld: %s: Trying to unlock a NULL mutex! (Called from %s:%ld:%s.)", \
+		         __FILE__, (long) __LINE__, __func__, file, (long) line, func);
        return -1;
     }
-     gw_assert(mutex != NULL);
-     mutex->owner = -1;
-     ret = pthread_mutex_unlock(&mutex->mutex);
-     if (ret != 0)
+    gw_assert(mutex != NULL);
+    mutex->owner = -1;
+    ret = pthread_mutex_unlock(&mutex->mutex);
+    if (ret != 0)
         panic(0, "%s:%ld: %s: Mutex failure! (Called from %s:%ld:%s.)", \
 		         __FILE__, (long) __LINE__, __func__, file, (long) line, func);
 
-     return ret;
+    return ret;
 }
 
