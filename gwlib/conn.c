@@ -121,7 +121,7 @@ static void lock_in(Connection *conn)
 }
 
 /* Unlock a Connection's read direction, if the Connection is unclaimed */
-static void unlock_in_real(Connection *conn, char *file, int line, char *func)
+static void unlock_in_real(Connection *conn, char *file, int line, const char *func)
 {
     int ret;
     gw_assert(conn != NULL);
@@ -148,7 +148,7 @@ static void lock_out(Connection *conn)
 }
 
 /* Unlock a Connection's write direction, if the Connection is unclaimed */
-static void unlock_out_real(Connection *conn, char *file, int line, char *func)
+static void unlock_out_real(Connection *conn, char *file, int line, const char *func)
 {
     int ret;
     gw_assert(conn != NULL);

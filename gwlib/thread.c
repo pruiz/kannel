@@ -58,7 +58,7 @@ void mutex_destroy(Mutex *mutex)
 }
 
 
-void mutex_lock_real(Mutex *mutex, char *file, int line, char *func)
+void mutex_lock_real(Mutex *mutex, char *file, int line, const char *func)
 {
     int ret;
 
@@ -83,7 +83,7 @@ void mutex_lock_real(Mutex *mutex, char *file, int line, char *func)
     mutex->owner = gwthread_self();
 }
 
-int mutex_unlock_real(Mutex *mutex, char *file, int line, char *func)
+int mutex_unlock_real(Mutex *mutex, char *file, int line, const char *func)
 {
      int ret;
     
