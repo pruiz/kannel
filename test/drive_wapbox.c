@@ -538,6 +538,7 @@ static long run_requests(Connection *boxc) {
 				handle_reply(boxc, msg);
 			msg_destroy(msg);
 		}
+		octstr_destroy(data);
 	}
 
 	if (requests_complete < max_requests)
