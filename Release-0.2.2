@@ -1,0 +1,38 @@
+Open Source WAP and SMS Gateway version 0.2.2
+
+Improvements to Gateway release 0.2:
+
+ * Content-Type from HTTP server is obeyed, instead of blindly assuming
+   it is WML.
+
+ * WBMP image support.
+ 
+ * Beginnings of capability support.
+ 
+ * Monstrous Makefiles made by automake removed, using simple hand made one
+   instead (in the hopes it can actually be debugged).
+ 
+ * Bug fixes and cleanups.
+ 
+Upcoming features:
+
+ * The rest of WAP functionality:
+ 
+   * Other request types.
+   
+   * Capabilities.
+   
+   * Session suspend and resume.
+
+   * WAP SMS support (February 2000?)
+
+ * Dynamically loadable service definitions, new SMSC connections and
+   other similar things
+
+
+Missing from current version that were in SMSGateway 0.6:
+
+ * addsmsc and delsmsc configuration options (I dunno if they worked
+    before, either...)
+
+ * 'suspend' is not a complete state; sendsms still works
