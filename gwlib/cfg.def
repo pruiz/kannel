@@ -195,6 +195,10 @@ MULTI_GROUP(smsc,
     OCTSTR(retry)
     OCTSTR(my-number)
     OCTSTR(sms-center)
+    OCTSTR(source-addr-ton)
+    OCTSTR(source-addr-npi)
+    OCTSTR(dest-addr-ton)
+    OCTSTR(dest-addr-npi)
 )
 
 

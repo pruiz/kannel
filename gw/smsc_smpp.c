@@ -71,6 +71,10 @@ typedef struct {
     Octstr *password;
     Octstr *address_range;
     Octstr *our_host;
+    int source_addr_ton;
+    int source_addr_npi;
+    int dest_addr_ton;
+    int dest_addr_npi;
     int transmit_port;
     int receive_port;
     int quitting;
@@ -80,8 +84,10 @@ typedef struct {
 
 static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port, 
     	    	    	 int receive_port, Octstr *system_type, 
-			 Octstr *username, Octstr *password,
-    	    	    	 Octstr *address_range, Octstr *our_host)
+                         Octstr *username, Octstr *password,
+    	    	    	 Octstr *address_range, Octstr *our_host, 
+                         int source_addr_ton, int source_addr_npi, 
+                         int dest_addr_ton, int dest_addr_npi)
 {
     SMPP *smpp;
     
@@ -98,6 +104,10 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->username = octstr_duplicate(username);
     smpp->password = octstr_duplicate(password);
     smpp->address_range = octstr_duplicate(address_range);
+    smpp->source_addr_ton = source_addr_ton;
+    smpp->source_addr_npi = source_addr_npi;
+    smpp->dest_addr_ton = dest_addr_ton;
+    smpp->dest_addr_npi = dest_addr_npi;
     smpp->our_host = octstr_duplicate(our_host);
     smpp->transmit_port = transmit_port;
     smpp->receive_port = receive_port;
@@ -210,55 +220,72 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     pdu = smpp_pdu_create(submit_sm, 
     	    	    	  counter_increase(smpp->message_id_counter));
     	    	   
-    pdu->u.submit_sm.dest_addr_ton = GSM_ADDR_TON_NATIONAL; /* national */
-    pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_NATIONAL; /* national */
-    pdu->u.submit_sm.source_addr_npi = GSM_ADDR_NPI_E164; /* ISDN number plan */
-    pdu->u.submit_sm.dest_addr_npi = GSM_ADDR_NPI_E164; /* ISDN number plan */
-    
     pdu->u.submit_sm.source_addr = octstr_duplicate(msg->sms.sender);
     pdu->u.submit_sm.destination_addr = octstr_duplicate(msg->sms.receiver);
  
-    /* lets see if its international or alphanumeric sender */
-    if( octstr_get_char(pdu->u.submit_sm.source_addr,0) == '+') {
-        if (!octstr_check_range(pdu->u.submit_sm.source_addr, 1, 256, gw_isdigit)) {
-     	    pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_ALPHANUMERIC; /* alphanum */
-   	    pdu->u.submit_sm.source_addr_npi = GSM_ADDR_NPI_UNKNOWN;
-    	}
-        else {
-	    /* numeric sender address with + in front -> international*/
-	    octstr_delete(pdu->u.submit_sm.source_addr,0,1);
-           pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_INTERNATIONAL;
-	}
-    }
-    else    {
-	if (!octstr_check_range(pdu->u.submit_sm.source_addr,0, 256, gw_isdigit)) {
-   	    pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_ALPHANUMERIC;
-   	    pdu->u.submit_sm.source_addr_npi = GSM_ADDR_NPI_UNKNOWN;
-   	}
-    }
-    
+    /* Check for manual override of source ton and npi values */
+    if(smpp->source_addr_ton > -1 && smpp->source_addr_npi > -1) {
+        pdu->u.submit_sm.source_addr_ton = smpp->source_addr_ton;
+        pdu->u.submit_sm.source_addr_npi = smpp->source_addr_npi;
+        debug("bb.sms.smpp", 0, "Manually forced source addr ton = %d, source add npi = %d",
+            smpp->source_addr_ton, smpp->source_addr_npi);
+    } else {
+        /* setup default values */
+        pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_NATIONAL; /* national */
+        pdu->u.submit_sm.source_addr_npi = GSM_ADDR_NPI_E164; /* ISDN number plan */
 
-    /* if its a international number starting with +, lets remove the
-    	'+' and set number type to international instead */
+        /* lets see if its international or alphanumeric sender */
+        if (octstr_get_char(pdu->u.submit_sm.source_addr,0) == '+') {
+            if (!octstr_check_range(pdu->u.submit_sm.source_addr, 1, 256, gw_isdigit)) {
+                pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_ALPHANUMERIC; /* alphanum */
+                pdu->u.submit_sm.source_addr_npi = GSM_ADDR_NPI_UNKNOWN;    /* short code */
+            } else {
+               /* numeric sender address with + in front -> international (remove the +) */
+               octstr_delete(pdu->u.submit_sm.source_addr, 0, 1);
+               pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_INTERNATIONAL;
+    	    }
+        } else {
+            if (!octstr_check_range(pdu->u.submit_sm.source_addr,0, 256, gw_isdigit)) {
+                pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_ALPHANUMERIC;
+                pdu->u.submit_sm.source_addr_npi = GSM_ADDR_NPI_UNKNOWN;
+            }
+        }
+    }
+
+    /* Check for manual override of destination ton and npi values */
+    if (smpp->dest_addr_ton > -1 && smpp->dest_addr_npi > -1) {
+        pdu->u.submit_sm.dest_addr_ton = smpp->dest_addr_ton;
+        pdu->u.submit_sm.dest_addr_npi = smpp->dest_addr_npi;
+        debug("bb.sms.smpp", 0, "Manually forced dest addr ton = %d, source add npi = %d",
+            smpp->dest_addr_ton, smpp->dest_addr_npi);
+    } else {
+        pdu->u.submit_sm.dest_addr_ton = GSM_ADDR_TON_NATIONAL; /* national */
+        pdu->u.submit_sm.dest_addr_npi = GSM_ADDR_NPI_E164; /* ISDN number plan */
+    }
+
+    /*
+     * if its a international number starting with +, lets remove the
+     * '+' and set number type to international instead 
+     */
     if( octstr_get_char(pdu->u.submit_sm.destination_addr,0) == '+') {
     	octstr_delete(pdu->u.submit_sm.destination_addr, 0,1);
-    	pdu->u.submit_sm.dest_addr_ton = 1; /* international */
+    	pdu->u.submit_sm.dest_addr_ton = GSM_ADDR_TON_INTERNATIONAL;
     }
 
     pdu->u.submit_sm.data_coding = fields_to_dcs(msg, 0);
 
     if (octstr_len(msg->sms.udhdata)) {
-	pdu->u.submit_sm.short_message =
-	    octstr_format("%S%S", msg->sms.udhdata, msg->sms.msgdata);
-	pdu->u.submit_sm.esm_class = SMPP_ESM_CLASS_UDH_INDICATOR;
+        pdu->u.submit_sm.short_message =
+	       octstr_format("%S%S", msg->sms.udhdata, msg->sms.msgdata);
+        pdu->u.submit_sm.esm_class = SMPP_ESM_CLASS_UDH_INDICATOR;
     } else {
-	pdu->u.submit_sm.short_message = octstr_duplicate(msg->sms.msgdata);
-	if(pdu->u.submit_sm.data_coding == 0 ) /*no reencoding for unicode! */
-	   charset_latin1_to_gsm(pdu->u.submit_sm.short_message);		
+        pdu->u.submit_sm.short_message = octstr_duplicate(msg->sms.msgdata);
+        if (pdu->u.submit_sm.data_coding == 0 ) /* no reencoding for unicode! */
+            charset_latin1_to_gsm(pdu->u.submit_sm.short_message);		
     }
     /* ask for the delivery reports if needed */
     if (msg->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL))
- 	pdu->u.submit_sm.registered_delivery = 1; 
+        pdu->u.submit_sm.registered_delivery = 1; 
 
     return pdu;
 }
@@ -805,6 +832,10 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     Octstr *system_id;
     Octstr *system_type;
     Octstr *address_range;
+    long source_addr_ton;
+    long source_addr_npi;
+    long dest_addr_ton;
+    long dest_addr_npi;
     Octstr *our_host;
     SMPP *smpp;
     int ok;
@@ -836,19 +867,33 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     if (host == NULL) {
         error(0,"SMPP: Configuration file doesn't specify host");
         ok = 0;
-    }    if (username == NULL) {
-	error(0, "SMPP: Configuration file doesn't specify username.");
-	ok = 0;
+    }    
+    if (username == NULL) {
+	   error(0, "SMPP: Configuration file doesn't specify username.");
+	   ok = 0;
     }
     if (password == NULL) {
-	error(0, "SMPP: Configuration file doesn't specify password.");
-	ok = 0;
+	   error(0, "SMPP: Configuration file doesn't specify password.");
+	   ok = 0;
     }
     if (!ok)
     	return -1;
 
+    /* if the ton and npi values are forced, set them, else set them to -1 */
+    if (cfg_get_integer(&source_addr_ton, grp, octstr_imm("source-addr-ton")) == -1)
+       source_addr_ton = -1;
+    if (cfg_get_integer(&source_addr_npi, grp, octstr_imm("source-addr-npi")) == -1)
+       source_addr_npi = -1;
+    if (cfg_get_integer(&dest_addr_ton, grp, octstr_imm("dest-addr-ton")) == -1)
+       dest_addr_ton = -1;
+    if (cfg_get_integer(&dest_addr_npi, grp, octstr_imm("dest-addr-npi")) == -1)
+       dest_addr_npi = -1;
+
     smpp = smpp_create(conn, host, port, receive_port, system_type, 
-    	    	       username, password, address_range, our_host);
+    	    	       username, password, address_range, our_host,
+                       source_addr_ton, source_addr_npi, dest_addr_ton, 
+                       dest_addr_npi);
+
     conn->data = smpp;
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S", 
     	    	    	       host, port,
