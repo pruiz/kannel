@@ -436,14 +436,14 @@ int octstr_write_to_socket(int socket, Octstr *ostr) {
 	len = ostr->len;
 	while (len > 0) {
 		ret = write(socket, data, len);
-		if (ret == -1) {
+		if (ret == -1 && errno != EINTR) {
 			error(errno, "Writing to socket failed");
 			return -1;
+		} else {
+			/* ret may be less than len */
+			len -= ret;
+			data += ret;
 		}
-		/* ret may be less than len, if the writing was interrupted
-		   by a signal. */
-		len -= ret;
-		data += ret;
 	}
 	return 0;
 }

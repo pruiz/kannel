@@ -1,5 +1,9 @@
 2000-04-03  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/octstr.c: Made octstr_write_to_socket() retry after EINTR.
+
+2000-04-03  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/gwstr.c, gwlib/gwstr.h: Removed split_words(), it has been
 	superseded by octstr_split_words().
 
