@@ -61,12 +61,6 @@ static void push_client_machine_destroy(void *a);
 static WSPPushClientMachine *push_client_machine_find_or_create(WAPEvent *e);
 
 /*
- * Ditto, except do not create the machine and look for machine with a 
- * specific identification number.
- */
-static WSPPushClientMachine push_client_machine_find_using_cpid(long cpid);
-
-/*
  * Feed an event to the client push state machine. Do not report errors to
  * caller.
  */
@@ -84,7 +78,6 @@ static WAPEvent *create_s_pushabort_ind(WSPPushClientMachine *cpm,
 static WAPEvent *create_s_confirmedpush_res(WSPPushClientMachine *cpm);
 static WAPEvent *create_tr_abort_req(WSPPushClientMachine *cpm, long reason);
 static WAPEvent *create_tr_invoke_res(WSPPushClientMachine *cpm);
-static void push_client_machine_assert(WSPPushClientMachine *cpm);
 
 /**************************************************************************
  *
@@ -423,11 +416,4 @@ static WAPEvent *create_tr_invoke_res(WSPPushClientMachine *cpm)
     return e;
 }
 
-static void push_client_machine_assert(WSPPushClientMachine *cpm)
-{
-    gw_assert(cpm);
-    gw_assert(cpm->state >= 0);
-    gw_assert(cpm->state <= push_client_states_count);
-    gw_assert(cpm->client_push_id >= 0);
-    gw_assert(cpm->push_headers);
-}
+
