@@ -1614,7 +1614,7 @@ static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
 {
   Octstr *input = NULL;
   string_table_t *item = NULL;
-  long i = 0, word_s = 0, word_e = 0;
+  long i = 0, word_s = 0, str_e = 0;
 
   input = octstr_create("");
 
@@ -1624,7 +1624,8 @@ static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
 
       if (octstr_len(item->string) > STRING_TABLE_MIN)
 	/* No use to replace 1 to 3 character substring, the reference 
-	   will eat the saving up. */
+	   will eat the saving up. A variable will be in the string table 
+	   even though it's only 1 character long. */
 	if ((word_s = octstr_search(ostr, item->string, 0)) >= 0)
 	  {
 	    /* Check whether the octet string are equal if they are equal 
@@ -1636,12 +1637,15 @@ static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
 		    octstr_truncate(ostr, 0);
 		    octstr_append_char(ostr, STR_T);
 		    octstr_append_uintvar(ostr, item->offset);
-		    word_e = octstr_len(ostr);
+		    str_e = 1;
 		  }
 	      }
 	    /* Check the possible substrings. */
 	    else if (octstr_len(ostr) > octstr_len(item->string))
 	      {
+		if (word_s + octstr_len(item->string) == octstr_len(ostr))
+		    str_e = 1;
+
 		octstr_delete(ostr, word_s, octstr_len(item->string));
 
 		octstr_truncate(input, 0);
@@ -1656,7 +1660,6 @@ static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
 		if ( word_s < octstr_len(ostr))
 		  octstr_append_char(input, STR_I);
 
-		word_e = word_s + octstr_len(input);
 		octstr_insert(ostr, input, word_s);
 	      }
 	    /* If te string table entry is longer than the string, it can 
@@ -1668,7 +1671,7 @@ static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
 
   if (octstr_get_char(ostr, 0) != STR_T)
     output_char(STR_I, wbxml);
-  if (word_e < octstr_len(ostr))
+  if (!str_e)
     octstr_append_char(ostr, STR_END);    
 
   output_octet_string(ostr, wbxml);

@@ -655,27 +655,32 @@ static URLTranslation *find_default_translation(URLTranslationList *trans)
  * RFC 2396 defines the list of characters that need to be encoded.
  */
 static void encode_for_url(char *buf, char *str) {
-	static unsigned char *unsafe = ";/?:@&=+$,-_.!~*'()";
-	static char is_unsafe[UCHAR_MAX];
-	static char hexdigits[] = "0123456789ABCDEF";
-	unsigned char *ustr;
+    static unsigned char *unsafe = ";/?:@&=+$,-_.!~*'(){}|\\^[]`<>#% \"";
+    static unsigned char delete = 0x7F;
+    static char is_unsafe[UCHAR_MAX];
+    static char hexdigits[] = "0123456789ABCDEF";
+    unsigned char *ustr;
+    unsigned char ch;
+    
+    if (unsafe != NULL) {
+	for (; *unsafe != '\0'; ++unsafe)
+	    is_unsafe[*unsafe] = 1;
+	for (ch = 0x00; ch <= 0x1F; ch++)
+	    is_unsafe[*unsafe] = 1;
+	is_unsafe[delete] = 1;
+	unsafe = NULL;
+    }
 	
-	if (unsafe != NULL) {
-		for (; *unsafe != '\0'; ++unsafe)
-			is_unsafe[*unsafe] = 1;
-		unsafe = NULL;
+    ustr = str;
+    while (*ustr != '\0') {
+	if (!is_unsafe[*ustr])
+	    *buf++ = *ustr++;
+	else {
+	    *buf++ = '%';
+	    *buf++ = hexdigits[*ustr / 16];
+	    *buf++ = hexdigits[*ustr % 16];
+	    ++ustr;
 	}
-	
-	ustr = str;
-	while (*ustr != '\0') {
-		if (!is_unsafe[*ustr])
-			*buf++ = *ustr++;
-		else {
-			*buf++ = '%';
-			*buf++ = hexdigits[*ustr / 16];
-			*buf++ = hexdigits[*ustr % 16];
-			++ustr;
-		}
-	}
-	*buf = '\0';
+    }
+    *buf = '\0';
 }

@@ -1,3 +1,13 @@
+2000-10-11  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/urltrans.c: Fixed the bug 111 by adding the unwise characters and 
+	special characters like delete (0x7f) and other between 0x00 and 0x1f
+	into the unsafe ones.
+
+	* gw/wml_compiler.c (string_table_apply): Fixed a bug where an extra 
+	string end was added in a case that two (or more) substrings are 
+	replaced with the 2nd (3rd...) being the first to be replaced.
+
 2000-10-11  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/wapbox.c: Formatted to follow coding style.
