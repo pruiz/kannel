@@ -152,11 +152,19 @@ static int check_config(Config *config)
 static int starter(Config *config)
 {
     ConfigGroup *grp;
-    char *val;
+    char *val, *log;
     
     if (check_config(config) == -1)
 	panic(0, "Cannot start with corrupted configuration");
 	
+    grp = config_find_first_group(config, "group", "core");
+
+    
+    if ((log = config_get(grp, "log-file")) != NULL) {
+	val = config_get(grp, "log-level");
+	open_logfile(log, val ? atoi(val) : 0);
+    }
+
     outgoing_sms = list_create();
     incoming_sms = list_create();
     outgoing_wdp = list_create();

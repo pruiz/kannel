@@ -1,5 +1,7 @@
 2000-05-04    <Kalle Marjola <rpr@wapit.com>>
 
+	* gw/bb_core.c: logfiles
+
 	* gw/bb_boxc.c: added basic routing thingies, now it only needs
 	some load balancing to wap side, otherwise this module is about
 	complete.. oh I forgot the dynamic configuration, but that later -
