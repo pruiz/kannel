@@ -924,7 +924,7 @@ admin-password = f00bar
         root process (not recommended)
      </entry></row>
 
-	 <row><entry><literal>admin-port-ssl</literal></entry>
+	 <row><entry><literal>admin-port-ssl (o)</literal></entry>
      <entry>bool</entry>
      <entry valign=bottom>
         If set to true a SSL-enabled administration HTTP server 
@@ -3175,7 +3175,7 @@ ssl-certkey-file
         other ports in Kannel, can be set as anything desired.
      </entry></row>
 
-	 <row><entry><literal>sendsms-port-ssl</literal></entry>
+	 <row><entry><literal>sendsms-port-ssl (o)</literal></entry>
      <entry>bool</entry>
      <entry valign=bottom>
         If set to true, the sendsms HTTP interface will use a
@@ -3184,6 +3184,20 @@ ssl-certkey-file
 		  core group. Defaults to "no".
      </entry></row>
 
+	 <row><entry><literal>sendsms-url (o)</literal></entry>
+     <entry>url</entry>
+     <entry valign=bottom>
+	     URL locating the sendsms service. Defaults to <literal>
+        /cgi-bin/sendsms</literal>.
+     </entry></row>
+
+	 <row><entry><literal>sendota-url (o)</literal></entry>
+     <entry>url</entry>
+     <entry valign=bottom>
+	     URL locating the sendota service. Defaults to <literal>
+        /cgi-bin/sendota</literal>.
+     </entry></row>
+	
     <row><entry><literal>sendsms-chars</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
@@ -4575,7 +4589,7 @@ trusted-pi = false
              <entry valign=bottom>
              The port PPG is listening at. Default 8080.
              </entry></row>
-             <row><entry><literal>ppg-port-ssl</literal></entry>
+             <row><entry><literal>ppg-port-ssl (o)</literal></entry>
              <entry><emphasis>bool</emphasis></entry>
              <entry valign=bottom>
              If set to true, the PPG is using a SSL-enabled HTTP
