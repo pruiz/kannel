@@ -68,19 +68,6 @@ static volatile sig_atomic_t req_threads = 0;
  * STATIC FUNCTIONS
  */
 
-/* Rounds up the result of a division */
-static int roundup_div(int a, int b)
-{
-	int t;
-	
-	t = a / b;
-	if(t * b != a)
-		t += 1;
-
-	return t;
-}
-
-
 /* Perform the service requested by the user: translate the request into
  * a pattern, if it is an URL, fetch it, and return a string, which must
  * be free'ed by the caller
@@ -252,9 +239,10 @@ static int do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslatio
 		} else {
 			/* in 7bit mode it is easier to remove the length of the UDH and
 			 * calculate it again */
-			maxdatalength += roundup_div(octstr_len(msg->sms.udhdata)*8, 7) + 1;
-			maxdatalength -= roundup_div(
-			    (CONCAT_IEL + octstr_len(msg->sms.udhdata)) * 8, 7);
+            maxdatalength += roundup_div(octstr_len(msg->sms.udhdata)*8, 7);
+            maxdatalength -= roundup_div(
+                (CONCAT_IEL + octstr_len(msg->sms.udhdata)) * 8, 7);
+
 		}
 	}
 	
