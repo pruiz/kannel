@@ -198,6 +198,8 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
 	if (backup_port > 0) {
 	    if ((smsc->emi_backup_fd = make_server_socket(backup_port)) <= 0)
 		goto error;
+
+	    debug(0, "EMI IP backup port at %d opened", backup_port);
 	}	
 	return smsc;
 
@@ -627,7 +629,10 @@ static int get_data(SMSCenter *smsc, char *buff, int length) {
 
 	ret = select(FD_SETSIZE, &rf, NULL, NULL, &to);
 
-	if (ret >= 0) {
+
+	if (ret > 0) {
+	    debug(0, "select at get_data %d", ret);
+	    
 	    if (secondary_fd >= 0 && FD_ISSET(secondary_fd, &rf)) {
 		n = read(secondary_fd, buff, length-1);
 
@@ -655,6 +660,8 @@ static int get_data(SMSCenter *smsc, char *buff, int length) {
 		}
 	    }
 	    if (FD_ISSET(smsc->emi_backup_fd, &rf)) {
+
+		debug(0, "Connection try to backup-port"); 
 
 		if (secondary_fd == -1) {
 		    /* well we actually should check if the connector is really

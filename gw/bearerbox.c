@@ -380,7 +380,7 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 				 * to load balancing functions */
 	}
 	/* WAP
-	* .. if a WAP is connectioneless, send to any wap box.. so
+	* .. if a WAP is connectionless, send to any wap box.. so
 	* need to set the destination. But if the message is connectioned
 	* session, we must route all to same wap box... */
 
@@ -425,7 +425,7 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 		}
 		if (thr->type == BB_TTYPE_SMSC)
 		    ret = smsc_receiver(thr->smsc,
-			   octstr_get_cstr(msg->msg->smart_sms.receiver));
+		       octstr_get_cstr(msg->msg->smart_sms.receiver));
 		else
 		    ret = 0;
 		
@@ -460,7 +460,9 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 	}
 	else {
 	    error(0, "Cannot route receiver <%s>, Tough.",
-		  octstr_get_cstr(msg->msg->smart_sms.receiver));
+		  msg_type(msg->msg) == smart_sms ?
+		  octstr_get_cstr(msg->msg->smart_sms.receiver) :
+		  octstr_get_cstr(msg->msg->wdp_datagram.destination_address));
 	    return -1;
 	}
     }
