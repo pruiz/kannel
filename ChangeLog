@@ -1,4 +1,8 @@
 2003-09-25  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/mime.[ch]: added function mime_entity_header() and mime_entity_body()
+      to return HTTP header and HTTP POST body of e MIMEEntity type.
+
+2003-09-25  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/shared.[ch]: implemented <foobar>_real() functions to have boxc 
       connections handled directly if desired by an box. This does not
       change current behaviour and gives more flexibility for other boxes.
