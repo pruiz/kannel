@@ -29,6 +29,10 @@
 # log-level = (verbosity level)
 #	verbosity level for this log-file. Defaults to '0' (DEBUG)
 #
+# test-heartbeat-thread = (0 or 1)
+#	temporary: log lots of output to test new heartbeat thread construct.
+*	default: 0
+#
 # Those not present use default values, which are following ones:
 # (read from file bb.h, check that, too)
 #

@@ -1,5 +1,14 @@
 2000-01-30  Patrick Schaaf <bof@bof.de>
 
+	* gw/wapbox.c: synchronize put_msg / remove_msg using a mutex,
+	removing the need for usleep(10ms). Consequently, make heartbeat
+	message send a thread of its own. Set test-heartbeat-thread
+	to 1 in wapbox.wapconf to see lots of debugging output.
+	* gw/wapbox.wapconf: add documentation about temporary
+	test-heartbeat-thread setting.
+
+2000-01-30  Patrick Schaaf <bof@bof.de>
+
 	* gw/wapbox.c: fixed race condition when starting empty_queue_thread.
 	BTW, that function seems to burn CPU like hell.
 

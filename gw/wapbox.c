@@ -17,11 +17,14 @@
 #include "wtp.h"
 #include "bb.h"
 
-#define BUSYLOOP_MILLISECONDS 10000
+#define TEST_HEARTBEAT_THREAD
 
 static char *bearerbox_host = BB_DEFAULT_HOST;
 static int bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static int heartbeat_freq = BB_DEFAULT_HEARTBEAT;
+#ifdef TEST_HEARTBEAT_THREAD
+static int test_heartbeat_thread = 0;
+#endif
 static char *logfile = NULL;
 static int logfilelevel = 0;
 
@@ -58,6 +61,10 @@ static void read_config(char *filename) {
 		        logfile = s;
 		if ((s = config_get(grp, "log-level")) != NULL)
 		        logfilelevel = atoi(s);
+#ifdef TEST_HEARTBEAT_THREAD
+		if ((s = config_get(grp, "test-heartbeat-thread")) != NULL)
+		        test_heartbeat_thread = atoi(s);
+#endif
 		grp = config_next_group(grp);
 	}
 	if (heartbeat_freq == -600)
@@ -113,6 +120,17 @@ static void msg_send(int s, Msg *msg) {
 	if (msg->type != heartbeat) {
 		debug(0, "WAPBOX: Sent message:");
 		msg_dump(msg);
+	} else {
+		/* avoid overly large, growing memory leak
+		 * As far as I can see msgs are not freed
+		 * right now; heartbeat was static, now we
+		 * need to free them.
+		 */
+#ifdef TEST_HEARTBEAT_THREAD
+		if (test_heartbeat_thread)
+			warning(0, "destroying heartbeat message");
+#endif
+		msg_destroy(msg);
 	}
 }
 
@@ -122,10 +140,13 @@ static Msg *queue_tab[MAX_MSGS_IN_QUEUE];
 static int queue_start = 0;
 static int queue_len = 0;
 static Mutex *queue_mutex;
+static Mutex *queue_read_mutex;	/* remove_msg_from_queue() sleeps here */
 
 
 void init_queue(void) {
 	queue_mutex = mutex_create();
+	queue_read_mutex = mutex_create();
+	mutex_lock(queue_read_mutex);
 }
 
 
@@ -135,7 +156,13 @@ void put_msg_in_queue(Msg *msg) {
 		error(0, "wapbox: message queue full, dropping message");
 	else {
 		queue_tab[(queue_start + queue_len) % MAX_MSGS_IN_QUEUE] = msg;
-		++queue_len;
+		if (0 == queue_len++) {
+#ifdef TEST_HEARTBEAT_THREAD
+			if (test_heartbeat_thread)
+				warning(0, "first new msg, waking empty_queue_thread");
+#endif
+			mutex_unlock(queue_read_mutex);	/* wake reader */
+		}
 	}
 	mutex_unlock(queue_mutex);
 }
@@ -144,31 +171,46 @@ void put_msg_in_queue(Msg *msg) {
 Msg *remove_msg_from_queue(void) {
 	Msg *msg;
 	
+#ifdef TEST_HEARTBEAT_THREAD
+	if (test_heartbeat_thread)
+		warning(0, "remove_msg_from_queue sleeping");
+#endif
+	mutex_lock(queue_read_mutex);	/* sleeps if queue empty */
+#ifdef TEST_HEARTBEAT_THREAD
+	if (test_heartbeat_thread)
+		warning(0, "remove_msg_from_queue awake");
+#endif
 	mutex_lock(queue_mutex);
 	if (queue_len == 0)
-		msg = NULL;
-	else {
-		msg = queue_tab[queue_start];
-		queue_start = (queue_start + 1) % MAX_MSGS_IN_QUEUE;
-		--queue_len;
-	}
+		panic(0, "remove_msg_from_queue: no longer single consumer?");
+	msg = queue_tab[queue_start];
+	queue_start = (queue_start + 1) % MAX_MSGS_IN_QUEUE;
+	if (--queue_len > 0)
+		mutex_unlock(queue_read_mutex);
+#ifdef TEST_HEARTBEAT_THREAD
+	else
+		if (test_heartbeat_thread)
+			warning(0, "remove_msg_from_queue no more messages");
+#endif
 	mutex_unlock(queue_mutex);
 	return msg;
 }
 
 
-static int send_heartbeat(int socket, int load)
-{
-    static Msg *msg = NULL;
-    
-    if (msg == NULL)
-        if ((msg = msg_create(heartbeat)) == NULL)
-            return -1;
-
-    msg->heartbeat.load = load;
-    msg_send(socket, msg);
-
-    return 0;
+static void *send_heartbeat_thread(void *arg) {
+	while (run_status == running) {
+		Msg *msg = msg_create(heartbeat);
+		if (msg == NULL)
+			panic(0, "cannot create heartbeat message");
+		msg->heartbeat.load = 0;	/* XXX */
+#ifdef TEST_HEARTBEAT_THREAD
+		if (test_heartbeat_thread)
+			warning(0, "send_heartbeat_thread new heartbeat");
+#endif
+		put_msg_in_queue(msg);
+		sleep(heartbeat_freq);
+	}
+	return NULL;
 }
 
 
@@ -182,16 +224,9 @@ static void *empty_queue_thread(void *arg) {
 	
 	while (run_status == running) {
 		msg = remove_msg_from_queue();
-		if (msg != NULL)
-			msg_send(socket, msg);
-		else {
-			if (time(NULL) - stamp > heartbeat_freq) {
-				/* send heartbeat */
-				send_heartbeat(socket, 0);
-				stamp = time(NULL);
-			}
-			usleep(BUSYLOOP_MILLISECONDS);
-		}
+		if (msg == NULL)
+			panic(0, "empty_queue_thread: msg==NULL");
+		msg_send(socket, msg);
 	}
 	return NULL;
 }
@@ -280,6 +315,7 @@ int main(int argc, char **argv) {
 
 	run_status = running;
 
+	(void) start_thread(1, send_heartbeat_thread, 0, 0);
 	(void) start_thread(1, empty_queue_thread, &bbsocket, 0);
 	
 	while (run_status == running) {
