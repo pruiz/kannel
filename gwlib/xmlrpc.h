@@ -56,16 +56,19 @@ int xmlrpc_call_add_string(XMLRPCMethodCall *method, Octstr *string);
  * has no real use, just use above functions */
 int xmlrpc_call_add_value(XMLRPCMethodCall *method, XMLRPCValue *value);
 
-/* Create Octstr (text/xml string) out of given MethodCall */
-/* NOT YET IMPLEMENTED */
+/* Create Octstr (text/xml string) out of given MethodCall. Caller
+ * must free returned Octstr */
+/* PARTIALLY IMPLEMENTED */
 Octstr *xmlrpc_call_octstr(XMLRPCMethodCall *call);
 
 /* Send MethodCall to given URL with given Headers. Note: adds XML-RPC
- *  spesified headers into given list.
+ *  spesified headers into given list. 'headers' are always destroyed, and
+ * if NULL when this function called, automatically generated
+ *
  * Return 0 if all went fine, -1 if failure. As user reference, uses *call
  */
-/* NOT YET IMPLEMENTED */
-int xmlrpc_call_send(XMLRPCMethodCall *call, HTTPClient *http_ref,
+/* PARTIALLY IMPLEMENTED, as is based on above function, for example */
+int xmlrpc_call_send(XMLRPCMethodCall *call, HTTPCaller *http_ref,
 		     Octstr *url, List *headers);
 
 
@@ -103,6 +106,9 @@ void xmlrpc_value_destroy(XMLRPCValue *val);
 /* Wrapper for destroy */
 void xmlrpc_value_destroy_item(void *val);
 
+/* append output of value to given octstr */
+/* THIS SHOULD GO AWAY LATER */
+void xmlrpc_value_print(XMLRPCValue *val, Octstr *os);
 
 
 /* Create a new <member> for xs_struct with undefined <value> */
@@ -124,6 +130,9 @@ XMLRPCScalar *xmlrpc_scalar_create(int type, void *arg);
 /* Destroy scalar */
 void xmlrpc_scalar_destroy(XMLRPCScalar *scalar);
 
+/* append output of scalar to given octstr */
+/* THIS SHOULD GO AWAY LATER */
+void xmlrpc_scalar_print(XMLRPCScalar *scalar, Octstr *os);
 
 /* Create <value> of <scalar> type with given type and value */
 XMLRPCValue *xmlrpc_create_scalar_value(int type, void *arg);

@@ -100,7 +100,54 @@ int xmlrpc_call_add_value(XMLRPCMethodCall *method, XMLRPCValue *value)
     return 0;
 }
 
+Octstr *xmlrpc_call_octstr(XMLRPCMethodCall *call)
+{
+    Octstr *body;
+    XMLRPCValue *val;
+    long i;
+    
+    body = octstr_format("<?xml version=\"1.0\"?>\n<methodCall>\n"
+			 "    <methodName>%S</methodName>\n"
+			 "    <params>", call->method_name);
 
+    list_lock(call->params);
+    for(i = 0; i < list_len(call->params); i++) {
+	val = list_get(call->params, i);
+	octstr_format_append(body, "\n    ");
+	xmlrpc_value_print(val, body);
+    }
+    list_unlock(call->params);
+    
+    octstr_format_append(body, "\n    </params>\n"
+			 "   </methodCall>\n");
+
+    return body;
+}
+
+int xmlrpc_call_send(XMLRPCMethodCall *call, HTTPCaller *http_ref,
+		     Octstr *url, List *headers)
+{
+    Octstr *body;
+    if (http_ref == NULL || call == NULL)
+	return -1;
+    
+    if (headers == NULL)
+	headers = list_create();
+    
+    http_header_add(headers, "Content-Type", "text/xml");
+
+    /* XXX these must be set according to XML-RPC specification,
+    *      but Kannel is not user-agent... */
+    http_header_add(headers, "User-Agent", "Kannel");
+    http_header_add(headers, "Host", "localhost");
+
+    body = xmlrpc_call_octstr(call);
+
+    http_start_request(http_ref, url, headers, body, 0, call);
+    
+    octstr_destroy(body);
+    http_destroy_headers(headers);
+}
 
 /*-------------------------------------
  * MethodResponse
@@ -171,7 +218,18 @@ void xmlrpc_value_destroy_item(void *val)
 {
     xmlrpc_value_destroy(val);
 }
-    
+
+void xmlrpc_value_print(XMLRPCValue *val, Octstr *os)
+{
+    if (val->v_type != xr_scalar)
+	return;
+
+    octstr_format_append(os, "<value>");
+    xmlrpc_scalar_print(val->v_scalar, os);
+    octstr_format_append(os, "</value>");
+}
+
+
 
 /* Create new member with undefined value */
 XMLRPCMember *xmlrpc_member_create(Octstr *name)
@@ -235,6 +293,17 @@ void xmlrpc_scalar_destroy(XMLRPCScalar *scalar)
     octstr_destroy(scalar->s_base64);
 }
 
+void xmlrpc_scalar_print(XMLRPCScalar *scalar, Octstr *os)
+{
+    switch(scalar->s_type) {
+    case xr_string:
+	octstr_format_append(os, "%S", scalar->s_str);
+	break;
+    case xr_int:
+	octstr_format_append(os, "<int>%d</int>", scalar->s_int);
+	break;
+    }
+}
 
 /*-------------------------------------------------
  * Utilities to make things easier

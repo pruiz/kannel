@@ -1,5 +1,9 @@
 2001-03-21  Kalle Marjola  <rpr@wapit.com>
 
+	* gwlib/xmlrpc.h|c: Updated, still missing many things
+	
+2001-03-21  Kalle Marjola  <rpr@wapit.com>
+
 	* gwlib/xmlrpc.h|c: Added. Initial code to implement XML-RPC
 	specification.
 
