@@ -1,3 +1,7 @@
+2000-09-19  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/list.[ch]: Removed list_cat function, as it is now unused.
+
 2000-09-19  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: Added wml_init and wml_shutdown that do nothing
