@@ -226,9 +226,14 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
     if (sms->sms.flag_udh && sms->sms.udhdata)
 	octstr_format_append(url, "&udh=%E", sms->sms.udhdata);
     
+    /* if we got a concatenation header only the data is still 7 bit */
+    /* so we want to make the smsc agree on that. */
+    if (sms->sms.flag_udh && sms->sms.udhdata && sms->sms.flag_8bit == 0)
+	octstr_format_append(url, "&charset=");
+
     if (sms->sms.flag_flash)
 	octstr_format_append(url, "&flash=%d", sms->sms.flag_flash);
-  
+ 
     headers = list_create();
     debug("smsc.http.kannel", 0, "start request");
     http_start_request(conndata->http_ref, url, headers, NULL, 0, sms, NULL);

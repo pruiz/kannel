@@ -220,7 +220,16 @@ static List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
     list = list_create();
     do {
 	msgno++;
-	part = msg_duplicate(orig);
+         /* if its a DLR request message getting split, only ask DLR for the first one */
+        part = msg_duplicate(orig);
+	if((msgno > 1) && (part->sms.dlr_mask))
+        {
+           octstr_destroy(part->sms.dlr_id);
+           octstr_destroy(part->sms.dlr_keyword);
+           part->sms.dlr_id = NULL;
+           part->sms.dlr_keyword = NULL;
+           part->sms.dlr_mask = 0;
+        }
 	octstr_destroy(part->sms.msgdata);
 	if (octstr_len(msgdata) <= max_part_len || msgno == max_messages) {
 	    part->sms.msgdata = octstr_copy(msgdata, 0, max_part_len);
@@ -354,6 +363,9 @@ static void *remember_receiver(Msg *msg, URLTranslation *trans)
     receiver->msg->sms.deferred = 0;
     receiver->msg->sms.time = (time_t) -1;
     receiver->msg->sms.smsc_id = octstr_duplicate(msg->sms.smsc_id);
+    receiver->msg->sms.dlr_id = NULL;
+    receiver->msg->sms.dlr_keyword = NULL;
+    receiver->msg->sms.dlr_mask = 0;
     
     receiver->trans = trans;
 
@@ -427,11 +439,13 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 				      Octstr **smsc, int *flag_flash,
 				      int *flag_mwi, int *mwimessages,
 				      int *flag_unicode, int *validity,
-				      int *deferred)
+				      int *deferred, int *dlr_mask, Octstr **dlr_id)
 {
     Octstr *name, *val;
     long l;
 
+    *dlr_mask = 0;
+    *dlr_id = NULL;
     *flag_flash = *flag_mwi = *mwimessages = *flag_unicode = *validity = *deferred = 0;
     for(l=0; l<list_len(headers); l++) {
 	http_header_get(headers, l, &name, &val);
@@ -470,6 +484,10 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 		*udh = NULL;
 	    }
 	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-DLR-ID")) == 0) {
+	    *dlr_id = octstr_duplicate(val);
+	    octstr_strip_blanks(*dlr_id);
+	}
 	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Flash")) == 0) {
     	    sscanf(octstr_get_cstr(val),"%d", flag_flash);
 	}
@@ -488,6 +506,9 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Deferred")) == 0) {
     	    sscanf(octstr_get_cstr(val),"%d", deferred);
 	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-DLR-Mask")) == 0) {
+    	    sscanf(octstr_get_cstr(val),"%d", dlr_mask);
+	}
 	octstr_destroy(name);
 	octstr_destroy(val);
     }
@@ -497,13 +518,26 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 			 Octstr *replytext, int octet_stream,
 			 Octstr *from, Octstr *to, Octstr *udh, 
 			 int flag_flash, int flag_mwi, int mwimessages, 
-			 int flag_unicode, int validity, int deferred)
+			 int flag_unicode, int validity, int deferred,
+			 Octstr *dlr_id, int dlr_mask)
 {    
     msg->sms.msgdata = replytext;
     if (octet_stream && urltrans_assume_plain_text(trans)==0)
 	msg->sms.flag_8bit = 1;
     
     msg->sms.time = time(NULL);
+
+    if (dlr_id != NULL) {
+	if (urltrans_accept_x_kannel_headers(trans)) {
+	    octstr_destroy(msg->sms.sender);
+	    msg->sms.dlr_id = dlr_id;
+    	    msg->sms.dlr_keyword = octstr_create("DLR");
+	} else {
+	    warning(0, "Tried to change dlr_id to '%s', denied.",
+		    octstr_get_cstr(dlr_id));
+	    octstr_destroy(dlr_id);
+	}
+    }
 
     if (from != NULL) {
 	if (urltrans_accept_x_kannel_headers(trans)) {
@@ -578,6 +612,17 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 		    deferred);
 	}
     }
+
+    if (dlr_mask) {
+	if (urltrans_accept_x_kannel_headers(trans)) {
+	    msg->sms.dlr_mask = dlr_mask;
+	    if(!msg->sms.dlr_keyword)
+	      	    msg->sms.dlr_keyword = octstr_create("DLR");
+	} else {
+	    warning(0, "Tried to change dlr_mask to '%d', denied.",
+		    dlr_mask);
+	}
+    }
 }
 
 
@@ -594,10 +639,14 @@ static void url_result_thread(void *arg)
     Octstr *text_wml;
     Octstr *octet_stream;
     Octstr *udh, *from, *to;
+    Octstr *dlr_id;
+    int dlr_mask;
     int octets;
     int flag_flash, flag_mwi, mwimessages, flag_unicode;
     int validity, deferred;
     
+    dlr_mask = 0;
+    dlr_id = NULL;
     text_html = octstr_imm("text/html");
     text_wml = octstr_imm("text/vnd.wap.wml");
     text_plain = octstr_imm("text/plain");
@@ -627,7 +676,7 @@ static void url_result_thread(void *arg)
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, NULL, &flag_flash,
 					  &flag_mwi, &mwimessages, &flag_unicode,
-					  &validity, &deferred);
+					  &validity, &deferred, &dlr_mask, &dlr_id);
 	    } else if (octstr_compare(type, text_plain) == 0) {
 		replytext = reply_body;
 		reply_body = NULL;
@@ -635,7 +684,7 @@ static void url_result_thread(void *arg)
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, NULL, &flag_flash,
 					  &flag_mwi, &mwimessages, &flag_unicode,
-					  &validity, &deferred);
+					  &validity, &deferred, &dlr_mask, &dlr_id);
 	    } else if (octstr_compare(type, octet_stream) == 0) {
 		replytext = reply_body;
 		octets = 1;
@@ -643,7 +692,7 @@ static void url_result_thread(void *arg)
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, NULL, &flag_flash,
 					  &flag_mwi, &mwimessages, &flag_unicode,
-					  &validity, &deferred);
+					  &validity, &deferred, &dlr_mask, &dlr_id);
 	    } else {
 		replytext = reply_couldnotrepresent; 
 	    }
@@ -653,8 +702,8 @@ static void url_result_thread(void *arg)
 	    replytext = reply_couldnotfetch;
 
 	fill_message(msg, trans, replytext, octets, from, to, udh, flag_flash,
-			flag_mwi, mwimessages, flag_unicode, validity, deferred);
-	
+			flag_mwi, mwimessages, flag_unicode, validity, deferred, dlr_id, dlr_mask);
+
     	if (final_url == NULL)
 	    final_url = octstr_imm("");
     	if (reply_body == NULL)
@@ -1075,7 +1124,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 				 int binary, Octstr *udh, Octstr *smsc, 
 				 int flag_flash, int flag_mwi, int mwimessages,
 				 int flag_unicode, int validity,
-				 int deferred, int *status)
+				 int deferred, int *status, int dlr_mask, Octstr *dlr_id)
 {				     
     Msg *msg = NULL;
     Octstr *newfrom, *returnerror;
@@ -1127,7 +1176,10 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     msg->sms.sender = octstr_duplicate(newfrom);
     msg->sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
     msg->sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
-    
+    msg->sms.dlr_mask = dlr_mask;
+    msg->sms.dlr_id = dlr_id ? octstr_duplicate(dlr_id) : octstr_create("");
+    msg->sms.dlr_keyword = octstr_create("DLR");
+
     if ( flag_flash < 0 || flag_flash > 1 ) {
 	returnerror = octstr_create("Flash field misformed, rejected");
 	goto fielderror;
@@ -1308,7 +1360,10 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     Octstr *from, *to;
     Octstr *text, *udh, *smsc, *flash_string, *mwi_string;
     Octstr *mwimessages_string, *unicode_string;
-    Octstr *validity_string, *deferred_string;
+    Octstr *validity_string, *deferred_string, *charset;
+    Octstr *dlr_id = NULL;
+    int	dlr_mask = 0;
+    Octstr *dlr_mask_string;
     int binary;
     int flag_flash, flag_mwi, mwimessages, flag_unicode, validity, deferred;
    
@@ -1329,8 +1384,16 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     mwimessages_string = http_cgi_variable(args, "mwimessages");
     unicode_string = http_cgi_variable(args, "unicode");
     validity_string = http_cgi_variable(args, "validity");
+    dlr_id = http_cgi_variable(args, "dlrid");
+    dlr_mask_string = http_cgi_variable(args, "dlrmask");
     deferred_string = http_cgi_variable(args, "deferred");
+    charset         = http_cgi_variable(args, "charset");
 
+    if(dlr_mask_string != NULL) {
+        sscanf(octstr_get_cstr(dlr_mask_string),"%d",&dlr_mask);
+    }  
+    else
+    	dlr_mask = 0;
     flag_flash = flag_mwi = mwimessages = flag_unicode = validity = deferred = 0;
 
     if(flash_string != NULL) {
@@ -1357,8 +1420,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
 	*status = 400;
 	return octstr_create("Wrong sendsms args, rejected");
     }
-
-    if (udh)
+    if ((udh) && (charset == NULL))
 	binary = 1;
     else
 	binary = 0;
@@ -1371,7 +1433,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
 
     return smsbox_req_handle(t, client_ip, from, to, text, binary,
 			     udh, smsc, flag_flash, flag_mwi, mwimessages,
-			     flag_unicode, validity, deferred, status);
+			     flag_unicode, validity, deferred, status, dlr_mask, dlr_id);
     
 }
 
@@ -1387,15 +1449,17 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     Octstr *from, *to, *user, *pass, *udh, *smsc;
     Octstr *ret;
     Octstr *type, *charset;
+    Octstr *dlr_id;
+    int dlr_mask = 0;
     int binary = 0;
     int flag_flash, flag_mwi, mwimessages, flag_unicode, validity, deferred;
  
-    from = to = user = pass = udh = smsc = NULL;
-
+    from = to = user = pass = udh = smsc = dlr_id = NULL;
+   
     get_x_kannel_from_headers(headers, &from, &to, &udh,
 			      &user, &pass, &smsc,  &flag_flash,
 			      &flag_mwi, &mwimessages, &flag_unicode,
-			      &validity, &deferred);
+			      &validity, &deferred, &dlr_mask, &dlr_id);
     
     ret = NULL;
     
@@ -1430,7 +1494,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	    ret = smsbox_req_handle(t, client_ip, from, to, body,
 				    binary, udh, smsc, flag_flash, 
 				    flag_mwi, mwimessages, flag_unicode,
-				    validity, deferred, status);
+				    validity, deferred, status, dlr_mask, dlr_id);
 
 	octstr_destroy(type);
 	octstr_destroy(charset);

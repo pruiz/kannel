@@ -38,6 +38,9 @@ MSG(sms,
 		INTEGER(flag_unicode);
 		INTEGER(validity);
 		INTEGER(deferred);
+		OCTSTR(dlr_id);
+		OCTSTR(dlr_keyword);
+		INTEGER(dlr_mask);
 	})
 
 MSG(ack,

@@ -30,6 +30,7 @@
 #include "gwlib/gwlib.h"
 #include "smsc_p.h"
 #include "sms.h"
+#include "dlr.h"
 
 #ifndef CIMD2_TRACE
 #define CIMD2_TRACE 0
@@ -377,6 +378,7 @@ struct packet
 /* A reminder that packets are created without a valid sequence number */
 #define BOGUS_SEQUENCE 0
 
+static Msg *cimd2_accept_delivery_report_message(struct packet *request, SMSCenter *smsc);
 /* Look for the STX OO:SSS TAB header defined by CIMD 2, where OO is the
  * operation code in two decimals and SSS is the sequence number in three
  * decimals.  Leave the results in the proper fields of the packet.
@@ -1257,7 +1259,14 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix)
      * If we do not do this, the server's default might be to
      * send status reports in some cases, and we don't do anything
      * with those reports anyway. */
-    packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 0);
+    /* ask for the delivery reports if needed*/
+
+    if(msg->sms.dlr_mask)
+    {
+	packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 14);
+    }
+    else
+	packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 0);
 
     truncated = 0;
 
@@ -1332,7 +1341,7 @@ static void packet_set_send_sequence(struct packet *packet, SMSCenter *smsc)
         smsc->cimd2_send_seq = 1;
 }
 
-static struct packet *cimd2_get_packet(SMSCenter *smsc)
+static struct packet *cimd2_get_packet(SMSCenter *smsc, Octstr **ts)
 {
     struct packet *packet = NULL;
 
@@ -1357,6 +1366,8 @@ static struct packet *cimd2_get_packet(SMSCenter *smsc)
 
     packet_check(packet);
     packet_check_can_receive(packet);
+	if(ts)
+	    *ts = packet_get_parm(packet,P_MC_TIMESTAMP);
 
     if (smsc->keepalive > 0)
         smsc->cimd2_next_ping = time(NULL) + 60 * smsc->keepalive;
@@ -1492,11 +1503,14 @@ static void cimd2_handle_request(struct packet *request, SMSCenter *smsc)
      * expected. */
 
     if (request->operation == DELIVER_STATUS_REPORT) {
-        info(0, "CIMD2: received status report we didn't ask for.\n");
-    } else if (request->operation == DELIVER_MESSAGE) {
-        message = cimd2_accept_message(request);
+        message = cimd2_accept_delivery_report_message(request,smsc);
         if (message)
             list_append(smsc->cimd2_received, message);
+     }
+     else if (request->operation == DELIVER_MESSAGE) {
+         message = cimd2_accept_message(request);
+         if (message)
+             list_append(smsc->cimd2_received, message);
     }
 
     cimd2_send_response(request, smsc);
@@ -1516,7 +1530,7 @@ static void cimd2_handle_request(struct packet *request, SMSCenter *smsc)
  * TODO: This function has grown large and complex.  Break it up
  * into smaller pieces.
  */
-static int cimd2_request(struct packet *request, SMSCenter *smsc)
+static int cimd2_request(struct packet *request, SMSCenter *smsc, Octstr **ts)
 {
     int ret;
     struct packet *reply = NULL;
@@ -1541,7 +1555,7 @@ retransmit:
         goto io_error;
 
 next_reply:
-    reply = cimd2_get_packet(smsc);
+    reply = cimd2_get_packet(smsc,ts);
     if (!reply)
         goto io_error;
 
@@ -1655,7 +1669,7 @@ static int cimd2_login(SMSCenter *smsc)
     packet_add_string_parm(packet, P_USER_IDENTITY, smsc->cimd2_username);
     packet_add_string_parm(packet, P_PASSWORD, smsc->cimd2_password);
 
-    ret = cimd2_request(packet, smsc);
+    ret = cimd2_request(packet, smsc, NULL);
     if (ret < 0)
         goto error;
 
@@ -1679,7 +1693,7 @@ static void cimd2_logout(SMSCenter *smsc)
 
     packet = packet_create(LOGOUT, BOGUS_SEQUENCE);
     /* TODO: Don't wait very long for a response in this case. */
-    cimd2_request(packet, smsc);
+    cimd2_request(packet, smsc,NULL);
     packet_destroy(packet);
 }
 
@@ -1691,7 +1705,7 @@ static int cimd2_send_alive(SMSCenter *smsc)
     gw_assert(smsc != NULL);
 
     packet = packet_create(ALIVE, BOGUS_SEQUENCE);
-    ret = cimd2_request(packet, smsc);
+    ret = cimd2_request(packet, smsc,NULL);
     packet_destroy(packet);
 
     if (ret < 0)
@@ -1809,6 +1823,8 @@ int cimd2_submit_msg(SMSCenter *smsc, Msg *msg)
     struct packet *packet;
     int ret = 0;
     int tries;
+    Octstr *ts;
+    ts = NULL;
 
     gw_assert(smsc != NULL);
 
@@ -1817,8 +1833,19 @@ int cimd2_submit_msg(SMSCenter *smsc, Msg *msg)
         return 0;   /* We can't signal protocol errors yet */
 
     for (tries = 0; tries < 3; tries++) {
-        ret = cimd2_request(packet, smsc);
-        if (ret == 0 || ret == -1)
+        ret = cimd2_request(packet, smsc,&ts);
+        if((ret == 0) && (ts) && (msg->sms.dlr_mask))
+        {
+            dlr_add(smsc->name,
+                octstr_get_cstr(ts), 
+                octstr_get_cstr(msg->sms.receiver),
+                octstr_get_cstr(msg->sms.dlr_keyword),
+                octstr_get_cstr(msg->sms.dlr_id),
+                msg->sms.dlr_mask);
+            octstr_destroy(ts);
+            ts = NULL;		
+	}
+	if (ret == 0 || ret == -1)
             break;
         if (cimd2_reopen(smsc) < 0) {
             ret = -1;
@@ -1923,3 +1950,48 @@ int cimd2_receive_msg(SMSCenter *smsc, Msg **msg)
 
     return 1;
 }
+
+
+
+static Msg *cimd2_accept_delivery_report_message(struct packet *request, SMSCenter *smsc)
+{
+    Msg *msg = NULL;
+    Octstr *destination = NULL;
+    Octstr *timestamp = NULL;
+    Octstr *statuscode = NULL;
+    int i;
+    int st_code; 
+    int code;
+    int remove;
+	
+    destination = packet_get_parm(request, P_DESTINATION_ADDRESS);
+    timestamp = packet_get_parm(request, P_MC_TIMESTAMP);
+    statuscode = packet_get_parm(request, P_STATUS_CODE);
+
+    st_code = atoi(octstr_get_cstr(statuscode));
+    
+    switch(st_code)
+    {
+    case 2:  /* validity period expired */
+    case 3:  /* delivery failed */
+	code = DLR_FAIL;
+    	break;
+    case 4: /* delivery successful */
+    	code = DLR_SUCCESS;
+    	break;
+    default:
+        code = 0;
+    }
+    if(code)
+    	msg = dlr_find(smsc->name,
+            octstr_get_cstr(timestamp), 
+            octstr_get_cstr(destination),
+            code);
+    else
+        msg = NULL;
+    octstr_destroy(statuscode);
+    octstr_destroy(destination);
+    octstr_destroy(timestamp);
+
+    return msg;
+ }

@@ -1,3 +1,15 @@
+2001-08-30 Andreas Fink <andreas@fink.org>
+	* gw/bearerbox.c, gw/emimsg.c, gw/msg-decl.h, gw/smsbox.c,
+	*  gw/smsc_cimd2.c: Added delivery report mechanism.
+	* to use it: ask for a DLR by specifying &dlrmask =
+	* 0 = no dlr, 1 = success, 2 = failure, 3 both.
+	* and &dlrid= a unique application specific ID.
+	* the DLR is treated as an incoming message of the style:
+	* "DLR 1/2 uniqueid  smscname" (1 = success, 2 = failure).
+	* gw/smsc_http.c: if charset is specified 7 bit is assumed.
+	* make it work with kannel/kannel SMSC links so concatenation
+	* works again in that case.
+
 2001-08-28 Andreas Fink <andreas@fink.org>
         * gw/smsc_emi2.c: fixed alphanumeric sender ID to
         use GSM character set (added charset_latin1_to_gsm(str);)

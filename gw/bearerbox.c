@@ -409,6 +409,7 @@ int main(int argc, char **argv)
     bb_status = BB_RUNNING;
     
     gwlib_init();
+    dlr_init();
     start_time = time(NULL);
 
     suspended = list_create();
@@ -470,7 +471,7 @@ int main(int argc, char **argv)
 
     alog_close();		/* if we have any */
     cfg_destroy(cfg);
-
+	dlr_shutdown();
     gwlib_shutdown();
 
     return 0;

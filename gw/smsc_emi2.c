@@ -21,6 +21,7 @@
 #include "bb_smscconn_cb.h"
 #include "msg.h"
 #include "emimsg.h"
+#include "dlr.h"
 
 typedef struct privdata {
     List	*outgoing_queue;
@@ -426,7 +427,14 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
 	emimsg->fields[E50_DDT] = str;
     }
 
-
+    /* if delivery reports are asked, lets ask for them too */
+    /* even the sender might not be interested in delivery or non delivery */
+    /* we still need them back to clear out the memory after the message */
+    /* has been delivered or non delivery has been confirmed */
+    if(msg->sms.dlr_mask) {
+    	emimsg->fields[E50_NRQ] = octstr_create("1");
+	emimsg->fields[E50_NT] = octstr_create("3");
+    }
     return emimsg;
 }
 
@@ -441,10 +449,15 @@ static int handle_operation(SMSCConn *conn, Connection *server,
     int type, len;
     Msg *msg;
     struct universaltime unitime;
+    int	i;
+    int st_code;
+    int remove;
+    int code;
 
-    msg = msg_create(sms);
+  
     switch(emimsg->ot) {
     case 01:
+	msg = msg_create(sms);
 	if (emimsg->fields[E01_AMSG] == NULL)
 	    emimsg->fields[E01_AMSG] = octstr_create("");
 	else if (octstr_hex_to_binary(emimsg->fields[E01_AMSG]) == -1)
@@ -495,6 +508,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	return 1;
 
     case 52:
+	msg = msg_create(sms);
 	/* AMSG is the same field as TMSG */
 	if (emimsg->fields[E50_AMSG] == NULL)
 	    emimsg->fields[E50_AMSG] = octstr_create("");
@@ -609,13 +623,42 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	}
 	emimsg_destroy(reply);
 	return 1;
+    case 53: /* delivery notification */	    
+	st_code = atoi(octstr_get_cstr(emimsg->fields[E50_DST]));
+	switch(st_code)
+	{
+	case 0: /* delivered */
+		msg = dlr_find(octstr_get_cstr(conn->id), 
+			octstr_get_cstr(emimsg->fields[E50_SCTS]), /* timestamp */
+			octstr_get_cstr(emimsg->fields[E50_OADC]), /* destination */
+			DLR_SUCCESS);
+		break;
+	case 1: /* buffered */
+		msg = NULL;
+		break;
+	case 2: /* not delivered */
+		msg = dlr_find(octstr_get_cstr(conn->id), 
+			octstr_get_cstr(emimsg->fields[E50_SCTS]), /* timestamp */
+			octstr_get_cstr(emimsg->fields[E50_OADC]), /* destination */
+			DLR_FAIL);
+		break;
+	}
+	if(msg != NULL) {           
+	    bb_smscconn_receive(conn, msg);
+	}
+	reply = emimsg_create_reply(53, emimsg->trn, 1);
+	if (emimsg_send(server, reply) < 0) {
+	    emimsg_destroy(reply);
+	    return -1;
+	}
+	emimsg_destroy(reply);
+	return 1;
 
     default:
 	error(0, "I don't know how to handle operation type %d", emimsg->ot);
 	return 0;
     }
 }
-
 
 static void clear_sent(PrivData *privdata)
 {
@@ -721,8 +764,41 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 		    privdata->unacked--;
 		    if (emimsg->ot == 51) {
 			if (octstr_get_char(emimsg->fields[0], 0) == 'A')
+			{
+			    /* we got an ack back. We might have to store the */
+			    /* timestamp for delivery notifications now */
+			    Octstr *ts, *adc;
+			    int	i;
+			    Msg *m;
+			  
+			    ts = octstr_duplicate(emimsg->fields[2]);
+			    i = octstr_search_char(ts,':',0);
+			    if (i>0)
+			    {
+			    	octstr_delete(ts,0,i+1);
+			        adc = octstr_duplicate(emimsg->fields[2]);
+			        octstr_truncate(adc,i);
+			        
+			        m = privdata->sendmsg[emimsg->trn];
+			        if(m == NULL)
+ 				        info(0,"uhhh m is NULL, very bad");
+			        else if(m->sms.dlr_mask)
+			        {
+			    	    dlr_add(octstr_get_cstr(conn->id), 
+			            	octstr_get_cstr(ts),
+			            	octstr_get_cstr(adc),
+			             	octstr_get_cstr(m->sms.dlr_keyword),
+			             	octstr_get_cstr(m->sms.dlr_id),
+			             	m->sms.dlr_mask);
+			        }
+				octstr_destroy(ts);
+				octstr_destroy(adc);
+			    }
+			    else
+			    	octstr_destroy(ts);
 			    bb_smscconn_sent(conn,
 					     privdata->sendmsg[emimsg->trn]);
+			}
 			else
 			    bb_smscconn_send_failed(conn,
 						privdata->sendmsg[emimsg->trn],

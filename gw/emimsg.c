@@ -61,6 +61,7 @@ static int field_count_op(int ot)
 	return 2;
     case 51:
     case 52:
+    case 53:
 	return SZ50;
     case 60:
 	return SZ60;
@@ -80,6 +81,7 @@ static int field_count_reply(int ot, int posit)
 	return posit ? 2 : 3;
     case 51:
     case 52:
+    case 53:
 	return 3;
     case 60:
 	return posit ? 2 : 3;
