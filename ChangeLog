@@ -1,3 +1,17 @@
+2000-06-16	Paul Keogh <paul.keogh@anam.ie>
+
+	* gw/cookies.c: updates after review by Richard Braakman. Also some
+	additional includes.
+
+	* gw/cookies.h: As for cookies.c
+
+	* gw/wsp-session-machine.h: Added COOKIES field to session MACHINE
+
+	* gw/wsp-session.c: Added cookie support to machine_create(), machine_destroy (). Also
+	added id_belongs_to_session() function for use by cookie functions.
+
+	* gw/wsp.h: Added cookie support to struct WSPMachine.
+
 2000-06-15  Kalle Marjola <rpr@wapit.com>
 
 	* gw/smsbox_req.c: fixed bug in http2-conversion, and set that
