@@ -1,4 +1,7 @@
 2004-06-21  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/smsc/smsc_smpp.c: added "more messages to send" support.
+
+2004-06-21  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/msg-decl.h, gw/shared.c, gw/smsc/smsc_cimd2.c: applied patch that
       adds "more messages to send" support (only CIMD2 supported yet).
       Thanks to "Arne K. Haaje" <haaje at eurobate.com> for the patch.

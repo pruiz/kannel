@@ -733,6 +733,10 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
         pdu->u.submit_sm.priority_flag = 0;
     }
 
+    /* set more messages to send */
+    if (smpp->version > 0x33 && msg->sms.msg_left > 0)
+        pdu->u.submit_sm.more_messages_to_send = 1;
+
     return pdu;
 }
 
