@@ -1,3 +1,9 @@
+2000-05-18  Richard Braakman  <dark@wapit.com>
+
+	* wmlscript/wsfalloc.c: Make ws_f_malloc return blocks aligned
+	to sizeof(long), to prevent unaligned accesses.  This should fix
+	the bug reported by Lim YoungLan, but I can't test that here.
+
 2000-05-17    <Kalle Marjola <rpr@wapit.com>>
 
 	* gwlib/counter.c|h: renamed counter_get as counter_increase and

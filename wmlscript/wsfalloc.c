@@ -51,6 +51,13 @@ ws_f_malloc(WsFastMalloc *pool, size_t size)
 {
   unsigned char *result;
 
+  /* Keep the blocks aligned, because this function is used to allocate
+   * space for structures containing longs and such. */
+
+  if (size % sizeof(long) != 0) {
+    size += sizeof(long) - (size % sizeof(long));
+  }
+
   if (pool->size < size)
     {
       size_t alloc_size;
