@@ -1,5 +1,9 @@
 2000-05-02  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/conn.h, gwlib.conn.c: Initial framework for Connection module.
+
+2000-05-02  Richard Braakman  <dark@wapit.com>
+
 	* gw/smsc_cimd2.c: Do not specify sms sender on outgoing messages.
 	Explanation is in the code.
 

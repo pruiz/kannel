@@ -32,6 +32,7 @@
 #include "gwassert.h"
 #include "counter.h"
 #include "charset.h"
+#include "conn.h"
 
 
 #endif

@@ -1175,8 +1175,12 @@ static struct packet *packet_encode_message(Msg *msg) {
 	packet_add_address_parm(packet,
 		P_DESTINATION_ADDRESS, msg->smart_sms.receiver);
 
-	packet_add_address_parm(packet,
-		P_ORIGINATING_ADDRESS, msg->smart_sms.sender);
+	/* We used to also set the originating address here, but CIMD2
+ 	 * interprets such numbers as a sub-address to our connection
+	 * number (so if the connection is "400" and we fill in "600"
+	 * as the sender number, the user sees "400600".  Since most
+	 * of the SMSC protocols ignore the sender field, we just ignore
+	 * it here, too. */
 
 	/* Explicitly ask not to get status reports.
 	 * If we do not do this, the server's default might be to
