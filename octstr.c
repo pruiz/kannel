@@ -487,6 +487,7 @@ int octstr_send(int fd, Octstr *ostr) {
 		ret = send(fd, data+written, datalength-written, 0);
 		if(ret == -1) {
 			if(errno==EINTR) continue;
+			if(errno==EAGAIN) continue;
 			goto error;
 		} else {
 			written += ret;
@@ -504,7 +505,50 @@ error:
 
 int octstr_recv(int fd, Octstr **ostr) {
 
+	uint32_t length;
+	char *data = NULL;
+	Octstr *newostr = NULL;
+	int ret = 0, readlength = 0;
+
+	/* How many octets in incomint Octstr. */
+	readlength = 0;
+	while(readlength < sizeof(uint32_t)) {
+		ret = recv(fd, (&length)+readlength, sizeof(uint32_t)-readlength, 0);
+		if(ret == -1) {
+			if(errno==EINTR) continue;
+			if(errno==EAGAIN) continue;
+			goto error;
+		} else {
+			readlength += ret;
+		}
+	}
+	length = ntohl(length);
+
+	data = malloc(length);
+	if(data==NULL) goto error;
+
+	/* Read the real data. */
+	readlength = 0;
+	while(readlength < length) {
+		ret = recv(fd, data+readlength, length-readlength, 0);
+		if(ret == -1) {
+			if(errno==EINTR) continue;
+			if(errno==EAGAIN) continue;
+			goto error;
+		} else {
+			readlength += ret;
+		}
+	}
+
+	newostr = octstr_create_from_data(data, length);
+
+	*ostr = newostr;
+	free(data);
 	return 1;
+error:
+	octstr_destroy(newostr);
+	free(data);
+	return -1;
 }
 
 /***********************************************************************
