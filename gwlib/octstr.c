@@ -19,6 +19,20 @@
 
 #include "gwlib.h"
 
+/* 
+ * Unfortunately some platforms base va_list an an array type
+ * which makes passing of the &args a bit tricky 
+ */
+#if defined(__linux__) && (defined(__powerpc__) || defined(__s390__))
+#define VARGS(x)   (x)
+#define VALPARM(y) va_list y
+#define VALST(z)   (z)
+#else
+#define VARGS(x)   (&x)
+#define VALPARM(y) va_list *y
+#define VALST(z)   (*z)
+#endif
+
 
 /***********************************************************************
  * Definitions of data structures. These are not visible to the external
@@ -1774,13 +1788,13 @@ static void format_flags(struct format *format, const char **fmt)
 
 
 static void format_width(struct format *format, const char **fmt,
-                         va_list *args)
+                         VALPARM(args))
 {
     char *end;
 
     if (**fmt == '*')
     {
-        format->min_width = va_arg(*args, int);
+        format->min_width = va_arg(VALST(args), int);
         ++(*fmt);
     } else if (isdigit(**(const unsigned char **) fmt))
     {
@@ -1792,7 +1806,7 @@ static void format_width(struct format *format, const char **fmt,
 
 
 static void format_prec(struct format *format, const char **fmt,
-                        va_list *args)
+                        VALPARM(args))
 {
     char *end;
 
@@ -1802,7 +1816,7 @@ static void format_prec(struct format *format, const char **fmt,
     if (**fmt == '*')
     {
         format->has_prec = 1;
-        format->prec = va_arg(*args, int);
+        format->prec = va_arg(VALST(args), int);
         ++(*fmt);
     } else if (isdigit(**(const unsigned char **) fmt))
     {
@@ -1828,7 +1842,7 @@ static void format_type(struct format *format, const char **fmt)
 
 
 static void convert(Octstr *os, struct format *format, const char **fmt,
-                    va_list *args)
+                    VALPARM(args))
 {
     Octstr *new;
     char *s, *pad;
@@ -1844,7 +1858,7 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     switch (**fmt)
     {
     case 'c':
-        c = va_arg(*args, int);
+        c = va_arg(VALST(args), int);
         new = octstr_create_from_data(&c, 1);
         break;
 
@@ -1852,13 +1866,13 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     case 'i':
         switch (format->type) {
         case 'l':
-            n = va_arg(*args, long);
+            n = va_arg(VALST(args), long);
             break;
         case 'h':
-            n = (short) va_arg(*args, int);
+            n = (short) va_arg(VALST(args), int);
             break;
         default:
-            n = va_arg(*args, int);
+            n = va_arg(VALST(args), int);
             break;
         }
         new = octstr_create("");
@@ -1871,13 +1885,13 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     case 'X':
 	switch (format->type) {
 	case 'l':
-	    u = va_arg(*args, unsigned long);
+	    u = va_arg(VALST(args), unsigned long);
 	    break;
         case 'h':
-            u = (unsigned short) va_arg(*args, unsigned int);
+            u = (unsigned short) va_arg(VALST(args), unsigned int);
             break;
         default:
-            u = va_arg(*args, unsigned int);
+            u = va_arg(VALST(args), unsigned int);
             break;
         }
         tmpfmt[0] = '%';
@@ -1907,12 +1921,12 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
                     "%c", (int) format->type);
         sprintf(strchr(tmpfmt, '\0'), "%c", **fmt);
         snprintf(tmpbuf, sizeof(tmpbuf),
-                 tmpfmt, va_arg(*args, double));
+                 tmpfmt, va_arg(VALST(args), double));
         new = octstr_create(tmpbuf);
         break;
 
     case 's':
-        s = va_arg(*args, char *);
+        s = va_arg(VALST(args), char *);
         if (format->has_prec && format->prec < (long) strlen(s))
             n = format->prec;
         else
@@ -1921,19 +1935,19 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
         break;
 
     case 'p':
-    	p = va_arg(*args, void *);
+    	p = va_arg(VALST(args), void *);
 	sprintf(tmpfmt, "%p", p);
 	new = octstr_create(tmpfmt);
 	break;
 
     case 'S':
-        new = octstr_duplicate(va_arg(*args, Octstr *));
+        new = octstr_duplicate(va_arg(VALST(args), Octstr *));
         if (format->has_prec)
             octstr_truncate(new, format->prec);
         break;
 
     case 'E':
-        new = octstr_duplicate(va_arg(*args, Octstr *));
+        new = octstr_duplicate(va_arg(VALST(args), Octstr *));
 	octstr_url_encode(new);
 	/*
 	 * note: we use blind truncate - encoded character can get cut half-way.
@@ -2003,10 +2017,10 @@ Octstr *octstr_format_valist(const char *fmt, va_list args)
 
         ++fmt;
         format_flags(&format, &fmt);
-        format_width(&format, &fmt, &args);
-        format_prec(&format, &fmt, &args);
+        format_width(&format, &fmt, VARGS(args));
+        format_prec(&format, &fmt, VARGS(args));
         format_type(&format, &fmt);
-        convert(os, &format, &fmt, &args);
+        convert(os, &format, &fmt, VARGS(args));
     }
 
     seems_valid(os);
