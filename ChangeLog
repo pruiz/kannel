@@ -1,4 +1,8 @@
 2002-01-29  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/thread.c: minimal debug output change in
+      mutex_unlock_real() to be of same style as others.
+
+2002-01-29  Stipe Tolj  <tolj@wapme-systems.de>
     * STATUS: added file to hold any relevant information about
       open issues, release showstoppers and patches that have been
       proposed and have to be reviewed. Any CVS commiter may grap
