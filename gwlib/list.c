@@ -377,9 +377,6 @@ List *list_cat(List *list1, List *list2)
 
 static void lock(List *list) {
 	void* a;
-	if(!list){
-		a=list;/* Let me breakpoint here please */
-	}
 	gw_assert(list != NULL);
 	mutex_lock(list->single_operation_lock);
 }
