@@ -1,3 +1,32 @@
+Fri Jun  9 02:58:00 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Implemented WSP connectionless service. This meant moving
+	things around a bit. The basic approach is to treat connectionless
+	mode as a level in the protocol stack that is parallel to WTP and
+	session oriented WSP. That is, connectionless mode gets events
+	directly from wapbox.c and feeds them to wap-appl.c, and vice
+	versa for replies.
+	
+	* gw/bb_udp.c: Read from port 9200 as well.
+	
+	* gw/wap-events-def.h: Added events S_Unit_MethodInvoke_Ind and
+	S_Unit_MethodResult_Req.
+	
+	* gw/wapbox.c: Deal with connectionless packets as well. Feed them
+	to wsp-unit.c. Also: trace packets received and sent, except for
+	heartbeat packets.
+	
+	* wsp-session.c: The session oriented mode of WSP. I just moved
+	relevants parts of wsp.c here and renamed them to use the
+	wsp_session prefix.
+
+	* gw/wsp-unit.c: The connectionless mode of WSP.
+	
+	* gw/wsp.c: Kept only stuff shared by wsp-session and wsp-unit.
+
+	* gw/wap-appl.c: Deal with both S-MethodInvoke.ind and
+	S-Unit-MethodInvoke.ind events.
+	
 Fri Jun  9 02:46:53 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wap-events.[ch]: Changed the WAPEvent sub-structures to be

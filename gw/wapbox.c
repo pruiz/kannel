@@ -18,6 +18,7 @@
 #include "wapbox.h"
 #include "msg.h"
 #include "wtp.h"
+#include "wsp.h"
 #include "wtp_timer.h"
 #include "bb.h"
 
@@ -136,6 +137,8 @@ static Msg *msg_receive(int s) {
 	if (msg == NULL)
 		return NULL;
 	octstr_destroy(os);
+	debug("wap", 0, "Received message from bearer box:");
+	msg_dump(msg, 0);
 	return msg;
 }
 
@@ -148,6 +151,11 @@ static void msg_send(int s, Msg *msg) {
 #if 0
         int ret;
 #endif
+
+	if (msg->type != heartbeat) {
+		debug("wap", 0, "Sending message to bearer box:");
+		msg_dump(msg, 0);
+	}
 	os = msg_pack(msg);
 	if (os == NULL)
 	   panic(0, "msg_pack failed");
@@ -382,7 +390,7 @@ int main(int argc, char **argv) {
 	int bbsocket;
 	int cf_index;
 	Msg *msg;
-	WAPEvent *wtp_event = NULL;
+	WAPEvent *event = NULL;
 
 	gwlib_init();
 	cf_index = get_and_set_debugs(argc, argv, NULL);
@@ -400,7 +408,8 @@ int main(int argc, char **argv) {
 	wtp_init();
         wtp_tid_cache_init();
         wtp_timer_init();
-	wsp_init();
+	wsp_session_init();
+	wsp_unit_init();
 
 	bbsocket = connect_to_bearer_box();
 	init_queue();
@@ -421,13 +430,14 @@ int main(int argc, char **argv) {
 		if (msg == NULL)
 			break;
                 if (msg->wdp_datagram.destination_port == CONNECTIONLESS_PORT) {
-			error(0, "WAPBOX: connectionless mode PDU ignored");
-			continue;
-                }
-		wtp_event = wtp_unpack_wdp_datagram(msg);
-                if (wtp_event == NULL)
-                   continue;
-		wtp_dispatch_event(wtp_event);
+			event = wsp_unit_unpack_wdp_datagram(msg);
+			if (event != NULL)
+				wsp_unit_dispatch_event(event);
+                } else {
+			event = wtp_unpack_wdp_datagram(msg);
+	                if (event != NULL)
+				wtp_dispatch_event(event);
+		}
 	}
 	info(0, "WAP box terminating.");
 
@@ -436,7 +446,8 @@ int main(int argc, char **argv) {
 	gwthread_join_every(send_heartbeat_thread);
 	gwthread_join_every(empty_queue_thread);
 	wap_appl_shutdown();
-	wsp_shutdown();
+	wsp_unit_shutdown();
+	wsp_session_shutdown();
 	destroy_queue();
 	wtp_shutdown();
 	wtp_timer_shutdown();

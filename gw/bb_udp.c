@@ -260,7 +260,7 @@ int udp_start(Config *config)
     
     udpc_list = list_create();	/* have a list of running systems */
 
-    /* add_service(9200, interface_name);	 * wsp 		*/
+    add_service(9200, interface_name);		/* wsp 		*/
     add_service(9201, interface_name);		/* wsp/wtp	*/
     /* add_service(9202, interface_name);	 * wsp/wtls	*/
     /* add_service(9203, interface_name);	 * wsp/wtp/wtls */

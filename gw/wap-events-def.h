@@ -154,6 +154,24 @@ WAPEVENT(RcvErrorPDU,
      ADDRTUPLE(addr_tuple)
      )
 
+WAPEVENT(S_Unit_MethodInvoke_Ind,
+	ADDRTUPLE(addr_tuple)
+	INTEGER(tid)
+	INTEGER(method)
+	OCTSTR(request_uri)
+	HTTPHEADER(request_headers)
+	OCTSTR(request_body)
+	)
+
+WAPEVENT(S_Unit_MethodResult_Req,
+	ADDRTUPLE(addr_tuple)
+	INTEGER(tid)
+	INTEGER(status)
+	INTEGER(response_type)
+	HTTPHEADER(response_headers)
+	OCTSTR(response_body)
+	)
+
 
 #undef WAPEVENT
 #undef OCTSTR

@@ -105,14 +105,17 @@ static void main_thread(void *arg) {
 	WAPEvent *ind, *res;
 	
 	while (run_status == running && (ind = list_consume(queue)) != NULL) {
-		gw_assert(ind->type == S_MethodInvoke_Ind);
+		gw_assert(ind->type == S_MethodInvoke_Ind ||
+			  ind->type == S_Unit_MethodInvoke_Ind);
 		gwthread_create(fetch_thread, ind);
-		res = wap_event_create(S_MethodInvoke_Res);
-		res->u.S_MethodInvoke_Res.mid = 
-			ind->u.S_MethodInvoke_Ind.mid;
-		res->u.S_MethodInvoke_Res.tid = 
-			ind->u.S_MethodInvoke_Ind.tid;
-		wsp_dispatch_event(res);
+		if (ind->type == S_MethodInvoke_Ind) {
+			res = wap_event_create(S_MethodInvoke_Res);
+			res->u.S_MethodInvoke_Res.mid = 
+				ind->u.S_MethodInvoke_Ind.mid;
+			res->u.S_MethodInvoke_Res.tid = 
+				ind->u.S_MethodInvoke_Ind.tid;
+			wsp_session_dispatch_event(res);
+		}
 	}
 }
 
@@ -126,10 +129,13 @@ static void fetch_thread(void *arg) {
 	int converter_failed;
 	WAPEvent *event;
 	unsigned long body_size, client_SDU_size;
-	WSPMachine *sm;
 	int wml_ok, wmlc_ok, wmlscript_ok, wmlscriptc_ok;
 	Octstr *url, *final_url, *resp_body, *body, *os, *type, *charset;
-	List *req_headers, *resp_headers;
+	List *session_headers;
+	List *request_headers;
+	List *actual_headers, *resp_headers;
+	WAPAddrTuple *addr_tuple;
+	long session_id;
 	
 	static struct {
 		char *type;
@@ -161,11 +167,29 @@ static void fetch_thread(void *arg) {
 	static int num_converters = sizeof(converters) / sizeof(converters[0]);
 
 	event = arg;
-	gw_assert(event->type == S_MethodInvoke_Ind);
-	sm = event->u.S_MethodInvoke_Ind.session;
+	if (event->type == S_MethodInvoke_Ind) {
+		struct S_MethodInvoke_Ind *p;
+		
+		p = &event->u.S_MethodInvoke_Ind;
+		session_headers = p->session->http_headers;
+		request_headers = p->http_headers;
+		url = octstr_duplicate(p->url);
+		addr_tuple = p->session->addr_tuple;
+		session_id = p->session->session_id;
+		client_SDU_size = p->session->client_SDU_size;
+	} else {
+		struct S_Unit_MethodInvoke_Ind *p;
+		
+		p = &event->u.S_Unit_MethodInvoke_Ind;
+		session_headers = NULL;
+		request_headers = p->request_headers;
+		url = octstr_duplicate(p->request_uri);
+		addr_tuple = p->addr_tuple;
+		session_id = -1;
+		client_SDU_size = 1024*1024; /* XXX */
+	}
 
-	wsp_http_map_url(&event->u.S_MethodInvoke_Ind.url);
-	url = event->u.S_MethodInvoke_Ind.url;
+	wsp_http_map_url(&url);
 
 	body = NULL;
 
@@ -174,39 +198,39 @@ static void fetch_thread(void *arg) {
 	wmlscript_ok = 0;
 	wmlscriptc_ok = 0;
 	
-	req_headers = list_create();
-	if (sm->http_headers != NULL)
-		http2_append_headers(req_headers, sm->http_headers);
-	if (event->u.S_MethodInvoke_Ind.http_headers)
-		http2_append_headers(req_headers, 
-			event->u.S_MethodInvoke_Ind.http_headers);
+	actual_headers = list_create();
+	if (session_headers != NULL)
+		http2_append_headers(actual_headers, session_headers);
+	if (request_headers)
+		http2_append_headers(actual_headers, 
+			request_headers);
 
-	wml_ok = http2_type_accepted(req_headers, "text/vnd.wap.wml");
-	wmlscript_ok = http2_type_accepted(req_headers, 
+	wml_ok = http2_type_accepted(actual_headers, "text/vnd.wap.wml");
+	wmlscript_ok = http2_type_accepted(actual_headers, 
 		"text/vnd.wap.wmlscript");
-	wmlc_ok = http2_type_accepted(req_headers, "application/vnd.wap.wmlc");
-	wmlscriptc_ok = http2_type_accepted(req_headers, 
+	wmlc_ok = http2_type_accepted(actual_headers, "application/vnd.wap.wmlc");
+	wmlscriptc_ok = http2_type_accepted(actual_headers, 
 		"application/vnd.wap.wmlscriptc");
 
 	if (wmlc_ok && !wml_ok) {
-		http2_header_add(req_headers, "Accept", "text/vnd.wap.wml");
+		http2_header_add(actual_headers, "Accept", "text/vnd.wap.wml");
 	}
 	if (wmlscriptc_ok && !wmlscript_ok) {
-		http2_header_add(req_headers, 
+		http2_header_add(actual_headers, 
 			"Accept", "text/vnd.wap.wmlscript");
 	}
-	if (octstr_len(sm->addr_tuple->client->address) > 0) {
-		http2_header_add(req_headers, 
+	if (octstr_len(addr_tuple->client->address) > 0) {
+		http2_header_add(actual_headers, 
 			"X_Network_Info", 
-			octstr_get_cstr(sm->addr_tuple->client->address));
+			octstr_get_cstr(addr_tuple->client->address));
 	}
-	{
+	if (session_id != -1) {
 		char buf[1024];
-		sprintf(buf, "%ld", sm->session_id);
-		http2_header_add(req_headers, "X-WAP-Session-ID", buf);
+		sprintf(buf, "%ld", session_id);
+		http2_header_add(actual_headers, "X-WAP-Session-ID", buf);
 	}
 
-	ret = http2_get_real(url, req_headers, 
+	ret = http2_get_real(url, actual_headers, 
 			     &final_url, &resp_headers, &resp_body);
 	octstr_destroy(final_url);
 
@@ -251,10 +275,10 @@ static void fetch_thread(void *arg) {
 		octstr_destroy(charset);
 	}
 	octstr_destroy(resp_body);
-	gw_assert(req_headers);
-	while ((os = list_extract_first(req_headers)) != NULL)
+	gw_assert(actual_headers);
+	while ((os = list_extract_first(actual_headers)) != NULL)
 		octstr_destroy(os);
-	list_destroy(req_headers);
+	list_destroy(actual_headers);
 
 	if (resp_headers != NULL) {
 		while ((os = list_extract_first(resp_headers)) != NULL)
@@ -266,7 +290,6 @@ static void fetch_thread(void *arg) {
 		body_size = 0;
 	else
 		body_size = octstr_len(body);
-	client_SDU_size = event->u.S_MethodInvoke_Ind.session->client_SDU_size;
 
 	if (body != NULL && body_size > client_SDU_size) {
 		status = 413; /* XXX requested entity too large */
@@ -278,17 +301,32 @@ static void fetch_thread(void *arg) {
 		type = octstr_create("text/plain");
 	}
 
-	e = wap_event_create(S_MethodResult_Req);
-	e->u.S_MethodResult_Req.server_transaction_id = 
-		event->u.S_MethodInvoke_Ind.server_transaction_id;
-	e->u.S_MethodResult_Req.status = status;
-	e->u.S_MethodResult_Req.response_type = 
-		encode_content_type(octstr_get_cstr(type));
-	e->u.S_MethodResult_Req.response_body = body;
-	e->u.S_MethodResult_Req.mid = event->u.S_MethodInvoke_Ind.mid;
-	e->u.S_MethodResult_Req.tid = event->u.S_MethodInvoke_Ind.tid;
-
-	wsp_dispatch_event(e);
+	if (event->type == S_MethodInvoke_Ind) {
+		e = wap_event_create(S_MethodResult_Req);
+		e->u.S_MethodResult_Req.server_transaction_id = 
+			event->u.S_MethodInvoke_Ind.server_transaction_id;
+		e->u.S_MethodResult_Req.status = status;
+		e->u.S_MethodResult_Req.response_type = 
+			encode_content_type(octstr_get_cstr(type));
+		e->u.S_MethodResult_Req.response_body = body;
+		e->u.S_MethodResult_Req.mid = event->u.S_MethodInvoke_Ind.mid;
+		e->u.S_MethodResult_Req.tid = event->u.S_MethodInvoke_Ind.tid;
+	
+		wsp_session_dispatch_event(e);
+	} else {
+		e = wap_event_create(S_Unit_MethodResult_Req);
+		e->u.S_Unit_MethodResult_Req.addr_tuple = 
+			wap_addr_tuple_duplicate(
+				event->u.S_Unit_MethodInvoke_Ind.addr_tuple);
+		e->u.S_Unit_MethodResult_Req.tid = 
+			event->u.S_Unit_MethodInvoke_Ind.tid;
+		e->u.S_Unit_MethodResult_Req.status = status;
+		e->u.S_Unit_MethodResult_Req.response_type = 
+			encode_content_type(octstr_get_cstr(type));
+		e->u.S_Unit_MethodResult_Req.response_body = body;
+	
+		wsp_unit_dispatch_event(e);
+	}
 
 	wap_event_destroy(event);
 	octstr_destroy(type);
