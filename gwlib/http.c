@@ -912,7 +912,8 @@ static void handle_transaction(Connection *conn, void *data)
             conn_register(trans->conn, client_fdset, handle_transaction, 
                           trans);
           } else {
-            list_produce(trans->caller, trans);
+            debug("gwlib.http",0,"Failed while sending request");
+		    goto error;
           }
           break;
 
