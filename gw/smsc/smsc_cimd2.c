@@ -2088,6 +2088,10 @@ static Msg *cimd2_accept_delivery_report_message(struct packet *request,
     {
     case 2:  /* validity period expired */
     case 3:  /* delivery failed */
+    case 6: /* last no response */
+    case 7: /* message cancelled */
+    case 8: /* message deleted */
+    case 9: /* message deleted by cancel */
 	code = DLR_FAIL;
     	break;
     case 4: /* delivery successful */

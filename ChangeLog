@@ -1,3 +1,8 @@
+2004-03-11 Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_cimd2.c: added more codes that return DLR_FAIL. 
+      Thanks to "Arne K. Haaje" <haaje@eurobate.com> for this patch.
+      [Msg-ID: <200403101401.42854.haaje@eurobate.com>]
+
 2004-03-10  Alexander Malysh  <a.malysh@centrium.de>
     * gw/shared.c: fixed bug that every part of splitted message has
       the same UUID. Thanks a lot to "Robert Galach" <kanelek@tenbit.pl>.
