@@ -51,7 +51,7 @@ static Octstr *copy_until_nul(Octstr *os, long *pos, long max_octets)
 	error(0, "SMPP: PDU NUL terminated string longer than allowed.");
     	return NULL;
     }
-    data = octstr_copy(os, *pos, nul - *pos);
+    data = (nul - *pos > 0) ? octstr_copy(os, *pos, nul - *pos) : NULL;
     *pos = nul + 1;
     return data;
 }
