@@ -563,8 +563,10 @@ static void config_reload(int reload) {
     cfg_get_bool(&new_bool, grp, octstr_imm("smart-errors"));
     reload_bool(reload, octstr_imm("smart error messaging"), &wsp_smart_errors, &new_bool);
 
-    cfg_get_bool(&new_bool, grp, octstr_imm("concatenation"));
-    reload_bool(reload, octstr_imm("concatenation"), &concatenation, &new_bool);
+    if (cfg_get_bool(&new_bool, grp, octstr_imm("concatenation")) == 1)
+        reload_bool(reload, octstr_imm("concatenation"), &concatenation, &new_bool);
+    else
+        concatenation = 1;
 
     if (cfg_get_integer(&new_value, grp, octstr_imm("max-messages")) != -1) {
         max_messages = new_value;
