@@ -54,7 +54,7 @@ static void skip_html_tag(Octstr *html, long *pos) {
 			if (i == -1)
 				*pos = len;
 			else
-				++(*pos);
+				*pos = i + 1;
 		} else
 			++(*pos);
 	}

@@ -194,12 +194,15 @@ static void http_request_thread(void *arg)
 	octstr_destroy(body);
 	http_destroy_cgiargs(args);
 	
-	if (http_server_send_reply(client, HTTP_OK, reply_hdrs, answer) == -1)
+	if (http_server_send_reply(client, HTTP_OK, reply_hdrs, answer) == -1) {
+		octstr_destroy(answer);
 		goto done;
+	}
 /* XXX we have a problem with responding with HTTP/1.1 when client
    (read: lynx) talked with HTTP/1.0. Urgh. By closing the client socket
    after the first request, we can do work around this in the short
    run. */
+	octstr_destroy(answer);
 	goto done;
     }
 

@@ -1,5 +1,13 @@
 2000-07-18  Richard Braakman  <dark@wapit.com>
 
+	* gw/html.c: Fix skipping of quoted strings (bug #89, reported
+	by Paul Keogh).
+
+	* gw/smsbox.c: Avoid memory leak in http_request_thread().
+	Fixes bug#101, reported by Paul Keogh.
+
+2000-07-18  Richard Braakman  <dark@wapit.com>
+
 	* gw/smsc_ois.c: Fixed some warnings.
 
 2000-07-18  Kalle Marjola  <rpr@wapit.com>
