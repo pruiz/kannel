@@ -3478,6 +3478,46 @@ the Kannel configuration, or 'Authorization failed' is returned.
         can be used to set the SMSC if it is not set otherwise.
    </entry></row>
 
+   <row><entry><literal>flash</literal></entry>
+   <entry valign=bottom>
+         Optional. If given and equals 1, the message will be encoded as 
+	 Class 0. When a message is class 0, the mobile shall display the
+	 message immediately irrespective of whether there is memory 
+	 available in the SIM or mobile memory. The message shall not be 
+	 automatically stored in the SIM or Mobile memory.
+	 The mobile may make provision through configuration for the user
+	 to selectively prevent the message from being displayed immediately.
+	 If the mobile is incapable of displaying class 0 messages or if the 
+	 immediate display of the message has been disabled then the it shall 
+	 treat the class 0 message as though there was no Message Class.
+	 This option excludes the <literal>mwi</literal> option.
+   </entry></row>
+
+   <row><entry><literal>mwi</literal></entry>
+   <entry valign=bottom>DAVI
+         Optional. If given, the message will be encoded as a Message Waiting
+	 Indicator. The accepted values are 1,2,3 and 4 for activating the
+	 voice, fax, email and other indicator, or 5,6,7,8 for deactivating,
+	 respectivly.
+	 This option excludes the <literal>flash</literal> option.
+   </entry></row>
+
+   <row><entry><literal>mwimessages</literal></entry>
+   <entry valign=bottom>DAVI
+         Optional. If given, the message will be encoded as a Message Waiting
+	 Indicator. The accepted values are 1,2,3 and 4 for activating the
+	 voice, fax, email and other indicator, or 5,6,7,8 for deactivating,
+	 respectivly.
+	 This option excludes the <literal>flash</literal> option.
+   </entry></row>
+
+   <row><entry><literal>unicode</literal></entry>
+   <entry valign=bottom>DAVI
+         Optional. If given, the message will be encoded using the Unicode
+	 text given in <literal>text</literal> field.
+	 ex: text=0041007200610062002006306350636.
+   </entry></row>
+
   </tbody>
   </tgroup>
  </table>

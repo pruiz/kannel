@@ -247,6 +247,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
 {
     Octstr *str;
     struct emimsg *emimsg;
+    int mwi;
 
     emimsg = emimsg_create_op(51, trn);
     str = octstr_duplicate(msg->sms.sender);
@@ -279,7 +280,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
     str = octstr_duplicate(msg->sms.receiver);
     if(octstr_get_char(str,0) == '+') {
     	 /* international number format */
-    	 /* EMI doesnt understand + so we have to repalce it with something useful */
+    	 /* EMI doesnt understand + so we have to replace it with something useful */
     	 /* we try 00 here. Should really be done in the config instead so this */
     	 /* is only a workaround to make wrong configs work  */
 	 octstr_delete(str, 0, 1);
@@ -289,8 +290,68 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
     emimsg->fields[E50_ADC] = str;
    
     emimsg->fields[E50_XSER] = octstr_create("");
-    /* XSer1: UDH */
 
+    /* XSer2: DCS */
+
+    if(msg->sms.flag_flash || msg->sms.flag_mwi || msg->sms.flag_unicode) {
+   	str = octstr_create("");
+	octstr_append_char(str, 2); 
+	octstr_append_char(str, 1); /* len 01 */
+
+   	if (! msg->sms.flag_mwi) {
+	    if (msg->sms.flag_flash) {
+		if (msg->sms.flag_unicode) 
+		    octstr_append_char(str, 0x18); /* Flash && Unicode */
+		else
+		    octstr_append_char(str, 0x10); /* Flash */
+	    } else if (msg->sms.flag_unicode)
+		octstr_append_char(str, 0x08); /* Unicode */
+	} 
+
+	else { /* MWI */
+	    mwi = msg->sms.flag_mwi - 1;
+
+	    if ( mwi & 0x04 ) {
+	        /* MWI Inactive, no text needed */
+		mwi = mwi & 0x03 | 0xC0;
+		octstr_destroy(msg->sms.msgdata);
+		msg->sms.msgdata = octstr_create("");
+	    } 
+
+	    else {
+	        /* MWI Active, we could set the number of messages */
+		mwi = mwi & 0x03 | 0x08; 	/* & 0011 | 1000 */
+
+	        if (msg->sms.flag_unicode)	/* MWI Store and unicode */
+		    mwi = mwi | 0xE0;		/* 11101111 */
+	        else {
+		    if (octstr_len(msg->sms.msgdata) == 0)	/* MWI Discard */
+		        mwi = mwi | 0xC0;	/* 11000000 */
+		    else					/* MWI Store (have text) */
+		        mwi = mwi | 0xD0;	/* 11010000 */
+		}
+		if (msg->sms.mwimessages) {
+		    str = octstr_create("");
+		    octstr_append_char(str, 1);
+		    octstr_append_char(str, 2);
+		    octstr_append_char(str, mwi & 0x03 | (octstr_len(msg->sms.msgdata) == 0 ? 0x00 : 0x80));
+		    octstr_append_char(str, msg->sms.mwimessages);
+		    octstr_binary_to_hex(str,1);
+		    octstr_append(msg->sms.udhdata, str);
+		    octstr_destroy(str);
+		    msg->sms.flag_udh = 1;
+		}
+	    }
+	    
+
+	    octstr_append_char(str, mwi);
+	}
+	octstr_binary_to_hex(str, 1);
+	octstr_append(emimsg->fields[E50_XSER],str);
+        octstr_destroy(str);
+    }
+
+    /* XSer1: UDH */
     if (msg->sms.flag_udh) {
 	str = octstr_create("");
 	octstr_append_char(str, 1);
@@ -300,17 +361,16 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
 	octstr_append(emimsg->fields[E50_XSER],str);
         octstr_destroy(str);
     }
-    /* XSer2: DCS */
-   if(msg->sms.flag_flash) {
-   	str = octstr_create("");
-	octstr_append_char(str, 2);
-	octstr_append_char(str, 1); /*len */
-	octstr_append_char(str, 0xF0);
-	octstr_binary_to_hex(str, 1);
-	octstr_append(emimsg->fields[E50_XSER],str);
-    }
 	
-    if (msg->sms.flag_8bit) {
+    if (msg->sms.flag_unicode) {
+	emimsg->fields[E50_MT] = octstr_create("4");
+	emimsg->fields[E50_MCLS] = octstr_create("1");
+	str = octstr_duplicate(msg->sms.msgdata);
+	emimsg->fields[E50_NB] =
+	    octstr_format("%04d", 4 * octstr_len(str));
+	emimsg->fields[E50_TMSG] = str;
+    }
+    else if (msg->sms.flag_8bit) {
 	emimsg->fields[E50_MT] = octstr_create("4");
 	emimsg->fields[E50_MCLS] = octstr_create("1");
 	str = octstr_duplicate(msg->sms.msgdata);

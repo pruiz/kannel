@@ -33,6 +33,9 @@ MSG(sms,
 		INTEGER(id);
 		INTEGER(sms_type);
 		INTEGER(flag_flash);
+		INTEGER(flag_mwi);
+		INTEGER(mwimessages);
+		INTEGER(flag_unicode);
 	})
 
 MSG(ack,

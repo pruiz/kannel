@@ -1,3 +1,17 @@
+2001-07-19 Bruno Rodrigues <bruno.rodrigues@litux.org>
+
+	* gw/msg-decl.h, gw/smsbox.c and gw/smsc_emi2.c: Changed "flash" 
+	to "flag_flash" and added flag_mwi, mwimessages and flag_unicode.
+	* gw/smsbox.c: Added code to process the mwi and unicode flags. 
+	Checked the flash code. Removed the "empty string from provider" 
+	to allow sending messages without text. Added some missing 
+	octstr_destroy in flags processing.
+	* gw/smsc_emi2.c: Added code to encode DCS using flash, mwi and
+	unicode flags. Corrected a typo :).
+	* doc/userguide/userguide.xml: Added description for flash, mwi
+	and unicode flags.
+	* Note: not testet yet the X-Kannel replies and concatenation. :(
+
 2001-07-19 Aarno Syvänen <aarno@wiral.com>
 
 	* test/test_ppg.c: Changed content type testing. Bug fixes.
