@@ -104,7 +104,7 @@ int mime_parse(Octstr *boundary, Octstr *mime_content, Octstr **pap_content,
     } else if (ret == 0) {
         gw_assert(*rdf_content == NULL);
         if (octstr_len(mime_content) != 0)
-        parse_epilogue(&mime_content);
+            parse_epilogue(&mime_content);
         return 1;
     }
 
@@ -112,8 +112,9 @@ int mime_parse(Octstr *boundary, Octstr *mime_content, Octstr **pap_content,
         warning(0, "erroneous capacity (rdf) headers");
         return 0;
     }
+
     if (octstr_len(mime_content) != 0)
-    parse_epilogue(&mime_content);
+        parse_epilogue(&mime_content);
     gw_assert(octstr_len(mime_content) == 0);
     
     return 1;
@@ -155,17 +156,6 @@ static int parse_tail(Octstr **multipart, Octstr *delimiter,
     return 0;
 }
 
-/* But if we have no epilogue, we do not have crlf after close delimiter either.*/
-/*
-static int parse_short_tail(Octstr **multipart, Octstr *delimiter, long boundary_pos,
-                            long *next_part_pos)
-{
-    *next_part_pos = parse_transport_padding(*multipart,
-         boundary_pos + octstr_len(delimiter));
-
-    return 0;
-}
-*/
 
 /*
  * Boundary misses crlf here. This is intentional: Kannel header parsing pro-
@@ -247,6 +237,7 @@ static int parse_body_part (Octstr **multipart, Octstr *boundary,
            *close_delimiter;
     long boundary_pos,          /* start of the boundary */
          close_delimiter_pos,   /* start of the close delimiter */
+         end_pos,               /* end of the message */
          next_part_pos,         /* start of the next part */
          epilogue_pos;          /* start of the epilogue */
  
@@ -266,8 +257,8 @@ static int parse_body_part (Octstr **multipart, Octstr *boundary,
             goto error;
         epilogue_pos = parse_transport_padding(*multipart, epilogue_pos);
         octstr_delete(*multipart, 0, epilogue_pos);
-	        goto last_part;
-        }
+	goto last_part;
+    }
 
     *body_part = octstr_create("");
     octstr_split_by_pos(multipart, body_part, boundary_pos);
