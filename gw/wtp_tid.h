@@ -7,9 +7,14 @@
 #ifndef WTP_TID_H
 #define WTP_TID_H
 
+typedef struct WTPCached_tid WTPCached_tid;
+
 #include <math.h>
 #include <stdlib.h>
 
+#include "gwlib/gwlib.h"
+#include "wap-events.h"
+#include "wtp_resp.h"
 #include "wtp.h"
 
 #define WTP_TID_WINDOW_SIZE (1L << 14)
@@ -35,8 +40,6 @@ struct WTPCached_tid {
        struct WTPCached_tid *next;
 };
 
-typedef struct WTPCached_tid WTPCached_tid;
-
 /* 
  * Initilize tid cache. MUST be called before calling other functions in this module.
  */
@@ -55,12 +58,12 @@ void wtp_tid_cache_shutdown(void);
  * of the test (ok, fail);
  */
 
-int wtp_tid_is_valid(WAPEvent *event, WTPMachine *machine);
+int wtp_tid_is_valid(WAPEvent *event, WTPRespMachine *machine);
 
 /*
  * Changes the tid value belonging to an existing iniator
  */
-void wtp_tid_set_by_machine(WTPMachine *machine, long tid);
+void wtp_tid_set_by_machine(WTPRespMachine *machine, long tid);
 
 #endif
 

@@ -4,10 +4,9 @@
  * By Aarno Syvänen for WapIT Ltd.
  */
 
-#include "wtp_pdu.h"
+#include "gwlib/gwlib.h"
 #include "wtp_send.h"
-#include "msg.h"
-#include "wapbox.h"
+
 
 /*
  * Readable names for octets
@@ -35,11 +34,10 @@ enum {
  * Prototypes of internal functions
  */
 
-static void add_datagram_address(Msg *msg, WTPMachine *machine);
-
-static void add_segment_address(Msg *msg, Address *address);
-
-static void add_direct_address(Msg *msg, WAPAddrTuple *address);
+static void add_datagram_address(Msg *msg, WAPAddrTuple *address);
+static void add_iniator_address(Msg *msg, WTPRespMachine *init_machine);
+static void add_responder_address(Msg *msg, WTPInitMachine *resp_machine);
+static void add_segment_address(Msg *msg, WAPAddrTuple *address);
 
 /*
  * Setting retransmission status of a already packed message.
@@ -62,20 +60,59 @@ static long message_rid(Msg *msg);
  * with the current code.  So we'll choose the SendTID and then calculate
  * the RcvTID.
  */
-static unsigned short send_tid(WTPMachine *machine);
+static unsigned short send_tid(unsigned short tid);
 
 /*****************************************************************************
  *
  * EXTERNAL FUNCTIONS:
  *
- * Sends a message object, of wdp datagram type, having result PDU as user 
- * data. Fetches SDU from WTP event, address four-tuple and machine state 
- * information (are we resending the packet or not) from WTP machine. Handles 
- * all errors by itself.
+ * Sends a message object, having type wdp_datagram, having invoke PDU as user
+ * data. Fetches address, tid and tid_new from the iniator state machine, 
+ * other fields from event. Only for the wtp iniator.
  *
- * Returns message to be sended, if succesfull, NULL otherwise. 
+ * Return message to be sended
  */
-Msg *wtp_send_result(WTPMachine *machine, WAPEvent *event){
+
+Msg *wtp_send_invoke(WTPInitMachine *machine, WAPEvent *event){
+    Msg *msg = NULL,
+        *dup = NULL;
+    WTP_PDU *pdu = NULL;
+
+    gw_assert(event->type == TR_Invoke_Req);
+    pdu = wtp_pdu_create(Invoke);
+    pdu->u.Invoke.con = 0;
+    pdu->u.Invoke.gtr = 1;
+    pdu->u.Invoke.ttr = 1;
+    pdu->u.Invoke.rid = 0;
+    pdu->u.Invoke.version = 0;
+/* 
+ * Now SendTID = GenTID (See WTP 10.5)
+ */
+    pdu->u.Invoke.tid = (unsigned short) machine->tid;
+    pdu->u.Invoke.tidnew = machine->tidnew;
+    pdu->u.Invoke.user_data = octstr_duplicate(
+                              event->u.TR_Invoke_Req.user_data);
+    pdu->u.Invoke.class = event->u.TR_Invoke_Req.tcl;
+    pdu->u.Invoke.uack = event->u.TR_Invoke_Req.up_flag;
+
+    msg = msg_create(wdp_datagram);
+    add_responder_address(msg, machine);
+    msg->wdp_datagram.user_data = wtp_pdu_pack(pdu);
+    wtp_pdu_destroy(pdu);
+
+    dup = msg_duplicate(msg);
+    put_msg_in_queue(msg);
+
+    return dup;
+}
+ 
+/* Sends a message object, of wdp datagram type, having result PDU as user 
+ * data. Fetches SDU from WTP event ,address four-tuple from WTP machine. 
+ * Handles all errors by itself. Only for wtp responder.
+ *
+ * Returns message to be sended. 
+ */
+Msg *wtp_send_result(WTPRespMachine *machine, WAPEvent *event){
 
      Msg *msg, *dup;
      WTP_PDU *pdu;
@@ -86,12 +123,12 @@ Msg *wtp_send_result(WTPMachine *machine, WAPEvent *event){
      pdu->u.Result.gtr = 1;
      pdu->u.Result.ttr = 1;
      pdu->u.Result.rid = 0;
-     pdu->u.Result.tid = send_tid(machine);
+     pdu->u.Result.tid = send_tid(machine->tid);
      pdu->u.Result.user_data = 
-     	octstr_duplicate(event->u.TR_Result_Req.user_data);
+     	  octstr_duplicate(event->u.TR_Result_Req.user_data);
 
      msg = msg_create(wdp_datagram);
-     add_datagram_address(msg, machine);
+     add_iniator_address(msg, machine);
      msg->wdp_datagram.user_data = wtp_pdu_pack(pdu);
      wtp_pdu_destroy(pdu);
   
@@ -105,36 +142,36 @@ Msg *wtp_send_result(WTPMachine *machine, WAPEvent *event){
  * Resend an already packed packet. We must turn on rid bit first (if it is 
  * not already turned).
  */
-void wtp_resend_result(Msg *result, long rid){
+void wtp_resend(Msg *msg, long rid){
 
-     if (message_rid(result) == 0) {
-        debug("wap.wtp.send", 0, "WTP: resend: turning the first bit");
-        set_rid(result, rid);
+     if (message_rid(msg) == 0) {
+        set_rid(msg, rid);
      }
 
-     put_msg_in_queue(msg_duplicate(result));
+     put_msg_in_queue(msg_duplicate(msg));
 }
 
 /*
  * Sends a message object, of wdp datagram type, having abort header as user 
- * data. Fetches address four-tuple from WTP machine, tid from wtp event, abort 
- * type and reason from direct input. Handles all errors by itself.
+ * data. Inputs are address four-tuple, tid , abort type and reason from 
+ * direct input. Handles all errors by itself. Both wtp iniator and responder 
+ * use this function.
  */
-void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine) {
+
+void wtp_send_abort(long abort_type, long abort_reason, long tid, 
+     WAPAddrTuple *address) {
      Msg *msg = NULL;
      WTP_PDU *pdu;
 
      pdu = wtp_pdu_create(Abort);
      pdu->u.Abort.con = 0;
      pdu->u.Abort.abort_type = abort_type;
-     pdu->u.Abort.tid = send_tid(machine);
+     pdu->u.Abort.tid = send_tid(tid);
      pdu->u.Abort.abort_reason = abort_reason;
 
      msg = msg_create(wdp_datagram);
-     add_datagram_address(msg, machine);
+     add_datagram_address(msg, address);
      msg->wdp_datagram.user_data = wtp_pdu_pack(pdu);
-     debug("wap.wtp_send", 0, "WTP_SEND: sending a message");
-     msg_dump(msg, 0);
      
      wtp_pdu_destroy(pdu);
 
@@ -144,59 +181,37 @@ void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine) {
 }
 
 /*
- * Same as previous, expect now abort type and reason, reply address and trans-
- * action tid are direct inputs. (This function is used when the transaction is 
- * aborted before calling the state machine).
+ * Send a message object, of wdp datagram type, having ack PDU as user 
+ * data. Creates SDU by itself, fetches address four-tuple and machine state
+ * from WTP machine. Ack_type is a flag telling whether we are doing tid 
+ * verification or not, rid_flag tells are we retransmitting. Handles all 
+ * errors by itself. Both wtp iniator and responder use this function. So this
+ * function does not set SendTID; the caller must do this instead.
  */
-void wtp_do_not_start(long abort_type, long abort_reason, WAPAddrTuple *address, 
-     int tid){
-
-     Msg *msg = NULL;
-     WTP_PDU *pdu;
-
-     gw_assert(abort_type < 2);
-     gw_assert(abort_reason < 10);
-     pdu = wtp_pdu_create(Abort);
-     pdu->u.Abort.con = 0;
-     pdu->u.Abort.tid = tid ^ 0x8000;
-     pdu->u.Abort.abort_type = abort_type;
-     pdu->u.Abort.abort_reason = abort_reason;
-
-     msg = msg_create(wdp_datagram);
-     add_direct_address(msg, address);
-     msg->wdp_datagram.user_data = wtp_pdu_pack(pdu);
-
-     put_msg_in_queue(msg);
-     debug("wap.wtp.send", 0, "WTP_SEND: do_not_start: aborted");
-     wtp_pdu_destroy(pdu);
-
-     return;
-}
-
-void wtp_send_ack(long ack_type, WTPMachine *machine){
-
+void wtp_send_ack(long ack_type, int rid_flag, long tid, 
+                  WAPAddrTuple *address){
      Msg *msg = NULL;
      WTP_PDU *pdu;
      
      pdu = wtp_pdu_create(Ack);
      pdu->u.Ack.con = 0;
      pdu->u.Ack.tidverify = ack_type;
-     pdu->u.Ack.rid = machine->rid;
-     pdu->u.Ack.tid = send_tid(machine);
+     pdu->u.Ack.rid = rid_flag;
+     pdu->u.Ack.tid = send_tid(tid);
 
      msg = msg_create(wdp_datagram);
-     add_datagram_address(msg, machine);
+     add_datagram_address(msg, address);
      msg->wdp_datagram.user_data = wtp_pdu_pack(pdu);
      
      wtp_pdu_destroy(pdu);
 
      put_msg_in_queue(msg);
-     debug("wap.wtp.send", 0, "WTP_SEND: message put into the queue");  
-
+     
      return;
 }
 
-void wtp_send_group_ack(Address *address, int tid, int retransmission_status, 
+void wtp_send_group_ack(WAPAddrTuple *address, int tid, 
+                        int retransmission_status, 
                         unsigned char packet_sequence_number){
 
      Msg *msg = NULL;
@@ -221,7 +236,8 @@ void wtp_send_group_ack(Address *address, int tid, int retransmission_status,
      return;
 }
 
-void wtp_send_negative_ack(Address *address, int tid, int retransmission_status,
+void wtp_send_negative_ack(WAPAddrTuple *address, int tid, 
+                           int retransmission_status,
                            int segments_missing, WTPSegment *missing_segments){
      
      Msg *msg = NULL;
@@ -235,7 +251,8 @@ void wtp_send_negative_ack(Address *address, int tid, int retransmission_status,
      pdu->u.Negative_ack.rid = retransmission_status;
      pdu->u.Negative_ack.tid = tid ^ 0x8000;
      pdu->u.Negative_ack.nmissing = segments_missing;
-     /* XXX: Convert missing_segments to an octstr of packet sequence numbers */
+     /* XXX: Convert missing_segments to an octstr of packet sequence 
+     numbers */
      pdu->u.Negative_ack.missing = NULL;
      
      msg = msg_create(wdp_datagram);
@@ -266,39 +283,55 @@ void wtp_send_address_dump(WAPAddrTuple *address){
 /****************************************************************************
  *
  * INTERNAL FUNCTIONS:
+ *
+ * Functions for determining the datagram address. If duplication is bad, void *
+ * is worse. We must swap the source and the destination, because we are answer-
+ * ing a query.
  */
+static void add_datagram_address(Msg *msg, WAPAddrTuple *address){
 
-/* 
- * We must swap the source and the destination, because we are answering a query.
- */
-static void add_datagram_address(Msg *msg, WTPMachine *machine){
+       msg->wdp_datagram.source_address = octstr_duplicate(
+            address->server->address);
 
-       msg->wdp_datagram.source_address = 
-    	    octstr_duplicate(machine->addr_tuple->server->address);
-
-       msg->wdp_datagram.source_port = machine->addr_tuple->server->port;
+       msg->wdp_datagram.source_port = address->server->port;
 
        msg->wdp_datagram.destination_address = 
-    	    octstr_duplicate(machine->addr_tuple->client->address);
+    	    octstr_duplicate(address->client->address);
        
-       msg->wdp_datagram.destination_port = machine->addr_tuple->client->port;
+       msg->wdp_datagram.destination_port = address->client->port;
 }
 
 /* 
- * Now we have the direct reply address.
+ * And iniator address form responder state machine.
  */
-static void add_direct_address(Msg *msg, WAPAddrTuple *address){
+static void add_iniator_address(Msg *msg, WTPRespMachine *resp_machine){
+
+       debug("wap.wtp_send", 0, "WTP_SEND: add_iniator_address");
+       msg->wdp_datagram.source_address = 
+    	    octstr_duplicate(resp_machine->addr_tuple->server->address);
+       msg->wdp_datagram.source_port = resp_machine->addr_tuple->server->port;
+       msg->wdp_datagram.destination_address = 
+    	    octstr_duplicate(resp_machine->addr_tuple->client->address);
+       msg->wdp_datagram.destination_port = 
+           resp_machine->addr_tuple->client->port;
+}
+
+/* 
+ * And responder address from iniator  state machine.
+ */
+static void add_responder_address(Msg *msg, WTPInitMachine *init_machine){
 
        debug("wap.wtp.send", 0, "WTP_SEND: adding direct address");
        msg->wdp_datagram.source_address = 
-    	    octstr_duplicate(address->client->address);
-       msg->wdp_datagram.source_port = address->client->port;
+    	    octstr_duplicate(init_machine->addr_tuple->server->address);
+       msg->wdp_datagram.source_port = init_machine->addr_tuple->server->port;
        msg->wdp_datagram.destination_address = 
-    	    octstr_duplicate(address->server->address);
-       msg->wdp_datagram.destination_port = address->server->port;
+    	    octstr_duplicate(init_machine->addr_tuple->client->address);
+       msg->wdp_datagram.destination_port = 
+            init_machine->addr_tuple->client->port;
 }
 
-static void add_segment_address(Msg *msg, Address *address){
+static void add_segment_address(Msg *msg, WAPAddrTuple *address){
 
        gw_assert(msg != NULL);
 }
@@ -320,9 +353,9 @@ static long message_rid(Msg *msg){
        return octstr_get_bits(msg->wdp_datagram.user_data, 7, 1);
 }
 
-static unsigned short send_tid(WTPMachine *machine){
+static unsigned short send_tid(unsigned short tid){
 
-       return machine->tid ^ 0x8000;
+       return tid ^ 0x8000;
 }
 
 /****************************************************************************/

@@ -13,7 +13,6 @@
 #include "gwlib/gwlib.h"
 #include "wapbox.h"
 #include "msg.h"
-#include "wtp.h"
 #include "wsp.h"
 #include "bb.h"
 #include "wsp-strings.h"
@@ -379,6 +378,7 @@ void wap_addr_tuple_dump(WAPAddrTuple *tuple) {
 int main(int argc, char **argv) {
 	int bbsocket;
 	int cf_index;
+        int ret = 0;
 	Msg *msg;
 	WAPEvent *event = NULL;
         List *events = NULL;
@@ -397,11 +397,13 @@ int main(int argc, char **argv) {
 	info(0, "WAP box version %s starting up.", VERSION);
 
 	timers_init();
-	wtp_init();
-        wtp_tid_cache_init();
-	wsp_strings_init();
+        wsp_strings_init();
 	wsp_session_init();
 	wsp_unit_init();
+
+        wtp_tid_cache_init();
+        wtp_iniator_init();
+        wtp_resp_init();
 	wap_appl_init();
 
 	bbsocket = connect_to_bearer_box();
@@ -423,11 +425,14 @@ int main(int argc, char **argv) {
 			if (event != NULL)
 				wsp_unit_dispatch_event(event);
                 } else {
-                  events = wtp_unpack_wdp_datagram(msg);
-		  while (list_len(events) > 0){
-			event = list_extract_first(events);;
-	                if (event != NULL)
-				wtp_dispatch_event(event);
+                        events = wtp_unpack_wdp_datagram(msg);
+		        while (list_len(events) > 0){
+			        event = list_extract_first(events);
+	                if (event != NULL && 
+                           (ret = wtp_event_is_for_responder(event)) == 1)
+			        wtp_resp_dispatch_event(event);
+                        else if (ret == 0)
+                                wtp_iniator_dispatch_event(event); 
                   }
                   list_destroy(events, NULL);
 		}
@@ -438,14 +443,15 @@ int main(int argc, char **argv) {
 	list_remove_producer(queue);
 	gwthread_join_every(send_heartbeat_thread);
 	gwthread_join_every(empty_queue_thread);
-	wap_appl_shutdown();
+        wtp_iniator_shutdown();
+	wtp_resp_shutdown();
+	wtp_tid_cache_shutdown();
 	wsp_unit_shutdown();
 	wsp_session_shutdown();
 	destroy_queue();
-	wtp_shutdown();
-	wtp_tid_cache_shutdown();
 	timers_shutdown();
 	wsp_strings_shutdown();
+        wap_appl_shutdown();
 	config_destroy(cfg);
 	gwlib_shutdown();
 	return 0;

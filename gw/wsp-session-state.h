@@ -26,7 +26,7 @@ ROW(NULL_SESSION,
 		/* Send TR-Invoke.res to WTP */
 		wtp_event = wap_event_create(TR_Invoke_Res);
 		wtp_event->u.TR_Invoke_Res.handle = e->handle;
-		wtp_dispatch_event(wtp_event);
+		wtp_resp_dispatch_event(wtp_event);
 
 		/* Assign a session ID for this session.  We do this
 		 * early, instead of in the CONNECTING state, because
@@ -86,7 +86,7 @@ ROW(CONNECTING,
 		wtp_event = wap_event_create(TR_Result_Req);
 		wtp_event->u.TR_Result_Req.user_data = ospdu;
 		wtp_event->u.TR_Result_Req.handle = sm->connect_handle;
-		wtp_dispatch_event(wtp_event);
+		wtp_resp_dispatch_event(wtp_event);
 
 		/* Release all method transactions in HOLDING state. */
 		wsp_release_holding_methods(sm);
@@ -284,7 +284,7 @@ ROW(CONNECTING_2,
 		wtp_event->u.TR_Abort_Req.abort_type = 0x01;
 		wtp_event->u.TR_Abort_Req.abort_reason = WSP_ABORT_DISCONNECT;
 		wtp_event->u.TR_Abort_Req.handle = e->handle;
-		wtp_dispatch_event(wtp_event);
+		wtp_resp_dispatch_event(wtp_event);
 	},
 	CONNECTING_2)
 
@@ -444,7 +444,7 @@ ROW(CONNECTED,
 		wtp_event->u.TR_Abort_Req.abort_type = 0x01;
 		wtp_event->u.TR_Abort_Req.abort_reason = WSP_ABORT_DISCONNECT;
 		wtp_event->u.TR_Abort_Req.handle = e->handle;
-		wtp_dispatch_event(wtp_event);
+		wtp_resp_dispatch_event(wtp_event);
 	},
 	CONNECTED)
 

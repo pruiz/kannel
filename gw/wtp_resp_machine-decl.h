@@ -1,16 +1,16 @@
 
 /*
- * wtp_machine-decl.h - macro call for generating WTP state machine. See the 
- * architecture document for guidance how to use and update it.
+ * wtp_machine-decl.h - macro call for generating WTP responder state machine. See 
+ * the architecture document for guidance how to use and update it.
  *
- * By Aarno Syvänen for WapIT Ltd.
+ * By Aarno Syvänen for Wapit Ltd.
  *
- * WTPMachine data sructure includes current state of WTP state machine for a 
- * specific transaction. This means all data needed to handle at least two 
- * incoming events of a certain transaction. Its fields can be grouped following 
+ * WTPRespMachine data structure includes current state of WTP responder state 
+ * machine for a specific transaction. This means all data needed to handle at least
+ * two incoming events of a certain transaction. Its fields can be grouped following 
  * way:
  *
- * General: wtp machine state 
+ * General: wtp responder machine state 
  *
  * Fields telling the service required: 
  *               a) transaction class (is transaction confirmed or not) 
@@ -19,9 +19,8 @@
  *
  * Machine identification: address four-tuple and transaction identifier
  * 
- * Fields required for tid verification: 
- *               a) flag telling are we doing it.
- *               b) packed wsp invoke indication, which is required by the 
+ * Field required for tid verification: 
+ *               a) packed wsp invoke indication, which is required by the 
  *                  protocol
  *
  * Fields required for reliable transmission: 
@@ -31,20 +30,22 @@
  *               c) flag telling are we resending the result or not
  *               d) similar flag for acknowledgements
  *               e) packed result message, for greater effectivity
- * 
- * WTPMachine cannot block when handling an event. So incoming events are queued.
- * Following fields are required for handling event queues:
- *               a) mutex for serialising event handling
- *               b) mutex for for queue updating
- *
- * And a pointer to the next machine in the wtp machines list.
  */
 
-#if !defined(MACHINE) || !defined(INTEGER) || !defined(ENUM) || \
-	!defined(OCTSTR) || !defined(TIMER) || \
-	!defined(MSG) || \
-	!defined(WSP_EVENT) || !defined(ADDRTUPLE)
-#error "wsp_machine-decl.h: Some required macro is missing."
+#if !defined(MACHINE) 
+      #error "wsp_resp_machine-decl.h: Macro MACHINE is missing."
+#elif !defined(INTEGER) 
+      #error "wsp_resp_machine-decl.h: Macro INTEGER is missing."
+#elif !defined(ENUM) 
+      #error "wsp_resp_machine-decl.h: Macro ENUM is missing."
+#elif !defined(TIMER) 
+      #error "wsp_resp_machine-decl.h: Macro TIMER is missing."
+#elif !defined(MSG) 
+      #error "wsp_resp_machine-decl.h: Macro MSG is missing."
+#elif !defined(WSP_EVENT) 
+      #error "wsp_resp_machine-decl.h: Macro WSP_EVENT is missing."
+#elif !defined(ADDRTUPLE)
+      #error "wsp_resp_machine-decl.h: Macro ADDRTUPLE is missing."
 #endif
 
 MACHINE(ENUM(state)
@@ -54,7 +55,6 @@ MACHINE(ENUM(state)
         INTEGER(aec)              /* counter telling how many timer periods 
                                       we have waited for acknowledgement */
         INTEGER(rcr)              /* retransmission counter */
-        INTEGER(tid_ve)           /* are we doing tid verification or not */
         INTEGER(u_ack)            /* user acknowledgement flag (are user 
                                       acknowledgement required) */ 
         INTEGER(rid)              /* retransmission flag, telling are we 
@@ -70,7 +70,6 @@ MACHINE(ENUM(state)
 #undef MACHINE
 #undef INTEGER
 #undef ENUM
-#undef OCTSTR
 #undef TIMER
 #undef MSG
 #undef WSP_EVENT

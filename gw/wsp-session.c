@@ -221,7 +221,7 @@ static WSPMachine *find_session_machine(WAPEvent *event, WSP_PDU *pdu) {
 	}
 	
 	gw_assert(session_id != -1 || handle != -1 || tuple != NULL);
-	if (handle != -1 && wtp_get_address_tuple(handle, &tuple) == -1) {
+	if (handle != -1 && wtp_resp_get_address_tuple(handle, &tuple) == -1) {
 		error(0, "Couldn't find WTP state machine %ld.", handle);
 		error(0, "This is an internal error.");
 		wap_event_dump(event);
@@ -924,7 +924,7 @@ static void wsp_send_abort(long reason, long handle) {
 	wtp_event->u.TR_Abort_Req.abort_type = 0x01;
 	wtp_event->u.TR_Abort_Req.abort_reason = reason;
 	wtp_event->u.TR_Abort_Req.handle = handle;
-	wtp_dispatch_event(wtp_event);
+	wtp_resp_dispatch_event(wtp_event);
 }
 
 
@@ -962,7 +962,7 @@ static void wsp_method_abort(WSPMethodMachine *msm, long reason) {
 	wtp_event->u.TR_Abort_Req.abort_reason = reason;
 	wtp_event->u.TR_Abort_Req.handle = msm->transaction_id;
 
-	wtp_dispatch_event(wtp_event);
+	wtp_resp_dispatch_event(wtp_event);
 }
 
 

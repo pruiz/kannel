@@ -178,7 +178,7 @@ ROW(REQUESTING,
 		/* Send TR-Invoke.res to WTP */
 		wtp_event = wap_event_create(TR_Invoke_Res);
 		wtp_event->u.TR_Invoke_Res.handle = msm->transaction_id;
-		wtp_dispatch_event(wtp_event);
+		wtp_resp_dispatch_event(wtp_event);
 	},
 	PROCESSING)
 
@@ -255,7 +255,7 @@ ROW(PROCESSING,
 		wtp_event = wap_event_create(TR_Result_Req);
 		wtp_event->u.TR_Result_Req.user_data = wsp_pdu_pack(new_pdu);
 		wtp_event->u.TR_Result_Req.handle = msm->transaction_id;
-		wtp_dispatch_event(wtp_event);
+		wtp_resp_dispatch_event(wtp_event);
 		wsp_pdu_destroy(new_pdu);
 	},
 	REPLYING)

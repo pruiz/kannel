@@ -17,6 +17,10 @@ WAPEVENT(TR_Invoke_Ind,
 	INTEGER(handle)
 	)
 
+WAPEVENT(TR_Invoke_Cnf,
+	INTEGER(handle)
+	)
+
 WAPEVENT(TR_Result_Cnf,
 	ADDRTUPLE(addr_tuple)
 	INTEGER(handle)
@@ -128,6 +132,9 @@ WAPEVENT(RcvInvoke,
 	INTEGER(rid)
 	INTEGER(up_flag)
 	INTEGER(no_cache_supported)
+	INTEGER(version)
+	INTEGER(gtr)
+	INTEGER(ttr)
 	ADDRTUPLE(addr_tuple)
 	)
 
@@ -147,7 +154,7 @@ WAPEVENT(RcvAck,
 
 WAPEVENT(TR_Invoke_Req,
 	ADDRTUPLE(addr_tuple)
-	INTEGER(ack_type)
+	INTEGER(up_flag)
 	OCTSTR(user_data)
 	INTEGER(tcl)
 	INTEGER(handle)

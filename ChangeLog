@@ -1,3 +1,48 @@
+2000-09-28 Aarno Syvänen <syvanen@wapit.com>
+
+	* gw/wsp-session.c: Calling wtp_resp_dispatch event and wtp_resp_get_
+	address_tuple
+
+	* gw/wsp-session|method-state.h : Calling wtp_resp_dispatch_event
+
+	* gw/wap-events-def.h: Added event TR-Invoke.cnf
+
+	* gw/wtp.c|h: Added new external function wtp_event_id_for_responder.
+	This checks first bit of tid. Added helper functions unpack_invoke,
+	unpack_ack and unpack_abort.
+
+	* gw/wtp_resp.c|h, gw/wtp.c|h: Transferring responder machine code
+	to a separate module (we have an iniator, too).
+
+	* gw/wtp_resp.c: Most error checking transferred to the function 
+	rep_machine_find_or_create. Refer to WTP, 10.2, table 33 when comment-
+	ing.
+
+	* gw/wtp_init.c|h, gw/init_state-decl.h, gw/init_machine-decl.h:
+	Wrote code for wtp iniator (for classes 0 and 1).
+
+	* gw/wapbox.c: Sending incoming message to the iniator or the 
+	responder, depending on the first bit of the tid. Shutting down
+	and iniating the iniator and responder, too.
+
+	* gw/wtp_send.c|h: New functions add_responder_address and add_
+	iniator_address (to avoid void pointer). In functions, use field of
+	a machine type instead of the machine itself, if possible. Added 
+	function wtp_send_invoke to the interface, removed do_not_start
+
+	* gw/wtp_resp_state-decl.h: Renamed wtp_state-decl.h. Reformatted 
+	comments. Use variable name resp_machine instead of machine every-
+	where. Make use of the new wtp_send interface. Do not turn u_ack flag,
+	but ack_pdu_sent (this bug is pointed out out by Huang Li), when ack
+	pdu was send. Used constant ACKNOWLEDGEMENT everywhere in 
+	wtp_send_calls. Noticed invalid use of 'resent' in the specs. Rid-flag
+	is not turned when ack is sended, because the iniator does not use 
+	this flag (only rid of result message is used by it. This is pointed
+	out by Huang Li, too).
+
+	* gw/wtp_tid.c|h: Used variable resp_machine (and corresponding type)
+	everywhere
+
 2000-09-29  Richard Braakman  <dark@wapit.com>
 
 	* checks/check_date.c: Wrote.

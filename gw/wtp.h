@@ -1,14 +1,10 @@
 /*
- * wtp.h - WTP implementation header
+ * wtp.h - WTP implementation general header, common things for the iniator 
+ * and the responder.
  */
 
 #ifndef WTP_H
 #define WTP_H
-
-typedef struct WTPMachine WTPMachine;
-typedef struct Address Address;
-typedef struct WTPSegment WTPSegment;
-typedef struct Tid_cache Tid_cache;
 
 #include <errno.h>
 #include <sys/types.h>
@@ -16,9 +12,13 @@ typedef struct Tid_cache Tid_cache;
 #include <stdlib.h>
 
 #include "gwlib/gwlib.h"
+#include "wapbox.h"
 #include "msg.h"
-#include "wsp.h"
 #include "wap-events.h"
+#include "wtp_pdu.h"
+
+/* Use this structure for storing segments to be reassembled*/
+typedef struct WTPSegment WTPSegment;
 #include "timers.h"
 #include "wtp_send.h"
 #include "wtp_tid.h"
@@ -27,25 +27,34 @@ typedef struct Tid_cache Tid_cache;
 /*
  * For removing the magic
  */
-#define NUMBER_OF_ABORT_TYPES 2
-#define NUMBER_OF_ABORT_REASONS 9
-#define NUMBER_OF_TRANSACTION_CLASSES 3
+enum {
+      NUMBER_OF_ABORT_TYPES = 2,
+      NUMBER_OF_ABORT_REASONS  = 9,
+      NUMBER_OF_TRANSACTION_CLASSES = 3
+};
+
 /*
  * For now, timers are defined. They will depend on bearer information fetched
  * from address (or from a header field of the protocol speaking with the
- * bearerbox).
+ * bearerbox). For suggested timers, see WTP, Appendix A.
  */
-
-#define L_A_WITH_USER_ACK 4
-#define L_R_WITH_USER_ACK 7
-#define L_W_WITH_USER_ACK 40
+enum {
+      L_A_WITH_USER_ACK = 4,
+      L_R_WITH_USER_ACK = 7,
+      S_R_WITHOUT_USER_ACK = 3,
+      S_R_WITH_USER_ACK = 4,
+      G_R_WITHOUT_USER_ACK = 3,
+      G_R_WITH_USER_ACK = 3
+};
 
 /*
  * Maximum values for counters (for retransmissions and acknowledgement waiting
  * periods)
  */
-#define AEC_MAX 6
-#define MAX_RCR  8
+enum {
+     AEC_MAX = 6,
+     MAX_RCR = 8
+};
 
 /*
  * Types of acknowledgement PDU (normal acknowledgement or tid verification)
@@ -65,34 +74,37 @@ enum {
 };
 
 /*
- * See file wtp_state-decl.h for comments. Note that in this case macro ROW is 
- * defined to produce an empty string.
+ * WTP abort types (i.e., provider abort codes defined by WAP)
  */
-enum states {
-    #define STATE_NAME(state) state,
-    #define ROW(state, event, condition, action, next_state)
-    #include "wtp_state-decl.h"
-    states_count
-};
-
-typedef enum states states;
+enum {
+	UNKNOWN = 0x00,
+	PROTOERR = 0x01,
+	INVALIDTID = 0x02,
+	NOTIMPLEMENTEDCL2 = 0x03,
+	NOTIMPLEMENTEDSAR = 0x04,
+	NOTIMPLEMENTEDUACK = 0x05,
+	WTPVERSIONZERO = 0x06,
+	CAPTEMPEXCEEDED = 0x07,
+	NORESPONSE = 0x08,
+	MESSAGETOOLARGE = 0x09
+};    
 
 /*
- * See file wtp_machine-decl.h for comments. We define one macro for every type.
+ * Responder set first tid, iniator not. So all tids send by iniator are 
+ * greater than 2**15.
  */
-struct WTPMachine {
-	long mid;
-        #define INTEGER(name) long name;
-        #define ENUM(name) states name;
-        #define MSG(name) Msg *name;
-        #define OCTSTR(name) Octstr *name;
-        #define QUEUE(name) WTPEvent *name;
-        #define WSP_EVENT(name) WAPEvent *name;
-	#define TIMER(name) Timer *name;
-	#define ADDRTUPLE(name) WAPAddrTuple *name;
-        #define MACHINE(field) field
-        #include "wtp_machine-decl.h"
+#define INIATOR_TID_LIMIT (1 << 15)
+
+/*
+ *  Transaction is identified by the address four-tuple and tid.
+ */
+struct machine_pattern {
+       WAPAddrTuple *tuple;
+       long tid;
+       long mid;
 };
+
+typedef struct machine_pattern machine_pattern;
 
 /*
  * Initialize the WTP subsystem. MUST be called before any other calls
@@ -112,9 +124,10 @@ void wtp_shutdown(void);
  */
 List *wtp_unpack_wdp_datagram(Msg *msg);
 
-
-void wtp_dispatch_event(WAPEvent *event);
-
-int wtp_get_address_tuple(long mid, WAPAddrTuple **tuple);
+/*
+ * Responder set the first bit of the tid field. If we get a packet from the 
+ * responder, we are the iniator. 
+ */
+int wtp_event_is_for_responder(WAPEvent *event);
 
 #endif
