@@ -1,3 +1,8 @@
+2001-05-11  Uoti Urpala  <uau@wapit.com>
+
+	* gw/urltrans.c: accept-x-kannel-headers and assume-plain-text
+	were set incorrectly.
+
 2001-05-09  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsc_emi2.c: Fixed formatting of a message field (%04d vs

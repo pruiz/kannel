@@ -636,7 +636,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 
 	cfg_get_bool(&ot->assume_plain_text, grp, 
 		     octstr_imm("assume-plain-text"));
-	cfg_get_bool(&ot->assume_plain_text, grp, 
+	cfg_get_bool(&ot->accept_x_kannel_headers, grp, 
 		     octstr_imm("accept-x-kannel-headers"));
 	cfg_get_bool(&ot->strip_keyword, grp, octstr_imm("strip-keyword"));
 	cfg_get_bool(&ot->send_sender, grp, octstr_imm("send-sender"));
