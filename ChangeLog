@@ -1,4 +1,20 @@
 2002-10-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added documentation to SMPP's directives
+      [source|dest]-addr-[ton|npi] and source-addr-autodetect.
+    * gw/smsc/smsc_smpp.c: changed DLR msg_id behaviour. SMPP spec says msg
+      ids should be C string, this is default now. Via msg-id-type users
+      may configure for smpp connections that use dec and hex values or mixes
+      of those.
+    * gwlib/cfg.def: added 'source-addr-autodetect' to smsc group for 
+      auto-detecting source addr in smpp module.
+
+2002-10-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_smscconn.c: fixed a bug in http admin /status page routine if smsc
+      groups did not have any smsc-id declared. 
+      Patch has been submited by Rene Kluwen <rene.kluwen@chimit.nl>
+      [Msg-ID: <006501c2708f$52284400$1401a8c0@helena>]
+
+2002-10-16  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: roll-back to previous revision. Veto'ed Andreas
       commit because it took out the new msg-id-type feature, which is required
       by certain SMSC vendors.
