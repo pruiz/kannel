@@ -461,13 +461,6 @@ int main(int argc, char **argv)
     httpadmin_stop();
     store_shutdown();
 
-/*    smsc_die(); */
-    
-/*
- *  Have to comment this out, or otherwise there is problems with
- *  HTTP library... wonder what side-effects this have
- *
- *   gwthread_join_all(); */
 
     boxc_cleanup();
     smsc2_cleanup();
@@ -480,6 +473,7 @@ int main(int argc, char **argv)
 
     alog_close();		/* if we have any */
     cfg_destroy(cfg);
+
     gwlib_shutdown();
 
     return 0;
