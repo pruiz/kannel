@@ -1,3 +1,14 @@
+2003-09-05  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smpp.c: changed pdu_to_msg() to recode source_addr and
+      destination_addr on the MO side. We will pass an prefixed '+' to the
+      smsbox side. Otherwise there is no chance for backend applicatins, like
+      smsbox to descide what type of number it is.
+      BEWARE: this may be an behaviour change for your individual setup, if
+      you relly that the number is transmitted in pure TON=1 notation to the
+      smsbox. In this case please use unified-prefix on the smsc group level
+      to get rid of the prefixed '+'.
+      Thanks to Alex for providing the patch.
+
 2003-09-04  Stipe Tolj  <tolj@wapme-systems.de>
     * wap/wsp_[strings.[ch]|session.c]: fixed compiler warnings.
 
