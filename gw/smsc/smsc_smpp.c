@@ -505,6 +505,9 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     }
     msg->sms.pid = pdu->u.deliver_sm.protocol_id;
 
+    /* set priority flag */
+    msg->sms.priority = pdu->u.deliver_sm.priority_flag;
+
     return msg;
 
 error:
@@ -727,12 +730,10 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     octstr_destroy(relation_UTC_time);
 
     /* set priority */
-    if (smpp->priority >= 0 && smpp->priority <= 5) {
+    if (msg->sms.priority >= 0 && msg->sms.priority <= 3)
+        pdu->u.submit_sm.priority_flag = msg->sms.priority;
+    else
         pdu->u.submit_sm.priority_flag = smpp->priority;
-    } else {
-        /* default priority is 0 */
-        pdu->u.submit_sm.priority_flag = 0;
-    }
 
     /* set more messages to send */
     if (smpp->version > 0x33 && msg->sms.msg_left > 0)
@@ -1842,6 +1843,8 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     /* check for any specified priority value in range [0-5] */
     if (cfg_get_integer(&priority, grp, octstr_imm("priority")) == -1)
         priority = SMPP_DEFAULT_PRIORITY;
+    else if (priority < 0 || priority > 3)
+        panic(0, "SMPP: Invalid value for priority directive in configuraton (allowed range 0-3).");
 
     /* set the msg_id type variable for this SMSC */
     if (cfg_get_integer(&smpp_msg_id_type, grp, octstr_imm("msg-id-type")) == -1) {

@@ -105,6 +105,7 @@ MSG(sms,
 		OCTSTR(binfo);
 		INTEGER(msg_left);
 		VOID(split_parts);
+		INTEGER(priority);
 	})
 
 MSG(ack,

@@ -1,3 +1,9 @@
+2004-09-03 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c, gw/msg-decl.h, gw/smsbox.c: applied patch that allows
+      setting of sms priority flag in smsbox and smpp module. Also fixes wrong 
+      priority setting in smpp module.
+    * doc/userguide/userguide.xml: describe 'priority' flag and some missing params.
+
 2004-09-01  Stipe Tolj  <stolj@wapme.de>
     * doc/userguide/userguide.xml: moved EMI/UCP specific 'throughput' to 
       general section, since this is within the SMSCConn structure itself.

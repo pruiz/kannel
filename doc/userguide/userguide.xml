@@ -5918,6 +5918,9 @@ text = "No action specified"
    <row><entry><literal>mwi</literal></entry>
    <entry><literal>X-Kannel-MWI</literal></entry></row>
 
+   <row><entry><literal>compress</literal></entry>
+   <entry><literal>X-Kannel-Compress</literal></entry></row>
+
    <row><entry><literal>coding</literal></entry>
    <entry><literal>X-Kannel-Coding</literal>. If unset, defaults to 1 
    (7 bits) if <literal>Content-Type</literal> is <literal>text/plain
@@ -5947,6 +5950,15 @@ text = "No action specified"
 
    <row><entry><literal>alt-dcs</literal></entry>
    <entry><literal>X-Kannel-Alt-DCS</literal></entry></row>
+
+   <row><entry><literal>binfo</literal></entry>
+   <entry><literal>X-Kannel-BInfo</literal></entry></row>
+
+   <row><entry><literal>rpi</literal></entry>
+   <entry><literal>X-Kannel-RPI</literal></entry></row>
+
+   <row><entry><literal>priority</literal></entry>
+   <entry><literal>X-Kannel-Priority</literal></entry></row>
 
   </tbody>
   </tgroup>
@@ -6794,6 +6806,12 @@ the Kannel configuration, or 'Authorization failed' is returned.
 	 plus 0xC0 if <literal>text</literal> field is not empty.</para> </footnote>
    </entry></row>
 
+   <row><entry><literal>compress</literal></entry>
+   <entry><literal>number</literal></entry>
+   <entry valign="bottom">
+         Optional. Sets the Compression bit in DCS Field.
+   </entry></row>
+
    <row><entry><literal>coding</literal></entry>
    <entry><literal>number</literal></entry>
    <entry valign="bottom">
@@ -6872,7 +6890,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 	   Optional. Sets the Return Path Indicator (RPI) value. (See ETSI Documentation).
    </entry></row>
 
-    <row><entry><literal>account</literal></entry>
+   <row><entry><literal>account</literal></entry>
      <entry>string</entry>
      <entry valign="bottom">
 	Optional. Account name or number to carry forward for billing purposes.
@@ -6881,16 +6899,22 @@ the Kannel configuration, or 'Authorization failed' is returned.
 	but wants to distinguish them in the log. In the case of a HTTP SMSC
 	type the account name is prepended with the service-name (username) and a colon (:)
 	and forwarded to the next instance of Kannel. This allows hierarchical accounting.
-     </entry></row>
+   </entry></row>
 
-    <row><entry><literal>binfo</literal></entry>
+   <row><entry><literal>binfo</literal></entry>
      <entry>string</entry>
      <entry valign="bottom">
 	Optional. Billing identifier/information proxy field used to pass arbitrary
 	billing transaction IDs or information to the specific SMSC modules. For EMI2 this
 	is encapsulated into the XSer 0c field, for SMPP this is encapsulated into the 
 	service_type of the submit_sm PDU.
-     </entry></row>
+   </entry></row>
+
+   <row><entry><literal>priority</literal></entry>
+   <entry>number</literal></entry>
+   <entry valign="bottom">
+     Optional. Sets the Priority value (range 0-3 is allowed).
+   </entry></row>
 
   </tbody>
   </tgroup>
