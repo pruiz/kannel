@@ -393,7 +393,7 @@ int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 	charset_iso_to_smpp(submit_sm->short_message);
 
 	submit_sm->source_addr_npi = GSM_ADDR_NPI_UNKNOWN;
-	submit_sm->source_addr_ton = GSM_ADDR_TON_NETWORKSPECIFIC;
+	submit_sm->source_addr_ton = GSM_ADDR_TON_UNKNOWN;
 
 	/* Notice that the +2 is to get rid of the 00 start. */
 	submit_sm->dest_addr_npi = GSM_ADDR_NPI_E164;
