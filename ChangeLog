@@ -1,3 +1,8 @@
+2004-06-09  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/dlr_pgsql.c, gw/dlr.c, gw/dlr_p.h, gwlib/cfg.def, doc/userguide/userguide.xml:
+      added PostgreSQL native DLR support. This is not tested yet. Code partially picked
+      from SQLBox patch.
+
 2004-06-08  Alexander Malysh  <a.malysh@centrium.de> 
     * wmlscript/wsgram.[ch]: new bison-generated source/header files.
 

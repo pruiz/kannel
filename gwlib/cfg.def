@@ -498,9 +498,20 @@ MULTI_GROUP(oracle-connection,
     OCTSTR(max-connections)
 )
 
+
 MULTI_GROUP(sdb-connection,
     OCTSTR(id)
     OCTSTR(url)
+    OCTSTR(max-connections)
+)
+
+
+MULTI_GROUP(pgsql-connection,
+    OCTSTR(id)
+    OCTSTR(host)
+    OCTSTR(username)
+    OCTSTR(password)
+    OCTSTR(database)
     OCTSTR(max-connections)
 )
 

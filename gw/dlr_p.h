@@ -167,5 +167,7 @@ struct dlr_storage *dlr_init_mem(Cfg *cfg);
 struct dlr_storage *dlr_init_mysql(Cfg *cfg);
 struct dlr_storage *dlr_init_sdb(Cfg *cfg);
 struct dlr_storage *dlr_init_oracle(Cfg *cfg);
+struct dlr_storage *dlr_init_pgsql(Cfg *cfg);
+
 
 #endif /* DLR_P_H */

@@ -248,21 +248,14 @@ void dlr_init(Cfg* cfg)
     /* call the sub-init routine */
     if (octstr_compare(dlr_type, octstr_imm("mysql")) == 0) {
         handles = dlr_init_mysql(cfg);
-        if (handles == NULL)
-   	    panic(0, "DLR: storage type defined as '%s', but no MySQL support build in!",
-              octstr_get_cstr(dlr_type));
     } else if (octstr_compare(dlr_type, octstr_imm("sdb")) == 0) {
         handles = dlr_init_sdb(cfg);
-        if (handles == NULL)
-   	    panic(0, "DLR: storage type defined as '%s', but no LibSDB support build in!",
-              octstr_get_cstr(dlr_type));
     } else if (octstr_compare(dlr_type, octstr_imm("oracle")) == 0) {
         handles = dlr_init_oracle(cfg);
-        if (handles == NULL)
-   	    panic(0, "DLR: storage type defined as '%s', but no Oracle support build in!",
-              octstr_get_cstr(dlr_type));
     } else if (octstr_compare(dlr_type, octstr_imm("internal")) == 0) {
         handles = dlr_init_mem(cfg);
+    } else if (octstr_compare(dlr_type, octstr_imm("pgsql")) == 0) {
+        handles = dlr_init_pgsql(cfg);
     }
 
     /*

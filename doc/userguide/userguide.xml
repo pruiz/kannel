@@ -4657,6 +4657,46 @@ field-boxc-id = boxc
 
 	</sect2>
 
+	<sect2>
+	<title>PostgreSQL DLR storage</title>
+	<para>To store DLR information into a PostgreSQL database you may use the
+	<literal>dlr-storage = pgsql</literal> configuration directive in the
+	<literal>core</literal> group.
+	</para>
+	<para>In addition to that you must have a <literal>dlr-db</literal>
+	group defined that specifies the table field names that are used to the
+	DLR attributes and a <literal>pgsql-connection</literal> group that
+	defines the connection to the PostgreSQL server itself.
+	</para>
+	<para>Here is the example configuration:
+
+<programlisting>
+group = pgsql-connection
+id = mydlr
+host = myhost.com
+username = foo
+password = bar
+database = dlr
+max-connections = 1
+
+group = dlr-db
+id = mydlr
+table = dlr
+field-smsc = smsc
+field-timestamp = ts
+field-destination = destination
+field-source = source
+field-service = service
+field-url = url
+field-mask = mask
+field-status = status
+field-boxc-id = boxc
+</programlisting>
+
+	</para>
+
+	</sect2>
+
         <sect2>
 	<title>DLR database field configuration</title>
 	<para>For external database storage of DLR information in relational
