@@ -1660,6 +1660,12 @@ commands never arrive nor can you restart it via WAP anymore.</para>
  		  Beware that you loose the smsbox connections in such a case.
    </entry></row>
 
+	<row><entry><literal>loglevel</literal></entry>
+   <entry valign="bottom">
+        Set Kannel log-level of log-files while running. This allowes
+		  you to change the current log-level of the log-files on the fly.
+   </entry></row>
+
   </tbody>
   </tgroup>
  </table>
