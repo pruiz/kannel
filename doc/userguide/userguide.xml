@@ -32,6 +32,18 @@
 			</address>
 		</affiliation>
 	</author>
+	<author>
+		<firstname>Kalle</firstname>
+		<surname>Marjola</surname>
+		<affiliation>
+			<jobtitle>Manager</jobtitle>
+			<orgname>Wapit Ltd</orgname>
+			<address> <email>rpr@wapit.com</email>
+			<otheraddr>http://www.wapit.com</otheraddr>
+			<otheraddr>http://www.kannel.org</otheraddr>
+			</address>
+		</affiliation>
+	</author>
 	<abstract>
 		<title>Abstract</title> 
 		<para>This document describes how
@@ -85,15 +97,10 @@
 	on what a third party is able to do with the source code. In
 	practice this means that Kannel is going to be a fully-featured
 	WAP implementation and compatible with a maximum amount of
-	bearers with special emphasis on SMSC compatibility.</para>
-
-	<para>The Kannel project was founded by <ulink
-	url="http://www.wapit.com">Wapit Ltd.</ulink> in June, 1999. Wapit
-	Ltd. was founded on October 6th 1998 in Helsinki, Finland to
-	organize the work of the team which had built the most extensive
-	set of SMS services so far. Wapit Ltd. acts as a content innovator
-	and a packager for wireless services. Wapit is a member of the
-	<ulink url="http://www.wapforum.org">WAP Forum</ulink>.</para>
+	bearers with special emphasis on SMSC compatibility.
+	The Kannel project was founded by <ulink
+	url="http://www.wapit.com">Wapit Ltd.</ulink> in June,
+	1999.</para>
 	
 	
 <sect1>
@@ -469,7 +476,7 @@
 </sect2>
 
 <sect2>
-<title>Core Configuration</title>
+<title>Core configuration</title>
 
   <para>Configuration for Kannel <emphasis>MUST</emphasis> always
   include a group for general bearerbox configuration. This group is
@@ -689,7 +696,7 @@ white-list = "http://localhost/whitelist.txt"
 
 
 <sect2>
-<title>Starting the Gateway</title>
+<title>Starting the gateway</title>
 
   <para>After you have compiled Kannel and edited configuration file
   for your taste, you can either run Kannel from command line or use
@@ -741,7 +748,7 @@ white-list = "http://localhost/whitelist.txt"
 </sect2>
 
 <sect2>
-<title>Command Line Options</title>
+<title>Command line options</title>
 
  <para>Bearerbox, smsbox and wapbox each accept certain command line options
    and arguments when they are launched. These arguments are:</para>
@@ -808,7 +815,7 @@ white-list = "http://localhost/whitelist.txt"
 </sect2>
 
 <sect2>
-<title>Kannel Statuses</title>
+<title>Kannel statuses</title>
 
     <para>In Kannel, there are four states for the program (which
     currently directly only apply to bearerbox):</para>
@@ -853,7 +860,7 @@ above.
 </sect2>
 
 <sect2>
-<title>HTTP Administration</title>
+<title>HTTP administration</title>
 
 <para>Kannel can be controlled via an HTTP administration interface. All
 commands are done as normal HTTP queries, so they can be easily done
@@ -941,7 +948,7 @@ chapter.</para>
   a look at that when setting up a WAP Kannel.</para>
 
 <sect2>
-<title>Wapbox Configuration</title>
+<title>Wapbox configuration</title>
 
   <para>If you have set <literal>wapbox-port</literal> variable in
   'core' configuration group, you <emphasis>MUST</emphasis> supply
@@ -1098,7 +1105,7 @@ bearerbox-host = localhost
   a look at that when setting up a SMS Kannel.</para>
 
 <sect2>
-<title>SMS Centers</title>
+<title>SMS centers</title>
 
     <para>To set up the SMS center at Kannel, you have to add a 'smsc'
     group into configuration file. 
@@ -1334,7 +1341,7 @@ smsc-password = bar
    <row><entry><literal>device</literal></entry>
      <entry><literal>device-name</literal></entry>
      <entry valign=bottom>
-          The device the modem is connected to, like /dev/ttyS0.
+          The device the modem is connected to, like <literal>/dev/ttyS0</literal>.
           ISDN connection only.
      </entry></row>
 
@@ -1376,7 +1383,7 @@ address-range = "" (regex of received numbers)
 </sect3>
 
 <sect3>
-<title>OIS 4.0 SMS2000 Over Radio PAD</title>
+<title>OIS 4.0 SMS2000 over radio PAD</title>
  
    <para>This implementation is over Radio PAD. Following
    configuration variables are needed, and if you find out the more
@@ -1400,7 +1407,7 @@ wait_report = 0/1 (0 means false, 1 means true)
 </sect3>
 
 <sect3>
-<title>OIS 5.0 SMS2000 Over X.25</title>
+<title>OIS 5.0 SMS2000 over X.25</title>
 
 <programlisting>
 group = smsc
@@ -1414,7 +1421,7 @@ ois-debug-level = number 0 to 8  (extra debug, optional, see smsc_ois.c)
 </sect3>
 
 <sect3>
-<title>GSM Modem</title>
+<title>GSM modem</title>
 
    <para>Kannel can use a GSM modem as SMS center.</para>
 
@@ -1423,7 +1430,7 @@ group = smsc
 smsc = at
 modemtype = wavecom
 device = /dev/ttyS0
-pin = ...     (Optional)
+pin = 2345
 </programlisting>
 
  <informaltable frame=none>
@@ -1445,13 +1452,15 @@ pin = ...     (Optional)
    <row><entry><literal>device</literal></entry>
      <entry><literal>device-name</literal></entry>
      <entry valign=bottom>
-          The device the modem is connected to, like /dev/ttyS0.
+          The device the modem is connected to, like <literal>/dev/ttyS0</literal>.
      </entry></row>
 
    <row><entry><literal>pin</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
-         <emphasis>Nick or somebody, can you explain this?</emphasis>
+         This is the PIN number of the SIM card in the GSM modem. You can specify
+         this option if your SIM has never been used before and needs to have
+         the PIN number entered. The PIN is usually a four digit number.
      </entry></row>
 
    </tbody></tgroup></informaltable>
@@ -1522,7 +1531,7 @@ port = 10000
 </sect2>
 
 <sect2>
-<title>Smsbox Configuration</title>
+<title>Smsbox configuration</title>
 
   <para>You must define a 'smsbox' group into configuration file to be
   able to use SMS Kannel. The simplest working 'smsbox' group looks 
@@ -1610,7 +1619,7 @@ log-level = 0
 </sect2>
 
 <sect2>
-<title>SMS-Service Configurations</title>
+<title>SMS-service configurations</title>
 
     <para>Now that you have a SMS center connection to send and
     receive SMS messages you need to define services for incoming
@@ -1878,7 +1887,7 @@ text = "No action spesified"
 
 
 <sect3>
-<title>Setting Up More Complex Services</title>
+<title>Setting up more complex services</title>
 
     <para>The basic service system is very limited - it can only
     answer to original requester and it cannot send UDH data, for
@@ -1905,7 +1914,7 @@ max-messages = 0
 
 </sect3>
 <sect3>
-<title>Setting Up Operator Specific Services</title>
+<title>Setting up operator specific services</title>
 
    <para>Those running Kannel with several SMS centers might need to
    define services according to relying SMS center. To achieve this,
@@ -1924,7 +1933,7 @@ url = "http://my.applet.machine/Servlet/weather?sender=%p&amp;operator=SOL&amp;t
 </sect2>
 
 <sect2>
-<title>SendSMS-User Configurations</title>
+<title>SendSMS-user configurations</title>
 
    <para>To enable SMS push, you must set
    <literal>sendsms-port</literal> in 'smsbox' group and define one or
