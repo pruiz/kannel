@@ -144,6 +144,7 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 		goto error;
 	}
 
+	servlen = sizeof(servaddr);
 	getsockname(router->fd, (struct sockaddr*)&servaddr, &servlen);
 
 	getnameinfo((struct sockaddr*)&cliaddr, len, 
