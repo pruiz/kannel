@@ -497,6 +497,12 @@ void ws_expr_linearize(WsCompiler *compiler, WsExpression *expr)
             /* Linearize the right-hand size expression. */
             ws_expr_linearize(compiler, expr->u.logical.right);
 
+            /* The result of a logical expression should be boolean.
+             * Control statements do automatic conversion, but typeof()
+	     * does not. */
+            ws_asm_link(compiler, ws_asm_ins(compiler, expr->line,
+                                         WS_ASM_TOBOOL));
+
             /* Insert the end label. */
             ws_asm_link(compiler, l_out);
         }

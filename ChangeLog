@@ -1,3 +1,8 @@
+2000-10-09  Richard Braakman  <dark@wapit.com>
+
+	* wmlscript/wsstree.c: Always convert the result of an && or ||
+	operator to boolean, because the spec requires it for typeof().
+
 2000-10-09 Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wtp_init.c, wtp_resp.c: When the state machines cannot handle
