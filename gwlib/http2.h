@@ -94,6 +94,8 @@
  * done 5. Proxy support for client end.
  * 6. POST client and server end.
  * 7. Basic auth.
+ *
+ * Stuff that hasn't been implemented is marked with #if LIW_TODO.
  */
 
 
@@ -129,7 +131,7 @@ enum {
 };
 
 
-
+#if LIW_TODO
 /*
  * A structure describing a CGI-BIN argument/variable.
  */
@@ -137,6 +139,7 @@ typedef struct {
 	Octstr *name;
 	Octstr *value;
 } HTTPCGIVar;
+#endif
 
 
 /*
@@ -178,6 +181,7 @@ int http2_get_real(Octstr *url, List *request_headers, Octstr **final_url,
 		  List **reply_headers, Octstr **reply_body);
 
 
+#if LIW_TODO
 /*
  * Functions for doing a POST request.
  */
@@ -185,8 +189,10 @@ int http2_post(Octstr *url, List *request_headers, List *form_fields,
 		List **reply_headers, Octstr **reply_body);
 int http2_post_real(Octstr *url, List *request_headers, List *form_fields,
 		  List **reply_headers, Octstr **reply_body);
+#endif
 
 
+#if LIW_TODO
 /*
  * Functions for controlling the client side socket pool. http2_set_max_sockets
  * sets the maximum number of open client side sockets in the pool.
@@ -202,16 +208,20 @@ int http2_post_real(Octstr *url, List *request_headers, List *form_fields,
 void http2_set_max_sockets(int max_sockets);
 void http2_close_all_connections(void);
 void http2_close_old_connections(void);
+#endif
 
 
+#if LIW_TODO
 /*
  * Functions for controlling the well-known port of the server.
  * http2_server_open sets it up, http2_server_close closes it.
  */
 int http2_server_open(int port);
 void http2_server_close(int socket);
+#endif
 
 
+#if LIW_TODO
 /*
  * Functions for dealing with a connection to a single client.
  * http2_server_client_accept waits for a new client, and returns a
@@ -233,6 +243,7 @@ int http2_server_get_request(int client_socket, Octstr **method, Octstr **url,
 	List **headers, Octstr **body, List **cgivars);
 int http2_server_send_reply(int client_socket, int status, List *headers, 
 	Octstr *body);
+#endif
 
 
 /*
@@ -248,6 +259,7 @@ int http2_server_send_reply(int client_socket, int status, List *headers,
  * Once you have a list of headers, you can use http2_header_add and the
  * other functions to manipulate it.
  */
+#if LIW_TODO
 List *http2_create_empty_headers(void);
 void http2_destroy_headers(List *);
 List *http2_parse_header_string(Octstr *headers_as_string);
@@ -255,6 +267,7 @@ Octstr *http2_generate_header_string(List *headers_as_list);
 
 void http2_header_add(List *headers, char *name, Octstr *contents);
 void http2_header_remove_all(List *headers, char *name);
+#endif
 
 /*
  * Find the first header called `name' in `headers'. Returns its contents
@@ -263,8 +276,9 @@ void http2_header_remove_all(List *headers, char *name);
  */
 Octstr *http2_header_find_first(List *headers, char *name);
 
+#if LIW_TODO
 List *http2_header_find_all(List *headers, char *name);
-
+#endif
 
 /*
  * Find the Content-Type header and returns the type and charset.
@@ -272,8 +286,10 @@ List *http2_header_find_all(List *headers, char *name);
 void http2_header_get_content_type(List *headers, Octstr **type, 
 	Octstr **charset);
 
+#if LIW_TODO
 void http2_header_set_content_type(List *headers, Octstr *type, 
 	Octstr *charset);
+#endif
 
 
 #endif

@@ -35,14 +35,15 @@ static void octstr_append(Octstr *to, Octstr *os);
  * Declarations for the socket pool.
  */
 typedef struct PoolSocket PoolSocket;
+
 static void pool_init(void);
 static void pool_shutdown(void);
 static PoolSocket *pool_socket_create(Octstr *host, int port);
 static void pool_socket_destroy(PoolSocket *p);
-static int pool_allocate(Octstr *host, int port);
-static void pool_free(int socket);
-static void pool_free_and_close(int socket);
-static Octstr *pool_get_buffer(int socket);
+static PoolSocket *pool_allocate(Octstr *host, int port);
+static void pool_free(PoolSocket *p);
+static void pool_free_and_close(PoolSocket *p);
+static Octstr *pool_get_buffer(PoolSocket *p);
 static int pool_same_socket(void *, void *);
 static int pool_socket_is_alive(PoolSocket *p);
 static int pool_socket_reopen(PoolSocket *p);
@@ -53,9 +54,10 @@ static int pool_socket_old_and_unused(void *a, void *b);
 /*
  * Operations on sockets from the socket pool.
  */
-static int socket_read_line(int socket, Octstr **line);
-static int socket_read_bytes(int socket, Octstr **os, long bytes);
-static int socket_read_to_eof(int socket, Octstr **os);
+static int socket_read_line(PoolSocket *p, Octstr **line);
+static int socket_read_bytes(PoolSocket *p, Octstr **os, long bytes);
+static int socket_read_to_eof(PoolSocket *p, Octstr **os);
+static int socket_write(PoolSocket *p, Octstr *os);
 
 
 /*
@@ -64,12 +66,12 @@ static int socket_read_to_eof(int socket, Octstr **os);
 static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path);
 static Octstr *build_request(Octstr *host, Octstr *path, List *headers);
 static int parse_status(Octstr *statusline);
-static int send_request(Octstr *url, List *request_headers);
-static int read_status(int socket);
-static int read_headers(int socket, List **headers);
-static int read_body(int socket, List *headers, Octstr **body);
-static int read_chunked_body(int socket, Octstr **body, List *headers);
-static int read_raw_body(int socket, Octstr **body, long bytes);
+static PoolSocket *send_request(Octstr *url, List *request_headers);
+static int read_status(PoolSocket *p);
+static int read_headers(PoolSocket *p, List **headers);
+static int read_body(PoolSocket *p, List *headers, Octstr **body);
+static int read_chunked_body(PoolSocket *p, Octstr **body, List *headers);
+static int read_raw_body(PoolSocket *p, Octstr **body, long bytes);
 
 
 void http2_init(void) {
@@ -118,33 +120,34 @@ void http2_close_proxy(void) {
 
 int http2_get(Octstr *url, List *request_headers, 
 List **reply_headers, Octstr **reply_body)  {
-	int s, status;
+	int status;
+	PoolSocket *p;
 
-	s = send_request(url, request_headers);
-	if (s == -1)
+	p = send_request(url, request_headers);
+	if (p == NULL)
 		goto error;
 	
-	status = read_status(s);
+	status = read_status(p);
 	if (status < 0)
 		goto error;
 	
-	if (read_headers(s, reply_headers) == -1)
+	if (read_headers(p, reply_headers) == -1)
 		goto error;
 
-	switch (read_body(s, *reply_headers, reply_body)) {
+	switch (read_body(p, *reply_headers, reply_body)) {
 	case -1:
 		goto error;
 	case 0:
-		pool_free_and_close(s);
+		pool_free_and_close(p);
 		break;
 	default:
-		pool_free(s);
+		pool_free(p);
 	}
 
 	return status;
 
 error:
-	pool_free(s);
+	pool_free(p);
 	error(0, "Couldn't fetch <%s>", octstr_get_cstr(url));
 	return -1;
 }
@@ -355,14 +358,16 @@ static void pool_socket_destroy(PoolSocket *p) {
 }
 
 
-static int pool_allocate(Octstr *host, int port) {
+static PoolSocket *pool_allocate(Octstr *host, int port) {
 	PoolSocket *p;
 	int i;
+	long pool_len;
 	
 	list_lock(pool);
 	
 	p = NULL;
-	for (i = 0; i < list_len(pool); ++i) {
+	pool_len = list_len(pool);
+	for (i = 0; i < pool_len; ++i) {
 		p = list_get(pool, i);
 		if (p->in_use && p->port == port &&
 		    octstr_compare(p->host, host) == 0) {
@@ -370,11 +375,11 @@ static int pool_allocate(Octstr *host, int port) {
 		}
 	}
 
-	if (i == list_len(pool)) {
+	if (i == pool_len) {
 		p = pool_socket_create(host, port);
 		if (p == NULL) {
 			list_unlock(pool);
-			return -1;
+			return NULL;
 		}
 		pool_kill_old_ones();
 		list_append(pool, p);
@@ -383,62 +388,36 @@ static int pool_allocate(Octstr *host, int port) {
 		gw_assert(p != NULL);
 		if (!pool_socket_is_alive(p) && pool_socket_reopen(p) == -1) {
 			list_unlock(pool);
-			return -1;
+			return NULL;
 		}
 	}
 
 	p->in_use = 1;
 	list_unlock(pool);
 
-	return p->socket;
+	return p;
 }
 
 
-static void pool_free(int socket) {
-	List *list;
-	PoolSocket *p;
-	
-	list_lock(pool);
-	
-	list = list_search_all(pool, &socket, pool_same_socket);
-	gw_assert(list_len(list) == 1);
-	p = list_get(list, 0);
-	list_destroy(list);
-	
+static void pool_free(PoolSocket *p) {
 	gw_assert(p->in_use);
-	gw_assert(p->socket == socket);
-	
 	time(&p->last_used);
 	p->in_use = 0;
-	
-	list_unlock(pool);
 }
 
 
-static void pool_free_and_close(int socket) {
-	List *list;
-	PoolSocket *p;
-	
+static void pool_free_and_close(PoolSocket *p) {
+	gw_assert(p->in_use);
+
 	list_lock(pool);
-	list = list_extract_all(pool, &socket, pool_same_socket);
+	list_delete_equal(pool, p);
 	list_unlock(pool);
 
-	gw_assert(list_len(list) == 1);
-	p = list_get(list, 0);
-	list_destroy(list);
-	
-	gw_assert(p->in_use);
-	gw_assert(p->socket == socket);
 	pool_socket_destroy(p);
 }
 
 
-static Octstr *pool_get_buffer(int socket) {
-	PoolSocket *p;
-	
-	list_lock(pool);
-	p = list_search(pool, &socket, pool_same_socket);
-	list_unlock(pool);
+static Octstr *pool_get_buffer(PoolSocket *p) {
 	gw_assert(p != NULL);
 	return p->buffer;
 }
@@ -520,14 +499,11 @@ static int pool_socket_old_and_unused(void *a, void *b) {
  * Return -1 for error, 0 for EOF, >0 for line. The will will have its
  * line endings (\r\n or \n) removed.
  */
-static int socket_read_line(int socket, Octstr **line) {
+static int socket_read_line(PoolSocket *p, Octstr **line) {
 	int newline;
-	Octstr *buffer;
 	
-	buffer = pool_get_buffer(socket);
-
-	while ((newline = octstr_search_char(buffer, '\n')) == -1) {
-		switch (octstr_append_from_socket(buffer, socket)) {
+	while ((newline = octstr_search_char(p->buffer, '\n')) == -1) {
+		switch (octstr_append_from_socket(p->buffer, p->socket)) {
 		case -1:
 			return -1;
 		case 0:
@@ -535,12 +511,11 @@ static int socket_read_line(int socket, Octstr **line) {
 		}
 	}
 
-	if (newline > 0 && octstr_get_char(buffer, newline-1) == '\r')
-		*line = octstr_copy(buffer, 0, newline - 1);
+	if (newline > 0 && octstr_get_char(p->buffer, newline-1) == '\r')
+		*line = octstr_copy(p->buffer, 0, newline - 1);
 	else
-		*line = octstr_copy(buffer, 0, newline);
-	octstr_delete(buffer, 0, newline + 1);
-debug("", 0, "read line: <%s>", octstr_get_cstr(*line));
+		*line = octstr_copy(p->buffer, 0, newline);
+	octstr_delete(p->buffer, 0, newline + 1);
 
 	return 1;
 }
@@ -552,20 +527,17 @@ debug("", 0, "read line: <%s>", octstr_get_cstr(*line));
  * error, 0 for EOF, or >0 for OK (exactly `bytes' bytes in `os'
  * returned). If OK, caller must free `*os'.
  */
-static int socket_read_bytes(int socket, Octstr **os, long bytes) {
-	Octstr *buffer;
-	
-	buffer = pool_get_buffer(socket);
-	while (octstr_len(buffer) < bytes) {
-		switch (octstr_append_from_socket(buffer, socket)) {
+static int socket_read_bytes(PoolSocket *p, Octstr **os, long bytes) {
+	while (octstr_len(p->buffer) < bytes) {
+		switch (octstr_append_from_socket(p->buffer, p->socket)) {
 		case -1:
 			return -1;
 		case 0:
 			return 0;
 		}
 	}
-	*os = octstr_copy(buffer, 0, bytes);
-	octstr_delete(buffer, 0, bytes);
+	*os = octstr_copy(p->buffer, 0, bytes);
+	octstr_delete(p->buffer, 0, bytes);
 	return 1;
 }
 
@@ -574,20 +546,25 @@ static int socket_read_bytes(int socket, Octstr **os, long bytes) {
 /*
  * Read all remaining data from socket. Return -1 for error, 0 for OK.
  */
-static int socket_read_to_eof(int socket, Octstr **os) {
-	Octstr *buffer;
-	
-	buffer = pool_get_buffer(socket);
+static int socket_read_to_eof(PoolSocket *p, Octstr **os) {
 	for (;;) {
-		switch (octstr_append_from_socket(buffer, socket)) {
+		switch (octstr_append_from_socket(p->buffer, p->socket)) {
 		case -1:
 			return -1;
 		case 0:
-			*os = octstr_duplicate(buffer);
-			octstr_delete(buffer, 0, octstr_len(buffer));
+			*os = octstr_duplicate(p->buffer);
+			octstr_delete(p->buffer, 0, octstr_len(p->buffer));
 			return 0;
 		}
 	}
+}
+
+
+/*
+ * Write an octet string to a socket.
+ */
+static int socket_write(PoolSocket *p, Octstr *os) {
+	return octstr_write_to_socket(p->socket, os);
 }
 
 
@@ -735,15 +712,15 @@ static int parse_status(Octstr *statusline) {
  * Build and send the HTTP request. Return socket from which the
  * response can be read or -1 for error.
  */
-static int send_request(Octstr *url, List *request_headers) {
+static PoolSocket *send_request(Octstr *url, List *request_headers) {
 	Octstr *host, *path, *request;
 	long port;
-	int s;
+	PoolSocket *p;
 
 	host = NULL;
 	path = NULL;
 	request = NULL;
-	s = -1;
+	p = NULL;
 
 	if (parse_url(url, &host, &port, &path) == -1)
 		goto error;
@@ -751,32 +728,32 @@ static int send_request(Octstr *url, List *request_headers) {
 	mutex_lock(proxy_mutex);
 	if (proxy_used_for_host(host)) {
 		request = build_request(url, host, request_headers);
-		s = pool_allocate(proxy_hostname, proxy_port);
+		p = pool_allocate(proxy_hostname, proxy_port);
 	} else {
 		request = build_request(path, host, request_headers);
-		s = pool_allocate(host, port);
+		p = pool_allocate(host, port);
 	}
 	mutex_unlock(proxy_mutex);
-	if (s == -1)
+	if (p == NULL)
 		goto error;
 	
-	if (octstr_write_to_socket(s, request) == -1)
+	if (socket_write(p, request) == -1)
 		goto error;
 
 	octstr_destroy(host);
 	octstr_destroy(path);
 	octstr_destroy(request);
 
-	return s;
+	return p;
 
 error:
 	octstr_destroy(host);
 	octstr_destroy(path);
 	octstr_destroy(request);
-	if (s != -1)
-		(void) close(s);
+	if (p != NULL)
+		pool_free(p);
 	error(0, "Couldn't fetch <%s>", octstr_get_cstr(url));
-	return -1;
+	return NULL;
 }
 
 
@@ -784,11 +761,11 @@ error:
  * Read and parse the status response line from an HTTP server.
  * Return the parsed status code. Return -1 for error.
  */
-static int read_status(int socket) {
+static int read_status(PoolSocket *p) {
 	Octstr *line;
 	long status;
 
-	if (socket_read_line(socket, &line) <= 0) {
+	if (socket_read_line(p, &line) <= 0) {
 		error(0, "HTTP2: Couldn't read status line from server.");
 		return -1;
 	}
@@ -802,13 +779,13 @@ static int read_status(int socket) {
  * Read the headers, i.e., until the first empty line (read and discard
  * the empty line as well). Return -1 for error, 0 for OK.
  */
-static int read_headers(int socket, List **headers) {
+static int read_headers(PoolSocket *p, List **headers) {
 	Octstr *line, *prev;
 
 	*headers = list_create();
 	prev = NULL;
 	for (;;) {
-		if (socket_read_line(socket, &line) <= 0) {
+		if (socket_read_line(p, &line) <= 0) {
 			error(0, "HTTP2: Incomplete response from server.");
 			goto error;
 		}
@@ -839,7 +816,7 @@ error:
  * Read the body of a response. Return -1 for error, 0 for OK (EOF on
  * socket reached) or 1 for OK (socket can be used for another transaction).
  */
-static int read_body(int socket, List *headers, Octstr **body)
+static int read_body(PoolSocket *p, List *headers, Octstr **body)
 {
 	Octstr *h;
 	long body_len;
@@ -854,13 +831,13 @@ static int read_body(int socket, List *headers, Octstr **body)
 		}
 		octstr_destroy(h);
 		h = NULL;
-		if (read_chunked_body(socket, body, headers) == -1)
+		if (read_chunked_body(p, body, headers) == -1)
 			goto error;
 		return 1;
 	} else {
 		h = http2_header_find_first(headers, "Content-Length");
 		if (h == NULL) {
-			if (socket_read_to_eof(socket, body) == -1)
+			if (socket_read_to_eof(p, body) == -1)
 				return -1;
 			return 0;
 		} else {
@@ -872,7 +849,7 @@ static int read_body(int socket, List *headers, Octstr **body)
 			}
 			octstr_destroy(h);
 			h = NULL;
-			if (read_raw_body(socket, body, body_len) == -1)
+			if (read_raw_body(p, body, body_len) == -1)
 				goto error;
 			return 1;
 		}
@@ -892,7 +869,7 @@ error:
  * error, 0 for OK. If there are any trailing headers (see RFC 2616, 3.6.1)
  * they are appended to `headers'.
  */
-static int read_chunked_body(int socket, Octstr **body, List *headers) {
+static int read_chunked_body(PoolSocket *p, Octstr **body, List *headers) {
 	Octstr *line, *chunk;
 	long len;
 	List *trailer;
@@ -901,7 +878,7 @@ static int read_chunked_body(int socket, Octstr **body, List *headers) {
 	line = NULL;
 
 	for (;;) {
-		if (socket_read_line(socket, &line) <= 0)
+		if (socket_read_line(p, &line) <= 0)
 			goto error;
 		if (octstr_parse_long(&len, line, 0, 16) == -1)
 			goto error;
@@ -909,18 +886,18 @@ static int read_chunked_body(int socket, Octstr **body, List *headers) {
 		line = NULL;
 		if (len == 0)
 			break;
-		if (socket_read_bytes(socket, &chunk, len) <= 0)
+		if (socket_read_bytes(p, &chunk, len) <= 0)
 			goto error;
 		octstr_append(*body, chunk);
 		octstr_destroy(chunk);
-		if (socket_read_line(socket, &line) <= 0)
+		if (socket_read_line(p, &line) <= 0)
 			goto error;
 		if (octstr_len(line) != 0)
 			goto error;
 		octstr_destroy(line);
 	}
 
-	if (read_headers(socket, &trailer) == -1)
+	if (read_headers(p, &trailer) == -1)
 		goto error;
 	while ((line = list_extract_first(trailer)) != NULL)
 		list_append(headers, line);
@@ -940,8 +917,8 @@ error:
  * Read a body whose length is know beforehand and which is not
  * encoded in any way. Return -1 for error, 0 for OK.
  */
-static int read_raw_body(int socket, Octstr **body, long bytes) {
-	if (socket_read_bytes(socket, body, bytes) <= 0) {
+static int read_raw_body(PoolSocket *p, Octstr **body, long bytes) {
+	if (socket_read_bytes(p, body, bytes) <= 0) {
 		error(0, "HTTP2: Error reading response body.");
 		return -1;
 	}
