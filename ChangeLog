@@ -1,3 +1,8 @@
+2002-07-05 Aarno Syvänen <aarno@global-networks.ch>
+    * TODO: Added file for larger projects. Now it is about making WAP 1.2.1 
+      gateway and PPG to support working with MMS centers.
+
+
 2002-07-05  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_smpp.c: fixing timezone issue for sms time validity, 
       patch made by Alan
