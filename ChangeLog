@@ -1,3 +1,7 @@
+2002-12-03  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_smscconn.c: fixed memory leak in smsc2_restart_smsc(),
+      thanks to Nisan for spotting this.
+
 2002-12-02  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/dlr.c: fixed race condition due to unlocked list. Thanks to
       Alexander Malysh <a.malysh@centrium.de> for this patch
