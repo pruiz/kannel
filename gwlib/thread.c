@@ -73,7 +73,8 @@ Mutex *mutex_create(void) {
 
 
 void mutex_destroy(Mutex *mutex) {
-     gw_free(mutex);
+	pthread_mutex_destroy(&mutex->mutex);
+	gw_free(mutex);
 }
 
 

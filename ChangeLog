@@ -1,3 +1,10 @@
+Fri Mar  3 13:32:30 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/thread.c (mutex_destroy): Destroy the pthread_mutex_t
+	when the Mutex object is destroyed.
+	
+	* gw/wsp_http.c: Enabled Tuomas's compiler by default.
+
 2000-03-03    <rpr@rpr.wapit.com>
 
 	* gw/smsc_sema.c: fixed loads of warnings, and one suspicious

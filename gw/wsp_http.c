@@ -405,7 +405,7 @@ error:
 
 
 static Octstr *convert_wml_to_wmlc_new(Octstr *wml, char *url) {
-#if 0
+#if 1
 	Octstr *wmlc, *wmlscripts;
 	int ret;
 	
@@ -422,6 +422,7 @@ octstr_dump(wmlc);
 	warning(0, "WSP: WML compilation failed.");
 	return NULL;
 #else
+	debug("wap.wsp.http", 0, "WSP: Tuomas's compiler NOT used.");
 	return NULL;
 #endif
 }
