@@ -1,5 +1,15 @@
 2001-05-14  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsc_smpp.c: Made system-id variable obsolete (i.e., if used,
+	the user is warned and told to use smsc-username instead). Things
+	should still work, and this allows us to remove the variable in a
+	future version.
+	
+	* */*.conf: Renamed system-id to smsc-username in sample config
+	files.
+
+2001-05-14  Lars Wirzenius  <liw@iki.fi>
+
 	* test/fakewap.c: Applied (after two months of waiting!) Neil
 	Hunter's patch for making fakewap more suitable for benchmarking
 	WAP gateways.
