@@ -1,3 +1,93 @@
+2001-10-19  Stipe Tolj  <tolj@wapme-systems.de>
+    
+    * README: replaced kannel.org with kannel.3glab.org to make the 
+    current home of Kannel more clear. Added a note that Win32 systems
+    are supported too using Cygwin 1.x and pthreads-win32 library.
+
+2001-10-19  Stipe Tolj  <tolj@wapme-systems.de>
+
+    * gw/bb_boxc.c: changed conn_wrap_fd() prototype call (see
+    gwlin/conn.c)
+
+    * gw/bb_http.c: required additions in httpadmin_start() to detect in
+    the config file (core group) if the admin HTTP server should use SSL,
+    indicated by "admin-port-ssl = yes", then load the global server
+    certificate and key. Changed http_open_port() prototype call (see
+    gwlib/http.c)
+
+    * gw/cert.pem: added x509 PEM encoded sample public certificate used
+    in gw/smskannel-ssl.conf.
+
+    * gw/key.pem: added x509 PEM encoded sample private key used in
+    gw/smskannel-ssl.conf.
+
+    * gw/smsbox.c: required additions in init_smsbox() to detect in the
+    config file (smsbox group) if the sendsms HTTP server should use SSL,
+    indicated by "sendsms-port-ssl = yes", then load the global server
+    certificate and key. Changed http_open_port() prototype call (see
+    gwlib/http.c)
+
+    * gw/smsc_emi2.c: changed conn_wrap_fd() prototype call (see
+    gwlin/conn.c)
+
+    * gw/smsc_fake.c: changed conn_wrap_fd() prototype call (see
+    gwlin/conn.c)
+
+    * gw/smsc_http.c: changed http_open_port() prototype call (see
+    gwlib/http.c)
+
+    * gw/smskannel-ssl.conf: added sample configuration file for SSL
+    enabled HTTP servers using sample certificate (cert.pem) and key
+    (key.pem).
+
+    * gw/wap_push_ppg.c: changed http_open_port() prototype call (see
+    gwlib/http.c)
+
+    * gwlib/cfg.def: added "admin-port-ssl" to core group and
+    "sendsms-port-ssl" to smsbox group. Changed "ssl-certkey-file" to
+    "ssl-client-certkey-file" to make it more semantic and added
+    "ssl-server-cert-file" and "ssl-server-key-file" within the core group
+    for the server side.
+
+    * gwlib/conn.c: added global server SSL context, X509 cert and RSA
+    key for server side. Changed conn_wrap_fd() to include ssl enable or
+    disable flag and included the SSL magic here. Added tmp_rsa_callback()
+    function for the private RSA key. Added server side mutex. Added
+    server_ssl_int() function which initialized server side SSL stuff.
+    Added server_shutdown_ssl() function which is used for server side
+    shutdown. Changed use_client_certkey_file() prototype to
+    use_global_client_certkey_file() to be more semantic. Added
+    use_global_server_certkey_file() routine to load global server
+    certificate and private key.
+
+    * gwlib/conn.h: changed prototype definition for conn_wrap_fd().
+    Added prototype definitions for openssl_locking_function(),
+    server_init_ssl(), server_shutdown_ssl(). Changed prototype name
+    use_client_certkey_file() to use_global_client_certkey_file(). Added
+    prototype definition for use_global_server_certkey_file().
+
+    * gwlib/http.c: added int ssl to struct server to reflect if this
+    server is SSL enabled. Added array int ssl[MAX_SERVERS] within
+    server_thread() to reflect which servers are SSL enabled and how
+    conn_wrap_fd() has to be called. Changed http_open_port() to include
+    boolean flag if this port is used for an SSL enabled server. Added
+    server_ssl_init() call within http_init(). Added server_shutdown_ssl()
+    all within http_shutdown().
+
+    * gwlib/http.h: changed prototype definition for http_open_port(). 
+
+    * test/drive_smpp.c: changed conn_wrap_fd() prototype call (see 
+    gwlin/conn.c)
+
+    * test/drive_wapbox.c: changed http_open_port() prototype call (see
+    gwlib/http.c) and conn_wrap_fd() prototype call (see gwlin/conn.c)
+
+    * test/test_http_server.c: changed http_open_port() prototype call
+    (see gwlib/http.c)
+
+    * test/test_smsc.c: changed http_open_port() prototype call (see
+    gwlib/http.c) and conn_wrap_fd() prototype call (see gwlin/conn.c)
+    
 2001-10-18: Aarno Syvänen <aarno@wiral.com>
 
 	* doc/arch/arch.xml: Documented sessionless wsp and unconfirmed push
