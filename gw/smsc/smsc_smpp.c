@@ -711,9 +711,14 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
              * (no suitable error code for the deliver_sm_resp is defined) 
              */ 
 
-            /* got a deliver ack (DLR)? */ 
+            /* got a deliver ack (DLR)? 
+	     * NOTE: following SMPP v3.4. spec. we are interested
+	     *       only on bits 2-5 (some SMSC's send 0x44, and it's
+	     *       spec. conforme)
+	     * XXX: what is 0x02 for ???
+	     */
             if ((pdu->u.deliver_sm.esm_class == 0x02 || 
-                 pdu->u.deliver_sm.esm_class == 0x04)) { 
+                 (pdu->u.deliver_sm.esm_class & ~0xC3) == 0x04)) { 
                 Octstr *respstr;    	 
                 Octstr *msgid = NULL; 
                 Octstr *stat = NULL; 
