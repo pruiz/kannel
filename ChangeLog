@@ -1,3 +1,16 @@
+2001-01-22  Richard Braakman  <dark@wapit.com>
+
+        * gwlib/gwthread-pthread.c: In function gwthread_create_real(),
+        applied Nick Clarey's patch to fix signal handling and restyled.
+        Then fixed signal handling some more by using pthread_sigmask
+        instead of sigprocmask, and SIG_BLOCK instead of SIG_SETMASK.
+        This way we won't interfere with signals used by the pthread
+	implementation.
+
+	* gw/bearerbox.c, gw/smsbox.c, gw/wapbox.c: Updated comment in
+	signal_handler() to reflect the new situation, and made them all
+	use gwthread_shouldhandlesignal().
+
 2001-01-22  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/wapbox.c: Converted to use new config file module in gwlib.

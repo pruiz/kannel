@@ -278,7 +278,7 @@ static void *new_thread(void *arg)
 long gwthread_create_real(gwthread_func_t *func, const char *name, void *arg)
 {
     int ret;
-    sigset_t oldSignalSet, newSignalSet;
+    sigset_t old_signal_set, new_signal_set;
     pthread_t id;
     struct new_thread_args *p;
     long number;
@@ -291,19 +291,35 @@ long gwthread_create_real(gwthread_func_t *func, const char *name, void *arg)
     p->arg = arg;
     p->ti = gw_malloc(sizeof(*(p->ti)));
 
-    /* For the duration of the thread creation, we need to block all
-     * of our signals. This will mean that there is a brief period when
-     * no signals will be processed. 
+    /* FIXME: If the spawning thread is not the main thread, then we
+     * don't need to mess with signals here and might save some system
+     * calls. */
+
+    /* We want to make sure that only the main thread handles signals,
+     * so that each signal is handled exactly once.  To do this, we
+     * make sure that each new thread has all the signals that we
+     * handle blocked.  To avoid race conditions, we block them in 
+     * the spawning thread first, then create the new thread (which
+     * inherits the settings), and then restore the old settings in
+     * the spawning thread.  This means that there is a brief period
+     * when no signals will be processed, but during that time they
+     * should be queued by the operating system.
      */
-    ret = sigfillset(&newSignalSet);
+    ret = sigemptyset(&new_signal_set);
     if (ret != 0) {
-	panic (ret, 
-	    "gwthread-pthread: Couldn't sigfillset our new signal set");
+	panic(ret, "gwthread-pthread: Couldn't initialize new signal set");
     }
-    ret = sigprocmask(SIG_SETMASK, &newSignalSet, &oldSignalSet);
+    ret = sigaddset(&new_signal_set, SIGHUP);
+    ret |= sigaddset(&new_signal_set, SIGTERM);
+    ret |= sigaddset(&new_signal_set, SIGQUIT);
+    ret |= sigaddset(&new_signal_set, SIGINT);
     if (ret != 0) {
-	panic (ret, 
-	    "gwthread-pthread: Couldn't get current signal set from sigaction");
+	panic(0, "gwthread-pthread: Couldn't add signal to signal set");
+    }
+    ret = pthread_sigmask(SIG_BLOCK, &new_signal_set, &old_signal_set);
+    if (ret != 0) {
+	panic(ret, 
+	    "gwthread-pthread: Couldn't disable signals for thread creation");
     }
 
     /* Lock the thread table here, so that new_thread can block
@@ -333,20 +349,19 @@ long gwthread_create_real(gwthread_func_t *func, const char *name, void *arg)
     number = fill_threadinfo(id, name, func, p->ti);
     unlock();
     
-    /* Restore the old signal mask, the new thread will have inherited the
-     * resticted one, but the main thread needs the old one back.
+    /* Restore the old signal mask.  The new thread will have
+     * inherited the resticted one, but the main thread needs
+     * the old one back.
      */
-    ret = sigprocmask(SIG_SETMASK, &oldSignalSet, NULL);
+    ret = pthread_sigmask(SIG_SETMASK, &old_signal_set, NULL);
     /* If any signals have been queued while creating the thread,
      * they will be handled now, be careful.
      */
     if (ret != 0) {
-	panic (ret, 
-	    "gwthread-pthread: Couldn't return signal set to old state");
+	panic(ret, "gwthread-pthread: Couldn't restore signal set.");
     }
 
-    debug("gwlib.gwthread", 0, "Started thread %ld (%s)",
-          number, name);
+    debug("gwlib.gwthread", 0, "Started thread %ld (%s)", number, name);
 
     return number;
 }
@@ -412,8 +427,7 @@ void gwthread_join_every(gwthread_func_t *func)
               ti->number, ti->name);
         ret = pthread_cond_wait(&ti->exiting, &threadtable_lock);
         if (ret != 0) {
-            warning(ret, "gwthread_join_all: error in "
-                    "pthread_cond_wait");
+            warning(ret, "gwthread_join_all: error in pthread_cond_wait");
         }
     }
     unlock();
@@ -564,27 +578,23 @@ int gwthread_shouldhandlesignal(int signal){
 #endif
 
 int gwthread_dumpsigmask(void) {
-    sigset_t signalSet;
-    int signalNumber;
+    sigset_t signal_set;
+    int signum;
 
     /* Grab the signal set data from our thread */
-    if (pthread_sigmask((int) NULL, NULL, &signalSet) != 0) {
-	/* If the retrieval was unsuccessful, say that it failed */
-	debug("gwlib",0,"gwthread_dumpsigmask: Couldn't get the signal mask!");
-	/* Report that our efforts have failed */
+    if (pthread_sigmask(SIG_BLOCK, NULL, &signal_set) != 0) {
+	warning(0, "gwthread_dumpsigmask: Couldn't get signal mask.");
 	return -1;
     }
     
-    /* For each signal that we can have */
-    for (signalNumber=1; signalNumber < 33; signalNumber++) {
-	/* If the signal with this number is not masked */
-	if (! (sigismember(&signalSet, signalNumber))) {
-	    /* Print a debug message stating this is the case */
-	    debug("gwlib",0,
-		"gwthread_dumpsigmask: Signal Number %d will be caught", 
-		signalNumber);
+    /* For each signal normally defined (there are usually only 32),
+     * print a message if we don't block it. */
+    for (signum = 1; signum <= 32; signum++) {
+	if (!sigismember(&signal_set, signum)) {
+	    debug("gwlib", 0,
+		"gwthread_dumpsigmask: Signal Number %d will be caught.", 
+		signum);
 	}
     }
-    /* Successful return */
     return 0;
 }
