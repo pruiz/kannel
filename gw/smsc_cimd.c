@@ -524,9 +524,9 @@ int cimd_submit_msg(SMSCenter *smsc, Msg *msg) {
 
 	/* QUICK AND DIRTY, WILL FIX ASAP -MG */
 
-	sms_msg = smsmessage_construct(octstr_get_cstr(msg->plain_sms.sender),
-				       octstr_get_cstr(msg->plain_sms.receiver),
-				       msg->plain_sms.text);
+	sms_msg = smsmessage_construct(octstr_get_cstr(msg->smart_sms.sender),
+				       octstr_get_cstr(msg->smart_sms.receiver),
+				       msg->smart_sms.msgdata);
 
 
 	/* Fix these by implementing a could-not-send-because-
@@ -686,11 +686,11 @@ int cimd_receive_msg(SMSCenter *smsc, Msg **msg) {
 	strncpy(text, tmpbuff, 480);
 
 	/* create a smsmessage structure out of the components */
-	*msg = msg_create(plain_sms);
+	*msg = msg_create(smart_sms);
 	if (*msg == NULL) return -1;
-	(*msg)->plain_sms.sender = octstr_create(sender);
-	(*msg)->plain_sms.receiver = octstr_create(receiver);
-	(*msg)->plain_sms.text = octstr_create(text);
+	(*msg)->smart_sms.sender = octstr_create(sender);
+	(*msg)->smart_sms.receiver = octstr_create(receiver);
+	(*msg)->smart_sms.msgdata = octstr_create(text);
 
 	/* Send acknowledge */
 	internal_cimd_send_acknowledge(smsc);

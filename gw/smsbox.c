@@ -107,9 +107,7 @@ int socket_sender(Msg *pmsg)
 
     mutex_unlock(&socket_mutex);
 
-    if (msg_type(pmsg) == plain_sms)
-	debug(0, "write <%s>", octstr_get_cstr(pmsg->plain_sms.text));
-    else if (msg_type(pmsg) == smart_sms)
+    if(msg_type(pmsg) == smart_sms)
 	debug(0, "write smart <%s>", octstr_get_cstr(pmsg->smart_sms.msgdata));
     octstr_destroy(pack);
 
@@ -130,8 +128,8 @@ static void new_request(Octstr *pack)
     msg = msg_unpack(pack);
     if (msg == NULL)
 	error(0, "Failed to unpack data!");
-    else if (msg_type(msg) != plain_sms)
-	warning(0, "Received other message than plain_sms, ignoring!");
+    else if (msg_type(msg) != smart_sms)
+	warning(0, "Received other message than smart_sms, ignoring!");
     else
 	(void)start_thread(1, smsbox_req_thread, msg, 0);
 }
@@ -158,13 +156,13 @@ static void *http_request_thread(void *arg)
     }
     /* print client information */
 
-    info(0, "Get HTTP request < %s > from < %s >", path, client_ip);
+    info(0, "smsbox: Get HTTP request < %s > from < %s >", path, client_ip);
     
     if (strcmp(path, "/cgi-bin/sendsms") == 0) {
-	
+
 	arglist = cgiarg_decode_to_list(args);
 	answer = smsbox_req_sendsms(arglist);
-	
+
 	cgiarg_destroy_list(arglist);
     } else
 	answer = "unknown request";

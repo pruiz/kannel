@@ -705,9 +705,6 @@ int smsc_close(SMSCenter *smsc) {
 
 int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 {
-#if 0
-    SMSMessage *sms_msg;
-#endif
     int ret;
     
     if (msg->msg_class == R_MSG_CLASS_WAP) {
@@ -723,22 +720,8 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 	ret = 0;
     }  else if (msg->msg_type == R_MSG_TYPE_MT) {
 
-#if 1
-
 	ret = smscenter_submit_msg(smsc, msg->msg);
 
-#else
-	debug(0, "Send SMS Message [%d] to SMSC", msg->id);
-
-	/*
-	 * stupid... correct all smsmessage constructs ASAP
-	 */
-	sms_msg = smsmessage_construct(octstr_get_cstr(msg->msg->plain_sms.sender),
-				       octstr_get_cstr(msg->msg->plain_sms.receiver),
-				       msg->msg->plain_sms.text);
-    
-	ret = smscenter_submit_smsmessage(smsc, sms_msg);
-#endif
 	if (ret == -1)
 	    /* rebuild connection? */
 	    ;
@@ -765,10 +748,6 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 
 int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
 {
-#if 0
-	SMSMessage *sms_msg;
-	int ret;
-#endif
 	RQueueItem *msg = NULL;
 	Msg *newmsg = NULL;
    
@@ -776,47 +755,21 @@ int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
     
 	if (smscenter_pending_smsmessage(smsc) == 1) {
 
-#if 1
-	msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MO);
-	if (msg==NULL) goto error;
+		msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MO);
+		if (msg==NULL) goto error;
 
 		if( smscenter_receive_msg(smsc, &newmsg) == 1 ) {
 			/* OK */
 			msg->msg = newmsg;
 		} else {
-			/* Error */
-			goto error;
+			error(0, "Failed to receive the message, reconnecting...");
+			/* reopen the connection etc. invisible to other end */
+
+			if (smsc_reopen(smsc) == -1)
+				return -1;
+			return 0;		/* iterate */
 		}
 
-#else
-	ret = smscenter_receive_smsmessage(smsc, &sms_msg);
-	if (ret < 1) {
-	    error(0, "Failed to receive the message, reconnecting...");
-	    /* reopen the connection etc. invisible to other end */
-
-	    if (smsc_reopen(smsc) == -1)
-		return -1;
-	    return 0;		/* iterate */
-	}
-	/* hm, what about ACK/NACK? - leave that to above */
-
-	msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MO);
-	msg->msg = msg_create(plain_sms);
-	if (msg->msg == NULL)
-	    goto error;
-
-	/*
-	 * this is plain STUPID. But a quick hack. As soon as we have
-	 * time, remove ALL SMSMessage structures and replace them with 'msg'
-	 */
-	msg->msg->plain_sms.receiver = octstr_create(sms_msg->receiver);
-	msg->msg->plain_sms.sender = octstr_create(sms_msg->sender);
-	msg->msg->plain_sms.text = octstr_duplicate(sms_msg->text);
-	msg->msg->plain_sms.time = sms_msg->time;
-	
-	msg->client_data = sms_msg;	/* keep the data for ACK/NACK */
-#endif
-	
 		*new = msg;
 		return 1;
 	}

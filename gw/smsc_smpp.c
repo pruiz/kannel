@@ -342,6 +342,9 @@ int smpp_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg) {
 	struct smpp_pdu *pdu = NULL;
 	struct smpp_pdu_submit_sm *submit_sm = NULL;
 
+	panic(0, "smpp_submit_smsmessage: USE OF THIS FUNCTION IS DEPRACATED");
+	return -1;
+
 	/* Validate *msg. */
 	if(smsc == NULL) goto error;
 	if(msg == NULL) goto error;
@@ -409,6 +412,9 @@ int smpp_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg) {
 	SMSMessage *newmsg = NULL;
 	char *newnum = NULL;
 
+	panic(0, "smpp_receive_smsmessage: USE OF THIS FUNCTION IS DEPRACATED");
+	return -1;
+
 	/* Pop a SMSMessage message from the MSG_MO stack. */
 	if( fifo_pop_smsmessage(smsc->received_mo, &newmsg) == 1 ) {
 
@@ -457,19 +463,7 @@ int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 	if(submit_sm == NULL) goto error;
 	memset(submit_sm, 0, sizeof(struct smpp_pdu_submit_sm));
 
-	if(msg_type(msg) == plain_sms) {
-
-		submit_sm->esm_class = 0;
-		submit_sm->data_coding = 3;
-
-		strncpy(submit_sm->source_addr, octstr_get_cstr(msg->plain_sms.sender), 21);
-		strncat(submit_sm->dest_addr, octstr_get_cstr(msg->plain_sms.receiver)+2, 21);
-
-		submit_sm->sm_length = octstr_len(msg->plain_sms.text);
-		octstr_get_many_chars(submit_sm->short_message, msg->plain_sms.text, 0, 160);
-		charset_iso_to_smpp(submit_sm->short_message);
-
-	} else if(msg_type(msg) == smart_sms) {
+	if(msg_type(msg) == smart_sms) {
 
 		if(msg->smart_sms.flag_8bit == 1) {
 			/* As per GSM 03.38. */
@@ -501,6 +495,7 @@ int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 
 	} else {
 		error(0, "smpp_submit_sms: Msg is WRONG TYPE");
+		msg_dump(msg);
 		goto error;
 	}
 

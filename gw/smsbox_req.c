@@ -182,9 +182,7 @@ static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
     if (suf != NULL)
 	slen = strlen(suf);
 
-    if (msg_type(msg) == plain_sms)
-	text = msg->plain_sms.text;
-    else if (msg_type(msg) == smart_sms) {
+    if(msg_type(msg) == smart_sms) {
 	warning(0, "Cannot send too long UDH!");
 	return 0;
     }
@@ -217,9 +215,9 @@ static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
 	if ((split = msg_duplicate(msg))==NULL)
 	    goto error;
 
-	octstr_replace(split->plain_sms.text, p+loc, size);
+	octstr_replace(split->smart_sms.msgdata, p+loc, size);
 	if (suf != NULL)
-	    octstr_insert_data(split->plain_sms.text, size, suf, slen);
+	    octstr_insert_data(split->smart_sms.msgdata, size, suf, slen);
 	
 	if (do_sending(split) < 0)
 	    return -1;
@@ -248,9 +246,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
     
 	max_msgs = urltrans_max_messages(trans);
 
-	if (msg_type(msg) == plain_sms)
-		text = msg->plain_sms.text;
-	else if (msg_type(msg) == smart_sms)
+	if(msg_type(msg) == smart_sms)
 		text = msg->smart_sms.msgdata;
 	else
 		goto error;
@@ -332,9 +328,9 @@ void *smsbox_req_thread(void *arg) {
 
     req_threads++;	/* possible overflow */
     
-	if (octstr_len(msg->plain_sms.text) == 0 ||
-		octstr_len(msg->plain_sms.sender) == 0 ||
-		octstr_len(msg->plain_sms.receiver) == 0) 
+	if (octstr_len(msg->smart_sms.msgdata) == 0 ||
+		octstr_len(msg->smart_sms.sender) == 0 ||
+		octstr_len(msg->smart_sms.receiver) == 0) 
 	{
 
 		error(0, "smsbox_req_thread: EMPTY Msg, dump follows:");
@@ -345,13 +341,13 @@ void *smsbox_req_thread(void *arg) {
 		return NULL;
 	}
 
-	if (octstr_compare(msg->plain_sms.sender, msg->plain_sms.receiver) == 0) {
+	if (octstr_compare(msg->smart_sms.sender, msg->smart_sms.receiver) == 0) {
 		info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
-		     octstr_get_cstr(msg->plain_sms.sender));
+		     octstr_get_cstr(msg->smart_sms.sender));
 		return NULL;
 	}
 
-	trans = urltrans_find(translations, msg->plain_sms.text);
+	trans = urltrans_find(translations, msg->smart_sms.msgdata);
 	if (trans == NULL) goto error;
 
 	/*
@@ -359,21 +355,21 @@ void *smsbox_req_thread(void *arg) {
 	 * if faked-sender or similar set. Note that we ignore if the replacement
 	 * fails.
 	 */
-	tmp = octstr_duplicate(msg->plain_sms.sender);
+	tmp = octstr_duplicate(msg->smart_sms.sender);
 	if (tmp == NULL) goto error;
 	
 	p = urltrans_faked_sender(trans);
 	if (p != NULL)
-		octstr_replace(msg->plain_sms.sender, p, strlen(p));
+		octstr_replace(msg->smart_sms.sender, p, strlen(p));
 	else if (global_sender != NULL)
-		octstr_replace(msg->plain_sms.sender, global_sender, strlen(global_sender));
+		octstr_replace(msg->smart_sms.sender, global_sender, strlen(global_sender));
 	else {
-		Octstr *t = msg->plain_sms.sender;
-		msg->plain_sms.sender = msg->plain_sms.receiver;
-		msg->plain_sms.receiver = t;
+		Octstr *t = msg->smart_sms.sender;
+		msg->smart_sms.sender = msg->smart_sms.receiver;
+		msg->smart_sms.receiver = t;
 	}
-	octstr_destroy(msg->plain_sms.receiver);
-	msg->plain_sms.receiver = tmp;
+	octstr_destroy(msg->smart_sms.receiver);
+	msg->smart_sms.receiver = tmp;
 
 	/* TODO: check if the sender is approved to use this service */
 
@@ -387,10 +383,10 @@ void *smsbox_req_thread(void *arg) {
 		goto error;
 	}
 
-	 if (octstr_replace(msg->plain_sms.text, reply, strlen(reply)) == -1)
+	 if (octstr_replace(msg->smart_sms.msgdata, reply, strlen(reply)) == -1)
 		goto error;
 
-	msg->plain_sms.time = time(NULL);	/* set current time */
+	msg->smart_sms.time = time(NULL);	/* set current time */
 
 	/* send_message frees the 'msg' */
 	if(send_message(trans, msg) < 0)

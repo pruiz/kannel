@@ -106,9 +106,7 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
 
 	if (msg->msg_class == R_MSG_CLASS_SMS) {
 
-	    if(msg_type(msg->msg) == plain_sms) {
-		debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->plain_sms.text));
-	    } else if(msg_type(msg->msg) == smart_sms) {
+	    if(msg_type(msg->msg) == smart_sms) {
 		debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->smart_sms.msgdata));
 	    }
 	} else {
@@ -177,7 +175,7 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 		msg_destroy(pmsg);
 		return 0;
 	    }
-	    else if (msg_type(pmsg) == plain_sms) {
+	    else if (msg_type(pmsg) == smart_sms) {
 		
 		msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
 		if (msg == NULL) {
@@ -185,7 +183,7 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 		    return -1;
 		}
 		msg->msg = pmsg;
-		debug(0, "BOXC: Read < %s >", octstr_get_cstr(pmsg->plain_sms.text));
+		debug(0, "BOXC: Read < %s >", octstr_get_cstr(pmsg->smart_sms.msgdata));
 	    }
 	    else if (msg_type(pmsg) == wdp_datagram) {
 		

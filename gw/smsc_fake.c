@@ -161,12 +161,12 @@ int fake_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg) {
 }
 
 int fake_submit_msg(SMSCenter *smsc, Msg *msg) {
-	if(msg_type(msg)==plain_sms) {
-		if (octstr_write_to_socket(smsc->socket, msg->plain_sms.sender) == -1 ||
+	if(msg_type(msg)==smart_sms) {
+		if (octstr_write_to_socket(smsc->socket, msg->smart_sms.sender) == -1 ||
 		    write_to_socket(smsc->socket, " ") == -1 ||
-		    octstr_write_to_socket(smsc->socket, msg->plain_sms.receiver) == -1 ||
+		    octstr_write_to_socket(smsc->socket, msg->smart_sms.receiver) == -1 ||
 		    write_to_socket(smsc->socket, " ") == -1 ||
-		    octstr_write_to_socket(smsc->socket, msg->plain_sms.text) == -1 ||
+		    octstr_write_to_socket(smsc->socket, msg->smart_sms.msgdata) == -1 ||
 		    write_to_socket(smsc->socket, "\n") == -1)
 			return -1;
 	}	
@@ -206,12 +206,12 @@ int fake_receive_msg(SMSCenter *smsc, Msg **msg) {
 		}
 	}
 
-	*msg = msg_create(plain_sms);
+	*msg = msg_create(smart_sms);
 	if (*msg == NULL) return -1;
 
-	(*msg)->plain_sms.sender = octstr_create(sender);
-	(*msg)->plain_sms.receiver = octstr_create(receiver);
-	(*msg)->plain_sms.text = octstr_create(text);
+	(*msg)->smart_sms.sender = octstr_create(sender);
+	(*msg)->smart_sms.receiver = octstr_create(receiver);
+	(*msg)->smart_sms.msgdata = octstr_create(text);
 
 	smscenter_remove_from_buffer(smsc, newline - smsc->buffer + 1);
 	return 1;
