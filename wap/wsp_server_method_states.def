@@ -120,7 +120,6 @@ ROW(NULL_METHOD,
 	{
 		List *headers;
 		WAPEvent *invoke;
-		int req_body_size;
 		int method;
 		Octstr *method_name;
 
@@ -144,18 +143,8 @@ ROW(NULL_METHOD,
 			octstr_duplicate(pdu->u.Post.uri);
 		invoke->u.S_MethodInvoke_Ind.request_headers = headers;
 
-		/*
-		 * The Siemens S35 adds an extra NUL character to the end
-		 * of the request body which may not work with certain cgi
-		 * scripts. It is removed here by truncating the length.
-		 */
-		req_body_size = octstr_len(pdu->u.Post.data);
-		if(octstr_get_char(pdu->u.Post.data,(req_body_size - 1)) == 0)
-			octstr_truncate(pdu->u.Post.data,(req_body_size - 1));
-
 		invoke->u.S_MethodInvoke_Ind.request_body = 
 			octstr_duplicate(pdu->u.Post.data);
-
 
 		invoke->u.S_MethodInvoke_Ind.session_headers =
 			http_header_duplicate(sm->http_headers);
