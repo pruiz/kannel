@@ -51,13 +51,13 @@ static int producer_index_start(pthread_t producer) {
 
 
 typedef struct {
-	long producer;
+	pthread_t producer;
 	long num;
 	long index;
 } Item;
 
 
-static Item *new_item(long producer, long num, long index) {
+static Item *new_item(pthread_t producer, long num, long index) {
 	Item *item;
 	
 	item = gw_malloc(sizeof(Item));
@@ -84,7 +84,7 @@ static void *producer(void *arg) {
 #if TRACE
 		if ((i % TRACE) == 0)
 			info(0, "Put: producer==%ld item=%ld index=%ld", 
-				id, i, index);
+				(long) id, i, index);
 #endif
 	}
 	info(0, "producer dies");
