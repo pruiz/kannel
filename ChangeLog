@@ -1,3 +1,12 @@
+Mon Apr  3 21:58:19 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/smsbox.c: Fixed a memory leak in error conditions. Also
+	rewrote send_heartbeat so it doesn't use a static variable.
+	
+	* gwlib/gwmem.c: Make filling allocated and freed memory areas
+	optionsl. There is a bug somewhere that causes filling of freed
+	memory areas to crash.
+
 Mon Apr  3 21:02:49 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* test/test_urltrans.c: Wrote. Useful for testing memory leaks.

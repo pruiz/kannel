@@ -107,7 +107,6 @@ static int socket_sender(Msg *pmsg)
 	goto error;
 
     mutex_lock(socket_mutex);
-
     if (octstr_send(socket_fd, pack) < 0) {
 	mutex_unlock(socket_mutex);
 	goto error;
@@ -118,14 +117,15 @@ static int socket_sender(Msg *pmsg)
 	  (int) octstr_len(pmsg->smart_sms.msgdata),
 	  octstr_get_cstr(pmsg->smart_sms.msgdata),
 	  octstr_len(pmsg->smart_sms.udhdata));
-    octstr_destroy(pack);
 
+    octstr_destroy(pack);
     msg_destroy(pmsg);
 
     return 0;
 
 error:
     msg_destroy(pmsg);
+    octstr_destroy(pack);
     return -1;
 }
 
@@ -317,6 +317,7 @@ static void init_smsbox(Config *cfg)
  */
 static int send_heartbeat(void)
 {
+#if 0
     /* XXX this is not thread safe, if two threads happen to call 
        send_hearbeat at the same time. Should never happen, though, and 
        anyway only causes a minor memory leak. --liw */
@@ -335,8 +336,21 @@ static int send_heartbeat(void)
     if (octstr_send(socket_fd, pack))
 	return -1;
     octstr_destroy(pack);
-    
     return 0;
+#else
+    Msg *msg = NULL;
+    Octstr *pack;
+    int ret;
+    
+    msg = msg_create(heartbeat);
+    msg->heartbeat.load = smsbox_req_count();
+    debug("sms", 0, "sending heartbeat load %ld", msg->heartbeat.load); 
+    pack = msg_pack(msg);
+    ret = octstr_send(socket_fd, pack);
+    octstr_destroy(pack);
+    msg_destroy(msg);
+    return ret;
+#endif
 }
 
 

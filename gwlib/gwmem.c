@@ -12,6 +12,10 @@
 #define GWMEM_CHECK 0
 #endif
 
+#ifndef GWMEM_FILL
+#define GWMEM_FILL 0
+#endif
+
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
@@ -87,9 +91,7 @@ const char *filename, long lineno) {
 void  gw_free_real(void *ptr, const char *filename, long lineno) {
 	gw_assert(initialized);
 	forget(ptr, filename, lineno);
-#if 1
 	free(ptr);
-#endif
 }
 
 
@@ -118,8 +120,8 @@ void gw_check_leaks(void) {
 
 #if GWMEM_CHECK
 
-#define MAX_TAB_SIZE (1024*1024)
-#define MAX_ALLOCATIONS	((MAX_TAB_SIZE)/sizeof(struct mem))
+#define MAX_TAB_SIZE (1024*1024L)
+#define MAX_ALLOCATIONS	((long) ((MAX_TAB_SIZE)/sizeof(struct mem)))
 
 struct mem {
 	void *p;
@@ -166,7 +168,6 @@ static long unlocked_find(void *p) {
 	gw_assert(ptr < tab + num_allocations);
 	return ptr - tab;
 }
-
 #endif
 
 
@@ -179,8 +180,8 @@ static void remember(void *p, size_t size, const char *filename, long lineno) {
 #if GWMEM_TRACE
 	debug("gwlib.gwmem", 0, "rembember %p", p);
 #endif
-	if (num_allocations == MAX_ALLOCATIONS)
-		panic(0, "Too many allocations that haven't been freed yet.");
+	if (num_allocations >= MAX_ALLOCATIONS)
+		panic(0, "Too many allocations at the same time.");
 	tab[num_allocations].p = p;
 	tab[num_allocations].size = size;
 	tab[num_allocations].allocated_filename = filename;
@@ -210,11 +211,9 @@ static void forget(void *p, const char *filename, long lineno) {
 		dump();
 		panic(0, "Can't deal with memory allocation problems. DIE!");
 	}
-#if 1
 	gw_assert(p == tab[i].p);
 	gw_assert(tab[i].size > 0);
 	fill(p, tab[i].size, 0xdeadbeef);
-#endif
 	memmove(tab + i, 
 	        tab + i + 1,
 	        (num_allocations - i - 1) * sizeof(struct mem));
@@ -232,11 +231,11 @@ static void check_leaks(void) {
 	bytes = 0;
 	for (i = 0; i < num_allocations; ++i)
 		bytes += tab[i].size;
-	unlock();
 	debug("gwlib.gwmem", 0, 
 	      "Current allocations: %ld areas, %ld bytes", 
 	      num_allocations, bytes);
 	dump();
+	unlock();
 #endif
 }
 
@@ -273,7 +272,7 @@ static void unlock(void) {
  */
 static void fill(void *p, size_t bytes, long pattern) 
 {
-#if GWMEM_CHECK
+#if GWMEM_CHECK && GWMEM_FILL
 	while (bytes > sizeof(long)) {
 		memcpy(p, &pattern, sizeof(long));
 		p += sizeof(long);
