@@ -58,12 +58,14 @@ typedef struct WSPMethodMachine WSPMethodMachine;
 #include "wtp.h"
 #include "wap-events.h"
 #include "wapbox.h"
+#include "cookies.h"
 
 struct WSPMachine {
 	#define INTEGER(name) long name;
 	#define OCTSTR(name) Octstr *name;
 	#define HTTPHEADERS(name) List *name;
 	#define ADDRTUPLE(name) WAPAddrTuple *name;
+	#define COOKIES(name) List *name;
 	#define METHODMACHINES(name) List *name;
 	#define MACHINE(fields) fields
 	#include "wsp-session-machine.h"
@@ -99,7 +101,6 @@ void wap_appl_init(void);
 void wap_appl_shutdown(void);
 void wap_appl_dispatch(WAPEvent *event);
 
-
 /*
  * WSP session oriented mode.
  */
@@ -122,6 +123,5 @@ WAPEvent *wsp_unit_unpack_wdp_datagram(Msg *msg);
  */
 Octstr *wsp_encode_http_headers(Octstr *content_type);
 long wsp_convert_http_status_to_wsp_status(long http_status);
-
 
 #endif
