@@ -95,8 +95,21 @@ ROW(CONNECTING,
 	{
 		WTPEvent *wtp_event;
 		Octstr *pdu;
+		WSPMachine *sm2;
 		
 		/* Send Disconnect event to existing sessions for client. */
+		for (sm2 = session_machines; sm2 != NULL; sm2 = sm2->next) {
+			if (sm2 != sm &&
+			    octstr_compare(sm2->client_address, sm->client_address) == 0 &&
+			    sm2->client_port == sm->client_port &&
+			    octstr_compare(sm2->server_address, sm->server_address) == 0 &&
+			    sm2->server_port == sm->server_port) {
+				info(0, "WSP: Disconnecting session %d (%p)",
+					sm2->session_id, (void *) sm2);
+				sm2->client_port = -1; /* Disable it. */
+				/* XXX this needs to be done properly later. --liw */
+			    }
+		}
 
 		/* Invent a new session ID since we're now the official
 		 * session for this client. 

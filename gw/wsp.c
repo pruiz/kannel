@@ -152,9 +152,17 @@ void wsp_dispatch_event(WTPMachine *wtp_sm, WSPEvent *event) {
 	
 	WSPMachine *sm;
 	
-	for (sm = session_machines; sm != NULL; sm = sm->next)
-		if (transaction_belongs_to_session(wtp_sm, sm))
-			break;
+	if (event->type == TRInvokeIndication &&
+	    event->TRInvokeIndication.tcl == 2 &&
+	    wsp_deduce_pdu_type(event->TRInvokeIndication.user_data, 0) == Connect_PDU) {
+		/* Client wants to start new session. Igore existing
+		   machines. */
+		sm = NULL;
+	} else {
+		for (sm = session_machines; sm != NULL; sm = sm->next)
+			if (transaction_belongs_to_session(wtp_sm, sm))
+				break;
+	}
 
 	if (sm == NULL) {
 		sm = wsp_machine_create();
