@@ -305,8 +305,13 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
     if (request->sms.sms_type != report && t->type == TRANSTYPE_SENDSMS)
         return octstr_create("");
 
-    word_list = octstr_split_words(request->sms.msgdata);
-    num_words = list_len(word_list);
+    if (request->sms.msgdata) {
+        word_list = octstr_split_words(request->sms.msgdata);
+        num_words = list_len(word_list);
+    } else {
+    	word_list = list_create();
+        num_words = 0;
+    }
 
     result = octstr_create("");
 
