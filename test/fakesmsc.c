@@ -116,6 +116,7 @@ int main(int argc, char **argv) {
 	s = make_server_socket(port);
 	if (s == -1)
 		panic(0, "couldn't create server socket");
+    	client_addr_len = sizeof(client_addr);
 	client = accept(s, &client_addr, &client_addr_len);
 	if (client == -1)
 		panic(errno, "accept failed");

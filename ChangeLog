@@ -1,3 +1,8 @@
+2000-09-26  Lars Wirzenius  <liw@iki.fi>
+
+	* test/fakesmsc.c: Initialize the third parameter to accept
+	correctly. I wonder why this has ever worked.
+
 2000-09-26  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsbox_req.c, gw/urltrans.c: set so that message without any
