@@ -1,3 +1,9 @@
+2000-09-18  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_smpp.c: Make charset_iso_to_smpp and charset_smpp_to_iso
+	work with character values > 128.  Bugfix suggested by
+	Philip Chr. Psiloinis.
+
 2000-09-18  Lars Wirzenius  <liw@iki.fi>
 
 	* doc/CodingStyle: Added example of coding style.

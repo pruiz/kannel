@@ -1786,7 +1786,7 @@ static int pdu_act_generic_nak(SMSCenter *smsc, smpp_pdu *pdu) {
 	return -1;
 }
 
-static int charset_smpp_to_iso(char* data) {
+static int charset_smpp_to_iso(unsigned char *data) {
 
 	int i;
 
@@ -1806,7 +1806,7 @@ static int charset_smpp_to_iso(char* data) {
 	return 1;
 }
 
-static int charset_iso_to_smpp(char* data) {
+static int charset_iso_to_smpp(unsigned char *data) {
 
 	int i;
 

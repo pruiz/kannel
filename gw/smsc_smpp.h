@@ -362,8 +362,8 @@ static int pdu_decode_unbind(smpp_pdu**, Octstr*);
 static int pdu_decode_unbind_resp(smpp_pdu**, Octstr*);
 */
 
-static int charset_smpp_to_iso(char*);
-static int charset_iso_to_smpp(char*);
+static int charset_smpp_to_iso(unsigned char *);
+static int charset_iso_to_smpp(unsigned char *);
 
 struct {
 
