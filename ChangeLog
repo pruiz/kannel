@@ -1,3 +1,9 @@
+2001-04-25  Tuomas Luttinen  <tuo@wapit.com>
+
+	* configure[.in] : Kannel now requires libxml 2.2.5 or newer. Reasons 
+	for this are: *encondingAliases functions that were included in 2.2.3
+	              *a bug that affects XML attributes in 2.2.3 and 2.2.4
+
 2001-04-25  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsc_emi2.c, gw/emimsg.c: Changed debugging output, made

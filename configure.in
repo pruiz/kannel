@@ -51,8 +51,8 @@ if test "$XML2_CONFIG" = "no"; then
 	else
 		changequote(<<, >>)dnl
 		case `$XML_CONFIG --version` in 
-		*2.[2-9].[0-9]*) ;;
-		*) echo "Libxml is too old. You need at least 2.2.0." ; exit 1 ;;
+		*2.[2-9].[5-9]*) ;;
+		*) echo "Libxml is too old. You need at least 2.2.5." ; exit 1 ;;
 		esac
 		changequote([, ])dnl
 		LIBS="$LIBS `$XML_CONFIG --libs`"
@@ -62,7 +62,7 @@ else
 	changequote(<<, >>)dnl
 	case `$XML2_CONFIG --version` in 
 	*2.[2-9].[0-9]*) ;;
-	*) echo "Libxml is too old. You need at least 2.2.0." ; exit 1 ;;
+	*) echo "Libxml is too old. You need at least 2.2.5." ; exit 1 ;;
 	esac
 	changequote([, ])dnl
 	LIBS="$LIBS `$XML2_CONFIG --libs`"
