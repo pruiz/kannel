@@ -476,13 +476,19 @@ AC_ARG_ENABLE(mutex-stats,
 ])
 
 
-dnl --enable-cookies option.
+dnl --disable-cookies option.
 
 AC_ARG_ENABLE(cookies,
-[  --enable-cookies        enable cookie support for WSP [disabled]], [
+[  --disable-cookies        disable cookie support for WSP [enable]], [
   if test "$enableval" = yes; then
-      AC_DEFINE(ENABLE_COOKIES)
+    echo enabling cookies
+    AC_DEFINE(ENABLE_COOKIES)
+  else
+    echo disabling cookies
   fi
+],[
+  echo enabling cookies
+  AC_DEFINE(ENABLE_COOKIES)
 ])
 
 
