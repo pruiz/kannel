@@ -1,3 +1,13 @@
+2003-04-03  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.[ch]: added http_get_header_parameter() function to return a
+      specific parameter value for multi-parameter headers.
+    * doc/userguide/userguide.xml: added section about new 'no-dlr' for CIMD2.
+    * gwlib/cfg.def, gw/smsc/smsc_cimd2.c: added new 'no-dlr' config directive
+      to indicate if DLR requests should be proceeeded for a CIMD2 connection.
+      This *should* be abstracted for all SMSC types in the next future!
+      Thanks to "Dziugas Baltrunas" <menulis@soften.ktu.lt> for the patch.
+      [Msg-ID: <Pine.LNX.4.53L0.0304021137580.5595@diedas.soften.ktu.lt>]
+
 2003-04-01  Alexander Malysh  <a.malysh@centrium.de>
     * configure.in, config.h.in, gwlib/protected.c: added check and using
       for reentrant functions (localtime_r,gmtime_r) in gw_localtime,gw_gmtime.
