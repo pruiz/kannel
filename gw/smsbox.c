@@ -949,12 +949,11 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      * check if UDH length is legal, or otherwise discard the
      * message, to prevent intentional buffer overflow schemes
      */
-    if (udh != NULL) {
-	if (octstr_len(udh) != (octstr_get_char(udh, 0) + 1))
-	    *status = 400;
-	    return octstr_create("UDH field misformed, rejected");
+    if (udh != NULL && (octstr_len(udh) != octstr_get_char(udh, 0) + 1)) {
+	*status = 400;
+	return octstr_create("UDH field misformed, rejected");
     }
-    
+
     if (strspn(octstr_get_cstr(to), sendsms_number_chars) < octstr_len(to)) {
 	info(0,"Illegal characters in 'to' string ('%s') vs '%s'",
 	     octstr_get_cstr(to), sendsms_number_chars);

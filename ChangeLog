@@ -1,5 +1,12 @@
 2001-05-09  Uoti Urpala  <uau@wapit.com>
 
+	* gw/smsc_emi2.c: Fixed formatting of a message field (%04d vs
+	%4d). Spotted by Andreas Fink.
+
+	* gw/smsbox.c: Fixed a nasty typo in the previous change.
+
+2001-05-09  Uoti Urpala  <uau@wapit.com>
+
 	* gw/smsbox.c: Return meaningful HTTP status codes when replying
 	to requests to sendsms-port.
 

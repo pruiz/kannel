@@ -273,7 +273,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
 	emimsg->fields[E50_MCLS] = octstr_create("1");
 	str = octstr_duplicate(msg->sms.msgdata);
 	emimsg->fields[E50_NB] =
-	    octstr_format("%4d", 8 * octstr_len(str));
+	    octstr_format("%04d", 8 * octstr_len(str));
 	octstr_binary_to_hex(str, 1);
 	emimsg->fields[E50_TMSG] = str;
     }
