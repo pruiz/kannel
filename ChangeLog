@@ -1,3 +1,6 @@
+2003-10-26  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bb_http.c: cleanup and harmonization of http admin commands.
+
 2003-10-24  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/conn.c: added check for NULL pointer callback function.
     * gwlib/http.c: call conn_unregister(conn) before destroing HTTPClient.

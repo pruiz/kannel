@@ -95,7 +95,7 @@ static Octstr *httpd_store_status(List *cgivars, int status_type)
     return store_status(status_type);
 }
 
-static Octstr *httpd_loglevel(List *cgivars)
+static Octstr *httpd_loglevel(List *cgivars, int status_type)
 {
     Octstr *reply;
     Octstr *level;
@@ -116,18 +116,20 @@ static Octstr *httpd_loglevel(List *cgivars)
     }
 }
 
-static Octstr *httpd_shutdown(List *cgivars)
+static Octstr *httpd_shutdown(List *cgivars, int status_type)
 {
     Octstr *reply;
     if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
     if (bb_status == BB_SHUTDOWN)
 	bb_status = BB_DEAD;
-    else
+    else {
 	bb_shutdown();
+        gwthread_wakeup(MAIN_THREAD_ID);
+    }
     return octstr_create("Bringing system down");
 }
 
-static Octstr *httpd_isolate(List *cgivars)
+static Octstr *httpd_isolate(List *cgivars, int status_type)
 {
     Octstr *reply;
     if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
@@ -139,7 +141,7 @@ static Octstr *httpd_isolate(List *cgivars)
 	return octstr_create(GW_NAME " isolated from message providers");
 }
 
-static Octstr *httpd_suspend(List *cgivars)
+static Octstr *httpd_suspend(List *cgivars, int status_type)
 {
     Octstr *reply;
     if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
@@ -151,7 +153,7 @@ static Octstr *httpd_suspend(List *cgivars)
 	return octstr_create(GW_NAME " suspended");
 }
 
-static Octstr *httpd_resume(List *cgivars)
+static Octstr *httpd_resume(List *cgivars, int status_type)
 {
     Octstr *reply;
     if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
@@ -163,7 +165,7 @@ static Octstr *httpd_resume(List *cgivars)
 	return octstr_create("Running resumed");
 }
 
-static Octstr *httpd_restart(List *cgivars)
+static Octstr *httpd_restart(List *cgivars, int status_type)
 {
     Octstr *reply;
     if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
@@ -178,7 +180,7 @@ static Octstr *httpd_restart(List *cgivars)
     return octstr_create("Restarting.....");
 }
 
-static Octstr *httpd_flush_dlr(List *cgivars)
+static Octstr *httpd_flush_dlr(List *cgivars, int status_type)
 {
     Octstr *reply;
     if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
@@ -190,7 +192,7 @@ static Octstr *httpd_flush_dlr(List *cgivars)
 	return octstr_create("DLR queue flushed");
 }
 
-static Octstr *httpd_stop_smsc(List *cgivars)
+static Octstr *httpd_stop_smsc(List *cgivars, int status_type)
 {
     Octstr *reply;
     Octstr *smsc;
@@ -208,7 +210,7 @@ static Octstr *httpd_stop_smsc(List *cgivars)
         return octstr_create("SMSC id not given");
 }
 
-static Octstr *httpd_restart_smsc(List *cgivars)
+static Octstr *httpd_restart_smsc(List *cgivars, int status_type)
 {
     Octstr *reply;
     Octstr *smsc;
@@ -226,17 +228,40 @@ static Octstr *httpd_restart_smsc(List *cgivars)
         return octstr_create("SMSC id not given");
 }
 
-static void httpd_serve(HTTPClient *client, Octstr *url, List *headers, 
+/* Known httpd commands and their functions */
+static struct httpd_command {
+    const char *command;
+    Octstr * (*function)(List *cgivars, int status_type);
+} httpd_commands[] = {
+    { "status", httpd_status },
+    { "store-status", httpd_store_status },
+    { "log-level", httpd_loglevel },
+    { "shutdown", httpd_shutdown },
+    { "suspend", httpd_suspend },
+    { "isolate", httpd_isolate },
+    { "resume", httpd_resume },
+    { "restart", httpd_restart },
+    { "flush-dlr", httpd_flush_dlr },
+    { "stop-smsc", httpd_stop_smsc },
+    { "start-smsc", httpd_restart_smsc },
+    { NULL , NULL } /* terminate list */
+};
+
+static void httpd_serve(HTTPClient *client, Octstr *ourl, List *headers,
     	    	    	Octstr *body, List *cgivars)
 {
-    Octstr *reply, *final_reply;
+    Octstr *reply, *final_reply, *url;
     char *content_type;
     char *header, *footer;
     int status_type;
+    int i;
+    long pos;
+
+    reply = final_reply = NULL; /* for compiler please */
+    url = octstr_duplicate(ourl);
 
     /* Set default reply format according to client
      * Accept: header */
-    
     if (http_type_accepted(headers, "text/vnd.wap.wml")) {
 	status_type = BBSTATUS_WML;
 	content_type = "text/vnd.wap.wml";
@@ -251,69 +276,45 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
     } else {
 	status_type = BBSTATUS_TEXT;
 	content_type = "text/plain";
-    }    
+    }
 
-    if (octstr_str_compare(url, "/cgi-bin/status")==0
-	|| octstr_str_compare(url, "/status")==0) {
-	reply = httpd_status(cgivars, status_type);
-    } else if (octstr_str_compare(url, "/cgi-bin/status.html")==0
-	       || octstr_str_compare(url, "/status.html")==0) {
-	status_type = BBSTATUS_HTML;
-	reply = httpd_status(cgivars, status_type);
-    } else if (octstr_str_compare(url, "/cgi-bin/status.wml")==0
-	       || octstr_str_compare(url, "/status.wml")==0) {
-	status_type = BBSTATUS_WML;
-	reply = httpd_status(cgivars, status_type);
-    } else if (octstr_str_compare(url, "/cgi-bin/status.txt")==0
-	       || octstr_str_compare(url, "/status.txt")==0) {
-	status_type = BBSTATUS_TEXT;
-	reply = httpd_status(cgivars, status_type);
-    } else if (octstr_str_compare(url, "/cgi-bin/status.xml")==0
-	       || octstr_str_compare(url, "/status.xml")==0) {
-	status_type = BBSTATUS_XML;
-	reply = httpd_status(cgivars, status_type);
-	/* content_type = "text/x-kannelstatus"; */
-    } else if (octstr_str_compare(url, "/store-status") == 0) {
-        status_type = BBSTATUS_TEXT;
-        reply = httpd_store_status(cgivars, status_type);
-    } else if (octstr_str_compare(url, "/store-status.html") == 0) {
-        status_type = BBSTATUS_HTML;
-        reply = httpd_store_status(cgivars, status_type);
-    } else if (octstr_str_compare(url, "/store-status.xml") == 0) {
-        status_type = BBSTATUS_XML;
-        reply = httpd_store_status(cgivars, status_type);
-    } else if (octstr_str_compare(url, "/cgi-bin/loglevel")==0
-	       || octstr_str_compare(url, "/loglevel")==0) {
-	reply = httpd_loglevel(cgivars);
-    } else if (octstr_str_compare(url, "/cgi-bin/shutdown")==0
-	       || octstr_str_compare(url, "/shutdown")==0) {
-	reply = httpd_shutdown(cgivars);
-    } else if (octstr_str_compare(url, "/cgi-bin/suspend")==0
-	       || octstr_str_compare(url, "/suspend")==0) {
-	reply = httpd_suspend(cgivars);
-    } else if (octstr_str_compare(url, "/cgi-bin/isolate")==0
-	       || octstr_str_compare(url, "/isolate")==0) {
-	reply = httpd_isolate(cgivars);
-    } else if (octstr_str_compare(url, "/cgi-bin/resume")==0
-	       || octstr_str_compare(url, "/resume")==0) {
-	reply = httpd_resume(cgivars);
-    } else if (octstr_str_compare(url, "/cgi-bin/restart")==0
-           || octstr_str_compare(url, "/restart")==0) {
-    reply = httpd_restart(cgivars);
-    } else if (octstr_str_compare(url, "/cgi-bin/flush-dlr")==0
-	       || octstr_str_compare(url, "/flush-dlr")==0) {
-	reply = httpd_flush_dlr(cgivars);
-    } else if (octstr_str_compare(url, "/cgi-bin/stop-smsc")==0
-	       || octstr_str_compare(url, "/stop-smsc")==0) {
-	reply = httpd_stop_smsc(cgivars);
-    } else if (octstr_str_compare(url, "/cgi-bin/start-smsc")==0
-	       || octstr_str_compare(url, "/start-smsc")==0) {
-	reply = httpd_restart_smsc(cgivars);
-    /*
-     * reconfig?
-     */
-    } else  {
-	reply = octstr_format("Unknown command %S", url);
+    /* kill '/cgi-bin' prefix */
+    pos = octstr_search(url, octstr_imm("/cgi-bin/"), 0);
+    if (pos != -1)
+        octstr_delete(url, pos, 9);
+
+    /* look for type and kill it */
+    pos = octstr_search_char(url, '.', 0);
+    if (pos != -1) {
+        Octstr *tmp = octstr_copy(url, pos+1, octstr_len(url) - pos - 1);
+        octstr_delete(url, pos, octstr_len(url) - pos);
+
+        if (octstr_str_compare(tmp, "txt") == 0)
+            status_type = BBSTATUS_TEXT;
+        else if (octstr_str_compare(tmp, "html") == 0)
+            status_type = BBSTATUS_HTML;
+        else if (octstr_str_compare(tmp, "xml") == 0)
+            status_type = BBSTATUS_XML;
+        else if (octstr_str_compare(tmp, "wml") == 0)
+            status_type = BBSTATUS_WML;
+
+        octstr_destroy(tmp);
+    }
+
+    for (i=0; httpd_commands[i].command != NULL; i++) {
+        if (octstr_str_compare(url, httpd_commands[i].command) == 0) {
+            reply = httpd_commands[i].function(cgivars, status_type);
+            break;
+        }
+    }
+
+    /* check if command found */
+    if (httpd_commands[i].command == NULL) {
+        char *lb = bb_status_linebreak(status_type);
+	reply = octstr_format("Unknown command `%S'.%sPossible commands are:%s",
+            ourl, lb, lb);
+        for (i=0; httpd_commands[i].command != NULL; i++)
+            octstr_format_append(reply, "%s%s", httpd_commands[i].command, lb);
     }
 
     gw_assert(reply != NULL);
@@ -352,6 +353,7 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
     http_send_reply(client, HTTP_OK, headers, final_reply);
 
     octstr_destroy(url);
+    octstr_destroy(ourl);
     octstr_destroy(body);
     octstr_destroy(reply);
     octstr_destroy(final_reply);
