@@ -121,6 +121,7 @@ srcdirs = gw gwlib test utils wmlscript
 
 docsrcs = $(shell grep -l '<!DOCTYPE ' doc/*/*.xml)
 docs = $(docsrcs:.xml=.html) $(docsrcs:.xml=.ps)
+DOCSTARGET=@DOCSTARGET@
 
 figsrcs = $(shell echo doc/*/*.fig)
 figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
@@ -154,10 +155,11 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 	if cmp -s y.tab.h $*.h; then rm -f y.tab.h; else mv y.tab.h $*.h; fi; \
 	else :; fi
 
-all: progs tests docs
+all: progs tests $(DOCSTARGET)
 progs: $(progs)
 tests: $(testprogs)
 docs: figs $(docs)
+no-docs:
 figs: $(figs)
 
 install: all

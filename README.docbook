@@ -1,3 +1,13 @@
+"configure" and documentation
+
+	The configure script tries to locate DocBook and the tools needed
+	to proecess it automatically. If it doesn't find them, it generates
+	a Makefile that won't build the documentation. You can override the
+	heuristics with the following options:
+	
+		--enable-docs	Always build documentation
+		--without-docs	Never build documentation
+	
 DocBook installation on Debian (unstable)
 
 	Install the "docbook-stylesheets" package and everything it

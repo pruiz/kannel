@@ -1,3 +1,8 @@
+Fri Jan 21 18:36:33 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* configure.in, configure, Makefile.in, README.docbook: Added
+	--enable-docs and --without-docs options.
+
 Fri Jan 21 14:18:24 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* wmlscript/wsgram.c, wmlscript/wsgram.h: Added to CVS. These

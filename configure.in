@@ -101,6 +101,7 @@ GW_HAVE_FUNC_FROM(arpa/inet.h, inet_aton,
 
 
 dnl DocBook stuff
+
 AC_CHECK_PROG(JADE, jade, jade, :)
 AC_CHECK_PROG(JADETEX, jadetex, jadetex, :)
 AC_CHECK_PROG(DVIPS, dvips, dvips, :)
@@ -117,6 +118,25 @@ for file in /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/print/docbook.dsl \
 do
 	AC_CHECK_FILE($file,TEX_DSL=$file)
 done
+
+AC_SUBST(DOCSTARGET)
+if test "x$HTML_DSL" = "x" -o "x$TEX_DSL" = "x"
+then
+	DOCSTARGET="no-docs"
+else
+	DOCSTARGET="docs"
+fi
+
+dnl Implement --enable-docs option.
+
+AC_ARG_ENABLE(docs,
+[  --enable-docs	  enable building of documentation], [
+  echo enabling documentation
+  DOCSTARGET="docs"
+], [
+  echo disabling documentation
+  DOCSTARGET="no-docs"
+])
 
 dnl Implement --enable-debug option.
 
