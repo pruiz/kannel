@@ -2289,6 +2289,13 @@ secret-nas = radius
 
      </entry></row>
 
+    <row><entry><literal>throughput</literal></entry>
+      <entry><literal>number (messages/sec)</literal></entry>
+      <entry valign="bottom">
+        If SMSC requires that Kannel limits the number of messages per second, 
+        use this variable. This is considered as active throttling. (optional)
+     </entry></row>
+
    <row><entry><literal>denied-smsc-id</literal></entry>
      <entry><literal>id-list</literal></entry>
      <entry valign="bottom">
@@ -2815,13 +2822,6 @@ smsc-password = bar
         When using <literal>flow-control=0</literal>, emi works in windowed
         flow control mode. This variable defines the size of the window used
         to send messages. (optional, defaults to the maximum - 100)
-     </entry></row>
-
-    <row><entry><literal>throughput</literal></entry>
-      <entry><literal>number (messages/sec)</literal></entry>
-      <entry valign="bottom">
-        If SMSC requires that Kannel limits the number of messages per second, 
-        use this variable. (optional)
      </entry></row>
 
     <row><entry><literal>my-number</literal></entry>
@@ -3890,6 +3890,7 @@ marked as "not tested" because the table is still new.</para>
      <entry>at</entry>
      <entry>http</entry>
      <entry>fake</entry>
+     <entry>smasi</entry>
    </row>
   </thead>
   <tbody>
@@ -3908,6 +3909,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
+    <entry>y</entry>
     <entry>y</entry>
    </row>
    <row>
@@ -3928,6 +3930,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>
+    <entry>?</entry>
    </row>
    <row>
     <entry spanname="feature">Can set Alt-DCS</entry>
@@ -3945,6 +3948,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -3961,6 +3965,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>y</entry>
     <entry>y</entry>
+    <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
    </row>
@@ -3981,6 +3986,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>?</entry>
     <entry>?</entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -3999,6 +4005,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
+    <entry>?</entry>
    </row>
 
 	<row>
@@ -4017,6 +4024,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -4033,6 +4041,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>y</entry>
     <entry>y</entry>
+    <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
    </row>
@@ -4053,6 +4062,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>
+    <entry>y</entry>
    </row>
 
    <row>
@@ -4068,6 +4078,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>y</entry>
+    <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -4089,6 +4100,26 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
+    <entry>?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can use throttling</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>y</entry>
+    <entry>n</entry>
+    <entry>y</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>y</entry>
+    <entry>y</entry>
+    <entry>y</entry>
    </row>
    
   </tbody>
@@ -4115,6 +4146,7 @@ marked as "not tested" because the table is still new.</para>
      <entry>at</entry>
      <entry>http</entry>
      <entry>fake</entry>
+     <entry>smasi</entry>
    </row>
   </thead>
   <tbody>
@@ -4135,6 +4167,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>
+    <entry>y</entry>
    </row>
 
    <!-- Lets clean the rest of the table -->
@@ -4155,6 +4188,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>n</entry>
     <entry>y?<footnote id="nomarkod"><para>Does not mark it as octet data</para></footnote></entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -4173,6 +4207,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>y?</entry>
     <entry>y?<footnoteref linkend="nomarkod"></entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -4191,6 +4226,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>n</entry>
     <entry>y?</entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -4209,6 +4245,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -4227,6 +4264,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -4245,6 +4283,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>y?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -4263,6 +4302,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -4281,6 +4321,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>y?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -4299,6 +4340,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>y?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -4317,6 +4359,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>N<footnote><para>Miscalculates message length</para></footnote></entry>
     <entry>y?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -4335,6 +4378,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>y?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -4353,6 +4397,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -4371,6 +4416,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
+    <entry>?</entry>
    </row>
 
    <row>
@@ -4386,6 +4432,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>n</entry>
+    <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
