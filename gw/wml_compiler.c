@@ -448,8 +448,19 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
     *p = NULL;
 
   attribute = octstr_create(attr->name);
+
+#if defined(LIBXML_VERSION) && LIBXML_VERSION >= 20000
+
+  if (attr->children != NULL)
+    value = octstr_create(attr->children->content);
+
+#else
+
   if (attr->val != NULL)
     value = octstr_create(attr->val->content);
+
+#endif
+
   else 
     value = NULL;
 
@@ -460,9 +471,10 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
       {
 	/* Check if there's an attribute start token with good value on 
 	   the code page. */
-	for (j = i; 
-	     strcmp(wml_attributes[i].attribute, wml_attributes[j].attribute)
-	       == 0; j++)
+        for (j = i; (wml_attributes[j].attribute != NULL) &&
+	       (strcmp(wml_attributes[i].attribute, 
+		       wml_attributes[j].attribute)
+		== 0); j++)
 	  if (wml_attributes[j].a_value != NULL && value != NULL)	      
 	    {
 	      val_j = octstr_create(wml_attributes[j].a_value);
@@ -493,8 +505,18 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
   /* The rest of the attribute is coded as a inline string. */
   if (value != NULL && coded_length < (int) octstr_len(value))
     {
-      if (coded_length == 0) 
+      if (coded_length == 0)
+
+#if defined(LIBXML_VERSION) && LIBXML_VERSION >= 20000
+
+        p = octstr_create(attr->children->content); 
+
+#else
+
 	p = octstr_create(attr->val->content); 
+
+#endif
+
       else
 	p = octstr_copy(value, coded_length, octstr_len(value) - 
 			coded_length); 
@@ -1155,7 +1177,7 @@ static unsigned long string_table_add(Octstr *ostr, wml_binary_t **wbxml)
   octstr_append_char(ostr, STR_END);
 
   /* Check whether the string is unique. */
-  for (i = 0; i < list_len((*wbxml)->string_table); i++)
+  for (i = 0; i < (unsigned long)list_len((*wbxml)->string_table); i++)
     {
       item = list_get((*wbxml)->string_table, i);
       if (octstr_compare(item->string, ostr) == 0)
