@@ -10,12 +10,10 @@ version="$1"
 tag=version_`echo $version | tr .- __`
 base=gateway-$version
 
-rm -rf $base $base.tar.gz README-$version design-$version design-$version.ps
+rm -rf $base
 cvs -Q export -r $tag -d $base gateway
-if fgrep "$version" $base/VERSION >/dev/null
+if [ "`head -1 $base/VERSION`" != "$version" ]
 then
-	:
-else
 	echo "Oops, VERSION does not match."
 	exit 1
 fi
@@ -23,11 +21,25 @@ fi
 tar -c -z -f $base.tar.gz $base
 zip -9qr $base.zip $base/*
 
-(cd $base && ./configure --enable-docs >/dev/null && make -s docs)
+(
+ set -e
+ cd $base
+ ./configure --enable-docs >/dev/null
+ touch .depend
+ make -s depend
+ make -s docs
+)
 
 cp -a $base/doc/arch arch-$version
+cp $base/doc/arch/arch.ps .
 tar -c -z -f arch-$version.tar.gz arch-$version/*
 zip -9qr arch-$version.zip arch-$version/*
+
+cp -a $base/doc/userguide userguide-$version
+cp $base/doc/userguide/userguide.ps .
+tar -c -z -f userguide-$version.tar.gz userguide-$version/*
+zip -9qr userguide-$version.zip userguide-$version/*
+
 cp $base/NEWS NEWS-$version
 cp $base/README README-$version
 cp $base/ChangeLog ChangeLog-$version
