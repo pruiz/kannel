@@ -1,3 +1,8 @@
+Wed Jan 19 10:33:39 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* configure.in: Added check for inet_aton in arpa/inet.h, using
+	GW_HAVE_FUNC_FROM. This should make things work for Solaris.
+
 Wed Jan 19 10:21:39 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: Silence WMLScript compiler tracing info.

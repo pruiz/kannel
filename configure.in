@@ -96,6 +96,8 @@ fi
 
 GW_HAVE_FUNC_FROM(netdb.h, getnameinfo,
 	HAVE_GETNAMEINFO, [Defined if we have getnameinfo() in <netdb.h>])
+GW_HAVE_FUNC_FROM(arpa/inet.h, inet_aton,
+	HAVE_INET_ATON, [Defined if we have inet_aton() in <arpa/inet.h>])
 
 
 dnl DocBook stuff
