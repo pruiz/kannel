@@ -24,20 +24,23 @@
 
 extern List *incoming_sms;
 extern List *outgoing_sms;
-
+extern List *flow_threads;
 
 
 /* growing number to be given to messages */
 static int msg_id = 1;
 
-/* approximation of store size (how many messages in it) */
-static long store_size = 0;
-
 static FILE *file = NULL;
 static Octstr *filename = NULL;
 static Octstr *newfile = NULL;
 static Octstr *bakfile = NULL;
-static Mutex *store_mutex = NULL;
+static Mutex *file_mutex = NULL;
+static long cleanup_thread;
+
+
+static List *sms_store;
+static List *ack_store;
+
 
 
 static void write_msg(Msg *msg)
@@ -83,15 +86,109 @@ static int rename_store(void)
 }
 
 
+static int do_dump(void)
+{
+    Msg *msg;
+    long l;
+
+    if (filename == NULL)
+	return 0;
+
+    /* create a new store-file and save all non-acknowledged
+     * messages into it
+     */
+    if (open_file(newfile)==-1)
+	return -1;
+
+    for (l=0; l < list_len(sms_store); l++) {
+	msg = list_get(sms_store, l);
+	write_msg(msg);
+    }    
+    fflush(file);
+
+    /* rename old storefile as .bak, and then new as regular file
+     * without .new ending */
+
+    return rename_store();
+}
+
+
+static int cmp_msgs(void *item, void *pattern) {
+    Msg *sms, *ack;
+
+    ack = pattern;
+    sms = item;
+
+    if (   ack->ack.time == sms->sms.time
+	&& ack->ack.id == sms->sms.id)
+	return 0;
+    else
+	return -1;
+}
+
+
+/*
+ * thread to cleanup store and to write it to file now and then
+ */
+static void store_cleanup(void *arg)
+{
+    Msg *ack;
+    List *match;
+    time_t last, now;
+
+    list_add_producer(flow_threads);
+    last = time(NULL);
+    
+    while((ack = list_consume(ack_store)) != NULL) {
+
+	match = list_extract_matching(sms_store, ack, cmp_msgs);
+	msg_destroy(ack);
+
+	if (match == NULL) {
+	    warning(0, "bb_store: get ACK of message not found "
+		    "from store, strange?");
+	    continue;
+	}
+	list_destroy(match, msg_destroy_item);
+
+	now = time(NULL);
+	/*
+	 * write store to file up to each 5. second, providing
+	 * that something happened, of course
+	 */
+	if (now - last > 5) {
+	    do_dump();
+	    last = now;
+	}
+    }
+    store_dump();
+    if (file != NULL)
+	fclose(file);
+    octstr_destroy(filename);
+    octstr_destroy(newfile);
+    octstr_destroy(bakfile);
+    mutex_destroy(file_mutex);
+
+    list_destroy(ack_store, msg_destroy_item);
+    list_destroy(sms_store, msg_destroy_item);
+
+    list_remove_producer(flow_threads);
+}
+
+
+
 /*------------------------------------------------------*/
 
 long store_messages(void)
 {
-    return store_size;
+    return list_len(sms_store);
 }
+
 
 int store_save(Msg *msg)
 {
+    Msg *copy;
+    
     if (file == NULL)
 	return 0;
 
@@ -102,17 +199,25 @@ int store_save(Msg *msg)
 	else
 	    msg_id++;
 
-	store_size++;
-    } else if (msg_type(msg) != ack)
+	copy = msg_duplicate(msg);
+	list_produce(sms_store, copy);
+    }
+    else if (msg_type(msg) == ack) {
+	copy = msg_duplicate(msg);
+	list_produce(ack_store, copy);
+    }
+    else
 	return -1;
 
-    mutex_lock(store_mutex);
+    /* write to file, too */
+    mutex_lock(file_mutex);
     write_msg(msg);
     fflush(file);
-    mutex_unlock(store_mutex);
-    
+    mutex_unlock(file_mutex);
+
     return 0;
 }
+
 
 
 int store_load(void)
@@ -120,15 +225,24 @@ int store_load(void)
     List *keys;
     Octstr *store_file, *pack, *key;
     Dict *msg_hash;
-    Msg *msg, *dmsg;
+    Msg *msg, *dmsg, *copy;
     int retval, msgs;
     long end, pos;
-
+    long store_size;
+    
     if (filename == NULL)
 	return 0;
 
-    mutex_lock(store_mutex);
+    list_lock(sms_store);
+    list_lock(ack_store);
 
+    while((msg = list_extract_first(sms_store))!=NULL)
+	msg_destroy(msg);
+
+    while((msg = list_extract_first(ack_store))!=NULL)
+	msg_destroy(msg);
+	
+    mutex_lock(file_mutex);
     if (file != NULL) {
 	fclose(file);
 	file = NULL;
@@ -142,17 +256,16 @@ int store_load(void)
     if (store_file == NULL) {
 	info(0, "Cannot open any store file, starting new one");
 	retval = open_file(filename);
-	mutex_unlock(store_mutex);
+	list_unlock(sms_store);
+	list_unlock(ack_store);
+	mutex_unlock(file_mutex);
 	return retval;
     }
 
     info(0, "Store-file size %ld, starting to unpack%s", octstr_len(store_file),
 	 octstr_len(store_file) > 10000 ? " (may take awhile)" : "");
 
-    if (store_size == 0)
-	msg_hash = dict_create(101, NULL);  /* XXX */
-    else
-	msg_hash = dict_create(store_size, NULL);
+    msg_hash = dict_create(101, NULL);  /* XXX should be different? */
 	
     pos = 0;
     msgs = 0;
@@ -201,53 +314,57 @@ int store_load(void)
     info(0, "Retrieved %d messages, non-acknowledged messages: %ld",
 	 msgs, store_size);
 
-    /* now create a new store-file and save all non-acknowledged messages
-     * into it
+    /* now create a new sms_store out of messages left
      */
-
-    if (open_file(newfile)==-1)
-	return -1;
 
     keys = dict_keys(msg_hash);
     while((key = list_extract_first(keys))!=NULL) {
 	msg = dict_get(msg_hash, key);
-	write_msg(msg);		/* write to new file */
-	octstr_destroy(key);
-    }
-    list_destroy(keys, NULL);
-    fflush(file);
 
-    /* rename old storefile as .bak, and then new as regular file
-     * without .new ending */
-
-    retval = rename_store();
-    
-
-    /* Finally, add all non-acknowledged messages to correct queues
-     * so that they can get the answer at some point
-     *
-     * If retval = -1 (errors in renaming), do not add messages,
-     * just clean up memory
-     */
-    
-    keys = dict_keys(msg_hash);
-    while((key = list_extract_first(keys))!=NULL) {
-	msg = dict_remove(msg_hash, key);
-	if (msg_type(msg) == sms && retval == 0) {
-	    if (msg->sms.sms_type == mo)
-		list_produce(incoming_sms, msg);
-	    else
-		list_produce(outgoing_sms, msg);
-	} else
+	if (msg_type(msg) != sms) {
 	    msg_destroy(msg);
+	    octstr_destroy(key);
+	    continue;
+	}
+	copy = msg_duplicate(msg);
+	list_produce(sms_store, copy);
+
+	if (msg->sms.sms_type == mo)
+	    list_produce(incoming_sms, msg);
+	else
+	    list_produce(outgoing_sms, msg);
+	
 	octstr_destroy(key);
     }
     list_destroy(keys, NULL);
+
+    /* Finally, generate new store file out of left messages
+     */
+    retval = do_dump();
+    
+    mutex_unlock(file_mutex);
 
     /* destroy the hash */
     dict_destroy(msg_hash);
+
+    list_unlock(sms_store);
+    list_unlock(ack_store);
+
+    return retval;
+}
+
+
+
+int store_dump(void)
+{
+    int retval;
+
     
-    mutex_unlock(store_mutex);
+    list_lock(sms_store);
+    debug("bb.store", 0, "Dumping %ld messages to store", list_len(sms_store));
+    retval = do_dump();
+    list_unlock(sms_store);
+
     return retval;
 }
 
@@ -262,7 +379,15 @@ int store_init(Octstr *fname)
     filename = octstr_duplicate(fname);
     newfile = octstr_format("%s.new", octstr_get_cstr(filename));
     bakfile = octstr_format("%s.bak", octstr_get_cstr(filename));
-    store_mutex = mutex_create();
+
+    sms_store = list_create();
+    ack_store = list_create();
+
+    file_mutex = mutex_create();
+    list_add_producer(ack_store);
+    
+    if ((cleanup_thread = gwthread_create(store_cleanup, NULL))==-1)
+	panic(0, "Failed to create a cleanup thread!");
 
     return 0;
 }
@@ -272,10 +397,6 @@ void store_shutdown(void)
 {
     if (filename == NULL)
 	return;
-    if (file != NULL)
-	fclose(file);
-    octstr_destroy(filename);
-    octstr_destroy(newfile);
-    octstr_destroy(bakfile);
-    mutex_destroy(store_mutex);
+
+    list_remove_producer(ack_store);
 }

@@ -901,6 +901,18 @@ admin-password = f00bar
         automatically discarded
      </entry></row>
 
+    <row><entry><literal>store-file</literal></entry>
+     <entry>filename</entry>
+     <entry valign=bottom>
+        A file in which any received SMS messages are stored until
+        they are successfully handled. By using this variable, no SMS
+        messages are lost in Kannel, but theoretically some messages
+        can duplicate when system is taken down
+        violently. <emphasis>Does not support sendsms messages
+        yet!</emphasis>
+
+     </entry></row>
+
     <row><entry><literal>http-proxy-host</literal></entry>
      <entry>hostname</entry>
      <entry morerows=1 valign=bottom>

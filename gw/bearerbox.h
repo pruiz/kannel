@@ -109,17 +109,28 @@ void httpadmin_stop(void);
 
 /* return number of SMS messages in current store (file) */
 long store_messages(void);
+
 /* assign ID and save given message to store. Return -1 if save failed */
 int store_save(Msg *msg);
+
 /* load store from file; delete any messages that have been relayed,
  * and create a new store file from remaining. Calling this function
  * might take a while, depending on store size
  * Return -1 if something fails (bb can then PANIC normally)
  */
 int store_load(void);
-/* initialize system. Return -1 if fname is baad (too long) */
+
+/* dump currently non-acknowledged messages into file. This is done
+ * automatically now and then, but can be forced. Return -1 if file
+ * problems
+ */
+int store_dump(void);
+
+/* initialize system. Return -1 if fname is baad (too long), otherwise
+ * load data from disk */
 int store_init(Octstr *fname);
-/* destroy system, close files */
+
+/* init shutdown (system dies when all acks have been processed) */
 void store_shutdown(void);
 
 

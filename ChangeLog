@@ -1,3 +1,15 @@
+2001-04-10  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_store.c: Updated to use double-memory buffering and to do
+	frequent dumps out of that data. Now it is fast and does not take
+	much disk space. Interval is currently fixed (5 secs), and there
+	is still no message queue limitations, and sendsms (push9 messages
+	are not yet supported. But otherwise it should work.
+
+	* gw/bearerbox.c|h: required little modifications
+
+	* doc/userguide/userguide.xml: added notes of store-file variable
+	
 2001-04-10  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsbox.c: Add no-cache headers to sendsms replies.

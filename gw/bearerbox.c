@@ -459,7 +459,6 @@ int main(int argc, char **argv)
     info(0, "All flow threads have died, killing core");
     bb_status = BB_DEAD;
     httpadmin_stop();
-    store_shutdown();
 
     boxc_cleanup();
     smsc2_cleanup();
@@ -498,6 +497,7 @@ int bb_shutdown(void)
 
     called = 1;
     set_shutdown_status();
+    store_shutdown();
     mutex_unlock(status_mutex);
 
 #ifndef KANNEL_NO_SMS
