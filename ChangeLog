@@ -1,4 +1,7 @@
 2002-04-17  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/wapbox.c, gwlib/pki.c: more work on WTLS configuration checking
+
+2002-04-17  Stipe Tolj <tolj@wapme-systems.de>
     * wap/wap_events.c: minor style correction
 
 2002-04-17  Stipe Tolj <tolj@wapme-systems.de>
