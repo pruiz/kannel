@@ -199,7 +199,6 @@ static unsigned char *name_resp_state(int s){
  */
 static void resp_event_handle(WTPRespMachine *resp_machine, WAPEvent *event){
      WAPEvent *wsp_event = NULL;
-     WAPEvent *timer_event = NULL;
 
      debug("wap.wtp", 0, "WTP: resp_machine %ld, state %s, event %s.", 
 	   resp_machine->mid, 

@@ -239,7 +239,6 @@ static unsigned char *name_init_state(int s){
  */
 static void handle_init_event(WTPInitMachine *init_machine, WAPEvent *event){
        WAPEvent *wsp_event = NULL;
-       WAPEvent *timer_event = NULL;
        int ret;
 
        debug("wap.wtp", 0, "WTP_INIT: initiator machine %ld, state %s,"
@@ -325,7 +324,7 @@ static WTPInitMachine *init_machine_find_or_create(WAPEvent *event){
        WTPInitMachine *machine = NULL;
        long mid;
        unsigned short old_tid, tid;
-       int tidnew;
+       int tidnew = 0;
        WAPAddrTuple *tuple;
 
        tid  = -1;

@@ -1,3 +1,7 @@
+2000-09-29  Richard Braakman  <dark@wapit.com>
+
+	* gw/wtp_init.c, gw/wtp_resp.c: Fixed some compiler warnings.
+
 2000-09-29  Kalle Marjola  <rpr@wapit.com>
 
 	* doc/userguide/userguide.xml: It has been done. Now (practically)
