@@ -86,12 +86,12 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port)
 
 	s = socket(PF_INET, SOCK_STREAM, 0);
 	if (s == -1) {
-		error(0, "Couldn't create new socket.");
+		error(errno, "Couldn't create new socket.");
 		goto error;
 	}
 
 	if (gw_gethostbyname(&hostinfo, hostname) == -1) {
-		error(0, "gethostbyname failed");
+		error(errno, "gethostbyname failed");
 		goto error;
 	}
 
@@ -109,24 +109,24 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port)
 	    reuse = 1;
 	    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &reuse,
 			   sizeof(reuse)) == -1) {
-		error(0, "setsockopt failed before bind");
+		error(errno, "setsockopt failed before bind");
 		goto error;
 	    }
 	    if (bind(s, (struct sockaddr *) &o_addr, sizeof(o_addr)) == -1) {
-		error(0, "bind to local port %d failed", our_port);
+		error(errno, "bind to local port %d failed", our_port);
 		goto error;
 	    }
 	}
 
 	if (connect(s, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
-		error(0, "connect failed");
+		error(errno, "connect failed");
 		goto error;
 	}
 
 	return s;
 
 error:
-	error(errno, "error connecting to server `%s' at port `%d'",
+	error(0, "error connecting to server `%s' at port `%d'",
 		hostname, port);
 	if (s >= 0)
 		close(s);
