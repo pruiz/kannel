@@ -24,10 +24,54 @@ Requirements
 
 Documentation
 
-	The user manual is in the doc/userguide directory and although it is
-	not complete, explain almost all parts of Kannel. Developer 
-        documentation (currently very outdated) is in the doc/arch directory.
+	The user manual is in the doc/userguide directory and although it
+	is not complete, explain almost all parts of Kannel. Developer
+	documentation (currently very outdated) is in the doc/arch
+	directory.
+	
+	In order to convert the documentation from DocBook (a markup
+	language) to HTML and PostScript, you need some tools. On a
+	Debian GNU/Linux system, install the package "docbook-stylesheets"
+	and everything it depends on:
+	
+	    apt-get install docbook-stylesheets
+    
+    	On a Red Hat Linux system, you need to install the following
+	packages, in order:
+	
+		sgml-common
+		psgml
+		docbook
+		stylesheets
+		jade
+		jadetex
+		transfig
 
+    	See http://www.rpmfind.net to find the packages.
+
+	Then apply this change to /usr/share/texmf/web2c/texmf.cnf:
+	
+		hash_extra.jadetex = 15000
+		hash_extra.pdfjadetex = 15000
+		pool_size.jadetex = 500000
+		pool_size.pdfjadetex = 500000
+		string_vacancies.jadetex = 45000
+		string_vacancies.pdfjadetex = 45000
+		max_strings.jadetex = 55000
+		max_strings.pdfjadetex = 55000
+		pool_free.jadetex = 47500
+		pool_free.pdfjadetex = 47500
+		nest_size.jadetex = 500
+		nest_size.pdfjadetex = 500
+		param_size.jadetex = 1500
+		param_size.pdfjadetex = 1500
+		save_size.jadetex = 5000
+		save_size.pdfjadetex = 5000
+		stack_size.jadetex = 1500
+		stack_size.pdfjadetex = 1500
+	
+    	On other systems, you'll have to figure it out yourself.
+	
 Getting the gateway sources
 
 	You can download the sources from
@@ -142,6 +186,41 @@ For developers only: "make check"
 	These tests are meant to test whether subsystems mostly work,
 	stress testing needs to be done separately, and tends to require
 	testing against real applications.
+
+For developers only: Source tree organization
+
+	The source tree is organized as follows:
+	
+		gateway		root of source tree: some docs, no sources
+		|-- contrib	contributed extra material
+		|-- doc		documentation
+		|-- gw		the gateway itself
+		|-- gwlib	utility functions
+		|-- test	programs for testing the gateway
+		`-- utils	utility programs
+
+For developers only: WMLScript references
+
+	WMLScript Specification
+		      Wireless Application Protocol WMLScript Language
+		      Specification Version 1.1 http://www.wapforum.org/
+
+	WMLScript Standard Libraries Specification
+		      Wireless Aplication Protocol WMLScript
+		      Standard Libraries Specification Version 1.1
+		      http://www.wapforum.org/
+
+	RFC-2279	UTF-8, a transformation format of ISO 10646
+
+	rfc/iana/assignments/character-sets
+		      The official names for character sets that may
+		      be used in the Internet and may be referred to in
+		      Internet Documentation.
+
+	ANSI/IEEE Std 754-1985
+		      IEEE Standard for Binary Floating-Point Arithmetic.
+		      Institute of Electrical and Electronics Engineers,
+		      New York (1985).
 
 Configuring and running the gateway
 
