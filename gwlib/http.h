@@ -495,7 +495,9 @@ void http_header_get_content_type(List *headers, Octstr **type,
 
 
 /*
- * Do the headers indicate that MIME type `type' is accepted?
+ * Check if a specific mime-type can be handled by a client. This is
+ * indicated via 'Accept' headers. Returns 1 if the mime-type is acceptable,
+ * otherwise 0.
  */
 int http_type_accepted(List *headers, char *type);
 
@@ -512,7 +514,8 @@ void http_header_dump(List *headers);
 void http_cgivar_dump(List *cgiargs);
 
 /*
- * Check for acceptable charset
+ * Check if the passed charset is in the 'Accept-Charset' header list
+ * alues of the client. Returns 1 if the charset is acceptable, otherwise 0.
  */
 int http_charset_accepted(List *headers, char *charset);
 

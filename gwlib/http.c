@@ -2993,20 +2993,6 @@ void http_cgivar_dump(List *cgiargs)
     debug("gwlib.http", 0, "End of dump.");
 }
 
-/* XXX this needs to go away */
-static char *istrdup(char *orig)
-{
-    int i, len = strlen(orig);
-    char *result = gw_malloc(len + 1);
-
-    for (i = 0; i < len; i++)
-        result[i] = toupper(orig[i]);
-
-    result[i] = 0;
-
-    return result;
-}
-
 
 static int http_something_accepted(List *headers, char *header_name,
                                    char *what)
@@ -3014,24 +3000,27 @@ static int http_something_accepted(List *headers, char *header_name,
     int found;
     long i;
     List *accepts;
-    char *iwhat;
+    Octstr *oswhat;
 
     gwlib_assert_init();
     gw_assert(headers != NULL);
     gw_assert(what != NULL);
 
-    iwhat = istrdup(what);
+    /* conver to upper case */
+    oswhat = octstr_create(what);
+    octstr_convert_range(oswhat, 0, octstr_len(oswhat), toupper);
     accepts = http_header_find_all(headers, header_name);
 
     found = 0;
     for (i = 0; !found && i < list_len(accepts); ++i) {
-        char *header_value = istrdup(octstr_get_cstr(list_get(accepts, i)));
-        if (strstr(header_value, iwhat) != NULL)
+        Octstr *header_value = list_get(accepts, i);
+        octstr_convert_range(header_value, 0, octstr_len(header_value), toupper);
+        if (octstr_compare(header_value, oswhat) == 0)
             found = 1;
-        gw_free(header_value);
+        octstr_destroy(header_value);
     }
 
-    gw_free(iwhat);
+    octstr_destroy(oswhat);
     http_destroy_headers(accepts);
     return found;
 }
