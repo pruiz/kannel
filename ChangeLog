@@ -1,4 +1,8 @@
 2002-11-18  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.c: added http_open_port_if() to bind to specific interface.
+      Thanks to Nisan for this patch.
+
+2002-11-18  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_smscconn.c: processing now number normalization on smsc basis first
       and for the global define rules.
     * gwlib/http.c: HTTP basic auth is supported, so fixed the comments.
