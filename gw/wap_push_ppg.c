@@ -2779,7 +2779,7 @@ static int get_mime_boundary(List *push_headers, Octstr *content_header,
 {
     long pos;
     Octstr *bos;
-    int c;
+    int c, quoted = 0;
 
     pos = 0;
     if ((pos = octstr_case_search(content_header, 
@@ -2789,11 +2789,14 @@ static int get_mime_boundary(List *push_headers, Octstr *content_header,
     }
 
     pos += octstr_len(bos);
-    if (octstr_get_char(content_header, pos) == '\"')
+    if (octstr_get_char(content_header, pos) == '"') {
         ++pos;
+        quoted = 1;
+    }
     *boundary = octstr_create("");
-    while ((c = octstr_get_char(content_header, pos)) != ';') {
-        if (c != ' ' && c != '\"')
+    while ((c = octstr_get_char(content_header, pos)) != -1) {
+        if (c == ';' || (quoted && c == '"') || (!quoted && c == ' '))
+                break;
             octstr_format_append(*boundary, "%c", c);
         ++pos;
     }
