@@ -149,7 +149,7 @@ static void *sms_router(void *arg)
     Msg *msg;
     Smsc *si, *backup;
     char *number;
-    int i, s, ret;
+    int i, s;
 
     debug("bb.thread", 0, "START: sms_router");
     list_add_producer(flow_threads);

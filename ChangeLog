@@ -1,3 +1,7 @@
+Thu May 25 16:52:22 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/bb_smsc.c: Removed unused variable `ret'.
+
 2000-05-25    Kalle Marjola <rpr@wapit.com>
 
 	* gw/smsc.c, gw/smsc.h, gw/smsc_p.h, gw/bb_smsc.c: removed old
