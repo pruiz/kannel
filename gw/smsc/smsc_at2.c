@@ -560,6 +560,9 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag,
                         if (msg != NULL) {
                             msg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
                             bb_smscconn_receive(privdata->conn, msg);
+                        } else {
+                            error(0, "AT2[%s] could not decode PDU to a message.",
+                                  octstr_get_cstr(privdata->name));
                         }
 
                         if (!cmgr_flag) {
