@@ -8,6 +8,10 @@ problem, fix it, and re-start from beginning:
 		* Make sure everything is committed to CVS.
 		
 		* Make sure everything is working.
+
+			* Run "make -s check"
+
+			* Test with a real phone.
 		
 		* Make sure documentation is up to date.
 		
@@ -18,6 +22,8 @@ problem, fix it, and re-start from beginning:
 
 	* Update file VERSION to have the version number you want.
 
+	* Commit the changes to ChangeLog and VERSION.
+
 	* Mark the version to be released with a tag. If the version number
 	  would be X.Y, then the tag would be "version_X_Y".
 	  
@@ -25,22 +31,18 @@ problem, fix it, and re-start from beginning:
 		
 		* "cvs tag -F version_X_Y" when iterating after fixing
 		  problems in a release candidate.
+
+	* Make VERSION say "cvs" as version number so that people using
+	  the CVS version won't report some specific number as their
+	  version.
 	
 	* Make distribution files.
 	
-		* Use "makedist" script. Run it in an empty directory,
-		  not directly from the CVS work directory. CVSROOT
-		  is set as when setting up CVS for download
+		* Use "makedist" script, with the version number as
+		  argument. Run it in an empty directory, not directly
+		  from the CVS work directory.  CVSROOT is set as when
+		  setting up CVS for download.
 	
-	* Test the distribution files and the software.
-	
-		* Copy the .tar.gz prepared above to all hosts where tests
-		  should be run.
-
-		* File doc/TESTCASES lists each step of the tests. Do them
-		  one by one. XXX Skip this test for now. TESTCASES is
-		  out of date.
-
 	* Run release candidate on demo.kannel.org.
 
 		* Check configuration.
@@ -50,15 +52,28 @@ problem, fix it, and re-start from beginning:
 	* Put new files on www.kannel.org, and otherwise update the
 	  site to reflect the new release.
 
+		* makedist output goes in ~kannel/public_html/download/$V,
+	 	  where $V is the new version number.
+
+		* Use the www.kannel.org CVS module to change the html
+		  files, and use ~kannel/bin/publish-www.kannel.org-from-cvs
+		  after committing.
+
+		* Announce new version on index.shtml, and describe it
+		  on news.html.  Include an extract from the NEWS file.
+
+		* Change the links in download.shtml, and update the
+		  "Old versions" section.
+
+		* Check changes locally before committing.  Note, this
+		  will not work for the links on the download page.
+
 	* Send out the announce to appropriate places.  Remember to
-	  set Reply-To to the devel list.
+	  set Reply-To to the devel list.  Include an extract from the
+	  NEWS file.
 	
 		* announce@kannel.org
 		
-		* linux-announce@news.ornl.gov
+		* linux-announce@news.ornl.gov  (not for all versions)
 	
-		* Freshmeat
-		
-	* Make VERSION say "cvs" as version number so that people using
-	  the CVS version won't report some specific number as their
-	  version.
+		* Freshmeat  (not for all versions)
