@@ -676,10 +676,12 @@
 	and equals sign (<literal>=</literal>) and the value of the
 	variable. The name of the variable can contain any characters
 	except whitespace and equals. The value of the variable is a
-	string, with or without quotation marks (<literal>"</literal>)
+	string, with or without quotation marks (<literal></literal>)
 	around it. Quotation marks are needed if the variable needs to
-	begin or end with whitespace or contain special characters. Normal C 	escape character syntax works inside quotation marks.</para>
-	
+	begin or end with whitespace or contain special
+	characters. Normal C 	escape character syntax works inside 
+	quotation marks.</para>
+
 	<para>Perhaps an example will make things easier to comprehend:
 
 <programlisting>
@@ -706,6 +708,12 @@
 	<para>The various variables that are understood in each type
 	of configuration group are explained below.</para>
 
+	<para>Some variable values are marked as
+	<literal>'bool'</literal>. The value for variable can be like
+	true, false, yes, no, on, off, 0 or 1. Other values are
+	treated as 'true' while if the variable is not present at all,
+	it is treated as being 'false'.</para>
+	
 </sect2>
 
 <sect2>
@@ -2024,6 +2032,28 @@ send-url = "http://localhost:20022"
 </sect3>
 </sect2>
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <sect2>
 <title>Smsbox configuration</title>
 
@@ -2137,7 +2167,8 @@ log-level = 0
     <para>These groups define SMS services in the smsbox, so they are only
     used by the smsbox. Each service is recognized from the first word
     in an SMS message and by the number of arguments accepted by the
-    service configuration.  By adding a username and password in the URL
+    service configuration (unless <literal>catch-all</literal>
+    configuration variable is used).  By adding a username and password in the URL
     in the following manner
     "http://luser:password@host.domain:port/path?query" we can perform
     HTTP Basic authentication.</para>
@@ -2147,7 +2178,7 @@ log-level = 0
 <programlisting>
 group = sms-service
 keyword = www
-url = "http://%S"
+get-url = "http://%S"
 </programlisting>
      
      This service grabs any SMS with two words and 'www' as the first
@@ -2199,13 +2230,21 @@ url = "http://%S"
 
      </entry></row>
 
-   <row><entry><literal>url (c)</literal></entry>
+   <row><entry><literal>get-url (c)</literal></entry>
      <entry>URL</entry>
      <entry valign=bottom>
         Requested URL. The url can include a list of parameters, which are
         parsed before the url is fetched. See below for these
-        parameters.
+        parameters. Also works with plain 'url'
 
+     </entry></row>
+
+   <row><entry><literal>post-url (c)</literal></entry>
+     <entry>URL</entry>
+     <entry valign=bottom>
+        Requested URL. As above, but request is done as POST, not GET.
+	Always matches the keyword, regardless of pattern matching.
+	See notes on POST otherwhere.
 
      </entry></row>
 
@@ -2240,6 +2279,27 @@ url = "http://%S"
 
      </entry></row>
 
+   <row><entry><literal>catch-all</literal></entry>
+     <entry>bool</entry>
+     <entry valign=bottom>
+        Catch keyword regardless of '%s' parameters in pattern.
+
+     </entry></row>
+
+   <row><entry><literal>send-sender</literal></entry>
+     <entry>bool</entry>
+     <entry valign=bottom>
+        Used only with POST. If set to true, number of the handset is
+        set, otherwise not.
+     </entry></row>
+
+   <row><entry><literal>split-keyword</literal></entry>
+     <entry>bool</entry>
+     <entry valign=bottom>
+     Used only with POST. Remove matched keyword from message text
+        before sending it onward.
+     </entry></row>
+
    <row><entry><literal>faked-sender</literal></entry>
      <entry>phone-number</entry>
      <entry valign=bottom>
@@ -2259,12 +2319,29 @@ url = "http://%S"
         except for error messages. 
      </entry></row>
 
+   <row><entry><literal>accept-x-kannel-headers</literal></entry>
+     <entry>bool</entry>
+     <entry valign=bottom>
+        Request reply can include special X-Kannel headers but these
+        are only accepted if this variable is set to true. See
+	<xref linkend="xkannel" endterm="xkannel.title">.
+     </entry></row>
+
+   <row><entry><literal>assume-plain-text</literal></entry>
+     <entry>bool</entry>
+     <entry valign=bottom>
+        If client does not set Content-Type for reply, it is normally
+        application/octet-stream which is then handled as data in
+        kannel. This can be forced to be plain/text to allow backward
+        compatibility, when data was not expected.
+     </entry></row>
+
    <row><entry><literal>concatenation</literal></entry>
-     <entry>0 or 1</entry>
+     <entry>bool</entry>
      <entry valign=bottom>
         Long messages can be sent as independent SMS messages with
-        <literal>concatenation = 0</literal> or as concatenated messages
-        with <literal>concatenation = 1</literal>. Concatenated messages
+        <literal>concatenation = true</literal> or as concatenated messages
+        with <literal>concatenation = false</literal>. Concatenated messages
         are reassembled into one long message by the receiving device.
      </entry></row>
 
@@ -2285,11 +2362,11 @@ url = "http://%S"
      </entry></row>
 
    <row><entry><literal>omit-empty</literal></entry>
-     <entry>0 or 1</entry>
+     <entry>bool</entry>
      <entry valign=bottom>
 	Normally, Kannel sends a warning to the user if there was an
 	empty reply from the service provider.  If
-	<literal>omit-empty</literal> is set to 1, Kannel will send
+	<literal>omit-empty</literal> is set to 'true', Kannel will send
 	nothing at all in such a case.
 
      </entry></row>
@@ -2404,13 +2481,14 @@ like %P, but a leading `00' is replaced with `+'
 group = sms-service
 keyword = nop
 text = "You asked nothing and I did it!"
+catch-all = true
 
 group = sms-service
 keyword = complex
-url = "http://my.applet.machine/Servlet/kludge2?sender=%p&amp;text=%r"
+get-url = "http://my.applet.machine/Servlet/kludge2?sender=%p&amp;text=%r"
+accept-x-kannel-headers = true
 max-messages = 3
-header = "<<<"
-footer = ">>>"
+concatenation = true
 
 group = sms-service
 keyword = default
@@ -2451,25 +2529,26 @@ text = "No action specified"
 	
 	<row>
 	<entry><literal>application/octet-stream</literal></entry>
-	<entry>The body will be transmitted as the SMS message, without
-	modification.</entry>
+	<entry>The body will be transmitted as the SMS message, as
+	8-bit data. This can be avoided by setting
+	<literal>assume-plain-text</literal> varaible on for the
+	SMS-service.</entry>
 	</row>
 	
 	</tbody>
 	</tgroup>
 	</informaltable>
-	
-	In addition, the reply message may be prefixed with User Data
-	Headers (UDH), which tell the phone the type of the message. These
-	can be set with the <literal>X-Kannel-UDH</literal> header in
-	the HTTP response. The header contents contains the UDH encoded
-	in a hexadecimal form:
-	
-<screen>X-Kannel-UDH: 034C4957</screen>
 
-    	The above example is nonsense, though. UDH is mostly used with
-	Nokia Smart Messaging, the specifications of which are not
-	open, so we can't give a proper example.</para>
+        </para>
+
+
+<sect3 id="xkannel">
+<title id="xkannel.title">Extended headers</title>
+	
+	<para>Kannel uses and accepts several X-Kannel headers to be
+	used with SMS-services and SMS-push.</para>
+
+</sect3>
 	
 </sect2>
 
@@ -2766,7 +2845,7 @@ concatenation = 1
 <programlisting>
 group = sms-service
 keyword = talk
-url = "http://my.applet.machine/Servlet/talk?sender=%p&amp;text=%r"
+get-url = "http://my.applet.machine/Servlet/talk?sender=%p&amp;text=%r"
 max-messages = 0
 </programlisting>
 
@@ -2785,7 +2864,7 @@ max-messages = 0
 group = sms-service
 keyword = weather
 accepted-smsc = SOL
-url = "http://my.applet.machine/Servlet/weather?sender=%p&amp;operator=SOL&amp;text=%r"
+get-url = "http://my.applet.machine/Servlet/weather?sender=%p&amp;operator=SOL&amp;text=%r"
 </programlisting>
 
 </sect3>
@@ -2812,11 +2891,11 @@ denied-smsc-id = A
 
 group = sms-service
 accepted-smsc = A
-url = "..."
+get-url = "..."
 
 group = sms-service
 accepted-smsc = B
-url = "..."
+get-url = "..."
 </programlisting>
  
     <para>As can be seen, the <literal>smsc-id</literal> is used to

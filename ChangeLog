@@ -1,5 +1,13 @@
 2001-03-27  Kalle Marjola  <rpr@wapit.com>
 
+	* doc/userguide/userguide.txt: added new configuration variables,
+	but missing X-Kannel header definations. Will add these later.
+
+	* gw/smskannel.conf: changed 'url' to 'get-url' (althought plain
+	url still works, for backward compability)
+
+2001-03-27  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/smsbox.c: added post-url support for sms-service
 	group. Documentation in User's Guide RSN (hopefully)
 
