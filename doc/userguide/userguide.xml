@@ -12,12 +12,13 @@
      [
 <!ENTITY figtype "#FIGTYPE#">
 <!ENTITY timestamp "#DATE#">
+<!ENTITY version "#VERSION#">
 ]>
 
 <book>
 
 <bookinfo>
-	<title>Kannel: Open Source WAP and SMS Gateway</title>
+	<title>Kannel: Open Source WAP and SMS Gateway &version;</title>
 	<subtitle>User's Guide</subtitle>
 	<author>
 		<firstname>Lars</firstname>
