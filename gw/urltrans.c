@@ -347,6 +347,8 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
 	switch (octstr_get_char(pattern, pos + 1)) {
 	case 'k':
+        if (num_words <= 0)
+        break;
 	    enc = octstr_duplicate(list_get(word_list, 0));
 	    octstr_url_encode(enc);
 	    octstr_append(result, enc);
