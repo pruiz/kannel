@@ -1,3 +1,9 @@
+2002-07-23 Harrie Hazewinkel <harrie@mod-snmp.com>
+    * Adding an extra option to the fakewap test which can print out
+      the complete message in human-readable format. The characters/bytes
+      of the message that are not printable are printed as '_'.
+      This is to facilitate debugging of the content part.
+
 2002-07-15  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added documentation about the
       'allowed|denied-receiver-prefix' directives for sms-service groups.

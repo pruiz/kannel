@@ -96,6 +96,7 @@ where options are:\n\
                 (default: off)\n\
 -d difference	difference between successive tid numbers (default: 1)\n\
 -F		Accept failure and continue rather than exiting\n\
+-w		Write/print recieved data (experimental)\n\
 \n\
 The urls are fetched in random order.\n\
 ";
@@ -147,6 +148,7 @@ time_t start_time, end_time;
 double totaltime = 0, besttime = 1000000L,  worsttime = 0;
 int verbose = 0;
 int nofailexit = 0;
+int writedata = 0;
 int test_separation = 0;
 
 /*
@@ -219,6 +221,24 @@ static void print_msg( const char * trace, unsigned char * msg,
         mutex_unlock( mutex );
     }
 }
+/*
+**  if -w option has been defined, function prints the trace message and
+**  the first bytes in the message header
+*/   
+static void print_data( const char * trace, unsigned char * msg,
+                int msg_len ) {
+    int i;
+    int printable = 0;
+    if (verbose || writedata) {
+        mutex_lock( mutex );
+        printf( "%s (len %d): ", trace, msg_len );
+        for (i = 0; i < msg_len && i < msg_len; i++)
+             printf( "%c", isprint(msg[i]) ? msg[i] : '_');
+        printf( "\n");
+        mutex_unlock( mutex );
+    }
+}
+
 /* Choose a random message from a table of messages. */
 static char *choose_message(char **urls, int num_urls) {
     /* the following doesn't give an even distribution, but who cares */
@@ -405,6 +425,7 @@ wap_msg_recv( int fd, const char * hdr, int hdr_len,
         }
     }
     print_msg( "Received packet", msg, msg_len );
+    print_data( "Received data", msg, msg_len );
 
     if (data != NULL && msg_len > hdr_len) {
         data_len = min( data_len, msg_len - hdr_len );
@@ -618,7 +639,7 @@ int main(int argc, char **argv)
 
     hostname = octstr_create("localhost");
 
-    while ((opt = getopt(argc, argv, "Fhvc:g:p:P:m:i:t:V:T:t:nsd:")) != EOF) {
+    while ((opt = getopt(argc, argv, "Fhvc:g:p:P:m:i:t:V:T:t:nsd:w")) != EOF) {
 	switch (opt) {
 	case 'g':
 	    octstr_destroy(hostname);
@@ -677,7 +698,11 @@ int main(int argc, char **argv)
 	case 'F':
 	    nofailexit=1;
 	    break;
-	    
+
+        case 'w':
+            writedata = 1;
+            break;
+
 	case '?':
 	default:
 	    error(0, "Unknown option %c", opt);
