@@ -1,3 +1,8 @@
+2001-07-09 Yann Muller <ymuller@3glab.com>
+
+	* doc/userguide/user2.1.xml,wtls.xml,images/*: Documentation for Alligata
+	  (3G Lab's version of Kannel) in XML format.
+
 2001-07-06 Yann Muller <ymuller@3glab.com>
 
 	* gw/wapbox.c, wap/wtls*.c, gwlib/pki.c: separated wtls specific code

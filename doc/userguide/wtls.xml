@@ -1,0 +1,843 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V3.1//EN" []>
+
+<!-- <!DOCTYPE book SYSTEM "docbookx.dtd"> -->
+<book>
+	<title>Guide to Mobile Internet Security</title>
+	<chapter>
+		<title>1  Introduction</title>
+		<para>Welcome to the Alligata Server <citetitle>Guide to Mobile Internet Security</citetitle>. This guide is part of the Alligata Server Secure package. It supplements the Alligata Server User Manual, and explains how you can use Alligata Server Secure&apos;s encryption features to set up secure Wireless Application Protocol (WAP) services such as credit card transactions and exchange of private information across the Mobile Internet or a mobile intranet.</para>
+		<para>This guide covers the following subjects:</para>
+		<itemizedlist>
+			<listitem>
+				<para>How security is implemented on the Internet using cryptography, message hashing, digital certificates and digital signatures.</para>
+			</listitem>
+			<listitem>
+				<para>How the Wireless Transport Layer Security (WTLS) component of the WAP stack extends security to the Mobile Internet.</para>
+			</listitem>
+			<listitem>
+				<para>How to obtain the data items items you need to set up secure Mobile Internet services: asymmetric key pairs and digital certificates.</para>
+			</listitem>
+			<listitem>
+				<para>How to configure Alligata Server Secure to offer secure WAP services.</para>
+			</listitem>
+		</itemizedlist>
+	</chapter>
+	<chapter>
+		<title>2  Internet Security Overview</title>
+		<para>For an understanding of security on the Mobile Internet, some knowledge is required of how security works on the terrestrial Internet. This section explains the ways in which confidential information sent across the Internet can be protected against interception, alteration and forgery by third parties.
+</para>
+		<section>
+			<title>2.1 Aspects of Internet Security
+</title>
+			<para>To be considered entirely secure, any method of communication must offer the following features:
+</para>
+			<itemizedlist>
+				<listitem>
+					<para>
+						<emphasis role="bold">Privacy</emphasis>. A message must not be readable by third parties between its source and its destination.</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis role="bold">Integrity protection</emphasis>. A message must reach its destination in the same form as it left its source, or else the fact that it has been altered in transit must be obvious to its recipient.</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis role="bold">Authentication.</emphasis> Means must exist for the recipient of a message to verify that its sender is trustworthy and genuine (that is, not impersonating a third party).</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis role="bold">Non-repudiation.</emphasis> The sender of a message must not be able to deny, at a later time, having sent it.</para>
+				</listitem>
+			</itemizedlist>
+			<para>All these features are available on the Internet through the use of encryption, hashing, digital certificates, digital signatures and password protection. These techniques are discussed in detail later in this section. Firstly, it is important to know why they are necessary to begin with.
+</para>
+		</section>
+		<section>
+			<title>2.2 Insecurity of the Internet</title>
+			<para>The Internet is not an inherently secure medium. A message sent across the Internet from one computer to another typically travels via several intermediate computers, called routers. Anyone with access to a router can inspect or modify data packets as they pass through it. Furthermore, before and after its journey across the Internet, data will often pass through a local area network (LAN). The architecture of most LANs is such that data packets from and to one computer on the network can freely be read by any other computer on it.
+</para>
+			<para>All this means that a message transmitted across the Internet can potentially be seen, and even altered, by hundreds of people – some known to the sender, others unknown – on its way to its destination.
+</para>
+		</section>
+		<section>
+			<title>2.3 Secure Sockets Layer (SSL)
+</title>
+			<para>A solution to the problem of secure Internet communication was first developed by the software company Netscape in 1994. Netscape added a protocol layer, the <emphasis role="bold">Secure Sockets Layer (SSL)</emphasis>, on top of the Internet&apos;s TCP/IP protocol suite in its Navigator Web browser. SSL employs a collection of mathematical and computational techniques to allow data to be sent securely across the Internet in ways that meet all the criteria of privacy, integrity protection, authentication and non-repudiation. By 1998, SSL was firmly integrated into the infrastructure of the Internet as a whole, and was the main catalyst behind the e-commerce boom of the late 1990s. As Figure 1 shows, it can be used in conjunction with any of the higher-level Internet protocols, such as HTTP, File Transfer Protocol (FTP) and Internet Message Access Protocol (IMAP).
+</para>
+			<mediaobject>
+				<imageobject>
+					<imagedata fileref="images/fig1o.png"/>
+				</imageobject>
+				<caption>
+					<para>Figure 1: SSL&apos;s position among the Internet&apos;s protocols
+</para>
+				</caption>
+			</mediaobject>
+			<para>SSL uses the following methods to provide security across the Internet:
+</para>
+			<itemizedlist>
+				<listitem>
+					<para>
+						<emphasis role="bold">Cryptography.</emphasis> This is the science of scrambling messages so that they cannot easily be understood by anyone other than their sender and their intended recipient. It enables privacy in Internet communications.</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis role="bold">Message hashing.</emphasis> A message is run through a computational algorithm to produce a message &apos;fingerprint&apos;, which can be used to verify that the message has not been altered in transit.</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis role="bold">Digital certificates.</emphasis> A digital certificate is a short electronic document that vouches for the authenticity of its holder. It is issued by an organisation called a <emphasis role="bold">certificate authority (CA)</emphasis> and is formatted in such a way that it is practically impossible to counterfeit.</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis role="bold">Digital signatures.</emphasis> A digital signature is a way of formatting a message so that it is traceable to one source, and one source only. Digital signatures enable non-repudiation in Internet transactions.</para>
+				</listitem>
+			</itemizedlist>
+			<para>The methods used by SSL are generic mathematical and procedural ones, which can be applied to any secure means of communication. As we shall see in Section 3, they have already been adopted by the Mobile Internet&apos;s Wireless Transport Layer Security (WTLS) protocol (see Section 3), and they are likely to form the basis of any future developments in Internet security.
+</para>
+			<para>Sections 2.4 to 2.8 examine the elements of Internet security as they are implemented in SSL. 
+</para>
+		</section>
+		<section>
+			<title>2.4 Privacy</title>
+			<para>The fundamental requirement of any method of secure communication is privacy. In inherently transparent media such as the Internet, this means finding ways of ensuring that even if a third party can see a message, they cannot understand it. The best way to achieve this is to scramble the message in a way that is systematic whilst being all but impossible to deduce from the scrambled message alone.
+</para>
+			<section>
+				<title>2.4.1 Symmetric Key Cryptography</title>
+				<para>SSL uses techniques of <emphasis role="bold">cryptography</emphasis> to scramble and unscramble data. Cryptography is the art of rendering information opaque by passing it through mathematical scrambling algorithms. The scrambling of information using cryptography is called <emphasis role="bold">encryption</emphasis>; its unscrambling is called <emphasis role="bold">decryption</emphasis>. </para>
+				<para>In encryption, message data is passed through a mathematical algorithm involving a particular numeric value. This numeric value is called the <emphasis role="bold">key</emphasis>. In basic cryptography, a message can only easily be decrypted by someone with access to the key with which it was encrypted.
+</para>
+				<para>Other important cryptographic terms are:
+</para>
+				<itemizedlist>
+					<listitem>
+						<para>
+							<emphasis role="bold">Plaintext:</emphasis> unencrypted data. Despite its name, the term usually refers to any kind of unencrypted data, whether textual, graphical, audio or binary.</para>
+					</listitem>
+					<listitem>
+						<para>
+							<emphasis role="bold">Ciphertext:</emphasis> data that has been encrypted.</para>
+					</listitem>
+					<listitem>
+						<para>
+							<emphasis role="bold">Cryptanalysis:</emphasis> the study of methods to &apos;break&apos; ciphertext – that is, deduce its original plaintext form – without direct access to its encryption key, encryption algorithm, or both.</para>
+					</listitem>
+				</itemizedlist>
+				<para>An example of a very simple cryptographic algorithm is to add a value <replaceable>x</replaceable> (the key) to the code of each character in a message. To decrypt an encrypted message, its recipient must know both its encryption algorithm and the algorithm&apos;s key. They can then use the key to perform the inverse of the encryption operation on each character of the message. For example, if a message were encrypted by adding 6 to the code of each character in it, it would be decrypted by subtracting 6 from each code. Because the decryption operation is the exact inverse of the encryption operation, this type of cryptography is called <emphasis role="bold">symmetric key cryptography</emphasis>.
+</para>
+				<para>The algorithms that are actually used in symmetric key cryptography on the Internet are much more complex than this example, in order to be able to withstand attempts to crack them by trial-and-error (known as &apos;brute force attacks&apos;). Most symmetric agorithms encrypt messages not a character at a time, but a block of bits at a time (typically 64) – a method called <emphasis role="bold">block cipher encryption</emphasis>. In block cipher encryption, a complicated series of transformations is applied to each block in turn, using a very long key (ideally at least 112 bits). In addition, a technique called <emphasis role="bold">cipher block chaining</emphasis> is often applied, whereby the result of the encryption of each block is used as a filter for the encryption of the next block (see Figure 2). Cipher block chaining hides any repeated patterns of data that occur in the plaintext message. (Such patterns are always a useful &apos;handle&apos; for malicious cryptanalysts.)
+</para>
+				<mediaobject>
+					<imageobject>
+						<imagedata fileref="images/fig2o.png"/>
+					</imageobject>
+					<caption>
+						<para>Figure 2: Cipher block chaining
+</para>
+					</caption>
+				</mediaobject>
+			</section>
+			<section>
+				<title>2.4.2 Public Key Cryptography
+</title>
+				<para>Advanced symmetric key cryptography offers very effective security for most purposes. (According to one estimate, there is not enough energy available in the solar system to perform a computational brute force attack against a 256-bit key.) However, symmetric key cryptography has an important limitation: before any encrypted communication can take place, the encryption key itself must be securely conveyed from the sender to the recipient. Symmetric key cryptography only allows this to be done by extraneous means. For example, the sender could send the key in an armoured van to the recipient (this is how banks install keys in their cash machines). Of course, this undermines the main advantage of the Internet over other forms of communication, namely its practicality.
+</para>
+				<para>To circumvent this limitation of symmetric key cryptography, another type of cryptography, called <emphasis role="bold">public key cryptography</emphasis> – also known as <emphasis role="bold">asymmetric key cryptography</emphasis> – is employed for the exchange of symmetric keys. Public key cryptography exploits the existence of a type of mathematical operation called a <emphasis role="bold">one-way function</emphasis>. A one-way function is one that is much easier to perform in one direction than in the other. A simple example of a one-way function is the multiplication of prime numbers: for instance, it is much easier to multiply 4253 by 5521 than it is to find the two prime factors of 23480813. (The multiplication of prime numbers plays a significant role in many cryptographic algorithms.)</para>
+				<para>Public key cryptography uses advanced one-way functions, consisting of a mathematical algorithm and a numerical key, to encrypt data. Unlike in symmetric key cryptography, however, the key used to encrypt a message cannot be used to decrypt it. Decrypting the message requires a different key that is mathematically related to the encryption key, but for all practical purposes impossible to derive from it. Even knowing the encryption algorithm is no help in calculating the encryption key, for which reason the best-known encryption algorithms are kept in the public domain. (The thinking is that submitting encryption algorithms to the scrutiny of the world&apos;s cryptanalysts is the best way of testing their robustness. For example, the RSA algorithm used by Alligata Secure has so far yielded no significant weaknesses.)
+</para>
+				<para>Note that deriving a decryption key from an encryption key is always hypothetically possible; in fact, mathematically it is many times quicker to work out a private asymmetric key than it is to work out a symmetric key of the same length. Still, calculating a private assymetric key of 1792 bits should – for the next few years, at least – be all but computationally infeasible even using hundreds of thousands of computers working in parallel. Certainly, for almost every organisation in the world, it will be financially infeasible.
+</para>
+			</section>
+			<section>
+				<title>2.4.3 Cryptography in Practice
+</title>
+				<para>Let us suppose Brian wants to set up a secure Internet connection. He first uses an appropriate software tool to create an asymmetric key pair, consisting of one public and one private key. Others can then use his public key to encrypt messages to him, which he – and no one else – can read using his private key. In this way, anyone can send Brian a private message without going through the risk or inconvenience of exchanging symmetric keys beforehand.
+</para>
+				<para>Conversely, if Brian wants to send a message that others can be sure originated with him, he encrypts it using his private key, and others use his public key to read it. (This is the process of creating a <emphasis role="bold">digital signature</emphasis>, and is elaborated in Section 2.7.)
+</para>
+				<para>In practice, the complex mathematical processes used by public key cryptography make it rather slow for use with long messages. SSL therefore restricts its use of public key cryptography to the exchange of a symmetric key (see Section 2.3.1) between the client and the server at the start of a secure Internet session. This symmetric key is agreed on-the-fly between the client and the server and it is called the <emphasis role="bold">session key</emphasis>. After the session is over, it is discarded by both the client and the server.
+</para>
+				<para>The ways in which symmetric and asymmetric cryptography are combined in real Internet transactions are illustrated in Section 2.8.</para>
+			</section>
+		</section>
+		<section>
+			<title>2.5 Integrity Protection
+</title>
+			<para>We have seen how cryptography can be used to send messages across the Internet that are unreadable by third parties. However, this does not prevent third parties from blindly altering messages between their source and their destination. Depending on the content of the message, such alterations may be apparent to the recipient of the message or not. (For example, indiscriminate interference with a text message is usually easier to spot than with a block of binary data.)
+</para>
+			<para>
+				<emphasis role="bold">Integrity protection</emphasis> is the term applied to techniques for verifying that a message reaches its intended recipient in exactly the same form as it leaves its sender. While integrity protection does not guarantee that a message will reach its desination unchanged, it does (virtually) guarantee that any change is obvious to the recipient.
+</para>
+			<section>
+				<title>2.5.1 Hash Functions</title>
+				<para>Integrity protection uses computational algorithms called <emphasis role="bold">hash functions</emphasis>. A hash function is a one-way function (see Section 2.3.2) into which data – such as an Internet message – is fed, and whose result is a value of a fixed length in bits. Passing a message through a hash function produces a <emphasis role="bold">hash value</emphasis> that is effectively a &apos;fingerprint&apos; of the message. This fingerprint is called the <emphasis role="bold">message digest</emphasis>. It is usually much shorter than the message itself.
+</para>
+				<para>The sender of a message computes its digest, encrypts the digest using their private key and sends it appended to the message. The recipient verifies the integrity of the message by decrypting the digest using the sender&apos;s public key, then running the message through the same hashing algorithm that produced the digest. If the message has been interfered with on its journey, the hash value calculated by the recipient will not match the value of the digest.
+</para>
+				<para>In fact, a matching hash value is not an absolute guarantee of integrity: a <emphasis role="bold">collision</emphasis> is theoretically possible, whereby the modified message happens to produce exactly the same hash value as the original message. However, collisions in good-quality hash functions are so rare that their calculation may be considered computationally intractable.
+</para>
+			</section>
+		</section>
+		<section>
+			<title>2.6 Authentication
+</title>
+			<para>SSL allows privacy and integrity in Internet communications. However, without further measures, the anonymity of the Internet makes it easy for a user to impersonate another user. For example, a malicious party could create a Web site on which they masquerade as a respected organisation, set up a private connection for transactions, and begin obtaining money and credit card details from unsuspecting &apos;customers&apos;.
+</para>
+			<mediaobject>
+				<imageobject>
+					<imagedata fileref="images/fig3o.png"/>
+				</imageobject>
+				<caption>
+					<para>Figure 3: Creation of a message digest using a hash function
+</para>
+				</caption>
+			</mediaobject>
+			<section>
+				<title>2.6.1 Digital Certificates
+</title>
+				<para>This problem is addressed by the use of <emphasis role="bold">digital certificates</emphasis>. A digital certificate is a message sent by one party to another at the beginning of a secure Internet session, verifying the sender&apos;s identity and vouching for their integrity. The certificate is obtained from an organisation called a <emphasis role="bold">certificate authority (CA)</emphasis>. The certificate is virtually impossible to forge, for reasons that are explained later.
+</para>
+				<para>Once a secure session has been requested by an Internet client such as a Web browser, it typically continues with the server sending the client its digital certificate. The server&apos;s digital certificate contains the following information:</para>
+				<itemizedlist>
+					<listitem>
+						<para>The server&apos;s public key</para>
+					</listitem>
+					<listitem>
+						<para>The certificate&apos;s serial number</para>
+					</listitem>
+					<listitem>
+						<para>The certificate&apos;s validity period</para>
+					</listitem>
+					<listitem>
+						<para>The server&apos;s domain name</para>
+					</listitem>
+					<listitem>
+						<para>The domain name of the CA that issued the certificate</para>
+					</listitem>
+				</itemizedlist>
+				<para>The certificate is supplied with its hashed digest (see Section 2.5.1). The digest is encrypted using the private key of the CA that issued the certificate; this encrypted digest constitutes the CA&apos;s digital signature. If the digital signature can be decrypted using the CA&apos;s public key, then the certificate must have originated with the CA. (See Section 2.7 for more on digital signatures.)
+</para>
+				<para>Upon receiving the server&apos;s certificate, the client validates it by checking the following criteria:
+</para>
+				<itemizedlist>
+					<listitem>
+						<para>That it is valid for the current date.</para>
+					</listitem>
+					<listitem>
+						<para>That it applies to the server that sent it.</para>
+					</listitem>
+					<listitem>
+						<para>That the CA that issued it is known and trusted. (To do this, the client checks the CA&apos;s own certificate, which is signed by the CA itself.)</para>
+					</listitem>
+					<listitem>
+						<para>That the CA&apos;s digital signature can be decrypted using the CA&apos;s public key. (Most Web clients contain a list of the public keys of the best known CAs, so they do not need to search the Internet for them.)</para>
+					</listitem>
+				</itemizedlist>
+				<para>The client warns the user if the certificate fails any of these tests. The user may continue with the session at their own risk, if they wish.
+ </para>
+				<para>Digital certificates can be issued in chains. For example, a large CA might issue a certificate to a smaller CA, which issues a certificate to a still smaller CA, which issues end-entity certificates to Internet traders. This helps distribute the task of administering digital certificates. When an Internet client receives a certificate from a chain, it checks the certificate of every CA in the chain as described above, until it reaches the self-signed certificate of a top-level CA. 
+</para>
+				<para>Digital certificates are not only used by Internet servers: they can also be obtained for Internet clients. In practice, though, demand for client certificates has proved minimal. Authentication of a client by a server, where it is implemented at all, is usually through use of a user name and a password. While this method is not infallible, it nevertheless adds a layer of security to Internet transactions that is absent from many non-Internet confidential transactions – for example, ordering goods by credit card over the telephone.</para>
+			</section>
+		</section>
+		<section>
+			<title>2.7 Non-repudiation
+</title>
+			<para>The final requirement of secure communications is non-repudiation: a message&apos;s source must be provable upon demand. Non-repudiation is normally achieved using <emphasis role="bold">digital signatures</emphasis>.
+</para>
+			<section>
+				<title>2.7.1 Digital Signatures
+</title>
+				<para>A digital signature is simply a way of encoding data so that its source and its integrity are verifiable. Digital signatures use the same techniques of cryptography and hashing that are used to provide privacy and integrity protection (see Sections 2.3 and 2.4). The difference is that the roles of public and private keys are reversed.
+</para>
+				<para>Let us suppose that Abigail wants to stamp a message with her digital signature. First she passes the message through a hash function to create a message digest. She then uses her private key to encrypt the digest, and attaches the encrypted digest to the message. This encrypted digest constitutes her digital signature. (Of course, Abigail could encrypt the entire message using her private key; however, encrypting the digest is sufficient and much quicker.)
+</para>
+				<para>If Brian is the recipient of Abigail&apos;s message and wants to verify that it originated with her, he uses Abigail&apos;s public key to decrypt her signature. He then runs the message through the same hash function that Abigail used to create the digest, and compares it with the value of Abigail&apos;s decrypted signature.
+</para>
+				<para>The main users of digital signatures on the Internet at present are CAs, who stamp them on every certificate they issue (see Section 2.6). Although client-side digital signatures are an effective means of non-repudiation, demand for them has so far been minimal. This suggests that businesses and customers are happy to carry out transactions without them. Instead, client-side non-repudiation is normally implemented using password protection, which is regarded as an acceptable compromise between practicality and guaranteed security.
+</para>
+			</section>
+		</section>
+		<section>
+			<title>2.8 Example Secure Transaction
+</title>
+			<para>Secure Internet transactions rely on quite complex combinations of public key cryptography, symmetric key cryptography, hash functions, digital certificates and digital signatures. The following example illustrates the sequence of steps involved in a typical SSL session.
+</para>
+			<para>Note that by far the most complex part of a secure Internet session is the initial <emphasis role="bold">handshake</emphasis>, whereby the parties agree on a secure data format for the rest of the session and, if necessary, establish each other&apos;s credentials.
+</para>
+			<para>This example demonstrates the most usual type of SSL handshake, with the client authenticating the server, but without the server authenticating the client. The transaction is summarised graphically in Figures 4, 5 and 6.
+</para>
+			<section>
+				<title>Part One: SSL Handshake
+</title>
+				<orderedlist inheritnum="ignore" continuation="restarts">
+					<listitem>
+						<para>Abigail, a Web surfer, sees an item she would like to buy on Brian&apos;s Web site. </para>
+					</listitem>
+					<listitem>
+						<para>Abigail clicks a button on Brian&apos;s Web site that sends a request for a secure Internet session to Brian. The following items are appended to the request:
+</para>
+						<para>- Various information about what versions of SSL Abigail&apos;s Web browser supports, what encryption algorithms it supports, and so on.
+</para>
+						<para>- Some randomly generated data. This will be used, along with other data, to generate the session key (see step X).
+
+</para>
+					</listitem>
+					<listitem>
+						<para>Brian receives Abigail&apos;s request for a secure session and sends her the following items:
+</para>
+						<para>- His digital certificate, including his public key. The certificate is signed by a trusted CA using its private key.
+</para>
+						<para>- Information about what versions of SSL Brian&apos;s Web server supports, what encryption algorithms it supports, and so on.
+</para>
+						<para>- Some randomly generated data which will be used in the generation of the session key.
+</para>
+						<para>Brian could also request Abigail&apos;s digital certificate. However, in practice it is very rare for a server to require a certificate from a client.
+</para>
+					</listitem>
+					<listitem>
+						<para>Abigail validates Brian&apos;s certificate as outlined in Section 2.6.1. If the validation is successful, she is happy that Brian is who he says he is, and that he is a reputable trader.</para>
+					</listitem>
+					<listitem>
+						<para>Abigail performs a series of operations on the random data she sent to Brian, and the random data Brian sent to her, to produce a piece of data called the <emphasis role="bold">premaster secret</emphasis>.
+</para>
+					</listitem>
+					<listitem>
+						<para>Abigail encrypts the premaster secret using Brian&apos;s public key and sends it to Brian. (If Brian had requested her digital certificate, she would also send her certificate for Brian to validate.)
+</para>
+					</listitem>
+					<listitem>
+						<para>Brian receives the premaster secret from Abigail.
+</para>
+					</listitem>
+					<listitem>
+						<para>Brian decrypts the premaster secret. He and Abigail simultaneously perform a series of operations on it, to arrive at a piece of data called the <emphasis role="bold">master secret</emphasis>.</para>
+					</listitem>
+					<listitem>
+						<para>Abigail and Brian simultaneously perform a series of operations on the master secret to arrive at the session key (see Section 2.4.3), which will be used to encrypt the information they want to send to each other.
+</para>
+					</listitem>
+					<listitem>
+						<para>Abigail sends Brian two messages. The first confirms that all further messages from her will be encrypted using the session key. The second is an encrypted message that formally ends the handshake from her side.
+</para>
+					</listitem>
+					<listitem>
+						<para>Brian sends Abigail two messages. The first confirms that all further messages from him will be encrypted using the session key. The second is an encrypted message that formally ends the handshake from his side.
+</para>
+					</listitem>
+				</orderedlist>
+				<mediaobject>
+					<imageobject>
+						<imagedata fileref="images/fig4out.png"/>
+					</imageobject>
+					<caption>
+						<para>Figure 4: SSL handshake. Step numbers correspond to those in the textual account
+</para>
+					</caption>
+				</mediaobject>
+			</section>
+			<section>
+				<title>Part Two: Transfer of Confidential Information
+</title>
+				<orderedlist inheritnum="ignore" continuation="continues">
+					<listitem>
+						<para>Abigail fills in the relevant form on Brian&apos;s Web site, including her credit card details. She presses a button which sends the form to Brian, encrypted using the session key.
+</para>
+					</listitem>
+					<listitem>
+						<para>Brian receives Abigail&apos;s credit card details and decrypts them using the session key.
+</para>
+					</listitem>
+				</orderedlist>
+				<mediaobject>
+					<imageobject>
+						<imagedata fileref="images/fig8o.png"/>
+					</imageobject>
+					<caption>
+						<para>Figure 5: Transfer of confidential information using SSL. Step numbers correspond to those in the textual account
+</para>
+					</caption>
+				</mediaobject>
+			</section>
+			<section>
+				<title>Part Three: Secure Session Closure
+</title>
+				<orderedlist inheritnum="ignore" continuation="continues">
+					<listitem>
+						<para>Abigail and Brian both discard their session keys.</para>
+					</listitem>
+					<listitem>
+						<para>Brian closes the secure session.</para>
+					</listitem>
+				</orderedlist>
+				<para>Finally, Brian sends Abigail her item and her credit card company the bill.</para>
+				<mediaobject>
+					<imageobject>
+						<imagedata fileref="images/fig7o.png"/>
+					</imageobject>
+					<caption>
+						<para>Figure 6: SSL session closure. Step numbers correspond to those in the textual account
+</para>
+					</caption>
+				</mediaobject>
+			</section>
+		</section>
+	</chapter>
+	<chapter>
+		<title>3  Mobile Internet Security</title>
+		<para/>
+		<section>
+			<title>3.1 Wireless Transport Layer Security (WTLS)</title>
+			<para>Mobile Internet security uses the same methods of encryption, hashing, digital certificates and digital signatures that SSL provides for the terrestrial Internet. However, instead of SSL, the Mobile Internet is served by a streamlined protocol called Wireless Transport Layer Security (WTLS). WTLS is an optional component of the Mobile Internet&apos;s Wireless Application Protocol (WAP) stack. It resides between the Wireless Datagram Protocol (WDP) and the Wireless Transaction Protocol (WTP) layers of the WAP stack. The structure of the WAP stack is shown in Figure 7. 
+</para>
+			<mediaobject>
+				<imageobject>
+					<imagedata fileref="images/fig10o.png"/>
+				</imageobject>
+				<caption>
+					<para>Figure 7: The WAP stack
+</para>
+				</caption>
+			</mediaobject>
+			<para>Like any Mobile Internet transaction, a secure Mobile Internet transaction extends across both the mobile telephone network and the Internet, using WAP for the wireless part of the journey, the Hypertext Transfer Protocol (HTTP) suite for the Internet part, and a WAP gateway in the middle to translate between the two. Figure 8 shows an overview of Mobile Internet communication, from the mobile device at one end to the HTTP server at the other. If security is required across the whole communication channel, SSL can be used between the WAP gateway and the HTTP server. Alternatively, the content provider can host the gateway themselves. (As will be seen later, this arrangement provides optimum security.)
+</para>
+			<mediaobject>
+				<imageobject>
+					<imagedata fileref="images/fig9o.png"/>
+				</imageobject>
+				<caption>
+					<para>Figure 8: WAP communication overview
+</para>
+				</caption>
+			</mediaobject>
+			<para>Like WAP as a whole, WTLS uses the Internet as a model for its procedures and is very similar, in outline, to SSL. However, it has a number of additional characteristics:</para>
+			<itemizedlist>
+				<listitem>
+					<para>
+						<emphasis role="bold">Compact coding.</emphasis> WTLS employs more compact coding than SSL, in order to keep messages as short as possible and to minimise the time and processing power required by the client device to interpret and transmit them. These measures help to offset the speed limitations imposed by the high latency and low bandwidth of wireless networks. They also compensate for the low power and computational resources of mobile devices.</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis role="bold">Datagram support.</emphasis> WTLS operates directly above WAP&apos;s Wireless Datagram  Protocol (WDP), and therefore needs to accommodate the unreliability and unpredictability of connectionless datagram communication. Rigorous confirmation and retransmission procedures are rendered doubly important by the intermittency and variable quality of radio transmission.</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis role="bold">Optimised handshakes.</emphasis> WTLS allows the WAP gateway, acting as a server to the mobile WAP client, to authenticate the client by obtaining the client&apos;s digital certificate from an external source, rather than the client itself. This reduces the processing and memory burden on the client.</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis role="bold">Dynamic key refreshing.</emphasis> Communication via radio signals is particularly vulnerable to &apos;tapping&apos; by third parties. As an extra security measure against eavesdropping, WTLS allows for the symmetric session key to be changed regularly over the course of the session, without the need for a clean handshake.</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis role="bold">Fast encryption and hashing algorithms.</emphasis> WTLS uses the quickest, most efficient algorithms available for hashing and encryption (see Section 2), so that client processing time and power consumption are kept within reasonable limits.</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis role="bold">Client-gateway rather than client-server coverage.</emphasis> Unlike SSL, WTLS does not span the whole of the communication channel from the client to the content provider&apos;s HTTP server, but only communication over the mobile telephone network between the client and the WAP gateway. If security is also required between the gateway and the HTTP server, it must be implemented using SSL.</para>
+				</listitem>
+			</itemizedlist>
+			<para>The complete WTLS specification can be found on the WAP Forum&apos;s Web site at <ulink url="www.wapforum.org">www.wapforum.org</ulink>.
+</para>
+			<section>
+				<title>3.1.1 WTLS Implementation Classes
+</title>
+				<para>The WTLS specification allows for three classes (levels) of WTLS implementation:
+</para>
+				<itemizedlist>
+					<listitem>
+						<para>
+							<emphasis role="bold">Class 1: Anonymous encryption.</emphasis> Data is encrypted, but certificates are not exchanged between the client and the gateway.</para>
+					</listitem>
+					<listitem>
+						<para>
+							<emphasis role="bold">Class 2: Encryption with server authentication.</emphasis> Data is encrypted and the client requires a digital certificate from the server.</para>
+					</listitem>
+					<listitem>
+						<para>
+							<emphasis role="bold">Class 3: Encryption with client and server authentication.</emphasis> Data is encrypted and the client and the server exchange digital certificates.</para>
+					</listitem>
+				</itemizedlist>
+			</section>
+			<section>
+				<title>3.1.2 WTLS Handshake
+</title>
+				<para>The WTLS handshake is very similar to the SSL handshake. The following example illustrates the most common form of the WTLS handshake, that for WTLS class 2 (see Section 3.1.1). This involves the client authenticating the gateway, but not vice versa. It is illustrated in Figure 9.
+</para>
+				<para>This example shows the <emphasis role="bold">full handshake</emphasis>. WTLS also uses an <emphasis role="bold">abbreviated handshake</emphasis> for resumption of a previously established session. This involves re-exchanging a session identification code agreed when the session was first established.
+</para>
+				<orderedlist inheritnum="ignore" continuation="restarts">
+					<listitem>
+						<para>Bollocks!</para>
+					</listitem>
+					<listitem>
+						<para>Abigail, a WAP phone user user, sees an item she would like to buy on a WAP site.</para>
+					</listitem>
+					<listitem>
+						<para>Abigail activates a link on her WAP phone that sends a request for a secure Internet session to the WAP gateway. The following information is appended to the request:</para>
+						<para>- Various information about what versions of WTLS Abigail&apos;s WAP browser supports, what encryption algorithms it supports, and so on.</para>
+						<para>- Some randomly generated data. This will be used, along with other data, to generate the session key (see steps 5 onward).</para>
+					</listitem>
+					<listitem>
+						<para>The gateway receives Abigail&apos;s request for a secure session and sends her the following items:
+</para>
+						<para>- Its digital certificate, including its public key. The certificate is signed by a trusted CA using its private key.
+</para>
+						<para>- Information about what versions of WTLS, encryption algorithms and so on are supported by the WAP gateway.
+</para>
+						<para>- Some randomly generated data which will be used in the generation of the session key.
+</para>
+						<para>In WTLS class 3 (see Section 3.1.1) the gateway would also request Abigail&apos;s digital certificate at this point. Alternatively, it could obtain Abigail&apos;s certificate from an external source on the Internet - a procedure which characterises the <emphasis role="bold">optimised WTLS handshake</emphasis>.</para>
+					</listitem>
+					<listitem>
+						<para>Abigail validates the gateway&apos;s certificate as outlined in Section 2.6.1. If the validation is successful, she is happy that the gateway&apos;s proprietor is genuine and trustworthy.
+</para>
+					</listitem>
+					<listitem>
+						<para>Abigail performs a series of operations on the random data she sent to the gateway, and the random data the gateway sent to her, to produce the premaster secret.
+</para>
+					</listitem>
+					<listitem>
+						<para>Abigail encrypts the premaster secret using the gateway&apos;s public key and sends it to the gateway. (In WTLS class 3, she would also send her digital certificate for the gateway to validate.)
+</para>
+					</listitem>
+					<listitem>
+						<para>The gateway receives the premaster secret from Abigail.
+</para>
+					</listitem>
+					<listitem>
+						<para>The gateway decrypts the premaster secret. The gateway and Abigail simultaneously perform a series of operations on it, to arrive at the master secret.</para>
+					</listitem>
+					<listitem>
+						<para>Abigail and the gateway simultaneously perform a series of operations on the master secret to arrive at the session key (see Section 2.4.3), which will be used to encrypt the information they want to send to each other.
+</para>
+					</listitem>
+					<listitem>
+						<para>Abigail sends the gateway two messages. The first confirms that all further messages from her will be encrypted using the session key. The second is an encrypted message that formally ends the handshake from her side.
+</para>
+					</listitem>
+					<listitem>
+						<para>The gateway sends Abigail two messages. The first confirms that all further messages from it will be encrypted using the session key. The second is an encrypted message that formally ends the handshake from the gateway&apos;s side.
+</para>
+					</listitem>
+				</orderedlist>
+				<mediaobject>
+					<imageobject>
+						<imagedata fileref="images/fig5out.png"/>
+					</imageobject>
+					<caption>
+						<para>Figure 9: WTLS handshake
+</para>
+					</caption>
+				</mediaobject>
+			</section>
+			<section>
+				<title>3.1.3 Digital Certificate Formats
+</title>
+				<para>WTLS specifies two possible formats for digital certificates:</para>
+				<itemizedlist>
+					<listitem>
+						<para>
+							<emphasis role="bold">X.509.</emphasis> This is the standard format for digital certificates in SSL, and is optional in implementations of WTLS. However, it is not supported by the current generation of WAP client devices.
+</para>
+						<para>The principal information contained in an X.509 certificate is:
+<itemizedlist>
+								<listitem>
+									<para>The subject&apos;s name</para>
+								</listitem>
+								<listitem>
+									<para>The issuing CA&apos;s name</para>
+								</listitem>
+								<listitem>
+									<para>The certificate&apos;s validity period
+</para>
+								</listitem>
+								<listitem>
+									<para>The asymmetric and symmetric algorithms used for key exchange
+</para>
+								</listitem>
+								<listitem>
+									<para>The subject&apos;s public key
+</para>
+								</listitem>
+								<listitem>
+									<para>The digital signature of the issuing CA
+</para>
+								</listitem>
+								<listitem>
+									<para>Alternative names for the subject (optional)
+</para>
+								</listitem>
+								<listitem>
+									<para>Allowed key usage - for example, whether the subject&apos;s public key may be used for encryption, server authentication, signing other certificates, and so on (optional) 
+</para>
+								</listitem>
+							</itemizedlist>
+						</para>
+					</listitem>
+					<listitem>
+						<para>
+							<emphasis role="bold">WTLS.</emphasis> WTLS certificates are similar to X.509 certificates but more compactly coded, so as to suit the high latencies and low bandwidth of wireless networks, and the limited processing reources of WAP client devices. WTLS certificates also omit some of X.509&apos;s non-essential fields, such as alternative subject names and key usage options.
+</para>
+						<para>A WTLS certificate includes the following information:</para>
+						<itemizedlist>
+							<listitem>
+								<para>The subject&apos;s name
+</para>
+							</listitem>
+							<listitem>
+								<para>The issuing CA&apos;s name
+</para>
+							</listitem>
+							<listitem>
+								<para>The certificate&apos;s validity period
+</para>
+							</listitem>
+							<listitem>
+								<para>The asymmetric and symmetric algorithms used for key exchange
+</para>
+							</listitem>
+							<listitem>
+								<para>The subject&apos;s public key
+</para>
+							</listitem>
+							<listitem>
+								<para>The digital signature of the issuing CA</para>
+							</listitem>
+						</itemizedlist>
+					</listitem>
+				</itemizedlist>
+			</section>
+			<section>
+				<title>3.1.4 Certificate Revocation in WTLS
+</title>
+				<para>On the terrestrial Internet, a CA can revoke a certificate it has issued before the end of the certificate&apos;s validity period, if the security of the owner&apos;s private key has been compromised or if there is new reason to doubt the owner&apos;s identity or integrity.
+
+</para>
+				<para>Certificate revocation on the terrestrial Internet is implemented by means of <emphasis role="bold">certificate revocation lists</emphasis> issued by CAs. When an Internet client receives a certificate from a secure server, it retrieves the signing CA&apos;s certificate revocation list from the Internet, checks that the certificate does not appear it, and if not, accepts the certificate.
+</para>
+				<para>On the Mobile Internet, it is impracticable for a small client device to check a revocation list every time it downloads a gateway&apos;s certificate. The problem of revocation is therefore addressed by the use of <emphasis role="bold">short-lived certificates</emphasis>. The CA, instead of issuing the secure WAP gateway with a single certificate valid for a long period, sends it a fresh certificate at short intervals throughout that period - for example every 25 hours. Each certificate is only valid until the next one arrives. If the CA needs to revoke its endorsement of a gateway (for example, because the security of the gateway&apos;s private key has been compromised), it simply stops sending the gateway certificates. Clients of the gateway will begin receiving expired certificates, and therefore will know that its security can no longer be relied on.
+</para>
+			</section>
+		</section>
+		<section>
+			<title>3.2 WTLS in Alligata Secure
+</title>
+				<para>NOTE: THIS SECTION WILL NEED UPDATING.
+				</para>
+			<section>
+				<title>3.2.1 Supported WTLS Implementation Classes 
+</title>
+
+				<para>
+				Alligata Secure supports all three WTLS implementation classes.
+</para>
+			</section>
+			<section>
+				<title>3.2.2 Supported Digital Certificate Formats
+</title>
+				<para>Alligata Secure supports both X.509 and WTLS certificates. Note, however, that X.509 certificates are not currently supported by WAP client devices.
+</para>
+			</section>
+			<section>
+				<title>3.2.3 Supported Encryption Algorithms
+</title>
+				<para>Alligata Secure supports asymmetric keys generated by the RSA alogorithm and symmetric keys generated by the MC5 algorithm. [check]
+</para>
+			</section>
+		</section>
+		<section>
+			<title>3.3 End-to-End Mobile Internet Security 
+</title>
+			<para>As we have seen, WTLS provides security between the client device and the WAP gateway. Most secure Mobile Internet transactions will also require security between the WAP gateway and the HTTP server. This can be implemented using one of two arrangements:
+</para>
+			<itemizedlist>
+				<listitem>
+					<para>SSL can be used between the gateway and the HTTP server. This method presents a very slight security risk, because data is momentarily held unencrypted inside the gateway (a phenonmenon known as the &apos;WAP Gap&apos;). It is therefore important that administrative access to the gateway is strictly limited, that the relationship between the gateway host and the content provider is strong and trusting, and that the decrypted data is never stored outside the gateway&apos;s memory. This set-up is not recommended for operations requiring guaranteed security, such as online banking.
+</para>
+				</listitem>
+				<listitem>
+					<para>The gateway can be hosted by the content provider and placed behind the content provider&apos;s firewall. This set-up obviates both the &apos;WAP Gap&apos; and the need for SSL between the gateway and the HTTP server. The content provider can, if they want, act as an Internet service provider (ISP) to the whole of the Mobile Internet, once the secure transaction is over. Alternatively, the content provider can close the secure WAP connection after the secure transaction has taken place, in which case the client user must dial in to their usual gateway in order to view other WAP sites.
+</para>
+				</listitem>
+			</itemizedlist>
+			<para>Figure 10 outlines a secure Mobile Internet transaction of the second type, with the WAP gateway behind the content provider&apos;s firewall. Abigail is now the user of a WAP client device, communicating with Brian via the WAP gateway.</para>
+			<mediaobject>
+				<imageobject>
+					<imagedata fileref="images/fig6out1.png"/>
+				</imageobject>
+				<caption>
+					<para>Figure 10: WTLS transaction, with the WAP gateway hosted by the content provider
+</para>
+				</caption>
+			</mediaobject>
+		</section>
+	</chapter>
+	<chapter>
+		<title>4  Using Alligata Secure with OpenSSL</title>
+		<para>NOTE: THIS SECTION IS INCOMPLETE AND IN PLACES INACCURATE. IT MAY, HOWEVER, BE USABLE AS THE BASIS FOR THE DOCUMENTATION FOR THE SECURE VERSION OF [KANNEL], WHEN THE LATTER IS RELEASED.</para>
+		<para>Alligata Secure is supplied with the OpenSSL open source software toolkit. OpenSSL includes a library of general purpose security functions that you can use in conjunction with Alligata Secure to implement secure Mobile Internet services. OpenSSL enables you to:
+</para>
+		<itemizedlist>
+			<listitem>
+				<para>create symmetric or asymmetric keys
+</para>
+			</listitem>
+			<listitem>
+				<para>create [digital certificates]
+</para>
+			</listitem>
+			<listitem>
+				<para>encrypt messages
+</para>
+			</listitem>
+			<listitem>
+				<para>calculate message digests
+</para>
+			</listitem>
+		</itemizedlist>
+		<para>Of OpenSSL&apos;s features, creation of symmetric keys, message encryption and digest calculation are incorporated into the Alligata Secure software. You can customise them by changing the configuration variables described in Section 4.X. Before you do anything else, however, you must create an asymmetric key pair.
+</para>
+		<section>
+			<title>4.1 Creating an Asymmetric Key Pair
+</title>
+			<para>An asymmetric key pair is required for WTLS connections between a WAP gateway and client devices (see Section 3). Alligata Secure supports keys generated by the RSA algorithm.
+</para>
+			<para>The following instructions show you how to create an RSA key pair using OpenSSL. Many additional options are also available: see the OpenSSL man pages (in particular openssl and genrsa) for details.
+</para>
+			<orderedlist inheritnum="ignore" continuation="restarts">
+				<title>To create an asymmetric key pair:
+</title>
+				<listitem>
+					<para>Create three or four files containing random data. You can do this by using the command
+</para>
+					<para>
+						<userinput moreinfo="none">echo <replaceable>random_string </replaceable>&gt;<replaceable> file_name</replaceable></userinput>
+					</para>
+					<para>for each file.
+</para>
+					<para>For example:</para>
+					<para>
+						<userinput moreinfo="none">echo ;st509tjjm[4t#~{sa{)8EHjhjOSFOhoij &gt; rand1.txt
+</userinput>
+					</para>
+					<para>These files will be used, together with the random data file $HOME/.rnd, to generate the key pair.
+</para>
+				</listitem>
+				<listitem>
+					<para>Type
+</para>
+					<para>
+						<userinput moreinfo="none">openssl genrsa -rand <replaceable>random_data_files</replaceable> -out <replaceable>output_file -storage_encryption_algorithm</replaceable> -passout <replaceable>password_source</replaceable>
+</userinput>
+					</para>
+					<variablelist>
+						<title>Notes:
+</title>
+						<varlistentry>
+							<term><userinput><replaceable>random_data_file:</replaceable></userinput></term>
+							<listitem>
+								<para>the file names should be separated by colons :.
+</para>
+							</listitem>
+						</varlistentry>
+						<varlistentry>
+							<term><userinput><replaceable>output_file:</replaceable></userinput></term>
+							<listitem>
+								<para>the name of the file to which the public and private keys will be output. Conventionally, the file name should have a <filename>.pem</filename> extension.
+</para>
+							</listitem>
+						</varlistentry>
+						<varlistentry>
+							<term><userinput><replaceable>-storage_encryption_algorithm:</replaceable></userinput></term>
+							<listitem>
+								<formalpara>
+									<title/>
+									<para>the symmetric algorithm used to encrypt the key file. Possible values are <userinput>-des, -des3</userinput> and <userinput>-idea</userinput>. This parameter is nominally optional, but should always be used except for testing.
+</para>
+								</formalpara>
+							</listitem>
+						</varlistentry>
+						<varlistentry>
+							<term><userinput><replaceable>password_source:</replaceable> </userinput></term>
+							<listitem>
+								<para>the source of the password that will be used to decrypt the key file. This parameter is formatted as follows:
+</para>
+								<variablelist>
+									<varlistentry>
+										<term><userinput>pass:<replaceable>password</replaceable>
+</userinput></term>
+										<listitem>
+											<para><replaceable>password</replaceable> is the password. Avoid except for testing, as Linux utilities such as <command>ps</command> can see the password.
+</para>
+										</listitem>
+									</varlistentry>
+									<varlistentry>
+										<term><userinput>env:environment_variable
+</userinput></term>
+										<listitem>
+											<para>The denoted environment variable&apos;s value is the password.
+</para>
+										</listitem>
+									</varlistentry>
+									<varlistentry>
+										<term><userinput>file:<replaceable>file_name</replaceable>
+</userinput></term>
+										<listitem>
+											<para>The first line of the denoted file is the password. Ensure that the file&apos;s read permissions are limited to those who will need the password.
+</para>
+										</listitem>
+									</varlistentry>
+									<varlistentry>
+										<term><userinput>fd:<replaceable>file_descriptor_number</replaceable>
+</userinput></term>
+										<listitem>
+											<para>The password is read from the denoted file descriptor. 
+</para>
+										</listitem>
+									</varlistentry>
+									<varlistentry>
+										<term><userinput>stdin</userinput></term>
+										<listitem>
+											<para>The password is read from the standard input.
+</para>
+										</listitem>
+									</varlistentry>
+								</variablelist>
+								<para>Example key generation command:
+</para>
+								<para>
+									<userinput moreinfo="none">openssl genrsa -rand rand1:rand2:rand3 -out abigailskeys.pem -des3 -passout file:/var/keypass
+</userinput>
+								</para>
+							</listitem>
+						</varlistentry>
+					</variablelist>
+				</listitem>
+				<listitem>
+					<para>Delete the files of random data that you created in Step 1.
+</para>
+				</listitem>
+				<listitem>
+					<para>To generate a file containing just the public key, type
+</para>
+					<para>
+						<userinput moreinfo="none">openssl rsa -in <replaceable>source_file</replaceable> -out <replaceable>output_file</replaceable> -pubout
+</userinput>
+					</para>
+					<para>For example:
+</para>
+					<para>
+						<userinput moreinfo="none">openssl rsa -in abigailskeys.pem -out abipub.pem -pubout
+</userinput>
+					</para>
+				</listitem>
+			</orderedlist>
+		</section>
+	</chapter>
+</book>
+<!--The information in the following processing instruction is used by avenue.quark. Do not edit or remove it if you plan to reopen this XML file in avenue.quark-->
+<?avenue.quark <strt><docs plat="1" vers="1.0.0" dtyp="xml" dttr="21D400E2-6964-11D5-A33D-00010211D1AF-00000000" wple="523" wpto="31" wpri="1181" wpbo="760"><xrse xrui="31D36028-6964-11D5-A33D-00010211D1AF-00000000" xrpa="C:\temp\alligata-docs\wtls\wtls.xml" xrty="3"></xrse></docs><tree trli="9725"><book tgid="0" elid="5523" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><title tgid="18" elid="5525" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="33"></title><chapter tgid="34" elid="5536" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="51" elid="4312" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="15"></title><para tgid="67" elid="4352" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="2" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="31"></PCDATA><citetitle tgid="82" elid="10523" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="33"></citetitle><PCDATA tgid="4" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="361"></PCDATA></para><para tgid="98" elid="4352" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="41"></para><itemizedlist tgid="113" elid="4327" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="130" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="146" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="125"></para></listitem><listitem tgid="161" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="177" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="116"></para></listitem><listitem tgid="192" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="208" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="133"></para></listitem><listitem tgid="223" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="239" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="69"></para></listitem></itemizedlist></chapter><chapter tgid="254" elid="5536" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><title tgid="271" elid="4312" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="29"></title><para tgid="287" elid="4352" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="305"></para><section tgid="302" elid="4386" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><title tgid="319" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="33"></title><para tgid="335" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="97"></para><itemizedlist tgid="350" elid="11650" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="367" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="383" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="14" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA><emphasis tgid="398" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="7"></emphasis><PCDATA tgid="16" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="89"></PCDATA></para></listitem><listitem tgid="413" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="429" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="17" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA><emphasis tgid="444" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="20"></emphasis><PCDATA tgid="19" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="165"></PCDATA></para></listitem><listitem tgid="459" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="475" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="20" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA><emphasis tgid="490" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="15"></emphasis><PCDATA tgid="22" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="145"></PCDATA></para></listitem><listitem tgid="505" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="521" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="23" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA><emphasis tgid="536" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="16"></emphasis><PCDATA tgid="25" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="83"></PCDATA></para></listitem></itemizedlist><para tgid="551" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="290"></para></section><section tgid="566" elid="4386" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><title tgid="583" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="30"></title><para tgid="599" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="538"></para><para tgid="614" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="203"></para></section><section tgid="629" elid="4386" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><title tgid="646" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="31"></title><para tgid="662" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="31" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="158"></PCDATA><emphasis tgid="677" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="26"></emphasis><PCDATA tgid="33" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="653"></PCDATA></para><mediaobject tgid="692" elid="11681" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><imageobject tgid="707" elid="8100" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imagedata tgid="722" elid="10789" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="1" tgcs="0"></imagedata></imageobject><caption tgid="746" elid="8106" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="761" elid="11556" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="56"></para></caption></mediaobject><para tgid="776" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="72"></para><itemizedlist tgid="791" elid="11650" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="808" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="824" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="36" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA><emphasis tgid="839" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="13"></emphasis><PCDATA tgid="38" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="195"></PCDATA></para></listitem><listitem tgid="854" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="870" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="39" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA><emphasis tgid="885" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="16"></emphasis><PCDATA tgid="41" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="165"></PCDATA></para></listitem><listitem tgid="900" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="916" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="42" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA><emphasis tgid="931" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="21"></emphasis><PCDATA tgid="44" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="144"></PCDATA><emphasis tgid="946" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="26"></emphasis><PCDATA tgid="46" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="81"></PCDATA></para></listitem><listitem tgid="961" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="977" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="47" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA><emphasis tgid="992" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="19"></emphasis><PCDATA tgid="49" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="181"></PCDATA></para></listitem></itemizedlist><para tgid="1007" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="369"></para><para tgid="1022" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="95"></para></section><section tgid="1037" elid="4386" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="1054" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="11"></title><para tgid="1070" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="401"></para><section tgid="1085" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="1102" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="32"></title><para tgid="1118" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="55" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="23"></PCDATA><emphasis tgid="1133" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="12"></emphasis><PCDATA tgid="57" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="207"></PCDATA><emphasis tgid="1148" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="10"></emphasis><PCDATA tgid="59" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="29"></PCDATA><emphasis tgid="1163" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="10"></emphasis><PCDATA tgid="61" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="2"></PCDATA></para><para tgid="1178" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="272"></para><para tgid="1193" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="41"></para><itemizedlist tgid="1208" elid="11650" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="1225" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="1241" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="64" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="8"></PCDATA><emphasis tgid="1256" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="10"></emphasis><PCDATA tgid="66" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="138"></PCDATA></para></listitem><listitem tgid="1271" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="1287" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="67" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="8"></PCDATA><emphasis tgid="1302" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="11"></emphasis><PCDATA tgid="69" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="30"></PCDATA></para></listitem><listitem tgid="1317" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="1333" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="70" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="8"></PCDATA><emphasis tgid="1348" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="14"></emphasis><PCDATA tgid="72" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="167"></PCDATA></para></listitem></itemizedlist><para tgid="1363" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="73" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="70"></PCDATA><replaceable tgid="1378" elid="10578" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="1"></replaceable><PCDATA tgid="75" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="542"></PCDATA><emphasis tgid="1394" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="26"></emphasis><PCDATA tgid="77" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="2"></PCDATA></para><para tgid="1409" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="78" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="366"></PCDATA><emphasis tgid="1424" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="23"></emphasis><PCDATA tgid="80" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="187"></PCDATA><emphasis tgid="1439" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="21"></emphasis><PCDATA tgid="82" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="312"></PCDATA></para><mediaobject tgid="1454" elid="11681" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imageobject tgid="1469" elid="8100" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imagedata tgid="1484" elid="10789" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"></imagedata></imageobject><caption tgid="1508" elid="8106" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="1523" elid="11556" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="32"></para></caption></mediaobject></section><section tgid="1538" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="1555" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="30"></title><para tgid="1571" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="777"></para><para tgid="1586" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="86" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="98"></PCDATA><emphasis tgid="1601" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="23"></emphasis><PCDATA tgid="88" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="17"></PCDATA><emphasis tgid="1616" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="27"></emphasis><PCDATA tgid="90" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="143"></PCDATA><emphasis tgid="1631" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="16"></emphasis><PCDATA tgid="92" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="381"></PCDATA></para><para tgid="1646" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="824"></para><para tgid="1661" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="535"></para></section><section tgid="1676" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="1693" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="31"></title><para tgid="1709" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="456"></para><para tgid="1724" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="97" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="205"></PCDATA><emphasis tgid="1739" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="17"></emphasis><PCDATA tgid="99" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="37"></PCDATA></para><para tgid="1754" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="100" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="414"></PCDATA><emphasis tgid="1769" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="11"></emphasis><PCDATA tgid="102" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="80"></PCDATA></para><para tgid="1784" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="130"></para></section></section><section tgid="1799" elid="4386" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="1816" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="25"></title><para tgid="1832" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="474"></para><para tgid="1847" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="106" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="5"></PCDATA><emphasis tgid="1862" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="20"></emphasis><PCDATA tgid="108" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="318"></PCDATA></para><section tgid="1877" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="1894" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="20"></title><para tgid="1910" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="110" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="58"></PCDATA><emphasis tgid="1925" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="14"></emphasis><PCDATA tgid="112" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="224"></PCDATA><emphasis tgid="1940" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="10"></emphasis><PCDATA tgid="114" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="84"></PCDATA><emphasis tgid="1955" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="14"></emphasis><PCDATA tgid="116" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="54"></PCDATA></para><para tgid="1970" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="460"></para><para tgid="1985" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="118" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="76"></PCDATA><emphasis tgid="2000" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="9"></emphasis><PCDATA tgid="120" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="262"></PCDATA></para></section></section><section tgid="2015" elid="4386" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="2032" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="19"></title><para tgid="2048" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="416"></para><mediaobject tgid="2063" elid="11681" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imageobject tgid="2078" elid="8100" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imagedata tgid="2093" elid="10789" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"></imagedata></imageobject><caption tgid="2117" elid="8106" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="2132" elid="11556" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="61"></para></caption></mediaobject><section tgid="2147" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="2164" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="27"></title><para tgid="2180" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="125" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="40"></PCDATA><emphasis tgid="2195" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="20"></emphasis><PCDATA tgid="127" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="237"></PCDATA><emphasis tgid="2210" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="26"></emphasis><PCDATA tgid="129" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="90"></PCDATA></para><para tgid="2225" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="237"></para><itemizedlist tgid="2240" elid="11650" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="2257" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="2273" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="23"></para></listitem><listitem tgid="2288" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="2304" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="31"></para></listitem><listitem tgid="2319" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="2335" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="33"></para></listitem><listitem tgid="2350" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="2366" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="24"></para></listitem><listitem tgid="2381" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="2397" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="53"></para></listitem></itemizedlist><para tgid="2412" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="393"></para><para tgid="2427" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="101"></para><itemizedlist tgid="2442" elid="11650" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="2459" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="2475" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="38"></para></listitem><listitem tgid="2490" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="2506" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="43"></para></listitem><listitem tgid="2521" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="2537" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="140"></para></listitem><listitem tgid="2552" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="2568" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="204"></para></listitem></itemizedlist><para tgid="2583" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="144"></para><para tgid="2598" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="488"></para><para tgid="2613" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="537"></para></section></section><section tgid="2628" elid="4386" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="2645" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="20"></title><para tgid="2661" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="146" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="159"></PCDATA><emphasis tgid="2676" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="18"></emphasis><PCDATA tgid="148" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="2"></PCDATA></para><section tgid="2691" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="2708" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="25"></title><para tgid="2724" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="337"></para><para tgid="2739" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="462"></para><para tgid="2754" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="312"></para><para tgid="2769" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="537"></para></section></section><section tgid="2784" elid="4386" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="2801" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="31"></title><para tgid="2817" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="272"></para><para tgid="2832" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="156" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="83"></PCDATA><emphasis tgid="2847" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="9"></emphasis><PCDATA tgid="158" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="135"></PCDATA></para><para tgid="2862" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="222"></para><section tgid="2877" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="2894" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="24"></title><orderedlist tgid="2910" elid="11651" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="2929" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="2945" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="79"></para></listitem><listitem tgid="2960" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="2976" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="154"></para><para tgid="2991" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="132"></para><para tgid="3006" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="117"></para></listitem><listitem tgid="3021" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3037" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="89"></para><para tgid="3052" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="118"></para><para tgid="3067" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="121"></para><para tgid="3082" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="88"></para><para tgid="3097" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="146"></para></listitem><listitem tgid="3112" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3128" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="181"></para></listitem><listitem tgid="3143" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3159" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="171" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="155"></PCDATA><emphasis tgid="3174" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="16"></emphasis><PCDATA tgid="173" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="2"></PCDATA></para></listitem><listitem tgid="3189" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3205" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="195"></para></listitem><listitem tgid="3220" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3236" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="50"></para></listitem><listitem tgid="3251" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3267" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="176" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="145"></PCDATA><emphasis tgid="3282" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="13"></emphasis><PCDATA tgid="178" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="1"></PCDATA></para></listitem><listitem tgid="3297" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3313" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="214"></para></listitem><listitem tgid="3328" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3344" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="212"></para></listitem><listitem tgid="3359" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3375" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="212"></para></listitem></orderedlist><mediaobject tgid="3390" elid="11681" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imageobject tgid="3405" elid="8100" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imagedata tgid="3420" elid="10789" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"></imagedata></imageobject><caption tgid="3444" elid="8106" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3459" elid="11556" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="81"></para></caption></mediaobject></section><section tgid="3474" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="3491" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="47"></title><orderedlist tgid="3507" elid="11651" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="3526" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3542" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="176"></para></listitem><listitem tgid="3557" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3573" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="86"></para></listitem></orderedlist><mediaobject tgid="3588" elid="11681" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imageobject tgid="3603" elid="8100" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imagedata tgid="3618" elid="10789" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"></imagedata></imageobject><caption tgid="3642" elid="8106" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3657" elid="11556" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="114"></para></caption></mediaobject></section><section tgid="3672" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="3689" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="35"></title><orderedlist tgid="3705" elid="11651" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="3724" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3740" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="50"></para></listitem><listitem tgid="3755" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3771" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="32"></para></listitem></orderedlist><para tgid="3786" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="75"></para><mediaobject tgid="3801" elid="11681" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imageobject tgid="3816" elid="8100" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imagedata tgid="3831" elid="10789" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"></imagedata></imageobject><caption tgid="3855" elid="8106" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="3870" elid="11556" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="87"></para></caption></mediaobject></section></section></chapter><chapter tgid="3885" elid="5536" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><title tgid="3902" elid="4312" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="27"></title><para tgid="3918" elid="4352" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"></para><section tgid="3933" elid="4386" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="3950" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="44"></title><para tgid="3966" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="570"></para><mediaobject tgid="3981" elid="11681" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imageobject tgid="3996" elid="8100" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imagedata tgid="4011" elid="10789" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"></imagedata></imageobject><caption tgid="4035" elid="8106" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4050" elid="11556" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="24"></para></caption></mediaobject><para tgid="4065" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="711"></para><mediaobject tgid="4080" elid="11681" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imageobject tgid="4095" elid="8100" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imagedata tgid="4110" elid="10789" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"></imagedata></imageobject><caption tgid="4134" elid="8106" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4149" elid="11556" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="37"></para></caption></mediaobject><para tgid="4164" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="170"></para><itemizedlist tgid="4179" elid="11650" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="4196" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4212" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="199" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA><emphasis tgid="4227" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="15"></emphasis><PCDATA tgid="201" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="404"></PCDATA></para></listitem><listitem tgid="4242" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4258" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="202" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA><emphasis tgid="4273" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="17"></emphasis><PCDATA tgid="204" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="333"></PCDATA></para></listitem><listitem tgid="4288" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4304" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="205" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA><emphasis tgid="4319" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="21"></emphasis><PCDATA tgid="207" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="264"></PCDATA></para></listitem><listitem tgid="4334" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4350" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="208" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA><emphasis tgid="4365" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="23"></emphasis><PCDATA tgid="210" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="280"></PCDATA></para></listitem><listitem tgid="4380" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4396" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="211" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA><emphasis tgid="4411" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="39"></emphasis><PCDATA tgid="213" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="192"></PCDATA></para></listitem><listitem tgid="4426" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4442" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="214" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA><emphasis tgid="4457" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="50"></emphasis><PCDATA tgid="216" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="326"></PCDATA></para></listitem></itemizedlist><para tgid="4472" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="217" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="76"></PCDATA><ulink tgid="4487" elid="10535" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="16"></ulink><PCDATA tgid="219" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="2"></PCDATA></para><section tgid="4504" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="4521" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="34"></title><para tgid="4537" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="81"></para><itemizedlist tgid="4552" elid="11650" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="4569" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4585" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="222" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="8"></PCDATA><emphasis tgid="4600" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="30"></emphasis><PCDATA tgid="224" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="90"></PCDATA></para></listitem><listitem tgid="4615" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4631" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="225" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="8"></PCDATA><emphasis tgid="4646" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="47"></emphasis><PCDATA tgid="227" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="81"></PCDATA></para></listitem><listitem tgid="4661" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4677" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="228" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="8"></PCDATA><emphasis tgid="4692" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="58"></emphasis><PCDATA tgid="230" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="79"></PCDATA></para></listitem></itemizedlist></section><section tgid="4707" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="4724" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="21"></title><para tgid="4740" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="282"></para><para tgid="4755" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="233" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="23"></PCDATA><emphasis tgid="4770" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="14"></emphasis><PCDATA tgid="235" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="20"></PCDATA><emphasis tgid="4785" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="21"></emphasis><PCDATA tgid="237" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="158"></PCDATA></para><orderedlist tgid="4800" elid="11651" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="4819" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4835" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="9"></para></listitem><listitem tgid="4850" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4866" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="81"></para></listitem><listitem tgid="4881" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4897" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="166"></para><para tgid="4912" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="132"></para><para tgid="4927" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="123"></para></listitem><listitem tgid="4942" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="4958" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="95"></para><para tgid="4973" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="118"></para><para tgid="4988" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="109"></para><para tgid="5003" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="88"></para><para tgid="5018" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="247" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="243"></PCDATA><emphasis tgid="5033" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="24"></emphasis><PCDATA tgid="249" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="1"></PCDATA></para></listitem><listitem tgid="5048" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5064" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="178"></para></listitem><listitem tgid="5079" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5095" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="162"></para></listitem><listitem tgid="5110" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5126" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="190"></para></listitem><listitem tgid="5141" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5157" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="56"></para></listitem><listitem tgid="5172" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5188" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="151"></para></listitem><listitem tgid="5203" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5219" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="220"></para></listitem><listitem tgid="5234" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5250" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="218"></para></listitem><listitem tgid="5265" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5281" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="227"></para></listitem></orderedlist><mediaobject tgid="5296" elid="11681" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imageobject tgid="5311" elid="8100" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imagedata tgid="5326" elid="10789" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"></imagedata></imageobject><caption tgid="5350" elid="8106" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5365" elid="11556" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="25"></para></caption></mediaobject></section><section tgid="5380" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="5397" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="34"></title><para tgid="5413" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="61"></para><itemizedlist tgid="5428" elid="11650" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="5445" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5461" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="261" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="8"></PCDATA><emphasis tgid="5476" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="6"></emphasis><PCDATA tgid="263" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="184"></PCDATA></para><para tgid="5491" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="264" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="64"></PCDATA><itemizedlist tgid="5506" elid="10616" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="5523" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5539" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="18"></para></listitem><listitem tgid="5554" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5570" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="21"></para></listitem><listitem tgid="5585" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5601" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="34"></para></listitem><listitem tgid="5616" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5632" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="62"></para></listitem><listitem tgid="5647" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5663" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="25"></para></listitem><listitem tgid="5678" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5694" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="40"></para></listitem><listitem tgid="5709" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5725" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="45"></para></listitem><listitem tgid="5740" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5756" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="167"></para></listitem></itemizedlist><PCDATA tgid="273" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="7"></PCDATA></para></listitem><listitem tgid="5771" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5787" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="274" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="8"></PCDATA><emphasis tgid="5802" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="5"></emphasis><PCDATA tgid="276" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="334"></PCDATA></para><para tgid="5817" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="54"></para><itemizedlist tgid="5832" elid="7271" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="5849" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5865" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="19"></para></listitem><listitem tgid="5880" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5896" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="22"></para></listitem><listitem tgid="5911" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5927" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="34"></para></listitem><listitem tgid="5942" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5958" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="62"></para></listitem><listitem tgid="5973" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="5989" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="25"></para></listitem><listitem tgid="6004" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="6020" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="39"></para></listitem></itemizedlist></listitem></itemizedlist></section><section tgid="6035" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="6052" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="37"></title><para tgid="6068" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="261"></para><para tgid="6083" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="286" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="78"></PCDATA><emphasis tgid="6098" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="28"></emphasis><PCDATA tgid="288" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="247"></PCDATA></para><para tgid="6113" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><PCDATA tgid="289" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="209"></PCDATA><emphasis tgid="6128" elid="10524" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="24"></emphasis><PCDATA tgid="291" elid="-1" tgxi="-1" tgbx="0" tgct="0" tgtg="1" tgcl="0" tgbl="0" tgit="1" tgix="0" tgax="0" tgcs="591"></PCDATA></para></section></section><section tgid="6143" elid="4386" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="6160" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="28"></title><para tgid="6176" elid="11675" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"></para><section tgid="6191" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="6208" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="45"></title><para tgid="6224" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="64"></para></section><section tgid="6239" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="6256" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="44"></title><para tgid="6272" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="149"></para></section><section tgid="6287" elid="11707" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="6304" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="38"></title><para tgid="6320" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="132"></para></section></section><section tgid="6335" elid="4386" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><title tgid="6352" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="41"></title><para tgid="6368" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="255"></para><itemizedlist tgid="6383" elid="11650" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><listitem tgid="6400" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="6416" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="571"></para></listitem><listitem tgid="6431" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="6447" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="577"></para></listitem></itemizedlist><para tgid="6462" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="230"></para><mediaobject tgid="6477" elid="11681" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imageobject tgid="6492" elid="8100" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><imagedata tgid="6507" elid="10789" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"></imagedata></imageobject><caption tgid="6531" elid="8106" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"><para tgid="6546" elid="11556" tgxi="-1" tgbx="0" tgct="1" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="81"></para></caption></mediaobject></section></chapter><chapter tgid="6561" elid="5536" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><title tgid="6562" elid="4312" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="37"></title><para tgid="6673" elid="4352" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="263"></para><itemizedlist tgid="6674" elid="4327" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><listitem tgid="6675" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="7074" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="36"></para></listitem><listitem tgid="6978" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="7075" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="30"></para></listitem><listitem tgid="6882" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="7076" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="17"></para></listitem><listitem tgid="6786" elid="9594" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="7077" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="26"></para></listitem></itemizedlist><para tgid="7078" elid="4352" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="312"></para><section tgid="7079" elid="4386" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><title tgid="7080" elid="11636" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="36"></title><para tgid="7191" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="176"></para><para tgid="7192" elid="11675" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="199"></para><orderedlist tgid="7193" elid="11651" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><title tgid="7305" elid="5388" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="34"></title><listitem tgid="7194" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="7978" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="88"></para><para tgid="7986" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><userinput tgid="7987" elid="10587" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="30"></userinput></para><para tgid="7988" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="15"></para><para tgid="7989" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="12"></para><para tgid="7990" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><userinput tgid="7991" elid="10587" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="52"></userinput></para><para tgid="7992" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="99"></para></listitem><listitem tgid="7882" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="7979" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="5"></para><para tgid="7993" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><userinput tgid="7994" elid="10587" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="111"></userinput></para><variablelist tgid="7995" elid="7275" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><title tgid="8137" elid="2504" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="7"></title><varlistentry tgid="7996" elid="2506" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><term tgid="8011" elid="9873" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="17"></userinput></term><listitem tgid="8026" elid="9874" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="9027" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="48"></para></listitem></varlistentry><varlistentry tgid="8900" elid="2506" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><term tgid="8901" elid="9873" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="12"></userinput></term><listitem tgid="8916" elid="9874" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="9028" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="134"></para></listitem></varlistentry><varlistentry tgid="8773" elid="2506" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><term tgid="8774" elid="9873" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="30"></userinput></term><listitem tgid="8789" elid="9874" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><formalpara tgid="9029" elid="7295" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><title tgid="9030" elid="6038" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="0"></title><para tgid="9046" elid="6041" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="181"></para></formalpara></listitem></varlistentry><varlistentry tgid="8646" elid="2506" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><term tgid="8647" elid="9873" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="17"></userinput></term><listitem tgid="8662" elid="9874" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="9061" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="110"></para><variablelist tgid="9062" elid="7275" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><varlistentry tgid="9063" elid="2506" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><term tgid="9078" elid="9873" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="14"></userinput></term><listitem tgid="9093" elid="9874" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="9712" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="104"></para></listitem></varlistentry><varlistentry tgid="9458" elid="2506" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><term tgid="9459" elid="9873" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="25"></userinput></term><listitem tgid="9474" elid="9874" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="9713" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="58"></para></listitem></varlistentry><varlistentry tgid="9331" elid="2506" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><term tgid="9332" elid="9873" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="15"></userinput></term><listitem tgid="9347" elid="9874" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="9714" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="141"></para></listitem></varlistentry><varlistentry tgid="9204" elid="2506" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><term tgid="9205" elid="9873" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="26"></userinput></term><listitem tgid="9220" elid="9874" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="9715" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="56"></para></listitem></varlistentry><varlistentry tgid="9585" elid="2506" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><term tgid="9586" elid="9873" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="0" tgax="0" tgcs="5"></userinput></term><listitem tgid="9601" elid="9874" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="9716" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="46"></para></listitem></varlistentry></variablelist><para tgid="9717" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="32"></para><para tgid="9718" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><userinput tgid="9719" elid="10587" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="94"></userinput></para></listitem></varlistentry></variablelist></listitem><listitem tgid="7786" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="7980" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="60"></para></listitem><listitem tgid="7690" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="7981" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="56"></para><para tgid="9722" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><userinput tgid="9723" elid="10587" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="53"></userinput></para><para tgid="9721" elid="7296" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="13"></para><para tgid="9720" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><userinput tgid="9724" elid="10587" tgxi="-1" tgbx="0" tgct="1" tgtg="1" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="57"></userinput></para></listitem><listitem tgid="7594" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="7982" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"></para></listitem><listitem tgid="7498" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="7983" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"></para></listitem><listitem tgid="7402" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="7984" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"></para></listitem><listitem tgid="7306" elid="5390" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"><para tgid="7985" elid="7296" tgxi="-1" tgbx="0" tgct="0" tgtg="0" tgcl="0" tgbl="0" tgit="0" tgix="1" tgax="0" tgcs="0"></para></listitem></orderedlist></section></chapter></book></tree></strt>?>
+<!--end avenue.quark processing instruction-->
