@@ -339,7 +339,8 @@ void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
 
         http_open_port(ppg_port, TYPE_HTTP);
 #ifdef HAVE_LIBSSL
-        http_open_port(ppg_ssl_port, TYPE_HTTPS);
+        if (ppg_ssl_port != NO_HTTPS_PORT)
+            http_open_port(ppg_ssl_port, TYPE_HTTPS);
 #endif
         http_clients = dict_create(number_of_pushes, NULL);
         urls = dict_create(number_of_pushes, NULL);
@@ -348,8 +349,9 @@ void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
         run_status = running;
         gwthread_create(ota_read_thread, NULL);
         gwthread_create(http_read_thread, NULL);
-#ifdef HAVE_LIBSSL 
-        gwthread_create(https_read_thread, NULL);
+#ifdef HAVE_LIBSSL
+        if (ppg_ssl_port != NO_HTTPS_PORT) 
+            gwthread_create(https_read_thread, NULL);
 #endif
         gwthread_create(pap_request_thread, NULL);
     }
@@ -373,7 +375,8 @@ void wap_push_ppg_shutdown(void)
 
          gwthread_join_every(http_read_thread);
 #ifdef HAVE_LIBSSL
-         gwthread_join_every(https_read_thread);
+         if (ppg_ssl_port != NO_HTTPS_PORT)
+            gwthread_join_every(https_read_thread);
 #endif
          gwthread_join_every(ota_read_thread);
          gwthread_join_every(pap_request_thread);
@@ -462,12 +465,11 @@ static int read_ppg_config(Cfg *cfg)
      cfg_get_integer(&ppg_ssl_port, grp, octstr_imm("ppg-ssl-port"));
      ssl_server_cert_file = cfg_get(grp, octstr_imm("ssl-server-cert-file"));
      ssl_server_key_file = cfg_get(grp, octstr_imm("ssl-server-key-file"));
-     if (ppg_ssl_port == -1) 
-         panic(0, "cannot continue; https port not defined");
-     if (ssl_server_cert_file == NULL || ssl_server_key_file == NULL) 
-         panic(0, "cannot continue without server cert and/or key files");
-     use_global_server_certkey_file(ssl_server_cert_file, ssl_server_key_file);
-    
+     if (ppg_ssl_port != NO_HTTPS_PORT) {
+        if (ssl_server_cert_file == NULL || ssl_server_key_file == NULL) 
+            panic(0, "cannot continue without server cert and/or key files");
+        use_global_server_certkey_file(ssl_server_cert_file, ssl_server_key_file);
+     }        
      octstr_destroy(ssl_server_cert_file);
      octstr_destroy(ssl_server_key_file);
 #endif
