@@ -403,6 +403,8 @@ static int event_semantically_valid(WAPEvent *e, int type_of_address)
     
     if (e->u.Push_Message.network_required != 
 	     e->u.Push_Message.bearer_required) {
+       debug("wap.push.pap.compiler", 0, "PAP COMPILER: network-required and"
+             " bearer-required must have same value");
        return 0;
     }
 
@@ -411,6 +413,8 @@ static int event_semantically_valid(WAPEvent *e, int type_of_address)
                                      e->u.Push_Message.network,
                                      e->u.Push_Message.bearer_required,
                                      e->u.Push_Message.bearer)) {
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: network or bearer"
+              " does not accept PLMN address");
         return 0;
     }
     
@@ -418,6 +422,8 @@ static int event_semantically_valid(WAPEvent *e, int type_of_address)
             !uses_ipv4_address(e->u.Push_Message.network_required,
                                e->u.Push_Message.bearer_required,
                                e->u.Push_Message.bearer)) {
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: network or bearer"
+              " does not accept IPv4 address");
         return 0;
     }
     
@@ -428,6 +434,8 @@ static int event_semantically_valid(WAPEvent *e, int type_of_address)
 	    !uses_ipv6_address(e->u.Push_Message.network_required,
                                e->u.Push_Message.bearer_required,
                                e->u.Push_Message.bearer))) {
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: network or bearer"
+              " does not accept IPv6 address");
         return 0;
     }
     
@@ -548,7 +556,7 @@ static int parse_node(xmlNodePtr node, WAPEvent **e, int *type_of_address)
     break;
 
     default:
-        error(0, "PAP COMPILER: parse_node: Unknown XML node in PAP source");
+        warning(0, "PAP COMPILER: parse_node: Unknown XML node in PAP source");
         return -2;
     }
 
@@ -586,6 +594,8 @@ static int parse_element(xmlNodePtr node, WAPEvent **e, int *type_of_address)
     name = octstr_create(node->name);
     if (octstr_len(name) == 0) {
         octstr_destroy(name);
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: element name length"
+              " zero");
         return -2;
     }
     
@@ -598,6 +608,7 @@ static int parse_element(xmlNodePtr node, WAPEvent **e, int *type_of_address)
 
     if (i == NUM_ELEMENTS) {
         octstr_destroy(name);
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown element");
         return -2;
     }
 
@@ -656,8 +667,10 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
         ++i;
     }
 
-    if (i == NUM_ATTRIBUTES)
+    if (i == NUM_ATTRIBUTES) {
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown attribute");
         goto error;
+    }
 
 /*
  * Parse an attribute (it is, check cdata is has for a value) that is *not* an
@@ -680,14 +693,17 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
         ++i;
     }
 
-    if (octstr_compare(attr_name, nameos) != 0)
+    if (octstr_compare(attr_name, nameos) != 0) {
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown attribute"
+              " value");
         goto error;
+    }
 
 /*
  * Check that the value of the attribute is one enumerated for this attribute
  * in pap, chapter 9.
  */
-    if (set_attribute_value(element_name, value, attr_name, e) == -1)
+    if (set_attribute_value(element_name, value, attr_name, e) == -1) 
         goto error;
 
     octstr_destroy(attr_name);
@@ -745,6 +761,8 @@ static int parse_push_message_value(Octstr *attr_name, Octstr *attr_value,
         return 0;
     }
 
+    debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown push message"
+          " element attribute");
     return -2;
 }  
 
@@ -771,6 +789,8 @@ static int parse_address_value(Octstr *attr_name, Octstr *attr_value,
         return ret;
     } 
 
+    debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown address element"
+          " attribute");
     return -2;
 }
 
@@ -791,6 +811,8 @@ static int parse_quality_of_service_value(Octstr *attr_name,
         return return_flag(ros);
     }
 
+    debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown quality of"
+          " service attribute");
     return -2;
 }
 
@@ -819,6 +841,8 @@ static int parse_push_response_value(Octstr *attr_name, Octstr *attr_value,
         return 0;
     }
 
+    debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown push response"
+          " element attribute");
     return -2;
 }
 
@@ -844,6 +868,8 @@ static int parse_progress_note_value(Octstr *attr_name, Octstr *attr_value,
 	return return_flag(ros);
     }
 
+    debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown progress note"
+          " element attribute");
     return -2;
 }
 
@@ -863,6 +889,8 @@ static int parse_bad_message_response_value(Octstr *attr_name,
         return 0;
     }
 
+    debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown bad message"
+          " response element attribute");
     return -2;
 }
 
@@ -877,6 +905,8 @@ static int parse_response_result_value(Octstr *attr_name,
         return 0;
     }
 
+    debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown response result"
+          " attribute");
     return -2;
 } 
 
@@ -933,6 +963,7 @@ static int parse_attr_value(Octstr *element_name, Octstr *attr_name,
                             int *type_of_address)
 {
     if (octstr_compare(attr_value, octstr_imm("erroneous")) == 0) {
+        debug("wap.push.pap.compiler", 0, "unknown value for an attribute");
         return -2;
     }
 
@@ -1049,7 +1080,7 @@ static Octstr *parse_bearer(Octstr *attr_value)
 	     return ros;
     }
 
-    warning(0, "PAP COMPILER: parse_bearer: no such bearer");
+    warning(0, "no such bearer");
     return NULL;
 }
 
@@ -1064,7 +1095,7 @@ static Octstr *parse_network(Octstr *attr_value)
 	     return ros;
     }
 
-    warning(0, "PAP COMPILER: parse_network: no such network");
+    warning(0, "no such network");
     return NULL;
 }
 
@@ -1081,7 +1112,7 @@ static int parse_requirement(Octstr *attr_value)
     else if (octstr_case_compare(attr_value, octstr_imm("true")) == 0)
         attr_as_number = PAP_TRUE;
     else
-        warning(0, "PAP COMPILER: parse_requirement: not a truth value");
+        warning(0, "in a requirement, value not a truth value");
 
     return attr_as_number;
 }
@@ -1101,7 +1132,7 @@ static int parse_priority(Octstr *attr_value)
     else if (octstr_case_compare(attr_value, octstr_imm("low")) == 0)
         attr_as_number = PAP_LOW;
     else
-        warning(0, "PAP COMPILER: parse_priority: illegal priority");
+        warning(0, "illegal priority");
 
     return attr_as_number;
 }
@@ -1124,7 +1155,7 @@ static int parse_delivery_method(Octstr *attr_value)
     else if (octstr_case_compare(attr_value, octstr_imm("notspecified")) == 0)
 	attr_as_number = PAP_NOT_SPECIFIED;
     else
-        warning(0, "PAP COMPILER: parse_delivery_method: illegal method");
+        warning(0, "illegal delivery method");
     
     return attr_as_number;
 }
@@ -1152,7 +1183,7 @@ static int parse_state(Octstr *attr_value)
     else if (octstr_case_compare(attr_value, octstr_imm("cancelled")) == 0)
         attr_as_number = PAP_CANCELLED;
     else 
-         warning(0, "PAP COMPILER: parse_state: illegal ppg state");
+         warning(0, "illegal ppg state");
 
     return attr_as_number;
 }
@@ -1181,21 +1212,21 @@ static int parse_address(Octstr **address, int *type_of_address)
         octstr_delete(*address, 0, 1);
 
     if ((pos = parse_ppg_specifier(address, pos)) < 0) {
-        warning(0, "PAP COMPILER: parse_address: illegal ppg specifier");
+        warning(0, "illegal ppg specifier");
         return -2;
     }
 
     if ((pos = parse_wappush_client_address(address, pos, 
             type_of_address)) == -2) {
-        warning(0, "PAP_COMPILER: parse_address: illegal client address");
+        warning(0, "illegal client address");
         return -2;
     } else if (pos == -1) {
-        warning(0, "PAP_COMPILER: parse_address: unimplemented feature");
+        warning(0, "unimplemented feature");
         return -1;
     }
 
-    debug("wap.push.ppg.compiler", 0, "client address was <%s>, accepted", 
-           octstr_get_cstr(copy = octstr_duplicate(*address)));    
+    info(0, "client address was <%s>, accepted", 
+         octstr_get_cstr(copy = octstr_duplicate(*address)));    
     octstr_destroy(copy);
 
     return pos;
@@ -1229,8 +1260,11 @@ static long parse_ppg_specifier(Octstr **address, long pos)
         if (octstr_get_char(*address, pos) == '.') {
 	    octstr_delete(*address, pos, 1);
             --pos;
-        } else
+        } else {
+            debug("wap.push.pap.compiler", 0, "PAP COMPILER: missing"
+                  " separator .");
 	    return -2;
+        }
 
         pos = parse_dom_fragment(address, pos);
     } 
@@ -1243,8 +1277,11 @@ static long parse_ppg_specifier(Octstr **address, long pos)
             --pos;
     }
 
-    if (pos < 0)
+    if (pos < 0) {
+       debug("wap.push.pap.compiler", 0, "PAP COMPILER: missing separator /"
+             " or @");
        return -2;
+    }
 
     return pos;
 }
@@ -1269,6 +1306,8 @@ static long parse_client_specifier(Octstr **address, long pos,
     pos = drop_character(address, pos);
 
     if ((pos = parse_constant("/TYPE", address, pos)) < 0) {
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: constant TYPE"
+              " missing from the client address");
         goto parse_error;
     }
 
@@ -1277,8 +1316,9 @@ static long parse_client_specifier(Octstr **address, long pos,
         goto not_implemented;
     }
 
-    if ((pos = parse_ext_qualifiers(address, pos, type_value)) < 0)
+    if ((pos = parse_ext_qualifiers(address, pos, type_value)) < 0) {
         goto parse_error;
+    }
 
     if (octstr_compare(type_value, octstr_imm("PLMN")) == 0) {
         *type_of_address = ADDR_PLMN;
@@ -1300,8 +1340,11 @@ static long parse_client_specifier(Octstr **address, long pos,
         pos = parse_escaped_value(address, pos); 
     }    
 
-    else
+    else {
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: wrong address type"
+              " in the client address");
         goto parse_error; 
+    }
 
     octstr_destroy(type_value);
     return pos;
@@ -1402,8 +1445,11 @@ static long parse_ext_qualifiers(Octstr **address, long pos,
             return pos;
     }
 
-    if (ret == 1)
+    if (ret == 1) {
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: erroneous qualifiers"
+              " in the client address");
         return -2;
+    }
 
     return pos;
 }
@@ -1419,14 +1465,20 @@ static long parse_global_phone_number(Octstr **address, long pos)
     unsigned char c;
 
     while ((c = octstr_get_char(*address, pos)) != '+' && pos >= 0) {
-        if (!isdigit(c) && c != '-' && c != '.')
+         if (!isdigit(c) && c != '-' && c != '.') {
+             debug("wap.push.pap.compiler", 0, "PAP COMPILER: wrong separator"
+                   " in a phone number (- and . allowed)");
              return -2;
-        else
+	 } else {
 	     --pos;
+         }
     }
 
-    if (pos == 0)
+    if (pos == 0) {
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER:a phone number must"
+              " start with +");
         return -2;
+    }
 
     if (pos > 0)
         --pos;
@@ -1440,14 +1492,23 @@ static long parse_ipv4(Octstr **address, long pos)
 {
     long i;
 
-    if ((pos = parse_ipv4_fragment(address, pos)) < 0) 
+    if ((pos = parse_ipv4_fragment(address, pos)) < 0) {
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: wrong separator in a"
+              " ipv4 address");
         return -2;
+    }
 
     i = 1;
 
     while (i <= 3 && octstr_get_char(*address, pos) != '=' && pos >= 0) {
         pos = parse_ipv4_fragment(address, pos);
         ++i;
+    }
+
+    if (pos == 0) {
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: missing separator at"
+              " beginning of a client address (=)");
+        return -2;
     }
 
     return pos;
@@ -1457,14 +1518,23 @@ static long parse_ipv6(Octstr **address, long pos)
 {
     long i;
 
-    if ((pos = parse_ipv6_fragment(address, pos)) < 0)
+    if ((pos = parse_ipv6_fragment(address, pos)) < 0) {
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: wrong separator in a"
+              " ipv6 address");
         return -2;
+    }
 
     i = 1;
 
-    while (i <= 7 && pos >= 0) {
+    while (i <= 7 && octstr_get_char(*address, pos) != '=' && pos >= 0) {
         pos = parse_ipv6_fragment(address, pos);
         ++i;
+    }
+
+    if (pos == 0) {
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: missing separator at"
+              " beginning of a client address (=)");
+        return -2;
     }
 
     return pos;
@@ -1503,6 +1573,8 @@ static int wina_bearer_identifier(Octstr *type_value)
         ++i;
     }
 
+    debug("wap.push.pap.compiler", 0, "PAP COMPILER: a bearer not registered"
+          " by wina");
     return 0;
 }
 
