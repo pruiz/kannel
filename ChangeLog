@@ -1,5 +1,16 @@
 2000-04-03  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/gwstr.c, gwlib/gwstr.h: Removed split_words(), it has been
+	superseded by octstr_split_words().
+
+	* gwlib/gwstr.c, gwlib/gwstr.h: Removed url_decode(), it has been
+	superseded by octstr_url_decode().
+
+	* gw/urltrans.h: Removed bogus paragraph from the function
+	comment for urltrans_get_pattern.
+
+2000-04-03  Richard Braakman  <dark@wapit.com>
+
 	* wmlscript/wsint.h: Always define WsInt32 to long and WsUInt32
 	to unsigned long, rather than looking for a type of exactly four
 	bytes.

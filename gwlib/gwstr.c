@@ -9,29 +9,6 @@
 #include "log.h"
 
 
-int split_words(char *buf, int max, char **words) {
-        int n;
-
-        n = 0;
-        while (n < max - 1 && *buf != '\0') {
-                while (*buf == ' ')
-                        ++buf;
-                if (*buf != '\0') {
-                        words[n++] = buf;
-                        while (*buf != ' ' && *buf != '\0')
-                                ++buf;
-                        if (*buf == ' ')
-                                *buf++ = '\0';
-                }
-        }
-        while (*buf == ' ')
-                ++buf;
-        if (*buf != '\0')
-                words[n++] = buf;
-        return n;
-}
-
-
 char *trim_ends(char *str) {
 	unsigned char *ustr, *end;
 	
@@ -67,45 +44,6 @@ char *strndup(char *str, size_t n) {
 	memcpy(p, str, n);
 	p[n] = '\0';
 	return p;
-}
-
-
-int url_decode(char *string)
-{
-    long value;
-    char *dptr = string;
-    char buf[3];		/* buffer for strtol conversion */
-    buf[2] = '\0';
-    
-    do {
-	if (*string == '%') {
-	    if (*(string+1) == '\0' || *(string+2) == '\0')
-		goto error;
-	    buf[0] = *(string+1);
-	    buf[1] = *(string+2);
-	    value =  strtol(buf, NULL, 16);
-	    if (value > 0) {
-		*dptr = (unsigned char)value;
-		string += 3;
-		dptr++;
-		continue;
-	    }
-	}
-	if (*string == '+') {
-	    *dptr++ = ' ';
-	    string++;
-	}
-	else
-	    *dptr++ = *string++;
-    } while(*string);
-    *dptr = '\0';
-
-    return 0;
-
-error:
-    *dptr = '\0';
-    error(0, "url_decode: corrupted end-of-string <%s>", string);
-    return -1;
 }
 
 

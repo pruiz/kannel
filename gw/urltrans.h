@@ -113,18 +113,13 @@ URLTranslation *urltrans_find_username(URLTranslationList *trans, char *name);
  * translation pattern and fill in the missing parts from the contents of
  * the SMS message.
  *
- * The contents of the SMS message is delivered in `words', which is an
- * array of strings, each string being a word of the message. That is,
- * the caller needs to break up the message into words (using, say,
- * split_words from gwlib). `n' is the number of words.
- *
  * `sms' is the SMS message that is being translated.
  *
- * Return NULL if there is a failure. Otherwise, return a pointer to the pattern,
- * which is stored in dynamically allocated memory that the caller should
- * free when the pattern is no longer needed.
+ * Return NULL if there is a failure. Otherwise, return a pointer to the
+ * pattern, which is stored in dynamically allocated memory that the
+ * caller should free when the pattern is no longer needed.
  *
- * The pattern is URL, fixed text or file name accorinbg to type of urltrans
+ * The pattern is URL, fixed text or file name according to type of urltrans
  */
 char *urltrans_get_pattern(URLTranslation *t, Msg *sms);
 

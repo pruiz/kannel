@@ -8,12 +8,6 @@
 #define _GWSTR_H
 
 
-/* Split string `buf' up to `max' words at space characters. Return number
- * of words found. If there are more than `max' words, all the remaining
- * words are the last word, even if it may contain spaces. */
-int split_words(char *buf, int max, char **words);
-
-
 /* Remove leading and trailing whitespace. */
 char *trim_ends(char *str);
 
@@ -38,13 +32,5 @@ int str_reverse_seek(const char *s, int start_offset, const char *accept);
 
 /* as above but ignoring case */
 int str_reverse_case_seek(const char *s, int start_offset, const char *accept);
-
-
-/* url-decode given string, doing the appropriate conversion in place.
- * Any corrupted codings ('%pr' for example) are left in place.
- * If the end of the string is malformed ('%n\0' or '%\0') returns -1,
- * 0 otherwise. The string so-far is modified. */
-int url_decode(char *string);
-
 
 #endif
