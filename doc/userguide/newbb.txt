@@ -27,7 +27,6 @@ Kannel is run like:
 Note that if using any fakesmsc, that must be started up before
 starting the bearerbox.
 
-
 COMMAND LINE OPTIONS
 
 Bearerbox, smsbox and wapbox each accept certain command line options
@@ -53,6 +52,8 @@ and arguments when they are launched. These arguments are:
  -I		  Start the system initially at ISOLATED state
 		  (Bearerbox only)
 
+ -H               Only try to open HTTP sendsms interface; if it
+                  fails, only warn about that. (Smsbox only)
 
 KANNEL STATUSES
 
