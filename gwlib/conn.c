@@ -335,7 +335,7 @@ static void unlocked_register_pollout(Connection *conn, int onoff)
 #ifdef HAVE_LIBSSL
 
 Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
-		Octstr *our_host)
+			  Octstr *our_host)
 {
     Connection *ret;
     int SSL_ret;
@@ -343,6 +343,8 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
     ret = conn_open_tcp(host, port, our_host);
 
     ret->ssl = SSL_new(global_ssl_context);
+    ret->ssl_mutex = mutex_create();
+    
     SSL_set_connect_state(ret->ssl);
     if (certkeyfile != NULL) {
         SSL_use_certificate_file(ret->ssl, octstr_get_cstr(certkeyfile),
@@ -350,27 +352,45 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
         SSL_use_PrivateKey_file(ret->ssl, octstr_get_cstr(certkeyfile), 
                                 SSL_FILETYPE_PEM);
         if (SSL_check_private_key(ret->ssl) != 1) {
-            error(0, "conn_open_ssl: private key isn't consistent with the \
-certificate from file %s (or failed reading the file)",
+            error(0, "conn_open_ssl: private key isn't consistent with the "
+		  "certificate from file %s (or failed reading the file)",
                   octstr_get_cstr(certkeyfile));
             goto error;
         }
     }
+    
     SSL_set_fd(ret->ssl, ret->fd);
-    SSL_ret = SSL_connect(ret->ssl);
 
-    if (SSL_ret != 1) {
-        int SSL_error = SSL_get_error(ret->ssl, SSL_ret); 
+    /*
+     * The current thread's error queue must be empty before
+     * the TLS/SSL I/O operation is attempted, or SSL_get_error()
+     * will not work reliably.
+     */
+    ERR_clear_error();
 
-        if (SSL_error != SSL_ERROR_WANT_READ
-           && SSL_error != SSL_ERROR_WANT_WRITE) {
-            error(0, "SSL connect failed: OpenSSL error %d: %s", 
-                     SSL_error, ERR_error_string(SSL_error, NULL));
-            goto error;
-        }
+    /*
+     * make the socket blocking while we do SSL_connect
+     */
+    if (socket_set_blocking(ret->fd, 1) < 0) {
+	goto error;
     }
-
-    ret->ssl_mutex = mutex_create();
+    
+    SSL_ret = SSL_connect(ret->ssl);
+    
+    /*
+     * restore the non-blocking state
+     */
+    if (socket_set_blocking(ret->fd, 0) < 0) {
+	goto error;
+    }
+    
+    if (SSL_ret != 1) {
+	int SSL_error = SSL_get_error (ret->ssl, SSL_ret); 
+	error(0, "SSL connect failed: OpenSSL error %d: %s", 
+	      SSL_error, ERR_error_string(SSL_error, NULL));
+	goto error;
+    }
+    
     return(ret);
 error:
     conn_destroy(ret);
@@ -1128,8 +1148,8 @@ void use_global_client_certkey_file(Octstr *certkeyfile)
                                 octstr_get_cstr(certkeyfile),
                                 SSL_FILETYPE_PEM);
     if (SSL_CTX_check_private_key(global_ssl_context) != 1)
-        panic(0, "reading global client certificate file %s, the certificate \
-isn't consistent with the private key (or failed reading the file)", 
+        panic(0, "reading global client certificate file %s, the certificate "
+	      "isn't consistent with the private key (or failed reading the file)", 
               octstr_get_cstr(certkeyfile));
     info(0, "Using global SSL certificate and key from file %s",
          octstr_get_cstr(certkeyfile));
@@ -1227,6 +1247,6 @@ conn_config_ssl (CfgGroup *grp)
 void
 conn_config_ssl (CfgGroup *grp)
 {
-    info(0, "SSL not configured, no SSL initialization done.");
+    info(0, "SSL not supported, no SSL initialization done.");
 }
 #endif /* HAVE_LIBSSL */

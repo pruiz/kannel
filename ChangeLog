@@ -1,31 +1,34 @@
+2001-12-07 Jörg Pommnitz <jpo@condat.de>
+    * gwlib/conn.c: fix error handling in conn_open_ssl
+
 2001-12-07  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_at2.c: fixed a typo for the ericsson R520m,
       reported by Bob Pepin <bob@gms.lu>
 
 2001-12-06 Jörg Pommnitz <jpo@condat.de>
-	* gwlib/cfg.def: introduce new config option ssl-trusted-ca-file
-	* gwlib/conn.c: implement client side SSL certificate verification
-	* doc/userguide/userguide.xml: document new option ssl-trusted-ca-file
+    * gwlib/cfg.def: introduce new config option ssl-trusted-ca-file
+    * gwlib/conn.c: implement client side SSL certificate verification
+    * doc/userguide/userguide.xml: document new option ssl-trusted-ca-file
 	
 2001-12-06 Jörg Pommnitz <jpo@condat.de>
-	* gwlib/conn.c, gwlib/conn.h: new function 
-	  void conn_config_ssl (CfgGroup *grp); to uniformly configure
-	  the SSL code
-	* gw/bearerbox.c, gw/smsbox.c, gw/wapbox.c: use conn_config_ssl
-	  to configure SSL code.
+    * gwlib/conn.c, gwlib/conn.h: new function 
+      void conn_config_ssl (CfgGroup *grp); to uniformly configure
+      the SSL 
+    * gw/bearerbox.c, gw/smsbox.c, gw/wapbox.c: use conn_config_ssl
+      to configure SSL code.
 
 2001-12-05  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_smpp.c: fixed bug in smsc-id setting, 
       reported by Indrek Mandre <indrek.mandre@trigger.ee>
 
 2001-12-05 Jörg Pommnitz <jpo@condat.de>
-	* gwlib/conn.c: fix longstanding bug in SSL locking. This fixes the
-	  crashes in gwlib_shutdown()
+    * gwlib/conn.c: fix longstanding bug in SSL locking. This fixes the
+      crashes in gwlib_shutdown()
 	
 2001-12-05 Jörg Pommnitz <jpo@condat.de>
-	* gw/smsc_emi2.c: code cleanup/reorganization, new feature "idle-timeout"
-	* gwlib/cfg.def: add new smsc config option "idle-timeout"
-	* doc/userguide/userguide.xml: document new config option "idle-timeout"
+    * gw/smsc_emi2.c: code cleanup/reorganization, new feature "idle-timeout"
+    * gwlib/cfg.def: add new smsc config option "idle-timeout"
+    * doc/userguide/userguide.xml: document new config option "idle-timeout"
 
 2001-12-05 Andreas Fink
     * gw/smsc_smpp.c, gw/smpp_pdu.h: introduced some constants for number type
