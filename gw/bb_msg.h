@@ -87,23 +87,22 @@ RQueue *rq_new(void);
 
 
 /*
- * push a new message to the queue
- *
- * return 0, cannot fail (mutex may panic, however)
+ * push a new message to the queue. Cannot fail (as long as
+ *  user does not give crap)
  */
-int rq_push_msg(RQueue *queue, RQueueItem *msg);
+void rq_push_msg(RQueue *queue, RQueueItem *msg);
 
 /*
  * as above, but pushes to head (and does NOT increase 'added')
  */
-int rq_push_msg_head(RQueue *queue, RQueueItem *msg);
+void rq_push_msg_head(RQueue *queue, RQueueItem *msg);
 
 /*
  * push an acknowledgement/NACK. It is pushed after last ACK/NACK
  * in the queue, and into head if there is none
  * (does NOT increase 'added')
  */
-int rq_push_msg_ack(RQueue *queue, RQueueItem *msg);
+void rq_push_msg_ack(RQueue *queue, RQueueItem *msg);
 
 /*
  * pull a message from queue which has source or destination

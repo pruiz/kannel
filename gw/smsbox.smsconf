@@ -21,6 +21,11 @@
 # sms-length = (number)
 #	maximum length of one SMS message. Defaults to 160 characters
 #
+# heartbeat-freq = (value in seconds)
+#	heartbeat frequency - how often a heartbeat (with load information)
+#	is send to bearerbox - so this value should be same as for bearerbox 
+#	or less.
+#
 # pid-file = (file path)
 #       the file in which the pid number of the bearer box is written
 #       if not set, no such a file is written (default = not set)

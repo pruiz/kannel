@@ -173,6 +173,7 @@ pthread_mutex_t route_mutex;
 typedef struct routeinfo {
     char *route_match;
     int receiver_id;
+    time_t tag;		/* last time used */
 } RouteInfo;
 
 static RouteInfo *route_info = NULL;
@@ -202,56 +203,124 @@ int bsearch_receiver(char *str, int *index)
     int cmp = -1;
     *index = -1;
 
-    while(hi >= 1) {
-	*index = (lo+hi)/2;
+    while(hi >= lo) {
+	*index = (lo+hi)/2 - 1;
 	cmp = strcmp(str, route_info[*index].route_match);
 	if (cmp == 0) return 0;
-	if (cmp < 0) hi = *index - 1;
-	else lo = *index + 1;
+	if (cmp < 0) hi = *index;
+	else lo = *index + 2;
     }
     return cmp;
 }
 
+
 int find_receiver(RQueueItem *rqi)
 {
-    int i;
+    int i, ret;
     
     if (rqi->routing_info == NULL)
 	return -1;
 
     mutex_lock(&route_mutex);
-    if (bsearch_receiver(rqi->routing_info, &i) != 0)
-	return -1;
- 
+    ret = bsearch_receiver(rqi->routing_info, &i);
+    if (ret == 0)
+	route_info[i].tag = time(NULL);
+    
     mutex_unlock(&route_mutex);
+    if (ret != 0)
+	return -1;
+    
     return route_info[i].receiver_id;
 }
+
+
+int del_receiver(int index)
+{
+    mutex_lock(&route_mutex);
+
+    memmove(route_info+index, route_info+index+1, route_count-index-1);
+    route_count--;
+
+    mutex_unlock(&route_mutex);
+    return 0;
+}
+
 
 
 int add_receiver(char *routing_str, int id)
 {
     RouteInfo *new;
+    int ret, index;
+    char *p;
+
+    p = strdup(routing_str);
+    if (p == NULL) {
+	error(errno, "Failed to allocate room for router");
+	return -1;
+    }
+    mutex_lock(&route_mutex);
+
+    ret = bsearch_receiver(routing_str, &index);
+    if (ret == 0) {
+	warning(0, "Trying to re-insert already known");
+	goto end;
+    }
+    /*
+     * reallocate more room if needed
+     */
     
     if (route_count >= route_limit) {
 	route_limit += 1024;
 	new = realloc(route_info, route_limit * sizeof(RouteInfo));
 	if (new == NULL) {
 	    error(errno, "Failed to add a new receiver routing info");
-	    return -1;
+	    ret = -1;
+	    goto end;
 	}
 	route_info = new;
     }
-    route_info[route_count].route_match = strdup(routing_str);
-    if (route_info[route_count].route_match == NULL) {
-	error(errno, "Failed to allocate room for router");
-	return -1;
-    }
-    route_info[route_count].receiver_id = id;
-
+    /*
+     * insert the new one
+     */
+    if (ret < 0) {
+	memmove(route_info+index+2, route_info+index+1, route_count-index-1);
+	index++;
+    } else
+	memmove(route_info+index+1, route_info+index, route_count-index);
+    
+    route_info[index].route_match = p;
+    route_info[index].receiver_id = id;
+    route_info[index].tag = time(NULL);
     route_count++;
-    return 0;
+    ret = 0;
+end:
+    mutex_unlock(&route_mutex);
+
+    return ret;
 }
 
+/*
+ * check routing list and delete all that are older than
+ * 10 minutes (600 seconds) (non-used for that period)
+ */
+int check_receivers()
+{
+    int i;
+    time_t now;
+
+    mutex_lock(&route_mutex);
+
+    now = time(NULL);
+    
+    for(i=0; i < route_count; i++)
+	if (route_info[i].tag + 600 < now) {
+	    memmove(route_info+i, route_info+i+1, route_count-i-1);
+	    route_count--;
+	    i--;
+	}
+    mutex_unlock(&route_mutex);
+    return 0;
+}
 
     
 
@@ -656,7 +725,7 @@ static void *smsboxconnection_thread(void *arg)
 	 * die if forced to, closing the socket */
 
         our_time = time(NULL);
-	if ((our_time) - (last_time) > bbox->heartbeat_freq) {
+	if ((our_time) - (last_time) > bbox->heartbeat_freq * 2) {
 	    if (us->boxc->fd != BOXC_THREAD &&
 		us->boxc->box_heartbeat < last_time) {
 
@@ -828,12 +897,15 @@ static BBThread *create_bbt(int type)
     nt->csdr = NULL;
     nt->boxc = NULL;
 
+    mutex_lock(&bbox->mutex);
+
     id = find_bbt_id();
     index = find_bbt_index();
     nt->id = id;
     bbox->threads[index] = nt;
-
     bbox->id_max = id;
+
+    mutex_unlock(&bbox->mutex);
     return nt;
 }
 
@@ -946,17 +1018,22 @@ static char *bbt_status_name(int status)
 static int bbt_kill(int id)
 {
     BBThread *thr;
-    int i, num, del;
+    int i, num, del, ret;
     num = del = 0;
+    ret = -1;
+    
+    mutex_lock(&bbox->mutex);
     
     for(i=0; i < bbox->thread_limit; i++) {
 	thr = bbox->threads[i];
 	if (thr != NULL && thr->id == id) {
 	    thr->status = BB_STATUS_KILLED;
-	    return 0;
+	    ret = 0;
+	    break;
 	}
     }
-    return -1;
+    mutex_unlock(&bbox->mutex);
+    return ret;
 }
 
 /*
@@ -968,6 +1045,8 @@ static BBThread *internal_smsbox(void)
     BBThread *thr;
     int i;
     
+    mutex_lock(&bbox->mutex);
+
     for(i=0; i < bbox->thread_limit; i++) {
 	thr = bbox->threads[i];
 	if (thr != NULL) {
@@ -978,6 +1057,8 @@ static BBThread *internal_smsbox(void)
 		return thr;
 	}
     }
+    mutex_unlock(&bbox->mutex);
+
     return NULL;
 }
 

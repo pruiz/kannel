@@ -13,8 +13,37 @@
 	back SMS messages to the bearer box. In addition, it sends
 	heartbeat messages. The SMS box is basically a modified part
 	of the current smsgateway.c.</para>
-	
-	<para>This chapter will be written by the person who will
-	convert the smsgateway.c to the SMS box.</para>
+
+<sect1>
+<title>SMS Box Design</title>
+
+   <para>The SMS Box is a very simple system, with two kind of
+   implementations: Bearer box internal SMS Box and independent SMS
+   Box (normal mode).</para>
+
+   <para><emphasis>SMS Box</emphasis> is a module that receives SMS
+   Messages from SMS Centers, routed to it via Bearerbox, and then
+   does actions pre-spesified in configuration files according to the
+   message contents. Normally this means a HTTP request to specified
+   URL with such parameters as sender phone number. The response to
+   the request is then resend back to bearerbox which then routes it to
+   SMS Center and back to mobile phone.</para>
+
+   <para>The SMS Box can also give a fixed text or data from the file
+   as a response, as specified in the configuration file. It can also
+   split the reply into several messages and do other similar actions.
+   </para>
+
+   <para><emphasis>Normal SMS Box</para> uses TCP/IP to connect the
+   Bearerbox and then use that line to receive and to send SMS
+   Messages, which are packed into internal form.</para>
+
+   <para><emphasis>Internal SMS Box</para> is a thread in
+   Bearerbox. It starts a new thread for each new request and puts
+   replies directly into Reply Queue (see Bearerbox design)</para>
+
+   <para>In addition to responding to the mobile orientated SMS
+   Messages, the SMS Box can accept text via HTTP-queries, which it
+   then sends as SMSes to the bearerbox and onward.</para>
 	
 </chapter>

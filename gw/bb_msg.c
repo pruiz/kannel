@@ -37,7 +37,7 @@ RQueue *rq_new(void)
 }
 
 
-int rq_push_msg(RQueue *queue, RQueueItem *msg)
+void rq_push_msg(RQueue *queue, RQueueItem *msg)
 {
     mutex_lock(&queue->mutex);
 
@@ -59,12 +59,10 @@ int rq_push_msg(RQueue *queue, RQueueItem *msg)
     queue->last_mod = time(NULL);
 
     mutex_unlock(&queue->mutex);
-
-    return 0;
 }
 
 
-int rq_push_msg_head(RQueue *queue, RQueueItem *msg)
+void rq_push_msg_head(RQueue *queue, RQueueItem *msg)
 {
     mutex_lock(&queue->mutex);
 
@@ -83,12 +81,10 @@ int rq_push_msg_head(RQueue *queue, RQueueItem *msg)
     queue->last_mod = time(NULL);
 
     mutex_unlock(&queue->mutex);
-
-    return 0;
 }
 
 
-int rq_push_msg_ack(RQueue *queue, RQueueItem *msg)
+void rq_push_msg_ack(RQueue *queue, RQueueItem *msg)
 {
     RQueueItem *ptr, *prev;
     
@@ -129,8 +125,6 @@ int rq_push_msg_ack(RQueue *queue, RQueueItem *msg)
     queue->last_mod = time(NULL);
 
     mutex_unlock(&queue->mutex);
-
-    return 0;
 }
 
 
@@ -243,7 +237,6 @@ time_t rq_oldest_message(RQueue *queue)
 
 time_t rq_last_mod(RQueue *queue)
 {
-    int ret;
     time_t val;
     
     mutex_lock(&queue->mutex);
