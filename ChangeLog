@@ -1,4 +1,9 @@
 2005-01-19  Alexander Malysh <amalysh at kannel.org>
+    * configure.in, configure: fixed bug #178 and similar bugs.
+      Additionaly fixed indentation.
+      Thanks to sradman for bug report.
+
+2005-01-19  Alexander Malysh <amalysh at kannel.org>
     * Makefile.in: fixed bug #173.
       Thanks to joergent.
 
