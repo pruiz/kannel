@@ -3,7 +3,7 @@ Mon Aug 21 18:32:04 2000  Lars Wirzenius  <liw@iki.fi>
 	* README, Makefile.in: Added some automatic checking as "make
 	check". See the README for more info.
 	
-	* checks/*: New files.
+	* utils/run-checks, checks/*: New files.
 
 2000-08-21  Paul Keogh <paul.keogh@anam.com>
 	* gwlib/counter.[ch]: Added counter_set method.
