@@ -1,9 +1,24 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.5
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.6
 
-Change summary from version 0.4:
+Change summary from version 0.5:
 
-* Headers from the phone are used in HTTP requests.
+* New WML compiler! Not a separate program.
 
-* Error handling of broken session (not very good, though).
+* SEMA SMS2000 protocol.
 
-* Many bug fixes.
+* Supports DEVICE:home -url for Motorola Timeport.
+
+* User guide.
+
+* WTP TID validation.
+
+* IEEE 754 binary floating point encoding and decoding in WMLScript compiler.
+
+* Bug fixes:
+
+	- integer/pointer size problems on Alpha
+	- configure is a bit smarter
+	- mutex and other thread related fixes
+	- some memory leaks
+	- some portability problems
+	- some performance problems

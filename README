@@ -15,10 +15,10 @@ Introduction
 	The Kannel Open Source WAP and SMS gateway works as both an SMS
 	gateway, for implementing keyword based services via GSM text
 	messages, and a WAP gateway, via UDP. The SMS part is fairly
-	mature, the WAP part is very early in its development.	In this
-	release, the GET request for WML pages and WMLScript files via
-	HTTP works, including compilation for WML and WMLScript to binary
-	forms. Only the data call bearer (UDP) is supported, not SMS.
+	mature, the WAP part is early in its development. In this release,
+	the GET request for WML pages and WMLScript files via HTTP works,
+	including compilation for WML and WMLScript to binary forms. Only
+	the data call bearer (UDP) is supported, not SMS.
 	
 Requirements
 
@@ -93,49 +93,17 @@ For developers only: autoconf, configure, config.status, and Makefile
 	problem with the Makefile, run "make clean all". If that solves
 	it, report it as a bug (see the end of this README).
 
-Configuring the gateway
+Configuring and running the gateway
 
+	See the user guide in doc/userguide or on the web at
+	http://www.kannel.org/doc.shtml.
+	
 	The gw/kannel.conf, gw/kannel.smsconf, and gw/kannel.wapconf
 	files configure the gateway. The defination configuration files
 	contain explanations for changing them. As sample configuration 
 	files, there is files test/sample.conf, test/sample.wapconf and 
 	test/sample.smsconf, which require only minimal editing before
 	using them.
-
-Running the gateway
-
-	You need to run the gw/bearerbox program (from the gw directory).
-	If you want SMS services, you also need to run gw/smsbox (or
-	run smsbox as an 'internal smsbox'), and if you want WAP 
-	services, you also need to run gw/wapbox.
-
-	Running, in a simplest form, is done like this:
-
-		$ gw/bearerbox test/sample.conf
-		$ gw/smsbox test/sample.smsconf
-
-	..or if you use SMSes and want to run smsbox as an internal
-	version, just run the bearerbox like this:
-
-		$ gw/bearerbox test/sample.conf test/sample.smsconf
-
-	Note that those sample configuration files are NOT ready for
-	test use in SMS environment, but must be edited a bit before
-	the use.
-
-	To run the wapbox, you need to set the environment
-	variable TEST_WML to the path to the test_wml program. For
-	example:
-	
-		TEST_WML=../test/test_wml ./wapbox foo.wapconf
-	
-	(The above command will work for the Bourne shell and lookalikes
-	such as zsh.)
-
-	Otherwise you'll get mysterious error messages. (This is a
-	temporary feature.)
-
-	None of the programs need to be run in root mode.
 
 Using the gateway with a Nokia 7110
 
@@ -169,18 +137,6 @@ Using the gateway with a Nokia 7110
 	After you have modified the profile, activate it and load the
 	home page. If you use the sample page above, you should see
 	"hello, world" on the screen after a few moments.
-
-Controlling the gateway via HTTP
-
-	The gateway can be controlled with HTTP calls to the bearer box.
-	These are at the moment undocumented except for comments in
-	gw/bearerbox.conf.
-	
-	The SMS box also listens for HTTP calls so that it is possible
-	to send SMS messages via HTTP. This is also undocumented at
-	the moment.
-	
-	See gw/control.html for examples, however.
 
 Feedback and more information
 
