@@ -109,7 +109,7 @@ error_reporting(0);
         /* get the status of this bearerbox */
         $s = XPathValue("gateway/status", $status[$inst]);
         if (ereg("(.*), uptime (.*)d (.*)h (.*)m (.*)s", $s, $regs)) {
-            $ts = ($regs[2]*24*60*60*60) + ($regs[3]*60*60) 
+            $ts = ($regs[2]*24*60*60) + ($regs[3]*60*60) 
                   + ($regs[4]*60) + $regs[5];
 
             echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
