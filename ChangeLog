@@ -1,5 +1,9 @@
 2000-06-26  Kalle Marjola  <rpr@wapit.com>
 
+	* Making out stable release 0.10, branched as 'release_0_10'
+
+2000-06-26  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/smsc_smpp.c: small fix by Mikael Gueck
 
 2000-06-21  Kalle Marjola  <rpr@wapit.com>

@@ -1,24 +1,21 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.9.3
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.10
 
-This is a DEVELOPMENT version. It should be usable for experimentation
-and testing, and is a release candidate for 0.10.  Please do try it
-out and report problems to devel@kannel.org (the development mailing list)
-or bugs@kannel.org (the bug tracking system).
+This is a STABLE version. It should be usable for production use.
+Please do try it out and report problems to devel@kannel.org (the 
+development mailing list) or bugs@kannel.org (the bug tracking system).
 
 Change summary from version 0.8:
 
-* New HTTP implementation.
-
-* New, faster bearerbox.
-
-* All boxes now share a single configuration file, with a new format.
+* New HTTP implementation
 
 * Wapbox mostly rewritten.  New version is closer to the standard,
   less buggy, and will be easier to improve further.
 
-* Phone-as-SMSC support, Nokia PremiCell, Siemens M20, Wavecom
+* All boxes now share a single configuration file, with a new format.
 
-* initial code for HTTP cookies
+* New bearerbox, which is easier to expand and edit
+
+* Phone-as-SMSC support, Nokia PremiCell, Siemens M20, Wavecom
 
 * CIMD2 SMS center protocol. UDH works.
 
@@ -27,64 +24,36 @@ Change summary from version 0.8:
 * WML compiler now uses the string table to compress its output, to generate
   smaller pages that fit in more phones.
 
-* EMI implementation should support UDH now. Also, initialization of TRN
-  fixed.
-
 * New test utility drive_wapbox, to test wapbox in isolation.
 
 * New test utility test_cimd2, which emulates a CIMD2 server.
 
 * WML decompiler provided by Vanteon, useful for testing WML compiler.
 
-* Octstr conversions between binary and base64.
-
-* mutex_lock panics if it locks the same mutex twice. Needed for
-  portability.
-
-* smsbox_req.c uses Octstr's more than before, instead of C strings.
-
-* gwlib now had gwlib_init and gwlib_shutdown, instead of having to
-  call each library module init and shutdown separately.
-
 * contrib directory added. Now has a Perl script to convert HTML to WML.
-
-* configure option --enable-mutex-stats added, for logging mutex sleeps.
-
-* New gwlib wrapper for sockets, to do high speed non-blocking I/O.
-  Not in use yet except by drive_wapbox.
 
 * New gwlib wrapper for threads, both to encapsulate them for portability
   and to provide a "wakeup" feature whereby threads that are blocked or
   sleeping can be woken by other threads.  Will be used to improve the
   shutdown sequence in all boxes, and the suspend feature in the bearerbox.
 
-* New approach for packing and unpacking WTP and WSP PDUs.
-
 * Improved portability to Solaris and FreeBSD.
-
-* Thread-safe wrappers around system library functions known to be not
-  thread-safe.
 
 * Bug fixes:
 
-	* Memory leak when smscenter_receive_message fails.
-	* gwmem-check.c does arithmetic with long* instead of void*.
-	* list_destroy, conffile.c silently ignores NULL argument.
 	* pthread errno handling.
-	* log.c: pthread_self cast to long rather than int for printing.
-	* wtp.c: memory leak fixed in tell_about_error.
 	* WTP layer correctly sets retransmission flag.
-	* CIMD2: handle text messages longer than 140 characters correctly.
 	* fakewap: fixed tid handling.
-	* http: header names and url start is compared case-insensitively.
 	* wsp: corrected capability parsing
 	* wsp: no more Tid-invoke problems
+	* fixes to SMPP and EMI code
 
 * Known problems:
 
 	* wapbox shutdown sometimes gets stuck and requires kill -9.
 	* HTTP library might get locked up for several minutes in certain 
 	  environments
+	* cimd2 cannot survive reconnect
 
 * Known limitations:
 
