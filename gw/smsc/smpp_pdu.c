@@ -242,8 +242,8 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
                 } else 
     #define OPTIONAL_END                                                                           \
     		{                                                             \
-		    error(0, "SMPP: Uknown optional parameter (0x%04lx) for PDU type (%ld) received!", \
-		            opt_tag, type);                                                        \
+		    error(0, "SMPP: Unknown optional parameter (0x%04lx) for PDU type (%s) received!", \
+		            opt_tag, pdu->type_name);                                              \
 		}                                                                                  \
             }                                                                                      \
         } 
