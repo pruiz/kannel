@@ -1,3 +1,9 @@
+2002-08-01  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: documentation for new smsbox group 
+      directives 'http-request-retry' and 'http-queue-delay'
+    * gw/smsbox.c, gwlib/cfg.def: added HTTP request queueing for 
+      sms-service 'get-url' and 'post-url' services.
+
 2002-08-01 Harrie Hazewinkel <harrie@mod-snmp.com>
     * Adding more warnings to the '--enable-warnings' and deleted the
       duplicate '-g -O2' options when '--enable-warnings'.
