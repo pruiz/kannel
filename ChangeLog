@@ -1,4 +1,7 @@
 2004-06-10  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/dlr_mem.c: fixed race condition.
+
+2004-06-10  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/bb_alog.c, gw/bearerbox.[ch]: added const identifier. Rewrite of
       costom log format handling (performance). Fixed memleak.
 

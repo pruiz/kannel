@@ -95,9 +95,11 @@ static void dlr_mem_flush(void)
     long i;
     long len;
 
+    list_lock(dlr_waiting_list);
     len = list_len(dlr_waiting_list);
     for (i=0; i < len; i++)
         list_delete(dlr_waiting_list, i, 1);
+    list_unlock(dlr_waiting_list);
 }
 
 /*
