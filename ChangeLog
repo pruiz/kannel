@@ -1,3 +1,11 @@
+2001-03-07  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+
+	* mk-solaris-package.sh, prototype.tmpl, prototype: modified
+	mk-solaris to create packages with the actual version rather
+	than just assume that it is cvs.  Modified prototype to be
+	prototype.tmpl and mk-solaris now uses it to generate the
+	correct prototype.
+
 2001-03-05  Lars Wirzenius  <liw@iki.fi>
 
 	* benchmarks/bench_http.sh: Removed unnecessary cruft. Set number
