@@ -1719,13 +1719,13 @@ smsc-password = bar
        Port number in the SMSC host machine
      </entry></row>
 
-   <row><entry><literal>smsc-username (m)</literal></entry>
+   <row><entry><literal>smsc-username</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
        Username in the SMSC machine/connection account
      </entry></row>
 
-   <row><entry><literal>smsc-password (m)</literal></entry>
+   <row><entry><literal>smsc-password</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
         Password in the SMSC machine needed to contact SMSC
@@ -2597,6 +2597,20 @@ bearerbox-host = localhost
 
     <row><entry><literal>access-log</literal></entry>
      <entry>filename</entry></row>
+
+    <row><entry><literal>reply-couldnotfetch</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        If set, replaces the SMS message sent back to user when kannel
+	could not fetch content. 
+     </entry></row>
+
+    <row><entry><literal>reply-couldnotrepresent</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        If set, replaces the SMS message sent back when kannel could not 
+	represent the result as a SMS message. 
+     </entry></row>
 
   </tbody>
   </tgroup>

@@ -1,3 +1,12 @@
+2001-07-23 Bruno Rodrigues <bruno.rodrigues@litux.org>
+
+	* userguide.xml: in emi2 section, username and password ain't
+	mandatory.
+	* smsbox.c, userguide.xml: There are at least two messages replied
+	back to user via SMS that should be configurable. I've activated
+	reply-couldnotfetch and reply-couldnotrepresent and added them to
+	smsbox group variables.
+
 2001-07-22 Bruno Rodrigues <bruno.rodrigues@litux.org>
 
 	* smsbox.c, smsc_emi2.c, userguide.xml: Added "validity" and

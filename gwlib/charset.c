@@ -42,15 +42,16 @@ static const struct {
 	int gsmesc;
 	int latin1;
 } gsm_escapes[] = {
-	{ 10, 12 }, /* ASCII page break */
-	{ 20, '^' },
-	{ 40, '{' },
-	{ 41, '}' },
-	{ 47, '\\' },
-	{ 60, '[' },
-	{ 61, '~' },
-	{ 62, ']' },
-	{ 64, '|' },
+	{  10, 12 }, /* ASCII page break */
+	{  20, '^' },
+	{  40, '{' },
+	{  41, '}' },
+	{  47, '\\' },
+	{  60, '[' },
+	{  61, '~' },
+	{  62, ']' },
+	{  64, '|' },
+	{ 101, 128 },
 	{ -1, -1 }
 };
 
@@ -95,7 +96,7 @@ static const int latin1_to_gsm[256] = {
 	/* } is an escaped ) */
 	/* ~ is an escaped = */
 	'x', 'y', 'z', -40, -64, -41, -61, NRP,       /* 120 - 127 */
-	NRP, NRP, NRP, NRP, NRP, NRP, NRP, NRP,       /* 128 - 135 */
+	-101, NRP, NRP, NRP, NRP, NRP, NRP, NRP,       /* 128 - 135 */
 	NRP, NRP, NRP, NRP, NRP, NRP, NRP, NRP,       /* 136 - 143 */
 	NRP, NRP, NRP, NRP, NRP, NRP, NRP, NRP,       /* 144 - 151 */
 	NRP, NRP, NRP, NRP, NRP, NRP, NRP, NRP,       /* 152 - 159 */
@@ -188,7 +189,7 @@ static const int latin1_to_gsm[256] = {
 	123, /* a dieresis */
 	 15, /* a ring */
 	 29, /* ae ligature */
-	  9, /* approximate c cedilla as C cedilla */
+	'c', /* approximate c cedilla as c */
 
 	/* 232 - 239 */
 	  4, /* e grave */

@@ -43,6 +43,8 @@ static URLTranslationList *translations = NULL;
 static long sms_max_length = MAX_SMS_OCTETS;
 static char *sendsms_number_chars;
 static Octstr *global_sender = NULL;
+static Octstr *reply_couldnotfetch = NULL;
+static Octstr *reply_couldnotrepresent = NULL;
 
 static List *smsbox_requests = NULL;
 
@@ -644,13 +646,12 @@ static void url_result_thread(void *arg)
 					  &flag_mwi, &mwimessages, &flag_unicode,
 					  &validity, &deferred);
 	    } else {
-		replytext = octstr_create("Result could not be represented "
-					  "as an SMS message.");
+		replytext = reply_couldnotrepresent; 
 	    }
 	    octstr_destroy(type);
 	    octstr_destroy(charset);
 	} else
-	    replytext = octstr_create("Could not fetch content, sorry.");
+	    replytext = reply_couldnotfetch;
 
 	fill_message(msg, trans, replytext, octets, from, to, udh, flag_flash,
 			flag_mwi, mwimessages, flag_unicode, validity, deferred);
@@ -1872,7 +1873,6 @@ static void init_smsbox(Cfg *cfg)
     octstr_destroy(ssl_certkey_file);
 #endif /* HAVE_LIBSSL */
 
-
     /*
      * get the remaining values from the smsbox group
      */
@@ -1885,6 +1885,15 @@ static void init_smsbox(Cfg *cfg)
 	octstr_destroy(bb_host);
 	bb_host = p;
     }
+
+    reply_couldnotfetch= cfg_get(grp, octstr_imm("reply-couldnotfetch"));
+    if (reply_couldnotfetch == NULL)
+	reply_couldnotfetch = octstr_create("Could not fetch content, sorry.");
+
+    reply_couldnotrepresent= cfg_get(grp, octstr_imm("reply-couldnotfetch"));
+    if (reply_couldnotrepresent == NULL)
+	reply_couldnotrepresent = octstr_create("Result could not be represented "
+					        "as an SMS message.");
 
     cfg_get_integer(&sendsms_port, grp, octstr_imm("sendsms-port"));
     cfg_get_integer(&sms_max_length, grp, octstr_imm("sms-length"));
@@ -2021,6 +2030,8 @@ int main(int argc, char **argv)
     counter_destroy(catenated_sms_counter);
     octstr_destroy(bb_host);
     octstr_destroy(global_sender);
+    octstr_destroy(reply_couldnotfetch);
+    octstr_destroy(reply_couldnotrepresent);
     cfg_destroy(cfg);
     gwlib_shutdown();
     return 0;

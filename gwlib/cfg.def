@@ -81,6 +81,8 @@ SINGLE_GROUP(smsbox,
     OCTSTR(log-level)
     OCTSTR(access-log)
     OCTSTR(sms-length)
+    OCTSTR(reply-couldnotfetch)
+    OCTSTR(reply-couldnotrepresent)
 )
 
 
