@@ -213,6 +213,7 @@ static int check_do_elements(xmlNodePtr node);
 static var_esc_t check_variable_name(xmlNodePtr node);
 static Octstr *get_do_element_name(xmlNodePtr node);
 static int check_if_url(int hex);
+static int only_blanks(const char *text);
 static void set_charset(Octstr *document, Octstr* charset);
 
 static int wml_table_len(wml_table_t *table);
@@ -535,7 +536,7 @@ static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
 	    wbxml_hex = wbxml_hex | status_bits;
 	    /* If this node has children, the end tag must be added after 
 	       them. */
-	    if ((status_bits & WBXML_CHILD_BIT) == WBXML_CHILD_BIT)
+	    if ((status_bits & WBXML_CONTENT_BIT) == WBXML_CONTENT_BIT)
 		add_end_tag = 1;
 	}
 	
@@ -548,7 +549,7 @@ static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
 	    wbxml_hex = wbxml_hex | status_bits;
 	    /* If this node has children, the end tag must be added after 
 	       them. */
-	    if ((status_bits & WBXML_CHILD_BIT) == WBXML_CHILD_BIT)
+	    if ((status_bits & WBXML_CONTENT_BIT) == WBXML_CONTENT_BIT)
 		add_end_tag = 1;
 	}
 	output_char(wbxml_hex, wbxml);
@@ -1360,8 +1361,11 @@ static unsigned char element_check_content(xmlNodePtr node)
 {
     unsigned char status_bits = 0x00;
 
-    if (node->children != NULL)
-	status_bits = WBXML_CHILD_BIT;
+    if ((node->children != NULL) && 
+	!((node->children->next == NULL) && 
+	  (node->children->type == XML_TEXT_NODE) && 
+	  (only_blanks(node->children->content))))
+	status_bits = WBXML_CONTENT_BIT;
 
     if (node->properties != NULL)
 	status_bits = status_bits | WBXML_ATTR_BIT;
@@ -1502,6 +1506,27 @@ static int check_if_url(int hex)
 	break;
     }
     return 0;
+}
+
+
+
+/*
+ * only_blanks - checks if a text node contains only white space, when it can 
+ * be left out as a element content.
+ */
+
+static int only_blanks(const char *text)
+{
+    int blank = 1;
+    int j=0;
+    int len = strlen(text);
+
+    while ((j<len) && blank) {
+	blank = blank && isspace(text[j]);
+	j++;
+    }
+ 
+    return blank;
 }
 
 

@@ -1,3 +1,12 @@
+2001-03-16  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_definitions.h: The WBXML_CHILD_BIT was changed into 
+	WBXML_CONTENT_BIT for clarity.
+	
+	* gw/wml_compiler.c (only_blanks): A patch provided by Bernard Valton
+	that prevents white space counted as element content.
+	Also changed the WBXML_CHILD_BIT into WBXML_CONTENT_BIT for clarity.
+
 2001-03-16  Richard Braakman  <dark@wapit.com>
 
 	* gw/wap-appl.c: Fixed memory leak of request_headers in request_data.

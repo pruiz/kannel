@@ -36,7 +36,7 @@
 
 #define WBXML_STR_END     0x00
 
-#define WBXML_CHILD_BIT   0x40
+#define WBXML_CONTENT_BIT 0x40
 #define WBXML_ATTR_BIT    0x80
 
 #define WBXML_STRING_TABLE_MIN 4    
