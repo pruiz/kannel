@@ -160,7 +160,8 @@ WAPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 	switch (pdu->type) {
 	case Invoke:
 		event = wap_event_create(RcvInvoke);
-		event->RcvInvoke.user_data = pdu->u.Invoke.user_data;
+		event->RcvInvoke.user_data = 
+			octstr_duplicate(pdu->u.Invoke.user_data);
 		event->RcvInvoke.exit_info = NULL;
 		event->RcvInvoke.tcl = pdu->u.Invoke.class;
 		event->RcvInvoke.tid = pdu->u.Invoke.tid;
@@ -213,6 +214,8 @@ WAPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 		panic(0, "Unhandled WTP PDU type while unpacking!");
 		break;
 	}
+
+	wtp_pdu_destroy(pdu);
 	
 	wap_event_assert(event);
 	return event;

@@ -4,6 +4,7 @@
  * By Aarno Syvänen for WapIT Ltd.
  */
 
+#include "wtp_pdu.h"
 #include "wtp_send.h"
 #include "msg.h"
 #include "wapbox.h"
@@ -34,15 +35,7 @@ enum {
  * Prototypes of internal functions
  */
 
-static Msg *pack_result(Msg *msg, WTPMachine *machine, WAPEvent *event);
-
-static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason, 
-       WAPEvent *event);
-
 static Msg *pack_stop(Msg *msg, long abort_type, long abort_reason, int tid);
-
-static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine, 
-                     WAPEvent *event);
 
 static Msg *pack_negative_ack(Msg *msg, int tid, int retransmission_status, 
        int segments_missing, WTPSegment *missing_segments);
@@ -57,8 +50,6 @@ static Msg *add_segment_address(Msg *msg, Address *address);
 static Msg *add_direct_address(Msg *msg, Address *address);
 
 static unsigned char insert_pdu_type(int type, unsigned char octet);
-
-static unsigned char indicate_simple_message(unsigned char octet);
 
 /*
  * Setting resending status of this octet (are we trying again)
@@ -122,15 +113,22 @@ static unsigned char insert_tpi_length(int tpi_length, unsigned char octet);
 Msg *wtp_send_result(WTPMachine *machine, WAPEvent *event){
 
      Msg *msg, *dup;
+     WTP_PDU *pdu;
+     
+     pdu = wtp_pdu_create(Result);
+     pdu->u.Result.con = 0;
+     pdu->u.Result.gtr = 1;
+     pdu->u.Result.ttr = 1;
+     pdu->u.Result.rid = 0;
+     pdu->u.Result.tid = event->TR_Result_Req.tid;
+     pdu->u.Result.user_data = 
+     	octstr_duplicate(event->TR_Result_Req.user_data);
 
      msg = msg_create(wdp_datagram);
      msg = add_datagram_address(msg, machine);
-     msg = pack_result(msg, machine, event);
+     msg->wdp_datagram.user_data = wtp_pdu_pack(pdu);
+     wtp_pdu_destroy(pdu);
   
-     if (msg == NULL){
-        return NULL;
-     }
-
      dup = msg_duplicate(msg);
      put_msg_in_queue(msg);
 
@@ -160,10 +158,19 @@ void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine,
      WAPEvent *event){
 
      Msg *msg = NULL;
+     WTP_PDU *pdu;
+
+     pdu = wtp_pdu_create(Abort);
+     pdu->u.Abort.con = 0;
+     pdu->u.Abort.abort_type = abort_type;
+     pdu->u.Abort.tid = event->TR_Abort_Req.tid;
+     pdu->u.Abort.abort_reason = abort_reason;
 
      msg = msg_create(wdp_datagram);
      msg = add_datagram_address(msg, machine);
-     msg = pack_abort(msg, abort_type, abort_reason, event);
+     msg->wdp_datagram.user_data = wtp_pdu_pack(pdu);
+     
+     wtp_pdu_destroy(pdu);
 
      put_msg_in_queue(msg);
 
@@ -193,10 +200,19 @@ void wtp_do_not_start(long abort_type, long abort_reason, Address *address, int 
 void wtp_send_ack(long ack_type, WTPMachine *machine, WAPEvent *event){
 
      Msg *msg = NULL;
+     WTP_PDU *pdu;
+     
+     pdu = wtp_pdu_create(Ack);
+     pdu->u.Ack.con = 0;
+     pdu->u.Ack.tidverify = ack_type;
+     pdu->u.Ack.rid = machine->rid;
+     pdu->u.Ack.tid = machine->tid;
 
      msg = msg_create(wdp_datagram);
      msg = add_datagram_address(msg, machine);
-     msg = pack_ack(msg, ack_type, machine, event);
+     msg->wdp_datagram.user_data = wtp_pdu_pack(pdu);
+     
+     wtp_pdu_destroy(pdu);
 
      put_msg_in_queue(msg);
      debug("wap.wtp.send", 0, "WTP_SEND: message put into the queue");  
@@ -223,7 +239,7 @@ void wtp_send_negative_ack(Address *address, int tid, int retransmission_status,
                            int segments_missing, WTPSegment *missing_segments){
      
      Msg *msg = NULL;
-
+     
      msg = msg_create(wdp_datagram);
      msg = add_segment_address(msg, address);
      msg = pack_negative_ack(msg, tid, retransmission_status, segments_missing,
@@ -248,81 +264,7 @@ void wtp_send_address_dump(Address *address){
 /****************************************************************************
  *
  * INTERNAL FUNCTIONS:
- *
- * Packs a message object, of wdp datagram type, having result PDU as user 
- * data. Fetches SDU from WTP event, machine state information (are we 
- * resending the packet) from WTP machine. Handles all errors by itself.
  */
-
-static Msg *pack_result(Msg *msg, WTPMachine *machine, WAPEvent *event){
-
-    unsigned char octet;
-    size_t pdu_len;
-    unsigned char *wtp_pdu = NULL;
-
-/* 
- * We turn on flags telling that we are not supporting segmentation and 
- * reassembly  
- */                           
-    octet = 6;                
-    pdu_len = 3;
-    wtp_pdu = gw_malloc(pdu_len);
-    
-/*
- * We try to send fixed length result PDU, without segmentation. Only inputs 
- * are the rid field (which tells are we resending or not), and the tid.
- */  
- 
-    octstr_destroy(msg->wdp_datagram.user_data);
-    msg->wdp_datagram.user_data = 
-         octstr_duplicate(event->TR_Result_Req.user_data);
-    
-    octet = insert_pdu_type(RESULT, octet);
-    octet = indicate_simple_message(octet);
-    octet = insert_rid(machine->rid, octet);
-    wtp_pdu[first_byte] = octet;
-
-    insert_tid(wtp_pdu, event->TR_Result_Req.tid);
-
-    octstr_insert_data(msg->wdp_datagram.user_data, first_byte, wtp_pdu, 3);
-    
-    gw_free(wtp_pdu);
-    return msg;
-
-}
-
-/*
- * Packs a message object, of wdp datagram type, consisting of Abort PDU header.
- * Fetches abort type and reason from direct input, tid from WTP event. Handles all 
- * errors by itself.
- */
-static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason, 
-       WAPEvent *event){
-
-       unsigned char octet;
-       size_t pdu_len;
-       unsigned char *wtp_pdu = NULL;
-
-       pdu_len = 4;
-       wtp_pdu = gw_malloc(pdu_len);
-       octet = 0;
-
-       octstr_destroy(msg->wdp_datagram.user_data);
-       msg->wdp_datagram.user_data = octstr_create_empty();
-
-       octet = insert_pdu_type(ABORT, octet);
-       octet = insert_abort_type(abort_type, octet);
-       wtp_pdu[first_byte] = octet;
-
-       insert_tid(wtp_pdu, event->TR_Abort_Req.tid);
-
-       wtp_pdu[fourth_byte] = abort_reason;
-
-       octstr_insert_data(msg->wdp_datagram.user_data, first_byte, wtp_pdu, 4);
-
-       gw_free(wtp_pdu);
-       return msg;
-}
 
 /*
  * As previous, expect now tid is supplied as a direct input
@@ -352,36 +294,6 @@ static Msg *pack_stop(Msg *msg, long abort_type, long abort_reason, int tid){
 
        gw_free(wtp_pdu);
        return msg;
-}
-
-static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine, 
-                     WAPEvent *event){
-
-    unsigned char octet;
-    size_t pdu_len;
-    unsigned char *wtp_pdu = NULL;
-
-    pdu_len = 3;
-    wtp_pdu = gw_malloc(pdu_len);
-    octet = 0;
-/*
- * Ack PDU is generated solely by WTP. Inputs are rid (are we sending the packet or  
- * not), ack type (are we doing tid verification or not) and tid.
- */
-    octet = insert_pdu_type(ACK, octet);
-    octet = indicate_ack_type(ack_type, octet);
-    octet = insert_rid(machine->rid, octet);
-    wtp_pdu[first_byte] = octet;
-
-    insert_tid(wtp_pdu, machine->tid);
-
-    octstr_destroy(msg->wdp_datagram.user_data);
-    msg->wdp_datagram.user_data = octstr_create_empty();
-    octstr_insert_data(msg->wdp_datagram.user_data, first_byte, wtp_pdu, fourth_byte);
-
-    gw_free(wtp_pdu);
-
-    return msg;
 }
 
 static Msg *pack_negative_ack(Msg *msg, int tid, int retransmission_status, 
@@ -502,12 +414,6 @@ static unsigned char insert_pdu_type (int type, unsigned char octet) {
        type <<= 3;
        octet |= type;
 
-       return octet;
-}
-
-static unsigned char indicate_simple_message(unsigned char octet){
-    
-       octet |= 0x6;
        return octet;
 }
 

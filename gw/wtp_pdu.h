@@ -6,6 +6,11 @@
  * Richard Braakman <dark@wapit.com>
  */
 
+#ifndef WTP_PDU_H
+#define WTP_PDU_H
+
+#include "gwlib/gwlib.h"
+
 struct wtp_tpi {
 	int type;
 	Octstr *data;
@@ -46,8 +51,11 @@ struct wtp_pdu {
 };
 typedef struct wtp_pdu WTP_PDU;
 
+WTP_PDU *wtp_pdu_create(int type);
 WTP_PDU *wtp_pdu_unpack(Octstr *data);
 Octstr *wtp_pdu_pack(WTP_PDU *pdu);
 void wtp_pdu_dump(WTP_PDU *pdu, int level);
 void wtp_pdu_destroy(WTP_PDU *pdu);
 void wtp_tpi_destroy(WTP_TPI *tpi);
+
+#endif

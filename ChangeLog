@@ -1,3 +1,20 @@
+Mon Jun  5 10:32:41 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wtp.c: Fixed bug that was caused by not duplicating an
+	octet string while copying it. Also fixed a memory leak.
+	
+	* gw/wtp_pdu.[ch]: Added function wtp_pdu_create. Also added
+	wrappers around wtp_pdu.h to prevent problems when including
+	many times, and added an include for gwlib/gwlib.h, so that
+	the caller does not have to deal with that.
+	
+	* gw/wtp_send.c: Started conversion to using wtp_pdu.c instead
+	of packing everything by hand. The basic PDUs are now converted.
+	The negative ACK and some other ones are not, because I wasn't
+	certain how they work, right now, and am too tired to understand
+	the spec (probably too tired to hack, but I ran a fakewap test
+	after each change to make sure I didn't break things too badly).
+
 Sun Jun  4 07:32:59 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Re-vamped the WTP layer to use a thread structure similar to WSP.

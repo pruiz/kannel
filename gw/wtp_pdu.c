@@ -8,6 +8,43 @@
 #include "gwlib/gwlib.h"
 #include "wtp_pdu.h"
 
+WTP_PDU *wtp_pdu_create(int type) {
+	WTP_PDU *pdu;
+	
+	pdu = gw_malloc(sizeof(*pdu));
+	pdu->type = type;
+	pdu->options = NULL;
+
+	switch (pdu->type) {
+#define PDU(name, docstring, fields, is_valid) \
+	case name: {\
+	struct name *p; p = &pdu->u.name; \
+	fields \
+	} break;
+#define UINT(field, docstring, bits) p->field = 0;
+#define UINTVAR(field, docstring) p->field = 0;
+#define OCTSTR(field, docstring, lengthfield) p->field = NULL;
+#define REST(field, docstring) p->field = NULL;
+#define TYPE(bits, value) 
+#define RESERVED(bits) 
+#define TPI(confield)
+#include "wtp_pdu.def"
+#undef TPI
+#undef RESERVED
+#undef TYPE
+#undef REST
+#undef OCTSTR
+#undef UINTVAR
+#undef UINT
+#undef PDU
+	default:
+		warning(0, "Cannot destroy unknown WTP PDU type %d", pdu->type);
+		break;
+	}
+
+	return pdu;
+}
+
 void wtp_pdu_destroy(WTP_PDU *pdu) {
 	if (pdu == NULL)
 		return;
