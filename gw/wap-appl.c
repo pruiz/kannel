@@ -208,10 +208,8 @@ static void main_thread(void *arg)
 	
 	case S_Resume_Ind:
 	    res = wap_event_create(S_Resume_Res);
-	    /* FIXME: Not yet used by WSP layer */
 	    res->u.S_Resume_Res.server_headers = NULL;
-	    res->u.S_Resume_Res.session_id =
-	    ind->u.S_Resume_Ind.session_id;
+	    res->u.S_Resume_Res.session_id = ind->u.S_Resume_Ind.session_id;
 	    wsp_session_dispatch_event(res);
 	    wap_event_destroy(ind);
 	    break;

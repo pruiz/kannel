@@ -144,6 +144,7 @@ void wsp_unit_shutdown(void);
  * This layer will dispatch events of these types to the application layer:
  *
  *   S_Connect_Ind, S_Disconnect_Ind,
+ *   S_Suspend_Ind, S_Resume_Ind,
  *   S_MethodInvoke_Ind, S_MethodResult_Cnf, S_MethodAbort_Ind
  *
  * and events of these types to the WTP Responder layer:
@@ -176,6 +177,7 @@ void wsp_session_shutdown(void);
  * session layer that takes events of these types:
  *
  *   S_Connect_Ind, S_Disconnect_Ind,
+ *   S_Suspend_Ind, S_Resume_Ind,
  *   S_MethodInvoke_Ind, S_MethodResult_Cnf, S_MethodAbort_Ind
  *   S_Unit_MethodInvoke_Ind   (from wsp_unit)
  *

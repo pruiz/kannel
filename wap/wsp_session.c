@@ -47,6 +47,13 @@ static wap_dispatch_func_t *dispatch_to_wtp_resp;
 static wap_dispatch_func_t *dispatch_to_wtp_init;
 static wap_dispatch_func_t *dispatch_to_appl;
 
+/*
+ * True iff "Session resume facility" is enabled.  This means we are
+ * willing to let sessions go to SUSPENDED state, and later resume them.
+ * Currently we always support it, but this may become configurable
+ * at some point.
+ */
+static int resume_enabled = 1;
 
 static List *queue = NULL;
 static List *session_machines = NULL;
@@ -72,16 +79,20 @@ static long wsp_next_session_id(void);
 
 static List *make_capabilities_reply(WSPMachine *m);
 static Octstr *make_connectreply_pdu(WSPMachine *m);
+static Octstr *make_resume_reply_pdu(WSPMachine *m, List *headers);
 
 static int transaction_belongs_to_session(void *session, void *tuple);
 static int find_by_session_id(void *session, void *idp);
 static int same_client(void *sm1, void *sm2);
 static WSPMethodMachine *wsp_find_method_machine(WSPMachine *, long id);
 
+static List *wsp_unpack_new_headers(WSPMachine *sm, Octstr *hdrs);
+
 static void wsp_disconnect_other_sessions(WSPMachine *sm);
 static void wsp_send_abort(long reason, long handle);
-static void wsp_abort_session(WSPMachine *sm, long reason);
 static void wsp_indicate_disconnect(WSPMachine *sm, long reason);
+static void wsp_indicate_suspend(WSPMachine *sm, long reason);
+static void wsp_indicate_resume(WSPMachine *sm, WAPAddrTuple *tuple, List *client_headers);
 
 static void wsp_release_holding_methods(WSPMachine *sm);
 static void wsp_abort_methods(WSPMachine *sm, long reason);
@@ -828,6 +839,24 @@ static Octstr *make_connectreply_pdu(WSPMachine *m) {
 }
 
 
+static Octstr *make_resume_reply_pdu(WSPMachine *m, List *headers) {
+	WSP_PDU *pdu;
+	Octstr *os;
+
+	pdu = wsp_pdu_create(Reply);
+
+	/* Not specified for Resume replies */
+	pdu->u.Reply.status = wsp_convert_http_status_to_wsp_status(HTTP_OK);
+	pdu->u.Reply.headers = wsp_headers_pack(headers, 1);
+	pdu->u.Reply.data = octstr_create("");
+
+	os = wsp_pdu_pack(pdu);
+	wsp_pdu_destroy(pdu);
+
+	return os;
+}
+
+
 static int transaction_belongs_to_session(void *wsp_ptr, void *tuple_ptr) {
 	WSPMachine *wsp;
 	WAPAddrTuple *tuple;
@@ -891,6 +920,19 @@ static void wsp_disconnect_other_sessions(WSPMachine *sm) {
 }
 
 
+static List *wsp_unpack_new_headers(WSPMachine *sm, Octstr *hdrs) {
+	List *new_headers;
+
+	if (hdrs && octstr_len(hdrs) > 0) {
+		new_headers = wsp_headers_unpack(hdrs, 0);
+		if (sm->http_headers == NULL)
+			sm->http_headers = http_create_empty_headers();
+		http_header_combine(sm->http_headers, new_headers);
+		return new_headers;
+	}
+	return NULL;
+}
+
 static void wsp_send_abort(long reason, long handle) {
 	WAPEvent *wtp_event;
 
@@ -899,11 +941,6 @@ static void wsp_send_abort(long reason, long handle) {
 	wtp_event->u.TR_Abort_Req.abort_reason = reason;
 	wtp_event->u.TR_Abort_Req.handle = handle;
 	dispatch_to_wtp_resp(wtp_event);
-}
-
-
-static void wsp_abort_session(WSPMachine *sm, long reason) {
-	wsp_send_abort(reason, sm->connect_handle);
 }
 
 
@@ -917,6 +954,28 @@ static void wsp_indicate_disconnect(WSPMachine *sm, long reason) {
 	new_event->u.S_Disconnect_Ind.error_headers = NULL;
 	new_event->u.S_Disconnect_Ind.error_body = NULL;
 	new_event->u.S_Disconnect_Ind.session_id = sm->session_id;
+	dispatch_to_appl(new_event);
+}
+
+
+static void wsp_indicate_suspend(WSPMachine *sm, long reason) {
+	WAPEvent *new_event;
+
+	new_event = wap_event_create(S_Suspend_Ind);
+	new_event->u.S_Suspend_Ind.reason = reason;
+	new_event->u.S_Suspend_Ind.session_id = sm->session_id;
+	dispatch_to_appl(new_event);
+}
+
+
+static void wsp_indicate_resume(WSPMachine *sm,
+                                WAPAddrTuple *tuple, List *headers) {
+	WAPEvent *new_event;
+
+	new_event = wap_event_create(S_Resume_Ind);
+	new_event->u.S_Resume_Ind.addr_tuple = wap_addr_tuple_duplicate(tuple);
+	new_event->u.S_Resume_Ind.client_headers = http_header_duplicate(headers);
+	new_event->u.S_Resume_Ind.session_id = sm->session_id;
 	dispatch_to_appl(new_event);
 }
 

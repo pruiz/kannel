@@ -20,6 +20,7 @@
 MACHINE(
 	INTEGER(state)
 	INTEGER(connect_handle)
+	INTEGER(resume_handle)
 	INTEGER(session_id)
 	ADDRTUPLE(addr_tuple)
 

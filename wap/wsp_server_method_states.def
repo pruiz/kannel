@@ -118,7 +118,9 @@ ROW(HOLDING,
 	Abort_Event,
 	1,
 	{
-		/* Decrement N_Methods; we don't do that */
+		/* Decrement N_Methods */
+		/* we don't keep track of N_Methods because it's unlimited */
+
 		/* Tr-Abort.req(abort reason) the method */
 		wsp_method_abort(msm, e->reason);
 	},
@@ -162,7 +164,8 @@ ROW(HOLDING,
 	e->abort_code != WSP_ABORT_DISCONNECT
 	&& e->abort_code != WSP_ABORT_SUSPEND,
 	{
-		/* Decrement N_Methods; we don't do that; XXX why? */
+		/* Decrement N_Methods */
+		/* we don't keep track of N_Methods because it's unlimited */
 	},
 	NULL_METHOD)
 
@@ -185,7 +188,8 @@ ROW(REQUESTING,
 	Abort_Event,
 	1,
 	{
-		/* Decrement N_Methods; we don't do that */
+		/* Decrement N_Methods */
+		/* we don't keep track of N_Methods because it's unlimited */
 
 		/* TR-Abort.req(abort reason) the method */
 		wsp_method_abort(msm, e->reason);
@@ -226,7 +230,8 @@ ROW(REQUESTING,
 	e->abort_code != WSP_ABORT_DISCONNECT
 	&& e->abort_code != WSP_ABORT_SUSPEND,
 	{
-		/* Decrement N_Methods; we don't do that */
+		/* Decrement N_Methods */
+		/* we don't keep track of N_Methods because it's unlimited */
 
 		/* S-MethodAbort.ind(abort reason) */
 		wsp_indicate_method_abort(msm, e->abort_code);
@@ -263,7 +268,8 @@ ROW(PROCESSING,
 	Abort_Event,
 	1,
 	{
-		/* Decrement N_Methods; we don't do that */
+		/* Decrement N_Methods */
+		/* we don't keep track of N_Methods because it's unlimited */
 
 		/* TR-Abort.req(abort reason) the method */
 		wsp_method_abort(msm, e->reason);
@@ -304,7 +310,8 @@ ROW(PROCESSING,
 	e->abort_code != WSP_ABORT_DISCONNECT
 	&& e->abort_code != WSP_ABORT_SUSPEND,
 	{
-		/* Decrement N_Methods; we don't do that */
+		/* Decrement N_Methods */
+		/* we don't keep track of N_Methods because it's unlimited */
 
 		/* S-MethodAbort.ind(abort reason) */
 		wsp_indicate_method_abort(msm, e->abort_code);
@@ -317,7 +324,8 @@ ROW(REPLYING,
 	Abort_Event,
 	1,
 	{
-		/* Decrement N_Methods; we don't do that */
+		/* Decrement N_Methods */
+		/* we don't keep track of N_Methods because it's unlimited */
 
 		/* TR-Abort.req(abort reason) the method */
 		wsp_method_abort(msm, e->reason);
@@ -333,10 +341,11 @@ ROW(REPLYING,
 	{
 		WAPEvent *new_event;
 
-		/* Decrement N_Methods; we don't do that */
+		/* Decrement N_Methods */
+		/* we don't keep track of N_Methods because it's unlimited */
 
 		/* S-MethodResult.cnf */
-		/* We don't do acknowledgement headers */
+		/* we don't do acknowledgement headers */
 		new_event = wap_event_create(S_MethodResult_Cnf);
 		new_event->u.S_MethodResult_Cnf.server_transaction_id =
 			msm->transaction_id;
@@ -376,7 +385,8 @@ ROW(REPLYING,
 	e->abort_code != WSP_ABORT_DISCONNECT
 	&& e->abort_code != WSP_ABORT_SUSPEND,
 	{
-		/* Decrement N_Methods; we don't do that */
+		/* Decrement N_Methods */
+		/* we don't keep track of N_Methods because it's unlimited */
 
 		/* S-MethodAbort.ind(abort reason) */
 		wsp_indicate_method_abort(msm, e->abort_code);

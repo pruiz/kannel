@@ -15,6 +15,9 @@ STATE_NAME(CONNECTING)
 STATE_NAME(TERMINATING)
 STATE_NAME(CONNECTING_2)
 STATE_NAME(CONNECTED)
+STATE_NAME(SUSPENDED)
+STATE_NAME(RESUMING)
+STATE_NAME(RESUMING_2)
 
 ROW(NULL_SESSION,
 	TR_Invoke_Ind,
@@ -26,7 +29,7 @@ ROW(NULL_SESSION,
 		/* Send TR-Invoke.res to WTP */
 		wtp_event = wap_event_create(TR_Invoke_Res);
 		wtp_event->u.TR_Invoke_Res.handle = e->handle;
-		wtp_resp_dispatch_event(wtp_event);
+		dispatch_to_wtp_resp(wtp_event);
 
 		/* Assign a session ID for this session.  We do this
 		 * early, instead of in the CONNECTING state, because
@@ -86,7 +89,7 @@ ROW(CONNECTING,
 		wtp_event = wap_event_create(TR_Result_Req);
 		wtp_event->u.TR_Result_Req.user_data = ospdu;
 		wtp_event->u.TR_Result_Req.handle = sm->connect_handle;
-		wtp_resp_dispatch_event(wtp_event);
+		dispatch_to_wtp_resp(wtp_event);
 
 		/* Release all method transactions in HOLDING state. */
 		wsp_release_holding_methods(sm);
@@ -103,17 +106,30 @@ ROW(CONNECTING,
 	1,
 	{
 		/* TR-Abort.req(DISCONNECT) the Connect transaction */
-		wsp_abort_session(sm, WSP_ABORT_DISCONNECT);
+		wsp_send_abort(WSP_ABORT_DISCONNECT, sm->connect_handle);
 
 		/* Abort(DISCONNECT) all method transactions */
 		wsp_abort_methods(sm, WSP_ABORT_DISCONNECT);
 
-		/* S-Disconnect.ind(USERREQ) */
-		wsp_indicate_disconnect(sm, WSP_ABORT_USERREQ);
+		/* S-Disconnect.ind(DISCONNECT) */
+		wsp_indicate_disconnect(sm, WSP_ABORT_DISCONNECT);
 	},
 	NULL_SESSION)
 
-/* MISSING: CONNECTING, Suspend_Event */
+ROW(CONNECTING,
+	Suspend_Event,
+	1,
+	{
+		/* TR-Abort.req(DISCONNECT) the Connect transaction */
+		wsp_send_abort(WSP_ABORT_DISCONNECT, sm->connect_handle);
+
+		/* Abort(DISCONNECT) all method transactions */
+		wsp_abort_methods(sm, WSP_ABORT_DISCONNECT);
+
+		/* S-Disconnect.ind(SUSPEND) */
+		wsp_indicate_disconnect(sm, WSP_ABORT_SUSPEND);
+	},
+	NULL_SESSION)
 
 ROW(CONNECTING,
 	TR_Invoke_Ind,
@@ -129,8 +145,15 @@ ROW(CONNECTING,
 	},
 	CONNECTING)
 
-/* MISSING: CONNECTING, TR_Invoke_Ind, pdu->type = Resume */
-
+ROW(CONNECTING,
+	TR_Invoke_Ind,
+	e->tcl == 2 && pdu->type == Resume,
+	{
+		/* TR-Abort.req(DISCONNECT) the TR-Invoke */
+		wsp_send_abort(WSP_ABORT_DISCONNECT, e->handle);
+	},
+	CONNECTING)
+		
 ROW(CONNECTING,
 	TR_Abort_Ind,
 	e->handle == sm->connect_handle,
@@ -149,6 +172,7 @@ ROW(CONNECTING,
 	{
 		WSPMethodMachine *msm;
 
+		/* See method state table  */
 		msm = wsp_find_method_machine(sm, e->handle);
 		handle_method_event(sm, msm, current_event, pdu);
 	},
@@ -159,7 +183,7 @@ ROW(TERMINATING,
 	1,
 	{
 		/* TR-Abort.req(DISCONNECT) remaining transport transaction */
-		wsp_abort_session(sm, WSP_ABORT_DISCONNECT);
+		wsp_send_abort(WSP_ABORT_DISCONNECT, sm->connect_handle);
 	},
 	NULL_SESSION)
 		
@@ -168,7 +192,7 @@ ROW(TERMINATING,
 	1,
 	{
 		/* TR-Abort.req(SUSPEND) remaining transport transaction */
-		wsp_abort_session(sm, WSP_ABORT_SUSPEND);
+		wsp_send_abort(WSP_ABORT_SUSPEND, sm->connect_handle);
 	},
 	NULL_SESSION)
 
@@ -195,7 +219,7 @@ ROW(CONNECTING_2,
 	1,
 	{
 		/* TR-Abort.req(DISCONNECT) the Connect transaction */
-		wsp_abort_session(sm, WSP_ABORT_DISCONNECT);
+		wsp_send_abort(WSP_ABORT_DISCONNECT, sm->connect_handle);
 
 		/* Abort(DISCONNECT) all method and push transactions */
 		wsp_abort_methods(sm, WSP_ABORT_DISCONNECT);
@@ -234,12 +258,12 @@ ROW(CONNECTING_2,
 
 ROW(CONNECTING_2,
 	Suspend_Event,
-	1,
+	!resume_enabled,
 	{
 		/* Session Resume facility disabled */
 
 		/* TR-Abort.req(DISCONNECT) the Connect transaction */
-		wsp_abort_session(sm, WSP_ABORT_DISCONNECT);
+		wsp_send_abort(WSP_ABORT_DISCONNECT, sm->connect_handle);
 
 		/* Abort(DISCONNECT) all method and push transactions */
 		wsp_abort_methods(sm, WSP_ABORT_DISCONNECT);
@@ -249,7 +273,22 @@ ROW(CONNECTING_2,
 	},
 	NULL_SESSION)
 
-/* MISSING: CONNECTING_2, Session Resume facility enabled */
+ROW(CONNECTING_2,
+	Suspend_Event,
+	resume_enabled,
+	{
+		/* Session Resume facility enabled */
+
+		/* TR-Abort.req(SUSPEND) the Connect transaction */
+		wsp_send_abort(WSP_ABORT_SUSPEND, sm->connect_handle);
+
+		/* Abort(SUSPEND) all method and push transactions */
+		wsp_abort_methods(sm, WSP_ABORT_SUSPEND);
+
+		/* S-Suspend.ind(SUSPEND) */
+		wsp_indicate_suspend(sm, WSP_ABORT_SUSPEND);
+	},
+	SUSPENDED)
 
 ROW(CONNECTING_2,
 	TR_Invoke_Ind,
@@ -273,29 +312,53 @@ ROW(CONNECTING_2,
 
 ROW(CONNECTING_2,
 	TR_Invoke_Ind,
-	e->tcl == 2 && pdu->type == Resume,
+	e->tcl == 2 && pdu->type == Resume && !resume_enabled,
 	{
 		/* Resume facility disabled */
 
-		WAPEvent *wtp_event;
-
 		/* TR-Abort.req(DISCONNECT) the TR-Invoke */
-		wtp_event = wap_event_create(TR_Abort_Req);
-		wtp_event->u.TR_Abort_Req.abort_type = 0x01;
-		wtp_event->u.TR_Abort_Req.abort_reason = WSP_ABORT_DISCONNECT;
-		wtp_event->u.TR_Abort_Req.handle = e->handle;
-		wtp_resp_dispatch_event(wtp_event);
+		wsp_send_abort(WSP_ABORT_DISCONNECT, e->handle);
 	},
 	CONNECTING_2)
 
-/* MISSING: As above, Resume facility enabled */
+ROW(CONNECTING_2,
+	TR_Invoke_Ind,
+	e->tcl == 2 && pdu->type == Resume && resume_enabled,
+	{
+		/* Resume facility enabled */
+
+		WAPEvent *wtp_event;
+		List *new_headers;
+
+		/* TR-Invoke.res */
+		wtp_event = wap_event_create(TR_Invoke_Res);
+		wtp_event->u.TR_Invoke_Res.handle = e->handle;
+		dispatch_to_wtp_resp(wtp_event);
+
+		/* TR-Abort.req(RESUME) the Connect transaction */
+		wsp_send_abort(WSP_ABORT_RESUME, sm->connect_handle);
+
+		/* Abort(RESUME) all method and push transactions */
+		wsp_abort_methods(sm, WSP_ABORT_RESUME);
+
+		/* S-Suspend.ind(RESUME) */
+		wsp_indicate_suspend(sm, WSP_ABORT_RESUME);
+
+		/* S-Resume.ind */
+		new_headers = wsp_unpack_new_headers(sm, pdu->u.Resume.headers);
+		wsp_indicate_resume(sm, e->addr_tuple, new_headers);
+		http_destroy_headers(new_headers);
+
+		sm->resume_handle = e->handle;
+	},
+	RESUMING)
 
 ROW(CONNECTING_2,
 	TR_Invoke_Ind,
 	e->tcl == 0 && pdu->type == Disconnect,
 	{
 		/* TR-Abort.req(DISCONNECT) the Connect transaction */
-		wsp_abort_session(sm, WSP_ABORT_DISCONNECT);
+		wsp_send_abort(WSP_ABORT_DISCONNECT, sm->connect_handle);
 
 		/* Abort(DISCONNECT) all method and push transactions */
 		wsp_abort_methods(sm, WSP_ABORT_DISCONNECT);
@@ -305,7 +368,22 @@ ROW(CONNECTING_2,
 	},
 	NULL_SESSION)
 
-/* MISSING: CONNECTING_2, TR-Invoke.ind(Suspend), Session Resume facility enabled */
+ROW(CONNECTING_2,
+	TR_Invoke_Ind,
+	e->tcl == 0 && pdu->type == Suspend && resume_enabled,
+	{
+		/* Resume facility enabled */
+
+		/* TR-Abort.req(SUSPEND) the Connect transaction */
+		wsp_send_abort(WSP_ABORT_SUSPEND, sm->connect_handle);
+
+		/* Abort(SUSPEND) all method and push transactions */
+		wsp_abort_methods(sm, WSP_ABORT_SUSPEND);
+
+		/* S-Suspend.ind(SUSPEND) */
+		wsp_indicate_suspend(sm, WSP_ABORT_SUSPEND);
+	},
+	SUSPENDED)
 
 /* MISSING: CONNECTING_2, TR_Invoke.cnf for push transaction */
 
@@ -397,7 +475,7 @@ ROW(CONNECTED,
 
 ROW(CONNECTED,
 	Suspend_Event,
-	1,
+	!resume_enabled,
 	{
 		/* Session Resume facility disabled */
 
@@ -409,7 +487,19 @@ ROW(CONNECTED,
 	},
 	NULL_SESSION)
 
-/* MISSING: CONNECTED, Session Resume facility enabled */
+ROW(CONNECTED,
+	Suspend_Event,
+	resume_enabled,
+	{
+		/* Session Resume facility enabled */
+
+		/* Abort(SUSPEND) all method and push transactions */
+		wsp_abort_methods(sm, WSP_ABORT_SUSPEND);
+
+		/* S-Suspend.ind(SUSPEND) */
+		wsp_indicate_suspend(sm, WSP_ABORT_SUSPEND);
+	},
+	SUSPENDED)
 
 ROW(CONNECTED,
 	TR_Invoke_Ind,
@@ -433,22 +523,43 @@ ROW(CONNECTED,
 
 ROW(CONNECTED,
 	TR_Invoke_Ind,
-	e->tcl == 2 && pdu->type == Resume,
+	e->tcl == 2 && pdu->type == Resume && !resume_enabled,
 	{
 		/* Resume facility disabled */
 
-		WAPEvent *wtp_event;
-
 		/* TR-Abort.req(DISCONNECT) the TR-Invoke */
-		wtp_event = wap_event_create(TR_Abort_Req);
-		wtp_event->u.TR_Abort_Req.abort_type = 0x01;
-		wtp_event->u.TR_Abort_Req.abort_reason = WSP_ABORT_DISCONNECT;
-		wtp_event->u.TR_Abort_Req.handle = e->handle;
-		wtp_resp_dispatch_event(wtp_event);
+		wsp_send_abort(WSP_ABORT_DISCONNECT, e->handle);
 	},
 	CONNECTED)
 
-/* MISSING: As above, Resume facility enabled */
+ROW(CONNECTED,
+	TR_Invoke_Ind,
+	e->tcl == 2 && pdu->type == Resume && resume_enabled,
+	{
+		/* Resume facility enabled */
+
+		WAPEvent *wtp_event;
+		List *new_headers;
+
+		/* TR-Invoke.res */
+		wtp_event = wap_event_create(TR_Invoke_Res);
+		wtp_event->u.TR_Invoke_Res.handle = e->handle;
+		dispatch_to_wtp_resp(wtp_event);
+
+		/* Abort(RESUME) all method and push transactions */
+		wsp_abort_methods(sm, WSP_ABORT_RESUME);
+
+		/* S-Suspend.ind(RESUME) */
+		wsp_indicate_suspend(sm, WSP_ABORT_RESUME);
+
+		/* S-Resume.ind */
+		new_headers = wsp_unpack_new_headers(sm, pdu->u.Resume.headers);
+		wsp_indicate_resume(sm, e->addr_tuple, new_headers);
+		http_destroy_headers(new_headers);
+
+		sm->resume_handle = e->handle;
+	},
+	RESUMING)
 
 ROW(CONNECTED,
 	TR_Invoke_Ind,
@@ -462,7 +573,17 @@ ROW(CONNECTED,
 	},
 	NULL_SESSION)
 
-/* MISSING: CONNECTED, TR-Invoke.ind(Suspend), Session Resume facility enabled */
+ROW(CONNECTED,
+	TR_Invoke_Ind,
+	e->tcl == 0 && pdu->type == Suspend && resume_enabled,
+	{
+		/* Abort(SUSPEND) all method and push transactions */
+		wsp_abort_methods(sm, WSP_ABORT_SUSPEND);
+
+		/* S-Suspend.ind(SUSPEND) */
+		wsp_indicate_suspend(sm, WSP_ABORT_SUSPEND);
+	},
+	SUSPENDED)
 
 /* MISSING: CONNECTED, Tr-Invoke.cnf for push transaction */
 
@@ -492,11 +613,385 @@ ROW(CONNECTED,
 	},
 	CONNECTED)
 
-/* MISSING: SUSPENDED state */
+/* MISSING: SUSPENDED, S-Disconnect.req */
 
-/* MISSING: RESUMING state */
+ROW(SUSPENDED,
+	Disconnect_Event,
+	1,
+	{
+		/* S-Disconnect.ind(DISCONNECT) */
+		wsp_indicate_disconnect(sm, WSP_ABORT_DISCONNECT);
+	},
+	NULL_SESSION)
 
-/* MISSING: RESUMING_2 state */
+ROW(SUSPENDED,
+	TR_Invoke_Ind,
+	e->tcl == 2 && (pdu->type == Get || pdu->type == Post),
+	{
+		/* TR-Abort.req(SUSPEND) the TR-Invoke */
+		wsp_send_abort(WSP_ABORT_SUSPEND, e->handle);
+	},
+	SUSPENDED)
+
+ROW(SUSPENDED,
+	TR_Invoke_Ind,
+	e->tcl == 2 && pdu->type == Resume,
+	{
+		WAPEvent *wtp_event;
+		List *new_headers;
+
+		/* TR-Invoke.res */
+		wtp_event = wap_event_create(TR_Invoke_Res);
+		wtp_event->u.TR_Invoke_Res.handle = e->handle;
+		dispatch_to_wtp_resp(wtp_event);
+
+		/* S-Resume.ind */
+		new_headers = wsp_unpack_new_headers(sm, pdu->u.Resume.headers);
+		wsp_indicate_resume(sm, e->addr_tuple, new_headers);
+		http_destroy_headers(new_headers);
+
+
+		sm->resume_handle = e->handle;
+	},
+	RESUMING)
+
+ROW(SUSPENDED,
+	TR_Invoke_Ind,
+	e->tcl == 0 && pdu->type == Disconnect,
+	{
+		/* S-Disconnect.ind(DISCONNECT) */
+		wsp_indicate_disconnect(sm, WSP_ABORT_DISCONNECT);
+	},
+	NULL_SESSION)
+
+/* MISSING: RESUMING, S-Disconnect.req */
+
+ROW(RESUMING,
+	Disconnect_Event,
+	1,
+	{
+		/* TR-Abort.req(DISCONNECT) the Resume transaction */
+		wsp_send_abort(WSP_ABORT_DISCONNECT, sm->resume_handle);
+
+		/* Abort(DISCONNECT) all method transactions */
+		wsp_abort_methods(sm, WSP_ABORT_DISCONNECT);
+
+		/* S-Disconnect.ind(DISCONNECT) */
+		wsp_indicate_disconnect(sm, WSP_ABORT_DISCONNECT);
+	},
+	NULL_SESSION)
+
+ROW(RESUMING,
+	S_Resume_Res,
+	1,
+	{
+		WAPEvent *wtp_event;
+		Octstr *ospdu;
+
+		/* Disconnect any other session for the peer address quadruplet */
+		wsp_disconnect_other_sessions(sm);
+
+		/* Bind session to new peer address quadruplet */
+		/* this happens automatically */
+
+		/* TR-Result.req(Reply) */
+		if (e->server_headers == NULL)
+			e->server_headers = http_create_empty_headers();
+
+		ospdu = make_resume_reply_pdu(sm, e->server_headers);
+		wtp_event = wap_event_create(TR_Result_Req);
+		wtp_event->u.TR_Result_Req.user_data = ospdu;
+		wtp_event->u.TR_Result_Req.handle = sm->resume_handle;
+		dispatch_to_wtp_resp(wtp_event);
+		
+		/* Release all method transactions in HOLDING state */
+		wsp_release_holding_methods(sm);
+	},
+	RESUMING_2)
+
+ROW(RESUMING,
+	Suspend_Event,
+	1,
+	{
+		/* TR-Abort.req(SUSPEND) the Resume transaction */
+		wsp_send_abort(WSP_ABORT_SUSPEND, sm->resume_handle);
+
+		/* Abort(SUSPEND) all method transactions */
+		wsp_abort_methods(sm, WSP_ABORT_SUSPEND);
+
+		/* S-Suspend.ind(SUSPEND) */
+		wsp_indicate_suspend(sm, WSP_ABORT_SUSPEND);
+	},
+	SUSPENDED)
+
+ROW(RESUMING,
+	TR_Invoke_Ind,
+	e->tcl == 2 && (pdu->type == Get || pdu->type == Post),
+	{
+		/* Start new method transaction (see method state table) */
+		WSPMethodMachine *msm;
+		msm = method_machine_create(sm, e->handle);
+		handle_method_event(sm, msm, current_event, pdu);
+	},
+	RESUMING)
+
+ROW(RESUMING,
+	TR_Invoke_Ind,
+	e->tcl == 2 && pdu->type == Resume,
+	{
+		WAPEvent *wtp_event;
+		List *new_headers;
+
+		/* TR-Invoke.res */
+		wtp_event = wap_event_create(TR_Invoke_Res);
+		wtp_event->u.TR_Invoke_Res.handle = e->handle;
+		dispatch_to_wtp_resp(wtp_event);
+
+		/* TR-Abort.req(RESUME) the old Resume transaction */
+		wsp_send_abort(WSP_ABORT_RESUME, sm->resume_handle);
+
+		/* Abort(RESUME) all method transactions */
+		wsp_abort_methods(sm, WSP_ABORT_RESUME);
+
+		/* S-Suspend.ind(RESUME) */
+		wsp_indicate_suspend(sm, WSP_ABORT_RESUME);
+
+		/* S-Resume.ind */
+		new_headers = wsp_unpack_new_headers(sm, pdu->u.Resume.headers);
+		wsp_indicate_resume(sm, e->addr_tuple, new_headers);
+		http_destroy_headers(new_headers);
+
+
+		sm->resume_handle = e->handle;
+	},
+	RESUMING)
+
+ROW(RESUMING,
+	TR_Invoke_Ind,
+	e->tcl == 0 && pdu->type == Suspend,
+	{
+		/* TR-Abort.req(SUSPEND) the Resume transaction */
+		wsp_send_abort(WSP_ABORT_SUSPEND, sm->resume_handle);
+
+		/* Abort(SUSPEND) all method transactions */
+		wsp_abort_methods(sm, WSP_ABORT_SUSPEND);
+
+		/* S-Suspend.ind(SUSPEND) */
+		wsp_indicate_suspend(sm, WSP_ABORT_SUSPEND);
+	},
+	SUSPENDED)
+
+ROW(RESUMING,
+	TR_Invoke_Ind,
+	e->tcl == 0 && pdu->type == Disconnect,
+	{
+		/* TR-Abort.req(DISCONNECT) the Resume transaction */
+		wsp_send_abort(WSP_ABORT_DISCONNECT, sm->resume_handle);
+
+		/* Abort(DISCONNECT) all method transactions */
+		wsp_abort_methods(sm, WSP_ABORT_DISCONNECT);
+
+		/* S-Disconnect.ind(DISCONNECT) */
+		wsp_indicate_disconnect(sm, WSP_ABORT_DISCONNECT);
+	},
+	NULL_SESSION)
+
+ROW(RESUMING,
+	TR_Abort_Ind,
+	e->handle == sm->resume_handle,
+	{
+		/* Abort(SUSPEND) all method transactions */
+		wsp_abort_methods(sm, WSP_ABORT_SUSPEND);
+
+		/* S-Suspend.ind(abort reason) */
+		wsp_indicate_suspend(sm, e->abort_code);
+	},
+	SUSPENDED)
+
+/* MISSING: RESUMING_2, S-Disconnect.req */
+
+ROW(RESUMING_2,
+	Disconnect_Event,
+	1,
+	{
+		/* TR-Abort.req(DISCONNECT) the Resume */
+		wsp_send_abort(WSP_ABORT_DISCONNECT, sm->resume_handle);
+
+		/* Abort(DISCONNECT) all method and push transactions */
+		wsp_abort_methods(sm, WSP_ABORT_DISCONNECT);
+
+		/* S-Disconnect.ind(DISCONNECT) */
+		wsp_indicate_disconnect(sm, WSP_ABORT_DISCONNECT);
+	},
+	NULL_SESSION)
+
+ROW(RESUMING_2,
+	S_MethodInvoke_Res,
+	1,
+	{
+		WSPMethodMachine *msm;
+
+		/* See method state table */
+		msm = wsp_find_method_machine(sm, e->server_transaction_id);
+		handle_method_event(sm, msm, current_event, pdu);
+	},
+	RESUMING_2)
+
+ROW(RESUMING_2,
+	S_MethodResult_Req,
+	1,
+	{
+		WSPMethodMachine *msm;
+
+		/* See method state table */
+		msm = wsp_find_method_machine(sm, e->server_transaction_id);
+		handle_method_event(sm, msm, current_event, pdu);
+	},
+	RESUMING_2)
+
+/* MISSING: RESUMING_2, S-Push.req */
+/* MISSING: RESUMING_2, S-ConfirmedPush.req */
+
+ROW(RESUMING_2,
+	Suspend_Event,
+	1,
+	{
+		/* TR-Abort.req(SUSPEND) the Resume transaction */
+		wsp_send_abort(WSP_ABORT_SUSPEND, sm->resume_handle);
+
+		/* Abort(SUSPEND) all method and push transactions */
+		wsp_abort_methods(sm, WSP_ABORT_SUSPEND);
+
+		/* S-Suspend.ind(SUSPEND) */
+		wsp_indicate_suspend(sm, WSP_ABORT_SUSPEND);
+	},
+	SUSPENDED)
+
+ROW(RESUMING_2,
+	TR_Invoke_Ind,
+	e->tcl == 2 && (pdu->type == Get || pdu->type == Post),
+	{
+		WSPMethodMachine *msm;
+		WAPEvent *new_event;
+
+		/* Start new method transaction (see method state table) */
+		msm = method_machine_create(sm, e->handle);
+		handle_method_event(sm, msm, current_event, pdu);
+
+		/* Release the new method transaction */
+		new_event = wap_event_create(Release_Event);
+		handle_method_event(sm, msm, new_event, NULL);
+		wap_event_destroy(new_event);
+	},
+	RESUMING_2)
+
+ROW(RESUMING_2,
+	TR_Invoke_Ind,
+	e->tcl == 2 && pdu->type == Resume,
+	{
+		WAPEvent *wtp_event;
+		List *new_headers;
+
+		/* TR-Invoke.res */
+		wtp_event = wap_event_create(TR_Invoke_Res);
+		wtp_event->u.TR_Invoke_Res.handle = e->handle;
+		dispatch_to_wtp_resp(wtp_event);
+
+		/* TR-Abort.req(RESUME) the old Resume transaction*/
+		wsp_send_abort(WSP_ABORT_RESUME, sm->resume_handle);
+
+		/* Abort(RESUME) all method and push transactions */
+		wsp_abort_methods(sm, WSP_ABORT_RESUME);
+
+		/* S-Suspend.ind(RESUME) */
+		wsp_indicate_suspend(sm, WSP_ABORT_RESUME);
+
+		/* S-Resume.ind */
+		new_headers = wsp_unpack_new_headers(sm, pdu->u.Resume.headers);
+		wsp_indicate_resume(sm, e->addr_tuple, new_headers);
+		http_destroy_headers(new_headers);
+
+
+		sm->resume_handle = e->handle;
+	},
+	RESUMING)
+
+ROW(RESUMING_2,
+	TR_Invoke_Ind,
+	e->tcl == 0 && pdu->type == Suspend,
+	{
+		/* TR-Abort.req(SUSPEND) the Resume transaction */
+		wsp_send_abort(WSP_ABORT_SUSPEND, sm->resume_handle);
+
+		/* Abort(SUSPEND) all method and push transactions */
+		wsp_abort_methods(sm, WSP_ABORT_SUSPEND);
+
+		/* S-Suspend.ind(SUSPEND) */
+		wsp_indicate_suspend(sm, WSP_ABORT_SUSPEND);
+	},
+	SUSPENDED)
+
+ROW(RESUMING_2,
+	TR_Invoke_Ind,
+	e->tcl == 0 && pdu->type == Disconnect,
+	{
+		/* TR-Abort.req(DISCONNECT) the Resume */
+		wsp_send_abort(WSP_ABORT_DISCONNECT, sm->resume_handle);
+
+		/* Abort(DISCONNECT) all method and push transactions */
+		wsp_abort_methods(sm, WSP_ABORT_DISCONNECT);
+
+		/* S-Disconnect.ind(DISCONNECT) */
+		wsp_indicate_disconnect(sm, WSP_ABORT_DISCONNECT);
+	},
+	NULL_SESSION)
+
+/* MISSING: RESUMING_2, TR_Invoke.cnf for push transaction */
+
+ROW(RESUMING_2,
+	TR_Result_Cnf,
+	e->handle == sm->resume_handle,
+	{
+	},
+	CONNECTED)
+
+ROW(RESUMING_2,
+	TR_Result_Cnf,
+	e->handle != sm->resume_handle,
+	{
+		WSPMethodMachine *msm;
+
+		/* See method state table */
+		msm = wsp_find_method_machine(sm, e->handle);
+		handle_method_event(sm, msm, current_event, pdu);
+	},
+	RESUMING_2)
+
+ROW(RESUMING_2,
+	TR_Abort_Ind,
+	e->handle == sm->resume_handle,
+	{
+		/* Abort(SUSPEND) all method and push transactions */
+		wsp_abort_methods(sm, WSP_ABORT_SUSPEND);
+
+		/* S-Suspend.ind(abort reason) */
+		wsp_indicate_suspend(sm, e->abort_code);
+	},
+	SUSPENDED)
+
+/* MISSING: As below, for push transactions */
+
+ROW(RESUMING_2,
+	TR_Abort_Ind,
+	e->handle != sm->resume_handle,
+	{
+		WSPMethodMachine *msm;
+
+		/* See method state table */
+		msm = wsp_find_method_machine(sm, e->handle);
+		handle_method_event(sm, msm, current_event, pdu);
+	},
+	RESUMING_2)
 
 #undef ROW
 #undef STATE_NAME

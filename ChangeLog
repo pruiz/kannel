@@ -1,3 +1,13 @@
+2000-11-24  Richard Braakman  <dark@wapit.com>
+
+	* Added Suspend/Resume support. (Not well tested yet)
+
+	* wap/wsp_pdu.def: Note that the capabilities field in a Resume
+	PDU is reserved.
+
+	* wap/wsp_server_method_states.def: Explain why we don't
+	decrement N_Methods.
+
 2000-11-24  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsc.c: oops, did fix to wrong place, silly me
@@ -7,7 +17,7 @@
 	* gwlib/gwmem-check.c: Add casts to avoid comparing pointers
 	and integers.
 
-2000-11-24  Richard Braakman  <dark@wapi.com>
+2000-11-24  Richard Braakman  <dark@wapit.com>
 
 	* gw/heartbeat.[ch]: New files, contain heartbeat code shared
 	between wapbox and smsbox.
@@ -50,7 +60,7 @@
 	* gw/smsc.c, gw/smsc_emi.c: applied authentication patch by Joerg
 	Pommnitz
 
-2000-11-23  Richard Braakman  <dark@wapi.com>
+2000-11-23  Richard Braakman  <dark@wapit.com>
 
 	* wap/wsp.h, wsp/wsp_headers.c, wap/wsp_session.c:
 	Changed some "XXX" comments.
@@ -64,7 +74,7 @@
 	* gw/smsc_at.c: reverted default GSM alphabet patch and added
 	call to charset_latin1_to_gsm().
 	
-2000-11-23  Richard Braakman  <dark@wapi.com>
+2000-11-23  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsbox.c: Moved http_proxy_ variables into init_smsbox, since
 	they are used only there.  Made http_proxy_host an Octstr.
@@ -81,7 +91,7 @@
 	on the server side. Use a single function for the checking that
 	is used by both the client and server.
 
-2000-11-23  Richard Braakman  <dark@wapi.com>
+2000-11-23  Richard Braakman  <dark@wapit.com>
 
 	* wap/wtp_init.c, wap/wtp_init_states.def, wap/wtp_resp.c,
 	wap/wtp_resp_states.def: Added static send_abort() and 
@@ -92,7 +102,7 @@
 
 	* doc/userguide/userguide.xml: some corrections to just written
 
-2000-11-23  Richard Braakman  <dark@wapi.com>
+2000-11-23  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_at.c, gw/smsbox_req.c: Replaced some strcpys with
 	pointer assignments.
@@ -119,7 +129,7 @@
 	* doc/userguide/sms-gateway.fig: New picture to support that
 	explanation
 
-2000-11-22  Richard Braakman  <dark@wapi.com>
+2000-11-22  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc.c, gw/smsc_cimd.c: Reformatted.
 
@@ -138,7 +148,7 @@
 	* doc/userguide/userguide.xml: Moved some explanations to correct
 	places, to avoid mixed up context
 
-2000-11-22  Richard Braakman  <dark@wapi.com>
+2000-11-22  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/fdset.c: When destroying an fdset with active fd's,
 	close them first and signal that event.
@@ -148,27 +158,27 @@
 	* doc/userguide/userguide.xml: Add notes about HTTP proxy username
 	and password.
 
-2000-11-21  Richard Braakman  <dark@wapi.com>
+2000-11-21  Richard Braakman  <dark@wapit.com>
 
 	* wmlscript/wserror.c, wmlscript/wslexer.c:
         Fixed some assertions with side effects.
 
-2000-11-21  Richard Braakman  <dark@wapi.com>
+2000-11-21  Richard Braakman  <dark@wapit.com>
 
 	* gw/html.c, convert_html_entity(): Made conversion of entities
 	like &#1234; work.
 
-2000-11-21  Richard Braakman  <dark@wapi.com>
+2000-11-21  Richard Braakman  <dark@wapit.com>
 
 	* gw/html.c, gw/msg.c: Reformatted.
 
-2000-11-21  Richard Braakman  <dark@wapi.com>
+2000-11-21  Richard Braakman  <dark@wapit.com>
 
 	* gw/cgi.[ch]: Removed, they are no longer used.
 
 	* gw/smsbox.c, gw/smsbox_req.[ch]: Removed inclusion of cgi.h.
 
-2000-11-21  Richard Braakman  <dark@wapi.com>
+2000-11-21  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/gwthread-pthread.c, gwlib/conn.c, gwlib/list.c,
 	gwlib/utils.c (roundup_div): Formatted according to our coding style.
@@ -205,7 +215,7 @@
 	* gw/smsbox_req.c: sendota patched (Stipe Tolj) to accept more 
 	that one OTA configuration. 
 	
-2000-11-20  Richard Braakman  <dark@wapi.com>
+2000-11-20  Richard Braakman  <dark@wapit.com>
 
 	* Turned WTP and WSP protocol stacks into a library.  Source 
         files moved to a directory called "wap", which generates libwap.a.
@@ -245,11 +255,11 @@
 	* gwlib/dict.c: Avoid an extra list_search if we know the 
 	list was empty.
 
-2000-11-20  Richard Braakman  <dark@wapi.com>
+2000-11-20  Richard Braakman  <dark@wapit.com>
 
 	* Making release 0.13.
 
-2000-11-20  Richard Braakman  <dark@wapi.com>
+2000-11-20  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/dict.c: Made it initialize empty table entries with
 	NULL instead of empty lists, to save memory.
@@ -271,12 +281,12 @@
 	* gw/bb_smsc.c (sms_receiver): usleep limit to avoid portability
 	problems, patch by Jarkko Oikarinen
 
-2000-11-16  Richard Braakman  <dark@wapi.com>
+2000-11-16  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/http.c: Responses with status 1xx, 204, or 304 are
 	defined as having no message body, so don't expect one.
 
-2000-11-16  Richard Braakman  <dark@wapi.com>
+2000-11-16  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/http.c: Removed calls to conn_unregister that were followed
 	by calls to conn_destroy.  It's redundant, and in one case the
@@ -292,7 +302,7 @@
 	pdu_extract() changed skipping of 00 sequence for the specific
 	modem types. (patch by Stipe Tolj)
 
-2000-11-15  Richard Braakman  <dark@wapi.com>
+2000-11-15  Richard Braakman  <dark@wapit.com>
 
 	* gw/wsp-session.c: Address tuples are now included in events
 	sent from WTP to WSP, so the code for looking up tuples based
@@ -315,7 +325,7 @@
 	private structure data into private header smscconn_p.h so that
 	caller (main bearerbox) does not need to worry about that
 
-2000-11-14  Richard Braakman  <dark@wapi.com>
+2000-11-14  Richard Braakman  <dark@wapit.com>
 
 	* doc/CodingStyle: Document our practice of having include files
 	include other files.
@@ -364,7 +374,7 @@
 
 	* Makefile.in: Use $(DESTDIR) in the install targets.
 
-2000-11-13  Richard Braakman  <dark@wapi.com>
+2000-11-13  Richard Braakman  <dark@wapit.com>
 
 	* configure.in, config.h, gwlib/gwassert.h: Use NO_GWASSERT
 	instead of NDEBUG.  Have gwassert.h define NO_GWASSERT if
@@ -378,7 +388,7 @@
 	* gwlib/http.c: Implemented persistent connections on the
 	client end.
 
-2000-11-10  Richard Braakman  <dark@wapi.com>
+2000-11-10  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/gwlib.c: Call gwlib_protected_shutdown() last, because
 	the protected functions are used by other shutdown functions.
@@ -397,7 +407,7 @@
 	* gwlib/http.c: Implemented persistent connections on the
 	server end.
 
-2000-11-10  Richard Braakman  <dark@wapi.com>
+2000-11-10  Richard Braakman  <dark@wapit.com>
 
 	* configure.in: Added --with-defaults to make it possible to
 	configure for speed or for debugging, with one option.
@@ -466,7 +476,7 @@
 	* gw/smsc_at.c: encode 7 bit messages in the default GSM alphabet
 	(thanks to Mike Gaertner).
 
-2000-11-08  Richard Braakman  <dark@wapi.com>
+2000-11-08  Richard Braakman  <dark@wapit.com>
 
 	* gw/wap-appl.c: Deal with client_SDU_size being 0, which means
 	there is no limit.  Thanks to Ruud Schramp for pointing this out.

@@ -78,6 +78,6 @@ PDU(Resume, "...",
 	TYPE(8, 9)
 	UINTVAR(sessionid, "Session ID")
 	UINTVAR(capabilities_len, "Length of capabilities")
-	OCTSTR(capabilities, "Accepted capabilities", capabilities_len)
+	OCTSTR(capabilities, "Reserved capabilities field", capabilities_len)
 	REST(headers, "Session headers")
 	, 1)
