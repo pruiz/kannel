@@ -841,11 +841,11 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
             break; 
  
         case bind_receiver_resp: 
-            if (pdu->u.bind_transmitter_resp.command_status != 0) { 
+            if (pdu->u.bind_receiver_resp.command_status != 0) { 
                 error(0, "SMPP[%s]: SMSC rejected login to receive, " 
                       "code 0x%08lx.", 
                       octstr_get_cstr(smpp->conn->id),
-                      pdu->u.bind_transmitter_resp.command_status); 
+                      pdu->u.bind_receiver_resp.command_status); 
             } else { 
                 /* set only resceive status if no transmitt is bind */
                 if (smpp->conn->status != SMSCCONN_ACTIVE) {
