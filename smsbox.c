@@ -184,7 +184,7 @@ static int do_sending(SMSMessage *msg, char *str)
 
     write_to_socket(socket_fd, buf);
 	
-    debug(0, "write < %s > from <%s> to <%s>", str,
+    debug(0, "write < %.*s > from <%s> to <%s>", sms_len, str,
 	  msg->receiver, msg->sender);
 	
     ret = pthread_mutex_unlock(&socket_mutex);
@@ -320,7 +320,7 @@ static void *request_thread(void *arg) {
 	free(msg->receiver);		/* that is us, we swap these at send */
 	msg->receiver = strdup(p);
     }
-    else if (global_sender) {
+    else if (global_sender != NULL) {
 	free(msg->receiver);		/* that is us, we swap these at send */
 	msg->receiver = strdup(global_sender);
     }
@@ -430,8 +430,9 @@ static void setup_signal_handlers(void) {
 static void init_smsbox(Config *cfg)
 {
     ConfigGroup *grp;
-    char *logfile, *loglevel;
+    char *logfile = NULL;
     char *p;
+    int lvl = 0;
 
     bb_port = BB_DEFAULT_SMSBOX_PORT;
     bb_host = BB_DEFAULT_HOST;
@@ -444,15 +445,20 @@ static void init_smsbox(Config *cfg)
 	    bb_host = p;
 	if ((p = config_get(grp, "sms-length")) != NULL)
 	    sms_len = atoi(p);
-	pid_file = config_get(grp, "pid-file");
-	global_sender = config_get(grp, "pid-file");
-	logfile = config_get(grp, "log-file");
-	loglevel = config_get(grp, "log-level");
-	
+	if ((p = config_get(grp, "pid-file")) != NULL)
+	    pid_file = p;
+	if ((p = config_get(grp, "global-sender")) != NULL)
+	    global_sender = p;
+	if ((p = config_get(grp, "log-file")) != NULL)
+	    logfile = p;
+	if ((p = config_get(grp, "log-level")) != NULL)
+	    lvl = atoi(p);
 	grp = config_next_group(grp);
     }
+    if (global_sender != NULL)
+	info(0, "Service global sender set as '%s'", global_sender);
+    
     if (logfile != NULL) {
-	int lvl = loglevel ? atoi(loglevel) : 0;
 	info(0, "Starting to log to file %s level %d", logfile, lvl);
 	open_logfile(logfile, lvl);
     }
@@ -477,17 +483,18 @@ int main(int argc, char **argv)
     if (cfg == NULL)
 	panic(0, "No configuration, aborting.");
 
+    init_smsbox(cfg);
+    write_pid_file();
+
     translations = urltrans_create();
     if (translations == NULL)
 	panic(errno, "urltrans_create failed");
     if (urltrans_add_cfg(translations, cfg) == -1)
 	panic(errno, "urltrans_add_cfg failed");
 
-    init_smsbox(cfg);
-    write_pid_file();
 
     
-    while(1) {
+    while(!abort_program) {
 	socket_fd = tcpip_connect_to_server(bb_host, bb_port);
 	if (socket_fd > -1)
 	    break;

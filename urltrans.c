@@ -392,16 +392,12 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 	ot->suffix = strdup(suffix);
 	if (ot->prefix == NULL || ot->suffix == NULL)
 	    goto error;
-    } else {
-	ot->prefix = NULL;
-	ot->suffix = NULL;
     }
     if (faked_sender != NULL) {
 	ot->faked_sender = strdup(faked_sender);
 	if (ot->faked_sender == NULL)
 	    goto error;
-    } else
-	ot->faked_sender = NULL;
+    }
 
     if (max_msgs != NULL) {
 	ot->max_messages = atoi(max_msgs);
@@ -409,14 +405,12 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 	    ot->split_chars = strdup(split_chars);
 	    if (ot->split_chars == NULL)
 		goto error;
-	} else
-	    ot->split_chars = NULL;
+	}
 	if (split_suffix != NULL) {
 	    ot->split_suffix = strdup(split_suffix);
 	    if (ot->split_suffix == NULL)
 		goto error;
-	} else
-	    ot->split_suffix = NULL;
+	}
     }
     else
 	ot->max_messages = 1;
@@ -430,6 +424,7 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 	(count_occurences(ot->pattern, "%a") > 0);
 
     ot->next = NULL;
+    debug(0, "Created translation '%s'", ot->keyword);
     return ot;
 error:
     error(errno, "Couldn't create a URLTranslation.");
@@ -474,7 +469,7 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 
 	for (t = trans->list; t != NULL; t = t->next) {
 	    if (strcasecmp(keyword, t->keyword) == 0 ||
-		strstr(alias_keyword, t->aliases) != NULL) {
+		strstr(t->aliases, alias_keyword) != NULL) {
 
 		if (n - 1 == t->args)
 		    break;

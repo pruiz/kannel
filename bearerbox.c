@@ -898,9 +898,9 @@ static void main_program(void)
 static void init_bb(Config *cfg)
 {
     ConfigGroup *grp;
-    char *logfile, *loglevel;
+    char *logfile = NULL;
     char *p;
-    int i;
+    int i, lvl = 0;
     
     bbox = malloc(sizeof(BearerBox));
     if (bbox == NULL)
@@ -931,9 +931,12 @@ static void init_bb(Config *cfg)
 	    bbox->smsbox_port = atoi(p);
 	if ((p = config_get(grp, "heartbeat-freq")) != NULL)
 	    bbox->heartbeat_freq = atoi(p);
-	bbox->pid_file = config_get(grp, "pid-file");
-	logfile = config_get(grp, "log-file");
-	loglevel = config_get(grp, "log-level");
+	if ((p = config_get(grp, "pid-file")) != NULL)
+	    bbox->pid_file = p;
+	if ((p = config_get(grp, "log-file")) != NULL)
+	    logfile = p;
+	if ((p = config_get(grp, "log-level")) != NULL)
+	    lvl = atoi(p);
 	
 	grp = config_next_group(grp);
     }
@@ -963,7 +966,6 @@ static void init_bb(Config *cfg)
 	goto error;
     }
     if (logfile != NULL) {
-	int lvl = loglevel ? atoi(loglevel) : 0;
 	info(0, "Starting to log to file %s level %d", logfile, lvl);
 	open_logfile(logfile, lvl);
     }
