@@ -1,5 +1,12 @@
 2000-05-30  Kalle Marjola <rpr@wapit.com>
 
+	* gw/bb_smsc.c: added white and black lists.
+
+	* doc/userguide/newconf.txt: added 'documentation' about white and
+	black lists
+
+2000-05-30  Kalle Marjola <rpr@wapit.com>
+
 	* gw/numhash.h|c: exported numhash from old smsgateway and edited
 	it to work with new http2 and Octstrings, plus removed some
 	functions. Next: implement white/black-list

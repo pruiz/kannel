@@ -22,6 +22,7 @@
 #include "msg.h"
 #include "bearerbox.h"
 #include "smsc.h"
+#include "numhash.h"
 
 /* passed from bearerbox core */
 
@@ -42,6 +43,9 @@ extern List *isolated;
 static volatile sig_atomic_t smsc_running;
 static List *smsc_list;
 static char *unified_prefix;
+
+static Numhash *black_list;
+static Numhash *white_list;
 
 typedef struct _smsc {
     List 	*outgoing_list;
@@ -73,10 +77,26 @@ static void sms_receiver(void *arg)
 	    break;
 
 	if (ret == 1) {
-	    /* XXX do we want to normalize receiver? it is like 1234 anyway... */
+	    /* XXX do we want to normalize receiver? it is like
+	     *     1234 anyway... */
 
 	    normalize_number(unified_prefix, &(msg->smart_sms.sender));
-	    
+	    if (white_list &&
+		numhash_find_number(white_list, msg->smart_sms.sender) < 1)
+	    {
+		info(0, "Number <%s> is not in white-list, message discarded",
+		     octstr_get_cstr(msg->smart_sms.sender));
+		msg_destroy(msg);
+		continue;
+	    }
+	    if (black_list &&
+		numhash_find_number(black_list, msg->smart_sms.sender) == 1)
+	    {
+		info(0, "Number <%s> is in black-list, message discarded",
+		     octstr_get_cstr(msg->smart_sms.sender));
+		msg_destroy(msg);
+		continue;
+	    }
 	    list_produce(incoming_sms, msg);
 
 	    counter_increase(incoming_sms_counter);
@@ -262,13 +282,20 @@ int smsc_start(Config *config)
 {
     ConfigGroup *grp;
     Smsc *si;
+    char *ls;
     
     if (smsc_running) return -1;
 
     smsc_list = list_create();
-    
-    unified_prefix = config_get(config_find_first_group(config, "group", "core"),
-				"unified-prefix");
+
+    grp = config_find_first_group(config, "group", "core");
+    unified_prefix = config_get(grp, "unified-prefix");
+
+    white_list = black_list = NULL;
+    if ((ls = config_get(grp, "white-list")) != NULL)
+	white_list = numhash_create(ls);
+    if ((ls = config_get(grp, "black-list")) != NULL)
+	black_list = numhash_create(ls);
 
     grp = config_find_first_group(config, "group", "smsc");
     while(grp != NULL) {
@@ -336,6 +363,12 @@ int smsc_die(void)
 	list_remove_producer(si->outgoing_list);
     }
     list_unlock(smsc_list);
+
+    /* XXX hopefully these are not used at this stage; at least they
+     *    should NOT be used, receivers should have exited already
+     */
+    numhash_destroy(white_list);
+    numhash_destroy(black_list);
     
     smsc_running = 0;
     return 0;

@@ -110,10 +110,21 @@ used:
  #       for Finland an unified-prefix "00358,0" should do the trick. 
  #       If there are several unified prefixes, separate their rules with
  #       semicolon (';'), like "0035850,050;0035840,040"
-
+ #
+ white-list = <url>
+ #       Load a list of accepted senders of SMS messages. If a sender
+ #       of an SMS message is not in this list, any message received
+ #       from SMS Center is discarded. See notes of phone number
+ #       format from numhash.h header file. NOTE: the system has only
+ #	 a precision of last 9 or 18 digits of phone numbers, so
+ #	 beware
+ #
+ black-list = <url>
+ #       As white-list, but SMS messages from these numbers are
+ #       automatically discarded
+ 
 No other configuration variables for core group are currently
-supported. A sample simple core group is shown at the end of the file.
-
+supported. A sample core group is shown at the end of the file.
 
 
 
@@ -438,6 +449,8 @@ box-allow-ip = "127.0.0.1"
 admin-deny-ip = "*.*.*.*"
 admin-allow-ip = "127.0.0.1"
 unified-prefix = "00358,0"
+white-list = "http://localhost/whitelist.txt"
+
 
 group = smsc
 smsc = fake
