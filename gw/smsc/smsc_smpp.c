@@ -582,11 +582,15 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
      * alt-charset in smsc group and if MT is not binary
      */
     if (msg->sms.coding == DC_7BIT || (msg->sms.coding == DC_UNDEF && octstr_len(msg->sms.udhdata))) {
-        /* 0xFX coding is always GSM 03.38 */
-        if ((pdu->u.submit_sm.data_coding & 0xF0) || !smpp->alt_charset) {
+        /* 
+         * consider 2 cases: 
+         *  a) data_coding 0xFX: encoding should always be GSM 03.38 charset 
+         *  b) data_coding 0x00: encoding may be converted according to alt-charset 
+         */
+        if (pdu->u.submit_sm.data_coding & 0xF0) {
             charset_latin1_to_gsm(pdu->u.submit_sm.short_message);
         }
-        else {
+        else if (pdu->u.submit_sm.data_coding == 0 && smpp->alt_charset) {
             /*
              * convert to the given alternative charset
              */

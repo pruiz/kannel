@@ -1,3 +1,9 @@
+2003-11-06  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smpp.c: fixed another issue resulting from the previous
+      revision commit. We want to convert the charset *only* if data_coding
+      is 0x00 and hence the default smsc alphabet is addressed. Thanks again
+      to Alexander for this quick spot.
+
 2003-11-05  Stipe Tolj  <tolj@wapme-systems.de>
 	* gw/smsc/smsc_smpp.c: fixed bug for re-encoding character set. Accoding 
       SMPP spec v3.4 if mclass is set, then data_coding is within 0xF0 range.
