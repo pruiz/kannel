@@ -1,3 +1,9 @@
+2001-03-01  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_boxc.c, gw/shared.c: Fix, modified so that error in read
+	causes connection to be broken, instead of possible trap in
+	infinite loop. Pointed out by Paul Keogh. 
+
 2001-03-01  Uoti Urpala  <uau@wapit.com>
 
 	* gwlib/http.c: Don't panic or crash if request contains spaces.

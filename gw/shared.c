@@ -93,6 +93,10 @@ Msg *read_from_bearerbox(void)
 	gw_claim_area(pack);
 	if (pack != NULL)
 	    break;
+	if (conn_read_error(bb_conn)) {
+	    info(0, "Error reading from bearerbox, disconnecting");
+	    return NULL;
+	}
 	if (conn_eof(bb_conn)) {
 	    info(0, "Connection closed by the bearerbox");
 	    return NULL;
