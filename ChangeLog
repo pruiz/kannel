@@ -1,3 +1,14 @@
+2002-08-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.[ch]: added HEAD method support for HTTP client module
+      functions, this modifies the http_start_request() prototype.
+    * gw/numhash.c, test/test_smsc.c: changed calls to http_get_real()
+    * gw/smsbox.c: added method to remember_receiver() and get_receiver() and
+      changed calls to http_start_request()
+    * gw/wap-app.c, gw/smsc/smsc_http.c, gwlib/xmlrpc.c, test/test_ppg.c: 
+      changed calls to http_start_request()
+    * test/test_http.c: added -m option so select HTTP method type for request
+      and changed calls to http_start_request()
+
 2002-08-19  Stipe Tolj  <tolj@wapme-systems.de>
     * wap/wtp_pdu.def: changed the TPI documentation string to make them more
       specification conform.
