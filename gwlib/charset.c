@@ -250,7 +250,7 @@ alias_t chars_aliases[] = {
     { NULL }
 };
 
-void charset_init(void)
+void charset_init()
 {
     int i;
 
@@ -259,6 +259,12 @@ void charset_init(void)
       /*debug("encoding",0,"Add encoding for %s",chars_aliases[i].alias);*/
     }
 }
+
+void charset_shutdown()
+{
+    xmlCleanupEncodingAliases();
+}
+
 
 void charset_gsm_to_latin1(Octstr *ostr)
 {

@@ -35,6 +35,7 @@ void gwlib_init(void)
 void gwlib_shutdown(void) 
 {
     gwlib_assert_init();
+    charset_shutdown();
     http_shutdown();
     socket_shutdown();
     gwthread_shutdown();

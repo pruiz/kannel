@@ -1,3 +1,10 @@
+2001-12-07  Tuomas Luttinen  <Tuomas.Luttinen@reach-u.com>
+
+	* gwlib/charset.[ch]: Function charset_shutdown added to release the
+	libxml charset aliases.
+
+	* gwlib/gwlib.c (gwlib_shutdown): Call to the charset_shutdown added.
+
 2001-12-07 Jörg Pommnitz <jpo@condat.de>
     * gwlib/conn.c: fix error handling in conn_open_ssl
 
