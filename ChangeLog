@@ -1,3 +1,9 @@
+2002-08-05  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_emi2.c, gwlib/cfg.def: added EMI2 specific configuration
+      directives 'notification-pid' and 'notification-addr'. 
+      Patch submitted by "Dima Milentiev" <Dima@m-wise.com>
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B296EB9@exchange.m-wise.com>]
+
 2002-08-05  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * doc/modems.conf: added keepalive command to M20: signal and battery level
     * gw/smsc_emi2.c, doc/userguide/userguide.xml: Added keepalive support when 
