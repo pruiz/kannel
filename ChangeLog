@@ -1,3 +1,10 @@
+2000-12-29  Tuomas Luttinen  <tuo@wapit.com>
+
+	* test/wml_tester.c: The test program now has a command line argument 
+	-n number that does the compiling n times. Also all the wml files 
+	written in sequence in the command line will be compiled. Some other 
+	modifications to get rid of the octstr_*_cstr-functions.
+
 2000-12-29  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_smscconn.c: shortened SMSCConn status output
