@@ -1,3 +1,11 @@
+2000-03-20    <Kalle Marjola <rpr@wapit.com>>
+
+	* gwlib/http.c: fixed bug in header_pack pointed out by Paul
+	Keogh. Also fixed a major too-early free in request_wrap, which
+	caused segmentation faults in heavy load.
+	
+	* gw/*.*: some little fixes/comments
+
 Mon Mar 20 16:56:36 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wapbox.c, gw/wsp.c, gw/wsp.h, gw/wsp_machine-decl.h,

@@ -460,7 +460,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 
     
 error:
-    error(errno, "http_get_u: failed");
+    error(0, "http_get_u: failed");
     return -1;
 }
 
@@ -919,7 +919,7 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
     HTTPRequest *request = NULL;
 
     if( (from==NULL) || (size==0) ) {
-	error(errno, "httprequest_wrap: faulty input");
+	error(0, "httprequest_wrap: faulty input");
 	goto error;
     }
 
@@ -1086,7 +1086,7 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
     return request;
     
 error:
-    error(errno, "httprequest_wrap: failed");
+    error(0, "httprequest_wrap: failed");
     httprequest_destroy(request);
     gw_free(mycopy);
     gw_free(tmpbuff);
@@ -1227,17 +1227,18 @@ HTTPRequest* httprequest_execute(HTTPRequest *request) {
 	gw_free(datareceive);
 	goto close_socket;
     }
-    gw_free(datareceive);
     
 /* close socket */
     if (close(s) == -1) {
 	error(errno, "Error closing connection to HTTP server.");
+	gw_free(datareceive);
 	goto error;
     }
 
 /* parse the results */
     result = httprequest_wrap(datareceive, size);
-    assert(result != NULL);
+    gw_free(datareceive);
+    /* assert(result != NULL); */
     
 /* return the result */	
     return result;
@@ -1453,6 +1454,8 @@ int header_pack(HTTPHeader *hdr)
 
 		ptr = prev;     /* rewind */
 	    }
+	    else
+		prev = ptr;
 	}	    
 	hdr = hdr->next;
     }

@@ -1,5 +1,5 @@
 /*
- * wsp.h - WSP PHU headers implementation header
+ * wsp.h - WSP PDU headers implementation header
  *
  * Kalle Marjola <rpr@wapit.com>
  */
@@ -12,6 +12,7 @@
 
 
 /* return an HTTPHeader linked list which must be freed by the caller
+ * (see http.h for details of HTTPHeaders). Cannot fail.
  */
 HTTPHeader *unpack_headers(Octstr *headers);
 

@@ -2001,7 +2001,7 @@ static void open_all_receivers(Config *cfg)
 	    smsc = smsc_open(grp);
 	    
 	    if (smsc == NULL) {
-		error(0, "Problems connecting to an SMSC, skipping.");
+		panic(0, "Problems connecting to an SMSC");
 /*
  * XXX this should NOT be treated thiw way, but instead leave it
  * to background, trying to establish the connection again and

@@ -4,7 +4,7 @@ The gateway inside WapIT:
 	architecture design, wapbox (WSP), PHB
 
 	Kalle Marjola <rpr@wapit.com>
-	bearer box, smsbox
+	bearerbox, smsbox, wapbox (WSP headers)
 	
 	Peter Grönholm <peter@wapit.com>
 	external relations, prototype WML converter
@@ -21,7 +21,7 @@ The gateway inside WapIT:
 	Formerly also:
 
 	Mikael Gueck <mikael@wapit.com>
-	smsbox, wap box (especially SMS center protocols)
+	smsbox, bearerbox (especially SMS center protocols)
 	HTTP
 
 Other people:

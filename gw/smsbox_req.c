@@ -46,7 +46,7 @@ static sig_atomic_t req_threads = 0;
  */
 static char *obey_request(URLTranslation *trans, Msg *sms)
 {
-	char *pattern;
+	char *pattern = NULL;
 	char *data, *tmpdata;
 	size_t size;
 	char *type = NULL;

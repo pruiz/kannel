@@ -670,6 +670,7 @@ int octstr_recv(int fd, Octstr **ostr) {
 	int ret = 0, readlength = 0;
 
 	nlength = 0;
+	*ostr = NULL;
 	
 	/* How many octets in incomint Octstr. */
 	readlength = 0;
