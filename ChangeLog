@@ -1,3 +1,7 @@
+2000-16-07 Derry Hamilton <rasilon@tardis.ed.ac.uk>
+	
+	* solaris/*:  Added packaging information for Solaris
+
 2000-14-07 Peter Grönholm
 
        * gw/wml-definitions.h: A typo corrected in URL value code table.
