@@ -1,3 +1,11 @@
+2001-04-03  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/fdset.c: When destroying an fdset with active fd's,
+        simply ignore those fd's and make it the caller's responsibility
+	to deal with them.  This reverses a change from 2000-11-22, which
+	was made at the time to fix the http shutdown sequence.  It didn't,
+	and now it's in the way of a better solution.
+
 2001-03-30  Uoti Urpala  <uau@wapit.com>
 
 	* gwlib/http.c: Enabled keepalive connections again.
