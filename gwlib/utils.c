@@ -131,7 +131,8 @@ int get_and_set_debugs(int argc, char **argv,
 
     info(0, "Debug_lvl = %d, log_file = %s, log_lvl = %d",
 	  debug_lvl, log_file ? log_file : "<none>", file_lvl);
-    info(0, "Debug places: `%s'", debug_places);
+    if (debug_places != NULL)
+	    info(0, "Debug places: `%s'", debug_places);
     
     return i;
 }

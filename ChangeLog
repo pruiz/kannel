@@ -1,3 +1,7 @@
+Fri Feb 18 20:07:29 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/utils.c: Don't report debug places unless they're set.
+
 Fri Feb 18 20:05:40 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp_http.c: Strip type parameters. This is ugly, but at least

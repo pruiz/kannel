@@ -143,6 +143,13 @@ void *wsp_http_thread(void *arg) {
 			encode_content_type(type));
 		status = 200; /* OK */
 		
+		if (strchr(type, ';') != NULL) {
+			*strchr(type, ';') = '\0';
+			type = trim_ends(type);
+			debug("wap.wsp.http", 0, 
+			      "WSP: Type without params: <%s>", type);
+		}
+		
 		input = octstr_create_from_data(data, size);
 
 		converter_failed = 0;
