@@ -1314,7 +1314,8 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
     mtime.year = swap_nibbles(octstr_get_char(pdu, pos));
     pos++;
     mtime.year += (mtime.year < 70 ? 2000 : 1900);
-    mtime.month = swap_nibbles(octstr_get_char(pdu, pos)) ;
+    mtime.month = swap_nibbles(octstr_get_char(pdu, pos));
+    mtime.month--;    
     pos++;
     mtime.day = swap_nibbles(octstr_get_char(pdu, pos));
     pos++;
