@@ -114,6 +114,8 @@ static void main_thread(void *arg) {
 				ind->u.S_MethodInvoke_Ind.mid;
 			res->u.S_MethodInvoke_Res.tid = 
 				ind->u.S_MethodInvoke_Ind.tid;
+			res->u.S_MethodInvoke_Res.msmid = 
+				ind->u.S_MethodInvoke_Ind.msmid;
 			wsp_session_dispatch_event(res);
 		}
 	}
@@ -171,12 +173,12 @@ static void fetch_thread(void *arg) {
 		struct S_MethodInvoke_Ind *p;
 		
 		p = &event->u.S_MethodInvoke_Ind;
-		session_headers = p->session->http_headers;
+		session_headers = p->session_headers;
 		request_headers = p->http_headers;
 		url = octstr_duplicate(p->url);
-		addr_tuple = p->session->addr_tuple;
-		session_id = p->session->session_id;
-		client_SDU_size = p->session->client_SDU_size;
+		addr_tuple = p->addr_tuple;
+		session_id = p->session_id;
+		client_SDU_size = p->client_SDU_size;
 	} else {
 		struct S_Unit_MethodInvoke_Ind *p;
 		
@@ -313,6 +315,8 @@ static void fetch_thread(void *arg) {
 		e->u.S_MethodResult_Req.response_body = body;
 		e->u.S_MethodResult_Req.mid = event->u.S_MethodInvoke_Ind.mid;
 		e->u.S_MethodResult_Req.tid = event->u.S_MethodInvoke_Ind.tid;
+		e->u.S_MethodResult_Req.msmid = 
+			event->u.S_MethodInvoke_Ind.msmid;
 	
 		wsp_session_dispatch_event(e);
 	} else {

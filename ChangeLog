@@ -1,3 +1,22 @@
+Fri Jun  9 08:31:18 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Separated the method state machine from the session state machine,
+	to keep state tables in the source closer to the spec and to allow
+	multiple fetches per client.
+	
+	* gw/wsp-method-machine.h, gw/wsp-session-machine.h: Split out from
+	gw/wsp_machine-decl.h, now removed.
+	
+	* gw/wsp-method-state.h, gw/wsp-session-state.h: Split out from
+	gw/wsp_state-decl.h, now removed.
+
+	* gw/wsp-session.c: Added handling of WSPMethodMachines and
+	correct routing of WAPEvents between the session and method
+	state machines. This is a bit ugly, though.
+
+	* gw/wap-appl.c, gw/wap-events-def.h, gw/wsp.h, gw/wtp.c:
+	Related changes.
+
 Fri Jun  9 06:20:12 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp.c: Combined wtp_machine_create and wtp_machine_create_empty.

@@ -47,30 +47,18 @@ typedef struct WSPMethodMachine WSPMethodMachine;
 struct WSPMachine {
 	#define INTEGER(name) long name;
 	#define OCTSTR(name) Octstr *name;
-	#define EVENT_POINTER(name) WSPEvent *name;
-	#define METHOD_POINTER(name) WSPMethodMachine *name;
-	#define SESSION_POINTER(name) WSPMachine *name;
-	#define HTTPHEADER(name) List *name;
-	#define LIST(name) List *name;
-	#define SESSION_MACHINE(fields) fields
-	#define METHOD_MACHINE(fields)
+	#define HTTPHEADERS(name) List *name;
 	#define ADDRTUPLE(name) WAPAddrTuple *name;
-	#include "wsp_machine-decl.h"
+	#define MACHINE(fields) fields
+	#include "wsp-session-machine.h"
 };
 
 
 struct WSPMethodMachine {
 	#define INTEGER(name) long name;
-	#define OCTSTR(name) Octstr *name;
-	#define EVENT_POINTER(name) WSPEvent *name;
-	#define METHOD_POINTER(name) WSPMethodMachine *name;
-	#define SESSION_POINTER(name) WSPMethodMachine *name;
-	#define HTTPHEADER(name) List *name;
-	#define LIST(name) List *name;
-	#define SESSION_MACHINE(fields)
-	#define METHOD_MACHINE(fields) fields
 	#define ADDRTUPLE(name) WAPAddrTuple *name;
-	#include "wsp_machine-decl.h"
+	#define MACHINE(fields) fields
+	#include "wsp-method-machine.h"
 };
 
 

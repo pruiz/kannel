@@ -530,6 +530,7 @@ static WAPEvent *create_tr_result_cnf(WTPMachine *sm) {
 	WAPEvent *event;
 	
 	event = wap_event_create(TR_Result_Cnf);
+	event->u.TR_Result_Cnf.tid = sm->tid;
 	event->u.TR_Result_Cnf.addr_tuple = 
 		wap_addr_tuple_duplicate(sm->addr_tuple);
 	return event;

@@ -20,6 +20,7 @@ WAPEVENT(TR_Invoke_Ind,
 
 WAPEVENT(TR_Result_Cnf,
 	  ADDRTUPLE(addr_tuple)
+	  INTEGER(tid)
           )
 
 WAPEVENT(TR_Abort_Ind,
@@ -39,8 +40,14 @@ WAPEVENT(S_Connect_Res,
 WAPEVENT(Release,
 	  INTEGER(tid)
 	  INTEGER(mid)
+	  INTEGER(msmid)
 	  OCTSTR(url)
 	  HTTPHEADER(http_headers)
+
+	  HTTPHEADER(session_headers)
+	  ADDRTUPLE(addr_tuple)
+	  INTEGER(session_id)
+	  INTEGER(client_SDU_size)
 	  )
 
 WAPEVENT(S_MethodInvoke_Ind,
@@ -50,12 +57,18 @@ WAPEVENT(S_MethodInvoke_Ind,
 	  INTEGER(method)
 	  HTTPHEADER(http_headers)
 	  INTEGER(server_transaction_id)
-	  SESSION_MACHINE(session)
+
+	  INTEGER(msmid)
+	  HTTPHEADER(session_headers)
+	  ADDRTUPLE(addr_tuple)
+	  INTEGER(session_id)
+	  INTEGER(client_SDU_size)
 	  )
 
 WAPEVENT(S_MethodInvoke_Res,
 	  INTEGER(tid)
 	  INTEGER(mid)
+	  INTEGER(msmid)
 	  )
 
 WAPEVENT(S_MethodResult_Req,
@@ -65,6 +78,7 @@ WAPEVENT(S_MethodResult_Req,
 	  OCTSTR(response_body)
 	  INTEGER(tid)
 	  INTEGER(mid)
+	  INTEGER(msmid)
 	  )
 
 WAPEVENT(RcvInvoke,

@@ -48,7 +48,12 @@ enum {
 typedef enum {
 	#define STATE_NAME(name) name,
 	#define ROW(state, event, condition, action, next_state)
-	#include "wsp_state-decl.h"
+	#include "wsp-session-state.h"
+
+	#define STATE_NAME(name) name,
+	#define ROW(state, event, condition, action, next_state)
+	#include "wsp-method-state.h"
+
 	WSPState_count
 } WSPState;
 
@@ -69,15 +74,23 @@ static enum { limbo, running, terminating } run_status = limbo;
 
 static List *queue = NULL;
 static List *session_machines = NULL;
+static List *method_machines = NULL;
 static Counter *session_id_counter = NULL;
 
 
-static void handle_event(WSPMachine *machine, WAPEvent *event, WSP_PDU *pdu);
+static WSPMachine *find_session_machine(WAPEvent *event, WSP_PDU *pdu);
+static void handle_session_event(WSPMachine *machine, WAPEvent *event, 
+				 WSP_PDU *pdu);
 static WSPMachine *machine_create(void);
 static void machine_destroy(WSPMachine *p);
 #if 0
 static void machine_dump(WSPMachine *machine);
 #endif
+
+static WSPMethodMachine *find_method_machine(WAPEvent *event);
+static void handle_method_event(WSPMethodMachine *machine, WAPEvent *event);
+static WSPMethodMachine *method_machine_create(WAPAddrTuple *, long);
+static void method_machine_destroy(WSPMethodMachine *msm);
 
 static void unpack_caps(Octstr *caps, WSPMachine *m);
 
@@ -95,9 +108,9 @@ static Octstr *make_connectreply_pdu(WSPMachine *m, long session_id);
 static long new_server_transaction_id(void);
 static int transaction_belongs_to_session(void *session, void *tuple);
 static int same_client(void *sm1, void *sm2);
+static int same_method_machine(void *, void *);
 
 static void main_thread(void *);
-static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu);
 
 
 
@@ -110,6 +123,7 @@ void wsp_session_init(void) {
 	queue = list_create();
 	list_add_producer(queue);
 	session_machines = list_create();
+	method_machines = list_create();
 	session_id_counter = counter_create();
 	run_status = running;
 	gwthread_create(main_thread, NULL);
@@ -128,11 +142,18 @@ void wsp_session_shutdown(void) {
 		wap_event_destroy(e);
 	list_destroy(queue);
 
-	debug("wap.wsp", 0, "WSP: %ld machines left.",
+	debug("wap.wsp", 0, "WSP: %ld session machines left.",
 		list_len(session_machines));
 	while (list_len(session_machines) > 0)
 		machine_destroy(list_get(session_machines, 0));
 	list_destroy(session_machines);
+
+	debug("wap.wsp", 0, "WSP: %ld method machines left.",
+		list_len(method_machines));
+	while (list_len(method_machines) > 0)
+		method_machine_destroy(list_get(method_machines, 0));
+	list_destroy(method_machines);
+
 	counter_destroy(session_id_counter);
 }
 
@@ -151,6 +172,7 @@ void wsp_session_dispatch_event(WAPEvent *event) {
 static void main_thread(void *arg) {
 	WAPEvent *e;
 	WSPMachine *sm;
+	WSPMethodMachine *msm;
 	WSP_PDU *pdu;
 	
 	while (run_status == running && (e = list_consume(queue)) != NULL) {
@@ -169,9 +191,18 @@ static void main_thread(void *arg) {
 			break;
 		}
 	
-		sm = find_machine(e, pdu);
+		sm = find_session_machine(e, pdu);
 		if (sm != NULL)
-			handle_event(sm, e, pdu);
+			handle_session_event(sm, e, pdu);
+		else {
+			msm = find_method_machine(e);
+			if (msm != NULL)
+				handle_method_event(msm, e);
+			else {
+				warning(0, "WSP: Ignoring event.");
+				wap_event_dump(e);
+			}
+		}
 		
 		wsp_pdu_destroy(pdu);
 	}
@@ -179,7 +210,7 @@ static void main_thread(void *arg) {
 
 
 
-static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
+static WSPMachine *find_session_machine(WAPEvent *event, WSP_PDU *pdu) {
 	WSPMachine *sm;
 	long mid;
 	WAPAddrTuple *tuple;
@@ -207,26 +238,11 @@ static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
 		mid = event->u.S_Connect_Res.mid;
 		break;
 
-	case Release:
-		mid = event->u.Release.mid;
-		break;
-
 	case S_MethodInvoke_Ind:
 		mid = event->u.S_MethodInvoke_Ind.mid;
 		break;
 
-	case S_MethodInvoke_Res:
-		mid = event->u.S_MethodInvoke_Res.mid;
-		break;
-
-	case S_MethodResult_Req:
-		mid = event->u.S_MethodResult_Req.mid;
-		break;
-
 	default:
-		error(0, "Don't know state machine for WAPEvent in WSP.");
-		debug("wap.wsp", 0, "WAPEvent which we couldn't find SM for:");
-		wap_event_dump(event);
 		return NULL;
 	}
 	
@@ -250,6 +266,10 @@ static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
 	} else {
 		sm = list_search(session_machines, tuple,
 				 transaction_belongs_to_session);
+		if (sm != NULL &&
+		    event->type == TR_Result_Cnf && 
+		    event->u.TR_Result_Cnf.tid != sm->connect_tid)
+			return NULL; /* Must be for a method machine, then */
 	}
 
 	if (sm == NULL) {
@@ -262,6 +282,58 @@ static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
 }
 
 
+static void handle_session_event(WSPMachine *sm, WAPEvent *current_event, 
+WSP_PDU *pdu) {
+	debug("wap.wsp", 0, "WSP: machine %p, state %s, event %s",
+		(void *) sm,
+		wsp_state_to_string(sm->state), 
+		wap_event_name(current_event->type));
+
+	#define STATE_NAME(name)
+	#define ROW(state_name, event, condition, action, next_state) \
+		{ \
+			struct event *e; \
+			e = &current_event->u.event; \
+			if (sm->state == state_name && \
+			   current_event->type == event && \
+			   (condition)) { \
+				action \
+				sm->state = next_state; \
+				debug("wap.wsp", 0, "WSP: New state: " \
+					#next_state); \
+				goto end; \
+			} \
+		}
+	#include "wsp-session-state.h"
+	
+	if (current_event->type == TR_Invoke_Ind) {
+		WAPEvent *abort;
+		
+		error(0, "WSP: Can't handle TR-Invoke.ind, aborting transaction.");
+		abort = wap_event_create(TR_Abort_Req);
+		abort->u.TR_Abort_Req.tid = current_event->u.TR_Invoke_Ind.tid;
+		abort->u.TR_Abort_Req.abort_type = 0x01; /* USER */
+		abort->u.TR_Abort_Req.abort_reason = 0xE0; /* PROTOERR */
+		abort->u.TR_Abort_Req.mid = current_event->u.TR_Invoke_Ind.mid;
+
+		wtp_dispatch_event(abort);
+		sm->state = NULL_SESSION;
+	} else {
+		error(0, "WSP: Can't handle event.");
+		debug("wap.wsp", 0, "WSP: The unhandled event:");
+		wap_event_dump(current_event);
+	}
+
+end:
+	wap_event_destroy(current_event);
+
+	if (sm->state == NULL_SESSION)
+		machine_destroy(sm);
+}
+
+
+
+
 static WSPMachine *machine_create(void) {
 	WSPMachine *p;
 	
@@ -270,17 +342,12 @@ static WSPMachine *machine_create(void) {
 	
 	#define INTEGER(name) p->name = 0;
 	#define OCTSTR(name) p->name = NULL;
-	#define METHOD_POINTER(name) p->name = NULL;
-	#define EVENT_POINTER(name) p->name = NULL;
-	#define SESSION_POINTER(name) p->name = NULL;
-	#define HTTPHEADER(name) p->name = NULL;
-	#define LIST(name) p->name = list_create();
+	#define HTTPHEADERS(name) p->name = NULL;
 	#define ADDRTUPLE(name) p->name = NULL;
-	#define SESSION_MACHINE(fields) fields
-	#define METHOD_MACHINE(fields)
-	#include "wsp_machine-decl.h"
+	#define MACHINE(fields) fields
+	#include "wsp-session-machine.h"
 	
-	p->state = NULL_STATE;
+	p->state = NULL_SESSION;
 
 	/* set capabilities to default values (defined in 1.1) */
 
@@ -299,18 +366,13 @@ static WSPMachine *machine_create(void) {
 static void machine_destroy(WSPMachine *p) {
 	debug("wap.wsp", 0, "Destroying WSPMachine %p", (void *) p);
 	list_delete_equal(session_machines, p);
-	#define MUTEX(name) mutex_destroy(p->name);
+
 	#define INTEGER(name) p->name = 0;
 	#define OCTSTR(name) octstr_destroy(p->name);
-	#define METHOD_POINTER(name) p->name = NULL;
-	#define EVENT_POINTER(name) p->name = NULL;
-	#define SESSION_POINTER(name) p->name = NULL;
-	#define HTTPHEADER(name) http2_destroy_headers(p->name);
-	#define LIST(name) list_destroy(p->name);
+	#define HTTPHEADERS(name) http2_destroy_headers(p->name);
 	#define ADDRTUPLE(name) wap_addr_tuple_destroy(p->name);
-	#define SESSION_MACHINE(fields) fields
-	#define METHOD_MACHINE(fields)
-	#include "wsp_machine-decl.h"
+	#define MACHINE(fields) fields
+	#include "wsp-session-machine.h"
 	gw_free(p);
 }
 
@@ -344,11 +406,50 @@ static void machine_dump(WSPMachine *machine) {
 #endif
 
 
-static void handle_event(WSPMachine *sm, WAPEvent *current_event, WSP_PDU *pdu)
-{
-	debug("wap.wsp", 0, "WSP: machine %p, state %s, event %s",
-		(void *) sm,
-		wsp_state_to_string(sm->state), 
+struct msm_pattern {
+	WAPAddrTuple *addr_tuple;
+	long msmid, tid;
+};
+
+
+static WSPMethodMachine *find_method_machine(WAPEvent *event) {
+	struct msm_pattern pat;
+
+	pat.msmid = -1;
+	pat.tid = -1;
+	pat.addr_tuple = NULL;
+
+	switch (event->type) {
+	case Release:
+		pat.msmid = event->u.Release.msmid;
+		break;
+
+	case S_MethodInvoke_Res:
+		pat.msmid = event->u.S_MethodInvoke_Res.msmid;
+		break;
+
+	case S_MethodResult_Req:
+		pat.msmid = event->u.S_MethodResult_Req.msmid;
+		break;
+
+	case TR_Result_Cnf:
+		pat.addr_tuple = wap_addr_tuple_duplicate(
+				event->u.TR_Result_Cnf.addr_tuple);
+		pat.tid = event->u.TR_Result_Cnf.tid;
+		break;
+
+	default:
+		return NULL;
+	}
+	
+	return list_search(method_machines, &pat, same_method_machine);
+}
+
+
+static void handle_method_event(WSPMethodMachine *msm, 
+WAPEvent *current_event) {
+	debug("wap.wsp", 0, "WSP: method machine %ld, state %s, event %s",
+		msm->id, wsp_state_to_string(msm->state), 
 		wap_event_name(current_event->type));
 
 	#define STATE_NAME(name)
@@ -356,44 +457,65 @@ static void handle_event(WSPMachine *sm, WAPEvent *current_event, WSP_PDU *pdu)
 		{ \
 			struct event *e; \
 			e = &current_event->u.event; \
-			if (sm->state == state_name && \
+			if (msm->state == state_name && \
 			   current_event->type == event && \
 			   (condition)) { \
 				action \
-				sm->state = next_state; \
-				debug("wap.wsp", 0, "WSP: New state: " \
+				msm->state = next_state; \
+				debug("wap.wsp", 0, "WSP: New method state: " \
 					#next_state); \
 				goto end; \
 			} \
 		}
-	#include "wsp_state-decl.h"
+	#include "wsp-method-state.h"
 	
-	if (current_event->type == TR_Invoke_Ind) {
-		WAPEvent *abort;
-		
-		error(0, "WSP: Can't handle TR-Invoke.ind, aborting transaction.");
-		abort = wap_event_create(TR_Abort_Req);
-		abort->u.TR_Abort_Req.tid = current_event->u.TR_Invoke_Ind.tid;
-		abort->u.TR_Abort_Req.abort_type = 0x01; /* USER */
-		abort->u.TR_Abort_Req.abort_reason = 0xE0; /* PROTOERR */
-		abort->u.TR_Abort_Req.mid = current_event->u.TR_Invoke_Ind.mid;
-
-		wtp_dispatch_event(abort);
-		sm->state = NULL_STATE;
-	} else {
-		error(0, "WSP: Can't handle event.");
-		debug("wap.wsp", 0, "WSP: The unhandled event:");
-		wap_event_dump(current_event);
-	}
+	error(0, "WSP: Can't handle method event.");
+	debug("wap.wsp", 0, "WSP: The unhandled event:");
+	wap_event_dump(current_event);
 
 end:
 	wap_event_destroy(current_event);
 
-	if (sm->state == NULL_STATE)
-		machine_destroy(sm);
+	if (msm->state == NULL_METHOD)
+		method_machine_destroy(msm);
 }
 
 
+static WSPMethodMachine *method_machine_create(WAPAddrTuple *addr_tuple,
+long tid) {
+	WSPMethodMachine *msm;
+	
+	msm = gw_malloc(sizeof(*msm));
+	
+	#define INTEGER(name) msm->name = 0;
+	#define ADDRTUPLE(name) msm->name = NULL;
+	#define MACHINE(fields) fields
+	#include "wsp-method-machine.h"
+	
+	msm->state = NULL_METHOD;
+	msm->id = counter_increase(session_id_counter);
+	msm->addr_tuple = wap_addr_tuple_duplicate(addr_tuple);
+	msm->tid = tid;
+
+	return msm;
+}
+
+
+
+static void method_machine_destroy(WSPMethodMachine *msm) {
+	if (msm == NULL)
+		return;
+
+	debug("wap.wsp", 0, "Destroying WSPMethodMachine %ld", msm->id);
+	list_delete_equal(method_machines, msm),
+
+	#define INTEGER(name)
+	#define ADDRTUPLE(name) wap_addr_tuple_destroy(msm->name);
+	#define MACHINE(fields) fields
+	#include "wsp-method-machine.h"
+
+	gw_free(msm);
+}
 
 
 static void unpack_caps(Octstr *caps, WSPMachine *m)
@@ -566,7 +688,12 @@ static char *wsp_state_to_string(WSPState state) {
 	switch (state) {
 	#define STATE_NAME(name) case name: return #name;
 	#define ROW(state, event, cond, stmt, next_state)
-	#include "wsp_state-decl.h"
+	#include "wsp-session-state.h"
+
+	#define STATE_NAME(name) case name: return #name;
+	#define ROW(state, event, cond, stmt, next_state)
+	#include "wsp-method-state.h"
+
 	default:
 		return "unknown wsp state";
 	}
@@ -677,4 +804,20 @@ static int same_client(void *a, void *b) {
 	sm1 = a;
 	sm2 = b;
 	return wap_addr_tuple_same(sm1->addr_tuple, sm2->addr_tuple);
+}
+
+
+static int same_method_machine(void *a, void *b) {
+	WSPMethodMachine *msm;
+	struct msm_pattern *pat;
+	
+	msm = a;
+	pat = b;
+
+	if (pat->msmid == -1) {
+		return wap_addr_tuple_same(msm->addr_tuple, pat->addr_tuple) &&
+			msm->tid == pat->tid;
+	}
+
+	return msm->id == pat->msmid;
 }
