@@ -1,3 +1,7 @@
+2001-11-22 Andreas Fink <andreas@fink.org>
+    * gw/smsc_smpp.c: set number plan indicator and type of number for
+    international numbers and alphanumeric ones.
+
 2001-11-20  Stipe Tolj  <tolj@wapme-systems.de>
 
     * gateway/doc/userguide/userguide.xml: added documentation about SSL 

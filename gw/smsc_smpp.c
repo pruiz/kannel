@@ -204,11 +204,44 @@ static long smpp_status_to_smscconn_failure_reason(long status)
 static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
 {
     SMPP_PDU *pdu;
-    
     pdu = smpp_pdu_create(submit_sm, 
     	    	    	  counter_increase(smpp->message_id_counter));
+    	    	   
+    pdu->u.submit_sm.dest_addr_ton = 2; /* national */
+    pdu->u.submit_sm.source_addr_ton = 2; /* national */
+    pdu->u.submit_sm.source_addr_npi = 1; /* ISDN number plan */
+    pdu->u.submit_sm.dest_addr_npi = 1; /* ISDN number plan */
+    
     pdu->u.submit_sm.source_addr = octstr_duplicate(msg->sms.sender);
     pdu->u.submit_sm.destination_addr = octstr_duplicate(msg->sms.receiver);
+ 
+    /* lets see if its international or alphanumeric sender */
+    if( octstr_get_char(pdu->u.submit_sm.source_addr,0) == '+') {
+        if (!octstr_check_range(pdu->u.submit_sm.source_addr, 1, 256, gw_isdigit)) {
+    	    pdu->u.submit_sm.source_addr_ton = 5; /* alphanum */
+   	    pdu->u.submit_sm.source_addr_npi = 0;
+    	}
+        else {
+	    /* numeric sender address with + in front -> international*/
+	    octstr_delete(pdu->u.submit_sm.source_addr,0,1);
+            pdu->u.submit_sm.source_addr_ton = 1; /* international */
+	}
+    }
+    else    {
+	if (!octstr_check_range(pdu->u.submit_sm.source_addr,0, 256, gw_isdigit)) {
+   	    pdu->u.submit_sm.source_addr_ton = 5; /* alphanum */
+   	    pdu->u.submit_sm.source_addr_npi = 0;
+   	}
+    }
+    
+
+    /* if its a international number starting with +, lets remove the
+    	'+' and set number type to international instead */
+    if( octstr_get_char(pdu->u.submit_sm.destination_addr,0) == '+') {
+    	octstr_delete(pdu->u.submit_sm.destination_addr, 0,1);
+    	pdu->u.submit_sm.dest_addr_ton = 1; /* international */
+    }
+
     if (octstr_len(msg->sms.udhdata)) {
 	pdu->u.submit_sm.short_message =
 	    octstr_format("%S%S", msg->sms.udhdata, msg->sms.msgdata);
@@ -221,6 +254,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     if (msg->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL))
  	pdu->u.submit_sm.registered_delivery = 1; 
     pdu->u.submit_sm.data_coding = fields_to_dcs(msg, 0);
+
     return pdu;
 }
 
