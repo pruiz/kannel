@@ -271,17 +271,17 @@ static void add_wsp_connect(Octstr *pdu) {
 }
 
 static void add_wsp_get(Octstr *pdu) {
-	unsigned char urlbuf[1024];
+    	Octstr *urlbuf;
 
 	octstr_append_char(pdu, Get_PDU);
 	if (http_url) {
 		octstr_append_uintvar(pdu, octstr_len(http_url));
 		octstr_append(pdu, http_url);
 	} else {
-		sprintf(urlbuf, "http://localhost:%ld/hello.wml",
-			(long) http_port);
-		octstr_append_uintvar(pdu, strlen(urlbuf));
-		octstr_append_cstr(pdu, urlbuf);
+		urlbuf = octstr_format("http://localhost:%ld/hello.wml",
+				       (long) http_port);
+		octstr_append_uintvar(pdu, octstr_len(urlbuf));
+		octstr_append(pdu, urlbuf);
 	}
 }
 

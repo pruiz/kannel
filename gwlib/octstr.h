@@ -264,7 +264,7 @@ int octstr_search_cstr(Octstr *ostr, const char *str, long pos);
  * Return the start position (index) of 'needle' in 'haystack'.
  * Return -1 if not found.
  */
-int octstr_search(Octstr *haystack, Octstr *needle);
+int octstr_search(Octstr *haystack, Octstr *needle, long pos);
 
 
 /*

@@ -41,12 +41,6 @@ static int proxy_used_for_host(Octstr *host);
 
 
 /*
- * Stuff that should be moved to other modules.
- */
-static int octstr_str_ncompare(Octstr *os, char *cstr);
-
-
-/*
  * Declarations for the socket pool.
  */
 static void pool_init(void);
@@ -476,7 +470,7 @@ Octstr **body, List **cgivars) {
 	case 0:
 		return 0;
 	}
-	if (octstr_str_ncompare(line, "GET ") != 0)
+	if (octstr_search(line, octstr_create_immutable("GET "), 0) != 0)
 		goto error;
 	octstr_delete(line, 0, 4);
 	space = octstr_search_char(line, ' ', 0);
@@ -796,31 +790,6 @@ int http_type_accepted(List *headers, char *type) {
 
 int http_charset_accepted(List *headers, char *charset) {
     return http_something_accepted(headers, "Accept-Charset", charset);
-}
-
-/***********************************************************************
- * Functions that should be moved to other modules but which are here
- * while development happens because of simplicity.
- */
- 
- 
-/*
- * Like octstr_str_compare, but compare only strlen(cstr) first bytes of
- * the octet string.
- */
-static int octstr_str_ncompare(Octstr *os, char *cstr) {
-	long i, len;
-	unsigned char *p;
-	
-	len = strlen(cstr);
-	p = (unsigned char *) cstr;
-	for (i = 0; i < len && octstr_get_char(os, i) == p[i]; ++i)
-		continue;
-	if (i == len)
-		return 0;
-	if (octstr_get_char(os, i) < p[i])
-		return -1;
-	return 1;
 }
 
 
@@ -1309,7 +1278,9 @@ static int parse_status(Octstr *statusline) {
 	int i;
 
 	for (i = 0; i < num_versions; ++i) {
-		if (octstr_str_ncompare(statusline, versions[i]) == 0)
+		if (octstr_search(statusline, 
+		    	    	  octstr_create_immutable(versions[i]),
+		    	    	  0) == 0)
 			break;
 	}
 	if (i == num_versions) {

@@ -745,26 +745,26 @@ int octstr_search_cstr(Octstr *ostr, const char *str, long pos) {
 }
 
 
-int octstr_search(Octstr *haystack, Octstr *needle) {
+int octstr_search(Octstr *haystack, Octstr *needle, long pos) {
 	int first;
-	long pos;
 
 	seems_valid(haystack);
 	seems_valid(needle);
+	gw_assert(pos >= 0);
 
 	/* Always "find" an empty string */
 	if (needle->len == 0)
 		return 0;
 
 	if (needle->len == 1)
-		return octstr_search_char(haystack, needle->data[0], 0);
+		return octstr_search_char(haystack, needle->data[0], pos);
 
 	/* For each occurrence of needle's first character in ostr,
 	 * check if the rest of needle follows.  Stop if there are no
 	 * more occurrences, or if the rest of needle can't possibly
 	 * fit in the haystack. */
 	first = needle->data[0];
-	pos = octstr_search_char(haystack, first, 0);
+	pos = octstr_search_char(haystack, first, pos);
 	while (pos >= 0 && haystack->len - pos >= needle->len) {
 		if (memcmp(haystack->data + pos,
 				needle->data, needle->len) == 0)
@@ -1490,9 +1490,12 @@ long octstr_extract_uintvar(Octstr *ostr, unsigned long *value, long pos) {
 
 void octstr_append_decimal(Octstr *ostr, long value) {
 	char tmp[128];
+	Octstr *ostmp;
 
 	sprintf(tmp, "%ld", value);
-	octstr_append_cstr(ostr, tmp);
+	ostmp = octstr_create(tmp);
+	octstr_append(ostr, ostmp);
+	octstr_destroy(ostmp);
 }
 
 
@@ -1600,10 +1603,16 @@ va_list *args)
 	long n;
 	char tmpfmt[1024];
 	char tmpbuf[1024];
+	char c;
 
 	new = NULL;
 
 	switch (**fmt) {
+    	case 'c':
+	    	c = va_arg(*args, int);
+		new = octstr_create_from_data(&c, 1);
+	    	break;
+
 	case 'd':
 		switch (format->type) {
 		case 'l':
@@ -1645,11 +1654,11 @@ va_list *args)
 
 	case 's':
 		s = va_arg(*args, char *);
-		if (format->has_prec)
+		if (format->has_prec && format->prec < (long) strlen(s))
 			n = format->prec;
 		else
 			n = (long) strlen(s);
-		new = octstr_create_limited(s, n);
+		new = octstr_create_from_data(s, n);
 		break;
 	
 	case 'S':

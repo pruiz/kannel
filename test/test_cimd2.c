@@ -267,9 +267,6 @@ static void make_timestamp(unsigned char *buf, time_t fortime) {
 
 static void send_packet(Octstr *out, int opcode, int sequence, ...) {
 	va_list ap;
-	unsigned char header[sizeof("\02ZZ:NNN\t")];
-	unsigned char parmheader[sizeof("PPP:")];
-	unsigned char footer[sizeof("CC\03")];
 	int parm;
 	unsigned char *value;
 	int checksum;
@@ -280,16 +277,12 @@ static void send_packet(Octstr *out, int opcode, int sequence, ...) {
 
 	old_len = octstr_len(out);
 
-	sprintf(header, "%c%02d:%03d%c", STX, opcode, sequence, TAB);
-	octstr_append_cstr(out, header);
+	octstr_format_append(out, "%c%02d:%03d%c", STX, opcode, sequence, TAB);
 
 	va_start(ap, sequence);
 	for (parm = va_arg(ap, int); parm != 0; parm = va_arg(ap, int)) {
 		value = va_arg(ap, unsigned char *);
-		sprintf(parmheader, "%03d:", parm);
-		octstr_append_cstr(out, parmheader);
-		octstr_append_cstr(out, value);
-		octstr_append_cstr(out, "\11");
+		octstr_format_append(out, "%03d:%s\11", parm, value);
 	}
 	va_end(ap);
 
@@ -299,9 +292,7 @@ static void send_packet(Octstr *out, int opcode, int sequence, ...) {
 		checksum = (checksum + octstr_get_char(out, old_len)) & 0xff;
 	}
 
-	sprintf(footer, "%02X%c", checksum, ETX);
-
-	octstr_append_cstr(out, footer);
+	octstr_format_append(out, "%02X%c", checksum, ETX);
 }
 
 static void send_error(Octstr *out, int opcode, int sequence,
@@ -321,16 +312,18 @@ static int eat_char(Octstr *packet, int ch) {
 }
 
 static Octstr *eat_string_parm(Octstr *packet, int parm, int maxlen) {
-	unsigned char parmheader[sizeof("\tPPP:")];
 	long start, datastart;
 	long tab;
 	Octstr *result;
+	Octstr *parmheader;
 
-	sprintf(parmheader, "%c%03d:", TAB, parm);
-	start = octstr_search_cstr(packet, parmheader, 0);
-	if (start < 0)
+    	parmheader = octstr_format("%c%0d:", TAB, parm);
+	start = octstr_search(packet, parmheader, 0);
+	if (start < 0) {
+		octstr_destroy(parmheader);
 		return NULL;
-	datastart = start + strlen(parmheader);
+	}
+	datastart = start + octstr_len(parmheader);
 
 	tab = octstr_search_char(packet, TAB, datastart + 1);
 	if (tab < 0) {
@@ -339,6 +332,7 @@ static Octstr *eat_string_parm(Octstr *packet, int parm, int maxlen) {
 
 	result = octstr_copy(packet, datastart, tab - datastart);
 	octstr_delete(packet, start, tab - start);
+	octstr_destroy(parmheader);
 	return result;
 }
 
