@@ -86,7 +86,32 @@ enum {
 };    
 
 /*
- * Responder set first tid, initiaotr not. So all tids send by initiator are 
+ * Transaction classes
+ */
+enum {
+    TRANSACTION_CLASS_0 = 0,
+    TRANSACTION_CLASS_1 = 1,
+    TRANSACTION_CLASS_2 = 2
+};
+
+/*
+ * Types of acknowledgement
+ */
+enum {
+    PROVIDER_ACKNOWLEDGEMENT = 0,
+    USER_ACKNOWLEDGEMENT = 1
+};
+
+/*
+ * Who is indicating, wtp initiator or responder.
+ */
+enum {
+    INITIATOR_INDICATION = 0,
+    RESPONDER_INDICATION = 1 
+};
+
+/*
+ * Responder set first tid, initiator not. So all tids send by initiator are 
  * greater than 2**15.
  */
 #define INITIATOR_TID_LIMIT (1 << 15)

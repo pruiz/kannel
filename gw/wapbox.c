@@ -15,6 +15,7 @@
 #include "heartbeat.h"
 #include "wap/wap.h"
 #include "wap-appl.h"
+#include "wap_push_ota.h"
 #include "msg.h"
 #include "bb.h"
 
@@ -247,7 +248,8 @@ int main(int argc, char **argv)
     
     wsp_session_init(&wtp_resp_dispatch_event,
                      &wtp_initiator_dispatch_event,
-                     &wap_appl_dispatch);
+                     &wap_appl_dispatch,
+                     &wap_push_ota_dispatch_event);
     wsp_unit_init(&dispatch_datagram, &wap_appl_dispatch);
     wsp_push_client_init(&wsp_push_client_dispatch_event, 
                          &wtp_resp_dispatch_event);

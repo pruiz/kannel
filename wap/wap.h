@@ -158,7 +158,8 @@ void wsp_unit_shutdown(void);
  */
 void wsp_session_init(wap_dispatch_func_t *responder_dispatch,
 		      wap_dispatch_func_t *initiator_dispatch,
-                      wap_dispatch_func_t *application_dispatch);
+                      wap_dispatch_func_t *application_dispatch,
+                      wap_dispatch_func_t *ota_dispatch);
 void wsp_session_dispatch_event(WAPEvent *event);
 void wsp_session_shutdown(void);
 

@@ -445,12 +445,15 @@ static WAPEvent *create_tr_invoke_cnf(WTPInitMachine *init_machine)
     gw_assert(init_machine != NULL);
     event = wap_event_create(TR_Invoke_Cnf);
     event->u.TR_Invoke_Cnf.handle = init_machine->mid;
+    event->u.TR_Invoke_Cnf.addr_tuple = 
+        wap_addr_tuple_duplicate(init_machine->addr_tuple);
 
     return event;
 }
 
 /*
- * Creates TR-Abort.ind event from an initiator state machine. 
+ * Creates TR-Abort.ind event from an initiator state machine. In addtion, set
+ * the ir_flag on.
  */
 static WAPEvent *create_tr_abort_ind(WTPInitMachine *sm, long abort_reason) 
 {
@@ -462,6 +465,7 @@ static WAPEvent *create_tr_abort_ind(WTPInitMachine *sm, long abort_reason)
     event->u.TR_Abort_Ind.addr_tuple = 
 	wap_addr_tuple_duplicate(sm->addr_tuple);
     event->u.TR_Abort_Ind.handle = sm->mid;
+    event->u.TR_Abort_Ind.ir_flag = INITIATOR_INDICATION;
 
     return event;
 }

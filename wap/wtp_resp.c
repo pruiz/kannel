@@ -570,7 +570,8 @@ static WAPEvent *create_tr_result_cnf(WTPRespMachine *sm)
 }
 
 /*
- * Creates TR-Abort.ind event from a responder state machine. 
+ * Creates TR-Abort.ind event from a responder state machine. In addition, set
+ * the responder indication flag.
  */
 static WAPEvent *create_tr_abort_ind(WTPRespMachine *sm, long abort_reason) {
     WAPEvent *event;
@@ -580,6 +581,7 @@ static WAPEvent *create_tr_abort_ind(WTPRespMachine *sm, long abort_reason) {
     event->u.TR_Abort_Ind.addr_tuple = 
 	wap_addr_tuple_duplicate(sm->addr_tuple);
     event->u.TR_Abort_Ind.handle = sm->mid;
+    event->u.TR_Abort_Ind.ir_flag = RESPONDER_INDICATION;
 
     return event;
 }

@@ -1,0 +1,79 @@
+/*
+ * wsp_push_server_states.def - macro calls to generate rows of the state 
+ * table. See the documentation for guidance how to use and update these.
+ *
+ * Note that NULL state is called here SERVER_PUSH_NULL_STATE. Condition 1
+ * means that action is unconditional.
+ *
+ * By Aarno Syvänen for Wapit Ltd
+ */
+
+STATE_NAME(SERVER_PUSH_NULL_STATE)
+STATE_NAME(SERVER_PUSH_PUSHING)
+
+ROW(SERVER_PUSH_NULL_STATE,
+    S_ConfirmedPush_Req,
+    1,
+    {
+     WSP_PDU *pdu;
+
+     pdu = make_confirmedpush_pdu(sm, current_event);
+     send_invoke(sm, pdu, current_event, TRANSACTION_CLASS_1);
+    },
+    SERVER_PUSH_PUSHING)
+
+ROW(SERVER_PUSH_PUSHING,
+    Push_Abort,
+    1,
+    {
+     send_abort_to_initiator(current_event->u.Push_Abort.reason, 
+         pm->transaction_id);
+     indicate_pushabort(pm, current_event->u.Push_Abort.reason);
+    },
+    SERVER_PUSH_NULL_STATE)
+
+ROW(SERVER_PUSH_PUSHING,
+    TR_Invoke_Cnf,
+    1,
+    {
+     confirm_push(pm);
+    },
+    SERVER_PUSH_NULL_STATE)
+
+ROW(SERVER_PUSH_PUSHING,
+    TR_Abort_Ind,
+    current_event->u.TR_Abort_Ind.abort_code == WSP_ABORT_DISCONNECT,
+    {
+     WAPEvent *wsp_event;
+     
+     wsp_event = wap_event_create(Disconnect_Event);
+     wsp_event->u.Disconnect_Event.session_handle = pm->server_push_id;
+     list_append(queue, wsp_event);
+    },
+    SERVER_PUSH_NULL_STATE)
+
+ROW(SERVER_PUSH_PUSHING,
+    TR_Abort_Ind,
+    current_event->u.TR_Abort_Ind.abort_code == WSP_ABORT_SUSPEND,
+    {
+     WAPEvent *wsp_event;
+
+     wsp_event = wap_event_create(Suspend_Event);
+     wsp_event->u.Suspend_Event.session_handle = pm->server_push_id;
+     list_append(queue, wsp_event);
+    },
+    SERVER_PUSH_NULL_STATE)
+
+ROW(SERVER_PUSH_PUSHING,
+    TR_Abort_Ind,
+    current_event->u.TR_Abort_Ind.abort_code != WSP_ABORT_DISCONNECT  &&
+    current_event->u.TR_Abort_Ind.abort_code != WSP_ABORT_SUSPEND,
+    {
+     indicate_pushabort(pm, current_event->u.Push_Abort.reason);
+    },
+    SERVER_PUSH_NULL_STATE)
+
+#undef STATE_NAME
+#undef ROW
+
+

@@ -10,7 +10,7 @@
 	!defined(OCTSTR) || \
 	!defined(ADDRTUPLE) || \
 	!defined(COOKIES) || \
-	!defined(METHODMACHINES) || \
+	!defined(MACHINESLIST) || \
 	!defined(CAPABILITIES) || \
 	!defined(MACHINE)
 #error "Some required macro is missing."
@@ -32,14 +32,15 @@ MACHINE(
 	
 	HTTPHEADERS(http_headers)
 	COOKIES(cookies)
-	METHODMACHINES(methodmachines)
+	MACHINESLIST(methodmachines)
+        MACHINESLIST(pushmachines)
 )
 
 #undef INTEGER
 #undef OCTSTR
 #undef HTTPHEADERS
 #undef ADDRTUPLE
-#undef METHODMACHINES
+#undef MACHINESLIST
 #undef MACHINE
 #undef COOKIES
 #undef CAPABILITIES

@@ -253,8 +253,28 @@ ROW(CONNECTING_2,
 	},
 	CONNECTING_2)
 
-/* MISSING: CONNECTING_2, S-Push.req */
-/* MISSING: CONNECTING_2, S-ConfirmedPush.req */
+ROW(CONNECTING_2,
+        S_Push_Req,
+        1,
+        {
+                WSP_PDU *pdu;
+
+                pdu = make_push_pdu(sm, current_event);
+                send_invoke(sm, pdu, current_event, TRANSACTION_CLASS_0);
+        },
+        CONNECTING_2)
+
+ROW(CONNECTING_2,
+        S_ConfirmedPush_Req,
+        1,
+        {
+                /* Start new push transaction*/
+                WSPPushMachine *spm;
+
+                spm = push_machine_create(sm, e->server_push_id);
+                handle_push_event(sm, spm, current_event);   
+        },
+        CONNECTING_2)
 
 ROW(CONNECTING_2,
 	Suspend_Event,
@@ -385,7 +405,17 @@ ROW(CONNECTING_2,
 	},
 	SUSPENDED)
 
-/* MISSING: CONNECTING_2, TR_Invoke.cnf for push transaction */
+ROW(CONNECTING_2,
+        TR_Invoke_Cnf,
+        1,
+        {
+                /* See push state table*/
+                WSPPushMachine *spm;
+
+                spm = find_push_machine(sm, e->handle);
+                handle_push_event(sm, spm, current_event);
+        },
+        CONNECTING_2)
 
 ROW(CONNECTING_2,
 	TR_Result_Cnf,
@@ -418,17 +448,31 @@ ROW(CONNECTING_2,
 	},
 	NULL_SESSION)
 
-/* MISSING: As below, for push transactions */
+/* 
+ * A separate flag tells is the indicator the initiator or the responder.
+ */
 
 ROW(CONNECTING_2,
 	TR_Abort_Ind,
-	e->handle != sm->connect_handle,
+	e->handle != sm->connect_handle && e->ir_flag == RESPONDER_INDICATION,
 	{
 		WSPMethodMachine *msm;
 
 		/* See method state table */
 		msm = find_method_machine(sm, e->handle);
 		handle_method_event(sm, msm, current_event, pdu);
+	},
+	CONNECTING_2)
+
+ROW(CONNECTING_2,
+	TR_Abort_Ind,
+	e->handle != sm->connect_handle && e->ir_flag == INITIATOR_INDICATION,
+	{
+		WSPPushMachine *m;
+
+		/* See push state table */
+		m = find_push_machine(sm, e->handle);
+		handle_push_event(sm, m, current_event);
 	},
 	CONNECTING_2)
 
@@ -470,8 +514,28 @@ ROW(CONNECTED,
 	},
 	CONNECTED)
 
-/* MISSING: CONNECTED, S-Push.req */
-/* MISSING: CONNECTED, S-ConfirmedPush.req */
+ROW(CONNECTED,
+        S_Push_Req,
+        1,
+        {
+               WSP_PDU *pdu;
+
+               pdu = make_push_pdu(sm, current_event);
+               send_invoke(sm, pdu, current_event, TRANSACTION_CLASS_0);
+        },
+        CONNECTED)
+
+ROW(CONNECTED,
+        S_ConfirmedPush_Req,
+        1,
+        {
+               /* Start new push transaction*/
+                WSPPushMachine *spm;
+
+                spm = push_machine_create(sm, e->server_push_id);
+                handle_push_event(sm, spm, current_event);
+        },
+        CONNECTED)
 
 ROW(CONNECTED,
 	Suspend_Event,
@@ -585,7 +649,17 @@ ROW(CONNECTED,
 	},
 	SUSPENDED)
 
-/* MISSING: CONNECTED, Tr-Invoke.cnf for push transaction */
+ROW(CONNECTED,
+       TR_Invoke_Cnf,
+       1,
+       {
+                /* See push state table*/
+                WSPPushMachine *spm;
+
+                spm = find_push_machine(sm, e->handle);
+                handle_push_event(sm, spm, current_event);
+       },
+       CONNECTED)
 
 ROW(CONNECTED,
 	TR_Result_Cnf,
@@ -599,11 +673,14 @@ ROW(CONNECTED,
 	},
 	CONNECTED)
 		
-/* MISSING: As below, for push transactions */
+/* 
+ * Event TR-Abort.ind has a separate flag telling is the indicator the 
+ * initiator or the responder.
+ */
 
 ROW(CONNECTED,
 	TR_Abort_Ind,
-	e->handle != sm->connect_handle,
+	e->handle != sm->connect_handle  && e->ir_flag == RESPONDER_INDICATION,
 	{
 		WSPMethodMachine *msm;
 
@@ -612,6 +689,18 @@ ROW(CONNECTED,
 		handle_method_event(sm, msm, current_event, pdu);
 	},
 	CONNECTED)
+
+ROW(CONNECTING_2,
+	TR_Abort_Ind,
+	e->handle != sm->connect_handle && e->ir_flag == INITIATOR_INDICATION,
+	{
+		WSPPushMachine *m;
+
+		/* See push state table */
+		m = find_push_machine(sm, e->handle);
+		handle_push_event(sm, m, current_event);
+	},
+	CONNECTING_2)
 
 /* MISSING: SUSPENDED, S-Disconnect.req */
 
@@ -849,8 +938,28 @@ ROW(RESUMING_2,
 	},
 	RESUMING_2)
 
-/* MISSING: RESUMING_2, S-Push.req */
-/* MISSING: RESUMING_2, S-ConfirmedPush.req */
+ROW(RESUMING_2,
+        S_Push_Req,
+        1,
+        {
+                WSP_PDU *pdu;
+
+                pdu = make_push_pdu(sm, current_event);
+                send_invoke(sm, pdu, current_event, TRANSACTION_CLASS_0);
+        },
+        RESUMING_2)
+
+ROW(RESUMING_2,
+        S_ConfirmedPush_Req,
+        1,
+        {
+                /* Start new push transaction*/
+                WSPPushMachine *spm;
+
+                spm = push_machine_create(sm, e->server_push_id);
+                handle_push_event(sm, spm, current_event);
+        },
+        RESUMING_2)
 
 ROW(RESUMING_2,
 	Suspend_Event,
@@ -946,7 +1055,17 @@ ROW(RESUMING_2,
 	},
 	NULL_SESSION)
 
-/* MISSING: RESUMING_2, TR_Invoke.cnf for push transaction */
+ROW(RESUMING_2,
+        TR_Invoke_Cnf,
+        1,
+        {
+                /* See push state table*/
+                WSPPushMachine *spm;
+
+                spm = find_push_machine(sm, e->handle);
+                handle_push_event(sm, spm, current_event);
+        },
+        RESUMING_2)
 
 ROW(RESUMING_2,
 	TR_Result_Cnf,
@@ -979,11 +1098,13 @@ ROW(RESUMING_2,
 	},
 	SUSPENDED)
 
-/* MISSING: As below, for push transactions */
+/* 
+ * A separate flag tells is the indicator the initiator or the responder
+ */
 
 ROW(RESUMING_2,
 	TR_Abort_Ind,
-	e->handle != sm->resume_handle,
+	e->handle != sm->resume_handle && e->ir_flag == RESPONDER_INDICATION,
 	{
 		WSPMethodMachine *msm;
 
@@ -993,5 +1114,22 @@ ROW(RESUMING_2,
 	},
 	RESUMING_2)
 
+ROW(CONNECTING_2,
+	TR_Abort_Ind,
+	e->handle != sm->connect_handle && e->ir_flag == INITIATOR_INDICATION,
+	{
+		WSPPushMachine *m;
+
+		/* See push state table */
+		m = find_push_machine(sm, e->handle);
+		handle_push_event(sm, m, current_event);
+	},
+	CONNECTING_2)
+
 #undef ROW
 #undef STATE_NAME
+
+
+
+
+

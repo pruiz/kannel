@@ -1,0 +1,30 @@
+/*
+ * wsp_server_push_machine.def: Macro calls to generate monotonous push 
+ * machine code. See documentation for guidance how to update these.
+ *
+ * By Aarno Syvänen for Wapit Ltd
+ */
+
+#if !defined(MACHINE)
+    #error "Definition of macro MACHINE is missing"
+#elif !defined(INTEGER)
+    #error "Definition of macro INTEGER is missing"
+#elif !defined(ADDRTUPLE)
+    #error "Definition of macro ADDRTUPLE is missing"
+#elif !defined(HTTPHEADER)
+    #error "Definition of macro HTTPHEADER is missing" 
+#endif
+
+MACHINE(
+       INTEGER(state)
+       INTEGER(server_push_id)
+       INTEGER(session_id)
+       INTEGER(transaction_id)
+       ADDRTUPLE(addr_tuple)
+       HTTPHEADER(push_header) 
+)
+
+#undef MACHINE
+#undef INTEGER
+#undef ADDRTUPLE
+#undef HTTPHEADER

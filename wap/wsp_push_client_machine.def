@@ -16,6 +16,7 @@ MACHINE(
 	INTEGER(state)
         INTEGER(client_push_id)
         INTEGER(transaction_id)
+        INTEGER(session_id)
         HTTPHEADERS(push_headers)
        )
 

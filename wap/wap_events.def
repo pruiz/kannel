@@ -57,6 +57,8 @@ WAPEVENT(TR_Invoke_Res, "TR-Invoke.res",
 
 WAPEVENT(TR_Invoke_Cnf, "TR-Invoke.cnf",
 	INTEGER(handle)
+
+        ADDRTUPLE(addr_tuple)
 	)
 
 WAPEVENT(TR_Result_Req, "TR-Result.req",
@@ -81,6 +83,7 @@ WAPEVENT(TR_Abort_Ind, "TR-Abort.ind",
 	INTEGER(handle)
 
 	ADDRTUPLE(addr_tuple)
+        INTEGER(ir_flag) /* Are we an initiator or a responder */
         )
 
 /*
@@ -315,7 +318,7 @@ WAPEVENT(S_ConfirmedPush_Req, "S-ConfirmedPush.req",
         HTTPHEADER(push_headers)
         OPTIONAL_OCTSTR(push_body)
 
-	INTEGER(session_id)
+        INTEGER(session_id)
         )
 
 WAPEVENT(S_ConfirmedPush_Ind, "S-ConfirmedPush.ind",

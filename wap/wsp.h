@@ -28,6 +28,7 @@ enum wsp_abort_values {
 
 typedef struct WSPMachine WSPMachine;
 typedef struct WSPMethodMachine WSPMethodMachine;
+typedef struct WSPPushMachine WSPPushMachine;
 
 #include "gwlib/gwlib.h"
 #include "wap_addr.h"
@@ -39,7 +40,7 @@ struct WSPMachine {
 	#define HTTPHEADERS(name) List *name;
 	#define ADDRTUPLE(name) WAPAddrTuple *name;
 	#define COOKIES(name) List *name;
-	#define METHODMACHINES(name) List *name;
+	#define MACHINESLIST(name) List *name;
 	#define CAPABILITIES(name) List *name;
 	#define MACHINE(fields) fields
 	#include "wsp_server_session_machine.def"
@@ -54,6 +55,13 @@ struct WSPMethodMachine {
 	#include "wsp_server_method_machine.def"
 };
 
+struct WSPPushMachine {
+       #define INTEGER(name) long name;
+       #define ADDRTUPLE(name) WAPAddrTuple *name;
+       #define HTTPHEADER(name) List *name;
+       #define MACHINE(fields) fields
+       #include "wsp_server_push_machine.def"
+};
 
 /*
  * Shared stuff.
@@ -61,3 +69,6 @@ struct WSPMethodMachine {
 long wsp_convert_http_status_to_wsp_status(long http_status);
 
 #endif
+
+
+

@@ -1,3 +1,38 @@
+2000-12-08  Aarno Syvänen <syvanen@wapit.com>
+
+	* wap/server_push_machine.def, wsp_server_push_states.def: Two new
+	modules to handle wsp push.
+
+	* gw/wap_push_ota.c|h: These files are used, for now,  only for 
+	debugging
+
+	* wap/wap_events.def: For TR-Abort.ind, added the field ir_flag. This 
+	tells are the indicator responder or initiator and TR-Invoke.cnf, 
+	added field addr_tuple, which tells the session to which the event
+	should be sent.
+
+	* wap/wtp.h: More readable strings instead of magic numbers.
+
+	* wap/wsp_push_client.c: Added calls to disconnect and suspend a
+	session. Combined indications and dispatching. Separate abort 
+	functions for the initiator and the responder. 
+
+	* wap/wsp.h: Added definition of server push machine.
+
+	* wap/wsp_server_session_machine.def: Added list for push machines.
+        Renamed macro METHODMACHINES to MACINESLIST.
+
+	* wap/wsp_session.c: Added statics to handle wsp push. In function
+	find_session_machine, added handling of push events. Destroying both
+	method and push machines.
+	
+	* wap/wtp_init.c, wap/wtp_resp.c: Assign values of new flags.
+
+	* wap/wap.h: Added a new interface function wap_push_ota_dispatch_
+	event.
+
+	* wap/wsp_push_client_machine.def: Added session_id.
+
 2000-12-08  Richard Braakman  <dark@wapit.com>
 
 	* gw/bb_smsc.c, function sms_receiver: Made the increase in sleep
