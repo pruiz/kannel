@@ -158,7 +158,6 @@ static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
 {
     Octstr *mime, *value, *boundary;
     List *headers;
-    char *bound = "kannel_MIME_boundary";
     long i;
 
     gw_assert(m != NULL && m->headers != NULL);
@@ -192,7 +191,9 @@ static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
     value = http_header_value(headers, octstr_imm("Content-Type"));
     boundary = http_get_header_parameter(value, octstr_imm("boundary"));
     if (boundary == NULL) {
-        boundary = octstr_create(bound);
+      boundary = octstr_format("_MIME_boundary-%d-%ld_%c_%c_bd%d", 
+			random(), (long)time(NULL), 'A' + (random()%26), 
+			       'a'+(random() % 26), random());
         octstr_append(value, octstr_imm("; boundary="));
         octstr_append(value, boundary);
         http_header_remove_all(headers, "Content-Type");
@@ -324,9 +325,17 @@ static MIMEEntity *mime_something_to_entity(Octstr *mime, List *headers)
 
             /* we have still two linefeeds at the beginning and end that we 
              * need to remove, these are from the seperator. 
-             * XXX we don't know if it is \n or \r\n?! */
-            octstr_delete(entity, 0, 2);
-            octstr_delete(entity, octstr_len(entity) - 4, 4);
+             * We check if it is \n or \r\n?! */
+	    if (octstr_get_char(entity, 0) == '\r')
+		 octstr_delete(entity, 0, 2);	      
+	    else
+		 octstr_delete(entity, 0, 1);
+
+	    if (octstr_get_char(entity, octstr_len(entity) - 2) == '\r')
+		 octstr_delete(entity, octstr_len(entity) - 4, 4);
+	    else
+		 octstr_delete(entity, octstr_len(entity) - 2, 2);
+
 
             debug("mime.parse",0,"MIME multipart: Parsing entity:");
             octstr_dump(entity, 0);
