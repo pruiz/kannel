@@ -442,7 +442,6 @@ int main(int argc, char **argv)
 
     config_destroy(cfg);
     gwlib_shutdown();
-    gw_check_leaks();
 
     return 0;
 }

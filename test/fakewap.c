@@ -573,7 +573,7 @@ int main(int argc, char **argv)
     double delta;
     int proto_version, pdu_type, tcl, tid_new;
 
-    gw_init_mem();
+    gwlib_init();
 
     proto_version = 0;
     pdu_type = 1;

@@ -36,8 +36,13 @@
 #include "charset.h"
 #include "conn.h"
 
+void gwlib_assert_init(void);
 void gwlib_init(void);
 void gwlib_shutdown(void);
+
+#ifdef NDEBUG
+#define gwlib_assert_init() ((void) 0)
+#endif
 
 
 #endif

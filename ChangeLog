@@ -1,3 +1,19 @@
+Thu May 25 18:45:15 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/gwlib.[ch]: gwlib_shutdown now always calls gw_check_leaks,
+	to check for memory leaks. Added function gwlib_assert_init, to
+	allow gwlib code to verify that gwlib has been initialized.
+
+	* gw/bearerbox.c, gw/smsbox.c, gw/wapbox.c, test/drive_wapbox.c,
+	test/fakesmsc.c, test/fakewap.c, test/test_cimd2.c,
+	test/test_counter.c, test/test_http.c, test/test_http2.c,
+	test/test_http2_server.c, test/test_list.c, test/test_mem.c,
+	test/test_msg.c, test/test_udp.c, test/test_urltrans.c,
+	test/wml_tester.c: Fixed to call gwlib_init and gwlib_shutdown
+	instead of gw_init_mem and gw_check_leaks.
+	
+	* gwlib/octstr.c: Call gwlib_assert_init in seems_valid.
+
 Thu May 25 16:52:22 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/bb_smsc.c: Removed unused variable `ret'.

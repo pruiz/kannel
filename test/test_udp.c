@@ -61,7 +61,7 @@ static void server(int port) {
 int main(int argc, char **argv) {
 	int port;
 	
-	gw_init_mem();
+	gwlib_init();
 
 	if (argc != 3)
 		panic(0, "Bad argument list\n%s", usage);

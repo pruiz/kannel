@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
 	size_t size;
 	long repeats;
 	
-	gw_init_mem();
+	gwlib_init();
 
 	repeats = 1;
 	source = 0;
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 		}
 	}
 	
-	gw_check_leaks();
+	gwlib_shutdown();
 	
 	return 0;
 }

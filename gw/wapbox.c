@@ -376,6 +376,5 @@ int main(int argc, char **argv) {
 	wtp_tid_cache_shutdown();
 	config_destroy(cfg);
 	gwlib_shutdown();
-	gw_check_leaks();
 	return 0;
 }

@@ -1288,6 +1288,7 @@ long octstr_get_digit_from(Octstr *ostr, long pos){
 
 static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
 const char *function) {
+	gwlib_assert_init();
 	gw_assert_place(ostr != NULL, 
 		filename, lineno, function);
 	gw_assert_allocated(ostr,

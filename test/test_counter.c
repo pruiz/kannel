@@ -53,7 +53,7 @@ int main(void) {
 	long i;
 	void *ret;
 	
-	gw_init_mem();
+	gwlib_init();
 	info(0, "%ld threads, %ld counts each", (long) THREADS, 
 		(long) PER_THREAD);
 	c = counter_create();

@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 
   char buffer[100];
 
-  gw_init_mem();
+  gwlib_init();
 
   /* You can give an wml text file as an argument './wap_compile main.wml' */
 
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
   octstr_destroy(output);
   octstr_destroy(wml_binary);
 
-  gw_check_leaks();
+  gwlib_shutdown();
 
   return ret;
 }

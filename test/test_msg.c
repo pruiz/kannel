@@ -15,7 +15,7 @@ int main(void) {
 	Msg *msg, *msg2;
 	Octstr *os;
 	
-	gw_init_mem();
+	gwlib_init();
 
 	info(0, "Creating msg.");
 	msg = msg_create(heartbeat);

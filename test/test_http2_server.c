@@ -79,8 +79,7 @@ int main(int argc, char **argv) {
 	int opt, port, use_threads;
 	HTTPSocket *httpd_socket, *client_socket;
 	
-	gw_init_mem();
-	http2_init();
+	gwlib_init();
 
 	port = 8080;
 	use_threads = 0;
@@ -125,7 +124,6 @@ int main(int argc, char **argv) {
 	}
 	http2_server_close(httpd_socket);
 	
-	http2_shutdown();
-	gw_check_leaks();
+	gwlib_shutdown();
 	return 0;
 }

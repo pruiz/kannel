@@ -69,8 +69,7 @@ int main(int argc, char **argv) {
 	time_t start, end;
 	double run_time;
 	
-	gw_init_mem();
-	http2_init();
+	gwlib_init();
 
 	proxy = NULL;
 	proxy_port = -1;
@@ -144,12 +143,12 @@ int main(int argc, char **argv) {
 	time(&end);
 
 	counter_destroy(counter);
-	http2_shutdown();
-	gw_check_leaks();
 	
 	run_time = difftime(end, start);
 	info(0, "%ld requests in %f seconds, %f requests/s.",
 		max_requests, run_time, max_requests / run_time);
 	
+	gwlib_shutdown();
+
 	return 0;
 }

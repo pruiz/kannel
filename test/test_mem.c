@@ -11,7 +11,7 @@ int main(void) {
 	void *p;
 	long i;
 	
-	gw_init_mem();
+	gwlib_init();
 
 	p = gw_malloc(100);
 	gw_free(p);
@@ -27,5 +27,7 @@ int main(void) {
 		debug("", 0, "i = %ld", i);
 	}
 
+	gwlib_shutdown();
+	
 	return 0;
 }

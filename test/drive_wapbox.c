@@ -658,7 +658,6 @@ int main(int argc, char **argv) {
 	octstr_destroy(http_url);
 	
 	gwlib_shutdown();
-	gw_check_leaks();
 
 	return 0;
 }

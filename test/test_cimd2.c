@@ -992,7 +992,7 @@ int main(int argc, char *argv[]) {
 	int i;
 	int opt;
 
-	gw_init_mem();
+	gwlib_init();
 
 	progname = argv[0];
 	srandom(0);  /* Make "random" data reproducible */

@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 	URLTranslation *t;
 	Config *cfg;
 	
-	gw_init_mem();
+	gwlib_init();
 
 	repeats = 1;
 
@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 	urltrans_destroy(list);
 	config_destroy(cfg);
 	
-	gw_check_leaks();
+	gwlib_shutdown();
 	
 	return 0;
 }

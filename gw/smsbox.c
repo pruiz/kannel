@@ -453,8 +453,7 @@ int main(int argc, char **argv)
     int cf_index;
     URLTranslationList *translations;
 
-    gw_init_mem();
-    http2_init();
+    gwlib_init();
     cf_index = get_and_set_debugs(argc, argv, NULL);
 
 
@@ -495,10 +494,9 @@ int main(int argc, char **argv)
     info(0, "Smsbox terminating.");
 
     http2_server_close(http_server_socket);
-    http2_shutdown();
     mutex_destroy(socket_mutex);
     urltrans_destroy(translations);
     config_destroy(cfg);
-    gw_check_leaks();
+    gwlib_shutdown();
     return 0;
 }

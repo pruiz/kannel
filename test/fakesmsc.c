@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 	if (argc < 5)
 		panic(0, "%s", usage);
 
-	gw_init_mem();
+	gwlib_init();
 	start_time = get_current_time();
 
 	port = atoi(argv[1]);
