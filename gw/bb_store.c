@@ -398,10 +398,6 @@ int store_load(void)
 	    msgs++;
 	}
 	else if (msg_type(msg) == ack) {
-	    if (msg->sms.sms_type == report) {
-		octstr_destroy(pack);
-		continue;
-	    }
 	    key = octstr_format("%d-%d", msg->ack.time, msg->ack.id);
 	    dmsg = dict_remove(msg_hash, key);
 	    if (dmsg != NULL) 
