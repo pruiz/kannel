@@ -1,4 +1,4 @@
-/* wtp_pdu.h - definitions for unpacked WTP protocol data units
+/* wsp_pdu.h - definitions for unpacked WTP protocol data units
  *
  * This file generates a structure definition and some function
  * declarations from wtp_pdu.def, using preprocessor magic.

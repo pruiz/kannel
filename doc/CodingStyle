@@ -266,3 +266,10 @@ ChangeLog
 	patch it reflects. This helps immensly those who want to follow
 	Kannel development without having to wade through millions of
 	lines of patches per year.
+
+Initialization of automatic variables
+
+	Try to avoid embedding initialization of automatic variables in
+	their definitions, since they are easy to miss and this can lead
+	to trouble. Also, it's too easy to mistakenly use an argument
+	value before it has been checked with gw_assert.
