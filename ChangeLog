@@ -1,6 +1,9 @@
 2002-12-31  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: added account to fill_message(). Thanks to Paul.
       [Msg-ID: <005701c2b0c0$4140cb50$0300a8c0@anam.com>]
+    * gw/heartbeat.c: fixed difftime calculation to make heartbeat work again.
+      Patch provided by Alexander Malysh <a.malysh@centrium.de>
+      [Msg-ID: <200212262253.18847.a.malysh@centrium.de>]
 
 2002-12-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_store.c: fixed assertion panic when admin URI /store-status is 
