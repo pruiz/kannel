@@ -1,5 +1,9 @@
 2000-12-04  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsbox_req.c: Rearranged code to be somewhat clearer.
+
+2000-12-04  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsbox_req.c: Rewrote SMS splitting so that it is hopefully
 	now somewhat more understandable.
 
