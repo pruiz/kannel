@@ -1,3 +1,10 @@
+2001-07-19 Aarno Syvänen <aarno@wiral.com>
+
+	* test/test_ppg.c: Changed content type testing. Bug fixes.
+	* gw/wap_push_ppg.c: Fixed a memory leak.
+	* gw/wap_push_pap.c: Handle various push content type errors.
+	* gw/wap_push_pap_compiler.c: Handle an empty attribute. 
+
 2001-07-18 Bruno Rodrigues <bruno.rodrigues@litux.org>
 
 	* gw/smsc_emi2.c: Added the "keepalive" code. If you want to keep
