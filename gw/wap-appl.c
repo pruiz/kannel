@@ -26,6 +26,7 @@
 
 #include "gwlib/gwlib.h"
 #include "wmlscript/ws.h"
+#include "xml_shared.h"
 #include "wml_compiler.h"
 #include "wap/wap.h"
 #include "wap-appl.h"

@@ -236,7 +236,13 @@ AC_ARG_ENABLE(warnings,
 [  --enable-warnings    enable compilation warnings (default: disabled)], [
   echo enabling compilation warnings
   if test -n "$GCC"; then
-    CFLAGS="$CFLAGS -Wall -O2 -g"
+    CFLAGS="$CFLAGS -Wall"
+    CFLAGS="$CFLAGS -Wstrict-prototypes"
+    CFLAGS="$CFLAGS -Wmissing-prototypes"
+    CFLAGS="$CFLAGS -Wmissing-declarations"
+    CFLAGS="$CFLAGS -Wnested-externs"
+    CFLAGS="$CFLAGS -Winline"
+    CFLAGS="$CFLAGS -Wredundant-decls"
   fi
 ])
 

@@ -16,6 +16,7 @@
 
 #include "msg.h"
 #include "sms.h"
+#include "ota_prov.h"
 #include "ota_prov_attr.h"
 #include "ota_compiler.h"
 

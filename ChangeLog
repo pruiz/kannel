@@ -1,3 +1,12 @@
+2002-08-01 Harrie Hazewinkel <harrie@mod-snmp.com>
+    * Adding more warnings to the '--enable-warnings' and deleted the
+      duplicate '-g -O2' options when '--enable-warnings'.
+      Only the following warnings cannot be avoided, since these
+      depend on the lex/flex and yacc/bison plus the system.
+      - wmlscript/wsint.h:217: warning: function declaration isn't a prototype
+      - wmlscript/wslexer.c:166: warning: no previous prototype for `ws_yy_lex'
+      - wmlscript/wsint.h:237: warning: previous declaration of `ws_yy_parse'
+
 2002-07-31  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_emi2.c: fixed a bug when using /status.xml for an EMI2 link
       that does not set any username. <null> is interpresed as XML start tag

@@ -39,7 +39,7 @@ Octstr *field_url, *field_mask, *field_status;
 void dlr_init(Cfg *cfg);
 
 /* DLR shutdown routine (abstracted) */
-void dlr_shutdown();
+void dlr_shutdown(void);
 
 /* 
  * Add a new entry to the list 

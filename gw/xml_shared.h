@@ -60,6 +60,10 @@ int only_blanks(const char *text);
  */
 int parse_charset(Octstr *charset);
 
+/*
+ * Return the character sets supported by the WML compiler, as a List
+ * of Octstrs, where each string is the MIME identifier for one charset.
+ */
 List *wml_charsets(void);
 
 /*

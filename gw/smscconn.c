@@ -13,6 +13,7 @@
 #include "smscconn.h"
 #include "smscconn_p.h"
 #include "bb_smscconn_cb.h"
+#include "smsc_at2.h"
 
 
 SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)

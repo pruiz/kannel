@@ -49,8 +49,14 @@ typedef struct dlr_wle {
  * of his list is looked up once a delivery report comes in 
  */
 static List *dlr_waiting_list;
-void dlr_destroy(dlr_wle *dlr);
-
+static void dlr_destroy(dlr_wle *dlr);
+static void dlr_init_mem(void);
+#ifdef DLR_MYSQL
+static void dlr_init_mysql(Cfg* cfg);
+#endif
+static void dlr_shutdown_mem(void);
+static void dlr_shutdown_mysql(void);
+static dlr_wle *dlr_new(void);
 
 /* 
  * At startup initialize the list, use abstraction to
@@ -60,14 +66,14 @@ void dlr_destroy(dlr_wle *dlr);
  * processed.
  */
 
-void dlr_init_mem()
+static void dlr_init_mem()
 {
     dlr_waiting_list = list_create();
 }
    
-void dlr_init_mysql(Cfg* cfg)
-{
 #ifdef DLR_MYSQL
+static void dlr_init_mysql(Cfg* cfg)
+{
     CfgGroup *grp;
     List *grplist;
     Octstr *mysql_host, *mysql_user, *mysql_pass, *mysql_db, *mysql_id;
@@ -156,8 +162,8 @@ found:
     octstr_destroy(mysql_user);
     octstr_destroy(mysql_pass);
     octstr_destroy(mysql_id);
-#endif
 }
+#endif /* DLR_MYSQL */
 
 void dlr_init(Cfg* cfg)
 {
@@ -212,12 +218,12 @@ void dlr_init(Cfg* cfg)
  * processed.
  */
 
-void dlr_shutdown_mem()
+static void dlr_shutdown_mem()
 {
     list_destroy(dlr_waiting_list, (list_item_destructor_t *)dlr_destroy);
 }
 
-void dlr_shutdown_mysql()
+static void dlr_shutdown_mysql()
 {
 #ifdef DLR_MYSQL
     mysql_close(connection);
@@ -252,7 +258,7 @@ void dlr_shutdown()
  * and intialize it to zero 
  */
 
-dlr_wle *dlr_new()
+static dlr_wle *dlr_new()
 {
 	int i;
 	dlr_wle *dlr;
@@ -269,7 +275,7 @@ dlr_wle *dlr_new()
  * internal function to destroy the dlr_wle entry 
  */
 
-void dlr_destroy(dlr_wle *dlr)
+static void dlr_destroy(dlr_wle *dlr)
 {
 	O_DELETE (dlr->smsc);
 	O_DELETE (dlr->timestamp);
@@ -285,7 +291,7 @@ void dlr_destroy(dlr_wle *dlr)
  * external functions
  */
 
-void dlr_add_mem(char *smsc, char *ts, char *dst, char *service, char *url, int mask)
+static void dlr_add_mem(char *smsc, char *ts, char *dst, char *service, char *url, int mask)
 {
    dlr_wle	*dlr;
 	
@@ -303,7 +309,7 @@ void dlr_add_mem(char *smsc, char *ts, char *dst, char *service, char *url, int 
    }
 }
 
-void dlr_add_mysql(char *smsc, char *ts, char *dst, char *service, char *url, int mask)
+static void dlr_add_mysql(char *smsc, char *ts, char *dst, char *service, char *url, int mask)
 {
 #ifdef DLR_MYSQL
     Octstr *sql;
@@ -346,7 +352,7 @@ void dlr_add(char *smsc, char *ts, char *dst, char *keyword, char *id, int mask)
 }
 
 
-Msg *dlr_find_mem(char *smsc, char *ts, char *dst, int typ)
+static Msg *dlr_find_mem(char *smsc, char *ts, char *dst, int typ)
 {
     long i;
     long len;
@@ -401,7 +407,7 @@ Msg *dlr_find_mem(char *smsc, char *ts, char *dst, int typ)
     return NULL;
 }
 
-Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
+static Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
 {
     Msg	*msg = NULL;
 #ifdef DLR_MYSQL

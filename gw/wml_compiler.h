@@ -31,33 +31,21 @@
  * 
  * Errors are logged with a little explanation and error number.
  */
-
-
 int wml_compile(Octstr *wml_text,
 		Octstr *charset,
 		Octstr **wml_binary);
-
-
-/*
- * Return the character sets supported by the WML compiler, as a List
- * of Octstrs, where each string is the MIME identifier for one charset.
- */
-
-void wml_init(void);
 
 /*
  * A function to initialize the wml compiler for use. Allocates memory 
  * for the tables wml compiler uses.
  */
-
-void wml_shutdown(void);
+void wml_init(void);
 
 /*
  * A function for shutting down the wml_compiler. Frees the memory used 
  * by the wml compiler.
  */
+void wml_shutdown(void);
 
-
-List *wml_charsets(void);
 
 #endif

@@ -6,6 +6,7 @@
 
 #include "gwlib/gwlib.h"
 #include "wap/wsp.h"
+#include "wap-error.h"
 
 Octstr* error_requesting_back(Octstr *url, Octstr *referer)
 {

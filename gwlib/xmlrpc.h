@@ -132,6 +132,10 @@ void xmlrpc_member_destroy_item(void *member);
 XMLRPCScalar *xmlrpc_scalar_create(int type, void *arg);
 XMLRPCScalar *xmlrpc_scalar_create_double(int type, double val);
 
+/* Create a new sturct of given type and value
+ * (which must be in right format) */
+XMLRPCValue *xmlrpc_create_struct_value(int type, void *arg);
+
 /* Destroy scalar */
 void xmlrpc_scalar_destroy(XMLRPCScalar *scalar);
 

@@ -49,7 +49,7 @@ struct CfgLoc {
 }; 
 
 
-CfgLoc *cfgloc_create(Octstr *filename) 
+static CfgLoc *cfgloc_create(Octstr *filename) 
 { 
     CfgLoc *cfgloc; 
      
@@ -61,7 +61,7 @@ CfgLoc *cfgloc_create(Octstr *filename)
 } 
  
  
-void cfgloc_destroy(CfgLoc *cfgloc) 
+static void cfgloc_destroy(CfgLoc *cfgloc) 
 { 
     if (cfgloc != NULL) { 
 	octstr_destroy(cfgloc->filename); 
@@ -248,7 +248,7 @@ static void parse_value(Octstr *value)
 }
 
 
-List *expand_file(Octstr *file, int forward) 
+static List *expand_file(Octstr *file, int forward) 
 {
     Octstr *os;
     Octstr *line;

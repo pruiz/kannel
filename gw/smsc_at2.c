@@ -42,7 +42,7 @@ static void at2_octstr_destroy(Octstr *ostr)
 }
 
 
-int	at2_open_device1(PrivAT2data *privdata)
+static int at2_open_device1(PrivAT2data *privdata)
 {
     info(0, "AT2[%s]: opening device", octstr_get_cstr(privdata->name));
     privdata->fd = open(octstr_get_cstr(privdata->device), 

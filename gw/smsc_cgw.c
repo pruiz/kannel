@@ -119,7 +119,6 @@ typedef struct privdata
 PrivData;
 
 
-int smsc_cgw_create(SMSCConn *conn, CfgGroup *cfg);
 static int cgw_add_msg_cb(SMSCConn *conn, Msg *sms);
 static int cgw_shutdown_cb(SMSCConn *conn, int finish_sending);
 static void cgw_start_cb(SMSCConn *conn);

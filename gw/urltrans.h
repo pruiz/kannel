@@ -241,6 +241,8 @@ Octstr *urltrans_deny_ip(URLTranslation *t);
 /* Return allowed and denied prefixes */
 Octstr *urltrans_allowed_prefix(URLTranslation *t);
 Octstr *urltrans_denied_prefix(URLTranslation *t);
+Octstr *urltrans_allowed_recv_prefix(URLTranslation *t);
+Octstr *urltrans_denied_recv_prefix(URLTranslation *t);
 
 /* Return white and black to number list */
 Numhash *urltrans_white_list(URLTranslation *t);
