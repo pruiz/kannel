@@ -1590,10 +1590,11 @@ smsc-password = bar
 </sect3>
 
 <sect3>
-<title>SMPP 3.3</title>
+<title>SMPP 3.4</title>
 
    <para>This implements Short Message Peer to Peer (SMPP) Protocol
-   3.3. Sample configuration:</para>
+   3.4 in a manner that should also be compatible with 3.3. Sample
+   configuration:</para>
 
 <programlisting>
 group = smsc

@@ -1,3 +1,12 @@
+2001-01-21  Lars Wirzenius  <liw@iki.fi>
+
+	* doc/userguide/userguide.xml: Changed SMPP version to 3.4.
+	
+	* gw/smsc_smpp.h: Removed. I thought I had removed it earlier
+	already.
+	
+	* test/fakewap.c: Fixed memory leaks.
+
 2001-01-19  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: Added function set_charset to fix bug with 

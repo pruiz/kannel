@@ -713,6 +713,10 @@ int main(int argc, char **argv)
     info( 0, "fakewap: time of best, worst and average transaction: "
              "%.1f s, %.1f s, %.1f s",
          besttime, worsttime, totaltime / num_sent );
+
+    octstr_destroy(hostname);
+    octstr_destroy(gateway_addr);
+    mutex_destroy(mutex);
     gwlib_shutdown();
     return 0;
 }
