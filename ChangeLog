@@ -1,3 +1,9 @@
+Thu Dec 30 18:47:19 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c: WML page is now fetched from the URL specifed in the
+	Get PDU and compiled, then sent to phone. Is this a WAP gateway
+	yet?
+
 Thu Dec 30 17:55:22 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile, */Makefile: Removed from CVS, since they're supposed

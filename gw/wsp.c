@@ -7,6 +7,7 @@
 
 #include "gwlib.h"
 #include "wsp.h"
+#include "wml.h"
 
 enum {
 	Bad_PDU = -1,
@@ -516,9 +517,13 @@ static int transaction_belongs_to_session(WTPMachine *wtp, WSPMachine *session)
 
 
 static void *wsp_http_thread(void *arg) {
-#if 0
+#if 1
 	char *type, *data;
 	size_t size;
+	Octstr *body;
+	WSPEvent *e;
+	int status;
+	struct wmlc *wmlc_data;
 #endif
 	char *url;
 	WSPEvent *event;
@@ -531,15 +536,37 @@ static void *wsp_http_thread(void *arg) {
 
 	url = octstr_get_cstr(event->SMethodInvokeResult.url);
 	debug(0, "WSP: url is <%s>", url);
-#if 0
+#if 1
 	if (http_get(url, &type, &data, &size) == -1) {
 		error(0, "WSP: http_get failed, oops.");
-		/* XXX send Abort or something to the WSPMachine. */
+		status = 500; /* Internal server error */
+		body = NULL;
 	} else {
-		debug(0, "WSP: Fetched URL (%s):\n%.*s\n-----",
-			type, (int) size, data);
-		/* XXX send S-MethodResult.req or something */
+		info(0, "WSP: Fetched <%s>", url);
+		status = 200; /* OK */
+
+		data = gw_realloc(data, size + 1);
+		data[size] = '\0';
+
+		wmlc_data = wml2wmlc(data);
+		if (wmlc_data == NULL)
+			panic(0, "Out of memory");
+		
+		body = octstr_create_from_data(wmlc_data->wbxml, 
+						wmlc_data->wml_length);
+		if (body == NULL)
+			panic(0, "octstr_create_from_data failed, oops");
 	}
+		
+	e = wsp_event_create(SMethodResultRequest);
+	e->SMethodResultRequest.server_transaction_id = 
+		event->SMethodInvokeIndication.server_transaction_id;
+	e->SMethodResultRequest.status = 200;
+	e->SMethodResultRequest.response_body = body;
+	e->SMethodResultRequest.machine = 
+		event->SMethodInvokeResult.machine;
+	debug(0, "WSP: sending S-MethodResult.req to WSP");
+	wsp_dispatch_event(event->SMethodInvokeResult.machine, e);
 #else
 	{
 		Octstr *data;
