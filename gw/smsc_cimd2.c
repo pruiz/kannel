@@ -1166,7 +1166,7 @@ static struct packet *packet_encode_message(Msg *msg) {
 	if (!parm_valid_address(msg->smart_sms.sender)) {
 		warning(0, "cimd2_submit_msg: non-digits in "
 			"originating phone number '%s', discarded",
-			octstr_get_cstr(msg->smart_sms.receiver));
+			octstr_get_cstr(msg->smart_sms.sender));
 		return NULL;
 	}
 

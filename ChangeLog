@@ -1,3 +1,8 @@
+2000-08-01  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_cimd2.c: When complaining about format of sender number,
+	actually log the sender number rather than the receiver number.
+
 2000-07-27  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_cimd2.c: When pending_smsmessage receives an unexpected
