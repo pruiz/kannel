@@ -1,4 +1,8 @@
 2002-06-25  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/wap_push_ppg.c: fixed a bug when service not found and username
+      is not initialized octstr_destroy() will cause segmentation fault.
+
+2002-06-25  Stipe Tolj <tolj@wapme-systems.de>
     * gw/wap_push_ppg.c: allow to start PPG module without SSL enabled HTTP
       server support.
 
