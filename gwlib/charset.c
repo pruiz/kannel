@@ -325,6 +325,63 @@ void charset_latin1_to_gsm(Octstr *ostr)
     }
 }
 
+/*
+ * This function is a wrapper arround charset_latin1_to_gsm()
+ * which implements the mapping of a NRCs (national reprentation codes)
+ * ISO 21 German.
+ */
+void charset_gsm_to_nrc_iso_21_german(Octstr *ostr)
+{
+    long pos, len;
+    int c, new;
+
+    len = octstr_len(ostr);
+    
+    for (pos = 0; pos < len; pos++) {
+        c = octstr_get_char(ostr, pos);
+        switch (c) {
+            /* GSM value; NRC value */
+            /* case 0x5b: new = 0x5b; break; /* Ä */
+            /* case 0x5c: new = 0x5c; break; /* Ö */
+            case 0x5e: new = 0x5d; break; /* Ü */
+            /* case 0x7b: new = 0x7b; break; /* ä */
+            /* case 0x7c: new = 0x7c; break; /* ö */
+            case 0x7e: new = 0x7d; break; /* ü */
+            case 0x1e: new = 0x7e; break; /* ß */
+            case 0x5f: new = 0x5e; break; /* § */
+            default: new = c;
+        }
+        if (new != c)
+            octstr_set_char(ostr, pos, new);
+    }
+}
+
+void charset_nrc_iso_21_german_to_gsm(Octstr *ostr)
+{
+    long pos, len;
+    int c, new;
+
+    len = octstr_len(ostr);
+    
+    for (pos = 0; pos < len; pos++) {
+        c = octstr_get_char(ostr, pos);
+        switch (c) {
+            /* NRC value; GSM value */
+            /* case 0x5b: new = 0x5b; break; /* Ä */
+            /* case 0x5c: new = 0x5c; break; /* Ö */
+            case 0x5d: new = 0x5e; break; /* Ü */
+            /* case 0x7b: new = 0x7b; break; /* ä */
+            /* case 0x7c: new = 0x7c; break; /* ö */
+            case 0x7d: new = 0x7e; break; /* ü */
+            case 0x7e: new = 0x1e; break; /* ß */
+            case 0x5e: new = 0x5f; break; /* § */
+            default: new = c;
+        }
+        if (new != c)
+            octstr_set_char(ostr, pos, new);
+    }
+}
+
 int charset_gsm_truncate(Octstr *gsm, long max)
 {
     if (octstr_len(gsm) > max) {

@@ -25,6 +25,7 @@
 #include "sms.h"
 #include "emimsg.h"
 #include "dlr.h"
+#include "alt_charsets.h"
 
 #define EMI2_MAX_TRN 100
 
@@ -69,6 +70,7 @@ typedef struct privdata {
 				   If 0, no idle timeout is in effect */
     Octstr   *npid; /* Notification PID value */
     Octstr   *nadc; /* Notification Address */
+    int alt_charset; /* Alternative GSM charset, defined via values in gwlib/alt_charsets.h */
 } PrivData;
 
 typedef enum {
@@ -442,6 +444,13 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
 	emimsg->fields[E50_MT] = octstr_create("3");
 	str = octstr_duplicate(msg->sms.msgdata);
 	charset_latin1_to_gsm(str);
+
+    /*
+     * Check if we have to apply some after GSM transcoding kludges
+     */
+    if (privdata->alt_charset = EMI_NRC_ISO_21)
+        charset_gsm_to_nrc_iso_21_german(str);
+
 	/* Could still be too long after truncation if there's an UDH part,
 	 * but this is only to notice errors elsewhere (should never happen).*/
 	if (charset_gsm_truncate(str, 160))
@@ -522,6 +531,11 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	if (octstr_get_char(emimsg->fields[E01_MT], 0) == '3') {
 	    msg->sms.msgdata = emimsg->fields[E01_AMSG];
 	    emimsg->fields[E01_AMSG] = NULL; /* So it's not freed */
+
+        /* obey the NRC (national replacement codes) */
+        if (privdata->alt_charset = EMI_NRC_ISO_21)
+            charset_nrc_iso_21_german_to_gsm(msg->sms.msgdata);
+
 	    charset_gsm_to_latin1(msg->sms.msgdata);
 	}
 	else {
@@ -624,6 +638,11 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	if (octstr_get_char(emimsg->fields[E50_MT], 0) == '3') {
 	    msg->sms.msgdata = emimsg->fields[E50_AMSG];
 	    emimsg->fields[E50_AMSG] = NULL; /* So it's not freed */
+
+        /* obey the NRC (national replacement codes) */
+        if (privdata->alt_charset = EMI_NRC_ISO_21)
+            charset_nrc_iso_21_german_to_gsm(msg->sms.msgdata);
+
 	    charset_gsm_to_latin1(msg->sms.msgdata);
 	}
 	else if (octstr_get_char(emimsg->fields[E50_MT], 0) == '4') {
@@ -1488,7 +1507,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     PrivData *privdata;
     Octstr *allow_ip, *deny_ip, *host, *alt_host;
     long portno, our_port, keepalive, flowcontrol, waitack, throughput, 
-         idle_timeout, alt_portno; 
+         idle_timeout, alt_portno, alt_charset; 
     long window;
     	/* has to be long because of cfg_get_integer */
     int i;
@@ -1638,6 +1657,11 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 	      octstr_get_cstr(privdata->name));
 	goto error;
     }
+
+    if (cfg_get_integer(&alt_charset, cfg, octstr_imm("alt-charset")) < 0)
+        privdata->alt_charset = 0;
+    else
+        privdata->alt_charset = alt_charset;    
 
     privdata->allow_ip = allow_ip;
     privdata->deny_ip = deny_ip;

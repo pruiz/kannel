@@ -20,5 +20,11 @@
 
 #define EMI_SWAPPED_CHARS		2
 
+/*
+ * for CMG's EMI/UCP, operators may use NCR (national representation
+ * codes), like ISO 21 German for the german "Umlauts".
+ * i.e. Vodafone D2 uses this charset kludges.
+ */
+#define EMI_NRC_ISO_21  3
 
 #endif
