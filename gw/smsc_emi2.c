@@ -35,10 +35,19 @@ typedef struct privdata {
     int		rport;		  /* Receive-port to listen */
     Octstr	*allow_ip, *deny_ip;
     Octstr	*host, *username, *password;
+    int		unacked;	/* Sent messages not acked */
+    time_t	sendtime[100];	/* When we sent out a message with a given
+				 * TRN. Is 0 if the TRN is currently free. */
+    int		sendtype[100];	/* OT of message, undefined if time == 0 */
+    Msg		*sendmsg[100]; 	/* Corresponding message for OT == 51 */
 } PrivData;
 
-/* Return 1 for positive ACK, 0 for timeout, -1 for broken/closed connection,
- * -2 for negative NACK */
+
+/* Wait for a message of type 'ot', sent with TRN 0, to be acked.
+ * Timeout after 't' seconds. Any other packets received are ignored.
+ * This function is meant for initial login packet(s) and testing.
+ * Return 1 for positive ACK, 0 for timeout, -1 for broken/closed connection,
+ * -2 for negative NACK. */
 static int wait_for_ack(PrivData *privdata, Connection *server, int ot, int t)
 {
     time_t timeout_time;
@@ -116,19 +125,18 @@ static struct emimsg *make_emi60(PrivData *privdata)
 static Connection *open_send_connection(SMSCConn *conn)
 {
     PrivData *privdata = conn->data;
-    int result, wait = 1;
+    int result, wait;
     struct emimsg *emimsg;
     Connection *server;
     Msg *msg;
 
+    wait = 0;
     while (!privdata->shutdown) {
-	server = conn_open_tcp_with_port(privdata->host, privdata->port,
-					 privdata->our_port);
-	if (privdata->shutdown) {
-	    conn_destroy(server);
-	    return NULL;
-	}
-	if (server == NULL) {
+	/* Change status only if the first attempt to form a
+	 * connection fails, as it's possible that the SMSC closed the
+	 * connection because of idle timeout and a new one will be
+	 * created quickly. */
+	if (wait) {
 	    if (conn->status == SMSCCONN_ACTIVE) {
 		mutex_lock(conn->flow_mutex);
 		conn->status = SMSCCONN_RECONNECTING;
@@ -138,19 +146,34 @@ static Connection *open_send_connection(SMSCConn *conn)
 		bb_smscconn_send_failed(conn, msg,
 					SMSCCONN_FAILED_TEMPORARILY);
 	    }
-	    error(0, "smsc_emi2: connection to %s failed, retrying after %d "
-		  "minutes", octstr_get_cstr(privdata->host), wait);
+	    info(0, "smsc_emi2: waiting for %d minutes before trying to "
+		 "connect again", wait);
 	    gwthread_sleep(wait * 60);
-	    wait = wait > 10 ? 10 : wait * 2 + 1;
+	    wait = wait > 5 ? 10 : wait * 2;
+	}
+	else
+	    wait = 1;
+
+	server = conn_open_tcp_with_port(privdata->host, privdata->port,
+					 privdata->our_port);
+	if (privdata->shutdown) {
+	    conn_destroy(server);
+	    return NULL;
+	}
+	if (server == NULL) {
+	    error(0, "smsc_emi2: opening TCP connection to %s failed",
+		  octstr_get_cstr(privdata->host));
 	    continue;
 	}
-	wait = 1;
+
 	if (privdata->username && privdata->password) {
 	    emimsg = make_emi60(privdata);
 	    emimsg_send(server, emimsg);
 	    emimsg_destroy(emimsg);
 	    result = wait_for_ack(privdata, server, 60, 30);
 	    if (result == -2) {
+		/* Are SMSCs going to return any temporary errors? If so,
+		 * testing for those error codes should be added here. */
 		error(0, "smsc_emi2: Server rejected our login, giving up");
 		conn->why_killed = SMSCCONN_KILLED_WRONG_PASSWORD;
 		conn_destroy(server);
@@ -160,34 +183,23 @@ static Connection *open_send_connection(SMSCConn *conn)
 		error(0, "smsc_emi2: Got no reply to login attempt "
 		      "within 30 s");
 		conn_destroy(server);
-		if (conn->status == SMSCCONN_ACTIVE) {
-		    mutex_lock(conn->flow_mutex);
-		    conn->status = SMSCCONN_RECONNECTING;
-		    mutex_unlock(conn->flow_mutex);
-		}
-		while ((msg = list_extract_first(privdata->outgoing_queue))) {
-		    bb_smscconn_send_failed(conn, msg,
-					    SMSCCONN_FAILED_TEMPORARILY);
-		}
 		continue;
 	    }
-	    else if (result == -1) {
+	    else if (result == -1) { /* Broken connection, already logged */
 		conn_destroy(server);
 		continue;
 	    }
 	}
+
 	if (privdata->username) {
 	    emimsg = make_emi31(privdata);
 	    emimsg_send(server, emimsg);
 	    emimsg_destroy(emimsg);
-	    result = wait_for_ack(privdata, server, 31, 30);
-	    if (result == -1) {
-		conn_destroy(server);
-		continue;
-	    }
-	    if (result <= 0)
-		warning(0, "smsc_emi2: alert (operation 31) failed");
+	    privdata->unacked = 1;
+	    privdata->sendtype[0]= 31;
+	    privdata->sendtime[0] = time(NULL);
 	}
+
 	if (conn->status != SMSCCONN_ACTIVE) {
 	    mutex_lock(conn->flow_mutex);
 	    conn->status = SMSCCONN_ACTIVE;
@@ -458,44 +470,43 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 }
 
 
-static void clear_sent(PrivData *privdata, time_t sendtime[100],
-		       Msg *sendmsg[100])
+static void clear_sent(PrivData *privdata)
 {
     int i;
 
-    for (i = 0; i < 100; i++)
-	if (sendtime[i])
-	    list_produce(privdata->outgoing_queue, sendmsg[i]);
+    for (i = 0; i < 100; i++) {
+	if (privdata->sendtime[i] && privdata->sendtype[i] == 51)
+	    list_produce(privdata->outgoing_queue, privdata->sendmsg[i]);
+	privdata->sendtime[i] = 0;
+    }
+    privdata->unacked = 0;
 }
 
 
 static void emi2_send_loop(SMSCConn *conn, Connection *server)
 {
     PrivData *privdata = conn->data;
-    int i, nexttrn = 0, unacked = 0;
+    int i, nexttrn = 0;
     struct emimsg *emimsg;
-    Octstr *str;
-    Msg *msg;
-    time_t sendtime[100], current_time, check_time;
-    Msg *sendmsg[100];
+    Octstr	*str;
+    Msg		*msg;
+    time_t	current_time, check_time;
 
-    for (i = 0; i < 100; i++)
-	sendtime[i] = 0;
     check_time = time(NULL);
     while (1) {
 	/* Send messages if there's room in the sending window */
-	while (unacked < 100 && !privdata->shutdown &&
+	while (privdata->unacked < 100 && !privdata->shutdown &&
 	       (msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
-	    while (sendtime[nexttrn % 100] != 0)
+	    while (privdata->sendtime[nexttrn % 100] != 0)
 		nexttrn++; /* pick unused TRN */
 	    nexttrn %= 100;
 	    emimsg = msg_to_emimsg(msg, nexttrn);
-	    sendmsg[nexttrn] = msg;
-	    sendtime[nexttrn++] = time(NULL);
-	    unacked++;
+	    privdata->sendmsg[nexttrn] = msg;
+	    privdata->sendtype[nexttrn] = 51;
+	    privdata->sendtime[nexttrn++] = time(NULL);
+	    privdata->unacked++;
 	    if (emimsg_send(server, emimsg) == -1) {
 		emimsg_destroy(emimsg);
-		clear_sent(privdata, sendtime, sendmsg);
 		return;
 	    }
 	    emimsg_destroy(emimsg);
@@ -504,89 +515,99 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 	/* Read acks/nacks from the server */
 	while ((str = conn_read_packet(server, 2, 3))) {
 	    debug("smsc.emi2", 0, "Got packet from the main socket");
-	    if ( (emimsg = get_fields(str)) ) {
-		octstr_destroy(str);
-		if (emimsg->or == 'O') {
-		    /* If the SMSC wants to send operations through this
-		     * socket, we'll have to read them because there
-		     * might be ACKs too. We just drop them while stopped,
-		     * hopefully the SMSC will resend them later. */
-		    if (!conn->is_stopped) {
-			if (handle_operation(conn, server, emimsg) < 0) {
-			    clear_sent(privdata, sendtime, sendmsg);
-			    return; /* Connection broke */
-			}
-		    }
-		    else
-			info(0, "Ignoring operation from main socket "
-			     "because the connection is stopped.");
-		}
-		else {   /* Already checked to be 'O' or 'R' */
-		    if (!sendtime[emimsg->trn] || emimsg->ot != 51)
-			error(0, "Emi2: Got ack, don't remember sending O?");
-		    else {
-			sendtime[emimsg->trn] = 0;
-			unacked--;
-			if (octstr_get_char(emimsg->fields[0], 0) == 'A')
-			    bb_smscconn_sent(conn, sendmsg[emimsg->trn]);
-			else {
-			    error(0, "emi2: got negative ack to message");
-			    bb_smscconn_send_failed(conn,sendmsg[emimsg->trn],
-						    SMSCCONN_FAILED_REJECTED);
-			}
-		    }
-		}
-		emimsg_destroy(emimsg);
+	    emimsg = get_fields(str);
+	    octstr_destroy(str);
+	    if (emimsg == NULL) {
+		continue; /* The parse functions logged errors */
 	    }
-	    else
-		octstr_destroy(str); /* The parse functions logged errors */
+	    if (emimsg->or == 'O') {
+		/* If the SMSC wants to send operations through this
+		 * socket, we'll have to read them because there
+		 * might be ACKs too. We just drop them while stopped,
+		 * hopefully the SMSC will resend them later. */
+		if (!conn->is_stopped) {
+		    if (handle_operation(conn, server, emimsg) < 0)
+			return; /* Connection broke */
+		}
+		else
+		    info(0, "Ignoring operation from main socket "
+			 "because the connection is stopped.");
+	    }
+	    else {   /* Already checked to be 'O' or 'R' */
+		if (!privdata->sendtime[emimsg->trn] ||
+		    emimsg->ot != privdata->sendtype[emimsg->trn])
+		    error(0, "Emi2: Got ack, don't remember sending O?");
+		else {
+		    privdata->sendtime[emimsg->trn] = 0;
+		    privdata->unacked--;
+		    if (emimsg->ot == 51) {
+			if (octstr_get_char(emimsg->fields[0], 0) == 'A')
+			    bb_smscconn_sent(conn,
+					     privdata->sendmsg[emimsg->trn]);
+			else
+			    bb_smscconn_send_failed(conn,
+						privdata->sendmsg[emimsg->trn],
+						SMSCCONN_FAILED_REJECTED);
+		    }
+		    else if (emimsg->ot == 31)
+			; /* We don't use the data in the reply */
+		    else
+			panic(0, "Bug, ACK handler missing for sent packet");
+		}
+	    }
+	    emimsg_destroy(emimsg);
 	}
 	if (conn_read_error(server)) {
 	    error(0, "emi2: Error trying to read ACKs from SMSC");
-	    clear_sent(privdata, sendtime, sendmsg);
 	    return;
-	    }
+	}
 	if (conn_eof(server)) {
 	    info(0, "emi2: Main connection closed by SMSC");
-	    clear_sent(privdata, sendtime, sendmsg);
 	    return;
 	}
 	/* Check whether there are messages the server hasn't acked in a
 	 * reasonable time */
 	current_time = time(NULL);
-	if (unacked && current_time > check_time + 30) {
+	if (privdata->unacked && current_time > check_time + 30) {
 	    check_time = current_time;
 	    for (i = 0; i < 100; i++)
-		if (sendtime[i] && sendtime[i] < current_time - 60) {
-		    warning(0, "smsc_emi2: received neither ACK nor NACK in"
-			    "60 seconds, resending message");
-		    sendtime[i] = 0;
-		    unacked--;
-		    list_produce(privdata->outgoing_queue, sendmsg[i]);
-		    /* Wake up this same thread (just avoiding sleep would
-		       be more efficient, but this shouldn't be common) */
-		    gwthread_wakeup(privdata->sender_thread);
+		if (privdata->sendtime[i]
+		    && privdata->sendtime[i] < current_time - 60) {
+		    privdata->sendtime[i] = 0;
+		    privdata->unacked--;
+		    if (privdata->sendtype[i] == 51) {
+			warning(0, "smsc_emi2: received neither ACK nor NACK "
+				"in 60 seconds, resending message");
+			list_produce(privdata->outgoing_queue,
+				     privdata->sendmsg[i]);
+			/* Wake up this same thread to send again
+			 * (simpler than avoiding sleep) */
+			gwthread_wakeup(privdata->sender_thread);
+		    }
+		    else if (privdata->sendtype[i] == 31)
+			warning(0, "smsc_emi2: Alert (operation 31) was not "
+				"ACKed within 60 seconds");
+		    else
+			panic(0, "Bug, no timeout handler for sent packet");
 		}
 	}
 
 	/* During shutdown, wait until we know whether the messages we just
 	 * sent were accepted by the SMSC */
-	if (privdata->shutdown && unacked == 0)
+	if (privdata->shutdown && privdata->unacked == 0)
 	    break;
 
 	/* If the server doesn't ack our messages, wake up to resend them */
-	if (unacked == 0)
+	if (privdata->unacked == 0)
 	    conn_wait(server, -1);
 	else
 	    conn_wait(server, 40);
 	if (conn_read_error(server)) {
 	    warning(0, "emi2: Error reading from the main connection");
-	    clear_sent(privdata, sendtime, sendmsg);
 	    return;
 	}
 	if (conn_eof(server)) {
 	    info(0, "emi2: Main connection closed by SMSC");
-	    clear_sent(privdata, sendtime, sendmsg);
 	    return;
 	}
     }
@@ -603,9 +624,11 @@ static void emi2_sender(void *arg)
     while (!privdata->shutdown) {
 	if ((server = open_send_connection(conn)) == NULL) {
 	    privdata->shutdown = 1;
+	    gwthread_wakeup(privdata->receiver_thread);
 	    break;
 	}
 	emi2_send_loop(conn, server);
+	clear_sent(privdata);
 	conn_destroy(server);
     }
 
@@ -665,7 +688,8 @@ static void emi2_receiver(SMSCConn *conn, Connection *server)
 	    }
 	    octstr_destroy(str);
 	}
-	conn_wait(server, -1);
+	else
+	    conn_wait(server, -1);
 	if (privdata->shutdown)
 	    break;
     }
@@ -817,6 +841,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     PrivData *privdata;
     Octstr *allow_ip, *deny_ip, *host;
     long portno, our_port; /* has to be long because of cfg_get_integer */
+    int i;
 
     privdata = gw_malloc(sizeof(PrivData));
     privdata->outgoing_queue = list_create();
@@ -869,6 +894,10 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     conn->name = octstr_format("EMI2:%d", privdata->port);
 
     privdata->shutdown = 0;
+
+    for (i = 0; i < 100; i++)
+	privdata->sendtime[i] = 0;
+    privdata->unacked = 0;
 
     conn->status = SMSCCONN_CONNECTING;
     conn->connect_time = time(NULL);

@@ -1,3 +1,8 @@
+2001-05-07  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsc_emi2.c: Changed error handling for (re)opening
+	connections, reorganized some code.
+
 2001-05-07  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_smpp.c: Use system-type for receiver as well as transmitter.
