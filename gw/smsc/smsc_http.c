@@ -466,7 +466,7 @@ static void brunet_send_sms(SMSCConn *conn, Msg *sms)
      */
     if (octstr_len(sms->sms.account)) {
         octstr_url_decode(sms->sms.account);
-        octstr_format_append(url, "&%E", sms->sms.account);
+        octstr_format_append(url, "&%s", octstr_get_cstr(sms->sms.account));
     }
 
     headers = list_create();
