@@ -522,11 +522,11 @@ static void setup_official_name(void)
         error(0, "Can't find out official hostname for this host, "
               "using `%s' instead.", u.nodename);
         official_name = octstr_create(u.nodename);
-	official_ip = octstr_create("127.0.0.1");
-    } 
-        
-    official_name = octstr_create(h.h_name);
-    official_ip = gw_netaddr_to_octstr(AF_INET, h.h_addr);
+        official_ip = octstr_create("127.0.0.1");
+    } else {
+        official_name = octstr_create(h.h_name);
+        official_ip = gw_netaddr_to_octstr(AF_INET, h.h_addr);
+    }
 }
 
 
