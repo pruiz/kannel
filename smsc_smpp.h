@@ -3,9 +3,6 @@
 
 #include "octstr.h"
 #include "smsc.h"
-#include "sms_msg.h"
-#include "smsc_p.h"
-
 
 typedef unsigned int int32;
 

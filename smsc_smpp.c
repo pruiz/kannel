@@ -1,7 +1,6 @@
 /*****************************************************************************
 * smsc_smpp.c - Short Message Peer to Peer Provisioning Protocol 3.3
 * Mikael Gueck for WapIT Ltd.
-* $Revision: 1.2 $
 */
 
 #include <errno.h>
@@ -75,13 +74,19 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password, char
 	if(smsc->data_r == NULL) goto error;
 
 	/* Open the transmitter connection */
-	smsc->fd_t = tcpip_connect_to_server(host, port);
+	smsc->fd_t = tcpip_connect_to_server(smsc->hostname, smsc->port);
 	if(smsc->fd_t == -1) goto error;
+	debug(0, "smsc->fd_t == %i", smsc->fd_t);
+	debug(0, "smsc->hostname == %s", smsc->hostname);
+	debug(0, "smsc->port == %i", smsc->port);
 	smsc->smpp_t_state = SMPP_STATE_CONNECTED;
 
 	/* Open the receiver connection */
-	smsc->fd_r = tcpip_connect_to_server(host, port);
+	smsc->fd_r = tcpip_connect_to_server(smsc->hostname, smsc->port);
 	if(smsc->fd_r == -1) goto error;
+	debug(0, "smsc->fd_r == %i", smsc->fd_t);
+	debug(0, "smsc->hostname == %s", smsc->hostname);
+	debug(0, "smsc->port == %i", smsc->port);
 	smsc->smpp_r_state = SMPP_STATE_CONNECTED;
 
 	/* Push a BIND_RECEIVER PDU on the [smsc->unsent] stack. */
@@ -91,6 +96,7 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password, char
 	smsc->seq_r = 1;
 	pdu->sequence_no = 1;
 	bind_receiver = malloc(sizeof(struct smpp_pdu_bind_receiver));
+	if(bind_receiver==NULL) goto error;
 	memset(bind_receiver, 0, sizeof(struct smpp_pdu_bind_receiver));
 	strncpy(bind_receiver->system_id, system_id, 16);
 	strncpy(bind_receiver->password, password, 9);
@@ -106,6 +112,7 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password, char
 	smsc->seq_t = 1;
 	pdu->sequence_no = 1;
 	bind_transmitter = malloc(sizeof(struct smpp_pdu_bind_transmitter));
+	if(bind_transmitter==NULL) goto error;
 	memset(bind_transmitter, 0, sizeof(struct smpp_pdu_bind_transmitter));
 	strncpy(bind_transmitter->system_id, system_id, 16);
 	strncpy(bind_transmitter->password, password, 9);
@@ -118,7 +125,7 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password, char
 	return smsc;
 
 error:
-
+	error(0, "smpp_open: could not open");
 	pdu_free(pdu);
 
 	/* Destroy FIFO stacks. */
@@ -203,7 +210,7 @@ int smpp_reopen(SMSCenter *smsc) {
 	smsc->smpp_t_state = SMPP_STATE_CONNECTED;
 
 	/* Open the receiver connection */
-	smsc->fd_t = tcpip_connect_to_server(smsc->hostname, smsc->port);
+	smsc->fd_r = tcpip_connect_to_server(smsc->hostname, smsc->port);
 	if(smsc->fd_r == -1) goto error;
 	smsc->smpp_r_state = SMPP_STATE_CONNECTED;
 
@@ -214,6 +221,7 @@ int smpp_reopen(SMSCenter *smsc) {
 	smsc->seq_r = 1;
 	pdu->sequence_no = 1;
 	bind_receiver = malloc(sizeof(struct smpp_pdu_bind_receiver));
+	if(bind_receiver==NULL) goto error;
 	memset(bind_receiver, 0, sizeof(struct smpp_pdu_bind_receiver));
 	strncpy(bind_receiver->system_id, smsc->smpp_system_id, 16);
 	strncpy(bind_receiver->password, smsc->smpp_password, 9);
@@ -229,6 +237,7 @@ int smpp_reopen(SMSCenter *smsc) {
 	smsc->seq_t = 1;
 	pdu->sequence_no = 1;
 	bind_transmitter = malloc(sizeof(struct smpp_pdu_bind_transmitter));
+	if(bind_transmitter==NULL) goto error;
 	memset(bind_transmitter, 0, sizeof(struct smpp_pdu_bind_transmitter));
 	strncpy(bind_transmitter->system_id, smsc->smpp_system_id, 16);
 	strncpy(bind_transmitter->password, smsc->smpp_password, 9);
@@ -241,6 +250,7 @@ int smpp_reopen(SMSCenter *smsc) {
 	return 1;
 
 error:
+	error(0, "smpp_reopen: could not open");
 
 	pdu_free(pdu);
 
@@ -259,11 +269,37 @@ error:
 	data_free(smsc->data_r);
 
 	smscenter_destruct(smsc);
+
 	return -1;
 }
 
 
 int smpp_close(SMSCenter *smsc) {
+
+	struct smpp_pdu *pdu = NULL;
+
+	/* Push a UNBIND PDU on the [smsc->fifo_r_out] stack. */
+	pdu = pdu_new();
+	if(pdu == NULL) goto error;
+	pdu->id = SMPP_UNBIND;
+	pdu->length = 16;
+	pdu->status = 0;
+	pdu->sequence_no = 1;
+	pdu->message_body = NULL;
+	fifo_push(smsc->fifo_r_out, pdu);
+	
+	/* Push a UNBIND PDU on the [smsc->fifo_t_out] stack. */
+	pdu = pdu_new();
+	if(pdu == NULL) goto error;
+	pdu->id = SMPP_UNBIND;
+	pdu->length = 16;
+	pdu->status = 0;
+	pdu->sequence_no = 1;
+	pdu->message_body = NULL;
+	fifo_push(smsc->fifo_t_out, pdu);
+
+	/* Write out the UNBIND PDUs. */
+	smpp_pending_smsmessage(smsc);
 
 	/* Check states */
 
@@ -300,6 +336,9 @@ int smpp_close(SMSCenter *smsc) {
 	data_free(smsc->data_r);
 
 	return 0;
+
+error:
+	return -1;
 }
 
 int smpp_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg) {
@@ -411,9 +450,11 @@ int smpp_pending_smsmessage(SMSCenter *smsc) {
 		if( pdu_encode(pdu, &data) == 1 ) {
 			/* Send the PDU data. */
 			ret = data_send(smsc->fd_t, data);
-			ret = data_free(data);
+			data_free(data);
+			if(ret==-1) break;
 		}
-		ret = pdu_free(pdu);
+		pdu_free(pdu);
+		if(ret==-1) break;
 	}
 
 	/* Receive raw data */
@@ -430,9 +471,9 @@ int smpp_pending_smsmessage(SMSCenter *smsc) {
 			/* Act on PDU. */
 			pdu->fd = smsc->fd_t;
 			ret = pdu_act(smsc, pdu);
-			ret = pdu_free(pdu);
+			pdu_free(pdu);
 		}
-		ret = data_free(data);
+		data_free(data);
 	}
 
 	/* Process the MO messages. */
@@ -448,9 +489,11 @@ int smpp_pending_smsmessage(SMSCenter *smsc) {
 		if( (ret = pdu_encode(pdu, &data)) ) {
 			/* Send the PDU data. */
 			ret = data_send(smsc->fd_r, data);
-			ret = data_free(data);
+			data_free(data);
+			if(ret==-1) break;
 		}
-		ret = pdu_free(pdu);
+		pdu_free(pdu);
+		if(ret==-1) break;
 	}
 
 	while( data_pop(smsc->data_r, &data) == 1 ) {
@@ -459,9 +502,9 @@ int smpp_pending_smsmessage(SMSCenter *smsc) {
 			/* Act on PDU. */
 			pdu->fd = smsc->fd_r;
 			ret = pdu_act(smsc, pdu);
-			ret = pdu_free(pdu);
+			pdu_free(pdu);
 		}
-		ret = data_free(data);
+		data_free(data);
 	}
 
 	/* Signal that we got a MO message */
@@ -809,6 +852,8 @@ static int data_send(int fd, Octstr *from) {
 	size_t length, curl, written = 0;
 	char *willy = NULL;
 
+	debug(0, "data_send: starting");
+
 	/* Create temp data structures. */
 	length = octstr_len(from);
 	if(length <= 0) return 0;
@@ -827,7 +872,6 @@ static int data_send(int fd, Octstr *from) {
 			if(errno==EINTR) continue;
 			if(errno==EBADF) {
 				error(errno, "data_send: write(2) failed");
-				
 			}
 			goto error;
 		} else if(curl == 0) {
@@ -841,6 +885,7 @@ static int data_send(int fd, Octstr *from) {
 	return 1;
 
 socket_b0rken:
+	debug(0, "data_send: broken socket!!!");
 	free(willy);
 	return -1;
 
@@ -1703,6 +1748,43 @@ static int pdu_decode_deliver_sm(smpp_pdu* pdu, Octstr* str) {
 	start = end+1;
 
 	free(buff);
+
+	debug(0, "pdu->service_type == %s", deliver_sm->service_type);
+	
+	debug(0, "pdu->source_addr_ton == %i", deliver_sm->source_addr_ton);
+	debug(0, "pdu->source_addr_npi == %i", deliver_sm->source_addr_npi);
+	debug(0, "pdu->source_addr == %s", deliver_sm->source_addr);
+	
+	debug(0, "pdu->dest_addr_ton == %i", deliver_sm->dest_addr_ton);
+	debug(0, "pdu->dest_addr_npi == %i", deliver_sm->dest_addr_npi);
+	debug(0, "pdu->dest_addr == %s", deliver_sm->dest_addr);
+	
+	debug(0, "pdu->esm_class == %i", deliver_sm->esm_class);
+	debug(0, "pdu->protocol_id == %i", deliver_sm->protocol_id);
+	debug(0, "pdu->priority_flag == %i", deliver_sm->priority_flag);
+	
+	debug(0, "pdu->schedule_delivery_time == %s", deliver_sm->schedule_delivery_time);
+	debug(0, "pdu->validity_period == %s", deliver_sm->validity_period);
+
+	debug(0, "pdu->registered_delivery_flag == %i", deliver_sm->registered_delivery_flag);
+	debug(0, "pdu->replace_if_present_flag == %i", deliver_sm->replace_if_present_flag);
+	debug(0, "pdu->data_coding == %i", deliver_sm->data_coding);
+	debug(0, "pdu->sm_default_msg_id == %i", deliver_sm->sm_default_msg_id);
+	debug(0, "pdu->sm_length == %i", deliver_sm->sm_length);
+
+	start = malloc( 4 );
+	end = malloc( (deliver_sm->sm_length*3) + 1 );
+	if(start == NULL) goto error;
+	if(end == NULL) goto error;
+	memset(end, 0, (deliver_sm->sm_length*3) + 1);
+	for(oct=0; oct < deliver_sm->sm_length; oct++) {
+		sprintf(start, "%02x ", (unsigned char) deliver_sm->short_message[oct]);
+		strcat(end, start);
+	}
+	debug(0, "pdu->short_message == %s", end);
+
+	free(start);
+	free(end);	
 
 	return 1;
 
