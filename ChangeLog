@@ -1,3 +1,9 @@
+2001-01-31  Uoti Urpala  <uau@wapit.com>
+
+	* gw/wap-appl.c: Fixed an uninitialized variable.
+
+	* test/test_http_server.c: Fixed double octstr_destroy().
+
 2001-01-31  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/octstr.c: Made octstr_destroy() call seems_valid even

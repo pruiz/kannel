@@ -475,12 +475,14 @@ static void return_unit_reply(WAPAddrTuple *tuple, long transaction_id,
 /*
  * Return an HTTP reply back to the phone.
  */
-static void return_reply(int status, struct content content, List *headers,
+static void return_reply(int status, Octstr *content_body, List *headers,
     	    	    	 long sdu_size, WAPEvent *orig_event,
 			 long session_id, Octstr *url, int x_wap_tod)
 {
-    if (content.url == NULL)
-	    content.url = octstr_duplicate(url);
+    struct content content;
+
+    content.url = url;
+    content.body = content_body;
 
     if (status < 0) {
 	error(0, "WSP: http lookup failed, oops.");
@@ -549,9 +551,8 @@ static void return_reply(int status, struct content content, List *headers,
     }
 
     octstr_destroy(content.type); /* body was re-used above */
-    octstr_destroy(content.url);
     octstr_destroy(content.charset);
-    octstr_destroy(url);
+    octstr_destroy(url);          /* same as content.url */
     wap_event_destroy(orig_event);
 
     counter_decrease(fetches);
@@ -564,7 +565,7 @@ static void return_reply(int status, struct content content, List *headers,
  */
 static void return_replies_thread(void *arg)
 {
-    struct content content;
+    Octstr *body;
     long id;
     Octstr *idstr;
     struct request_data *p;
@@ -574,8 +575,7 @@ static void return_replies_thread(void *arg)
 
     while (run_status == running) {
 
-	id = http_receive_result(caller, &status, &final_url, &headers,
-	    	    	    	 &content.body);
+	id = http_receive_result(caller, &status, &final_url, &headers, &body);
     	if (id == -1)
 	    break;
     	idstr = octstr_format("%ld", id);
@@ -587,7 +587,7 @@ static void return_replies_thread(void *arg)
 
 	gw_assert(p != NULL);
 	octstr_destroy(idstr);
-	return_reply(status, content, headers, p->client_SDU_size,
+	return_reply(status, body, headers, p->client_SDU_size,
 		     p->event, p->session_id, p->url, p->x_wap_tod);
     	gw_free(p);
     	octstr_destroy(final_url);
@@ -615,8 +615,7 @@ static void start_fetch(WAPEvent *event)
     List *resp_headers;
     WAPAddrTuple *addr_tuple;
     long session_id;
-    struct content content;
-    static struct content empty_content;
+    Octstr *content_body;
     Octstr *method;	    /* type of request, normally a get or a post */
     Octstr *request_body;
     int x_wap_tod;          /* X-WAP.TOD header was present in request */
@@ -626,8 +625,6 @@ static void start_fetch(WAPEvent *event)
     Octstr *idstr;
     
     counter_increase(fetches);
-    
-    content = empty_content;
     
     if (event->type == S_MethodInvoke_Ind) {
 	struct S_MethodInvoke_Ind *p;
@@ -690,10 +687,10 @@ static void start_fetch(WAPEvent *event)
 	ret = HTTP_OK;
 	resp_headers = list_create();
 	http_header_add(resp_headers, "Content-Type", "text/vnd.wap.wml");
-	content.body = octstr_create(HEALTH_DECK);
+	content_body = octstr_create(HEALTH_DECK);
 	http_destroy_headers(actual_headers);
 	octstr_destroy(request_body);
-	return_reply(ret, content, resp_headers, client_SDU_size,
+	return_reply(ret, content_body, resp_headers, client_SDU_size,
 		     event, session_id, url, x_wap_tod);
     } else if (octstr_str_compare(method, "GET") == 0 ||
                octstr_str_compare(method, "POST") == 0) {
@@ -719,12 +716,12 @@ static void start_fetch(WAPEvent *event)
 	mutex_unlock(http_reply_update);
     } else {
 	error(0, "WSP: Method %s not supported.", octstr_get_cstr(method));
-	content.body = octstr_create("");
+	content_body = octstr_create("");
 	resp_headers = NULL;
 	ret = HTTP_NOT_IMPLEMENTED;
 	http_destroy_headers(actual_headers);
 	octstr_destroy(request_body);
-	return_reply(ret, content, resp_headers, client_SDU_size,
+	return_reply(ret, content_body, resp_headers, client_SDU_size,
 		     event, session_id, url, x_wap_tod);
     }
 }

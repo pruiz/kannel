@@ -132,7 +132,6 @@ int main(int argc, char **argv) {
 	panic(0, "http_open_server failed");
 
     client_thread(file_contents);
-    octstr_destroy(file_contents);
 
     debug("test.http", 0, "Program exiting normally.");
     gwlib_shutdown();
