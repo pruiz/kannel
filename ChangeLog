@@ -1,3 +1,6 @@
+2000-07-18  Paul Keogh <paul.keogh@anam.com>
+	* gw/urltrans.c: Fixed memory leak in destroy_onetrans().
+
 2000-07-17  Paul Keogh <paul.keogh@anam.com>
 	* gwlib/counter.[ch]: Added counter_decrease() function.
 
