@@ -1,3 +1,8 @@
+2000-06-14  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_smsc.c: modified sleep in smsc receive to variable length,
+	to increase performance
+
 2000-06-14  Yann Muller  <ymuller@3glab.com>
 
 	* smsc_at.c: New SMSC for wireless modems (AT commands).

@@ -62,6 +62,7 @@ static void sms_receiver(void *arg)
     Msg *msg;
     Smsc *conn = arg;
     int ret;
+    int sleep = 1000;
 
     list_add_producer(flow_threads);
     list_add_producer(incoming_sms);
@@ -100,9 +101,16 @@ static void sms_receiver(void *arg)
 
 	    counter_increase(incoming_sms_counter);
 	    debug("bb.sms", 0, "smsc: new message received");
+	    sleep = 1000;
 	}
-	else
-	    usleep(100000);
+	else {
+	    usleep(sleep);
+	    /* XXX: gradually sleep longer and longer times until something starts to
+	     * happen - this of course reduces response time, but that's better than
+	     * extensive CPU usage when it is not used
+	     */
+	    if (sleep < 1000000) sleep *= 10;
+	}
     }    
     list_remove_producer(incoming_sms);
     list_remove_producer(flow_threads);
