@@ -1,3 +1,20 @@
+2001-10-31 Aaarno Syvänen <aarno@wiral.com>
+    * gwlib/cfg.def: Added new configuration variables.
+    
+    * gw/pushkannel.conf: Updated sample configuration file.
+
+    * gw/wap_push_ppg.c: A bugfix: Reject a push attempt without headers. This
+      was spotted by Jong Hien Zin. Reject a PAP document when network or 
+      bearer is required (by setting corresponding attribute) but not set.
+      This was spotted by Stipe Tolj. Reject other application ids than 
+      push.sia when push is confirmed. This was spotted Jong Hien Zin.
+	
+    * gw/wap_push_ppg_pushusers.[ch]: Added pi authentication. Not tested, yet.
+
+    * gwlib/dict.c: Dict_destroy now ignores silently NULL input.
+
+    * test/test_ppg.c: Change the hardcoded document. Now is is SI over SMS.
+
 2001-10-29 Andreas Fink <andreas@fink.org>
     * gw/smsc_at2.c: changed default speeds for siemens to 19200
       also updated so Siemens do a sleep wait after opening the port
