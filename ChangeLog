@@ -1,3 +1,6 @@
+2001-10-17 Jörg Pommnitz <jpo@condat.de>
+	* doc/userguide/userguide.xml: fix doc to get through Jade.
+
 2001-10-17  Nick Clarey  <nclarey@3glab.com>
 
         * smsc_at.c: Added change from Matt Flax <flatmax@cse.unsw.edu.au>
@@ -26,7 +29,7 @@
 	bearer (a phone number for IP bearer, IP address for SMS).
 	* gw/wap_push_pap_compiler.h: Tell this in the module comment.
 
-2001-07-27 Jörg Pommnitz <jpo@condat.de>
+2001-10-15 Jörg Pommnitz <jpo@condat.de>
 
 	* doc/userguide/userguide.xml,doc/arch/arch.xml: fix doc to get 
 	through Jade.
