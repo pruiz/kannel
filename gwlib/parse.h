@@ -124,4 +124,12 @@ unsigned long parse_get_uintvar(ParseContext *context);
  */
 Octstr *parse_get_nul_string(ParseContext *context);
 
+/*
+ * Return unparsed content. This should be used only after all 
+ * headers are parsed (and the headers and content are stored in
+ * same octstr).
+ */
+ 
+Octstr *parse_get_rest(ParseContext *context);
+
 #endif

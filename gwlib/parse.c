@@ -222,3 +222,15 @@ Octstr *parse_get_nul_string(ParseContext *context)
 
     return result;
 }
+
+Octstr *parse_get_rest(ParseContext *context)
+{
+    Octstr *rest;
+    
+    gw_assert(context != NULL);
+    
+    octstr_delete(context->data, 0, context->pos);
+    rest = octstr_duplicate(context->data);   
+    
+    return rest;   
+}
