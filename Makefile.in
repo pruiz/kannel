@@ -101,7 +101,7 @@ docdirs = $(shell echo doc/[a-z]*/.)
 
 all: progs tests docs
 progs: $(progs)
-tests: $(tests)
+tests: $(testprogs)
 docs: $(docs)
 
 #install:
