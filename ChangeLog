@@ -1,7 +1,7 @@
 Tue Dec 14 16:34:39 1999  Lars Wirzenius  <liw@wapit.com>
 
-	* gw/wsp.c: Fixed calls to mytex_try_lock (which returns -1, not
-	EBUSY, when the lock failed).
+	* gw/wsp.c, gw/wtp.c: Fixed calls to mytex_try_lock (which
+	returns -1, not EBUSY, when the lock failed).
 
 Mon Dec 13 20:47:28 1999  Lars Wirzenius  <liw@wapit.com>
 
