@@ -45,7 +45,7 @@ static int field_value(ParseContext *context, int *well_known_value) {
 	unsigned long len;
 
 	val = parse_get_char(context);
-	if (val < 31) {
+	if (val >= 0 && val < 31) {
 		*well_known_value = -1;
 		parse_limit(context, val);
 		return WSP_FIELD_VALUE_DATA;
@@ -67,6 +67,18 @@ static int field_value(ParseContext *context, int *well_known_value) {
 		parse_skip(context, -1);
 		return WSP_FIELD_VALUE_NUL_STRING;
    	 }
+}
+
+/* Skip over a field_value as defined above. */
+static void skip_field_value(ParseContext *context) {
+	int val;
+	int ret;
+
+	ret = field_value(context, &val);
+	if (ret == WSP_FIELD_VALUE_DATA) {
+		parse_skip_to_limit(context);
+		parse_pop_limit(context);
+	}
 }
 
 /* Multi-octet-integer is defined in 8.4.2.1 */
@@ -109,7 +121,7 @@ static int secondary_field_value(ParseContext *context, long *result) {
 	if (val == 0) {
 		*result = 0;
 		return WSP_FIELD_VALUE_NONE;
-	} else if (val < 31) {
+	} else if (val > 0 && val < 31) {
 		*result = unpack_multi_octet_integer(context, val);
 		return WSP_FIELD_VALUE_ENCODED;
 	} else if (val == 31) {
@@ -1108,6 +1120,7 @@ List *unpack_headers(Octstr *headers, int content_type_present) {
 	ParseContext *context;
 	int byte;
     	List *unpacked;
+	int code_page;
 
 	unpacked = http_create_empty_headers();
 	context = parse_context_create(headers);
@@ -1121,17 +1134,31 @@ List *unpack_headers(Octstr *headers, int content_type_present) {
 		unpack_well_known_field(unpacked,
 				WSP_HEADER_CONTENT_TYPE, context);
 
+	code_page = 1;  /* default */
+
 	while (parse_octets_left(context) > 0 && !parse_error(context)) {
 		byte = parse_get_char(context);
 	
-		if (byte == 127) {
-			warning(0, "Ignoring shift-delimiter");
-			parse_skip(context, 1); /* ignore page-identity */
-		} else if (byte >= 1 && byte <= 31) {
-			warning(0, "Ignoring short-cut-shift-delimiter %d.",
-					byte);
+		if (byte == 127 || (byte >= 1 && byte <= 31)) {
+			if (byte == 127)
+				code_page = parse_get_char(context);
+			else
+				code_page = byte;
+			if (code_page == 1)
+				info(0, "Returning to code page 1 (default).");
+			else {
+				warning(0, "Shift to unknown code page %d.",
+					code_page);
+				warning(0, "Will try to skip headers until "
+					"next known code page.");
+			}
 		} else if (byte >= 128) {  /* well-known-header */
-			unpack_well_known_field(unpacked, byte-128, context);
+			if (code_page == 1)
+				unpack_well_known_field(unpacked, byte-128, context);
+			else {
+				debug("wsp", 0, "Skipping field 0x%02x.", byte);
+				skip_field_value(context);
+			}
 		} else if (byte > 31 && byte < 127) {
 			/* Un-parse the character we just read */
 			parse_skip(context, -1);

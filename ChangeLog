@@ -1,5 +1,10 @@
 2000-09-20  Richard Braakman  <dark@wapit.com>
 
+	* gw/wsp_headers.c: Try to skip over unknown code pages more
+	intelligently.
+
+2000-09-20  Richard Braakman  <dark@wapit.com>
+
 	* gw/timers.[ch], gw/wtp.c: Renamed timer_* to gwtimer_* to
 	avoid name conflict with system functions.  Sigh.
 
