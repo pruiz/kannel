@@ -5,6 +5,8 @@
 
 #include <unistd.h>
 #include <errno.h>
+#include <string.h>
+#include <time.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -18,7 +20,7 @@ static int min_restart_delay = 60; /* in seconds */
 static pid_t child_box; /* used in main_loop, available to signal handlers */
 
 /* Extra arguments to pass to the box */
-const static char *extra_arguments[] = {
+static char *extra_arguments[] = {
 	"-v", "4",   /* Minimal output on stderr, goes to /dev/null anyway */
 };
 #define NUM_EXTRA (sizeof(extra_arguments) / sizeof(*extra_arguments))
@@ -47,6 +49,7 @@ void build_box_arglist(char *boxfile, int argc, char **argv)
 	box_arglist = malloc((1 + NUM_EXTRA + argc + 1) * sizeof(*box_arglist));
 	if (!box_arglist) {
 		fprintf(stderr, "%s: malloc: %s\n", progname, strerror(errno));
+		exit(1);
 	}
 
 	/* Have argp walk down box_arglist and set each argument. */
@@ -65,7 +68,6 @@ void build_box_arglist(char *boxfile, int argc, char **argv)
 void write_pidfile(char *pidfile)
 {
 	int fd;
-	pid_t pid;
 	FILE *f;
 
 	fd = open(pidfile, O_WRONLY|O_NOCTTY|O_TRUNC|O_CREAT, 0644);
@@ -194,7 +196,7 @@ void main_loop(char *boxfile)
 
 		/* Make sure we don't fork in an endless loop if something
 		 * is drastically wrong.  This code limits it to one
-		 * per minute. */
+		 * per minute (or whatever min_restart_delay is set to). */
 		time_t this_time = time(NULL);
 		if (this_time <= next_fork) {
 			sleep(next_fork - this_time);
@@ -318,4 +320,5 @@ int main(int argc, char *argv[])
 
 	setup_signals();
 	main_loop(boxfile);
+	return 0;
 }

@@ -1,3 +1,8 @@
+2000-03-16  Richard Braakman  <dark@wapit.fi>
+
+	* utils/run_kannel_box.c: Clean up compiler warnings, fix minor
+	bug found by rpr.
+
 2000-03-15  Markku Rossi  <mtr@iki.fi>
 
 	* wmlscript/wsopt.c: Fixed some bugs from the assembler stream
