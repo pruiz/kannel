@@ -1,3 +1,12 @@
+2000-02-25  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gw/wml_compiler.c : Now first version of the new compiler with 
+	variable support.
+	* gwlib/octstr.h/c : int octstr_search_char_from(Octstr *ostr, char 
+	ch, size_t pos) added. Does the same as octstr_search_char, except 
+	start from the position pos. The latter is now implemented as a call
+	to the former with argument pos == 0.
+
 2000-02-23    <rpr@rpr.wapit.com>
 
 	* gwlib/octstr.c: modified octstr_recv to fail if receives
