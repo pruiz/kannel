@@ -1846,6 +1846,7 @@ static int create_peek_window(Octstr **address, long *pos)
     unsigned char c;
 
     i = 0;
+    c = '=';
     while (i < 2 && (c = octstr_get_char(*address, *pos)) != '=') {
         if (*pos > 0)
             --*pos;
