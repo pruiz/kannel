@@ -42,7 +42,7 @@ static enum { limbo, running, terminating } resp_run_status = limbo;
 
 wap_dispatch_func_t *dispatch_to_wdp;
 wap_dispatch_func_t *dispatch_to_wsp;
-
+wap_dispatch_func_t *dispatch_to_push;
 
 /*
  * Queue of events to be handled by WTP responder.
@@ -137,7 +137,8 @@ static void send_ack(WTPRespMachine *machine, long ack_type, int rid_flag);
  */
 
 void wtp_resp_init(wap_dispatch_func_t *datagram_dispatch,
-                   wap_dispatch_func_t *session_dispatch) 
+                   wap_dispatch_func_t *session_dispatch,
+                   wap_dispatch_func_t *push_dispatch) 
 {
     resp_machines = list_create();
     resp_machine_id_counter = counter_create();
@@ -147,6 +148,7 @@ void wtp_resp_init(wap_dispatch_func_t *datagram_dispatch,
 
     dispatch_to_wdp = datagram_dispatch;
     dispatch_to_wsp = session_dispatch;
+    dispatch_to_push = push_dispatch;
 
     timers_init();
     wtp_tid_cache_init();

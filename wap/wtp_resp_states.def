@@ -108,7 +108,10 @@ ROW(LISTEN,
 
      wsp_event = create_tr_invoke_ind(resp_machine, 
          event->u.RcvInvoke.user_data);
-     wsp_session_dispatch_event(wsp_event);
+     if (resp_machine->tcl == 1)
+         wsp_push_client_dispatch_event(wsp_event);
+     else
+         wsp_session_dispatch_event(wsp_event);
 
      start_timer_A(resp_machine); 
      resp_machine->ack_pdu_sent = 0;
@@ -172,7 +175,10 @@ ROW(TIDOK_WAIT,
      event->u.RcvAck.tid_ok == 1,
     { 
      wsp_event = wap_event_duplicate(resp_machine->invoke_indication);
-     wsp_session_dispatch_event(wsp_event);
+     if (resp_machine->tcl == 1)
+         wsp_push_client_dispatch_event(wsp_event);
+     else
+         wsp_session_dispatch_event(wsp_event);
      
      wtp_tid_set_by_machine(resp_machine, event->u.RcvAck.tid);
 
@@ -252,7 +258,10 @@ ROW(INVOKE_RESP_WAIT,
     {
      wsp_event = create_tr_abort_ind(resp_machine, 
          event->u.RcvAbort.abort_reason);
-     wsp_session_dispatch_event(wsp_event);
+     if (resp_machine->tcl == 1)
+         wsp_push_client_dispatch_event(wsp_event);
+     else
+         wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
 
@@ -350,7 +359,10 @@ ROW(INVOKE_RESP_WAIT,
      send_abort(resp_machine, PROVIDER, PROTOERR);
      
      wsp_event = create_tr_abort_ind(resp_machine, PROTOERR);
-     wsp_session_dispatch_event(wsp_event);
+     if (resp_machine->tcl == 1)
+         wsp_push_client_dispatch_event(wsp_event);
+     else
+         wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
 
@@ -554,7 +566,7 @@ ROW(WAIT_TIMEOUT_STATE,
      send_abort(resp_machine, PROVIDER, PROTOERR);
       
      wsp_event = create_tr_abort_ind(resp_machine, PROTOERR);
-     wsp_session_dispatch_event(wsp_event);
+     wsp_push_client_dispatch_event(wsp_event);
     },
     LISTEN)
 
@@ -563,7 +575,7 @@ ROW(WAIT_TIMEOUT_STATE,
     1,
     {
      wsp_event = create_tr_abort_ind(resp_machine, PROTOERR);
-     wsp_session_dispatch_event(wsp_event);
+     wsp_push_client_dispatch_event(wsp_event);
     },
     LISTEN)
 
@@ -575,7 +587,7 @@ ROW(WAIT_TIMEOUT_STATE,
     1,
     {
      wsp_event = create_tr_abort_ind(resp_machine, NORESPONSE);
-     wsp_session_dispatch_event(wsp_event); 
+     wsp_push_client_dispatch_event(wsp_event); 
     },
     LISTEN)
 

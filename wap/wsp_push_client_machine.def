@@ -1,0 +1,24 @@
+/*
+ * wsp-push-client-machine.h: Define wsp push client state machine
+ *
+ * By Aarno Syvänen for Wapit Ltd. 
+ */
+
+#if !defined(INTEGER)
+    #error "Macro INTEGER not defined."
+#elseif !defined(HTTPHEADERS)
+    #error "Macro HTTPHEADERS not defined."
+#elseif !defined(MACHINE)
+    #error "Macro MACHINE is not defined."
+#endif
+
+MACHINE(
+	INTEGER(state)
+        INTEGER(client_push_id)
+        INTEGER(transaction_id)
+        HTTPHEADERS(push_headers)
+       )
+
+#undef INTEGER
+#undef HTTPHEADERS
+#undef MACHINE

@@ -82,7 +82,8 @@ void wap_shutdown(void);
  *   TR_Invoke_Ind, TR_Result_Cnf, TR_Abort_Ind
  */
 void wtp_resp_init(wap_dispatch_func_t *datagram_dispatch,
-                   wap_dispatch_func_t *session_dispatch);
+                   wap_dispatch_func_t *session_dispatch,
+                   wap_dispatch_func_t *push_dispatch);
 void wtp_resp_dispatch_event(WAPEvent *event);
 void wtp_resp_shutdown(void);
 
@@ -168,6 +169,10 @@ void wsp_session_shutdown(void);
  * FIXME Not implemented yet.
  */
 
+void wsp_push_client_init(wap_dispatch_func_t *dispatch_self, 
+                          wap_dispatch_func_t *dispatch_wtp_resp);
+void wsp_push_client_shutdown(void);
+void wsp_push_client_dispatch_event(WAPEvent *e);
 
 /*
  * Application layer

@@ -175,6 +175,32 @@ WAPEVENT(S_MethodAbort_Ind,
 	INTEGER(reason)
 	INTEGER(session_id)
 	)
+/*
+ * Per-push events used by the session layer
+ */
+WAPEVENT(S_ConfirmedPush_Res,
+	INTEGER(client_push_id)
+	)
+
+WAPEVENT(S_PushAbort_Req,
+	INTEGER(client_push_id)
+	INTEGER(abort_reason)
+	)
+
+WAPEVENT(S_ConfirmedPush_Ind,
+	INTEGER(client_push_id)
+	HTTPHEADER(push_headers)
+        OCTSTR(push_body)
+	)
+
+WAPEVENT(S_PushAbort_Ind,
+	INTEGER(client_push_id)
+        INTEGER(abort_reason)
+	)
+
+WAPEVENT(Push_Abort,
+	INTEGER(reason)
+	)
 
 /*
  * Events created by unpacking T-DUnitdata.ind events.
