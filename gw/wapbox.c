@@ -380,7 +380,7 @@ void wap_addr_tuple_dump(WAPAddrTuple *tuple) {
 int main(int argc, char **argv) {
 	int bbsocket;
 	int cf_index;
-        int ret = 0;
+        int ret;
 	Msg *msg;
 	WAPEvent *event = NULL;
         List *events = NULL;
@@ -418,10 +418,7 @@ int main(int argc, char **argv) {
 
 	gwthread_create(send_heartbeat_thread, NULL);
 	gwthread_create(empty_queue_thread, &bbsocket);
-	for (; run_status == running; msg_destroy(msg)) {
-		msg = msg_receive(bbsocket);
-		if (msg == NULL)
-			break;
+	while (run_status == running && (msg = msg_receive(bbsocket)) != NULL) {
                 if (msg->wdp_datagram.destination_port == CONNECTIONLESS_PORT) {
 			event = wsp_unit_unpack_wdp_datagram(msg);
 			if (event != NULL)
@@ -430,16 +427,18 @@ int main(int argc, char **argv) {
                         events = wtp_unpack_wdp_datagram(msg);
 		        while (list_len(events) > 0) {
 			    event = list_extract_first(events);
-	                    if (event != NULL) 
+	                    if (event != NULL) {
                                 if ((ret = wtp_event_is_for_responder(
                                            event))  == 1)
 			            wtp_resp_dispatch_event(event);
                                 else if (ret == 0)
                                     wtp_initiator_dispatch_event(event); 
+			    }
                         }
                         list_destroy(events, NULL);
-		} /* if CONNECTIONLESS PORT */
-	} /* for */
+		}
+	        msg_destroy(msg);
+	}
 	info(0, "WAP box terminating.");
 
 	run_status = aborting;

@@ -1,3 +1,12 @@
+2000-10-11  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/wapbox.c: Simplified the main loop. Also removed the
+	initialization of ret (which was done at the definition
+	of the variable, tens of lines above, which is bad style).
+	Removed comments at end of braces, which is also bad style
+	(if it is not obvious what the braces end, the loop or whatever
+	construct is too long or indentation is broken).
+
 2000-10-11 Aarno Syvänen <syvanen@wapit.cm>
 
 	* gw/wapbox.c: Separate conditions event == NULL and event_is_for_
