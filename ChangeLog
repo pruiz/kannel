@@ -1,5 +1,10 @@
 2000-04-08  Richard Braakman  <dark@wapit.com>
 
+	* gw/wtp_timer.c: Removed debugging output again for normal
+	operations.
+
+2000-04-08  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/octstr.c: More assertions.
 
 2000-04-08  Richard Braakman  <dark@wapit.com>

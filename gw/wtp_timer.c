@@ -44,7 +44,9 @@ WTPTimer *wtp_timer_create(void) {
 	list_lock(timers);
 
 	list_append(timers, timer); 
+#if 0
         debug("wap.wtp.timer", 0, "Created timer %p.", (void *) timer);
+#endif
 
 	list_unlock(timers);
 
@@ -64,8 +66,10 @@ void wtp_timer_destroy(WTPTimer *timer) {
 	count = len - list_len(timers);
 
 	if (count == 1) {
+#if 0
         	debug("wap.wtp.timer", 0,
 			"Destroyed timer %p.", (void *) timer);
+#endif
 	} else if (count < 1) {
 		error(0, "Unknown timer %p, ignored, not stopped.",
 			(void *) timer);
@@ -93,8 +97,10 @@ void wtp_timer_start(WTPTimer *timer, long interval,
 	timer->machine = sm;
 	timer->event = e;
 
+#if 0
 	debug("wap.wtp.timer", 0, "Timer %p started at %ld, duration %ld.", 
 		(void *) timer, timer->start_time, timer->interval);
+#endif
 
 	list_unlock(timers);
 }
@@ -105,8 +111,10 @@ void wtp_timer_stop(WTPTimer *timer) {
 	list_lock(timers);
 
 	timer->interval = 0;
+#if 0
 	debug("wap.wtp.timer", 0, "Timer %p stopped at %ld.", (void *) timer,
 		(long) time(NULL));
+#endif
 
 	list_unlock(timers);
 
@@ -130,14 +138,18 @@ void wtp_timer_check(void) {
 	for (pos = 0; pos < len; pos++) {
 		WTPTimer *timer = list_get(timers, pos);
 
+#if 0
 		debug("wap.wtp.timer", 0,
 			"Going thru timers list. This timer belongs to the "
 			"machine %p and its timer interval was %ld",
 			(void *) timer->machine, timer->interval);
+#endif
 
 		if (timer->interval == 0) {
+#if 0
 			debug("wap.wtp.timer", 0, "Timer %p stopped.", 
 				(void *) timer);
+#endif
 			continue;
 		}
 
@@ -152,8 +164,10 @@ void wtp_timer_check(void) {
 			eventp->machine = timer->machine;
 			list_append(elapsed, eventp);
 		} else {
+#if 0
 			debug("wap.wtp.timer", 0, "Timer %p has not elapsed.", 
 				(void *) timer);
+#endif
 		}          
 	}
 
