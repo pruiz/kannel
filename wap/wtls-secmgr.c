@@ -16,11 +16,12 @@
  *
  */
 
-#if (HAVE_WTLS_OPENSSL)
-
 #include <string.h>
 
 #include "gwlib/gwlib.h"
+
+#if (HAVE_WTLS_OPENSSL)
+
 #include "wtls.h"
 
 /*

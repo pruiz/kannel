@@ -1,7 +1,14 @@
-#if (HAVE_WTLS_OPENSSL)
+/*
+ * pki.c: PKI and certificate handling routines
+ *
+ */
 
 #include <stdio.h>
 
+#include "gwlib/gwlib.h"
+ 
+#if (HAVE_WTLS_OPENSSL)
+ 
 #include <openssl/rsa.h>
 #include <openssl/evp.h>
 #include <openssl/objects.h>
@@ -24,7 +31,7 @@ void pki_shutdown(void)
 }
 
 
-void get_cert_from_file(char* s, X509** x509)
+void get_cert_from_file(Octstr *s, X509 **x509)
 {
 		char *filename;
 		

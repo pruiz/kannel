@@ -1,13 +1,14 @@
-/* wtls_pdu.c - pack and unpack WTLS packets
+/* 
+ * wtls_pdu.c: pack and unpack WTLS packets
  *
  * Generates packing and unpacking code from wtls_pdu.def.
  *
- * 
  */
+
+#include "gwlib/gwlib.h"
 
 #if (HAVE_WTLS_OPENSSL)
 
-#include "gwlib/gwlib.h"
 #include "gwlib/octstr.h"
 #include "wtls_pdu.h"
 #include "wtls_pdusupport.h"

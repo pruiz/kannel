@@ -1,11 +1,22 @@
-/* wtls_statesupport.c
+/* 
+ * wtls_statesupport.c
+ * 
  * 2001  Nick Clarey, Yann Muller for 3G LAB
  */
+
+#include "gwlib/gwlib.h"
 
 #if (HAVE_WTLS_OPENSSL)
 
 #include <openssl/x509.h>
+#ifndef NO_RC5
+#include <openssl/rc5.h>
+#else
+#error "your OpenSSL installation lacks RC5 algorithm support"
+#endif
+
 #include "wtls_statesupport.h"
+
 #define BLOCKLENGTH 64
 #define INNERPAD 0x36
 #define OUTERPAD 0x5C
@@ -250,7 +261,6 @@ Octstr* wtls_hash(Octstr* inputData, WTLSMachine* wtls_machine)
         return outputData;
 }
 
-
 Octstr* wtls_decrypt_rc5(Octstr* data, WTLSMachine* wtls_machine)
 {
         Octstr* encryptedData;
@@ -371,7 +381,6 @@ Octstr* wtls_encrypt_rc5(Octstr* data, WTLSMachine* wtls_machine)
          octstr_destroy(duplicatedIv);
          return encryptedData;
 }
-
 
 Octstr* wtls_decrypt_rsa(Octstr* encryptedData)
 {

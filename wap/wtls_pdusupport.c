@@ -1,14 +1,16 @@
-/* wtls_support.c - pack and unpack WTLS packets
+/* 
+ * wtls_support.c: pack and unpack WTLS packets
  *
  * Support functions for packing and unpacking PDUs
- *
  * 
  */
+
+#include "gwlib/gwlib.h"
+
 #if (HAVE_WTLS_OPENSSL)
 
 #include "wtls_pdu.h"
 #include "wtls_pdusupport.h"
-#include "gwlib/gwlib.h"
 #include "wtls_statesupport.h"
 
 // Change this later !!!!

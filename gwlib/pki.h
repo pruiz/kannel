@@ -8,11 +8,11 @@
 
 void pki_init(void);
 void pki_shutdown(void);
-void get_cert_from_file(char* s, X509** x509);
-void get_privkey_from_file(Octstr* s,RSA** priv_key, Octstr* password);
+void get_cert_from_file(Octstr *s, X509 **x509);
+void get_privkey_from_file(Octstr *s, RSA **priv_key, Octstr *password);
 
-void dump_cert(X509* x509);
-void dump_privkey(RSA* priv_key);
+void dump_cert(X509 *x509);
+void dump_privkey(RSA *priv_key);
 
 
 #endif PKI_H

@@ -1,12 +1,13 @@
- /*
- * wtls.c - WTLS Server-side implementation
+/*
+ * wtls.c: WTLS server-side implementation
  *
  * Nick Clarey <nclarey@3glab.com>
  */
 
+#include "gwlib/gwlib.h"
+
 #if (HAVE_WTLS_OPENSSL)
 
-#include "gwlib/gwlib.h"
 #include "wtls.h"
 #include "timers.h"
 #include "wap_events.h"

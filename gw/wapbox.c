@@ -25,6 +25,7 @@
 #if (HAVE_WTLS_OPENSSL)
 #include <openssl/x509.h>
 #include "wap/wtls.h"
+#include "gwlib/pki.h"
 #endif
 
 enum {
@@ -144,27 +145,28 @@ static Cfg *read_config(Octstr *filename)
 
 #if (HAVE_WTLS_OPENSSL)
     /* Load up the necessary keys */
-    if ((s = cfg_get(grp, octstr_imm("certificate-file"))) != NULL){
-            if(octstr_compare(s, octstr_imm("none")) == 0){
-                    debug("bbox",0,"certificate file not set");
-            }else{
-                    /* Load the certificate into the necessary parameter */
-                    get_cert_from_file(s, &x509_cert);
-                    gw_assert(x509_cert != NULL);
-                    debug("bbox",0,"certificate parameter is %s", s);
-            }
+    if ((s = cfg_get(grp, octstr_imm("certificate-file"))) != NULL) {
+        if (octstr_compare(s, octstr_imm("none")) == 0) {
+            debug("bbox", 0, "certificate file not set");
+        } else {
+            /* Load the certificate into the necessary parameter */
+            get_cert_from_file(s, &x509_cert);
+            gw_assert(x509_cert != NULL);
+            debug("bbox", 0, "certificate parameter is %s", s);
+        }
     }
 
-    if ((s = cfg_get(grp, octstr_imm("privatekey-file"))) != NULL){
-            password = cfg_get(grp, octstr_imm("privatekey-password"));
-            if(octstr_compare(s, octstr_imm("none")) == 0){
-                    debug("bbox",0,"privatekey-file not set");
-            }else{
-                    /* Load the private key into the necessary parameter */
-                    get_privkey_from_file(s, &private_key,password);
-                    gw_assert(private_key != NULL);
-                    debug("bbox",0,"certificate parameter is %s", s);
-            }        
+    if ((s = cfg_get(grp, octstr_imm("privatekey-file"))) != NULL) {
+        Octstr *password;
+        password = cfg_get(grp, octstr_imm("privatekey-password"));
+        if (octstr_compare(s, octstr_imm("none")) == 0) {
+            debug("bbox", 0, "privatekey-file not set");
+        } else {
+            /* Load the private key into the necessary parameter */
+            get_privkey_from_file(s, &private_key,password);
+            gw_assert(private_key != NULL);
+            debug("bbox", 0, "certificate parameter is %s", s);
+        }        
     }
 #endif
 
