@@ -11,8 +11,8 @@
 
 enum {
     BB_RUNNING = 0,
-    BB_SUSPENDED = 1,
-    BB_CLOSED = 2,
+    BB_ISOLATED = 1,	/* do not receive new messgaes from UDP/SMSC */
+    BB_SUSPENDED = 2,	/* do not transfer any messages */
     BB_SHUTDOWN = 3,
     BB_DEAD = 4
 };
@@ -84,6 +84,7 @@ int httpadmin_start(Config *config);
  */
 
 int bb_shutdown(void);
+int bb_isolate(void);
 int bb_suspend(void);
 int bb_resume(void);
 int bb_restart(void);

@@ -29,6 +29,8 @@ extern volatile sig_atomic_t bb_status;
 extern List *incoming_wdp;
 
 extern List *flow_threads;
+extern List *suspended;
+extern List *isolated;
 
 /* our own thingies */
 
@@ -66,11 +68,11 @@ static void *udp_receiver(void *arg)
     /* remove messages from socket until it is closed */
     while(bb_status != BB_DEAD && bb_status != BB_SHUTDOWN) {
 
-	// if (bb_status == bb_suspended)
-        // wait_for_status_change(&bb_status, bb_suspended);
+	list_consume(isolated);	/* block here if suspended/isolated */
 
 	if (read_available(conn->fd, 100000) < 1)
 	    continue;
+
 	ret = udp_recvfrom(conn->fd, &datagram, &cliaddr);
 	if (ret == -1) {
 	    if (errno == EAGAIN)
@@ -127,6 +129,8 @@ static void *udp_sender(void *arg)
     debug("bb.thread", 0, "START: udp_sender");
     list_add_producer(flow_threads);
     while(bb_status != BB_DEAD) {
+
+	list_consume(suspended);	/* block here if suspended */
 
 	if ((msg = list_consume(conn->outgoing_list)) == NULL)
 	    break;

@@ -89,6 +89,18 @@ static Octstr *httpd_shutdown(List *cgivars)
     return octstr_create("Bringing system down");
 }
 
+static Octstr *httpd_isolate(List *cgivars)
+{
+    Octstr *reply;
+    if ((reply = httpd_check_authorization(cgivars))!= NULL) return reply;
+    if ((reply = httpd_check_status())!= NULL) return reply;
+
+    if (bb_isolate() == -1)
+	return octstr_create("Already isolated");
+    else
+	return octstr_create("Kannel isolated from message providers");
+}
+
 static Octstr *httpd_suspend(List *cgivars)
 {
     Octstr *reply;
@@ -133,6 +145,8 @@ static void *httpd_serve(void *arg)
 	reply = httpd_shutdown(cgivars);
     else if (octstr_str_compare(url, "/cgi-bin/suspend")==0)
 	reply = httpd_suspend(cgivars);
+    else if (octstr_str_compare(url, "/cgi-bin/isolate")==0)
+	reply = httpd_isolate(cgivars);
     else if (octstr_str_compare(url, "/cgi-bin/resume")==0)
 	reply = httpd_resume(cgivars);
     /*
@@ -173,9 +187,7 @@ static void *httpadmin_run(void *arg)
     
     httpd = http2_server_open(port);
 
-    /*
-     * infinitely wait for new connections;
-     * XXX how to stop this?
+    /* infinitely wait for new connections;
      */
 
     while(bb_status != BB_DEAD) {
@@ -188,7 +200,6 @@ static void *httpadmin_run(void *arg)
 	    error(0, "Failed to start a new thread to handle HTTP admin command");
 	    http2_server_close_client(client);
 	}
-	sleep(2); /* XXX: kludge! that accept blocks a bit too hard... maybe signal? */
     }
     http2_server_close(httpd);
 

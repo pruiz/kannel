@@ -34,6 +34,8 @@ extern List *incoming_sms;
 extern List *outgoing_sms;
 
 extern List *flow_threads;
+extern List *suspended;
+extern List *isolated;
 
 /* our own thingies */
 
@@ -66,8 +68,7 @@ static void *sms_receiver(void *arg)
     /* remove messages from SMSC until it is closed */
     while(bb_status != BB_DEAD && bb_status != BB_SHUTDOWN) {
 
-	// if (bb_status == bb_suspended)
-        // wait_for_status_change(&bb_status, bb_suspended);
+	list_consume(isolated);	/* block here if suspended/isolated */
 
 	// XXX mutexes etc are needed, I think?
 
@@ -105,6 +106,8 @@ static void *sms_sender(void *arg)
     list_add_producer(flow_threads);
     
     while(bb_status != BB_DEAD) {
+
+	list_consume(suspended);	/* block here if suspended */
 
 	if ((msg = list_consume(conn->outgoing_list)) == NULL)
 	    break;

@@ -45,7 +45,16 @@ List *flow_threads;
  */
 List *core_threads;
 
+/* and still more abuse; we use this list to put us into
+ * 'suspend' state - if there are any producers (only core adds/removes them)
+ * receiver/sender systems just sit, blocked in list_consume
+ */
+List *suspended;
 
+/* this one is like 'suspended', but only for receiving UDP/SMSC
+ * (suspended state puts producers for both lists)
+ */
+List *isolated;
 
 volatile sig_atomic_t bb_status;
 
@@ -259,7 +268,9 @@ static int starter(Config *config)
 
     flow_threads = list_create();
     core_threads = list_create();
-
+    suspended = list_create();
+    isolated = list_create();
+    
     status_mutex = mutex_create();
 
     setup_signal_handlers();
@@ -320,6 +331,8 @@ int main(int argc, char **argv)
 
     list_destroy(flow_threads);
     list_destroy(core_threads);
+    list_destroy(suspended);
+    list_destroy(isolated);
     mutex_destroy(status_mutex);
 
     config_destroy(cfg);
@@ -343,6 +356,10 @@ int bb_shutdown(void)
 	mutex_unlock(status_mutex);
 	return -1;
     }
+    if (bb_status == BB_SUSPENDED)
+	list_remove_producer(suspended);
+    if (bb_status == BB_SUSPENDED || bb_status == BB_ISOLATED)
+	list_remove_producer(isolated);
     bb_status = BB_SHUTDOWN;
     mutex_unlock(status_mutex);
 
@@ -354,14 +371,35 @@ int bb_shutdown(void)
     return 0;
 }
 
-int bb_suspend(void)
+int bb_isolate(void)
 {
     mutex_lock(status_mutex);
-    if (bb_status != BB_RUNNING) {
+    if (bb_status != BB_RUNNING && bb_status != BB_SUSPENDED) {
 	mutex_unlock(status_mutex);
 	return -1;
     }
+    if (bb_status == BB_RUNNING)
+	list_add_producer(isolated);
+    else
+	list_remove_producer(suspended);
+
+    bb_status = BB_ISOLATED;
+    mutex_unlock(status_mutex);
+    return 0;
+}
+
+int bb_suspend(void)
+{
+    mutex_lock(status_mutex);
+    if (bb_status != BB_RUNNING && bb_status != BB_ISOLATED) {
+	mutex_unlock(status_mutex);
+	return -1;
+    }
+    if (bb_status != BB_ISOLATED)
+	list_add_producer(isolated);
+
     bb_status = BB_SUSPENDED;
+    list_add_producer(suspended);
     mutex_unlock(status_mutex);
     return 0;
 }
@@ -369,11 +407,15 @@ int bb_suspend(void)
 int bb_resume(void)
 {
     mutex_lock(status_mutex);
-    if (bb_status != BB_SUSPENDED) {
+    if (bb_status != BB_SUSPENDED && bb_status != BB_ISOLATED) {
 	mutex_unlock(status_mutex);
 	return -1;
     }
+    if (bb_status == BB_SUSPENDED)
+	list_remove_producer(suspended);
+	
     bb_status = BB_RUNNING;
+    list_remove_producer(isolated);
     mutex_unlock(status_mutex);
     return 0;
 }
@@ -388,15 +430,24 @@ Octstr *bb_print_status(void)
 {
     char *s;
     char buf[512];
+    time_t t;
+
+    t = time(NULL) - start_time;
     
     switch(bb_status) {
     case BB_RUNNING:
 	s = "running";
+	break;
+    case BB_ISOLATED:
+	s = "isolated";
+	break;
     case BB_SUSPENDED:
 	s = "suspended";
+	break;
     default:
 	s = "going down";
     }
-    sprintf(buf, "Kannel %s %s", VERSION, s);
+    sprintf(buf, "Kannel version %s %s (up %ldd %ldh %ldm %lds)", VERSION, s,
+	    t/3600/24, t/3600%24, t/60%60, t%60);
     return octstr_create(buf);
 }

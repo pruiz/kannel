@@ -31,6 +31,7 @@ extern List *incoming_wdp;
 extern List *outgoing_wdp;
 
 extern List *flow_threads;
+extern List *suspended;
 
 /* our own thingies */
 
@@ -72,6 +73,8 @@ static void boxc_receiver(void *arg)
 	if (read_available(conn->fd, 100000) < 1)
 	    continue;
 
+	list_consume(suspended);	/* block here if suspended */
+	
 	ret = octstr_recv(conn->fd, &pack);
 
 	if (ret < 1)
@@ -133,9 +136,8 @@ static void *boxc_sender(void *arg)
 
     while(bb_status != BB_DEAD) {
 
-	if (bb_status == BB_SUSPENDED)
-	    ; // wait_for_status_change(&bb_status, bb_suspended);
-	
+	list_consume(suspended);	/* block here if suspended */
+
 	if ((msg = list_consume(conn->incoming)) == NULL)
 	    break;
 
@@ -412,8 +414,7 @@ static void *wdp_to_wapboxes(void *arg)
     
     while(bb_status != BB_DEAD) {
 
-	if (bb_status == BB_SUSPENDED)
-	    ; // wait_for_status_change(&bb_status, suspended);
+	list_consume(suspended);	/* block here if suspended */
 
 	if ((msg = list_consume(incoming_wdp)) == NULL)
 	    break;
@@ -460,7 +461,7 @@ static void wait_for_connections(int fd, void *(*function) (void *arg), List *wa
 	tv.tv_sec = 1;
 	tv.tv_usec = 0;
 	
-	if (bb_status == BB_RUNNING || bb_status == BB_SHUTDOWN)
+	if (bb_status != BB_SUSPENDED)
 	    FD_SET(fd, &rf);
 
 	ret = select(FD_SETSIZE, &rf, NULL, NULL, &tv);
