@@ -15,7 +15,7 @@ void wtp_pdu_destroy(WTP_PDU *pdu) {
 	switch (pdu->type) {
 #define PDU(name, docstring, fields, is_valid) \
 	case name: {\
-	struct name *p = &pdu->u.name; \
+	struct name *p; p = &pdu->u.name; \
 	fields \
 	} break;
 #define UINT(field, docstring, bits)
