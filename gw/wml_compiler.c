@@ -325,14 +325,19 @@ int wml_compile(Octstr *wml_text,
 		Octstr **wml_binary,
 		Octstr **wml_scripts)
 {
+  Octstr *stripped_text;
   int i, ret = 0;
   size_t size;
   char *wml_c_text;
 
+  /* Remove the extra space from start and the end of the WML Document. */
+
+  stripped_text = text_strip_blank(wml_text);
+
   /* Check the WML-code for \0-characters. */
 
-  size = octstr_len(wml_text);
-  wml_c_text = octstr_get_cstr(wml_text);
+  size = octstr_len(stripped_text);
+  wml_c_text = octstr_get_cstr(stripped_text);
 
   for (i = 0; i < size; i++)
     {
@@ -355,6 +360,8 @@ int wml_compile(Octstr *wml_text,
 
   *wml_binary = octstr_duplicate(wbxml_string);
   *wml_scripts = octstr_create_empty();
+
+  octstr_destroy(stripped_text);
 
   return ret;
 }
@@ -1121,7 +1128,7 @@ Octstr *text_strip_blank(Octstr *text)
     start ++;
 
   /* and from the end. */
-  end = octstr_len(text) - 1;
+  end = octstr_len(text);
 
   while (isspace(octstr_get_char(text, end)))
     end--;

@@ -1,7 +1,10 @@
 2000-02-25  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
 	* gw/wml_compiler.c : Now first version of the new compiler with 
-	variable support.
+	variable support. The WML document is first stripped from extra 
+	whitespace in the beginning and end to avoid parsing errors by 
+	gnome-XML.
+
 	* gwlib/octstr.h/c : int octstr_search_char_from(Octstr *ostr, char 
 	ch, size_t pos) added. Does the same as octstr_search_char, except 
 	start from the position pos. The latter is now implemented as a call
