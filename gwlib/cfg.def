@@ -232,6 +232,7 @@ MULTI_GROUP(smsc,
     OCTSTR(source-addr-npi)
     OCTSTR(dest-addr-ton)
     OCTSTR(dest-addr-npi)
+    OCTSTR(service-type)
     OCTSTR(source-addr-autodetect)
     OCTSTR(enquire-link-interval)
     OCTSTR(max-pending-submits)

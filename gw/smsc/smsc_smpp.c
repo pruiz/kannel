@@ -89,6 +89,7 @@ typedef struct {
     Octstr *address_range; 
     Octstr *our_host; 
     Octstr *my_number; 
+    Octstr *service_type;
     int source_addr_ton; 
     int source_addr_npi; 
     int dest_addr_ton; 
@@ -120,7 +121,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
                          int max_pending_submits, int reconnect_delay,
                          int version, int priority, Octstr *my_number,
                          int smpp_msg_id_type, int autodetect_addr,
-                         Octstr *alt_charset) 
+                         Octstr *alt_charset, Octstr *service_type) 
 { 
     SMPP *smpp; 
      
@@ -144,6 +145,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->alt_dcs = alt_dcs;
     smpp->our_host = octstr_duplicate(our_host); 
     smpp->my_number = octstr_duplicate(my_number); 
+    smpp->service_type = octstr_duplicate(service_type);
     smpp->transmit_port = transmit_port; 
     smpp->receive_port = receive_port; 
     smpp->enquire_link_interval = enquire_link_interval;
@@ -173,6 +175,7 @@ static void smpp_destroy(SMPP *smpp)
         octstr_destroy(smpp->username); 
         octstr_destroy(smpp->password); 
         octstr_destroy(smpp->system_type); 
+        octstr_destroy(smpp->service_type); 
         octstr_destroy(smpp->address_range); 
         octstr_destroy(smpp->our_host); 
         octstr_destroy(smpp->my_number);
@@ -326,6 +329,9 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     	    	    
     pdu->u.submit_sm.source_addr = octstr_duplicate(msg->sms.sender); 
     pdu->u.submit_sm.destination_addr = octstr_duplicate(msg->sms.receiver); 
+
+    /* Set the service type of the outgoing message */
+    pdu->u.submit_sm.service_type = octstr_duplicate(smpp->service_type);
   
     /* Check for manual override of source ton and npi values */ 
     if(smpp->source_addr_ton > -1 && smpp->source_addr_npi > -1) { 
@@ -1252,6 +1258,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     long dest_addr_npi; 
     Octstr *our_host; 
     Octstr *my_number; 
+    Octstr *service_type;
     SMPP *smpp; 
     int ok; 
     int transceiver_mode; 
@@ -1284,6 +1291,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     address_range = cfg_get(grp, octstr_imm("address-range")); 
     our_host = cfg_get(grp, octstr_imm("our-host")); 
     my_number = cfg_get(grp, octstr_imm("my-number")); 
+    service_type = cfg_get(grp, octstr_imm("service-type")); 
      
     system_id = cfg_get(grp, octstr_imm("system-id")); 
     if (system_id != NULL) { 
@@ -1328,6 +1336,11 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
 	    error(0, "SMPP: Configuration file doesn't specify system-type."); 
 	    ok = 0; 
     } 
+    if (octstr_len(service_type) > 6) {
+            error(0, "SMPP: Service type must be 6 characters or less.");
+            ok = 0;
+    }
+
     if (!ok) 
         return -1; 
  
@@ -1379,7 +1392,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
                        dest_addr_npi, alt_dcs, enquire_link_interval, 
                        max_pending_submits, reconnect_delay, 
                        version, priority, my_number, smpp_msg_id_type,
-                       autodetect_addr, alt_charset); 
+                       autodetect_addr, alt_charset, service_type); 
  
     conn->data = smpp; 
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S",  
@@ -1401,6 +1414,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     octstr_destroy(my_number); 
     octstr_destroy(smsc_id);
     octstr_destroy(alt_charset); 
+    octstr_destroy(service_type);
 
     conn->status = SMSCCONN_CONNECTING; 
        

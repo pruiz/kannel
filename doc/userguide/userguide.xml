@@ -2479,6 +2479,16 @@ address-range = ""
        Voice Mail Activation.
      </entry></row>
 
+   <row><entry><literal>service-type</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Optional; if specified, sets the service type for the SMSC. If
+       unset, the default service type is used. This may be used to
+       influence SMS routing (for example). The SMSC operator may
+       also refer to this as the "profile ID". The maximum length of the
+       service type is 6, according to the SMPP specification v3.4.
+     </entry></row>
+
    <row><entry><literal>interface-version</literal></entry>
      <entry><literal>number</literal></entry>
      <entry valign="bottom">

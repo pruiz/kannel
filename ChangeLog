@@ -1,3 +1,8 @@
+2003-02-18  David Holland  <david.holland@3glab.com>
+    * gw/smsc/smsc_smpp.c, gwlib/cfg.def, doc/userguide/userguide.xml:
+      added facility to specify SMPP SMSC service type with
+      'service-type = "foo"' syntax (thanks to Nick Clarey)
+
 2003-02-18  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smasi.c: fixed typo bug in reading the TON and NPI config
       directives for the SM/ASI module.
