@@ -670,7 +670,7 @@ int urltrans_send_sender(URLTranslation *t)
 static URLTranslation *create_onetrans(CfgGroup *grp)
 {
     URLTranslation *ot;
-    Octstr *aliases, *url, *post_url, *text, *file;
+    Octstr *aliases, *url, *post_url, *text, *file, *exec;
     Octstr *accepted_smsc, *forced_smsc, *default_smsc;
     Octstr *grpname, *sendsms_user, *sms_service;
     int is_sms_service;
@@ -729,6 +729,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	post_url = cfg_get(grp, octstr_imm("post-url"));
 	file = cfg_get(grp, octstr_imm("file"));
 	text = cfg_get(grp, octstr_imm("text"));
+	exec = cfg_get(grp, octstr_imm("exec"));
 	if (url != NULL) {
 	    ot->type = TRANSTYPE_GET_URL;
 	    ot->pattern = url;
@@ -742,6 +743,9 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	} else if (text != NULL) {
 	    ot->type = TRANSTYPE_TEXT;
 	    ot->pattern = text;
+    } else if (exec != NULL) {
+        ot->type = TRANSTYPE_EXECUTE;
+        ot->pattern = exec;
 	} else {
 	    error(0, "Configuration group `sms-service' "
 	    	     "did not specify get-url, post-url, file or text.");
