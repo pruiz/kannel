@@ -1,4 +1,8 @@
 2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_emi2.c: fixing timestamp issue for the 0-based months,
+      now conversion function gets the right value
+
+2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
     * checks/check_[fakesmsc|pph].sh: need some time before trying to grep 
       around in the logs and descide if things are doing well
 
