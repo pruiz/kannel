@@ -45,11 +45,24 @@
 			</address>
 		</affiliation>
 	</author>
+	<author>
+		<firstname>Andreas</firstname>
+		<surname>Fink</surname>
+		<affiliation>
+			<jobtitle>Open Source Developer</jobtitle>
+			<orgname>Global Networks Inc. (SMSRELAY)</orgname>
+			<address> <email>andreas@fink.org</email>
+			<otheraddr>http://www.smsrelay.com</otheraddr>
+			<otheraddr>http://www.global-networks.ch</otheraddr>
+			</address>
+		</affiliation>
+	</author>
 	<abstract>
 		<title>Abstract</title> 
 		<para>This document describes how
 		to install and use Kannel, the Open Source WAP and SMS Gateway
-		produced by Wapit Ltd.
+		originally developed by Wapit Ltd (now out of business) and now
+		being developed further by the open source community.
 		</para>
 	</abstract>
   <revhistory>
@@ -4469,7 +4482,7 @@ forced-smsc = SOL
 	<sect3>
 	<title>MySQL DLR storage</title>
 	<para>To store DLR information into a MySQL database you may use the
-	<literal>dlr-storeage = mysql</literal> configuration directive in the
+	<literal>dlr-storage = mysql</literal> configuration directive in the
 	<literal>core</literal> group.
 	</para>
 	<para>In addition to that you must have a <literal>dlr-mysql</literal>
@@ -5670,6 +5683,55 @@ sendsms-port-ssl = true
 </userinput></screen>
 	</sect1>	
 							  
+</chapter>
+
+<chapter id="delivery-reports">
+<title>Delivery Reports</title>
+
+	<para>This chapter explains how to set up kannel to deliver delivery reports.
+	</para>
+	
+	<para>Delivery reports are a method to tell your system if the message
+	has arrived on the destination phone. There are different things which can happen
+	to a message on the way to the phone which are:
+	</para>
+	<para>
+	<itemizedlist>
+	<listitem><para>Message gets rejected by the SMSC (unknown subscriber, invalid destination number etc).</para></listitem>
+	<listitem><para>Message gets accepted by the SMSC but the phone rejects the message.</para></listitem>
+	<listitem><para>Message gets accepted by the SMSC but the phone is off or out of reach.
+	 The message gets buffered.</para></listitem>
+	<listitem><para>Message gets successfully delivered.</para></listitem>
+	</itemizedlist>
+	</para>
+	
+	<para>When you deliver SMS to Kannel you have to indicate what kind of delivery report messages you
+	would like to receive back from the system. The delivery report types currrently implemented are:
+	<itemizedlist>
+	<listitem><para>1: delivery success</para></listitem>
+	<listitem><para>2: delivery failure</para></listitem>
+	<listitem><para>4: message buffered</para></listitem>
+	<listitem><para>8: smsc submit</para></listitem>
+	<listitem><para>16: smsc reject</para></listitem>
+	</itemizedlist>
+	If you want multiple report types, you simply add the values togeter. For example if you want to get delivery success and/or failure
+	you set the dlrmask value to 1+2. and so on. If you specify dlrmask on the URL you pass on to
+	kannel you also need to specify dlrurl. dlrurlshould contain the URL to which
+	kannel should place a HTTP requests once the delivery report is ready to be delivered back to your system.
+	</para>
+	<para>
+	An example transaction would work as following.
+	<itemizedlist>
+	<listitem><para>1. you send a message using dlrmaks=7 and dlrurl=www.xyz.com/cgi/dlr.php?type=%d</para></listitem>
+	<listitem><para>2. Kannel forwards the message to the SMSC and keeps track of the message</para></listitem>
+	<listitem><para>3. The SMSC can not reach the phone and thus returns a buffered message</para></listitem>
+	<listitem><para>4. Kannel calls http://www.xyz.com/cgi/dlr.php?type=4 to indicate the message being buffered</para></listitem>
+	<listitem><para>5. The phone is switched on and the SMS gets delivered from the SMSC. The SMSC reports this to Kannel</para></listitem>
+	<listitem><para>4. Kannel calls http://www.xyz.com/cgi/dlr.php?type=2 to indicate the final success</para></listitem>
+	</itemizedlist>
+	Depending on the SMSC type not all type of messages are supported. For example a CIMD SMSC does
+	not support buffered messages. Also some SMSC drivers have not implemented all DLR types.
+	</para>
 </chapter>
 
 

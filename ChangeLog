@@ -1,3 +1,6 @@
+2002-04-10 Andreas Fink <andreas@fink.org>
+    * doc/userguide/userguide.xml: corrected a typo. Added section about DLR
+
 2002-04-09  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsc_smpp.c, doc/userguide/userguide.xml: Added my-number to SMPP
     * doc/userguide/userguide.xml: changed at2 my-number description
