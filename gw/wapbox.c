@@ -38,6 +38,7 @@ enum {MAX_SMS_OCTETS = 140};
 
 static Octstr *bearerbox_host;
 static long bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
+static int bearerbox_ssl = 0;
 static long heartbeat_freq = BB_DEFAULT_HEARTBEAT;
 static long heartbeat_thread;
 static Counter *sequence_counter = NULL;
@@ -78,6 +79,10 @@ static Cfg *read_config(Octstr *filename)
     
     if (cfg_get_integer(&bearerbox_port,grp,octstr_imm("wapbox-port")) == -1)
 	panic(0, "No 'wapbox-port' in core group");
+#ifdef HAVE_LIBSSL
+    cfg_get_bool(&bearerbox_ssl, grp, octstr_imm("wapbox-port-ssl"));
+#endif /* HAVE_LIBSSL */
+
     
     http_proxy_host = cfg_get(grp, octstr_imm("http-proxy-host"));
     http_proxy_port =  -1;
@@ -429,7 +434,7 @@ int main(int argc, char **argv)
     
     if (bearerbox_host == NULL)
     	bearerbox_host = octstr_create(BB_DEFAULT_HOST);
-    connect_to_bearerbox(bearerbox_host, bearerbox_port, NULL
+    connect_to_bearerbox(bearerbox_host, bearerbox_port, bearerbox_ssl, NULL
 		    /* bearerbox_our_port */);
 
     wap_push_ota_bb_address_set(bearerbox_host);
