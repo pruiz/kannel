@@ -1,3 +1,6 @@
+2002-11-11  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smpp.c: fixing a thread handling bug, reported by Paul.
+
 2002-11-07  Oded Arbel  <odeda@m-wise.com>
     * gw/smsc/smsc_at2.c: fixed compilation warning from last commit
 
