@@ -1,4 +1,7 @@
 2002-04-24  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsbox.c: fixed typo in init_smsbox()
+
+2002-04-24  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsc_smpp.c: fixed debug output to be hex, thanks to Simon
 
 2002-04-24  Stipe Tolj <tolj@wapme-systems.de>
