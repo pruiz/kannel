@@ -43,18 +43,30 @@ if test -z "$pthread"; then
 	AC_CHECK_LIB(c_r, pthread_exit, [LIBS="$LIBS -lc_r"])
 fi
 
+AC_PATH_PROG(XML2_CONFIG, xml2-config, no)
 AC_PATH_PROG(XML_CONFIG, xml-config, no)
-if test "$XML_CONFIG" = "no"; then
-	echo "You MUST have the gnome-xml library installed"; exit 1
+if test "$XML2_CONFIG" = "no"; then
+	if test "$XML_CONFIG" = "no"; then
+		echo "You MUST have the gnome-xml library installed"; exit 1
+	else
+		changequote(<<, >>)dnl
+		case `$XML_CONFIG --version` in 
+		*2.[2-9].[0-9]*) ;;
+		*) echo "Libxml is too old. You need at least 2.2.0." ; exit 1 ;;
+		esac
+		changequote([, ])dnl
+		LIBS="$LIBS `$XML_CONFIG --libs`"
+		CFLAGS="$CFLAGS `$XML_CONFIG --cflags`"
+	fi
 else
 	changequote(<<, >>)dnl
-	case `$XML_CONFIG --version` in 
+	case `$XML2_CONFIG --version` in 
 	*2.[2-9].[0-9]*) ;;
 	*) echo "Libxml is too old. You need at least 2.2.0." ; exit 1 ;;
 	esac
 	changequote([, ])dnl
-	LIBS="$LIBS `$XML_CONFIG --libs`"
-	CFLAGS="$CFLAGS `$XML_CONFIG --cflags`"
+	LIBS="$LIBS `$XML2_CONFIG --libs`"
+	CFLAGS="$CFLAGS `$XML2_CONFIG --cflags`"
 fi
 
 AC_CHECK_LIB(resolv, inet_ntop)

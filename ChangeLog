@@ -1,3 +1,9 @@
+2001-03-21  Tuomas Luttinen  <tuo@wapit.com>
+
+	* configure.in, configure: Added the xml2-config that libxml-2.3.* and 
+	newer want instead of xml-config. Tested with libxml-2.2.11 and 2.3.4.
+	Yet to be tested with both libxml1 and libxml2 installed.
+
 2001-03-21  Kalle Marjola  <rpr@wapit.com>
 
 	* gwlib/xmlrpc.h|c: Updated, still missing many things
