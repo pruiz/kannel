@@ -273,11 +273,9 @@ int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, size_t n) {
 int octstr_search_char(Octstr *ostr, char ch) {
     size_t pos = 0;
     int tmp_int, asc_ch = -1;
-    Octstr *ch_o;
     
     asc_ch = octstr_get_char(octstr_create(&ch), 0);
    
-    
     while( (tmp_int = octstr_get_char(ostr, pos)) != asc_ch){
 	   if( tmp_int == -1 ) break;
 	   pos++;
@@ -303,10 +301,12 @@ int octstr_search_str(Octstr *ostr, char *str) {
     	if( (a=octstr_get_char(ostr, pos_a)) == (b=octstr_get_char(char_to_oct, pos_b))){
 	    pos_b++;
 	    if( pos_b == octstr_len(char_to_oct) )
-		return (pos_a - len_c + 1); /*returns the start position of the found substring */
+		return (pos_a - len_c + 1);
+	        /*returns the start of the found substring */
 	}
 	else {
-	    if( len_o-(pos_a+1) < len_c )break; /* is it worth to keep looking */
+	    if( len_o-(pos_a+1) < len_c )break;
+	    /* is it worth to keep looking */
 	    pos_b = 0;
 	}
     }/* for ends */
@@ -318,6 +318,7 @@ int octstr_search_str(Octstr *ostr, char *str) {
 
 
 
+    
 int octstr_print(FILE *f, Octstr *ostr) {
     if (fwrite(ostr->data, ostr->len, 1, f) != 1) {
 		error(errno, "Couldn't write all of octet string to file.");
