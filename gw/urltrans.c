@@ -248,7 +248,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	switch (octstr_get_char(t->pattern, pos + 1)) {
 	case 's':
 	    enc = encode_for_url(list_get(word_list, nextarg));
-	    octstr_format_append(result, "%s", enc);
+	    octstr_append(result, enc);
 	    octstr_destroy(enc);
 	    ++nextarg;
 	    break;
@@ -267,10 +267,9 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	case 'r':
 	    for (j = nextarg; j < num_words; ++j) {
 		enc = encode_for_url(list_get(word_list, j));
-		if (j == nextarg)
-		    octstr_format_append(result, "%s", enc);
-		else
-		    octstr_format_append(result, "+%s", enc);
+		if (j != nextarg)
+		    octstr_append_char(result, '+');
+		octstr_append(result, enc);
 		octstr_destroy(enc);
 	    }
 	    break;
@@ -281,13 +280,13 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	 */
 	case 'P':
 	    enc = encode_for_url(request->sms.sender);
-	    octstr_format_append(result, "%s", enc);
+	    octstr_append(result, enc);
 	    octstr_destroy(enc);
 	    break;
 
 	case 'p':
 	    enc = encode_for_url(request->sms.receiver);
-	    octstr_format_append(result, "%s", enc);
+	    octstr_append(result, enc);
 	    octstr_destroy(enc);
 	    break;
 
@@ -296,12 +295,12 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 		temp = octstr_copy(request->sms.sender, 2, 
 		    	    	  octstr_len(request->sms.sender));
 		enc = encode_for_url(temp);
-		octstr_format_append(result, "%%2B%s", enc);
+		octstr_format_append(result, "%%2B%S", enc);
 		octstr_destroy(enc);
 		octstr_destroy(temp);
 	    } else {
 		enc = encode_for_url(request->sms.sender);
-		octstr_format_append(result, "%s", enc);
+		octstr_append(result, enc);
 		octstr_destroy(enc);
 	    }
 	    break;
@@ -311,12 +310,12 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 		temp = octstr_copy(request->sms.receiver, 2, 
 		    	    	  octstr_len(request->sms.receiver));
 		enc = encode_for_url(temp);
-		octstr_format_append(result, "%%2B%s", enc);
+		octstr_format_append(result, "%%2B%S", enc);
 		octstr_destroy(enc);
 		octstr_destroy(temp);
 	    } else {
 		enc = encode_for_url(request->sms.receiver);
-		octstr_format_append(result, "%s", enc);
+		octstr_append(result, enc);
 		octstr_destroy(enc);
 	    }
 	break;
@@ -325,9 +324,8 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    for (j = 0; j < num_words; ++j) {
 		enc = encode_for_url(list_get(word_list, j));
 		if (j > 0)
-		    octstr_format_append(result, "+%s", enc);
-		else
-		    octstr_format_append(result, "%s", enc);
+		    octstr_append_char(result, '+');
+		octstr_append(result, enc);
 		octstr_destroy(enc);
 	    }
 	    break;
@@ -630,7 +628,7 @@ static void destroy_onetrans(void *p)
     
     ot = p;
     if (ot != NULL) {
-	gw_free(ot->keyword);
+	octstr_destroy(ot->keyword);
 	list_destroy(ot->aliases, octstr_destroy_item);
 	octstr_destroy(ot->pattern);
 	octstr_destroy(ot->prefix);

@@ -1,3 +1,20 @@
+2000-12-11  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_smpp.c: Made smpp_reopen() work, and not crash.
+	Made it not destroy the smsc structure when it fails, because
+	that's not part of the interface.
+
+	* gw/smsc.c: Made smsc_reopen() also lock the smsc structure.
+
+	* gwlib/socket.c: In read_available(), pass the actual value of
+	the largest fd used to select, rather than FD_SETSIZE.
+
+	* gw/urltrans.c: encode_for_url returns an Octstr, but callers
+	treated it as char *.  Fixed that.
+	Free URLTranslation->keyword with octstr_destroy, not gw_free.
+
+	* gw/smsc_smpp.c: Removed unused lists sent_mt and delivered_mt.
+
 2000-12-11  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/octstr.c: octstr_format(): Implement %% in format strings.

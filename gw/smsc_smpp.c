@@ -43,8 +43,6 @@ SMSCenter *smpp_open(char *host, int port, char *system_id, char *password,
 
 	/* Create FIFO stacks */
 	smsc->unsent_mt    = list_create();
-	smsc->sent_mt      = list_create();
-	smsc->delivered_mt = list_create();
 	smsc->received_mo  = list_create();
 	smsc->fifo_t_in    = list_create();
 	smsc->fifo_t_out   = list_create();
@@ -75,8 +73,6 @@ error:
 
 	/* Destroy FIFO stacks. */
 	list_destroy(smsc->unsent_mt, NULL);
-	list_destroy(smsc->sent_mt, NULL);
-	list_destroy(smsc->delivered_mt, NULL);
 	list_destroy(smsc->received_mo, NULL);
 	list_destroy(smsc->fifo_t_in, NULL);
 	list_destroy(smsc->fifo_t_out, NULL);
@@ -92,13 +88,17 @@ error:
 }
 
 int smpp_reopen(SMSCenter *smsc) {
-
-	gw_assert(smsc==NULL);
+	gw_assert(smsc != NULL);
 
 	/* Destroy buffers */
 	data_free(smsc->data_t);
 	data_free(smsc->data_r);
 
+	/* Create new buffers */
+	smsc->data_t = data_new();
+	smsc->data_r = data_new();
+
+	/* Open the transmitter connection */
 	/* Close sockets */
 	close(smsc->fd_t);
 	close(smsc->fd_r);
@@ -120,23 +120,6 @@ int smpp_reopen(SMSCenter *smsc) {
 
 error:
 	error(0, "smpp_reopen: could not open");
-
-	/* Destroy FIFO stacks. */
-	list_destroy(smsc->unsent_mt, NULL);
-	list_destroy(smsc->sent_mt, NULL);
-	list_destroy(smsc->delivered_mt, NULL);
-	list_destroy(smsc->received_mo, NULL);
-	list_destroy(smsc->fifo_t_in, NULL);
-	list_destroy(smsc->fifo_t_out, NULL);
-	list_destroy(smsc->fifo_r_in, NULL);
-	list_destroy(smsc->fifo_r_out, NULL);
-
-	/* Destroy buffers */
-	data_free(smsc->data_t);
-	data_free(smsc->data_r);
-
-	smscenter_destruct(smsc);
-
 	return -1;
 }
 
@@ -213,8 +196,6 @@ int smpp_close(SMSCenter *smsc) {
 
 	/* Destroy FIFO stacks. */
 	list_destroy(smsc->unsent_mt, NULL);
-	list_destroy(smsc->sent_mt, NULL);
-	list_destroy(smsc->delivered_mt, NULL);
 	list_destroy(smsc->received_mo, NULL);
 	list_destroy(smsc->fifo_t_in, NULL);
 	list_destroy(smsc->fifo_t_out, NULL);
@@ -615,11 +596,14 @@ static int data_receive(int fd, Octstr *to) {
 
 	memset(data, 0, sizeof(data));
 
+	if (fd < 0)
+		return -1;
+
 	FD_ZERO(&rf);
 	FD_SET(fd, &rf);
 	tox.tv_sec = 0;
 	tox.tv_usec = 100;
-	ret = select(FD_SETSIZE, &rf, NULL, NULL, &tox);
+	ret = select(fd + 1, &rf, NULL, NULL, &tox);
 
 	if (ret == 0) {
 		goto no_data;
@@ -634,7 +618,6 @@ static int data_receive(int fd, Octstr *to) {
 	length = read(fd, data, sizeof(data)-1);
 
 	if(length == -1) {
-/*		if(errno==EWOULDBLOCK) return -1; */
 		goto error;
 	} else if(length == 0) {
 		debug("bb.sms.smpp", 0, "other side closed socket <%i>", fd);
@@ -914,6 +897,10 @@ static int pdu_encode(smpp_pdu *pdu, Octstr **rawdata) {
 
 	case SMPP_SUBMIT_SM:
 		ret = pdu_encode_submit_sm(pdu, &body);
+		break;
+
+	case SMPP_UNBIND:
+		body = NULL;
 		break;
 
 	default:

@@ -294,7 +294,7 @@ int read_available(int fd, long wait_usec)
     to.tv_sec = waits.quot;
     to.tv_usec = waits.rem;
 retry:
-    ret = select(FD_SETSIZE, &rf, NULL, NULL, &to);
+    ret = select(fd + 1, &rf, NULL, NULL, &to);
     if (ret > 0 && FD_ISSET(fd, &rf))
         return 1;
     if (ret < 0) {
