@@ -470,6 +470,7 @@ OctstrList *octstr_split_words(Octstr *ostr) {
 void octstr_dump(Octstr *ostr) {
 	char *p, buf[40];
 	size_t pos;
+	unsigned char c;
 
 	if (ostr == NULL)
 		return;
@@ -490,6 +491,24 @@ void octstr_dump(Octstr *ostr) {
 		}
 	}
 	debug(0, "  data: %s", buf);
+/* Added hex FXH */
+	p = buf;
+	for (pos = 0; pos < octstr_len(ostr); ++pos) {
+		c=octstr_get_char(ostr, pos);
+		if(c<0x20) 
+			{
+				c='.';
+			}
+		sprintf(p, " %c",c);
+		p = strchr(p, '\0');
+		if (p - buf > sizeof(buf) - 5) {
+			debug(0, "  data: %s", buf);
+			buf[0] = '\0';
+			p = buf;
+		}
+	}
+	debug(0, "  data: %s", buf);
+/* Added hex FXH */
 }
 
 int octstr_send(int fd, Octstr *ostr) {

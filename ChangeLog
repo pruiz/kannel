@@ -1,3 +1,10 @@
+Tue Jan 25 16:51:43 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c, gw/wsp_state-decl.h, gwlib/octstr.c: Applied patch
+	from francois-xavier.hannedouche@philips.com to provide partial
+	support for Post PDU with only one argument. Also adds support
+	for enabling a reconnection.
+
 Tue Jan 25 14:59:05 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* utils/seewbmp.c: Added to CVS. Simple debugging tool written by

@@ -62,6 +62,7 @@ static WSPEvent *remove_from_event_queue(WSPMachine *machine);
 
 static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data);
 static int unpack_get_pdu(Octstr **url, Octstr **headers, Octstr *pdu);
+static int unpack_post_pdu(Octstr **url, Octstr **headers, Octstr *pdu);
 
 static int unpack_uint8(unsigned long *u, Octstr *os, int *off);
 static int unpack_uintvar(unsigned long *u, Octstr *os, int *off);
@@ -470,6 +471,76 @@ static int unpack_get_pdu(Octstr **url, Octstr **headers, Octstr *pdu) {
 		error(0, "unpack_get_pdu: Get PDU has headers, ignored them");
 	*headers = NULL;
 	debug(0, "WSP: Get PDU had URL <%s>", octstr_get_cstr(*url));
+	return 0;
+}
+
+static int unpack_post_pdu(Octstr **url, Octstr **headers, Octstr *pdu) {
+	unsigned long url_len;
+	unsigned long param_len;
+	Octstr 		*param;
+	Octstr 		*head;
+	Octstr 		*comp;
+	int off;
+
+	off = 1; /* Offset 0 has type octet. */
+	/* 
+		0x60 : Post
+		u8	: URL len
+		u8 	: Header Len
+		URL	:
+		Vars	:
+
+	*/
+	if (unpack_uintvar(&url_len, pdu, &off) == -1)
+	{
+		return -1;
+	}
+	 if( unpack_uintvar(&param_len,pdu,&off) == -1)
+	{
+		return -1;
+	}
+/*
+	debug(0, "WSP: Post PDU had  URL len <%d>", url_len);
+	debug(0, "WSP: Post PDU had  param len <%d>", param_len);
+*/
+	if(  unpack_octstr(url, url_len, pdu, &off) == -1)
+	{
+		return -1;
+	}
+	debug(0, "WSP: Post PDU had URL <%s>", octstr_get_cstr(*url));
+
+	if(unpack_octstr(&head,param_len,pdu,&off)==-1)
+	{
+		return -1;
+	}
+	debug(0, "WSP: Got headers. <%d> Total len <%d> offset",octstr_len(pdu),off);
+
+	if(unpack_octstr(&param,octstr_len(pdu)-off,pdu,&off)==-1)
+	{
+		return -1;
+	}
+
+/*
+	if (off < octstr_len(pdu))
+		error(0, "unpack_post_pdu: Post PDU has headers, ignored them");
+*/
+		
+	*headers = NULL;
+
+	debug(0, "WSP: Post PDU had dats <%s>", octstr_get_cstr(param));
+
+	octstr_destroy(head);
+	/* Now we concatenante the two thingies */
+	head=octstr_create("?");
+	octstr_insert(*url,head,url_len);	
+	octstr_insert(*url,param,octstr_len(*url));	
+	octstr_destroy(param);
+	octstr_destroy(head);
+/*
+	octstr_set_char	(*url,url_len,'?');
+*/	
+	debug(0, "WSP: Final URL is  <%s>", octstr_get_cstr(*url));
+	debug(0, "WSP: URL unpacked");
 	return 0;
 }
 
