@@ -1965,7 +1965,7 @@ ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int i
 
     grplist = cfg_get_multi_group(cfg, octstr_imm("modems"));
     if(idnumber == 0)
-	debug("bb.smsc.at2",0,"AT2[%s]: Found <%d> modems in config", octstr_get_cstr(privdata->name), list_len(grplist));
+	debug("bb.smsc.at2",0,"AT2[%s]: Found <%ld> modems in config", octstr_get_cstr(privdata->name), list_len(grplist));
 
     if(grplist == NULL)
 	panic(0, "Where are the modem definitions ?!?!");
