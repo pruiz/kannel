@@ -1,3 +1,6 @@
+2001-11-12 Aarno Syvänen <aarno@wiral.com>
+    * doc/userguide/userguide.xml: Documented ppg authentication configuration.
+
 2001-11-09 Jörg Pommnitz <jpo@condat.de>
     * gateway/gw/wap_push_ppg.c: change Content-Transfer-Encoding to 
       "binary" after successful decoding.

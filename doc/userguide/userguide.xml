@@ -4155,7 +4155,7 @@ group = sendsms-user
 username = operator_B
 password = bar
 forced-smsc = B
-</programlisting>
+</programlisting> 
 
     <para>Note that if your SMS centers do not set the sender phone
     number but rely on number transmitted, you should set
@@ -4436,25 +4436,31 @@ otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
       example configuration file are given. A working push proxy gateway
       is described. </para>
 <sect1>
-<title>Configuring ppg group</title>
+<title>Configuring ppg core group, for pi interface</title>
      <para>Ppg configuration group defines gateway's service interface.
      Configuring a ppg working with a trusted pi is easiest. Actually,
      you need no configuration at all: in this case a ppg with default 
      values will be set up. Do not rely on this, default values may change.
-     For ppg configuration variables, see table 7.1.
+     For ppg core configuration variables, see table 7.1.
      </para>
 
-     <para>An example is probably usefull here.</para>
+     <para>An example of a core configuration for ppg working only pis with 
+     specific addresses follows. Note that ppg-deny-ip-list is not actually 
+     necessary, but does make configuring simpler: ips here are always denied,
+     even when they are mentioned in the allowed ips list.</para>
      <screen><userinput>
 group = ppg
 ppg-url = /cgi-bin/wap-push.cgi
 ppg-port = 8080
 concurrent-pushes = 100
-trusted-pi = true
+users = 1024
+ppg-allow-ip = 194.100.32.125;127.0.0.1
+ppg-deny-ip = 194.100.32.89;194.100.32.103
+trusted-pi = false
      </userinput></screen>
 
      <table frame=none>
-     <title>PPG group configuration variables</title>
+     <title>PPG core group configuration variables</title>
              <tgroup cols=3><thead><row>
              <entry>Variable</entry>
              <entry>Value</entry>
@@ -4464,7 +4470,7 @@ trusted-pi = true
              <row><entry><literal>group</literal></entry>
              <entry><emphasis>ppg</emphasis></entry>
              <entry valign=bottom>
-             Mandatory value. Defines the group in question.
+             Mandatory value. Tells that we are configuring the ppg group.
              </entry></row>
              <row><entry><literal>ppg-port</literal></entry>
              <entry><emphasis>number</emphasis></entry>
@@ -4484,17 +4490,131 @@ trusted-pi = true
              does</emphasis> work even value is too low; it will only be 
              slower. Default 100.
              </entry></row>
+             <row><entry><literal>users</literal></entry>
+             <entry><emphasis>number</emphasis></entry>
+             <entry valign=bottom>
+             Number of actually configured user accounts. Note that ppg 
+             <emphasis>does</emphasis> work even value is too low; it will 
+             only be slower. Default 1024.
+             </entry></row>
              <row><entry><literal>trusted-pi</literal></entry>
              <entry><emphasis>boolean</emphasis></entry>
              <entry valign=bottom>
              If true, pi does authentication for ppg. Obviously, both of them
-             must reside inside same firewall. Default true.
+             must reside inside same firewall. Default true. If this variable
+             is true, all security variables are ignored (even though they
+             may be present).
+             </entry></row>
+             <row><entry><literal>ppg-deny-ip</literal></entry>
+             <entry><emphasis>ip-list</emphasis></entry>
+             <entry valign=bottom>
+             PPG will not accept pushes from these ips. Wildcards are allowed.
+             If this attribute is missing, no IP is denied <emphasis> by this
+             list </emphasis>.
+             </entry></row>
+             <row><entry><literal>ppg-allow-ip</literal></entry>
+             <entry><emphasis>ip-list</emphasis></entry>
+             <entry valign=bottom>
+             PPG will accept pushes from these, and only these, ips. Wildcards
+             are allowed. Adding this list means that ips not mentioned are 
+             denied, too.
              </entry></row>
              </tbody>
              </tgroup>
      </table>
+</sect1>
+<sect1>
+<title>Configuring PPG user group variables</title>
 
-     <para>Configuration for a secure pi will be added later.</para>
+      <para>In addition of pi lists similar to the core group, ppg 
+      configuration spesific to a certain user contains variables used for
+      authentication and enforcing restrictions to phone numbers pi may 
+      contact. All variables are elaborated in table 7.2.</para>
+
+      <para>As an example, let us see how to configure a ppg user (a pi, 
+      named here 'picom') allowed to send pushes only from a specified ip.
+      </para>
+
+<screen><userinput>
+group = wap-push-user
+wap-push-user = picom
+ppg-username = foo
+ppg-password = bar
+allow-ip = 62.254.217.163
+</userinput></screen>
+
+      <para>It goes without saying that is real systems you must use more
+            complex paswords that bar.</para>
+
+      <table frame=none>
+      <title>PPG user group configuration variables</title>
+      <tgroup cols=3><thead><row>
+             <entry>Variable</entry>
+             <entry>Value</entry>
+             <entry>Description</entry>
+             </row></thead>
+             <tbody>
+             <row><entry><literal>group</literal></entry>
+             <entry><emphasis>wap-push-user</emphasis></entry>
+             <entry valign=bottom>
+             Mandatory value. Tells that we are configuring the users group.
+             </entry></row>
+             <row><entry><literal>wap-push-user</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign=bottom>
+             (More) human readable name of an user.
+             </entry></row>
+             <row><entry><literal>ppg-username</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign=bottom>
+             Username for this user.
+             </entry></row>
+             <row><entry><literal>ppg-password</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign=bottom>
+             Password for this user.
+             </entry></row>
+             <row><entry><literal>allowed-prefix</literal></entry>
+             <entry><emphasis>number-list</emphasis></entry>
+             <entry valign=bottom>
+             Phone number prefixes allowed in pushes coming from this pi. These
+             prefixes must conform international phone number format.
+             </entry></row>
+             <row><entry><literal>denied-prefix</literal></entry>
+             <entry><emphasis>number-list</emphasis></entry>
+             <entry valign=bottom>
+             Phone number prefixes denied in pushes coming from this pi. These
+             prefixes must conform international phone number format.
+             </entry></row>
+             <row><entry><literal>white-list</literal></entry>
+             <entry><emphasis>url</emphasis></entry>
+             <entry valign=bottom>
+             Defines an url wherefrom the whitelist can be fetched. White list
+             itself contains list of phone numbers accepting pushes from this 
+             pi.
+             </entry></row>
+             <row><entry><literal>black-list</literal></entry>
+             <entry><emphasis>url</emphasis></entry>
+             <entry valign=bottom>
+             Defines an url wherefrom the blacklist can be fetched. Blacklist 
+             itself contains list of phone number not accepting pushes from 
+             this pi.
+             </entry></row>
+             <row><entry><literal>allow-ip</literal></entry>
+             <entry><emphasis>ip-list</emphasis></entry>
+             <entry valign=bottom>
+             Defines ips wherefrom this pi can do pushes. Adding this list 
+             means that ips not mentioned are denied.
+             </entry></row>
+             <row><entry><literal>deny-ip</literal></entry>
+             <entry><emphasis>ip-list</emphasis></entry>
+             <entry valign=bottom>
+             Defines ips wherefrom this pi cannot do pushes. Ips not mentioned
+             in either list are denied, too.
+             </entry></row>
+             </tbody>
+             </tgroup>
+      </table>
 </sect1>
 <sect1>
 <title>Finishing ppg configuration</title>
@@ -4889,15 +5009,26 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
        PPG listens at the port defined in the ppg configuration file. Other 
        <literal>test_http_server</literal> options are irrelevant here.</para>
 
-       <para>Lastly, start making push requests, for instance with <literal>
-       test_ppg</literal>. Its first argument is a URL specifying location of
-       push services. Other arguments are two file names, first one push 
-       content and second one pap control document. (For command line options,
-       see Table C.1.). For example (you can simplify push url by setting
-       a ppg configuration variable, see "Setting up push proxy gateway"):
+       <para>Lastly, start making push requests, for instance with a test 
+       program <literal> test_ppg</literal>. Its first argument is a URL 
+       specifying location of push services. Other arguments are two file 
+       names, first one push content and second one pap control document. 
+       (For command line options, see Table C.1.). For example doing one 
+       push(you can simplify push url by setting a ppg configuration variable,
+       see "Setting up push proxy gateway"; q flag here prevents dumping of 
+       test_ppg program debugging information):
        </para>
        <screen><userinput>
        test/test_ppg -q http://name:port [content_file] [control_file]
+       </userinput></screen>
+
+       <para>If you want use authentication in a test environment, you can pass
+       username and password either using headers (setting flag -b) or url:
+       </para>
+
+       <screen><userinput>
+       test/test_ppg -q http://name:port?username=foo'&'password=bar 
+       [content_file] [control_file]
        </userinput></screen>
    
        <table frame=none>
@@ -4925,6 +5056,17 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              the phone that should handle the push request. Sia, ua, mms, nil
              and scrap are accepted. Nil and scrap are used for debugging 
              purposes.
+             </entry></row>
+             <row><entry><literal>-e</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign=bottom>
+             Use tranfer encoding when sending a push content. Only base64 is
+             currently supported.
+             </entry></row>
+             <row><entry><literal>-b</literal></entry>
+             <entry><emphasis>boolean</emphasis></entry>
+             <entry valign=bottom>
+             Use headers for authentication, instead of url. Default off.
              </entry></row>
              <row><entry><literal>-i</literal></entry>
              <entry><emphasis>number</emphasis></entry>
