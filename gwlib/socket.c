@@ -330,9 +330,9 @@ retry:
 	 * layers of abstraction.  */
 	case EBADF:
 	    if(!FD_ISSET(fd, &rf)){
-		info(0,"Tried to select on fd %d, not in the set!\n",fd);
+		warning(0,"Tried to select on fd %d, not in the set!\n",fd);
 	    }else{
-		info(0,"Tried to select on invalid fd %d!\n",fd);
+		warning(0,"Tried to select on invalid fd %d!\n",fd);
 	    }
 	    break;
 	case EINVAL:
@@ -341,9 +341,9 @@ retry:
 
 	    /* First up, try invalid timeout*/
 	    if(to.tv_sec > 10000000)
-		info(0,"Wait more than three years for a select?\n");
+		warning(0,"Wait more than three years for a select?\n");
 	    if(to.tv_usec >1000000)
-		info(0,"There are only 1000000 usec in a second...\n");
+		warning(0,"There are only 1000000 usec in a second...\n");
 	    break;
 	    
 
