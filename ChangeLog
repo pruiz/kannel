@@ -1,4 +1,9 @@
 2005-02-15  Stipe Tolj  <stolj@wapme.de> 
+    * configure[.in]: fixing bug #191. Thanks to Sefan Cars and Noritoshi
+      Demizu <demizu@dd.iij4u.or.jp> for reporting and resolving this issue
+      for the FreeBSD platform.
+
+2005-02-15  Stipe Tolj  <stolj@wapme.de> 
     * gwlib/http.c: fixing bug #68 reported by Aarno. Thanks to Rune Saetre 
       <rune.saetre@netcom-gsm.no> for providing a patch. Applied in variation
       of the Rune's patch, in order to reduce code.

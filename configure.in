@@ -123,7 +123,8 @@ case "$host" in
     ;;
   *-*-openbsd* | *-*-freebsd*)
     CFLAGS="$CFLAGS -pthread"
-	AC_CHECK_LIB(c_r, pthread_exit, [LIBS="$LIBS -lc_r -lkse"; pthread="yes"])
+    AC_CHECK_LIB(c_r, pthread_exit, [LIBS="$LIBS -lc_r"; pthread="yes"])
+    AC_CHECK_LIB(kse, pthread_exit, [LIBS="$LIBS -lkse"; pthread="yes"])
     ;;
 esac
 AC_SUBST(EXE_EXT)
