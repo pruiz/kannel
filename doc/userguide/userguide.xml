@@ -1,4 +1,3 @@
-
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
 <!--
@@ -2366,6 +2365,16 @@ address-range = ""
      <entry valign=bottom>
        Usually you can get away with "VMA" which stands for
        Voice Mail Activation.
+     </entry></row>
+
+   <row><entry><literal>interface-version</literal></entry>
+     <entry><literal>number</literal></entry>
+     <entry valign=bottom>
+       Change the "interface version" parameter sent from Kannel to
+       a value other then 0x34 (for SMPP v3.4). the value entered here
+       should be the hexadecimal representation of the interface version
+       parameter. for example, the default (if not set) is "34" which stands
+       for 0x34. for SMPP v3.3 set to "33".
      </entry></row>
 
    <row><entry><literal>address-range (m)</literal></entry>

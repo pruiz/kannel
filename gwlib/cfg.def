@@ -212,6 +212,7 @@ MULTI_GROUP(smsc,
     OCTSTR(max-pending-submits)
     OCTSTR(reconnect-delay)
     OCTSTR(transceiver-mode)
+    OCTSTR(interface-version)
 )
 
 

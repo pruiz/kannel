@@ -26,7 +26,7 @@
  * stable releases. 
  */ 
  
-#if 1 
+#ifndef DEBUG 
 /* This version doesn't dump. */ 
 static void dump_pdu(const char *msg, SMPP_PDU *pdu) 
 { 
@@ -41,7 +41,6 @@ static void dump_pdu(const char *msg, SMPP_PDU *pdu)
 #endif 
  
  
- 
 /*  
  * Some defaults.
  */ 
@@ -49,7 +48,7 @@ static void dump_pdu(const char *msg, SMPP_PDU *pdu)
 #define SMPP_ENQUIRE_LINK_INTERVAL  30.0 
 #define SMPP_MAX_PENDING_SUBMITS    10 
 #define SMPP_RECONNECT_DELAY	    10.0 
- 
+#define SMPP_DEFAULT_VERSION        0x34
  
  
 /*********************************************************************** 
@@ -83,6 +82,7 @@ typedef struct {
     long enquire_link_interval;
     long max_pending_submits;
     long reconnect_delay;
+    int version;
     SMSCConn *conn; 
 } SMPP; 
  
@@ -95,7 +95,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
                          int dest_addr_ton, int dest_addr_npi, 
                          int alt_dcs, int enquire_link_interval, 
                          int max_pending_submits, int reconnect_delay,
-                         Octstr *my_number) 
+                         int version, Octstr *my_number) 
 { 
     SMPP *smpp; 
      
@@ -125,6 +125,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->max_pending_submits = max_pending_submits; 
     smpp->reconnect_delay = reconnect_delay;
     smpp->quitting = 0; 
+    smpp->version = version;
     smpp->conn = conn; 
      
     return smpp; 
@@ -400,7 +401,7 @@ static Connection *open_transmitter(SMPP *smpp)
     else 
 	bind->u.bind_transmitter.system_type =  
 	    octstr_duplicate(smpp->system_type); 
-    bind->u.bind_transmitter.interface_version = 0x34; 
+    bind->u.bind_transmitter.interface_version = smpp->version;
     bind->u.bind_transmitter.address_range =  
     	octstr_duplicate(smpp->address_range); 
     send_pdu(conn, bind); 
@@ -434,7 +435,7 @@ static Connection *open_transceiver(SMPP *smpp)
         bind->u.bind_transmitter.system_type = octstr_create("VMA"); 
     else    
         bind->u.bind_transmitter.system_type = octstr_duplicate(smpp->system_type); 
-    bind->u.bind_transmitter.interface_version = 0x34; 
+    bind->u.bind_transmitter.interface_version = smpp->version;
     bind->u.bind_transmitter.address_range = octstr_duplicate(smpp->address_range); 
     send_pdu(conn, bind); 
     smpp_pdu_destroy(bind); 
@@ -468,7 +469,7 @@ static Connection *open_receiver(SMPP *smpp)
     else 
 	bind->u.bind_receiver.system_type =  
 	    octstr_duplicate(smpp->system_type); 
-    bind->u.bind_receiver.interface_version = 0x34; 
+    bind->u.bind_receiver.interface_version = smpp->version;
     bind->u.bind_receiver.address_range =  
     	octstr_duplicate(smpp->address_range); 
     send_pdu(conn, bind); 
@@ -924,6 +925,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     long enquire_link_interval;
     long max_pending_submits;
     long reconnect_delay;
+    long version;
 
  
     my_number = NULL; 
@@ -992,13 +994,20 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
        dest_addr_ton = -1; 
     if (cfg_get_integer(&dest_addr_npi, grp, octstr_imm("dest-addr-npi")) == -1) 
        dest_addr_npi = -1; 
- 
+
+    /* check for any specified interface version */
+    if (cfg_get_integer(&version, grp, octstr_imm("interface-version")) == -1)
+        version = SMPP_DEFAULT_VERSION;
+    else
+        /* convert decimal to BCD */
+        version = ((version / 10) << 4) + (version % 10);
+
     smpp = smpp_create(conn, host, port, receive_port, system_type,  
     	    	       username, password, address_range, our_host, 
                        source_addr_ton, source_addr_npi, dest_addr_ton,  
                        dest_addr_npi, alt_dcs, enquire_link_interval, 
                        max_pending_submits, reconnect_delay, 
-                       my_number); 
+                       version, my_number); 
  
     smsc_id = cfg_get(grp, octstr_imm("smsc-id")); 
     if (smsc_id == NULL) { 
