@@ -1,6 +1,9 @@
 2002-08-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_smscconn.c: removing debug line from previous testing and 
       commented out lines and added 're-connecting' state to smsc2_status().
+    * gw/smsc/smsc_smpp.c: fixed a bug with possible segfault when acessing the 
+      smpp->msgs_to_send in queued_cb() while the connection has been shutdown
+      and the status page queueries all available connections.
 
 2002-08-13 Harrie Hazewinkel <harrie@mod-snmp.com>
     * Changed the '<NULL>' into '(null)' since the former is
