@@ -1041,6 +1041,9 @@ Octstr *conn_read_fixed(Connection *conn, long length)
 {
     Octstr *result = NULL;
 
+    if (length < 1)
+	return NULL;
+
     /* See if the data is already available.  If not, try a read(),
      * then see if we have enough data after that.  If not, give up. */
     lock_in(conn);

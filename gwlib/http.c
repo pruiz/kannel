@@ -380,7 +380,8 @@ static void deduce_body_state(HTTPEntity *ent)
 
     h = http_header_find_first(ent->headers, "Content-Length");
     if (h != NULL) {
-        if (octstr_parse_long(&ent->expected_body_len, h, 0, 10) == -1) {
+        if (octstr_parse_long(&ent->expected_body_len, h, 0, 10) == -1 ||
+	    ent->expected_body_len < 0) {
 	    error(0, "HTTP: Content-Length header wrong: <%s>",
 		  octstr_get_cstr(h));
 	    ent->state = body_error;

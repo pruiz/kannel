@@ -1,3 +1,8 @@
+2004-11-30    <kmarjola@enpocket.com>
+
+    * gwlib/conn.c: Bug fix: try not to read negative number of bytes
+    * gwlib/http.c: Bug fix: close connection with bad content-length
+
 2004-11-29  Alexander Malysh <amalysh at kannel.org>
     * gwlib/charset.c: fixed bug in 'charset_convert' that could cause
       converted string to be truncated.
