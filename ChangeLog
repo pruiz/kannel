@@ -1,3 +1,7 @@
+2000-03-30    <Kalle Marjola <rpr@wapit.com>>
+
+	* gwlib/octstr.c: removed wrong assertion from octstr_truncate
+
 Thu Mar 30 06:51:03 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/octstr.[ch]: Changed octstr_create_from_data and

@@ -475,7 +475,8 @@ void octstr_replace(Octstr *ostr, char *data, long len) {
 void octstr_truncate(Octstr *ostr, int new_len) {
 	seems_valid(ostr);
 	gw_assert(new_len >= 0);
-	gw_assert(new_len <= ostr->len);
+	if (new_len >= ostr->len)
+	    return 
 
 	ostr->len = new_len;
 	ostr->data[new_len] = '\0';
