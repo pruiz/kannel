@@ -235,8 +235,8 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 			     conndata->username, conndata->password,
 			     sms->sms.receiver, 
                              sms->sms.msgdata); 
-    }
-    
+    }   
+
     if (octstr_len(sms->sms.udhdata)) {
         if (!conndata->no_sep) {
 	    octstr_format_append(url, "&udh=%E", sms->sms.udhdata);
@@ -250,7 +250,7 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
         octstr_format_append(url, "&from=%E", sms->sms.sender);
     if (sms->sms.mclass)
 	octstr_format_append(url, "&mclass=%d", sms->sms.mclass);
-    if (sms->sms.coding && !conndata->no_coding)
+    if (!conndata->no_coding && sms->sms.coding)
 	octstr_format_append(url, "&coding=%d", sms->sms.coding);
     if (sms->sms.mwi)
 	octstr_format_append(url, "&mwi=%d", sms->sms.mwi);
@@ -283,7 +283,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     ConnData *conndata = conn->data;
     Octstr *user, *pass, *from, *to, *text, *udh, *account, *tmp_string;
     Octstr *retmsg;
-    int	mclass, mwi, coding, validity, deferred;
+    int	mclass, mwi, coding, validity, deferred; 
     List *reply_headers;
     int ret;
 
