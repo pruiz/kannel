@@ -24,10 +24,11 @@ extern volatile sig_atomic_t bb_status;
 static volatile sig_atomic_t httpadmin_running;
 
 static long	ha_port;
-static Octstr	*ha_password;
-static Octstr	*ha_status_pw;
-static Octstr	*ha_allow_ip;
-static Octstr	*ha_deny_ip;
+static Octstr *ha_interface;
+static Octstr *ha_password;
+static Octstr *ha_status_pw;
+static Octstr *ha_allow_ip;
+static Octstr *ha_deny_ip;
 
 
 /*---------------------------------------------------------
@@ -364,6 +365,7 @@ int httpadmin_start(Cfg *cfg)
     if (cfg_get_integer(&ha_port, grp, octstr_imm("admin-port")) == -1)
 	panic(0, "Missing admin-port variable, cannot start HTTP admin");
 
+    ha_interface = cfg_get(grp, octstr_imm("admin-interface"));
     ha_password = cfg_get(grp, octstr_imm("admin-password"));
     if (ha_password == NULL)
 	panic(0, "You MUST set HTTP admin-password");
@@ -398,7 +400,7 @@ int httpadmin_start(Cfg *cfg)
     octstr_destroy(ssl_server_key_file);
 #endif /* HAVE_LIBSSL */
 
-    http_open_port(ha_port, ssl);
+    http_open_port_if(ha_port, ssl, ha_interface);
 
     if (gwthread_create(httpadmin_run, NULL) == -1)
 	panic(0, "Failed to start a new thread for HTTP admin");
@@ -412,6 +414,7 @@ void httpadmin_stop(void)
 {
     http_close_all_ports();
     gwthread_join_every(httpadmin_run);
+    octstr_destroy(ha_interface);    
     octstr_destroy(ha_password);
     octstr_destroy(ha_status_pw);
     octstr_destroy(ha_allow_ip);
