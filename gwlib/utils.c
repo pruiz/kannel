@@ -143,64 +143,76 @@ int get_and_set_debugs(int argc, char **argv,
     return i;
 }
 
-int check_ip(char *accept_string, char *ip, char *match_buffer)
+
+static int pattern_matches_ip(Octstr *pattern, Octstr *ip)
 {
-    char *p, *t, *start;
-
-    t = accept_string;
+    long i, j;
+    long pat_len, ip_len;
+    int pat_c, ip_c;
     
-    while(1) {
-	for(p = ip, start = t;;p++, t++) {
-	    if ((*t == ';' || *t == '\0') && *p == '\0')
-		goto found;
+    pat_len = octstr_len(pattern);
+    ip_len = octstr_len(ip);
 
-	    if (*t == '*') {
-		t++;
-		while(*p != '.' && *p != ';' && *p != '\0')
-		    p++;
-
-		if (*p == '\0')
-		    goto found;
-		continue;
+    i = 0;
+    j = 0;
+    while (i < pat_len && j < ip_len) {
+	pat_c = octstr_get_char(pattern, i);
+	ip_c = octstr_get_char(ip, j);
+	if (pat_c == ip_c) {
+	    /* The characters match, go to the next ones. */
+	    ++i;
+	    ++j;
+	} else if (pat_c != '*') {
+	    /* They differ, and the pattern isn't a wildcard one. */
+	    return 0;
+	} else {
+	    /* We found a wildcard in the pattern. Skip in ip. */
+	    ++i;
+	    while (j < ip_len && ip_c != '.') {
+		++j;
+		ip_c = octstr_get_char(ip, j);
 	    }
-	    if (*p == '\0' || *t == '\0' || *t != *p)
-		break;		/* not matching */
-
 	}
-	for(; *t != ';'; t++)		/* seek next IP */
-	    if (*t == '\0')
-		goto failed;
-	t++;
     }
-failed:    
-    debug("gwlib", 0, "Could not find match for <%s> in <%s>", ip, 
-    	  accept_string);
+    
+    if (i >= pat_len && j >= ip_len)
+    	return 1;
     return 0;
-found:
-    if (match_buffer != NULL) {
-	for(p=match_buffer; *start != '\0' && *start != ';'; p++, start++)
-	    *p = *start;
-	*p = '\0';
-	debug("gwlib", 0, "Found and copied match <%s>", match_buffer);
+}
+
+
+static int pattern_list_matches_ip(Octstr *pattern_list, Octstr *ip)
+{
+    List *patterns;
+    Octstr *pattern;
+    int matches;
+
+    patterns = octstr_split(pattern_list, octstr_imm(";"));
+    matches = 0;
+
+    while (!matches && (pattern = list_extract_first(patterns)) != NULL) {
+	matches = pattern_matches_ip(pattern, ip);
+	octstr_destroy(pattern);
     }
-    return 1;
+    
+    list_destroy(patterns, octstr_destroy_item);
+    return matches;
 }
 
 
 int is_allowed_ip(Octstr *allow_ip, Octstr *deny_ip, Octstr *ip)
 {
     if (ip == NULL)
-	return -1;
-
-    if (deny_ip == NULL || octstr_len(deny_ip) == 0)
-	return 1;
-
-    if (allow_ip != NULL && 
-        check_ip(octstr_get_cstr(allow_ip), octstr_get_cstr(ip), NULL) == 1)
-	return 1;
-
-    if (check_ip(octstr_get_cstr(deny_ip), octstr_get_cstr(ip), NULL) == 1)
 	return 0;
+
+    if (octstr_len(deny_ip) == 0)
+	return 1;
+
+    if (allow_ip != NULL && pattern_list_matches_ip(allow_ip, ip))
+	return 1;
+
+    if (pattern_list_matches_ip(deny_ip, ip))
+    	return 0;
 
     return 1;
 }

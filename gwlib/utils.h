@@ -59,22 +59,6 @@ int get_and_set_debugs(int argc, char **argv,
 
 
 /*
- * this function checks if the given 'ip' is in 'accept_string', which
- * has multiple ips separated with ';', like "100.0.0.0;20.0.0.30"
- * The 'accept_stting' can have '*' instead of number in any location,
- * so complete 'anything matches' is "*.*.*.*". Functionalibility is
- * non-determined if either of the IP-addresses is invalid.
- *
- * If 'match_buffer' is not NULL, copies the matching IP to it. Caller
- * must provide buffer large enough, is used.
- *
- * Return 0 if no match found, in which case match_buffer is untouched,
- * and 1 if match found, in which case match buffer is modified, if provided
- */
-int check_ip(char *accept_string, char *ip, char *match_buffer);
-
-
-/*
  * return 0 if 'ip' is denied by deny_ip and not allowed by allow_ip
  * return 1 otherwise (deny_ip is NULL or 'ip' is in allow_ip or is not
  *  in deny_ip)

@@ -1,3 +1,11 @@
+2001-01-31  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/utils.c: Rewrote the is_allowed_ip implementation to
+	use Octstr instead of C strings. Removed the now-unused check_ip
+	function.
+
+	* checks/check_ipcheck.c: Wrote.
+
 2001-01-30  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/utils.[ch]: Made is_allowed_ip accept Octstr arguments
