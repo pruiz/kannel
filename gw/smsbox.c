@@ -39,7 +39,6 @@ static char *pid_file;
 static int heartbeat_freq;
 static char *accepted_chars = NULL;
 static int only_try_http = 0;
-static Connection *bb_conn;
 static URLTranslationList *translations = NULL;
 static int sms_max_length = MAX_SMS_OCTETS;
 static char *sendsms_number_chars;
@@ -54,6 +53,23 @@ static volatile sig_atomic_t abort_program = 0;
 /***********************************************************************
  * Communication with the bearerbox.
  */
+
+
+static Connection *bb_conn;
+
+
+/*
+ * Connect to the bearerbox.
+ */
+static void connect_to_bearerbox(Octstr *host, int port)
+{
+    bb_conn = conn_open_tcp(host, port);
+    if (bb_conn == NULL)
+    	panic(0, "Couldn't connect to the bearerbox.");
+    info(0, "Connected to bearerbox at %s port %d.",
+        octstr_get_cstr(bb_host), bb_port);
+}
+
 
 
 /*
@@ -257,6 +273,7 @@ static List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
 	
 	list_append(list, part);
     }
+    octstr_destroy(msgdata);
     
     return list;
 }
@@ -1394,7 +1411,7 @@ int main(int argc, char **argv)
     init_smsbox(cfg);
 
     debug("sms", 0, "----------------------------------------------");
-    debug("sms", 0, "Gateway SMS BOX version %s starting", VERSION);
+    debug("sms", 0, "Kannel smsbox version %s starting", VERSION);
     write_pid_file();
 
     translations = urltrans_create();
@@ -1412,21 +1429,14 @@ int main(int argc, char **argv)
     gwthread_create(obey_request_thread, NULL);
     gwthread_create(url_result_thread, NULL);
 
-    while(!abort_program) {
-        bb_conn = conn_open_tcp(bb_host, bb_port);
-	if (bb_conn != NULL)
-	    break;
-	sleep(10);
-    }
+    connect_to_bearerbox(bb_host, bb_port);
 
-    info(0, "Connected to Bearer Box at %s port %d.",
-        octstr_get_cstr(bb_host), bb_port);
     heartbeat_thread = heartbeat_start(write_to_bearerbox, heartbeat_freq,
 				       outstanding_requests);
 
     read_from_bearerbox();
 
-    info(0, "Smsbox terminating.");
+    info(0, "Kannel smsbox terminating.");
 
     heartbeat_stop(heartbeat_thread);
     http_close_all_servers();
@@ -1441,7 +1451,6 @@ int main(int argc, char **argv)
     urltrans_destroy(translations);
     gw_assert(list_len(smsbox_requests) == 0);
     list_destroy(smsbox_requests, NULL);
-    gw_free(global_sender);
     http_caller_destroy(caller);
     dict_destroy(receivers);
     counter_destroy(catenated_sms_counter);

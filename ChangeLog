@@ -1,5 +1,10 @@
 2000-12-04  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsbox.c: Rearranged code for clarity, plugged a memory leak
+	and fixed a memory freeing bug (memory was being freed twice).
+
+2000-12-04  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsbox.c: Merged smsbox_req.c into smsbox.c, because they
 	called each other backwards and forwards and the merged file is
 	small enough to be manageable, so there's no point in keeping
