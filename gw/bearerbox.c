@@ -1462,12 +1462,16 @@ static void update_queue_watcher()
     if (c % 20 == 19)
 	check_queues();
 
-    limit = time(NULL) - 60;
-    if (c >= 120 && (rq_last_mod(bbox->request_queue) < limit ||
-		     rq_last_mod(bbox->reply_queue) < limit)) {
-	char buf[1024];
-	print_queues(buf);
-	debug(0, "\n%s", buf);
+    if (c >= 120) {
+	limit = time(NULL) - 60;
+	
+	if (rq_last_mod(bbox->request_queue) > limit ||
+	    rq_last_mod(bbox->reply_queue) > limit) {
+
+	    char buf[1024];
+	    print_queues(buf);
+	    debug(0, "\n%s", buf);
+	}
 	c = 0;
     }
 }
