@@ -318,10 +318,6 @@ static void init_smsbox(Config *cfg)
  */
 static int send_heartbeat(void)
 {
-#if 0
-    /* XXX this is not thread safe, if two threads happen to call 
-       send_hearbeat at the same time. Should never happen, though, and 
-       anyway only causes a minor memory leak. --liw */
     static Msg *msg = NULL;
     Octstr *pack;
     
@@ -340,22 +336,6 @@ static int send_heartbeat(void)
 	return -1;
     octstr_destroy(pack);
     return 0;
-#else
-    Msg *msg = NULL;
-    Octstr *pack;
-    int ret;
-    
-    msg = msg_create(heartbeat);
-    msg->heartbeat.load = smsbox_req_count();
-#if 0
-    debug("sms", 0, "sending heartbeat load %ld", msg->heartbeat.load); 
-#endif
-    pack = msg_pack(msg);
-    ret = octstr_send(socket_fd, pack);
-    octstr_destroy(pack);
-    msg_destroy(msg);
-    return ret;
-#endif
 }
 
 

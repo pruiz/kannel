@@ -456,7 +456,7 @@ char *smsbox_req_sendsms(CGIArg *list)
 {
 	Msg *msg = NULL;
 	URLTranslation *t = NULL;
-	Octstr *user = NULL, *val, *from, *to;
+	Octstr *user = NULL, *val, *from = NULL, *to;
 	Octstr *text = NULL, *udh = NULL;
 	int ret;
 
@@ -527,6 +527,7 @@ char *smsbox_req_sendsms(CGIArg *list)
     
 error:
     error(0, "sendsms_request: failed");
+    octstr_destroy(from);
     return "Sending failed.";
 }
 

@@ -817,7 +817,7 @@ static void *smsboxconnection_thread(void *arg)
 {
     BBThread	*us;
     time_t	our_time, last_time;
-    int		ret, written = 0, read_or_written;
+    int		ret;
     RQueueItem	*qmsg;
     
     us = arg;
@@ -848,52 +848,8 @@ static void *smsboxconnection_thread(void *arg)
 	if (us->boxc->fd == BOXC_THREAD)
 	    us->boxc->load = smsbox_req_count();
 
-	if (written < 0)
-	    written = 0;
-
-	read_or_written = 0;
-
-	/* check for any messages to us in request-queue,
-	 * if any, put into socket and if accepted, add ACK
-	 * about that to reply-queue, otherwise NACK (unless it
-	 *  was an ACK/NACK message already)
-	 *
-	 * NOTE: there should be something load balance here?
-	 */
-
 	gw_assert(us->boxc != NULL);
-	if (written + us->boxc->load < 100) {
-	    qmsg = rq_pull_msg(bbox->request_queue, us->id);
-	    if (qmsg == NULL) {
-		qmsg = rq_pull_msg_class(bbox->request_queue, R_MSG_CLASS_SMS);
-	    }
-	    if (qmsg) {
-		ret = boxc_send_message(us->boxc, qmsg, bbox->reply_queue);
-		if (ret < 0) {
-		    error(0, "SMSBOXC: [%d] send message failed, killing", us->id);
-		    break;
-		}
-		written++;
-		read_or_written = 1;
-#if 0 /* XXX this makes bearerbox notice that smsbox does write things */
-		continue;
-#endif
-	    }
-	}
 
-	/* for internal thread, all messages are automatically appended to
-	 * reply queue, no need to call get_message
-	 */
-	
-	if (us->boxc->fd == BOXC_THREAD) {
-	    written--;
-	    usleep(10000);
-	    read_or_written = 1;
-#if 0 /* XXX this makes bearerbox notice that smsbox does write things */
-	    continue;
-#endif
-	}
-	
 	/* read socket, adding any new messages to reply-queue */
 	/* if socket is closed, set us to die-mode */
 
@@ -906,15 +862,29 @@ static void *smsboxconnection_thread(void *arg)
 	    normalize_numbers(qmsg, NULL);
 	    route_msg(us, qmsg);
 	    rq_push_msg(bbox->reply_queue, qmsg);
-	    written--;
-	    read_or_written = 1;
-#if 0 /* XXX this makes bearerbox notice that smsbox does write things */
 	    continue;
-#endif
 	}
-	written--;
-	if (!read_or_written)
-	    usleep(10000);
+
+	/*
+	 * write to socket if we have any messages to add
+	 */
+
+	if (us->boxc->load < 100) {
+	    qmsg = rq_pull_msg(bbox->request_queue, us->id);
+	    if (qmsg == NULL) {
+		qmsg = rq_pull_msg_class(bbox->request_queue, R_MSG_CLASS_SMS);
+	    }
+	    if (qmsg) {
+		ret = boxc_send_message(us->boxc, qmsg, bbox->reply_queue);
+		if (ret < 0) {
+		    error(0, "SMSBOXC: [%d] send message failed, killing", us->id);
+		    break;
+		}
+		continue;
+	    }
+	}
+	debug("bb", 0, "Sleeping...");
+	usleep(10000);
     }
 disconnect:    
     warning(0, "SMSBOXC: Closing and dying...");
@@ -1859,6 +1829,8 @@ static void init_bb(Config *cfg)
     while(grp != NULL) {
 	if ((p = config_get(grp, "max-threads")) != NULL)
 	    bbox->thread_limit = atoi(p);
+	if ((p = config_get(grp, "max-queue")) != NULL)
+	    bbox->max_queue = atoi(p);
 	if ((p = config_get(grp, "http-admin-port")) != NULL)
 	    bbox->http_port = atoi(p);
 	if ((p = config_get(grp, "wapbox-port")) != NULL)

@@ -1203,10 +1203,8 @@ HTTPRequest* httprequest_execute(HTTPRequest *request) {
 /* prepare data to be sent to server */
     request->action = HTTP_CLIENT;
     datasend = httprequest_unwrap(request);
-    if(datasend==NULL){
-	gw_free(datasend);
+    if(datasend==NULL)
 	goto error;
-    }
     
 /* open socket */
     s = tcpip_connect_to_server(request->url->host, request->url->port);

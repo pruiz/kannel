@@ -1,3 +1,12 @@
+2000-04-13    <Kalle Marjola <rpr@wapit.com>>
+
+	* gw/bearerbox.c: tried to fix saturation problem; failed but now
+	works a bit better. Also added max-queue variable reading, it had
+	been lost in some point. I will try to fix saturation later on
+
+	* gw/smsbox.c: removed that thread-safe heartbeat thingy, it is of
+	no use (sorry Liw :)
+
 Wed Apr 12  2000  Derry Hamilton  <rasilon@tardis.ed.ac.uk
 
         * utils/start-stop-daemon.c: Implemented pid_is_user and pid_is_cmd
