@@ -77,22 +77,14 @@ WsBool ws_encode_buffer(WsBuffer *buffer, ...)
 
     va_start(ap, buffer);
 
-#ifdef SPARC_ABI
     while ((spec = va_arg(ap, int)) != WS_ENC_END)
-#else
-while ((spec = va_arg(ap, WsEncodingSpec)) != WS_ENC_END)
-#endif
     {
         switch (spec)
         {
         case WS_ENC_BYTE:
         case WS_ENC_INT8:
         case WS_ENC_UINT8:
-#ifdef SPARC_ABI
             ival = va_arg(ap, int);
-#else
-            ival = va_arg(ap, WsUInt8);
-#endif
 
             if (!ws_buffer_append_space(buffer, &p, 1))
                 goto error;
@@ -102,11 +94,7 @@ while ((spec = va_arg(ap, WsEncodingSpec)) != WS_ENC_END)
 
         case WS_ENC_INT16:
         case WS_ENC_UINT16:
-#ifdef SPARC_ABI
             ival = va_arg(ap, int);
-#else
-            ival = va_arg(ap, WsUInt16);
-#endif
 
             if (!ws_buffer_append_space(buffer, &p, 2))
                 goto error;
@@ -116,11 +104,7 @@ while ((spec = va_arg(ap, WsEncodingSpec)) != WS_ENC_END)
 
         case WS_ENC_INT32:
         case WS_ENC_UINT32:
-#ifdef SPARC_ABI
-            ival = va_arg(ap, int);
-#else
-            ival = va_arg(ap, WsUInt32);
-#endif
+            ival = va_arg(ap, long);
 
             if (!ws_buffer_append_space(buffer, &p, 4))
                 goto error;
@@ -130,18 +114,10 @@ while ((spec = va_arg(ap, WsEncodingSpec)) != WS_ENC_END)
 
         case WS_ENC_MB_UINT16:
         case WS_ENC_MB_UINT32:
-#ifdef SPARC_ABI
-
-            ui32 = va_arg(ap, int);
-
-#else
-
             if (spec == WS_ENC_MB_UINT16)
-                ui32 = va_arg(ap, WsUInt16);
+                ui32 = va_arg(ap, int);
             else
-                ui32 = va_arg(ap, WsUInt32);
-
-#endif
+                ui32 = va_arg(ap, long);
 
             len = sizeof(data);
             cp = ws_encode_mb_uint32(ui32, data, &len);
@@ -153,13 +129,8 @@ while ((spec = va_arg(ap, WsEncodingSpec)) != WS_ENC_END)
             break;
 
         case WS_ENC_DATA:
-#ifdef SPARC_ABI
-            cp = (unsigned char *) va_arg(ap, int);
-            len = va_arg(ap, int);
-#else
             cp = va_arg(ap, unsigned char *);
-            len = va_arg(ap, size_t);
-#endif
+            len = va_arg(ap, unsigned int);
 
             if (!ws_buffer_append_space(buffer, &p, len))
                 goto error;
@@ -205,14 +176,8 @@ size_t ws_decode_buffer(const unsigned char *buffer, size_t buffer_len, ...)
 
     va_start(ap, buffer_len);
 
-#ifdef SPARC_ABI
-    while ((spec = va_arg(ap, int)) != WS_ENC_END)
-#else
-    while ((spec = va_arg(ap, WsEncodingSpec)) != WS_ENC_END)
-#endif
-    {
-        switch (spec)
-        {
+    while ((spec = va_arg(ap, int)) != WS_ENC_END) {
+        switch (spec) {
         case WS_ENC_BYTE:
         case WS_ENC_INT8:
         case WS_ENC_UINT8:

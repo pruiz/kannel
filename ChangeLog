@@ -1,3 +1,8 @@
+2000-10-10  Richard Braakman  <dark@wapit.com>
+
+	* wmlscript/wsencode.c: Fix va_arg type bug for all platforms,
+	not just sparc.  Removed SPARC_ABI conditionals.
+
 2000-10-10  Lars Wirzenius  <liw@iki.fi>
 
 	* debian/postinst: Don't use /var/log/kannel as home directory
