@@ -172,6 +172,7 @@ ROW(HOLDING,
 		 */
 		 
 		new_event = wsp_event_create(SMethodInvokeResult);
+		new_event->SMethodInvokeResult.session = sm;
 		new_event->SMethodInvokeResult.machine = e->machine;
 		new_event->SMethodInvokeResult.url = e->url;
 		new_event->SMethodInvokeResult.method = Get_PDU;

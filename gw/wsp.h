@@ -54,7 +54,8 @@ struct WSPEvent {
 
 	#define INTEGER(name) int name
 	#define OCTSTR(name) Octstr *name
-	#define MACHINE(name) WTPMachine *name
+	#define WTP_MACHINE(name) WTPMachine *name
+	#define SESSION_MACHINE(name) WSPMachine *name
 	#define WSP_EVENT(name, fields) struct name fields name;
 	#include "wsp_events-decl.h"
 };

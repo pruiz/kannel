@@ -95,7 +95,8 @@ WSPEvent *wsp_event_create(WSPEventType type) {
 
 	#define INTEGER(name) p->name = 0
 	#define OCTSTR(name) p->name = NULL
-	#define MACHINE(name) p->name = NULL
+	#define WTP_MACHINE(name) p->name = NULL
+	#define SESSION_MACHINE(name) p->name = NULL
 	#define WSP_EVENT(name, fields) \
 		{ struct name *p = &event->name; fields }
 	#include "wsp_events-decl.h"
@@ -108,7 +109,8 @@ void wsp_event_destroy(WSPEvent *event) {
 	if (event != NULL) {
 		#define INTEGER(name) p->name = 0
 		#define OCTSTR(name) octstr_destroy(p->name)
-		#define MACHINE(name) p->name = NULL
+		#define WTP_MACHINE(name) p->name = NULL
+		#define SESSION_MACHINE(name) p->name = NULL
 		#define WSP_EVENT(name, fields) \
 			{ struct name *p = &event->name; fields }
 		#include "wsp_events-decl.h"
@@ -132,7 +134,9 @@ void wsp_event_dump(WSPEvent *event) {
 	debug(0, "  type: %s (%d)", wsp_event_name(event->type), event->type);
 	#define INTEGER(name) debug(0, "  %s.%s: %d", t, #name, p->name)
 	#define OCTSTR(name) debug(0, "  %s.%s:", t, #name); octstr_dump(p->name)
-	#define MACHINE(name) \
+	#define WTP_MACHINE(name) \
+		debug(0, "  %s.%s at %p", t, #name, (void *) p->name)
+	#define SESSION_MACHINE(name) \
 		debug(0, "  %s.%s at %p", t, #name, (void *) p->name)
 	#define WSP_EVENT(tt, fields) \
 		if (tt == event->type) \
@@ -418,7 +422,6 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 	int off;
 	unsigned long version, caps_len, headers_len;
 	Octstr *caps, *headers;
-	OctstrList *hdrs;
 
 	off = 1;	/* ignore PDU type */
 	if (unpack_uint8(&version, user_data, &off) == -1 ||
@@ -648,6 +651,7 @@ static long convert_http_status_to_wsp_status(long http_status) {
 		long wsp_status;
 	} tab[] = {
 		{ 200, 0x20 },
+		{ 413, 0x4D },
 		{ 415, 0x4F },
 	};
 	int i;
@@ -655,6 +659,7 @@ static long convert_http_status_to_wsp_status(long http_status) {
 	for (i = 0; i < sizeof(tab) / sizeof(tab[0]); ++i)
 		if (tab[i].http_status == http_status)
 			return tab[i].wsp_status;
+	error(0, "WSP: Unknown status code used internally. Oops.");
 	return 0x60; /* Status 500, or "Internal Server Error" */
 }
 
@@ -715,6 +720,7 @@ static void *wsp_http_thread(void *arg) {
 #endif
 	char *url;
 	WSPEvent *event;
+	unsigned long body_size, client_SDU_size;
 
 	debug(0, "WSP: wsp_http_thread starts");
 
@@ -879,14 +885,28 @@ error:
 		}
 	}
 		
+	if (body == NULL)
+		body_size = 0;
+	else
+		body_size = octstr_len(body);
+	client_SDU_size = event->SMethodInvokeResult.session->client_SDU_size;
+
+	if (body != NULL && body_size > client_SDU_size) {
+		status = 413; /* XXX requested entity too large */
+		warning(0, "WSP: Entity at %s too large (size %lu B, limit %lu B)",
+			url, body_size, client_SDU_size);
+		body = NULL;
+		type = "text/plain";
+	}
+
 	e = wsp_event_create(SMethodResultRequest);
 	e->SMethodResultRequest.server_transaction_id = 
 		event->SMethodInvokeResult.server_transaction_id;
 	e->SMethodResultRequest.status = status;
 	e->SMethodResultRequest.response_type = encode_content_type(type);
 	e->SMethodResultRequest.response_body = body;
-	e->SMethodResultRequest.machine = 
-		event->SMethodInvokeResult.machine;
+	e->SMethodResultRequest.machine = event->SMethodInvokeResult.machine;
+
 	debug(0, "WSP: sending S-MethodResult.req to WSP");
 	wsp_dispatch_event(event->SMethodInvokeResult.machine, e);
 

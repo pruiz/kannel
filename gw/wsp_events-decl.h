@@ -5,7 +5,7 @@
  *
  * Note that the address five-tuple is included in fields of wtp machine.
  * 
- * By Aarno Syvänen for WapIt Ltd.
+ * By Aarno Syvänen and Lars Wirzenius for WapIt Ltd.
  */
 
 WSP_EVENT(TRInvokeIndication,
@@ -15,7 +15,7 @@ WSP_EVENT(TRInvokeIndication,
           INTEGER(tcl);
           INTEGER(wsp_pdu);
           INTEGER(wsp_tid);
-          MACHINE(machine);
+          WTP_MACHINE(machine);
 	  })
 
 WSP_EVENT(TRInvokeConfirmation,
@@ -24,7 +24,7 @@ WSP_EVENT(TRInvokeConfirmation,
           INTEGER(exit_info_present);
           INTEGER(wsp_pdu);
           INTEGER(wsp_tid);
-          MACHINE(machine);
+          WTP_MACHINE(machine);
           })
 
 WSP_EVENT(TRResultConfirmation,
@@ -33,7 +33,7 @@ WSP_EVENT(TRResultConfirmation,
           INTEGER(exit_info_present);
           INTEGER(wsp_pdu);
           INTEGER(wsp_tid);
-          MACHINE(machine);
+          WTP_MACHINE(machine);
           })
 
 WSP_EVENT(TRAbortIndication,
@@ -41,33 +41,33 @@ WSP_EVENT(TRAbortIndication,
           INTEGER(abort_code);
           INTEGER(wsp_pdu);
           INTEGER(wsp_tid);
-          MACHINE(machine);
+          WTP_MACHINE(machine);
           })
 
 WSP_EVENT(TRAbortRequire,
           {
           INTEGER(abort_code);
           INTEGER(wsp_tid);
-          MACHINE(machine);
+          WTP_MACHINE(machine);
           })
 
 WSP_EVENT(SConnectResponse,
 	  {
-	  MACHINE(machine); /* XXX this is a kludge */
+	  WTP_MACHINE(machine); /* XXX this is a kludge */
 	  OCTSTR(server_headers);
 	  OCTSTR(negotiated_capabilities);
 	  })
 
 WSP_EVENT(Release,
 	  {
-	  MACHINE(machine);
+	  WTP_MACHINE(machine);
 	  OCTSTR(url);
 	  })
 
 #if 0
 WSP_EVENT(SMethodInvokeIndication,
 	  {
-	  MACHINE(machine);
+	  WTP_MACHINE(machine);
 	  OCTSTR(url);
 	  INTEGER(method);
 	  INTEGER(server_transaction_id);
@@ -76,10 +76,11 @@ WSP_EVENT(SMethodInvokeIndication,
 
 WSP_EVENT(SMethodInvokeResult,
 	  {
-	  MACHINE(machine);
+	  WTP_MACHINE(machine);
 	  OCTSTR(url);
 	  INTEGER(method);
 	  INTEGER(server_transaction_id);
+	  SESSION_MACHINE(session);
 	  })
 
 WSP_EVENT(SMethodResultRequest,
@@ -88,10 +89,11 @@ WSP_EVENT(SMethodResultRequest,
 	  INTEGER(status);
 	  INTEGER(response_type);
 	  OCTSTR(response_body);
-	  MACHINE(machine);
+	  WTP_MACHINE(machine);
 	  })
 
 #undef WSP_EVENT
 #undef OCTSTR
 #undef INTEGER
-#undef MACHINE
+#undef WTP_MACHINE
+#undef SESSION_MACHINE

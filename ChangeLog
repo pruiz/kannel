@@ -1,3 +1,10 @@
+Mon Jan 24 20:53:47 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c, gw/wsp.h, gw/wsp_events-decl.h, wsp_state-decl.h:
+	WSP now obeys client SDU size limit. Had to add a pointer to
+	the session machine to a WSP event, which caused non-local
+	trivial changes.
+
 2000-01-24	Sanna Seppanen <sanna@wapit.com>
 	*gwlib/http.h: function added: header_dump.
 	*gwlig/http.c: implementation of header_dump
