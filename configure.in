@@ -7,7 +7,7 @@ AC_PREREQ(2.13)
 AC_INIT(gw/alt_charsets.h)
 AC_CONFIG_HEADER(config.h)
 AC_SUBST(SHELL)
-
+AC_CONFIG_AUX_DIR(/usr/share/automake)
 dnl Gateway version number.
 
 AC_DEFINE_UNQUOTED(VERSION, "`head -1 VERSION`")
@@ -16,6 +16,13 @@ dnl Target installation directory for documentation
 
 AC_SUBST(docdir)
 docdir='${prefix}/share/doc/kannel'
+
+dnl Checks Sytem Type.
+AC_CANONICAL_HOST
+
+case "$host" in
+*-sun-solaris*) CFLAGS="$CFLAGS -DSunOS=1";;
+esac
 
 dnl Checks for programs.
 
@@ -56,7 +63,7 @@ dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/ioctl.h sys/time.h sys/types.h unistd.h sys/poll.h)
 AC_CHECK_HEADERS(pthread.h getopt.h)
-AC_CHECK_HEADER(sys/strsun.h, CFLAGS="$CFLAGS -DSunOS=1") 
+dnl AC_CHECK_HEADER(sys/strsun.h, CFLAGS="$CFLAGS -DSunOS=1") 
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 
@@ -106,6 +113,34 @@ GW_HAVE_FUNC_FROM(stdio.h, getopt, HAVE_GETOPT_IN_STDIO_H,
     	    	  [Does <stdio.h> declare getopt()?])
 GW_HAVE_FUNC_FROM(unistd.h, getopt, HAVE_GETOPT_IN_UNISTD_H,
     	    	  [Does <unistd.h> declare getopt()?])
+
+dnl Misfeature checks
+AC_MSG_CHECKING(for working pthreads)
+AC_TRY_RUN([#include <pthread.h>
+#include <unistd.h>
+int pid;
+void testpid(void* foo);
+int main(void){
+    pthread_t child;
+    pid=getpid();
+    pthread_create(&child,NULL,(void*)testpid,NULL);
+    pthread_join(child,NULL);
+    return 0;
+}
+void testpid(void* foo){
+    int mypid=getpid();
+    if(mypid!=pid){
+        /* Pthreads states that all threads should have the same PID
+         * we dont!
+         */
+        exit(1);
+    }else{
+        exit(0);
+    }
+}
+],echo yes , echo no ;CFLAGS="$CFLAGS -DBROKEN_PTHREADS=1", echo  Cross compiling - assuming they work)
+
+
 
 dnl DocBook stuff
 

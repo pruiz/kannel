@@ -549,11 +549,15 @@ void gwthread_sleep(double seconds)
 }
 
 
-#ifdef PTHREAD_SIGNAL_HANDLING
+#ifndef BROKEN_PTHREADS
+
+/* Working pthreads */
 int gwthread_shouldhandlesignal(int signal){
     return 1;
 }
 #else
+
+/* Somewhat broken pthreads */
 int gwthread_shouldhandlesignal(int signal){
     return (gwthread_self() == MAIN_THREAD_ID);
 }

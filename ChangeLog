@@ -1,3 +1,8 @@
+2000-12-22  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+
+	* config.h.in,configure,configure.in,gwlib/gwthread-pthread.c:
+	Cleaned up host system determination and tests for broken pthreads.
+	
 2000-12-21  Lars Wirzenius  <liw@iki.fi>
 
 	* test/drive_smpp.c: Added includes for accept(2).
