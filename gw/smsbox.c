@@ -197,13 +197,21 @@ static int send_message(URLTranslation *trans, Msg *msg)
         msg->sms.boxc_id = octstr_duplicate(smsbox_id);
     }
     
-    /* Empty message?  Either ignore it or substitute the "empty"
-     * warning defined  */
-    if (octstr_len(msg->sms.msgdata) == 0) {
-	if (trans != NULL && urltrans_omit_empty(trans))
+    /* 
+     * Empty message? Two alternatives have to be handled:
+     *  a) it's a HTTP sms-service reply: either ignore it or 
+     *     substitute the "empty" warning defined  
+     *  b) it's a sendsms HTTP interface call: leave the message empty
+     *     if at least a UDH is given.
+     * 
+     * XXX this still does not cover the case when the sendsms interface is
+     * used with *no* text and udh. What should we do then?!
+     */
+    if (octstr_len(msg->sms.msgdata) == 0 && octstr_len(msg->sms.udhdata) == 0) {
+        if (trans != NULL && urltrans_omit_empty(trans))
             return 0;
         else
-	    msg->sms.msgdata = octstr_duplicate(reply_emptymessage);
+            msg->sms.msgdata = octstr_duplicate(reply_emptymessage);
     }
 
     if (trans == NULL) {
@@ -1729,7 +1737,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      * If receiver is not null, to list is already present on it
      */
     if(receiver == NULL) {
-	receiver = octstr_split_words(to);
+        receiver = octstr_split_words(to);
     }
     no_recv = list_len(receiver);
 
@@ -1738,8 +1746,12 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      * message, to prevent intentional buffer overflow schemes
      */
     if (udh != NULL && (octstr_len(udh) != octstr_get_char(udh, 0) + 1)) {
-	returnerror = octstr_create("UDH field misformed, rejected");
-	goto fielderror2;
+        returnerror = octstr_create("UDH field misformed, rejected");
+        goto fielderror2;
+    }
+    if (udh != NULL && octstr_len(udh) > MAX_SMS_OCTETS) {
+        returnerror = octstr_create("UDH field is too long, rejected");
+        goto fielderror2;
     }
 
     /*

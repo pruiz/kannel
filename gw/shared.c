@@ -322,9 +322,9 @@ static Octstr *extract_msgdata_part_by_coding(Msg *msg, Octstr *split_chars,
 
 
 List *sms_split(Msg *orig, Octstr *header, Octstr *footer, 
-		       Octstr *nonlast_suffix, Octstr *split_chars, 
-		       int catenate, unsigned long msg_sequence,
-                       int max_messages, int max_octets)
+                Octstr *nonlast_suffix, Octstr *split_chars, 
+                int catenate, unsigned long msg_sequence,
+                int max_messages, int max_octets)
 {
     long max_part_len, udh_len, hf_len, nlsuf_len;
     unsigned long total_messages, msgno;
@@ -338,65 +338,71 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
 
     /* First check whether the message is under one-part maximum */
     if (orig->sms.coding == DC_8BIT || orig->sms.coding == DC_UCS2)
-	max_part_len = max_octets - udh_len - hf_len;
+        max_part_len = max_octets - udh_len - hf_len;
     else
-	max_part_len = max_octets * 8 / 7 - (udh_len * 8 + 6) / 7 - hf_len;
+        max_part_len = max_octets * 8 / 7 - (udh_len * 8 + 6) / 7 - hf_len;
+
     if (sms_msgdata_len(orig) > max_part_len && catenate) {
-	/* Change part length to take concatenation overhead into account */
-	if (udh_len == 0)
-	    udh_len = 1;  /* To add the udh total length octet */
-	udh_len += CATENATE_UDH_LEN;
-	if (orig->sms.coding == DC_8BIT || orig->sms.coding == DC_UCS2)
-	    max_part_len = max_octets - udh_len - hf_len;
-	else
-	    max_part_len = max_octets * 8 / 7 - (udh_len * 8 + 6) / 7 - hf_len;
+        /* Change part length to take concatenation overhead into account */
+        if (udh_len == 0)
+            udh_len = 1;  /* Add the udh total length octet */
+        udh_len += CATENATE_UDH_LEN;
+        if (orig->sms.coding == DC_8BIT || orig->sms.coding == DC_UCS2)
+            max_part_len = max_octets - udh_len - hf_len;
+        else
+            max_part_len = max_octets * 8 / 7 - (udh_len * 8 + 6) / 7 - hf_len;
     }
+
+    /* ensure max_part_len is never negativ */
+    max_part_len = max_part_len > 0 ? max_part_len : 0;
 
     temp = msg_duplicate(orig);
     msgno = 0;
     list = list_create();
+
     do {
-	msgno++;
-         /* if its a DLR request message getting split, only ask DLR for the first one */
+        msgno++;
         part = msg_duplicate(orig);
-	if((msgno > 1) && (part->sms.dlr_mask))
-        {
-           octstr_destroy(part->sms.dlr_url);
-           part->sms.dlr_url = NULL;
-           part->sms.dlr_mask = 0;
+
+        /* 
+         * if its a DLR request message getting split, 
+         * only ask DLR for the first one 
+         */
+        if ((msgno > 1) && (part->sms.dlr_mask)) {
+            octstr_destroy(part->sms.dlr_url);
+            part->sms.dlr_url = NULL;
+            part->sms.dlr_mask = 0;
         }
-	octstr_destroy(part->sms.msgdata);
-	if (sms_msgdata_len(temp) <= max_part_len || msgno == max_messages) {
-	    part->sms.msgdata = octstr_copy(temp->sms.msgdata, 0, max_part_len);
-	    last = 1;
-	}
-	else {
-	    part->sms.msgdata = extract_msgdata_part_by_coding(temp, split_chars,
-						     max_part_len - nlsuf_len);
-	    last = 0;
-	}
-	if (header)
-	    octstr_insert(part->sms.msgdata, header, 0);
-	if (footer)
-	    octstr_append(part->sms.msgdata, footer);
-	if (!last && nonlast_suffix)
-	    octstr_append(part->sms.msgdata, nonlast_suffix);
-	list_append(list, part);
+        octstr_destroy(part->sms.msgdata);
+        if (sms_msgdata_len(temp) <= max_part_len || msgno == max_messages) {
+            part->sms.msgdata = temp->sms.msgdata ? 
+                octstr_copy(temp->sms.msgdata, 0, max_part_len) : octstr_create("");
+            last = 1;
+        }
+        else {
+            part->sms.msgdata = 
+                extract_msgdata_part_by_coding(temp, split_chars,
+                                               max_part_len - nlsuf_len);
+            last = 0;
+        }
+        if (header)
+            octstr_insert(part->sms.msgdata, header, 0);
+        if (footer)
+            octstr_append(part->sms.msgdata, footer);
+        if (!last && nonlast_suffix)
+            octstr_append(part->sms.msgdata, nonlast_suffix);
+        list_append(list, part);
     } while (!last);
+
     total_messages = msgno;
     msg_destroy(temp);
     if (catenate && total_messages > 1) {
         for (msgno = 1; msgno <= total_messages; msgno++) {
-	    part = list_get(list, msgno - 1);
-	    prepend_catenation_udh(part, msgno, total_messages, msg_sequence);
+            part = list_get(list, msgno - 1);
+            prepend_catenation_udh(part, msgno, total_messages, msg_sequence);
         }
     }
+
     return list;
 }
-
-
-
-
-
-
 
