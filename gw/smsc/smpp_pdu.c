@@ -225,14 +225,13 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
                 int tag_id_buffer = 0;                                                  \
                 opt_tag = octstr_copy(data_without_len, pos, 2); pos += 2;              \
                 opt_len = octstr_get_char(data_without_len, pos); pos++;                \
-                //opt_len += octstr_get_char(data_without_len, pos) * 256; pos++;       \
                 debug("smpp_pdu", 0, "Optional parameter length read as %d", opt_len);  \
                 opt_val = octstr_copy(data_without_len, pos, opt_len); pos += opt_len;
     #define TLV(tag_id, min_len, max_len)                                               \
                 tag_id_buffer = tag_id;                                                 \
                 tag_str = octstr_create_from_data_real((char*) &tag_id_buffer, 2);      \
                 if (octstr_compare(opt_tag, tag_str) == 0) {                            \
-                    debug("smpp_pdu", 0, "PDU type = %ld /// opt_len = %d "             \
+                    debug("smpp_pdu", 0, "PDU type = %ld, opt_len = %d "                \
                                          "(min = %d, max = %d) opt_val = %s",           \
                           type, opt_len, min_len, max_len, octstr_get_cstr(opt_val));   \
                     if (min_len == -1 || (min_len <= opt_len && opt_len <= max_len)) {  \

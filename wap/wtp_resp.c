@@ -239,7 +239,6 @@ static unsigned char *name_resp_state(int s)
 static void resp_event_handle(WTPRespMachine *resp_machine, WAPEvent *event)
 {
     WAPEvent *wsp_event = NULL;
-    WAPEvent *e = NULL; /* For SAR acknowledgment */
 
     /* 
      * We don't feed sar packets into state machine 
