@@ -6,7 +6,6 @@
 
 #include "gwlib/gwlib.h"
 #include "wtp_init.h"
-#include "test_push.h"
 
 /*****************************************************************************
  * Internal data structures.
