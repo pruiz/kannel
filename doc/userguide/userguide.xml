@@ -2167,6 +2167,15 @@ my-number = "12345"
        Set it to 0 to disable this feature.
      </entry></row>
 
+   <row><entry><literal>no-dlr</literal></entry>
+     <entry><literal>boolean</literal></entry>
+     <entry valign="bottom">
+       Optional. If defined, status delivery report requests (DLR) won't be
+       requested at all. Some CIMD2 SMSC have prohibited these reports so
+       if you are getting error like "Incorrect status report request parameter
+       usage", this option is for you. Defaults to "false".
+     </entry></row>
+
    <row><entry><literal>my-number</literal></entry>
       <entry><literal>string</literal></entry>
       <entry valign="bottom">
