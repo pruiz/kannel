@@ -16,6 +16,7 @@
 #include "wap-appl.h"
 #include "wap/wsp.h"
 #include "wap/wsp_strings.h"
+#include "wap_push_si_compiler.h"
 
 enum {
     TIME_EXPIRED = 0,
@@ -401,8 +402,8 @@ store_push:
         return;
 
 no_start:
-        octstr_destroy(type);
         wap_addr_tuple_destroy(tuple);
+        octstr_destroy(type);
         remove_push_data(sm, pm, cless);
         if (sm)
             remove_pushless_session(sm);
@@ -977,7 +978,6 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
 
     (**e).u.Push_Message.push_data = content.body;
     octstr_destroy(content.charset);
-    /*octstr_destroy(content.type);*/
 
     debug("wap.push.ppg", 0, "PPG: push message content and headers valid");
     return 1;
@@ -1015,7 +1015,7 @@ static void check_x_wap_application_id_header(List **push_headers)
         "X-WAP-Application-Id");
     
     if (appid_content == NULL) {
-        header_value = "0x02";                 /* assigned number for wml ua */
+        header_value = "2";                 /* assigned number for wml ua */
         http_header_add(*push_headers, "X-WAP-Application-Id", header_value);
         return;
     }
@@ -1024,7 +1024,7 @@ static void check_x_wap_application_id_header(List **push_headers)
     http_header_remove_all(*push_headers, "X-WAP-Application-Id");
     http_header_add(*push_headers, "X-WAP-Application-Id", 
                     octstr_get_cstr(appid_content));
-
+    
     octstr_destroy(appid_content);   
 }
 
@@ -1083,9 +1083,10 @@ static Octstr *convert_si_to_sic(struct content *content)
 {
     Octstr *sic;
 
-    sic = octstr_duplicate(content->body);
-
-    return sic;
+    if (si_compile(content->body, content->charset, &sic) == 0)
+        return sic;
+    warning(0, "PPG: si compilation failed");
+    return NULL;
 }
 
 static struct {
@@ -1097,7 +1098,7 @@ static struct {
       "application/vnd.wap.wmlc",
       convert_wml_to_wmlc },
     { "text/vnd.wap.si",
-      "text/vnd.wap.si",
+      "application/vnd.wap.sic",
       convert_si_to_sic } 
 };
 
@@ -1802,7 +1803,7 @@ static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport,
  * We are not interested about parsing URI fully - we check only does it cont-
  * ains application id reserved by WINA or the part containing assigned code. 
  * Otherwise (regardless of it being an URI or assigned code) we simply pass 
- * it forward.
+ * it forward. 
  */
 
 static char *wina_uri[] =
@@ -1835,8 +1836,10 @@ static void parse_appid_header(Octstr **appid_content)
         ++i;
     }
 
-    if (i == NUMBER_OF_WINA_URIS)
-        return;
+    if (i == NUMBER_OF_WINA_URIS) {
+        *appid_content = octstr_format("%ld", 2);      /* assigned number */
+        return;                                        /* for wml ua */
+    }
     
     octstr_delete(*appid_content, 0, pos);             /* again the URI */
     if ((coded_value = wsp_string_to_application_id(*appid_content)) >= 0) {

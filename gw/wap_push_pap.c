@@ -4,7 +4,7 @@
  * By Aarno Syvänen for Wiral Ltd and for Wapit Ltd.
  */
 
-#define HTTP_PORT 80
+#define HTTP_PORT 8080
 #define NUMBER_OF_PUSHES 100
 
 #include "gwlib/gwlib.h"
@@ -262,7 +262,6 @@ clean:
 herror:
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
-        octstr_destroy(content_header);
         octstr_destroy(url);
         continue;
 
@@ -428,7 +427,7 @@ static void send_bad_message_response(HTTPClient *c, Octstr *fragment,
               "</badmessage-response>"
          "</pap>");
 
-    debug("wap.push.pap", 0, "PAP: bad message response to pi");
+    debug("wap.push.pap", 0, "PAP: send_bad_message_response: telling pi");
     send_to_pi(c, reply_body);
 
     octstr_destroy(fragment);

@@ -27,6 +27,26 @@ static Counter *counter = NULL;
 static char **push_data = NULL;
 static char *boundary = NULL;
 static Octstr *content_flag = NULL;
+static Octstr *appid_flag = NULL;
+
+static void add_push_application_id(List **push_headers, Octstr *appid_flag)
+{
+    if (octstr_compare(appid_flag, octstr_imm("any")) == 0)
+        http_header_add(*push_headers, "X-WAP-Application-Id", 
+                        "http://www.wiral.com:*");
+    else if (octstr_compare(appid_flag, octstr_imm("sia")) == 0)
+        http_header_add(*push_headers, "X-WAP-Application-Id", 
+                        "http://www.wiral.com:push.sia");
+    else if (octstr_compare(appid_flag, octstr_imm("ua")) == 0)
+        http_header_add(*push_headers, "X-WAP-Application-Id", 
+                        "http://www.wiral.com:wml.ua");
+    else if (octstr_compare(appid_flag, octstr_imm("mms")) == 0)
+        http_header_add(*push_headers, "X-WAP-Application-Id", 
+                        "http://www.wiral.com:push.mms");
+    else if (octstr_compare(appid_flag, octstr_imm("scrap")) == 0)
+        http_header_add(*push_headers, "X-WAP-Application-Id", 
+                        "no appid at all");
+}
 
 static void add_content_type(Octstr *content_flag, Octstr **wap_content)
 {
@@ -43,8 +63,6 @@ static void add_content_type(Octstr *content_flag, Octstr **wap_content)
         *wap_content = octstr_format("%s", "no type at all\r\n"); 
     else if (octstr_compare(content_flag, octstr_imm("nil")) == 0)
         *wap_content = octstr_create("");
-
-    octstr_destroy(content_flag);
 }
 
 /*
@@ -112,8 +130,7 @@ static void start_push(HTTPCaller *caller, long i)
 
     wap_content = NULL;
     push_headers  = http_create_empty_headers();
-    http_header_add(push_headers, "X-WAP-Application-Id", 
-                    "http://www.wiral.com:push.ua");
+    
     push_content = NULL;
     if (use_hardcoded) {
         http_header_add(push_headers, "Content-Type", "multipart/related;" 
@@ -187,7 +204,7 @@ static void start_push(HTTPCaller *caller, long i)
         octstr_destroy(pap_content);
         octstr_destroy(wap_content);
     }
-    
+    add_push_application_id(&push_headers, appid_flag);
     http_header_add(push_headers, "Content-Length: ", 
                     octstr_get_cstr(cos = octstr_format("%d", 
                     octstr_len(push_content))));
@@ -333,7 +350,10 @@ receive_rest:
 static void help(void) 
 {
     info(0, "Usage: test_ppg [options] push_url [content_file pap_file]");
-    info(0, "push content_file using control file pap_file to push_url");
+    info(0, "Implements push initiator for wap push. Push services are ");
+    info(0, "located in push_url, push content in the file content file.");
+    info(0, "File pap_file contains pap control document that controls");
+    info(0, "pushing");
     info(0, "If option -H is not used, command line has three arguments.");
     info(0, "These are following, in this order:");
     info(0, "      a) the url of the push proxy gateway");
@@ -344,8 +364,11 @@ static void help(void)
     info(0, "print this info");
     info(0, "-c content qualifier");
     info(0, "Define content type of the push content. Wml, multipart, nil,"); 
-    info(0, "scrap and si accepted. Wml is default, nil (no content type at");
+    info(0, "scrap and si accepted. Si is default, nil (no content type at");
     info(0, " all) and scrap (random string) are used for debugging");
+    info(0, "-a application id");
+    info(0, "Define the client application that will handle the push. Any,"); 
+    info(0, "sia, ua, mms, nil and scrap accepted, default any.");
     info(0, "-v number");
     info(0, "    Set log level for stderr logging. Default 0 (debug)");
     info(0, "-q");
@@ -373,7 +396,7 @@ int main(int argc, char **argv)
     gwlib_init();
     num_threads = 1;
 
-    while ((opt = getopt(argc, argv, "Hhv:qr:t:c:")) != EOF) {
+    while ((opt = getopt(argc, argv, "Hhv:qr:t:c:a:")) != EOF) {
         switch(opt) {
 	    case 'v':
 	        log_set_output_level(atoi(optarg));
@@ -412,6 +435,21 @@ int main(int argc, char **argv)
                 }
 	    break;
 
+	    case 'a':
+	        appid_flag = octstr_create(optarg);
+                if (octstr_compare(appid_flag, octstr_imm("any")) != 0 && 
+                    octstr_compare(appid_flag, octstr_imm("sia")) != 0 &&
+                    octstr_compare(appid_flag, octstr_imm("ua")) != 0 &&
+                    octstr_compare(appid_flag, octstr_imm("mms")) != 0 &&
+                    octstr_compare(appid_flag, octstr_imm("nil")) != 0 &&
+                    octstr_compare(appid_flag, octstr_imm("scrap")) != 0) {
+		    octstr_destroy(appid_flag);
+		    error(0, "TEST_PPG: Push application id not known");
+		    help();
+                    exit(0);
+                }
+	    break;
+
 	    case 'h':
 	        help();
                 exit(0);
@@ -433,7 +471,10 @@ int main(int argc, char **argv)
     num_urls = argc - optind;
 
     if (content_flag == NULL)
-        content_flag = octstr_imm("wml");
+        content_flag = octstr_imm("si");
+
+    if (appid_flag == NULL)
+        appid_flag = octstr_imm("any");
 
     if (push_data[0] == NULL)
         panic(0, "No ppg address specified, stopping");
@@ -461,6 +502,8 @@ int main(int argc, char **argv)
     info(0, "TEST_PPG: %ld requests in %f seconds, %f requests per second",
          max_pushes, run_time, max_pushes / run_time);
 
+    octstr_destroy(content_flag);
+    octstr_destroy(appid_flag);
     counter_destroy(counter);
     gwlib_shutdown();
 

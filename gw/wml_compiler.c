@@ -13,23 +13,22 @@
 #include "config.h"
 
 #include <time.h>
-#include <ctype.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 
 #include <xmlmemory.h>
-#include <parser.h>
 #include <tree.h>
 #include <debugXML.h>
 #include <encoding.h>
 
 #include "gwlib/gwlib.h"
 #include "wml_compiler.h"
-
+#include "xml_definitions.h"
 
 /***********************************************************************
  * Declarations of data types. 
@@ -117,7 +116,7 @@ typedef struct {
     List *value_list;
 } wml_attribute_t;
 
-
+#include "xml_shared.h"
 #include "wml_definitions.h"
 
 
@@ -156,7 +155,6 @@ static int parse_attr_value(Octstr *attr_value, List *tokens,
 			    wml_binary_t **wbxml);
 static int parse_text(xmlNodePtr node, wml_binary_t **wbxml);
 static int parse_cdata(xmlNodePtr node, wml_binary_t **wbxml);
-static int parse_charset(Octstr *charset, wml_binary_t **wbxml);
 static int parse_octet_string(Octstr *ostr, int cdata, wml_binary_t **wbxml);
 
 static void parse_end(wml_binary_t **wbxml);
@@ -208,14 +206,11 @@ static int hash_cmp(void *hash1, void *hash2);
  * Miscellaneous help functions.
  */
 
-static unsigned char element_check_content(xmlNodePtr node);
 static int check_do_elements(xmlNodePtr node);
 static var_esc_t check_variable_name(xmlNodePtr node);
 static Octstr *get_do_element_name(xmlNodePtr node);
 static int check_if_url(int hex);
 static int check_if_emphasis(xmlNodePtr node);
-static int only_blanks(const char *text);
-static void set_charset(Octstr *document, Octstr* charset);
 
 static int wml_table_len(wml_table_t *table);
 static int wml_table3_len(wml_table3_t *table);
@@ -237,19 +232,6 @@ static List *string_table_add_many(List *sorted, wml_binary_t **wbxml);
 static unsigned long string_table_add(Octstr *ostr, wml_binary_t **wbxml);
 static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml);
 static void string_table_output(Octstr *ostr, wml_binary_t **wbxml);
-
-/*
- * Macro for creating an octet string from a node content. This has two 
- * versions for different libxml node content implementation methods.
- */
-
-#ifdef XML_USE_BUFFER_CONTENT
-#define create_octstr_from_node(node) (octstr_create(node->content->content))
-#else
-#define create_octstr_from_node(node) (octstr_create(node->content))
-#endif
-
-
 
 /***********************************************************************
  * Implementations of the functions declared in wml_compiler.h.
@@ -486,7 +468,7 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
     (*wbxml)->string_table_length = 0x00; /* String table length=0 */
 
     chars = octstr_create("UTF-8");
-    (*wbxml)->character_set = parse_charset(chars, wbxml);
+    (*wbxml)->character_set = parse_charset(chars);
     octstr_destroy(chars);
 
     node = xmlDocGetRootElement(document);
@@ -793,57 +775,6 @@ static int parse_cdata(xmlNodePtr node, wml_binary_t **wbxml)
     
     /* Memory cleanup. */
     octstr_destroy(temp);
-
-    return ret;
-}
-
-
-
-/*
- * parse_charset - a character set parsing function.
- * This function parses the character set of the document. 
- */
-
-static int parse_charset(Octstr *charset, wml_binary_t **wbxml)
-{
-    Octstr *number = NULL;
-    int i, j, cut = 0, ret = 0;
-
-    /* The charset might be in lower case, so... */
-    octstr_convert_range(charset, 0, octstr_len(charset), toupper);
-
-    /*
-     * The character set is handled in two parts to make things easier. 
-     * The cutting.
-     */
-    if ((cut = octstr_search_char(charset, '_', 0)) > 0) {
-	number = octstr_copy(charset, cut + 1, 
-			     (octstr_len(charset) - (cut + 1)));
-	octstr_truncate(charset, cut);
-    } else if ((cut = octstr_search_char(charset, '-', 0)) > 0) {
-	number = octstr_copy(charset, cut + 1, 
-			     (octstr_len(charset) - (cut + 1)));
-	octstr_truncate(charset, cut);
-    }
-
-    /* And table search. */
-    for (i = 0; character_sets[i].charset != NULL; i++)
-	if (octstr_str_compare(charset, character_sets[i].charset) == 0) {
-	    for (j = i; 
-		 octstr_str_compare(charset, character_sets[j].charset) == 0; 
-		 j++)
-		if (octstr_str_compare(number, character_sets[j].nro) == 0) {
-		    ret = character_sets[j].MIBenum;
-		    break;
-		}
-	    break;
-	}
-
-    /* UTF-8 is the default value */
-    if (character_sets[i].charset == NULL)
-	ret = character_sets[i-1].MIBenum;
-
-    octstr_destroy(number);
 
     return ret;
 }
@@ -1358,30 +1289,6 @@ static int hash_cmp(void *item, void *pattern)
 }
 
 
-
-/*
- * element_check_content - a helper function for parse_element for checking 
- * if an element has content or attributes. Returns status bit for attributes 
- * (0x80) and another for content (0x40) added into one octet.
- */
-
-static unsigned char element_check_content(xmlNodePtr node)
-{
-    unsigned char status_bits = 0x00;
-
-    if ((node->children != NULL) && 
-	!((node->children->next == NULL) && 
-	  (node->children->type == XML_TEXT_NODE) && 
-	  (only_blanks(node->children->content))))
-	status_bits = WBXML_CONTENT_BIT;
-
-    if (node->properties != NULL)
-	status_bits = status_bits | WBXML_ATTR_BIT;
-
-    return status_bits;
-}
-
-
 /*
  * check_do_elements - a helper function for parse_element for checking if a
  * card or template element has two or more do elements of the same name. 
@@ -1545,63 +1452,6 @@ static int check_if_emphasis(xmlNodePtr node)
 
     return 0;
 }
-
-
-
-/*
- * only_blanks - checks if a text node contains only white space, when it can 
- * be left out as a element content.
- */
-
-static int only_blanks(const char *text)
-{
-    int blank = 1;
-    int j=0;
-    int len = strlen(text);
-
-    while ((j<len) && blank) {
-	blank = blank && isspace((int)text[j]);
-	j++;
-    }
- 
-    return blank;
-}
-
-
-
-/*
- * set_charset - set the charset of the http headers into the document, if 
- * it has no encoding set.
- */
-
-static void set_charset(Octstr *document, Octstr* charset)
-{
-    long gt = 0, enc = 0;
-    Octstr *encoding = NULL, *text = NULL, *temp = NULL;
-
-    if (octstr_len(charset) == 0)
-	return;
-
-    encoding = octstr_create(" encoding");
-    enc = octstr_search(document, encoding, 0);
-    gt = octstr_search_char(document, '>', 0);
-
-    if (enc < 0 || enc > gt) {
-	gt ++;
-	text = octstr_copy(document, gt, octstr_len(document) - gt);
-	if (charset_to_utf8(text, &temp, charset) >= 0) {
-	    octstr_delete(document, gt, octstr_len(document) - gt);
-	    octstr_append_data(document, octstr_get_cstr(temp), 
-			       octstr_len(temp));
-	}
-
-	octstr_destroy(temp);
-	octstr_destroy(text);
-    }
-
-    octstr_destroy(encoding);
-}
-
 
 
 /*
@@ -2017,18 +1867,15 @@ static void string_table_output(Octstr *ostr, wml_binary_t **wbxml)
 }
 
 
-List *wml_charsets(void) {
-	int i;
-	List *result;
-	Octstr *charset;
 
-	result = list_create();
-	for (i = 0; character_sets[i].charset != NULL; i++) {
-		charset = octstr_create(character_sets[i].charset);
-		octstr_append_char(charset, '-');
-		octstr_append(charset, 
-			      octstr_imm(character_sets[i].nro));
-		list_append(result, charset);
-	}
-	return result;
-}
+
+
+
+
+
+
+
+
+
+
+

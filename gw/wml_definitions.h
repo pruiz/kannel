@@ -1,5 +1,5 @@
 /*
- * wml_definitions.h - definitions needed by WML compiler
+ * wml_definitions.h - definitions unique to WML compiler
  *
  * This file contains fefinitions for global tokens and structures containing 
  * element and attribute tokens for the code page 1.
@@ -7,42 +7,6 @@
  *
  * Tuomas Luttinen for Wapit Ltd.
  */
-
-
-/***********************************************************************
- * Declarations of global tokens. 
- */
-
-#define WBXML_SWITCH_PAGE 0x00
-#define WBXML_END         0x01
-#define WBXML_ENTITY      0x02
-#define WBXML_STR_I       0x03
-#define WBXML_LITERAL     0x04
-#define WBXML_EXT_I_0     0x40
-#define WBXML_EXT_I_1     0x41
-#define WBXML_EXT_I_2     0x42
-#define WBXML_PI          0x43
-#define WBXML_LITERAL_C   0x44
-#define WBXML_EXT_T_0     0x80
-#define WBXML_EXT_T_1     0x81
-#define WBXML_EXT_T_2     0x82
-#define WBXML_STR_T       0x83
-#define WBXML_LITERAL_A   0x84
-#define WBXML_EXT_0       0xC0
-#define WBXML_EXT_1       0xC1
-#define WBXML_EXT_2       0xC2
-#define WBXML_OPAQUE      0xC3
-#define WBXML_LITERAL_AC  0xC4
-
-#define WBXML_STR_END     0x00
-
-#define WBXML_CONTENT_BIT 0x40
-#define WBXML_ATTR_BIT    0x80
-
-#define WBXML_STRING_TABLE_MIN 4    
-
-#define WBXML_START_NUM 100
-
 
 /***********************************************************************
  * Declarations of global variables. 
@@ -223,37 +187,36 @@ wml_table_t wml_URL_values[] = {
 };
 
 /*
- * Character sets.
+ * Character sets
  */
 
-struct {
-  char *real;
-  char *alias;
-} chars_aliases[] = {
-  { "CP1257", "WIN-1257" },
-  { "CP1257", "WINDOWS-1257" },
-  { "CP1251", "WINDOWS-1251" },
-  { "CP1251", "WIN-1251" },
-  { "CP1253", "WINDOWS-1253" },
-  {NULL}
+struct alias_t {
+    char *real;
+    char *alias;
+}; 
+
+typedef struct alias_t alias_t;
+
+alias_t chars_aliases[] = {
+    { "CP1257", "WIN-1257" },
+    { "CP1257", "WINDOWS-1257" },
+    { "CP1251", "WINDOWS-1251" },
+    { "CP1251", "WIN-1251" }, 
+    { "CP1253", "WINDOWS-1253" },
+    { NULL }
 };
 
 
-struct {
-  char *charset;
-  char *nro;
-  unsigned int MIBenum;
-} character_sets[] = {
-  { "ISO", "8859-1", 4 }, /* ISOLatin1 */
-  { "ISO", "8859-2", 5 }, /* ISOLatin2 */
-  { "ISO", "8859-3", 6 }, /* ISOLatin3 */
-  { "ISO", "8859-4", 7 }, /* ISOLatin4 */
-  { "ISO", "8859-5", 8 }, /* ISOLatinCyrillic */
-  { "ISO", "8859-6", 9 }, /* ISOLatinArabic */
-  { "ISO", "8859-7", 10 }, /* ISOLatinGreek */
-  { "ISO", "8859-8", 11 }, /* ISOLatinHebrew */
-  { "ISO", "8859-9", 12 }, /* ISOLatin5 */
-  /* Note!! If you want to add character sets, put them above this line. */
-  { "UTF", "8", 106 }, /* UTF-8, the default. */
-  {NULL}
-};
+
+
+
+
+
+
+
+
+
+
+
+
+

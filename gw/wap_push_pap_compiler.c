@@ -20,6 +20,7 @@
 #include <encoding.h>
 #include <ctype.h>
 
+#include "shared.h"
 #include "wap_push_pap_compiler.h"
 #include "wap_push_ppg.h"
 
@@ -190,7 +191,6 @@ static int parse_progress_note_value(Octstr *attr_name, Octstr *attr_value,
                                      WAPEvent **e);
 static int parse_bad_message_response_value(Octstr *attr_name, 
                                             Octstr *attr_value, WAPEvent **e);
-static Octstr *parse_date(Octstr *attr_value);
 static int parse_code(Octstr *attr_value);
 static Octstr *parse_bearer(Octstr *attr_value);
 static Octstr *parse_network(Octstr *attr_value);
@@ -376,6 +376,10 @@ static int parse_element(xmlNodePtr node, WAPEvent **e)
     int ret;
 
     name = octstr_create(node->name);
+    if (octstr_len(name) == 0) {
+        octstr_destroy(name);
+        return -2;
+    }
     
     i = 0;
     while (i < NUM_ELEMENTS) {
@@ -754,43 +758,6 @@ static int set_attribute_value(Octstr *element_name, Octstr *attr_value,
     }
 
     return ret;
-}
-
-/*
- * Date type used by PAP protocol is defined in PAP, chapter 9.2.
- */
-static Octstr *parse_date(Octstr *attr_value)
-{
-    long date_value;
-
-    if (octstr_parse_long(&date_value, attr_value, 0, 10) < 0)
-        goto error;
-    if (octstr_parse_long(&date_value, attr_value, 5, 10) < 0)
-        goto error;
-    if (date_value < 1 || date_value > 12)
-        goto error;
-    if (octstr_parse_long(&date_value, attr_value, 8, 10) < 0)
-        goto error;
-    if (date_value < 1 || date_value > 31)
-        goto error;
-    if (octstr_parse_long(&date_value, attr_value, 11, 10) < 0)
-        goto error;
-    if (date_value < 0 || date_value > 23)
-        goto error;
-    if (octstr_parse_long(&date_value, attr_value, 14, 10) < 0)
-        goto error;
-    if (date_value < 0 || date_value > 59)
-        goto error;
-    if (date_value < 0 || date_value > 59)
-        goto error;
-    if (octstr_parse_long(&date_value, attr_value, 17, 10) < 0)
-        goto error;
-
-    return attr_value;
-
-error:
-    warning(0, "PAP COMPILER: parse_date: not an ISO date");
-    return NULL;
 }
 
 /*

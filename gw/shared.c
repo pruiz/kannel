@@ -119,3 +119,63 @@ Msg *read_from_bearerbox(void)
 	error(0, "Failed to unpack data!");
     return msg;
 }
+
+/*****************************************************************************
+ *
+ * Functions handling OSI dates
+ *
+ * Function validates an OSI date. Return unmodified octet string date when it
+ * is valid, NULL otherwise.
+ */
+
+Octstr *parse_date(Octstr *date)
+{
+    long date_value;
+
+    if (octstr_get_char(date, 4) != '-')
+        goto error;
+    if (octstr_get_char(date, 7) != '-')
+        goto error;
+    if (octstr_get_char(date, 10) != 'T')
+        goto error;
+    if (octstr_get_char(date, 13) != ':')
+        goto error;
+    if (octstr_get_char(date, 16) != ':')
+        goto error;
+    if (octstr_get_char(date, 19) != 'Z')
+        goto error;
+
+    if (octstr_parse_long(&date_value, date, 0, 10) < 0)
+        goto error;
+    if (octstr_parse_long(&date_value, date, 5, 10) < 0)
+        goto error;
+    if (date_value < 1 || date_value > 12)
+        goto error;
+    if (octstr_parse_long(&date_value, date, 8, 10) < 0)
+        goto error;
+    if (date_value < 1 || date_value > 31)
+        goto error;
+    if (octstr_parse_long(&date_value, date, 11, 10) < 0)
+        goto error;
+    if (date_value < 0 || date_value > 23)
+        goto error;
+    if (octstr_parse_long(&date_value, date, 14, 10) < 0)
+        goto error;
+    if (date_value < 0 || date_value > 59)
+        goto error;
+    if (date_value < 0 || date_value > 59)
+        goto error;
+    if (octstr_parse_long(&date_value, date, 17, 10) < 0)
+        goto error;
+
+    return date;
+
+error:
+    warning(0, "parse_date: not an ISO date");
+    return NULL;
+}
+
+
+
+
+

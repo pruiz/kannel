@@ -63,5 +63,9 @@ Msg *read_from_bearerbox(void);
  */
 void write_to_bearerbox(Msg *msg);
 
+/*
+ * Validates an OSI date.
+ */
+Octstr *parse_date(Octstr *date);
 
 #endif
