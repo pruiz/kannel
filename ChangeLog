@@ -5,7 +5,6 @@
 	* gwlib/http.c: htp_get_u: zero-valued "Content-Length" header 
 	from phone won't be sent to web server.
 	
-
 2000-03-22 Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
 	* gwlib/http.h: Modified the definition of header_dump to
@@ -23,7 +22,6 @@
 2000-03-21 Sanna Seppanen <sanna@wapit.com>
 
 	* gwlib/http.c: Rewrote httprequest_remove_header().
-
 
 2000-03-21 Sanna Seppanen <sanna@wapit.com>
 
@@ -127,7 +125,7 @@ Tue Mar 21 12:38:52 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* test/wml_tester.c: Changed to use wml_compile with two arguments.
 
-2000-03-20    <Kalle Marjola <rpr@wapit.com>>
+2000-03-20    <Kalle Marjola <rpr@wapit.com>
 
 	* gwlib/http.c: fixed bug in header_pack pointed out by Paul
 	Keogh. Also fixed a major too-early free in request_wrap, which
@@ -174,7 +172,7 @@ Fri Mar 17 17:49:38 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Making release 0.6.1.
 
-2000-03-17    <Kalle Marjola <rpr@wapit.com>>
+2000-03-17    <Kalle Marjola <rpr@wapit.com>
 
 	* gw/*.*, gwlib/*.*: numerous little code lookup fixes
 
@@ -216,7 +214,6 @@ Fri Mar 17 10:55:37 2000  Lars Wirzenius  <liw@wapit.com>
 	* utils/run_kannel_box.c: Clean up compiler warnings, fix minor
 	bug found by rpr.
 
->>>>>>> 1.329
 2000-03-15  Markku Rossi  <mtr@iki.fi>
 
 	* wmlscript/wsopt.c: Fixed some bugs from the assembler stream
