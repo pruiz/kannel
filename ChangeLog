@@ -1,5 +1,11 @@
 2000-08-31  Lars Wirzenius  <liw@iki.fi>
 
+	* configure.in: Tweaked the libxml checking. It should now be
+	slightly cleaner and should work with upcoming 2.2.x versions
+	of the library without changing configure.in.
+
+2000-08-31  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/wsp.[ch]: Minor cleanups: Removed unused constants, added
 	a comment for assertions, etc.
 
