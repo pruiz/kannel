@@ -3,7 +3,7 @@
  *
  * Yann Muller - 3G Lab, 2000.
  *
- * $Id: smsc_at.c,v 1.4 2000-06-19 09:34:08 3glab Exp $
+ * $Id: smsc_at.c,v 1.5 2000-06-19 12:54:22 3glab Exp $
  * 
  * Make sure your kannel configuration file contains the following lines
  * to be able to use the AT SMSC:
@@ -337,6 +337,7 @@ unblock:
 /******************************************************************************
  * Send an AT command to the modem
  * returns 0 if OK, -1 on failure, -2 on SIM PIN needed.
+ * Set multiline to 1 if the command will expect more data to be sent.
  */
 static int send_modem_command(int fd, char *cmd, int multiline) {
 	Octstr *ostr;
@@ -377,6 +378,9 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 			ret = octstr_search_cstr(ostr, ">");
 		else
 			ret = octstr_search_cstr(ostr, "OK");
+			if(ret == -1)
+				ret = octstr_search_cstr(ostr, "READY");
+			
 		if(ret != -1) {
 			octstr_destroy(ostr);
 			return 0;
