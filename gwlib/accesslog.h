@@ -91,7 +91,7 @@ void alog_use_gmtime(void);
 
 /* log given message with arguments (normal printf) into access log,
  * along with timestamp */
-void alog(const char *fmt, ...);
+void alog(const char *fmt, ...) PRINTFLIKE(1,2);
 
 #endif
 

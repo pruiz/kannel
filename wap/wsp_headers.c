@@ -1388,7 +1388,7 @@ List *wsp_headers_unpack(Octstr *headers, int content_type_present)
         debug("wsp", 0, "WSP: decoded headers:");
         for (i = 0; i < list_len(unpacked); i++) {
             Octstr *header = list_get(unpacked, i);
-            debug("wsp", 0, octstr_get_cstr(header));
+            debug("wsp", 0, "%s", octstr_get_cstr(header));
         }
         debug("wsp", 0, "WSP: End of decoded headers.");
     }

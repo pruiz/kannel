@@ -257,5 +257,12 @@
 
 /* Define if you have pthread_rwlock_t type and reader/writer lock support. */
 #undef HAVE_PTHREAD_RWLOCK_T
+
+/* If we're using GCC, we can get it to check format function arguments. */
+#ifdef __GNUC__
+    #define PRINTFLIKE(a,b) __attribute__((format(printf, a, b)))
+#else
+    #define PRINTFLIKE(a, b)
+#endif
                      
 #endif

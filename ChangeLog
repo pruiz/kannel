@@ -1,4 +1,11 @@
 2004-08-08 Alexander Malysh <olek2002 at hotmail.com>
+    * gw-config.h.in: define 'PRINTFLIKE' here, so we ca use this everywhere.
+    * gwlib/log.h: removed 'PRINTFLIKE' and 'PRINTFLIKE2' from here and fixed functions
+      declaration.
+    * gw/bb_alog.c, gwlib/accesslog.h, wap/wsp_headers.c, wmlscript/wserror.h: fixed 
+      compiler format warnings.
+
+2004-08-08 Alexander Malysh <olek2002 at hotmail.com>
     * gwlib/gw-rwlock.[ch], gw/dlr_mem.c, gw/bb_smscconn.c: got
       rid of PTHREAD_RWLOCK_INITIALIZER because it's not on opengroup
       standard (PTHREAD_RWLOCK_INITIALIZER is deleted for alignment with

@@ -64,15 +64,6 @@
 #ifndef GWLOG_H
 #define GWLOG_H
 
-/* If we're using GCC, we can get it to check log function arguments. */
-#ifdef __GNUC__
-#define PRINTFLIKE __attribute__((format(printf, 2, 3)))
-#define PRINTFLIKE2 __attribute__((format(printf, 3, 4)))
-#else
-#define PRINTFLIKE
-#define PRINTFLIKE2
-#endif
-
 /* Symbolic levels for output levels. */
 enum output_level {
 	GW_DEBUG, GW_INFO, GW_WARNING, GW_ERROR, GW_PANIC
@@ -95,32 +86,32 @@ void log_shutdown(void);
  */
 #define	panic	gw_panic
 
-void gw_panic(int, const char *, ...) PRINTFLIKE ;
+void gw_panic(int, const char *, ...) PRINTFLIKE(2,3);
 
 /* Print a normal error message. Used when something which should be
  * investigated and possibly fixed, happens. The error might be fatal, too,
  * but we have time to put system down peacefully.
  */
-void error(int, const char *, ...) PRINTFLIKE ;
+void error(int, const char *, ...) PRINTFLIKE(2,3);
 
 /* Print a warning message. 'Warning' is a message that should be told and
  * distinguished from normal information (info), but does not necessary 
  * require any further investigations. Like 'warning, no sender number set'
  */
-void warning(int, const char *, ...) PRINTFLIKE ;
+void warning(int, const char *, ...) PRINTFLIKE(2,3);
 
 /* Print an informational message. This information should be limited to
  * one or two rows per request, if real debugging information is needed,
  * use debug
  */
-void info(int, const char *, ...) PRINTFLIKE ;
+void info(int, const char *, ...) PRINTFLIKE(2,3);
 
 /*
  * Print a debug message. Most of the log messages should be of this level 
  * when the system is under development. The first argument gives the `place'
  * where the function is called from; see function set_debug_places.
  */
-void debug(const char *, int, const char *, ...) PRINTFLIKE2 ;
+void debug(const char *, int, const char *, ...) PRINTFLIKE(3,4);
 
 
 /*

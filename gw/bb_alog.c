@@ -365,8 +365,8 @@ void bb_alog_sms(SMSCConn *conn, Msg *msg, const char *message)
             octstr_binary_to_hex(text, 1);
         octstr_binary_to_hex(udh, 1);
 
-        alog("%s [SMSC:%s] [SVC:%s] [ACT:%s] [BINF:%s] [from:%s] [to:%s] [flags:%d:%d:%d:%d:%d] "
-             "[msg:%d:%s] [udh:%d:%s]",
+        alog("%s [SMSC:%s] [SVC:%s] [ACT:%s] [BINF:%s] [from:%s] [to:%s] [flags:%ld:%ld:%ld:%ld:%ld] "
+             "[msg:%ld:%s] [udh:%ld:%s]",
              message,
              octstr_get_cstr(cid),
              msg->sms.service ? octstr_get_cstr(msg->sms.service) : "",

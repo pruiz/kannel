@@ -78,7 +78,7 @@ void ws_info(WsCompilerPtr compiler, char *message, ...);
 /* Report a fatal (non-recovable) error and terminate the program
    brutally.  This is only used to report internal inconsistencies and
    bugs.  This will never return. */
-void ws_fatal(char *fmt, ...);
+void ws_fatal(char *fmt, ...) PRINTFLIKE(1,2);
 
 /* Report an out-of-memory error. */
 void ws_error_memory(WsCompilerPtr compiler);
