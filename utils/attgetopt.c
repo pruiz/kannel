@@ -8,6 +8,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "config.h"
+
+/*
+ * If the systm has getopt() defined within stdio.h (like on Solaris 2.6)
+ * then we will not implement our own here.
+ */
+#ifndef HAVE_GETOPT_IN_STDIO_H
+
 #define ERR(s, c)       \
 	if (opterr) \
 	        (void) fprintf(stderr, "%s: %s\n", argv[0], s)
@@ -60,3 +68,5 @@ int getopt(int argc, char **argv, char *opts)
         }
         return(c);
 }
+
+#endif /* HAVE_GETOPT_IN_STDIO_H */
