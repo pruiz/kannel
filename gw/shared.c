@@ -51,6 +51,9 @@ Octstr *version_report_string(const char *boxname)
 #ifdef HAVE_MYSQL
              "Using MySQL %s.\n"
 #endif
+#ifdef HAVE_SDB
+             "Using LibSDB %s.\n"
+#endif
              "Using %s malloc.\n",
 			 boxname, VERSION,
 			 u.sysname, u.release, u.version, u.machine,
@@ -62,6 +65,9 @@ Octstr *version_report_string(const char *boxname)
 #endif
 #ifdef HAVE_MYSQL
              MYSQL_SERVER_VERSION,
+#endif
+#ifdef HAVE_SDB
+             LIBSDB_VERSION,
 #endif
              octstr_get_cstr(gwmem_type()));
 }

@@ -241,7 +241,7 @@ done
 dnl Implement --enable-warnings option.
 
 AC_ARG_ENABLE(warnings,
-[  --enable-warnings    enable compilation warnings (default: disabled)], [
+[  --enable-warnings       enable compilation warnings (default: disabled)], [
   echo enabling compilation warnings
   if test -n "$GCC"; then
     CFLAGS="$CFLAGS -Wall"
@@ -572,7 +572,7 @@ if test "x$ssllib" != "x" && test "x$sslinc" != "x"; then
 	AC_MSG_RESULT(yes)
       ], [
         AC_ARG_ENABLE(ssl-thread-test,
-        [  --disable-ssl-thread-test disable the multithread test for the OpenSSL library
+        [  --disable-ssl-thread-test  disable the multithread test for the OpenSSL library
                           this will force to continue even if the test fails],
         [ if test "$enableval" = no ; then
             AC_MSG_RESULT([no, continue forced])
@@ -588,11 +588,12 @@ if test "x$ssllib" != "x" && test "x$sslinc" != "x"; then
 fi
 
 
+AC_CONFIG_SECTION([Configuring DB support])
+
 dnl Implement the --with-mysql option. 
 
-AC_CONFIG_SECTION([Configuring MySQL support])
 AC_ARG_WITH(mysql,
-[  --with-mysql[=DIR]        where to look for MySQL libs and header files
+[  --with-mysql[=DIR]      where to look for MySQL libs and header files
                           DIR points to the installation [/usr/local/mysql]],
 [ if test -d "$withval"; then 
     mysqlloc="$withval"; 
@@ -607,7 +608,7 @@ dnl accordingly and enable the usage of the libmysqlclient routines.
 
 AC_MSG_CHECKING([whether to compile with MySQL support])
 AC_ARG_ENABLE(mysql,
-[  --enable-mysql            enable MySQL storage (default: disabled)], [
+[  --enable-mysql          enable MySQL storage (default: disabled)], [
   if test "$enableval" != yes ; then
     AC_MSG_RESULT(disabled)
 else
@@ -664,11 +665,43 @@ else
 ])
 
 
+dnl Implement the --enable-sdb option. This will set HAVE_SDB in config.h
+dnl accordingly and enable the usage of the libsdb routines.
+
+AC_MSG_CHECKING([whether to compile with LibSDB support])
+AC_ARG_ENABLE(sdb,
+[  --enable-sdb            enable LibSDB storage (default: disabled)], [
+  if test "$enableval" != yes; then
+    AC_MSG_RESULT(disabled)
+  else
+    AC_MSG_RESULT(searching)
+    AC_PATH_PROGS(SDB_CONFIG, sdb-config, no)
+    if test "$SDB_CONFIG" = "no"; then
+      AC_MSG_ERROR(Unable to find sdb-config in path for SDB support)
+    else
+      AC_MSG_CHECKING([sdb version])
+      sdb_version=`$SDB_CONFIG --version`
+      AC_MSG_RESULT([$sdb_version])
+      LIBS="$LIBS `$SDB_CONFIG --libs`"
+      CFLAGS="$CFLAGS `$SDB_CONFIG --cflags`"
+      AC_CHECK_HEADERS(sdb.h)
+      dnl AC_CHECK_LIB(sdb, sdb_init, [LIBS="`$SDB_CONFIG --libs`"]) 
+      AC_CHECK_FUNCS(sdb_init)
+      AC_DEFINE(HAVE_SDB)
+      AC_DEFINE_UNQUOTED(LIBSDB_VERSION, "$sdb_version")
+      SDB="yes"
+    fi
+  fi
+],[
+  AC_MSG_RESULT(disabled)
+])
+
+
 dnl Implement the --with-dlr option.
 dnl Checks which external DLR storage should be used. 
 
 AC_ARG_WITH(dlr,
-[  --with-dlr[=TYPE]       select DLR storage to use: internal/mysql (default: internal)], 
+[  --with-dlr[=TYPE]       select DLR storage to use: internal/mysql/sdb (default: internal)], 
 [ AC_CONFIG_SECTION([Configuring DLR support]) 
   AC_MSG_CHECKING([for DLR storage type])
   AC_MSG_RESULT($withval)
@@ -680,6 +713,13 @@ AC_ARG_WITH(dlr,
       AC_MSG_ERROR(Option --with-dlr=mysql requires MySQL client support)
     else
       AC_DEFINE(DLR_MYSQL)
+    fi
+    ;;
+  sdb)
+    if test "$SDB" != "yes"; then
+      AC_MSG_ERROR(Option --with-dlr=sdb requires SDB support)
+    else
+      AC_DEFINE(DLR_SDB)
     fi
     ;;
   *) 

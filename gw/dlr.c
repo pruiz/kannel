@@ -11,6 +11,8 @@
  *     implemented use of mutex to avoid two mysql calls to run at the same time
  * 2002-03-22: tolj@wapme-systems.de:
  *     added more abstraction to fit for several other storage types
+ * 2002-08-04: tolj@wapme-systems.de:
+ *     added simple database library (sdb) support
  */
  
 #include <ctype.h>
@@ -54,6 +56,9 @@ static void dlr_init_mem(void);
 #ifdef DLR_MYSQL
 static void dlr_init_mysql(Cfg* cfg);
 #endif
+#ifdef DLR_SDB
+static void dlr_init_sdb(Cfg* cfg);
+#endif
 static void dlr_shutdown_mem(void);
 static void dlr_shutdown_mysql(void);
 static dlr_wle *dlr_new(void);
@@ -70,6 +75,34 @@ static void dlr_init_mem()
 {
     dlr_waiting_list = list_create();
 }
+
+
+/*
+ * Load all configuration directives that are common for all database
+ * types that use the 'dlr-db' group to define which attributes are 
+ * used in the table
+ */
+#ifdef DLR_DB
+static void dlr_db_init(CfgGroup *grp)
+{
+    if (!(table = cfg_get(grp, octstr_imm("table"))))
+   	    panic(0, "DLR: DB: directive 'table' is not specified!");
+    if (!(field_smsc = cfg_get(grp, octstr_imm("field-smsc"))))
+   	    panic(0, "DLR: DB: directive 'field-smsc' is not specified!");
+    if (!(field_ts = cfg_get(grp, octstr_imm("field-timestamp"))))
+        panic(0, "DLR: DB: directive 'field-timestamp' is not specified!");
+    if (!(field_dst = cfg_get(grp, octstr_imm("field-destination"))))
+   	    panic(0, "DLR: DB: directive 'field-destination' is not specified!");
+    if (!(field_serv = cfg_get(grp, octstr_imm("field-service"))))
+   	    panic(0, "DLR: DB: directive 'field-service' is not specified!");
+    if (!(field_url = cfg_get(grp, octstr_imm("field-url"))))
+   	    panic(0, "DLR: DB: directive 'field-url' is not specified!");
+    if (!(field_mask = cfg_get(grp, octstr_imm("field-mask"))))
+        panic(0, "DLR: DB: directive 'field-mask' is not specified!");
+    if (!(field_status = cfg_get(grp, octstr_imm("field-status"))))
+   	    panic(0, "DLR: DB: directive 'field-status' is not specified!");
+}
+#endif
    
 #ifdef DLR_MYSQL
 static void dlr_init_mysql(Cfg* cfg)
@@ -83,27 +116,13 @@ static void dlr_init_mysql(Cfg* cfg)
      * check for all mandatory directives that specify the field names 
      * of the used MySQL table
      */
-    if (!(grp = cfg_get_single_group(cfg, octstr_imm("dlr-mysql"))))
-        panic(0, "DLR: MySQL: group 'dlr-mysql' is not specified!");
+    if (!(grp = cfg_get_single_group(cfg, octstr_imm("dlr-db"))))
+        panic(0, "DLR: MySQL: group 'dlr-db' is not specified!");
 
-    if (!(mysql_id = cfg_get(grp, octstr_imm("mysql-id"))))
-   	    panic(0, "DLR: MySQL: directive 'mysql-id' is not specified!");
-    if (!(table = cfg_get(grp, octstr_imm("table"))))
-   	    panic(0, "DLR: MySQL: directive 'table' is not specified!");
-    if (!(field_smsc = cfg_get(grp, octstr_imm("field-smsc"))))
-   	    panic(0, "DLR: MySQL: directive 'field-smsc' is not specified!");
-    if (!(field_ts = cfg_get(grp, octstr_imm("field-timestamp"))))
-        panic(0, "DLR: MySQL: directive 'field-timestamp' is not specified!");
-    if (!(field_dst = cfg_get(grp, octstr_imm("field-destination"))))
-   	    panic(0, "DLR: MySQL: directive 'field-destination' is not specified!");
-    if (!(field_serv = cfg_get(grp, octstr_imm("field-service"))))
-   	    panic(0, "DLR: MySQL: directive 'field-service' is not specified!");
-    if (!(field_url = cfg_get(grp, octstr_imm("field-url"))))
-   	    panic(0, "DLR: MySQL: directive 'field-url' is not specified!");
-    if (!(field_mask = cfg_get(grp, octstr_imm("field-mask"))))
-        panic(0, "DLR: MySQL: directive 'field-mask' is not specified!");
-    if (!(field_status = cfg_get(grp, octstr_imm("field-status"))))
-   	    panic(0, "DLR: MySQL: directive 'field-status' is not specified!");
+    if (!(mysql_id = cfg_get(grp, octstr_imm("id"))))
+   	    panic(0, "DLR: MySQL: directive 'id' is not specified!");
+
+    dlr_db_init(grp);
 
     /*
      * now grap the required information from the 'mysql-connection' group
@@ -165,6 +184,60 @@ found:
 }
 #endif /* DLR_MYSQL */
 
+#ifdef DLR_SDB
+static void dlr_init_sdb(Cfg* cfg)
+{
+    CfgGroup *grp;
+    List *grplist;
+    Octstr *sdb_url, *sdb_id;
+    Octstr *p = NULL;
+
+    /*
+     * check for all mandatory directives that specify the field names 
+     * of the used table
+     */
+    if (!(grp = cfg_get_single_group(cfg, octstr_imm("dlr-db"))))
+        panic(0, "DLR: SDB: group 'dlr-db' is not specified!");
+
+    if (!(sdb_id = cfg_get(grp, octstr_imm("id"))))
+   	    panic(0, "DLR: SDB: directive 'id' is not specified!");
+
+    dlr_db_init(grp);
+
+    /*
+     * now grap the required information from the 'mysql-connection' group
+     * with the sdb-id we just obtained
+     *
+     * we have to loop through all available SDB connection definitions 
+     * and search for the one we are looking for
+     */
+
+     grplist = cfg_get_multi_group(cfg, octstr_imm("sdb-connection"));
+     while (grplist && (grp = list_extract_first(grplist)) != NULL) {
+        p = cfg_get(grp, octstr_imm("id"));
+        if (p != NULL && octstr_compare(p, sdb_id) == 0) {
+            goto found;
+        }
+     }
+     panic(0, "DLR: SDB: connection settings for id '%s' are not specified!", 
+           octstr_get_cstr(sdb_id));
+
+found:
+    octstr_destroy(p);
+    list_destroy(grplist, NULL);
+
+    if (!(sdb_url = cfg_get(grp, octstr_imm("url"))))
+   	    panic(0, "DLR: SDB: directive 'url' is not specified!");
+
+    /*
+     * ok, ready to connect
+     */
+    info(0,"Connecting to sdb resource <%s>.", octstr_get_cstr(sdb_url));
+    connection = sdb_open(octstr_get_cstr(sdb_url));
+    octstr_destroy(sdb_url);
+}
+#endif /* DLR_SDB */
+
 void dlr_init(Cfg* cfg)
 {
     CfgGroup *grp;
@@ -197,6 +270,14 @@ void dlr_init(Cfg* cfg)
     } else 
     if (octstr_compare(dlr_type, octstr_imm("internal")) == 0) {
         dlr_init_mem();
+    } else 
+    if (octstr_compare(dlr_type, octstr_imm("sdb")) == 0) {
+#ifdef DLR_SDB
+        dlr_init_sdb(cfg);
+#else
+   	    panic(0, "DLR: storage type defined as '%s', but no LibSDB support build in!", 
+              octstr_get_cstr(dlr_type));
+#endif        
 
     /*
      * add aditional types here
@@ -230,6 +311,13 @@ static void dlr_shutdown_mysql()
 #endif
 }
 
+static void dlr_shutdown_sdb()
+{
+#ifdef DLR_SDB
+    sdb_close(connection);
+#endif
+}
+
 void dlr_shutdown()
 {
     /* call the sub-init routine */
@@ -238,6 +326,9 @@ void dlr_shutdown()
     } else 
     if (octstr_compare(dlr_type, octstr_imm("internal")) == 0) {
         dlr_shutdown_mem();
+    } else 
+    if (octstr_compare(dlr_type, octstr_imm("sdb")) == 0) {
+        dlr_shutdown_sdb();
 
     /*
      * add aditional types here
@@ -334,6 +425,31 @@ static void dlr_add_mysql(char *smsc, char *ts, char *dst, char *service, char *
 #endif
 }
 
+static void dlr_add_sdb(char *smsc, char *ts, char *dst, char *service, char *url, int mask)
+{
+#ifdef DLR_SDB
+    Octstr *sql;
+    int	state;
+
+    sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES "
+                        "('%s', '%s', '%s', '%s', '%s', '%d', '%d')",
+		                octstr_get_cstr(table), octstr_get_cstr(field_smsc), 
+                        octstr_get_cstr(field_ts), octstr_get_cstr(field_dst), 
+                        octstr_get_cstr(field_serv), octstr_get_cstr(field_url), 
+                        octstr_get_cstr(field_mask), octstr_get_cstr(field_status),
+                        smsc, ts, dst, service,	url, mask, 0);
+
+    mutex_lock(dlr_mutex);
+  
+    state = sdb_query(connection, octstr_get_cstr(sql), NULL, NULL);
+    if (state == -1)
+        error(0, "SDB: error in inserting DLR");
+    
+    octstr_destroy(sql);
+    mutex_unlock(dlr_mutex);
+#endif
+}
+
 void dlr_add(char *smsc, char *ts, char *dst, char *keyword, char *id, int mask)
 {
     if (octstr_compare(dlr_type, octstr_imm("internal")) == 0) {
@@ -341,6 +457,9 @@ void dlr_add(char *smsc, char *ts, char *dst, char *keyword, char *id, int mask)
     } else 
     if (octstr_compare(dlr_type, octstr_imm("mysql")) == 0) {
         dlr_add_mysql(smsc, ts, dst, keyword, id, mask);
+    } else 
+    if (octstr_compare(dlr_type, octstr_imm("sdb")) == 0) {
+        dlr_add_sdb(smsc, ts, dst, keyword, id, mask);
 
     /*
      * add aditional types here
@@ -491,7 +610,7 @@ static Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
     }
  
     if ((typ & DLR_BUFFERED) && ((dlr_mask & DLR_SUCCESS) || (dlr_mask & DLR_FAIL))) {
-        debug("dlr.mysql", 0, "dlr not deleted because we wait on more reports");
+        debug("dlr.mysql", 0, "DLR not deleted because we wait on more reports");
     } else {
         debug("dlr.mysql", 0, "removing DLR from database");
         sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s' LIMIT 1;",
@@ -516,6 +635,126 @@ static Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
     return msg;
 }
 
+#ifdef DLR_SDB
+static int sdb_callback_add(int n, char **p, void *row)
+{
+	if (!n) {
+        debug("dlr.sdb", 0, "no rows found");
+        return 0;
+    }
+
+    /* strip string into words */
+    row = octstr_split(octstr_imm(p[0]), octstr_imm(" "));
+    if (list_len(row) != 3) {
+        debug("dlr.sdb", 0, "Row has wrong length %ld", list_len(row));
+        return 0;
+    }
+           
+	return 0;
+}
+
+static int sdb_callback_msgs(int n, char **p, void *row)
+{}
+#endif
+
+static Msg *dlr_find_sdb(char *smsc, char *ts, char *dst, int typ)
+{
+    Msg	*msg = NULL;
+#ifdef DLR_SDB
+    Octstr *sql;
+    int	state;
+    int dlr_mask;
+    Octstr *dlr_service;
+    Octstr *dlr_url;
+    List *row;
+    
+    sql = octstr_format("SELECT %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s'",
+                        octstr_get_cstr(field_mask), octstr_get_cstr(field_serv), 
+                        octstr_get_cstr(field_url), octstr_get_cstr(table), 
+                        octstr_get_cstr(field_smsc),
+                        smsc, octstr_get_cstr(field_ts), ts);
+
+    mutex_lock(dlr_mutex);
+    
+    state = sdb_query(connection, octstr_get_cstr(sql), sdb_callback_add, row);
+    octstr_destroy(sql);
+    if (state == -1) {
+        error(0, "SDB: error in finding DLR");
+        mutex_unlock(dlr_mutex);
+        return NULL;
+    }
+
+    debug("dlr.sdb", 0, "Found entry, row[0]=%s, row[1]=%s, row[2]=%s", 
+          octstr_get_cstr(list_get(row, 0)), 
+          octstr_get_cstr(list_get(row, 1)), 
+          octstr_get_cstr(list_get(row, 2)));
+
+    dlr_mask = atoi(octstr_get_cstr(list_get(row, 0)));
+    dlr_service = octstr_duplicate(list_get(row, 1));
+    dlr_url = octstr_duplicate(list_get(row, 2));
+    list_destroy(row, octstr_destroy_item);
+    
+    mutex_unlock(dlr_mutex);
+    
+    sql = octstr_format("UPDATE %s SET %s=%d WHERE %s='%s' AND %s='%s'",
+                        octstr_get_cstr(table), octstr_get_cstr(field_status), 
+                        typ, octstr_get_cstr(field_smsc), smsc, 
+                       	octstr_get_cstr(field_ts), ts);
+    
+    mutex_lock(dlr_mutex);
+    
+    state = sdb_query(connection, octstr_get_cstr(sql), NULL, NULL);
+    octstr_destroy(sql);
+    if (state == -1) {
+        error(0, "SDB: error in updating DLR");
+        mutex_unlock(dlr_mutex);
+        return NULL;
+    }
+
+    mutex_unlock(dlr_mutex);
+
+    if ((typ & dlr_mask)) {
+        /* its an entry we are interested in */
+        msg = msg_create(sms);
+        msg->sms.service = octstr_duplicate(dlr_service);
+        msg->sms.dlr_mask = typ;
+        msg->sms.sms_type = report;
+        msg->sms.smsc_id = octstr_create(smsc);
+    	msg->sms.sender = octstr_create(dst);
+        msg->sms.receiver = octstr_create("000");
+        msg->sms.msgdata = octstr_duplicate(dlr_url);
+        time(&msg->sms.time);
+        debug("dlr.dlr", 0, "created DLR message: %s", octstr_get_cstr(msg->sms.msgdata));
+    } else {
+        debug("dlr.dlr", 0, "ignoring DLR message because of mask");
+    }
+ 
+    if ((typ & DLR_BUFFERED) && ((dlr_mask & DLR_SUCCESS) || (dlr_mask & DLR_FAIL))) {
+        debug("dlr.sdb", 0, "DLR not deleted because we wait on more reports");
+    } else {
+        debug("dlr.sdb", 0, "removing DLR from database");
+        sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s' LIMIT 1",
+                            octstr_get_cstr(table), octstr_get_cstr(field_smsc), 
+                            smsc, octstr_get_cstr(field_ts), ts);
+        
+        mutex_lock(dlr_mutex);
+
+        state = sdb_query(connection, octstr_get_cstr(sql), NULL, NULL);
+        octstr_destroy(sql);
+        if (state == -1) {
+            error(0, "SDB: error in deleting DLR");
+        }
+
+        mutex_unlock(dlr_mutex);
+    }
+
+    octstr_destroy(dlr_service);
+    octstr_destroy(dlr_url);
+
+#endif
+    return msg;
+}
+
 Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
 {
     Msg	*msg = NULL;
@@ -525,6 +764,9 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
     } else 
     if (octstr_compare(dlr_type, octstr_imm("mysql")) == 0) {
         msg = dlr_find_mysql(smsc, ts, dst, typ);
+    } else 
+    if (octstr_compare(dlr_type, octstr_imm("sdb")) == 0) {
+        msg = dlr_find_sdb(smsc, ts, dst, typ);
 
     /*
      * add aditional types here
@@ -561,6 +803,26 @@ long dlr_messages(void)
         result = mysql_store_result(connection);
         res = mysql_num_rows(result);
         mysql_free_result(result);
+        mutex_unlock(dlr_mutex);
+        return res;
+#endif
+    } else 
+    if (octstr_compare(dlr_type, octstr_imm("sdb")) == 0) {
+#ifdef DLR_SDB
+        Octstr *sql;
+        int	state;
+        long res;
+        
+        sql = octstr_format("SELECT * FROM %s", octstr_get_cstr(table));
+        mutex_lock(dlr_mutex);
+        state = sdb_query(connection, octstr_get_cstr(sql), sdb_callback_msgs, NULL);
+        octstr_destroy(sql);
+        if (state == -1) {
+            error(0, "SDB: error in selecting ammount of waiting DLRs");
+            mutex_unlock(dlr_mutex);
+            return -1;
+        }
+        res = (long) state;
         mutex_unlock(dlr_mutex);
         return res;
 #endif
@@ -605,6 +867,21 @@ void dlr_flush(void)
         }
         result = mysql_store_result(connection);
         mysql_free_result(result);
+        mutex_unlock(dlr_mutex);
+#endif
+    } else 
+    if (octstr_compare(dlr_type, octstr_imm("sdb")) == 0) {
+#ifdef DLR_SDB
+        Octstr *sql;
+        int	state;
+        
+        sql = octstr_format("DELETE FROM %s", octstr_get_cstr(table));
+        mutex_lock(dlr_mutex);
+        state = sdb_query(connection, octstr_get_cstr(sql), NULL, NULL);
+        octstr_destroy(sql);
+        if (state == -1) {
+            error(0, "SDB: error in flusing DLR table");
+        }
         mutex_unlock(dlr_mutex);
 #endif
 

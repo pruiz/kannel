@@ -16,17 +16,26 @@
 #define	DLR_SMSC_SUCCESS    0x08
 #define	DLR_SMSC_FAIL       0x10
 
+#if defined(DLR_MYSQL) || defined(DLR_SDB)
+#define DLR_DB 1
+#endif
 
 Mutex *dlr_mutex;
 Octstr *dlr_type;
 
 /*
- * MySQL specific global things
+ * DB specific global things
  */
+#ifdef DLR_DB
 #ifdef DLR_MYSQL
 #include <mysql/mysql.h>
 MYSQL *connection;
 MYSQL mysql;
+#endif
+#ifdef DLR_SDB
+#include <sdb.h>
+char *connection;
+#endif
 Octstr *table;
 Octstr *field_smsc, *field_ts, *field_dst, *field_serv;
 Octstr *field_url, *field_mask, *field_status;

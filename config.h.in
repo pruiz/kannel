@@ -122,8 +122,17 @@
 /* Define if you have and want to use the MySQL client library (-lmysqlclient) */
 #undef HAVE_MYSQL
 
+/* Define if you have and want to use the sdb client library (-lsdb) */
+#undef HAVE_SDB
+
 /* Define if you want to use the MySQL support for DLR (delivery reports) */
 #undef DLR_MYSQL
+
+/* Define if you want to use the simple database library (libSDB) support for DLR */
+#undef DLR_SDB
+
+/* Define version of used libSDB */
+#undef LIBSDB_VERSION
 
 /* Define if you want to have cookie support for the WSP */
 #undef ENABLE_COOKIES

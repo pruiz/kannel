@@ -351,8 +351,13 @@ MULTI_GROUP(mysql-connection,
     OCTSTR(database)
 )
 
-SINGLE_GROUP(dlr-mysql,
-    OCTSTR(mysql-id)
+MULTI_GROUP(sdb-connection,
+    OCTSTR(id)
+    OCTSTR(url)
+)
+ 
+SINGLE_GROUP(dlr-db,
+    OCTSTR(id)
     OCTSTR(table)
     OCTSTR(field-smsc)
     OCTSTR(field-timestamp)
