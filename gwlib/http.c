@@ -3011,7 +3011,7 @@ static int http_something_accepted(List *headers, char *header_name,
     found = 0;
     for (i = 0; !found && i < list_len(accepts); ++i) {
         Octstr *header_value = list_get(accepts, i);
-        if (octstr_case_compare(header_value, octstr_imm(what)) == 0)
+        if (octstr_case_search(header_value, octstr_imm(what), 0) != -1)
             found = 1;
     }
 

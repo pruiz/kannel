@@ -1,3 +1,7 @@
+2003-10-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.c: applied Alex's patch for Vjacheslav report on a failing 
+      http_something_accepted() routine if we have multi-valued parameter.
+
 2003-10-15  Alexander Malysh  <a.malysh@centrium.de>
     * Makefile.in: fixed 'make install' errors.
 
