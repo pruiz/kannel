@@ -1881,6 +1881,7 @@ int cimd2_submit_msg(SMSCenter *smsc, Msg *msg)
                 octstr_get_cstr(msg->sms.boxc_id));
 	}
     octstr_destroy(ts);
+    ts = NULL;
 	if (ret == 0 || ret == -1)
             break;
         if (cimd2_reopen(smsc) < 0) {
