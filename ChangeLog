@@ -1,3 +1,9 @@
+2003-04-22  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/gwlib.h: added md5 header inclusion.
+    * gwlib/md5.[ch]: added MD5 message digest algorithm. This may be used in
+      various places, including computation of unique IDs etc.
+    * test/test_md5.c: added simple testing program.
+
 2003-04-17  Stipe Tolj  <tolj@wapme-systems.de>
     * configure[.in]: removed checking of libiconv.a. Some systems, like Linux
       contains iconv functions inside glibc. We check the for the header only.
