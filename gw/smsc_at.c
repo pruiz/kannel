@@ -2,8 +2,6 @@
  * smsc_at.c - implement interface to wireless modems using AT commands
  *
  * Yann Muller - 3G Lab, 2000.
- *
- * $Id: smsc_at.c,v 1.8 2000-07-13 08:56:08 3glab Exp $
  * 
  * Make sure your kannel configuration file contains the following lines
  * to be able to use the AT SMSC:
@@ -141,16 +139,19 @@ SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin) {
 	/* Turn Echo off on the modem: we don't need it */
 	if(send_modem_command(smsc->at_fd, "ATE0", 0) == -1)
 		goto error;
-	/* Check does the modem require a PIN and, if so, send it */
-	ret = send_modem_command(smsc->at_fd, "AT+CPIN?", 0); 
-	if(ret == -1)
-		goto error;
-	if(ret == -2) {
-		if(smsc->at_pin == NULL)
+	/* Check does the modem require a PIN and, if so, send it
+	 * This is not supported by the Nokia Premicell */
+	if(strcmp(smsc->at_modemtype, PREMICELL) != 0) {
+		ret = send_modem_command(smsc->at_fd, "AT+CPIN?", 0); 
+		if(ret == -1)
 			goto error;
-		sprintf(setpin, "AT+CPIN=%s", smsc->at_pin);
-		if(send_modem_command(smsc->at_fd, setpin, 0) == -1)
-			goto error;
+		if(ret == -2) {
+			if(smsc->at_pin == NULL)
+				goto error;
+			sprintf(setpin, "AT+CPIN=%s", smsc->at_pin);
+			if(send_modem_command(smsc->at_fd, setpin, 0) == -1)
+				goto error;
+		}
 	}
 	/* Set the modem to PDU mode and autodisplay of new messages */
 	if(send_modem_command(smsc->at_fd, "AT+CMGF=0", 0) == -1)
@@ -242,7 +243,7 @@ int at_submit_msg(SMSCenter *smsc, Msg *msg) {
 	int ret = -1; 
 	char sc[3];
 
-	/* The Wavecom modem needs a '00' prepended to the PDU
+	/* The Wavecom and Siemens modems need a '00' prepended to the PDU
 	 * to indicate to use the default SC. */
 	sc[0] = '\0';
 	if((strcmp(smsc->at_modemtype, WAVECOM) == 0) || (strcmp(smsc->at_modemtype, SIEMENS) == 0))
@@ -256,7 +257,7 @@ int at_submit_msg(SMSCenter *smsc, Msg *msg) {
 		{
 			sprintf(command, "%s%s%c", sc, pdu, 26);
 			ret = send_modem_command(smsc->at_fd, command, 0);
-			printf("send command status: %d\n", ret);
+			debug("AT", 0, "send command status: %d", ret);
 		}
 	}
 	return ret;
@@ -347,7 +348,7 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 	ostr = octstr_create_empty();
 
 	/* debug */
-	/* printf("Command: %s\n", cmd); */
+	printf("Command: %s\n", cmd);
 	
 	/* DEBUG !!! - pretend to send but just return success (0)*/
 	/* return 0; */
@@ -437,11 +438,11 @@ static int pdu_extract(SMSCenter *smsc, Octstr **pdu) {
 	
 	/* skip the SMSC address on the Wavecom (don't know about other modems -
 	 * Premicell doesn't need it) */
-	if(strcmp(smsc->at_modemtype, WAVECOM) == 0) {
+	if(strcmp(smsc->at_modemtype, WAVECOM) == 0 
+	    || strcmp(smsc->at_modemtype, SIEMENS) == 0) {
 		tmp = hexchar(octstr_get_char(buffer, pos))*16
 		    + hexchar(octstr_get_char(buffer, pos+1));
 		tmp = 2 + tmp * 2;
-		printf("skipping... %d\n", tmp);
 		pos += tmp;
 	}
 	
@@ -617,8 +618,8 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	pdu[pos] = numtext(0);
 	pos++;
 	
-	/* destination address */
-	/* FIXME: how can we be sure of the numbering type? 
+	/* destination address
+	 * The numbering type needs to be fixed so
 	 * we use international for now */
 	pdu[pos] = numtext((octstr_len(msg->smart_sms.receiver) & 240) >> 4);
 	pos++;
@@ -629,9 +630,19 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	pdu[pos] = numtext(1);
 	pos++;
 
-	for(i=0; i<octstr_len(msg->smart_sms.receiver); i+=2) {
-		pdu[pos] = octstr_get_char(msg->smart_sms.receiver, i+1); pos++;
-		pdu[pos] = octstr_get_char(msg->smart_sms.receiver, i); pos++;
+	/* make sure there is no blank in the phone number and encode
+	 * an even number of digits */
+	octstr_strip_blank(msg->smart_sms.receiver);
+	len = octstr_len(msg->smart_sms.receiver);
+	for(i=0; i<len; i+=2) {
+		if (i+1 < len) {
+			pdu[pos] = octstr_get_char(msg->smart_sms.receiver, i+1);
+		} else {
+			pdu[pos] = numtext (15);
+		}
+		pos++;
+		pdu[pos] = octstr_get_char(msg->smart_sms.receiver, i);
+		pos++;
 	}
 	
 	/* protocal identifier */
@@ -693,7 +704,7 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	}
 	printf("\n");*/
 
-	return 1;
+	return 0;
 }
 
 /******************************************************************************
@@ -727,8 +738,6 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded) {
 	int len;
 
 	len = octstr_len(input);
-	/*if( len > maxlen)
-		len = maxlen;*/
 
 	prevoctet = octstr_get_char(input ,0);
 	for(i=1; i<octstr_len(input); i++) {
@@ -761,6 +770,7 @@ static int encode8bituncompressed(Octstr *input, unsigned char *encoded) {
 	len = octstr_len(input);
 	
 	for(i=0; i<len; i++) {
+		/* each character is encoded in its hex representation (2 chars) */
 		encoded[i*2] = numtext((octstr_get_char(input, i) & 240) >> 4);
 		encoded[i*2+1] = numtext(octstr_get_char(input, i) & 15);
 	}
