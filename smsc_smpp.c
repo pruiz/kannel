@@ -1604,7 +1604,7 @@ static int pdu_act_deliver_sm(SMSCenter *smsc, smpp_pdu *pdu) {
 	smsmsg = smsmessage_construct(
 		deliver_sm->source_addr, 
 		deliver_sm->dest_addr,
-		octstr_create(deliver_sm->short_message));
+		octstr_create_from_data(deliver_sm->short_message, deliver_sm->sm_length));
 
 	/* Push the SMSMessage structure on the smsc->received_mo fifostack. */
 	fifo_push_smsmessage(smsc->received_mo, smsmsg);
@@ -1747,7 +1747,7 @@ static int pdu_decode_deliver_sm(smpp_pdu* pdu, Octstr* str) {
 	   won't break our application with the new definition
 	   of max short_message size. */
 	end = start + strlen(start);
-	strncpy(deliver_sm->short_message, start, 
+	memcpy(deliver_sm->short_message, start, 
 		(deliver_sm->sm_length > sizeof(deliver_sm->short_message)) ? 
 			sizeof(deliver_sm->short_message) : deliver_sm->sm_length);
 	start = end+1;
