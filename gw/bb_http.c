@@ -25,6 +25,7 @@ static volatile sig_atomic_t httpadmin_running;
 
 static int	ha_port;
 static char	*ha_password;
+static char	*ha_status_pw;
 static char	*ha_allow_ip;
 static char	*ha_deny_ip;
 
@@ -37,21 +38,35 @@ static char	*ha_deny_ip;
  * check if the password matches. Return NULL if
  * it does (or is not required)
  */
-static Octstr *httpd_check_authorization(List *cgivars)
+static Octstr *httpd_check_authorization(List *cgivars, int status)
 {
     Octstr *password;
-    Octstr *reply;
+    static double sleep = 0.01;
 
     password = http_cgi_variable(cgivars, "password");
 
-    if ((ha_password && password == NULL) ||
-	(ha_password && octstr_str_compare(password, ha_password)!=0))
-    {
-	reply = octstr_create("Denied");
-    } else
-	reply = NULL;
+    if (status) {
+	if (ha_status_pw == NULL)
+	    return NULL;
 
-    return reply;
+	if (password == NULL)
+	    goto denied;
+
+	if (octstr_str_compare(password, ha_password)!=0
+	    && octstr_str_compare(password, ha_status_pw)!=0)
+	    goto denied;
+    }
+    else {
+	if (password == NULL || octstr_str_compare(password, ha_password)!=0)
+	    goto denied;
+    }
+    sleep = 0.0;
+    return NULL;	/* allowed */
+denied:
+    gwthread_sleep(sleep);
+    sleep += 1.0;		/* little protection against brute force
+				 * password cracking */
+    return octstr_create("Denied");
 }
 
 /*
@@ -69,13 +84,15 @@ static Octstr *httpd_check_status(void)
 
 static Octstr *httpd_status(List *cgivars, int status_type)
 {
+    Octstr *reply;
+    if ((reply = httpd_check_authorization(cgivars, 1))!= NULL) return reply;
     return bb_print_status(status_type);
 }
 
 static Octstr *httpd_shutdown(List *cgivars)
 {
     Octstr *reply;
-    if ((reply = httpd_check_authorization(cgivars))!= NULL) return reply;
+    if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
     if (bb_status == BB_SHUTDOWN)
 	bb_status = BB_DEAD;
     else
@@ -86,7 +103,7 @@ static Octstr *httpd_shutdown(List *cgivars)
 static Octstr *httpd_isolate(List *cgivars)
 {
     Octstr *reply;
-    if ((reply = httpd_check_authorization(cgivars))!= NULL) return reply;
+    if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
     if ((reply = httpd_check_status())!= NULL) return reply;
 
     if (bb_isolate() == -1)
@@ -98,7 +115,7 @@ static Octstr *httpd_isolate(List *cgivars)
 static Octstr *httpd_suspend(List *cgivars)
 {
     Octstr *reply;
-    if ((reply = httpd_check_authorization(cgivars))!= NULL) return reply;
+    if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
     if ((reply = httpd_check_status())!= NULL) return reply;
 
     if (bb_suspend() == -1)
@@ -110,7 +127,7 @@ static Octstr *httpd_suspend(List *cgivars)
 static Octstr *httpd_resume(List *cgivars)
 {
     Octstr *reply;
-    if ((reply = httpd_check_authorization(cgivars))!= NULL) return reply;
+    if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
     if ((reply = httpd_check_status())!= NULL) return reply;
  
     if (bb_resume() == -1)
@@ -127,11 +144,25 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
 {
     Octstr *reply;
     char *content_type;
+    int status_type;
+
+    /* Set default reply format according to client
+     * Accept: header */
     
-    if (octstr_str_compare(url, "/cgi-bin/status")==0) {
-	/* XXX this SHOULD choose the type according to accept-header */
-	reply = httpd_status(cgivars, BBSTATUS_HTML);
+    if (http_type_accepted(headers, "text/vnd.wap.wml")) {
+	status_type = BBSTATUS_WML;
+	content_type = "text/vnd.wap.wml";
+    }
+    else if (http_type_accepted(headers, "text/html")) {
+	status_type = BBSTATUS_HTML;
 	content_type = "text/html";
+    } else {
+	status_type = BBSTATUS_TEXT;
+	content_type = "text/plain";
+    }    
+
+    if (octstr_str_compare(url, "/cgi-bin/status")==0) {
+	reply = httpd_status(cgivars, status_type);
     } else if (octstr_str_compare(url, "/cgi-bin/status.html")==0) {
 	reply = httpd_status(cgivars, BBSTATUS_HTML);
 	content_type = "text/html";
@@ -226,8 +257,10 @@ int httpadmin_start(Config *config)
 
     ha_password = config_get(grp, "admin-password");
     if (ha_password == NULL)
-	warning(0, "No HTTP admin password set");
+	panic(0, "You MUST set HTTP admin-password");
     
+    ha_status_pw = config_get(grp, "status-password");
+
     ha_port = atoi(p);
     ha_allow_ip = config_get(grp, "admin-allow-ip");
     ha_deny_ip = config_get(grp, "admin-deny-ip");

@@ -660,6 +660,14 @@ admin-password = f00bar
          Password for HTTP administration commands (see below)
      </entry></row>
    
+    <row><entry><literal>status-password</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+         Password to request Kannel status. If not set, no password is
+	 required, and if set, either this or
+	 <literal>admin-password</literal> can be used
+     </entry></row>
+   
     <row><entry><literal>admin-deny-ip</literal></entry>
      <entry morerows=1>IP-list</entry>
      <entry morerows=1 valign=bottom>
@@ -810,6 +818,7 @@ admin-password = f00bar
 group = core
 admin-port = 13000
 admin-password = f00bar
+status-password = sTat
 admin-deny-ip = "*.*.*.*"
 admin-allow-ip = "127.0.0.1;200.100.0.*"
 smsbox-port = 13003
@@ -1028,7 +1037,9 @@ chapter.</para>
         Get the current status of the gateway. Tells the current state
         (see above) and total number of messages relied and queuing in
         the system right now. Also lists the total number of smsbox
-        and wapbox connections.
+        and wapbox connections. No password required, unless
+        <literal>status-password</literal> set, in which case either
+        that or main admin password must be supplied.
    </entry></row>
 
    <row><entry><literal>suspend</literal></entry>

@@ -1,5 +1,22 @@
 2000-12-28  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/bb_http.c: modified so that cgi-bin/status returns the reply
+	in format accepted by the client, preferring WML over HTML over
+	plain text.
+
+	* gw/bb_http.c: made admin-password mandatory in code, too. Set
+	that wrong password in admin commands causes delayed answer to
+	delay brute force password cracking
+
+	* gw/bb_http.c: added new configuration variable status-password -
+	if set, status inquiry must be supplied with either this or
+	general admin-password
+
+	* gw/*kannel.conf, doc/userguide/userguide.xml: updated to reflect
+	status-password
+
+2000-12-28  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bearerbox.c, gw/bearerbox.h, gw/bb_boxc.c, gw/bb_smscconn.c:
 	updated to format status inquiry into HTML, WML or plain text.
 
