@@ -396,7 +396,7 @@ void gw_panic(int e, const char *fmt, ...)
 
 void error(int e, const char *fmt, ...) 
 {
-    if ((e = thread_to[gwthread_self()])) {
+    if ((e = thread_to[gwthread_table_slot()])) {
         FUNCTION_GUTS_EXCL(GW_ERROR, "");
     } else {
         FUNCTION_GUTS(GW_ERROR, "");
@@ -406,7 +406,7 @@ void error(int e, const char *fmt, ...)
 
 void warning(int e, const char *fmt, ...) 
 {
-    if ((e = thread_to[gwthread_self()])) {
+    if ((e = thread_to[gwthread_table_slot()])) {
         FUNCTION_GUTS_EXCL(GW_WARNING, "");
     } else {
         FUNCTION_GUTS(GW_WARNING, "");
@@ -416,7 +416,7 @@ void warning(int e, const char *fmt, ...)
 
 void info(int e, const char *fmt, ...) 
 {
-    if ((e = thread_to[gwthread_self()])) {
+    if ((e = thread_to[gwthread_table_slot()])) {
         FUNCTION_GUTS_EXCL(GW_INFO, "");
     } else {
         FUNCTION_GUTS(GW_INFO, "");
@@ -474,7 +474,7 @@ void debug(const char *place, int e, const char *fmt, ...)
     	 * list of what places are used instead of reading them
     	 * from the log file.
 	 */
-        if ((e = thread_to[gwthread_self()])) {
+        if ((e = thread_to[gwthread_table_slot()])) {
             FUNCTION_GUTS_EXCL(GW_DEBUG, "");
         } else {
             FUNCTION_GUTS(GW_DEBUG, "");
@@ -498,7 +498,7 @@ void log_set_debug_places(const char *places)
 
 void log_thread_to(unsigned int idx)
 {
-    long thread_id = gwthread_self();
+    long thread_id = gwthread_table_slot();
 
     if (idx > 0) 
         info(0, "Logging thread `%ld' to logfile `%s' with level `%d'.", 
