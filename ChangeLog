@@ -1,5 +1,10 @@
 2000-03-29  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/socket.c: Cast sockaddr arguments for recvfrom() and
+	sendto() to (struct sockaddr *).
+
+2000-03-29  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/socket.c: Tidied up gethostnameinfo(), removed excessive
 	use of __ in names.
 

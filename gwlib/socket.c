@@ -382,7 +382,7 @@ int udp_sendto(int s, Octstr *datagram, Octstr *addr) {
 	gw_assert(octstr_len(addr) == sizeof(sa));
 	memcpy(&sa, octstr_get_cstr(addr), sizeof(sa));
 	if (sendto(s, octstr_get_cstr(datagram), octstr_len(datagram), 0,
-		   &sa, (int) sizeof(sa)) == -1) {
+		   (struct sockaddr *) &sa, (int) sizeof(sa)) == -1) {
 		error(errno, "Couldn't send UDP packet");
 		return -1;
 	}
@@ -397,7 +397,8 @@ int udp_recvfrom(int s, Octstr **datagram, Octstr **addr) {
 	int bytes;
 
 	salen = sizeof(sa);
-	bytes = recvfrom(s, &buf, (int) sizeof(buf), 0, &sa, &salen);
+	bytes = recvfrom(s, &buf, (int) sizeof(buf), 0,
+			 (struct sockaddr *) &sa, &salen);
 	if (bytes == -1) {
 		error(errno, "Couldn't receive UDP packet");
 		return -1;
