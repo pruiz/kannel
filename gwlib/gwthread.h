@@ -108,7 +108,7 @@ long gwthread_self_pid(void);
 
 /* Same as gwthread_self() and gwthread_self_pid() combined to one void
  * call. Returns the internal thread id and the process id. */
-void gwthread_self_ids(long **tid, long **pid);
+void gwthread_self_ids(long *tid, long *pid);
 
 /* If the other thread is currently in gwthread_pollfd or gwthread_sleep,
  * make it return immediately.  Otherwise, make it return immediately, the

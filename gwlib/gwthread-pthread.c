@@ -622,7 +622,7 @@ long gwthread_self_pid(void)
         return (long) getpid();
 }
 
-void gwthread_self_ids(long **tid, long **pid)
+void gwthread_self_ids(long *tid, long *pid)
 {
     struct threadinfo *threadinfo;
     threadinfo = pthread_getspecific(tsd_key);
