@@ -434,7 +434,7 @@ int config_sanity_check(Config *config)
             smsc++;
         else if (strcmp(group, "sms-service") == 0)
             sms_service++;
-        else if (strcmp(group, "sms-service") != 0
+        else if (strcmp(group, "otaconfig") != 0
                  && strcmp(group, "sendsms-user") != 0) {
             error(0, "Unknown group '%s' in configuration", group);
 	    errors++;

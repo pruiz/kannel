@@ -210,6 +210,13 @@ static void sms_sender(void *arg)
     
     gwthread_join(conn->receiver);
 
+    /* If, for some reason, there are still messages in our specific queue,
+     * put them into generic queue
+     */
+    while(list_len(conn->outgoing_list) > 0) {
+	msg = list_consume(conn->outgoing_list);
+	list_produce(outgoing_sms, msg);
+    }
     list_destroy(conn->outgoing_list, NULL);
     smsc_close(conn->smsc);
 
