@@ -662,7 +662,7 @@ char *smsbox_req_sendsms(List *list, char *client_ip)
 	msg = msg_create(smart_sms);
 
 	msg->smart_sms.receiver = octstr_duplicate(to);
-	msg->smart_sms.sender = from;  	/* duplication */
+	msg->smart_sms.sender = octstr_duplicate(from);
 	msg->smart_sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
 	msg->smart_sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
 
@@ -705,6 +705,7 @@ char *smsbox_req_sendsms(List *list, char *client_ip)
 	     octstr_get_cstr(to),
 	     text ? octstr_get_cstr(text) : "<< UDH >>");
 
+	octstr_destroy(from);
 	return "Sent.";
     
 error:
