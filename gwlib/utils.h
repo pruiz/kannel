@@ -134,5 +134,9 @@ int str_find_substr(char *list, char *sub, const char *separator);
 int gw_isdigit(int);
 int gw_isxdigit(int);
 
+/*
+ * Rounds up the result of a division
+ */
+int roundup_div(int a, int b);
 
 #endif

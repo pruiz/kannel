@@ -373,3 +373,17 @@ int gw_isxdigit(int c)
 {
     return isxdigit(c);
 }
+
+
+/* Rounds up the result of a division */
+int roundup_div(int a, int b)
+{
+	int t;
+	
+	t = a / b;
+	if(t * b != a)
+		t += 1;
+
+	return t;
+}
+
