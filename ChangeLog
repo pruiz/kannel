@@ -1,3 +1,8 @@
+2003-03-18  Stipe Tolj  <tolj@wapme-systems.de>
+    * test/test_http_server.c: added a special URI /save which causes to save
+      the received body of a POST request to a temporary /tmp/body.<pid>.<n> 
+      file. This may be used for analyzing MMS related POST requests.
+
 2003-03-17  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap-error.[ch]: added error_converting() for reporting smart error
       messages if the converter failed, ie. libxml2 parser failed because of

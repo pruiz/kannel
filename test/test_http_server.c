@@ -28,7 +28,8 @@ static void client_thread(void *arg)
     List *headers, *resph, *cgivars;
     HTTPCGIVar *v;
     Octstr *reply_body, *reply_type;
-    
+    unsigned long n = 0;
+
     if (arg == NULL) {
 	reply_body = octstr_create("Sent.");
 	reply_type = octstr_create("Content-Type: text/plain; "
@@ -44,6 +45,7 @@ static void client_thread(void *arg)
     while (run) {
 	client = http_accept_request(port, &ip, &url, &headers, &body, 
 	    	    	    	     &cgivars);
+    n++;
 	if (client == NULL)
 	    break;
 
@@ -86,8 +88,14 @@ static void client_thread(void *arg)
         } else {
 	        reply_body = octstr_imm("");
 	    } 
-    }
-        
+	} else if (octstr_compare(url, octstr_imm("/save")) == 0) {
+        /* safe the body into a temporary file */
+		pid_t pid = getpid();
+		FILE *f = fopen(octstr_get_cstr(octstr_format("/tmp/body.%ld.%ld", pid, n)), "w");
+        octstr_print(f, body);
+		fclose(f);
+    } 
+            
    if (verbose) {
        debug("test.http", 0, "request headers were");
        http_header_dump(headers);
@@ -114,7 +122,8 @@ static void client_thread(void *arg)
 }
 
 static void help(void) {
-    info(0, "Usage: test_http_server [-v loglevel][-l logfile][-f file][-h][-q][-p port][-s][-c ssl_cert][-k ssl_key][-w white_list][b blacklist]\n");
+    info(0, "Usage: test_http_server [-v loglevel][-l logfile][-f file][-h][-q]"
+            "[-p port][-s][-c ssl_cert][-k ssl_key][-w white_list][b blacklist]\n");
 }
 
 static void sigterm(int signo) {
