@@ -1,3 +1,7 @@
+2001-03-22  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsc_http.c: fixed several memory leaks
+
 2001-03-22  Uoti Urpala  <uau@wapit.com>
 
 	* gwlib/http.c: Fixed memory leak.

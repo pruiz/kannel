@@ -188,7 +188,8 @@ static void httpsmsc_send_cb(void *arg)
 
     conn->data = NULL;
     conndata_destroy(conndata);
-    
+
+    conn->status = SMSCCONN_DEAD;
     bb_smscconn_killed();
 }
 
@@ -364,19 +365,16 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     }
     if ((type = cfg_get(cfg, octstr_imm("system-type")))==NULL) {
 	error(0, "'type' missing in smsc 'http' record.");
+	octstr_destroy(type);
 	return -1;
     }
     conndata = gw_malloc(sizeof(ConnData));
     conndata->http_ref = NULL;
 
-    conndata->allow_ip =
-	octstr_duplicate(cfg_get(cfg, octstr_imm("connect-allow-ip")));
-    conndata->send_url =
-	octstr_duplicate(cfg_get(cfg, octstr_imm("send-url")));
-    conndata->username =
-	octstr_duplicate(cfg_get(cfg, octstr_imm("smsc-username")));
-    conndata->password =
-	octstr_duplicate(cfg_get(cfg, octstr_imm("smsc-password")));
+    conndata->allow_ip = cfg_get(cfg, octstr_imm("connect-allow-ip"));
+    conndata->send_url = cfg_get(cfg, octstr_imm("send-url"));
+    conndata->username = cfg_get(cfg, octstr_imm("smsc-username"));
+    conndata->password = cfg_get(cfg, octstr_imm("smsc-password"));
 
     if (conndata->send_url == NULL)
 	panic(0, "Sending not allowed");
@@ -403,7 +401,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     conndata->http_ref = http_caller_create();
     
     conn->data = conndata;
-    conn->name = octstr_format("HTTP:%s", octstr_get_cstr(type));
+    conn->name = octstr_format("HTTP:%S", type);
     conn->status = SMSCCONN_ACTIVE;
     conn->connect_time = time(NULL);
 
@@ -427,6 +425,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
 
     info(0, "httpsmsc '%s' initiated and ready", octstr_get_cstr(conn->name));
     
+    octstr_destroy(type);
     return 0;
 
 error:
@@ -436,6 +435,7 @@ error:
     conndata_destroy(conndata);
     conn->why_killed = SMSCCONN_KILLED_CANNOT_CONNECT;
     conn->status = SMSCCONN_DEAD;
+    octstr_destroy(type);
     return -1;
 }
 

@@ -369,6 +369,8 @@ void smsc2_cleanup(void)
 {
     SMSCConn *conn;
     int i;
+
+    debug("smscconn", 0, "final clean-up for SMSCConn");
     
     for(i=0; i < list_len(smsc_list); i++) {
         conn = list_get(smsc_list, i);
