@@ -1133,7 +1133,11 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip)
 	error(0, "/sendsms got wrong args");
 	return octstr_create("Wrong sendsms args, rejected");
     }
-    binary = 1;
+
+    if (udh)
+	binary = 1;
+    else
+	binary = 0;
     /*
      * XXX   in future, we should allow both 7bit or 8bit data as 'text',
      *      maybe as data vs. text argument, and then set binary accordingly.
