@@ -1,3 +1,15 @@
+2003-10-29  Stipe Tolj  <tolj@wapme-systems.de>
+    * configure[.in]: added checking of POSIX.1 regex functions and header
+      files availibility on the system.
+    * gwlib/gwlib.h: added inclusion of gwlib/regex.h
+    * gwlib/regex.[ch]: added POSIX regular expression support, including
+      substitution routine for passing subexpression matches to the result.
+      This needs some more improvement, but looks good now.
+    * test/test_regex.c: test program for the gwlib/regex.[ch] module. Try
+      $ ./test/test_regex "+4914287756" "^(00|\+)([0-9]{6,20})$" "\$2"
+      for a quick test on how to substitute an prefixed + MSISDN with the
+      regex into the subexpression part two.
+
 2003-10-28  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_emi.c: fixed billing identifier handling. We have to 
       convert the binary information received from smsbox to hex for
