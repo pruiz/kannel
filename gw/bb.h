@@ -4,8 +4,8 @@
  * These all can be overriden in appropriate configuration files
  *
  */
-#ifndef _BB_H
-#define _BB_H
+#ifndef BB_H
+#define BB_H
 
 #define BB_DEFAULT_THREAD_MAX	20
 #define BB_DEFAULT_HOST		"localhost"

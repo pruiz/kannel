@@ -156,17 +156,6 @@ int write_to_socket(int socket, char *str)
 }
 
 
-int socket_query_blocking(int fd)
-{
-    int flags = fcntl(fd, F_GETFL);
-    if (flags < 0) {
-        warning(errno, "cannot tell if fd %d is blocking", fd);
-        return -1;
-    }
-
-    return (flags & O_NONBLOCK) != 0;
-}
-
 int socket_set_blocking(int fd, int blocking)
 {
     int flags, newflags;
@@ -190,77 +179,6 @@ int socket_set_blocking(int fd, int blocking)
     }
 
     return 0;
-}
-
-
-int read_line(int fd, char *line, int max)
-{
-    char *start;
-    int ret;
-
-    start = line;
-    while (max > 0) {
-        ret = read(fd, line, 1);
-        if (ret == -1) {
-            if (errno == EAGAIN) continue;
-            if (errno == EINTR) continue;
-            error(errno, "read failed");
-            return -1;
-        }
-        if (ret == 0)
-            break;
-        ++line;
-        --max;
-        if (line[-1] == '\n')
-            break;
-    }
-
-    if (line == start)
-        return 0;
-
-    if (line[-1] == '\n')
-        --line;
-    if (line[-1] == '\r')
-        --line;
-    *line = '\0';
-
-    return 1;
-}
-
-
-int read_to_eof(int fd, char **data, size_t *len)
-{
-    size_t size;
-    int ret;
-    char *p;
-
-    *len = 0;
-    size = 0;
-    *data = NULL;
-    for (;;) {
-        if (*len == size) {
-            size += 16 * 1024;
-            p = gw_realloc(*data, size);
-            *data = p;
-        }
-        ret = read(fd, *data + *len, size - *len);
-        if (ret == -1) {
-            if (errno == EINTR) continue;
-            if (errno == EAGAIN) continue;
-            error(errno, "Error while reading");
-            goto error;
-        }
-        if (ret == 0)
-            break;
-        *len += ret;
-    }
-
-    return 0;
-
-error:
-    gw_free(*data);
-    *data = NULL;
-    return -1;
 }
 
 

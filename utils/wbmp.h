@@ -1,5 +1,5 @@
-#ifndef _WBMP_H
-#define _WBMP_H
+#ifndef WBMP_H
+#define WBMP_H
 
 /* WBMP - Wireless Bitmap
  *
@@ -9,6 +9,7 @@
  */
 
 #include "gwlib/gwlib.h"
+
 
 /* extension header parameters... not implemented/supported in any WBMP
  * yet... but for future reference, although I'm quite sure there is

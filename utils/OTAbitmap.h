@@ -1,5 +1,5 @@
-#ifndef _OTABITMAP_H
-#define _OTABITMAP_H
+#ifndef OTABITMAP_H
+#define OTABITMAP_H
 
 /* OTA Bitmap - used for CLI Icon and Operator logo messages
  *

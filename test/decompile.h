@@ -5,8 +5,8 @@
  *
  */
 
-#ifndef _DECOMPILE_H_INCLUDED_
-#define _DECOMPILE_H_INCLUDED_
+#ifndef DECOMPILE_H_INCLUDED
+#define DECOMPILE_H_INCLUDED
 
 
 /* Global Tags */

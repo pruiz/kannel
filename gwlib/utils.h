@@ -4,8 +4,8 @@
  * Kalle Marjola <rpr@wapit.com>
  */
 
-#ifndef _GW_UTILS_H
-#define _GW_UTILS_H
+#ifndef GW_UTILS_H
+#define GW_UTILS_H
 
 #include <stddef.h>
 #include <stdio.h>
@@ -57,11 +57,6 @@ Octet reverse_octet(Octet source);
 int get_and_set_debugs(int argc, char **argv,
 		       int (*find_own) (int index, int argc, char **argv));
 
-
-/* print usage of all standard arguments (parsed in get_and_set_debugs)
- * to given stream */
-void print_std_args_usage(FILE *stream);
-    
 
 /*
  * this function checks if the given 'ip' is in 'accept_string', which

@@ -12,8 +12,8 @@
  * Lars Wirzenius
  */
 
-#ifndef _GWMEM_H
-#define _GWMEM_H
+#ifndef GWMEM_H
+#define GWMEM_H
 
 
 void gw_native_init(void);

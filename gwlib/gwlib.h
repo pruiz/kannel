@@ -7,8 +7,9 @@
  *
  * Kalle Marjola for WapIT Ltd 1999
  */
-#ifndef _GWLIB_H
-#define _GWLIB_H
+
+#ifndef GWLIB_H
+#define GWLIB_H
 
 #include <stdlib.h>
 #include <stddef.h>

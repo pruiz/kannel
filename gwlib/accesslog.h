@@ -13,8 +13,8 @@
  */
 
 
-#ifndef _ACCESSLOG_H
-#define _ACCESSLOG_H
+#ifndef ACCESSLOG_H
+#define ACCESSLOG_H
 
 /* open access log with filename fname. if use_localtime != 0 then
  * all events are logged with localtime, not GMT

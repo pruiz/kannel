@@ -1,5 +1,21 @@
 2001-01-26  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/alt_charsets.h, gw/bb.h, gwlib/accesslog.h, gwlib/gwlib.h,
+	gwlib/gwmem.h, gwlib/socket.h, gwlib/utils.h, test/decompile.h,
+	utils/OTAbitmap.h, utils/wbmp.h: Removed leading underscore from
+	symbols. It is reserved to the C implementation and is not to
+	be used by application code.
+	
+	* gwlib/socket.[ch]: Removed unused functions socket_query_blocking,
+	read_line, and read_to_eof.
+	
+	* gwlib/utils.[ch]: Removed unused function print_std_args_usage.
+	
+	* gwlib/gw_inet.[ch], gw/wap_push_ota.c: Removed the (unused)
+	gw_inet_ntop wrapper.
+
+2001-01-26  Lars Wirzenius  <liw@iki.fi>
+
 	* doc/userguide/userguide.xml: Documented the "phone" option in
 	EMI over modem.
 

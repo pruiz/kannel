@@ -1,5 +1,5 @@
-#ifndef _ALT_CHARSETS_H
-#define _ALT_CHARSETS_H
+#ifndef ALT_CHARSETS_H
+#define ALT_CHARSETS_H
 
 /* file of FtS -kludges (Fuck the Standards)
  *

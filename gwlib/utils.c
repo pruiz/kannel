@@ -143,17 +143,6 @@ int get_and_set_debugs(int argc, char **argv,
     return i;
 }
 
-void print_std_args_usage(FILE *stream)
-{
-    fprintf(stream,
-	   " -v <level>     set stderr output level. 0 = DEBUG, 4 = PANIC\n"
-	   " -F <logfile>   set logfile name\n"
-	   " -V <level>     set logfile output level. Defaults to DEBUG\n"
-	   " -D <places>    set DEBUG places, like \"wap.* -wap.wsp.*\"\n"
-	   " --verbosity, --logfile, --fileverbosity   aliased arguments\n");
-}
-
-
 int check_ip(char *accept_string, char *ip, char *match_buffer)
 {
     char *p, *t, *start;
