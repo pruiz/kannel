@@ -10,13 +10,17 @@
 #define GWLIB_GETOPT_H
 
 #if HAVE_GETOPT_H
-	#include <getopt.h>
+    #include <getopt.h>
+#elif HAVE_GETOPT_IN_STDIO_H
+    #include <stdio.h>
+#elif HAVE_GETOPT_IN_UNISTD_H
+    #include <unistd.h>
 #else
-	int getopt(int argc, char **argv, char *opts);
-	extern int opterr;
-	extern int optind;
-	extern int optopt;
-	extern char *optarg;
+    int getopt(int argc, char **argv, char *opts);
+    extern int opterr;
+    extern int optind;
+    extern int optopt;
+    extern char *optarg;
 #endif
 
 #endif

@@ -21,6 +21,12 @@
 /* Define if you have getopt(3). */
 #undef HAVE_GETOPT
 
+/* Define if you have a declaration for getopt(3) in <stdio.h>. */
+#undef HAVE_GETOPT_IN_STDIO_H
+
+/* Define if you have a declaration for getopt(3) in <unistd.h>. */
+#undef HAVE_GETOPT_IN_UNISTD_H
+
 /* Define if you have getopt_long(3). */
 #undef HAVE_GETOPT_LONG
 

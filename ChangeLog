@@ -1,3 +1,10 @@
+2000-10-16  Lars Wirzenius  <liw@iki.fi>
+
+	* config.h.in, configure{,.in}, gwlib/gw-getopt.h: Check for a
+	prototype for getopt in stdio.h and unistd.h as well, and only
+	use our own one if we fail to find anything. This should make
+	Kannel compile on Solaris again.
+
 2000-10-16 Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wtp_resp_state-decl.h: Removed CR inside a string.

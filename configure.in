@@ -101,6 +101,11 @@ GW_HAVE_TYPE_FROM(sys/socket.h,
 	HAVE_SOCKLEN_T,
 	[Defined if there is a socklen_t in <sys/socket.h>])
 
+GW_HAVE_FUNC_FROM(stdio.h, getopt, HAVE_GETOPT_IN_STDIO_H,
+    	    	  [Does <stdio.h> declare getopt()?])
+GW_HAVE_FUNC_FROM(unistd.h, getopt, HAVE_GETOPT_IN_UNISTD_H,
+    	    	  [Does <unistd.h> declare getopt()?])
+
 dnl DocBook stuff
 
 AC_CHECK_PROG(JADE, jade, jade, :)
@@ -175,7 +180,6 @@ AC_ARG_WITH(malloc,
   *) echo "Unknown malloc wrapper $withval. Oops."; exit 1 ;;
   esac
 ], [
-  echo "malloc without"
   AC_DEFINE(USE_GWMEM_CHECK)
 ])
 
