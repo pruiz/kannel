@@ -1,3 +1,14 @@
+Fri May 26 21:01:41 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/http2.c: Compare header names case-insensitively.
+
+Fri May 26 20:47:06 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wap-appl.h: Moved to gw/wsp.h. Don't want a zillion small
+	.h files, after all.
+	
+	* gw/wsp.h: Added prototypes for the application layer.
+
 2000-05-26  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/conn.c: Converted conn_claim() stuff to use new thread
