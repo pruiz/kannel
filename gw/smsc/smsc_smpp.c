@@ -246,7 +246,7 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu)
             /* discard message if UDH length indicator is obvious corrupt */
             error(0, "SMPP[%s]: Mallformed UDH length indicator 0x%03x while message length "
                      "0x%03x. Discarding binary MO message.", octstr_get_cstr(smpp->conn->id), 
-                     udh_offset, octstr_len(pdu->u.deliver_sm.short_message));
+                     udh_offset, (unsigned int)octstr_len(pdu->u.deliver_sm.short_message));
             msg_destroy(msg);
             return NULL;
         }
