@@ -5,10 +5,12 @@
 # appropriate for a small site running Kannel on one machine.
 
 # Make sure that the Kannel binaries can be found in $BOXPATH or somewhere
-# else along $PATH.
+# else along $PATH.  run_kannel_box has to be in $BOXPATH.
 
-BOXPATH=${BOXPATH:-/usr/sbin}
-PIDFILES=${PIDFILES:-/var/run}
+BOXPATH=/usr/sbin
+PIDFILES=/var/run
+BBCONF=/etc/kannel/bb.conf
+WAPCONF=/etc/kannel/wap.conf
 
 PATH=$BOXPATH:$PATH
 
@@ -21,17 +23,17 @@ test -x $BOXPATH/bearerbox || exit 0
 case "$1" in
   start)
     echo -n "Starting WAP gateway: bearerbox"
-    start-stop-daemon --start --quiet --pidfile $PIDFILES/kannel_bearerbox.pid --exec run_kannel_box -- --pidfile $PIDFILES/kannel_bearerbox.pid bearerbox 
+    start-stop-daemon --start --quiet --pidfile $PIDFILES/kannel_bearerbox.pid --exec $BOXPATH/run_kannel_box -- --pidfile $PIDFILES/kannel_bearerbox.pid bearerbox -- $BBCONF
     echo -n " wapbox"
-    start-stop-daemon --start --quiet --pidfile $PIDFILES/kannel_wapbox.pid --exec run_kannel_box -- --pidfile $PIDFILES/kannel_wapbox.pid wapbox
+    start-stop-daemon --start --quiet --pidfile $PIDFILES/kannel_wapbox.pid --exec $BOXPATH/run_kannel_box -- --pidfile $PIDFILES/kannel_wapbox.pid wapbox -- $WAPCONF
     echo "."
     ;;
 
   stop)
     echo -n "Stopping WAP gateway: wapbox"
-    start-stop-daemon --stop --quiet --pidfile $PIDFILES/kannel_wapbox.pid
+    start-stop-daemon --stop --quiet --pidfile $PIDFILES/kannel_wapbox.pid --exec $BOXPATH/run_kannel_box
     echo -n " bearerbox"
-    start-stop-daemon --stop --quiet --pidfile $PIDFILES/kannel_bearerbox.pid
+    start-stop-daemon --stop --quiet --pidfile $PIDFILES/kannel_bearerbox.pid --exec $BOXPATH/run_kannel_box
     echo "."
     ;;
 

@@ -1,3 +1,8 @@
+2000-03-21  Richard Braakman  <dark@wapit.com>
+
+	* utils/kannel-init.d: Added some configuration options at the top.
+	It now controls my local Kannel setup without problems.
+
 Tue Mar 21 13:43:50 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp.c: Converted to use new list instead of (broken) old 
