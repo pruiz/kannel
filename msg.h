@@ -37,6 +37,12 @@ Msg *msg_create(enum msg_type type);
 
 
 /*
+ * Return type of the message
+ */
+enum msg_type msg_type(Msg *msg);
+
+
+/*
  * Destroy an Msg object. All fields are also destroyed.
  */
 void msg_destroy(Msg *msg);

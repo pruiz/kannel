@@ -143,6 +143,11 @@ Octstr *octstr_copy(Octstr *ostr, size_t from, size_t len) {
 }
 
 
+Octstr *octstr_duplicate(Octstr *ostr) {
+	return octstr_create_from_data(ostr->data, ostr->len);
+}
+
+
 Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2) {
 	Octstr *ostr;
 	

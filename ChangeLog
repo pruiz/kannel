@@ -1,3 +1,13 @@
+1999-11-11    <rpr@rpr.wapit.com>
+
+	* msg.h, msg.c: added function msg_type.
+
+	* octstr.h, octstr.c: functions octstr_duplicate, octstr_send ja
+	octstr_recv added. 
+
+	* unlimited number of improvements, bugfixing and enhancements in
+	other modules. Too many.
+
 1999-11-09    <rpr@rpr.wapit.com>
 
 	* initial release. Copied several files from old smsgateway

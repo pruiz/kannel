@@ -58,7 +58,7 @@ all: progs
 progs: $(progs)
 
 SMSC = smsc.o smsc_smpp.o smsc_emi.o smsc_fake.o smsc_cimd.o
-BBOBJS = $(SMSC) boxc.o csdr.o bb_msg.o sms_msg.o bearerbox.o
+BBOBJS = $(SMSC) boxc.o csdr.o bb_msg.o sms_msg.o msg.o bearerbox.o
 
 
 #doc: dummy
@@ -87,6 +87,7 @@ config.o: config.h wapitlib.h
 html.o: html.h wapitlib.h
 http.o: http.h wapitlib.h
 octstr.o: octstr.h wapitlib.h
+boxc.o: msg.h bb_msg.h
 smsc.o: smsc.h sms_msg.h smsc_p.h
 sms_msg.h: octstr.h
 smsc_fake.o: smsc.h sms_msg.h smsc_p.h wapitlib.h

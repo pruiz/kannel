@@ -66,6 +66,12 @@ Octstr *octstr_copy(Octstr *ostr, size_t from, size_t len);
 
 
 /*
+ * as copy but duplicates entirely
+ */
+Octstr *octstr_duplicate(Octstr *ostr);
+
+
+/*
  * Create a new octet string by catenating two existing ones. Return 
  * pointer to the new object, or NULL if the operation failed.
  */

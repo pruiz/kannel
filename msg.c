@@ -62,6 +62,12 @@ void msg_destroy(Msg *msg) {
 	free(msg);
 }
 
+
+enum msg_type msg_type(Msg *msg) {
+    return msg->type;
+}
+
+
 Octstr *msg_pack(Msg *msg) {
 	Octstr *os;
 	
