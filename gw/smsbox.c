@@ -372,6 +372,13 @@ static void get_receiver(long id, Msg **msg, URLTranslation **trans)
     
     idstr = octstr_format("%ld", id);
     receiver = dict_remove(receivers, idstr);
+    if (receiver == NULL) {
+	error(0, "get_receiver: Failed to get receiver, trying again");
+	sleep(1);
+	receiver = dict_remove(receivers, idstr);
+	if (receiver == NULL)
+	    panic(0, "get_receiver: Failed to get receiver");
+    }
     octstr_destroy(idstr);
     *msg = receiver->msg;
     *trans = receiver->trans;

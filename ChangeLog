@@ -1,3 +1,9 @@
+2001-03-01  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsbox.c: Added a temporary half-fix for a bug that could
+	cause NULL references with sms-service HTTP requests. Has to be
+	fixed properly later.
+
 2001-03-01  Lars Wirzenius  <liw@iki.fi>
 
 	* test/test_http.c: Reformatted to follow current coding style.
