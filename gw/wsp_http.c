@@ -347,7 +347,7 @@ void *wsp_http_thread(void *arg) {
 			status = 415; /* Unsupported media type */
 			warning(0, "WSP: Unsupported content type `%s'", type);
 			debug("wap.wsp.http", 0, "Content of unsupported content:");
-			octstr_dump(input);
+			octstr_dump(input, 0);
 		}
 	}
 		

@@ -259,10 +259,10 @@ void wtp_send_address_dump(Address *address){
 
        debug("wap.wtp.send", 0, "WTP: address dump starting");
        debug("wap.wtp.send", 0, "WTP: source address");
-       octstr_dump(address->source_address);
+       octstr_dump(address->source_address, 1);
        debug("wap.wtp.send", 0, "WTP: source port %ld: ", address->source_port);
        debug("wap.wtp.send", 0, "WTP: destination address");
-       octstr_dump(address->destination_address);
+       octstr_dump(address->destination_address, 1);
        debug("wap.wtp.send", 0, "WTP: destination port %ld: ", address->destination_port);
 }
 

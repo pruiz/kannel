@@ -254,7 +254,7 @@ void wtp_event_dump(WTPEvent *event) {
 	#define INTEGER(name) debug("wap.wtp", 0, "  %s.%s: %ld", t, #name, p->name)
 	#define OCTSTR(name) \
 		debug("wap.wtp", 0, "  %s.%s:", t, #name); \
-		octstr_dump(p->name)
+		octstr_dump(p->name, 1)
 	#define EVENT(tt, field) \
 		if (tt == event->type) \
 			{ char *t = #tt; struct tt *p = &event->tt; field } 
@@ -320,13 +320,14 @@ void wtp_machine_dump(WTPMachine *machine){
 	           debug("wap.wtp", 0, "  %s: %ld", #name, machine->name)
            #define MSG(name) \
                    debug("wap.wtp", 0, "Field %s: ", #name); \
-                   msg_dump(machine->name)
+                   msg_dump(machine->name, 1)
            #define WSP_EVENT(name) \
                    debug("wap.wtp", 0, "WSP event %s:", #name); \
                    wsp_event_dump(machine->name)
            #define ENUM(name) debug("wap.wtp", 0, "  state = %s.", name_state(machine->name))
-	   #define OCTSTR(name)  debug("wap.wtp", 0, "  Octstr field %s :", #name); \
-                                 octstr_dump(machine->name)
+	   #define OCTSTR(name)  \
+	   	debug("wap.wtp", 0, "  Octstr field %s :", #name); \
+                octstr_dump(machine->name, 1)
            #define TIMER(name)   debug("wap.wtp", 0, "  Machine timer %p:", (void *) \
                                        machine->name)
            #define MUTEX(name)   if (mutex_try_lock(machine->name) == -1) \
@@ -450,7 +451,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
          if (octstr_len(msg->wdp_datagram.user_data) < 3){
             event = tell_about_error(pdu_too_short_error, event, msg, tid);
             debug("wap.wtp", 0, "Got too short PDU (less than three octets)");
-            msg_dump(msg);
+            msg_dump(msg, 0);
             return event;
          }
 
@@ -481,7 +482,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                      if (fourth_octet == -1){
                          event = tell_about_error(pdu_too_short_error, event, msg, tid);
                          debug("wap.wtp", 0, "WTP: unpack_datagram; missing fourth octet (invoke)");
-                         msg_dump(msg);
+                         msg_dump(msg, 0);
                          return event;
                      }
                      
@@ -511,7 +512,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                     if (fourth_octet == -1){
                        event = tell_about_error(pdu_too_short_error, event, msg, tid);
                        debug("wap.wtp", 0, "WTP: unpack_datagram; missing fourth octet (abort)");
-                       msg_dump(msg);
+                       msg_dump(msg, 0);
                        return event;
                     }
 
@@ -828,7 +829,7 @@ static void segment_dump(WTPSegment *segment){
        debug("wap.wtp", 0, "tid was: %ld", segment->tid);
        debug("wap.wtp", 0, "psn was: %d", segment->packet_sequence_number);
        debug("wap.wtp", 0, "segment itself was:");
-       octstr_dump(segment->data);
+       octstr_dump(segment->data, 1);
        debug("wap.wtp", 0, "WTP: segment dump ends");
 }
 
@@ -1048,7 +1049,7 @@ WTPEvent *unpack_invoke(Msg *msg, WTPSegment *segments_list, long tid,
          
 	        case group_trailer_segment:
                      debug("wap.wtp", 0, "WTP: Got a segmented message");
-                     msg_dump(msg);
+                     msg_dump(msg, 0);
                      segments_list = add_segment_to_message(tid, 
                                      msg->wdp_datagram.user_data, 0);
                      return NULL;
@@ -1157,7 +1158,7 @@ static Octstr *unpack_segmented_invoke(Msg *msg, WTPSegment *segments_list,
 
        if (message_type(first_octet) == body_segment){
           debug("wap.wtp", 0, "WTP: Got a body segment");
-          msg_dump(msg);
+          msg_dump(msg, 0);
           segments_list = add_segment_to_message(tid, 
                           msg->wdp_datagram.user_data, packet_sequence_number);
           return NULL;
@@ -1165,7 +1166,7 @@ static Octstr *unpack_segmented_invoke(Msg *msg, WTPSegment *segments_list,
 
        if (message_type(first_octet) == group_trailer_segment){
           debug("wap.wtp", 0, "WTP: Got the last segment of the group");
-          msg_dump(msg);
+          msg_dump(msg, 0);
           segments_list = add_segment_to_message(tid, 
                           msg->wdp_datagram.user_data, packet_sequence_number);
           segments_missing = list_missing_segments(segments_ackd, segments_list,
@@ -1188,7 +1189,7 @@ static Octstr *unpack_segmented_invoke(Msg *msg, WTPSegment *segments_list,
 
       if (message_type(first_octet) == transmission_trailer_segment){
          debug("wap.wtp", 0, "WTP: Got last segment of a message");
-         msg_dump(msg);
+         msg_dump(msg, 0);
 
          segments_list = add_segment_to_message(tid, 
                          msg->wdp_datagram.user_data, packet_sequence_number);

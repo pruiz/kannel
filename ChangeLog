@@ -1,3 +1,9 @@
+Thu Mar 30 01:27:40 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Changed msg_dump and octstr_dump to take a "level" argument.
+	This allows them to indent dumps within dumps correctly. Related
+	changes at callers.
+
 Thu Mar 30 01:04:34 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c, gw/wsp.h, gw/wsp_machine-decl.h: Changed

@@ -298,7 +298,7 @@ OctstrList *octstr_split_words(Octstr *ostr);
 /*
  * Print debugging information about octet string.
  */
-void octstr_dump(Octstr *ostr);
+void octstr_dump(Octstr *ostr, int level);
 
 /*
  * Send(2) given octstr into 'fd', possibly blocking. 

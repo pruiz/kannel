@@ -344,7 +344,7 @@ int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 	if(smsc == NULL) goto error;
 	if(msg == NULL) goto error;
 
-	msg_dump(msg);
+	msg_dump(msg, 0);
 
 	/* If we cannot really send yet, push message to
 	   smsc->unsent_mt where it will stay until
@@ -360,7 +360,7 @@ int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 
 	if(msg_type(msg) != smart_sms) {
 		error(0, "smpp_submit_sms: Msg is WRONG TYPE");
-		msg_dump(msg);
+		msg_dump(msg, 0);
 		goto error;
 	}
 

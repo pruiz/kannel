@@ -382,7 +382,7 @@ void *smsbox_req_thread(void *arg) {
     {
 
 	error(0, "smsbox_req_thread: EMPTY Msg, dump follows:");
-	msg_dump(msg);
+	msg_dump(msg, 0);
 		/* NACK should be returned here if we use such 
 		   things... future implementation! */
 	   

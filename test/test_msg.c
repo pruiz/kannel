@@ -18,11 +18,11 @@ int main(void) {
 	info(0, "Creating msg.");
 	msg = msg_create(heartbeat);
 	msg->heartbeat.load = 42;
-	msg_dump(msg);
+	msg_dump(msg, 0);
 	
 	info(0, "Packing msg.");
 	os = msg_pack(msg);
-	octstr_dump(os);
+	octstr_dump(os, 0);
 	
 	info(0, "Unpacking msg to msg2.");
 	msg2 = msg_unpack(os);
@@ -40,11 +40,11 @@ int main(void) {
 	
 	info(0, "Packing smart_sms.");
 	os = msg_pack(msg);
-	octstr_dump(os);
+	octstr_dump(os, 0);
 	
 	info(0, "Duplicating msg.");
 	msg2 = msg_duplicate(msg);
-	msg_dump(msg2);
+	msg_dump(msg2, 0);
 	msg_destroy(msg2);
 
 	info(0, "Unpacking smart_sms.");

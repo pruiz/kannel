@@ -712,7 +712,7 @@ OctstrList *octstr_split_words(Octstr *ostr) {
 }
 
 
-void octstr_dump(Octstr *ostr) {
+void octstr_dump(Octstr *ostr, int level) {
 	unsigned char *p, *d, buf[1024], charbuf[256];
 	size_t pos;
 	const int octets_per_line = 8;
@@ -721,9 +721,12 @@ void octstr_dump(Octstr *ostr) {
 	if (ostr == NULL)
 		return;
 
-	debug("gwlib.octstr", 0, "Octet string at %p:", (void *) ostr);
-	debug("gwlib.octstr", 0, "  len:  %lu", (unsigned long) ostr->len);
-	debug("gwlib.octstr", 0, "  size: %lu", (unsigned long) ostr->size);
+	debug("gwlib.octstr", 0, "%*sOctet string at %p:", level, "", 
+				  (void *) ostr);
+	debug("gwlib.octstr", 0, "%*s  len:  %lu", level, "",
+				  (unsigned long) ostr->len);
+	debug("gwlib.octstr", 0, "%*s  size: %lu", level, "",
+				  (unsigned long) ostr->size);
 
 	buf[0] = '\0';
 	p = buf;
@@ -740,7 +743,8 @@ void octstr_dump(Octstr *ostr) {
 	    ++pos;
 	    if (pos - this_line_begins_at == octets_per_line) {
 		*d = '\0';
-		debug("gwlib.octstr", 0, "  data: %s  %s", buf, charbuf);
+		debug("gwlib.octstr", 0, "%*s  data: %s  %s", level, "",
+				          buf, charbuf);
 		buf[0] = '\0';
 		charbuf[0] = '\0';
 		p = buf;
@@ -750,9 +754,12 @@ void octstr_dump(Octstr *ostr) {
 	}
 	if (pos - this_line_begins_at > 0) {
 	    *d = '\0';
-	    debug("gwlib.octstr", 0, "  data: %-*.*s  %s", octets_per_line*3,
+	    debug("gwlib.octstr", 0, "%*s  data: %-*.*s  %s", level, "",
+	    				octets_per_line*3,
 		  octets_per_line*3, buf, charbuf);
 	}
+
+	debug("gwlib.octstr", 0, "%*sOctet string dump ends.", level, "");
 }
 
 int octstr_send(int fd, Octstr *ostr) {

@@ -46,11 +46,11 @@ int main(int argc, char **argv)
 
   if (ret == 0)
     {
-      octstr_dump(wml_text);
+      octstr_dump(wml_text, 0);
       printf("\n");
 
       printf("Here's the binary output: \n\n");
-      octstr_dump(wml_binary);
+      octstr_dump(wml_binary, 0);
       printf("\n");
 
       printf("And as a text: \n\n");

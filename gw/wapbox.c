@@ -158,7 +158,7 @@ static void msg_send(int s, Msg *msg) {
 	octstr_destroy(os);
 	if (msg->type != heartbeat) {
 		debug("wap.msg.send", 0, "WAPBOX: Sent message:");
-		msg_dump(msg);
+		msg_dump(msg, 0);
 	}
         /* Yeah, we now allways free the memory allocated to msg.*/
         msg_destroy(msg);
@@ -325,7 +325,7 @@ int main(int argc, char **argv) {
 		if (msg == NULL)
 			break;
                 debug("wap.msg.received", 0, "WAPBOX: message received");
-                msg_dump(msg);
+                msg_dump(msg, 0);
 		wtp_event = wtp_unpack_wdp_datagram(msg);
                 debug("wap.event", 0, "WAPBOX: datagram unpacked");
                 wtp_event_dump(wtp_event);

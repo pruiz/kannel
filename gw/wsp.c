@@ -148,7 +148,9 @@ void wsp_event_dump(WSPEvent *event) {
 	debug("wap.wsp", 0, "Dump of WSPEvent %p follows:", (void *) event);
 	debug("wap.wsp", 0, "  type: %s (%d)", wsp_event_name(event->type), event->type);
 	#define INTEGER(name) debug("wap.wsp", 0, "  %s.%s: %d", t, #name, p->name)
-	#define OCTSTR(name) debug("wap.wsp", 0, "  %s.%s:", t, #name); octstr_dump(p->name)
+	#define OCTSTR(name) \
+		debug("wap.wsp", 0, "  %s.%s:", t, #name); \
+		octstr_dump(p->name, 1)
 	#define WTP_MACHINE(name) \
 		debug("wap.wsp", 0, "  %s.%s at %p", t, #name, (void *) p->name)
 	#define SESSION_MACHINE(name) \
@@ -240,7 +242,7 @@ void wsp_machine_dump(WSPMachine *machine) {
 	#define INTEGER(name) debug("wap.wsp", 0, "  %s: %ld", #name, p->name);
 	#define OCTSTR(name) \
 		debug("wap.wsp", 0, "  %s:", #name); \
-		octstr_dump(p->name);
+		octstr_dump(p->name, 1);
 	#define METHOD_POINTER(name) \
 		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name);
 	#define EVENT_POINTER(name) \
@@ -480,14 +482,14 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 	      version, caps_len, headers_len);
 	if (caps_len > 0) {
 	    debug("wap.wsp", 0, "Unpacked caps:");
-	    octstr_dump(caps);
+	    octstr_dump(caps, 0);
 
 	    unpack_caps(caps, m);
 	}
 	if (headers_len > 0) {
 	    HTTPHeader *hdrs;
 	    
-	    octstr_dump(headers);
+	    octstr_dump(headers, 0);
 	    
 	    hdrs = unpack_headers(headers);
 

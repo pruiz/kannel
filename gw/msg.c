@@ -79,13 +79,15 @@ void msg_destroy(Msg *msg) {
 	gw_free(msg);
 }
 
-void msg_dump(Msg *msg) {
-	debug("gw.msg", 0, "Msg object at %p:", (void *) msg);
-	debug("gw.msg", 0, "  type: %s", type_as_str(msg));
+void msg_dump(Msg *msg, int level) {
+	debug("gw.msg", 0, "%*sMsg object at %p:", level, "", (void *) msg);
+	debug("gw.msg", 0, "%*s type: %s", level, "", type_as_str(msg));
 	#define INTEGER(name) \
-		debug("gw.msg", 0, "  %s.%s: %ld", t, #name, (long) p->name)
+		debug("gw.msg", 0, "%*s %s.%s: %ld", \
+			level, "", t, #name, (long) p->name)
 	#define OCTSTR(name) \
-		debug("gw.msg", 0, "  %s.%s:", t, #name); octstr_dump(p->name)
+		debug("gw.msg", 0, "%*s %s.%s:", level, "", t, #name); \
+		octstr_dump(p->name, level + 1)
 	#define MSG(tt, stmt) \
 		if (tt == msg->type) \
 			{ char *t = #tt; struct tt *p = &msg->tt; stmt }

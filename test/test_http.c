@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
 			panic(0, "http_get failed");
 		debug("", 0, "Fetched %s (%s):", argv[i], type);
 		os = octstr_create_from_data(data, size);
-		octstr_dump(os);
+		octstr_dump(os, 0);
 	}
 	
 	return 0;
