@@ -95,30 +95,42 @@ static void signal_handler(int signum)
     if (!gwthread_shouldhandlesignal(signum))
 	return;
 
-    if (signum == SIGINT || signum == SIGTERM) {
+    switch (signum) {
+        case SIGINT:
+        case SIGTERM:
 
-	mutex_lock(status_mutex);
-        if (bb_status != BB_SHUTDOWN && bb_status != BB_DEAD) {
+            mutex_lock(status_mutex);
+            if (bb_status != BB_SHUTDOWN && bb_status != BB_DEAD) {
+                warning(0, "Killing signal received, shutting down...");
+                mutex_unlock(status_mutex);
+                bb_shutdown();
+                return;
+            } 
+            else if (bb_status == BB_SHUTDOWN) {
+                warning(0, "New killing signal received, killing neverthless...");
+                bb_status = BB_DEAD;
+            }
+            else if (bb_status == BB_DEAD) {
+                panic(0, "cannot die by its own will");
+            }
+            mutex_unlock(status_mutex);
+            break;
 
-            warning(0, "Killing signal received, shutting down...");
-
-	    mutex_unlock(status_mutex);
-	    bb_shutdown();
-	    return;
-        }
-        else if (bb_status == BB_SHUTDOWN) {
-            warning(0, "New killing signal received, killing neverthless...");
-            bb_status = BB_DEAD;
-        }
-        else if (bb_status == BB_DEAD) {
-	    panic(0, "cannot die by its own will");
-	}
-	mutex_unlock(status_mutex);
-    } else if (signum == SIGHUP) {
-        warning(0, "SIGHUP received, catching and re-opening logs");
-        log_reopen();
-        alog_reopen();
-	store_load();
+        case SIGHUP:
+            warning(0, "SIGHUP received, catching and re-opening logs");
+            log_reopen();
+            alog_reopen();
+            store_load();
+            break;
+        
+        /* 
+         * It would be more proper to use SIGUSR1 for this, but on some
+         * platforms that's reserved by the pthread support. 
+         */
+        case SIGQUIT:
+	       warning(0, "SIGQUIT received, reporting memory usage.");
+	       gw_check_leaks();
+	       break;
     }
 }
 
@@ -131,6 +143,7 @@ static void setup_signal_handlers(void)
     act.sa_flags = 0;
     sigaction(SIGINT, &act, NULL);
     sigaction(SIGTERM, &act, NULL);
+    sigaction(SIGQUIT, &act, NULL);
     sigaction(SIGHUP, &act, NULL);
     sigaction(SIGPIPE, &act, NULL);
 }

@@ -1797,15 +1797,29 @@ static void signal_handler(int signum) {
     if (!gwthread_shouldhandlesignal(signum))
         return;
 
-    if (signum == SIGINT) {
-	if (program_status != shutting_down) {
-	    error(0, "SIGINT received, aborting program...");
-	    program_status = shutting_down;
-	}
-    } else if (signum == SIGHUP) {
-        warning(0, "SIGHUP received, catching and re-opening logs");
-        log_reopen();
-        alog_reopen();
+    switch (signum) {
+        case SIGINT:
+
+       	    if (program_status != shutting_down) {
+                error(0, "SIGINT received, aborting program...");
+                program_status = shutting_down;
+            }
+            break;
+
+        case SIGHUP:
+            warning(0, "SIGHUP received, catching and re-opening logs");
+            log_reopen();
+            alog_reopen();
+            break;
+
+        /* 
+         * It would be more proper to use SIGUSR1 for this, but on some
+         * platforms that's reserved by the pthread support. 
+         */
+        case SIGQUIT:
+	       warning(0, "SIGQUIT received, reporting memory usage.");
+	       gw_check_leaks();
+	       break;
     }
 }
 
@@ -1817,6 +1831,7 @@ static void setup_signal_handlers(void) {
     sigemptyset(&act.sa_mask);
     act.sa_flags = 0;
     sigaction(SIGINT, &act, NULL);
+    sigaction(SIGQUIT, &act, NULL);
     sigaction(SIGHUP, &act, NULL);
     sigaction(SIGPIPE, &act, NULL);
 }
