@@ -398,7 +398,8 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
     }
 	
     /* XSer2: DCS */
-    if ((dcs = fields_to_dcs(msg, msg->sms.alt_dcs))) {
+    dcs = fields_to_dcs(msg, msg->sms.alt_dcs);
+    if (dcs != 0 && dcs != 4) {
    	str = octstr_create("");
 	octstr_append_char(str, 2); 
 	octstr_append_char(str, 1); /* len 01 */
@@ -1216,8 +1217,8 @@ static void emi2_sender(void *arg)
     octstr_destroy(privdata->allow_ip);
     octstr_destroy(privdata->deny_ip);
     octstr_destroy(privdata->host);
-    if(octstr_len(privdata->alt_host))
-	octstr_destroy(privdata->alt_host);
+    octstr_destroy(privdata->alt_host);
+    octstr_destroy(privdata->my_number);
     octstr_destroy(privdata->username);
     octstr_destroy(privdata->password);
     gw_free(privdata);

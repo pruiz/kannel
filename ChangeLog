@@ -1,3 +1,9 @@
+2002-03-14  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsc_emi2.c: added a missing octdestroy and changed dcs encoding
+      behaviour: if dcs equals to default + 8bit, we don't need to add a 
+      DCS in XSER, the MCLs=1 is enough (Should fix complaint from 
+      Avner Sternheim <AvnerS@outlook.co.il>)
+
 2002-03-13  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsc_at2.c: fixed a bug when keepalive field is undefined
 
