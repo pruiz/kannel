@@ -104,12 +104,6 @@ The urls are fetched in random order.\n\
 #include <sys/param.h>
 #include <math.h>
 
-#if HAVE_GETOPT_H
-#include <getopt.h>
-#endif
-
-
-
 #include "gwlib/gwlib.h"
 
 #define GET_WTP_PDU_TYPE(hdr)  (hdr[0] >> 3)

@@ -5,12 +5,7 @@
  */
 
 #include <stdlib.h>
-
-#include "config.h"
-
-#if HAVE_GETOPT_H
-#include <getopt.h>
-#endif
+#include <unistd.h>
 
 #include "gwlib/gwlib.h"
 

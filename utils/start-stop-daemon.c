@@ -55,6 +55,7 @@
 #if HAVE_GETOPT_H
 #include <getopt.h>
 #endif
+#include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
 #include <sys/ioctl.h>

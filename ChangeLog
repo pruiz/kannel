@@ -4,6 +4,10 @@ Wed Apr 12 00:30:54 2000  Lars Wirzenius  <liw@wapit.com>
 	utils/start-stop-daemon.c: Changed references to <getopt.h>
 	to <unistd.h>, except in start-stop-daemon, where <getopt.h>
 	is still needed because of getopt_long.
+	
+	Thanks to kean.leong.ang@my.arthurandersen.com for noticing
+	this (and providing a patch, even though I did it slightly
+	differently).
 
 Tue Apr 11 21:57:17 2000  Lars Wirzenius  <liw@wapit.com>
 
