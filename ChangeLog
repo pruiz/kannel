@@ -6,6 +6,12 @@
     * gwlib/cfg.c: added more verbosity for 'include = "foobar.conf"'
       config file inclusion that avoids to concatenate groups by mistake.
 
+2002-05-30  Harrie Hazewinkel <harrie@mod-snmp.com>
+    * Moved heartbeat related code into the heartbeat.[c,h] files.
+      Added a heartbeat_stop all functionality by means of the
+      parameter ALL_HEARTBEATS in the heartbeat_stop function.
+      This affected gw/bb.h, gw/smsbox.c and gw/wapbox.c.
+
 2002-05-29  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smscconn.h, gw/smsc_smpp.c, gw/bb_smscconn.c: added new 
       SMSCCONN_ACTIVE_RECV state to provide online status information
