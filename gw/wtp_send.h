@@ -38,7 +38,7 @@ void wtp_send_abort(long abort_type, long abort_reson, WTPMachine *machine,
  * action tid are direct inputs. (This function is used when the transaction is 
  * aborted before calling the state machine).
  */
-void wtp_do_not_start(long abort_type, long abort_reason, Address *address, 
+void wtp_do_not_start(long abort_type, long abort_reason, WAPAddrTuple*address, 
      int tid);
 
 /*
@@ -57,7 +57,7 @@ void wtp_send_negative_ack(Address *address, int tid,
                            int retransmission_status, int segments_missing,
                            WTPSegment *missing_segments);
 
-void wtp_send_address_dump(Address *address);
+void wtp_send_address_dump(WAPAddrTuple  *address);
 
 #endif
 

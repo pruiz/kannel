@@ -39,7 +39,7 @@ static void add_datagram_address(Msg *msg, WTPMachine *machine);
 
 static void add_segment_address(Msg *msg, Address *address);
 
-static void add_direct_address(Msg *msg, Address *address);
+static void add_direct_address(Msg *msg, WAPAddrTuple *address);
 
 /*
  * Setting retransmission status of a already packed message.
@@ -151,7 +151,8 @@ void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine,
  * action tid are direct inputs. (This function is used when the transaction is 
  * aborted before calling the state machine).
  */
-void wtp_do_not_start(long abort_type, long abort_reason, Address *address, int tid){
+void wtp_do_not_start(long abort_type, long abort_reason, WAPAddrTuple *address, 
+     int tid){
 
      Msg *msg = NULL;
      WTP_PDU *pdu;
@@ -165,9 +166,12 @@ void wtp_do_not_start(long abort_type, long abort_reason, Address *address, int 
      msg = msg_create(wdp_datagram);
      add_direct_address(msg, address);
      msg->wdp_datagram.user_data = wtp_pdu_pack(pdu);
+     debug("wap.wtp_send", 0, "putting a message in the queue");
+     msg_dump(msg, 0);
 
      put_msg_in_queue(msg);
-     debug("wap.wtp.send", 0, "WTP: do_not_start: aborted");
+     debug("wap.wtp.send", 0, "WTP_SEND: do_not_start: aborted");
+     wtp_pdu_destroy(pdu);
 
      return;
 }
@@ -246,15 +250,20 @@ void wtp_send_negative_ack(Address *address, int tid, int retransmission_status,
      return;
 }
 
-void wtp_send_address_dump(Address *address){
+void wtp_send_address_dump(WAPAddrTuple *address){
 
-       debug("wap.wtp.send", 0, "WTP: address dump starting");
-       debug("wap.wtp.send", 0, "WTP: source address");
-       octstr_dump(address->source_address, 1);
-       debug("wap.wtp.send", 0, "WTP: source port %ld: ", address->source_port);
-       debug("wap.wtp.send", 0, "WTP: destination address");
-       octstr_dump(address->destination_address, 1);
-       debug("wap.wtp.send", 0, "WTP: destination port %ld: ", address->destination_port);
+       if (address != NULL){
+          debug("wap.wtp.send", 0, "WTP_SEND: address dump starting");
+          debug("wap.wtp.send", 0, "WTP_SEND: source address");
+          octstr_dump(address->client->address, 1);
+          debug("wap.wtp.send", 0, "WTP_SEND: source port %ld: ", 
+                 address->client->port);
+          debug("wap.wtp.send", 0, "WTP_SEND: destination address");
+                 octstr_dump(address->server->address, 1);
+          debug("wap.wtp.send", 0, "WTP_SEND: destination port %ld: ", 
+                address->server->port);
+       } else
+         debug("wap.wtp_send", 0, "Address pointing NULL");
 }
 
 /****************************************************************************
@@ -281,16 +290,16 @@ static void add_datagram_address(Msg *msg, WTPMachine *machine){
 /* 
  * Now we have the direct reply address.
  */
-static void add_direct_address(Msg *msg, Address *address){
+static void add_direct_address(Msg *msg, WAPAddrTuple *address){
 
-       debug("wap.wtp.send", 0, "WTP: add_direct_address");
+       debug("wap.wtp.send", 0, "WTP: adding direct address");
        wtp_send_address_dump(address);
        msg->wdp_datagram.source_address = 
-    	    octstr_duplicate(address->source_address);
-       msg->wdp_datagram.source_port = address->source_port;
+    	    octstr_duplicate(address->client->address);
+       msg->wdp_datagram.source_port = address->client->port;
        msg->wdp_datagram.destination_address = 
-    	    octstr_duplicate(address->destination_address);
-       msg->wdp_datagram.destination_port = address->destination_port;
+    	    octstr_duplicate(address->server->address);
+       msg->wdp_datagram.destination_port = address->server->port;
 }
 
 static void add_segment_address(Msg *msg, Address *address){

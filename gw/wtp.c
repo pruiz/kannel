@@ -119,7 +119,13 @@ static WTPMachine *find_machine_using_mid(long mid);
 static WAPEvent *create_tr_invoke_ind(WTPMachine *sm, Octstr *user_data);
 static WAPEvent *create_tr_result_cnf(WTPMachine *sm);
 static WAPEvent *create_tr_abort_ind(WTPMachine *sm, long abort_reason);
+static WAPEvent *create_rcv_error_pdu(Msg *msg);
 
+static int wrong_version(Octstr *user_data);
+static int deduce_tid(Octstr *user_data);
+
+static void handle_wrong_version(Msg *msg);
+static void handle_no_sar(Msg *msg);
 
 /******************************************************************************
  *
@@ -137,21 +143,43 @@ static WAPEvent *create_tr_abort_ind(WTPMachine *sm, long abort_reason);
  * appropiate. The memory for this data structure is deallocated either by this module, if 
  * its data is added to a message to be reassembled, or by wtp_handle_event.
  *
- * Return event, when we have a single message or have reassembled whole the message; NULL, 
- * when we have a segment inside of a segmented message.
+ * Return event, when we have a single message or have reassembled whole the message or 
+ * the message received has illegal header; NULL, when we have a segment inside of a 
+ * segmented message or when it has a special error.
  */
 WAPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 	WTP_PDU *pdu;
 	WAPEvent *event;
-	
+
+        if (octstr_len(msg->wdp_datagram.user_data) < 3){
+           event = create_rcv_error_pdu(msg);
+           debug("wap.wtp", 0, "A too short PDU received");
+           msg_dump(msg, 0);
+           return event;
+        }
+
+        if (wrong_version(msg->wdp_datagram.user_data)){
+	   debug("wap.wtp", 0, "A PDU having a wrong version field received");
+	   handle_wrong_version(msg);
+	   return NULL;
+        }
+/*
+ * Wtp_pdu_unpack returns NULL, when the error was illegal header
+ */
 	pdu = wtp_pdu_unpack(msg->wdp_datagram.user_data);
-	if (pdu == NULL)
-		return NULL;
+
+	if (pdu == NULL){
+	   event = create_rcv_error_pdu(msg);
+           debug("wap.wtp", 0, "A PDU with an illegal header received");
+           return event;
+        }   		
 
 	event = NULL;	
 
 	switch (pdu->type) {
+
 	case Invoke:
+	     if (pdu->u.Invoke.ttr && pdu->u.Invoke.gtr){
 		event = wap_event_create(RcvInvoke);
 		event->u.RcvInvoke.user_data = 
 			octstr_duplicate(pdu->u.Invoke.user_data);
@@ -166,6 +194,11 @@ WAPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 					msg->wdp_datagram.source_port,
 					msg->wdp_datagram.destination_address,
 					msg->wdp_datagram.destination_port);
+             } else {
+                handle_no_sar(msg);
+	        msg_destroy(msg);
+	        return NULL;
+             }
 		break;
 
 	case Ack:
@@ -193,8 +226,11 @@ WAPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 		break;
 
 	default:
-		panic(0, "Unhandled WTP PDU type while unpacking!");
-		break;
+	        event = wap_event_create(RcvErrorPDU);
+	        debug("wap.wtp", 0, "Unhandled PDU type. Message was");
+                msg_dump(msg, 0);
+                msg_destroy(msg);
+		return event;
 	}
 
 	wtp_pdu_destroy(pdu);
@@ -386,8 +422,7 @@ static WTPMachine *wtp_machine_find_or_create(WAPEvent *event){
  */
 	              case RcvInvoke: 
 	                   machine = wtp_machine_create(tuple, tid,
-				     		event->u.RcvInvoke.tcl);
-                           machine->in_use = 1;
+							event->u.RcvInvoke.tcl);
                       break;
 
 	              case RcvAck: 
@@ -410,8 +445,7 @@ static WTPMachine *wtp_machine_find_or_create(WAPEvent *event){
 }
 
 /*
- *  We are interested only machines in use, it is, having in_use-flag 1. Transaction
- *  is identified by the address four-tuple and tid.
+ *  Transaction is identified by the address four-tuple and tid.
  */
 struct machine_pattern {
 	WAPAddrTuple *tuple;
@@ -425,9 +459,6 @@ static int is_wanted_machine(void *a, void *b) {
 	
 	m = a;
 	pat = b;
-
-	if (!m->in_use)
-		return 0;
 
 	if (m->mid == pat->mid)
 		return 1;
@@ -554,6 +585,28 @@ static WAPEvent *create_tr_abort_ind(WTPMachine *sm, long abort_reason) {
 	return event;
 }
 
+/*
+ * Create RcvErrorPDU event
+ */
+static WAPEvent *create_rcv_error_pdu(Msg *msg){
+       WAPEvent *event;
+       int tid;
+
+       event = wap_event_create(RcvErrorPDU);
+       tid = deduce_tid(msg->wdp_datagram.user_data);
+
+       event->u.RcvErrorPDU.tid = tid;
+       event->u.RcvErrorPDU.addr_tuple->client->address = 
+              octstr_duplicate(msg->wdp_datagram.source_address);
+       event->u.RcvErrorPDU.addr_tuple->client->port = 
+              msg->wdp_datagram.source_port;
+       event->u.RcvErrorPDU.addr_tuple->server->address = 
+             octstr_duplicate(msg->wdp_datagram.destination_address);
+       event->u.RcvErrorPDU.addr_tuple->server->port = 
+             msg->wdp_datagram.destination_port;
+
+       return event;
+}
 
 static int machine_has_mid(void *a, void *b) {
 	WTPMachine *sm;
@@ -564,7 +617,52 @@ static int machine_has_mid(void *a, void *b) {
 	return sm->mid == mid;
 }
 
+static int wrong_version(Octstr *user_data){
+       long version_bits;
+
+       return (version_bits = octstr_get_bits(user_data, 24 ,2)) != 0;       
+}
+
+static int deduce_tid(Octstr *user_data){
+       int tid;
+       int tid_array[] = {0 ,0};
+
+       octstr_get_many_chars(tid_array, user_data, 1, 2);
+       tid = tid_array[0] << 8;
+       tid += tid_array[1];
+ 
+       return tid;
+}
 
 static WTPMachine *find_machine_using_mid(long mid) {
-	return list_search(machines, &mid, machine_has_mid);
+       return list_search(machines, &mid, machine_has_mid);
+}
+
+static void handle_wrong_version(Msg *msg){
+       WAPAddrTuple *address;
+       int tid;
+
+       tid = deduce_tid(msg->wdp_datagram.user_data);
+       address = wap_addr_tuple_create(msg->wdp_datagram.source_address, 
+                                       msg->wdp_datagram.source_port,
+                                       msg->wdp_datagram.destination_address,
+                                       msg->wdp_datagram.destination_port);
+       wtp_do_not_start(PROVIDER, WTPVERSIONZERO, address, tid);
+       wap_addr_tuple_destroy(address);
+}
+
+/*
+ * This function will be removed when we have SAR
+ */
+static void handle_no_sar(Msg *msg){
+       WAPAddrTuple *address;
+       int tid;
+
+       tid = deduce_tid(msg->wdp_datagram.user_data);
+       address = wap_addr_tuple_create(msg->wdp_datagram.source_address, 
+                                       msg->wdp_datagram.source_port,
+                                       msg->wdp_datagram.destination_address,
+                                       msg->wdp_datagram.destination_port);
+       wtp_do_not_start(PROVIDER, NOTIMPLEMENTEDSAR, address, tid);
+       wap_addr_tuple_destroy(address);
 }
