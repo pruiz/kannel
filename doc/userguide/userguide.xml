@@ -1996,6 +1996,8 @@ secret-radius = radius
   </tbody>
   </tgroup>
  </table>
+<programlisting>
+</programlisting>
 
 </sect2>
 <sect2>
@@ -2009,12 +2011,8 @@ secret-radius = radius
   </para>
 
 </sect2>
-  
 </sect1>
-
 </chapter>
-
-
 
 
 
