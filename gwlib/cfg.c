@@ -346,7 +346,7 @@ int cfg_read(Cfg *cfg)
                           octstr_get_cstr(loc->filename)); 
                 } else {     
              
-                    list_insert(stack, 0, filename); 
+                    list_insert(stack, 0, octstr_duplicate(filename)); 
                     debug("gwlib.cfg", 0, "Loading include file `%s' (on line %ld of file %s).",  
                           octstr_get_cstr(filename), loc->line_no,  
                           octstr_get_cstr(loc->filename)); 
@@ -405,7 +405,7 @@ int cfg_read(Cfg *cfg)
     }
 
     list_destroy(lines, NULL); 
-    list_destroy(stack, NULL); 
+    list_destroy(stack, octstr_destroy_item); 
 
     if (error_lineno != 0) {
         error(0, "Error found on line %ld of file `%s'.",  

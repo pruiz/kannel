@@ -1,3 +1,8 @@
+2002-03-26  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gwlib/cfg.c: fixed bug when including several include files
+    * gwlib/date.c: fixed testing sec < 60
+    * gw/urltrans.c: added seconds to "%t"
+
 2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
     * checks/check_ppg.sh: checking test_http_server output seems not necessary
       in this case and more verbose error output
