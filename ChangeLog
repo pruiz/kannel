@@ -1,8 +1,10 @@
+2000-07-17  Paul Keogh <paul.keogh@anam.com>
+	* gwlib/counter.[ch]: Added counter_decrease() function.
+
 2000-07-15 Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	
 	* config.h.in,configure,configure.in: Removed checks for integer
 	lengths as it broke more than it might have fixed.
-	
 
 2000-07-14  Paul Keogh <paul.keogh@anam.com>
 	* gwlib/http.c: Fixed a bug in the HTTP POST which prevented interop
