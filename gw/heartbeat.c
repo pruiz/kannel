@@ -56,11 +56,12 @@ static void heartbeat_thread(void *arg)
          * This is not bad unless we send them way too fast.  Make sure
          * our frequency is not more than twice the configured one.
          */
-        if (difftime(last_hb, time(NULL)) < info->freq / 2)
+        if (difftime(time(NULL), last_hb) < info->freq / 2)
             continue;
 
         msg = msg_create(heartbeat);
-        msg->heartbeat.load = info->load_func();
+        if (NULL != info->load_func)
+            msg->heartbeat.load = info->load_func();
         info->send_func(msg);
         last_hb = time(NULL);
     }
@@ -70,6 +71,10 @@ long heartbeat_start(hb_send_func_t *send_func, double freq,
                      hb_load_func_t *load_func)
 {
     struct hb_info *info;
+
+    /* can't start with send_funct NULL */
+    if (send_func == NULL)
+        return -1;
 
     info = gw_malloc(sizeof(*info));
     info->send_func = send_func;
