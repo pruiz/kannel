@@ -54,7 +54,7 @@ static int num_logfiles = 0;
  * This is used for smsc specific logging.
  */
 #define THREADTABLE_SIZE 1024
-static unsigned int thread_to[THREADTABLE_SIZE];
+static unsigned int thread_to[(long)THREADTABLE_SIZE];
 
 
 /*
@@ -174,20 +174,20 @@ int log_open(char *filename, int level, enum excl_state excl)
     
     add_stderr();
     if (num_logfiles == MAX_LOGFILES) {
-	error(0, "Too many log files already open, not adding `%s'", 
-	      filename);
-	return;
+        error(0, "Too many log files already open, not adding `%s'", 
+              filename);
+        return -1;
     }
     
     if (strlen(filename) > FILENAME_MAX) {
-	error(0, "Log filename too long: `%s'.", filename);
-	return;
+        error(0, "Log filename too long: `%s'.", filename);
+        return -1;
     }
     
     f = fopen(filename, "a");
     if (f == NULL) {
-	error(errno, "Couldn't open logfile `%s'.", filename);
-	return;
+        error(errno, "Couldn't open logfile `%s'.", filename);
+        return -1;
     }
     
     logfiles[num_logfiles].file = f;
@@ -335,7 +335,6 @@ static void kannel_syslog(char *format, va_list args, int level)
 
 #define FUNCTION_GUTS_EXCL(level, place) \
 	do { \
-	    int i; \
 	    char buf[FORMAT_SIZE]; \
 	    va_list args; \
 	    \

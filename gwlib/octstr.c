@@ -2184,7 +2184,7 @@ octstr_recode (Octstr *tocode, Octstr *fromcode, Octstr *orig)
 
 void octstr_strip_char(Octstr *text, char ch)
 {
-    int start = 0, end, len = 0;
+    int start = 0;
 
     seems_valid(text);
     gw_assert(!text->immutable);
