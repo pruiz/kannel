@@ -67,31 +67,31 @@ void debug(const char *, int, const char *, ...) PRINTFLIKE2 ;
  * "wap.wsp.* -wap.wap.http", only wap.wsp is logged, but not http-parts on 
  * it
  */
-void set_debug_places(const char *places);
+void log_set_debug_places(const char *places);
 
 
 /* Set minimum level for output messages to stderr. Messages with a lower 
    level are not printed to standard error, but may be printed to files
    (see below). */
-void set_output_level(enum output_level level);
+void log_set_output_level(enum output_level level);
 
 /*
  * Set syslog usage. If `ident' is NULL, syslog is not used.
  */
-void set_syslog(const char *ident, int syslog_level);
+void log_set_syslog(const char *ident, int syslog_level);
 
 /* Start logging to a file as well. The file will get messages at least of
    level `level'. There is no need and no way to close the log file;
    it will be closed automatically when the program finishes. Failures
    when opening to the log file are printed to stderr. */
-void open_logfile(char *filename, int level);
+void log_open(char *filename, int level);
 
 /* Close and re-open all logfiles */
-void reopen_log_files(void);
+void log_reopen(void);
 
 /*
  * Close all log files.
  */
-void close_all_logfiles(void);
+void log_close_all(void);
 
 #endif

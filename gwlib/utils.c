@@ -129,11 +129,11 @@ int get_and_set_debugs(int argc, char **argv,
 	}
     }
     if (debug_lvl > -1)
-	set_output_level(debug_lvl);
+	log_set_output_level(debug_lvl);
     if (debug_places != NULL)
-        set_debug_places(debug_places);
+        log_set_debug_places(debug_places);
     if (log_file != NULL)
-	open_logfile(log_file, file_lvl);
+	log_open(log_file, file_lvl);
 
     info(0, "Debug_lvl = %d, log_file = %s, log_lvl = %d",
 	  debug_lvl, log_file ? log_file : "<none>", file_lvl);

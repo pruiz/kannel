@@ -588,7 +588,7 @@ int main(int argc, char **argv) {
 	while ((opt = getopt(argc, argv, "hv:r:c:w:du:Ug:")) != EOF) {
 		switch (opt) {
 		case 'v':
-			set_output_level(atoi(optarg));
+			log_set_output_level(atoi(optarg));
 			break;
 
 		case 'r':

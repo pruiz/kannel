@@ -211,7 +211,7 @@ static void signal_handler(int signum) {
 	}
     } else if (signum == SIGHUP) {
         warning(0, "SIGHUP received, catching and re-opening logs");
-        reopen_log_files();
+        log_reopen();
     }
 }
 
@@ -304,7 +304,7 @@ static void init_smsbox(Config *cfg)
 
     if (logfile != NULL) {
 	info(0, "Starting to log to file %s level %d", logfile, lvl);
-	open_logfile(logfile, lvl);
+	log_open(logfile, lvl);
     }
     if (global_sender != NULL)
 	info(0, "Service global sender set as '%s'", global_sender);

@@ -40,7 +40,7 @@ int main(void) {
 	long i;
 	
 	gwlib_init();
-	set_output_level(GW_INFO);
+	log_set_output_level(GW_INFO);
 	c = counter_create();
 	for (i = 0; i < THREADS; ++i)
 		threads[i] = gwthread_create(check, c);

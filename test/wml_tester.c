@@ -120,9 +120,9 @@ int main(int argc, char **argv)
       if (file)
 	{
 	  fclose(fp);
-	  open_logfile(octstr_get_cstr(filename), 0);
+	  log_open(octstr_get_cstr(filename), 0);
 	  octstr_dump(wml_binary, 0);
-	  close_all_logfiles();
+	  log_close_all();
 	  fp = fopen(octstr_get_cstr(filename), "a");
 	}
       else

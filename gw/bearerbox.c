@@ -114,7 +114,7 @@ static void signal_handler(int signum)
 	mutex_unlock(status_mutex);
     } else if (signum == SIGHUP) {
         warning(0, "SIGHUP received, catching and re-opening logs");
-        reopen_log_files();
+        log_reopen();
     }
 }
 
@@ -274,7 +274,7 @@ static int starter(Config *config)
 
     if ((log = config_get(grp, "log-file")) != NULL) {
 	val = config_get(grp, "log-level");
-	open_logfile(log, val ? atoi(val) : 0);
+	log_open(log, val ? atoi(val) : 0);
     }
     info(0, "----------------------------------------");
     info(0, "Kannel bearerbox II version %s starting", VERSION);

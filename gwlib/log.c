@@ -56,7 +56,7 @@ static void add_stderr(void)
 }
 
 
-void set_output_level(enum output_level level) 
+void log_set_output_level(enum output_level level) 
 {
     int i;
     
@@ -70,7 +70,7 @@ void set_output_level(enum output_level level)
 }
 
 
-void set_syslog(const char *ident, int syslog_level) 
+void log_set_syslog(const char *ident, int syslog_level) 
 {
     if (ident == NULL)
 	dosyslog = 0;
@@ -82,7 +82,7 @@ void set_syslog(const char *ident, int syslog_level)
 }
 
 
-void reopen_log_files(void) 
+void log_reopen(void) 
 {
 	int i;
 	
@@ -99,7 +99,7 @@ void reopen_log_files(void)
 }
 
 
-void close_all_logfiles(void) 
+void log_close_all(void) 
 {
     while (num_logfiles > 0) {
 	--num_logfiles;
@@ -110,7 +110,7 @@ void close_all_logfiles(void)
 }
 
 
-void open_logfile(char *filename, int level) 
+void log_open(char *filename, int level) 
 {
     FILE *f;
     
@@ -347,7 +347,7 @@ void debug(const char *place, int e, const char *fmt, ...)
 }
 
 
-void set_debug_places(const char *places) 
+void log_set_debug_places(const char *places) 
 {
     char *p;
     

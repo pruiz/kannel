@@ -127,20 +127,20 @@ static void read_config(char *filename)
     /* Get syslog parameters */
     if ((s = config_get(grp, "syslog-level")) != NULL) {
 	if (strcmp(s,"none") == 0) {
-	    set_syslog(NULL, 0);
+	    log_set_syslog(NULL, 0);
 	    debug("bbox",0,"syslog parameter is none");
 	} else {
-	    set_syslog("wapbox", atoi(s));
+	    log_set_syslog("wapbox", atoi(s));
 	    debug("bbox",0,"syslog parameter is %d", atoi(s));
 	}
     } else {
-	set_syslog(NULL, 0);
+	log_set_syslog(NULL, 0);
 	debug("bbox",0,"no syslog parameter");
     }
     
     
     if (logfile != NULL) {
-	open_logfile(logfile, logfilelevel);
+	log_open(logfile, logfilelevel);
 	info(0, "Starting to log to file %s level %d", logfile, logfilelevel);
     }
     wsp_http_map_url_config_info();	/* debugging aid */
@@ -267,7 +267,7 @@ static void signal_handler(int signum)
     
     case SIGHUP:
 	warning(0, "SIGHUP received, catching and re-opening logs");
-	reopen_log_files();
+	log_reopen();
 	break;
     
     /* 

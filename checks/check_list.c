@@ -209,10 +209,10 @@ static void main_for_extract(void) {
 
 int main(void) {
 	gwlib_init();
-	set_output_level(GW_INFO);
+	log_set_output_level(GW_INFO);
 	main_for_list_add_and_delete();
 	main_for_extract();
 	main_for_producer_and_consumer();
-	close_all_logfiles();
+	gwlib_shutdown();
 	return 0;
 }

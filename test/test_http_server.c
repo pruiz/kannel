@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
     while ((opt = getopt(argc, argv, "hv:p:t")) != EOF) {
 	switch (opt) {
 	case 'v':
-	    set_output_level(atoi(optarg));
+	    log_set_output_level(atoi(optarg));
 	    break;
 
 	case 'h':

@@ -61,8 +61,8 @@ static void check_reversible(void)
 
 int main(void)
 {
-    set_output_level(GW_INFO);
     gwlib_init();
+    log_set_output_level(GW_INFO);
     check_reversible();
     gwlib_shutdown();
     return 0;
