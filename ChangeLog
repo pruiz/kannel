@@ -1,3 +1,7 @@
+2002-09-06  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/dlr.c: fixing dlr_add_<db>() routines for the new DLR handling way.
+      Thanks to Oded for reporting this.
+
 2002-09-06 Andreas Fink <afink@gni.ch>
     * gw/dlr.c: added Oded's patch to fix a missing parameter in mysql DLR.
 
