@@ -1,4 +1,7 @@
 2001-12-18 Andreas Fink <andreas@fink.org>
+    * gw/dlr.c: corrected missing comma
+
+2001-12-18 Andreas Fink <andreas@fink.org>
     * configure: include mysqlclientlib into linking if on the system to make dlr with mysql happy
     * gw/dlr.c: use a mutex with mysql variant to avoid mysql errors because two commands
       execute at exactly the same time under high load. Some other cleanups.

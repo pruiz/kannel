@@ -306,7 +306,7 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
     }
     else
     {
-    	debug("dlr.dlr",0"ignoring DLR message because of mask");
+    	debug("dlr.dlr",0,"ignoring DLR message because of mask");
     }
  
     if((typ & DLR_BUFFERED) &&
