@@ -1,3 +1,8 @@
+2000-10-26  Kalle Marjola  <rpr@wapit.com>
+
+	* gwlib/conffile.c (config_sanity_check): make sure that there are
+	smsc group(s) and sms-service group(s) if there is smsbox set.
+
 2000-10-26  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/http.c: Converted to use conn.c. This is a minimal change,

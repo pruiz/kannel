@@ -413,9 +413,10 @@ int config_sanity_check(Config *config)
 {
     ConfigGroup *grp;
     char *group;
-    int core, smsbox, wapbox;
+    int core, smsbox, wapbox, smsc, sms_service;
+    int errors = 0;
 
-    core = smsbox = wapbox = 0;
+    core = smsbox = wapbox = smsc = sms_service = errors = 0;
 
     grp = config_first_group(config);
     while (grp != NULL) {
@@ -429,26 +430,47 @@ int config_sanity_check(Config *config)
             smsbox++;
         else if (strcmp(group, "wapbox") == 0)
             wapbox++;
-        else if (strcmp(group, "smsc") != 0
-                 && strcmp(group, "sms-service") != 0
+        else if (strcmp(group, "smsc") == 0)
+            smsc++;
+        else if (strcmp(group, "sms-service") == 0)
+            sms_service++;
+        else if (strcmp(group, "sms-service") != 0
                  && strcmp(group, "sendsms-user") != 0) {
             error(0, "Unknown group '%s' in configuration", group);
-            return -1;
+	    errors++;
         }
 
         grp = config_next_group(grp);
     }
-    if (core == 0)
+    if (core == 0) {
         error(0, "No 'core' group in configuration");
-    else if (core > 1)
+	errors++;
+    }
+    else if (core > 1) {
         error(0, "More than one 'core' group in configuration");
-    else if (smsbox > 1)
-        error(0, "More than one 'core' group in configuration");
-    else if (wapbox > 1)
-        error(0, "More than one 'wapbox' group in configuration");
-    else
-        return 0;  /* all OK - after initial check */
+	errors++;
+    }
 
-    return -1;
+    if (smsbox > 0) {
+	if (smsbox > 1) {
+	    error(0, "More than one 'core' group in configuration");
+	    errors++;
+	}
+	if (smsc == 0) {
+	    error(0, "'smsbox' group without 'smsc' groups");
+	    errors++;
+	} else if (sms_service == 0) {
+	    error(0, "'smsbox' group without 'sms-service' groups");
+	    errors++;
+	}
+    }
+    if (wapbox > 1) {
+        error(0, "More than one 'wapbox' group in configuration");
+	errors++;
+    }
+    if (errors > 0)
+	return -1;
+    else
+	return 0;  /* all OK - after initial check */
 }
 
