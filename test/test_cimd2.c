@@ -497,8 +497,6 @@ static void handle_submit(Octstr *packet, Octstr *out, int sequence) {
 			printf("    Priority: %ld\n", priority);
 	}
 
-	send_error(out, 53, sequence, "009", "operation failed");
-#if 0
 	if (!dest_addr) {
 		send_error(out, 53, sequence, "300", "no destination");
 	} else if (list_len(other_dests) > 0) {
@@ -515,7 +513,6 @@ static void handle_submit(Octstr *packet, Octstr *out, int sequence) {
 			    60, buf,
 			    0);
 	}
-#endif
 
 	octstr_destroy(dest_addr);
 	octstr_destroy(orig_addr);
