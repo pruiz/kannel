@@ -6,6 +6,7 @@
              
 #include "gwlib/gwlib.h"
 #include "gw/msg.h"
+#include "gw/shared.h"
 
 static void help(void)
 {
@@ -43,7 +44,6 @@ static void run_connects(void)
         write_to_bearerbox(msg);
 
         /* do something, like passing MT messages */
-        sleep(1);
 
         /* close connection and shutdown */
         close_connection_to_bearerbox();

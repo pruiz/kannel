@@ -43,9 +43,9 @@ int main(void)
     }
     gwthread_sleep(5); /* give hash table some time */
     if (dict_key_count(dict) == HUGE_SIZE)
-        info(0, "ok, got %ld entries in the dictionary.", HUGE_SIZE);
+        info(0, "ok, got %d entries in the dictionary.", HUGE_SIZE);
     else
-        error(0, "key count is %ld, should be %ld.", dict_key_count(dict), HUGE_SIZE);
+        error(0, "key count is %ld, should be %d.", dict_key_count(dict), HUGE_SIZE);
     dict_destroy(dict);
 
     gwlib_shutdown();
