@@ -6452,6 +6452,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
               </tgroup>
         </table>
  </sect1>
+</appendix>
 
 <appendix>
 <title>Setting up a dial-up line</title>
