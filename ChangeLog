@@ -1,3 +1,7 @@
+2004-09-04  Stipe Tolj  <stolj@wapme.de>
+    * doc/userguide/userguide.xml: fixing jade compiler error of Alex's 
+      previous commit for priority flag.
+
 2004-09-03  Stipe Tolj  <stolj@wapme.de>
     * gw/smsc/smsc_http.c: upgradding bruNET response parsing to comply with
       more recent interface verions (v2.0+) where bruNET delivers 'MessageId'

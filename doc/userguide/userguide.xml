@@ -6911,7 +6911,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    </entry></row>
 
    <row><entry><literal>priority</literal></entry>
-   <entry>number</literal></entry>
+   <entry>number</entry>
    <entry valign="bottom">
      Optional. Sets the Priority value (range 0-3 is allowed).
    </entry></row>
