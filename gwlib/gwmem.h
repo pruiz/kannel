@@ -61,6 +61,7 @@ void gw_check_shutdown(void);
 #define gw_init_mem()
 #define gw_check_leaks()
 #define gw_malloc(size) (gw_native_malloc(size))
+#define gw_malloc_trace(size, file, line, func) (gw_native_malloc(size))
 #define gw_realloc(ptr, size) (gw_native_realloc(ptr, size))
 #define gw_free(ptr) (gw_native_free(ptr))
 #define gw_strdup(str) (gw_native_strdup(str))
@@ -85,6 +86,8 @@ void gw_check_shutdown(void);
 #endif
 
 #define gw_check_leaks() (gw_check_check_leaks())
+#define gw_malloc_trace(size, file, line, func) \
+	(gw_check_malloc(size, file, line, func))
 #define gw_malloc(size) \
 	(gw_check_malloc(size, __FILE__, __LINE__, __func__))
 #define gw_realloc(ptr, size) \
