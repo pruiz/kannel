@@ -109,7 +109,7 @@ SINGLE_GROUP(core,
     OCTSTR(ssl-trusted-ca-file)
     OCTSTR(dlr-storage)
     OCTSTR(maximum-queue-length)
-    OCTSTR(sms-incoming-queue-length)
+    OCTSTR(sms-incoming-queue-limit)
 )
 
 

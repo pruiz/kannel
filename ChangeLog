@@ -1,3 +1,8 @@
+2003-11-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml, gw/bearerbox.c, gwlib/cfg.def: changed 
+      config directive 'sms-incoming-queue-length' to 'sms-incoming-queue-limit'
+      for the sake of semantics.
+
 2003-11-15  Stipe Tolj  <tolj@wapme-systems.de>
     * LICENSE: changed to Kannel Software License v1.0. BSD-style as before
       with some more restrictions to the name "Kannel" and usage of it.

@@ -443,12 +443,12 @@ static Cfg *init_bearerbox(Cfg *cfg)
         max_incoming_sms_qlength = -1;
     else {
         warning(0, "Option 'maximum-queue-length' is deprecated! Please use"
-                          " 'sms-incoming-queue-length' instead!");
+                          " 'sms-incoming-queue-limit' instead!");
     }
 
     if (max_incoming_sms_qlength == -1 &&
         cfg_get_integer(&max_incoming_sms_qlength, grp,
-                                  octstr_imm("sms-incoming-queue-length")) == -1)
+                                  octstr_imm("sms-incoming-queue-limit")) == -1)
         max_incoming_sms_qlength = -1;
 
 #ifndef NO_SMS    
