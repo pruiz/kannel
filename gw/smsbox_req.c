@@ -706,7 +706,6 @@ char *smsbox_req_sendsms(List *list, char *client_ip)
 	     text ? octstr_get_cstr(text) : "<< UDH >>");
 	octstr_destroy(from);
 
-	octstr_destroy(from);
 	return "Sent.";
     
 error:
