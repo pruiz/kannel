@@ -285,7 +285,7 @@
 
 	<para>The source code to
 	Kannel is available for download at <ulink
-	url="http://www.kannel.org/download.shtml">http://www.kannel.org/download.shtml</ulink>.
+	url="http://www.kannel.3glab.org/download.shtml">http://www.kannel.3glab.org/download.shtml</ulink>.
 	It is available in various formats and you can choose to download
 	either the latest release version or the daily snapshot of the
 	development source tree for the next release version, depending
@@ -313,8 +313,8 @@
 		you're reading at the moment.</para></listitem>
 	<listitem><para><citetitle>Architecture and 
 		Design</citetitle>, in <filename>doc/arch</filename> or
-		at <ulink url="http://www.kannel.org/arch.shtml">
-		http://www.kannel.org/arch.shtml</ulink></para></listitem>
+		at <ulink url="http://www.kannel.3glab.org/arch.shtml">
+		http://www.kannel.3glab.org/arch.shtml</ulink></para></listitem>
 	<listitem><para>The <filename>README</filename> and various other
 		text files in the source tree.</para></listitem>
 	</orderedlist>
@@ -613,6 +613,115 @@
 
 </sect2>
 
+<sect2>
+<title>Installing Kannel from DEB packages</title>
+
+	<para>This chapter explains how to install, upgrade and remove
+	Kannel binary DEB packages.</para>
+		
+	<para>Before you install Kannel, check that you have libxml2
+	installed on your system:</para>
+
+	<screen><userinput>dpkg -l libxml2</userinput></screen>
+	
+	<para>Installing or upgrading Kannel using APT</para>
+
+	<para>1. Log in as root:</para>
+
+	<screen><userinput>su -</userinput></screen>
+
+	<para>3. Install or upgrade the package:
+
+	<screen><userinput>apt-get install kannel</userinput></screen>
+	</para>
+	
+
+	<para>Installing or upgrading Kannel from a file</para>
+
+	<para>1. Download the binary DEB packet from the Kannel
+	web site.</para>
+	
+	<para>2. Log in as root:</para>
+
+	<screen><userinput>su -</userinput></screen>
+
+	<para>3. Install or upgrade the DEB package:
+	<screen><userinput>dpkg -i kannel-VERSION.deb</userinput></screen>
+	</para>
+
+	<para>Removing Kannel</para>
+	
+	<para>1. Log in as root:</para>
+
+	<para>2. Remove the package maintaining configuration files:
+	<screen><userinput>dpkg --remove kannel</userinput></screen>
+	</para>
+
+	<para>3. Remove the package completely:
+	<screen><userinput>dpkg --purge kannel</userinput></screen>
+	</para>
+
+	<para>After you have installed Kannel from the DEB packages you
+	should now be able to run the Kannel init.d script that will
+	start Kannel as a WAP gateway. Run the script as root.</para>
+
+	<screen>
+	<userinput>/etc/init.d/kannel start</userinput>
+	</screen>
+
+	<para>To stop the gateway just run the same script with the
+	stop parameter.</para>
+
+	<screen>
+	<userinput>/etc/init.d/kannel stop</userinput>
+	</screen>
+	
+	<para>If Kannel is already running and you just want to quickly
+	stop and start the gateway,e.g.to set a new configuration option,
+	run the script with the restart parameter.</para>
+
+	<screen>
+	<userinput>/etc/init.d/kannel restart</userinput>
+	</screen>
+	
+	<para>If you want Kannel to run as a daemon, you need to add a
+	symbolic link to the Kannel script from the runlevel you want
+	Kannel to run in. E.g. to run Kannel in default runlevel, 
+	just run: </para>
+	
+	<screen>
+	<userinput>update-rc.d kannel defaults</userinput>
+	</screen>
+	
+	<para>If you don't want Kannel to run as a daemon, 
+	run: </para>
+	
+	<screen>
+	<userinput>update-rc.d -f kannel remove</userinput>
+	</screen>
+	
+	<para>To run Kannel as a SMS gateway you need to edit the
+	configuration file which is at /etc/kannel/kannel.conf.
+	In /usr/share/docs/kannel/examples/ there are example files 
+	They have some basic examples of the configuration groups 
+	needed to run Kannel as a SMS gateway. For
+	more detailed information please read the section "SMS gateway
+	configuration" later in this same document.</para>
+
+	<para>The logging is disabled by default and you can enable
+	it from the kannel.conf file. Just add the log-file option
+	to the group of which box you want to log.</para>  
+	
+	<para>The documentation will be installed at 
+	/usr/share/doc/kannel/.</para>
+
+	<para>In the Kannel documentation directory there is a html
+	file called control.html. It is an example file that shows
+	how to use the Kannel http administration interface. It
+	also has a template for sending SMS messages.</para>
+
+</sect2>
+
 </sect1>
 
 </chapter>
@@ -879,7 +988,9 @@ admin-password = f00bar
         If there are several unified prefixes, separate their rules with
         semicolon (';'), like "+35850,050;+35840,040". <emphasis>Note
         that prefix routing is next to useless now that there are
-        SMSC ID entries</emphasis>
+        SMSC ID entries. To remove prefixes, use like 
+	"-,+35850,050;-,+35840,040".
+	</emphasis>
 
      </entry></row>
 
@@ -897,7 +1008,7 @@ admin-password = f00bar
     <row><entry><literal>black-list</literal></entry>
      <entry>URL</entry>
      <entry valign=bottom>
-        As white-list, but SMS messages from these numbers are
+        As white-list, but SMS messages to these numbers are
         automatically discarded
      </entry></row>
 
@@ -907,10 +1018,7 @@ admin-password = f00bar
         A file in which any received SMS messages are stored until
         they are successfully handled. By using this variable, no SMS
         messages are lost in Kannel, but theoretically some messages
-        can duplicate when system is taken down
-        violently. <emphasis>Does not support sendsms messages
-        yet!</emphasis>
-
+        can duplicate when system is taken down violently. 
      </entry></row>
 
     <row><entry><literal>http-proxy-host</literal></entry>
@@ -1174,14 +1282,22 @@ commands never arrive nor can you restart it via WAP anymore.</para>
   <title>Kannel HTTP Administration Commands</title>
   <tgroup cols=2>
   <tbody>
-   <row><entry><literal>status</literal></entry>
+   <row><entry><literal>status or status.html</literal></entry>
    <entry valign=bottom>
-        Get the current status of the gateway. Tells the current state
-        (see above) and total number of messages relied and queueing in
-        the system right now. Also lists the total number of smsbox
+        Get the current status of the gateway in HTML. Tells the current 
+	state (see above) and total number of messages relied and queueing 
+	in the system right now. Also lists the total number of smsbox
         and wapbox connections. No password required, unless
         <literal>status-password</literal> set, in which case either
         that or main admin password must be supplied.
+   </entry></row>
+   <row><entry><literal>status.txt</literal></entry>
+   <entry valign=bottom>
+        Text version of status
+   </entry></row>
+   <row><entry><literal>status.xml</literal></entry>
+   <entry valign=bottom>
+        XML version of status
    </entry></row>
 
    <row><entry><literal>suspend</literal></entry>
@@ -1433,7 +1549,8 @@ bearerbox-host = localhost
     <literal>white-list</literal> and/or <literal>black-list</literal>
     variables. See above for details of these variables.</para>
 
-  <para> A sample configuration file <literal>smskannel.conf</literal> is supplied with the standard distribution. You may want to take
+  <para> A sample configuration file <literal>smskannel.conf</literal> 
+  is supplied with the standard distribution. You may want to take
   a look at that when setting up an SMS Kannel.</para>
 
 <sect2>
@@ -1525,21 +1642,23 @@ bearerbox-host = localhost
         entries are separated with semicolons (';')
      </entry></row>
 
+   <row><entry><literal>allowed-prefix</literal></entry>
+     <entry><literal>prefix-list</literal></entry>
+     <entry valign=bottom>
+        A list of phone number prefixes which are accepted to be
+        sent through this SMSC. Multiple entries are separated with 
+        semicolon (';'). For example, "040;050" prevents sending of
+        any SMS message with prefix of 040 or 050 through this SMSC.
+	If denied-prefix is unset, only this numbers are allowed. If
+	set, number are allowed if present in allowed or not in 
+	denied list.
+     </entry></row>
+
    <row><entry><literal>denied-prefix</literal></entry>
      <entry><literal>prefix-list</literal></entry>
      <entry valign=bottom>
         A list of phone number prefixes which are NOT accepted to be
-        sent through this SMSC. Multiple entries are separated with 
-        semicolon (';'). For example, "040;050" prevents sending of
-        any SMS message with prefix of 040 or 050 through this SMSC
-     </entry></row>
-
-   <row><entry><literal>allowed-prefix</literal></entry>
-     <entry><literal>prefix-list</literal></entry>
-     <entry valign=bottom>
-        As <literal>denied-prefix</literal>, but SMS messages with destination
-        with any of these prefixes is allowed to be  sent through this
-        SMSC. 
+        sent through this SMSC.
      </entry></row>
 
    <row><entry><literal>preferred-prefix</literal></entry>
@@ -1775,7 +1894,7 @@ smsc-password = bar
      </entry></row>
 
     <row><entry><literal>keepalive</literal></entry>
-      <entry><literal>number</literal></entry>
+      <entry><literal>number (seconds)</literal></entry>
       <entry valign=bottom>
         (Ignored if username is undefined). A keepalive command will be
         sent to the SMSC connection this many seconds after the last
@@ -1786,7 +1905,7 @@ smsc-password = bar
      </entry></row>
 
     <row><entry><literal>wait-ack</literal></entry>
-      <entry><literal>number</literal></entry>
+      <entry><literal>number (seconds)</literal></entry>
       <entry valign=bottom>
         A message is resent if the acknowledge from SMSC takes more than 
 	this time.  Defaults to 60 seconds.
@@ -1796,7 +1915,7 @@ smsc-password = bar
       <entry><literal>number</literal></entry>
       <entry valign=bottom>
 	This SMSC can support two types of flow control. The first type 
-	of flow control is a <literal>top-and-wait</literal> protocol, 
+	of flow control is a <literal>stop-and-wait</literal> protocol, 
 	when this parameter equals to '1'. During the handling of commands, 
 	no other commands shall be sent before the a response is received. 
 	Any command that is sent before the reception of the response will 
@@ -1915,23 +2034,85 @@ group = smsc
 smsc = sema
 device = /dev/tty0
 smsc_nua = (X121 smsc address)
- #       The address of an SMSC for Sema SMS2000 protocols using an X.28 
- #       connection.
 home_nua = (x121 radio pad address)
- #       The address of a radio PAD implementing Sema SMS2000 using X.28 
- #       connection.
- #
 wait_report = 0/1 (0 means false, 1 means true)
- #       Report indicator used by the Sema SMS2000 protocol. Optional.
+</programlisting>
 
+<informaltable frame=none>
+  <tgroup cols=3><thead><row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row></thead><tbody>
+
+   <row><entry><literal>device (m)</literal></entry>
+     <entry><literal>device</literal></entry>
+     <entry valign=bottom>
+        ex: /dev/tty0
+     </entry></row>
+
+   <row><entry><literal>smsc_nua (m)</literal></entry>
+     <entry><literal>X121 smsc address</literal></entry>
+     <entry valign=bottom>
+       The address of an SMSC for SEMA SMS2000 protocols using an
+       X.28 connection.
+     </entry></row>
+
+   <row><entry><literal>home_nua (m)</literal></entry>
+     <entry><literal>X121 radio pad address</literal></entry>
+     <entry valign=bottom>
+       The address of a radio PAD implementing Sema SMS2000 using
+       X.28 connection.
+     </entry></row>
+
+   <row><entry><literal>wait_report</literal></entry>
+     <entry><literal>0 (false)/1 (true)</literal></entry>
+     <entry valign=bottom>
+       Report indicator used by the Sema SMS2000 protocol. Optional.
+     </entry></row>
+   </tbody></tgroup></informaltable>
+
+<programlisting>
 group = smsc
 smsc = ois
 host = 103.102.101.100
 port = 10000
-receive-port = 10000 (the port in which the SMSC will contact)
-ois-debug-level = number 0 to 8  (extra debug, optional, see smsc_ois.c)
+receive-port = 10000
+ois-debug-level = 0
 </programlisting>
 
+<informaltable frame=none>
+  <tgroup cols=3><thead><row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row></thead><tbody>
+
+   <row><entry><literal>host (m)</literal></entry>
+     <entry><literal>ip</literal></entry>
+     <entry valign=bottom>
+        SMSC Host name or IP
+     </entry></row>
+
+   <row><entry><literal>port (m)</literal></entry>
+     <entry><literal>port number</literal></entry>
+     <entry valign=bottom>
+       SMSC Port number
+     </entry></row>
+
+   <row><entry><literal>receive-port (m)</literal></entry>
+     <entry><literal>port number</literal></entry>
+     <entry valign=bottom>
+       The port in which the SMSC will contact
+     </entry></row>
+
+   <row><entry><literal>ois-debug-level</literal></entry>
+     <entry><literal>number 0 to 8</literal></entry>
+     <entry valign=bottom>
+       extra debug, optional, see smsc_ois.c
+     </entry></row>
+
+   </tbody></tgroup></informaltable>
 </sect3>
 
 <sect3>
@@ -1959,8 +2140,6 @@ pin = 2345
      <entry valign=bottom>
         Modems from different manufacturers have slightly different
         behaviour. We need to know what type of modem is used.
-        Supported types are: <literal>wavecom</literal>, 
-        <literal>premicell</literal>, <literal>siemens</literal>, <literal>siemens-tc35</literal>.
      </entry></row>
 
    <row><entry><literal>device (m)</literal></entry>
@@ -1989,6 +2168,49 @@ pin = 2345
 
    </tbody></tgroup></informaltable>
 
+ <informaltable frame=none>
+  <tgroup cols=3><thead><row>
+     <entry>Modem Type</entry>
+     <entry>Modems</entry>
+   </row></thead><tbody>
+
+   <row><entry><literal>wavecom</literal></entry>
+     <entry valign=bottom>
+     	Wavecom
+     </entry></row>
+
+   <row><entry><literal>premicell</literal></entry>
+     <entry valign=bottom>
+     	Nokia Premicell
+     </entry></row>
+
+   <row><entry><literal>siemens</literal></entry>
+     <entry valign=bottom>
+     	Siemens M20 (this modem have some bugs)
+     </entry></row>
+
+   <row><entry><literal>siemens-tc35</literal></entry>
+     <entry valign=bottom>
+     	Siemens TC35
+     </entry></row>
+
+   <row><entry><literal>falcom</literal></entry>
+     <entry valign=bottom>
+     	Falcom
+     </entry></row>
+
+   <row><entry><literal>nokiaphone</literal></entry>
+     <entry valign=bottom>
+     	Nokia 6210, 7210, 8210 (tested). Probably other 
+	nokia phones too.
+     </entry></row>
+
+   <row><entry><literal>ericsson</literal></entry>
+     <entry valign=bottom>
+     	Ericsson
+     </entry></row>
+
+   </tbody></tgroup></informaltable>
 </sect3>
 
 
@@ -2139,9 +2361,6 @@ features to expect from a driver, and to help identify areas where
 drivers need to be updated.  Currently most of the entries are
 marked as "not tested" because the table is still new.</para>
 
-<para>Some of the items are not really features, but rather the absence
-of specific bugs that seem to show up often.</para>
-
 <table frame=none>
  <title>SMSC driver features</title>
  <tgroup cols="12" align="center">
@@ -2166,6 +2385,164 @@ of specific bugs that seem to show up often.</para>
   </thead>
   <tbody>
    <row>
+    <entry spanname="feature">Can set DCS<footnote id="fields-to-dcs"><para>To use 
+      <literal>class</literal>, <literal>mwi</literal>, <literal>coding</literal>
+      and <literal>compress</literal> fields.</para></footnote></entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can set Validity</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can set Deferred</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>n</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can send Unicode</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Can send 8 bits</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+   </row>
+
+   <row>
+    <entry spanname="feature">Correctly send GSM alphabet</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>y</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+   </row>
+
+  </tbody>
+ </tgroup>
+</table>
+
+<table frame=none>
+ <title>SMSC driver internal features</title>
+ <tgroup cols="12" align="center">
+  <colspec colname="first" colnum="1" align="left">
+  <colspec colname="last" colnum="12">
+  <spanspec spanname="feature" namest="first" nameend="last">
+  <thead>
+   <row>
+     <entry>Feature</entry>
+     <entry>cimd</entry>
+     <entry>cimd2</entry>
+     <entry>emi</entry>
+     <entry>emi_ip</entry>
+     <entry>emi2</entry>
+     <entry>smpp</entry>
+     <entry>sema</entry>
+     <entry>ois</entry>
+     <entry>at</entry>
+     <entry>http</entry>
+     <entry>fake</entry>
+   </row>
+  </thead>
+  <tbody>
+
+   <row>
+    <entry spanname="feature">Can keep idle connections alive</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>y</entry>
+    <entry>y?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+   </row>
+
+   <!-- Lets clean the rest of the table -->
+
+   <row>
     <entry spanname="feature">Can send octet data without UDH</entry>
    </row>
    <row>
@@ -2181,24 +2558,6 @@ of specific bugs that seem to show up often.</para>
     <entry>y?</entry>
     <entry>n</entry>
     <entry>y?<footnote id="nomarkod"><para>Does not mark it as octet data</para></footnote></entry>
-   </row>
-
-   <row>
-    <entry spanname="feature">Can send unicode messages</entry>
-   </row>
-   <row>
-    <entry></entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>y</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
    </row>
 
    <row>
@@ -2418,24 +2777,6 @@ of specific bugs that seem to show up often.</para>
    </row>
 
    <row>
-    <entry spanname="feature">Can keep idle connections alive</entry>
-   </row>
-   <row>
-    <entry></entry>
-    <entry>n</entry>
-    <entry>y?</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>y</entry>
-    <entry>y?</entry>
-    <entry>?</entry>
-    <entry>?</entry>
-    <entry>?</entry>
-    <entry>?</entry>
-    <entry>?</entry>
-   </row>
-
-   <row>
     <entry spanname="feature">Can shut down idle connections</entry>
    </row>
    <row>
@@ -2451,42 +2792,6 @@ of specific bugs that seem to show up often.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
-   </row>
-
-   <row>
-    <entry spanname="feature">Can set validity period</entry>
-   </row>
-   <row>
-    <entry></entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>y</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>y?</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-   </row>
-
-   <row>
-    <entry spanname="feature">Can set arbitrary data coding scheme</entry>
-   </row>
-   <row>
-    <entry></entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>y</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
-    <entry>n</entry>
    </row>
 
   </tbody>
@@ -2558,6 +2863,18 @@ bearerbox-host = localhost
 
    ...but you would most probably want to define 'sendsms-port' to be
    able to use SMS push.</para>
+
+   <para>SMSBox inherits from core the following fields:
+<programlisting>
+smsbox-port
+http-proxy-port
+http-proxy-host
+http-proxy-username
+http-proxy-password
+http-proxy-exceptions
+ssl-certkey-file
+</programlisting>
+   </para>
 
  <table frame=none>
   <title>Smsbox Group Variables</title>
@@ -2637,7 +2954,7 @@ bearerbox-host = localhost
     <row><entry><literal>black-list</literal></entry>
      <entry>URL</entry>
      <entry valign=bottom>
-        As white-list, but SMS messages from these numbers are
+        As white-list, but SMS messages to these numbers are
         automatically discarded
      </entry></row>
 
@@ -2646,6 +2963,7 @@ bearerbox-host = localhost
      <entry valign=bottom>
         If set, replaces the SMS message sent back to user when kannel
 	could not fetch content. 
+	Defaults to <literal>Could not fetch content, sorry.</literal>.
      </entry></row>
 
     <row><entry><literal>reply-couldnotrepresent</literal></entry>
@@ -2653,6 +2971,24 @@ bearerbox-host = localhost
      <entry valign=bottom>
         If set, replaces the SMS message sent back when kannel could not 
 	represent the result as a SMS message. 
+	Defaults to <literal>Result could not be represented as an 
+	SMS message.</literal>.
+     </entry></row>
+
+    <row><entry><literal>reply-requestfailed</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        If set, replaces the SMS message sent back when kannel could not 
+	contact http service.
+	Defaults to <literal>Request Failed</literal>.
+     </entry></row>
+
+    <row><entry><literal>reply-emptymessage</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        If set, replaces the SMS message sent back when message is
+	empty. Set to "" to enable empty messages.
+	Defaults to <literal>&lt;Empty reply from service provider&gt;</literal>.
      </entry></row>
 
   </tbody>
@@ -2712,6 +3048,11 @@ get-url = "http://%S"
      service, <literal>default</literal> 'sms-service' group is used.
      You should always define <literal>default</literal> service.</para>
 
+     <para>Service group <literal>black-list</literal> has a special
+     meaning: if the incoming message is in service's black-list, this
+     service is used to reply to user. If unset, message will be 
+     discarded.</para>
+
  <table frame=none>
   <title>SMS-Service Group Variables</title>
   <tgroup cols=3>
@@ -2748,6 +3089,13 @@ get-url = "http://%S"
         If the service has aliases, they are listed as a list with 
         each entry separated with a semicolon (';')
 
+     </entry></row>
+
+   <row><entry><literal>name</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        Optional name to identify the service in logs. If unset,
+	<literal>keyword</literal> is used.
      </entry></row>
 
    <row><entry><literal>get-url (c)</literal></entry>
@@ -2792,11 +3140,37 @@ get-url = "http://%S"
      <entry>id-list</entry>
      <entry valign=bottom>
         Accept ONLY SMS messages arriving from SMSC with matching ID.
+        <footnote><para>Even if this service is denied,
+	kannel still searches for other service which accepts the message,
+	or default service.</para></footnote>
         Separate multiple entries with ';'. For example, if 
          <literal>accepted-smsc</literal>
         is "RL;SON", accept messages which originate from SMSC with
         ID set as 'RL' or 'SON'
+     </entry></row>
 
+   <row><entry><literal>allowed-prefix</literal></entry>
+     <entry><literal>prefix-list</literal></entry>
+     <entry valign=bottom>
+        A list of phone number prefixes which are accepted to be
+        received by this service. 
+        <footnote><para>Like in accepted-smsc, 
+	kannel still searches for other service which accepts the message.
+	This way there could be several services with the same keyword and
+	different results.</para></footnote>
+	Multiple entries are separated with 
+        semicolon (';'). For example, "91;93" selects this service for
+	these prefixes. 
+	If denied-prefix is unset, only this numbers are allowed. If 
+	denied is set, number are allowed if present in allowed or not 
+	in denied list.
+     </entry></row>
+
+   <row><entry><literal>denied-prefix</literal></entry>
+     <entry><literal>prefix-list</literal></entry>
+     <entry valign=bottom>
+        A list of phone number prefixes which are NOT accepted to be
+        sent through this SMSC.
      </entry></row>
 
    <row><entry><literal>catch-all</literal></entry>
@@ -2914,11 +3288,27 @@ get-url = "http://%S"
         and then the first suffix. These are only used for 
         <literal>url</literal> type services, and only if both are
 	specified.
-
      </entry></row>
 
    <row><entry><literal>suffix</literal></entry>
      <entry>string</entry></row>
+
+    <row><entry><literal>white-list</literal></entry>
+     <entry>URL</entry>
+     <entry valign=bottom>
+        Load a list of accepted senders of SMS messages. If a 
+	sender of an SMS message is not in this list, any message 
+	received from the SMSC is rejected, unless a <literal>
+	black-list</literal> service is defined. See notes of phone 
+	number format from numhash.h header file. 
+     </entry></row>
+
+    <row><entry><literal>black-list</literal></entry>
+     <entry>URL</entry>
+     <entry valign=bottom>
+        As white-list, but SMS messages from these numbers are
+        automatically discarded
+     </entry></row>
 
   </tbody>
   </tgroup>
@@ -3009,7 +3399,7 @@ catch-all = true
 
 group = sms-service
 keyword = complex
-get-url = "http://my.applet.machine/Servlet/kludge2?sender=%p&amp;text=%r"
+get-url = "http://host/service?sender=%p&amp;text=%r"
 accept-x-kannel-headers = true
 max-messages = 3
 concatenation = true
@@ -3055,7 +3445,7 @@ text = "No action specified"
 	<entry><literal>application/octet-stream</literal></entry>
 	<entry>The body will be transmitted as the SMS message, as
 	8-bit data. This can be avoided by setting
-	<literal>assume-plain-text</literal> varaible on for the
+	<literal>assume-plain-text</literal> variable on for the
 	SMS-service.</entry>
 	</row>
 	
@@ -3070,7 +3460,68 @@ text = "No action specified"
 <title id="xkannel.title">Extended headers</title>
 	
 	<para>Kannel uses and accepts several X-Kannel headers to be
-	used with SMS-services and SMS-push.</para>
+	used with SMS-services. </para>
+
+ <table frame=none>
+  <title>X-Kannel Headers</title>
+  <tgroup cols=2>
+  <thead>
+   <row>
+     <entry>SMSPush equivalent</entry>
+     <entry>X-Kannel Header</entry>
+   </row>
+  <tbody>
+   <row><entry><literal>username</literal></entry>
+   <entry><literal>X-Kannel-Username</literal></entry></row>
+
+   <row><entry><literal>password</literal></entry>
+   <entry><literal>X-Kannel-Password</literal></entry></row>
+
+   <row><entry><literal>from</literal></entry>
+   <entry><literal>X-Kannel-From</literal></entry></row>
+
+   <row><entry><literal>to</literal></entry>
+   <entry><literal>X-Kannel-To</literal></entry></row>
+
+   <row><entry><literal>to</literal></entry>
+   <entry>request body</entry></row>
+
+   <row><entry><literal>charset</literal></entry>
+   <entry>charset as in <literal>Content-Type: text/html; charset=ISO-8859-1</literal></entry></row>
+
+   <row><entry><literal>udh</literal></entry>
+   <entry><literal>X-Kannel-UDH</literal></entry></row>
+
+   <row><entry><literal>smsc</literal></entry>
+   <entry><literal>X-Kannel-SMSC</literal></entry></row>
+
+   <row><entry><literal>flash</literal></entry>
+   <entry><literal>X-Kannel-Flash</literal> (deprecated, see <literal>X-Kannel-Class</literal></entry></row>
+
+   <row><entry><literal>class</literal></entry>
+   <entry><literal>X-Kannel-Class</literal></entry></row>
+
+   <row><entry><literal>mwi</literal></entry>
+   <entry><literal>X-Kannel-MWI</literal></entry></row>
+
+   <row><entry><literal>coding</literal></entry>
+   <entry><literal>X-Kannel-Coding</literal>. If unset, defaults to 1 
+   (7 bits) if <literal>Content-Type</literal> is <literal>text/plain
+   </literal>, <literal>text/html</literal> or 
+   <literal>text/vnd.wap.wml</literal>. On 
+   <literal>application/octet-stream</literal>, defaults to
+   8 bits (2). All other <literal>Content-Type</literal> values 
+   are rejected.</entry></row>
+
+   <row><entry><literal>validity</literal></entry>
+   <entry><literal>X-Kannel-Validity</literal></entry></row>
+
+   <row><entry><literal>deferred</literal></entry>
+   <entry><literal>X-Kannel-Deferred</literal></entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
 
 </sect3>
 	
@@ -3113,6 +3564,12 @@ text = "No action specified"
      <entry>string</entry>
      <entry valign=bottom>
        Password for the user (see HTTP interface, below)
+     </entry></row>
+
+   <row><entry><literal>name</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+       As in 'sms-service' groups.
      </entry></row>
 
    <row><entry><literal>user-deny-ip</literal></entry>
@@ -3167,6 +3624,25 @@ text = "No action specified"
    <row><entry><literal>footer</literal></entry>
      <entry>string</entry></row>
 
+   <row><entry><literal>allowed-prefix</literal></entry>
+     <entry><literal>prefix-list</literal></entry>
+     <entry valign=bottom>
+        A list of phone number prefixes which are accepted to be
+        sent using this username. Multiple entries are separated with 
+        semicolon (';'). For example, "040;050" prevents sending of
+        any SMS message with prefix of 040 or 050 through this SMSC.
+	If denied-prefix is unset, only this numbers are allowed. If
+	set, number are allowed if present in allowed or not in 
+	denied list.
+     </entry></row>
+
+   <row><entry><literal>denied-prefix</literal></entry>
+     <entry><literal>prefix-list</literal></entry>
+     <entry valign=bottom>
+        A list of phone number prefixes which are NOT accepted to be
+        sent using this username.
+     </entry></row>
+
     <row><entry><literal>white-list</literal></entry>
      <entry>URL</entry>
      <entry valign=bottom>
@@ -3180,10 +3656,8 @@ text = "No action specified"
      <entry>URL</entry>
      <entry valign=bottom>
         As white-list, but SMS messages from these numbers are
-        automatically discarded
+        automatically rejected.
      </entry></row>
-
-    <row><entry><literal>store-file</literal></entry>
 
   </tbody>
   </tgroup>
@@ -3486,7 +3960,8 @@ forced-smsc = B
 	WWW browser. The URL looks something like this:
 	
 <programlisting>
-http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;to=0123456&amp;text=Hello+world
+http://smsbox.host.name:13013/cgi-bin/sendsms?
+username=foo&amp;password=bar&amp;to=0123456&amp;text=Hello+world
 </programlisting>
 
          Thus, technically,
@@ -3496,9 +3971,10 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
 
  <table frame=none>
   <title>SMS Push (send-sms) CGI Variables</title>
-  <tgroup cols=2>
+  <tgroup cols=3>
   <tbody>
    <row><entry><literal>username</literal> (or <literal>user</literal>)</entry>
+   <entry><literal>string</literal></entry>
    <entry valign=bottom>
         Username or account name. Must be <literal>username</literal> of the one
         'sendsms-user' group in the Kannel configuration,
@@ -3506,6 +3982,7 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
    </entry></row>
 
    <row><entry><literal>password</literal> (or <literal>pass</literal>)</entry>
+   <entry><literal>string</literal></entry>
    <entry valign=bottom>
        Password associated with given <literal>username</literal>. Must match
  corresponding field in the 'sendsms-user' group of
@@ -3513,6 +3990,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    </entry></row>
 
    <row><entry><literal>from</literal></entry>
+   <entry><literal>string</literal></entry>
    <entry valign=bottom>
         Phone number of the sender. This field is usually overridden
         by the SMS Center, or it can be overridden by
@@ -3522,6 +4000,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    </entry></row>
 
    <row><entry><literal>to</literal></entry>
+   <entry><literal>phone number list</literal></entry>
    <entry valign=bottom>
         Phone number of the receiver. To send to multiple receivers,
    separate each entry with <emphasis>space</emphasis> (' ', '+'
@@ -3530,6 +4009,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    </entry></row>
 
    <row><entry><literal>text</literal></entry>
+   <entry><literal>string</literal></entry>
    <entry valign=bottom>
         Contents of the message, URL encoded as necessary. The content
         can be more than 160 characters, but then
@@ -3537,13 +4017,23 @@ the Kannel configuration, or 'Authorization failed' is returned.
         <literal>max-messages</literal> set more than 1.
    </entry></row>
 
+   <row><entry><literal>charset</literal></entry>
+   <entry><literal>string</literal></entry>
+   <entry valign=bottom>
+        Charset of text message. Used to convert to a format suitable for
+	7 bits or to UCS2. Defaults to ISO-8859-1 if coding is 7bits and
+	UTF16BE if coding is UCS2.
+   </entry></row>
+
    <row><entry><literal>udh</literal></entry>
+   <entry><literal>string</literal></entry>
    <entry valign=bottom>
          Optional User Data Header (UDH) part of the message. Must be
          URL encoded.
    </entry></row>
 
    <row><entry><literal>smsc</literal></entry>
+   <entry><literal>string</literal></entry>
    <entry valign=bottom>
         Optional virtual smsc-id from which the message is supposed to 
 	have arrived. This is used for routing purposes, if any denied
@@ -3555,58 +4045,55 @@ the Kannel configuration, or 'Authorization failed' is returned.
    </entry></row>
 
    <row><entry><literal>flash</literal></entry>
+   <entry><literal>number</literal></entry>
    <entry valign=bottom>
-         Optional. If given and equals 1, the message will be encoded as 
-	 Class 0. When a message is class 0, the mobile shall display the
-	 message immediately irrespective of whether there is memory 
-	 available in the SIM or mobile memory. The message shall not be 
-	 automatically stored in the SIM or Mobile memory.
-	 The mobile may make provision through configuration for the user
-	 to selectively prevent the message from being displayed immediately.
-	 If the mobile is incapable of displaying class 0 messages or if the 
-	 immediate display of the message has been disabled then the it shall 
-	 treat the class 0 message as though there was no Message Class.
-	 This option excludes the <literal>mwi</literal> option.
+         Deprecated. See <literal>class</literal>.
+   </entry></row>
+
+   <row><entry><literal>class</literal></entry>
+   <entry><literal>number</literal></entry>
+   <entry valign=bottom>
+         Optional. Sets the Message Class in DCS Field.
+	 Accepts values between 1 and 4, for Message Class 0 to 3, 
+	 A value of 1 sends the message directly to display. Class=2 sends
+	 to mobile, 3 do SIM and 4 to SIM Toolkit.
    </entry></row>
 
    <row><entry><literal>mwi</literal></entry>
+   <entry><literal>number</literal></entry>
    <entry valign=bottom>
-         Optional. If given, the message will be encoded as a Message Waiting
+         Optional. Sets Message Waiting Indicator bits in DCS field.
+	 If given, the message will be encoded as a Message Waiting
 	 Indicator. The accepted values are 1,2,3 and 4 for activating the
 	 voice, fax, email and other indicator, or 5,6,7,8 for deactivating,
 	 respectivly.
 	 This option excludes the <literal>flash</literal> option.
    </entry></row>
 
-   <row><entry><literal>mwimessages</literal></entry>
+   <row><entry><literal>coding</literal></entry>
+   <entry><literal>number</literal></entry>
    <entry valign=bottom>
-         Optional. If given, the message will be encoded as a Message Waiting
-	 Indicator. The accepted values are 1,2,3 and 4 for activating the
-	 voice, fax, email and other indicator, or 5,6,7,8 for deactivating,
-	 respectivly.
-	 This option excludes the <literal>flash</literal> option.
-   </entry></row>
-
-   <row><entry><literal>unicode</literal></entry>
-   <entry valign=bottom>
-         Optional. If given, the message will be encoded using the Unicode
-	 text given in <literal>text</literal> field.
-	 ex: text=0041007200610062002006306350636.
+         Optional. Sets the coding scheme bits in DCS field.
+	 Accepts values 1 to 3, for 7bit, 8bit or UCS2.
+	 If unset, defaults to 7 bits unless a udh is defined, which sets
+	 coding to 8bits.
    </entry></row>
 
    <row><entry><literal>validity</literal></entry>
+   <entry><literal>number (minutes)</literal></entry>
    <entry valign=bottom>
          Optional. If given, kannel will inform SMS Center that it should only
-	 try to send the message for this many seconds. If the destination
+	 try to send the message for this many minutes. If the destination
 	 mobile is off other situation that it cannot receive the sms, the
 	 smsc discards the message.
 	 Note: you must have your kannel box time syncronized with the SMS Center.
    </entry></row>
 
    <row><entry><literal>deferred</literal></entry>
+   <entry><literal>number (minutes)</literal></entry>
    <entry valign=bottom>
          Optional. If given, the SMS center will postpone the message to be
-	 delivered at now plus this many seconds.
+	 delivered at now plus this many minutes.
 	 Note: you must have your kannel box time syncronized with the SMS Center.
    </entry></row>
 
@@ -3625,7 +4112,8 @@ the Kannel configuration, or 'Authorization failed' is returned.
        concatenated messages if too long. An example URL is like this:	
 
 <programlisting>
-http://smsbox.host.name:13013/cgi-bin/sendota?otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
+http://smsbox.host.name:13013/cgi-bin/sendota?
+otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
 </programlisting>
        </para>
 
@@ -3714,7 +4202,7 @@ http://smsbox.host.name:13013/cgi-bin/sendota?otaid=myconfig&amp;username=foo&am
 	related to the gateway, and the preferred procedure for reporting
 	bugs and sending corrections to them.</para>
 	
-	<para>The Kannel development mailing list is devel@kannel.org.  To subscribe, send mail to <ulink url="mailto:devel-subscribe@kannel.org">devel-subscribe@kannel.org</ulink>.
+	<para>The Kannel development mailing list is devel@kannel.3glab.org.  To subscribe, send mail to <ulink url="mailto:devel-subscribe@kannel.3glab.org">devel-subscribe@kannel.3glab.org</ulink>.
 	This is currently the best location for asking help and reporting
 	bugs. Please include configuration file and version number.</para>
 	

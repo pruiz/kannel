@@ -1,3 +1,23 @@
+2001-09-02 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* userguide.xml: Written information about latest patch. Added 
+	"Installing Kannel from DEB packages" section. Added info about
+	removing prefixes using unified-prefix. Corrected some glitches.
+	Added status.[txt|html|xml] information. Corrected validity and
+	deferred text (it's minutes, not seconds). Added modem types table
+	(well, just the table, we could add a list of tested modems in there).
+	Splitted "feature list". One list have the "user" features (what 
+	matters for who is using kannel. The other have "internal features" 
+	(what matters for coders/administrators). Added X-Kannel headers
+	list.
+	* gw/control.html: Added new fields to form and included some 
+	javascript (I hope it's ok) to select host and port to compose URL.
+	* smsbox.c: Added charset processing to sms-service (and hopefully
+	to sendsms push). Tested sms-service functionality. 
+	* Unicode Patch: I need help to test and improve the code using other
+	charsets.
+	* doc/kannel.conf: Added ALL possible fields, commented, so it's
+	easier to see what we want and uncomment it.
+
 2001-09-01 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* "charset", "class" and "coding" patch. Use class to define Message
 	Class (older flash). Use coding to select manually 7/8bit or UCS2. 

@@ -53,6 +53,7 @@ static Numhash *black_list;
 
 static List *smsbox_requests = NULL;
 
+int charset_processing (Octstr *charset, Octstr **text, int coding);
 
 /***********************************************************************
  * Communication with the bearerbox.
@@ -674,6 +675,10 @@ static void url_result_thread(void *arg)
 	    } else {
 		replytext = reply_couldnotrepresent; 
 	    }
+
+	    if (! charset_processing(charset, &replytext, coding)) {
+		replytext = reply_couldnotrepresent;
+	    }
 	    octstr_destroy(type);
 	    octstr_destroy(charset);
 	} else
@@ -1167,7 +1172,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	goto fielderror2;
     }
 
-    info(0, "/cgi-bin/sendsms sender:<%s:%s> (%s) to:<%s> msg:<%s>",
+    info(0, "sendsms sender:<%s:%s> (%s) to:<%s> msg:<%s>",
 	 octstr_get_cstr(urltrans_username(t)),
 	 octstr_get_cstr(newfrom),
 	 octstr_get_cstr(client_ip),
@@ -1246,91 +1251,9 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     } else
 	msg->sms.smsc_id = NULL;
 
-    /* Charset processing */
-    if (charset) {
-	Octstr *temp, *tempcharset;
-
-debug("sms.http", 0, "I have charset, coding=%d and charset=%s", msg->sms.coding, octstr_get_cstr(charset));
-octstr_dump(msg->sms.msgdata, 0);
-
-	/* For 7 bit, convert to UTF-8 and then to ISO-8859-1
-	 * (except if it is already in that format)
-	 */
-	if (msg->sms.coding == DC_7BIT && octstr_compare(charset, octstr_imm("ISO-8859-1")) != 0) {
-
-debug("sms.http", 0, "coding=7bit, start, msgdata is %s", octstr_get_cstr(msg->sms.msgdata));
-octstr_dump(msg->sms.msgdata, 0);
-		
-	    /* encode to UTF-8 */
-	    if (octstr_compare(charset, octstr_imm("UTF-8")) != 0) {
-		if (charset_to_utf8(msg->sms.msgdata, &temp, charset) >= 0) {
-		    octstr_destroy(msg->sms.msgdata);
-		    msg->sms.msgdata = temp;
-
-debug("sms.http", 0, "coding=7bit, after utf8, msgdata is %s", octstr_get_cstr(msg->sms.msgdata));
-octstr_dump(msg->sms.msgdata, 0);
-
-		} else {
-		    returnerror = octstr_create("Charset field misformed, rejected");
-		    goto fielderror;
-		}
-	    }
-						
-	    /* UTF-8 to ISO-8859-1 */
-	    charset = octstr_create("ISO-8859-1");
-	    if (charset_from_utf8(msg->sms.msgdata, &temp, charset) >= 0) {
-		octstr_destroy(msg->sms.msgdata);
-		msg->sms.msgdata = temp;
-		octstr_destroy(charset);
-	    } else {
-		octstr_destroy(charset);
-		returnerror = octstr_create("Charset field misformed, rejected");
-		goto fielderror;
-	    }
-
-debug("sms.http", 0, "coding=7bit, after iso8859-1, msgdata is %s", octstr_get_cstr(msg->sms.msgdata));
-octstr_dump(msg->sms.msgdata, 0);
-
-	}
-
-	/* For UCS2, convert to UTF-8 and then to UTF-16BE
-	 * (except if it is already in that format)
-	 */
-	else if (msg->sms.coding == DC_UCS2 && octstr_compare(charset, octstr_imm("UCS2")) != 0 
-	         && octstr_compare(charset, octstr_imm("UTF-16BE")) != 0) {
-
-debug("sms.http", 0, "coding=ucs2, start, msgdata is %s", octstr_get_cstr(msg->sms.msgdata));
-octstr_dump(msg->sms.msgdata, 0);
-		
-	    /* encoding to UTF-8 */
-	    if (octstr_compare(charset, octstr_imm("UTF-8")) != 0) {
-		if (charset_to_utf8(msg->sms.msgdata, &temp, charset) >= 0) {
-		    octstr_destroy(msg->sms.msgdata);
-		    msg->sms.msgdata = temp;
-
-debug("sms.http", 0, "coding=ucs2, after utf8, msgdata is %s", octstr_get_cstr(msg->sms.msgdata));
-octstr_dump(msg->sms.msgdata, 0);
-
-		} else {
-		    returnerror = octstr_create("Charset field misformed, rejected");
-		    goto fielderror;
-		}
-	    }
-						
-	    /* UTF-8 to UTF-16BE */
-	    tempcharset = octstr_create("UTF-16BE");
-	    if (charset_from_utf8(msg->sms.msgdata, &temp, tempcharset) >= 0) {
-		octstr_destroy(msg->sms.msgdata);
-		msg->sms.msgdata = temp;
-		octstr_destroy(tempcharset);
-	    } else {
-		octstr_destroy(tempcharset);
-		returnerror = octstr_create("Encoding field misformed, rejected");
-		goto fielderror;
-	    }
-debug("sms.http", 0, "coding=ucs2, after utf-16, msgdata is %s", octstr_get_cstr(msg->sms.msgdata));
-octstr_dump(msg->sms.msgdata, 0);
-	}
+    if (! charset_processing(charset, &msg->sms.msgdata, msg->sms.coding)) {
+	returnerror = octstr_create("Charset or body misformed, rejected");
+	goto fielderror;
     }
 
     msg->sms.time = time(NULL);
@@ -1397,7 +1320,7 @@ static URLTranslation *authorise_username(Octstr *username, Octstr *password,
         }
     }
 
-    info(0, "/sendsms used by <%s>", octstr_get_cstr(username));
+    info(0, "sendsms used by <%s>", octstr_get_cstr(username));
     return t;
 }
 
@@ -1568,16 +1491,24 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 
 	if (octstr_compare(type,
 			   octstr_imm("application/octet-stream")) == 0)
-	    coding = DC_8BIT; /* XXX Force UCS2 with DC Field */
+	    if (coding == DC_UNDEF)
+		coding = DC_8BIT; /* XXX Force UCS2 with DC Field */
 	else if (octstr_compare(type,
 				octstr_imm("text/plain")) == 0)
-	    coding = DC_7BIT;
+	    if (coding == DC_UNDEF)
+		coding = DC_7BIT;
 	else {
 	    error(0, "/sendsms got weird content type %s",
 		  octstr_get_cstr(type));
 	    *status = 415;
 	    ret = octstr_create("Unsupported content-type, rejected");
 	}
+
+	if (! charset_processing(charset, &body, coding)) {
+	    *status = 415;
+	    ret = octstr_create("Charset or body misformed, rejected");
+	}
+
 	if (ret == NULL)
 	    ret = smsbox_req_handle(t, client_ip, from, to, body, charset,
 				    udh, smsc, class, mwi, coding, compress, 
@@ -2218,4 +2149,110 @@ int main(int argc, char **argv)
     cfg_destroy(cfg);
     gwlib_shutdown();
     return 0;
+}
+
+int charset_processing (Octstr *charset, Octstr **body, int coding) {
+	
+    /* Charset processing */
+    if (octstr_len(charset)) {
+	Octstr *temp, *tempcharset;
+
+debug("sms.http", 0, "enter charset, coding=%d, msgdata is %s", coding, octstr_get_cstr(*body));
+octstr_dump(*body, 0);
+
+	/* For 7 bit, convert to UTF-8 and then to ISO-8859-1
+	 * (except if it is already in that format)
+	 */
+	if (coding == DC_7BIT && octstr_compare(charset, octstr_imm("ISO-8859-1")) != 0) {
+
+debug("sms.http", 0, "enter 7bit (and charset was not iso-8859-1)");
+
+	    /* encode to UTF-8 */
+	    if (octstr_compare(charset, octstr_imm("UTF-8")) != 0) {
+
+debug("sms.http", 0, "enter 7bit/to utf8");
+
+		if (charset_to_utf8(*body, &temp, charset) >= 0) {
+		    octstr_destroy(*body);
+		    *body = octstr_duplicate(temp);
+		    octstr_destroy(temp);
+
+debug("sms.http", 0, "in 7bit/to utf8, new msgdata is %s", octstr_get_cstr(*body));
+octstr_dump(*body, 0);
+
+		} else {
+
+debug("sms.http", 0, "error on 7bit/ to utf8");
+
+		    return 0;
+		}
+	    }
+						
+	    /* UTF-8 to ISO-8859-1 */
+/*	    charset = octstr_create("ISO-8859-1");
+	    if (charset_from_utf8(new*body, &temp, charset) >= 0) {
+		octstr_destroy(new*body);
+		new*body = temp;
+		octstr_destroy(charset);
+	    } else {
+		octstr_destroy(charset);
+		octstr_destroy(new*body);
+		return NULL;
+	    }
+debug("sms.http", 0, "coding=7bit, after iso8859-1, msgdata is %s", octstr_get_cstr(new*body));
+octstr_dump(new*body, 0);
+
+*/
+	}
+
+	/* For UCS2, convert to UTF-8 and then to UTF-16BE
+	 * (except if it is already in that format)
+	 */
+	else if (coding == DC_UCS2 && octstr_compare(charset, octstr_imm("UCS2")) != 0 
+	         && octstr_compare(charset, octstr_imm("UTF-16BE")) != 0) {
+
+debug("sms.http", 0, "enter ucs2 (and charset was not UCS2)");
+		
+	    /* encoding to UTF-8 */
+	    if (octstr_compare(charset, octstr_imm("UTF-8")) != 0) {
+
+debug("sms.http", 0, "enter ucs2/to utf8");
+
+		if (charset_to_utf8(*body, &temp, charset) >= 0) {
+		    octstr_destroy(*body);
+		    *body = octstr_duplicate(temp);
+		    octstr_destroy(temp);
+
+debug("sms.http", 0, "in ucs2/to utf8, new msgdata is %s", octstr_get_cstr(*body));
+octstr_dump(*body, 0);
+
+		} else {
+
+debug("sms.http", 0, "error on ucs2/ to utf8");
+
+		    return 0;
+		}
+	    }
+						
+	    /* UTF-8 to UTF-16BE */
+	    tempcharset = octstr_create("UTF-16BE");
+	    if (charset_from_utf8(*body, &temp, tempcharset) >= 0) {
+		octstr_destroy(*body);
+		*body = octstr_duplicate(temp);
+		octstr_destroy(tempcharset);
+		octstr_destroy(temp);
+
+debug("sms.http", 0, "in ucs2/to ucs2, new msgdata is %s", octstr_get_cstr(*body));
+octstr_dump(*body, 0);
+
+	    } else {
+
+debug("sms.http", 0, "error on ucs2/ to ucs2");
+
+		octstr_destroy(tempcharset);
+		return 0;
+	    }
+	}
+    }
+    return 1;
 }

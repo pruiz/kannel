@@ -97,7 +97,7 @@ static int at_open_connection(SMSCenter *smsc) {
         
         fd = open(smsc->at_serialdevice, O_RDWR|O_NONBLOCK|O_NOCTTY);
         if(fd == -1) {
-                error(errno, "at_open_data_link: error open(2)ing the character device <%s>",
+                error(errno, "at_open_data_link: error opening the character device <%s>",
                       smsc->at_serialdevice);
                 return -1;
         }
