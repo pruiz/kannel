@@ -1,3 +1,8 @@
+Fri Nov 12 17:30:08 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* Makefile: added "make depend". This only works with GNU make,
+	shame on me.
+
 1999-11-12    <rpr@rpr.wapit.com>
 
 	* html.c: modified html_strip_suffix_and_prefix to use

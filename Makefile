@@ -26,6 +26,8 @@ LIBS=
 CFLAGS=-Wall -g -DHAVE_THREADS=1 $(PID_FILE) -DVERSION=\"$(VERSION)\"
 LDFLAGS= -static
 
+MKDEPEND=$(CC) -MM
+
 # Some systems require ranlib to be run on a library after it is created.
 # Some don't even have ranlib. Uncomment appropriately.
 RANLIB=:
@@ -82,20 +84,10 @@ bearerbox.o: smsc.h html.h wapitlib.h http.h config.h urltrans.h cgi.h \
 	sms_msg.h VERSION
 fakesmsc.o: wapitlib.h
 
-cgi.o: cgi.h wapitlib.h
-config.o: config.h wapitlib.h
-html.o: html.h wapitlib.h
-http.o: http.h wapitlib.h
-octstr.o: octstr.h wapitlib.h
-boxc.o: msg.h bb_msg.h
-smsc.o: smsc.h msg.h smsc_p.h
-sms_msg.h: octstr.h
-smsc_fake.o: smsc.h sms_msg.h smsc_p.h wapitlib.h
-smsc_smsc.o: smsc.h sms_msg.h smsc_p.h wapitlib.h
-smsc_emi.o: smsc.h sms_msg.h smsc_p.h wapitlib.h
-smsc_smpp.o: smsc.h sms_msg.h smsc_p.h wapitlib.h
-urltrans.o: urltrans.h sms_msg.h wapitlib.h
-wapitlib.o: wapitlib.h
+depend .depend:
+	$(MKDEPEND) *.c > .depend
+
+include .depend
 
 clean:
 	rm -f a.out core *.o $(progs) libgw.a gateway.pid .cvsignore
@@ -105,6 +97,7 @@ cvsignore:
 	rm -f .cvsignore
 	for i in $(progs); do echo $$i >> .cvsignore; done
 	echo .cvsignore >> .cvsignore
+	echo .depend >> .cvsignore
 	cd doc && $(MAKE) cvsignore
 
 install: all
