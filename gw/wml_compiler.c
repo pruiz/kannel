@@ -624,10 +624,10 @@ int parse_attribute(xmlNodePtr node)
 						 coded_length)) != 0)
       error(0, "WML compiler: could not output attribute value as a string.");
 
-  if (wml_attributes[i].attribute == NULL)
+  if (wml_attributes[i].attribute == NULL) {
     error(0, "WML compiler: unknown attribute.");
     return -1;
-  else 
+  } else 
     return status;
 }
 

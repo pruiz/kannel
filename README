@@ -36,6 +36,9 @@ Getting the gateway sources
 
 	You can download the sources from
 	http://www.kannel.org/sourcecode.shtml.
+	
+	Note that you also need the Gnome-xml library from
+	http://xmlsoft.org/xml.html.
 
 Compiling and installing the gateway
 

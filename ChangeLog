@@ -1,3 +1,11 @@
+Wed Jan 26 15:13:25 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* configure.in: Check for gnome-xml library, which is needed by
+	the new WML compiler.
+	
+	* README: Documented need for the gnome-xml library. (Sorry about
+	that, I promise not to document anything again.)
+
 2000-01-26 Aarno Syvänen <syvanen@wapit.com>
 
 	* Oops, segmentation work stopped

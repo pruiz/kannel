@@ -22,12 +22,13 @@
 #include <fcntl.h>
 #include <string.h>
 
+#include <gnome-xml/xmlmemory.h>
+#include <gnome-xml/parser.h>
+#include <gnome-xml/tree.h>
+#include <gnome-xml/debugXML.h>
+
 #include "gwlib.h"
 
-#include "xmlmemory.h"
-#include "parser.h"
-#include "tree.h"
-#include "debugXML.h"
 
 
 /*
