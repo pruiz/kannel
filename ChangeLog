@@ -1,3 +1,8 @@
+2000-05-24  Richard Braakman  <dark@wapit.com>
+
+	* test/test_cimd2.c: Written a while ago, added to CVS today.
+	Might be useful for people doing speed tests of sms handling.
+	
 2000-05-23    <Kalle Marjola <rpr@wapit.com>>
 
 	* gwlib/http2.c|h: moved destroying functions here, and changed so
