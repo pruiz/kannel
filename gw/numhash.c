@@ -301,11 +301,11 @@ Numhash *numhash_create(char *seek_url)
   
     while((ptr = strchr(data, '\n'))) {	/* each line is ended with linefeed */
 	*ptr = '\0';
-	while(*data && isspace(*data)) data++;
+	while(*data && isspace(*(unsigned char *)data)) data++;
 	if (*data != '#') {
 	    loc = 0;
 	    while (*data) {
-		if (isdigit(*data))
+		if (isdigit(*(unsigned char *)data))
 		    numbuf[loc++] = *data;
 		else if (*data == ' ' || *data == '+' || *data == '-')
 			;
