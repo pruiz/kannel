@@ -1,3 +1,33 @@
+2003-07-23  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gwlib/cfg.def, gw/wapbox.c, gw/wap-appl.[ch]: added new wap-url-map and
+      wap-user-map groups to replace (to be) deprecated map-url map. This 
+      allows url transformation, msisdn sending and cokie handling per url
+    * gwlib/http.c: destroy proxy values to be able reloading them; only 
+      re-set content-type if not empty on mark_transformation
+    * gw/wapbox.c: added configuration reloading through SIGHUP (I'll
+      implement later the same functionality in bearerbox and smsbox) for some
+      "safe" configuration parameters: http-proxy-*, log-level, smart-errors, 
+      concatenation and max-messages (what are these?), old map-url and new
+      url-map groups
+    * gw/wapbox.c: defaulted sms parameters to UNDEF
+    * gw/wap-appl.c: if device requests an HEAD, process it as usual and trim
+      content on the end; if content is already 0 bytes, accept it and also return
+      0 byte "converted" content
+    * gw/wap-appl.c: if device accepts */*, add kannel's accepts anyway;
+    ................
+    * gw/wap-appl.c, wap/wsp_headers.c: added msisdn provisioning based on 
+      proxy authentication, unfortunately only supported by some devices, 
+      but it's better than nothing. Device's user and pass is matched against 
+      "wap-user-map" configuration group (later an alternative like pam) and 
+      if this fails, previous radius provisioning is tried
+    * gw/wap-appl.c: if msisdn is discovered, new wap-url-map groups defines
+      if it's to be sent through query_string or header, and which format to
+      use.
+    * gw/wap-appl.c: added info() debug for requested URL (too many debug and
+      not one line with it ;) )
+    * gw/wap-appl.c: moved http_headers_remove_hop lower
+
+
 2003-07-23  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_store.c,gw/bearerbox.c: fixed segfault if no store-file is configured.
 

@@ -128,7 +128,10 @@ static Octstr *convert_wmlscript_to_wmlscriptc(struct content *content);
 /* DAVI: To-Do static Octstr *convert_multipart_mixed(struct content *content); */
 static Octstr *deconvert_multipart_formdata(struct content *content);
 /* DAVI: To-Do static Octstr *deconvert_mms_message(struct content *content); */
-static void wsp_http_map_url(Octstr **osp);
+static void wsp_http_map_url(Octstr **osp, Octstr **send_msisdn_query, 
+			     Octstr **send_msisdn_header, 
+			     Octstr **send_msisdn_format, int *accept_cookies);
+static int wsp_http_map_user(Octstr **msisdn, Octstr *user, Octstr *pass);
 static List *negotiate_capabilities(List *req_caps);
 
 static struct {
@@ -362,7 +365,8 @@ static void main_thread(void *arg)
  * -1 if an convertion failed and 0 if no convertion routine
  * was maching this content-type
  */
-static int convert_content(struct content *content, List *request_headers) 
+static int convert_content(struct content *content, List *request_headers, 
+			   int allow_empty) 
 {
     Octstr *new_body;
     int failed = 0;
@@ -373,6 +377,10 @@ static int convert_content(struct content *content, List *request_headers)
             !http_type_accepted(request_headers, octstr_get_cstr(content->type))) {
             debug("wap.convert",0,"WSP convert: Tring to convert from <%s> to <%s>", 
                   octstr_get_cstr(content->type), converters[i].result_type);
+	    /* Note: if request is HEAD, body is empty and we still need to adapt
+	     * content-type but we don't need to convert a 0 bytes body */
+	    if(allow_empty && octstr_len(content->body) == 0) 
+		    return 1;
             new_body = converters[i].convert(content);
             if (new_body != NULL) {
                 long s = octstr_len(content->body);
@@ -448,7 +456,7 @@ static void add_kannel_version(List *headers)
 /* Add Accept-Charset: headers for stuff the WML compiler can
  * convert to UTF-8. */
 /* XXX This is not really correct, since we will not be able
- * to handle those charsets for all content types, just WML. */
+ * to handle those charsets for all content types, just WML/XHTML. */
 static void add_charset_headers(List *headers) 
 {
     long i, len;
@@ -469,8 +477,9 @@ static void add_accept_headers(List *headers)
     int i;
     
     for (i = 0; i < NUM_CONVERTERS; i++) {
-	if (http_type_accepted(headers, converters[i].result_type)
-	    && !http_type_accepted(headers, converters[i].type)) {
+	if (http_type_accepted(headers, "*/*") || (
+	    http_type_accepted(headers, converters[i].result_type)
+	    && !http_type_accepted(headers, converters[i].type))) {
 	    http_header_add(headers, "Accept", converters[i].type);
 	}
     }
@@ -544,30 +553,96 @@ static void add_x_wap_tod(List *headers)
 }
 
 
-static void add_msisdn(List *headers, WAPAddrTuple *addr_tuple) 
+static void add_msisdn(List *headers, WAPAddrTuple *addr_tuple, Octstr **url,
+		       Octstr *send_msisdn_query, Octstr *send_msisdn_header,
+		       Octstr *send_msisdn_format) 
 {
     Octstr *msisdn = NULL;
-    /* XXX DAVI: TO-DO
     Octstr *proxy_auth = NULL;
+
+    if(octstr_len(send_msisdn_query) == 0 && 
+       octstr_len(send_msisdn_header) == 0)
+	return;
+	
+    /* Security precautions */
+    if(octstr_len(send_msisdn_header)) { 
+	Octstr *value = NULL;
+	value = http_header_value(headers, send_msisdn_header);
+	if(value != NULL) 
+	    warning(0, "MSISDN header <%s> already present on request, "
+	            "probably a security atack (url=<%s>, header value=<%s>)", 
+	            octstr_get_cstr(send_msisdn_header), 
+	            octstr_get_cstr(*url), octstr_get_cstr(value));
+	http_header_remove_all(headers, octstr_get_cstr(send_msisdn_header));
+    }
+    if(octstr_len(send_msisdn_query)) {
+	if(octstr_case_search(*url, send_msisdn_query, 0) != -1)
+	    warning(0, "MSISDN parameter <%s> already present on query "
+	            "string, probably a security atack (url=<%s>)", 
+	            octstr_get_cstr(send_msisdn_query), 
+	            octstr_get_cstr(*url));
+	/* XXX DAVI: search and remove it from query */
+    }
 
     proxy_auth = http_header_find_first(headers, "Proxy-Authorization");
     if(proxy_auth) {
-        octstr_base64_to_binary(proxy_auth);
-        debug("foo", 0, "DAVI: proxy auth %s", octstr_get_cstr(proxy_auth));
-    }
-    */
+	Octstr *user, *pass;
+	long i;
 
-    /* XXX DAVI: Add generic msisdn provisioning in here! */
-    /* We do not accept NULL values to be added to the HTTP header */
-    if ((msisdn = radius_acct_get_msisdn(addr_tuple->remote->address)) != NULL) {
-        http_header_add(headers, "X-WAP-Network-Client-MSISDN", octstr_get_cstr(msisdn));
-    /* XXX DAVI: TO-DO
+	i = octstr_search_char(proxy_auth, ':', 0);
+	if(i < 0) {
+	    warning(0, "AUTH: Invalid Proxy-Authentication <%s>", 
+	            octstr_get_cstr(proxy_auth));
+	} else {
+	    user = octstr_copy(proxy_auth, 0, i);
+	    pass = octstr_copy(proxy_auth, i+1, octstr_len(proxy_auth) - i + 2);
+	    if(octstr_len(user) < 1 || octstr_len(pass) < 1) {
+		warning(0, "AUTH: Invalid Proxy-Authentication <%s>", 
+		        octstr_get_cstr(proxy_auth));
+	    } else if(1 != wsp_http_map_user(&msisdn, user, pass)) {
+		warning(0, "AUTH: Invalid user or password <%s>", 
+		        octstr_get_cstr(proxy_auth));
+	    } else {
+		debug("add_msisdn", 0, "AUTH: User <%s> is <%s>",
+		      octstr_get_cstr(proxy_auth), octstr_get_cstr(msisdn));
+	    }
+	}
+
     } else {
-        http_header_add(headers, "X-WSB-Identity", "91xxxxxxx");
-    */
+	msisdn = radius_acct_get_msisdn(addr_tuple->remote->address);
     }
 
-    octstr_destroy(msisdn);
+    if(msisdn != NULL) {
+	if(send_msisdn_format != NULL && octstr_case_compare(
+	   send_msisdn_format, octstr_imm("ericsson")) == 0) {
+	    octstr_binary_to_hex(msisdn, 1);
+	} else if(send_msisdn_format != NULL && octstr_case_compare(
+	          send_msisdn_format, octstr_imm("hash")) == 0) {
+	    /* XXX To be implemented by Stipe ;) */
+	    octstr_append(msisdn, octstr_imm("-hashed"));
+	}
+
+	if(send_msisdn_query != NULL) {
+	    Octstr *newurl = NULL;
+	    /* XXX DAVI: this needs to be refactored 
+	     * for "#" char in url! */
+	    if(octstr_search_char(*url, '?', 7) > 0) {
+		octstr_append(*url, octstr_imm("&"));
+	    } else {
+		octstr_append(*url, octstr_imm("?"));
+	    }
+	    newurl = octstr_duplicate(send_msisdn_query);
+	    octstr_append(*url, newurl);
+	    octstr_append(*url, octstr_imm("="));
+	    octstr_append(*url, msisdn);
+	}
+
+	if(send_msisdn_header != NULL)
+	    http_header_add(headers, octstr_get_cstr(send_msisdn_header), 
+	                    octstr_get_cstr(msisdn));
+
+	octstr_destroy(msisdn);
+    }
 }
 
 
@@ -654,6 +729,8 @@ static void return_reply(int status, Octstr *content_body, List *headers,
 
     sm = find_session_machine_by_id(session_id);
     device_headers = (sm ? sm->http_headers : request_headers);
+    if(device_headers == NULL)
+	device_headers = list_create();
 
     if (status < 0) {
         error(0, "WSP: http lookup failed, oops."); /* XXX DAVI: also check for empty reply */
@@ -691,7 +768,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
             if (headers == NULL)
                 headers = http_create_empty_headers();
 
-            converted = convert_content(&content, device_headers);
+            converted = convert_content(&content, device_headers, 0);
             if (converted == 1)
                 http_header_mark_transformation(headers, content.body, content.type);
 
@@ -785,7 +862,8 @@ static void return_reply(int status, Octstr *content_body, List *headers,
             content.version = NULL;
         }
 
-        converted = convert_content(&content, device_headers);
+        converted = convert_content(&content, device_headers, 
+			octstr_compare(method, octstr_imm("HEAD")) == 0);
         if (converted < 0) {
             warning(0, "WSP: All converters for `%s' at `%s' failed.",
                     octstr_get_cstr(content.type), octstr_get_cstr(url));
@@ -803,7 +881,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
                 
                 debug("wap.wsp",0,"WSP: returning smart error WML deck for failed converters");
 
-                converted = convert_content(&content, device_headers);
+                converted = convert_content(&content, device_headers, 0);
                 if (converted == 1)
                     http_header_mark_transformation(headers, content.body, content.type);
 
@@ -858,10 +936,24 @@ static void return_reply(int status, Octstr *content_body, List *headers,
         content.type = octstr_create("text/plain");
         http_header_mark_transformation(headers, content.body, content.type);
     }
+    /* remove body if request method was HEAD */
+    else if(octstr_compare(method, octstr_imm("HEAD")) == 0) {
+	octstr_destroy(content.body);
+	content.body = octstr_create("");
+	if(!http_type_accepted(request_headers, "*/*") &&
+	   !http_type_accepted(request_headers, octstr_get_cstr(content.type))) {
+	    octstr_destroy(content.type);
+	    content.type = octstr_create("text/plain");
+	}
+	debug("wsp", 0, "WSP: HEAD request, removing body, content-type is now %s", 
+			octstr_get_cstr(content.type));
+	http_header_mark_transformation(headers, content.body, content.type);
+    }
 
 #ifdef ENABLE_NOT_ACCEPTED 
     /* Returns HTTP response 406 if content-type is not supported by device */
-    if (request_headers && content.type &&
+    else if (!http_type_accepted(request_headers, "*/*") && 
+	request_headers && content.type &&
         !http_type_accepted(request_headers, octstr_get_cstr(content.type))) {
         warning(0, "WSP: content-type %s not supported", 
                 octstr_get_cstr(content.type));
@@ -970,6 +1062,8 @@ static void start_fetch(WAPEvent *event)
     int x_wap_tod;          /* X-WAP.TOD header was present in request */
     Octstr *magic_url;
     struct request_data *p;
+    Octstr *send_msisdn_query, *send_msisdn_header, *send_msisdn_format;
+    int accept_cookies;
     
     counter_increase(fetches);
     
@@ -1000,9 +1094,11 @@ static void start_fetch(WAPEvent *event)
         request_body = octstr_duplicate(p->request_body);
         method = p->method;
     }
+    info(0, "Fetching <%s>", octstr_get_cstr(url));
     
-    wsp_http_map_url(&url);
-    
+    wsp_http_map_url(&url, &send_msisdn_query, &send_msisdn_header, 
+		     &send_msisdn_format, &accept_cookies);
+
     actual_headers = list_create();
     
     if (session_headers != NULL)
@@ -1010,7 +1106,6 @@ static void start_fetch(WAPEvent *event)
     if (request_headers != NULL)
         http_header_combine(actual_headers, request_headers);
     
-    http_remove_hop_headers(actual_headers);
     x_wap_tod = http_header_remove_all(actual_headers, "X-WAP.TOD");
     add_accept_headers(actual_headers);
     add_charset_headers(actual_headers);
@@ -1019,7 +1114,8 @@ static void start_fetch(WAPEvent *event)
     add_via(actual_headers);
 
 #ifdef ENABLE_COOKIES
-    if ((session_id != -1) && 
+    /* DAVI: to finish - accept_cookies -1, use global accept-cookies, 0 = no, 1 = yes ? */
+    if (accept_cookies != 0 && (session_id != -1) &&  
         (set_cookies(actual_headers, find_session_machine_by_id(session_id)) == -1)) 
         error(0, "WSP: Failed to add cookies");
 #endif
@@ -1040,8 +1136,11 @@ static void start_fetch(WAPEvent *event)
     
     add_kannel_version(actual_headers);
     add_session_id(actual_headers, session_id);
-    add_msisdn(actual_headers, addr_tuple);
+
+    add_msisdn(actual_headers, addr_tuple, &url, send_msisdn_query, 
+	       send_msisdn_header, send_msisdn_format);
     
+    http_remove_hop_headers(actual_headers);
     http_header_pack(actual_headers);
     
     magic_url = octstr_imm("kannel:alive");
@@ -1268,76 +1367,79 @@ static List *negotiate_capabilities(List *req_caps)
  * The following code implements the map-url mechanism
  */
 
-struct wsp_http_map {
-	struct wsp_http_map *next;
-	unsigned flags;
-#define WSP_HTTP_MAP_INPREFIX	0x0001	/* prefix-match incoming string */
-#define WSP_HTTP_MAP_OUTPREFIX	0x0002	/* prefix-replace outgoing string */
-#define WSP_HTTP_MAP_INOUTPREFIX 0x0003	/* combine the two for masking */
-	char *in;
-	int in_len;
-	char *out;
-	int out_len;
+struct url_map_struct {
+	Octstr *name;
+	Octstr *url;
+	Octstr *map_url;
+	Octstr *send_msisdn_query;
+	Octstr *send_msisdn_header;
+	Octstr *send_msisdn_format;
+	int accept_cookies;
 };
+List *url_map = NULL;
 
-static struct wsp_http_map *wsp_http_map = 0;
-static struct wsp_http_map *wsp_http_map_last = 0;
+struct user_map_struct {
+	Octstr *name;
+	Octstr *user;
+	Octstr *pass;
+	Octstr *msisdn;
+};
+List *user_map = NULL;
+
 
 /*
- * Add mapping for src URL to dst URL.
+ * adds a mapping entry to map an url into an (all optional)
+ * - an description name
+ * - new url
+ * - a query-string parameter name to send msisdn, if available
+ * - an header name to send msisdn, if available
+ * - msisdn header format
+ * - accept cookies (1), not accept (0) or use global settings (-1)
  */
-static void wsp_http_map_url_do_config(char *src, char *dst)
-{
-    struct wsp_http_map *new_map;
-    int in_len = src ? strlen(src) : 0;
-    int out_len = dst ? strlen(dst) : 0;
+void wsp_http_url_map(Octstr *name, Octstr *url, Octstr *map_url,
+                      Octstr *send_msisdn_query,
+                      Octstr *send_msisdn_header,
+                      Octstr *send_msisdn_format,
+                      int accept_cookies) {
+
+    struct url_map_struct *entry;
+
+    if(url_map == NULL) 
+	url_map = list_create();
+
+    entry = gw_malloc(sizeof(*entry));
+    entry->name = name;
+    entry->url = url;
+    entry->map_url = map_url;
+    entry->send_msisdn_query = send_msisdn_query;
+    entry->send_msisdn_header = send_msisdn_header;
+    entry->send_msisdn_format = send_msisdn_format;
+    entry->accept_cookies = accept_cookies;
     
-    if (!in_len) {
-	warning(0, "wsp_http_map_url_do_config: empty incoming string");
-	return;
-    }
-    gw_assert(in_len > 0);
-    
-    new_map = gw_malloc(sizeof(*new_map));
-    new_map->next = NULL;
-    new_map->flags = 0;
-    
-    /* incoming string
-     * later, the incoming URL will be prefix-compared to new_map->in,
-     * using exactly new_map->in_len characters for comparison.
-     */
-    new_map->in = gw_strdup(src);
-    if (src[in_len-1] == '*') {
-	new_map->flags |= WSP_HTTP_MAP_INPREFIX;
-	in_len--;		/* do not include `*' in comparison */
-    } else {
-	in_len++;		/* include \0 in comparisons */
-    }
-    new_map->in_len = in_len;
-    
-    /* replacement string
-     * later, when an incoming URL matches, it will be replaced
-     * or modified according to this string. If the replacement
-     * string ends with an asterisk, and the match string indicates
-     * a prefix match (also ends with an asterisk), the trailing
-     * part of the matching URL will be appended to the replacement
-     * string, i.e. we do a prefix replacement.
-     */
-    new_map->out = gw_strdup(dst);
-    if (dst[out_len-1] == '*') {
-	new_map->flags |= WSP_HTTP_MAP_OUTPREFIX;
-	out_len--;			/* exclude `*' */
-    }
-    new_map->out_len = out_len;
-    
-    /* insert at tail of existing list */
-    if (wsp_http_map == NULL) {
-	wsp_http_map = wsp_http_map_last = new_map;
-    } else {
-	wsp_http_map_last->next = new_map;
-	wsp_http_map_last = new_map;
-    }
+    list_append(url_map, entry);
 }
+
+
+/*
+ * adds a mapping entry to map user/pass into a description
+ * name and a msisdn
+ */
+void wsp_http_user_map(Octstr *name, Octstr *user, Octstr *pass,
+                      Octstr *msisdn) {
+
+    struct user_map_struct *entry;
+
+    if(user_map == NULL) 
+	user_map = list_create();
+
+    entry = gw_malloc(sizeof(*entry));
+    entry->name = name;
+    entry->user = user;
+    entry->pass = pass;
+    entry->msisdn = msisdn;
+    list_append(user_map, entry);
+}
+
 
 /* Called during configuration read, once for each "map-url" statement.
  * Interprets parameter value as a space-separated two-tuple of src and dst.
@@ -1353,9 +1455,13 @@ void wsp_http_map_url_config(char *s)
     out = strtok(NULL, " \t");
     if (!out) 
     	return;
-    wsp_http_map_url_do_config(in, out);
+    wsp_http_url_map(octstr_imm("unknown"), 
+		     octstr_create(in),
+		     octstr_create(out),
+		     NULL, NULL, NULL, 0);
     gw_free(s);
 }
+
 
 /* Called during configuration read, this adds a mapping for the source URL
  * "DEVICE:home", to the given destination. The mapping is configured
@@ -1363,96 +1469,167 @@ void wsp_http_map_url_config(char *s)
  */
 void wsp_http_map_url_config_device_home(char *to)
 {
-    int len;
-    char *newto = 0;
-    
-    if (!to)
-	return;
-    len = strlen(to);
-    if (to[len] != '*') {
-	newto = gw_malloc(len+2);
-	strcpy(newto, to);
-	newto[len] = '*';
-	newto[len+1] = '\0';
-	to = newto;
-    }
-    wsp_http_map_url_do_config("DEVICE:home*", to);
-    if (newto)
-	gw_free(newto);
+    wsp_http_url_map(octstr_imm("Device Home"), 
+		     octstr_imm("DEVICE:home*"),
+		     octstr_create(to),
+		     NULL, NULL, NULL, -1);
 }
+
 
 /* show mapping list at info level, after configuration is done. */
 void wsp_http_map_url_config_info(void)
 {
-    struct wsp_http_map *run;
-    
-    for (run = wsp_http_map; run; run = run->next) {
-	char *s1 = (run->flags & WSP_HTTP_MAP_INPREFIX)  ? "*" : "";
-	char *s2 = (run->flags & WSP_HTTP_MAP_OUTPREFIX) ? "*" : "";
-	info(0, "map-url %.*s%s %.*s%s",
-	     run->in_len, run->in, s1,
-	     run->out_len, run->out, s2);
+    long i;
+    for(i=0; url_map && i < list_len(url_map); i++) {
+	struct url_map_struct *entry;
+	entry = list_get(url_map, i);
+	info(0, "WSP: Added wap-url-map, name <%s>, url <%s>, map-url <%s>, "
+		"send-msisdn-query <%s>, send-msisdn-header <%s>, "
+		"send-msisdn-format <%s>, accept-cookies <%d>", 
+	        octstr_get_cstr(entry->name), octstr_get_cstr(entry->url), 
+	        octstr_get_cstr(entry->map_url), 
+	        octstr_get_cstr(entry->send_msisdn_query), 
+	        octstr_get_cstr(entry->send_msisdn_header), 
+	        octstr_get_cstr(entry->send_msisdn_format), 
+	        entry->accept_cookies);
     }
 }
 
-/* Search list of mappings for the given URL, returning the map structure. */
-static struct wsp_http_map *wsp_http_map_find(char *s)
+
+/* show mapping list at info level, after configuration is done. */
+void wsp_http_map_user_config_info(void)
 {
-    struct wsp_http_map *run;
-    
-    for (run = wsp_http_map; run; run = run->next)
-    if (0 == strncasecmp(s, run->in, run->in_len))
-	break;
-    if (run) {
-	debug("wap.wsp.http", 0, "WSP: found mapping for url <%s>", s);
+    long i;
+    for(i=0; user_map && i < list_len(user_map); i++) {
+	struct user_map_struct *entry;
+	entry = list_get(user_map, i);
+	info(0, "WSP: Added wap-user-map, name <%s>, user <%s>, pass <%s>, "
+		"msisdn <%s>", octstr_get_cstr(entry->name), 
+	        octstr_get_cstr(entry->user), octstr_get_cstr(entry->pass), 
+	        octstr_get_cstr(entry->msisdn));
     }
-    return run;
 }
+
 
 /* 
  * Maybe rewrite URL, if there is a mapping. This is where the runtime
  * lookup comes in (called from further down this file, wsp_http.c)
  */
-static void wsp_http_map_url(Octstr **osp)
+static void wsp_http_map_url(Octstr **osp, Octstr **send_msisdn_query, 
+			     Octstr **send_msisdn_header, 
+			     Octstr **send_msisdn_format, int *accept_cookies)
 {
-    struct wsp_http_map *map;
-    Octstr *old = *osp;
-    char *oldstr = octstr_get_cstr(old);
-    
-    map = wsp_http_map_find(oldstr);
-    if (!map)
-        return;
+    long i;
+    Octstr *newurl, *tmp1, *tmp2;
 
-    *osp = octstr_create_from_data(map->out, map->out_len);
+    newurl = tmp1 = tmp2 = NULL;
+    *send_msisdn_query = *send_msisdn_header = *send_msisdn_format = NULL;
+    *accept_cookies = -1;
 
-    /* 
-     * If both prefix flags are set, append tail of incoming URL
-     * to outgoing URL.
-     */
-    if (WSP_HTTP_MAP_INOUTPREFIX == (map->flags & WSP_HTTP_MAP_INOUTPREFIX))
-        octstr_append_cstr(*osp, oldstr + map->in_len);
-    debug("wap.wsp.http", 0, "WSP: url <%s> mapped to <%s>",
-          oldstr, octstr_get_cstr(*osp));
-    octstr_destroy(old);
+    debug("wsp", 0, "WSP: mapping url <%s>", octstr_get_cstr(*osp));
+    for(i=0; url_map && i < list_len(url_map); i++) {
+	struct url_map_struct *entry;
+	entry = list_get(url_map, i);
+
+	/* debug("wsp", 0, "WSP: matching <%s> with <%s>", 
+	      octstr_get_cstr(entry->url), octstr_get_cstr(entry->map_url)); */
+
+	/* DAVI: I only have '*' terminated entry->url implementation for now */
+	tmp1 = octstr_duplicate(entry->url);
+	octstr_delete(tmp1, octstr_len(tmp1)-1, 1); /* remove last '*' */
+	tmp2 = octstr_copy(*osp, 0, octstr_len(tmp1));
+
+	debug("wsp", 0, "WSP: matching <%s> with <%s>", 
+	      octstr_get_cstr(tmp1), octstr_get_cstr(tmp2));
+
+	if(octstr_case_compare(tmp2, tmp1) == 0) {
+	    /* rewrite url if configured to do so */
+	    if(entry->map_url != NULL) {
+	        if(octstr_get_char(entry->map_url, 
+		   octstr_len(entry->map_url)-1) == '*') {
+		    newurl = octstr_duplicate(entry->map_url);
+		    octstr_delete(newurl, octstr_len(newurl)-1, 1);
+		    octstr_append(newurl, octstr_copy(*osp, 
+				  octstr_len(entry->url)-1, 
+				  octstr_len(*osp)-octstr_len(entry->url)+1));
+	        } else {
+		    newurl = octstr_duplicate(entry->map_url);
+	        }
+		debug("wsp", 0, "WSP: URL Rewriten from <%s> to <%s>", 
+		      octstr_get_cstr(*osp), octstr_get_cstr(newurl));
+	        octstr_destroy(*osp);
+	        *osp = newurl;
+	    }
+	    *accept_cookies = entry->accept_cookies;
+	    *send_msisdn_query = octstr_duplicate(entry->send_msisdn_query);
+	    *send_msisdn_header = octstr_duplicate(entry->send_msisdn_header);
+	    *send_msisdn_format = octstr_duplicate(entry->send_msisdn_format);
+	    break;
+	}
+	octstr_destroy(tmp1);
+	octstr_destroy(tmp2);
+    }
+}
+
+
+/* 
+ * converts user and pass in msisdn
+ */
+static int wsp_http_map_user(Octstr **msisdn, Octstr *user, Octstr *pass)
+{
+    long i;
+    struct user_map_struct *entry;
+
+    for(i=0; user_map && i < list_len(user_map); i++) {
+	entry = list_get(user_map, i);
+	if(octstr_compare(user, entry->user)==0 && 
+	   octstr_compare(pass, entry->pass)==0) {
+	    *msisdn = octstr_duplicate(entry->msisdn);
+	    return 1;
+	}
+    }
+    return 0;
 }
 
 
 void wsp_http_map_destroy(void) 
 {
-    struct wsp_http_map *p, *q;
-    p = wsp_http_map;
-    
-    while (p != NULL) {
-	q = p;
-	if (q -> in) 
-	    gw_free (q -> in);
-	if (q -> out) 
-	    gw_free (q -> out);
-	p = q -> next;
-	gw_free (q);
-    }
-    wsp_http_map = wsp_http_map_last = NULL;
+    long i;
+    struct url_map_struct *entry;
+
+    if(url_map != NULL) {
+	for(i=0; i < list_len(url_map); i++) {
+	    entry = list_get(url_map, i);
+	    octstr_destroy(entry->name);
+	    octstr_destroy(entry->url);
+	    octstr_destroy(entry->map_url);
+	    octstr_destroy(entry->send_msisdn_query);
+	    octstr_destroy(entry->send_msisdn_header);
+	    octstr_destroy(entry->send_msisdn_format);
+	}
+	list_destroy(url_map, NULL);
+   }
+   url_map = NULL;
 }
+
+
+void wsp_http_map_user_destroy(void) 
+{
+    long i;
+    struct user_map_struct *entry;
+    if(user_map != NULL) {
+	for(i=0; i < list_len(user_map); i++) {
+	    entry = list_get(user_map, i);
+	    octstr_destroy(entry->name);
+	    octstr_destroy(entry->user);
+	    octstr_destroy(entry->pass);
+	    octstr_destroy(entry->msisdn);
+	}
+	list_destroy(user_map, NULL);
+   }
+   user_map = NULL;
+}
+
 
 /*
  * Ota submodule implements indications, responses and confirmations part of 

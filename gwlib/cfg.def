@@ -59,6 +59,8 @@ SINGLE_GROUP(core,
 SINGLE_GROUP(wapbox,
     OCTSTR(bearerbox-host)
     OCTSTR(timer-freq)
+    OCTSTR(url-map)
+    /* to be deprecated (begin) */
     OCTSTR(map-url)
     OCTSTR(map-url-max)
     OCTSTR(map-url-0)
@@ -71,6 +73,7 @@ SINGLE_GROUP(wapbox,
     OCTSTR(map-url-7)
     OCTSTR(map-url-8)
     OCTSTR(map-url-9)
+    /* to be deprecated (end) */
     OCTSTR(device-home)
     OCTSTR(log-file)
     OCTSTR(log-level)
@@ -79,6 +82,25 @@ SINGLE_GROUP(wapbox,
     OCTSTR(access-log)
     OCTSTR(concatenation)
     OCTSTR(max-messages)
+)
+
+
+MULTI_GROUP(wap-url-map,
+    OCTSTR(name)
+    OCTSTR(url)
+    OCTSTR(map-url)
+    OCTSTR(send-msisdn-query)
+    OCTSTR(send-msisdn-header)
+    OCTSTR(send-msisdn-format)
+    OCTSTR(accept-cookies)
+)
+
+
+MULTI_GROUP(wap-user-map,
+    OCTSTR(name)
+    OCTSTR(user)
+    OCTSTR(pass)
+    OCTSTR(msisdn)
 )
 
 

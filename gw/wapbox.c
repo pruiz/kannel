@@ -28,6 +28,9 @@
 #endif
 #include "radius/radius_acct.h"
 
+static void config_reload(int reload);
+static long logfilelevel=-1;
+
 enum {
     CONNECTIONLESS_PORT = 9200,
     CONNECTION_ORIENTED_PORT = 9201,
@@ -44,6 +47,7 @@ static long bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static int bearerbox_ssl = 0;
 static Counter *sequence_counter = NULL;
 static long timer_freq = DEFAULT_TIMER_FREQ;
+static Octstr *config_filename;
 
 /* smart error messaging related globals */
 int wsp_smart_errors = 0;
@@ -62,15 +66,7 @@ static Cfg *init_wapbox(Cfg *cfg)
 {
     CfgGroup *grp;
     Octstr *s;
-    long i;
     Octstr *logfile;
-    long logfilelevel;
-    Octstr *http_proxy_host;
-    long http_proxy_port;
-    List *http_proxy_exceptions;
-    Octstr *http_proxy_username;
-    Octstr *http_proxy_password;
-    long map_url_max;
 
     cfg_dump(cfg);
     
@@ -87,25 +83,11 @@ static Cfg *init_wapbox(Cfg *cfg)
     cfg_get_bool(&bearerbox_ssl, grp, octstr_imm("wapbox-port-ssl"));
 #endif /* HAVE_LIBSSL */
     
-    http_proxy_host = cfg_get(grp, octstr_imm("http-proxy-host"));
-    http_proxy_port =  -1;
-    cfg_get_integer(&http_proxy_port, grp, octstr_imm("http-proxy-port"));
-    http_proxy_username = cfg_get(grp, octstr_imm("http-proxy-username"));
-    http_proxy_password = cfg_get(grp, octstr_imm("http-proxy-password"));
-    http_proxy_exceptions = cfg_get_list(grp, octstr_imm("http-proxy-exceptions"));
-    if (http_proxy_host != NULL && http_proxy_port > 0) {
-        http_use_proxy(http_proxy_host, http_proxy_port, 
-                       http_proxy_exceptions, http_proxy_username, 
-                       http_proxy_password);
-    }
-
+    /* load parameters that could be later reloaded */
+    config_reload(0);
+    
     conn_config_ssl (grp);
 
-    octstr_destroy(http_proxy_host);
-    octstr_destroy(http_proxy_username);
-    octstr_destroy(http_proxy_password);
-    list_destroy(http_proxy_exceptions, octstr_destroy_item);
-      
     /*
      * And the rest of the pull info comes from the wapbox group.
      */
@@ -116,10 +98,8 @@ static Cfg *init_wapbox(Cfg *cfg)
     bearerbox_host = cfg_get(grp, octstr_imm("bearerbox-host"));
     if (cfg_get_integer(&timer_freq, grp, octstr_imm("timer-freq")) == -1)
         timer_freq = DEFAULT_TIMER_FREQ;
-    
+
     logfile = cfg_get(grp, octstr_imm("log-file"));
-    if (cfg_get_integer(&logfilelevel, grp, octstr_imm("log-level")) == -1)
-    	logfilelevel = 0;
     if (logfile != NULL) {
         log_open(octstr_get_cstr(logfile), logfilelevel, GW_NON_EXCL);
         info(0, "Starting to log to file %s level %ld", 
@@ -151,38 +131,6 @@ static Cfg *init_wapbox(Cfg *cfg)
     } else {
         debug("wap", 0, "Could not open access-log");
     }
-
-    /* configure URL mappings */
-    map_url_max = -1;
-    cfg_get_integer(&map_url_max, grp, octstr_imm("map-url-max"));
-	
-    if ((device_home = cfg_get(grp, octstr_imm("device-home"))) != NULL) {
-        wsp_http_map_url_config_device_home(octstr_get_cstr(device_home));
-    }
-    if ((s = cfg_get(grp, octstr_imm("map-url"))) != NULL) {
-        wsp_http_map_url_config(octstr_get_cstr(s));
-        octstr_destroy(s);
-    }
-    debug("wap", 0, "map_url_max = %ld", map_url_max);
-
-    for (i = 0; i <= map_url_max; i++) {
-        Octstr *name;
-	
-        name = octstr_format("map-url-%d", i);
-        if ((s = cfg_get(grp, name)) != NULL)
-            wsp_http_map_url_config(octstr_get_cstr(s));
-        octstr_destroy(name);
-    }
-    wsp_http_map_url_config_info();	/* debugging aid */
-
-    /* 
-     * users may define 'smart-errors' to have WML decks returned with
-     * error information instread of signaling using the HTTP reply codes
-     */
-    cfg_get_bool(&wsp_smart_errors, grp, octstr_imm("smart-errors"));
-    if (cfg_get_bool(&concatenation, grp, octstr_imm("concatenation")) < 0)
-        concatenation = 1;
-    cfg_get_integer(&max_messages, grp, octstr_imm("max-messages"));
 
     /* configure the 'wtls' group */
 #if (HAVE_WTLS_OPENSSL)
@@ -265,6 +213,7 @@ static void signal_handler(int signum)
     
         case SIGHUP:
             warning(0, "SIGHUP received, catching and re-opening logs");
+            config_reload(1);
             log_reopen();
             break;
     
@@ -376,8 +325,8 @@ static Msg *pack_sms_datagram(WAPEvent *dgram)
     msg->sms.mwi = MWI_UNDEF;
     msg->sms.coding = DC_8BIT;
     msg->sms.mclass = MC_UNDEF;
-    msg->sms.validity = 0;
-    msg->sms.deferred = 0;
+    msg->sms.validity = -1;
+    msg->sms.deferred = -1;
     msg->sms.service = octstr_duplicate(dgram->u.T_DUnitdata_Req.service_name);
     
     return msg;   
@@ -440,12 +389,186 @@ static void dispatch_datagram(WAPEvent *dgram)
     wap_event_destroy(dgram);
 }
 
+static void config_reload(int reload) {
+    Cfg *cfg;
+    CfgGroup *grp;
+    List *groups;
+    long map_url_max;
+    Octstr *s;
+    long i;
+    long new_value;
+    int new_bool;
+    Octstr *http_proxy_host;
+    long http_proxy_port;
+    List *http_proxy_exceptions;
+    Octstr *http_proxy_username;
+    Octstr *http_proxy_password;
+    int warn_map_url = 0;
+
+    /* XXX TO-DO: if(reload) implement wapbox.suspend/mutex.lock */
+    
+    if(reload)
+	debug("config_reload", 0, "Reloading configuration");
+    /* NOTE: we could lstat config file and only reload if it was modified, 
+     * but as we have a include directive, we don't know every file's
+     * timestamp at this point
+     */
+
+    cfg = cfg_create(config_filename);
+
+    if (cfg_read(cfg) == -1) {
+	warning(0, "Couldn't %sload configuration from `%s'.", 
+                   (reload ? "re" : ""),
+                   octstr_get_cstr(config_filename));
+    	return;
+    }
+
+    grp = cfg_get_single_group(cfg, octstr_imm("core"));
+
+    http_proxy_host = cfg_get(grp, octstr_imm("http-proxy-host"));
+    http_proxy_port =  -1;
+    cfg_get_integer(&http_proxy_port, grp, octstr_imm("http-proxy-port"));
+    http_proxy_username = cfg_get(grp, octstr_imm("http-proxy-username"));
+    http_proxy_password = cfg_get(grp, octstr_imm("http-proxy-password"));
+    http_proxy_exceptions = cfg_get_list(grp, octstr_imm("http-proxy-exceptions"));
+    if (http_proxy_host != NULL && http_proxy_port > 0) {
+        http_use_proxy(http_proxy_host, http_proxy_port, 
+                       http_proxy_exceptions, http_proxy_username, 
+                       http_proxy_password);
+    }
+    octstr_destroy(http_proxy_host);
+    octstr_destroy(http_proxy_username);
+    octstr_destroy(http_proxy_password);
+    list_destroy(http_proxy_exceptions, octstr_destroy_item);
+      
+
+    grp = cfg_get_single_group(cfg, octstr_imm("wapbox"));
+    if (grp == NULL) {
+        warning(0, "No 'wapbox' group in configuration.");
+	return;
+    }
+    
+    if (cfg_get_integer(&new_value, grp, octstr_imm("log-level")) != -1 &&
+	new_value != logfilelevel) {
+	if(reload)
+	    info(0, "Changing log level from %ld to %ld", logfilelevel, 
+		    new_value);
+	log_set_log_level(new_value);
+	logfilelevel = new_value;
+    }
+
+    /* 
+     * users may define 'smart-errors' to have WML decks returned with
+     * error information instread of signaling using the HTTP reply codes
+     */
+    new_bool = 0;
+    cfg_get_bool(&new_bool, grp, octstr_imm("smart-errors"));
+    if(reload && new_bool != wsp_smart_errors) {
+	info(0, "<smart-errors> is now %s", 
+	     (new_bool ? "activated" : "deactivated"));
+    }
+    wsp_smart_errors = new_bool;
+
+
+    /* XXX Comment me!
+     */
+    new_bool = 0;
+    if (cfg_get_bool(&new_bool, grp, octstr_imm("concatenation")) < 0)
+        new_bool = 1;
+    if(reload && new_bool != concatenation) {
+	info(0, "<concatenation> is now %s", 
+	     (new_bool ? "activated" : "deactivated"));
+    }
+    concatenation = new_bool;
+
+
+    /* XXX Comment me!
+     */
+    new_value = 0;
+    cfg_get_integer(&new_value, grp, octstr_imm("max-messages"));
+    if(reload && new_value != max_messages) {
+	info(0, "<max-messages> are now %ld", new_value);
+    }
+    max_messages = new_value;
+
+
+    /* configure URL mappings */
+    map_url_max = -1;
+    cfg_get_integer(&map_url_max, grp, octstr_imm("map-url-max"));
+    if(map_url_max > 0)
+	warn_map_url=1;
+    if(reload) {  /* clear old map */
+	wsp_http_map_destroy();
+	wsp_http_map_user_destroy();
+    }
+	
+    if ((device_home = cfg_get(grp, octstr_imm("device-home"))) != NULL) {
+        wsp_http_map_url_config_device_home(octstr_get_cstr(device_home));
+    }
+    if ((s = cfg_get(grp, octstr_imm("map-url"))) != NULL) {
+	warn_map_url=1;
+        wsp_http_map_url_config(octstr_get_cstr(s));
+        octstr_destroy(s);
+    }
+    debug("wap", 0, "map_url_max = %ld", map_url_max);
+
+    for (i = 0; i <= map_url_max; i++) {
+        Octstr *name;
+
+	warn_map_url=1;
+        name = octstr_format("map-url-%d", i);
+        if ((s = cfg_get(grp, name)) != NULL)
+            wsp_http_map_url_config(octstr_get_cstr(s));
+        octstr_destroy(name);
+    }
+
+    if(warn_map_url)
+	warning(0, "<map-url> and related are deprecated, please use wap-url-map group");
+
+
+    if( (groups = cfg_get_multi_group(cfg, octstr_imm("wap-url-map"))) != NULL) {
+    	for(i=0; i<list_len(groups); i++) {
+	    Octstr *name, *url, *map_url, *send_msisdn_query;
+	    Octstr *send_msisdn_header, *send_msisdn_format;
+	    int accept_cookies;
+
+	    grp = list_get(groups, i);
+	    name = cfg_get(grp, octstr_imm("name"));
+	    url = cfg_get(grp, octstr_imm("url"));
+	    map_url = cfg_get(grp, octstr_imm("map-url"));
+	    send_msisdn_query = cfg_get(grp, octstr_imm("send-msisdn-query"));
+	    send_msisdn_header = cfg_get(grp, octstr_imm("send-msisdn-header"));
+	    send_msisdn_format = cfg_get(grp, octstr_imm("send-msisdn-format"));
+	    accept_cookies = -1;
+	    cfg_get_bool(&accept_cookies, grp, octstr_imm("accept-cookies"));
+	    wsp_http_url_map(name, url, map_url, send_msisdn_query, send_msisdn_header,
+			     send_msisdn_format, accept_cookies);
+	}
+    }
+    wsp_http_map_url_config_info();	/* debugging aid */
+
+    if( (groups = cfg_get_multi_group(cfg, octstr_imm("wap-user-map"))) != NULL) {
+    	for(i=0; i<list_len(groups); i++) {
+	    Octstr *name, *user, *pass, *msisdn;
+	    grp = list_get(groups, i);
+	    name = cfg_get(grp, octstr_imm("name"));
+	    user = cfg_get(grp, octstr_imm("user"));
+	    pass = cfg_get(grp, octstr_imm("pass"));
+	    msisdn = cfg_get(grp, octstr_imm("msisdn"));
+	    wsp_http_user_map(name, user, pass, msisdn);
+	}
+    }
+    wsp_http_map_user_config_info();	/* debugging aid */
+
+    cfg_destroy(cfg);
+    /* XXX TO-DO: if(reload) implement wapbox.resume/mutex.unlock */
+}
+
 int main(int argc, char **argv) 
 {
     int cf_index;
     int restart = 0;
     Msg *msg;
-    Octstr *filename;
     Cfg *cfg;
     double heartbeat_freq =  DEFAULT_HEARTBEAT;
     
@@ -455,16 +578,14 @@ int main(int argc, char **argv)
     setup_signal_handlers();
     
     if (argv[cf_index] == NULL)
-        filename = octstr_create("kannel.conf");
+        config_filename = octstr_create("kannel.conf");
     else
-        filename = octstr_create(argv[cf_index]);
-    cfg = cfg_create(filename);
+        config_filename = octstr_create(argv[cf_index]);
+    cfg = cfg_create(config_filename);
 
     if (cfg_read(cfg) == -1)
-        panic(0, "Couldn't read configuration from `%s'.", octstr_get_cstr(filename));
+        panic(0, "Couldn't read configuration from `%s'.", octstr_get_cstr(config_filename));
 
-    octstr_destroy(filename);
-    
     report_versions("wapbox");
 
     cfg = init_wapbox(cfg);
@@ -592,6 +713,7 @@ int main(int argc, char **argv)
     wml_shutdown();
     close_connection_to_bearerbox();
     wsp_http_map_destroy();
+    wsp_http_map_user_destroy();
     octstr_destroy(device_home);
     octstr_destroy(bearerbox_host);
 

@@ -204,6 +204,13 @@ void http_use_proxy(Octstr *hostname, int port, List *exceptions,
     http_close_proxy();
     mutex_lock(proxy_mutex);
 
+    /* Clear values to enable reloading */
+    octstr_destroy(proxy_hostname);
+    octstr_destroy(proxy_username);
+    octstr_destroy(proxy_password);
+    if(proxy_exceptions)
+        list_destroy(proxy_exceptions, octstr_destroy_item);
+
     proxy_hostname = octstr_duplicate(hostname);
     proxy_port = port;
     proxy_exceptions = list_create();
@@ -2624,7 +2631,8 @@ void http_header_mark_transformation(List *headers,
     /* Add headers that we need to describe the new body. */
     new_length = octstr_format("%ld", octstr_len(new_body));
     http_header_add(headers, "Content-Length", octstr_get_cstr(new_length));
-    http_header_add(headers, "Content-Type", octstr_get_cstr(new_type));
+    if(octstr_len(new_type))
+	http_header_add(headers, "Content-Type", octstr_get_cstr(new_type));
 
     /* Perhaps we should add Warning: 214 "Transformation applied" too? */
 

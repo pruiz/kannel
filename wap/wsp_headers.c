@@ -615,6 +615,48 @@ static Octstr *unpack_credentials(ParseContext *context)
     return decoded;
 }
 
+/* Credentials is defined in 8.4.2.5 
+ * but as Proxy-Authentication is to be used by kannel, 
+ * a simplier to parse version is used here */
+static Octstr *proxy_unpack_credentials(ParseContext *context)
+{
+    Octstr *decoded = NULL;
+    int val;
+
+    val = parse_peek_char(context);
+
+    if (val == BASIC_AUTHENTICATION) {
+        Octstr *userid, *password;
+
+        parse_skip(context, 1);
+
+        userid = parse_get_nul_string(context);
+        password = parse_get_nul_string(context);
+
+        if (parse_error(context)) {
+            octstr_destroy(userid);
+            octstr_destroy(password);
+        } else {
+            /* Create the user-pass cookie */
+            decoded = octstr_duplicate(userid);
+            octstr_append_char(decoded, ':');
+            octstr_append(decoded, password);
+            octstr_destroy(userid);
+            octstr_destroy(password);
+        }
+    } else if (val >= 32 && val < 128) {
+        /* Generic authentication scheme */
+        decoded = parse_get_nul_string(context);
+        if (decoded)
+            unpack_broken_parameters(context, decoded);
+    }
+
+    if (!decoded)
+        warning(0, "Cannot parse credentials.");
+
+    return decoded;
+}
+
 /* Challenge is defined in 8.4.2.5 */
 static Octstr *unpack_challenge(ParseContext *context)
 {
@@ -1099,8 +1141,11 @@ void wsp_unpack_well_known_field(List *unpacked, int field_type,
             break;
 
         case WSP_HEADER_AUTHORIZATION:
-        case WSP_HEADER_PROXY_AUTHORIZATION:
             decoded = unpack_credentials(context);
+            break;
+
+        case WSP_HEADER_PROXY_AUTHORIZATION:
+            decoded = proxy_unpack_credentials(context);
             break;
 
         case WSP_HEADER_CACHE_CONTROL:
@@ -1144,7 +1189,7 @@ void wsp_unpack_well_known_field(List *unpacked, int field_type,
             }
             break;
 
-        case WSP_HEADER_PROXY_AUTHENTICATE:
+        /* case WSP_HEADER_PROXY_AUTHENTICATE: */
         case WSP_HEADER_WWW_AUTHENTICATE:
             decoded = unpack_challenge(context);
             break;
@@ -1364,8 +1409,8 @@ struct headerinfo headerinfo[] =
         { WSP_HEADER_LOCATION, pack_uri, 0 },
         { WSP_HEADER_MAX_FORWARDS, wsp_pack_integer_string, 0 },
         { WSP_HEADER_PRAGMA, pack_pragma, LIST },
-        { WSP_HEADER_PROXY_AUTHENTICATE, pack_challenge, BROKEN_LIST },
-        { WSP_HEADER_PROXY_AUTHORIZATION, pack_credentials, BROKEN_LIST },
+        /* { WSP_HEADER_PROXY_AUTHENTICATE, pack_challenge, BROKEN_LIST }, */
+        /* { WSP_HEADER_PROXY_AUTHORIZATION, proxy_pack_credentials, BROKEN_LIST }, */
         { WSP_HEADER_PUBLIC, pack_method, LIST },
         { WSP_HEADER_RANGE, pack_range, 0 },
         { WSP_HEADER_REFERER, pack_uri, 0 },
@@ -1385,6 +1430,7 @@ struct headerinfo headerinfo[] =
         { WSP_HEADER_X_WAP_APPLICATION_ID, wsp_pack_integer_string, 0},
         { WSP_HEADER_CONTENT_ID, wsp_pack_text, 0},
         { WSP_HEADER_ENCODING_VERSION, wsp_pack_version_value, 0 }
+        // DAVI { WSP_HEADER_SET_COOKIE, pack_version_value, 0 }
     };
 
 static Parameter *parm_create(Octstr *key, Octstr *value)
