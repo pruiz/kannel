@@ -246,6 +246,39 @@ static Octstr *extract_msgdata_part(Octstr *msgdata, Octstr *split_chars,
 }
 
 
+static Octstr *extract_msgdata_part_by_coding(Msg *msg, Octstr *split_chars,
+											  int max_part_len)
+{
+	Octstr *temp = NULL;
+	int pos, esc_count;
+
+	if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
+        /* nothing to do here, just call the original extract_msgdata_part */
+		return extract_msgdata_part(msg->sms.msgdata, split_chars, max_part_len);
+	}
+
+	/* 
+     * else we need to do something special. I'll just get charset_gsm_truncate to
+     * cut the string to the required length and then count real characters. 
+     */
+	temp = octstr_duplicate(msg->sms.msgdata);
+	charset_latin1_to_gsm(temp);
+	charset_gsm_truncate(temp, max_part_len);
+	
+	pos = esc_count = 0;
+
+	while ((pos = octstr_search_char(temp, 27, pos)) != -1) {
+		++pos;
+    	++esc_count;
+	}
+
+	octstr_destroy(temp);
+
+	/* now just call the original extract_msgdata_part with the new length */
+	return extract_msgdata_part(msg->sms.msgdata, split_chars, max_part_len - esc_count);
+}
+
+
 List *sms_split(Msg *orig, Octstr *header, Octstr *footer, 
 		       Octstr *nonlast_suffix, Octstr *split_chars, 
 		       int catenate, int msg_sequence, int max_messages,
@@ -254,8 +287,7 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
     long max_part_len, udh_len, hf_len, nlsuf_len;
     long total_messages, msgno, last;
     List *list;
-    Msg *part;
-    Octstr *msgdata;
+    Msg *part, *temp;
 
     hf_len = octstr_len(header) + octstr_len(footer);
     nlsuf_len = octstr_len(nonlast_suffix);
@@ -266,7 +298,7 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
 	max_part_len = max_octets - udh_len - hf_len;
     else
 	max_part_len = max_octets * 8 / 7 - (udh_len * 8 + 6) / 7 - hf_len;
-    if (octstr_len(orig->sms.msgdata) > max_part_len && catenate) {
+    if (sms_msgdata_len(orig) > max_part_len && catenate) {
 	/* Change part length to take concatenation overhead into account */
 	if (udh_len == 0)
 	    udh_len = 1;  /* To add the udh total length octet */
@@ -277,7 +309,7 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
 	    max_part_len = max_octets * 8 / 7 - (udh_len * 8 + 6) / 7 - hf_len;
     }
 
-    msgdata = octstr_duplicate(orig->sms.msgdata);
+    temp = msg_duplicate(orig);
     msgno = 0;
     list = list_create();
     do {
@@ -291,12 +323,12 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
            part->sms.dlr_mask = 0;
         }
 	octstr_destroy(part->sms.msgdata);
-	if (octstr_len(msgdata) <= max_part_len || msgno == max_messages) {
-	    part->sms.msgdata = octstr_copy(msgdata, 0, max_part_len);
+	if (sms_msgdata_len(temp) <= max_part_len || msgno == max_messages) {
+	    part->sms.msgdata = octstr_copy(temp->sms.msgdata, 0, max_part_len);
 	    last = 1;
 	}
 	else {
-	    part->sms.msgdata = extract_msgdata_part(msgdata, split_chars,
+	    part->sms.msgdata = extract_msgdata_part_by_coding(temp, split_chars,
 						     max_part_len - nlsuf_len);
 	    last = 0;
 	}
@@ -309,7 +341,7 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
 	list_append(list, part);
     } while (!last);
     total_messages = msgno;
-    octstr_destroy(msgdata);
+    msg_destroy(temp);
     if (catenate && total_messages > 1) {
         for (msgno = 1; msgno <= total_messages; msgno++) {
 	    part = list_get(list, msgno - 1);
