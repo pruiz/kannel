@@ -153,6 +153,7 @@ struct SMSCenter {
 	char *at_pin;
 	List *at_received;
 	Octstr *at_inbuffer;
+	char *at_validityperiod;
 	
 	/* For buffering input. */
 	char *buffer;
@@ -272,7 +273,8 @@ void ois_delete_queue(SMSCenter *smsc);
 /*
  * Interface to wireless modems using AT commands.
  */
-SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin);
+SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin,
+    	    	   char *validityperiod);
 int at_reopen(SMSCenter *smsc);
 int at_close(SMSCenter *smsc);
 int at_pending_smsmessage(SMSCenter *smsc);

@@ -126,6 +126,7 @@ SMSCenter *smscenter_construct(void)
     smsc->at_received = NULL;
     smsc->at_inbuffer = NULL;
     smsc->at_pin = NULL;
+    smsc->at_validityperiod = NULL;
 
     /* add new SMSCes here */
 
@@ -512,7 +513,7 @@ SMSCenter *smsc_open(CfgGroup *grp)
     Octstr *alt_chars, *allow_ip;
     Octstr *smpp_system_id, *smpp_system_type, *smpp_address_range;
     Octstr *sema_smscnua, *sema_homenua, *sema_report;
-    Octstr *at_modemtype, *at_pin;
+    Octstr *at_modemtype, *at_pin, *at_validityperiod;
 
     long iwaitreport;
     long port, receive_port, our_port;
@@ -587,6 +588,7 @@ SMSCenter *smsc_open(CfgGroup *grp)
 
     at_modemtype = cfg_get(grp, octstr_imm("modemtype"));
     at_pin = cfg_get(grp, octstr_imm("pin"));
+    at_validityperiod = cfg_get(grp, octstr_imm("validityperiod"));
 
     smsc = NULL;
 
@@ -685,7 +687,9 @@ SMSCenter *smsc_open(CfgGroup *grp)
         else
             smsc = at_open(octstr_get_cstr(device), 
 	    	    	   at_modemtype ? octstr_get_cstr(at_modemtype) : 0, 
-			   at_pin ? octstr_get_cstr(at_pin) : 0);
+			   at_pin ? octstr_get_cstr(at_pin) : 0,
+	    	    	   at_validityperiod ? 
+			       octstr_get_cstr(at_validityperiod) : 0);
         break;
 
         /* add new SMSCes here */
@@ -727,6 +731,7 @@ SMSCenter *smsc_open(CfgGroup *grp)
     octstr_destroy(sema_report);
     octstr_destroy(at_modemtype);
     octstr_destroy(at_pin);
+    octstr_destroy(at_validityperiod);
     return smsc;
 }
 

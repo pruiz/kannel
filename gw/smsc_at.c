@@ -46,7 +46,7 @@ static int send_modem_command(int fd, char *cmd, int multiline);
 static int pdu_extract(SMSCenter *smsc, Octstr **ostr);
 static Msg *pdu_decode(Octstr *data);
 static Msg *pdu_decode_deliver_sm(Octstr *data);
-static int pdu_encode(Msg *msg, unsigned char *pdu);
+static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc);
 static Octstr *convertpdu(Octstr *pdutext);
 static int hexchar(char hexc);
 static int encode7bituncompressed(Octstr *input, unsigned char *encoded);
@@ -130,7 +130,9 @@ error:
 /******************************************************************************
  * Open the (Virtual) SMSCenter
  */
-SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin) {
+SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin,
+    	    	   char *validityperiod) 
+{
 	SMSCenter *smsc;
 	char setpin[20];
 	int ret;
@@ -141,6 +143,8 @@ SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin) {
 
 	smsc->type = SMSC_TYPE_AT;
 	smsc->at_serialdevice = gw_strdup(serialdevice);
+	if (validityperiod != NULL)
+	    smsc->at_validityperiod = gw_strdup(validityperiod);
 	smsc->at_modemtype = gw_strdup(modemtype);
 	if(pin)
 		smsc->at_pin = gw_strdup(pin);
@@ -272,7 +276,7 @@ int at_submit_msg(SMSCenter *smsc, Msg *msg) {
 		strcpy(sc, "00");
 	
 	if(msg_type(msg)==sms) {
-		pdu_encode(msg, &pdu[0]);
+		pdu_encode(msg, &pdu[0], smsc);
 		
 		sprintf(command, "AT+CMGS=%d", strlen(pdu)/2);
 		if(send_modem_command(smsc->at_fd, command, 1) == 0)
@@ -370,7 +374,7 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 	ostr = octstr_create("");
 
 	/* debug */
-	printf("Command: %s\n", cmd);
+	debug("bb.smsc.at", 0, "AT: Command: %s\n", cmd);
 	
 	/* DEBUG !!! - pretend to send but just return success (0)*/
 	/* return 0; */
@@ -613,8 +617,8 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
 /******************************************************************************
  * Encode a Msg into a PDU
  */
-static int pdu_encode(Msg *msg, unsigned char *pdu) {
-	int pos = 0, i,len;
+static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
+	int pos = 0, i,len, setvalidity;
 	int ntype = PNT_UNKNOWN; /* number type default */
 	int nstartpos = 0;	 /* offset for the phone number */
 	
@@ -622,8 +626,11 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	 * the hex values that will be sent to the modem.
 	 * Each octet is coded with two characters. */
 	
-	/* message type SUBMIT */
-	pdu[pos] = (msg->sms.flag_udh != 0) ? numtext(4) : numtext(0);
+	/* message type SUBMIT
+	 *    01010001 = 0x51 indicating add. UDH, TP-VP(Rel) & MSG_SUBMIT
+	 * or 00010001 = 0x11 for just TP-VP(Rel) & MSG_SUBMIT */
+
+	pdu[pos] = (msg->sms.flag_udh != 0) ? numtext(5) : numtext(1);
 	pos++;
 	pdu[pos] = numtext(AT_SUBMIT_SM);
 	pos++;
@@ -690,6 +697,28 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	pos++;
 	/* data coding/message class: class 1 */
 	pdu[pos] = numtext(msg->sms.flag_8bit << 2) + 1;
+	pos++;
+
+	/* Validity-Period (TP-VP)
+	 * see GSM 03.40 section 9.2.3.12
+	 * defaults to 24 hours = 167 if not set */
+	setvalidity = (smsc->at_validityperiod != NULL ? atoi(smsc->at_validityperiod) : 167);
+	
+	if (setvalidity >= 0 && setvalidity <= 143)
+		debug("AT", 0, "TP-Validity-Period: %d minutes", 
+		      (setvalidity+1)*5);
+	else if (setvalidity >= 144 && setvalidity <= 167)
+		debug("AT", 0, "TP-Validity-Period: %3.1f hours", 
+		      ((float)(setvalidity-143)/2)+12);
+	else if (setvalidity >= 168 && setvalidity <= 196)
+		debug("AT", 0, "TP-Validity-Period: %d days", 
+		      (setvalidity-166));
+	else 
+	    	debug("AT", 0, "TP-Validity-Period: %d weeks", 
+		      (setvalidity-192));
+	pdu[pos] = numtext((setvalidity & 240) >> 4);
+	pos++;
+	pdu[pos] = numtext(setvalidity & 15);
 	pos++;
 
 	/* user data length - include length of UDH if it exists*/

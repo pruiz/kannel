@@ -93,6 +93,7 @@ MULTI_GROUP(smsc,
     OCTSTR(keepalive)
     OCTSTR(modemtype)
     OCTSTR(device)
+    OCTSTR(validityperiod)
     OCTSTR(our-port)
     OCTSTR(receive-port)
     OCTSTR(connect-allow-ip)
