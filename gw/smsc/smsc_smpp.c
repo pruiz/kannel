@@ -1080,7 +1080,7 @@ static Msg *handle_dlr(SMPP *smpp, SMPP_PDU *pdu)
 
         dlrmsg = dlr_find(smpp->conn->id,
             tmp, /* smsc message id */
-            pdu->u.deliver_sm.destination_addr, /* destination */
+            pdu->u.deliver_sm.source_addr, /* destination */
             dlrstat);
 
         octstr_destroy(msgid);
