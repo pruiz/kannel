@@ -13,7 +13,7 @@
  * 1) they may include wrappers for debugging
  * 2) if memory allocation fails, PANIC is called
  *
- * So they work 'always', so need to check the return value.
+ * So they work 'always', no need to check the return value.
  */
 
 void *gw_malloc(size_t size);
