@@ -1,4 +1,14 @@
 2002-08-05  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added documentation about libSDB support
+      as DLR storage space type
+    * doc/*.conf, doc/examples/dlr-sdb.conf: moved the .conf files to 
+      doc/examples and added a dlr-sdb.conf example configuration file
+    * config.h.in, configure[.in], gw/dlr.[ch], gw/shared.c, gwlib/cfg.def:
+      added libSDB support as DLR storage type. libSDB is an abstraction
+      library for various DB system, including MySQL, PostgreSQL, Oracle,
+      gdbm and some others.
+    
+2002-08-05  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: fixed a bug for an uninitialized rpi value inside
       smsbox_req_sendsms()
     
