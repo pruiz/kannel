@@ -41,6 +41,7 @@ static int bb_ssl = 0;
 static long sendsms_port = 0;
 static Octstr *sendsms_url = NULL;
 static Octstr *sendota_url = NULL;
+static Octstr *xmlrpc_url = NULL;
 static Octstr *bb_host;
 static char *pid_file;
 static int heartbeat_freq;
@@ -179,7 +180,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
     	    	     msg_sequence, max_msgs, sms_max_length);
     msg_count = list_len(list);
 
-    debug("sms", 0, "message length %ld, sending %ld messages", 
+    debug("sms", 0, "message length %ld, sending %d messages", 
           octstr_len(msg->sms.msgdata), msg_count);
 
     while ((part = list_extract_first(list)) != NULL)
@@ -1333,7 +1334,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     Msg *msg = NULL;
     Octstr *newfrom, *returnerror, *receiv;
     List *receiver, *failed_id, *allowed, *denied;
-    int no_recv, ret, i;
+    int no_recv, ret = 0, i;
     long del;
 
     /*
@@ -1913,6 +1914,83 @@ error(0, "got here");
 
 
 /*
+ * Create and send an SMS message from an XML-RPC request.
+ * Answer with a valid XML-RPC response for a successfull request.
+ * 
+ * function signature: boolean sms.send(struct)
+ * 
+ * The <struct> MUST contain at least <member>'s with name 'username',
+ * 'password', 'to' and MAY contain additional <member>'s with name
+ * 'from', 'account', 'smsc', 'udh', 'dlrmask', 'dlrurl'. All values
+ * are of type string.
+ */
+static Octstr *smsbox_xmlrpc_post(List *headers, Octstr *body,
+                                  Octstr *client_ip, int *status)
+{
+    Octstr *from, *to, *user, *pass, *udh, *smsc;
+    Octstr *ret;
+    Octstr *type, *charset;
+    Octstr *dlr_url;
+    Octstr *account;
+    Octstr *output;
+    Octstr *method_name;
+    XMLRPCMethodCall *msg;
+
+    from = to = user = pass = udh = smsc = dlr_url = account = NULL;
+    ret = NULL;
+
+    /*
+     * check if the content type is valid for this request
+     */
+    http_header_get_content_type(headers, &type, &charset);
+    if (octstr_case_compare(type, octstr_imm("text/xml")) != 0) {
+        error(0, "Unsupported content-type '%s'", octstr_get_cstr(type));
+        *status = HTTP_BAD_REQUEST;
+        ret = octstr_format("Unsupported content-type '%s'", octstr_get_cstr(type));
+    } else {
+
+        /*
+         * parse the body of the request and check if it is a valid XML-RPC
+         * structure
+         */
+        msg = xmlrpc_call_parse(body);
+
+        if ((xmlrpc_parse_status(msg) != XMLRPC_COMPILE_OK) && 
+            ((output = xmlrpc_parse_error(msg)) != NULL)) {
+            /* parse failure */
+            error(0, "%s", octstr_get_cstr(output));
+            *status = HTTP_BAD_REQUEST;
+            ret = octstr_format("%s", octstr_get_cstr(output));
+            octstr_destroy(output);
+        } else {
+
+            /*
+             * at least the structure has been valid, now check for the
+             * required methodName and the required variables
+             */
+            if (octstr_case_compare((method_name = xmlrpc_get_method_name(msg)), 
+                                    octstr_imm("sms.send")) != 0) {
+                error(0, "Unknown method name '%s'", octstr_get_cstr(method_name));
+                *status = HTTP_BAD_REQUEST;
+                ret = octstr_format("Unkown method name '%s'", 
+                                    octstr_get_cstr(method_name));
+            } else {
+
+                /*
+                 * check for the required struct members
+                 */
+
+            }
+        }
+
+        xmlrpc_call_destroy(msg);
+    }
+    
+    return ret;
+}
+
+
+/*
  * Create and send an SMS OTA (auto configuration) message from an HTTP 
  * request. If cgivar "text" is present, use it as a xml configuration source,
  * otherwise read the configuration from the configuration file.
@@ -2269,29 +2347,45 @@ static void sendsms_thread(void *arg)
      * call the necessary routine for it
      */
 
+    /* sendsms */
    	if (octstr_compare(url, sendsms_url) == 0)
 	{
 	    /* 
-	    * decide if this is a GET or POST request and let the 
-	    * related routine handle the checking
-	    */
-	    if (body == NULL)
-		answer = smsbox_req_sendsms(args, ip, &status);
-	    else
-		answer = smsbox_sendsms_post(hdrs, body, ip, &status);
+         * decide if this is a GET or POST request and let the 
+         * related routine handle the checking
+         */
+        if (body == NULL)
+            answer = smsbox_req_sendsms(args, ip, &status);
+        else
+            answer = smsbox_sendsms_post(hdrs, body, ip, &status);
 	}
+    /* XML-RPC */
+    else if (octstr_compare(url, xmlrpc_url) == 0)
+    {
+        /*
+         * XML-RPC request needs to have a POST body
+         */
+        if (body == NULL) {
+            answer = octstr_create("Incomplete request.");
+            status = HTTP_BAD_REQUEST;
+        } else
+            answer = smsbox_xmlrpc_post(hdrs, body, ip, &status);
+    }
+    /* sendota */
 	else if (octstr_compare(url, sendota_url) == 0)
 	{
-	    if (body == NULL)
-	    answer = smsbox_req_sendota(args, ip, &status);
-	    else
-		answer = smsbox_sendota_post(args, hdrs, body, ip, &status);
+        if (body == NULL)
+            answer = smsbox_req_sendota(args, ip, &status);
+        else
+            answer = smsbox_sendota_post(args, hdrs, body, ip, &status);
 	}
+    /* add aditional URI compares here */
 	else {
-	    answer = octstr_create("Unknown request.");
-	    status = HTTP_NOT_FOUND;
+        answer = octstr_create("Unknown request.");
+        status = HTTP_NOT_FOUND;
 	}
-        debug("sms.http", 0, "Status: %d Answer: <%s>", status,
+
+    debug("sms.http", 0, "Status: %d Answer: <%s>", status,
 	      octstr_get_cstr(answer));
 
 	octstr_destroy(ip);
@@ -2482,6 +2576,8 @@ static void init_smsbox(Cfg *cfg)
      */
     if ((sendsms_url = cfg_get(grp, octstr_imm("sendsms-url"))) == NULL)
         sendsms_url = octstr_imm("/cgi-bin/sendsms");
+    if ((sendsms_url = cfg_get(grp, octstr_imm("xmlrpc-url"))) == NULL)
+        sendsms_url = octstr_imm("/cgi-bin/xmlrpc");
     if ((sendota_url = cfg_get(grp, octstr_imm("sendota-url"))) == NULL)
         sendota_url = octstr_imm("/cgi-bin/sendota");
 
