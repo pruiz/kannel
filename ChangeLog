@@ -1,5 +1,10 @@
 2000-12-19  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smsc_wrapper.c: it is ready - to be tested out. Next: new
+	bb_smsc.c, so the wrapper can be checked out
+
+2000-12-19  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/smsc_emi.c: fixed that NULL pointer is not tried to be
 	printed
 

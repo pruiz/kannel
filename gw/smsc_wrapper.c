@@ -45,6 +45,7 @@ static void wrapper_receiver(void *arg)
 	if (ret == 1) {
             debug("bb.sms", 0, "smsc: new message received");
             sleep = 0.0001;
+	    counter_increase(conn->received);
 	    bb_smscconn_receive(conn, msg);
         }
         else {
@@ -64,6 +65,28 @@ static void wrapper_receiver(void *arg)
 }
 
 
+
+static int sms_send(SMSCConn *conn, Msg *msg)
+{
+    SmscWrapper *wrap = conn->data;
+    int ret;
+
+    debug("bb.sms", 0, "sms_sender: sending message");
+        
+    ret = smsc_send_message(wrap->smsc, msg);
+    if (ret == -1) {
+	counter_increase(conn->failed);
+	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_REJECTED);
+        return -1;
+    } else {
+	counter_increase(conn->sent);
+	bb_smscconn_sent(conn, msg);
+        return 0;
+    }
+}
+
+
+
 static void wrapper_sender(void *arg)
 {
     Msg 	*msg;
@@ -78,9 +101,36 @@ static void wrapper_sender(void *arg)
 	if ((msg = list_consume(wrap->outgoing_queue)) == NULL)
             break;
 
-	/* send here, including multi-send... */
-    }
+        if (octstr_search_char(msg->sms.receiver, ' ', 0) != -1) {
+            /*
+             * multi-send: this should be implemented in corresponding
+             *  SMSC protocol, but while we are waiting for that...
+             */
+            int i;
+	    Msg *newmsg;
+            /* split from spaces: in future, split with something more sensible,
+             * this is dangerous... (as space is url-encoded as '+')
+             */
+            List *nlist = octstr_split_words(msg->sms.receiver);
 
+            for(i=0; i < list_len(nlist); i++) {
+
+		newmsg = msg_duplicate(msg);
+                octstr_destroy(newmsg->sms.receiver);
+
+                newmsg->sms.receiver = list_get(nlist, i);
+                sms_send(conn, newmsg);
+            }
+            list_destroy(nlist, NULL);
+            msg_destroy(msg);
+        }
+        else
+	    sms_send(conn,msg);
+
+    }
+    /* cleanup, we are now dying */
+
+    
     conn->is_killed = 1;
     if (conn->is_stopped) {
 	list_remove_producer(conn->stopped);
@@ -89,7 +139,12 @@ static void wrapper_sender(void *arg)
 
     gwthread_wakeup(wrap->sender_thread);
     gwthread_join(wrap->sender_thread);
+
+    /* call 'failed' to all messages still in queue */
     
+    while((msg = list_extract_first(wrap->outgoing_queue))!=NULL) {
+	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
+    }
     list_destroy(wrap->outgoing_queue, NULL);
     smsc_close(wrap->smsc);
     gw_free(conn->data);
