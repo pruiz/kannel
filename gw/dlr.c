@@ -152,7 +152,6 @@ found:
         info(0,"Connected to mysql server at %s.", octstr_get_cstr(mysql_host));
         info(0,"MYSQL: server version %s, client version %s.",  
              mysql_get_server_info(&mysql), mysql_get_client_info()); 
-        info(0,"MYSQL protocol info: %s.", mysql_get_proto_info(&mysql)); 
     } 
 
     octstr_destroy(mysql_db);
