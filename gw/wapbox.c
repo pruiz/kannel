@@ -387,6 +387,7 @@ int main(int argc, char **argv) {
 	wsp_strings_init();
 	wsp_session_init();
 	wsp_unit_init();
+	wap_appl_init();
 
 	bbsocket = connect_to_bearer_box();
 	init_queue();
@@ -398,7 +399,6 @@ int main(int argc, char **argv) {
 
 	gwthread_create(send_heartbeat_thread, NULL);
 	gwthread_create(empty_queue_thread, &bbsocket);
-	wap_appl_init();
 	for (; run_status == running; msg_destroy(msg)) {
 		msg = msg_receive(bbsocket);
 		if (msg == NULL)
