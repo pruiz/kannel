@@ -1,4 +1,10 @@
 2004-04-19  Alexander Malysh  <a.malysh@centrium.de> 
+    * test/dlr-receiver.py: added simple ready-to-go server 
+      for receiving DLRs.
+      Thanks to Guillaume Cottenceau <guillaume.cottenceau@mnc.ch>.
+      [Msg-Id: <84fzb4uu2s.fsf@frozen.mnc.ch>].
+
+2004-04-19  Alexander Malysh  <a.malysh@centrium.de> 
     * gwlib/octstr.c: applied patch that allows octstr_search_chars
       to not ignore its `pos' parameter.
       Thanks to Guillaume Cottenceau <guillaume.cottenceau@mnc.ch>.
