@@ -11,6 +11,8 @@
  * Stipe Tolj <tolj@wapme-systems.de>
  */
 
+#include <ctype.h>
+
 #include "gwlib/gwlib.h"
 
 
@@ -80,6 +82,21 @@ Octstr *gw_regex_error(int errcode, const regex_t *preg)
 }
 
 
+/* Duplicate a string. */
+static char *pstrdup(const char *s)
+{
+    char *res;
+    size_t len;
+
+    if (s == NULL)
+        return NULL;
+    len = strlen(s) + 1;
+    res = gw_malloc(len);
+    memcpy(res, s, len);
+    return res;
+}
+
+
 /* This function substitutes for $0-$9, filling in regular expression
  * submatches. Pass it the same nmatch and pmatch arguments that you
  * passed gw_regexec(). pmatch should not be greater than the maximum number
@@ -89,6 +106,7 @@ Octstr *gw_regex_error(int errcode, const regex_t *preg)
  * string that was matched against.
  *
  * It returns the substituted string, or NULL on error.
+ * BEWARE: Caller must free allocated memory of the result.
  *
  * Parts of this code are based on Henry Spencer's regsub(), from his
  * AT&T V8 regexp package. Function borrowed from apache-1.3/src/main/util.c
@@ -105,7 +123,7 @@ char *gw_regex_sub(const char *input, const char *source,
     if (!source)
         return NULL;
     if (!nmatch)
-        return src;
+        return pstrdup(src);
 
     /* First pass, find the size */
     len = 0;
@@ -205,6 +223,7 @@ Octstr *gw_regex_subst_real(const Octstr *re, const Octstr *os, const Octstr *ru
     regex_t *regexp;
     regmatch_t pmatch[REGEX_MAX_SUB_MATCH];
     int rc;
+    char *rsub;
 
     /* compile */
     regexp = gw_regex_comp_real(re, REG_EXTENDED|REG_ICASE, file, line, func);
@@ -217,13 +236,20 @@ Octstr *gw_regex_subst_real(const Octstr *re, const Octstr *os, const Octstr *ru
     gw_regex_destroy(regexp);
 
     /* substitute via rule if matched */
-    result = (rc == 0) ? octstr_create(
-        gw_regex_sub(octstr_get_cstr(rule), octstr_get_cstr(os),
-                     REGEX_MAX_SUB_MATCH, &pmatch[0])
-        ) : NULL;
+    if (rc != 0)
+        return NULL;
 
+    rsub = gw_regex_sub(octstr_get_cstr(rule), octstr_get_cstr(os),
+                        REGEX_MAX_SUB_MATCH, &pmatch[0]);
+    if (rsub == NULL)
+        return NULL;
+
+    result = octstr_create(rsub);
+    gw_free(rsub);
+    
     return result;
 }
+
 
 Octstr *gw_regex_subst_pre_real(const regex_t *preg, const Octstr *os, const Octstr *rule, 
                                 const char *file, long line, const char *func)
@@ -231,6 +257,7 @@ Octstr *gw_regex_subst_pre_real(const regex_t *preg, const Octstr *os, const Oct
     Octstr *result;
     regmatch_t pmatch[REGEX_MAX_SUB_MATCH];
     int rc;
+    char *rsub;
 
     gw_assert(preg != NULL);
 
@@ -239,11 +266,17 @@ Octstr *gw_regex_subst_pre_real(const regex_t *preg, const Octstr *os, const Oct
                             file, line, func);
 
     /* substitute via rule if matched */
-    result = (rc == 0) ? octstr_create(
-        gw_regex_sub(octstr_get_cstr(rule), octstr_get_cstr(os),
-                     REGEX_MAX_SUB_MATCH, &pmatch[0])
-        ) : NULL;
+    if (rc != 0)
+        return NULL;
 
+    rsub = gw_regex_sub(octstr_get_cstr(rule), octstr_get_cstr(os),
+                        REGEX_MAX_SUB_MATCH, &pmatch[0]);
+    if (rsub == NULL)
+        return NULL;
+
+    result = octstr_create(rsub);
+    gw_free(rsub);
+    
     return result;
 }
 

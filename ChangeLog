@@ -1,4 +1,10 @@
 2003-10-30  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/regex.c: fixed compiler warning and deallocation of memory
+      after gw_regex_sub() call.
+    * wap/cookies.c: fixed compiler warning
+    * test/test_regex.c: fixed missing deallocation.
+
+2003-10-30  Stipe Tolj  <tolj@wapme-systems.de>
 	* gwlib/regex.[ch]: made regex functions display calling function in case
 	  of error. This is usefully for later debugging purposes. Added functions
 	  gw_regex_[match|subst]_[pre]() for simple matchin and substituion

@@ -51,6 +51,7 @@ int main(int argc, char **argv)
         rsub = gw_regex_sub(octstr_get_cstr(sub), octstr_get_cstr(os),
                             REGEX_MAX_SUB_MATCH, &pmatch[0]);
         debug("regex",0,"RE: substituted string is <%s>.", rsub);
+        gw_free(rsub);
     }
     
     info(0, "step 2: wrapper functions");

@@ -332,8 +332,8 @@ static int have_cookie(List *cookies, Cookie *cookie)
             ((value->path != NULL && cookie->path != NULL) && 
                 octstr_compare(value->path, cookie->path) == 0)) &&
             (value->domain == NULL) ||
-            ((value->domain != NULL && cookie->domain != NULL) && 
-                octstr_compare(value->domain, cookie->domain) == 0)) {
+            (((value->domain != NULL && cookie->domain != NULL) && 
+                octstr_compare(value->domain, cookie->domain) == 0))) {
 			
             /* We have a match according to 4.3.3 - discard the old one */
             cookie_destroy(value);
