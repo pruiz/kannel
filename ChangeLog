@@ -1,3 +1,9 @@
+2000-04-10 Sanna Seppanen <sanna@wapit.com>
+
+	* gwlib/octstr.c,h: octstr_search_str()-function memory-leak fixed.
+	If it is still somehow suspicious, please fix it! I do use it in my
+	implementations.
+	
 Sun Apr  9 20:42:08 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile.in: Added nag target.

@@ -501,7 +501,6 @@ int octstr_search_char_from(Octstr *ostr, int ch, long pos) {
 
 
 
-#if 0
 int octstr_search_str(Octstr *ostr, char *str) {
 	long pos_a, pos_b = 0, len_c = 0, len_o =0, a=0, b=0; 
 	Octstr *char_to_oct = NULL;
@@ -520,7 +519,8 @@ int octstr_search_str(Octstr *ostr, char *str) {
 		if (a == b) {
 			pos_b++;
 			if (pos_b == octstr_len(char_to_oct)) {
-				return pos_a - len_c + 1;
+			    octstr_destroy(char_to_oct);
+			    return pos_a - len_c + 1;
 				/*returns the start of the found substring */
 			}
 		} else {
@@ -532,9 +532,10 @@ int octstr_search_str(Octstr *ostr, char *str) {
 	}
 	
 	/* string wasn't there*/
+	octstr_destroy(char_to_oct);
 	return -1;
 }
-#endif
+
 
 
 
