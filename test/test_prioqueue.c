@@ -77,7 +77,7 @@ static void my_dump(const void *a, long index)
 int main()
 {    
     Octstr *os;    
-    long i, len;    
+    long i;    
     gw_prioqueue_t *queue;    
     
     gwlib_init();

@@ -1,4 +1,7 @@
 2004-08-20  Stipe Tolj  <stolj@wapme.de>
+    * test/test_prioqueue.c: fixed compiler warning.
+
+2004-08-20  Stipe Tolj  <stolj@wapme.de>
     * gwlib/gw-prioqueue.c: some source beautifying ;) no logic change.
     * test/test_prioqueue.c: adding Alex's simple test program for testing
       the generic priority queue he introduced to gwlib.
