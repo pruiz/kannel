@@ -87,6 +87,7 @@ static void boxc_receiver(void *arg)
 	if (ret < 1) {
 	    info(0, "Client <%s> closed connection",
 		  octstr_get_cstr(conn->client_ip));
+	    conn->alive = 0;
 	    break;
 	}
 	if ((msg = msg_unpack(pack))==NULL) {

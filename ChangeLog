@@ -1,3 +1,8 @@
+2000-07-07  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_boxc.c: hopefully fixed a little bug/feature in connection 
+	closing
+
 2000-07-06  Richard Braakman  <dark@wapit.com>
 
 	* Making release 0.10.1.
