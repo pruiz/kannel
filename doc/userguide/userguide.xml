@@ -6276,7 +6276,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 &#60;si&#62;
     &#60;indication href="http://wap.iobox.fi"
                 si-id="1@wiral.com"
-                action="signal-medium"
+                action="signal-high"
                 created="1999-06-25T15:23:15Z"
                 si-expires="2002-06-30T00:00:00Z"&#62;
                 Want to test a fetch?
@@ -6347,16 +6347,21 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
        test_ppg program debugging information):
        </para>
        <screen><userinput>
-       test/test_ppg -q http://name:port [content_file] [control_file]
+       test/test_ppg -q http://ppg-host-name:ppg-port/ppg-url [content_file] 
+       [control_file]
        </userinput></screen>
 
+       <para> This presumes that you have set trusted-pi true.
+       </para>
+
        <para>If you want use authentication in a test environment, you can pass
-       username and password either using headers (setting flag -b) or url:
+       username and password either using headers (setting flag -b) or url (you
+       must have set trusted-pi false and added wap-push-user configuration group):
        </para>
 
        <screen><userinput>
-       test/test_ppg -q http://name:port?username=foo'&'password=bar 
-       [content_file] [control_file]
+       test/test_ppg -q http://ppg-host-name:ppg-port?username=ppg-username'&'
+       password=ppg-password [content_file] [control_file]
        </userinput></screen>
    
        <table frame=none>
