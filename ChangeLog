@@ -1,4 +1,12 @@
 2003-02-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: move 'our-host' from SMSC specific config 
+      sections to global SMSC section and added HTTP admin command 'loglevel'.
+    * gwlib/log.[ch], gw/bb_http.c: added HTTP admin command 'loglevel' to 
+      change log-level of log-files while bearerbox is running.
+      Patched submited by Angel. Slightly modified by me.
+      [Msg-ID: <NCEOLLKPFAEAOBBMHNHEIEIFFGAA.afradejas@mediafusion.es>]
+
+2003-02-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: adding handling of invaid userid and/or passwd to 
       shutdown SMSC connection rather then retrying to reconnect.
       Thanks to Alexander for this patch.
