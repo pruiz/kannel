@@ -1,3 +1,10 @@
+Wed Apr 12 00:30:54 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* test/fakewap.c, test/test_http.c, test/test_urltrans.c,
+	utils/start-stop-daemon.c: Changed references to <getopt.h>
+	to <unistd.h>, except in start-stop-daemon, where <getopt.h>
+	is still needed because of getopt_long.
+
 Tue Apr 11 21:57:17 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/bearerbox.c: Try harder to read from smsbox to avoid the
