@@ -1,4 +1,8 @@
 2004-06-10  Alexander Malysh  <a.malysh@centrium.de> 
+    * gwlib/gw-rwlock.[ch]: initial version of the wrapper for
+      reader/writer lock. For now only pthread_rw_lock is supported.
+
+2004-06-10  Alexander Malysh  <a.malysh@centrium.de> 
     * gwlib/regex.c: fixed memleak.
 
 2004-06-10  Alexander Malysh  <a.malysh@centrium.de> 
