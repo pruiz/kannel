@@ -1,20 +1,28 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.11
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.11.1
 
 This is a DEVELOPMENT version. It should be usable for experimentation
 and testing, and is a release candidate for 0.12. Please do try it out
 and report problems to devel@kannel.org (the development mailing list)
 or bugs@kannel.org (the bug tracking system).
 
-Changes since version 0.10.2:
+Changes since version 0.11:
 
-  * WSP layer decodes all HTTP headers sent by the phone.
-  * Various bugs and memory leaks fixed.
-  * Better support for UDH SMS.
-  * Support for POST is no longer optional.
-  * WMLScript compiler is now aware of the Crypto library.
+* X-WAP-Gateway header now uses a slash to separate "kannel" from
+  the version number, rather than a space.  This makes it consistent
+  with the HTTP definition of a "product token".
 
-* Known problems:
+* No longer supports libxml 1.8.6 or older.
 
-	* wapbox shutdown sometimes gets stuck and requires kill -9.
+* Debugging feature: SIGQUIT is caught to report memory usage.
+
+* WML compiler uses string table more efficiently, to produce smaller
+  compiled pages.
+
+* Bugfix: WML compiler also accepts 'e', 'u', and 'n' as aliases for "noesc",
+  "unesc", and "escape".
+
+* Better Solaris support.
+
+* Various bugs and memory leaks fixed.
 
 See ChangeLog for detailed information.
