@@ -1,6 +1,7 @@
 2000-05-02 Aarno Syvänen <syvanen@wapit.com>
 
-	* wtp.c: In function add_segment_to_message, removed a static variable
+	* wtp.c: In function add_segment_to_message, removed a static variable.
+	in function tell_about_error, fixed a memory leak, 
 
 2000-05-02    <Kalle Marjola <rpr@wapit.com>>
 

@@ -1097,6 +1097,7 @@ static WTPEvent *tell_about_error(int type, WTPEvent *event, Msg *msg, long tid)
        Address *address = NULL;
 
        address = deduce_reply_address(msg);
+       msg_destroy(msg);
        debug("wap.wtp", 0, "WTP: tell:");
        wtp_send_address_dump(address);
 
@@ -1266,7 +1267,6 @@ static WTPEvent *unpack_invoke_flags(WTPEvent *event, Msg *msg, long tid,
 
          tcl = this_octet&3; 
          if (tcl > NUMBER_OF_TRANSACTION_CLASSES-1){
-/* XXX this is a potential memory leak, yes? --liw */
             event = tell_about_error(illegal_header, event, msg, tid);
             return event;
          }
