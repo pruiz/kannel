@@ -263,10 +263,10 @@ static WSPPushClientMachine *push_client_machine_find_or_create(WAPEvent *e)
     break;
 
     case S_PushAbort_Req:
-         transid = e->u.S_PushAbort_Req.client_push_id;
+         transid = e->u.S_PushAbort_Req.push_id;
     break;
 
-    case Push_Abort:
+    case Abort_Event:
     break;
 
     case TR_Abort_Ind:
@@ -297,7 +297,7 @@ static WSPPushClientMachine *push_client_machine_find_or_create(WAPEvent *e)
                   "  push client machine");
 	break;
 
-        case Push_Abort:
+        case Abort_Event:
 	    error(0, "WSP_PUSH_CLIENT: internal abort to a nonexisting"
                   " push client machine");
 	break;
@@ -375,8 +375,8 @@ static WAPEvent *create_s_pushabort_ind(WSPPushClientMachine *cpm,
     WAPEvent *e;
 
     e = wap_event_create(S_PushAbort_Ind);
-    e->u.S_PushAbort_Ind.client_push_id = cpm->client_push_id;
-    e->u.S_PushAbort_Ind.abort_reason = abort_reason;
+    e->u.S_PushAbort_Ind.push_id = cpm->client_push_id;
+    e->u.S_PushAbort_Ind.reason = abort_reason;
 
     return e;
 }

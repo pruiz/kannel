@@ -295,40 +295,68 @@ WAPEVENT(S_MethodAbort_Ind,
  * Per-push events used by the session layer
  */
 
+WAPEVENT(S_Push_Req,
+	HTTPHEADER(push_headers)
+	OPTIONAL_OCTSTR(push_body)
+
+	INTEGER(session_id)
+	)
+
+WAPEVENT(S_Push_Ind,
+	HTTPHEADER(push_headers)
+	OPTIONAL_OCTSTR(push_body)
+
+	INTEGER(session_handle)
+	)
+
 WAPEVENT(S_ConfirmedPush_Req,
         INTEGER(server_push_id)
         HTTPHEADER(push_headers)
-        OCTSTR(push_body)
-        )
+        OPTIONAL_OCTSTR(push_body)
 
-WAPEVENT(S_ConfirmedPush_Res,
-	INTEGER(client_push_id)
-	)
+	INTEGER(session_id)
+        )
 
 WAPEVENT(S_ConfirmedPush_Ind,
 	INTEGER(client_push_id)
 	HTTPHEADER(push_headers)
-        OCTSTR(push_body)
+        OPTIONAL_OCTSTR(push_body)
+
+	INTEGER(session_handle)
+	)
+
+WAPEVENT(S_ConfirmedPush_Res,
+	INTEGER(client_push_id)
+
+	INTEGER(session_handle)
 	)
 
 WAPEVENT(S_ConfirmedPush_Cnf,
         INTEGER(server_push_id)
+
+	INTEGER(session_id)
         )
 
+/*
+ * The specification of S-PushAbort seems to assume that only the
+ * client can issue an S-PushAbort.req, and only the server can get
+ * an S-PushAbort.ind.  This is contradicted by the state tables.
+ * That's why the definitions here use just "push_id" instead of
+ * server_push_id and client_push_id.
+ */
+
 WAPEVENT(S_PushAbort_Req,
-	INTEGER(client_push_id)
-	INTEGER(abort_reason)
+	INTEGER(push_id)
+        INTEGER(reason)
+
+	INTEGER(session_handle)
 	)
-
-
 
 WAPEVENT(S_PushAbort_Ind,
-	INTEGER(client_push_id)
-        INTEGER(abort_reason)
-	)
-
-WAPEVENT(Push_Abort,
+	INTEGER(push_id)
 	INTEGER(reason)
+
+	INTEGER(session_handle)
 	)
 
 /*
@@ -421,6 +449,13 @@ WAPEVENT(S_Unit_MethodResult_Ind,
 	INTEGER(status)
 	HTTPHEADER(response_headers)
 	OPTIONAL_OCTSTR(response_body)
+	)
+
+WAPEVENT(S_Unit_Push,
+	ADDRTUPLE(addr_tuple)
+	INTEGER(push_id)
+	HTTPHEADER(push_headers)
+	OPTIONAL_OCTSTR(push_body)
 	)
 
 #undef WAPEVENT

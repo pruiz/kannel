@@ -66,23 +66,22 @@ ROW(PUSH_CLIENT_RECEIVING,
      WAPEvent *wtp_event;
      WAPEvent *pot_event;
 
-     wtp_event = create_tr_abort_req(cpm, e->u.S_PushAbort_Req.abort_reason);
+     wtp_event = create_tr_abort_req(cpm, e->u.S_PushAbort_Req.reason);
      dispatch_to_wtp_resp(wtp_event);
-     pot_event = create_s_pushabort_ind(cpm, 
-         e->u.S_PushAbort_Req.abort_reason);
+     pot_event = create_s_pushabort_ind(cpm, e->u.S_PushAbort_Req.reason);
      debug("wap.wsp", 0, "creating push abort indication for pot");
      wap_event_dump(pot_event);
     },
     PUSH_CLIENT_NULL_STATE)
 
 ROW(PUSH_CLIENT_RECEIVING,
-    Push_Abort,
+    Abort_Event,
     1,
     {
      WAPEvent *wtp_event;
      WAPEvent *pot_event;
 
-     wtp_event = create_tr_abort_req(cpm, e->u.S_PushAbort_Req.abort_reason);
+     wtp_event = create_tr_abort_req(cpm, e->u.S_PushAbort_Req.reason);
      dispatch_to_wtp_resp(wtp_event);
      pot_event = create_s_pushabort_ind(cpm, WSP_ABORT_USERREQ);
      debug("wap.wsp", 0, "creating push abort indication for pot");
@@ -114,8 +113,7 @@ ROW(PUSH_CLIENT_RECEIVING,
     {
      WAPEvent *pot_event;
 
-     pot_event = create_s_pushabort_ind(cpm, 
-         e->u.S_PushAbort_Req.abort_reason);
+     pot_event = create_s_pushabort_ind(cpm, e->u.S_PushAbort_Req.reason);
      debug("wap.wsp", 0, "creating push abort indication for pot");
      wap_event_dump(pot_event);
     },

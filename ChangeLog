@@ -1,5 +1,11 @@
 2000-11-29  Richard Braakman  <dark@wapit.com>
 
+	* wap/wap_events.def, wap/wsp_push_client.c,
+	wap/wsp_push_client_states.def: Brought Push-related events in
+	line with the scheme used by other WSP events.
+
+2000-11-29  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/gwpoll.h, gwlib/gwthread-pthread.h: FreeBSD compatibility
 	fix.  Specify "no timeout" on poll by using INFTIM, if it's
 	available, rather than using a random negative value.

@@ -692,7 +692,7 @@ ROW(RESUMING,
 		disconnect_other_sessions(sm);
 
 		/* Bind session to new peer address quadruplet */
-		/* this happens automatically */
+		/* this happens automatically XXX Not true */
 
 		/* TR-Result.req(Reply) */
 		if (e->server_headers == NULL)
