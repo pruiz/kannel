@@ -1,3 +1,12 @@
+2001-10-12 Aarno Syvänen <aarno@wiral.com>
+
+	* gwlib/dict.c: A bugfix in function dict_put_once.
+	* gw/wap_push_pap_compiler.c: Reject unparsable phone numbers properly.
+	(Global phone number is here an unique identifier, so we must insist
+	it.)
+	* gw/wap_push_ppg.c: Stylised warnings. Updated comments. Add calling
+	of dict_put_once.
+
 2001-10-11 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* dlr: Changed Delivery Reports Code. Instead of having a DLR sms-
 	-service, each service has a dlr-url field where is defined the url
