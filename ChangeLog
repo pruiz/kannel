@@ -1,4 +1,7 @@
 2002-03-26  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * Updated NEWS to prepare for 1.1.6.
+
+2002-03-26  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gwlib/cfg.c: fixed bug when including several include files
     * gwlib/date.c: fixed testing sec < 60
     * gw/urltrans.c: added seconds to "%t"
