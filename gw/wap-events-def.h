@@ -84,18 +84,30 @@ WAPEVENT(RcvInvoke,
       INTEGER(up_flag)
       INTEGER(exit_info_present)
       INTEGER(no_cache_supported)
+      OCTSTR(client_address)
+      INTEGER(client_port)
+      OCTSTR(server_address)
+      INTEGER(server_port)
       )
 
 WAPEVENT(RcvAbort,
       INTEGER(tid)
       INTEGER(abort_type)
       INTEGER(abort_reason)
+      OCTSTR(client_address)
+      INTEGER(client_port)
+      OCTSTR(server_address)
+      INTEGER(server_port)
       )
 
 WAPEVENT(RcvAck,
       INTEGER(tid)
       INTEGER(tid_ok)
       INTEGER(rid)
+      OCTSTR(client_address)
+      INTEGER(client_port)
+      OCTSTR(server_address)
+      INTEGER(server_port)
       )
 
 WAPEVENT(TR_Invoke_Req,
@@ -112,17 +124,20 @@ WAPEVENT(TR_Invoke_Res,
       INTEGER(tid)
       OCTSTR(exit_info)
       INTEGER(exit_info_present)
+      INTEGER(mid);
       )
 
 WAPEVENT(TR_Result_Req,
       INTEGER(tid)
       OCTSTR(user_data)
+      INTEGER(mid)
       )
 
 WAPEVENT(TR_Abort_Req,
      INTEGER(tid)
      INTEGER(abort_type)
      INTEGER(abort_reason)
+     INTEGER(mid)
      ) 
 
 WAPEVENT(TimerTO_A,
@@ -139,6 +154,10 @@ WAPEVENT(TimerTO_W,
 
 WAPEVENT(RcvErrorPDU,
      INTEGER(tid)
+      OCTSTR(client_address)
+      INTEGER(client_port)
+      OCTSTR(server_address)
+      INTEGER(server_port)
      )
 
 

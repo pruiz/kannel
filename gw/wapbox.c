@@ -312,7 +312,6 @@ int main(int argc, char **argv) {
 	int cf_index;
 	Msg *msg;
 	WAPEvent *wtp_event = NULL;
-        WTPMachine *wtp_machine = NULL;
 
 	gwlib_init();
 	cf_index = get_and_set_debugs(argc, argv, NULL);
@@ -357,12 +356,7 @@ int main(int argc, char **argv) {
 		wtp_event = wtp_unpack_wdp_datagram(msg);
                 if (wtp_event == NULL)
                    continue;
-		wtp_machine = wtp_machine_find_or_create(msg, wtp_event);
-                if (wtp_machine == NULL) {
-		   wap_event_destroy(wtp_event);
-                   continue;
-		}
-	        wtp_handle_event(wtp_machine, wtp_event);
+		wtp_dispatch_event(wtp_event);
 	}
 	info(0, "WAP box terminating.");
 

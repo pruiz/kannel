@@ -33,7 +33,8 @@ ROW(NULL_STATE,
 		wtp_event->TR_Invoke_Res.tid = e->machine->tid;
 		wtp_event->TR_Invoke_Res.exit_info = NULL;
 		wtp_event->TR_Invoke_Res.exit_info_present = 0;
-		wtp_handle_event(e->machine, wtp_event);
+		wtp_event->TR_Invoke_Res.mid = e->machine->mid;
+		wtp_dispatch_event(wtp_event);
 
 		sm->n_methods = 0;
 
@@ -97,7 +98,8 @@ ROW(CONNECTING,
 		wtp_event = wap_event_create(TR_Result_Req);
 		wtp_event->TR_Result_Req.tid = e->machine->tid;
 		wtp_event->TR_Result_Req.user_data = ospdu;
-		wtp_handle_event(e->machine, wtp_event);
+		wtp_event->TR_Result_Req.mid = e->machine->mid;
+		wtp_dispatch_event(wtp_event);
 
 		/* Release all method transactions in HOLDING state. */
 	},
@@ -181,8 +183,9 @@ ROW(CONNECTED,
 		wtp_event = wap_event_create(TR_Result_Req);
 		wtp_event->TR_Result_Req.tid = e->machine->tid;
 		wtp_event->TR_Result_Req.user_data = ospdu;
+		wtp_event->TR_Result_Req.mid = e->machine->mid;
 		debug("wap.wsp", 0, "WSP: Resuming ...sending TR-Result.req event to old WTPMachine");
-		wtp_handle_event(e->machine, wtp_event);
+		wtp_dispatch_event(wtp_event);
 
 		/* Release all method transactions in HOLDING state. */
 	},
@@ -225,7 +228,8 @@ ROW(REQUESTING,
 		wtp_event->TR_Invoke_Res.tid = e->machine->tid;
 		wtp_event->TR_Invoke_Res.exit_info = NULL;
 		wtp_event->TR_Invoke_Res.exit_info_present = 0;
-		wtp_handle_event(e->machine, wtp_event);
+		wtp_event->TR_Invoke_Res.mid = e->machine->mid;
+		wtp_dispatch_event(wtp_event);
 	},
 	PROCESSING)
 
@@ -247,7 +251,8 @@ ROW(PROCESSING,
 		wtp_event = wap_event_create(TR_Result_Req);
 		wtp_event->TR_Result_Req.tid = e->machine->tid;
 		wtp_event->TR_Result_Req.user_data = wsp_pdu_pack(new_pdu);
-		wtp_handle_event(e->machine, wtp_event);
+		wtp_event->TR_Result_Req.mid = e->machine->mid;
+		wtp_dispatch_event(wtp_event);
 		wsp_pdu_destroy(new_pdu);
 	},
 	REPLYING)

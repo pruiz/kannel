@@ -32,8 +32,8 @@ void gwlib_shutdown(void) {
 	gwlib_assert_init();
 	http2_shutdown();
 	socket_shutdown();
-	gwthread_shutdown();
 	gwlib_protected_shutdown();
+	gwthread_shutdown();
 	gw_check_leaks();
 	init = 0;
 }

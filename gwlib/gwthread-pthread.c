@@ -149,7 +149,9 @@ static void delete_threadinfo(void) {
 	close(threadinfo->wakefd_recv);
 	/* The main thread may still try call gwthread_self, when
 	 * logging stuff.  So we need to set this to a safe value. */
+#if 0 /* XXX for some reason, this makes shutdown hang --liw */
 	pthread_setspecific(tsd_key, NULL);
+#endif
 	THREAD(threadinfo->number) = NULL;
 	active_threads--;
 	gw_free(threadinfo);
@@ -195,7 +197,7 @@ void gwthread_shutdown(void) {
 	gw_assert(threadtable[0] != NULL);
 	lock();
 	delete_threadinfo();
-
+	
 	running = 0;
 	for (i = 0; i < THREADTABLE_SIZE; i++) {
 		if (threadtable[i] != NULL) {

@@ -42,7 +42,7 @@
 
 #if !defined(MACHINE) || !defined(INTEGER) || !defined(ENUM) || \
 	!defined(OCTSTR) || !defined(TIMER) || \
-	!defined(MUTEX) || !defined(NEXT) || !defined(MSG) || \
+	!defined(MSG) || \
 	!defined(WSP_EVENT) || !defined(LIST) 
 #error "wsp_machine-decl.h: Some required macro is missing."
 #endif
@@ -67,19 +67,15 @@ MACHINE(INTEGER(in_use);
         INTEGER(ack_pdu_sent);     /* are we resending the acknowledgement */
         TIMER(timer);              /* pointer to the timer of this machine timer
                                       in the global timers list */
-        MUTEX(mutex);              /* mutex for seriarilising the event queue */
-	LIST(event_queue);         /* list containing the event queue */
         WSP_EVENT(invoke_indication); /* packed wsp invoke indication - for tid
                                          verification */
-        NEXT(next);)               /* list pointer */
+	)
 
 #undef MACHINE
 #undef INTEGER
 #undef ENUM
 #undef OCTSTR
 #undef TIMER
-#undef MUTEX
-#undef NEXT
 #undef MSG
 #undef WSP_EVENT
 #undef LIST

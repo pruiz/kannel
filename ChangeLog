@@ -1,3 +1,31 @@
+Sun Jun  4 07:32:59 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Re-vamped the WTP layer to use a thread structure similar to WSP.
+	All code referring to segmentation and re-assembly has been deleted
+	(this was simpler for me - it wasn't used anyway, and we can dig it
+	out of CVS if we want it later). Error handling also suffered, but
+	on the other hand, the current structure should be easier to make
+	robust.
+	
+	* gw/wap-events-def.h: Events generated from PDUs now have the
+	address of the client and the gateway included in the event.
+	This means we can use a trivial wtp_dispatch_event function
+	interface, without having to carry around the addressing information
+	separately.
+	
+	Other events that the WTP layer may receive include a `mid'
+	(machine id) field for finding the correct WTPMachine. The ultimate
+	goal it so make the WTPMachine data type hidden within WTP, so
+	that there are no direct pointers to the machines.
+	
+	* gw/wapbox.c, gw/wsp.c, gw/wsp_state-decl.h: Use
+	wtp_dispatch_event to send an event.
+	
+	* gwlib/gwthread-pthread.c: Commented out call to pthread_setspecific
+	that was hanging shutdown. The real reason is probably somewhere
+	else, but I didn't find it, so this workaround is used to make
+	things at least seemingly work.
+
 Sun Jun  4 04:38:02 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c, gw/wsp_state-decl.h: Use WSP_PDU's, instead of

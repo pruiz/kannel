@@ -95,6 +95,7 @@ typedef enum states states;
  * See file wtp_machine-decl.h for comments. We define one macro for every type.
  */
 struct WTPMachine {
+	long mid;
         #define INTEGER(name) long name
         #define ENUM(name) states name
         #define MSG(name) Msg *name
@@ -102,8 +103,6 @@ struct WTPMachine {
         #define QUEUE(name) WTPEvent *name
         #define WSP_EVENT(name) WAPEvent *name
 	#define TIMER(name) WTPTimer *name
-        #define MUTEX(name) Mutex *name
-        #define NEXT(name) struct WTPMachine *name
         #define MACHINE(field) field
 	#define LIST(name) List *name
         #include "wtp_machine-decl.h"
@@ -117,16 +116,6 @@ struct Address {
    long source_port;
    Octstr *destination_address;
    long destination_port;
-};
-
-/*
- * An ordered linked list for storing received segments.
- */
-struct WTPSegment {
-   long tid;
-   char packet_sequence_number;
-   Octstr *data;
-   struct WTPSegment *next;
 };
 
 /*
@@ -152,57 +141,6 @@ void wtp_shutdown(void);
 WAPEvent *wtp_unpack_wdp_datagram(Msg *msg);
 
 
-/*
- * Creates wtp machine having addsress quintuple and transaction class 
- * iniatilised. If machines list is busy, just waits.
- */ 
-WTPMachine *wtp_machine_create(Octstr *srcaddr, long srcport,
-				Octstr *destaddr, long destport, long tid,
-				long tcl);
-
-/*
- * Checks whether wtp machines data structure includes a spesific machine.
- * The machine in question is identified with with source and destination
- * address and port and tid. Address information is fetched from message
- * fields, tid from an field of the event. If the machine does not exist and
- * the event is RcvInvoke, a new machine is created and added in the machines
- * data structure. If the event was RcvAck or RcvAbort, the event is ignored.
- * If the event is RcvErrorPDU, new machine is created.
- */
-WTPMachine *wtp_machine_find_or_create(Msg *msg, WAPEvent *event);
-
-
-/*
- * Mark a WTP state machine unused. Normally, removing a state machine from the state 
- * machines list means marking turning off a flag.  If machines list is busy, just wait.
- */
-void wtp_machine_mark_unused(WTPMachine *machine);
-
-
-/* 
- * Removes from the machines list all machines having in_use-flag cleared. Panics 
- * if machines list is empty. If machines list is busy, does nothing (garbage 
- * collection will eventually start again).
- */
-void wtp_machines_list_clear(void);
-
-
-/*
- * Output the state of the machine and all its fields.
- */
-void wtp_machine_dump(WTPMachine  *machine);
-
-
-/*
- * Feed an event to a WTP state machine. Handle all errors by itself, do not 
- * report them to the caller. Generate a pointer to WSP event, if an indication 
- * or a confirmation is required.
- */
-void wtp_handle_event(WTPMachine *machine, WAPEvent *event);
-
-/*
- * Generates a new transaction handle by incrementing the previous one by one.
- */
-unsigned long wtp_tid_next(void);
+void wtp_dispatch_event(WAPEvent *event);
 
 #endif

@@ -376,9 +376,10 @@ static void handle_event(WSPMachine *sm, WAPEvent *current_event, WSP_PDU *pdu)
 			current_event->TR_Invoke_Ind.machine->tid;
 		abort->TR_Abort_Req.abort_type = 0x01; /* USER */
 		abort->TR_Abort_Req.abort_reason = 0xE0; /* PROTOERR */
+		abort->TR_Abort_Req.mid = 
+			current_event->TR_Invoke_Ind.machine->mid;
 
-		wtp_handle_event(current_event->TR_Invoke_Ind.machine,
-				 abort);
+		wtp_dispatch_event(abort);
 		machine_mark_unused(sm);
 	} else {
 		error(0, "WSP: Can't handle event.");
