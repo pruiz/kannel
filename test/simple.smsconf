@@ -3,7 +3,7 @@ bearerbox-port = 13001
 sendsms-port = 22022
 global-sender = 10000
 
-username = one
+username = default
 password = yksi
 
 username = three

@@ -1,3 +1,10 @@
+1999-11-17    <rpr@rpr.wapit.com>
+
+	* smsbox_req.c: added username 'default', which is used, if no
+	username is specified in 'sendsms' http-request
+
+	* smsbox.smsconf: documentation updated accordingly
+
 Tue Nov 16 17:32:34 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/csdr.c: Fixed bug that prevented client address from being

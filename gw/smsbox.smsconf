@@ -112,7 +112,9 @@ log-level = 0
 # username = (name)
 #	instead of service definitions, send sms users can be added. This
 #	is the 'login name' and it is casesensitive. Note that none of the
-#	above are useful with send sms service, but all below are.
+#	above are useful with send sms service, but all below are. Use
+#	special name 'default' if no username is specified for sendsms query 
+#	(this is for backward compatibility)
 #
 # password = (password)
 #	associated password

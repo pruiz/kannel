@@ -383,40 +383,41 @@ char *smsbox_req_sendsms(CGIArg *list)
     char *udh = NULL;
     int ret;
     
-	if (cgiarg_get(list, "username", &val) == -1)
-		return "Authorization failed";	
-
+    if (cgiarg_get(list, "username", &val) == -1)
+	t = urltrans_find_username(translations, "default");
+    else 
 	t = urltrans_find_username(translations, val);
-	if (t == NULL || 
-		cgiarg_get(list, "password", &val) == -1 ||
-		strcmp(val, urltrans_password(t)) != 0)
-	{
-		return "Authorization failed";
-	}
-
-	cgiarg_get(list, "udh", &udh);
-
-	if (cgiarg_get(list, "to", &to) == -1 ||
-		cgiarg_get(list, "text", &text) == -1)
-	{
-		error(0, "/cgi-bin/sendsms got wrong args");
-		return "Wrong sendsms args.";
-	}
-
-	if (urltrans_faked_sender(t) != NULL) {
-		from = urltrans_faked_sender(t);
-	} else if (cgiarg_get(list, "from", &from) == 0 &&
-		   *from != '\0') {
-	    ;
-	} else if (global_sender != NULL) {
-		from = global_sender;
-	} else {
-		return "Sender missing and no global set";
-	}
     
-	info(0, "/cgi-bin/sendsms <%s> <%s> <%s>", from, to, text);
+    if (t == NULL || 
+	cgiarg_get(list, "password", &val) == -1 ||
+	strcmp(val, urltrans_password(t)) != 0) {
 
-	if(udh==NULL) {
+	return "Authorization failed";
+    }
+
+    cgiarg_get(list, "udh", &udh);
+
+    if (cgiarg_get(list, "to", &to) == -1 ||
+	cgiarg_get(list, "text", &text) == -1)
+    {
+	error(0, "/cgi-bin/sendsms got wrong args");
+	return "Wrong sendsms args.";
+    }
+
+    if (urltrans_faked_sender(t) != NULL) {
+	from = urltrans_faked_sender(t);
+    } else if (cgiarg_get(list, "from", &from) == 0 &&
+	       *from != '\0') {
+	;	
+    } else if (global_sender != NULL) {
+	from = global_sender;
+    } else {
+	return "Sender missing and no global set";
+    }
+    
+    info(0, "/cgi-bin/sendsms <%s> <%s> <%s>", from, to, text);
+
+    if(udh==NULL) {
   
 		msg = msg_create(plain_sms);
 		if (msg == NULL) goto error;
@@ -428,7 +429,7 @@ char *smsbox_req_sendsms(CGIArg *list)
     
 		ret = send_message(t, msg, text);
 
-	} else {
+    } else {
   
 		msg = msg_create(smart_sms);
 		if (msg == NULL) goto error;
@@ -443,7 +444,7 @@ char *smsbox_req_sendsms(CGIArg *list)
     
 		ret = send_message(t, msg, text);
 
-	}
+    }
 
     if (ret == -1)
 	goto error;
