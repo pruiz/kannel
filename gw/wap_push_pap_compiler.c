@@ -448,6 +448,7 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
     long i;
     int ret;
 
+    nameos = octstr_imm("erroneous");
     attr_name = octstr_create(attribute->name);
     if (attribute->children != NULL)
         value = create_octstr_from_node(attribute->children);
