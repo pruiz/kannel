@@ -1,3 +1,8 @@
+2005-03-15  Stipe Tolj  <stolj@wapme.de> 
+    * configure[.in]: moved required libxml2 version check from 2.2.5 to
+      2.2.7, since we use the macro LIBXML_DOTTED_VERSION in gw/shared.c and 
+      this is available since 2.2.7. 
+
 2005-03-09  Alexander Malysh <amalysh at kannel.org>
     * gw/bb_smscconn.c, gw/smscconn.c: fixed memleaks in handling of
       splitted messages.

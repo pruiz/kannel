@@ -2912,7 +2912,7 @@ fi
 '
   echo "${nl}${T_MD}Checking for libxml2 support ...${T_ME}"
 
-xml_ver_required="2.2.5"
+xml_ver_required="2.2.7"
 for ac_prog in xml2-config xml-config
 do
 # Extract the first word of "$ac_prog", so it can be a program name with args.
