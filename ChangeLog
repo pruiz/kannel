@@ -1,3 +1,12 @@
+2004-03-05  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/protected.[ch]: fixed non reentrant time functions, those _must_
+      use only one mutex instead of mutex per time function. Quote from man
+      page: The return value points to a statically allocated struct which
+            might be overwritten by subsequent calls to any of the date and
+            time functions.
+      Added 'gw_mktime' function.
+    * wap/cookies.c: changed 'mktime' call to 'gw_mktime'.
+
 2004-02-26 Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: update of OISD section.
     * gw/smscconn[_p].[ch], gw/smsc/smsc.c, gw/smsc_oisd.c, gw/smsc/smsc_p,h:

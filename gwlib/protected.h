@@ -75,6 +75,7 @@ void gwlib_protected_init(void);
 void gwlib_protected_shutdown(void);
 struct tm gw_localtime(time_t t);
 struct tm gw_gmtime(time_t t);
+time_t gw_mktime(struct tm *tm);
 int gw_rand(void);
 int gw_gethostbyname(struct hostent *ret, const char *name, char **buff);
 
@@ -87,6 +88,9 @@ int gw_gethostbyname(struct hostent *ret, const char *name, char **buff);
 
 #undef gmtime
 #define gmtime(t) do_not_use_gmtime_directly
+
+#undef mktime
+#define mktime(t) do_not_use_mktime_directly
 
 #undef rand
 #define rand() do_not_use_rand_directly

@@ -73,13 +73,12 @@
 #undef gmtime
 #undef rand
 #undef gethostbyname
+#undef mktime
 
 
 enum {
-    LOCALTIME,
-    GMTIME,
     RAND,
-    GETHOSTBYNAME,
+    GWTIME,
     NUM_LOCKS
 };
 
@@ -122,9 +121,9 @@ struct tm gw_localtime(time_t t)
     struct tm tm;
 
 #ifndef HAVE_LOCALTIME_R
-    lock(LOCALTIME);
+    lock(GWTIME);
     tm = *localtime(&t);
-    unlock(LOCALTIME);
+    unlock(GWTIME);
 #else
     localtime_r(&t, &tm);
 #endif
@@ -138,14 +137,25 @@ struct tm gw_gmtime(time_t t)
     struct tm tm;
 
 #ifndef HAVE_GMTIME_R
-    lock(GMTIME);
+    lock(GWTIME);
     tm = *gmtime(&t);
-    unlock(GMTIME);
+    unlock(GWTIME);
 #else
     gmtime_r(&t, &tm);
 #endif
 
     return tm;
+}
+
+
+time_t gw_mktime(struct tm *tm)
+{
+    time_t t;
+    lock(GWTIME);
+    t = mktime(tm);
+    unlock(GWTIME);
+
+    return t;
 }
 
 

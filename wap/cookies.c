@@ -601,7 +601,7 @@ static int parse_http_date(const char *expires)
 
 	ti.tm_isdst = -1;
 
-	rv = mktime(&ti);
+	rv = gw_mktime(&ti);
 	if (ti.tm_isdst)
 		rv -= 3600;
 
