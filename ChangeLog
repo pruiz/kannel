@@ -1,3 +1,12 @@
+2003-02-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * configure[.in]: added checking of --[enable|disable]-docs switch.
+      Thanks to Alan for the reminder and the patch.
+    * gw/smscconn_p.h, gw/smscconn.c, gw/smsc_[smpp|smasi|http|fake|emi2|cgw].c:
+      Added 'our-host' interface support for binding to an explicite interface
+      on SMSC connections. Patch provided by Angel.
+      [Msg-ID: <NCEOLLKPFAEAOBBMHNHEKEGOFGAA.afradejas@mediafusion.es>]
+    * gw/dlr.c: memory leak fix. Thanks to Alexander for pointing to this.
+
 2003-02-24  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: entry about 'restart' command
     * gw/bearerbox.c, gw/bb_boxc.c, gw/bb_http.c: admin HTTP command 'restart' added
