@@ -1,8 +1,6 @@
 /*
  * Macro calls to generate rows of the state table. See the documentation for
- * guidance how to use and update these. For more detailed explanation what this
- * state machine does, see a separate chapter in the documentation. (In this case,
- * very general comments are required.)  
+ * guidance how to use and update these. 
  *
  * Macros have following arguments:
  *
@@ -15,7 +13,64 @@
  *     the state wtp machine will transit)
  *
  * Condition 1 means that the action will be performed unconditionally, action
- * {} means that the event in question will be ignored. 
+ * {} means that the event in question will be ignored (of course, the state of 
+ * the machine can change). 
+ *
+ * Commenting the state table is perhaps best done by pointing out how various 
+ * services provided by WTP contribute rows to the state table.
+ *
+ * Normal transaction goes as follows (timers excluded):
+ *        - WTP get an invoke pdu from the peer. WTP does TR-Invoke.ind (trans-
+ *          mitting to WSP its PDU) and the state changes to INVOKE_RESP_WAIT
+ *        - WSP does TR-Invoke.res, telling that it has handled the indication. 
+ *          The state changes to RESULT_WAIT.
+ *        - WSP tells that it has results from the content server, or reply pdu to
+ *          send. It does TR-Result.req. State changes to RESULT_RESP_WAIT. 
+ *        - WTP gets acknowledgement from the peer. It generates TR_Result.cnf
+ *          and state changes to LISTEN. The transaction is over.
+ *
+ * Retransmission until acknowledgement guarantees reliability of the transaction,
+ * if the peer stays up. It is implemented by using retransmissions controlled by
+ * timers and counters. There are two kind of timers, retransmission and acknow-
+ * ledgement timers. (Actually, there is one timer iniatilised with two intervals.  * But let us keep the language simple). These are used in concert with 
+ * corresponding counters, RCR (retransmission counter) and AEC (acknowledgement 
+ * expiration counter). AEC counts expired acknowledgement intervals.
+ *
+ * WTP starts an acknowledgement timer when it waits a WSP acknowledgement, and re-
+ * transmission timer when it sends something. So when the acknowledgement timer
+ * expires, the action is to increment AEC, and when the retransmission timer 
+ * expires, the action is to resend a packet. (Note, however, the chapter concern-
+ * ing user acknowledgement.)
+ *
+ * WTP ignores invoke pdus having same tid as the current transaction. This 
+ * quarantees rejection of the duplicates. Note, however, how reliability is 
+ * achieved WTP is doing tid verification (next chapter).
+ *
+ * Tid verification is done if tid validation fails (which happens when the 
+ * message is a duplicate or when tid wrapping-up could confuse the protocol). In 
+ * this case, the state changes to TIDOK_WAIT. WSP is indicated only after an
+ * acknowledgement is received. After a negative answer (Abort PDU) the trans-
+ * action is teared down. Reliablity is quaranteed by resending, which happens
+ * when WTP receives a resended invoke pdu, when its state TIDOK_WAIT. Abort pdu
+ * now means a negative answer to a question "have you a transaction having tid
+ * included in the tid verification message". So there is no need to indicate WSP.
+ *
+ * Error handling is mostly done before feeding an event to the state machine. 
+ * However, when a pdu with an illegal header (header WTP does not understand) is
+ * received, this is an special kind of event, because its handling depends of 
+ * the state. WTP must allways send an abort pdu. If a transaction is established,
+ * it must be teared down. If WSP has been indicated about a transaction, WTP must
+ * do TR-Abort.ind.
+ *
+ * There is two kind of aborts: by the peer, when it send abort, pdu and by the 
+ * wsp, when it does a primitive TR-Abort.req. When WSP does an abort, WTP must 
+ * send an abort pdu to the peer; when WTP receives an abort, WSP must be indicat-
+ * ed (note, however, the special meaning abort pdu has in tid verification; see 
+ * the relevant chapter).
+ *
+ * User acknowledgement means that WTP waits WSP (which in most cases is WTP user)
+ * acknowledgement, instead of doing it by itself. This means, that if user acknow-
+ * ledgement flag is off, WTP sends an ack pdu when acknowledgement timer expires.
  *
  * By Aarno Syvänen for WapIT Ltd.
  */
