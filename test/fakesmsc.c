@@ -80,8 +80,9 @@ Usage: fakesmsc [-H host] [-p port] [-i interval] [-m max] [-r <type>] <msg> ...
 * 'host' and 'port' define bearerbox connection (default localhost:10000),\n\
 * 'interval' is time in seconds (floats allowed) between generated messages,\n\
 * 'max' is the total number sent (-1, default, means unlimited),\n\
-* <type> which numbers to randomize for MO messages, 1: src, 2: recv, 3: both\n\
-*        where the specified numbers in <msg> are used as constant prefix,\n\
+* <type> bitmask of which elements to add randomized numbers for MO messages,\n\
+*        1: src no, 2: recv no, 4: last text element,\n\
+*        where the given static elements in <msg> are used as constant prefixes,\n\
 * <msg> is message to send, if several are given, they are sent randomly.\n\
 \n\
 msg format: \"sender receiver type(text/data/udh/route) [udhdata|route] msgdata\"\n\
@@ -93,7 +94,7 @@ Examples: \n\
 fakesmsc -m 1 \"123 345 udh %04udh%3f message+data+here\"\n\
 fakesmsc -m 1 \"123 345 route smsbox1 message+data+here\"\n\
 fakesmsc -i 0.01 -m 1000 \"123 345 text nop\" \"1 2 text another message here\"\n\
-fakesmsc -r 3 -m 1000 \"123<rand> 345<rand> text nop\"\n\
+fakesmsc -r 7 -m 1000 \"123<rand> 345<rand> text nop <rand>\"\n\
 \n\
 Server replies are shown in the same message format.\n";
 
@@ -173,7 +174,7 @@ static int check_args(int i, int argc, char **argv)
         interval = atof(argv[i+1]);
     else if (strcmp(argv[i], "-r")==0 || strcmp(argv[i], "--randomize")==0) {
         rnd = atoi(argv[i+1]);
-        if (rnd < 0 || rnd > 3)
+        if (rnd < 0 || rnd > 7)
             rnd = 0;
     }
     else {
@@ -184,31 +185,27 @@ static int check_args(int i, int argc, char **argv)
     return 1;
 }
 
-
-/* randomize the source and/or receiver numnber(s) */
+/* randomization of message elements */
 static Octstr *randomize(Octstr *os)
 {
     Octstr *msg = octstr_create("");
     List *words = octstr_split_words(os);
     int i;
-    
-    switch (rnd) {
-        case 1:
-            octstr_format_append(msg, "%S%d %S", list_get(words, 0), gw_rand(),
-                                 list_get(words, 1));
-            break;
-        case 2:
-            octstr_format_append(msg, "%S %S%d", list_get(words, 0), list_get(words, 1), 
-                                 gw_rand());
-            break;
-        case 3:
-            octstr_format_append(msg, "%S%d %S%d", list_get(words, 0), gw_rand(), 
-                                 list_get(words, 1), gw_rand());
-            break;
-    }
+
+    /* randomize source and receiver number */
+    octstr_format_append(msg, "%S", list_get(words, 0));
+    if (rnd & 0x1) 
+        octstr_format_append(msg, "%d", gw_rand());
+
+    octstr_format_append(msg, " %S", list_get(words, 1));
+    if (rnd & 0x2) 
+        octstr_format_append(msg, "%d", gw_rand());
 
     for (i = 2; i < list_len(words); i++) 
         octstr_format_append(msg, " %S", list_get(words, i));
+
+    if (rnd & 0x4)
+        octstr_format_append(msg, " %d", gw_rand());
 
     octstr_append_char(msg, 10); /* End of line */
 

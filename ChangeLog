@@ -1,3 +1,7 @@
+2003-12-11  Stipe Tolj  <tolj@wapme-systems.de>
+    * test/fakesmsc.c: changed randomization behaviour to allow adding randomized
+      numbers as last message word. Use the -r switch as bitmask.
+
 2003-12-09  Stipe Tolj  <tolj@wapme-systems.de>
     * wap/wsp_headers.[ch]: fixing prototype declarations of depending routines
       for external applications using WSP header functions.
