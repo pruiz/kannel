@@ -135,6 +135,10 @@ struct smscconn {
  * Responsible file: smsc_wrapper.c */
 int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg);
 
+/* ADD NEW CREATE FUNCTIONS HERE
+ *
+ * int smsc_xxx_create(SMSCConn *conn, ConfigGroup *cfg);
+ */
 
 
 #endif
