@@ -1,4 +1,7 @@
 2003-06-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: fixing jade compiler warnings?!
+
+2003-06-20  Stipe Tolj  <tolj@wapme-systems.de>
     * radius/radius_acct.c: fixed a bug when NAS does not provide framed IP
       address or caller ID (MSISDN), then discard the packet for the mapping,
       but do forward to the remote server.
