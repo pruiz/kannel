@@ -1,3 +1,16 @@
+2000-05-04    Kalle Marjola <rpr@wapit.com>
+
+	* gw/bb_core.c, gw/bb_boxc.c, gw/bb_udp.c, gw/bb_smsc.c,
+	gw/new_bb.h: added first version of the new bearerbox. 
+	WAP-browsing works, but bearerbox is missing signal handling, 
+	HTTP adminstration, log files, SMSC support, wapbox routing 
+	and many, many more things. 
+
+	* gw/new_kannel.conf: new configuration file type used by the new
+	bearerbox. Documentation later.
+
+	* Makefile.in: added target for bb_core, the new bearerbox proto
+
 2000-05-04    <Kalle Marjola <rpr@wapit.com>>
 
 	* gwlib/conffile.c|h: more changes so that all functions needing

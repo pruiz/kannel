@@ -5,5 +5,5 @@
 # gw/kannel.wapconf
 #
 bearerbox-host = "localhost"
-bearerbox-port = 20002
+bearerbox-port = 13002
 log-file = "/tmp/wap_kannel.log"

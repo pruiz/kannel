@@ -107,6 +107,7 @@ progsrcs = \
 	wmlscript/wmlsdasm.c \
 	utils/seewbmp.c \
 	utils/run_kannel_box.c \
+	gw/bb_core.c \
 	$(STARTSTOPDAEMONSRC)
 progobjs = $(progsrcs:.c=.o)
 progs = $(progsrcs:.c=)

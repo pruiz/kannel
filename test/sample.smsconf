@@ -5,8 +5,8 @@
 # gw/kannel.smsconf
 #
 bearerbox-host = "localhost"
-bearerbox-port = 20001
-sendsms-port = 22222
+bearerbox-port = 13001
+sendsms-port = 13013
 
 
 ### users
