@@ -5788,6 +5788,13 @@ information to external applications. There is no semantics
 associated while processing these.)
 </entry></row>
 
+<row><entry><literal>%o</literal></entry><entry>
+account identifier/information of incoming message. The value
+depends on the SMSC module and has been introduced to allow the
+forwarding of an operator ID from aggregator SMSCs to the application
+layer, hence the smsbox HTTP calling instance.
+</entry></row>
+
 </tbody>
 </tgroup>
 </table>

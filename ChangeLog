@@ -1,4 +1,8 @@
 2004-09-28  Stipe Tolj  <stolj@wapme.de>
+    * doc/userguide/userguide.xml: added section for account %o escape code
+      for the sms-service url translation.
+
+2004-09-28  Stipe Tolj  <stolj@wapme.de>
     * gw/urltrans.c: fixed comment block for new account %o escape code. 
       Thanks to the eagle'd eyes of Alex. :p
     * gw/smsc/smsc_http.c: added credits to Alex for his improvements to the
