@@ -1,5 +1,6 @@
 2003-04-17  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_http.c: fixing a missing urldecode in brunet_send_sms().
+    * gw/smsc/smsc_http.c: fixed minor issue in brunet_send_sms().
 
 2003-04-16  Stipe Tolj  <tolj@wapme-systems.de>
     * utils/mtbatch.c: added MT batch utility. This application connects to
