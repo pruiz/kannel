@@ -1,4 +1,9 @@
 2003-03-06  Stipe Tolj  <tolj@wapme-systems.de>
+    * contrib/kannel-monitor/*: a simple php application to summerize sms
+      traffic accross several bearerbox instances, including automatic
+      refresh and admin command support.
+
+2003-03-06  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/log.c: fixed compiler warning.
     * gw/smsc/smsc_smpp.c: fixed a charset encoding misbehaviour when msgs
       get split into multiple sms chunks. Now also the chunked, single msgs
