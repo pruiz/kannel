@@ -1,3 +1,8 @@
+2002-03-08 Andreas Fink <andreas@fink.org>
+    * gw/smsc_at2.c: fixed a bug for +CPIN which wasnt waiting for OK after
+    +CPIN answer. This was screwing up AT command answers and Siemens TC35
+    couldnt get initialized anymore.
+
 2002-03-08  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * doc/userguide/userguide.xml: added mysql config information from Oded 
       Arbel patch 

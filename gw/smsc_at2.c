@@ -721,8 +721,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
            if (-1 != octstr_search(line, octstr_imm("+CPIN: READY"), 0))
            {
            	privdata->pin_ready = 1;
-		ret = 4;
-		goto end;
+		continue;
 	   }
 
 	   if (-1 != octstr_search(line, octstr_imm("+CMS ERROR"),0))
