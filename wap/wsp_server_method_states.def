@@ -305,7 +305,7 @@ ROW(PROCESSING,
 		new_pdu->u.Reply.status = 
 			wsp_convert_http_status_to_wsp_status(e->status);
 		new_pdu->u.Reply.headers = 
-			wsp_headers_pack(e->response_headers, 1, WSP_1_2);
+			wsp_headers_pack(e->response_headers, 1, sm->encoding_version);
 		new_pdu->u.Reply.data = octstr_duplicate(e->response_body);
 
 		/* Send TR-Result.req to WTP */

@@ -1,4 +1,10 @@
 2004-03-11 Stipe Tolj  <tolj@wapme-systems.de> 
+    * wap/wsp_server_method_states.def: fixing bug where WSP 1.2 is simply 
+      assumed while entering the WSP header packing, instead of using the
+      "detected" WSP Encoding-Version that is available in the state 
+      machine. Thanks to "Vjacheslav Chekushin" <slava@lmt.lv> for this.
+
+2004-03-11 Stipe Tolj  <tolj@wapme-systems.de> 
     * gw/smsc/smsc_cimd2.c: fixing wrong parameter length for "service 
       description" field according to Nokia CIMD spec.
       Thanks to <dido@imperium.ph> for pointing to this.
