@@ -780,7 +780,16 @@ char *smsbox_req_sendsms(List *list, char *client_ip)
 	    (text == NULL && udh == NULL))
 	{
 		error(0, "/cgi-bin/sendsms got wrong args");
-		return "Wrong sendsms args.";
+		return "Wrong sendsms args, rejected";
+	}
+
+	/*
+	 * check if UDH length is legal, or otherwise discard the
+	 * message, to prevent intentional buffer overflow schemes
+	 */
+	if (udh != NULL) {
+	    if (octstr_len(udh) != (octstr_get_char(udh, 0) + 1))
+		return "UDH field misformed, rejected";
 	}
 
 	if (strspn(octstr_get_cstr(to), sendsms_number_chars)
@@ -800,8 +809,11 @@ char *smsbox_req_sendsms(List *list, char *client_ip)
 	} else if (global_sender != NULL) {
 		from = octstr_create(global_sender);
 	} else {
-		return "Sender missing and no global set";
+		return "Sender missing and no global set, rejected";
 	}
+
+
+	
 	info(0, "/cgi-bin/sendsms <%s:%s> <%s> <%s>",
 	     user ? octstr_get_cstr(user) : "default",
 	     octstr_get_cstr(from), octstr_get_cstr(to),

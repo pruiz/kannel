@@ -1,3 +1,10 @@
+2000-11-08  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_boxc.c: fixed error that caused bearerbox to possibly
+	segfault when connection from illegal IP was tried
+
+	* gw/smsbox_req.c: make sure that UDH length is set properly
+	
 2000-11-07  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/http.c: Bugfix. Destroy the new_server_sockets list.

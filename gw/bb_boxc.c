@@ -253,7 +253,10 @@ static void run_smsbox(void *arg)
     list_add_producer(flow_threads);
     fd = (int)arg;
     newconn = accept_boxc(fd);
-
+    if (newconn == NULL) {
+	list_remove_producer(flow_threads);
+	return;
+    }
     newconn->incoming = incoming_sms;
     newconn->retry = incoming_sms;
     newconn->outgoing = outgoing_sms;
@@ -292,6 +295,10 @@ static void run_wapbox(void *arg)
     list_add_producer(flow_threads);
     fd = (int)arg;
     newconn = accept_boxc(fd);
+    if (newconn == NULL) {
+	list_remove_producer(flow_threads);
+	return;
+    }
     newconn->is_wap = 1;
     
     /*
