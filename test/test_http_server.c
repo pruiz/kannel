@@ -12,9 +12,12 @@
 #include "gwlib/gwlib.h"
 #include "gwlib/http.h"
 
-static volatile sig_atomic_t run = 1;
-static int port,
-           verbose;
+Octstr *whitelist,
+       *blacklist;
+
+int verbose,
+    run,
+    port;
 
 static void client_thread(void *arg) 
 {
@@ -57,26 +60,40 @@ static void client_thread(void *arg)
 	}
 	list_destroy(cgivars, NULL);
     
-    	if (octstr_compare(url, octstr_imm("/quit")) == 0) {
+    if (octstr_compare(url, octstr_imm("/quit")) == 0) {
 	    run = 0;
-        } else if (octstr_compare(url, octstr_imm("/whitelist")) == 0) {
+    } else if (octstr_compare(url, octstr_imm("/whitelist")) == 0) {
 	    octstr_destroy(reply_body);
-            reply_body = octstr_imm("+358408676005\n+358408676006\n"
-                                    "+358408227749\n+358408201681\n");
-	} else if (octstr_compare(url, octstr_imm("/blacklist")) == 0) {
-            octstr_destroy(reply_body);
-            reply_body = octstr_imm("+358408676004\n+358408676002\n"
-                                    "+358408676003\n");
-        }
-        
-        if (verbose) {
-            debug("test.http", 0, "request headers were");
-            http_header_dump(headers);
-            if (body != NULL) {
-               debug("test.http", 0, "request body was");
-               octstr_dump(body, 0);
+        if (whitelist != NULL) {
+            if (verbose) {
+                debug("test.http.server", 0, "we send a white list");
+                octstr_dump(whitelist, 0);
             }
-        }
+            reply_body = octstr_duplicate(whitelist);
+        } else {
+	        reply_body = octstr_imm("");
+	    }
+	} else if (octstr_compare(url, octstr_imm("/blacklist")) == 0) {
+        octstr_destroy(reply_body);
+        if (blacklist != NULL) {
+            if (verbose) {
+                debug("test.http.server", 0, "we send a blacklist");
+                octstr_dump(blacklist, 0);
+            }
+	        reply_body = octstr_duplicate(blacklist);
+        } else {
+	        reply_body = octstr_imm("");
+	    } 
+    }
+        
+   if (verbose) {
+       debug("test.http", 0, "request headers were");
+       http_header_dump(headers);
+       if (body != NULL) {
+           debug("test.http", 0, "request body was");
+           octstr_dump(body, 0);
+       }
+    }
 
 	octstr_destroy(ip);
 	octstr_destroy(url);
@@ -88,12 +105,14 @@ static void client_thread(void *arg)
 
     list_destroy(resph, octstr_destroy_item);
     octstr_destroy(reply_body);
+    octstr_destroy(whitelist);
+    octstr_destroy(blacklist);
     debug("test.http", 0, "client_thread terminates");
     http_close_all_ports();
 }
 
 static void help(void) {
-    info(0, "Usage: test_http_server [-v loglevel][-l logfile][-f file][-h][-q][-p port][-s][-c ssl_cert][-k ssl_key]\n");
+    info(0, "Usage: test_http_server [-v loglevel][-l logfile][-f file][-h][-q][-p port][-s][-c ssl_cert][-k ssl_key][-w white_list][b blacklist]\n");
 }
 
 static void sigterm(int signo) {
@@ -113,6 +132,10 @@ int main(int argc, char **argv) {
     Octstr *ssl_server_cert_file = NULL;
     Octstr *ssl_server_key_file = NULL;
 #endif
+    char *whitelist_name;
+    char *blacklist_name;
+    int white_asked,
+        black_asked;
 
     gwlib_init();
 
@@ -124,10 +147,15 @@ int main(int argc, char **argv) {
     port = 8080;
     use_threads = 0;
     verbose = 1;
+    run = 1;
     filename = NULL;
     log_filename = NULL;
+    blacklist_name = NULL;
+    whitelist_name = NULL;
+    white_asked = 0;
+    black_asked = 0;
 
-    while ((opt = getopt(argc, argv, "hqv:p:tf:l:sc:k:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hqv:p:tf:l:sc:k:b:w:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
@@ -176,7 +204,21 @@ int main(int argc, char **argv) {
 	case 'l':
 	    octstr_destroy(log_filename);
 	    log_filename = octstr_create(optarg);
-	    break;
+	break;
+
+    case 'w':
+        whitelist_name = optarg;
+        if (whitelist_name == NULL)
+            whitelist_name = "";
+        white_asked = 1;
+	break;
+
+    case 'b':
+        blacklist_name = optarg;
+        if (blacklist_name == NULL)
+            blacklist_name = "";
+        black_asked = 1;
+	break;
 
 	case '?':
 	default:
@@ -188,13 +230,26 @@ int main(int argc, char **argv) {
 
     if (log_filename != NULL) {
     	log_open(octstr_get_cstr(log_filename), GW_DEBUG);
-	octstr_destroy(log_filename);
+	    octstr_destroy(log_filename);
     }
 
     if (filename == NULL)
     	file_contents = NULL;
     else
     	file_contents = octstr_read_file(filename);
+
+    if (white_asked) {
+        whitelist = octstr_read_file(whitelist_name);
+        if (whitelist == NULL)
+            panic(0, "Cannot read the whitelist");
+    }
+    
+    if (black_asked) {
+        blacklist = octstr_read_file(blacklist_name);
+        if (blacklist == NULL)
+            panic(0, "Cannot read the blacklist");
+    }
+
 #ifdef HAVE_LIBSSL
     /*
      * check if we are doing a SSL-enabled server version here
@@ -226,3 +281,7 @@ int main(int argc, char **argv) {
     gwlib_shutdown();
     return 0;
 }
+
+
+
+
