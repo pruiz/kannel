@@ -15,8 +15,8 @@
 #define MAX_THREADS 1024
 #define MAX_IN_QUEUE 128
 
-static Counter *counter = NULL;
 static long max_requests = 1;
+static double interval = 0;
 static int method = HTTP_METHOD_GET;
 static char **urls = NULL;
 static int num_urls = 0;
@@ -141,6 +141,7 @@ static void client_thread(void *arg)
     HTTPCaller *caller;
     char buf[1024];
     long in_queue;
+    Counter *counter = NULL;
 
     caller = arg;
     succeeded = 0;
@@ -152,27 +153,23 @@ static void client_thread(void *arg)
 	http_add_basic_auth(reqh, auth_username, auth_password);
 
     in_queue = 0;
+    counter = counter_create();
     
     for (;;) {
-	while (in_queue < MAX_IN_QUEUE) {
 	    i = counter_increase(counter);
 	    if (i >= max_requests)
 	    	goto receive_rest;
 	    start_request(caller, reqh, i);
-#if 0
-	    gwthread_sleep(0.1);
-#endif
-	    ++in_queue;
-	}
-	while (in_queue >= MAX_IN_QUEUE) {
+	    if (interval > 0)
+            gwthread_sleep(interval);
+        ++in_queue;
 	    if (receive_reply(caller) == -1)
-	    	++failed;
-    	    else
+	       ++failed;
+    	else
 	    	++succeeded;
 	    --in_queue;
-	}
     }
-    
+
 receive_rest:
     while (in_queue > 0) {
 	if (receive_reply(caller) == -1)
@@ -182,6 +179,7 @@ receive_rest:
     	--in_queue;
     }
 
+    counter_destroy(counter);
     http_destroy_headers(reqh);
     http_caller_destroy(caller);
     info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
@@ -222,6 +220,10 @@ static void help(void)
     info(0, "    don't print the body or headers of the HTTP response");
     info(0, "-r number");
     info(0, "    make `number' requests, repeating URLs as necessary");
+    info(0, "-t number");
+    info(0, "    run `number' threads, that make -r `number' requests");
+    info(0, "-i interval");
+    info(0, "    make one request in `interval' seconds");
     info(0, "-p domain.name");
     info(0, "    use `domain.name' as a proxy");
     info(0, "-P portnumber");
@@ -267,11 +269,11 @@ int main(int argc, char **argv)
     exceptions = list_create();
     proxy_username = NULL;
     proxy_password = NULL;
-    num_threads = 0;
+    num_threads = 1;
     file = 0;
     fp = NULL;
     
-    while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:a:u:sc:H:B:m:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:i:a:u:sc:H:B:m:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
@@ -289,6 +291,10 @@ int main(int argc, char **argv)
 	    num_threads = atoi(optarg);
 	    if (num_threads > MAX_THREADS)
 		num_threads = MAX_THREADS;
+	    break;
+
+	case 'i':
+	    interval = atof(optarg);
 	    break;
 
     case 'u':
@@ -405,12 +411,11 @@ int main(int argc, char **argv)
     octstr_destroy(proxy_password);
     list_destroy(exceptions, octstr_destroy_item);
     
-    counter = counter_create();
     urls = argv + optind;
     num_urls = argc - optind;
     
     time(&start);
-    if (num_threads == 0)
+    if (num_threads == 1)
         client_thread(http_caller_create());
     else {
         for (i = 0; i < num_threads; ++i)
@@ -420,11 +425,9 @@ int main(int argc, char **argv)
     }
     time(&end);
     
-    counter_destroy(counter);
-    
     run_time = difftime(end, start);
     info(0, "%ld requests in %f seconds, %f requests/s.",
-         max_requests, run_time, max_requests / run_time);
+         (max_requests * num_threads), run_time, (max_requests * num_threads) / run_time);
     
     octstr_destroy(auth_username);
     octstr_destroy(auth_password);
