@@ -1,3 +1,13 @@
+2001-01-18  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_boxc.c: the current smsbox closes the connection properly,
+	so wait until that before exiting with boxc_receiver, thus
+	eliminating lost messages
+
+	* gw/bb_boxc.c: added alive-check to boxc_sender after
+	list_consume() as octstr_send does not notice that socket has been
+	closed
+	
 2001-01-18  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/smsbox.c, gw/urltrans.[ch]: Converted to use cfg.c instead

@@ -151,9 +151,15 @@ static void boxc_sender(void *arg)
 
 	list_consume(suspended);	/* block here if suspended */
 
-	if ((msg = list_consume(conn->incoming)) == NULL)
+	if ((msg = list_consume(conn->incoming)) == NULL) {
+	    shutdown(conn->fd, 1);
 	    break;
-
+	}
+	if (!conn->alive) {
+	    /* we got message here */
+	    list_produce(conn->retry, msg);
+	    break;
+	}
 	gw_assert((!conn->is_wap && msg_type(msg) == sms)
 		                 ||
 		  (conn->is_wap && msg_type(msg) == wdp_datagram));
@@ -169,9 +175,9 @@ static void boxc_sender(void *arg)
 	msg_destroy(msg);
 	debug("bb.boxc", 0, "boxc_sender: sent message");
     }
-    /* XXX the client should close the line, instead */
-    conn->alive = 0;
-    
+    /* the client closes the connection, after that die in receiver */
+    /* conn->alive = 0; */
+
     list_remove_producer(flow_threads);
 }
 
