@@ -380,7 +380,7 @@ int smsc2_stop_smsc(Octstr *id)
     if (conn->status = SMSCCONN_CONNECTING)
         return -1;
     */
-    smscconn_stop(conn);
+    smscconn_shutdown(conn, 1);
     return 0;
 }
 
