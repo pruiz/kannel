@@ -77,6 +77,7 @@ struct WSPMachine
 	#define SESSION_MACHINE(fields) fields
 	#define METHOD_MACHINE(fields)
 	#define HTTPHEADER(name) HTTPHeader *name
+	#define LIST(name) List *name
 	#include "wsp_machine-decl.h"
 ;
 
@@ -91,6 +92,7 @@ struct WSPMethodMachine
 	#define SESSION_MACHINE(fields)
 	#define METHOD_MACHINE(fields) fields
 	#define HTTPHEADER(name) HTTPHeader *name
+	#define LIST(name) List *name
 	#include "wsp_machine-decl.h"
 ;
 

@@ -97,6 +97,7 @@ struct WTPMachine {
         #define MUTEX(name) Mutex *name
         #define NEXT(name) struct WTPMachine *name
         #define MACHINE(field) field
+	#define LIST(name) List *name
         #include "wtp_machine-decl.h"
 };
 

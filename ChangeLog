@@ -1,3 +1,12 @@
+Mon Mar 20 16:56:36 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wapbox.c, gw/wsp.c, gw/wsp.h, gw/wsp_machine-decl.h,
+	gw/wtp.c, gw/wtp.h, gw/wtp_machine-decl.h, : Converted from
+	hand-made lists to the new generic list. At least partially.
+	
+	* gwlib/list.[ch]: Added a list_search function (untested as
+	yet, though).
+
 Mon Mar 20 15:45:43 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/list.[ch], test/test_list.c: Wrote a generic dynamic list

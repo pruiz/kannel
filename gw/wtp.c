@@ -309,6 +309,9 @@ void wtp_machine_dump(WTPMachine *machine){
 	   	debug("wap.wtp", 0, "  %s %p",#name, (void *) machine->name) 
            #define NEXT(name) 
 	   #define MACHINE(field) field
+	   #define LIST(name) \
+	   	debug("wap.wtp", 0, "  %s %s", #name, \
+			machine->name ? "non-NULL" : "NULL")
 	   #include "wtp_machine-decl.h"
            debug("wap.wtp", 0, "WTPMachine dump ends");
 	
@@ -664,6 +667,7 @@ static WTPMachine *wtp_machine_create_empty(void){
         #define TIMER(name) machine->name = wtp_timer_create()
         #define NEXT(name) machine->name = NULL
         #define MACHINE(field) field
+	#define LIST(name) machine->name = list_create()
         #include "wtp_machine-decl.h"
 
 	mutex_lock(machines.lock);
@@ -790,20 +794,7 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
  * Append an event to the event queue of a WTPMachine.
  */
 static void append_to_event_queue(WTPMachine *machine, WTPEvent *event) {
-
-	mutex_lock(machine->queue_lock);
-
-	if (machine->event_queue_head == NULL) {
-		machine->event_queue_head = event;
-		machine->event_queue_tail = event;
-		event->next = NULL;
-	} else {
-		machine->event_queue_tail->next = event;
-		machine->event_queue_tail = event;
-		event->next = NULL;
-	}
-
-	mutex_unlock(machine->queue_lock);
+	list_append(machine->event_queue, event);
 }
 
 
@@ -814,19 +805,14 @@ static void append_to_event_queue(WTPMachine *machine, WTPEvent *event) {
 static WTPEvent *remove_from_event_queue(WTPMachine *machine) {
 	WTPEvent *event;
 	
-	mutex_lock(machine->queue_lock);
-
-	if (machine->event_queue_head == NULL)
+	list_lock(machine->event_queue);
+	if (list_len(machine->event_queue) == 0)
 		event = NULL;
 	else {
-		event = machine->event_queue_head;
-		machine->event_queue_head = event->next;
-		if (machine->event_queue_head == NULL)
-			machine->event_queue_tail = NULL;
-		event->next = NULL;
+		event = list_get(machine->event_queue, 0);
+		list_delete(machine->event_queue, 0, 1);
 	}
-
-	mutex_unlock(machine->queue_lock);
+	list_unlock(machine->event_queue);
 
 	return event;
 }

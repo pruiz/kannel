@@ -165,8 +165,6 @@ void wsp_event_dump(WSPEvent *event) {
 
 
 void wsp_dispatch_event(WTPMachine *wtp_sm, WSPEvent *event) {
-	/* XXX this now always creates a new machine for each event, boo */
-	
 	WSPMachine *sm;
 	
 	/* XXX this should probably be moved to a condition function --liw */
@@ -211,6 +209,7 @@ WSPMachine *wsp_machine_create(void) {
 	#define SESSION_MACHINE(fields) fields
 	#define METHOD_MACHINE(fields)
 	#define HTTPHEADER(name) p->name = NULL
+	#define LIST(name) p->name = list_create()
 	#include "wsp_machine-decl.h"
 	
 	p->state = NULL_STATE;
@@ -439,31 +438,24 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 }
 
 static void append_to_event_queue(WSPMachine *machine, WSPEvent *event) {
-	mutex_lock(machine->queue_lock);
-	if (machine->event_queue_head == NULL) {
-		machine->event_queue_head = event;
-		machine->event_queue_tail = event;
-		event->next = NULL;
-	} else {
-		machine->event_queue_tail->next = event;
-		machine->event_queue_tail = event;
-		event->next = NULL;
-	}
-	mutex_unlock(machine->queue_lock);
+	list_lock(machine->event_queue);
+	list_append(machine->event_queue, event);
+	list_unlock(machine->event_queue);
 }
 
 static WSPEvent *remove_from_event_queue(WSPMachine *machine) {
 	WSPEvent *event;
 	
-	mutex_lock(machine->queue_lock);
-	if (machine->event_queue_head == NULL)
+	/* Note: Can't use list_consume here, since no-one is registered
+	   as a producer. */
+	list_lock(machine->event_queue);
+	if (list_len(machine->event_queue) == 0)
 		event = NULL;
 	else {
-		event = machine->event_queue_head;
-		machine->event_queue_head = event->next;
-		event->next = NULL;
+		event = list_get(machine->event_queue, 0);
+		list_delete(machine->event_queue, 0, 1);
 	}
-	mutex_unlock(machine->queue_lock);
+	list_unlock(machine->event_queue);
 	return event;
 }
 

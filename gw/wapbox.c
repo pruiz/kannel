@@ -7,6 +7,7 @@
  * Lars Wirzenius <liw@wapit.com> for WapIT Ltd.
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
@@ -148,60 +149,38 @@ static void msg_send(int s, Msg *msg) {
 }
 
 
-#define MAX_MSGS_IN_QUEUE 1024
-static Msg *queue_tab[MAX_MSGS_IN_QUEUE];
-static int queue_start = 0;
-static int queue_len = 0;
-static Mutex *queue_mutex;
-static Mutex *queue_read_mutex;	/* remove_msg_from_queue() sleeps here */
+
+/*
+ * This is the queue of messages that are being sent to the bearerbox.
+ */
+static List *queue = NULL;
 
 
 void init_queue(void) {
-	queue_mutex = mutex_create();
-	queue_read_mutex = mutex_create();
-	mutex_lock(queue_read_mutex);
+	assert(queue == NULL);
+	queue = list_create();
 }
 
 
 void put_msg_in_queue(Msg *msg) {
-	mutex_lock(queue_mutex);
-	if (queue_len == MAX_MSGS_IN_QUEUE)
-		error(0, "wapbox: message queue full, dropping message");
-	else {
-		queue_tab[(queue_start + queue_len) % MAX_MSGS_IN_QUEUE] = msg;
-		if (0 == queue_len++) {
-			mutex_unlock(queue_read_mutex);	/* wake reader */
-		}
-	}
-	mutex_unlock(queue_mutex);
+	list_produce(queue, msg);
 }
 
 
 Msg *remove_msg_from_queue(void) {
-	Msg *msg;
-	
-	mutex_lock(queue_read_mutex);	/* sleeps if queue empty */
-	mutex_lock(queue_mutex);
-	if (queue_len == 0)
-		panic(0, "remove_msg_from_queue: no longer single consumer?");
-	msg = queue_tab[queue_start];
-	queue_start = (queue_start + 1) % MAX_MSGS_IN_QUEUE;
-	if (--queue_len > 0)
-		mutex_unlock(queue_read_mutex);
-	mutex_unlock(queue_mutex);
-	return msg;
+	return list_consume(queue);
 }
 
 
 static void *send_heartbeat_thread(void *arg) {
+	list_add_producer(queue);
 	while (run_status == running) {
 		Msg *msg = msg_create(heartbeat);
-		if (msg == NULL)
-			panic(0, "cannot create heartbeat message");
 		msg->heartbeat.load = 0;	/* XXX */
 		put_msg_in_queue(msg);
 		sleep(heartbeat_freq);
 	}
+	list_remove_producer(queue);
 	return NULL;
 }
 
@@ -213,9 +192,8 @@ static void *empty_queue_thread(void *arg) {
 	socket = *(int *) arg;
 	while (run_status == running) {
 		msg = remove_msg_from_queue();
-		if (msg == NULL)
-			panic(0, "empty_queue_thread: msg==NULL");
-		msg_send(socket, msg);
+		if (msg != NULL)
+			msg_send(socket, msg);
 	}
 	return NULL;
 }
@@ -304,6 +282,7 @@ int main(int argc, char **argv) {
 	/* bof@bof.de 30.1.2000 - the other way round races. ugh. */
 
 	run_status = running;
+	list_add_producer(queue);
 
 	(void) start_thread(1, send_heartbeat_thread, 0, 0);
 	(void) start_thread(1, empty_queue_thread, &bbsocket, 0);
@@ -327,7 +306,8 @@ int main(int argc, char **argv) {
                    continue;
 	        wtp_handle_event(wtp_machine, wtp_event);
 	}
-	
+	list_remove_producer(queue);
+
 	info(0, "WAP box terminating.");
 	return 0;
 }

@@ -10,7 +10,8 @@
 #if !defined(HTTPHEADER) || !defined(INTEGER) || !defined(MUTEX) || \
 	!defined(OCTSTR) || !defined(EVENT_POINTER) || \
 	!defined(METHOD_POINTER) || !defined(SESSION_POINTER) || \
-	!defined(SESSION_MACHINE) || !defined(METHOD_MACHINE)
+	!defined(SESSION_MACHINE) || !defined(METHOD_MACHINE) || \
+	!defined(LIST)
 #error "wsp_machine-decl.h: Some required macro is missing."
 #endif
 
@@ -21,9 +22,7 @@ SESSION_MACHINE({
 	INTEGER(n_methods);
 	INTEGER(session_id);
 	METHOD_POINTER(method_machine);
-	MUTEX(queue_lock);
-	EVENT_POINTER(event_queue_head);
-	EVENT_POINTER(event_queue_tail);
+	LIST(event_queue);
 	OCTSTR(client_address);
 	INTEGER(client_port);
 	OCTSTR(server_address);
@@ -58,3 +57,4 @@ METHOD_MACHINE({
 #undef SESSION_MACHINE
 #undef METHOD_MACHINE
 #undef HTTPHEADER
+#undef LIST

@@ -256,6 +256,25 @@ void *list_consume(List *list) {
 
 
 
+void *list_search(List *list, void *pattern, int (*cmp)(void *, void *)) {
+	void *item;
+	long i;
+	
+	list_lock(list);
+	for (i = 0; i < list->len; ++i) {
+		item = GET(list, i);
+		if (cmp(item, pattern) == 0)
+			break;
+	}
+	if (i == list->len)
+		item = NULL;
+	list_unlock(list);
+	
+	return item;
+}
+
+
+
 /*************************************************************************/
 
 static void lock(List *list) {
