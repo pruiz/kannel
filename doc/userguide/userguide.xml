@@ -610,7 +610,8 @@
 	
 	<itemizedlist>
 
-	<listitem><para><literal>csdr</literal>: XXX Unneeded?
+	<listitem><para><literal>wdp-udp</literal>: Used to tell that
+	this group configures a UDP port for WAP.
 	</para></listitem>
 
 	<listitem><para><literal>wap-service</literal>: Which UDP port
@@ -642,11 +643,11 @@
  4  log-file = "bearerbox.log"
  5  log-level = 0
  6
- 7  csdr = wap
+ 7  wdp-udp = wap
  8  interface-name = 127.0.0.1
  9  wap-service = "wsp"
 10
-11  csdr = wap
+11  wdp-udp = wap
 12  interface-name = 127.0.0.1
 13  wap-service = "wsp/wtp"
 </programlisting>

@@ -1,3 +1,8 @@
+Wed Apr  5 18:20:52 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* csdr.[ch] renamed to wdp_udp.[ch] and other files modified
+	accordingly.
+
 2000-04-05  Richard Braakman  <dark@wapit.com>
 
 	* wmlscript/wsint.h: Restored "extern int yylex()" declaration.

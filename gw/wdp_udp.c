@@ -1,5 +1,5 @@
 /*
- * CSD Router thread for bearer box (WAP/SMS Gateway)
+ * wdp_udp.c - implement UDP bearer for WDP
  *
  * Interface by Kalle Marjola
  * Implementation by Mikael Gueck
@@ -15,30 +15,30 @@
 
 #include "gwlib/gwlib.h"
 #include "bb_msg.h"
-#include "csdr.h"
+#include "wdp_udp.h"
 
-CSDRouter *csdr_open(ConfigGroup *grp) {
-	CSDRouter *router;
+WDP_UDPBearer *wdp_udp_open(ConfigGroup *grp) {
+	WDP_UDPBearer *udp;
 	char *interface_name;
 	char *wap_service;
 	int fl;
 	int port;
 	Octstr *os;
 
-	router = gw_malloc(sizeof(CSDRouter));
+	udp = gw_malloc(sizeof(WDP_UDPBearer));
 
         interface_name = config_get(grp, "interface-name");
         wap_service = config_get(grp, "wap-service");
 
 	if (interface_name == NULL) {
 		error(0, "You need to configure 'interface-name' for the "
-			 "CSD router.");
+			 "UDP port.");
 		goto error;
 	}
 
 	if (wap_service == NULL) {
 		error(0, "You need to configure a 'wap-service' for the "
-			 "CSD router.");
+			 "UDP port.");
 		goto error;
 	}
 
@@ -65,49 +65,49 @@ CSDRouter *csdr_open(ConfigGroup *grp) {
 	}
 
 	os = octstr_create(interface_name);
-	router->addr = udp_create_address(os, port);
+	udp->addr = udp_create_address(os, port);
 	octstr_destroy(os);
-	if (router->addr == NULL) {
-		error(0, "csdr_open: could not resolve interface <%s>",
+	if (udp->addr == NULL) {
+		error(0, "wdp_udp_open: could not resolve interface <%s>",
 			interface_name);
 		goto error;
 	}
 	
-	router->fd = udp_bind(port);
+	udp->fd = udp_bind(port);
 
-	fl = fcntl(router->fd, F_GETFL);
-	fcntl(router->fd, F_SETFL, fl | O_NONBLOCK);
+	fl = fcntl(udp->fd, F_GETFL);
+	fcntl(udp->fd, F_SETFL, fl | O_NONBLOCK);
 
-	os = udp_get_ip(router->addr);
-	debug("bb.csdr", 0, "csdr_open: Bound to UDP <%s:%d> service <%s>.",
+	os = udp_get_ip(udp->addr);
+	debug("bb.udp", 0, "wdp_udp_open: Bound to UDP <%s:%d> service <%s>.",
 	      octstr_get_cstr(os),
-	      udp_get_port(router->addr), 
+	      udp_get_port(udp->addr), 
 	      wap_service);
 	octstr_destroy(os);
 
-	return router;
+	return udp;
 
 error:
-	error(errno, "CSDR: csdr_open: could not open, aborting");
-	gw_free(router);
+	error(errno, "WDP/UDP: wdp_udp_open: could not open, aborting");
+	gw_free(udp);
 	return NULL;
 }
 
-int csdr_close(CSDRouter *router) {
-	if (router != NULL) {
-		(void) close(router->fd);
-		octstr_destroy(router->addr);
-		gw_free(router);
+int wdp_udp_close(WDP_UDPBearer *udp) {
+	if (udp != NULL) {
+		(void) close(udp->fd);
+		octstr_destroy(udp->addr);
+		gw_free(udp);
 	}
 	return 0;
 }
 
-RQueueItem *csdr_get_message(CSDRouter *router) {
+RQueueItem *wdp_udp_get_message(WDP_UDPBearer *udp) {
 	int ret;
 	RQueueItem *item = NULL;
 	Octstr *datagram, *cliaddr;
 
-	ret = udp_recvfrom(router->fd, &datagram, &cliaddr);
+	ret = udp_recvfrom(udp->fd, &datagram, &cliaddr);
 	if (ret == -1) {
 		if (errno == EAGAIN) {
 			/* No datagram available, don't block. */
@@ -123,8 +123,8 @@ RQueueItem *csdr_get_message(CSDRouter *router) {
 
 	item->msg->wdp_datagram.source_address = udp_get_ip(cliaddr);
 	item->msg->wdp_datagram.source_port    = udp_get_port(cliaddr);
-	item->msg->wdp_datagram.destination_address = udp_get_ip(router->addr);
-	item->msg->wdp_datagram.destination_port    = udp_get_port(router->addr);
+	item->msg->wdp_datagram.destination_address = udp_get_ip(udp->addr);
+	item->msg->wdp_datagram.destination_port    = udp_get_port(udp->addr);
 	item->msg->wdp_datagram.user_data = datagram;
 
 	/* set routing info: use client IP and port
@@ -140,30 +140,30 @@ no_msg:
 	return NULL;
 
 error:
-	error(0, "CSDR: could not receive UDP datagram");
+	error(0, "WDP/UDP: could not receive UDP datagram");
 	rqi_delete(item);
 	return NULL;
 }
 
-int csdr_send_message(CSDRouter *router, RQueueItem *item) {
+int wdp_udp_send_message(WDP_UDPBearer *udp, RQueueItem *item) {
 	Octstr *cliaddr;
 	int ret;
 
 	cliaddr = udp_create_address(item->msg->wdp_datagram.destination_address,
 				item->msg->wdp_datagram.destination_port);
-	ret = udp_sendto(router->fd, item->msg->wdp_datagram.user_data,
+	ret = udp_sendto(udp->fd, item->msg->wdp_datagram.user_data,
 			 cliaddr);
 	if (ret == -1)
-		error(errno, "CSDR: could not send UDP datagram");
+		error(errno, "WDP/UDP: could not send UDP datagram");
 	octstr_destroy(cliaddr);
 	return ret;
 }
 
-int csdr_is_to_us(CSDRouter *router, Msg *msg) {
+int wdp_udp_is_to_us(WDP_UDPBearer *udp, Msg *msg) {
 	Octstr *addr;
 	int same;
 	
-	gw_assert(router != NULL);
+	gw_assert(udp != NULL);
 	gw_assert(msg != NULL);
 	gw_assert(msg_type(msg) == wdp_datagram);
 	
@@ -172,7 +172,7 @@ int csdr_is_to_us(CSDRouter *router, Msg *msg) {
 	if (addr == NULL)
 		return 0;
 
-	same = (octstr_compare(router->addr, addr) == 0);
+	same = (octstr_compare(udp->addr, addr) == 0);
 	octstr_destroy(addr);
 	return same;
 }

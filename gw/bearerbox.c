@@ -25,7 +25,7 @@
  * - SMSC threads connect specified SMS Center and receive and send
  *   messages concerning it
  *
- * - CSDR thread listens to UDP packets, and similarly sends them
+ * - UDP thread listens to UDP packets, and similarly sends them
  *
  * - SMS BOX Connection does all the required data transfer with one
  *   sms box. On thread is started for each SMS BOX Connection.
@@ -56,14 +56,14 @@
 #include "bb_msg.h"
 
 #include "smsc.h"
-#include "csdr.h"
+#include "wdp_udp.h"
 #include "boxc.h"
 #include "smsbox_req.h"
 
 /* bearerbox thread types */
 enum {
     BB_TTYPE_SMSC,
-    BB_TTYPE_CSDR,
+    BB_TTYPE_UDP,
     BB_TTYPE_SMS_BOX,
     BB_TTYPE_WAP_BOX
 };
@@ -84,7 +84,7 @@ typedef struct bb_t {
     pthread_t thread;
 
     SMSCenter *smsc;   	/* if SMSC thread */
-    CSDRouter *csdr;   	/* if CSD Router thread */
+    WDP_UDPBearer *udp;	/* if UDP thread */
     BOXC *boxc;		/* if SMS/WAP box */
 
     time_t heartbeat;	/* last update of our status */
@@ -356,7 +356,7 @@ static int check_receivers(void)
     
 
 
-/* route received message; mainly used to find a corresponding SMSC/CSDR
+/* route received message; mainly used to find a corresponding SMSC/UDP
  * to MT message; ACK/NACK already should know the receiver
  *
  * return 0 on success, -1 on failure
@@ -412,18 +412,18 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 	thr = bbox->threads[i];
 	if (thr != NULL) {
 	    if ((thr->type == BB_TTYPE_SMSC ||
-		thr->type == BB_TTYPE_CSDR)
+		thr->type == BB_TTYPE_UDP)
 		&&
 		thr->status != BB_STATUS_DEAD) {
 
-		/* Route WAP according to CSDR port and IP
+		/* Route WAP according to UDP port and IP
 		 */
 		if (msg->msg_class == R_MSG_CLASS_WAP &&
-		    thr->type == BB_TTYPE_CSDR &&
+		    thr->type == BB_TTYPE_UDP &&
 		    (thr->status == BB_STATUS_OK ||
 		     thr->status == BB_STATUS_CREATED)) {
 
-		    if (csdr_is_to_us(thr->csdr, msg->msg) == 1) { 
+		    if (wdp_udp_is_to_us(thr->udp, msg->msg) == 1) { 
 			msg->destination = thr->id;
 			break;
 		    }
@@ -648,7 +648,7 @@ static void *smscenter_thread(void *arg)
 /*
  * CSD Router thread.. listen to UDP packets from CSD Router etc.
  */
-static void *csdrouter_thread(void *arg)
+static void *udp_thread(void *arg)
 {
     BBThread	*us;
     RQueueItem	*qmsg;
@@ -667,7 +667,7 @@ static void *csdrouter_thread(void *arg)
 	 */
 	qmsg = rq_pull_msg(bbox->reply_queue, us->id);
 	if (qmsg) {
-	    ret = csdr_send_message(us->csdr, qmsg);
+	    ret = wdp_udp_send_message(us->udp, qmsg);
 	    if (qmsg->msg_type == R_MSG_TYPE_MT) {
 		if (ret < 0)
 		    qmsg->msg_type = R_MSG_TYPE_NACK;
@@ -684,7 +684,7 @@ static void *csdrouter_thread(void *arg)
 	    bbox->suspended == 0 &&
 	    rq_queue_len(bbox->request_queue, NULL) < bbox->max_queue) {
 
-	    qmsg = csdr_get_message(us->csdr);
+	    qmsg = wdp_udp_get_message(us->udp);
 	    if (qmsg) {
 		route_msg(us, qmsg);
 		rq_push_msg(bbox->request_queue, qmsg);
@@ -693,12 +693,12 @@ static void *csdrouter_thread(void *arg)
 	}
 	usleep(10000);
     }
-    warning(0, "CSDR: Closing and dying...");
+    warning(0, "WDP/UDP: Closing and dying...");
     mutex_lock(bbox->mutex);
 
     gw_assert(us != NULL);
-    csdr_close(us->csdr);
-    us->csdr = NULL;
+    wdp_udp_close(us->udp);
+    us->udp = NULL;
     us->status = BB_STATUS_DEAD;
 
     mutex_unlock(bbox->mutex);
@@ -1010,7 +1010,7 @@ static BBThread *create_bbt(int type)
     nt->heartbeat = time(NULL);
 
     nt->smsc = NULL;
-    nt->csdr = NULL;
+    nt->udp = NULL;
     nt->boxc = NULL;
 
     mutex_lock(bbox->mutex);
@@ -1032,7 +1032,7 @@ static BBThread *create_bbt(int type)
 static void del_bbt(BBThread *thr)
 {
     smsc_close(thr->smsc);
-    csdr_close(thr->csdr);
+    wdp_udp_close(thr->udp);
     boxc_close(thr->boxc);
     gw_free(thr);
 }
@@ -1060,16 +1060,16 @@ static void new_bbt_smsc(SMSCenter *smsc)
 /*
  * create a new UDP Thread (CSD Router thread)
  */
-static void new_bbt_csdr(CSDRouter *csdr)
+static void new_bbt_udp(WDP_UDPBearer *udp)
 {
     BBThread *nt;
     
-    gw_assert(csdr != NULL);
-    nt = create_bbt(BB_TTYPE_CSDR);
+    gw_assert(udp != NULL);
+    nt = create_bbt(BB_TTYPE_UDP);
     if (nt != NULL) {
-	nt->csdr = csdr;
-	(void)start_thread(1, csdrouter_thread, nt, 0);
-	debug("bb", 0, "Created a new CSDR thread");
+	nt->udp = udp;
+	(void)start_thread(1, udp_thread, nt, 0);
+	debug("bb", 0, "Created a new UDP thread");
     }
     else
 	error(0, "Failed to create a new thread!");
@@ -1654,14 +1654,14 @@ static void print_threads(char *buffer, int in_xml)
 		    sprintf(buf, "[%d] SMSC Connection %s (%s)\n", thr->id,
 			    smsc_name(thr->smsc), bbt_status_name(thr->status));
 		break;
-	    case BB_TTYPE_CSDR:
+	    case BB_TTYPE_UDP:
 		if (in_xml)
 		    sprintf(buf, BOX_XML_ANSWER,
 			    thr->id, bbt_status_name(thr->status),
-			    "General", "CSDR",
+			    "General", "UDP",
 			    "Internal", 0, 0, 0);
 		else
-		    sprintf(buf, "[%d] CSDR Connection (%s)\n", thr->id,
+		    sprintf(buf, "[%d] UDP Connection (%s)\n", thr->id,
 			    bbt_status_name(thr->status));
 		break;
 	    case BB_TTYPE_SMS_BOX:
@@ -1999,7 +1999,7 @@ static void setup_signal_handlers(void)
 static void open_all_receivers(Config *cfg)
 {
     SMSCenter *smsc;
-    CSDRouter *csdr;
+    WDP_UDPBearer *udp;
     ConfigGroup *grp;
         
     grp = config_first_group(cfg);
@@ -2019,13 +2019,15 @@ static void open_all_receivers(Config *cfg)
 		new_bbt_smsc(smsc);
 	    }
 	}
-	else if (config_get(grp, "csdr") != NULL) {
-	    csdr = csdr_open(grp);
+	else if (config_get(grp, "csdr") != NULL)
+	    error(0, "You need to rename `csdr' to `wdp-udp'. Sorry.");
+	else if (config_get(grp, "wdp-udp") != NULL) {
+	    udp = wdp_udp_open(grp);
 	    
-	    if (csdr == NULL) {
-		error(0, "Problems connecting to a CSDR, skipping.");
+	    if (udp == NULL) {
+		error(0, "Problems openind WDP/UDP port, skipping.");
 	    } else {
-		new_bbt_csdr(csdr);
+		new_bbt_udp(udp);
 	    }
 	}
 	grp = config_next_group(grp);
