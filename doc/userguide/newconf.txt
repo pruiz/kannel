@@ -213,8 +213,23 @@ connected to the computer. We need both a username and a password for
 logging in to most of the SMS centers (fake smsc does not need
  username nor password, nor does require some other centers which are
  accessed via TCP/IP)
-        
 
+GSM modem as an SMSC:
+        
+ group = smsc
+ #       Mandatory
+ #
+ smsc = at
+ #       Uses a GSM modem with AT commands
+ #
+ modemtype = (modem type)
+ #       Modems from different manufacturers have slightly different
+ #       behaviour. So we need to know what type of modem is used.
+ #       Supported types are: wavecom, premicell, siemens.
+ #
+ device = /dev/xxx 
+ #	The device the modem is connected to. like /dev/ttyS0.
+ #
 
 
 WAPBOX GROUP
