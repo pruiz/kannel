@@ -1995,6 +1995,7 @@ bearerbox-host = localhost
         SMSC ID entries. To remove prefixes, use like 
 	     "-,+35850,050;-,+35840,040".
 	</emphasis>
+     </entry></row>
 
    <row><entry><literal>alt-charset</literal></entry>
      <entry><literal>number</literal></entry>

@@ -1,3 +1,6 @@
+2002-09-08  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * doc/userguide/userguide.xml: fix
+
 2002-09-06  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gwlib/cfg.c, doc/userguide/userguide.xml: added directory include to 
       configuration. If "include" argument is a directory, include the files 
