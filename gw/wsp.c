@@ -434,7 +434,7 @@ static int field_value(Octstr *str, int	*offset, int *well_known_value,
     }
     else if (val > 127) {
 	*well_known_value = val - 0x80;
-	*data_offset = 0;
+	*data_offset = *offset;
 	*data_len = 1;
 	(*offset)++;
 	return WSP_FIELD_VALUE_ENCODED;
@@ -449,11 +449,61 @@ static int field_value(Octstr *str, int	*offset, int *well_known_value,
 }
 
 
+static char *encoded_language(int val, int val2)
+{
+    char *ch;
+
+    if (val2 >= 0) {
+	if (val==0x07 && val2==0xEA)
+	    ch = "big5";
+	else if (val==0x03 && val2==0xE8)
+	    ch = "iso-10646-ucs-2";
+	else
+	    ch = "unknown";
+    } else {
+	if (val <= WSP_PREDEFINED_LAST_CHARSET)
+	    ch = WSPCharacterSetAssignment[val];
+	else if (val == 0x6A)
+	    ch = "utf-8";
+	else
+	    ch = "non-assigned";
+    }
+    return ch;
+}
+    
+
+static char *encode_language_str(Octstr *str, char *buf, int off, int data_len)
+{
+    char *ch;
+    unsigned long len;
+    int ret, val, data_off, end;
+    end = off;
+    
+    ret = field_value(str, &end, &val, &data_off, &len);
+    if (ret == WSP_FIELD_VALUE_ENCODED) {
+	ch = encoded_language(val, -1);
+    }
+    else if (ret == WSP_FIELD_VALUE_DATA) {
+	ch = encoded_language(octstr_get_char(str, data_off),
+			      octstr_get_char(str, data_off+1));
+    }
+    if (data_off+len+1 == off+data_len) {
+	val = octstr_get_char(str, data_off+len);
+	sprintf(buf, "%s;q=%0.2f", ch, (float)((val-1)/100.0));
+	ch = buf;
+    } else if (data_off+len+2 == off+data_len) {
+	sprintf(buf, "%s;q=?", ch);
+	ch = buf;
+    }
+    return ch;
+}
+
+
 int decode_well_known_field(int field_type, Octstr *headers, int *off)
 {
     unsigned long len;
-    int data_off, ret, val;
-    char *ch;
+    int data_off, ret, val, val2;
+    char *ch, tmpbuf[1024];
     
     ret = field_value(headers, off, &val, &data_off, &len);
 
@@ -464,7 +514,7 @@ int decode_well_known_field(int field_type, Octstr *headers, int *off)
      *     fix this (as we may get the same field name repeatly)
      */
     if (ret == WSP_FIELD_VALUE_NUL_STRING) {
-	    debug(0, "hdr %s: '%s'", 
+	    debug(0, "%s: '%s'", 
 		  WSPHeaderFieldNameAssignment[field_type],
 		  octstr_get_cstr(headers)+data_off);
 	    return 0;
@@ -479,38 +529,28 @@ int decode_well_known_field(int field_type, Octstr *headers, int *off)
 	if (ret == WSP_FIELD_VALUE_ENCODED &&
 	    val <= WSP_PREDEFINED_LAST_CONTENTTYPE)
 
-	    debug(0, "hdr %s: '%s'", 
+	    debug(0, "%s: '%s'", 
 		  WSPHeaderFieldNameAssignment[field_type],
 		  WSPContentTypeAssignment[val]);
 	else if (ret == WSP_FIELD_VALUE_DATA)
-	    debug(0, "hdr %s: accept-general-form not supported",
+	    debug(0, "%s: accept-general-form not supported",
 		  WSPHeaderFieldNameAssignment[field_type]);
 	else
 	    return -1;
 	break;
 
+	
     case 0x01:		/* Accept-Charset */ 
 	if (ret == WSP_FIELD_VALUE_ENCODED) {
-	    if (val <= WSP_PREDEFINED_LAST_CHARSET)
-		ch = WSPCharacterSetAssignment[val];
-	    else if (val == 0x6A)
-		ch = "utf-8";
-	    else 
-		ch = "non-assigned";
+	    ch = encoded_language(val, -1);
 	}
 	else if (ret == WSP_FIELD_VALUE_DATA) {
-	    if (octstr_get_char(headers, data_off)==0x07 &&
-		octstr_get_char(headers, data_off)==0xEA)
-		ch = "big5";
-	    else if (octstr_get_char(headers, data_off)==0x03 &&
-		octstr_get_char(headers, data_off)==0xE8)
-		ch = "iso-10646-ucs-2";
-	    else
-		ch = "non-assigned";
-	} else
-	    return -1;	/* no NUL STRING for accept-charset */ 
-
-	debug(0, "hdr %s: '%s'", 
+	    ch = encode_language_str(headers, tmpbuf, data_off, len);
+	}
+	else
+	    ch = "?";
+	
+	debug(0, "%s: '%s'", 
 	      WSPHeaderFieldNameAssignment[field_type], ch);
 	break;
 
@@ -531,7 +571,7 @@ int decode_well_known_field(int field_type, Octstr *headers, int *off)
 	} else
 	    ch = "Unsupported";
 	
-	debug(0, "hdr %s: '%s'", 
+	debug(0, "%s: '%s'", 
 	      WSPHeaderFieldNameAssignment[field_type], ch);
 	break;
 
@@ -582,6 +622,112 @@ int unpack_headers(Octstr *headers)
 }	
 
 
+static int unpack_caps(Octstr *caps, WSPMachine *m)
+{
+    int off, flags;
+    unsigned long length, uiv, mor;
+    
+    off = 0;
+    while (off < octstr_len(caps)) {
+	unpack_uintvar(&length, caps, &off);
+
+	/* XXX
+	 * capablity identifier is defined as 'multiple octets'
+	 * and encoded as Field-Name, but current supported
+	 * capabilities can be identified via one number
+	 */
+
+	off++;
+	switch(octstr_get_char(caps,off-1)) {
+	case WSP_CAPS_CLIENT_SDU_SIZE:
+	    if (unpack_uintvar(&uiv, caps, &off) == -1)
+		warning(0, "Problems getting client SDU size capability");
+	    else {
+		if (WSP_MAX_CLIENT_SDU && uiv < WSP_MAX_CLIENT_SDU) {
+		    debug(0, "Client tried client SDU size %lu larger "
+			  "than our max %d", uiv, WSP_MAX_CLIENT_SDU);
+		} else if (!(m->set_caps & WSP_CSDU_SET)) {
+		    debug(0, "Client SDU size negotiated to %lu", uiv);
+		    m->client_SDU_size = uiv;
+		    m->set_caps |= WSP_CSDU_SET;
+		}
+	    }
+	    break;
+	case WSP_CAPS_SERVER_SDU_SIZE:
+	    if (unpack_uintvar(&uiv, caps, &off) == -1)
+		warning(0, "Problems getting server SDU size capability");
+	    else {
+		if (WSP_MAX_SERVER_SDU && uiv < WSP_MAX_SERVER_SDU) {
+		    debug(0, "Client tried server SDU size %lu larger "
+			  "than our max %d", uiv, WSP_MAX_SERVER_SDU);
+		} else if (!(m->set_caps & WSP_SSDU_SET)) {
+		    debug(0, "Server SDU size negotiated to %lu", uiv);
+		    m->server_SDU_size = uiv;
+		    m->set_caps |= WSP_SSDU_SET;
+		}
+	    }
+	    break;
+	case WSP_CAPS_PROTOCOL_OPTIONS:
+	    /* XXX should be taken as octstr or something - and
+		  * be sure, that there is that information */
+
+	    flags = (octstr_get_char(caps,off));
+	    if (!(m->set_caps & WSP_PO_SET)) {
+
+		/* we do not support anything yet, so answer so */
+
+		debug(0, "Client protocol option flags %0xd, not supported.", flags);
+		     
+		m->protocol_options = WSP_MAX_PROTOCOL_OPTIONS;
+		m->set_caps |= WSP_SSDU_SET;
+	    }
+	    break;
+	case WSP_CAPS_METHOD_MOR:
+	    if (unpack_uint8(&mor, caps, &off) == -1)
+		warning(0, "Problems getting MOR methods capability");
+	    else {
+		if (mor < WSP_MAX_METHOD_MOR) {
+		    debug(0, "Client tried method MOR %lu larger "
+			  "than our max %d", mor, WSP_MAX_METHOD_MOR);
+		} else if (!(m->set_caps & WSP_MMOR_SET)) {
+		    debug(0, "Method MOR negotiated to %lu", mor);
+		    m->MOR_method = mor;
+		    m->set_caps |= WSP_MMOR_SET;
+		}
+	    }
+	    break;
+	case WSP_CAPS_PUSH_MOR:
+	    if (unpack_uint8(&mor, caps, &off) == -1)
+		warning(0, "Problems getting MOR push capability");
+	    else {
+		if (mor < WSP_MAX_PUSH_MOR) {
+		    debug(0, "Client tried push MOR %lu larger "
+			  "than our max %d", mor, WSP_MAX_PUSH_MOR);
+		} else if (!(m->set_caps & WSP_PMOR_SET)) {
+		    debug(0, "Push MOR negotiated to %lu", mor);
+		    m->MOR_push = mor;
+		    m->set_caps |= WSP_PMOR_SET;
+		}
+	    }
+	    break;
+	case WSP_CAPS_EXTENDED_METHODS:
+	    debug(0, "Extended methods capability ignored");
+	    break;
+	case WSP_CAPS_HEADER_CODE_PAGES:
+	    debug(0, "Header code pages capability ignored");
+	    break;
+	case WSP_CAPS_ALIASES:
+	    debug(0, "Aliases capability ignored");
+	    break;
+	default:
+	    /* unassigned */
+	    debug(0, "Unknown capability ignored");
+	    break;
+	}
+    }
+    return 0;
+}
+
 static void append_to_event_queue(WSPMachine *machine, WSPEvent *event) {
 	mutex_lock(machine->queue_lock);
 	if (machine->event_queue_head == NULL) {
@@ -613,9 +759,8 @@ static WSPEvent *remove_from_event_queue(WSPMachine *machine) {
 
 
 static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
-	int off, flags;
+	int off;
 	unsigned long version, caps_len, headers_len;
-	unsigned long length, uiv, mor;
 	Octstr *caps, *headers;
 
 	off = 1;	/* ignore PDU type */
@@ -631,120 +776,14 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 	if (caps_len > 0) {
 	    debug(0, "Unpacked caps:");
 	    octstr_dump(caps);
+
+	    unpack_caps(caps, m);
 	}
-
-	/*
-	 * CAPABILITIES
-	 */
-	off = 0;
-	while (off < caps_len) {
-	    unpack_uintvar(&length, caps, &off);
-
-	    /* XXX
-	     * capablity identifier is defined as 'multiple octets'
-	     * and encoded as Field-Name, but current supported
-	     * capabilities can be identified via one number
-	     */
-
-	    off++;
-	    switch(octstr_get_char(caps,off-1)) {
-	     case WSP_CAPS_CLIENT_SDU_SIZE:
-		if (unpack_uintvar(&uiv, caps, &off) == -1)
-		    warning(0, "Problems getting client SDU size capability");
-		else {
-		    if (WSP_MAX_CLIENT_SDU && uiv < WSP_MAX_CLIENT_SDU) {
-			debug(0, "Client tried client SDU size %lu larger "
-			      "than our max %d", uiv, WSP_MAX_CLIENT_SDU);
-		    } else if (!(m->set_caps & WSP_CSDU_SET)) {
-			debug(0, "Client SDU size negotiated to %lu", uiv);
-			m->client_SDU_size = uiv;
-			m->set_caps |= WSP_CSDU_SET;
-		    }
-		}
-		break;
-	     case WSP_CAPS_SERVER_SDU_SIZE:
-		 if (unpack_uintvar(&uiv, caps, &off) == -1)
-		     warning(0, "Problems getting server SDU size capability");
-		 else {
-		     if (WSP_MAX_SERVER_SDU && uiv < WSP_MAX_SERVER_SDU) {
-			 debug(0, "Client tried server SDU size %lu larger "
-			       "than our max %d", uiv, WSP_MAX_SERVER_SDU);
-		     } else if (!(m->set_caps & WSP_SSDU_SET)) {
-			 debug(0, "Server SDU size negotiated to %lu", uiv);
-			 m->server_SDU_size = uiv;
-			 m->set_caps |= WSP_SSDU_SET;
-		     }
-		 }
-		 break;
-	     case WSP_CAPS_PROTOCOL_OPTIONS:
-		 /* XXX should be taken as octstr or something - and
-		  * be sure, that there is that information */
-
-		 flags = (octstr_get_char(caps,off));
-		 if (!(m->set_caps & WSP_PO_SET)) {
-
-		     /* we do not support anything yet, so answer so */
-
-		     debug(0, "Client protocol option flags %0xd, not supported.", flags);
-		     
-		     m->protocol_options = WSP_MAX_PROTOCOL_OPTIONS;
-		     m->set_caps |= WSP_SSDU_SET;
-		 }
-		 break;
-	     case WSP_CAPS_METHOD_MOR:
-		if (unpack_uint8(&mor, caps, &off) == -1)
-		    warning(0, "Problems getting MOR methods capability");
-		else {
-		    if (mor < WSP_MAX_METHOD_MOR) {
-			debug(0, "Client tried method MOR %lu larger "
-			      "than our max %d", mor, WSP_MAX_METHOD_MOR);
-		    } else if (!(m->set_caps & WSP_MMOR_SET)) {
-			debug(0, "Method MOR negotiated to %lu", mor);
-			m->MOR_method = mor;
-			m->set_caps |= WSP_MMOR_SET;
-		    }
-		}
-		break;
-	    case WSP_CAPS_PUSH_MOR:
-		if (unpack_uint8(&mor, caps, &off) == -1)
-		    warning(0, "Problems getting MOR push capability");
-		else {
-		    if (mor < WSP_MAX_PUSH_MOR) {
-			debug(0, "Client tried push MOR %lu larger "
-			      "than our max %d", mor, WSP_MAX_PUSH_MOR);
-		    } else if (!(m->set_caps & WSP_PMOR_SET)) {
-			debug(0, "Push MOR negotiated to %lu", mor);
-			m->MOR_push = mor;
-			m->set_caps |= WSP_PMOR_SET;
-		    }
-		}
-		break;
-	    case WSP_CAPS_EXTENDED_METHODS:
-		debug(0, "Extended methods capability ignored");
-		break;
-	    case WSP_CAPS_HEADER_CODE_PAGES:
-		debug(0, "Header code pages capability ignored");
-		break;
-	    case WSP_CAPS_ALIASES:
-		debug(0, "Aliases capability ignored");
-		break;
-	    default:
-		/* unassigned */
-		debug(0, "Unknown capability ignored");
-		break;
-	    }
-	}
-	/*
-	 * HEADERS
-	 */
-
 	if (headers_len > 0) {
-	    int byte;
-
 	    debug(0, "Unpacked headers:");
 	    octstr_dump(headers);
-
-	    debug(0, "Final off = %d", off);
+	    
+	    unpack_headers(headers);
 	}
 	return 0;
 }
