@@ -1,3 +1,8 @@
+2002-10-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/utils.c: fixed a bug in does_prefix_match(), when a number gets
+      not recognized if it has the same length as in prefix list. Now 
+      prefix = number does get matched.
+
 2002-10-15 Andreas Fink <afink@gni.ch>
     * gw/dlr.c gw/smsc/smsc_smpp.c: fixed DLR reports if message ID was hex or alpha
 
