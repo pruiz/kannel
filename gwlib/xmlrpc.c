@@ -8,10 +8,10 @@
  * Stipe Tolj <tolj@wapme-systems.de>
  */
 
-#include <xmlmemory.h>
-#include <tree.h>
-#include <debugXML.h>
-#include <encoding.h>
+#include <libxml/xmlmemory.h>
+#include <libxml/tree.h>
+#include <libxml/debugXML.h>
+#include <libxml/encoding.h>
 
 #include "gwlib/gwlib.h"
 #include "gwlib/xmlrpc.h"

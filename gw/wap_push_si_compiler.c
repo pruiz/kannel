@@ -7,10 +7,10 @@
  */
 
 #include <ctype.h>
-#include <xmlmemory.h>
-#include <tree.h>
-#include <debugXML.h>
-#include <encoding.h>
+#include <libxml/xmlmemory.h>
+#include <libxml/tree.h>
+#include <libxml/debugXML.h>
+#include <libxml/encoding.h>
 
 #include "shared.h"
 #include "xml_shared.h"

@@ -26,11 +26,11 @@
  * By  Aarno Syvänen for Wapit Ltd and for Wiral Ltd.
  */
 
-#include <xmlmemory.h>
-#include <parser.h>
-#include <tree.h>
-#include <debugXML.h>
-#include <encoding.h>
+#include <libxml/xmlmemory.h>
+#include <libxml/parser.h>
+#include <libxml/tree.h>
+#include <libxml/debugXML.h>
+#include <libxml/encoding.h>
 #include <ctype.h>
 #include <string.h>
 

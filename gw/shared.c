@@ -5,7 +5,7 @@
  */
 
 #include <sys/utsname.h>
-#include <xmlversion.h>
+#include <libxml/xmlversion.h>
 
 #include "gwlib/gwlib.h"
 #include "shared.h"
