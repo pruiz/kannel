@@ -84,5 +84,9 @@
 /* Defined if we have getnameinfo() in <netdb.h> */
 #undef HAVE_GETNAMEINFO
 
+/* Syntactic sugar that shows why I'm doing some odd things*/
+#ifdef sparc
+#define SPARC_ABI
+#endif
 
 #endif

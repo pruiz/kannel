@@ -1,3 +1,9 @@
+2000-08-06  Derry Hamilton  <rasilon@tardis.ed.ac.uk>
+
+	* config.h.in, wmlscript/wsencode.c:  Fixed the WMLScript compiler
+	  errors under Solaris SPARC.  The SPARC ABI requires that function
+	  parameters be int aligned.
+
 2000-08-04  Tuomas Luttinen  <tuo@wapit.com>
 
 	* test/decompile.[ch]: A patch by Chris Wulff applied.
