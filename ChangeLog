@@ -1,5 +1,17 @@
 1999-11-17    <rpr@rpr.wapit.com>
 
+	* gwlib/wapitlib.c: catched signal interrupts in read
+
+	* gw/bearerbox.c: internal sms box implemented. Still some
+	problems when the system wents down
+
+	* gw/boxc.c, gw/smsbox_rew.c: updates
+
+	* gw/smsc_cimd.c: quick hack to connect CIMD 1.37. Partial. MG,
+	fix this.
+
+1999-11-17    <rpr@rpr.wapit.com>
+
 	* smsbox_req.c: added username 'default', which is used, if no
 	username is specified in 'sendsms' http-request
 

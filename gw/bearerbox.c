@@ -49,7 +49,8 @@
 #include "config.h"
 #include "http.h"
 #include "cgi.h"
-
+#include "urltrans.h"
+#include "smsbox_req.h"
 #include "bb_msg.h"
 #include "msg.h"
 #include "smsc.h"
@@ -127,6 +128,7 @@ typedef struct bb_s {
     char *admin_username;	/* for HTTP-adminstration */
     char *admin_password;	/* ditto */
 
+
     int http_fd, wap_fd, sms_fd;	/* socket FDs */
     
     char *pid_file;		/* our pid */
@@ -145,6 +147,7 @@ static BearerBox *bbox = NULL;
  * FORWARD DECLARATIONS
  */
 
+static BBThread *internal_smsbox(void);
 static void print_threads(char *buffer);
 static void print_queues(char *buffer);
 
@@ -618,7 +621,8 @@ static void *smsboxconnection_thread(void *arg)
     RQueueItem	*msg;
     
     us = arg;
-    us->boxc = boxc_open(bbox->sms_fd);
+    if (us->boxc == NULL)
+	us->boxc = boxc_open(bbox->sms_fd);
     bbox->accept_pending--;
 
     us->status = BB_STATUS_OK;
@@ -631,14 +635,17 @@ static void *smsboxconnection_thread(void *arg)
 
         our_time = time(NULL);
 	if ((our_time) - (last_time) > bbox->heartbeat_freq) {
-	    if (us->boxc->box_heartbeat < last_time) {
+	    if (us->boxc->fd != BOXC_THREAD &&
+		us->boxc->box_heartbeat < last_time) {
+
 		warning(0, "SMSBOXC: Other end has stopped beating");
 		break;
 	    }
 	    update_heartbeat(us);
 	    last_time = our_time;
 	}
-	
+	if (us->boxc->fd == BOXC_THREAD)
+	    us->boxc->load == smsbox_req_count();
 
 	if (written < 0)
 	    written = 0;
@@ -666,6 +673,16 @@ static void *smsboxconnection_thread(void *arg)
 		continue;
 	    }
 	}
+
+	/* for internal thread, all messages are automatically appended to
+	 * reply queue, no need to call get_message
+	 */
+	
+	if (us->boxc->fd == BOXC_THREAD) {
+	    written--;
+	    continue;
+	}
+	
 	/* read socket, adding any new messages to reply-queue */
 	/* if socket is closed, set us to die-mode */
 
@@ -698,6 +715,7 @@ static void *smsboxconnection_thread(void *arg)
 int thread_writer(Msg *msg)
 {
     RQueueItem *rqi;
+
     rqi = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
     if (rqi == NULL) {
 	msg_destroy(msg);
@@ -705,7 +723,7 @@ int thread_writer(Msg *msg)
     }
     rqi->msg = msg;
     normalize_numbers(rqi, NULL);
-    route_msg(NULL, rqi);
+    route_msg(internal_smsbox(), rqi);
     rq_push_msg(bbox->reply_queue, rqi);
     return 0;
 }
@@ -821,8 +839,10 @@ static void new_bbt_smsc(SMSCenter *smsc)
     if (nt != NULL) {
 	nt->smsc = smsc;
 	(void)start_thread(1, smscenter_thread, nt, 0);
+	debug(0, "Created a new SMSC thread");
     }
-    debug(0, "Created a new SMSC thread");
+    else
+	error(0, "Failed to create a new thread!");
 }
 
 
@@ -837,8 +857,10 @@ static void new_bbt_csdr(CSDRouter *csdr)
     if (nt != NULL) {
 	nt->csdr = csdr;
 	(void)start_thread(1, csdrouter_thread, nt, 0);
+	debug(0, "Created a new CSDR thread");
     }
-    debug(0, "Created a new CSDR thread");
+    else
+	error(0, "Failed to create a new thread!");
 }
 
 
@@ -852,8 +874,10 @@ static void new_bbt_wapbox()
     if (nt != NULL) {
 	bbox->accept_pending++;
 	(void)start_thread(1, wapboxconnection_thread, nt, 0);
+	debug(0, "Created a new WAP BOX thread (id = %d)", nt->id);
     }
-    debug(0, "Created a new WAP BOX thread (id = %d)", nt->id);
+    else
+	error(0, "Failed to create a new thread!");
 }
 
 
@@ -867,8 +891,10 @@ static void new_bbt_smsbox()
     if (nt != NULL) {
 	bbox->accept_pending++;
 	(void)start_thread(1, smsboxconnection_thread, nt, 0);
+	debug(0, "Created a new SMS BOX thread (id = %d)", nt->id);
     }
-    debug(0, "Created a new SMS BOX thread (id = %d)", nt->id);
+    else
+	error(0, "Failed to create a new thread!");
 }
 
 /*
@@ -911,6 +937,27 @@ static int bbt_kill(int id)
     return -1;
 }
 
+/*
+ * check if we have an internal smsbox. Return pointer to it
+ * if we do, NULL otherwise
+ */
+static BBThread *internal_smsbox(void)
+{
+    BBThread *thr;
+    int i;
+    
+    for(i=0; i < bbox->thread_limit; i++) {
+	thr = bbox->threads[i];
+	if (thr != NULL) {
+	    if (thr->type == BB_TTYPE_SMS_BOX &&
+		thr->boxc != NULL &&
+		thr->boxc->fd == BOXC_THREAD)
+
+		return thr;
+	}
+    }
+    return NULL;
+}
 
 /*-----------------------------------------------------------
  * HTTP ADMINSTRATION
@@ -927,9 +974,20 @@ static char *http_admin_command(char *command, CGIArg *list)
 	bbox->admin_password == NULL ||
 	strcmp(bbox->admin_password, val) != 0)
 
-	return "Authorization failed";	
+	return "Authorization failed";
 
-    if (strcasecmp(command, "/cgi-bin/stop") == 0) {
+    if (bbox->abort_program > 0)
+	return "The avalance has already started, too late to do anything";
+
+    if (strcasecmp(command, "/cgi-bin/sendsms") == 0) {
+	if (bbox->suspended != 0)
+	    return "Gateway is suspended";
+	else if (internal_smsbox() == NULL)
+	    return "No internal SMS BOX";
+	else
+	    return smsbox_req_sendsms(list);
+    }
+    else if (strcasecmp(command, "/cgi-bin/stop") == 0) {
 	if (bbox->suspended != 0)
 	    return "Already suspended";
 	else {
@@ -948,13 +1006,9 @@ static char *http_admin_command(char *command, CGIArg *list)
 	}
     }
     else if (strcasecmp(command, "/cgi-bin/kill") == 0) {
-	if (bbox->abort_program > 0)
-	    return "Already killed, trying to die";
-	else {
-	    bbox->abort_program = 1;
-	    warning(0, "Shutdown initiated via HTTP-admin");
-	    return "Shutdown started";
-	}
+	bbox->abort_program = 1;
+	warning(0, "Shutdown initiated via HTTP-admin");
+	return "Shutdown started";
     }
     else if (strcasecmp(command, "/cgi-bin/disconnect") == 0) {
 	if (cgiarg_get(list, "id", &val) == -1)
@@ -1280,8 +1334,12 @@ static void print_threads(char *buffer)
 			bbt_status_name(thr->status));
 		break;
 	    case BB_TTYPE_SMS_BOX:
-		sprintf(buf, "[%d] SMS BOX Connection from <%s> (%s)\n", thr->id,
-			thr->boxc->client_ip, bbt_status_name(thr->status));
+		if (thr->boxc->fd == BOXC_THREAD)
+		    sprintf(buf, "[%d] Internal SMS BOX (%s)\n", thr->id,
+			    bbt_status_name(thr->status));
+		else
+		    sprintf(buf, "[%d] SMS BOX Connection from <%s> (%s)\n", thr->id,
+			    thr->boxc->client_ip, bbt_status_name(thr->status));
 		break;
 	    case BB_TTYPE_WAP_BOX: 
 		sprintf(buf, "[%d] WAP BOX Connection from <%s> (%s)\n", thr->id,
@@ -1575,6 +1633,68 @@ static void open_all_receivers(Config *cfg)
 }
 
 
+/*
+ * this function creates an internal SMS BOX Thread
+ * (it is much faster than sms box connected via tcp/ip)
+ */
+void create_internal_smsbox(Config *cfg)
+{
+    ConfigGroup *grp;
+    BBThread *nt;
+    URLTranslationList *translations;
+    char *p;
+    int sms_len, sendsms_port;
+    char *global_sender;
+
+    sms_len = 160;
+    sendsms_port = -1;
+    
+    info(0, "Creating an internal SMS BOX");
+    
+    grp = config_first_group(cfg);
+    while(grp != NULL) {
+        if ((p = config_get(grp, "sendsms-port")) != NULL)
+	    sendsms_port = atoi(p);
+	
+        if ((p = config_get(grp, "sms-length")) != NULL)
+            sms_len = atoi(p);
+        if ((p = config_get(grp, "global-sender")) != NULL)
+            global_sender = p;
+	
+        grp = config_next_group(grp);
+    }
+    if (global_sender != NULL)
+        info(0, "Internal SMS BOX global sender set as '%s'", global_sender);
+    
+    if (sendsms_port != bbox->http_port)
+	warning(0, "Sendsms port <%d> different than HTTP-admin port <%d>, ignored",
+		sendsms_port, bbox->http_port);
+    else if (sendsms_port == 0)
+	warning(0, "No sendssms-port set in smsconf, but we use HTTP-admin port <%d>",
+		bbox->http_port);
+    
+    translations = urltrans_create();
+    if (translations == NULL)
+        panic(errno, "urltrans_create failed");
+    if (urltrans_add_cfg(translations, cfg) == -1)
+        panic(errno, "urltrans_add_cfg failed");
+
+    smsbox_req_init(translations, sms_len, global_sender, thread_writer);
+    
+    nt = create_bbt(BB_TTYPE_SMS_BOX);
+    if (nt != NULL) {
+	bbox->accept_pending++;
+	nt->boxc = boxc_open(BOXC_THREAD);
+	if (nt->boxc != NULL)
+	    (void)start_thread(1, smsboxconnection_thread, nt, 0);
+    }
+    else
+	error(0, "Failed to create a new thread!");
+    
+    return;
+}
+
+
 int main(int argc, char **argv)
 {
     int cf_index;
@@ -1598,10 +1718,11 @@ int main(int argc, char **argv)
 	if (cfg == NULL)
 	    info(0, "No internal SMS BOX");
 	else
-	    error(0, "Internal SMS BOX not yet supported");
+	    create_internal_smsbox(cfg);
     }
-    /* init_smsbox(cfg); */
-    
+    else
+	info(0, "No internal SMS BOX");
+	
     main_program();
 
     return 0;

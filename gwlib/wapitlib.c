@@ -361,8 +361,10 @@ int read_to_eof(int fd, char **data, size_t *len) {
 		}
 		ret = read(fd, *data + *len, size - *len);
 		if (ret == -1) {
-			error(errno, "Error while reading");
-			goto error;
+		    if(errno==EINTR) continue;
+		    if(errno==EAGAIN) continue;
+		    error(errno, "Error while reading");
+		    goto error;
 		}
 		if (ret == 0)
 			break;

@@ -84,37 +84,39 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
 {
     int ack = 0;
     
+    if (msg->msg_type == R_MSG_TYPE_ACK ||
+	msg->msg_type == R_MSG_TYPE_NACK) {
+
+	rqi_delete(msg);
+	return 0;
+    }
     if (boxc->fd == BOXC_THREAD) {
 	
 	(void)start_thread(1, smsbox_req_thread, msg->msg, 0);
+
+	msg->msg = NULL;	/* it has been taken... */
     } else {
+	Octstr *pack;
 
-	if (msg->msg_type != R_MSG_TYPE_ACK &&
-	    msg->msg_type != R_MSG_TYPE_NACK) {	
-
-	    Octstr *pack;
-
-	    pack = msg_pack(msg->msg);
-	    if (pack == NULL) goto error;
+	pack = msg_pack(msg->msg);
+	if (pack == NULL) goto error;
 	    
-	    octstr_send(boxc->fd, pack);
-	    octstr_destroy(pack);
+	octstr_send(boxc->fd, pack);
+	octstr_destroy(pack);
 
-	    if (msg->msg_class == R_MSG_CLASS_SMS) {
+	if (msg->msg_class == R_MSG_CLASS_SMS) {
 
-		if(msg_type(msg->msg) == plain_sms) {
-		    debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->plain_sms.text));
-		} else if(msg_type(msg->msg) == smart_sms) {
-		    debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->smart_sms.msgdata));
-		}
-
-	    } else {
-		debug(0, "BOXC:write < WAP >");
+	    if(msg_type(msg->msg) == plain_sms) {
+		debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->plain_sms.text));
+	    } else if(msg_type(msg->msg) == smart_sms) {
+		debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->smart_sms.msgdata));
 	    }
-	    ack = 1;
-	}
-    }	
-
+	} else {
+	    debug(0, "BOXC:write < WAP >");
+	    }
+	ack = 1;
+    }
+    
     if (msg->msg_type == R_MSG_TYPE_MO) {
 	if (ack) {
 	    msg->msg_type = R_MSG_TYPE_ACK;	/* done. */

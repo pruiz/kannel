@@ -151,11 +151,16 @@ static int do_sending(Msg *msg, char *str)
     if (pmsg == NULL)
 	goto error;
 
-    /* note the switching of sender and receiver */
-
     pmsg->plain_sms.receiver = octstr_duplicate(msg->plain_sms.receiver);
     pmsg->plain_sms.sender = octstr_duplicate(msg->plain_sms.sender);
     pmsg->plain_sms.text = octstr_create_limited(str, sms_max_length);
+    pmsg->plain_sms.time = time(NULL);
+
+    if (pmsg->plain_sms.receiver == NULL ||
+	pmsg->plain_sms.sender == NULL ||
+	pmsg->plain_sms.text == NULL)
+
+	goto error;
 
     if (sender(pmsg) < 0)
 	goto error;
@@ -347,7 +352,7 @@ void *smsbox_req_thread(void *arg) {
 
     /* TODO: check if the sender is approved to use this service */
 
-    info(0, "starting to service request <%s> from <%s> to <%s>",
+    info(0, "creating service request <%s> from <%s> to <%s>",
 	      octstr_get_cstr(msg->plain_sms.text),
 	      octstr_get_cstr(msg->plain_sms.sender),
 	      octstr_get_cstr(msg->plain_sms.receiver));

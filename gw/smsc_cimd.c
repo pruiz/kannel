@@ -75,7 +75,7 @@ static int cimd_open_connection(SMSCenter *smsc) {
 
 	for (;;) {
 		ret = smscenter_read_into_buffer(smsc);
-		if (strstr(smsc->buffer, "CIMD rel 1.36\n") != NULL)
+		if (strstr(smsc->buffer, "CIMD rel 1.37\n") != NULL)
 			break;
 		if (ret < 0) goto logout;
 	}
@@ -684,7 +684,7 @@ static int internal_cimd_connect_tcpip(SMSCenter *smsc) {
 	for (;;) {
 		ret = smscenter_read_into_buffer(smsc);
 		if (ret < 0) goto logout;
-		if (strstr(smsc->buffer, "CIMD rel 1.36\n") != NULL)
+		if (strstr(smsc->buffer, "CIMD rel 1.37\n") != NULL)
 			break;
 		usleep(1000);
 	}
