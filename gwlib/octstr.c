@@ -691,8 +691,13 @@ int octstr_compare(Octstr *ostr1, Octstr *ostr2)
     else
         len = ostr2->len;
 
-    if (len == 0)
-        return 0; 	/* XXX this is a bug --liw */
+    if (len == 0) {
+	if (ostr1->len == 0 && ostr2->len > 0)
+	    return -1;
+	if (ostr1->len > 0 && ostr2->len == 0)
+	    return 1;
+        return 0;
+    }
 
     ret = memcmp(ostr1->data, ostr2->data, len);
     if (ret == 0) {
@@ -702,6 +707,52 @@ int octstr_compare(Octstr *ostr1, Octstr *ostr2)
             ret = 1;
     }
     return ret;
+}
+
+
+int octstr_case_compare(Octstr *os1, Octstr *os2)
+{
+    int c1, c2;
+    long i, len;
+
+    seems_valid(os1);
+    seems_valid(os2);
+
+    if (os1->len < os2->len)
+        len = os1->len;
+    else
+        len = os2->len;
+
+    if (len == 0) {
+	if (os1->len == 0 && os2->len > 0)
+	    return -1;
+	if (os1->len > 0 && os2->len == 0)
+	    return 1;
+        return 0;
+    }
+
+    for (i = 0; i < len; ++i) {
+	c1 = toupper(os1->data[i]);
+	c2 = toupper(os2->data[i]);
+	if (c1 != c2)
+	    break;
+    }
+
+    if (i == len) {
+	if (i == os1->len && i == os2->len)
+	    return 0;
+	if (i == os1->len)
+	    return -1;
+	return 1;
+    } else {
+	c1 = toupper(os1->data[i]);
+	c2 = toupper(os2->data[i]);
+	if (c1 < c2)
+	    return -1;
+	if (c1 == c2)
+	    return 0;
+	return 1;
+    }
 }
 
 

@@ -229,6 +229,14 @@ int octstr_compare(Octstr *ostr1, Octstr *ostr2);
 
 
 /*
+ * Like octstr_compare, except compares bytes without case sensitivity.
+ * Note that this probably doesn't work for Unicode, but should work
+ * for such 8-bit character sets as are supported by libc.
+ */
+int octstr_case_compare(Octstr *ostr1, Octstr *ostr2);
+
+
+/*
  * as above, but comparing is done only up to n bytes
  */
 int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, long n);
