@@ -1,5 +1,9 @@
 2000-09-14  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/http.c: Ran through astyle to get formatting right.
+
+2000-09-14  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/http.c: Removed internal function octstr_str_ncompare,
 	replacing it with calls to octstr_search and
 	octstr_create_immutable. Die *_cstr, die!
