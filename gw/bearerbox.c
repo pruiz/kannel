@@ -492,6 +492,7 @@ static int normalize_number(char *dial_prefixes, Octstr **number)
 	return 0;
 
     t = official = dial_prefixes;
+    official_len = 0;
 
     while(1) {
 
@@ -1158,6 +1159,7 @@ static BBThread *internal_smsbox(void)
     
     mutex_lock(bbox->mutex);
 
+    thr = NULL;
     for(i=0; i < bbox->thread_limit; i++) {
 	thr = bbox->threads[i];
 	if (thr != NULL) {
@@ -1912,9 +1914,10 @@ void create_internal_smsbox(Config *cfg)
 
     sms_len = 160;
     sendsms_port = -1;
+    global_sender = NULL;
     
     info(0, "Creating an internal SMS BOX");
-    
+
     grp = config_first_group(cfg);
     while(grp != NULL) {
         if ((p = config_get(grp, "sendsms-port")) != NULL)

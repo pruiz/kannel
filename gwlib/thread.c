@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include "config.h"
 #include "gwmem.h"
 #include "log.h"
 #include "thread.h"

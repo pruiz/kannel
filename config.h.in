@@ -112,6 +112,9 @@
 /* Defined if we have getnameinfo() in <netdb.h> */
 #undef HAVE_GETNAMEINFO
 
+/* Do we have <pthread.h>? */
+#undef HAVE_PTHREAD_H
+
 #endif
 
 /* config.h.bot - config.h.in suffix, used by autoheader */

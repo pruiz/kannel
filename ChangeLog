@@ -1,3 +1,9 @@
+Mon Jan 10 11:02:33 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* config.h.in, gw/bearerbox.c, gw/smsc_emi.c, gw/smsc_smpp.c,
+	gw/wapbox.c, gw/wsp.c, gwlib/thread.c: Silenced compiler warnings
+	when compiling with -Wall.
+
 Mon Jan 10 10:10:22 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Removed automake. Automake makes huge, complicated Makefiles

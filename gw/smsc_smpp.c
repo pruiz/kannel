@@ -1306,6 +1306,8 @@ static int pdu_encode_bind(smpp_pdu *pdu, Octstr **str) {
 	struct smpp_pdu_bind_transmitter *bind_transmitter;
 	struct smpp_pdu_bind_transmitter_resp *bind_transmitter_resp;
 
+	bind_receiver_resp = NULL;
+
 	switch(pdu->id) {
 
 	case SMPP_BIND_RECEIVER:

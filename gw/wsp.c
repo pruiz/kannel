@@ -294,7 +294,7 @@ static WSPEvent *remove_from_event_queue(WSPMachine *machine) {
 static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 	int off, flags;
 	unsigned long version, caps_len, headers_len;
-	unsigned long length, uiv, mor, type;
+	unsigned long length, uiv, mor;
 	Octstr *caps, *headers;
 
 	off = 1;	/* ignore PDU type */
@@ -621,8 +621,13 @@ static void *wsp_http_thread(void *arg) {
 			body = octstr_create_from_data(data, size);
 			if (body == NULL)
 				panic(0, "XXX octstr_create_data failed");
-		} else
+		} else if (strcmp(type, "text/vnd.wap.wmlscript") == 0) {
+			status = 415;
+			error(0, "WMLScript not yet implemented.");
+		} else {
 			status = 415; /* Unsupported media type */
+			warning(0, "Unsupported content type `%s'", type);
+		}
 	}
 		
 	e = wsp_event_create(SMethodResultRequest);

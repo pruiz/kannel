@@ -8,11 +8,15 @@
  */
 
 #include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "gwlib.h"
 #include "msg.h"
 #include "wtp.h"
 #include "bb.h"
+
+#define BUSYLOOP_MILLISECONDS 10000
 
 static char *bearerbox_host = BB_DEFAULT_HOST;
 static int bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
@@ -171,6 +175,7 @@ static void *empty_queue_thread(void *arg) {
 			send_heartbeat(socket, 0);
 			stamp = time(NULL);
 		    }
+		    usleep(BUSYLOOP_MILLISECONDS);
 		}
 	}
 }

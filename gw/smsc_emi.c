@@ -698,6 +698,8 @@ static int put_data(SMSCenter *smsc, char *buff, int length, int is_backup) {
 	size_t len = length;
 	int ret;
 	int fd;
+	
+	fd = -1;
 
 	if(smsc->type == SMSC_TYPE_EMI_IP) {
 		if (is_backup) {
@@ -898,6 +900,8 @@ static int internal_emi_parse_rawmessage_to_msg(
 	int msgnbr;
 	int tmpint;
 
+	msgnbr = -1;
+
 	bzero(isotext, sizeof(isotext));
 
 	strncpy(isotext, rawmessage, length);
@@ -966,6 +970,7 @@ static int internal_emi_acknowledge_from_rawmessage(
 	int tmpint;
 	int is_backup = 0;
 	
+	msgnbr = -1;
 	bzero(&sender, sizeof(sender));
 	bzero(&receiver, sizeof(receiver));
 	bzero(&emitext, sizeof(emitext));
