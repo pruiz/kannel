@@ -1,6 +1,6 @@
 2002-08-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_smscconn.c: removing debug line from previous testing and 
-      commented out lines.
+      commented out lines and added 're-connecting' state to smsc2_status().
 
 2002-08-13 Harrie Hazewinkel <harrie@mod-snmp.com>
     * Changed the '<NULL>' into '(null)' since the former is
