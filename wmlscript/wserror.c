@@ -196,7 +196,7 @@ void ws_vfprintf(WsIOProc io, void *context, const char *fmt, va_list ap)
             cp = buf;
             switch (fmt[i]) {
             case 'c': 		/* character */
-                ival = (int) va_arg(ap, char);
+                ival = (int) va_arg(ap, int);
 
                 snprintf(buf, sizeof(buf), "%c", (char) ival);
                 cp = buf;

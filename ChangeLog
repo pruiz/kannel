@@ -1,3 +1,9 @@
+2000-10-11  Richard Braakman  <dark@wapit.com>
+
+	* wmlscript/wserror.c: Corrected a stray va_arg(ap, char).
+	(va_arg should always get the type as it is after promotion, and
+	char is promoted to int.)
+
 2000-10-12  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/http.c: When we are the server side, and the client uses
