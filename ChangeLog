@@ -1,3 +1,6 @@
+2004-06-29  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/smsc/smsc_smpp.c: fixed compilation failure.
+
 2004-06-28  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/bearerbox.c: got rid of unused 'boxid' mutex.
     * gw/msg.h: introduced 'ack_status_t' typedef instead of anonymous enum.

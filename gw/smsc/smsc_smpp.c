@@ -949,7 +949,7 @@ static Connection *open_receiver(SMPP *smpp)
 static Msg *handle_dlr(SMPP *smpp, SMPP_PDU *pdu)
 {
     Msg *dlrmsg = NULL;
-    Octstr *respstr = NULL, *msgid = NULL;
+    Octstr *respstr = NULL, *msgid = NULL, *tmp;
     int dlrstat = -1;
     
     /* first check for SMPP v3.4 and above */
@@ -1046,7 +1046,7 @@ static Msg *handle_dlr(SMPP *smpp, SMPP_PDU *pdu)
         if (stat != NULL)
             octstr_destroy(stat);
     }
-    Octstr *tmp;
+
     tmp = octstr_format("0");
     
     if (msgid != NULL) {
