@@ -1,4 +1,9 @@
 2002-07-31  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_emi2.c: fixed a bug when using /status.xml for an EMI2 link
+      that does not set any username. <null> is interpresed as XML start tag
+      and hence we don't produce a valid XML file.
+
+2002-07-31  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: changed formating of HTTP User-Agent headers to be 
       in "foobar/1.2" style.
 
