@@ -285,8 +285,8 @@ int store_save(Msg *msg)
 {
     Msg *copy;
     
-    if (file == NULL)
-	return 0;
+    if (filename == NULL)
+        return 0;
 
     if (msg_type(msg) == sms) {
 	msg->sms.id = counter_increase(msg_id);
