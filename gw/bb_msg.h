@@ -89,7 +89,7 @@ RQueue *rq_new(void);
 /*
  * push a new message to the queue
  *
- * return 0 if successful, -1 if failed
+ * return 0, cannot fail (mutex may panic, however)
  */
 int rq_push_msg(RQueue *queue, RQueueItem *msg);
 
@@ -120,7 +120,7 @@ RQueueItem *rq_pull_msg(RQueue *queue, int req_id);
 RQueueItem *rq_pull_msg_class(RQueue *queue, int class);
 
 /*
- * return the current length of the queue, -1 on (mutex) error
+ * return the current length of the queue
  * if total is set, puts the 'added' value into it
  */
 int rq_queue_len(RQueue *queue, int *total);

@@ -1,5 +1,15 @@
 1999-11-17    <rpr@rpr.wapit.com>
 
+	* wapitlib.c, wapitlib.h: added functions mutex_lock and
+	mutex_unlock, which loack/unlock given mutex and panic if fail -
+	as panic is acceptable as mutex fails only because of coding error
+	(too early call or out-of-sequence call)
+
+	* bearerbox.c, smsbox.c, bb_msg.c: modified to use new mutex_lock
+	and unlock functions
+	
+1999-11-17    <rpr@rpr.wapit.com>
+
 	* gw/bearerbox.c: fixed heartbeat bug
 
 	* gw/smsbox.c: added debug information

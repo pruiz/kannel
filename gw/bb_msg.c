@@ -39,12 +39,7 @@ RQueue *rq_new(void)
 
 int rq_push_msg(RQueue *queue, RQueueItem *msg)
 {
-    int ret;
-    
-    ret = pthread_mutex_lock(&queue->mutex);
-    
-    if (ret != 0)
-	goto error;
+    mutex_lock(&queue->mutex);
 
     msg->next = NULL;
     if (queue->last != NULL)
@@ -63,26 +58,15 @@ int rq_push_msg(RQueue *queue, RQueueItem *msg)
     queue->added++;
     queue->last_mod = time(NULL);
 
-    ret = pthread_mutex_unlock(&queue->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_unlock(&queue->mutex);
 
     return 0;
-    
-error:
-    error(ret, "Failed to push message");
-    return -1;
 }
 
 
 int rq_push_msg_head(RQueue *queue, RQueueItem *msg)
 {
-    int ret;
-    
-    ret = pthread_mutex_lock(&queue->mutex);
-    
-    if (ret != 0)
-	goto error;
+    mutex_lock(&queue->mutex);
 
     msg->next = queue->first;
     queue->first = msg;
@@ -98,27 +82,17 @@ int rq_push_msg_head(RQueue *queue, RQueueItem *msg)
     queue->queue_len++;
     queue->last_mod = time(NULL);
 
-    ret = pthread_mutex_unlock(&queue->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_unlock(&queue->mutex);
 
     return 0;
-    
-error:
-    error(ret, "Failed to push message to head");
-    return -1;
 }
 
 
 int rq_push_msg_ack(RQueue *queue, RQueueItem *msg)
 {
-    int ret;
     RQueueItem *ptr, *prev;
     
-    ret = pthread_mutex_lock(&queue->mutex);
-    
-    if (ret != 0)
-	goto error;
+    mutex_lock(&queue->mutex);
 
     ptr = queue->first;
     prev = NULL;
@@ -154,15 +128,9 @@ int rq_push_msg_ack(RQueue *queue, RQueueItem *msg)
     queue->queue_len++;
     queue->last_mod = time(NULL);
 
-    ret = pthread_mutex_unlock(&queue->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_unlock(&queue->mutex);
 
     return 0;
-    
-error:
-    error(ret, "Failed to push acknowledgement");
-    return -1;
 }
 
 
@@ -190,12 +158,9 @@ static void rq_remove_msg(RQueue *queue, RQueueItem *msg, RQueueItem *prev)
 
 RQueueItem *rq_pull_msg(RQueue *queue, int req_id)
 {
-    int ret;
     RQueueItem *ptr, *prev;
     
-    ret = pthread_mutex_lock(&queue->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_lock(&queue->mutex);
 
     ptr = queue->first;
     prev = NULL;
@@ -208,26 +173,17 @@ RQueueItem *rq_pull_msg(RQueue *queue, int req_id)
 	prev = ptr;
 	ptr = ptr->next;
     }
-    ret = pthread_mutex_unlock(&queue->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_unlock(&queue->mutex);
 
     return ptr;	      
-    
-error:
-    error(ret, "Failed to pull message");
-    return NULL;
 }
 
 
 RQueueItem *rq_pull_msg_class(RQueue *queue, int class)
 {
-    int ret;
     RQueueItem *ptr, *prev;
     
-    ret = pthread_mutex_lock(&queue->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_lock(&queue->mutex);
 
     ptr = queue->first;
     prev = NULL;
@@ -243,40 +199,25 @@ RQueueItem *rq_pull_msg_class(RQueue *queue, int class)
 	prev = ptr;
 	ptr = ptr->next;
     }
-    ret = pthread_mutex_unlock(&queue->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_unlock(&queue->mutex);
 
     return ptr;	      
-    
-error:
-    error(ret, "Failed to pull message");
-    return NULL;
 }
 
 
 int rq_queue_len(RQueue *queue, int *total)
 {
-    int ret;
     int retval;
     
-    ret = pthread_mutex_lock(&queue->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_lock(&queue->mutex);
 
     retval = queue->queue_len;
     if (total != NULL)
 	*total = queue->added;
 
-    ret = pthread_mutex_unlock(&queue->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_unlock(&queue->mutex);
 
     return retval;
-    
-error:
-    error(ret, "Failed to inquire queue length");
-    return -1;
 }
 
 
@@ -284,11 +225,8 @@ time_t rq_oldest_message(RQueue *queue)
 {
     time_t smallest;
     RQueueItem *ptr;
-    int ret;
     
-    ret = pthread_mutex_lock(&queue->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_lock(&queue->mutex);
 
     smallest = time(NULL);
     ptr = queue->first;
@@ -297,15 +235,9 @@ time_t rq_oldest_message(RQueue *queue)
 	    smallest = ptr->time_tag;
 	ptr = ptr->next;
     }
-    ret = pthread_mutex_unlock(&queue->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_unlock(&queue->mutex);
 
     return smallest;  
-    
-error:
-    error(ret, "Failed to mutex");
-    return time(NULL);
 }
 
 
@@ -314,20 +246,13 @@ time_t rq_last_mod(RQueue *queue)
     int ret;
     time_t val;
     
-    ret = pthread_mutex_lock(&queue->mutex);
-    if (ret != 0) goto error;
+    mutex_lock(&queue->mutex);
 
     val = queue->last_mod;
 
-    ret = pthread_mutex_unlock(&queue->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_unlock(&queue->mutex);
 
     return val;  
-    
-error:
-    error(ret, "Failed to mutex");
-    return 0;
 }
 
 

@@ -101,14 +101,12 @@ int socket_sender(Msg *pmsg)
     if (pack == NULL)
 	goto error;
 
-    ret = pthread_mutex_lock(&socket_mutex);
-    if (ret != 0) 	goto error;
+    mutex_lock(&socket_mutex);
 
     if (octstr_send(socket_fd, pack) < 0)
 	goto error;
 
-    ret = pthread_mutex_unlock(&socket_mutex);
-    if (ret != 0) goto error;
+    mutex_unlock(&socket_mutex);
 
     debug(0, "write <%s>", octstr_get_cstr(pmsg->plain_sms.text));
     octstr_destroy(pack);
@@ -352,8 +350,7 @@ void main_loop()
 		info(0, "Receive failed, apparently other end was closed/failed");
 		break;
 	    }
-	    ret = pthread_mutex_unlock(&socket_mutex);
-	    if (ret != 0) goto error;
+	    mutex_unlock(&socket_mutex);
 
 	    if (total == 0)
 		start = time(NULL);
@@ -361,17 +358,14 @@ void main_loop()
 	    new_request(pack);
 	    octstr_destroy(pack);
 	    
-	    ret = pthread_mutex_lock(&socket_mutex);
-	    if (ret != 0) goto error;
+	    mutex_lock(&socket_mutex);
 	    continue;
 	}
-	ret = pthread_mutex_unlock(&socket_mutex);
-	if (ret != 0) goto error;
+	mutex_unlock(&socket_mutex);
 	    
 	usleep(1000);
 
-	ret = pthread_mutex_lock(&socket_mutex);
-	if (ret != 0) goto error;
+	mutex_lock(&socket_mutex);
     }
     secs = time(NULL) - start;
     info(0, "Received (and handled?) %d requests in %d seconds (%.2f per second)",

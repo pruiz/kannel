@@ -91,6 +91,10 @@ typedef struct bb_t {
 } BBThread;
 
 
+
+
+
+
 /*
  * Bearer box main object
  * (this could be a list of global variables, but I like it this way)
@@ -164,6 +168,8 @@ static void print_queues(char *buffer);
  * a sorted list so that we can use a binary search or something...
  */
 
+pthread_mutex_t route_mutex;
+
 typedef struct routeinfo {
     char *route_match;
     int receiver_id;
@@ -179,26 +185,46 @@ static int route_limit = 0;
 
 int cmp_route(const void *str, const void *route)
 {
-    RouteInfo *ri;
-    ri = route;
-    
-    return strcmp(str, ri->route_match);
+    return strcmp(str, ((RouteInfo *)route)->route_match);
 }
 
+/*
+ * this is 'normal' binary search except that index of last compare
+ * is inserted into -1
+ *
+ * Return 0 if last matched, <0 or >0 if not. '*i' is set as last comprasion
+ * index
+ */
+int bsearch_receiver(char *str, int *index)
+{
+    int lo = 1;
+    int hi = route_count;
+    int cmp = -1;
+    *index = -1;
+
+    while(hi >= 1) {
+	*index = (lo+hi)/2;
+	cmp = strcmp(str, route_info[*index].route_match);
+	if (cmp == 0) return 0;
+	if (cmp < 0) hi = *index - 1;
+	else lo = *index + 1;
+    }
+    return cmp;
+}
 
 int find_receiver(RQueueItem *rqi)
 {
-    RouteInfo *ri;
+    int i;
+    
     if (rqi->routing_info == NULL)
 	return -1;
 
-    ri = bsearch(rqi->routing_info, route_info, route_count,
-		 sizeof(RouteInfo), cmp_route);
-
-    if (ri != NULL)
-	return ri->receiver_id;
-    else
+    mutex_lock(&route_mutex);
+    if (bsearch_receiver(rqi->routing_info, &i) != 0)
 	return -1;
+ 
+    mutex_unlock(&route_mutex);
+    return route_info[i].receiver_id;
 }
 
 
@@ -269,9 +295,7 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 
     /* possible bottleneck? deal with this later */
     
-    ret = pthread_mutex_lock(&bbox->mutex);	
-    if (ret != 0)
-	goto error;
+    mutex_lock(&bbox->mutex);	
 
     for(i=0; i < bbox->thread_limit; i++) {
 	thr = bbox->threads[i];
@@ -307,9 +331,7 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 	    }
 	}
     }
-    ret = pthread_mutex_unlock(&bbox->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_unlock(&bbox->mutex);
 
     if (msg->destination == -1) {
 	if (backup >= 0)
@@ -321,10 +343,6 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 	}
     }
     return 0;
-
-error:
-    error(ret, "mutex error! Failed to route etc.");
-    return -1;
 }
 
 
@@ -430,22 +448,11 @@ static void normalize_numbers(RQueueItem *msg, SMSCenter *from)
  */
 static void update_heartbeat(BBThread *thr)
 {
-    int ret;
-    ret = pthread_mutex_lock(&bbox->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_lock(&bbox->mutex);
 
     thr->heartbeat = time(NULL);
     
-    ret = pthread_mutex_unlock(&bbox->mutex);
-    if (ret != 0)
-	goto error;
-
-    return;	      
-    
-error:
-    error(ret, "Failed to update heartbeat");
-    return;
+    mutex_unlock(&bbox->mutex);
 }
 
 
@@ -1109,13 +1116,10 @@ static void http_start_thread()
  */
 static void check_queues(void)
 {
-    int ret;
     time_t now;
     RQueueItem *ptr, *prev;
     
-    ret = pthread_mutex_lock(&bbox->request_queue->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_lock(&bbox->request_queue->mutex);
 
     ptr = bbox->request_queue->first;
     prev = NULL;
@@ -1135,15 +1139,7 @@ static void check_queues(void)
 	
 	ptr = ptr->next;
     }
-    ret = pthread_mutex_unlock(&bbox->request_queue->mutex);
-    if (ret != 0)
-	goto error;
-
-    return;
-    
-error:
-    error(ret, "Failed to check queues");
-    return;
+    mutex_unlock(&bbox->request_queue->mutex);
 }
 
 /*
@@ -1181,11 +1177,8 @@ static void check_heartbeats(void)
 {
     BBThread *thr;
     int i;
-    int ret;
     time_t now;
-    ret = pthread_mutex_lock(&bbox->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_lock(&bbox->mutex);
 
     now = time(NULL);
     for(i=0; i < bbox->thread_limit; i++) {
@@ -1200,15 +1193,7 @@ static void check_heartbeats(void)
 	    }
 	}
     }
-    ret = pthread_mutex_unlock(&bbox->mutex);
-    if (ret != 0)
-	goto error;
-
-    return;	      
-    
-error:
-    error(ret, "Failed to check heartbeats");
-    return;
+    mutex_unlock(&bbox->mutex);
 }
 
 /*
@@ -1217,7 +1202,6 @@ error:
  */
 static void print_queues(char *buffer)
 {
-    int ret;
     int rq, rp;
     int totp, totq;
     time_t trp, trq, now;
@@ -1228,23 +1212,14 @@ static void print_queues(char *buffer)
     trp = rq_oldest_message(bbox->reply_queue);
     now = time(NULL);
     
-    ret = pthread_mutex_lock(&bbox->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_lock(&bbox->mutex);
 
     sprintf(buffer,"Request queue length %d, oldest %ds old; mean %.1f, total %d messages\n"
 	    "Reply queue length %d; oldest %ds old; mean %.1f, total %d messages",
 	    rq, (int)(now-trq), bbox->mean_req_ql, totq, 
 	    rp, (int)(now-trp), bbox->mean_rep_ql, totp);
 	    
-    ret = pthread_mutex_unlock(&bbox->mutex);
-    if (ret != 0)
-	goto error;
-
-    return;	      
-
-error:
-    error(ret, "Failed to print queues");
+    mutex_unlock(&bbox->mutex);
 }
 
 /*
@@ -1257,7 +1232,7 @@ static void update_queue_watcher()
     static int req_ql[10], rep_ql[10];
     static int index = 0;
     static int c = 0;
-    int i, id, ret;
+    int i, id;
     int req, rep;
     time_t limit;
     
@@ -1292,16 +1267,12 @@ static void update_queue_watcher()
 	req += req_ql[i];
 	rep += rep_ql[i];
     }
-    ret = pthread_mutex_lock(&bbox->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_lock(&bbox->mutex);
 
     bbox->mean_req_ql = req / id;
     bbox->mean_rep_ql = rep / id;
 
-    ret = pthread_mutex_unlock(&bbox->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_unlock(&bbox->mutex);
 
     c++;
     if (c % 20 == 19)
@@ -1313,11 +1284,6 @@ static void update_queue_watcher()
 	info(0, "\n%s", buf);
 	c = 0;
     }
-    return;	      
-    
-error:
-    error(ret, "Failed to update mean queue lengths");
-    return;
 }
 
 /*
@@ -1327,14 +1293,12 @@ error:
 static void print_threads(char *buffer)
 {
     BBThread *thr;
-    int i, ret;
+    int i;
     char buf[1024];
 
     buffer[0] = '\0';
     
-    ret = pthread_mutex_lock(&bbox->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_lock(&bbox->mutex);
 
     for(i=0; i < bbox->thread_limit; i++) {
 	thr = bbox->threads[i];
@@ -1366,17 +1330,12 @@ static void print_threads(char *buffer)
 	    strcat(buffer, buf);
 	}
     }
-    ret = pthread_mutex_unlock(&bbox->mutex);
-    if (ret != 0)
-	goto error;
+    mutex_unlock(&bbox->mutex);
 
     if (bbox->http_port > -1) {
 	sprintf(buf, "[n/a] HTTP-Adminstration at port %d\n", bbox->http_port);
 	strcat(buffer, buf);
     }
-    return;	      
-error:
-    error(errno, "Failed to print threads");
 }
 
 
@@ -1485,6 +1444,7 @@ static void init_bb(Config *cfg)
     bbox->abort_program = 0;
     bbox->suspended = 0;
     pthread_mutex_init(&bbox->mutex, NULL);
+    pthread_mutex_init(&route_mutex, NULL);
     
     bbox->thread_limit = 20;
     bbox->http_port = BB_DEFAULT_HTTP_PORT;

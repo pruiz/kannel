@@ -192,4 +192,13 @@ int get_and_set_debugs(int argc, char **argv,
 void print_std_args_usage(FILE *stream);
     
 
+/* lock given mutex. PANICS if fails (non-initialized mutex or other
+ *  coding error) */ 
+void mutex_lock(pthread_mutex_t *mutex);
+
+
+/* unlock given mutex, PANICX if fails (so do not call for non-locked)
+ */
+void mutex_unlock(pthread_mutex_t *mutex);
+    
 #endif
