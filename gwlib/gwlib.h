@@ -52,6 +52,4 @@ void gwlib_shutdown(void);
 #define gwlib_assert_init() ((void) 0)
 #endif
 
-#define GW_NAME "Wiral Kannel"
-
 #endif
