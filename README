@@ -3,8 +3,8 @@ README for Kannel: Open Source WAP and SMS Gateway
 
 Abstract
 
-	This README describes the WapIT Open Source WAP and SMS gateway,
-	and how it can be used and installed.
+	This README describes Kannel, the WapIT Open Source WAP and SMS
+	gateway, and how it can be used and installed.
 
 Status of README
 
@@ -12,26 +12,13 @@ Status of README
 
 Introduction
 
-	The WapIT Open Source WAP and SMS gateway works as both an SMS
+	The Kannel Open Source WAP and SMS gateway works as both an SMS
 	gateway, for implementing keyword based services via GSM text
 	messages, and a WAP gateway, via UDP. The SMS part is fairly
 	mature, the WAP part is very early in its development.	In this
-	release, the GET request for WML pages via HTTP works, and the
-	phone receives a compiled WML page. This is enough for serving
-	simple, static WML pages. WMLScript and other request types are
-	not supported. Only the data call bearer (UDP) is supported,
-	not SMS.
-	
-	NOTE: At release time, we found our that you can't run both
-	the SMS and WAP boxes at the same time, because then the bearer
-	box crashes during a WAP session. Oops. We'll fix this in the
-	next release.
-	
-	This gateway was formerly known as "smsgateway", but has now been
-	rewritten to a new architectural design and is thus called just
-	"gateway" (a better name is fortcoming, suggestions welcome).
-	The old smsgateway becomes complely unsupported as of this
-	release.
+	release, the GET request for WML pages and WMLScript files via
+	HTTP works, including compilation for WML and WMLScript to binary
+	forms. Only the data call bearer (UDP) is supported, not SMS.
 	
 Requirements
 
@@ -47,7 +34,7 @@ Documentation
 
 Getting the gateway sources
 
-	You can download the gateway sources from 
+	You can download the sources from
 	http://www.kannel.org/sourcecode.shtml.
 
 Compiling and installing the gateway
@@ -57,9 +44,34 @@ Compiling and installing the gateway
 	
 		./configure
 		make
+		make bindir=/somewhere/suitable install
 
 	You need to copy the gw/bearerbox, gw/wapbox, gw/smsbox and
 	test/test_wml programs somewhere suitable.
+
+For developers only: autoconf, configure, config.status, and Makefile
+
+	We use the GNU autoconf tool to make it easier to adapt Kannel to
+	each platform. The `autoconf' program reads the file configure.in,
+	and generates a corresponding shell script called configure,
+	which investigates the system it runs on to see what it supports
+	and what it does not. configure then reads Makefile.in and
+	config.h.in and writes out Makefile, config.h, and a shell
+	script config.status.
+	
+	If you modify configure.in, you need to run autoconf.
+	
+	If you modify Makefile.in or config.h.in, you need to run
+	config.status.
+	
+	If you modify any source files to add or change any header
+	includes, you need to run "make depend".
+	
+	You always need to run "make" (which is the same as "make all").
+	
+	If you have trouble building things and suspect that there is a
+	problem with the Makefile, run "make clean all". If that solves
+	it, report it as a bug (see the end of this README).
 
 Configuring the gateway
 
@@ -71,7 +83,7 @@ Running the gateway
 
 	You need to run the gw/bearerbox program (from the gw directory).
 	If you want SMS services, you also need to run gw/smsbox, and
-	if you want WAP services, you need to run gw/wapbox.
+	if you want WAP services, you also need to run gw/wapbox.
 	
 	Note that to run the wapbox, you need to set the environment
 	variable TEST_WML to the path to the test_wml program. For
@@ -79,6 +91,9 @@ Running the gateway
 	
 		TEST_WML=../test/test_wml ./wapbox foo.wapconf
 	
+	(The above command will work for the Bourne shell and lookalikes
+	such as zsh.)
+
 	Otherwise you'll get mysterious error messages. (This is a
 	temporary feature.)
 
@@ -129,17 +144,9 @@ Controlling the gateway via HTTP
 
 Feedback and more information
 
-	If you have trouble with this software, don't hesitate to ask
-	for help at
-	
-		feedback@kannel.org
-		
-	If you modify the code (whether to fix bugs or add features), and
-	want to have your changes included in the official version, send
-	them also to the above address.
-	
-	You may also want to subscribe the announce and devel lists at
-	kannel.org: send e-mail to
+	You may want to subscribe the announce and devel lists at
+	kannel.org if you need help or want to participate in the
+	development of Kannel. Send e-mail to
 	
 		announce-subscribe@kannel.org
 		devel-subscribe@kannel.org
