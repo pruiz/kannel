@@ -80,7 +80,8 @@ static SMPP_PDU *handle_bind_transmitter(ESME *esme, SMPP_PDU *pdu)
     resp = smpp_pdu_create(bind_transmitter_resp,
     	    	    	    pdu->u.bind_transmitter.sequence_number);
 #if 0 /* XXX system_id is not implemented in the PDU at the moment */
-    resp->u.bind_transmitter_resp.system_id = octstr_duplicate(smsc_system_id);
+    resp->u.bind_transmitter_resp.system_id = 
+    	octstr_duplicate(smsc_system_id);
 #endif
     return resp;
 }

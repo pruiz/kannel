@@ -17,7 +17,8 @@ running=yes
 while [ $running = yes ]
 do
     sleep 1
-    if grep "ESME has submitted all messages to SMSC." check_smpp_drive.log >/dev/null
+    if grep "ESME has submitted all messages to SMSC." check_smpp_drive.log \
+    	>/dev/null
     then
         running=no
     fi

@@ -563,7 +563,8 @@ void octstr_format_append(Octstr *os, const char *fmt, ...);
 
 
 /*
- * ount a hash key value for an octet srting by adding all the octets together.
+ * Compute a hash key value for an octet string by adding all the 
+ * octets together.
  */
 unsigned long octstr_hash_key(Octstr *ostr);
 

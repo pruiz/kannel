@@ -1,5 +1,16 @@
 2001-01-26  Lars Wirzenius  <liw@iki.fi>
 
+	* AUTHORS, ChangeLog, NEWS, checks/check_fakesmsc.sh,
+	checks/check_fakewap.sh, checks/check_sendsms.sh,
+	checks/check_smpp.sh, doc/arch/arch.xml, gw/bb_smscconn.c,
+	gw/bearerbox,.c gw/smsbox.c, gw/smsc.c gw/urltrans.[ch],
+	gw/wapbox.c, gwlib/http.c, gwlib/octstr. test/drive_smpp.c,
+	test/test_http.c, test/test_octstr_format.c: Edited some long
+	lines to be shorter than 80 characters. There's still lots
+	more, find them with utils/find-long-lines.
+
+2001-01-26  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/alt_charsets.h, gw/bb.h, gwlib/accesslog.h, gwlib/gwlib.h,
 	gwlib/gwmem.h, gwlib/socket.h, gwlib/utils.h, test/decompile.h,
 	utils/OTAbitmap.h, utils/wbmp.h: Removed leading underscore from
@@ -926,7 +937,8 @@
 
 2000-12-08  Aarno Syväen <syvanen@wapit.com>
 
-	* wap/wsp_push_client.c, wap/wap_events.def: Really resolve a conflict.
+	* wap/wsp_push_client.c, wap/wap_events.def: Really resolve
+	a conflict.
 
 2000-12-09  Lars Wirzenius  <liw@iki.fi>
 
@@ -1234,7 +1246,7 @@
 
 	* Introduced OPTIONAL_OCTSTR, and require that OCTSTR and
 	ADDRTUPLE fields never be NULL.  wap_event_assert now checks this.
-	HTTPHEADER, CAPABILITIES, and OPTIONAL_OCTSTR fields can be NULL.	
+	HTTPHEADER, CAPABILITIES, and OPTIONAL_OCTSTR fields can be NULL.
 	All uses have been checked to see if they can deal with this,
 	and some have been adjusted.
 

@@ -151,7 +151,7 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 }
 
 
-/*------------------------------------------------------------------------------
+/*---------------------------------------------------------------------
  * Other functions
  */
 
@@ -442,8 +442,10 @@ Octstr *smsc2_status(int status_type)
 	    sprintf(tmp3, "connecting");
 	}
 	
-	sprintf(tmp2, " (%s, rcvd %ld, sent %ld, failed %ld, queued %ld msgs)%s", tmp3,
-		info.received, info.sent, info.failed, info.queued, lb);
+	sprintf(tmp2, " (%s, rcvd %ld, sent %ld, failed %ld, "
+	    	      "queued %ld msgs)%s", tmp3,
+		      info.received, info.sent, info.failed, info.queued, 
+		      lb);
 	strcat(tmp, tmp2);
     }
     if (para)

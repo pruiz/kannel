@@ -47,7 +47,8 @@ struct URLTranslation {
     Octstr *password;	/* password associated */
     Octstr *forced_smsc;/* if smsc id is forcet to certain for this user */
     Octstr *default_smsc; /* smsc id if none given in http send-sms request */
-    Octstr *allow_ip;	/* allowed IPs to request send-sms with this account */
+    Octstr *allow_ip;	/* allowed IPs to request send-sms with this 
+    	    	    	   account */
     Octstr *deny_ip;	/* denied IPs to request send-sms with this account */
     
     int args;
@@ -311,7 +312,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    break;
 
 	case 'q':
-	    if (strncmp(octstr_get_cstr(request->sms.receiver), "00", 2) == 0) {
+	    if (strncmp(octstr_get_cstr(request->sms.receiver),"00",2)==0) {
 		temp = octstr_copy(request->sms.receiver, 2, 
 		    	    	  octstr_len(request->sms.receiver));
 		enc = octstr_create_urlcoded(temp);

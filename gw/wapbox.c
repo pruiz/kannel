@@ -200,13 +200,15 @@ static void dispatch_datagram(WAPEvent *dgram)
         warning(0, "dispatch_datagram received event of unexpected type.");
         wap_event_dump(dgram);
     } else {
+	WAPAddrTuple *tuple;
         msg = msg_create(wdp_datagram);
+	tuple = dgram->u.T_DUnitdata_Req.addr_tuple;
         msg->wdp_datagram.source_address =
-            octstr_duplicate(dgram->u.T_DUnitdata_Req.addr_tuple->local->address);
+            octstr_duplicate(tuple->local->address);
         msg->wdp_datagram.source_port =
             dgram->u.T_DUnitdata_Req.addr_tuple->local->port;
         msg->wdp_datagram.destination_address =
-            octstr_duplicate(dgram->u.T_DUnitdata_Req.addr_tuple->remote->address);
+            octstr_duplicate(tuple->remote->address);
         msg->wdp_datagram.destination_port =
             dgram->u.T_DUnitdata_Req.addr_tuple->remote->port;
         msg->wdp_datagram.user_data =

@@ -6,7 +6,7 @@
 
 <bookinfo>
 	<title>Kannel Architecture and Design</title>
-	<subtitle>$Revision: 1.13 $</subtitle>
+	<subtitle>$Revision: 1.14 $</subtitle>
 	<author>
 	<firstname>Lars</firstname>
 	<surname>Wirzenius</surname>
@@ -1948,8 +1948,8 @@ bad:
 	<corpauthor>WAP Forum</corpauthor>
 	<abstract>
 
-		<para>Overview document about WAP. See
-		<ulink url="http://www.wapforum.org/what/WAP_white_pages.pdf">
+		<para>Overview document about WAP. See <ulink
+		url="http://www.wapforum.org/what/WAP_white_pages.pdf">
 		http://www.wapforum.org/what/WAP_white_pages.pdf</ulink>.</para>
 
 	</abstract>

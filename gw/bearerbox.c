@@ -593,8 +593,10 @@ Octstr *bb_print_status(int status_type)
     if (status_type == BBSTATUS_HTML) {
 	frmt = "%s</p>\n\n"
 	    " <p>Status: uptime %ldd %ldh %ldm %lds, %s</p>\n\n"
-	    " <p>WDP: received %ld (%ld queued), sent %ld (%ld queued)</p>\n\n"
-	    " <p>SMS: received %ld (%ld queued), sent %ld (%ld queued)</p>\n\n";
+	    " <p>WDP: received %ld (%ld queued), sent %ld "
+	    "(%ld queued)</p>\n\n"
+	    " <p>SMS: received %ld (%ld queued), sent %ld "
+	    "(%ld queued)</p>\n\n";
 	footer = "<p>";
     } else if (status_type == BBSTATUS_WML) {
 	frmt = "%s</p>\n\n"

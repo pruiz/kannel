@@ -13,7 +13,8 @@ bbpid=$!
 
 sleep 2
 
-test/fakesmsc -i $interval -m $times '123 234 text nop' > check_fakesmsc.log 2>&1 &
+test/fakesmsc -i $interval -m $times '123 234 text nop' \
+    > check_fakesmsc.log 2>&1 &
 
 sleep 1
 

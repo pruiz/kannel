@@ -26,14 +26,15 @@ sleep 2
 test/fakewap -m $times $url > check_fake.log 2>&1
 ret=$?
 
-test/test_http -qv 4 http://localhost:8080/quit # XXX our signals are fucked up on linux
-kill -SIGINT $bbpid $wappid # $httppid
+test/test_http -qv 4 http://localhost:8080/quit
+kill -SIGINT $bbpid $wappid
 wait
 
 if [ "$ret" != 0 ]
 then
 	echo check_fakewap failed 1>&2
-	echo See check_bb.log, check_wap.log, check_fake.log, check_http.log for info 1>&2
+	echo See check_bb.log, check_wap.log, check_fake.log, 1>&2
+	echo check_http.log for info 1>&2
 	exit 1
 fi
 

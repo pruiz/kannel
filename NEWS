@@ -164,7 +164,8 @@ New features:
 
  * Bearerbox starts up faster.
 
- * sendsms interface can handle multiple requests over one HTTP/1.1 connection.
+ * sendsms interface can handle multiple requests over one HTTP/1.1
+   connection.
 
  * Improved portability to HP/UX, FreeBSD and Cygwin, possibly others.
 

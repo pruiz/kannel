@@ -52,9 +52,11 @@ static void client_thread(void *arg) {
 			error(0, "http GET failed");
 		} else {
 			++succeeded;
-			http_header_get_content_type(replyh, &type, &charset);
+			http_header_get_content_type(replyh, &type, 
+			    	    	    	     &charset);
 			debug("", 0, "Content-type is <%s>, charset is <%s>",
-			      octstr_get_cstr(type), octstr_get_cstr(charset));
+			      octstr_get_cstr(type), 
+			      octstr_get_cstr(charset));
 			octstr_destroy(type);
 			octstr_destroy(charset);
 			debug("", 0, "Reply headers:");

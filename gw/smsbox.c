@@ -961,7 +961,8 @@ error:
 #define ENDTAG		"01"
 
 /*
- * Create and send an SMS OTA (auto configuration) message from an HTTP request
+ * Create and send an SMS OTA (auto configuration) message from an HTTP 
+ * request.
  * Args: list contains the CGI parameters
  * 
  * This will be changed later to use an XML compiler.

@@ -692,10 +692,10 @@ static void handle_transaction(Connection *conn, void *data)
 	    ret = client_read_status(trans);
 	    if (ret < 0) {
 		/*
-		 * Couldn't read the status from the socket. This may mean that 
-		 * the socket had been closed by the server after an idle 
-		 * timeout, so we close the connection and try again, opening a 
-		 * new socket, but only once.
+		 * Couldn't read the status from the socket. This may mean 
+		 * that the socket had been closed by the server after an 
+		 * idle timeout, so we close the connection and try again, 
+		 * opening a new socket, but only once.
 		 */
 		if (trans->retrying) {
 		    goto error;
@@ -1341,7 +1341,8 @@ static void server_thread(void *dummy)
 		} else {
 		    conn = conn_wrap_fd(fd);
     	    	    client = client_create(conn, host_ip(addr));
-		    conn_register(conn, server_fdset, receive_request, client);
+		    conn_register(conn, server_fdset, receive_request, 
+		    	    	  client);
 		}
 	    }
 	}

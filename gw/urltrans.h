@@ -13,7 +13,8 @@
  *
  * 1. Create a URLTranslation object with urltrans_create.
  * 2. Add translations into it with urltrans_add_one or urltrans_add_cfg.
- * 3. Receive SMS messages, and translate them into URLs with urltrans_get_url.
+ * 3. Receive SMS messages, and translate them into URLs with 
+ *    urltrans_get_url.
  * 4. When you are done, free the object with urltrans_destroy.
  *
  * See below for more detailed instructions for using the functions.
@@ -160,8 +161,8 @@ int urltrans_max_messages(URLTranslation *t);
 
 
 /*
- * Return the concatenation status for SMS messages that should be generated from
- * the web page directed by the URL translation. (1=enabled)
+ * Return the concatenation status for SMS messages that should be generated
+ * from the web page directed by the URL translation. (1=enabled)
  */
 int urltrans_concatenation(URLTranslation *t);
 
