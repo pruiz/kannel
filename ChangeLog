@@ -1,3 +1,15 @@
+2000-06-09  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/socket.c: Make read_available assert that fd >= 0, because
+	otherwise it just segfaults.
+
+	* gwlib/http2.c: Make pool_socket_is_alive return "not alive" for
+	sockets < 0.  This does not fix the whole problem but it keeps the
+	wapbox from crashing here.
+
+	* gwlib/list.c: Fix bug in delete_items_from_list which would
+	corrupt the list in some cases.
+
 2000-06-09  Kalle Marjola  <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/bb_*.c: removed START and EXIT debug info as they are in new

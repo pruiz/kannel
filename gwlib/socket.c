@@ -307,6 +307,8 @@ int read_available(int fd, long wait_usec)
     int ret;
     div_t waits;
 
+    gw_assert(fd >= 0);
+
     FD_ZERO(&rf);
     FD_SET(fd, &rf);
     waits = div(wait_usec,1000000);

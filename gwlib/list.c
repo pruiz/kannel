@@ -507,7 +507,7 @@ static void delete_items_from_list(List *list, long pos, long count) {
 		 * works. Faster methods would have to take more special
 		 * cases into account. 
 		 */
-		for (i = 0; i < list->len - count; ++i) {
+		for (i = 0; i < list->len - count - pos; ++i) {
 			from =  INDEX(list, pos + i + count);
 			to = INDEX(list, pos + i);
 			list->tab[to] = list->tab[from];

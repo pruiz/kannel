@@ -747,6 +747,9 @@ static void pool_free_and_close(HTTPSocket *p) {
 
 
 static int pool_socket_is_alive(HTTPSocket *p) {
+	if (p->socket < 0)
+		return 0;
+
 	switch (read_available(p->socket, 0)) {
 	case -1:
 		return 0;
