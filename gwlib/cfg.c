@@ -252,7 +252,6 @@ List *expand_file(Octstr *file, int forward)
 {
     Octstr *os;
     Octstr *line;
-    Octstr *filename; 
     List *lines; 
     List *expand; 
     long lineno; 
@@ -286,7 +285,6 @@ List *expand_file(Octstr *file, int forward)
  
 int cfg_read(Cfg *cfg) 
 { 
-    Octstr *os; 
     CfgLoc *loc; 
     CfgLoc *loc_inc; 
     List *lines;

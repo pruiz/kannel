@@ -1,4 +1,7 @@
 2002-03-08  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gwlib/cfg.h: removed to warnings
+
+2002-03-08  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/bearerbox.c, gwlib/cfg.def: Added mysql-* configuration variables to 
       define the hostname, user, password and database name (It's still missing
       documentation about mysql) - Oded Arbel Patch
