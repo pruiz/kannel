@@ -80,11 +80,13 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 		octstr_destroy(final_url);
 		list_destroy(request_headers);
 		if (status != HTTP_OK) {
+		    if (reply_headers) {
 			while ((os = list_extract_first(reply_headers)) != NULL)
 				octstr_destroy(os);
 			list_destroy(reply_headers);
-			octstr_destroy(reply_body);
-			goto error;
+		    }
+		    octstr_destroy(reply_body);
+		    goto error;
 		}
 		
 		http_header_get_content_type(reply_headers, &type, &charset);
@@ -409,7 +411,6 @@ void smsbox_req_thread(void *arg) {
 	 * fails.
 	 */
     tmp = octstr_duplicate(msg->smart_sms.sender);
-    if (tmp == NULL) goto error;
 	
     p = urltrans_faked_sender(trans);
     if (p != NULL)
@@ -428,9 +429,9 @@ void smsbox_req_thread(void *arg) {
 
     reply = obey_request(trans, msg);
     if (reply == NULL) {
-		error(0, "request failed");
-		reply = gw_strdup("Request failed");
-		goto error;
+error:
+	error(0, "request failed");
+	reply = gw_strdup("Request failed");
     }
 
     octstr_replace(msg->smart_sms.msgdata, reply, strlen(reply));
@@ -447,11 +448,6 @@ void smsbox_req_thread(void *arg) {
     req_threads--;
     return;
 
-error:
-    error(0, "Request_thread: failed");
-    msg_destroy(msg);
-    gw_free(reply);
-    req_threads--;
 }
 
 

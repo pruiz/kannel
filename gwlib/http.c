@@ -1197,7 +1197,7 @@ error:
 	octstr_destroy(request);
 	if (p != NULL)
 		pool_free(p);
-	error(0, "Couldn't fetch <%s>", octstr_get_cstr(url));
+	error(0, "Couldn't send request to <%s>", octstr_get_cstr(url));
 	return NULL;
 }
 
