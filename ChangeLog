@@ -1,3 +1,7 @@
+2003-08-04  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: fixed assertion bug, while having double octstr_destroy() for 
+      charet. Thanks to Aarno for pointing out to delete this.
+
 2003-08-03  Alexander Malysh  <a.malysh@centrium.de>
      * gw/bb_smscconn_cb.h: added new enum types (SMSCCONN_SUCCESS,SMSCCONN_FAILED_QFULL)
      * gw/bb_smscconn.c: changed return code for bb_smscconn_receive(...) now we use enum
