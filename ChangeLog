@@ -1,5 +1,13 @@
 2000-09-20  Richard Braakman  <dark@wapit.com>
 
+	* gw/timers.c: Implement the heap structure using a C array,
+	instead of using List.  This has less overhead and removes the
+	need for list_swap.
+
+	* gw/list.[ch]: Remove list_swap.
+
+2000-09-20  Richard Braakman  <dark@wapit.com>
+
 	* gw/timers.[ch]: Removed timersets from the interface.  The choice
 	of what timers should be handled by a single thread is a performance
 	issue, not an interface issue.  All timers are now handled by a

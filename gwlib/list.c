@@ -372,23 +372,6 @@ List *list_search_all(List *list, void *pattern, int (*cmp)(void *, void *)) {
 }
 
 
-void list_swap(List *list, long pos1, long pos2) {
-	void *item;
-
-	lock(list);
-	gw_assert(list != NULL);
-	gw_assert(pos1 >= 0);
-	gw_assert(pos1 < list->len);
-	gw_assert(pos2 >= 0);
-	gw_assert(pos2 < list->len);
-
-	item = GET(list, pos1);
-	list->tab[INDEX(list, pos1)] = GET(list, pos2);
-	list->tab[INDEX(list, pos2)] = item;
-	unlock(list);
-}
-
-
 /*************************************************************************/
 
 static void lock(List *list) {

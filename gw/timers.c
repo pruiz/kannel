@@ -10,6 +10,26 @@
 #include "gw/wap-events.h"
 #include "gw/timers.h"
 
+/*
+ * Active timers are stored in a TimerHeap.  It is a partially ordered
+ * array.  Each element i is the child of element i/2 (rounded down),
+ * and a child never elapses before its parent.  The result is that
+ * element 0, the top of the heap, is always the first timer to
+ * elapse.  The heap is kept in this partial order by all operations on
+ * it.  Maintaining a partial order is much cheaper than maintaining
+ * a sorted list.
+ * The array will be resized as needed.  The size field is the number
+ * of elements for which space is reserved, and the len field is the
+ * number of elements actually used.  The elements used will always be
+ * at heap[0] through heap[len-1].
+ */
+struct TimerHeap {
+	Timer **heap;
+	long len;
+	long size;
+};
+typedef struct TimerHeap TimerHeap;
+
 struct Timerset {
 	/*
 	 * This field is set to true when the timer thread should shut down.
@@ -24,14 +44,9 @@ struct Timerset {
 	Mutex *mutex;
 	/*
 	 * Active timers are stored here in a partially ordered structure.
-	 * Each element i is the child of element i/2 (rounded down),
-	 * and a child never elapses before its parent.  The result is
-	 * that element 0, the top of the heap, is always the first timer
-	 * to elapse.  The heap is kept in this partial order by all
-	 * operations on timers.  (Maintaining a partial order is much
-	 * cheaper than maintaining a sorted list.)
+	 * See the definition of TimerHeap, above, for an explanation.
 	 */
-	List *heap;
+	TimerHeap *heap;
 	/*
 	 * The thread that watches the top of the heap, and processes
 	 * timers that have elapsed.
@@ -95,10 +110,12 @@ static int initialized = 0;
  * Internal functions
  */
 static void abort_elapsed(Timer *timer);
-static void heap_delete(List *heap, long index);
-static int heap_adjust(List *heap, long index);
-static void heap_insert(List *heap, Timer *timer);
-static void heap_swap(List *heap, long index1, long index2);
+static TimerHeap *heap_create(void);
+static void heap_destroy(TimerHeap *heap);
+static void heap_delete(TimerHeap *heap, long index);
+static int heap_adjust(TimerHeap *heap, long index);
+static void heap_insert(TimerHeap *heap, Timer *timer);
+static void heap_swap(TimerHeap *heap, long index1, long index2);
 static void lock(Timerset *set);
 static void unlock(Timerset *set);
 static void watch_timers(void *arg);  /* The timer thread */
@@ -108,7 +125,7 @@ static void elapse_timer(Timer *timer);
 void timers_init(void) {
 	timers = gw_malloc(sizeof(*timers));
 	timers->mutex = mutex_create();
-	timers->heap = list_create();
+	timers->heap = heap_create();
 	timers->stopping = 0;
 	timers->thread = gwthread_create(watch_timers, timers);
 	initialized = 1;
@@ -116,11 +133,11 @@ void timers_init(void) {
 
 void timers_shutdown(void) {
 	/* Stop all timers. */
-	if (list_len(timers->heap) > 0)
+	if (timers->heap->len > 0)
 		warning(0, "Timers shutting down with %ld active timers.",
-			list_len(timers->heap));
-	while (list_len(timers->heap) > 0)
-		timer_stop(list_get(timers->heap, 0));
+			timers->heap->len);
+	while (timers->heap->len > 0)
+		timer_stop(timers->heap->heap[0]);
 
 	/* Kill timer thread */
 	timers->stopping = 1;
@@ -130,7 +147,7 @@ void timers_shutdown(void) {
 	initialized = 0;
 
 	/* Free resources */
-	list_destroy(timers->heap, NULL);
+	heap_destroy(timers->heap);
 	mutex_destroy(timers->mutex);
 	gw_free(timers);
 }
@@ -182,7 +199,7 @@ void timer_start(Timer *timer, int interval, WAPEvent *event) {
 		if (interval < timer->elapses && timer->index == 0)
 			wakeup = 1;
 		timer->elapses = interval;
-		gw_assert(list_get(timers->heap, timer->index) == timer);
+		gw_assert(timers->heap->heap[timer->index] == timer);
 		wakeup |= heap_adjust(timers->heap, timer->index);
 
 		/* Then set its new event, if necessary. */
@@ -220,7 +237,7 @@ void timer_stop(Timer *timer) {
 	 */
 	if (timer->elapses > 0) {
 		timer->elapses = -1;
-		gw_assert(list_get(timers->heap, timer->index) == timer);
+		gw_assert(timers->heap->heap[timer->index] == timer);
 		heap_delete(timers->heap, timer->index);
 	}
 
@@ -261,33 +278,60 @@ static void abort_elapsed(Timer *timer) {
 }
 
 /*
+ * Create a new timer heap.
+ */
+static TimerHeap *heap_create(void) {
+	TimerHeap *heap;
+
+	heap = gw_malloc(sizeof(*heap));
+	heap->heap = gw_malloc(sizeof(heap->heap[0]));
+	heap->size = 1;
+	heap->len = 0;
+
+	return heap;
+}
+
+static void heap_destroy(TimerHeap *heap) {
+	if (heap == NULL)
+		return;
+
+	gw_free(heap->heap);
+	gw_free(heap);
+}
+
+/*
  * Remove a timer from the heap.  Do this by swapping it with the element
  * in the last position, then shortening the heap, then moving the
  * swapped element up or down to maintain the partial ordering.
  */
-static void heap_delete(List *heap, long index) {
-	Timer *t;
+static void heap_delete(TimerHeap *heap, long index) {
 	long last;
 
-	t = list_get(heap, index);
-	last = list_len(heap) - 1;
-	if (index == last) {
-		list_delete(heap, last, 1);
-	} else {
-		heap_swap(heap, index, last);
-		list_delete(heap, last, 1);
+	gw_assert(index >= 0);
+	gw_assert(index < heap->len);
+	gw_assert(heap->heap[index]->index == index);
+
+	last = heap->len - 1;
+	heap_swap(heap, index, last);
+	heap->heap[last]->index = -1;
+	heap->len--;
+	if (index != last)
 		heap_adjust(heap, index);
-	}
-	t->index = -1;
 }
 
 /*
  * Add a timer to the heap.  Do this by adding it at the end, then
  * moving it up or down as necessary to achieve partial ordering.
  */
-static void heap_insert(List *heap, Timer *timer) {
-	list_append(heap, timer);
-	timer->index = list_len(heap) - 1;
+static void heap_insert(TimerHeap *heap, Timer *timer) {
+	heap->len++;
+	if (heap->len > heap->size) {
+		heap->heap = gw_realloc(heap->heap,
+				heap->len * sizeof(heap->heap[0]));
+		heap->size = heap->len;
+	}
+	heap->heap[heap->len - 1] = timer;
+	timer->index = heap->len - 1;
 	heap_adjust(heap, timer->index);
 }
 
@@ -295,14 +339,22 @@ static void heap_insert(List *heap, Timer *timer) {
  * Swap two elements of the heap, and update their index fields.
  * This is the basic heap operation.
  */
-static void heap_swap(List *heap, long index1, long index2) {
+static void heap_swap(TimerHeap *heap, long index1, long index2) {
 	Timer *t;
 
-	list_swap(heap, index1, index2);
-	t = list_get(heap, index1);
-	t->index = index1;
-	t = list_get(heap, index2);
-	t->index = index2;
+	gw_assert(index1 >= 0);
+	gw_assert(index1 < heap->len);
+	gw_assert(index2 >= 0);
+	gw_assert(index2 < heap->len);
+
+	if (index1 == index2)
+		return;
+
+	t = heap->heap[index1];
+	heap->heap[index1] = heap->heap[index2];
+	heap->heap[index2] = t;
+	heap->heap[index1]->index = index1;
+	heap->heap[index2]->index = index2;
 }
 
 /*
@@ -312,11 +364,9 @@ static void heap_swap(List *heap, long index1, long index2) {
  * Return 1 if the timer at the heap's top is now earlier than
  * before this operation, otherwise 0.
  */
-static int heap_adjust(List *heap, long index) {
+static int heap_adjust(TimerHeap *heap, long index) {
 	Timer *t;
 	Timer *parent;
-	Timer *child;
-	Timer *child2;
 	long child_index;
 
 	/*
@@ -331,17 +381,20 @@ static int heap_adjust(List *heap, long index) {
 	 *    have to do anything.
 	 */
 
+	gw_assert(index >= 0);
+	gw_assert(index < heap->len);
+
 	/* Move to top? */
-	t = list_get(heap, index);
-	parent = list_get(heap, index / 2);
+	t = heap->heap[index];
+	parent = heap->heap[index / 2];
 	if (t->elapses < parent->elapses) {
 		/* This will automatically terminate when it reaches
-		 * the top, because in that case t == parent. */
-		while (t->elapses < parent->elapses) {
+		 * the top, because in that t == parent. */
+		do {
 			heap_swap(heap, index, index / 2);
 			index = index / 2;
-			parent = list_get(heap, index / 2);
-		}
+			parent = heap->heap[index / 2];
+		} while (t->elapses < parent->elapses);
 		/* We're done.  Return 1 if we changed the top. */
 		return index == 0;
 	}
@@ -349,24 +402,22 @@ static int heap_adjust(List *heap, long index) {
 	/* Move to bottom? */
 	for (;;) {
 		child_index = index * 2;
-		if (child_index >= list_len(heap))
+		if (child_index >= heap->len)
 			return 0;  /* Already at bottom */
-		child = list_get(heap, child_index);
-		if (child_index == list_len(heap) - 1) {
+		if (child_index == heap->len - 1) {
 			/* Only one child */
-			if (child->elapses < t->elapses)
+			if (heap->heap[child_index]->elapses < t->elapses)
 				heap_swap(heap, index, child_index);
 			break;
 		}
 
-		/* Find first child */
-		child2 = list_get(heap, child_index + 1);
-		if (child2->elapses < child->elapses) {
-			child = child2;
+		/* Find out which child elapses first */
+		if (heap->heap[child_index + 1]->elapses <
+		    heap->heap[child_index]->elapses) {
 			child_index++;
 		}
 
-		if (child->elapses < t->elapses) {
+		if (heap->heap[child_index]->elapses < t->elapses) {
 			heap_swap(heap, index, child_index);
 			index = child_index;
 		} else {
@@ -410,14 +461,14 @@ static void watch_timers(void *arg) {
 		lock(set);
 
 		/* Are there any timers to watch? */
-		if (list_len(set->heap) == 0) {
+		if (set->heap->len == 0) {
 			unlock(set);
 			gwthread_sleep(1000000.0);  /* Sleep very long */
 			continue;
 		}
 
 		/* Does the top timer elapse? */
-		top = list_get(set->heap, 0);
+		top = set->heap->heap[0];
 		top_time = top->elapses;
 		now = time(NULL);
 		if (top_time <= now) {

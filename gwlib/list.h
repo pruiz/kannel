@@ -225,9 +225,4 @@ void *list_search(List *list, void *pattern, list_item_matches_t *cmp);
 List *list_search_all(List *list, void *pattern, list_item_matches_t *cmp);
 
 
-/*
- * Exchange to items in the list.
- */
-void list_swap(List *list, long pos1, long pos2);
-
 #endif
