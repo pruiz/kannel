@@ -27,7 +27,7 @@ typedef struct r_queue RQueue;
 /* message class */
 enum {
     R_MSG_CLASS_WAP,		/* UDP/SMSC <-> WAP BOX */
-    R_MSG_CLASS_SMS,		/* SMSC <-> SMS BOX */
+    R_MSG_CLASS_SMS		/* SMSC <-> SMS BOX */
 };
 
 /* message type */
@@ -35,7 +35,7 @@ enum {
     R_MSG_TYPE_MO,
     R_MSG_TYPE_MT,
     R_MSG_TYPE_ACK,
-    R_MSG_TYPE_NACK,
+    R_MSG_TYPE_NACK
 };    
 
 /*

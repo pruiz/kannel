@@ -52,6 +52,7 @@ typedef enum {
 	#define SESSION_MACHINE
 	#define HTTPHEADER
 	#include "wsp_events-decl.h"
+	WSPEventType_count
 } WSPEventType;
 
 struct WSPEvent {

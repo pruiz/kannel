@@ -13,18 +13,18 @@
 #include "octstr.h"
 
 enum http_results {
-    HTTP_RESULT_OK = 200,
+    HTTP_RESULT_OK = 200
 };
 
 enum http_transfer_encoding {
     HTTP_ENCODING_8BIT,
-    HTTP_ENCODING_CHUNKED,
+    HTTP_ENCODING_CHUNKED
 };
 
 enum http_type {
     HTTP_TYPE_HTML,
     HTTP_TYPE_TEXT,
-    HTTP_TYPE_UNKNOWN,
+    HTTP_TYPE_UNKNOWN
 };
 
 enum http_action {
@@ -32,7 +32,7 @@ enum http_action {
     HTTP_CLIENT,
     HTTP_SERVER,
     HTTP_GATEWAY,
-    HTTP_CACHE,
+    HTTP_CACHE
 };
 
 
@@ -40,7 +40,7 @@ enum http_method {
     GET,
     POST,
     PUT,
-    HEAD,
+    HEAD
 };
 
 

@@ -20,7 +20,7 @@ enum {
 };
 
 enum {
-   CURRENT = 0x00,
+   CURRENT = 0x00
 };
 
 enum {

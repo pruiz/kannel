@@ -17,6 +17,7 @@ typedef long int32;
 enum msg_type {
 	#define MSG(type, stmt) type,
 	#include "msg-decl.h"
+	msg_type_count
 };
 
 typedef struct {

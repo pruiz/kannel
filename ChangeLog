@@ -1,3 +1,12 @@
+Thu Mar 23 19:58:44 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/bb_msg.h, gw/bearerbox.c, gw/msg.c, gw/msg.h, gw/urltrans.h,
+	gw/wsp.c, gw/wsp.h, gw/wtp.c, gw/wtp.h, gwlib/http.h: Removed
+	commas from end of enum definitions. These would be very useful
+	(since some of them are generated automatically), but they're
+	against the C specification (and I distinctly remembered they
+	were not).  Thanks to Markku Rossi for putting me straight.
+
 Thu Mar 23 19:37:03 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wml_compiler.[ch]: Removed kludge to not use the new WML

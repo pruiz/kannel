@@ -29,7 +29,7 @@ static enum {
 	initializing,
 	running,
 	aborting,
-	aborting_with_prejudice,
+	aborting_with_prejudice
 } run_status = initializing;
 
 /* NOTE: the following variable belongs to a hack, and will go away

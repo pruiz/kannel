@@ -112,6 +112,8 @@ Octstr *msg_pack(Msg *msg) {
 		case type: { struct type *p = &msg->type; stmt } break;
 	switch (msg->type) {
 		#include "msg-decl.h"
+	default:
+		panic(0, "Internal error: unknown message type %d", msg->type);
 	}
 
 	prepend_integer(os, octstr_len(os));
@@ -147,6 +149,9 @@ Msg *msg_unpack(Octstr *os) {
 		case type: { struct type *p = &(msg->type); stmt } break;
 	switch (msg->type) {
 		#include "msg-decl.h"
+	default:
+		panic(0, "Internal error: unknown message type: %d", 
+			msg->type);
 	}
 
 	return msg;

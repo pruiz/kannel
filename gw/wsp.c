@@ -45,13 +45,14 @@ enum {
 	Delete_PDU = 0x43,
 	Trace_PDU = 0x44,
 	Post_PDU = 0x60,
-	Put_PDU = 0x61,
+	Put_PDU = 0x61
 };
 
 typedef enum {
 	#define STATE_NAME(name) name,
 	#define ROW(state, event, condition, action, next_state)
 	#include "wsp_state-decl.h"
+	WSPState_count
 } WSPState;
 
 
@@ -637,8 +638,9 @@ static char *wsp_state_to_string(WSPState state) {
 	#define STATE_NAME(name) case name: return #name;
 	#define ROW(state, event, cond, stmt, next_state)
 	#include "wsp_state-decl.h"
+	default:
+		return "unknown wsp state";
 	}
-	return "unknown wsp state";
 }
 
 

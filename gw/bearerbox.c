@@ -66,7 +66,7 @@ enum {
     BB_TTYPE_SMSC,
     BB_TTYPE_CSDR,
     BB_TTYPE_SMS_BOX,
-    BB_TTYPE_WAP_BOX,
+    BB_TTYPE_WAP_BOX
 };
 
 enum {
@@ -74,7 +74,7 @@ enum {
     BB_STATUS_OK,
     BB_STATUS_SUSPENDED,	/* reserved for future use */
     BB_STATUS_KILLED,		/* killed by main program or other thread */
-    BB_STATUS_DEAD,		/* thread itself has died, can be removed */
+    BB_STATUS_DEAD		/* thread itself has died, can be removed */
 };
 
 typedef struct bb_t {

@@ -69,18 +69,20 @@ enum {
  */
 enum {
      PROVIDER = 0x00,
-     USER = 0x01,
+     USER = 0x01
 };
 
 enum event_name {
      #define EVENT(name, field) name,
      #include "wtp_events-decl.h"
+     event_name_count
 };
 
 enum states {
     #define STATE_NAME(state) state,
     #define ROW(state, event, condition, action, next_state)
     #include "wtp_state-decl.h"
+    states_count
 };
 
 typedef enum states states;
