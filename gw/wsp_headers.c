@@ -14,6 +14,7 @@
  */
 
 #include <string.h>
+#include <limits.h>
 #include <ctype.h>
 
 
@@ -1698,10 +1699,10 @@ static int pack_integer_string(Octstr *packed, Octstr *value)
         if (!isdigit(c))
             break;
         digit = c - '0';
-        if (integer > UINT_MAX / 10)
+        if (integer > ULONG_MAX / 10)
             goto overflow;
         integer *= 10;
-        if (integer > UINT_MAX - digit)
+        if (integer > ULONG_MAX - digit)
             goto overflow;
         integer += digit;
     }

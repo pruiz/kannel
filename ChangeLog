@@ -1,3 +1,8 @@
+2000-10-05  Richard Braakman  <dark@wapit.com>
+
+	* gw/wsp_headers.c: Bugfix in pack_integer_string, use ULONG_MAX
+	instead of UINT_MAX and include the right header file.
+
 2000-10-04  Richard Braakman  <dark@wapit.com>
 
 	* gw/wap-appl.c: Pass the status code we really got from the server
