@@ -1,3 +1,12 @@
+2003-05-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/shared.c, gw/smsbox.c: fixing mainly BUG#24 for sending too long 
+      UDH indicator sequences. This does not cover the effect, when UDH is
+      pretty long and Msg body is getting split and hence the UDH gets
+      prepended with the UDH sequence numbers. At least this fix ensures 
+      that octstr_copy() inside sms_split() does not panic. 
+      Patch based on post by "Oleg Titov" <Oleg.Titov@aleph-tec.com>.
+      [Msg-ID: <198463211.20030505104734@aleph-tec.com>]
+
 2003-05-26  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bearerbox.c: bugfix from previous commit.
 
