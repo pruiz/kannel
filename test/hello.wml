@@ -5,4 +5,4 @@
 <card id="main" title="Hello, world" newcontext="true">
         <p>Hello, world.</p>
 </card>
-</xml>
+</wml>

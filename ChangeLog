@@ -1,4 +1,8 @@
 2005-01-28  Stipe Tolj  <stolj@wapme.de> 
+    * test/hello.wml: fixed obviously wml compiling break for 
+      checks/check_fakewap.sh.
+
+2005-01-28  Stipe Tolj  <stolj@wapme.de> 
     * checks/check_http.sh, utils/run-checks: moving shell from /bin/sh to
       /bin/bash.
     * checks/check_ppg.sh: moving file condition check from -e (exists) to
