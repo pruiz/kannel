@@ -241,7 +241,8 @@ Octstr *wsp_pdu_pack(WSP_PDU *pdu) {
 	bitpos += 8 * octstr_len(p->field);
 #define REST(field, docstring) \
 	gw_assert(bitpos % 8 == 0); \
-	octstr_append(data, p->field); \
+	if (p->field != NULL) \
+		octstr_append(data, p->field); \
 	bitpos += 8 * octstr_len(p->field);
 #define TYPE(bits, value) \
 	octstr_set_bits(data, bitpos, (bits), (value)); \

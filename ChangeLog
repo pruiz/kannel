@@ -2,6 +2,7 @@
 
 	* gw/wsp_pdu.c: Allow REST fields to be NULL when packing (treat
 	them as length 0 strings).  This was already done for OCTSTR fields.
+	Thanks to Paul Keogh for fixing this.
 
 	* gw/wtp_pdu.c: Make the same change for REST and OCTSTR fields as
 	above.  It's going to be difficult to keep this code in sync.
