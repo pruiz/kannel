@@ -1,5 +1,17 @@
 2000-06-05  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/conn.c: Implemented conn_open_tcp().
+	Fixed conn_read_withlen, which I broke a few days ago.
+
+	* gwlib/conn.c: Split the single Connection lock into two locks,
+	one for reading and one for writing.  This allows reader and
+	writer threads to work without fighting over one lock.  Only
+	conn_wait needs both locks.
+
+	* test/drive_wapbox.c: Take advantage of some new octstr functions.
+
+2000-06-05  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/gwthread.h, gwlib/gwthread-pthread.c: Renamed
 	gwthread_join_all to gwthread_join_every, and added a
 	gwthread_join_all that joins ALL threads.  Added gwthread_wakeup_all

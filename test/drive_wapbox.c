@@ -102,25 +102,6 @@ static unsigned long get_varint(Octstr *pdu, int pos) {
 	return c;
 }
 
-static void add_varint(Octstr *pdu, unsigned long v) {
-	long pos;
-	unsigned char ch;
-	int conflag = 0;
-
-	if (v == 0) {
-		octstr_append_char(pdu, 0);
-		return;
-	}
-
-	pos = octstr_len(pdu);
-	while (v != 0) {
-		ch = (v & 0x7f) | conflag;
-		v >>= 7;
-		octstr_insert_data(pdu, pos, &ch, 1);
-		conflag = 0x80;
-	}
-}
-
 static void http_thread(void *arg) {
 	HTTPSocket *server = arg;
 	HTTPSocket *client;
@@ -246,10 +227,7 @@ static void increment_tid(Client *client) {
 
 /* Set the U/P flag on an Invoke PDU */
 static void set_user_ack(Octstr *pdu) {
-	int c;
-
-	c = octstr_get_char(pdu, 3) | 0x10;
-	octstr_set_char(pdu, 3, c);
+	octstr_set_bits(pdu, 3 * 8 + 3, 1, 1);
 }
 
 static Octstr *wtp_invoke_create(int class) {
@@ -283,19 +261,19 @@ static void add_wsp_get(Octstr *pdu) {
 
 	octstr_append_char(pdu, Get_PDU);
 	if (http_url) {
-		add_varint(pdu, octstr_len(http_url));
+		octstr_append_uintvar(pdu, octstr_len(http_url));
 		octstr_append(pdu, http_url);
 	} else {
 		sprintf(urlbuf, "http://localhost:%ld/hello.wml",
 			(long) http_port);
-		add_varint(pdu, strlen(urlbuf));
+		octstr_append_uintvar(pdu, strlen(urlbuf));
 		octstr_append_cstr(pdu, urlbuf);
 	}
 }
 
 static void add_wsp_disconnect(Octstr *pdu, long session_id) {
 	octstr_append_char(pdu, Disconnect_PDU);
-	add_varint(pdu, session_id);
+	octstr_append_uintvar(pdu, session_id);
 }
 
 static void set_tid(Octstr *pdu, int tid) {
