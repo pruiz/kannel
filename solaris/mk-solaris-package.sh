@@ -4,7 +4,7 @@ VERSION=`head -1 ../VERSION`
 export VERSION
 DATE=`date +%Y-%m-%d`
 
-echo Making WAkannel-{VERSION}.pkg
+echo Making WAkannel-${VERSION}.pkg
 cd ..
 make 
 make install
