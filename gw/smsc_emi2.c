@@ -67,6 +67,8 @@ typedef struct privdata {
     time_t      check_time;
     int         idle_timeout;   /* Seconds a Main connection to the SMSC is allowed to be idle.
 				   If 0, no idle timeout is in effect */
+    Octstr   *npid; /* Notification PID value */
+    Octstr   *nadc; /* Notification Address */
 } PrivData;
 
 typedef enum {
@@ -467,10 +469,14 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
     /* even the sender might not be interested in delivery or non delivery */
     /* we still need them back to clear out the memory after the message */
     /* has been delivered or non delivery has been confirmed */
-    if (msg->sms.dlr_mask & 0x07) {
+    if (msg->sms.dlr_mask & (DLR_SUCCESS | DLR_FAIL | DLR_BUFFERED)) {
     	emimsg->fields[E50_NRQ] = octstr_create("1");
-	emimsg->fields[E50_NT] = octstr_create("");
-	octstr_append_decimal(emimsg->fields[E50_NT], 3 + (msg->sms.dlr_mask & 0x04)); 
+        emimsg->fields[E50_NT] = octstr_create("");
+	    octstr_append_decimal(emimsg->fields[E50_NT], 3 + (msg->sms.dlr_mask & DLR_BUFFERED)); 
+	    if (privdata->npid)
+            emimsg->fields[E50_NPID] = octstr_duplicate(privdata->npid);
+	    if (privdata->nadc)
+            emimsg->fields[E50_NADC] = octstr_duplicate(privdata->nadc); 
     }
     return emimsg;
 }
@@ -1256,6 +1262,8 @@ static void emi2_sender(void *arg)
     octstr_destroy(privdata->my_number);
     octstr_destroy(privdata->username);
     octstr_destroy(privdata->password);
+    octstr_destroy(privdata->npid);
+    octstr_destroy(privdata->nadc);
     gw_free(privdata);
     conn->data = NULL;
 
@@ -1562,6 +1570,9 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 
     privdata->my_number = cfg_get(cfg, octstr_imm("my-number"));
 
+    privdata->npid = cfg_get(cfg, octstr_imm("notification-pid"));
+    privdata->nadc = cfg_get(cfg, octstr_imm("notification-addr"));
+    
     cfg_get_bool(&privdata->retry, cfg, octstr_imm("retry"));
     if(privdata->retry < 0) 
 	privdata->retry = 0;

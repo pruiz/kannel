@@ -216,6 +216,8 @@ MULTI_GROUP(smsc,
     OCTSTR(transceiver-mode)
     OCTSTR(interface-version)
     OCTSTR(priority)
+    OCTSTR(notification-pid)
+    OCTSTR(notification-addr)
 )
 
 
