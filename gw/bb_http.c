@@ -69,7 +69,12 @@ static Octstr *httpd_check_status(void)
 
 static Octstr *httpd_status(List *cgivars)
 {
-    return bb_print_status();
+    return bb_print_status(0);
+}
+
+static Octstr *httpd_xmlstatus(List *cgivars)
+{
+    return bb_print_status(1);
 }
 
 static Octstr *httpd_shutdown(List *cgivars)
@@ -138,6 +143,8 @@ static void httpd_serve(void *arg)
     
     if (octstr_str_compare(url, "/cgi-bin/status")==0)
 	reply = httpd_status(cgivars);
+    else if (octstr_str_compare(url, "/cgi-bin/xmlstatus")==0)
+	reply = httpd_xmlstatus(cgivars);
     else if (octstr_str_compare(url, "/cgi-bin/shutdown")==0)
 	reply = httpd_shutdown(cgivars);
     else if (octstr_str_compare(url, "/cgi-bin/suspend")==0)

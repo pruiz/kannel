@@ -41,7 +41,7 @@ int smsbox_restart(Config *config);
 
 int wapbox_start(Config *config);
 
-Octstr *boxc_status(void);
+Octstr *boxc_status(int xml);
 
 /*---------------
  * bb_udp.c (UDP receiver/sender)
@@ -70,7 +70,7 @@ int smsc_die(void);	/* called when router dies */
 /* as udp_addwdp() */
 int smsc_addwdp(Msg *msg);
 
-Octstr *smsc_status(void);
+Octstr *smsc_status(int xml);
 
 
 /*---------------
@@ -93,4 +93,4 @@ int bb_resume(void);
 int bb_restart(void);
 
 /* return string of current status */
-Octstr *bb_print_status(void);
+Octstr *bb_print_status(int xml);

@@ -694,12 +694,15 @@ int wapbox_start(Config *config)
 }
 
 
-Octstr *boxc_status(void)
+Octstr *boxc_status(int xml)
 {
     char tmp[1024], buf[256];
-    int i;
+    int i, boxes;
     time_t orig, t;
     Boxc *bi;
+
+    if (xml)
+	return octstr_create("XML not yet supported");
 
     orig = time(NULL);
     /*
@@ -709,7 +712,8 @@ Octstr *boxc_status(void)
      */
     
     sprintf(tmp, "Box connections:<BR>\n");
-
+    boxes = 0;
+    
     if (wapbox_list) {
 	list_lock(wapbox_list);
 	for(i=0; i < list_len(wapbox_list); i++) {
@@ -720,6 +724,7 @@ Octstr *boxc_status(void)
 		    octstr_get_cstr(bi->client_ip),
 		    t/3600/24, t/3600%24, t/60%60, t%60);
 	    strcat(tmp, buf);
+	    boxes++;
 	}
 	list_unlock(wapbox_list);
     }
@@ -733,9 +738,12 @@ Octstr *boxc_status(void)
 		    octstr_get_cstr(bi->client_ip),
 		    t/3600/24, t/3600%24, t/60%60, t%60);
 	    strcat(tmp, buf);
+	    boxes++;
 	}
 	list_unlock(smsbox_list);
     }
+    if (boxes == 0)
+	sprintf(tmp, "No boxes connected<BR>\n");
     return octstr_create(tmp);
 }
 

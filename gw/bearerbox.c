@@ -529,17 +529,21 @@ int bb_restart(void)
 
 
 
-#define append_status(r, s, f) { s = f(); octstr_append(r, s); \
+#define append_status(r, s, f, x) { s = f(x); octstr_append(r, s); \
                                  octstr_destroy(s); }
 
 
-Octstr *bb_print_status(void)
+Octstr *bb_print_status(int xml)
 {
     char *s;
-    char buf[512];
+    char buf[1024];
     Octstr *ret, *str;
     time_t t;
 
+    if (xml) {
+	return octstr_create("XML status not currently supported");
+    }
+    
     t = time(NULL) - start_time;
     
     switch(bb_status) {
@@ -555,19 +559,26 @@ Octstr *bb_print_status(void)
     default:
 	s = "going down";
     }
-    sprintf(buf, "Kannel version %s %s (up %ldd %ldh %ldm %lds), %d threads<br><br>"
-	    "Received %ld SMS and %ld WDP messages, Sent %ld SMS and %ld WDP messages<br><br>",
+    sprintf(buf, "<p>Kannel version %s %s (up %ldd %ldh %ldm %lds), %d threads</p>"
+	    "<p>WDP: received %ld (%ld still in queue), sent %ld (%ld still in queue)</p>"
+	    "<p>SMS: received %ld (%ld still in queue), sent %ld (%ld still in queue)</p>"
+	    "<p>",
 	    VERSION, s, t/3600/24, t/3600%24, t/60%60, t%60,
 	    list_producer_count(flow_threads),
-	    counter_value(incoming_sms_counter),
 	    counter_value(incoming_wdp_counter),
+	    list_len(incoming_wdp),
+	    counter_value(outgoing_wdp_counter),
+	    list_len(outgoing_wdp),
+	    counter_value(incoming_sms_counter),
+	    list_len(incoming_sms),
 	    counter_value(outgoing_sms_counter),
-	    counter_value(outgoing_wdp_counter));
+	    list_len(outgoing_sms));
 
     ret = octstr_create(buf);
 
-    append_status(ret, str, boxc_status);
-    append_status(ret, str, smsc_status);
+    append_status(ret, str, boxc_status, xml);
+    append_status(ret, str, smsc_status, xml);
+    octstr_append(ret, octstr_create_immutable("</p>"));
     
     return ret;
 }

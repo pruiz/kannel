@@ -442,12 +442,15 @@ int smsc_die(void)
 }
 
 
-Octstr *smsc_status(void)
+Octstr *smsc_status(int xml)
 {
     char tmp[512];
     int i;
     Smsc *si;
     
+    if (xml)
+	return octstr_create("XML not yet supported");
+
     if (!smsc_running) return octstr_create("No SMSC connections<br>");
 
     sprintf(tmp, "<br>SMSC connections:<br>");
