@@ -18,18 +18,30 @@ Security:
    request (for example to sendsms) contained literal spaces in the URL.
    This has been fixed.  The problem was not present in the 1.0 series.
 
+New features:
+
+ * New "http" SMSC which allows Kannel to be used with HTTP-based
+   SMS interfaces (such as Kannel itself, so that you can chain them).
+
+ * WML compiler produces slightly smaller output.
+
 Bugfixes:
 
- * Phone-as-SMSC module made more reliable under high load.
+ * Phone-as-SMSC module made more reliable under high load.  In particular,
+   reopening a broken connection works again.
 
  * Bearerbox no longer treats any UDP errors as fatal, they are just
    warnings now.
+
+ * Several memory leaks fixed.
 
 Development news:
 
  * Started a benchmarking framework, activated with "make bench".
 
  * Bearerbox now uses the conn module for box connections.
+
+ * octstr_format takes a new %E format which does http-url encoding.
 
 
 Changes since version 1.1.1:
