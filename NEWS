@@ -1,1 +1,11 @@
-See ChangeLog.
+NEWS about Open Source WAP and SMS Gateway version 0.3
+
+Change summary from version 0.2.2:
+
+* fakewap test program, by Antti Saarenheimo, first prototype.
+
+* WMLScript compiler, by Markku Rossi.
+
+* Using WML compiler as an external program, due to bugs.
+
+* Various bug fixes, see ChangeLog for details.
