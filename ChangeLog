@@ -1,4 +1,11 @@
 2002-04-19  Stipe Tolj <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added 'force-sar' section
+    * gw/wap-appl.c: some source reformating
+    * wap/wtp_resp.c, gw/wapbox.c, gwlib/cfg.def: added 'force-sar' 
+      indicator to allow forced WTP connections, even if the phone 
+      requests SAR. Some source reformating.
+
+2002-04-19  Stipe Tolj <tolj@wapme-systems.de>
     * gw/wap-appl.c: reformated return_reply() to CodingStyle rules
 
 2002-04-18  Stipe Tolj <tolj@wapme-systems.de>
