@@ -100,7 +100,9 @@ void msg_dump(Msg *msg) {
 		debug(0, "  %s.%s: %ld", t, #name, (long) p->name)
 	#define OCTSTR(name) \
 		debug(0, "  %s.%s:", t, #name); octstr_dump(p->name)
-	#define MSG(type, stmt) { char *t = #type; struct type *p = &msg->type; stmt }
+	#define MSG(tt, stmt) \
+		if (tt == msg->type) \
+			{ char *t = #tt; struct tt *p = &msg->tt; stmt }
 	#include "msg-decl.h"
 	debug(0, "Msg object ends.");
 }
