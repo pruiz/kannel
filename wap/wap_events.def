@@ -307,6 +307,7 @@ WAPEVENT(S_Push_Ind,
 	OPTIONAL_OCTSTR(push_body)
 
 	INTEGER(session_handle)
+	HTTPHEADER(session_headers)
 	)
 
 WAPEVENT(S_ConfirmedPush_Req,
@@ -451,7 +452,14 @@ WAPEVENT(S_Unit_MethodResult_Ind,
 	OPTIONAL_OCTSTR(response_body)
 	)
 
-WAPEVENT(S_Unit_Push,
+WAPEVENT(S_Unit_Push_Req,
+	ADDRTUPLE(addr_tuple)
+	INTEGER(push_id)
+	HTTPHEADER(push_headers)
+	OPTIONAL_OCTSTR(push_body)
+	)
+
+WAPEVENT(S_Unit_Push_Ind,
 	ADDRTUPLE(addr_tuple)
 	INTEGER(push_id)
 	HTTPHEADER(push_headers)
