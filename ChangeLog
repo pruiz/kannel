@@ -1,4 +1,9 @@
 2002-01-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap_ota_prov.h: moved to gw/ota_prov_attr.h and added MMSURL type
+    * gw/ota_prov.c, gw/smsbox.c: changed header include to ota_prov_attr.h.
+    * gw/ota_compiler.c: added MMSURL type.
+
+2002-01-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/ota_prov.[ch]: fixed typo in ota_tokenize_bookmarks(). Removed 
       static function declarations from header file.
 
