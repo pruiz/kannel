@@ -1,3 +1,8 @@
+2000-02-21 Aarno Syvänen <syvanen@wapit.com>
+
+	* test/fakewap.c: commented tid verification protocol used by the 
+	program
+	
 2000-02-21    <rpr@rpr.wapit.com>
 
 	* gw/smsc_smpp.c: added receive-port, so that transmit/receive
