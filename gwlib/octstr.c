@@ -1410,7 +1410,7 @@ void octstr_dump(Octstr *ostr, int level)
 {
     unsigned char *p, *d, buf[1024], charbuf[256];
     long pos;
-    const int octets_per_line = 8;
+    const int octets_per_line = 16;
     int c, this_line_begins_at;
 
     if (ostr == NULL)

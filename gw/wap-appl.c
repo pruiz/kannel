@@ -408,11 +408,6 @@ static int deconvert_content(struct content *content)
     int failed = 0;
     int i;
 
-    if(content == NULL || content->body == NULL) {
-        warning(0, "WSP deconvert: Empty body, not deconverting");
-        return -1;
-    }
-    
     debug("wap.deconvert",0,"WSP deconvert: Trying to deconvert:"); 
     octstr_dump(content->body, 0);
     for (i = 0; i < NUM_DECONVERTERS; i++) {
@@ -1053,7 +1048,7 @@ static void start_fetch(WAPEvent *event)
         }
 
         /* 
-         * XXX Call convert_content() here for transformations of binary
+         * Call deconvert_content() here for transformations of binary
          * encoded POST requests from the client into text plain decoded
          * POST requests for the HTTP server.
          * Mainly this is used for multipart/form-data transmissions,

@@ -324,8 +324,6 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary,
         /* we had none, so use UTF-8 as default */
         encoding = octstr_create("UTF-8");
     }
-    debug("wml_compile", 0, "WML compiler: Final encoding will be <%s>", 
-		    octstr_get_cstr(encoding));
 
     size = octstr_len(wml_text);
     wml_c_text = octstr_get_cstr(wml_text);
@@ -542,7 +540,7 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
         }
         if (i == NUMBER_OF_WBXML_VERSION) {
             (*wbxml)->wbxml_version = 0x01; /* WBXML Version number 1.1 */
-            warning(0, "WBXML: Unknown wbxml version given, assuming 1.1 <%s>",
+            warning(0, "WBXML: Unknown wbxml version, assuming 1.1 (<%s> is unknown)",
                     octstr_get_cstr(version));
         }
     }
@@ -563,7 +561,8 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
         }
         if (i == NUMBER_OF_WML_EXTERNALID) {
             (*wbxml)->wml_public_id = 0x04; /* WML 1.1 Public ID */
-            warning(0, "WBXML: WML with unknown ExternalID, assuming 1.1 <%s>",
+            warning(0, "WBXML: WML with unknown ExternalID, assuming 1.1 "
+                    "(<%s> is unknown)",
                     octstr_get_cstr(externalID));
         }
     }
@@ -695,8 +694,19 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
 	if (attr->children == NULL || 
 	    (hit = list_search(attribute->value_list, (void *)pattern, 
 			       hash_cmp)) == NULL) {
-		wbxml_hex = attribute->binary;
-		output_st_char(wbxml_hex, wbxml);
+                if(attribute->binary == 0x00) {
+                    warning(0, "WML compiler: can't compile attribute %s%s%s%s", 
+                               octstr_get_cstr(attribute->attribute), 
+			       (attr->children != NULL ? "=\"": ""), 
+			       (attr->children != NULL ? octstr_get_cstr(pattern) : ""), 
+			       (attr->children != NULL ? "\"": ""));
+	            wbxml_hex = WBXML_LITERAL;
+	            output_st_char(wbxml_hex, wbxml);
+	            output_st_char(string_table_add(octstr_duplicate(name), wbxml), wbxml);
+		} else {
+		    wbxml_hex = attribute->binary;
+		    output_st_char(wbxml_hex, wbxml);
+		}
 	} else if (hit->binary) {
 	    wbxml_hex = hit->binary;
 	    coded_length = octstr_len(hit->item);

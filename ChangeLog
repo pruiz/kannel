@@ -1,3 +1,19 @@
+2003-07-17  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gwlib/octstr.c: octstr_dump 16 chars per line. It's impossible to decode
+      8 chars per line and we already have most of the other lines with more
+      than 80 chars
+    * gw/wml_compiler.c: encode LITERAL attribute names if there's no opcode
+      defined. For example, multiple="true" and multiple="false" are each one 
+      encoded as one byte, but there's no multiple="<something>" opcode. This
+      fix encodes multiple and something as a LITERAL string correctly
+    * gw/{wml_compiler,wap-appl}.c: changed some debug strings and removed two
+      debugs. In wap-appl, there's no need to test body!=NULL again, and if
+      it's tested, it should be an error, not an warning. In wml_compiler,
+      there's no need to that debug because that value doesn't make any sense.
+      WML is probably recoded before by my patch and will be recoded again in
+      the end. In practice, this value was never in sync with real results and
+      as I don't know why, it's better to not be there confusing ;)
+
 2003-07-17  Stipe Tolj  <tolj@wapme-systems.de>
     * configure[.in]: relabeled default settings to [foobar] style.
     * gwlib/gwmem.h: added #define gw_malloc_trace() macros to trace the caller
