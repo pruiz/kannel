@@ -316,8 +316,10 @@ void dlr_add_mysql(char *smsc, char *ts, char *dst, char *service, char *url, in
 
     sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES "
                         "('%s', '%s', '%s', '%s', '%s', '%d', '%d');",
-		                table, field_smsc, field_ts, field_dst, field_serv,
-                        field_url, field_mask, field_status,
+		                octstr_get_cstr(table), octstr_get_cstr(field_smsc), 
+                        octstr_get_cstr(field_ts), octstr_get_cstr(field_dst), 
+                        octstr_get_cstr(field_serv), octstr_get_cstr(field_url), 
+                        octstr_get_cstr(field_mask), octstr_get_cstr(field_status),
                         smsc, ts, dst, service,	url, mask, 0);
 
     mutex_lock(dlr_mutex);
@@ -417,8 +419,10 @@ Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
     Msg	*msg = NULL;
     
     sql = octstr_format("SELECT %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s';",
-                        field_mask, field_serv, field_url, table, field_smsc,
-                        smsc, field_ts, ts);
+                        octstr_get_cstr(field_mask), octstr_get_cstr(field_serv), 
+                        octstr_get_cstr(field_url), octstr_get_cstr(table), 
+                        octstr_get_cstr(field_smsc),
+                        smsc, octstr_get_cstr(field_ts), ts);
 
     mutex_lock(dlr_mutex);
     
@@ -453,8 +457,9 @@ Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
     mutex_unlock(dlr_mutex);
     
     sql = octstr_format("UPDATE %s SET %s=%d WHERE %s='%s' AND %s='%s';",
-                        table, field_status, typ, field_smsc, smsc, 
-                       	field_ts, ts);
+                        octstr_get_cstr(table), octstr_get_cstr(field_status), 
+                        typ, octstr_get_cstr(field_smsc), smsc, 
+                       	octstr_get_cstr(field_ts), ts);
     
     mutex_lock(dlr_mutex);
     
@@ -489,7 +494,8 @@ Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
     } else {
         debug("dlr.mysql", 0, "removing DLR from database");
         sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s';",
-                            table, field_smsc, smsc, field_ts, ts);
+                            octstr_get_cstr(table), octstr_get_cstr(field_smsc), 
+                            smsc, octstr_get_cstr(field_ts), ts);
         
         mutex_lock(dlr_mutex);
 
