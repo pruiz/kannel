@@ -38,11 +38,17 @@ dnl Checks system type.
 AC_CANONICAL_HOST
 
 dnl Apply system specific rules.
+dnl Executable extension for systems that need one, i.e. Cygwin
+EXE_EXT=""
 case "$host" in
   *-sun-solaris*) 
     CFLAGS="$CFLAGS -DSunOS=1"
     ;;
+  *-cygwin*)
+    EXE_EXT=".exe"
+    ;;
 esac
+AC_SUBST(EXE_EXT)
 
 dnl Checks for programs.
 AC_PROG_CC
