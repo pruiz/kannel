@@ -1,3 +1,11 @@
+2000-10-18  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: Now checks also attributes for texts that could 
+	be placed in the string table. Also removes non alphanumerical 
+	characters from the start and the end of the strings.
+
+	* gwlib/octstr.[ch]: octstr_strip_nonalphanums added.
+
 2000-10-18  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/conn.[ch]: Added conn_wait_multi(). Untested.

@@ -562,7 +562,8 @@ static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
 	return -1;
     }
 
-    /* Encode the attribute list for this node and add end tag after the list. */
+    /* Encode the attribute list for this node and add end tag after the 
+       list. */
 
     if(node->properties != NULL) {
 	attribute = node->properties;
@@ -1463,6 +1464,7 @@ static void string_table_build(xmlNodePtr node, wml_binary_t **wbxml)
 static void string_table_collect_strings(xmlNodePtr node, List *strings)
 {
     Octstr *string;
+    xmlAttrPtr attribute;
 
     switch (node->type) {
     case XML_TEXT_NODE:
@@ -1471,11 +1473,23 @@ static void string_table_collect_strings(xmlNodePtr node, List *strings)
 
 	    octstr_shrink_blanks(string);
 	    octstr_strip_blanks(string);
+	    if (octstr_len(string) > STRING_TABLE_MIN)
+		octstr_strip_nonalphanums(string);
 
 	    if (octstr_len(string) > STRING_TABLE_MIN)
 		list_append(strings, string);
 	    else 
 		octstr_destroy(string);
+	}
+	break;
+    case XML_ELEMENT_NODE:
+	if(node->properties != NULL) {
+	    attribute = node->properties;
+	    while (attribute != NULL) {
+		if (attribute->children != NULL)
+		    string_table_collect_strings(attribute->children, strings);
+		attribute = attribute->next;
+	    }
 	}
 	break;
     default:

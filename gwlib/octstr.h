@@ -387,6 +387,12 @@ void octstr_strip_blanks(Octstr *ostr);
 
 
 /*
+ * Strip non-alphanums from start and end of a octet string.
+ */
+void octstr_strip_nonalphanums(Octstr *ostr);
+
+
+/*
  * Shrink consecutive white space characters into one space.
  */
 void octstr_shrink_blanks(Octstr *ostr);

@@ -1110,6 +1110,33 @@ void octstr_strip_blanks(Octstr *text)
 }
 
 
+void octstr_strip_nonalphanums(Octstr *text)
+{
+    int start = 0, end, len = 0;
+
+    seems_valid(text);
+    gw_assert(!text->immutable);
+
+    /* Remove white space from the beginning of the text */
+    while (!isalnum(octstr_get_char(text, start)))
+        start ++;
+
+    if (start > 0)
+        octstr_delete(text, 0, start);
+
+    /* and from the end. */
+
+    if ((len = octstr_len(text)) > 0) {
+        end = len = len - 1;
+        while (!isalnum(octstr_get_char(text, end)))
+            end--;
+        octstr_delete(text, end + 1, len - end);
+    }
+
+    seems_valid(text);
+}
+
+
 void octstr_shrink_blanks(Octstr *text)
 {
     int i, j, end;
