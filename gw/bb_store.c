@@ -230,7 +230,7 @@ Octstr *store_status(int status_type)
                        "<receiver>%s</receiver>\n\t<smsc-id>%s</smsc-id>\n\t"
                        "<udh-data>%s</udh-data>\n\t<msg-data>%s</msg-data>\n\t"
                        "<time>%s</time>\n</message>\n";
-            } else if (status_type == BBSTATUS_TEXT) {
+            } else {
                 frmt = "[%d] [%s] [%s] [%s] [%s] [%s] [%s]\n";
             }
 
