@@ -1,3 +1,10 @@
+2000-11-03  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: A conformance patch: card and template elements 
+	cannot have 2 or more do elements of the same name, PI are ignored,
+	unknown tags and CDATA are now processed. Also some code was cleaned 
+	into the new coding standard.
+
 2000-11-03  Richard Braakman  <dark@wapit.com>
 
         * gw/wsp_headers.c: If an Expires header has an invalid date, then

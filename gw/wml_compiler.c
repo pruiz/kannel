@@ -197,8 +197,9 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml);
 static int parse_attr_value(Octstr *attr_value, wml_table_t *tokens, 
 			    wml_binary_t **wbxml);
 static int parse_text(xmlNodePtr node, wml_binary_t **wbxml);
+static int parse_cdata(xmlNodePtr node, wml_binary_t **wbxml);
 static int parse_charset(Octstr *charset, wml_binary_t **wbxml);
-static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml);
+static int parse_octet_string(Octstr *ostr, int cdata, wml_binary_t **wbxml);
 
 static void parse_end(wml_binary_t **wbxml);
 static void parse_entities(Octstr *wml_source);
@@ -243,6 +244,8 @@ static void hash3_destroy(void *p);
  */
 
 static unsigned char element_check_content(xmlNodePtr node);
+static int check_do_elements(xmlNodePtr node);
+static Octstr *get_do_element_name(xmlNodePtr node);
 static int check_if_url(int hex);
 
 static int wml_table_len(wml_table_t *table);
@@ -439,8 +442,12 @@ static int parse_node(xmlNodePtr node, wml_binary_t **wbxml)
     case XML_TEXT_NODE:
 	status = parse_text(node, wbxml);
 	break;
+    case XML_CDATA_SECTION_NODE:
+	status = parse_cdata(node, wbxml);
+	break;
     case XML_COMMENT_NODE:
-	/* Comments are ignored. */
+    case XML_PI_NODE:
+	/* Comments and PIs are ignored. */
 	break;
 	/*
 	 * XML has also many other node types, these are not needed with 
@@ -543,6 +550,16 @@ static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
     for (i = 0; wml_elements[i].text != NULL; i++)
 	if (octstr_str_compare(name, wml_elements[i].text) == 0) {
 	    wbxml_hex = wml_elements[i].token;
+	    /* A conformance patch: no do-elements of same name in a card or
+	       template. An extremely ugly patch. --tuo */
+	    if (wbxml_hex == 0x27 || /* Card */
+		wbxml_hex == 0x3B)   /* Template */
+		if (check_do_elements(node) == -1) {
+		    add_end_tag = -1;
+		    error(0, "WML compiler: Two or more do elements with same"
+			  " name in a card or template element.");
+		    break;
+		}
 	    if ((status_bits = element_check_content(node)) > 0) {
 		wbxml_hex = wbxml_hex | status_bits;
 		/* If this node has children, the end tag must be added after 
@@ -557,9 +574,16 @@ static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
     /* The tag was not on the code page, it has to be encoded as a string. */
 
     if (wml_elements[i].text == NULL) { 
-	/* Unknown tags not yet implemented. They will need a string table. */
-	error(0, "WML compiler: unknown tag.");
-	return -1;
+	wbxml_hex = LITERAL;
+	if ((status_bits = element_check_content(node)) > 0) {
+	    wbxml_hex = wbxml_hex | status_bits;
+	    /* If this node has children, the end tag must be added after 
+	       them. */
+	    if ((status_bits & CHILD_BIT) == CHILD_BIT)
+		add_end_tag = 1;
+	}
+	output_char(wbxml_hex, wbxml);
+	output_char(string_table_add(octstr_duplicate(name), wbxml), wbxml);
     }
 
     /* Encode the attribute list for this node and add end tag after the 
@@ -709,7 +733,7 @@ static int parse_attr_value(Octstr *attr_value, wml_table_t *tokens,
 	    gw_assert(pos <= octstr_len(attr_value));
 	
 	    cut_text = octstr_copy(attr_value, 0, pos);
-	    if (parse_octet_string(cut_text, wbxml) != 0)
+	    if (parse_octet_string(cut_text, 0, wbxml) != 0)
 		return -1;
 	    octstr_destroy(cut_text);
 	    
@@ -730,7 +754,7 @@ static int parse_attr_value(Octstr *attr_value, wml_table_t *tokens,
 	if (tokens[i].text != NULL)
 	    parse_attr_value(attr_value, tokens, wbxml);
 	else
-	    if (parse_octet_string(attr_value, wbxml) != 0)
+	    if (parse_octet_string(attr_value, 0, wbxml) != 0)
 		return -1;
     }
 
@@ -768,8 +792,31 @@ static int parse_text(xmlNodePtr node, wml_binary_t **wbxml)
     if (octstr_len(temp) == 0)
 	ret = 0;
     else
-	ret = parse_octet_string(temp, wbxml);
+	ret = parse_octet_string(temp, 0, wbxml);
 
+    /* Memory cleanup. */
+    octstr_destroy(temp);
+
+    return ret;
+}
+
+
+
+/*
+ * parse_cdata - a cdata section parsing function.
+ * This function parses a cdata section that is outputted into the binary 
+ * "as is". 
+ */
+
+static int parse_cdata(xmlNodePtr node, wml_binary_t **wbxml)
+{
+    int ret = 0;
+    Octstr *temp;
+
+    temp = octstr_create(node->content);
+
+    parse_octet_string(temp, 1, wbxml);
+    
     /* Memory cleanup. */
     octstr_destroy(temp);
 
@@ -987,15 +1034,16 @@ static var_esc_t check_variable_syntax(Octstr *variable)
  * not. Returns 0 for success, -1 for error.
  */
 
-static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
+static int parse_octet_string(Octstr *ostr, int cdata, wml_binary_t **wbxml)
 {
     Octstr *output, *var, *temp = NULL;
     int var_len;
     int start = 0, pos = 0, len;
 
-    /* No variables? Ok, let's take the easy way... */
+    /* No variables? Ok, let's take the easy way... (CDATA never contains 
+       variables.) */
 
-    if ((pos = octstr_search_char(ostr, '$', 0)) < 0) {
+    if ((pos = octstr_search_char(ostr, '$', 0)) < 0 || cdata == 1) {
 	string_table_apply(ostr, wbxml);
 	return 0;
     }
@@ -1300,6 +1348,90 @@ static unsigned char element_check_content(xmlNodePtr node)
 
 
 /*
+ * check_do_elements - a helper function for parse_element for checking if a
+ * card or template element has two or more do elements of the same name. 
+ * Returns 0 for OK and -1 for an error (== do elements with same name found).
+ */
+
+static int check_do_elements(xmlNodePtr node)
+{
+    xmlNodePtr child;
+    int i, status = 0;
+    Octstr *name = NULL;
+    List *name_list = NULL;
+    
+    name_list = list_create();
+
+    if ((child = node->children) != NULL) {
+	while (child != NULL) {
+	    if (strcmp(child->name, "do") == 0) {
+		name = get_do_element_name(child);
+
+		if (name == NULL) {
+		    error(0, "WML compiler: no name or type in a do element");
+		    return -1;
+		}
+
+		for (i = 0; i < list_len(name_list); i ++)
+		    if (octstr_compare(list_get(name_list, i), name) == 0) {
+			octstr_destroy(name);
+			status = -1;
+			break;
+		    }
+		if (status != -1)
+		    list_append(name_list, name);
+		else
+		    break;
+	    }
+	    child = child->next;
+	}
+    }
+
+    list_destroy(name_list, octstr_destroy_item);
+
+    return status;
+}
+
+
+
+/*
+ * get_do_element_name - returns the name for a do element. Name is either 
+ * name when the element has the attribute or defaults to the type attribute 
+ * if there is no name.
+ */
+
+static Octstr *get_do_element_name(xmlNodePtr node)
+{
+    Octstr *name = NULL;
+    xmlAttrPtr attr; 
+
+    if ((attr = node->properties) != NULL) {
+	while (attr != NULL) {
+	    if (strcmp(attr->name, "name") == 0) {
+		name = octstr_create(attr->children->content);
+		break;
+	    }
+	    attr = attr->next;
+	}
+
+	if (attr == NULL) {
+	    attr = node->properties;
+	    while (attr != NULL) {
+		if (strcmp(attr->name, "type") == 0) {
+		    name = octstr_create(attr->children->content);
+		    break;
+		}
+		attr = attr->next;
+	    }
+	}
+    }
+
+    return name;
+}
+
+
+
+/*
  * check_if_url - checks whether the attribute value is an URL or some other 
  * kind of value. Returns 1 for an URL and 0 otherwise.
  */
@@ -1356,13 +1488,13 @@ static int wml_table3_len(wml_table3_t *table)
 
 static string_table_t *string_table_create(int offset, Octstr *ostr)
 {
-  string_table_t *node;
+    string_table_t *node;
 
-  node = gw_malloc(sizeof(string_table_t));
-  node->offset = offset;
-  node->string = ostr;
+    node = gw_malloc(sizeof(string_table_t));
+    node->offset = offset;
+    node->string = ostr;
 
-  return node;
+    return node;
 }
 
 
@@ -1373,10 +1505,9 @@ static string_table_t *string_table_create(int offset, Octstr *ostr)
 
 static void string_table_destroy(string_table_t *node)
 {
-  if (node != NULL)
-    {
-      octstr_destroy(node->string);
-      gw_free(node);
+    if (node != NULL) {
+	octstr_destroy(node->string);
+	gw_free(node);
     }
 }
 
@@ -1389,13 +1520,13 @@ static void string_table_destroy(string_table_t *node)
 
 static string_table_proposal_t *string_table_proposal_create(Octstr *ostr)
 {
-  string_table_proposal_t *node;
+    string_table_proposal_t *node;
 
-  node = gw_malloc(sizeof(string_table_proposal_t));
-  node->count = 1;
-  node->string = ostr;
+    node = gw_malloc(sizeof(string_table_proposal_t));
+    node->count = 1;
+    node->string = ostr;
 
-  return node;
+    return node;
 }
 
 
@@ -1407,10 +1538,9 @@ static string_table_proposal_t *string_table_proposal_create(Octstr *ostr)
 
 static void string_table_proposal_destroy(string_table_proposal_t *node)
 {
-  if (node != NULL)
-    {
-      octstr_destroy(node->string);
-      gw_free(node);
+    if (node != NULL) {
+	octstr_destroy(node->string);
+	gw_free(node);
     }
 }
 
@@ -1425,32 +1555,29 @@ static void string_table_proposal_destroy(string_table_proposal_t *node)
 
 static void string_table_build(xmlNodePtr node, wml_binary_t **wbxml)
 {
-  string_table_proposal_t *item = NULL;
-  List *list = NULL;
+    string_table_proposal_t *item = NULL;
+    List *list = NULL;
 
-  list = list_create();
+    list = list_create();
 
-  string_table_collect_strings(node, list);
+    string_table_collect_strings(node, list);
 
-  list = string_table_add_many(string_table_sort_list(list), wbxml);
+    list = string_table_add_many(string_table_sort_list(list), wbxml);
 
-  list =  string_table_collect_words(list);
+    list =  string_table_collect_words(list);
 
-  /* Don't add strings if there aren't any. (no NULLs please) */
-  if (list)
-    {
-      list = 
-        string_table_add_many(string_table_sort_list(list), wbxml);
+    /* Don't add strings if there aren't any. (no NULLs please) */
+    if (list) {
+	list = string_table_add_many(string_table_sort_list(list), wbxml);
     }
 
-  /* Memory cleanup. */
-  while (list_len(list))
-    {
-      item = list_extract_first(list);
-      string_table_proposal_destroy(item);
+    /* Memory cleanup. */
+    while (list_len(list)) {
+	item = list_extract_first(list);
+	string_table_proposal_destroy(item);
     }
 
-  list_destroy(list, NULL);
+    list_destroy(list, NULL);
 }
 
 
@@ -1513,40 +1640,36 @@ static void string_table_collect_strings(xmlNodePtr node, List *strings)
 
 static List *string_table_sort_list(List *start)
 {
-  int i;
-  Octstr *string = NULL;
-  string_table_proposal_t *item = NULL;
-  List *sorted = NULL;
+    int i;
+    Octstr *string = NULL;
+    string_table_proposal_t *item = NULL;
+    List *sorted = NULL;
 
-  sorted = list_create();
+    sorted = list_create();
 
-  while (list_len(start))
-    {
-      string = list_extract_first(start);
+    while (list_len(start)) {
+	string = list_extract_first(start);
       
-      /* Check whether the string is unique. */
-      for (i = 0; i < list_len(sorted); i++)
-	{
-	  item = list_get(sorted, i);
-	  if (octstr_compare(item->string, string) == 0)
-	    {
-	      octstr_destroy(string);
-	      string = NULL;
-	      item->count ++;
-	      break;
+	/* Check whether the string is unique. */
+	for (i = 0; i < list_len(sorted); i++) {
+	    item = list_get(sorted, i);
+	    if (octstr_compare(item->string, string) == 0) {
+		octstr_destroy(string);
+		string = NULL;
+		item->count ++;
+		break;
 	    }
 	}
-      
-      if (string != NULL)
-	{
-	  item = string_table_proposal_create(string);
-	  list_append(sorted, item);
+	
+	if (string != NULL) {
+	    item = string_table_proposal_create(string);
+	    list_append(sorted, item);
 	}
     }
 
-  list_destroy(start, NULL);
+    list_destroy(start, NULL);
 
-  return sorted;
+    return sorted;
 }
 
 
@@ -1559,27 +1682,24 @@ static List *string_table_sort_list(List *start)
 
 static List *string_table_add_many(List *sorted, wml_binary_t **wbxml)
 {
-  string_table_proposal_t *item = NULL;
-  List *list = NULL;
+    string_table_proposal_t *item = NULL;
+    List *list = NULL;
 
-  list = list_create();
+    list = list_create();
 
-  while (list_len(sorted))
-    {
-      item = list_extract_first(sorted);
+    while (list_len(sorted)) {
+	item = list_extract_first(sorted);
 
-      if (item->count > 1 && octstr_len(item->string) > STRING_TABLE_MIN)
-	{
-	  string_table_add(octstr_duplicate(item->string), wbxml);
-	  string_table_proposal_destroy(item);
-	}
-      else
-	list_append(list, item);
+	if (item->count > 1 && octstr_len(item->string) > STRING_TABLE_MIN) {
+	    string_table_add(octstr_duplicate(item->string), wbxml);
+	    string_table_proposal_destroy(item);
+	} else
+	    list_append(list, item);
     }
 
-  list_destroy(sorted, NULL);
+    list_destroy(sorted, NULL);
 
-  return list;
+    return list;
 }
 
 
@@ -1591,34 +1711,30 @@ static List *string_table_add_many(List *sorted, wml_binary_t **wbxml)
 
 static List *string_table_collect_words(List *strings)
 {
-  Octstr *word = NULL;
-  string_table_proposal_t *item = NULL;
-  List *list = NULL, *temp_list = NULL;
+    Octstr *word = NULL;
+    string_table_proposal_t *item = NULL;
+    List *list = NULL, *temp_list = NULL;
 
-  while (list_len(strings))
-    {
-      item = list_extract_first(strings);
+    while (list_len(strings)) {
+	item = list_extract_first(strings);
 
-      if (list == NULL)
-	{
-	  list = octstr_split_words(item->string);
-	  string_table_proposal_destroy(item);
-	}
-      else
-	{
-	  temp_list = octstr_split_words(item->string);
+	if (list == NULL) {
+	    list = octstr_split_words(item->string);
+	    string_table_proposal_destroy(item);
+	} else {
+	    temp_list = octstr_split_words(item->string);
 
-	  while ((word = list_extract_first(temp_list)) != NULL)
-	    list_append(list, word);
+	    while ((word = list_extract_first(temp_list)) != NULL)
+		list_append(list, word);
 
-	  list_destroy(temp_list, NULL);
-	  string_table_proposal_destroy(item);
+	    list_destroy(temp_list, NULL);
+	    string_table_proposal_destroy(item);
 	}
     }
 
-  list_destroy(strings, NULL);
+    list_destroy(strings, NULL);
 
-  return list;
+    return list;
 }
 
 
@@ -1632,30 +1748,28 @@ static List *string_table_collect_words(List *strings)
 
 static unsigned long string_table_add(Octstr *ostr, wml_binary_t **wbxml)
 {
-  string_table_t *item = NULL;
-  unsigned long i, offset = 0;
+    string_table_t *item = NULL;
+    unsigned long i, offset = 0;
 
-  /* Check whether the string is unique. */
-  for (i = 0; i < (unsigned long)list_len((*wbxml)->string_table); i++)
-    {
-      item = list_get((*wbxml)->string_table, i);
-      if (octstr_compare(item->string, ostr) == 0)
-	{
-	  octstr_destroy(ostr);
-	  return item->offset;
+    /* Check whether the string is unique. */
+    for (i = 0; i < (unsigned long)list_len((*wbxml)->string_table); i++) {
+	item = list_get((*wbxml)->string_table, i);
+	if (octstr_compare(item->string, ostr) == 0) {
+	    octstr_destroy(ostr);
+	    return item->offset;
 	}
     }
 
-  /* Create a new list item for the string table. */
-  offset = (*wbxml)->string_table_length;
+    /* Create a new list item for the string table. */
+    offset = (*wbxml)->string_table_length;
 
-  item = string_table_create(offset, ostr);
+    item = string_table_create(offset, ostr);
 
-  (*wbxml)->string_table_length = 
-    (*wbxml)->string_table_length + octstr_len(ostr) + 1;
-  list_append((*wbxml)->string_table, item);
+    (*wbxml)->string_table_length = 
+	(*wbxml)->string_table_length + octstr_len(ostr) + 1;
+    list_append((*wbxml)->string_table, item);
 
-  return offset;
+    return offset;
 }
 
 
@@ -1668,69 +1782,66 @@ static unsigned long string_table_add(Octstr *ostr, wml_binary_t **wbxml)
 
 static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
 {
-  Octstr *input = NULL;
-  string_table_t *item = NULL;
-  long i = 0, word_s = 0, str_e = 0;
+    Octstr *input = NULL;
+    string_table_t *item = NULL;
+    long i = 0, word_s = 0, str_e = 0;
 
-  input = octstr_create("");
+    input = octstr_create("");
 
-  for (i = 0; i < list_len((*wbxml)->string_table); i++)
-    {
-      item = list_get((*wbxml)->string_table, i);
+    for (i = 0; i < list_len((*wbxml)->string_table); i++) {
+	item = list_get((*wbxml)->string_table, i);
 
-      if (octstr_len(item->string) > STRING_TABLE_MIN)
-	/* No use to replace 1 to 3 character substring, the reference 
-	   will eat the saving up. A variable will be in the string table 
-	   even though it's only 1 character long. */
-	if ((word_s = octstr_search(ostr, item->string, 0)) >= 0)
-	  {
-	    /* Check whether the octet string are equal if they are equal 
-	       in length. */
-	    if (octstr_len(ostr) == octstr_len(item->string))
-	      {
-		if ((word_s = octstr_compare(ostr, item->string)) == 0)
-		  {
-		    octstr_truncate(ostr, 0);
-		    octstr_append_char(ostr, STR_T);
-		    octstr_append_uintvar(ostr, item->offset);
-		    str_e = 1;
-		  }
-	      }
-	    /* Check the possible substrings. */
-	    else if (octstr_len(ostr) > octstr_len(item->string))
-	      {
-		if (word_s + octstr_len(item->string) == octstr_len(ostr))
-		    str_e = 1;
+	if (octstr_len(item->string) > STRING_TABLE_MIN)
+	    /* No use to replace 1 to 3 character substring, the reference 
+	       will eat the saving up. A variable will be in the string table 
+	       even though it's only 1 character long. */
+	    if ((word_s = octstr_search(ostr, item->string, 0)) >= 0) {
+		/* Check whether the octet string are equal if they are equal 
+		   in length. */
+		if (octstr_len(ostr) == octstr_len(item->string)) {
+		    if ((word_s = octstr_compare(ostr, item->string)) == 0)
+		    {
+			octstr_truncate(ostr, 0);
+			octstr_append_char(ostr, STR_T);
+			octstr_append_uintvar(ostr, item->offset);
+			str_e = 1;
+		    }
+		}
+		/* Check the possible substrings. */
+		else if (octstr_len(ostr) > octstr_len(item->string))
+		{
+		    if (word_s + octstr_len(item->string) == octstr_len(ostr))
+			str_e = 1;
 
-		octstr_delete(ostr, word_s, octstr_len(item->string));
+		    octstr_delete(ostr, word_s, octstr_len(item->string));
 
-		octstr_truncate(input, 0);
-		/* Substring in the start? No STR_END then. */
-		if (word_s > 0)
-		  octstr_append_char(input, STR_END);
+		    octstr_truncate(input, 0);
+		    /* Substring in the start? No STR_END then. */
+		    if (word_s > 0)
+			octstr_append_char(input, STR_END);
                   
-		octstr_append_char(input, STR_T);
-		octstr_append_uintvar(input, item->offset);
+		    octstr_append_char(input, STR_T);
+		    octstr_append_uintvar(input, item->offset);
 
-		/* Subtring ending the string? No need to start a new one. */
-		if ( word_s < octstr_len(ostr))
-		  octstr_append_char(input, STR_I);
+		    /* Subtring the end? No need to start a new one. */
+		    if ( word_s < octstr_len(ostr))
+			octstr_append_char(input, STR_I);
 
-		octstr_insert(ostr, input, word_s);
-	      }
-	    /* If te string table entry is longer than the string, it can 
-	       be skipped. */
-	  }
+		    octstr_insert(ostr, input, word_s);
+		}
+		/* If te string table entry is longer than the string, it can 
+		   be skipped. */
+	    }
     }
 
-  octstr_destroy(input);
+    octstr_destroy(input);
 
-  if (octstr_get_char(ostr, 0) != STR_T)
-    output_char(STR_I, wbxml);
-  if (!str_e)
-    octstr_append_char(ostr, STR_END);    
+    if (octstr_get_char(ostr, 0) != STR_T)
+	output_char(STR_I, wbxml);
+    if (!str_e)
+	octstr_append_char(ostr, STR_END);    
 
-  output_octet_string(ostr, wbxml);
+    output_octet_string(ostr, wbxml);
 }
 
 
@@ -1742,13 +1853,12 @@ static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
 
 static void string_table_output(Octstr *ostr, wml_binary_t **wbxml)
 {
-  string_table_t *item;
+    string_table_t *item;
 
-  while ((item = list_extract_first((*wbxml)->string_table)) != NULL)
-    {
-      octstr_insert(ostr, item->string, octstr_len(ostr));
-      octstr_append_char(ostr, STR_END);
-      string_table_destroy(item);
+    while ((item = list_extract_first((*wbxml)->string_table)) != NULL) {
+	octstr_insert(ostr, item->string, octstr_len(ostr));
+	octstr_append_char(ostr, STR_END);
+	string_table_destroy(item);
     }
 }
 
