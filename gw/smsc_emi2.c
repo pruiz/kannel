@@ -663,6 +663,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	}
 	else {
 	    unitime.year += 2000; /* Conversion function expects full year */
+        unitime.month -= 1; /* conversion function expects 0-based months */
 	    msg->sms.time = date_convert_universal(&unitime);
 	}
 
