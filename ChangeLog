@@ -1,3 +1,7 @@
+2003-03-27  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsbox.c: added temporarily fix to smsbox that "handle" ack messages
+      from bearerbox, so user will not be confused with warning about not
+      handled messages.
 2003-03-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/log.c: fixing possible seg fault bug while re-opening "shared"
       log files. Thanks to Alexander for this patch.

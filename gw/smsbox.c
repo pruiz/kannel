@@ -133,6 +133,12 @@ static void read_messages_from_bearerbox(void)
 		start = time(NULL);
 	    total++;
 	    list_produce(smsbox_requests, msg);
+	} else if (msg_type(msg) == ack) {
+	    /* 
+	     * do nothing for now. Later we will handle this
+	     * gracefully...
+	     */
+	    msg_destroy(msg);
 	} else {
 	    warning(0, "Received other message than sms/admin, ignoring!");
 	    msg_destroy(msg);
