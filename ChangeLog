@@ -1,3 +1,10 @@
+
+2001-09-06 Andreas Fink <andreas@fink.org>
+	* gw/smsc_at2.c
+	fixed some oddities left over from the old driver.
+	debugged for nokia and siemens. enabled hardware
+	handshake for better performance.
+
 2001-09-05 Andreas Fink <andreas@fink.org
 	* gw/smscconn_p.h gw/smscconn.c gw/smsc_at2.c
 	new AT driver for GSM modems. This one is operating
