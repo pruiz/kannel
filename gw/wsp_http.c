@@ -243,47 +243,57 @@ static Octstr *convert_wml_to_wmlc_old(Octstr *wml, char *url) {
 	char data[100*1024];
 	size_t n;
 	Octstr *wmlc;
+	int e;
 	
 	debug("wap.wsp.http", 0, "WSP: Compiling WML using Peter's compiler");
 
-	tmpnam(name);
-	f = fopen(name, "w");
-	if (f == NULL)
-		goto error;
-	if (fwrite(octstr_get_cstr(wml), 1, octstr_len(wml), f) == -1)
-		goto error;
-	fclose(f);
-	
 	test_wml = getenv("TEST_WML");
 	if (test_wml == NULL) {
 		error(0, "TEST_WML not specified.");
 		return NULL;
 	}
 
+	tmpnam(name);
+	f = fopen(name, "w");
+	if (f == NULL) {
+		e = errno;
+		goto error;
+	}
+	if (fwrite(octstr_get_cstr(wml), 1, octstr_len(wml), f) == -1) {
+		e = errno;
+		goto error;
+	}
+	fclose(f);
+	
 	sprintf(cmd, "%s %s", test_wml, name);
 	debug("wap.wsp.http", 0, "WSP: WML cmd: <%s>", cmd);
 	f = popen(cmd, "r");
-	if (f == NULL)
+	if (f == NULL) {
+		e = errno;
 		goto error;
+	}
 	n = fread(data, 1, sizeof(data), f);
 	debug("wap.wsp.http", 0, "WSP: Read %lu bytes of compiled WMLC", (unsigned long) n);
 	fclose(f);
-	wmlc = octstr_create_from_data(data, n);
+	(void) remove(name);
 
+	wmlc = octstr_create_from_data(data, n);
 	debug("wap.wsp.http", 0, "WML: Compiled WML:");
 	octstr_dump(wmlc);
 
 	debug("wap.wsp.http", 0, "WSP: WML compilation done.");
+	
 	return wmlc;
 
 error:
-	panic(errno, "Couldn't write temp file for WML compilation.");
+	(void) remove(name);
+	panic(e, "Couldn't write temp file for WML compilation.");
 	return NULL;
 }
 
 
 static Octstr *convert_wml_to_wmlc_new(Octstr *wml, char *url) {
-#if 1
+#if 0
 	Octstr *wmlc, *wmlscripts;
 	int ret;
 	
