@@ -1,4 +1,8 @@
 2002-10-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * test/test_octstr_immutable.c: minor change to make dumping of arguments
+      possible to.
+
+2002-10-16  Stipe Tolj  <tolj@wapme-systems.de>
     * wap/wsp_headers.c: fixed a bug in WSP header packing that breaked MMS
       notification sending via PPG.
 
