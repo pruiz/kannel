@@ -1,3 +1,9 @@
+2002-08-08  Harrie Hazewinkel <harrie@mod-snmp.com>
+    * Moving the smsc code into a subdiretory gw/smsc.
+      files moved (into gw/smsc):
+      emimsg.c emimsg.h smpp_pdu.c smpp_pdu.def smpp_pdu.h
+      files changed: test/drive_smpp.c test/test_smsc.c
+
 2002-08-08  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_http.c: fixed the "failed" logging to access.log, which was
       caused because the relayed smsbox instance send HTTP_ACCEPT and the

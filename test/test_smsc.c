@@ -1,6 +1,6 @@
 #include <unistd.h>
 #include "gwlib/gwlib.h"
-#include "gw/smpp_pdu.h"
+#include "gw/smsc/smpp_pdu.h"
 #include <string.h>
 
 /***********************************************************************
