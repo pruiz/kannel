@@ -473,6 +473,86 @@ WAPEVENT(S_Unit_Push_Ind, "S-Unit-Push.ind",
 	OPTIONAL_OCTSTR(push_body)
 	)
 
+/*
+ * Events used by push OTA protocol, server side
+ */
+
+WAPEVENT(Pom_SessionRequest_Req, "Pom-SessionRequest.req",
+        ADDRTUPLE(addr_tuple)
+        HTTPHEADER(push_headers)
+        HTTPHEADER(sia)
+
+        INTEGER(push_id)
+        )
+
+WAPEVENT(Pom_Connect_Ind, "Pom-Connect.ind",
+         ADDRTUPLE(addr_tuple)
+         HTTPHEADER(push_headers)
+         CAPABILITIES(requested_capabilities)
+         HTTPHEADER(accept_application)
+         HTTPHEADER(bearer_indication)
+
+         INTEGER(session_id)
+        )
+
+WAPEVENT(Pom_Connect_Res, "Pom-Connect.res",
+         CAPABILITIES(negotiated_capabilities)
+        )
+
+WAPEVENT(Pom_Disconnect_Ind, "Pom-Disconnect.ind",
+         INTEGER(reason_code)
+	 INTEGER(redirect_security)	/* Only meaningful if redirecting */
+	 INTEGER(redirect_addresses)	/* FIXME: Wrong type, not used */
+	 OPTIONAL_OCTSTR(error_headers)
+	 OPTIONAL_OCTSTR(error_body)
+
+	 INTEGER(session_handle)
+        )
+
+WAPEVENT(Po_Push_Req, "Po-Push.req",
+         HTTPHEADER(push_headers)
+         INTEGER(authenticated)
+         INTEGER(trusted)
+         INTEGER(last)
+         OPTIONAL_OCTSTR(push_body)
+
+         INTEGER(session_handle)
+        )
+
+WAPEVENT(Po_ConfirmedPush_Req, "Po-ConfirmedPush.req",
+         INTEGER(server_push_id)
+         HTTPHEADER(push_headers)
+         INTEGER(authenticated)
+         INTEGER(trusted)
+         INTEGER(last)
+         OPTIONAL_OCTSTR(push_body)
+
+         INTEGER(session_handle)
+        )
+
+WAPEVENT(Po_ConfirmedPush_Cnf, "Po-ConfirmedPush.Cnf",
+         INTEGER(server_push_id)
+
+         INTEGER(session_handle)
+        )
+
+WAPEVENT(Po_Unit_Push_Req, "Po-Unit-Push.req",
+         ADDRTUPLE(addr_tuple)
+         INTEGER(push_id)
+         HTTPHEADER(push_headers)
+         INTEGER(authenticated)
+         INTEGER(trusted)
+         INTEGER(last)
+         OPTIONAL_OCTSTR(push_body)
+        )
+
+WAPEVENT(Po_PushAbort_Ind, "Po-PushAbort.ind",
+         INTEGER(push_id)
+	 INTEGER(reason)
+
+	 INTEGER(session_handle)
+        )
+
 #undef WAPEVENT
 #undef OCTSTR
 #undef OPTIONAL_OCTSTR
@@ -480,3 +560,5 @@ WAPEVENT(S_Unit_Push_Ind, "S-Unit-Push.ind",
 #undef HTTPHEADER
 #undef ADDRTUPLE
 #undef CAPABILITIES
+
+

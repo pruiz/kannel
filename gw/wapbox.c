@@ -17,6 +17,7 @@
 #include "wap/wap.h"
 #include "wap-appl.h"
 #include "wap_push_ota.h"
+#include "wap_push_ppg.h"
 #include "msg.h"
 #include "bb.h"
 
@@ -250,7 +251,7 @@ int main(int argc, char **argv)
     wsp_session_init(&wtp_resp_dispatch_event,
                      &wtp_initiator_dispatch_event,
                      &wap_appl_dispatch,
-                     &wap_push_ota_dispatch_event);
+                     &wap_push_ppg_dispatch_event);
     wsp_unit_init(&dispatch_datagram, &wap_appl_dispatch);
     wsp_push_client_init(&wsp_push_client_dispatch_event, 
                          &wtp_resp_dispatch_event);
@@ -259,13 +260,17 @@ int main(int argc, char **argv)
     wtp_resp_init(&dispatch_datagram, &wsp_session_dispatch_event,
                   &wsp_push_client_dispatch_event);
     wap_appl_init();
+    wap_push_ota_init(&wsp_session_dispatch_event, &wsp_unit_dispatch_event);
+    wap_push_ppg_init(&wap_push_ota_dispatch_event);
 
     wml_init();
     
     if (bearerbox_host == NULL)
     	bearerbox_host = octstr_create(BB_DEFAULT_HOST);
     connect_to_bearerbox(bearerbox_host, bearerbox_port);
-    
+
+    wap_push_ota_bb_address_set(bearerbox_host);
+
     program_status = running;
     heartbeat_thread = heartbeat_start(write_to_bearerbox, heartbeat_freq, 
     	    	    	    	       wap_appl_get_load);
@@ -299,6 +304,8 @@ int main(int argc, char **argv)
     wsp_unit_shutdown();
     wsp_session_shutdown();
     wap_appl_shutdown();
+    wap_push_ota_shutdown();
+    wap_push_ppg_shutdown();
     wml_shutdown();
     close_connection_to_bearerbox();
     wsp_http_map_destroy();

@@ -84,6 +84,15 @@ NSTRING("Via", WSP_HEADER_VIA)
 NSTRING("Warning", WSP_HEADER_WARNING)
 NSTRING("WWW-Authenticate", WSP_HEADER_WWW_AUTHENTICATE)
 NSTRING("Content-Disposition", WSP_HEADER_CONTENT_DISPOSITION)
+NSTRING("X-Wap-Application-Id", WSP_HEADER_X_WAP_APPLICATION_ID)
+NSTRING("X-Wap-Content-URI", WSP_HEADER_X_WAP_CONTENT_URI)
+NSTRING("X-Wap-Initiator-URI", WSP_HEADER_X_WAP_INITIATOR_URI)
+NSTRING("Accept-Application", WSP_HEADER_ACCEPT_APPLICATION)
+NSTRING("Bearer-Indication", WSP_HEADER_BEARER_INDICATION)
+NSTRING("Push-Flag", WSP_HEADER_PUSH_FLAG)
+NSTRING("Profile", WSP_HEADER_PROFILE)
+NSTRING("Profile-Diff", WSP_HEADER_PROFILE_DIFF)
+NSTRING("Profile-Warning", WSP_HEADER_PROFILE_WARNING)
 )
 
 /* Table 40. Content Type Assignments */
@@ -130,6 +139,17 @@ STRING("application/vnd.wap.multipart.alternative")
 STRING("application/xml")
 STRING("text/xml")
 STRING("application/vnd.wap.wbxml")
+STRING("application/x-x968-cross-cert")
+STRING("application/x-x968-ca-cert")
+STRING("application/x-x968-user-cert")
+STRING("text/vnd.wap.si")
+STRING("application/vnd.wap.sic")
+STRING("text/vnd.wap.sl")
+STRING("application/vnd.wap.slc")
+STRING("text/vnd.wap.co")
+STRING("application/vnd.wap.coc")
+STRING("application/vnd.wap.multipart.related")
+STRING("application/vnd.wap.sia")
 )
 
 /* Table 42, Character Set Assignment (partial) */
@@ -365,6 +385,51 @@ STRING("close")
 /* Transfer-encoding values, from section 8.4.2.46 */
 LINEAR(transfer_encoding,
 STRING("chunked")
+)
+
+/* 
+ * Application ids, from http://www.wapforum.org/wina/push-app-id.htm. "*"
+ * means "any".
+ */
+NUMBERED(application_id,
+ASSIGN("*", 0x00)          
+ASSIGN("push.sia", 0x01)    
+ASSIGN("wml.ua", 0x02)      
+ASSIGN("push.mms", 0x04)
+)
+
+/* Well-known bearer type codes, from WDP Appendix C */
+LINEAR(bearer_indication,
+STRING("any_ipv4")
+STRING("any_ipv6")
+STRING("gsm_usd_any")
+STRING("gsm_sms_gsmmsisdn")
+STRING("ansi-136_guts/r-data_ansi_136_msisdn")
+STRING("is-95_cdma_sms_is_637_msisdn")
+STRING("is-95_cdma_csd_ipv4")
+STRING("is-95_packet_data_ipv4")
+STRING("ansi-136_csd_ipv4")
+STRING("ansi-136_packet_data_ipv4")
+STRING("gsm_csd_ipv4")
+STRING("gsm_gprs_ipv4")
+STRING("gsm_ussd_ipv4")
+STRING("amps_cdpd_ipv4")
+STRING("pdc_csd_ipv4")
+STRING("pdc_packet_data_ipv4")
+STRING("iden_sms_iden_msisdn")
+STRING("iden_csd_ipv4")
+STRING("iden_packet_data_ipv4")
+STRING("paging_network_flex_flex_msisdn")
+STRING("phs_sms_phs_msisdn")
+STRING("phs_csd_ipv4")
+STRING("gsm_ussd_gsm_service_code")
+STRING("tetra_sds_tetra_itsi")
+STRING("tetra_sds_tetra_msisdn")
+STRING("tetra_packet_data_ipv4")
+STRING("paging_network_reflex_reflex_isdn")
+STRING("gsm_ussd_gsm_msisdn")
+STRING("mobitex_mpak_man")
+STRING("ansi-136_ghost/r_data_gsm_isdn")
 )
 
 /**** More preprocessor magic ****/

@@ -6,9 +6,16 @@
  *   RFC 2068, Hypertext Transfer Protocol HTTP/1.1
  *   RFC 2616, Hypertext Transfer Protocol HTTP/1.1
  *
+ *   For push headers, WSP specification, June 2000 conformance release
+ *
  * This file has two parts.  The first part decodes the request's headers
  * from WSP to HTTP.  The second part encodes the response's headers from
  * HTTP to WSP.
+ *
+ * Note that push header encoding and decoding are divided two parts:
+ * first decoding and encoding numeric values and then packing these values
+ * into WSP format and unpacking them from WSP format. This module contains
+ * only packing and unpacking parts.
  *
  * Richard Braakman
  */
@@ -1070,6 +1077,8 @@ static void unpack_well_known_field(List *unpacked, int field_type,
         case WSP_HEADER_AGE:
         case WSP_HEADER_CONTENT_LENGTH:
         case WSP_HEADER_MAX_FORWARDS:
+        case WSP_HEADER_BEARER_INDICATION:
+        case WSP_HEADER_ACCEPT_APPLICATION:
             /* Long-integer version of Integer-value */
             {
                 long l = unpack_multi_octet_integer(context,
@@ -1387,6 +1396,10 @@ struct headerinfo headerinfo[] =
         { WSP_HEADER_WARNING, pack_warning, LIST },
         { WSP_HEADER_WWW_AUTHENTICATE, pack_challenge, BROKEN_LIST },
         { WSP_HEADER_CONTENT_DISPOSITION, pack_content_disposition, 0 },
+        { WSP_HEADER_PUSH_FLAG, pack_integer_string, 0},
+        { WSP_HEADER_X_WAP_CONTENT_URI, pack_uri, 0},
+        { WSP_HEADER_X_WAP_INITIATOR_URI, pack_uri, 0},
+        { WSP_HEADER_X_WAP_APPLICATION_ID, pack_integer_string, 0}
     };
 
 static Parameter *parm_create(Octstr *key, Octstr *value)

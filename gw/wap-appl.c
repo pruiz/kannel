@@ -1,9 +1,15 @@
 /*
  * gw/wap-appl.c - wapbox application layer implementation
  *
- * The application layer is a thread that reads events from its event
- * queue, fetches the corresponding URLs and feeds back events to the
- * WSP layer.
+ * The application layer is reads events from its event queue, fetches the 
+ * corresponding URLs and feeds back events to the WSP layer (pull). In addi-
+ * tion, the layer forwards WSP events related to push to the module wap_push
+ * ppg, implementing indications and conformations of OTA protocol.
+ *
+ * Note that push header encoding and decoding are divided two parts:
+ * first decoding and encoding numeric values and then packing these values
+ * into WSP format and unpacking them from WSP format. This module contains
+ * encoding part.
  *
  * Lars Wirzenius
  */
@@ -192,7 +198,10 @@ static void main_thread(void *arg)
 	case S_Unit_MethodInvoke_Ind:
 	    start_fetch(ind);
 	    break;
-	
+/*
+ * This event is interesting to when we are pushing: Pom-Connect is a confirmed
+ * service.
+ */
 	case S_Connect_Ind:
 	    res = wap_event_create(S_Connect_Res);
 	    /* FIXME: Not yet used by WSP layer */
@@ -204,7 +213,9 @@ static void main_thread(void *arg)
 	    wsp_session_dispatch_event(res);
 	    wap_event_destroy(ind);
 	    break;
-	
+/*
+ * Ditto this: we need to know, whether push delivery did not succeed.
+ */	
 	case S_Disconnect_Ind:
 	    wap_event_destroy(ind);
 	    break;
@@ -224,10 +235,16 @@ static void main_thread(void *arg)
 	case S_MethodResult_Cnf:
 	    wap_event_destroy(ind);
 	    break;
+
+        case S_ConfirmedPush_Cnf:
+	    break;
 	
 	case S_MethodAbort_Ind:
 	    /* XXX Interrupt the fetch thread somehow */
 	    wap_event_destroy(ind);
+	    break;
+
+        case S_PushAbort_Ind:
 	    break;
 	
 	default:
