@@ -245,7 +245,7 @@ static void handle_init_event(WTPInitMachine *init_machine, WAPEvent *event)
 	     (condition)) { \
 	     action \
 	     init_machine->state = next_state; \
-	     debug("wap.wtp", 0, "WTP %ld: New state %s", \
+	     debug("wap.wtp", 0, "WTP_INIT %ld: New state %s", \
                    init_machine->mid, #next_state); \
 	 } else 
       #include "wtp_init_state-decl.h"
@@ -254,6 +254,8 @@ static void handle_init_event(WTPInitMachine *init_machine, WAPEvent *event)
 	     debug("wap.wtp.init", 0, "WTP_INIT: handle_init_event:"
                    "Unhandled event was:");
 	     wap_event_dump(event);
+             wap_event_destroy(event);
+             int_machine_destroy(machine);
 	     return;
 	 }
 
@@ -483,7 +485,7 @@ static unsigned short rcv_tid(unsigned short tid)
 
 /*
  * Start retry interval timer (strictly speaking, timer iniatilised with retry
- * interval.
+ * interval).
  */
 static void start_initiator_timer_R(WTPInitMachine *machine) 
 {
