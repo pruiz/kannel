@@ -1,3 +1,8 @@
+2000-01-30  Patrick Schaaf <bof@bof.de>
+
+	* gw/wapbox.c: fixed race condition when starting empty_queue_thread.
+	BTW, that function seems to burn CPU like hell.
+
 2000-01-28  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
 	* gw/wml_compiler.c : Some little fixes.

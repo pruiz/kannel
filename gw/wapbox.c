@@ -276,9 +276,12 @@ int main(int argc, char **argv) {
 	bbsocket = connect_to_bearer_box();
 	init_queue();
 	
+	/* bof@bof.de 30.1.2000 - the other way round races. ugh. */
+
+	run_status = running;
+
 	(void) start_thread(1, empty_queue_thread, &bbsocket, 0);
 	
-	run_status = running;
 	while (run_status == running) {
 		msg = msg_receive(bbsocket);
 		if (msg == NULL)
