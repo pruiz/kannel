@@ -157,9 +157,9 @@ int sema_close(SMSCenter *smsc)
 
 int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 {
+        int nret = 0;
         struct sema_msg *lmsg = NULL;
 	struct sm_submit_invoke *submit_sm = NULL;
-	int nret;
 	char x28sender[2] = "A3";
         
 	/* Validate msg */
@@ -237,7 +237,7 @@ int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 	
 	memset(submit_sm->smscrefnum,0,sizeof(submit_sm->smscrefnum));	
         /*pack the message body in 2kmsg*/
-	lmsg->msgbody = (void**)&submit_sm;
+	lmsg->msgbody = (void**)(&submit_sm);
 	nret = sema_msg_session_mt(smsc, lmsg);
 
 	gw_free(submit_sm);
@@ -245,6 +245,7 @@ int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 	sema_msg_free(lmsg);
 	lmsg = NULL;
 	
+
 	if(nret == SESSION_MT_RECEIVE_SUCCESS){
 	    debug("smsc.sema", 0, "sema_submit_msg: message is successfully delivered");
 	    return 1; /*success*/
@@ -257,6 +258,9 @@ int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 	    info(0, "sema_submit msg: smsc say submit failed!");
 	    return 0;
 	}
+
+	return 1;
+	
 error_memory:
 	error(errno,"memory allocation problem");
 error:
@@ -274,7 +278,7 @@ int sema_receive_msg(SMSCenter *smsc, Msg **msg)
     struct sema_msg *rmsg = NULL;
     struct sm_deliver_invoke *recieve_sm = NULL;
  
-    if(sema_msglist_pop(smsc->sema_mo, &rmsg) == 1 ) {
+    while(sema_msglist_pop(smsc->sema_mo, &rmsg) == 1 ) {
   
 	*msg = msg_create(smart_sms);
 	if(*msg==NULL) goto error;
@@ -301,10 +305,9 @@ int sema_receive_msg(SMSCenter *smsc, Msg **msg)
 	(*msg)->smart_sms.udhdata = octstr_create_empty();
 	gw_free(recieve_sm);
 	sema_msg_free(rmsg);
-
-	return 1;
+	rmsg = NULL;
     }
-    return 0;
+    return 1;
 
 error:
     error(errno, "sema_receive_msg: can not create Smart Msg");
@@ -319,7 +322,8 @@ int sema_pending_smsmessage(SMSCenter *smsc)
     int ret = 0;
     char clrbuff[]="CLR\0";
     char errbuff[]="ERR\0";
-  
+    /* struct sema_msg* smsg = NULL;*/
+
   /* Receive raw data */
     ret = X28_data_read(smsc->sema_fd, smsc->buffer);
     if(ret == -1) {
@@ -327,8 +331,7 @@ int sema_pending_smsmessage(SMSCenter *smsc)
 	if(ret == -1) goto error;
 	return 0;
     } 
-    if(ret == 0) return 0; 
-  
+
     /* Interpret the raw data */
     memset(data,0,sizeof(data));
     while(X28_msg_pop(smsc->buffer, data) == 0 ) {
@@ -338,6 +341,7 @@ int sema_pending_smsmessage(SMSCenter *smsc)
 		debug("smsc.sema", 0, "sema_pending_msg: Radio Pad Command line-%s",data);
 	    }
 	    else{   
+	      
 		ret = sema_msg_session_mo(smsc, data);
 		if(ret == -1) goto error;
 	    }
@@ -349,6 +353,8 @@ int sema_pending_smsmessage(SMSCenter *smsc)
     if(smsc->sema_mo->first != NULL){
 	return 1;
     }
+
+
     return 0;
 
 error:
@@ -433,7 +439,7 @@ error:
 
 static int sema_msglist_pop(sema_msglist *plist, sema_msg **msg) {
 
-    if(plist == NULL) {
+   if(plist == NULL) {
 	info(0, "msglist_pop: NULL list");
 	goto no_msg;
     }
@@ -906,7 +912,7 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 
     submit_invoke=(struct sm_submit_invoke*)(*(pmsg->msgbody));
     if(submit_invoke == NULL) goto error;
-	
+
     /*encode first*/
     memset(IA5chars,0,sizeof(IA5chars));
 
@@ -916,6 +922,7 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
     iseg = strlen(IA5chars)/121 + 1;
     segments = gw_malloc(iseg * sizeof(struct msg_hash));
     if(segments == NULL) goto error;
+
 
     /*first segments*/	
     if(strlen(IA5chars) < 121)
@@ -973,7 +980,6 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 	memcpy(IA5buff,octstr_get_cstr(segments[i].content),
 	       octstr_len(segments[i].content));
 
-        info(0,"echo send buffer %s",IA5buff);
 	iret =X28_data_send(smsc->sema_fd,IA5buff,strlen(IA5buff));
 	if(iret == -1)
 	    goto error;
@@ -1314,42 +1320,46 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
 	receive_sm->replypath = get_variable_value(tmp, &octetlen);
 	/*text size in septect*/
 	octsrc +=iusedbyte;
-	iusedbyte = line_scan_IA5_hex(octsrc, 1,tmp);
+	iusedbyte = internal_char_IA5_to_hex(octsrc, tmp);
 	if(iusedbyte < 1) goto error_deliver;
-	octetlen = 1;
-	receive_sm->textsizeseptet = get_variable_value(tmp, &octetlen);
+	receive_sm->textsizeseptet = tmp[0];
 	/*text size in octects*/
 	octsrc +=iusedbyte;
-	iusedbyte = line_scan_IA5_hex(octsrc, 1,tmp);
+	iusedbyte = internal_char_IA5_to_hex(octsrc, tmp);
 	if(iusedbyte < 1) goto error_deliver;
-	octetlen = 1;
-	receive_sm->textsizeoctect = get_variable_value(tmp, &octetlen);
+	receive_sm->textsizeoctect = tmp[0];
+	octsrc+=iusedbyte;
+	
 	/*message text*/
-	memset(tmp,0,sizeof(tmp));							    
-	if(receive_sm->DCS == ENCODE_IA5) 
+	
+	iusedbyte = 0;
+	memset(tmp,0,sizeof(tmp));						
+	if(receive_sm->DCS == ENCODE_IA5 && receive_sm->textsizeoctect > 0) 
 	{
-	    octsrc +=iusedbyte;
-	    iusedbyte = line_scan_IA5_hex(octsrc,receive_sm->textsizeoctect,tmp);
+	    iusedbyte = line_scan_IA5_hex(octsrc,receive_sm->textsizeoctect,tmp);	   
 	    if(iusedbyte < 1) goto error_deliver;	
 	    receive_sm->shortmsg =octstr_create_from_data( tmp,receive_sm->textsizeoctect);
 	}
-	else if(receive_sm->DCS == ENCODE_GSM)
+	else if(receive_sm->DCS == ENCODE_GSM &&  receive_sm->textsizeseptet > 0)
 	{
 	    memset(tmpgsm,0,sizeof(tmpgsm));
-	    octsrc +=iusedbyte;
+	  
 	    iusedbyte = line_scan_IA5_hex(octsrc,receive_sm->textsizeoctect,tmp);
 	    if(iusedbyte < 1) goto error_deliver;
 	    line_scan_hex_GSM7(tmp,receive_sm->textsizeoctect,
 			       receive_sm->textsizeseptet, tmpgsm);
 	    receive_sm->shortmsg = octstr_create_from_data(tmpgsm,
 							   receive_sm->textsizeseptet);
+	
 	}
+	else if(receive_sm->textsizeoctect <= 0)
+	  receive_sm->shortmsg = octstr_create_empty();
+
 	/*accepttime*/
 	octsrc +=iusedbyte;
 	iusedbyte = line_scan_IA5_hex(octsrc,14,tmp);
 	if(iusedbyte < 1) goto error_deliver;
 	memcpy(receive_sm->accepttime, tmp,14);
-
 	/*valid time*/
 	octsrc +=iusedbyte;
 	iusedbyte = line_scan_IA5_hex(octsrc,14,tmp);

@@ -1,3 +1,7 @@
+2000-04-27    <Kalle Marjola <rpr@wapit.com>>
+
+	* gw/smsc_sema.c: some fixes and updates by Hao Shi
+
 2000-04-27  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/gwmem.h: Move prototype declarations out of the #if
