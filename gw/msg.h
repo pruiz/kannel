@@ -56,7 +56,7 @@ void msg_destroy(Msg *msg);
 
 
 /*
- * For debugging: Output with `debug' (in wapitlib.h) the contents of
+ * For debugging: Output with `debug' (in gwlib/log.h) the contents of
  * an Msg object.
  */
 void msg_dump(Msg *msg);

@@ -18,9 +18,8 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#include "gwlib.h"
 #include "smsc.h"
-#include "smsc_p.h"
-#include "wapitlib.h"
 #include "smsc_p.h"
 
 

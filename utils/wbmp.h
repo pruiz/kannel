@@ -8,7 +8,7 @@
  * functions to store WBMPs and and create Octet strings from them
  */
 
-#include "wapitlib.h"
+#include "gwlib.h"
 
 /* extension header parameters... not implemented/supported in any WBMP
  * yet... but for future reference, although I'm quite sure there is

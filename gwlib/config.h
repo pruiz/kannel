@@ -92,7 +92,7 @@ char *config_get(ConfigGroup *grp, char *name);
 int config_set(ConfigGroup *grp, char *name, char *value);
 
 /* For debugging: dump contents of a Config object (using info() in 
-   wapitlib.h). */
+   gwlib/log.h). */
 void config_dump(Config *cfg);
 
 

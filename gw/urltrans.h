@@ -116,7 +116,7 @@ URLTranslation *urltrans_find_username(URLTranslationList *trans, char *name);
  * The contents of the SMS message is delivered in `words', which is an
  * array of strings, each string being a word of the message. That is,
  * the caller needs to break up the message into words (using, say,
- * split_words from wapitlib.h). `n' is the number of words.
+ * split_words from gwlib). `n' is the number of words.
  *
  * `sms' is the SMS message that is being translated.
  *

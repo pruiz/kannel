@@ -14,10 +14,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include "gwlib.h"
 #include "smsc.h"
 #include "smsc_smpp.h"
-#include "octstr.h"
-#include "wapitlib.h"
 
 SMSCenter *smpp_open(char *host, int port, char *system_id, char *password, char* system_type, char *address_range) {
 

@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-#include "gwlog.h"
+#include "log.h"
 #include "thread.h"
 
 

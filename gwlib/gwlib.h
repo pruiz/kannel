@@ -12,11 +12,12 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-#include "wapitlib.h"
 #include "gwstr.h"
-#include "gwlog.h"
 #include "gwmem.h"
+#include "utils.h"
+#include "log.h"
 #include "thread.h"
+#include "socket.h"
 #include "config.h"
 #include "http.h"
 #include "octstr.h"

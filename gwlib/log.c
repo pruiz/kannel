@@ -5,7 +5,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "gwlog.h"
+#include "log.h"
 #include "thread.h"
 
 

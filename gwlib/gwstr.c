@@ -5,7 +5,7 @@
 #include <ctype.h>
 
 #include "gwstr.h"
-#include "gwlog.h"
+#include "log.h"
 
 
 int split_words(char *buf, int max, char **words) {

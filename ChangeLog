@@ -1,5 +1,12 @@
 1999-11-29    <rpr@rpr.wapit.com>
 
+	* gwlib/*: renamed gwlog as log and separated socket functions to
+	own module 'socket.c'. Renamed remaining wapitlib as 'utils'
+
+	* */*.c, */*.h: removed last wapitlib.h references
+
+1999-11-29    <rpr@rpr.wapit.com>
+
 	* gw/smsbox_req.c: added sender username for sendsms request log
 	output
 

@@ -8,7 +8,7 @@
  * functions to store OTA Bitmaps and and create Octet strings from them
  */
 
-#include "wapitlib.h"
+#include "gwlib.h"
 
 /* OTA Bitmap
  */

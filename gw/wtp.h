@@ -54,7 +54,7 @@ void wtp_event_destroy(WTPEvent *event);
 
 
 /*
- * Output (with `debug' in wapitlib.h) the type of an event and all
+ * Output (with `debug' in log.h) the type of an event and all
  * the fields of that type.
  */
 void wtp_event_dump(WTPEvent *event);
@@ -90,7 +90,7 @@ void wtp_machine_destroy(WTPMachine *machine);
 
 
 /*
- * Output (with `debug' in wapitlib.h) the state of the machine  and all
+ * Output (with `debug' in gwlib/log.h) the state of the machine  and all
  * its fields.
  */
 void wtp_machine_dump(WTPMachine  *machine);

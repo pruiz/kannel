@@ -5,8 +5,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "wapitlib.h"
-#include "octstr.h"
+#include "gwlib.h"
 
 /*
  * A data structure holding one SMS message. `sender' and `receiver'

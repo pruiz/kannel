@@ -14,8 +14,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "wapitlib.h"
-#include "config.h"
+#include "gwlib.h"
 #include "bb_msg.h"
 
 /*
