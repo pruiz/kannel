@@ -1,3 +1,12 @@
+2002-09-06  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gwlib/cfg.c, doc/userguide/userguide.xml: added directory include to 
+      configuration. If "include" argument is a directory, include the files 
+    * configure.in, config.h.in: Added #define WIN32 awareness
+    * doc/userguide/userguide.xml: "un-drafted" post-xml
+    * utils/build-cygwin-package: added first alpha version to a script to
+      build some package for windows. Now, it creates a zip file with the
+      executables, docs (if generated) and example configuration files
+
 2002-09-06  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: fixed a problem with the range of sequence_number.
       Reported by Angel.

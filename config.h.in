@@ -1,6 +1,9 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+/* Define Win32 */
+#undef WIN32
+
 /* Define one of these depending on which malloc wrapper you want to use. */
 #undef USE_GWMEM_NATIVE
 #undef USE_GWMEM_CHECK

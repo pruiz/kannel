@@ -53,12 +53,14 @@ case "$host" in
     ;;
   *-cygwin*)
     EXE_EXT=".exe"
+    AC_DEFINE(WIN32)
     ;;
   *apple-darwin*) 
     CFLAGS="$CFLAGS -DDARWIN=1" 
     LIBTOOL="libtool -static -o" 
 esac
 AC_SUBST(EXE_EXT)
+AC_SUBST(WIN32)
 AC_SUBST(LIBTOOL)
 
 AC_ARG_WITH(cflags,

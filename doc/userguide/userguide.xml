@@ -16,6 +16,10 @@
 <!ENTITY % draft "#DRAFTS#">
 ]>
 
+<!-- Embbeb your block with these to set it to "draft"
+<![%draft;[ <your block> ]]>
+-->
+
 <book>
 
 <bookinfo>
@@ -933,8 +937,9 @@ x	should now be able to run the Kannel init.d script that will
 <title id="includes.title">Inclusion of configuration files</title>
 
 	<para>A configuration file may contain a special directive 
-	called <literal>include</literal> to include an other 
-	configuration file to the configuration processing.</para>
+	called <literal>include</literal> to include other 
+	file or a directory with files to the configuration 
+	processing.</para>
  
 	<para>This allows to segment the specific configuration groups
 	required for several services and boxes to different files and
@@ -955,6 +960,8 @@ box-deny-ip = "*.*.*.*"
 box-allow-ip = "127.0.0.1"
 
 include = "wapbox.conf"
+
+include = "configurations"
 </programlisting>
 
 	This is the main <literal>kannel.conf</literal> configuration
@@ -972,15 +979,9 @@ syslog-level = none
 
 	The above <literal>include</literal> statement may be defined
 	at any point in the configuration file and at any inclusion 
-	depth. Hence you can cascade numerious inclusions if necessary.
+	depth. Hence you can cascade numerous inclusions if necessary.
 	</para>
 
-	
-	<para>snippet defines the keyword <literal>nop</literal>
-	for an SMS service, and a default action for situation when
-	the keyword in the SMS message does not match any defined
-	service.</para>
-	
 	<para>At process start time inclusion of configuration files 
 	breaks if either the included file can not be opened and 
 	processed or the included file has been processed already in 
@@ -4134,7 +4135,6 @@ get-url = "http://%S"
      </entry></row>
 
 
-   <![%draft;[
    <row><entry><literal>post-xml (c)</literal></entry>
      <entry>URL</entry>
      <entry valign=bottom>
@@ -4144,7 +4144,6 @@ get-url = "http://%S"
 	    linkend="postxml" endterm="postxml.title">
      </entry></row>
 
-]]>
    <row><entry><literal>file (c)</literal></entry>
      <entry>filename</entry>
      <entry valign=bottom>
@@ -4527,14 +4526,12 @@ text = "No action specified"
 	<entry>Processed like HTML.</entry>
 	</row>
 	
-<![%draft;[
 	<row>
 	<entry><literal>text/xml</literal></entry>
 	<entry>Processed as a POST-XML. See <xref
 	    linkend="postxml" endterm="postxml.title"></entry>
 	</row>
 	
-]]>
 	<row>
 	<entry><literal>application/octet-stream</literal></entry>
 	<entry>The body will be transmitted as the SMS message, as
@@ -4723,7 +4720,6 @@ text = "No action specified"
  
 </sect3>
 	
-<![%draft;[
 <sect3 id="postxml">
 <title id="postxml.title">XML Post</title>
 	
@@ -4795,7 +4791,6 @@ text = "No action specified"
 	met IETF's sms-xml standard (yet in draft) and additional tags needed by kannel should be
 	pondered.</para></warning>
 </sect3>
-]]>
 
 </sect2>
 
