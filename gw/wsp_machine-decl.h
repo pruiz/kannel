@@ -17,7 +17,6 @@
 
 
 SESSION_MACHINE(
-	INTEGER(unused)
 	INTEGER(state)
 	INTEGER(n_methods)
 	INTEGER(session_id)

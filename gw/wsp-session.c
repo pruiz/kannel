@@ -74,7 +74,6 @@ static Counter *session_id_counter = NULL;
 
 static void handle_event(WSPMachine *machine, WAPEvent *event, WSP_PDU *pdu);
 static WSPMachine *machine_create(void);
-static void machine_mark_unused(WSPMachine *p);
 static void machine_destroy(WSPMachine *p);
 #if 0
 static void machine_dump(WSPMachine *machine);
@@ -124,6 +123,9 @@ void wsp_session_shutdown(void) {
 	while ((e = list_extract_first(queue)) != e)
 		wap_event_destroy(e);
 	list_destroy(queue);
+
+	debug("wap.wsp", 0, "WSP: %ld machines left.",
+		list_len(session_machines));
 	while (list_len(session_machines) > 0)
 		machine_destroy(list_get(session_machines, 0));
 	list_destroy(session_machines);
@@ -291,11 +293,6 @@ static WSPMachine *machine_create(void) {
 }
 
 
-static void machine_mark_unused(WSPMachine *p) {
-	p->unused = 1;
-}
-
-
 static void machine_destroy(WSPMachine *p) {
 	debug("wap.wsp", 0, "Destroying WSPMachine %p", (void *) p);
 	list_delete_equal(session_machines, p);
@@ -379,7 +376,7 @@ static void handle_event(WSPMachine *sm, WAPEvent *current_event, WSP_PDU *pdu)
 		abort->u.TR_Abort_Req.mid = current_event->u.TR_Invoke_Ind.mid;
 
 		wtp_dispatch_event(abort);
-		machine_mark_unused(sm);
+		sm->state = NULL_STATE;
 	} else {
 		error(0, "WSP: Can't handle event.");
 		debug("wap.wsp", 0, "WSP: The unhandled event:");
@@ -389,7 +386,7 @@ static void handle_event(WSPMachine *sm, WAPEvent *current_event, WSP_PDU *pdu)
 end:
 	wap_event_destroy(current_event);
 
-	if (sm->unused)
+	if (sm->state == NULL_STATE)
 		machine_destroy(sm);
 }
 
@@ -666,7 +663,7 @@ static int transaction_belongs_to_session(void *wsp_ptr, void *tuple_ptr) {
 	wsp = wsp_ptr;
 	tuple = tuple_ptr;
 
-	return !wsp->unused && wap_addr_tuple_same(wsp->addr_tuple, tuple);
+	return wap_addr_tuple_same(wsp->addr_tuple, tuple);
 }
 
 
@@ -676,7 +673,5 @@ static int same_client(void *a, void *b) {
 	
 	sm1 = a;
 	sm2 = b;
-	return !sm1->unused &&
-	       !sm2->unused && 
-	       wap_addr_tuple_same(sm1->addr_tuple, sm2->addr_tuple);
+	return wap_addr_tuple_same(sm1->addr_tuple, sm2->addr_tuple);
 }

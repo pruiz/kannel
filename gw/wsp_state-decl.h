@@ -73,14 +73,14 @@ ROW(CONNECTING,
 		long i;
 		
 		/* Send Disconnect event to existing sessions for client. */
-		old_sessions = list_search_all(session_machines,
+		old_sessions = list_extract_all(session_machines,
 					       sm,
 					       same_client);
 		if (old_sessions != NULL) {
 			for (i = 0; i < list_len(old_sessions); ++i) {
 				sm2 = list_get(old_sessions, i);
 				if (sm2 != sm)
-					machine_mark_unused(sm2);
+					machine_destroy(sm2);
 			}
 			list_destroy(old_sessions);
 		}
@@ -158,7 +158,6 @@ ROW(CONNECTED,
 	TR_Invoke_Ind,
 	e->tcl == 0 && pdu->type == Disconnect,
 	{
-		machine_mark_unused(sm);
 	},
 	NULL_STATE)
 
