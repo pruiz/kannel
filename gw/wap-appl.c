@@ -248,8 +248,8 @@ static void main_thread(void *arg)
 	    break;
 	
 	default:
-	    panic(0, "APPL: Can't handle %s event",
-	    wap_event_name(ind->type));
+	    panic(0, "APPL: Can't handle %s event", 
+	    	  wap_event_name(ind->type));
 	    break;
 	}
     }

@@ -341,8 +341,7 @@ static struct area *record_allocation(unsigned char *p, size_t size,
     static struct area empty_area;
 
     if (num_allocations == MAX_ALLOCATIONS) {
-        panic(0, "Cannot have more than %ld allocations at once",
-              MAX_ALLOCATIONS);
+        panic_hard(0, "Too many concurrent allocations.", 0, 0, 0);
     }
 
     area = &allocated[num_allocations];
@@ -440,8 +439,7 @@ void *gw_check_malloc(size_t size, const char *filename, long lineno,
 
     p = malloc(size + 2 * MARKER_SIZE);
     if (p == NULL)
-        panic(errno, "Memory allocation of %lu bytes failed",
-              (unsigned long) size);
+        panic_hard(errno, "Memory allocation bytes failed", 0, 0, 0);
     p += MARKER_SIZE;
 
     lock();
@@ -467,7 +465,7 @@ void *gw_check_realloc(void *p, size_t size, const char *filename,
     area = find_area(p);
     if (!area) {
         unlock();
-        panic(0, "Realloc called on non-allocated area %p", p);
+        panic_hard(0, "Realloc called on non-allocated area", 0, 0, 0);
     }
 
     if (size == area->area_size) {
@@ -523,7 +521,7 @@ void gw_check_free(void *p, const char *filename, long lineno,
     area = find_area(p);
     if (!area) {
         unlock();
-        panic(0, "Free called on non-allocated area %p", p);
+        panic_hard(0, "Free called on non-allocated area", 0, 0, 0);
     }
 
     free_area(area);
@@ -556,7 +554,7 @@ void *gw_check_claim_area(void *p, const char *filename, long lineno,
     area = find_area(p);
     if (!area) {
         unlock();
-        panic(0, "Claim_area called on non-allocated area %p", p);
+        panic_hard(0, "Claim_area called on non-allocated area", 0, 0, 0);
     }
 
     area->claimer.filename = filename;

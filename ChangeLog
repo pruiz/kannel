@@ -1,3 +1,23 @@
+2001-01-05  Lars Wirzenius  <liw@iki.fi>
+
+	* Started to convert logging functions to use octstr_format instead
+	sprintf, to make them more powerful. Now, panic() and error() use
+	octstr_format, the others do not yet (each call needs to be
+	checked to make sure that octstr_format can deal with the format
+	string and I didn't have the time to do that yet).
+	
+	Also added the function panic_hard for those cases where calling
+	panic would call eternal recursion - panic uses octstr_format, which
+	can call panic itself (via gw_assert or gw_malloc, for example).
+	
+    	* gwlib/log.[ch]: Implemented panic_hard and made panic and error
+	use octstr_format.
+
+	* gwlib/gwassert.h, gwlib/gwmem-check.c, gwlib/gwmem-native.c,
+	gwlib/octstr.c: Changed to use panic_hard instead of panic.
+
+	* gw/wap-appl.c: Indentation fix.
+
 2000-01-04 Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
 	* configure.in,configure: Added tests for the definition of 
