@@ -4138,12 +4138,14 @@ text = "No action specified"
 	<entry>Processed like HTML.</entry>
 	</row>
 	
+<![%draft;[
 	<row>
 	<entry><literal>text/xml</literal></entry>
 	<entry>Processed as a POST-XML. See <xref
 	    linkend="postxml" endterm="postxml.title"></entry>
 	</row>
 	
+]]>
 	<row>
 	<entry><literal>application/octet-stream</literal></entry>
 	<entry>The body will be transmitted as the SMS message, as
