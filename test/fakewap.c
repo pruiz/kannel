@@ -84,6 +84,7 @@ where options are:\n\
 -t tcl		transaction class, as an integer (default: 2)\n\
 -n		set tid_new flag in packets, forces gateway to flush cache\n\
 -d difference	difference between successive tid numbers (default: 1)\n\
+-F		Accept failure and continue rather than exiting\n\
 \n\
 The urls are fetched in random order.\n\
 ";
@@ -134,6 +135,7 @@ int num_sent = 0;
 time_t start_time, end_time;
 double totaltime = 0, besttime = 1000000L,  worsttime = 0;
 int verbose = 0;
+int nofailexit=0;
 
 /*
  * PDU type, version number and transaction class are supplied by a 
@@ -325,7 +327,11 @@ wap_msg_recv( int fd, const char * hdr, int hdr_len,
 	    ret = read_available(fd, timeout * 1000 * 1000);
 	    if (ret <= 0) {
                 info(0, "Timeout while receiving from socket.\n");
-                return fResponderIsDead ? -1 : 0;
+		if(nofailexit){
+		    continue;
+		}else{
+		    return fResponderIsDead ? -1 : 0;
+		}
 		/* continue if we got ack? */
 	    }
         }
@@ -557,7 +563,7 @@ int main(int argc, char **argv)
 
     hostname = octstr_create("localhost");
 
-    while ((opt = getopt(argc, argv, "hvc:g:p:P:m:i:t:V:T:t:nd:")) != EOF) {
+    while ((opt = getopt(argc, argv, "Fhvc:g:p:P:m:i:t:V:T:t:nd:")) != EOF) {
 	switch (opt) {
 	case 'g':
 	    hostname = octstr_create(optarg);
@@ -606,6 +612,9 @@ int main(int argc, char **argv)
 	case 'h':
 	    help();
 	    exit(0);
+	    break;
+	case 'F':
+	    nofailexit=1;
 	    break;
 	    
 	case '?':
