@@ -1,4 +1,10 @@
 2003-03-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap_push_pap_compiler.c, wap/wap_events.def: fixed none accepted <pap>
+      attribute 'product-name'. Thanks to "Bas A. Schulte" <bschulte@zeelandnet.nl>.
+      [Msg-ID: <B647848F-5A5B-11D7-8DAC-000393059670@zeelandnet.nl>]
+    * test/test_pap.c: added return code output in case pap_compile() fails.
+
+2003-03-20  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added 'reconnect-delay' to the higher
       smsc group abstraction documentation and deleted 'retry' from emi2
       and at2.
