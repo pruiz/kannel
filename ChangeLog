@@ -1,4 +1,11 @@
 2002-08-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added new SMSC type section for the SM/ASI
+      protocoll.
+    * gw/smsc/smasi_pdu.[chdef], gw/smsc/smsc_smasi.c, gw/smscconn.c, 
+      gw/smscconn_p.h: added the new 'smasi' SMSC type for connecting to
+      SM/ASI protocoll SMSC, like the CriticalPath InVoke SMS Center.
+
+2002-08-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_smscconn.c: removing debug line from previous testing and 
       commented out lines and added 're-connecting' state to smsc2_status().
     * gw/smsc/smsc_smpp.c: fixed a bug with possible segfault when acessing the 
