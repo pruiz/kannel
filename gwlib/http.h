@@ -349,5 +349,10 @@ int http_type_accepted(List *headers, char *type);
  */
 void http_header_dump(List *headers);
 
+/*
+ * Check for acceptable charset
+ */
+int http_charset_accepted(List *headers, char *charset);
+
 
 #endif

@@ -3,6 +3,9 @@
 	32-bit type and defines kint32 and kuint32 as appropriate in 
 	preparation for 64-bit kannel on Alpha and UltraSPARC since the
 	compiler types int32 and uint32 are not supported everywhere.
+	* gwlib/http.h: Added the function definition for 
+	http_charset_accepted rather than leaving it to be implicitly
+	defined.
 	
 2000-07-13  Yann Muller  <ymuller@3glab.com>
 
