@@ -154,7 +154,7 @@ int deliver_to_bearerbox(Msg *msg)
 }
                                                
 
-Msg *read_from_bearerbox(void)
+Msg *read_from_bearerbox(double seconds)
 {
     int ret;
     Octstr *pack;
@@ -162,34 +162,40 @@ Msg *read_from_bearerbox(void)
 
     pack = NULL;
     while (program_status != shutting_down) {
-	pack = conn_read_withlen(bb_conn);
-	gw_claim_area(pack);
-	if (pack != NULL)
-	    break;
-	if (conn_read_error(bb_conn)) {
-	    info(0, "Error reading from bearerbox, disconnecting");
-	    return NULL;
-	}
-	if (conn_eof(bb_conn)) {
-	    info(0, "Connection closed by the bearerbox");
-	    return NULL;
-	}
+        pack = conn_read_withlen(bb_conn);
+        gw_claim_area(pack);
+        if (pack != NULL)
+            break;
 
-	ret = conn_wait(bb_conn, -1.0);
-	if (ret < 0) {
-	    error(0, "Connection to bearerbox broke.");
-	    return NULL;
-	}
+        if (conn_read_error(bb_conn)) {
+            info(0, "Error reading from bearerbox, disconnecting.");
+            return NULL;
+        }
+        if (conn_eof(bb_conn)) {
+            info(0, "Connection closed by the bearerbox.");
+            return NULL;
+        }
+
+        ret = conn_wait(bb_conn, seconds);
+        if (ret < 0) {
+            error(0, "Connection to bearerbox broke.");
+            return NULL;
+        }
+        else if (ret == 1) {
+            info(0, "Connection to bearerbox timed out after %.2f seconds.", seconds);
+            return NULL;
+        }
     }
     
     if (pack == NULL)
-    	return NULL;
+        return NULL;
 
     msg = msg_unpack(pack);
     octstr_destroy(pack);
 
     if (msg == NULL)
-	error(0, "Failed to unpack data!");
+        error(0, "Failed to unpack data!");
+
     return msg;
 }
 

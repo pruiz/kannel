@@ -15,6 +15,7 @@
 #include "msg.h"
 
 #define CATENATE_UDH_LEN 5
+#define INFINITE_TIME -1
 
 /*
  * Program status. Set this to shutting_down to make read_from_bearerbox
@@ -61,9 +62,12 @@ void close_connection_to_bearerbox(void);
 
 
 /*
- * Receive Msg from bearerbox. Return NULL if connection broke.
+ * Receive Msg from bearerbox. Unblock the call when the given
+ * timeout for conn_wait() is reached. Use a negative value, 
+ * ie. -1 for an infinite blocking, hence no timeout applies. 
+ * Return NULL if connection broke or timed out.
  */
-Msg *read_from_bearerbox(void);
+Msg *read_from_bearerbox(double seconds);
 
 
 /*
