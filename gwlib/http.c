@@ -13,7 +13,6 @@
 /* XXX set maximum number of concurrent connections to same host, total? */
 /* XXX basic auth is missing */
 /* XXX 100 status codes. */
-/* XXX accept HTTP/1.x requests with 1.x >= 1.1 (see RFC2145) */
 /* FIXME Don't try to re-use a connection that got a HTTP/1.0 reply */
 
 #include <ctype.h>
