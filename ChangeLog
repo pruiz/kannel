@@ -1,3 +1,6 @@
+2003-06-18  Alexander Malysh  <a.malysh@centrium.de>
+    *  gwlib/dbpool.c: fixed compiler warning
+
 2003-06-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: fixed compiler warning
 

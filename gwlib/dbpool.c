@@ -89,7 +89,7 @@ unsigned int dbpool_increase_mysql(DBPool *p, unsigned int c)
 
 
 /* Initialize the mysql database config block */
-static dbpool_startup_mysql(DBPool *p, void *data)
+static void dbpool_startup_mysql(DBPool *p, void *data)
 {
     list_add_producer(p->pool);
     p->conf = data;
