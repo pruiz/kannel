@@ -347,7 +347,7 @@ void smpp_pdu_dump(SMPP_PDU *pdu)
             tag_val = dict_get(p->optional_parameters, key); \
             if (tag_val != NULL) { \
                 debug("sms.smpp",0,"  %s: ", #tag_id); \
-                debug("sms.smpp",0,"    tag: 0x%04lx", tag_id); \
+                debug("sms.smpp",0,"    tag: 0x%04lx", id); \
                 debug("sms.smpp",0,"    length: 0x%04lx", \
                       octstr_len(tag_val)); \
 		        octstr_dump_short(tag_val, 2, "  value"); \

@@ -1,3 +1,6 @@
+2003-12-17  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smpp_pdu.c: making compiler and Alex happy again ;)
+
 2003-12-16  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smpp_pdu.c: removed debug output while packing optional v3.4 
       parameters and added better debug output for dumping of the PDU. 
