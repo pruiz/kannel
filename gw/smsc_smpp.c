@@ -339,7 +339,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
             sprintf(buffer, "%02d%02d%02d%02d%02d%02d0%01d%02d%1s",
                     tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
                     tm.tm_hour, tm.tm_min, tm.tm_sec,
-                    0, gwqdiff, relation_UTC_time );
+                    0, gwqdiff, octstr_get_cstr(relation_UTC_time));
             pdu->u.submit_sm.validity_period = octstr_create(buffer);
         }
 
@@ -348,7 +348,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
             sprintf(buffer, "%02d%02d%02d%02d%02d%02d0%01d%02d%1s",
                     tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
                     tm.tm_hour, tm.tm_min, tm.tm_sec,
-                    0, gwqdiff, relation_UTC_time );
+                    0, gwqdiff, octstr_get_cstr(relation_UTC_time));
             pdu->u.submit_sm.schedule_delivery_time = octstr_create(buffer);
         }
     }
@@ -1063,17 +1063,17 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
                        max_pending_submits, reconnect_delay, 
                        version, my_number); 
  
-    smsc_id = cfg_get(grp, octstr_imm("smsc-id")); 
-    if (smsc_id == NULL) { 
-        conn->id = octstr_duplicate(conn->name); 
-    } 
- 
     conn->data = smpp; 
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S",  
     	    	    	       host, port, 
                                (receive_port ? receive_port : port),  
                                username, system_type); 
  
+    smsc_id = cfg_get(grp, octstr_imm("smsc-id")); 
+    if (smsc_id == NULL) { 
+        conn->id = octstr_duplicate(conn->name); 
+    } 
+
     octstr_destroy(host); 
     octstr_destroy(username); 
     octstr_destroy(password); 
