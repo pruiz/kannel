@@ -66,6 +66,12 @@ int get_and_set_debugs(int argc, char **argv,
  */
 int is_allowed_ip(Octstr *allow_ip, Octstr *deny_ip, Octstr *ip);
 
+/*
+ * Return 1 if 'ip' is not allowed to connect, when 'allow_ip' defines
+ * allowed hosts, and 0 if connect ok. If 'allow_ip' is NULL, check against
+ * "127.0.0.1" (localhost)
+ */
+int connect_denied(Octstr *allow_ip, Octstr *ip);
 
 /*
  * Normalize 'number', like change number "040500" to "0035840500" if

@@ -1,5 +1,13 @@
 2001-03-19  Kalle Marjola  <rpr@wapit.com>
 
+	* gwlib/utils.c|h: added new function connect_denied(..), which is
+	like the old is_allowed_ip(..) except that deny-ip is no longer
+	used as it is expected to be "*.*.*.*" and no allow-ip means
+	localhost. This function will hopefully eventually replace all old
+	ip-checkings, to tighten basic security
+
+2001-03-19  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bb_smscconn.c (sms_router): Bugfix. Now hopefully router does
 	not get stuck again if the list is successfully emptied
 

@@ -218,6 +218,23 @@ int is_allowed_ip(Octstr *allow_ip, Octstr *deny_ip, Octstr *ip)
 }
 
 
+int connect_denied(Octstr *allow_ip, Octstr *ip)
+{
+    if (ip == NULL)
+	return 1;
+
+    /* If IP not set, allow from Localhost */
+    if (allow_ip == NULL) { 
+	if (pattern_list_matches_ip(octstr_imm("127.0.0.1"), ip))
+	    return 0;
+    } else {
+	if (pattern_list_matches_ip(allow_ip, ip))
+	    return 0;
+    }
+    return 1;
+}
+
+
 int normalize_number(char *dial_prefixes, Octstr **number)
 {
     char *t, *p, *official, *start;
