@@ -10,6 +10,8 @@
  * XML compiler by Aarno Syvänen <aarno@wiral.com>, Wiral Ltd.
  */
 
+#include <string.h>
+
 #include "gwlib/gwlib.h"
 
 #include "msg.h"
@@ -24,6 +26,11 @@
  * Implementation of the internal function
  */
 
+/*
+ * Append the User Data Header (UDH) including the lenght (UDHL). Only ports 
+ * UDH here - SAR UDH is added when (or if) we split the message. This is our
+ * *specific* WDP layer.
+ */
 static void ota_pack_udh(Msg **msg)
 {
     (*msg)->sms.udhdata = octstr_create("");
@@ -31,6 +38,9 @@ static void ota_pack_udh(Msg **msg)
 }
 
 
+/*
+ * Our WSP headers: Push Id, PDU type, headers, charset.
+ */
 static int ota_pack_push_headers(Msg **msg, Octstr *mime_type)
 {    
     (*msg)->sms.msgdata = octstr_create("");
@@ -391,7 +401,6 @@ Msg *ota_tokenize_bookmarks(CfgGroup *grp, Octstr *from, Octstr *receiver)
 {
     Octstr *url, *name;
     Msg *msg;
-    Octstr *p;
     
     url = NULL;
     name = NULL;
@@ -457,7 +466,7 @@ Msg *ota_tokenize_bookmarks(CfgGroup *grp, Octstr *from, Octstr *receiver)
         octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
     }
     /* URL */
-    if (name != NULL) {
+    if (url != NULL) {
         /* PARM with attributes */
         octstr_append_from_hex(msg->sms.msgdata, "87");
         /* NAME=PROXY, VALUE, inline string */
