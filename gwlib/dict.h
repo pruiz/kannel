@@ -60,4 +60,11 @@ void *dict_remove(Dict *dict, Octstr *key);
 long dict_key_count(Dict *dict);
 
 
+/*
+ * Return a list of all the currently defined keys in the Dict. The
+ * caller must destroy the list.
+ */
+List *dict_keys(Dict *dict);
+
+
 #endif

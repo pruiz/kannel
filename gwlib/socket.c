@@ -529,6 +529,8 @@ void socket_shutdown(void)
     mutex_destroy(inet_mutex);
     octstr_destroy(official_name);
     official_name = NULL;
+    octstr_destroy(official_ip);
+    official_ip = NULL;
 }
 
 

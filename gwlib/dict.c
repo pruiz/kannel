@@ -225,3 +225,24 @@ long dict_key_count(Dict *dict)
 
     return result;
 }
+
+
+List *dict_keys(Dict *dict)
+{
+    List *list;
+    Item *item;
+    long i, j;
+    
+    list = list_create();
+
+    for (i = 0; i < dict->size; ++i) {
+	if (dict->tab[i] == NULL)
+	    continue;
+	for (j = 0; j < list_len(dict->tab[i]); ++j) {
+	    item = list_get(dict->tab[i], j);
+	    list_append(list, octstr_duplicate(item->key));
+	}
+    }
+    
+    return list;
+}
