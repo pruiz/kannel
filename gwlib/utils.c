@@ -256,6 +256,9 @@ int does_prefix_match(Octstr *prefix, Octstr *number)
             }
             if (*p != *b) break;
         }
+        if (*p == ';' || *p == '\0') {
+            return 1;
+        }
         while (*p != '\0' && *p != ';')
             p++;
         while (*p == ';') p++;
