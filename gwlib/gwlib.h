@@ -13,6 +13,7 @@
 #include <stddef.h>
 
 #include "wapitlib.h"
+#include "gwmem.h"
 #include "config.h"
 #include "http.h"
 #include "octstr.h"

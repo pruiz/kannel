@@ -1,3 +1,10 @@
+1999-11-26    <rpr@rpr.wapit.com>
+
+	* gwlib/gwmem.*, gwlib/gwlib.h: Added new dynamic memory handling
+	functions. All programs should be modified to use these. They
+	simply PANIC if the allocation fails, so need to check their
+	return value.
+
 1999-11-26  Aarno Syvänen <syvanen@wapit.com>
 
 	*wtp_state-decl.h: Added new rows in the state table (enough to run
