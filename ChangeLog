@@ -1,4 +1,9 @@
 2002-05-21  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c, gwlib/cfg.def: applied timing configuration patch
+      provided by Alan McNatty <alan@catalyst.net.nz>
+      [Msg-ID: <1021942284.3140.207.camel@euclid>]
+
+2002-05-21  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsc_smpp.c: added Alt-DCS support for SMPP module
 
 2002-05-20  Stipe Tolj <tolj@wapme-systems.de>
