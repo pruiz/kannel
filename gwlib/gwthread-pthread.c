@@ -548,6 +548,12 @@ long gwthread_self(void)
         return -1;
 }
 
+/* Return the threadtable sloot this thread is using. */
+long gwthread_table_slot(void)
+{
+    return (gwthread_self() % THREADTABLE_SIZE);
+}
+
 void gwthread_wakeup(long thread)
 {
     unsigned char c = 0;
