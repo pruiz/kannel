@@ -150,6 +150,15 @@
         and have many interesting applications. Usually servers know whether
         some data is new, not the users. </para>
 
+	<para>Kannel's quality has been recognized on March 7, 2001 when it
+	was <ulink url="http://www.kannel.org/oldnews.shtml#wapcert">certified</ulink> 
+	by <ulink url="http://www.wapforum.org">Wap Forum</ulink>
+	as the first WAP 1.1 gateway in the world.</para>
+
+	<para>Greater quality recognization are the quantity of companies 
+	using Kannel to successful connect to a variety of SMSC protocols 
+	in lots of countries.</para>
+
 	<para><ulink url="http://www.opensource.org">Open Source</ulink>
 	is a way to formalize the principle of openness by placing the
 	source code of a product under a Open Source compliant software
@@ -218,7 +227,9 @@
 	also compresses the WML pages into a more compact form, to
 	save on-the-air bandwidth and to further reduce the phone's
 	processing requirements. It also compiles WMLScript programs
-	into a bytecode format.</para>
+	into a bytecode format. Latest WAP specifications defines some 
+	aditional convertions that Kannel is starting to implement, like
+	multipart/form-data, multipart/mixed or MMS content convertion.</para>
 	
 	<para>Kannel is not just a WAP gateway. It also works as an
 	SMS gateway.  Although WAP is the hot and technically superior
@@ -268,7 +279,8 @@
 
       <para>SMS, short messaging service, is a way to send short (160
       character) messages from one GSM phone to another. It can also
-      be used to send operator logos, ringing tones, business cards
+      be used to send regular text as well as advanced content like 
+      operator logos, ringing tones, business cards
       and phone configurations.</para>
 
       <para><emphasis>SMS services</emphasis> are content services
@@ -287,7 +299,8 @@
       <para>As practically every different kind of SMS center uses different
       protocol, an <emphasis>SMS gateway</emphasis> is used to handle
       connections with SMS centers and to relay them onward in an
-      unified form.</para>
+      unified form. Kannel's biggest feature is to abstract each SMSC protocol
+      to a well-known HTTP protocol, simplifying services deployment.</para>
 
         <figure>
         <title>Logical position of SMS gateway between a phone and a content server.</title>
@@ -320,8 +333,38 @@
 <sect1>
 <title>Features</title>
 
-	<para>This section needs to be written.</para>
-
+	<sect2>
+	<title>WAP</title>
+		<para>
+			<itemizedlist>
+			<listitem><para>Fully compliant with WAP 1.1 specification</para></listitem>
+			<listitem><para>Already implements some WAP 1.2 and even WAP 2.0 features.</para></listitem>
+			</itemizedlist>
+		</para>
+	</sect2>
+	<sect2>
+	<title>WAP Push</title>
+		<para>
+			<itemizedlist>
+			<listitem><para>Supports WAP Push SI and SL</para></listitem>
+			<listitem><para>...</para></listitem>
+			</itemizedlist>
+		</para>
+	</sect2>
+	<sect2>
+	<title>SMS</title>
+		<para>
+			<itemizedlist>
+			<listitem><para>Supports a variety of SMSC protocols, namely:</para>
+				<itemizedlist>
+				<listitem><para>CMG's UCP/EMI 4.0 and 3.5</para>
+				<listitem><para>...</para>
+				</itemizedlist>
+			</listitem>
+			<listitem><para>Full support for MO and MT messages</para></listitem>
+			</itemizedlist>
+		</para>
+	</sect2>
 </sect1>
 
 <sect1>
@@ -338,41 +381,45 @@
 	
 	<itemizedlist>
 
-	<listitem><para>C compiler, development libraries and related
-	tools.</para></listitem>
+	<listitem><para>C compiler and libraries for ANSI C, with normal
+		Unix extensions such as BSD sockets and related tools. 
+		(GNU's GCC toolchain is recommended)</para></listitem>
 
 	<listitem><para>The Gnome XML library (known as
-	gnome-xml and libxml), version 2.2.5 or newer. See <ulink
-	url="http://xmlsoft.org/xml.html">http://xmlsoft.org/xml.html</ulink>.
-	</para>
-	<para>
-	If you are installing it from your distribution's packages, you'll need
-	<literal>libxml2-dev</literal> in addition to run-time <literal>libxml2</literal> package
-	libraries.
-	</para>
-
-	</listitem>
+		gnome-xml and libxml), version 2.2.5 or newer. See <ulink
+		url="http://xmlsoft.org/xml.html">http://xmlsoft.org/xml.html</ulink>.
+		</para>
+		<para>If you are installing it from your distribution's packages, you'll need
+		<literal>libxml2-dev</literal> in addition to run-time <literal>libxml2</literal> package
+		libraries.</para></listitem>
 	
-
 	<listitem><para>GNU Make.</para></listitem>
 
-	<listitem><para>Posix threads (pthread.h).</para></listitem>
+	<listitem><para>An implementation of POSIX threads
+		(<filename>pthread.h</filename>).</para></listitem>
 
-	<listitem><para>GNU Bison 1.28 if you modify the WMLScript
-	compiler.</para></listitem>
+	<listitem><para>GNU Bison 1.28, if you want to modify the WMLScript
+		compiler (a pre-generated parser is included for those who just
+		want to compile Kannel).</para></listitem>
 
-	<listitem><para>DocBook markup language tools (jade, jadetex,
-	DocBook stylesheets, etc; see README.docbook), if you want
-	to format the documentation (pre-formatted versions are
-	available).</para></listitem>
+	<listitem><para>DocBook processing tools: DocBook stylesheets,
+		jade, jadetex, etc; see <filename>README.docbook</filename> for
+		more information (pre-formatted versions of the documentation
+		are available, and you can compile Kannel itself even without
+		the documentation tools).</para></listitem>
+	
+	<listitem><para>GNU autoconf, if you want to modify the
+		configuration script.</para></listitem>
 
 	</itemizedlist>
 	</para>
 	
-	<para>Hardware requirements are fluffier. We haven't benchmarked Kannel
-	yet, so there are no hard numbers, but a reasonably fast PC workstation
-	(400 MHz Pentium II, 128 MB RAM) should serve several concurrent
-	users or tens of SMS messages per second without problems.</para>
+	<para>Hardware requirements are fluffier. Some informal benchmarkings 
+	have shown that with a reasonably fast PC architecture (e.g. 400MHz 
+	Pentium II with 128MB RAM), SMS performance's botleneck is always on the
+	SMSC side, even for example with multiple connections summing a pipeline with 
+	400 msg/sec.  We haven't benchmarked Kannel yet on WAP side, so there are 
+	no hard numbers.</para>
 
 </sect1>
 
@@ -387,12 +434,8 @@
 	compiled and all the files in the correct places; the next
 	chapter will explain how the gateway is configured.</para>
 
-<sect1>
-<title>Upgrading from previous versions</title>
-	<para>If you are upgrading from a previous version, please look at
-	<xref linkend="upgrading-notes"> for any pertinent information.
-	</para>
-</sect1>
+	<note><para>If you are upgrading from a previous version, please look at
+	<xref linkend="upgrading-notes"> for any important information.</para></note>
 
 <sect1>
 <title>Getting the source code</title>
@@ -431,53 +474,37 @@
 		http://www.kannel.org/arch.shtml</ulink></para></listitem>
 	<listitem><para>The <filename>README</filename> and various other
 		text files in the source tree.</para></listitem>
+		
 	</orderedlist>
+	</para>
 	
+	<para>You can also find general information on Kannel's 
+		<ulink url="http://www.kannel.org">website</ulink> and
+		information about existing problems at 
+		<ulink url="http://bugs.kannel.org">our bugtracker</ulink>.
+	</para>
+
+	<para>
 	We intend to cover everything you need to install and use Kannel
-	is in <citetitle>User's Guide</citetitle>, but the guide is still incomplete in this respect. Similarly, the <citetitle>Architecture and
+	is in <citetitle>User's Guide</citetitle>, but the guide is still 
+	incomplete in this respect. Similarly, the <citetitle>Architecture and
 	Design</citetitle> document should tell you everything you need
-	to know to dive into the sources and quickly make your own modifications. It's not a replacement for actually
+	to know to dive into the sources and quickly make your own modifications. 
+	It's not a replacement for actually
 	reading the source code, but it should work as a map to the
 	source code.  The <filename>README</filename> is not supposed
 	to be very important, nor contain much information. Instead,
 	it will just point at the other documentation.
 	</para>
 	
-	<para>You need the following tools to compile Kannel:
-	
-	<itemizedlist>
-
-	<listitem><para>C compiler and libraries for ANSI C, with normal
-	Unix extensions such as BSD sockets.</para></listitem>
-
-	<listitem><para>An implementation of POSIX threads
-	(<filename>pthread.h</filename>).</para></listitem>
-
-	<listitem><para>GNU Bison 1.28, if you want to modify the WMLScript
-	compiler (a pre-generated parser is included for those who just
-	want to compile Kannel).</para></listitem>
-
-	<listitem><para>DocBook processing tools: DocBook stylesheets,
-	jade, jadetex, etc; see <filename>README.docbook</filename> for
-	more information (pre-formatted versions of the documentation
-	are available, and you can compile Kannel itself even without
-	the documentation tools).</para></listitem>
-	
-	<listitem><para>GNU autoconf, if you want to modify the
-	configuration script.</para></listitem>
-
-	</itemizedlist>
-	
-	</para>
-
 </sect1>
 
 <sect1>
 <title>Compiling the gateway</title>
 
 	<para>If you are using Kannel on a supported platform, or one
-	that is similar enough to one, compiling Kannel is trivial.
-	After you have unpacked the source package of your choosing,
+	that is similar enough to one, compiling Kannel should be trivial.
+	After you have unpacked the source package of your choose,
 	or after you have checked out the source code from CVS, enter
 	the following commands:
 	
@@ -510,54 +537,55 @@
 	    Set defaults for the other options.
 	    <replaceable>type</replaceable> is either <literal>speed</literal>
 	    or <literal>debug</literal>.  The default is
-            <literal>debug</literal>.
+            <literal>speed</literal>. <literal>speed</literal> options is equivalent to 
+	    <literal>--with-malloc=native --disable-assertions</literal>, while 
+	    <literal>debug</literal> is <literal>--with-malloc=checking --enable-assertions</literal>.
+
 	    </para></listitem>
 
-	<listitem><para><literal>--enable-docs (default)</literal>
+	<listitem><para><literal>--disable-docs (default is --enable-docs)</literal>
 
-	    Build documentation, b.e., converting the User Guide and
+	    Use this option if you don't have docbook installed and/or 
+	    you want to save some time and cpu cicles. 
+	    Pre-generated documentation is available on Kannel's site.
+	    Default behaviour is to build documentation, b.e., converting the User Guide and
 	    the Architecture Guide from the DocBook markup language to
-	    PostScript and HTML.</para></listitem>
+	    PostScript and HTML if docbook is available.
+	    </para></listitem>
 
-	<listitem><para><literal>--disable-docs</literal>
-
-	    Don't build documentation.</para></listitem>
-
-	<listitem><para><literal>--enable-drafts</literal>
+	<listitem><para><literal>--enable-drafts (default is --disable-drafts)</literal>
 
 	    When building documentation, include the sections marked as
 	    <literal>draft</literal>.</para></listitem>
 
-	<listitem><para><literal>--disable-drafts (default)</literal>
-
-	    When building documentation, don't include the sections marked 
-	    as <literal>draft</literal>.</para></listitem>
-
-	<listitem><para><literal>--enable-debug</literal>
+	<listitem><para><literal>--enable-debug (default is --disable-debug)</literal>
 
 	    Enable non-reentrant development time
 	    debugging of WMLScript compiler.</para></listitem>
 
-	<listitem><para><literal>--enable-localtime</literal>
+	<listitem><para><literal>--disable-localtime (default is --enable-localtime)</literal>
 
-	    Write log file time stamps in local time, not
-	    GMT.</para></listitem>
+	    Write log file time stamps in GMT, not in local time.
+	    </para></listitem>
 
-	<listitem><para><literal>--disable-assertions</literal>
+	<listitem><para><literal>--enable-assertions / --disable-assertions</literal>
 
-	    Turn off runtime assertion checking.  This makes
+	    Turn on or off runtime assertion checking.  <literal>enable</literal> makes
 	    Kannel faster, but gives less information if it crashes.
+	    Default value is dependent on <literal>--with-defaults</literal>.
 	    </para></listitem>
 
 	<listitem><para><literal>--with-malloc=</literal><replaceable>type</replaceable>
 
 	    Select memory allocation module to use:
 	    <replaceable>type</replaceable> is <literal>native</literal>,
-            <literal>checking</literal> (the default), or
+            <literal>checking</literal>, or
             <literal>slow</literal>.  For production use you probably
 	    want <literal>native</literal>.  The <literal>slow</literal>
             module is more thorough than <literal>checking</literal>,
-	    but much slower.</para></listitem>
+	    but much slower. 
+	    Default value is dependent on <literal>--with-defaults</literal>.
+	    </para></listitem>
 
 	<listitem><para><literal>--enable-mutex-stats</literal>
 
@@ -571,6 +599,8 @@
 
 	    Enable using PAM for authentication of sendsms users for
 	    smsbox.</para></listitem>
+
+	<!-- XXX DAVI add mysql, openssl and others in here -->
 
 	</itemizedlist>
 	</para>
@@ -653,16 +683,10 @@
 	<para>1. Download the binary RPM packet from the Kannel
 	web site.</para>
 	
-	<para>2. Log in as root:</para>
+	<para>2. Install the RPM package:
 
 	<screen><userinput>
-	su -
-	</userinput></screen>
-
-	<para>3. Install the RPM package:
-
-	<screen><userinput>
-	rpm -ivh kannel-VERSION.i386.rpm
+	rpm -ivh kannel-<replaceable>VERSION</replaceable>.<replaceable>i386</replaceable>.rpm
 	</userinput></screen>
 	</para>
 
@@ -671,20 +695,16 @@
 	<para>1. Download the binary RPM packet from the Kannel
         web site.</para>
 
-	<para>2. Log in as root</para>
-	
-	<para>3. Upgrade the RPM package:
+	<para>2. Upgrade the RPM package:
 
         <screen><userinput>
-	rpm -Uvh kannel-VERSION.i386.rpm
+	rpm -Uvh kannel-<replaceable>VERSION</replaceable>.<replaceable>i386</replaceable>.rpm
 	</userinput></screen>
         </para>
 	
 	<para>Removing Kannel</para>
 
-	<para>1. Log in as root:</para>
-
-	<para>2. Remove the RPM package:
+	<para>1. Remove the RPM package:
 	
 	<screen><userinput>
 	rpm -e kannel
@@ -692,7 +712,7 @@
 	</para>
 
 	<para>After you have installed Kannel from the RPM packages you
-x	should now be able to run the Kannel init.d script that will
+	should now be able to run the Kannel init.d script that will
 	start Kannel as a WAP gateway. Run the script as root.</para>
 
 	<screen><userinput>
@@ -727,19 +747,24 @@ x	should now be able to run the Kannel init.d script that will
 
 	<para>To run Kannel as a SMS gateway you need to edit the
 	configuration file which is at /etc/kannel/kannel.conf.
-	In the same directory there is an example file called
-	smskannel.conf. It has some basic examples of the
-	configuration groups needed to run Kannel as a SMS gateway. For
-	more detailed information please read the section "SMS gateway
-	configuration" later in this same document.</para>
+	In kannel's documentation directory 
+	(<filename>/usr/share/doc/kannel</filename>) 
+	there is an example file called examples/smskannel.conf. 
+	It has some basic examples of the configuration groups needed 
+	to run Kannel as a SMS gateway. For more detailed information 
+	please see <filename>examples/kannel.conf</filename> in the
+	same directory for a commented complete example, and read the 
+	section "SMS gateway configuration" later in this same 
+	document.</para>
 
 	<para>The logging is disabled by default and you can enable
 	it from the kannel.conf file. Just add the log-file option
 	to the group of which box you want to log.</para>  
 	
 	<para>The documentation will be installed at 
-	/usr/share/doc/kannel-VERSION/ or /usr/doc/kannel-VERSION/
-	depending on if you used the RedHat 7.x or 6.x package.</para>
+	/usr/doc/kannel-VERSION/ or /usr/share/doc/kannel-VERSION/
+	depending on if you used the RedHat 6.x or a 7.x or newer 
+	package.</para>
 
 	<para>In the Kannel documentation directory there is a html
 	file called control.html. It is an example file that shows
@@ -753,6 +778,12 @@ x	should now be able to run the Kannel init.d script that will
 
 	<para>This chapter explains how to install, upgrade and remove
 	Kannel binary DEB packages.</para>
+
+	<para>Kannel's packages are available on main Debian repository 
+	(<ulink url="http://packages.debian.org/kannel">http://packages.debian.org/kannel</ulink>)
+	although that version may be out-of-sync with latest Kannel version.
+	</para>
+	<!-- XXX DAVI add kannel packages and my repository here -->
 		
 	<para>Before you install Kannel, check that you have libxml2
 	installed on your system:</para>
@@ -761,15 +792,9 @@ x	should now be able to run the Kannel init.d script that will
 	dpkg -l libxml2
 	</userinput></screen>
 	
-	<para>Installing or upgrading Kannel using APT</para>
+	<para>Installing or upgrading Kannel from Debian or Kannel repository</para>
 
-	<para>1. Log in as root:</para>
-
-	<screen><userinput>
-	su -
-	</userinput></screen>
-
-	<para>3. Install or upgrade the package:
+	<para>1. Install or upgrade the package:
 
 	<screen><userinput>
 	apt-get install kannel
@@ -2566,7 +2591,7 @@ smsc-password = bar
     <row><entry><literal>throughput</literal></entry>
       <entry><literal>number (messages/sec)</literal></entry>
       <entry valign="bottom">
-        If SMSC requires that kannel limits the number of messages per second, 
+        If SMSC requires that Kannel limits the number of messages per second, 
         use this variable. (optional)
      </entry></row>
 
@@ -3094,7 +3119,7 @@ pin = 2345
      <entry valign="bottom">
         Modems from different manufacturers have slightly different
         behaviour. We need to know what type of modem is used. Use "auto"
-        or omit parameter to have kannel detect the modem type automatically.
+        or omit parameter to have Kannel detect the modem type automatically.
         (some types should not be autodetected like the Nokia Premicell).
      </entry></row>
 
@@ -3292,7 +3317,7 @@ pin = 2345
    <row><entry><literal>enable-mms</literal></entry>
      <entry><literal>boolean</literal></entry>
      <entry valign="bottom">
-     	Optional, defaults to false. If enabled, kannel
+     	Optional, defaults to false. If enabled, Kannel
 	would send an AT+CMMS=2 if it have more than one
 	message on queue and hopefully will be quickier
 	sending the messages.
@@ -3434,7 +3459,7 @@ send-url = "http://localhost:20022"
    <row><entry><literal>smsc-username</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign="bottom">
-       Username associated to connection, if needed. 'kannel' requires
+       Username associated to connection, if needed. Kannel requires
        this, and it is the same as send-sms username at other end.
      </entry></row>
 
@@ -4191,7 +4216,7 @@ ssl-certkey-file
     <row><entry><literal>reply-couldnotfetch</literal></entry>
      <entry>string</entry>
      <entry valign="bottom">
-        If set, replaces the SMS message sent back to user when kannel
+        If set, replaces the SMS message sent back to user when Kannel
 	could not fetch content. 
 	Defaults to <literal>Could not fetch content, sorry.</literal>.
      </entry></row>
@@ -4199,7 +4224,7 @@ ssl-certkey-file
     <row><entry><literal>reply-couldnotrepresent</literal></entry>
      <entry>string</entry>
      <entry valign="bottom">
-        If set, replaces the SMS message sent back when kannel could not 
+        If set, replaces the SMS message sent back when Kannel could not 
 	represent the result as a SMS message. 
 	Defaults to <literal>Result could not be represented as an 
 	SMS message.</literal>.
@@ -4208,7 +4233,7 @@ ssl-certkey-file
     <row><entry><literal>reply-requestfailed</literal></entry>
      <entry>string</entry>
      <entry valign="bottom">
-        If set, replaces the SMS message sent back when kannel could not 
+        If set, replaces the SMS message sent back when Kannel could not 
 	contact http service.
 	Defaults to <literal>Request Failed</literal>.
      </entry></row>
@@ -4224,7 +4249,7 @@ ssl-certkey-file
     <row><entry><literal>mo-recode</literal></entry>
      <entry>boolean</entry>
      <entry valign="bottom">
-        If enabled, kannel will try to convert received messages with UCS2 charset
+        If enabled, Kannel will try to convert received messages with UCS2 charset
 	to ISO-8859-1 or to UTF-8, simplifying external servers jobs. If Kannel is 
 	able to recode message, it will also change <literal>coding</literal> to 
 	<literal>7 bits</literal> and <literal>charset</literal> to 
@@ -4515,7 +4540,7 @@ get-url = "http://%S"
      <entry valign="bottom">
         Accept ONLY SMS messages arriving from SMSC with matching ID.
         <footnote><para>Even if this service is denied,
-	kannel still searches for other service which accepts the message,
+	Kannel still searches for other service which accepts the message,
 	or default service.</para></footnote>
         Separate multiple entries with ';'. For example, if 
          <literal>accepted-smsc</literal>
@@ -4529,7 +4554,7 @@ get-url = "http://%S"
         A list of phone number prefixes of the sender number which are 
 		  accepted to be received by this service. 
         <footnote><para>Like in accepted-smsc, 
-	kannel still searches for other service which accepts the message.
+	Kannel still searches for other service which accepts the message.
 	This way there could be several services with the same keyword and
 	different results.</para></footnote>
 	Multiple entries are separated with 
@@ -4617,7 +4642,7 @@ get-url = "http://%S"
      <entry valign="bottom">
         If client does not set Content-Type for reply, it is normally
         application/octet-stream which is then handled as data in
-        kannel. This can be forced to be plain/text to allow backward
+        Kannel. This can be forced to be plain/text to allow backward
         compatibility, when data was not expected.
      </entry></row>
 
@@ -5042,7 +5067,7 @@ text = "No action specified"
 
    <row><entry><literal>%a or %r (text)</literal></entry>
    <entry>request body</entry>
-   <entry>kannel send all words (%a) unless <literal>strip-keyword</literal> is true</entry></row>
+   <entry>Kannel send all words (%a) unless <literal>strip-keyword</literal> is true</entry></row>
 
    <row><entry><literal>%C (charset)</literal></entry>
    <entry>present in <literal>Content-Type</literal> <literal>HTTP</literal></entry>
@@ -5089,7 +5114,7 @@ text = "No action specified"
       &#60;dlr-url&#62;dlr-url&#60;/dlr-url&#62;
     &#60;/statusrequest&#62;
 
-    &#60;!-- request from kannel to application --&#62;
+    &#60;!-- request from Kannel to application --&#62;
     &#60;from&#62;
       &#60;user&#62;username&#60;/user&#62;
       &#60;username&#62;username&#60;/username&#62; 
@@ -5099,7 +5124,7 @@ text = "No action specified"
     &#60;/from&#62;
     &#60;to&#62;smsc-id&#60;/to&#62;
 
-    &#60;!-- request from application to kannel --&#62;
+    &#60;!-- request from application to Kannel --&#62;
     &#60;from&#62;smsc-id&#60;/from&#62;
     &#60;to&#62;service-name&#60;/to&#62;
 
@@ -5122,9 +5147,9 @@ text = "No action specified"
 	<para><literal>udh</literal> is the same format as <literal>X-Kannel-UDH</literal>.
 	Example: &#60;udh&#62;06050415820000&#60;/udh&#62;.</para>
 	
-	<para>On kannel->application, <literal>from</literal> is the <literal>smsc-id</literal>
+	<para>On Kannel->application, <literal>from</literal> is the <literal>smsc-id</literal>
 	that message arrives and <literal>to</literal> is the service name.</para>
-	<para>On application->kannel, <literal>from</literal> contains the credentials (
+	<para>On application->Kannel, <literal>from</literal> contains the credentials (
 	<literal>user/username</literal>, <literal>pass/password</literal> and <literal>
 	account</literal> and <literal>to</literal> corresponds to the <literal>smsc-id
 	</literal> to submit the message.</para>
@@ -5133,13 +5158,13 @@ text = "No action specified"
 	only one of them should be used. (same for <literal>pass</literal> and <literal>
 	password</literal>.</para>
 
-	<para>When application POST in kannel, as in GET, only <literal>user</literal>, <literal>
+	<para>When application POST in Kannel, as in GET, only <literal>user</literal>, <literal>
 	pass</literal> and <literal>da</literal> are required. Everything else is optional. 
 	(<literal>oa</literal> could be needed too is there's no <literal>default-sender</literal>
 	or <literal>forced-sender</literal>.</para>
 
 	<warning><para>This is experimental code. XML format could and should change to fully
-	met IETF's sms-xml standard (yet in draft) and additional tags needed by kannel should be
+	met IETF's sms-xml standard (yet in draft) and additional tags needed by Kannel should be
 	pondered.</para></warning>
 </sect3>
 
@@ -6094,11 +6119,11 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <row><entry><literal>validity</literal></entry>
    <entry><literal>number (minutes)</literal></entry>
    <entry valign="bottom">
-         Optional. If given, kannel will inform SMS Center that it should only
+         Optional. If given, Kannel will inform SMS Center that it should only
 	 try to send the message for this many minutes. If the destination
 	 mobile is off other situation that it cannot receive the sms, the
 	 smsc discards the message.
-	 Note: you must have your kannel box time syncronized with the SMS Center.
+	 Note: you must have your Kannel box time syncronized with the SMS Center.
    </entry></row>
 
    <row><entry><literal>deferred</literal></entry>
@@ -6106,7 +6131,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <entry valign="bottom">
          Optional. If given, the SMS center will postpone the message to be
 	 delivered at now plus this many minutes.
-	 Note: you must have your kannel box time syncronized with the SMS Center.
+	 Note: you must have your Kannel box time syncronized with the SMS Center.
    </entry></row>
 
    <row><entry><literal>dlrmask</literal></entry>
@@ -6138,7 +6163,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <row><entry><literal>alt-dcs</literal></entry>
    <entry><literal>number</literal></entry>
    <entry valign="bottom">
-	   Optional. If unset, kannel uses the alt-dcs defined on smsc configuration,
+	   Optional. If unset, Kannel uses the alt-dcs defined on smsc configuration,
 	   or 0X per default. If equals to 1, uses FX. If equals to 2, force 0X.
    </entry></row>
 
@@ -6156,7 +6181,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 	accounting on it if your front end uses the same username for all services
 	but wants to distinguish them in the log. In the case of a HTTP SMSC
 	type the account name is prepended with the servicename (username) and a colon (:)
-	and forwarded to the next insta ce of kannel. This allows hierarchical accounting.
+	and forwarded to the next instance of Kannel. This allows hierarchical accounting.
      </entry></row>
 
   </tbody>
@@ -6940,8 +6965,8 @@ sendsms-port-ssl = true
 group = ppg
 ...
 ppg-ssl-port = 8090
-ssl-server-cert-file = "/home/aarno/kannelcvs/gateway/gw/cert1.pem"
-ssl-server-key-file = "/home/aarno/kannelcvs/gateway/gw/key1.pem"
+ssl-server-cert-file = "/etc/kannel/cert1.pem"
+ssl-server-key-file = "/etc/kannel/key1.pem"
 </programlisting>
         </para>
         <para>
@@ -6955,7 +6980,7 @@ ssl-server-key-file = "/home/aarno/kannelcvs/gateway/gw/key1.pem"
 <chapter id="delivery-reports">
 <title>Delivery Reports</title>
 
-	<para>This chapter explains how to set up kannel to deliver delivery reports.
+	<para>This chapter explains how to set up Kannel to deliver delivery reports.
 	</para>
 	
 	<para>Delivery reports are a method to tell your system if the message
@@ -6987,8 +7012,8 @@ ssl-server-key-file = "/home/aarno/kannelcvs/gateway/gw/key1.pem"
 	</itemizedlist>
 	If you want multiple report types, you simply add the values togeter. For example if you want to get delivery success and/or failure
 	you set the dlrmask value to 1+2. and so on. If you specify dlrmask on the URL you pass on to
-	kannel you also need to specify dlrurl. dlrurlshould contain the URL to which
-	kannel should place a HTTP requests once the delivery report is ready to be delivered back to your system.
+	Kannel you also need to specify dlrurl. dlrurlshould contain the URL to which
+	Kannel should place a HTTP requests once the delivery report is ready to be delivered back to your system.
 	</para>
 	<para>
 	An example transaction would work as following.
@@ -7514,12 +7539,12 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
  group = test-ppg
  retries = 2
  pi-ssl = yes
- ssl-client-certkey-file = /home/aarno/kannelcvs/gateway/gw/certkey.pem
+ ssl-client-certkey-file = /etc/kannel/certkey.pem
  
  group = configuration
  push-url = https://localhost:8900/wappush
- pap-file = /home/aarno/test/ipnoqos.txt
- content-file = /home/aarno/test/si.txt
+ pap-file = /etc/kannel/ipnoqos.txt
+ content-file = /etc/kannel/si.txt
  username = foo
  password = bar
 </programlisting>
@@ -7802,7 +7827,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
         to /etc/logrotate.d) is shown below. In this example the Kannel log files found 
         in /var/log/kannel are rotated and compressed daily over 365 days.  See the 
         documentation for logrotate for more details.  Of particular note however is the 
-        postrotate command, this killall -HUP issues a HUP command to each kannel
+        postrotate command, this killall -HUP issues a HUP command to each Kannel
         box running. The HUP signal has the effect of reopening the log file, without this 
         command Kannel will continue to write to the rotated log file.
         </para>

@@ -346,7 +346,7 @@ AC_SUBST(SUFFIX)
 dnl Implement --with-defaults=speed/debug option.
 
 AC_ARG_WITH(defaults,
-[  --with-defaults         set default configure options: speed/debug [native malloc + assertions]
+[  --with-defaults         set default configure options: speed/debug [speed]
                           this will set assertion checking and malloc wrapper accordingly
 			  speed = native malloc + no assertions
 			  debug = checking malloc + assertions], [

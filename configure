@@ -26,7 +26,7 @@ ac_help="$ac_help
 ac_help="$ac_help
   --enable-suffix         enable suffix for binaries [disabled]"
 ac_help="$ac_help
-  --with-defaults         set default configure options: speed/debug [native malloc + assertions]
+  --with-defaults         set default configure options: speed/debug [speed]
                           this will set assertion checking and malloc wrapper accordingly
 			  speed = native malloc + no assertions
 			  debug = checking malloc + assertions"

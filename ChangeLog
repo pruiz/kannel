@@ -1,9 +1,22 @@
+2003-07-20  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * configure{,.in}: --with-defaults default value is "speed"
+    * userguide.xml: changed some strings, added others, added some 
+      features, fixed duplicate software requirements, fixed ./configure
+      defaults (still missing some options), fixed redhat and some debian
+      strings, Capitalized every "Kannel" reference, removed aarno hardcoded
+      directories in examples.
+
 2003-07-20  Alexander Malysh  <a.malysh@centrium.de>
-    * gw/bb_smscconn{.c,_cb.h},gw/dlr.[ch],gw/smsc/smsc_{at,cgw,cimd2,emi,fake,http,smasi,smpp,soap,wrapper}.c:
-      added generic DLR_SMSC_[SUCCESS|FAIL] code. All smscs benefit from it. Advantages follow:
-      1) no code duplication in every smsc.
-      2) even fake/old smscs have now DLR_SMSC_[SUCCESS|FAIL] support for free.
-      3) always the same format for dlr messages e.g. "ACK/some_driver_message", "NACK/some_driver_message_or_error_code".
+    * gw/bb_smscconn{.c,_cb.h}, gw/dlr.[ch], gw/smsc/smsc_{at,cgw,cimd2,emi,
+      fake,http,smasi,smpp,soap,wrapper}.c: added generic 
+      DLR_SMSC_[SUCCESS|FAIL] code. All smscs benefit from it. Advantages 
+      follow:
+        1) no code duplication in every smsc.
+        2) even fake/old smscs have now DLR_SMSC_[SUCCESS|FAIL] support for 
+	   free.
+        3) always the same format for dlr messages e.g. 
+	   "ACK/some_driver_message", 
+	   "NACK/some_driver_message_or_error_code".
 
 2003-07-20  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_store.c: always set message id and timestamp.
