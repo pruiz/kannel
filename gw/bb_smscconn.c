@@ -200,11 +200,14 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
      *	gwthread_sleep(0.5);
      */
     
-    if (unified_prefix == NULL)
-    	uf = NULL;
-    else
-    	uf = octstr_get_cstr(unified_prefix);
+   /*
+    * First normalize in smsc level and then on global level.
+    * In outbound direction it's vise versa, hence first global then smsc.
+    */
+    uf = conn->unified_prefix ? octstr_get_cstr(conn->unified_prefix) : NULL;
+    normalize_number(uf, &(sms->sms.sender));
 
+    uf = unified_prefix ? octstr_get_cstr(unified_prefix) : NULL; 
     normalize_number(uf, &(sms->sms.sender));
 
     if (white_list &&
