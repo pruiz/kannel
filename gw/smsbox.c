@@ -575,8 +575,12 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 	    warning(0, "Tried to set Compress field, denied.");
     }
     /* Compatibility Mode */
-    if ( msg->sms.coding == DC_UNDEF && octstr_len(udh))
-	msg->sms.coding = DC_8BIT;
+    if ( msg->sms.coding == DC_UNDEF) {
+	if(octstr_len(udh))
+	  msg->sms.coding = DC_8BIT;
+	else
+	  msg->sms.coding = DC_7BIT;
+    }
 
     if (validity) {
 	if (urltrans_accept_x_kannel_headers(trans))
