@@ -1,4 +1,16 @@
 2003-03-25  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smscconn[.c|_p.h], gw/smsc/smsc[.c|_p.h]:
+      this is a rewrite of the CIMD2 module to be addopted to the new
+      SMSCConn API layer. Thanks to Angel for sending this patch.
+    * gw/smsc/smsc_cimd2.c: Added additional support features:
+      'our-host', 'our-port' and parameter 069 (service center address) have
+      been added. Harmonzied log message formating.
+      BEWARE: there are also COMPATIBILITY BREAKERS:
+      Harmonized 'my-number' directive, this makes 'sender-prefix' absolete.
+      Interpretation of 'keepalive' is now in seconds instead of minutes.
+      [Msg-ID: <NCEOLLKPFAEAOBBMHNHEKEBBFKAA.afradejas@mediafusion.es>]
+
+2003-03-25  Stipe Tolj  <tolj@wapme-systems.de>
     * Makefile.in: fixing Bruno's delete commit that caused config.sub and 
       config.guess to dissapear after a 'make distclean'. They are part of
       configure and have been produced while autoconf did all it's magic.
