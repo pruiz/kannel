@@ -271,7 +271,11 @@ int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, size_t n) {
 
 
 int octstr_search_char(Octstr *ostr, char ch) {
-    size_t pos = 0;
+    return octstr_search_char_from(ostr, ch, 0);
+}
+
+
+int octstr_search_char_from(Octstr *ostr, char ch, size_t pos) {
     int tmp_int, asc_ch = -1;
     
     asc_ch = octstr_get_char(octstr_create(&ch), 0);

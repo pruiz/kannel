@@ -43,6 +43,8 @@ int wml_compiler_not_implemented = 1;
 
 typedef enum { NO, YES, NOT_CHECKED } var_allow_t;
 
+typedef enum { NOESC, ESC, UNESC, FAILED } var_esc_t;
+
 
 
 /***********************************************************************
@@ -272,6 +274,7 @@ int parse_node(xmlNodePtr node);
 int parse_element(xmlNodePtr node);
 int parse_attribute(xmlAttrPtr attr);
 int parse_text(xmlNodePtr node);
+int parse_octet_string(Octstr *ostr);
 
 int parse_end(void);
 
@@ -282,8 +285,9 @@ unsigned char element_check_content(xmlNodePtr node);
  * Variable functions. These functions are used to find and parse variables.
  */
 
-int parse_variable(Octstr *text, int start, var_allow_t allowed,
-		   Octstr **output);
+int parse_variable(Octstr *text, int start, Octstr **output);
+Octstr *get_variable(Octstr *text, int start);
+var_esc_t check_variable_syntax(Octstr *variable);
 
 
 /* Functions to get rid of extra white space. */
@@ -295,6 +299,8 @@ void text_shrink_blank(Octstr *text);
 
 int output_char(char byte);
 int output_octet_string(Octstr *ostr);
+int output_plain_octet_string(Octstr *ostr);
+Octstr *output_variable(Octstr *variable, var_esc_t escaped);
 
 /*
 void parse_cdata(xmlNodePtr node);
@@ -667,16 +673,16 @@ int parse_attribute(xmlAttrPtr attr)
     {
       if (coded_length == 0) 
 	{
-	  if ((status = output_octet_string(octstr_create(attr->val->content))) 
+	  if ((status = parse_octet_string(octstr_create(attr->val->content))) 
 	      != 0)
 	    error(0, 
 		  "WML compiler: could not output attribute value as a string.");
 	}
       else
 	{
-	  if ((status = output_octet_string(octstr_copy(value, coded_length, 
-							octstr_len(value) -
-							coded_length))) != 0)
+	  if ((status = parse_octet_string(octstr_copy(value, coded_length, 
+						       octstr_len(value) -
+						       coded_length))) != 0)
 	    error(0, 
 		  "WML compiler: could not output attribute value as a string.");
 	}
@@ -712,41 +718,29 @@ int parse_end(void)
 
 /*
  * parse_text - a text string parsing function.
- * This function parses a text node. The text is searched for variables that
- * are them passed to function that parses them with information if the 
- * variables are allowed in this text context.
+ * This function parses a text node. 
  */
 
 int parse_text(xmlNodePtr node)
 {
-  int i;
-  var_allow_t var_allowed = NOT_CHECKED;
-  Octstr *temp1, *temp2;
+  int ret;
+  /*  var_allow_t var_allowed = NOT_CHECKED; */
+  Octstr *temp;
 
-  temp1 = octstr_create(node->content);
+  temp = octstr_create(node->content);
 
-  text_shrink_blank(temp1);
-  text_strip_blank(temp1);
+  text_shrink_blank(temp);
+  text_strip_blank(temp);
 
-  if (octstr_len(temp1) == 0)
+  if (octstr_len(temp) == 0)
     return 0;
 
-  if (octstr_search_char(temp1, '$') > -1)
-    return -1;
-
-  if (output_char(STR_I) == -1)
-      error(0, "WML compiler: couldn't output STR_I before a text field.");
-  temp2 = octstr_duplicate(wbxml_string);
-  octstr_destroy(wbxml_string);
-  wbxml_string = octstr_cat(temp2, temp1);
-  if (output_char(STR_END) == -1)
-      error(0, "WML compiler: couldn't output STR_END after a text field.");
+  ret = parse_octet_string(temp);
 
   /* Memory cleanup. */
-  octstr_destroy(temp1);
-  octstr_destroy(temp2);
+  octstr_destroy(temp);
 
-  return 0;
+  return ret;
 }
 
 
@@ -757,16 +751,246 @@ int parse_text(xmlNodePtr node)
  * - text: the octet string containing a variable
  * - start: the starting position of the variable not including 
  *   trailing &
- * - allowed: iformation if the variables are allowed in this context
- * - output: octet string that returns the encoded variable
  * Returns: lenth of the variable for success, -1 for failure. A variable 
  * encoutered in a context that doesn't allow them is considered a failure.
+ * Parsed variable is returned as an octet string in Octstr **output.
  */
 
-int parse_variable(Octstr *text, int start, var_allow_t allowed,
-		   Octstr **output)
+int parse_variable(Octstr *text, int start, Octstr **output)
 {
-  return -1;
+  var_esc_t esc;
+  int ret;
+  Octstr *variable;
+
+  variable = get_variable(text, start + 1);
+
+  if (octstr_get_char(variable, 0) == '$')
+    {
+      *output = octstr_create("$");
+      ret = 2;
+    }
+  else
+    {
+      if (octstr_get_char(text, start + 1) == '(')
+	ret = octstr_len(variable) + 3;
+      else
+	ret = octstr_len(variable) + 1;
+
+      if ((esc = check_variable_syntax(variable)) == FAILED)
+	return -1;
+      else
+	if ((*output = output_variable(variable, esc)) == NULL)
+	  return -1;
+    }
+
+  return ret;
+}
+
+
+
+/*
+ * get_variable - get the variable name from text.
+ * Octstr *text contains the text with a ariable name starting at point 
+ * int start.
+ */
+
+Octstr *get_variable(Octstr *text, int start)
+{
+  Octstr *var;
+  size_t end;
+  char ch;
+
+  ch = octstr_get_char(text, start);
+
+  if (ch == '$')
+    {
+      var = octstr_create("$");
+    }
+  else if (ch == '(')
+    {
+      start ++;
+      end = octstr_search_char_from(text, ')', start);
+      if (end == -1)
+	error(0, "WML compiler: braces opened, but not closed for a variable.");
+      else if (end - start == 1)
+	error(0, "WML compiler: empty braces wihtout variable.");
+      else
+	var = octstr_copy(text, start, end - start);
+    }
+  else
+    {
+      end = start + 1;
+      while (isalnum(ch = octstr_get_char(text, end)) || (ch == '_'))
+	end ++;
+
+      var = octstr_copy(text, start, end - start);
+    }
+     
+  return var;
+}
+
+
+
+/*
+ * check_variable_syntax - checks the variable syntax and the possible 
+ * escepe mode it has. Octstr *variable contains the variable string.
+ */
+
+var_esc_t check_variable_syntax(Octstr *variable)
+{
+  Octstr *escaped, *noesc, *unesc, *escape;
+  char *buf;
+  char ch;
+  int i;
+  int pos, len;
+  var_esc_t ret;
+
+  if ((pos = octstr_search_char(variable, ':')) > 0)
+    {
+      buf = gw_malloc((len = (octstr_len(variable) - pos)));
+      octstr_get_many_chars(buf, variable, pos, len);
+      escaped = octstr_create_tolower(buf);
+      octstr_truncate(variable, pos);
+
+      noesc = octstr_create("noesc");
+      unesc = octstr_create("unesc");
+      escape = octstr_create("escape");
+
+      if (octstr_compare(escaped, noesc) == 0)
+	ret = NOESC;
+      else if (octstr_compare(escaped, unesc) == 0)
+	ret = UNESC;
+      else if (octstr_compare(escaped, escape) == 0)
+	ret = ESC;
+      else
+	{
+	  error(0, "WML compiler: syntax error in variable escaping.");
+	  octstr_destroy(escaped);
+	  octstr_destroy(escape);
+	  octstr_destroy(noesc);
+	  octstr_destroy(unesc);
+	  gw_free(buf);
+	  return FAILED;
+	}
+      octstr_destroy(escaped);
+      octstr_destroy(escape);
+      octstr_destroy(noesc);
+      octstr_destroy(unesc);
+      gw_free(buf);
+    }
+  else
+    ret = NOESC;
+
+  ch = octstr_get_char(variable, 0);
+  if (!(isalpha(ch)) && ch != '_')
+    {
+      buf = gw_malloc(70);
+      if (sprintf(buf, 
+		  "WML compiler: syntax error in variable; name starting with %c.",
+		  ch) < 1)
+	error(0, "WML compiler: could not format error log output!");
+      error(0, buf);
+      gw_free(buf);
+      return FAILED;
+    }
+  else
+    for (i = 1; i < octstr_len(variable); i++)
+      if (!isalnum((ch = octstr_get_char(variable, 0))) && ch != '_')
+	{
+	  error(0, "WML compiler: syntax error in variable.");
+	  return FAILED;
+	}
+
+  return ret;
+}
+
+
+
+/*
+ * parse_octet_string - parse an octet string into wbxml_string, the string 
+ * is checked for variables. Returns 0 for success, -1 for error.
+ */
+
+int parse_octet_string(Octstr *ostr)
+{
+  Octstr *output, *temp1, *temp2, *var;
+  int var_len;
+  int start = 0, pos = 0, len;
+
+  /* No variables? Ok, let's take the easy way... */
+
+  if (octstr_search_char(ostr, '$') < 0 && octstr_search_char(ostr, '&') < 0)
+    return output_octet_string(ostr);
+
+  len = octstr_len(ostr);
+  output = octstr_create_empty();
+  var = octstr_create_empty();
+
+  for (pos = 0; pos < len; pos ++)
+    {
+      if (octstr_get_char(ostr, pos) == '$')
+	{
+	  temp1 = octstr_copy(ostr, start, pos - start);
+	  if ((var_len = parse_variable(ostr, pos, &var)) > 0)
+	    {
+	      if (octstr_get_char(var, 0) == '$')
+		/* No, it's not actually variable, but $-character escaped as
+		   "$$". So everything should be packed into one string. */
+		{
+		  temp2 = octstr_cat(temp1, var);
+		  octstr_destroy(temp1);
+
+		  if (octstr_len(output) == 0)
+		    {	
+		      output = octstr_duplicate(temp2);
+		      octstr_destroy(temp2);
+		    }
+		  else
+		    {
+		      temp1 = octstr_cat(output, temp2);
+		      output = octstr_duplicate(temp1);
+		      octstr_destroy(temp1);
+		    }
+		}
+	      else
+		/* The string is output as a inline string and the variable 
+		   as a inline variable reference. */
+		{
+		  output_octet_string(temp1);
+		  octstr_destroy(temp1);
+		  output_plain_octet_string(var);
+		}
+
+	      pos = pos + var_len;
+	      start = pos;
+	    }
+	  else
+	    return -1;
+	}
+      else if (octstr_get_char(ostr, pos) == '&')
+	/* Entities are not yet supported. */
+	{
+	  return -1;
+	}
+    }
+  
+  start ++;
+
+  /* Was there still something after the last variable? */
+  if (start != pos)
+    {
+      temp1 = octstr_cat(output, temp2);
+      output = octstr_duplicate(temp1);
+      octstr_destroy(temp1);
+    }
+
+  if (octstr_len(output) > 0)
+    if (output_octet_string(output) == -1)
+      return -1;
+  
+  octstr_destroy(output);
+  
+  return 0;
 }
 
 
@@ -788,8 +1012,13 @@ int parse_pi(xmlNodePtr node)
 
 int output_char(char byte)
 {
-  if ((wbxml_string = octstr_cat_char(wbxml_string, byte)) == NULL)
-    return -1;
+  Octstr *temp;
+
+  if ((temp = octstr_cat_char(wbxml_string, byte)) == NULL)
+      return -1;
+
+  octstr_destroy(wbxml_string);
+  wbxml_string = temp;
 
   return 0;
 }
@@ -797,18 +1026,83 @@ int output_char(char byte)
 
 
 /*
- * output_octet_string - output an octet string into wbxml_string.
- * Returns 0 for success, -1 for error.
+ * output_octet_string - output an octet string into wbxml_string as a 
+ * inline string. Returns 0 for success, -1 for an error.
  */
 
 int output_octet_string(Octstr *ostr)
 {
   if (output_char(STR_I) == 0)
-    if ((wbxml_string = octstr_cat(wbxml_string, ostr)) != NULL)
+    if (output_plain_octet_string(ostr) == 0)
       if (output_char(STR_END) == 0)
 	return 0;
 
   return -1;
+}
+
+
+
+/*
+ * output_plain_octet_string - output an octet string into wbxml_string.
+ * Returns 0 for success, -1 for an error.
+ */
+
+int output_plain_octet_string(Octstr *ostr)
+{
+  Octstr *temp;
+  if ((temp = octstr_cat(wbxml_string, ostr)) == NULL)
+    return -1;
+
+  octstr_destroy(wbxml_string);
+  wbxml_string = temp;
+
+  return 0;
+}
+
+
+
+/*
+ * output_variable - output a variable reference into a octet string
+ * that is returned to the caller. Return NULL for an error.
+ */
+
+Octstr *output_variable(Octstr *variable, var_esc_t escaped)
+{
+  char ch;
+  char cha[2];
+  Octstr *ret, *temp;
+
+  switch (escaped)
+    {
+    case ESC:
+      ch = EXT_I_0;
+      sprintf(cha, "%c", ch);
+      if ((ret = octstr_create(cha)) == NULL)
+	error(0, "WML compiler: could not output EXT_I_0.");
+      break;
+    case UNESC:
+      ch = EXT_I_1;
+      sprintf(cha, "%c", ch);
+      if ((ret = octstr_create(cha)) == NULL)
+	error(0, "WML compiler: could not output EXT_I_1.");
+      break;
+    default:
+      ch = EXT_I_2;
+      sprintf(cha, "%c", ch);
+      if ((ret = octstr_create(cha)) == NULL)
+	error(0, "WML compiler: could not output EXT_I_2.");
+      break;
+    }
+
+  temp = octstr_cat(ret, variable);
+  octstr_destroy(ret);
+  ret = octstr_cat_char(temp, STR_END);
+  octstr_destroy(temp);
+
+  if (ret == NULL)
+    error(0, "WML compiler: could not output variable name.");
+
+  return ret;
 }
 
 

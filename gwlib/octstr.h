@@ -152,16 +152,25 @@ int octstr_print(FILE *f, Octstr *ostr);
 
 
 /*
- * Search the character from octet string. Returns the position (index) of the char in
- * string, -1 if not found.
+ * Search the character from octet string. Returns the position (index) of 
+ * the char in string, -1 if not found.
  */
 int octstr_search_char(Octstr *ostr, char ch);
+
+
+/*
+ * Search the character from octet string starting from position pos. Returns 
+ * the position (index) of the char in string, -1 if not found.
+ */
+int octstr_search_char_from(Octstr *ostr, char ch, size_t pos);
+
 
 /*
  * Search the string from octet string. Returns the start position (index) of
  * the substring, -1 if not found.
  */
 int octstr_search_str(Octstr *ostr, char *str) ;
+
 
 /*
  * Write contents of octet string to a file, in human readable form. 
