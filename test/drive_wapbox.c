@@ -53,6 +53,7 @@ static int wapbox_port = 30188;
 static Octstr *http_url = NULL;
 
 static int verbose_debug = 0;
+static int user_ack = 0;
 
 static long requests_complete = 0;
 static volatile sig_atomic_t dying = 0;
@@ -128,6 +129,9 @@ static void *http_thread(void *arg) {
 	Octstr *body;
 	List *cgivars;
 	Octstr *reply_body = octstr_create("Nothing interesting");
+	List *reply_headers = list_create();
+
+	list_append(reply_headers, "Content-type: text/plain");
 
 	for (;!dying;) {
 		client = http2_server_accept_client(server);
@@ -136,7 +140,7 @@ static void *http_thread(void *arg) {
 		while (http2_server_get_request(client, &url, &headers,
 					&body, &cgivars) == 1) {
 			http2_server_send_reply(client, 200,
-				headers, reply_body);
+				reply_headers, reply_body);
 			while (list_len(headers) > 0)
 				octstr_destroy(list_consume(headers));
 			octstr_destroy(url);
@@ -149,6 +153,8 @@ static void *http_thread(void *arg) {
 	}
 
 	octstr_destroy(reply_body);
+	while (list_len(reply_headers) > 0)
+		octstr_destroy(list_consume(reply_headers));
 	http2_server_close(server);
 	return NULL;
 }
@@ -228,6 +234,14 @@ static void increment_tid(Client *client) {
 		client->wtp_tid++;
 }
 
+/* Set the U/P flag on an Invoke PDU */
+static void set_user_ack(Octstr *pdu) {
+	int c;
+
+	c = octstr_get_char(pdu, 3) | 0x10;
+	octstr_set_char(pdu, 3, c);
+}
+
 static Octstr *wtp_invoke_create(int class) {
 	Octstr *pdu;
 	/* data describes a TR-Invoke PDU, with GTR=1 and TTR=1 (segmentation
@@ -237,6 +251,9 @@ static Octstr *wtp_invoke_create(int class) {
 	gw_assert(class <= 2);
 	pdu = octstr_create_from_data(data, sizeof(data));
 	octstr_set_char(pdu, 3, class);
+
+	if (user_ack)
+		set_user_ack(pdu);
 
 	return pdu;
 }
@@ -288,14 +305,6 @@ static int get_tid(Octstr *pdu) {
 	return tid & 0x7fff;
 }
 
-/* Set the U/P flag on an Invoke PDU */
-static void set_user_ack(Octstr *pdu) {
-	int c;
-
-	c = octstr_get_char(pdu, 3) | 0x10;
-	octstr_set_char(pdu, 3, c);
-}
-
 static int wtp_type(Octstr *pdu) {
 	return (octstr_get_char(pdu, 0) >> 3) & 0x0f;
 }
@@ -339,8 +348,6 @@ static void send_invoke_connect(Connection *boxc, Client *client) {
 
 	pdu = wtp_invoke_create(2);
 	set_tid(pdu, client->wtp_tid);
-	/* For some reason Kannel requires this flag */
-	set_user_ack(pdu);
 	add_wsp_connect(pdu);
 
 	send_pdu(pdu, boxc, client);
@@ -358,8 +365,6 @@ static void send_invoke_get(Connection *boxc, Client *client) {
 
 	pdu = wtp_invoke_create(2);
 	set_tid(pdu, client->wtp_tid);
-	/* For some reason Kannel requires this flag */
-	set_user_ack(pdu);
 	add_wsp_get(pdu);
 
 	send_pdu(pdu, boxc, client);
@@ -554,6 +559,7 @@ static void help(void) {
 	info(0, "  -c clients   # of concurrent clients; default 1.");
 	info(0, "  -w wapport   Port wapbox should connect to; default 30188");
 	info(0, "  -u url       Use this url instead of internal http server");
+	info(0, "  -U           Set the User ack flag on all WTP transactions");
 }
 
 int main(int argc, char **argv) {
@@ -566,7 +572,7 @@ int main(int argc, char **argv) {
 
 	gwlib_init();
 
-	while ((opt = getopt(argc, argv, "hv:r:c:w:du:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hv:r:c:w:du:U")) != EOF) {
 		switch (opt) {
 		case 'v':
 			set_output_level(atoi(optarg));
@@ -586,6 +592,10 @@ int main(int argc, char **argv) {
 
 		case 'u':
 			http_url = octstr_create(optarg);
+			break;
+
+		case 'U':
+			user_ack = 1;
 			break;
 
 		case 'h':

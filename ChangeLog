@@ -1,10 +1,16 @@
+2000-05-22  Richard Braakman  <dark@wapit.com>
+
+	* test/drive_wapbox.c: Make setting the U/P flag optional, with
+	the -U flag, because Kannel no longer (erroneously) requires it.
+	Also have its internal httpd supply a Content-Type header.
+
 2000-05-22    <Kalle Marjola <rpr@wapit.com>>
 
 	* gwlib/http2.c|h: implemented function http2_destroy_headers
 
 	* gw/bb_core.c: some update to status information
 
-	* gw/bb_http.c: fixed las memory leaks, now the new system should
+	* gw/bb_http.c: fixed last memory leaks, now the new system should
 	not leak memory at all. Still misses cgibin arguments because of
 	the lack of operations in http2.
 
