@@ -101,7 +101,8 @@ progsrcs = \
 	wmlscript/wmlsc.c \
 	wmlscript/wmlsdasm.c \
 	utils/seewbmp.c \
-	utils/run_kannel_box.c
+	utils/run_kannel_box.c \
+	utils/start-stop-daemon.c
 progobjs = $(progsrcs:.c=.o)
 progs = $(progsrcs:.c=)
 

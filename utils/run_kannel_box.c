@@ -14,10 +14,11 @@
 #include <fcntl.h>
 #include <signal.h>
 
-static char *progname;
+static char *progname;  /* The name of this program (for error messages) */
 static char **box_arglist;
 static int min_restart_delay = 60; /* in seconds */
 static pid_t child_box; /* used in main_loop, available to signal handlers */
+static char *pidfile; /* The name of the pidfile to use.  NULL if no pidfile */
 
 /* Extra arguments to pass to the box */
 static char *extra_arguments[] = {
@@ -65,10 +66,13 @@ void build_box_arglist(char *boxfile, int argc, char **argv)
 	*argp++ = (char *)NULL;
 }
 
-void write_pidfile(char *pidfile)
+void write_pidfile(void)
 {
 	int fd;
 	FILE *f;
+
+	if (!pidfile)
+		return;
 
 	fd = open(pidfile, O_WRONLY|O_NOCTTY|O_TRUNC|O_CREAT, 0644);
 	if (fd < 0) {
@@ -87,6 +91,14 @@ void write_pidfile(char *pidfile)
 		fprintf(stderr, "%s: writing %s: %s\n", progname, pidfile, strerror(errno));
 		exit(1);
 	}
+}
+
+void remove_pidfile(void)
+{
+	if (!pidfile)
+		return;
+
+	unlink(pidfile);
 }
 
 /* Set 0 (stdin) to /dev/null, and 1 and 2 (stdout and stderr) to /dev/full
@@ -164,6 +176,10 @@ void signal_transfer_and_die(int signum)
 		kill(child_box, signum);
 	}
 
+	/* Prepare to die.  Normally the atexit handler would take care
+	 * of this when we exit(), but we're going to die from a signal. */
+	remove_pidfile();
+
 	/* Then send it to self.  First set the default handler, to
 	 * avoid catching the signal with this handler again.  This
 	 * is not a race, because it doesn't matter if we die from
@@ -232,7 +248,6 @@ void main_loop(char *boxfile)
 int main(int argc, char *argv[])
 {
 	int i;
-	char *pidfile = NULL;
 	char *boxfile = NULL;
 	pid_t childpid;
 
@@ -305,9 +320,8 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	if (pidfile) {
-		write_pidfile(pidfile);
-	}
+	atexit(remove_pidfile);
+	write_pidfile();
 
 	/* Set the umask to a known value, rather than inheriting
 	 * an unknown one. */

@@ -1,3 +1,15 @@
+2000-03-21  Richard Braakman  <dark@wapit.com>
+
+	* utils/run_kannel_box.c: Make it remove its pidfile when it dies.
+
+	* utils/kannel-init.d: New script file to start and stop Kannel
+	(suitable for use in /etc/init.d)
+
+	* utils/start-stop-daemon.c, utils/start-stop-daemon.8: Utility
+	used by kannel-init.d, taken from dpkg source.
+
+	* Makefile.in: Added entry for start-stop-daemon.
+
 Tue Mar 21 12:57:35 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/list.[ch]: Wrote function list_extract_first.
