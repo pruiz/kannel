@@ -58,5 +58,12 @@ void smsbox_req_thread(void *arg);
  */
 char *smsbox_req_sendsms(List *cgivars, char *client_ip);
 
+/*
+ * handle sendota request. Note that this does NOT start a new thread, but
+ * instead must be called from appropriate HTTP-thread
+ *
+ * Returns 'answer' string (which shall NOT be freed by the caller)
+ */
+char *smsbox_req_sendota(List *cgivars);
 
 #endif
