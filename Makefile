@@ -51,7 +51,7 @@ THREADLIB = -lpthread
 LIBS += $(THREADLIB) $(EFENCELIB) $(DMALLOCLIB) -lm
 
 # For Solaris uncomment the following
-LIBS += -lsocket -lnsl
+#LIBS += -lsocket -lnsl
 
 #
 # You probably don't need to touch anything below this, if you're just

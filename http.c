@@ -18,10 +18,6 @@
 #include <netinet/tcp.h>
 #include <sys/param.h>
 
-#ifdef BSD
-typedef int socklen_t;
-#endif
-
 #include "http.h"
 #include "wapitlib.h"
 

@@ -18,6 +18,10 @@ typedef int pthread_attr_t;
 #define pthread_self() (0)
 #endif
 
+#ifndef HAVE_SOCKLEN_T
+typedef int socklen_t;
+#endif
+
 /* If we're using GCC, we can get it to check log function arguments. */
 #ifdef __GNUC__
 #define PRINTFLIKE __attribute__((format(printf, 2, 3)))
