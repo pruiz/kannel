@@ -2273,6 +2273,40 @@ secret-radius = radius
 			re-connect behaviour. (Defaults to '10' seconds).
      </entry></row>
 
+    <row><entry><literal>reroute</literal></entry>
+      <entry><literal>boolean</literal></entry>
+      <entry valign="bottom">
+			If set for a smsc group, all inbound messages coming from this smsc
+			connection are passed internally	to the outbound routing functions. 
+			Hence this messages is not delivered to any connected box for 
+			processing. It is passed to the bearerbox routing as if it would
+ 		   have orginated from an externally connected smsbox.
+			(Defaults to 'no').
+     </entry></row>
+
+    <row><entry><literal>reroute-smsc-id</literal></entry>
+      <entry><literal>string</literal></entry>
+      <entry valign="bottom">
+			Similiar to 'reroute'. Defines the explicite smsc-id 
+			the MO message should be passed to for MT traffic. Hence all 
+			messages coming from the the configuration group smsc are passed
+			to the outbound queue of the specified smsc-id. This allows 
+			direct proxying of messages between 2 smsc connections without 
+			injecting them to the general	routing procedure in bearerbox.
+     </entry></row>
+
+    <row><entry><literal>reroute-receiver</literal></entry>
+      <entry><literal>string</literal></entry>
+      <entry valign="bottom">
+			Similiar to 'reroute'. Defines the explicite smsc-id routes 
+ 		   for specific receiver numbers of messages that are coming from this
+			smsc connection.
+			Format is that first comes the smsc-id to route the message to, then 
+			all receiver numbers that should be routed, separated with comma (','). 
+			For example, route receivers 111 and 222 to smsc-id A and 333 and 444
+			to smsc-id B would look like: "A,111,222; B,333,444".
+     </entry></row>
+
   </tbody>
   </tgroup>
  </table>
