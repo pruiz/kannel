@@ -1,5 +1,9 @@
 2000-12-04  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/urltrans.[ch]: Reformatted for new coding style.
+
+2000-12-04  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsbox.c: Fixed the PAM code to use warning and error,
 	instead of printf.
 

@@ -44,8 +44,9 @@ enum {
     TRANSTYPE_URL = 0,
     TRANSTYPE_TEXT = 1,
     TRANSTYPE_FILE = 2,
-    TRANSTYPE_SENDSMS =3
+    TRANSTYPE_SENDSMS = 3
 };
+
 
 /*
  * Create a new URLTranslationList object. Return NULL if the creation failed,
@@ -79,6 +80,7 @@ void urltrans_destroy(URLTranslationList *list);
  */
 int urltrans_add_one(URLTranslationList *trans, ConfigGroup *grp);
 
+
 /*
  * Add translations to a URLTranslation object from a Config object
  * (see config.h). Translations are added from groups in `cfg' that
@@ -103,13 +105,17 @@ int urltrans_add_cfg(URLTranslationList *trans, Config *cfg);
  * If 'smsc' is set, only accept translation with no 'accepted-smsc' set or
  * with matching smsc in that list.
  */
-URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text, Octstr *smsc);
+URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text, 
+    	    	    	      Octstr *smsc);
+
 
 /*
  * find matching URLTranslation for the given 'username', or NULL
  * if not found. Password must be checked afterwards
  */
-URLTranslation *urltrans_find_username(URLTranslationList *trans, char *name);
+URLTranslation *urltrans_find_username(URLTranslationList *trans, 
+    	    	    	    	       char *name);
+
 
 /*
  * Return a pattern given contents of an SMS message. Find the appropriate
@@ -126,10 +132,12 @@ URLTranslation *urltrans_find_username(URLTranslationList *trans, char *name);
  */
 char *urltrans_get_pattern(URLTranslation *t, Msg *sms);
 
+
 /*
  * Return the type of the translation, see enumeration above
  */
 int urltrans_type(URLTranslation *t);
+
 
 /*
  * Return prefix and suffix of translations, if they have been set.
@@ -137,10 +145,12 @@ int urltrans_type(URLTranslation *t);
 char *urltrans_prefix(URLTranslation *t);
 char *urltrans_suffix(URLTranslation *t);
 
+
 /*
  * Return (a recommended) faked sender number, or NULL if not set.
  */
 char *urltrans_faked_sender(URLTranslation *t);
+
 
 /*
  * Return maximum number of SMS messages that should be generated from
@@ -148,11 +158,13 @@ char *urltrans_faked_sender(URLTranslation *t);
  */
 int urltrans_max_messages(URLTranslation *t);
 
+
 /*
  * Return the concatenation status for SMS messages that should be generated from
  * the web page directed by the URL translation. (1=enabled)
  */
 int urltrans_concatenation(URLTranslation *t);
+
 
 /*
  * Return (recommended) delimiter characters when splitting long
@@ -160,26 +172,31 @@ int urltrans_concatenation(URLTranslation *t);
  */
 char *urltrans_split_chars(URLTranslation *t);
 
+
 /*
  * return a string that should be added after each sms message if it is
  * except for the last one.
  */
 char *urltrans_split_suffix(URLTranslation *t);
 
+
 /*
  * Return if set that should not send 'empty reply' messages
  */
 int urltrans_omit_empty(URLTranslation *t);
+
 
 /*
  * return a string that should be inserted to each SMS, if any
  */
 char *urltrans_header(URLTranslation *t);
 
+
 /*
  * return a string that should be appended to each SMS, if any
  */
 char *urltrans_footer(URLTranslation *t);
+
 
 /*
  * return the username or password string, or NULL if not set
@@ -188,17 +205,22 @@ char *urltrans_footer(URLTranslation *t);
 char *urltrans_username(URLTranslation *t);
 char *urltrans_password(URLTranslation *t);
 
+
 /* Return forced smsc ID for send-sms user, if set */
 char *urltrans_forced_smsc(URLTranslation *t);
+
 
 /* Return default smsc ID for send-sms user, if set */
 char *urltrans_default_smsc(URLTranslation *t);
 
+
 /* Return list of accepted SMSC IDs, if set */
 char *urltrans_accepted_smsc(URLTranslation *t);
+
 
 /* Return allow and deny IP strings, if set. */
 char *urltrans_allow_ip(URLTranslation *t);
 char *urltrans_deny_ip(URLTranslation *t);
+
 
 #endif
