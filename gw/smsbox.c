@@ -2646,7 +2646,7 @@ static Octstr *smsbox_xmlrpc_post(List *headers, Octstr *body,
  */
 static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
 {
-    Octstr *id, *from, *phonenumber, *smsc, *ota_doc, *doc_type;
+    Octstr *id, *from, *phonenumber, *smsc, *ota_doc, *doc_type, *account;
     CfgGroup *grp;
     List *grplist;
     Octstr *p;
@@ -2654,7 +2654,7 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
     Msg *msg;
     int ret, ota_type;
     
-    id = phonenumber = smsc = NULL;
+    id = phonenumber = smsc = account = NULL;
 
     /* check the username and password */
     t = authorise_user(list, client_ip);
@@ -2781,6 +2781,10 @@ send:
         msg->sms.smsc_id = octstr_duplicate(urltrans_default_smsc(t));
     } else
         msg->sms.smsc_id = NULL;
+
+    account = http_cgi_variable(list, "account");
+    if (octstr_len(account) > 0)
+        msg->sms.account = octstr_duplicate(account);
 
     octstr_dump(msg->sms.msgdata, 0);
 

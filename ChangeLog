@@ -1,4 +1,8 @@
 2004-06-28  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/smsbox.c: commited patch #1 from bug #129.
+      Thanks to joergent.
+
+2004-06-28  Alexander Malysh  <a.malysh@centrium.de> 
     * gwlib/list.[ch]: added 'list_sort' function that sorts the list with qsort.
     * gwlib/octstr.[ch]: added '%H' modifier to 'octstr_format' that converts Octstr
       to hex-encoded in uppercase.
