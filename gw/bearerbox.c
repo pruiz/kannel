@@ -1893,7 +1893,7 @@ static void write_pid_file(void)
         
     if (bbox->pid_file != NULL) {
 	f = fopen(bbox->pid_file, "w");
-	fprintf(f, "%d\n", getpid());
+	fprintf(f, "%d\n", (int)getpid());
 	fclose(f);
     }
 }

@@ -196,9 +196,11 @@ static int convert_html_entity(char **html) {
 
 /* Convert an HTML page into an SMS message: Remove tags, convert entities,
    and so on. */
-void html_to_sms(char *sms, size_t smsmax, char *html) {
+void html_to_sms(char *sms, size_t smsmax, char *html_arg) {
 	int n;
+	unsigned char *html;
 	
+	html = html_arg;
 	n = 0;
 	while (n < smsmax-1 && *html != '\0') {
 		switch (*html) {
@@ -209,7 +211,7 @@ void html_to_sms(char *sms, size_t smsmax, char *html) {
 				html = skip_html_tag(html);
 			break;
 		case '&':
-			sms[n++] = convert_html_entity(&html);
+			sms[n++] = convert_html_entity((char **) &html);
 			break;
 		default:
 			if (isspace(*html)) {

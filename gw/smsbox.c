@@ -212,7 +212,7 @@ static void write_pid_file(void) {
         
     if (pid_file != NULL) {
 	f = fopen(pid_file, "w");
-	fprintf(f, "%d\n", getpid());
+	fprintf(f, "%d\n", (int)getpid());
 	fclose(f);
     }
 }

@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <unistd.h>
@@ -25,7 +26,7 @@
 int newcr_to_space ( char* from, char* to ) {
 
 	while(*from != '\0') {
-		if(isspace(*from) || *from=='\n'|| *from=='\r' || *from=='\t') {
+		if(isspace((int)*from) || *from=='\n'|| *from=='\r' || *from=='\t') {
 			*to=' '; to++;
 		}
 		else {
@@ -92,7 +93,7 @@ char * white_space_del (char *from) {
 	if(temp==NULL) goto error;
 
 	/* delete spaces from beginning of string */
-	while ( (isspace(temp[string_len2])) && (temp[string_len2] != '\0'))
+	while ( (isspace((int)temp[string_len2])) && (temp[string_len2] != '\0'))
 		string_len2++;
 
 	string_len = strlen(&temp[string_len2]);
@@ -114,7 +115,7 @@ char * white_space_del (char *from) {
 
 	/* delete spaces from end of string */
 
-	while ( (isspace(temp[string_len])) && (string_len != 0) )
+	while ( (isspace((int)temp[string_len])) && (string_len != 0) )
 		string_len--;
 
 	temp[++string_len] = '\0';
@@ -145,9 +146,9 @@ int space_del ( char* from, char* to ) {
 
 	while(*from != '\0') {
 
-		if(isspace(*from)) {
+		if(isspace((int)*from)) {
 		
-			while(isspace(*from))  from++;
+			while(isspace((int)*from))  from++;
 			
 			from--;
 			*to=*from;
@@ -389,7 +390,7 @@ int check_next_tag(unsigned char *hex, char *temp) {
 	hex_temp=*hex;
 	temp++;
 
-	while(isspace(*temp))
+	while(isspace((int)*temp))
 		temp++;
 
 	temp_pointer = temp;
@@ -436,7 +437,7 @@ char * element(char *temp, unsigned char *hex, int *count, struct wmlc *binary_s
 	unsigned char hex_memory = 0x00;
 	
 	temp++;
-	if(isspace(*temp))
+	if(isspace((int)*temp))
 		temp++;
 
 	if (*temp == '/') {
@@ -481,7 +482,7 @@ stop:
 
 	while (*temp!='\0') {
 		/* Are we entering tag with attribute space? */
-		if(isspace(*temp)) {
+		if(isspace((int)*temp)) {
 			/*
 			define_tag(tag_start, hex);
 
@@ -774,7 +775,7 @@ char * attribute_space(char *temp, int *count, struct wmlc *binary_string, struc
 	{	string_table_memory = string_table;
 	}
 
-	while( !isspace(*temp) )
+	while( !isspace((int)*temp) )
 	{	tag[i]=*temp;
 		temp++; i++;
 	}
@@ -838,7 +839,7 @@ char * attribute_space(char *temp, int *count, struct wmlc *binary_string, struc
 	{	while(x!=2)
 		{	if(*temp=='>')
 			{	x=END; break; }
-			else if(isspace(*temp))
+			else if(isspace((int)*temp))
 				temp++; 
 			else if(*temp=='\"') 
 			{	x++;
@@ -1149,7 +1150,7 @@ struct wmlc * wml2wmlc(char *string_pointer_from) {
 			temp = element(temp, &hex, &count, binary_string, string_table, &event, &offset, variable, &event_variable, &string_table_counter);
 			temp++;
 		}
-		else if (isspace(*temp)) {
+		else if (isspace((int)*temp)) {
 					/******* if space then next *******/
 			temp++;
 			if (*temp!='<' && *temp != '$') {

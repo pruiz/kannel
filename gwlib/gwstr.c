@@ -33,15 +33,16 @@ int split_words(char *buf, int max, char **words) {
 
 
 char *trim_ends(char *str) {
-	char *end;
+	unsigned char *ustr, *end;
 	
-	while (isspace(*str))
-		++str;
-	end = strchr(str, '\0');
-	while (str < end && isspace(end[-1]))
+	ustr = str;
+	while (isspace(*ustr))
+		++ustr;
+	end = strchr(ustr, '\0');
+	while (ustr < end && isspace(end[-1]))
 		--end;
 	*end = '\0';
-	return str;
+	return ustr;
 }
 
 

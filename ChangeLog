@@ -1,3 +1,9 @@
+Thu Jan 27 17:34:53 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/bearerbox.c, gw/html.c, gw/smsbox.c, gw/smsc_emi.c, gw/wml.c,
+	gwlib/gwstr.c, gwlib/http.c: Applied Solaris portability fixes
+	from Derry Hamilton <derry.hamilton@pa.press.net>.
+
 Thu Jan 27 16:19:35 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp.c: Fixed check for length of Abort PDU. Two equals

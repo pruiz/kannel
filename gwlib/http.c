@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include <math.h>
 #include <netdb.h>
@@ -829,7 +830,7 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 		if(eol != NULL) *eol = '\0';
 		if(midptr != NULL) *midptr = '\0';
 		midptr++;
-		while(isspace(*midptr)) midptr++;
+		while(isspace((int)*midptr)) midptr++;
 		if( (eol!=NULL) && (midptr!=NULL) )
 			httprequest_add_header(request, ptr, midptr);
 	}
