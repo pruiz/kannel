@@ -130,6 +130,15 @@ SMSCenter *smscenter_construct(void)
     smsc->at_validityperiod = NULL;
     smsc->at_alt_dcs = 0;
 
+    /* SEMA SMSC G8.1 OIS 5.8 (TCP/IP Direct Access) */
+    smsc->oisd_hostname = NULL;
+    smsc->oisd_port = -1;
+    smsc->oisd_send_seq = 0;
+    smsc->oisd_inbuffer = NULL;
+    smsc->oisd_received = NULL;
+    smsc->oisd_error = 0;
+    smsc->oisd_next_ping = 0;
+
     /* add new SMSCes here */
 
     /* Memory */
@@ -189,6 +198,12 @@ void smscenter_destruct(SMSCenter *smsc)
     list_destroy(smsc->at_received, NULL);
     gw_free(smsc->at_inbuffer);
 
+    /* SEMA SMSC G8.1 OIS 5.8 (Direct Access) */
+    octstr_destroy(smsc->oisd_hostname);
+    octstr_destroy(smsc->oisd_inbuffer);
+    octstr_destroy(smsc->sender_prefix);
+    list_destroy(smsc->oisd_received, NULL);
+
     /* add new SMSCes here */
 
     /* Other fields */
@@ -236,6 +251,11 @@ int smscenter_submit_msg(SMSCenter *smsc, Msg *msg)
 
     case SMSC_TYPE_AT:
         if (at_submit_msg(smsc, msg) == -1)
+            goto error;
+        break;
+
+    case SMSC_TYPE_OISD:
+        if (oisd_submit_msg(smsc, msg) == -1)
             goto error;
         break;
 
@@ -301,6 +321,12 @@ int smscenter_receive_msg(SMSCenter *smsc, Msg **msg)
             goto error;
         break;
 
+    case SMSC_TYPE_OISD:
+        ret = oisd_receive_msg(smsc, msg);
+        if (ret == -1)
+            goto error;
+        break;
+
     default:
         goto error;
 
@@ -360,6 +386,12 @@ int smscenter_pending_smsmessage(SMSCenter *smsc)
 
     case SMSC_TYPE_AT:
         ret = at_pending_smsmessage(smsc);
+        if (ret == -1)
+            goto error;
+        break;
+
+    case SMSC_TYPE_OISD:
+        ret = oisd_pending_smsmessage(smsc);
         if (ret == -1)
             goto error;
         break;
@@ -512,6 +544,8 @@ SMSCenter *smsc_open(CfgGroup *grp)
     	typeno = SMSC_TYPE_OIS;
     else if (octstr_compare(type, octstr_imm("at")) == 0)
     	typeno = SMSC_TYPE_AT;
+    else if (octstr_compare(type, octstr_imm("oisd")) == 0)
+        typeno = SMSC_TYPE_OISD;
     else {
 	error(0, "Unknown SMSC type '%s'", octstr_get_cstr(type));
 	octstr_destroy(type);
@@ -644,6 +678,13 @@ SMSCenter *smsc_open(CfgGroup *grp)
 			       alt_dcs);
         break;
 
+    case SMSC_TYPE_OISD:
+        if (host == NULL || port == 0)
+            error(0, "Required field missing for OISD center.");
+        else
+            smsc = oisd_open(host, port, keepalive, sender_prefix);
+        break;
+
         /* add new SMSCes here */
 
     default: 		/* Unknown SMSC type */
@@ -723,6 +764,9 @@ int smsc_reopen(SMSCenter *smsc)
     case SMSC_TYPE_AT:
         ret = at_reopen(smsc);
 	break;
+    case SMSC_TYPE_OISD:
+        ret = oisd_reopen(smsc);
+    break;
         /* add new SMSCes here */
     default: 		/* Unknown SMSC type */
         ret = -2; 		/* no use */
@@ -781,6 +825,11 @@ int smsc_close(SMSCenter *smsc)
 
     case SMSC_TYPE_AT:
         if (at_close(smsc) == -1)
+            errors = 1;
+        break;
+
+    case SMSC_TYPE_OISD:
+        if (oisd_close(smsc) == -1)
             errors = 1;
         break;
 
