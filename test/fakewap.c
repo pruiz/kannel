@@ -112,7 +112,6 @@ The urls are fetched in random order.\n\
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include <netinet/tcp.h>
 #include <sys/param.h>
 #include <math.h>
 #include <signal.h>

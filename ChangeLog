@@ -9,6 +9,12 @@
 	WAIT_TIMEOUT_STATE to get rid of name conflicts with Cygwin
 	headers.
 	
+	* gwlib/socket.c, test/fakewap.c: Removed an include for
+	netinet/tcp.h, which seems to a) not be needed under Linux and b)
+	be unknown to Richard Stevens, so presumably it is non-portable.
+	If it proves to be necessary, we'll add it to configure and
+	include it conditionally.
+	
 	* Thanks to Stipe Tolj for pointing these out.
 
 2000-10-25  Lars Wirzenius  <liw@iki.fi>
