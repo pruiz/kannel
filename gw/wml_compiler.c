@@ -149,14 +149,12 @@ static void output_variable(Octstr *variable, Octstr **output,
 static string_table_t *string_table_create(int offset, Octstr *ostr);
 static void string_table_destroy(string_table_t *node);
 static string_table_proposal_t *string_table_proposal_create(Octstr *ostr);
-static string_table_proposal_t *string_table_proposal_duplicate(
-       string_table_proposal_t *node);
 static void string_table_proposal_destroy(string_table_proposal_t *node);
 static void string_table_build(xmlNodePtr node, wml_binary_t **wbxml);
 static void string_table_collect_strings(xmlNodePtr node, List *strings);
 static List *string_table_collect_words(List *strings);
 static List *string_table_sort_list(List *start);
-static void string_table_add_many(List *sorted, wml_binary_t **wbxml);
+static List *string_table_add_many(List *sorted, wml_binary_t **wbxml);
 static unsigned long string_table_add(Octstr *ostr, wml_binary_t **wbxml);
 static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml);
 static void string_table_output(Octstr *ostr, wml_binary_t **wbxml);
@@ -176,7 +174,7 @@ int wml_compile(Octstr *wml_text,
   char *wml_c_text;
   wml_binary_t *wbxml = NULL;
 
-  *wml_binary = NULL;
+  *wml_binary = octstr_create_empty();
   wbxml = wml_binary_create();
 
   /* Remove the extra space from start and the end of the WML Document. */
@@ -941,8 +939,8 @@ static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
     }
 
   len = octstr_len(ostr);
-  output = NULL;/*empty*/
-  var = NULL;/*empty*/
+  output = octstr_create_empty();
+  var = octstr_create_empty();
 
   while (pos < len)
     {
@@ -1023,8 +1021,8 @@ static wml_binary_t *wml_binary_create(void)
   wbxml->character_set = 0x00;
   wbxml->string_table_length = 0x00;
   wbxml->string_table = list_create();
-  wbxml->wbxml_string = NULL;
-  wbxml->utf8map = NULL;
+  wbxml->wbxml_string = octstr_create_empty();
+  wbxml->utf8map = NULL ;
 
   return wbxml;
 }
@@ -1053,11 +1051,7 @@ static void wml_binary_destroy(wml_binary_t *wbxml)
 
 static void wml_binary_output(Octstr *ostr, wml_binary_t *wbxml)
 {
-  if (ostr == NULL) 
-    ostr = octstr_create_from_data(&wbxml->wbxml_version, 1);
-  else
-    octstr_append_char(ostr, wbxml->wbxml_version);
-
+  octstr_append_char(ostr, wbxml->wbxml_version);
   octstr_append_char(ostr, wbxml->wml_public_id);
   octstr_append_uintvar(ostr, wbxml->character_set);
   octstr_append_uintvar(ostr, wbxml->string_table_length);
@@ -1077,10 +1071,7 @@ static void wml_binary_output(Octstr *ostr, wml_binary_t *wbxml)
 
 static void output_char(int byte, wml_binary_t **wbxml)
 {
-  if ((*wbxml)->wbxml_string == NULL)
-    (*wbxml)->wbxml_string = octstr_create_from_data(&byte, sizeof(byte));
-  else
-     octstr_append_char((*wbxml)->wbxml_string, byte);
+  octstr_append_char((*wbxml)->wbxml_string, byte);
 }
 
 
@@ -1208,25 +1199,12 @@ static string_table_proposal_t *string_table_proposal_create(Octstr *ostr)
 
   node = gw_malloc(sizeof(string_table_proposal_t));
   node->count = 1;
-  node->string = octstr_duplicate(ostr);
+  node->string = ostr;
 
   return node;
 }
 
-static string_table_proposal_t *string_table_proposal_duplicate(
-       string_table_proposal_t *node)
-{
-  string_table_proposal_t *dup = NULL;
 
-  if (node != NULL)
-    {
-       dup  = gw_malloc(sizeof(string_table_proposal_t));
-       dup->count = node->count;
-       dup->string = octstr_duplicate(node->string);
-    } 
-
-  return dup;
-}
 
 /*
  * string_table_proposal_destroy - frees the memory allocated for the 
@@ -1249,35 +1227,31 @@ static void string_table_proposal_destroy(string_table_proposal_t *node)
  * adds those strings that appear more than once into string table. The rest 
  * of the strings are sliced into words and the same procedure is executed to 
  * the list of these words.
- * This function deallocates memory allocated for list words.
  */
 
 static void string_table_build(xmlNodePtr node, wml_binary_t **wbxml)
 {
-  /*string_table_proposal_t *item = NULL;*/
-  List *strings  = NULL,
-       *words = NULL;
+  string_table_proposal_t *item = NULL;
+  List *list = NULL;
 
-  strings = list_create();
-  
-  string_table_collect_strings(node, strings);
+  list = list_create();
 
-  string_table_add_many(string_table_sort_list(strings), wbxml);
+  string_table_collect_strings(node, list);
 
-  words = string_table_collect_words(strings);
+  list = string_table_add_many(string_table_sort_list(list), wbxml);
 
-  string_table_add_many(string_table_sort_list(words), wbxml);
+  list =  string_table_collect_words(list);
 
-  list_destroy(words);
-  list_destroy(strings);
+  list = string_table_add_many(string_table_sort_list(list), wbxml);
 
   /* Memory cleanup. */
-  /* while (list_len(list))
+  while (list_len(list))
     {
       item = list_extract_first(list);
       string_table_proposal_destroy(item);
     }
-    list_destroy(list);*/
+
+  list_destroy(list);
 }
 
 
@@ -1332,22 +1306,17 @@ static void string_table_collect_strings(xmlNodePtr node, List *strings)
  * string_table_sort_list - takes a list of octet strings and returns a list
  * of string_table_proposal_t:s that contains the same strings with number of 
  * instants of every string in the input list.
- * Function allocates memory for a list sorted. This memory must be dealloct-
- * ed by the caller; in this application this would mean string_table_add_
- * many.
  */
 
 static List *string_table_sort_list(List *start)
 {
   int i;
   Octstr *string = NULL;
-  string_table_proposal_t *item = NULL,
-                          *temp = NULL;
+  string_table_proposal_t *item = NULL;
   List *sorted = NULL;
 
   sorted = list_create();
 
-  gw_assert(start != NULL);
   while (list_len(start))
     {
       string = list_extract_first(start);
@@ -1355,28 +1324,24 @@ static List *string_table_sort_list(List *start)
       /* Check whether the string is unique. */
       for (i = 0; i < list_len(sorted); i++)
 	{
-	   temp = string_table_proposal_duplicate(list_get(sorted, i));
-
-           if (octstr_compare(temp->string, string) == 0)
-	     {
-	        octstr_destroy(string);
-	        string = NULL;
-	        item->count ++;
-	        break;
-	     }
-
-	   string_table_proposal_destroy(temp);
+	  item = list_get(sorted, i);
+	  if (octstr_compare(item->string, string) == 0)
+	    {
+	      octstr_destroy(string);
+	      string = NULL;
+	      item->count ++;
+	      break;
+	    }
 	}
       
       if (string != NULL)
 	{
-          item = string_table_proposal_create(string);
-	  list_append(sorted, string_table_proposal_duplicate(item));
-          string_table_proposal_destroy(item);
-        }
+	  item = string_table_proposal_create(string);
+	  list_append(sorted, item);
+	}
     }
 
-  /*list_destroy(start);*/
+  list_destroy(start);
 
   return sorted;
 }
@@ -1385,31 +1350,31 @@ static List *string_table_sort_list(List *start)
 
 /*
  * string_table_add_many - takes a list of string with number of instants and
- * adds those whose number is greater than 1 into the string table. 
- * This function deallocates memory used by list sorted.
+ * adds those whose number is greater than 1 into the string table. Returns 
+ * the list ofrejected strings for memory cleanup.
  */
 
-static void string_table_add_many(List *sorted, wml_binary_t **wbxml)
+static List *string_table_add_many(List *sorted, wml_binary_t **wbxml)
 {
   string_table_proposal_t *item = NULL;
-  /*List *list = NULL;
+  List *list = NULL;
 
-    list = list_create();*/
+  list = list_create();
 
   while (list_len(sorted))
     {
       item = list_extract_first(sorted);
 
       if (item->count > 1 && octstr_len(item->string) > STRING_TABLE_MIN)
+	{
 	  string_table_add(octstr_duplicate(item->string), wbxml);
-      /*else
-	list_append(list, item);*/
-
-      string_table_proposal_destroy(item);
-	
+	  string_table_proposal_destroy(item);
+	}
+      else
+	list_append(list, item);
     }
-   list_destroy(sorted);
-   /*return list;*/
+
+  return list;
 }
 
 
@@ -1417,30 +1382,28 @@ static void string_table_add_many(List *sorted, wml_binary_t **wbxml)
 /*
  * string_table_collect_words - takes a list of strings and returns a list 
  * of words contained by those strings.
- * Function allocates memory for list words, this must deallocated by the
- * caller; in this application this would be string_table_build.
  */
 
 static List *string_table_collect_words(List *strings)
 {
   string_table_proposal_t *item = NULL;
-  List *words = NULL;
+  List *list = NULL;
 
-  words = list_create();
+  list = list_create();
 
   while (list_len(strings))
     {
       item = list_extract_first(strings);
 
-      if (list_len(words) == 0)
-	words = octstr_split_words(item->string);
+      if (list_len(list) == 0)
+	list = octstr_split_words(item->string);
       else
-	words = list_cat(octstr_split_words(item->string), words);
+	list = list_cat(octstr_split_words(item->string), list);
     }
 
-  /*list_destroy(strings);*/
+  list_destroy(strings);
 
-  return words;
+  return list;
 }
 
 
@@ -1494,7 +1457,7 @@ static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
   string_table_t *item = NULL;
   long i = 0, word_s = 0, word_e = 0;
 
-  input = NULL;/*empty*/
+  input = octstr_create_empty();
 
   for (i = 0; i < list_len((*wbxml)->string_table); i++)
     {
