@@ -10,7 +10,7 @@ Change summary from version 0.9.2:
 * SMSC for wireless modems support by 3G Lab, supports PremiCell, Wavecom, 
   Siemens M20
 
-* HTTP cookies
+* initial HTTP cookies code
 
 * added X-WAP-Gateway to HTTP requests
 

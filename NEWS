@@ -18,7 +18,7 @@ Change summary from version 0.8:
 
 * Phone-as-SMSC support, Nokia PremiCell, Siemens M20, Wavecom
 
-* HTTP cookies
+* initial code for HTTP cookies
 
 * CIMD2 SMS center protocol. UDH works.
 
