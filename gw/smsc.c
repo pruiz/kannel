@@ -624,8 +624,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
         break;
 
     case SMSC_TYPE_CIMD2:
-        if (host == NULL || portno == 0 || username == NULL ||
-            password == NULL)
+        if (host == NULL || portno == 0)
             error(0, "Required field missing for CIMD 2 center.");
         else
             smsc = cimd2_open(host, portno, username, password,

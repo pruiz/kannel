@@ -1,3 +1,8 @@
+2000-11-24  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsc.c, gw/smsc_emi.c: applied authentication patch by Joerg
+	Pommnitz
+
 2000-11-23  Richard Braakman  <dark@wapi.com>
 
 	* wap/wsp.h, wsp/wsp_headers.c, wap/wsp_session.c:

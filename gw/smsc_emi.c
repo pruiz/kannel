@@ -71,7 +71,7 @@ static int guarantee_link(SMSCenter *smsc);
 
 static void generate_checksum(const unsigned char *buffer,
                               unsigned char *checksum_out);
-static int wait_for_ack(SMSCenter *smsc);
+static int wait_for_ack(SMSCenter *smsc, int op_type);
 
 
 static char char_iso_to_sms(unsigned char from, int alt_charset);
@@ -141,6 +141,71 @@ int emi_close(SMSCenter *smsc)
     return emi_close_ip(smsc);
 }
 
+static int emi_fill_ucp60_login (char *buf, char *OAdC, char *passwd) {
+    int   max_ia5passwd_len = strlen (passwd) * 2 + 1;
+    char  ia5passwd [max_ia5passwd_len];
+
+    if (parse_binary_to_emi(passwd, ia5passwd, strlen (passwd)) < 0) {
+        error(0, "parse_binary_to_emi failed");
+        return -1;
+    }
+
+    sprintf (buf, "%s/%c/%c/%c/%s//%s/////",
+	     OAdC,      /* OAdC: Address code originator */
+	     '6',       /* OTON: 6 = Abbreviated number (short number alias) */
+	     '5',       /* ONPI: 5 = Private (TCP/IP address/abbreviated number address) */
+	     '1',       /* STYP: 1 = open session */
+	     ia5passwd, /* PWD:  Current password encoded into IA5 characters */
+	     "0100"     /* VERS: Version number  0100 */
+	     );
+
+    return 0;
+}
+
+static int emi_open_session (SMSCenter *smsc)
+{
+    char message_whole  [1024];
+    char message_body   [1024];
+    char message_header [50];
+    char message_footer [10];
+    char my_buffer      [1024];
+    int length;
+
+    memset (message_whole,  0, sizeof (message_whole));
+    memset (message_body,   0, sizeof (message_body));
+    memset (message_header, 0, sizeof (message_header));
+    memset (message_footer, 0, sizeof (message_footer));
+
+    if (emi_fill_ucp60_login (message_body, smsc->emi_username, smsc->emi_password) < 0) {
+        error(0, "emi_fill_ucp60_login failed");
+        return -1;
+    }
+
+    length = strlen(message_body);
+    length += 13;  /* header (fixed) */
+    length += 2;   /* footer (fixed) */
+    length += 2;   /* slashes between header, body, footer */
+
+    sprintf(message_header, "%02i/%05i/O/60", (smsc->emi_current_msg_number++ % 100), length);
+    
+    /* FOOTER */
+
+    sprintf (my_buffer, "%s/%s/", message_header, message_body);
+    generate_checksum(my_buffer, message_footer);
+
+    sprintf (message_whole, "\x02%s/%s/%s\x03", message_header, message_body, message_footer);
+
+    debug("bb.sms.emi", 0, "final UCP60 msg: <%s>", message_whole);
+
+    put_data(smsc, message_whole, strlen (message_whole), 0);
+
+    if (!wait_for_ack(smsc, 60)) {
+	info(0, "emi_open_session: wait for ack failed!");
+	return -1;
+    }
+}
+
+
 /*******************************************************
  * the actual protocol open... quite simple here */
 
@@ -151,6 +216,11 @@ static int emi_open_connection_ip(SMSCenter *smsc)
                                           smsc->emi_port, smsc->emi_our_port);
     if (smsc->emi_fd < 0)
         return -1;
+
+    if (smsc->emi_username && smsc->emi_password) {
+	return emi_open_session (smsc);
+    }
+    
     return 0;
 }
 
@@ -173,8 +243,8 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
 
     smsc->emi_hostname = gw_strdup(hostname);
     smsc->emi_port = port;
-    smsc->emi_username = gw_strdup(username);
-    smsc->emi_password = gw_strdup(password);
+    smsc->emi_username = username ? gw_strdup(username) : NULL;
+    smsc->emi_password = password ? gw_strdup(password) : NULL;
     smsc->emi_backup_port = receive_port;
     smsc->emi_backup_allow_ip = allow_ip ? gw_strdup(allow_ip) : NULL;
     smsc->emi_our_port = our_port;
@@ -304,14 +374,14 @@ int emi_submit_msg(SMSCenter *smsc, Msg *omsg)
     }
 
     if (smsc->type == SMSC_TYPE_EMI_IP) {
-        if (!wait_for_ack(smsc)) {
+        if (!wait_for_ack(smsc, 51)) {
             info(0, "emi_submit_smsmessage: wait for ack failed!");
             goto error;
         }
     }
 
     if (smsc->type == SMSC_TYPE_EMI)
-        wait_for_ack(smsc);
+        wait_for_ack(smsc, 51);
 
     /*	smsc->emi_current_msg_number += 1; */
     debug("bb.sms.emi", 0, "Submit Ok...");
@@ -527,7 +597,7 @@ error:
  *
  * REQUIRED by the protocol that it must be waited...
  */
-static int wait_for_ack(SMSCenter *smsc)
+static int wait_for_ack(SMSCenter *smsc, int op_type)
 {
     char *tmpbuff;
     int found = 0;
@@ -554,8 +624,7 @@ static int wait_for_ack(SMSCenter *smsc)
         }
 
         /* act on data */
-        if (memorybuffer_has_rawmessage(smsc, 51, 'R') > 0 ||
-            memorybuffer_has_rawmessage(smsc, 1, 'R') > 0) {
+        if (memorybuffer_has_rawmessage(smsc, op_type, 'R') > 0) {
             memorybuffer_cut_rawmessage(smsc, tmpbuff, 10*1024);
             debug("bb.sms.emi", 0, "Found ACK/NACK: <%s>", tmpbuff);
             found = 1;
@@ -594,7 +663,7 @@ static int get_data(SMSCenter *smsc, char *buff, int length)
     FD_ZERO(&rf);
     if (smsc->emi_fd >= 0) FD_SET(smsc->emi_fd, &rf);
     if (smsc->emi_secondary_fd >= 0) FD_SET(smsc->emi_secondary_fd, &rf);
-    FD_SET(smsc->emi_backup_fd, &rf);
+    if (smsc->emi_backup_fd > 0) FD_SET(smsc->emi_backup_fd, &rf);
 
     FD_SET(0, &rf);
     to.tv_sec = 0;
@@ -626,7 +695,7 @@ static int get_data(SMSCenter *smsc, char *buff, int length)
                 smsc->emi_fd = -1; 	/* ready to be re-opened */
             }
         }
-        if (FD_ISSET(smsc->emi_backup_fd, &rf)) {
+        if ((smsc->emi_backup_fd > 0) && FD_ISSET(smsc->emi_backup_fd, &rf)) {
             if (smsc->emi_secondary_fd == -1) {
 		Octstr *ip;
 		
@@ -673,12 +742,10 @@ static int put_data(SMSCenter *smsc, char *buff, int length, int is_backup)
         } else {
             if (smsc->emi_fd == -1) {
                 info(0, "Reopening connection to SMSC");
-                smsc->emi_fd = tcpip_connect_to_server(smsc->emi_hostname,
-                                                       smsc->emi_port);
-                if (smsc->emi_fd == -1) {
+		if (emi_open_connection_ip(smsc) < 0) {
                     error(errno, "put_data: Reopening failed!");
                     return -1;
-                }
+		}
             }
             fd = smsc->emi_fd;
         }
