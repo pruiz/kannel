@@ -306,7 +306,7 @@ Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2)
 int octstr_get_char(Octstr *ostr, long pos)
 {
     seems_valid(ostr);
-    if (pos >= ostr->len)
+    if (pos >= ostr->len || pos < 0)
         return -1;
     return ostr->data[pos];
 }
