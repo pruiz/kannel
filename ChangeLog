@@ -1,3 +1,6 @@
+2002-11-25  Oded Arbel  <odeda@m-wise.com>
+    * gw/smsc/smsc_at2.c, gw/smsc/smsc_at2.h: patch to fix swap_nibbles to
+      use unsigned char. Patch provided by Sindunata Sudarmaji <software@dygsp.com>.
 2002-11-20  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_http.c, gw/smsbox.c, gwlib/cfg.def: patch to allow to bind to
       a specific interface for smsbox's sendsms interface and bearerbox's 

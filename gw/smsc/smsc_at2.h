@@ -298,7 +298,7 @@ int at2_check_sms_memory(PrivAT2data* privdata);
  * Implementation completly ripped off Dennis Malmstrom timestamp 
  * patches against 1.0.3. Thanks Dennis! 
  */
-int	swap_nibbles(char byte);
+int	swap_nibbles(unsigned char byte);
 
 /*
  * creates a buffer with a valid PDU address field as per [GSM 03.40]

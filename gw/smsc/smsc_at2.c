@@ -2237,7 +2237,7 @@ void at2_destroy_modem(ModemDef *modem)
 }
 
 
-int swap_nibbles(char byte)
+int swap_nibbles(unsigned char byte)
 {
     return ( ( byte & 15 ) * 10 ) + ( byte >> 4 );
 }
