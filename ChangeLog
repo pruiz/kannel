@@ -1,4 +1,11 @@
 2003-08-22  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml, gw/urltrans.c: added new escape code '%I'
+      to allow inclussion of the internal SMS ID into the processing. This
+      is a preliminary support in having unique IDs sometime of all messages
+      entering and leaving the system. Mainly for tracing reasons accross
+      all attached backend (application server) systems.
+
+2003-08-22  Stipe Tolj  <tolj@wapme-systems.de>
     * test/test_[dict|boxc].c: fixed compiler warnings.
 
 2003-08-21  Stipe Tolj  <tolj@wapme-systems.de>
