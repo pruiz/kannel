@@ -109,7 +109,7 @@ extern int wsp_smart_errors;
 extern Octstr *device_home;
 
 /*
- *
+ * Defines if PPG is running in wapbox instance
  */
 static int have_ppg = 0;
 
@@ -121,7 +121,7 @@ static void main_thread(void *);
 static void start_fetch(WAPEvent *);
 static void return_replies_thread(void *);
 
-static void  dev_null(const char *data, size_t len, void *context);
+static void dev_null(const char *data, size_t len, void *context);
 
 static Octstr *convert_wml_to_wmlc(struct content *content);
 static Octstr *convert_wmlscript_to_wmlscriptc(struct content *content);
@@ -129,8 +129,8 @@ static Octstr *convert_wmlscript_to_wmlscriptc(struct content *content);
 static Octstr *deconvert_multipart_formdata(struct content *content);
 /* DAVI: To-Do static Octstr *deconvert_mms_message(struct content *content); */
 static void wsp_http_map_url(Octstr **osp, Octstr **send_msisdn_query, 
-			     Octstr **send_msisdn_header, 
-			     Octstr **send_msisdn_format, int *accept_cookies);
+                             Octstr **send_msisdn_header, 
+                             Octstr **send_msisdn_format, int *accept_cookies);
 static int wsp_http_map_user(Octstr **msisdn, Octstr *user, Octstr *pass);
 static List *negotiate_capabilities(List *req_caps);
 
@@ -260,103 +260,95 @@ static void main_thread(void *arg)
     WAPAddrTuple *tuple;
     
     while (run_status == running && (ind = list_consume(queue)) != NULL) {
-	switch (ind->type) {
-	case S_MethodInvoke_Ind:
-	    res = wap_event_create(S_MethodInvoke_Res);
-	    res->u.S_MethodInvoke_Res.server_transaction_id =
-	    ind->u.S_MethodInvoke_Ind.server_transaction_id;
-	    res->u.S_MethodInvoke_Res.session_id =
-	    ind->u.S_MethodInvoke_Ind.session_id;
-	    wsp_session_dispatch_event(res);
-	    start_fetch(ind);
-	    break;
+    switch (ind->type) {
+    case S_MethodInvoke_Ind:
+        res = wap_event_create(S_MethodInvoke_Res);
+        res->u.S_MethodInvoke_Res.server_transaction_id =
+            ind->u.S_MethodInvoke_Ind.server_transaction_id;
+        res->u.S_MethodInvoke_Res.session_id =
+        ind->u.S_MethodInvoke_Ind.session_id;
+        wsp_session_dispatch_event(res);
+        start_fetch(ind);
+        break;
 	
-	case S_Unit_MethodInvoke_Ind:
-	    start_fetch(ind);
-	    break;
+    case S_Unit_MethodInvoke_Ind:
+        start_fetch(ind);
+        break;
 
-	case S_Connect_Ind:
-            tuple  = ind->u.S_Connect_Ind.addr_tuple;
-
-            if (have_ppg && wap_push_ppg_have_push_session_for(tuple)) {
-	        indicate_push_connection(ind);
-            } else {
-	        res = wap_event_create(S_Connect_Res);
-	    /* FIXME: Not yet used by WSP layer */
-	       res->u.S_Connect_Res.server_headers = NULL;
-	       res->u.S_Connect_Res.negotiated_capabilities =
-	           negotiate_capabilities(
-	               ind->u.S_Connect_Ind.requested_capabilities);
-	       res->u.S_Connect_Res.session_id = 
+    case S_Connect_Ind:
+        tuple  = ind->u.S_Connect_Ind.addr_tuple;
+        if (have_ppg && wap_push_ppg_have_push_session_for(tuple)) {
+            indicate_push_connection(ind);
+        } else {
+            res = wap_event_create(S_Connect_Res);
+            /* FIXME: Not yet used by WSP layer */
+            res->u.S_Connect_Res.server_headers = NULL;
+            res->u.S_Connect_Res.negotiated_capabilities =
+                negotiate_capabilities(ind->u.S_Connect_Ind.requested_capabilities);
+            res->u.S_Connect_Res.session_id = 
                    ind->u.S_Connect_Ind.session_id;
-	       wsp_session_dispatch_event(res);
-            }
-
-            wap_event_destroy(ind);
-            break;
+            wsp_session_dispatch_event(res);
+        }
+        wap_event_destroy(ind);
+        break;
 	
-	case S_Disconnect_Ind:
+    case S_Disconnect_Ind:
 	    sid = ind->u.S_Disconnect_Ind.session_handle;
+        if (have_ppg && wap_push_ppg_have_push_session_for_sid(sid)) 
+            indicate_push_disconnect(ind);
+        wap_event_destroy(ind);
+        break;
 
-            if (have_ppg && wap_push_ppg_have_push_session_for_sid(sid)) 
-                indicate_push_disconnect(ind);
-	    wap_event_destroy(ind);
-	    break;
-
-	case S_Suspend_Ind:
+    case S_Suspend_Ind:
 	    sid = ind->u.S_Suspend_Ind.session_id;
-
-            if (wap_push_ppg_have_push_session_for_sid(sid)) 
-                indicate_push_suspend(ind);
+        if (wap_push_ppg_have_push_session_for_sid(sid)) 
+            indicate_push_suspend(ind);
 	    wap_event_destroy(ind);
 	    break;
 
-	case S_Resume_Ind:
+    case S_Resume_Ind:
 	    sid = ind->u.S_Resume_Ind.session_id;
-
-            if (have_ppg && wap_push_ppg_have_push_session_for_sid(sid)) 
-                indicate_push_resume(ind);
-            else {
-	        res = wap_event_create(S_Resume_Res);
-	        res->u.S_Resume_Res.server_headers = NULL;
-	        res->u.S_Resume_Res.session_id = 
-                    ind->u.S_Resume_Ind.session_id;
-	        wsp_session_dispatch_event(res);
-	        
-            }
-            wap_event_destroy(ind);
-	    break;
+        if (have_ppg && wap_push_ppg_have_push_session_for_sid(sid)) {
+            indicate_push_resume(ind);
+        } else {
+            res = wap_event_create(S_Resume_Res);
+            res->u.S_Resume_Res.server_headers = NULL;
+            res->u.S_Resume_Res.session_id = ind->u.S_Resume_Ind.session_id;
+            wsp_session_dispatch_event(res);
+        }
+        wap_event_destroy(ind);
+        break;
 	
-	case S_MethodResult_Cnf:
-	    wap_event_destroy(ind);
-	    break;
+    case S_MethodResult_Cnf:
+        wap_event_destroy(ind);
+        break;
 
-        case S_ConfirmedPush_Cnf:
-            confirm_push(ind);
-            wap_event_destroy(ind);
-	    break;
+    case S_ConfirmedPush_Cnf:
+        confirm_push(ind);
+        wap_event_destroy(ind);
+        break;
 	
-	case S_MethodAbort_Ind:
-	    /* XXX Interrupt the fetch thread somehow */
-	    wap_event_destroy(ind);
-	    break;
+    case S_MethodAbort_Ind:
+        /* XXX Interrupt the fetch thread somehow */
+        wap_event_destroy(ind);
+        break;
 
-        case S_PushAbort_Ind:
-            indicate_push_abort(ind);
-            wap_event_destroy(ind);
-	    break;
+    case S_PushAbort_Ind:
+        indicate_push_abort(ind);
+        wap_event_destroy(ind);
+        break;
 
-        case Pom_Connect_Res:
-	    response_push_connection(ind);
-	    wap_event_destroy(ind);
-	    break;
+    case Pom_Connect_Res:
+        response_push_connection(ind);
+        wap_event_destroy(ind);
+        break;
 	
 	default:
-	    panic(0, "APPL: Can't handle %s event", 
-	    	  wap_event_name(ind->type));
-	    break;
-	}
-    }
+        panic(0, "WAP-APPL: Can't handle %s event", 
+              wap_event_name(ind->type));
+        break;
+    } /* switch */
+    } /* while */
 }
 
 
@@ -368,7 +360,7 @@ static void main_thread(void *arg)
  * was maching this content-type
  */
 static int convert_content(struct content *content, List *request_headers, 
-			   int allow_empty) 
+                           int allow_empty) 
 {
     Octstr *new_body;
     int failed = 0;
@@ -379,10 +371,12 @@ static int convert_content(struct content *content, List *request_headers,
             !http_type_accepted(request_headers, octstr_get_cstr(content->type))) {
             debug("wap.convert",0,"WSP convert: Tring to convert from <%s> to <%s>", 
                   octstr_get_cstr(content->type), converters[i].result_type);
-	    /* Note: if request is HEAD, body is empty and we still need to adapt
-	     * content-type but we don't need to convert a 0 bytes body */
-	    if(allow_empty && octstr_len(content->body) == 0) 
-		    return 1;
+            /* 
+             * Note: if request is HEAD, body is empty and we still need to adapt
+             * content-type but we don't need to convert a 0 bytes body 
+             */
+            if (allow_empty && octstr_len(content->body) == 0) 
+                return 1;
             new_body = converters[i].convert(content);
             if (new_body != NULL) {
                 long s = octstr_len(content->body);
@@ -466,9 +460,9 @@ static void add_charset_headers(List *headers)
     gw_assert(charsets != NULL);
     len = list_len(charsets);
     for (i = 0; i < len; i++) {
-	unsigned char *charset = octstr_get_cstr(list_get(charsets, i));
-	if (!http_charset_accepted(headers, charset))
-	    http_header_add(headers, "Accept-Charset", charset);
+        unsigned char *charset = octstr_get_cstr(list_get(charsets, i));
+        if (!http_charset_accepted(headers, charset))
+            http_header_add(headers, "Accept-Charset", charset);
     }
 }
 
@@ -479,47 +473,49 @@ static void add_accept_headers(List *headers)
     int i;
     
     for (i = 0; i < NUM_CONVERTERS; i++) {
-	if (http_type_accepted(headers, "*/*") || (
-	    http_type_accepted(headers, converters[i].result_type)
-	    && !http_type_accepted(headers, converters[i].type))) {
-	    http_header_add(headers, "Accept", converters[i].type);
-	}
+        if (http_type_accepted(headers, "*/*") || (
+            http_type_accepted(headers, converters[i].result_type)
+            && !http_type_accepted(headers, converters[i].type))) {
+            http_header_add(headers, "Accept", converters[i].type);
+        }
     }
 }
 
 
+/* Add X-WAP-Network-Client-IP: header to proxy client IP to HTTP server */
 static void add_network_info(List *headers, WAPAddrTuple *addr_tuple) 
 {
     if (octstr_len(addr_tuple->remote->address) > 0) {
-	http_header_add(headers, "X-WAP-Network-Client-IP", 
-			octstr_get_cstr(addr_tuple->remote->address));
+        http_header_add(headers, "X-WAP-Network-Client-IP", 
+                        octstr_get_cstr(addr_tuple->remote->address));
     }
 }
 
 
+/* Add X-WAP-Session-ID: header to request */
 static void add_session_id(List *headers, long session_id) 
 {
     if (session_id != -1) {
-	char buf[40];
-	sprintf(buf, "%ld", session_id);
-	http_header_add(headers, "X-WAP-Session-ID", buf);
+        char buf[40];
+        sprintf(buf, "%ld", session_id);
+        http_header_add(headers, "X-WAP-Session-ID", buf);
     }
 }
 
 
+/* Add X-WAP-Client-SDU-Size: to provide information on client capabilities */
 static void add_client_sdu_size(List *headers, long sdu_size) 
 {
     if (sdu_size > 0) {
-	Octstr *buf;
+        Octstr *buf;
 	
-	buf = octstr_format("%ld", sdu_size);
-	http_header_add(headers, "X-WAP-Client-SDU-Size", 
-	    	    	octstr_get_cstr(buf));
-	octstr_destroy(buf);
+        buf = octstr_format("%ld", sdu_size);
+        http_header_add(headers, "X-WAP-Client-SDU-Size", octstr_get_cstr(buf));
+        octstr_destroy(buf);
     }
 }
 
-
+/* Add proxy Via: header to request with our Kannel version */
 static void add_via(List *headers) 
 {
     Octstr *os;
@@ -527,8 +523,8 @@ static void add_via(List *headers)
     
     version = http_header_value(headers, octstr_imm("Encoding-Version"));
     os = octstr_format("WAP/%s %S (" GW_NAME "/%s)", 
-		       (version ? octstr_get_cstr(version) : "1.1"),
-		       get_official_name(), VERSION);
+                       (version ? octstr_get_cstr(version) : "1.1"),
+                       get_official_name(), VERSION);
     http_header_add(headers, "Via", octstr_get_cstr(os));
     octstr_destroy(os);
     octstr_destroy(version);
@@ -547,8 +543,8 @@ static void add_x_wap_tod(List *headers)
     
     gateway_time = date_format_http(time(NULL));
     if (gateway_time == NULL) {
-	warning(0, "Could not add X-WAP.TOD response header.");
-	return;
+        warning(0, "Could not add X-WAP.TOD response header.");
+        return;
     }
     
     http_header_add(headers, "X-WAP.TOD", octstr_get_cstr(gateway_time));
@@ -556,104 +552,117 @@ static void add_x_wap_tod(List *headers)
 }
 
 
+/* Add MSISDN provisioning information to HTTP header */
 static void add_msisdn(List *headers, WAPAddrTuple *addr_tuple, Octstr **url,
-		       Octstr *send_msisdn_query, Octstr *send_msisdn_header,
-		       Octstr *send_msisdn_format) 
+                       Octstr *send_msisdn_query, Octstr *send_msisdn_header,
+                       Octstr *send_msisdn_format) 
 {
     Octstr *msisdn = NULL;
     Octstr *proxy_auth = NULL;
 
-    if(octstr_len(send_msisdn_query) == 0 && 
-       octstr_len(send_msisdn_header) == 0)
-	return;
+    if (octstr_len(send_msisdn_query) == 0 && 
+        octstr_len(send_msisdn_header) == 0)
+        return;
 	
-    /* Security precautions */
-    if(octstr_len(send_msisdn_header)) { 
-	Octstr *value = NULL;
-	value = http_header_value(headers, send_msisdn_header);
-	if(value != NULL) 
-	    warning(0, "MSISDN header <%s> already present on request, "
-	            "probably a security atack (url=<%s>, header value=<%s>)", 
-	            octstr_get_cstr(send_msisdn_header), 
-	            octstr_get_cstr(*url), octstr_get_cstr(value));
-	http_header_remove_all(headers, octstr_get_cstr(send_msisdn_header));
+    /* 
+     * Security precautions. Check if the client is already passing our 
+     * MSISDN provisioning HTTP header or a GET query parameter within the 
+     * request. If yes, then issue an warning and remove the header or the 
+     * parameter from the query before processing further.
+     */
+    if (octstr_len(send_msisdn_header)) { 
+        Octstr *value = NULL;
+        if ((value = http_header_value(headers, send_msisdn_header)) != NULL)
+            warning(0, "MSISDN header <%s> already present on request, "
+                       "probably a security attack (url=<%s>, header value=<%s>)", 
+                    octstr_get_cstr(send_msisdn_header), 
+                    octstr_get_cstr(*url), octstr_get_cstr(value));
+        http_header_remove_all(headers, octstr_get_cstr(send_msisdn_header));
     }
-    if(octstr_len(send_msisdn_query)) {
-	if(octstr_case_search(*url, send_msisdn_query, 0) != -1)
-	    warning(0, "MSISDN parameter <%s> already present on query "
-	            "string, probably a security atack (url=<%s>)", 
-	            octstr_get_cstr(send_msisdn_query), 
-	            octstr_get_cstr(*url));
-	/* XXX DAVI: search and remove it from query */
-    }
-
-    /* Proxy-Authorization Authentication */
-    proxy_auth = http_header_find_first(headers, "Proxy-Authorization");
-    if(proxy_auth) {
-	Octstr *user, *pass;
-	long i;
-
-	i = octstr_search_char(proxy_auth, ':', 0);
-	if(i < 0) {
-	    warning(0, "AUTH: Invalid Proxy-Authentication <%s>", 
-	            octstr_get_cstr(proxy_auth));
-	} else {
-	    user = octstr_copy(proxy_auth, 0, i);
-	    pass = octstr_copy(proxy_auth, i+1, octstr_len(proxy_auth) - i + 2);
-	    if(octstr_len(user) < 1 || octstr_len(pass) < 1) {
-		warning(0, "AUTH: Invalid Proxy-Authentication <%s>", 
-		        octstr_get_cstr(proxy_auth));
-	    } else if(1 != wsp_http_map_user(&msisdn, user, pass)) {
-		warning(0, "AUTH: Invalid user or password <%s>", 
-		        octstr_get_cstr(proxy_auth));
-	    } else {
-		debug("add_msisdn", 0, "AUTH: User <%s> is <%s>",
-		      octstr_get_cstr(proxy_auth), octstr_get_cstr(msisdn));
-	    }
-	    octstr_destroy(user);
-	    octstr_destroy(pass);
-	}
-	octstr_destroy(proxy_auth);
-    } 
-    
-    /* Radius Authentication */
-    else {
-	msisdn = radius_acct_get_msisdn(addr_tuple->remote->address);
+    if (octstr_len(send_msisdn_query)) {
+        if (octstr_case_search(*url, send_msisdn_query, 0) != -1)
+            warning(0, "MSISDN parameter <%s> already present on query "
+                       "string, probably a security attack (url=<%s>)", 
+                    octstr_get_cstr(send_msisdn_query), 
+                    octstr_get_cstr(*url));
+        /* XXX DAVI: search and remove it from query */
     }
 
-    if(msisdn != NULL) {
-	if(send_msisdn_format != NULL && octstr_case_compare(
-	   send_msisdn_format, octstr_imm("ericsson")) == 0) {
-	    octstr_binary_to_hex(msisdn, 1);
-	} else if(send_msisdn_format != NULL && octstr_case_compare(
-	          send_msisdn_format, octstr_imm("hash")) == 0) {
-	    /* XXX To be implemented by Stipe ;) */
-	    octstr_append(msisdn, octstr_imm("-hashed"));
-	}
+    /* Process proxy authorization first. */
+    if ((proxy_auth = 
+         http_header_find_first(headers, "Proxy-Authorization")) != NULL) {
+        Octstr *user, *pass;
+        long i;
 
-	if(send_msisdn_query != NULL) {
-	    /* XXX DAVI: this needs to be refactored 
-	     * for "#" char in url! */
-	    if(octstr_search_char(*url, '?', 7) > 0) {
-		octstr_append(*url, octstr_imm("&"));
-	    } else {
-		octstr_append(*url, octstr_imm("?"));
-	    }
-	    octstr_append(*url, send_msisdn_query);
-	    octstr_append(*url, octstr_imm("="));
-	    octstr_append(*url, msisdn);
-	}
-
-	if(send_msisdn_header != NULL)
-	    http_header_add(headers, octstr_get_cstr(send_msisdn_header), 
-	                    octstr_get_cstr(msisdn));
-
-	octstr_destroy(msisdn);
+        if ((i = octstr_search_char(proxy_auth, ':', 0)) < 0) {
+            warning(0, "AUTH: Invalid Proxy-Authentication <%s>", 
+                    octstr_get_cstr(proxy_auth));
+        } else {
+            user = octstr_copy(proxy_auth, 0, i);
+            pass = octstr_copy(proxy_auth, i + 1, octstr_len(proxy_auth) - i + 2);
+            if (octstr_len(user) < 1 || octstr_len(pass) < 1) {
+                warning(0, "AUTH: Invalid Proxy-Authentication <%s>", 
+                        octstr_get_cstr(proxy_auth));
+            } 
+            else if (wsp_http_map_user(&msisdn, user, pass) != 1) {
+                warning(0, "AUTH: Invalid user or password <%s>", 
+                        octstr_get_cstr(proxy_auth));
+            } else {
+                debug("add_msisdn", 0, "AUTH: User <%s> is <%s>",
+                octstr_get_cstr(proxy_auth), octstr_get_cstr(msisdn));
+            }
+            octstr_destroy(user);
+            octstr_destroy(pass);
+        }
+        octstr_destroy(proxy_auth);
+    } else {
+        /* otherwise relly on the RADIUS acct proxy */
+        msisdn = radius_acct_get_msisdn(addr_tuple->remote->address);
     }
+
+    /* convert to vendor specific MSISDN formating behaviour */
+    if (msisdn != NULL && send_msisdn_format != NULL) {
+        if (octstr_case_compare(send_msisdn_format, octstr_imm("ericsson")) == 0) {
+            octstr_binary_to_hex(msisdn, 1);
+        } 
+        else if (octstr_case_compare(send_msisdn_format, octstr_imm("hash")) == 0) {
+
+            /* XXX more types, ie. MD5, SHA1 etc. hashed versions of MSISDN */
+
+            octstr_append(msisdn, octstr_imm("-hashed"));
+        }
+
+        /* 
+         * If send_msisdn_query is defined, then use this as GET query 
+         * parameter for transmitting the MSISDN to the HTTP server.
+         */
+        if (send_msisdn_query != NULL) {
+            /* XXX DAVI: this needs to be refactored 
+             * for "#" char in url! */
+            if (octstr_search_char(*url, '?', 7) > 0) {
+                octstr_append(*url, octstr_imm("&"));
+            } else {
+                octstr_append(*url, octstr_imm("?"));
+            }
+            octstr_append(*url, send_msisdn_query);
+            octstr_append(*url, octstr_imm("="));
+            octstr_append(*url, msisdn);
+        }
+
+        /* 
+         * Otherwise encapsulate it in the HTTP request as header using the
+         * send_msisdn_header header name. (or even both).
+         */
+        if (send_msisdn_header != NULL)
+            http_header_add(headers, octstr_get_cstr(send_msisdn_header), 
+                            octstr_get_cstr(msisdn));
+    }
+
+    octstr_destroy(msisdn);
 }
 
 
-/* XXX DAVI: Disabled in cvs 1.81 for Opengroup tests
+/* XXX DAVI: Disabled in cvs revision 1.81 for Opengroup tests
 static void add_referer_url(List *headers, Octstr *url) 
 {
     if (octstr_len(url) > 0) {
@@ -683,8 +692,7 @@ static Octstr *get_referer_url(const WSPMachine *sm)
  * Return the reply from an HTTP request to the phone via a WSP session.
  */
 static void return_session_reply(long server_transaction_id, long status,
-    	    	    	    	 List *headers, Octstr *body, 
-				 long session_id)
+    	    	    	    	 List *headers, Octstr *body, long session_id)
 {
     WAPEvent *e;
     
@@ -735,10 +743,11 @@ static void return_reply(int status, Octstr *content_body, List *headers,
     content.body = content_body;
     content.version = NULL;
 
+    /* get session machine for this session */
     sm = find_session_machine_by_id(session_id);
     device_headers = (sm ? sm->http_headers : request_headers);
-    if(device_headers == NULL)
-	device_headers = list_create();
+    if (device_headers == NULL)
+        device_headers = list_create();
 
     if (status < 0) {
         error(0, "WSP: http lookup failed, oops."); /* XXX DAVI: also check for empty reply */
@@ -781,6 +790,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
                 http_header_mark_transformation(headers, content.body, content.type);
 
         } else {
+            /* no WSP smart error messaging */
             status = HTTP_BAD_GATEWAY;
             content.type = octstr_create("text/plain");
             content.charset = octstr_create("");
@@ -788,6 +798,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
         }
 
     } else {
+        /* received response by HTTP server */
         WAPAddrTuple *addr_tuple;
         Octstr *ua, *server;
 
@@ -820,60 +831,82 @@ static void return_reply(int status, Octstr *content_body, List *headers,
                 error(0, "WSP: Failed to extract cookies");
 #endif
 
-        /* Adapts content body's charset to device
-         * If device doesn't support body's charset but supports UTF-8, this block
-         * tries to convert body to UTF-8. (this is required for Sharp GX20 for example)
+        /* 
+         * XXX why do we transcode charsets on the content body here?!
+         * Why is this not in the scope of the HTTP server, rather
+         * then doing this inside Kannel?! st. 
          */
-         if(octstr_search(content.type, octstr_imm("text/vnd.wap.wml"), 0) >= 0 || 
+
+        /* 
+         * Adapts content body's charset to device.
+         * If device doesn't support body's charset but supports UTF-8, this 
+         * block tries to convert body to UTF-8. 
+         * (This is required for Sharp GX20 for example)
+         */
+        if (octstr_search(content.type, octstr_imm("text/vnd.wap.wml"), 0) >= 0 || 
             octstr_search(content.type, octstr_imm("application/xhtml+xml"), 0) >= 0 ||
             octstr_search(content.type, octstr_imm("application/vnd.wap.xhtml+xml"), 0) >= 0) {
-             Octstr *charset = find_charset_encoding(content.body);
-             if(charset == NULL)
-                 charset = octstr_imm("UTF-8"); 
-             /* convert to utf-8 if original charset is not utf-8 and device supports it */
-             if(octstr_case_compare(charset, octstr_imm("UTF-8")) < 0 &&
+            Octstr *charset;
+            
+            /* get charset used in content body, default to utf-8 if not present */
+            if ((charset = find_charset_encoding(content.body)) == NULL)
+                charset = octstr_imm("UTF-8"); 
+
+            /* convert to utf-8 if original charset is not utf-8 
+             * and device supports it */
+
+            if (octstr_case_compare(charset, octstr_imm("UTF-8")) < 0 &&
                 !http_charset_accepted(device_headers, octstr_get_cstr(charset))) {
-                 if(!http_charset_accepted(device_headers, "UTF-8")) {
-                     warning(0, "Device doesn't support charset [%s] neither UTF-8", 
+                if (!http_charset_accepted(device_headers, "UTF-8")) {
+                    warning(0, "WSP: Device doesn't support charset <%s> neither UTF-8", 
                                 octstr_get_cstr(charset));
-                 } else {
-                     debug("wsp", 0, "Converting wml/xhtml from charset [%s] to UTF-8", 
-                                     octstr_get_cstr(charset));
-                     if(charset_convert(content.body, octstr_get_cstr(charset), "UTF-8") >= 0) {
-		         octstr_destroy(content.charset);
-		         content.charset = octstr_create("UTF-8");
-			 /* XXX it might be good idea to change <?xml...encoding?> */
-		     }
-                 }
-            } 
-	    /* convert to iso-8859-1 if original charset is not iso and device supports it */
-	    else if(octstr_case_compare(charset, octstr_imm("ISO-8859-1")) < 0 &&
-                !http_charset_accepted(device_headers, octstr_get_cstr(charset))) {
-                 if(!http_charset_accepted(device_headers, "ISO-8859-1")) {
-                     warning(0, "Device doesn't support charset [%s] neither ISO-8859-1", 
-                                octstr_get_cstr(charset));
-                 } else {
-                     debug("wsp", 0, "Converting wml/xhtml from charset [%s] to ISO-8859-1", 
-                                     octstr_get_cstr(charset));
-                     if(charset_convert(content.body, octstr_get_cstr(charset), "ISO-8859-1") >= 0) {
-		         octstr_destroy(content.charset);
-		         content.charset = octstr_create("ISO-8859-1");
-			 /* XXX it might be good idea to change <?xml...encoding?> */
-                     }
+                } else {
+                    /* convert to utf-8 */
+                    debug("wsp",0,"Converting wml/xhtml from charset <%s> to UTF-8", 
+                          octstr_get_cstr(charset));
+                    if (charset_convert(content.body, 
+                                        octstr_get_cstr(charset), "UTF-8") >= 0) {
+                        octstr_destroy(content.charset);
+                        content.charset = octstr_create("UTF-8");
+                        /* XXX it might be good idea to change <?xml...encoding?> */
+                    }
                  }
             }
-	    octstr_destroy(charset);
+ 
+            /* convert to iso-8859-1 if original charset is not iso 
+             * and device supports it */
+            else if (octstr_case_compare(charset, octstr_imm("ISO-8859-1")) < 0 &&
+                    !http_charset_accepted(device_headers, octstr_get_cstr(charset))) {
+                if (!http_charset_accepted(device_headers, "ISO-8859-1")) {
+                    warning(0, "WSP: Device doesn't support charset <%s> neither ISO-8859-1", 
+                            octstr_get_cstr(charset));
+                } else {
+                    /* convert to iso-latin1 */
+                    debug("wsp",0,"Converting wml/xhtml from charset <%s> to ISO-8859-1", 
+                          octstr_get_cstr(charset));
+                    if (charset_convert(content.body, 
+                                        octstr_get_cstr(charset), "ISO-8859-1") >= 0) {
+                        octstr_destroy(content.charset);
+                        content.charset = octstr_create("ISO-8859-1");
+                        /* XXX it might be good idea to change <?xml...encoding?> */
+                    }
+                }
+            }
+
+            octstr_destroy(charset);
         }
 
-        /* For wml->wmlc conversion, send max wbxml version supported */
-        if ((sm = find_session_machine_by_id(session_id)) != NULL) {
-            content.version = http_header_value(sm->http_headers, octstr_imm("Encoding-Version"));
+        /* for wml->wmlc conversion, send max wbxml version supported */
+        if (sm != NULL) {
+            content.version = http_header_value(sm->http_headers, 
+                                                octstr_imm("Encoding-Version"));
         } else {
             content.version = NULL;
         }
 
+        /* convert content-type by our own converter table */
         converted = convert_content(&content, device_headers, 
-			octstr_compare(method, octstr_imm("HEAD")) == 0);
+                                    octstr_compare(method, octstr_imm("HEAD")) == 0);
         if (converted < 0) {
             warning(0, "WSP: All converters for `%s' at `%s' failed.",
                     octstr_get_cstr(content.type), octstr_get_cstr(url));
@@ -897,7 +930,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
 
             }
         }
-        if (converted == 1) {
+        else if (converted == 1) {
             http_header_mark_transformation(headers, content.body, content.type);
 
             /* 
@@ -946,35 +979,34 @@ static void return_reply(int status, Octstr *content_body, List *headers,
         content.type = octstr_create("text/plain");
         http_header_mark_transformation(headers, content.body, content.type);
     }
-    /* remove body if request method was HEAD */
-    else if(octstr_compare(method, octstr_imm("HEAD")) == 0) {
-	octstr_destroy(content.body);
-	content.body = octstr_create("");
-	if(!http_type_accepted(request_headers, "*/*") &&
-	   !http_type_accepted(request_headers, octstr_get_cstr(content.type))) {
-	    octstr_destroy(content.type);
-	    content.type = octstr_create("text/plain");
-	}
-	debug("wsp", 0, "WSP: HEAD request, removing body, content-type is now %s", 
-			octstr_get_cstr(content.type));
-	http_header_mark_transformation(headers, content.body, content.type);
+    /* remove body if request method was HEAD, we act strictly here */
+    else if (octstr_compare(method, octstr_imm("HEAD")) == 0) {
+        octstr_destroy(content.body);
+        content.body = octstr_create("");
+        /* change to text/plain if received content-type is not accepted */
+        if (!http_type_accepted(request_headers, "*/*") &&
+            !http_type_accepted(request_headers, octstr_get_cstr(content.type))) {
+            octstr_destroy(content.type);
+            content.type = octstr_create("text/plain");
+        }
+        debug("wsp",0,"WSP: HEAD request, removing body, content-type is now <%s>", 
+              octstr_get_cstr(content.type));
+        http_header_mark_transformation(headers, content.body, content.type);
     }
 
 #ifdef ENABLE_NOT_ACCEPTED 
     /* Returns HTTP response 406 if content-type is not supported by device */
-    else if (!http_type_accepted(request_headers, "*/*") && 
-	request_headers && content.type &&
-        !http_type_accepted(request_headers, octstr_get_cstr(content.type))) {
-        warning(0, "WSP: content-type %s not supported", 
+    else if (request_headers && content.type &&
+             !http_type_accepted(request_headers, octstr_get_cstr(content.type)) &&
+             !http_type_accepted(request_headers, "*/*")) {
+        warning(0, "WSP: content-type <%s> not supported", 
                 octstr_get_cstr(content.type));
         status = HTTP_NOT_ACCEPTABLE;
         octstr_destroy(content.type);
         content.type = octstr_create("text/plain");
-        if (content.charset)
-            octstr_destroy(content.charset);
+        octstr_destroy(content.charset);
+        octstr_destroy(content.body);
         content.charset = octstr_create("");
-        if (content.body) 
-            octstr_destroy(content.body);
         content.body = octstr_create("");
         http_header_mark_transformation(headers, content.body, content.type);
     }
@@ -991,6 +1023,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
          * more useful to the client than our "Bad Gateway" would be.
          * The too-large body is probably an error page in html.
          */
+        /* XXX add WSP smart messaging here too */
         if (http_status_class(status) == HTTP_STATUS_SUCCESSFUL)
             status = HTTP_BAD_GATEWAY;
         warning(0, "WSP: Entity at %s too large (size %ld B, limit %lu B)",
@@ -1039,6 +1072,7 @@ static void return_replies_thread(void *arg)
         return_reply(status, body, headers, p->client_SDU_size,
                      p->event, p->session_id, p->method, p->url, p->x_wap_tod,
                      p->request_headers);
+
         wap_event_destroy(p->event);
         http_destroy_headers(p->request_headers);
         gw_free(p);
@@ -1048,7 +1082,8 @@ static void return_replies_thread(void *arg)
 
 
 /*
- * This WML deck is returned when the user asks for the URL "kannel:alive".
+ * This WML deck is returned when the user asks for the magic 
+ * URL "kannel:alive".
  */
 #define HEALTH_DECK \
     "<?xml version=\"1.0\"?>" \
@@ -1107,8 +1142,8 @@ static void start_fetch(WAPEvent *event)
     }
     info(0, "Fetching <%s>", octstr_get_cstr(url));
     
-    wsp_http_map_url(&url, &send_msisdn_query, &send_msisdn_header, 
-		     &send_msisdn_format, &accept_cookies);
+    wsp_http_map_url(&url, &send_msisdn_query, &send_msisdn_header,
+                     &send_msisdn_format, &accept_cookies);
 
     actual_headers = list_create();
     
@@ -1125,9 +1160,11 @@ static void start_fetch(WAPEvent *event)
     add_via(actual_headers);
 
 #ifdef ENABLE_COOKIES
-    /* DAVI: to finish - accept_cookies -1, use global accept-cookies, 0 = no, 1 = yes ? */
+    /* DAVI: to finish - accept_cookies -1, 
+     * use global accept-cookies, 0 = no, 1 = yes ? */
     if (accept_cookies != 0 && (session_id != -1) &&  
-        /* DAVI (set_cookies(url, actual_headers, find_session_machine_by_id(session_id)) == -1)) */
+        /* DAVI (set_cookies(url, actual_headers, 
+                             find_session_machine_by_id(session_id)) == -1)) */
         (set_cookies(actual_headers, find_session_machine_by_id(session_id)) == -1)) 
         error(0, "WSP: Failed to add cookies");
 #endif
@@ -1187,7 +1224,7 @@ static void start_fetch(WAPEvent *event)
 
         /* 
          * Call deconvert_content() here for transformations of binary
-         * encoded POST requests from the client into text plain decoded
+         * encoded POST requests from the client into plain text decoded
          * POST requests for the HTTP server.
          * Mainly this is used for multipart/form-data transmissions,
          * including MMS on-the-fly message decoding.
@@ -1197,11 +1234,13 @@ static void start_fetch(WAPEvent *event)
             struct content content;
             int converted;
 
-            http_header_get_content_type(actual_headers, &content.type, &content.charset);
+            http_header_get_content_type(actual_headers, &content.type, 
+                                         &content.charset);
             content.body = request_body;
             converted = deconvert_content(&content); 
             if (converted == 1) 
-                http_header_mark_transformation(actual_headers, content.body, content.type);
+                http_header_mark_transformation(actual_headers, content.body, 
+                                                content.type);
             request_body = content.body;
         }
 
@@ -1221,7 +1260,7 @@ static void start_fetch(WAPEvent *event)
 
         octstr_destroy(request_body);
     } 
-    /* we don't support the method the client asked us */
+    /* we don't support the WSP/HTTP method the client asked us */
     else {
         error(0, "WSP: Method %s not supported.", octstr_get_cstr(method));
         content_body = octstr_create("");
@@ -1234,8 +1273,7 @@ static void start_fetch(WAPEvent *event)
         http_destroy_headers(actual_headers);
     }
 }
-
-
+                
 
 /* Shut up WMLScript compiler status/trace messages. */
 static void dev_null(const char *data, size_t len, void *context) 
@@ -1251,7 +1289,7 @@ static Octstr *convert_wml_to_wmlc(struct content *content)
    
     /* content->charset is passed from the HTTP header parsing */
     ret = wml_compile(content->body, content->charset, &wmlc, 
-		      content->version);
+                      content->version);
     if (ret == 0)
         return wmlc;
 
@@ -1282,22 +1320,19 @@ static Octstr *convert_wmlscript_to_wmlscriptc(struct content *content)
     
     compiler = ws_create(&params);
     if (compiler == NULL) {
-	panic(0, "WSP: could not create WMLScript compiler");
-	exit(1);
+        panic(0, "WSP: could not create WMLScript compiler");
     }
     
-    result = ws_compile_data(compiler, 
-			     octstr_get_cstr(content->url),
-			     octstr_get_cstr(content->body),
-			     octstr_len(content->body),
-			     &result_data,
-			     &result_size);
+    result = ws_compile_data(compiler, octstr_get_cstr(content->url),
+                             octstr_get_cstr(content->body),
+                             octstr_len(content->body),
+                             &result_data, &result_size);
     if (result != WS_OK) {
-	warning(0, "WSP: WMLScript compilation failed: %s",
-		ws_result_to_string(result));
-	wmlscriptc = NULL;
+        warning(0, "WSP: WMLScript compilation failed: %s",
+                ws_result_to_string(result));
+        wmlscriptc = NULL;
     } else {
-	wmlscriptc = octstr_create_from_data(result_data, result_size);
+        wmlscriptc = octstr_create_from_data(result_data, result_size);
     }
     
     return wmlscriptc;
@@ -1308,14 +1343,14 @@ static Octstr *convert_multipart_mixed(struct content *content)
 {
     Octstr *result = NULL;
 
-    / * XXX There's a big bug in http_get_content_type that 
+    /* XXX There's a big bug in http_get_content_type that 
      * assumes that header parameter is charset without looking at
      * parameter key. Good!. I'll use its value to catch boundary
      * value for now
      * Ex: "Content-Type: (foo/bar);something=(value)" it gets value
      * without caring about what is "something" * /
     debug("wap.wsp.multipart.mixed", 0, "WSP.Multipart.Mixed, boundary=[%s]", 
-		    octstr_get_cstr(content->charset));
+          octstr_get_cstr(content->charset));
 
     / * XXX DAVI: To Implement * /
     result = octstr_duplicate(content->body);
@@ -1327,10 +1362,8 @@ static Octstr *convert_multipart_mixed(struct content *content)
 static Octstr *deconvert_multipart_formdata(struct content *content)
 {
     Octstr *mime;
-    int ret;
    
-    ret = mime_decompile(content->body, &mime);
-    if (ret == 0)
+    if ((mime_decompile(content->body, &mime)) == 0)
         return mime;
 
     return NULL;
@@ -1340,16 +1373,13 @@ static Octstr *deconvert_multipart_formdata(struct content *content)
 static Octstr *deconvert_mms_message(struct content *content)
 {
     Octstr *mime;
-    int ret;
    
-    ret = mms_decompile(content->body, &mime);
-    if (ret == 0)
+    if ((mms_decompile(content->body, &mime)) == 0)
         return mime;
 
     return NULL;
 }
 */
-
 
 
 /* The interface for capability negotiation is a bit different from
@@ -1383,27 +1413,27 @@ static List *negotiate_capabilities(List *req_caps)
  */
 
 struct url_map_struct {
-	Octstr *name;
-	Octstr *url;
-	Octstr *map_url;
-	Octstr *send_msisdn_query;
-	Octstr *send_msisdn_header;
-	Octstr *send_msisdn_format;
-	int accept_cookies;
+    Octstr *name;
+    Octstr *url;
+    Octstr *map_url;
+    Octstr *send_msisdn_query;
+    Octstr *send_msisdn_header;
+    Octstr *send_msisdn_format;
+    int accept_cookies;
 };
 List *url_map = NULL;
 
 struct user_map_struct {
-	Octstr *name;
-	Octstr *user;
-	Octstr *pass;
-	Octstr *msisdn;
+    Octstr *name;
+    Octstr *user;
+    Octstr *pass;
+    Octstr *msisdn;
 };
 List *user_map = NULL;
 
 
 /*
- * adds a mapping entry to map an url into an (all optional)
+ * Adds a mapping entry to map an url into an (all optional)
  * - an description name
  * - new url
  * - a query-string parameter name to send msisdn, if available
@@ -1416,11 +1446,10 @@ void wsp_http_url_map(Octstr *name, Octstr *url, Octstr *map_url,
                       Octstr *send_msisdn_header,
                       Octstr *send_msisdn_format,
                       int accept_cookies) {
-
     struct url_map_struct *entry;
 
-    if(url_map == NULL) 
-	url_map = list_create();
+    if (url_map == NULL) 
+        url_map = list_create();
 
     entry = gw_malloc(sizeof(*entry));
     entry->name = name;
@@ -1436,16 +1465,15 @@ void wsp_http_url_map(Octstr *name, Octstr *url, Octstr *map_url,
 
 
 /*
- * adds a mapping entry to map user/pass into a description
+ * Adds a mapping entry to map user/pass into a description
  * name and a msisdn
  */
 void wsp_http_user_map(Octstr *name, Octstr *user, Octstr *pass,
-                      Octstr *msisdn) {
-
+                       Octstr *msisdn) {
     struct user_map_struct *entry;
 
-    if(user_map == NULL) 
-	user_map = list_create();
+    if (user_map == NULL) 
+        user_map = list_create();
 
     entry = gw_malloc(sizeof(*entry));
     entry->name = name;
@@ -1456,7 +1484,8 @@ void wsp_http_user_map(Octstr *name, Octstr *user, Octstr *pass,
 }
 
 
-/* Called during configuration read, once for each "map-url" statement.
+/* 
+ * Called during configuration read, once for each "map-url" statement.
  * Interprets parameter value as a space-separated two-tuple of src and dst.
  */
 void wsp_http_map_url_config(char *s)
@@ -1466,28 +1495,25 @@ void wsp_http_map_url_config(char *s)
     s = gw_strdup(s);
     in = strtok(s, " \t");
     if (!in) 
-    	return;
+        return;
     out = strtok(NULL, " \t");
     if (!out) 
-    	return;
-    wsp_http_url_map(octstr_imm("unknown"), 
-		     octstr_create(in),
-		     octstr_create(out),
-		     NULL, NULL, NULL, 0);
+        return;
+    wsp_http_url_map(octstr_imm("unknown"), octstr_create(in), 
+                     octstr_create(out), NULL, NULL, NULL, 0);
     gw_free(s);
 }
 
 
-/* Called during configuration read, this adds a mapping for the source URL
+/* 
+ * Called during configuration read, this adds a mapping for the source URL
  * "DEVICE:home", to the given destination. The mapping is configured
  * as an in/out prefix mapping.
  */
 void wsp_http_map_url_config_device_home(char *to)
 {
-    wsp_http_url_map(octstr_imm("Device Home"), 
-		     octstr_imm("DEVICE:home*"),
-		     octstr_create(to),
-		     NULL, NULL, NULL, -1);
+    wsp_http_url_map(octstr_imm("Device Home"), octstr_imm("DEVICE:home*"),
+                     octstr_create(to), NULL, NULL, NULL, -1);
 }
 
 
@@ -1495,18 +1521,18 @@ void wsp_http_map_url_config_device_home(char *to)
 void wsp_http_map_url_config_info(void)
 {
     long i;
-    for(i=0; url_map && i < list_len(url_map); i++) {
-	struct url_map_struct *entry;
-	entry = list_get(url_map, i);
-	info(0, "WSP: Added wap-url-map, name <%s>, url <%s>, map-url <%s>, "
-		"send-msisdn-query <%s>, send-msisdn-header <%s>, "
-		"send-msisdn-format <%s>, accept-cookies <%d>", 
-	        octstr_get_cstr(entry->name), octstr_get_cstr(entry->url), 
-	        octstr_get_cstr(entry->map_url), 
-	        octstr_get_cstr(entry->send_msisdn_query), 
-	        octstr_get_cstr(entry->send_msisdn_header), 
-	        octstr_get_cstr(entry->send_msisdn_format), 
-	        entry->accept_cookies);
+    for (i = 0; url_map && i < list_len(url_map); i++) {
+        struct url_map_struct *entry;
+        entry = list_get(url_map, i);
+        info(0, "WSP: Added wap-url-map, name <%s>, url <%s>, map-url <%s>, "
+                "send-msisdn-query <%s>, send-msisdn-header <%s>, "
+                "send-msisdn-format <%s>, accept-cookies <%d>", 
+             octstr_get_cstr(entry->name), octstr_get_cstr(entry->url), 
+             octstr_get_cstr(entry->map_url), 
+             octstr_get_cstr(entry->send_msisdn_query), 
+             octstr_get_cstr(entry->send_msisdn_header), 
+             octstr_get_cstr(entry->send_msisdn_format), 
+             entry->accept_cookies);
     }
 }
 
@@ -1515,13 +1541,13 @@ void wsp_http_map_url_config_info(void)
 void wsp_http_map_user_config_info(void)
 {
     long i;
-    for(i=0; user_map && i < list_len(user_map); i++) {
-	struct user_map_struct *entry;
-	entry = list_get(user_map, i);
-	info(0, "WSP: Added wap-user-map, name <%s>, user <%s>, pass <%s>, "
-		"msisdn <%s>", octstr_get_cstr(entry->name), 
-	        octstr_get_cstr(entry->user), octstr_get_cstr(entry->pass), 
-	        octstr_get_cstr(entry->msisdn));
+    for (i = 0; user_map && i < list_len(user_map); i++) {
+        struct user_map_struct *entry;
+        entry = list_get(user_map, i);
+        info(0, "WSP: Added wap-user-map, name <%s>, user <%s>, pass <%s>, "
+                "msisdn <%s>", octstr_get_cstr(entry->name), 
+             octstr_get_cstr(entry->user), octstr_get_cstr(entry->pass), 
+             octstr_get_cstr(entry->msisdn));
     }
 }
 
@@ -1531,8 +1557,8 @@ void wsp_http_map_user_config_info(void)
  * lookup comes in (called from further down this file, wsp_http.c)
  */
 static void wsp_http_map_url(Octstr **osp, Octstr **send_msisdn_query, 
-			     Octstr **send_msisdn_header, 
-			     Octstr **send_msisdn_format, int *accept_cookies)
+                             Octstr **send_msisdn_header, 
+                             Octstr **send_msisdn_format, int *accept_cookies)
 {
     long i;
     Octstr *newurl, *tmp1, *tmp2;
@@ -1541,69 +1567,71 @@ static void wsp_http_map_url(Octstr **osp, Octstr **send_msisdn_query,
     *send_msisdn_query = *send_msisdn_header = *send_msisdn_format = NULL;
     *accept_cookies = -1;
 
-    debug("wsp", 0, "WSP: mapping url <%s>", octstr_get_cstr(*osp));
-    for(i=0; url_map && i < list_len(url_map); i++) {
-	struct url_map_struct *entry;
-	entry = list_get(url_map, i);
+    debug("wsp",0,"WSP: Mapping url <%s>", octstr_get_cstr(*osp));
+    for (i = 0; url_map && i < list_len(url_map); i++) {
+        struct url_map_struct *entry;
+        entry = list_get(url_map, i);
 
-	/* debug("wsp", 0, "WSP: matching <%s> with <%s>", 
-	      octstr_get_cstr(entry->url), octstr_get_cstr(entry->map_url)); */
+        /* 
+        debug("wsp",0,"WSP: matching <%s> with <%s>", 
+	          octstr_get_cstr(entry->url), octstr_get_cstr(entry->map_url)); 
+        */
 
-	/* DAVI: I only have '*' terminated entry->url implementation for now */
-	tmp1 = octstr_duplicate(entry->url);
-	octstr_delete(tmp1, octstr_len(tmp1)-1, 1); /* remove last '*' */
-	tmp2 = octstr_copy(*osp, 0, octstr_len(tmp1));
+        /* DAVI: I only have '*' terminated entry->url implementation for now */
+        tmp1 = octstr_duplicate(entry->url);
+        octstr_delete(tmp1, octstr_len(tmp1)-1, 1); /* remove last '*' */
+        tmp2 = octstr_copy(*osp, 0, octstr_len(tmp1));
 
-	debug("wsp", 0, "WSP: matching <%s> with <%s>", 
-	      octstr_get_cstr(tmp1), octstr_get_cstr(tmp2));
+        debug("wsp",0,"WSP: Matching <%s> with <%s>", 
+              octstr_get_cstr(tmp1), octstr_get_cstr(tmp2));
 
-	if(octstr_case_compare(tmp2, tmp1) == 0) {
-	    /* rewrite url if configured to do so */
-	    if(entry->map_url != NULL) {
-	        if(octstr_get_char(entry->map_url, 
-		   octstr_len(entry->map_url)-1) == '*') {
-		    newurl = octstr_duplicate(entry->map_url);
-		    octstr_delete(newurl, octstr_len(newurl)-1, 1);
-		    octstr_append(newurl, octstr_copy(*osp, 
-				  octstr_len(entry->url)-1, 
-				  octstr_len(*osp)-octstr_len(entry->url)+1));
-	        } else {
-		    newurl = octstr_duplicate(entry->map_url);
-	        }
-		debug("wsp", 0, "WSP: URL Rewriten from <%s> to <%s>", 
-		      octstr_get_cstr(*osp), octstr_get_cstr(newurl));
-	        octstr_destroy(*osp);
-	        *osp = newurl;
-	    }
-	    *accept_cookies = entry->accept_cookies;
-	    *send_msisdn_query = octstr_duplicate(entry->send_msisdn_query);
-	    *send_msisdn_header = octstr_duplicate(entry->send_msisdn_header);
-	    *send_msisdn_format = octstr_duplicate(entry->send_msisdn_format);
-	    octstr_destroy(tmp1);
-	    octstr_destroy(tmp2);
-	    break;
-	}
-	octstr_destroy(tmp1);
-	octstr_destroy(tmp2);
+        if (octstr_case_compare(tmp2, tmp1) == 0) {
+            /* rewrite url if configured to do so */
+            if (entry->map_url != NULL) {
+                if (octstr_get_char(entry->map_url, 
+                                    octstr_len(entry->map_url)-1) == '*') {
+                    newurl = octstr_duplicate(entry->map_url);
+                    octstr_delete(newurl, octstr_len(newurl)-1, 1);
+                    octstr_append(newurl, octstr_copy(*osp, 
+                    octstr_len(entry->url)-1, 
+                    octstr_len(*osp)-octstr_len(entry->url)+1));
+                } else {
+                    newurl = octstr_duplicate(entry->map_url);
+                }
+                debug("wsp",0,"WSP: URL Rewriten from <%s> to <%s>", 
+                      octstr_get_cstr(*osp), octstr_get_cstr(newurl));
+                octstr_destroy(*osp);
+                *osp = newurl;
+            }
+            *accept_cookies = entry->accept_cookies;
+            *send_msisdn_query = octstr_duplicate(entry->send_msisdn_query);
+            *send_msisdn_header = octstr_duplicate(entry->send_msisdn_header);
+            *send_msisdn_format = octstr_duplicate(entry->send_msisdn_format);
+            octstr_destroy(tmp1);
+            octstr_destroy(tmp2);
+            break;
+        }
+        octstr_destroy(tmp1);
+        octstr_destroy(tmp2);
     }
 }
 
 
 /* 
- * converts user and pass in msisdn
+ * Converts user and pass into MSISDN
  */
 static int wsp_http_map_user(Octstr **msisdn, Octstr *user, Octstr *pass)
 {
     long i;
     struct user_map_struct *entry;
 
-    for(i=0; user_map && i < list_len(user_map); i++) {
-	entry = list_get(user_map, i);
-	if(octstr_compare(user, entry->user)==0 && 
-	   octstr_compare(pass, entry->pass)==0) {
-	    *msisdn = octstr_duplicate(entry->msisdn);
-	    return 1;
-	}
+    for (i = 0; user_map && i < list_len(user_map); i++) {
+        entry = list_get(user_map, i);
+        if (octstr_compare(user, entry->user)==0 && 
+            octstr_compare(pass, entry->pass)==0) {
+            *msisdn = octstr_duplicate(entry->msisdn);
+            return 1;
+        }
     }
     return 0;
 }
@@ -1614,20 +1642,20 @@ void wsp_http_map_destroy(void)
     long i;
     struct url_map_struct *entry;
 
-    if(url_map != NULL) {
-	for(i=0; i < list_len(url_map); i++) {
-	    entry = list_get(url_map, i);
-	    octstr_destroy(entry->name);
-	    octstr_destroy(entry->url);
-	    octstr_destroy(entry->map_url);
-	    octstr_destroy(entry->send_msisdn_query);
-	    octstr_destroy(entry->send_msisdn_header);
-	    octstr_destroy(entry->send_msisdn_format);
-	    gw_free(entry);
-	}
-	list_destroy(url_map, NULL);
-   }
-   url_map = NULL;
+    if (url_map != NULL) {
+        for (i = 0; i < list_len(url_map); i++) {
+            entry = list_get(url_map, i);
+            octstr_destroy(entry->name);
+            octstr_destroy(entry->url);
+            octstr_destroy(entry->map_url);
+            octstr_destroy(entry->send_msisdn_query);
+            octstr_destroy(entry->send_msisdn_header);
+            octstr_destroy(entry->send_msisdn_format);
+            gw_free(entry);
+        }
+        list_destroy(url_map, NULL);
+    }
+    url_map = NULL;
 }
 
 
@@ -1635,18 +1663,18 @@ void wsp_http_map_user_destroy(void)
 {
     long i;
     struct user_map_struct *entry;
-    if(user_map != NULL) {
-	for(i=0; i < list_len(user_map); i++) {
-	    entry = list_get(user_map, i);
-	    octstr_destroy(entry->name);
-	    octstr_destroy(entry->user);
-	    octstr_destroy(entry->pass);
-	    octstr_destroy(entry->msisdn);
-	    gw_free(entry);
-	}
-	list_destroy(user_map, NULL);
-   }
-   user_map = NULL;
+    if (user_map != NULL) {
+        for (i = 0; i < list_len(user_map); i++) {
+            entry = list_get(user_map, i);
+            octstr_destroy(entry->name);
+            octstr_destroy(entry->user);
+            octstr_destroy(entry->pass);
+            octstr_destroy(entry->msisdn);
+            gw_free(entry);
+        }
+        list_destroy(user_map, NULL);
+    }
+    user_map = NULL;
 }
 
 
@@ -1714,6 +1742,7 @@ static void check_application_headers(List **headers,
     octstr_destroy(coded_octstr);
 }
 
+
 /*
  * Bearer-Indication field is defined in ota 6.4.1. 
  * Skip the header, if it is malformed or if there is more than one bearer 
@@ -1752,7 +1781,7 @@ static void decode_bearer_indication(List **headers, List **bearer_headers)
     http_header_get(inb, 0, &name, &coded_octstr);
     http_destroy_headers(inb);
 
-  /* Greatest assigned number for a bearer type is 0xff, see wdp, appendix C */
+    /* Greatest assigned number for a bearer type is 0xff, see wdp, appendix C */
     coded_value = octstr_get_char(coded_octstr, 0);
     value = wsp_bearer_indication_to_cstr(coded_value);
 
@@ -1783,6 +1812,7 @@ static void split_header_list(List **headers, List **new_headers, char *name)
     http_header_remove_all(*headers, name);  
 }
 
+
 /*
  * Find headers Accept-Application and Bearer-Indication amongst push headers,
  * decode them and add them to their proper field. 
@@ -1790,9 +1820,7 @@ static void split_header_list(List **headers, List **new_headers, char *name)
 static void indicate_push_connection(WAPEvent *e)
 {
     WAPEvent *ppg_event;
-    List *push_headers,
-         *application_headers,
-         *bearer_headers;
+    List *push_headers, *application_headers, *bearer_headers;
 
     push_headers = http_header_duplicate(e->u.S_Connect_Ind.client_headers);
     application_headers = http_create_empty_headers();
@@ -1822,6 +1850,7 @@ static void indicate_push_connection(WAPEvent *e)
     wap_push_ppg_dispatch_event(ppg_event);
 }
 
+
 static void indicate_push_disconnect(WAPEvent *e)
 {
     WAPEvent *ppg_event;
@@ -1838,6 +1867,7 @@ static void indicate_push_disconnect(WAPEvent *e)
 
     wap_push_ppg_dispatch_event(ppg_event);
 }
+
 
 /*
  * We do not implement acknowledgement headers
@@ -1856,6 +1886,7 @@ static void confirm_push(WAPEvent *e)
     wap_push_ppg_dispatch_event(ppg_event);
 }
 
+
 static void indicate_push_abort(WAPEvent *e)
 {
     WAPEvent *ppg_event;
@@ -1870,6 +1901,7 @@ static void indicate_push_abort(WAPEvent *e)
     wap_push_ppg_dispatch_event(ppg_event);
 }
 
+
 static void indicate_push_suspend(WAPEvent *e)
 {
     WAPEvent *ppg_event;
@@ -1881,6 +1913,7 @@ static void indicate_push_suspend(WAPEvent *e)
     wap_push_ppg_dispatch_event(ppg_event);
 }
 
+
 /*
  * Find Bearer-Indication amongst client headers, decode it and assign it to
  * a separate field in the event structure.
@@ -1888,8 +1921,7 @@ static void indicate_push_suspend(WAPEvent *e)
 static void indicate_push_resume(WAPEvent *e)
 {
     WAPEvent *ppg_event;
-    List *push_headers,
-         *bearer_headers;
+    List *push_headers, *bearer_headers;
 
     push_headers = http_header_duplicate(e->u.S_Resume_Ind.client_headers);
     bearer_headers = http_create_empty_headers();
@@ -1912,6 +1944,7 @@ static void indicate_push_resume(WAPEvent *e)
     wap_push_ppg_dispatch_event(ppg_event);
 }
 
+
 /*
  * Server headers are mentioned in table in ota 6.4.1, but none of the primit-
  * ives use them. They are optional in S_Connect_Res, so we do not use them.
@@ -1930,8 +1963,4 @@ static void response_push_connection(WAPEvent *e)
 
     wsp_session_dispatch_event(wsp_event);
 }
-
-
-
-
 
