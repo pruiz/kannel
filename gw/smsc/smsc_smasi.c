@@ -54,6 +54,7 @@ static void dump_pdu(const char *msg, Octstr *id, SMASI_PDU *pdu)
 #define SMASI_DEFAULT_PRIORITY      0
 #define MAX_PENDING_SUBMITS         10
 #define SMASI_THROTTLING_SLEEP_TIME 15
+#define SMASI_ENQUIRE_LINK_INTERVAL  30.0 
 
 
 /************************************************************************/
@@ -96,6 +97,7 @@ typedef struct {
     long priority;
     time_t throttling_err_time;
     int quitting;
+    long enquire_link_interval;
     int logged_off;
 } SMASI;
 
@@ -126,6 +128,7 @@ static SMASI *smasi_create(SMSCConn *conn)
     smasi->logged_off = 0;
     smasi->priority = 0;
     smasi->throttling_err_time = 0;
+    smasi->enquire_link_interval = 30;
 
     list_add_producer(smasi->msgs_to_send);
 
@@ -591,6 +594,25 @@ static void send_logoff(SMASI *smasi, Connection *conn)
 }
 
  
+static void send_enquire_link(SMASI *smasi, Connection *conn, long *last_sent) 
+{ 
+    SMASI_PDU *pdu = NULL; 
+    Octstr *os = NULL; 
+ 
+    if (date_universal_now() - *last_sent < smasi->enquire_link_interval)
+        return; 
+    *last_sent = date_universal_now(); 
+ 
+    pdu = smasi_pdu_create(EnquireLinkReq);
+    dump_pdu("Sending EnquireLinkReq:", smasi->conn->id, pdu); 
+    os = smasi_pdu_pack(pdu); 
+    if (os)
+	   conn_write(conn, os); /* Write errors checked by caller. */ 
+    octstr_destroy(os); 
+    smasi_pdu_destroy(pdu); 
+} 
+
+
 static int send_pdu(Connection *conn, Octstr *id, SMASI_PDU *pdu)
 {
     Octstr * os = NULL;
@@ -833,6 +855,8 @@ static void smasi_thread(void *arg)
     int logoff_already_sent = 0;
     int ret;
     Connection *conn;
+    long last_enquire_sent; 
+    double timeout; 
 
     smasi = arg;
 
@@ -853,6 +877,8 @@ static void smasi_thread(void *arg)
         len = 0;
 
         for (;;) {
+            timeout = last_enquire_sent + smasi->enquire_link_interval
+                        - date_universal_now(); 
 
             /* Send logoff request if module is shutting down. */
             if (smasi->quitting && !logoff_already_sent) {
@@ -1011,7 +1037,10 @@ static int init_configuration(SMASI *smasi, CfgGroup *config)
     if (cfg_get_integer(&smasi->priority, config,
       octstr_imm("priority")) == -1)
         smasi->priority = SMASI_DEFAULT_PRIORITY;
-
+    if (cfg_get_integer(&smasi->enquire_link_interval, config,
+      octstr_imm("enquire-link-interval")) == -1)
+        smasi->enquire_link_interval = SMASI_ENQUIRE_LINK_INTERVAL;
+   
     /* Configure SMSC connection. */
     smasi->conn->data = smasi;
     smasi->conn->name = octstr_format("SMASI:%S:%d:%S",
