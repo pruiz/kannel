@@ -366,9 +366,6 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
 	emimsg->fields[E50_NT] = octstr_create("");
 	octstr_append_decimal(emimsg->fields[E50_NT], 3 + (msg->sms.dlr_mask & 0x04)); 
     }
-//    DAVI
-	emimsg->fields[E50_RPID] = octstr_create("0127");
-//    DAVI
     return emimsg;
 }
 
