@@ -1,3 +1,9 @@
+2000-06-29  Paul Keogh <paul.keogh@anam.ie>
+
+	* gwlib/list.c: Removed unnecessary calls to lock() and unlock() 
+	in the list_cat() function as the called functions do the required locking.
+	Locking the same lock twice causes a panic().
+
 2000-06-29  Richard Braakman  <dark@wapit.com>
 
 	* gw/wsp-session.c: Fixed memory leak in new capability code.
