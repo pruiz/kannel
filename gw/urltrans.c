@@ -585,10 +585,12 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    break;
 
 	case 'A':
-	    enc = octstr_duplicate(reply);
-	    octstr_url_encode(enc);
-	    octstr_append(result, enc);
-	    octstr_destroy(enc);
+	    if (reply) {
+		enc = octstr_duplicate(reply);
+		octstr_url_encode(enc);
+		octstr_append(result, enc);
+		octstr_destroy(enc);
+	    }
 	    break;
 
 	case 'c':

@@ -1,4 +1,9 @@
 2004-03-09  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/urltrans.c: applied patch from "Angel Fradejas" <afradejas@mediafusion.es>
+      that fixes the bug #117.
+      Msg-Id: <200403031228.i23CSkP16905@int-mail01.mediafusion.es>.
+
+2004-03-09  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/octstr.c: applied patch from "Angel Fradejas" <afradejas@mediafusion.es>
       in slighly modified version that checks for NULL pointers.
       Msg-Id: <200403031228.i23CSkP16905@int-mail01.mediafusion.es>.
