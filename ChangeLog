@@ -1,3 +1,11 @@
+2000-01-27 Sanna Seppanen <sanna@wapit.com>
+
+	*gwlib/http.c, gwlib/http.h implementation of http_post. all bzero 
+	-functions changed to memset.
+
+	*gwlib/http.c, gwlib/http.h  http_get changed to use http_get_u 
+	with NULL header pointer.
+	
 Thu Jan 27 20:09:23 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp.c, gw/wtp.h: Fixed locking of WTPMachine list (the previous
