@@ -1,9 +1,8 @@
 /*
  * wtp.c - WTP implementation
  *
- * Implementation is for now very straigthforward, WTP state machines are stored
- * as an unordered linked list (this fact will change, naturally). Segments to be 
- * reassembled are stored as ordered linked list. 
+ * WTP state machines are stored in the project library data sructure list. 
+ * Segments to be reassembled are stored as ordered linked list. 
  *
  * By Aarno Syvänen for WapIT Ltd.
  */
@@ -83,7 +82,7 @@ struct Segments {
        WTPSegment *list;             /* List of segments received */
        WTPSegment *ackd;             /* List of segments acknowledged */
        WTPSegment *missing;          /* Missing segments list */
-       WTPSegment *first;            /* pointer to first of the segments */
+       WTPSegment *first;            /* pointer to first of the segments assembled*/
        WTPEvent *event;              /* event perhaps containing a segment (instead of a 
                                         complete message*/
        int negative_ack_sent;
@@ -421,7 +420,8 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
  * appropiate. The memory for this data structure is deallocated either by this module, if 
  * its data is added to a message to be reassembled, or by wtp_handle_event.
  *
- * Return event, when we have a single message or have reassembled whole the message; NULL,  * when we have a segment inside of a segmented message.
+ * Return event, when we have a single message or have reassembled whole the message; NULL, 
+ * when we have a segment inside of a segmented message.
  */
 WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
@@ -1289,27 +1289,25 @@ static WTPEvent *unpack_invoke_flags(WTPEvent *event, Msg *msg, long tid,
 static WTPSegment *add_segment_to_message(long tid, Octstr *data, unsigned char 
                                           position){
 
-/* XXX static variable? probably not thread safe --liw */
-       static WTPSegment *first = NULL;
        WTPSegment *previous = NULL,
                   *next = NULL,
-                  *segments_list = NULL;
+                  *new_segment = NULL;
 
-       debug("wap.wtp", 0, "WTP: Adding a segment into the segments list");
+       debug("wap.wtp", 0, "WTP: Adding a segment into the message");
 
-       segments_list = create_segment();
-       segments_list->tid = tid;
-       segments_list->packet_sequence_number = position;
-       octstr_destroy(segments_list->data);
-       segments_list->data = data;
+       new_segment = create_segment();
+       new_segment->tid = tid;
+       new_segment->packet_sequence_number = position;
+       octstr_destroy(new_segment->data);
+       new_segment->data = octstr_duplicate(data);
 
-       if (first == NULL){
-          first = segments_list;
-          return first;
+       if (segments->first == NULL){
+          segments->first = new_segment;
+          return segments->first;
 
        } else {
-          previous = find_previous_segment(tid, position, first, next);
-          return insert_segment(previous, next, segments_list);
+          previous = find_previous_segment(tid, position, segments->first, next);
+          return insert_segment(previous, next, new_segment);
        }
 
 /* Following return is not necessary but is required by the compiler */
