@@ -1,3 +1,9 @@
+2000-07-11  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: Bug #86 fixed. A memory leak with $ characters 
+	fixed. Another one still remains with mix of $ characters and 
+	variables.
+
 2000-07-11  Yann Muller  <ymuller@3glab.com>
 
 	* doc/userguide/newconf.txt: Added configuration information to use
@@ -16,9 +22,9 @@
 
 2000-07-07  Tuomas Luttinen  <tuo@wapit.com>
 
-	* configure: Now supprt for libxml 1.8.8 and 2.1.1.
+	* configure: Now support for libxml 1.8.8 and 2.1.1.
 
-	* gw/wml_compiler.c: Supprt for libxml version 2 and above now ready.
+	* gw/wml_compiler.c: Support for libxml version 2 and above now ready.
 
 	* gw/wml_compiler.c (parse_attribute): Patch by Holger Casties applied
 	to eliminate a segmentation fault with NULL pointer passed as a second 
