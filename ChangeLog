@@ -1,3 +1,8 @@
+2002-12-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/conn.c: fixed reentrant bugs in conn_shutdown_ssl() and
+      server_shutdown_ssl(). Thanks to Paul for pointing this out.
+    * test/wapproxy.c: fixed a couple of compiler warnings.
+
 2002-12-05 Andreas Fink <andreas@fink.org>
    * gw/smsc/smsc_smpp.c: fixed throttling problem in SMPP
      which was triggered by getting back a generic error instead of
