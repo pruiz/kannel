@@ -171,7 +171,7 @@ int ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
     WsBool success;
 
     /* Just check that we get the correct amount of arguments. */
-    gw_assert(compiler->magic = COMPILER_MAGIC);
+    gw_assert(compiler->magic == COMPILER_MAGIC);
 
     while (ws_stream_getc(compiler->input, &ch)) {
         /* Save the token's line number. */

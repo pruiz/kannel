@@ -1,6 +1,7 @@
 2000-11-21  Richard Braakman  <dark@wapi.com>
 
-	* wmlscript/wserror.c: Fixed some assertions with side effects.
+	* wmlscript/wserror.c, wmlscript/wslexer.c:
+        Fixed some assertions with side effects.
 
 2000-11-21  Richard Braakman  <dark@wapi.com>
 
