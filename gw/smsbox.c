@@ -602,6 +602,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
     struct tm tm;
     char p[22];
     int type;
+    FILE *f;
     
     gw_assert(msg != NULL);
     gw_assert(msg_type(msg) == sms);
@@ -634,6 +635,26 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	     octstr_get_cstr(*result));
 	break;
     
+    case TRANSTYPE_EXECUTE:
+        debug("sms.exec", 0, "executing sms-service '%s'", 
+              octstr_get_cstr(pattern));
+        if ((f = popen(octstr_get_cstr(pattern), "r")) != NULL) {
+            octstr_destroy(pattern);
+            *result = octstr_read_pipe(f);
+            pclose(f);
+            alog("SMS request sender:%s request: '%s' file answer: '%s'",
+                octstr_get_cstr(msg->sms.receiver),
+                octstr_get_cstr(msg->sms.msgdata),
+                octstr_get_cstr(*result));
+        } else {
+            error(0, "popen failed for '%s': %d: %s",
+                  octstr_get_cstr(pattern), errno, strerror(errno));
+            *result = NULL;
+            octstr_destroy(pattern);
+            goto error;
+        }
+        break;
+
     case TRANSTYPE_GET_URL:
 	request_headers = http_create_empty_headers();
 	http_header_add(request_headers, "User-Agent", "Kannel " VERSION);
