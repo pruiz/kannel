@@ -1,3 +1,8 @@
+2000-12-21  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+	
+	* gw/wap-appl.c: Fixed race condition, between updating and
+	deleting stuff in id_to_request_data and caller simultaneously
+
 2000-12-20  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_smscconn_cb.c: renamed as bb_smscconn.c and includes all

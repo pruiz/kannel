@@ -50,11 +50,18 @@ static HTTPCaller *caller = NULL;
 static Counter *fetches = NULL;
 
 
+/* We have a race between caller and id_to_request_data updates,
+ * since one thread waits on caller being nonempty and then immediatly
+ * tried to process id_to_request_data, sometimes before the first
+ * has added to it.  This mutex prevents id_to_request_data being read
+ * until the updates have completed on both lists.
+ */
+Mutex* http_reply_update;
+
 /*
  * Charsets supported by WML compiler, queried from wml_compiler.
  */
 static List *charsets = NULL;
-
 
 struct content {
     Octstr *body;
@@ -124,6 +131,7 @@ void wap_appl_init(void)
     id_to_request_data = dict_create(1024, NULL);
     gwthread_create(main_thread, NULL);
     gwthread_create(return_replies_thread, NULL);
+    http_reply_update=mutex_create();
 }
 
 
@@ -501,12 +509,20 @@ static void return_replies_thread(void *arg)
     List *headers;
 
     while (run_status == running) {
+
 	id = http_receive_result(caller, &status, &final_url, &headers,
 	    	    	    	 &content.body);
     	if (id == -1)
 	    break;
     	idstr = octstr_format("%ld", id);
+	
+	
+	mutex_lock(http_reply_update);
+
 	p = dict_remove(id_to_request_data, idstr);
+	
+	mutex_unlock(http_reply_update);
+
 	gw_assert(p != NULL);
 	octstr_destroy(idstr);
 	return_reply(status, content, headers, p->client_SDU_size,
@@ -623,6 +639,10 @@ static void start_fetch(WAPEvent *event)
 	    octstr_destroy(request_body);
 	    request_body = NULL;
 	}
+	/* We need to update caller AND id_to_request_data before
+	 * another thread can process it.  I hate race conditions.
+	 */
+	mutex_lock(http_reply_update);
 	id = http_start_request(caller, url, actual_headers, request_body, 0);
 	http_destroy_headers(actual_headers);
 	octstr_destroy(request_body);
@@ -636,6 +656,7 @@ static void start_fetch(WAPEvent *event)
 	p->x_wap_tod = x_wap_tod;
 	dict_put(id_to_request_data, idstr, p);
 	octstr_destroy(idstr);
+	mutex_unlock(http_reply_update);
     } else {
 	error(0, "WSP: Method %s not supported.", octstr_get_cstr(method));
 	content.body = octstr_create("");
