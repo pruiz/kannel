@@ -148,7 +148,7 @@ static int start_smsc(Config *config)
     static int started = 0;
     if (started) return 0;
 
-    smsc_start(config);
+    smsc2_start(config);
 
     smsbox_start(config);
 
@@ -425,10 +425,11 @@ int main(int argc, char **argv)
     bb_status = BB_DEAD;
     httpadmin_stop();
 
-    smsc_die();
+/*    smsc_die(); */
     
     gwthread_join_all();
-    
+
+    smsc2_cleanup();
     empty_msg_lists();
     
     list_destroy(flow_threads, NULL);
@@ -467,7 +468,7 @@ int bb_shutdown(void)
 
 #ifndef KANNEL_NO_SMS
     debug("bb", 0, "shutting down smsc");
-    smsc_shutdown();
+    smsc2_shutdown();
 #endif
 #ifndef KANNEL_NO_WAP
     debug("bb", 0, "shutting down udp");
@@ -578,13 +579,14 @@ Octstr *bb_print_status(int xml)
 	    counter_value(incoming_sms_counter),
 	    list_len(incoming_sms),
 	    counter_value(outgoing_sms_counter),
-	    list_len(outgoing_sms) + smsc_outgoing_queue());
+	    list_len(outgoing_sms));
+/*	    list_len(outgoing_sms) + smsc_outgoing_queue()); */
 
     octstr_destroy(version);
     ret = octstr_create(buf);
 
     append_status(ret, str, boxc_status, xml);
-    append_status(ret, str, smsc_status, xml);
+    append_status(ret, str, smsc2_status, xml);
     octstr_append(ret, octstr_create_immutable("</p>"));
     
     return ret;

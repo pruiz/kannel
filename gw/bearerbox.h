@@ -63,18 +63,23 @@ int udp_outgoing_queue(void);
 
 
 /*---------------
- * bb_smsc.c (SMS Center connections)
+ * bb_smscconn.c (SMS Center connections)
  */
 
-int smsc_start(Config *config);
-int smsc_restart(Config *config);
-int smsc_shutdown(void);
-int smsc_die(void);	/* called when router dies */
+int smsc2_start(Config *config);
+int smsc2_restart(Config *config);
+int smsc2_shutdown(void);
+void smsc2_cleanup(void); /* final clean-up */
 
+Octstr *smsc2_status(int xml);
+
+
+
+/* old bb_smsc.c functions not yet/anymore supported by new bb_smscconn */
+int smsc_die(void);	/* called when router dies */
 /* as udp_addwdp() */
 int smsc_addwdp(Msg *msg);
 
-Octstr *smsc_status(int xml);
 /* tell total number of messages in seperate SMSC outgoing queues */
 int smsc_outgoing_queue(void);
 

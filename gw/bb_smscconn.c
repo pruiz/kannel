@@ -207,7 +207,7 @@ static void sms_router(void *arg)
 	    else if (ret == 1) {
                 debug("bb", 0, "sms_router: adding message to preferred <%s>",
                       octstr_get_cstr(smscconn_name(conn)));
-		if (smscconn_send(conn, msg) == 1)
+		if (smscconn_send(conn, msg) == -1)
 		    continue;
 		msg_destroy(msg);
                 goto found;
@@ -216,8 +216,10 @@ static void sms_router(void *arg)
         if (backup) {
             debug("bb", 0, "sms_router: adding message to <%s>",
                   octstr_get_cstr(smscconn_name(backup)));
-	    if (smscconn_send(backup, msg) == 1)
+	    if (smscconn_send(backup, msg) == -1)
 		list_produce(outgoing_sms, msg);
+	    else
+		msg_destroy(msg);
         }
         else {
             warning(0, "Cannot find SMSC for message to <%s>, discarded.",

@@ -39,11 +39,14 @@ static void wrapper_receiver(void *arg)
         list_consume(conn->stopped); /* block here if suspended/isolated */
 
         ret = smsc_get_message(wrap->smsc, &msg);
-        if (ret == -1)
+        if (ret == -1) {
+	    debug("bb.sms", 0, "smscconn (%s): permanently failed",
+		  octstr_get_cstr(conn->name));
             break;
-
+	}
 	if (ret == 1) {
-            debug("bb.sms", 0, "smsc: new message received");
+            debug("bb.sms", 0, "smscconn (%s): new message received",
+		  octstr_get_cstr(conn->name));
             sleep = 0.0001;
 	    counter_increase(conn->received);
 	    bb_smscconn_receive(conn, msg);
@@ -71,7 +74,8 @@ static int sms_send(SMSCConn *conn, Msg *msg)
     SmscWrapper *wrap = conn->data;
     int ret;
 
-    debug("bb.sms", 0, "sms_sender: sending message");
+    debug("bb.sms", 0, "smscconn_sender (%s): sending message",
+	  octstr_get_cstr(conn->name));
         
     ret = smsc_send_message(wrap->smsc, msg);
     if (ret == -1) {
@@ -95,7 +99,7 @@ static void wrapper_sender(void *arg)
 
     /* send messages to SMSC until our putgoing_list is empty and
      * no producer anymore (we are set to shutdown) */
-    while(1) {
+    while(conn->status != SMSCCONN_KILLED) {
 
         list_consume(conn->stopped); /* block here if suspended/isolated */
 
@@ -131,26 +135,32 @@ static void wrapper_sender(void *arg)
     }
     /* cleanup, we are now dying */
 
+    debug("bb.sms", 0, "SMSCConn %s sender died, waiting for receiver",
+	  octstr_get_cstr(conn->name));
     
     conn->is_killed = 1;
+    smsc_set_killed(wrap->smsc, 1);
+
     if (conn->is_stopped) {
 	list_remove_producer(conn->stopped);
 	conn->is_stopped = 0;
     }
 
-    gwthread_wakeup(wrap->sender_thread);
-    gwthread_join(wrap->sender_thread);
+    gwthread_wakeup(wrap->receiver_thread);
+    gwthread_join(wrap->receiver_thread);
 
     /* call 'failed' to all messages still in queue */
     
+    conn->status = SMSCCONN_KILLED;
+
     while((msg = list_extract_first(wrap->outgoing_queue))!=NULL) {
 	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
     }
     list_destroy(wrap->outgoing_queue, NULL);
     smsc_close(wrap->smsc);
-    gw_free(conn->data);
+    gw_free(wrap);
+    conn->data = NULL;
 
-    conn->status = SMSCCONN_KILLED;
     bb_smscconn_killed(SMSCCONN_KILLED_SHUTDOWN);
 }
 
@@ -176,6 +186,9 @@ static int wrapper_shutdown(SMSCConn *conn, int finish_sending)
 {
     SmscWrapper *wrap = conn->data;
 
+    debug("bb.sms", 0, "Shutting down SMSCConn %s, %s",
+	  octstr_get_cstr(conn->name), finish_sending ? "slow" : "instant");
+    
     if (finish_sending == 0) {
 	Msg *msg; 
 	while((msg = list_extract_first(wrap->outgoing_queue))!=NULL) {
@@ -183,9 +196,21 @@ static int wrapper_shutdown(SMSCConn *conn, int finish_sending)
 	}
     }
     list_remove_producer(wrap->outgoing_queue);
+    smsc_set_killed(wrap->smsc, 1);
     return 0;
 }
 
+
+static long wrapper_queued(SMSCConn *conn)
+{
+    SmscWrapper *wrap = conn->data;
+    long ret = list_len(wrap->outgoing_queue);
+
+    /* XXX use internal queue as load, maybe something else later */
+    
+    conn->load = ret;
+    return ret;
+}
 
 int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
 {
@@ -206,6 +231,8 @@ int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
     if ((wrap->smsc = smsc_open(cfg)) == NULL)
 	goto error;
 
+    conn->name = octstr_create(smsc_name(wrap->smsc));
+    
     wrap->outgoing_queue = list_create();
     list_add_producer(wrap->outgoing_queue);
     
@@ -222,6 +249,7 @@ int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
 	goto error;
 
     conn->shutdown = wrapper_shutdown;
+    conn->queued = wrapper_queued;
     
     return 0;
 

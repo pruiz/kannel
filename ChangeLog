@@ -1,5 +1,17 @@
 2000-12-21  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/bearerbox.*: use smsc2_ functions for new bb_smscconn,
+	renaming in a near future
+	
+	* gw/smsc.c: modified to use gwthread_sleep instead of plain
+	sleep, so that no need for 'semi-busy sleep' during reconnect
+
+	* gw/smscconn*.*: added missing functions, these should now work
+
+	* gw/smsc_wrapper.c: finished, including program flow etc.
+	
+2000-12-21  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/smsc.c: added missing breaks to _reopen
 
 2000-12-21  Derry Hamilton <rasilon@tardis.ed.ac.uk>

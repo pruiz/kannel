@@ -709,6 +709,9 @@ int smsc_reopen(SMSCenter *smsc)
 {
     int ret;
 
+    if (smsc->killed)
+	return -2;
+
     smscenter_lock(smsc);
 
     switch (smsc->type) {
@@ -905,7 +908,7 @@ int smsc_close(SMSCenter *smsc)
 int smsc_send_message(SMSCenter *smsc, Msg *msg)
 {
     int ret;
-    int wait = 1, l;
+    int wait = 1;
 
 retry:
     ret = smscenter_submit_msg(smsc, msg);
@@ -917,11 +920,8 @@ retry:
             return -1;
         } else if (ret == -1) {
             error(0, "Reopen failed, retrying after %d minutes...", wait);
-            for (l = 0; l < wait*60; l++) {
-                if (smsc->killed)	/* only after failed re-open..*/
-                    return -1;
-                sleep(1);
-            }
+	    gwthread_sleep(wait*60.0);
+
             wait = wait > 10 ? 10 : wait * 2 + 1;
             goto retry;
         }
@@ -939,7 +939,7 @@ int smsc_get_message(SMSCenter *smsc, Msg **new)
 {
     Msg *newmsg = NULL;
     int ret;
-    int l, wait = 1;
+    int wait = 1;
 
     *new = NULL;
 
@@ -967,11 +967,7 @@ retry:
                 return -1;
             else if (ret == -1) {
                 error(0, "Reopen failed, retrying after %d minutes...", wait);
-                for (l = 0; l < wait*60; l++) {
-                    if (smsc->killed)	/* only after failed re-open..*/
-                        return -1;
-                    sleep(1);
-                }
+		gwthread_sleep(wait*60.0);
                 wait = wait > 10 ? 10 : wait * 2 + 1;
                 goto retry;
             }

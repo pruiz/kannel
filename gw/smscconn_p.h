@@ -70,7 +70,7 @@
 #include "gwlib/gwlib.h"
 
 struct smscconn {
-    int		 status;	/* see smscconn.h */
+    int		status;		/* see smscconn.h */
     int 	load;	       	/* load factor, 0 = no load */
     int		is_killed;	/* time to die */
     time_t 	connect_time;	/* When connection to SMSC was established */
@@ -91,7 +91,7 @@ struct smscconn {
 
     /* Routing Octstrings common to all SMSC Connections */
     Octstr *denied_smsc_id;
-    Octstr *accepted_smsc_id;
+    Octstr *preferred_smsc_id;
 
     Octstr *denied_prefix;
     Octstr *preferred_prefix;
@@ -107,6 +107,12 @@ struct smscconn {
     /* pointer to function called when a new message is needed to be sent.
        MAY NOT block */
     int (*send_msg) (SMSCConn *conn, Msg *msg);
+
+    /* pointer to function which returns current number of queued
+     * messages to-be-sent. The function CAN also set load factor directly
+     * to SMSCConn structure (above)
+     */
+    long (*queued) (SMSCConn *conn);
     
     void *data;			/* SMSC specific stuff */
 
