@@ -35,6 +35,7 @@ static char *boundary = NULL;
 static Octstr *content_flag = NULL;
 static Octstr *appid_flag = NULL;
 static Octstr *content_transfer_encoding = NULL;
+static Octstr *connection = NULL;
 
 enum { SSL_CONNECTION_OFF = 0,
        DEFAULT_NUMBER_OF_RELOGS = 2};
@@ -141,6 +142,17 @@ static void add_content_transfer_encoding_type(Octstr *content_flag,
 	octstr_append_cstr(wap_content, "Content-transfer-encoding: base64\r\n");
 }
 
+static void add_connection_header(Octstr *connection, Octstr *wap_content)
+{
+    if (!connection)
+        return;
+
+    if (octstr_compare(connection, octstr_imm("close")) == 0)
+        octstr_format_append(wap_content, "%s", "Connection: close\r\n");
+    else if (octstr_compare(connection, octstr_imm("keep-alive")) == 0) 
+        octstr_format_append(wap_content, "%s", "Connection: keep-alive\r\n");
+}
+
 static void transfer_encode (Octstr *cte, Octstr *content)
 {
     if (!cte)
@@ -205,7 +217,7 @@ static List *push_headers_create(size_t content_len)
            *mos;
 
     mos = NULL;
-    push_headers  = http_create_empty_headers();
+    push_headers = http_create_empty_headers();
     if (use_hardcoded)
         http_header_add(push_headers, "Content-Type", "multipart/related;" 
                         " boundary=asdlfkjiurwgasf; type=\"application/xml\"");
@@ -280,6 +292,8 @@ static Octstr *push_content_create(void)
         add_content_type(content_flag, &wap_content);
         add_content_transfer_encoding_type(content_transfer_encoding, 
                                            wap_content);
+        add_connection_header(connection, wap_content);
+
         if ((wap_file_content = 
                 octstr_read_file(octstr_get_cstr(content_file))) == NULL)
 	    panic(0, "Stopping");
@@ -347,7 +361,6 @@ static void start_push(HTTPCaller *caller, long i)
                        ssl_client_certkey_file);
     debug("test.ppg", 0, "TEST_PPG: started pushing job %ld", i);
 
-    octstr_destroy(push_url);
     octstr_destroy(push_content);
     http_destroy_headers(push_headers);
 }
@@ -554,6 +567,8 @@ static void help(void)
     info(0, "      c) a pap document controlling pushing");
     info(0, "     or");
     info(0, "      a) a test configuration file, containing all these");
+    info(0, "Option -H cannot be used with a configuration file. If it is");
+    info(0, "used, the push url is the only argument.");
     info(0, "Options are:");
     info(0, "-h");
     info(0, "print this info");
@@ -578,6 +593,9 @@ static void help(void)
     info(0, "-e transfer encoding");
     info(0, "    use transfer encoding to send push contents.");
     info(0, "    Currently supported is base64.");
+    info(0, "-k connection header");
+    info(0, "Use the connection header. Keep-alive and close accepted,");
+    info(0, "default close");
     info(0, "-H");
     info(0, "Use hardcoded MIME message, containing a pap control document.");
     info(0, "In addition, use hardcoded username/password in headers (if ");
@@ -601,7 +619,7 @@ int main(int argc, char **argv)
     gwlib_init();
     num_threads = 1;
 
-    while ((opt = getopt(argc, argv, "Hhbv:qr:t:c:a:i:e")) != EOF) {
+    while ((opt = getopt(argc, argv, "Hhbv:qr:t:c:a:i:e:k:")) != EOF) {
         switch(opt) {
 	    case 'v':
 	        log_set_output_level(atoi(optarg));
@@ -675,6 +693,18 @@ int main(int argc, char **argv)
 		}
 	    break;
 
+	    case 'k':
+	        connection = octstr_create(optarg);
+                if (octstr_compare(connection, octstr_imm("close")) != 0 && 
+                    octstr_compare(connection, 
+                        octstr_imm("keep-alive")) != 0) {
+		    octstr_destroy(connection);
+		    error(0, "TEST_PPG: Connection-header unacceptable");
+		    help();
+                    exit(1);
+                }
+	    break;
+
 	    case 'h':
 	        help();
                 exit(1);
@@ -715,36 +745,33 @@ int main(int argc, char **argv)
         error(0, "No ppg address or config file, stopping");
         exit(1);
     }
-
+    push_url = octstr_create(push_data[0]);
+           
     use_config = 0;
     if (!use_hardcoded) {
         if (push_data[1] == NULL) {
             info(0, "a configuration file input assumed");
+            read_test_ppg_config(fos = octstr_format("%s", push_data[0]));
+            octstr_destroy(fos);
             use_config = 1;
         }
     }
 
-    if (!use_config && push_data[1] != NULL) {
+    if (!use_hardcoded && !use_config && push_data[1] != NULL) {
         if (push_data[2] == NULL) {
 	   error(0, "no pap control document, stopping");
            exit(1);
         } else {
            info(0, "an input without a configuration file assumed");
-           push_url = octstr_create(push_data[0]);
            content_file = octstr_create(push_data[1]);
            pap_file = octstr_create(push_data[2]);
+           debug("test.ppg", 0, "using %s as a content file", push_data[1]);
+           debug("test.ppg", 0, "using %s as a control file", push_data[2]);
         }
     }
 
-    debug("test.ppg", 0, "using %s as a content file", push_data[1]);
-    debug("test.ppg", 0, "using %s as a control file", push_data[2]);
-
     boundary = "asdlfkjiurwghasf";
     counter = counter_create();
-    if (use_config) {
-        read_test_ppg_config(fos = octstr_format("%s", push_data[0]));
-        octstr_destroy(fos);
-    }
 
     time(&start);
     if (num_threads == 0)
@@ -767,6 +794,8 @@ int main(int argc, char **argv)
     octstr_destroy(ssl_client_certkey_file);
     octstr_destroy(username);
     octstr_destroy(password);
+    octstr_destroy(push_url);
+    octstr_destroy(connection);
     counter_destroy(counter);
     gwlib_shutdown();
 

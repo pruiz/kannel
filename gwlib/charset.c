@@ -346,6 +346,11 @@ int charset_to_utf8(Octstr *from, Octstr **to, Octstr *charset_from)
     xmlBufferPtr frombuffer = NULL;
     xmlBufferPtr tobuffer = NULL;
 
+    if (octstr_compare(charset_from, octstr_imm("UTF-8")) == 0) {
+        *to = octstr_duplicate(from);
+        return 0;
+    }
+
     handler = xmlFindCharEncodingHandler(octstr_get_cstr(charset_from));
     if (handler == NULL)
 	return -2;

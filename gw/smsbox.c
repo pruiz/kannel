@@ -17,7 +17,7 @@
 #include "html.h"
 #include "urltrans.h"
 #include "wap_ota_prov.h"
-
+#include "ota_compiler.h"
 
 #ifdef HAVE_SECURITY_PAM_APPL_H
 #include <security/pam_appl.h>
@@ -174,6 +174,8 @@ static int send_message(URLTranslation *trans, Msg *msg)
 
     list = sms_split(msg, header, footer, suffix, split_chars, catenate,
     	    	     msg_sequence, max_msgs, sms_max_length);
+    debug("sms", 0, "message length %ld, sending %ld messages", 
+          octstr_len(msg->sms.msgdata), list_len(list));
     while ((part = list_extract_first(list)) != NULL)
 	write_to_bearerbox(part);
     list_destroy(list, NULL);
@@ -1066,7 +1068,8 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	 octstr_get_cstr(newfrom),
 	 octstr_get_cstr(client_ip),
 	 octstr_get_cstr(to),
-	 udh == NULL ? ( text == NULL ? "" : octstr_get_cstr(text) ) : "<< UDH >>");
+	 udh == NULL ? ( text == NULL ? "" : octstr_get_cstr(text) ) : 
+             octstr_get_cstr(text));
     
     /*
      * XXX here we should validate and split the 'to' field
@@ -1437,20 +1440,106 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     return ret;
 }
 
+/*
+ * Append the User Data Header (UDH) including the lenght (UDHL). Only ports 
+ * UDH here - SAR UDH is added when (or if) we split the message. This is our
+ * *specific* WDP layer.
+ */
+static void pack_udh(Msg **msg)
+{
+    (*msg)->sms.udhdata = octstr_create("");
+    octstr_append_from_hex((*msg)->sms.udhdata, "060504C34FC002");
+}
+
+/*
+ * Our WSP headers: Push Id, PDU type, headers, charset.
+ */
+static int pack_push_headers(Msg **msg, Octstr *mime_type)
+{    
+    (*msg)->sms.msgdata = octstr_create("");
+    if (octstr_case_compare(mime_type, octstr_imm("settings")) == 0) {
+        /* PUSH ID, PDU type, header length, value length */
+        octstr_append_from_hex((*msg)->sms.msgdata, "01062C1F2A");
+        /* MIME type for settings */
+        octstr_format_append((*msg)->sms.msgdata, "%s", 
+                             "application/x-wap-prov.browser-settings");
+        octstr_append_from_hex((*msg)->sms.msgdata, "00");
+    } else if (octstr_case_compare(mime_type, octstr_imm("bookmarks")) == 0) {
+        /* PUSH ID, PDU type, header length, value length */
+        octstr_append_from_hex((*msg)->sms.msgdata, "01062D1F2B");
+        /* MIME type for bookmarks */
+        octstr_format_append((*msg)->sms.msgdata, "%s", 
+                             "application/x-wap-prov.browser-bookmarks");
+        octstr_append_from_hex((*msg)->sms.msgdata, "00");
+    } else {
+        warning(0, "Unknown MIME request in OTA");
+        return 0;
+    }
+    /* charset UTF-8 */
+    octstr_append_from_hex((*msg)->sms.msgdata, "81EA");
+
+    return 1;
+}
+
+/*
+ * Our WSP data: a compiled OTA document
+ * Return -2 when header error, -1 when compile error, 0 when no error
+ */
+static int pack_message(Msg **msg, Octstr *ota_doc, Octstr *doc_type, 
+                        Octstr *from, Octstr *phone_number)
+{
+    Octstr *ota_binary;
+
+    *msg = msg_create(sms);
+    (*msg)->sms.sms_type = mt_push;
+    pack_udh(msg);
+    if (!pack_push_headers(msg, doc_type))
+        goto herror;
+    if (ota_compile(ota_doc, octstr_imm("UTF-8"), &ota_binary) == -1)
+        goto cerror;
+    octstr_format_append((*msg)->sms.msgdata, "%S", ota_binary);
+    (*msg)->sms.sender = octstr_duplicate(from);
+    (*msg)->sms.receiver = octstr_duplicate(phone_number);
+    (*msg)->sms.coding = DC_8BIT;
+    (*msg)->sms.time = time(NULL);
+
+    octstr_dump((*msg)->sms.msgdata, 0);
+    info(0, "/cgi-bin/sendota: XML request from <%s>", octstr_get_cstr(phone_number));
+
+    octstr_destroy(ota_binary);
+    octstr_destroy(ota_doc);
+    octstr_destroy(doc_type);
+    octstr_destroy(from);
+    return 0;
+
+herror:
+    octstr_destroy(ota_doc);
+    octstr_destroy(doc_type);
+    octstr_destroy(from);
+    return -2;
+
+cerror:
+    octstr_destroy(ota_doc);
+    octstr_destroy(doc_type);
+    octstr_destroy(from);
+    return -1;
+}
 
 /*
  * Create and send an SMS OTA (auto configuration) message from an HTTP 
- * request.
+ * request. If cgivar "text" is present, use it as a xml configuration source,
+ * otherwise read the configuration from the configuration file.
  * Args: list contains the CGI parameters
  * 
  * Official Nokia and Ericsson WAP OTA configuration settings coded 
  * by Stipe Tolj <tolj@wapme-systems.de>, Wapme Systems AG.
  * 
- * This will be changed later to use an XML compiler.
+ * XML compiler by Aarno Syvänen <aarno@wiral.com>, Wiral Ltd.
  */
 static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
 {
-    Octstr *url, *desc, *ipaddr, *phonenum, *username, *passwd, *id, *from;
+    Octstr *url, *desc, *ipaddr, *phonenum, *username, *passwd, *id, *from,
+           *ota_doc, *doc_type;
     int speed, bearer, calltype, connection, security, authent;
     CfgGroup *grp;
     List *grplist;
@@ -1500,27 +1589,60 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
 	return octstr_create("Sender missing and no global set, rejected");
     }
 
+    /* check does we have an external xml source for configuration */
+    if ((ota_doc = http_cgi_variable(list, "text")) != NULL) {
+        ota_doc = octstr_duplicate(ota_doc);
+        if ((doc_type = http_cgi_variable(list, "type")) == NULL) {
+	    doc_type = octstr_format("%s", "settings");
+        } else {
+	    doc_type = octstr_duplicate(doc_type);
+        }
+
+        if ((ret = pack_message(&msg, ota_doc, doc_type, from, 
+                                phonenumber)) < 0) {
+            *status = HTTP_BAD_REQUEST;
+            msg_destroy(msg);
+            if (ret == -2)
+                return octstr_create("Erroneous document type, cannot"
+                                     " compile\n");
+            else if (ret == -1)
+	        return octstr_create("Erroneous ota source, cannot compile\n");
+        }
+
+        ret = send_message(t, msg); 
+        if (ret == -1) {
+	    error(0, "sendota_request: failed");
+	    *status = HTTP_INTERNAL_SERVER_ERROR;
+            msg_destroy(msg);
+	    return octstr_create("Sending failed.");
+        }
+        msg_destroy(msg);
+
+        *status = HTTP_OK;
+        return octstr_create("Sent");
+    } else {
     /* check if a otaconfig id has been given and decide which OTA
      * properties to be send to the client otherwise send the default */
-    id = http_cgi_variable(list, "otaid");
+       id = http_cgi_variable(list, "otaid");
     
-    grplist = cfg_get_multi_group(cfg, octstr_imm("otaconfig"));
-    while (grplist && (grp = list_extract_first(grplist)) != NULL) {
-	p = cfg_get(grp, octstr_imm("ota-id"));
-	if (id == NULL || (p != NULL && octstr_compare(p, id) == 0))
-	    goto found;
-	octstr_destroy(p);
-    }
+       grplist = cfg_get_multi_group(cfg, octstr_imm("otaconfig"));
+       while (grplist && (grp = list_extract_first(grplist)) != NULL) {
+	   p = cfg_get(grp, octstr_imm("ota-id"));
+	   if (id == NULL || (p != NULL && octstr_compare(p, id) == 0))
+	       goto found;
+           octstr_destroy(p);
+       }
 
-    list_destroy(grplist, NULL);
-    if (id != NULL)
-	error(0, "%s can't find otaconfig with ota-id '%s'.", 
-          octstr_get_cstr(sendota_url), octstr_get_cstr(id));
-    else
-	error(0, "%s can't find any otaconfig group.", octstr_get_cstr(sendota_url));
-    octstr_destroy(from);
-    *status = HTTP_BAD_REQUEST;
-    return octstr_create("Missing otaconfig group.");
+       list_destroy(grplist, NULL);
+       if (id != NULL)
+	   error(0, "%s can't find otaconfig with ota-id '%s'.", 
+                 octstr_get_cstr(sendota_url), octstr_get_cstr(id));
+       else
+	  error(0, "%s can't find any otaconfig group.", octstr_get_cstr(sendota_url));
+       octstr_destroy(from);
+       *status = HTTP_BAD_REQUEST;
+       return octstr_create("Missing otaconfig group.");
+    }
 
 found:
     octstr_destroy(p);

@@ -193,22 +193,22 @@
        a ligthweigth protocol speaking with WAP stack (to be more specific,
        with WSP), PAP speaks with the push initiator. It defines three kind
        of XML documents, one for the push data itself and another for 
-       protocol purposes (this is called pap document or push control 
-       document). Third one is not supported by Kannel, yet.</para>
+       protocol purposes (these are called pap document or push control 
+       documents). </para>
 
        <para>The server does not simply send push content to the phone, the
        user would surely not accept, for instance, interrupting of a voice 
-       call. Instead it sends a specific XML document, called Service 
-       Indication. This informs the user about the content becomed available, 
-       and it is displayed only when it is not interrupting anything. It 
-       contains an URL specifying the service and a text for user describing 
-       the content. Then the user can decide does he accept push or not.
+       call. Instead it sends a specific XML document, either Service 
+       Indication or Service Loading. These inform the user about the content 
+       becomed available, and it is displayed only when it is not interrupting 
+       anything. It contains an URL specifying the service and a text for user 
+       describing the content. Then the user can decide does he accept push or not.
        </para>
 
        <para>The push content is sended to the phones over SMS, but the 
        content is fetched by the phone over IP bearer, for instance CSD
-       or GPRS. Because Push Proxy Gateway tokenises SI document, it may fit
-       one SMS message (if not, it is segmented for tranfer). </para>
+       or GPRS. Because Push Proxy Gateway tokenises SI and SL documents, it 
+       may fit one SMS message (if not, it is segmented for transfer). </para>
 
        <para>Using two bearers seems to be an unnecessary complication. But 
        quite simply, phones currently operate this way. Push over GPRS can 
@@ -2575,6 +2575,13 @@ send-url = "http://localhost:20022"
       Do not add variable coding to the send-url.
    </entry></row>
 
+   <row><entry><literal>no-sep</literal></entry>
+   <entry><literal>boolean</literal></entry>
+   <entry valign=bottom>
+      Represent udh and text as a numeric string containing the hexdump. For
+      instance, text=%2b123 is represented as text=2b313233. 
+   </entry></row>
+
    <row><entry><literal>port (m)</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign=bottom>
@@ -4029,13 +4036,16 @@ forced-smsc = SOL
 <title>Over-The-Air configurations</title>
 
    <para>To enable Over-The-Air configuration of phones or other client
-   devices that support the protocol you need to configure a
-   <literal>otaconfig</literal> group and a <literal>sendsms-user</literal>.
+   devices that support the protocol you need to configure a <literal>
+   sendsms-user</literal>.<literal>Otaconfig</literal> group is not 
+   necessary, you can send settings to the phone as a XML document, but
+   this method is perhaps more suitable for continous provisioning.
    </para>
 
    <para>If you want to send multiple OTA configurations through the smsbox
-   you will have to declare a <literal>ota-id</literal> string to the
-	different <literal>otaconfig</literal> groups.
+   and you do not want to send XML documents, you will have to declare a 
+   <literal>ota-id</literal> string to the different <literal>otaconfig
+    </literal> groups.
    </para>
 
  <table frame=none>
@@ -4463,14 +4473,77 @@ the Kannel configuration, or 'Authorization failed' is returned.
 <sect2>
 <title>Using the HTTP interface to send OTA configuration messages</title>
 
-       <para>OTA messages can be sent to mobile phones or devices to auto-configure the   
+       <para>OTA messages can be sent to mobile phones or devices to auto-configure the  
        settings for WAP. They are actually complex SMS messages with UDH and sent as
-       concatenated messages if too long. An example URL is like this:	
-
-<programlisting>
+       concatenated messages if too long (and compiled if necessary). An example URL is 
+       like this (OTA configuration defined in the Kannel configuration file):
+	
+<screen><userinput>
 http://smsbox.host.name:13013/cgi-bin/sendota?
 otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
-</programlisting>
+</userinput></screen>
+
+       URL containing XML document looks like this: 
+
+<screen><userinput>
+http://smsbox.host.name:13013/cgi-bin/sendota?
+username=foo&amp;password=bar&amp;phonenumber=0123456&amp;text=myXMLdocument&amp;
+type=settings
+</userinput></screen>
+       
+       You can send either settings or bookmark, set cgi variable type accordingly. 
+       Default for this variable is settings.
+       </para>
+
+       <para>
+       Here is an example XML document (this one contains CSD settings for logging
+       in to a mobile service):
+
+<screen><userinput>
+&#60;?xml version="1.0"?&#62;
+&#60;!DOCTYPE CHARACTERISTIC-LIST SYSTEM "file://gw/settings.dtd"&#62;
+&#60;CHARACTERISTIC-LIST&#62;
+
+&#60;CHARACTERISTIC TYPE="ADDRESS"&#62;
+&#60;PARM NAME="BEARER" VALUE="GSM/CSD"/&#62;
+&#60;PARM NAME="PROXY" VALUE="213.161.40.40"/&#62;
+&#60;PARM NAME="PORT" VALUE="9201"/&#62;
+&#60;PARM NAME="CSD_DIALSTRING" VALUE="+358600505050"/&#62;
+&#60;PARM NAME="PPP_AUTHTYPE" VALUE="PAP"/&#62;
+&#60;PARM NAME="PPP_AUTHNAME" VALUE="yourusername"/&#62;
+&#60;PARM NAME="PPP_AUTHSECRET" VALUE="yourauthsecret"/&#62;
+&#60;PARM NAME="CSD_CALLTYPE" VALUE="ISDN"/&#62;
+&#60;PARM NAME="CSD_CALLSPEED" VALUE="9600"/&#62;
+&#60;/CHARACTERISTIC&#62;
+
+&#60;CHARACTERISTIC TYPE="URL" 
+     VALUE="http://cn.wiral.com/wapwml/loginphtml"/&#62;
+
+&#60;CHARACTERISTIC TYPE="NAME"&#62;
+&#60;PARM NAME="NAME" VALUE="Matrix Login CSD"/&#62;
+&#60;/CHARACTERISTIC&#62;
+
+&#60;/CHARACTERISTIC-LIST&#62;
+</userinput></screen>
+
+       A bookmark document looks like this:
+
+<screen><userinput>
+&#60;?xml version="1.0"?&#62;
+&#60;!DOCTYPE CHARACTERISTIC_LIST SYSTEM "file://gw/settings.dtd"&#62;
+&#60;CHARACTERISTIC-LIST&#62;
+    &#60;CHARACTERISTIC TYPE="BOOKMARK"&#62;
+        &#60;PARM NAME="NAME" VALUE="Matrix Login"/&#62;
+        &#60;PARM NAME="URL" VALUE="http://tim.wiral.com/wapwml/login.phtml?
+                                    MID=aarno&amp;ID=myhash"/&#62;
+    &#60;/CHARACTERISTIC&#62;
+&#60;/CHARACTERISTIC-LIST&#62;
+</userinput></screen>
+
+       Document type definition (DTD) for these documents is not publicly available,
+       you must supply it as a file. Kannel gw directory contains an example, 
+       <literal>settings.dtd</literal>.
+
        </para>
 
  <table frame=none>
@@ -4481,7 +4554,8 @@ otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
    <entry valign=bottom>
         Name or id of the 'otaconfig' group in Kannel configuration
         that should be sent to the phone. This variable is optional.
-        If it is not given the first 'otaconfig' group is sent. 
+        If it is not given the first 'otaconfig' group is sent. This
+        is unnecessary when a XML document is sended to the phone.
    </entry></row>
 
    <row><entry><literal>username</literal></entry>
@@ -4509,6 +4583,18 @@ otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
        variable in the sendsms-user group. If this variable is not
        set, smsbox global-sender is used.
    </entry></row>
+
+   <row><entry><literal>text</literal></entry>
+   <entry valign=bottom>
+       The XML document, containing either settings or bookmarks.
+   </entry></row>
+
+   <row><entry><literal>type</literal></entry>
+   <entry valign=bottom>
+       Type of the XML document, either "settings" or "bookmarks". Default is 
+       "settings"
+   </entry></row>
+
   </tbody>
   </tgroup>
  </table>
@@ -4567,6 +4653,12 @@ otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
      specific addresses follows. Note that ppg-deny-ip-list is not actually 
      necessary, but does make configuring simpler: IPs here are always denied,
      even when they are mentioned in the allowed IPs list.</para>
+
+     <para>Please note that there are no <emphasis>cgi script</emphasis> called 
+     <literal>/cgi-bin/wap-push.cgi</literal>. Ppg-url is a simple stamp, used for 
+     routing requests to the right service. You can change this stamp by setting
+     <literal>push-url</literal> configuration variable.
+     </para>
      <screen><userinput>
 group = ppg
 ppg-url = /cgi-bin/wap-push.cgi
@@ -4577,7 +4669,6 @@ ppg-allow-ip = 194.100.32.125;127.0.0.1
 ppg-deny-ip = 194.100.32.89;194.100.32.103
 trusted-pi = false
      </userinput></screen>
-
      <table frame=none>
      <title>PPG core group configuration variables</title>
              <tgroup cols=3><thead><row>
@@ -4820,11 +4911,13 @@ bearerbox-host = localhost
      send-url to point to sendsms service.</para>
 </sect1>
 <sect1>
-<title>Output generated by HTTP SMSC</title>
+<title>An example push (tokenised SI) document</title>
        <para>HTTP SMSC generates a HTTP get request when it get a sendmessage 
        event, expressed in unicode. The content gateway, or the sendsms 
-       service must, of course, understand this URL. So here is an example.
-       (Text is a tokenised SI document.)</para>
+       service must, of course, understand this URL. So here is an example,
+       cgi variable text contains the url escaped form of a SI document. It is
+       usable for testing prototype phones.
+       </para>
 <screen><userinput>
 http://matrix:8080/phplib/kannelgw.php?user=*deleted*&amp;pass=*deleted*=
 to=%2B358408676001&amp;text=3D%02%06%17%AE%96localhost%3A8080%00%AF%80%8D%CF%B4
@@ -4832,6 +4925,27 @@ to=%2B358408676001&amp;text=3D%02%06%17%AE%96localhost%3A8080%00%AF%80%8D%CF%B4
 99%06%25%15%23%15%10%C3%04+%02%060%01%03Want+to+test+a+fetch%3F%00%01%01&amp;
 udh=%06%05%04%0B%84%23%F0
 </userinput></screen>
+</sect1>
+
+<sect1>
+<title>Default network and bearer used by push proxy gateway</title>
+       <para> If network and bearer attributes of the pap control document are
+       missing or set any, Kannel uses address type for routing purposes: if
+       the address type is a phone number (TYPE=PLMN), network defaults to GSM
+       and bearer to SMS; if it is a IP-address (TYPE=IPv4), network defaults
+       to GSM and bearer to CSD. So following minimal pap document works:
+<screen><userinput>
+&#60;?xml version="1.0"?&#62;
+&#60;!DOCTYPE pap PUBLIC "-//WAPFORUM//DTD PAP//EN"
+          "http://www.wapforum.org/DTD/pap_1.0.dtd"&#62;
+&#60;pap&#62;
+  &#60;push-message push-id="9fjeo39jf084@pi.com"&#62;
+    &#60;address address-value="WAPPUSH=+358408676001/TYPE=PLMN@ppg.carrier.com"&#62;
+    &#60;/address&#62;
+  &#60;/push-message&#62;
+&#60;/pap&#62;
+</userinput></screen>
+       </para>
 </sect1>
      
 </chapter>
@@ -5120,7 +5234,8 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
        This contains a simulated SMSC, for instance a http server simulation
        (this is used as example, because it is simplest) and a simulated
        push initiator. Between them, there is the push proxy gateway to be
-       tested.</para>
+       tested. This means that you must configure HTTP SMSC.
+       </para>
 <sect1>
 <title>Creating push content and control document for testing</title>
       <para>
@@ -5148,18 +5263,19 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
   &#60;/push-message&#62;
 &#60;/pap&#62;
       </userinput></screen>
-      Because the push content is sended to th phone over SMS, you must set
+      Because the push content is sended to the phone over SMS, rigth value for
       <literal>network-required</literal> and <literal>bearer-required
-      </literal> true, <literal>network</literal> GSM and <literal>bearer
-      </literal> SMS. Address value is international phone number and it must
-      start with plus. It is used here as an unique identifier, SMSC, or 
+      </literal> is true, for <literal>network</literal> GSM and for <literal>bearer
+      </literal> SMS. However, you can omit these values alltogether, if you use
+      a phone number as an address. Address value is international phone number and
+      it must start with plus. It is used here as an unique identifier, SMSC, or 
       sendsms script must transform it to an usable phone number.
       </para>
       <para>
       Here is an example of Service Indication, a type of push content. 
       Essentially, the phone displays, when it receives this SI, the text 
       "Want to test a fetch" and if the user wants, fetches the content 
-      located by URL "http://wap.iobox.fi".
+      located by URL <literal>http://wap.iobox.fi</literal>.
       <screen><userinput>
 &#60;?xml version="1.0"?&#62;
     &#60;!DOCTYPE si PUBLIC "-//WAPFORUM//DTD SI 1.0//EN"
@@ -5181,6 +5297,24 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
       it causes an immediate presentation of the push message. Production
       usage is a quite another matter.
       </para>
+
+      <para>
+      Another example of push content is Service Loading. In principle, the phone
+      should fetch immediately content from URL <literal>http://wap.iobox.fi
+      </literal> when it receives this document. This sounds quite unsecure, and
+      indeed, user invention is probably required before fetching.
+
+      <screen><userinput>
+&#60;?xml version="1.0"?&#62;
+    &#60;!DOCTYPE sl PUBLIC "-//WAPFORUM//DTD SL 1.0//EN"
+                "http://www.wapforum.org/DTD/sl.dtd"&#62;
+&#60;sl
+    href="http://wap.iobox.fi"
+    action="execute-high"&#62;
+&#60;/sl&#62;
+      </userinput></screen>
+      </para>
+
 </sect1>
 <sect1>
 <title>Starting necessary programs</title>

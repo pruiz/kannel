@@ -22,14 +22,15 @@ enum {
 };
 
 /*
- * Compile PAP control document to a corresponding Kannel event. Checks vali-
+ *Compile PAP control document to a corresponding Kannel event. Checks vali-
  * dity of the document. The caller must initialize wap event to NULL. In add-
  * ition, it must free memory allocated by this function. 
  *
- * After compiling, some semantic analysing of the resulted event. Do not
- * accept an IP address, when a non-IP bearer is requested, and a phone number,
- * when an IP-bearer is requested. In addition, update address_type field of
- * the Kannel event.
+ * After compiling, some semantic analysing of the resulted event. 
+ *
+ * Note that entities in the DTD are parameter entities and they can appear 
+ * only in DTD (See site http://www.w3.org/TR/REC-xml, Chapter 4.1). So we do 
+ * not need to worry about them in the document itself.
  *
  * Returns 0, when success
  *        -1, when a non-implemented pap feature is asked for

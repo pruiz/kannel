@@ -1556,25 +1556,32 @@ static long parse_constant(const char *field_name, Octstr **address, long pos)
 {
     size_t i,    
            size;
+    Octstr *nameos;
 
-    size = strlen(field_name);
+    nameos = octstr_format("%s", field_name);
+    size = octstr_len(nameos);
     i = 0;
     
-    while (octstr_get_char(*address, pos - i)  == field_name[size-1 - i] && 
-            i <  size) {
+    while (octstr_get_char(*address, pos - i)  == 
+               octstr_get_char(nameos, size-1 - i) && i <  size) {
         ++i;
     }
 
-    while (octstr_get_char(*address, pos) != field_name[0] && pos >= 0) {
+    while (octstr_get_char(*address, pos) != 
+               octstr_get_char(nameos, 0) && pos >= 0) {
         pos = drop_character(address, pos);
     }
 
     pos = drop_character(address, pos);    
 
     if (pos < 0 || i != size) {
+        debug("wap.push.pap.compiler", 0, "parse_constant: unparsable"
+              " constant %s", field_name);
+        octstr_destroy(nameos);
         return -2;
     }
 
+    octstr_destroy(nameos);
     return pos;
 }
 

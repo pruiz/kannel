@@ -1,4 +1,4 @@
-/*
+;/*
  * test_http.c - a simple program to test the new http library
  *
  * Lars Wirzenius
@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #include "gwlib/gwlib.h"
 #include "gwlib/http.h"
@@ -18,10 +19,11 @@ static Counter *counter = NULL;
 static long max_requests = 1;
 static char **urls = NULL;
 static int num_urls = 0;
-static int print_body = 1;
+static int verbose = 1;
 static Octstr *auth_username = NULL;
 static Octstr *auth_password = NULL;
-
+static Octstr *msg_text = NULL;
+static int file = 0;
 
 static void start_request(HTTPCaller *caller, List *reqh, long i)
 {
@@ -33,9 +35,16 @@ static void start_request(HTTPCaller *caller, List *reqh, long i)
     id = gw_malloc(sizeof(long));
     *id = i;
     url = octstr_create(urls[i % num_urls]);
+    if (file) {
+        octstr_append(url, octstr_imm("&text="));
+        octstr_append(url, msg_text);
+    }
     http_start_request(caller, url, reqh, NULL, 0, id, NULL);
-    debug("", 0, "Started request %ld", *id);
+    debug("", 0, "Started request %ld with url:", *id);
+    octstr_url_decode(url);
+    octstr_dump(url, 0);
     octstr_destroy(url);
+    octstr_destroy(msg_text);
 }
 
 
@@ -65,14 +74,18 @@ static int receive_reply(HTTPCaller *caller)
 	  octstr_get_cstr(charset));
     octstr_destroy(type);
     octstr_destroy(charset);
-    debug("", 0, "Reply headers:");
+    if (verbose)
+        debug("", 0, "Reply headers:");
     while ((os = list_extract_first(replyh)) != NULL) {
-	octstr_dump(os, 1);
+        if (verbose)
+	    octstr_dump(os, 1);
 	octstr_destroy(os);
     }
     list_destroy(replyh, NULL);
-    if (print_body)
-	octstr_print(stdout, replyb);
+    if (verbose) {
+        debug("", 0, "Reply body:");
+        octstr_dump(replyb, 1);
+    }
     octstr_destroy(replyb);
 
     return 0;
@@ -139,7 +152,7 @@ static void help(void)
     info(0, "-v number");
     info(0, "    set log level for stderr logging");
     info(0, "-q");
-    info(0, "    don't print the body of the HTTP response");
+    info(0, "    don't print the body or headers of the HTTP response");
     info(0, "-r number");
     info(0, "    make `number' requests, repeating URLs as necessary");
     info(0, "-p domain.name");
@@ -148,6 +161,9 @@ static void help(void)
     info(0, "    connect to proxy at port `portnumber'");
     info(0, "-e domain1:domain2:...");
     info(0, "    set exception list for proxy use");
+    info(0, "-u filename");
+    info(0, "    read request's &text= string from file 'filename'. It is"); 
+    info(0, "    url encoded before it is added to the request");
 }
 
 int main(int argc, char **argv) 
@@ -162,6 +178,7 @@ int main(int argc, char **argv)
     long threads[MAX_THREADS];
     time_t start, end;
     double run_time;
+    FILE *fp;
     
     gwlib_init();
     
@@ -171,15 +188,17 @@ int main(int argc, char **argv)
     proxy_username = NULL;
     proxy_password = NULL;
     num_threads = 0;
+    file = 0;
+    fp = NULL;
     
-    while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:a:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:a:u:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
 	    break;
 	
 	case 'q':
-	    print_body = 0;
+	    verbose = 0;
 	    break;
 	
 	case 'r':
@@ -191,6 +210,19 @@ int main(int argc, char **argv)
 	    if (num_threads > MAX_THREADS)
 		num_threads = MAX_THREADS;
 	    break;
+
+        case 'u':
+            file = 1;
+            fp = fopen(optarg, "a");
+            if (fp == NULL)
+                panic(0, "Cannot open message text file %s", optarg);
+            msg_text = octstr_read_file(optarg);
+            if (msg_text == NULL)
+                panic(0, "Cannot read message text");
+            debug("", 0, "message text is");
+            octstr_dump(msg_text, 0);
+            octstr_url_encode(msg_text);
+            break;
 	
 	case 'h':
 	    help();
@@ -269,6 +301,10 @@ int main(int argc, char **argv)
     octstr_destroy(auth_password);
     
     gwlib_shutdown();
+    if (file) {
+        fclose(fp);
+    }
     
     return 0;
 }
+

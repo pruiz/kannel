@@ -83,6 +83,7 @@ typedef struct conndata {
     Octstr	*password;	/* as said */
     int         no_sender;      /* ditto */
     int         no_coding;      /* this, too */
+    int         no_sep;         /* not to mention this */
 
     /* callback functions set by HTTP-SMSC type */
 
@@ -212,20 +213,38 @@ static void httpsmsc_send_cb(void *arg)
  * Kannel
  */
 
+enum {HEX_NOT_UPPERCASE = 0};
+
 static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 {
     ConnData *conndata = conn->data;
     Octstr *url;
     List *headers;
 
-    url = octstr_format("%S?"
-			"user=%E&pass=%E&to=%E&text=%E",
-			conndata->send_url,
-			conndata->username, conndata->password,
-			sms->sms.receiver, sms->sms.msgdata);
-
-    if (octstr_len(sms->sms.udhdata))
-	octstr_format_append(url, "&udh=%E", sms->sms.udhdata);
+    if (!conndata->no_sep) {
+        url = octstr_format("%S?"
+			    "user=%E&pass=%E&to=%E&text=%E",
+			     conndata->send_url,
+			     conndata->username, conndata->password,
+			     sms->sms.receiver, sms->sms.msgdata);
+    } else {
+        octstr_binary_to_hex(sms->sms.msgdata, HEX_NOT_UPPERCASE);
+        url = octstr_format("%S?"
+			    "user=%E&pass=%E&to=%E&text=%S",
+			     conndata->send_url,
+			     conndata->username, conndata->password,
+			     sms->sms.receiver, 
+                             sms->sms.msgdata); 
+    }
+    
+    if (octstr_len(sms->sms.udhdata)) {
+        if (!conndata->no_sep) {
+	    octstr_format_append(url, "&udh=%E", sms->sms.udhdata);
+        } else {
+	    octstr_binary_to_hex(sms->sms.udhdata, HEX_NOT_UPPERCASE);
+            octstr_format_append(url, "&udh=%S", sms->sms.udhdata);
+	}
+    }
 
     if (!conndata->no_sender)
         octstr_format_append(url, "&from=%E", sms->sms.sender);
@@ -418,6 +437,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     conndata->password = cfg_get(cfg, octstr_imm("smsc-password"));
     cfg_get_bool(&conndata->no_sender, cfg, octstr_imm("no-sender"));
     cfg_get_bool(&conndata->no_coding, cfg, octstr_imm("no-coding"));
+    cfg_get_bool(&conndata->no_sep, cfg, octstr_imm("no-sep"));
 
     if (conndata->send_url == NULL)
 	panic(0, "Sending not allowed");

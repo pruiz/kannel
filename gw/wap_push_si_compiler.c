@@ -18,8 +18,7 @@
 
 /****************************************************************************
  *
- * Following global variables are unique to the SI compiler. See si, chapter 
- * 9.3.
+ * Global variables
  *
  * Two token table types, one and two token fields
  */
