@@ -239,7 +239,7 @@ Octstr *octstr_copy_real(Octstr *ostr, long from, long len)
     if (from >= ostr->len)
         return octstr_create("");
 
-    if (from + len > ostr->len)
+    if (len > ostr->len - from)
         len = ostr->len - from;
 
     return octstr_create_from_data(ostr->data + from, len);

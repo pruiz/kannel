@@ -1,3 +1,9 @@
+2001-01-11  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/octstr.c: octstr_copy_real: Changed the code that checks
+	whether the length of the part to be copied is too long so that
+	it can deal with integer overflows (assuming they wrap around).
+
 2001-01-11  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smscconn.c: modified so that flow_mutex is always locked in
