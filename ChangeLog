@@ -1,3 +1,11 @@
+2000-06-19  Yann Muller  <ymuller@3glab.com>
+
+	* gw/smsc.c, gw/smsc_p.h, gw/smsc_at.c: Applied Denis Hennessy's
+	patch to support Siemens M20: connect at 19200 baud, added a 
+	'pin = xxxx' entry to the conf file,  fixed missing trailing null char
+	in encode_pdu, added a dummy receiver address since smsbox requires one,
+	added the dummy "00" SC prefix for the M20 (like the wavecom).
+
 2000-06-17  Richard Braakman  <dark@wapit.com>
 
 	* Replaced capabilities parsing.  New file gw/wsp_caps.[ch] defines
@@ -48,6 +56,15 @@
 	* gw/urltrans.c: fixed find-operations
 
 	* gw/bb_smsc.c: added smsc_status
+
+2000-06-16	Yann Muller <ymuller@3glab.com>
+
+	* gw/smsc.c, gw/smsc_p.h: Added modemtype configuration parameter
+	for the AT SMSC.
+	
+	* gw/smsc_at.c: Added support for Nokia PremiCell GSM modem.
+	The parameter modemtype in kannel.conf can be set to 'wavecom'
+	or 'premicell'.
 
 2000-06-16	Paul Keogh <paul.keogh@anam.ie>
 

@@ -3,7 +3,7 @@
  *
  * Yann Muller - 3G Lab, 2000.
  *
- * $Id: smsc_at.c,v 1.3 2000-06-16 13:35:25 3glab Exp $
+ * $Id: smsc_at.c,v 1.4 2000-06-19 09:34:08 3glab Exp $
  * 
  * Make sure your kannel configuration file contains the following lines
  * to be able to use the AT SMSC:
@@ -62,6 +62,7 @@ static int numtext(int num);
  */
 #define WAVECOM		"wavecom"
 #define PREMICELL	"premicell"
+#define SIEMENS		"siemens"
 
 /******************************************************************************
  * Open the connection
@@ -81,8 +82,13 @@ static int at_open_connection(SMSCenter *smsc) {
 	}
 
 	tcgetattr(fd, &tios);
-	cfsetospeed(&tios, B9600);  /* check radio pad parameter*/
-	cfsetispeed(&tios, B9600);
+	if(strcmp(smsc->at_modemtype, SIEMENS) == 0) {
+		cfsetospeed(&tios, B19200);  /* check radio pad parameter*/
+		cfsetispeed(&tios, B19200);
+	} else {
+		cfsetospeed(&tios, B9600);  /* check radio pad parameter*/
+		cfsetispeed(&tios, B9600);
+	}
 	cfmakeraw(&tios);
 	/* parameters:
 	 * IGNBRK, IGNPAR: ignore BREAK and PARITY errors
@@ -110,8 +116,10 @@ error:
 /******************************************************************************
  * Open the (Virtual) SMSCenter
  */
-SMSCenter *at_open(char *serialdevice, char *modemtype) {
+SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin) {
 	SMSCenter *smsc;
+	char setpin[20];
+	int ret;
 	
 	smsc = smscenter_construct();
 	if(smsc == NULL)
@@ -120,6 +128,8 @@ SMSCenter *at_open(char *serialdevice, char *modemtype) {
 	smsc->type = SMSC_TYPE_AT;
 	smsc->at_serialdevice = gw_strdup(serialdevice);
 	smsc->at_modemtype = gw_strdup(modemtype);
+	if(pin)
+		smsc->at_pin = gw_strdup(pin);
 	smsc->at_received = list_create();
 	smsc->at_inbuffer = octstr_create_empty();
 
@@ -130,6 +140,17 @@ SMSCenter *at_open(char *serialdevice, char *modemtype) {
 	/* Turn Echo off on the modem: we don't need it */
 	if(send_modem_command(smsc->at_fd, "ATE0", 0) == -1)
 		goto error;
+	/* Check does the modem require a PIN and, if so, send it */
+	ret = send_modem_command(smsc->at_fd, "AT+CPIN?", 0); 
+	if(ret == -1)
+		goto error;
+	if(ret == -2) {
+		if(smsc->at_pin == NULL)
+			goto error;
+		sprintf(setpin, "AT+CPIN=%s", smsc->at_pin);
+		if(send_modem_command(smsc->at_fd, setpin, 0) == -1)
+			goto error;
+	}
 	/* Set the modem to PDU mode and autodisplay of new messages */
 	if(send_modem_command(smsc->at_fd, "AT+CMGF=0", 0) == -1)
 		goto error;
@@ -223,7 +244,7 @@ int at_submit_msg(SMSCenter *smsc, Msg *msg) {
 	/* The Wavecom modem needs a '00' prepended to the PDU
 	 * to indicate to use the default SC. */
 	sc[0] = '\0';
-	if(strcmp(smsc->at_modemtype, WAVECOM) == 0)
+	if((strcmp(smsc->at_modemtype, WAVECOM) == 0) || (strcmp(smsc->at_modemtype, SIEMENS) == 0))
 		strcpy(sc, "00");
 	
 	if(msg_type(msg)==smart_sms) {
@@ -315,7 +336,7 @@ unblock:
 
 /******************************************************************************
  * Send an AT command to the modem
- * returns 0 if OK, -1 on failure.
+ * returns 0 if OK, -1 on failure, -2 on SIM PIN needed.
  */
 static int send_modem_command(int fd, char *cmd, int multiline) {
 	Octstr *ostr;
@@ -324,7 +345,7 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 	ostr = octstr_create_empty();
 
 	/* debug */
-	/*printf("Command: %s\n", cmd);*/
+	/* printf("Command: %s\n", cmd); */
 	
 	/* send the command */	
 	write(fd, cmd, strlen(cmd));
@@ -334,17 +355,24 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 	 * This is not perfect but OK for now */
 	for( i=0; i<1000; i++) {
 		ret = at_data_read(fd, ostr);
-		/*printf("Read from modem: ");
-		for(i=0; i<octstr_len(ostr); i++) {
-			if(octstr_get_char(ostr, i) <32)
-				printf("[%02x] ", octstr_get_char(ostr, i));
-			else
-				printf("%c ", octstr_get_char(ostr, i));
-		}
-		printf("\n");*/
+		/* if(octstr_len(ostr)) {
+			printf("Read from modem: ");
+			for(i=0; i<octstr_len(ostr); i++) {
+				if(octstr_get_char(ostr, i) <32)
+					printf("[%02x] ", octstr_get_char(ostr, i));
+				else
+					printf("%c ", octstr_get_char(ostr, i));
+			}
+			printf("\n");
+		}*/
 		if(ret == -1)
 			goto error;
 
+		ret = octstr_search_cstr(ostr, "SIM PIN");
+		if(ret != -1) {
+			octstr_destroy(ostr);
+			return -2;
+		}
 		if(multiline)
 			ret = octstr_search_cstr(ostr, ">");
 		else
@@ -424,11 +452,11 @@ nomsg:
  */
 static Msg *pdu_decode(Octstr *data) {
 	int type;
-	int i;
 	Msg *msg = NULL;
 
 	/* debug info */
-	/*printf("Decoding PDU: ");
+	/* int i;
+	printf("Decoding PDU: ");
 	for(i=0; i<octstr_len(data); i++) {
 		printf("%c", octstr_get_char(data, i));
 	}
@@ -526,6 +554,8 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
 	/* build the message */		
 	message = msg_create(smart_sms);
 	message->smart_sms.sender = origin;
+	/* Put a dummy address in the receiver for now (SMSC requires one) */
+	message->smart_sms.receiver = octstr_create_from_data("1234", 4);
 	/*message->smart_sms.receiver = destination;*/
 	if (udhi) {
 		message->smart_sms.flag_udh = 1;
@@ -546,7 +576,7 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
  * Encode a Msg into a PDU
  */
 static int pdu_encode(Msg *msg, unsigned char *pdu) {
-	int pos = 0, i, len;
+	int pos = 0, i,len;
 
 	/* The message is encoded directly in the text representation of 
 	 * the hex values that will be sent to the modem.
@@ -618,6 +648,7 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	} else {
 		pos += encode7bituncompressed(msg->smart_sms.msgdata, &pdu[pos], 140-pos/2);
 	}
+	pdu[pos] = 0;
 	return 1;
 }
 
