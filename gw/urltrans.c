@@ -54,8 +54,10 @@ struct URLTranslation {
     Octstr *allow_ip;	/* allowed IPs to request send-sms with this 
     	    	    	   account */
     Octstr *deny_ip;	/* denied IPs to request send-sms with this account */
-    Octstr *allowed_prefix;	/* Prefixes allowed in this translation, or... */
+    Octstr *allowed_prefix;	/* Prefixes (of sender) allowed in this translation, or... */
     Octstr *denied_prefix;	/* ...denied prefixes */
+    Octstr *allowed_recv_prefix; /* Prefixes (of receiver) allowed in this translation, or... */
+    Octstr *denied_recv_prefix;	/* ...denied prefixes */
     Numhash *white_list;	/* To numbers allowed, or ... */
     Numhash *black_list; /* ...denied numbers */
 
@@ -91,9 +93,9 @@ static URLTranslation *create_onetrans(CfgGroup *grp);
 static void destroy_onetrans(void *ot);
 static URLTranslation *find_translation(URLTranslationList *trans, 
 					List *words, Octstr *smsc,
-					Octstr *sender, int *reject);
+					Octstr *sender, Octstr *receiver, int *reject);
 static URLTranslation *find_default_translation(URLTranslationList *trans,
-						Octstr *smsc, Octstr *sender,
+						Octstr *smsc, Octstr *sender, Octstr *receiver,
 						int *reject);
 static URLTranslation *find_black_list_translation(URLTranslationList *trans,
 						Octstr *smsc);
@@ -206,7 +208,7 @@ int urltrans_add_cfg(URLTranslationList *trans, Cfg *cfg)
 
 
 URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
-			      Octstr *smsc, Octstr *sender) 
+			      Octstr *smsc, Octstr *sender, Octstr *receiver) 
 {
     List *words;
     URLTranslation *t;
@@ -214,12 +216,12 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
     
     words = octstr_split_words(text);
     
-    t = find_translation(trans, words, smsc, sender, &reject);
+    t = find_translation(trans, words, smsc, sender, receiver, &reject);
     list_destroy(words, octstr_destroy_item);
     if (reject)
 	t = find_black_list_translation(trans, smsc);
     if (t == NULL) {
-	t = find_default_translation(trans, smsc, sender, &reject);
+	t = find_default_translation(trans, smsc, sender, receiver, &reject);
 	if (reject)
 	    t = find_black_list_translation(trans, smsc);
     }
@@ -670,6 +672,16 @@ Octstr *urltrans_denied_prefix(URLTranslation *t)
     return t->denied_prefix;
 }
 
+Octstr *urltrans_allowed_recv_prefix(URLTranslation *t) 
+{
+    return t->allowed_recv_prefix;
+}
+
+Octstr *urltrans_denied_recv_prefix(URLTranslation *t) 
+{
+    return t->denied_recv_prefix;
+}
+
 Numhash *urltrans_white_list(URLTranslation *t)
 {
     return t->white_list;
@@ -758,6 +770,8 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
     ot->deny_ip = NULL;
     ot->allowed_prefix = NULL;
     ot->denied_prefix = NULL;
+    ot->allowed_recv_prefix = NULL;
+    ot->denied_recv_prefix = NULL;
     ot->white_list = NULL;
     ot->black_list = NULL;
     
@@ -843,7 +857,10 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	
 	ot->prefix = cfg_get(grp, octstr_imm("prefix"));
 	ot->suffix = cfg_get(grp, octstr_imm("suffix"));
-	
+
+	ot->allowed_recv_prefix = cfg_get(grp, octstr_imm("allowed-receiver-prefix"));
+    ot->denied_recv_prefix = cfg_get(grp, octstr_imm("denied-receiver-prefix"));
+
 	ot->args = count_occurences(ot->pattern, octstr_imm("%s"));
 	ot->args += count_occurences(ot->pattern, octstr_imm("%S"));
 	ot->has_catchall_arg = 
@@ -965,6 +982,8 @@ static void destroy_onetrans(void *p)
 	octstr_destroy(ot->deny_ip);
 	octstr_destroy(ot->allowed_prefix);
 	octstr_destroy(ot->denied_prefix);
+	octstr_destroy(ot->allowed_recv_prefix);
+	octstr_destroy(ot->denied_recv_prefix);
 	numhash_destroy(ot->white_list);
 	numhash_destroy(ot->black_list);
 	gw_free(ot);
@@ -976,7 +995,7 @@ static void destroy_onetrans(void *p)
  * Find the appropriate translation 
  */
 static URLTranslation *find_translation(URLTranslationList *trans, 
-	List *words, Octstr *smsc, Octstr *sender, int *reject)
+	List *words, Octstr *smsc, Octstr *sender, Octstr *receiver, int *reject)
 {
     Octstr *keyword;
     int i, n;
@@ -1005,20 +1024,34 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 	    }
 	}
 
-	/* Have allowed */
+	/* Have allowed for sender */
 	if (t->allowed_prefix && ! t->denied_prefix &&
 	   (does_prefix_match(t->allowed_prefix, sender) != 1)) {
 	    t = NULL;
 	    continue;
 	}
 
-	/* Have denied */
+	/* Have denied for sender */
 	if (t->denied_prefix && ! t->allowed_prefix &&
 	   (does_prefix_match(t->denied_prefix, sender) == 1)) {
 	    t = NULL;
 	    continue;
 	}
-	
+
+	/* Have allowed for receiver */
+	if (t->allowed_recv_prefix && ! t->denied_recv_prefix &&
+	   (does_prefix_match(t->allowed_recv_prefix, receiver) != 1)) {
+	    t = NULL;
+	    continue;
+	}
+
+	/* Have denied for receiver */
+	if (t->denied_recv_prefix && ! t->allowed_recv_prefix &&
+	   (does_prefix_match(t->denied_recv_prefix, receiver) == 1)) {
+	    t = NULL;
+	    continue;
+	}
+
 	if (t->white_list &&
 	    numhash_find_number(t->white_list, sender) < 1) {
 	    t = NULL; *reject = 1;
@@ -1058,7 +1091,7 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 
 
 static URLTranslation *find_default_translation(URLTranslationList *trans,
-						Octstr *smsc, Octstr *sender,
+						Octstr *smsc, Octstr *sender, Octstr *receiver,
 						int *reject)
 {
     URLTranslation *t;
@@ -1078,16 +1111,30 @@ static URLTranslation *find_default_translation(URLTranslationList *trans,
 	    }
 	}
 
-	/* Have allowed */
+	/* Have allowed sender */
 	if (t->allowed_prefix && ! t->denied_prefix &&
 		       	(does_prefix_match(t->allowed_prefix, sender) != 1)) {
 	    t = NULL;
 	    continue;
 	}
 
-	/* Have denied */
+	/* Have denied sender */
 	if (t->denied_prefix && ! t->allowed_prefix &&
 		       	(does_prefix_match(t->denied_prefix, sender) == 1)) {
+	    t = NULL;
+	    continue;
+	}
+
+	/* Have allowed receiver */
+	if (t->allowed_recv_prefix && ! t->denied_recv_prefix &&
+		       	(does_prefix_match(t->allowed_recv_prefix, receiver) != 1)) {
+	    t = NULL;
+	    continue;
+	}
+
+	/* Have denied receiver */
+	if (t->denied_recv_prefix && ! t->allowed_recv_prefix &&
+		       	(does_prefix_match(t->denied_recv_prefix, receiver) == 1)) {
 	    t = NULL;
 	    continue;
 	}

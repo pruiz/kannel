@@ -248,6 +248,8 @@ MULTI_GROUP(sms-service,
     OCTSTR(catch-all)
     OCTSTR(allowed-prefix)
     OCTSTR(denied-prefix)
+    OCTSTR(allowed-receiver-prefix)
+    OCTSTR(denied-receiver-prefix)
     OCTSTR(white-list)
     OCTSTR(black-list)
     OCTSTR(dlr-url)
