@@ -2340,7 +2340,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     if(dlr_url == NULL) { /* deprecated dlrurl without "-" */
 	dlr_url = http_cgi_variable(args, "dlrurl");
 	if(dlr_url != NULL)
-	    warning(0, "<dlrurl> field used and deprecated");
+	    warning(0, "<dlrurl> field used and deprecated. Please use dlr-url instead.");
     }
     auth_code = http_cgi_variable(args, "auth-code");
     /* No HPLMN on EMI's MT message
@@ -2350,7 +2350,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     if(tmp_string == NULL) { /* deprecated dlrmask without "-" */
 	tmp_string = http_cgi_variable(args, "dlrmask");
 	if(tmp_string != NULL)
-	    warning(0, "<dlrmask> field used and deprecated");
+	    warning(0, "<dlrmask> field used and deprecated. Please use dlr-mask instead.");
     }
     if(tmp_string != NULL)
         sscanf(octstr_get_cstr(tmp_string),"%d", &dlr_mask);

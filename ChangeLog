@@ -1,3 +1,6 @@
+2003-08-08  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsbox.c: more info about deprecated fields in the warning strings.
+
 2003-08-08  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap-appl.c: major bug fixing BUG#76. We *only* pass the orginal 
       client request headers to the convert_content() routine, not the once
