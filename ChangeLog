@@ -1,3 +1,6 @@
+2004-08-24 Alexander Malysh <amalysh at kannel.org>
+    * Makefile.in: remove 'gwlib/gw_uuid_types.h' by distclean too.
+
 2004-08-23  Stipe Tolj  <stolj@wapme.de>
     * configure[.in]: fixing pthread lib settings for FreeBSD 5.2.1. We
       need to add -lc_r and -lkse to LIBS for the freebsd platform.
