@@ -1,5 +1,16 @@
 2000-08-31  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/http.c: Improved (but still did not write properly) HTTP
+	Content-Type header parsing.
+	
+	* test/test_http.c: Parse and report Content-Type. Also, http_get_real
+	now wants a non-NULL request header list. Give it that.
+	
+	* test/test_http_server.c: Report a character set (UTF-8, though
+	it doesn't really matter) so that the parsing can be tested.
+
+2000-08-31  Lars Wirzenius  <liw@iki.fi>
+
 	* configure.in: Tweaked the libxml checking. It should now be
 	slightly cleaner and should work with upcoming 2.2.x versions
 	of the library without changing configure.in. Thanks to Geir

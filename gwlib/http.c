@@ -728,7 +728,7 @@ List *http_header_find_all(List *headers, char *name) {
 void http_header_get_content_type(List *headers, Octstr **type, 
 Octstr **charset) {
 	Octstr *h;
-	long semicolon;
+	long semicolon, equals, len;
 	
 	gwlib_assert_init();
 	gw_assert(headers != NULL);
@@ -746,11 +746,22 @@ Octstr **charset) {
 			*type = h;
 			*charset = octstr_create("");
 		} else {
-			*charset = octstr_copy(h, semicolon + 1, 
-					octstr_len(h));
+			*charset = octstr_duplicate(h);
+			octstr_delete(*charset, 0, semicolon + 1);
 			octstr_strip_blanks(*charset);
+			equals = octstr_search_char(*charset, '=', 0);
+			if (equals == -1)
+				octstr_truncate(*charset, 0);
+			else {
+				octstr_delete(*charset, 0, equals + 1);
+				if (octstr_get_char(*charset, 0) == '"')
+					octstr_delete(*charset, 0, 1);
+				len = octstr_len(*charset);
+				if (octstr_get_char(*charset, len - 1) == '"')
+					octstr_truncate(*charset, len - 1);
+			}
 
-			octstr_delete(h, semicolon, octstr_len(h));
+			octstr_truncate(h, semicolon);
 			octstr_strip_blanks(h);
 			*type = h;
 		}

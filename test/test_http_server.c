@@ -48,7 +48,8 @@ static void client_thread(void *arg) {
 		list_destroy(headers);
 
 		resph = list_create();
-		list_append(resph, octstr_create("Content-Type: text/plain"));
+		list_append(resph, octstr_create("Content-Type: text/plain; "
+						 "charset=\"UTF-8\""));
 		body = octstr_create("hello, world\n");
 		ret = http_server_send_reply(client_socket, HTTP_OK, 
 			resph, body);

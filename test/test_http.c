@@ -20,22 +20,28 @@ static int num_urls = 0;
 
 static void client_thread(void *arg) {
 	int ret;
-	Octstr *url, *final_url, *replyb, *os;
-	List *replyh;
+	Octstr *url, *final_url, *replyb, *os, *type, *charset;
+	List *reqh, *replyh;
 	long i, succeeded, failed;
 	
 	succeeded = 0;
 	failed = 0;
+	reqh = list_create();
 	while ((i = counter_increase(counter)) < max_requests) {
 		if ((i % 1000) == 0)
 			info(0, "Starting fetch %ld", i);
 		url = octstr_create(urls[i % num_urls]);
-		ret = http_get_real(url, NULL, &final_url, &replyh, &replyb);
+		ret = http_get_real(url, reqh, &final_url, &replyh, &replyb);
 		if (ret == -1) {
 			++failed;
 			error(0, "http_get failed");
 		} else {
 			++succeeded;
+			http_header_get_content_type(replyh, &type, &charset);
+			debug("", 0, "Content-type is <%s>, charset is <%s>",
+			      octstr_get_cstr(type), octstr_get_cstr(charset));
+			octstr_destroy(type);
+			octstr_destroy(charset);
 			debug("", 0, "Reply headers:");
 			while ((os = list_extract_first(replyh)) 
 			       != NULL) {
@@ -49,6 +55,7 @@ static void client_thread(void *arg) {
 			octstr_destroy(final_url);
 		}
 	}
+	list_destroy(reqh);
 	info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
 }
 
