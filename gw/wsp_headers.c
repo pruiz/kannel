@@ -42,6 +42,12 @@
 #define BYTE_RANGE 128
 #define SUFFIX_BYTE_RANGE 129
 
+/* Use this value for Expires headers if we can't parse the expiration
+ * date.  It's about one day after the start of the epoch.  We don't
+ * use the exact start of the epoch because some clients have trouble
+ * with that. */
+#define LONG_AGO_VALUE 100000
+
 /*
  * get field value and return its type as predefined data types
  * There are three kinds of field encodings:
@@ -1301,6 +1307,7 @@ static int pack_content_type(Octstr *packet, Octstr *value);
 static int pack_credentials(Octstr *packet, Octstr *value);
 static int pack_date(Octstr *packet, Octstr *value);
 static int pack_encoding(Octstr *packet, Octstr *value);
+static int pack_expires(Octstr *packet, Octstr *value);
 static int pack_field_name(Octstr *packet, Octstr *value);
 static int pack_if_range(Octstr *packet, Octstr *value);
 static int pack_integer_string(Octstr *packet, Octstr *value);
@@ -1353,7 +1360,7 @@ struct headerinfo headerinfo[] =
         { WSP_HEADER_CONTENT_TYPE, pack_content_type, 0 },
         { WSP_HEADER_DATE, pack_date, 0 },
         { WSP_HEADER_ETAG, pack_text, 0 },
-        { WSP_HEADER_EXPIRES, pack_date, 0 },
+        { WSP_HEADER_EXPIRES, pack_expires, 0 },
         { WSP_HEADER_FROM, pack_text, 0 },
         { WSP_HEADER_HOST, pack_text, 0 },
         { WSP_HEADER_IF_MODIFIED_SINCE, pack_date, 0 },
@@ -1659,6 +1666,13 @@ static void pack_long_integer(Octstr *packed, unsigned long integer)
     long oldlen = octstr_len(packed);
     unsigned char octet;
     long len;
+
+    if (integer == 0) {
+	/* The Multi-octet-integer has to be at least 1 octet long. */
+	octstr_append_char(packed, 1); /* length */
+	octstr_append_char(packed, 0); /* value */
+	return;
+    }
 
     /* Encode it back-to-front, by repeatedly inserting
      * at the same position, because that's easier. */
@@ -2482,6 +2496,23 @@ static int pack_content_type(Octstr *packed, Octstr *value)
     /* The expansion of Content-type-value works out to be
      * equivalent to Accept-value. */ 
     return pack_accept(packed, value);
+}
+
+static int pack_expires(Octstr *packed, Octstr *value)
+{
+    int ret;
+
+    ret = pack_date(packed, value);
+
+    if (ret < 0) {
+	/* Responses with an invalid Expires header should be treated
+	as already expired.  If we just skip this header, then the client
+	won't know that.  So we encode one with a date far in the past. */
+	pack_long_integer(packed, LONG_AGO_VALUE);
+	ret = 0;
+    }
+
+    return ret;
 }
 
 static int pack_if_range(Octstr *packed, Octstr *value)
