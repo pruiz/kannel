@@ -49,6 +49,7 @@ extern List *isolated;
 
 static volatile sig_atomic_t smsc_running;
 static List *smsc_list;
+static List *smsc_groups;
 static Octstr *unified_prefix;
 
 static Numhash *black_list;
@@ -310,13 +311,14 @@ static void sms_router(void *arg)
 int smsc2_start(Cfg *cfg)
 {
     CfgGroup *grp;
-    List *groups;
     SMSCConn *conn;
     Octstr *os;
-    
+    int i;
+
     if (smsc_running) return -1;
 
     smsc_list = list_create();
+    smsc_groups = list_create();
 
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
     unified_prefix = cfg_get(grp, octstr_imm("unified-prefix"));
@@ -336,15 +338,24 @@ int smsc2_start(Cfg *cfg)
 	octstr_destroy(os);
     }
 
-    groups = cfg_get_multi_group(cfg, octstr_imm("smsc"));
+    smsc_groups = cfg_get_multi_group(cfg, octstr_imm("smsc"));
+    /*
     while(groups && (grp = list_extract_first(groups)) != NULL) {
-        conn = smscconn_create(grp, 1); /* start as stopped */
+        conn = smscconn_create(grp, 1); 
         if (conn == NULL)
             panic(0, "Cannot start with SMSC connection failing");
         
         list_append(smsc_list, conn);
     }
-    list_destroy(groups, NULL);
+    */
+    for (i = 0; i < list_len(smsc_groups) && 
+        (grp = list_get(smsc_groups, i)) != NULL; i++) {
+        conn = smscconn_create(grp, 1); 
+        if (conn == NULL)
+            panic(0, "Cannot start with SMSC connection failing");
+        list_append(smsc_list, conn);
+    }
+    
     if ((router_thread = gwthread_create(sms_router, NULL)) == -1)
 	panic(0, "Failed to start a new thread for SMS routing");
     
@@ -354,9 +365,9 @@ int smsc2_start(Cfg *cfg)
     return 0;
 }
 
-SMSCConn *smsc2_find(Octstr *id)
+int smsc2_find(Octstr *id)
 {
-    SMSCConn *conn;
+    SMSCConn *conn = NULL;
     int i;
 
     for (i = 0; i < list_len(smsc_list); i++) {
@@ -366,37 +377,72 @@ SMSCConn *smsc2_find(Octstr *id)
         }
     }
     if (i >= list_len(smsc_list))
-        conn = NULL;
-    return conn;
+        i = -1;
+    return i;
 }
 
 int smsc2_stop_smsc(Octstr *id)
 {
     SMSCConn *conn;
+    int i;
 
-    if ((conn = smsc2_find(id)) == NULL)
+    /* find the specific smsc via id */
+    if ((i = smsc2_find(id)) == -1) {
+        error(0,"HTTP: Could not shutdown smsc-id `%s'", octstr_get_cstr(id));
         return -1;
-    /*
-    if (conn->status = SMSCCONN_CONNECTING)
-        return -1;
-    */
-    smscconn_shutdown(conn, 1);
+    }
+    info(0,"HTTP: Shutting down smsc-id `%s'", octstr_get_cstr(id));
+    conn = list_get(smsc_list, i);
+    smscconn_shutdown(conn, 1);   /* shutdown the smsc */
+    list_delete(smsc_list, i, 1); /* drop it from the active smsc list */
+	smscconn_destroy(conn);       /* destroy the connection */
     return 0;
 }
 
 int smsc2_start_smsc(Octstr *id)
 {
+    CfgGroup *grp;
     SMSCConn *conn;
+    Octstr *smscid;
+    int i;
+    
+    /* check if smsc is started already */
+    list_lock(smsc_list);
+    for (i = 0; i < list_len(smsc_list); i++) {
+        conn = list_get(smsc_list, i);
+        if (conn != NULL && octstr_compare(conn->id, id) == 0) {
+            error(0, "HTTP: Could not re-start already running smsc-id `%s'", 
+                  octstr_get_cstr(id));
+            list_unlock(smsc_list);
+            return -1;
+        }
+    }
+    list_unlock(smsc_list);
 
-    if ((conn = smsc2_find(id)) == NULL)
+    /* find the group with smsc id */
+    for (i = 0; i < list_len(smsc_groups) && 
+        (grp = list_get(smsc_groups, i)) != NULL; i++) {
+        smscid = cfg_get(grp, octstr_imm("smsc-id"));
+        if (smscid != NULL && octstr_compare(smscid, id) == 0) {
+            info(0,"HTTP: Re-starting smsc-id `%s'", octstr_get_cstr(smscid));
+            break;
+        }
+    }
+    if (i > list_len(smsc_groups))
         return -1;
-    /*
-    if (conn->status = SMSCCONN_ACTIVE)
-        return -1;
-    */
+
+    conn = smscconn_create(grp, 1); 
+    if (conn == NULL)
+        panic(0, "Cannot start with SMSC connection failing");
+    list_append(smsc_list, conn);
+    
+    if ((router_thread = gwthread_create(sms_router, NULL)) == -1)
+	   panic(0, "Failed to start a new thread for SMS routing");
+
     smscconn_start(conn);
     if (router_thread >= 0)
         gwthread_wakeup(router_thread);
+
     return 0;
 }
 
@@ -469,6 +515,7 @@ void smsc2_cleanup(void)
 	smscconn_destroy(conn);
     }
     list_destroy(smsc_list, NULL);
+    list_destroy(smsc_groups, NULL);
     octstr_destroy(unified_prefix);    
     numhash_destroy(white_list);
     numhash_destroy(black_list);
