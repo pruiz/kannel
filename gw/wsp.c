@@ -358,7 +358,7 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 			abort->TR_Abort_Req.tid = 
 				current_event->TR_Invoke_Ind.machine->tid;
 			abort->TR_Abort_Req.abort_type = 0x01; /* USER */
-			abort->TR_Abort_Req.abort_reason = 0x01; /* PROTOERR */
+			abort->TR_Abort_Req.abort_reason = 0xE0; /* PROTOERR */
 
 			wtp_handle_event(current_event->TR_Invoke_Ind.machine,
 					 abort);

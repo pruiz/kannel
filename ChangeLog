@@ -3,6 +3,9 @@
 	* wsp_http.c: Using octstr_compare instead of strstr in conditional 
 	header addition. There was some curious problem with strstrs.
 
+	* wsp.c: Changed Can't handle event error code to 0xEO. This is user
+	protoerr.
+
 Fri May 12    Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	* fakewap.c: Added -F switch which enables continue on fail
 	rather than exit on fail. (Stress testing)
