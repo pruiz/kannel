@@ -1,4 +1,8 @@
 2004-08-19 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_at.c: fixed segfault when modemtype is set to 'auto'
+      or 'autodetect'. Fixed '+CPIN', some modem needs '"'.
+
+2004-08-19 Alexander Malysh <amalysh at kannel.org>
     * gwlib/gw-prioqueue.[ch]: implemented very simple priority queue ala
       Robert Sedgewick. Behavior like kannel's list.
       Thanks to 'almado.de' for the idea.

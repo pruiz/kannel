@@ -153,7 +153,7 @@ int	at2_open_device(PrivAT2data *privdata)
      * Nokia 7110 and 6210 need some time between opening
      * the connection and sending the first AT commands 
      */
-    if (privdata->modem->need_sleep)
+    if (privdata->modem == NULL || privdata->modem->need_sleep)
         sleep(1);
     debug("bb.smsc.at2", 0, "AT2[%s]: device opened", octstr_get_cstr(privdata->name));
     return 0;
@@ -455,7 +455,7 @@ int	at2_init_device(PrivAT2data *privdata)
             if (ret == 2) {
                 if (privdata->pin == NULL)
                     return -1;
-                setpin = octstr_format("AT+CPIN=%s", octstr_get_cstr(privdata->pin));
+                setpin = octstr_format("AT+CPIN=\"%s\"", octstr_get_cstr(privdata->pin));
                 ret = at2_send_modem_command(privdata, octstr_get_cstr(setpin), 0, 0);
                 octstr_destroy(setpin);
                 if (ret != 0 )
