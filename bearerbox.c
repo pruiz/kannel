@@ -384,14 +384,6 @@ static void *csdrouter_thread(void *arg)
 	if (us->status == BB_STATUS_KILLED) break;
 	HEARTBEAT_UPDATE(our_time, last_time, us);
 
-	/* check for any new messages from CSD Router
-	 */
-	msg = csdr_get_message(us->csdr);
-	if (msg) {
-	    rq_push_msg(bbox->request_queue, msg);
-	    continue;	/* is this necessary? */
-	}
-
 	/* check for any messages to us in reply-queue
 	 */
 	msg = rq_pull_msg(bbox->reply_queue, us->id);
@@ -405,8 +397,16 @@ static void *csdrouter_thread(void *arg)
 
 		rq_push_msg(bbox->request_queue, msg);
 	    }
-	    continue;
+	    continue;	/* is this necessary? */
 	}
+	/* check for any new messages from CSD Router
+	 */
+	msg = csdr_get_message(us->csdr);
+	if (msg) {
+	    rq_push_msg(bbox->request_queue, msg);
+	    continue;	/* is this necessary? */
+	}
+
 	usleep(1000);
     }
     us->status = BB_STATUS_DEAD;
@@ -420,6 +420,7 @@ static void *csdrouter_thread(void *arg)
 static void *wapboxconnection_thread(void *arg)
 {
     BBThread	*us;
+    RQueueItem	*msg;
     time_t	our_time, last_time;
 
     us = arg;
@@ -432,13 +433,24 @@ static void *wapboxconnection_thread(void *arg)
 	if (us->status == BB_STATUS_KILLED) break;
 	HEARTBEAT_UPDATE(our_time, last_time, us);
 
-	/* read socket, adding any new messages to reply-queue */
-	/* if socket is closed, set us to die-mode */
-
 	/* check for any messages to us in request-queue,
 	 * if any, put into socket and if accepted, add ACK
 	 * about that to reply-queue, otherwise NACK
 	 */
+	msg = rq_pull_msg(bbox->request_queue, us->id);
+	if (msg == NULL)
+	    msg = rq_pull_msg_class(bbox->request_queue, R_MSG_CLASS_WAP);
+
+	if (msg) {
+	    warning(0, "WAPC: wap-message read from queue and discarded"); 
+	    /* ret = boxc_send_message(us->boxc, msg, bbox->reply_queue); */
+	    rqi_delete(msg);		/* delete it, for now */
+	    continue;
+	}
+	
+	/* read socket, adding any new messages to reply-queue */
+	/* if socket is closed, set us to die-mode */
+
     }
     boxc_close(us->boxc);
     us->boxc = NULL;
