@@ -36,6 +36,17 @@ ROW(LISTEN,
 
 ROW(LISTEN,
     RcvInvoke,
+    (event->RcvInvoke.tcl == 2 || event->RcvInvoke.tcl == 1) &&
+    event->RcvInvoke.up_flag == 1 && !wtp_tid_is_valid(event),
+    { 
+     machine->tid_ve = 1;
+     wtp_send_ack(machine->tid_ve, machine, event);
+     machine->ack_pdu_sent = 1;
+    },
+    TIDOK_WAIT)
+
+ROW(LISTEN,
+    RcvInvoke,
     event->RcvInvoke.tcl == 0,
     {
      current_primitive=TRInvokeIndication;
@@ -46,6 +57,46 @@ ROW(LISTEN,
      wsp_dispatch_event(machine, wsp_event);
     },
     LISTEN)
+
+ROW(TIDOK_WAIT,
+    RcvAck,
+    (machine->tcl == 2 || machine->tcl == 1) && event->RcvAck.tid_ok == 1,
+    { 
+     current_primitive=TRInvokeIndication;
+     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     if (wsp_event == NULL)
+        goto mem_error;
+     debug(0, "RcvAck: generated TR-Invoke.ind for WSP");
+     wsp_dispatch_event(machine, wsp_event);
+     
+     timer = wtp_timer_create();
+     if (timer == NULL)
+        goto mem_error;
+     wtp_timer_start(timer, L_A_WITH_USER_ACK, machine, event); 
+    },
+    INVOKE_RESP_WAIT)
+
+ROW(TIDOK_WAIT,
+    RcvAbort,
+    1,
+    { wtp_machine_mark_unused(machine); },
+    LISTEN)
+
+ROW(TIDOK_WAIT,
+    RcvInvoke,
+    event->RcvInvoke.rid == 0,
+    { },
+    TIDOK_WAIT)
+
+ROW(TIDOK_WAIT,
+    RcvInvoke,
+    event->RcvInvoke.rid == 1,
+    { 
+     machine->tid_ve = 1;
+     wtp_send_ack(machine->tid_ve, machine, event); 
+     machine->ack_pdu_sent = 1;
+    },
+    TIDOK_WAIT)
 
 /*
  * Ignore receiving invoke, when the state of the machine is INVOKE_RESP_WAIT.
@@ -61,7 +112,7 @@ ROW(INVOKE_RESP_WAIT,
     TRInvoke,
     machine->tcl == 2,
     { 
-     timer=wtp_timer_create();
+     timer = wtp_timer_create();
      if (timer == NULL)
         goto mem_error;
      wtp_timer_start(timer, L_A_WITH_USER_ACK, machine, event); 
@@ -80,6 +131,31 @@ ROW(INVOKE_RESP_WAIT,
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
+
+ROW(INVOKE_RESP_WAIT,
+    TRAbort,
+    1,
+    { 
+     wtp_machine_mark_unused(machine);
+     wtp_send_abort(event->TRAbort.abort_type, machine, event); 
+    },
+    LISTEN)
+
+ROW(INVOKE_RESP_WAIT,
+    TRResult,
+    1,
+    {
+     machine->rcr = 0;
+
+     timer = wtp_timer_create();
+     if (timer == NULL)
+        goto mem_error;
+     wtp_timer_start(timer, L_R_WITH_USER_ACK, machine, event);
+     
+     wtp_send_result(machine, event); 
+     machine->rid = 1;
+    },
+    RESULT_RESP_WAIT)
 
 ROW(RESULT_WAIT,
     TRResult,
@@ -128,8 +204,18 @@ ROW(RESULT_WAIT,
     {
      machine->rid = event->RcvInvoke.rid;
      wtp_send_ack(machine->tid_ve, machine, event);
+     machine->ack_pdu_sent = 1;
     },
     RESULT_WAIT)
+
+ROW(RESULT_WAIT,
+    TRAbort,
+    1,
+    { 
+     wtp_machine_mark_unused(machine);
+     wtp_send_abort(event->TRAbort.abort_type, machine, event); 
+    },
+    LISTEN)
 
 ROW(RESULT_RESP_WAIT,
     RcvAck,
@@ -157,8 +243,21 @@ ROW(RESULT_RESP_WAIT,
     },
     LISTEN)
 
+ROW(RESULT_RESP_WAIT,
+    TRAbort,
+    1,
+    { 
+     wtp_machine_mark_unused(machine);
+     wtp_send_abort(event->TRAbort.abort_type, machine, event); 
+    },
+    LISTEN)
+
 #undef ROW
 #undef STATE_NAME
+
+
+
+
 
 
 

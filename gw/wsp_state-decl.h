@@ -47,6 +47,41 @@ ROW(NULL_STATE,
 		wsp_handle_event(sm, new_event);
 	},
 	CONNECTING)
+/*
+ * When WAP box is restarting, the first PDU can be other than Connect. (That 
+ * can happen when the bearerbox is sending us old packets or the peer has not
+ * closed the connection.) Get (hopefully) means that the connection is still 
+ * open. We simply ignore Disconnect PDU.
+ */
+
+ROW(NULL_STATE,
+        TRInvokeIndication,
+	e->tcl == 2 && wsp_deduce_pdu_type(e->user_data, 0) == Get_PDU &&
+	sm->n_methods == 0 /* XXX check max from config */,
+	{
+		WSPEvent *new_event;
+		Octstr *url;
+		Octstr *headers;
+
+		++sm->n_methods;
+
+		debug(0, "WSP: Got Get PDU, state being NULL_STATE");
+                if (unpack_get_pdu(&url, &headers, e->user_data) == -1)
+			error(0, "Unpacking Get PDU failed, oops.");
+		debug(0, "WSP: sending Release to ourselves");
+		new_event = wsp_event_create(Release);
+		new_event->Release.machine = e->machine;
+		new_event->Release.url = url;
+		wsp_handle_event(sm, new_event);
+
+	},
+	HOLDING)
+
+ROW(NULL_STATE,
+    TRInvokeIndication,
+    e->tcl == 0 && wsp_deduce_pdu_type(e->user_data, 0) == Disconnect_PDU,
+    { },
+    NULL_STATE)
 
 ROW(CONNECTING,
 	SConnectResponse,
@@ -185,3 +220,5 @@ ROW(REPLYING,
 
 #undef ROW
 #undef STATE_NAME
+
+

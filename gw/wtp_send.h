@@ -20,14 +20,14 @@ void wtp_send_result(WTPMachine *machine, WTPEvent *event);
 
 /*
  * Send a message object, of wdp datagram type, having abort PDU as user 
- * data. Fetches SDU from WTP event, address four-tuple from WTP machine. 
+ * data. Creates SDU by itself, fetches address four-tuple from WTP machine. 
  * Handles all errors by itself.
  */
-void wtp_send_abort(WTPMachine *machine, WTPEvent *event);
+void wtp_send_abort(long abort_type, WTPMachine *machine, WTPEvent *event);
 
 /*
  * Send a message object, of wdp datagram type, having ack PDU as user 
- * data. Fetches SDU from WTP event, address four-tuple and machine state
+ * data. Creates SDU by itself, fetches address four-tuple and machine state
  * from WTP machine. Ack_type is a flag telling whether we are doing tid 
  * verification or not. Handles all errors by itself.
  */
@@ -35,3 +35,7 @@ void wtp_send_abort(WTPMachine *machine, WTPEvent *event);
 void wtp_send_ack(long ack_type, WTPMachine *machine, WTPEvent *event);
 
 #endif
+
+
+
+

@@ -18,7 +18,8 @@
 
 static Msg *wtp_pack_result(WTPMachine *machine, WTPEvent *event);
 
-static Msg *wtp_pack_abort(WTPMachine *machine, WTPEvent *event);
+static Msg *wtp_pack_abort(long abort_type, WTPMachine *machine, 
+                           WTPEvent *event);
 
 static Msg *wtp_pack_ack(long ack_type, WTPMachine *machine, WTPEvent *event);
 
@@ -54,11 +55,11 @@ msg_error:
      return;
 }
 
-void wtp_send_abort(WTPMachine *machine, WTPEvent *event){
+void wtp_send_abort(long abort_type, WTPMachine *machine, WTPEvent *event){
 
      Msg *msg = NULL;
 
-     msg = wtp_pack_abort(machine, event);
+     msg = wtp_pack_abort(abort_type, machine, event);
      msg_dump(msg);
      if (msg == NULL)
         goto msg_error;
@@ -92,7 +93,7 @@ void wtp_send_ack(long ack_type, WTPMachine *machine, WTPEvent *event){
  *Abort(CAPTEMPEXCEEDED)
  */
 msg_error:
-     error(0, "WTP: send_result: out of memory");
+     error(0, "WTP: send_ack: out of memory");
      free(msg); 
      return;
 }
@@ -129,8 +130,7 @@ static Msg *wtp_pack_result(WTPMachine *machine, WTPEvent *event){
  * tion. Only inputs are the rid field (which tells are we resending or not), 
  * and the tid.
  */  
-    debug(0,"we have a requirement:");
-    wtp_event_dump(event);    
+ 
     msg->wdp_datagram.user_data = octstr_copy(event->TRResult.user_data, 0,
          octstr_len(event->TRResult.user_data));
     if (msg->wdp_datagram.user_data == NULL)
@@ -188,7 +188,8 @@ error:
 }
 
 
-static Msg *wtp_pack_abort(WTPMachine *machine, WTPEvent *event){
+static Msg *wtp_pack_abort(long abort_type, WTPMachine *machine, 
+                           WTPEvent *event){
 
        Msg *msg;
        int octet,
@@ -211,7 +212,7 @@ static Msg *wtp_pack_abort(WTPMachine *machine, WTPEvent *event){
 /* 
  * Then the type of the abort
  */
-    octet += event->TRAbort.abort_type;
+    octet += abort_type;
     wtp_pdu[0] = octet;
 /*
  * A responder turns on the first bit of the tid field, as an identification.
@@ -294,7 +295,6 @@ static Msg *wtp_pack_ack(long ack_type, WTPMachine *machine, WTPEvent *event){
     tid = event->RcvInvoke.tid^0x8000;
     first_tid = tid>>8;
     last_tid = event->RcvInvoke.tid&0xff;
-    debug(0, "last tid was %d", last_tid);
     wtp_pdu[1] = first_tid;
     wtp_pdu[2] = last_tid;
 
@@ -345,7 +345,7 @@ static Msg *wtp_add_datagram_address(Msg *msg, WTPMachine *machine){
  *Abort(CAPTEMPEXCEEDED)
  */
 oct_error:
-    error(0, "WTP: add_datagram: out of memory");
+    error(0, "WTP: add_datagram_address: out of memory");
     free(msg->wdp_datagram.source_address);
     free(msg->wdp_datagram.destination_address);
     free(msg);

@@ -1,3 +1,18 @@
+1999-12-29 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp.c, wtp_send.c: Added label WTP and function names in error 
+	messages.
+
+	* wtp_state-decl.h: More rows added. Now all events expect timer and
+	error are handled.
+
+	* wtp_send.c: Added abort_type in the argument list of the function 
+	send_abort. 
+
+	* wsp_state-decl.h: Added rows for handling Get and Disconnect PDUs 
+	when the state is NULL_STATE (these are needed for restarting the 
+	wapbox.
+
 1999-12-28    <rpr@rpr.wapit.com>
 
 	* gwlib/log.*: added log level 'forced' and updated documentary in

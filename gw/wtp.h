@@ -16,8 +16,9 @@ typedef struct WTPEvent WTPEvent;
 #include "msg.h" 
 #include "wsp.h" 
 #include "wtp_timer.h" 
+#include "wtp_send.h"
 
-#define NUMBER_OF_ABORT_REASONS 8
+#define NUMBER_OF_ABORT_REASONS 9
 /*
  * For now, timers are defined. They will depend on bearer information fetched
  * from address (or from a header field of the protocol speaking with the 

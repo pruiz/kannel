@@ -8,8 +8,6 @@
  */
 
 #include "wtp.h"
-#include "wtp_send.h"
-#include "wtp_timer.h"
 
 /*
  * Global data structures:
@@ -58,7 +56,7 @@ static WTPEvent *remove_from_event_queue(WTPMachine *machine);
 
 /******************************************************************************
  *
- *EXTERNAL FUNCTIONS:
+ * EXTERNAL FUNCTIONS:
  */
 
 WTPEvent *wtp_event_create(enum event_name type) {
@@ -88,7 +86,7 @@ error:
         #define EVENT(type, field) { struct type *p = &event->type; field }
         #include "wtp_events-decl.h"
         free(event);
-	error(errno, "Out of memory.");
+	error(errno, "WTP: event_create: Out of memory.");
 	return NULL;
 }
 /*
@@ -151,7 +149,7 @@ void wtp_machine_mark_unused(WTPMachine *machine){
 
         if (temp == NULL){
 	    mutex_unlock(temp->mutex);
-            debug(0, "WTPMachine unknown");
+            debug(0, "WTP: machine_mark_unused: WTPMachine unknown");
             return;
 	}
        
@@ -191,7 +189,7 @@ void wtp_machine_destroy(WTPMachine *machine){
           if (temp == NULL){
               mutex_unlock(&temp->next->mutex);
 	      mutex_unlock(&temp->mutex);
-              info(0, "Machine unknown");
+              debug(0, "WTP: machine_destroy: Machine unknown");
               return;
 	  }
 
@@ -207,8 +205,8 @@ void wtp_machine_destroy(WTPMachine *machine){
         #define ENUM(name)        
         #define OCTSTR(name) octstr_destroy(temp->name)
         #define TIMER(name) wtp_timer_destroy(temp->name)
-        #define QUEUE(name) if (temp->name != NULL)\
-                               panic(0, "Event queue was not empty")
+        #define QUEUE(name) if (temp->name != NULL) \
+                panic(0, "WTP: machine_destroy: Event queue was not empty")
         #define MUTEX(name) mutex_destroy(temp->name)
         #define NEXT(name)
         #define MACHINE(field) field
@@ -253,7 +251,7 @@ void wtp_machine_dump(WTPMachine  *machine){
            debug (0, "WTPMachine dump ends");
 	
          } else
-           debug(0, "wtp_machine_dump: machine does not exist");
+           debug(0, "machine does not exist");
 }
 
 
@@ -284,18 +282,19 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
 
 	          case RcvAck: 
                        tid = event->RcvAck.tid;
-                       tid=event->RcvAck.tid;
                        machine = wtp_machine_find(msg->wdp_datagram.source_address,
                                     msg->wdp_datagram.source_port, 
                                     msg->wdp_datagram.destination_address,
                                     msg->wdp_datagram.destination_port, 
                                     tid);
+
                        if (machine == NULL)
-			  error(0, "ack received, yet having no machine");
+			  error(0, "WTP: machine_find_or_create: ack received, 
+                                yet having no machine");
                   break;
                  
 	          default:
-                       debug(0, "WTP: machine_find_or_create: wrong event");
+                       debug(0, "WTP: machine_find_or_create: unhandled event");
                   break;
 	   }
 
@@ -432,7 +431,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                if (octet > NUMBER_OF_ABORT_REASONS)
                   goto illegal_header;
                event->RcvAbort.abort_reason = octet;
-               info(0, "abort event packed");
+               debug(0, "WTP: unpack_datagram: abort event packed");
             }
 
 /*
@@ -469,35 +468,35 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
  */
 wrong_version:
          wtp_event_destroy(event);
-         error(0, "Version not supported");
+         error(0, "WTP: unpack_datagram: Version not supported");
          return NULL;
 /*
  *Send Abort(NOTIMPLEMENTEDSAR)
  */
 no_segmentation:
          wtp_event_destroy(event);
-         error(0, "No segmentation implemented");
+         error(0, "WTP: unpack_datagram: No segmentation implemented");
          return NULL;
 /*
  *TBD: Send Abort(CAPTEMPEXCEEDED), too.
  */
 cap_error:
          free(event);
-         error(errno, "Out of memory");
+         error(errno, "WTP: unpack_datagram: Out of memory");
          return NULL;
 /*
  *TBD: Send Abort(PROTOERR). Add necessary indications! 
  */
 illegal_header:
          wtp_event_destroy(event);
-         error(0, "Illegal header structure");
+         error(0, "WTP: unpack_datagram: Illegal header structure");
          return NULL;
 /*
  *TBD: Reason to panic?
  */
 no_datagram:   
          free(event);
-         error(0, "No datagram received");
+         error(0, "WTP: unpack_datagram: No datagram received");
          return NULL;
 }
 
@@ -521,7 +520,7 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
      }
 
      do {
-	  debug(0, "WTP: state is %s, event is %s.",
+	  debug(0, "WTP: handle_event: state is %s, event is %s.",
 	  		name_state(machine->state),
 	  		name_event(event->type));
 
@@ -537,8 +536,8 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 		  } else 
 	  #include "wtp_state-decl.h"
 		  {
-			error(0, "WTP: unhandled event!");
-			debug(0, "WTP: Unhandled event was:");
+			error(0, "WTP: handle_event: unhandled event!");
+			debug(0, "WTP: handle_event: Unhandled event was:");
 			wtp_event_dump(event);
 		  }
 
@@ -552,7 +551,7 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
  *Send Abort(CAPTEMPEXCEEDED)
  */
 mem_error:
-     debug(0, "wtp_handle_event: out of memory");
+     debug(0, "WTP: handle_event: out of memory");
      if (timer != NULL)
         wtp_timer_destroy(timer);
      if (wsp_event != NULL)
@@ -693,7 +692,7 @@ static WTPMachine *wtp_machine_create_empty(void){
             #include "wtp_machine-decl.h"
         }
         free(machine);
-        error(errno, "Out of memory");
+        error(errno, "WTP: machine_create_empty: Out of memory");
         return NULL;
 }
 
@@ -735,7 +734,7 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
  * Abort(CAPTEMPEXCEEDED)
  */
          if (event == NULL){
-            debug(0, "pack_wsp_event: Out of memory");
+            debug(0, "WTP: pack_wsp_event: Out of memory");
             free(event);
             return NULL;
          }
