@@ -1,5 +1,5 @@
 2002-08-23  Stipe Tolj  <tolj@wapme-systems.de>
-    * gwlib/http.c: fixed a minor compiler warning
+    * gw/smsc/smsc_at2.c, gwlib/http.c: fixed a minor compiler warnings
 
 2002-08-22  Stipe Tolj  <tolj@wapme-systems.de>
     * wap/wap_events.def, wap/wtp.c: added a RcvResult event and a coresponding
