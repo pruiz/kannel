@@ -83,9 +83,6 @@ extern List *outgoing_sms;
 extern List *flow_threads;
 
 
-/* growing number to be given to messages */
-static Counter *msg_id;
-
 static FILE *file = NULL;
 static Octstr *filename = NULL;
 static Octstr *newfile = NULL;
@@ -239,7 +236,6 @@ static void store_cleanup(void *arg)
     octstr_destroy(newfile);
     octstr_destroy(bakfile);
     mutex_destroy(file_mutex);
-    counter_destroy(msg_id);
     
     list_destroy(ack_store, msg_destroy_item);
     list_destroy(sms_store, msg_destroy_item);
@@ -550,10 +546,6 @@ int store_dump(void)
 
 int store_init(Octstr *fname)
 {
-    /* message id always used */
-    msg_id = counter_create();
-    counter_set(msg_id, 1);
-
     if (fname == NULL)
         return 0; /* we are done */
 
@@ -580,10 +572,8 @@ int store_init(Octstr *fname)
 
 void store_shutdown(void)
 {
-    if (filename == NULL) {
-        counter_destroy(msg_id);
+    if (filename == NULL)
 	return;
-    }
 
     list_remove_producer(ack_store);
 }

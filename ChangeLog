@@ -1,4 +1,7 @@
 2004-01-15  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bb_store.c: got rid of unused 'Counter *msg_id'. We use UUID's now.
+
+2004-01-15  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/log.c: close syslog when exit. removed 'inline' from declaration of
       'gw_panic_output' because va_args functions can't be inlined.
 
