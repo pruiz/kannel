@@ -861,20 +861,20 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                 warning(0, "SMPP[%s]: SMSC sent submit_sm_resp " 
                         "with wrong sequence number 0x%08lx",
                         octstr_get_cstr(smpp->conn->id),
-                        pdu->u.submit_sm.sequence_number); 
+                        pdu->u.submit_sm_resp.sequence_number); 
             } else if (pdu->u.submit_sm_resp.command_status != 0) { 
                 error(0, "SMPP[%s]: SMSC returned error code 0x%08lx " 
                       "in response to submit_sm.",
                       octstr_get_cstr(smpp->conn->id),
                       pdu->u.submit_sm_resp.command_status); 
                 reason = smpp_status_to_smscconn_failure_reason( 
-                            pdu->u.submit_sm.command_status); 
+                            pdu->u.submit_sm_resp.command_status); 
 
                 /* 
                  * check to see if we got a "throttling error", in which case we'll just
                  * sleep for a while 
                  */
-                if (pdu->u.submit_sm.command_status == SMPP_ESME_RTHROTTLED)
+                if (pdu->u.submit_sm_resp.command_status == SMPP_ESME_RTHROTTLED)
                     time(&(smpp->throttling_err_time));
                 else
                     smpp->throttling_err_time = 0;
