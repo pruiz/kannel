@@ -739,9 +739,9 @@ static int parse_text(xmlNodePtr node, wml_binary_t **wbxml)
 	octstr_strip_blanks(temp);
 
     if (octstr_len(temp) == 0)
-	ret = 0;
-    else
-	ret = parse_st_octet_string(temp, 0, wbxml);
+        ret = 0;
+    else 
+        ret = parse_st_octet_string(temp, 0, wbxml);
 
     /* Memory cleanup. */
     octstr_destroy(temp);
@@ -1425,7 +1425,7 @@ static int check_if_url(int hex)
 
 static int check_if_emphasis(xmlNodePtr node)
 {
-    if (node == NULL)
+    if (node == NULL || node->name == NULL)
 	return 0;
 
     if (strcmp(node->name, "b") == 0)
