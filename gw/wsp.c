@@ -96,7 +96,7 @@ void wsp_init(void) {
 
 void wsp_shutdown(void) {
 	while (list_len(session_machines) > 0)
-		wsp_machine_destroy(list_extract_first(session_machines));
+		wsp_machine_destroy(list_get(session_machines, 0));
 	list_destroy(session_machines);
 	counter_destroy(session_id_counter);
 }
@@ -268,7 +268,15 @@ WSPMachine *wsp_machine_create(void) {
 }
 
 
+void wsp_machine_mark_unused(WSPMachine *p) {
+	p->unused = 1;
+}
+
+
 void wsp_machine_destroy(WSPMachine *p) {
+	list_delete_equal(session_machines, p);
+	while (list_len(p->event_queue) > 0)
+		wsp_event_destroy(list_extract_first(p->event_queue));
 	#define MUTEX(name) mutex_destroy(p->name);
 	#define INTEGER(name) p->name = 0;
 	#define OCTSTR(name) octstr_destroy(p->name);
@@ -354,7 +362,7 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 
 			wtp_handle_event(current_event->TR_Invoke_Ind.machine,
 					 abort);
-			sm->client_port = -1;
+			wsp_machine_mark_unused(sm);
 		} else {
 			error(0, "WSP: Can't handle event.");
 			debug("wap.wsp", 0, "WSP: The unhandled event:");
@@ -362,13 +370,14 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 		}
 
 	end:
-#if 1
 		wsp_event_destroy(current_event);
-#endif
 		current_event = remove_from_event_queue(sm);
-	} while (current_event != NULL);
-	
-	mutex_unlock(sm->mutex);
+	} while (sm != NULL && current_event != NULL);
+
+	if (sm->unused)
+		wsp_machine_destroy(sm);
+	else
+		mutex_unlock(sm->mutex);
 }
 
 
@@ -857,8 +866,10 @@ static int same_client(void *a, void *b) {
 	
 	sm1 = a;
 	sm2 = b;
-	return octstr_compare(sm1->client_address, sm2->client_address) == 0 &&
+	return !sm1->unused &&
+	       !sm2->unused && 
 	       sm1->client_port == sm2->client_port &&
-	       octstr_compare(sm1->server_address, sm2->server_address) == 0 &&
-	       sm1->server_port == sm2->server_port;
+	       sm1->server_port == sm2->server_port &&
+	       octstr_compare(sm1->client_address, sm2->client_address) == 0 &&
+	       octstr_compare(sm1->server_address, sm2->server_address) == 0;
 }

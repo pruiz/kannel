@@ -131,8 +131,9 @@ static void check_received(void) {
 		for (n = 0; n < NUM_ITEMS_PER_PRODUCER; ++n) {
 			index = p * NUM_ITEMS_PER_PRODUCER + n;
 			if (!received[index]) {
-				error(0, "Not received: producer=%ld item=%ld "
-				         "index=%ld", producers[p], n, index);
+				error(0, "Not received: producer=%ld "
+				         "item=%ld index=%ld", 
+					 producers[p], n, index);
 			}
 		}
 	}
@@ -288,7 +289,8 @@ static void main_for_extract(void) {
 		for (i = 0; i < list_len(extracted); ++i) {
 			p = list_get(extracted, i);
 			if (strcmp(p, items[j]) != 0)
-				panic(0, "extraction returned wrong element!");
+				panic(0, 
+				  "extraction returned wrong element!");
 		}
 		list_destroy(extracted);
 	}

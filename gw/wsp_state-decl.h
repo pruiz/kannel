@@ -104,7 +104,7 @@ ROW(CONNECTING,
 			for (i = 0; i < list_len(old_sessions); ++i) {
 				sm2 = list_get(old_sessions, i);
 				if (sm2 != sm)
-					sm2->client_port = -1;
+					wsp_machine_mark_unused(sm2);
 			}
 			list_destroy(old_sessions);
 		}
@@ -186,6 +186,7 @@ ROW(CONNECTED,
 	TR_Invoke_Ind,
 	e->tcl == 0 && wsp_deduce_pdu_type(e->user_data, 0) == Disconnect_PDU,
 	{
+		wsp_machine_mark_unused(sm);
 	},
 	NULL_STATE)
 

@@ -161,6 +161,12 @@ WSPMachine *wsp_machine_create(void);
 
 
 /*
+ * Mark a WSPMachine as unused, for later destruction.
+ */
+void wsp_machine_mark_unused(WSPMachine *machine);
+
+
+/*
  * Destroy a WSPMachine structure, including all its members.
  */
 void wsp_machine_destroy(WSPMachine *machine);

@@ -142,22 +142,27 @@ double totaltime = 0, besttime = 1000000L,  worsttime = 0;
 int verbose = 0;
 
 /*
- * PDU type, version number and transaction class are supplied by a command line argument.
+ * PDU type, version number and transaction class are supplied by a 
+ * command line argument.
  */
-unsigned char WSP_Connect[] = {0x06, 0x00, 0x00, 0x00, 0x01, 0x10, 0x00, 0x00 };
+unsigned char WSP_Connect[] = {0x06, 0x00, 0x00, 0x00, 0x01, 0x10, 0x00, 
+				0x00 };
 unsigned char WSP_ConnectReply[] = {0x16, 0x80, 0x00, 0x02 };
 unsigned char WTP_Ack[] =          {0x18, 0x00, 0x00 };
 unsigned char WTP_TidVe[] =        {0x1C, 0x00, 0x00};
 unsigned char WTP_Abort[] =        {0x20, 0x00, 0x00, 0x00 };
 unsigned char WSP_Get[] =          {0x0E, 0x00, 0x00, 0x02, 0x40 };
-unsigned char WSP_Reply[] =        {0x16, 0x80, 0x00, 0x04, 0x20, 0x01, 0x94 };
+unsigned char WSP_Reply[] =        {0x16, 0x80, 0x00, 0x04, 0x20, 0x01, 
+				    0x94 };
 unsigned char WSP_Disconnect[] =   {0x0E, 0x00, 0x00, 0x00, 0x05 };
 
 /*
 **  In this case it does not matter what is the byte order
 */
 #define SET_GTR( hdr ) hdr[0] |= 0x04
-#define SET_TID( hdr, tid) hdr[1] |= (0x7f & ((tid) >> 8)); hdr[2] = (char)(tid)
+#define SET_TID( hdr, tid) \
+	hdr[1] |= (0x7f & ((tid) >> 8)); \
+	hdr[2] = (char)(tid)
 #define GET_TID( hdr ) (((hdr[1] & 0x7f) << 8) + hdr[2])
 #define CONSTRUCT_EXPECTED_REPLY_HDR( dest, template, tid ) \
     if (sizeof(dest) < sizeof(template)) panic(0,"buffer overflow.");\
@@ -210,7 +215,8 @@ static unsigned short get_tid(void) {
 
 
 /*
-**  Function stores WAP/WSP variable length integer to buffer and returns actual len
+**  Function stores WAP/WSP variable length integer to buffer and returns 
+**  actual len
 */
 static int StoreVarInt( unsigned char *buf, unsigned long varInt )
 {
@@ -325,7 +331,8 @@ wap_msg_recv( int fd, const char * hdr, int hdr_len,
 	    ret = read_available(fd, timeout * 1000 * 1000);
 	    if (ret <= 0) {
                 info(0, "Timeout while receiving from socket.\n");
-                return fResponderIsDead ? -1 : 0;  /* continue if we got ack? */
+                return fResponderIsDead ? -1 : 0;
+		/* continue if we got ack? */
 	    }
         }
 	
@@ -514,7 +521,8 @@ client_session( void * arg)
         if (tmp < besttime) besttime = tmp;
         if (tmp > worsttime) worsttime = tmp;
         totaltime += tmp;
-        if (interval > 0.01) info(0, "fakewap: finished session # %d", i_this);
+        if (interval > 0.01)
+	    info(0, "fakewap: finished session # %d", i_this);
         mutex_unlock( mutex );
 
         if (tmp < (double)interval) {
@@ -654,11 +662,13 @@ int main(int argc, char **argv)
     while (threads > 0) usleep( 1000 );
 
     info(0, "fakewap complete.");
-    info( 0, "fakewap: %d client threads made total %d transactions.", org_threads, num_sent);
+    info(0, "fakewap: %d client threads made total %d transactions.", 
+    	org_threads, num_sent);
     delta = difftime(end_time, start_time);
     info( 0, "fakewap: total running time %.1f seconds", delta);
     info( 0, "fakewap: %.1f messages/seconds on average", num_sent / delta);
-    info( 0, "fakewap: time of best, worst and average transaction: %.1f s, %.1f s, %.1f s",
+    info( 0, "fakewap: time of best, worst and average transaction: "
+             "%.1f s, %.1f s, %.1f s",
          besttime, worsttime, totaltime / num_sent );
     return 0;
 }

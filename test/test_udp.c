@@ -33,7 +33,8 @@ static void client(int port) {
 		if (udp_recvfrom(s, &pong, &from) == -1)
 			panic(0, "Couldn't receive pong");
 		info(0, "Got <%s> from <%s:%d>", octstr_get_cstr(pong),
-			octstr_get_cstr(udp_get_ip(from)), udp_get_port(from));
+			octstr_get_cstr(udp_get_ip(from)), 
+			udp_get_port(from));
 	}
 }
 
@@ -50,7 +51,8 @@ static void server(int port) {
 		if (udp_recvfrom(s, &ping, &from) == -1)
 			panic(0, "Couldn't receive ping");
 		info(0, "Got <%s> from <%s:%d>", octstr_get_cstr(ping),
-			octstr_get_cstr(udp_get_ip(from)), udp_get_port(from));
+			octstr_get_cstr(udp_get_ip(from)), 
+			udp_get_port(from));
 		if (udp_sendto(s, pong, from) == -1)
 			panic(0, "Couldn't send pong.");
 	}

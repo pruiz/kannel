@@ -191,6 +191,9 @@ clean:
 	rm -f core $(progs) $(testprogs) $(objs) $(docs) *.a
 	rm -f $(figs) $(docs)
 
+nag:
+	utils/find-long-lines
+
 depend .depend: wmlscript/wsgram.h
 	for dir in $(srcdirs); do \
 		$(MKDEPEND) $$dir/*.c | sed "s:^[^ ]:$$dir/&:"; done > .depend

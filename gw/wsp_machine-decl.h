@@ -17,6 +17,7 @@
 
 
 SESSION_MACHINE(
+	INTEGER(unused)
 	INTEGER(state)
 	MUTEX(mutex)
 	INTEGER(n_methods)

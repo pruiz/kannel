@@ -269,8 +269,7 @@ void wtp_event_dump(WTPEvent *event) {
  * Mark a WTP state machine unused. Normal functions do not remove machines, just 
  * set a flag. In addition, destroys the timer.
  */
-void wtp_machine_mark_unused(WTPMachine *machine){
-
+void wtp_machine_mark_unused(WTPMachine *machine) {
      machine->in_use = 0;
      wtp_timer_destroy(machine->timer);
      machine->timer = NULL;
@@ -600,7 +599,10 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
           event = remove_from_event_queue(machine);
      } while (event != NULL);
      
-     mutex_unlock(machine->mutex);
+     if (machine->in_use)
+	mutex_unlock(machine->mutex);
+     else
+     	wtp_machine_destroy(machine);
  
      return;
 }
@@ -622,6 +624,8 @@ void wtp_init(void) {
 }
 
 void wtp_shutdown(void) {
+     debug("wap.wtp", 0, "wtp_shutdown: %ld machines left",
+     	   list_len(machines));
      while (list_len(machines) > 0)
 	wtp_machine_destroy(list_extract_first(machines));
      list_destroy(machines);
@@ -736,6 +740,7 @@ static WTPMachine *wtp_machine_create_empty(void){
  * been deleted from the machines list.
  */
 static void wtp_machine_destroy(WTPMachine *machine){
+	list_delete_equal(machines, machine);
         #define INTEGER(name) machine->name = 0
         #define ENUM(name) machine->name = LISTEN
         #define MSG(name) msg_destroy(machine->name)

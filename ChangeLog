@@ -1,3 +1,26 @@
+Sun Apr  9 20:42:08 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Makefile.in: Added nag target.
+	
+	* utils/find-long-lines: Wrote.
+	
+	* test/test_udp.c, test/test_list.c, test/fakewap.c, test/fakesmsc.c:
+	Re-formatted some long lines.
+	
+	* gw/wsp.[ch], gw/wsp_machine-decl.h: Wrote function
+	wsp_machine_mark_unused. This marks a WSPMachine as unused.
+	
+	* gw/wsp.c: wsp_machine_destroy now removes the machine from
+	the list of WSPMachines. wsp_shutdown and same_client changed
+	correspondingly.  wsp_handle_event calls wsp_machine_destroy if
+	it notices the machine becomes unused.
+	
+	* gw/wsp_state-decl.h: Changed to use wsp_machine_mark_unused instead
+	of mucking around with the client_port field.
+	
+	* gw/wtp.c: wtp_handle_event removes machine if it notices it
+	is unused.
+
 Sun Apr  9 02:18:38 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* More memory leak fixes, now in bearerbox. Now it should be possible

@@ -1,5 +1,5 @@
 /*
- * fakesmsc.c - simulate some properties of SMS centers, using trivial protocol
+ * fakesmsc.c - simulate an SMS centers, using a trivial protocol
  *
  * The protocol:
  *
@@ -24,8 +24,8 @@ static char usage[] = "Usage: fakesmsc <port> <interval> <max> <msg> ... \n\
 where <port> is the port to listen to, <interval> is the interval, in \n\
 seconds (floating point allowed), between automatically generated messages \n\
 <max> is the maximum number of messages to send (0 means infinitum), \n\
-and <msg> is the message to be sent. If there are several messages, they are \n\
-sent in random order.";
+and <msg> is the message to be sent. If there are several messages, they\n\
+are sent in random order.";
 
 
 #include <errno.h>
