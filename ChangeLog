@@ -1,3 +1,8 @@
+2000-10-18  Richard Braakman  <dark@wapit.com>
+
+	* gw/bb_udp.c, gwlib/http.c: Corrected some stray free() calls
+	to gw_free().
+
 2000-10-18  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bearerbox.c: Use new report_version in HTTP admin status, too.
@@ -143,13 +148,13 @@
 	
 	* test/test_http.c: Modified to use the new interface.
 
-2000-10-11  Richard Braakman  <dark@wapit.com>
+2000-10-12  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/gwassert.h: Added parentheses around the panic(...), 0
         expressions in the assert macros, to get the originally intended
 	meaning.
 
-2000-10-11  Richard Braakman  <dark@wapit.com>
+2000-10-12  Richard Braakman  <dark@wapit.com>
 
 	* wmlscript/wserror.c: Corrected a stray va_arg(ap, char).
 	(va_arg should always get the type as it is after promotion, and

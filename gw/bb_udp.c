@@ -180,7 +180,7 @@ static Udpc *udpc_create(int port, char *interface_name)
 	error(0, "updc_create: could not resolve interface <%s>",
 	      interface_name);
 	close(udpc->fd);
-	free(udpc);
+	gw_free(udpc);
 	return NULL;
     }
 
