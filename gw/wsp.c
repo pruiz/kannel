@@ -617,7 +617,7 @@ static int unpack_uintvar(unsigned long *u, Octstr *os, int *off) {
 			return -1;
 		}
 		*u = ((*u) << 7) | (o & 0x7F);
-	} while ((o & 0x80) == 1);
+	} while ((o & 0x80) != 0);
 
 	return 0;
 }

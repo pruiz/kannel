@@ -1,3 +1,8 @@
+Thu Feb  3 18:40:38 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c: Fixed unpack_uintvar to handle multiple bytes. This
+	was embarrassing.
+
 2000-03-02  Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_send.c: added static functions message_rid, set_rid for changing
