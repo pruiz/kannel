@@ -318,7 +318,7 @@ static int unpack_parameter(ParseContext *context, Octstr *decoded) {
 		goto error;
 	}
 
-	octstr_append_cstr(decoded, "; ");
+	octstr_append(decoded, octstr_create_immutable("; "));
 	octstr_append(decoded, parm);
 	if (octstr_len(value) > 0) {
 		octstr_append_char(decoded, '=');
@@ -349,7 +349,8 @@ static void unpack_optional_q_value(ParseContext *context, Octstr *decoded) {
 	if (parse_octets_left(context) > 0) {
 		Octstr *qval = unpack_q_value(context);
 		if (qval) {
-			octstr_append_cstr(decoded, "; q=");
+			octstr_append(decoded, 
+			    	      octstr_create_immutable("; q="));
 			octstr_append(decoded, qval);
 			octstr_destroy(qval);
 		} else
@@ -553,7 +554,8 @@ static Octstr *unpack_challenge(ParseContext *context) {
 		decoded = parse_get_nul_string(context);
 		realm_value = parse_get_nul_string(context);
 		if (decoded && realm_value) {
-			octstr_append_cstr(decoded, "realm=\"");
+			octstr_append(decoded, 
+			    	      octstr_create_immutable("realm=\""));
 			octstr_append(decoded, realm_value);
 			octstr_append_char(decoded, '"');
 			unpack_all_parameters(context, decoded);
@@ -665,7 +667,8 @@ static Octstr *unpack_cache_directive(ParseContext *context) {
 				octstr_append(decoded, fieldname);
 				octstr_destroy(fieldname);
 				if (parse_octets_left(context) > 0)
-					octstr_append_cstr(decoded, ", ");
+					octstr_append(decoded, 
+					    octstr_create_immutable(", "));
 			} while (parse_octets_left(context) > 0 &&
 				!parse_error(context));
 			break;

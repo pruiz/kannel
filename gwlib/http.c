@@ -508,7 +508,6 @@ error:
 int http_server_send_reply(HTTPSocket *socket, int status, List *headers, 
 Octstr *body) {
 	Octstr *response;
-	char buf[1024];
 	int i, ret;
 	long len;
 	
@@ -518,19 +517,17 @@ Octstr *body) {
 	gw_assert(headers != NULL);
 	gw_assert(body != NULL);
 
-	sprintf(buf, "HTTP/1.1 %d Foo\r\n", status);
-	response = octstr_create(buf);
+    	response = octstr_format("HTTP/1.1 %d Foo\r\n", status);
 	if (body == NULL)
 		len = 0;
 	else
 		len = octstr_len(body);
-	sprintf(buf, "Content-Length: %ld\r\n", len);
-	octstr_append_cstr(response, buf);
+	octstr_format_append(response, "Content-Length: %ld\r\n", len);
 	for (i = 0; headers != NULL && i < list_len(headers); ++i) {
-		octstr_append(response, list_get(headers, i));
-		octstr_append_cstr(response, "\r\n");
+		octstr_format_append(response, "%s\r\n", 
+		    	    	     list_get(headers, i));
 	}
-	octstr_append_cstr(response, "\r\n");
+	octstr_format_append(response, "\r\n");
 	if (body != NULL)
 		octstr_append(response, body);
 	ret = socket_write(socket, response);
@@ -586,17 +583,12 @@ void http_destroy_headers(List *headers) {
 
 
 void http_header_add(List *headers, char *name, char *contents) {
-	Octstr *h;
-	
 	gwlib_assert_init();
 	gw_assert(headers != NULL);
 	gw_assert(name != NULL);
 	gw_assert(contents != NULL);
 
-	h = octstr_create(name);
-	octstr_append_cstr(h, ": ");
-	octstr_append_cstr(h, contents);
-	list_append(headers, h);
+	list_append(headers, octstr_format("%s: %s", name, contents));
 }
 
 
@@ -1197,9 +1189,12 @@ static int socket_write(HTTPSocket *p, Octstr *os) {
  *  http_URL = "http:" "//" host [ ":" port ] [ abs_path [ "?" query ]]
  */
 static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path) {
-	static char prefix[] = "http://";
-	static int prefix_len = sizeof(prefix) - 1;
+	Octstr *prefix;
+	long prefix_len;
 	int host_len, colon, slash;
+
+    	prefix = octstr_create_immutable("http://");
+	prefix_len = octstr_len(prefix);
 
 	/* XXX: we change http to lowercase, but is that non-wanted
 	 *      operation? I mean, we could just compare it incasensitively,
@@ -1208,9 +1203,9 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path) {
 	 *      means that URL is modified...
 	 */
 	octstr_convert_range(url, 0, 4, tolower);
-	if (octstr_search_cstr(url, prefix, 0) != 0) {
+	if (octstr_search(url, prefix, 0) != 0) {
 		error(0, "URL <%s> doesn't start with `%s'",
-			octstr_get_cstr(url), prefix);
+			octstr_get_cstr(url), octstr_get_cstr(prefix));
 		return -1;
 	}
 	
@@ -1277,32 +1272,24 @@ List *headers, Octstr *request_body, char *method_name) {
 
 /* XXX headers missing */
 	Octstr *request;
-	char buf[1024];
 	int i;
 
-	request = octstr_create("");
+	request = octstr_format("%s %S HTTP/1.1\r\n", 
+	    	    	    	method_name, path_or_url);
 
-	octstr_append_cstr(request, method_name);
-	octstr_append_cstr(request, " ");
-	octstr_append_cstr(request, octstr_get_cstr(path_or_url));
-	octstr_append_cstr(request, " HTTP/1.1\r\nHost: ");
-	octstr_append_cstr(request, octstr_get_cstr(host));
-	if (port != HTTP_PORT) {
-		sprintf(buf, ":%ld", port);
-		octstr_append_cstr(request, buf);
-	}
-
-	octstr_append_cstr(request, "\r\n");
+	octstr_format_append(request, "Host: %S", host);
+	if (port != HTTP_PORT)
+		octstr_format_append(request, ":%ld", port);
+	octstr_append(request, octstr_create_immutable("\r\n"));
 
 	for (i = 0; headers != NULL && i < list_len(headers); ++i) {
 		octstr_append(request, list_get(headers, i));
-		octstr_append_cstr(request, "\r\n");
+		octstr_append(request, octstr_create_immutable("\r\n"));
 	}
-	octstr_append_cstr(request, "\r\n");
+	octstr_append(request, octstr_create_immutable("\r\n"));
 
-	if (NULL!=request_body) {
+	if (request_body != NULL)
 		octstr_append(request, request_body);
-	}
 
 	return request;
 }

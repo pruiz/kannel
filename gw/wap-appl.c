@@ -223,12 +223,7 @@ static int convert_content(struct content *content) {
 
 /* Add a header identifying our gateway version */
 static void add_kannel_version(List *headers) {
-	Octstr *version;
-
-	version = octstr_create("Kannel/");
-	octstr_append_cstr(version, VERSION);
-	http_header_add(headers, "X-WAP-Gateway", octstr_get_cstr(version));
-	octstr_destroy(version);
+	http_header_add(headers, "X-WAP-Gateway", "Kannel/" VERSION);
 }
 
 

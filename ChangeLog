@@ -1,5 +1,18 @@
 2000-09-14  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/octstr.[ch]: Added `pos' argument to octstr_search to
+	let caller specify from where the search in the haystack starts.
+	Also, octstr_format now understands %c.
+	
+	* gw/html.c, gw/smsc_at.c, gw/wap-appl.c, gw/wsp_headers.c,
+	gwlib/http.c, gwlib/octstr.c, test/drive_wapbox.c,
+	test/test_cimd2.c: Use octstr_search instead of octstr_search_cstr
+	and various functions instead of octstr_append_cstr.
+	
+	* gw/wml_compiler.c: Fix call to octstr_search.
+
+2000-09-14  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/octstr.[ch]: Removed the octstr_create_limited, because
 	it had so limited use.
 

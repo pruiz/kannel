@@ -1485,7 +1485,7 @@ static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
       if (octstr_len(item->string) > STRING_TABLE_MIN)
 	/* No use to replace 1 to 3 character substring, the reference 
 	   will eat the saving up. */
-	if ((word_s = octstr_search(ostr, item->string)) >= 0)
+	if ((word_s = octstr_search(ostr, item->string, 0)) >= 0)
 	  {
 	    /* Check whether the octet string are equal if they are equal 
 	       in length. */
