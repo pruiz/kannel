@@ -1,5 +1,8 @@
 2000-11-07  Tuomas Luttinen  <tuo@wapit.com>
 
+	* gwlib/octstr.c: Added some protection against endless loops in 
+	strip-functions for special cases.
+
 	* gw/wml_compiler.c: Memory leak with malformed variable fixed. 
 	Also fixed the bug that reserved words cannot be variable names,
 	eg $(password).
