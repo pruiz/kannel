@@ -1,4 +1,7 @@
 2004-08-08 Alexander Malysh <olek2002 at hotmail.com>
+    * gwlib/log.c: more fixes for compiler format warnings.
+
+2004-08-08 Alexander Malysh <olek2002 at hotmail.com>
     * gw-config.h.in: define 'PRINTFLIKE' here, so we ca use this everywhere.
     * gwlib/log.h: removed 'PRINTFLIKE' and 'PRINTFLIKE2' from here and fixed functions
       declaration.

@@ -419,14 +419,14 @@ static void format(char *buf, int level, const char *place, int e,
 }
 
 
-static void output(FILE *f, char *buf, va_list args) 
+static void PRINTFLIKE(2,0) output(FILE *f, char *buf, va_list args) 
 {
     vfprintf(f, buf, args);
     fflush(f);
 }
 
 
-static void kannel_syslog(char *format, va_list args, int level)
+static void PRINTFLIKE(1,0) kannel_syslog(char *format, va_list args, int level)
 {
     char buf[4096]; /* Trying to syslog more than 4K could be bad */
     int translog;
@@ -460,7 +460,7 @@ static void kannel_syslog(char *format, va_list args, int level)
 	    translog = LOG_INFO;
 	    break;
 	}
-	syslog(translog, buf);
+	syslog(translog, "%s", buf);
     }
 }
 
@@ -528,7 +528,7 @@ static void kannel_syslog(char *format, va_list args, int level)
 	} while (0)
 
 
-static void gw_panic_output(int err, const char *fmt, ...)
+static void PRINTFLIKE(2,3) gw_panic_output(int err, const char *fmt, ...)
 {
     FUNCTION_GUTS(GW_PANIC, "");
 }
