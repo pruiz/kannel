@@ -1,3 +1,7 @@
+2000-12-11 Aarno Syvänen <syvanen@wapit.com>
+
+	* wap/wsp_unit.c: Added handling of S_Unit_Push.req
+
 2000-12-11  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_smpp.c: Made smpp_reopen() work, and not crash.

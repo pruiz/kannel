@@ -31,13 +31,12 @@ static enum { limbo, running, terminating } run_status = limbo;
 static wap_dispatch_func_t *dispatch_to_wdp;
 static wap_dispatch_func_t *dispatch_to_appl;
 
-
 static List *queue = NULL;
 
 
 static void main_thread(void *);
-static WAPEvent *pack_into_datagram(WAPEvent *event);
-
+static WAPEvent *pack_into_result_datagram(WAPEvent *event);
+static WAPEvent *pack_into_push_datagram(WAPEvent *event);
 
 /***********************************************************************
  * Public functions
@@ -103,12 +102,12 @@ static WAPEvent *unpack_datagram(WAPEvent *datagram) {
 		warning(0, "WSP UNIT: Unsupported PDU type %d", pdu->type);
 		goto error;
 	}
-
+        
 	event = wap_event_create(S_Unit_MethodInvoke_Ind);
-	event->u.S_Unit_MethodInvoke_Ind.addr_tuple =
-		wap_addr_tuple_duplicate(datagram->u.T_DUnitdata_Ind.addr_tuple);
+	event->u.S_Unit_MethodInvoke_Ind.addr_tuple = wap_addr_tuple_duplicate(
+                datagram->u.T_DUnitdata_Ind.addr_tuple);
 	event->u.S_Unit_MethodInvoke_Ind.transaction_id = tid_byte;
-	
+        
 	switch (pdu->type) {
 	case Get:
 		debug("wap.wsp", 0, "Connectionless Get request received.");
@@ -171,10 +170,16 @@ static void main_thread(void *arg) {
 			break;
 
 		case S_Unit_MethodResult_Req:
-			newevent = pack_into_datagram(e);
+			newevent = pack_into_result_datagram(e);
 			if (newevent != NULL)
 				dispatch_to_wdp(newevent);
 			break;
+
+                case S_Unit_Push_Req:
+		        newevent = pack_into_push_datagram(e);
+                        if (newevent != NULL)
+				dispatch_to_wdp(newevent);
+		        break;
 	
 		default:
 			warning(0, "WSP UNIT: Unknown event type %d", e->type);
@@ -186,7 +191,7 @@ static void main_thread(void *arg) {
 }
 
 
-static WAPEvent *pack_into_datagram(WAPEvent *event) {
+static WAPEvent *pack_into_result_datagram(WAPEvent *event) {
 	WAPEvent *datagram;
 	struct S_Unit_MethodResult_Req *p;
 	WSP_PDU *pdu;
@@ -215,3 +220,40 @@ static WAPEvent *pack_into_datagram(WAPEvent *event) {
 
 	return datagram;
 }
+
+/*
+ * According to WSP table 12, p. 63, push id and transaction id are stored 
+ * into same field.  
+ */
+static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
+        WAPEvent *datagram;
+        WSP_PDU *pdu;
+        Octstr *ospdu;
+	unsigned char push_id;
+
+        gw_assert(event->type == S_Unit_Push_Req);
+        pdu = wsp_pdu_create(Push);
+	pdu->u.Push.headers = wsp_headers_pack(
+               event->u.S_Unit_Push_Req.push_headers, 1);
+	pdu->u.Push.data = octstr_duplicate(
+               event->u.S_Unit_Push_Req.push_body);
+        ospdu = wsp_pdu_pack(pdu);
+	wsp_pdu_destroy(pdu);
+	if (ospdu == NULL)
+		return NULL;
+
+        push_id = event->u.S_Unit_Push_Req.push_id;
+	octstr_insert_data(ospdu, 0, &push_id, 1);
+
+        datagram = wap_event_create(T_DUnitdata_Req);
+        datagram->u.T_DUnitdata_Req.addr_tuple =
+		wap_addr_tuple_duplicate(event->u.S_Unit_Push_Req.addr_tuple);
+	datagram->u.T_DUnitdata_Req.user_data = ospdu;
+
+        return datagram;
+}
+
+
+
+
+
