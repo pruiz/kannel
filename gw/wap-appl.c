@@ -1141,7 +1141,8 @@ static void start_fetch(WAPEvent *event)
     }
 
     info(0, "Fetching URL <%s> for MSISDN <%s>, IP <%s:%d>", octstr_get_cstr(url),
-         msisdn ? octstr_get_cstr(msisdn) : "", octstr_get_cstr(addr_tuple->remote->address),
+         msisdn ? octstr_get_cstr(msisdn) : "", 
+         addr_tuple->remote->address ? octstr_get_cstr(addr_tuple->remote->address) : "",
          addr_tuple->remote->port);
 
     /* 

@@ -1,4 +1,9 @@
 2005-03-04  Stipe Tolj  <stolj@wapme.de> 
+    * gw/wap-appl.c: adding a NULL check causing a PANIC while dumping the
+      IP in the fetch info() statement. How can this be NULL, since we 
+      pass it the same way to alog()?. Tbanks again to Jonathan for this.
+
+2005-03-04  Stipe Tolj  <stolj@wapme.de> 
     * gwlib/http.c: fixing bug #205 (leaking FDs). Due to an unhandled error
       state we would not change the HTTPEntity state and the conn ist not
       closed. Thanks to Jonathan for reporting this and Alex for the fix.
