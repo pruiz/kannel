@@ -1,3 +1,11 @@
+2000-05-11    <Kalle Marjola <rpr@wapit.com>>
+
+	* gw/bb_http.c: Oooops, added
+
+	* gw/bb_*.c: added signal trapping and (shutdown) flow-control.
+	Still need some new List operations to free all memory while
+	exiting.
+
 2000-05-10    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/bb_*.c: and more, now some HTTP adminstration 'works'

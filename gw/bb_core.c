@@ -28,11 +28,90 @@ List *outgoing_sms;
 List *incoming_wdp;
 List *outgoing_wdp;
 
+
+/* this is not a list of items; instead it is used as
+ * indicator to note how many threads we have.
+ * ALL flow threads must exit before we may safely change
+ * bb_status from BB_SHUTDOWN to BB_DEAD
+ *
+ * XXX: prehaps we could also have items in this list, as
+ *     descriptors of each thread?
+ */
+List *flow_threads;
+
+/*
+ * as above, but these are core threads, and they do not need to
+ * exit before we can change status. They may, however.
+ */
+List *core_threads;
+
+
+
 volatile sig_atomic_t bb_status;
 
 /* own global variables */
 
+static Mutex *status_mutex;
 static time_t start_time;
+
+
+/*-------------------------------------------------------
+ * signals
+ */
+
+static void signal_handler(int signum)
+{
+    /* We get a SIGINT for each thread running; this timeout makes sure we
+       handle it only once (unless there's a huge load and handling them
+       takes longer than two seconds). */
+
+    static time_t first_kill = -1;
+    
+    if (signum == SIGINT || signum == SIGTERM) {
+
+	mutex_lock(status_mutex);
+        if (bb_status != BB_SHUTDOWN && bb_status != BB_DEAD) {
+
+	    mutex_unlock(status_mutex);
+	    
+            warning(0, "Killing signal received, shutting down...");
+	    bb_shutdown();
+            first_kill = time(NULL);
+        }
+        else if (bb_status == BB_SHUTDOWN) {
+	    mutex_unlock(status_mutex);
+	    /*
+             * we have to wait for a while as one SIGINT from keyboard
+             * causes several signals - one for each thread?
+             */
+            if (time(NULL) - first_kill > 2) {
+                warning(0, "New killing signal received, killing neverthless...");
+                bb_status = BB_DEAD;
+            }
+        }
+	else
+	    mutex_unlock(status_mutex);
+    } else if (signum == SIGHUP) {
+        warning(0, "SIGHUP received, catching and re-opening logs");
+        reopen_log_files();
+    }
+}
+
+static void setup_signal_handlers(void)
+{
+    struct sigaction act;
+
+    act.sa_handler = signal_handler;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGTERM, &act, NULL);
+    sigaction(SIGHUP, &act, NULL);
+    sigaction(SIGPIPE, &act, NULL);
+}
+
+
+
 
 /*--------------------------------------------------------
  * functions to start/init sub-parts of the bearerbox
@@ -61,6 +140,9 @@ static void *wdp_router(void *arg)
 {
     Msg *msg;
 
+    debug("bb", 0, "START: wdp_router");
+    list_add_producer(flow_threads);
+    
     while(bb_status != BB_DEAD) {
 
 	if ((msg = list_consume(outgoing_wdp)) == NULL)
@@ -74,10 +156,11 @@ static void *wdp_router(void *arg)
 
 	udp_addwdp(msg);
     }
-    debug("bb", 0, "wdp_router: exiting");
     udp_die();
     // smsc_endwdp();
 
+    debug("bb", 0, "EXIT: wdp_router");
+    list_remove_producer(flow_threads);
     return NULL;
 }
 
@@ -167,11 +250,21 @@ static int starter(Config *config)
     if (check_config(config) == -1)
 	panic(0, "Cannot start with corrupted configuration");
 
+    /* if all seems to be OK by the first glimpse, real start-up */
+    
     outgoing_sms = list_create();
     incoming_sms = list_create();
     outgoing_wdp = list_create();
     incoming_wdp = list_create();
 
+    flow_threads = list_create();
+    core_threads = list_create();
+
+    status_mutex = mutex_create();
+
+    setup_signal_handlers();
+
+    
     /* XXX do we require this? or not? */
     httpadmin_start(config);
     
@@ -209,11 +302,26 @@ int main(int argc, char **argv)
         panic(0, "No configuration, aborting.");
 
     starter(cfg);
-    debug("bb", 0, "Start-up done, entering mainloop");
-    // main_program();
 
-    while(bb_status != BB_DEAD) sleep(6);
+
+    sleep(1);	/* give time to threads to register themselves */
+    debug("bb", 0, "Start-up done, entering mainloop");
     
+    /* wait until flow threads exit */
+
+    while(list_consume(flow_threads)!=NULL)
+	;
+
+    info(0, "All flow threads have died, killing core");
+    bb_status = BB_DEAD;
+    
+    while(list_consume(core_threads)!=NULL)
+	;
+
+    list_destroy(flow_threads);
+    list_destroy(core_threads);
+    mutex_destroy(status_mutex);
+
     config_destroy(cfg);
     gw_check_leaks();
     gwlib_shutdown();
@@ -229,8 +337,14 @@ int main(int argc, char **argv)
 
 int bb_shutdown(void)
 {
-    if (bb_status == BB_SHUTDOWN || bb_status == BB_DEAD) return -1;
+    mutex_lock(status_mutex);
+    
+    if (bb_status == BB_SHUTDOWN || bb_status == BB_DEAD) {
+	mutex_unlock(status_mutex);
+	return -1;
+    }
     bb_status = BB_SHUTDOWN;
+    mutex_unlock(status_mutex);
 
     debug("bb", 0, "shutting down smsc");
     smsc_shutdown();
@@ -242,17 +356,25 @@ int bb_shutdown(void)
 
 int bb_suspend(void)
 {
-    if (bb_status != BB_RUNNING) return -1;
-
+    mutex_lock(status_mutex);
+    if (bb_status != BB_RUNNING) {
+	mutex_unlock(status_mutex);
+	return -1;
+    }
     bb_status = BB_SUSPENDED;
+    mutex_unlock(status_mutex);
     return 0;
 }
 
 int bb_resume(void)
 {
-    if (bb_status != BB_SUSPENDED) return -1;
-
+    mutex_lock(status_mutex);
+    if (bb_status != BB_SUSPENDED) {
+	mutex_unlock(status_mutex);
+	return -1;
+    }
     bb_status = BB_RUNNING;
+    mutex_unlock(status_mutex);
     return 0;
 }
 

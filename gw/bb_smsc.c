@@ -23,6 +23,8 @@
 #include "new_bb.h"
 #include "smsc.h"
 
+#include "bb_msg.h"   /* XXX until smsc interface changed */
+
 
 /* passed from bearerbox core */
 
@@ -30,6 +32,8 @@ extern volatile sig_atomic_t bb_status;
 extern List *incoming_wdp;
 extern List *incoming_sms;
 extern List *outgoing_sms;
+
+extern List *flow_threads;
 
 /* our own thingies */
 
@@ -53,6 +57,10 @@ static void *sms_receiver(void *arg)
     Smsc *conn = arg;
     int ret;
 
+    RQueueItem *tmp;	/* XXX until smsc interface fixed */
+    
+    debug("bb.thread", 0, "START: sms_receiver");
+    list_add_producer(flow_threads);
     list_add_producer(incoming_sms);
 
     /* remove messages from SMSC until it is closed */
@@ -62,21 +70,23 @@ static void *sms_receiver(void *arg)
         // wait_for_status_change(&bb_status, bb_suspended);
 
 	// XXX mutexes etc are needed, I think?
-/*
- * XXX have to think about the new SMSCenter interface...
- *  
- *	if (smscenter_pending_smsmessage(conn->smsc) == 1) {
- *	    ret = smscenter_receive_msg(conn->smsc, new);
- *
- *	     if (ret == 1)
- *		list_produce(incoming_sms, msg);
- *	    else
- *		warning(0, "problems with smscenters... FIX FIX");
- *	} else
- *	    sleep(1);
- */
+
+	ret = smsc_get_message(conn->smsc, &tmp);
+	if (ret == -1)
+	    break;
+
+	if (ret == 1) {
+	    msg = tmp->msg;
+	    rqi_delete(tmp);
+	    list_produce(incoming_sms, msg);
+	    /* number normalization? in smsc..? */
+	}
+	else
+	    sleep(1);
     }    
     list_remove_producer(incoming_sms);
+    debug("bb.thread", 0, "EXIT: sms_receiver");
+    list_remove_producer(flow_threads);
     return NULL;
 }
 
@@ -89,19 +99,23 @@ static void *sms_sender(void *arg)
     Msg *msg;
     Smsc *conn = arg;
     int ret;
+    RQueueItem *tmp;	/* XXX until smsc interface changed */
+
+    debug("bb.thread", 0, "START: sms_sender");
+    list_add_producer(flow_threads);
     
     while(bb_status != BB_DEAD) {
 
 	if ((msg = list_consume(conn->outgoing_list)) == NULL)
 	    break;
 
-	/* XXX note that last argument! */
-	/* and the second argument */
-
-	// ret = smsc_send_message(conn->smsc, msg, NULL);
+	tmp = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
+	tmp->msg = msg;
+	ret = smsc_send_message(conn->smsc, tmp, NULL);
 	
-	// msg_destroy(msg); implicit destroy?
+	/* there should be implicit destroy in sending */
     }
+    
     if (pthread_join(conn->receiver, NULL) != 0)
 	error(0, "Join failed in sms_sender");
 
@@ -109,6 +123,8 @@ static void *sms_sender(void *arg)
     smsc_close(conn->smsc);
 
     gw_free(conn);
+    debug("bb.thread", 0, "EXIT: sms_sender");
+    list_remove_producer(flow_threads);
     return NULL;
 }
 
@@ -122,6 +138,9 @@ static void *sms_router(void *arg)
     Msg *msg;
     Smsc *si;
     int i;
+
+    debug("bb.thread", 0, "START: sms_router");
+    list_add_producer(flow_threads);
 
     while(bb_status != BB_DEAD) {
 
@@ -146,8 +165,11 @@ static void *sms_router(void *arg)
     }
     smsc_die();
 
+    debug("bb.thread", 0, "EXIT: sms_router");
+    list_remove_producer(flow_threads);
     return NULL;
 }
+
 
 static Smsc *create_new_smsc(ConfigGroup *grp)
 {

@@ -28,6 +28,8 @@
 extern volatile sig_atomic_t bb_status;
 extern List *incoming_wdp;
 
+extern List *flow_threads;
+
 /* our own thingies */
 
 static volatile sig_atomic_t udp_running;
@@ -57,7 +59,9 @@ static void *udp_receiver(void *arg)
     Msg *msg;
     Udpc *conn = arg;
 
+    debug("bb.thread", 0, "START: udp_receiver");
     list_add_producer(incoming_wdp);
+    list_add_producer(flow_threads);
     
     /* remove messages from socket until it is closed */
     while(bb_status != BB_DEAD && bb_status != BB_SHUTDOWN) {
@@ -90,6 +94,8 @@ static void *udp_receiver(void *arg)
 	list_produce(incoming_wdp, msg);
     }    
     list_remove_producer(incoming_wdp);
+    debug("bb.thread", 0, "EXIT: udp_receiver");
+    list_remove_producer(flow_threads);
     return NULL;
 }
 
@@ -118,6 +124,8 @@ static void *udp_sender(void *arg)
     Msg *msg;
     Udpc *conn = arg;
 
+    debug("bb.thread", 0, "START: udp_sender");
+    list_add_producer(flow_threads);
     while(bb_status != BB_DEAD) {
 
 	if ((msg = list_consume(conn->outgoing_list)) == NULL)
@@ -134,13 +142,12 @@ static void *udp_sender(void *arg)
 
 	msg_destroy(msg);
     }
-    debug("bb.udp", 0, "udp_sender done.");
-    
     if (pthread_join(conn->receiver, NULL) != 0)
 	error(0, "Join failed in udp_sender");
 
-    debug("bb.udp", 0, "udp_sender exiting");
     udpc_destroy(conn);
+    debug("bb.thread", 0, "EXIT: udp_sender");
+    list_remove_producer(flow_threads);
     return NULL;
 }
 

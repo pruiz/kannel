@@ -30,6 +30,8 @@ extern List *outgoing_sms;
 extern List *incoming_wdp;
 extern List *outgoing_wdp;
 
+extern List *flow_threads;
+
 /* our own thingies */
 
 static volatile sig_atomic_t smsbox_running;
@@ -63,9 +65,6 @@ static void boxc_receiver(void *arg)
     Octstr *pack;
     Msg *msg;
     int ret;
-    
-    debug("bb", 0, "box connection receiver");
-
     
     /* remove messages from socket until it is closed */
     while(bb_status != BB_DEAD) {
@@ -102,7 +101,6 @@ static void boxc_receiver(void *arg)
 	    msg_destroy(msg);
 	}
     }    
-    debug("bb", 0, "receiver done.");
 }
 
 
@@ -130,7 +128,8 @@ static void *boxc_sender(void *arg)
     Msg *msg;
     Boxc *conn = arg;
     
-    debug("bb", 0, "box connection sender");
+    debug("bb.thread", 0, "START: boxc_sender");
+    list_add_producer(flow_threads);
 
     while(bb_status != BB_DEAD) {
 
@@ -150,7 +149,8 @@ static void *boxc_sender(void *arg)
 	}
 	msg_destroy(msg);
     }
-    debug("bb", 0, "boxc_sender: exiting");
+    debug("bb.thread", 0, "EXIT: boxc_sender");
+    list_remove_producer(flow_threads);
     return NULL;
 }
 
@@ -231,6 +231,8 @@ static void *run_smsbox(void *arg)
     Boxc *newconn;
     pthread_t sender;
     
+    debug("bb.thread", 0, "START: run_smsbox");
+    list_add_producer(flow_threads);
     fd = (int)arg;
     newconn = accept_boxc(fd);
 
@@ -256,6 +258,8 @@ cleanup:
     list_delete_equal(smsbox_list, newconn);
     boxc_destroy(newconn);
 
+    debug("bb.thread", 0, "EXIT: run_smsbox");
+    list_remove_producer(flow_threads);
     return NULL;
 }
 
@@ -268,6 +272,8 @@ static void *run_wapbox(void *arg)
     List *newlist;
     pthread_t sender;
 
+    debug("bb.thread", 0, "START: run_wapbox");
+    list_add_producer(flow_threads);
     fd = (int)arg;
     newconn = accept_boxc(fd);
     newconn->is_wap = 1;
@@ -312,8 +318,8 @@ cleanup:
     list_destroy(newlist);
     boxc_destroy(newconn);
 
-    debug("bb", 0, "wapbox finally exiting");
-
+    debug("bb.thread", 0, "EXIT: run_smsbox");
+    list_remove_producer(flow_threads);
     return NULL;
 }
 
@@ -398,7 +404,8 @@ static void *wdp_to_wapboxes(void *arg)
     Boxc *conn;
     Msg *msg;
 
-    debug("bb", 0, "starting incoming WDP router module");
+    debug("bb", 0, "START: wdp_to_wapboxes router");
+    list_add_producer(flow_threads);
 
     route_info = list_create();
 
@@ -416,13 +423,14 @@ static void *wdp_to_wapboxes(void *arg)
 	conn = route_msg(route_info, msg);
 	list_produce(conn->incoming, msg);
     }
-    debug("bb", 0, "wdp to wapboxes router: exiting");
     while((ap = list_consume(route_info)) != NULL)
 	ap_destroy(ap);
     list_destroy(route_info);
     while((conn = list_consume(wapbox_list)) != NULL)
 	list_remove_producer(conn->incoming);
 
+    debug("bb", 0, "EXIT: wdp_to_wapboxes router");
+    list_remove_producer(flow_threads);
     return NULL;
 }
 
@@ -431,21 +439,22 @@ static void *wdp_to_wapboxes(void *arg)
 
 
 
-static void wait_for_connections(int fd, void *(*function) (void *arg))
+static void wait_for_connections(int fd, void *(*function) (void *arg), List *waited)
 {
     fd_set rf;
     struct timeval tv;
     int ret;
-
-    /*
-     * XXX: future fixing: in a case of shutdown, we should
-     *    allow new connections to empty the list... or do
-     *    other things to empty it
-     */
-
-    debug("bb", 0, "Wait for connections, fd = %d", fd);
     
-    while(bb_status != BB_DEAD && bb_status != BB_SHUTDOWN) { 
+    while(bb_status != BB_DEAD) {
+
+	/* XXX: if we are being shutdowned, as long as there is
+	 * messages in incoming list allow new connections, but when
+	 * list is empty, exit
+	 */
+	if (bb_status == BB_SHUTDOWN) {
+	    ret = list_wait_until_nonempty(waited);
+	    if (ret == -1) break;
+	}
 
 	FD_ZERO(&rf);
 	tv.tv_sec = 1;
@@ -473,6 +482,9 @@ static void *smsboxc_run(void *arg)
     int fd;
     int port;
 
+    debug("bb.thread", 0, "START: smsboxc_run");
+
+    list_add_producer(flow_threads);
     port = (int)arg;
     
     fd = make_server_socket(port);
@@ -483,7 +495,7 @@ static void *smsboxc_run(void *arg)
      * select drops with error, so we can check the status
      */
 
-    wait_for_connections(fd, run_smsbox);
+    wait_for_connections(fd, run_smsbox, incoming_sms);
 
     /* continue avalanche */
     list_remove_producer(outgoing_sms);
@@ -492,6 +504,10 @@ static void *smsboxc_run(void *arg)
      * is completely over
      */
 
+    /* XXX wait until all smsboxes have died, then delete list */
+
+    debug("bb.thread", 0, "EXIT: smsboxc_run");
+    list_remove_producer(flow_threads);
     return NULL;
 }
 
@@ -499,19 +515,24 @@ static void *smsboxc_run(void *arg)
 static void *wapboxc_run(void *arg)
 {
     int fd, port;
+
+    debug("bb.thread", 0, "START: wapboxc_run");
+
+    list_add_producer(flow_threads);
     port = (int)arg;
-
-    debug("bb", 0, "main wapbox listener");
-
     
     fd = make_server_socket(port);
 
-    wait_for_connections(fd, run_wapbox);
+    wait_for_connections(fd, run_wapbox, incoming_wdp);
 
     /* continue avalanche */
 
     list_remove_producer(outgoing_wdp);
 
+    /* XXX wait until all wapboxes have died, then delete list */
+
+    debug("bb.thread", 0, "EXIT: wapboxc_run");
+    list_remove_producer(flow_threads);
     return NULL;
 }
 

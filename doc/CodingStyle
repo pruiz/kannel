@@ -131,6 +131,7 @@ Log message at the `debug' level: naming convention for `place'
 		bb.udp		BB UDP sender/receiver
 		bb.boxc		BB box connections
 		bb.http		HTTP admin things
+		bb.thread	Thread handling
 		bb.sms		SMS related stuff
 		bb.sms.cimd	CIMD implementation
 		bb.sms.cimd2	CIMD 2 implementation
