@@ -1,5 +1,11 @@
 1999-11-17    <rpr@rpr.wapit.com>
 
+	* gw/bearerbox.c: fixed heartbeat bug
+
+	* gw/smsbox.c: added debug information
+	
+1999-11-17    <rpr@rpr.wapit.com>
+
 	* gwlib/wapitlib.c: catched signal interrupts in read
 
 	* gw/bearerbox.c: internal sms box implemented. Still some

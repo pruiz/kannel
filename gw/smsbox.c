@@ -292,7 +292,8 @@ int send_heartbeat()
     msg->heartbeat.load = smsbox_req_count();
     if ((pack = msg_pack(msg)) == NULL)
 	return -1;
-    
+
+    debug(0, "sending heartbeat load %d", smsbox_req_count()); 
     if (octstr_send(socket_fd, pack))
 	return -1;
     octstr_destroy(pack);

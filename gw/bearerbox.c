@@ -173,19 +173,32 @@ static RouteInfo *route_info = NULL;
 static int route_count = 0;
 static int route_limit = 0;
 
+/*
+ * WAP datagram routing routines
+ */
+
+int cmp_route(const void *str, const void *route)
+{
+    RouteInfo *ri;
+    ri = route;
+    
+    return strcmp(str, ri->route_match);
+}
+
 
 int find_receiver(RQueueItem *rqi)
 {
-    int i;
-
+    RouteInfo *ri;
     if (rqi->routing_info == NULL)
 	return -1;
-    
-    for(i=0; i < route_count; i++) {
-	if (strcmp(rqi->routing_info, route_info[i].route_match)==0)
-	    return route_info[i].receiver_id;
-    }
-    return -1;
+
+    ri = bsearch(rqi->routing_info, route_info, route_count,
+		 sizeof(RouteInfo), cmp_route);
+
+    if (ri != NULL)
+	return ri->receiver_id;
+    else
+	return -1;
 }
 
 
@@ -566,6 +579,7 @@ static void *wapboxconnection_thread(void *arg)
     bbox->accept_pending--;
 
     us->status = BB_STATUS_OK;
+    last_time = time(NULL);
     
     while(us->boxc != NULL && !bbox->abort_program) {
 	if (us->status == BB_STATUS_KILLED) break;
@@ -626,6 +640,7 @@ static void *smsboxconnection_thread(void *arg)
     bbox->accept_pending--;
 
     us->status = BB_STATUS_OK;
+    last_time = time(NULL);
     
     while(us->boxc != NULL && bbox->abort_program < 2) {
 	
@@ -645,7 +660,7 @@ static void *smsboxconnection_thread(void *arg)
 	    last_time = our_time;
 	}
 	if (us->boxc->fd == BOXC_THREAD)
-	    us->boxc->load == smsbox_req_count();
+	    us->boxc->load = smsbox_req_count();
 
 	if (written < 0)
 	    written = 0;
