@@ -457,8 +457,10 @@ static void brunet_send_sms(SMSCConn *conn, Msg *sms)
         (octstr_len(sms->sms.udhdata) ? octstr_imm("B") : octstr_imm("S")),
         sms->sms.msgdata, tid);
 
+    /* add binary UDH header */
     if (octstr_len(sms->sms.udhdata)) {
-        octstr_format_append(url, "&XSer=%E", sms->sms.udhdata);
+        octstr_format_append(url, "&XSer=01%02x%E", octstr_len(sms->sms.udhdata), 
+                             sms->sms.udhdata);
     }
 
     /* 
@@ -713,7 +715,7 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
                                List *headers, Octstr *body, List *cgivars)
 {
     ConnData *conndata = conn->data;
-    Octstr *user, *from, *to, *text, *account;
+    Octstr *user, *pass, *from, *to, *text, *account;
     Octstr *retmsg;
     int	mclass, mwi, coding, validity, deferred; 
     List *reply_headers;
@@ -722,7 +724,8 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
     mclass = mwi = coding = validity = deferred = 0;
     retmsg = NULL;
 
-    user = http_cgi_variable(cgivars, "app_id");
+    user = http_cgi_variable(cgivars, "username");
+    pass = http_cgi_variable(cgivars, "password");
     from = http_cgi_variable(cgivars, "source_addr");
     to = http_cgi_variable(cgivars, "dest_addr");
     text = http_cgi_variable(cgivars, "message");
@@ -730,8 +733,10 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
 
     debug("smsc.http.xidris", 0, "HTTP[%s]: Received a request",
           octstr_get_cstr(conn->id));
-    
-    if (user == NULL || octstr_compare(user, conndata->username) != 0) {
+
+    if (user == NULL || pass == NULL ||
+	    octstr_compare(user, conndata->username) != 0 ||
+	    octstr_compare(pass, conndata->password) != 0) {
         error(0, "HTTP[%s]: Authorization failure. app_id was <%s>.",
               octstr_get_cstr(conn->id), octstr_get_cstr(user));
         retmsg = octstr_create("Authorization failed for MO submission.");
@@ -774,6 +779,7 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
     http_send_reply(client, status, reply_headers, retmsg);
 
     octstr_destroy(retmsg);
+    octstr_destroy(user);
     octstr_destroy(user);
     octstr_destroy(from);
     octstr_destroy(to);
