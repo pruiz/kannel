@@ -373,6 +373,11 @@
 
 	    Compile the start-stop-daemon program.</para></listitem>
 
+	<listitem><para><literal>--enable-pam</literal>
+
+	    Enable using PAM for authentication of sendsms users for
+	    smsbox.</para></listitem>
+
 	</itemizedlist>
 
 	</para>

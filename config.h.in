@@ -97,7 +97,10 @@
 /* Define if you have the z library (-lz).  */
 #undef HAVE_LIBZ
 
-/* Defined if there is a socklen_t in <sys/socket.h> */
+/* Define if there is a socklen_t in <sys/socket.h> */
 #undef HAVE_SOCKLEN_T
+
+/* Define if the PAM headers are on the local machine */
+#undef HAVE_SECURITY_PAM_APPL_H
 
 #endif

@@ -18,9 +18,11 @@
 #include "smsbox_req.h"
 #include "urltrans.h"
 #include "config.h"
+
 #ifdef HAVE_SECURITY_PAM_APPL_H
 #include <security/pam_appl.h>
 #endif
+
 /*
  * this module handles the request handling - that is, finding
  * the correct urltranslation, fetching the result and then
@@ -494,7 +496,7 @@ static int PAM_conv (int num_msg, pam_message_type **msg,
 	if (!(repl = (gw_realloc(repl, size)))) \
   		return PAM_CONV_ERR; \
 	size += sizeof(struct pam_response)
-#define COPY_STRING(s) (s) ? strdup(s) : NULL
+#define COPY_STRING(s) (s) ? gw_strdup(s) : NULL
 
   for (count = 0; count < num_msg; count++) {
     switch (msg[count]->msg_style) {
@@ -519,7 +521,7 @@ static int PAM_conv (int num_msg, pam_message_type **msg,
       /* Must be an error of some sort... */
       printf("unexpected error from PAM: %s\n",
 	     msg[count]->msg);
-      free(repl);
+      gw_free(repl);
       return PAM_CONV_ERR;
     }
   }
@@ -559,7 +561,6 @@ int authenticate(const char *login, const char *passwd)
 
 int pam_authorise_user(List *list) {
   
-  URLTranslation *t = urltrans_find_username(translations,"pam");
   Octstr *val, *user = NULL;
   char *pwd, *login;
   int result;

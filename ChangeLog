@@ -1,5 +1,13 @@
 2000-11-06  Lars Wirzenius  <liw@iki.fi>
 
+	* configure{,.in}, config.h.in: Add support for PAM enable and
+	disable.
+	
+	* gw/smsbox_req.c: Fixed the PAM stuff so that it will compile
+	with the new gwmem.h protectors against malloc and friends.
+
+2000-11-06  Lars Wirzenius  <liw@iki.fi>
+
 	* README, doc/userguide/userguide.xml: Moved information on how
 	to use configure from README to User Guide.
 
