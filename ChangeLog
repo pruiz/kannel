@@ -1,4 +1,16 @@
 2003-07-31  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap-maps.[ch]: removed wap_map_[url|user]_config_info(). This is 
+      done directly in the wapbox.c:config_reload() section. Reorganized
+      user_map to be a Dict instead of a List with the userid as the hash
+      key. This makes lookups way more faster. This should also be done
+      with url mapping lookups, even while this is more complicated because
+      of wildcards etc. We will implement an URLDict for this.
+    * gw/wapbox.c: changed the wap-[url|user]-map group parsing a bit and 
+      added information output of what has been added. Fixed missing update
+      of 'logfilelevel' while not reloaded to the given parameter in wapbox
+      group.
+
+2003-07-31  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap-appl.c, gw/wml_compiler.c: minor code cosmetics
 
 2003-07-28  Stipe Tolj  <tolj@wapme-systems.de>
