@@ -170,7 +170,8 @@ void log_close_all(void)
 
 int log_open(char *filename, int level, enum excl_state excl) 
 {
-    FILE *f;
+    FILE *f = NULL;
+    int i;
     
     add_stderr();
     if (num_logfiles == MAX_LOGFILES) {
@@ -184,10 +185,23 @@ int log_open(char *filename, int level, enum excl_state excl)
         return -1;
     }
     
-    f = fopen(filename, "a");
+    /* 
+     * Check if the file is already opened for logging.
+     * If there is an open file, then assign the file descriptor
+     * that is already existing for this log file.
+     */
+    for (i = 0; i < num_logfiles && f == NULL; ++i) {
+        if (strcmp(logfiles[i].filename, filename) == 0)
+            f = logfiles[i].file;
+    }
+
+    /* if not previously opened, then open it now */
     if (f == NULL) {
-        error(errno, "Couldn't open logfile `%s'.", filename);
-        return -1;
+        f = fopen(filename, "a");
+        if (f == NULL) {
+            error(errno, "Couldn't open logfile `%s'.", filename);
+            return -1;
+        }
     }
     
     logfiles[num_logfiles].file = f;
