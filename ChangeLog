@@ -1,3 +1,9 @@
+2000-10-11 Aarno Syvänen <syvanen@wapit.cm>
+
+	* gw/wapbox.c: Separate conditions event == NULL and event_is_for_
+	responder in code selecting to which wtp process an incoming 
+	event belongs.
+
 2000-10-11  Peter Gronholm  <peter@wapit.com>
 
 	* gw/control.html: Updated the example file to reflect the new

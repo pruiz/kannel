@@ -428,17 +428,18 @@ int main(int argc, char **argv) {
 				wsp_unit_dispatch_event(event);
                 } else {
                         events = wtp_unpack_wdp_datagram(msg);
-		        while (list_len(events) > 0){
-			        event = list_extract_first(events);
-	                if (event != NULL && 
-                           (ret = wtp_event_is_for_responder(event)) == 1)
-			        wtp_resp_dispatch_event(event);
-                        else if (ret == 0)
-                                wtp_initiator_dispatch_event(event); 
-                  }
-                  list_destroy(events, NULL);
-		}
-	}
+		        while (list_len(events) > 0) {
+			    event = list_extract_first(events);
+	                    if (event != NULL) 
+                                if ((ret = wtp_event_is_for_responder(
+                                           event))  == 1)
+			            wtp_resp_dispatch_event(event);
+                                else if (ret == 0)
+                                    wtp_initiator_dispatch_event(event); 
+                        }
+                        list_destroy(events, NULL);
+		} /* if CONNECTIONLESS PORT */
+	} /* for */
 	info(0, "WAP box terminating.");
 
 	run_status = aborting;
