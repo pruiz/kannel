@@ -1,3 +1,23 @@
+2003-01-28  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smpp_pdu.c: added Alexander's optional PDU parameters
+      robustness patch.
+      [Msg-ID: <200301252018.01219.a.malysh@centrium.de>]
+    * gw/smsc/smsc_oisd.c, gw/smsc/smsc.c, gw/smsc/smsc_p.h:
+      added new OIS direct module provided by Dariusz Markowicz <dm@tenbit.pl>.
+      [Msg-ID: <02a301c2c56d$fa354f20$d4e34cd5@oem>]
+
+2003-01-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_http.c: fixed a missing octstr_duplicate() bug in 
+      kannel_receive_sms(). Thanks to Angel for this patch.
+      [Msg-ID: <NCEOLLKPFAEAOBBMHNHEAEODFAAA.afradejas@mediafusion.es>]
+    * gw/smsc/smsc_cimd2.c: added validity setting within CIMD2 module.
+      Patch submitted by Nicholas Rahn <nicholas.rahn@mnc.ch>.
+      [Msg-ID: <1043677000.2194.41.camel@frisbee.mnc.ch>]
+    * gw/smsc/smsc_cimd2.c: added non-activated RPI (reply path indicator)
+      as default. This is common in the other modules too. Allow alphanumeric
+      source addresses. Patch by "Arne K. Haaje" <haaje@eurobate.com>
+      [Msg-ID: <3E313D1E.2060903@eurobate.com>]
+
 2003-01-25  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap_push_pap_compiler.c: fixed infinite loop bug if /TYPE=xxx is 
       missing in the PAP document. Thanks to Paul for pointing this out.
