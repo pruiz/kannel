@@ -85,6 +85,7 @@ static Mutex *dlr_mutex = NULL;
 enum {
     SDB_ORACLE,
     SDB_MYSQL,
+    SDB_POSTGRES,
     SDB_OTHER
 };
 
@@ -97,6 +98,7 @@ static const char* sdb_get_limit_str()
         case SDB_ORACLE:
             return "AND ROWNUM < 2";
         case SDB_MYSQL:
+        case SDB_POSTGRES:
             return "LIMIT 1";
         case SDB_OTHER:
         default:
@@ -262,10 +264,26 @@ static void  dlr_sdb_remove(const Octstr *smsc, const Octstr *ts, const Octstr *
     int	state;
 
     debug("dlr.sdb", 0, "removing DLR from database");
-    sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s' %s",
-                        octstr_get_cstr(fields->table),
-                        octstr_get_cstr(fields->field_smsc), octstr_get_cstr(smsc),
-                        octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts), sdb_get_limit_str());
+    if (sdb_conn_type == SDB_POSTGRES) {
+        /*
+         * Postgres doesn't support limiting delete/update queries,
+         * thus we need to use a select subquery.
+         * - notice that for uniqueness use of `oid', postgres suggests
+         * to do vacuum regularly, even if it's virtually impossible
+         * to hit duplicates since oid's are given in a row
+         */
+        sql = octstr_format("DELETE FROM %s WHERE oid = \
+                            (SELECT oid FROM %s WHERE %s='%s' AND %s='%s' LIMIT 1)",
+                            octstr_get_cstr(fields->table),
+                            octstr_get_cstr(fields->table),
+                            octstr_get_cstr(fields->field_smsc), octstr_get_cstr(smsc),
+                            octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
+    } else {
+        sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s' %s",
+                            octstr_get_cstr(fields->table),
+                            octstr_get_cstr(fields->field_smsc), octstr_get_cstr(smsc),
+                            octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts), sdb_get_limit_str());
+    }
 
 #if defined(DLR_TRACE)
      debug("dlr.sdb", 0, "SDB: sql: %s", octstr_get_cstr(sql));
@@ -388,6 +406,9 @@ found:
     else if (octstr_search(sdb_url, octstr_imm("mysql:"), 0) == 0) {
         warning(0, "DLR[sdb]: Please use native MySQL support, instead of libsdb.");
         sdb_conn_type = SDB_MYSQL;
+    }
+    else if (octstr_search(sdb_url, octstr_imm("postgres:"), 0) == 0) {
+        sdb_conn_type = SDB_POSTGRES;
     }
     else
         sdb_conn_type = SDB_OTHER;

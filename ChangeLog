@@ -1,3 +1,9 @@
+2004-05-18  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/dlr_sdb.c: applied patch that adds "limit" support for
+      Postrgesql into SDB DLR storage.
+      Thanks to Guillaume Cottenceau for the patch.
+      [Msg-Id: <84u0yse0dv.fsf@frozen.mnc.ch>].
+
 2004-05-15  Alexander Malysh  <a.malysh@centrium.de> 
     * wmlscript/wsgram.y: fixed bison's file generation.
       Thanks to Paul P Komkoff Jr <i@stingr.net> for pointing to
