@@ -1,3 +1,7 @@
+2002-07-31  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: changed formating of HTTP User-Agent headers to be 
+      in "foobar/1.2" style.
+
 2002-07-29  Stipe Tolj  <tolj@wapme-systems.de>
     * test/fakewap.c: fixed compiler warnings from previous commit.
 
