@@ -1,4 +1,8 @@
 2003-05-28  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_http.c: some fixes for system-types 'brunet' and
+      'xidris'.
+
+2003-05-28  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_soap.c: adding new SMSC module for SOAP over HTTP from
       Oded and Dima from m-Wise. Yet not bound to the smsc abstraction
       layer. Thanks a lot!
