@@ -157,6 +157,10 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
     else if (http_type_accepted(headers, "text/html")) {
 	status_type = BBSTATUS_HTML;
 	content_type = "text/html";
+    }
+    else if (http_type_accepted(headers, "text/xml")) {
+	status_type = BBSTATUS_XML;
+	content_type = "text/xml";
     } else {
 	status_type = BBSTATUS_TEXT;
 	content_type = "text/plain";
@@ -215,6 +219,10 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
             "\n<wml>\n <card>\n  <p>";
 	footer = "  </p>\n </card>\n</wml>\n";
 	content_type = "text/vnd.wap.wml";
+    } else if (status_type == BBSTATUS_XML) {
+	header = "<?xml version=\"1.0\"?>\n"
+            "<gateway>\n";
+        footer = "</gateway>\n";
     } else {
 	header = "";
 	footer = "";

@@ -809,7 +809,12 @@ Octstr *boxc_status(int status_type)
     if (status_type == BBSTATUS_HTML || status_type == BBSTATUS_WML)
 	para = 1;
     
-    tmp = octstr_format("%sBox connections:%s", para ? "<p>" : "", lb);
+    if (status_type == BBSTATUS_XML) {
+        tmp = octstr_create ("");
+        octstr_append_cstr(tmp, "<boxes>\n\t");
+    }
+    else
+        tmp = octstr_format("%sBox connections:%s", para ? "<p>" : "", lb);
     boxes = 0;
     
     if (wapbox_list) {
@@ -819,7 +824,14 @@ Octstr *boxc_status(int status_type)
 	    if (bi->alive == 0)
 		continue;
 	    t = orig - bi->connect_time;
-	    octstr_format_append(tmp,
+            if (status_type == BBSTATUS_XML)
+	        octstr_format_append(tmp,
+		    "<box>\n\t\t<type>wapbox</type>\n\t\t<IP>%s</IP>\n\t\t<status>"
+                                 "on-line %ldd %ldh %ldm %lds</status>\n\t</box>\n",
+				 octstr_get_cstr(bi->client_ip),
+				 t/3600/24, t/3600%24, t/60%60, t%60);
+            else
+	        octstr_format_append(tmp,
 		    "%swapbox %s (on-line %ldd %ldh %ldm %lds)%s",
 				 ws, octstr_get_cstr(bi->client_ip),
 				 t/3600/24, t/3600%24, t/60%60, t%60, lb);
@@ -834,20 +846,29 @@ Octstr *boxc_status(int status_type)
 	    if (bi->alive == 0)
 		continue;
 	    t = orig - bi->connect_time;
-	    octstr_format_append(tmp, "%ssmsbox %s (on-line %ldd %ldh %ldm %lds)%s",
+            if (status_type == BBSTATUS_XML)
+	        octstr_format_append(tmp, "<box>\n\t\t<type>smsbox</type>\n\t\t<IP>%s</IP>\n\t\t<status>"
+                    "on-line %ldd %ldh %ldm %lds</status>\n\t\t</box>",
+		    octstr_get_cstr(bi->client_ip),
+		    t/3600/24, t/3600%24, t/60%60, t%60);
+            else
+	        octstr_format_append(tmp, "%ssmsbox %s (on-line %ldd %ldh %ldm %lds)%s",
 		    ws, octstr_get_cstr(bi->client_ip),
 		    t/3600/24, t/3600%24, t/60%60, t%60, lb);
 	    boxes++;
 	}
 	list_unlock(smsbox_list);
     }
-    if (boxes == 0) {
+    if (boxes == 0 && status_type != BBSTATUS_XML) {
 	octstr_destroy(tmp);
 	tmp = octstr_format("%sNo boxes connected", para ? "<p>" : "");
     }
     if (para)
 	octstr_append_cstr(tmp, "</p>");
-    octstr_append_cstr(tmp, "\n\n");
+    if (status_type == BBSTATUS_XML)
+        octstr_append_cstr(tmp, "</boxes>\n");
+    else
+        octstr_append_cstr(tmp, "\n\n");
     return tmp;
 }
 

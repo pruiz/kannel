@@ -1,3 +1,9 @@
+2001-05-24  Paul Keogh <paul.keogh@anam.com>
+
+	* gw/bb_http.c, gw/bb_boxc.c, gw/bb_smscconn.c, bearerbox.c: Added
+	support for the cgi-bin/status.xml HTTP status command. Status is
+	returned as a well-formed XML document.
+
 2001-05-22  Uoti Urpala  <uau@wapit.com>
 
 	* gwlib/http.c: Fixed two bugs with redirects. One happened when

@@ -614,6 +614,14 @@ Octstr *bb_print_status(int status_type)
 	    "      SMS: sent %ld (%ld queued)<br/>\n"
             "      SMS: store size %ld</p>\n\n";
 	footer = "<p>";
+    } else if (status_type == BBSTATUS_XML) {
+	frmt = "<version>%s</version>\n"
+	    "<status>uptime %ldd %ldh %ldm %lds, %s</status>\n"
+	    "\t<wdp>\n\t\t<received><total>%ld</total><queued>%ld</queued></received>\n\t\t<sent><total>%ld"
+	    "</total><queued>%ld</queued></sent>\n\t</wdp>\n"
+	    "\t<sms>\n\t\t<received><total>%ld</total><queued>%ld</queued></received>\n\t\t<sent><total>%ld"
+	    "</total><queued>%ld</queued></sent>\n\t\t<storesize>%ld</storesize>\n\t</sms>\n";
+	footer = "";
     } else {
 	frmt = "%s\n\nStatus: uptime %ldd %ldh %ldm %lds, %s\n\n"
 	    "WDP: received %ld (%ld queued), sent %ld (%ld queued)\n\n"
@@ -656,6 +664,7 @@ char *bb_status_linebreak(int status_type)
     case BBSTATUS_TEXT:
 	return "\n";
     case BBSTATUS_XML:
+	return "\n";
     default:
 	return NULL;
     }

@@ -402,10 +402,16 @@ Octstr *smsc2_status(int status_type)
 	para = 1;
 
     if (!smsc_running) {
-	return octstr_format("%sNo SMSC connections%s\n\n", para ? "<p>" : "",
+	if (status_type == BBSTATUS_XML)
+	    return octstr_create ("<smscs>\n\t<count>0</count>\n</smscs>");
+	else
+	    return octstr_format("%sNo SMSC connections%s\n\n", para ? "<p>" : "",
 			     para ? "</p>" : "");
     }
-    tmp = octstr_format("%sSMSC connections:%s", para ? "<p>" : "", lb);
+    if (status_type != BBSTATUS_XML)
+        tmp = octstr_format("%sSMSC connections:%s", para ? "<p>" : "", lb);
+    else
+	tmp = octstr_format("<smscs><count>%d</count>\n\t", list_len(smsc_list));
     
     for(i=0; i < list_len(smsc_list); i++) {
         conn = list_get(smsc_list, i);
@@ -420,7 +426,13 @@ Octstr *smsc2_status(int status_type)
 	else if (status_type == BBSTATUS_TEXT)
 	    octstr_append_cstr(tmp, "    ");
 
-        octstr_append(tmp, smscconn_name(conn));
+	if (status_type == BBSTATUS_XML) {
+            octstr_append_cstr(tmp, "<smsc>\n\t\t<name>");
+            octstr_append(tmp,  smscconn_name(conn));
+            octstr_append_cstr(tmp, "</name>\n\t\t");
+        }
+        else
+            octstr_append(tmp, smscconn_name(conn));
 
 	switch(info.status) {
 	case SMSCCONN_ACTIVE:
@@ -433,14 +445,24 @@ Octstr *smsc2_status(int status_type)
 	    sprintf(tmp3, "connecting");
 	}
 	
-	octstr_format_append(tmp, " (%s, rcvd %ld, sent %ld, failed %ld, "
+        if (status_type == BBSTATUS_XML)
+	    octstr_format_append(tmp, "<status>%s</status>\n\t\t<received>%ld</received>"
+                             "\n\t\t<sent>%ld</sent>\n\t\t<failed>%ld</failed>\n\t\t"
+			     "<queued>%ld</queued>\n\t</smsc>\n", tmp3,
+			     info.received, info.sent, info.failed,
+			     info.queued);
+        else
+	    octstr_format_append(tmp, " (%s, rcvd %ld, sent %ld, failed %ld, "
 			     "queued %ld msgs)%s", tmp3,
 			     info.received, info.sent, info.failed,
 			     info.queued, lb);
     }
     if (para)
 	octstr_append_cstr(tmp, "</p>");
-    octstr_append_cstr(tmp, "\n\n");
+    if (status_type == BBSTATUS_XML)
+        octstr_append_cstr(tmp, "</smscs>\n");
+    else
+        octstr_append_cstr(tmp, "\n\n");
     return tmp;
 }
 
