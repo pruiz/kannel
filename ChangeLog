@@ -1,4 +1,10 @@
 2002-01-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: updated SMPP documentation for port = 0
+    * gw/smsc_smpp.c: applied patch to allow disabling of SMPP threads, using
+      values for the ports, suggested by Nisan Bloch <nisof@amagoblin.co.za>
+      [Msg-ID: <5.1.0.14.0.20020117224637.00a845b0@amagoblin.ialien.co.za>]
+
+2002-01-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/date.c: applied fix to solve date_convert_universal()
       misbehaviour, suggested by "Angel Fradejas" <afradejas@mediafusion.es>
       [Msg-ID: <FMEKKCFKIGBADHGIJKPJEEIDCLAA.afradejas@mediafusion.es>]
