@@ -1,5 +1,10 @@
 2001-04-26  Richard Braakman  <dark@wapit.com>
 
+        * gw/smsc_cimd2.c: Reopen connection if SMSC does not respond
+        to "alive" request.
+
+2001-04-26  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/http.c: Handle 100-Continue responses.
 
 2001-04-26  Richard Braakman  <dark@wapit.com>

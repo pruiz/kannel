@@ -1666,15 +1666,21 @@ static void cimd2_logout(SMSCenter *smsc)
     packet_destroy(packet);
 }
 
-static void cimd2_send_alive(SMSCenter *smsc)
+static int cimd2_send_alive(SMSCenter *smsc)
 {
     struct packet *packet = NULL;
+    int ret;
 
     gw_assert(smsc != NULL);
 
     packet = packet_create(ALIVE, BOGUS_SEQUENCE);
-    cimd2_request(packet, smsc);
+    ret = cimd2_request(packet, smsc);
     packet_destroy(packet);
+
+    if (ret < 0)
+        warning(0, "CIMD2: SMSC not alive.\n");
+
+    return ret;
 }
 
 /***************************************************************************/
@@ -1831,8 +1837,12 @@ int cimd2_pending_smsmessage(SMSCenter *smsc)
 
     ret = read_available(smsc->socket, 0);
     if (ret == 0) {
-        if (smsc->keepalive > 0 && smsc->cimd2_next_ping < time(NULL))
-            cimd2_send_alive(smsc);
+        if (smsc->keepalive > 0 && smsc->cimd2_next_ping < time(NULL)) {
+            if (cimd2_send_alive(smsc) < 0) {
+                smsc->cimd2_error = 1;
+                return 1;
+            }
+        }
         return 0;
     }
 
