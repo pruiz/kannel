@@ -1,3 +1,10 @@
+Sat Apr 22 23:47:33 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* configure.in, config.h.in: Added option --enable-http2. Files
+	that start using http2.h should do it conditionally based on
+	USE_HTTP2. This allows us to easily switch between the old and
+	new implementations.
+
 Sat Apr 22 23:35:27 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/http2.[ch]: Implemented GET CGI argument parsing.

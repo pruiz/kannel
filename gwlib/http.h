@@ -4,8 +4,6 @@
  * Lars Wirzenius for WapIT Ltd.
  */
 
-
-
 #ifndef HTTP_H
 #define HTTP_H
 

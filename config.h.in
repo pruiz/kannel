@@ -1,6 +1,9 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+/* Define if you want to enable use of experimental HTTP implementation. */
+#undef USE_HTTP2
+
 /* Define if you want log file timestamps in localtime instead of GMT. */
 #undef LOG_TIMESTAMP_LOCALTIME
 
