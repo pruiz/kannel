@@ -10,8 +10,9 @@ typedef struct WTPEvent WTPEvent;
 
 #include <errno.h>
 #include <netinet/in.h>
+#include <stdlib.h>
 
-#include "octstr.h" 
+#include "wapitlib.h"
 #include "msg.h" 
 #include "wtp_timer.h" 
 

@@ -2,14 +2,11 @@
  * wtp.c - WTP implementation
  *
  *Implementation is for now very straigthforward, WTP state machines are stored
- *in a unordered linked list (this fact will change, naturally).
+ *in an unordered linked list (this fact will change, naturally).
  *
  *By Aarno Syvänen for WapIT Ltd.
  */
 
-#include <stdlib.h>
-
-#include "wapitlib.h"
 #include "wtp.h"
 
 /*
@@ -293,8 +290,10 @@ void wtp_machine_dump(WTPMachine  *machine){
         #define MUTEX(name)   ret=pthread_mutex_trylock(&machine->name);\
                               if (ret == EBUSY)\
                                   debug(0, "Machine locked");\
-                              else\
-                                  debug(0, "Machine unlocked")
+                              else {\
+                                  debug(0, "Machine unlocked");\
+                                  ret=pthread_mutex_unlock(&machine->name);\
+                              }
 #else
         #define MUTEX(name)
 #endif
@@ -358,14 +357,11 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
              pdu_type,
              gtr,
              ttr,
-             rid,
 	     first_tid,  /*first octet of the tid, in the network order*/ 
 	     last_tid,   /*second octet of the tid, in the network order*/
              tid,
-             tid_new,
-             tid_ok,
+             rcv_tid,
              version,
-             up_flag,
              tcl,
              abort_type,
              tpi_length_type,
@@ -377,13 +373,20 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
  */
          first_tid=octstr_get_char(msg->wdp_datagram.user_data,1);
          last_tid=octstr_get_char(msg->wdp_datagram.user_data,2);
-         tid=last_tid;
-         tid=(tid << 8) + first_tid;
-debug(0, "first_tid=%d last_tid=%d tid=%d", first_tid, last_tid, tid);
+         rcv_tid=first_tid;
+         rcv_tid=(rcv_tid << 8) + last_tid;
+/*
+ *Toggle first bit of the tid field. It tells whether the packet is sended by
+ *the iniator or by the responder. So in the message the bit in question has
+ *the opposite value.
+ */
+         tid = rcv_tid^0x8000;
+         debug(0, "first_tid=%d last_tid=%d tid=%d rcv_tid=%d", first_tid, 
+               last_tid, tid, rcv_tid);
 
          this_octet=octet=octstr_get_char(msg->wdp_datagram.user_data, 0);
          if (octet == -1)
-            goto error;
+            goto no_datagram;
 
          con=this_octet>>7; 
          if (con == 0){
@@ -403,6 +406,7 @@ debug(0, "first_tid=%d last_tid=%d tid=%d", first_tid, last_tid, tid);
                if (event == NULL)
                   goto cap_error;
                event->RcvInvoke.tid=tid;
+
                gtr=this_octet>>2&1;
                this_octet=octet;
                ttr=this_octet>>1&1;
@@ -410,30 +414,31 @@ debug(0, "first_tid=%d last_tid=%d tid=%d", first_tid, last_tid, tid);
 		  goto no_segmentation;
                }
                this_octet=octet;
-               rid=this_octet&1;
-               event->RcvInvoke.rid=rid; 
+               event->RcvInvoke.rid=this_octet&1; 
+
                this_octet=octet=octstr_get_char(
-                                msg->wdp_datagram.user_data, 3);
+                          msg->wdp_datagram.user_data, 3);
                version=this_octet>>6&3;
                if (version != 0){
                   goto wrong_version;
                } 
                this_octet=octet;
-               tid_new=this_octet>>5&1;
-               event->RcvInvoke.tid_new=tid_new;
+               event->RcvInvoke.tid_new=this_octet>>5&1;
                this_octet=octet;
-               up_flag=this_octet>>4&1;
-               event->RcvInvoke.up_flag=up_flag;
+               event->RcvInvoke.up_flag=this_octet>>4&1;
                this_octet=octet;
                tcl=this_octet&3; 
                if (tcl > 2)
                   goto illegal_header;
-               event->RcvInvoke.tcl=tcl;  
+               event->RcvInvoke.tcl=tcl; 
+ 
 /*
  *At last, the message itself. We remove the header.
  */
                octstr_delete(msg->wdp_datagram.user_data, 0, 4);
-               event->RcvInvoke.user_data=msg->wdp_datagram.user_data;         
+               event->RcvInvoke.user_data=msg->wdp_datagram.user_data; 
+               info(0, "Invoke event packed"); 
+               wtp_event_dump(event);       
             }
 /*
  *Message type is supposed to be result. This is impossible, so we have an
@@ -450,14 +455,16 @@ debug(0, "first_tid=%d last_tid=%d tid=%d", first_tid, last_tid, tid);
                if (event == NULL)
                   goto cap_error;
                event->RcvAck.tid=tid;
+
                this_octet=octet=octstr_get_char(
-                                msg->wdp_datagram.user_data, 0);
-               tid_ok=this_octet>>2&1;
-               event->RcvAck.tid_ok=tid_ok;
+                          msg->wdp_datagram.user_data, 0);
+               event->RcvAck.tid_ok=this_octet>>2&1;
                this_octet=octet;
-               rid=this_octet&1;
-               event->RcvAck.rid=rid;
+               event->RcvAck.rid=this_octet&1;
+               info(0, "Ack event packed");
+               wtp_event_dump(event);
             }
+
 /*
  *Message type was abort.
  */
@@ -465,17 +472,21 @@ debug(0, "first_tid=%d last_tid=%d tid=%d", first_tid, last_tid, tid);
                 event=wtp_event_create(RcvAbort);
                 if (event == NULL)
                     goto cap_error;
-               event->RcvAbort.tid=tid;
+                event->RcvAbort.tid=tid;
+                
                octet=octstr_get_char(msg->wdp_datagram.user_data, 0);
                abort_type=octet&7;
                if (abort_type > 1)
                   goto illegal_header;
                event->RcvAbort.abort_type=abort_type;   
+
                octet=octstr_get_char(msg->wdp_datagram.user_data, 3);
                if (octet > NUMBER_OF_ABORT_REASONS)
                   goto illegal_header;
                event->RcvAbort.abort_reason=octet;
+               info(0, "abort event packed");
             }
+
 /*
  *WDP does the segmentation.
  */
@@ -485,6 +496,7 @@ debug(0, "first_tid=%d last_tid=%d tid=%d", first_tid, last_tid, tid);
             if (pdu_type >= 8){
                goto illegal_header;
             } 
+
 /*
  *Message is of variable length. This is possible only when we are receiving
  *an invoke message.(For now, only info tpis are supported.)
@@ -507,30 +519,35 @@ debug(0, "first_tid=%d last_tid=%d tid=%d", first_tid, last_tid, tid);
  *Send Abort(WTPVERSIONZERO)
  */
 wrong_version:
+         wtp_event_destroy(event);
          error(0, "Version not supported");
          return NULL;
 /*
  *Send Abort(NOTIMPLEMENTEDSAR)
  */
 no_segmentation:
+         wtp_event_destroy(event);
          error(errno, "No segmentation implemented");
          return NULL;
 /*
  *TBD: Send Abort(CAPTEMPEXCEEDED), too.
  */
 cap_error:
+         free(event);
          error(errno, "Out of memory");
          return NULL;
 /*
  *Send Abort(PROTOERR)
  */
 illegal_header:
+         wtp_event_destroy(event);
          error(errno, "Illegal header structure");
          return NULL;
 /*
- *TBD: Another error message
+ *TBD: Another error message. Or panic?
  */
-error:   
+no_datagram:   
+         free(event);
          error(errno, "No datagram received");
          return NULL;
 }
