@@ -1,3 +1,9 @@
+Tue Jan 25 17:14:12 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/thread.c: Added comments to explain how mutex_try_lock
+	works, and fixed a bug that left the mutex locked in case of
+	recursive locks.
+
 Tue Jan 25 16:51:43 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c, gw/wsp_state-decl.h, gwlib/octstr.c: Applied patch
