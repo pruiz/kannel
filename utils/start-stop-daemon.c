@@ -63,6 +63,14 @@
 #include <sys/termios.h>
 #include <fcntl.h>
 
+/*Solaris needs to be told how
+to talk to it's proc filesystem*/
+#define _STRUCTURED_PROC 1
+#if defined(OSsunos)
+#include <sys/procfs.h>
+#endif
+
+
 #ifdef HAVE_ERROR_H
 #include <error.h>
 #endif
@@ -111,7 +119,7 @@ static void *xmalloc(int size);
 static void push(struct pid_list **list, int pid);
 static void do_help(void);
 static void parse_options(int argc, char * const *argv);
-#if defined(OSLinux) || defined(OSHURD)
+#if defined(OSLinux) || defined(OSHURD) || defined(OSsunos)
 static int pid_is_user(int pid, int uid);
 static int pid_is_cmd(int pid, const char *name);
 #endif
@@ -516,6 +524,51 @@ pid_is_cmd(int pid, const char *name)
 }
 #endif /* OSHURD */
 
+#if defined(OSsunos)
+/*
+Lots of lovely system dependant functions for Solaris.  I used to like the
+idea of proc, but now I'm not so sure.  It feels to much like a kludge.
+*/
+
+/*
+pid_is_user, takes the pid and a uid, normally ours, but can be someone
+elses, to allow you to identify the process' owner. returns zero on success,
+and either true or the uid of the owner on failure (this may be undefined,
+or I may be misremembering.
+*/
+static int
+pid_is_user(int pid, int uid)
+{
+   struct stat sb;
+   char buf[32];
+
+   sprintf(buf, "/proc/%d", pid);
+   if (stat(buf, &sb) != 0)
+      return 0; /*I can stat it so it seems to be mine...*/
+   return ((int) sb.st_uid == uid);
+}
+
+/*
+pid_is_cmd, takes a pid, and a string representing the process' (supposed)
+name.  Compares the process' supposed name with the name reported by the
+system.  Returns zero on failure, and nonzero on success.
+*/
+static int
+pid_is_cmd(int pid, const char *name)
+{
+   char buf[32];
+   FILE *f;
+   int c;
+   psinfo_t pid_info;
+
+   sprintf(buf, "/proc/%d/psinfo", pid);
+   f = fopen(buf, "r");
+   if (!f)
+      return 0;
+   fread(&pid_info,sizeof(psinfo_t),1,f);
+   return (!strcmp(name,pid_info.pr_fname));
+}
+#endif /*OSsunos*/
 
 
 static void
