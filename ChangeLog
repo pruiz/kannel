@@ -1,3 +1,8 @@
+2000-12-13  Richard Braakman  <dark@wapit.com>
+
+	* test/fakewap.c: Indented gwlib_shutdown() call according to
+	our coding style.
+	
 2000-12-13 Paul Keogh <paul.keogh@anam.com>
 
 	* test/fakewap.c: Added gwlib_shutdown() call.
