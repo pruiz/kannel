@@ -7,6 +7,7 @@
 
 typedef struct WTPMachine WTPMachine;
 typedef struct WTPEvent WTPEvent;
+typedef struct Address Address; 
 
 #include <errno.h>
 #include <netinet/in.h>
@@ -85,6 +86,12 @@ struct WTPEvent {
     #include "wtp_events-decl.h" 
 };
 
+struct Address {
+   Octstr *source_address;
+   long source_port;
+   Octstr *destination_address;
+   long destination_port;
+};
 
 /*
  * Create a WTPEvent structure and initialize it to be empty. Return a

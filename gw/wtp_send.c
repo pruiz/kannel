@@ -21,7 +21,15 @@ static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason,
 static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine, 
                      WTPEvent *event);
 
+static Msg *pack_negative_ack(Msg *msg, long tid, int retransmission_status, 
+       int segments_missing, int *missing_segments);
+
+static Msg *pack_group_ack(Msg *msg, long tid, int retransmission_status, 
+                          char packet_sequence_number);
+
 static Msg *add_datagram_address(Msg *msg, WTPMachine *machine);
+
+static Msg *add_segment_address(Msg *msg, Address *address);
 
 static char insert_pdu_type(int type, char octet);
 
@@ -101,6 +109,44 @@ void wtp_send_ack(long ack_type, WTPMachine *machine, WTPEvent *event){
      return;
 }
 
+void wtp_send_group_ack(Address *address, long tid, int retransmission_status, 
+                        char packet_sequence_number){
+
+     Msg *msg = NULL;
+
+     msg = msg_create(wdp_datagram);
+     msg = add_segment_address(msg, address);
+     msg = pack_group_ack(msg, tid, retransmission_status, 
+                          packet_sequence_number);
+
+     if (msg == NULL){
+        return;
+     }
+
+     put_msg_in_queue(msg); 
+
+     return;
+}
+
+void wtp_send_negative_ack(Address *address, long tid, int retransmission_status, 
+                           int segments_missing, int *missing_segments){
+     
+     Msg *msg = NULL;
+
+     msg = msg_create(wdp_datagram);
+     msg = add_segment_address(msg, address);
+     msg = pack_negative_ack(msg, tid, retransmission_status, segments_missing,
+                          missing_segments);
+
+     if (msg == NULL){
+        return;
+     }
+
+     put_msg_in_queue(msg); 
+
+     return;
+}
+
 /****************************************************************************
  *
  * INTERNAL FUNCTIONS:
@@ -137,6 +183,8 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
 #endif
     insert_tid(wtp_pdu, event->TRResult.tid);
     octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 3);
+    debug(0,"WTP: sending a result message");
+    msg_dump(msg);
 
     return msg;
 
@@ -197,6 +245,17 @@ static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine,
     return msg;
 }
 
+static Msg *pack_negative_ack(Msg *msg, long tid, int retransmission_status, 
+       int segments_missing, int *missing_segments){
+
+       return msg;
+}
+
+static Msg *pack_group_ack(Msg *msg, long tid, int retransmission_status, 
+                          char packet_sequence_number){
+
+       return msg;
+}
 /* 
  * We must swap the source and the destination, because we are answering a query.
  */
@@ -211,6 +270,11 @@ static Msg *add_datagram_address(Msg *msg, WTPMachine *machine){
     	    octstr_duplicate(machine->source_address);
        
        msg->wdp_datagram.destination_port = machine->source_port;
+
+       return msg;
+}
+
+static Msg *add_segment_address(Msg *msg, Address *address){
 
        return msg;
 }

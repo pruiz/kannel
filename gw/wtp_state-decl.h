@@ -45,7 +45,7 @@ ROW(LISTEN,
     RcvInvoke,
     event->RcvInvoke.tcl == 0,
     {
-     current_primitive=TRInvokeIndication;
+     current_primitive = TRInvokeIndication;
      wsp_event=pack_wsp_event(current_primitive, event, machine);
      debug(0, "RcvInvoke: generated TR-Invoke.ind for WSP");
      wsp_dispatch_event(machine, wsp_event);
@@ -56,8 +56,8 @@ ROW(TIDOK_WAIT,
     RcvAck,
     (machine->tcl == 2 || machine->tcl == 1) && event->RcvAck.tid_ok == 1,
     { 
-     current_primitive=TRInvokeIndication;
-     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     current_primitive = TRInvokeIndication;
+     wsp_event = pack_wsp_event(current_primitive, event, machine);
      debug(0, "RcvAck: generated TR-Invoke.ind for WSP");
      wsp_dispatch_event(machine, wsp_event);
      
@@ -252,6 +252,27 @@ ROW(RESULT_RESP_WAIT,
      wtp_machine_mark_unused(machine);
      wtp_send_abort(event->TRAbort.abort_type, event->TRAbort.abort_type,
                     machine, event); 
+    },
+    LISTEN)
+
+ROW(RESULT_RESP_WAIT,
+    TimerTO_R,
+    machine->rcr < MAX_RCR,
+    {
+     ++machine->rcr;
+     wtp_send_result(machine, event);
+     wtp_timer_start(timer, L_R_WITH_USER_ACK, machine, event);
+    },
+    RESULT_RESP_WAIT)
+
+ROW(RESULT_RESP_WAIT,
+    TimerTO_R,
+    machine->rcr == MAX_RCR,
+    {
+     wtp_machine_mark_unused(machine);
+     current_primitive = TRAbortIndication;
+     wsp_event = pack_wsp_event(current_primitive, event, machine);
+     /*wsp_dispatch_event(machine, wsp_event);*/
     },
     LISTEN)
 

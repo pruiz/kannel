@@ -35,6 +35,12 @@ void wtp_send_abort(long abort_type, long abort_reson, WTPMachine *machine,
 
 void wtp_send_ack(long ack_type, WTPMachine *machine, WTPEvent *event);
 
+void wtp_send_group_ack(Address *address, long tid, int retransmission_status, 
+                        char packet_sequence_number); 
+
+void wtp_send_negative_ack(Address *address, long tid, 
+                           int retransmission_status, int segments_missing,
+                           int *missing_segments);
 #endif
 
 
