@@ -23,6 +23,12 @@
 #include <arpa/inet.h>
 #endif
 
+/* configure should get this, but doesn't. XXX fix this --liw */
+#if __sun && __sparc
+#define HAVE_INET_ATON 1 
+#endif
+
+
 #if !HAVE_INET_ATON
 
 int inet_aton(char *name, struct in_addr *ap)

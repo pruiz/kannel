@@ -1,3 +1,14 @@
+Mon Jan 24 19:06:58 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* configure.in, configure: Look for -lresolv if it is necessary.
+	(From Derry Hamilton <derry.hamilton@pa.press.net>)
+	
+	* gwlib/socket.c: Portability kludge for Solaris. Should be fixed
+	later. (Likewise from Derry.)
+	
+	* test/fakewap.c: Moved definition of `ret' inside #ifdef so that
+	it doesn't cause an "unused variable" warning.
+
 2000-01-24    <rpr@rpr.wapit.com>
 
 	* gwlib/http.h|c: added functions header_pack and header_destroy

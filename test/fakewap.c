@@ -614,7 +614,6 @@ int main(int argc, char **argv)
     unsigned short our_port;
     int     i, org_threads;
     double delta;
-    int ret;
 
     if (argc > 2 && argv[1][0] == '-' && argv[1][1] == 'v') {
         verbose = 1;
@@ -628,6 +627,7 @@ int main(int argc, char **argv)
     {
         WORD wVersionRequested = MAKEWORD( 2, 0 );
         WSADATA wsaData;
+	int ret;
  
         ret = WSAStartup( wVersionRequested, &wsaData );
         if ( ret != 0 ) {
