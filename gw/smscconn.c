@@ -14,6 +14,11 @@
 #include "smscconn_p.h"
 #include "bb_smscconn_cb.h"
 
+/*
+ * Some defaults
+ */
+#define SMSCCONN_RECONNECT_DELAY     10.0 
+
 
 SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
 {
@@ -71,6 +76,10 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     if (conn->allowed_smsc_id && conn->denied_smsc_id)
 	warning(0, "Both 'allowed-smsc-id' and 'denied-smsc-id' set, deny-list "
 		"automatically ignored");
+
+    if (cfg_get_integer(&conn->reconnect_delay, grp, 
+                        octstr_imm("reconnect-delay")) == -1)
+        conn->reconnect_delay = SMSCCONN_RECONNECT_DELAY;
     
     smsc_type = cfg_get(grp, octstr_imm("smsc"));
     if (smsc_type == NULL) {

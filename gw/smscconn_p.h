@@ -127,6 +127,8 @@ struct smscconn {
     long log_level;
     int log_idx;    /* index position within the global logfiles[] array in gwlib/log.c */
 
+    long reconnect_delay; /* delay in seconds while re-connect attempts */
+
 
     /* XXX: move rest global data from Smsc here
      */
