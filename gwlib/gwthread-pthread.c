@@ -301,7 +301,7 @@ static int block_user_signals(sigset_t *old_set_storage)
     }
     ret = pthread_sigmask(SIG_BLOCK, &block_signals, old_set_storage);
     if (ret != 0) {
-        error(errno, 
+        error(ret, 
             "gwthread-pthread: Couldn't disable signals for thread creation");
         return -1;
     }
@@ -314,7 +314,7 @@ static void restore_user_signals(sigset_t *old_set)
 
     ret = pthread_sigmask(SIG_SETMASK, old_set, NULL);
     if (ret != 0) {
-        panic(errno, "gwthread-pthread: Couldn't restore signal set.");
+        panic(ret, "gwthread-pthread: Couldn't restore signal set.");
     }
 }
 

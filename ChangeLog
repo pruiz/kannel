@@ -1,3 +1,15 @@
+2001-03-16  Richard Braakman  <dark@wapit.com>
+
+	* When logging errors, do not report errno if it's not relevant.
+        Fixed 25 counts of this, leaving 81 valid uses.
+
+	* Updated NEWS file to prepare for 1.1.3.
+
+	* test/test_http_server.c: Run client_thread in a separate thread.
+	This makes check_http.sh not fail.  (sigterm was calling
+	http_close_all_ports while the main thread itself was in
+	port_get_request).
+
 2001-03-15  Uoti Urpala  <uau@wapit.com>
 
 	* test/test_smsc.c: Fixed a memory allocation bug.

@@ -96,7 +96,7 @@ SMSCenter * sema_open(char* smscnua, char* homenua,
 	return smsc;
 
 error:
-	error(errno, "sema_open: could not open");
+	error(0, "sema_open: could not open");
 	smscenter_destruct(smsc);
 	return NULL;
 }
@@ -122,7 +122,7 @@ int sema_reopen(SMSCenter *smsc)
      access codes correctly. */
     smsc->sema_fd = X28_reopen_data_link(smsc->sema_fd, smsc->sema_serialdevice);
     if(smsc->sema_fd == -1){
-	error(errno,"sema_reopen_data_link: device file error");
+	error(0,"sema_reopen_data_link: device file error");
 	goto error;
     }
     /*test outgoing call to the smsc */
@@ -134,7 +134,7 @@ int sema_reopen(SMSCenter *smsc)
     X28_close_send_link(smsc->sema_fd);
     return 0;
 error:
-    error(errno, "sema_reopen_data_link: failed");
+    error(0, "sema_reopen_data_link: failed");
     return -1;
   
 }
@@ -183,10 +183,8 @@ int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 	    }
 	*/
 	lmsg = sema_msg_new();
-	if(lmsg == NULL) goto error_memory;
 	
 	submit_sm = gw_malloc(sizeof(struct sm_submit_invoke));
-	if(submit_sm == NULL) goto error_memory;
 	memset(submit_sm, 0, sizeof(struct sm_submit_invoke));
 
 	lmsg->type = 'S';
@@ -256,8 +254,6 @@ int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 
 	return 1;
 	
-error_memory:
-	error(errno,"memory allocation problem");
 error:
 	if(submit_sm)
 	    gw_free(submit_sm);
@@ -305,7 +301,7 @@ int sema_receive_msg(SMSCenter *smsc, Msg **msg)
     return 1;
 
 error:
-    error(errno, "sema_receive_msg: can not create Smart Msg");
+    error(0, "sema_receive_msg: can not create Smart Msg");
     return -1;
 }
 
@@ -353,7 +349,7 @@ int sema_pending_smsmessage(SMSCenter *smsc)
     return 0;
 
 error:
-    error(errno,"sema_pending message: device file error");
+    error(0,"sema_pending message: device file error");
     return -1;
 }
 
@@ -678,7 +674,7 @@ static int X28_data_read(int padfd, char *cbuffer) {
 	    if(errno==EINTR) goto got_data;
 	    if(errno==EAGAIN) goto got_data;
 	    error(errno, "Error doing select for fad");
-	    goto error;
+	    return -1;
 	} else if (ret == 0)
 	    goto got_data;
 	len = strlen(cbuffer);
@@ -686,7 +682,8 @@ static int X28_data_read(int padfd, char *cbuffer) {
 		   cbuffer + len,
 		   256);    
 	if (ret == -1) {
-	    goto error;
+            error(errno," read device file");
+	    return -1;
 	}
 	if (ret == 0)
 	    goto eof;
@@ -710,11 +707,6 @@ got_data:
     ret = 0;
     goto unblock;
 
-error:
-    error(errno," read device file");
-    ret = -1;
-    goto unblock;
-     
 unblock:
     return ret;  
 
@@ -984,7 +976,6 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 
     /*wait result and report return*/
     mtrmsg = sema_msg_new();
-    if(mtrmsg == NULL) goto error;
     memset(mochars,0,sizeof(mochars));
 
     time(&tstart);
@@ -1132,7 +1123,6 @@ static int sema_msg_session_mo(SMSCenter *smsc, char* cbuff){
     struct sm_statusreport_invoke* report_invoke = NULL;
  
     rmsg = sema_msg_new();
-    if(rmsg == NULL) goto error;
 
     iret = sema_decode_msg(&rmsg,cbuff);
     if(iret == - 1) goto msg_error;/* decode error */
@@ -1237,7 +1227,6 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
     switch(cmsgtype){
     case 's': /* submit invoke result */
 	submit_result = gw_malloc(sizeof(struct sm_submit_result)); 
-	if(submit_result == NULL) goto error;
 	memset(submit_result,0,sizeof(struct sm_submit_result));
 
 	/* result */ 
@@ -1263,7 +1252,6 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
     case 'M': 
 	/* deliver invoke*/
 	receive_sm = gw_malloc(sizeof(struct sm_deliver_invoke));
-	if(receive_sm == NULL) goto error;
 	memset(receive_sm, 0, sizeof(struct sm_deliver_invoke));
 	/*deliver destination address length*/
 	iusedbyte = line_scan_IA5_hex(octsrc, 1, tmp);
@@ -1365,7 +1353,6 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
     case 'T': 
 	/* status report invoke */
 	receive_report = gw_malloc(sizeof(struct sm_statusreport_invoke)); 
-	if(receive_report == NULL) goto error;		
 	memset(receive_report,0,sizeof(struct sm_statusreport_invoke));
 	/*deliver msisdn address length*/
 	iusedbyte = line_scan_IA5_hex(octsrc, 1, tmp);
@@ -1448,9 +1435,6 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
     }
     return 1;
 
-error:
-    error(errno,"sema_decode: memory allocation error!");
-    return -1;
 no_msg:
     info(0,"sema_decode: msg in empty");
     return 0;

@@ -1488,9 +1488,9 @@ int main(int argc, char **argv)
 
     translations = urltrans_create();
     if (translations == NULL)
-	panic(errno, "urltrans_create failed");
+	panic(0, "urltrans_create failed");
     if (urltrans_add_cfg(translations, cfg) == -1)
-	panic(errno, "urltrans_add_cfg failed");
+	panic(0, "urltrans_add_cfg failed");
 
     sendsms_number_chars = SENDSMS_DEFAULT_CHARS;
     caller = http_caller_create();

@@ -1,4 +1,4 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 1.1.2
+NEWS about Kannel: Open Source WAP and SMS Gateway version 1.1.3
 
 This is a DEVELOPMENT version. It should be usable for experimentation
 and testing, and is a release candidate for 1.2. Please do try it out
@@ -7,6 +7,29 @@ or bugs@kannel.org (the bug tracking system).
 
 NOTE: This is not an update to 1.0.  Updates to 1.0 will be numbered 1.0.x,
 until we decide to release 1.2.  See the VERSION file for details.
+
+
+Changes since version 1.1.2:
+
+
+Security:
+
+ * A bug in the error handling code would make Kannel crash if a HTTP
+   request (for example to sendsms) contained literal spaces in the URL.
+   This has been fixed.  The problem was not present in the 1.0 series.
+
+Bugfixes:
+
+ * Phone-as-SMSC module made more reliable under high load.
+
+ * Bearerbox no longer treats any UDP errors as fatal, they are just
+   warnings now.
+
+Development news:
+
+ * Started a benchmarking framework, activated with "make bench".
+
+ * Bearerbox now uses the conn module for box connections.
 
 
 Changes since version 1.1.1:

@@ -759,7 +759,7 @@ static int put_data(SMSCenter *smsc, char *buff, int length, int is_backup)
             if (smsc->emi_fd == -1) {
                 info(0, "Reopening connection to SMSC");
 		if (emi_open_connection_ip(smsc) < 0) {
-                    error(errno, "put_data: Reopening failed!");
+                    error(0, "put_data: Reopening failed!");
                     return -1;
 		}
             }

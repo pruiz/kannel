@@ -1863,7 +1863,7 @@ int cimd2_pending_smsmessage(SMSCenter *smsc)
         return 1;
     }
     if (ret < 0) {
-        warning(errno, "cimd2_pending_smsmessage: read failed");
+        warning(0, "cimd2_pending_smsmessage: read failed");
         smsc->cimd2_error = 1;
         return 1;
     }

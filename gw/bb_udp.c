@@ -140,7 +140,7 @@ static int send_udp(int fd, Msg *msg)
 				 msg->wdp_datagram.destination_port);
     ret = udp_sendto(fd, msg->wdp_datagram.user_data, cliaddr);
     if (ret == -1)
-	error(errno, "WDP/UDP: could not send UDP datagram");
+	error(0, "WDP/UDP: could not send UDP datagram");
     octstr_destroy(cliaddr);
     return ret;
 }

@@ -170,7 +170,7 @@ Msg *msg_unpack(Octstr *os)
     return msg;
 
 error:
-    error(errno, "Msg packet was invalid.");
+    error(0, "Msg packet was invalid.");
     return NULL;
 }
 

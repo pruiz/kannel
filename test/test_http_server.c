@@ -146,7 +146,13 @@ int main(int argc, char **argv) {
     if (http_open_port(port) == -1)
 	panic(0, "http_open_server failed");
 
-    client_thread(file_contents);
+    /*
+     * Do the real work in a separate thread so that the main
+     * thread can catch signals safely.
+     */
+    if (gwthread_create(client_thread, file_contents) < 0)
+	panic(0, "Cannot create client thread.");
+    gwthread_join_every(client_thread);
 
     debug("test.http", 0, "Program exiting normally.");
     gwlib_shutdown();

@@ -439,7 +439,7 @@ void *gw_check_malloc(size_t size, const char *filename, long lineno,
 
     p = malloc(size + 2 * MARKER_SIZE);
     if (p == NULL)
-        panic(errno, "Memory allocation bytes failed");
+        panic(errno, "Memory allocation of %d bytes failed.", size);
     p += MARKER_SIZE;
 
     lock();

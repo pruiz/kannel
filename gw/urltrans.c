@@ -631,7 +631,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
     return ot;
 
 error:
-    error(errno, "Couldn't create a URLTranslation.");
+    error(0, "Couldn't create a URLTranslation.");
     destroy_onetrans(ot);
     return NULL;
 }

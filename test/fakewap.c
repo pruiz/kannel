@@ -308,7 +308,7 @@ wap_msg_send( int fd, unsigned char * hdr,
     ret = udp_sendto(fd, datagram, gateway_addr);
 
     if (ret == -1) {
-        error(errno, "Sending to socket failed");
+        error(0, "Sending to socket failed");
         return -1;
     }
 
@@ -367,7 +367,7 @@ wap_msg_recv( int fd, const char * hdr, int hdr_len,
 	octstr_destroy(dummy);
 
         if (ret == -1) {
-            error(errno, "recv() from socket failed");
+            error(0, "recv() from socket failed");
             return -1;
         }
 

@@ -254,10 +254,7 @@ int cimd_pending_smsmessage(SMSCenter *smsc)
         /* Reconnect if no results in 30 seconds */
         if (time(NULL) > (thetime + 30)) {
 
-            error(errno, "timeout occurred, maybe the connection was broken?");
-            if (errno == EPIPE) {
-                error(0, "broken pipe");
-            } /* if errno */
+            error(0, "timeout occurred, maybe the connection was broken?");
 
             /* Reconnect if neccessary, this catches most of them */
             /* XXX this is an ugly kludge, but then again,
@@ -265,7 +262,7 @@ int cimd_pending_smsmessage(SMSCenter *smsc)
             connect_tcpip(smsc);
             goto no_messages;
 
-        } /* if time */
+        }
 
     }
 
@@ -485,7 +482,7 @@ int cimd_receive_msg(SMSCenter *smsc, Msg **msg)
     return 1;
 
 error:
-    debug("bb.sms.cimd", errno, "cimd_receive_smsmessage: failed");
+    debug("bb.sms.cimd", 0, "cimd_receive_smsmessage: failed");
     gw_free(tmpbuff);
     gw_free(sender);
     gw_free(receiver);
@@ -595,14 +592,14 @@ static int send_acknowledge(SMSCenter *smsc)
 
     tmpint = write_to_socket(smsc->socket, tmpbuff);
     if (tmpint == -1) {
-        error(errno, "cimd_send_acknowledge: connection failure");
+        error(0, "cimd_send_acknowledge: connection failure");
         goto error;
     }
 
     return 0;
 
 error:
-    debug("bb.sms.cimd", errno, "cimd_send_acknowledge: failed");
+    debug("bb.sms.cimd", 0, "cimd_send_acknowledge: failed");
     return -1;
 }
 
@@ -697,7 +694,7 @@ static int expect_acknowledge(SMSCenter *smsc, int *cmd, int *err)
 
     /* if we got an ERROR */
 error:
-    error(errno, "cimd_expect_acknowledge failed");
+    error(0, "cimd_expect_acknowledge failed");
     return -1;
 
 }

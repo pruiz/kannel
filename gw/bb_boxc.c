@@ -323,8 +323,7 @@ static void run_smsbox(void *arg)
 
     sender = gwthread_create(boxc_sender, newconn);
     if (sender == -1) {
-	error(errno, 
-	      "Failed to start a new thread, disconnecting client <%s>",
+	error(0, "Failed to start a new thread, disconnecting client <%s>",
 	      octstr_get_cstr(newconn->client_ip));
 	goto cleanup;
     }
@@ -377,8 +376,7 @@ static void run_wapbox(void *arg)
 
     sender = gwthread_create(boxc_sender, newconn);
     if (sender == -1) {
-	error(errno, 
-	      "Failed to start a new thread, disconnecting client <%s>",
+	error(0, "Failed to start a new thread, disconnecting client <%s>",
 	      octstr_get_cstr(newconn->client_ip));
 	goto cleanup;
     }
