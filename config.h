@@ -61,6 +61,10 @@ int config_read(Config *cfg);
 /* Write a configuration file. */
 int config_write(Config *cfg);
 
+/* read from given file and create. 'default' is used if filename is NULL.
+ * default MUST be set if filename is NULL! */
+Config *config_from_file(char *filename, char *default_file);
+
 /* Get the first configuration group. */
 ConfigGroup *config_first_group(Config *cfg);
 

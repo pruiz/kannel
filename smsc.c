@@ -738,7 +738,8 @@ RQueueItem *smsc_get_message(SMSCenter *smsc)
 
 	msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MO);
 
-	/* normalization where? */
+	/* normalization should be done much better way, have to think
+	 * about that */
 
 	normalize_number(smsc->dial_prefix, sms_msg->sender, &p);
 	strcpy(msg->sender, p);

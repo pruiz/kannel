@@ -1,0 +1,18 @@
+/*
+ * default defines for bearer box behaviour
+ *
+ * These all can be overriden in appropriate configuration files
+ *
+ */
+#ifndef _BB_H
+#define _BB_H
+
+
+#define BB_DEFAULT_HOST		"localhost"
+#define BB_DEFAULT_SMSBOX_PORT	13001
+#define BB_DEFAULT_WAPBOX_PORT	13000
+#define BB_DEFAULT_HTTP_PORT	12345
+
+#define BB_DEFAULT_HEARTBEAT	5
+
+#endif

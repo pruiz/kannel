@@ -63,11 +63,11 @@ ConfigGroup *config_add_group(Config *cfg) {
 	grp->lastvar = NULL;
 
 	if (cfg->grouplist == NULL) {
-		cfg->grouplist = grp;
-		cfg->lastgroup = grp;
+	    cfg->grouplist = grp;
+	    cfg->lastgroup = grp;
 	} else {
-		cfg->lastgroup->next = grp;
-		cfg->lastgroup = grp;
+	    cfg->lastgroup->next = grp;
+	    cfg->lastgroup = grp;
 	}
 
 	return grp;
@@ -290,6 +290,24 @@ error:
 	if (f != NULL)
 		fclose(f);
 	return -1;
+}
+
+
+Config *config_from_file(char *filename, char *default_file) {
+    Config *cfg;
+
+    if (filename == NULL)
+	filename = default_file;
+    
+    info(0, "Reading configuration from <%s>", filename);
+    cfg = config_create(filename);
+    if (cfg == NULL)
+        return NULL;
+    if (config_read(cfg) == -1) {
+        config_destroy(cfg);
+        return NULL;
+    }
+    return cfg;
 }
 
 

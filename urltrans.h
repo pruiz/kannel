@@ -40,6 +40,11 @@ typedef struct URLTranslationList URLTranslationList;
  */
 typedef struct URLTranslation URLTranslation;
 
+enum {
+    TRANSTYPE_URL,
+    TRANSTYPE_TEXT,
+    TRANSTYPE_FILE,
+};
 
 /*
  * Create a new URLTranslationList object. Return NULL if the creation failed,
@@ -57,36 +62,18 @@ void urltrans_destroy(URLTranslationList *list);
 
 
 /*
- * Add a translation to the object. The `keyword' is the first word of
- * the SMS message, `url' is the URL pattern it should use. See 
- * urltrans_get_url below for a description of the patterns. The keyword
- * and pattern strings are copied, so the caller does not have to keep
- * them around.
+ * Add a translation to the object. The group is parsed internally.
  *
  * There can be several patterns for the same keyword, but with different
  * patterns. urltrans_get_url will pick the pattern that best matches the
- * actual SMS message. (See urltrans_get_url for a description of the
+ * actual SMS message. (See urltrans_get_pattern for a description of the
  * algorithm.)
  *
  * There can only be one pattern with keyword "default", however.
  *
- * `max_messages' defines the maximum number of SMS messages that can
- * be generated from one URL. If 'split_chars' is set, these are used for
- * sms message splitting. They have no effect if max_messages is 1 or less
- * or if the entire reply fits in one sms message
- *
- * 'imit_empty', if set, prevents sending of '<empty reply from server>'
- * text.
- *
- * 'faked_sender' is number that is sent back
- * to SMSC, masking the system. This works only in EMI systems
- *
  * Return -1 for error, or 0 for OK.
  */
-int urltrans_add_one(URLTranslationList *trans, char *keyword, char *url,
-	char *prefix, char *suffix, int max_messages, int omit_empty,
-	char *faked_sender, char *split_chars);
-
+int urltrans_add_one(URLTranslationList *trans, ConfigGroup *grp);
 
 /*
  * Add translations to a URLTranslation object from a Config object
@@ -102,12 +89,18 @@ int urltrans_add_cfg(URLTranslationList *trans, Config *cfg);
 
 /*
  * Find the translation that corresponds to a given SMS request.
+ *
+ * Use the translation with pattern whose keyword is the same as the first
+ * word of the SMS message and that has the number of `%s' fields as the SMS
+ * message has words after the first one. If no such pattern exists, use the
+ * pattern whose keyword is "default". If there is no such pattern, either,
+ * return NULL.
  */
 URLTranslation *urltrans_find(URLTranslationList *trans, SMSMessage *sms);
 
 
 /*
- * Return a URL given contents of an SMS message. Find the appropriate
+ * Return a pattern given contents of an SMS message. Find the appropriate
  * translation pattern and fill in the missing parts from the contents of
  * the SMS message.
  *
@@ -116,20 +109,20 @@ URLTranslation *urltrans_find(URLTranslationList *trans, SMSMessage *sms);
  * the caller needs to break up the message into words (using, say,
  * split_words from wapitlib.h). `n' is the number of words.
  *
- * `orig' is the SMS message that is being translated.
+ * `sms' is the SMS message that is being translated.
  *
- * Use the pattern whose keyword is the same as the first word of the SMS
- * message and that has the number of `%s' fields as the SMS message has
- * words after the first one. If no such pattern exists, use the pattern
- * whose keyword is "default". If there is no such pattern, either, return
- * NULL.
- *
- * Return NULL if there is a failure. Otherwise, return a pointer to the URL,
+ * Return NULL if there is a failure. Otherwise, return a pointer to the pattern,
  * which is stored in dynamically allocated memory that the caller should
- * free when the URL is no longer needed.
+ * free when the pattern is no longer needed.
+ *
+ * The pattern is URL, fixed text or file name accorinbg to type of urltrans
  */
-char *urltrans_get_url(URLTranslation *t, SMSMessage *sms);
+char *urltrans_get_pattern(URLTranslation *t, SMSMessage *sms);
 
+/*
+ * Return the type of the translation, see enumeration above
+ */
+int urltrans_type(URLTranslation *t);
 
 /*
  * Return prefix and suffix of translations, if they have been set.
@@ -137,6 +130,10 @@ char *urltrans_get_url(URLTranslation *t, SMSMessage *sms);
 char *urltrans_prefix(URLTranslation *t);
 char *urltrans_suffix(URLTranslation *t);
 
+/*
+ * Return (a recommended) faked sender number, or NULL if not set.
+ */
+char *urltrans_faked_sender(URLTranslation *t);
 
 /*
  * Return maximum number of SMS messages that should be generated from
@@ -145,20 +142,21 @@ char *urltrans_suffix(URLTranslation *t);
 int urltrans_max_messages(URLTranslation *t);
 
 /*
- * Return if set that should not send 'empty reply' messages
- */
-int urltrans_omit_empty(URLTranslation *t);
-
-/*
- * Return (a recommended) faked sender number, or NULL if not set.
- */
-char *urltrans_faked_sender(URLTranslation *t);
-
-/*
  * Return (recommended) delimiter characters when splitting long
  * replies into several messages
  */
 char *urltrans_split_chars(URLTranslation *t);
+
+/*
+ * return a string that should be added after each sms message if it is
+ * except for the last one.
+ */
+char *urltrans_split_suffix(URLTranslation *t);
+
+/*
+ * Return if set that should not send 'empty reply' messages
+ */
+int urltrans_omit_empty(URLTranslation *t);
 
 
 #endif

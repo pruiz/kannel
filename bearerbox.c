@@ -22,6 +22,7 @@
 #include "smsc.h"
 #include "csdr.h"
 #include "boxc.h"
+#include "bb.h"
 
 /* bearer box thread types */
 enum {
@@ -897,6 +898,7 @@ static void main_program(void)
 static void init_bb(Config *cfg)
 {
     ConfigGroup *grp;
+    char *logfile, *loglevel;
     char *p;
     int i;
     
@@ -911,26 +913,27 @@ static void init_bb(Config *cfg)
     pthread_mutex_init(&bbox->mutex, NULL);
     
     bbox->thread_limit = 20;
-    bbox->http_port = 12345;
-    bbox->wapbox_port = 13000;
-    bbox->smsbox_port = 13001;
-    bbox->heartbeat_freq = 5;
+    bbox->http_port = BB_DEFAULT_HTTP_PORT;
+    bbox->wapbox_port = BB_DEFAULT_WAPBOX_PORT;
+    bbox->smsbox_port = BB_DEFAULT_SMSBOX_PORT;
+    bbox->heartbeat_freq = BB_DEFAULT_HEARTBEAT;
     bbox->pid_file = NULL;
     
     grp = config_first_group(cfg);
     while(grp != NULL) {
 	if ((p = config_get(grp, "max-threads")) != NULL)
 	    bbox->thread_limit = atoi(p);
-	else if ((p = config_get(grp, "http-port")) != NULL)
+	if ((p = config_get(grp, "http-port")) != NULL)
 	    bbox->http_port = atoi(p);
-	else if ((p = config_get(grp, "wap-port")) != NULL)
+	if ((p = config_get(grp, "wap-port")) != NULL)
 	    bbox->wapbox_port = atoi(p);
-	else if ((p = config_get(grp, "sms-port")) != NULL)
+	if ((p = config_get(grp, "sms-port")) != NULL)
 	    bbox->smsbox_port = atoi(p);
-	else if ((p = config_get(grp, "heartbeat-freq")) != NULL)
+	if ((p = config_get(grp, "heartbeat-freq")) != NULL)
 	    bbox->heartbeat_freq = atoi(p);
-	else if ((p = config_get(grp, "pid-file")) != NULL)
-	    bbox->pid_file = p;
+	bbox->pid_file = config_get(grp, "pid-file");
+	logfile = config_get(grp, "log-file");
+	loglevel = config_get(grp, "log-level");
 	
 	grp = config_next_group(grp);
     }
@@ -959,7 +962,11 @@ static void init_bb(Config *cfg)
 	error(0, "Failed to open sockets");
 	goto error;
     }
-    
+    if (logfile != NULL) {
+	int lvl = loglevel ? atoi(loglevel) : 0;
+	info(0, "Starting to log to file %s level %d", logfile, lvl);
+	open_logfile(logfile, lvl);
+    }
     return;
 error:	
     panic(errno, "Failed to create bearerbox, exiting");
@@ -1042,25 +1049,6 @@ static void open_all_receivers(Config *cfg)
 }
 
 
-static Config *read_config(char *filename) {
-    Config *cfg;
-
-    if (filename == NULL)
-	filename = "smsgateway.conf";
-    info(0, "Reading configuration from <%s>", filename);
-    cfg = config_create(filename);
-    if (cfg == NULL)
-	return NULL;
-    if (config_read(cfg) == -1) {
-	config_destroy(cfg);
-	return NULL;
-    }
-    return cfg;
-}
-
-
-
-
 int main(int argc, char **argv)
 {
         int cf_index;
@@ -1071,7 +1059,7 @@ int main(int argc, char **argv)
         info(0, "Gateway bearer box version %s starting", VERSION);
 
         setup_signal_handlers();
-        cfg = read_config(argv[cf_index]);
+        cfg = config_from_file(argv[cf_index], "bearerbox.conf");
         if (cfg == NULL)
                 panic(0, "No configuration, aborting.");
 

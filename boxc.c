@@ -141,7 +141,7 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 		return -1;	/* time to die */
 	    
 	    info(0, "BOXC:read: < %s >", buffer);
-	    if (*buffer == 'A' || *buffer == 'N')
+	    if (*buffer == 'A' || *buffer == 'N')	/* ignore ack/nack */
 		return 0;
 	    msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
 	    if (msg == NULL) {
