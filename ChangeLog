@@ -1,3 +1,15 @@
+2003-12-02 Aarno Syvanen <as@gni.ch>
+    * wap/wtp.c: Better debugging in the case of truncated pdu
+    * wap/wap_events.[c|h]: Wrapper for checking wap event allocation
+    * wap/wap.c: Fixed a memory leak
+    * gwlib/octstr.[c|h]: Wrapper for checking ocstr_copy allocation
+    * gwlib/http.[c|h]: Wrapper for octstr_find_first allocation
+    * gw/wap_push_ppg.c: Fixed memory leaks
+    * gw/wap-appl.c: Fixed a memory leak
+    * gw/msg.[c|h]: Wrappers for msg_create and msg_unpack. Fixed a
+      leak.
+    * gw/bb_store.c: Fixed a memory leak
+
 2003-11-30  Alexander Malysh  <a.malysh@centrium.de>
     * gw/dlr.c: don't duplicate values from dlr_entry struct, just reuse these.
       This give us a bit speedup.
@@ -13,7 +25,6 @@
 2003-11-27  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/accesslog.c: fixed compiler warning about zero-length format string.
       Got rid of buffer allocation, just allocate on the stack.
-
 2003-11-26  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/http.c: fixed memory leak if conn_wrap_fd(...) failed due to unsuccessfull
       SSL handshake.
