@@ -86,7 +86,8 @@ int main(int argc, char **argv) {
 			break;
 		msg_dump(msg);
 		event = wtp_unpack_wdp_datagram(msg);
-		wtp_event_dump(event);
+                debug(0, "Datagram unpacked");
+                return 0;
 #if 0
 		machine = create_or_find_wtp_machine(event);
 		debug(0, "Ignoring stuff since implementation isn't done.");
@@ -96,3 +97,5 @@ int main(int argc, char **argv) {
 	info(0, "WAP box terminating.");
 	return 0;
 }
+
+

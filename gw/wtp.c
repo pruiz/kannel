@@ -99,8 +99,8 @@ void wtp_event_destroy(WTPEvent *event) {
 void wtp_event_dump(WTPEvent *event) {
   	debug(0, "Event %p:", (void *) event); 
 	debug(0, " type = %s", name_event(event->type));
-	#define INTEGER(name) debug(0, "Integer field #name %ld:", p->name); 
-	#define OCTSTR(name)  debug(0, "Octstr field #name :");\
+	#define INTEGER(name) debug(0, "Integer field %s,%ld:",#name,p->name); 
+	#define OCTSTR(name)  debug(0, "Octstr field %s:",#name);\
                               octstr_dump(p->name)
 	#define EVENT(type, stmt) { struct type *p = &event->type; stmt } 
 	#include "wtp_events-decl.h"
@@ -357,10 +357,9 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
              pdu_type,
              gtr,
              ttr,
-	     first_tid,  /*first octet of the tid, in the network order*/ 
-	     last_tid,   /*second octet of the tid, in the network order*/
+	     first_tid,  /*first octet of the tid, in the host order*/ 
+	     last_tid,   /*second octet of the tid, in the host order*/
              tid,
-             rcv_tid,
              version,
              tcl,
              abort_type,
@@ -368,21 +367,16 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
              tpi_length;
 
 /*
- *every message type uses the second and the third octets for tid. Bytes are 
- *already in host order.
+ *Every message type uses the second and the third octets for tid. Bytes are 
+ *already in host order. Not that the iniator 
  */
          first_tid=octstr_get_char(msg->wdp_datagram.user_data,1);
          last_tid=octstr_get_char(msg->wdp_datagram.user_data,2);
-         rcv_tid=first_tid;
-         rcv_tid=(rcv_tid << 8) + last_tid;
-/*
- *Toggle first bit of the tid field. It tells whether the packet is sended by
- *the iniator or by the responder. So in the message the bit in question has
- *the opposite value.
- */
-         tid = rcv_tid^0x8000;
-         debug(0, "first_tid=%d last_tid=%d tid=%d rcv_tid=%d", first_tid, 
-               last_tid, tid, rcv_tid);
+         tid=first_tid;
+         tid=(tid << 8) + last_tid;
+
+         debug(0, "first_tid=%d last_tid=%d tid=%d", first_tid, 
+               last_tid, tid);
 
          this_octet=octet=octstr_get_char(msg->wdp_datagram.user_data, 0);
          if (octet == -1)
@@ -490,7 +484,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 /*
  *WDP does the segmentation.
  */
-            if (pdu_type > 4 || pdu_type < 8){
+            if (pdu_type > 4 && pdu_type < 8){
                goto no_segmentation;
             }
             if (pdu_type >= 8){
@@ -512,8 +506,10 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                tpi_length=1;
            } else {
 /*or short*/
+               tpi_length=0;
            }
          }      
+         debug(0, "Return reached");
          return event;
 /*
  *Send Abort(WTPVERSIONZERO)
