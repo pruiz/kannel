@@ -104,6 +104,10 @@ static int do_dump(void)
 	msg = list_get(sms_store, l);
 	write_msg(msg);
     }    
+    for (l=0; l < list_len(ack_store); l++) {
+	msg = list_get(ack_store, l);
+	write_msg(msg);
+    }    
     fflush(file);
 
     /* rename old storefile as .bak, and then new as regular file
@@ -160,7 +164,7 @@ static void store_cleanup(void *arg)
 	 * that something happened, of course
 	 */
 	if (now - last > 5) {
-	    do_dump();
+	    store_dump();
 	    last = now;
 	}
     }
@@ -362,10 +366,12 @@ int store_dump(void)
 {
     int retval;
 
-    
     list_lock(sms_store);
-    debug("bb.store", 0, "Dumping %ld messages to store", list_len(sms_store));
+    list_lock(ack_store);
+    debug("bb.store", 0, "Dumping %ld messages and %ld acks to store",
+	  list_len(sms_store), list_len(ack_store));
     retval = do_dump();
+    list_unlock(ack_store);
     list_unlock(sms_store);
 
     return retval;

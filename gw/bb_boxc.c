@@ -138,9 +138,15 @@ static void boxc_receiver(void *arg)
 		warning(0, "Message rejected by bearerbox, no router!");
 		/* send NACK */
 		msg_destroy(msg);
+
+		/* XXX we should mark message as 'ACK' to store so that
+		 *     it is not retried again and again...
+		 */
 	    }
 	    if (msg->sms.sms_type == mt_push) {
-		/* XXX generate ack-message and send it */
+		/* XXX generate ack-message and send it - in fact, this
+		*  should include information did it succeed, wa sit queued
+		*  or rejected... */
 	    }
 	}
 	else if (msg_type(msg) == wdp_datagram && conn->is_wap)

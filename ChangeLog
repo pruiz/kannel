@@ -1,7 +1,14 @@
 2001-04-10  Kalle Marjola  <rpr@wapit.com>
 
-	* gw/bb_store.c: Bugfix: comprasion was wrong way around...
+	* gw/bb_store.c: some little fixes, dumps acks to file, too, if
+	any in memory
+
+	* gw/bb_boxc.c: added some comments for possible future updates
 	
+2001-04-10  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_store.c: Bugfix: comprasion was wrong way around...
+
 2001-04-10  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_store.c: Updated to use double-memory buffering and to do
