@@ -4,6 +4,7 @@
       'unified-prefix' directive for number normalization
     * gw/bb_smscconn.c, gw/smscconn.c, gw/smscconn_p.h: added 'unified-prefix'
       function on a smsc basis to set number normalization rules.
+    * gwlib/cfg.def: added 'unified-prefix' to multi-group 'smsc'.
 
 2002-09-06 Andreas Fink <afink@gni.ch>
     * gw/dlr.c: fixed a crash when migrating from MySQL database
