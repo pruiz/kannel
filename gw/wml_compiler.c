@@ -682,7 +682,7 @@ int parse_text(xmlNodePtr node)
 
   text_shrink_blank(temp1);
 
-  if (octstr_search_char(temp1, '&') > -1)
+  if (octstr_search_char(temp1, '$') > -1)
     return -1;
 
   temp2 = octstr_duplicate(wbxml_string);
