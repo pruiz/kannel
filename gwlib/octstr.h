@@ -166,6 +166,14 @@ void octstr_get_many_chars(char *buf, Octstr *ostr, long pos, long len);
 char *octstr_get_cstr(Octstr *ostr);
 
 
+/*
+ * Append characters from printable hexadecimal format at the tail of 
+ * an octet string. "78797a" or "78797A" would be converted to "xyz"
+ * and then appended.
+ */
+void octstr_append_from_hex(Octstr *ostr, char *hex);
+
+
 /* Convert the octet string in-place to printable hexadecimal format.
  * "xyz" would be converted to "78797a".  If the uppercase
  * flag is set, 'A' through 'F' are used instead of 'a' through 'f'.

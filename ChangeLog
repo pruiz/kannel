@@ -1,3 +1,16 @@
+2000-10-05  Yann Muller  <ymuller@3glab.com>
+
+	* gw/smsbox_req.c/h: added smsbox_req_sendota() to send OTA config
+	messages.
+
+	* smsbox.c: calls smsbox_req_sendota() if cgi address matches
+	'/cgi-bin/sendota'.
+	
+	* doc/userguide/userguide.xml: added info about config and usage
+	of OTA.
+
+	* gwlib/octstr.c/h: added octstr_append_from_hex().
+
 2000-10-05  Kalle Marjola  <rpr@wapit.com>
 
 	* doc/userguide/userguide.xml: language corrected.

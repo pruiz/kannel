@@ -2001,15 +2001,27 @@ url = "http://my.applet.machine/Servlet/weather?sender=%p&amp;operator=SOL&amp;t
 
    <row><entry><literal>faked-sender</literal></entry>
      <entry>phone-number</entry>
-     <entry morerows=7 valign=bottom>
+     <entry valign=bottom>
         As in 'sms-service' groups
      </entry></row>
 
    <row><entry><literal>max-messages</literal></entry>
-     <entry>number</entry></row>
+     <entry>number</entry>
+     <entry valign=bottom>
+        If the message to be sent is longer than maximum length of an SMS
+        it will be split into several parts. <literal>max-messages</literal>
+        lets you specify a maximum number of individual SMS messages that
+        can be used.
+     </entry></row>
 
-   <row><entry><literal>concetenation</literal></entry>
-     <entry>0 or 1</entry></row>
+   <row><entry><literal>concatenation</literal></entry>
+     <entry>0 or 1</entry>
+     <entry valign=bottom>
+        Long messages can be sent as independant SMS messages with
+        <literal>concatenation = 0</literal> or as concatenated messages
+        with <literal>concatenation = 1</literal>. Concatenated messages
+        are reassembled into one long message by the receiving device.
+     </entry></row>
 
    <row><entry><literal>split-chars</literal></entry>
      <entry>string</entry></row>
@@ -2051,6 +2063,120 @@ forced-smsc = SOL
    "123.234.123.234". On the other hand, the user can send a longer
    message, up to 3 SMSes long, which is sent as concatenated
    SMS.</para>
+
+</sect2>
+
+<sect2>
+<title>Over-The-Air configurations</title>
+
+   <para>To enable Over-The-Air configuration of phones or other client
+   devices that support the protocol you need to configure a
+   <literal>ota-config</literal> group and a <literal>sendsms-user</literal>.
+   </para>
+   
+ <table frame=none>
+  <title>OTA Config Group Variables</title>
+  <tgroup cols=3>
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>group</literal></entry>
+     <entry><literal>otaconfig</literal></entry>
+     <entry valign=bottom>
+       This is a mandatory variable
+     </entry></row>
+
+   <row><entry><literal>location</literal></entry>
+     <entry><literal>URL</literal></entry>
+     <entry valign=bottom>
+       The address of the server for your WAP services. http://your.wap.site
+     </entry></row>
+
+   <row><entry><literal>service</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       Description of the service
+     </entry></row>
+
+   <row><entry><literal>ipaddress</literal></entry>
+     <entry><literal>IP</literal></entry>
+     <entry valign=bottom>
+      IP address of your server 
+     </entry></row>
+
+   <row><entry><literal>phonenumber</literal></entry>
+     <entry><literal>phone-number</literal></entry>
+     <entry valign=bottom>
+       Phone number used to establish the PPP connection
+     </entry></row>
+
+   <row><entry><literal>bearer</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       Connection type: cont or temp. Defaults to cont.
+     </entry></row>
+
+   <row><entry><literal>pppsecurity</literal></entry>
+     <entry><literal>on or off</literal></entry>
+     <entry valign=bottom>
+       Enable CHAP authentication if set to on, PAP otherwise
+     </entry></row>
+
+   <row><entry><literal>authentication</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       normal or secure. Defaults to normal.
+     </entry></row>
+
+   <row><entry><literal>login</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       Login name.
+     </entry></row>
+
+   <row><entry><literal>secret</literal></entry>
+     <entry><literal></literal></entry>
+     <entry valign=bottom>
+       Login password
+     </entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
+
+  <para>A sample 'otaconfig' group:
+
+<programlisting>
+group = otaconfig
+location = http://wap.company.com
+service = "Our company's WAP site"
+ipaddress = 10.11.12.13
+phonenumber = 013456789
+bearer = data
+calltype = analog
+connection = cont
+pppsecurity = off
+authentication = normal
+login = wapusr
+secret = thepasswd
+</programlisting>
+
+And a 'sendsms-user' to use with it. With concatenation enabled:
+
+<programlisting>
+group = sendsms-user
+username = otauser
+password = foo
+max-messages = 2
+concatenation = 1
+</programlisting>
+
+  </para>
 
 </sect2>
 </sect1>
@@ -2147,6 +2273,40 @@ the Kannel configuration, or 'Authorization failed' is returned.
 	
 </sect2>
 
+<sect2>
+<title>Using the HTTP interface to send OTA configuration messages</title>
+
+       <para>OTA messages can be sent to mobile phones or devices to auto-configure the   
+       settings for WAP. They are actually complex SMS messages with UDH and sent as
+       concatenated messages if too long. An example URL is like this:	
+
+<programlisting>
+http://smsbox.host.name:13013/cgi-bin/sendota?username=foo&amp;password=bar&amp;phonenumber=0123456
+</programlisting>
+
+ <table frame=none>
+  <title>OTA CGI Variables</title>
+  <tgroup cols=2>
+  <tbody>
+   <row><entry><literal>username</literal></entry>
+   <entry valign=bottom>
+        Username of the 'sendsms-user' group in Kannel configuration, that has
+        been configured to send OTA messages.
+   </entry></row>
+
+   <row><entry><literal>password</literal></entry>
+   <entry valign=bottom>
+       Password associated to given <literal>username</literal>. Must match
+       corresponding field in 'sendsms-user' group in Kannel configuration, or
+       'Authorization failed' is returned.
+   </entry></row>
+
+   <row><entry><literal>phonenumber</literal></entry>
+   <entry valign=bottom>
+       Number of the phone that is to receive the OTA configuration message.
+   </entry></row>
+
+</sect2>
 
 </sect1>
 
