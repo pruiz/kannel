@@ -1,3 +1,6 @@
+2002-11-13  Stipe Tolj  <tolj@wapme-systems.de>
+    * wap/wtp_resp_states.def: fixed compiler warning
+
 2002-11-12  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.c: fixed a bug in basic auth userid and password handling,
       reported by Vjacheslav Chekushin <slava@lmt.lv>
