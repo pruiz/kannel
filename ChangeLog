@@ -1,3 +1,8 @@
+2001-01-12  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/charset.c: Translate u-dieresis correctly from latin1 to GSM.
+	(It does exist in GSM Default, so it doesn't have to be approximated.)
+
 2001-01-12  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smscconn.h, gw/smscconn_p.h, gw/bb_smscconn_cb.h: updated API

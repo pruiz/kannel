@@ -215,7 +215,7 @@ const static int latin1_to_gsm[256] = {
 	  6, /* u grave */
 	'u', /* approximate u acute */
 	'u', /* approximate u circumflex */
-	'u', /* approximate u dieresis */
+	126, /* u dieresis */
 	'y', /* approximate y acute */
 	NRP, /* thorn */
 	'y', /* approximate y dieresis */
