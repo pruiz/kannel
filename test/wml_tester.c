@@ -14,7 +14,6 @@ int main(int argc, char **argv)
 {
   Octstr *wml_text = NULL;
   Octstr *wml_binary = NULL;
-  Octstr *wml_scripts = NULL;
 
   int ret;
   int file = 0;
@@ -49,7 +48,7 @@ int main(int argc, char **argv)
   if (!file)
     set_output_level(DEBUG);
 
-  ret = wml_compile(wml_text, &wml_binary, &wml_scripts);
+  ret = wml_compile(wml_text, &wml_binary);
 
   printf("wml_compile returned: %d\n", ret);
 
@@ -66,7 +65,6 @@ int main(int argc, char **argv)
 
   octstr_destroy(wml_text);
   octstr_destroy(wml_binary);
-  octstr_destroy(wml_scripts);
   return ret;
 }
 

@@ -414,6 +414,51 @@ void octstr_truncate(Octstr *ostr, int new_len) {
 }
 
 
+void octstr_strip_blank(Octstr *text) {
+        int start = 0, end, len = 0;
+
+	/* Remove white space from the beginning of the text */
+	while (isspace(octstr_get_char(text, start)))
+	    start ++;
+
+	if(start > 0)
+	    octstr_delete(text, 0, start);
+
+	/* and from the end. */
+
+	if ((len = octstr_len(text)) > 0) {
+	    end = len = len - 1;
+
+	    while (isspace(octstr_get_char(text, end)))
+	        end--;
+
+	    octstr_delete(text, end + 1, len - end);
+	}
+}
+
+
+void octstr_shrink_blank(Octstr *text) {
+       int i, j, end;
+
+       end = octstr_len(text);
+
+       /* Shrink white spaces to one  */
+       for(i = 0; i < end; i++) {
+	   if(isspace(octstr_get_char(text, i))) {
+	       /* Change the remaining space into single space. */
+	       if(octstr_get_char(text, i) != ' ')
+		   octstr_set_char(text, i, ' ');
+
+	       j = i = i + 1;
+	       while (isspace(octstr_get_char(text, j)))
+		   j ++;
+	       if (j - i > 1)
+		   octstr_delete(text, i, j - i);
+	   }
+       }
+}
+
+
 void octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
 	size_t needed;
 	char *p;

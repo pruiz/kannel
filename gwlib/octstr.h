@@ -229,6 +229,20 @@ void octstr_truncate(Octstr *ostr, int new_len);
 
 
 /*
+ * octstr_strip_blank - strips white space from start and end of a octet
+ * string.
+ */
+void octstr_strip_blank(Octstr *text);
+
+
+/*
+ * octstr_shrink_blank - shrinks following white space characters into one 
+ * white space.
+ */
+void octstr_shrink_blank(Octstr *text);
+
+
+/*
  * Delete part of an octet string.
  */
 void octstr_delete(Octstr *ostr1, size_t pos, size_t len);

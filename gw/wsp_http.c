@@ -470,7 +470,7 @@ error:
 
 static Octstr *convert_wml_to_wmlc_new(Octstr *wml, char *url) {
 #if HAVE_LIBXML
-	Octstr *wmlc, *wmlscripts;
+	Octstr *wmlc;
 	int ret;
 	static Mutex *kludge = NULL;
 	
@@ -480,10 +480,9 @@ static Octstr *convert_wml_to_wmlc_new(Octstr *wml, char *url) {
 
 	debug("wap.wsp.http", 0, "WSP: Compiling WML using Tuomas's compiler.");
 	mutex_lock(kludge);
-	ret = wml_compile(wml, &wmlc, &wmlscripts);
+	ret = wml_compile(wml, &wmlc);
 	mutex_unlock(kludge);
 	debug("wap.wsp.http", 0, "WSP: wml_compile returned %d", ret);
-	octstr_destroy(wmlscripts);
 	if (ret == 0)
 {
 debug("wap.wsp.http", 0, "WSP: WML compilation successful, output:");
