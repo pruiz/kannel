@@ -21,6 +21,7 @@
 #include "bb_msg.h"
 #include "octstr.h"
 #include "msg.h"
+#include "smsbox_req.h"
 
 
 BOXC *boxc_open(int fd)
@@ -35,7 +36,8 @@ BOXC *boxc_open(int fd)
 	goto error;
 
     if (fd < 0) {
-	nb->fd = fd;
+	debug(0, "BOXC: Started an internal SMS BOX Thread");
+	nb->fd = BOXC_THREAD;
     } else {
 	debug(0, "BOXC: Accepting a new client...");
 
@@ -78,54 +80,52 @@ int boxc_close(BOXC *boxc)
 }
 
 
-
 int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
 {
     int ack = 0;
     
     if (boxc->fd == BOXC_THREAD) {
-	/* smsbox_add_msg(msg); */
-	;
+	
+	(void)start_thread(1, smsbox_req_thread, msg->msg, 0);
     } else {
 
 	if (msg->msg_type != R_MSG_TYPE_ACK &&
-	    msg->msg_type != R_MSG_TYPE_NACK) 
-	{
+	    msg->msg_type != R_MSG_TYPE_NACK) {	
 
-		Octstr *pack;
+	    Octstr *pack;
 
-		pack = msg_pack(msg->msg);
-		if (pack == NULL) goto error;
+	    pack = msg_pack(msg->msg);
+	    if (pack == NULL) goto error;
+	    
+	    octstr_send(boxc->fd, pack);
+	    octstr_destroy(pack);
 
-		octstr_send(boxc->fd, pack);
-		octstr_destroy(pack);
+	    if (msg->msg_class == R_MSG_CLASS_SMS) {
 
-		if (msg->msg_class == R_MSG_CLASS_SMS) {
-
-			if(msg_type(msg->msg) == plain_sms) {
-				debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->plain_sms.text));
-			} else if(msg_type(msg->msg) == smart_sms) {
-				debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->smart_sms.msgdata));
-			}
-
-		} else {
-			debug(0, "BOXC:write < WAP >");
+		if(msg_type(msg->msg) == plain_sms) {
+		    debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->plain_sms.text));
+		} else if(msg_type(msg->msg) == smart_sms) {
+		    debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->smart_sms.msgdata));
 		}
-		ack = 1;
+
+	    } else {
+		debug(0, "BOXC:write < WAP >");
+	    }
+	    ack = 1;
 	}
-    }
+    }	
 
-	if (msg->msg_type == R_MSG_TYPE_MO) {
-		if (ack) {
-		    msg->msg_type = R_MSG_TYPE_ACK;	/* done. */
-		} else {
-		    msg->msg_type = R_MSG_TYPE_NACK;	/* failed. */
-		}
-		rq_push_msg_ack(reply_queue, msg);
+    if (msg->msg_type == R_MSG_TYPE_MO) {
+	if (ack) {
+	    msg->msg_type = R_MSG_TYPE_ACK;	/* done. */
 	} else {
-		rqi_delete(msg);	/* delete ACK/NACK from SMSC/CSDR */
+	    msg->msg_type = R_MSG_TYPE_NACK;	/* failed. */
 	}
-
+	rq_push_msg_ack(reply_queue, msg);
+    } else {
+	rqi_delete(msg);	/* delete ACK/NACK from SMSC/CSDR */
+    }
+	
     return 0;
 error:
     error(0, "BOXC: Send message failed");
@@ -140,8 +140,12 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 
     *rmsg = NULL;
     if (boxc->fd == BOXC_THREAD)
-	/* msg = smsbox_get_msg(); */
-	;
+
+	/*
+	 * thread connection adds directly into queue, so
+	 * this function is redundant with it
+	 */
+	return 0;	
     else {
 	if (read_available(boxc->fd) > 0) {
 	    Msg *pmsg;

@@ -67,7 +67,7 @@ all: progs
 progs: $(progs)
 
 SMSC = smsc.o smsc_smpp.o smsc_emi.o smsc_fake.o smsc_cimd.o
-BBOBJS = $(SMSC) boxc.o csdr.o bb_msg.o sms_msg.o msg.o bearerbox.o
+BBOBJS = $(SMSC) boxc.o csdr.o bb_msg.o sms_msg.o msg.o smsbox_req.o bearerbox.o
 
 
 #doc: dummy

@@ -99,21 +99,27 @@ int socket_sender(Msg *pmsg)
     
     pack = msg_pack(pmsg);
     if (pack == NULL)
-	return -1;
+	goto error;
 
     ret = pthread_mutex_lock(&socket_mutex);
-    if (ret != 0) return -1;	
+    if (ret != 0) 	goto error;
 
     if (octstr_send(socket_fd, pack) < 0)
-	return -1;
+	goto error;
 
     ret = pthread_mutex_unlock(&socket_mutex);
-    if (ret != 0) return -1;
+    if (ret != 0) goto error;
 
     debug(0, "write <%s>", octstr_get_cstr(pmsg->plain_sms.text));
     octstr_destroy(pack);
 
+    msg_destroy(pmsg);
+
     return 0;
+
+error:
+    msg_destroy(pmsg);
+    return -1;
 }
 
 

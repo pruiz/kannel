@@ -19,7 +19,8 @@
  * 'global-sender' is backup sender number. String is strdupped
  * 'sender' is function pointer to function that does the actual sending,
  *     that is either uses a socket (to bearer box) or appends into reply
- *     queue (bearerbox thread smsbox)
+ *     queue (bearerbox thread smsbox). The sender function must free the
+ *     message unless it stores it. Return 0 on success, and -1 on failure
  *
  * Return -1 on error, 0 if Ok.
  */

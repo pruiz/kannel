@@ -1,3 +1,8 @@
+1999-11-16    <rpr@rpr.wapit.com>
+
+	* bearerbox.c, boxc.c, smsbox.c, smsbox_req.c, smsbox_rq.h,
+	Makefile: Preparing bearerbox for internal SMS Box.
+
 Tue Nov 16 12:21:41 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile, fakesmsc.c, http.c, wapitlib.h: Solaris support

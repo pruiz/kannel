@@ -160,12 +160,11 @@ static int do_sending(Msg *msg, char *str)
     if (sender(pmsg) < 0)
 	goto error;
 
-    free(pmsg);
+    /* sender does the freeing */
 
     return 0;
 error:
-    free(pmsg);
-    error(0, "Memory allocation failed");
+    error(0, "Failed");
     return -1;
 }
 

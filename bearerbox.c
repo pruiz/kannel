@@ -225,8 +225,11 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
     int i, ret, backup = -1;
 
     if (msg->source > -1)	/* if we have already routed message */
-	return 0;			
-    msg->source = bbt->id;
+	return 0;
+    if (bbt != NULL)
+	msg->source = bbt->id;
+    else
+	msg->source = -1;	/* unknown */
 
     if (msg->msg_type == R_MSG_TYPE_MO) {
 	if (msg->msg_class == R_MSG_CLASS_SMS)
@@ -687,10 +690,30 @@ static void *smsboxconnection_thread(void *arg)
     return NULL;
 }
 
+/*
+ * Internal thread SMS BOX writer. Passed as function pointer
+ * to smsbox_req_init, and is then called by smsbox_req_thread
+ * when we have a ready SMS Message
+ */
+int thread_writer(Msg *msg)
+{
+    RQueueItem *rqi;
+    rqi = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
+    if (rqi == NULL) {
+	msg_destroy(msg);
+	return -1;
+    }
+    rqi->msg = msg;
+    normalize_numbers(rqi, NULL);
+    route_msg(NULL, rqi);
+    rq_push_msg(bbox->reply_queue, rqi);
+    return 0;
+}
+
 
 
 /*---------------------------------------------------------------------
- * BEARER BOX THREAD FUNCTIONS (receivers)
+ * BEARER BOX THREAD FUNCTIONS (utitilies)
  */
 
 /*
@@ -1567,8 +1590,16 @@ int main(int argc, char **argv)
 	panic(0, "No configuration, aborting.");
     
     init_bb(cfg);
-    open_all_receivers(cfg);
     write_pid_file();
+    open_all_receivers(cfg);
+
+    
+    cfg = config_from_file(argv[cf_index+1], "smsbox.smsconf");
+    if (cfg == NULL)
+	info(0, "No internal SMS BOX");
+    else
+	error(0, "Internal SMS BOX not yet supported");
+    /* init_smsbox(cfg); */
     
     main_program();
 
