@@ -233,7 +233,7 @@ Octstr *wsp_pdu_pack(WSP_PDU *pdu) {
 #define UINTVAR(field, docstring) \
 	gw_assert(bitpos % 8 == 0); \
 	octstr_append_uintvar(data, p->field); \
-	bitpos += 8 * octstr_len(data);
+	bitpos = 8 * octstr_len(data);
 #define OCTSTR(field, docstring, lengthfield) \
 	gw_assert(bitpos % 8 == 0); \
 	if (p->field != NULL) \
