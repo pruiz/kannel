@@ -480,6 +480,32 @@ int http_charset_accepted(List *headers, char *charset);
 void http_add_basic_auth(List *headers, Octstr *username, Octstr *password);
 
 
+/* 
+ * Many HTTP field elements can take parameters in a standardized
+ * form: parameters appear after the main value, each is introduced
+ * by a semicolon (;), and consists of a key=value pair or just
+ * a key, where the key is a token and the value is either a token
+ * or a quoted-string.
+ * The main value itself is a series of tokens, separators, and
+ * quoted-strings.
+ *
+ * This function will take such a field element, and look for the 
+ * value of a specific key, which is then returned. If the key
+ * is not found within the header value NULL is returned.
+ * 
+ * BEWARE: value is *only* the header value, not the whole header with
+ * field name.
+ * 
+ * Example:
+ *    * assume to have "Content-Type: application/xml; charset=utf-8" 
+ *    * within List *headers 
+ *   value = http_header_value(headers, octstr_imm("Content-Type"))
+ *   val = http_get_header_parameter(value, octstr_imm("charset"));
+ * will return "utf-8" to lvalue.
+ */
+Octstr *http_get_header_parameter(Octstr *value, Octstr *parameter);
+
+
 /*
  * Return the general class of a status code.  For example, all
  * 2xx codes are HTTP_STATUS_SUCCESSFUL.  See the list at the top

@@ -913,7 +913,7 @@ static void handle_transaction(Connection *conn, void *data)
                           trans);
           } else {
             debug("gwlib.http",0,"Failed while sending request");
-		    goto error;
+            goto error;
           }
           break;
 
@@ -2865,6 +2865,68 @@ void http_add_basic_auth(List *headers, Octstr *username, Octstr *password)
     octstr_insert(os, octstr_imm("Basic "), 0);
     http_header_add(headers, "Authorization", octstr_get_cstr(os));
     octstr_destroy(os);
+}
+
+
+Octstr *http_get_header_parameter(Octstr *value, Octstr *parameter)
+{
+    long pos, len, end;
+    int c, found = 0;
+    Octstr *result = NULL;
+
+    len = octstr_len(value);
+    /* Find the start of the first parameter. */
+    for (pos = 0; pos < len; pos++) {
+        c = octstr_get_char(value, pos);
+        if (c == ';')
+            break;
+        else if (c == '"')
+            pos += http_header_quoted_string_len(value, pos) - 1;
+    }
+
+    if (pos >= len)
+        return NULL;   /* no parameters */
+
+    for (pos++; pos > 0 && pos < len && found == 0; pos++) {
+        Octstr *key = NULL;
+        Octstr *val = NULL;
+
+        end = octstr_search_char(value, '=', pos);
+        if (end < 0)
+            end = octstr_search_char(value, ';', pos);
+        if (end < 0)
+            end = octstr_len(value);
+        key = octstr_copy(value, pos, end - pos);
+        octstr_strip_blanks(key);
+        pos = end;
+
+        if (octstr_get_char(value, pos) == '=') {
+            pos++;
+            while (isspace(octstr_get_char(value, pos)))
+                pos++;
+            if (octstr_get_char(value, pos) == '"')
+                end = pos + http_header_quoted_string_len(value, pos);
+            else
+                end = octstr_search_char(value, ';', pos);
+            if (end < 0)
+                end = octstr_len(value);
+            val = octstr_copy(value, pos, end - pos);
+            octstr_strip_blanks(val);
+            pos = end;
+            pos = octstr_search_char(value, ';', pos);
+        }
+
+        /* is this the pair we look for? bail out then*/
+        if (octstr_compare(key, parameter) == 0) {
+            found++;        
+            result = octstr_duplicate(val);
+        }
+
+        octstr_destroy(key);
+        octstr_destroy(val);
+    }
+
+    return result;
 }
 
 
