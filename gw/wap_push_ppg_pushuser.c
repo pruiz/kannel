@@ -901,7 +901,7 @@ static Octstr *forced_smsc(WAPPushUser *u)
 
 static Octstr *default_smsc(WAPPushUser *u)
 {
-    return u->smsc_id;
+    return u->default_smsc_id;
 }
 
 

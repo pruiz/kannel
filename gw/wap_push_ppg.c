@@ -139,6 +139,7 @@ static Octstr *ppg_deny_ip = NULL;
 static Octstr *ppg_allow_ip = NULL; 
 static int user_configuration = USER_CONFIGURATION_NOT_ADDED;
 static Octstr *global_sender = NULL;
+static Octstr *ppg_default_smsc = NULL; 
 #ifdef HAVE_LIBSSL
 static Octstr *ssl_server_cert_file = NULL;
 static Octstr *ssl_server_key_file = NULL;
@@ -461,7 +462,8 @@ static int read_ppg_config(Cfg *cfg)
      ppg_allow_ip = cfg_get(grp, octstr_imm("ppg-allow-ip"));
      if ((global_sender = cfg_get(grp, octstr_imm("global-sender"))) == NULL)
          global_sender = octstr_imm("1234");
-
+     ppg_default_smsc = cfg_get(grp, octstr_imm("default-smsc"));
+   
 #ifdef HAVE_LIBSSL
      cfg_get_integer(&ppg_ssl_port, grp, octstr_imm("ppg-ssl-port"));
      ssl_server_cert_file = cfg_get(grp, octstr_imm("ssl-server-cert-file"));
@@ -832,15 +834,21 @@ static void pap_request_thread(void *arg)
             debug("wap.push.ppg", 0, "PPG: http_read_thread: pap control"
                   " entity compiled ok");
 
+            /* check if we have an explicit routing information */
             retos = http_cgi_variable(cgivars, "smsc");
-            if (retos == NULL)
+            if (retos == NULL) {
+                /* get the push user specific smsc routing */
                 smsc_id = wap_push_ppg_pushuser_smsc_id_get(username);
-            else
+                /* if there was no user specific, then set the ppg global */
+                smsc_id = smsc_id ? 
+                    smsc_id : (ppg_default_smsc ? octstr_duplicate(ppg_default_smsc) : NULL);
+            } else {
                 smsc_id = octstr_duplicate(retos);
+            }
             ppg_event->u.Push_Message.push_headers = 
                 http_header_duplicate(push_headers);
             ppg_event->u.Push_Message.push_data = octstr_duplicate(push_data);
-            ppg_event->u.Push_Message.smsc_id = octstr_duplicate(smsc_id);
+            ppg_event->u.Push_Message.smsc_id = smsc_id ? octstr_duplicate(smsc_id) : NULL;
             if (!handle_push_message(&client, ppg_event, http_status)) {
 	        if (client == NULL)
 		    break;
