@@ -1,4 +1,9 @@
 2003-04-03  Stipe Tolj  <tolj@wapme-systems.de>
+    * test/test_octstr_dump.c: added a simple tester for octstr_dump(). Takes
+      one argument, opens the file, reads the content and dumps the content
+      using octstr_dump().
+
+2003-04-03  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.[ch]: added http_get_header_parameter() function to return a
       specific parameter value for multi-parameter headers.
     * doc/userguide/userguide.xml: added section about new 'no-dlr' for CIMD2.
