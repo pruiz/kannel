@@ -1,8 +1,16 @@
+2000-11-21  Lars Wirzenius  <liw@iki.fi>
+
+	* checsk/check_fakesmsc.sh: Sleep before starting background
+	processes, so that the previous ones have time to start up
+	properly.
+
+	* ChangeLog: Indented the previous log entry properly. (8, not 4)
+
 2000-11-21  Yann Muller  <ymuller@3glab.com>
 
-    * gw/smsbox_req.c: sendota patched (Stipe Tolj) to accept more 
-    that one OTA configuration. 
-    
+	* gw/smsbox_req.c: sendota patched (Stipe Tolj) to accept more 
+	that one OTA configuration. 
+	
 2000-11-20  Richard Braakman  <dark@wapi.com>
 
 	* Turned WTP and WSP protocol stacks into a library.  Source 
