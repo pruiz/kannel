@@ -1,12 +1,12 @@
 #!/bin/sh
 #
-# Use `test/test_headers'to test gw/wsp_headers.c
+# Use `test/test_headers' to test gw/wsp_headers.c
 
 set -e
 
 loglevel=1
 
-test/test_headers -v $loglevel > check_headers.log 2>&1
+test/test_headers -v $loglevel test/header_test > check_headers.log 2>&1
 ret=$?
 
 if [ "$ret" != 0 ] || \
