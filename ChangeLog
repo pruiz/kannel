@@ -1,6 +1,11 @@
+2000-04-19  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: Now uses the struct to carry WML binary, the
+	headers and string table.
+
 2000-04-18  Tuomas Luttinen  <tuo@wapit.com>
 
-	* gw/wml_compiler.c: tyoe conflict with output_char corrected, 
+	* gw/wml_compiler.c: type conflict with output_char corrected, 
 	calls to octstr_cat_char removed.
 
 2000-04-18  Richard Braakman  <dark@wapit.com>

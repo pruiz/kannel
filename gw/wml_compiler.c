@@ -12,8 +12,6 @@
 
 #include "config.h"
 
-
-
 #include <time.h>
 #include <ctype.h>
 #include <unistd.h>
@@ -260,6 +258,25 @@ wml_attr_value_t wml_URL_values[] = {
 };
 
 
+/*
+ * The binary WML structure, that has been passed around between the 
+ * internal functions. It contains the header fields for wbxml version, 
+ * the WML public ID and the character set, the length of the string table, 
+ * the list structure implementing the string table and the octet string 
+ * containing the encoded WML binary.
+ */
+
+typedef struct {
+  unsigned char wbxml_version;
+  unsigned char wml_public_id;
+  unsigned char character_set;
+  unsigned char string_table_length;
+  List *string_table;
+  Octstr *wbxml_string;
+} wml_binary_t;
+
+
+
 #if 0
 /*
  * int wml_state_attr_code_page keeps track of the current attribute 
@@ -293,17 +310,17 @@ int wml_state_tag_code_page;
  */
 
 
-static int parse_document(xmlDocPtr document, Octstr **wbxml_string);
+static int parse_document(xmlDocPtr document, wml_binary_t **wbxml);
 
-static int parse_node(xmlNodePtr node, Octstr **wbxml_string);
-static int parse_element(xmlNodePtr node, Octstr **wbxml_string);
-static int parse_attribute(xmlAttrPtr attr, Octstr **wbxml_string);
+static int parse_node(xmlNodePtr node, wml_binary_t **wbxml);
+static int parse_element(xmlNodePtr node, wml_binary_t **wbxml);
+static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml);
 static int parse_attr_value(Octstr *attr_value, wml_attr_value_t *tokens, 
-			    Octstr **wbxml_string);
-static int parse_text(xmlNodePtr node, Octstr **wbxml_string);
-static int parse_octet_string(Octstr *ostr, Octstr **wbxml_string);
+			    wml_binary_t **wbxml);
+static int parse_text(xmlNodePtr node, wml_binary_t **wbxml);
+static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml);
 
-static void parse_end(Octstr **wbxml_string);
+static void parse_end(wml_binary_t **wbxml);
 
 static unsigned char element_check_content(xmlNodePtr node);
 static int check_if_url(int hex);
@@ -313,18 +330,26 @@ static int check_if_url(int hex);
  */
 
 static int parse_variable(Octstr *text, int start, Octstr **output, 
-			  Octstr **wbxml_string);
+			  wml_binary_t **wbxml);
 static Octstr *get_variable(Octstr *text, int start);
 static var_esc_t check_variable_syntax(Octstr *variable);
 
+/*
+ * wml_binary-functions. These are used to create, destroy and modify
+ * wml_binary_t.
+ */
+
+static wml_binary_t *wml_binary_create(void);
+static void wml_binary_destroy(wml_binary_t *wbxml);
+static void wml_binary_output(Octstr *ostr, wml_binary_t *wbxml);
 
 /* Output into the wbxml_string. */
 
-static void output_char(int byte, Octstr **wbxml_string);
-static int output_octet_string(Octstr *ostr, Octstr **wbxml_string);
-static int output_plain_octet_string(Octstr *ostr, Octstr **wbxml_string);
+static void output_char(int byte, wml_binary_t **wbxml);
+static int output_octet_string(Octstr *ostr, wml_binary_t **wbxml);
+static int output_plain_octet_string(Octstr *ostr, wml_binary_t **wbxml);
 static Octstr *output_variable(Octstr *variable, var_esc_t escaped, 
-			       Octstr **wbxml_string);
+			       wml_binary_t **wbxml);
 
 
 
@@ -340,8 +365,10 @@ int wml_compile(Octstr *wml_text,
   size_t size;
   xmlDocPtr pDoc = NULL;
   char *wml_c_text;
+  wml_binary_t *wbxml = NULL;
 
   *wml_binary = octstr_create_empty();
+  wbxml = wml_binary_create();
 
   /* Remove the extra space from start and the end of the WML Document. */
 
@@ -374,7 +401,11 @@ int wml_compile(Octstr *wml_text,
   pDoc = xmlParseMemory(wml_c_text, size);
 #endif
 
-  ret = parse_document(pDoc, wml_binary);
+  ret = parse_document(pDoc, &wbxml);
+  wml_binary_output(*wml_binary, wbxml);
+
+  wml_binary_destroy(wbxml);
+
   if (pDoc) 
     xmlFreeDoc (pDoc);
 
@@ -398,17 +429,17 @@ int wml_compile(Octstr *wml_text,
  * next child on the list.
  */
 
-static int parse_node(xmlNodePtr node, Octstr **wbxml_string)
+static int parse_node(xmlNodePtr node, wml_binary_t **wbxml)
 {
   int status = 0;
 
   /* Call for the parser function of the node type. */
   switch (node->type) {
   case XML_ELEMENT_NODE:
-    status = parse_element(node, wbxml_string);
+    status = parse_element(node, wbxml);
     break;
   case XML_TEXT_NODE:
-    status = parse_text(node, wbxml_string);
+    status = parse_text(node, wbxml);
     break;
   case XML_COMMENT_NODE:
     /* Comments are ignored. */
@@ -430,14 +461,14 @@ static int parse_node(xmlNodePtr node, Octstr **wbxml_string)
   switch (status) {
   case 0:
     if (node->childs != NULL)
-      if (parse_node(node->childs, wbxml_string) == -1)
+      if (parse_node(node->childs, wbxml) == -1)
 	return -1;
     break;
   case 1:
     if (node->childs != NULL)
-      if (parse_node(node->childs, wbxml_string) == -1)
+      if (parse_node(node->childs, wbxml) == -1)
 	return -1;
-    parse_end(wbxml_string);
+    parse_end(wbxml);
     break;
   case -1: /* Something went wrong in the parsing. */
     return -1;
@@ -448,7 +479,7 @@ static int parse_node(xmlNodePtr node, Octstr **wbxml_string)
   }
 
   if (node->next != NULL)
-    if (parse_node(node->next, wbxml_string) == -1)
+    if (parse_node(node->next, wbxml) == -1)
       return -1;
 
   return 0;
@@ -458,10 +489,10 @@ static int parse_node(xmlNodePtr node, Octstr **wbxml_string)
 /*
  * parse_document - the parsing function for the document node.
  * The function outputs the WBXML version, WML public id and the
- * character set values into start of the wbxml_string.
+ * character set values into start of the wbxml.
  */
 
-static int parse_document(xmlDocPtr document, Octstr **wbxml_string)
+static int parse_document(xmlDocPtr document, wml_binary_t **wbxml)
 {
   if (document == NULL)
     {
@@ -474,12 +505,12 @@ static int parse_document(xmlDocPtr document, Octstr **wbxml_string)
    * A bad hack, WBXML version is assumed to be 1.1, charset is assumed 
    * to be ISO-8859-1!
    */
-  output_char(0x01, wbxml_string); /* WBXML Version number 1.1 */
-  output_char(0x04, wbxml_string); /* WML 1.1 Public ID */
-  output_char(0x04, wbxml_string); /* Charset=ISO-8859-1 */
-  output_char(0x00, wbxml_string); /* String table length=0 */
+  (*wbxml)->wbxml_version = 0x01; /* WBXML Version number 1.1 */
+  (*wbxml)->wml_public_id = 0x04; /* WML 1.1 Public ID */
+  (*wbxml)->character_set = 0x04; /* Charset=ISO-8859-1 */
+  (*wbxml)->string_table_length = 0x00; /* String table length=0 */
 
-  return parse_node(xmlDocGetRootElement(document), wbxml_string);
+  return parse_node(xmlDocGetRootElement(document), wbxml);
 }
 
 
@@ -491,7 +522,7 @@ static int parse_document(xmlDocPtr document, Octstr **wbxml_string)
  * and -1 for an error.
  */
 
-static int parse_element(xmlNodePtr node, Octstr **wbxml_string)
+static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
 {
   int i, add_end_tag = 0;
   unsigned char wbxml_hex, status_bits;
@@ -515,7 +546,7 @@ static int parse_element(xmlNodePtr node, Octstr **wbxml_string)
 	      if ((status_bits & CHILD_BIT) == CHILD_BIT)
 		add_end_tag = 1;
 	    }
-	  output_char(wbxml_hex, wbxml_string);
+	  output_char(wbxml_hex, wbxml);
 	  break;
 	}
     }
@@ -535,10 +566,10 @@ static int parse_element(xmlNodePtr node, Octstr **wbxml_string)
       attribute = node->properties;
       while (attribute != NULL)
 	{
-	  parse_attribute(attribute, wbxml_string);
+	  parse_attribute(attribute, wbxml);
 	  attribute = attribute->next;
 	}
-      parse_end(wbxml_string);
+      parse_end(wbxml);
     }
 
   octstr_destroy(name);
@@ -575,7 +606,7 @@ static unsigned char element_check_content(xmlNodePtr node)
  */
 
 
-static int parse_attribute(xmlAttrPtr attr, Octstr **wbxml_string)
+static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
 {
   int i, j, status = 0;
   int coded_length = 0;
@@ -632,7 +663,7 @@ static int parse_attribute(xmlAttrPtr attr, Octstr **wbxml_string)
       octstr_destroy(attr_i);      
     }
 
-  output_char(wbxml_hex, wbxml_string);
+  output_char(wbxml_hex, wbxml);
 
   /* The rest of the attribute is coded as a inline string. */
   if (value != NULL && coded_length < (int) octstr_len(value))
@@ -645,10 +676,10 @@ static int parse_attribute(xmlAttrPtr attr, Octstr **wbxml_string)
 
       if (check_if_url(wbxml_hex))
 	status = parse_attr_value(p, wml_URL_values,
-				  wbxml_string);
+				  wbxml);
       else
 	status = parse_attr_value(p, wml_attribute_values,
-				  wbxml_string);
+				  wbxml);
       if (status != 0)
 	error(0, 
 	      "WML compiler: could not output attribute value as a string.");
@@ -677,7 +708,7 @@ static int parse_attribute(xmlAttrPtr attr, Octstr **wbxml_string)
  */
 
 static int parse_attr_value(Octstr *attr_value, wml_attr_value_t *tokens,
-			     Octstr **wbxml_string)
+			     wml_binary_t **wbxml)
 {
   int i, pos, wbxml_hex;
   Octstr *cut_text = NULL;
@@ -698,7 +729,7 @@ static int parse_attr_value(Octstr *attr_value, wml_attr_value_t *tokens,
 	break;
       case 0:
 	wbxml_hex = tokens[i].token;
-	output_char(wbxml_hex, wbxml_string);	
+	output_char(wbxml_hex, wbxml);	
 	octstr_delete(attr_value, 0, strlen(tokens[i].attr_value));	
 	break;
       default:
@@ -706,12 +737,12 @@ static int parse_attr_value(Octstr *attr_value, wml_attr_value_t *tokens,
 	gw_assert(pos <= octstr_len(attr_value));
 	
 	cut_text = octstr_copy(attr_value, 0, pos);
-	if (parse_octet_string(cut_text, wbxml_string) != 0)
+	if (parse_octet_string(cut_text, wbxml) != 0)
 	  return -1;
 	octstr_destroy(cut_text);
 
 	wbxml_hex = tokens[i].token;
-	output_char(wbxml_hex, wbxml_string);	
+	output_char(wbxml_hex, wbxml);	
 
 	octstr_delete(attr_value, 0, pos + strlen(tokens[i].attr_value));
 	break;
@@ -726,9 +757,9 @@ static int parse_attr_value(Octstr *attr_value, wml_attr_value_t *tokens,
   if ((int) octstr_len(attr_value) > 0)
     {
       if (tokens[i].attr_value != NULL)
-	parse_attr_value(attr_value, tokens, wbxml_string);
+	parse_attr_value(attr_value, tokens, wbxml);
       else
-	if (parse_octet_string(attr_value, wbxml_string) != 0)
+	if (parse_octet_string(attr_value, wbxml) != 0)
 	  return -1;
     }
 
@@ -760,9 +791,9 @@ static int check_if_url(int hex)
  * parse_end - adds end tag to an element.
  */
 
-static void parse_end(Octstr **wbxml_string)
+static void parse_end(wml_binary_t **wbxml)
 {
-  output_char(END, wbxml_string);
+  output_char(END, wbxml);
 }
 
 
@@ -772,7 +803,7 @@ static void parse_end(Octstr **wbxml_string)
  * This function parses a text node. 
  */
 
-static int parse_text(xmlNodePtr node, Octstr **wbxml_string)
+static int parse_text(xmlNodePtr node, wml_binary_t **wbxml)
 {
   int ret;
   /*  var_allow_t var_allowed = NOT_CHECKED; */
@@ -786,7 +817,7 @@ static int parse_text(xmlNodePtr node, Octstr **wbxml_string)
   if (octstr_len(temp) == 0)
     ret = 0;
   else
-    ret = parse_octet_string(temp, wbxml_string);
+    ret = parse_octet_string(temp, wbxml);
 
   /* Memory cleanup. */
   octstr_destroy(temp);
@@ -808,7 +839,7 @@ static int parse_text(xmlNodePtr node, Octstr **wbxml_string)
  */
 
 static int parse_variable(Octstr *text, int start, Octstr **output, 
-			  Octstr **wbxml_string)
+			  wml_binary_t **wbxml)
 {
   var_esc_t esc;
   int ret;
@@ -831,7 +862,7 @@ static int parse_variable(Octstr *text, int start, Octstr **output,
       if ((esc = check_variable_syntax(variable)) == FAILED)
 	return -1;
       else
-	if ((*output = output_variable(variable, esc, wbxml_string)) == NULL)
+	if ((*output = output_variable(variable, esc, wbxml)) == NULL)
 	  return -1;
     }
 
@@ -943,9 +974,10 @@ static var_esc_t check_variable_syntax(Octstr *variable)
   if (!(isalpha((int)ch)) && ch != '_')
     {
       buf = gw_malloc(70);
-      if (sprintf(buf, 
-		  "WML compiler: syntax error in variable; name starting with %c.",
-		  ch) < 1)
+      if (sprintf
+	  (buf, 
+	   "WML compiler: syntax error in variable; name starting with %c.",
+	   ch) < 1)
 	error(0, "WML compiler: could not format error log output!");
       error(0, buf);
       gw_free(buf);
@@ -969,7 +1001,7 @@ static var_esc_t check_variable_syntax(Octstr *variable)
  * is checked for variables. Returns 0 for success, -1 for error.
  */
 
-static int parse_octet_string(Octstr *ostr, Octstr **wbxml_string)
+static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 {
   Octstr *output, *temp1, *temp2 = NULL, *var;
   int var_len;
@@ -978,7 +1010,7 @@ static int parse_octet_string(Octstr *ostr, Octstr **wbxml_string)
   /* No variables? Ok, let's take the easy way... */
 
   if (octstr_search_char(ostr, '$') < 0)
-    return output_octet_string(ostr, wbxml_string);
+    return output_octet_string(ostr, wbxml);
 
   len = octstr_len(ostr);
   output = octstr_create_empty();
@@ -989,7 +1021,7 @@ static int parse_octet_string(Octstr *ostr, Octstr **wbxml_string)
       if (octstr_get_char(ostr, pos) == '$')
 	{
 	  temp1 = octstr_copy(ostr, start, pos - start);
-	  if ((var_len = parse_variable(ostr, pos, &var, wbxml_string)) > 0)
+	  if ((var_len = parse_variable(ostr, pos, &var, wbxml)) > 0)
 	    {
 	      if (octstr_get_char(var, 0) == '$')
 		/* No, it's not actually variable, but $-character escaped as
@@ -1014,9 +1046,9 @@ static int parse_octet_string(Octstr *ostr, Octstr **wbxml_string)
 		/* The string is output as a inline string and the variable 
 		   as a inline variable reference. */
 		{
-		  output_octet_string(temp1, wbxml_string);
+		  output_octet_string(temp1, wbxml);
 		  octstr_destroy(temp1);
-		  output_plain_octet_string(var, wbxml_string);
+		  output_plain_octet_string(var, wbxml);
 		}
 
 	      pos = pos + var_len;
@@ -1041,13 +1073,13 @@ static int parse_octet_string(Octstr *ostr, Octstr **wbxml_string)
       else
 	{
 	  temp1 = octstr_copy(ostr, start, pos - start);
-	  output_octet_string(temp1, wbxml_string);
+	  output_octet_string(temp1, wbxml);
 	  octstr_destroy(temp1);
 	}
     }
 
   if (octstr_len(output) > 0)
-    if (output_octet_string(output, wbxml_string) == -1)
+    if (output_octet_string(output, wbxml) == -1)
       return -1;
   
   octstr_destroy(output);
@@ -1059,13 +1091,73 @@ static int parse_octet_string(Octstr *ostr, Octstr **wbxml_string)
 
 
 /*
+ * wml_binary_create - reserves memory for the wml_binary_t and sets the 
+ * fields to zeroes and NULLs.
+ */
+
+static wml_binary_t *wml_binary_create(void)
+{
+  wml_binary_t *wbxml;
+
+  wbxml = gw_malloc(sizeof(wml_binary_t));
+  wbxml->wbxml_version = 0x00;
+  wbxml->wml_public_id = 0x00;
+  wbxml->character_set = 0x00;
+  wbxml->string_table_length = 0x00;
+  wbxml->string_table = list_create();
+  wbxml->wbxml_string = octstr_create_empty();
+
+  return wbxml;
+}
+
+
+
+/*
+ * wml_binary_destroy - frees the memory allocated for the wml_binary_t.
+ */
+
+static void wml_binary_destroy(wml_binary_t *wbxml)
+{
+  if (wbxml != NULL)
+    {
+      list_destroy(wbxml->string_table);
+      octstr_destroy(wbxml->wbxml_string);
+      gw_free(wbxml);
+    }
+}
+
+
+
+/*
+ * wml_binary_output - outputs all the fiels of wml_binary_t into ostr.
+ */
+
+static void wml_binary_output(Octstr *ostr, wml_binary_t *wbxml)
+{
+  octstr_append_char(ostr, wbxml->wbxml_version);
+  octstr_append_char(ostr, wbxml->wml_public_id);
+  octstr_append_char(ostr, wbxml->character_set);
+  octstr_append_char(ostr, wbxml->string_table_length);
+
+  /* XXX String table is ignored atm. -tuo */
+#if 0
+  if (wbxml->string_table_length > 0)
+    output_string_table(ostr, wbxml->string_table);
+#endif
+
+  octstr_insert(ostr, wbxml->wbxml_string, octstr_len(ostr));
+}
+
+
+
+/*
  * output_char - output a character into wbxml_string.
  * Returns 0 for success, -1 for error.
  */
 
-static void output_char(int byte, Octstr **wbxml_string)
+static void output_char(int byte, wml_binary_t **wbxml)
 {
-  octstr_append_char(*wbxml_string, byte);
+  octstr_append_char((*wbxml)->wbxml_string, byte);
 }
 
 
@@ -1075,12 +1167,12 @@ static void output_char(int byte, Octstr **wbxml_string)
  * inline string. Returns 0 for success, -1 for an error.
  */
 
-static int output_octet_string(Octstr *ostr, Octstr **wbxml_string)
+static int output_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 {
-  output_char(STR_I, wbxml_string);
-  if (output_plain_octet_string(ostr, wbxml_string) == 0)
+  output_char(STR_I, wbxml);
+  if (output_plain_octet_string(ostr, wbxml) == 0)
     {      
-      output_char(STR_END, wbxml_string);
+      output_char(STR_END, wbxml);
       return 0;
     }
   return -1;
@@ -1089,19 +1181,19 @@ static int output_octet_string(Octstr *ostr, Octstr **wbxml_string)
 
 
 /*
- * output_plain_octet_string - output an octet string into wbxml_string.
+ * output_plain_octet_string - output an octet string into wbxml.
  * Returns 0 for success, -1 for an error.
  */
 
-static int output_plain_octet_string(Octstr *ostr, Octstr **wbxml_string)
+static int output_plain_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 {
   Octstr *temp;
-  if ((temp = octstr_cat(*wbxml_string, ostr)) == NULL)
+  if ((temp = octstr_cat((*wbxml)->wbxml_string, ostr)) == NULL)
     return -1;
 
-  octstr_destroy(*wbxml_string);
+  octstr_destroy((*wbxml)->wbxml_string);
 
-  *wbxml_string = octstr_duplicate(temp);
+  (*wbxml)->wbxml_string = octstr_duplicate(temp);
 
   octstr_destroy(temp);
 
@@ -1116,7 +1208,7 @@ static int output_plain_octet_string(Octstr *ostr, Octstr **wbxml_string)
  */
 
 static Octstr *output_variable(Octstr *variable, var_esc_t escaped, 
-			       Octstr **wbxml_string)
+			       wml_binary_t **wbxml)
 {
   char ch;
   char cha[2];
