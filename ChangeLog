@@ -1,3 +1,40 @@
+2001-09-27 Aarno Syvänen <aarno@wiral.com>
+	
+	* gw/wap_push_ppg.c: Removed #if 0 -code. Send username-password-pair
+	to OTA layer. Accept GSM SMS bearer. Correct comparisions between
+	signed and unsigned types. Remove MIME headers. Committed bugfixes by
+	Bernard Valton. Do confirmed push when preferconfirmed QoS is request-
+	ed, because Kannel supports confirmed push (a suggestion by Bernard
+	Valton). 
+	* test/test_ppg.c: Added HTTP status checking. Added an option for
+	interval between pushes.
+	* gw/wap_push_ota.c: Send username-password-pair to WSP layer. Accept
+	GSM SMS bearer.
+	* wap/wsp_unit.c: Send username-password-pair to wdp layer. Accept
+	GSM SMS bearer.
+	* wap/wap_events.def: Added username-password pair to events. Added
+	bearer and network fields to events.
+	* gw/wapbox.c: Added an ability to send SMS message from wapbox. It
+	is splitted when necessary.
+	* gw/smsbox.c, gw/shared.[ch]: Transferred SMS message splitting code
+	to the module shared.
+	* gw/bb_boxc.c: Accept sms messages from wapbox, route them to smsc.
+	* gw/wap_push_pap_compiler.c: Correct comparisions between signed and
+	unsigned types. A bugfix.
+	* gw/wap_push_si_compiler.c: Correct comparisions between signed and
+	unsigned types.
+	* gw/xml_shared.h: Added missing declarations.
+	* test/test_http_server.c: Better debugging of received requests.
+	* gw/wap_push_pap_mime.c: MIME parser expected a surplus crlf. Correct-
+	ed this. Accept lower case versions of the headers.
+	* gw/smsc_http.c: Added new configuration variables no-sender and no-
+	coding to make URLs simpler.
+	* gw/cfg.def: Added these variables.
+	* gwlib/dict.[ch]: Currently outcommented code for dict_put_once. This
+	function puts key to the dict, and doing this again is an error.
+	* checks/check_httpsmsc_kannel.sh: Corrected an infinite loop.
+	* gw/pushkannel.conf: Added sample configuration for push.
+
 2001-09-21 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* gw/smsbox.c: Forced 7bits coding if coding=DC_UNDEF and udh is 
 	empty. Fixed bug in text concatenation
