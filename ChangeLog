@@ -1,4 +1,10 @@
 2003-11-07 Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: BUG#98 indicated that the user's guide does
+      not indicate that the keyword in a sms-service group matches in non-case
+      sensitive manner. This is a crutiual information for users, so addiong
+      this.
+
+2003-11-07 Stipe Tolj  <tolj@wapme-systems.de>
     * contrib/kannel-monitor/*: changed the monitor to allow non persistance 
       of the admin password. Instead, if no admin password is configured,
       a dialog box will ask you for it whenever you try to issue HTTP admin

@@ -4530,14 +4530,16 @@ get-url = "http://%S"
    <row><entry><literal>keyword (m)</literal></entry>
      <entry>word</entry>
      <entry valign="bottom">
-        Services are identified by the first word in the SMS Each
+        Services are identified by the first word in the SMS. Each
         `%s' in the URL corresponds to one word in the SMS message.
          Words are separated with spaces. A keyword is matched only if
          the number of words in the SMS message is the same as the
          number of `%s' fields in the URL. This allows you to
         configure the gateway to use different URLs for the same
         keyword depending on the number of words the SMS message
-        contains.
+        contains. The keyword matches in non-case sensitive manner,
+		  which means you don't have to use aliases to handle different
+		  cased versions of your keyword.
      </entry></row>
 
    <row><entry><literal>aliases</literal></entry>
