@@ -162,14 +162,224 @@ error:
 
 
 /*
- * do the split procedure and send several sms messages
+ * Take a Msg structure and send it as a MT SMS message.
  *
- * return -1 on failure, 0 if Ok.
+ * Return -1 on failure, 0 if Ok.
  */
 static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
 {
+
+	Msg *tmpmsg;
+
+	int data_to_send = 0;
+	int data_sent = 0;
+
+	/* The size of a single message (in bytes.) 
+	   7bit and 8bit sizes differ. */
+	int hard_msg_size = 0;
+
+	/* The size of the payload that can be carried by a specific
+	   message depends on whether we are using headers, footers
+	   and split suffixes etc. */
+/*	int soft_payload_size; */
+
+	int pos_inside_message = 0;
+	
+	int this_message_length = 0;
+	int this_udh_length = 0;
+
+	int orig_msg_length = 0;
+	int orig_udh_length = 0;
+
+	/* The hard limit of maximum messages to send. 
+	   Set in the configuration file. */
+	int max_messages_to_send = maxmsgs;
+	int this_message_number = 0;
+	int is_last_message = 0;
+
+	char *h, *f, *suf, *sc;
+	int flen, hlen, slen;
+
+	char *ptr;
+
+	char tmpdata[256];
+	char tmpudh[256];
+
+	/* Get the configuration values. */
+	h = urltrans_header(trans);
+	f = urltrans_footer(trans);
+	suf = urltrans_split_suffix(trans);
+	sc = urltrans_split_chars(trans);
+
+	/* Verify the configuration values. */
+	hlen = ( h == NULL ? 0 : strlen(h) );
+	flen = ( f == NULL ? 0 : strlen(f) );
+	slen = ( suf == NULL ? 0 : strlen(suf) );
+	orig_msg_length = ( msg->smart_sms.msgdata == NULL ? 
+		0 : octstr_len(msg->smart_sms.msgdata) );
+	orig_udh_length = ( msg->smart_sms.udhdata == NULL ? 
+		0 : octstr_len(msg->smart_sms.udhdata) );
+
+	ptr = octstr_get_cstr(msg->smart_sms.msgdata);
+	if(ptr==NULL) goto error;
+
+	/* Let's see what is the hard max message size. */
+	if(msg->smart_sms.flag_udh == 1) {
+
+		/* The basic SMS datablock size is 140 bytes
+		   of 8 bit binary data. */
+		hard_msg_size = (160 * 7) / 8;
+		this_udh_length = orig_udh_length;
+
+		/* Check if we need to fragment the 
+		   datagram to several SMS messages. */
+		if( orig_msg_length + orig_udh_length > hard_msg_size ) {
+			/* The size of the fragmentation UDH
+			   data to add is 5 bytes. */
+			this_udh_length += 5;
+		}
+
+		hard_msg_size -= this_udh_length;
+
+		/* Note that we don't use footers and headers when
+		   sending a UDH message. */
+
+	} else {
+
+		/* We might have to append a header and a footer to
+		   each and every message we send in this transaction. */
+		hard_msg_size = 160 - hlen - flen;
+		this_udh_length = 0;
+
+	}
+
+	/* Cannot deduce what to do if something is very wrong. */
+	if(hard_msg_size < 0) {
+		error(0, "do_split_char: too long header and/or footer");
+		goto error;
+	}
+
+	/* Just the data, not the UDHs. */
+	data_to_send = orig_msg_length;
+
+	while(data_sent < data_to_send) {
+
+		/* How much actual data to send in this message? */
+		this_message_length = (data_to_send - data_sent) < hard_msg_size ?
+			(data_to_send - data_sent) : hard_msg_size;
+
+
+		/* Check that we're not exceeding the maximum amount of
+		   messages allowed. */
+		is_last_message = 0;
+		this_message_number++;
+		if(this_message_number == max_messages_to_send) {
+			is_last_message = 1;
+
+		} else if(this_message_number > max_messages_to_send) {
+
+			/* Can't send any more messages. Done. */
+			break;
+
+		} else {
+			/* This might _still_ be the last message. */
+			if(data_to_send-data_sent <= this_message_length) {
+				is_last_message = 1;
+			}
+		}
+
+		tmpmsg = msg_create(smart_sms);
+		tmpmsg->smart_sms.sender = 
+			octstr_duplicate(msg->smart_sms.sender);
+		tmpmsg->smart_sms.receiver = 
+			octstr_duplicate(msg->smart_sms.receiver);
+		tmpmsg->smart_sms.flag_udh = msg->smart_sms.flag_udh;
+		tmpmsg->smart_sms.flag_8bit = msg->smart_sms.flag_8bit;
+
+		/* Add a suffix if there is enough data to create a new
+		   message after this one. */
+		if( (suf != NULL) && (is_last_message != 1) )
+			slen = strlen(suf);
+		else
+			slen = 0;
+
+		if(msg->smart_sms.flag_udh == 1) {
+
+			octstr_get_many_chars(tmpdata, 
+				msg->smart_sms.msgdata,
+				data_sent, this_message_length );
+
+			/* Modify the existing UDHs to add the
+			   fragmentation data. */
+			octstr_get_many_chars(tmpudh,
+				msg->smart_sms.udhdata, 
+				0, this_udh_length );
+
+			pos_inside_message = octstr_len(msg->smart_sms.udhdata);
+/*
+			tmpudh[0] = this_udh_length;
+			tmpudh[pos_inside_message] = 
+*/
+		} else {
+
+			pos_inside_message = 0;
+
+			/* See if we need to find a user configured split
+			   character and cut from there. */
+			if(sc != NULL) {
+				this_message_length =
+					str_reverse_seek(ptr+data_sent,
+						this_message_length-1, sc);
+			}
+
+			/* Add possible header. */
+			if(h != NULL) {
+				strcpy(tmpdata, h);
+				pos_inside_message += strlen(h);
+			}
+
+			/* Copy message body. */
+			strncpy(tmpdata + pos_inside_message,
+				ptr + data_sent, this_message_length - slen);
+
+			pos_inside_message += this_message_length - slen;
+
+			/* Add a split suffix (typically "...") to a message
+			   which is followed by another.. */
+			if( slen > 0 ) {
+				strcpy(tmpdata + pos_inside_message, suf);
+				pos_inside_message += strlen(suf);
+			}
+
+			/* Add possible footer. */
+			if(f != NULL) {
+				strcpy(tmpdata + pos_inside_message, f);
+				pos_inside_message += strlen(f);
+			}
+
+		}
+
+		tmpmsg->smart_sms.msgdata = 
+			octstr_create_from_data(tmpdata, 
+				this_message_length + hlen + flen + slen);
+
+		tmpmsg->smart_sms.udhdata = 
+			octstr_create_from_data(tmpudh, this_udh_length);
+
+		/* Actually send the message. */
+		if( do_sending(tmpmsg) < 0 ) goto error;
+
+		/* The tmpmsg is freed by the function called by do_sending. */
+
+		data_sent += this_message_length - slen;
+	}
+
+	/* This function must destroy the original message. */
+	msg_destroy(msg);
+
+#if 0    
     Msg *split;
-    
+
     char *p, *suf, *sc;
     int slen = 0;
     int size, total_len, loc;
@@ -235,7 +445,10 @@ static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
 	loc += size;
     }
     msg_destroy(msg);	/* we must delete at as it is supposed to be deleted */
+#endif
+
     return 0;
+
 error:
     error(0, "Memory allocation failed!");
     msg_destroy(msg);
@@ -260,7 +473,8 @@ static int send_message(URLTranslation *trans, Msg *msg)
     if(msg_type(msg) != smart_sms) {
 	error(0, "Weird messagetype for send_message!");
 	goto error;
-    }    
+    }
+
     if (octstr_len(msg->smart_sms.msgdata)==0) {
 	if (urltrans_omit_empty(trans) != 0) {
 	    max_msgs = 0;
@@ -270,16 +484,19 @@ static int send_message(URLTranslation *trans, Msg *msg)
 		goto error;
 	}
     }
+
     if (max_msgs == 0) {
 	info(0, "No reply sent, denied.");
 	msg_destroy(msg);
 	return 0;
     }
+
     h = urltrans_header(trans);
     f = urltrans_footer(trans);
     if (h != NULL) hl = strlen(h); else hl = 0;
     if (f != NULL) fl = strlen(f); else fl = 0;
-	
+
+#if 0	
     if (octstr_len(msg->smart_sms.msgdata) <= (sms_max_length - fl - hl)
 	|| max_msgs == 1) {
 
@@ -297,7 +514,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	    if (octstr_insert_data(msg->smart_sms.msgdata,
 				   octstr_len(msg->smart_sms.msgdata), f, fl)== -1)
 		goto error;
-	
+
 	if (do_sending(msg) < 0)
 	    goto error;
 
@@ -309,6 +526,10 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	if (do_split_send(msg, max_msgs, trans) < 0)
 	    goto error;
     }
+#endif
+
+    if (do_split_send(msg, max_msgs, trans) < 0) goto error;
+
     return 0;
 
 error:
