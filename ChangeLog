@@ -1,3 +1,10 @@
+2002-09-06  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_boxc.c, gw/bearerbox.c: made boxid++ thead-safe via mutex
+    * docs/userguide/userguide.xml: documented the smsc specific 
+      'unified-prefix' directive for number normalization
+    * gw/bb_smscconn.c, gw/smscconn.c, gw/smscconn_p.h: added 'unified-prefix'
+      function on a smsc basis to set number normalization rules.
+
 2002-09-06 Andreas Fink <afink@gni.ch>
     * gw/dlr.c: fixed a crash when migrating from MySQL database
     without source field to one which has.
