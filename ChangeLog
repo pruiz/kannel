@@ -1,5 +1,9 @@
 2003-03-06  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/log.c: fixed compiler warning.
+    * gw/smsc/smsc_smpp.c: fixed a charset encoding misbehaviour when msgs
+      get split into multiple sms chunks. Now also the chunked, single msgs
+      get passed to the charset encoding. 
+      Thanks to "Benjamin Lee" <benjamin.lee@aspectdata.com> for this.
 
 2003-03-05  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/octstr.c[.debug], gwlib/log.c: fixed some compiler warnings.
