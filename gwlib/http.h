@@ -27,7 +27,7 @@ enum http_type {
 
 /* Fetch the document specified by an URL. Return -1 for error, or 0 for OK.
    If ok, return the type, contents and size via type, data. and size. */
-int http_get(char *url, int *type, char **data, size_t *size);
+int http_get(char *url, char **type, char **data, size_t *size);
 
 /* Set up a HTTP server socket listening at port `port'. Return -1 for error,
 or the socket file descriptor for success. */

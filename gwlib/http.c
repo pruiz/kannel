@@ -183,7 +183,7 @@ error:
 /*****************************************************************************
 * HTTP client GET
 */
-int http_get(char *urltext, int *type, char **data, size_t *size) {
+int http_get(char *urltext, char **type, char **data, size_t *size) {
 
 	URL *url = NULL;
 	HTTPRequest *request = NULL, *response = NULL;
@@ -287,17 +287,11 @@ int http_get(char *urltext, int *type, char **data, size_t *size) {
 	}
 
 	/* Check the content of the "Content-Type" header. */
-	ptr = httprequest_get_header_value(request, "Content-Type");
+	ptr = httprequest_get_header_value(response, "Content-Type");
 	if(ptr != NULL) {
-		if(strstr(ptr, "text/html") != NULL) {
-			*type = HTTP_TYPE_HTML;
-		} else if(strstr(ptr, "text/plain") != NULL) {
-			*type = HTTP_TYPE_TEXT;
-		} else {
-			*type = HTTP_TYPE_UNKNOWN;
-		}
+		*type = strdup(ptr);
 	} else {
-		*type = HTTP_TYPE_UNKNOWN;
+		*type = NULL;
 	}
 
 	/* Fill in the variables which we return. */
