@@ -12,19 +12,34 @@ WSP_EVENT(TRInvokeIndication,
           INTEGER(ack_type);
           OCTSTR(user_data);
           INTEGER(tcl);
+          INTEGER(wsp_pdu);
+          INTEGER(wsp_tid);
           MACHINE(machine);
 	  })
+
+WSP_EVENT(TRInvokeConfirmation,
+          {
+          OCTSTR(exit_info);
+          INTEGER(exit_info_present);
+          INTEGER(wsp_pdu);
+          INTEGER(wsp_tid);
+          MACHINE(machine);
+          })
 
 WSP_EVENT(TRResultConfirmation,
 	  {
           OCTSTR(exit_info);
           INTEGER(exit_info_present);
+          INTEGER(wsp_pdu);
+          INTEGER(wsp_tid);
           MACHINE(machine);
           })
 
 WSP_EVENT(TRAbortIndication,
           {
           INTEGER(abort_code);
+          INTEGER(wsp_pdu);
+          INTEGER(wsp_tid);
           MACHINE(machine);
           })
 
@@ -32,19 +47,19 @@ WSP_EVENT(TRInvokeResponse,
           {
           OCTSTR(exit_info);
           INTEGER(exit_info_present);
-          INTEGER(tid);
+          INTEGER(wsp_tid);
           })
 
 WSP_EVENT(TRResultRequire,
           {
           OCTSTR(user_data);
-          INTEGER(tid);
+          INTEGER(wsp_tid);
           })
 
 WSP_EVENT(TRAbortRequire,
           {
           INTEGER(abort_code);
-          INTEGER(tid);
+          INTEGER(wsp_tid);
           })
 
 #undef WSP_EVENT
