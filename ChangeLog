@@ -1,3 +1,10 @@
+Mon Mar 20 15:45:43 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/list.[ch], test/test_list.c: Wrote a generic dynamic list
+	implementation. There can be only one, code duplication leads to
+	bugs. This is not yet used anywhere, except the test program, but
+	I'll start working on converting the wapbox to this next.
+
 Mon Mar 20 15:10:52 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wapbox.c: Function empty_queue_thread: Removed timestamp

@@ -27,6 +27,7 @@
 #include "conffile.h"
 #include "http.h"
 #include "octstr.h"
+#include "list.h"
 
 
 #endif
