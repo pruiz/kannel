@@ -66,6 +66,14 @@ static int update_tables(RADIUS_PDU *pdu)
         client_ip = dict_get(pdu->attr, octstr_imm("Framed-IP-Address"));
         msisdn = dict_get(pdu->attr, octstr_imm("Calling-Station-Id"));
 
+        /* we can't add mapping without both components */
+        if (client_ip == NULL || msisdn == NULL) {
+            warning(0, "RADIUS: NAS did either not send 'Framed-IP-Address' or/and "
+                       "'Calling-Station-Id', dropping mapping but will forward.");
+            /* anyway forward the packet to remote RADIUS server */
+            return 1;
+        }
+
         if (octstr_compare(type, octstr_imm("1")) == 0 && session_id && msisdn) {
             /* session START */
             if (dict_get(radius_table, client_ip) == NULL && 
