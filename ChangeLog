@@ -1,4 +1,8 @@
 2002-08-05  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: fixed a bug for an uninitialized rpi value inside
+      smsbox_req_sendsms()
+    
+2002-08-05  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added documentation about RPI support
     * gw/smsc_smpp.c, gw/smsc_emi2.c, gw/smsbox.c, gw/smpp_pdu.h,
       gw/msg-decl.h: added Return Path Indicator (RPI) support for 
