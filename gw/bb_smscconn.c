@@ -331,7 +331,6 @@ int smsc2_start(Cfg *cfg)
     if (smsc_running) return -1;
 
     smsc_list = list_create();
-    smsc_groups = list_create();
 
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
     unified_prefix = cfg_get(grp, octstr_imm("unified-prefix"));
