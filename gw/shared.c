@@ -18,6 +18,9 @@
 #ifdef HAVE_MYSQL 
 #include <mysql_version.h>
 #endif
+#ifdef HAVE_SQLITE 
+#include <sqlite.h>
+#endif
 
 
 enum program_status program_status = starting_up;
@@ -55,6 +58,9 @@ Octstr *version_report_string(const char *boxname)
 #ifdef HAVE_SDB
              "Using LibSDB %s.\n"
 #endif
+#ifdef HAVE_SQLITE
+             "Using SQLite %s.\n"
+#endif
              "Using %s malloc.\n",
 			 boxname, VERSION,
 			 u.sysname, u.release, u.version, u.machine,
@@ -69,6 +75,9 @@ Octstr *version_report_string(const char *boxname)
 #endif
 #ifdef HAVE_SDB
              LIBSDB_VERSION,
+#endif
+#ifdef HAVE_SQLITE
+             SQLITE_VERSION,
 #endif
              octstr_get_cstr(gwmem_type()));
 }
