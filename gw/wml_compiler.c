@@ -342,6 +342,7 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
   (*wbxml)->wml_public_id = 0x04; /* WML 1.1 Public ID */
   (*wbxml)->string_table_length = 0x00; /* String table length=0 */
 
+#if 0
   if (document->encoding != NULL)
     {
       chars = octstr_create(document->encoding);
@@ -352,10 +353,13 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
     (*wbxml)->character_set = parse_charset(charset, wbxml);
   else
     {
+#endif
       chars = octstr_create("UTF-8");
       (*wbxml)->character_set = parse_charset(chars, wbxml);
       octstr_destroy(chars);
+#if 0
     }
+#endif
 
   node = xmlDocGetRootElement(document);
   string_table_build(node, wbxml);
@@ -1075,7 +1079,7 @@ static void output_char(int byte, wml_binary_t **wbxml)
 }
 
 
-
+#if 0
 /*
  * output_plain_octet_utf8map - remap ascii to utf8 and
  * output an octet string into wbxml.
@@ -1097,7 +1101,7 @@ static void output_plain_octet_utf8map(Octstr *ostr, wml_binary_t **wbxml)
 			   (*wbxml)->utf8map + ((ch - 128) * 4)) ;
     }
 }
-
+#endif
 
 
 /*
@@ -1108,9 +1112,11 @@ static void output_plain_octet_utf8map(Octstr *ostr, wml_binary_t **wbxml)
 
 static void output_convertable_string(Octstr *ostr, wml_binary_t **wbxml)
 {
+#if 0
   if ((*wbxml)->utf8map) 
     output_plain_octet_utf8map(ostr, wbxml) ;
   else
+#endif
     octstr_insert((*wbxml)->wbxml_string, ostr, 
 		  octstr_len((*wbxml)->wbxml_string));
 }
@@ -1374,6 +1380,8 @@ static List *string_table_add_many(List *sorted, wml_binary_t **wbxml)
 	list_append(list, item);
     }
 
+  list_destroy(sorted);
+
   return list;
 }
 
@@ -1389,13 +1397,11 @@ static List *string_table_collect_words(List *strings)
   string_table_proposal_t *item = NULL;
   List *list = NULL;
 
-  list = list_create();
-
   while (list_len(strings))
     {
       item = list_extract_first(strings);
 
-      if (list_len(list) == 0)
+      if (list == NULL)
 	list = octstr_split_words(item->string);
       else
 	list = list_cat(octstr_split_words(item->string), list);
@@ -1549,3 +1555,4 @@ List *wml_charsets(void) {
 	}
 	return result;
 }
+
