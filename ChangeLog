@@ -1,4 +1,7 @@
 2003-03-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smpp.c: moved 'reconnect-delay' also to the higher layer.
+
+2003-03-19  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: added UDH support for MOs. Thanks to 
       David White <David.White@one.at> for this patch.
       [Msg-ID: <3E770BA2.5030701@i-one.at>]
