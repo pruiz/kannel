@@ -1,5 +1,11 @@
 2000-10-06  Richard Braakman  <dark@wapit.com>
 
+	* gw/smsc.c: Reactivate the code that sets the timestamp on a
+	smart_sms, if the SMSC didn't set it.  Thanks to Jarkko Kovala
+	for noticing.
+
+2000-10-06  Richard Braakman  <dark@wapit.com>
+
 	* Making release 0.11.3
 
 2000-10-06  Richard Braakman  <dark@wapit.com>

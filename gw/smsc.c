@@ -327,11 +327,9 @@ int smscenter_receive_msg(SMSCenter *smsc, Msg **msg)
     }
     smscenter_unlock(smsc);
 	
-	/* Fix the time if the SMSC didn't tell us it. */
-/*
-	if (ret == 1 && (*msg)->time == 0)
-		time(&(*msg)->time);
-*/
+    /* If the SMSC didn't set the timestamp, set it here. */
+    if (ret == 1 && msg_type(*msg) == smart_sms && (*msg)->smart_sms.time == 0)
+	time(&(*msg)->smart_sms.time);
 
     return ret;
 
