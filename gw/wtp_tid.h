@@ -14,18 +14,28 @@
 
 #define WTP_TID_WINDOW_SIZE (1L << 14)
 
-enum {
-     no_cache = -1,
-     iniatilised = -2,
-     not_iniatilised = -3,
-     cached = 0
-};
-
+/*
+ * Constants defining the result of tid validation
+ */
 enum {
      no_cached_tid,
      ok,
      fail
 };
+
+/*
+ * Tid cache item consists of iniator identifier and cached tid.
+ */
+struct WTPCached_tid {
+       Octstr *source_address;
+       long source_port;
+       Octstr *destination_address;
+       long destination_port;
+       long tid;
+       struct WTPCached_tid *next;
+};
+
+typedef struct WTPCached_tid WTPCached_tid;
 
 /* 
  * Initilize tid cache. MUST be called before calling other functions in this module.

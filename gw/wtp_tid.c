@@ -7,95 +7,78 @@
 #include "wtp_tid.h"
 
 /*
+ * Constants used for defining the tid cache status
+ */
+enum {
+     no_cache = -1,
+     iniatilised = -2,
+     not_iniatilised = -3,
+     cached = 0
+};
+
+/*
  * Global data structure:
  *
- * Tid cache: an unordered linked list storing last tid for every iniator
+ * Tid cache is implemented by using a library object List
  */
-
-struct WTPCached_tid {
-       Octstr *source_address;
-       long source_port;
-       Octstr *destination_address;
-       long destination_port;
-       long tid;
-       struct WTPCached_tid *next;
-};
-
-typedef struct WTPCached_tid WTPCached_tid;
-
-struct Tid_cache {
-       WTPCached_tid *first;
-       WTPCached_tid *this; /* pointer to the present cache item */
-       WTPCached_tid *item; /* pointer to the last cache item */
-       Mutex *lock;
-};
-
-typedef struct Tid_Cache Tid_Cache;
-
-static Tid_cache tid_cache =
-{
-       NULL,
-       NULL,
-       NULL,
-       NULL,
-};
+    static List *tid_cache = NULL;   
 
 /*
  * Prototypes of internal functions
  */
 static WTPCached_tid *cache_item_create_empty(void);
 static void cache_item_destroy(WTPCached_tid *item);
-
 /*
 static void cache_item_dump(WTPCached_tid *item);
 */
-static int last_tid_exists(WTPMachine *machine);
-
-static void set_tid(long tid);
+static void set_tid(WTPCached_tid *item, long tid);
 
 static void add_tid(WTPMachine *machine, long tid);
 
 static int tid_in_window(long rcv_tid, long last_tid);
+
+static WTPCached_tid *tid_cached(WTPMachine *machine);
 
 /*
  * External functions:
  */
 
 void wtp_tid_cache_init(void) {
-     tid_cache.lock = mutex_create();
+
+     tid_cache = list_create();
 }
 
 void wtp_tid_cache_shutdown(void) {
-     WTPCached_tid *p;
 
-     while (tid_cache.first != NULL) {
-         p = tid_cache.first;
-	 tid_cache.first = tid_cache.first->next;
-	 cache_item_destroy(p);
-     }
-     mutex_destroy(tid_cache.lock);
+    while (list_len(tid_cache) > 0)
+          cache_item_destroy(list_extract_first(tid_cache));
+    list_destroy(tid_cache);
 }
 
 /*
  * Tid verification is invoked, when tid_new flag of the incoming message is 
  * on. It is not, if the iniator is not yet cached. If iniator is cached, the
- * recived tid is stoed.
+ * received tid is stored.
  */
- 
 int wtp_tid_is_valid(WTPEvent *event, WTPMachine *machine){
 
     long rcv_tid = -1,
          last_tid = -1;
+
+    WTPCached_tid *item = NULL;
 
 #if 0
     debug("wap.wtp.tid", 0, "starting validation");
 #endif
     rcv_tid = machine->tid;
    
-    if (event->RcvInvoke.tid_new == 0) {
-       
-       if ((last_tid = last_tid_exists(machine)) == no_cache) {
-          if (event->RcvInvoke.no_cache_supported == 1)
+    if (!event->RcvInvoke.tid_new) {
+/*
+ * First we check whether the current iniator has a cache item for it.
+ */      
+       if ((item = tid_cached(machine)) == NULL) {
+
+          if (event->RcvInvoke.no_cache_supported)
              return no_cached_tid;
           else {
 #if 0
@@ -105,17 +88,19 @@ int wtp_tid_is_valid(WTPEvent *event, WTPMachine *machine){
              return ok;
          }
       }
+/*
+ * If it has, we check if the message is a duplicate or has tid wrapped up confusingly.
+ */      
+     last_tid = item->tid; 
       
-      if (tid_in_window(rcv_tid, last_tid) == 0){
-#if 0
-         debug("wap.wtp.tid", 0, "tid out of the window");
-#endif
+     if (tid_in_window(rcv_tid, last_tid) == 0){
+         info(0, "WTP_TID: tid out of the window");
          return fail;
       } else {
 #if 0
          debug("wap.wtp.tid", 0, "tid in the window");
 #endif
-         set_tid(rcv_tid);
+         set_tid(item, rcv_tid);
          return ok;
       }
 
@@ -123,10 +108,10 @@ int wtp_tid_is_valid(WTPEvent *event, WTPMachine *machine){
       info(0, "WTP_TID: tid_new flag on");
       rcv_tid = 0;
 
-      if (tid_cache.item == NULL) {
+      if (item == NULL) {
          add_tid(machine, rcv_tid);
       } else {
-         set_tid(rcv_tid);
+         set_tid(item, rcv_tid);
       }
      
       return fail;
@@ -141,7 +126,8 @@ int wtp_tid_is_valid(WTPEvent *event, WTPMachine *machine){
  * Internal functions:
  *
  * Checks whether the received tid is inside the window of acceptable ones. The size 
- * of the window is a half of the tid space. 
+ * of the window is set by the constant WTP_TID_WINDOW_SIZE (half of the tid space is
+ * the recommended value). 
  *
  * Inputs: stored tid, received tid. Output 0, if received tid is outside the window,
  * 1, if it is inside.
@@ -149,14 +135,14 @@ int wtp_tid_is_valid(WTPEvent *event, WTPMachine *machine){
 static int tid_in_window(long rcv_tid, long last_tid){
 
 #if 0
-       debug("wap.wtp.tid", 0, "tids were %ld and %ld", rcv_tid, last_tid); 
+       debug("wap.wtp.tid", 0, "tids were rcv_tid, %ld and last_tid, %ld and test window %ld", rcv_tid, last_tid, WTP_TID_WINDOW_SIZE); 
 #endif
        if (last_tid == rcv_tid) {
           return 0;
        } 
 
        if (rcv_tid > last_tid) {
-	  if (rcv_tid - last_tid <= WTP_TID_WINDOW_SIZE) {
+	  if (abs(rcv_tid - last_tid) <= WTP_TID_WINDOW_SIZE) {
              return 1;
           } else {
              return 0;
@@ -172,7 +158,7 @@ static int tid_in_window(long rcv_tid, long last_tid){
        }
 
 /*
- * Following return is unnecessary but our compiler demands it");
+ * Following return is unnecessary but our compiler demands it
  */
        return 0;
 }
@@ -192,6 +178,7 @@ static WTPCached_tid *cache_item_create_empty(void){
 
        return item;
 }
+
 static void cache_item_destroy(WTPCached_tid *item){
 
        octstr_destroy(item->destination_address);
@@ -212,51 +199,54 @@ static void cache_item_dump(WTPCached_tid *item){
 }
 #endif
 /*
- * Checks if there is any tid stored for a spesific iniator. Receives address 
+ * Checking whether there is an item stored for a specific iniator. Receives address 
  * quadruplet - the identifier it uses - from object WTPMachine. Ditto tid.
- * Returns the cached tid or no_cache, if there is not one.
+ * Returns the item or NULL, if there is not one. Iniator is identified by the 
+ * address four-tuple.
  */
-static int tid_cached(WTPMachine *machine){
+struct profile {
+       Octstr *source_address;
+       Octstr *destination_address;
+       long source_port;
+       long destination_port;
+};
 
-       WTPCached_tid *this_item = NULL;
-       
-       mutex_lock(tid_cache.lock);
+static int tid_is_cached(void *a, void *b){
 
-       if (tid_cache.item == NULL){
-          mutex_unlock(tid_cache.lock);
-          return no_cache;
-       }   
+       struct profile *iniator_profile;
+       WTPCached_tid *item;
 
-       this_item = tid_cache.first;
-       
-       while (this_item != NULL){
+       item = a;
+       iniator_profile = b;
 
-             if ((octstr_compare(this_item->source_address, 
-                         machine->source_address) == 0) &&
-                 this_item->source_port == machine->source_port && 
-                 (octstr_compare(this_item->destination_address,
-                         machine->destination_address) == 0) &&
-                 this_item->destination_port == 
-		 machine->destination_port){
-               
-	       int found = this_item->tid;
-               mutex_unlock(tid_cache.lock);
-               return found;
-
-	     } else {
-               this_item = this_item->next;
-             }
-       }
-
-       mutex_unlock(tid_cache.lock);
-       return no_cache;
+       return octstr_compare(item->source_address, 
+                             iniator_profile->source_address) == 0 &&
+              octstr_compare(item->destination_address,
+                             iniator_profile->destination_address) == 0 &&
+              item->source_port == iniator_profile->source_port &&
+              item->destination_port == iniator_profile->destination_port;             
 }
 
-static void set_tid(long tid){
+static WTPCached_tid *tid_cached(WTPMachine *machine){
 
-       mutex_lock(tid_cache.lock);
-       tid_cache.this->tid = tid; 
-       mutex_unlock(tid_cache.lock);
+       WTPCached_tid *item = NULL;
+       struct profile iniator_profile;
+
+       iniator_profile.source_address = machine->source_address;
+       iniator_profile.destination_address = machine->destination_address;
+       iniator_profile.source_port = machine->source_port;
+       iniator_profile.destination_port = machine->destination_port;
+
+       item = list_search(tid_cache, &iniator_profile, tid_is_cached);
+
+       return item;
+}
+
+static void set_tid(WTPCached_tid *item, long tid){
+       
+       list_lock(tid_cache);
+       item->tid = tid;
+       list_unlock(tid_cache);
 }
 
 /*
@@ -277,31 +267,8 @@ static void add_tid(WTPMachine *machine, long tid){
        new_item->destination_port = machine->destination_port;
        new_item->tid = tid; 
 
-       mutex_lock(tid_cache.lock);
-
-       if (tid_cache.item == NULL) {
-           tid_cache.first = new_item;
-           tid_cache.item = tid_cache.first;
-           tid_cache.this = tid_cache.first;
-       } else {
-           tid_cache.item->next = new_item;
-           tid_cache.item = new_item;
-           tid_cache.this = tid_cache.item;
-       }
-       
-       mutex_unlock(tid_cache.lock); 
+       list_append(tid_cache, new_item);
 }
-
-static int last_tid_exists(WTPMachine *machine){
-
-       int cached_tid = -1;
-
-       if ((cached_tid = tid_cached(machine)) >= 0)
-          return cached_tid;
-       else
-	  return no_cache;
-}
-
 
 
 

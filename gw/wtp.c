@@ -664,10 +664,9 @@ static unsigned char *name_state(int s){
 
 
 /*
- * If the machines list is busy, just waits. We are interested only machines in use,
- * it is, having in_use-flag 1.
+ *  We are interested only machines in use, it is, having in_use-flag 1. Transaction
+ *  is identified by the address four-tuple and tid.
  */
-
 struct machine_pattern {
 	Octstr *source_address;
 	long source_port;

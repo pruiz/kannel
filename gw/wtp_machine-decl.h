@@ -14,7 +14,8 @@
  *
  * Fields telling the service required: 
  *               a) transaction class (is transaction confirmed or not) 
- *               b) user acknowledgement flag (do we wait for response primitive  *                  of WTP user (for instance, WSP) or not)
+ *               b) user acknowledgement flag (do we wait for response primitive  
+ *                  of WTP user (for instance, WSP) or not)
  *
  * Machine identification: address four-tuple and transaction identifier
  * 

@@ -365,7 +365,8 @@ static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine,
     wtp_pdu = gw_malloc(pdu_len);
     octet = 0;
 /*
- * Ack PDU is generated solely by WTP. Inputs are rid (are we sending the packet or  * not), ack type (are we doing tid verification or not) and tid.
+ * Ack PDU is generated solely by WTP. Inputs are rid (are we sending the packet or  
+ * not), ack type (are we doing tid verification or not) and tid.
  */
     octet = insert_pdu_type(ACK, octet);
     octet = indicate_ack_type(ack_type, octet);

@@ -13,7 +13,7 @@
  * require. 
  *
  * Fields of an incoming message event corresponds directly with fields of the 
- * message itself (omitting, of course, fields used solyly by WTP). Same apply 
+ * message itself (omitting, of course, fields used solely by WTP). Same apply 
  * to the fields of events generates by WSP, they are ones required by specifica-
  * tion. However, timer events have a meaningless dummy field.
  *

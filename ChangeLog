@@ -1,3 +1,7 @@
+2000-05-05 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp_tid.c|h: Module now uses list standard functions
+
 2000-05-04    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/bb_core.c: logfiles
