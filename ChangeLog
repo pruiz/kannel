@@ -1,3 +1,10 @@
+2004-02-26 Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: update of OISD section.
+    * gw/smscconn[_p].[ch], gw/smsc/smsc.c, gw/smsc_oisd.c, gw/smsc/smsc_p,h:
+      Rewrite of OISD module to smscconn API. Thankt a lot to 
+      "Dariusz Markowicz" <dariuszm@tenbit.pl> for this patch.
+      [see Mantis BUG#59 for the diff file]
+
 2004-02-24 Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: fixed bug that config directive 'sendsms-chars' was not used
       at all in the logic, only the default remained. Thanks to 

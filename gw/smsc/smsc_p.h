@@ -82,7 +82,6 @@ enum {
 	SMSC_TYPE_EMI_X25,
 	SMSC_TYPE_SEMA_X28,
 	SMSC_TYPE_OIS,
-	SMSC_TYPE_OISD
 };
 
 /*
@@ -180,16 +179,6 @@ struct SMSCenter {
         size_t ois_bufsize;
         size_t ois_buflen;
         Octstr *sender_prefix;
-    
-	/* SEMA SMSC G8.1 OIS 5.8 (TCP/IP Direct Access) */
-	Octstr *oisd_hostname;
-	int oisd_port;
-	unsigned long oisd_send_seq;
-	unsigned long oisd_receive_seq;
-	Octstr *oisd_inbuffer;
-	List *oisd_received;
-	int oisd_error;
-	time_t oisd_next_ping;	
 
 	/* For buffering input. */
 	char *buffer;
@@ -274,16 +263,5 @@ int ois_pending_smsmessage(SMSCenter *smsc);
 int ois_submit_msg(SMSCenter *smsc, const Msg *msg);
 int ois_receive_msg(SMSCenter *smsc, Msg **msg);
 void ois_delete_queue(SMSCenter *smsc);
-
-
-/*
- * Interface to Sema SMS centers using OIS 5.8 (Direct Access)
- */
-SMSCenter *oisd_open(Octstr *hostname, int port, int keepalive, Octstr *sender_prefix);
-int oisd_reopen(SMSCenter *smsc);
-int oisd_close(SMSCenter *smsc);
-int oisd_pending_smsmessage(SMSCenter *smsc);
-int oisd_submit_msg(SMSCenter *smsc, Msg *msg);
-int oisd_receive_msg(SMSCenter *smsc, Msg **msg);
 
 #endif

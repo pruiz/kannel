@@ -3140,7 +3140,7 @@ address-range = ""
 </sect2>
 
 <sect2>
-<title>Sema Group SMS2000 OIS 4.0 and 5.0</title>
+<title>Sema Group SMS2000 OIS 4.0, 5.0 and 5.8</title>
  
    <para>The 4.0 implementation is over Radio PAD (X.28). Following
    configuration variables are needed, and if you find out the more
@@ -3148,6 +3148,8 @@ address-range = ""
 
    <para>The 5.0 implementation uses X.25 access gateway.</para>
   
+   <para>The 5.8 implementation uses direct TCP/IP access interface.</para>
+
 <programlisting>
 group = smsc
 smsc = sema
@@ -3229,6 +3231,52 @@ ois-debug-level = 0
      <entry><literal>number 0 to 8</literal></entry>
      <entry valign="bottom">
        extra debug, optional, see smsc_ois.c
+     </entry></row>
+
+   </tbody></tgroup></informaltable>
+
+<programlisting>
+group = smsc
+smsc = oisd
+host = 103.102.101.100
+port = 10000
+keepalive = 25
+my-number = 12345
+</programlisting>
+
+<informaltable frame="none">
+  <tgroup cols="3"><thead><row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row></thead><tbody>
+
+   <row><entry><literal>host (m)</literal></entry>
+     <entry><literal>ip</literal></entry>
+     <entry valign="bottom">
+        SMSC Host name or IP
+     </entry></row>
+
+   <row><entry><literal>port (m)</literal></entry>
+     <entry><literal>port number</literal></entry>
+     <entry valign="bottom">
+       SMSC Port number
+     </entry></row>
+
+   <row><entry><literal>keepalive</literal></entry>
+     <entry><literal>number</literal></entry>
+     <entry valign="bottom">
+       SMSC connection will not be left idle for longer than this many
+       seconds.  The right value to use depends on how eager the SMSC
+       is to close idle connections. If you see many unexplained 
+       reconnects, try lowering this value.
+       Set it to 0 to disable this feature.
+     </entry></row>
+
+   <row><entry><literal>my-number</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Any valid SME number acceptable by SMSC. This number is used only in keepalive request. 
      </entry></row>
 
    </tbody></tgroup></informaltable>
@@ -3815,6 +3863,7 @@ marked as "not tested" because the table is still new.</para>
      <entry>smpp</entry>
      <entry>sema</entry>
      <entry>ois</entry>
+     <entry>oisd</entry>
      <entry>at</entry>
      <entry>http</entry>
      <entry>fake</entry>
@@ -3833,6 +3882,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>n</entry>
     <entry>n</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>y</entry>
@@ -3852,6 +3902,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>y</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>
    </row>
@@ -3863,6 +3914,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>y</entry>
+    <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
@@ -3884,6 +3936,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
+    <entry>n</entry>
     <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -3902,6 +3955,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>n</entry>
+    <entry>n</entry>
     <entry>?</entry>
     <entry>?</entry>
    </row>
@@ -3916,6 +3970,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y</entry>
     <entry>n</entry>
     <entry>y</entry>
+    <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
     <entry>y</entry>
@@ -3938,6 +3993,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>n</entry>
+    <entry>n</entry>
    </row>
 
    <row>
@@ -3952,6 +4008,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
+    <entry>y</entry>
     <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -3970,6 +4027,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>y</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>
    </row>
@@ -3986,6 +4044,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -4003,6 +4062,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
+    <entry>n</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
@@ -4028,6 +4088,7 @@ marked as "not tested" because the table is still new.</para>
      <entry>smpp</entry>
      <entry>sema</entry>
      <entry>ois</entry>
+     <entry>oisd</entry>
      <entry>at</entry>
      <entry>http</entry>
      <entry>fake</entry>
@@ -4048,6 +4109,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>y</entry>
+    <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>
    </row>
@@ -4067,6 +4129,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>y?</entry>
     <entry>y</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>y?<footnote id="nomarkod"><para>Does not mark it as octet data</para></footnote></entry>
    </row>
@@ -4083,6 +4146,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>n</entry>
     <entry>?</entry>
+    <entry>y</entry>
     <entry>y</entry>
     <entry>y?</entry>
     <entry>y?<footnoteref linkend="nomarkod"></entry>
@@ -4101,6 +4165,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>?</entry>
     <entry>y</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>y?</entry>
    </row>
@@ -4117,6 +4182,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>y?<footnote><para>However, it looks like the <literal>sema</literal> driver can't receive <emphasis>text</emphasis> data.</para></footnote></entry>
     <entry>y?</entry>
+    <entry>y</entry>
     <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
@@ -4135,6 +4201,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>y</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
    </row>
@@ -4151,6 +4218,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>n</entry>
     <entry>N</entry>
+    <entry>y</entry>
     <entry>y</entry>
     <entry>y?</entry>
     <entry>y?</entry>
@@ -4169,6 +4237,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>N</entry>
     <entry>y</entry>
+    <entry>y</entry>
     <entry>n</entry>
     <entry>n</entry>
    </row>
@@ -4185,6 +4254,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>y?</entry>
+    <entry>y</entry>
     <entry>y</entry>
     <entry>y?</entry>
     <entry>y?</entry>
@@ -4203,6 +4273,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y</entry>
+    <entry>y</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -4219,6 +4290,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>n</entry>
+    <entry>y</entry>
     <entry>N<footnote><para>Miscalculates message length</para></footnote></entry>
     <entry>y?</entry>
     <entry>y?</entry>
@@ -4237,6 +4309,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>y?</entry>
     <entry>y</entry>
+    <entry>y</entry>
     <entry>y?</entry>
     <entry>y?</entry>
    </row>
@@ -4253,6 +4326,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>y?</entry>
+    <entry>y</entry>
     <entry>y?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
@@ -4270,6 +4344,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>y?</entry>
     <entry>?</entry>
     <entry>n</entry>
+    <entry>y</entry>
     <entry>y?</entry>
     <entry>y?</entry>
     <entry>y?</entry>
@@ -4287,6 +4362,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>n</entry>
     <entry>?</entry>
     <entry>?</entry>
+    <entry>n</entry>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
