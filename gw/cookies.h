@@ -27,10 +27,10 @@ typedef struct _cookie {
 
 /* Function prototypes for external interface */
 
-Cookie *cookie_create (void);
-void cookies_destroy (List *);
-int get_cookies (List *, const WSPMachine *);
-int set_cookies (List *, WSPMachine *);
+Cookie *cookie_create(void);
+void cookies_destroy(List *);
+int get_cookies(List *, const WSPMachine *);
+int set_cookies(List *, WSPMachine *);
 
 
 #define MAX_HTTP_DATE_LENGTH	128

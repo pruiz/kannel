@@ -10,6 +10,9 @@
  * Date: May 2000
  */
 
+#include <string.h>
+#include <ctype.h>
+
 #include "gwlib/gwlib.h"
 #include "wsp.h"
 #include "cookies.h"
@@ -23,6 +26,7 @@ static void expire_cookies (List *);
 static void cookie_destroy (Cookie *);
 static int have_cookie (List *, Cookie *);
 static int parse_http_date (const char *);
+static Cookie emptyCookie;
 
 /*
  * Function: _create, _destroy
@@ -34,12 +38,9 @@ Cookie *cookie_create (void)
 {
 	Cookie *p;
 
-	if ((p = gw_malloc (sizeof (Cookie))) == NULL) {
-		error (0, "cookie_create: gw_malloc() failed");
-		return NULL;
-	}
+	p = gw_malloc (sizeof (Cookie));	/* Never returns NULL */
 
-	memset (p, 0, sizeof (Cookie));
+	*p = emptyCookie;
 	p -> max_age = -1;
 	time (&p -> birth);
 	return p;
@@ -75,10 +76,7 @@ int get_cookies (List *headers, const WSPMachine *sm)
 	Cookie *cookie = NULL;
 	long pos = 0;
 
-	if (headers == NULL || sm == NULL) {
-		error (0, "get_cookies: Null argument(s) - no headers, WSPMachine or both");
-		return -1;
-	}
+	gw_assert (sm != NULL);
 
 	for (pos = 0; pos < list_len (headers); pos++) {
 		header = list_get(headers, pos);
@@ -97,7 +95,7 @@ int get_cookies (List *headers, const WSPMachine *sm)
 
 				/* Check to see if this cookie is already present */
 
-				if (have_cookie (sm->cookies, cookie) == TRUE) {
+				if (have_cookie (sm->cookies, cookie) == 1) {
 					debug ("wap.wsp.http", 0, "parse_cookie: Cookie present");
 					cookie_destroy (cookie);
 					continue;
@@ -153,15 +151,15 @@ int set_cookies (List *headers, WSPMachine *sm)
 			cookie = octstr_create ("Cookie: ");
 			octstr_append (cookie, value->version);
 			octstr_append (cookie, value->name);
-			octstr_append_cstr (cookie, "=");
+			octstr_append_char (cookie, '=');
 			octstr_append (cookie, value->value);
 
 			if (value->path) {
-				octstr_append_cstr (cookie, ";");
+				octstr_append_char (cookie, ';');
 				octstr_append (cookie, value->path);
 			}
 			if (value->domain) {
-				octstr_append_cstr (cookie, ";");
+				octstr_append_char (cookie, ';');
 				octstr_append (cookie, value->domain);
 			}
 
@@ -219,7 +217,6 @@ static Cookie *parse_cookie (Octstr *cookiestr)
 {
 	char *v = NULL;
 	char *p = NULL;
-	char *vs = NULL;
 	int delta = 0;
 	Cookie *c = NULL;
 	Octstr **f = NULL;
@@ -232,11 +229,7 @@ static Cookie *parse_cookie (Octstr *cookiestr)
 	v = gw_strdup (octstr_get_cstr (cookiestr));
 	p = strtok (v, ";");
 	
-	if ((c = cookie_create ()) == NULL) {
-		error (0, "parse_cookie: cookie_create () failed");
-		gw_free (v);
-		return NULL;
-	}
+	c = cookie_create ();	/* Never returns NULL */
 
 	while (p != NULL) {
 		while (isspace (*p)) p++;		/* Skip leading whitespace */
@@ -311,10 +304,9 @@ static Cookie *parse_cookie (Octstr *cookiestr)
 
 static void add_cookie_to_cache (const WSPMachine *sm, Cookie *value)
 {
-	if ((sm == NULL) || sm -> cookies == NULL || value == NULL) {
-		error (0, "add_cookie_to_cache: Bad argument(s)");
-		return;
-	}
+	gw_assert (sm != NULL);
+	gw_assert (sm -> cookies != NULL);
+	gw_assert (value != NULL);
 
 	list_append(sm -> cookies, value);
 
@@ -334,20 +326,20 @@ static int have_cookie (List *cookies, Cookie *cookie)
 
 	if (cookies == NULL || cookie == NULL) {
 		error (0, "have_cookie: Null argument(s) - no Cookie list, Cookie or both");
-		return FALSE;
+		return 0;
 	}
 
 	/* Walk through the cookie cache, comparing cookie */
 
-	for (pos = 0; pos < list_len (cookies); pos++) {
+	while (pos < list_len (cookies)) {
 		value = list_get (cookies, pos);
 
 		/* Worrying - octstr_compare returns 0 on MIN (len1, len2) == 0 - but this
 		   behaviour marked as a bug ! */
 
-		if ((octstr_compare (value -> name, cookie -> name) == 0) &&
-			(octstr_compare (value -> path, cookie -> path) == 0) &&
-			(octstr_compare (value -> domain, cookie -> domain) == 0)) {
+		if (((value -> name) && octstr_compare (value -> name, cookie -> name) == 0) &&
+			((value -> path) && octstr_compare (value -> path, cookie -> path) == 0) &&
+			((value -> domain) && octstr_compare (value -> domain, cookie -> domain) == 0)) {
 			
 			/* We have a match according to 4.3.3 - discard the old one */
 
@@ -357,14 +349,16 @@ static int have_cookie (List *cookies, Cookie *cookie)
 			/* Discard the new cookie also if max-age is 0 */
 
 			if (cookie -> max_age == 0) 
-				return TRUE;
+				return 1;
 
 			debug ("wap.wsp.http", 0, "have_cookie: Updating cached cookie (%s)", 
 				octstr_get_cstr (cookie->name));
 		}
+		else
+			pos++;
 	}
 
-	return FALSE;
+	return 0;
 }
 
 /*
@@ -414,11 +408,12 @@ static void cookie_destroy (Cookie *p)
 {
 	if (p == NULL) return;
 
-	if (p -> name != NULL) octstr_destroy (p -> name);
-	if (p -> value != NULL) octstr_destroy (p -> value);
-	if (p -> version != NULL) octstr_destroy (p -> version);
-	if (p -> domain != NULL) octstr_destroy (p -> domain);
-	if (p -> path != NULL) octstr_destroy (p -> path);
+	octstr_destroy (p -> name);
+	octstr_destroy (p -> value);
+	octstr_destroy (p -> version);
+	octstr_destroy (p -> domain);
+	octstr_destroy (p -> path);
+
 	gw_free (p);
 	debug ("wap.wsp.http", 0, "cookie_destroy: Destroyed cookie");
 	return;
@@ -549,10 +544,6 @@ static int parse_http_date (const char *expires)
 		return -1;
 	}
 
-	/* This may be MS specific - by setting the DST field to -1 you delgete responsibility to
-	 * the CRT library.
-	 */
-
 	ti.tm_isdst = -1;
 
 	rv = mktime (&ti);
@@ -577,7 +568,7 @@ static int parse_http_date (const char *expires)
 
 		/* This is bad - set the delta to 0 so we expire next time around */
 
-		error (0, "parse_http_date () Expiry time (%s) (delta=%d) is in the past !", 
+		error (0, "parse_http_date () Expiry time (%s) (delta=%ld) is in the past !", 
 			asctime (&ti), rv-now);
 		return 0;
 	}
