@@ -1692,9 +1692,6 @@ commands never arrive nor can you restart it via WAP anymore.</para>
 
 
 
-
-
-
 <chapter id="wap-gateway">
 <title>Setting up a WAP gateway</title>
 
@@ -1865,8 +1862,157 @@ bearerbox-host = localhost
 
 
 
+<chapter id="msisdn-provisioning">
+<title>Setting up MSISDN provisioning for WAP gateway</title>
 
+    <para>This chapter tells you how to set Kannel up to deliver the MSISDN
+	 number of the WAP device using the WAP gateway.</para>
 
+	 <para>Mostly this feature is interested because the WAP protocol stack
+	 itself does not provide such a protocol layer bridging of information.
+	 In case you want to know which unique MSISDN is used by the WAP device
+	 your HTTP application is currently interacting, then you can pick this
+	 information from a RADIUS server that is used by a NAS (network access
+	 server) for authentication and accounting purposes.
+	 </para>
+
+	 <para>Kannel provides a RADIUS accounting proxy thread inside wapbox
+	 which holds a mapping table for the dynamicaly assigned (DHCP) IP 
+	 addresses of the WAP clients and their MSISDN numbers provided to the
+	 NAS device.
+	 </para>
+
+	 <para>Beware that you <emphasis>HAVE TO</emphasis> to be in control of 
+	 the NAS to configure it to use Kannel's wapbox as RADIUS accounting 
+	 server. You can not use
+	 MSISDN provisioning via Kannel's RADIUS accounting proxy if you can
+	 not forward the accounting packets to Kannel's accounting proxy thread.
+	 So obviously this feature is for operators and people who have dedicated
+	 dial-in servers (NAS).
+	 </para>
+
+<sect1>
+<title>RADIUS accounting proxy configuration</title>
+
+  <para>To set up the RADIUS accounting proxy thread inside Kannel you 
+  have to define a 'radius-acct' group.</para>
+
+<sect2>
+<title>RADIUS-Acct configuration</title>
+
+  <para>The simplest working 'radius-acct' group looks like this:
+<programlisting>
+group = radius-acct
+our-port = 1646
+remote-port = 2646
+secret-nas = radius
+secret-radius = radius
+</programlisting>
+
+   There is, however, multiple optional variables for the 'radius-acct'
+   group.</para>
+
+ <table frame="none">
+  <title>RADIUS-Acct Group Variables</title>
+  <tgroup cols="3">
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>group (m)</literal></entry>
+     <entry><literal>radius-acct</literal></entry>
+     <entry valign="bottom">
+       This is mandatory variable if you want to have Kannel's 
+		 RADIUS accounting proxy thread to be active inside wapbox.
+     </entry></row>
+
+   <row><entry><literal>secret-nas (m)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+	    Specifies the shared secret between NAS and our RADIUS accounting proxy.
+     </entry></row>
+
+   <row><entry><literal>secret-radius (m)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+	    Specifies the shared secret between our RADIUS accounting proxy and the
+		 remote RADIUS server itself.
+     </entry></row>
+
+   <row><entry><literal>our-host</literal></entry>
+     <entry><literal>IP address</literal></entry>
+     <entry valign="bottom">
+	    Specifies the local interface where our-port value will bind
+		 to. (defaults to 0.0.0.0)
+     </entry></row>
+
+   <row><entry><literal>remote-host</literal></entry>
+     <entry><literal>FQDN or IP address</literal></entry>
+     <entry valign="bottom">
+	    Specifies the remote RADIUS server to which we forward the 
+		 accounting packets. (defaults to localhost)
+     </entry></row>
+
+   <row><entry><literal>our-port</literal></entry>
+     <entry><literal>number</literal></entry>
+     <entry valign="bottom">
+	    Specifies the port to which our RADIUS accounting proxy thread
+		 will listen to. (defaults according to RFC2866 to 1813)
+     </entry></row>
+
+   <row><entry><literal>remote-port</literal></entry>
+     <entry><literal>number</literal></entry>
+     <entry valign="bottom">
+	    Specifies the port to which our RADIUS accounting proxy thread
+		 will forward any packets to the remote-host. 
+		 (defaults according to RFC2866 to 1813)
+     </entry></row>
+
+   <row><entry><literal>nas-ports</literal></entry>
+     <entry><literal>number</literal></entry>
+     <entry valign="bottom">
+	    Specifies how many possible clients can connect simultaniously 
+		 to the NAS. This value is used to initialize the mapping hash table.
+		 If does not require to be exact, because the table grows automatically
+		 if required. (defaults to 30)
+     </entry></row>
+
+    <row><entry><literal>unified-prefix</literal></entry>
+     <entry>prefix-list</entry>
+     <entry valign="bottom">
+        String to unify provided phone numbers from NAS.
+		  Format is that first comes the
+        unified prefix, then all prefixes which are replaced by the
+        unified prefix, separated with comma (','). For example,
+        for Finland an unified-prefix "+358,00358,0;+,00" should do the trick. 
+        If there are several unified prefixes, separate their rules with
+        semicolon (';'), like "+35850,050;+35840,040".
+	  </entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
+
+</sect2>
+<sect2>
+<title>Using the MSISDN provisioning on HTTP server side</title>
+
+  <para>Kannel's wapbox will include a specific HTTP header in the HTTP
+  request issued to the URL provided by the WAP client. That HTTP header 
+  is <literal>X-WAP-Network-Client-MSISDN</literal>. It will carry as value
+  the MSISDN of the WAP client if the RADIUS accounting proxy has received
+  a valid accounting packet from the NAS that provided the client IP.
+  </para>
+
+</sect2>
+  
+</sect1>
+
+</chapter>
 
 
 
