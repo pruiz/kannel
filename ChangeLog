@@ -1,3 +1,7 @@
+Sat May 27 06:39:51 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wap-events.[ch]: Added wap_event_assert function.
+
 Sat May 27 02:50:09 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/gwthread.[ch]: Added function gwthread_join_all, which

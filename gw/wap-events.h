@@ -49,10 +49,7 @@ WAPEvent *wap_event_duplicate(WAPEvent *event);
 
 const char *wap_event_name(WAPEventName type);
 void wap_event_dump(WAPEvent *event);
-
-#if XXX
-void wap_event_assert_or_finalize(WAPEvent *event);
-#endif
+void wap_event_assert(WAPEvent *event);
 
 
 #endif

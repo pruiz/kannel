@@ -116,3 +116,25 @@ void wap_event_dump(WAPEvent *event) {
 	}
 	debug("wap.event", 0, "WAPEvent dump ends.");
 }
+
+
+
+void wap_event_assert(WAPEvent *event) {
+	gw_assert(event != NULL),
+	gw_assert(event->type >= 0);
+	gw_assert(event->type < WAPEventNameCount);
+
+	switch (event->type) {
+	#define WAPEVENT(name, fields) \
+		case name: \
+		{ struct name *p = &event->name; fields; break; }
+	#define OCTSTR(name) octstr_len(p->name);
+	#define INTEGER(name) gw_assert(p != NULL);
+	#define HTTPHEADER(name) gw_assert(p->name != NULL);
+	#define WTP_MACHINE(name) gw_assert(p->name != NULL);
+	#define SESSION_MACHINE(name) gw_assert(p->name != NULL);
+	#include "wap-events-def.h"
+	default:
+		gw_assert(0);
+	}
+}
