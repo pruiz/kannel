@@ -1,3 +1,9 @@
+2000-06-30  Derry Hamilton  <rasilon@tardis.ed.ac.uk>
+
+	* Makefile.in: made .depend depend on config.h.  This should
+	allow changing between checked and unchecked malloc without manual
+	intervention.
+
 2000-06-30  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/gwmem-check.c: Fix call to free() in drop_from_free_ring().
