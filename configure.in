@@ -33,7 +33,13 @@ AC_CHECK_LIB(socket, accept)
 AC_CHECK_LIB(nsl, inet_ntoa)
 AC_CHECK_LIB(pthread, pthread_create)
 AC_CHECK_LIB(z, gzopen)
-AC_CHECK_LIB(xml, xmlDocGetRootElement)
+AC_CHECK_LIB(xml, xmlDocGetRootElement,
+	case `xml-config --version` in 
+	1.8.6[)] [;;] 
+	1.8.7[)] [;;] 
+	*[)] echo "Libxml is too old. You need at least 1.8.6." [;] exit 1 [;;] 
+	esac,
+	echo "You MUST have the gnome-xml library installed"; exit 1)
 AC_SEARCH_LIBS(inet_aton, c resolv)
 
 dnl Checks for header files.

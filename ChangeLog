@@ -1,3 +1,7 @@
+Fri Mar 24 12:38:33 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* configure.in, configure: Check that gnome-xml is at least 1.8.6.
+
 2000-03-24 Sanna Seppänen <sanna@wapit.com>
 
 	* gwlib/http.c,h: header_destroy returns now a pointer to the
