@@ -55,16 +55,18 @@
  */ 
 
 /*
+ * wsstdlib.c - WTA and WTAI standard libraries related implementations
  *
- * wsstdlib.c
- *
- * Author: Markku Rossi <mtr@iki.fi>
- *
- * Copyright (c) 1999-2000 WAPIT OY LTD.
- *		 All rights reserved.
- *
- * Standard libraries.
- *
+ * Authors: 
+ * Markku Rossi <mtr@iki.fi>
+ * Stipe Tolj <stolj@wapme.de>
+ * 
+ * 2005-03-22 - update to latest specs: 
+ *              WAP-268-WTAI-20010908.pdf 
+ *              WAP-269-WTAIIS136-20010908-a.pdf
+ *              WAP-270-WTAIPDC-20010908-a.pdf
+ *              WAP-228-WTAIIS95-20010908-a.pdf
+ *              WAP-255-WTAIGSM-20010908-a.pdf
  */
 
 #include "wsint.h"
@@ -89,6 +91,8 @@ struct WsStdLibFuncRegRec
 
     /* The exact number of arguments. */
     int num_args;
+    
+    /* The function ID as specified */
     WsUInt8 function_id;
 };
 
@@ -199,62 +203,6 @@ static WsStdLibFuncReg lib_dialogs_functions[] =
         {"alert", 1, 2},
     };
 
-static WsStdLibFuncReg lib_wtapublic_functions[] =
-    {
-        {"makeCall", 1, 0},
-        {"sendDTMF", 1, 1},
-    };
-
-static WsStdLibFuncReg lib_wtavoicecall_functions[] =
-    {
-        {"setup", 2, 0},
-        {"accept", 2, 1},
-        {"release", 1, 2},
-        {"sendDTMF", 1, 3},
-    };
-
-static WsStdLibFuncReg lib_wtanettext_functions[] =
-    {
-        {"send", 2, 0},
-        {"read", 1, 1},
-        {"remove", 1, 2},
-        {"getFieldValue", 2, 3},
-    };
-
-static WsStdLibFuncReg lib_phonebook_functions[] =
-    {
-        {"write", 3, 0},
-        {"read", 2, 1},
-        {"remove", 1, 2},
-        {"getFieldValue", 2, 3},
-    };
-
-static WsStdLibFuncReg lib_wtacalllog_functions[] =
-    {
-        {"dialled", 1, 0},
-        {"missed", 1, 1},
-        {"received", 1, 2},
-        {"getFieldValue", 2, 3},
-    };
-
-static WsStdLibFuncReg lib_wtamisc_functions[] =
-    {
-        {"indication", 3, 0},
-        {"endcontext", 0, 1},
-        {"protected", 1, 2},
-    };
-
-static WsStdLibFuncReg lib_wtagsm_functions[] =
-    {
-        {"reject", 1, 0},
-        {"hold", 1, 1},
-        {"transfer", 1, 2},
-        {"multiparty", 0, 3},
-        {"retrieve", 1, 4},
-        {"location", 0, 5},
-        {"sendUSSD", 4, 6},
-    };
-
 static WsStdLibFuncReg lib_crypto_functions[] =
     {
         {"signText", 4, 16},
@@ -277,24 +225,114 @@ static WsStdLibFuncReg lib_efi_functions[] =
         {"control", 3, 12},
     };
 
+static WsStdLibFuncReg lib_wtapublic_functions[] =
+    {
+        {"makeCall", 1, 0},
+        {"sendDTMF", 1, 1},
+        {"addPBEntry", 2, 2},
+    };
+
+static WsStdLibFuncReg lib_wtavoicecall_functions[] =
+    {
+        {"setup", 2, 0},
+        {"accept", 2, 1},
+        {"release", 1, 2},
+        {"sendDTMF", 2, 3},
+        {"callStatus", 2, 4},
+        {"list", 1, 5},
+    };
+
+static WsStdLibFuncReg lib_wtanettext_functions[] =
+    {
+        {"send", 2, 0},
+        {"list", 2, 1},
+        {"remove", 1, 2},
+        {"getFieldValue", 2, 3},
+        {"markAsRead", 1, 4},
+    };
+
+static WsStdLibFuncReg lib_wtaphonebook_functions[] =
+    {
+        {"write", 3, 0},
+        {"search", 2, 1},
+        {"remove", 1, 2},
+        {"getFieldValue", 2, 3},
+        {"change", 3, 4},
+    };
+
+static WsStdLibFuncReg lib_wtamisc_functions[] =
+    {
+        {"setIndicator", 2, 0},
+        {"endContext", 0, 1},
+        {"getProtection", 0, 2},
+        {"setProtection", 1, 3},
+    };
+
+static WsStdLibFuncReg lib_wtaansi136_functions[] =
+    {
+        {"sendFlash", 2, 0},
+        {"sendAlert", 2, 1},
+    };
+
+static WsStdLibFuncReg lib_wtagsm_functions[] =
+    {
+        {"hold", 1, 0},
+        {"retrieve", 1, 1},
+        {"transfer", 2, 2},
+        {"deflect", 2, 3},
+        {"multiparty", 0, 4},
+        {"seperate", 1, 5},
+        {"sendUSSD", 4, 6},
+        {"netinfo", 1, 7},
+        {"callWaiting", 1, 8},
+        {"sendBusy", 1, 9},
+    };
+    
+static WsStdLibFuncReg lib_wtacalllog_functions[] =
+    {
+        {"dialled", 1, 0},
+        {"missed", 1, 1},
+        {"received", 1, 2},
+        {"getFieldValue", 2, 3},
+    };
+
+static WsStdLibFuncReg lib_wtapdc_functions[] =
+    {
+        {"hold", 1, 0},
+        {"retrieve", 1, 1},
+        {"transfer", 2, 2},
+        {"deflect", 2, 3},
+        {"multiparty", 0, 4},
+        {"seperate", 1, 5},
+    };
+
+static WsStdLibFuncReg lib_wtais95_functions[] =
+    {
+        {"sendText", 6, 0},
+        {"cancelText", 1, 1},
+        {"sendAck", 1, 2},
+    };
+
 static WsStdLibReg libraries[] =
     {
         {"Lang", 0, NF(lib_lang_functions), lib_lang_functions},
         {"Float", 1, NF(lib_float_functions), lib_float_functions},
         {"String", 2, NF(lib_string_functions), lib_string_functions},
         {"URL", 3, NF(lib_url_functions), lib_url_functions},
-        {"WMLBrowser", 4, NF(lib_wmlbrowser_functions),
-         lib_wmlbrowser_functions},
+        {"WMLBrowser", 4, NF(lib_wmlbrowser_functions), lib_wmlbrowser_functions},
         {"Dialogs", 5, NF(lib_dialogs_functions), lib_dialogs_functions},
         {"Crypto", 6, NF(lib_crypto_functions), lib_crypto_functions},
         {"EFI", 7, NF(lib_efi_functions), lib_efi_functions},
         {"WTAPublic", 512, NF(lib_wtapublic_functions), lib_wtapublic_functions},
         {"WTAVoiceCall", 513, NF(lib_wtavoicecall_functions), lib_wtavoicecall_functions},
         {"WTANetText", 514, NF(lib_wtanettext_functions), lib_wtanettext_functions},
-        {"PhoneBook", 515, NF(lib_phonebook_functions), lib_phonebook_functions},
+        {"WTAPhoneBook", 515, NF(lib_wtaphonebook_functions), lib_wtaphonebook_functions},
         {"WTAMisc", 516, NF(lib_wtamisc_functions), lib_wtamisc_functions},
+        {"WTAANSI163", 517, NF(lib_wtaansi136_functions), lib_wtaansi136_functions},
         {"WTAGSM", 518, NF(lib_wtagsm_functions), lib_wtagsm_functions},
         {"WTACallLog", 519, NF(lib_wtacalllog_functions), lib_wtacalllog_functions},
+        {"WTAPDC", 520, NF(lib_wtapdc_functions), lib_wtapdc_functions},
+        {"WTAIS95", 521, NF(lib_wtais95_functions), lib_wtais95_functions},
         {NULL, 0, 0, NULL}
     };
 

@@ -55,16 +55,11 @@
  */ 
 
 /*
+ * wsstdlib.c - WTA and WTAI standard libraries related implementations
  *
- * wsstdlib.h
- *
- * Author: Markku Rossi <mtr@iki.fi>
- *
- * Copyright (c) 1999-2000 WAPIT OY LTD.
- *		 All rights reserved.
- *
- * Standard libraries.
- *
+ * Authors: 
+ * Markku Rossi <mtr@iki.fi>
+ * Stipe Tolj <stolj@wapme.de>
  */
 
 #ifndef WSSTDLIB_H

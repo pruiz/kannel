@@ -1,3 +1,9 @@
+2005-03-22  Stipe Tolj  <stolj@wapme.de> 
+    * wmlscript/wsstdlib.[ch]: updated and added latest WTAI functions as 
+      defined in WAP-268-WTAI, WAP-269-WTAIIS136, WAP-270-WTAIPDC, 
+      WAP-228-WTAIIS95-20010908 and WAP-255-WTAIGSM. Thanks to Dermot Wrycraft
+      <Dermot.Wrycraft@magdalene.co.uk> for providing the hint for update.
+    
 2005-03-21  Stipe Tolj  <stolj@wapme.de> 
     * gwlib/octstr.{ch]: adding octstr_str_case_compare() to allow insensitive
       string compare with const char. Patch by Fred <fred@5thfinger.com>.
