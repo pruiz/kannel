@@ -1,3 +1,6 @@
+2003-05-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_http.c: fixed compiler warning
+
 2003-05-16  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_http.c: fixed parse_xml_tag() function. This may be of 
       abstractive use inside gwlib/octstr.[ch]?!
