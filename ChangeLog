@@ -1,3 +1,9 @@
+2000-11-07  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: Memory leak with malformed variable fixed. 
+	Also fixed the bug that reserved words cannot be variable names,
+	eg $(password).
+
 2000-11-07  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/http.[ch]: Removed old server API.

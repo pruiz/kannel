@@ -725,47 +725,55 @@ static int parse_attr_value(Octstr *attr_value, wml_table_t *tokens,
      * Nokia 7110 doesn't seem to understand string table references here.
      */
 
-    for (i = 0; tokens[i].text != NULL; i++) {
-	pos = octstr_search_cstr(attr_value, tokens[i].text, 0);
-	switch (pos) {
-	case -1:
-	    break;
-	case 0:
-	    wbxml_hex = tokens[i].token;
-	    output_char(wbxml_hex, wbxml);	
-	    octstr_delete(attr_value, 0, strlen(tokens[i].text));	
-	    break;
-	default:
-	    /* 
-	     *  There is some text before the first hit, that has to 
-	     *  be handled too. 
-	     */
-	    gw_assert(pos <= octstr_len(attr_value));
+    /* A fast patch to allow reserved names to be variable names. May produce 
+       a little longer binary at some points. --tuo */
+    if (octstr_search_char(attr_value, '$', 0) >= 0) {
+	if (parse_octet_string(attr_value, 0, wbxml) != 0)
+	    return -1;
+    } else {
+
+	for (i = 0; tokens[i].text != NULL; i++) {
+	    pos = octstr_search_cstr(attr_value, tokens[i].text, 0);
+	    switch (pos) {
+	    case -1:
+		break;
+	    case 0:
+		wbxml_hex = tokens[i].token;
+		output_char(wbxml_hex, wbxml);	
+		octstr_delete(attr_value, 0, strlen(tokens[i].text));	
+		break;
+	    default:
+		/* 
+		 *  There is some text before the first hit, that has to 
+		 *  be handled too. 
+		 */
+		gw_assert(pos <= octstr_len(attr_value));
 	
-	    cut_text = octstr_copy(attr_value, 0, pos);
-	    if (parse_octet_string(cut_text, 0, wbxml) != 0)
-		return -1;
-	    octstr_destroy(cut_text);
+		cut_text = octstr_copy(attr_value, 0, pos);
+		if (parse_octet_string(cut_text, 0, wbxml) != 0)
+		    return -1;
+		octstr_destroy(cut_text);
 	    
-	    wbxml_hex = tokens[i].token;
-	    output_char(wbxml_hex, wbxml);	
+		wbxml_hex = tokens[i].token;
+		output_char(wbxml_hex, wbxml);	
 
-	    octstr_delete(attr_value, 0, pos + strlen(tokens[i].text));
-	    break;
+		octstr_delete(attr_value, 0, pos + strlen(tokens[i].text));
+		break;
+	    }
 	}
-    }
 
-    /* 
-     * If no hits, then the attr_value is handled as a normal text, otherwise
-     * the remaining part is searched for other hits too. 
-     */
+	/* 
+	 * If no hits, then the attr_value is handled as a normal text, 
+	 * otherwise the remaining part is searched for other hits too. 
+	 */
 
-    if ((int) octstr_len(attr_value) > 0) {
-	if (tokens[i].text != NULL)
-	    parse_attr_value(attr_value, tokens, wbxml);
-	else
-	    if (parse_octet_string(attr_value, 0, wbxml) != 0)
-		return -1;
+	if ((int) octstr_len(attr_value) > 0) {
+	    if (tokens[i].text != NULL)
+		parse_attr_value(attr_value, tokens, wbxml);
+	    else
+		if (parse_octet_string(attr_value, 0, wbxml) != 0)
+		    return -1;
+	}
     }
 
     return 0;
@@ -924,6 +932,8 @@ static int parse_variable(Octstr *text, int start, Octstr **output,
 
 	if ((esc = check_variable_syntax(variable)) != FAILED)
 	    output_variable(variable, output, esc, wbxml);
+	else
+	    octstr_destroy(variable);
     }
 
     return ret;
