@@ -1,5 +1,11 @@
 2001-03-29  Uoti Urpala  <uau@wapit.com>
 
+	* gw/urltrans.c: Test in find_translation() was the wrong way
+	around, 'accepted-smsc' actually worked like denied-smsc. Fixed.
+	Also enabled using 'accepted-smsc' in default SMS-service groups.
+
+2001-03-29  Uoti Urpala  <uau@wapit.com>
+
 	* gw/smsc_emi2.c: Added support for the "our-port" parameter.
 
 	* gwlib/conn.[ch]: Added function conn_open_tcp_with_port, which

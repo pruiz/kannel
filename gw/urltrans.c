@@ -82,7 +82,8 @@ static URLTranslation *create_onetrans(CfgGroup *grp);
 static void destroy_onetrans(void *ot);
 static URLTranslation *find_translation(URLTranslationList *trans, 
 					List *words, Octstr *smsc);
-static URLTranslation *find_default_translation(URLTranslationList *trans);
+static URLTranslation *find_default_translation(URLTranslationList *trans,
+						Octstr *smsc);
 
 
 /***********************************************************************
@@ -191,7 +192,7 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
     t = find_translation(trans, words, smsc);
     list_destroy(words, octstr_destroy_item);
     if (t == NULL)
-	t = find_default_translation(trans);
+	t = find_default_translation(trans, smsc);
     return t;
 }
 
@@ -751,7 +752,7 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 	 * translation only if smsc id is in accept string
 	 */
 	if (smsc && t->accepted_smsc) {
-	    if (list_search(t->accepted_smsc, smsc, octstr_item_match)) {
+	    if (!list_search(t->accepted_smsc, smsc, octstr_item_match)) {
 		t = NULL;
 		continue;
 	    }
@@ -771,19 +772,26 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 }
 
 
-static URLTranslation *find_default_translation(URLTranslationList *trans)
+static URLTranslation *find_default_translation(URLTranslationList *trans,
+						Octstr *smsc)
 {
     URLTranslation *t;
     int i;
-	
+    List *list;
+
+    list = dict_get(trans->dict, octstr_imm("default"));
+    t = NULL;
     for (i = 0; i < list_len(trans->list); ++i) {
-	t = list_get(trans->list, i);
-	if (t->keyword != NULL && t->type != TRANSTYPE_SENDSMS
-	    && octstr_compare(octstr_imm("default"), 
-	    	    	      t->keyword) == 0)
-	    return t;
+	t = list_get(list, i);
+	if (smsc && t->accepted_smsc) {
+	    if (!list_search(t->accepted_smsc, smsc, octstr_item_match)) {
+		t = NULL;
+		continue;
+	    }
+	}
+	break;
     }
-    return NULL;
+    return t;
 }
 
 
