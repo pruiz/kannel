@@ -567,6 +567,8 @@ static long parse_field_name(Octstr *content, long pos)
  * Transfer entity headers of a body part (it is, from the content entity) 
  * to a header list. Push Message, chapter 6.2.1.10 states that Content-Type
  * header is mandatory. 
+ * Message proper starts after first empty line. We search only to it, and
+ * remove the line here.
  * Return 0 when error, 1 otherwise. In addition, return the modified body
  * part and content headers.
  */
@@ -590,6 +592,8 @@ static int pass_data_headers(Octstr **body_part, List **data_headers)
     if (pass_extension_headers(body_part, data_headers, octstr_imm("\r\n\r\n")) == 0)
         goto operror;
    
+    octstr_delete(*body_part, 0, octstr_len(octstr_imm("\r\n")));   
+
     return 1;
 
 operror:
