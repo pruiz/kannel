@@ -1,5 +1,10 @@
 2000-03-29  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/octstr.c: Small changes to deal with the possibility
+	of ostr->data being NULL if ostr->size is 0.
+
+2000-03-29  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/gwmem.c: Add assertion (size > 0) to gw_malloc.
 
 2000-03-29    <Kalle Marjola <rpr@wapit.com>>

@@ -122,7 +122,7 @@ Octstr *octstr_create_from_data(const char *data, size_t len) {
     Octstr *ostr;
     
     ostr = octstr_create_empty();
-    if (ostr != NULL) {
+    if (ostr != NULL && len > 0) {
 	ostr->len = len;
 	ostr->size = len + 1;
 	ostr->data = gw_malloc(ostr->size);
@@ -164,18 +164,20 @@ Octstr *octstr_duplicate(Octstr *ostr) {
 
 
 Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2) {
-    Octstr *ostr;
+	Octstr *ostr;
     
-    ostr = octstr_create_empty();
-    if (ostr == NULL)
+	ostr = octstr_create_empty();
+	if (ostr == NULL)
 		return NULL;
 
 	ostr->len = ostr1->len + ostr2->len;
 	ostr->size = ostr->len + 1;
 	ostr->data = gw_malloc(ostr->size);
 	
-	memcpy(ostr->data, ostr1->data, ostr1->len);
-	memcpy(ostr->data + ostr1->len, ostr2->data, ostr2->len);
+	if (ostr1->len > 0)
+		memcpy(ostr->data, ostr1->data, ostr1->len);
+	if (ostr2->len > 0)
+		memcpy(ostr->data + ostr1->len, ostr2->data, ostr2->len);
 	ostr->data[ostr->len] = '\0';
 	
 	return ostr;
@@ -200,7 +202,8 @@ Octstr *octstr_cat_char(Octstr *ostr1, int ch) {
 	ostr->size = ostr->len + 1;
 	ostr->data = gw_malloc(ostr->size);
 	
-	memcpy(ostr->data, ostr1->data, ostr1->len);
+	if (ostr1->len > 0)
+		memcpy(ostr->data, ostr1->data, ostr1->len);
 	ostr->data[ostr->len-1] = ch;
 	ostr->data[ostr->len] = '\0';
 	
@@ -210,7 +213,7 @@ Octstr *octstr_cat_char(Octstr *ostr1, int ch) {
 
 void octstr_set_char(Octstr *ostr, size_t pos, int ch) {
 	if (pos < ostr->len)
-		ostr->data[pos] = (unsigned char) ch;
+		ostr->data[pos] = ch;
 }
 
 
@@ -219,12 +222,13 @@ void octstr_get_many_chars(char *buf, Octstr *ostr, size_t pos, size_t len) {
 		return;
 	if (pos + len > ostr->len)
 		len = ostr->len - pos;
-	memcpy(buf, ostr->data + pos, len);
+	if (len > 0)
+		memcpy(buf, ostr->data + pos, len);
 }
 
 
 char *octstr_get_cstr(Octstr *ostr) {
-	if (ostr->size == 0)
+	if (ostr->len == 0)
 		return "";
 	return ostr->data;
 }
@@ -272,7 +276,7 @@ int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, size_t n) {
 
 
 int octstr_search_char(Octstr *ostr, char ch) {
-    return octstr_search_char_from(ostr, ch, 0);
+	return octstr_search_char_from(ostr, ch, 0);
 }
 
 
@@ -323,7 +327,9 @@ int octstr_search_str(Octstr *ostr, char *str) {
 
     
 int octstr_print(FILE *f, Octstr *ostr) {
-    if (fwrite(ostr->data, ostr->len, 1, f) != 1) {
+	if (ostr->len == 0)
+		return 0;
+	if (fwrite(ostr->data, ostr->len, 1, f) != 1) {
 		error(errno, "Couldn't write all of octet string to file.");
 		return -1;
 	}
@@ -373,6 +379,9 @@ int octstr_write_to_socket(int socket, Octstr *ostr) {
 void octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos) {
 	size_t needed;
 	char *p;
+
+	if (ostr2->len == 0)
+		return;
 	
 	needed = ostr1->len + ostr2->len + 1;
 	if (ostr1->size < needed) {
@@ -399,7 +408,8 @@ void octstr_replace(Octstr *ostr, char *data, size_t len) {
 	    ostr->size = needed;
 	    ostr->data = p;
 	}
-	memcpy(ostr->data, data, len);
+	if (len > 0)
+		memcpy(ostr->data, data, len);
 	ostr->len = len;
 	ostr->data[len] = '\0';
 }
@@ -462,6 +472,9 @@ void octstr_shrink_blank(Octstr *text) {
 void octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
 	size_t needed;
 	char *p;
+
+	if (len == 0)
+		return;
 	
 	if (ostr->len < pos) {	/* make things a bit more robust */
 		pos = ostr->len;
