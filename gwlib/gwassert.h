@@ -7,8 +7,11 @@
 
 #ifdef NDEBUG
 #define gw_assert(expr) ((void) 0)
+#define gw_assert_place(expr, file, line) ((void) 0)
 #else
-#define gw_assert(expr) ((void) ((expr) ? 0 : \
-			panic(0, "%s:%d: %s: Assertion `%s' failed.", \
-			      __FILE__, __LINE__, __FUNCTION__, #expr), 0))
+#define gw_assert(expr) \
+	gw_assert_place(expr, __FILE__, __LINE__, __FUNCTION__)
+#define gw_assert_place(expr, file, lineno, func) ((void) ((expr) ? 0 : \
+			panic(0, "%s:%ld: %s: Assertion `%s' failed.", \
+			      (file), (long) (lineno), (func), #expr), 0))
 #endif

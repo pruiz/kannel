@@ -74,7 +74,8 @@ struct OctstrList {
  */
 
 
-static void seems_valid(Octstr *ostr);
+static void seems_valid_real(Octstr *ostr, const char *filename, long lineno);
+#define seems_valid(ostr) (seems_valid_real(ostr, __FILE__, __LINE__))
 
 
 /***********************************************************************
@@ -147,6 +148,9 @@ Octstr *octstr_create_tolower(const char *cstr) {
 Octstr *octstr_create_from_data(const void *data, long len) {
 	Octstr *ostr;
 	
+	gw_assert(len >= 0);
+	gw_assert(data != NULL || len == 0);
+
 	ostr = octstr_create_empty();
 	if (ostr != NULL && len > 0) {
 		ostr->len = len;
@@ -170,6 +174,8 @@ void octstr_destroy(Octstr *ostr) {
 
 
 long octstr_len(Octstr *ostr) {
+	if (ostr == NULL)
+		return 0;
 	seems_valid(ostr);
 	return ostr->len;
 }
@@ -929,10 +935,12 @@ error:
  * Local functions.
  */
 
-static void seems_valid(Octstr *ostr) {
-	gw_assert(ostr != NULL);
-	gw_assert(ostr->len < ostr->size || 
-	         (ostr->size == 0 && ostr->len == 0));
-	gw_assert(ostr->size == 0 || 
-	         (ostr->data !=  NULL && ostr->data[ostr->len] == '\0'));
+static void seems_valid_real(Octstr *ostr, const char *filename, long lineno) {
+	gw_assert_place(ostr != NULL, filename, lineno, "");
+	gw_assert_place(ostr->len < ostr->size || 
+	         (ostr->size == 0 && ostr->len == 0),
+		 filename, lineno, "");
+	gw_assert_place(ostr->size == 0 || 
+	         (ostr->data !=  NULL && ostr->data[ostr->len] == '\0'),
+		 filename, lineno, "");
 }

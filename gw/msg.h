@@ -12,8 +12,6 @@
 
 #include "gwlib/gwlib.h"
 
-typedef long int32;
-
 enum msg_type {
 	#define MSG(type, stmt) type,
 	#include "msg-decl.h"
@@ -23,7 +21,7 @@ enum msg_type {
 typedef struct {
 	enum msg_type type;
 
-	#define INTEGER(name) int32 name
+	#define INTEGER(name) long name
 	#define OCTSTR(name) Octstr *name
 	#define MSG(type, stmt) struct type stmt type;
 	#include "msg-decl.h"

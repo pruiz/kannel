@@ -114,7 +114,7 @@ static int socket_sender(Msg *pmsg)
     }
     mutex_unlock(socket_mutex);
 
-    debug("sms", 0, "write <%*s> [%ld]",
+    debug("sms", 0, "write <%.*s> [%ld]",
 	  (int) octstr_len(pmsg->smart_sms.msgdata),
 	  octstr_get_cstr(pmsg->smart_sms.msgdata),
 	  octstr_len(pmsg->smart_sms.udhdata));
@@ -317,6 +317,9 @@ static void init_smsbox(Config *cfg)
  */
 static int send_heartbeat(void)
 {
+    /* XXX this is not thread safe, if two threads happen to call 
+       send_hearbeat at the same time. Should never happen, though, and 
+       anyway only causes a minor memory leak. --liw */
     static Msg *msg = NULL;
     Octstr *pack;
     
@@ -467,5 +470,6 @@ int main(int argc, char **argv)
     info(0, "Connected to Bearer Box at %s port %d", bb_host, bb_port);
 
     main_loop();
+    gw_check_leaks();
     return 0;
 }

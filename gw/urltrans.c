@@ -92,11 +92,14 @@ URLTranslationList *urltrans_create(void) {
 
 
 void urltrans_destroy(URLTranslationList *trans) {
+	if (trans == NULL)
+		return;
 	while (trans->list != NULL) {
 		URLTranslation *ot = trans->list;
 		trans->list = trans->list->next;
 		destroy_onetrans(ot);
 	}
+	gw_free(trans);
 }
 
 
@@ -141,6 +144,7 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text) {
 	    return NULL;
 
 	t = find_translation(trans, words);
+	octstr_list_destroy(words, 1);
 	if (t == NULL)
 	    t = find_default_translation(trans);
 	return t;
@@ -499,6 +503,8 @@ static void destroy_onetrans(URLTranslation *ot) {
 		gw_free(ot->faked_sender);
 		gw_free(ot->split_chars);
 		gw_free(ot->split_suffix);
+		gw_free(ot->username);
+		gw_free(ot->password);
 		gw_free(ot);
 	}
 }

@@ -30,8 +30,8 @@ static void unlock(void);
 static void dump(void);
 #endif
 
-static void remember(void *p, size_t size);
-static void forget(void *p);
+static void remember(void *p, size_t size, const char *filename, long lineno);
+static void forget(void *p, const char *filename, long lineno);
 static void check_leaks(void);
 
 static void fill(void *p, size_t bytes, long pattern);
@@ -43,7 +43,7 @@ void gw_init_mem(void) {
 	initialized = 1;
 }
 
-void *gw_malloc(size_t size) {
+void *gw_malloc_real(size_t size, const char *filename, long lineno) {
 	void *ptr;
 	
 	gw_assert(initialized);
@@ -57,48 +57,49 @@ void *gw_malloc(size_t size) {
 			(unsigned long) size);
 	
 	fill(ptr, size, 0xbabecafe);
-	remember(ptr, size);
+	remember(ptr, size, filename, lineno);
 	
 	return ptr;
 }
 
 
-void *gw_realloc(void *ptr, size_t size) {
+void *gw_realloc_real(void *ptr, size_t size, 
+const char *filename, long lineno) {
 	void *new_ptr;
 	
 	gw_assert(initialized);
-	
 	gw_assert(size > 0);
+
 	new_ptr = realloc(ptr, size);
 	if (new_ptr == NULL)
 		panic(errno, "Memory re-allocation of %lu bytes failed", 
 			(unsigned long) size);
 	
 	if (new_ptr != ptr) {
-		remember(new_ptr, size);
-		forget(ptr);
+		remember(new_ptr, size, filename, lineno);
+		forget(ptr, filename,lineno);
 	}
 	
 	return new_ptr;
 }
 
 
-void  gw_free(void *ptr) {
+void  gw_free_real(void *ptr, const char *filename, long lineno) {
 	gw_assert(initialized);
-#if 0
-	forget(ptr);
+	forget(ptr, filename, lineno);
+#if 1
 	free(ptr);
 #endif
 }
 
 
-char *gw_strdup(const char *str) {
+char *gw_strdup_real(const char *str, const char *filename, long lineno) {
 	char *copy;
 	
 	gw_assert(initialized);
-	
 	gw_assert(str != NULL);
-	copy = gw_malloc(strlen(str) + 1);
+
+	copy = gw_malloc_real(strlen(str) + 1, filename, lineno);
 	strcpy(copy, str);
 	return copy;
 }
@@ -123,6 +124,8 @@ void gw_check_leaks(void) {
 struct mem {
 	void *p;
 	size_t size;
+	const char *allocated_filename;
+	long allocated_lineno;
 };
 static struct mem tab[MAX_ALLOCATIONS + 1];
 static long num_allocations = 0;
@@ -170,7 +173,7 @@ static long unlocked_find(void *p) {
 /*
  * Add a memory area to the table.
  */
-static void remember(void *p, size_t size) {
+static void remember(void *p, size_t size, const char *filename, long lineno) {
 #if GWMEM_CHECK
 	lock();
 #if GWMEM_TRACE
@@ -180,6 +183,8 @@ static void remember(void *p, size_t size) {
 		panic(0, "Too many allocations that haven't been freed yet.");
 	tab[num_allocations].p = p;
 	tab[num_allocations].size = size;
+	tab[num_allocations].allocated_filename = filename;
+	tab[num_allocations].allocated_lineno = lineno;
 	++num_allocations;
 	qsort(tab, num_allocations, sizeof(struct mem), compare_mem);
 	unlock();
@@ -190,7 +195,7 @@ static void remember(void *p, size_t size) {
 /*
  * Forget about a memory area.
  */
-static void forget(void *p) {
+static void forget(void *p, const char *filename, long lineno) {
 #if GWMEM_CHECK
 	long i;
 
@@ -231,6 +236,7 @@ static void check_leaks(void) {
 	debug("gwlib.gwmem", 0, 
 	      "Current allocations: %ld areas, %ld bytes", 
 	      num_allocations, bytes);
+	dump();
 #endif
 }
 
@@ -240,8 +246,10 @@ static void dump(void) {
 	long i;
 
 	for (i = 0; i < num_allocations; ++i)
-		debug("gwlib.gwmem", 0, "area %ld at %p, %lu bytes",
-			i, tab[i].p, (unsigned long) tab[i].size);
+		debug("gwlib.gwmem", 0, "area %ld at %p, %lu bytes, "
+			"allocated at %s:%ld",
+			i, tab[i].p, (unsigned long) tab[i].size,
+			tab[i].allocated_filename, tab[i].allocated_lineno);
 }
 #endif
 

@@ -1,3 +1,32 @@
+Mon Apr  3 21:02:49 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* test/test_urltrans.c: Wrote. Useful for testing memory leaks.
+	
+	* gw/msg.[ch]: Used long instead of int32.
+	
+	* gw/smsbox.c: Fixed output restriction format in debugging statement.
+	Also added a call to gw_check_leaks so that memory leaks can be
+	reported.
+	
+	* gw/urltrans.c: urltrans_destroy now works even when called
+	a NULL argument. Also, fixed a couple of memory leaks:
+	urltrans_destroy frees the actual list header node as
+	well, urltrans_find frees the temporary list of words, and
+	destroy_onetrans frees the username and password fields. (The work
+	on gwmem.c starts paying.)
+	
+	* gwlib/gwassert.h: Added a gw_assert_place macro so that the
+	caller can set explicitly the place reported.
+	
+	* gwlib/gwmem.[ch]: Record location where memory allocation is made,
+	so that gw_check_leak can report it.
+	
+	* gwlib/octstr.c: seems_valid reports the place it is called from
+	in the assertion error messages, not the places where gw_assert
+	fails.
+	
+	* test/test_http.c: Added -r option for repeating the fetch.
+	
 Mon Apr  3 18:55:46 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/socket.c: Changed certain AF_INET constants back to

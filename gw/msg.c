@@ -20,11 +20,11 @@
  * Prototypes for private functions.
  */
 
-static void append_integer(Octstr *os, int32 i);
-static void prepend_integer(Octstr *os, int32 i);
+static void append_integer(Octstr *os, long i);
+static void prepend_integer(Octstr *os, long i);
 static void append_string(Octstr *os, Octstr *field);
 
-static int parse_integer(int32 *i, Octstr *packed, int *off);
+static int parse_integer(long *i, Octstr *packed, int *off);
 static int parse_string(Octstr **os, Octstr *packed, int *off);
 
 static char *type_as_str(Msg *msg);
@@ -125,7 +125,7 @@ Octstr *msg_pack(Msg *msg) {
 Msg *msg_unpack(Octstr *os) {
 	Msg *msg;
 	int off;
-	int32 i;
+	long i;
 
 	msg = msg_create(0);
 	if (msg == NULL)
@@ -167,16 +167,16 @@ error:
  */
 
 
-static void append_integer(Octstr *os, int32 i) {
+static void append_integer(Octstr *os, long i) {
 	Octstr *temp;
 
 	i = htonl(i);
-	temp = octstr_create_from_data((char *) &i, sizeof(i));
+	temp = octstr_create_from_data(&i, sizeof(i));
 	octstr_insert(os, temp, octstr_len(os));
 	octstr_destroy(temp);
 }
 
-static void prepend_integer(Octstr *os, int32 i) {
+static void prepend_integer(Octstr *os, long i) {
 	Octstr *temp;
 
 	i = htonl(i);
@@ -195,22 +195,22 @@ static void append_string(Octstr *os, Octstr *field) {
 }
 
 
-static int parse_integer(int32 *i, Octstr *packed, int *off) {
+static int parse_integer(long *i, Octstr *packed, int *off) {
 	assert(*off >= 0);
-	if ((int) sizeof(int32) + *off > octstr_len(packed)) {
+	if ((int) sizeof(long) + *off > octstr_len(packed)) {
 		error(0, "Packet too short while unpacking Msg.");
 		return -1;
 	}
 
-	octstr_get_many_chars((char *) i, packed, *off, sizeof(int32));
+	octstr_get_many_chars((char *) i, packed, *off, sizeof(long));
 	*i = ntohl(*i);
-	*off += sizeof(int32);
+	*off += sizeof(long);
 	return 0;
 }
 
 
 static int parse_string(Octstr **os, Octstr *packed, int *off) {
-	int32 len;
+	long len;
 
 	if (parse_integer(&len, packed, off) == -1)
 		return -1;

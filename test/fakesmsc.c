@@ -141,7 +141,8 @@ int main(int argc, char **argv) {
 			if (first_received_at == 0)
 				first_received_at = last_received_at;
 		}
-		if (FD_ISSET(client, &writeset) && (max_send == 0 || num_sent < max_send)) {
+		if (FD_ISSET(client, &writeset) && 
+		    (max_send == 0 || num_sent < max_send)) {
 			gettimeofday(&now, &tz);
 			nowsec = (double) now.tv_sec + now.tv_usec / 1e6;
 			if (nowsec - lastsec > interval) {
