@@ -1,5 +1,10 @@
 2000-08-31  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/wsp.[ch]: Minor cleanups: Removed unused constants, added
+	a comment for assertions, etc.
+
+2000-08-31  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/wapbox.[ch]: Moved WB_DEFAULT_TIMER_TICK and CONNECTIONLESS_PORT
 	defines from .h to .c, since they're only used inside .c.
 	

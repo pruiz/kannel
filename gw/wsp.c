@@ -1,8 +1,5 @@
 /*
  * wsp.c - Parts of WSP shared between session oriented and connectionless mode
- *
- * Lars Wirzenius
- * Capabilities/headers by Kalle Marjola <rpr@wapit.com>
  */
 
 
@@ -26,6 +23,7 @@ Octstr *wsp_encode_http_headers(Octstr *content_type) {
 	
 	type = wsp_encode_content_type(content_type);
 
+	/* `type' must be a short integer a la WSP */
 	gw_assert(type >= 0x00);
 	gw_assert(type < 0x80);
 

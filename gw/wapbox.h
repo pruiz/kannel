@@ -8,14 +8,6 @@
 
 #include "msg.h"
 
-/*
- * Shortest timer tick (in seconds, being shortest defined time amongst 
- * protocol timers) is currently defined. 
- */
-#define WB_DEFAULT_TIMER_TICK 1
-#define CONNECTIONLESS_PORT 9200
-
-
 typedef struct {
 	Octstr *address;
 	long port;
@@ -37,6 +29,7 @@ int wap_addr_tuple_same(WAPAddrTuple *a, WAPAddrTuple *b);
 WAPAddrTuple *wap_addr_tuple_duplicate(WAPAddrTuple *tuple);
 void wap_addr_tuple_dump(WAPAddrTuple *tuple);
 
+/* XXX these should be renamed and made into a proper WDP layer */
 void init_queue(void);
 void put_msg_in_queue(Msg *msg);
 Msg *remove_msg_from_queue(void);

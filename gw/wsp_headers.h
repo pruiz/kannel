@@ -1,5 +1,5 @@
 /*
- * wsp.h - WSP PDU headers implementation header
+ * wsp_headers.h - WSP PDU headers implementation header
  *
  * Kalle Marjola <rpr@wapit.com>
  */
@@ -18,5 +18,6 @@
  * this way for historical reasons.
  */
 List *unpack_headers(Octstr *headers, int content_type);
+/* XXX this function should follow naming convention */
 
 #endif

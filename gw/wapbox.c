@@ -1,11 +1,10 @@
 /*
- * wapbox.h - main program for WAP box
+ * wapbox.c - main program for WAP box
  *
  * This module contains the main program for the WAP box of the WAP gateway.
  * See the architecture documentation for details.
- *
- * Lars Wirzenius <liw@wapit.com> for WapIT Ltd.
  */
+
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
@@ -22,6 +21,14 @@
 #include "wtp_timer.h"
 #include "bb.h"
 #include "wsp-strings.h"
+
+/*
+ * Shortest timer tick (in seconds, being shortest defined time amongst 
+ * protocol timers) is currently defined. 
+ */
+#define WB_DEFAULT_TIMER_TICK 1
+#define CONNECTIONLESS_PORT 9200
+
 
 static Config *cfg = NULL;
 static char *bearerbox_host = BB_DEFAULT_HOST;

@@ -6,8 +6,6 @@
  *
  * Note that the `NULL' state has been renamed to `NULL_METHOD' because
  * NULL is reserved by C.
- *
- * Lars Wirzenius
  */
 
 STATE_NAME(NULL_METHOD)
@@ -38,7 +36,7 @@ ROW(NULL_METHOD,
 		invoke = wap_event_create(S_MethodInvoke_Ind);
 		invoke->u.S_MethodInvoke_Ind.server_transaction_id =
 			msm->transaction_id;
-		/* This 0x40 is the GET type */
+		/* This 0x40 is the GET type ; XXX avoid magic numbers */
 		invoke->u.S_MethodInvoke_Ind.method = 0x40 + pdu->u.Get.subtype;
 		invoke->u.S_MethodInvoke_Ind.url =
 			octstr_duplicate(pdu->u.Get.uri);
@@ -82,12 +80,12 @@ ROW(NULL_METHOD,
 		invoke->u.S_MethodInvoke_Ind.url =
 			octstr_duplicate(pdu->u.Post.uri);
 		invoke->u.S_MethodInvoke_Ind.http_headers = headers;
-/*
- * The Siemens S35 adds an extra NUL character to the end of the 
- * request body which may not work with certain cgi scripts. It is 
- * removed here by truncating the length.
- *
- */
+
+		/*
+		 * The Siemens S35 adds an extra NUL character to the end
+		 * of the request body which may not work with certain cgi
+		 * scripts. It is removed here by truncating the length.
+		 */
 		req_body_size = octstr_len(pdu->u.Post.data);
 		if(octstr_get_char(pdu->u.Post.data,(req_body_size - 1)) == 0)
 			octstr_truncate(pdu->u.Post.data,(req_body_size - 1));
@@ -150,7 +148,7 @@ ROW(HOLDING,
 
 ROW(HOLDING,
 	TR_Abort_Ind,
-	e->abort_code = WSP_ABORT_SUSPEND,
+	e->abort_code == WSP_ABORT_SUSPEND,
 	{
 		WAPEvent *wsp_event;
 
@@ -167,7 +165,7 @@ ROW(HOLDING,
 	e->abort_code != WSP_ABORT_DISCONNECT
 	&& e->abort_code != WSP_ABORT_SUSPEND,
 	{
-		/* Decrement N_Methods; we don't do that */
+		/* Decrement N_Methods; we don't do that; XXX why? */
 	},
 	NULL_METHOD)
 
@@ -215,7 +213,7 @@ ROW(REQUESTING,
 
 ROW(REQUESTING,
 	TR_Abort_Ind,
-	e->abort_code = WSP_ABORT_SUSPEND,
+	e->abort_code == WSP_ABORT_SUSPEND,
 	{
 		WAPEvent *wsp_event;
 
@@ -293,7 +291,7 @@ ROW(PROCESSING,
 
 ROW(PROCESSING,
 	TR_Abort_Ind,
-	e->abort_code = WSP_ABORT_SUSPEND,
+	e->abort_code == WSP_ABORT_SUSPEND,
 	{
 		WAPEvent *wsp_event;
 
@@ -365,7 +363,7 @@ ROW(REPLYING,
 
 ROW(REPLYING,
 	TR_Abort_Ind,
-	e->abort_code = WSP_ABORT_SUSPEND,
+	e->abort_code == WSP_ABORT_SUSPEND,
 	{
 		WAPEvent *wsp_event;
 

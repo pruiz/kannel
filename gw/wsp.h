@@ -10,20 +10,7 @@
  * int WSP_accepted_header_code_pages[] = { -1 };
  */
 
-/* well, aliases are not negotiated... */
-
-/* use bitflags for set values */
-   
-#define WSP_CSDU_SET 	1
-#define WSP_SSDU_SET 	2
-#define WSP_PO_SET 	4
-#define WSP_MMOR_SET	8
-#define WSP_PMOR_SET	16
-#define WSP_EM_SET	32
-#define WSP_HCP_SET	64
-#define WSP_A_SET	128
-
-/* See Table 35 */
+/* See Table 35; XXX of what? */
 enum wsp_abort_values {
 	WSP_ABORT_PROTOERR = 0xe0,
 	WSP_ABORT_DISCONNECT = 0xe1,
