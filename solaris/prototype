@@ -1,0 +1,13 @@
+d none etc 0755 bin bin
+f none etc/kannel.conf 0644 bin bin
+d none kannel 0755 bin bin
+d none kannel/bin 0755 bin bin
+f none kannel/bin/bearerbox-cvs 0755 bin bin
+f none kannel/bin/smsbox-cvs 0755 bin bin
+f none kannel/bin/wapbox-cvs 0755 bin bin
+f none kannel/bin/wmlsc-cvs 0755 bin bin
+f none kannel/bin/wmlsdasm-cvs 0755 bin bin
+f none kannel/bin/seewbmp-cvs 0755 bin bin
+f none kannel/bin/run_kannel_box-cvs 0755 bin bin
+f none kannel/bin/start-stop-daemon-cvs 0755 bin bin
+i pkginfo=./pkginfo
