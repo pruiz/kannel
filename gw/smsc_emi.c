@@ -995,7 +995,7 @@ static int internal_emi_acknowledge_from_rawmessage(
 
 	debug("bb.sms.emi", 0, "acknowledge: type = '%s'", emivars[3]);
 	
-	sprintf(emitext, "%s/%05i/%s/%s", emivars[0], strlen(isotext)+17,
+	sprintf(emitext, "%s/%05i/%s/%s", emivars[0], (int) strlen(isotext)+17,
 		"R", emivars[3]);
 
 	smsc->emi_current_msg_number = atoi(emivars[0]) + 1;
@@ -1074,7 +1074,7 @@ static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char 
 	  msgtext[octstr_len(msg->smart_sms.msgdata) - udh_len] = '\0';
 	  internal_emi_parse_binary_to_emi(msgtext, my_buffer2, octstr_len(msg->smart_sms.msgdata) - udh_len);	  
 	  
-	  sprintf(snumbits,"%04d",(octstr_len(msg->smart_sms.msgdata)-udh_len)*8);
+	  sprintf(snumbits,"%04d",(int) (octstr_len(msg->smart_sms.msgdata)-udh_len)*8);
 	  mt = '4';
 	  strcpy(mcl,"1");
 	}

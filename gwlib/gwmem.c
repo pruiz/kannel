@@ -11,7 +11,7 @@ void *gw_malloc(size_t size)
 
     ptr = malloc(size);
     if (ptr == NULL)
-	panic(errno, "Memory allocation of %d bytes failed", size);
+	panic(errno, "Memory allocation of %lu bytes failed", (unsigned long) size);
 
     return ptr;
 }
@@ -23,7 +23,7 @@ void *gw_realloc(void *ptr, size_t size)
 
     new_ptr = realloc(ptr, size);
     if (new_ptr == NULL)
-	panic(errno, "Memory re-allocation of %d bytes failed", size);
+	panic(errno, "Memory re-allocation of %lu bytes failed", (unsigned long) size);
     
     return new_ptr;
 }

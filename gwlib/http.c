@@ -232,7 +232,7 @@ int httpserver_answer(int socket, char *text) {
     bufsize = strlen(text) + 1024;
     bigbuff = gw_malloc(bufsize);
 
-    sprintf(bigbuff, "HTTP/1.1 200 OK\r\nContent-Type:text/html\r\nContent-Length: %i\r\n\r\n", strlen(text));
+    sprintf(bigbuff, "HTTP/1.1 200 OK\r\nContent-Type:text/html\r\nContent-Length: %i\r\n\r\n", (int) strlen(text));
     strcat(bigbuff, text);
 
     tmpint = write_to_socket(socket, bigbuff);
@@ -1026,7 +1026,7 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 	    httprequest_add_header(request, ptr, midptr);
     }
 
-    request->data_length = size - ((int)ptr - (int)mycopy);
+    request->data_length = size - (int) (ptr - mycopy);
 
 
 

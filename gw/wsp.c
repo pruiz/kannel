@@ -566,7 +566,7 @@ static int unpack_post_pdu(Octstr **url, Octstr **headers, Octstr *pdu) {
 	{
 		return -1;
 	}
-	debug("wap.wsp", 0, "WSP: Got headers. <%d> Total len <%d> offset",octstr_len(pdu),off);
+	debug("wap.wsp", 0, "WSP: Got headers. <%d> Total len <%d> offset",(int)octstr_len(pdu),off);
 
 	if(unpack_octstr(&param,octstr_len(pdu)-off,pdu,&off)==-1)
 	{
