@@ -24,7 +24,6 @@ static void help(void)
 int main(int argc, char **argv)
 {
     Octstr *filename = NULL;
-    long i;
     unsigned long num = 1, j;
     int opt;
     Octstr *mime, *mime2;

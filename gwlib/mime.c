@@ -101,9 +101,7 @@ static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
     Octstr *mime, *value, *boundary;
     List *headers;
     char *bound = "kannel_MIME_boundary";
-    long mime_parts;
-    long i, j;
-    unsigned long headers_len, data_len;
+    long i;
 
     gw_assert(m != NULL && m->headers != NULL);
 
@@ -313,8 +311,6 @@ static void mime_entity_dump_real(MIMEEntity *m, unsigned int level)
 
 void mime_entity_dump(MIMEEntity *m)
 {
-    long i;
-
     gw_assert(m != NULL && m->headers != NULL);
 
     debug("mms",0,"Dumping MIMEEntity at address %p", m);
