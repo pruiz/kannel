@@ -34,7 +34,7 @@ struct URLTranslation {
     char *suffix;	/* for suffix-cut */
     char *faked_sender;	/* works only with certain services */
     int max_messages;	/* absolute limit of reply messages */
-    int concatenation;	/* send long messages as concatenated SMS's if set to 1 */
+    int concatenation;	/* send long messages as concatenated SMS's if true */
     char *split_chars;	/* allowed chars to be used to split message */
     char *split_suffix;	/* chars added to end after each split (not last) */
     int omit_empty;	/* if the reply is empty, is notification send */
@@ -255,11 +255,13 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 			}
 			break;
 		case 'P':
-			encode_for_url(enc, octstr_get_cstr(request->smart_sms.sender));
+			encode_for_url(enc, 
+			    	octstr_get_cstr(request->smart_sms.sender));
 			sprintf(s, "%s", enc);
 			break;
 		case 'p':
-			encode_for_url(enc, octstr_get_cstr(request->smart_sms.receiver));
+			encode_for_url(enc, 
+			    	octstr_get_cstr(request->smart_sms.receiver));
 			sprintf(s, "%s", enc);
 			break;
 		case 'Q':

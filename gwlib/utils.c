@@ -29,7 +29,7 @@ MultibyteInt get_variable_value(Octet *source, int *len)
     
     for(*len=1;; (*len)++, source++) {
 	retval = retval * 0x80 + (*source & 0x7F);
-	if (*source < 0x80)	/* if the continue-bit (high bit) is not set */
+	if (*source < 0x80)  /* if the continue-bit (high bit) is not set */
 	    break;
     }
     return retval;
@@ -182,7 +182,8 @@ int check_ip(char *accept_string, char *ip, char *match_buffer)
 	t++;
     }
 failed:    
-    debug("gwlib", 0, "Could not find match for <%s> in <%s>", ip, accept_string);
+    debug("gwlib", 0, "Could not find match for <%s> in <%s>", ip, 
+    	  accept_string);
     return 0;
 found:
     if (match_buffer != NULL) {
@@ -203,7 +204,8 @@ int is_allowed_ip(char *allow_ip, char *deny_ip, Octstr *ip)
     if (deny_ip == NULL || *deny_ip == '\0')
 	return 1;
 
-    if (allow_ip != NULL && check_ip(allow_ip, octstr_get_cstr(ip), NULL) == 1)
+    if (allow_ip != NULL && 
+        check_ip(allow_ip, octstr_get_cstr(ip), NULL) == 1)
 	return 1;
 
     if (check_ip(deny_ip, octstr_get_cstr(ip), NULL) == 1)
@@ -228,7 +230,8 @@ int normalize_number(char *dial_prefixes, Octstr **number)
     
     while(1) {
 
-        for(p = octstr_get_cstr(*number), start = t, len = 0; ; t++, p++, len++)
+    	p = octstr_get_cstr(*number);
+        for(start = t, len = 0; ; t++, p++, len++)
 	{
             if (*t == ',' || *t == ';' || *t == '\0') {
                 if (start != official) {
@@ -298,7 +301,7 @@ void kannel_cfmakeraw (struct termios *tio){
      * barfs, INLCR - translate NL to CR,IXON - enable Xon/Xoff, ISTRIP - 
      * strip the eighth bit (do we really want to be doing this?), IGNBRK - 
      * ignore break condition.*/
-    tio->c_iflag      &= ~(BRKINT|ICRNL|IGNCR|IGNBRK|INLCR|IXON|ISTRIP|IGNBRK);
+    tio->c_iflag &= ~(BRKINT|ICRNL|IGNCR|IGNBRK|INLCR|IXON|ISTRIP|IGNBRK);
 
     /* Other flags,*/
 

@@ -30,6 +30,7 @@ Octstr *html_to_sms(Octstr *html);
  * which the caller will free. The page pointed by `html' will not be
  * modified.
  */
-Octstr *html_strip_prefix_and_suffix(Octstr *html, char *prefix, char *suffix);
+Octstr *html_strip_prefix_and_suffix(Octstr *html, char *prefix, 
+    	    	    	    	     char *suffix);
 
 #endif

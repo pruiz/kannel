@@ -102,18 +102,19 @@ static void boxc_receiver(void *arg)
 	                  ||
 	    (conn->is_wap && msg_type(msg) == wdp_datagram))
 	{
-	    debug("bb.boxc", 0, "boxc_receiver: message from client received");
+	    debug("bb.boxc", 0, 
+		  "boxc_receiver: message from client received");
 	    list_produce(conn->outgoing, msg);
 	} else {
 	    if (msg_type(msg) == heartbeat) {
 		if (msg->heartbeat.load > 0)
-		    debug("bb.boxc", 0, "boxc_receiver: heartbeat with load value %ld received",
-			  msg->heartbeat.load);
+		    debug("bb.boxc", 0, "boxc_receiver: heartbeat with "
+			  "load value %ld received", msg->heartbeat.load);
 		conn->load = msg->heartbeat.load;
 	    }
 	    else
-		warning(0, "boxc_receiver: unknown msg received from <%s>, ignored",
-		  octstr_get_cstr(conn->client_ip));
+		warning(0, "boxc_receiver: unknown msg received from <%s>, "
+		    	"ignored", octstr_get_cstr(conn->client_ip));
 	    msg_destroy(msg);
 	}
     }    
@@ -160,7 +161,8 @@ static void boxc_sender(void *arg)
         if (send_msg(conn->fd, msg) == -1) {
 	    /* if we fail to send, return msg to the list it came from
 	     * before dying off */
-	    debug("bb.boxc", 0, "send failed, let's assume that connection had died");
+	    debug("bb.boxc", 0, "send failed, let's assume that connection "
+	    	    	    	"had died");
 	    list_produce(conn->retry, msg);
 	    break;
 	}
@@ -260,7 +262,8 @@ static void run_smsbox(void *arg)
 
     sender = gwthread_create(boxc_sender, newconn);
     if (sender == -1) {
-	error(errno, "Failed to start a new thread, disconnecting client <%s>",
+	error(errno, 
+	      "Failed to start a new thread, disconnecting client <%s>",
 	      octstr_get_cstr(newconn->client_ip));
 	goto cleanup;
     }
@@ -300,7 +303,8 @@ static void run_wapbox(void *arg)
     debug("bb", 0, "setting up systems for new wapbox");
     
     newlist = list_create();
-    list_add_producer(newlist);  /* this is released by the sender/receiver if it exits */
+    list_add_producer(newlist);  /* this is released by the 
+    	    	    	    	    sender/receiver if it exits */
     
     newconn->incoming = newlist;
     newconn->retry = incoming_wdp;
@@ -308,7 +312,8 @@ static void run_wapbox(void *arg)
 
     sender = gwthread_create(boxc_sender, newconn);
     if (sender == -1) {
-	error(errno, "Failed to start a new thread, disconnecting client <%s>",
+	error(errno, 
+	      "Failed to start a new thread, disconnecting client <%s>",
 	      octstr_get_cstr(newconn->client_ip));
 	goto cleanup;
     }
@@ -384,7 +389,8 @@ static Boxc *route_msg(List *route_info, Msg *msg)
     
     ap = list_search(route_info, msg, cmp_route);
     if (ap == NULL) {
-	debug("bb.boxc", 0, "Did not find previous routing info for WDP, generating new");
+	debug("bb.boxc", 0, "Did not find previous routing info for WDP, "
+	    	    	    "generating new");
 route:
 
 	ap = gw_malloc(sizeof(AddrPar));
@@ -484,7 +490,8 @@ static void wdp_to_wapboxes(void *arg)
 
 
 
-static void wait_for_connections(int fd, void (*function) (void *arg), List *waited)
+static void wait_for_connections(int fd, void (*function) (void *arg), 
+    	    	    	    	 List *waited)
 {
     fd_set rf;
     struct timeval tv;

@@ -261,7 +261,8 @@ static void *new_thread(void *arg) {
 	return NULL;
 }
 
-long gwthread_create_real(gwthread_func_t *func, const char *name, void *arg) {
+long gwthread_create_real(gwthread_func_t *func, const char *name, void *arg) 
+{
 	int ret;
 	pthread_t id;
 	struct new_thread_args *p;
@@ -360,7 +361,8 @@ void gwthread_join_every(gwthread_func_t *func) {
 		ti = THREAD(i);
 		if (ti == NULL || ti->func != func)
 			continue;
-		debug("gwlib.gwthread", 0, "Waiting for %ld (%s) to terminate",
+		debug("gwlib.gwthread", 0, 
+		    	"Waiting for %ld (%s) to terminate",
 			ti->number, ti->name);
 		ret = pthread_cond_wait(&ti->exiting, &threadtable_lock);
 		if (ret != 0) {

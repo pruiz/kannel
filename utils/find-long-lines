@@ -19,7 +19,7 @@ fi
 
 find $dirs -type f ! -name '*.[oa]' ! -name '.*' ! -name '*.ps' ! \
 	-name '*.png' ! -name core ! -name configure ! -name config.status \
-	! -name '*.log' |
+	! -name '*.log' ! -name '*.fig' |
 grep -v '/CVS/' |
 while read file
 do

@@ -447,7 +447,8 @@ static void make_bigger(List *list, long items) {
 	 *		     start+len       start
 	 */		
 
-	gw_assert(list->start < old_size || (list->start == 0 && old_size == 0));
+	gw_assert(list->start < old_size || 
+	    	  (list->start == 0 && old_size == 0));
 	if (list->start + list->len > old_size) {
 		len_at_end = old_size - list->start;
 		len_at_beginning = list->len - len_at_end;

@@ -23,17 +23,27 @@ test -x $BOXPATH/bearerbox || exit 0
 case "$1" in
   start)
     echo -n "Starting WAP gateway: bearerbox"
-    start-stop-daemon --start --quiet --pidfile $PIDFILES/kannel_bearerbox.pid --exec $BOXPATH/run_kannel_box -- --pidfile $PIDFILES/kannel_bearerbox.pid bearerbox -- $BBCONF
+    start-stop-daemon --start --quiet \
+    	--pidfile $PIDFILES/kannel_bearerbox.pid \
+	--exec $BOXPATH/run_kannel_box \
+	-- --pidfile $PIDFILES/kannel_bearerbox.pid bearerbox -- $BBCONF
     echo -n " wapbox"
-    start-stop-daemon --start --quiet --pidfile $PIDFILES/kannel_wapbox.pid --exec $BOXPATH/run_kannel_box -- --pidfile $PIDFILES/kannel_wapbox.pid wapbox -- $WAPCONF
+    start-stop-daemon --start --quiet \
+    	--pidfile $PIDFILES/kannel_wapbox.pid \
+	--exec $BOXPATH/run_kannel_box \
+	-- --pidfile $PIDFILES/kannel_wapbox.pid wapbox -- $WAPCONF
     echo "."
     ;;
 
   stop)
     echo -n "Stopping WAP gateway: wapbox"
-    start-stop-daemon --stop --quiet --pidfile $PIDFILES/kannel_wapbox.pid --exec $BOXPATH/run_kannel_box
+    start-stop-daemon --stop --quiet \
+    	--pidfile $PIDFILES/kannel_wapbox.pid \
+	--exec $BOXPATH/run_kannel_box
     echo -n " bearerbox"
-    start-stop-daemon --stop --quiet --pidfile $PIDFILES/kannel_bearerbox.pid --exec $BOXPATH/run_kannel_box
+    start-stop-daemon --stop --quiet \
+    	--pidfile $PIDFILES/kannel_bearerbox.pid \
+	--exec $BOXPATH/run_kannel_box
     echo "."
     ;;
 

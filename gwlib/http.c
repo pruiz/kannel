@@ -383,8 +383,8 @@ int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
 
     *final_url = octstr_duplicate(url);
     for (i = 0; i < HTTP_MAX_FOLLOW; ++i) {
-        ret = http_post(*final_url, request_headers, request_body, reply_headers,
-                        reply_body);
+        ret = http_post(*final_url, request_headers, request_body, 
+	    	    	reply_headers, reply_body);
         /*
          * If the return value is any of these values then the url
          * to return to the caller is in the Location field and

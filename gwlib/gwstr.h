@@ -31,6 +31,7 @@ int str_reverse_seek(const char *s, int start_offset, const char *accept);
 
 
 /* as above but ignoring case */
-int str_reverse_case_seek(const char *s, int start_offset, const char *accept);
+int str_reverse_case_seek(const char *s, int start_offset, 
+    	    	    	  const char *accept);
 
 #endif

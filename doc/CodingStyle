@@ -11,6 +11,57 @@ Code formatting
 
 	Tabs are 8 characters. Indents are 4.
 	
+    	Example:
+
+/*
+ * This function doesn't do anything sensible. It just uses uses various
+ * C constructs to show their layout.
+ */
+int foo(int bar)
+{
+    static int tab[2][12] = {
+        { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
+        { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
+    };
+    struct yow {
+        int plim;
+    } barbar;
+    int i;
+
+    assert(bar != 0);
+    if (bar < 0) {
+        for (i = 0; i > bar; --i) {
+            while (global_variable < 0) {
+                global_variable += i;
+                printf("%d\n", i);
+            }
+        }
+    } else {
+        do {
+            --bar;
+            switch (bar % 3) {
+            case 0:
+                printf("0\n");
+                break;
+            case 1:
+                printf("1\n");
+                /*FALLTHROUGH*/
+            case 2:
+                printf("2\n");
+                break;
+            default:
+                assert(0);        /* eeek! */
+                abort();          /* die, stupid program, die */
+            }
+        } while (bar < 0
+                 || global_variable == 42);
+    }
+    return bar;
+}
+
+	It is OK to deviate from this style, if it makes the code clearer.
+
+
 Commenting
 
 	Each source code file shall begin with a comment of the following

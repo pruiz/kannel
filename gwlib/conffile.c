@@ -191,7 +191,8 @@ int config_read(Config *cfg) {
 
 		p = strchr(s, '=');
 		if (p == NULL) {
-			error(0, "%s:%ld:syntax error", cfg->filename, lineno);
+			error(0, "%s:%ld:syntax error", cfg->filename, 
+			      lineno);
 			goto error;
 		}
 		*p++ = '\0';
@@ -248,7 +249,8 @@ int config_write(Config *cfg) {
 	}
 	
 	if (rename(tempname, cfg->filename) == -1) {
-		error(errno, "Error renaming new config file to correct name.");
+		error(errno, "Error renaming new config file to "
+		    	     "correct name.");
 		goto error;
 	}
 

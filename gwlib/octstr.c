@@ -176,8 +176,9 @@ Octstr *octstr_create_immutable(const char *cstr) {
 			break;
 		i = (i + 1) % MAX_IMMUTABLES;
 		if (i == index)
-			panic(0, "octstr_create_immutable: Too many immutable "
-				 "strings, limit is %d.", MAX_IMMUTABLES);
+			panic(0, "octstr_create_immutable: "
+			    	 "Too many immutable strings, limit is %d.", 
+				 MAX_IMMUTABLES);
 	}
 	os = &immutables[i].os;
 	if (!immutables[i].in_use) {
@@ -602,7 +603,9 @@ long octstr_parse_long(long *nump, Octstr *ostr, long pos, int base) {
 }
 
 
-int octstr_check_range(Octstr *ostr, long pos, long len, octstr_func_t filter) {
+int octstr_check_range(Octstr *ostr, long pos, long len, 
+    	    	       octstr_func_t filter)
+{
 	long end = pos + len;
 
 	seems_valid(ostr);
@@ -622,7 +625,9 @@ int octstr_check_range(Octstr *ostr, long pos, long len, octstr_func_t filter) {
 }
 
 
-void octstr_convert_range(Octstr *ostr, long pos, long len, octstr_func_t map) {
+void octstr_convert_range(Octstr *ostr, long pos, long len, 
+    	    	    	  octstr_func_t map) 
+{
 	long end = pos + len;
 
 	seems_valid(ostr);
@@ -1506,7 +1511,8 @@ void octstr_append_decimal(Octstr *ostr, long value) {
 
 /*
  * A parsed form of the format string. This struct has been carefully
- * defined so that it can be initialized with {0} and it will have * the correct defaults.
+ * defined so that it can be initialized with {0} and it will have 
+ * the correct defaults.
  */
 struct format {
 	int minus;

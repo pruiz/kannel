@@ -60,7 +60,8 @@ static Octstr *httpd_check_authorization(List *cgivars)
 static Octstr *httpd_check_status(void)
 {
     if (bb_status == BB_SHUTDOWN || bb_status == BB_DEAD)
-	return octstr_create("Avalanche has already started, too late to save the sheeps");
+	return octstr_create("Avalanche has already started, too late to "
+	    	    	     "save the sheeps");
     return NULL;
 }
 
@@ -128,7 +129,8 @@ static void httpd_serve(void *arg)
     Octstr *url, *body;
     Octstr *reply;
     
-    if (http_server_get_request(client, &url, &headers, &body, &cgivars) < 0) {
+    if (http_server_get_request(client, &url, &headers, &body, &cgivars) < 0)
+    {
 	warning(0, "Malformed line from client, ignored");
 	http_server_close_client(client);
 	return;
@@ -190,14 +192,15 @@ static void httpadmin_run(void *arg)
 	client = http_server_accept_client(httpd);
 	if (client == NULL)
 	    continue;
-	if (is_allowed_ip(ha_allow_ip, ha_deny_ip, http_socket_ip(client))==0) {
+	if (is_allowed_ip(ha_allow_ip,ha_deny_ip,http_socket_ip(client))==0) {
 	    info(0, "HTTP admin tried from denied host <%s>, disconnected",
 		 octstr_get_cstr(http_socket_ip(client)));
 	    http_server_close_client(client);
 	    continue;
 	}
         if (gwthread_create(httpd_serve, client) == -1) {
-	    error(0, "Failed to start a new thread to handle HTTP admin command");
+	    error(0, 
+	    	"Failed to start a new thread to handle HTTP admin command");
 	    http_server_close_client(client);
 	}
     }

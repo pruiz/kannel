@@ -1,5 +1,9 @@
 2000-09-18  Lars Wirzenius  <liw@iki.fi>
 
+	* doc/CodingStyle: Added example of coding style.
+
+2000-09-18  Lars Wirzenius  <liw@iki.fi>
+
 	* ChangeLog, debian/init, gw/bb_boxc.c, gw/bb_http.c, gw/html.h,
 	gw/msg.c, gw/urltrans.c, gwlib/conffile.c, gwlib/conffile.h,
 	gwlib/gwassert.h, gwlib/gwstr.h, gwlib/gwthread-pthread.c,

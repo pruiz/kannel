@@ -172,7 +172,8 @@ int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
 int http_post(Octstr *url, List *request_headers, Octstr *request_body,
 		List **reply_headers, Octstr **reply_body);
 int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
-		  Octstr **final_url, List **reply_headers, Octstr **reply_body);
+		  Octstr **final_url, List **reply_headers, 
+		  Octstr **reply_body);
 
 
 /*

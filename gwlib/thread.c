@@ -15,7 +15,8 @@
 
 
 #ifdef MUTEX_STATS
-Mutex *mutex_make_measured(Mutex *mutex, unsigned char *filename, int lineno) {
+Mutex *mutex_make_measured(Mutex *mutex, unsigned char *filename, int lineno)
+{
 	mutex->filename = filename;
 	mutex->lineno = lineno;
 	mutex->locks = 0;

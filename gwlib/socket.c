@@ -74,7 +74,8 @@ int tcpip_connect_to_server(char *hostname, int port) {
 }
 
 
-int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
+int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port)
+{
 	struct sockaddr_in addr;
 	struct sockaddr_in o_addr;
 	struct hostent hostinfo;

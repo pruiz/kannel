@@ -208,14 +208,16 @@ long octstr_parse_long(long *number, Octstr *ostr, long pos, int base);
  * For example: ok = octstr_check_range(o, 1, 10, isdigit);
  */
 typedef int (*octstr_func_t)(int);
-int octstr_check_range(Octstr *ostr, long pos, long len, octstr_func_t filter);
+int octstr_check_range(Octstr *ostr, long pos, long len, 
+    	    	       octstr_func_t filter);
 
 
 /* Run the 'map' function over each character in the specified range,
  * replacing each character with the return value of that function.
  * For example: octstr_convert_range(o, 1, 10, tolower);
  */
-void octstr_convert_range(Octstr *ostr, long pos, long len, octstr_func_t map);
+void octstr_convert_range(Octstr *ostr, long pos, long len, 
+    	    	    	  octstr_func_t map);
 
 
 /*
@@ -422,7 +424,8 @@ long octstr_get_bits(Octstr *ostr, long bitpos, int numbits);
  * The string will be extended with 0-valued octets as necessary to hold
  * the indicated bit range.
  */
-void octstr_set_bits(Octstr *ostr, long bitpos, int numbits, unsigned long value);
+void octstr_set_bits(Octstr *ostr, long bitpos, int numbits, 
+    	    	     unsigned long value);
 
 
 /* 
