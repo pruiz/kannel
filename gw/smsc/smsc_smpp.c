@@ -236,7 +236,8 @@ static int read_pdu(SMPP *smpp, Connection *conn, long *len, SMPP_PDU **pdu)
  
 static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu) 
 { 
-    Msg *msg; 
+    Msg *msg;
+    int udh_offset = 0;
  
     gw_assert(pdu->type == deliver_sm); 
      
@@ -245,16 +246,28 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu)
     pdu->u.deliver_sm.source_addr = NULL; 
     msg->sms.receiver = pdu->u.deliver_sm.destination_addr; 
     pdu->u.deliver_sm.destination_addr = NULL; 
-    msg->sms.msgdata = pdu->u.deliver_sm.short_message; 
-    pdu->u.deliver_sm.short_message = NULL; 
+
     dcs_to_fields(&msg, pdu->u.deliver_sm.data_coding);
+
+    /* extract UDH sequence if any */
+    if (pdu->u.deliver_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR) {
+        udh_offset = octstr_get_char(pdu->u.deliver_sm.short_message, 0) + 1; 
+        msg->sms.udhdata = octstr_copy(pdu->u.deliver_sm.short_message, 0, udh_offset);
+        msg->sms.msgdata = octstr_copy(pdu->u.deliver_sm.short_message, udh_offset,
+                                       octstr_len(pdu->u.deliver_sm.short_message) - udh_offset);
+        octstr_destroy(pdu->u.deliver_sm.short_message);
+        msg->sms.coding = DC_8BIT;
+    } else {
+        msg->sms.msgdata = pdu->u.deliver_sm.short_message;
+    }
+    pdu->u.deliver_sm.short_message = NULL;
 
     /* handle default data coding */
     switch (pdu->u.deliver_sm.data_coding) { 
         case 0x00: /* default SMSC alphabet */
             /* 
              * try to convert from something interesting if specified so
-             * unless it was specified binary
+             * unless it was specified binary, ie. UDH indicator was detected
              */
             if (smpp->alt_charset && msg->sms.coding != DC_8BIT) { 
                 if (charset_convert(msg->sms.msgdata, octstr_get_cstr(smpp->alt_charset), "ISO-8859-1") != 0)
@@ -291,7 +304,9 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu)
              * you implement them if you feel like it 
              */
         default: 
-            msg->sms.coding = DC_7BIT;
+            /* if we have an UDH indicator, we assume DC_8BIT */
+            msg->sms.coding = pdu->u.deliver_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR ?
+                DC_8BIT : DC_7BIT;
     }
     msg->sms.pid = pdu->u.deliver_sm.protocol_id; 
 
