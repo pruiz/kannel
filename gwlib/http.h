@@ -183,9 +183,9 @@ void http_close_proxy(void);
  *
  * XXX these are going away in the future
  */
-int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
-		  List **reply_headers, Octstr **reply_body);
-
+int http_get_real(int method, Octstr *url, List *request_headers, 
+                  Octstr **final_url, List **reply_headers, 
+                  Octstr **reply_body);
 
 /*
  * An identification for a caller of HTTP. This is used with
@@ -238,8 +238,8 @@ void http_caller_signal_shutdown(HTTPCaller *caller);
  * is no ssl authentication, unless you have set a global one with
  * use_global_certkey_file() from conn.c.
  */
-void http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
-    	    	    	Octstr *body, int follow, void *id, 
+void http_start_request(HTTPCaller *caller, int method, Octstr *url, 
+                        List *headers, Octstr *body, int follow, void *id, 
     	    	    	Octstr *certkeyfile); 
 
 
@@ -480,5 +480,18 @@ void http_add_basic_auth(List *headers, Octstr *username, Octstr *password);
  * of this file.
  */
 int http_status_class(int code);
+
+
+/*
+ * Return the HTTP_METHOD_xxx enum code for a Octstr containing 
+ * the HTTP method name.
+ */
+int http_name2method(Octstr *method);
+
+
+/*
+ * Return the char containing the HTTP method name.
+ */
+char *http_method2name(int method);
 
 #endif

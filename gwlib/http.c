@@ -543,14 +543,24 @@ enum { HTTP_MAX_FOLLOW = 5 };
 
 
 /*
+ * The implemented HTTP method strings
+ * Order is sequenced by the enum in the header
+ */
+static char *http_methods[] = {
+    "GET", "POST", "HEAD"
+};
+
+
+/*
  * Information about a server we've connected to.
  */
 typedef struct {
     HTTPCaller *caller;
     void *request_id;
+    int method;             /* uses enums from http.h for the HTTP methods */
     Octstr *url;
     List *request_headers;
-    Octstr *request_body;   /* NULL for GET, non-NULL for POST */
+    Octstr *request_body;   /* NULL for GET or HEAD, non-NULL for POST */
     enum {
 	request_not_sent,
 	reading_status,
@@ -572,16 +582,16 @@ typedef struct {
 } HTTPServer;
 
 
-static HTTPServer *server_create(HTTPCaller *caller, Octstr *url,
-    	    	    	    	    	   List *headers, Octstr *body,
-					   int follow_remaining,
-					   Octstr *certkeyfile)
+static HTTPServer *server_create(HTTPCaller *caller, int method, Octstr *url,
+                                 List *headers, Octstr *body, int follow_remaining,
+                                 Octstr *certkeyfile)
 {
     HTTPServer *trans;
     
     trans = gw_malloc(sizeof(*trans));
     trans->caller = caller;
     trans->request_id = NULL;
+    trans->method = method;
     trans->url = octstr_duplicate(url);
     trans->request_headers = http_header_duplicate(headers);
     trans->request_body = octstr_duplicate(body);
@@ -824,11 +834,12 @@ error:
     return -1;
 }
 
-static int response_expectation(int status)
+static int response_expectation(int method, int status)
 {
     if (status == HTTP_NO_CONTENT ||
         status == HTTP_NOT_MODIFIED ||
-        http_status_class(status) == HTTP_STATUS_PROVISIONAL)
+        http_status_class(status) == HTTP_STATUS_PROVISIONAL ||
+        method == HTTP_METHOD_HEAD)
 	return expect_no_body;
     else
         return expect_body;
@@ -872,7 +883,7 @@ static void handle_transaction(Connection *conn, void *data)
 		/* Got the status, go read headers and body next. */
 		trans->state = reading_entity;
 		trans->response =
-		    entity_create(response_expectation(trans->status));
+		    entity_create(response_expectation(trans->method, trans->status));
 	    } else
 		return;
 	    break;
@@ -946,11 +957,10 @@ error:
  * Add Host: and Content-Length: headers (and others that may be necessary).
  * Return the request as an Octstr.
  */
-static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port,
-                             List *headers, Octstr *request_body, 
-			     char *method_name)
+static Octstr *build_request(char *method_name, Octstr *path_or_url, 
+                             Octstr *host, long port, List *headers, 
+                             Octstr *request_body)
 {
-
     /* XXX headers missing */
     Octstr *request;
     int i;
@@ -1115,7 +1125,7 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
  * response can be read or -1 for error.
  */
 
-static Connection *send_request(HTTPServer *trans, char *method_name)
+static Connection *send_request(HTTPServer *trans)
 {
     Octstr *path, *request;
     Connection *conn;
@@ -1131,40 +1141,39 @@ static Connection *send_request(HTTPServer *trans, char *method_name)
     trans->host = NULL;
 
     if (parse_url(trans->url, &trans->host, &trans->port, &path, &trans->ssl,
-		  &trans->username, &trans->password) == -1)
+                  &trans->username, &trans->password) == -1)
         goto error;
 
     if (trans->username != NULL)
-	http_add_basic_auth(trans->request_headers, trans->username,
-	    	       trans->password);
+        http_add_basic_auth(trans->request_headers, trans->username,
+                            trans->password);
 
     if (proxy_used_for_host(trans->host)) {
-	proxy_add_authentication(trans->request_headers);
-        request = build_request(trans->url, trans->host, trans->port, 
-	    	    	    	trans->request_headers, 
-				trans->request_body, method_name);
-	host = proxy_hostname;
-	port = proxy_port;
+        proxy_add_authentication(trans->request_headers);
+        request = build_request(http_method2name(trans->method), 
+                                trans->url, trans->host, trans->port, 
+                                trans->request_headers, trans->request_body);
+        host = proxy_hostname;
+        port = proxy_port;
     } else {
-        request = build_request(path, trans->host, trans->port,
-	    	    	    	trans->request_headers,
-                                trans->request_body, method_name);
-	host = trans->host;
-	port = trans->port;
+        request = build_request(http_method2name(trans->method), path, trans->host, 
+                                trans->port, trans->request_headers,
+                                trans->request_body);
+        host = trans->host;
+        port = trans->port;
     }
 
     if (trans->retrying) {
 #ifdef HAVE_LIBSSL
-	if (trans->ssl) conn = 
-	    conn_open_ssl(host, port, trans->certkeyfile, our_host);
-	else
+        if (trans->ssl) 
+            conn = conn_open_ssl(host, port, trans->certkeyfile, our_host);
+        else
 #endif /* HAVE_LIBSSL */
-	    conn = conn_open_tcp(host, port, our_host);
-	debug("gwlib.http", 0, "HTTP: Opening NEW connection to `%s:%d' (fd=%d).",
-	      octstr_get_cstr(host), port, conn_get_id(conn));
+            conn = conn_open_tcp(host, port, our_host);
+            debug("gwlib.http", 0, "HTTP: Opening NEW connection to `%s:%d' (fd=%d).",
+                  octstr_get_cstr(host), port, conn_get_id(conn));
     } else
-        conn = conn_pool_get(host, port, trans->ssl, trans->certkeyfile,
-			our_host);
+        conn = conn_pool_get(host, port, trans->ssl, trans->certkeyfile, our_host);
     if (conn == NULL)
         goto error;
 
@@ -1199,34 +1208,39 @@ static void write_request_thread(void *arg)
     char buf[128];    
 
     while (run_status == running) {
-	trans = list_consume(pending_requests);
-	if (trans == NULL)
-	    break;
+        trans = list_consume(pending_requests);
+        if (trans == NULL)
+            break;
 
-    	gw_assert(trans->state == request_not_sent);
+        gw_assert(trans->state == request_not_sent);
 
-    	if (trans->request_body == NULL)
-	    method = "GET";
-	else {
-	    method = "POST";
-	    /* 
-	     * Add a Content-Length header.  Override an existing one, if
-	     * necessary.  We must have an accurate one in order to use the
-	     * connection for more than a single request.
-	     */
-	    http_header_remove_all(trans->request_headers, "Content-Length");
-	    sprintf(buf, "%ld", octstr_len(trans->request_body));
-	    http_header_add(trans->request_headers, "Content-Length", buf);
-	}
+        if (trans->method == HTTP_METHOD_POST) {
+            /* 
+             * Add a Content-Length header.  Override an existing one, if
+             * necessary.  We must have an accurate one in order to use the
+             * connection for more than a single request.
+             */
+            http_header_remove_all(trans->request_headers, "Content-Length");
+            sprintf(buf, "%ld", octstr_len(trans->request_body));
+            http_header_add(trans->request_headers, "Content-Length", buf);
+        } 
+            /* 
+             * ok, this has to be an GET or HEAD request method then,
+             * if it contains a body, then this is not HTTP conform, so at
+             * least warn the user 
+             */
+        else if (trans->request_body != NULL) {
+            warning(0, "HTTP: GET or HEAD method request contains body:");
+            octstr_dump(trans->request_body, 0);
+        }
 
-	trans->conn = send_request(trans, method);
-    	if (trans->conn == NULL)
-	    list_produce(trans->caller, trans);
-	else {
-	    trans->state = reading_status;
-	    conn_register(trans->conn, client_fdset, handle_transaction, 
-	    	    	  trans);
-	}
+        trans->conn = send_request(trans);
+        if (trans->conn == NULL)
+            list_produce(trans->caller, trans);
+        else {
+            trans->state = reading_status;
+            conn_register(trans->conn, client_fdset, handle_transaction, trans);
+        }
     }
 }
 
@@ -1251,7 +1265,7 @@ static void start_client_threads(void)
 }
 
 
-void http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
+void http_start_request(HTTPCaller *caller, int method, Octstr *url, List *headers,
     	    	    	Octstr *body, int follow, void *id, Octstr *certkeyfile)
 {
     HTTPServer *trans;
@@ -1262,7 +1276,7 @@ void http_start_request(HTTPCaller *caller, Octstr *url, List *headers,
     else
     	follow_remaining = 0;
 
-    trans = server_create(caller, url, headers, body, follow_remaining, 
+    trans = server_create(caller, method, url, headers, body, follow_remaining, 
 			  certkeyfile);
 
     if (id == NULL)
@@ -1308,7 +1322,7 @@ void *http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
 }
 
 
-int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
+int http_get_real(int method, Octstr *url, List *request_headers, Octstr **final_url,
                   List **reply_headers, Octstr **reply_body)
 {
     HTTPCaller *caller;
@@ -1316,7 +1330,8 @@ int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
     void *ret;
     
     caller = http_caller_create();
-    http_start_request(caller, url, request_headers, NULL, 1, http_get_real, NULL);
+    http_start_request(caller, method, url, request_headers, 
+                       NULL, 1, http_get_real, NULL);
     ret = http_receive_result(caller, &status, final_url, 
     	    	    	      reply_headers, reply_body);
     http_caller_destroy(caller);
@@ -2705,3 +2720,31 @@ int http_status_class(int code)
         sclass = code - (code % 100);
     return sclass;
 }
+
+
+int http_name2method(Octstr *method)
+{
+    gw_assert(method != NULL);
+
+    if (octstr_str_compare(method, "GET") == 0) {
+        return HTTP_METHOD_GET;
+    } 
+    else if (octstr_str_compare(method, "POST") == 0) {
+        return HTTP_METHOD_POST;
+    } 
+    else if (octstr_str_compare(method, "HEAD") == 0) {
+        return HTTP_METHOD_HEAD;
+    } 
+
+    return -1;
+}
+
+
+char *http_method2name(int method)
+{
+    gw_assert(method > 0 && method <= 3);
+
+    return http_methods[method-1];
+}
+
+
