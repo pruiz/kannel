@@ -107,7 +107,9 @@ static char *name_state(int name);
 /*
  * Really removes a WTP state machine. Used only by the garbage collection. 
  */
+#if 0
 static void destroy_machine(WTPMachine *machine, WTPMachine *previous);
+#endif
 
 /*
  * Find the WTPMachine from the global list of WTPMachine structures that
@@ -246,6 +248,7 @@ void wtp_machine_mark_unused(WTPMachine *machine){
  * eventually start again).
  */
 void wtp_machines_list_clear(void){
+#if 0
 
      WTPMachine *this_machine = NULL,
                 *previous = NULL; 
@@ -262,6 +265,8 @@ void wtp_machines_list_clear(void){
         this_machine = machines.first;
         previous = machines.first;
 
+/* The following loop can't work, as far as I can see. --liw 
+   Let's ignore this functionality until we have working generic lists. */
         while (this_machine != NULL){
               if (this_machine->in_use == 0)
                   destroy_machine(this_machine, previous);
@@ -269,6 +274,7 @@ void wtp_machines_list_clear(void){
               this_machine = this_machine->next;
         }
      }
+#endif
 } 
 
 /*
@@ -808,6 +814,8 @@ static WTPEvent *remove_from_event_queue(WTPMachine *machine) {
 	else {
 		event = machine->event_queue_head;
 		machine->event_queue_head = event->next;
+		if (machine->event_queue_head == NULL)
+			machine->event_queue_tail = NULL;
 		event->next = NULL;
 	}
 
@@ -1284,6 +1292,7 @@ static WTPSegment *make_missing_segments_list(Msg *msg,
 /*
  * Really removes a WTP state machine. Used only by the garbage collection. 
  */
+#if 0
 static void destroy_machine(WTPMachine *machine, WTPMachine *previous){
 
      if (machine == previous) {
@@ -1309,15 +1318,6 @@ static void destroy_machine(WTPMachine *machine, WTPMachine *previous){
 
      return;
 }
+#endif
 
 /**********************************************************************************/
-
-
-
-
-
-
-
-
-
-

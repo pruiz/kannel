@@ -162,7 +162,7 @@ int octstr_search_char(Octstr *ostr, char ch);
  * Search the character from octet string starting from position pos. Returns 
  * the position (index) of the char in string, -1 if not found.
  */
-int octstr_search_char_from(Octstr *ostr, char ch, size_t pos);
+int octstr_search_char_from(Octstr *ostr, int ch, size_t pos);
 
 
 /*

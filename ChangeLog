@@ -1,3 +1,12 @@
+Wed Mar  8 16:53:24 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wtp.c: Fixed or commented away broken list handling.
+	
+	* gwlib/octstr.[ch]: Fixed octstr_search_char_from. Also changed its
+	prototype so that the character is passed as an int, since this does
+	not cause problems with 8-bit characters on platforms where the
+	char type is signed.
+
 2000-03-08  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
 	* gw/wml_compiler.c: Bug fix: no more squares (ie tabulator 
