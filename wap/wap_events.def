@@ -21,12 +21,12 @@
  * Transport layer (WDP)
  */
 
-WAPEVENT(T_DUnitdata_Req,
+WAPEVENT(T_DUnitdata_Req, "T-DUnitdata.req",
 	ADDRTUPLE(addr_tuple)
 	OCTSTR(user_data)
 	)
 
-WAPEVENT(T_DUnitdata_Ind,
+WAPEVENT(T_DUnitdata_Ind, "T-DUnitdata.ind",
 	ADDRTUPLE(addr_tuple)
 	OCTSTR(user_data)
 	)
@@ -35,7 +35,7 @@ WAPEVENT(T_DUnitdata_Ind,
  * Transaction layer (WTP)
  */
 
-WAPEVENT(TR_Invoke_Req,
+WAPEVENT(TR_Invoke_Req, "TR-Invoke.req",
 	ADDRTUPLE(addr_tuple)
 	INTEGER(up_flag)
 	OCTSTR(user_data)
@@ -43,7 +43,7 @@ WAPEVENT(TR_Invoke_Req,
 	INTEGER(handle)
 	)
 
-WAPEVENT(TR_Invoke_Ind,
+WAPEVENT(TR_Invoke_Ind, "TR-Invoke.ind",
         INTEGER(ack_type)
         OCTSTR(user_data)
         INTEGER(tcl)
@@ -51,32 +51,32 @@ WAPEVENT(TR_Invoke_Ind,
 	INTEGER(handle)
 	)
 
-WAPEVENT(TR_Invoke_Res,
+WAPEVENT(TR_Invoke_Res, "TR-Invoke.res",
 	INTEGER(handle)
 	)
 
-WAPEVENT(TR_Invoke_Cnf,
+WAPEVENT(TR_Invoke_Cnf, "TR-Invoke.cnf",
 	INTEGER(handle)
 	)
 
-WAPEVENT(TR_Result_Req,
+WAPEVENT(TR_Result_Req, "TR-Result.req",
 	OCTSTR(user_data)
 	INTEGER(handle)
 	)
 
-WAPEVENT(TR_Result_Cnf,
+WAPEVENT(TR_Result_Cnf, "TR-Result.cnf",
 	INTEGER(handle)
 
 	ADDRTUPLE(addr_tuple)
         )
 
-WAPEVENT(TR_Abort_Req,
+WAPEVENT(TR_Abort_Req, "TR-Abort.req",
 	INTEGER(abort_type)
 	INTEGER(abort_reason)
 	INTEGER(handle)
 	) 
 
-WAPEVENT(TR_Abort_Ind,
+WAPEVENT(TR_Abort_Ind, "TR-Abort.ind",
         INTEGER(abort_code)
 	INTEGER(handle)
 
@@ -88,7 +88,7 @@ WAPEVENT(TR_Abort_Ind,
  * These events use the session id as a handle.
  */
 
-WAPEVENT(S_Connect_Ind,
+WAPEVENT(S_Connect_Ind, "S-Connect.ind",
 	ADDRTUPLE(addr_tuple)
 	HTTPHEADER(client_headers)
 	CAPABILITIES(requested_capabilities)
@@ -96,27 +96,27 @@ WAPEVENT(S_Connect_Ind,
 	INTEGER(session_id)
 	)
 
-WAPEVENT(S_Connect_Res,
+WAPEVENT(S_Connect_Res, "S-Connect.res",
 	HTTPHEADER(server_headers)
 	CAPABILITIES(negotiated_capabilities)
 
 	INTEGER(session_id)
 	)
 
-WAPEVENT(S_Suspend_Ind,
+WAPEVENT(S_Suspend_Ind, "S-Suspend.ind",
 	INTEGER(reason)
 
 	INTEGER(session_id)
 	)
 
-WAPEVENT(S_Resume_Ind,
+WAPEVENT(S_Resume_Ind, "S-Resume.ind",
 	ADDRTUPLE(addr_tuple)
 	HTTPHEADER(client_headers)
 
 	INTEGER(session_id)
 	)
 
-WAPEVENT(S_Resume_Res,
+WAPEVENT(S_Resume_Res, "S-Resume.res",
 	HTTPHEADER(server_headers)
 
 	INTEGER(session_id)
@@ -126,7 +126,7 @@ WAPEVENT(S_Resume_Res,
  * Session layer (WSP), client side
  */
 
-WAPEVENT(S_Connect_Req,
+WAPEVENT(S_Connect_Req, "S-Connect.req",
 	ADDRTUPLE(addr_tuple)
 	HTTPHEADER(client_headers)
 	CAPABILITIES(requested_capabilities)
@@ -134,19 +134,19 @@ WAPEVENT(S_Connect_Req,
 	INTEGER(session_handle)
 	)
 
-WAPEVENT(S_Suspend_Req,
+WAPEVENT(S_Suspend_Req, "S-Suspend.req",
 
 	INTEGER(session_handle)
 	)
 
-WAPEVENT(S_Resume_Req,
+WAPEVENT(S_Resume_Req, "S-Resume.req",
 	ADDRTUPLE(addr_tuple)
 	HTTPHEADER(client_headers)
 
 	INTEGER(session_handle)
 	)
 
-WAPEVENT(S_Resume_Cnf,
+WAPEVENT(S_Resume_Cnf, "S-Resume.cnf",
 	HTTPHEADER(server_headers)
 
 	INTEGER(session_handle)
@@ -157,7 +157,7 @@ WAPEVENT(S_Resume_Cnf,
  * On the server side, the "handle" field is always the session id.
  */
 
-WAPEVENT(S_Disconnect_Req,
+WAPEVENT(S_Disconnect_Req, "S-Disconnect.req",
 	INTEGER(reason_code)
 	INTEGER(redirect_security)	/* Only meaningful if redirecting */
 	INTEGER(redirect_addresses)	/* FIXME: Wrong type, not used */
@@ -167,7 +167,7 @@ WAPEVENT(S_Disconnect_Req,
 	INTEGER(session_handle)
 	)
 
-WAPEVENT(S_Disconnect_Ind,
+WAPEVENT(S_Disconnect_Ind, "S-Disconnect.ind",
 	INTEGER(reason_code)
 	INTEGER(redirect_security)	/* Only meaningful if redirecting */
 	INTEGER(redirect_addresses)	/* FIXME: Wrong type, not used */
@@ -181,22 +181,22 @@ WAPEVENT(S_Disconnect_Ind,
  * Pseudo-events used by session layer
  */
 
-WAPEVENT(Disconnect_Event,
+WAPEVENT(Disconnect_Event, "Disconnect",
 
 	INTEGER(session_handle)
 	)
 
-WAPEVENT(Suspend_Event,
+WAPEVENT(Suspend_Event, "Suspend",
 
 	INTEGER(session_handle)
 	)
 
-WAPEVENT(Release_Event,
+WAPEVENT(Release_Event, "Release",
 
 	INTEGER(dummy)
 	)
 
-WAPEVENT(Abort_Event,
+WAPEVENT(Abort_Event, "Abort",
 	INTEGER(reason)
 	)
 
@@ -204,7 +204,7 @@ WAPEVENT(Abort_Event,
  * Per-method events for session layer, server side
  */
 
-WAPEVENT(S_MethodInvoke_Ind,
+WAPEVENT(S_MethodInvoke_Ind, "S-MethodInvoke.ind",
 	INTEGER(server_transaction_id)
 	OCTSTR(method)				/* All caps */
 	OCTSTR(request_uri)
@@ -217,13 +217,13 @@ WAPEVENT(S_MethodInvoke_Ind,
 	INTEGER(session_id)
 	)
 
-WAPEVENT(S_MethodInvoke_Res,
+WAPEVENT(S_MethodInvoke_Res, "S-MethodInvoke.res",
 	INTEGER(server_transaction_id)
 
 	INTEGER(session_id)
 	)
 
-WAPEVENT(S_MethodResult_Req,
+WAPEVENT(S_MethodResult_Req, "S-MethodResult.req",
 	INTEGER(server_transaction_id)
 	INTEGER(status)
 	HTTPHEADER(response_headers)
@@ -232,7 +232,7 @@ WAPEVENT(S_MethodResult_Req,
 	INTEGER(session_id)
 	)
 
-WAPEVENT(S_MethodResult_Cnf,
+WAPEVENT(S_MethodResult_Cnf, "S-MethodResult.cnf",
 	INTEGER(server_transaction_id)
 
 	INTEGER(session_id)
@@ -242,7 +242,7 @@ WAPEVENT(S_MethodResult_Cnf,
  * Per-method events for session layer, client side
  */
 
-WAPEVENT(S_MethodInvoke_Req,
+WAPEVENT(S_MethodInvoke_Req, "S-MethodInvoke.req",
 	INTEGER(client_transaction_id)
 	OCTSTR(method)
 	OCTSTR(request_uri)
@@ -252,13 +252,13 @@ WAPEVENT(S_MethodInvoke_Req,
 	INTEGER(session_handle)
 	)
 
-WAPEVENT(S_MethodInvoke_Cnf,
+WAPEVENT(S_MethodInvoke_Cnf, "S-MethodInvoke.cnf",
 	INTEGER(client_transaction_id)
 
 	INTEGER(session_handle)
 	)
 
-WAPEVENT(S_MethodResult_Ind,
+WAPEVENT(S_MethodResult_Ind, "S-MethodResult.ind",
 	INTEGER(client_transaction_id)
 	INTEGER(status)
 	HTTPHEADER(response_headers)
@@ -267,7 +267,7 @@ WAPEVENT(S_MethodResult_Ind,
 	INTEGER(session_handle)
 	)
 
-WAPEVENT(S_MethodResult_Res,
+WAPEVENT(S_MethodResult_Res, "S-MethodResult.res",
 	INTEGER(client_transaction_id)
 
 	INTEGER(session_handle)
@@ -278,13 +278,13 @@ WAPEVENT(S_MethodResult_Res,
  * These events are used by both client and server side.
  */
 
-WAPEVENT(S_MethodAbort_Req,
+WAPEVENT(S_MethodAbort_Req, "S-MethodAbort.req",
 	INTEGER(transaction_id)
 
 	INTEGER(session_hande)
 	)
 
-WAPEVENT(S_MethodAbort_Ind,
+WAPEVENT(S_MethodAbort_Ind, "S-MethodAbort.ind",
 	INTEGER(transaction_id)
 	INTEGER(reason)
 
@@ -295,14 +295,14 @@ WAPEVENT(S_MethodAbort_Ind,
  * Per-push events used by the session layer
  */
 
-WAPEVENT(S_Push_Req,
+WAPEVENT(S_Push_Req, "S-Push.req",
 	HTTPHEADER(push_headers)
 	OPTIONAL_OCTSTR(push_body)
 
 	INTEGER(session_id)
 	)
 
-WAPEVENT(S_Push_Ind,
+WAPEVENT(S_Push_Ind, "S-Push.ind",
 	HTTPHEADER(push_headers)
 	OPTIONAL_OCTSTR(push_body)
 
@@ -310,7 +310,7 @@ WAPEVENT(S_Push_Ind,
 	HTTPHEADER(session_headers)
 	)
 
-WAPEVENT(S_ConfirmedPush_Req,
+WAPEVENT(S_ConfirmedPush_Req, "S-ConfirmedPush.req",
         INTEGER(server_push_id)
         HTTPHEADER(push_headers)
         OPTIONAL_OCTSTR(push_body)
@@ -318,7 +318,7 @@ WAPEVENT(S_ConfirmedPush_Req,
 	INTEGER(session_id)
         )
 
-WAPEVENT(S_ConfirmedPush_Ind,
+WAPEVENT(S_ConfirmedPush_Ind, "S-ConfirmedPush.ind",
 	INTEGER(client_push_id)
 	HTTPHEADER(push_headers)
         OPTIONAL_OCTSTR(push_body)
@@ -326,13 +326,13 @@ WAPEVENT(S_ConfirmedPush_Ind,
 	INTEGER(session_handle)
 	)
 
-WAPEVENT(S_ConfirmedPush_Res,
+WAPEVENT(S_ConfirmedPush_Res, "S-ConfirmedPush.res",
 	INTEGER(client_push_id)
 
 	INTEGER(session_handle)
 	)
 
-WAPEVENT(S_ConfirmedPush_Cnf,
+WAPEVENT(S_ConfirmedPush_Cnf, "S-ConfirmedPush.cnf",
         INTEGER(server_push_id)
 
 	INTEGER(session_id)
@@ -346,14 +346,14 @@ WAPEVENT(S_ConfirmedPush_Cnf,
  * server_push_id and client_push_id.
  */
 
-WAPEVENT(S_PushAbort_Req,
+WAPEVENT(S_PushAbort_Req, "S-PushAbort.req",
 	INTEGER(push_id)
         INTEGER(reason)
 
 	INTEGER(session_handle)
 	)
 
-WAPEVENT(S_PushAbort_Ind,
+WAPEVENT(S_PushAbort_Ind, "S-PushAbort.ind",
 	INTEGER(push_id)
 	INTEGER(reason)
 
@@ -365,7 +365,7 @@ WAPEVENT(S_PushAbort_Ind,
  * Used by WTP layer.
  */
 
-WAPEVENT(RcvInvoke,
+WAPEVENT(RcvInvoke, "RcvInvoke",
 	OCTSTR(user_data)
 	INTEGER(tcl)
 	INTEGER(tid)
@@ -379,14 +379,14 @@ WAPEVENT(RcvInvoke,
 	ADDRTUPLE(addr_tuple)
 	)
 
-WAPEVENT(RcvAbort,
+WAPEVENT(RcvAbort, "RcvAbort",
 	INTEGER(tid)
 	INTEGER(abort_type)
 	INTEGER(abort_reason)
 	ADDRTUPLE(addr_tuple)
 	)
 
-WAPEVENT(RcvAck,
+WAPEVENT(RcvAck, "RcvAck",
 	INTEGER(tid)
 	INTEGER(tid_ok)
 	INTEGER(rid)
@@ -397,19 +397,19 @@ WAPEVENT(RcvAck,
  * Other events used by WTP layer.
  */
 
-WAPEVENT(TimerTO_A,
+WAPEVENT(TimerTO_A, "Timeout-A",
 	INTEGER(handle)
 	)
 
-WAPEVENT(TimerTO_R,
+WAPEVENT(TimerTO_R, "Timeout-R",
 	INTEGER(handle)
 	)
 
-WAPEVENT(TimerTO_W,
+WAPEVENT(TimerTO_W, "Timeout-W",
 	INTEGER(handle)
 	)
 
-WAPEVENT(RcvErrorPDU,
+WAPEVENT(RcvErrorPDU, "RcvErrorPDU",
 	INTEGER(tid)
 	ADDRTUPLE(addr_tuple)
 	)
@@ -418,7 +418,7 @@ WAPEVENT(RcvErrorPDU,
  * Events used by connectionless session protocol (WSP)
  */
 
-WAPEVENT(S_Unit_MethodInvoke_Req,
+WAPEVENT(S_Unit_MethodInvoke_Req, "S-Unit-MethodInvoke.req",
 	ADDRTUPLE(addr_tuple)
 	INTEGER(transaction_id)
 	OCTSTR(method)
@@ -427,7 +427,7 @@ WAPEVENT(S_Unit_MethodInvoke_Req,
 	OPTIONAL_OCTSTR(request_body)
 	)
 
-WAPEVENT(S_Unit_MethodInvoke_Ind,
+WAPEVENT(S_Unit_MethodInvoke_Ind, "S-Unit_MethodInvoke.ind",
 	ADDRTUPLE(addr_tuple)
 	INTEGER(transaction_id)
 	OCTSTR(method)				/* All caps */
@@ -436,7 +436,7 @@ WAPEVENT(S_Unit_MethodInvoke_Ind,
 	OPTIONAL_OCTSTR(request_body)
 	)
 
-WAPEVENT(S_Unit_MethodResult_Req,
+WAPEVENT(S_Unit_MethodResult_Req, "S-Unit-MethodResult.req",
 	ADDRTUPLE(addr_tuple)
 	INTEGER(transaction_id)
 	INTEGER(status)
@@ -444,7 +444,7 @@ WAPEVENT(S_Unit_MethodResult_Req,
 	OPTIONAL_OCTSTR(response_body)
 	)
 
-WAPEVENT(S_Unit_MethodResult_Ind,
+WAPEVENT(S_Unit_MethodResult_Ind, "S-Unit-MethodResult.ind",
 	ADDRTUPLE(addr_tuple)
 	INTEGER(transaction_id)
 	INTEGER(status)
@@ -452,14 +452,14 @@ WAPEVENT(S_Unit_MethodResult_Ind,
 	OPTIONAL_OCTSTR(response_body)
 	)
 
-WAPEVENT(S_Unit_Push_Req,
+WAPEVENT(S_Unit_Push_Req, "S-Unit-Push.req",
 	ADDRTUPLE(addr_tuple)
 	INTEGER(push_id)
 	HTTPHEADER(push_headers)
 	OPTIONAL_OCTSTR(push_body)
 	)
 
-WAPEVENT(S_Unit_Push_Ind,
+WAPEVENT(S_Unit_Push_Ind, "S-Unit-Push.ind",
 	ADDRTUPLE(addr_tuple)
 	INTEGER(push_id)
 	HTTPHEADER(push_headers)

@@ -18,7 +18,7 @@ typedef struct WAPEvent WAPEvent;
  * Names of WAPEvents.
  */
 typedef enum {
-	#define WAPEVENT(name, fields) name,
+	#define WAPEVENT(name, prettyname, fields) name,
 	#include "wap_events.def"
 	WAPEventNameCount
 } WAPEventName;
@@ -31,7 +31,7 @@ struct WAPEvent {
 	WAPEventName type;
 
 	union {
-	#define WAPEVENT(name, fields) struct name { fields } name;
+	#define WAPEVENT(name, prettyname, fields) struct name { fields } name;
 	#define OCTSTR(name) Octstr *name;
 	#define OPTIONAL_OCTSTR(name) Octstr *name; /* May be NULL */
 	#define INTEGER(name) long name;

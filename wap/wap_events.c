@@ -21,7 +21,7 @@ WAPEvent *wap_event_create(WAPEventName type) {
 	event->type = type;
 
 	switch (event->type) {
-	#define WAPEVENT(name, fields) \
+	#define WAPEVENT(name, prettyname, fields) \
 		case name: \
 			{ struct name *p = &event->u.name; fields } \
 			break;
@@ -47,7 +47,7 @@ void wap_event_destroy(WAPEvent *event) {
 	wap_event_assert(event);
 
 	switch (event->type) {
-	#define WAPEVENT(name, fields) \
+	#define WAPEVENT(name, prettyname, fields) \
 		case name: \
 			{ struct name *p = &event->u.name; fields; } \
 			break;
@@ -82,7 +82,7 @@ WAPEvent *wap_event_duplicate(WAPEvent *event) {
 	new->type = event->type;
 
 	switch (event->type) {
-	#define WAPEVENT(name, fields) \
+	#define WAPEVENT(name, prettyname, fields) \
 		case name: \
 			{ struct name *p = &new->u.name; \
 			  struct name *q = &event->u.name; \
@@ -105,8 +105,8 @@ WAPEvent *wap_event_duplicate(WAPEvent *event) {
 
 const char *wap_event_name(WAPEventName type) {
 	switch (type) {
-	#define WAPEVENT(name, fields) \
-		case name: return #name;
+	#define WAPEVENT(name, prettyname, fields) \
+		case name: return prettyname;
 	#include "wap_events.def"
 	default:
 		panic(0, "Unknown WAPEvent type %d", (int) type);
@@ -121,7 +121,7 @@ void wap_event_dump(WAPEvent *event) {
 		debug("wap.event", 0, "  type = %s", 
 			wap_event_name(event->type));
 		switch (event->type) {
-		#define WAPEVENT(name, fields) \
+		#define WAPEVENT(name, prettyname, fields) \
 			case name: \
 			{ struct name *p = &event->u.name; fields; break; }
 		#define OCTSTR(name) \
@@ -158,7 +158,7 @@ void wap_event_assert(WAPEvent *event) {
 	gw_assert(event->type < WAPEventNameCount);
 
 	switch (event->type) {
-#define WAPEVENT(name, fields) \
+#define WAPEVENT(name, prettyname, fields) \
 	case name: \
 	{ struct name *p = &event->u.name; fields; p = NULL; break; }
 #define OCTSTR(name) \

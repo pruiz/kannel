@@ -1,5 +1,10 @@
 2000-11-29  Richard Braakman  <dark@wapit.com>
 
+	* wap/wap_events.*: Gave events pretty names, for logging.
+	("TR-Invoke.cnf" instead of "TR_Invoke_Cnf").
+
+2000-11-29  Richard Braakman  <dark@wapit.com>
+
 	* wap/wap_events.def, wap/wsp_push_client.c,
 	wap/wsp_push_client_states.def: Brought Push-related events in
 	line with the scheme used by other WSP events.
