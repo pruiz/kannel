@@ -7,6 +7,7 @@ set -e
 times=1000
 port="8080"
 url="http://localhost:$port/foo.txt"
+quiturl="http://localhost:$port/quit"
 loglevel=0
 
 test/test_http_server -p $port -v $loglevel > check_http_server.log 2>&1 &
@@ -17,7 +18,7 @@ sleep 1
 test/test_http -r $times $url > check_http.log 2>&1
 ret=$?
 
-kill $serverpid
+test/test_http -r 1 $quiturl >> check_http.log 2>&1
 wait
 
 if [ "$ret" != 0 ] || \

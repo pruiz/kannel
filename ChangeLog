@@ -1,3 +1,10 @@
+2001-03-21  Lars Wirzenius  <liw@iki.fi>
+
+	* checks/check_http.sh: Kill server via HTTP, instead of via
+	a signal. This way, if the server has trouble dying properly,
+	it will be quite visible, instead of possibly hidden by signal
+	handling.
+
 2001-03-21  Uoti Urpala  <uau@wapit.com>
 
 	* gwlib/http.c: Fixed memory leaks, updated keepalive connections
