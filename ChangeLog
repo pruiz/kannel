@@ -1,4 +1,8 @@
 2003-08-21  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_boxc.c: fixing BUG#80, see Mantis for more detailed information
+      on the impact of the bug and why things have to be resolved here.
+
+2003-08-21  Stipe Tolj  <tolj@wapme-systems.de>
     * test/test_boxc.c: added smsbox connection testing for BUG#80.
 
 2003-08-14  Alexander Malysh  <a.malysh@centrium.de>
