@@ -1570,6 +1570,7 @@ static Msg *cimd2_accept_message(struct packet *request, SMSCConn *conn)
 	debug("CIMD2", 0, "Invalid DCS");
 	dcs_to_fields(&message, 0);
     }
+    time(&message->sms.time);
     message->sms.sender = origin;
     message->sms.receiver = destination;
     if (UDH) {
