@@ -21,8 +21,8 @@ Requirements
 	You need a Unix-like operating system that supports POSIX threads
 	(pthreads.h). We use RedHat Linux and Debian GNU/Linux systems.
 
-    There is also support for the Cygwin 1.x POSIX emulation layer
-    for the Win32 platforms.
+	There is also support for the Cygwin 1.3 POSIX emulation layer
+	for the Win32 platforms.
 	
 	You need GNU make, other make's tend not to work. For example,
 	the FreeBSD and Solaris versions of make do not work. Check the
@@ -31,12 +31,12 @@ Requirements
 	
 	On Solaris, you probably want to install gcc, GNU make and GNU
 	binutils from www.sunfreeware.com.
-
-    On MacOS X, you may have problems in compiling the latest libxml
-    (2.4.23). There may be linking errors for those library. A work-
-    arround is either using an older version of libxml (2.3.9 for 
-    example) or to build it as static library without the dynamic one 
-    being built.
+	
+	On MacOS X, you may have problems in compiling the latest libxml
+	(2.4.23). There may be linking errors for those library. A work-
+	arround is either using an older version of libxml (2.3.9 for 
+	example) or to build it as static library without the dynamic one 
+	being built.
 
 Documentation
 
