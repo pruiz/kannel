@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <limits.h>
 
 #include <unistd.h>
 #include <time.h>
