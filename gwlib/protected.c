@@ -107,15 +107,15 @@ int gw_rand(void)
 /* linux version */
 int gw_gethostbyname(struct hostent *ent, const char *name, char **buff)
 {
-    struct hostent *tmphp, *hp;
+    struct hostent *tmphp, hp;
     int herr, res;
     size_t bufflen;
 
-    tmphp = hp = NULL; /* for compiler please */
+    tmphp = NULL; /* for compiler please */
 
     bufflen = 1024;
     *buff = (char*) gw_malloc(bufflen);
-    while ((res=gethostbyname_r(name, hp,*buff, bufflen, &tmphp, &herr)) == ERANGE) {
+    while ((res=gethostbyname_r(name, &hp,*buff, bufflen, &tmphp, &herr)) == ERANGE) {
         /* enlarge the buffer */
 	bufflen *= 2;
 	*buff = (char*) gw_realloc(*buff, bufflen);
@@ -126,7 +126,7 @@ int gw_gethostbyname(struct hostent *ent, const char *name, char **buff)
         res = -1;
     }
     else {
-        *ent = *hp;
+        *ent = hp;
     }
 
     return res;
