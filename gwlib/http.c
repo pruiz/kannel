@@ -73,7 +73,8 @@ static int socket_write(HTTPSocket *p, Octstr *os);
 static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path);
 
 static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port,
-                             List *headers, Octstr *request_body, char* method_name);
+                             List *headers, Octstr *request_body, 
+			     char* method_name);
 
 static HTTPSocket *send_request(Octstr *url, List *request_headers,
                                 Octstr *request_body, char *method_name);
@@ -87,7 +88,8 @@ static int read_chunked_body(HTTPSocket *p, Octstr **body, List *headers);
 static int read_raw_body(HTTPSocket *p, Octstr **body, long bytes);
 static List *parse_cgivars(Octstr *url);
 static int header_is_called(Octstr *header, char *name);
-static int http_something_accepted(List *headers, char *header_name, char *what);
+static int http_something_accepted(List *headers, char *header_name, 
+    	    	    	    	   char *what);
 
 
 
@@ -342,7 +344,8 @@ error:
 
 
 int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
-                   Octstr **final_url, List **reply_headers, Octstr **reply_body)
+                   Octstr **final_url, List **reply_headers, 
+		   Octstr **reply_body)
 {
     int i, ret;
     long len;
@@ -831,7 +834,7 @@ int http_charset_accepted(List *headers, char *charset)
  */
 
 
-int proxy_used_for_host(Octstr *host)
+static int proxy_used_for_host(Octstr *host)
 {
     int i;
 
@@ -1289,7 +1292,8 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path)
  */
 
 static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port,
-                             List *headers, Octstr *request_body, char *method_name)
+                             List *headers, Octstr *request_body, 
+			     char *method_name)
 {
 
     /* XXX headers missing */
