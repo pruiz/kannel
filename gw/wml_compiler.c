@@ -584,7 +584,6 @@ static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
  * of the output. Returns 0 for success, -1 for error.
  */
 
-
 static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
 {
     int status = 0;
@@ -606,19 +605,26 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
     if ((attribute = dict_get(wml_attributes_dict, name)) != NULL) {
 	if (attr->children == NULL || 
 	    (hit = list_search(attribute->value_list, (void *)pattern, 
-			       hash_cmp)) == NULL)
-	    wbxml_hex = attribute->binary;
-	else if (hit->binary) {
+			       hash_cmp)) == NULL) {
+		wbxml_hex = attribute->binary;
+		output_char(wbxml_hex, wbxml);
+	} else if (hit->binary) {
 	    wbxml_hex = hit->binary;
 	    coded_length = octstr_len(hit->item);
+	    output_char(wbxml_hex, wbxml);
 	} else
 	    status = -1;
-    } else
-	status = -1;
+    } else {
+	/* The attribute was not on the code page, it has to be encoded as a 
+	   string. */
+	wbxml_hex = WBXML_LITERAL;
+	output_char(wbxml_hex, wbxml);
+	output_char(string_table_add(octstr_duplicate(name), wbxml), wbxml);
+	warning(0, "WML compiler: Unknown attribute in WML source: <%s>", 
+		octstr_get_cstr(name));
+    }
 
     if (status >= 0) {
-	output_char(wbxml_hex, wbxml);
-
 	/* The rest of the attribute is coded as a inline string. */
 	if (pattern != NULL && 
 	    coded_length < (int) octstr_len(pattern)) {

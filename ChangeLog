@@ -1,3 +1,9 @@
+2001-08-02  Tuomas Luttinen  <Tuomas.Luttinen@reach-u.com>
+
+	* gw/wml_compiler.c (parse_attribute): A bug reported by Bernard 
+	Valton fixed: unknown attribute is encoded with LITERAL and a string 
+	table reference.
+
 2001-08-01  Tuomas Luttinen  <Tuomas.Luttinen@reach-u.com>
 
 	* gwlib/charset.h: Updated the comments about the supported character 
