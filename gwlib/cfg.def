@@ -114,7 +114,8 @@ MULTI_GROUP(wap-push-user,
     OCTSTR(black-list)
     OCTSTR(deny-ip)
     OCTSTR(allow-ip)
-    OCTSTR(forced-smsc)
+    OCTSTR(forced-smsc-id)
+    OCTSTR(default-smsc-id)
 )
 
 

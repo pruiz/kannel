@@ -14,7 +14,7 @@
  *
  * In addition, rfcs 1521 and 2045 are referred.
  *
- * By  Aarno SyvŠnen for Wapit Ltd, Wiral Ltd and Global Networks Inc.
+ * By Aarno SyväŠnen for Wapit Ltd, Wiral Ltd and Global Networks Inc. 
  */
 
 #include <time.h>
@@ -677,6 +677,8 @@ static void pap_request_thread(void *arg)
                                           ders */
          *cgivars;
     HTTPClient *client;
+    Octstr *smsc_id;
+    Octstr *retos;
     
     http_status = 0;                
   
@@ -704,22 +706,22 @@ static void pap_request_thread(void *arg)
         }
 
         if (!trusted_pi && user_configuration) {
-	        if (!wap_push_ppg_pushuser_authenticate(client, cgivars, ip, 
+	    if (!wap_push_ppg_pushuser_authenticate(client, cgivars, ip, 
                                                     push_headers, &username)) {
 	             error(0,  "Request <%s> from <%s>: authorisation failure",
                        octstr_get_cstr(url), octstr_get_cstr(ip));
                  goto ferror;
             }
-	    } else {                        /* Jörg, this wont disappear again */
-	        username = octstr_imm("");
-	    }
+        } else {                        /* Jörg, this wont disappear again */
+	    username = octstr_imm("");
+	}
 
         http_status = HTTP_ACCEPTED;
         info(0, "PPG: Accept request <%s> from <%s>", octstr_get_cstr(url), 
              octstr_get_cstr(ip));
         
         if (octstr_len(mime_content) == 0) {
-	        warning(0, "PPG: No MIME content received, the request"
+	    warning(0, "PPG: No MIME content received, the request"
                     " unacceptable");
             send_bad_message_response(&client, octstr_imm("No MIME content"), 
                                       PAP_BAD_REQUEST, http_status);
@@ -787,10 +789,10 @@ static void pap_request_thread(void *arg)
 
         ppg_event = NULL;
         if ((compiler_status = pap_compile(pap_content, &ppg_event)) == -2) {
-	         send_bad_message_response(&client, pap_content, PAP_BAD_REQUEST,
+	    send_bad_message_response(&client, pap_content, PAP_BAD_REQUEST,
                                        http_status);
             if (client == NULL)
-	            break;
+	        break;
             warning(0, "PPG: pap control entity erroneous, the request" 
                     " unacceptable");
             goto no_compile;
@@ -798,20 +800,20 @@ static void pap_request_thread(void *arg)
             send_bad_message_response(&client, pap_content, PAP_BAD_REQUEST,
                                       http_status);
             if (client == NULL)
-	            break;
+	        break;
             warning(0, "PPG: non implemented pap feature requested, the"
                     " request unacceptable");
             goto no_compile;
         } else {
-	        if (!dict_put_once(http_clients, 
-		        ppg_event->u.Push_Message.pi_push_id, client)) {
+	    if (!dict_put_once(http_clients, 
+		    ppg_event->u.Push_Message.pi_push_id, client)) {
                 warning(0, "PPG: duplicate push id, the request unacceptable");
-	            tell_fatal_error(&client, ppg_event, url, http_status, 
+	        tell_fatal_error(&client, ppg_event, url, http_status, 
                                  PAP_DUPLICATE_PUSH_ID);
                 if (client == NULL)
-	                break;
+	            break;
                 goto not_acceptable;
-	        } 
+	    } 
 
             dict_put(urls, ppg_event->u.Push_Message.pi_push_id, url); 
  
@@ -822,19 +824,26 @@ static void pap_request_thread(void *arg)
                     tell_fatal_error(&client, ppg_event, url, http_status, 
                                     PAP_FORBIDDEN);
                     if (client == NULL)
-	                    break;
+	                break;
 	                goto not_acceptable;
 	            }   
             }        
 
             debug("wap.push.ppg", 0, "PPG: http_read_thread: pap control"
                   " entity compiled ok");
+
+            retos = http_cgi_variable(cgivars, "smsc");
+            if (retos == NULL)
+                smsc_id = wap_push_ppg_pushuser_smsc_id_get(username);
+            else
+                smsc_id = octstr_duplicate(retos);
             ppg_event->u.Push_Message.push_headers = 
                 http_header_duplicate(push_headers);
             ppg_event->u.Push_Message.push_data = octstr_duplicate(push_data);
+            ppg_event->u.Push_Message.smsc_id = octstr_duplicate(smsc_id);
             if (!handle_push_message(&client, ppg_event, http_status)) {
-	            if (client == NULL)
-		            break;
+	        if (client == NULL)
+		    break;
                 goto no_transform;
             }
         }
@@ -848,6 +857,7 @@ static void pap_request_thread(void *arg)
         octstr_destroy(push_data);
         octstr_destroy(rdf_content);
         octstr_destroy(boundary);
+        octstr_destroy(smsc_id);
         continue;
 
 no_transform:
@@ -860,6 +870,7 @@ no_transform:
         octstr_destroy(push_data);
         octstr_destroy(rdf_content);
         octstr_destroy(boundary);
+        octstr_destroy(smsc_id);
         continue;
 
 no_compile:
@@ -1274,6 +1285,10 @@ static PPGPushMachine *push_machine_create(WAPEvent *e, WAPAddrTuple *tuple)
     m->push_data = octstr_duplicate(e->u.Push_Message.push_data);
 
     m->address_type = e->u.Push_Message.address_type;
+    if (e->u.Push_Message.smsc_id != NULL)
+        m->smsc_id = octstr_duplicate(e->u.Push_Message.smsc_id);
+    else
+        m->smsc_id = NULL;
 
     m->progress_notes_requested = e->u.Push_Message.progress_notes_requested;
     if (e->u.Push_Message.progress_notes_requested)
@@ -1352,11 +1367,13 @@ static void create_session(WAPEvent *e, PPGPushMachine *pm)
 {
     WAPEvent *ota_event;
     List *push_headers;
+    Octstr *smsc_id;
 
     gw_assert(e->type == Push_Message);
     push_machine_assert(pm);
     
     push_headers = http_header_duplicate(e->u.Push_Message.push_headers);
+    smsc_id = octstr_duplicate(e->u.Push_Message.smsc_id);
 
     ota_event = wap_event_create(Pom_SessionRequest_Req);
     ota_event->u.Pom_SessionRequest_Req.addr_tuple =
@@ -1365,7 +1382,10 @@ static void create_session(WAPEvent *e, PPGPushMachine *pm)
     ota_event->u.Pom_SessionRequest_Req.push_headers = push_headers;
     ota_event->u.Pom_SessionRequest_Req.push_id = pm->push_id;
     ota_event->u.Pom_SessionRequest_Req.address_type = pm->address_type;
-     
+    if (smsc_id != NULL)
+        ota_event->u.Pom_SessionRequest_Req.smsc_id = smsc_id;
+    else
+        ota_event->u.Pom_SessionRequest_Req.smsc_id = NULL;
     dispatch_to_ota(ota_event);
 }
 
@@ -1428,9 +1448,11 @@ static void request_unit_push(long last, PPGPushMachine *pm)
     ota_event->u.Po_Unit_Push_Req.last = last;
 
     ota_event->u.Po_Unit_Push_Req.address_type = pm->address_type;
-
-    ota_event->u.Po_Unit_Push_Req.push_body = 
-            octstr_duplicate(pm->push_data);
+    if (pm->smsc_id != NULL)
+        ota_event->u.Po_Unit_Push_Req.smsc_id = octstr_duplicate(pm->smsc_id);
+    else
+        ota_event->u.Po_Unit_Push_Req.smsc_id = NULL;
+    ota_event->u.Po_Unit_Push_Req.push_body = octstr_duplicate(pm->push_data);
 
     dispatch_to_ota(ota_event);
     debug("wap.push.ppg", 0, "PPG: OTA request for unit push");

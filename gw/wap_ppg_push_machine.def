@@ -28,7 +28,9 @@
  *        i) PI authentication fields: authentication fields for this push: 
  *           authenticated, trusted. 
  *
- * By Aarno Syvänen for Wapit Ltd and for Wiral Ltd
+ *        j) Smsc used for pushing 
+ *
+ * By Aarno Syvänen for Wapit Ltd, for Wiral Ltd and for Global Networks Inc
  */
 
 #if !defined(MACHINE)
@@ -71,6 +73,7 @@ MACHINE(OCTSTR(pi_push_id)       /* this id is selected by PI and SHOULD
         INTEGER(authenticated)   /* transferring trust from the client to
                                     PPG */
         INTEGER(trusted)  
+        OPTIONAL_OCTSTR(smsc_id) /* smsc used for pushes */
        )
 
 #undef MACHINE

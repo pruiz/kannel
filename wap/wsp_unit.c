@@ -255,6 +255,11 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
 	    wap_addr_tuple_duplicate(event->u.S_Unit_Push_Req.addr_tuple);
         datagram->u.T_DUnitdata_Req.address_type = 
 	    event->u.S_Unit_Push_Req.address_type;
+        if (event->u.S_Unit_Push_Req.smsc_id != NULL)
+            datagram->u.T_DUnitdata_Req.smsc_id =
+                octstr_duplicate(event->u.S_Unit_Push_Req.smsc_id);
+        else
+            datagram->u.T_DUnitdata_Req.smsc_id = NULL;
 
 	datagram->u.T_DUnitdata_Req.user_data = ospdu;
         debug("wap.wsp.unit", 0, "WSP_UNIT: delivering to wdp");

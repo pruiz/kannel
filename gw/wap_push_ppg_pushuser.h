@@ -1,11 +1,14 @@
 /*
- * wap_push_ppg_pushuser.h: Header of push user authentication module.
+ * wap_push_ppg_pushuser.h: Header of the push user module. This means
+ * currently authentication and smsc routing. 
  *
  * Only WAP-165-PushArchOverview-19991108-a, an informal document, mentions
  * pi authentication. (See chapter 13.) So this is definitely left for 
  * implementors.
  * Basic authentication is defined in rfc 2617. Note that https connections
  * are handled by our http module.
+ * Smsc routing is, of course, a very specific to Kannel. It is very similar
+ * to sendsms group routing. 
  *
  * By Aarno Syvänen for Wiral Ltd
  */
@@ -17,7 +20,7 @@
 
 /*
  * This function initializes the module and push users data stucture, contain-
- * ing authentication data for all push user accounts. This function MUST be
+ * ing user specific  data for all push user accounts. This function MUST be
  * called before any other functions of this module.
  */
 int wap_push_ppg_pushuser_list_add(List *l, long number_of_pushes, 
@@ -72,5 +75,10 @@ int wap_push_ppg_pushuser_client_phone_number_acceptable(Octstr *username,
 
 int wap_push_ppg_pushuser_search_ip_from_wildcarded_list(Octstr *haystack, 
     Octstr *needle, Octstr *list_sep, Octstr *ip_sep);
+
+/*
+ * Returns smsc pushes by this user must use, NULL when there was an error.
+ */
+Octstr *wap_push_ppg_pushuser_smsc_id_get(Octstr *username);
 
 #endif

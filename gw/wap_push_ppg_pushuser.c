@@ -11,7 +11,7 @@
  *
  * Global data structures
  *
- * Hold authentication data for one ppg user
+ * Hold user specific  data for one ppg user
  */
 
 struct WAPPushUser {
@@ -28,13 +28,14 @@ struct WAPPushUser {
     Octstr *user_deny_ip;              /* this user allows pushes from these 
                                           IPs*/
     Octstr *user_allow_ip;             /* and denies them from these*/
-    Octstr *smsc_id;                   /* send SMS via a specific smsc-id */
+    Octstr *smsc_id;                   /* force push SMs to this smsc */
+    Octstr *default_smsc_id;           /* use this smsc as a default for push SMs */
 };
 
 typedef struct WAPPushUser WAPPushUser;
 
 /*
- * Hold authentication data of all ppg users
+ * Hold user specific  data of all ppg users
  */
 
 struct WAPPushUserList {
@@ -75,6 +76,8 @@ static void reply(HTTPClient *c, List *push_headers);
 static int parse_cgivars_for_username(List *cgivars, Octstr **username);
 static int parse_cgivars_for_password(List *cgivars, Octstr **password);
 static int compare_octstr_sequence(Octstr *os1, Octstr *os2, long start);
+static Octstr *forced_smsc(WAPPushUser *u);
+static Octstr *default_smsc(WAPPushUser *u);
 
 /****************************************************************************
  *
@@ -304,6 +307,21 @@ found:
     return 1;
 }
 
+/*
+ * Returns smsc pushes by this user must use, NULL when there was an error.
+ */
+Octstr *wap_push_ppg_pushuser_smsc_id_get(Octstr *username)
+{
+    WAPPushUser *u;
+    Octstr *smsc_id;
+
+    u = user_find_by_username(username);
+    if ((smsc_id = forced_smsc(u)) != NULL)
+        return octstr_duplicate(smsc_id);
+
+    smsc_id = default_smsc(u);
+    return octstr_duplicate(smsc_id);
+}
 
 /***************************************************************************
  *
@@ -352,6 +370,7 @@ static WAPPushUser *create_oneuser(CfgGroup *grp)
     u->user_deny_ip = NULL;              
     u->user_allow_ip = NULL;
     u->smsc_id = NULL;
+    u->default_smsc_id = NULL;
 
     u->name = cfg_get(grp, octstr_imm("wap-push-user"));
 
@@ -383,7 +402,8 @@ static WAPPushUser *create_oneuser(CfgGroup *grp)
     u->country_prefix = cfg_get(grp, octstr_imm("country-prefix"));
     u->allowed_prefix = cfg_get(grp, octstr_imm("allowed-prefix"));
     u->denied_prefix = cfg_get(grp, octstr_imm("denied-prefix"));
-    u->smsc_id = cfg_get(grp, octstr_imm("forced-smsc"));
+    u->smsc_id = cfg_get(grp, octstr_imm("forced-smsc-id"));
+    u->default_smsc_id = cfg_get(grp, octstr_imm("default-smsc-id"));
 
     os = cfg_get(grp, octstr_imm("white-list"));
     if (os != NULL) {
@@ -428,6 +448,7 @@ static void destroy_oneuser(void *p)
      octstr_destroy(u->user_deny_ip);              
      octstr_destroy(u->user_allow_ip);
      octstr_destroy(u->smsc_id);
+     octstr_destroy(u->default_smsc_id);
      gw_free(u);             
 }
 
@@ -455,6 +476,8 @@ static void oneuser_dump(WAPPushUser *u)
     octstr_dump(u->user_allow_ip, 0);
     debug("wap.push.ppg.pushuser", 0, "send via smsc-id:");                   
     octstr_dump(u->smsc_id, 0);
+    debug("wap.push.ppg.pushuser", 0, "use default smsc:");
+    octstr_dump(u->default_smsc_id, 0);
     debug("wap.push.ppg.pushuser", 0, "end of the dump");
 }
 
@@ -871,6 +894,15 @@ static int compare_octstr_sequence(Octstr *os1, Octstr *os2, long start)
     return ret;
 }
 
+static Octstr *forced_smsc(WAPPushUser *u)
+{
+    return u->smsc_id;
+}
+
+static Octstr *default_smsc(WAPPushUser *u)
+{
+    return u->smsc_id;
+}
 
 
 

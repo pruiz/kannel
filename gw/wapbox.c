@@ -343,7 +343,10 @@ static Msg *pack_sms_datagram(WAPEvent *dgram)
     msg->sms.udhdata = pack_udhdata(tuple);
     msg->sms.msgdata = octstr_duplicate(dgram->u.T_DUnitdata_Req.user_data);
     msg->sms.time = time(NULL);
-    msg->sms.smsc_id = NULL;
+    if (dgram->u.T_DUnitdata_Req.smsc_id != NULL)
+        msg->sms.smsc_id = octstr_duplicate(dgram->u.T_DUnitdata_Req.smsc_id);
+    else
+        msg->sms.smsc_id = NULL;
     msg->sms.sms_type = mt_push;
     msg->sms.mwi = MWI_UNDEF;
     msg->sms.coding = DC_8BIT;

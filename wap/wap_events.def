@@ -76,6 +76,7 @@ WAPEVENT(T_DUnitdata_Req, "T-DUnitdata.req",
 	OCTSTR(user_data)
 
         INTEGER(address_type)
+        OPTIONAL_OCTSTR(smsc_id)
 	)
 
 WAPEVENT(T_DUnitdata_Ind, "T-DUnitdata.ind",
@@ -450,28 +451,28 @@ WAPEVENT(RcvSegInvoke, "RcvSegInvoke",
     )
 
 WAPEVENT(RcvResult, "RcvResult",
-	OCTSTR(user_data)
-	INTEGER(tid)
-	INTEGER(rid)
-	INTEGER(gtr)
-	INTEGER(ttr)
-	ADDRTUPLE(addr_tuple)
-	)
+    OCTSTR(user_data)
+    INTEGER(tid)
+    INTEGER(rid)
+    INTEGER(gtr)
+    INTEGER(ttr)
+    ADDRTUPLE(addr_tuple)
+    )
 
 WAPEVENT(RcvAbort, "RcvAbort",
-	INTEGER(tid)
-	INTEGER(abort_type)
-	INTEGER(abort_reason)
-	ADDRTUPLE(addr_tuple)
-	)
+    INTEGER(tid)
+    INTEGER(abort_type)
+    INTEGER(abort_reason)
+    ADDRTUPLE(addr_tuple)
+    )
 
 WAPEVENT(RcvAck, "RcvAck",
-	INTEGER(tid)
-	INTEGER(tid_ok)
-	INTEGER(rid)
+    INTEGER(tid)
+    INTEGER(tid_ok)
+    INTEGER(rid)
     INTEGER(psn)
-	ADDRTUPLE(addr_tuple)
-	)
+    ADDRTUPLE(addr_tuple)
+    )
 
 WAPEVENT(RcvNegativeAck, "RcvNack",
     INTEGER(tid)
@@ -486,181 +487,184 @@ WAPEVENT(RcvNegativeAck, "RcvNack",
  */
 
 WAPEVENT(TimerTO_A, "Timeout-A",
-	INTEGER(handle)
-	)
+    INTEGER(handle)
+    )
 
 WAPEVENT(TimerTO_R, "Timeout-R",
-	INTEGER(handle)
-	)
+    INTEGER(handle)
+    )
 
 WAPEVENT(TimerTO_W, "Timeout-W",
-	INTEGER(handle)
-	)
+    INTEGER(handle)
+    )
 
 WAPEVENT(RcvErrorPDU, "RcvErrorPDU",
-	INTEGER(tid)
-	ADDRTUPLE(addr_tuple)
-	)
+    INTEGER(tid)
+    ADDRTUPLE(addr_tuple)
+    )
 
 /*
  * Events used by connectionless session protocol (WSP)
  */
 
 WAPEVENT(S_Unit_MethodInvoke_Req, "S-Unit-MethodInvoke.req",
-	ADDRTUPLE(addr_tuple)
-	INTEGER(transaction_id)
-	OCTSTR(method)
-	OCTSTR(request_uri)
-	HTTPHEADER(request_headers)
-	OPTIONAL_OCTSTR(request_body)
-	)
+    ADDRTUPLE(addr_tuple)
+    INTEGER(transaction_id)
+    OCTSTR(method)
+    OCTSTR(request_uri)
+    HTTPHEADER(request_headers)
+    OPTIONAL_OCTSTR(request_body)
+    )
 
 WAPEVENT(S_Unit_MethodInvoke_Ind, "S-Unit_MethodInvoke.ind",
-	ADDRTUPLE(addr_tuple)
-	INTEGER(transaction_id)
-	OCTSTR(method)				/* All caps */
-	OCTSTR(request_uri)
-	HTTPHEADER(request_headers)
-	OPTIONAL_OCTSTR(request_body)
-	)
+    ADDRTUPLE(addr_tuple)
+    INTEGER(transaction_id)
+    OCTSTR(method)				/* All caps */
+    OCTSTR(request_uri)
+    HTTPHEADER(request_headers)
+    OPTIONAL_OCTSTR(request_body)
+    )
 
 WAPEVENT(S_Unit_MethodResult_Req, "S-Unit-MethodResult.req",
-	ADDRTUPLE(addr_tuple)
-	INTEGER(transaction_id)
-	INTEGER(status)
-	HTTPHEADER(response_headers)
-	OPTIONAL_OCTSTR(response_body)
-	)
+    ADDRTUPLE(addr_tuple)
+    INTEGER(transaction_id)
+    INTEGER(status)
+    HTTPHEADER(response_headers)
+    OPTIONAL_OCTSTR(response_body)
+    )
 
 WAPEVENT(S_Unit_MethodResult_Ind, "S-Unit-MethodResult.ind",
-	ADDRTUPLE(addr_tuple)
-	INTEGER(transaction_id)
-	INTEGER(status)
-	HTTPHEADER(response_headers)
-	OPTIONAL_OCTSTR(response_body)
-	)
+    ADDRTUPLE(addr_tuple)
+    INTEGER(transaction_id)
+    INTEGER(status)
+    HTTPHEADER(response_headers)
+    OPTIONAL_OCTSTR(response_body)
+    )
 
 WAPEVENT(S_Unit_Push_Req, "S-Unit-Push.req",
-	ADDRTUPLE(addr_tuple)
-	INTEGER(push_id)
-	HTTPHEADER(push_headers)
-	OPTIONAL_OCTSTR(push_body)
+    ADDRTUPLE(addr_tuple)
+    INTEGER(push_id)
+    HTTPHEADER(push_headers)
+    OPTIONAL_OCTSTR(push_body)
 
-        INTEGER(address_type)
-	)
+    INTEGER(address_type)
+    OPTIONAL_OCTSTR(smsc_id)
+    )
 
 WAPEVENT(S_Unit_Push_Ind, "S-Unit-Push.ind",
-	ADDRTUPLE(addr_tuple)
-	INTEGER(push_id)
-	HTTPHEADER(push_headers)
-	OPTIONAL_OCTSTR(push_body)
-	)
+    ADDRTUPLE(addr_tuple)
+    INTEGER(push_id)
+    HTTPHEADER(push_headers)
+    OPTIONAL_OCTSTR(push_body)
+    )
 
 /*
  * Events used by push OTA protocol, server side
  */
 
 WAPEVENT(Pom_SessionRequest_Req, "Pom-SessionRequest.req",
-        ADDRTUPLE(addr_tuple)
-        HTTPHEADER(push_headers)
+    ADDRTUPLE(addr_tuple)
+    HTTPHEADER(push_headers)
         
-        INTEGER(push_id)
-        INTEGER(address_type)
-        )
+    INTEGER(push_id)
+    INTEGER(address_type)
+    OPTIONAL_OCTSTR(smsc_id)
+    )
 
 WAPEVENT(Pom_Connect_Ind, "Pom-Connect.ind",
-         ADDRTUPLE(addr_tuple)
-         HTTPHEADER(push_headers)
-         CAPABILITIES(requested_capabilities)
-         HTTPHEADER(accept_application)
-         HTTPHEADER(bearer_indication)
+    ADDRTUPLE(addr_tuple)
+    HTTPHEADER(push_headers)
+    CAPABILITIES(requested_capabilities)
+    HTTPHEADER(accept_application)
+    HTTPHEADER(bearer_indication)
 
-         INTEGER(session_id)
-         INTEGER(push_id)
-        )
+    INTEGER(session_id)
+    INTEGER(push_id)
+    )
 
 WAPEVENT(Pom_Connect_Res, "Pom-Connect.res",
-         CAPABILITIES(negotiated_capabilities)
+    CAPABILITIES(negotiated_capabilities)
 
-         INTEGER(session_id)
-        )
+    INTEGER(session_id)
+    )
 
 WAPEVENT(Pom_Disconnect_Ind, "Pom-Disconnect.ind",
-         INTEGER(reason_code)
-	 INTEGER(redirect_security)	/* Only meaningful if redirecting */
-	 INTEGER(redirect_addresses)	/* FIXME: Wrong type, not used */
-	 OPTIONAL_OCTSTR(error_headers)
-	 OPTIONAL_OCTSTR(error_body)
+    INTEGER(reason_code)
+    INTEGER(redirect_security)	/* Only meaningful if redirecting*/ 
+    INTEGER(redirect_addresses)	/* FIXME: Wrong type, not used */
+    OPTIONAL_OCTSTR(error_headers)
+    OPTIONAL_OCTSTR(error_body)
 
-	 INTEGER(session_handle)
-        )
+    INTEGER(session_handle)
+    )
 
 WAPEVENT(Pom_Suspend_Ind, "Pom-Suspend.ind",
-         INTEGER(reason)
+    INTEGER(reason)
 
-	 INTEGER(session_id) 
-        )
+    INTEGER(session_id) 
+    )
 
 WAPEVENT(Pom_Resume_Ind, "Pom-Resume.ind",
-         ADDRTUPLE(addr_tuple)
-	 HTTPHEADER(client_headers)
-         HTTPHEADER(bearer_indication)
+    ADDRTUPLE(addr_tuple)
+    HTTPHEADER(client_headers)
+    HTTPHEADER(bearer_indication)
 
-	 INTEGER(session_id)
-        )
+    INTEGER(session_id)
+    )
 
 WAPEVENT(Po_Push_Req, "Po-Push.req",
-         HTTPHEADER(push_headers)
-         INTEGER(authenticated)
-         INTEGER(trusted)
-         INTEGER(last)
-         OPTIONAL_OCTSTR(push_body)
+    HTTPHEADER(push_headers)
+    INTEGER(authenticated)
+    INTEGER(trusted)
+    INTEGER(last)
+    OPTIONAL_OCTSTR(push_body)
 
-         INTEGER(session_handle)
-        )
+    INTEGER(session_handle)
+    )
 
 WAPEVENT(Po_ConfirmedPush_Req, "Po-ConfirmedPush.req",
-         INTEGER(server_push_id)
-         HTTPHEADER(push_headers)
-         INTEGER(authenticated)
-         INTEGER(trusted)
-         INTEGER(last)
-         OPTIONAL_OCTSTR(push_body)
+    INTEGER(server_push_id)
+    HTTPHEADER(push_headers)
+    INTEGER(authenticated)
+    INTEGER(trusted)
+    INTEGER(last)
+    OPTIONAL_OCTSTR(push_body)
 
-         INTEGER(session_handle)
-        )
+    INTEGER(session_handle)
+    )
 
 WAPEVENT(Po_ConfirmedPush_Cnf, "Po-ConfirmedPush.Cnf",
-         INTEGER(server_push_id)
+    INTEGER(server_push_id)
 
-         INTEGER(session_handle)
-        )
+    INTEGER(session_handle)
+    )
 
 WAPEVENT(Po_Unit_Push_Req, "Po-Unit-Push.req",
-         ADDRTUPLE(addr_tuple)
-         INTEGER(push_id)
-         HTTPHEADER(push_headers)
-         INTEGER(authenticated)
-         INTEGER(trusted)
-         INTEGER(last)
-         OPTIONAL_OCTSTR(push_body)
+    ADDRTUPLE(addr_tuple)
+    INTEGER(push_id)
+    HTTPHEADER(push_headers)
+    INTEGER(authenticated)
+    INTEGER(trusted)
+    INTEGER(last)
+    OPTIONAL_OCTSTR(push_body)
 
-         INTEGER(address_type)
-        )
+    INTEGER(address_type)
+    OPTIONAL_OCTSTR(smsc_id)
+    )
 
 WAPEVENT(Po_PushAbort_Req, "Po-PushAbort.req",
-         INTEGER(push_id)
-         INTEGER(reason)
+    INTEGER(push_id)
+    INTEGER(reason)
 
-         INTEGER(session_id)
-        )
+    INTEGER(session_id)
+    )
 
 WAPEVENT(Po_PushAbort_Ind, "Po-PushAbort.ind",
-         INTEGER(push_id)
-	 INTEGER(reason)
+    INTEGER(push_id)
+    INTEGER(reason)
 
-	 INTEGER(session_handle)
-        )
+    INTEGER(session_handle)
+    )
 
 /*
  * Following events are used communicating between PPG main module (implement-
@@ -676,23 +680,24 @@ WAPEVENT(Po_PushAbort_Ind, "Po-PushAbort.ind",
  */
 
 WAPEVENT(Push_Message, "push-message",
-         OCTSTR(pi_push_id)
-         OPTIONAL_OCTSTR(deliver_before_timestamp)   /* using PAP format */
-         OPTIONAL_OCTSTR(deliver_after_timestamp)    /* ditto */
-         OPTIONAL_OCTSTR(source_reference)
-         OPTIONAL_OCTSTR(ppg_notify_requested_to)
-         INTEGER(progress_notes_requested)
-         OCTSTR(address_value)                       /* as parsed PAP */
-         INTEGER(address_type)
-         INTEGER(priority)
-         INTEGER(delivery_method)
-         OPTIONAL_OCTSTR(network)
-         INTEGER(network_required)
-         OPTIONAL_OCTSTR(bearer)
-         INTEGER(bearer_required)
-         HTTPHEADER(push_headers)
-         OPTIONAL_OCTSTR(push_data)
-         CAPABILITIES(pi_capabilities)
+    OCTSTR(pi_push_id)
+    OPTIONAL_OCTSTR(deliver_before_timestamp)   /* using PAP format */
+    OPTIONAL_OCTSTR(deliver_after_timestamp)    /* ditto */
+    OPTIONAL_OCTSTR(source_reference)
+    OPTIONAL_OCTSTR(ppg_notify_requested_to)
+    INTEGER(progress_notes_requested)
+    OCTSTR(address_value)                       /* as parsed PAP */
+    INTEGER(address_type)
+    INTEGER(priority)
+    INTEGER(delivery_method)
+    OPTIONAL_OCTSTR(network)
+    INTEGER(network_required)
+    OPTIONAL_OCTSTR(bearer)
+    INTEGER(bearer_required)
+    HTTPHEADER(push_headers)
+    OPTIONAL_OCTSTR(push_data)
+    CAPABILITIES(pi_capabilities)
+    OPTIONAL_OCTSTR(smsc_id)
 )
 
 /*
@@ -700,22 +705,22 @@ WAPEVENT(Push_Message, "push-message",
  * see Push Access Protocol, 9.3.2.
  */
 WAPEVENT(Push_Response, "push-response",
-         OCTSTR(pi_push_id)
-         OPTIONAL_OCTSTR(sender_name)
-         OPTIONAL_OCTSTR(reply_time)
-         OPTIONAL_OCTSTR(sender_address)
-         INTEGER(code)
-         OPTIONAL_OCTSTR(desc)
-        )
+    OCTSTR(pi_push_id)
+    OPTIONAL_OCTSTR(sender_name)
+    OPTIONAL_OCTSTR(reply_time)
+    OPTIONAL_OCTSTR(sender_address)
+    INTEGER(code)
+    OPTIONAL_OCTSTR(desc)
+    )
 
 /*
  * This is for debugging PIs. One note per stage. See Push Access Protocol,
  * 9.3.1.PPG main module sends these separately to PAP. 
  */
 WAPEVENT(Progress_Note, "progress-note",
-         INTEGER(stage)
-         OPTIONAL_OCTSTR(note)
-         OPTIONAL_OCTSTR(time)
+    INTEGER(stage)
+    OPTIONAL_OCTSTR(note)
+    OPTIONAL_OCTSTR(time)
 )
 
 /*
@@ -723,9 +728,9 @@ WAPEVENT(Progress_Note, "progress-note",
  * chapter 5. 
  */
 WAPEVENT(Bad_Message_Response, "badmessage-response",
-         INTEGER(code)
-         OPTIONAL_OCTSTR(desc)
-         OPTIONAL_OCTSTR(bad_message_fragment)
+    INTEGER(code)
+    OPTIONAL_OCTSTR(desc)
+    OPTIONAL_OCTSTR(bad_message_fragment)
 )
 
 #undef WAPEVENT
