@@ -371,7 +371,7 @@ static int convert_content(struct content *content, List *request_headers)
     for (i = 0; i < NUM_CONVERTERS; i++) {
         if (octstr_str_compare(content->type, converters[i].type) == 0 &&
             !http_type_accepted(request_headers, octstr_get_cstr(content->type))) {
-            debug("wap.convert",0,"WSP::CONVERT: Tring to convert from %s to %s", 
+            debug("wap.convert",0,"WSP convert: Tring to convert from <%s> to <%s>", 
                   octstr_get_cstr(content->type), converters[i].result_type);
             new_body = converters[i].convert(content);
             if (new_body != NULL) {
@@ -380,13 +380,13 @@ static int convert_content(struct content *content, List *request_headers)
                 octstr_destroy(content->type);
                 content->body = new_body;
                 content->type = octstr_create(converters[i].result_type);
-                debug("wap.convert",0,"WSP::CONVERT: success, content-type is "
-                      "now %s, size %ld->%ld", 
+                debug("wap.convert",0,"WSP convert: Success, content-type is "
+                      "now <%s>, size %ld->%ld", 
                       converters[i].result_type, s, octstr_len(new_body));
                 octstr_dump(new_body, 0);
                 return 1;
             }
-            debug("wap.convert",0,"WSP::CONVERT: failed");
+            debug("wap.convert",0,"WSP convert: Failed!");
             failed = 1;
         }
     }
@@ -409,32 +409,32 @@ static int deconvert_content(struct content *content)
     int i;
 
     if(content == NULL || content->body == NULL) {
-	warning(0, "WSP::DECONVERT: empty body (null), not deconverting");
+        warning(0, "WSP deconvert: Empty body, not deconverting");
         return -1;
     }
     
-    debug("wap.deconvert",0,"WSP::DECONVERT: Trying to deconvert:"); 
+    debug("wap.deconvert",0,"WSP deconvert: Trying to deconvert:"); 
     octstr_dump(content->body, 0);
     for (i = 0; i < NUM_DECONVERTERS; i++) {
         if (octstr_str_compare(content->type, deconverters[i].type) == 0) {
-            debug("wap.deconvert",0,"WSP::DECONVERT: Tring to deconvert from %s to %s", 
-	          octstr_get_cstr(content->type), 
-		  deconverters[i].result_type);
+            debug("wap.deconvert",0,"WSP deconvert: Tring to deconvert from <%s> to <%s>", 
+                  octstr_get_cstr(content->type), 
+            deconverters[i].result_type);
             new_body = deconverters[i].deconvert(content);
             if (new_body != NULL) {
-		long s = octstr_len(content->body);
+                long s = octstr_len(content->body);
                 octstr_destroy(content->body);
                 octstr_destroy(content->type);
                 content->body = new_body;
                 content->type = octstr_create(deconverters[i].result_type);
-                debug("wap.deconvert",0,"WSP::DECONVERT: success, content-type is "
-                      "now %s, size %ld->%ld", 
-		      deconverters[i].result_type, s, octstr_len(new_body));
-                debug("wap.deconvert",0,"WSP::DECONVERT: Deconverted to:"); 
-		octstr_dump(new_body, 0);
+                debug("wap.deconvert",0,"WSP deconvert: Success, content-type is "
+                      "now <%s>, size %ld->%ld", 
+                deconverters[i].result_type, s, octstr_len(new_body));
+                debug("wap.deconvert",0,"WSP deconvert: Deconverted to:"); 
+                octstr_dump(new_body, 0);
                 return 1;
             }
-            debug("wap.deconvert",0,"WSP::DECONVERT: failed");
+            debug("wap.deconvert",0,"WSP deconvert: Failed!");
             failed = 1;
         }
     }
@@ -841,18 +841,20 @@ static void return_reply(int status, Octstr *content_body, List *headers,
     }
 
 #ifdef ENABLE_NOT_ACCEPTED 
-    /* Returns 406 is content-type is not supported by device */
-    if(request_headers && content.type &&
-       !http_type_accepted(request_headers, octstr_get_cstr(content.type))) {
+    /* Returns HTTP response 406 if content-type is not supported by device */
+    if (request_headers && content.type &&
+        !http_type_accepted(request_headers, octstr_get_cstr(content.type))) {
         warning(0, "WSP: content-type %s not supported", 
                 octstr_get_cstr(content.type));
         status = HTTP_NOT_ACCEPTABLE;
-	octstr_destroy(content.type);
+        octstr_destroy(content.type);
         content.type = octstr_create("text/plain");
-	if(content.charset) { octstr_destroy(content.charset); }
+        if (content.charset)
+            octstr_destroy(content.charset);
         content.charset = octstr_create("");
-        if(content.body) { octstr_destroy(content.body); }
-	content.body = octstr_create("");
+        if (content.body) 
+            octstr_destroy(content.body);
+        content.body = octstr_create("");
         http_header_mark_transformation(headers, content.body, content.type);
     }
 #endif
@@ -1005,7 +1007,7 @@ static void start_fetch(WAPEvent *event)
 
     /* set referer URL to HTTP header from WSPMachine */
     /* 
-     * XXX this makes Open Group's test suite wml/events/tasks/go/5 failing, 
+     * XXX This makes Open Group's test suite wml/events/tasks/go/5 failing, 
      * which requires that device is *not* sending referer, but Kannel drops
      * it in. We have to remove this for now.
      */
@@ -1024,7 +1026,9 @@ static void start_fetch(WAPEvent *event)
     http_header_pack(actual_headers);
     
     magic_url = octstr_imm("kannel:alive");
-    if (octstr_str_compare(method, "GET")  == 0 &&
+
+    /* check if this request is a call for our magic URL */
+    if (octstr_str_compare(method, "GET")  == 0 && 
         octstr_compare(url, magic_url) == 0) {
         ret = HTTP_OK;
         resp_headers = list_create();
@@ -1035,15 +1039,40 @@ static void start_fetch(WAPEvent *event)
                      event, session_id, method, url, x_wap_tod, actual_headers);
         wap_event_destroy(event);
         http_destroy_headers(actual_headers);
-    } else if (octstr_str_compare(method, "GET") == 0 ||
-               octstr_str_compare(method, "POST") == 0 ||
-               octstr_str_compare(method, "HEAD") == 0) {
+    } 
+    /* otherwise it should be a GET, POST or HEAD request type */
+    else if (octstr_str_compare(method, "GET") == 0 ||
+             octstr_str_compare(method, "POST") == 0 ||
+             octstr_str_compare(method, "HEAD") == 0) {
+
+        /* we don't allow a body within a GET or HEAD request */
         if (request_body != NULL && (octstr_str_compare(method, "GET") == 0 ||
                                      octstr_str_compare(method, "HEAD") == 0)) {
             octstr_destroy(request_body);
             request_body = NULL;
         }
 
+        /* 
+         * XXX Call convert_content() here for transformations of binary
+         * encoded POST requests from the client into text plain decoded
+         * POST requests for the HTTP server.
+         * Mainly this is used for multipart/form-data transmissions,
+         * including MMS on-the-fly message decoding.
+         */
+        if (octstr_str_compare(method, "POST") == 0 && request_body && 
+            octstr_len(request_body)) {
+            struct content content;
+            int converted;
+
+            http_header_get_content_type(actual_headers, &content.type, &content.charset);
+            content.body = request_body;
+            converted = deconvert_content(&content); 
+            if (converted == 1) 
+                http_header_mark_transformation(actual_headers, content.body, content.type);
+            request_body = content.body;
+        }
+
+        /* struct that is used for the HTTP response identifier */
         p = gw_malloc(sizeof(*p));
         p->client_SDU_size = client_SDU_size;
         p->event = event;
@@ -1052,22 +1081,15 @@ static void start_fetch(WAPEvent *event)
         p->url = url;
         p->x_wap_tod = x_wap_tod;
         p->request_headers = actual_headers;
-	if(octstr_str_compare(method, "POST") == 0 && request_body && 
-	   octstr_len(request_body)) {
-	    struct content content;
-	    int converted;
 
-	    http_header_get_content_type(actual_headers, &content.type, &content.charset);
-	    content.body = request_body;
-	    converted = deconvert_content(&content); 
-	    if (converted == 1) 
-	        http_header_mark_transformation(actual_headers, content.body, content.type);
-	    request_body = content.body;
-	}
+        /* issue the request to the HTTP server */
         http_start_request(caller, http_name2method(method), url, actual_headers, 
                            request_body, 0, p, NULL);
+
         octstr_destroy(request_body);
-    } else {
+    } 
+    /* we don't support the method the client asked us */
+    else {
         error(0, "WSP: Method %s not supported.", octstr_get_cstr(method));
         content_body = octstr_create("");
         resp_headers = http_create_empty_headers();
