@@ -1,4 +1,8 @@
 2002-08-22  Stipe Tolj  <tolj@wapme-systems.de>
+    * wap/wap_events.def, wap/wtp.c: added a RcvResult event and a coresponding
+      unpack_result() function. This is necessary for an upcoming wap proxy.
+
+2002-08-22  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml, gw/smsc/smsc_at.[ch], gw/sms.h:
       Oded's patch for full DLR support in AT2 module. Some further 
       improvements and fixes included.
