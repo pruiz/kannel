@@ -1,5 +1,11 @@
 2001-01-17  Lars Wirzenius  <liw@iki.fi>
 
+	* configure.in, configure: Remove checking for -lz. Richard is
+	right: if libxml needs it, then xml-config --libs must report -lz,
+	so there is no point in checking for it for ourselves.
+
+2001-01-17  Lars Wirzenius  <liw@iki.fi>
+
 	* configure.in, configure, config.h.in: check for syslog.h.
 	
 	* gwlib/log.c: Use the result from configure (HAVE_SYSLOG_H) to

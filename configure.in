@@ -43,7 +43,6 @@ if test -z "$pthread"; then
 	AC_CHECK_LIB(c_r, pthread_exit, [LIBS="$LIBS -lc_r"])
 fi
 
-AC_CHECK_LIB(z, gzopen)
 AC_PATH_PROG(XML_CONFIG, xml-config, no)
 if test "$XML_CONFIG" = "no"; then
 	echo "You MUST have the gnome-xml library installed"; exit 1
