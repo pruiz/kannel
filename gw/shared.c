@@ -8,20 +8,26 @@
 #include <xmlversion.h>
 
 #include "gwlib/gwlib.h"
-
 #include "shared.h"
 
 void report_versions(const char *boxname)
 {
+    Octstr *os;
+    
+    os = version_report_string(boxname);
+    debug("gwlib.gwlib", 0, "%s", octstr_get_cstr(os));
+    octstr_destroy(os);
+}
+
+
+Octstr *version_report_string(const char *boxname)
+{
     struct utsname u;
 
     uname(&u);
-
-    debug("gwlib.gwlib", 0, "Kannel %s, version `%s' starting up.", 
-    	  boxname, VERSION);
-    debug("gwlib.gwlib", 0, "System: %s, release %s, version %s, machine %s", 
-    	  u.sysname, u.release, u.version, u.machine);
-#ifdef LIBXML_VERSION_STRING
-    debug("gwlib.gwlib", 0, "Libxml version %s", LIBXML_VERSION_STRING);
-#endif
+    return octstr_format("Kannel %s version `%s'.\n"
+    	    	    	 "System %s, release %s, version %s, machine %s.\n"
+			 "Libxml version %s.\n",
+			 boxname, VERSION, u.sysname, u.release, u.version, 
+			 u.machine, LIBXML_VERSION_STRING);
 }

@@ -1,3 +1,8 @@
+2000-10-18  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/shared.[ch]: Added function version_report_string so that the
+	report_version() info can be reported via HTTP as well.
+
 2000-10-18  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsc_fake.c: fixed that message sending is not tried with
