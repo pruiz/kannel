@@ -9,7 +9,7 @@
 #include "wsp.h"
 #include "wsp_pdu.h"
 #include "wsp_headers.h"
-#include "wsp_strings.h"
+#include "wsp-strings.h"
 
 /***********************************************************************
  * Public functions
