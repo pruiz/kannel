@@ -1,6 +1,7 @@
 /*****************************************************************************
 * http.c - The implementation of the HTTP subsystem.
 * Mikael Gueck (mikael.gueck@wapit.com) for WapIT Ltd.
+* Upkeeping Sanna Seppanen <sanna@wapit.com> for WapIT Ltd.
 */
 
 
@@ -20,8 +21,7 @@
 #include <netinet/tcp.h>
 #include <sys/param.h>
 
-#include <config.h>
-
+#include "config.h"
 #include "gwlib.h"
 
 
@@ -29,7 +29,7 @@
 * Static Functions
 */
 
-static char *internal_base6t4(char *pass);
+static unsigned char *internal_base6t4(unsigned char *pass);
 
 /*****************************************************************************
 * Implementations
@@ -44,7 +44,7 @@ int httpserver_setup(int port) {
 }
 
 /*****************************************************************************
-* Accept a HTTP connection, analyze if and return results
+* Accept a HTTP connection, analyze it and return results
 */
 
 int httpserver_get_request(int socket, char **client_ip, char **path, char **args) {
@@ -79,31 +79,16 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 		accept_ip, sizeof(accept_ip), 
 		NULL, 0, NI_NUMERICHOST);
     *client_ip = gw_strdup(accept_ip);
-
-
-
     
     gbsize = 1024;
     growingbuff = gw_malloc(gbsize);
     memset(growingbuff, 0, gbsize);
     errno = 0;
 
-
-
-
-
-
-
-
     
     /* Receive the client request. */
     for(;;) {
-
-
-	
 	if(done_with_looping == 1) break;
-
-
 	
 	/* Read from socket. */
 	ptr = growingbuff + readthisfar;
@@ -118,10 +103,6 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	    readthisfar += tmpint;
 	}
 
-
-
-
-
 	/* First comes the status line. */
 	if(done_with_status == 0) {
 
@@ -130,35 +111,27 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 		*eol = '\0';
 		newbuff = gw_strdup(growingbuff);
 
-
-
 		/* check the request method type */
-		if( sscanf(growingbuff, "GET %s HTTP/%i.%i", newbuff, &tmpint, &tmpint) == 3 )
+		if( sscanf(growingbuff, "GET %s HTTP/%i.%i",
+			   newbuff, &tmpint, &tmpint) == 3 )
 		    request = 1; /*designating GET*/ 
-		else if( sscanf(growingbuff, "POST %s HTTP/%i.%i", newbuff, &tmpint, &tmpint) == 3 )		    request = 2; /*designating POST*/
-		
+		else if( sscanf(growingbuff, "POST %s HTTP/%i.%i",
+				newbuff, &tmpint, &tmpint) == 3 )
+		    request = 2; /*designating POST*/
 		
 		url = internal_url_create(newbuff);
 		gw_free(newbuff);
 		*eol = '\r';
 		done_with_status = 1;
 		done_with_looping = 1;
-		
 		continue;		
-		
 	    }
 	    
 	} /* Statusline found */
 
-
-
-
-
-	
 	/* see if the buffer needs enlargement */
 	
     } /* for */
-
 
 
     if( request == 2 ){/* POST */
@@ -175,8 +148,6 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	    eol++;
 	}
 
-
-	
 	i=0;
 	i = atoi(temp);
 	
@@ -208,10 +179,6 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	gw_free(growingbuff);
 	
 	return connfd;
-	
-
-
-    
 error:
     gw_free(growingbuff);
     return -1;
@@ -232,7 +199,7 @@ int httpserver_answer(int socket, char *text) {
     bufsize = strlen(text) + 1024;
     bigbuff = gw_malloc(bufsize);
 
-    sprintf(bigbuff, "HTTP/1.1 200 OK\r\nContent-Type:text/html\r\nContent-Length: %i\r\n\r\n", (int) strlen(text));
+    sprintf(bigbuff, "HTTP/1.1 200 OK\r\nContent-Type:text/html\r\nContent-Length: %ul\r\n\r\n", (unsigned int) strlen(text));
     strcat(bigbuff, text);
 
     tmpint = write_to_socket(socket, bigbuff);
@@ -282,14 +249,11 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     
     URL *url = NULL;
     HTTPRequest *request = NULL, *response = NULL;
-    char *ptr = NULL, tempbuffer[4];
-    char *authorization = NULL;
+    unsigned char *ptr = NULL, tempbuffer[4];
+    unsigned char *authorization = NULL;
     int how_many_moves = 0;
     size_t temp =0;
       
-
-
-
    /* Initializing... */
     /* ..request */
     if( (url = internal_url_create(urltext)) == NULL) {
@@ -297,7 +261,6 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	goto error;
     }
 
-    
     /* ..url */
     if( (request = httprequest_create(url, NULL)) == NULL) {
 	error(errno, "http_get_u: Creating HTTPRequest failed");
@@ -329,7 +292,8 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     /* .. the common headers... */
     httprequest_add_header(request, "Host", request->url->host);
     httprequest_add_header(request, "Connection", "close");
-    httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
+    httprequest_add_header(request, "User-Agent",
+			   "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
     
     /* ..username */
     if(request->url->username != NULL) {
@@ -383,7 +347,8 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 		  (response->status == 302) || 
 		  (response->status == 303) ) {
 
-	     url = internal_url_create(httprequest_get_header_value(response, "Location"));
+	     url = internal_url_create(httprequest_get_header_value(
+		 response, "Location"));
 	     if(url==NULL){
 		 error(0,"http_get_u: missing 'Location' header in response");
 		 httprequest_destroy(response);
@@ -413,13 +378,16 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	     /* .. the common headers... */
 	     httprequest_add_header(request, "Host", request->url->host);
 	     httprequest_add_header(request, "Connection", "close");
-	     httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
+	     httprequest_add_header(
+		 request, "User-Agent",
+		 "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
 
 
 	     /* ..username */
 	     if(request->url->username != NULL) {
 		 ptr = gw_malloc(1024);
-		 sprintf(ptr, "%s:%s", request->url->username, request->url->password);
+		 sprintf(ptr, "%s:%s", request->url->username,
+			 request->url->password);
 		 if( (authorization = internal_base6t4(ptr)) == NULL){
 		     error(errno, "http_get_u: internal_base6t4 failed");
 		     gw_free(ptr);
@@ -468,7 +436,8 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     
     
 /* Check the content of the "Content-Type" header. */
-    if( (ptr = httprequest_get_header_value(response, "Content-Type")) != NULL ) {
+    if( (ptr = httprequest_get_header_value(response,
+					    "Content-Type")) != NULL ) {
 	*type = gw_strdup(ptr);
     } else {
 	*type = NULL;
@@ -529,19 +498,10 @@ int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader
 
     /* Adding... */
     request->method_type = POST;
-
-
-    /*
-      if( getsockname(int  s , struct sockaddr * name , socklen_t * namelen ) == 0 );
-      else {error(0, "http_post: coulnd get socketname");goto error;}
-      httprequest_add_header(request, "Referer", name->);
-      gethostname("localhost", MAXHOSTNAMELEN));
-    */    
-
-
-    
     httprequest_add_header(request, "Connection", "Keep-Alive");
-    httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
+    httprequest_add_header(request,
+			   "User-Agent",
+			   "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
     httprequest_add_header(request, "Host", request->url->host);
 
     memset(temp_buffer, 0, strlen(temp_buffer));
@@ -587,7 +547,8 @@ int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader
 		 (response->status == 302) || 
 		 (response->status == 303) ) {
 	    
-	    url = internal_url_create(httprequest_get_header_value(response, "Location"));
+	    url = internal_url_create(
+		httprequest_get_header_value(response, "Location"));
 	    if(url==NULL) goto error;
 	    httprequest_destroy(request);
 	    httprequest_destroy(response);
@@ -606,7 +567,9 @@ int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader
 	    if(request == NULL) goto error;
 	    httprequest_add_header(request, "Host", request->url->host);
 	    httprequest_add_header(request, "Connection", "close");
-	    httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
+	    httprequest_add_header(
+		request, "User-Agent",
+		"Mozilla/2.0 (compatible; Open Source WAP Gateway)");
 	    
 	    /*   ..the user defined headers */
 	    for(;;){
@@ -633,7 +596,8 @@ int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader
     } /* for ends */
     
     /* Check the content of the "Content-Type" header. */
-    if( (ptr = httprequest_get_header_value(response, "Content-Type")) != NULL ) {
+    if( (ptr = httprequest_get_header_value(response,
+					    "Content-Type")) != NULL ) {
 	*type = gw_strdup(ptr);
     } else {
 	*type = NULL;
@@ -692,7 +656,8 @@ URL* internal_url_create(char *text) {
 	has_abs_path = has_query;
 
     if(text == NULL) {
-	debug("gwlib.http", 0, "url_create: someone just called me with NULL input");
+	debug("gwlib.http", 0,
+	      "url_create: someone just called me with NULL input");
 	goto error;
     }
 
@@ -1021,7 +986,8 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 	if(eol != NULL) *eol = '\0';
 	if(midptr != NULL) *midptr = '\0';
 	midptr++;
-	while(isspace(*midptr)) midptr++;  /* advance to start of data- cut off the whitespaces */
+	while(isspace(*midptr)) midptr++;
+	/* advance to start of data- cut off the whitespaces */
 	if( (eol!=NULL) && (midptr!=NULL) )
 	    httprequest_add_header(request, ptr, midptr);
     }
@@ -1047,7 +1013,8 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
     if(midptr == NULL) {
 	/* no transfer encoding - a simple case */
 	if(httprequest_get_header_value(request, "Content-Length") != NULL)
-	    request->data_length = atoi(httprequest_get_header_value(request, "Content-Length"));
+	    request->data_length = atoi(
+		httprequest_get_header_value(request, "Content-Length"));
 	
 	/* No need to check Content-Length, just read it all in. */
 	request->data = gw_malloc(request->data_length+1);
@@ -1154,7 +1121,8 @@ char* httprequest_unwrap(HTTPRequest *request) {
 	case GET:
 	    method_used = "GET";
 	    if(request->url->query != NULL) 
-		sprintf(tmpbuff, "%s?%s", request->url->abs_path, request->url->query);
+		sprintf(tmpbuff,
+			"%s?%s", request->url->abs_path, request->url->query);
 	    else
 		sprintf(tmpbuff, "%s", request->url->abs_path);
 	    break;
@@ -1185,7 +1153,8 @@ char* httprequest_unwrap(HTTPRequest *request) {
 /* terminate headers */
     strcat(bigbuff, "\r\n");
     
-    debug("gwlib.http", 0,"request_unwrap: preparing to put entity: <%s>", request->data);
+    debug("gwlib.http", 0,
+	  "request_unwrap: preparing to put entity: <%s>", request->data);
     
 /* data */
     if(request->data != NULL) 
@@ -1214,7 +1183,8 @@ error:
 
 HTTPRequest* httprequest_execute(HTTPRequest *request) {
     
-    char *datasend = NULL, *datareceive = NULL;
+    char *datareceive = NULL;
+    char *datasend = NULL;
     int s = -1;
     size_t size = 0;
     HTTPRequest *result = NULL;
@@ -1288,8 +1258,7 @@ error:
          we'll fix this later, causing a memory leak is just a workaround.
 	 --liw */
     
-    /* I think I solved the problem: you cant free a memory, which isn't allocated.
-       Added gw_free() -functions to appropriate places. Hope it helped :)
+    /* XXX Added gw_free() -functions to appropriate places. Hope it helped :)
        -sanna- */
     gw_free(datasend);
     gw_free(datareceive);
@@ -1463,6 +1432,7 @@ int header_pack(HTTPHeader *hdr)
 {
     HTTPHeader *ptr, *prev;
     char buf[1024];
+    int ret = 0;
     
     while(hdr != NULL) {
 
@@ -1471,10 +1441,11 @@ int header_pack(HTTPHeader *hdr)
 	for(prev = hdr, ptr = hdr->next; ptr != NULL; ptr = ptr->next) {
 	    if (strcasecmp(hdr->key, ptr->key)==0) {
 
-		sprintf(buf, "%s, %s", hdr->value, ptr->value);
+		ret = sprintf(buf, "%s, %s", hdr->value, ptr->value);
+		if(ret != 2) return -1;
 		gw_free(hdr->value);
 		hdr->value = gw_strdup(buf);
-
+		
 		prev->next = ptr->next;
 		gw_free(ptr->key);
 		gw_free(ptr->value);
@@ -1550,14 +1521,22 @@ error:
     return NULL;
 }
 
-static char *internal_base6t4(char *pass) {
+
+
+/*
+ * internal_base6t4 - encode character string to base 64. Return the
+ * encoded string.
+ */
+
+static unsigned char *internal_base6t4(unsigned char *pass) {
 
     int ictr,ctr2;
-    char onec,*result, temp[10];
+    unsigned char onec,*result, temp[10];
     long twentyfour;
-    char base64[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    unsigned char base64[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-    result = gw_malloc(strlen(pass) + strlen(pass) / 4 + strlen(pass) % 4 + 5);
+    result = gw_malloc(strlen(pass) + strlen(pass) / 4
+		       + strlen(pass) % 4 + 5);
     result[0] = 0;
 
     twentyfour = 0;
@@ -1609,6 +1588,3 @@ static char *internal_base6t4(char *pass) {
 
     return result;
 }
-
-
-
