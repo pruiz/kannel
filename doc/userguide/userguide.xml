@@ -4973,7 +4973,7 @@ ssl-certkey-file
 
     <row><entry><literal>log-file</literal></entry>
      <entry>filename</entry>
-     <entry morerows=2 valign="bottom">
+     <entry morerows="2" valign="bottom">
        As with the bearerbox 'core' group. Access-log is used to store
        information about MO and send-sms requests. Can be named same as the 
        'main' access-log (in 'core' group).
@@ -7189,7 +7189,7 @@ trusted-pi = false
              Segment wap push binary sms. Default on. You need
              not normally set this value.
              </entry></row>
-             <row><entry<literal>max-messages</literal></entry>
+             <row><entry><literal>max-messages</literal></entry>
              <entry><emphasis>integer</emphasis></entry>
              <entry valign="bottom">
              Maximum number of sm messages generated. Default
