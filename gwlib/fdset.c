@@ -2,6 +2,10 @@
  * fdset.c - module for managing a large collection of file descriptors
  */
 
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+
 #include "gwlib/gwlib.h"
 
 struct FDSet
@@ -261,8 +265,10 @@ static void poller(void *arg)
         ret = gwthread_poll(set->pollinfo, set->entries, -1.0);
 
         if (ret < 0) {
-            error(0, "Poller thread: can't handle error; sleeping 1 second.");
-            gwthread_sleep(1.0);
+	    if (errno != EINTR) {
+                error(0, "Poller: can't handle error; sleeping 1 second.");
+                gwthread_sleep(1.0);
+            }
             continue;
         }
 

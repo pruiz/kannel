@@ -1,5 +1,9 @@
 2000-10-31  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/fdset.c: Handle EINTR.
+
+2000-10-31  Richard Braakman  <dark@wapit.com>
+
 	* Moved wap_addr functions from wapbox.c to new file wap_addr.c,
 	and created wap_addr.h for it.
 
