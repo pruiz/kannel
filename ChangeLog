@@ -1,6 +1,6 @@
 2000-07-19  Tuomas Luttinen  <tuo@wapit.com>
 
-	* configure.in: libxml 1.8.9 and 2.2.0 added.
+	* configure.in: libxml 1.8.9 and 2.2.0 added. Fixes bug #97.
 
 2000-07-18  Richard Braakman  <dark@wapit.com>
 
