@@ -169,7 +169,6 @@ void xmlrpc_call_destroy(XMLRPCMethodCall *call)
     gw_free(call);
 }
 
-
 int xmlrpc_call_add_int(XMLRPCMethodCall *method, long i4)
 {
     XMLRPCValue *nval;
@@ -283,7 +282,6 @@ int xmlrpc_call_send(XMLRPCMethodCall *call, HTTPCaller *http_ref,
      * HTTP headers to be defined.
      * These are set anyway within gwlib/http.c:build_request()
      */
-
     body = xmlrpc_call_octstr(call);
 
     http_start_request(http_ref, url, headers, body, 0, ref, NULL);
