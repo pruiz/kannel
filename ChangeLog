@@ -1,3 +1,6 @@
+2002-02-12 Andreas Fink <andreas@fink.org>
+    * gwlib//octstr.c: removed annoying info message for making gwlib
+    be better usable for command line tools.
 2002-02-10  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_ois.c: removed unused ois_convert_from_iso88591() for the
       sake of kannel-nag

@@ -147,7 +147,8 @@ void octstr_shutdown(void)
             ++n;
         }
     }
-    debug("gwlib.octstr", 0, "Immutable octet strings: %ld.", n);
+    if(n>0)
+        debug("gwlib.octstr", 0, "Immutable octet strings: %ld.", n);
     mutex_destroy(&immutables_mutex);
 }
 
