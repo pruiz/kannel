@@ -1,3 +1,7 @@
+2002-04-25  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/wap_push_ppg.c: fix in coriented_deliverable() to return 
+      the right boolean, thanks to Paul
+
 2002-04-24  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsbox.c: fixed typo in init_smsbox()
 

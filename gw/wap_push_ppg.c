@@ -2283,7 +2283,7 @@ static int cless_accepted(WAPEvent *e, PPGSessionMachine *sm)
  */
 static int coriented_deliverable(long appid_code)
 {
-    return appid_code == 2;
+    return appid_code == 1;
 }
 
 /*
