@@ -58,6 +58,9 @@ else
 	CFLAGS="$CFLAGS `$XML_CONFIG --cflags`"
 fi
 
+AC_CHECK_LIB(resolv, inet_ntop)
+
+
 dnl Checks for header files.
 
 AC_HEADER_STDC
@@ -71,6 +74,14 @@ AC_TRY_COMPILE(, [char *func = __FUNCTION__;],
     	       AC_DEFINE(HAVE___FUNCTION__))
 AC_TRY_COMPILE(, [char *func = __func__;], 
     	       AC_DEFINE(HAVE___FUNC__))
+
+AC_MSG_CHECKING(for INET_ADDRSTRLEN)
+AC_TRY_COMPILE(netinet/in.h,[ int main(void){
+int size=INET_ADDRSTRLEN;
+return 0;
+}
+],echo yes , echo no ;CFLAGS="$CFLAGS -DINET_ADDRSTRLEN=16", echo  Cross compiling - assuming it exists)
+
 
 dnl Checks for library functions.
 
