@@ -20,8 +20,8 @@
 <book>
 
 <bookinfo>
-	<title>Kannel: Open Source WAP and SMS Gateway Architecture Design</title>
-	<subtitle>For gateway version &version;</subtitle>
+	<title>Kannel: Open Source WAP and SMS Gateway</title>
+	<subtitle>Architecture and Design</subtitle>
 	<authorgroup>
 		<author>
 			<firstname>Lars</firstname>

@@ -17,26 +17,24 @@
 <book>
 
 <bookinfo>
-	<title>Open Source WAP Gateway User's Guide</title>
-	<subtitle>&timestamp;</subtitle>
+	<title>Kannel: Open Source WAP and SMS Gateway</title>
+	<subtitle>User's Guide</subtitle>
 	<author>
 		<firstname>Lars</firstname>
 		<surname>Wirzenius</surname>
 		<affiliation>
 			<jobtitle>Gateway architect</jobtitle>
 			<orgname>WapIT Ltd</orgname>
-			<address>
-			<email>liw@wapit.com</email>
+			<address> <email>liw@wapit.com</email>
 			<otheraddr>http://www.wapit.com</otheraddr>
 			<otheraddr>http://www.kannel.org</otheraddr>
 			</address>
 		</affiliation>
 	</author>
 	<abstract>
-		<title>Abstract</title>
-		<para>This document describes how to install and use
-		the Open Source WAP Gateway produced by WapIT Ltd.
-		</para>
+		<title>Abstract</title> <para>This document describes how
+		to install and use the Open Source WAP and SMS Gateway
+		produced by WapIT Ltd.	</para>
 	</abstract>
 </bookinfo>
 
@@ -50,6 +48,7 @@
 <sect1><title>Why yet another gateway?</title><para>xxx</para></sect1>
 <sect1><title>Why open source?</title><para>xxx</para></sect1>
 <sect1><title>Features of the gateway</title><para>xxx</para></sect1>
+<sect1><title>Requirements of the gateway</title><para>xxx</para></sect1>
 </chapter>
 
 <chapter>
@@ -61,10 +60,164 @@
 	compiled and all the files in the correct places; the next
 	chapter will explain how the gateway is configured.</para>
 
-<sect1><title>Getting the source code</title><para>xxx</para></sect1>
-<sect1><title>Finding the documentation</title><para>xxx</para></sect1>
-<sect1><title>Compiling the gateway</title><para>xxx</para></sect1>
-<sect1><title>Using pre-compiled binary packages</title><para>xxx</para></sect1>
+<sect1>
+<title>Getting the source code</title>
+
+	<para>The source code to Kannel is availble to download at
+	the following address:
+	
+		<blockquote>
+		<para><ulink url="http://www.kannel.org/download.shtml">http://www.kannel.org/download.shtml</ulink>
+		</para></blockquote>
+	
+	It is available on various formats and you can choose to download
+	either the latest release version or the daily snapshot of
+	the development source tree for the next release version,
+	depending on whether you want to use Kannel for production use
+	or to participate in development.</para>
+	
+	<para>If you're serious about development, you probably want to
+	use CVS, the version control system used by the Kannel project.
+	This allows you to participate in Kannel development much
+	more easily than by downloading the current daily snapshot and
+	integrating any changes you've made every day. CVS does that
+	for you. (See the Kannel web site for more information on how
+	to use CVS.)</para>
+
+</sect1>
+
+
+<sect1>
+<title>Finding the documentation</title>
+
+	<para>The documentation for Kannel consists of three parts:
+	
+	<orderedlist>
+	<listitem><para><citetitle>User's Guide</citetitle>, i.e., the one
+		you're reading at the moment.</para></listitem>
+	<listitem><para><citetitle>Architecture and 
+		Design</citetitle>, in <filename>doc/arch</filename> or
+		at <ulink url="http://www.kannel.org/arch.shtml">
+		http://www.kannel.org/arch.shtml</ulink></para></listitem>
+	<listitem><para>The <filename>README</filename> and various other
+		random text files in the source tree.</para></listitem>
+	</orderedlist>
+	
+	The goal is that everything you need to install and use Kannel
+	is in <citetitle>User's Guide</citetitle>, but that goal is
+	very far still. Similarly, the <citetitle>Architecture and
+	Design</citetitle> document should tell you everything you need
+	to know to dive into the sources and quickly be able to make
+	your own modifications. It's not a replacement for actually
+	reading the source code, but it should work as a map to the
+	source code.  The <filename>README</filename> is not supposed
+	to be very important, nor contain much information. Instead,
+	it will just point at the other documentation.
+	</para>
+	
+	<para>You need the following tools to compile Kannel:
+	
+	<itemizedlist>
+
+	<listitem><para>C compiler and libraries for ANSI C, with normal
+	Unix extensions such as BSD sockets.</para></listitem>
+
+	<listitem><para>An implementation of POSIX threads
+	(<filename>pthread.h</filename>).</para></listitem>
+
+	<listitem><para>GNU Bison 1.28, if you want to modify the WMLScript
+	compiler (a pre-generated parser is included for those who just
+	want to compile Kannel).</para></listitem>
+
+	<listitem><para>DocBook processing tools: DocBook stylesheets,
+	jade, jadetex, etc; see <filename>README.docbook</filename> for
+	more information (pre-formatted versions of the documentation
+	are available, and you can compile Kannel itself even without
+	the documentation tools).</para></listitem>
+	
+	<listitem><para>GNU autoconf, if you want to modify the
+	configuration script.</para></listitem>
+
+	</itemizedlist>
+	
+	</para>
+
+</sect1>
+
+<sect1>
+<title>Compiling the gateway</title>
+
+	<para>If you are using Kannel on a supported platform, or one
+	that is similar enough to one, compiling Kannel is trivial.
+	After you have unpacked the source package of your choosing,
+	or after you have checked out the source code from CVS, enter
+	the following commands:
+	
+<screen><userinput>./configure</userinput>
+<userinput>make</userinput></screen>
+	
+	The <filename>configure</filename> script investigates your
+	computer for various things Kannel compilation needs, and
+	writes out the <filename>Makefile</filename> used to compile
+	Kannel. <command>make</command> then runs the commands to
+	actually compile Kannel.</para>
+	
+	<para>If either command writes out an error message and stops
+	before it finishes its job, you have a problem, and you either
+	need the expertese to fix it yourself, or you need to report the
+	problem to the Kannel project. See <xref linkend="bug-reporting">
+	for details.</para>
+	
+	<para>For detailed instruction to using the configuration
+	script, see file <filename>INSTALL</filename>.</para>
+
+</sect1>
+
+<sect1>
+<title>Installing the gateway</title>
+
+	<para>After you have compiled Kannel, you need to install
+	certain programs in a suitable place. This is most easily
+	done by using <command>make</command> again:
+	
+<screen><userinput>make bindir=<replaceable>/path/to/directory</replaceable> install</userinput></screen>
+
+	Replace <replaceable>/path/to/directory</replaceable> with the
+	pathname of the actual directory where the programs should be
+	installed. The programs that are installed are (as filenames
+	from the root of the source directory):
+	
+	<simplelist>
+	<member><filename>gw/bearerbox</filename></member>
+	<member><filename>gw/smsbox</filename></member>
+	<member><filename>gw/wapbox</filename></member>
+	<member><filename>test/test_wml</filename></member>
+	</simplelist>
+	
+	The filenames will get the version number of the gateway added
+	during installation. This makes it easier to keep several
+	versions installed, and lets you easily go back to an older
+	version if the new version proves problematic.</para>
+	
+	<para>Kannel consists of three programs, called boxes: the
+	bearer box is the interface towards the phones. It accepts
+	WAP and SMS messages from the phones and sends them to the
+	other boxes. The SMS box handles SMS gateway functionality,
+	and the WAP box handles WAP gateway functionality. There can
+	be several SMS boxes and several WAP boxes running, and they
+	don't have to run all on the same host. This makes it possible
+	to handle much larger loads than one host can handle.</para>
+
+</sect1>
+
+<sect1>
+<title>Using pre-compiled binary packages</title>
+
+	<para>Pre-compiled binary packages are not yet available,
+	sorry.</para>
+
+</sect1>
+
 </chapter>
 
 <chapter>
@@ -75,15 +228,138 @@
 	while it is running, and using the HTTP interface to control
 	the gateway or using it for sending SMS messages.</para>
 
-<sect1><title>Configuring the gateway</title><para>xxx</para></sect1>
-<sect1><title>Configuring the SMS box</title><para>xxx</para></sect1>
-<sect1><title>Configuring the WAP box</title><para>xxx</para></sect1>
-<sect1><title>Starting the gateway</title><para>xxx</para></sect1>
-<sect1><title>Using the HTTP interface to send SMS messages</title><para>xxx</para></sect1>
-<sect1><title>Using the HTTP administrative interface to control the gateway</title><para>xxx</para></sect1>
+	<para>Each box in Kannel (bearer, SMS, and WAP box) has its own
+	configuration file. Configuration of each box is discussed in its
+	own subsection below.</para>
+	
+
+
+<sect1>
+<title>Configuration file syntax</title>
+
+	<para>All configuration files have the same basic syntax. Each
+	file consists of groups of configuration variables. Groups are
+	separated by empty lines, and each variable is defined on its
+	own line. Comments are lines that begin with a number sign
+	(<literal>#</literal>) and are ignored (they don't, for example,
+	separate groups of variables).</para>
+	
+	<para>A variable definition line has the name of the variable,
+	and equals sign (<literal>=</literal>) and the value of the
+	variable. The name of the variable can contain any characters
+	except whitespace and equals. The value of the variable is a
+	string, with or without quotation marks (<literal>"</literal>)
+	around it. Quotation marks are needed if the variable needs to
+	begin or end with whitespace or contain special characters.
+	Inside quotation marks normal C escape character syntax works.</para>
+	
+	<para>Perhaps an example will make things easier to comprehend:
+
+<programlisting>
+1  # A do-nothing service.
+2  keyword = nop
+3  text = "You asked nothing and I did it!"
+4
+5  # Default service.
+6  keyword = default
+7  text = "No services defined"
+</programlisting>
+
+	The above snippet defines the keyword <literal>nop</literal>
+	for an SMS service, and a default action for situation when
+	the keyword in the SMS message does not match any defined
+	service.</para>
+	
+	<para>Lines 1 and 5 are comment lines. Line 4 separates the
+	two groups. The remaining lines define variables. There is
+	no explicit type for a group, instead they are identified
+	by the variables they define. Since the above groups define
+	the variable <literal>keyword</literal>, they are SMS service
+	definition groups.</para>
+	
+	<para>The various variables that are understood in each type
+	of configuration file are explained below.</para>
+
+</sect1>
+
+<sect1>
+<title>Configuring the bearer box</title>
+
+	<para>xxx</para>	
+
+</sect1>
+
+<sect1>
+<title>Configuring the SMS box</title>
+
+	<para>xxx</para>
+
+</sect1>
+
+<sect1>
+<title>Configuring the WAP box</title>
+
+	<para>The WAP box is very simple to configure. Basically, you just
+	need to tell it where the bearer box is. The WAP box understands
+	the following variables:
+	
+	<itemizedlist>
+
+	<listitem><para><literal>bearerbox-host</literal>: A string giving
+	the DNS name or IP number of the machine where the bearer box runs.
+	</para></listitem>
+
+	<listitem><para><literal>bearerbox-port</literal>: The port number
+	where the bearer box listens for WAP box connections. Must be the
+	same as <literal>wap-port</literal> in the bearer box configuration.
+	</para></listitem>
+
+	<listitem><para><literal>heartbeat-freq</literal>: Frequency
+	of heartbeat messages. Must be same value as in the bearer box
+	configuration.	</para></listitem>
+
+	<listitem><para><literal>log-file</literal>: Name of log file where
+	log messages are output, in addition to the standard output.
+	</para></listitem>
+
+	<listitem><para><literal>log-level</literal>: Verbosity level for
+	the log file given by <literal>log-file</literal>. Defaults to
+	`0' for DEBUG.	</para></listitem>
+
+	</itemizedlist>
+	
+	</para>
+
+</sect1>
+
+<sect1>
+<title>Starting the gateway</title>
+
+	<para>xxx order of starting, command line options, log levels</para>
+
+</sect1>
+
+<sect1>
+<title>Using the HTTP interface to send SMS messages</title>
+
+	<para>xxx</para>
+
+</sect1>
+
+<sect1>
+<title>Using the HTTP administrative interface to control the gateway</title>
+
+	<para>Kannel allows certain HTTP requests to monitor and control
+	the gateway, but they are currently not implemented well enough
+	to be useful, thus they won't be described here yet. If you're
+	interested in working on them, see the source code to the bearer
+	box.</para>
+
+</sect1>
+
 </chapter>
 
-<chapter>
+<chapter id="bug-reporting">
 <title>Getting help and reporting bugs</title>
 
 	<para>This chapter explains where to find help with problems
