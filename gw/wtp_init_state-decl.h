@@ -130,11 +130,11 @@ ROW(INITIATOR_RESULT_WAIT,
 /*
  * RCR must not be greater than RCR_MAX.
  */ 
-   ROW(INIATOR_RESULT_WAIT,
+   ROW(INITIATOR_RESULT_WAIT,
        RcvAck,
        event->u.RcvAck.tid_ok,
        { },
-       INIATOR_RESULT_WAIT)
+       INITIATOR_RESULT_WAIT)
 
 ROW(INITIATOR_RESULT_WAIT,
     RcvAbort,

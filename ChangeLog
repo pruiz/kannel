@@ -1,5 +1,9 @@
 2000-10-10  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/wtp_init_state-decl.h: Fixed misspelled INITIATOR_RESULT_WAIT.
+
+2000-10-10  Lars Wirzenius  <liw@iki.fi>
+
 	* debian/rules: "clean" doesn't run "make clean" unless Makefile
 	exists.
 
