@@ -54,6 +54,7 @@ ROW(INITIATOR_NULL_STATE,
      
      msg_destroy(init_machine->invoke);
      init_machine->rid = 0;
+     init_machine->rcr = 0;
         
      init_machine->invoke = wtp_send_invoke(init_machine, event);
      init_machine->rid = 1;
@@ -109,14 +110,13 @@ ROW(INITIATOR_RESULT_WAIT,
     INITIATOR_NULL_STATE)
 
 /*
- * This is a positive answer to a tid verification. (Negative one being 
- * already sent by init_machine_find_or_create)
+ * This is a positive answer to a tid verification (negative one being 
+ * already sent by init_machine_find_or_create).
  */
 ROW(INITIATOR_RESULT_WAIT,
     RcvAck,
-    event->u.RcvAck.tid_ok == 1,
+    event->u.RcvAck.tid_ok == 1 && init_machine->rcr < MAX_RCR,
     {
-     init_machine->rid = 0;
      wtp_send_ack(TID_VERIFICATION, init_machine->rid, init_machine->tid, 
                   init_machine->addr_tuple);
      init_machine->tidok_sent = 1;
@@ -126,6 +126,15 @@ ROW(INITIATOR_RESULT_WAIT,
      start_initiator_timer_R(init_machine);
     },
     INITIATOR_RESULT_WAIT)
+
+/*
+ * RCR must not be greater than RCR_MAX.
+ */ 
+   ROW(INIATOR_RESULT_WAIT,
+       RcvAck,
+       event->u.RcvAck.tid_ok,
+       { },
+       INIATOR_RESULT_WAIT)
 
 ROW(INITIATOR_RESULT_WAIT,
     RcvAbort,

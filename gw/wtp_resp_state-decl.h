@@ -368,6 +368,7 @@ ROW(RESULT_WAIT,
     RcvErrorPDU,
     1,
     {
+
      wtp_send_abort(PROVIDER, PROTOERR, resp_machine->tid, 
                     resp_machine->addr_tuple); 
      
