@@ -52,6 +52,7 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded);
 static int encode8bituncompressed(Octstr *input, unsigned char *encoded);
 static void decode7bituncompressed(Octstr *input, int len, Octstr *decoded);
 static int numtext(int num);
+unsigned char gsm_alpha(unsigned char value);
 
 
 /******************************************************************************
@@ -68,6 +69,32 @@ static int numtext(int num);
 #define SIEMENS		"siemens"
 #define FALCOM		"falcom"
 #define NOKIAPHONE	"nokiaphone"
+
+/******************************************************************************
+ * ETSI GSM 03.38, version 6.0.1, section 6.2.1; Default alphabet 
+ * Characters in hex position 10, [12 to 1a] and 24 are not present on
+ * latin1 charset, so we cannot reproduce on the screen 
+ */
+
+unsigned char GSM_Default_Alphabet[] = {
+  '@',  0xa3, '$',  0xa5, 0xe8, 0xe9, 0xf9, 0xec,
+  0xf2, 0xc7, '\n', 0xd8, 0xf8, '\r', 0xc5, 0xe5,
+  '?',  '_',  '?',  '?',  '?',  '?',  '?',  '?',
+  '?',  '?',  '?',  '?',  0xc6, 0xe6, 0xdf, 0xc9,
+  ' ',  '!',  '\"', '#',  0xa4,  '%',  '&',  '\'',
+  '(',  ')',  '*',  '+',  ',',  '-',  '.',  '/',
+  '0',  '1',  '2',  '3',  '4',  '5',  '6',  '7',
+  '8',  '9',  ':',  ';',  '<',  '=',  '>',  '?',
+  0xa1, 'A',  'B',  'C',  'D',  'E',  'F',  'G',
+  'H',  'I',  'J',  'K',  'L',  'M',  'N',  'O',
+  'P',  'Q',  'R',  'S',  'T',  'U',  'V',  'W',
+  'X',  'Y',  'Z',  0xc4, 0xd6, 0xd1, 0xdc, 0xa7,
+  0xbf, 'a',  'b',  'c',  'd',  'e',  'f',  'g',
+  'h',  'i',  'j',  'k',  'l',  'm',  'n',  'o',
+  'p',  'q',  'r',  's',  't',  'u',  'v',  'w',
+  'x',  'y',  'z',  0xe4, 0xf6, 0xf1, 0xfc, 0xe0
+};
+
 
 /******************************************************************************
  * Open the connection
@@ -728,13 +755,13 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded) {
 
 	len = octstr_len(input);
 
-    /* prevoctet is set to the first character and we'll start the loop
-     * at the following char. */
-	prevoctet = octstr_get_char(input ,0);
+	/* prevoctet is set to the first character and we'll start the loop
+	 * at the following char. */
+	prevoctet = gsm_alpha(octstr_get_char(input ,0) & 0x7f);
 	for(i=1; i<octstr_len(input); i++) {
-    	/* a byte is encoded with what is left of the previous character
-    	 * and filled with as much as possible of the current one. */
-		tmpenc = prevoctet + ((octstr_get_char(input,i) & ermask[c]) << r);
+		/* a byte is encoded with what is left of the previous character
+		 * and filled with as much as possible of the current one. */
+		tmpenc = prevoctet + ((gsm_alpha(octstr_get_char(input,i) & 0x7f) & ermask[c]) << r);
 		encoded[pos] = numtext((tmpenc & 240) >> 4); pos++;
 		encoded[pos] = numtext(tmpenc & 15); pos++;
 		c = (c>6)? 1 : c+1;
@@ -743,10 +770,10 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded) {
 		/* prevoctet becomes the part of the current octet that hasn't
 		 * been copied to 'encoded' or the next char if the current has
 		 * been completely copied already. */
-		prevoctet = (octstr_get_char(input,i) & elmask[r]) >> (c-1);
+		prevoctet = (gsm_alpha(octstr_get_char(input,i) & 0x7f) & elmask[r]) >> (c-1);
 		if(r == 7) {
 			i++;
-			prevoctet = octstr_get_char(input, i);
+			prevoctet = gsm_alpha(octstr_get_char(input, i) & 0x7f);
 		}
 	}
 	/* if the length of the message is a multiple of 8 then we
@@ -793,14 +820,14 @@ static void decode7bituncompressed(Octstr *input, int len, Octstr *decoded) {
 	prevoctet = 0;
 	for(i=0; i<len; i++) {
 		septet = ((octet & rmask[c]) << (r-1)) + prevoctet;
-		octstr_append_char(decoded, septet);
+                octstr_append_char(decoded, GSM_Default_Alphabet[septet]);
 
 		prevoctet = (octet & lmask[r]) >> c;
 	
 		/* When r=7 we have a full character in prevoctet*/
 		if((r==7) && (i<len-1)){
 			i++;
-			octstr_append_char(decoded, prevoctet);
+                        octstr_append_char(decoded, GSM_Default_Alphabet[prevoctet]);
 			prevoctet = 0;
 		}
 
@@ -828,4 +855,21 @@ static int hexchar(char hexc) {
 	return (hexc>9) ? hexc-7 : hexc;
 }
 
+/**********************************************************************
+ * GSM default character encoding
+ */
+
+unsigned char gsm_alpha(unsigned char value)
+{
+
+  unsigned char i;
+
+  if (value == '?') return  0x3f;
+
+  for (i = 0 ; i < 128 ; i++)
+    if (GSM_Default_Alphabet[i] == value)
+      return i;
+
+  return 0x3f; /* '?' */
+}
 
