@@ -148,6 +148,8 @@ SINGLE_GROUP(smsbox,
     OCTSTR(black-list)
     OCTSTR(mo-recode)
     OCTSTR(xmlrpc-url)
+    OCTSTR(http-request-retry)
+    OCTSTR(http-queue-delay)
 )
 
 

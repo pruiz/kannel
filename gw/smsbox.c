@@ -36,6 +36,9 @@ enum { MAX_SMS_OCTETS = 140 };
 
 #define O_DESTROY(a) { if(a) octstr_destroy(a); a = NULL; }
 
+/* Defaults for the HTTP request queueing inside http_queue_thread */
+#define HTTP_MAX_RETRIES    0
+#define HTTP_RETRY_DELAY    10 /* in sec. */
 
 static Cfg *cfg;
 static long bb_port;
@@ -59,8 +62,11 @@ static Octstr *reply_emptymessage = NULL;
 static int mo_recode = 0;
 static Numhash *white_list;
 static Numhash *black_list;
+static unsigned long max_http_retries = HTTP_MAX_RETRIES;
+static unsigned long http_queue_delay = HTTP_RETRY_DELAY;
 
-static List *smsbox_requests = NULL;
+static List *smsbox_requests = NULL;      /* the inbound request queue */
+static List *smsbox_http_requests = NULL; /* the outbound HTTP request queue */
 
 int charset_processing (Octstr *charset, Octstr *text, int coding);
 long get_tag(Octstr *body, Octstr *tag, Octstr **value, long pos, int nostrip);
@@ -196,20 +202,28 @@ static int send_message(URLTranslation *trans, Msg *msg)
 
 /***********************************************************************
  * Stuff to remember which receiver belongs to which HTTP query.
+ * This also includes HTTP request data to queue a failed HTTP request
+ * into the smsbox_http_request queue which is then handled by the
+ * http_queue_thread thread on a re-scheduled time basis.
  */
 
 
 static HTTPCaller *caller;
 static Counter *num_outstanding_requests;
-
+     
 
 struct receiver {
     Msg *msg;
     URLTranslation *trans;
+    Octstr *url; /* the after pattern URL */
+    List *http_headers; 
+    Octstr *body; /* body content of the request */
+    unsigned long retries; /* number of performed retries */
 };
 
 
-static void *remember_receiver(Msg *msg, URLTranslation *trans)
+static void *remember_receiver(Msg *msg, URLTranslation *trans, Octstr *url, 
+                               List *headers, Octstr *body, unsigned int retries)
 {
     struct receiver *receiver;
     
@@ -234,21 +248,32 @@ static void *remember_receiver(Msg *msg, URLTranslation *trans)
     receiver->msg->sms.smsc_id = octstr_duplicate(msg->sms.smsc_id);
     receiver->msg->sms.dlr_url = NULL;
     receiver->msg->sms.dlr_mask = msg->sms.dlr_mask; 
-    	/* to remember if it's a DLR http get */
+   	/* to remember if it's a DLR http get */
     
     receiver->trans = trans;
+
+    /* remember the HTTP request if we need to queue this */
+    receiver->url = octstr_duplicate(url);
+    receiver->http_headers = http_header_duplicate(headers);
+    receiver->body = octstr_duplicate(body);
+    receiver->retries = retries;
 
     return receiver;
 }
 
 
-static void get_receiver(void *id, Msg **msg, URLTranslation **trans)
+static void get_receiver(void *id, Msg **msg, URLTranslation **trans, Octstr **url,
+                         List **headers, Octstr **body, unsigned long *retries)
 {
     struct receiver *receiver;
     
     receiver = id;
     *msg = receiver->msg;
     *trans = receiver->trans;
+    *url = receiver->url;
+    *headers = receiver->http_headers;
+    *body = receiver->body;
+    *retries = receiver->retries;
     gw_free(receiver);
     counter_decrease(num_outstanding_requests);
 }
@@ -771,6 +796,51 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 }
 
 
+/***********************************************************************
+ * Thread to handle failed HTTP requests and retries to deliver the 
+ * information to the HTTP server. The thread uses the smsbox_http_requests
+ * queue that is spooled by url_result_thread in case the HTTP requests
+ * fails.
+ */
+
+static void http_queue_thread(void *arg)
+{
+    void *id;
+    Msg *msg;
+    URLTranslation *trans;
+    Octstr *req_url;
+    List *req_headers;
+    Octstr *req_body;
+    unsigned long retries;
+ 
+    while ((id = list_consume(smsbox_http_requests)) != NULL) {
+        /* 
+         * Sleep for a while in order not to block other operting requests.
+         * Defaults to 10 sec. if not given via http-queue-delay directive in
+         * smsbox group.
+         */
+        if (http_queue_delay > 0) 
+            gwthread_sleep(http_queue_delay);
+
+        /* 
+         * Get all required HTTP request data from the queue and reconstruct 
+         * the id pointer for later lookup in url_result_thread.
+         */
+        get_receiver(id, &msg, &trans, &req_url, &req_headers, &req_body, &retries);
+        
+        if (retries < max_http_retries) {
+            id = remember_receiver(msg, trans, req_url, req_headers, req_body, ++retries);
+        
+            debug("sms.http",0,"HTTP: Retrying request <%s> (%ld/%ld)",  
+                  octstr_get_cstr(req_url), retries, max_http_retries);
+
+            /* re-queue this request to the HTTPCaller list */
+            http_start_request(caller, req_url, req_headers, req_body, 1, id, NULL);
+        }
+    }
+}
+
+
 static void url_result_thread(void *arg)
 {
     Octstr *final_url, *reply_body, *type, *charset, *replytext;
@@ -779,6 +849,9 @@ static void url_result_thread(void *arg)
     void *id;
     Msg *msg;
     URLTranslation *trans;
+    Octstr *req_url;
+    List *req_headers;
+    Octstr *req_body;
     Octstr *text_html;
     Octstr *text_plain;
     Octstr *text_wml;
@@ -792,7 +865,9 @@ static void url_result_thread(void *arg)
     int octets;
     int mclass, mwi, coding, compress, pid, alt_dcs;
     int validity, deferred;
-    
+    unsigned long retries;
+    unsigned int queued; /* indicate if processes reply is requeued */
+
     dlr_mask = 0;
     dlr_url = NULL;
     text_html = octstr_imm("text/html");
@@ -802,102 +877,108 @@ static void url_result_thread(void *arg)
     octet_stream = octstr_imm("application/octet-stream");
 
     for (;;) {
-    	id = http_receive_result(caller, &status, &final_url, &reply_headers,
+        queued = 0;
+        id = http_receive_result(caller, &status, &final_url, &reply_headers,
 	    	    	    	 &reply_body);
-    	if (id == NULL)
-	    break;
+        if (id == NULL)
+            break;
     	
-    	get_receiver(id, &msg, &trans);
-
-    	from = to = udh = smsc = NULL;
-	octets = mclass = mwi = coding = compress = pid = alt_dcs = 0;
-	validity = deferred = 0;
-	account = NULL;
+        get_receiver(id, &msg, &trans, &req_url, &req_headers, &req_body, &retries);
+     
+        from = to = udh = smsc = NULL;
+        octets = mclass = mwi = coding = compress = pid = alt_dcs = 0;
+        validity = deferred = 0;
+        account = NULL;
 	
-    	if (status == HTTP_OK || status == HTTP_ACCEPTED) {
-	    http_header_get_content_type(reply_headers, &type, &charset);
-	    if (octstr_case_compare(type, text_html) == 0 ||
-		octstr_case_compare(type, text_wml) == 0) {
-		strip_prefix_and_suffix(reply_body,
-					urltrans_prefix(trans), 
-					urltrans_suffix(trans));
-		replytext = html_to_sms(reply_body);
-		octstr_strip_blanks(replytext);
-    	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
+        if (status == HTTP_OK || status == HTTP_ACCEPTED) {
+            http_header_get_content_type(reply_headers, &type, &charset);
+            if (octstr_case_compare(type, text_html) == 0 ||
+                octstr_case_compare(type, text_wml) == 0) {
+                strip_prefix_and_suffix(reply_body, urltrans_prefix(trans), 
+                                        urltrans_suffix(trans));
+                replytext = html_to_sms(reply_body);
+                octstr_strip_blanks(replytext);
+                get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, &smsc, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_url, 
 					  &account, &pid, &alt_dcs);
-	    } else if (octstr_case_compare(type, text_plain) == 0) {
-		replytext = octstr_duplicate(reply_body);
+            } else if (octstr_case_compare(type, text_plain) == 0) {
+                replytext = octstr_duplicate(reply_body);
                 octstr_destroy(reply_body);
-		reply_body = NULL;
-		// XXX full text octstr_strip_blanks(replytext);
-    	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
+                reply_body = NULL;
+                /* XXX full text octstr_strip_blanks(replytext); */
+                get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, &smsc, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_url, 
 					  &account, &pid, &alt_dcs);
-	    } else if (octstr_case_compare(type, text_xml) == 0) {
-		replytext = octstr_duplicate(reply_body);
-		octstr_destroy(reply_body); 
-		reply_body = NULL;
-		get_x_kannel_from_xml(mt_reply, &type, &replytext, reply_headers, &from, &to, &udh,
-				NULL, NULL, &smsc, &mclass, &mwi, &coding,
-				&compress, &validity, &deferred,
-				&dlr_mask, &dlr_url, &account, &pid, &alt_dcs, NULL);
-	    } else if (octstr_case_compare(type, octet_stream) == 0) {
-		replytext = octstr_duplicate(reply_body);
+            } else if (octstr_case_compare(type, text_xml) == 0) {
+                replytext = octstr_duplicate(reply_body);
+                octstr_destroy(reply_body); 
+                reply_body = NULL;
+                get_x_kannel_from_xml(mt_reply, &type, &replytext, reply_headers, 
+                        &from, &to, &udh, NULL, NULL, &smsc, &mclass, &mwi, 
+                        &coding, &compress, &validity, &deferred, &dlr_mask, 
+                        &dlr_url, &account, &pid, &alt_dcs, NULL);
+            } else if (octstr_case_compare(type, octet_stream) == 0) {
+                replytext = octstr_duplicate(reply_body);
                 octstr_destroy(reply_body);
-		octets = 1;
-		reply_body = NULL;
-    	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
+                octets = 1;
+                reply_body = NULL;
+                get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
 					  NULL, NULL, &smsc, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_url, 
 					  &account, &pid, &alt_dcs);
-	    } else {
-		replytext = octstr_duplicate(reply_couldnotrepresent); 
-	    }
+            } else {
+                replytext = octstr_duplicate(reply_couldnotrepresent); 
+            }
 
-	    if (charset_processing(charset, replytext, coding) == -1) {
-		replytext = octstr_duplicate(reply_couldnotrepresent);
-	    }
-	    octstr_destroy(type);
-	    octstr_destroy(charset);
-	} else
-	    replytext = octstr_duplicate(reply_couldnotfetch);
+            if (charset_processing(charset, replytext, coding) == -1) {
+                replytext = octstr_duplicate(reply_couldnotrepresent);
+            }
+            octstr_destroy(type);
+            octstr_destroy(charset);
+        } else if (max_http_retries > 0) {
+            id = remember_receiver(msg, trans, req_url, req_headers, req_body, retries);
+            list_produce(smsbox_http_requests, id);
+            queued++;
+            goto requeued;
+        } else
+            replytext = octstr_duplicate(reply_couldnotfetch);
 
-	fill_message(msg, trans, replytext, octets, from, to, udh, mclass,
-			mwi, coding, compress, validity, deferred, dlr_url, 
-			dlr_mask, pid, alt_dcs, smsc);
+        fill_message(msg, trans, replytext, octets, from, to, udh, mclass,
+            mwi, coding, compress, validity, deferred, dlr_url, 
+           dlr_mask, pid, alt_dcs, smsc);
 
-    	if (final_url == NULL)
-	    final_url = octstr_imm("");
-    	if (reply_body == NULL)
-	    reply_body = octstr_imm("");
+        if (final_url == NULL)
+            final_url = octstr_imm("");
+        if (reply_body == NULL)
+            reply_body = octstr_imm("");
 
-	if (msg->sms.dlr_mask == 0) {
-	    alog("SMS HTTP-request sender:%s request: '%s' "
-		"url: '%s' reply: %d '%s'",
-		octstr_get_cstr(msg->sms.receiver),
-		(msg->sms.msgdata != NULL) ? octstr_get_cstr(msg->sms.msgdata) : "",
-		octstr_get_cstr(final_url),
-		status,
-		(status == HTTP_OK) 
-		? "<< successful >>"
-		: octstr_get_cstr(reply_body));
-	}
-		
-    	octstr_destroy(final_url);
-	http_destroy_headers(reply_headers);
-	octstr_destroy(reply_body);
+        if (msg->sms.dlr_mask == 0) {
+            alog("SMS HTTP-request sender:%s request: '%s' "
+                 "url: '%s' reply: %d '%s'",
+                 octstr_get_cstr(msg->sms.receiver),
+                 (msg->sms.msgdata != NULL) ? octstr_get_cstr(msg->sms.msgdata) : "",
+                 octstr_get_cstr(final_url), status,	
+                 (status == HTTP_OK) ? "<< successful >>" : octstr_get_cstr(reply_body));
+        }
+
+requeued:
+        octstr_destroy(final_url);
+        http_destroy_headers(reply_headers);
+        octstr_destroy(reply_body);
+        octstr_destroy(req_url);
+        http_destroy_headers(req_headers);
+        octstr_destroy(req_body);
     
-	if (msg->sms.dlr_mask == 0) {
-	    if ( send_message(trans, msg) < 0)
-		error(0, "failed to send message to phone");
-	}	
-	msg_destroy(msg);
+        if (msg->sms.dlr_mask == 0 && !queued) {
+            if (send_message(trans, msg) < 0)
+                error(0, "failed to send message to phone");
+        }	
+        msg_destroy(msg);
     }
 }
 
@@ -983,7 +1064,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 			    octstr_get_cstr(msg->sms.receiver));
 	}
 	
-	id = remember_receiver(msg, trans);
+	id = remember_receiver(msg, trans, pattern, request_headers, NULL, 0);
 	http_start_request(caller, pattern, request_headers, NULL, 1, id,
  			   NULL);
 	octstr_destroy(pattern);
@@ -994,7 +1075,6 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
     case TRANSTYPE_POST_URL:
 	request_headers = http_create_empty_headers();
 	http_header_add(request_headers, "User-Agent", GW_NAME "/" VERSION);
-	id = remember_receiver(msg, trans);
 	if (msg->sms.coding == DC_8BIT)
 	    http_header_add(request_headers, "Content-Type",
 			    "application/octet-stream");
@@ -1095,6 +1175,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
+	id = remember_receiver(msg, trans, pattern, request_headers, msg->sms.msgdata, 0);
 	http_start_request(caller, pattern, request_headers, 
  			   msg->sms.msgdata, 1, id, NULL);
 	octstr_destroy(pattern);
@@ -1129,8 +1210,6 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 
 	request_headers = http_create_empty_headers();
 	http_header_add(request_headers, "User-Agent", GW_NAME "/" VERSION);
-	id = remember_receiver(msg, trans);
-
 	http_header_add(request_headers, "Content-Type", "text/xml");
 
 	xml = octstr_create("");
@@ -1236,6 +1315,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	msg->sms.msgdata = xml;
 
 	debug("sms", 0, "XMLBuild: XML: <%s>", octstr_get_cstr(msg->sms.msgdata));
+	id = remember_receiver(msg, trans, pattern, request_headers, msg->sms.msgdata, 0);
 	http_start_request(caller, pattern, request_headers,
 			msg->sms.msgdata, 1, id, NULL);
 	octstr_destroy(pattern);
@@ -2816,6 +2896,10 @@ static Cfg *init_smsbox(Cfg *cfg)
 	octstr_destroy(p);
     }
 
+    /* HTTP queueing values */
+    cfg_get_integer(&max_http_retries, grp, octstr_imm("http-request-retry"));
+    cfg_get_integer(&http_queue_delay, grp, octstr_imm("http-queue-delay"));
+
     if (sendsms_port > 0) {
 	if (http_open_port(sendsms_port, ssl) == -1) {
 	    if (only_try_http)
@@ -2880,6 +2964,11 @@ int main(int argc, char **argv)
 
     init_smsbox(cfg);
 
+    if (max_http_retries > 0) {
+        info(0, "Using HTTP request queueing with %ld retries, %lds delay.", 
+                max_http_retries, http_queue_delay);
+    }
+
     debug("sms", 0, "----------------------------------------------");
     debug("sms", 0, GW_NAME " smsbox version %s starting", VERSION);
     write_pid_file();
@@ -2893,11 +2982,14 @@ int main(int argc, char **argv)
     sendsms_number_chars = SENDSMS_DEFAULT_CHARS;
     caller = http_caller_create();
     smsbox_requests = list_create();
+    smsbox_http_requests = list_create();
     list_add_producer(smsbox_requests);
+    list_add_producer(smsbox_http_requests);
     num_outstanding_requests = counter_create();
     catenated_sms_counter = counter_create();
     gwthread_create(obey_request_thread, NULL);
     gwthread_create(url_result_thread, NULL);
+    gwthread_create(http_queue_thread, NULL);
 
     connect_to_bearerbox(bb_host, bb_port, bb_ssl, NULL /* bb_our_host */);
 	/* XXX add our_host if required */
@@ -2915,15 +3007,19 @@ int main(int argc, char **argv)
     http_close_all_ports();
     gwthread_join_every(sendsms_thread);
     list_remove_producer(smsbox_requests);
+    list_remove_producer(smsbox_http_requests);
     gwthread_join_every(obey_request_thread);
     http_caller_signal_shutdown(caller);
     gwthread_join_every(url_result_thread);
+    gwthread_join_every(http_queue_thread);
 
     close_connection_to_bearerbox();
     alog_close();
     urltrans_destroy(translations);
     gw_assert(list_len(smsbox_requests) == 0);
+    gw_assert(list_len(smsbox_http_requests) == 0);
     list_destroy(smsbox_requests, NULL);
+    list_destroy(smsbox_http_requests, NULL);
     http_caller_destroy(caller);
     counter_destroy(num_outstanding_requests);
     counter_destroy(catenated_sms_counter);
