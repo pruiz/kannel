@@ -1,10 +1,17 @@
+2002-07-05  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c, gwlib/cfg.def: added SMPP priority flag support using
+      configuration directive 'priority', patch submitted 
+      by Ignat Vassilev <ozzy@declera.com>
+      [Msg-ID: <3D1A586B.3070308@declera.com>]
+
 2002-07-02  Stipe Tolj  <tolj@wapme-systems.de>
     * Re-Making stable release 1.2.0.
 
 2002-07-04 Aarno Syvänen <aarno@global-networks.ch>
     * "Test_http_server reads black and white lists from files" patch:
     * test/test_http_server.c: Doing this
-    * checks/check_ppg.sh: Use lists when starting http server responsible for distributing these
+    * checks/check_ppg.sh: Use lists when starting http server responsible 
+      for distributing these
     * test/whitelist.txt, test/blacklist.txt: Added required files.
     * test/smstestppg.txt: Changed MSISDN.
     * gw/pushkannel.conf: Changed send-url.
