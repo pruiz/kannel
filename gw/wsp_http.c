@@ -435,7 +435,7 @@ static int encode_content_type(const char *type) {
 
 
 static Octstr *convert_to_self(Octstr *stuff, char *url) {
-	return stuff;
+	return octstr_duplicate(stuff);
 }
 
 
