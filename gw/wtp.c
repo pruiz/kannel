@@ -226,7 +226,7 @@ void wtp_machine_dump(WTPMachine  *machine){
 
         if (machine != NULL){
 
-           debug(0, "The machine was %p:", (void *) machine); 
+           debug(0, "Machine %p: dump starting", (void *) machine); 
 	   #define INTEGER(name) \
            debug(0, "Integer field %s,%ld:", #name, machine->name)
            #define ENUM(name) debug(0, "state=%s.", name_state(machine->name))
@@ -234,17 +234,18 @@ void wtp_machine_dump(WTPMachine  *machine){
                                  octstr_dump(machine->name)
            #define TIMER(name)   debug(0, "Machine timer %p:", (void *) \
                                        machine->name)
-           #define QUEUE(name)   debug (0, "Next event to be processed, %s", \
-                                        name_event(machine->name->type)) 
            #define MUTEX(name)   if (mutex_try_lock(&machine->name) == EBUSY) \
-                                    debug(0, "Machine locked");\
+                                    debug(0, "Machine %s locked", #name);\
                                  else {\
-                                    debug(0, "Machine unlocked");\
+                                    debug(0, "Machine %s unlocked", #name);\
                                     mutex_unlock(&machine->name);\
                                  }
-           #define NEXT(name)
+           #define QUEUE(name)   debug (0, "head and tail is: %s %p", \
+                                        #name, (void *) machine->name) 
+           #define NEXT(name) 
 	   #define MACHINE(field) field
 	   #include "wtp_machine-decl.h"
+           debug (0, "machine dump ends");
 	
          } else
            debug(0, "wtp_machine_dump: machine does not exist");
@@ -735,6 +736,8 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
 	        default:
                 break;
          }
+         debug (0,"pack_wsp_event:");
+         wsp_event_dump(event);
          return event;
 } 
 
