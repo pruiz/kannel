@@ -43,7 +43,6 @@ typedef struct WTPCached_tid WTPCached_tid;
 
 void wtp_tid_cache_init(void);
 
-
 /*
  * Shut down the tid cache. MUST be called after tid cache isn't used anymore.
  */
@@ -57,6 +56,11 @@ void wtp_tid_cache_shutdown(void);
  */
 
 int wtp_tid_is_valid(WAPEvent *event, WTPMachine *machine);
+
+/*
+ * Changes the tid value belonging to an existing iniator
+ */
+void wtp_tid_set_by_machine(WTPMachine *machine, long tid);
 
 #endif
 

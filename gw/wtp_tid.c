@@ -27,13 +27,15 @@ enum {
  * Prototypes of internal functions
  */
 static WTPCached_tid *cache_item_create_empty(void);
+
 static void cache_item_destroy(WTPCached_tid *item);
 /*
 static void cache_item_dump(WTPCached_tid *item);
 */
-static void set_tid(WTPCached_tid *item, long tid);
 
 static void add_tid(WTPMachine *machine, long tid);
+
+static void set_tid_by_item(WTPCached_tid *item, long tid);
 
 static int tid_in_window(long rcv_tid, long last_tid);
 
@@ -100,7 +102,7 @@ int wtp_tid_is_valid(WAPEvent *event, WTPMachine *machine){
 #if 0
          debug("wap.wtp.tid", 0, "tid in the window");
 #endif
-         set_tid(item, rcv_tid);
+         set_tid_by_item(item, rcv_tid);
          return ok;
       }
 
@@ -111,7 +113,7 @@ int wtp_tid_is_valid(WAPEvent *event, WTPMachine *machine){
       if (item == NULL) {
          add_tid(machine, rcv_tid);
       } else {
-         set_tid(item, rcv_tid);
+         set_tid_by_item(item, rcv_tid);
       }
      
       return fail;
@@ -120,6 +122,22 @@ int wtp_tid_is_valid(WAPEvent *event, WTPMachine *machine){
  * This return is unnecessary but our compiler demands it
  */
     return fail;
+}
+
+/*
+ * Changes tid value used by an existing iniator. Input machine and the 
+ * new tid.
+ */
+void wtp_tid_set_by_machine(WTPMachine *machine, long tid){
+     WTPCached_tid *item = NULL;
+       
+     item = tid_cached(machine);
+
+     if (item != NULL){
+        list_lock(tid_cache);
+        item->tid = tid;
+        list_unlock(tid_cache);
+     }
 }
 
 /*
@@ -134,11 +152,11 @@ int wtp_tid_is_valid(WAPEvent *event, WTPMachine *machine){
  */
 static int tid_in_window(long rcv_tid, long last_tid){
 
-#if 0
+#if 1
        debug("wap.wtp.tid", 0, "tids were rcv_tid, %ld and last_tid, %ld and test window %ld", rcv_tid, last_tid, WTP_TID_WINDOW_SIZE); 
 #endif
        if (last_tid == rcv_tid) {
-          return 0;
+	 return 0;
        } 
 
        if (rcv_tid > last_tid) {
@@ -243,13 +261,6 @@ static WTPCached_tid *tid_cached(WTPMachine *machine){
        return item;
 }
 
-static void set_tid(WTPCached_tid *item, long tid){
-       
-       list_lock(tid_cache);
-       item->tid = tid;
-       list_unlock(tid_cache);
-}
-
 /*
  * Adds an item to the tid cache, one item per every iniator. Iniator is 
  * identified by the address four-tuple, fetched from wtp machine.
@@ -272,7 +283,15 @@ static void add_tid(WTPMachine *machine, long tid){
        list_append(tid_cache, new_item);
 }
 
+/*
+ * Set tid for an existing iniator. Input a cache item and the new tid.
+ */
+static void set_tid_by_item(WTPCached_tid *item, long tid){
 
+        list_lock(tid_cache);
+        item->tid = tid;
+        list_unlock(tid_cache);
+}
 
 
 

@@ -137,6 +137,10 @@ ROW(LISTEN,
     },
     LISTEN)
 
+/*
+ * We must cache the newly accepted tid item, otherwise every tid after a suspected 
+ * one will be validated.
+ */
 ROW(TIDOK_WAIT,
     RcvAck,
     (machine->tcl == 2 || machine->tcl == 1) && event->u.RcvAck.tid_ok == 1,
@@ -144,6 +148,8 @@ ROW(TIDOK_WAIT,
      wsp_event = wap_event_duplicate(machine->invoke_indication);
      wsp_session_dispatch_event(wsp_event);
      
+     wtp_tid_set_by_machine(machine, event->u.RcvAck.tid);
+
      timer_event = wap_event_create(TimerTO_A);
      wtp_timer_start(machine->timer, L_A_WITH_USER_ACK, machine, timer_event); 
      machine->ack_pdu_sent = 0;
