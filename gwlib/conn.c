@@ -427,6 +427,27 @@ int conn_register(Connection *conn, FDSet *fdset,
 	return 0;
 }
 
+void conn_unregister(Connection *conn) {
+	if (conn->fd < 0)
+		return;
+
+	/* We need both locks to update the registration information */
+	lock_out(conn);
+	lock_in(conn);
+
+	if (conn->registered) {
+		fdset_unregister(conn->registered, conn->fd);
+		conn->registered = NULL;
+		conn->callback = NULL;
+		conn->callback_data = NULL;
+		conn->listening_pollin = 0;
+		conn->listening_pollout = 0;
+	}
+
+	unlock_in(conn);
+	unlock_out(conn);
+}
+
 int conn_wait(Connection *conn, double seconds) {
 	int events;
 	int ret;

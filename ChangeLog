@@ -1,3 +1,7 @@
+2000-10-31  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/conn.c: Implement conn_unregister() too.
+
 2000-10-31  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/http.c: Converted HTTP transaction handling into a state
