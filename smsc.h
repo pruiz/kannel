@@ -51,6 +51,10 @@ int smsc_reopen(SMSCenter *smsc);
    cannot fail. */
 char *smsc_name(SMSCenter *smsc);
 
+/* Return SMSC personal dial prefix, if any
+ */
+char *smsc_dial_prefix(SMSCenter *smsc);
+
 /* Return 1 if the SMSC is router for 'number', 2 if the SMSC is
  * default router and 0 if not suitable.
  * (function checks if the prefix of the number is in route_prefix)
@@ -76,7 +80,6 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue);
 /* receive a message from SMS center and return it. Return NULL on problem
 */
 RQueueItem *smsc_get_message(SMSCenter *smsc);
-
 
 
 

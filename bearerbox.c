@@ -87,6 +87,7 @@ typedef struct bb_s {
     int http_fd, wap_fd, sms_fd;	/* socket FDs */
     
     char *pid_file;		/* our pid */
+    char *global_prefix;	/* global normalization string */
     
     pthread_mutex_t mutex;	/* for heartbeat/structure update */
 } BearerBox;
@@ -183,6 +184,77 @@ error:
 }
 
 
+/*
+ * normalize 'number'
+ *
+ * return -1 on error, 0 if no match in dial_prefixes and 1 if match found
+ * If the 'number' needs normalization, the old one is freed and new
+ * created
+ */
+
+static int normalize_number(char *dial_prefixes, char **number)
+{
+    char *t, *p, *official, *start;
+    char *new;
+    int len, official_len;
+    
+    if (dial_prefixes == NULL || dial_prefixes[0] == '\0')
+	return 0;
+
+    t = official = dial_prefixes;
+    
+    while(1) {
+	for(p = *number, start = t, len = 0; ; t++, p++, len++) {
+	    if (*t == ',' || *t == ';' || *t == '\0') {
+		if (start != official) {
+		    new = malloc(strlen(*number)+1+official_len-len);
+		    if (new == NULL) {
+			error(0, "Memory allocation failed");
+			return -1;
+		    }
+		    strncpy(new, official, official_len);
+		    strcpy(new + official_len, *number+len);
+		    free(*number);
+		    *number = new;
+		}
+		return 1;
+	    }
+	    if (*t != *p)
+		break;		/* not matching */
+	}
+	for(; *t != ',' && *t != ';' && *t != '\0'; t++, len++)
+	    ;
+	if (*t == '\0') break;
+	if (start == official) official_len = len;
+	if (*t == ';') official = t+1;
+	t++;
+    }
+    return 0;
+}
+
+
+static void normalize_numbers(RQueueItem *msg, SMSCenter *from)
+{
+    char *p;
+    int sr, rr;
+
+    sr = rr = 0;
+    if (from != NULL) {
+	p = smsc_dial_prefix(from);
+	if (p != NULL) {
+	    sr = normalize_number(p, &(msg->sender));
+	    rr = normalize_number(p, &(msg->receiver));
+	}
+    }
+    if (sr == 0)
+	sr = normalize_number(bbox->global_prefix, &(msg->sender));
+    if (rr == 0)
+	rr = normalize_number(bbox->global_prefix, &(msg->receiver));
+	
+    if (sr == -1 || rr == -1)
+	error(0, "Problems during number normalization");
+}
+
 
 /*----------------------------------------------------
  * MAIN THREAD FDUNCTIONS
@@ -257,6 +329,7 @@ static void *smscenter_thread(void *arg)
 	 */
 	msg = smsc_get_message(us->smsc);
 	if (msg) {
+	    normalize_numbers(msg, us->smsc);
 	    route_msg(us, msg);
 	    
 	    rq_push_msg(bbox->request_queue, msg);
@@ -368,7 +441,17 @@ static void *smsboxconnection_thread(void *arg)
 	if (us->status == BB_STATUS_KILLED) break;
 	/* update heartbeat if too much from the last update
 	 * die if forced to, closing the socket */
-	HEARTBEAT_UPDATE(our_time, last_time, us);
+
+        our_time = time(NULL);
+	if ((our_time) - (last_time) > bbox->heartbeat_freq) {
+	    if (us->boxc->box_heartbeat < last_time) {
+		warning(0, "BOXC: Other end has stopped beating");
+		break;
+	    }
+	    update_heartbeat(us);
+	    last_time = our_time;
+	}
+	
 
 	if (written < 0)
 	    written = 0;
@@ -404,6 +487,7 @@ static void *smsboxconnection_thread(void *arg)
 	    error(0, "SMS BOX %d get message failed, killing", us->id);
 	    break;
 	} else if (ret > 0) {
+	    normalize_numbers(msg, NULL);
 	    route_msg(us, msg);
 	    rq_push_msg(bbox->reply_queue, msg);
 	    written--;
@@ -702,8 +786,8 @@ static void check_heartbeats(void)
 		warning(0, "Thread %d (id %d) type %d has stopped beating!",
 			i, thr->id, thr->type);
 
-		bbox->threads[i] = NULL;
-		del_bbt(thr);
+		if (thr->status != BB_STATUS_DEAD)
+		    thr->status == BB_STATUS_KILLED;
 	    }
 	}
     }
@@ -859,7 +943,8 @@ static void main_program(void)
 
 	now = time(NULL);
 	if (now - last > bbox->heartbeat_freq) {
-	    check_heartbeats();
+	    check_threads();		/* destroy killed */
+	    check_heartbeats();		/* check if need to be marked as killed */
 	    last = now;
 
 	    update_queue_watcher();
@@ -926,6 +1011,7 @@ static void init_bb(Config *cfg)
     bbox->smsbox_port = BB_DEFAULT_SMSBOX_PORT;
     bbox->heartbeat_freq = BB_DEFAULT_HEARTBEAT;
     bbox->pid_file = NULL;
+    bbox->global_prefix = NULL;
     
     grp = config_first_group(cfg);
     while(grp != NULL) {
@@ -937,6 +1023,8 @@ static void init_bb(Config *cfg)
 	    bbox->wapbox_port = atoi(p);
 	if ((p = config_get(grp, "sms-port")) != NULL)
 	    bbox->smsbox_port = atoi(p);
+	if ((p = config_get(grp, "global-prefix")) != NULL)
+	    bbox->global_prefix = p;
 	if ((p = config_get(grp, "heartbeat-freq")) != NULL)
 	    bbox->heartbeat_freq = atoi(p);
 	if ((p = config_get(grp, "pid-file")) != NULL)
@@ -1002,8 +1090,10 @@ static void write_pid_file(void)
 static void signal_handler(int signum)
 {
     if (signum == SIGINT) {
-        error(0, "SIGINT received, aborting program...");
-        bbox->abort_program = 1;
+	if (bbox->abort_program == 0) {
+	    error(0, "SIGINT received, aborting program...");
+	    bbox->abort_program = 1;
+	}
     } else if (signum == SIGHUP) {
         warning(0, "SIGHUP received, catching and re-opening logs");
         reopen_log_files();

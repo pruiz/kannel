@@ -278,8 +278,8 @@ RQueueItem *rqi_new(int class, int type)
     nqi->msg_type = type;
     nqi->msg = octstr_create_empty();
 
-    nqi->sender[0] = '\0';
-    nqi->receiver[0] = '\0';
+    nqi->sender = NULL;
+    nqi->receiver = NULL;
     nqi->time_tag = time(NULL);
     nqi->source = -1;
     nqi->destination = -1;	/* unknown */
@@ -299,6 +299,8 @@ error:
 void rqi_delete(RQueueItem *msg)
 {
     octstr_destroy(msg->msg);
+    free(msg->sender);
+    free(msg->receiver);
     free(msg);
 }
 

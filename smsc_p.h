@@ -43,11 +43,11 @@ struct SMSCenter {
 	int id;
         int latency;
     	
-	/* Dialing prefix. */
-	char dial_prefix[DIAL_PREFIX_MAX_LEN];
+	/* Personal dialing prefix (normalization string). */
+	char *dial_prefix;
 
 	/* Routing prefix. */
-	char route_prefix[DIAL_PREFIX_MAX_LEN];
+	char *route_prefix;
 
 	/* Alternative charset */
         int alt_charset;
@@ -141,26 +141,6 @@ int smscenter_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg);
    if there is a message. Use smscenter_receive_smsmessage to actually receive
    the message. */
 int smscenter_pending_smsmessage(SMSCenter *smsc);
-
-/*
- * Normalize a phone number. `dial_prefixes' is a list of prefix of
- * the following format:
- *
- *	"0035850,050;0035840,040"
- *
- * The alternatives are separated by commas. The first one is the
- * official one; if the phone number begins with any of the others,
- * it is replaced with the official one.
- *
- * If there is several 'official' numbers, each entry is separated with ';'
- *
- * The new string is returned as a 'new', dynamically allocated string,
- * even if it hasn't been modified. The caller must free it.
- *
- * return value -1 on error, 0 if no match found, 1 if match found
- */
-int normalize_number(char *dial_prefixes, char *number, char **new);
-
 
 /*
  * Interface to fakesmsc.c. 

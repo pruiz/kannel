@@ -120,16 +120,19 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 	    if (ret < 1)
 		return -1;	/* time to die */
 	    
-	    info(0, "BOXC:read: < %s >", buffer);
 	    boxc->box_heartbeat = time(NULL);		/* update heartbeat */
 	    
-	    if (*buffer == 'A' || *buffer == 'N')	/* ignore ack/nack */
-		return 0;
-	    if (*buffer == 'H') {		/* heartbeat/load */
-		boxc->load = atoi(buffer+1);
-		info(0, "BOXC: Load factor %d received", boxc->load);
+	    if (*buffer == 'A' || *buffer == 'N') {	/* ignore ack/nack */
+		debug(0, "BOXC: ACK/NACK read < %s >, ignore", buffer);
 		return 0;
 	    }
+	    else if (*buffer == 'H') {		/* heartbeat/load */
+		boxc->load = atoi(buffer+1);
+		debug(0, "BOXC: Load factor %d received", boxc->load);
+		return 0;
+	    }
+	    info(0, "BOXC:read: < %s >", buffer);
+	    
 	    msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
 	    if (msg == NULL) {
 		error(0, "Failed to create new message, killing thread");
@@ -157,11 +160,13 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 		    }
 		}
 	    }
-	    /* we _should_ check and normalize numbers here, but I'm bored
-	     */
-	    strcat(msg->sender, sender);
-	    strcat(msg->receiver, receiver);
+	    msg->sender = strdup(sender);
+	    msg->receiver = strdup(receiver);
 	    msg->msg = octstr_create(text);
+	    if (msg->sender == NULL || msg->receiver == NULL || msg->msg == NULL) {
+		error(0, "Memory allocation failed, send NACK");
+		goto error;
+	    }
 	}
 	else 
 	    msg = NULL; /* nothing to read */
@@ -174,6 +179,7 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 
 malformed:
     error(0, "Received a malformed message from SMS BOX, send immediate NACK");
+error:
     write_to_socket(boxc->fd, "N\n");
     rqi_delete(msg);
     return 0;

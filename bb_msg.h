@@ -46,8 +46,8 @@ struct r_queue_item {
     int id;		/* internal number */
     int msg_class;	/* see enum above */
     int msg_type;	/* see enum above */
-    char sender[35];	/* normalized phone number or IP number */
-    char receiver[35];	/* ditto */
+    char *sender;	/* phone number or IP. */
+    char *receiver;	/* ditto */
     Octstr *msg;     	/* parsed message (just the message) */
     time_t time_tag;	/* when created (in our system) */
     int source;		/* original receiver thread id */

@@ -53,7 +53,8 @@ SMSCenter *smscenter_construct(void) {
 		goto error;
 
 	smsc->type = SMSC_TYPE_DELETED;
-	smsc->dial_prefix[0] = '\0';
+	smsc->dial_prefix = NULL;
+	smsc->route_prefix = NULL;
 	smsc->alt_charset = 0;
 
 #if HAVE_THREADS
@@ -172,8 +173,7 @@ error:
 
 
 int smscenter_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg) {
-	int ret, retval;
-	char *new;
+	int ret;
 
 	if (smscenter_lock(smsc) == -1)
 		return -1;
@@ -216,16 +216,6 @@ int smscenter_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg) {
 	if (ret == 1 && (*msg)->time == 0)
 		time(&(*msg)->time);
 
-	/* Make sure the sender number starts with smsc->dial_prefix,
-	   if it doesn't, but should. */
-	retval = normalize_number(smsc->dial_prefix, (*msg)->sender, &new);
-	if (new == NULL) {
-		error(0, "Couldn't normalize phone number. Dropping message.");
-		goto error;
-	}
-	free((*msg)->sender);
-	(*msg)->sender = new;
-	
 	return ret;
 
 error:
@@ -409,75 +399,6 @@ static int smscenter_unlock(SMSCenter *smsc) {
 }
 
 
-/*
- * Normalize a phone number. `dial_prefixes' is a list of prefix of
- * the following format:
- *
- *	"0035850,050;0035840,040"
- *
- * The alternatives are separated by commas. The first one is the
- * official one; if the phone number begins with any of the others,
- * it is replaced with the official one.
- *
- * If there is several 'official' numbers, each entry is separated with ';'
- *
- * The new string is returned as a 'new', dynamically allocated string,
- * even if it hasn't been modified. The caller must free it.
- *
- * return value -1 on error, 0 if no match found, 1 if match found
- */
-int normalize_number(char *dial_prefixes, char *number, char **new) {
-	char *official, *p, *tmps;
-	char copy[DIAL_PREFIX_MAX_LEN];
-	char tmp[DIAL_PREFIX_MAX_LEN];
-
-	if (dial_prefixes == NULL || dial_prefixes[0] == '\0') {
-	        *new = malloc(strlen(number)+1);
-		if (*new == NULL) {
-		    error(errno, "Out of memory normalizing phone number.");
-		    return -1;
-		}
-		strcpy(*new, number);
-		return 0;
-	}
-	*new = malloc(strlen(dial_prefixes) + strlen(number) + 1);
-	if (*new == NULL) {
-		error(errno, "Out of memory normalizing phone number.");
-		return -1;
-	}
-	
-
-	strcpy(tmp, dial_prefixes);
-	tmps = tmp;
-
-	while (tmps != NULL && (p = strtok(tmps, ";")) != NULL) {
-	    strcpy(copy, tmps);
-	    tmps += strlen(copy)+1;	/* store next... */
-	
-	    official = strtok(copy, ",");
-
-	    /* Begins with official prefix? */	
-	    if (strncmp(number, official, strlen(official)) == 0) {
-		strcpy(*new, number);
-		return 1;
-	    }
-
-	    /* Begins with one of the alternatives? */
-	    p = strtok(NULL, ",");
-	    while (p != NULL) {
-		if (strncmp(number, p, strlen(p)) == 0) {
-			sprintf(*new, "%s%s", official, number + strlen(p));
-			return 1;
-		}
-		p = strtok(NULL, ",");
-	    }
-	}
-	/* Use as is. */
-	strcpy(*new, number);
-	return 0;
-}
-
-
 /*------------------------------------------------------------------------
  * Public SMSC functions
  */
@@ -573,16 +494,8 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 	}
 	if (smsc != NULL) {
 	    smsc->alt_charset = (alt_chars != NULL ? atoi(alt_chars) : 0);
-
-	    sprintf(smsc->dial_prefix, "%.*s",
-		    (int) sizeof(smsc->dial_prefix),
-		    (dial_prefix == NULL) ? "" : dial_prefix);
-
-	    sprintf(smsc->route_prefix, "%.*s",
-		    (int) sizeof(smsc->route_prefix),
-		    (route_prefix == NULL) ? "" : route_prefix);
-
-	    info(0, "Opened a new SMSC type %d", typeno);
+	    smsc->dial_prefix = dial_prefix;
+	    smsc->route_prefix = route_prefix;
 	}
 	
 	return smsc;
@@ -609,10 +522,15 @@ int smsc_reopen(SMSCenter *smsc) {
 
 
 
-char *smsc_name(SMSCenter *smsc) {
+char *smsc_name(SMSCenter *smsc)
+{
     return smsc->name;
 }
 
+char *smsc_dial_prefix(SMSCenter *smsc)
+{
+    return smsc->dial_prefix;
+}
 
 int smsc_receiver(SMSCenter *smsc, char *number)
 {
@@ -729,7 +647,7 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 	      msg->msg_type);
 	ret = -1;
     }
-/* TODO:		smsmessage_destruct(msg->client_data); */
+    free(msg->client_data);	
     rqi_delete(msg);
 
     return ret;
@@ -740,7 +658,6 @@ RQueueItem *smsc_get_message(SMSCenter *smsc)
 {
     SMSMessage *sms_msg;
     RQueueItem *msg;
-    char *p;
     int ret;
     
 
@@ -751,22 +668,22 @@ RQueueItem *smsc_get_message(SMSCenter *smsc)
 	    error(0, "Failed to receive the message, ignore...");
 	    /* reopen the connection etc. invisible to other end */
 	}
+	/* hm, what about ACK/NACK? - leave that to above */
 
-	/* hm, what about ACK/NACK? */
-
+	/* now we create a queryitem.. note that we just copy pointers,
+	 * not the stuff inside, so beware...
+	 */
 	msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MO);
 
-	/* normalization should be done much better way, have to think
-	 * about that */
+	msg->receiver = sms_msg->receiver;
+	msg->sender = sms_msg->sender;
+	msg->msg = sms_msg->text;
 
-	normalize_number(smsc->dial_prefix, sms_msg->sender, &p);
-	strcpy(msg->sender, p);
-	free(p);
-	normalize_number(smsc->dial_prefix, sms_msg->receiver, &p);
-	strcpy(msg->receiver, p);
-	free(p);
-	msg->msg = octstr_copy(sms_msg->text, 0, 160);
-	
+	/* delete old pointers so that no accidents happen */
+	sms_msg->receiver = NULL;
+	sms_msg->sender = NULL;
+	sms_msg->text = NULL;
+
 	msg->client_data = sms_msg;	/* keep the data for ACK/NACK */
 	
 	
@@ -774,4 +691,5 @@ RQueueItem *smsc_get_message(SMSCenter *smsc)
     }
     return NULL;
 }
+
 
