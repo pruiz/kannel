@@ -1,3 +1,7 @@
+2001-04-21  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsc_emi2.c: Fixed a stupid bug in the previous fix.
+
 2001-04-20  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsc_emi2.c: Fixed a bug in SMSC time stamp parsing.

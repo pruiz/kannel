@@ -436,7 +436,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	    time(&msg->sms.time);
 	}
 	else {
-	    unitime->year += 2000; /* Conversion function expects full year */
+	    unitime.year += 2000; /* Conversion function expects full year */
 	    msg->sms.time = date_convert_universal(&unitime);
 	}
 
