@@ -1,3 +1,22 @@
+Sun Apr 23 23:37:40 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* config.h.in, configure.in: Made it configure-time selectable
+	whether to use the debugging features of gwmem or not.
+	
+	* gwlib/gwmem.c: Removed. Actually, split into gwmem-native.c and
+	gwmem-check.c.
+
+	* gwlib/gwmem.h, gwmem-native.c, gwmem-check.c: Separated the
+	checking and non-checking implemenations. The term `native' is
+	chosen to allow for a third option: `fast'. This will not do
+	checking, but will reduce the number of actual malloc calls made.
+	
+	* gwlib/gwstr.c: Replaced includes with a simple "gwlib.h",
+	so as to make sure config.h is included properly.
+	
+	* gwlib/octstr.c, test/test_mem.c: Fixed to conform to new
+	interface of gw_assert_allocated.
+
 Sun Apr 23 22:38:18 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp_send.c: When re-sending a message, create a duplicate of
