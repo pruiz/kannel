@@ -14,7 +14,8 @@ enum {
     BB_ISOLATED = 1,	/* do not receive new messgaes from UDP/SMSC */
     BB_SUSPENDED = 2,	/* do not transfer any messages */
     BB_SHUTDOWN = 3,
-    BB_DEAD = 4
+    BB_DEAD = 4,
+    BB_FULL = 5         /* message queue to long, do not accept ne messages */
 };
 
 
