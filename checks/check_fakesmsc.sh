@@ -8,8 +8,7 @@ times=10
 interval=0.001
 loglevel=0
 
-test/fakesmsc -i $interval -m $times '123 234 www www.kannel.org' \
-    > check_fakesmsc.log 2>&1 &
+test/fakesmsc -i $interval -m $times '123 234 nop' > check_fakesmsc.log 2>&1 &
 
 sleep 2
 

@@ -277,13 +277,6 @@ int octstr_search_char(Octstr *ostr, int ch, long pos);
 
 
 /*
- * Search for a substring in an octet string, starting at position `pos'. 
- * Return the start position (index) of the substring, -1 if not found.
- */
-int octstr_search_cstr(Octstr *ostr, const char *str, long pos);
-
-
-/*
  * Search for the octet string 'needle' in the octet string 'haystack'.
  * Return the start position (index) of 'needle' in 'haystack'.
  * Return -1 if not found.

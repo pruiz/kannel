@@ -20,7 +20,20 @@ static void client_thread(void *arg)
     Octstr *body, *url, *ip;
     List *headers, *resph, *cgivars;
     HTTPCGIVar *v;
+    Octstr *reply_body, *reply_type;
     
+    if (arg == NULL) {
+	reply_body = octstr_create("hello, world");
+	reply_type = octstr_create("Content-Type: text/plain; "
+	    	    	    	   "charset=\"UTF-8\"");
+    } else {
+	reply_body = arg;
+	reply_type = octstr_create("Content-Type: text/vnd.wap.wml");
+    }
+    
+    resph = list_create();
+    list_append(resph, reply_type);
+
     while (run) {
 	client = http_accept_request(&ip, &url, &headers, &body, &cgivars);
 	if (client == NULL)
@@ -45,17 +58,11 @@ static void client_thread(void *arg)
 	octstr_destroy(body);
 	list_destroy(headers, octstr_destroy_item);
     
-	resph = list_create();
-	list_append(resph, 
-	    	    octstr_create("Content-Type: text/plain; "
-		    	    	  "charset=\"UTF-8\""));
-	body = octstr_create("hello, world\n");
-	http_send_reply(client, HTTP_OK, resph, body);
-    
-	list_destroy(resph, octstr_destroy_item);
-	octstr_destroy(body);
+	http_send_reply(client, HTTP_OK, resph, reply_body);
     }
 
+    list_destroy(resph, octstr_destroy_item);
+    octstr_destroy(reply_body);
     debug("test.http", 0, "client_thread terminates");
 }
 
@@ -72,6 +79,8 @@ static void sigterm(int signo) {
 int main(int argc, char **argv) {
     int opt, port, use_threads;
     struct sigaction act;
+    char *filename;
+    Octstr *file_contents;
 
     gwlib_init();
 
@@ -82,8 +91,9 @@ int main(int argc, char **argv) {
 
     port = 8080;
     use_threads = 0;
+    filename = NULL;
 
-    while ((opt = getopt(argc, argv, "hv:p:t")) != EOF) {
+    while ((opt = getopt(argc, argv, "hv:p:tf:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
@@ -101,6 +111,10 @@ int main(int argc, char **argv) {
 	    use_threads = 1; /* XXX unimplemented as of now */
 	    break;
 
+	case 'f':
+	    filename = optarg;
+	    break;
+
 	case '?':
 	default:
 	    error(0, "Invalid option %c", opt);
@@ -109,10 +123,16 @@ int main(int argc, char **argv) {
 	}
     }
 
+    if (filename == NULL)
+    	file_contents = NULL;
+    else
+    	file_contents = octstr_read_file(filename);
+
     if (http_open_server(port) == -1)
 	panic(0, "http_open_server failed");
 
-    client_thread(NULL);
+    client_thread(file_contents);
+    octstr_destroy(file_contents);
 
     debug("test.http", 0, "Program exiting normally.");
     gwlib_shutdown();

@@ -1,3 +1,19 @@
+2001-01-03  Lars Wirzenius  <liw@iki.fi>
+
+	* checks/check_fakesmsc.sh, checks/check_fakewap.sh: Modified to
+	work without network access to facilitate development on a laptop.
+	
+	* test/test_http_server.c: Added option -f, to allow a WML file
+	to be returned instead of a text/plain response. This is used
+	by check_fakewap.sh above.
+	
+	* gw/bb_smscconn.c: Initialized some local variables so that
+	the compiler won't warn that they are used before they are
+	initialized.
+	
+	* gwlib/octstr.[ch]: Removed octstr_search_cstr, which was no
+	longer used.
+
 2000-12-29  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_definitions.h: Added WBXML_ to every defined constant, 

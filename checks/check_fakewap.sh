@@ -5,8 +5,13 @@
 set -e
 
 times=1
-url="http://www.wapit.com/~liw/hello.wml"
+url="http://localhost:8080/hello.wml"
 loglevel=0
+
+test/test_http_server -f test/hello.wml -p 8080 > check_http.log 2>&1 &
+httppid=$!
+
+sleep 1
 
 gw/bearerbox -v $loglevel gw/wapkannel.conf > check_bb.log 2>&1 &
 bbpid=$!
@@ -21,14 +26,15 @@ sleep 2
 test/fakewap -m $times $url > check_fake.log 2>&1
 ret=$?
 
-kill -SIGINT $bbpid $wappid
+test/test_http -qv 4 http://localhost:8080/quit # XXX our signals are fucked up on linux
+kill -SIGINT $bbpid $wappid # $httppid
 wait
 
 if [ "$ret" != 0 ]
 then
 	echo check_fakewap failed 1>&2
-	echo See check_bb.log, check_wap.log, check_fake.log for info 1>&2
+	echo See check_bb.log, check_wap.log, check_fake.log, check_http.log for info 1>&2
 	exit 1
 fi
 
-rm check_bb.log check_wap.log check_fake.log
+rm check_bb.log check_wap.log check_fake.log check_http.log

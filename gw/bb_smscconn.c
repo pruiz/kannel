@@ -165,6 +165,10 @@ static void sms_router(void *arg)
     list_add_producer(flow_threads);
     gwthread_wakeup(MAIN_THREAD_ID);
 
+    bp_load = 0;
+    bo_load = 0;
+    bb_load = 0;
+
     while(bb_status != BB_DEAD) {
 
         list_consume(suspended);        /* block here if suspended */

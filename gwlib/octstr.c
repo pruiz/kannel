@@ -828,36 +828,6 @@ int octstr_search_char(Octstr *ostr, int ch, long pos)
 }
 
 
-int octstr_search_cstr(Octstr *ostr, const char *str, long pos)
-{
-    int first;
-    long len;
-
-    seems_valid(ostr);
-    gw_assert(str != NULL);
-
-    len = strlen(str);
-
-    /* Always "find" an empty string */
-    if (len == 0)
-        return 0;
-
-    /* For each occurrence of str's first character in ostr, check
-     * if the rest of str follows.  Stop if there are no more
-     * occurrences, or if the rest of str can't possibly fit in
-     * the rest of the ostr. */
-    first = str[0];
-    pos = octstr_search_char(ostr, first, pos);
-    while (pos >= 0 && ostr->len - pos >= len) {
-        if (memcmp(ostr->data + pos, str, len) == 0)
-            return pos;
-        pos = octstr_search_char(ostr, first, pos + 1);
-    }
-
-    return -1;
-}
-
-
 int octstr_search(Octstr *haystack, Octstr *needle, long pos)
 {
     int first;
