@@ -153,13 +153,11 @@ WAPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 		event = wap_event_create(RcvInvoke);
 		event->u.RcvInvoke.user_data = 
 			octstr_duplicate(pdu->u.Invoke.user_data);
-		event->u.RcvInvoke.exit_info = NULL;
 		event->u.RcvInvoke.tcl = pdu->u.Invoke.class;
 		event->u.RcvInvoke.tid = pdu->u.Invoke.tid;
 		event->u.RcvInvoke.tid_new = pdu->u.Invoke.tidnew;
 		event->u.RcvInvoke.rid = pdu->u.Invoke.rid;
 		event->u.RcvInvoke.up_flag = pdu->u.Invoke.uack;
-		event->u.RcvInvoke.exit_info_present = 0;
 		event->u.RcvInvoke.no_cache_supported = 0;
 		event->u.RcvInvoke.addr_tuple = 
 		  wap_addr_tuple_create(msg->wdp_datagram.source_address,

@@ -202,9 +202,8 @@ ROW(INVOKE_RESP_WAIT,
     RcvAbort,
     1,
     {
-     current_primitive = TR_Abort_Ind;
-     /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_session_dispatch_event(wsp_event);*/
+     wsp_event = create_tr_abort_ind(machine, event->u.RcvAbort.abort_reason);
+     wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
 
@@ -267,9 +266,8 @@ ROW(INVOKE_RESP_WAIT,
     {
      wtp_send_abort(PROVIDER, PROTOERR, machine, event); 
      
-     current_primitive = TR_Abort_Ind;
-     /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_session_dispatch_event(wsp_event);*/
+     wsp_event = create_tr_abort_ind(machine, PROTOERR);
+     wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
 
@@ -294,9 +292,8 @@ ROW(RESULT_WAIT,
     RcvAbort,
     1,
     {
-     current_primitive = TR_Abort_Ind;
-     /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_session_dispatch_event(wsp_event);*/
+     wsp_event = create_tr_abort_ind(machine, event->u.RcvAbort.abort_reason);
+     wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
 
@@ -335,9 +332,8 @@ ROW(RESULT_WAIT,
     {
      wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
      
-     current_primitive = TR_Abort_Ind;
-     /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_session_dispatch_event(wsp_event);*/
+     wsp_event = create_tr_abort_ind(machine, PROTOERR);
+     wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
 
@@ -362,9 +358,8 @@ ROW(RESULT_RESP_WAIT,
     RcvAbort,
     1,
     {
-     current_primitive = TR_Abort_Ind;
-     /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_session_dispatch_event(wsp_event);*/
+     wsp_event = create_tr_abort_ind(machine, event->u.RcvAbort.abort_reason);
+     wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
 
@@ -375,40 +370,6 @@ ROW(RESULT_RESP_WAIT,
      wtp_send_abort(USER, event->u.TR_Abort_Req.abort_reason, machine, event); 
     },
     LISTEN)
-
-/* 
- * This hack will be removed when timers are properly tested, for instance, 
- * with a new version of fakewap. We just response to RcvInvoke with a resended
- * packet. 
- */ 
-#if 1
-
-ROW(RESULT_RESP_WAIT,
-    RcvInvoke,
-    machine->rcr < MAX_RCR,
-    {
-     wtp_resend_result(machine->result, machine->rid);
-     ++machine->rcr;
-    },
-    RESULT_RESP_WAIT)
-
-ROW(RESULT_RESP_WAIT,
-    RcvInvoke,
-    machine->rcr == MAX_RCR,
-    {
-     current_primitive = TR_Abort_Ind;
-     /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_session_dispatch_event(wsp_event);*/
-    },
-    LISTEN)
-
-/* 
- * We resend the packet, obviously the previous one did not reach the client.
- * We must still be able to handle an event RcvInvoke, when WTP machine state
- * is RESULT_RESP_WAIT. We resend only when we get a timer event - this way we 
- * can control number of resendings.
- */
-#else
 
 ROW(RESULT_RESP_WAIT,
     RcvInvoke,
@@ -432,12 +393,10 @@ ROW(RESULT_RESP_WAIT,
     TimerTO_R,
     machine->rcr == MAX_RCR,
     {
-     current_primitive = TR_Abort_Ind;
-     /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_session_dispatch_event(wsp_event);*/
+     wsp_event = create_tr_abort_ind(machine, NORESPONSE);
+     wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
-#endif
 
 ROW(RESULT_RESP_WAIT,
     RcvErrorPDU,
@@ -445,9 +404,8 @@ ROW(RESULT_RESP_WAIT,
     {
      wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
       
-     current_primitive = TR_Abort_Ind;
-     /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_session_dispatch_event(wsp_event);*/
+     wsp_event = create_tr_abort_ind(machine, PROTOERR);
+     wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
 

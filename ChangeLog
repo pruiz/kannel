@@ -1,3 +1,8 @@
+Fri Jun  9 05:32:38 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wap-events-def.h, gw/wtp.c, gw/wsp_state-decl.h: Removed
+	unused exit_info and exit_info_present fields from WAPEvents.
+
 Fri Jun  9 05:28:12 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp_state-decl.h: Enabled sending of TR-Abort.ind events

@@ -31,8 +31,6 @@ ROW(NULL_STATE,
 		if (wtp_event == NULL)
 			panic(0, "wap_event_create failed");
 		wtp_event->u.TR_Invoke_Res.tid = e->tid;
-		wtp_event->u.TR_Invoke_Res.exit_info = NULL;
-		wtp_event->u.TR_Invoke_Res.exit_info_present = 0;
 		wtp_event->u.TR_Invoke_Res.mid = e->mid;
 		wtp_dispatch_event(wtp_event);
 
@@ -231,8 +229,6 @@ ROW(REQUESTING,
 		/* Send TR-Invoke.res to WTP */
 		wtp_event = wap_event_create(TR_Invoke_Res);
 		wtp_event->u.TR_Invoke_Res.tid = e->tid;
-		wtp_event->u.TR_Invoke_Res.exit_info = NULL;
-		wtp_event->u.TR_Invoke_Res.exit_info_present = 0;
 		wtp_event->u.TR_Invoke_Res.mid = e->mid;
 		wtp_dispatch_event(wtp_event);
 	},

@@ -19,8 +19,6 @@ WAPEVENT(TR_Invoke_Ind,
 	  )
 
 WAPEVENT(TR_Result_Cnf,
-          OCTSTR(exit_info)
-          INTEGER(exit_info_present)
 	  ADDRTUPLE(addr_tuple)
           )
 
@@ -71,13 +69,11 @@ WAPEVENT(S_MethodResult_Req,
 
 WAPEVENT(RcvInvoke,
       OCTSTR(user_data)
-      OCTSTR(exit_info)
       INTEGER(tcl)
       INTEGER(tid)
       INTEGER(tid_new)
       INTEGER(rid)
       INTEGER(up_flag)
-      INTEGER(exit_info_present)
       INTEGER(no_cache_supported)
       ADDRTUPLE(addr_tuple)
       )
@@ -105,8 +101,6 @@ WAPEVENT(TR_Invoke_Req,
 
 WAPEVENT(TR_Invoke_Res,
       INTEGER(tid)
-      OCTSTR(exit_info)
-      INTEGER(exit_info_present)
       INTEGER(mid);
       )
 
