@@ -63,7 +63,8 @@ static void dump_pdu(const char *msg, Octstr *id, SMPP_PDU *pdu)
 
 enum {
     SMPP_ESME_RMSGQFUL   = 0x00000014,
-    SMPP_ESME_RTHROTTLED = 0x00000058
+    SMPP_ESME_RTHROTTLED = 0x00000058,
+    SMPP_ESME_RX_T_APPN = 0x00000064
 } SMPP_ERROR_MESSAGES;
  
  
@@ -683,6 +684,19 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
     switch (pdu->type) { 
         case deliver_sm: 
 	        /* XXX UDH */ 
+	    /*
+             * If SMSCConn stopped then send temp. error code
+	     */
+	     mutex_lock(smpp->conn->flow_mutex);
+	     if (smpp->conn->is_stopped) {
+                 mutex_unlock(smpp->conn->flow_mutex);
+                 resp = smpp_pdu_create(deliver_sm_resp,
+                               pdu->u.deliver_sm.sequence_number);
+                 resp->u.deliver_sm.command_status = SMPP_ESME_RX_T_APPN;
+	         break;
+             }
+             mutex_unlock(smpp->conn->flow_mutex);
+
             /* 
              * bb_smscconn_receive can fail, but we ignore that since we 
              * have no way to usefull tell the SMS center about this 
