@@ -14,6 +14,11 @@
  * are of type MIMEEntity again. We result in a recursive linked represenation
  * of the MIME multipart/related structure.
  *
+ * We know about two various multipart types:
+ *   multipart/mixed - where no "order" is associated among the entities
+ *   multipart/related - where the "start" parameter in the Content-Type defines 
+ *                       the semantically main processing entitiy in the set.
+ *
  * In order to provide a mapping facility between the MIMEEntity representation
  * and an Octstr that holds the MIME document we have the two major functions
  * mime_octstr_to_entity() and mime_entity_to_octstr() that act as converters.
@@ -32,10 +37,11 @@
 
 /* Define an generic MIME entity structure to be 
  * used for MIME multipart parsing. */
-typedef struct {
+typedef struct MIMEEntity {
     List *headers;
     List *multiparts;
     Octstr *body;
+    struct MIMEEntity *start;   /* in case multipart/replated */
 } MIMEEntity;
 
 
@@ -50,6 +56,12 @@ void mime_entity_destroy(MIMEEntity *e);
  * call, otherwise will return NULL in case of a fatal error while parsing. 
  */
 MIMEEntity *mime_octstr_to_entity(Octstr *mime);
+
+/*
+ * Parse the given List (HTTP hedaer) and Octstr (HTTP body) and create
+ * a MIME multipart representatin if possible. Return NULL if parsing fails.
+ */
+MIMEEntity *mime_http_to_entity(List *headers, Octstr *body);
 
 /*
  * Convert a given MIME multipart representation structure to
