@@ -12,6 +12,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdint.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 #include "octstr.h"
 #include "wapitlib.h"
@@ -468,7 +472,34 @@ void octstr_dump(Octstr *ostr) {
 
 int octstr_send(int fd, Octstr *ostr) {
 
+	uint32_t length;
+	int ret = 0, written = 0, datalength = 0;
+	char *data = NULL;
+
+	length = htonl(octstr_len(ostr));
+	datalength = octstr_len(ostr)+sizeof(uint32_t);
+	data = malloc(datalength);
+	if(data==NULL) goto error;
+	memcpy(data, &length, sizeof(uint32_t));
+	octstr_get_many_chars(data+sizeof(uint32_t), ostr, 0, octstr_len(ostr));
+	
+	while(written < datalength) {
+		ret = send(fd, data+written, datalength-written, 0);
+		if(ret == -1) {
+			if(errno==EINTR) continue;
+			goto error;
+		} else {
+			written += ret;
+		}
+	}
+
+	free(data);
 	return 1;
+
+error:
+	free(data);
+	error(errno, "octstr_send: failed");
+	return -1;	
 }
 
 int octstr_recv(int fd, Octstr **ostr) {
