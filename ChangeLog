@@ -1,3 +1,8 @@
+2000-06-17  Richard Braakman  <dark@wapit.com>
+
+	* test/drive_wapbox.c: Defined wtp_types enum, because we can
+	no longer steal the values we need from wtp.h.
+
 2000-06-16 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp.c: Fixed bug pointed out by Joerg Pommnintz

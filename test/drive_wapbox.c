@@ -19,10 +19,9 @@
 
 #include "gwlib/gwlib.h"
 #include "gw/msg.h"
-#include "gw/wtp.h"
 
 /* These should really be in a header file */
-enum {
+enum wsp_types {
         Bad_PDU = -1,
         Connect_PDU = 0x01,
         ConnectReply_PDU = 0x02,
@@ -40,6 +39,12 @@ enum {
         Trace_PDU = 0x44,
         Post_PDU = 0x60,
         Put_PDU = 0x61
+};
+
+enum wtp_types {
+	INVOKE = 1,
+	RESULT = 2,
+	ACK = 3
 };
 
 #define WSP_VERSION 0x10
