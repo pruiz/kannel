@@ -924,6 +924,17 @@ admin-password = f00bar
         root process (not recommended)
      </entry></row>
 
+	 <row><entry><literal>admin-port-ssl</literal></entry>
+     <entry>bool</entry>
+     <entry valign=bottom>
+        If set to true a SSL-enabled administration HTTP server 
+		  will be used instead of the default unsecure plain HTTP 
+		  server. To access the administration pacges you will have
+		  to use a HTTP client that is capable of talking to such 
+		  a server. Use the "https://" scheme to access the
+		  secured HTTP server. Defaults to "no".
+     </entry></row>
+
     <row><entry><literal>admin-password (m)</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
@@ -1097,12 +1108,33 @@ admin-password = f00bar
 	 require this.
      </entry></row>
     
-    <row><entry><literal>ssl-certkey-file</literal></entry>
-     <entry>ssl-certkey-file</entry>
+    <row><entry><literal>ssl-client-certkey-file (c)</literal></entry>
+     <entry>filename</entry>
      <entry valign=bottom>
       A PEM encoded SSL certificate and private key file to be used
-      with SSL connections.
+      with SSL client connections. This certificate is used for
+  	   the HTTPS client side only, i.e. for SMS service requests to 
+		SSL-enabed HTTP servers. 
      </entry>
+    </row>
+  
+	 <row><entry><literal>ssl-server-cert-file (c)</literal></entry>
+     <entry>filename</entry>
+     <entry valign=bottom>
+      A PEM encoded SSL certificate file to be used with SSL server
+		connections. This certificate is used for the HTTPS server
+		side only, i.e. for the administration HTTP server and the
+		HTTP interface to send SMS messages.
+	  </entry>
+    </row>
+
+	 <row><entry><literal>ssl-server-key-file (c)</literal></entry>
+     <entry>filename</entry>
+     <entry valign=bottom>
+      A PEM encoded SSL private key file to be used with SSL server
+		connections. This key is associated to the specified 
+		certificate and is used for the HTTPS server side only.
+	  </entry>
     </row>
 
 
@@ -3099,6 +3131,15 @@ ssl-certkey-file
         other ports in Kannel, can be set as anything desired.
      </entry></row>
 
+	 <row><entry><literal>sendsms-port-ssl</literal></entry>
+     <entry>bool</entry>
+     <entry valign=bottom>
+        If set to true, the sendsms HTTP interface will use a
+		  SSL-enabled HTTP server with the specified 
+		  ssl-server-cert-file and ssl-server-key-file from the 
+		  core group. Defaults to "no".
+     </entry></row>
+
     <row><entry><literal>sendsms-chars</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
@@ -4432,22 +4473,22 @@ otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
 
 <chapter id="ppg">
 <title>Setting up Push Proxy Gateway</title>
-      <para>This chapter explains how to set up a push proxy gateway. An
-      example configuration file are given. A working push proxy gateway
+      <para>This chapter explains how to set up a push proxy gateway (PPG). 
+		An example configuration file are given. A working push proxy gateway
       is described. </para>
 <sect1>
-<title>Configuring ppg core group, for pi interface</title>
-     <para>Ppg configuration group defines gateway's service interface.
-     Configuring a ppg working with a trusted pi is easiest. Actually,
-     you need no configuration at all: in this case a ppg with default 
+<title>Configuring ppg core group, for push initiator (PI) interface</title>
+     <para>PPG configuration group defines gateway's service interface.
+     Configuring a PPG working with a trusted PI is easiest. Actually,
+     you need no configuration at all: in this case a PPG with default 
      values will be set up. Do not rely on this, default values may change.
-     For ppg core configuration variables, see table 7.1.
+     For PPG core configuration variables, see table 7.1.
      </para>
 
-     <para>An example of a core configuration for ppg working only pis with 
+     <para>An example of a core configuration for PPG working only with 
      specific addresses follows. Note that ppg-deny-ip-list is not actually 
-     necessary, but does make configuring simpler: ips here are always denied,
-     even when they are mentioned in the allowed ips list.</para>
+     necessary, but does make configuring simpler: IPs here are always denied,
+     even when they are mentioned in the allowed IPs list.</para>
      <screen><userinput>
 group = ppg
 ppg-url = /cgi-bin/wap-push.cgi
@@ -4470,37 +4511,43 @@ trusted-pi = false
              <row><entry><literal>group</literal></entry>
              <entry><emphasis>ppg</emphasis></entry>
              <entry valign=bottom>
-             Mandatory value. Tells that we are configuring the ppg group.
+             Mandatory value. Tells that we are configuring the PPG group.
              </entry></row>
              <row><entry><literal>ppg-port</literal></entry>
              <entry><emphasis>number</emphasis></entry>
              <entry valign=bottom>
-             The port ppg is listening at. Default 8080.
+             The port PPG is listening at. Default 8080.
              </entry></row>
+				 <row><entry><literal>ppg-port-ssl</literal></entry>
+             <entry><emphasis>bool</emphasis></entry>
+             <entry valign=bottom>
+             If set to true, the PPG is using a SSL-enabled HTTP
+				 server on the ppg-port. Defaults to "no".
+			    </entry></row>
              <row><entry><literal>ppg-url</literal></entry>
              <entry><emphasis>url</emphasis></entry>
              <entry valign=bottom>
-             Url locating ppg services. Default <literal>
+             URL locating PPG services. Default <literal>
              /cgi-bin/wap-push.cgi</literal>.
              </entry></row>
              <row><entry><literal>concurrent-pushes</literal></entry>
              <entry><emphasis>number</emphasis></entry>
              <entry valign=bottom>
-             Number of concurrent pushes expected. Note that ppg <emphasis>
+             Number of concurrent pushes expected. Note that PPG <emphasis>
              does</emphasis> work even value is too low; it will only be 
              slower. Default 100.
              </entry></row>
              <row><entry><literal>users</literal></entry>
              <entry><emphasis>number</emphasis></entry>
              <entry valign=bottom>
-             Number of actually configured user accounts. Note that ppg 
+             Number of actually configured user accounts. Note that PPG 
              <emphasis>does</emphasis> work even value is too low; it will 
              only be slower. Default 1024.
              </entry></row>
              <row><entry><literal>trusted-pi</literal></entry>
              <entry><emphasis>boolean</emphasis></entry>
              <entry valign=bottom>
-             If true, pi does authentication for ppg. Obviously, both of them
+             If true, PI does authentication for PPG. Obviously, both of them
              must reside inside same firewall. Default true. If this variable
              is true, all security variables are ignored (even though they
              may be present).
@@ -4508,15 +4555,15 @@ trusted-pi = false
              <row><entry><literal>ppg-deny-ip</literal></entry>
              <entry><emphasis>ip-list</emphasis></entry>
              <entry valign=bottom>
-             PPG will not accept pushes from these ips. Wildcards are allowed.
+             PPG will not accept pushes from these IPs. Wildcards are allowed.
              If this attribute is missing, no IP is denied <emphasis> by this
              list </emphasis>.
              </entry></row>
              <row><entry><literal>ppg-allow-ip</literal></entry>
              <entry><emphasis>ip-list</emphasis></entry>
              <entry valign=bottom>
-             PPG will accept pushes from these, and only these, ips. Wildcards
-             are allowed. Adding this list means that ips not mentioned are 
+             PPG will accept pushes from these, and only these, IPs. Wildcards
+             are allowed. Adding this list means that IPs not mentioned are 
              denied, too.
              </entry></row>
              </tbody>
@@ -4709,6 +4756,82 @@ udh=%06%05%04%0B%84%23%F0
 </userinput></screen>
 </sect1>
      
+</chapter>
+
+
+<chapter id="ssl-enabling">
+<title>Using SSL for HTTP</title>
+
+	<para>This chapter explains how you can use SSL to ensure
+	secure HTTP communication on both, client and server side.
+	</para>
+
+	<para>Beware that the gateway, is acting in both roles of
+	the HTTP model:
+
+	<orderedlist>
+	 <listitem><para>as HTTP client, i.e. for requesting URLs 
+	   while acting as WAP gateway and while fetching information
+		for the SMS services.</para></listitem>
+	 <listitem><para>as HTTP server, i.e. for the administration HTTP
+	   interface, the PPG and for the sendsms HTTP interface.
+		</para></listitem>
+   </orderedlist>
+
+	That is why you can specify seperate certification files within
+	the core group to be used for the HTTP sides.</para>
+
+	<para>You can use one or both sides of the SSL support. There 
+	is no mandatory to use both if only one is desired.</para>
+
+	<sect1>
+	 <title>Using SSL client support</title>
+     <para>To use the client support please use the following
+	    configuration directive within the core group</para>
+<screen><userinput>
+group = core
+...
+ssl-client-certkey-file = "filename"
+</screen></userinput>
+	  <para>Now you are able to use https:// scheme URLs within 
+ 	    your WML decks and SMS services.</para>
+	</sect1>	
+
+	<sect1>
+	 <title>Using SSL server support for the administration HTTP
+	   interface</title>
+     <para>To use the SSL-enabled HTTP server please use the 
+	    following configuration directive within the core group
+		 </para>
+<screen><userinput>
+group = core
+...
+admin-port-ssl = true
+...
+ssl-server-cert-file = "filename"
+ssl-server-key-file = "filenane"
+</screen></userinput>
+	</sect1>	
+
+	<sect1>
+	 <title>Using SSL server support for the sendsms HTTP
+	   interface</title>
+     <para>To use the SSL-enabled HTTP server please use the 
+	    following configuration directive within the core and 
+		 smsbox groups
+		 </para>
+<screen><userinput>
+group = core
+...
+ssl-server-cert-file = "filename"
+ssl-server-key-file = "filenane"
+
+group = smsbox
+...
+sendsms-port-ssl = true
+</screen></userinput>
+	</sect1>	
+							  
 </chapter>
 
 
