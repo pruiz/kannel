@@ -6,9 +6,9 @@
 
 #if !defined(INTEGER)
     #error "Macro INTEGER not defined."
-#elseif !defined(HTTPHEADERS)
+#elif !defined(HTTPHEADERS)
     #error "Macro HTTPHEADERS not defined."
-#elseif !defined(MACHINE)
+#elif !defined(MACHINE)
     #error "Macro MACHINE is not defined."
 #endif
 

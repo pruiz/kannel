@@ -1620,16 +1620,16 @@ long octstr_extract_uintvar(Octstr *ostr, unsigned long *value, long pos)
 {
     int c;
     int count;
-    unsigned long uint;
+    unsigned long ui;
 
-    uint = 0;
+    ui = 0;
     for (count = 0; count < 5; count++) {
         c = octstr_get_char(ostr, pos + count);
         if (c < 0)
             return -1;
-        uint = (uint << 7) | (c & 0x7f);
+        ui = (ui << 7) | (c & 0x7f);
         if (!(c & 0x80)) {
-            *value = uint;
+            *value = ui;
             return pos + count + 1;
         }
     }

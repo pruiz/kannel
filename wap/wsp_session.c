@@ -693,7 +693,7 @@ static long next_wsp_session_id(void) {
 static void sanitize_capabilities(List *caps, WSPMachine *m) {
 	long i;
 	Capability *cap;
-	unsigned long uint;
+	unsigned long ui;
 
 	for (i = 0; i < list_len(caps); i++) {
 		cap = list_get(caps, i);
@@ -709,16 +709,16 @@ static void sanitize_capabilities(List *caps, WSPMachine *m) {
 			 * max SDU size we will send, and there's no
 			 * internal limit to that, so accept any value. */
 			if (cap->data != NULL &&
-			    octstr_extract_uintvar(cap->data, &uint, 0) < 0)
+			    octstr_extract_uintvar(cap->data, &ui, 0) < 0)
 				goto bad_cap;
 			else
-				m->client_SDU_size = uint;
+				m->client_SDU_size = ui;
 			break;
 
 		case WSP_CAPS_SERVER_SDU_SIZE:
 			/* Check if it's a valid uintvar */
 			if (cap->data != NULL &&
-			    (octstr_extract_uintvar(cap->data, &uint, 0) < 0))
+			    (octstr_extract_uintvar(cap->data, &ui, 0) < 0))
 				goto bad_cap;
 			/* XXX Our MRU is not quite unlimited, since we
 			 * use signed longs in the library functions --
@@ -764,15 +764,15 @@ static void sanitize_capabilities(List *caps, WSPMachine *m) {
 
 
 static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
-	unsigned long uint;
+	unsigned long ui;
 	Capability *cap;
 	Octstr *data;
 
 	if (wsp_cap_count(caps, WSP_CAPS_CLIENT_SDU_SIZE, NULL) == 0) {
-		if (wsp_cap_get_client_sdu(req, &uint) > 0) {
+		if (wsp_cap_get_client_sdu(req, &ui) > 0) {
 			/* Accept value if it is not silly. */
-			if ((uint >= 256 && uint < LONG_MAX) || uint == 0) {
-				m->client_SDU_size = uint;
+			if ((ui >= 256 && ui < LONG_MAX) || ui == 0) {
+				m->client_SDU_size = ui;
 			}
 		}
 		/* Reply with the client SDU we decided on */
@@ -787,11 +787,11 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 		/* Accept whatever size the client is willing
 		 * to send.  If the client did not specify anything,
 		 * then use the default. */
-		if (wsp_cap_get_server_sdu(req, &uint) <= 0) {
-			uint = 1400;
+		if (wsp_cap_get_server_sdu(req, &ui) <= 0) {
+			ui = 1400;
 		}
 		data = octstr_create("");
-		octstr_append_uintvar(data, uint);
+		octstr_append_uintvar(data, ui);
 		cap = wsp_cap_create(WSP_CAPS_SERVER_SDU_SIZE, NULL, data);
 		list_append(caps, cap);
 	}
@@ -807,11 +807,11 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 	/* Accept any Method-MOR the client sent; if it sent none,
 	 * use the default. */
 	if (wsp_cap_count(caps, WSP_CAPS_METHOD_MOR, NULL) == 0) {
-		if (wsp_cap_get_method_mor(req, &uint) <= 0) {
-			uint = 1;
+		if (wsp_cap_get_method_mor(req, &ui) <= 0) {
+			ui = 1;
 		}
 		data = octstr_create("");
-		octstr_append_char(data, uint);
+		octstr_append_char(data, ui);
 		cap = wsp_cap_create(WSP_CAPS_METHOD_MOR, NULL, data);
 		list_append(caps, cap);
 	}
@@ -820,8 +820,8 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 	 * that yet.  But we already specified that in protocol options;
 	 * so, pretend we do, and handle the value that way. */
 	if (wsp_cap_count(caps, WSP_CAPS_PUSH_MOR, NULL) == 0) {
-		if (wsp_cap_get_push_mor(req, &uint) > 0) {
-			m->MOR_push = uint;
+		if (wsp_cap_get_push_mor(req, &ui) > 0) {
+			m->MOR_push = ui;
 		}
 		data = octstr_create("");
 		octstr_append_char(data, m->MOR_push);
@@ -861,7 +861,7 @@ static void refuse_unreplied_capabilities(List *caps, List *req) {
 
 
 static int is_default_cap(Capability *cap) {
-	unsigned long uint;
+	unsigned long ui;
 
 	/* All unknown values are empty by default */
 	if (cap->name != NULL || cap->id < 0 || cap->id >= WSP_NUM_CAPS)
@@ -871,8 +871,8 @@ static int is_default_cap(Capability *cap) {
 	case WSP_CAPS_CLIENT_SDU_SIZE:
 	case WSP_CAPS_SERVER_SDU_SIZE:
 		return (cap->data != NULL &&
-		    octstr_extract_uintvar(cap->data, &uint, 0) >= 0 &&
-		    uint == 1400);
+		    octstr_extract_uintvar(cap->data, &ui, 0) >= 0 &&
+		    ui == 1400);
 	case WSP_CAPS_PROTOCOL_OPTIONS:
 		return cap->data != NULL && octstr_get_char(cap->data, 0) == 0;
 	case WSP_CAPS_METHOD_MOR:

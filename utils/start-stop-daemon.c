@@ -31,7 +31,7 @@
 #elif defined(__GNU__)
 #define OSHURD
 #elif defined(SunOS)
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__APPLE__)
 #define FreeBSD
 #else
 #error Unknown architecture - cannot build start-stop-daemon
@@ -196,16 +196,16 @@ start-stop-daemon for Debian GNU/Linux - small and fast C version written by\n\
 Marek Michalkiewicz <marekm@i17linuxb.ists.pwr.wroc.pl>, public domain.\n"
 VERSION "\n\
 \n\
-Usage:
+Usage:\n\
   start-stop-daemon -S|--start options ... -- arguments ...\n\
   start-stop-daemon -K|--stop options ...\n\
   start-stop-daemon -H|--help\n\
   start-stop-daemon -V|--version\n\
 \n\
-Options (at least one of --exec|--pidfile|--user is required):
+Options (at least one of --exec|--pidfile|--user is required):\n\
   -x|--exec <executable>        program to start/check if it is running\n\
   -p|--pidfile <pid-file>       pid file to check\n\
-  -c|--chuid <name|uid[:group|gid]>
+  -c|--chuid <name|uid[:group|gid]>\n\
   		change to this user/group before starting process\n\
   -u|--user <username>|<uid>    stop processes owned by this user\n\
   -n|--name <process-name>      stop processes with this name\n\
@@ -227,13 +227,13 @@ start-stop-daemon for Debian GNU/Linux - small and fast C version written by\n\
 Marek Michalkiewicz <marekm@i17linuxb.ists.pwr.wroc.pl>, public domain.\n"
 VERSION "\n\
 \n\
-Usage:
+Usage:\n\
   start-stop-daemon -S options ... -- arguments ...\n\
   start-stop-daemon -K options ...\n\
   start-stop-daemon -H\n\
   start-stop-daemon -V\n\
 \n\
-Options (at least one of --exec|--pidfile|--user is required):
+Options (at least one of --exec|--pidfile|--user is required):\n\
   -x <executable>               program to start/check if it is running\n\
   -p <pid-file>                 pid file to check\n\
   -c <name|uid[:group|gid]>     change to this user/group before starting process\n\

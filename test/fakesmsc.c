@@ -18,16 +18,23 @@
  * Largely rewritten by Uoti Urpala
  */
 
-static char usage[] = "\nUsage: fakesmsc [-H host] [-p port] [-i interval] [-m max] <msg> ... \n\
+static char usage[] = "\n\
+Usage: fakesmsc [-H host] [-p port] [-i interval] [-m max] <msg> ... \n\
 \n\
-'host' and 'port' define bearerbox connection (default localhost:10000),\n\
-'interval' is time in seconds (floats allowed) between generated messages,\n\
-'max' is the total number sent (-1, default, means unlimited),\n\
-<msg> is message to send, if several are given, they are sent randomly.\n\
+* 'host' and 'port' define bearerbox connection (default localhost:10000),\n\
+* 'interval' is time in seconds (floats allowed) between generated messages,\n\
+* 'max' is the total number sent (-1, default, means unlimited),\n\
+* <msg> is message to send, if several are given, they are sent randomly.\n\
+\n\
 msg format: \"sender receiver type(text/data/udh) [udhdata] msgdata\"\n\
+\n\
 Type \"text\" means plaintext msgdata, \"data\" urlcoded, \"udh\" urlcoded udh+msg\n\
-Examples: fakesmsc -m 1 \"123 345 udh %04udh%3f message+data+here\"
+\n\
+Examples: \n\
+\n\
+fakesmsc -m 1 \"123 345 udh %04udh%3f message+data+here\"\n\
 fakesmsc -i 0.01 -m 1000 \"123 345 text nop\" \"1 2 text another message here\"\n\
+\n\
 Server replies are shown in the same message format.\n";
 
 #include <errno.h>

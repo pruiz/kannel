@@ -1,3 +1,13 @@
+2001-04-23  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/octstr.c, test/fakesmsc.c, utils/start-stop-daemon.c,
+	wap/wsp_push_client_machine.def, wap/wsp_session.c: Applied
+	manually parts of patch send by Dirk-Willem van Gulik as
+	improvements for MacOS X. Mainly this included renaming of some
+	local variables (uint -> ui), presumably because MacOS X defines
+	uint as a macro. Also reformatted fakesmsc and start-stop-daemon
+	output and corrected preprocessor syntax.
+	
 2001-04-23  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/http.[ch]: Added support for HEAD method, supplied
