@@ -1,3 +1,8 @@
+Sat May 27 02:02:33 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/gwthread.h, gwlib/gwthread-pthread.c: Name of function
+	made as the name of the thread.
+
 Fri May 26 21:05:29 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* utils/start-stop-daemon.c: Added pid_is_cmd for FreeBSD.

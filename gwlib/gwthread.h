@@ -9,6 +9,9 @@
  * Richard Braakman <dark@wapit.com>
  */
 
+#ifndef GWTHREAD_H
+#define GWTHREAD_H
+
 typedef void Threadfunc(void *arg);
 
 /* Called by the gwlib init code */
@@ -18,7 +21,9 @@ void gwthread_shutdown(void);
 /* Start a new thread, running func(arg).  Return the new thread ID
  * on success, or -1 on failure.  Thread IDs are unique during the lifetime
  * of the entire process, unless you use more than LONG_MAX threads. */
-long gwthread_create(Threadfunc *func, void *arg);
+long gwthread_create_real(Threadfunc *func, const char *funcname, void *arg);
+#define gwthread_create(func, arg) \
+	(gwthread_create_real(func, __FILE__ ":" ## #func, arg))
 
 /* Wait for the other thread to terminate.  Return immediately if it
  * has already terminated. */
@@ -45,3 +50,5 @@ int gwthread_pollfd(int fd, int events, double timeout);
 /* Sleep until "seconds" seconds have elapsed, or until another thread
  * calls gwthread_wakeup on us.  Fractional seconds are allowed. */
 void gwthread_sleep(double seconds);
+
+#endif

@@ -24,6 +24,7 @@
 
 struct threadinfo {
 	pthread_t self;
+	const char *name;
 	long number;
 	int wakefd_send;
 	int wakefd_recv;
@@ -85,12 +86,14 @@ static void flushpipe(int fd) {
  * it in a free slot in the thread table.  The thread table must already
  * be locked by the caller.  Return the thread number chosen for this
  * thread. */
-static long fill_threadinfo(pthread_t id, struct threadinfo *ti) {
+static long fill_threadinfo(pthread_t id, const char *name, 
+struct threadinfo *ti) {
 	int pipefds[2];
 	long first_try;
 	int ret;
 
 	ti->self = id;
+	ti->name = name;
 
 	if (pipe(pipefds) < 0) {
 		panic(errno, "cannot allocate wakeup pipe for new thread");
@@ -151,7 +154,7 @@ static void create_threadinfo_main(void) {
 	int ret;
 
 	ti = gw_malloc(sizeof(*ti));
-	fill_threadinfo(pthread_self(), ti);
+	fill_threadinfo(pthread_self(), "main", ti);
 	ret = pthread_setspecific(tsd_key, ti);
 	if (ret != 0) {
 		panic(ret, "gwthread-pthread: pthread_setspecific failed");
@@ -189,7 +192,9 @@ void gwthread_shutdown(void) {
 	running = 0;
 	for (i = 0; i < THREADTABLE_SIZE; i++) {
 		if (threadtable[i] != NULL) {
-			debug("gwlib", 0, "Thread %ld still running", threadtable[i]->number);
+			debug("gwlib", 0, "Thread %ld (%s) still running", 
+				threadtable[i]->number,
+				threadtable[i]->name);
 		}
 		running++;
 	}
@@ -241,7 +246,7 @@ static void *new_thread(void *arg) {
 	return NULL;
 }
 
-long gwthread_create(Threadfunc *func, void *arg) {
+long gwthread_create_real(Threadfunc *func, const char *name, void *arg) {
 	int ret;
 	pthread_t id;
 	struct new_thread_args *p;
@@ -272,7 +277,7 @@ long gwthread_create(Threadfunc *func, void *arg) {
 		warning(ret, "Could not detach new thread.");
 	}
 
-	number = fill_threadinfo(id, p->ti);
+	number = fill_threadinfo(id, name, p->ti);
 	unlock();
 
 	return number;
