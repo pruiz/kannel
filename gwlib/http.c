@@ -1978,6 +1978,7 @@ static void receive_request(Connection *conn, void *data)
 		return;
 	    /* Reply has been sent completely */
 	    if (!client->persistent_conn) {
+                conn_unregister(conn);
 		client_destroy(client);
 		return;
 	    }

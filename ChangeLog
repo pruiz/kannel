@@ -1,3 +1,7 @@
+2003-10-24  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/conn.c: added check for NULL pointer callback function.
+    * gwlib/http.c: call conn_unregister(conn) before destroing HTTPClient.
+
 2003-10-22  Alexander Malysh  <a.malysh@centrium.de>
     * gw/wml_compiler.c: fixed possible segfault if wml document doesn't contain
       DTD section. Thanks to Vjacheslav Chekushin <slava@lmt.lv> for patch.

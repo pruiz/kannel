@@ -803,7 +803,8 @@ static void poll_callback(int fd, int revents, void *data)
     /* Get result of nonblocking connect, before any reads and writes
      * we must check result (it must be handled in initial callback) */
     if (conn->connected == no) {
-      conn->callback(conn, conn->callback_data);
+      if (conn->callback)
+          conn->callback(conn, conn->callback_data);
       return;
     }
 
@@ -825,7 +826,7 @@ static void poll_callback(int fd, int revents, void *data)
         unlock_in(conn);
 	do_callback = 1;
     }
-    if (do_callback)
+    if (do_callback && conn->callback)
         conn->callback(conn, conn->callback_data);
 }
 
@@ -857,13 +858,12 @@ int conn_register(Connection *conn, FDSet *fdset,
         events = 0;
 	/* For nonconnected socket we must lesten both directions */
         if (conn->connected == yes) {
-        if (conn->read_eof == 0 && conn->read_error == 0)
-            events |= POLLIN;
-        if (unlocked_outbuf_len(conn) > 0)
-            events |= POLLOUT;
+            if (conn->read_eof == 0 && conn->read_error == 0)
+                events |= POLLIN;
+            if (unlocked_outbuf_len(conn) > 0)
+                events |= POLLOUT;
         } else {
-          events |= POLLIN;
-          events |= POLLOUT;
+          events |= POLLIN | POLLOUT;
         }
 
         conn->registered = fdset;
