@@ -444,7 +444,7 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
   int i, j, status = 0;
   int coded_length = 0;
   unsigned char wbxml_hex = 0x00;
-  Octstr *attribute = NULL, *value = NULL, *attr_i = NULL, *val_j = NULL, 
+  Octstr *attribute = NULL, *value = NULL, *val_j = NULL, 
     *p = NULL;
 
   attribute = octstr_create(attr->name);
@@ -456,43 +456,37 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
   /* Check if the attribute is found on the code page. */
 
   for (i = 0; wml_attributes[i].attribute != NULL; i++)
-    {
-      if (octstr_compare(attribute, 
-			 (attr_i = octstr_create(wml_attributes[i].attribute)))
-			 == 0)
-	{
-	  /* Check if there's an attribute start token with good value on 
-	     the code page. */
-	  for (j = i; 
-	       octstr_str_compare(attr_i, wml_attributes[j].attribute)
-		 == 0; j++)
-	    if (wml_attributes[j].a_value != NULL && value != NULL)	      
-	      {
-		val_j = octstr_create(wml_attributes[j].a_value);
-		
-		if (octstr_ncompare(val_j, value, 
-				    coded_length = octstr_len(val_j)) == 0)
-		  {
-		    wbxml_hex = wml_attributes[j].token;
-		    octstr_destroy(val_j);
-		    break;
-		  }
-		else
-		  {
-		    octstr_destroy(val_j);
-		    coded_length = 0;
-		  }
-	      }
-	    else
-	      {
-		wbxml_hex = wml_attributes[i].token;
-		coded_length = 0;
-	      }
-	  octstr_destroy(attr_i);      
-	  break;
-	}
-      octstr_destroy(attr_i);      
-    }
+    if (octstr_str_compare(attribute, wml_attributes[i].attribute) == 0)
+      {
+	/* Check if there's an attribute start token with good value on 
+	   the code page. */
+	for (j = i; 
+	     strcmp(wml_attributes[i].attribute, wml_attributes[j].attribute)
+	       == 0; j++)
+	  if (wml_attributes[j].a_value != NULL && value != NULL)	      
+	    {
+	      val_j = octstr_create(wml_attributes[j].a_value);
+
+	      if (octstr_ncompare(val_j, value, 
+				  coded_length = octstr_len(val_j)) == 0)
+		{
+		  wbxml_hex = wml_attributes[j].token;
+		  octstr_destroy(val_j);
+		  break;
+		}
+	      else
+		{
+		  octstr_destroy(val_j);
+		  coded_length = 0;
+		}
+	    }
+	  else
+	    {
+	      wbxml_hex = wml_attributes[i].token;
+	      coded_length = 0;
+	    }
+	break;
+      }
 
   output_char(wbxml_hex, wbxml);
 

@@ -227,14 +227,30 @@ wml_attr_value_t wml_URL_values[] = {
  * Character sets.
  */
 
+static unsigned char utf8map_iso8859_7[] = {
+#include "utf8map_iso8859-7.h"
+} ;
+
+static unsigned char utf8map_win1251[] = {
+#include "utf8map_win1251.h"
+} ;
+
+static unsigned char utf8map_win1253[] = {
+#include "utf8map_win1253.h"
+} ;
+
 static unsigned char utf8map_win1257[] = {
 #include "utf8map_win1257.h"
+} ;
+
+static unsigned char utf8map_koi8r[] = {
+#include "utf8map_koi8r.h"
 } ;
 
 struct {
   char *charset;
   char *nro;
-  unsigned char MIBenum;
+  unsigned int MIBenum;
   unsigned char *utf8map;
 } character_sets[] = {
   { "ISO", "8859-1", 4, NULL }, /* ISOLatin1 */
@@ -243,11 +259,17 @@ struct {
   { "ISO", "8859-4", 7, NULL }, /* ISOLatin4 */
   { "ISO", "8859-5", 8, NULL }, /* ISOLatinCyrillic */
   { "ISO", "8859-6", 9, NULL }, /* ISOLatinArabic */
-  { "ISO", "8859-7", 10, NULL }, /* ISOLatinGreek */
+  { "ISO", "8859-7", 10, utf8map_iso8859_7 }, /* ISOLatinGreek */
   { "ISO", "8859-8", 11, NULL }, /* ISOLatinHebrew */
   { "ISO", "8859-9", 12, NULL }, /* ISOLatin5 */
-  /* Latvian, uses UTF-8 but with remaping */
+  /* Russian, uses UTF-8 but with remapping */
+  { "WINDOWS", "1251", 106, utf8map_win1251 }, 
+  /* Windows-1253, uses UTF-8 but with remapping */
+  { "WINDOWS", "1253", 106, utf8map_win1253 }, 
+  /* Latvian, uses UTF-8 but with remapping */
   { "WINDOWS", "1257", 106, utf8map_win1257 }, 
+  /* Russian, uses UTF-8 but with remapping */
+  { "KOI8", "R", 106, utf8map_koi8r }, 
   /* Note!! If you want to add character sets, put them above this line. */
   { "UTF", "8", 106, NULL }, /* UTF-8, the default. */
   {NULL}

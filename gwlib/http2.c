@@ -88,6 +88,7 @@ static int read_chunked_body(HTTPSocket *p, Octstr **body, List *headers);
 static int read_raw_body(HTTPSocket *p, Octstr **body, long bytes);
 static List *parse_cgivars(Octstr *url);
 static int header_is_called(Octstr *header, char *name);
+static int http2_something_accepted(List *headers, char *header_name, char *what);
 
 
 
@@ -594,27 +595,52 @@ void http2_header_dump(List *headers) {
 	debug("gwlib.http2", 0, "End of dump.");
 }
 
+static char *istrdup (char *orig) {
+    int i, len = strlen (orig);
+    char *result = gw_malloc (len + 1);
 
-int http2_type_accepted(List *headers, char *type) {
-	int found;
-	long i;
-	List *accepts;
-	
-	gwlib_assert_init();
-	gw_assert(headers != NULL);
-	gw_assert(type != NULL);
+    for (i = 0; i < len; i++)
+	result[i] = toupper (orig [i]);
 
-	accepts = http2_header_find_all(headers, "Accept");
-	
-	found = 0;
-	for (i = 0; !found && i < list_len(accepts); ++i) {
-		if (strstr(octstr_get_cstr(list_get(accepts, i)), type) != NULL)
-			found = 1;
-	}
-	http2_destroy_headers(accepts);
-	return found;
+    result[i] = 0;
+
+    return result;
 }
 
+static int http2_something_accepted(List *headers, char *header_name, char *what) {
+    int found;
+    long i;
+    List *accepts;
+    char *iwhat = istrdup (what);
+	
+    gwlib_assert_init();
+    gw_assert(headers != NULL);
+    gw_assert(what != NULL);
+
+    accepts = http2_header_find_all(headers, header_name);
+	
+    found = 0;
+    for (i = 0; !found && i < list_len(accepts); ++i) {
+	char *header_value = istrdup (octstr_get_cstr(list_get(accepts, i)));
+	if (strstr(header_value, iwhat) != NULL) {
+	    found = 1;
+	}
+	gw_free (header_value);
+    }
+
+    gw_free (iwhat);
+    http2_destroy_headers(accepts);
+    return found;
+}
+
+
+int http2_type_accepted(List *headers, char *type) {
+    return http2_something_accepted(headers, "Accept", type);
+}
+
+int http2_charset_accepted(List *headers, char *charset) {
+    return http2_something_accepted(headers, "Accept-Charset", charset);
+}
 
 /***********************************************************************
  * Functions that should be moved to other modules but which are here

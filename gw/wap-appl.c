@@ -231,6 +231,32 @@ static void fetch_thread(void *arg) {
 		sprintf(buf, "%ld", session_id);
 		http2_header_add(actual_headers, "X-WAP-Session-ID", buf);
 	}
+
+	{
+	    extern struct {
+		char *charset;
+		char *nro;
+		unsigned char MIBenum;
+		unsigned char *utf8map;
+	    } character_sets[];
+	    
+	    for (i = 0; character_sets[i].charset != NULL; i++) {
+	    
+		char charsetname[16];
+
+		strcpy (charsetname, character_sets[i].charset);
+		strcat (charsetname, "-");
+		strcat (charsetname, character_sets[i].nro);
+		
+		if (http2_charset_accepted(actual_headers, charsetname)) {
+		    info(0, "WSP: charset %s already accepted.", charsetname);
+		} else {
+		    info(0, "WSP: charset %s added to accepted list.", charsetname);
+		    http2_header_add(actual_headers, "Accept-Charset", charsetname);
+		}
+
+	    }
+	}
 	
 	http2_header_pack(actual_headers);
 
