@@ -895,8 +895,6 @@ static HTTPSocket *send_request(Octstr *url, List *request_headers) {
 	if (p == NULL)
 		goto error;
 	
-debug("", 0, "http2 request:");
-octstr_dump(request, 0);
 	if (socket_write(p, request) == -1)
 		goto error;
 
