@@ -1,4 +1,9 @@
 2002-05-29  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smscconn.h, gw/smsc_smpp.c, gw/bb_smscconn.c: added new 
+      SMSCCONN_ACTIVE_RECV state to provide online status information
+      and exclude the smsc from routing within smsc2_rout()
+
+2002-05-29  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsc_emi2.c: fixed octstr in octstr_format() call.
 
 2002-05-29  Stipe Tolj <tolj@wapme-systems.de>
