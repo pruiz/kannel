@@ -66,7 +66,6 @@
 #include "bb_smscconn_cb.h"
 #include "msg.h"
 
-
 typedef struct conndata {
     HTTPCaller *http_ref;
     long receive_thread;
@@ -428,7 +427,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
  * Brunet - A german aggregator (mainly doing T-Mobil D1 connections)
  *
  *  o bruHTT v1.3L (for MO traffic) 
- *  o bruHTP v2.1  (for MT traffic)
+ *  o bruHTP v2.1 (date 22.04.2003) (for MT traffic)
  *
  * Stipe Tolj <tolj@wapme-systems.de>
  */
@@ -437,14 +436,15 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 static void brunet_send_sms(SMSCConn *conn, Msg *sms)
 {
     ConnData *conndata = conn->data;
-    Octstr *url, *tid;
+    Octstr *url, *id, *tid;
     List *headers;
 
     /* 
      * Construct TransactionId like this: <timestamp>-<receiver msisdn>-<msg.id> 
-     * to garantee uniqueness. 
+     * and then run md5 hash function to garantee uniqueness. 
      */
-    tid = octstr_format("%d%S%d", time(NULL), sms->sms.receiver, sms->sms.id);
+    id = octstr_format("%d%S%d", time(NULL), sms->sms.receiver, sms->sms.id);
+    tid = md5(id);
 
     /* format the URL for call */
     url = octstr_format("%S?"
@@ -481,6 +481,7 @@ static void brunet_send_sms(SMSCConn *conn, Msg *sms)
                        NULL, 0, sms, NULL);
 
     octstr_destroy(url);
+    octstr_destroy(id);
     octstr_destroy(tid);
     http_destroy_headers(headers);
 }
