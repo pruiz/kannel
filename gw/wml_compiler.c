@@ -477,7 +477,6 @@ static int parse_node(xmlNodePtr node, wml_binary_t **wbxml)
 static int parse_document(xmlDocPtr document, Octstr *charset, 
 			  wml_binary_t **wbxml)
 {
-    Octstr *chars;
     xmlNodePtr node;
 
     if (document == NULL) {
