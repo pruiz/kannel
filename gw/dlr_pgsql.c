@@ -163,7 +163,7 @@ static struct dlr_entry* dlr_pgsql_get(const Octstr *smsc, const Octstr *ts, con
     Octstr *sql;
     List *result, *row;
 
-    sql = octstr_format("SELECT %s, %s, %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s';",
+    sql = octstr_format("SELECT %s, %s, %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s' LIMIT 1;",
                         octstr_get_cstr(fields->field_mask), octstr_get_cstr(fields->field_serv),
                         octstr_get_cstr(fields->field_url), octstr_get_cstr(fields->field_src),
                         octstr_get_cstr(fields->field_dst), octstr_get_cstr(fields->field_boxc),
@@ -215,8 +215,9 @@ static void dlr_pgsql_remove(const Octstr *smsc, const Octstr *ts, const Octstr 
     Octstr *sql;
 
     debug("dlr.pgsql", 0, "removing DLR from database");
-    sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s';",
-                        octstr_get_cstr(fields->table), octstr_get_cstr(fields->field_smsc),
+    sql = octstr_format("DELETE FROM %s WHERE oid = (SELECT oid FROM %s WHERE %s='%s' AND %s='%s' LIMIT 1);",
+                        octstr_get_cstr(fields->table), octstr_get_cstr(fields->table),
+                        octstr_get_cstr(fields->field_smsc),
                         octstr_get_cstr(smsc), octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
 
 
@@ -229,9 +230,10 @@ static void dlr_pgsql_update(const Octstr *smsc, const Octstr *ts, const Octstr 
     Octstr *sql;
 
     debug("dlr.pgsql", 0, "updating DLR status in database");
-    sql = octstr_format("UPDATE %s SET %s=%d WHERE %s='%s' AND %s='%s';",
+    sql = octstr_format("UPDATE %s SET %s=%d WHERE oid = (SELECT oid FROM %s WHERE %s='%s' AND %s='%s' LIMIT 1);",
                         octstr_get_cstr(fields->table),
                         octstr_get_cstr(fields->field_status), status,
+                        octstr_get_cstr(fields->table),
                         octstr_get_cstr(fields->field_smsc), octstr_get_cstr(smsc),
                         octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
     pgsql_update(sql);

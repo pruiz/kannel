@@ -1,4 +1,10 @@
 2005-03-07  Alexander Malysh <amalysh at kannel.org>
+    * gw/dlr_pgsql.c: attached patch adds again 'LIMIT 1' to dlr_pgsql
+      because after fix for #190 we will delete and update to much rows
+      in postgresql.
+      [Msg-Id: <cv04cu$dv3$1@sea.gmane.org>]
+
+2005-03-07  Alexander Malysh <amalysh at kannel.org>
     * gw/wap-appl.c: added call to 'radius_acct_get_msisdn' back.
       Thanks to Jonathan for reporting this.
 
