@@ -78,6 +78,7 @@
 
 enum {
     RAND,
+    GETHOSTBYNAME,
     GWTIME,
     NUM_LOCKS
 };

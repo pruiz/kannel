@@ -1,3 +1,7 @@
+2004-03-06  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/protected.c: restored GETHOSTBYNAME mutex, that was accidental
+      removed by last commit.
+
 2004-03-05  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/octstr.c: don't allocate temporarely Octstr in 'octstr_append_decimal'.
 
