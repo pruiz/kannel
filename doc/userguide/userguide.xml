@@ -1069,6 +1069,16 @@ bearerbox-host = localhost
 
 </sect1>
 
+
+<sect1>
+<title>Checking whether the WAP gateway is alive</title>
+
+    <para>You can check whether the WAP gateway (both the
+    bearerbox and the wapbox) is alive by fetching the URL
+    <literal>kannel:alive</literal>.</para>
+
+</sect1>
+
 </chapter>
 
 

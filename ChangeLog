@@ -1,5 +1,10 @@
 2000-11-01  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/wap-appl.c: Implement magic URL kannel:alive, based on
+	patch from Neil Hunter.
+
+2000-11-01  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/gwlib.h, gwlib/list.c: Move around include for gwmem.h
 	so it comes after thread.h, because thread.h includes pthread.h,
 	and Cygwin's pthread.h includes malloc.h, which gets annoyed by

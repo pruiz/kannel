@@ -331,6 +331,16 @@ static void add_x_wap_tod(List *headers) {
 	octstr_destroy(gateway_time);
 }
 
+
+/*
+ * This WML deck is returned when the user asks for the URL "kannel:alive".
+ */
+#define HEALTH_DECK \
+    "<?xml version=\"1.0\"?>" \
+    "<!DOCTYPE wml PUBLIC \"-//WAPFORUM//DTD 1.1//EN\" " \
+    "\"http://www.wapforum.org/DTD/wml_1.1.xml\">" \
+    "<wml><card id=\"health\"><p>Ok</p></card></wml>"
+
 static void fetch_thread(void *arg) {
 	int status;
 	int ret;
@@ -348,6 +358,7 @@ static void fetch_thread(void *arg) {
 	int method;		/* type of request, normally a get or a post */
 	Octstr *request_body;
 	int x_wap_tod;          /* X-WAP.TOD header was present in request */
+	Octstr *magic_url;
 	
     	counter_increase(fetches);
 
@@ -412,8 +423,17 @@ static void fetch_thread(void *arg) {
 	switch (method) {
 
 	case 0x40 :			/* Get request */
-		ret = http_get(url, actual_headers, 
-		               &resp_headers, &content.body);
+	    	magic_url = octstr_create_immutable("kannel:alive");
+    	    	if (octstr_compare(url, magic_url) == 0) {
+		    ret = HTTP_OK;
+		    resp_headers = list_create();
+		    http_header_add(resp_headers, "Content-Type",
+		    	    	    "text/vnd.wap.wml");
+    	    	    content.body = octstr_create(HEALTH_DECK);
+		} else {
+		    ret = http_get(url, actual_headers, 
+				   &resp_headers, &content.body);
+		}
 		break;
 
 	case 0x60 :			/* Post request		*/
