@@ -92,6 +92,8 @@ where options are:\n\
 -t tcl		transaction class, as an integer (default: 2)\n\
 -n		set tid_new flag in packets, forces gateway to flush cache\n\
                 (default: off)\n\
+-s              test separation, by concatenating ack and disconnect pdus\n\
+                (default: off)\n\
 -d difference	difference between successive tid numbers (default: 1)\n\
 -F		Accept failure and continue rather than exiting\n\
 \n\
@@ -145,22 +147,24 @@ int num_sent = 0;
 time_t start_time, end_time;
 double totaltime = 0, besttime = 1000000L,  worsttime = 0;
 int verbose = 0;
-int nofailexit=0;
+int nofailexit = 0;
 
 /*
  * PDU type, version number and transaction class are supplied by a 
- * command line argument.
+ * command line argument. WSP_Concat is a concatenation of WTP_Ack and 
+ * WSP_Disconnect PDUs.
  */
 unsigned char WSP_Connect[] = {0x06, 0x00, 0x00, 0x00, 0x01, 0x10, 0x00, 
 				0x00 };
 unsigned char WSP_ConnectReply[] = {0x16, 0x80, 0x00, 0x02 };
 unsigned char WTP_Ack[] =          {0x18, 0x00, 0x00 };
-unsigned char WTP_TidVe[] =        {0x1C, 0x00, 0x00};
+unsigned char WTP_TidVe[] =        {0x1C, 0x00, 0x00 };
 unsigned char WTP_Abort[] =        {0x20, 0x00, 0x00, 0x00 };
 unsigned char WSP_Get[] =          {0x0E, 0x00, 0x00, 0x02, 0x40 };
 unsigned char WSP_Reply[] =        {0x16, 0x80, 0x00, 0x04, 0x20, 0x01, 
 				    0x94 };
 unsigned char WSP_Disconnect[] =   {0x0E, 0x00, 0x00, 0x00, 0x05 };
+unsigned char WSP_Concat[] = {0x00, 0x03, 0x18, 0x00, 0x00, 0x05, 0x0E, 0x00, 0x00, 0x00, 0x05 };
 
 /*
 **  In this case it does not matter what is the byte order
@@ -219,6 +223,7 @@ static char *choose_message(char **urls, int num_urls) {
     /* the following doesn't give an even distribution, but who cares */
     return urls[rand() % num_urls];
 }
+
 
 /* returns next tid, given current tid.  Every thread has its own
  * port, so has its own tid space. */
@@ -438,7 +443,8 @@ static void client_session( void * arg)
     long timeout = 10;  /* wap gw is broken if no input */
     unsigned short tid = 0;
     unsigned short old_tid;
-    int tid_new;
+    int tid_new = 0;
+    int test_separation = 0;
     int connection_retries = 0;
     int i_this;
 
@@ -519,19 +525,29 @@ static void client_session( void * arg)
         ret = wap_msg_recv( fd, reply_hdr, sizeof(WSP_Reply),
                             tid, buf, sizeof(buf), timeout );
         if (ret == -1) break;
-
-        ret = wap_msg_send( fd, WTP_Ack, sizeof(WTP_Ack), tid, tid_new,
+        /*
+	** If we are testing separation, we concatenate WTP_Ack and 
+        ** WSP_Disconnect messages.
+        */
+        if (test_separation){
+           ret = wap_msg_send(fd, WSP_Concat, sizeof(WSP_Concat), tid, tid_new,
+			     sid, sid_len);
+           
+           if (ret == -1) break;
+        } else {
+           ret = wap_msg_send( fd, WTP_Ack, sizeof(WTP_Ack), tid, tid_new,
 			    NULL, 0 );
 
-        if (ret == -1) break;
+           if (ret == -1) break;
 
         /*
         **  Finally disconnect with the sid returned by connect reply
         */
-        ret = wap_msg_send( fd, WSP_Disconnect, sizeof(WSP_Disconnect),
+           ret = wap_msg_send( fd, WSP_Disconnect, sizeof(WSP_Disconnect),
 		            tid, tid_new, sid, sid_len );
 
-        if (ret == -1) break;
+           if (ret == -1) break;
+        }
 
         gettimeofday(&now, &tz);
         nowsec = (double) now.tv_sec + now.tv_usec / 1e6;
@@ -569,7 +585,7 @@ int main(int argc, char **argv)
 {
     int i, opt;
     double delta;
-    int proto_version, pdu_type, tcl, tid_new;
+    int proto_version, pdu_type, tcl, tid_new, test_separation;
 #ifdef SunOS
     struct sigaction alrm;
 
@@ -586,7 +602,7 @@ int main(int argc, char **argv)
 
     hostname = octstr_create("localhost");
 
-    while ((opt = getopt(argc, argv, "Fhvc:g:p:P:m:i:t:V:T:t:nd:")) != EOF) {
+    while ((opt = getopt(argc, argv, "Fhvc:g:p:P:m:i:t:V:T:t:nsd:")) != EOF) {
 	switch (opt) {
 	case 'g':
 	    hostname = octstr_create(optarg);
@@ -624,6 +640,10 @@ int main(int argc, char **argv)
 	    tid_new = 1;
 	    break;
 
+        case 's':
+	    test_separation = 1;
+            break;
+
 	case 'd':
 	    tid_addition = atoi(optarg);
 	    break;
@@ -636,6 +656,7 @@ int main(int argc, char **argv)
 	    help();
 	    exit(0);
 	    break;
+
 	case 'F':
 	    nofailexit=1;
 	    break;
@@ -657,8 +678,7 @@ int main(int argc, char **argv)
     WSP_Connect[0] += (pdu_type&15)<<3;
     WSP_Connect[3] += tcl&3;
     WSP_Connect[3] += (tid_new&1)<<5;
-
-
+    
     gateway_addr = udp_create_address(hostname, port);
 
     urls = argv + optind;

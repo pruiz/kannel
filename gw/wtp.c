@@ -146,24 +146,29 @@ static size_t cat_chars(long data1, long data2);
  */
 List *wtp_unpack_wdp_datagram(Msg *msg){
         List *events = NULL;
-        WAPEvent *event;
-        Msg *msg_found;
-        Octstr *data, *pdu_found;
+        WAPEvent *event = NULL;
+        Msg *msg_found = NULL;
+        Octstr *data = NULL, 
+               *pdu_found = NULL;
         long pdu_len;
         long pdu_len_array[] = {0, 0};
 
         events = list_create();
-        data = msg->wdp_datagram.user_data;
-
-        if (concatenated_message(data)){
+        
+        if (concatenated_message(msg->wdp_datagram.user_data)){
+           data = octstr_duplicate(msg->wdp_datagram.user_data);
 	   octstr_delete(data, 0, 1);
 
            while (octstr_len(data) != 0){
 
 	         if (octstr_get_bits(data, 0, 1) == 0){
+		    debug("wap.wtp", 0, "Data octsrt ha sa following value");
+		    octstr_dump(data, 0);
 	            pdu_len = octstr_get_char(data, 0);
                     octstr_delete(data, 0, 1);
+
                  } else {
+		    octstr_set_bits(data, 0, 1, 0);
 		    octstr_get_many_chars(pdu_len_array, data, 0, 2);
                     pdu_len = cat_chars(pdu_len_array[0], pdu_len_array[1]);
                     octstr_delete(data, 0, 2);
@@ -171,16 +176,20 @@ List *wtp_unpack_wdp_datagram(Msg *msg){
                  
                  pdu_found = octstr_copy(data, 0, pdu_len); 
                  msg_found = msg_duplicate(msg);
-                 msg_found->wdp_datagram.user_data = pdu_found;
-                 event = wtp_unpack_wdp_datagram_real(msg);
+                 msg_found->wdp_datagram.user_data = octstr_duplicate(pdu_found);
+                 event = wtp_unpack_wdp_datagram_real(msg_found);
+                 wap_event_assert(event);
                  list_append(events, event);
                  octstr_destroy(pdu_found);
-                 msg_destroy(msg_found);
                  octstr_delete(data, 0, pdu_len);
+                 msg_destroy(msg_found);
            }/* while*/
+           octstr_destroy(data);
+
         } else {
-	  event = wtp_unpack_wdp_datagram_real(msg); 
-          list_append(events, event);
+	   event = wtp_unpack_wdp_datagram_real(msg); 
+           wap_event_assert(event);
+           list_append(events, event);
         } 
 
         return events;
@@ -201,7 +210,7 @@ List *wtp_unpack_wdp_datagram(Msg *msg){
  * the message received has illegal header; NULL, when we have a segment inside of a 
  * segmented message or when it has a special error.
  */
-WAPEvent *wtp_unpack_wdp_datagram_real (Msg *msg){
+WAPEvent *wtp_unpack_wdp_datagram_real(Msg *msg){
 	WTP_PDU *pdu;
 	WAPEvent *event;
         Octstr *data;
@@ -684,7 +693,7 @@ static int deduce_tid(Octstr *user_data){
 
 static int concatenated_message(Octstr *user_data){
 
-       return octstr_get_char(user_data, 0 ) == 0;
+       return octstr_get_char(user_data, 0) == '0';
 }
 
 static size_t cat_chars(long  data1, long data2){

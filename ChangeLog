@@ -1,3 +1,10 @@
+2000-07-07 Aarno Syvänen <syvanen@wapit.com>
+
+	wtp.c: Bugfixes in the separation code
+
+	test/fakewap.c: Added sending of a concatenated message, for testing
+	separation.
+
 2000-07-07  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_boxc.c: hopefully fixed a little bug/feature in connection 
