@@ -585,10 +585,10 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
     }	
 
     if (msg->msg_type == R_MSG_TYPE_ACK) {
-	debug(0, "SMSC:Read ACK [%d] from queue, ignoring.", msg->id);
+	debug("bb.sms", 0, "SMSC:Read ACK [%d] from queue, ignoring.", msg->id);
 	ret = 0;
     } else if (msg->msg_type == R_MSG_TYPE_NACK) {
-	debug(0, "SMSC:Read NACK [%d] from queue, ignoring.", msg->id);
+	debug("bb.sms", 0, "SMSC:Read NACK [%d] from queue, ignoring.", msg->id);
 	ret = 0;
     }  else if (msg->msg_type == R_MSG_TYPE_MT) {
 

@@ -60,7 +60,7 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 
 	if (urltrans_type(trans) == TRANSTYPE_TEXT) {
 
-		debug(0, "formatted text answer: <%s>", pattern);
+		debug("sms", 0, "formatted text answer: <%s>", pattern);
 		return pattern;
 
 	} else if (urltrans_type(trans) == TRANSTYPE_FILE) {
@@ -84,7 +84,7 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 
 	/* URL */
 
-	debug(0, "formatted url: <%s>", pattern);
+	debug("sms", 0, "formatted url: <%s>", pattern);
 
 	if (http_get(pattern, &type, &data, &size) == -1) {
 		gw_free(pattern);

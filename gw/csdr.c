@@ -126,7 +126,7 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	fl = fcntl(router->fd, F_GETFL);
 	fcntl(router->fd, F_SETFL, fl | O_NONBLOCK);
 
-	debug(0, "csdr_open: Bound to UDP <%s:%d> service <%s>.",
+	debug("bb.csdr", 0, "csdr_open: Bound to UDP <%s:%d> service <%s>.",
 	      router->ip, router->port, wap_service);
 
 	return router;
@@ -203,7 +203,7 @@ retry:
 	item->msg->wdp_datagram.destination_port    = router->port;
 	item->msg->wdp_datagram.user_data = octstr_create_from_data(data, length);
 /*
-	debug(0, "csdr_get_message: message dump follows");
+	debug("bb.csdr", 0, "csdr_get_message: message dump follows");
 	msg_dump(item->msg);
 */
 	/* set routing info: use client IP and port
@@ -233,7 +233,7 @@ int csdr_send_message(CSDRouter *router, RQueueItem *item)
 
 	memset(&cliaddr, 0, sizeof(struct sockaddr_in));
 
-	debug(0, "CSDR: Time to send a message");
+	debug("bb.csdr", 0, "CSDR: Time to send a message");
 
 	/* Can only do 64k of data... have to def a MIN macro one of these times... -MG */
 	datalen = (sizeof(data)<octstr_len(item->msg->wdp_datagram.user_data)) ? 
@@ -253,7 +253,7 @@ int csdr_send_message(CSDRouter *router, RQueueItem *item)
 	sendto(router->fd, data, datalen, 0, (struct sockaddr *) &cliaddr, 
 		clilen);
 
-	debug(0, "CSDR: Done.");
+	debug("bb.csdr", 0, "CSDR: Done.");
 
 	return 0;
 error:
@@ -267,7 +267,7 @@ int csdr_is_to_us(CSDRouter *router, Msg *msg) {
     if (msg_type(msg) != wdp_datagram) goto error;
 
 /*
- *  debug(0, "<%s %d> vs <%s %d>", router->ip, router->port,
+ *  debug("bb.csdr", 0, "<%s %d> vs <%s %d>", router->ip, router->port,
  *	  octstr_get_cstr(msg->wdp_datagram.source_address),
  *	  (int)msg->wdp_datagram.source_port);
  */

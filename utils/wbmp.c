@@ -88,7 +88,7 @@ int wbmp_create_stream(WBMP *pic, Octet **stream)
     memcpy(*stream+2+wl, tmp_h, hl);
     memcpy(*stream+2+wl+hl, pic->main_image, pic_size);
 
-    debug(0, "picture %d x %d, stream length %d",
+    debug("util", 0, "picture %d x %d, stream length %d",
 	  pic->width, pic->height, 2+wl+hl+pic_size);
     
     return (2+wl+hl+pic_size);

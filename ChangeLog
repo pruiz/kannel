@@ -1,3 +1,24 @@
+Tue Feb 15 15:01:45 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* doc/CodingStyle: Documented usage of debug().
+	
+	* Lots of files: Removed #if 0 wrappers around calls to debug that
+	are now unwanted (the wrappers, not the calls).
+
+Tue Feb 15 14:14:11 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Changed interface to debug() function: Added a new first
+	argment `place', which tells where the function is being called
+	from. Then added the function set_debug_places (and made relevant
+	changes to gwlib/utils.c:get_and_set_debugs), which sets the
+	places which should actually be logged.
+	
+	This makes it run-time configurable what debugging output gets
+	printed.
+	
+	Also changed all calls to debug, to make things compile. The place
+	is "xxx" everywhere for now, will start changing that next.
+
 2000-02-15  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
 	* gw/wml_compiler.c (parse_attribute): A little more stable compiler;

@@ -575,9 +575,9 @@ void octstr_dump(Octstr *ostr) {
 	if (ostr == NULL)
 		return;
 
-	debug(0, "Octet string at %p:", (void *) ostr);
-	debug(0, "  len:  %lu", (unsigned long) ostr->len);
-	debug(0, "  size: %lu", (unsigned long) ostr->size);
+	debug("gwlib.octstr", 0, "Octet string at %p:", (void *) ostr);
+	debug("gwlib.octstr", 0, "  len:  %lu", (unsigned long) ostr->len);
+	debug("gwlib.octstr", 0, "  size: %lu", (unsigned long) ostr->size);
 
 	buf[0] = '\0';
 	p = buf;
@@ -585,12 +585,12 @@ void octstr_dump(Octstr *ostr) {
 		sprintf(p, "%02x ", octstr_get_char(ostr, pos));
 		p = strchr(p, '\0');
 		if (p - buf > sizeof(buf) - 5) {
-			debug(0, "  data: %s", buf);
+			debug("gwlib.octstr", 0, "  data: %s", buf);
 			buf[0] = '\0';
 			p = buf;
 		}
 	}
-	debug(0, "  data: %s", buf);
+	debug("gwlib.octstr", 0, "  data: %s", buf);
 }
 
 int octstr_send(int fd, Octstr *ostr) {

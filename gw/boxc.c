@@ -35,10 +35,10 @@ BOXC *boxc_open(int fd, char *allow_ip, char *deny_ip)
     nb = gw_malloc(sizeof(BOXC));
 
     if (fd < 0) {
-	debug(0, "BOXC: Started an internal SMS BOX Thread");
+	debug("bb", 0, "BOXC: Started an internal SMS BOX Thread");
 	nb->fd = BOXC_THREAD;
     } else {
-	debug(0, "BOXC: Accepting a new client...");
+	debug("bb", 0, "BOXC: Accepting a new client...");
 
 	client_addr_len = sizeof(client_addr);
 	nb->fd = accept(fd, (struct sockaddr *)&client_addr, &client_addr_len);
@@ -104,7 +104,7 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
     }
     if (boxc->fd == BOXC_THREAD) {
 
-	debug(0, "BOXC: starting a new thread to handle request");
+	debug("bb", 0, "BOXC: starting a new thread to handle request");
 	
 	(void)start_thread(1, smsbox_req_thread, msg->msg, 0);
 
@@ -121,10 +121,11 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
 	if (msg->msg_class == R_MSG_CLASS_SMS) {
 
 	    if(msg_type(msg->msg) == smart_sms) {
-		debug(0, "BOXC: Write < %s >", octstr_get_cstr(msg->msg->smart_sms.msgdata));
+		debug("bb", 0, "BOXC: Write < %s >", 
+		      octstr_get_cstr(msg->msg->smart_sms.msgdata));
 	    }
 	} else {
-	    debug(0, "BOXC: Write < WAP >");
+	    debug("bb", 0, "BOXC: Write < WAP >");
 	    }
 	ack = 1;
     }
@@ -191,7 +192,7 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 	    if (msg_type(pmsg) == heartbeat) {
 		boxc->load = pmsg->heartbeat.load;
 		if (boxc->load > 0)
-		    debug(0, "BOXC: Load factor %d received", boxc->load);
+		    debug("bb", 0, "BOXC: Load factor %d received", boxc->load);
 
 		octstr_destroy(os);
 		msg_destroy(pmsg);
@@ -205,7 +206,7 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 		    return -1;
 		}
 		msg->msg = pmsg;
-		debug(0, "BOXC: Read < %s >", octstr_get_cstr(pmsg->smart_sms.msgdata));
+		debug("bb", 0, "BOXC: Read < %s >", octstr_get_cstr(pmsg->smart_sms.msgdata));
 	    }
 	    else if (msg_type(pmsg) == wdp_datagram) {
 		
@@ -215,7 +216,7 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 		    return -1;
 		}
 		msg->msg = pmsg;
-		debug(0, "BOXC: Read < WAP >");
+		debug("bb", 0, "BOXC: Read < WAP >");
 	    }
 	}
     }

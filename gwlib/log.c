@@ -22,6 +22,14 @@ static struct {
 static int num_logfiles = 0;
 
 
+/*
+ * List of places that should be logged.
+ */
+#define MAX_LOGGABLE_PLACES (10*1000)
+static char *loggable_places[MAX_LOGGABLE_PLACES];
+static int num_places = 0;
+
+
 /* Make sure stderr is included in the list. */
 static void add_stderr(void) {
 	int i;
@@ -85,7 +93,8 @@ void open_logfile(char *filename, int level) {
 
 
 #define FORMAT_SIZE (10*1024)
-static void format(char *buf, int level, int e, const char *fmt)
+static void format(char *buf, int level, const char *place, int e, 
+	const char *fmt)
 {
 	static char *tab[] = {
 		"DEBUG: ",
@@ -114,6 +123,10 @@ static void format(char *buf, int level, int e, const char *fmt)
 	else
 		sprintf(p, "%s", tab[level]);
 
+	p = strchr(p, '\0');
+	if (place != NULL && *place != '\0')
+		sprintf(p, "%s: ", place);
+
 	if (strlen(prefix) + strlen(fmt) > FORMAT_SIZE / 2) {
 		sprintf(buf, "%s <OUTPUT message too long>\n", prefix);
 		return;
@@ -139,13 +152,13 @@ static void output(FILE *f, char *buf, va_list args) {
    more awkward to edit, but that can't be helped. The "do {} while (0)"
    construct is a gimmick to be more like a function call in all syntactic
    situation. */
-#define FUNCTION_GUTS(level) \
+#define FUNCTION_GUTS(level, place) \
 	do { \
 		int i; \
 		char buf[FORMAT_SIZE]; \
 		va_list args; \
 		add_stderr(); \
-		format(buf, level, e, fmt); \
+		format(buf, level, place, e, fmt); \
 		for (i = 0; i < num_logfiles; ++i) { \
 			if (level >= logfiles[i].minimum_output_level) { \
 				va_start(args, fmt); \
@@ -156,33 +169,68 @@ static void output(FILE *f, char *buf, va_list args) {
 	} while (0)
 
 void forced(int e, const char *fmt, ...) {
-	FUNCTION_GUTS(LOG);
+	FUNCTION_GUTS(LOG, "");
 }
 
 
 void panic(int e, const char *fmt, ...) {
-	FUNCTION_GUTS(PANIC);
+	FUNCTION_GUTS(PANIC, "");
 	exit(EXIT_FAILURE);
 }
 
 
 void error(int e, const char *fmt, ...) {
-	FUNCTION_GUTS(ERROR);
+	FUNCTION_GUTS(ERROR, "");
 }
 
 
 void warning(int e, const char *fmt, ...) {
-	FUNCTION_GUTS(WARNING);
+	FUNCTION_GUTS(WARNING, "");
 }
 
 
 void info(int e, const char *fmt, ...) {
-	FUNCTION_GUTS(INFO);
+	FUNCTION_GUTS(INFO, "");
 }
 
 
-void debug(int e, const char *fmt, ...) {
-	FUNCTION_GUTS(DEBUG);
+
+static int place_matches(const char *place, const char *pat) {
+	size_t len;
+	
+	len = strlen(pat);
+	if (pat[len-1] == '*')
+		return (strncasecmp(place, pat, len - 1) == 0);
+	return (strcasecmp(place, pat) == 0);
+}
+
+static int place_should_be_logged(const char *place) {
+	int i;
+	
+	if (num_places == 0)
+		return 1;
+	for (i = 0; i < num_places; ++i) {
+		if (place_matches(place, loggable_places[i]))
+			return 1;
+	}
+	return 0;
 }
 
 
+void debug(const char *place, int e, const char *fmt, ...) {
+	if (place_should_be_logged(place)) {
+		FUNCTION_GUTS(DEBUG, place);
+	}
+}
+
+
+void set_debug_places(const char *places) {
+	char *p;
+	
+	p = strtok(gw_strdup(places), " ,");
+	num_places = 0;
+	while (p != NULL && num_places < MAX_LOGGABLE_PLACES) {
+		loggable_places[num_places++] = p;
+		p = strtok(NULL, " ,");
+	}
+}

@@ -206,17 +206,17 @@ void wtp_event_destroy(WTPEvent *event) {
 
 void wtp_event_dump(WTPEvent *event) {
 
-  	debug(0, "WTPEvent %p:", (void *) event); 
-	debug(0, "  type = %s", name_event(event->type));
-	#define INTEGER(name) debug(0, "  %s.%s: %ld", t, #name, p->name)
+  	debug("wap.wtp", 0, "WTPEvent %p:", (void *) event); 
+	debug("wap.wtp", 0, "  type = %s", name_event(event->type));
+	#define INTEGER(name) debug("wap.wtp", 0, "  %s.%s: %ld", t, #name, p->name)
 	#define OCTSTR(name) \
-		debug(0, "  %s.%s:", t, #name); \
+		debug("wap.wtp", 0, "  %s.%s:", t, #name); \
 		octstr_dump(p->name)
 	#define EVENT(tt, field) \
 		if (tt == event->type) \
 			{ char *t = #tt; struct tt *p = &event->tt; field } 
 	#include "wtp_events-decl.h"
-  	debug(0, "WTPEvent %p ends.", (void *) event); 
+  	debug("wap.wtp", 0, "WTPEvent %p ends.", (void *) event); 
 }
 
 /*
@@ -279,35 +279,35 @@ void wtp_machine_dump(WTPMachine *machine){
 
         if (machine != NULL){
 
-           debug(0, "WTPMachine %p: dump starting", (void *) machine); 
+           debug("wap.wtp", 0, "WTPMachine %p: dump starting", (void *) machine); 
 	   #define INTEGER(name) \
-	           debug(0, "  %s: %ld", #name, machine->name)
+	           debug("wap.wtp", 0, "  %s: %ld", #name, machine->name)
            #define MSG(name) \
-                   debug(0, "Result field %s: ", #name); \
+                   debug("wap.wtp", 0, "Result field %s: ", #name); \
                    msg_dump(machine->name)
            #define WSP_EVENT(name) \
-                   debug(0, "WSP event %s:", #name); \
+                   debug("wap.wtp", 0, "WSP event %s:", #name); \
                    wsp_event_dump(machine->name)
-           #define ENUM(name) debug(0, "  state = %s.", name_state(machine->name))
-	   #define OCTSTR(name)  debug(0, "  Octstr field %s :", #name); \
+           #define ENUM(name) debug("wap.wtp", 0, "  state = %s.", name_state(machine->name))
+	   #define OCTSTR(name)  debug("wap.wtp", 0, "  Octstr field %s :", #name); \
                                  octstr_dump(machine->name)
-           #define TIMER(name)   debug(0, "  Machine timer %p:", (void *) \
+           #define TIMER(name)   debug("wap.wtp", 0, "  Machine timer %p:", (void *) \
                                        machine->name)
            #define MUTEX(name)   if (mutex_try_lock(machine->name) == -1) \
-                                    debug(0, "%s locked", #name);\
+                                    debug("wap.wtp", 0, "%s locked", #name);\
                                  else {\
-                                    debug(0, "%s unlocked", #name);\
+                                    debug("wap.wtp", 0, "%s unlocked", #name);\
                                     mutex_unlock(machine->name);\
                                  }
            #define QUEUE(name) \
-	   	debug (0, "  %s %p",#name, (void *) machine->name) 
+	   	debug("wap.wtp", 0, "  %s %p",#name, (void *) machine->name) 
            #define NEXT(name) 
 	   #define MACHINE(field) field
 	   #include "wtp_machine-decl.h"
-           debug (0, "WTPMachine dump ends");
+           debug("wap.wtp", 0, "WTPMachine dump ends");
 	
 	} else {
-           debug(0, "WTP: dump: machine does not exist");
+           debug("wap.wtp", 0, "WTP: dump: machine does not exist");
         }
 }
 
@@ -338,7 +338,7 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
                   break;
 
                   default:
-                       debug(0, "WTP: machine_find_or_create: unhandled event");
+                       debug("wap.wtp", 0, "WTP: machine_find_or_create: unhandled event");
                        wtp_event_dump(event);
                   break;
 	   }
@@ -362,7 +362,7 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
 				     msg->wdp_datagram.destination_port,
 				     tid, event->RcvInvoke.tcl);
                            machine->in_use = 1;
-                           debug(0, "WTP: machine_find_or_create: invoke or error received, a new machine created");
+                           debug("wap.wtp", 0, "WTP: machine_find_or_create: invoke or error received, a new machine created");
                       break;
 
 	              case RcvAck: 
@@ -374,7 +374,7 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
                       break;
                  
 	              default:
-                           debug(0, "WTP: machine_find_or_create: unhandled event");
+                           debug("wap.wtp", 0, "WTP: machine_find_or_create: unhandled event");
                            wtp_event_dump(event);
                       break;
               }
@@ -406,7 +406,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
          if (octstr_len(msg->wdp_datagram.user_data) < 3){
             event = tell_about_error(pdu_too_short_error, event, msg, tid);
-            debug(0, "Got too short PDU (less than three octets)");
+            debug("wap.wtp", 0, "Got too short PDU (less than three octets)");
             msg_dump(msg);
             return event;
          }
@@ -435,7 +435,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
                      if (fourth_octet == -1){
                          event = tell_about_error(pdu_too_short_error, event, msg, tid);
-                         debug(0, "WTP: unpack_datagram; missing fourth octet (invoke)");
+                         debug("wap.wtp", 0, "WTP: unpack_datagram; missing fourth octet (invoke)");
                          msg_dump(msg);
                          return event;
                      }
@@ -459,7 +459,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
                     if (fourth_octet == -1){
                        event = tell_about_error(pdu_too_short_error, event, msg, tid);
-                       debug(0, "WTP: unpack_datagram; missing fourth octet (abort)");
+                       debug("wap.wtp", 0, "WTP: unpack_datagram; missing fourth octet (abort)");
                          msg_dump(msg);
                        return event;
                     }
@@ -520,7 +520,7 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
      }
 
      do {
-	  debug(0, "WTP: handle_event: machine %p, state %s, event %s.",
+	  debug("wap.wtp", 0, "WTP: handle_event: machine %p, state %s, event %s.",
 	  		(void *) machine,
 	  		name_state(machine->state),
 	  		name_event(event->type));
@@ -530,15 +530,15 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 		  if (machine->state == wtp_state && \
 		     event->type == event_type && \
 		     (condition)) { \
-                     debug(0, "WTP: doing action for %s", #wtp_state); \
+                     debug("wap.wtp", 0, "WTP: doing action for %s", #wtp_state); \
 		     action \
-                     debug(0, "WTP: setting state to %s", #next_state); \
+                     debug("wap.wtp", 0, "WTP: setting state to %s", #next_state); \
                      machine->state = next_state; \
 		  } else 
 	  #include "wtp_state-decl.h"
 		  {
 			error(0, "WTP: handle_event: unhandled event!");
-			debug(0, "WTP: handle_event: Unhandled event was:");
+			debug("wap.wtp", 0, "WTP: handle_event: Unhandled event was:");
 			wtp_event_dump(event);
 		  }
 
@@ -601,7 +601,7 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
            mutex_lock(machines.lock);           
 
            if (machines.list == NULL){
-              debug(0, "WTP: machine_find: list is empty");
+              debug("wap.wtp", 0, "WTP: machine_find: list is empty");
               mutex_unlock(machines.lock);
               return NULL;
            }
@@ -707,12 +707,12 @@ static WTPSegment *create_segment(void){
 #ifdef next
 static void segment_dump(WTPSegment *segment){
 
-       debug(0, "WTP: segment was:");
-       debug(0, "tid was: %ld", segment->tid);
-       debug(0, "psn was: %d", segment->packet_sequence_number);
-       debug(0, "segment itself was:");
+       debug("wap.wtp", 0, "WTP: segment was:");
+       debug("wap.wtp", 0, "tid was: %ld", segment->tid);
+       debug("wap.wtp", 0, "psn was: %d", segment->packet_sequence_number);
+       debug("wap.wtp", 0, "segment itself was:");
        octstr_dump(segment->data);
-       debug(0, "WTP: segment dump ends");
+       debug("wap.wtp", 0, "WTP: segment dump ends");
 }
 
 static void segment_destroy(WTPSegment *segment){
@@ -914,7 +914,7 @@ WTPEvent *unpack_abort(Msg *msg, long tid, char first_octet, char fourth_octet){
          event->RcvAbort.tid = tid;  
          event->RcvAbort.abort_type = abort_type;   
          event->RcvAbort.abort_reason = fourth_octet;
-         debug(0, "WTP: unpack_abort: abort event packed");
+         debug("wap.wtp", 0, "WTP: unpack_abort: abort event packed");
          return event;
 }
 
@@ -933,7 +933,7 @@ WTPEvent *unpack_invoke(Msg *msg, WTPSegment *segments_list, long tid,
 
          if (protocol_version(fourth_octet) != CURRENT){
             event = tell_about_error(wrong_version, event, msg, tid);
-            debug(0, "WTP: unpack_invoke: handling version error");
+            debug("wap.wtp", 0, "WTP: unpack_invoke: handling version error");
             return event;
          }
 
@@ -950,7 +950,7 @@ WTPEvent *unpack_invoke(Msg *msg, WTPSegment *segments_list, long tid,
          switch (message_type(first_octet)) {
          
 	        case group_trailer_segment:
-                     debug(0, "WTP: Got a segmented message");
+                     debug("wap.wtp", 0, "WTP: Got a segmented message");
                      msg_dump(msg);
                      segments_list = add_segment_to_message(tid, 
                                      msg->wdp_datagram.user_data, 0);
@@ -978,7 +978,7 @@ static WTPEvent *tell_about_error(int type, WTPEvent *event, Msg *msg, long tid)
 
        gw_free(event);
        address = deduce_reply_address(msg);
-       debug(0, "WTP: tell:");
+       debug("wap.wtp", 0, "WTP: tell:");
        wtp_send_address_dump(address);
 
        switch (type){
@@ -1040,14 +1040,14 @@ static Octstr *unpack_segmented_invoke(Msg *msg, WTPSegment *segments_list,
        static int negative_ack_sent = 0,
               group_ack_sent = 0;
 
-       debug(0, "WTP: got a segmented invoke package");
+       debug("wap.wtp", 0, "WTP: got a segmented invoke package");
 
        tid = deduce_tid(msg);
        packet_sequence_number = fourth_octet;
        address = deduce_reply_address(msg);
 
        if (message_type(first_octet) == body_segment){
-          debug(0, "WTP: Got a body segment");
+          debug("wap.wtp", 0, "WTP: Got a body segment");
           msg_dump(msg);
           segments_list = add_segment_to_message(tid, 
                           msg->wdp_datagram.user_data, packet_sequence_number);
@@ -1055,7 +1055,7 @@ static Octstr *unpack_segmented_invoke(Msg *msg, WTPSegment *segments_list,
        }
 
        if (message_type(first_octet) == group_trailer_segment){
-          debug(0, "WTP: Got the last segment of the group");
+          debug("wap.wtp", 0, "WTP: Got the last segment of the group");
           msg_dump(msg);
           segments_list = add_segment_to_message(tid, 
                           msg->wdp_datagram.user_data, packet_sequence_number);
@@ -1078,7 +1078,7 @@ static Octstr *unpack_segmented_invoke(Msg *msg, WTPSegment *segments_list,
       }
 
       if (message_type(first_octet) == transmission_trailer_segment){
-         debug(0, "WTP: Got last segment of a message");
+         debug("wap.wtp", 0, "WTP: Got last segment of a message");
          msg_dump(msg);
 
          segments_list = add_segment_to_message(tid, 
@@ -1116,7 +1116,7 @@ static WTPSegment *unpack_negative_ack(Msg *msg, char fourth_octet){
        WTPSegment *missing_segments = NULL;
        char number_of_missing_packets = 0;
        
-       debug(0, "WTP: got a negative ack");
+       debug("wap.wtp", 0, "WTP: got a negative ack");
        number_of_missing_packets = fourth_octet; 
        missing_segments = make_missing_segments_list(msg, 
                           number_of_missing_packets);      
@@ -1167,7 +1167,7 @@ static WTPSegment *add_segment_to_message(long tid, Octstr *data, char position)
                   *next = NULL,
                   *segments_list = NULL;
 
-       debug (0, "WTP: Adding a segment into the segments list");
+       debug("wap.wtp", 0, "WTP: Adding a segment into the segments list");
 
        segments_list = create_segment();
        segments_list->tid = tid;
@@ -1201,7 +1201,7 @@ static int first_segment(WTPEvent *event){
 
 static Octstr *concatenate_message(long tid, WTPSegment *segments_list){
 
-       debug(0, "WTP: concatenation not yet supported");
+       debug("wap.wtp", 0, "WTP: concatenation not yet supported");
        
        return NULL;
 }
@@ -1243,7 +1243,7 @@ static WTPSegment *find_previous_segment(long tid, char packet_sequence_number,
        }
 
        if (current == NULL)
-          debug(0, "WTP: find_previous_segment: tid not found from the segments list");
+          debug("wap.wtp", 0, "WTP: find_previous_segment: tid not found from the segments list");
        else
           if (current->next == NULL)
              next = current;

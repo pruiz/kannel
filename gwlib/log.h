@@ -10,8 +10,10 @@
 /* If we're using GCC, we can get it to check log function arguments. */
 #ifdef __GNUC__
 #define PRINTFLIKE __attribute__((format(printf, 2, 3)))
+#define PRINTFLIKE2 __attribute__((format(printf, 3, 4)))
 #else
 #define PRINTFLIKE
+#define PRINTFLIKE2
 #endif
 
 /* Symbolic levels for output levels. */
@@ -52,9 +54,23 @@ void info(int, const char *, ...) PRINTFLIKE ;
 
 /*
  * Print a debug message. Most of the log messages should be of this level when
- * the system is under development
+ * the system is under development. The first argument gives the `place'
+ * where the function is called from; see function set_debug_places.
  */
-void debug(int, const char *, ...) PRINTFLIKE ;
+void debug(const char *, int, const char *, ...) PRINTFLIKE2 ;
+
+
+/*
+ * Set the places from which debug messages are actually printed. This
+ * allows run-time configuration of what is and is not logged when debug
+ * is called. `places' is a string of tokens, separated by whitespace and/or
+ * commas, with trailing asterisks (`*') matching anything. For instance,
+ * if `places' is "wsp.* wtp.* wapbox", then all places that begin with
+ * "wsp." or "wtp." (including the dots) are logged, and so is the place
+ * called "wapbox". Nothing else is logged at debug level, however.
+ */
+void set_debug_places(const char *places);
+
 
 /* Set minimum level for output messages to stderr. Messages with a lower 
    level are not printed to standard error, but may be printed to files

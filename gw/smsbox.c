@@ -113,7 +113,7 @@ int socket_sender(Msg *pmsg)
 
     mutex_unlock(socket_mutex);
 
-    debug(0, "write <%s>", octstr_get_cstr(pmsg->smart_sms.msgdata));
+    debug("sms", 0, "write <%s>", octstr_get_cstr(pmsg->smart_sms.msgdata));
     octstr_destroy(pack);
 
     msg_destroy(pmsg);
@@ -321,7 +321,7 @@ int send_heartbeat()
     if ((pack = msg_pack(msg)) == NULL)
 	return -1;
 
-    debug(0, "sending heartbeat load %d", smsbox_req_count()); 
+    debug("sms", 0, "sending heartbeat load %d", smsbox_req_count()); 
     if (octstr_send(socket_fd, pack))
 	return -1;
     octstr_destroy(pack);
@@ -434,8 +434,8 @@ int main(int argc, char **argv)
 
     init_smsbox(cfg);
 
-    debug(0, "----------------------------------------------");
-    debug(0, "Gateway SMS BOX version %s starting", VERSION);
+    debug("sms", 0, "----------------------------------------------");
+    debug("sms", 0, "Gateway SMS BOX version %s starting", VERSION);
     write_pid_file();
 
     translations = urltrans_create();

@@ -22,7 +22,7 @@ ROW(LISTEN,
      current_primitive = TRInvokeIndication;
 
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     debug(0, "WTP: Sending TR-Invoke.ind to WSP");
+     debug("wap.wtp", 0, "WTP: Sending TR-Invoke.ind to WSP");
      wsp_dispatch_event(machine, wsp_event);
 
      timer = wtp_timer_create();
@@ -56,7 +56,7 @@ ROW(LISTEN,
     {
      current_primitive = TRInvokeIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     debug(0, "RcvInvoke: generated TR-Invoke.ind for WSP");
+     debug("wap.wtp", 0, "RcvInvoke: generated TR-Invoke.ind for WSP");
      wsp_dispatch_event(machine, wsp_event);
     },
     LISTEN)
@@ -84,7 +84,7 @@ ROW(TIDOK_WAIT,
     (machine->tcl == 2 || machine->tcl == 1) && event->RcvAck.tid_ok == 1,
     { 
      wsp_event = machine->invoke_indication;
-     debug(0, "RcvAck: generated TR-Invoke.ind for WSP");
+     debug("wap.wtp", 0, "RcvAck: generated TR-Invoke.ind for WSP");
      wsp_event_dump(wsp_event);
      wsp_dispatch_event(machine, wsp_event);
      
@@ -172,7 +172,7 @@ ROW(INVOKE_RESP_WAIT,
 
      timer = wtp_timer_create();
      wtp_timer_start(timer, L_R_WITH_USER_ACK, machine, event);
-     debug(0, "WTP: sending results");
+     debug("wap.wtp", 0, "WTP: sending results");
      wtp_send_result(machine, event); 
      machine->rid = 1;
     },

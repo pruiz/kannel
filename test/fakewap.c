@@ -499,7 +499,7 @@ client_session( void * arg )
     fd = connect_to_server_with_port( hostname, port, our_port);
     if (fd == -1)
         panic(0, "couldn't connect host ");
-    debug(0, "Connected socket to host.");
+    debug("test.fakewap", 0, "Connected socket to host.");
 
     gettimeofday(&now, &tz);
     lastsec = (double) now.tv_sec + now.tv_usec / 1e6;

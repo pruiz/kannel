@@ -72,16 +72,16 @@ void *wsp_http_thread(void *arg) {
 	};
 	static int num_converters = sizeof(converters) / sizeof(converters[0]);
 
-	debug(0, "WSP: wsp_http_thread starts");
+	debug("wap.wsp.http", 0, "WSP: wsp_http_thread starts");
 
 	event = arg;
 	wtp_sm = event->SMethodInvokeResult.machine;
 	sm = event->SMethodInvokeResult.session;
-	debug(0, "WSP: Sending S-MethodInvoke.Res to WSP");
+	debug("wap.wsp.http", 0, "WSP: Sending S-MethodInvoke.Res to WSP");
 	wsp_dispatch_event(wtp_sm, event);
 
 	url = octstr_get_cstr(event->SMethodInvokeResult.url);
-	debug(0, "WSP: url is <%s>", url);
+	debug("wap.wsp.http", 0, "WSP: url is <%s>", url);
 
 	body = NULL;
 
@@ -139,7 +139,7 @@ void *wsp_http_thread(void *arg) {
 		type = "text/plain";
 	} else {
 		info(0, "WSP: Fetched <%s>", url);
-		debug(0, "WSP: Type is <%s> (0x%02x)", type,
+		debug("wap.wsp.http", 0, "WSP: Type is <%s> (0x%02x)", type,
 			encode_content_type(type));
 		status = 200; /* OK */
 		
@@ -148,7 +148,7 @@ void *wsp_http_thread(void *arg) {
 		converter_failed = 0;
 		for (i = 0; i < num_converters; ++i) {
 			if (strcmp(type, converters[i].type) == 0) {
-				debug(0, "WSP: converting to `%s'",
+				debug("wap.wsp.http", 0, "WSP: converting to `%s'",
 					converters[i].result_type);
 				body = converters[i].convert(input, url);
 				if (body != NULL)
@@ -166,7 +166,7 @@ void *wsp_http_thread(void *arg) {
 		} else {
 			status = 415; /* Unsupported media type */
 			warning(0, "WSP: Unsupported content type `%s'", type);
-			debug(0, "Content of unsupported content:");
+			debug("wap.wsp.http", 0, "Content of unsupported content:");
 			octstr_dump(input);
 		}
 	}
@@ -193,10 +193,10 @@ void *wsp_http_thread(void *arg) {
 	e->SMethodResultRequest.response_body = body;
 	e->SMethodResultRequest.machine = event->SMethodInvokeResult.machine;
 
-	debug(0, "WSP: sending S-MethodResult.req to WSP");
+	debug("wap.wsp.http", 0, "WSP: sending S-MethodResult.req to WSP");
 	wsp_dispatch_event(event->SMethodInvokeResult.machine, e);
 
-	debug(0, "WSP: wsp_http_thread ends");
+	debug("wap.wsp.http", 0, "WSP: wsp_http_thread ends");
 	return NULL;
 }
 
@@ -244,7 +244,7 @@ static Octstr *convert_wml_to_wmlc_old(Octstr *wml, char *url) {
 	size_t n;
 	Octstr *wmlc;
 	
-	debug(0, "WSP: Compiling WML");
+	debug("wap.wsp.http", 0, "WSP: Compiling WML");
 
 	tmpnam(name);
 	f = fopen(name, "w");
@@ -258,19 +258,19 @@ static Octstr *convert_wml_to_wmlc_old(Octstr *wml, char *url) {
 	if (test_wml == NULL)
 		test_wml = "./test_wml";
 	sprintf(cmd, "%s %s", test_wml, name);
-	debug(0, "WSP: WML cmd: <%s>", cmd);
+	debug("wap.wsp.http", 0, "WSP: WML cmd: <%s>", cmd);
 	f = popen(cmd, "r");
 	if (f == NULL)
 		goto error;
 	n = fread(data, 1, sizeof(data), f);
-	debug(0, "WSP: Read %lu bytes of compiled WMLC", (unsigned long) n);
+	debug("wap.wsp.http", 0, "WSP: Read %lu bytes of compiled WMLC", (unsigned long) n);
 	fclose(f);
 	wmlc = octstr_create_from_data(data, n);
 
-	debug(0, "WML: Compiled WML:");
+	debug("wap.wsp.http", 0, "WML: Compiled WML:");
 	octstr_dump(wmlc);
 
-	debug(0, "WSP: WML compilation done.");
+	debug("wap.wsp.http", 0, "WSP: WML compilation done.");
 	return wmlc;
 
 error:
@@ -284,10 +284,14 @@ static Octstr *convert_wml_to_wmlc_new(Octstr *wml, char *url) {
 	Octstr *wmlc, *wmlscripts;
 	int ret;
 	
+	debug("wap.wsp.http", 0, "WSP: Calling wml_compile.");
 	ret = wml_compile(wml, &wmlc, &wmlscripts);
+	debug("wap.wsp.http", 0, "WSP: wml_compile returned %d", ret);
 	octstr_destroy(wmlscripts);
 	if (ret == 0)
+{ octstr_dump(wmlc);
 		return wmlc;
+}
 	return NULL;
 #else
 	return NULL;
@@ -303,7 +307,7 @@ static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, char *url) {
 	size_t result_size;
 	Octstr *wmlscriptc;
 
-	debug(0, "WSP: Compiling WMLScript");
+	debug("wap.wsp.http", 0, "WSP: Compiling WMLScript");
 
 	memset(&params, 0, sizeof(params));
 	params.use_latin1_strings = 0;
@@ -336,6 +340,6 @@ static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, char *url) {
 		wmlscriptc = octstr_create_from_data(result_data, result_size);
 	}
 
-	debug(0, "WSP: WMLScript compilation done.");
+	debug("wap.wsp.http", 0, "WSP: WMLScript compilation done.");
 	return wmlscriptc;
 }

@@ -145,22 +145,22 @@ char *wsp_event_name(WSPEventType type) {
 
 
 void wsp_event_dump(WSPEvent *event) {
-	debug(0, "Dump of WSPEvent %p follows:", (void *) event);
-	debug(0, "  type: %s (%d)", wsp_event_name(event->type), event->type);
-	#define INTEGER(name) debug(0, "  %s.%s: %d", t, #name, p->name)
-	#define OCTSTR(name) debug(0, "  %s.%s:", t, #name); octstr_dump(p->name)
+	debug("wap.wsp", 0, "Dump of WSPEvent %p follows:", (void *) event);
+	debug("wap.wsp", 0, "  type: %s (%d)", wsp_event_name(event->type), event->type);
+	#define INTEGER(name) debug("wap.wsp", 0, "  %s.%s: %d", t, #name, p->name)
+	#define OCTSTR(name) debug("wap.wsp", 0, "  %s.%s:", t, #name); octstr_dump(p->name)
 	#define WTP_MACHINE(name) \
-		debug(0, "  %s.%s at %p", t, #name, (void *) p->name)
+		debug("wap.wsp", 0, "  %s.%s at %p", t, #name, (void *) p->name)
 	#define SESSION_MACHINE(name) \
-		debug(0, "  %s.%s at %p", t, #name, (void *) p->name)
+		debug("wap.wsp", 0, "  %s.%s at %p", t, #name, (void *) p->name)
 	#define WSP_EVENT(tt, fields) \
 		if (tt == event->type) \
 			{ char *t = #tt; struct tt *p = &event->tt; fields }
 	#define HTTPHEADER(name) \
-		debug(0, "  %s.%s: HTTP headers:", t, #name); \
+		debug("wap.wsp", 0, "  %s.%s: HTTP headers:", t, #name); \
 		header_dump(p->name)
 	#include "wsp_events-decl.h"
-	debug(0, "Dump of WSPEvent %p ends.", (void *) event);
+	debug("wap.wsp", 0, "Dump of WSPEvent %p ends.", (void *) event);
 }
 
 
@@ -237,7 +237,7 @@ void wsp_machine_destroy(WSPMachine *machine) {
 
 
 void wsp_machine_dump(WSPMachine *machine) {
-	debug(0, "Dumping WSPMachine not yet implemented.");
+	debug("wap.wsp", 0, "Dumping WSPMachine not yet implemented.");
 }
 
 
@@ -252,13 +252,11 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 	}
 
 	do {
-		debug(0, "WSP: state is %s, event is %s",
+		debug("wap.wsp", 0, "WSP: state is %s, event is %s",
 			wsp_state_to_string(sm->state), 
 			wsp_event_name(current_event->type));
-#if 0
-		debug(0, "WSP: event is:");
+		debug("wap.wsp", 0, "WSP: event is:");
 		wsp_event_dump(current_event);
-#endif
 
 		#define STATE_NAME(name)
 		#define ROW(state_name, event, condition, action, next_state) \
@@ -268,10 +266,10 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 				if (sm->state == state_name && \
 				   current_event->type == event && \
 				   (condition)) { \
-					debug(0, "WSP: Doing action for %s", \
+					debug("wap.wsp", 0, "WSP: Doing action for %s", \
 						#state_name); \
 					action \
-					debug(0, "WSP: Setting state to %s", \
+					debug("wap.wsp", 0, "WSP: Setting state to %s", \
 						#next_state); \
 					sm->state = next_state; \
 					goto end; \
@@ -294,7 +292,7 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 			sm->client_port = -1;
 		} else {
 			error(0, "WSP: Can't handle event.");
-			debug(0, "WSP: The unhandled event:");
+			debug("wap.wsp", 0, "WSP: The unhandled event:");
 			wsp_event_dump(current_event);
 		}
 
@@ -350,10 +348,10 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 		warning(0, "Problems getting client SDU size capability");
 	    else {
 		if (WSP_MAX_CLIENT_SDU && uiv < WSP_MAX_CLIENT_SDU) {
-		    debug(0, "Client tried client SDU size %lu larger "
+		    debug("wap.wsp", 0, "Client tried client SDU size %lu larger "
 			  "than our max %d", uiv, WSP_MAX_CLIENT_SDU);
 		} else if (!(m->set_caps & WSP_CSDU_SET)) {
-		    debug(0, "Client SDU size negotiated to %lu", uiv);
+		    debug("wap.wsp", 0, "Client SDU size negotiated to %lu", uiv);
 		    m->client_SDU_size = uiv;
 		    m->set_caps |= WSP_CSDU_SET;
 		}
@@ -364,10 +362,10 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 		warning(0, "Problems getting server SDU size capability");
 	    else {
 		if (WSP_MAX_SERVER_SDU && uiv < WSP_MAX_SERVER_SDU) {
-		    debug(0, "Client tried server SDU size %lu larger "
+		    debug("wap.wsp", 0, "Client tried server SDU size %lu larger "
 			  "than our max %d", uiv, WSP_MAX_SERVER_SDU);
 		} else if (!(m->set_caps & WSP_SSDU_SET)) {
-		    debug(0, "Server SDU size negotiated to %lu", uiv);
+		    debug("wap.wsp", 0, "Server SDU size negotiated to %lu", uiv);
 		    m->server_SDU_size = uiv;
 		    m->set_caps |= WSP_SSDU_SET;
 		}
@@ -382,7 +380,7 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 
 		/* we do not support anything yet, so answer so */
 
-		debug(0, "Client protocol option flags %0xd, not supported.", flags);
+		debug("wap.wsp", 0, "Client protocol option flags %0xd, not supported.", flags);
 		     
 		m->protocol_options = WSP_MAX_PROTOCOL_OPTIONS;
 		m->set_caps |= WSP_SSDU_SET;
@@ -393,10 +391,10 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 		warning(0, "Problems getting MOR methods capability");
 	    else {
 		if (mor < WSP_MAX_METHOD_MOR) {
-		    debug(0, "Client tried method MOR %lu larger "
+		    debug("wap.wsp", 0, "Client tried method MOR %lu larger "
 			  "than our max %d", mor, WSP_MAX_METHOD_MOR);
 		} else if (!(m->set_caps & WSP_MMOR_SET)) {
-		    debug(0, "Method MOR negotiated to %lu", mor);
+		    debug("wap.wsp", 0, "Method MOR negotiated to %lu", mor);
 		    m->MOR_method = mor;
 		    m->set_caps |= WSP_MMOR_SET;
 		}
@@ -407,27 +405,27 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 		warning(0, "Problems getting MOR push capability");
 	    else {
 		if (mor < WSP_MAX_PUSH_MOR) {
-		    debug(0, "Client tried push MOR %lu larger "
+		    debug("wap.wsp", 0, "Client tried push MOR %lu larger "
 			  "than our max %d", mor, WSP_MAX_PUSH_MOR);
 		} else if (!(m->set_caps & WSP_PMOR_SET)) {
-		    debug(0, "Push MOR negotiated to %lu", mor);
+		    debug("wap.wsp", 0, "Push MOR negotiated to %lu", mor);
 		    m->MOR_push = mor;
 		    m->set_caps |= WSP_PMOR_SET;
 		}
 	    }
 	    break;
 	case WSP_CAPS_EXTENDED_METHODS:
-	    debug(0, "Extended methods capability ignored");
+	    debug("wap.wsp", 0, "Extended methods capability ignored");
 	    break;
 	case WSP_CAPS_HEADER_CODE_PAGES:
-	    debug(0, "Header code pages capability ignored");
+	    debug("wap.wsp", 0, "Header code pages capability ignored");
 	    break;
 	case WSP_CAPS_ALIASES:
-	    debug(0, "Aliases capability ignored");
+	    debug("wap.wsp", 0, "Aliases capability ignored");
 	    break;
 	default:
 	    /* unassigned */
-	    debug(0, "Unknown capability ignored");
+	    debug("wap.wsp", 0, "Unknown capability ignored");
 	    break;
 	}
     }
@@ -476,10 +474,10 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 	    unpack_octstr(&headers, headers_len, user_data, &off) == -1)
 		return -1;
 
-	debug(0, "Unpacked Connect PDU: version=%lu, caps_len=%lu, hdrs_len=%lu",
+	debug("wap.wsp", 0, "Unpacked Connect PDU: version=%lu, caps_len=%lu, hdrs_len=%lu",
 	      version, caps_len, headers_len);
 	if (caps_len > 0) {
-	    debug(0, "Unpacked caps:");
+	    debug("wap.wsp", 0, "Unpacked caps:");
 	    octstr_dump(caps);
 
 	    unpack_caps(caps, m);
@@ -493,7 +491,7 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 
 	    /* pack them for more compact form */
 	    header_pack(hdrs);
-	    debug(0, "WSP: Connect PDU had headers:");
+	    debug("wap.wsp", 0, "WSP: Connect PDU had headers:");
 	    header_dump(hdrs);
 
 	    m->http_headers = hdrs;
@@ -515,11 +513,11 @@ static int unpack_get_pdu(Octstr **url, HTTPHeader **headers, Octstr *pdu) {
 		h = octstr_copy(pdu, off, octstr_len(pdu) - off);
 		*headers = unpack_headers(h);
 		octstr_destroy(h);
-		debug(0, "WSP: Get PDU had headers:");
+		debug("wap.wsp", 0, "WSP: Get PDU had headers:");
 		header_dump(*headers);
 	} else
 		*headers = NULL;
-	debug(0, "WSP: Get PDU had URL <%s>", octstr_get_cstr(*url));
+	debug("wap.wsp", 0, "WSP: Get PDU had URL <%s>", octstr_get_cstr(*url));
 	return 0;
 }
 
@@ -549,20 +547,20 @@ static int unpack_post_pdu(Octstr **url, Octstr **headers, Octstr *pdu) {
 		return -1;
 	}
 /*
-	debug(0, "WSP: Post PDU had  URL len <%d>", url_len);
-	debug(0, "WSP: Post PDU had  param len <%d>", param_len);
+	debug("wap.wsp", 0, "WSP: Post PDU had  URL len <%d>", url_len);
+	debug("wap.wsp", 0, "WSP: Post PDU had  param len <%d>", param_len);
 */
 	if(  unpack_octstr(url, url_len, pdu, &off) == -1)
 	{
 		return -1;
 	}
-	debug(0, "WSP: Post PDU had URL <%s>", octstr_get_cstr(*url));
+	debug("wap.wsp", 0, "WSP: Post PDU had URL <%s>", octstr_get_cstr(*url));
 
 	if(unpack_octstr(&head,param_len,pdu,&off)==-1)
 	{
 		return -1;
 	}
-	debug(0, "WSP: Got headers. <%d> Total len <%d> offset",octstr_len(pdu),off);
+	debug("wap.wsp", 0, "WSP: Got headers. <%d> Total len <%d> offset",octstr_len(pdu),off);
 
 	if(unpack_octstr(&param,octstr_len(pdu)-off,pdu,&off)==-1)
 	{
@@ -576,7 +574,7 @@ static int unpack_post_pdu(Octstr **url, Octstr **headers, Octstr *pdu) {
 		
 	*headers = NULL;
 
-	debug(0, "WSP: Post PDU had data <%s>", octstr_get_cstr(param));
+	debug("wap.wsp", 0, "WSP: Post PDU had data <%s>", octstr_get_cstr(param));
 
 	octstr_destroy(head);
 	/* Now we concatenante the two thingies */
@@ -588,8 +586,8 @@ static int unpack_post_pdu(Octstr **url, Octstr **headers, Octstr *pdu) {
 /*
 	octstr_set_char	(*url,url_len,'?');
 */	
-	debug(0, "WSP: Final URL is  <%s>", octstr_get_cstr(*url));
-	debug(0, "WSP: URL unpacked");
+	debug("wap.wsp", 0, "WSP: Final URL is  <%s>", octstr_get_cstr(*url));
+	debug("wap.wsp", 0, "WSP: URL unpacked");
 	return 0;
 }
 

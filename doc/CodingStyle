@@ -86,3 +86,43 @@ Log messages
 	debugging the gateway would probably like the source file, line
 	number, and possibly function name be reported systematically.
 	What to do?
+
+Log message at the `debug' level: naming convention for `place'
+
+	The debug() function's first argument is called `place'. It tells
+	the logical place where call is made from. This is not the same
+	as the source file and line; those change too often for them to
+	be useful. Instead, it is meant to identify the subsystem and
+	subsubsystem (and, if necessary, subsubsubsystem). The following
+	subsystems should be used:
+	
+		wap		WAP Box
+		wap.wsp		WSP implementation
+		wap.wsp.http	WSP implementation
+		wap.wtp		WTP implementation
+		wap.wtp.timer	WTP timers
+		wap.wml		WML encoder
+
+		bb		Bearer box: misc stuff
+		bb.csdr		CSDR implementation
+		bb.sms		SMS related stuff
+		bb.sms.cimd	CIMD implementation
+		bb.sms.emi	EMI/UCP implementation
+		bb.sms.smpp	SMPP implementation
+		
+		sms		SMS box
+		
+		gw		Misc stuff used by all boxes
+		gw.msg		Inter-box messages
+
+		gwlib		Library functions
+		gwlib.http	HTTP implementation
+		gwlib.octstr	Octet strings
+
+		test		Test programs
+		test.fakewap	
+		test.udp_send
+
+		util		Utility programs
+
+	If you need more subsystems, please add them here as well.

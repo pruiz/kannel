@@ -166,13 +166,13 @@ static void cache_item_destroy(WTPCached_tid *item){
 
 static void cache_item_dump(WTPCached_tid *item){
 
-       debug(0, "WTP_TID: dumping of a cache item starts");
-       debug(0, "source address");
+       debug("wap.wtp", 0, "WTP_TID: dumping of a cache item starts");
+       debug("wap.wtp", 0, "source address");
        octstr_dump(item->source_address);
-       debug(0, "source port %ld", item->source_port);
+       debug("wap.wtp", 0, "source port %ld", item->source_port);
        debug (0, "destination address");
        octstr_dump(item->destination_address);
-       debug(0, "destination port %ld", item->destination_port);
+       debug("wap.wtp", 0, "destination port %ld", item->destination_port);
 }
 #endif
 /*

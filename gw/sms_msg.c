@@ -60,12 +60,12 @@ void smsmessage_add_udh(SMSMessage *sms, int id, Octstr *data) {
 	buf[0] = id;
 	buf[1] = (unsigned char) octstr_len(data);
 	temp = octstr_create_from_data(buf, 2);
-	debug(0, "temp:");
+	debug("bb.sms", 0, "temp:");
 	octstr_dump(temp);
-	debug(0, "data:");
+	debug("bb.sms", 0, "data:");
 	octstr_dump(data);
 	temp2 = octstr_cat(temp, data);
-	debug(0, "temp2:");
+	debug("bb.sms", 0, "temp2:");
 	octstr_dump(temp2);
 	len = octstr_get_char(sms->text, 0);
 	octstr_insert(sms->text, temp2, 1 + len);

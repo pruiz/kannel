@@ -385,11 +385,11 @@ int parse_node(xmlNodePtr node)
     break;
     /* ignored at this state of development 
   case XML_DOCUMENT_NODE:
-    debug(0, "WML compiler: Parsing document node.");
+    debug("wap.wml", 0, "WML compiler: Parsing document node.");
     status = parse_document(node);
     break;
   case XML_ATTRIBUTE_NODE:
-    debug(0, "WML compiler: Parsing attribute node.");
+    debug("wap.wml", 0, "WML compiler: Parsing attribute node.");
     status = parse_attribute(node);
     break;
   case XML_CDATA_SECTION_NODE:

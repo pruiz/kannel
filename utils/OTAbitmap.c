@@ -100,7 +100,7 @@ int OTAbitmap_create_stream(OTAbitmap *pic, Octet **stream)
     memcpy(*stream, tmp_header, hdr_len);
     memcpy(*stream + hdr_len, pic->main_image, pic_size);
 
-    debug(0, "picture %d x %d, stream length %d",
+    debug("util", 0, "picture %d x %d, stream length %d",
 	  pic->width, pic->height, hdr_len + pic_size);
     
     return (hdr_len + pic_size);

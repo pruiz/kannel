@@ -78,6 +78,7 @@ int get_and_set_debugs(int argc, char **argv,
     int debug_lvl = -1;
     int file_lvl = DEBUG;
     char *log_file = NULL;
+    char *debug_places = NULL;
     
     for(i=1; i < argc; i++) {
 	if (strcmp(argv[i],"-v")==0 ||
@@ -102,6 +103,13 @@ int get_and_set_debugs(int argc, char **argv,
 		i++;
 	    } else
 		fprintf(stderr, "Missing argument for option %s\n", argv[i]); 
+	} else if (strcmp(argv[i],"-D")==0 ||
+		   strcmp(argv[i],"--debug")==0) {
+	    if (i+1 < argc) {
+		debug_places = argv[i+1];
+		i++;
+	    } else
+		fprintf(stderr, "Missing argument for option %s\n", argv[i]); 
 	} else if(*argv[i] != '-')
 	    break;
 	else {
@@ -116,11 +124,14 @@ int get_and_set_debugs(int argc, char **argv,
     }
     if (debug_lvl > -1)
 	set_output_level(debug_lvl);
+    if (debug_places != NULL)
+        set_debug_places(debug_places);
     if (log_file != NULL)
 	open_logfile(log_file, file_lvl);
 
     info(0, "Debug_lvl = %d, log_file = %s, log_lvl = %d",
 	  debug_lvl, log_file ? log_file : "<none>", file_lvl);
+    info(0, "Debug places: `%s'", debug_places);
     
     return i;
 }
@@ -165,14 +176,14 @@ int check_ip(char *accept_string, char *ip, char *match_buffer)
 	t++;
     }
 failed:    
-    debug(0, "Could not find match for <%s> in <%s>", ip, accept_string);
+    debug("gwlib", 0, "Could not find match for <%s> in <%s>", ip, accept_string);
     return 0;
 found:
     if (match_buffer != NULL) {
 	for(p=match_buffer; *start != '\0' && *start != ';'; p++, start++)
 	    *p = *start;
 	*p = '\0';
-	debug(0, "Found and copied match <%s>", match_buffer);
+	debug("gwlib", 0, "Found and copied match <%s>", match_buffer);
     }
     return 1;
 }

@@ -85,11 +85,11 @@ Msg *wtp_send_result(WTPMachine *machine, WTPEvent *event){
      msg = msg_create(wdp_datagram);
      msg = add_datagram_address(msg, machine);
 
-     debug(0, "WTP: packing result pdu");
+     debug("wap.wtp", 0, "WTP: packing result pdu");
 
      msg = pack_result(msg, machine, event);
 
-     debug(0,"WTP: result pdu packed");
+     debug("wap.wtp", 0,"WTP: result pdu packed");
   
      if (msg == NULL){
         return NULL;
@@ -107,7 +107,7 @@ Msg *wtp_send_result(WTPMachine *machine, WTPEvent *event){
 void wtp_resend_result(Msg *result, long rid){
 
      if (message_rid(result) == 0) {
-        debug(0, "WTP: resend: turning the first bit");
+        debug("wap.wtp", 0, "WTP: resend: turning the first bit");
         result = set_rid(result, rid);
      }
      put_msg_in_queue(result);
@@ -147,7 +147,7 @@ void wtp_do_not_start(long abort_type, long abort_reason, Address *address, long
 
      msg = msg_create(wdp_datagram);
      msg = add_direct_address(msg, address);
-     debug(0, "WTP: do_not_start: address added");
+     debug("wap.wtp", 0, "WTP: do_not_start: address added");
      msg = pack_stop(msg, abort_type, abort_reason, tid);
 
      if (msg == NULL){
@@ -155,7 +155,7 @@ void wtp_do_not_start(long abort_type, long abort_reason, Address *address, long
      }
 
      put_msg_in_queue(msg);
-     debug(0, "WTP: do_not_start: aborted");
+     debug("wap.wtp", 0, "WTP: do_not_start: aborted");
 
      return;
 }
@@ -217,13 +217,13 @@ void wtp_send_negative_ack(Address *address, long tid, int retransmission_status
 
 void wtp_send_address_dump(Address *address){
 
-       debug(0, "WTP: address dump starting");
-       debug(0, "WTP: source address");
+       debug("wap.wtp", 0, "WTP: address dump starting");
+       debug("wap.wtp", 0, "WTP: source address");
        octstr_dump(address->source_address);
-       debug(0, "WTP: source port %ld: ", address->source_port);
-       debug(0, "WTP: destination address");
+       debug("wap.wtp", 0, "WTP: source port %ld: ", address->source_port);
+       debug("wap.wtp", 0, "WTP: destination address");
        octstr_dump(address->destination_address);
-       debug(0, "WTP: destination port %ld: ", address->destination_port);
+       debug("wap.wtp", 0, "WTP: destination port %ld: ", address->destination_port);
 }
 
 /****************************************************************************
@@ -257,15 +257,11 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
     octet = indicate_simple_message(octet);
     octet = insert_rid(machine->rid, octet);
     wtp_pdu[0] = octet;
-#ifdef d
-    debug(0, "WTP: inserting tid");
-#endif
+    debug("wap.wtp", 0, "WTP: inserting tid");
     insert_tid(wtp_pdu, event->TRResult.tid);
     octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 3);
-#ifdef d
-    debug(0,"WTP: sending a result message");
+    debug("wap.wtp", 0,"WTP: sending a result message");
     msg_dump(msg);
-#endif
 
     return msg;
 
@@ -449,7 +445,7 @@ static Msg *add_datagram_address(Msg *msg, WTPMachine *machine){
  */
 static Msg *add_direct_address(Msg *msg, Address *address){
 
-       debug(0, "WTP: add_direct_address");
+       debug("wap.wtp", 0, "WTP: add_direct_address");
        wtp_send_address_dump(address);
        msg->wdp_datagram.source_address = 
     	    octstr_duplicate(address->source_address);

@@ -80,7 +80,7 @@ static int cimd_open_connection(SMSCenter *smsc) {
 	    if (ret < 0) goto logout;
 	}
 	
-	debug(0, "got the server identification tag");
+	debug("bb.sms.cimd", 0, "got the server identification tag");
 	
 	smscenter_remove_from_buffer(smsc, smsc->buflen);
 	
@@ -103,7 +103,7 @@ static int cimd_open_connection(SMSCenter *smsc) {
 	if(internal_cimd_expect_acknowledge(smsc, &cmd, &err) < 1)
 	    goto logout;
 	
-	debug(0, "logged in");
+	debug("bb.sms.cimd", 0, "logged in");
 	
 	gw_free(tmpbuff);
 	return 0;
@@ -180,7 +180,7 @@ int cimd_close(SMSCenter *smsc) {
 	int 	ret;
 
 	if (smsc->socket == -1) {
-	    debug(0, "Trying to close cimd while already closed!");
+	    debug("bb.sms.cimd", 0, "Trying to close cimd while already closed!");
 	    return 0;
 	}
 	cbuff = gw_malloc(2*1024);
@@ -236,7 +236,7 @@ int cimd_pending_smsmessage(SMSCenter *smsc) {
 	/* send the poll message to determine if we have messages in queue */
 	ret = write_to_socket(smsc->socket, tmpbuff); 
 	if(ret < 0) {
-	    debug(0, "sending poll message failed");
+	    debug("bb.sms.cimd", 0, "sending poll message failed");
 	    goto error;
 	}
 	/* block while waiting for answer that dataset ends to a 0x0A */
@@ -250,7 +250,7 @@ int cimd_pending_smsmessage(SMSCenter *smsc) {
 
 		ret = smscenter_read_into_buffer(smsc);
 		if (ret <= 0) {
-		    debug(0, "read_into_buffer failed!, ret=%d",ret);
+		    debug("bb.sms.cimd", 0, "read_into_buffer failed!, ret=%d",ret);
 		    goto error;
 		}
 
@@ -294,7 +294,7 @@ no_messages:
 
 error:
 	
-	debug(0, "smscenter_pending_smsmessage: returning error");
+	debug("bb.sms.cimd", 0, "smscenter_pending_smsmessage: returning error");
 	gw_free(tmpbuff);
 	return -1;
 }
@@ -361,7 +361,7 @@ int cimd_submit_msg(SMSCenter *smsc, Msg *msg) {
 
 	ret = write_to_socket(smsc->socket, tmpbuff);
 	if(ret < 0) {
-		debug(0, "cimd_submit_smsmessage: socket write error");
+		debug("bb.sms.cimd", 0, "cimd_submit_smsmessage: socket write error");
 		goto error;
 	}
 
@@ -391,8 +391,8 @@ int cimd_submit_msg(SMSCenter *smsc, Msg *msg) {
 			goto error;
 		} else {
 			error(0, "Unexpected behaviour from the CIMD server");
-			debug(0, "cimd_submit_smsmessage: acknowledge was <%i>", ret);
-			debug(0, "cimd_submit_smsmessage: buffer==<%s>", smsc->buffer);
+			debug("bb.sms.cimd", 0, "cimd_submit_smsmessage: acknowledge was <%i>", ret);
+			debug("bb.sms.cimd", 0, "cimd_submit_smsmessage: buffer==<%s>", smsc->buffer);
 			goto error;
 		}
 
@@ -404,7 +404,7 @@ okay:
 	return 0;
 
 error:
-	debug(0, "cimd_submit_smsmessage: returning error");
+	debug("bb.sms.cimd", 0, "cimd_submit_smsmessage: returning error");
 	gw_free(tmpbuff);
 	gw_free(tmptext);	
 	return -1;
@@ -419,7 +419,7 @@ int cimd_receive_msg(SMSCenter *smsc, Msg **msg) {
 	char *receiver = NULL, *text = NULL, *scts = NULL;
 	char *tmpchar = NULL;
 
-	debug(0, "cimd_receive_smsmessage: starting");
+	debug("bb.sms.cimd", 0, "cimd_receive_smsmessage: starting");
 
 	/* the PENDING function has previously requested for
 	   the message and checked that it safely found its 
@@ -482,19 +482,19 @@ int cimd_receive_msg(SMSCenter *smsc, Msg **msg) {
 	gw_free(text);
 	gw_free(scts);
 
-	debug(0, "cimd_receive_smsmessage: return ok");
+	debug("bb.sms.cimd", 0, "cimd_receive_smsmessage: return ok");
 
 	return 1;
 
 error:
-	debug(errno, "cimd_receive_smsmessage: failed");
+	debug("bb.sms.cimd", errno, "cimd_receive_smsmessage: failed");
 	gw_free(tmpbuff);
 	gw_free(sender);
 	gw_free(receiver);
 	gw_free(text);
 	gw_free(scts);
 
-	debug(0, "cimd_receive_smsmessage: return failed");
+	debug("bb.sms.cimd", 0, "cimd_receive_smsmessage: return failed");
 
 	return -1;
 }
@@ -516,7 +516,7 @@ static int internal_cimd_connect_tcpip(SMSCenter *smsc) {
 	int ret = 0;
 	int cmd = 0, err = 0;
 
-	debug(0, "reconnecting to <%s>", smsc->name);
+	debug("bb.sms.cimd", 0, "reconnecting to <%s>", smsc->name);
 
 	/* allocate some spare space */
 	tmpbuff = gw_malloc(10*1024);
@@ -571,7 +571,7 @@ static int internal_cimd_connect_tcpip(SMSCenter *smsc) {
 	if(internal_cimd_expect_acknowledge(smsc, &cmd, &err) < 1)
 		goto logout;
 
-	debug(0, "cimd_connect_tcpip: logged in");
+	debug("bb.sms.cimd", 0, "cimd_connect_tcpip: logged in");
 	
 	gw_free(tmpbuff);
 
@@ -609,7 +609,7 @@ static int internal_cimd_send_acknowledge(SMSCenter *smsc) {
 	return 0;
 
 error:
-	debug(errno, "cimd_send_acknowledge: failed");
+	debug("bb.sms.cimd", errno, "cimd_send_acknowledge: failed");
 	return -1;
 }
 
@@ -684,7 +684,7 @@ static int internal_cimd_expect_acknowledge(SMSCenter *smsc, int *cmd, int *err)
 	else
 		*err = 0;
 
-	debug(0, "cimd_pending_smsmessage: smsc->buffer == <%s>", smsc->buffer);
+	debug("bb.sms.cimd", 0, "cimd_pending_smsmessage: smsc->buffer == <%s>", smsc->buffer);
 
 	/* Remove the acknowledge message from the incoming buffer. */
 	smscenter_remove_from_buffer(smsc, end_of_dataset - smsc->buffer + 1);
@@ -1018,7 +1018,7 @@ static int internal_cimd_parse_cimd_to_iso88591(char* from, char* to, int length
 
 		else { /* of course it might be that nothing happened */
 
-		    debug(0, "paRse: [%c:%02X %c:%02X %c:%02X]", from[my_int],
+		    debug("bb.sms.cimd", 0, "paRse: [%c:%02X %c:%02X %c:%02X]", from[my_int],
 			  from[my_int], from[my_int+1],from[my_int+1],
 			  from[my_int+2],from[my_int+2]);
 		    

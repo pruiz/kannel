@@ -16,7 +16,7 @@ int main(void) {
 	if (s == -1)
 		panic(0, "no server socket");
 	ss = accept(s, &addr, &addrlen);
-	debug(0, "accept: %d", ss);
+	debug("test", 0, "accept: %d", ss);
 	
 	msg = msg_create(wdp_datagram);
 	if (msg == NULL)

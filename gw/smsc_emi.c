@@ -201,7 +201,7 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
 	    if ((smsc->emi_backup_fd = make_server_socket(backup_port)) <= 0)
 		goto error;
 
-	    debug(0, "EMI IP backup port at %d opened", backup_port);
+	    debug("bb.sms.emi", 0, "EMI IP backup port at %d opened", backup_port);
 	}	
 	return smsc;
 
@@ -318,13 +318,13 @@ int emi_submit_msg(SMSCenter *smsc, Msg *omsg) {
 	}
 
 /*	smsc->emi_current_msg_number += 1; */
-	debug(0, "Submit Ok...");
+	debug("bb.sms.emi", 0, "Submit Ok...");
 	
 	gw_free(tmpbuff);
 	return 0;
 
 error:
-	debug(0, "Submit Error...");
+	debug("bb.sms.emi", 0, "Submit Error...");
 
 	gw_free(tmpbuff);
 	return -1;
@@ -492,25 +492,25 @@ static int at_dial(char *device, char *phonenum, char *at_prefix, time_t how_lon
 
 				if(strstr(tmpbuff, "CONNECT")!=NULL) {
 				
-					debug(0, "at_dial: CONNECT");
+					debug("bb.sms.emi", 0, "at_dial: CONNECT");
 					redial = 0;
 					break;
 					
 				} else if(strstr(tmpbuff, "NO CARRIER")!=NULL) {
 				
-					debug(0, "at_dial: NO CARRIER");
+					debug("bb.sms.emi", 0, "at_dial: NO CARRIER");
 					redial = 1;
 					break;
 
 				} else if(strstr(tmpbuff, "BUSY")!=NULL) {
 				
-					debug(0, "at_dial: BUSY");
+					debug("bb.sms.emi", 0, "at_dial: BUSY");
 					redial = 1;
 					break;
 					
 				} else if(strstr(tmpbuff, "NO DIALTONE")!=NULL) {
 				
-					debug(0, "at_dial: NO DIALTONE");
+					debug("bb.sms.emi", 0, "at_dial: NO DIALTONE");
 					redial = 1;
 					break;
 					
@@ -531,7 +531,7 @@ static int at_dial(char *device, char *phonenum, char *at_prefix, time_t how_lon
 
 	} /* End of dial loop. */
 
-	debug(0, "at_dial: done with dialing");
+	debug("bb.sms.emi", 0, "at_dial: done with dialing");
 	return fd;
 
 timeout:
@@ -580,7 +580,7 @@ static int internal_emi_wait_for_ack(SMSCenter *smsc) {
 	if( internal_emi_memorybuffer_has_rawmessage( smsc, 51, 'R' ) > 0 ||
 	    internal_emi_memorybuffer_has_rawmessage( smsc, 1, 'R' ) > 0 ) {
 	       internal_emi_memorybuffer_cut_rawmessage( smsc, tmpbuff, 10*1024 );
-	       debug(0,"Found ACK/NACK: <%s>",tmpbuff);
+	       debug("bb.sms.emi", 0,"Found ACK/NACK: <%s>",tmpbuff);
 	       found = 1;
 
 	}
@@ -614,7 +614,7 @@ static int get_data(SMSCenter *smsc, char *buff, int length) {
 		n = read(smsc->emi_fd, buff, length);
 /*
 		if(n > 0)
-			debug(0, "modembuffer_get_data(X.31): got <%s>", buff);
+			debug("bb.sms.emi", 0, "modembuffer_get_data(X.31): got <%s>", buff);
 */
 		return n;
 	}
@@ -672,8 +672,8 @@ static int get_data(SMSCenter *smsc, char *buff, int length) {
 	    }
 	}
 	if (n > 0) { 
-	    debug(0,"get_data:Read %d bytes: <%.*s>", n, n, buff); 
-	    debug(0,"get_data:smsc->buffer == <%s>", smsc->buffer); 
+	    debug("bb.sms.emi", 0,"get_data:Read %d bytes: <%.*s>", n, n, buff); 
+	    debug("bb.sms.emi", 0,"get_data:smsc->buffer == <%s>", smsc->buffer); 
 	}
 	return n;
 
@@ -782,7 +782,7 @@ static int internal_emi_memorybuffer_insert_data(SMSCenter *smsc, char *buff, in
     memcpy(smsc->buffer, buff, length);
 
     smsc->buflen += length;
-/*    debug(0, "insert: buff = <%s> (length=%d)", smsc->buffer, smsc->buflen); */
+/*    debug("bb.sms.emi", 0, "insert: buff = <%s> (length=%d)", smsc->buffer, smsc->buflen); */
     
     return 0;
 
@@ -811,7 +811,7 @@ static int internal_emi_memorybuffer_has_rawmessage(SMSCenter *smsc,
 		
 	    if( strstr(tmpbuff, tmpbuff2) != NULL ) {
 		
-		debug(0, "found message <%c/%02i>...msg <%s>", auth, type, tmpbuff);
+		debug("bb.sms.emi", 0, "found message <%c/%02i>...msg <%s>", auth, type, tmpbuff);
 		return 1;
 	    }
 
@@ -844,7 +844,7 @@ static int internal_emi_memorybuffer_cut_rawmessage(
 	size_of_the_rest  = (smsc->buflen - size_of_cut_piece);
 
 /*
-	debug(0, "size_of_cut_piece == <%i> ; size_of_the_rest == <%i>",
+	debug("bb.sms.emi", 0, "size_of_cut_piece == <%i> ; size_of_the_rest == <%i>",
 	      size_of_cut_piece, size_of_the_rest);
 */
 	
@@ -861,7 +861,7 @@ static int internal_emi_memorybuffer_cut_rawmessage(
 	memmove(stx, etx+1, (smsc->buffer + smsc->bufsize) - stx );
 
 	smsc->buflen -= size_of_cut_piece;
-/*	debug(0,"cut: buff == <%s>\nsmsc->buffer == <%s>",buff,smsc->buffer); */
+/*	debug("bb.sms.emi", 0,"cut: buff == <%s>\nsmsc->buffer == <%s>",buff,smsc->buffer); */
 
 	return 0;
 
@@ -993,7 +993,7 @@ static int internal_emi_acknowledge_from_rawmessage(
 	
 	/* HEADER */
 
-	debug(0, "acknowledge: type = '%s'", emivars[3]);
+	debug("bb.sms.emi", 0, "acknowledge: type = '%s'", emivars[3]);
 	
 	sprintf(emitext, "%s/%05i/%s/%s", emivars[0], strlen(isotext)+17,
 		"R", emivars[3]);
@@ -1173,7 +1173,7 @@ static int internal_emi_parse_iso88591_to_emi(char *from, char *to,
 
 	*to = '\0';
 
-	debug(0, "emi parsing <%s> to emi, length %d", from, length);
+	debug("bb.sms.emi", 0, "emi parsing <%s> to emi, length %d", from, length);
 	
 	for (ptr = from; length > 0; ptr++,length--) {
 		tmpchar = internal_char_iso_to_sms(*ptr, alt_charset);

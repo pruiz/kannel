@@ -110,7 +110,7 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 		newbuff = gw_strdup(growingbuff);
 		sscanf(growingbuff, "GET %s HTTP/%i.%i", 
 		       newbuff, &tmpint, &tmpint);
-		debug(0, "http_get_request: got the first line");
+		debug("gwlib.http", 0, "http_get_request: got the first line");
 
 		url = internal_url_create(newbuff);
 		gw_free(newbuff);
@@ -273,7 +273,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 
     for(;;) {
 	
-	debug(0, "HTTP: Making request using headers:");
+	debug("gwlib.http", 0, "HTTP: Making request using headers:");
 	header_dump(request->baseheader);
 
 	/* Open connection, send request, get response. */
@@ -550,7 +550,7 @@ URL* internal_url_create(char *text) {
 	has_abs_path = has_query;
 
     if(text == NULL) {
-	debug(0, "url_create: someone just called me with NULL input");
+	debug("gwlib.http", 0, "url_create: someone just called me with NULL input");
 	goto error;
     }
 
@@ -665,7 +665,7 @@ URL* internal_url_create(char *text) {
     return tmpURL;
 
 error:
-    debug(errno, "url_create: failed");
+    debug("gwlib.http", errno, "url_create: failed");
     gw_free(mycopy);
     internal_url_destroy(tmpURL);
     return NULL;
@@ -1042,7 +1042,7 @@ char* httprequest_unwrap(HTTPRequest *request) {
 /* terminate headers */
     strcat(bigbuff, "\r\n");
     
-    debug(0,"request_unwrap: preparing to put data: <%s>", request->data);
+    debug("gwlib.http", 0,"request_unwrap: preparing to put data: <%s>", request->data);
     
 /* data */
     if(request->data != NULL) 
@@ -1057,7 +1057,7 @@ char* httprequest_unwrap(HTTPRequest *request) {
     
     
 error:
-    debug(errno, "httprequest_unwrap: failed");
+    debug("gwlib.http", errno, "httprequest_unwrap: failed");
     gw_free(bigbuff);
     gw_free(tmpbuff);
     gw_free(tmpline);
@@ -1210,7 +1210,7 @@ HTTPHeader *header_create(char *key, char *value) {
 int header_dump(HTTPHeader *hdr)
 {
     while(hdr != NULL) {
-	debug(0, "%s: %s", hdr->key, hdr->value);
+	debug("gwlib.http", 0, "%s: %s", hdr->key, hdr->value);
 	hdr = hdr->next;
     }
     return 0;
@@ -1322,7 +1322,7 @@ char* httprequest_get_header_value(HTTPRequest *request, char *key) {
 	
 
 error:
-    debug(errno, "httprequest_add_header: failed");
+    debug("gwlib.http", errno, "httprequest_add_header: failed");
     return NULL;
 }
 

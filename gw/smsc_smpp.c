@@ -267,7 +267,7 @@ int smpp_close(SMSCenter *smsc) {
 
 	struct smpp_pdu *pdu = NULL;
 
-	debug(0, "smpp_close: closing");
+	debug("bb.sms.smpp", 0, "smpp_close: closing");
 
 	/* Push a UNBIND PDU on the [smsc->fifo_r_out] stack. */
 	pdu = pdu_new();
@@ -458,7 +458,7 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 			(*msg)->smart_sms.flag_8bit = 0;
 			(*msg)->smart_sms.flag_udh = 0;
 		} else {
-			debug(0, "problemss....");
+			debug("bb.sms.smpp", 0, "problemss....");
 			msg_destroy(*msg);
 			*msg = NULL;
 		}
@@ -809,7 +809,7 @@ static int data_receive(int fd, Octstr *to) {
 /*		if(errno==EWOULDBLOCK) return -1; */
 		goto error;
 	} else if(length == 0) {
-		debug(0, "soketti <%i> kloused", fd);
+		debug("bb.sms.smpp", 0, "soketti <%i> kloused", fd);
 		goto error;
 	}
 
@@ -825,7 +825,7 @@ no_data:
 	return 0;
 
 error:
-	debug(0, "data_receive: error");
+	debug("bb.sms.smpp", 0, "data_receive: error");
 	return -1;
 }
 
@@ -849,7 +849,7 @@ static int data_send(int fd, Octstr *from) {
 	size_t length, curl, written = 0;
 	char *willy = NULL;
 
-/*	debug(0, "data_send: starting"); */
+/*	debug("bb.sms.smpp", 0, "data_send: starting"); */
 
 	/* Create temp data structures. */
 	length = octstr_len(from);
@@ -881,12 +881,12 @@ static int data_send(int fd, Octstr *from) {
 	return 1;
 
 socket_b0rken:
-	debug(0, "data_send: broken socket!!!");
+	debug("bb.sms.smpp", 0, "data_send: broken socket!!!");
 	gw_free(willy);
 	return -1;
 
 error:
-	debug(0, "data_send: ERROR!!!");
+	debug("bb.sms.smpp", 0, "data_send: ERROR!!!");
 	gw_free(willy);
 	return -1;
 }
@@ -1427,7 +1427,7 @@ static int pdu_act_bind_receiver_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 */
 static int pdu_act_unbind_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 
-/*	debug(0, "pdu_act_unbind_resp: start"); */
+/*	debug("bb.sms.smpp", 0, "pdu_act_unbind_resp: start"); */
 
 	/* Remove the status flag CAN_RECEIVE or CAN_SEND */
 
@@ -1440,15 +1440,15 @@ static int pdu_act_unbind_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 */
 static int pdu_act_submit_sm_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 
-	debug(0, "pdu_act_submit_sm_resp: start");
+	debug("bb.sms.smpp", 0, "pdu_act_submit_sm_resp: start");
 
 	/* Mark message the SUBMIT_SM_RESP refers to as
 	   acknowledged and remove it from smsc->smpp_fifostack. */
 
-	debug(0, "pdu->length == %08x", pdu->length);
-	debug(0, "pdu->id == %08x", pdu->id);
-	debug(0, "pdu->status == %08x", pdu->status);
-	debug(0, "pdu->sequence_no == %08x", pdu->sequence_no);
+	debug("bb.sms.smpp", 0, "pdu->length == %08x", pdu->length);
+	debug("bb.sms.smpp", 0, "pdu->id == %08x", pdu->id);
+	debug("bb.sms.smpp", 0, "pdu->status == %08x", pdu->status);
+	debug("bb.sms.smpp", 0, "pdu->sequence_no == %08x", pdu->sequence_no);
 
 	return -1;
 }
@@ -1519,7 +1519,7 @@ static int pdu_decode_submit_sm_resp(smpp_pdu* pdu, Octstr* str) {
 */
 static int pdu_act_submit_multi_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 
-	debug(0, "pdu_act_submit_multi_resp: start");
+	debug("bb.sms.smpp", 0, "pdu_act_submit_multi_resp: start");
 
 	/* Mark messages reffer to by the SUBMIT_MULTI_RESP as
 	   acknowledged and remove them from smsc->fifostack. */
@@ -1694,28 +1694,28 @@ static int pdu_decode_deliver_sm(smpp_pdu* pdu, Octstr* str) {
 
 	gw_free(buff);
 
-	debug(0, "pdu->service_type == %s", deliver_sm->service_type);
+	debug("bb.sms.smpp", 0, "pdu->service_type == %s", deliver_sm->service_type);
 
-	debug(0, "pdu->source_addr_ton == %i", deliver_sm->source_addr_ton);
-	debug(0, "pdu->source_addr_npi == %i", deliver_sm->source_addr_npi);
-	debug(0, "pdu->source_addr == %s", deliver_sm->source_addr);
+	debug("bb.sms.smpp", 0, "pdu->source_addr_ton == %i", deliver_sm->source_addr_ton);
+	debug("bb.sms.smpp", 0, "pdu->source_addr_npi == %i", deliver_sm->source_addr_npi);
+	debug("bb.sms.smpp", 0, "pdu->source_addr == %s", deliver_sm->source_addr);
 
-	debug(0, "pdu->dest_addr_ton == %i", deliver_sm->dest_addr_ton);
-	debug(0, "pdu->dest_addr_npi == %i", deliver_sm->dest_addr_npi);
-	debug(0, "pdu->dest_addr == %s", deliver_sm->dest_addr);
+	debug("bb.sms.smpp", 0, "pdu->dest_addr_ton == %i", deliver_sm->dest_addr_ton);
+	debug("bb.sms.smpp", 0, "pdu->dest_addr_npi == %i", deliver_sm->dest_addr_npi);
+	debug("bb.sms.smpp", 0, "pdu->dest_addr == %s", deliver_sm->dest_addr);
 
-	debug(0, "pdu->esm_class == %i", deliver_sm->esm_class);
-	debug(0, "pdu->protocol_id == %i", deliver_sm->protocol_id);
-	debug(0, "pdu->priority_flag == %i", deliver_sm->priority_flag);
+	debug("bb.sms.smpp", 0, "pdu->esm_class == %i", deliver_sm->esm_class);
+	debug("bb.sms.smpp", 0, "pdu->protocol_id == %i", deliver_sm->protocol_id);
+	debug("bb.sms.smpp", 0, "pdu->priority_flag == %i", deliver_sm->priority_flag);
 
-	debug(0, "pdu->schedule_delivery_time == %s", deliver_sm->schedule_delivery_time);
-	debug(0, "pdu->validity_period == %s", deliver_sm->validity_period);
+	debug("bb.sms.smpp", 0, "pdu->schedule_delivery_time == %s", deliver_sm->schedule_delivery_time);
+	debug("bb.sms.smpp", 0, "pdu->validity_period == %s", deliver_sm->validity_period);
 
-	debug(0, "pdu->registered_delivery_flag == %i", deliver_sm->registered_delivery_flag);
-	debug(0, "pdu->replace_if_present_flag == %i", deliver_sm->replace_if_present_flag);
-	debug(0, "pdu->data_coding == %i", deliver_sm->data_coding);
-	debug(0, "pdu->sm_default_msg_id == %i", deliver_sm->sm_default_msg_id);
-	debug(0, "pdu->sm_length == %i", deliver_sm->sm_length);
+	debug("bb.sms.smpp", 0, "pdu->registered_delivery_flag == %i", deliver_sm->registered_delivery_flag);
+	debug("bb.sms.smpp", 0, "pdu->replace_if_present_flag == %i", deliver_sm->replace_if_present_flag);
+	debug("bb.sms.smpp", 0, "pdu->data_coding == %i", deliver_sm->data_coding);
+	debug("bb.sms.smpp", 0, "pdu->sm_default_msg_id == %i", deliver_sm->sm_default_msg_id);
+	debug("bb.sms.smpp", 0, "pdu->sm_length == %i", deliver_sm->sm_length);
 
 	start = gw_malloc( 4 );
 	end = gw_malloc( (deliver_sm->sm_length*3) + 1 );
@@ -1724,7 +1724,7 @@ static int pdu_decode_deliver_sm(smpp_pdu* pdu, Octstr* str) {
 		sprintf(start, "%02x ", (unsigned char) deliver_sm->short_message[oct]);
 		strcat(end, start);
 	}
-	debug(0, "pdu->short_message == %s", end);
+	debug("bb.sms.smpp", 0, "pdu->short_message == %s", end);
 
 	gw_free(start);
 	gw_free(end);
@@ -1820,10 +1820,10 @@ static int pdu_act_generic_nak(SMSCenter *smsc, smpp_pdu *pdu) {
 
 	error(0, "pdu_act_generic_nak: SOMETHING IS DREADFULLY WRONG");
 
-	debug(0, "pdu->length == %08x", pdu->length);
-	debug(0, "pdu->id == %08x", pdu->id);
-	debug(0, "pdu->status == %08x", pdu->status);
-	debug(0, "pdu->sequence_no == %08x", pdu->sequence_no);
+	debug("bb.sms.smpp", 0, "pdu->length == %08x", pdu->length);
+	debug("bb.sms.smpp", 0, "pdu->id == %08x", pdu->id);
+	debug("bb.sms.smpp", 0, "pdu->status == %08x", pdu->status);
+	debug("bb.sms.smpp", 0, "pdu->sequence_no == %08x", pdu->sequence_no);
 
 	/* Panic  */
 

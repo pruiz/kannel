@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	for(fd=1;fd<argc;fd++) {
-		debug(0, "argv[%i] = <%s>", fd, argv[fd]);
+		debug("test.udp_send", 0, "argv[%i] = <%s>", fd, argv[fd]);
 	}
 
         fd = socket(PF_INET, SOCK_DGRAM, 0);

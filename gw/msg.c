@@ -82,17 +82,17 @@ void msg_destroy(Msg *msg) {
 }
 
 void msg_dump(Msg *msg) {
-	debug(0, "Msg object at %p:", (void *) msg);
-	debug(0, "  type: %s", type_as_str(msg));
+	debug("gw.msg", 0, "Msg object at %p:", (void *) msg);
+	debug("gw.msg", 0, "  type: %s", type_as_str(msg));
 	#define INTEGER(name) \
-		debug(0, "  %s.%s: %ld", t, #name, (long) p->name)
+		debug("gw.msg", 0, "  %s.%s: %ld", t, #name, (long) p->name)
 	#define OCTSTR(name) \
-		debug(0, "  %s.%s:", t, #name); octstr_dump(p->name)
+		debug("gw.msg", 0, "  %s.%s:", t, #name); octstr_dump(p->name)
 	#define MSG(tt, stmt) \
 		if (tt == msg->type) \
 			{ char *t = #tt; struct tt *p = &msg->tt; stmt }
 	#include "msg-decl.h"
-	debug(0, "Msg object ends.");
+	debug("gw.msg", 0, "Msg object ends.");
 }
 
 

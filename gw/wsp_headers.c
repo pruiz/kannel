@@ -272,7 +272,7 @@ static HTTPHeader *decode_well_known_field(int field_type,
 		ch = WSPContentTypeAssignment[val];
 		  
 	    else if (ret == WSP_FIELD_VALUE_DATA) {
-		debug(0, "%s: accept-general-form not supported",
+		debug("wap.wsp", 0, "%s: accept-general-form not supported",
 		      WSPHeaderFieldNameAssignment[field_type]);
 		return NULL;
 	    } else
@@ -300,7 +300,7 @@ static HTTPHeader *decode_well_known_field(int field_type,
 		else if (val == 0x1F) ch = "fi";
 		else if (val == 0x70) ch = "sv";
 		else {
-		    debug(0, "Nonsupported language '0x%x'", val);
+		    debug("wap.wsp", 0, "Nonsupported language '0x%x'", val);
 		    return NULL;
 		}
 	    } else
@@ -310,7 +310,7 @@ static HTTPHeader *decode_well_known_field(int field_type,
 
 	default:
 	    if (field_type <= WSP_PREDEFINED_LAST_FIELDNAME) {
-		debug(0, "Nonsupported field '0x%x'", field_type);
+		debug("wap.wsp", 0, "Nonsupported field '0x%x'", field_type);
 		return NULL;
 	    } else
 		goto error;
@@ -363,10 +363,10 @@ HTTPHeader *unpack_headers(Octstr *headers)
 	    warning(0, "read past header octet!");
 	    break;
 	} else if (byte == 127) {
-	    debug(0, "Shift-delimiter encountered, IGNORED");
+	    debug("wap.wsp", 0, "Shift-delimiter encountered, IGNORED");
 	    off += 2;	/* ignore page-identity */
 	} else if (byte >= 1 && byte <= 31) {
-	    debug(0, "Short-cut-shift-delimiter %d encountered, IGNORED", byte);
+	    debug("wap.wsp", 0, "Short-cut-shift-delimiter %d encountered, IGNORED", byte);
 	    off++;
 	}
 	else if (byte >= 128) {  /* well-known-header */

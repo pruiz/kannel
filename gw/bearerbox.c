@@ -613,7 +613,7 @@ static void *smscenter_thread(void *arg)
 		break;		/* kill us */
 	    }
 	    if (ret == 1) {
-		debug(0, "SMSC: Received a message from <%s>",
+		debug("bb", 0, "SMSC: Received a message from <%s>",
 		      smsc_name(us->smsc));
 		normalize_numbers(msg, us->smsc);
 		route_msg(us, msg);
@@ -918,7 +918,7 @@ int thread_writer(Msg *msg)
     normalize_numbers(rqi, NULL);
     route_msg(internal_smsbox(), rqi);
     rq_push_msg(bbox->reply_queue, rqi);
-    debug(0, "SMSBox: wrote <%s> into queue",
+    debug("bb", 0, "SMSBox: wrote <%s> into queue",
 	  octstr_get_cstr(msg->smart_sms.msgdata));
     return 0;
 }
@@ -1029,7 +1029,7 @@ static void new_bbt_smsc(SMSCenter *smsc)
     if (nt != NULL) {
 	nt->smsc = smsc;
 	(void)start_thread(1, smscenter_thread, nt, 0);
-	debug(0, "Created a new SMSC thread");
+	debug("bb", 0, "Created a new SMSC thread");
     }
     else
 	error(0, "Failed to create a new thread!");
@@ -1047,7 +1047,7 @@ static void new_bbt_csdr(CSDRouter *csdr)
     if (nt != NULL) {
 	nt->csdr = csdr;
 	(void)start_thread(1, csdrouter_thread, nt, 0);
-	debug(0, "Created a new CSDR thread");
+	debug("bb", 0, "Created a new CSDR thread");
     }
     else
 	error(0, "Failed to create a new thread!");
@@ -1064,7 +1064,7 @@ static void new_bbt_wapbox()
     if (nt != NULL) {
 	bbox->accept_pending++;
 	(void)start_thread(1, wapboxconnection_thread, nt, 0);
-	debug(0, "Created a new WAP BOX thread (id = %d)", nt->id);
+	debug("bb", 0, "Created a new WAP BOX thread (id = %d)", nt->id);
     }
     else
 	error(0, "Failed to create a new thread!");
@@ -1081,7 +1081,7 @@ static void new_bbt_smsbox()
     if (nt != NULL) {
 	bbox->accept_pending++;
 	(void)start_thread(1, smsboxconnection_thread, nt, 0);
-	debug(0, "Created a new SMS BOX thread (id = %d)", nt->id);
+	debug("bb", 0, "Created a new SMS BOX thread (id = %d)", nt->id);
     }
     else
 	error(0, "Failed to create a new thread!");
@@ -1301,7 +1301,7 @@ static void http_start_thread()
     
     (void)start_thread(1, http_request_thread, NULL, 0);
 
-    debug(0, "Created a new HTTP adminstration thread");
+    debug("bb", 0, "Created a new HTTP adminstration thread");
 }
 
 
@@ -1354,7 +1354,7 @@ static void sendsms_start_thread()
 
     (void)start_thread(1, sendsms_thread, NULL, 0);
 
-    debug(0, "Created a new HTTP adminstration thread");
+    debug("bb", 0, "Created a new HTTP adminstration thread");
 }
 
 

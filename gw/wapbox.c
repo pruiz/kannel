@@ -45,9 +45,7 @@ static void read_config(char *filename) {
 	cfg = config_create(filename);
 	if (config_read(cfg) == -1)
 		panic(0, "Couldn't read configuration from `%s'.", filename);
-#if 0
 	config_dump(cfg);
-#endif
 	
 	grp = config_first_group(cfg);
 	while (grp != NULL) {
@@ -100,10 +98,9 @@ static Msg *msg_receive(int s) {
 	if (octstr_recv(s, &os) < 1)
 		return NULL;
 	msg = msg_unpack(os);
-#if 0
-        debug(0, "WAPBOX: message received");
+
+        debug("wap", 0, "WAPBOX: message received");
         msg_dump(msg);
-#endif
 	if (msg == NULL)
 		return NULL;
 	octstr_destroy(os);
@@ -121,10 +118,8 @@ static void msg_send(int s, Msg *msg) {
 	   error(0, "wapbox: octstr_send failed");
 	octstr_destroy(os);
 	if (msg->type != heartbeat) {
-#if 0
-		debug(0, "WAPBOX: Sent message:");
+		debug("wap", 0, "WAPBOX: Sent message:");
 		msg_dump(msg);
-#endif
 	} else {
 		/* avoid overly large, growing memory leak
 		 * As far as I can see msgs are not freed
@@ -329,20 +324,16 @@ int main(int argc, char **argv) {
 		if (msg == NULL)
 			break;
 
-                debug(0, "WAPBOX: message received");
+                debug("wap", 0, "WAPBOX: message received");
 
 		wtp_event = wtp_unpack_wdp_datagram(msg);
-#if 0
-                debug(0, "WAPBOX: datagram unpacked");
+                debug("wap", 0, "WAPBOX: datagram unpacked");
                 wtp_event_dump(wtp_event);
-#endif
                 if (wtp_event == NULL)
                    continue;
 		wtp_machine = wtp_machine_find_or_create(msg, wtp_event);
-#if 0
-                debug(0, "WAPBOX: machine created");
+                debug("wap", 0, "WAPBOX: machine created");
                 wtp_machine_dump(wtp_machine);
-#endif
                 if (wtp_machine == NULL)
                    continue;
 	        wtp_handle_event(wtp_machine, wtp_event);
