@@ -151,13 +151,13 @@ static WAPEvent *convert_pap_to_event(Octstr *pap_content)
     octstr_destroy(pap_content);
     ppg_event = wap_event_create(Push_Message);
     ppg_event->u.Push_Message.pi_push_id = octstr_imm("0@ppg.wapit.fi");
-    ppg_event->u.Push_Message.progress_notes_requested = FALSE;
+    ppg_event->u.Push_Message.progress_notes_requested = PAP_FALSE;
     ppg_event->u.Push_Message.address_value =
         octstr_imm("WAPPUSH=127.0.0.1/TYPE=IPv4@ppg.wapit.fi");
     ppg_event->u.Push_Message.priority = LOW;
     ppg_event->u.Push_Message.delivery_method = CONFIRMED;
-    ppg_event->u.Push_Message.network_required = FALSE;
-    ppg_event->u.Push_Message.bearer_required = FALSE;
+    ppg_event->u.Push_Message.network_required = PAP_FALSE;
+    ppg_event->u.Push_Message.bearer_required = PAP_FALSE;
     ppg_event->u.Push_Message.push_headers = push_headers;
     ppg_event->u.Push_Message.push_data = octstr_duplicate(push_data);
     ppg_event->u.Push_Message.pi_capabilities = NULL;

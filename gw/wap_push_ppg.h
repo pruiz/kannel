@@ -65,8 +65,8 @@ enum {
  * Simple answer to question is something required or not
  */
 enum {
-    FALSE,
-    TRUE
+    PAP_FALSE,
+    PAP_TRUE
 };
 
 /*

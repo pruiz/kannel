@@ -1,3 +1,10 @@
+2001-05-02  Richard Braakman  <dark@wapit.com>
+
+	* gw/wap_push_ppg.h, wap_push_pap.c: Renamed TRUE and FALSE
+	to PAP_TRUE and PAP_FALSE.  (These are enumerated protocol
+	values.)  Needed for portability to systems that predefine
+	TRUE and FALSE macros.
+
 2001-04-30  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_{at,cimd2,ois,smpp}.c, gw/sms.h, gw/smpp_pdu.h:
