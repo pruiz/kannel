@@ -1,3 +1,7 @@
+2000-01-18    mikael.gueck@wapit.com
+
+	* gw/smsc_cimd.c: submit_sms UDH-enabling fix
+
 Tue Jan 18 16:02:49 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Release 0.3.
