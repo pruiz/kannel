@@ -171,6 +171,7 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 
 no_msg:
 error:
+	error(errno, "csdr_get_message: could not get message");
 	return NULL;
 }
 
