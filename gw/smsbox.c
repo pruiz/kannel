@@ -251,11 +251,10 @@ static int send_message(URLTranslation *trans, Msg *msg)
     }
     
     if (msg->sms.flag_udh == 0 && octstr_len(msg->sms.msgdata) == 0) {
-	if (trans != NULL && urltrans_omit_empty(trans) != 0) {
+	if (trans != NULL && urltrans_omit_empty(trans) != 0)
 	    max_msgs = 0;
-	} else { 
+	else
 	    octstr_replace(msg->sms.msgdata, empty, strlen(empty));
-	}
     }
 
     if (max_msgs == 0)
