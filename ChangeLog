@@ -1,3 +1,9 @@
+2003-02-14  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c, doc/userguide/userguide.xml: Changed default behaviour
+      of the 'source-addr-autodetect' to yes. Alex suggested this. If the 
+      feature is not needed, it can be turned off by setting the config
+      directive to 'no'.
+
 2003-02-13 Aarno Syvänen <as@gni.ch>
     * PPG SMSC routing patch:
     * gw/wap_ppg_push_machine.def: Added a field for smsc id.
