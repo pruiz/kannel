@@ -1,3 +1,7 @@
+2002-04-23  Stipe Tolj <tolj@wapme-systems.de>
+    * gwlib/cfg.def: added missing 'xmlrpc-url' for XML-RPC URI
+      tringger to be used.
+
 2002-04-22  Stipe Tolj <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added 'smart-errors' section
     * gw/wap-appl.c, wap/wsp.h, wap/wsp_server_session_machine.def,
