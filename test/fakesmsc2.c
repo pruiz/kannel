@@ -1,33 +1,34 @@
 /*
- * fakesmsc.c - simulate an SMS centers, using a trivial protocol
+ * fakesmsc2.c - simulate an SMS center, using a trivial protocol
  *
  * The protocol:
  *
- *	client writes a line (terminated with \r\n or \n) with three space
- *	separated fields: sender's phone number, receiver's phone number,
- *	and text of message
- *
- *	server writes similar lines when it wants to send messages; at the
- *	moment, it sends them after the client has been quiet for a while,
- *	see macros MSG_SECS and MSG_USECS below.
- *
- * The server terminates when the client terminates. It only accepts one
- * client.
+ *	Client sends each message on its own line (terminated with \r\n or \n).
+ *	The line begins with 3 space-separated fields:
+ *	sender's phone number, receiver's phone number,
+ *	type of message. Type of message can be one of "text", "data", or
+ *	"udh". If type == "text", the rest of the line is taken as the message.
+ *	If type == "data", the next field is taken to be the text of the
+ *	message in urlcoded form. Space is coded as '+'. If type == "udh",
+ *	the following 2 fields are taken to be the UDH and normal portions
+ *	in urlcoded form. Space is again coded as '+'.
+ *	The server sends replies back in the same format.
  *
  * Lars Wirzenius, later edition by Kalle Marjola
+ * fake2 version by Uoti Urpala
  */
 
-#define MAX_SEND (0)
-
-static char usage[] = "\nUsage: fakesmsc [-h host] [-p port] [-i interval] [-m max] <msg> ... \n\
+static char usage[] = "\nUsage: fakesmsc2 [-H host] [-p port] [-i interval] [-m max] <msg> ... \n\
 \n\
-where 'host' is the machine running bearerbox (default localhost),\n\
-'port' is the port to connect to (default 10000), 'interval' is the \n\
-interval (default 1.0) in seconds (floating point allowed) between \n\
-automatically generated messages, 'max' is the maximum number of messages \n\
-to send (0, default, means infinitum), and <msg> is the message to be sent. \n\
-If there are several messages, they are sent in random order.";
-
+'host' and 'port' define bearerbox connection (default localhost:10000),\n\
+'interval' is time in seconds (floats allowed) between generated messages,\n\
+'max' is the total number sent (-1, default, means unlimited),\n\
+<msg> is message to send, if several are given, they are sent randomly.\n\
+msg format: \"sender receiver type(text/data/udh) msgdata [udhdata]\"\n\
+Type \"text\" means plaintext msgdata, \"data\" urlcoded, \"udh\" urlcoded udh+msg\n\
+Examples: fakesmsc2 -m 1 \"123 345 udh %04udh%3f message+data+here\"
+fakesmsc2 -i 0.01 -m 10000 \"123 345 text nop\" \"1 2 text another message here\"\n\
+Server replies are shown urlcoded.\n";
 
 #include <errno.h>
 #include <math.h>
@@ -37,34 +38,90 @@ If there are several messages, they are sent in random order.";
 #include <time.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#include <limits.h>
+#include <signal.h>
 
 #include <sys/param.h>
 
 #include "gwlib/gwlib.h"
 
 static int port = 10000;
-static char *host = "localhost";
-static int max_send = 0;
+static Octstr *host;
+static long max_send = LONG_MAX;
 static double interval = 1.0;
+static int sigint_received;
 
-/* Write a line to a socket. Also write the terminating newline (i.e., the
-   input string does not have to include it. */
-static void write_line(int fd, char *line) {
-    int n;
 
-    n = strlen(line);
-    if (write(fd, line, n) != n)
-	panic(errno, "write failed or truncated");
-    if (write(fd, "\n", 1) != 1)
-	panic(errno, "write failed or truncated");
+static void signal_handler(int signum) {
+    if (signum == SIGINT)
+	sigint_received = 1;
+    else
+	panic(0, "Caught signal with no handler?!");
+}
+
+
+static Octstr *transform_for_output(Octstr *line, long num_received)
+{
+    int p, p2;
+    Octstr *sender, *receiver, *type, *msgdata, *udhdata;
+
+    p = octstr_search_char(line, ' ', 0);
+    if (p == -1)
+	goto error;
+    sender = octstr_copy(line, 0, p);
+    p2 = octstr_search_char(line, ' ', p + 1);
+    if (p2 == -1)
+	goto error;
+    receiver = octstr_copy(line, p + 1, p2 - p - 1);
+    p = octstr_search_char(line, ' ', p2 + 1);
+    if (p == -1)
+	goto error;
+    type = octstr_copy(line, p2 + 1, p - p2 -1);
+    if (!octstr_compare(type, octstr_imm("data"))) {
+	msgdata = octstr_copy(line, p + 1, LONG_MAX);
+	udhdata = NULL;
+    }
+    else if (!octstr_compare(type, octstr_imm("udh"))) {
+	p2 = octstr_search_char(line, ' ', p + 1);
+	if (p2 == -1)
+	    goto error;
+	msgdata = octstr_copy(line, p + 1, p2 - p - 1);
+	udhdata = octstr_copy(line, p2 + 1, LONG_MAX);
+    }
+    else
+	goto error;
+    octstr_destroy(line);
+    if (udhdata == NULL)
+	line = octstr_format("Got message %d: %S %S <%S>",
+			     num_received, sender, receiver, msgdata);
+    else
+	line = octstr_format("Got message %d: %S %S <%S %S>",
+			     num_received, sender, receiver, msgdata, udhdata);
+    octstr_destroy(sender);
+    octstr_destroy(receiver);
+    octstr_destroy(type);
+    octstr_destroy(msgdata);
+    octstr_destroy(udhdata);
+    return line;
+
+error:
+    panic(0, "Invalid line from server (%s)", octstr_get_cstr(line));
+    return 0; /* To avoid warnings, panic doesn't return */
+}
+
+
+    static void setup_signal_handlers(void) {
+    struct sigaction act;
+
+    act.sa_handler = signal_handler;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    sigaction(SIGINT, &act, NULL);
 }
 
 
 /* Choose a random message from a table of messages. */
-static char *choose_message(char **msgs, int num_msgs) {
+static Octstr *choose_message(Octstr **msgs, int num_msgs) {
     /* the following doesn't give an even distribution, but who cares */
     return msgs[gw_rand() % num_msgs];
 }
@@ -83,10 +140,13 @@ static double get_current_time(void) {
 static int check_args(int i, int argc, char **argv) {
     if (strcmp(argv[i], "-p")==0 || strcmp(argv[i], "--port")==0)
         port = atoi(argv[i+1]);
-    else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--host"))
-	host = argv[i+1];
-    else if (strcmp(argv[i], "-m")==0 || strcmp(argv[i], "--messages")==0)
+    else if (!strcmp(argv[i], "-H") || !strcmp(argv[i], "--host"))
+	host = octstr_create(argv[i+1]);
+    else if (strcmp(argv[i], "-m")==0 || strcmp(argv[i], "--messages")==0) {
 	max_send = atoi(argv[i+1]);
+	if (max_send < 0)
+	    max_send = LONG_MAX;
+    }
     else if (strcmp(argv[i], "-i")==0 || strcmp(argv[i], "--interval")==0)
 	interval = atof(argv[i+1]);
     else {
@@ -100,33 +160,40 @@ static int check_args(int i, int argc, char **argv) {
 
 /* The main program. */
 int main(int argc, char **argv) {
-    int client, ret;
-    char line[1024];
-    fd_set readset;
-    struct timeval tv;
-    char **msgs;
+    Connection *server;
+    Octstr *line;
+    Octstr **msgs;
+    int i;
     int mptr, num_msgs;
-    int num_received, num_sent;
+    long num_received, num_sent;
     double first_received_at, last_received_at;
     double first_sent_at, last_sent_at;
     double start_time, end_time;
     double delta;
 
     gwlib_init();
+    setup_signal_handlers();
+    host = octstr_create("localhost");
     start_time = get_current_time();
 
     mptr = get_and_set_debugs(argc, argv, check_args);
     num_msgs = argc - mptr;
     if (num_msgs <= 0)
 	panic(0, "%s", usage);
-    msgs = argv + mptr;
-    info(0, "Host %s Port %d interval %.3f max-messages %d",
-	 host, port, interval, max_send);
+    msgs = gw_malloc(sizeof(Octstr *) * num_msgs);
+    for (i = 0; i < num_msgs; i ++) {
+	msgs[i] = octstr_create(argv[mptr + i]);
+	octstr_append_char(msgs[i], 10); /* End of line */
+    }
+    info(0, "Host %s Port %d interval %.3f max-messages %ld",
+	 octstr_get_cstr(host), port, interval, max_send);
 
     srand((unsigned int) time(NULL));
 
     info(0, "fakesmsc starting");
-    client = tcpip_connect_to_server(host, port);
+    server = conn_open_tcp(host, port);
+    if (server == NULL)
+	panic(0, "Failed to open connection");
 
     num_sent = 0;
     num_received = 0;
@@ -137,58 +204,54 @@ int main(int argc, char **argv) {
     last_sent_at = 0;
 
     num_sent = 0;
-    while (client >= 0) {
-	if (max_send == 0 || num_sent < max_send) {
-	    write_line(client, choose_message(msgs, num_msgs));
+    while (1) {
+	if (num_sent < max_send) {
+	    if (conn_write(server, choose_message(msgs, num_msgs)) == -1)
+		panic(0, "write failed");
 	    ++num_sent;
 	    if (num_sent == max_send)
-		info(0, "fakesmsc: sent message %d", num_sent);
+		info(0, "fakesmsc: sent message %ld", num_sent);
 	    else
-		debug("send", 0, "fakesmsc: sent message %d", num_sent);
+		debug("send", 0, "fakesmsc: sent message %ld", num_sent);
 	    last_sent_at = get_current_time();
 	    if (first_sent_at == 0)
 		first_sent_at = last_sent_at;
 	}
 	do {
-	    FD_ZERO(&readset);
-	    FD_SET(client, &readset);
 	    delta = interval * num_sent - (get_current_time() - first_sent_at);
 	    if (delta < 0)
 		delta = 0;
-	    tv.tv_sec = (long) delta;
-	    tv.tv_usec = (long) ((delta - tv.tv_sec) * 1e6);
-
-	    ret = select(client+1, &readset, NULL, NULL,
-			 num_sent < max_send ? &tv : NULL);
-	    if (ret == -1)
-		panic(errno, "select failed");
-	    if (ret == 1 && FD_ISSET(client, &readset)) {
-		if (read_line(client, line,
-			      sizeof(line)) <= 0) {
-		    close(client);
-		    client = -1;
-		    break;
-		}
+	    if (num_sent >= max_send)
+		delta = -1;
+	    conn_wait(server, delta);
+	    if (conn_read_error(server) || conn_eof(server) || sigint_received)
+		goto over;
+	    while ( (line = conn_read_line(server)) ) {
 		last_received_at = get_current_time();
-		++num_received;
-		if (num_received == max_send) {
-		    info(0, "fakesmsc: got message %d: <%s>",
-			 num_received, line);
-		} else {
-		    debug("receive", 0, "fakesmsc: got message %d: <%s>",
-			  num_received, line);
-		}
 		if (first_received_at == 0)
 		    first_received_at = last_received_at;
+		++num_received;
+		line = transform_for_output(line, num_received);
+		if (num_received == max_send) {
+		    info(0, "%s", octstr_get_cstr(line));
+		} else {
+		    debug("receive", 0, "%s", octstr_get_cstr(line));
+		}
+		octstr_destroy(line);
 	    }
-	} while (delta > 0 || (max_send > 0 && num_sent >= max_send));
+	} while (delta > 0 || num_sent >= max_send);
     }
 
-    close(client);
+over:
+    conn_destroy(server);
+
+    for (i = 0; i < num_msgs; i ++)
+	octstr_destroy(msgs[i]);
+    gw_free(msgs);
 
     end_time = get_current_time();
 
-    info(0, "fakesmsc: %d messages sent and %d received",
+    info(0, "fakesmsc: %ld messages sent and %ld received",
 	 num_sent, num_received);
     info(0, "fakesmsc: total running time %.1f seconds",
 	 end_time - start_time);

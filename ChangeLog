@@ -1,3 +1,11 @@
+2001-01-24  Uoti Urpala <uau@iki.fi>
+
+	* test/fakesmsc2.c, gw/smsc_fake2.c: Several fake2 changes, added
+	send/receive udh, possibility to restrict connections based on IP.
+	Messages on command line need to be written differently.
+
+	* gwlib/octstr.[ch]: Added octstr_create_urlcoded() function.
+
 2001-01-23  Lars Wirzenius  <liw@iki.fi>
 
 	* Ran some compiles with stricter warning options than -Wall.

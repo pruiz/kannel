@@ -23,12 +23,10 @@
 typedef struct privdata {
     List	*outgoing_queue;
     long	connection_thread;
-
-    int		shutdown;
-
-    int		listening_socket;
-
-    int port;
+    int		shutdown; /* Signal to the connection thread to shut down */
+    int		listening_socket; /* File descriptor */
+    int		port;		  /* Port number to listen */
+    Octstr	*allow_ip, *deny_ip;
 } PrivData;
 
 
@@ -51,51 +49,38 @@ static int fake2_open_connection(PrivData *privdata)
 }
 
 
-/*--------------------------------------------------------------------
- * TODO: WAP WDP functions!
- */
-
-
-static PrivData *fake2_smsc_open(CfgGroup *grp)
-{
-    PrivData *privdata;
-    long portno;
-
-    if (cfg_get_integer(&portno, grp, octstr_imm("port")) == -1)
-    	portno = 0;
-
-    if (portno == 0) {
-	error(0, "'port' invalid in 'fake2' record.");
-	return NULL;
-    }
-    privdata = gw_malloc(sizeof(PrivData));
-    privdata->listening_socket = -1;
-
-    privdata->port = portno;
-
-    if (fake2_open_connection(privdata) < 0) {
-	gw_free(privdata);
-	return NULL;
-    }
-    info(0, "Fake2 open successfully done");
-
-    return privdata;
-}
-
-
 static int sms_to_client(Connection *client, Msg *msg)
 {
-    char ten = 10;
+    Octstr *line;
+    Octstr *msgdata;
 
     debug("bb.sms", 0, "smsc_fake2: sending message to client");
 
-    if (conn_write(client, msg->sms.sender) == -1 ||
-	conn_write_data(client, " ", 1) == -1 ||
-	conn_write(client, msg->sms.receiver) == -1 ||
-	conn_write_data(client, " ", 1) == -1 ||
-	conn_write(client, msg->sms.msgdata) == -1 ||
-	conn_write_data(client, &ten, 1) == - 1)
+    line = octstr_duplicate(msg->sms.sender);
+    octstr_append_char(line, ' ');
+    octstr_append(line, msg->sms.receiver);
+    if (msg->sms.flag_8bit) {
+	octstr_append(line, octstr_imm(" udh "));
+	msgdata = octstr_create_urlcoded(msg->sms.msgdata);
+	octstr_append(line, msgdata);
+	octstr_destroy(msgdata);
+	octstr_append_char(line, ' ');
+	msgdata = octstr_create_urlcoded(msg->sms.udhdata);
+    }
+    else {
+	octstr_append(line, octstr_imm(" data "));
+	msgdata = octstr_create_urlcoded(msg->sms.msgdata);
+    }
+    octstr_append(line, msgdata);
+    octstr_append_char(line, 10);
+
+    if (conn_write(client, line) == -1) {
+	octstr_destroy(msgdata);
+	octstr_destroy(line);
 	return -1;
+    }
+    octstr_destroy(msgdata);
+    octstr_destroy(line);
     return 1;
 }
 
@@ -104,33 +89,57 @@ static void msg_to_bb(SMSCConn *conn, Octstr *line)
 {
     long p, p2;
     Msg *msg;
+    Octstr *type = NULL; /* might be destroyed after error before created */
 
     msg = msg_create(sms);
     p = octstr_search_char(line, ' ', 0);
-    if (p == -1) {
-	msg->sms.sender = octstr_duplicate(line);
-	msg->sms.receiver = octstr_create("");
-	msg->sms.msgdata = octstr_create("");
+    if (p == -1)
+	goto error;
+    msg->sms.sender = octstr_copy(line, 0, p);
+    p2 = octstr_search_char(line, ' ', p + 1);
+    if (p2 == -1)
+	goto error;
+    msg->sms.receiver = octstr_copy(line, p + 1, p2 - p - 1);
+    p = octstr_search_char(line, ' ', p2 + 1);
+    if (p == -1)
+	goto error;
+    type = octstr_copy(line, p2 + 1, p - p2 - 1);
+    if (!octstr_compare(type, octstr_imm("text")))
+	msg->sms.msgdata = octstr_copy(line, p + 1, LONG_MAX);
+    else if (!octstr_compare(type, octstr_imm("data"))) {
+	msg->sms.msgdata = octstr_copy(line, p + 1, LONG_MAX);
+	if (octstr_url_decode(msg->sms.msgdata) == -1)
+	    warning(0, "Fake2: urlcoded data from client looks malformed");
     }
-    else {
-	msg->sms.sender = octstr_copy(line, 0, p);
+    else if (!octstr_compare(type, octstr_imm("udh"))) {
 	p2 = octstr_search_char(line, ' ', p + 1);
-	if (p2 == -1) {
-	    msg->sms.receiver = octstr_copy(line, p + 1, LONG_MAX);
-	    msg->sms.msgdata = octstr_create("");
-	}
-	else {
-	    msg->sms.receiver = octstr_copy(line, p + 1, p2 - p - 1);
-	    msg->sms.msgdata = octstr_copy(line, p2 + 1, LONG_MAX);
-	}
+	if (p2 == -1)
+	    goto error;
+	msg->sms.msgdata = octstr_copy(line, p + 1, p2 - p - 1);
+	msg->sms.udhdata = octstr_copy(line, p2 + 1, LONG_MAX);
+	msg->sms.flag_udh = 1;
+	msg->sms.flag_8bit = 1;
+	if (octstr_url_decode(msg->sms.msgdata) == -1 ||
+	    octstr_url_decode(msg->sms.udhdata) == -1)
+	    warning(0, "Fake2: urlcoded data from client looks malformed");
     }
+    else
+	goto error;
     octstr_destroy(line);
+    octstr_destroy(type);
     time(&msg->sms.time);
     msg->sms.smsc_id = octstr_duplicate(conn->id);
 
     debug("bb.sms", 0, "fake2: new message received");
     counter_increase(conn->received);
     bb_smscconn_receive(conn, msg);
+    return;
+error:
+    warning(0, "Fake2: invalid message syntax from client, ignored");
+    msg_destroy(msg);
+    octstr_destroy(line);
+    octstr_destroy(type);
+    return;
 }
 
 
@@ -186,12 +195,13 @@ eof:
 }
 
 
-static void fake2_connection(void *arg)
+static void fake2_listener(void *arg)
 {
     SMSCConn	*conn = arg;
     PrivData	*privdata = conn->data;
-    struct sockaddr client_addr;
+    struct sockaddr_in client_addr;
     socklen_t	client_addr_len;
+    Octstr	*ip;
     Connection	*client;
     int 	s, ret;
     Msg		*msg;
@@ -208,19 +218,30 @@ static void fake2_connection(void *arg)
 	if (ret == 0) /* This thread was woken up from elsewhere, but
 			 if we're not shutting down nothing to do here. */
 	    continue;
-	s = accept(privdata->listening_socket, &client_addr, &client_addr_len);
+	s = accept(privdata->listening_socket, (struct sockaddr *)&client_addr,
+		   &client_addr_len);
 	if (s == -1) {
-	    warning(errno, "fake2_connection: accept() failed, retrying...");
+	    warning(errno, "fake2_listener: accept() failed, retrying...");
+	    continue;
+	}
+	ip = host_ip(client_addr);
+	if (!is_allowed_ip(octstr_get_cstr(privdata->allow_ip), octstr_get_cstr(privdata->deny_ip), ip)) {
+	    info(0, "Fake2 connection tried from denied host <%s>,"
+		 " disconnected", octstr_get_cstr(ip));
+	    octstr_destroy(ip);
+	    close(s);
 	    continue;
 	}
 	client = conn_wrap_fd(s);
 	if (client == NULL) {
-	    error(0, "fake2_connection: conn_wrap_fd failed on accept()ed fd");
+	    error(0, "fake2_listener: conn_wrap_fd failed on accept()ed fd");
+	    octstr_destroy(ip);
 	    close(s);
 	    continue;
 	}
 	conn_claim(client);
-	info(0, "Fake2 SMSC client connected");
+	info(0, "Fake2 SMSC client connected from %s", octstr_get_cstr(ip));
+	octstr_destroy(ip);
 	mutex_lock(conn->flow_mutex);
 	conn->status = SMSCCONN_ACTIVE;
 	conn->connect_time = time(NULL);
@@ -244,8 +265,9 @@ static void fake2_connection(void *arg)
 	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
     }
     list_destroy(privdata->outgoing_queue, NULL);
-    /* !@# Check to see whether there will be more resources to free
-       from privdata later */
+    close(privdata->listening_socket);
+    octstr_destroy(privdata->allow_ip);
+    octstr_destroy(privdata->deny_ip);
     gw_free(privdata);
     conn->data = NULL;
 
@@ -316,12 +338,34 @@ static long queued_cb(SMSCConn *conn)
 
 int smsc_fake2_create(SMSCConn *conn, CfgGroup *cfg)
 {
-    PrivData *privdata;
+    PrivData *privdata = NULL;
+    Octstr *allow_ip, *deny_ip;
+    long portno;   /* has to be long because of cfg_get_integer */
 
-    conn->send_msg = add_msg_cb;
+    if (cfg_get_integer(&portno, cfg, octstr_imm("port")) == -1)
+	portno = 0;
+    allow_ip = cfg_get(cfg, octstr_imm("connect-allow-ip"));
+    if (allow_ip)
+	deny_ip = octstr_create("*.*.*.*");
+    else
+	deny_ip = NULL;
 
-    if ( (privdata = fake2_smsc_open(cfg)) == NULL)
+    if (portno == 0) {
+	error(0, "'port' invalid in 'fake2' record.");
 	goto error;
+    }
+    privdata = gw_malloc(sizeof(PrivData));
+    privdata->listening_socket = -1;
+
+    privdata->port = portno;
+    privdata->allow_ip = allow_ip;
+    privdata->deny_ip = deny_ip;
+
+    if (fake2_open_connection(privdata) < 0) {
+	gw_free(privdata);
+	privdata = NULL;
+	goto error;
+    }
 
     conn->data = privdata;
 
@@ -334,12 +378,13 @@ int smsc_fake2_create(SMSCConn *conn, CfgGroup *cfg)
     conn->connect_time = time(NULL);
 
     if ( (privdata->connection_thread =
-	  gwthread_create(fake2_connection, conn)) == -1)
+	  gwthread_create(fake2_listener, conn)) == -1)
 	goto error;
 
     conn->shutdown = shutdown_cb;
     conn->queued = queued_cb;
     conn->start_conn = start_cb;
+    conn->send_msg = add_msg_cb;
 
     return 0;
 
@@ -353,6 +398,8 @@ error:
 	}
     }
     gw_free(privdata);
+    octstr_destroy(allow_ip);
+    octstr_destroy(deny_ip);
     conn->why_killed = SMSCCONN_KILLED_CANNOT_CONNECT;
     conn->status = SMSCCONN_DEAD;
     return -1;

@@ -62,6 +62,8 @@ static Octstr *immutables[MAX_IMMUTABLES];
 static Mutex immutables_mutex;
 static int immutables_init = 0;
 
+static char is_safe[UCHAR_MAX + 1];
+
 /*
  * Convert a pointer to a C string literal to a long that can be used
  * for hashing. This is done by converting the pointer into an integer
@@ -108,8 +110,27 @@ static void octstr_grow(Octstr *ostr, long size)
 }
 
 
+/*
+ * Fill is_safe table. is_safe[c] means that c can be left as such when
+ * url-encoded.
+ * RFC 2396 defines the list of characters that need to be encoded.
+ * Space is treated as an exception by the encoding routine;
+ * it's listed as safe here, but is actually changed to '+'.
+ */
+static void urlcode_init(void)
+{
+    int i;
+
+    unsigned char *safe = " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	"abcdefghijklmnopqrstuvwxyz-_.!~*'()";
+    for (i = 0; safe[i] != '\0'; ++i)
+	is_safe[safe[i]] = 1;
+}
+
+
 void octstr_init(void)
 {
+    urlcode_init();
     mutex_init_static(&immutables_mutex);
     immutables_init = 1;
 }
@@ -1461,6 +1482,52 @@ eof:
 error:
     gw_free(data);
     return -1;
+}
+
+
+Octstr *octstr_create_urlcoded(Octstr *ostr)
+{
+    int i, n, newlen;
+    unsigned char *str, *str2, *hexits;
+    unsigned char c;
+    Octstr *res;
+
+    seems_valid(ostr);
+
+    res = octstr_create("");
+
+    if (ostr->len == 0)
+	return res;
+
+    str = ostr->data;
+    n = 0;
+    for (i = 0; i < ostr->len; i++)
+	if (!is_safe[*str++])
+	    n++;
+    newlen = ostr->len + 2 * n;
+    res->len = newlen;
+    res->size = res->len + 1;
+    res->data = gw_malloc(res->size);
+
+    hexits = "0123456789ABCDEF";
+
+    str = ostr->data;
+    str2 = res->data;
+    for (i = 0; i < ostr->len; i++) {
+	c = *str++;
+	if (!is_safe[c]) {
+	    *str2++ = '%';
+	    *str2++ = hexits[c >> 4 & 0xf];
+	    *str2++ = hexits[c & 0xf];
+	}
+	else if (c == ' ')
+	    *str2++ = '+';
+	else
+	    *str2++ = c;
+    }
+    *str2 = 0;
+    seems_valid(res);
+    return res;
 }
 
 
