@@ -559,9 +559,14 @@ static void send_messages(SMPP *smpp, Connection *conn, long *pending_submits)
     Msg *msg; 
     SMPP_PDU *pdu; 
     Octstr *os; 
- 
+    double delay = 0;
+
     if (*pending_submits == -1) 
         return; 
+
+    if (smpp->conn->throughput) {
+        delay = 1.0 / smpp->conn->throughput;
+    }
  
     while (*pending_submits < smpp->max_pending_submits) {
     	/* Get next message, quit if none to be sent */ 
@@ -577,6 +582,10 @@ static void send_messages(SMPP *smpp, Connection *conn, long *pending_submits)
         send_pdu(conn, smpp->conn->id, pdu); 
         smpp_pdu_destroy(pdu); 
  
+        /* obey throughput speed limit, if any */
+        if (smpp->conn->throughput)
+            gwthread_sleep(delay);
+
         ++(*pending_submits); 
     } 
 } 
