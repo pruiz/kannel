@@ -695,7 +695,7 @@ static void url_result_thread(void *arg)
 	alog("SMS HTTP-request sender:%s request: '%s' "
 	     "url: '%s' reply: %d '%s'",
 	     octstr_get_cstr(msg->sms.receiver),
-	     octstr_get_cstr(msg->sms.msgdata),
+	     (msg->sms.msgdata != NULL) ? octstr_get_cstr(msg->sms.msgdata) : "",
 	     octstr_get_cstr(final_url),
 	     status,
 	     (status == HTTP_OK) 

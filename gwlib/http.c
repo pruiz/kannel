@@ -566,6 +566,8 @@ typedef struct {
     int follow_remaining;
     Octstr *certkeyfile;
     int ssl;
+    Octstr *username;	/* For basic authentication */
+    Octstr *password;
 } HTTPServer;
 
 
@@ -589,6 +591,8 @@ static HTTPServer *server_create(HTTPCaller *caller, Octstr *url,
     trans->conn = NULL;
     trans->host = NULL;
     trans->port = 0;
+    trans->username = NULL;
+    trans->password = NULL;
     trans->retrying = 0;
     trans->follow_remaining = follow_remaining;
     trans->certkeyfile = certkeyfile;
@@ -979,12 +983,12 @@ static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port,
  * 
  *  http_URL = "http:" "//" host [ ":" port ] [ abs_path [ "?" query ]]
  */
-static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
-		     int *ssl)
+static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path, 
+		     int *ssl, Octstr **username, Octstr **password)
 {
     Octstr *prefix, *prefix_https;
     long prefix_len;
-    int host_len, colon, slash;
+    int host_len, colon, slash, at;
 
     prefix = octstr_imm("http://");
     prefix_https = octstr_imm("https://");
@@ -1022,6 +1026,21 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
         return -1;
     }
 
+    at = octstr_search_char(url, '@', prefix_len);
+    if ( at != -1 ) {
+	if ((slash == -1 || ( slash != -1 && at < slash))) {
+	    int colon2;
+	    colon2 = octstr_search_char(url, ':', prefix_len);
+
+	    if (colon2 != -1 && (colon2 < at)) {
+		octstr_set_char(url, colon2, '@');
+		colon = octstr_search_char(url, ':', prefix_len);
+	    }
+	} else {
+	    at = -1;
+	}
+    }
+    
     if (slash == -1 && colon == -1) {
         /* Just the hostname, no port or path. */
         host_len = octstr_len(url) - prefix_len;
@@ -1059,6 +1078,21 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
         return -1;
     }
 
+
+    if (at != -1) {
+	int at2;
+	at2 = octstr_search_char(url, '@', prefix_len);
+	*username = octstr_copy(url, prefix_len, at2 - prefix_len);
+
+	if (at2 != at)
+	    *password = octstr_copy(url, at2 + 1, at - at2 - 1);
+	else
+	    *password = NULL;
+
+	host_len = host_len - at + prefix_len - 1;
+	prefix_len = at + 1;
+    }
+
     *host = octstr_copy(url, prefix_len, host_len);
     if (slash == -1)
         *path = octstr_create("/");
@@ -1089,8 +1123,13 @@ static Connection *send_request(HTTPServer *trans, char *method_name)
     octstr_destroy(trans->host);
     trans->host = NULL;
 
-    if (parse_url(trans->url, &trans->host, &trans->port, &path, &trans->ssl) == -1)
+    if (parse_url(trans->url, &trans->host, &trans->port, &path, &trans->ssl,
+		  &trans->username, &trans->password) == -1)
         goto error;
+
+    if (trans->username != NULL)
+	http_add_basic_auth(trans->request_headers, trans->username,
+	    	       trans->password);
 
     if (proxy_used_for_host(trans->host)) {
 	proxy_add_authentication(trans->request_headers);
@@ -1100,7 +1139,7 @@ static Connection *send_request(HTTPServer *trans, char *method_name)
 	host = proxy_hostname;
 	port = proxy_port;
     } else {
-        request = build_request(path, trans->host, trans->port, 
+        request = build_request(path, trans->host, trans->port,
 	    	    	    	trans->request_headers,
                                 trans->request_body, method_name);
 	host = trans->host;
@@ -2500,7 +2539,10 @@ void http_add_basic_auth(List *headers, Octstr *username, Octstr *password)
 {
     Octstr *os;
     
-    os = octstr_format("%S:%S", username, password);
+    if (password != NULL)
+      os = octstr_format("%S:%S", username, password);
+    else
+      os = octstr_format("%S", username);
     octstr_binary_to_base64(os);
     octstr_strip_blanks(os);
     octstr_insert(os, octstr_imm("Basic "), 0);

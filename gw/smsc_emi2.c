@@ -763,10 +763,11 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 			 * (simpler than avoiding sleep) */
 			gwthread_wakeup(privdata->sender_thread);
 		    }
-		    else if (privdata->sendtype[i] == 31)
+		    else if (privdata->sendtype[i] == 31) {
 			warning(0, "smsc_emi2: Alert (operation 31) was not "
 				"ACKed within %d seconds", privdata->waitack);
-		    else
+			if (privdata->flowcontrol) write=1;
+		    } else
 			panic(0, "Bug, no timeout handler for sent packet");
 		}
 	}

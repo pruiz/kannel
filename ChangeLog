@@ -1,3 +1,12 @@
+2001-09-20 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* gw/smsbox.c: Check for msgdata=NULL when loggin to alog
+	* gwlib/http.c: Added sms-service basic authentication.
+	url = "http://user:pass@host:port/path/file". Added parsing to 
+	parse_url and used existent http_add_basic_auth call
+	* gw/smsc_emi2.c: when using flow-control (stop-and-wait), if a
+	-31 message is not ack, make write=1 again to restart sending 
+	messages 
+
 2001-09-19 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* gw/bb_store.c: Fixed two bugs that don't close store.lock when
 	store_dump is called. One was (introduced by me) in store_rename
