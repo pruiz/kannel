@@ -512,7 +512,8 @@ int charset_convert(Octstr *string, char *charset_from, char *charset_to)
     gw_free(to_buf);
     return ret;
 #endif
-    return 0;
+    return 0; /* XXX Shouldn't this be -1 saying that no convertion done due to 
+               * not having iconv? */
 }
 
 

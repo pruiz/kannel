@@ -1,4 +1,10 @@
 2003-07-18  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/wap-appl.c: Set encoding version in Via: header; also change 
+      content.charset variable if kannel does transcoding; reset map-url
+      variables when destroying them
+    * gwlib/charset.c: added comment
+
+2003-07-18  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * STATUS: moved issues to http://bugs.kannel.org to concentrate them in
       one unique place, where everyone (I mean, whoever is registered) can add
       comments, open new bugs and specially, fix them. 

@@ -512,9 +512,12 @@ static void add_client_sdu_size(List *headers, long sdu_size)
 static void add_via(List *headers) 
 {
     Octstr *os;
+    Octstr *version;
     
-    os = octstr_format("WAP/1.1 %S (" GW_NAME "/%s)", get_official_name(),
-		       VERSION);
+    version = http_header_value(headers, octstr_imm("Encoding-Version"));
+    os = octstr_format("WAP/%s %S (" GW_NAME "/%s)", 
+		       (version ? octstr_get_cstr(version) : "1.1"),
+		       get_official_name(), VERSION);
     http_header_add(headers, "Via", octstr_get_cstr(os));
     octstr_destroy(os);
 }
@@ -537,18 +540,31 @@ static void add_x_wap_tod(List *headers)
     }
     
     http_header_add(headers, "X-WAP.TOD", octstr_get_cstr(gateway_time));
-		    octstr_destroy(gateway_time);
+    octstr_destroy(gateway_time);
 }
 
 
 static void add_msisdn(List *headers, WAPAddrTuple *addr_tuple) 
 {
     Octstr *msisdn = NULL;
+    /* XXX DAVI: TO-DO
+    Octstr *proxy_auth = NULL;
+
+    proxy_auth = http_header_find_first(headers, "Proxy-Authorization");
+    if(proxy_auth) {
+        octstr_base64_to_binary(proxy_auth);
+        debug("foo", 0, "DAVI: proxy auth %s", octstr_get_cstr(proxy_auth));
+    }
+    */
 
     /* XXX DAVI: Add generic msisdn provisioning in here! */
     /* We do not accept NULL values to be added to the HTTP header */
     if ((msisdn = radius_acct_get_msisdn(addr_tuple->remote->address)) != NULL) {
         http_header_add(headers, "X-WAP-Network-Client-MSISDN", octstr_get_cstr(msisdn));
+    /* XXX DAVI: TO-DO
+    } else {
+        http_header_add(headers, "X-WSB-Identity", "91xxxxxxx");
+    */
     }
 
     octstr_destroy(msisdn);
@@ -737,7 +753,11 @@ static void return_reply(int status, Octstr *content_body, List *headers,
                  } else {
                      debug("wsp", 0, "Converting wml/xhtml from charset [%s] to UTF-8", 
                                      octstr_get_cstr(charset));
-                     charset_convert(content.body, octstr_get_cstr(charset), "UTF-8");
+                     if(charset_convert(content.body, octstr_get_cstr(charset), "UTF-8") >= 0) {
+		         octstr_destroy(content.charset);
+		         content.charset = octstr_create("UTF-8");
+			 /* XXX it might be good idea to change <?xml...encoding?> */
+		     }
                  }
             } 
 	    /* convert to iso-8859-1 if original charset is not iso and device supports it */
@@ -749,7 +769,11 @@ static void return_reply(int status, Octstr *content_body, List *headers,
                  } else {
                      debug("wsp", 0, "Converting wml/xhtml from charset [%s] to ISO-8859-1", 
                                      octstr_get_cstr(charset));
-                     charset_convert(content.body, octstr_get_cstr(charset), "ISO-8859-1");
+                     if(charset_convert(content.body, octstr_get_cstr(charset), "ISO-8859-1") >= 0) {
+		         octstr_destroy(content.charset);
+		         content.charset = octstr_create("ISO-8859-1");
+			 /* XXX it might be good idea to change <?xml...encoding?> */
+                     }
                  }
             }
         }
@@ -1427,6 +1451,7 @@ void wsp_http_map_destroy(void)
 	p = q -> next;
 	gw_free (q);
     }
+    wsp_http_map = wsp_http_map_last = NULL;
 }
 
 /*
