@@ -109,7 +109,7 @@ struct smscconn {
     int 	is_stopped;
 
     Octstr *name;		/* Descriptive name filled from connection info */
-    Octstr *id;			/* Abstract name spesified in configuration and
+    Octstr *id;			/* Abstract name specified in configuration and
 				   used for logging and routing */
     Octstr *allowed_smsc_id;
     Octstr *denied_smsc_id;

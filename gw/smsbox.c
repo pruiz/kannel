@@ -988,13 +988,14 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	request_headers = http_create_empty_headers();
 	http_header_add(request_headers, "User-Agent", GW_NAME " " VERSION);
 	id = remember_receiver(msg, trans);
-	/* XXX Which header should we use for UCS2 ? octstr also ? */
-	/* XXX UCS2 should be text/ *, charset=UTF16-BE ? */
-	if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2)
+	if (msg->sms.coding == DC_8BIT)
 	    http_header_add(request_headers, "Content-Type",
 			    "application/octet-stream");
 	else
-	    http_header_add(request_headers, "Content-Type", "text/plain");
+	    if(msg->sms.coding == DC_UCS2)
+		http_header_add(request_headers, "Content-Type", "text/plain; charset=UTF-16BE");
+	    else
+		http_header_add(request_headers, "Content-Type", "text/plain");
 	if (urltrans_send_sender(trans))
 	    http_header_add(request_headers, "X-Kannel-From",
 			    octstr_get_cstr(msg->sms.receiver));
@@ -1077,6 +1078,13 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	    Octstr *os;
 	    os = octstr_format("%d",msg->sms.deferred);
 	    http_header_add(request_headers, "X-Kannel-Deferred", 
+	    	octstr_get_cstr(os));
+	    octstr_destroy(os);
+	}
+	if (msg->sms.service) {
+	    Octstr *os;
+	    os = octstr_duplicate(msg->sms.service);
+	    http_header_add(request_headers, "X-Kannel-Service", 
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}

@@ -1,4 +1,13 @@
 2002-05-03  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * : The "where do you want me to post this?" patch
+    * doc/userguide/userguide.xml: added kannel post headers (kannel->appl);
+      added glossary and bibliography
+    * gw/other_smskannel.conf, gw/smscconn_p.h, gw/smskannel-ssl.conf, 
+      gw/smskannel.conf: fixed typo
+    * gw/smsbox.c: fixed ucs2 content-type and added X-Kannel-Service to
+      kannel post-url
+
+2002-05-03  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * : The "I don't like empty variables" patch
     * gw/smsbox.c: fixed empty text messages panic in post-xml code
     * gw/smsc_emi2.c: fixed deliver reports with undefined smsc-id. It

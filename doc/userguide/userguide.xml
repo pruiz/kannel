@@ -22,6 +22,8 @@
 <bookinfo>
 	<title>Kannel &version; User's Guide</title>
 	<subtitle>Open Source WAP and SMS gateway</subtitle>
+
+<authorgroup>
 	<author>
 		<firstname>Lars</firstname>
 		<surname>Wirzenius</surname>
@@ -58,6 +60,36 @@
 			</address>
 		</affiliation>
 	</author>
+	<author>
+		<firstname>Bruno</firstname>
+		<surname>Rodrigues</surname>
+		<affiliation>
+			<address> <email>bruno.rodrigues@litux.org</email>
+			<otheraddr>http://litux.org/bruno</otheraddr>
+			</address>
+		</affiliation>
+	</author>
+<!--	<author>
+		<firstname>Stipe</firstname>
+		<surname>Tolj</surname>
+		<affiliation>
+			<address> <email>tolj@wapme-systems.de</email>
+			<otheraddr>http://www.wapme-systems.de</otheraddr>
+			</address>
+		</affiliation>
+	</author>
+	<author>
+		<firstname>Aarno</firstname>
+		<surname>Syvänen</surname>
+		<affiliation>
+			<address> <email>aarno@wiral.com</email>
+			<otheraddr>http://www.wiral.com</otheraddr>
+			</address>
+		</affiliation>
+	</author>
+-->
+</authorgroup>
+
 	<abstract>
 		<title>Abstract</title> 
 		<para>This document describes how
@@ -66,6 +98,7 @@
 		being developed further by the open source community.
 		</para>
 	</abstract>
+
   <revhistory>
     <revision>
       <revnumber>&version;</revnumber>
@@ -4327,6 +4360,94 @@ text = "No action specified"
  </table>
 
 </sect3>
+
+
+<sect3 id="kannelpost">
+<title id="kannelpost.title">Kannel POST</title>
+
+	<para>Kannel can do POST if <literal>service</literal> is
+	contains a <literal>post-url="..."</literal>.</para>
+
+<table frame=none>
+  <title>X-Kannel Post Headers</title>
+  <tgroup cols=2>
+  <thead>
+   <row>
+     <entry>Parameter (escape code) equivalent</entry>
+     <entry>X-Kannel Header</entry>
+     <entry>Notes</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>%p (from)</literal></entry>
+   <entry><literal>X-Kannel-From</literal></entry>
+   <entry>Only sent if <literal>send-sender</literal> is true</entry> </row>
+
+   <row><entry><literal>%P (to)</literal></entry>
+   <entry><literal>X-Kannel-To</literal></entry>
+   <entry></entry></row>
+
+   <row><entry><literal>%t (time)</literal></entry>
+   <entry><literal>X-Kannel-Time</literal></entry>
+   <entry></entry></row>
+
+   <row><entry><literal>%u (udh)</literal></entry>
+   <entry><literal>X-Kannel-UDH</literal></entry>
+   <entry>in hex format: <literal>06050415820000</literal></entry></row>
+
+   <row><entry><literal>%i (smsc)</literal></entry>
+   <entry><literal>X-Kannel-SMSC</literal></entry>
+   <entry></entry></row>
+
+   <row><entry><literal>- (mclass)</literal></entry>
+   <entry><literal>X-Kannel-MClass</literal></entry>
+   <entry></entry></row>
+
+   <row><entry><literal>- (pid)</literal></entry>
+   <entry><literal>X-Kannel-PID</literal></entry>
+   <entry></entry></row>
+
+   <row><entry><literal>- (alt-dcs)</literal></entry>
+   <entry><literal>X-Kannel-Alt-DCS</literal></entry>
+   <entry></entry></row>
+
+   <row><entry><literal>- (mwi)</literal></entry>
+   <entry><literal>X-Kannel-MWI</literal></entry>
+   <entry></entry></row>
+
+   <row><entry><literal>%c (coding)</literal></entry>
+   <entry><literal>X-Kannel-Coding</literal></entry>
+   <entry>1=7 Bits, 2=8 Bits, 3=UCS2</entry></row>
+
+   <row><entry><literal>- (compress)</literal></entry>
+   <entry><literal>X-Kannel-Compress</literal></entry>
+   <entry></entry></row>
+
+   <row><entry><literal>- (validity)</literal></entry>
+   <entry><literal>X-Kannel-Validity</literal></entry>
+   <entry></entry></row>
+
+   <row><entry><literal>- (deferred)</literal></entry>
+   <entry><literal>X-Kannel-Deferred</literal></entry>
+   <entry></entry></row>
+
+   <row><entry><literal>%n (service name)</literal></entry>
+   <entry><literal>X-Kannel-Service</literal></entry>
+   <entry></entry></row>
+
+   <row><entry><literal>%a or %r (text)</literal></entry>
+   <entry>request body</entry>
+   <entry>kannel send all words (%a) unless <literal>strip-keyword</literal> is true</entry></row>
+
+   <row><entry><literal>%C (charset)</literal></entry>
+   <entry>present in <literal>Content-Type</literal> <literal>HTTP</literal></entry>
+   <entry>Example: <literal>Content-Type: text/plain; charset=ISO-8859-1</literal></entry></row>
+
+  </tbody>
+  </tgroup>
+</table>
+ 
+</sect3>
 	
 <![%draft;[
 <sect3 id="postxml">
@@ -6642,6 +6763,58 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 
 </appendix>
 
+
+<glossary>
+        <title>Glossary</title>
+
+        <glossdiv><title>M</title>
+                <glossentry id="MO"><glossterm>MO</glossterm><glossdef>
+                        <para>Mobile Originated - a SMS from mobile to application</para>
+                </glossdef></glossentry>
+                <glossentry id="MT"><glossterm>MT</glossterm><glossdef>
+                        <para>Mobile Terminated - a SMS from application to mobile</para>
+                </glossdef></glossentry>
+                <glossentry id="MWI"><glossterm>MWI</glossterm><glossdef>
+                        <para>Message Waiting Indicator (See <xref linkend="Biblio-3GPP-23038">)</para>
+                </glossdef></glossentry>
+                <glossentry id="MCLASS"><glossterm>MClass</glossterm><glossdef>
+                        <para>Message Class (See <xref linkend="Biblio-3GPP-23038">)</para>
+                </glossdef></glossentry>
+                <glossentry id="CODING"><glossterm>Coding</glossterm><glossdef>
+                        <para>Message Coding (See <xref linkend="Biblio-3GPP-23038">)</para>
+                </glossdef></glossentry>
+        </glossdiv>
+
+</glossary>
+
+<bibliography>
+        <title>Bibliography</title>
+
+        <biblioentry id="Biblio-RFC-2616">
+                <title>RFC 2616 - Hypertext Transfer Protocol -- HTTP/1.1</title>
+                <issn><ulink url="http://www.w3.org/Protocols/rfc2616/rfc2616.html">http://www.w3.org/Protocols/rfc2616/rfc2616.html</ulink></issn>
+                <subtitle>Request for Comments: 2616</subtitle>
+                <orgname>The Internet Society</orgname>
+                <copyright><year>1999</year></copyright>
+        </biblioentry>
+
+        <biblioentry id="Biblio-3GPP-23038">
+                <title>3GPP 23.038</title>
+                <issn><ulink url="http://www.3gpp.org/ftp/Specs/latest/Rel-5/23_series/23038-500.zip">http://www.3gpp.org/ftp/Specs/latest/Rel-5/23_series/23038-500.zip</ulink></issn>
+                <subtitle>...</subtitle>
+                <orgname>3GPP</orgname>
+                <copyright><year>?</year></copyright>
+        </biblioentry>
+
+        <biblioentry id="Biblio-3GPP-23040">
+                <title>3GPP 23.040</title>
+                <issn><ulink url="http://www.3gpp.org/ftp/Specs/latest/Rel-5/23_series/23040-530.zip">http://www.3gpp.org/ftp/Specs/latest/Rel-5/23_series/23040-530.zip</ulink></issn>
+                <subtitle>...</subtitle>
+                <orgname>3GPP</orgname>
+                <copyright><year>?</year></copyright>
+        </biblioentry>
+
+</bibliography>
 
 </book>
 
