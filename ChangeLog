@@ -1,3 +1,13 @@
+2000-10-04  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsc.c, gw/smsc_p.h, gw/smsc_emi.c: added configuration
+	variable 'connect-allow-ip' currently used by emi_ip in certain
+	situations - banned connect from other IPs, so you have to set
+	this variable if you still want to use emi_ip with receive port.
+
+	* gwlib/socket.c: removed loist of 'errno' from error, to minimize
+	double system error outputs.
+
 2000-10-03  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsbox.c: Fixed that we tried to close non-opened

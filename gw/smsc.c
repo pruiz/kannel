@@ -93,6 +93,7 @@ SMSCenter *smscenter_construct(void) {
 	smsc->emi_serialdevice = NULL;
 	smsc->emi_username = NULL;
 	smsc->emi_password = NULL;
+	smsc->emi_backup_allow_ip = NULL;
 
 	/* EMI IP */
 	smsc->emi_hostname = NULL;
@@ -170,6 +171,7 @@ void smscenter_destruct(SMSCenter *smsc) {
 
 	/* EMI IP */
 	gw_free(smsc->emi_hostname);
+	gw_free(smsc->emi_backup_allow_ip);
 
 	/* SEMA */
 	gw_free(smsc->sema_smscnua);
@@ -511,7 +513,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
         char *preferred_id, *denied_id;
         char *preferred_prefix, *denied_prefix;
         char *backup_port, *receive_port, *our_port; 
-        char *alt_chars;
+        char *alt_chars, *allow_ip;
         char *smpp_system_id, *smpp_system_type, *smpp_address_range;
 	char *sema_smscnua, *sema_homenua, *sema_report;
 	char *at_modemtype, *at_pin;
@@ -536,6 +538,8 @@ SMSCenter *smsc_open(ConfigGroup *grp)
         denied_prefix = config_get(grp, "denied-prefix");
         alt_chars = config_get(grp, "alt-charset");
 
+        allow_ip = config_get(grp, "connect-allow-ip");
+	
 	smsc_id = config_get(grp, "smsc-id");
 	preferred_id = config_get(grp, "preferred-smsc-id");
 	denied_id = config_get(grp, "denied-smsc-id");
@@ -633,7 +637,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 		error(0, "Required field missing for EMI IP center.");
             else
 		smsc = emi_open_ip(host, portno, username, password,
-				   receiveportno, ourportno);
+				   receiveportno, allow_ip, ourportno);
 	    break;
 
 	case SMSC_TYPE_SMPP_IP:

@@ -86,12 +86,12 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port)
 
 	s = socket(PF_INET, SOCK_STREAM, 0);
 	if (s == -1) {
-		error(errno, "Couldn't create new socket.");
+		error(0, "Couldn't create new socket.");
 		goto error;
 	}
 
 	if (gw_gethostbyname(&hostinfo, hostname) == -1) {
-		error(errno, "gethostbyname failed");
+		error(0, "gethostbyname failed");
 		goto error;
 	}
 
@@ -109,7 +109,7 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port)
 	    reuse = 1;
 	    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &reuse,
 			   sizeof(reuse)) == -1) {
-		error(errno, "setsockopt failed before bind");
+		error(0, "setsockopt failed before bind");
 		goto error;
 	    }
 	    if (bind(s, (struct sockaddr *) &o_addr, sizeof(o_addr)) == -1) {
@@ -119,7 +119,7 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port)
 	}
 
 	if (connect(s, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
-		error(errno, "connect failed");
+		error(0, "connect failed");
 		goto error;
 	}
 

@@ -163,7 +163,8 @@ static int emi_open_connection_ip(SMSCenter *smsc)
 * Open the connection and log in
 */
 SMSCenter *emi_open_ip(char *hostname, int port, char *username,
-                       char *password, int receive_port, int our_port)
+                       char *password, int receive_port, char *allow_ip,
+		       int our_port)
 {
 
     SMSCenter *smsc;
@@ -179,7 +180,11 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
     smsc->emi_username = gw_strdup(username);
     smsc->emi_password = gw_strdup(password);
     smsc->emi_backup_port = receive_port;
+    smsc->emi_backup_allow_ip = gw_strdup(allow_ip);
     smsc->emi_our_port = our_port;
+
+    if (receive_port > 0 && allow_ip == NULL)
+	warning(0, "EMI IP: receive-port set but no IPs allowed to connect!");
 
     smsc->emi_current_msg_number = 0;
 
@@ -574,7 +579,7 @@ static int get_data(SMSCenter *smsc, char *buff, int length)
 {
     int n = 0;
 
-    struct sockaddr client_addr;
+    struct sockaddr_in client_addr;
     socklen_t client_addr_len;
 
     fd_set rf;
@@ -626,10 +631,23 @@ static int get_data(SMSCenter *smsc, char *buff, int length)
         }
         if (FD_ISSET(smsc->emi_backup_fd, &rf)) {
             if (secondary_fd == -1) {
-                /* well we actually should check if the connector is really
-                 * that SMS Center... back to that in a few minutes... */
-                secondary_fd = accept(smsc->emi_backup_fd, &client_addr, &client_addr_len);
-                info(0, "Secondary socket opened by SMSC");
+		Octstr *ip;
+		
+                secondary_fd = accept(smsc->emi_backup_fd,
+				      (struct sockaddr *)&client_addr, &client_addr_len);
+
+		ip = host_ip((struct sockaddr_in)client_addr);
+		if (is_allowed_ip(smsc->emi_backup_allow_ip, "*.*.*.*", ip)==0) {
+		    info(0, "SMSC secondary connection tried from  <%s>, disconnected",
+			 octstr_get_cstr(ip));
+		    octstr_destroy(ip);
+		    close(secondary_fd);
+		    secondary_fd = -1;
+		    return 0;
+		}
+                info(0, "Secondary socket opened by SMSC from <%s>",
+		     octstr_get_cstr(ip));
+		octstr_destroy(ip);
             } else
                 info(0, "New connection request while old secondary is open!");
         }
