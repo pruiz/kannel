@@ -135,7 +135,7 @@ Pragmas:
 Pragma:
 	  tUSE PragmaDeclaration ';'
 	| error
-		{ ws_error_syntax(pctx, @2.first_line); }
+		{ ws_error_syntax(pctx, @1.first_line); }
 	;
 
 PragmaDeclaration:
@@ -401,7 +401,7 @@ Block:	'{' StatementListOpt '}'
 		}
 	| error
 		{
-		    ws_error_syntax(pctx, @2.first_line);
+		    ws_error_syntax(pctx, @1.first_line);
 		    $$ = NULL;
 		}
 	;

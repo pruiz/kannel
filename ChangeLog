@@ -1,4 +1,9 @@
 2004-05-15  Alexander Malysh  <a.malysh@centrium.de> 
+    * wmlscript/wsgram.y: fixed bison's file generation.
+      Thanks to Paul P Komkoff Jr <i@stingr.net> for pointing to
+      this.
+
+2004-05-15  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/bb_udp.c: applied slightly modified patch that allows to put
       semicolon-separated list of ip addresses in wdp-interfaces 
       statement in config file and kannel send responses from proper
