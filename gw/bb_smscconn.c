@@ -441,6 +441,7 @@ Octstr *smsc2_status(int status_type)
 	tmp = octstr_format("<smscs><count>%d</count>\n\t", list_len(smsc_list));
     
     for(i=0; i < list_len(smsc_list); i++) {
+	Octstr *connection_id = NULL;
         conn = list_get(smsc_list, i);
 	smscconn_info(conn, &info);
 
@@ -448,15 +449,20 @@ Octstr *smsc2_status(int status_type)
 	    /* XXX  we could delete the SMSC now */
 	    continue;
 
+	connection_id = smscconn_id(conn);
+
+	if (!connection_id)
+	    connection_id = octstr_imm ("unknown");
+
 	if (status_type == BBSTATUS_HTML) {
 	    octstr_append_cstr(tmp, "&nbsp;&nbsp;&nbsp;&nbsp;<b>");
-	    octstr_append(tmp,smscconn_id(conn));
+	    octstr_append(tmp,connection_id);
 	    octstr_append_cstr(tmp, "</b>&nbsp;&nbsp;&nbsp;&nbsp;");
 	}
 	else if (status_type == BBSTATUS_TEXT)
 	{
 	    octstr_append_cstr(tmp, "    ");
-	    octstr_append(tmp,smscconn_id(conn));
+	    octstr_append(tmp,connection_id);
 	    octstr_append_cstr(tmp, "    ");
 	}
 	if (status_type == BBSTATUS_XML) {
