@@ -547,11 +547,13 @@ Octstr *smsc2_status(int status_type)
             return octstr_format("%sNo SMSC connections%s\n\n", para ? "<p>" : "",
                                  para ? "</p>" : "");
     }
+
     if (status_type != BBSTATUS_XML)
         tmp = octstr_format("%sSMSC connections:%s", para ? "<p>" : "", lb);
     else
         tmp = octstr_format("<smscs><count>%d</count>\n\t", list_len(smsc_list));
     
+    list_lock(smsc_list);
     for (i = 0; i < list_len(smsc_list); i++) {
         conn = list_get(smsc_list, i);
 
@@ -605,6 +607,8 @@ Octstr *smsc2_status(int status_type)
             info.received, info.sent, info.failed,
             info.queued, lb);
     }
+    list_unlock(smsc_list);
+
     if (para)
         octstr_append_cstr(tmp, "</p>");
     if (status_type == BBSTATUS_XML)
