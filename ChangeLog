@@ -1,5 +1,9 @@
 2000-10-11  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/wapbox.c: Formatted to follow coding style.
+
+2000-10-11  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/wapbox.c: Simplified the main loop. Also removed the
 	initialization of ret (which was done at the definition
 	of the variable, tens of lines above, which is bad style).
