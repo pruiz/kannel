@@ -3000,7 +3000,7 @@ static int http_something_accepted(List *headers, char *header_name,
     int found;
     long i;
     List *accepts;
-    Octstr *oswhat;
+    Octstr *oswhat = NULL; /* make compiler happy */
 
     gwlib_assert_init();
     gw_assert(headers != NULL);
