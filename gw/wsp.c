@@ -12,6 +12,142 @@
 #include "wml.h"
 #include "ws.h"
 
+/* and WAP standard defined values */
+
+#define WSP_CAPS_CLIENT_SDU_SIZE	0x00
+#define WSP_CAPS_SERVER_SDU_SIZE	0x01
+#define WSP_CAPS_PROTOCOL_OPTIONS	0x02
+#define WSP_CAPS_METHOD_MOR		0x03
+#define WSP_CAPS_PUSH_MOR		0x04
+#define WSP_CAPS_EXTENDED_METHODS    	0x05
+#define WSP_CAPS_HEADER_CODE_PAGES    	0x06
+#define WSP_CAPS_ALIASES	   	0x07
+
+
+
+static char *WSPHeaderFieldNameAssignment[] = {
+    "Accept",			/* 0x00 */
+    "Accept-Charset",
+    "Accept-Encoding",
+    "Accept-Language",
+    "Accept-Ranges",
+    "Age", 
+    "Allow",
+    "Authorization",
+    "Cache-Control",		/* 0x08 */
+    "Connection",
+    "Content-Base",
+    "Content-Encoding",
+    "Content-Language",
+    "Content-Length",
+    "Content-Location",
+    "Content-MD5",
+    "Content-Range",		/* 0x10 */
+    "Content-Type",
+    "Date",
+    "Etag",
+    "Expires",
+    "From",
+    "Host",
+    "If-Modified-Since",
+    "If-Match",			/* 0x18 */
+    "If-None-Match",
+    "If-Range",
+    "If-Unmodified-Since",
+    "Location",
+    "Last-Modified",
+    "Max-Forwards",
+    "Pragma",
+    "Proxy-Authenticate",	/* 0x20 */
+    "Proxy-Authorization",
+    "Public",
+    "Range",
+    "Referer",
+    "Retry-After",
+    "Server",
+    "Transfer-Encoding",
+    "Upgrade",			/* 0x28 */
+    "User-Agent",
+    "Vary",
+    "Via",
+    "Warning",
+    "WWW_Authenticate",
+    "Content-Disposition"	/* 0x2E */
+};
+#define WSP_PREDEFINED_LAST_FIELDNAME	0x2F
+
+
+static char *WSPContentTypeAssignment[] = {
+    "*/*",			/* 0x00 */
+    "text/*",
+    "text/html",
+    "text/plain",
+    "text/x-hdml",
+    "text/x-ttml",
+    "text/x-vCalendar",
+    "text/x-vCard",
+    "text/vnd.wap.wml",		/* 0x08 */
+    "text/vnd.wap.wmlscript",
+    "application/vnd.wap.catc",
+    "Multipart/*",
+    "Multipart/mixed",
+    "Multipart/form-data",
+    "Multipart/byteranges",
+    "multipart/alternative",
+    "application/*",		/* 0x10 */
+    "application/java-wm",
+    "application/x-www-form-urlencoded",
+    "application/x-hdmlc",
+    "application/vnd.wap.wmlc",
+    "application/vnd.wap.wmlscriptc",
+    "application/vnd.wap.wsic",
+    "application/vnd.wap.uaprof",
+    "application/vnd.wap.wtls-ca-certificate",
+    "application/vnd.wap.wtls-user-certificate",
+    "application/x-x509-ca-cert",
+    "application/x-x509-user-cert",
+    "image/*",
+    "image/gif",
+    "image/jpeg",
+    "image/tiff",
+    "image/png",			/* 0x20 */
+    "image/vnd.wap.wbmp",
+    "application/vnd.wap.multipart.*",
+    "application/vnd.wap.multipart.mixed",
+    "application/vnd.wap.multipart.form-data",
+    "application/vnd.wap.multipart.byteranges",
+    "application/vnd.wap.multipart.alternative",
+    "application/xml",
+    "text/xml",
+    "application/vnd.wap.wbxml",
+    ""					/* 0x2A - */
+};
+#define WSP_PREDEFINED_LAST_CONTENTTYPE	0x29
+
+
+static char *WSPCharacterSetAssignment[] = {
+    "0x00",
+    "0x01",
+    "0x02",
+    "us-ascii",
+    "iso-8859-1",
+    "iso-8859-2",
+    "iso-8859-3",
+    "iso-8859-4",
+    "iso-8859-5",
+    "iso-8859-6",
+    "iso-8859-7",	/* 0x0A */
+    "iso-8859-8",
+    "iso-8859-9",
+    ""
+};
+#define WSP_PREDEFINED_LAST_CHARSET 	0x0C
+
+/* hard-coded into header parsing:
+ *  0x11, 0x6A, 0x03E8, 0x07EA
+ */
+
+
 enum {
 	Bad_PDU = -1,
 	Connect_PDU = 0x01,
@@ -69,7 +205,6 @@ static long new_server_transaction_id(void);
 static int transaction_belongs_to_session(WTPMachine *wtp, WSPMachine *session);
 
 static void *wsp_http_thread(void *arg);
-
 
 
 WSPEvent *wsp_event_create(WSPEventType type) {
@@ -263,6 +398,190 @@ int wsp_deduce_pdu_type(Octstr *pdu, int connectionless) {
  */
 
 
+#define WSP_FIELD_VALUE_NUL_STRING	1
+#define WSP_FIELD_VALUE_ENCODED 	2
+#define WSP_FIELD_VALUE_DATA		3
+
+/*
+ * get field value and return irs type as predefined data types
+ * Modify all arguments except for 'str'
+ *
+ * offset: set to end of unpacked data
+ * well_known_value: set to well-known-value, if present (_VALUE_ENCODED)
+ * data_offset: start of the data, unless well-known
+ * data_len: total length of the data in data_offset location. Includes
+ *         terminating NUL if data type is VALUE_NUL_STRING
+ */
+static int field_value(Octstr *str, int	*offset, int *well_known_value,
+		       int *data_offset, unsigned long *data_len)
+{
+    int val;
+    val = octstr_get_char(str, *offset);
+    if (val < 31) {
+	*well_known_value = -1;
+	*data_offset = *offset + 1;
+	*data_len = val;
+	*offset += 1+val;
+	return WSP_FIELD_VALUE_DATA;
+    }
+    else if (val == 31) {
+	*well_known_value = -1;
+	(*offset)++;
+	*data_offset = *offset + 1;
+	unpack_uintvar(data_len, str, data_offset);
+	*offset = *data_offset + *data_len;
+	return WSP_FIELD_VALUE_DATA;
+    }
+    else if (val > 127) {
+	*well_known_value = val - 0x80;
+	*data_offset = 0;
+	*data_len = 1;
+	(*offset)++;
+	return WSP_FIELD_VALUE_ENCODED;
+    }
+    else {
+	*well_known_value = -1;
+	*data_offset = *offset;
+	*data_len = strlen(octstr_get_cstr(str)+*offset) + 1;
+	*offset += *data_len;
+	return WSP_FIELD_VALUE_NUL_STRING;
+    }
+}
+
+
+int decode_well_known_field(int field_type, Octstr *headers, int *off)
+{
+    unsigned long len;
+    int data_off, ret, val;
+    char *ch;
+    
+    ret = field_value(headers, off, &val, &data_off, &len);
+
+    /* We may take the NUL string immediately out of sequence
+     * as it is easily decoded...
+     *
+     * XXX as we make more stable system, this is not the case, so
+     *     fix this (as we may get the same field name repeatly)
+     */
+    if (ret == WSP_FIELD_VALUE_NUL_STRING) {
+	    debug(0, "hdr %s: '%s'", 
+		  WSPHeaderFieldNameAssignment[field_type],
+		  octstr_get_cstr(headers)+data_off);
+	    return 0;
+    }
+    
+    switch (field_type) {
+
+	/* new well-known-field-names are added to this list
+	 */
+	
+    case 0x00:		/* Accept */ 
+	if (ret == WSP_FIELD_VALUE_ENCODED &&
+	    val <= WSP_PREDEFINED_LAST_CONTENTTYPE)
+
+	    debug(0, "hdr %s: '%s'", 
+		  WSPHeaderFieldNameAssignment[field_type],
+		  WSPContentTypeAssignment[val]);
+	else if (ret == WSP_FIELD_VALUE_DATA)
+	    debug(0, "hdr %s: accept-general-form not supported",
+		  WSPHeaderFieldNameAssignment[field_type]);
+	else
+	    return -1;
+	break;
+
+    case 0x01:		/* Accept-Charset */ 
+	if (ret == WSP_FIELD_VALUE_ENCODED) {
+	    if (val <= WSP_PREDEFINED_LAST_CHARSET)
+		ch = WSPCharacterSetAssignment[val];
+	    else if (val == 0x6A)
+		ch = "utf-8";
+	    else 
+		ch = "non-assigned";
+	}
+	else if (ret == WSP_FIELD_VALUE_DATA) {
+	    if (octstr_get_char(headers, data_off)==0x07 &&
+		octstr_get_char(headers, data_off)==0xEA)
+		ch = "big5";
+	    else if (octstr_get_char(headers, data_off)==0x03 &&
+		octstr_get_char(headers, data_off)==0xE8)
+		ch = "iso-10646-ucs-2";
+	    else
+		ch = "non-assigned";
+	} else
+	    return -1;	/* no NUL STRING for accept-charset */ 
+
+	debug(0, "hdr %s: '%s'", 
+	      WSPHeaderFieldNameAssignment[field_type], ch);
+	break;
+
+	/* case 0x02: accept-encoding not yet supported */
+	
+    case 0x03:		/* Accept-language */
+	if (ret == WSP_FIELD_VALUE_ENCODED) {
+	    if (val == 0x00) 	/* actually 0x80 */
+		ch = "*";	/* is this how it is marked? */
+	    else if (val == 0x16) ch = "de";
+	    else if (val == 0x19) ch = "en";
+	    else if (val == 0x1F) ch = "fi";
+	    else if (val == 0x70) ch = "sv";
+	    else {
+		debug(0, "Nonsupported language '0x%x'", val);
+		return 0;
+	    }
+	} else
+	    ch = "Unsupported";
+	
+	debug(0, "hdr %s: '%s'", 
+	      WSPHeaderFieldNameAssignment[field_type], ch);
+	break;
+
+    default:
+	if (field_type <= WSP_PREDEFINED_LAST_FIELDNAME) {
+	    debug(0, "Nonsupported field '0x%x'", field_type);
+	    return 0;
+	} else
+	    return -1;
+    }
+
+    return 0;
+}
+
+int unpack_headers(Octstr *headers)
+{
+    int off, byte;
+    
+    off = 0;
+    while(off < octstr_len(headers)) {
+	byte = octstr_get_char(headers, off);
+	if (byte == -1) {
+	    warning(0, "read past header octet!");
+	    return -1;
+	} else if (byte == 127) {
+	    debug(0, "Shift-delimiter encountered, IGNORED");
+	    off += 2;	/* ignore page-identity */
+	} else if (byte >= 1 && byte <= 31) {
+	    debug(0, "Short-cut-shift-delimiter %d encountered, IGNORED", byte);
+	    off++;
+	}
+	else if (byte >= 128) {  /* well-known-header */
+	    off++;
+	    if (decode_well_known_field(byte-0x80, headers, &off)==-1)
+		warning(0, "Malformed data for header '%s'",
+			WSPHeaderFieldNameAssignment[byte-0x80]);
+	    
+	} else if (byte > 31 && byte < 127) {
+	    debug(0, "Token-text: '%s'",
+		  octstr_get_cstr(headers)+off);
+	    off += strlen(octstr_get_cstr(headers)+off)+1;
+	} else {
+	    warning(0, "Unsupported token/whatever header (start 0x%x)", byte);
+	    break;
+	}
+    }
+    return 0;
+}	
+
+
 static void append_to_event_queue(WSPMachine *machine, WSPEvent *event) {
 	mutex_lock(machine->queue_lock);
 	if (machine->event_queue_head == NULL) {
@@ -306,20 +625,18 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 	    unpack_octstr(&caps, caps_len, user_data, &off) == -1 ||
 	    unpack_octstr(&headers, headers_len, user_data, &off) == -1)
 		return -1;
-#if 0
-	debug(0, "Unpacked Connect PDU:");
-	debug(0, "  version=%lu", version);
-	debug(0, "  caps_len=%lu", caps_len);
-	debug(0, "  headers_len=%lu", headers_len);
-	debug(0, "  caps:");
-	octstr_dump(caps);
-	debug(0, "  headers:");
-	octstr_dump(headers);
-	debug(0, "Connect PDU dump done.");
-#endif
 
+	debug(0, "Unpacked Connect PDU: version=%lu, caps_len=%lu, hdrs_len=%lu",
+	      version, caps_len, headers_len);
+	if (caps_len > 0) {
+	    debug(0, "Unpacked caps:");
+	    octstr_dump(caps);
+	}
+
+	/*
+	 * CAPABILITIES
+	 */
 	off = 0;
-
 	while (off < caps_len) {
 	    unpack_uintvar(&length, caps, &off);
 
@@ -417,9 +734,20 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 		break;
 	    }
 	}
+	/*
+	 * HEADERS
+	 */
+
+	if (headers_len > 0) {
+	    int byte;
+
+	    debug(0, "Unpacked headers:");
+	    octstr_dump(headers);
+
+	    debug(0, "Final off = %d", off);
+	}
 	return 0;
 }
-
 
 
 static int unpack_get_pdu(Octstr **url, Octstr **headers, Octstr *pdu) {

@@ -35,18 +35,6 @@
 #define WSP_HCP_SET	64
 #define WSP_A_SET	128
 
-/* and WAP standard defined values */
-
-#define WSP_CAPS_CLIENT_SDU_SIZE	0x00
-#define WSP_CAPS_SERVER_SDU_SIZE	0x01
-#define WSP_CAPS_PROTOCOL_OPTIONS	0x02
-#define WSP_CAPS_METHOD_MOR		0x03
-#define WSP_CAPS_PUSH_MOR		0x04
-#define WSP_CAPS_EXTENDED_METHODS    	0x05
-#define WSP_CAPS_HEADER_CODE_PAGES    	0x06
-#define WSP_CAPS_ALIASES	   	0x07
-
-
 
 typedef struct WSPMachine WSPMachine;
 typedef struct WSPMethodMachine WSPMethodMachine;

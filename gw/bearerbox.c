@@ -1790,6 +1790,7 @@ static void init_bb(Config *cfg)
     bbox->id_max = 1;
     bbox->abort_program = 0;
     bbox->suspended = 0;
+    bbox->accept_pending = 0;
     bbox->mutex = mutex_create();
     route_mutex = mutex_create();
     
@@ -1905,6 +1906,10 @@ static void signal_handler(int signum)
 	    first_kill = time(NULL);
 	}
 	else if (bbox->abort_program == 1) {
+	    /*
+	     * we have to wait for a while as one SIGINT from keyboard
+	     * causes several signals - one for each thread?
+	     */
 	    if (time(NULL) - first_kill > 2) {
 		error(0, "New SIGINT received, killing neverthless...");
 		bbox->abort_program = 2;
@@ -2033,10 +2038,11 @@ void create_internal_smsbox(Config *cfg)
     
     nt = create_bbt(BB_TTYPE_SMS_BOX);
     if (nt != NULL) {
-	bbox->accept_pending++;
 	nt->boxc = boxc_open(BOXC_THREAD, NULL, NULL);
-	if (nt->boxc != NULL)
+	if (nt->boxc != NULL) {
+	    bbox->accept_pending++;
 	    (void)start_thread(1, smsboxconnection_thread, nt, 0);
+	}
     }
     else
 	error(0, "Failed to create a new thread!");

@@ -1,3 +1,13 @@
+2000-01-20    <rpr@rpr.wapit.com>
+
+	* gw/bearerbox.c: added missing accept_pending initialization and
+	commented SIGINT handling procedure 
+
+	* gw/wsp.h: moved WSP header definitions to wsp.c
+
+	* gw/wsp.c: initial header decoding, only debug output yet, and
+	only decodes some common headers
+
 Wed Jan 19 13:22:13 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* doc/dialup.txt: Added. E-mail from Roger Willcocks describing
