@@ -34,6 +34,8 @@ enum { MAX_SMS_OCTETS = 140 };
 
 #define SENDSMS_DEFAULT_CHARS "0123456789 +-"
 
+#define O_DESTROY(a) { if(a) octstr_destroy(a); a = NULL; }
+
 
 static Cfg *cfg;
 static long bb_port;
@@ -62,6 +64,7 @@ static Numhash *black_list;
 static List *smsbox_requests = NULL;
 
 int charset_processing (Octstr *charset, Octstr *text, int coding);
+long get_tag(Octstr *body, Octstr *tag, Octstr **value, long pos, int nostrip);
 
 /***********************************************************************
  * Communication with the bearerbox.
@@ -377,7 +380,48 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
     }
 }
 
-static void get_x_kannel_from_xml(Octstr **type, Octstr **body, 
+long get_tag(Octstr *body, Octstr *tag, Octstr **value, long pos, int nostrip) {
+    long start, end;
+    int taglen;
+    Octstr *tmp;
+
+    tmp = octstr_create("<");
+    octstr_append(tmp, tag);
+    octstr_append(tmp, octstr_imm(">"));
+    taglen = octstr_len(tmp);
+
+    start = octstr_search(body, tmp, pos);
+    octstr_destroy(tmp);
+    if(start != -1) {
+	tmp = octstr_create("</");
+	octstr_append(tmp, tag);
+	octstr_append(tmp, octstr_imm(">"));
+
+	end = octstr_search(body, tmp, start);
+	octstr_destroy(tmp);
+	if(end != -1) {
+	    octstr_destroy(*value);
+	    *value = octstr_copy(body, start + taglen, end - start - taglen);
+	    if(nostrip == 0) {
+		octstr_strip_blanks(*value);
+		debug("sms", 0, "XMLParsing: tag <%s> value <%s>", octstr_get_cstr(tag), 
+			octstr_get_cstr(*value));
+	    }
+	    return end + taglen + 1;
+	} else {
+	    debug("sms", 0, "XMLParsing: end tag </%s> not found", octstr_get_cstr(tag));
+	    return -1;
+	}
+    } else {
+	debug("sms", 0, "XMLParsing: tag <%s> not found", octstr_get_cstr(tag));
+	return -1;
+    }
+}
+
+// requesttype = mt_reply or mt_push. for example, auth is only read on mt_push
+// parse body and populate fields, including replacing body for <ud> value and
+// type to text/plain
+static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body, 
                                   List *headers, Octstr **from,
                                   Octstr **to, Octstr **udh,
                                   Octstr **user, Octstr **pass,
@@ -388,75 +432,201 @@ static void get_x_kannel_from_xml(Octstr **type, Octstr **body,
                                   Octstr **account, int *pid, int *alt_dcs)
 {                                    
 
-    long start, end;
-    Octstr *text;
+/*
+ * <?xml version="1.0" encoding="xxx"?>
+ * <!DOCTYPE ...
+ * <message>
+ *   <auth>
+ *     <user>...</user> ( or username)
+ *     <pass>...</pass> ( or password)
+ *     <account>...</account>
+ *   </auth>
+ *   <submit>
+ *     <da><number>...</number></da>
+ *     <da>...
+ *     <oa><number>...</number></oa>
+ *     <ud>...</ud>
+ *     <udh>0123</ud>
+ *     <dcs>
+ *       <mclass>.</mclass>
+ *       <coding>.</coding>
+ *       <mwi>.</mwi>
+ *       <compress>.</compress>
+ *       <alt-dcs>.</alt-dcs>
+ *     </dcs>
+ *     <pid>..</pid>
+ *     <statusrequest>
+ *       <dlr-mask>..</dlr-mask>
+ *       <dlr-url>...</dlr-url>
+ *     </statusrequest>
+ *     <from>smsc</from>
+ *     <to>smsc</to>
+ *   </submit>
+ * </message>
+ */
+
+    Octstr *text, *tmp, *tmp2;
+    long tmplong, where;
+    
+    tmp = tmp2 = text = NULL;
 
     *dlr_mask = 0;
     *dlr_url = NULL;
     *mclass = *mwi = *coding = *compress = *validity = 
 	*deferred = *pid = *alt_dcs = 0;
 
-    debug("sms", 0, "DAVI Body: <%s>", octstr_get_cstr(*body));
+    debug("sms", 0, "XMLParsing: XML: <%s>", octstr_get_cstr(*body));
 
-    if(user != NULL) {
-	start = octstr_search(*body, octstr_imm("<user>"), 0);
-	if(start != -1) {
-	    end = octstr_search(*body, octstr_imm("</user>"), start);
-	    if(end != -1) {
-		octstr_destroy(*user);
-		*user = octstr_copy(*body, start + 6, end - start - 6);
-		debug("sms", 0, "DAVI user: <%s>", octstr_get_cstr(*user));
+
+    if(requesttype == mt_push) {
+	/* auth */
+	get_tag(*body, octstr_imm("auth"), &tmp, 0, 0);
+	if(tmp) {
+	    /* user */
+	    get_tag(tmp, octstr_imm("user"), user, 0, 0);
+	    get_tag(tmp, octstr_imm("username"), user, 0, 0);
+
+	    /* pass */
+	    get_tag(tmp, octstr_imm("pass"), pass, 0, 0);
+	    get_tag(tmp, octstr_imm("password"), pass, 0, 0);
+
+	    /* account */
+	    get_tag(tmp, octstr_imm("account"), account, 0, 0);
+	    O_DESTROY(tmp);
+	}
+
+	/* to (da/number) Multiple tags */ 
+	where = get_tag(*body, octstr_imm("da"), &tmp, 0, 0);
+	if(tmp) {
+	    get_tag(tmp, octstr_imm("number"), to, 0, 0);
+	    while(tmp && where != -1) {
+		O_DESTROY(tmp);
+		where = get_tag(*body, octstr_imm("da"), &tmp, where, 0);
+		if(tmp) {
+		    get_tag(tmp, octstr_imm("number"), &tmp2, 0, 0);
+		    octstr_append_char(*to, ' ');
+		    octstr_append(*to, tmp2);
+		    O_DESTROY(tmp2);
+		}
 	    }
 	}
     }
 
-    if(pass != NULL) {
-	start = octstr_search(*body, octstr_imm("<pass>"), 0);
-	if(start != -1) {
-	    end = octstr_search(*body, octstr_imm("</pass>"), start);
-	    if(end != -1) {
-		octstr_destroy(*pass);
-		*pass = octstr_copy(*body, start + 6, end - start - 6);
-		debug("sms", 0, "DAVI pass: <%s>", octstr_get_cstr(*pass));
-	    }
-	}
+    /* from (oa/number) */
+    get_tag(*body, octstr_imm("oa"), &tmp, 0, 0);
+    if(tmp) {
+	get_tag(tmp, octstr_imm("number"), from, 0, 0);
+	O_DESTROY(tmp);
+    }
+    
+    /* udh */
+    get_tag(*body, octstr_imm("udh"), &tmp, 0, 0);
+    if(tmp) {
+	O_DESTROY(*udh);
+	*udh = octstr_duplicate(tmp);
+	octstr_hex_to_binary(*udh);
+	O_DESTROY(tmp);
     }
 
-    start = octstr_search(*body, octstr_imm("<from>"), 0);
-    if(start != -1) {
-	end = octstr_search(*body, octstr_imm("</from>"), start);
-	if(end != -1) {
-	    octstr_destroy(*from);
-	    *from = octstr_copy(*body, start + 6, end - start - 6);
-	    debug("sms", 0, "DAVI from: <%s>", octstr_get_cstr(*from));
-	}
+    /* smsc */
+    get_tag(*body, octstr_imm("to"), smsc, 0, 0);
+
+    /* pid */
+    get_tag(*body, octstr_imm("pid"), &tmp, 0, 0);
+    if(tmp) {
+	if(octstr_parse_long(&tmplong, tmp, 0, 10) != -1)
+	    *pid = tmplong;
+	O_DESTROY(tmp);
     }
 
-    start = octstr_search(*body, octstr_imm("<to>"), 0);
-    if(start != -1) {
-	end = octstr_search(*body, octstr_imm("</to>"), start);
-	if(end != -1) {
-	    octstr_destroy(*to);
-	    *to = octstr_copy(*body, start + 4, end - start - 4);
-	    debug("sms", 0, "DAVI to: <%s>", octstr_get_cstr(*to));
+    /* dcs* (dcs/ *) */
+    get_tag(*body, octstr_imm("dcs"), &tmp, 0, 0);
+    if(tmp) {
+	/* mclass (dcs/mclass) */
+	get_tag(tmp, octstr_imm("mclass"), &tmp2, 0, 0);
+	if(tmp2) {
+	    if(octstr_parse_long(&tmplong, tmp2, 0, 10) != -1)
+		*mclass = tmplong;
+	    O_DESTROY(tmp2);
 	}
+	/* mwi (dcs/mwi) */
+	get_tag(tmp, octstr_imm("mwi"), &tmp2, 0, 0);
+	if(tmp2) {
+	    if(octstr_parse_long(&tmplong, tmp2, 0, 10) != -1)
+		*mwi = tmplong;
+	    O_DESTROY(tmp2);
+	}
+	/* coding (dcs/coding) */
+	get_tag(tmp, octstr_imm("coding"), &tmp2, 0, 0);
+	if(tmp2) {
+	    if(octstr_parse_long(&tmplong, tmp2, 0, 10) != -1)
+		*coding = tmplong;
+	    O_DESTROY(tmp2);
+	}
+	/* compress (dcs/compress) */
+	get_tag(tmp, octstr_imm("compress"), &tmp2, 0, 0);
+	if(tmp2) {
+	    if(octstr_parse_long(&tmplong, tmp2, 0, 10) != -1)
+		*compress = tmplong;
+	    O_DESTROY(tmp2);
+	}
+	/* alt-dcs (dcs/alt-dcs) */
+	get_tag(tmp, octstr_imm("alt-dcs"), &tmp2, 0, 0);
+	if(tmp2) {
+	    if(octstr_parse_long(&tmplong, tmp2, 0, 10) != -1)
+		*alt_dcs = tmplong;
+	    O_DESTROY(tmp2);
+	}
+	O_DESTROY(tmp);
     }
 
-    start = octstr_search(*body, octstr_imm("<text>"), 0);
-    if(start != -1) {
-	end = octstr_search(*body, octstr_imm("</text>"), start);
-	if(end != -1) {
-	    text = octstr_copy(*body, start + 6, end - start - 6);
-	    debug("sms", 0, "DAVI text: <%s>", octstr_get_cstr(text));
-	    octstr_destroy(*body);
-	    *body = octstr_duplicate(text);
-	    octstr_destroy(text);
+    /* statusrequest* (statusrequest/ *) */
+    get_tag(*body, octstr_imm("statusrequest"), &tmp, 0, 0);
+    if(tmp) {
+	/* dlr-mask (statusrequest/dlr-mask) */
+	get_tag(tmp, octstr_imm("dlr-mask"), &tmp2, 0, 0);
+	if(tmp2) {
+	    if(octstr_parse_long(&tmplong, tmp2, 0, 10) != -1)
+		*dlr_mask = tmplong;
+	    O_DESTROY(tmp2);
 	}
+	get_tag(tmp, octstr_imm("dlr-url"), dlr_url, 0, 0);
+	O_DESTROY(tmp);
     }
 
-    /* XXX Add more fields */
+    /* validity (vp/delay) */
+    get_tag(*body, octstr_imm("vp"), &tmp, 0, 0);
+    if(tmp) {
+	get_tag(tmp, octstr_imm("delay"), &tmp2, 0, 0);
+	if(tmp2) {
+	    if(octstr_parse_long(&tmplong, tmp2, 0, 10) != -1)
+		*validity = tmplong;
+	    O_DESTROY(tmp2);
+	}
+	O_DESTROY(tmp);
+    }
 
-    octstr_destroy(*type);
+    /* deferred (timing/delay) */
+    get_tag(*body, octstr_imm("timing"), &tmp, 0, 0);
+    if(tmp) {
+	get_tag(tmp, octstr_imm("delay"), &tmp2, 0, 0);
+	if(tmp2) {
+	    if(octstr_parse_long(&tmplong, tmp2, 0, 10) != -1)
+		*deferred = tmplong;
+	    O_DESTROY(tmp2);
+	}
+	O_DESTROY(tmp);
+    }
+
+    /* text */
+    get_tag(*body, octstr_imm("ud"), &text, 0, 0);
+    get_tag(*body, octstr_imm("ud-raw"), &text, 0, 1);
+
+    octstr_truncate(*body, 0);
+    octstr_append(*body, text);
+    O_DESTROY(text);
+    
+    O_DESTROY(*type);
     *type = octstr_create("text/plain");
 }
 
@@ -519,7 +689,7 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 	    msg->sms.udhdata = udh;
 	} else {
 	    warning(0, "Tried to set UDH field, denied.");
-	    octstr_destroy(udh);
+	    // Will be destroyed down there octstr_destroy(udh);
 	}
     }
     if (mclass) {
@@ -565,6 +735,7 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 	else
 	  msg->sms.coding = DC_7BIT;
     }
+    octstr_destroy(udh);
 
     if (validity) {
 	if (urltrans_accept_x_kannel_headers(trans))
@@ -660,8 +831,9 @@ static void url_result_thread(void *arg)
 					  &account, &pid, &alt_dcs);
 	    } else if (octstr_case_compare(type, text_xml) == 0) {
 		replytext = octstr_duplicate(reply_body);
+		octstr_destroy(reply_body); 
 		reply_body = NULL;
-		get_x_kannel_from_xml(&type, &replytext, reply_headers, &from, &to, &udh,
+		get_x_kannel_from_xml(mt_reply, &type, &replytext, reply_headers, &from, &to, &udh,
 				NULL, NULL, &smsc, &mclass, &mwi, &coding,
 				&compress, &validity, &deferred,
 				&dlr_mask, &dlr_url, &account, &pid, &alt_dcs);
@@ -815,6 +987,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	http_header_add(request_headers, "User-Agent", "Kannel " VERSION);
 	id = remember_receiver(msg, trans);
 	/* XXX Which header should we use for UCS2 ? octstr also ? */
+	/* XXX UCS2 should be text/ *, charset=UTF16-BE ? */
 	if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2)
 	    http_header_add(request_headers, "Content-Type",
 			    "application/octet-stream");
@@ -915,7 +1088,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
     case TRANSTYPE_POST_XML:
 
 /* XXX The first two chars are beeing eaten somewhere and
- * only sometimes */
+ * only sometimes - something must be ungry */
 
 #define OCTSTR_APPEND_XML(xml, tag, text)                  \
 	octstr_append(xml, octstr_imm("  "));        \
@@ -976,27 +1149,34 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	}
 
 	/* ud */
-	if(octstr_len(msg->sms.msgdata))
+	if(octstr_len(msg->sms.msgdata)) {
 	    OCTSTR_APPEND_XML(xml, "ud", msg->sms.msgdata);
+	}
 
 	/* pid */
-	if(msg->sms.pid)
+	if(msg->sms.pid != 0) {
 	    OCTSTR_APPEND_XML_NUMBER(xml, "pid", msg->sms.pid);
+	}
 
 	/* dcs */
 	{
 	    tmp = octstr_create("");
 
-	    if(msg->sms.coding)
+	    if(msg->sms.coding != 0) { 
 		OCTSTR_APPEND_XML_NUMBER(tmp, "coding", msg->sms.coding);
-	    if(msg->sms.mclass)
+	    }
+	    if(msg->sms.mclass != 0) {
 		OCTSTR_APPEND_XML_NUMBER(tmp, "mclass", msg->sms.mclass);
-	    if(msg->sms.alt_dcs)
+	    }
+	    if(msg->sms.alt_dcs != 0) {
 		OCTSTR_APPEND_XML_NUMBER(tmp, "alt-dcs", msg->sms.alt_dcs);
-	    if(msg->sms.mwi)
+	    }
+	    if(msg->sms.mwi != 0) {
 		OCTSTR_APPEND_XML_NUMBER(tmp, "mwi", msg->sms.mwi);
-	    if(msg->sms.compress)
+	    }
+	    if(msg->sms.compress != 0) {
 		OCTSTR_APPEND_XML_NUMBER(tmp, "compress", msg->sms.compress);
+	    }
 
 	    if(octstr_len(tmp)) {
 		OCTSTR_APPEND_XML(xml, "dcs", tmp)
@@ -1010,16 +1190,24 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	/* at */
 	tm = gw_gmtime(msg->sms.time);
 	tmp = octstr_format("<year>%04d</year><month>%02d</month>"
-			"<day>02d</day><hour>%02d</hour><minute>%02d</minute>"
+			"<day>%02d</day><hour>%02d</hour><minute>%02d</minute>"
 			"<second>%02d</second><timezone>0</timezone>",
 		       	tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 		       	tm.tm_hour, tm.tm_min, tm.tm_sec);
 	OCTSTR_APPEND_XML(xml, "at", tmp);
 	octstr_destroy(tmp);
 
-	if(octstr_len(msg->sms.smsc_id))
-	    OCTSTR_APPEND_XML(xml, "smsc", msg->sms.smsc_id);
+	/* smsc = from */
+	if(octstr_len(msg->sms.smsc_id)) {
+	    OCTSTR_APPEND_XML(xml, "from", msg->sms.smsc_id);
+	}
 
+	/* smsc = from */
+	if(octstr_len(msg->sms.service)) {
+	    OCTSTR_APPEND_XML(xml, "to", msg->sms.service);
+	}
+
+	/* End XML */
 	octstr_append(xml, octstr_imm("\t</submit>\n"));
 	octstr_append(xml, octstr_imm("</message>\n"));
 
@@ -1028,6 +1216,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 
 	msg->sms.msgdata = xml;
 
+	debug("sms", 0, "XMLBuild: XML: <%s>", octstr_get_cstr(msg->sms.msgdata));
 	http_start_request(caller, pattern, request_headers,
 			msg->sms.msgdata, 1, id, NULL);
 	octstr_destroy(pattern);
@@ -1849,7 +2038,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     */
     http_header_get_content_type(headers, &type, &charset);
     if(octstr_case_compare(type, octstr_imm("text/xml")) == 0) {
-	get_x_kannel_from_xml(&type, &body, headers, &from, &to, &udh,
+	get_x_kannel_from_xml(mt_push, &type, &body, headers, &from, &to, &udh,
 		       	&user, &pass, &smsc, &mclass, &mwi, &coding,
 		       	&compress, &validity, &deferred,
 		       	&dlr_mask, &dlr_url, &account, &pid, &alt_dcs);
@@ -1910,7 +2099,6 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     octstr_destroy(smsc);
     octstr_destroy(dlr_url);
     octstr_destroy(account);
-error(0, "got here");
     return ret;
 }
 
@@ -2351,17 +2539,17 @@ static void sendsms_thread(void *arg)
      */
 
     /* sendsms */
-   	if (octstr_compare(url, sendsms_url) == 0)
-	{
-	    /* 
-         * decide if this is a GET or POST request and let the 
-         * related routine handle the checking
-         */
-        if (body == NULL)
-            answer = smsbox_req_sendsms(args, ip, &status);
-        else
-            answer = smsbox_sendsms_post(hdrs, body, ip, &status);
-	}
+    if (octstr_compare(url, sendsms_url) == 0)
+    {
+	/* 
+	 * decide if this is a GET or POST request and let the 
+	 * related routine handle the checking
+	 */
+	if (body == NULL)
+	    answer = smsbox_req_sendsms(args, ip, &status);
+	else
+	    answer = smsbox_sendsms_post(hdrs, body, ip, &status);
+    }
     /* XML-RPC */
     else if (octstr_compare(url, xmlrpc_url) == 0)
     {
@@ -2375,21 +2563,21 @@ static void sendsms_thread(void *arg)
             answer = smsbox_xmlrpc_post(hdrs, body, ip, &status);
     }
     /* sendota */
-	else if (octstr_compare(url, sendota_url) == 0)
-	{
-        if (body == NULL)
+    else if (octstr_compare(url, sendota_url) == 0)
+    {
+	if (body == NULL)
             answer = smsbox_req_sendota(args, ip, &status);
         else
             answer = smsbox_sendota_post(args, hdrs, body, ip, &status);
-	}
+    }
     /* add aditional URI compares here */
-	else {
+    else {
         answer = octstr_create("Unknown request.");
         status = HTTP_NOT_FOUND;
-	}
+    }
 
-    debug("sms.http", 0, "Status: %d Answer: <%s>", status,
-	      octstr_get_cstr(answer));
+	debug("sms.http", 0, "Status: %d Answer: <%s>", status,
+		octstr_get_cstr(answer));
 
 	octstr_destroy(ip);
 	octstr_destroy(url);
@@ -2717,6 +2905,9 @@ int main(int argc, char **argv)
     counter_destroy(catenated_sms_counter);
     octstr_destroy(bb_host);
     octstr_destroy(global_sender);
+    octstr_destroy(sendsms_url);
+    octstr_destroy(sendota_url);
+    octstr_destroy(xmlrpc_url);
     octstr_destroy(reply_emptymessage);
     octstr_destroy(reply_requestfailed);
     octstr_destroy(reply_couldnotfetch);

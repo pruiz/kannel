@@ -1,7 +1,24 @@
 2002-04-29  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gwlib/cfg.c: Yet another fix to grp->cfgfilename. Hopefully, the last 
+    * gw/smsbox.c: Finished post-xml code. Someday the code will be changed
+      to libxml functions, but until then, this "works for me". XML format
+      could and WILL be changed later, as IETF's document is still a draft, 
+      and there's some tags that it doesn't have.
+      Works for service (post-xml field), accepts xml in service reply and
+      in sendsms-user. Sendsms-user support multiple recipient addresses.
+    * doc/userguide/userguide.xml: Completed post-xml documentation.
+    * gw/smsbox.c: Fixed a bug when receiving reply from service and 
+      accept-x-kannel-headers is disabled. udh was destroyed and later 
+      was used to define coding
+    * doc/userguide/userguide.xml: fixed ">Date" in log format appendix
+    * gw/smsbox.c: fixed some tab/space
+    * gw/smsbox.c: destroy sendsms_url, sendota_url and xmlrpc_url at the end
+
+
+2002-04-29  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * doc/userguide/userguide.xml: Added UDH example to set number of 
-	  messages in MWI
-	* Changelog: Fixed ^M. Please cvs up -d and cvs diff before commiting
+      messages in MWI
+    * Changelog: Fixed ^M. Please cvs up -d and cvs diff before commiting
 
 2002-04-29  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/otacompiler.c, gw/shared.c, gw/wap_push_pap_compiler.c, 

@@ -380,6 +380,9 @@ int cfg_read(Cfg *cfg)
     	    	if (grp == NULL)
                     grp = create_group(); 
                  
+		if(grp->configfile != NULL) {
+		    octstr_destroy(grp->configfile); grp->configfile=NULL;
+		}
 		grp->configfile = octstr_duplicate(cfg->filename); 
 
                 cfg_set(grp, name, value); 
