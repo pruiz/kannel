@@ -1,5 +1,10 @@
 2000-10-16  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/log.c: Reformatted. Also made kannel_syslog's mapping of
+	Kannel's log level to syslog log levels actually work.
+
+2000-10-16  Lars Wirzenius  <liw@iki.fi>
+
 	* checks/check_counter.c, checks/check_date.c,
 	checks/check_list.c, checks/check_octstr.c, gwlib/log.c,
 	gwlib/log.h, gwlib/utils.c: Renamed the log level enums to have
