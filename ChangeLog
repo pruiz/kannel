@@ -1,3 +1,8 @@
+Tue Nov 30 14:51:01 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* Makefile: fixed "make depend" to add the directory of the object
+	file to the .depends file.
+
 1999-11-30 Aarno Syvänen <syvanen@wapit.com>
 
 	* wsp_events-decl.h: added fields for wsp pdu type and event handle 

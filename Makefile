@@ -75,6 +75,7 @@ testprogs = $(testsrcs:.c=)
 srcs = $(shell echo */*.c)
 objs = $(srcs:.c=.o)
 
+srcdirs = gw gwlib test utils
 docdirs = $(shell echo doc/[a-z]*/.)
 
 all: progs tests
@@ -90,7 +91,8 @@ clean:
 	for dir in $(docdirs); do set -e; (cd $$dir && $(MAKE) clean); done
 
 depend .depend:
-	$(MKDEPEND) */*.c > .depend
+	for dir in $(srcdirs); do \
+		$(MKDEPEND) $$dir/*.c | sed "s:^[^ ]:$$dir/&:"; done > .depend
 include .depend
 
 libgw.a: $(gwobjs)
