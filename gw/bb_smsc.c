@@ -123,7 +123,12 @@ static void *sms_sender(void *arg)
 	    counter_increase(outgoing_sms_counter);
 	}
     }
+    list_lock(smsc_list);
     list_delete_equal(smsc_list, conn);
+    list_unlock(smsc_list);
+
+    if (list_len(smsc_list) == 0)
+	list_destroy(smsc_list);
 
     debug("bb", 0, "sms_sender: done, waiting in join");
     
@@ -171,10 +176,12 @@ static void *sms_router(void *arg)
 	 */
 	normalize_number(unified_prefix, &(msg->smart_sms.receiver));
 	    
-	list_lock(smsc_list);
 	/* select in which list to add this
 	 * start - from random SMSC, as they are all 'equal'
 	 */
+
+	list_lock(smsc_list);
+
 	s = rand() % list_len(smsc_list);
 	number = octstr_get_cstr(msg->smart_sms.receiver);
 	backup = NULL;
@@ -315,6 +322,7 @@ int smsc_shutdown(void)
 int smsc_die(void)
 {
     Smsc *si;
+    int i;
     
     if (!smsc_running) return -1;
 
@@ -324,10 +332,13 @@ int smsc_die(void)
 
     debug("bb.sms", 0, "smsc_die: removing producers from smsc-lists");
     
-    while((si = list_consume(smsc_list)) != NULL) {
+    list_lock(smsc_list);
+    
+    for(i=0; i < list_len(smsc_list); i++) {
+	si = list_get(smsc_list, i);
 	list_remove_producer(si->outgoing_list);
     }
-    list_destroy(smsc_list);
+    list_unlock(smsc_list);
     
     smsc_running = 0;
     return 0;

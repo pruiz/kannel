@@ -155,11 +155,7 @@ static void *boxc_sender(void *arg)
 	gw_assert((!conn->is_wap && msg_type(msg) == smart_sms)
 		                 ||
 		  (conn->is_wap && msg_type(msg) == wdp_datagram));
-	
-	
 
-	debug("bb.boxc", 0, "boxc_sender: sending message");
-	
         if (send_msg(conn->fd, msg) == -1) {
 	    /* if we fail to send, return msg to the list it came from
 	     * before dying off */
@@ -168,6 +164,7 @@ static void *boxc_sender(void *arg)
 	    break;
 	}
 	msg_destroy(msg);
+	debug("bb.boxc", 0, "boxc_sender: sent message");
     }
     /* XXX the client should close the line, instead */
     conn->alive = 0;

@@ -1,3 +1,7 @@
+2000-05-25    Kalle Marjola <rpr@wapit.com>
+
+	* gw/bb_smsc.c: fixed some lock-ups during violent shutdown
+
 2000-05-25  Richard Braakman  <dark@wapit.com>
 
 	* test/fakewap.c: Sanitized tid handling.  It's now local to the
