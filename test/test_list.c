@@ -128,6 +128,7 @@ static void check_received(void) {
 }
 
 
+#if THREADS
 static void main_with_threads(void) {
 	List *list;
 	int i;
@@ -159,6 +160,7 @@ static void main_with_threads(void) {
 	
 	check_received();
 }
+#endif
 
 
 static void main_without_threads(void) {
@@ -190,14 +192,16 @@ static int compare_cstr(void *item, void *pat) {
 }
 
 
+#if 0
 static void dump(List *list) {
 	long i;
 	
 	debug("", 0, "List dump begin (%ld items):", list_len(list));
 	for (i = 0; i < list_len(list); ++i)
-		debug("", 0, "[%ld] = <%s>", i, list_get(list, i));
+		debug("", 0, "[%ld] = <%s>", i, (char *) list_get(list, i));
 	debug("", 0, "List dump end.");
 }
+#endif
 
 
 static void main_for_list_add_and_delete(void) {
@@ -283,10 +287,9 @@ static void main_for_extract(void) {
 int main(void) {
 	main_for_list_add_and_delete();
 	main_for_extract();
+	main_without_threads();
 #if THREADS
 	main_with_threads();
-#else
-	main_without_threads();
 #endif
 	return 0;
 }
