@@ -672,9 +672,10 @@ ws_expr_linearize(WsCompiler *compiler, WsExpression *expr)
 	      }
 
 	    /* Insert the function name to the byte-code pool. */
-	    if (!ws_bc_add_const_utf8_string(compiler->bc, &findex,
-					     expr->u.call.name,
-					     strlen(expr->u.call.name)))
+	    if (!ws_bc_add_const_utf8_string(
+					compiler->bc, &findex,
+					(unsigned char *) expr->u.call.name,
+					strlen(expr->u.call.name)))
 	      {
 		ws_error_memory(compiler);
 		return;

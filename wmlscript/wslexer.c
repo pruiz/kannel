@@ -987,7 +987,7 @@ buffer_to_int(WsCompilerPtr compiler, WsBuffer *buffer)
 static WsBool
 read_float_from_point(WsCompiler *compiler, WsBuffer *buffer, WsFloat *result)
 {
-  int ch;
+  unsigned int ch;
   unsigned char *p;
 
   while (ws_stream_getc(compiler->input, &ch))
@@ -1015,7 +1015,7 @@ read_float_from_point(WsCompiler *compiler, WsBuffer *buffer, WsFloat *result)
 static WsBool
 read_float_from_exp(WsCompiler *compiler, WsBuffer *buffer, WsFloat *result)
 {
-  int ch;
+  unsigned int ch;
   unsigned char *p;
   int sign = '+';
   unsigned char buf[4];

@@ -250,9 +250,9 @@ pragma_meta(const WsUtf8String *property_name, const WsUtf8String *content,
 {
   FILE *fp = stdout;
   char *what = (char *) context;
-  char *property_name_l = ws_utf8_to_latin1(property_name, '?', NULL);
-  char *content_l = ws_utf8_to_latin1(content, '?', NULL);
-  char *scheme_l = ws_utf8_to_latin1(scheme, '?', NULL);
+  char *property_name_l = (char *) ws_utf8_to_latin1(property_name, '?', NULL);
+  char *content_l = (char *) ws_utf8_to_latin1(content, '?', NULL);
+  char *scheme_l = (char *) ws_utf8_to_latin1(scheme, '?', NULL);
 
   fprintf(fp, "%s: name=\"%s\", content=\"%s\",",
 	  what,
@@ -265,7 +265,7 @@ pragma_meta(const WsUtf8String *property_name, const WsUtf8String *content,
 
   fprintf(fp, "\n");
 
-  ws_utf8_free_data(property_name_l);
-  ws_utf8_free_data(content_l);
-  ws_utf8_free_data(scheme_l);
+  ws_utf8_free_data((unsigned char *) property_name_l);
+  ws_utf8_free_data((unsigned char *) content_l);
+  ws_utf8_free_data((unsigned char *) scheme_l);
 }

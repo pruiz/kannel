@@ -319,7 +319,7 @@ ws_utf8_to_latin1(const WsUtf8String *string, unsigned char unknown_char,
 
 
 void
-ws_utf8_free_data(char *data)
+ws_utf8_free_data(unsigned char *data)
 {
   if (data)
     ws_free(data);

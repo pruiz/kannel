@@ -182,7 +182,7 @@ ws_bc_encode(WsBc *bc, unsigned char **data_return, size_t *data_len_return)
 	    case WS_BC_STRING_ENC_ISO_8859_1:
 	      {
 		WsUtf8String *string = ws_utf8_alloc();
-		char *latin1;
+		unsigned char *latin1;
 		size_t latin1_len;
 		WsBool success;
 

@@ -88,6 +88,6 @@ unsigned char *ws_utf8_to_latin1(const WsUtf8String *string,
 
 /* Free a string, returned by the ws_utf8_to_latin1_cstr()
    function. */
-void ws_utf8_free_data(char *data);
+void ws_utf8_free_data(unsigned char *data);
 
 #endif /* not WSUTF8_H */
