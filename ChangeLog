@@ -1,6 +1,11 @@
+2002-01-29  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/conn.c, gwlib/thread.[ch]: revised Andreas changes
+      for the debugging code of mutexes to be more gwlib/gwassert.h
+      style. This should help in reading the logs more cleanly.
+
 2002-01-28 Andreas Fink <andreas@fink.org>
-    *gwlib/thread.c/h: some debugging code for Mutex problems.
-     seems to fix a problem on solaris for no obvious reasons
+    * gwlib/thread.c/h: some debugging code for Mutex problems.
+      seems to fix a problem on solaris for no obvious reasons
 
 2002-01-28 Andreas Fink <andreas@fink.org>
     * gw/smsc_smpp.c: fixed SMPP for unicode sending
