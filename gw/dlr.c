@@ -193,12 +193,17 @@ void dlr_init(Cfg* cfg)
     if (octstr_compare(dlr_type, octstr_imm("mysql")) == 0) {
         handles = dlr_init_mysql(cfg);
         if (handles == NULL)
-   	    panic(0, "DLR: storage type defined as '%s', but no MySQL support build in!", 
+   	    panic(0, "DLR: storage type defined as '%s', but no MySQL support build in!",
               octstr_get_cstr(dlr_type));
     } else if (octstr_compare(dlr_type, octstr_imm("sdb")) == 0) {
         handles = dlr_init_sdb(cfg);
         if (handles == NULL)
-   	    panic(0, "DLR: storage type defined as '%s', but no LibSDB support build in!", 
+   	    panic(0, "DLR: storage type defined as '%s', but no LibSDB support build in!",
+              octstr_get_cstr(dlr_type));
+    } else if (octstr_compare(dlr_type, octstr_imm("oracle")) == 0) {
+        handles = dlr_init_oracle(cfg);
+        if (handles == NULL)
+   	    panic(0, "DLR: storage type defined as '%s', but no Oracle support build in!",
               octstr_get_cstr(dlr_type));
     } else if (octstr_compare(dlr_type, octstr_imm("internal")) == 0) {
         handles = dlr_init_mem(cfg);
@@ -222,7 +227,7 @@ void dlr_init(Cfg* cfg)
     /* cleanup */
     octstr_destroy(dlr_type);
 }
- 
+
 /*
  * Shutdown dlr storage
  */
@@ -351,7 +356,7 @@ Msg *dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int typ)
         debug("dlr.dlr", 0, "DLR[%s]: created DLR message for URL <%s>",
                       dlr_type(), (msg->sms.dlr_url?octstr_get_cstr(msg->sms.dlr_url):""));
     } else {
-        debug("dlr.dlr", 0, "DLR[%s]: Ignoring DLR message because of mask", dlr_type());
+        debug("dlr.dlr", 0, "DLR[%s]: Ignoring DLR message because of mask type=%d dlr->mask=%d", dlr_type(), typ, dlr->mask);
         /* ok that was a status report but we where not interested in having it */
         msg = NULL;
     }

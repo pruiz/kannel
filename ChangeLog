@@ -1,4 +1,10 @@
 2003-08-08  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/dlr_mysql.c,doc/examples/dlr-mysql.conf,doc/userguide/userguide.xml:
+      teached mysql dlr to use dbpool.
+    * gw/dlr.c,gw/dlr_oracle.c,gw/dlr_p.h,gwlib/cfg.def,doc/examples/dlr-oracle.conf:
+      added dlr oracle storage support.
+
+2003-08-08  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/dbpool.[ch],gwlib/dbpool_mysql.c,gwlib/dbpool_oracle.c,gwlib/dbpool_p.h,test/test_dbpool.c,
       config.h.in,configure,configure.in: dbpool cleanup/rewrite. Added oracle 8i/9i support. Some parts
       still not ideal, but I hope that others will help me/itself to get it cleaner:)

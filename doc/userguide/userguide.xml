@@ -1059,7 +1059,7 @@ syslog-level = none
 	breaks if either the included file can not be opened and 
 	processed or the included file has been processed already in 
 	the stack and a recursive cycling has been detected.</para>
-	
+
 </sect2>
 
 <sect2>
@@ -5422,6 +5422,7 @@ host = localhost
 mysql-username = foo
 mysql-password = bar
 database = dlr
+max-connections = 1
 
 group = dlr-db
 id = mydlr

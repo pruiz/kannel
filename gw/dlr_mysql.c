@@ -10,36 +10,83 @@
 */
 
 #include "gwlib/gwlib.h"
+#include "gwlib/dbpool.h"
 #include "dlr_p.h"
 
 
 #ifdef DLR_MYSQL
 #include <mysql/mysql.h>
-static MYSQL *connection;
-static MYSQL mysql;
+
+/*
+ * Our connection pool to mysql.
+ */
+static DBPool *pool = NULL;
 
 /*
  * Database fields, which we are use.
  */
 static struct dlr_db_fields *fields = NULL;
 
-/*
- * Mutex to protec access to mysql.
- */
-static Mutex *dlr_mutex = NULL;
 
+static void mysql_update(const Octstr *sql)
+{
+    int	state;
+    DBPoolConn *pc;
+
+#if defined(DLR_TRACE)
+     debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
+#endif
+
+    pc = dbpool_conn_consume(pool);
+    if (pc == NULL) {
+        error(0, "MYSQL: Database pool got no connection! DB update failed!");
+        return;
+    }
+
+    state = mysql_query(pc->conn, octstr_get_cstr(sql));
+    if (state != 0)
+        error(0, "MYSQL: %s", mysql_error(pc->conn));
+
+    dbpool_conn_produce(pc);
+}
+
+static MYSQL_RES* mysql_select(const Octstr *sql)
+{
+    int	state;
+    MYSQL_RES *result = NULL;
+    DBPoolConn *pc;
+
+#if defined(DLR_TRACE)
+    debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
+#endif
+
+    pc = dbpool_conn_consume(pool);
+    if (pc == NULL) {
+        error(0, "MYSQL: Database pool got no connection! DB update failed!");
+        return NULL;
+    }
+
+    state = mysql_query(pc->conn, octstr_get_cstr(sql));
+    if (state != 0) {
+        error(0, "MYSQL: %s", mysql_error(pc->conn));
+    } else {
+        result = mysql_store_result(pc->conn);
+    }
+
+    dbpool_conn_produce(pc);
+
+    return result;
+}
 
 static void dlr_mysql_shutdown()
 {
-    mysql_close(connection);
+    dbpool_destroy(pool);
     dlr_db_fields_destroy(fields);
-    mutex_destroy(dlr_mutex);
 }
 
 static void dlr_mysql_add(struct dlr_entry *entry)
 {
     Octstr *sql;
-    int	state;
 
     sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s, %s) VALUES "
                         "('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d');",
@@ -53,17 +100,9 @@ static void dlr_mysql_add(struct dlr_entry *entry)
                         octstr_get_cstr(entry->destination), octstr_get_cstr(entry->service), octstr_get_cstr(entry->url),
                         entry->mask, octstr_get_cstr(entry->boxc_id), 0);
 
-#if defined(DLR_TRACE)
-     debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
-#endif
 
-    mutex_lock(dlr_mutex);
+    mysql_update(sql);
 
-    state = mysql_query(connection, octstr_get_cstr(sql));
-    if (state != 0)
-        error(0, "MYSQL: %s", mysql_error(connection));
-
-    mutex_unlock(dlr_mutex);
     octstr_destroy(sql);
     dlr_entry_destroy(entry);
 }
@@ -72,7 +111,6 @@ static struct dlr_entry* dlr_mysql_get(const Octstr *smsc, const Octstr *ts, con
 {
     struct dlr_entry *res = NULL;
     Octstr *sql;
-    int	state;
     MYSQL_RES *result;
     MYSQL_ROW row;
 
@@ -83,20 +121,13 @@ static struct dlr_entry* dlr_mysql_get(const Octstr *smsc, const Octstr *ts, con
                         octstr_get_cstr(fields->table), octstr_get_cstr(fields->field_smsc),
                         octstr_get_cstr(smsc), octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
 
-#if defined(DLR_TRACE)
-    debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
-#endif
 
-    mutex_lock(dlr_mutex);
-    state = mysql_query(connection, octstr_get_cstr(sql));
+    result = mysql_select(sql);
     octstr_destroy(sql);
-    if (state != 0) {
-        error(0, "MYSQL: %s", mysql_error(connection));
-        mutex_unlock(dlr_mutex);
+
+    if (result == NULL) {
         return NULL;
     }
-    result = mysql_store_result(connection);
-    mutex_unlock(dlr_mutex);
     if (mysql_num_rows(result) < 1) {
         debug("dlr.mysql", 0, "no rows found");
         mysql_free_result(result);
@@ -129,30 +160,21 @@ static struct dlr_entry* dlr_mysql_get(const Octstr *smsc, const Octstr *ts, con
 static void dlr_mysql_remove(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
 {
     Octstr *sql;
-    int	state;
 
     debug("dlr.mysql", 0, "removing DLR from database");
     sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s' LIMIT 1;",
                         octstr_get_cstr(fields->table), octstr_get_cstr(fields->field_smsc),
                         octstr_get_cstr(smsc), octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
 
-#if defined(DLR_TRACE)
-    debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
-#endif
 
-    mutex_lock(dlr_mutex);
-    state = mysql_query(connection, octstr_get_cstr(sql));
+    mysql_update(sql);
+
     octstr_destroy(sql);
-    if (state != 0) {
-        error(0, "MYSQL: %s", mysql_error(connection));
-    }
-    mutex_unlock(dlr_mutex);
 }
 
 static void dlr_mysql_update(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int status)
 {
     Octstr *sql;
-    int	state;
 
     debug("dlr.mysql", 0, "updating DLR status in database");
     sql = octstr_format("UPDATE %s SET %s=%d WHERE %s='%s' AND %s='%s' LIMIT 1;",
@@ -161,43 +183,27 @@ static void dlr_mysql_update(const Octstr *smsc, const Octstr *ts, const Octstr 
                         octstr_get_cstr(fields->field_smsc), octstr_get_cstr(smsc),
                         octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
 
-#if defined(DLR_TRACE)
-    debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
-#endif
+    mysql_update(sql);
 
-    mutex_lock(dlr_mutex);
-    state = mysql_query(connection, octstr_get_cstr(sql));
     octstr_destroy(sql);
-    if (state != 0) {
-        error(0, "MYSQL: %s", mysql_error(connection));
-    }
-    mutex_unlock(dlr_mutex);
 }
 
 
 static long dlr_mysql_messages(void)
 {
     Octstr *sql;
-    int	state;
     long res;
     MYSQL_RES *result;
     MYSQL_ROW row;
 
     sql = octstr_format("SELECT count(*) FROM %s;", octstr_get_cstr(fields->table));
-#if defined(DLR_TRACE)
-    debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
-#endif
 
-    mutex_lock(dlr_mutex);
-    state = mysql_query(connection, octstr_get_cstr(sql));
+    result = mysql_select(sql);
     octstr_destroy(sql);
-    if (state != 0) {
-        error(0, "MYSQL: %s", mysql_error(connection));
-        mutex_unlock(dlr_mutex);
+
+    if (result == NULL) {
         return -1;
     }
-    result = mysql_store_result(connection);
-    mutex_unlock(dlr_mutex);
     if (mysql_num_rows(result) < 1) {
         debug("dlr.mysql", 0, "Could not get count of DLR table");
         mysql_free_result(result);
@@ -211,25 +217,18 @@ static long dlr_mysql_messages(void)
     }
     res = atol(row[0]);
     mysql_free_result(result);
+
     return res;
 }
 
 static void dlr_mysql_flush(void)
 {
-        Octstr *sql;
-        int	state;
-        MYSQL_RES *result;
+    Octstr *sql;
 
-        sql = octstr_format("DELETE FROM %s;", octstr_get_cstr(fields->table));
-        mutex_lock(dlr_mutex);
-        state = mysql_query(connection, octstr_get_cstr(sql));
-        octstr_destroy(sql);
-        if (state != 0) {
-            error(0, "MYSQL: %s", mysql_error(connection));
-        }
-        result = mysql_store_result(connection);
-        mutex_unlock(dlr_mutex);
-        mysql_free_result(result);
+    sql = octstr_format("DELETE FROM %s;", octstr_get_cstr(fields->table));
+
+    mysql_update(sql);
+    octstr_destroy(sql);
 }
 
 static struct dlr_storage  handles = {
@@ -249,6 +248,8 @@ struct dlr_storage *dlr_init_mysql(Cfg* cfg)
     List *grplist;
     Octstr *mysql_host, *mysql_user, *mysql_pass, *mysql_db, *mysql_id;
     Octstr *p = NULL;
+    long pool_size;
+    DBConf *db_conf = NULL;
 
     /*
      * check for all mandatory directives that specify the field names
@@ -286,6 +287,9 @@ found:
     octstr_destroy(p);
     list_destroy(grplist, NULL);
 
+    if (cfg_get_integer(&pool_size, grp, octstr_imm("max-connections")) == -1 || pool_size == 0)
+        pool_size = 1;
+
     if (!(mysql_host = cfg_get(grp, octstr_imm("host"))))
    	    panic(0, "DLR: MySQL: directive 'host' is not specified!");
     if (!(mysql_user = cfg_get(grp, octstr_imm("mysql-username"))))
@@ -298,30 +302,26 @@ found:
     /*
      * ok, ready to connect to MySQL
      */
-    mysql_init(&mysql);
-    connection = mysql_real_connect(&mysql,
-   	                octstr_get_cstr(mysql_host), octstr_get_cstr(mysql_user),
-                    octstr_get_cstr(mysql_pass), octstr_get_cstr(mysql_db),
-                    0, NULL, 0);
+    db_conf = gw_malloc(sizeof(DBConf));
+    gw_assert(db_conf != NULL);
+
+    db_conf->mysql = gw_malloc(sizeof(MySQLConf));
+    gw_assert(db_conf->mysql != NULL);
+
+    db_conf->mysql->host = mysql_host;
+    db_conf->mysql->username = mysql_user;
+    db_conf->mysql->password = mysql_pass;
+    db_conf->mysql->database = mysql_db;
+
+    pool = dbpool_create(DBPOOL_MYSQL, db_conf, pool_size);
+    gw_assert(pool != NULL);
 
     /*
      * XXX should a failing connect throw panic?!
      */
-    if (connection == NULL) {
-        error(0,"DLR: MySQL: can not connect to database!");
-        panic(0,"MYSQL: %s", mysql_error(&mysql));
-    } else {
-        info(0,"Connected to mysql server at %s.", octstr_get_cstr(mysql_host));
-        info(0,"MYSQL: server version %s, client version %s.",
-             mysql_get_server_info(&mysql), mysql_get_client_info());
-    }
+    if (dbpool_conn_count(pool) == 0)
+        panic(0,"DLR: MySQL: database pool has no connections!");
 
-    dlr_mutex = mutex_create();
-
-    octstr_destroy(mysql_db);
-    octstr_destroy(mysql_host);
-    octstr_destroy(mysql_user);
-    octstr_destroy(mysql_pass);
     octstr_destroy(mysql_id);
 
     return &handles;

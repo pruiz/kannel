@@ -110,5 +110,6 @@ void dlr_db_fields_destroy(struct dlr_db_fields *fields);
 struct dlr_storage *dlr_init_mem(Cfg *cfg);
 struct dlr_storage *dlr_init_mysql(Cfg *cfg);
 struct dlr_storage *dlr_init_sdb(Cfg *cfg);
+struct dlr_storage *dlr_init_oracle(Cfg *cfg);
 
 #endif /* DLR_P_H */

@@ -393,8 +393,17 @@ MULTI_GROUP(mysql-connection,
     OCTSTR(mysql-username)
     OCTSTR(mysql-password)
     OCTSTR(database)
+    OCTSTR(max-connections)
 )
 
+
+MULTI_GROUP(oracle-connection,
+    OCTSTR(id)
+    OCTSTR(username)
+    OCTSTR(password)
+    OCTSTR(tnsname)
+    OCTSTR(max-connections)
+)
 
 MULTI_GROUP(sdb-connection,
     OCTSTR(id)
