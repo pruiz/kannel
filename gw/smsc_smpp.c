@@ -43,7 +43,7 @@ static void dump_pdu(const char *msg, SMPP_PDU *pdu)
  
  
 /*  
- * Some constants. 
+ * Some defaults.
  */ 
  
 #define SMPP_ENQUIRE_LINK_INTERVAL  30.0 
@@ -80,6 +80,9 @@ typedef struct {
     int transmit_port; 
     int receive_port; 
     int quitting; 
+    long enquire_link_interval;
+    long max_pending_submits;
+    long reconnect_delay;
     SMSCConn *conn; 
 } SMPP; 
  
@@ -90,7 +93,9 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     	    	    	 Octstr *address_range, Octstr *our_host,  
                          int source_addr_ton, int source_addr_npi,  
                          int dest_addr_ton, int dest_addr_npi, 
-                         int alt_dcs, Octstr *my_number) 
+                         int alt_dcs, int enquire_link_interval, 
+                         int max_pending_submits, int reconnect_delay,
+                         Octstr *my_number) 
 { 
     SMPP *smpp; 
      
@@ -116,6 +121,9 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->my_number = octstr_duplicate(my_number); 
     smpp->transmit_port = transmit_port; 
     smpp->receive_port = receive_port; 
+    smpp->enquire_link_interval = enquire_link_interval;
+    smpp->max_pending_submits = max_pending_submits; 
+    smpp->reconnect_delay = reconnect_delay;
     smpp->quitting = 0; 
     smpp->conn = conn; 
      
@@ -311,7 +319,7 @@ static void send_enquire_link(SMPP *smpp, Connection *conn, long *last_sent)
     SMPP_PDU *pdu; 
     Octstr *os; 
  
-    if (date_universal_now() - *last_sent < SMPP_ENQUIRE_LINK_INTERVAL) 
+    if (date_universal_now() - *last_sent < smpp->enquire_link_interval)
     	return; 
     *last_sent = date_universal_now(); 
  
@@ -347,7 +355,7 @@ static void send_messages(SMPP *smpp, Connection *conn, long *pending_submits)
     if (*pending_submits == -1) 
     	return; 
  
-    while (*pending_submits < SMPP_MAX_PENDING_SUBMITS) { 
+    while (*pending_submits < smpp->max_pending_submits) {
     	/* Get next message, quit if none to be sent */ 
     	msg = list_extract_first(smpp->msgs_to_send); 
 	if (msg == NULL) 
@@ -782,8 +790,9 @@ static void io_thread(void *arg)
 	else 
 	    conn = open_receiver(smpp); 
 	if (conn == NULL) { 
-	    error(0, "SMPP: Couldn't connect to SMS center."); 
-	    gwthread_sleep(SMPP_RECONNECT_DELAY); 
+        error(0, "SMPP: Couldn't connect to SMS center (retrying in %ld seconds).", 
+              smpp->reconnect_delay);
+        gwthread_sleep(smpp->reconnect_delay);
 	    smpp->conn->status = SMSCCONN_RECONNECTING; 
 	    continue; 
 	} 
@@ -792,8 +801,8 @@ static void io_thread(void *arg)
 	pending_submits = -1; 
 	len = 0; 
     	for (;;) { 
-	    timeout = last_enquire_sent + SMPP_ENQUIRE_LINK_INTERVAL  
-	    	    	    - date_universal_now(); 
+        timeout = last_enquire_sent + smpp->enquire_link_interval
+                    - date_universal_now(); 
     	    if (smpp->quitting || conn_wait(conn, timeout) == -1) 
 	    	break; 
  
@@ -912,6 +921,10 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     int transceiver_mode; 
     Octstr *smsc_id; 
     int alt_dcs;
+    long enquire_link_interval;
+    long max_pending_submits;
+    long reconnect_delay;
+
  
     my_number = NULL; 
     transceiver_mode = 0;
@@ -941,7 +954,18 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
 	} else 
 	    octstr_destroy(system_id); 
     } 
-     
+
+    /* 
+     * check if timing values have been configured, otherwise
+     * use the predefined default values.
+     */
+    if (cfg_get_integer(&enquire_link_interval, grp, octstr_imm("enquire-link-interval")) == -1)
+        enquire_link_interval = SMPP_ENQUIRE_LINK_INTERVAL;
+    if (cfg_get_integer(&max_pending_submits, grp, octstr_imm("max-pending-submits")) == -1)
+        max_pending_submits = SMPP_MAX_PENDING_SUBMITS;
+    if (cfg_get_integer(&reconnect_delay, grp, octstr_imm("reconnect-delay")) == -1)
+        reconnect_delay = SMPP_RECONNECT_DELAY;
+ 
     /* Check that config is OK */ 
     ok = 1; 
     if (host == NULL) { 
@@ -972,7 +996,9 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     smpp = smpp_create(conn, host, port, receive_port, system_type,  
     	    	       username, password, address_range, our_host, 
                        source_addr_ton, source_addr_npi, dest_addr_ton,  
-                       dest_addr_npi, alt_dcs, my_number); 
+                       dest_addr_npi, alt_dcs, enquire_link_interval, 
+                       max_pending_submits, reconnect_delay, 
+                       my_number); 
  
     smsc_id = cfg_get(grp, octstr_imm("smsc-id")); 
     if (smsc_id == NULL) { 

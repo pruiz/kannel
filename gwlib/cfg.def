@@ -208,6 +208,9 @@ MULTI_GROUP(smsc,
     OCTSTR(source-addr-npi)
     OCTSTR(dest-addr-ton)
     OCTSTR(dest-addr-npi)
+    OCTSTR(enquire-link-interval)
+    OCTSTR(max-pending-submits)
+    OCTSTR(reconnect-delay)
     OCTSTR(transceiver-mode)
 )
 
