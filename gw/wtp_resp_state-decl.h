@@ -105,6 +105,11 @@ ROW(LISTEN,
     },
     INVOKE_RESP_WAIT)
 
+/*
+ * We must here store event fields and wsp indication into the wtp responder 
+ * state machine: if tid is valid, we will continue the transaction without a 
+ * new event.
+ */
 ROW(LISTEN,
     RcvInvoke,
     (event->u.RcvInvoke.tcl == 2 || event->u.RcvInvoke.tcl == 1) &&
@@ -263,7 +268,7 @@ ROW(INVOKE_RESP_WAIT,
  * send an acknowledgement (user acknowledgement in form of TR-Invoke.res or 
  * TR-Result.req instead of provider acknowledgement is awaited); if it is 
  * off, WTP does this. IMHO, specs support this exegesis: there is condition 
- * Uack == False && class == 2 with action send ack pdu. In addition, WSP 
+ * Uack == False && class == 2 with action send ack pdu. In addition, WTP 
  * 8.3.1 says " When [user acknowledgement] is enabled WTP provider does not
  * respond to a received message until after WTP user has confirmed the 
  * indication service primitive by issuing the response primitive".
@@ -278,6 +283,10 @@ ROW(INVOKE_RESP_WAIT,
     },
     INVOKE_RESP_WAIT)
 
+/*
+ * When a transaction is aborted, WSP must surely now this. One of corrections
+ * in MOT_WTP_CR_01.
+ */
 ROW(INVOKE_RESP_WAIT,
     TimerTO_A,
     resp_machine->aec == AEC_MAX,
@@ -396,7 +405,7 @@ ROW(RESULT_WAIT,
 
 /*
  * A duplicate ack(tidok) caused by a heavy load (the original changed state
- * from TIDOK_WAIT).
+ * from TIDOK_WAIT). This implements CR-Nokia-WTP-20-March-2000/2.
  */
 ROW(RESULT_WAIT,
     RcvAck,

@@ -1,3 +1,9 @@
+2000-10-18 Aarno Syvänen <syvanen@wapit.com>
+
+	* gw/wtp_init_state-decl.h, wtp_resp_state-decl.h: Add a comment tell-
+	ing which CR is implemented. Now all deviations from June 2000 con-
+	formance release are explained.
+
 2000-10-18  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bearerbox.c: updated 'status' to tell number of messages

@@ -128,7 +128,7 @@ ROW(INITIATOR_RESULT_WAIT,
     INITIATOR_RESULT_WAIT)
 
 /*
- * RCR must not be greater than RCR_MAX.
+ * RCR must not be greater than RCR_MAX. One of corrections from MOT_WTP_CR_01.
  */ 
    ROW(INITIATOR_RESULT_WAIT,
        RcvAck,
