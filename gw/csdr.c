@@ -204,6 +204,7 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	if (item->routing_info == NULL)
 	    goto error;
 	sprintf(item->routing_info, "%s:%s", client_ip, client_port);
+
 	
 	return item;
 

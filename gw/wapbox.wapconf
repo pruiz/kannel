@@ -1,2 +1,3 @@
 bearerbox-host = localhost
 bearerbox-port = 13000
+heartbeat-freq = 30

@@ -722,8 +722,9 @@ static void *wapboxconnection_thread(void *arg)
 
 	our_time = time(NULL);
 	if (our_time - last_time > bbox->heartbeat_freq) {
-	    if (us->boxc->box_heartbeat + bbox->heartbeat_freq * 2 < our_time) {
-		
+	    if (us->boxc->fd != BOXC_THREAD &&
+		(us->boxc->box_heartbeat + bbox->heartbeat_freq * 2 < our_time)) {
+
 		warning(0, "WAPBOXC: Other end has stopped beating");
 		break;
 	    }
@@ -816,6 +817,7 @@ static void *smsboxconnection_thread(void *arg)
 
     us->status = BB_STATUS_OK;
     last_time = time(NULL);
+    update_heartbeat(us);
     
     while(us->boxc != NULL && bbox->abort_program < 2) {
 	if (us->status == BB_STATUS_KILLED) break;
@@ -823,7 +825,7 @@ static void *smsboxconnection_thread(void *arg)
 	our_time = time(NULL);
 	if (our_time - last_time > bbox->heartbeat_freq) {
 	    if (us->boxc->fd != BOXC_THREAD &&
-		us->boxc->box_heartbeat + bbox->heartbeat_freq * 2 < our_time) {
+		(us->boxc->box_heartbeat + bbox->heartbeat_freq * 2 < our_time)) {
 
 		warning(0, "SMSBOXC: Other end has stopped beating");
 		break;

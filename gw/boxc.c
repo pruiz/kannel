@@ -71,6 +71,7 @@ BOXC *boxc_open(int fd, char *allow_ip, char *deny_ip)
 	/* TODO: do the hand-shake, baby, yeah-yeah! */
     }
     nb->load = 0;
+    nb->box_heartbeat = time(NULL);
     return nb;
     
 error:
