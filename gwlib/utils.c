@@ -11,6 +11,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <termios.h>
 
 #include "gwlib.h"
 
@@ -266,3 +267,50 @@ void encode_network_long(unsigned char *data, unsigned long value) {
         data[2] = (value >> 8) & 0xff;
         data[3] = value & 0xff;
 }
+
+#if !HAVE_CFMAKERAW
+/* Something that does the same as GNU cfmakeraw if it doesn't 
+ * exist on the target system */
+
+void kannel_cfmakeraw (struct termios *tio){
+    /* Block until a charactor is available, but it only needs to be one*/
+    tio->c_cc[VMIN]    = 1;
+    tio->c_cc[VTIME]   = 0;
+
+    /* GNU cfmakeraw sets these flags so we had better too...*/
+
+    /* Control modes,*/
+    tio->c_cflag      &= ~(CSIZE|PARENB); /* Allow parity bits and size*/
+    tio->c_cflag      |= CS8;             /* Wow, eight bit bytes!!! */
+
+    /* Input Flags,*/
+
+    /* Break on SIGINT, the FSF set both ICRNL (translate CR -> NL) and 
+     * IGNCR (which cancels out  ICRNL) - leave this in case something 
+     * barfs, INLCR - translate NL to CR,IXON - enable Xon/Xoff, ISTRIP - 
+     * strip the eighth bit (do we really want to be doing this?), IGNBRK - 
+     * ignore break condition.*/
+    tio->c_iflag      &= ~(BRKINT|ICRNL|IGNCR|IGNBRK|INLCR|IXON|ISTRIP|IGNBRK);
+
+    /* Other flags,*/
+
+    /* ECHO - echo input chars, ECHONL - always echo NL, even if ECHO is off
+     * ICANON - enable stuff like KILL, EOF, EOL etc in the stream, IEXTEN - 
+     * enable implementation dependant stuff, ISIG - generate signals in 
+     * response to chars like INTR, SUSP etc.*/
+    tio->c_lflag      &= ~(ECHO|ECHONL|ICANON|IEXTEN|ISIG);
+
+    /* Output flags,*/
+    /* Enable Implementation defined stuff on the output stream*/
+    tio->c_oflag      &= ~OPOST;
+}
+#else
+/* If it does exist, call cfmakeraw rather than the internal one*/
+#define kannel_cfmakeraw cfmakeraw
+#endif
+
+
+#ifndef B115200
+#define B115200 B38400
+#endif
+

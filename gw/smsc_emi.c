@@ -29,21 +29,6 @@
 #include "gwlib/gwlib.h"
 #include "alt_charsets.h"
 
-#if !HAVE_CFMAKERAW
-/* XXX this is misplaced, and only a stub.
- * bof@bof.de Thu Dec 30 00:32:27 CET 1999
- */
-static void cfmakeraw(struct termios *tio)
-{}
-#endif
-
-/*
- * Not all systems have B115200, but all should have B38400.
- */
-#ifndef B115200
-#define B115200 B38400
-#endif
-
 /******************************************************************************
 * Static functions
 */
@@ -431,7 +416,7 @@ static int at_dial(char *device, char *phonenum, char *at_prefix, time_t how_lon
 	tcgetattr(fd, &tios);
 	cfsetospeed(&tios, B115200);
 	cfsetispeed(&tios, B115200);
-	cfmakeraw(&tios);
+	kannel_cfmakeraw(&tios);
 	tios.c_cflag |= (HUPCL | CREAD | CRTSCTS);
 	tcsetattr(fd, TCSANOW, &tios);
 

@@ -45,14 +45,6 @@
 #include "smsc_sema.h"
 
 
-#if !HAVE_CFMAKERAW
-/* XXX this is misplaced, and only a stub.
- * bof@bof.de Thu Dec 30 00:32:27 CET 1999
- */
-  static void cfmakeraw(struct termios *tio)
-{}
-#endif
-
 
 static unsigned char sema_counter[4] = "0000";
 static int sema_wait_report = 1;
@@ -484,7 +476,7 @@ static int X28_open_data_link(char* device){
     tcgetattr(fd, &tios);
     cfsetospeed(&tios, B4800);  /* check radio pad parameter*/
     cfsetispeed(&tios, B4800);
-    cfmakeraw(&tios);
+    kannel_cfmakeraw(&tios);
     tios.c_iflag |= IGNBRK|IGNPAR|INPCK|ISTRIP;
     tios.c_cflag |= (CSIZE|HUPCL | CREAD | CRTSCTS);
     tios.c_cflag ^= PARODD;

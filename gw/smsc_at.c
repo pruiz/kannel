@@ -3,7 +3,7 @@
  *
  * Yann Muller - 3G Lab, 2000.
  *
- * $Id: smsc_at.c,v 1.5 2000-06-19 12:54:22 3glab Exp $
+ * $Id: smsc_at.c,v 1.6 2000-06-19 16:18:14 derry Exp $
  * 
  * Make sure your kannel configuration file contains the following lines
  * to be able to use the AT SMSC:
@@ -89,7 +89,7 @@ static int at_open_connection(SMSCenter *smsc) {
 		cfsetospeed(&tios, B9600);  /* check radio pad parameter*/
 		cfsetispeed(&tios, B9600);
 	}
-	cfmakeraw(&tios);
+	kannel_cfmakeraw(&tios);
 	/* parameters:
 	 * IGNBRK, IGNPAR: ignore BREAK and PARITY errors
 	 * INPCK: enable parity check
