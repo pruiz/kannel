@@ -121,7 +121,7 @@ static unsigned char insert_tpi_length(int tpi_length, unsigned char octet);
  */
 Msg *wtp_send_result(WTPMachine *machine, WTPEvent *event){
 
-     Msg *msg = NULL;
+     Msg *msg, *dup;
 
      msg = msg_create(wdp_datagram);
      msg = add_datagram_address(msg, machine);
@@ -131,10 +131,11 @@ Msg *wtp_send_result(WTPMachine *machine, WTPEvent *event){
         return NULL;
      }
 
+     dup = msg_duplicate(msg);
      put_msg_in_queue(msg);
      debug("wap.wtp.send", 0, "WTP_SEND: put the message to the send queue");
 
-     return msg;
+     return dup;
 }
 
 /*

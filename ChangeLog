@@ -1,3 +1,20 @@
+Wed Mar 29 20:44:52 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/msg.c: Cleanups. No need to check that msg_create returns
+	non-NULL (it panics, if it fails). Use octstr_duplicate instead
+	of doing it manually with octstr_copy.
+	
+	* gw/wtp_send.c: Bugfix. wtp_send_result used to return the same
+	message copy that it passed on to put_msg_in_queue. The caller
+	would then make a duplicate. This is a race condition: sometimes
+	the message in the queue would be processed and destroyed before
+	the caller had time to duplicate the message. Changed it so that
+	wtp_send_result makes the duplicate itself, since that is the
+	only reasonable way to avoid the race condition.
+	
+	* gw/wtp_state-decl.h: Changed to use result from wtp_send_result
+	directly, instead of duplicating it.
+
 Wed Mar 29 19:44:05 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* test/test_list.c: Fixed warnings.

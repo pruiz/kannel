@@ -196,7 +196,7 @@ ROW(INVOKE_RESP_WAIT,
      timer_event = wtp_event_create(TimerTO_R);
      wtp_timer_start(machine->timer, L_R_WITH_USER_ACK, machine, timer_event);
      debug("wap.wtp", 0, "WTP: sending results");
-     machine->result = msg_duplicate(wtp_send_result(machine, event)); 
+     machine->result = wtp_send_result(machine, event);
      machine->rid = 1;
     },
     RESULT_RESP_WAIT)
@@ -256,7 +256,7 @@ ROW(RESULT_WAIT,
      timer_event = wtp_event_create(TimerTO_R);
      wtp_timer_start(machine->timer, L_R_WITH_USER_ACK, machine, timer_event);
 
-     machine->result = msg_duplicate(wtp_send_result(machine, event));
+     machine->result = wtp_send_result(machine, event);
      machine->rid = 1;
     },
     RESULT_RESP_WAIT)
