@@ -311,7 +311,7 @@ nag:
 
 depend .depend: wmlscript/wsgram.h gw-config.h
 	for dir in $(srcdirs); do \
-		$(MKDEPEND) $$dir/*.c | sed "s:^[^ ]:$$dir/&:"; done > .depend
+		$(MKDEPEND) $$dir/*.c | sed "s:^[^ ^#]:$$dir/&:"; done > .depend
 include .depend
 
 libgw.a: $(gwobjs)

@@ -1,3 +1,7 @@
+2005-01-19  Alexander Malysh <amalysh at kannel.org>
+    * Makefile.in: fixed bug #173.
+      Thanks to joergent.
+
 2004-12-23  Alexander Malysh <amalysh at kannel.org>
     * contrib/kannel-monitor/index.php: and yet another one-liner.
       Fixed a case when there is a bearerbox attached and no smsbox's
