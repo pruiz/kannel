@@ -27,10 +27,10 @@ cvsignore:
 		do echo $$file >> .cvsignore; done
 
 public: all
-	rm -rf $(instdir)
-	mkdir -p $(instdir)
+	rm -rf $(instdir)/userguide
+	mkdir -p $(instdir)/userguide
 	cp index.html $(docs) $(docsps) $(docshtml) $(figspng) $(figsps) \
-		$(instdir)
+		$(instdir)/userguide
 	for dir in $(docs:.xml=); do \
-		if [ -d $$dir ]; then cp -r $$dir $(instdir); fi; done
-	chmod -R go=u,go-w $(instdir)
+		if [ -d $$dir ]; then cp -r $$dir $(instdir)/userguide; fi; done
+	chmod -R go=u,go-w $(instdir)/userguide

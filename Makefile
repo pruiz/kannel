@@ -124,3 +124,6 @@ install: all
 	mkdir -p $(bindir)
 	install $(progs) $(bindir)
 	for dir in $(docdirs); do set -e; (cd $$dir && $(MAKE) install); done
+
+publish-docs:
+	for dir in $(docdirs); do set -e; (cd $$dir && $(MAKE) public); done
