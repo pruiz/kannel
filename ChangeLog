@@ -1,5 +1,9 @@
 2000-11-07  Lars Wirzenius  <liw@iki.fi>
 
+	* checks/check_sendsms.sh: Wrote.
+
+2000-11-07  Lars Wirzenius  <liw@iki.fi>
+
 	* checks/check_fakesmsc.sh: Wrote.
 
 2000-11-06  Tuomas Luttinen  <tuo@wapit.com>
