@@ -1,3 +1,7 @@
+2005-01-24  Alexander Malysh <amalysh at kannel.org>
+    * gw/urltrans.c: fixed bug #174.
+      Thanks to chandave for provided patch.
+
 2005-01-23  Alexander Malysh <amalysh at kannel.org>
     * gwlib/http.c: apllied patch that includes some http server fixes:
       - don't close listen filedescriptor when accept failed (that can be caused

@@ -609,7 +609,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 			octstr_append(result, octstr_imm("8-BIT"));
 			break;
 		    case DC_UCS2:
-			octstr_append(result, octstr_imm("UTF16-BE"));
+			octstr_append(result, octstr_imm("UTF-16BE"));
 			break;
 		}
 	    }
