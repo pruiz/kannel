@@ -1,3 +1,9 @@
+2000-09-22  Kalle Marjola  <rpr@wapit.com>
+
+	* gwlib/utils.c: set that command line option '--' ends option
+	parsing. Thanks to Kari Lempiainen for finding this, although I
+	added one 'break' to it, too.
+	
 2000-09-22  Richard Braakman  <dark@wapit.com>
 
 	* gw/timers.c: Correctly record elapse-event in gwtimer_start.  Oops.
