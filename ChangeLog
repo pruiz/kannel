@@ -1,4 +1,9 @@
 2002-09-03  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smpp_pdu.c: fixed a bug in copy_until_nul() which caused to return
+      octstr "" when the null-terminated string contained "\0". The return value
+      in such a case should be NULL.
+
+2002-09-03  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: documentation for the new 'msg-id-type' 
       directive for the SMPP module
     * gw/smsc/smsc_smpp.c, gwlib/cfg.def: adding the 'msg-id-type' directive
