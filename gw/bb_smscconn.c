@@ -176,13 +176,13 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
     char *uf;
 
     /* do some queue control */
-    if (bb_status == BB_FULL && maximum_queue_length != -1 && 
+    if (maximum_queue_length != -1 && bb_status == BB_FULL && 
             list_len(incoming_sms) <= maximum_queue_length) {
         bb_status = BB_RUNNING;
         warning(0, "started to accept messages again");
     }
-
-    if (maximum_queue_length != -1 && list_len(outgoing_sms) > 0 &&
+    
+    if (maximum_queue_length != -1 && 
             list_len(incoming_sms) > maximum_queue_length) {
         if (bb_status != BB_FULL)
             bb_status = BB_FULL;
@@ -626,6 +626,14 @@ int smsc2_rout(Msg *msg)
     msg_destroy(msg);
     return 1;
 }
+
+
+
+
+
+
+
+
 
 
 
