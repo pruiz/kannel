@@ -823,7 +823,8 @@ static void start_fetch(WAPEvent *event)
         p->url = url;
         p->x_wap_tod = x_wap_tod;
         p->request_headers = actual_headers;
-        http_start_request(caller, url, actual_headers, request_body, 0, p, NULL);
+        http_start_request(caller, http_name2method(method), url, actual_headers, 
+                           request_body, 0, p, NULL);
         octstr_destroy(request_body);
     } else {
         error(0, "WSP: Method %s not supported.", octstr_get_cstr(method));

@@ -360,8 +360,8 @@ static void start_push(HTTPCaller *caller, long i)
     id = gw_malloc(sizeof(long));
     *id = i;
     make_url(&push_url);
-    http_start_request(caller, push_url, push_headers, push_content, 0, id,
-                       ssl_client_certkey_file);
+    http_start_request(caller, HTTP_METHOD_GET, push_url, push_headers, 
+                       push_content, 0, id, ssl_client_certkey_file);
     debug("test.ppg", 0, "TEST_PPG: started pushing job %ld", i);
 
     octstr_destroy(push_content);
@@ -408,7 +408,7 @@ static int receive_push_reply(HTTPCaller *caller)
         http_add_basic_auth(retry_headers, username, password);
         trid = gw_malloc(sizeof(long));
         *trid = tries;
-        http_start_request(caller, final_url, retry_headers, 
+        http_start_request(caller, HTTP_METHOD_GET, final_url, retry_headers, 
                            push_content, 0, trid, NULL);
         debug("test.ppg ", 0, "TEST_PPG: doing response to %s", 
               octstr_get_cstr(final_url));
