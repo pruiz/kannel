@@ -343,6 +343,7 @@ static void *remember_receiver(Msg *msg, URLTranslation *trans)
     receiver->msg->sms.flag_8bit = 0;
     receiver->msg->sms.flag_udh = 0;
     receiver->msg->sms.udhdata = NULL;
+    receiver->msg->sms.flag_flash = 0;
     receiver->msg->sms.msgdata = NULL;
     receiver->msg->sms.time = (time_t) -1;
     receiver->msg->sms.smsc_id = octstr_duplicate(msg->sms.smsc_id);
@@ -416,7 +417,7 @@ static Octstr *get_udh_from_headers(List *headers)
 static void get_x_kannel_from_headers(List *headers, Octstr **from,
 				      Octstr **to, Octstr **udh,
 				      Octstr **user, Octstr **pass,
-				      Octstr **smsc)
+				      Octstr **smsc, int *flash)
 {
     Octstr *name, *val;
     long l;
@@ -458,6 +459,9 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 		*udh = NULL;
 	    }
 	}
+        else if (octstr_case_compare(name, octstr_imm("X-Kannel-Flash")) == 0) {
+    	    sscanf(octstr_get_cstr(val),"%d",flash);
+        }
 	octstr_destroy(name);
 	octstr_destroy(val);
     }
@@ -465,7 +469,7 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 
 static void fill_message(Msg *msg, URLTranslation *trans,
 			 Octstr *replytext, int octet_stream,
-			 Octstr *from, Octstr *to, Octstr *udh)
+			 Octstr *from, Octstr *to, Octstr *udh, int flash)
 {    
     msg->sms.msgdata = replytext;
     if (octet_stream && urltrans_assume_plain_text(trans)==0)
@@ -502,6 +506,13 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 	    octstr_destroy(udh);
 	}
     }
+    if (flash) {
+        if (urltrans_accept_x_kannel_headers(trans)) {
+	    msg->sms.flag_flash = flash;	  
+	} else {
+	    warning(0, "Tried to set Flash field, denied.");
+	}
+    }
 }
 
 
@@ -519,6 +530,7 @@ static void url_result_thread(void *arg)
     Octstr *octet_stream;
     Octstr *udh, *from, *to;
     int octets;
+    int flash;
     
     text_html = octstr_imm("text/html");
     text_wml = octstr_imm("text/vnd.wap.wml");
@@ -534,7 +546,7 @@ static void url_result_thread(void *arg)
     	get_receiver(id, &msg, &trans);
 
     	from = to = udh = NULL;
-	octets = 0;
+	octets = flash = 0;
 	
     	if (status == HTTP_OK) {
 	    http_header_get_content_type(reply_headers, &type, &charset);
@@ -546,19 +558,19 @@ static void url_result_thread(void *arg)
 		replytext = html_to_sms(reply_body);
 		octstr_strip_blanks(replytext);
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
-					  NULL, NULL, NULL);
+					  NULL, NULL, NULL,&flash);
 	    } else if (octstr_compare(type, text_plain) == 0) {
 		replytext = reply_body;
 		reply_body = NULL;
 		octstr_strip_blanks(replytext);
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
-					  NULL, NULL, NULL);
+					  NULL, NULL, NULL,&flash);
 	    } else if (octstr_compare(type, octet_stream) == 0) {
 		replytext = reply_body;
 		octets = 1;
 		reply_body = NULL;
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
-					  NULL, NULL, NULL);
+					  NULL, NULL, NULL,&flash);
 	    } else {
 		replytext = octstr_create("Result could not be represented "
 					  "as an SMS message.");
@@ -568,7 +580,7 @@ static void url_result_thread(void *arg)
 	} else
 	    replytext = octstr_create("Could not fetch content, sorry.");
 
-	fill_message(msg, trans, replytext, octets, from, to, udh);
+	fill_message(msg, trans, replytext, octets, from, to, udh, flash);
 	
     	if (final_url == NULL)
 	    final_url = octstr_imm("");
@@ -678,6 +690,13 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	    octstr_binary_to_hex(os, 1);
 	    http_header_add(request_headers, "X-Kannel-UDH",
 			    octstr_get_cstr(os));
+	    octstr_destroy(os);
+	}
+	if(msg->sms.flag_flash) {
+	    Octstr *os;
+	    os = octstr_format("%d",msg->sms.flag_flash);
+	    http_header_add(request_headers, "X-Kannel-Flash", 
+	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
 	http_start_request(caller, pattern, request_headers, 
@@ -938,7 +957,7 @@ static int pam_authorise_user(List *list)
 
 static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 				 Octstr *from, Octstr *to, Octstr *text,
-				 int binary, Octstr *udh, Octstr *smsc,
+				 int binary, Octstr *udh, Octstr *smsc, int flash,
 				 int *status)
 {				     
     Msg *msg = NULL;
@@ -990,7 +1009,8 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     msg->sms.sender = octstr_duplicate(newfrom);
     msg->sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
     msg->sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
-    
+    msg->sms.flag_flash = flash;
+
     /* new smsc-id argument - we should check this one, if able,
        but that's advanced logics -- Kalle */
     
@@ -1122,9 +1142,10 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
 {
     URLTranslation *t = NULL;
     Octstr *from, *to;
-    Octstr *text, *udh, *smsc;
+    Octstr *text, *udh, *smsc, *flash_string;
     int binary;
-    
+    int flash;
+   
     /* check the username and password */
     t = authorise_user(args, client_ip);
     if (t == NULL) {
@@ -1137,8 +1158,11 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     smsc = http_cgi_variable(args, "smsc");
     from = http_cgi_variable(args, "from");
     to = http_cgi_variable(args, "to");
-    
-    
+    flash_string = http_cgi_variable(args, "flash");
+    flash = 0;
+    if(flash_string) {
+        sscanf(octstr_get_cstr(flash_string),"%d",&flash);
+    }
     if (to == NULL || (text == NULL && udh == NULL)) {
 	error(0, "/sendsms got wrong args");
 	*status = 400;
@@ -1157,7 +1181,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
      */
 
     return smsbox_req_handle(t, client_ip, from, to, text, binary,
-			     udh, smsc, status);
+			     udh, smsc, flash, status);
     
 }
 
@@ -1174,11 +1198,12 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     Octstr *ret;
     Octstr *type, *charset;
     int binary = 0;
-    
+    int flash;
+ 
     from = to = user = pass = udh = smsc = NULL;
 
     get_x_kannel_from_headers(headers, &from, &to, &udh,
-			      &user, &pass, &smsc);
+			      &user, &pass, &smsc,  &flash);
     
     ret = NULL;
     
@@ -1211,7 +1236,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	}
 	if (ret == NULL)
 	    ret = smsbox_req_handle(t, client_ip, from, to, body,
-				    binary, udh, smsc, status);
+				    binary, udh, smsc, flash, status);
 
 	octstr_destroy(type);
 	octstr_destroy(charset);

@@ -221,7 +221,8 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
         pdu->u.submit_sm.data_coding = DCS_OCTET_DATA;
     else
         pdu->u.submit_sm.data_coding = DCS_GSM_TEXT;
-    
+	if (msg->sms.flag_flash==1)
+	    pdu->u.submit_sm.data_coding = (pdu->u.submit_sm.data_coding & 0xEC) | 0x10;
     return pdu;
 }
 

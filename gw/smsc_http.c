@@ -226,6 +226,9 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
     if (sms->sms.flag_udh && sms->sms.udhdata)
 	octstr_format_append(url, "&udh=%E", sms->sms.udhdata);
     
+    if (sms->sms.flag_flash)
+	octstr_format_append(url, "&flash=%d", sms->sms.flag_flash);
+  
     headers = list_create();
     debug("smsc.http.kannel", 0, "start request");
     http_start_request(conndata->http_ref, url, headers, NULL, 0, sms, NULL);
@@ -248,8 +251,9 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 			       List *headers, Octstr *body, List *cgivars)
 {
     ConnData *conndata = conn->data;
-    Octstr *user, *pass, *from, *to, *text, *udh;
+    Octstr *user, *pass, *from, *to, *text, *udh, *flash_string;
     Octstr *retmsg;
+    int	flash;
     List *reply_headers;
     int ret;
 
@@ -259,7 +263,11 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     to = http_cgi_variable(cgivars, "to");
     text = http_cgi_variable(cgivars, "text");
     udh = http_cgi_variable(cgivars, "udh");
-
+    flash_string = http_cgi_variable(cgivars, "flash");
+    if(flash_string) {
+	sscanf(octstr_get_cstr(flash_string),"%d",&flash);
+	octstr_destroy(flash_string);
+    }
     debug("smsc.http.kannel", 0, "Received an HTTP request");
     
     if (   user == NULL || pass == NULL
@@ -291,7 +299,8 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 
 	msg->sms.smsc_id = octstr_duplicate(conn->id);
 	msg->sms.time = time(NULL);
-	
+	msg->sms.flag_flash = flash;
+
 	ret = bb_smscconn_receive(conn, msg);
 	if (ret == -1)
 	    retmsg = octstr_create("Not accepted");

@@ -248,16 +248,47 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
     struct emimsg *emimsg;
 
     emimsg = emimsg_create_op(51, trn);
-
     str = octstr_duplicate(msg->sms.sender);
-    if (!octstr_check_range(str, 0, 256, gw_isdigit)) {
-	/* alphanumeric sender address */
-	emimsg->fields[E50_OTOA] = octstr_create("5039");
-	pack_7bit(str);
+    if(octstr_get_char(str,0) == '+') {
+    	/* either alphanum or international */
+    	if (!octstr_check_range(str, 1, 256, gw_isdigit)) {
+	    /* alphanumeric sender address with + in front*/
+	    octstr_truncate(str, 11); /* max length of alphanumeric OaDC */
+	    emimsg->fields[E50_OTOA] = octstr_create("5039");
+	    pack_7bit(str);
+	}
+	else {
+	    /* international number. Set format and remove + */
+	    emimsg->fields[E50_OTOA] = octstr_create("1139");
+	    octstr_delete(str, 0, 1);
+	    octstr_truncate(str, 22);  /* max length of numeric OaDC */
+	}
     }
+    else {
+	if (!octstr_check_range(str, 0, 256, gw_isdigit)) {
+	    /* alphanumeric sender address */
+	    octstr_truncate(str, 11); /* max length of alphanumeric OaDC */
+	    emimsg->fields[E50_OTOA] = octstr_create("5039");
+	    pack_7bit(str);
+	}
+    }
+ 
     emimsg->fields[E50_OADC] = str;
 
-    emimsg->fields[E50_ADC] = octstr_duplicate(msg->sms.receiver);
+    str = octstr_duplicate(msg->sms.receiver);
+    if(octstr_get_char(str,0) == '+') {
+    	 /* international number format */
+    	 /* EMI doesnt understand + so we have to repalce it with something useful */
+    	 /* we try 00 here. Should really be done in the config instead so this */
+    	 /* is only a workaround to make wrong configs work  */
+	 octstr_delete(str, 0, 1);
+	 octstr_insert_data(str, 0, "00",2);
+    }
+    octstr_truncate(str, 16); /* max length of ADC */
+    emimsg->fields[E50_ADC] = str;
+   
+    emimsg->fields[E50_XSER] = octstr_create("");
+    /* XSer1: UDH */
 
     if (msg->sms.flag_udh) {
 	str = octstr_create("");
@@ -265,9 +296,19 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
 	octstr_append_char(str, octstr_len(msg->sms.udhdata));
 	octstr_append(str, msg->sms.udhdata);
 	octstr_binary_to_hex(str, 1);
-	emimsg->fields[E50_XSER] = str;
+	octstr_append(emimsg->fields[E50_XSER],str);
+        octstr_destroy(str);
     }
-
+    /* XSer2: DCS */
+   if(msg->sms.flag_flash) {
+   	str = octstr_create("");
+	octstr_append_char(str, 2);
+	octstr_append_char(str, 1); /*len */
+	octstr_append_char(str, 0xF0);
+	octstr_binary_to_hex(str, 1);
+	octstr_append(emimsg->fields[E50_XSER],str);
+    }
+	
     if (msg->sms.flag_8bit) {
 	emimsg->fields[E50_MT] = octstr_create("4");
 	emimsg->fields[E50_MCLS] = octstr_create("1");

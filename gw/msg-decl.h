@@ -32,6 +32,7 @@ MSG(sms,
 		OCTSTR(smsc_id);
 		INTEGER(id);
 		INTEGER(sms_type);
+		INTEGER(flag_flash);
 	})
 
 MSG(ack,
