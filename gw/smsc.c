@@ -539,7 +539,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 	    break;
 
 	case SMSC_TYPE_SMPP_IP:
-	    if (host == NULL || port == NULL || 
+	    if (host == NULL || port == NULL || smpp_system_type == NULL ||
 	    	smpp_system_id == NULL || password == NULL)
 		error(0, "Required field missing for SMPP center.");
 	    else
