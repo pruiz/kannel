@@ -1,4 +1,7 @@
 2003-11-26  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smpp_pdu.def: added missing esm_class values for deliver_sm PDU.
+ 
+2003-11-26  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added HTTP SMSC type 'wapme'.
     * gw/smsc/smsc_http.c: harmonizing kannel_receive_sms() to behave the same
       way as smsbox's sendsms interface. We run into code duplication here.
