@@ -10,12 +10,24 @@
 #ifndef	DLR_H
 #define	DLR_H 1
 
+#define	DLR_UNDEFINED       -1
+#define	DLR_NOTHING         0x00
 #define	DLR_SUCCESS         0x01
 #define	DLR_FAIL            0x02
 #define	DLR_BUFFERED        0x04
 #define	DLR_SMSC_SUCCESS    0x08
 #define	DLR_SMSC_FAIL       0x10
 
+#define DLR_IS_DEFINED(dlr)          (dlr != DLR_UNDEFINED)
+#define DLR_IS_ENABLED(dlr)          (DLR_IS_DEFINED(dlr) && (dlr & (DLR_SUCCESS | DLR_FAIL | DLR_BUFFERED | DLR_SMSC_SUCCESS | DLR_SMSC_FAIL)))
+#define DLR_IS_ENABLED_DEVICE(dlr)   (DLR_IS_DEFINED(dlr) && (dlr & (DLR_SUCCESS | DLR_FAIL | DLR_BUFFERED)))
+#define DLR_IS_ENABLED_SMSC(dlr)     (DLR_IS_DEFINED(dlr) && (dlr & (DLR_SMSC_SUCCESS | DLR_SMSC_FAIL)))
+#define DLR_IS_SUCCESS_OR_FAIL(dlr)  (DLR_IS_DEFINED(dlr) && (dlr & (DLR_SUCCESS | DLR_FAIL)))
+#define DLR_IS_SUCCESS(dlr)          (DLR_IS_DEFINED(dlr) && (dlr & DLR_SUCCESS))
+#define DLR_IS_FAIL(dlr)             (DLR_IS_DEFINED(dlr) && (dlr & DLR_FAIL))
+#define DLR_IS_BUFFERED(dlr)         (DLR_IS_DEFINED(dlr) && (dlr & DLR_BUFFERED))
+#define DLR_IS_SMSC_SUCCESS(dlr)     (DLR_IS_DEFINED(dlr) && (dlr & DLR_SMSC_SUCCESS))
+#define DLR_IS_SMSC_FAIL(dlr)        (DLR_IS_DEFINED(dlr) && (dlr & DLR_SMSC_FAIL))
 
 /* DLR initialization routine (abstracted) */
 void dlr_init(Cfg *cfg);

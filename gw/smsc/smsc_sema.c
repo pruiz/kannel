@@ -173,7 +173,7 @@ int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 	    goto error;
 	}
 	/*  user data header is not supported in sm2000 X25 access
-	    if(msg->sms.coding == DC_7BIT){
+	    if(msg->sms.coding == DC_7BIT ...|| DC_UNDEF?){
 	    error(0, "sema_submit_sms: submit invoke support in IA5 encoding(8 bits chars)");
 	    goto error;
 	    }

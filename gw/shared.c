@@ -10,6 +10,7 @@
 #include "gwlib/gwlib.h"
 #include "shared.h"
 #include "sms.h"
+#include "dlr.h"
 
 #if defined(HAVE_LIBSSL) || defined(HAVE_WTLS_OPENSSL) 
 #include <openssl/opensslv.h>
@@ -368,7 +369,7 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
          * if its a DLR request message getting split, 
          * only ask DLR for the first one 
          */
-        if ((msgno > 1) && (part->sms.dlr_mask)) {
+        if ((msgno > 1) && DLR_IS_ENABLED(part->sms.dlr_mask)) {
             octstr_destroy(part->sms.dlr_url);
             part->sms.dlr_url = NULL;
             part->sms.dlr_mask = 0;

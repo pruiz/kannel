@@ -561,7 +561,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag,
                             msg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
                             bb_smscconn_receive(privdata->conn, msg);
                         } else {
-                            error(0, "AT2[%s] could not decode PDU to a message.",
+                            error(0, "AT2[%s]: could not decode PDU to a message.",
                                   octstr_get_cstr(privdata->name));
                         }
 
@@ -1651,7 +1651,7 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
                 continue;
 
 	    /* gen DLR_SMSC_SUCCESS */
-	    if (msg->sms.dlr_mask & DLR_SMSC_SUCCESS)
+	    if (DLR_IS_SMSC_SUCCESS(msg->sms.dlr_mask))
 	    {
 		Msg* dlrmsg;
 
@@ -1673,7 +1673,7 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 	    }
 
 	    /* store DLR message if needed for SMSC generated delivery reports */
-	    if (msg->sms.dlr_mask & (DLR_SUCCESS | DLR_FAIL | DLR_BUFFERED)) {
+	    if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask)) {
 		if (msg_id == -1)
 		    error(0,"AT2[%s]: delivery notification requested, but I have no message ID!",
 			octstr_get_cstr(privdata->name));
@@ -1691,7 +1691,7 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 
         if (ret != 0) {
 	    /* gen DLR_SMSC_FAIL */
-	    if (msg->sms.dlr_mask & DLR_SMSC_FAIL) {
+	    if (DLR_IS_SMSC_FAIL(msg->sms.dlr_mask)) {
 		Msg* dlrmsg;
 
 		dlrmsg = msg_create(sms);
@@ -1738,9 +1738,9 @@ Octstr* at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
      * TP-RP , TP-UDHI, TP-SRR, TP-VPF(4), TP-VPF(3), TP-RD, TP-MTI(1), TP-MTI(0)
      */
     octstr_append_char(buffer,
-	((msg->sms.rpi ? 1 : 0) << 7) /* TP-RP */
+	((msg->sms.rpi > 0 ? 1 : 0) << 7) /* TP-RP */
 	| ((octstr_len(msg->sms.udhdata)  ? 1 : 0) << 6) /* TP-UDHI */
-	| (((msg->sms.dlr_mask & (DLR_SUCCESS | DLR_FAIL | DLR_BUFFERED)) ? 1 : 0) << 5) /* TP-SRR */
+	| ((DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask) ? 1 : 0) << 5) /* TP-SRR */
 	| 16 /* TP-VP(Rel)*/
 	| 1 /* TP-MTI: SUBMIT_SM */
 	);
@@ -1754,16 +1754,16 @@ Octstr* at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
     octstr_append(buffer, temp);
     O_DESTROY(temp);
 
-    octstr_append_char(buffer, msg->sms.pid); /* protocol identifier */
+    octstr_append_char(buffer, (msg->sms.pid == -1 ? 0 : msg->sms.pid) ); /* protocol identifier */
     octstr_append_char(buffer, fields_to_dcs(msg, /* data coding scheme */
-	(msg->sms.alt_dcs ? 2 - msg->sms.alt_dcs : privdata->conn->alt_dcs)));
+	(msg->sms.alt_dcs != -1 ? msg->sms.alt_dcs : privdata->conn->alt_dcs)));
 
     /* 
      * Validity-Period (TP-VP)
      * see GSM 03.40 section 9.2.3.12
      * defaults to 24 hours = 167 if not set 
      */
-    if ( msg->sms.validity) {
+    if ( msg->sms.validity >= 0) {
         if (msg->sms.validity > 635040)
             setvalidity = 255;
         if (msg->sms.validity >= 50400 && msg->sms.validity <= 635040)

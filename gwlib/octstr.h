@@ -288,6 +288,13 @@ int octstr_search_char(Octstr *ostr, int ch, long pos);
 
 
 /*
+ * Search several character from octet string starting from position pos. Returns 
+ * the position (index) of the first char found in string, -1 if none was found.
+ */
+int octstr_search_chars(Octstr *ostr, Octstr *chars, long pos);
+
+
+/*
  * Search for the octet string 'needle' in the octet string 'haystack'.
  * Return the start position (index) of 'needle' in 'haystack'.
  * Return -1 if not found.

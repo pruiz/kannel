@@ -1,3 +1,19 @@
+2003-07-19  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gwlib/octstr.{c,h}: added octstr_search_chars similar to its singular 
+      cousin, but enabling to do 'error if o_s_c(string, "/\n\r\0")'
+    * userguide.xml: added information about requiring defined smsc-id if 
+      you want to use delivery reports
+    * gw/dlr.c: dlr_add and dlr_find returns nothing if smsc-id is empty, 
+      logging an warning asking for "smsc-id"
+    * gw/dlr.h: added some macros to test dlr_mask values, especially now
+      that it could have the value "-1" ;)
+    * gw/dlr.c, gw/shared.c: now uses dlr.h macros to test dlr_mask
+    * gw/msg.c: reset structure on msg_create(sms) to make sure that every
+      value is in a sane state
+    * gw/wap_push_ppg.c: accept dlr_mask=-1 and 0
+    * gw/sms.h, gw/smsc/smsc_*.c: uses dlr.h macros and checks for sms 
+      parameters with values -1 or 0
+
 2003-07-18  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/wap-appl.c: Set encoding version in Via: header; also change 
       content.charset variable if kannel does transcoding; reset map-url

@@ -2122,6 +2122,7 @@ secret-radius = radius
 	variables <literal>denied-smsc-id</literal>, 
 	<literal>allowed-smsc-id</literal> and
 	<literal>preferred-smsc-id</literal> is used for that.
+	If you want to use Delivery Reports, you must define this.
 
      </entry></row>
 
@@ -7123,6 +7124,10 @@ ssl-server-key-file = "/home/aarno/kannelcvs/gateway/gw/key1.pem"
 	</itemizedlist>
 	</para>
 	
+	<note>
+	    <para>If you want to use delivery reports, you must define a <literal>smsc-id</literal> for each smsc group.</para>
+	</note>
+
 	<para>When you deliver SMS to Kannel you have to indicate what kind of delivery report messages you
 	would like to receive back from the system. The delivery report types currrently implemented are:
 	<itemizedlist>

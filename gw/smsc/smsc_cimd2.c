@@ -1275,8 +1275,8 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix, SMS
     gw_assert(msg->type == sms);
     gw_assert(msg->sms.receiver != NULL);
 
-    dcs = fields_to_dcs(msg, (msg->sms.alt_dcs ? 
-        2 - msg->sms.alt_dcs : conn->alt_dcs));
+    dcs = fields_to_dcs(msg, (msg->sms.alt_dcs != -1 ? 
+        msg->sms.alt_dcs : conn->alt_dcs));
     if (msg->sms.sender == NULL)
         msg->sms.sender = octstr_create("");
 
@@ -1337,7 +1337,7 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix, SMS
      *
      * This code was copied from smsc_at2.c.
      */
-    if (msg->sms.validity) {
+    if (msg->sms.validity >= 0) {
       if (msg->sms.validity > 635040)
 	setvalidity = 255;
       if (msg->sms.validity >= 50400 && msg->sms.validity <= 635040)
@@ -1367,11 +1367,11 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix, SMS
     /* ask for the delivery reports if needed*/
 
     if (!pdata->no_dlr)
-        if (msg->sms.dlr_mask & 0x03)
+        if (DLR_IS_SUCCESS_OR_FAIL(msg->sms.dlr_mask))
             packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 14, conn);
     	else
             packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 0, conn);
-    else if( pdata->no_dlr && (msg->sms.dlr_mask & 0x03) )
+    else if( pdata->no_dlr && DLR_IS_SUCCESS_OR_FAIL(msg->sms.dlr_mask)) 
     	warning(0, "CIMD2[%s]: dlr request make no sense while no-dlr set to true",
     		 octstr_get_cstr(conn->id));
 
@@ -1389,7 +1389,7 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix, SMS
          * it does not fit. */
         packet_add_hex_parm(packet, P_USER_DATA_HEADER, msg->sms.udhdata, conn);
     }
-    if (msg->sms.coding == DC_7BIT)
+    if (msg->sms.coding == DC_7BIT || msg->sms.coding == DC_UNDEF)
         spaceleft = spaceleft * 8 / 7;
     if (spaceleft < 0)
         spaceleft = 0;
@@ -1899,7 +1899,7 @@ static int cimd2_submit_msg(SMSCConn *conn, Msg *msg)
     }
 
     ret = cimd2_request(packet, conn, &ts);
-    if((ret == 0) && (ts) && (msg->sms.dlr_mask & 0x03) && !pdata->no_dlr) {
+    if((ret == 0) && (ts) && DLR_IS_SUCCESS_OR_FAIL(msg->sms.dlr_mask) && !pdata->no_dlr) {
         dlr_add(conn->name, ts, msg);
     }
     octstr_destroy(ts);

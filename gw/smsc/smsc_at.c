@@ -831,7 +831,7 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
         /* Validity-Period (TP-VP)
          * see GSM 03.40 section 9.2.3.12
          * defaults to 24 hours = 167 if not set */
-	if ( msg->sms.validity) {
+	if ( msg->sms.validity >= 0) {
 	    if (msg->sms.validity > 635040)
 		setvalidity = 255;
 	    if (msg->sms.validity >= 50400 && msg->sms.validity <= 635040)

@@ -66,6 +66,7 @@
 #include "bb_smscconn_cb.h"
 #include "msg.h"
 #include "sms.h"
+#include "dlr.h"
 
 typedef struct conndata {
     HTTPCaller *http_ref;
@@ -290,11 +291,11 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 
     if (!conndata->no_sender)
         octstr_format_append(url, "&from=%E", sms->sms.sender);
-    if (sms->sms.mclass)
+    if (sms->sms.mclass != MC_UNDEF)
 	octstr_format_append(url, "&mclass=%d", sms->sms.mclass);
-    if (!conndata->no_coding && sms->sms.coding)
+    if (!conndata->no_coding && sms->sms.coding != DC_UNDEF)
 	octstr_format_append(url, "&coding=%d", sms->sms.coding);
-    if (sms->sms.mwi)
+    if (sms->sms.mwi != MWI_UNDEF)
 	octstr_format_append(url, "&mwi=%d", sms->sms.mwi);
     if (sms->sms.account) /* prepend account with local username */
 	octstr_format_append(url, "&account=%E:%E", sms->sms.service, sms->sms.account);
@@ -304,7 +305,7 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
         octstr_url_encode(sms->sms.dlr_url);
         octstr_format_append(url, "&dlrurl=%S", sms->sms.dlr_url);
     }
-    if (sms->sms.dlr_mask)
+    if (sms->sms.dlr_mask != DLR_UNDEFINED)
         octstr_format_append(url, "&drlmask=%d", sms->sms.dlr_mask);
 
     headers = list_create();

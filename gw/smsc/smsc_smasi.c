@@ -447,7 +447,7 @@ static SMASI_PDU *msg_to_pdu(SMASI *smasi, Msg *msg)
     }
 
     /* Set encoding. */
-    if (msg->sms.coding != 0) {
+    if (msg->sms.coding != DC_UNDEF) {
         if (msg->sms.coding == DC_7BIT)
             pdu->u.SubmitReq.MsEncoding = octstr_create("7bit");
         else if (msg->sms.coding == DC_8BIT)
@@ -459,11 +459,12 @@ static SMASI_PDU *msg_to_pdu(SMASI *smasi, Msg *msg)
     }
 
     /* Set messaging class - if within defined parameter range. */
-    if (msg->sms.mclass >= 0 && msg->sms.mclass <= 4)
-        pdu->u.SubmitReq.Class = octstr_format("%ld", (msg->sms.mclass - 1));
+    if (msg->sms.mclass != MC_UNDEF)
+        pdu->u.SubmitReq.Class = octstr_format("%ld", msg->sms.mclass - 1); /* DAVI fix me */
 
     /* Set Protocol ID. */
-    pdu->u.SubmitReq.ProtocolID = octstr_format("%ld", msg->sms.pid);
+    pdu->u.SubmitReq.ProtocolID = octstr_format("%ld", 
+	(msg->sms.pid == SMS_PARAM_UNDEFINED ? 0 : msg->sms.pid));
 
     /* Check if SMS is binary. */
     if (msg->sms.udhdata && octstr_len(msg->sms.udhdata) > 0) {
@@ -527,7 +528,7 @@ static Msg *pdu_to_msg(SMASI_PDU *pdu)
     if (pdu->u.DeliverReq.ProtocolId)
         if (octstr_parse_long(&msg->sms.pid, 
                               pdu->u.DeliverReq.ProtocolId, 0, 10) == -1)
-            msg->sms.pid = 0;
+            msg->sms.pid = SMS_PARAM_UNDEFINED;
 
     /* Read Coding. */
     if (pdu->u.DeliverReq.MsEncoding) {
@@ -554,16 +555,16 @@ static Msg *pdu_to_msg(SMASI_PDU *pdu)
     if (pdu->u.DeliverReq.Class) {
         if (octstr_parse_long(&msg->sms.mclass, 
                               pdu->u.DeliverReq.Class, 0, 10) == -1)
-            msg->sms.mclass = 0;    /* Set to unspecified. */
+            msg->sms.mclass = MC_UNDEF;    /* Set to unspecified. */
         else
-            msg->sms.mclass++;      /* Correct value mapping. */
+            msg->sms.mclass++;      /* Correct value mapping. */ /* DAVI: fix me */
     }
 
     /* Read protocol ID. */
     if (pdu->u.DeliverReq.ProtocolId)
         if (octstr_parse_long(&msg->sms.pid, 
                               pdu->u.DeliverReq.ProtocolId, 0, 10) == -1)
-            msg->sms.pid = 0;
+            msg->sms.pid = SMS_PARAM_UNDEFINED;
 
     return msg;
 }

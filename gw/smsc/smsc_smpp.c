@@ -398,11 +398,12 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
      * set the data coding scheme (DCS) field 
      * check if we have a forced value for this from the smsc-group.
      */
-    pdu->u.submit_sm.data_coding = fields_to_dcs(msg, (msg->sms.alt_dcs ? 
-        2 - msg->sms.alt_dcs : smpp->conn->alt_dcs));
+    pdu->u.submit_sm.data_coding = fields_to_dcs(msg, 
+        (msg->sms.alt_dcs != SMS_PARAM_UNDEFINED ? 
+         msg->sms.alt_dcs : smpp->conn->alt_dcs));
 
     /* set protocoll id */
-    if(msg->sms.pid) 
+    if(msg->sms.pid != SMS_PARAM_UNDEFINED) 
         pdu->u.submit_sm.protocol_id = msg->sms.pid; 
 
     /*
@@ -413,7 +414,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     if (octstr_len(msg->sms.udhdata)) 
         pdu->u.submit_sm.esm_class = pdu->u.submit_sm.esm_class |
             ESM_CLASS_SUBMIT_UDH_INDICATOR;
-    if (msg->sms.rpi) 
+    if (msg->sms.rpi > 0) 
         pdu->u.submit_sm.esm_class = pdu->u.submit_sm.esm_class |
             ESM_CLASS_SUBMIT_RPI;
 
@@ -452,7 +453,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     /*
      * check for validity and defered settings
      */
-    if (msg->sms.validity || msg->sms.deferred) {
+    if (msg->sms.validity >= 0 || msg->sms.deferred >= 0) {
 
         /* work out 1/4 hour difference between local time and UTC/GMT */
         gmtime = gw_gmtime(time(NULL));
@@ -467,7 +468,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
             gwqdiff *= -1;  /* make absolute */
         }
 
-        if (msg->sms.validity) {
+        if (msg->sms.validity >= 0) {
             tm = gw_localtime(time(NULL) + msg->sms.validity * 60);
             buffer = octstr_format("%02d%02d%02d%02d%02d%02d0%02d%1s",
                     tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
@@ -477,7 +478,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
             octstr_destroy(buffer);
         }
 
-        if (msg->sms.deferred) {
+        if (msg->sms.deferred >= 0) {
             tm = gw_localtime(time(NULL) + msg->sms.deferred * 60);
             buffer = octstr_format("%02d%02d%02d%02d%02d%02d0%02d%1s",
                     tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
@@ -489,7 +490,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     }
 
     /* ask for the delivery reports if needed */ 
-    if (msg->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL)) 
+    if (DLR_IS_SUCCESS_OR_FAIL(msg->sms.dlr_mask)) 
         pdu->u.submit_sm.registered_delivery = 1;  
 
     octstr_destroy(relation_UTC_time);
@@ -890,7 +891,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
  
                 /* gen DLR_SMSC_FAIL */		 
                 if (reason == SMSCCONN_FAILED_REJECTED &&
-                    (msg->sms.dlr_mask & (DLR_SMSC_FAIL|DLR_FAIL))) { 
+                    (DLR_IS_FAIL(msg->sms.dlr_mask) || DLR_IS_SMSC_FAIL(msg->sms.dlr_mask))) { 
                     Octstr *reply; 
  		 
                     reply = octstr_format("0x%08lx", 
@@ -937,11 +938,11 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
  
                 /* SMSC ACK.. now we have the message id. */ 
  				 
-                if (msg->sms.dlr_mask & (DLR_SMSC_SUCCESS|DLR_SUCCESS|DLR_FAIL|DLR_BUFFERED)) 
+                if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask) || DLR_IS_SMSC_SUCCESS(msg->sms.dlr_mask))
                     dlr_add(smpp->conn->id, tmp, msg);
   
                 /* gen DLR_SMSC_SUCCESS */ 
-                if (msg->sms.dlr_mask & DLR_SMSC_SUCCESS) { 
+                if (DLR_IS_SMSC_SUCCESS(msg->sms.dlr_mask)) { 
                     Octstr *reply; 
  		 
                     reply = octstr_format("0x%08lx", pdu->u.submit_sm_resp.command_status); 
@@ -949,7 +950,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                     dlrmsg = dlr_find(smpp->conn->id,
                                       tmp, /* smsc message id */
                                       msg->sms.receiver, /* destination */ 
-                                      (DLR_SMSC_SUCCESS|((msg->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL)) ? DLR_BUFFERED : 0))); 
+                                      (DLR_SMSC_SUCCESS|( DLR_IS_SUCCESS_OR_FAIL(msg->sms.dlr_mask) ? DLR_BUFFERED : 0))); 
  			 
                     if (dlrmsg != NULL) { 
                         octstr_append_char(reply, '/'); 

@@ -3225,7 +3225,7 @@ static long set_dlr_mask(List *cgivars, Octstr *dlr_url)
 
     if ((masklen = octstr_parse_long(&dlr_mask, dlrmaskos, 0, 10)) != -1 &&
              masklen == octstr_len(dlrmaskos) &&
-             dlr_mask > 0 && dlr_mask < 32) {
+             dlr_mask >= -1 && dlr_mask <= 31) {
          return dlr_mask;
     }
 

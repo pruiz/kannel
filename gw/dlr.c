@@ -258,12 +258,17 @@ void dlr_add(const Octstr *smsc, const Octstr *ts, const Msg *msg)
 {
     struct dlr_entry *dlr = NULL;
 
+    if(octstr_len((Octstr *)smsc) == 0) {
+	warning(0, "DLR[%s]: Can't add a dlr without smsc-id", dlr_type());
+        return;
+    }
+
     /* sanity check */
     if (handles == NULL || handles->dlr_add == NULL || msg == NULL)
         return;
 
     /* check if delivery receipt requested */
-    if (!(msg->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL|DLR_BUFFERED|DLR_SMSC_SUCCESS|DLR_SMSC_FAIL)))
+    if (!DLR_IS_ENABLED(msg->sms.dlr_mask))
         return;
 
      /* allocate new struct dlr_entry struct */
@@ -298,6 +303,11 @@ Msg *dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int typ)
     Msg	*msg = NULL;
     struct dlr_entry *dlr = NULL;
     
+    if(octstr_len((Octstr *)smsc) == 0) {
+	warning(0, "DLR[%s]: Can't find a dlr without smsc-id", dlr_type());
+        return NULL;
+    }
+
     /* check if we have handler registered */
     if (handles == NULL || handles->dlr_get == NULL)
         return NULL;

@@ -1105,7 +1105,7 @@ static int parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char *rawmessage, 
         udh_len = 0;
     }
 
-    if (msg->sms.coding == DC_7BIT ) {
+    if (msg->sms.coding == DC_7BIT || msg->sms.coding == DC_UNDEF) {
         octstr_get_many_chars(msgtext, msg->sms.msgdata, 0, octstr_len(msg->sms.msgdata));
         msgtext[octstr_len(msg->sms.msgdata)] = '\0';
         parse_iso88591_to_emi(msgtext, my_buffer2,

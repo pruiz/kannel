@@ -32,6 +32,8 @@
 
 #include "msg.h"
 
+#define SMS_PARAM_UNDEFINED 0
+
 #define MC_UNDEF 0
 #define MC_CLASS0 1
 #define MC_CLASS1 2
@@ -52,6 +54,9 @@
 #define DC_7BIT 1
 #define DC_8BIT 2
 #define DC_UCS2 3
+
+#define COMPRESS_OFF    0
+#define COMPRESS_ON     1
 
 #define SMS_7BIT_MAX_LEN 160
 #define SMS_8BIT_MAX_LEN 140

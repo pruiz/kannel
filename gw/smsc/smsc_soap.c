@@ -1132,9 +1132,8 @@ static void soap_read_response(SMSCConn *conn)
         dlr_add(conn->id, octstr_imm(tmpid), msg);
 
         /* generate SMSC success DLR */
-        if (msg->sms.dlr_mask & DLR_SMSC_SUCCESS) {
+        if (DLR_IS_SMSC_SUCCESS(msg->sms.dlr_mask)) {
             Msg* dlrmsg;
-
 
             dlrmsg = dlr_find(conn->id,octstr_imm(tmpid),
                               msg->sms.receiver, /* destination */
@@ -1157,7 +1156,7 @@ static void soap_read_response(SMSCConn *conn)
     else { /* nack */
         debug("bb.soap.read_response",0,"SOAP[%s]: NACK", octstr_get_cstr(privdata->name));
 
-        if (msg->sms.dlr_mask & DLR_SMSC_FAIL) {
+        if (DLR_IS_SMSC_FAIL(msg->sms.dlr_mask)) {
             Msg* dlrmsg;
 
             /* generate DLR_SMSC_FAIL message */
@@ -2821,7 +2820,8 @@ Octstr* soap_msgdata_attribute(Msg* msg, PrivData* privdata)
 /* validity in 30 minutes increment */
 Octstr* soap_o2o_validity30_attribute(Msg* msg)
 {
-    return octstr_format("%ld",(msg->sms.validity?msg->sms.validity:SOAP_DEFAULT_VALIDITY) / 30);
+    return octstr_format("%ld",(msg->sms.validity != SMS_PARAM_UNDEFINED ? 
+			 msg->sms.validity : SOAP_DEFAULT_VALIDITY) / 30);
 }
 
 /* date on which the message's validity expires */
@@ -2833,7 +2833,10 @@ Octstr* soap_mobitai_validity_date_attribute(Msg* msg)
 /* validity in seconds */
 Octstr* soap_bouyg_validity_attribute(Msg* msg)
 {
-    return octstr_format("%d", 60*msg->sms.validity);
+    if(msg->sms.validity >= 0)
+	return octstr_format("%d", 60*msg->sms.validity);
+    else
+	return octstr_format("%d", 0);
 }
 
 Octstr* soap_o2o_date_attribute(Msg* msg)
@@ -2856,13 +2859,13 @@ Octstr* soap_rand_attribute(Msg* msg)
 /* "Y" for any of the SMSC generated DLRs, "N" otherwise */
 Octstr* soap_o2o_dlrmask_smsc_yn_attribute(Msg* msg)
 {
-    return octstr_create(msg->sms.dlr_mask & (DLR_FAIL | DLR_SUCCESS | DLR_BUFFERED) ? "Y" : "N");
+    return octstr_create(DLR_IS_ENABLED_SMSC(msg->sms.dlr_mask) ? "Y" : "N");
 }
 
 /* "1" for any of the SMSC generated DLRs, "0" otherwise */
 Octstr* soap_o2o_dlrmask_success_01_attribute(Msg* msg)
 {
-    return octstr_create(msg->sms.dlr_mask & (DLR_SUCCESS) ? "0" : "1");
+    return octstr_create( DLR_IS_SUCCESS(msg->sms.dlr_mask) ? "0" : "1");
 }
 
 /*

@@ -870,6 +870,18 @@ int octstr_search_char(Octstr *ostr, int ch, long pos)
 }
 
 
+int octstr_search_chars(Octstr *ostr, Octstr *chars, long pos)
+{
+    long i, j;
+    for(i=0; i < octstr_len(chars); i++) {
+	j = octstr_search_char(ostr, octstr_get_char(chars, i), 0);
+	if(j != -1)
+	    return j;
+    }
+    return -1;
+}
+
+
 int octstr_search(Octstr *haystack, Octstr *needle, long pos)
 {
     int first;

@@ -477,7 +477,7 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix)
     octstr_append_char(packet->data, (char) dcs);
 
     /* Status report request */
-    if (msg->sms.dlr_mask & 0x07)
+    if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask))
         octstr_append_char(packet->data, (char) 7);
     else
         octstr_append_char(packet->data, (char) 0);
@@ -499,7 +499,7 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix)
     udhdata = octstr_duplicate(msg->sms.udhdata);
     msgdata = octstr_duplicate(msg->sms.msgdata);
 
-    if (msg->sms.coding == DC_7BIT) {
+    if (msg->sms.coding == DC_7BIT || msg->sms.coding == DC_UNDEF) {
         charset_latin1_to_gsm(msgdata);
         oisd_shrink_gsm7(msgdata);
     }
@@ -1039,14 +1039,14 @@ int oisd_submit_msg(SMSCenter *smsc, Msg *msg)
 
     for (tries = 0; tries < 3; tries++) {
         ret = oisd_request(packet, smsc, &ts);
-        if ((ret == 0) && (ts) && (msg->sms.dlr_mask & 0x03)) {
+        if ((ret == 0) && (ts) && DLR_IS_SUCCESS_OR_FAIL(msg->sms.dlr_mask)) {
             debug("bb.sms.oisd", 0, "oisd_submit_msg dlr_add url=%s ",
                   octstr_get_cstr(msg->sms.dlr_url));
             dlr_add(octstr_imm(smsc->name), ts, msg);
             octstr_destroy(ts);
             ts = NULL;
         }
-        if ((ret < 0) && (msg->sms.dlr_mask & 0x03)) {
+        if ((ret < 0) && DLR_IS_SUCCESS_OR_FAIL(msg->sms.dlr_mask)) {
             Msg* fake_dlr_msg;
             debug("bb.sms.oisd", 0, "oisd_submit_msg request ret=%d ", ret);
             fake_dlr_msg = oisd_submit_failed(smsc, msg, ts);

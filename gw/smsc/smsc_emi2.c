@@ -377,15 +377,16 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
  
     emimsg->fields[E50_OADC] = str;
 
-    /* set protocoll id */
-    if (msg->sms.pid != 0) {
+    /* set protocol id */
+    if (msg->sms.pid >= 0) {
         emimsg->fields[E50_RPID] = octstr_format("%04d", msg->sms.pid);
     }
 
     /* set reply path indicator */
-    if (msg->sms.rpi != 0) {
+    if (msg->sms.rpi == 2)
+        emimsg->fields[E50_RPI] = octstr_create("2");
+    else if (msg->sms.rpi > 0)
         emimsg->fields[E50_RPI] = octstr_create("1");
-    }
 
     str = octstr_duplicate(msg->sms.receiver);
     if(octstr_get_char(str,0) == '+') {
@@ -454,7 +455,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
 	emimsg->fields[E50_AMSG] = str;
     }
 
-    if (msg->sms.validity) {
+    if (msg->sms.validity >= 0) {
 	tm = gw_localtime(time(NULL) + msg->sms.validity * 60);
 	sprintf(p, "%02d%02d%02d%02d%02d",
 	    tm.tm_mday, tm.tm_mon + 1, tm.tm_year % 100, 
@@ -462,7 +463,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
 	str = octstr_create(p);
 	emimsg->fields[E50_VP] = str;
     }
-    if (msg->sms.deferred) {
+    if (msg->sms.deferred >= 0) {
 	str = octstr_create("1");
 	emimsg->fields[E50_DD] = str;
 	tm = gw_localtime(time(NULL) + msg->sms.deferred * 60);
@@ -477,14 +478,14 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
     /* even the sender might not be interested in delivery or non delivery */
     /* we still need them back to clear out the memory after the message */
     /* has been delivered or non delivery has been confirmed */
-    if (msg->sms.dlr_mask & (DLR_SUCCESS | DLR_FAIL | DLR_BUFFERED)) {
-    	emimsg->fields[E50_NRQ] = octstr_create("1");
-        emimsg->fields[E50_NT] = octstr_create("");
-	    octstr_append_decimal(emimsg->fields[E50_NT], 3 + (msg->sms.dlr_mask & DLR_BUFFERED)); 
-	    if (privdata->npid)
-            emimsg->fields[E50_NPID] = octstr_duplicate(privdata->npid);
-	    if (privdata->nadc)
-            emimsg->fields[E50_NADC] = octstr_duplicate(privdata->nadc); 
+    if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask)) {
+	emimsg->fields[E50_NRQ] = octstr_create("1");
+	emimsg->fields[E50_NT] = octstr_create("");
+	octstr_append_decimal(emimsg->fields[E50_NT], 3 + (DLR_IS_BUFFERED(msg->sms.dlr_mask) ? 4 : 0)); 
+	if (privdata->npid)
+	    emimsg->fields[E50_NPID] = octstr_duplicate(privdata->npid);
+	if (privdata->nadc)
+	    emimsg->fields[E50_NADC] = octstr_duplicate(privdata->nadc); 
     }
     return emimsg;
 }
@@ -735,17 +736,16 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	}
 	if (msg != NULL) {     
 	    
-        /*
-         * Recode the msg structure with the given msgdata.
-         * Note: the DLR URL is delivered in msg->sms.dlr_url already.
-         */
-		if((emimsg->fields[E50_AMSG]) == NULL)
-			msg->sms.msgdata = octstr_create("Delivery Report without text");
-		else
-        	msg->sms.msgdata = octstr_duplicate(emimsg->fields[E50_AMSG]);
-        octstr_hex_to_binary(msg->sms.msgdata);
-        msg->sms.sms_type = report;
-
+	    /*
+	     * Recode the msg structure with the given msgdata.
+	     * Note: the DLR URL is delivered in msg->sms.dlr_url already.
+	     */
+	    if((emimsg->fields[E50_AMSG]) == NULL)
+		msg->sms.msgdata = octstr_create("Delivery Report without text");
+	    else
+		msg->sms.msgdata = octstr_duplicate(emimsg->fields[E50_AMSG]);
+	    octstr_hex_to_binary(msg->sms.msgdata);
+	    msg->sms.sms_type = report;
 	    bb_smscconn_receive(conn, msg);
 	}
 	reply = emimsg_create_reply(53, emimsg->trn, 1, privdata->name);
@@ -884,7 +884,7 @@ static int emi2_do_send(SMSCConn *conn, Connection *server)
         }
 
         /* report the submission to the DLR code */
-        if (msg->sms.dlr_mask & 0x18) {
+        if (DLR_IS_FAIL(msg->sms.dlr_mask) || DLR_IS_SMSC_FAIL(msg->sms.dlr_mask)) {
             Octstr *ts;
 
             ts = octstr_create("");
@@ -1019,7 +1019,7 @@ static int emi2_handle_smscreq(SMSCConn *conn, Connection *server)
 				if(m == NULL) {
 				    info(0,"EMI2[%s]: uhhh m is NULL, very bad",
 					 octstr_get_cstr(privdata->name));
-                } else if ((m->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL|DLR_BUFFERED))) {
+				} else if (DLR_IS_ENABLED_DEVICE(m->sms.dlr_mask)) {
 				    dlr_add((conn->id ? conn->id : privdata->name), ts, m);
 				}
 				octstr_destroy(ts);

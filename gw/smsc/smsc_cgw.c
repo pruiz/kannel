@@ -342,7 +342,7 @@ static struct cgwop *msg_to_cgwop(PrivData *privdata, Msg *msg, int trn)
     cgwop_add(cgwop, octstr_imm("to"), msg->sms.receiver);
 
     /* If delivery reports are asked, ask for them by adding a nrq:anything field */
-    if (msg->sms.dlr_mask & 0x07)
+    if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask))
         cgwop_add(cgwop, octstr_imm("nrq"), octstr_imm("true"));
 
     octstr_destroy(sender);
@@ -1117,7 +1117,7 @@ static int cgw_handle_op(SMSCConn *conn, Connection *server, struct cgwop *cgwop
 
         msg = privdata->sendmsg[trn];
 
-        if (msg && msg->sms.dlr_url && (msg->sms.dlr_mask & 0x07)) {
+        if (msg && msg->sms.dlr_url && DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask)) {
             Octstr *ts;
 
             ts = octstr_create("");
