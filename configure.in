@@ -176,15 +176,6 @@ AC_ARG_ENABLE(localtime,
   fi
 ])
 
-dnl --enable-http2 option.
-
-AC_ARG_ENABLE(http2,
-[  --enable-http2	  enable use of experimental HTTP implementation], [
-  if test "$enableval" = yes; then
-      AC_DEFINE(USE_HTTP2)
-  fi
-])
-
 dnl --with-malloc=native/fast/checking
 
 AC_ARG_WITH(malloc,

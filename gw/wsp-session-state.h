@@ -38,7 +38,7 @@ ROW(NULL_SESSION,
 			List *hdrs;
 			
 			hdrs = unpack_headers(pdu->u.Connect.headers);
-			http2_header_pack(hdrs);
+			http_header_pack(hdrs);
 			gw_assert(sm->http_headers == NULL);
 			sm->http_headers = hdrs;
 		}
@@ -129,7 +129,7 @@ ROW(CONNECTED,
 		new_event->u.Release.tid = e->tid;
 		new_event->u.Release.msmid = msm->id;
 		new_event->u.Release.session_headers =
-			http2_header_duplicate(sm->http_headers);
+			http_header_duplicate(sm->http_headers);
 		new_event->u.Release.addr_tuple =
 			wap_addr_tuple_duplicate(sm->addr_tuple);
 		new_event->u.Release.session_id = sm->session_id;

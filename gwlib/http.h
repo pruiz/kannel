@@ -1,5 +1,5 @@
 /*++++
- * http2.h - HTTP protocol implementation
+ * http.h - HTTP protocol implementation
  *
  * This header file defines the interface to the HTTP implementation
  * in Kannel.
@@ -69,7 +69,7 @@
  * Design: Lars Wirzenius, Richard Braakman
  * Implementation: Sanna Seppänen
  *
- * Temporary implementation note: The prefix for this file is http2 for
+ * Temporary implementation note: The prefix for this file is http for
  * now. When the old HTTP implementation in Kannel is retired, the prefix
  * will change to http.
  *
@@ -80,15 +80,15 @@
  *   a valid Basic Authentication and add an Authentication header
  *   given username and password
  * - how should form variables be encoded when doing a POST? how should
- *   http2_post get them?
+ *   http_post get them?
  *
  * Implementation plan
  * ===================
  *
- * done 1. http2_get and everything it needs (header manipulation, at least).
+ * done 1. http_get and everything it needs (header manipulation, at least).
  *    At first a very simple system, without proxy support or a socket
  *    pool.
- * done 2. Test harness for http2_get.
+ * done 2. Test harness for http_get.
  * 3. Enough server things to get rid of old http.
  * done 4. Multiple requests per tcp socket, client and server end.
  * done 5. Proxy support for client end.
@@ -99,8 +99,8 @@
  */
 
 
-#ifndef HTTP2_H
-#define HTTP2_H
+#ifndef HTTP_H
+#define HTTP_H
 
 #include "gwlib/list.h"
 #include "gwlib/octstr.h"
@@ -145,38 +145,38 @@ typedef struct {
  * Initialization function. This MUST be called before any other function
  * declared in this header file.
  */
-void http2_init(void);
+void http_init(void);
 
 
 /*
  * Shutdown function. This MUST be called when no other function
  * declared in this header file will be called anymore.
  */
-void http2_shutdown(void);
+void http_shutdown(void);
 
 
 /*
- * Functions for controlling proxy use. http2_use_proxy sets the proxy to
+ * Functions for controlling proxy use. http_use_proxy sets the proxy to
  * use; if another proxy was already in use, it is closed and forgotten
  * about as soon as all existing requests via it have been served.
  *
- * http2_close_proxy closes the current proxy connection, after any
+ * http_close_proxy closes the current proxy connection, after any
  * pending requests have been served.
  */
-void http2_use_proxy(Octstr *hostname, int port, List *exceptions);
-void http2_close_proxy(void);
+void http_use_proxy(Octstr *hostname, int port, List *exceptions);
+void http_close_proxy(void);
 
 
 /*
  * Functions for doing a GET request. The difference is that _real follows
- * redirections, plain http2_get does not. Return value is the status
+ * redirections, plain http_get does not. Return value is the status
  * code of the request as a numeric value, or -1 if a response from the
  * server was not received. If return value is not -1, reply_headers and
  * reply_body are set and MUST be destroyed by caller.
  */
-int http2_get(Octstr *url, List *request_headers, 
+int http_get(Octstr *url, List *request_headers, 
 		List **reply_headers, Octstr **reply_body);
-int http2_get_real(Octstr *url, List *request_headers, Octstr **final_url,
+int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
 		  List **reply_headers, Octstr **reply_body);
 
 
@@ -184,102 +184,102 @@ int http2_get_real(Octstr *url, List *request_headers, Octstr **final_url,
 /*
  * Functions for doing a POST request.
  */
-int http2_post(Octstr *url, List *request_headers, List *form_fields,
+int http_post(Octstr *url, List *request_headers, List *form_fields,
 		List **reply_headers, Octstr **reply_body);
-int http2_post_real(Octstr *url, List *request_headers, List *form_fields,
+int http_post_real(Octstr *url, List *request_headers, List *form_fields,
 		  List **reply_headers, Octstr **reply_body);
 #endif
 
 
 #if LIW_TODO
 /*
- * Functions for controlling the client side socket pool. http2_set_max_sockets
+ * Functions for controlling the client side socket pool. http_set_max_sockets
  * sets the maximum number of open client side sockets in the pool.
- * http2_close_all_connections closes all sockets in the pool (after the
- * requests via them have been finished) and http2_close_old_connections
+ * http_close_all_connections closes all sockets in the pool (after the
+ * requests via them have been finished) and http_close_old_connections
  * closes such sockets that have not been used for a while.
  *
- * http2_close_old_connections SHOULD be called every now and then, if
+ * http_close_old_connections SHOULD be called every now and then, if
  * there are no other client side socket functions called.
  *
  * XXX max_sockets total and per host and for the proxy?
  */
-void http2_set_max_sockets(int max_sockets);
-void http2_close_all_connections(void);
-void http2_close_old_connections(void);
+void http_set_max_sockets(int max_sockets);
+void http_close_all_connections(void);
+void http_close_old_connections(void);
 #endif
 
 
 /*
  * Functions for controlling the well-known port of the server.
- * http2_server_open sets it up, http2_server_close closes it.
+ * http_server_open sets it up, http_server_close closes it.
  */
 typedef struct HTTPSocket HTTPSocket;
-HTTPSocket *http2_server_open(int port);
-void http2_server_close(HTTPSocket *socket);
+HTTPSocket *http_server_open(int port);
+void http_server_close(HTTPSocket *socket);
 
 
 /*
  * Functions for dealing with a connection to a single client.
- * http2_server_client_accept waits for a new client, and returns a
- * new socket that corresponds to the client. http2_server_client_close
+ * http_server_client_accept waits for a new client, and returns a
+ * new socket that corresponds to the client. http_server_client_close
  * closes that connection.
  *
- * http2_server_client_get_request reads the request from a client
- * connection and http2_server_client_send_reply sends the reply. Note
+ * http_server_client_get_request reads the request from a client
+ * connection and http_server_client_send_reply sends the reply. Note
  * that there can be several requests made on the same client socket:
  * the server MUST respond to them in order.
  *
- * http2_server_client_get_request returns, among other things, a parsed
+ * http_server_client_get_request returns, among other things, a parsed
  * list of CGI-BIN arguments/variables as a List whose elements are 
  * pointers to HTTPCGIVar structures (see beginning of file).
  */
-HTTPSocket *http2_server_accept_client(HTTPSocket *socket);
-void http2_server_close_client(HTTPSocket *client_socket);
-int http2_server_get_request(HTTPSocket *client_socket, Octstr **url, 
+HTTPSocket *http_server_accept_client(HTTPSocket *socket);
+void http_server_close_client(HTTPSocket *client_socket);
+int http_server_get_request(HTTPSocket *client_socket, Octstr **url, 
 	List **headers, Octstr **body, List **cgivars);
-int http2_server_send_reply(HTTPSocket *client_socket, int status, 
+int http_server_send_reply(HTTPSocket *client_socket, int status, 
 	List *headers, Octstr *body);
-int http2_socket_fd(HTTPSocket *socket);
+int http_socket_fd(HTTPSocket *socket);
 /* return reference to IP of the client */
-Octstr *http2_socket_ip(HTTPSocket *socket);
+Octstr *http_socket_ip(HTTPSocket *socket);
 
 /*
  * destroy args given up by the get_request. Non-thread safe
  */
-void http2_destroy_cgiargs(List *args);
+void http_destroy_cgiargs(List *args);
 
 /*
  * return reference to cgi argument 'name', or NULL if not matching
  */
-Octstr *http2_cgi_variable(List *list, char *name);
+Octstr *http_cgi_variable(List *list, char *name);
 
 /*
  * Functions for manipulating a list of headers. You can use a list of
  * headers returned by one of the functions above, or create an empty
- * list with http2_create_empty_headers. Use http2_destroy_headers to
+ * list with http_create_empty_headers. Use http_destroy_headers to
  * destroy a list of headers (not just the list, but the headers
- * themselves). You can also use http2_parse_header_string to create a list:
+ * themselves). You can also use http_parse_header_string to create a list:
  * it takes a textual representation of headers as an Octstr and returns
- * the corresponding List. http2_generate_header_string goes the other
+ * the corresponding List. http_generate_header_string goes the other
  * way.
  *
- * Once you have a list of headers, you can use http2_header_add and the
+ * Once you have a list of headers, you can use http_header_add and the
  * other functions to manipulate it.
  */
-List *http2_create_empty_headers(void);
-void http2_destroy_headers(List *headers);
-void http2_header_add(List *headers, char *name, char *contents);
-void http2_header_get(List *headers, long i, Octstr **name, Octstr **value);
-List *http2_header_duplicate(List *headers);
-void http2_header_pack(List *headers);
-void http2_append_headers(List *to, List *from);
+List *http_create_empty_headers(void);
+void http_destroy_headers(List *headers);
+void http_header_add(List *headers, char *name, char *contents);
+void http_header_get(List *headers, long i, Octstr **name, Octstr **value);
+List *http_header_duplicate(List *headers);
+void http_header_pack(List *headers);
+void http_append_headers(List *to, List *from);
 
 #if LIW_TODO
-List *http2_parse_header_string(Octstr *headers_as_string);
-Octstr *http2_generate_header_string(List *headers_as_list);
+List *http_parse_header_string(Octstr *headers_as_string);
+Octstr *http_generate_header_string(List *headers_as_list);
 
-void http2_header_remove_all(List *headers, char *name);
+void http_header_remove_all(List *headers, char *name);
 #endif
 
 /*
@@ -287,18 +287,18 @@ void http2_header_remove_all(List *headers, char *name);
  * as a new Octet string, which the caller must free. Return NULL for
  * not found.
  */
-Octstr *http2_header_find_first(List *headers, char *name);
-List *http2_header_find_all(List *headers, char *name);
+Octstr *http_header_find_first(List *headers, char *name);
+List *http_header_find_all(List *headers, char *name);
 
 
 /*
  * Find the Content-Type header and returns the type and charset.
  */
-void http2_header_get_content_type(List *headers, Octstr **type, 
+void http_header_get_content_type(List *headers, Octstr **type, 
 	Octstr **charset);
 
 #if LIW_TODO
-void http2_header_set_content_type(List *headers, Octstr *type, 
+void http_header_set_content_type(List *headers, Octstr *type, 
 	Octstr *charset);
 #endif
 
@@ -306,13 +306,13 @@ void http2_header_set_content_type(List *headers, Octstr *type,
 /*
  * Do the headers indicate that MIME type `type' is accepted?
  */
-int http2_type_accepted(List *headers, char *type);
+int http_type_accepted(List *headers, char *type);
 
 
 /*
  * Dump the contents of a header list with debug.
  */
-void http2_header_dump(List *headers);
+void http_header_dump(List *headers);
 
 
 #endif

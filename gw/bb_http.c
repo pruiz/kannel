@@ -42,7 +42,7 @@ static Octstr *httpd_check_authorization(List *cgivars)
     Octstr *password;
     Octstr *reply;
 
-    password = http2_cgi_variable(cgivars, "password");
+    password = http_cgi_variable(cgivars, "password");
 
     if ((ha_password && password == NULL) ||
 	(ha_password && octstr_str_compare(password, ha_password)!=0))
@@ -128,7 +128,7 @@ static void httpd_serve(void *arg)
     Octstr *url, *body;
     Octstr *reply;
     
-    http2_server_get_request(client, &url, &headers, &body, &cgivars);
+    http_server_get_request(client, &url, &headers, &body, &cgivars);
     
     if (octstr_str_compare(url, "/cgi-bin/status")==0)
 	reply = httpd_status(cgivars);
@@ -152,16 +152,16 @@ static void httpd_serve(void *arg)
 
     debug("bb.http", 0, "Result: '%s'", octstr_get_cstr(reply));
     
-    if (http2_server_send_reply(client, HTTP_OK, headers, reply) == -1)
+    if (http_server_send_reply(client, HTTP_OK, headers, reply) == -1)
 	warning(0, "HTTP-admin server_send_reply failed");
     
     octstr_destroy(url);
     octstr_destroy(body);
     octstr_destroy(reply);
-    http2_destroy_headers(headers);
-    http2_destroy_cgiargs(cgivars);
+    http_destroy_headers(headers);
+    http_destroy_cgiargs(cgivars);
 
-    http2_server_close_client(client);
+    http_server_close_client(client);
 }
 
 static void httpadmin_run(void *arg)
@@ -171,7 +171,7 @@ static void httpadmin_run(void *arg)
 
     port = (int)arg;
     
-    httpd = http2_server_open(port);
+    httpd = http_server_open(port);
     if (httpd == NULL)
 	panic(0, "Cannot start without HTTP admin");
     
@@ -181,23 +181,23 @@ static void httpadmin_run(void *arg)
     while(bb_status != BB_DEAD) {
 	if (bb_status == BB_SHUTDOWN)
 	    bb_shutdown();
-	if (read_available(http2_socket_fd(httpd), 100000) < 1)
+	if (read_available(http_socket_fd(httpd), 100000) < 1)
 	    continue;
-	client = http2_server_accept_client(httpd);
+	client = http_server_accept_client(httpd);
 	if (client == NULL)
 	    continue;
-	if (is_allowed_ip(ha_allow_ip, ha_deny_ip, http2_socket_ip(client))==0) {
+	if (is_allowed_ip(ha_allow_ip, ha_deny_ip, http_socket_ip(client))==0) {
 	    info(0, "HTTP admin tried from denied host <%s>, disconnected",
-		 octstr_get_cstr(http2_socket_ip(client)));
-	    http2_server_close_client(client);
+		 octstr_get_cstr(http_socket_ip(client)));
+	    http_server_close_client(client);
 	    continue;
 	}
         if (gwthread_create(httpd_serve, client) == -1) {
 	    error(0, "Failed to start a new thread to handle HTTP admin command");
-	    http2_server_close_client(client);
+	    http_server_close_client(client);
 	}
     }
-    http2_server_close(httpd);
+    http_server_close(httpd);
 
     httpadmin_running = 0;
 }

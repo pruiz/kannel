@@ -164,19 +164,19 @@ static void http_request_thread(void *arg)
     list_append(reply_hdrs, octstr_create("Content-type: text/html"));
 
     client = arg;
-    client_ip = socket_get_peer_ip(http2_socket_fd(client));
+    client_ip = socket_get_peer_ip(http_socket_fd(client));
     if (http_allow_ip != NULL &&
 	check_ip(http_allow_ip, client_ip, NULL) < 1 &&
 	http_deny_ip != NULL &&
 	check_ip(http_deny_ip, client_ip, NULL) == 1) {
 	    warning(0, "Non-allowed connect tried from <%s>, ignored",
 		    client_ip);
-	    (void) http2_server_send_reply(client, HTTP_NOT_FOUND, /* XXX */
+	    (void) http_server_send_reply(client, HTTP_NOT_FOUND, /* XXX */
 	    		NULL, NULL);
 	    goto done;
     }
     
-    while (http2_server_get_request(client, &url, &hdrs, &body, &args) > 0) {
+    while (http_server_get_request(client, &url, &hdrs, &body, &args) > 0) {
 	info(0, "smsbox: Got HTTP request <%s> from <%s>",
 	    octstr_get_cstr(url),
 	    client_ip);
@@ -188,11 +188,11 @@ static void http_request_thread(void *arg)
         debug("sms.http", 0, "Answer: <%s>", octstr_get_cstr(answer));
 
 	octstr_destroy(url);
-	http2_destroy_headers(hdrs);
+	http_destroy_headers(hdrs);
 	octstr_destroy(body);
-	http2_destroy_cgiargs(args);
+	http_destroy_cgiargs(args);
 	
-	if (http2_server_send_reply(client, HTTP_OK, reply_hdrs, answer) == -1)
+	if (http_server_send_reply(client, HTTP_OK, reply_hdrs, answer) == -1)
 		goto done;
 /* XXX we have a problem with responding with HTTP/1.1 when client
    (read: lynx) talked with HTTP/1.0. Urgh. By closing the client socket
@@ -206,7 +206,7 @@ done:
     while ((os = list_extract_first(reply_hdrs)) != NULL)
 	    octstr_destroy(os);
     list_destroy(reply_hdrs);
-    http2_server_close_client(client);
+    http_server_close_client(client);
 }
 
 
@@ -214,7 +214,7 @@ static void http_start_thread(void)
 {
     HTTPSocket *client;
     
-    client = http2_server_accept_client(http_server_socket);
+    client = http_server_accept_client(http_server_socket);
     gwthread_create(http_request_thread, client);
     http_accept_pending = 0;
 }
@@ -320,7 +320,7 @@ static void init_smsbox(Config *cfg)
 	info(0, "Service global sender set as '%s'", global_sender);
     
     if (sendsms_port > 0) {
-	http_server_socket = http2_server_open(sendsms_port);
+	http_server_socket = http_server_open(sendsms_port);
 	if (http_server_socket == NULL)
 	    error(0, "Failed to open HTTP socket, ignoring it");
 	else
@@ -379,7 +379,7 @@ static void main_loop(void)
 	FD_ZERO(&rf);
 	FD_SET(socket_fd, &rf);
 	if (http_accept_pending == 0)
-	    FD_SET(http2_socket_fd(http_server_socket), &rf);
+	    FD_SET(http_socket_fd(http_server_socket), &rf);
 	to.tv_sec = 0;
 	to.tv_usec = 0;
 
@@ -391,7 +391,7 @@ static void main_loop(void)
 	    error(errno, "Select failed");
 	    goto error;
 	} if (ret > 0 && http_accept_pending == 0 && 
-	      FD_ISSET(http2_socket_fd(http_server_socket), &rf)) {
+	      FD_ISSET(http_socket_fd(http_server_socket), &rf)) {
 
 	    http_accept_pending = 1;
 	    http_start_thread();
@@ -492,7 +492,7 @@ int main(int argc, char **argv)
 
     info(0, "Smsbox terminating.");
 
-    http2_server_close(http_server_socket);
+    http_server_close(http_server_socket);
     mutex_destroy(socket_mutex);
     urltrans_destroy(translations);
     config_destroy(cfg);

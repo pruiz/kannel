@@ -35,12 +35,12 @@ ROW(NULL_METHOD,
 		new_event->u.S_MethodInvoke_Ind.url = octstr_duplicate(e->url);
 		new_event->u.S_MethodInvoke_Ind.method = Get_PDU;
 		new_event->u.S_MethodInvoke_Ind.http_headers = 
-			http2_header_duplicate(e->http_headers);
+			http_header_duplicate(e->http_headers);
 		new_event->u.S_MethodInvoke_Ind.server_transaction_id = 
 			new_server_transaction_id();
 		new_event->u.S_MethodInvoke_Ind.msmid = msm->id;
 		new_event->u.S_MethodInvoke_Ind.session_headers = 
-			http2_header_duplicate(e->session_headers);
+			http_header_duplicate(e->session_headers);
 		new_event->u.S_MethodInvoke_Ind.addr_tuple = 
 			wap_addr_tuple_duplicate(e->addr_tuple);
 		new_event->u.S_MethodInvoke_Ind.session_id = e->session_id;

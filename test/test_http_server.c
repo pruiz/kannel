@@ -1,5 +1,5 @@
 /*
- * test_http2.c - a simple program to test the http2 library, server end
+ * test_http.c - a simple program to test the http library, server end
  *
  * Lars Wirzenius
  */
@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 #include "gwlib/gwlib.h"
-#include "gwlib/http2.h"
+#include "gwlib/http.h"
 
 static void client_thread(void *arg) {
 	HTTPSocket *client_socket;
@@ -21,18 +21,18 @@ static void client_thread(void *arg) {
 	client_socket = arg;
 
 	for (;;) {
-		ret = http2_server_get_request(client_socket, &url, &headers, 
+		ret = http_server_get_request(client_socket, &url, &headers, 
 				&body, &cgivars);
 		if (ret == -1) {
-			error(0, "http2_server_get_request failed");
+			error(0, "http_server_get_request failed");
 			goto error;
 		}
 		if (ret == 0)
 			break;
-		debug("test.http2", 0, "Request for <%s>", 
+		debug("test.http", 0, "Request for <%s>", 
 			octstr_get_cstr(url));
 		while ((v = list_extract_first(cgivars)) != NULL) {
-			debug("test.http2", 0, "Var: <%s>=<%s>",
+			debug("test.http", 0, "Var: <%s>=<%s>",
 				octstr_get_cstr(v->name), 
 				octstr_get_cstr(v->value));
 			octstr_destroy(v->name);
@@ -50,7 +50,7 @@ static void client_thread(void *arg) {
 		resph = list_create();
 		list_append(resph, octstr_create("Content-Type: text/plain"));
 		body = octstr_create("hello, world\n");
-		ret = http2_server_send_reply(client_socket, HTTP_OK, 
+		ret = http_server_send_reply(client_socket, HTTP_OK, 
 			resph, body);
 
 		while ((os = list_extract_first(resph)) != NULL)
@@ -59,7 +59,7 @@ static void client_thread(void *arg) {
 		octstr_destroy(body);
 
 		if (ret == -1) {
-			error(0, "http2_server_send_reply failed");
+			error(0, "http_server_send_reply failed");
 			goto error;
 		}
 	}
@@ -67,11 +67,11 @@ static void client_thread(void *arg) {
 
 	info(0, "Done with client.");
 error:
-	http2_server_close_client(client_socket);
+	http_server_close_client(client_socket);
 }
 
 static void help(void) {
-	info(0, "Usage: test_http2_server [-p port]\n");
+	info(0, "Usage: test_http_server [-p port]\n");
 }
 
 int main(int argc, char **argv) {
@@ -109,19 +109,19 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	httpd_socket = http2_server_open(port);
+	httpd_socket = http_server_open(port);
 	if (httpd_socket == NULL)
-		panic(0, "http2_server_open failed");
+		panic(0, "http_server_open failed");
 	for (;;) {
-		client_socket = http2_server_accept_client(httpd_socket);
+		client_socket = http_server_accept_client(httpd_socket);
 		if (client_socket == NULL)
-			panic(0, "http2_server_accept_client failed");
+			panic(0, "http_server_accept_client failed");
 		if (use_threads)
 			gwthread_create(client_thread, client_socket);
 		else
 			client_thread(client_socket);
 	}
-	http2_server_close(httpd_socket);
+	http_server_close(httpd_socket);
 	
 	gwlib_shutdown();
 	return 0;

@@ -1,5 +1,5 @@
 /*
- * test_http2.c - a simple program to test the http2 library
+ * test_http.c - a simple program to test the new http library
  *
  * Lars Wirzenius
  */
@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 #include "gwlib/gwlib.h"
-#include "gwlib/http2.h"
+#include "gwlib/http.h"
 
 #define MAX_THREADS 1024
 
@@ -30,10 +30,10 @@ static void client_thread(void *arg) {
 		if ((i % 1000) == 0)
 			info(0, "Starting fetch %ld", i);
 		url = octstr_create(urls[i % num_urls]);
-		ret = http2_get_real(url, NULL, &final_url, &replyh, &replyb);
+		ret = http_get_real(url, NULL, &final_url, &replyh, &replyb);
 		if (ret == -1) {
 			++failed;
-			error(0, "http2_get failed");
+			error(0, "http_get failed");
 		} else {
 			++succeeded;
 			debug("", 0, "Reply headers:");
@@ -53,7 +53,7 @@ static void client_thread(void *arg) {
 }
 
 static void help(void) {
-	info(0, "Usage: test_http2 [-r repeats] url ...\n"
+	info(0, "Usage: test_http [-r repeats] url ...\n"
 		"where -r means the number of times the fetches should be\n"
 		"repeated.");
 }
@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (proxy != NULL && proxy_port > 0)
-		http2_use_proxy(proxy, proxy_port, exceptions);
+		http_use_proxy(proxy, proxy_port, exceptions);
 	octstr_destroy(proxy);
 	while ((os = list_extract_first(exceptions)) != NULL)
 		octstr_destroy(os);

@@ -1,3 +1,8 @@
+2000-06-12  Richard Braakman  <dark@wapit.com>
+
+	* Renamed http2 to http everywhere, because the old http code
+	is completely gone.  Removed --with-http2 configuration option.
+
 2000-06-12  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: Character set and string table length changed 

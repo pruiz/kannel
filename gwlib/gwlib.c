@@ -23,14 +23,14 @@ void gwlib_init(void) {
 	gw_init_mem();
 	gwlib_protected_init();
 	gwthread_init();
-	http2_init();
+	http_init();
 	socket_init();
 	init = 1;
 }
 
 void gwlib_shutdown(void) {
 	gwlib_assert_init();
-	http2_shutdown();
+	http_shutdown();
 	socket_shutdown();
 	gwlib_protected_shutdown();
 	gwthread_shutdown();

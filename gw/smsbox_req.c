@@ -73,7 +73,7 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 	case TRANSTYPE_URL:
 		url = octstr_create(pattern);
 		request_headers = list_create();
-		status = http2_get_real(url, request_headers, &final_url,
+		status = http_get_real(url, request_headers, &final_url,
 					&reply_headers, &reply_body);
 		gw_free(pattern);		/* no longer needed */
 		octstr_destroy(url);
@@ -87,7 +87,7 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 			goto error;
 		}
 		
-		http2_header_get_content_type(reply_headers, &type, &charset);
+		http_header_get_content_type(reply_headers, &type, &charset);
 		if (octstr_str_compare(type, "text/html") == 0) {
 			if (urltrans_prefix(trans) != NULL &&
 			    urltrans_suffix(trans) != NULL) {
@@ -458,22 +458,22 @@ char *smsbox_req_sendsms(List *list)
 	Octstr *text = NULL, *udh = NULL;
 	int ret;
 
-	if ((user = http2_cgi_variable(list, "username")) == NULL)
+	if ((user = http_cgi_variable(list, "username")) == NULL)
 	    t = urltrans_find_username(translations, "default");
 	else 
 	    t = urltrans_find_username(translations, octstr_get_cstr(user));
     
 	if (t == NULL || 
-	    (val = http2_cgi_variable(list, "password")) == NULL ||
+	    (val = http_cgi_variable(list, "password")) == NULL ||
 	    strcmp(octstr_get_cstr(val), urltrans_password(t)) != 0)
 	{
 	    return "Authorization failed";
 	}
 
-	udh = http2_cgi_variable(list, "udh");
-	text = http2_cgi_variable(list, "text");
+	udh = http_cgi_variable(list, "udh");
+	text = http_cgi_variable(list, "text");
 
-	if ((to = http2_cgi_variable(list, "to")) == NULL ||
+	if ((to = http_cgi_variable(list, "to")) == NULL ||
 	    (text == NULL && udh == NULL))
 	{
 		error(0, "/cgi-bin/sendsms got wrong args");
@@ -482,7 +482,7 @@ char *smsbox_req_sendsms(List *list)
 
 	if (urltrans_faked_sender(t) != NULL) {
 	    from = octstr_create(urltrans_faked_sender(t));
-	} else if ((from = http2_cgi_variable(list, "from")) != NULL &&
+	} else if ((from = http_cgi_variable(list, "from")) != NULL &&
 		   octstr_len(from) > 0) 
 	{
 	    from = octstr_duplicate(from);

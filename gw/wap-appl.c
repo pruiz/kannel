@@ -202,34 +202,34 @@ static void fetch_thread(void *arg) {
 	
 	actual_headers = list_create();
 	if (session_headers != NULL)
-		http2_append_headers(actual_headers, session_headers);
+		http_append_headers(actual_headers, session_headers);
 	if (request_headers)
-		http2_append_headers(actual_headers, 
+		http_append_headers(actual_headers, 
 			request_headers);
 
-	wml_ok = http2_type_accepted(actual_headers, "text/vnd.wap.wml");
-	wmlscript_ok = http2_type_accepted(actual_headers, 
+	wml_ok = http_type_accepted(actual_headers, "text/vnd.wap.wml");
+	wmlscript_ok = http_type_accepted(actual_headers, 
 		"text/vnd.wap.wmlscript");
-	wmlc_ok = http2_type_accepted(actual_headers, "application/vnd.wap.wmlc");
-	wmlscriptc_ok = http2_type_accepted(actual_headers, 
+	wmlc_ok = http_type_accepted(actual_headers, "application/vnd.wap.wmlc");
+	wmlscriptc_ok = http_type_accepted(actual_headers, 
 		"application/vnd.wap.wmlscriptc");
 
 	if (wmlc_ok && !wml_ok) {
-		http2_header_add(actual_headers, "Accept", "text/vnd.wap.wml");
+		http_header_add(actual_headers, "Accept", "text/vnd.wap.wml");
 	}
 	if (wmlscriptc_ok && !wmlscript_ok) {
-		http2_header_add(actual_headers, 
+		http_header_add(actual_headers, 
 			"Accept", "text/vnd.wap.wmlscript");
 	}
 	if (octstr_len(addr_tuple->client->address) > 0) {
-		http2_header_add(actual_headers, 
+		http_header_add(actual_headers, 
 			"X_Network_Info", 
 			octstr_get_cstr(addr_tuple->client->address));
 	}
 	if (session_id != -1) {
 		char buf[1024];
 		sprintf(buf, "%ld", session_id);
-		http2_header_add(actual_headers, "X-WAP-Session-ID", buf);
+		http_header_add(actual_headers, "X-WAP-Session-ID", buf);
 	}
 
 	{
@@ -248,28 +248,28 @@ static void fetch_thread(void *arg) {
 		strcat (charsetname, "-");
 		strcat (charsetname, character_sets[i].nro);
 		
-		if (http2_charset_accepted(actual_headers, charsetname)) {
+		if (http_charset_accepted(actual_headers, charsetname)) {
 	/*	    info(0, "WSP: charset %s already accepted.", charsetname); */
 		} else {
 	/*	    info(0, "WSP: charset %s added to accepted list.", charsetname); */
-		    http2_header_add(actual_headers, "Accept-Charset", charsetname);
+		    http_header_add(actual_headers, "Accept-Charset", charsetname);
 		}
 
 	    }
 	}
 	
-	http2_header_pack(actual_headers);
+	http_header_pack(actual_headers);
 
-	ret = http2_get_real(url, actual_headers, 
+	ret = http_get_real(url, actual_headers, 
 			     &final_url, &resp_headers, &resp_body);
 	octstr_destroy(final_url);
 
 	if (ret != HTTP_OK) {
-		error(0, "WSP: http2_get_real failed (%d), oops.", ret);
+		error(0, "WSP: http_get_real failed (%d), oops.", ret);
 		status = 500; /* Internal server error; XXX should be 503 */
 		type = octstr_create("text/plain");
 	} else {
-		http2_header_get_content_type(resp_headers, &type, &charset);
+		http_header_get_content_type(resp_headers, &type, &charset);
 		info(0, "WSP: Fetched <%s> (%s, charset='%s')", 
 			octstr_get_cstr(url), octstr_get_cstr(type),
 			octstr_get_cstr(charset));

@@ -32,6 +32,8 @@ Change summary from version 0.8:
 
 * New test utility test_cimd2, which emulates a CIMD2 server.
 
+* WML decompiler provided by Vanteon, useful for testing WML compiler.
+
 * Octstr conversions between binary and base64.
 
 * mutex_lock panics if it locks the same mutex twice. Needed for

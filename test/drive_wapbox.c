@@ -124,12 +124,12 @@ static void http_thread(void *arg) {
 		octstr_create("Content-Type: text/vnd.wap.wml"));
 
 	for (;!dying;) {
-		client = http2_server_accept_client(server);
+		client = http_server_accept_client(server);
 		if (client == NULL)
 			continue;
-		while (http2_server_get_request(client, &url, &headers,
+		while (http_server_get_request(client, &url, &headers,
 					&body, &cgivars) == 1) {
-			http2_server_send_reply(client, 200,
+			http_server_send_reply(client, 200,
 				reply_headers, reply_body);
 			while (list_len(headers) > 0)
 				octstr_destroy(list_consume(headers));
@@ -141,14 +141,14 @@ static void http_thread(void *arg) {
 			list_destroy(cgivars);
 			
 		}
-		http2_server_close_client(client);
+		http_server_close_client(client);
 	}
 
 	octstr_destroy(reply_body);
 	while (list_len(reply_headers) > 0)
 		octstr_destroy(list_consume(reply_headers));
 	list_destroy(reply_headers);
-	http2_server_close(server);
+	http_server_close(server);
 }
 	
 
@@ -159,7 +159,7 @@ static int start_http_thread(void) {
 	unsigned short port;
 
 	for (port = 40000; port < 41000; port += 13) {
-		server = http2_server_open(port);
+		server = http_server_open(port);
 		if (server)
 			break;
 	}

@@ -52,7 +52,7 @@ void wap_event_destroy(WAPEvent *event) {
 	#define OCTSTR(name) octstr_destroy(p->name);
 	#define INTEGER(name) p->name = 0;
 	#define SESSION_MACHINE(name) p->name = NULL;
-	#define HTTPHEADER(name) http2_destroy_headers(p->name);
+	#define HTTPHEADER(name) http_destroy_headers(p->name);
 	#define ADDRTUPLE(name) wap_addr_tuple_destroy(p->name);
 	#include "wap-events-def.h"
 	default:
@@ -83,7 +83,7 @@ WAPEvent *wap_event_duplicate(WAPEvent *event) {
 	#define OCTSTR(name) p->name = octstr_duplicate(q->name);
 	#define INTEGER(name) p->name = q->name;
 	#define SESSION_MACHINE(name) p->name = q->name;
-	#define HTTPHEADER(name) p->name = http2_header_duplicate(q->name);
+	#define HTTPHEADER(name) p->name = http_header_duplicate(q->name);
 	#define ADDRTUPLE(name) p->name = wap_addr_tuple_duplicate(q->name);
 	#include "wap-events-def.h"
 	default:
@@ -124,7 +124,7 @@ void wap_event_dump(WAPEvent *event) {
 			debug("wap.event", 0, "  %s = %p", \
 				#name, (void *) p->name);
 		#define HTTPHEADER(name) \
-			http2_header_dump(p->name);
+			http_header_dump(p->name);
 		#define ADDRTUPLE(name) \
 			wap_addr_tuple_dump(p->name);
 		#include "wap-events-def.h"

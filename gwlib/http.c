@@ -1,5 +1,5 @@
 /*
- * http2.c - HTTP protocol implementation
+ * http.c - HTTP protocol implementation
  *
  * Lars Wirzenius
  */
@@ -12,7 +12,7 @@
 #include <sys/socket.h>
 
 #include "gwlib.h"
-#include "http2.h"
+#include "http.h"
 
 
 /*++++
@@ -88,11 +88,11 @@ static int read_chunked_body(HTTPSocket *p, Octstr **body, List *headers);
 static int read_raw_body(HTTPSocket *p, Octstr **body, long bytes);
 static List *parse_cgivars(Octstr *url);
 static int header_is_called(Octstr *header, char *name);
-static int http2_something_accepted(List *headers, char *header_name, char *what);
+static int http_something_accepted(List *headers, char *header_name, char *what);
 
 
 
-void http2_init(void) {
+void http_init(void) {
 	gw_assert(proxy_mutex == NULL);
 	proxy_mutex = mutex_create();
 	proxy_exceptions = list_create();
@@ -100,9 +100,9 @@ void http2_init(void) {
 }
 
 
-void http2_shutdown(void) {
+void http_shutdown(void) {
 	gwlib_assert_init();
-	http2_close_proxy();
+	http_close_proxy();
 	list_destroy(proxy_exceptions);
 	mutex_destroy(proxy_mutex);
 	proxy_mutex = NULL;
@@ -110,7 +110,7 @@ void http2_shutdown(void) {
 }
 
 
-void http2_use_proxy(Octstr *hostname, int port, List *exceptions) {
+void http_use_proxy(Octstr *hostname, int port, List *exceptions) {
 	int i;
 
 	gwlib_assert_init();
@@ -119,7 +119,7 @@ void http2_use_proxy(Octstr *hostname, int port, List *exceptions) {
 	gw_assert(port > 0);
 	gw_assert(exceptions != NULL);
 
-	http2_close_proxy();
+	http_close_proxy();
 	mutex_lock(proxy_mutex);
 	proxy_hostname = octstr_duplicate(hostname);
 	proxy_port = port;
@@ -130,7 +130,7 @@ void http2_use_proxy(Octstr *hostname, int port, List *exceptions) {
 }
 
 
-void http2_close_proxy(void) {
+void http_close_proxy(void) {
 	Octstr *p;
 
 	gwlib_assert_init();
@@ -147,7 +147,7 @@ void http2_close_proxy(void) {
 }
 
 
-int http2_get(Octstr *url, List *request_headers, 
+int http_get(Octstr *url, List *request_headers, 
 List **reply_headers, Octstr **reply_body)  {
 	int status;
 	HTTPSocket *p;
@@ -199,7 +199,7 @@ error:
 }
 
 
-int http2_get_real(Octstr *url, List *request_headers, Octstr **final_url,
+int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
 List **reply_headers, Octstr **reply_body) {
 	int i, ret;
 	Octstr *h;
@@ -215,12 +215,12 @@ List **reply_headers, Octstr **reply_body) {
 	
 	*final_url = octstr_duplicate(url);
 	for (i = 0; i < HTTP_MAX_FOLLOW; ++i) {
-		ret = http2_get(*final_url, request_headers, reply_headers, 
+		ret = http_get(*final_url, request_headers, reply_headers, 
 				reply_body);
 		if (ret != HTTP_MOVED_PERMANENTLY && ret != HTTP_FOUND &&
 		    ret != HTTP_SEE_OTHER)
 			break;
-		h = http2_header_find_first(*reply_headers, "Location");
+		h = http_header_find_first(*reply_headers, "Location");
 		if (h == NULL) {
 			ret = -1;
 			break;
@@ -242,49 +242,49 @@ List **reply_headers, Octstr **reply_body) {
 }
 
 
-HTTPSocket *http2_server_open(int port) {
+HTTPSocket *http_server_open(int port) {
 	gwlib_assert_init();
 	gw_assert(port > 0);
 	return socket_create_server(port);
 }
 
 
-void http2_server_close(HTTPSocket *socket) {
+void http_server_close(HTTPSocket *socket) {
 	gwlib_assert_init();
 	gw_assert(socket != NULL);
 	socket_destroy(socket);
 }
 
 
-int http2_socket_fd(HTTPSocket *socket) {
+int http_socket_fd(HTTPSocket *socket) {
 	gwlib_assert_init();
 	gw_assert(socket != NULL);
 	return socket->socket;
 }
 
 
-Octstr *http2_socket_ip(HTTPSocket *socket) {
+Octstr *http_socket_ip(HTTPSocket *socket) {
 	gwlib_assert_init();
 	gw_assert(socket != NULL);
         return socket->host;
 }
 
 
-HTTPSocket *http2_server_accept_client(HTTPSocket *socket) {
+HTTPSocket *http_server_accept_client(HTTPSocket *socket) {
 	gwlib_assert_init();
 	gw_assert(socket != NULL);
 	return socket_accept(socket);
 }
 
 
-void http2_server_close_client(HTTPSocket *socket) {
+void http_server_close_client(HTTPSocket *socket) {
 	gwlib_assert_init();
 	gw_assert(socket != NULL);
 	socket_destroy(socket);
 }
 
 
-int http2_server_get_request(HTTPSocket *socket, Octstr **url, List **headers,
+int http_server_get_request(HTTPSocket *socket, Octstr **url, List **headers,
 Octstr **body, List **cgivars) {
 	Octstr *line;
 	long space;
@@ -345,7 +345,7 @@ error:
 }
 
 
-int http2_server_send_reply(HTTPSocket *socket, int status, List *headers, 
+int http_server_send_reply(HTTPSocket *socket, int status, List *headers, 
 Octstr *body) {
 	Octstr *response;
 	char buf[1024];
@@ -379,7 +379,7 @@ Octstr *body) {
 }
 
 
-void http2_destroy_cgiargs(List *args) {
+void http_destroy_cgiargs(List *args) {
         HTTPCGIVar *v;
 
 	gwlib_assert_init();
@@ -396,7 +396,7 @@ void http2_destroy_cgiargs(List *args) {
 }
 
 
-Octstr *http2_cgi_variable(List *list, char *name) {
+Octstr *http_cgi_variable(List *list, char *name) {
 	int i;
 	HTTPCGIVar *v;
 	
@@ -413,13 +413,13 @@ Octstr *http2_cgi_variable(List *list, char *name) {
 }
 
 
-List *http2_create_empty_headers(void) {
+List *http_create_empty_headers(void) {
 	gwlib_assert_init();
 	return list_create();
 }
 
 
-void http2_destroy_headers(List *headers) {
+void http_destroy_headers(List *headers) {
 	Octstr *h;
 
 	gwlib_assert_init();
@@ -434,7 +434,7 @@ void http2_destroy_headers(List *headers) {
 }
 
 
-void http2_header_add(List *headers, char *name, char *contents) {
+void http_header_add(List *headers, char *name, char *contents) {
 	Octstr *h;
 	
 	gwlib_assert_init();
@@ -449,7 +449,7 @@ void http2_header_add(List *headers, char *name, char *contents) {
 }
 
 
-void http2_header_get(List *headers, long i, Octstr **name, Octstr **value) {
+void http_header_get(List *headers, long i, Octstr **name, Octstr **value) {
 	Octstr *os;
 	long colon;
 	
@@ -464,7 +464,7 @@ void http2_header_get(List *headers, long i, Octstr **name, Octstr **value) {
 	else
 		colon = octstr_search_char(os, ':');
 	if (colon == -1) {
-		error(0, "HTTP2: Header does not contain a colon. BAD.");
+		error(0, "HTTP: Header does not contain a colon. BAD.");
 		*name = octstr_create("X-Unknown");
 		*value = octstr_duplicate(os);
 	} else {
@@ -475,7 +475,7 @@ void http2_header_get(List *headers, long i, Octstr **name, Octstr **value) {
 }
 
 
-List *http2_header_duplicate(List *headers) {
+List *http_header_duplicate(List *headers) {
 	List *new;
 	long i;
 	
@@ -484,21 +484,21 @@ List *http2_header_duplicate(List *headers) {
 	if (headers == NULL)
 		return NULL;
 
-	new = http2_create_empty_headers();
+	new = http_create_empty_headers();
 	for (i = 0; i < list_len(headers); ++i)
 		list_append(new, octstr_duplicate(list_get(headers, i)));
 	return new;
 }
 
 
-void http2_header_pack(List *headers) {
+void http_header_pack(List *headers) {
 	gwlib_assert_init();
 	gw_assert(headers != NULL);
 	/* XXX not implemented yet. */
 }
 
 
-void http2_append_headers(List *to, List *from) {
+void http_append_headers(List *to, List *from) {
 	Octstr *header;
 	long i;
 	
@@ -513,7 +513,7 @@ void http2_append_headers(List *to, List *from) {
 }
 
 
-Octstr *http2_header_find_first(List *headers, char *name) {
+Octstr *http_header_find_first(List *headers, char *name) {
 	long i, name_len;
 	Octstr *h;
 
@@ -532,7 +532,7 @@ Octstr *http2_header_find_first(List *headers, char *name) {
 }
 
 
-List *http2_header_find_all(List *headers, char *name) {
+List *http_header_find_all(List *headers, char *name) {
 	List *list;
 	long i;
 	Octstr *h;
@@ -551,7 +551,7 @@ List *http2_header_find_all(List *headers, char *name) {
 }
 
 
-void http2_header_get_content_type(List *headers, Octstr **type, 
+void http_header_get_content_type(List *headers, Octstr **type, 
 Octstr **charset) {
 	Octstr *h;
 	long semicolon;
@@ -561,7 +561,7 @@ Octstr **charset) {
 	gw_assert(type != NULL);
 	gw_assert(charset != NULL);
 
-	h = http2_header_find_first(headers, "Content-Type");
+	h = http_header_find_first(headers, "Content-Type");
 	if (h == NULL) {
 		*type = octstr_create("application/octet-stream");
 		*charset = octstr_create_empty();
@@ -584,15 +584,15 @@ Octstr **charset) {
 }
 
 
-void http2_header_dump(List *headers) {
+void http_header_dump(List *headers) {
 	long i;
 	
 	gwlib_assert_init();
 
-	debug("gwlib.http2", 0, "Dumping HTTP2 headers:");
+	debug("gwlib.http", 0, "Dumping HTTP headers:");
 	for (i = 0; headers != NULL && i < list_len(headers); ++i)
 		octstr_dump(list_get(headers, i), 1);
-	debug("gwlib.http2", 0, "End of dump.");
+	debug("gwlib.http", 0, "End of dump.");
 }
 
 static char *istrdup (char *orig) {
@@ -607,7 +607,7 @@ static char *istrdup (char *orig) {
     return result;
 }
 
-static int http2_something_accepted(List *headers, char *header_name, char *what) {
+static int http_something_accepted(List *headers, char *header_name, char *what) {
     int found;
     long i;
     List *accepts;
@@ -617,7 +617,7 @@ static int http2_something_accepted(List *headers, char *header_name, char *what
     gw_assert(headers != NULL);
     gw_assert(what != NULL);
 
-    accepts = http2_header_find_all(headers, header_name);
+    accepts = http_header_find_all(headers, header_name);
 	
     found = 0;
     for (i = 0; !found && i < list_len(accepts); ++i) {
@@ -629,17 +629,17 @@ static int http2_something_accepted(List *headers, char *header_name, char *what
     }
 
     gw_free (iwhat);
-    http2_destroy_headers(accepts);
+    http_destroy_headers(accepts);
     return found;
 }
 
 
-int http2_type_accepted(List *headers, char *type) {
-    return http2_something_accepted(headers, "Accept", type);
+int http_type_accepted(List *headers, char *type) {
+    return http_something_accepted(headers, "Accept", type);
 }
 
-int http2_charset_accepted(List *headers, char *charset) {
-    return http2_something_accepted(headers, "Accept-Charset", charset);
+int http_charset_accepted(List *headers, char *charset) {
+    return http_something_accepted(headers, "Accept-Charset", charset);
 }
 
 /***********************************************************************
@@ -791,7 +791,7 @@ static int pool_socket_is_alive(HTTPSocket *p) {
 
 
 static int pool_socket_reopen(HTTPSocket *p) {
-	debug("gwlib.http2", 0, "HTTP2: Re-opening socket.");
+	debug("gwlib.http", 0, "HTTP: Re-opening socket.");
 	(void) close(p->socket);
 	p->socket = tcpip_connect_to_server(octstr_get_cstr(p->host), p->port);
 	if (p->socket == -1)
@@ -838,7 +838,7 @@ static int pool_socket_old_and_unused(void *a, void *b) {
 static HTTPSocket *socket_create_client(Octstr *host, int port) {
 	HTTPSocket *p;
 
-	debug("gwlib.http2", 0, "HTTP2: Creating a new client socket <%s:%d>.",
+	debug("gwlib.http", 0, "HTTP: Creating a new client socket <%s:%d>.",
 		octstr_get_cstr(host), port);
 	p = gw_malloc(sizeof(HTTPSocket));
 	p->socket = tcpip_connect_to_server(octstr_get_cstr(host), port);
@@ -864,7 +864,7 @@ static HTTPSocket *socket_create_client(Octstr *host, int port) {
 static HTTPSocket *socket_create_server(int port) {
 	HTTPSocket *p;
 
-	debug("gwlib.http2", 0, "HTTP2: Creating a new server socket <%d>.",
+	debug("gwlib.http", 0, "HTTP: Creating a new server socket <%d>.",
 		port);
 	p = gw_malloc(sizeof(HTTPSocket));
 	p->socket = make_server_socket(port);
@@ -890,7 +890,7 @@ static HTTPSocket *socket_create_server(int port) {
 static void socket_destroy(HTTPSocket *p) {
 	gw_assert(p != NULL);
 
-	debug("gwlib.http2", 0, "HTTP2: Closing socket <%s:%d>",
+	debug("gwlib.http", 0, "HTTP: Closing socket <%s:%d>",
 		octstr_get_cstr(p->host), p->port);
 	(void) close(p->socket);
 	octstr_destroy(p->host);
@@ -910,7 +910,7 @@ static HTTPSocket *socket_accept(HTTPSocket *server) {
 	addrlen = sizeof(addr);
 	s = accept(server->socket, (struct sockaddr *)&addr, &addrlen);
 	if (s == -1) {
-		error(errno, "HTTP2: Error accepting a client.");
+		error(errno, "HTTP: Error accepting a client.");
 		return NULL;
 	}
 	client = gw_malloc(sizeof(HTTPSocket));
@@ -921,7 +921,7 @@ static HTTPSocket *socket_accept(HTTPSocket *server) {
 	client->port = 0;
 	client->buffer = octstr_create_empty();
 
-	debug("gwlib.http2", 0, "HTTP2: Accepted client from <%s>",
+	debug("gwlib.http", 0, "HTTP: Accepted client from <%s>",
 	      octstr_get_cstr(client->host));
 
 	return client;
@@ -1132,15 +1132,15 @@ static int parse_status(Octstr *statusline) {
 			break;
 	}
 	if (i == num_versions) {
-		error(0, "HTTP2: Server responds with unknown HTTP version.");
-		debug("gwlib.http2", 0, "Status line: <%s>",
+		error(0, "HTTP: Server responds with unknown HTTP version.");
+		debug("gwlib.http", 0, "Status line: <%s>",
 			octstr_get_cstr(statusline));
 		return -1;
 	}
 
 	if (octstr_parse_long(&status, statusline, 
 	                      strlen(versions[i]), 10) == -1) {
-		error(0, "HTTP2: Malformed status line from HTTP server: <%s>",
+		error(0, "HTTP: Malformed status line from HTTP server: <%s>",
 			octstr_get_cstr(statusline));
 		return -1;
 	}
@@ -1179,7 +1179,7 @@ static HTTPSocket *send_request(Octstr *url, List *request_headers) {
 	if (p == NULL)
 		goto error;
 	
-	debug("wsp.http2", 0, "HTTP2: Sending request:");
+	debug("wsp.http", 0, "HTTP: Sending request:");
 	octstr_dump(request, 0);
 	if (socket_write(p, request) == -1)
 		goto error;
@@ -1210,7 +1210,7 @@ static int read_status(HTTPSocket *p) {
 	long status;
 
 	if (socket_read_line(p, &line) <= 0) {
-		warning(0, "HTTP2: Couldn't read status line from server.");
+		warning(0, "HTTP: Couldn't read status line from server.");
 		return -1;
 	}
 	status = parse_status(line);
@@ -1230,7 +1230,7 @@ static int read_headers(HTTPSocket *p, List **headers) {
 	prev = NULL;
 	for (;;) {
 		if (socket_read_line(p, &line) <= 0) {
-			error(0, "HTTP2: Incomplete response from server.");
+			error(0, "HTTP: Incomplete response from server.");
 			goto error;
 		}
 		if (octstr_len(line) == 0) {
@@ -1265,11 +1265,11 @@ static int read_body(HTTPSocket *p, List *headers, Octstr **body)
 	Octstr *h;
 	long body_len;
 
-	h = http2_header_find_first(headers, "Transfer-Encoding");
+	h = http_header_find_first(headers, "Transfer-Encoding");
 	if (h != NULL) {
 		octstr_strip_blank(h);
 		if (octstr_str_compare(h, "chunked") != 0) {
-			error(0, "HTTP2: Unknown Transfer-Encoding <%s>",
+			error(0, "HTTP: Unknown Transfer-Encoding <%s>",
 				octstr_get_cstr(h));
 			goto error;
 		}
@@ -1279,7 +1279,7 @@ static int read_body(HTTPSocket *p, List *headers, Octstr **body)
 			goto error;
 		return 1;
 	} else {
-		h = http2_header_find_first(headers, "Content-Length");
+		h = http_header_find_first(headers, "Content-Length");
 		if (h == NULL) {
 			if (socket_read_to_eof(p, body) == -1)
 				return -1;
@@ -1287,7 +1287,7 @@ static int read_body(HTTPSocket *p, List *headers, Octstr **body)
 		} else {
 			if (octstr_parse_long(&body_len, h, 0, 10) 
 			    == -1) {
-				error(0, "HTTP2: Content-Length header "
+				error(0, "HTTP: Content-Length header "
 				         "wrong: <%s>", octstr_get_cstr(h));
 				goto error;
 			}
@@ -1352,7 +1352,7 @@ static int read_chunked_body(HTTPSocket *p, Octstr **body, List *headers) {
 error:
 	octstr_destroy(line);
 	octstr_destroy(*body);
-	error(0, "HTTP2: Error reading chunked body.");
+	error(0, "HTTP: Error reading chunked body.");
 	return -1;
 }
 
@@ -1363,7 +1363,7 @@ error:
  */
 static int read_raw_body(HTTPSocket *p, Octstr **body, long bytes) {
 	if (socket_read_bytes(p, body, bytes) <= 0) {
-		error(0, "HTTP2: Error reading response body.");
+		error(0, "HTTP: Error reading response body.");
 		return -1;
 	}
 	return 0;

@@ -29,7 +29,7 @@
 #include "gwthread.h"
 #include "socket.h"
 #include "conffile.h"
-#include "http2.h"
+#include "http.h"
 #include "octstr.h"
 #include "list.h"
 #include "gwassert.h"

@@ -317,7 +317,7 @@ static void decode_well_known_field(List *unpacked, int field_type,
 	}
     }
 
-    http2_header_add(unpacked, WSPHeaderFieldNameAssignment[field_type], ch);
+    http_header_add(unpacked, WSPHeaderFieldNameAssignment[field_type], ch);
     return;
 
 error:
@@ -330,7 +330,7 @@ static void decode_app_header(List *unpacked, Octstr *str, int *off)
     int len;
 
     len = strlen(octstr_get_cstr(str) + *off);
-    http2_header_add(unpacked, octstr_get_cstr(str)+ *off, 
+    http_header_add(unpacked, octstr_get_cstr(str)+ *off, 
     		     octstr_get_cstr(str)+ *off+len+1);
     
     *off += len + 2 + strlen(octstr_get_cstr(str)+*off+len+1);
@@ -344,7 +344,7 @@ List *unpack_headers(Octstr *headers)
     
     off = 0;
 
-    unpacked = http2_create_empty_headers();
+    unpacked = http_create_empty_headers();
     while(off < octstr_len(headers)) {
 	byte = octstr_get_char(headers, off);
 	

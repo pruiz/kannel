@@ -371,7 +371,7 @@ static void machine_destroy(WSPMachine *p) {
 
 	#define INTEGER(name) p->name = 0;
 	#define OCTSTR(name) octstr_destroy(p->name);
-	#define HTTPHEADERS(name) http2_destroy_headers(p->name);
+	#define HTTPHEADERS(name) http_destroy_headers(p->name);
 	#define ADDRTUPLE(name) wap_addr_tuple_destroy(p->name);
 	#define MACHINE(fields) fields
 	#include "wsp-session-machine.h"

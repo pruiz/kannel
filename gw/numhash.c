@@ -261,21 +261,21 @@ Numhash *numhash_create(char *seek_url)
 
     url = octstr_create(seek_url);
     request_headers = list_create();
-    status = http2_get_real(url, request_headers, &final_url,
+    status = http_get_real(url, request_headers, &final_url,
 			    &reply_headers, &reply_body);
     octstr_destroy(url);
     octstr_destroy(final_url);
     list_destroy(request_headers);
 
     if (status != HTTP_OK) {
-	http2_destroy_headers(reply_headers);
+	http_destroy_headers(reply_headers);
 	octstr_destroy(reply_body);
 	error(0, "Cannot load numhash!");
 	return NULL;
     }
-    http2_header_get_content_type(reply_headers, &type, &charset);
+    http_header_get_content_type(reply_headers, &type, &charset);
     octstr_destroy(charset);
-    http2_destroy_headers(reply_headers);
+    http_destroy_headers(reply_headers);
     
     if (octstr_str_compare(type, "text/plain") != 0) {
 	octstr_destroy(type);

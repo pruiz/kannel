@@ -1,9 +1,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-/* Define if you want to enable use of experimental HTTP implementation. */
-#undef USE_HTTP2
-
 /* Define one of these depending on which malloc wrapper you want to use. */
 #undef USE_GWMEM_NATIVE
 #undef USE_GWMEM_CHECK
