@@ -1,5 +1,10 @@
 2000-10-18  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/urltrans.c: Fix off-by-one error in is_safe array size
+	in encode_for_url().
+
+2000-10-18  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/bearerbox.c, gw/smsbox.c, gw/wapbox.c: Added missing #include
 	"shared.h".
 

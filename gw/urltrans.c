@@ -657,7 +657,7 @@ static URLTranslation *find_default_translation(URLTranslationList *trans)
 static void encode_for_url(char *buf, char *str) {
     static unsigned char *safe = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	    "abcdefghijklmnopqrstuvwxyz-_.!~*'()";
-    static char is_safe[UCHAR_MAX];
+    static char is_safe[UCHAR_MAX + 1];
     static char hexdigits[] = "0123456789ABCDEF";
     unsigned char *ustr;
     
