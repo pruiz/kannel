@@ -1,3 +1,8 @@
+1999-11-16    <mikael@wapit.com>
+
+	* smsc*.(c|h), *box.c: getting rid of the SMSMessage structure
+	and pending_* plus adding better UDH support
+
 1999-11-15    <rpr@rpr.wapit.com>
 
 	* bearerbox.c, control.html, bearerbox.conf: added new
