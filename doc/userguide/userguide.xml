@@ -2285,9 +2285,14 @@ forced-smsc = SOL
 
    <para>To enable Over-The-Air configuration of phones or other client
    devices that support the protocol you need to configure a
-   <literal>ota-config</literal> group and a <literal>sendsms-user</literal>.
+   <literal>otaconfig</literal> group and a <literal>sendsms-user</literal>.
    </para>
-   
+
+   <para>If you want to send multiple OTA configurations through the smsbox
+   you will have to declare a <literal>ota-id</literal> string to the
+	different <literal>otaconfig</literal> groups.
+   </para>
+
  <table frame=none>
   <title>OTA Config Group Variables</title>
   <tgroup cols=3>
@@ -2303,6 +2308,14 @@ forced-smsc = SOL
      <entry><literal>otaconfig</literal></entry>
      <entry valign=bottom>
        This is a mandatory variable
+     </entry></row>
+
+   <row><entry><literal>ota-id</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+	     An optional name or id for the otaconfig. Any string is
+        acceptable, but semicolon ';' may cause problems, so avoid
+        it and any other special non-alphabet characters. 
      </entry></row>
 
    <row><entry><literal>location</literal></entry>
@@ -2611,7 +2624,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
        concatenated messages if too long. An example URL is like this:	
 
 <programlisting>
-http://smsbox.host.name:13013/cgi-bin/sendota?username=foo&amp;password=bar&amp;phonenumber=0123456
+http://smsbox.host.name:13013/cgi-bin/sendota?otaid=myconfig&username=foo&amp;password=bar&amp;phonenumber=0123456
 </programlisting>
        </para>
 
@@ -2619,6 +2632,13 @@ http://smsbox.host.name:13013/cgi-bin/sendota?username=foo&amp;password=bar&amp;
   <title>OTA CGI Variables</title>
   <tgroup cols=2>
   <tbody>
+   <row><entry><literal>otaid</literal></entry>
+   <entry valign=bottom>
+        Name or id of the 'otaconfig' group in Kannel configuration, that should
+        be send to the phone. This variable is optional. If no is given the
+		  first 'otaconfig' group is send.
+   </entry></row>
+
    <row><entry><literal>username</literal></entry>
    <entry valign=bottom>
         Username of the 'sendsms-user' group in Kannel configuration, that has
