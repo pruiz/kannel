@@ -33,13 +33,13 @@ int main(void) {
 	msg_destroy(msg);
 	msg_destroy(msg2);
 	
-	info(0, "Creating plain_sms.");
-	msg = msg_create(plain_sms);
-	msg->plain_sms.sender = octstr_create("123");
-	msg->plain_sms.receiver = octstr_create("456");
-	msg->plain_sms.text = octstr_create("hello, world");
+	info(0, "Creating smart_sms.");
+	msg = msg_create(smart_sms);
+	msg->smart_sms.sender = octstr_create("123");
+	msg->smart_sms.receiver = octstr_create("456");
+	msg->smart_sms.msgdata = octstr_create("hello, world");
 	
-	info(0, "Packing plain_sms.");
+	info(0, "Packing smart_sms.");
 	os = msg_pack(msg);
 	octstr_dump(os);
 	
@@ -48,12 +48,12 @@ int main(void) {
 	msg_dump(msg2);
 	msg_destroy(msg2);
 
-	info(0, "Unpacking plain_sms.");
+	info(0, "Unpacking smart_sms.");
 	msg2 = msg_unpack(os);
 	info(0, "msg2:");
-	info(0, "  sender: %s", octstr_get_cstr(msg->plain_sms.sender));
-	info(0, "  receiv: %s", octstr_get_cstr(msg->plain_sms.receiver));
-	info(0, "  text  : %s", octstr_get_cstr(msg->plain_sms.text));
+	info(0, "  sender: %s", octstr_get_cstr(msg->smart_sms.sender));
+	info(0, "  receiv: %s", octstr_get_cstr(msg->smart_sms.receiver));
+	info(0, "  msgdata  : %s", octstr_get_cstr(msg->smart_sms.msgdata));
 
 	return 0;
 }
