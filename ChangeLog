@@ -1,5 +1,11 @@
 1999-12-22    <rpr@rpr.wapit.com>
 
+	* gw/smsc.c, conf-files: changed SMSC configuration vairable
+	username and password into smsc-username and smsc-password with
+	future HTTP adminstration in mind.
+
+1999-12-22    <rpr@rpr.wapit.com>
+
 	* gw/smsbox_req.c (do_split_send): returned old code until Mikael
 	fixes his new one.
 

@@ -379,8 +379,8 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
         port = config_get(grp, "port");
         backup_port = config_get(grp, "backup-port");
         our_port = config_get(grp, "our-port");
-        username = config_get(grp, "username");
-        password = config_get(grp, "password");
+        username = config_get(grp, "smsc-username");
+        password = config_get(grp, "smsc-password");
         phone = config_get(grp, "phone");
         device = config_get(grp, "device");
         dial_prefix = config_get(grp, "dial-prefix");
@@ -502,10 +502,10 @@ int smsc_receiver(SMSCenter *smsc, char *number)
 
     p = smsc->route_prefix;
 
-	if(p==NULL) {
-		error(0, "smsc_receiver: no route prefix");
-		return 0;
-	}
+    if(p==NULL) {
+	error(0, "smsc_receiver: no route prefix");
+	return 0;
+    }
 
     while(*p != '\0') {
 	b = number;
