@@ -1,0 +1,15 @@
+Source: kannel
+Maintainer: Lars Wirzenius <liw@iki.fi>
+Section: net
+Priority: optional
+Standards-Version: 3.1.1
+
+Package: kannel
+Architecture: any
+Depends: ${shlibs:Depends}
+Section: net
+Priority: optional
+Description: WAP and SMS gateway
+ Kannel is a gateway for connecting WAP (Wireless Application Protocol)
+ phones to the Internet. It also works as an SMS gateway, for providing
+ SMS based services for GSM phones.

@@ -1,0 +1,7 @@
+kannel (0.7.9999) unstable; urgency=low
+
+  * Initial version of Debian package. This is not an upstream release
+    version. It is a CVS snapshot.
+
+ -- Lars Wirzenius <liw@iki.fi>  Wed, 29 Mar 2000 22:17:43 +0300
+

@@ -1,0 +1,53 @@
+#!/usr/bin/make -f
+
+build: Makefile
+	dh_testdir
+	$(MAKE)
+
+Makefile:
+	CFLAGS='-Wall -O2 -g' ./configure
+
+clean:
+	dh_testdir
+	$(MAKE) clean
+	rm -f Makefile
+	dh_clean
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+	$(MAKE) prefix=`pwd`/debian/tmp/usr \
+		suffix="" install
+	install -d debian/tmp/etc/kannel
+	install -m 0644 debian/kannel.* debian/tmp/etc/kannel
+	install -m 0700 -d debian/tmp/var/log/kannel
+
+binary: binary-arch binary-indep
+
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+#	dh_installdebconf	
+	dh_installdocs
+#	dh_installexamples
+	cp utils/kannel-init.d debian/init
+	dh_installinit
+#	dh_installcron
+	if [ -e utils/start-stop-daemon ]; then \
+		not=""; else not="utils/start-stop-daemon.8"; \
+	fi; dh_installmanpages $$not
+	
+	dh_installchangelogs ChangeLog
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary-indep: install

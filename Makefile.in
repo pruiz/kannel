@@ -97,6 +97,8 @@ suffix = -$(VERSION)
 # compiling and installing the software.
 #
 
+STARTSTOPDAEMONSRC=@STARTSTOPDAEMONSRC@
+
 progsrcs = \
 	gw/bearerbox.c \
 	gw/smsbox.c \
@@ -105,7 +107,7 @@ progsrcs = \
 	wmlscript/wmlsdasm.c \
 	utils/seewbmp.c \
 	utils/run_kannel_box.c \
-	utils/start-stop-daemon.c
+	$(STARTSTOPDAEMONSRC)
 progobjs = $(progsrcs:.c=.o)
 progs = $(progsrcs:.c=)
 
@@ -176,13 +178,13 @@ no-docs:
 figs: $(figs)
 
 install: all
+	$(INSTALL) -d $(bindir)
 	for prog in $(progs); do \
 		$(INSTALL) $$prog $(bindir)/`basename $$prog`$(suffix); \
 	done
 
 install-docs:
-	rm -rf $(docdir)
-	mkdir $(docdir)
+	$(INSTALL) -d $(docdir)
 	cp -r $(docs) $(docsrcs) $(figs) $(figsrcs) $(docdir)
 
 clean:

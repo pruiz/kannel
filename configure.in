@@ -26,6 +26,10 @@ AC_PROG_YACC
 AC_PROG_LEX
 AC_PATH_PROG(PERL, perl)
 
+AC_CHECK_FILE(/sbin/start-stop-daemon, , 
+		STARTSTOPDAEMONSRC="utils/start-stop-daemon.c")
+AC_SUBST(STARTSTOPDAEMONSRC)
+
 dnl Checks for libraries.
 
 AC_CHECK_LIB(m, log)

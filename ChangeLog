@@ -1,3 +1,15 @@
+Fri Mar 31 00:31:21 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* debian/*: Added Debian packaging files. The Debian package is not
+	yet official, but these files allow one to build a Debian package.
+	
+	* Makefile.in, configure.in: Check whether start-stop-daemon
+	already exists and use the system one if it does (it only exists
+	on Debian, though).
+	
+	* utils/kannel-init.d: Changed location of box programs and 
+	configuration files.
+
 2000-03-30  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: Memory leaks stiched.
