@@ -200,6 +200,8 @@ int csdr_send_message(CSDRouter *router, RQueueItem *item)
         cliaddr.sin_port = htons(item->msg->wdp_datagram.destination_port);
         cliaddr.sin_addr = *(struct in_addr *) hostinfo->h_addr;
 
+	clilen = sizeof(cliaddr);
+
 	sendto(router->fd, data, datalen, 0, &cliaddr, clilen);
 
 	return 0;
