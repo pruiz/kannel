@@ -1,3 +1,8 @@
+2000-07-27  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_cimd2.c: When pending_smsmessage receives an unexpected
+	response packet, report it instead of crashing.
+
 2000-07-24  Richard Braakman  <dark@wapit.com>
 
 	* gw/wsp_headers.c: Mostly rewritten.  Now decodes all header

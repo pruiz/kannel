@@ -1813,7 +1813,13 @@ int cimd2_pending_smsmessage(SMSCenter *smsc) {
 		packet_check(packet);
 		packet_check_can_receive(packet);
 
-		cimd2_handle_request(packet, smsc);
+		if (packet->operation < RESPONSE)
+			cimd2_handle_request(packet, smsc);
+		else {
+			error(0, "cimd2_pending_smsmessage: unexpected response packet");
+			octstr_dump(packet->data, 0);
+		}
+			
 		packet_destroy(packet);
 	}
 	
