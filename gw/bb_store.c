@@ -236,7 +236,11 @@ Octstr *store_status(int status_type)
             }
 
             /* transform the time value */
+#if LOG_TIMESTAMP_LOCALTIME
+            tm = gw_localtime(msg->sms.time);
+#else
             tm = gw_gmtime(msg->sms.time);
+#endif
             sprintf(p, "%04d-%02d-%02d %02d:%02d:%02d",
                     tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
                     tm.tm_hour, tm.tm_min, tm.tm_sec);
