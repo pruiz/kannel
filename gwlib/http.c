@@ -1969,7 +1969,8 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
 	client->persistent_conn)
         client->persistent_conn = p;
 
-    octstr_format_append(response, "Server: Kannel-%s\r\n", VERSION);
+    /* identify ourselfs */
+    octstr_format_append(response, "Server: Kannel/%s\r\n", VERSION);
 
     octstr_format_append(response, "Content-Length: %ld\r\n",
 			 octstr_len(body));
