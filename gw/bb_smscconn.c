@@ -61,7 +61,8 @@ static long maximum_queue_length;
 
 static long router_thread = -1;
 
-void route_incoming_sms(Msg *sms);
+void route_incoming_to_boxc(Msg *sms);
+static int route_incoming_to_smsc(SMSCConn *conn, Msg *msg);
 
 static void log_sms(SMSCConn *conn, Msg *sms, char *message)
 {
@@ -212,6 +213,7 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply
 int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 {
     char *uf;
+    int rc;
 
     /* do some queue control */
     if (maximum_queue_length != -1 && bb_status == BB_FULL &&
@@ -275,12 +277,20 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	log_sms(conn, sms, "DLR SMS");
 
     /*
-     * Now try to route the message to a specific smsbox
-     * connection based on the existing msg->sms.boxc_id or
-     * the registered receiver numbers for specific smsbox'es.
+     * Try to reroute internally to an smsc-id without leaving
+     * actually bearerbox scope.
+     * Scope: internal routing (to smsc-ids)
      */
-    route_incoming_sms(sms);
-    /* list_produce(incoming_sms, sms); */
+    if (!(rc = route_incoming_to_smsc(conn, sms))) {
+
+        /*
+         * Now try to route the message to a specific smsbox
+         * connection based on the existing msg->sms.boxc_id or
+         * the registered receiver numbers for specific smsbox'es.
+         * Scope: external routing (to smsbox connections)
+         */
+        route_incoming_to_boxc(sms);
+    }
 
     counter_increase(incoming_sms_counter);
     if (conn != NULL) counter_increase(conn->received);
@@ -800,16 +810,39 @@ int smsc2_rout(Msg *msg)
     return 1;
 }
 
+static int route_incoming_to_smsc(SMSCConn *conn, Msg *msg)
+{
+    /* 
+     * Check if we have any "reroute" rules to obey. Which means msg gets 
+     * transported internally from MO to MT msg.
+     */
+    if (conn->reroute) {
+        /* drop into inbound queue again for routing */
+	    list_produce(outgoing_sms, msg);
+        return 1;
+    }
+    
+    if (conn->reroute_to_smsc != NULL) {
+        /* apply directly to the given smsc-id for MT traffic */
+        octstr_destroy(msg->sms.smsc_id);
+        msg->sms.smsc_id = octstr_duplicate(conn->reroute_to_smsc);
+        list_produce(outgoing_sms, msg);
+        return 1;
+    } 
+    
+    if (conn->reroute_by_receiver != NULL && msg->sms.receiver != NULL) {
+        Octstr *smsc = NULL;
+        
+        /* route by receiver number */
+        if ((smsc = dict_get(conn->reroute_by_receiver, 
+                             msg->sms.receiver)) != NULL) {
+            octstr_destroy(msg->sms.smsc_id);
+            msg->sms.smsc_id = octstr_duplicate(smsc);
+            list_produce(outgoing_sms, msg);
+            return 1;
+        }
+    }
 
-
-
-
-
-
-
-
-
-
-
-
+    return 0; /* did not route internally */
+}
 
