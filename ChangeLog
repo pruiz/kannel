@@ -1,3 +1,10 @@
+2000-05-25    Kalle Marjola <rpr@wapit.com>
+
+	* gw/bb_smsc.c: added number normalization/unifying, via
+	configuration variable unified-prefix. 
+
+	* doc/userguide/newconf.txt: added explanation of unified-prefix
+
 2000-05-25    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/*box.c: changed default configuration file to be

@@ -97,6 +97,19 @@ used:
  admin-deny-ip = <IP-list>
  admin-deny-ip = <IP-list>
  #       As above, but for adminstration HTTP requests
+ #
+ unified-prefix = <prefix-list>
+ #	 String to unify received phone numbers, for SMSC routing and
+ #       to ensure that SMS centers can handle them properly. 
+ #       This is applied to 'sender' number when receiving SMS
+ #       messages from SMS Center and for 'receiver' number when
+ #	 receiving messages from SMSbox (either sendsms message or
+ #	  reply to original message). Format is so that first is the
+ #       unified prefix, then all prefixes which are replaced by the
+ #       unified prefix, separated with comma (','). For example,
+ #       for Finland an unified-prefix "00358,0" should do the trick. 
+ #       If there are several unified prefixes, separate their rules with
+ #       semicolon (';'), like "0035850,050;0035840,040"
 
 No other configuration variables for core group are currently
 supported. A sample simple core group is shown at the end of the file.
@@ -410,7 +423,7 @@ more accounts to use it.
 
 
 
-SAMPLE SIMPLE CONFIGURATION
+SAMPLE CONFIGURATION
 
 -------------------
 # bearerbox things
@@ -427,7 +440,7 @@ box-deny-ip = "*.*.*.*"
 box-allow-ip = "127.0.0.1"
 admin-deny-ip = "*.*.*.*"
 admin-allow-ip = "127.0.0.1"
-
+unified-prefix = "00358,0"
 
 group = smsc
 smsc = fake

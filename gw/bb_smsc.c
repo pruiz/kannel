@@ -44,6 +44,7 @@ extern List *isolated;
 
 static volatile sig_atomic_t smsc_running;
 static List *smsc_list;
+static char *unified_prefix;
 
 typedef struct _smsc {
     List 	*outgoing_list;
@@ -82,10 +83,10 @@ static void *sms_receiver(void *arg)
 	    rqi_delete(tmp);
 
 	    /* XXX do we want to normalize receiver? it is like 1234 anyway... */
-	    // normalize_number(global_normalization, &(msg->smart_sms.sender));
+
+	    normalize_number(unified_prefix, &(msg->smart_sms.sender));
 	    
 	    list_produce(incoming_sms, msg);
-	    /* number normalization? in smsc..? */
 
 	    counter_increase(incoming_sms_counter);
 	    debug("bb.sms", 0, "smsc: new message received");
@@ -171,6 +172,10 @@ static void *sms_router(void *arg)
 	    msg_destroy(msg);
 	    continue;
 	}
+	/* XXX we normalize the receiver - if set, but do we want
+	 *     to normalize the sender, too?
+	 */
+	normalize_number(unified_prefix, &(msg->smart_sms.receiver));
 	    
 	list_lock(smsc_list);
 	/* select in which list to add this */
@@ -244,6 +249,9 @@ int smsc_start(Config *config)
 
     smsc_list = list_create();
     
+    unified_prefix = config_get(config_find_first_group(config, "group", "core"),
+				"unified-prefix");
+
     grp = config_find_first_group(config, "group", "smsc");
     while(grp != NULL) {
 	si = create_new_smsc(grp);
