@@ -872,6 +872,7 @@ static void init_smsbox_routes(Cfg *cfg)
             items = octstr_split(smsc_ids, octstr_imm(";"));
             for (i = 0; i < list_len(items); i++) {
                 Octstr *item = list_get(items, i);
+                octstr_strip_blanks(item);
 
                 debug("bb.boxc",0,"Adding smsbox routing to id <%s> for smsc id <%s>",
                       octstr_get_cstr(boxc_id), octstr_get_cstr(item));
@@ -884,7 +885,8 @@ static void init_smsbox_routes(Cfg *cfg)
         if (shortcuts) {
             items = octstr_split(shortcuts, octstr_imm(";"));
             for (i = 0; i < list_len(items); i++) {
-                Octstr *item = item = list_get(items, i);
+                Octstr *item = list_get(items, i);
+                octstr_strip_blanks(item);
 
                 debug("bb.boxc",0,"Adding smsbox routing to id <%s> for receiver no <%s>",
                       octstr_get_cstr(boxc_id), octstr_get_cstr(item));
@@ -1147,13 +1149,17 @@ void boxc_cleanup(void)
 
 
 /*
- * Route the incoming message to a specific smsbox conn
- * or simply to a random if no shortcut routing and msg->sms.boxc_id
- * match.
+ * Route the incoming message to one of the following input queues:
+ *   a specific smsbox conn
+ *   a random smsbox conn if no shortcut routing and msg->sms.boxc_id match
+ *
+ * BEWARE: All logic inside here should be fast, hence speed processing
+ * optimized, because every single MO message passes this function and we 
+ * have to ensure that no unncessary overhead is done.
  */
-void route_incoming_sms(Msg *msg)
+void route_incoming_to_boxc(Msg *msg)
 {
-    Boxc *conn = NULL;
+    Boxc *bc = NULL;
     Octstr *s, *r;
 
     s = r = NULL;
@@ -1167,8 +1173,8 @@ void route_incoming_sms(Msg *msg)
      */
     if (msg->sms.boxc_id != NULL) {
         
-        conn = dict_get(smsbox_by_id, msg->sms.boxc_id);
-        if (conn == 0) {
+        bc = dict_get(smsbox_by_id, msg->sms.boxc_id);
+        if (bc == 0) {
             /* 
              * something is wrong, this was the smsbox connection we used 
              * for sending, so it seems this smsbox is gone
@@ -1182,10 +1188,10 @@ void route_incoming_sms(Msg *msg)
      * Check if we have a "smsbox-route" for this msg.
      * Where the shortcut route has a higher priority then the smsc-id rule.
      */
-    if (conn == NULL) {
+    if (bc == NULL) {
         s = (msg->sms.smsc_id ? dict_get(smsbox_by_smsc, msg->sms.smsc_id) : NULL);
         r = (msg->sms.receiver ? dict_get(smsbox_by_receiver, msg->sms.receiver) : NULL);
-        conn = r ? dict_get(smsbox_by_id, r) : (s ? dict_get(smsbox_by_id, s) : NULL);
+        bc = r ? dict_get(smsbox_by_id, r) : (s ? dict_get(smsbox_by_id, s) : NULL);
     }
 
     /* 
@@ -1193,10 +1199,9 @@ void route_incoming_sms(Msg *msg)
      * a random smsbox via the shared incoming_sms queue, otherwise to the
      * smsc specific incoming queue
      */
-    if (conn == NULL)
+    if (bc == NULL)
         list_produce(incoming_sms, msg);
     else
-        list_produce(conn->incoming, msg);
-
+        list_produce(bc->incoming, msg);
 }
 
