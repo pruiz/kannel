@@ -400,11 +400,13 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
     ERR_clear_error();
 
     /*
-     * make the socket is non-blocking while we do SSL_connect
+     * make sure the socket is non-blocking while we do SSL_connect
      */
     if (socket_set_blocking(ret->fd, 0) < 0) {
         goto error;
     }
+    BIO_set_nbio(SSL_get_rbio(ret->ssl), 1);
+    BIO_set_nbio(SSL_get_wbio(ret->ssl), 1);
 
     /* record current time */
     timeout = time(NULL);
@@ -562,16 +564,18 @@ Connection *conn_wrap_fd(int fd, int ssl)
         conn->ssl_mutex = mutex_create();
         conn->peer_certificate = NULL;
 
-	/* SSL_set_fd can fail, so check it */
+        /* SSL_set_fd can fail, so check it */
         if (SSL_set_fd(conn->ssl, conn->fd) == 0) {
-	    /* SSL_set_fd failed, log error and return NULL */
-	    error(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
-	    conn_destroy(conn);
-	    return NULL;
-	}
+            /* SSL_set_fd failed, log error and return NULL */
+            error(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
+            conn_destroy(conn);
+            return NULL;
+        }
         /* SSL_set_verify(conn->ssl, 0, NULL); */
-        BIO_set_nbio(SSL_get_rbio(conn->ssl), 0);
-        BIO_set_nbio(SSL_get_wbio(conn->ssl), 0);
+
+        /* set read/write BIO layer to non-blocking mode */
+        BIO_set_nbio(SSL_get_rbio(conn->ssl), 1);
+        BIO_set_nbio(SSL_get_wbio(conn->ssl), 1);
 
         /*
          * now enter the SSL handshake phase
@@ -584,8 +588,10 @@ Connection *conn_wrap_fd(int fd, int ssl)
          */
         while (((rc = SSL_accept(conn->ssl)) <= 0) && 
                ((SSL_get_error(conn->ssl, rc) == SSL_ERROR_WANT_READ) ||
-               (SSL_get_error(conn->ssl, rc) == SSL_ERROR_WANT_WRITE))) 
-            {}
+                (SSL_get_error(conn->ssl, rc) == SSL_ERROR_WANT_WRITE))) {
+            /* busy waiting */
+            gwthread_sleep(0.02);
+        }
 	  	     
         /*
          * If SSL_accept() has failed then check which reason it may 
@@ -599,8 +605,8 @@ Connection *conn_wrap_fd(int fd, int ssl)
                  * was transferred. That's not a real error and can occur
                  * sporadically with some clients.
                  */
-                warning(0, "SSL: handshake stopped: connection was closed");
-                warning(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
+                error(0, "SSL: handshake stopped: connection was closed");
+                error(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
 
                 SSL_set_shutdown(conn->ssl, SSL_RECEIVED_SHUTDOWN);
                 SSL_smart_shutdown(conn->ssl);
@@ -617,8 +623,8 @@ Connection *conn_wrap_fd(int fd, int ssl)
                 char ca[2];
                 int rv;
 
-                warning(0, "SSL: handshake failed: HTTP spoken on HTTPS port");
-                warning(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
+                error(0, "SSL: handshake failed: HTTP spoken on HTTPS port");
+                error(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
                     
                 /* first: skip the remaining bytes of the request line */
                 do {
@@ -648,8 +654,8 @@ Connection *conn_wrap_fd(int fd, int ssl)
                 /*
                  * ok, anything else is a fatal error
                  */
-                warning(0, "SSL: handshake failed with fatal error");
-                warning(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
+                error(0, "SSL: handshake failed with fatal error");
+                error(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
                 
                 SSL_set_shutdown(conn->ssl, SSL_RECEIVED_SHUTDOWN);
                 SSL_smart_shutdown(conn->ssl);
@@ -1310,6 +1316,8 @@ void conn_init_ssl(void)
     SSL_library_init();
     SSL_load_error_strings();
     global_ssl_context = SSL_CTX_new(SSLv23_method());
+    SSL_CTX_set_mode(global_ssl_context, 
+        SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 }
 
 void server_ssl_init(void) 
@@ -1317,6 +1325,8 @@ void server_ssl_init(void)
     SSLeay_add_ssl_algorithms();
     SSL_load_error_strings();
     global_server_ssl_context = SSL_CTX_new(SSLv23_server_method());
+    SSL_CTX_set_mode(global_server_ssl_context, 
+        SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
     if (!SSL_CTX_set_default_verify_paths(global_server_ssl_context)) {
 	   panic(0, "can not set default path for server");
     }

@@ -1,4 +1,11 @@
 2003-11-11  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/conn.c: enable non-blocking mode for SSL connections via read/write
+      BIO and partial writing and buffer moving in ssl context. this is needed if 
+      we use non-blocking mode otherwise openssl doesn't simulate write(2) 
+      behaviour. Thanks to Alex for providing the patch
+      [Msg-ID: <200311071927.27616.a.malysh@centrium.de>]
+
+2003-11-11  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bearerbox.c: remove "no-op" debug output.
     * gw/wap_push_[ppg|pap_mime].c: various Ocstr call improvements for the PPG
       handling, MIME parsing routines.
