@@ -1,3 +1,7 @@
+2004-01-18  Alexander Malysh  <a.malysh@centrium.de>
+    * doc/userguide/userguide.xml: added missing 'field-source' and 'field-boxc-id' in
+      examples within DLR database field configuration section.
+
 2004-01-15  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_store.c: got rid of unused 'Counter *msg_id'. We use UUID's now.
 

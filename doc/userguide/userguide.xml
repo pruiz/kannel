@@ -5773,11 +5773,13 @@ id = dlr-db
 table = dlr
 field-smsc = smsc
 field-timestamp = ts
+field-source = source
 field-destination = destination
 field-service = service
 field-url = url
 field-mask = mask
 field-status = status
+field-boxc-id = boxc
 </programlisting>
 
   </para>
