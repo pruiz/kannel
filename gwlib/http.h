@@ -367,6 +367,10 @@ List *http_header_duplicate(List *headers);
 void http_header_pack(List *headers);
 void http_append_headers(List *to, List *from);
 Octstr *http_header_value(List *headers, Octstr *header);
+int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
+              int *ssl, Octstr **username, Octstr **password);
+int parse_url_path(Octstr *path, Octstr **base_dir, Octstr **page,
+              Octstr **query_string, Octstr **anchor);
 
 
 /*

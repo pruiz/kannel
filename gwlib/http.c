@@ -204,13 +204,6 @@ void http_use_proxy(Octstr *hostname, int port, List *exceptions,
     http_close_proxy();
     mutex_lock(proxy_mutex);
 
-    /* Clear values to enable reloading */
-    octstr_destroy(proxy_hostname);
-    octstr_destroy(proxy_username);
-    octstr_destroy(proxy_password);
-    if(proxy_exceptions)
-        list_destroy(proxy_exceptions, octstr_destroy_item);
-
     proxy_hostname = octstr_duplicate(hostname);
     proxy_port = port;
     proxy_exceptions = list_create();
@@ -1127,12 +1120,20 @@ static Octstr *build_response(List *headers, Octstr *body)
  * 
  *  http_URL = "http:" "//" [ userid : password "@"] host [ ":" port ] [ abs_path [ "?" query ]] 
  */
-static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path, 
+int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path, 
 		     int *ssl, Octstr **username, Octstr **password)
 {
     Octstr *prefix, *prefix_https;
-    long prefix_len;
-    int host_len, colon, slash, at, auth_sep = 0;
+    long prefix_len, portnum;
+    int host_len, colon, slash, at, auth_sep, isssl;
+    host_len = colon = slash = at = auth_sep = isssl = 0;
+
+    if(ssl) *ssl=0;
+    if(port) *port=80;
+    if(host) *host=NULL;
+    if(path) *path=NULL;
+    if(username) *username=NULL;
+    if(password) *password=NULL;
 
     prefix = octstr_imm("http://");
     prefix_https = octstr_imm("https://");
@@ -1144,7 +1145,9 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
             debug("gwlib.http", 0, "HTTPS URL; Using SSL for the connection");
             prefix = prefix_https;
             prefix_len = octstr_len(prefix_https);	
-            *ssl = 1;
+	    isssl = 1;
+            if(ssl != NULL)
+		*ssl = isssl;
 #else
             error(0, "Attempt to use HTTPS <%s> but SSL not compiled in", 
                   octstr_get_cstr(url));
@@ -1187,35 +1190,41 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
     if (slash == -1 && colon == -1) {
         /* Just the hostname, no port or path. */
         host_len = octstr_len(url) - prefix_len;
+	if(port != NULL)
 #ifdef HAVE_LIBSSL
-        *port = *ssl ? HTTPS_PORT : HTTP_PORT;
+            *port = isssl ? HTTPS_PORT : HTTP_PORT;
 #else
-        *port = HTTP_PORT;
+            *port = HTTP_PORT;
 #endif /* HAVE_LIBSSL */
     } else if (slash == -1) {
         /* Port, but not path. */
         host_len = colon - prefix_len;
-        if (octstr_parse_long(port, url, colon + 1, 10) == -1) {
+	if( octstr_parse_long(&portnum, url, colon + 1, 10) == -1) {
             error(0, "URL <%s> has malformed port number.",
                   octstr_get_cstr(url));
             return -1;
         }
+	if(port != NULL)
+	    *port = portnum;
     } else if (colon == -1 || colon > slash) {
         /* Path, but not port. */
         host_len = slash - prefix_len;
+	if(port != NULL)
 #ifdef HAVE_LIBSSL
-        *port = *ssl ? HTTPS_PORT : HTTP_PORT;
+            *port = isssl ? HTTPS_PORT : HTTP_PORT;
 #else
-        *port = HTTP_PORT;
+            *port = HTTP_PORT;
 #endif /* HAVE_LIBSSL */
     } else if (colon < slash) {
         /* Both path and port. */
         host_len = colon - prefix_len;
-        if (octstr_parse_long(port, url, colon + 1, 10) == -1) {
+        if (octstr_parse_long(&portnum, url, colon + 1, 10) == -1) {
             error(0, "URL <%s> has malformed port number.",
                   octstr_get_cstr(url));
             return -1;
         }
+	if(port != NULL)
+	    *port = portnum;
     } else {
         error(0, "Internal error in URL parsing logic.");
         return -1;
@@ -1225,15 +1234,18 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
     if (at != -1) {
 	int at2, i;
 	at2 = octstr_search_char(url, '@', prefix_len);
-	*username = octstr_copy(url, prefix_len, at2 - prefix_len);
+	if(username != NULL)
+	    *username = octstr_copy(url, prefix_len, at2 - prefix_len);
 
-	if (at2 != at)
-	    *password = octstr_copy(url, at2 + 1, at - at2 - 1);
-	else
-	    *password = NULL;
+	if(password != NULL) {
+	    if (at2 != at)
+	        *password = octstr_copy(url, at2 + 1, at - at2 - 1);
+	    else
+	        *password = NULL;
+	}
 
-    if (auth_sep != -1)
-        octstr_set_char(url, auth_sep, ':');
+        if (auth_sep != -1)
+            octstr_set_char(url, auth_sep, ':');
     
 	for(i = at2 + 1; i < at ; i++)
 	    octstr_set_char(url, i, '*');
@@ -1242,12 +1254,15 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
 	prefix_len = at + 1;
     }
 
-    *host = octstr_copy(url, prefix_len, host_len);
-    if (slash == -1)
-        *path = octstr_create("/");
-    else
-        *path = octstr_copy(url, slash, octstr_len(url) - slash);
+    if(host != NULL)
+        *host = octstr_copy(url, prefix_len, host_len);
 
+    if(path != NULL) {
+        if (slash == -1)
+            *path = octstr_create("/");
+        else
+            *path = octstr_copy(url, slash, octstr_len(url) - slash);
+    }
 
     return 0;
 }
@@ -1296,6 +1311,83 @@ static Connection *get_connection(HTTPServer *trans)
   error(0, "Couldn't send request to <%s>", octstr_get_cstr(trans->url));
   return NULL;
 }
+
+
+/*
+ * Parse the URL's path to get the request_base, page, query
+ *
+ * Return -1 if the URL's path seems malformed.
+ *
+ * We assume HTTP URLs of the form specified in "3.2.2 http URL" in
+ * RFC 2616:
+ * 
+ *  http_URL = "http:" "//" [ userid : password "@"] host [ ":" port ] [ abs_path [ "?" query ]] 
+ */
+int parse_url_path(Octstr *path, Octstr **base_dir, Octstr **page,
+                 Octstr **query_string, Octstr **anchor)
+{
+    Octstr *tmp;
+    long i, j;
+
+    if(base_dir) *base_dir=NULL;
+    if(page) *page=NULL;
+    if(query_string) *query_string=NULL;
+    if(anchor) *anchor=NULL;
+
+
+    if(octstr_len(path) < 1) {
+	if(base_dir) *base_dir = octstr_create("/");
+	return 0;
+    }
+
+    tmp = octstr_duplicate(path);
+    debug("DAVI", 0, "url_path: processing <%s>", octstr_get_cstr(tmp));
+
+    i = octstr_search_char(tmp, '?', 0);
+    if(i>=0) {
+	/* XXX no query_string grabbign for now */
+	octstr_truncate(tmp, i);
+        debug("DAVI", 0, "url_path: without query <%s>", octstr_get_cstr(tmp));
+    }
+    i = octstr_search_char(tmp, '#', 0);
+    if(i>=0) {
+	/* XXX no query_string grabbign for now */
+	octstr_truncate(tmp, i);
+        debug("DAVI", 0, "url_path: without anchor <%s>", octstr_get_cstr(tmp));
+    }
+
+    debug("DAVI", 0, "url_path: final path <%s>", octstr_get_cstr(tmp));
+
+    if(octstr_len(tmp) < 1) {
+	if(base_dir) *base_dir = octstr_create("/");
+	octstr_destroy(tmp);
+	return 0;
+    }
+
+    j=0;
+    while(j>=0) {
+	i=j+1;
+    	j = octstr_search_char(tmp, '/', i);
+    }
+
+    if(base_dir) {
+	   if(i==1) {
+	    	*base_dir = octstr_create("/");
+	   } else {
+		*base_dir = octstr_copy(tmp, 0, i);
+	   }
+        debug("DAVI", 0, "url_path: base_dir anchor <%s>", octstr_get_cstr(*base_dir));
+    }
+
+    if(page && i != octstr_len(tmp)) {
+	*page = octstr_copy(tmp, i, octstr_len(tmp)-i);
+        debug("DAVI", 0, "url_path: page anchor <%s>", octstr_get_cstr(*page));
+    }
+
+    octstr_destroy(tmp);
+    return 0;
+}
+
 
 /*
  * Build and send the HTTP request. Return socket from which the
@@ -2443,28 +2535,41 @@ void http_header_pack(List *headers)
         for(j=i+1; j < list_len(headers); j++) {
             http_header_get(headers, j, &name2, &value2);
 
-            if(octstr_case_compare( name, name2) == 0) {
+            if(octstr_case_compare(name, name2) == 0) {
                 if(octstr_len(value) + 2 + octstr_len(value2) > MAX_HEADER_LENGHT) {
+		    octstr_destroy(name2);
+		    octstr_destroy(value2);
                     break;
                 } else {
 		    Octstr *header;
+
+		    /* Delete old header */
+		    header = list_get(headers, i);
+		    octstr_destroy(header);
+                    list_delete(headers, i, 1);
+
 		    /* Adds comma and new value to old header value */
-                    octstr_append(value, octstr_create(", "));
+                    octstr_append(value, octstr_imm(", "));
                     octstr_append(value, value2);
 		    /* Creates a new header */
 		    header = octstr_create("");
                     octstr_append(header, name);
-                    octstr_append(header, octstr_create(": "));
+                    octstr_append(header, octstr_imm(": "));
                     octstr_append(header, value);
-		    /* Delete old header and insert new one */
-                    list_delete(headers, i, 1);
                     list_insert(headers, i, header);
+
 		    /* Delete this header */
+		    header = list_get(headers, j);
+		    octstr_destroy(header);
                     list_delete(headers, j, 1);
                     j--;
                 }
             }
+	    octstr_destroy(name2);
+	    octstr_destroy(value2);
         }
+	octstr_destroy(name);
+	octstr_destroy(value);
     }
 }
 

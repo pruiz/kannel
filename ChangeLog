@@ -1,3 +1,28 @@
+cvs com ChangeLog \
+	gw/dlr.c \
+	gw/wap-appl.c \
+	gwlib/cfg.def \
+	gwlib/http.c \
+	gwlib/http.h \
+	radius/radius_acct.c \
+	wap/cookies.c \
+	wap/cookies.h \
+
+2003-07-24  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/dlr.c, gwlib/cfg.def: panic if group is undefined, instead of 
+      segfaulting, for example, running "bearerbox /tmp/"
+    * gw/wap-appl.c, gw/wapbox.c, gwlib/http.c: fixed lots of memory leaks ;)
+    * gwlib/http.c: removed "clear values" from use_proxy as close_proxy
+      already does that
+    * gwlib/http.[ch]: refactored parse_url to be able to "ask" only some values, 
+      setting the others to NULL; made it public instead of static to be used
+      by cookies.c
+    * gwlib/http.[ch]: added parse_url_path to split rul path into base_dir, 
+      page, query_string and anchor. This will be used in cookies.c
+    * radius/radius_acct.c: don't destroy if not init'ed, fixes a mutex panic 
+      on wapbox shutdown
+    * wap/cookies.[ch]: .........
+
 2003-07-23  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gwlib/cfg.def, gw/wapbox.c, gw/wap-appl.[ch]: added new wap-url-map and
       wap-user-map groups to replace (to be) deprecated map-url map. This 

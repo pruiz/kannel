@@ -175,6 +175,9 @@ void dlr_init(Cfg* cfg)
 
     /* check which DLR storage type we are using */
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
+    if(grp == NULL)
+	panic(0, "DLR: can't find group core");
+
     dlr_type = cfg_get(grp, octstr_imm("dlr-storage"));
 
     /* 

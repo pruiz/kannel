@@ -16,7 +16,7 @@ static Dict *client_table = NULL;      /* maps client ip -> session id */
 /* we will initialize hash tables in the size of our NAS ports */
 #define RADIUS_NAS_PORTS    30
 
-static Mutex *radius_mutex;
+static Mutex *radius_mutex = NULL;
 static int run_thread = 0;
 
 /* 
@@ -317,6 +317,9 @@ void radius_acct_init(CfgGroup *grp)
 
 void radius_acct_shutdown(void) 
 {
+    if(radius_mutex == NULL) /* haven't init'ed at all */
+        return;
+
     mutex_lock(radius_mutex);
     run_thread = 0;
     mutex_unlock(radius_mutex);

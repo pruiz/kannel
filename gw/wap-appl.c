@@ -218,6 +218,8 @@ void wap_appl_shutdown(void)
     http_caller_signal_shutdown(caller);
     gwthread_join_every(return_replies_thread);
     
+    wsp_http_map_destroy(); 
+    wsp_http_map_user_destroy(); 
     http_caller_destroy(caller);
     list_destroy(queue, wap_event_destroy_item);
     list_destroy(charsets, octstr_destroy_item);
@@ -529,6 +531,7 @@ static void add_via(List *headers)
 		       get_official_name(), VERSION);
     http_header_add(headers, "Via", octstr_get_cstr(os));
     octstr_destroy(os);
+    octstr_destroy(version);
 }
 
 
@@ -584,6 +587,7 @@ static void add_msisdn(List *headers, WAPAddrTuple *addr_tuple, Octstr **url,
 	/* XXX DAVI: search and remove it from query */
     }
 
+    /* Proxy-Authorization Authentication */
     proxy_auth = http_header_find_first(headers, "Proxy-Authorization");
     if(proxy_auth) {
 	Octstr *user, *pass;
@@ -606,9 +610,14 @@ static void add_msisdn(List *headers, WAPAddrTuple *addr_tuple, Octstr **url,
 		debug("add_msisdn", 0, "AUTH: User <%s> is <%s>",
 		      octstr_get_cstr(proxy_auth), octstr_get_cstr(msisdn));
 	    }
+	    octstr_destroy(user);
+	    octstr_destroy(pass);
 	}
-
-    } else {
+	octstr_destroy(proxy_auth);
+    } 
+    
+    /* Radius Authentication */
+    else {
 	msisdn = radius_acct_get_msisdn(addr_tuple->remote->address);
     }
 
@@ -623,7 +632,6 @@ static void add_msisdn(List *headers, WAPAddrTuple *addr_tuple, Octstr **url,
 	}
 
 	if(send_msisdn_query != NULL) {
-	    Octstr *newurl = NULL;
 	    /* XXX DAVI: this needs to be refactored 
 	     * for "#" char in url! */
 	    if(octstr_search_char(*url, '?', 7) > 0) {
@@ -631,8 +639,7 @@ static void add_msisdn(List *headers, WAPAddrTuple *addr_tuple, Octstr **url,
 	    } else {
 		octstr_append(*url, octstr_imm("?"));
 	    }
-	    newurl = octstr_duplicate(send_msisdn_query);
-	    octstr_append(*url, newurl);
+	    octstr_append(*url, send_msisdn_query);
 	    octstr_append(*url, octstr_imm("="));
 	    octstr_append(*url, msisdn);
 	}
@@ -726,6 +733,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
 
     content.url = url;
     content.body = content_body;
+    content.version = NULL;
 
     sm = find_session_machine_by_id(session_id);
     device_headers = (sm ? sm->http_headers : request_headers);
@@ -734,12 +742,12 @@ static void return_reply(int status, Octstr *content_body, List *headers,
 
     if (status < 0) {
         error(0, "WSP: http lookup failed, oops."); /* XXX DAVI: also check for empty reply */
-        content.charset = octstr_create("");
         /* smart WSP error messaging?! */
         if (wsp_smart_errors) {
             Octstr *referer_url;
             status = HTTP_OK;
             content.type = octstr_create("text/vnd.wap.wml");
+            content.charset = octstr_create("");
             /*
              * check if a referer for this URL exists and 
              * get back to the previous page in this case
@@ -807,13 +815,14 @@ static void return_reply(int status, Octstr *content_body, List *headers,
 
 #ifdef ENABLE_COOKIES
         if (session_id != -1)
+            /* DAVI if (get_cookies(url, headers, find_session_machine_by_id(session_id)) == -1) */
             if (get_cookies(headers, find_session_machine_by_id(session_id)) == -1)
                 error(0, "WSP: Failed to extract cookies");
 #endif
 
         /* Adapts content body's charset to device
          * If device doesn't support body's charset but supports UTF-8, this block
-         * tries to convert body to UTF-8. (DAVI: this is required for Sharp GX20 for example)
+         * tries to convert body to UTF-8. (this is required for Sharp GX20 for example)
          */
          if(octstr_search(content.type, octstr_imm("text/vnd.wap.wml"), 0) >= 0 || 
             octstr_search(content.type, octstr_imm("application/xhtml+xml"), 0) >= 0 ||
@@ -853,6 +862,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
                      }
                  }
             }
+	    octstr_destroy(charset);
         }
 
         /* For wml->wmlc conversion, send max wbxml version supported */
@@ -999,6 +1009,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
                           status, headers, content.body);
     }
 
+    octstr_destroy(content.version); /* body was re-used above */
     octstr_destroy(content.type); /* body was re-used above */
     octstr_destroy(content.charset);
     octstr_destroy(url);          /* same as content.url */
@@ -1116,6 +1127,7 @@ static void start_fetch(WAPEvent *event)
 #ifdef ENABLE_COOKIES
     /* DAVI: to finish - accept_cookies -1, use global accept-cookies, 0 = no, 1 = yes ? */
     if (accept_cookies != 0 && (session_id != -1) &&  
+        /* DAVI (set_cookies(url, actual_headers, find_session_machine_by_id(session_id)) == -1)) */
         (set_cookies(actual_headers, find_session_machine_by_id(session_id)) == -1)) 
         error(0, "WSP: Failed to add cookies");
 #endif
@@ -1139,6 +1151,9 @@ static void start_fetch(WAPEvent *event)
 
     add_msisdn(actual_headers, addr_tuple, &url, send_msisdn_query, 
 	       send_msisdn_header, send_msisdn_format);
+    octstr_destroy(send_msisdn_query);
+    octstr_destroy(send_msisdn_header);
+    octstr_destroy(send_msisdn_format);
     
     http_remove_hop_headers(actual_headers);
     http_header_pack(actual_headers);
@@ -1564,6 +1579,8 @@ static void wsp_http_map_url(Octstr **osp, Octstr **send_msisdn_query,
 	    *send_msisdn_query = octstr_duplicate(entry->send_msisdn_query);
 	    *send_msisdn_header = octstr_duplicate(entry->send_msisdn_header);
 	    *send_msisdn_format = octstr_duplicate(entry->send_msisdn_format);
+	    octstr_destroy(tmp1);
+	    octstr_destroy(tmp2);
 	    break;
 	}
 	octstr_destroy(tmp1);
@@ -1606,6 +1623,7 @@ void wsp_http_map_destroy(void)
 	    octstr_destroy(entry->send_msisdn_query);
 	    octstr_destroy(entry->send_msisdn_header);
 	    octstr_destroy(entry->send_msisdn_format);
+	    gw_free(entry);
 	}
 	list_destroy(url_map, NULL);
    }
@@ -1624,6 +1642,7 @@ void wsp_http_map_user_destroy(void)
 	    octstr_destroy(entry->user);
 	    octstr_destroy(entry->pass);
 	    octstr_destroy(entry->msisdn);
+	    gw_free(entry);
 	}
 	list_destroy(user_map, NULL);
    }
