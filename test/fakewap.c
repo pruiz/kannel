@@ -550,12 +550,9 @@ static void client_session( void * arg)
     }
     close(fd);
 
-    /*
-    **  The last end_time stays, decrement the number of active threads
-    */
+    /* The last end_time stays */
     mutex_lock( mutex );
     time(&end_time);
-    threads--;
     mutex_unlock( mutex );
 }
 
@@ -569,7 +566,7 @@ static void help(void) {
 /* The main program. */
 int main(int argc, char **argv)
 {
-    int i, opt, org_threads;
+    int i, opt;
     double delta;
     int proto_version, pdu_type, tcl, tid_new;
 
@@ -667,7 +664,6 @@ int main(int argc, char **argv)
     info(0, "fakewap starting");
 
     if (threads < 1) threads = 1;
-    org_threads = threads;
 
     /*
     **  Start 'extra' client threads and finally execute the
@@ -677,14 +673,12 @@ int main(int argc, char **argv)
         gwthread_create(client_session, NULL);
     client_session(NULL);
 
-    /*
-    **  Wait the other sessions to complete
-    */
-    while (threads > 0) usleep( 1000 );
+    /* Wait for the other sessions to complete */
+    gwthread_join_all(client_session);
 
     info(0, "fakewap complete.");
     info(0, "fakewap: %d client threads made total %d transactions.", 
-    	org_threads, num_sent);
+    	threads, num_sent);
     delta = difftime(end_time, start_time);
     info( 0, "fakewap: total running time %.1f seconds", delta);
     info( 0, "fakewap: %.1f messages/seconds on average", num_sent / delta);
