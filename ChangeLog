@@ -1,3 +1,53 @@
+2000-07-24  Richard Braakman  <dark@wapit.com>
+
+	* gw/wsp_headers.c: Mostly rewritten.  Now decodes all header
+	types defined by WSP 1.1.  This means that the headers sent
+	by the phone are all passed to the HTTP server.  Previously,
+	only a few commonly-appearing ones were (partially) decoded.
+	Uses wsp-strings.def instead of inlined string tables.
+	Uses new gwlib parse module to scan octstr contents.
+	"Works for me" status.  Will be more thoroughly tested after 
+	the decoding code is complete.
+
+	* gw/wsp_headers.h: Changed interface of unpack_headers.
+	It now takes a content_type_present flag parameter, instead
+	of having a separate unpack_post_headers function.
+
+	* gw/wsp-strings.c: Support for NUMBERED tables, which assign
+	non-sequential numbers to the strings in a table.
+
+	* gw/wsp-strings.h: Support for NAMED tables, which assign an
+	enum value to each entry in a string table.
+
+	* gw/wsp-strings.def: Define lots of new string tables, for use
+	by the wsp_header module.
+
+	* gw/wapbox.c: Init and shutdown newly used wsp-strings module.
+
+	* gw/wsp-method-state.h, gw/wsp-session-state.h, gw/wsp-unit.c:
+	Use new unpack_headers interface.
+
+	* gwlib/octstr.c: In octstr_insert, assert that ostr2 is not
+	inserted past the end of ostr1.  (This assumption was already
+	there; it's just made explicit now.)
+	Removed unused octstr_get_digit_from function.  octstr_parse_long
+	does the same thing.
+	New octstr_append_decimal function.
+
+	* gwlib/protected.c, gwlib/protected.h: Added gw_getlocale,
+	for use by rfc2068_date_format function.
+
+	* gwlib/utils.c, gwlib/utils.c: New rfc2068_date_format function,
+	to convert a unix timeval to a common textual format.  (The RFC2068
+	format also fits the RFC822 format).
+
+	* gwlib/parse.c, gwlib/parse.h: New module to make it easier to
+	parse octstrs without passing lots of length and offset variables
+	around.
+	
+	* gwlib/gwlib.h: Include new parse.h.  Move inclusion of protected.h
+	to end, so that it can use Octstr in its function prototypes.
+
 2000-07-24  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/smsbox_req.c: Removed function smsbox_req_sendota that used

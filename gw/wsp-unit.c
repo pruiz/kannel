@@ -115,7 +115,7 @@ WAPEvent *wsp_unit_unpack_wdp_datagram(Msg *msg) {
 		event->u.S_Unit_MethodInvoke_Ind.request_uri = 
 			octstr_duplicate(pdu->u.Get.uri);
 		event->u.S_Unit_MethodInvoke_Ind.request_headers = 
-			unpack_headers(pdu->u.Get.headers);
+			unpack_headers(pdu->u.Get.headers, 0);
 		event->u.S_Unit_MethodInvoke_Ind.request_body = NULL;
 		break;
 	case Post:
@@ -124,7 +124,7 @@ WAPEvent *wsp_unit_unpack_wdp_datagram(Msg *msg) {
 		event->u.S_Unit_MethodInvoke_Ind.request_uri = 
 			octstr_duplicate(pdu->u.Post.uri);
 		event->u.S_Unit_MethodInvoke_Ind.request_headers = 
-			unpack_post_headers(pdu->u.Post.headers);
+			unpack_headers(pdu->u.Post.headers, 1);
 		event->u.S_Unit_MethodInvoke_Ind.request_body = 
 			octstr_duplicate(pdu->u.Post.data);
 		break;
@@ -186,7 +186,7 @@ WAPEvent *wsp_unit_unpack_wdp_datagram(Msg *msg) {
 	event->u.S_Unit_MethodInvoke_Ind.request_uri = 
 		octstr_duplicate(pdu->u.Get.uri);
 	event->u.S_Unit_MethodInvoke_Ind.request_headers = 
-		unpack_headers(pdu->u.Get.headers);
+		unpack_headers(pdu->u.Get.headers, 0);
 	event->u.S_Unit_MethodInvoke_Ind.request_body = NULL;
 
         wsp_pdu_destroy(pdu);

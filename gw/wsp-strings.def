@@ -1,56 +1,85 @@
-#if !defined(LINEAR) || !defined(STRING)
-#error "Some required macro is missing."
+/* String table with entries starting at 0 and numbered upwards. */
+#if !defined(LINEAR)
+#error "Required macro LINEAR is missing."
+#endif
+
+/* Entry in a LINEAR table */
+#if !defined(STRING)
+#error "Required macro STRING is missing."
+#endif
+
+/* String table where entries have assigned numbers.  Multiple
+ * entries can have the same number (the first listed entry is used
+ * when looking up by number). */
+#if !defined(NUMBERED)
+#define NUMBERED LINEAR
+#endif
+
+/* Entry in a NUMBERED table */
+#if !defined(ASSIGN)
+#define ASSIGN(string, number) STRING(string)
+#endif
+
+/* Just like LINEAR, but an enumerated type name##_enum is defined for
+ * the entries. */
+#if !defined(NAMED)
+#define NAMED LINEAR
+#endif
+
+/* Entry in a NAMED table */
+#if !defined(NSTRING)
+#define NSTRING(string, name) STRING(string)
 #endif
 
 /* Table 39. Header Field Name Assignments */
-LINEAR(header,
-STRING("Accept")
-STRING("Accept-Charset")
-STRING("Accept-Encoding")
-STRING("Accept-Language")
-STRING("Accept-Ranges")
-STRING("Age")
-STRING("Allow")
-STRING("Authorization")
-STRING("Cache-Control")
-STRING("Connection")
-STRING("Content-Base")
-STRING("Content-Encoding")
-STRING("Content-Language")
-STRING("Content-Length")
-STRING("Content-Location")
-STRING("Content-MD5")
-STRING("Content-Range")
-STRING("Content-Type")
-STRING("Date")
-STRING("Etag")
-STRING("Expires")
-STRING("From")
-STRING("Host")
-STRING("If-Modified-Since")
-STRING("If-Match")
-STRING("If-None-Match")
-STRING("If-Range")
-STRING("If-Unmodified-Since")
-STRING("Location")
-STRING("Last-Modified")
-STRING("Max-Forwards")
-STRING("Pragma")
-STRING("Proxy-Authenticate")
-STRING("Proxy-Authorization")
-STRING("Public")
-STRING("Range")
-STRING("Referer")
-STRING("Retry-After")
-STRING("Server")
-STRING("Transfer-Encoding")
-STRING("Upgrade")
-STRING("User-Agent")
-STRING("Vary")
-STRING("Via")
-STRING("Warning")
-STRING("WWW-Authenticate")
-STRING("Content-Disposition")
+NAMED(header,
+NSTRING("Accept", WSP_HEADER_ACCEPT)
+NSTRING("Accept-Charset", WSP_HEADER_ACCEPT_CHARSET)
+NSTRING("Accept-Encoding", WSP_HEADER_ACCEPT_ENCODING)
+NSTRING("Accept-Language", WSP_HEADER_ACCEPT_LANGUAGE)
+NSTRING("Accept-Ranges", WSP_HEADER_ACCEPT_RANGES)
+NSTRING("Age", WSP_HEADER_AGE)
+NSTRING("Allow", WSP_HEADER_ALLOW)
+NSTRING("Authorization", WSP_HEADER_AUTHORIZATION)
+NSTRING("Cache-Control", WSP_HEADER_CACHE_CONTROL)
+NSTRING("Connection", WSP_HEADER_CONNECTION)
+NSTRING("Content-Base", WSP_HEADER_CONTENT_BASE)
+NSTRING("Content-Encoding", WSP_HEADER_CONTENT_ENCODING)
+NSTRING("Content-Language", WSP_HEADER_CONTENT_LANGUAGE)
+NSTRING("Content-Length", WSP_HEADER_CONTENT_LENGTH)
+NSTRING("Content-Location", WSP_HEADER_CONTENT_LOCATION)
+NSTRING("Content-MD5", WSP_HEADER_CONTENT_MD5)
+NSTRING("Content-Range", WSP_HEADER_CONTENT_RANGE)
+NSTRING("Content-Type", WSP_HEADER_CONTENT_TYPE)
+NSTRING("Date", WSP_HEADER_DATE)
+NSTRING("Etag", WSP_HEADER_ETAG)
+NSTRING("Expires", WSP_HEADER_EXPIRES)
+NSTRING("From", WSP_HEADER_FROM)
+NSTRING("Host", WSP_HEADER_HOST)
+NSTRING("If-Modified-Since", WSP_HEADER_IF_MODIFIED_SINCE)
+NSTRING("If-Match", WSP_HEADER_IF_MATCH)
+NSTRING("If-None-Match", WSP_HEADER_IF_NONE_MATCH)
+NSTRING("If-Range", WSP_HEADER_IF_RANGE)
+NSTRING("If-Unmodified-Since", WSP_HEADER_IF_UNMODIFIED_SINCE)
+NSTRING("Location", WSP_HEADER_LOCATION)
+NSTRING("Last-Modified", WSP_HEADER_LAST_MODIFIED)
+NSTRING("Max-Forwards", WSP_HEADER_MAX_FORWARDS)
+NSTRING("Pragma", WSP_HEADER_PRAGMA)
+NSTRING("Proxy-Authenticate", WSP_HEADER_PROXY_AUTHENTICATE)
+NSTRING("Proxy-Authorization", WSP_HEADER_PROXY_AUTHORIZATION)
+NSTRING("Public", WSP_HEADER_PUBLIC)
+NSTRING("Range", WSP_HEADER_RANGE)
+NSTRING("Referer", WSP_HEADER_REFERER)
+NSTRING("Retry-After", WSP_HEADER_RETRY_AFTER)
+NSTRING("Server", WSP_HEADER_SERVER)
+NSTRING("Transfer-Encoding", WSP_HEADER_TRANSFER_ENCODING)
+NSTRING("Upgrade", WSP_HEADER_UPGRADE)
+NSTRING("User-Agent", WSP_HEADER_USER_AGENT)
+NSTRING("Vary", WSP_HEADER_VARY)
+NSTRING("Via", WSP_HEADER_VIA)
+NSTRING("Warning", WSP_HEADER_WARNING)
+NSTRING("WWW-Authenticate", WSP_HEADER_WWW_AUTHENTICATE)
+NSTRING("Content-Disposition", WSP_HEADER_CONTENT_DISPOSITION)
 )
 
 /* Table 40. Content Type Assignments */
@@ -70,7 +99,7 @@ STRING("Multipart/*")
 STRING("Multipart/mixed")
 STRING("Multipart/form-data")
 STRING("Multipart/byteranges")
-STRING("multipare/alternative")
+STRING("multipart/alternative")
 STRING("application/*")
 STRING("application/java-vm")
 STRING("application/x-www-form-urlencoded")
@@ -99,5 +128,234 @@ STRING("text/xml")
 STRING("application/vnd.wap.wbxml")
 )
 
+/* Table 42, Character Set Assignment (partial) */
+/* The full list is at
+ *   ftp://ftp.isi.edu/in-notes/iana/assignments/character-sets
+ * but the WSP standard lists these values explicitly.
+ */
+NUMBERED(charset,
+ASSIGN("big5", 2026)
+ASSIGN("iso-10646-ucs-2", 1000)
+ASSIGN("iso-8859-1", 4)
+ASSIGN("iso-8859-2", 5)
+ASSIGN("iso-8859-3", 6)
+ASSIGN("iso-8859-4", 7)
+ASSIGN("iso-8859-5", 8)
+ASSIGN("iso-8859-6", 9)
+ASSIGN("iso-8859-7", 10)
+ASSIGN("iso-8859-8", 11)
+ASSIGN("iso-8859-9", 12)
+ASSIGN("shift_JIS", 17)
+ASSIGN("us-ascii", 3)
+ASSIGN("utf-8", 106)
+)
+
+/* Table 38, Well-Known Parameter Assignments */
+NUMBERED(parameter,
+ASSIGN("q", 0)
+ASSIGN("charset", 1)
+ASSIGN("level", 2)
+ASSIGN("type", 3)
+ASSIGN("name", 5)
+ASSIGN("filename", 6)
+ASSIGN("differences", 7)
+ASSIGN("padding", 8)
+)
+
+/* 8.4.2.18, Content encoding field */
+LINEAR(encoding,
+STRING("gzip")
+STRING("compress")
+STRING("deflate")
+)
+
+/* 8.4.2.11, Accept ranges field */
+LINEAR(ranges,
+STRING("none")
+STRING("bytes")
+)
+
+/* 8.4.2.15, Cache-control field */
+NAMED(cache_control,
+NSTRING("no-cache", WSP_CACHE_CONTROL_NO_CACHE)
+NSTRING("no-store", WSP_CACHE_CONTROL_NO_STORE)
+NSTRING("max-age", WSP_CACHE_CONTROL_MAX_AGE)
+NSTRING("max-stale", WSP_CACHE_CONTROL_MAX_STALE)
+NSTRING("min-fresh", WSP_CACHE_CONTROL_MIN_FRESH)
+NSTRING("only-if-cached", WSP_CACHE_CONTROL_ONLY_IF_CACHED)
+NSTRING("public", WSP_CACHE_CONTROL_PUBLIC)
+NSTRING("private", WSP_CACHE_CONTROL_PRIVATE)
+NSTRING("no-transform", WSP_CACHE_CONTROL_NO_TRANSFORM)
+NSTRING("must-revalidate", WSP_CACHE_CONTROL_MUST_REVALIDATE)
+NSTRING("proxy-revalidate", WSP_CACHE_CONTROL_PROXY_REVALIDATE)
+)
+
+/* 8.4.2.53, Content-disposition field */
+LINEAR(disposition,
+STRING("form-data")
+STRING("attachment")
+)
+
+/* Table 41, ISO 639 Language Assignments */
+/* For some reason this table was incomplete in the spec.  The languages
+ * were listed, but not their abbreviations. */
+NUMBERED(language,
+ASSIGN("*", 0) /* Special any-language value */
+ASSIGN("aa", 0x01)  /* Afar */
+ASSIGN("ab", 0x02)  /* Abkhazian */
+ASSIGN("af", 0x03)  /* Afrikaans */
+ASSIGN("am", 0x04)  /* Amharic */
+ASSIGN("ar", 0x05)  /* Arabic */
+ASSIGN("as", 0x06)  /* Assamese */
+ASSIGN("ay", 0x07)  /* Aymara */
+ASSIGN("az", 0x08)  /* Azerbaijani */
+ASSIGN("ba", 0x09)  /* Bashkir */
+ASSIGN("be", 0x0a)  /* Byelorussian */
+ASSIGN("bg", 0x0b)  /* Bulgarian */
+ASSIGN("bh", 0x0c)  /* Bihari */
+ASSIGN("bi", 0x0d)  /* Bislama */
+ASSIGN("bn", 0x0e)  /* Bengali; Bangla */
+ASSIGN("bo", 0x0f)  /* Tibetan */
+ASSIGN("br", 0x10)  /* Breton */
+ASSIGN("ca", 0x11)  /* Catalan */
+ASSIGN("co", 0x12)  /* Corsican */
+ASSIGN("cs", 0x13)  /* Czech */
+ASSIGN("cy", 0x14)  /* Welsh */
+ASSIGN("da", 0x15)  /* Danish */
+ASSIGN("de", 0x16)  /* German */
+ASSIGN("dz", 0x17)  /* Bhutani */
+ASSIGN("el", 0x18)  /* Greek */
+ASSIGN("en", 0x19)  /* English */
+ASSIGN("eo", 0x1a)  /* Esperanto */
+ASSIGN("es", 0x1b)  /* Spanish */
+ASSIGN("et", 0x1c)  /* Estonian */
+ASSIGN("eu", 0x1d)  /* Basque */
+ASSIGN("fa", 0x1e)  /* Persian */
+ASSIGN("fi", 0x1f)  /* Finnish */
+ASSIGN("fj", 0x20)  /* Fiji */
+ASSIGN("fo", 0x82)  /* Faroese */
+ASSIGN("fr", 0x22)  /* French */
+ASSIGN("fy", 0x83)  /* Frisian */
+ASSIGN("ga", 0x24)  /* Irish */
+ASSIGN("gd", 0x25)  /* Scots Gaelic */
+ASSIGN("gl", 0x26)  /* Galician */
+ASSIGN("gn", 0x27)  /* Guarani */
+ASSIGN("gu", 0x28)  /* Gujarati */
+ASSIGN("ha", 0x29)  /* Hausa */
+ASSIGN("he", 0x2a)  /* Hebrew (formerly iw) */
+ASSIGN("hi", 0x2b)  /* Hindi */
+ASSIGN("hr", 0x2c)  /* Croatian */
+ASSIGN("hu", 0x2d)  /* Hungarian */
+ASSIGN("hy", 0x2e)  /* Armenian */
+ASSIGN("ia", 0x84)  /* Interlingua */
+ASSIGN("id", 0x30)  /* Indonesian (formerly in) */
+ASSIGN("ie", 0x86)  /* Interlingue */
+ASSIGN("ik", 0x87)  /* Inupiak */
+ASSIGN("is", 0x33)  /* Icelandic */
+ASSIGN("it", 0x34)  /* Italian */
+ASSIGN("iu", 0x89)  /* Inuktitut */
+ASSIGN("ja", 0x36)  /* Japanese */
+ASSIGN("jw", 0x37)  /* Javanese */
+ASSIGN("ka", 0x38)  /* Georgian */
+ASSIGN("kk", 0x39)  /* Kazakh */
+ASSIGN("kl", 0x8a)  /* Greenlandic */
+ASSIGN("km", 0x3b)  /* Cambodian */
+ASSIGN("kn", 0x3c)  /* Kannada */
+ASSIGN("ko", 0x3d)  /* Korean */
+ASSIGN("ks", 0x3e)  /* Kashmiri */
+ASSIGN("ku", 0x3f)  /* Kurdish */
+ASSIGN("ky", 0x40)  /* Kirghiz */
+ASSIGN("la", 0x8b)  /* Latin */
+ASSIGN("ln", 0x42)  /* Lingala */
+ASSIGN("lo", 0x43)  /* Laothian */
+ASSIGN("lt", 0x44)  /* Lithuanian */
+ASSIGN("lv", 0x45)  /* Latvian, Lettish */
+ASSIGN("mg", 0x46)  /* Malagasy */
+ASSIGN("mi", 0x47)  /* Maori */
+ASSIGN("mk", 0x48)  /* Macedonian */
+ASSIGN("ml", 0x49)  /* Malayalam */
+ASSIGN("mn", 0x4a)  /* Mongolian */
+ASSIGN("mo", 0x4b)  /* Moldavian */
+ASSIGN("mr", 0x4c)  /* Marathi */
+ASSIGN("ms", 0x4d)  /* Malay */
+ASSIGN("mt", 0x4e)  /* Maltese */
+ASSIGN("my", 0x4f)  /* Burmese */
+ASSIGN("na", 0x81)  /* Nauru */
+ASSIGN("ne", 0x51)  /* Nepali */
+ASSIGN("nl", 0x52)  /* Dutch */
+ASSIGN("no", 0x53)  /* Norwegian */
+ASSIGN("oc", 0x54)  /* Occitan */
+ASSIGN("om", 0x55)  /* (Afan) Oromo */
+ASSIGN("or", 0x56)  /* Oriya */
+ASSIGN("pa", 0x57)  /* Punjabi */
+ASSIGN("pl", 0x58)  /* Polish */
+ASSIGN("ps", 0x59)  /* Pashto, Pushto */
+ASSIGN("pt", 0x5a)  /* Portuguese */
+ASSIGN("qu", 0x5b)  /* Quechua */
+ASSIGN("rm", 0x8c)  /* Rhaeto-Romance */
+ASSIGN("rn", 0x5d)  /* Kirundi */
+ASSIGN("ro", 0x5e)  /* Romanian */
+ASSIGN("ru", 0x5f)  /* Russian */
+ASSIGN("rw", 0x60)  /* Kinyarwanda */
+ASSIGN("sa", 0x61)  /* Sanskrit */
+ASSIGN("sd", 0x62)  /* Sindhi */
+ASSIGN("sg", 0x63)  /* Sangro (Sangho) */
+ASSIGN("sh", 0x64)  /* Serbo-Croatian */
+ASSIGN("si", 0x65)  /* Sinhalese */
+ASSIGN("sk", 0x66)  /* Slovak */
+ASSIGN("sl", 0x67)  /* Slovenian */
+ASSIGN("sm", 0x68)  /* Samoan */
+ASSIGN("sn", 0x69)  /* Shona */
+ASSIGN("so", 0x6a)  /* Somali */
+ASSIGN("sq", 0x6b)  /* Albanian */
+ASSIGN("sr", 0x6c)  /* Serbian */
+ASSIGN("ss", 0x6d)  /* Siswati */
+ASSIGN("st", 0x6e)  /* Sesotho */
+ASSIGN("su", 0x6f)  /* Sundanese */
+ASSIGN("sv", 0x70)  /* Swedish */
+ASSIGN("sw", 0x71)  /* Swahili */
+ASSIGN("ta", 0x72)  /* Tamil */
+ASSIGN("te", 0x73)  /* Telugu */
+ASSIGN("tg", 0x74)  /* Tajik */
+ASSIGN("th", 0x75)  /* Thai */
+ASSIGN("ti", 0x76)  /* Tigrinya */
+ASSIGN("tk", 0x77)  /* Turkmen */
+ASSIGN("tl", 0x78)  /* Tagalog */
+ASSIGN("tn", 0x79)  /* Setswana */
+ASSIGN("to", 0x7a)  /* Tonga */
+ASSIGN("tr", 0x7b)  /* Turkish */
+ASSIGN("ts", 0x7c)  /* Tsonga */
+ASSIGN("tt", 0x7d)  /* Tatar */
+ASSIGN("tw", 0x7e)  /* Twi */
+ASSIGN("ug", 0x7f)  /* Uighur */
+ASSIGN("uk", 0x50)  /* Ukrainian */
+ASSIGN("ur", 0x21)  /* Urdu */
+ASSIGN("uz", 0x23)  /* Uzbek */
+ASSIGN("vi", 0x2f)  /* Vietnamese */
+ASSIGN("vo", 0x85)  /* Volapuk */
+ASSIGN("wo", 0x31)  /* Wolof */
+ASSIGN("xh", 0x32)  /* Xhosa */
+ASSIGN("yi", 0x88)  /* Yiddish (formerly ji) */
+ASSIGN("yo", 0x35)  /* Yoruba */
+ASSIGN("za", 0x3a)  /* Zhuang */
+ASSIGN("zh", 0x41)  /* Chinese */
+ASSIGN("zu", 0x5c)  /* Zulu */
+)
+
+/* Well known methods, from table 34. */
+NUMBERED(method,
+ASSIGN("GET", 0x40)
+ASSIGN("OPTIONS", 0x41)
+ASSIGN("HEAD", 0x42)
+ASSIGN("DELETE", 0x43)
+ASSIGN("TRACE", 0x44)
+ASSIGN("POST", 0x60)
+ASSIGN("PUT", 0x61)
+)
+
 #undef LINEAR
 #undef STRING
+#undef NUMBERED
+#undef ASSIGN
+#undef NAMED
+#undef NSTRING

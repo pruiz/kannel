@@ -29,7 +29,7 @@ ROW(NULL_METHOD,
 		 * the information nicely available. */
 
 		if (octstr_len(pdu->u.Get.headers) > 0)
-			headers = unpack_headers(pdu->u.Get.headers);
+			headers = unpack_headers(pdu->u.Get.headers, 0);
 		else
 			headers = NULL;
 
@@ -69,7 +69,7 @@ ROW(NULL_METHOD,
 		 * the information nicely available. */
 
 		if (octstr_len(pdu->u.Post.headers) > 0)
-			headers = unpack_post_headers(pdu->u.Post.headers);
+			headers = unpack_headers(pdu->u.Post.headers, 1);
 		else
 			headers = NULL;
 

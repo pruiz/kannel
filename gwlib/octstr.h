@@ -19,6 +19,7 @@
 #define OCTSTR_H
 
 #include <stdio.h>
+#include <stdarg.h>
 
 #include "list.h"
 
@@ -382,13 +383,6 @@ int octstr_recv(int fd, Octstr **ostr);
 int octstr_url_decode(Octstr *ostr);
 
 /*
- * octstr_get_digit_from - search long int from position pos. return found
- * integer or -1 if not found. in case of an overflow or underflow errno is
- * set to ERANGE.
- */
-long octstr_get_digit_from(Octstr *ostr, long pos);
-
-/*
  * Treat the octstr as an unsigned array of bits, most significant bit
  * first, and return the indicated bit range as an integer.  numbits
  * must not be larger than 32.  Bits beyond the end of the string will
@@ -418,5 +412,11 @@ void octstr_append_uintvar(Octstr *ostr, unsigned long value);
  * Return -1 if there is not a valid uintvar at pos.
  */
 long octstr_extract_uintvar(Octstr *ostr, unsigned long *value, long pos);
+
+
+/*
+ * Append the decimal representation of the given value to ostr 
+ */
+void octstr_append_decimal(Octstr *ostr, long value);
 
 #endif

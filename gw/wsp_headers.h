@@ -13,19 +13,10 @@
 
 /* return an HTTPHeader linked list which must be freed by the caller
  * (see http.h for details of HTTPHeaders). Cannot fail.
+ * The second argument is true if the headers will have a leading
+ * Content-Type field.  Some WSP PDUs encode Content-Type separately
+ * this way for historical reasons.
  */
-#ifdef POST_SUPPORT
-List *unpack_post_headers(Octstr *headers);
-#endif
-
-List *unpack_headers(Octstr *headers);
-
-
-/* Outputs unpacked headers into own string
- * the string has format 'Header1: value, value2, value3\r\nHeader2: ....'
- */
-Octstr *output_headers(List *uhdrs);
-
-
+List *unpack_headers(Octstr *headers, int content_type);
 
 #endif

@@ -21,5 +21,7 @@ struct tm gw_localtime(time_t t);
 struct tm gw_gmtime(time_t t);
 int gw_rand(void);
 int gw_gethostbyname(struct hostent *ret, const char *name);
+/* Wrapper around setlocale(category, NULL) */
+Octstr *gw_getlocale(int category);
 
 #endif

@@ -12,6 +12,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <termios.h>
+#include <locale.h>
 
 #include "gwlib.h"
 
@@ -306,8 +307,27 @@ void kannel_cfmakeraw (struct termios *tio){
 }
 #endif
 
+Octstr *rfc2068_date_format(unsigned long unixtime) {
+	struct tm tm;
+	unsigned char buffer[30];
+	size_t len;
+	Octstr *oldlocale;
 
-#ifndef B115200
-#define B115200 B38400
-#endif
+	/* Make sure strftime behaves */
+	oldlocale = gw_getlocale(LC_TIME);
+	setlocale(LC_TIME, "C");
 
+	tm = gw_gmtime((time_t) unixtime);
+	len = strftime(buffer, sizeof(buffer),
+		"%a, %d %b %Y %H:%M:%S GMT", &tm);
+	if (len == 0) {
+		warning(0, "strftime failed for %lu.", unixtime);
+		return NULL;
+	}
+
+	if (oldlocale)
+		setlocale(LC_TIME, octstr_get_cstr(oldlocale));
+	octstr_destroy(oldlocale);
+
+	return octstr_create(buffer);
+}

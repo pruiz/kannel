@@ -20,7 +20,6 @@
 #include <sys/types.h>
 #endif
 
-#include "protected.h"
 #include "gwstr.h"
 #include "gwmem.h"
 #include "utils.h"
@@ -36,6 +35,8 @@
 #include "counter.h"
 #include "charset.h"
 #include "conn.h"
+#include "parse.h"
+#include "protected.h"
 
 void gwlib_assert_init(void);
 void gwlib_init(void);

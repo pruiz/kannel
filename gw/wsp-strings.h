@@ -11,6 +11,7 @@
  *
  * For a table named foo, these functions will be declared:
  * Octstr *wsp_foo_to_string(long number);
+ * unsigned char *wsp_foo_to_cstr(long number);
  * long wsp_string_to_foo(Octstr *ostr);
  * The first will return NULL if the number has no assigned string.
  * The second will return -1 if the string has no assigned number.
@@ -25,6 +26,14 @@ void wsp_strings_shutdown(void);
 /* Declare the functions */
 #define LINEAR(name, strings) \
 Octstr *wsp_##name##_to_string(long number); \
+unsigned char *wsp_##name##_to_cstr(long number); \
 long wsp_string_to_##name(Octstr *ostr);
 #define STRING(string)
+#include "wsp-strings.def"
+
+/* Define the enumerated types */
+#define LINEAR(name, strings)
+#define STRING(string)
+#define NAMED(name, strings) enum name##_enum { strings name##_dummy };
+#define NSTRING(string, name) name,
 #include "wsp-strings.def"

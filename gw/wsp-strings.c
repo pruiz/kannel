@@ -21,21 +21,47 @@
 
 static int initialized;
 
+struct element {
+	unsigned char *str;
+	long number;
+};
+
 /* Declare the data */
 #define LINEAR(name, strings) \
 	static unsigned char *name##_table[] = { strings };
 #define STRING(string) string,
+#define NUMBERED(name, strings) \
+	static struct element name##_table[] = { strings };
+#define ASSIGN(string, number) { string, number },
 #include "wsp-strings.def"
 
 /* Define the functions for translating number to Octstr */
 #define LINEAR(name, strings) \
 Octstr *wsp_##name##_to_string(long number) { \
+	return octstr_create(wsp_##name##_to_cstr(number)); \
+}
+#define STRING(string)
+#include "wsp-strings.def"
+
+/* Define the functions for translating number to constant string */
+#define LINEAR(name, strings) \
+unsigned char *wsp_##name##_to_cstr(long number) { \
 	gw_assert(initialized); \
 	if (number < 0 || number >= TABLE_SIZE(name##_table)) \
 		return NULL; \
-	return octstr_create(name##_table[number]); \
+	return name##_table[number]; \
 }
 #define STRING(string)
+#define NUMBERED(name, strings) \
+unsigned char *wsp_##name##_to_cstr(long number) { \
+	long i; \
+	gw_assert(initialized); \
+	for (i = 0; i < TABLE_SIZE(name##_table); i++) { \
+		if (name##_table[i].number == number) \
+			return name##_table[i].str; \
+	} \
+	return NULL; \
+}
 #include "wsp-strings.def"
 
 /* Define the functions for translating Octstr to number.  Currently
@@ -54,6 +80,16 @@ long wsp_string_to_##name(Octstr *ostr) { \
 	return -1; \
 }
 #define STRING(string)
+#define NUMBERED(name, strings) \
+long wsp_string_to_##name(Octstr *ostr) { \
+	long i; \
+	gw_assert(initialized); \
+	for (i = 0; i < TABLE_SIZE(name##_table); i++) { \
+		if (octstr_str_compare(ostr, name##_table[i].str) == 0) \
+			return name##_table[i].number; \
+	} \
+	return -1; \
+}
 #include "wsp-strings.def"
 
 void wsp_strings_init(void) {

@@ -22,6 +22,7 @@
 #include "wsp.h"
 #include "wtp_timer.h"
 #include "bb.h"
+#include "wsp-strings.h"
 
 static Config *cfg = NULL;
 static char *bearerbox_host = BB_DEFAULT_HOST;
@@ -434,6 +435,7 @@ int main(int argc, char **argv) {
 	wtp_init();
         wtp_tid_cache_init();
         wtp_timer_init();
+	wsp_strings_init();
 	wsp_session_init();
 	wsp_unit_init();
 
@@ -482,6 +484,7 @@ int main(int argc, char **argv) {
 	wtp_shutdown();
 	wtp_timer_shutdown();
 	wtp_tid_cache_shutdown();
+	wsp_strings_shutdown();
 	config_destroy(cfg);
 	gwlib_shutdown();
 	return 0;
