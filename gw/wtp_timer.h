@@ -29,7 +29,6 @@ typedef struct WTPTimer WTPTimer;
 #include "wtp.h"
 
 struct WTPTimer {
-	struct WTPTimer *next;
 	long start_time;
 	long interval;
 	WTPMachine *machine;

@@ -172,11 +172,12 @@ static WTPCached_tid *cache_item_create_empty(void){
 
        item = gw_malloc(sizeof(WTPCached_tid));
 
-       item->source_address = octstr_create_empty(); 
+       item->source_address = NULL;
        item->source_port = 0;
-       item->destination_address = octstr_create_empty();
+       item->destination_address = NULL;
        item->destination_port = 0;
        item->tid = 0;
+       item->next = NULL;
 
        return item;
 }
@@ -227,8 +228,9 @@ static int tid_cached(WTPMachine *machine){
                  this_item->destination_port == 
 		 machine->destination_port){
                
+	       int found = this_item->tid;
                mutex_unlock(tid_cache.lock);
-               return this_item->tid;
+               return found;
 
 	     } else {
                this_item = this_item->next;

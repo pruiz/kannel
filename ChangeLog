@@ -1,3 +1,22 @@
+2000-04-07  Richard Braakman  <dark@wapit.com>
+
+	* gw/wtp_timer.c: Converted to use generic List code.  This should
+	fix a number of bugs in the timer code.  Also changed to a single
+	indentation style, and made all log messages full sentences.
+	Restored some debugging output about timers because I'm debugging
+	them.
+
+	* gw/wtp.c: In pack_wsp_event, call octstr_duplicate on
+	exit_info instead of sharing it between the WSP and WTP
+	events.  (The WTP event will be destroyed soon afterwards,
+	taking its octstrs with it).
+
+	* gw/wtp_tid.c: In cache_item_create_empty, initialize item->next
+	too.  Also initialize source_address and destination_address to
+	NULL instead of to empty octstrs (prevents memory leak).
+	In tid_cached, use a temporary variable when returning the tid,
+	to avoid accessing a cache element after releasing the lock.
+
 Sat Apr  8 01:01:00 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/smsbox.c, gw/urltrans.c, gw/wapbox.c, gw/wsp.c, gw/wsp.h,
@@ -34,10 +53,10 @@ Fri Apr  7 15:08:50 2000  Lars Wirzenius  <liw@wapit.com>
 	
 	* gwlib/octstr.c: Made seems_valid_real report the calling
 	function name also, and re-wrote the assertions so that it is
-	easier to see which condition failed. Addes some assertions
+	easier to see which condition failed. Added some assertions
 	as well.
 
-2000-04-05  Richard Braakman  <dark@wapit.com>
+2000-04-06  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/octstr.c, gwlib/octstr.h: Added new functions
 	octstr_binary_to_hex, octstr_hex_to_binary,

@@ -850,7 +850,7 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
                 
 	        case TR_Result_Cnf:
                      event->TR_Result_Cnf.exit_info =
-                            wtp_event->RcvInvoke.exit_info;
+                            octstr_duplicate(wtp_event->RcvInvoke.exit_info);
                      event->TR_Result_Cnf.exit_info_present =
                             wtp_event->RcvInvoke.exit_info_present;
                      event->TR_Result_Cnf.wsp_tid =

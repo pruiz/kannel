@@ -1,7 +1,7 @@
 /*
  * wtp_timer.c - timers for WTP
  *
- * This file implements the timers declard in wtp_timer.h. It is very
+ * This file implements the timers declared in wtp_timer.h. It is very
  * straightforward for now. In the future, it would be a good idea to
  * keep the timers in a priority queue sorted by ascending end time,
  * so that it is not necessary to traverse the entire list of timers
@@ -17,26 +17,20 @@
 #include "wtp_timer.h"
 #include "gwlib/gwlib.h"
 
-/*
- * Wtp timers "queue" (additions at to the end, removals by searching through 
- * whole data structure. Lock is global.
+/* Wtp timers queue, contains all active timers.  The list's lock is
+ * used for operations on its elements.  No list operations should be
+ * done without explicit list_lock and list_unlock. */
+List *timers;
+
+/* The events triggered by elapsed timers are collected in these
+ * structures, so that they can be handled in a separate loop.
+ * (That avoids the problem of wtp_handle_event wanting to modify
+ * the timers while wtp_timer_check is scanning the list).
  */
-
-struct Timers {
-       WTPTimer *list;        /* pointer to the first timer in the timers 
-                                 list */
-       Mutex *lock;           /* global mutex for serializing timer 
-                                 handling */
+struct pending_event {
+	WTPMachine *machine;
+	WTPEvent *event;
 };
-
-typedef struct Timers Timers;
-
-static Timers timers =
-{
-       NULL,
-       NULL
-};
-
 
 WTPTimer *wtp_timer_create(void) {
 	WTPTimer *timer;
@@ -46,165 +40,151 @@ WTPTimer *wtp_timer_create(void) {
 	timer->interval = 0;
         timer->event = NULL;
         timer->machine = NULL;
-  
-        mutex_lock(timers.lock);
+ 
+	list_lock(timers);
 
-        timer->next = timers.list;
-	timers.list = timer;
+	list_append(timers, timer); 
+        debug("wap.wtp.timer", 0, "Created timer %p.", (void *) timer);
 
-        mutex_unlock(timers.lock);
+	list_unlock(timers);
 
 	return timer;
 }
 
 
 void wtp_timer_destroy(WTPTimer *timer) {
-	WTPTimer *t = NULL;
-	
-        mutex_lock(timers.lock);
+	long len, count;
 
-	if (timers.list == timer) {
-	   timers.list = timer->next;
-#if 0
-           debug("wap.wtp.timer", 0, "First item in the list: %p. Destroying it", (void *) timer);
-#endif
+	list_lock(timers);
 
-	} else {
-	   for (t = timers.list; t != NULL && t != timer; t = t->next){
-#if 0
-               debug("wap.wtp.timer", 0, "Going thru timers list. Met timer %p, belonging to machine %p", (void *) timer, (void *) timer->machine);
-#endif
-	       continue;
-           }
+	/* Count the number of deleted items by comparing the list
+	 * length before and after. */
+	len = list_len(timers);
+	list_delete_equal(timers, timer);
+	count = len - list_len(timers);
 
-	   if (t == NULL) {
-	      error(0, "Unknown timer, ignored, not stopped.");
-              mutex_unlock(timers.lock);
-	      return;
-	   }
-
-	   gw_assert(t == timer);
-#if 0
-           debug("wap.wtp.timer", 0, "destroying timer %p", (void *) t);
-#endif
-	   timer->next = t->next;
+	if (count == 1) {
+        	debug("wap.wtp.timer", 0,
+			"Destroyed timer %p.", (void *) timer);
+	} else if (count < 1) {
+		error(0, "Unknown timer %p, ignored, not stopped.",
+			(void *) timer);
+		list_unlock(timers);
+		return;
+	} else if (count > 1) {
+		debug("wap.wtp.timer", 0,
+			"Destroyed timer %p, occurred %ld times!",
+			(void *) timer, count);
 	}
-        
-	gw_free(timer);
 
-        mutex_unlock(timers.lock);
-        return;
+	list_unlock(timers);
+	
+	gw_free(timer);
 }
 
 
-void wtp_timer_start(WTPTimer *timer, long interval, WTPMachine *sm,
-     WTPEvent *e) {
+void wtp_timer_start(WTPTimer *timer, long interval,
+			WTPMachine *sm, WTPEvent *e) {
 
-     mutex_lock(timers.lock);
+	list_lock(timers);
 
-     timer->start_time = (long) time(NULL);
-     timer->interval = interval;
-     timer->machine = sm;
-     timer->event = e;
-#if 0
-     debug("wap.wtp.timer", 0, "Timer %p started at %ld, duration %ld.", 
-	   (void *) timer, timer->start_time, timer->interval);
-#endif
+	timer->start_time = (long) time(NULL);
+	timer->interval = interval;
+	timer->machine = sm;
+	timer->event = e;
 
-     mutex_unlock(timers.lock);
+	debug("wap.wtp.timer", 0, "Timer %p started at %ld, duration %ld.", 
+		(void *) timer, timer->start_time, timer->interval);
+
+	list_unlock(timers);
 }
 
 
 void wtp_timer_stop(WTPTimer *timer) {
-   
-     mutex_lock(timers.lock);
-     
-     timer->interval = 0;
-#if 0
-     debug("wap.wtp.timer", 0, "Timer %p stopped at %ld.", (void *) timer,
-	    (long) time(NULL));
-#endif
 
-     mutex_unlock(timers.lock);
+	list_lock(timers);
+
+	timer->interval = 0;
+	debug("wap.wtp.timer", 0, "Timer %p stopped at %ld.", (void *) timer,
+		(long) time(NULL));
+
+	list_unlock(timers);
+
 }
 
 
 void wtp_timer_check(void) {
-
-	WTPTimer *timer = NULL,
-                 *temp = NULL;
 	long now;
+	long pos, len;
+	struct pending_event *eventp;
+	List *elapsed;  /* List of pending_event structs */
 
 	now = (long) time(NULL);
-#if 0
 	debug("wap.wtp.timer", 0, "Checking timers at %ld.", now);
-#endif
 
-        mutex_lock(timers.lock);
+	elapsed = list_create();
 
-        timer = timers.list;
+	list_lock(timers);
+	len = list_len(timers);
 
-	while ( timer != NULL) {
+	for (pos = 0; pos < len; pos++) {
+		WTPTimer *timer = list_get(timers, pos);
 
-#if 0
-            debug("wap.wtp.timer", 0, "Going thru timers list. This timer belongs to the machine %p and its timer interval was %ld", (void *) timer->machine, timer->interval);
-#endif
+		debug("wap.wtp.timer", 0,
+			"Going thru timers list. This timer belongs to the "
+			"machine %p and its timer interval was %ld",
+			(void *) timer->machine, timer->interval);
 
-	    if (timer->interval == 0) {
-               debug("wap.wtp.timer", 0, "Timer %p stopped.", 
-                    (void *) timer);
-               timer = timer->next;
-	       continue;
-            }
+		if (timer->interval == 0) {
+			debug("wap.wtp.timer", 0, "Timer %p stopped.", 
+				(void *) timer);
+			continue;
+		}
 
-	    if (timer->start_time + timer->interval <= now) {
-	       debug("wap.wtp.timer", 0, "Timer %p has elapsed.", 
-                    (void *) timer);
+		if (timer->start_time + timer->interval <= now) {
+			debug("wap.wtp.timer", 0, "Timer %p has elapsed.", 
+				(void *) timer);
                
-	       timer->interval = 0;
-/*
- * Wtp_handle_event can call wtp_timer_destroy, which would free the memory 
- * allocated to timer. So we must store the pointer to the next element before
- * calling it.
- */
-               temp = timer->next;
-               mutex_unlock(timers.lock);
-               wtp_handle_event(timer->machine, timer->event);
-               mutex_lock(timers.lock);
-               timer = temp;
+			timer->interval = 0;
 
-	    } else {
-#if 0
-	       debug("wap.wtp.timer", 0, "Timer %p has not elapsed.", 
-                    (void *) timer);
-#endif
-               timer = timer->next;
-            }          
+			eventp = gw_malloc(sizeof(*eventp));
+			eventp->event = timer->event;
+			eventp->machine = timer->machine;
+			list_append(elapsed, eventp);
+		} else {
+			debug("wap.wtp.timer", 0, "Timer %p has not elapsed.", 
+				(void *) timer);
+		}          
 	}
 
-        mutex_unlock(timers.lock);
+	list_unlock(timers);
 
-        return;
+	/* This has to be done after the timers list is unlocked, because
+	 * wtp_handle_event can modify timers. */
+	while ((eventp = list_consume(elapsed))) {
+		wtp_handle_event(eventp->machine, eventp->event);
+		gw_free(eventp);
+	}
+	list_destroy(elapsed);
 }
 
 void wtp_timer_dump(WTPTimer *timer){
 
-     mutex_lock(timers.lock);
+	list_lock(timers);
 
-     debug("wap.wtp.timer", 0, "Timer dump starts");
-     debug("wap.wtp.timer", 0, "Starting time was %ld", timer->start_time);
-     debug("wap.wtp.timer", 0, "Checking interval was %ld", timer->interval);
-     debug("wap.wtp.timer", 0, "Timer belonged to a machine");
-     wtp_machine_dump(timer->machine);
-     debug("wap.wtp.timer", 0, "Timer event was");
-     wtp_event_dump(timer->event);
-     debug("wap.wtp.timer", 0, "Timer dump ends");
+	debug("wap.wtp.timer", 0, "Timer dump starts.");
+	debug("wap.wtp.timer", 0, "Starting time was %ld.", timer->start_time);
+	debug("wap.wtp.timer", 0, "Checking interval was %ld.",
+					timer->interval);
+	debug("wap.wtp.timer", 0, "Timer belonged to a machine:");
+	wtp_machine_dump(timer->machine);
+	debug("wap.wtp.timer", 0, "Timer event was:");
+	wtp_event_dump(timer->event);
+	debug("wap.wtp.timer", 0, "Timer dump ends.");
 
-     mutex_unlock(timers.lock); 
+	list_unlock(timers);
 }
 
 void wtp_timer_init(void){
-
-     timers.lock = mutex_create();
+	timers = list_create();
 }
-
