@@ -1,4 +1,7 @@
 2002-11-14  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smpp_pdu.c, wap/wtp_resp.c: fixed compiler warnings.
+
+2002-11-14  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added 'smsbox-id' directive and 'smsbox-route'
       group documentation
     * gw/bb_boxc.c, gw/bb_smscconn.c: added smsbox specific identified handling
