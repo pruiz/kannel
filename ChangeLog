@@ -1,5 +1,10 @@
 2000-04-11  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/socket.c, gwlib/socket.h: Added socket_query_blocking
+	and socket_set_blocking functions.  Untested.
+
+2000-04-11  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/thread.c: Made mutex_destroy silently handle a NULL mutex,
 	like other destroy functions.
 

@@ -33,6 +33,14 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port);
 /* Write string to socket. */
 int write_to_socket(int socket, char *str);
 
+/* Check if socket is in blocking or non-blocking mode.  Return -1 for
+ * error, 0 for nonblocking, 1 for blocking. */
+int socket_query_blocking(int socket);
+
+/* Set socket to blocking or non-blocking mode.  Return -1 for error,
+ * 0 for success. */
+int socket_set_blocking(int socket, int blocking);
+
 /* Read a line from a socket. Return -1 for error, 0 for EOF, or 1 for OK.
    Remove CRLF and LF from end of line. */
 int read_line(int fd, char *line, int max);

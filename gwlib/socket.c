@@ -6,6 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <sys/time.h>
 #include <sys/types.h>
@@ -14,8 +15,6 @@
 #include <netdb.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
-
-#include <config.h>
 
 #include "gwlib.h"
 
@@ -209,6 +208,40 @@ int write_to_socket(int socket, char *str) {
 	return 0;
 }
 
+
+int socket_query_blocking(int fd) {
+	int flags = fcntl(fd, F_GETFL);
+	if (flags < 0) {
+		warning(errno, "cannot tell if fd %d is blocking", fd);
+		return -1;
+	}
+
+	return (flags & O_NONBLOCK) != 0;
+}
+
+int socket_set_blocking(int fd, int blocking) {
+	int flags, newflags;
+
+	flags = fcntl(fd, F_GETFL);
+	if (flags < 0) {
+		error(errno, "cannot get flags for fd %d", fd);
+		return -1;
+	}
+
+	if (blocking) 
+		newflags = flags & ~O_NONBLOCK;
+	else
+		newflags = flags | O_NONBLOCK;
+
+	if (newflags != flags) {
+		if (fcntl(fd, F_SETFL, newflags) < 0) {
+			error(errno, "cannot set flags for fd %d", fd);
+			return -1;
+		}
+	}
+
+	return 0;
+}
 
 int read_line(int fd, char *line, int max) {
         char *start;
