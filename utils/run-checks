@@ -4,11 +4,12 @@
 # README for more info.
 #
 
-rm -f check.log
+rm -f check.log check.log.new
 for prog in "$@"
 do
 	echo -n "Check: $prog..."
-	if $prog 2> check.log.new && test ! -s check.log.new
+        $prog 2> check.log.new
+	if test ! -s check.log.new
 	then
 		echo " OK."
 	else

@@ -101,6 +101,7 @@ static Octstr *content_header = NULL;
 static Octstr *content_transfer_encoding = NULL;
 static Octstr *connection = NULL;
 static Octstr *delimiter = NULL;
+static Octstr *initiator_uri = NULL;
 
 enum { SSL_CONNECTION_OFF = 0,
        DEFAULT_NUMBER_OF_RELOGS = 2};
@@ -328,6 +329,11 @@ static List *push_headers_create(size_t content_len)
     add_connection_header(&push_headers, connection);
 
     octstr_destroy(mos);
+
+    /* add initiator... */
+    if (initiator_uri)
+	http_header_add(push_headers, "X-Wap-Initiator-URI",
+			octstr_get_cstr(initiator_uri));
 
     return push_headers;
 }
@@ -705,6 +711,9 @@ static void help(void)
     info(0, "supply a message header as a plain string. For instance"); 
     info(0, "-s x-wap-application-id:mms.ua equals -a ua. Default is");
     info(0, "x-wap-application-id:mms.ua.");
+    info(0, "-I string");
+    info(0, "supply an initiator header as a plain string. For instance"); 
+    info(0, "-I x-wap-application-id:http://foo.bar equals -I http://foo.bar");
     info(0, "-S string");
     info(0, "supply an additional part header (for push content) as a string."); 
     info(0, "For instance, -S Content-Language: en. Default no additional part");
@@ -760,7 +769,7 @@ int main(int argc, char **argv)
     gwlib_init();
     num_threads = 1;
 
-    while ((opt = getopt(argc, argv, "HhBbnEpv:qr:t:c:a:i:e:k:d:s:S:")) != EOF) {
+    while ((opt = getopt(argc, argv, "HhBbnEpv:qr:t:c:a:i:e:k:d:s:S:I:")) != EOF) {
         switch(opt) {
 	    case 'v':
 	        log_set_output_level(atoi(optarg));
@@ -886,7 +895,11 @@ int main(int argc, char **argv)
                 add_preamble = 1;
             break;
 
-	    case '?':
+            case 'I':
+                initiator_uri = octstr_create(optarg);
+		break;
+
+	case '?':
 	    default:
 	        error(0, "TEST_PPG: Invalid option %c", opt);
             help();

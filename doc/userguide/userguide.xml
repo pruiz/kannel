@@ -8299,6 +8299,14 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              Use <literal>string</literal> as a X-WAP-Application-Id
              header (You must supply whole header).
              </entry></row>
+
+             <row><entry><literal>-I</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign="bottom">
+             Use <literal>string</literal> as a X-WAP-Initiator-URI
+             header (You must supply whole header).
+             </entry></row>
+
              <row><entry><literal>-B</literal></entry>
              <entry><emphasis>boolean</emphasis></entry>
              <entry valign="bottom">
