@@ -1,3 +1,6 @@
+2003-08-08  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap-appl.c: some debug output harmonization. No logic change.
+
 2003-08-08  Alexander Malysh  <a.malysh@centrium.de>
     * gw/smsbox.c: more info about deprecated fields in the warning strings.
 
