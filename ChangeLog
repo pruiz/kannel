@@ -1,4 +1,7 @@
 2003-06-23  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_[fake|http|smasi].c: added 'throughput' delaying feature.
+
+2003-06-23  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smscconn[_p].[ch]: added 'throughput' MT message per sec. limitation
       to abstraction layer.
     * gw/smsc/smsc_emi2.c: moved 'throughput' from EMI2 specific directive to
