@@ -67,11 +67,7 @@
  * ================
  *
  * Design: Lars Wirzenius, Richard Braakman
- * Implementation: Sanna Seppänen
- *
- * Temporary implementation note: The prefix for this file is http for
- * now. When the old HTTP implementation in Kannel is retired, the prefix
- * will change to http.
+ * Implementation: Lars Wirzenius
  *
  * To do
  * =====
@@ -79,23 +75,6 @@
  * - add functions that make it easy to check a list of headers for
  *   a valid Basic Authentication and add an Authentication header
  *   given username and password
- * - how should form variables be encoded when doing a POST? how should
- *   http_post get them?
- *
- * Implementation plan
- * ===================
- *
- * done 1. http_get and everything it needs (header manipulation, at least).
- *    At first a very simple system, without proxy support or a socket
- *    pool.
- * done 2. Test harness for http_get.
- * done 3. Enough server things to get rid of old http.
- * done 4. Multiple requests per tcp socket, client and server end.
- * done 5. Proxy support for client end.
- * done? 6. POST client and server end.
- * 7. Basic auth.
- *
- * Stuff that hasn't been implemented is marked with #if LIW_TODO.
  */
 
 

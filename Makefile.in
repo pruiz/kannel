@@ -86,7 +86,7 @@ HTML_DSL=@HTML_DSL@
 TEX_DSL=@TEX_DSL@
 
 # Set this to something if you want all installed binaries to have a suffix.
-# Version number if common.
+# Version number is common.
 suffix = -$(VERSION)
 
 #
