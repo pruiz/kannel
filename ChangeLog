@@ -1,3 +1,8 @@
+Tue Mar 21 13:43:50 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wtp.c: Converted to use new list instead of (broken) old 
+	custom list.
+
 2000-03-21  Richard Braakman  <dark@wapit.com>
 
 	* utils/run_kannel_box.c: Make it remove its pidfile when it dies.

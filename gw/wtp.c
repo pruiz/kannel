@@ -49,23 +49,7 @@ enum {
  * wtp machines list
  */
 
-struct Machines {
-       WTPMachine *first;        /* pointer to the first machine in the machines 
-                                    list */
-       WTPMachine *list;         /* pointer to the last machine in the machines 
-                                    list */       
-       Mutex *lock;              /* global mutex inserting, updating and removing 
-                                    machines */   
-};
-
-typedef struct Machines Machines;                                      
-
-static Machines machines =
-{
-      NULL,
-      NULL,
-      NULL,
-};
+static List *machines = NULL;
 
 /*****************************************************************************
  *
@@ -227,19 +211,7 @@ void wtp_event_dump(WTPEvent *event) {
  * list is busy, just wait (fetching the page is the most time-consuming task).
  */
 void wtp_machine_mark_unused(WTPMachine *machine){
-
-     if (machines.list == NULL) {
-        panic(0, "WTP: the list is empty");
-        return;
-     }
-
-     mutex_lock(machines.lock);
-
      machine->in_use = 0;
-
-     mutex_unlock(machines.lock);
-
-     return;
 }
 
 /* 
@@ -572,7 +544,7 @@ unsigned long wtp_tid_next(void){
 
 
 void wtp_init(void) {
-     machines.lock = mutex_create();
+     machines = list_create();
 }
 
 /*****************************************************************************
@@ -609,43 +581,45 @@ static char *name_state(int s){
  * If the machines list is busy, just waits. We are interested only machines in use,
  * it is, having in_use-flag 1.
  */
+
+struct machine_pattern {
+	Octstr *source_address;
+	long source_port;
+	Octstr *destination_address;
+	long destination_port;
+	long tid;
+};
+
+static int is_wanted_machine(void *a, void *b) {
+	struct machine_pattern *pat;
+	WTPMachine *m;
+	
+	m = a;
+	pat = b;
+
+	return octstr_compare(m->source_address, pat->source_address) == 0 &&
+               m->source_port == pat->source_port && 
+               octstr_compare(m->destination_address, 
+	                      pat->destination_address) == 0 &&
+               m->destination_port == pat->destination_port &&
+	       m->tid == pat->tid && 
+	       m->in_use == 1;
+}
+
 static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
        Octstr *destination_address, long destination_port, long tid){
-
-           WTPMachine *this_machine;
-
-           mutex_lock(machines.lock);           
-
-           if (machines.list == NULL){
-              debug("wap.wtp", 0, "WTP: machine_find: list is empty");
-              mutex_unlock(machines.lock);
-              return NULL;
-           }
-
-           this_machine = machines.first;
-          
-           while (this_machine != NULL){
-   
-	         if ((octstr_compare(this_machine->source_address, 
-                                     source_address) == 0) &&
-                      this_machine->source_port == source_port && 
-                      (octstr_compare(this_machine->destination_address,
-                                      destination_address) == 0) &&
-                      this_machine->destination_port == destination_port &&
-		      this_machine->tid == tid && 
-                      this_machine->in_use == 1){
-
-                    mutex_unlock(machines.lock);
-                   
-                    return this_machine;
-                 
-		 } else {
-                    this_machine = this_machine->next;  
-                 }              
-          }
-
-          mutex_unlock(machines.lock); 
-          return this_machine;
+	struct machine_pattern pat;
+	WTPMachine *m;
+	
+	pat.source_address = source_address;
+	pat.source_port = source_port;
+	pat.destination_address = destination_address;
+	pat.destination_port = destination_port;
+	pat.tid = tid;
+	
+	m = list_search(machines, &pat, is_wanted_machine);
+	debug("wap.wtp", 0, "WTP: wtp_machine_find: %p", (void *) m);
+	return m;
 }
 
 /*
@@ -670,17 +644,7 @@ static WTPMachine *wtp_machine_create_empty(void){
 	#define LIST(name) machine->name = list_create()
         #include "wtp_machine-decl.h"
 
-	mutex_lock(machines.lock);
-
-	if (machines.list == NULL){
-	   machines.first = machine;
-           machines.list = machines.first;
-	} else
-	   machines.list->next = machine;
-
-        machines.list = machine;
-
-	mutex_unlock(machines.lock);
+	list_append(machines, machine);
 
         return machine;
 }
@@ -803,6 +767,7 @@ static void append_to_event_queue(WTPMachine *machine, WTPEvent *event) {
  * it from the queue. Return NULL if the queue was empty.
  */
 static WTPEvent *remove_from_event_queue(WTPMachine *machine) {
+#if 0
 	WTPEvent *event;
 	
 	list_lock(machine->event_queue);
@@ -815,6 +780,9 @@ static WTPEvent *remove_from_event_queue(WTPMachine *machine) {
 	list_unlock(machine->event_queue);
 
 	return event;
+#else
+	return list_extract_first(machine->event_queue);
+#endif
 }
 
 /*
@@ -874,6 +842,7 @@ static int message_type(char octet){
        if (gtr == 0 && ttr == 1)
           return transmission_trailer_segment;
        panic(0, "Following return is unnecessary but required by the compiler");
+       /* XXX the above panic is wrong and bad. --liw */
        return 0;
 }
 
@@ -972,7 +941,7 @@ WTPEvent *unpack_invoke(Msg *msg, WTPSegment *segments_list, long tid,
 
 /*
  * Returns event RcvErrorPDU, when error is illegal header, otherwise NULL.
- */
+2 */
 static WTPEvent *tell_about_error(int type, WTPEvent *event, Msg *msg, long tid){
 
        Address *address = NULL;
@@ -1185,6 +1154,7 @@ static WTPSegment *add_segment_to_message(long tid, Octstr *data, char position)
        }
 
        panic(0, "Following return is not necessary but is required by the compiler");
+       /* XXX the above panic is wrong. --liw */
        return NULL;      
 }
 
@@ -1312,5 +1282,3 @@ static void destroy_machine(WTPMachine *machine, WTPMachine *previous){
      return;
 }
 #endif
-
-/**********************************************************************************/
