@@ -117,8 +117,7 @@ static regex_t *black_list_regex;
 
 static long router_thread = -1;
 
-int route_incoming_to_boxc(Msg *sms);
-static int route_incoming_to_smsc(SMSCConn *conn, Msg *msg);
+static long route_incoming_to_smsc(SMSCConn *conn, Msg *msg);
 
 
 /*---------------------------------------------------------------------------
@@ -303,8 +302,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
      * actually bearerbox scope.
      * Scope: internal routing (to smsc-ids)
      */
-    if (!(rc = route_incoming_to_smsc(conn, copy))) {
-
+    if ((rc = route_incoming_to_smsc(conn, copy)) == -1) {
         /*
          * Now try to route the message to a specific smsbox
          * connection based on the existing msg->sms.boxc_id or
@@ -865,44 +863,60 @@ int smsc2_rout(Msg *msg)
     return 1;
 }
 
-static int route_incoming_to_smsc(SMSCConn *conn, Msg *msg)
+
+/*
+ * Try to reroute to another smsc.
+ * @return -1 if no rerouting info available; otherwise return code from smsc2_route.
+ */
+static long route_incoming_to_smsc(SMSCConn *conn, Msg *msg)
 {
+    Octstr *smsc;
+    
     /* sanity check */
     if (!conn || !msg)
-        return 0;
+        return -1;
+        
+    /* check for dlr rerouting */
+    if (!conn->reroute_dlr && (msg->sms.sms_type == report_mo || msg->sms.sms_type == report_mt))
+        return -1;
 
-    /* 
-     * Check if we have any "reroute" rules to obey. Which means msg gets 
+    /*
+     * Check if we have any "reroute" rules to obey. Which means msg gets
      * transported internally from MO to MT msg.
      */
     if (conn->reroute) {
-        /* drop into inbound queue again for routing */
-	    list_produce(outgoing_sms, msg);
-        return 1;
+        /* change message direction */
+        store_save_ack(msg, ack_success);
+        msg->sms.sms_type = mt_push;
+        store_save(msg);
+        /* drop into outbound queue again for routing */
+        return smsc2_rout(msg);
     }
     
-    if (conn->reroute_to_smsc != NULL) {
+    if (conn->reroute_to_smsc) {
+        /* change message direction */
+        store_save_ack(msg, ack_success);
+        msg->sms.sms_type = mt_push;
+        store_save(msg);
         /* apply directly to the given smsc-id for MT traffic */
         octstr_destroy(msg->sms.smsc_id);
         msg->sms.smsc_id = octstr_duplicate(conn->reroute_to_smsc);
-        list_produce(outgoing_sms, msg);
-        return 1;
-    } 
+        return smsc2_rout(msg);
+    }
     
-    if (conn->reroute_by_receiver != NULL && msg->sms.receiver != NULL) {
-        Octstr *smsc = NULL;
-        
+    if (conn->reroute_by_receiver && msg->sms.receiver &&
+                 (smsc = dict_get(conn->reroute_by_receiver, msg->sms.receiver))) {
+        /* change message direction */
+        store_save_ack(msg, ack_success);
+        msg->sms.sms_type = mt_push;
+        store_save(msg);
         /* route by receiver number */
         /* XXX implement wildcard matching too! */
-        if ((smsc = dict_get(conn->reroute_by_receiver, 
-                             msg->sms.receiver)) != NULL) {
-            octstr_destroy(msg->sms.smsc_id);
-            msg->sms.smsc_id = octstr_duplicate(smsc);
-            list_produce(outgoing_sms, msg);
-            return 1;
-        }
+        octstr_destroy(msg->sms.smsc_id);
+        msg->sms.smsc_id = octstr_duplicate(smsc);
+        return smsc2_rout(msg);
     }
 
-    return 0; /* did not route internally */
+    return -1; 
 }
 

@@ -1,4 +1,8 @@
 2004-06-28  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/smscconn.c, gw/smscconn_p.h, gwlib/cfg.def, doc/userguide/userguide.xml, gw/bb_smscconn.c:
+      made rerouting between SMSC's working properly.
+
+2004-06-28  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/bb_store.c, gw/bearerbox.h: added 'store_save_ack' in order to avoid code
       duplication.
 

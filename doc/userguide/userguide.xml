@@ -2435,6 +2435,14 @@ secret-nas = radius
 			to smsc-id B would look like: "A,111,222; B,333,444".
      </entry></row>
 
+    <row><entry><literal>reroute-dlr</literal></entry>
+      <entry><literal>boolean</literal></entry>
+      <entry valign="bottom">
+                       Indicate whether DLR's should be reroutet too, if one of above reroute
+                       rules are enabled. Please note, that SMSC-Module should support DLR sending.
+                       At time of writing none of SMSC-Module supports DLR sending.
+      </entry></row>
+
      <row><entry><literal>allowed-smsc-id-regex</literal></entry>
         <entry>POSIX regular expression</entry>
         <entry valign="bottom">

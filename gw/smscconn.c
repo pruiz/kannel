@@ -81,59 +81,58 @@
  * Add reroute information to the connection data. Where the priority
  * is in the order: reroute, reroute-smsc-id, reroute-receiver.
  */
-static void init_reroute(SMSCConn **conn, CfgGroup *grp)
+static void init_reroute(SMSCConn *conn, CfgGroup *grp)
 {
-    Octstr *rule = NULL;
-    unsigned int i, j;
+    Octstr *rule;
+    long i;
 
-    if (cfg_get_bool(&(*conn)->reroute, grp, octstr_imm("reroute")) != -1) {
+    if (cfg_get_bool(&conn->reroute_dlr, grp, octstr_imm("reroute-dlr")) == -1)
+        conn->reroute_dlr = 0;
+    info(0, "DLR rerouting for smsc id <%s> %s.", octstr_get_cstr(conn->id), (conn->reroute_dlr?"enabled":"disabled"));
+
+    if (cfg_get_bool(&conn->reroute, grp, octstr_imm("reroute")) != -1) {
         debug("smscconn",0,"Adding general internal routing for smsc id <%s>",
-              octstr_get_cstr((*conn)->id));
+              octstr_get_cstr(conn->id));
         return;
     }
 
-    if (((*conn)->reroute_to_smsc 
-         = cfg_get(grp, octstr_imm("reroute-smsc-id"))) != NULL) {
-
+    if ((conn->reroute_to_smsc = cfg_get(grp, octstr_imm("reroute-smsc-id"))) != NULL) {
          /* reroute all messages to a specific smsc-id */
          debug("smscconn",0,"Adding internal routing: smsc id <%s> to smsc id <%s>",
-               octstr_get_cstr((*conn)->id), octstr_get_cstr((*conn)->reroute_to_smsc));
+               octstr_get_cstr(conn->id), octstr_get_cstr(conn->reroute_to_smsc));
         return;
     }
 
     if ((rule = cfg_get(grp, octstr_imm("reroute-receiver"))) != NULL) {
-        List *routes = NULL;
+        List *routes;
 
         /* create hash disctionary for this smsc-id */
-        (*conn)->reroute_by_receiver = dict_create(10, (void(*)(void *)) octstr_destroy);
-        
+        conn->reroute_by_receiver = dict_create(100, (void(*)(void *)) octstr_destroy);
+
         routes = octstr_split(rule, octstr_imm(";"));
         for (i = 0; i < list_len(routes); i++) {
             Octstr *item = list_get(routes, i);
-            Octstr *smsc = NULL;
-            List *receivers = NULL;
-    
+            Octstr *smsc, *receiver;
+            List *receivers;
+
             /* first word is the smsc-id, all other are the receivers */
             receivers = octstr_split(item, octstr_imm(","));
-            smsc = list_len(receivers) > 0 ? 
-                octstr_duplicate(list_get(receivers, 0)) : NULL;
+            smsc = list_extract_first(receivers);
             if (smsc)
                 octstr_strip_blanks(smsc);
 
-            for (j = 0; j < list_len(receivers); j++) {
-                Octstr *n = list_get(receivers, j);
-
-                if (j != 0) {
-                    Octstr *r = octstr_duplicate(n);
-                    octstr_strip_blanks(r);
-                    debug("smscconn",0,"Adding internal routing for smsc id <%s>: "
+            while((receiver = list_extract_first(receivers))) {
+                octstr_strip_blanks(receiver);
+                debug("smscconn",0,"Adding internal routing for smsc id <%s>: "
                           "receiver <%s> to smsc id <%s>",
-                          octstr_get_cstr((*conn)->id), octstr_get_cstr(r), 
+                          octstr_get_cstr(conn->id), octstr_get_cstr(receiver),
                           octstr_get_cstr(smsc));
-
-                    dict_put((*conn)->reroute_by_receiver, r, octstr_duplicate(smsc));
-                    octstr_destroy(r);
-                }
+                if (!dict_put_once(conn->reroute_by_receiver, receiver, octstr_duplicate(smsc)))
+                    panic(0, "Could not set internal routing for smsc id <%s>: "
+                              "receiver <%s> to smsc id <%s>, because receiver has already routing entry!",
+                              octstr_get_cstr(conn->id), octstr_get_cstr(receiver),
+                              octstr_get_cstr(smsc));
+                octstr_destroy(receiver);
             }
             octstr_destroy(smsc);
             list_destroy(receivers, octstr_destroy_item);
@@ -220,7 +219,7 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
         conn->throughput = (int) throughput;
 
     /* configure the internal rerouting rules for this smsc id */
-    init_reroute(&conn, grp);
+    init_reroute(conn, grp);
 
     if (cfg_get_integer(&conn->log_level, grp, octstr_imm("log-level")) == -1)
         conn->log_level = 0;
