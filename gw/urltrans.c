@@ -46,7 +46,6 @@ struct URLTranslation {
     
     int args;
     int has_catchall_arg;
-    URLTranslation *next;
 };
 
 
@@ -54,7 +53,7 @@ struct URLTranslation {
  * Hold the list of all translations.
  */
 struct URLTranslationList {
-	URLTranslation *list;
+	List *list;
 };
 
 
@@ -86,19 +85,21 @@ URLTranslationList *urltrans_create(void) {
 	URLTranslationList *trans;
 	
 	trans = gw_malloc(sizeof(URLTranslationList));
-	trans->list = NULL;
+	trans->list = list_create();
 	return trans;
 }
 
 
 void urltrans_destroy(URLTranslationList *trans) {
+	URLTranslation *ot;
+	
 	if (trans == NULL)
 		return;
-	while (trans->list != NULL) {
-		URLTranslation *ot = trans->list;
-		trans->list = trans->list->next;
+	while (list_len(trans->list) > 0) {
+		ot = list_extract_first(trans->list);
 		destroy_onetrans(ot);
 	}
+	list_destroy(trans->list);
 	gw_free(trans);
 }
 
@@ -115,9 +116,7 @@ int urltrans_add_one(URLTranslationList *trans, ConfigGroup *grp)
     if (ot == NULL)
 	return -1;
 		
-    ot->next = trans->list;
-    trans->list = ot;
-
+    list_append(trans->list, ot);
     return 0;
 }
 
@@ -161,8 +160,10 @@ URLTranslation *urltrans_find_username(URLTranslationList *trans,
 				       char *name)
 {
     URLTranslation *t;
+    int i;
 
-    for (t = trans->list; t != NULL; t = t->next) {
+    for (i = 0; i < list_len(trans->list); ++i) {
+	t = list_get(trans->list, i);
 	if (t->type == TRANSTYPE_SENDSMS) {
 	    if (strcmp(name, t->username) == 0)
 		return t;
@@ -483,8 +484,6 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     ot->has_catchall_arg = (count_occurences(ot->pattern, "%r") > 0) ||
 	(count_occurences(ot->pattern, "%a") > 0);
 
-    ot->next = NULL;
-	
     return ot;
 error:
     error(errno, "Couldn't create a URLTranslation.");
@@ -521,7 +520,7 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 {
 	char *keyword;
 	char alias_keyword[1024];
-	int n;
+	int i, n;
 	URLTranslation *t;
 
 	n = list_len(words);
@@ -530,7 +529,9 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 	keyword = octstr_get_cstr(list_get(words, 0));
 	sprintf(alias_keyword, "%s;", keyword);
 
-	for (t = trans->list; t != NULL; t = t->next) {
+        t = NULL;
+	for (i = 0; i < list_len(trans->list); ++i) {
+	    t = list_get(trans->list, i);
 	    if (t->keyword != NULL) {
 		if (strcasecmp(keyword, t->keyword) == 0 ||
 		    str_case_str(t->aliases, alias_keyword) != NULL) {
@@ -550,8 +551,11 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 static URLTranslation *find_default_translation(URLTranslationList *trans)
 {
     URLTranslation *t;
+    int i;
 	
-    for (t = trans->list; t != NULL; t = t->next) {
+    t = NULL;
+    for (i = 0; i < list_len(trans->list); ++i) {
+	t = list_get(trans->list, i);
 	if (t->keyword != NULL && strcasecmp("default", t->keyword) == 0)
 	    break;
     }

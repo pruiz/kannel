@@ -1,3 +1,7 @@
+Tue Apr  4 14:57:55 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/urltrans.c: Changed to use List.
+
 Tue Apr  4 14:42:54 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/urltrans.c, gw/wsp_headers.c, gw/wsp_headers.h,
