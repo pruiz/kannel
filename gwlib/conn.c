@@ -27,8 +27,8 @@
 #ifdef HAVE_LIBSSL
 #include <openssl/ssl.h>
 
-SSL_CTX *global_ssl_context;
-SSL_CTX *global_server_ssl_context;
+SSL_CTX *global_ssl_context = NULL;
+SSL_CTX *global_server_ssl_context = NULL;
 X509 *ssl_public_cert;
 RSA *ssl_private_key;
 #endif /* HAVE_LIBSSL */
@@ -1092,7 +1092,8 @@ void conn_shutdown_ssl(void)
 {
     int c, maxlocks = CRYPTO_num_locks();
 
-    SSL_CTX_free(global_ssl_context);
+    if (global_ssl_context)
+        SSL_CTX_free(global_ssl_context);
 
     for (c=0;c<maxlocks;c++) 
         mutex_destroy(ssl_static_locks[c]);
