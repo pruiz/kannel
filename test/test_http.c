@@ -18,6 +18,8 @@ static long max_requests = 1;
 static char **urls = NULL;
 static int num_urls = 0;
 static int print_body = 1;
+static Octstr *auth_username = NULL;
+static Octstr *auth_password = NULL;
 
 static void client_thread(void *arg) {
 	int ret;
@@ -33,6 +35,8 @@ static void client_thread(void *arg) {
 	reqh = list_create();
 	sprintf(buf, "%ld", (long) gwthread_self());
 	http_header_add(reqh, "X-Thread", buf);
+	if (auth_username != NULL && auth_password != NULL)
+	    http_add_basic_auth(reqh, auth_username, auth_password);
 	while ((i = counter_increase(counter)) < max_requests) {
 		if ((i % 1000) == 0)
 			info(0, "Starting fetch %ld", i);
@@ -108,7 +112,7 @@ int main(int argc, char **argv) {
 	proxy_password = NULL;
 	num_threads = 0;
 
-	while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:a:")) != EOF) {
 		switch (opt) {
 		case 'v':
 			set_output_level(atoi(optarg));
@@ -145,6 +149,16 @@ int main(int argc, char **argv) {
 			while (p != NULL) {
 				list_append(exceptions, octstr_create(p));
 				p = strtok(NULL, ":");
+			}
+			break;
+
+    	    	case 'a':
+		    	p = strtok(optarg, ":");
+			if (p != NULL) {
+			    auth_username = octstr_create(p);
+			    p = strtok(NULL, "");
+			    if (p != NULL)
+			    	auth_password = octstr_create(p);
 			}
 			break;
 
@@ -192,6 +206,9 @@ int main(int argc, char **argv) {
 	info(0, "%ld requests in %f seconds, %f requests/s.",
 		max_requests, run_time, max_requests / run_time);
 	
+    	octstr_destroy(auth_username);
+    	octstr_destroy(auth_password);
+
 	gwlib_shutdown();
 
 	return 0;

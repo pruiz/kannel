@@ -2019,6 +2019,19 @@ int http_charset_accepted(List *headers, char *charset)
 }
 
 
+void http_add_basic_auth(List *headers, Octstr *username, Octstr *password)
+{
+    Octstr *os;
+    
+    os = octstr_format("%S:%S", username, password);
+    octstr_binary_to_base64(os);
+    octstr_strip_blanks(os);
+    octstr_insert(os, octstr_create_immutable("Basic "), 0);
+    http_header_add(headers, "Authorization", octstr_get_cstr(os));
+    octstr_destroy(os);
+}
+
+
 /***********************************************************************
  * Module initialization and shutdown.
  */

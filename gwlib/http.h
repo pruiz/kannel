@@ -418,4 +418,10 @@ void http_header_dump(List *headers);
 int http_charset_accepted(List *headers, char *charset);
 
 
+/*
+ * Add Basic Authentication headers headers.
+ */
+void http_add_basic_auth(List *headers, Octstr *username, Octstr *password);
+
+
 #endif

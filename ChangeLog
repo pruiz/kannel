@@ -1,5 +1,12 @@
 2000-11-14  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/http.[ch]: Wrote function http_add_basic_auth.
+	
+	* test/test_http.c: Added code to optionally use Basic Auth
+	with requests.
+
+2000-11-14  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/http.c: Report when connections to servers are opened
 	and when a proxy is being used (via debug).
 	
