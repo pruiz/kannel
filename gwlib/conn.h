@@ -83,23 +83,15 @@ int conn_wait(Connection *conn, double seconds);
  * and -1 if the connection is broken.
  */
 int conn_write(Connection *conn, Octstr *data);
-int conn_write_network_long(Connection *conn, long value);
 int conn_write_data(Connection *conn, unsigned char *data, long length);
 
 /* Input functions.  Each of these takes an open connection and
  * returns data if it's available, or NULL if it's not. */
 
-/* Return the data available, as long as there is at least 'minimum'
- * octets of it.
+/* Return exactly "length" octets of data, if at least that many
+ * are available.  Otherwise return NULL.
  */
-Octstr *conn_read(Connection *conn, int minimum);
-
-/* If there are at least 4 octets of data available, process them as
- * a network long, assign that long to the location pointed to by valp,
- * and return 1.  If there is not enough data, return 0.  If the
- * connection is broken, return -1.
- */
-int conn_read_network_long(Connection *conn, long *valp);
+Octstr *conn_read_fixed(Connection *conn, long length);
 
 /* If the input buffer starts with a full line of data (terminated by
  * LF or CR LF), then return that line as an Octstr and remove it

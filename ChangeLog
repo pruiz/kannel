@@ -1,5 +1,24 @@
 2000-05-04  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/conn.c, gwlib/conn.h: Got rid of network_long functions.
+	The interface is so awkward that it's just as easy for the caller
+	to fill a 4-octet buffer and provide that.
+
+	* gwlib/octstr.h, gwlib/octstr.c: Added functions octstr_write_data
+	and octstr_append, used by the new Connection code.
+
+	* gwlib/http2.c: Removed static octstr_append, superseded by the one
+	in the octstr module.
+
+	* gwlib/conn.c, gwlib/conn.h: conn_read interface was not useful.
+	Renamed to conn_read_fixed(), made it return exactly the number
+	of bytes specified.
+
+	* gwlib/conn.c code fleshed out some more, but several functions
+	still not implemented.
+
+2000-05-04  Richard Braakman  <dark@wapit.com>
+
 	* gw/wsp_http.c: In wsp_http_thread(), do not destroy charset
 	until after it is used by the converters.
 

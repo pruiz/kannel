@@ -258,6 +258,14 @@ int octstr_pretty_print(FILE *f, Octstr *ostr);
 int octstr_write_to_socket(int socket, Octstr *ostr);
 
 /*
+ * Write contents of octet string starting at 'from' to a
+ * non-blocking file descriptor.
+ * Return the number of octets written.  Return -1 for error.
+ * It is possible for this function to write only part of the octstr.
+ */
+long octstr_write_data(Octstr *ostr, int fd, long from);
+
+/*
  * Read available data from socket and return it as an octstr.
  * Block if no data is available.  If a lot of data is available,
  * read only up to an internal limit.
@@ -292,6 +300,12 @@ void octstr_insert_data(Octstr *ostr, long pos, char *data, long len);
  * Append characters from C array at the tail of an octet string.
  */
 void octstr_append_data(Octstr *ostr, char *data, long len);
+
+
+/*
+ * Append a second octstr to the first.
+ */
+void octstr_append(Octstr *ostr1, Octstr *ostr2);
 
 
 /*

@@ -41,7 +41,6 @@ static int proxy_used_for_host(Octstr *host);
  * Stuff that should be moved to other modules.
  */
 static int octstr_str_ncompare(Octstr *os, char *cstr);
-static void octstr_append(Octstr *to, Octstr *os);
 
 
 /*
@@ -383,14 +382,6 @@ static int octstr_str_ncompare(Octstr *os, char *cstr) {
 	if (octstr_get_char(os, i) < p[i])
 		return -1;
 	return 1;
-}
-
-
-/*
- * Append contents of `os' to `to'. `os' remains untouched.
- */
-static void octstr_append(Octstr *to, Octstr *os) {
-	octstr_append_data(to, octstr_get_cstr(os), octstr_len(os));
 }
 
 

@@ -802,6 +802,28 @@ int octstr_write_to_socket(int socket, Octstr *ostr) {
 }
 
 
+long octstr_write_data(Octstr *ostr, int fd, long from) {
+	long ret;
+
+	gw_assert(fd >= 0);
+	gw_assert(from >= 0);
+	seems_valid(ostr);
+
+	if (from >= ostr->len)
+		return 0;
+
+	ret = write(fd, ostr->data + from, ostr->len - from);
+
+	if (ret < 0) {
+		error(errno, "Error writing %ld octets to fd %d:",
+			ostr->len - from, fd);
+		return -1;
+	}
+
+	return ret;
+}
+
+	
 int octstr_append_from_socket(Octstr *ostr, int socket) {
 	unsigned char buf[4096];
 	int len;
@@ -938,6 +960,11 @@ void octstr_insert_data(Octstr *ostr, long pos, char *data, long len) {
 
 void octstr_append_data(Octstr *ostr, char *data, long len) {
 	octstr_insert_data(ostr, ostr->len, data, len);
+}
+
+
+void octstr_append(Octstr *ostr1, Octstr *ostr2) {
+	octstr_insert(ostr1, ostr2, ostr1->len);
 }
 
 
