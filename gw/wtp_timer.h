@@ -32,7 +32,7 @@ struct WTPTimer {
 	long start_time;
 	long interval;
 	WTPMachine *machine;
-	WTPEvent *event;
+	WAPEvent *event;
 };
 
 /*
@@ -62,7 +62,7 @@ void wtp_timer_destroy(WTPTimer *timer);
  * Start the timer.
  */
 void wtp_timer_start(WTPTimer *timer, long interval, WTPMachine *sm, 
-	WTPEvent *e);
+	WAPEvent *e);
 
 
 /*

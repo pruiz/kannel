@@ -310,7 +310,7 @@ int main(int argc, char **argv) {
 	int bbsocket;
 	int cf_index;
 	Msg *msg;
-	WTPEvent *wtp_event = NULL;
+	WAPEvent *wtp_event = NULL;
         WTPMachine *wtp_machine = NULL;
 
 	gwlib_init();
@@ -357,7 +357,7 @@ int main(int argc, char **argv) {
                    continue;
 		wtp_machine = wtp_machine_find_or_create(msg, wtp_event);
                 if (wtp_machine == NULL) {
-		   wtp_event_destroy(wtp_event);
+		   wap_event_destroy(wtp_event);
                    continue;
 		}
 	        wtp_handle_event(wtp_machine, wtp_event);

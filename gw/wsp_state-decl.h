@@ -23,13 +23,13 @@ ROW(NULL_STATE,
 	TR_Invoke_Ind,
 	e->tcl == 2 && wsp_deduce_pdu_type(e->user_data, 0) == Connect_PDU,
 	{
-		WSPEvent *new_event;
-		WTPEvent *wtp_event;
+		WAPEvent *new_event;
+		WAPEvent *wtp_event;
 
 		/* Send TR-Invoke.res to WTP */
-		wtp_event = wtp_event_create(TR_Invoke_Res);
+		wtp_event = wap_event_create(TR_Invoke_Res);
 		if (wtp_event == NULL)
-			panic(0, "wtp_event_create failed");
+			panic(0, "wap_event_create failed");
 		wtp_event->TR_Invoke_Res.tid = e->machine->tid;
 		wtp_event->TR_Invoke_Res.exit_info = NULL;
 		wtp_event->TR_Invoke_Res.exit_info_present = 0;
@@ -46,7 +46,7 @@ ROW(NULL_STATE,
 		 * don't have any such layer, we'll just send .res to
 		 * ourselves.
 		 */
-		new_event = wsp_event_create(S_Connect_Res);
+		new_event = wap_event_create(S_Connect_Res);
 		new_event->S_Connect_Res.machine = e->machine;
 		wsp_handle_event(sm, new_event);
 	},
@@ -66,7 +66,7 @@ ROW(NULL_STATE,
 	e->tcl == 2 && wsp_deduce_pdu_type(e->user_data, 0) == Get_PDU &&
 	sm->n_methods == 0 /* XXX check max from config */,
 	{
-		WSPEvent *new_event;
+		WAPEvent *new_event;
 		Octstr *url;
 		Octstr *headers;
 
@@ -93,7 +93,7 @@ ROW(CONNECTING,
 	S_Connect_Res,
 	1,
 	{
-		WTPEvent *wtp_event;
+		WAPEvent *wtp_event;
 		Octstr *pdu;
 		WSPMachine *sm2;
 		List *old_sessions;
@@ -121,7 +121,7 @@ ROW(CONNECTING,
 		pdu = make_connectreply_pdu(sm, sm->session_id);
 
 		/* Make a TR-Result.req event for WTP. */
-		wtp_event = wtp_event_create(TR_Result_Req);
+		wtp_event = wap_event_create(TR_Result_Req);
 		wtp_event->TR_Result_Req.tid = e->machine->tid;
 		wtp_event->TR_Result_Req.user_data = pdu;
 		wtp_handle_event(e->machine, wtp_event);
@@ -143,7 +143,7 @@ ROW(CONNECTED,
 	e->tcl == 2 && wsp_deduce_pdu_type(e->user_data, 0) == Get_PDU &&
 	sm->n_methods == 0 /* XXX check max from config */,
 	{
-		WSPEvent *new_event;
+		WAPEvent *new_event;
 		Octstr *url;
 		List *headers;
 
@@ -152,7 +152,7 @@ ROW(CONNECTED,
 		if (unpack_get_pdu(&url, &headers, e->user_data) == -1)
 			error(0, "Unpacking Get PDU failed, oops.");
 		else {
-			new_event = wsp_event_create(Release);
+			new_event = wap_event_create(Release);
 			new_event->Release.machine = e->machine;
 			new_event->Release.url = url;
 			new_event->Release.http_headers = headers;
@@ -167,7 +167,7 @@ ROW(CONNECTED,
 	e->tcl == 2 && wsp_deduce_pdu_type(e->user_data, 0) == Post_PDU &&
 	sm->n_methods == 0 /* XXX check max from config */,
 	{
-		WSPEvent *new_event;
+		WAPEvent *new_event;
 		Octstr *url;
 		Octstr *headers;
 
@@ -176,7 +176,7 @@ ROW(CONNECTED,
 		if (unpack_post_pdu(&url, &headers, e->user_data) == -1)
 			error(0, "Unpacking Post PDU failed, oops.");
 		else {
-			new_event = wsp_event_create(Release);
+			new_event = wap_event_create(Release);
 			new_event->Release.machine = e->machine;
 			new_event->Release.url = url;
 			wsp_handle_event(sm, new_event);
@@ -194,19 +194,19 @@ ROW(CONNECTED,
 	NULL_STATE)
 
 #if 0 /* XXX This doesn't work at all. It initializes the wrong fields
-	of the WTPEvent structure. I don't have the time to fix it yet.
+	of the WAPEvent structure. I don't have the time to fix it yet.
 	--liw */
 ROW(CONNECTED,
 	TR_Invoke_Ind,
 	wsp_deduce_pdu_type(e->user_data, 0) == Connect_PDU,
 	{
-		WTPEvent *wtp_event;
+		WAPEvent *wtp_event;
 		Octstr *pdu;
 		
 		/* Send Disconnect event to existing sessions for client. */
 
 		/* Make a TR-Result.req event for WTP. */
-		wtp_event = wtp_event_create(TRAbort);
+		wtp_event = wap_event_create(TRAbort);
 		wtp_event->TR_Result_Req.tid = e->machine->tid;
 		wtp_event->TR_Result_Req.user_data = pdu;
 		debug("wap.wsp", 0, "WSP: Try Killing WTP....");
@@ -220,7 +220,7 @@ ROW(CONNECTED,
 	TR_Invoke_Ind,
 	wsp_deduce_pdu_type(e->user_data, 0) == Resume_PDU,
 	{
-		WTPEvent *wtp_event;
+		WAPEvent *wtp_event;
 		Octstr *pdu;
 		
 		
@@ -236,7 +236,7 @@ ROW(CONNECTED,
 		pdu = make_connectreply_pdu(sm, sm->session_id);
 
 		/* Make a TR-Result.req event for WTP. */
-		wtp_event = wtp_event_create(TR_Result_Req);
+		wtp_event = wap_event_create(TR_Result_Req);
 		wtp_event->TR_Result_Req.tid = e->machine->tid;
 		wtp_event->TR_Result_Req.user_data = pdu;
 		debug("wap.wsp", 0, "WSP: Resuming ...sending TR-Result.req event to old WTPMachine");
@@ -250,7 +250,7 @@ ROW(HOLDING,
 	Release,
 	1,
 	{
-		WSPEvent *new_event;
+		WAPEvent *new_event;
 
 		/* 
 		 * This is where we start the HTTP fetch.
@@ -259,7 +259,7 @@ ROW(HOLDING,
 		 * it fails, then we have a problem.
 		 */
 		 
-		new_event = wsp_event_create(S_MethodInvoke_Res);
+		new_event = wap_event_create(S_MethodInvoke_Res);
 		new_event->S_MethodInvoke_Res.session = sm;
 		new_event->S_MethodInvoke_Res.machine = e->machine;
 		new_event->S_MethodInvoke_Res.url = octstr_duplicate(e->url);
@@ -276,10 +276,10 @@ ROW(REQUESTING,
 	S_MethodInvoke_Res,
 	1,
 	{
-		WTPEvent *wtp_event;
+		WAPEvent *wtp_event;
 		
 		/* Send TR-Invoke.res to WTP */
-		wtp_event = wtp_event_create(TR_Invoke_Res);
+		wtp_event = wap_event_create(TR_Invoke_Res);
 		wtp_event->TR_Invoke_Res.tid = e->machine->tid;
 		wtp_event->TR_Invoke_Res.exit_info = NULL;
 		wtp_event->TR_Invoke_Res.exit_info_present = 0;
@@ -291,10 +291,10 @@ ROW(PROCESSING,
 	S_MethodResult_Req,
 	1,
 	{
-		WTPEvent *wtp_event;
+		WAPEvent *wtp_event;
 
 		/* Send TR-Result.req to WTP */
-		wtp_event = wtp_event_create(TR_Result_Req);
+		wtp_event = wap_event_create(TR_Result_Req);
 		wtp_event->TR_Result_Req.tid = e->machine->tid;
 		wtp_event->TR_Result_Req.user_data = 
 			make_reply_pdu(e->status, e->response_type,

@@ -34,15 +34,15 @@ enum {
  * Prototypes of internal functions
  */
 
-static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event);
+static Msg *pack_result(Msg *msg, WTPMachine *machine, WAPEvent *event);
 
 static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason, 
-       WTPEvent *event);
+       WAPEvent *event);
 
 static Msg *pack_stop(Msg *msg, long abort_type, long abort_reason, int tid);
 
 static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine, 
-                     WTPEvent *event);
+                     WAPEvent *event);
 
 static Msg *pack_negative_ack(Msg *msg, int tid, int retransmission_status, 
        int segments_missing, WTPSegment *missing_segments);
@@ -119,7 +119,7 @@ static unsigned char insert_tpi_length(int tpi_length, unsigned char octet);
  *
  * Returns message to be sended, if succesfull, NULL otherwise. 
  */
-Msg *wtp_send_result(WTPMachine *machine, WTPEvent *event){
+Msg *wtp_send_result(WTPMachine *machine, WAPEvent *event){
 
      Msg *msg, *dup;
 
@@ -157,7 +157,7 @@ void wtp_resend_result(Msg *result, long rid){
  * type and reason from direct input. Handles all errors by itself.
  */
 void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine, 
-     WTPEvent *event){
+     WAPEvent *event){
 
      Msg *msg = NULL;
 
@@ -190,7 +190,7 @@ void wtp_do_not_start(long abort_type, long abort_reason, Address *address, int 
      return;
 }
 
-void wtp_send_ack(long ack_type, WTPMachine *machine, WTPEvent *event){
+void wtp_send_ack(long ack_type, WTPMachine *machine, WAPEvent *event){
 
      Msg *msg = NULL;
 
@@ -254,7 +254,7 @@ void wtp_send_address_dump(Address *address){
  * resending the packet) from WTP machine. Handles all errors by itself.
  */
 
-static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
+static Msg *pack_result(Msg *msg, WTPMachine *machine, WAPEvent *event){
 
     unsigned char octet;
     size_t pdu_len;
@@ -297,7 +297,7 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
  * errors by itself.
  */
 static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason, 
-       WTPEvent *event){
+       WAPEvent *event){
 
        unsigned char octet;
        size_t pdu_len;
@@ -355,7 +355,7 @@ static Msg *pack_stop(Msg *msg, long abort_type, long abort_reason, int tid){
 }
 
 static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine, 
-                     WTPEvent *event){
+                     WAPEvent *event){
 
     unsigned char octet;
     size_t pdu_len;

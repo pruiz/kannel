@@ -187,12 +187,12 @@ static void wsp_http_map_url(Octstr **osp)
 /* here comes the main processing */
 
 void wsp_http_thread(void *arg) {
-	WSPEvent *e;
+	WAPEvent *e;
 	int status;
 	int ret;
 	int i;
 	int converter_failed;
-	WSPEvent *event;
+	WAPEvent *event;
 	unsigned long body_size, client_SDU_size;
 	WTPMachine *wtp_sm;
 	WSPMachine *sm;
@@ -232,9 +232,12 @@ void wsp_http_thread(void *arg) {
 	event = arg;
 	wtp_sm = event->S_MethodInvoke_Res.machine;
 	sm = event->S_MethodInvoke_Res.session;
-	wsp_dispatch_event(wtp_sm, wsp_event_duplicate(event));
+	wsp_dispatch_event(wtp_sm, wap_event_duplicate(event));
 		/* XXX shouldn't this duplicate the event? */
 
+	debug("xxx", 0, "foo:");
+	wap_event_dump(event);
+	debug("xxx", 0, "foo end.");
 	wsp_http_map_url(&event->S_MethodInvoke_Res.url);
 	url = event->S_MethodInvoke_Res.url;
 
@@ -348,7 +351,7 @@ void wsp_http_thread(void *arg) {
 		type = octstr_create("text/plain");
 	}
 
-	e = wsp_event_create(S_MethodResult_Req);
+	e = wap_event_create(S_MethodResult_Req);
 	e->S_MethodResult_Req.server_transaction_id = 
 		event->S_MethodInvoke_Res.server_transaction_id;
 	e->S_MethodResult_Req.status = status;
@@ -359,7 +362,7 @@ void wsp_http_thread(void *arg) {
 
 	wsp_dispatch_event(event->S_MethodInvoke_Res.machine, e);
 
-	wsp_event_destroy(event);
+	wap_event_destroy(event);
 	octstr_destroy(type);
 }
 

@@ -38,36 +38,10 @@
 
 typedef struct WSPMachine WSPMachine;
 typedef struct WSPMethodMachine WSPMethodMachine;
-typedef struct WSPEvent WSPEvent;
 
 #include "gwlib/gwlib.h"
 #include "wtp.h"
-
-typedef enum {
-	#define WSP_EVENT(name, fields) name,
-	#define INTEGER
-	#define OCTSTR
-	#define WTP_MACHINE
-	#define SESSION_MACHINE
-	#define HTTPHEADER
-	#include "wsp_events-decl.h"
-	WSPEventType_count
-} WSPEventType;
-
-struct WSPEvent {
-	WSPEventType type;
-#if 0
-	WSPEvent *next;
-#endif
-
-	#define INTEGER(name) int name
-	#define OCTSTR(name) Octstr *name
-	#define WTP_MACHINE(name) WTPMachine *name
-	#define SESSION_MACHINE(name) WSPMachine *name
-	#define WSP_EVENT(name, fields) struct name fields name;
-	#define HTTPHEADER(name) List *name
-	#include "wsp_events-decl.h"
-};
+#include "wap-events.h"
 
 struct WSPMachine {
 	#define MUTEX(name) Mutex *name;
@@ -114,43 +88,10 @@ void wsp_shutdown(void);
 
 
 /*
- * Create a WSPEvent structure and initialize it to be empty. Return a
- * pointer to the structure or NULL if there was a failure.
- */
-WSPEvent *wsp_event_create(WSPEventType type);
-
-
-/*
- * Duplicate a WSPEvent structure.
- */
-WSPEvent *wsp_event_duplicate(WSPEvent *event);
-
-
-/*
- * Destroy a WSPEvent structure, including all its members.
- */
-void wsp_event_destroy(WSPEvent *event);
-
-
-/*
- * Return string giving name of event type.
- */
-char *wsp_event_name(WSPEventType type);
-
-
-/*
- * Output (with `debug' in wapitlib.h) the type of an event and all
- * the fields of that type.
- */
-void wsp_event_dump(WSPEvent *event);
-
-
-
-/*
  * Find the correct WSPMachine to send the event to, or create a new
  * one, and then make that machine handle the event.
  */
-void wsp_dispatch_event(WTPMachine *wtp_sm, WSPEvent *event);
+void wsp_dispatch_event(WTPMachine *wtp_sm, WAPEvent *event);
 
 
 /*
@@ -184,7 +125,7 @@ void wsp_machine_dump(WSPMachine *machine);
  * Feed a WSPEvent to a WSPMachine. Handle errors, do not report them to
  * the caller.
  */
-void wsp_handle_event(WSPMachine *machine, WSPEvent *event);
+void wsp_handle_event(WSPMachine *machine, WAPEvent *event);
 
 
 int wsp_deduce_pdu_type(Octstr *pdu, int connectionless);

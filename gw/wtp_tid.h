@@ -56,7 +56,7 @@ void wtp_tid_cache_shutdown(void);
  * of the test (ok, fail);
  */
 
-int wtp_tid_is_valid(WTPEvent *event, WTPMachine *machine);
+int wtp_tid_is_valid(WAPEvent *event, WTPMachine *machine);
 
 #endif
 

@@ -17,7 +17,7 @@
  * errors by itself. Returns message, if OK, else NULL. 
  */
 
-Msg *wtp_send_result(WTPMachine *machine, WTPEvent *event); 
+Msg *wtp_send_result(WTPMachine *machine, WAPEvent *event); 
 
 /*
  * Resend an already packed packet. Inputs are message to be resend and the value
@@ -31,7 +31,7 @@ void wtp_resend_result(Msg *result, long rid);
  * Handles all errors by itself.
  */
 void wtp_send_abort(long abort_type, long abort_reson, WTPMachine *machine, 
-     WTPEvent *event);
+     WAPEvent *event);
 
 /*
  * Same as previous, expect now abort type and reason, reply address and trans-
@@ -48,7 +48,7 @@ void wtp_do_not_start(long abort_type, long abort_reason, Address *address,
  * verification or not. Handles all errors by itself.
  */
 
-void wtp_send_ack(long ack_type, WTPMachine *machine, WTPEvent *event);
+void wtp_send_ack(long ack_type, WTPMachine *machine, WAPEvent *event);
 
 void wtp_send_group_ack(Address *address, int tid, int retransmission_status, 
                         unsigned char packet_sequence_number); 

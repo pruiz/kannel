@@ -1,3 +1,19 @@
+Fri May 26 19:05:09 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wap-events.[ch], gw/wap-events-def.h: Combined WTPEvent and
+	WSPEvent into a unified WAPEvent. This makes it slightly easier
+	to find the events (no need to wonder whether a TR-Invoke.ind is
+	a WTP or WSP event, for example), and reduces code duplication
+	a bit.
+	
+	* gw/wsp_events-decl.h, gw/wtp_events-decl.h: Removed.
+	
+	* Lots of files: WTPEvent and WSPEvent and related function calls
+	changed to WAPEvent and its functions.
+
+	* gwlib/http2.c: http2_header_dump works now even with a NULL
+	argument.
+
 2000-05-26  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/gwthread.h: New thread interface.  Encapsulates thread

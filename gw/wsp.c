@@ -57,8 +57,8 @@ static List *session_machines = NULL;
 static Counter *session_id_counter = NULL;
 
 
-static void append_to_event_queue(WSPMachine *machine, WSPEvent *event);
-static WSPEvent *remove_from_event_queue(WSPMachine *machine);
+static void append_to_event_queue(WSPMachine *machine, WAPEvent *event);
+static WAPEvent *remove_from_event_queue(WSPMachine *machine);
 
 static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data);
 static int unpack_get_pdu(Octstr **url, List **headers, Octstr *pdu);
@@ -103,102 +103,7 @@ void wsp_shutdown(void) {
 
 
 
-WSPEvent *wsp_event_create(WSPEventType type) {
-	WSPEvent *event;
-	
-	event = gw_malloc(sizeof(WSPEvent));
-	event->type = type;
-#if 0
-	event->next = NULL;
-#endif
-
-	#define INTEGER(name) p->name = 0
-	#define OCTSTR(name) p->name = NULL
-	#define WTP_MACHINE(name) p->name = NULL
-	#define SESSION_MACHINE(name) p->name = NULL
-	#define WSP_EVENT(name, fields) \
-		{ struct name *p = &event->name; fields }
-	#define HTTPHEADER(name) p->name = NULL
-	#include "wsp_events-decl.h"
-
-	return event;
-}
-
-
-WSPEvent *wsp_event_duplicate(WSPEvent *event) {
-	WSPEvent *copy;
-	
-	copy = gw_malloc(sizeof(WSPEvent));
-	copy->type = event->type;
-
-	#define INTEGER(name) p->name = q->name
-	#define OCTSTR(name) p->name = octstr_duplicate(q->name)
-	#define WTP_MACHINE(name) p->name = q->name
-	#define SESSION_MACHINE(name) p->name = q->name
-	#define WSP_EVENT(name, fields) \
-		{ struct name *p = &copy->name; \
-		  struct name *q = &event->name; \
-		  fields }
-	#define HTTPHEADER(name) p->name = http2_header_duplicate(q->name)
-	#include "wsp_events-decl.h"
-
-	return copy;
-}
-
-
-void wsp_event_destroy(WSPEvent *event) {
-	if (event != NULL) {
-		#define INTEGER(name) p->name = 0
-		#define OCTSTR(name) octstr_destroy(p->name)
-		#define WTP_MACHINE(name) p->name = NULL
-		#define SESSION_MACHINE(name) p->name = NULL
-		#define WSP_EVENT(name, fields) \
-			{ struct name *p = &event->name; fields }
-		#define HTTPHEADER(name) p->name = NULL
-		#include "wsp_events-decl.h"
-
-		gw_free(event);
-	}
-}
-
-char *wsp_event_name(WSPEventType type) {
-	switch (type) {
-	#define WSP_EVENT(name, fields) case name: return #name;
-	#define INTEGER
-	#define OCTSTR
-	#define WTP_MACHINE
-	#define SESSION_MACHINE
-	#define HTTPHEADER
-	#include "wsp_events-decl.h"
-	default:
-		return "unknown WSPEvent type";
-	}
-}
-
-
-void wsp_event_dump(WSPEvent *event) {
-	debug("wap.wsp", 0, "Dump of WSPEvent %p follows:", (void *) event);
-	debug("wap.wsp", 0, "  type: %s (%d)", wsp_event_name(event->type), event->type);
-	#define INTEGER(name) debug("wap.wsp", 0, "  %s.%s: %d", t, #name, p->name)
-	#define OCTSTR(name) \
-		debug("wap.wsp", 0, "  %s.%s:", t, #name); \
-		octstr_dump(p->name, 1)
-	#define WTP_MACHINE(name) \
-		debug("wap.wsp", 0, "  %s.%s at %p", t, #name, (void *) p->name)
-	#define SESSION_MACHINE(name) \
-		debug("wap.wsp", 0, "  %s.%s at %p", t, #name, (void *) p->name)
-	#define WSP_EVENT(tt, fields) \
-		if (tt == event->type) \
-			{ char *t = #tt; struct tt *p = &event->tt; fields }
-	#define HTTPHEADER(name) \
-		debug("wap.wsp", 0, "  %s.%s: HTTP headers:", t, #name); \
-		http2_header_dump(p->name)
-	#include "wsp_events-decl.h"
-	debug("wap.wsp", 0, "Dump of WSPEvent %p ends.", (void *) event);
-}
-
-
-void wsp_dispatch_event(WTPMachine *wtp_sm, WSPEvent *event) {
+void wsp_dispatch_event(WTPMachine *wtp_sm, WAPEvent *event) {
 	WSPMachine *sm;
 	
 	/* XXX this should probably be moved to a condition function --liw */
@@ -267,7 +172,7 @@ void wsp_machine_mark_unused(WSPMachine *p) {
 void wsp_machine_destroy(WSPMachine *p) {
 	list_delete_equal(session_machines, p);
 	while (list_len(p->event_queue) > 0)
-		wsp_event_destroy(list_extract_first(p->event_queue));
+		wap_event_destroy(list_extract_first(p->event_queue));
 	#define MUTEX(name) mutex_destroy(p->name);
 	#define INTEGER(name) p->name = 0;
 	#define OCTSTR(name) octstr_destroy(p->name);
@@ -310,7 +215,7 @@ void wsp_machine_dump(WSPMachine *machine) {
 }
 
 
-void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
+void wsp_handle_event(WSPMachine *sm, WAPEvent *current_event) {
 	/* 
 	 * If we're already handling events for this machine, add the
 	 * event to the queue.
@@ -324,7 +229,7 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 		debug("wap.wsp", 0, "WSP: machine %p, state %s, event %s",
 			(void *) sm,
 			wsp_state_to_string(sm->state), 
-			wsp_event_name(current_event->type));
+			wap_event_name(current_event->type));
 
 		#define STATE_NAME(name)
 		#define ROW(state_name, event, condition, action, next_state) \
@@ -342,10 +247,10 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 		#include "wsp_state-decl.h"
 		
 		if (current_event->type == TR_Invoke_Ind) {
-			WTPEvent *abort;
+			WAPEvent *abort;
 			
 			error(0, "WSP: Can't handle TR-Invoke.ind, aborting transaction.");
-			abort = wtp_event_create(TR_Abort_Req);
+			abort = wap_event_create(TR_Abort_Req);
 			abort->TR_Abort_Req.tid = 
 				current_event->TR_Invoke_Ind.machine->tid;
 			abort->TR_Abort_Req.abort_type = 0x01; /* USER */
@@ -357,11 +262,11 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 		} else {
 			error(0, "WSP: Can't handle event.");
 			debug("wap.wsp", 0, "WSP: The unhandled event:");
-			wsp_event_dump(current_event);
+			wap_event_dump(current_event);
 		}
 
 	end:
-		wsp_event_destroy(current_event);
+		wap_event_destroy(current_event);
 		current_event = remove_from_event_queue(sm);
 	} while (sm != NULL && current_event != NULL);
 
@@ -507,11 +412,11 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
     }
 }
 
-static void append_to_event_queue(WSPMachine *machine, WSPEvent *event) {
+static void append_to_event_queue(WSPMachine *machine, WAPEvent *event) {
 	list_append(machine->event_queue, event);
 }
 
-static WSPEvent *remove_from_event_queue(WSPMachine *machine) {
+static WAPEvent *remove_from_event_queue(WSPMachine *machine) {
 	return list_extract_first(machine->event_queue);
 }
 

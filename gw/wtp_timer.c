@@ -33,7 +33,7 @@ static List *timers;
  */
 struct pending_event {
 	WTPMachine *machine;
-	WTPEvent *event;
+	WAPEvent *event;
 };
 
 WTPTimer *wtp_timer_create(void) {
@@ -91,13 +91,13 @@ void wtp_timer_destroy(WTPTimer *timer) {
 
 	list_unlock(timers);
 	
-	wtp_event_destroy(timer->event);
+	wap_event_destroy(timer->event);
 	gw_free(timer);
 }
 
 
 void wtp_timer_start(WTPTimer *timer, long interval,
-			WTPMachine *sm, WTPEvent *e) {
+			WTPMachine *sm, WAPEvent *e) {
 
 	list_lock(timers);
 
@@ -120,7 +120,7 @@ void wtp_timer_stop(WTPTimer *timer) {
 	list_lock(timers);
 
 	timer->interval = 0;
-	wtp_event_destroy(timer->event);
+	wap_event_destroy(timer->event);
 	timer->event = NULL;
 #if 0
 	debug("wap.wtp.timer", 0, "Timer %p stopped at %ld.", (void *) timer,
@@ -204,7 +204,7 @@ void wtp_timer_dump(WTPTimer *timer){
 	debug("wap.wtp.timer", 0, "Timer belonged to a machine:");
 	wtp_machine_dump(timer->machine);
 	debug("wap.wtp.timer", 0, "Timer event was:");
-	wtp_event_dump(timer->event);
+	wap_event_dump(timer->event);
 	debug("wap.wtp.timer", 0, "Timer dump ends.");
 
 	list_unlock(timers);

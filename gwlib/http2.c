@@ -585,10 +585,9 @@ void http2_header_dump(List *headers) {
 	long i;
 	
 	gwlib_assert_init();
-	gw_assert(headers != NULL);
 
 	debug("gwlib.http2", 0, "Dumping HTTP2 headers:");
-	for (i = 0; i < list_len(headers); ++i)
+	for (i = 0; headers != NULL && i < list_len(headers); ++i)
 		octstr_dump(list_get(headers, i), 1);
 	debug("gwlib.http2", 0, "End of dump.");
 }

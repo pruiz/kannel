@@ -6,7 +6,6 @@
 #define WTP_H
 
 typedef struct WTPMachine WTPMachine;
-typedef struct WTPEvent WTPEvent;
 typedef struct Address Address;
 typedef struct WTPSegment WTPSegment;
 typedef struct Tid_cache Tid_cache;
@@ -19,6 +18,7 @@ typedef struct Tid_cache Tid_cache;
 #include "gwlib/gwlib.h"
 #include "msg.h"
 #include "wsp.h"
+#include "wap-events.h"
 #include "wtp_timer.h"
 #include "wtp_send.h"
 #include "wtp_tid.h"
@@ -79,15 +79,6 @@ enum {
 };
 
 /*
- * See file wtp_events-decl.h for comments. 
- */
-enum event_name {
-     #define EVENT(name, field) name,
-     #include "wtp_events-decl.h"
-     event_name_count
-};
-
-/*
  * See file wtp_state-decl.h for comments. Note that in this case macro ROW is 
  * defined to produce an empty string.
  */
@@ -109,27 +100,13 @@ struct WTPMachine {
         #define MSG(name) Msg *name
         #define OCTSTR(name) Octstr *name
         #define QUEUE(name) WTPEvent *name
-        #define WSP_EVENT(name) WSPEvent *name
+        #define WSP_EVENT(name) WAPEvent *name
 	#define TIMER(name) WTPTimer *name
         #define MUTEX(name) Mutex *name
         #define NEXT(name) struct WTPMachine *name
         #define MACHINE(field) field
 	#define LIST(name) List *name
         #include "wtp_machine-decl.h"
-};
-
-/*
- * See file wtp_events-decl.h for comments. Again, we define one macro for every
- * type.
- */
-struct WTPEvent {
-    enum event_name type;
-    WTPEvent *next;
-
-    #define INTEGER(name) long name
-    #define OCTSTR(name) Octstr *name
-    #define EVENT(name, field) struct name field name;
-    #include "wtp_events-decl.h"
 };
 
 /*
@@ -165,25 +142,6 @@ void wtp_init(void);
 void wtp_shutdown(void);
 
 /*
- * Create a WTPEvent structure and initialize it to be empty. Return a
- * pointer to the structure or NULL if there was a failure.
- */
-WTPEvent *wtp_event_create(enum event_name type);
-
-
-/*
- * Destroy a WTPEvent structure, including all its members.
- */
-void wtp_event_destroy(WTPEvent *event);
-
-
-/*
- * Output the type of an event and all the fields of that type.
- */
-void wtp_event_dump(WTPEvent *event);
-
-
-/*
  * Parse a `wdp_datagram' message object (of type Msg, see msg.h) and
  * create a corresponding WTPEvent object. Also check that the datagram
  * is syntactically valid. If there is a problem (memory allocation or
@@ -191,7 +149,7 @@ void wtp_event_dump(WTPEvent *event);
  * packet to the phone. Otherwise return a pointer to the event structure
  * that has been created.
  */
-WTPEvent *wtp_unpack_wdp_datagram(Msg *msg);
+WAPEvent *wtp_unpack_wdp_datagram(Msg *msg);
 
 
 /*
@@ -211,7 +169,7 @@ WTPMachine *wtp_machine_create(Octstr *srcaddr, long srcport,
  * data structure. If the event was RcvAck or RcvAbort, the event is ignored.
  * If the event is RcvErrorPDU, new machine is created.
  */
-WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event);
+WTPMachine *wtp_machine_find_or_create(Msg *msg, WAPEvent *event);
 
 
 /*
@@ -240,7 +198,7 @@ void wtp_machine_dump(WTPMachine  *machine);
  * report them to the caller. Generate a pointer to WSP event, if an indication 
  * or a confirmation is required.
  */
-void wtp_handle_event(WTPMachine *machine, WTPEvent *event);
+void wtp_handle_event(WTPMachine *machine, WAPEvent *event);
 
 /*
  * Generates a new transaction handle by incrementing the previous one by one.

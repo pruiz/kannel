@@ -60,7 +60,7 @@ void wtp_tid_cache_shutdown(void) {
  * on. It is not, if the iniator is not yet cached. If iniator is cached, the
  * received tid is stored.
  */
-int wtp_tid_is_valid(WTPEvent *event, WTPMachine *machine){
+int wtp_tid_is_valid(WAPEvent *event, WTPMachine *machine){
 
     long rcv_tid = -1,
          last_tid = -1;

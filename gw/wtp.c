@@ -83,7 +83,7 @@ struct Segments {
        WTPSegment *ackd;             /* List of segments acknowledged */
        WTPSegment *missing;          /* Missing segments list */
        WTPSegment *first;            /* pointer to first of the segments assembled*/
-       WTPEvent *event;              /* event perhaps containing a segment (instead of a 
+       WAPEvent *event;              /* event perhaps containing a segment (instead of a 
                                         complete message*/
        int negative_ack_sent;
        Mutex *lock;                  /* Lock for serialising reassembly operations */
@@ -141,11 +141,7 @@ static WTPSegment *make_missing_segments_list(Msg *msg,
  * Print a wtp event or a wtp machine state name as a string.
  */
 
-static unsigned char *name_event(int name);
-
 static unsigned char *name_state(int name);
-
-static WTPEvent *duplicate_event(WTPEvent *event);
 
 /*
  * Really removes a WTP state machine. Used only by the garbage collection. 
@@ -167,12 +163,12 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
  * Packs a wsp event. Fetches flags and user data from a wtp event. Address 
  * five-tuple and tid are fields of the wtp machine.
  */
-static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event, 
+static WAPEvent *pack_wsp_event(WAPEventName wsp_name, WAPEvent *wtp_event, 
          WTPMachine *machine);
 
-static void append_to_event_queue(WTPMachine *machine, WTPEvent *event);
+static void append_to_event_queue(WTPMachine *machine, WAPEvent *event);
  
-static WTPEvent *remove_from_event_queue(WTPMachine *machine);
+static WAPEvent *remove_from_event_queue(WTPMachine *machine);
 
 static long deduce_tid(Msg *msg);
 #ifdef todo
@@ -184,12 +180,12 @@ static int message_type(unsigned char octet);
 
 static int protocol_version(unsigned char octet);
 
-static WTPEvent *unpack_ack(long tid, unsigned char octet);
+static WAPEvent *unpack_ack(long tid, unsigned char octet);
 
-static WTPEvent *unpack_abort(Msg *msg, long tid, unsigned char first_octet, 
+static WAPEvent *unpack_abort(Msg *msg, long tid, unsigned char first_octet, 
                               unsigned char fourth_octet);
 
-static WTPEvent *unpack_invoke(Msg *msg, WTPSegment *segment, long tid, 
+static WAPEvent *unpack_invoke(Msg *msg, WTPSegment *segment, long tid, 
        unsigned char first_octet, unsigned char fourth_octet);
 
 static Octstr *unpack_segmented_invoke(Msg *msg, WTPSegment *segment, long tid, 
@@ -197,17 +193,17 @@ static Octstr *unpack_segmented_invoke(Msg *msg, WTPSegment *segment, long tid,
 
 static WTPSegment *unpack_negative_ack(Msg *msg, unsigned char octet);
 
-static WTPEvent *tell_about_error(int type, WTPEvent *event, Msg *msg, long tid);
+static WAPEvent *tell_about_error(int type, WAPEvent *event, Msg *msg, long tid);
 #ifdef todo
 static int tpi_short(unsigned char octet);
 #endif
-static WTPEvent *unpack_invoke_flags(WTPEvent *event, Msg *msg, long tid, 
+static WAPEvent *unpack_invoke_flags(WAPEvent *event, Msg *msg, long tid, 
        unsigned char first_octet, unsigned char fourth_octet);
 
 static WTPSegment *add_segment_to_message(long tid, Octstr *data, unsigned 
                                           char position);
 
-static int first_segment(WTPEvent *event);
+static int first_segment(WAPEvent *event);
 
 static Octstr *concatenate_message(long tid, WTPSegment *segments_list);
 
@@ -217,52 +213,6 @@ static Address *deduce_reply_address(Msg *msg);
  *
  * EXTERNAL FUNCTIONS:
  */
-
-WTPEvent *wtp_event_create(enum event_name type) {
-	WTPEvent *event;
-	
-	event = gw_malloc(sizeof(WTPEvent));
-
-	event->type = type;
-	event->next = NULL;
-	
-	#define INTEGER(name) p->name = 0
-	#define OCTSTR(name) p->name = NULL
-	#define EVENT(type, field) { struct type *p = &event->type; field } 
-	#include "wtp_events-decl.h"
-        return event;
-}
-
-/*
- * Note: We must use p everywhere (including events having only integer 
- * fields), otherwise we get a compiler warning. 
- */
-void wtp_event_destroy(WTPEvent *event) {
-
-	if (event != NULL) {
-	   #define INTEGER(name) p->name = 0
-	   #define OCTSTR(name) octstr_destroy(p->name)
-	   #define EVENT(type, field) { struct type *p = &event->type; field }
-	   #include "wtp_events-decl.h"
-        }
-
-	gw_free(event);
-}
-
-void wtp_event_dump(WTPEvent *event) {
-
-  	debug("wap.wtp", 0, "WTPEvent %p:", (void *) event); 
-	debug("wap.wtp", 0, "  type = %s", name_event(event->type));
-	#define INTEGER(name) debug("wap.wtp", 0, "  %s.%s: %ld", t, #name, p->name)
-	#define OCTSTR(name) \
-		debug("wap.wtp", 0, "  %s.%s:", t, #name); \
-		octstr_dump(p->name, 1)
-	#define EVENT(tt, field) \
-		if (tt == event->type) \
-			{ char *t = #tt; struct tt *p = &event->tt; field } 
-	#include "wtp_events-decl.h"
-  	debug("wap.wtp", 0, "WTPEvent %p ends.", (void *) event); 
-}
 
 /*
  * Mark a WTP state machine unused. Normal functions do not remove machines, just 
@@ -310,7 +260,7 @@ void wtp_machine_dump(WTPMachine *machine){
                    msg_dump(machine->name, 1)
            #define WSP_EVENT(name) \
                    debug("wap.wtp", 0, "WSP event %s:", #name); \
-                   wsp_event_dump(machine->name)
+                   wap_event_dump(machine->name)
            #define ENUM(name) debug("wap.wtp", 0, "  state = %s.", name_state(machine->name))
 	   #define OCTSTR(name)  \
 	   	debug("wap.wtp", 0, "  Octstr field %s :", #name); \
@@ -337,7 +287,7 @@ void wtp_machine_dump(WTPMachine *machine){
 }
 
 
-WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
+WTPMachine *wtp_machine_find_or_create(Msg *msg, WAPEvent *event){
 
           WTPMachine *machine = NULL;
           long tid;
@@ -363,7 +313,7 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
 
                   default:
                        debug("wap.wtp", 0, "WTP: machine_find_or_create: unhandled event"); 
-                       wtp_event_dump(event);
+                       wap_event_dump(event);
                        return NULL;
                   break;
 	   }
@@ -400,7 +350,7 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
                  
 	              default:
                            debug("wap.wtp", 0, "WTP: machine_find_or_create: unhandled event");
-                           wtp_event_dump(event);
+                           wap_event_dump(event);
                            return NULL;
                       break;
               }
@@ -423,9 +373,9 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
  * Return event, when we have a single message or have reassembled whole the message; NULL, 
  * when we have a segment inside of a segmented message.
  */
-WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
+WAPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
-         WTPEvent *event = NULL;
+         WAPEvent *event = NULL;
 
          unsigned char first_octet,
                   pdu_type;
@@ -479,8 +429,8 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
                      if (first_segment(event)) {
 			gw_assert(segments->event == NULL);
-                        segments->event = duplicate_event(event);
-                        wtp_event_destroy(event);
+                        segments->event = wap_event_duplicate(event);
+                        wap_event_destroy(event);
                         mutex_unlock(segments->lock);
                         return NULL;
 
@@ -521,7 +471,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                               msg, segments->list, tid, first_octet, fourth_octet);
 
                     if (message_type(first_octet) == transmission_trailer_segment){
-                       event = duplicate_event(segments->event);
+                       event = wap_event_duplicate(segments->event);
                        mutex_unlock(segments->lock);
                        segment_lists_destroy(segments);
                        segments = segment_lists_create_empty();
@@ -556,10 +506,10 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
  * report them to the caller. Note: Do not put {}s of the else block inside
  * the macro definition (it ends with a line without a backlash). 
  */
-void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
-     WSPEventType current_primitive;
-     WSPEvent *wsp_event = NULL;
-     WTPEvent *timer_event = NULL;
+void wtp_handle_event(WTPMachine *machine, WAPEvent *event){
+     WAPEventName current_primitive;
+     WAPEvent *wsp_event = NULL;
+     WAPEvent *timer_event = NULL;
 
 /* 
  * If we're already handling events for this machine, add the event to the 
@@ -574,7 +524,7 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 	  debug("wap.wtp", 0, "WTP: machine %p, state %s, event %s.", 
 	  	(void *) machine, 
 		name_state(machine->state), 
-		name_event(event->type));
+		wap_event_name(event->type));
 
 	  #define STATE_NAME(state)
 	  #define ROW(wtp_state, event_type, condition, action, next_state) \
@@ -588,12 +538,12 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 		  {
 		     error(0, "WTP: handle_event: unhandled event!");
 		     debug("wap.wtp", 0, "WTP: handle_event: Unhandled event was:");
-		     wtp_event_dump(event);
+		     wap_event_dump(event);
                      return;
 		  }
 
 	  if (event != NULL) {
-	     wtp_event_destroy(event);  
+	     wap_event_destroy(event);  
           }
 
           event = remove_from_event_queue(machine);
@@ -639,17 +589,6 @@ void wtp_shutdown(void) {
  *
  * Give the name of an event in a readable form. 
  */
-
-static unsigned char *name_event(int s){
-
-       switch (s){
-              #define EVENT(type, field) case type: return #type;
-              #include "wtp_events-decl.h"
-              default:
-                      return "unknown event";
-       }
- }
-
 
 static unsigned char *name_state(int s){
 
@@ -802,7 +741,7 @@ static void segment_lists_dump(Segments *segments){
        debug("wap.wtp", 0, "first segment was");
        segment_dump(segments->first);         
        debug("wap.wtp", 0, "event to be added");
-       wtp_event_dump(segments->event);                   
+       wap_event_dump(segments->event);                   
        debug("wap.wtp", 0, "have we send a negative acknowledgement %d", segments->negative_ack_sent); 
        if (mutex_try_lock(segments->lock) == -1)
            debug("wap.wtp", 0, "segments list locked");
@@ -818,7 +757,7 @@ static void segment_lists_destroy(Segments *segments){
        segment_destroy(segments->ackd);    
        segment_destroy(segments->missing); 
        segment_destroy(segments->first);            
-       wtp_event_destroy(segments->event);
+       wap_event_destroy(segments->event);
        mutex_destroy(segments->lock);   
        gw_free(segments);   
 }
@@ -860,10 +799,10 @@ static void segment_destroy(WTPSegment *segment){
  * Packs a wsp event. Fetches flags and user data from a wtp event. Address 
  * five-tuple and tid are fields of the wtp machine.
  */
-static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event, 
+static WAPEvent *pack_wsp_event(WAPEventName wsp_name, WAPEvent *wtp_event, 
          WTPMachine *machine){
 
-         WSPEvent *event = wsp_event_create(wsp_name);
+         WAPEvent *event = wap_event_create(wsp_name);
 
          switch (wsp_name){
                 
@@ -910,7 +849,7 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
 /*
  * Append an event to the event queue of a WTPMachine. 
  */
-static void append_to_event_queue(WTPMachine *machine, WTPEvent *event) {
+static void append_to_event_queue(WTPMachine *machine, WAPEvent *event) {
 
        list_append(machine->event_queue, event);
 }
@@ -920,7 +859,7 @@ static void append_to_event_queue(WTPMachine *machine, WTPEvent *event) {
  * Return the first event from the event queue of a WTPMachine, and remove
  * it from the queue, NULL if the queue was empty.
  */
-static WTPEvent *remove_from_event_queue(WTPMachine *machine) {
+static WAPEvent *remove_from_event_queue(WTPMachine *machine) {
 
        return list_extract_first(machine->event_queue);
 }
@@ -991,12 +930,12 @@ static int protocol_version(unsigned char octet){
        return octet>>6&3;
 }
 
-static WTPEvent *unpack_ack(long tid, unsigned char octet){
+static WAPEvent *unpack_ack(long tid, unsigned char octet){
 
-      WTPEvent *event = NULL;
+      WAPEvent *event = NULL;
       unsigned char this_octet;
 
-      event = wtp_event_create(RcvAck);
+      event = wap_event_create(RcvAck);
 
       event->RcvAck.tid = tid;
       this_octet = octet;
@@ -1007,13 +946,13 @@ static WTPEvent *unpack_ack(long tid, unsigned char octet){
       return event;
 }
 
-WTPEvent *unpack_abort(Msg *msg, long tid, unsigned char first_octet, unsigned 
+WAPEvent *unpack_abort(Msg *msg, long tid, unsigned char first_octet, unsigned 
                        char fourth_octet){
 
-         WTPEvent *event = NULL;
+         WAPEvent *event = NULL;
          unsigned char abort_type;      
 
-         event = wtp_event_create(RcvAbort);
+         event = wap_event_create(RcvAbort);
 
          abort_type = first_octet&7;
 /*
@@ -1033,17 +972,17 @@ WTPEvent *unpack_abort(Msg *msg, long tid, unsigned char first_octet, unsigned
 }
 
 /*
- * Fields of an unsegmented invoke are transferred to WTPEvent having type 
+ * Fields of an unsegmented invoke are transferred to WAPEvent having type 
  * RcvInvoke.
  *
  * A segmented message is indicated by a cleared ttr flag. This causes the protocol
  * to add the received segment to the message identified by tid. Invoke message has 
  * an implicit sequence number 0 (it being the first segment).
  */
-WTPEvent *unpack_invoke(Msg *msg, WTPSegment *segments_list, long tid, 
+WAPEvent *unpack_invoke(Msg *msg, WTPSegment *segments_list, long tid, 
                         unsigned char first_octet, unsigned char fourth_octet){
 
-         WTPEvent *event = NULL;
+         WAPEvent *event = NULL;
 
          if (protocol_version(fourth_octet) != CURRENT){
             event = tell_about_error(wrong_version, event, msg, tid);
@@ -1051,7 +990,7 @@ WTPEvent *unpack_invoke(Msg *msg, WTPSegment *segments_list, long tid,
             return event;
          }
 
-         event = wtp_event_create(RcvInvoke);
+         event = wap_event_create(RcvInvoke);
 /*
  * First invoke message includes all event flags, even when we are receiving a 
  * segmented message. So we first fetch event flags, and then handle user_data 
@@ -1091,7 +1030,7 @@ WTPEvent *unpack_invoke(Msg *msg, WTPSegment *segments_list, long tid,
 /*
  * Returns event RcvErrorPDU, when the error is an illegal header, otherwise NULL.
  */
-static WTPEvent *tell_about_error(int type, WTPEvent *event, Msg *msg, long tid){
+static WAPEvent *tell_about_error(int type, WAPEvent *event, Msg *msg, long tid){
 
        Address *address = NULL;
 
@@ -1123,21 +1062,21 @@ static WTPEvent *tell_about_error(int type, WTPEvent *event, Msg *msg, long tid)
              case illegal_header:
                   error(0, "WTP: Illegal header structure");
                   gw_free(event);
-                  event = wtp_event_create(RcvErrorPDU);
+                  event = wap_event_create(RcvErrorPDU);
                   event->RcvErrorPDU.tid = tid;
              return event;
 
              case pdu_too_short_error:
                   error(0, "WTP: PDU too short");
                   gw_free(event);
-                  event = wtp_event_create(RcvErrorPDU);
+                  event = wap_event_create(RcvErrorPDU);
                   event->RcvErrorPDU.tid = tid;
              return event;
 
              case no_datagram: 
                   error(0, "WTP: No datagram received");
                   gw_free(event);
-                  event = wtp_event_create(RcvErrorPDU);
+                  event = wap_event_create(RcvErrorPDU);
                   event->RcvErrorPDU.tid = tid;
              return event;
 
@@ -1256,7 +1195,7 @@ static int tpi_short(unsigned char octet){
 }
 #endif
 
-static WTPEvent *unpack_invoke_flags(WTPEvent *event, Msg *msg, long tid, 
+static WAPEvent *unpack_invoke_flags(WAPEvent *event, Msg *msg, long tid, 
                 unsigned char first_octet, unsigned char fourth_octet){
 
          unsigned char this_octet,
@@ -1314,11 +1253,11 @@ static WTPSegment *add_segment_to_message(long tid, Octstr *data, unsigned char
 }
 
 /*
- * If there is no data yet collected at userdata field of WTPEvent, we have the first
+ * If there is no data yet collected at userdata field of WAPEvent, we have the first
  * segment. Of course, this not a general function for deciding whether some segment 
  * of a message is the first one. 
  */
-static int first_segment(WTPEvent *event){
+static int first_segment(WAPEvent *event){
 
        int first_segment = 0;
 
@@ -1422,30 +1361,6 @@ static WTPSegment *make_missing_segments_list(Msg *msg,
        return missing_segments;
 }
 
-/*
- * Duplicates an event data structure, allocating the required memory.
- *
- * Returns an event when successfull, NULL otherwise.
- */
-static WTPEvent *duplicate_event(WTPEvent *original){
-
-       WTPEvent *copy = NULL;
-
-       copy = wtp_event_create(original->type);
-       if (copy == NULL)
-          return NULL;
-
-       #define INTEGER(name) p->name = q->name
-       #define OCTSTR(name) \
-               if (q->name == NULL) p->name = NULL; \
-               else p->name = octstr_copy(q->name, 0, octstr_len(q->name))
-       #define EVENT(type, field) { \
-                    struct type *p = &copy->type; \
-                    struct type *q = &original->type; \
-                    field }
-       #include "wtp_events-decl.h"
-       return copy;
-}
 #if 0
 static int machine_not_in_use(void *a, void *b){
 
