@@ -1,3 +1,10 @@
+2000-01-25    <rpr@rpr.wapit.com>
+
+	* gw/urltrans.c: added some missing initializations which caused
+	sendsms to crash
+
+	* gw/wsp_headers.s: added some code to fool code reviewer
+
 Tue Jan 25 17:27:53 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/http.c: Commented out gw_free calls for error situations,

@@ -379,7 +379,9 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     ot->keyword = ot->aliases = ot->pattern = NULL;
     ot->prefix = ot->suffix = ot->faked_sender = NULL;
     ot->split_chars = ot->split_suffix = NULL;
+    ot->footer = ot->header = NULL;
     ot->username = ot->password = NULL;
+    ot->omit_empty = 0;
     
     keyword = config_get(grp, "keyword");
     aliases = config_get(grp, "aliases");

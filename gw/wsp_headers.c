@@ -4,8 +4,12 @@
  * Kalle Marjola <rpr@wapit.com>
  */
 
+#include <string.h>
+
+
 #include "gwlib.h"
 #include "wsp.h"
+
 
 /*
  * some predefined well-known assignments
@@ -349,7 +353,7 @@ HTTPHeader *unpack_headers(Octstr *headers)
     HTTPHeader *first, *prev, *val;
     
     off = 0;
-    first = NULL;
+    first = prev = NULL;
     
     while(off < octstr_len(headers)) {
 	byte = octstr_get_char(headers, off);

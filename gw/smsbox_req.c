@@ -143,7 +143,7 @@ error:
 static int do_sending(Msg *msg)
 {
     if (sms_max_length < 0) return -1;
-    
+
     if (sender(msg) < 0)
 	goto error;
 
@@ -465,7 +465,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
     int hl, fl;
     char *h, *f;
     static char *empty = "<Empty reply from service provider>";
-    
+
     max_msgs = urltrans_max_messages(trans);
 
     if(msg_type(msg) != smart_sms) {
@@ -489,6 +489,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
 
     h = urltrans_header(trans);
     f = urltrans_footer(trans);
+
     if (h != NULL) hl = strlen(h); else hl = 0;
     if (f != NULL) fl = strlen(f); else fl = 0;
 
@@ -501,6 +502,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	 * truncate if the message is too long one (this only happens if
 	 *  max_msgs == 1)
 	 */
+
 	if (octstr_len(msg->smart_sms.msgdata)+fl > sms_max_length)
 	    octstr_truncate(msg->smart_sms.msgdata, sms_max_length - fl);
 	    
@@ -516,6 +518,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	 * we have a message that is longer than what fits in one
 	 * SMS message and we are allowed to split it
 	 */
+
 	if (do_split_send(msg, max_msgs, trans) < 0)
 	    goto error;
     }
