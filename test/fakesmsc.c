@@ -152,12 +152,14 @@ int main(int argc, char **argv) {
 	if (max_send == 0 || num_sent < max_send) {
 	    write_line(client, choose_message(msgs, num_msgs));
 	    ++num_sent;
-	    debug("send", 0, "fakesmsc: sent message %d", num_sent);
+	    if (num_sent == max_send)
+		info(0, "fakesmsc: sent message %d", num_sent);
+	    else
+		debug("send", 0, "fakesmsc: sent message %d", num_sent);
 	    last_sent_at = get_current_time();
 	    if (first_sent_at == 0)
 		first_sent_at = last_sent_at;
 	}
-
 	do {
 	    FD_ZERO(&readset);
 	    FD_SET(client, &readset);

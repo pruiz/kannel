@@ -1,3 +1,8 @@
+2000-10-05  Kalle Marjola  <rpr@wapit.com>
+
+	* test/fakesmsc.c: use info level to inform that all messages have
+	been sent.
+
 2000-10-05  Richard Braakman  <dark@wapit.com>
 
 	* wmlscript/*: Reformatted.
