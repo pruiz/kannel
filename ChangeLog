@@ -1,3 +1,8 @@
+Fri Jun  9 07:44:25 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wtp.c, gw/wtp_state-decl.h: Beginning the breaking up of
+	pack_wsp_event function into smaller, more well defined ones.
+
 Fri Jun  9 06:48:42 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wap-appl.c: Combine headers for HTTP request after the

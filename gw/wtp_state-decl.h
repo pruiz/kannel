@@ -90,9 +90,8 @@ ROW(LISTEN,
     {
      machine->u_ack = event->u.RcvInvoke.up_flag;
      machine->tcl = event->u.RcvInvoke.tcl;
-     current_primitive = TR_Invoke_Ind;
 
-     wsp_event = pack_wsp_event(current_primitive, event, machine);
+     wsp_event = create_tr_invoke_ind(machine, event->u.RcvInvoke.user_data);
      wsp_session_dispatch_event(wsp_event);
 
      timer_event = wap_event_create(TimerTO_A);
@@ -113,8 +112,7 @@ ROW(LISTEN,
     
      machine->u_ack = event->u.RcvInvoke.up_flag;
      machine->tcl = event->u.RcvInvoke.tcl;
-     current_primitive = TR_Invoke_Ind;
-     machine->invoke_indication = pack_wsp_event(current_primitive, event, machine);
+     machine->invoke_indication = create_tr_invoke_ind(machine, event->u.RcvInvoke.user_data);
      debug("wap.wtp", 0, "WTP_STATE: generating invoke indication, tid being invalid");
     },
     TIDOK_WAIT)
@@ -126,8 +124,7 @@ ROW(LISTEN,
     RcvInvoke,
     event->u.RcvInvoke.tcl == 0,
     {
-     current_primitive = TR_Invoke_Ind;
-     wsp_event = pack_wsp_event(current_primitive, event, machine);
+     wsp_event = create_tr_invoke_ind(machine, event->u.RcvInvoke.user_data);
      wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
@@ -137,14 +134,6 @@ ROW(LISTEN,
     1,
     { 
      wtp_send_abort(PROVIDER, PROTOERR, machine, event);
-    },
-    LISTEN)
-
-ROW(LISTEN,
-    TR_Abort_Req,
-    1,
-    {
-     wtp_send_abort(USER, PROTOERR, machine, event);
     },
     LISTEN)
 

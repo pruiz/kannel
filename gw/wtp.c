@@ -122,8 +122,8 @@ static enum { limbo, running, terminating } run_status = limbo;
 static List *queue = NULL;
 
 static void main_thread(void *);
-
 static WTPMachine *find_machine_using_mid(long mid);
+static WAPEvent *create_tr_invoke_ind(WTPMachine *sm, Octstr *user_data);
 
 
 /******************************************************************************
@@ -534,6 +534,26 @@ WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl) {
 	return machine;
 } 
 
+
+/*
+ * Create a TR-Invoke.ind event to be sent to WSP.
+ */
+static WAPEvent *create_tr_invoke_ind(WTPMachine *sm, Octstr *user_data) {
+	WAPEvent *event;
+	
+	event = wap_event_create(TR_Invoke_Ind);
+	event->u.TR_Invoke_Ind.ack_type = sm->u_ack;
+	event->u.TR_Invoke_Ind.user_data = octstr_duplicate(user_data);
+	event->u.TR_Invoke_Ind.tcl = sm->tcl;
+	event->u.TR_Invoke_Ind.wsp_tid = wtp_tid_next();
+	event->u.TR_Invoke_Ind.tid = sm->tid;
+	event->u.TR_Invoke_Ind.mid = sm->mid;
+	event->u.TR_Invoke_Ind.addr_tuple = 
+		wap_addr_tuple_duplicate(sm->addr_tuple);
+	return event;
+}
+
+
 /*
  * Packs a wsp event. Fetches flags and user data from a wtp event. Address 
  * five-tuple and tid are fields of the wtp machine.
@@ -545,19 +565,6 @@ static WAPEvent *pack_wsp_event(WAPEventName wsp_name, WAPEvent *wtp_event,
 
          switch (wsp_name){
                 
-	        case TR_Invoke_Ind:
-		     gw_assert(wtp_event->type == RcvInvoke);
-                     event->u.TR_Invoke_Ind.ack_type = machine->u_ack;
-                     event->u.TR_Invoke_Ind.user_data =
-                            octstr_duplicate(wtp_event->u.RcvInvoke.user_data);
-                     event->u.TR_Invoke_Ind.tcl = wtp_event->u.RcvInvoke.tcl;
-                     event->u.TR_Invoke_Ind.wsp_tid = wtp_tid_next();
-                     event->u.TR_Invoke_Ind.tid = machine->tid;
-                     event->u.TR_Invoke_Ind.mid = machine->mid;
-                     event->u.TR_Invoke_Ind.addr_tuple = 
-		     	wap_addr_tuple_duplicate(machine->addr_tuple);
-                break;
-
 	        case TR_Invoke_Cnf:
 		     gw_assert(wtp_event->type == TR_Invoke_Ind);
                      event->u.TR_Invoke_Cnf.wsp_tid =
