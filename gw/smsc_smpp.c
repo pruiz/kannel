@@ -233,6 +233,11 @@ static long smpp_status_to_smscconn_failure_reason(long status)
 static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg) 
 { 
     SMPP_PDU *pdu; 
+    char buffer[16];
+    Octstr *relation_UTC_time;
+    struct tm gmtime, localtime, tm;
+    int gwqdiff;
+
     pdu = smpp_pdu_create(submit_sm,  
     	    	    	  counter_increase(smpp->message_id_counter)); 
     	    	    
@@ -307,10 +312,48 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
         if (pdu->u.submit_sm.data_coding == 0 ) /* no reencoding for unicode! */ 
             charset_latin1_to_gsm(pdu->u.submit_sm.short_message);		 
     } 
+
+    /*
+     * check for validity and defered settings
+     */
+    if (msg->sms.validity || msg->sms.deferred) {
+
+        /* work out 1/4 hour difference between local time and UTC/GMT */
+        gmtime = gw_gmtime(time(NULL));
+        localtime = gw_localtime(time(NULL));
+        if (localtime.tm_hour >= gmtime.tm_hour) {
+            relation_UTC_time = octstr_create("+");
+            gwqdiff = (localtime.tm_hour - gmtime.tm_hour) * 4;
+        } else {
+            relation_UTC_time = octstr_create("-");
+            gwqdiff = (gmtime.tm_hour - localtime.tm_hour) * 4;
+        }
+
+        if (msg->sms.validity) {
+            tm = gw_localtime(time(NULL) + msg->sms.validity * 60);
+            sprintf(buffer, "%02d%02d%02d%02d%02d%02d0%01d%02d%1s",
+                    tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
+                    tm.tm_hour, tm.tm_min, tm.tm_sec,
+                    0, gwqdiff, relation_UTC_time );
+            pdu->u.submit_sm.validity_period = octstr_create(buffer);
+        }
+
+        if (msg->sms.deferred) {
+            tm = gw_localtime(time(NULL) + msg->sms.deferred * 60);
+            sprintf(buffer, "%02d%02d%02d%02d%02d%02d0%01d%02d%1s",
+                    tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
+                    tm.tm_hour, tm.tm_min, tm.tm_sec,
+                    0, gwqdiff, relation_UTC_time );
+            pdu->u.submit_sm.schedule_delivery_time = octstr_create(buffer);
+        }
+    }
+
     /* ask for the delivery reports if needed */ 
     if (msg->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL)) 
         pdu->u.submit_sm.registered_delivery = 1;  
- 
+
+    octstr_destroy(relation_UTC_time);
+
     return pdu; 
 } 
  
