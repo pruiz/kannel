@@ -1,3 +1,9 @@
+2001-04-12  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/smsc_smpp.c: Make it optional to dump or not dump SMPP pdus
+	that are received or sent. Not dumping them reduces "make bench"
+	log file sizes by about half a gigabyte.
+
 2001-04-12  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/urltrans.c (urltrans_get_pattern): fixed that %s cannot cause

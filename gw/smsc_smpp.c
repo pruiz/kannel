@@ -18,6 +18,27 @@
 #include "smpp_pdu.h"
 
 
+/*
+ * Select these based on whether you want to dump SMPP PDUs as they are 
+ # sent and received or not.
+ */
+
+#if 1
+/* This version doesn't dump. */
+static void dump_pdu(const char *msg, SMPP_PDU *pdu)
+{
+}
+#else
+/* This version does dump. */
+static void dump_pdu(const char *msg, SMPP_PDU *pdu)
+{
+    debug("bb.sms.smpp", 0, "SMPP: %s", msg);
+    smpp_pdu_dump(pdu);
+}
+#endif
+
+
+
 /***********************************************************************
  * Implementation of the actual SMPP protocol: reading and writing
  * PDUs in the correct order.
@@ -232,8 +253,7 @@ static void read_thread(void *pointer)
 	    break;
 
     	while ((ret = read_pdu(conn, &len, &pdu)) == 1) {
-    	    debug("bb.sms.smpp", 0, "SMPP: Got %s PDU.", pdu->type_name);
-    	    smpp_pdu_dump(pdu);
+	    dump_pdu("Got PDU:", pdu);
 	    switch (pdu->type) {
 	    case deliver_sm:
     	    	/* XXX UDH */
@@ -341,8 +361,7 @@ static void write_thread(void *arg)
 	conn_write(smpp->transmission, os);
 	octstr_destroy(os);
 
-    	debug("bb.sms.smpp", 0, "SMPP: Sent PDU:");
-	smpp_pdu_dump(pdu);
+    	dump_pdu("Sent PDU:", pdu);
 	smpp_pdu_destroy(pdu);
     }
 }
@@ -386,7 +405,7 @@ static int smpp_reconnect(SMPP *smpp)
     bind->u.bind_transmitter.password = octstr_duplicate(smpp->password);
     bind->u.bind_transmitter.system_type = octstr_create("VMA");
     bind->u.bind_transmitter.interface_version = 0x34;
-    smpp_pdu_dump(bind);
+    dump_pdu("Sending:", bind);
     os = smpp_pdu_pack(bind);
     conn_write(smpp->transmission, os);
     smpp_pdu_destroy(bind);
@@ -398,7 +417,7 @@ static int smpp_reconnect(SMPP *smpp)
     bind->u.bind_receiver.password = octstr_duplicate(smpp->password);
     bind->u.bind_receiver.system_type = octstr_create("VMA");
     bind->u.bind_receiver.interface_version = 0x34;
-    smpp_pdu_dump(bind);
+    dump_pdu("Sending:", bind);
     os = smpp_pdu_pack(bind);
     conn_write(smpp->reception, os);
     smpp_pdu_destroy(bind);
