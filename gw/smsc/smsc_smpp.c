@@ -62,6 +62,8 @@ static void dump_pdu(const char *msg, Octstr *id, SMPP_PDU *pdu)
  */
 
 enum {
+    SMPP_ESME_RINVPASWD   = 0x0000000E,
+    SMPP_ESME_RINVSYSID   = 0x0000000F,
     SMPP_ESME_RMSGQFUL    = 0x00000014,
     SMPP_ESME_RTHROTTLED  = 0x00000058,
     SMPP_ESME_RX_T_APPN   = 0x00000064,
@@ -955,6 +957,9 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 		              "code 0x%08lx.",
                       octstr_get_cstr(smpp->conn->id),
                       pdu->u.bind_transmitter_resp.command_status); 
+                if (pdu->u.bind_transmitter_resp.command_status == SMPP_ESME_RINVSYSID ||
+                    pdu->u.bind_transmitter_resp.command_status == SMPP_ESME_RINVPASWD)
+                    smpp->quitting = 1;
             } else { 
                 *pending_submits = 0; 
                 smpp->conn->status = SMSCCONN_ACTIVE; 
@@ -969,6 +974,9 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                       "code 0x%08lx.",
                       octstr_get_cstr(smpp->conn->id),
                       pdu->u.bind_transceiver_resp.command_status); 
+                if (pdu->u.bind_transceiver_resp.command_status == SMPP_ESME_RINVSYSID ||
+                    pdu->u.bind_transceiver_resp.command_status == SMPP_ESME_RINVPASWD)
+                    smpp->quitting = 1;
             } else { 
                 *pending_submits = 0; 
                 smpp->conn->status = SMSCCONN_ACTIVE; 
@@ -983,6 +991,9 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                       "code 0x%08lx.", 
                       octstr_get_cstr(smpp->conn->id),
                       pdu->u.bind_receiver_resp.command_status); 
+                if (pdu->u.bind_receiver_resp.command_status == SMPP_ESME_RINVSYSID ||
+                    pdu->u.bind_receiver_resp.command_status == SMPP_ESME_RINVPASWD)
+                    smpp->quitting = 1;
             } else { 
                 /* set only resceive status if no transmitt is bind */
                 if (smpp->conn->status != SMSCCONN_ACTIVE) {
