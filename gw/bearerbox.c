@@ -60,6 +60,16 @@ List *isolated;
 
 volatile sig_atomic_t bb_status;
 
+/* 
+ * Flags for main thread to check what is to do.
+ */
+enum {
+    BB_LOGREOPEN = 1,
+    BB_CHECKLEAKS = 2
+};
+/* Here we will set above flags */
+static volatile sig_atomic_t bb_todo = 0;
+
 /* own global variables */
 
 static Mutex *status_mutex;
@@ -99,28 +109,19 @@ static void signal_handler(int signum)
     switch (signum) {
         case SIGINT:
         case SIGTERM:
-
-            mutex_lock(status_mutex);
             if (bb_status != BB_SHUTDOWN && bb_status != BB_DEAD) {
-                warning(0, "Killing signal received, shutting down...");
-                mutex_unlock(status_mutex);
-                bb_shutdown();
-                return;
-            } 
+                bb_status = BB_SHUTDOWN;
+            }
             else if (bb_status == BB_SHUTDOWN) {
-                warning(0, "New killing signal received, killing neverthless...");
                 bb_status = BB_DEAD;
             }
             else if (bb_status == BB_DEAD) {
-                panic(0, "cannot die by its own will");
+                panic(0, "Cannot die by its own will");
             }
-            mutex_unlock(status_mutex);
             break;
 
         case SIGHUP:
-            warning(0, "SIGHUP received, catching and re-opening logs");
-            log_reopen();
-            alog_reopen();
+            bb_todo |= BB_LOGREOPEN;
             break;
         
         /* 
@@ -128,9 +129,8 @@ static void signal_handler(int signum)
          * platforms that's reserved by the pthread support. 
          */
         case SIGQUIT:
-	       warning(0, "SIGQUIT received, reporting memory usage.");
-	       gw_check_leaks();
-	       break;
+           bb_todo |= BB_CHECKLEAKS;  
+           break;
     }
 }
 
@@ -513,8 +513,44 @@ int main(int argc, char **argv)
 	list_remove_producer(isolated);
     }
 
-    /* wait until flow threads exit */
+    while(bb_status != BB_SHUTDOWN && bb_status != BB_DEAD && list_producer_count(flow_threads) > 0) {
+        /* debug("bb", 0, "Main Thread: going to sleep."); */
+        /*
+         * Not infinite sleep here, because we should notice
+         * when all "flow threads" are dead and shutting bearerbox
+         * down.
+         * XXX if all "flow threads" call gwthread_wakeup(MAIN_THREAD_ID),
+         * we can enter infinite sleep then.
+         */
+        gwthread_sleep(10.0);
+        /* debug("bb", 0, "Main Thread: woken up."); */
 
+        if (bb_todo == 0) {
+            debug("bb", 0, "Main Thread: Nothing todo.");
+            continue;
+        }
+
+        if (bb_todo & BB_LOGREOPEN) {
+            warning(0, "SIGHUP received, catching and re-opening logs");
+            log_reopen();
+            alog_reopen();
+            bb_todo = bb_todo & ~BB_LOGREOPEN;
+        }
+
+        if (bb_todo & BB_CHECKLEAKS) {
+            warning(0, "SIGQUIT received, reporting memory usage.");
+	    gw_check_leaks();
+            bb_todo = bb_todo & ~BB_CHECKLEAKS;
+        }
+    }
+
+    if (bb_status == BB_SHUTDOWN || bb_status == BB_DEAD)
+        warning(0, "Killing signal or HTTP admin command received, shutting down...");
+
+    /* call shutdown */
+    bb_shutdown();
+
+    /* wait until flow threads exit */
     while(list_consume(flow_threads)!=NULL)
 	;
 

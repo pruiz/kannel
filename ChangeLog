@@ -1,4 +1,9 @@
 2003-10-26  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bearerbox.c: applied patch that should fix bearerbox signal handling.
+      Otherwise is a deadlock possible while signal arrived. For more details see
+      Msg-Id: <200310130000.34055.a.malysh@centrium.de>
+
+2003-10-26  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_http.c: cleanup and harmonization of http admin commands.
 
 2003-10-24  Alexander Malysh  <a.malysh@centrium.de>
