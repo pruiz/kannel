@@ -335,6 +335,12 @@ int octstr_str_compare(const Octstr *ostr1, const char *str);
 
 
 /*
+ * Like octstr_str_compare, except compares bytes without case sensitifity.
+ */
+int octstr_str_case_compare(const Octstr *ostr1, const char *str);
+ 
+
+/*
  * Same as octstr_str_compare, but comparing is done only up to n bytes.
  */
 int octstr_str_ncompare(const Octstr *ostr, const char *str, long n);

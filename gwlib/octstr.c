@@ -955,6 +955,19 @@ int octstr_str_compare(const Octstr *ostr, const char *str)
 }
 
 
+int octstr_str_case_compare(const Octstr *ostr, const char *str)
+{
+    seems_valid(ostr);
+
+    if (str == NULL)
+        return -1;
+    if (ostr->data == NULL)
+       return strcasecmp("", str);
+
+    return strcasecmp(ostr->data, str);
+}
+
+
 int octstr_str_ncompare(const Octstr *ostr, const char *str, long n)
 {
     seems_valid(ostr);

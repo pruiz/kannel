@@ -1,4 +1,9 @@
 2005-03-21  Stipe Tolj  <stolj@wapme.de> 
+    * gwlib/octstr.{ch]: adding octstr_str_case_compare() to allow insensitive
+      string compare with const char. Patch by Fred <fred@5thfinger.com>.
+      [Msg-Id: <020f01c51acf$98f1c0e0$0401a8c0@FRED4>]
+      
+2005-03-21  Stipe Tolj  <stolj@wapme.de> 
     * gwlib/http.c: fixing server and client thread state variables in order to 
       make modules usable in other code where http_init() and http_shutdown()
       is called several times. Thanks to Paul for pointing to this.
