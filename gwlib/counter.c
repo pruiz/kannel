@@ -43,7 +43,6 @@ long counter_increase(Counter *counter)
         counter->n = 0;
     else
         ++counter->n;
-    debug("dark", 0, "counter_increase(%p) to %ld.", counter, counter->n);
     mutex_unlock(counter->lock);
     return ret;
 }
@@ -54,7 +53,6 @@ long counter_value(Counter *counter)
 
     mutex_lock(counter->lock);
     ret = counter->n;
-    debug("dark", 0, "querying counter %p (%ld).", counter, counter->n);
     mutex_unlock(counter->lock);
     return ret;
 }
@@ -67,7 +65,6 @@ long counter_decrease(Counter *counter)
     ret = counter->n;
     if (counter->n > 0)
         --counter->n;
-    debug("dark", 0, "counter_decrease(%p) to %ld.", counter, counter->n);
     mutex_unlock(counter->lock);
     return ret;
 }
@@ -79,7 +76,6 @@ long counter_set(Counter *counter, long n)
     mutex_lock(counter->lock);
     ret = counter->n;
     counter->n = n;
-    debug("dark", 0, "counter_set(%p) to %ld.", counter, counter->n);
     mutex_unlock(counter->lock);
     return ret;
 }
