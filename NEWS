@@ -1,15 +1,57 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 1.1
+NEWS about Kannel: Open Source WAP and SMS Gateway version 1.1.1
 
 This is a DEVELOPMENT version. It should be usable for experimentation
 and testing, and is a release candidate for 1.2. Please do try it out
 and report problems to devel@kannel.org (the development mailing list)
 or bugs@kannel.org (the bug tracking system).
 
-This version continues the 0.13.x series.  We named it 1.1 instead of
-0.13.2 in order to make clear that it isn't older than 1.0.
-
 NOTE: This is not an update to 1.0.  Updates to 1.0 will be numbered 1.0.x,
 until we decide to release 1.2.  See the VERSION file for details.
+
+Changes since version 1.1:
+
+
+Compatibility breakers:
+
+ * Kannel now complains about unknown configuration settings, rather than
+   silently ignoring them.
+
+
+New features:
+
+ * The SMS testing tool (fakesmsc) has been replaced with a better one.
+   It can be started and stopped while Kannel is running, which makes
+   it easier to use.  It also supports udh.
+
+ * validityperiod option for phone-as-SMSC, see usersguide for details.
+
+ * User's Guide has section on how to use pre-compiled Kannel packages.
+
+ * Improved portability to FreeBSD.
+
+ * Updated CIMD2 code to version "2-0 en" of the specification.
+
+
+Bugfixes:
+
+ * http-proxy-exceptions works again.
+
+ * SMS service keywords are case-insensitive again.
+
+ * If SMS request has unknown keyword, and no default is specified,
+   reply "Request failed" instead of logging a confusing error message.
+
+ * Fixed possible deadlock in bearerbox startup.
+
+ * Fixed a number of memory leaks.
+
+ * Fixed some errors that only showed up with --with-malloc=native.
+
+
+Development news:
+
+ * All boxes now use the new configuration file interface.
+
 
 Changes since version 0.13.1:
 
