@@ -192,7 +192,7 @@ static Msg *pack_into_datagram(WAPEvent *event) {
 	if (ospdu == NULL)
 		return NULL;
 
-	os = octstr_create_empty();
+	os = octstr_create("");
 	octstr_append_char(os, p->transaction_id);
 	octstr_append(os, ospdu);
 	octstr_destroy(ospdu);

@@ -677,7 +677,7 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 			}
 		}
 		/* Reply with the client SDU we decided on */
-		data = octstr_create_empty();
+		data = octstr_create("");
 		octstr_append_uintvar(data, m->client_SDU_size);
 		cap = wsp_cap_create(WSP_CAPS_CLIENT_SDU_SIZE,
 			NULL, data);
@@ -687,7 +687,7 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 	if (wsp_cap_count(caps, WSP_CAPS_SERVER_SDU_SIZE, NULL) == 0) {
 		/* We don't care what the client sent us, but we can
 		 * handle any size packet, so we tell the client that. */
-		data = octstr_create_empty();
+		data = octstr_create("");
 		octstr_append_uintvar(data, 0);
 		cap = wsp_cap_create(WSP_CAPS_SERVER_SDU_SIZE, NULL, data);
 		list_append(caps, cap);
@@ -695,7 +695,7 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 
 	/* Currently we cannot handle any protocol options */
 	if (wsp_cap_count(caps, WSP_CAPS_PROTOCOL_OPTIONS, NULL) == 0) {
-		data = octstr_create_empty();
+		data = octstr_create("");
 		octstr_append_char(data, 0);
 		cap = wsp_cap_create(WSP_CAPS_PROTOCOL_OPTIONS, NULL, data);
 		list_append(caps, cap);
@@ -708,7 +708,7 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 		if (wsp_cap_get_method_mor(req, &uint) <= 0) {
 			uint = 255;
 		}
-		data = octstr_create_empty();
+		data = octstr_create("");
 		octstr_append_char(data, uint);
 		cap = wsp_cap_create(WSP_CAPS_METHOD_MOR, NULL, data);
 		list_append(caps, cap);
@@ -721,7 +721,7 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 		if (wsp_cap_get_push_mor(req, &uint) > 0) {
 			m->MOR_push = uint;
 		}
-		data = octstr_create_empty();
+		data = octstr_create("");
 		octstr_append_char(data, m->MOR_push);
 		cap = wsp_cap_create(WSP_CAPS_PUSH_MOR, NULL, data);
 		list_append(caps, cap);

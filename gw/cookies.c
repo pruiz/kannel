@@ -202,14 +202,14 @@ static Octstr *get_header_value (Octstr *header)
 		return NULL;
 	}
 
-	octstr_strip_blank(header);
-	colon = octstr_search_char(header, ':');
+	octstr_strip_blanks(header);
+	colon = octstr_search_char(header, ':', 0);
 	if (colon == -1) {
 		error (0, "get_header_value: Malformed header (%s)", octstr_get_cstr (header));
 		return NULL;
 	} else {
 		h = octstr_copy (header, colon + 1, octstr_len(header));
-		octstr_strip_blank(h);
+		octstr_strip_blanks(h);
 	}
 
 	debug ("wap.wsp.http", 0, "get_header_value: Value (%s)", octstr_get_cstr (h));
@@ -297,7 +297,7 @@ static Cookie *parse_cookie (Octstr *cookiestr)
 	/* Process version - 4.3.4 */
 
 	if (c -> version == NULL) {
-		c -> version = octstr_create_empty ();
+		c -> version = octstr_create("");
 		octstr_append_cstr (c -> version, "$Version=\"0\";");
 	}
 

@@ -284,7 +284,7 @@ wap_msg_send( int fd, unsigned char * hdr,
     int ret;
     Octstr *datagram;
 
-    datagram = octstr_create_empty();
+    datagram = octstr_create("");
     if (hdr != NULL)
     	octstr_append_data(datagram, hdr, hdr_len);
 

@@ -1214,12 +1214,12 @@ static int ois_adjust_sm_text(Msg *msg, const char *raw)
 	ois_convert_to_iso88591(buffer, msglen7);
 	if (msg->smart_sms.flag_udh & 0x02) {
 	    msg->smart_sms.flag_udh = 1;
-	    msg->smart_sms.msgdata = octstr_create_empty();
+	    msg->smart_sms.msgdata = octstr_create("");
 	    msg->smart_sms.udhdata = octstr_create_from_data(buffer, msglen7);
 	} else {
 	    msg->smart_sms.flag_udh = 0;
 	    msg->smart_sms.msgdata = octstr_create_from_data(buffer, msglen7);
-	    msg->smart_sms.udhdata = octstr_create_empty();
+	    msg->smart_sms.udhdata = octstr_create("");
 	}
 	msg->smart_sms.flag_8bit = 0;
 	break;
@@ -1228,24 +1228,24 @@ static int ois_adjust_sm_text(Msg *msg, const char *raw)
 	ois_convert_to_iso88591(buffer, msglen8);
 	if (msg->smart_sms.flag_udh & 0x02) {
 	    msg->smart_sms.flag_udh = 1;
-	    msg->smart_sms.msgdata = octstr_create_empty();
+	    msg->smart_sms.msgdata = octstr_create("");
 	    msg->smart_sms.udhdata = octstr_create_from_data(buffer, msglen8);
 	} else {
 	    msg->smart_sms.flag_udh = 0;
 	    msg->smart_sms.msgdata = octstr_create_from_data(buffer, msglen8);
-	    msg->smart_sms.udhdata = octstr_create_empty();
+	    msg->smart_sms.udhdata = octstr_create("");
 	}
 	msg->smart_sms.flag_8bit = 0;
 	break;
     default: /* 0xf4, 0xf5, 0xf6, 0xf7; 8bit to disp, mem, sim or term */ 
 	if (msg->smart_sms.flag_udh & 0x02) {
 	    msg->smart_sms.flag_udh = 1;
-	    msg->smart_sms.msgdata = octstr_create_empty();
+	    msg->smart_sms.msgdata = octstr_create("");
 	    msg->smart_sms.udhdata = octstr_create_from_data(&raw[2], msglen8);
 	} else {
 	    msg->smart_sms.flag_udh = 0;
 	    msg->smart_sms.msgdata = octstr_create_from_data(&raw[2], msglen8);
-	    msg->smart_sms.udhdata = octstr_create_empty();
+	    msg->smart_sms.udhdata = octstr_create("");
 	}
 	msg->smart_sms.flag_8bit = 1;
 	break;

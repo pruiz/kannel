@@ -376,7 +376,7 @@ static void fetch_thread(void *arg) {
 	default:
 		error(0, "WSP: Method not supported: %d.", method);
 		content.url = octstr_duplicate(url);
-		content.body = octstr_create_empty();
+		content.body = octstr_create("");
 		resp_headers = NULL;
 		ret = 501;
 
@@ -386,7 +386,7 @@ static void fetch_thread(void *arg) {
 		error(0, "WSP: http_get_real failed (%d), oops.", ret);
 		status = 500; /* Internal server error; XXX should be 503 */
 		content.type = octstr_create("text/plain");
-		content.charset = octstr_create_empty();
+		content.charset = octstr_create("");
 	} else {
 		http_header_get_content_type(resp_headers,
 				&content.type, &content.charset);
@@ -426,13 +426,13 @@ static void fetch_thread(void *arg) {
 			octstr_get_cstr(url), octstr_len(content.body),
 			client_SDU_size);
                 octstr_destroy(content.body);
-		content.body = octstr_create_empty();
+		content.body = octstr_create("");
 		octstr_destroy(content.type);
 		content.type = octstr_create("text/plain");
 	}
 
 	if (content.body == NULL)
-		content.body = octstr_create_empty();
+		content.body = octstr_create("");
 
 	if (event->type == S_MethodInvoke_Ind) {
 		WAPEvent *e = wap_event_create(S_MethodResult_Req);

@@ -30,7 +30,7 @@ static void skip_html_comment(Octstr *html, long *pos) {
 	long i;
 
 	*pos += 4;	/* Skip "<!--" at beginning of comment. */
-	i = octstr_search_cstr_from(html, "-->", *pos);
+	i = octstr_search_cstr(html, "-->", *pos);
 	if (i == -1)
 		*pos = octstr_len(html);
 	else
@@ -50,7 +50,7 @@ static void skip_html_tag(Octstr *html, long *pos) {
 	len = octstr_len(html);
 	while (*pos < len && (c = octstr_get_char(html, *pos)) != '>') {
 		if (c == '"' || c == '\'') {
-			i = octstr_search_char_from(html, c, *pos + 1);
+			i = octstr_search_char(html, c, *pos + 1);
 			if (i == -1)
 				*pos = len;
 			else
@@ -218,7 +218,7 @@ Octstr *html_to_sms(Octstr *html) {
 	int c;
 	Octstr *sms;
 	
-	sms = octstr_create_empty();
+	sms = octstr_create("");
 	len = octstr_len(html);
 	i = 0;
 	while (i < len) {
@@ -239,8 +239,8 @@ Octstr *html_to_sms(Octstr *html) {
 			break;
 		}
 	}
-	octstr_shrink_blank(sms);
-	octstr_strip_blank(sms);
+	octstr_shrink_blanks(sms);
+	octstr_strip_blanks(sms);
 	return sms;
 }
 

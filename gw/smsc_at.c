@@ -130,7 +130,7 @@ SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin) {
 	if(pin)
 		smsc->at_pin = gw_strdup(pin);
 	smsc->at_received = list_create();
-	smsc->at_inbuffer = octstr_create_empty();
+	smsc->at_inbuffer = octstr_create("");
 
 	smsc->at_fd = at_open_connection(smsc);
 	if (smsc->at_fd < 0)
@@ -345,7 +345,7 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 	Octstr *ostr;
 	int ret, i;
 
-	ostr = octstr_create_empty();
+	ostr = octstr_create("");
 
 	/* debug */
 	printf("Command: %s\n", cmd);
@@ -375,23 +375,23 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 		if(ret == -1)
 			goto error;
 
-		ret = octstr_search_cstr(ostr, "SIM PIN");
+		ret = octstr_search_cstr(ostr, "SIM PIN", 0);
 		if(ret != -1) {
 			octstr_destroy(ostr);
 			return -2;
 		}
 		if(multiline)
-			ret = octstr_search_cstr(ostr, ">");
+			ret = octstr_search_cstr(ostr, ">", 0);
 		else {
-			ret = octstr_search_cstr(ostr, "OK");
+			ret = octstr_search_cstr(ostr, "OK", 0);
 			if(ret == -1)
-				ret = octstr_search_cstr(ostr, "READY");
+				ret = octstr_search_cstr(ostr, "READY", 0);
 		}
 		if(ret != -1) {
 			octstr_destroy(ostr);
 			return 0;
 		}
-		ret = octstr_search_cstr(ostr, "ERROR");
+		ret = octstr_search_cstr(ostr, "ERROR", 0);
 		if(ret != -1) {
 			octstr_destroy(ostr);
 			return -1;
@@ -418,11 +418,11 @@ static int pdu_extract(SMSCenter *smsc, Octstr **pdu) {
 	buffer = smsc->at_inbuffer;
 	
 	/* find the beginning of a message from the modem*/	
-	pos = octstr_search_cstr(buffer, "+CMT:");
+	pos = octstr_search_cstr(buffer, "+CMT:", 0);
 	if(pos == -1) 
 		goto nomsg;
 	pos += 5;
-	pos = octstr_search_cstr_from(buffer, ",", pos);
+	pos = octstr_search_cstr(buffer, ",", pos);
 	if(pos == -1)
 		goto nomsg;
 	pos++;
@@ -570,7 +570,7 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
 	if(eightbit == 1) {
 		text = octstr_duplicate(tmpstr);
 	} else {
-		text = octstr_create_empty();
+		text = octstr_create("");
 		decode7bituncompressed(tmpstr, len, text);
 	}
 
@@ -632,7 +632,7 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 
 	/* make sure there is no blank in the phone number and encode
 	 * an even number of digits */
-	octstr_strip_blank(msg->smart_sms.receiver);
+	octstr_strip_blanks(msg->smart_sms.receiver);
 	len = octstr_len(msg->smart_sms.receiver);
 	for(i=0; i<len; i+=2) {
 		if (i+1 < len) {
@@ -715,7 +715,7 @@ static Octstr *convertpdu(Octstr *pdutext) {
 	int i;
 	int len = octstr_len(pdutext);
 
-	pdu = octstr_create_empty();
+	pdu = octstr_create("");
 	for (i=0; i<len; i+=2) {
 		octstr_append_char(pdu, hexchar(octstr_get_char(pdutext,i))*16 
 			+ hexchar(octstr_get_char(pdutext,i+1)));

@@ -327,12 +327,12 @@ static Octstr *eat_string_parm(Octstr *packet, int parm, int maxlen) {
 	Octstr *result;
 
 	sprintf(parmheader, "%c%03d:", TAB, parm);
-	start = octstr_search_cstr(packet, parmheader);
+	start = octstr_search_cstr(packet, parmheader, 0);
 	if (start < 0)
 		return NULL;
 	datastart = start + strlen(parmheader);
 
-	tab = octstr_search_char_from(packet, TAB, datastart + 1);
+	tab = octstr_search_char(packet, TAB, datastart + 1);
 	if (tab < 0) {
 		tab = octstr_len(packet);
 	}
@@ -763,13 +763,13 @@ static void parse_data(Octstr *in, Octstr *out) {
 		/* Look for start of packet.  Delete everything up to the start
 		 * marker.  (CIMD2 section 3.1 says we can ignore any data
 		 * transmitted between packets.) */
-		stx = octstr_search_char(in, STX);
+		stx = octstr_search_char(in, STX, 0);
 		if (stx < 0)
 			octstr_delete(in, 0, octstr_len(in));
 		else if (stx > 0)
 			octstr_delete(in, 0, stx);
 
-		etx = octstr_search_char(in, ETX);
+		etx = octstr_search_char(in, ETX, 0);
 		if (etx < 0)
 			return;  /* Incomplete packet; wait for more data. */
 
@@ -879,7 +879,7 @@ static void main_loop(void) {
 	static int reported_outfull = 0;
 	int interval = -1;
 
-	inbuffer = octstr_create_empty();
+	inbuffer = octstr_create("");
 	outbuffer = octstr_create(intro);
 	start_time = time(NULL);
 

@@ -119,7 +119,7 @@ List *wsp_cap_unpack_list(Octstr *caps) {
 		} else {
 			long nullpos;
 			id = -1;  /* It's encoded as token-text */
-			nullpos = octstr_search_char_from(caps, 0, pos);
+			nullpos = octstr_search_char(caps, 0, pos);
 			if (nullpos < 0)
 				goto error;
 			name = octstr_copy(caps, pos, nullpos - pos);
@@ -142,7 +142,7 @@ Octstr *wsp_cap_pack_list(List *caps_list) {
 	Capability *cap;
 	long i, len;
 
-	result = octstr_create_empty();
+	result = octstr_create("");
 	len = list_len(caps_list);
 	for (i = 0; i < len; i++) {
 		long datalen;
@@ -158,7 +158,7 @@ Octstr *wsp_cap_pack_list(List *caps_list) {
 
 		if (cap->name) {
 			if (octstr_get_char(cap->name, 0) >= 0x80 ||
-			    octstr_search_char(cap->name, 0) >= 0) {
+			    octstr_search_char(cap->name, 0, 0) >= 0) {
 				error(0, "WSP: Bad capability.");
 				wsp_cap_dump(cap);
 				continue;

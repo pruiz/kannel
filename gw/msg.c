@@ -102,7 +102,7 @@ enum msg_type msg_type(Msg *msg) {
 Octstr *msg_pack(Msg *msg) {
 	Octstr *os;
 
-	os = octstr_create_empty();
+	os = octstr_create("");
 	append_integer(os, msg->type);
 
 	#define INTEGER(name) append_integer(os, p->name)
@@ -170,7 +170,7 @@ static void append_integer(Octstr *os, long i) {
 	Octstr *temp;
 
 	i = htonl(i);
-	temp = octstr_create_from_data(&i, sizeof(i));
+	temp = octstr_create_from_data((char *) &i, sizeof(i));
 	octstr_insert(os, temp, octstr_len(os));
 	octstr_destroy(temp);
 }

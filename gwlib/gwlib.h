@@ -10,15 +10,10 @@
 #ifndef _GWLIB_H
 #define _GWLIB_H
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 
 #include "config.h"
-
-#if HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
 
 #include "gwstr.h"
 #include "gwmem.h"

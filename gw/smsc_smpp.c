@@ -468,7 +468,7 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 		(*msg)->smart_sms.sender = octstr_create(deliver_sm->source_addr);
 		(*msg)->smart_sms.receiver = octstr_create(deliver_sm->dest_addr);
 		(*msg)->smart_sms.msgdata = octstr_create(deliver_sm->short_message);
-		(*msg)->smart_sms.udhdata = octstr_create_empty();
+		(*msg)->smart_sms.udhdata = octstr_create("");
 
 		return 1;
 	}
@@ -589,7 +589,7 @@ static Octstr* data_new(void) {
 
 	struct Octstr *newstr = NULL;
 
-	newstr = octstr_create_empty();
+	newstr = octstr_create("");
 
 	return newstr;
 }
@@ -734,7 +734,7 @@ static int data_pop(Octstr *from, Octstr **to) {
 	if(olen < 16) goto no_msg;
 
 	/* Read the length (4 first octets) */
-	octstr_get_many_chars(&header, from, 0, 4);
+	octstr_get_many_chars((char *) &header, from, 0, 4);
 
 	/* Translate the length */
 	length = decode_network_long(header);

@@ -174,19 +174,19 @@ int wml_compile(Octstr *wml_text,
   char *wml_c_text;
   wml_binary_t *wbxml = NULL;
 
-  *wml_binary = octstr_create_empty();
+  *wml_binary = octstr_create("");
   wbxml = wml_binary_create();
 
   /* Remove the extra space from start and the end of the WML Document. */
 
-  octstr_strip_blank(wml_text);
+  octstr_strip_blanks(wml_text);
 
   /* Check the WML-code for \0-characters. */
 
   size = octstr_len(wml_text);
   wml_c_text = octstr_get_cstr(wml_text);
 
-  if (octstr_search_char(wml_text, '\0') != -1)
+  if (octstr_search_char(wml_text, '\0', 0) != -1)
     {    
       error(0, 
 	    "WML compiler: Compiling error: "
@@ -599,7 +599,7 @@ static int parse_attr_value(Octstr *attr_value, wml_attr_value_t *tokens,
 
   for (i = 0; tokens[i].attr_value != NULL; i++)
     {
-      pos = octstr_search_cstr(attr_value, tokens[i].attr_value);
+      pos = octstr_search_cstr(attr_value, tokens[i].attr_value, 0);
       switch (pos) {
       case -1:
 	break;
@@ -686,8 +686,8 @@ static int parse_text(xmlNodePtr node, wml_binary_t **wbxml)
 
   temp = octstr_create(node->content);
 
-  octstr_shrink_blank(temp);
-  octstr_strip_blank(temp);
+  octstr_shrink_blanks(temp);
+  octstr_strip_blanks(temp);
 
   if (octstr_len(temp) == 0)
     ret = 0;
@@ -719,13 +719,13 @@ static int parse_charset(Octstr *charset, wml_binary_t **wbxml)
    * The character set is handled in two parts to make things easier. 
    * The cutting.
    */
-  if ((cut = octstr_search_char(charset, '_')) > 0)
+  if ((cut = octstr_search_char(charset, '_', 0)) > 0)
     {
       number = octstr_copy(charset, cut + 1, 
 			   (octstr_len(charset) - (cut + 1)));
       octstr_truncate(charset, cut);
     }
-  else if ((cut = octstr_search_char(charset, '-')) > 0)
+  else if ((cut = octstr_search_char(charset, '-', 0)) > 0)
     {
       number = octstr_copy(charset, cut + 1, 
 			   (octstr_len(charset) - (cut + 1)));
@@ -831,7 +831,7 @@ static Octstr *get_variable(Octstr *text, int start)
   else if (ch == '(')
     {
       start ++;
-      end = octstr_search_char_from(text, ')', start);
+      end = octstr_search_char(text, ')', start);
       if (end == -1)
 	error(0, "WML compiler: braces opened, but not closed for a "
 	      "variable.");
@@ -867,7 +867,7 @@ static var_esc_t check_variable_syntax(Octstr *variable)
   int pos, len, i;
   var_esc_t ret;
 
-  if ((pos = octstr_search_char(variable, ':')) > 0)
+  if ((pos = octstr_search_char(variable, ':', 0)) > 0)
     {
       len = octstr_len(variable) - pos;
       escape = octstr_copy(variable, pos + 1, len - 1);
@@ -936,15 +936,15 @@ static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 
   /* No variables? Ok, let's take the easy way... */
 
-  if ((pos = octstr_search_char(ostr, '$')) < 0)
+  if ((pos = octstr_search_char(ostr, '$', 0)) < 0)
     {
       string_table_apply(ostr, wbxml);
       return 0;
     }
 
   len = octstr_len(ostr);
-  output = octstr_create_empty();
-  var = octstr_create_empty();
+  output = octstr_create("");
+  var = octstr_create("");
 
   while (pos < len)
     {
@@ -1025,7 +1025,7 @@ static wml_binary_t *wml_binary_create(void)
   wbxml->character_set = 0x00;
   wbxml->string_table_length = 0x00;
   wbxml->string_table = list_create();
-  wbxml->wbxml_string = octstr_create_empty();
+  wbxml->wbxml_string = octstr_create("");
   wbxml->utf8map = NULL ;
 
   return wbxml;
@@ -1278,8 +1278,8 @@ static void string_table_collect_strings(xmlNodePtr node, List *strings)
       {
 	string = octstr_create(node->content);
 
-	octstr_shrink_blank(string);
-	octstr_strip_blank(string);
+	octstr_shrink_blanks(string);
+	octstr_strip_blanks(string);
 
 	if (octstr_len(string) > STRING_TABLE_MIN)
 	  list_append(strings, string);
@@ -1471,7 +1471,7 @@ static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
   string_table_t *item = NULL;
   long i = 0, word_s = 0, word_e = 0;
 
-  input = octstr_create_empty();
+  input = octstr_create("");
 
   for (i = 0; i < list_len((*wbxml)->string_table); i++)
     {

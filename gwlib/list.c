@@ -92,7 +92,16 @@ void list_destroy(List *list) {
 
 
 long list_len(List *list) {
+#if 0
+	long len;
+	
+	lock(list);
+	len = list->len;
+	unlock(list);
+	return len;
+#else
 	return list->len;
+#endif
 }
 
 

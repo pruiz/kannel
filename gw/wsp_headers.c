@@ -146,7 +146,7 @@ static Octstr *unpack_integer_value(Context *context) {
 		return NULL;
 	}
 
-	decoded = octstr_create_empty();
+	decoded = octstr_create("");
 	octstr_append_decimal(decoded, value);
 	return decoded;
 }
@@ -210,7 +210,7 @@ static Octstr *unpack_version_value(long value) {
 	major = ((value >> 4) & 0x7);
 	minor = (value & 0xf);
 
-	result = octstr_create_empty();
+	result = octstr_create("");
 	octstr_append_char(result, major + '0');
 	if (minor != 15) {
 		octstr_append_char(result, '.');
@@ -268,7 +268,7 @@ static int unpack_parameter(Context *context, Octstr *decoded) {
 			case -1: /* untyped: Integer-value */
 			case 3: /* type: Integer-value */
 			case 8: /* padding: Short-integer */
-				value = octstr_create_empty();
+				value = octstr_create("");
 				octstr_append_decimal(value, val);
 				break;
 			case 0: /* q, already handled above */
@@ -297,7 +297,7 @@ static int unpack_parameter(Context *context, Octstr *decoded) {
 				break;
 			}
 		} else if (ret == WSP_FIELD_VALUE_NONE) {
-			value = octstr_create_empty();
+			value = octstr_create("");
 		} else {
 			gw_assert(ret == WSP_FIELD_VALUE_NUL_STRING);
 			/* Text-value = No-value | Token-text | Quoted-string */
@@ -804,7 +804,7 @@ static Octstr *unpack_warning_value(Context *context) {
 	if (parse_error(context) || !warn_agent || !warn_text)
 		goto error;
 
-	decoded = octstr_create_empty();
+	decoded = octstr_create("");
 	octstr_append_decimal(decoded, warn_code);
 	octstr_append_char(decoded, ' ');
 	octstr_append(decoded, warn_agent);
@@ -891,7 +891,7 @@ static void unpack_well_known_field(List *unpacked, int field_type, Context *con
 		case WSP_HEADER_CONTENT_LENGTH:
 		case WSP_HEADER_MAX_FORWARDS:
 			/* Short-integer version of Integer-value */
-			decoded = octstr_create_empty();
+			decoded = octstr_create("");
 			octstr_append_decimal(decoded, val);
 			break;
 
@@ -939,7 +939,7 @@ static void unpack_well_known_field(List *unpacked, int field_type, Context *con
 			break;
 
 		case WSP_HEADER_WARNING:
-			decoded = octstr_create_empty();
+			decoded = octstr_create("");
 			octstr_append_decimal(decoded, val);
 			break;
 
@@ -975,7 +975,7 @@ static void unpack_well_known_field(List *unpacked, int field_type, Context *con
 			{
 				long l = unpack_multi_octet_integer(context,
 					parse_octets_left(context));
-				decoded = octstr_create_empty();
+				decoded = octstr_create("");
 				octstr_append_decimal(decoded, l);
 			}
 			break;
@@ -1014,7 +1014,7 @@ static void unpack_well_known_field(List *unpacked, int field_type, Context *con
 			/* The value is a bare Parameter, without a preceding
 			 * header body.  unpack_parameter wasn't really
 			 * designed for this.  We work around it here. */
-			decoded = octstr_create_empty();
+			decoded = octstr_create("");
 			if (unpack_parameter(context, decoded) < 0) {
 				octstr_destroy(decoded);
 				decoded = NULL;

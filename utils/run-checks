@@ -8,12 +8,14 @@ rm -f check.log
 for prog in "$@"
 do
 	echo -n "Check: $prog..."
-	if $prog 2>> check.log
+	if $prog 2> check.log.new && test ! -s check.log.new
 	then
 		echo " OK."
 	else
 		echo " FAILURE!"
+		cat check.log.new >> check.log
 	fi
+	rm check.log.new
 done
 
 if test -s check.log

@@ -274,7 +274,7 @@ WTP_PDU *wtp_pdu_unpack(Octstr *data) {
 				octstr_len(data) - bitpos / 8); \
 		bitpos = octstr_len(data) * 8; \
 	} else { \
-		p->field = octstr_create_empty(); \
+		p->field = octstr_create(""); \
 	}
 #define TYPE(bits, value) bitpos += (bits);
 #define RESERVED(bits) bitpos += (bits);
@@ -334,7 +334,7 @@ Octstr *wtp_pdu_pack(WTP_PDU *pdu) {
 	long bitpos;
 
 	/* We rely on octstr_set_bits to lengthen our octstr as needed. */
-	data = octstr_create_empty();
+	data = octstr_create("");
 
 	fixup_length_fields(pdu);
 

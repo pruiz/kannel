@@ -1,38 +1,19 @@
 /*
- * test_list.c - test gwlib/list.c
- *
- * Lars Wirzenius <liw@wapit.com>
+ * check_list.c - check that gwlib/list.c works
  */
  
-#ifndef TRACE
-#define TRACE (100*1000)
-#endif
-
-#ifndef THREADS
-#define THREADS 1
-#endif
-
-
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
 
 #include "gwlib/gwlib.h"
 
-#if THREADS
 #define NUM_PRODUCERS (4)
 #define NUM_CONSUMERS (4)
-#else
-#define NUM_PRODUCERS (1)
-#define NUM_CONSUMERS (1)
-#endif
+#define NUM_ITEMS_PER_PRODUCER (1*1000)
 
 static long producers[NUM_PRODUCERS];
 static long consumers[NUM_CONSUMERS];
-
-#define NUM_ITEMS_PER_PRODUCER (100*1000)
-
-
 static char received[NUM_PRODUCERS * NUM_ITEMS_PER_PRODUCER];
 
 static int producer_index_start(long producer) {
@@ -46,8 +27,6 @@ static int producer_index_start(long producer) {
 		panic(0, "Couldn't find thread.");
 	return i * NUM_ITEMS_PER_PRODUCER;
 }
-
-
 
 
 typedef struct {
@@ -77,17 +56,9 @@ static void producer(void *arg) {
 
 	id = gwthread_self();
 	index = producer_index_start(id);
-	info(0, "producer starts at %ld", index);
 	list_add_producer(list);
-	for (i = 0; i < NUM_ITEMS_PER_PRODUCER; ++i, ++index) {
+	for (i = 0; i < NUM_ITEMS_PER_PRODUCER; ++i, ++index)
 		list_produce(list, new_item(id, i, index));
-#if TRACE
-		if ((i % TRACE) == 0)
-			info(0, "Put: producer==%ld item=%ld index=%ld", 
-				(long) id, i, index);
-#endif
-	}
-	info(0, "producer dies");
 	list_remove_producer(list);
 }
 
@@ -96,27 +67,16 @@ static void consumer(void *arg) {
 	long i;
 	Item *item;
 	
-	info(0, "consumer starts");
-
 	list = arg;
-
 	i = 0;
 	for (;;) {
 		item = list_consume(list);
 		if (item == NULL)
 			break;
-#if TRACE
-		if ((i % TRACE) == 0)
-			info(0, "Got %ld: producer=%ld item=%ld index=%ld", 
-				i, (long) item->producer, item->num, 
-				item->index);
-#endif
 		received[item->index] = 1;
 		gw_free(item);
 		++i;
 	}
-
-	info(0, "consumer dies");
 }
 
 
@@ -126,7 +86,9 @@ static void init_received(void) {
 
 static void check_received(void) {
 	long p, n, index;
+	int errors;
 	
+	errors = 0;
 	for (p = 0; p < NUM_PRODUCERS; ++p) {
 		for (n = 0; n < NUM_ITEMS_PER_PRODUCER; ++n) {
 			index = p * NUM_ITEMS_PER_PRODUCER + n;
@@ -135,13 +97,16 @@ static void check_received(void) {
 				         "item=%ld index=%ld", 
 					 (unsigned long) producers[p], 
 					 n, index);
+				errors = 1;
 			}
 		}
 	}
+	
+	if (errors)
+		panic(0, "Not all messages were received.");
 }
 
 
-#if THREADS
 static void main_for_producer_and_consumer(void) {
 	List *list;
 	int i;
@@ -155,7 +120,6 @@ static void main_for_producer_and_consumer(void) {
 	for (i = 0; i < NUM_CONSUMERS; ++i)
 		consumers[i] = gwthread_create(consumer, list);
 	
-	info(0, "main waits for children");
 	for (i = 0; i < NUM_PRODUCERS; ++i)
 		gwthread_join(producers[i]);
 	for (i = 0; i < NUM_CONSUMERS; ++i)
@@ -167,57 +131,14 @@ static void main_for_producer_and_consumer(void) {
 		warning(0, "main: %ld %ld %ld", (long) item->producer, 
 				item->num, item->index);
 	}
-	info(0, "main ends");
 	
 	check_received();
-	info(0, "main_with_threads done.");
 }
-#else
-static void main_for_producer_and_consumer(void) {
-	List *list;
-	Item *item;
-	long i;
-	
-	list = list_create();
-	init_received();
-	for (i = 0; i < NUM_PRODUCERS; ++i) {
-		producers[i] = gwthread_self();
-		producer(list);
-	}
-	for (i = 0; i < NUM_PRODUCERS; ++i) {
-		consumers[i] = gwthread_self();
-		consumer(list);
-	}
-
-	while (list_len(list) > 0) {
-		item = list_get(list, 0);
-		list_delete(list, 0, 1);
-		warning(0, "main: %ld %ld %ld", item->producer, item->num,
-				item->index);
-	}
-	info(0, "main ends");
-	
-	check_received();
-	info(0, "main_without_threads done.");
-}
-#endif
 
 
 static int compare_cstr(void *item, void *pat) {
 	return strcmp(item, pat) == 0;
 }
-
-
-#if 0
-static void dump(List *list) {
-	long i;
-	
-	debug("", 0, "List dump begin (%ld items):", list_len(list));
-	for (i = 0; i < list_len(list); ++i)
-		debug("", 0, "[%ld] = <%s>", i, (char *) list_get(list, i));
-	debug("", 0, "List dump end.");
-}
-#endif
 
 
 static void main_for_list_add_and_delete(void) {
@@ -251,7 +172,6 @@ static void main_for_list_add_and_delete(void) {
 		panic(0, "list is not empty after deleting everything");
 	
 	list_destroy(list);
-	info(0, "list adds and deletes OK in simple case.");
 }
 
 
@@ -297,12 +217,12 @@ static void main_for_extract(void) {
 		panic(0, "list is not empty after extracting everything");
 	
 	list_destroy(list);
-	info(0, "list extraction OK in simple case.");
 }
 
 
 int main(void) {
 	gwlib_init();
+	set_output_level(INFO);
 	main_for_list_add_and_delete();
 	main_for_extract();
 	main_for_producer_and_consumer();

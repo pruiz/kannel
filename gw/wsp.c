@@ -29,7 +29,7 @@ Octstr *wsp_encode_http_headers(Octstr *content_type) {
 	gw_assert(type >= 0x00);
 	gw_assert(type < 0x80);
 
-	os = octstr_create_empty();
+	os = octstr_create("");
 	octstr_append_char(os, ((unsigned char) type) | 0x80);
 	
 	return os;

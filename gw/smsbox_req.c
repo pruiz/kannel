@@ -152,7 +152,7 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 		if (octstr_len(replytext) == 0)
 			ret = gw_strdup("");
 		else {
-			octstr_strip_blank(replytext);
+			octstr_strip_blanks(replytext);
 			ret = gw_strdup(octstr_get_cstr(replytext));
 		}
 		octstr_destroy(replytext);

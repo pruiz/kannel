@@ -1,3 +1,32 @@
+2000-08-31  Lars Wirzenius  <liw@iki.fi>
+
+	* test/test_list.c: Removed.
+	
+	* checks/check_list.c: Wrote.
+
+2000-08-30  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/bb_udp.c, gw/cookies.c, gw/html.c, gw/msg.c,
+	gw/smsbox_req.c, gw/smsc_at.c, gw/smsc_cimd2.c, gw/smsc_ois.c,
+	gw/smsc_sema.c, gw/smsc_smpp.c, gw/wap-appl.c, gw/wml_compiler.c,
+	gw/wsp-session.c, gw/wsp-unit.c, gw/wsp.c, gw/wsp_caps.c,
+	gw/wsp_headers.c, gw/wsp_pdu.c, gw/wtp_pdu.c, gwlib/conn.c,
+	gwlib/http.c, gwlib/http.h, gwlib/octstr.c, gwlib/octstr.h,
+	gwlib/parse.c, gwlib/socket.c, test/fakewap.c, test/test_cimd2.c:
+
+	Cleanups based on a (brief) code review. Lots of small changes
+	pretty much everywhere, but nothing really big.
+	
+	* Renamed octstr_search_*_from to octstr_search_*, because there's
+	no point in having two almost equivalent functions.
+	
+	* Renamed octstr_*_blank to octstr_*_blanks, to be grammattically
+	correct.
+	
+	* Killed octstr_create_empty, replaced it with octstr_create("").
+	
+	* Other minor differences, see the diff if you're interested.
+
 2000-08-30  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: The octet string memory leaks in the string table

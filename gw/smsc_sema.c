@@ -294,7 +294,7 @@ int sema_receive_msg(SMSCenter *smsc, Msg **msg)
 	    octstr_len(recieve_sm->destadd)-2);
   
 	(*msg)->smart_sms.msgdata = octstr_duplicate(recieve_sm->shortmsg);
-	(*msg)->smart_sms.udhdata = octstr_create_empty();
+	(*msg)->smart_sms.udhdata = octstr_create("");
 	gw_free(recieve_sm);
 	sema_msg_free(rmsg);
 	rmsg = NULL;
@@ -1345,7 +1345,7 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
 	
 	}
 	else if(receive_sm->textsizeoctect <= 0)
-	  receive_sm->shortmsg = octstr_create_empty();
+	  receive_sm->shortmsg = octstr_create("");
 
 	/*accepttime*/
 	octsrc +=iusedbyte;
@@ -1471,7 +1471,7 @@ static int sema_encode_msg(sema_msg* pmsg, char* str) {
     Octstr *IA5msg = NULL;
     int tSize = 0;
     unsigned char oc1byte[10];
-    IA5msg = octstr_create_empty();	
+    IA5msg = octstr_create("");	
     switch(pmsg->type)
     {
     case 'S':

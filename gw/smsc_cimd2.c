@@ -411,7 +411,7 @@ static struct packet *packet_extract(Octstr *in)
 	Octstr *packet;
 
 	/* Find STX, and delete everything up to it */
-	stx = octstr_search_char(in, STX);
+	stx = octstr_search_char(in, STX, 0);
 	if (stx < 0) {
 		octstr_delete(in, 0, octstr_len(in));
 		return NULL;
@@ -420,7 +420,7 @@ static struct packet *packet_extract(Octstr *in)
 	}
 
 	/* STX is now in position 0.  Find ETX. */
-	etx = octstr_search_char_from(in, ETX, 1);
+	etx = octstr_search_char(in, ETX, 1);
 	if (etx < 0) {
 		return NULL;
 	}
@@ -429,7 +429,7 @@ static struct packet *packet_extract(Octstr *in)
 	 * Either skip to the second STX, or assume an ETX marker before
 	 * the STX.  Doing the latter has a chance of succeeding, and
 	 * will at least allow good logging of the error. */
-	stx = octstr_search_char_from(in, STX, 1);
+	stx = octstr_search_char(in, STX, 1);
 	if (stx >= 0 && stx < etx) {
 		warning(0, "CIMD2: packet without end marker");
 		packet = octstr_copy(in, 0, stx);
@@ -457,20 +457,20 @@ static Octstr *packet_get_parm(struct packet *packet, int parmno) {
 	long number;
 
 	gw_assert(packet != NULL);
-	pos = octstr_search_char(packet->data, TAB);
+	pos = octstr_search_char(packet->data, TAB, 0);
 	if (pos < 0)
 		return NULL; /* Bad packet, nothing we can do */
 
 	/* Parameters have a tab on each end.  If we don't find the
 	 * closing tab, we're at the checksum, so we stop. */
 	for ( ;
-	     (next = octstr_search_char_from(packet->data, TAB, pos+1)) >= 0;
+	     (next = octstr_search_char(packet->data, TAB, pos+1)) >= 0;
 	     pos = next) {
 		if (octstr_parse_long(&number, packet->data, pos+1, 10) < 0)
 			continue;
 		if (number != parmno)
 			continue;
-		valuepos = octstr_search_char_from(packet->data, ':', pos+1);
+		valuepos = octstr_search_char(packet->data, ':', pos+1);
 		if (valuepos < 0)
 			continue; /* badly formatted parm */
 		valuepos++; /* skip the ':' */
@@ -703,7 +703,7 @@ static int packet_check(struct packet *packet) {
 	gw_assert(packet != NULL);
 	data = packet->data;
 
-	if (octstr_search_char(data, 0) >= 0) {
+	if (octstr_search_char(data, 0, 0) >= 0) {
 		/* CIMD2 spec does not allow NUL bytes in a packet */
 		warning(0, "CIMD2 packet contains NULs");
 		errors++;
@@ -721,9 +721,9 @@ static int packet_check(struct packet *packet) {
 	len = octstr_len(data);
 	/* Start at the first tab, wherever it is, so that we can still
 	 * check parameters if the header was weird. */
-	pos = octstr_search_char(data, TAB);
+	pos = octstr_search_char(data, TAB, 0);
 	for ( ; pos >= 0; pos = next) {
-		next = octstr_search_char_from(data, TAB, pos + 1);
+		next = octstr_search_char(data, TAB, pos + 1);
 		if (next >= 0) {
 			errors += (packet_check_parameter(packet, pos, next - pos) < 0);
 		} else {
@@ -1655,7 +1655,7 @@ SMSCenter *cimd2_open(char *hostname, int port, char *username, char *password, 
 	smsc->cimd2_password = octstr_create(password);
 	sprintf(smsc->name, "CIMD2:%s:%d:%s", hostname, port, username);
 	smsc->cimd2_received = list_create();
-	smsc->cimd2_inbuffer = octstr_create_empty();
+	smsc->cimd2_inbuffer = octstr_create("");
 	smsc->cimd2_error = 0;
 	if (keepalive > 0)
 		smsc->cimd2_next_ping = time(NULL) + keepalive * 60;
@@ -1696,7 +1696,7 @@ int cimd2_reopen(SMSCenter *smsc) {
 
 	/* Clear leftover input */
 	octstr_destroy(smsc->cimd2_inbuffer);
-	smsc->cimd2_inbuffer = octstr_create_empty();
+	smsc->cimd2_inbuffer = octstr_create("");
 
 	return cimd2_login(smsc);
 }
