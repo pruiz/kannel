@@ -968,12 +968,34 @@ admin-password = f00bar
         As with admin-port, this can be anything you want. Must be set
         if you want to handle any SMS traffic.
      </entry></row>
+	  
+	 <row><entry><literal>smsbox-port-ssl (o)</literal></entry>
+     <entry>bool</entry>
+     <entry valign=bottom>
+	     If set to true, the smsbox connection module will be SSL-enabled.
+		  Your smsboxes will have to connect using SSL to the bearerbox
+		  then. This is used to secure communication between bearerbox
+		  and smsboxes in case they are in seperate networks operated and
+		  the TCP communication is not secured on a lower network layer.
+		  Defaults to "no".
+     </entry></row>
 
     <row><entry><literal>wapbox-port (c)</literal></entry>
      <entry>port-number</entry>
      <entry valign=bottom>
         Like smsbox-port, but for wapbox-connections. If not set,
         Kannel cannot handle WAP traffic
+     </entry></row>
+
+	 <row><entry><literal>wapbox-port-ssl (o)</literal></entry>
+     <entry>bool</entry>
+     <entry valign=bottom>
+	     If set to true, the wapbox connection module will be SSL-enabled.
+		  Your wapboxes will have to connect using SSL to the bearerbox
+		  then. This is used to secure communication between bearerbox
+		  and wapboxes in case they are in seperate networks operated and
+		  the TCP communication is not secured on a lower network layer.
+		  Defaults to "no".
      </entry></row>
 
     <row><entry><literal>box-deny-ip</literal></entry>
