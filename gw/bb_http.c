@@ -128,7 +128,11 @@ static void httpd_serve(void *arg)
     Octstr *url, *body;
     Octstr *reply;
     
-    http_server_get_request(client, &url, &headers, &body, &cgivars);
+    if (http_server_get_request(client, &url, &headers, &body, &cgivars) < 0) {
+	warning(0, "Malformed line from client, ignored");
+	http_server_close_client(client);
+	return;
+    }
     
     if (octstr_str_compare(url, "/cgi-bin/status")==0)
 	reply = httpd_status(cgivars);
@@ -154,7 +158,7 @@ static void httpd_serve(void *arg)
     
     if (http_server_send_reply(client, HTTP_OK, headers, reply) == -1)
 	warning(0, "HTTP-admin server_send_reply failed");
-    
+
     octstr_destroy(url);
     octstr_destroy(body);
     octstr_destroy(reply);

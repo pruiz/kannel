@@ -239,13 +239,17 @@ static int check_config(Config *config)
 	warning(0, "multiple 'core' groups in configuration");
 
     grp = config_find_first_group(config, "group", "smsbox");
+
+#ifndef KANNEL_NO_SMS    
     if (smsp && *smsp && grp == NULL) {
 	error(0, "No 'smsbox' group in configuration, but smsbox-port set");
 	return -1;
     }
     if (grp != NULL && config_find_next_group(grp, "group", "smsbox"))
 	warning(0, "multiple 'smsbox' groups in configuration");
-	
+#endif
+    
+#ifndef KANNEL_NO_WAP	
     grp = config_find_first_group(config, "group", "wapbox");
     if (wapp && *wapp && grp == NULL) {
 	error(0, "No 'wapbox' group in configuration, but wapbox-port set");
@@ -253,7 +257,8 @@ static int check_config(Config *config)
     }
     if (grp != NULL && config_find_next_group(grp, "group", "wapbox"))
 	warning(0, "multiple 'wapbox' groups in configuration");
-
+#endif
+    
     return 0;
 }
 
@@ -310,19 +315,23 @@ static int starter(Config *config)
     
     /* http-admin is REQUIRED */
     httpadmin_start(config);
-    
+
+#ifndef KANNEL_NO_SMS    
     if (config_find_first_group(config, "group", "smsc"))
 	start_smsc(config);
-
+#endif
+    
     grp = config_find_first_group(config, "group", "core");
     
+#ifndef KANNEL_NO_WAP
     val = config_get(grp, "wdp-interface-name");
     if (val && *val != '\0')
 	start_udp(config);
 
     if (config_find_first_group(config, "group", "wapbox"))
 	start_wap(config);
-
+#endif
+    
     return 0;
 }
 
@@ -331,6 +340,7 @@ static void empty_msg_lists(void)
 {
     Msg *msg;
 
+#ifndef KANNEL_NO_WAP
 
     if (list_len(incoming_wdp) > 0 || list_len(outgoing_wdp) > 0)
 	warning(0, "Remaining WDP: %ld incoming, %ld outgoing",
@@ -339,6 +349,7 @@ static void empty_msg_lists(void)
     info(0, "Total WDP messages: received %ld, sent %ld",
 	 counter_value(incoming_wdp_counter),
 	 counter_value(outgoing_wdp_counter));
+#endif
     
     while((msg = list_extract_first(incoming_wdp))!=NULL)
 	msg_destroy(msg);
@@ -352,6 +363,8 @@ static void empty_msg_lists(void)
     counter_destroy(outgoing_wdp_counter);
     
     
+#ifndef KANNEL_NO_SMS
+
     /* XXX we should record these so that they are not forever lost...
      */
     if (list_len(incoming_sms) > 0 || list_len(outgoing_sms) > 0)
@@ -361,6 +374,8 @@ static void empty_msg_lists(void)
     info(0, "Total SMS messages: received %ld, sent %ld",
 	 counter_value(incoming_sms_counter),
 	 counter_value(outgoing_sms_counter));
+
+#endif
 
     while((msg = list_extract_first(incoming_sms))!=NULL)
 	msg_destroy(msg);
@@ -461,10 +476,14 @@ int bb_shutdown(void)
     set_shutdown_status();
     mutex_unlock(status_mutex);
 
+#ifndef KANNEL_NO_SMS
     debug("bb", 0, "shutting down smsc");
     smsc_shutdown();
+#endif
+#ifndef KANNEL_NO_WAP
     debug("bb", 0, "shutting down upd");
     udp_shutdown();
+#endif
     
     return 0;
 }

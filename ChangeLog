@@ -1,3 +1,11 @@
+2000-07-12  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_http.c: oops, return value for HTTP admin was not checked,
+	now fixed
+
+	* gw/bearerbox.c: added compiler options KANNEL_NO_SMS and
+	KANNEL_NO_WAP
+
 2000-07-11  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: Bug #86 fixed. A memory leak with $ characters 
