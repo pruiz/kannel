@@ -1,3 +1,9 @@
+Thu Mar 30 03:05:53 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/counter.[ch]: Wrote.
+	
+	* test/test_counter.c: Wrote.
+
 Thu Mar 30 02:25:51 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* lotsafiles: Made minor tweaks to make things compile on my
