@@ -8,6 +8,7 @@
 
 
 #include <ctype.h>
+#include <limits.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +17,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include "gwassert.h"
 #include "gwlib.h"
 #include "gwstdint.h"
 
@@ -42,9 +44,9 @@
  * always work.
  */
 struct Octstr {
-    unsigned char *data;
-    size_t len;
-    size_t size;
+	unsigned char *data;
+	size_t len;
+	size_t size;
 };
 
 
@@ -53,8 +55,8 @@ struct Octstr {
  */
 typedef struct Node Node;
 struct Node {
-    Octstr *ostr;
-    Node *next;
+	Octstr *ostr;
+	Node *next;
 };
 
 
@@ -62,7 +64,7 @@ struct Node {
  * List of octet strings.
  */
 struct OctstrList {
-    Node *head, *tail;
+	Node *head, *tail;
 };
 
 
@@ -72,6 +74,9 @@ struct OctstrList {
  */
 
 
+static void seems_valid(Octstr *ostr);
+
+
 /***********************************************************************
  * Implementations of the functions declared in octstr.h. See the
  * header for explanations of what they should do.
@@ -79,18 +84,22 @@ struct OctstrList {
 
 
 Octstr *octstr_create_empty(void) {
-    Octstr *ostr;
-    
-    ostr = gw_malloc(sizeof(Octstr));
-    ostr->data = NULL;
-    ostr->size = 0;
-    ostr->len = 0;
-    return ostr;
+	Octstr *ostr;
+	
+	ostr = gw_malloc(sizeof(Octstr));
+	ostr->data = NULL;
+	ostr->size = 0;
+	ostr->len = 0;
+	seems_valid(ostr);
+	return ostr;
 }
 
 
 /* Reserve space for at least 'size' octets */
 static void octstr_grow(Octstr *ostr, long size) {
+	seems_valid(ostr);
+	gw_assert(size >= 0);
+	
 	if (size > ostr->size) {
 		ostr->data = gw_realloc(ostr->data, size);
 		ostr->size = size;
@@ -99,85 +108,100 @@ static void octstr_grow(Octstr *ostr, long size) {
 
 
 Octstr *octstr_create(const char *cstr) {
-    return octstr_create_from_data(cstr, strlen(cstr));
+	gw_assert(cstr != NULL);
+	return octstr_create_from_data(cstr, strlen(cstr));
 }
 
 
 Octstr *octstr_create_limited(char *cstr, int max_len) {
-    int len = strlen(cstr);
-    if (len < max_len)
-	return octstr_create_from_data(cstr, len);
-    else
-	return octstr_create_from_data(cstr, max_len);
+	int len;
+
+	gw_assert(cstr != NULL);
+	gw_assert(max_len >= 0);
+
+	len = strlen(cstr);
+	if (len < max_len)
+		return octstr_create_from_data(cstr, len);
+	else
+		return octstr_create_from_data(cstr, max_len);
 }
 
 
 Octstr *octstr_create_tolower(const char *cstr) {
-    int i;
-    int len = strlen(cstr);
-    Octstr *ret;
+	int i;
+	int len;
+	Octstr *ret;
     
-    ret = octstr_create_from_data(cstr, len);
-    
-    for (i = 0; i < len; i ++)
-        octstr_set_char(ret, i, tolower(octstr_get_char(ret, i)));
-    
-    return ret;
+	gw_assert(cstr != NULL);
+
+	len = strlen(cstr);
+	ret = octstr_create_from_data(cstr, len);
+	for (i = 0; i < len; i ++)
+		octstr_set_char(ret, i, tolower(octstr_get_char(ret, i)));
+	
+	seems_valid(ret);
+	return ret;
 }
 
 
 Octstr *octstr_create_from_data(const char *data, size_t len) {
-    Octstr *ostr;
-    
-    ostr = octstr_create_empty();
-    if (ostr != NULL && len > 0) {
-	ostr->len = len;
-	ostr->size = len + 1;
-	ostr->data = gw_malloc(ostr->size);
-	memcpy(ostr->data, data, len);
-	ostr->data[len] = '\0';
-    }
-    return ostr;
+	Octstr *ostr;
+	
+	ostr = octstr_create_empty();
+	if (ostr != NULL && len > 0) {
+		ostr->len = len;
+		ostr->size = len + 1;
+		ostr->data = gw_malloc(ostr->size);
+		memcpy(ostr->data, data, len);
+		ostr->data[len] = '\0';
+	}
+	seems_valid(ostr);
+	return ostr;
 }
 
 
 void octstr_destroy(Octstr *ostr) {
-    if (ostr != NULL) {
-	gw_free(ostr->data);
-	gw_free(ostr);
-    }
+	if (ostr != NULL) {
+		seems_valid(ostr);
+		gw_free(ostr->data);
+		gw_free(ostr);
+	}
 }
 
 
 size_t octstr_len(Octstr *ostr) {
-    return ostr->len;
+	seems_valid(ostr);
+	return ostr->len;
 }
 
 
 Octstr *octstr_copy(Octstr *ostr, size_t from, size_t len) {
-    if (from >= ostr->len)
-	return octstr_create_empty();
-    
-    if (from + len > ostr->len)
-	len = ostr->len - from;
-    
-    return octstr_create_from_data(ostr->data + from, len);
+	seems_valid(ostr);
+
+	if (from >= ostr->len)
+		return octstr_create_empty();
+	
+	if (from + len > ostr->len)
+		len = ostr->len - from;
+	
+	return octstr_create_from_data(ostr->data + from, len);
 }
 
 
 
 Octstr *octstr_duplicate(Octstr *ostr) {
-    return octstr_create_from_data(ostr->data, ostr->len);
+	seems_valid(ostr);
+	return octstr_create_from_data(ostr->data, ostr->len);
 }
 
 
 Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2) {
 	Octstr *ostr;
     
-	ostr = octstr_create_empty();
-	if (ostr == NULL)
-		return NULL;
+	seems_valid(ostr1);
+	seems_valid(ostr2);
 
+	ostr = octstr_create_empty();
 	ostr->len = ostr1->len + ostr2->len;
 	ostr->size = ostr->len + 1;
 	ostr->data = gw_malloc(ostr->size);
@@ -187,12 +211,14 @@ Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2) {
 	if (ostr2->len > 0)
 		memcpy(ostr->data + ostr1->len, ostr2->data, ostr2->len);
 	ostr->data[ostr->len] = '\0';
-	
+
+	seems_valid(ostr);	
 	return ostr;
 }
 
 
 int octstr_get_char(Octstr *ostr, size_t pos) {
+	seems_valid(ostr);
 	if (pos >= ostr->len)
 		return -1;
 	return ostr->data[pos];
@@ -202,10 +228,9 @@ int octstr_get_char(Octstr *ostr, size_t pos) {
 Octstr *octstr_cat_char(Octstr *ostr1, int ch) {
 	Octstr *ostr;
 	
-	ostr = octstr_create_empty();
-	if (ostr == NULL)
-		return NULL;
+	seems_valid(ostr1);
 
+	ostr = octstr_create_empty();
 	ostr->len = ostr1->len + 1;
 	ostr->size = ostr->len + 1;
 	ostr->data = gw_malloc(ostr->size);
@@ -215,17 +240,23 @@ Octstr *octstr_cat_char(Octstr *ostr1, int ch) {
 	ostr->data[ostr->len-1] = ch;
 	ostr->data[ostr->len] = '\0';
 	
+	seems_valid(ostr);
 	return ostr;
 }
 
 
 void octstr_set_char(Octstr *ostr, size_t pos, int ch) {
+	seems_valid(ostr);
 	if (pos < ostr->len)
 		ostr->data[pos] = ch;
+	seems_valid(ostr);
 }
 
 
 void octstr_get_many_chars(char *buf, Octstr *ostr, size_t pos, size_t len) {
+	gw_assert(buf != NULL);
+	seems_valid(ostr);
+
 	if (pos >= ostr->len)
 		return;
 	if (pos + len > ostr->len)
@@ -236,6 +267,7 @@ void octstr_get_many_chars(char *buf, Octstr *ostr, size_t pos, size_t len) {
 
 
 char *octstr_get_cstr(Octstr *ostr) {
+	seems_valid(ostr);
 	if (ostr->len == 0)
 		return "";
 	return ostr->data;
@@ -245,6 +277,9 @@ char *octstr_get_cstr(Octstr *ostr) {
 int octstr_compare(Octstr *ostr1, Octstr *ostr2) {
 	int ret;
 	size_t len;
+
+	seems_valid(ostr1);
+	seems_valid(ostr2);
 
 	if (ostr1->len < ostr2->len)
 		len = ostr1->len;
@@ -268,6 +303,9 @@ int octstr_compare(Octstr *ostr1, Octstr *ostr2) {
 int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, size_t n) {
 	size_t len;
 
+	seems_valid(ostr1);
+	seems_valid(ostr2);
+
 	if ((ostr1->len < ostr2->len) && (ostr1->len < n))
 		len = ostr1->len;
 	else if ((ostr2->len < ostr1->len) && (ostr2->len < n))
@@ -283,7 +321,7 @@ int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, size_t n) {
 
 
 
-int octstr_search_char(Octstr *ostr, char ch) {
+int octstr_search_char(Octstr *ostr, int ch) {
 	return octstr_search_char_from(ostr, ch, 0);
 }
 
@@ -292,6 +330,10 @@ int octstr_search_char_from(Octstr *ostr, int ch, size_t pos) {
 	size_t len;
 	int ch_at_pos;
 	
+	seems_valid(ostr);
+	gw_assert(ch >= 0);
+	gw_assert(ch <= UCHAR_MAX);
+
 	len = octstr_len(ostr);
 	for (; pos < len; ++pos) {
 		ch_at_pos = octstr_get_char(ostr, pos);
@@ -306,35 +348,43 @@ int octstr_search_char_from(Octstr *ostr, int ch, size_t pos) {
 
 
 int octstr_search_str(Octstr *ostr, char *str) {
-    size_t pos_a, pos_b = 0, len_c = 0, len_o =0, a=0, b=0; 
-    Octstr *char_to_oct = NULL;
-    
-    len_o = octstr_len(ostr);
-    len_c = octstr_len( char_to_oct = octstr_create(str) );
-    
-    for(pos_a = 0  ;  pos_a  < len_o  ;  pos_a++){
-    	if( (a=octstr_get_char(ostr, pos_a)) == (b=octstr_get_char(char_to_oct, pos_b))){
-	    pos_b++;
-	    if( pos_b == octstr_len(char_to_oct) )
-		return (pos_a - len_c + 1);
-	        /*returns the start of the found substring */
+	size_t pos_a, pos_b = 0, len_c = 0, len_o =0, a=0, b=0; 
+	Octstr *char_to_oct = NULL;
+	
+	seems_valid(ostr);
+	gw_assert(str != NULL);
+
+	len_o = octstr_len(ostr);
+	len_c = octstr_len( char_to_oct = octstr_create(str) );
+	
+	for (pos_a = 0; pos_a < len_o; pos_a++) {
+		a=octstr_get_char(ostr, pos_a);
+		b=octstr_get_char(char_to_oct, pos_b);
+		if (a == b) {
+			pos_b++;
+			if (pos_b == octstr_len(char_to_oct)) {
+				return pos_a - len_c + 1;
+				/*returns the start of the found substring */
+			}
+		} else {
+			if (len_o - (pos_a + 1) < len_c)
+				break;
+			/* is it worth to keep looking */
+			pos_b = 0;
+		}
 	}
-	else {
-	    if( len_o-(pos_a+1) < len_c )break;
-	    /* is it worth to keep looking */
-	    pos_b = 0;
-	}
-    }/* for ends */
-    
-    
-    /* string wasn't there*/
-    return -1;
+	
+	/* string wasn't there*/
+	return -1;
 }
 
 
 
     
 int octstr_print(FILE *f, Octstr *ostr) {
+	gw_assert(f != NULL);
+	seems_valid(ostr);
+	
 	if (ostr->len == 0)
 		return 0;
 	if (fwrite(ostr->data, ostr->len, 1, f) != 1) {
@@ -348,6 +398,9 @@ int octstr_print(FILE *f, Octstr *ostr) {
 int octstr_pretty_print(FILE *f, Octstr *ostr) {
 	unsigned char *p;
 	size_t i;
+	
+	gw_assert(f != NULL);
+	seems_valid(ostr);
 	
 	p = ostr->data;
 	for (i = 0; i < ostr->len; ++i, ++p) {
@@ -367,6 +420,9 @@ int octstr_write_to_socket(int socket, Octstr *ostr) {
 	unsigned char *data;
 	int ret;
 
+	gw_assert(socket >= 0);
+	seems_valid(ostr);
+
 	data = ostr->data;
 	len = ostr->len;
 	while (len > 0) {
@@ -385,6 +441,9 @@ int octstr_write_to_socket(int socket, Octstr *ostr) {
 
 
 void octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos) {
+	seems_valid(ostr1);
+	seems_valid(ostr2);
+
 	if (ostr2->len == 0)
 		return;
 	
@@ -394,87 +453,104 @@ void octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos) {
 	memcpy(ostr1->data + pos, ostr2->data, ostr2->len);
 	ostr1->len += ostr2->len;
 	ostr1->data[ostr1->len] = '\0';
+	
+	seems_valid(ostr1);
 }
 
 
 void octstr_replace(Octstr *ostr, char *data, size_t len) {
+	seems_valid(ostr);
+	gw_assert(data != NULL);
+
 	octstr_grow(ostr, len + 1);
 	if (len > 0)
 		memcpy(ostr->data, data, len);
 	ostr->len = len;
 	ostr->data[len] = '\0';
+
+	seems_valid(ostr);
 }
 
 
 void octstr_truncate(Octstr *ostr, int new_len) {
-    if (new_len >= ostr->len || new_len < 0)
-	return;
-    
-    ostr->len = new_len;
-    ostr->data[new_len] = '\0';
+	seems_valid(ostr);
+	gw_assert(new_len >= 0);
+	gw_assert(new_len <= ostr->len);
+
+	ostr->len = new_len;
+	ostr->data[new_len] = '\0';
+	
+	seems_valid(ostr);
 }
 
 
 void octstr_strip_blank(Octstr *text) {
         int start = 0, end, len = 0;
 
+	seems_valid(text);
+
 	/* Remove white space from the beginning of the text */
 	while (isspace(octstr_get_char(text, start)))
-	    start ++;
+		start ++;
 
-	if(start > 0)
-	    octstr_delete(text, 0, start);
+	if (start > 0)
+		octstr_delete(text, 0, start);
 
 	/* and from the end. */
 
 	if ((len = octstr_len(text)) > 0) {
-	    end = len = len - 1;
-
-	    while (isspace(octstr_get_char(text, end)))
-	        end--;
-
-	    octstr_delete(text, end + 1, len - end);
+		end = len = len - 1;
+		while (isspace(octstr_get_char(text, end)))
+			end--;
+		octstr_delete(text, end + 1, len - end);
 	}
+
+	seems_valid(text);
 }
 
 
 void octstr_shrink_blank(Octstr *text) {
-       int i, j, end;
-
-       end = octstr_len(text);
-
-       /* Shrink white spaces to one  */
-       for(i = 0; i < end; i++) {
-	   if(isspace(octstr_get_char(text, i))) {
-	       /* Change the remaining space into single space. */
-	       if(octstr_get_char(text, i) != ' ')
-		   octstr_set_char(text, i, ' ');
-
-	       j = i = i + 1;
-	       while (isspace(octstr_get_char(text, j)))
-		   j ++;
-	       if (j - i > 1)
-		   octstr_delete(text, i, j - i);
-	   }
-       }
+	int i, j, end;
+	
+	seems_valid(text);
+	
+	end = octstr_len(text);
+	
+	/* Shrink white spaces to one  */
+	for (i = 0; i < end; i++) {
+		if (isspace(octstr_get_char(text, i))) {
+			/* Change the remaining space into single space. */
+			if (octstr_get_char(text, i) != ' ')
+				octstr_set_char(text, i, ' ');
+	
+			j = i = i + 1;
+			while (isspace(octstr_get_char(text, j)))
+				j ++;
+			if (j - i > 1)
+				octstr_delete(text, i, j - i);
+		}
+	}
+	
+	seems_valid(text);
 }
 
 
 void octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
+	seems_valid(ostr);
+	gw_assert(pos <= ostr->len);
+
 	if (len == 0)
 		return;
 	
-	if (ostr->len < pos) {	/* make things a bit more robust */
-		pos = ostr->len;
-	}
 	octstr_grow(ostr, ostr->len + len + 1);
-
 	if (ostr->len > pos) {	/* only if neccessary */
 		memmove(ostr->data+pos+len, ostr->data+pos, ostr->len - pos);
 	}
 	memcpy(ostr->data + pos, data, len);
 	ostr->len += len;
 	ostr->data[ostr->len] = '\0';
+	
+	seems_valid(ostr);
 }
 
 
@@ -489,6 +565,8 @@ void octstr_append_cstr(Octstr *ostr, char *cstr) {
 
 
 void octstr_delete(Octstr *ostr1, size_t pos, size_t len) {
+	seems_valid(ostr1);
+
 	if (pos > ostr1->len)
 		pos = ostr1->len;
 	if (pos + len > ostr1->len)
@@ -499,6 +577,8 @@ void octstr_delete(Octstr *ostr1, size_t pos, size_t len) {
 		ostr1->len -= len;
 	        ostr1->data[ostr1->len] = '\0';
 	}
+
+	seems_valid(ostr1);
 }
 
 
@@ -509,6 +589,8 @@ Octstr *octstr_read_file(const char *filename) {
 	char buf[128*1024];
 	size_t n;
 	
+	gw_assert(filename != NULL);
+
 	f = fopen(filename, "r");
 	if (f == NULL) {
 		error(errno, "fopen failed: couldn't open `%s'", filename);
@@ -599,6 +681,8 @@ OctstrList *octstr_split_words(Octstr *ostr) {
 	Octstr *word;
 	size_t i, start, end;
 	
+	seems_valid(ostr);
+
 	list = octstr_list_create();
 
 	p = ostr->data;
@@ -672,10 +756,12 @@ void octstr_dump(Octstr *ostr) {
 }
 
 int octstr_send(int fd, Octstr *ostr) {
-
 	uint32_t length;
 	int ret = 0, written = 0, datalength = 0;
 	char *data = NULL;
+
+	gw_assert(fd >= 0);
+	seems_valid(ostr);
 
 	length = htonl(octstr_len(ostr));
 	datalength = octstr_len(ostr)+sizeof(uint32_t);
@@ -710,6 +796,8 @@ int octstr_recv(int fd, Octstr **ostr) {
 	char *data = NULL;
 	Octstr *newostr = NULL;
 	int ret = 0, readlength = 0;
+	
+	gw_assert(fd >= 0);
 
 	nlength = 0;
 	*ostr = NULL;
@@ -765,4 +853,18 @@ eof:
 error:
 	gw_free(data);
 	return -1;
+}
+
+
+
+/**********************************************************************
+ * Local functions.
+ */
+
+static void seems_valid(Octstr *ostr) {
+	gw_assert(ostr != NULL);
+	gw_assert(ostr->len < ostr->size || 
+	         (ostr->size == 0 && ostr->len == 0));
+	gw_assert(ostr->size == 0 || 
+	         (ostr->data !=  NULL && ostr->data[ostr->len] == '\0'));
 }

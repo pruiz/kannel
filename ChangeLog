@@ -1,3 +1,7 @@
+Wed Mar 29 23:29:26 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/octstr.[ch]: Added gw_asserts and cleaned up formatting.
+
 Wed Mar 29 23:01:15 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/list.c: Changed assert to gw_assert.
