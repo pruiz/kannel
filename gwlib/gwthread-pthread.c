@@ -205,8 +205,8 @@ void gwthread_shutdown(void) {
 			debug("gwlib", 0, "Thread %ld (%s) still running", 
 				threadtable[i]->number,
 				threadtable[i]->name);
+			running++;
 		}
-		running++;
 	}
 	unlock();
 

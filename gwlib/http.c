@@ -1729,6 +1729,7 @@ static List *parse_cgivars(Octstr *url) {
 		
 		list_append(list, v);
 	}
+	octstr_destroy(args);
 	
 	return list;
 }

@@ -1,3 +1,8 @@
+2000-07-18  Kalle Marjola  <rpr@wapit.com>
+
+	* gwlib/gwthread-pthread.c, gwlib/http.c: Fized bugs #98 and #100
+	reported by Paul Keogh.
+
 2000-07-18  Paul Keogh <paul.keogh@anam.com>
 	* gw/urltrans.c: Fixed memory leak in destroy_onetrans().
 
