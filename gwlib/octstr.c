@@ -167,14 +167,15 @@ void octstr_shutdown(void)
 }
 
 
-Octstr *octstr_create_real(const char *cstr)
+Octstr *octstr_create_real(const char *cstr, const char *file, long line,
+                           const char *func)
 {
     gw_assert(cstr != NULL);
-    return octstr_create_from_data(cstr, strlen(cstr));
+    return octstr_create_from_data_trace(cstr, strlen(cstr), file, line, func);
 }
 
-
-Octstr *octstr_create_from_data_real(const char *data, long len)
+Octstr *octstr_create_from_data_real(const char *data, long len, const char *file,
+                                     long line, const char *func)
 {
     Octstr *ostr;
 
@@ -182,7 +183,7 @@ Octstr *octstr_create_from_data_real(const char *data, long len)
     if (data == NULL)
         gw_assert(len == 0);
 
-    ostr = gw_malloc(sizeof(*ostr));
+    ostr = gw_malloc_trace(sizeof(*ostr), file, line, func);
     if (len == 0) {
         ostr->len = 0;
         ostr->size = 0;
@@ -190,7 +191,7 @@ Octstr *octstr_create_from_data_real(const char *data, long len)
     } else {
         ostr->len = len;
         ostr->size = len + 1;
-        ostr->data = gw_malloc(ostr->size);
+        ostr->data = gw_malloc_trace(ostr->size, file, line, func);
         memcpy(ostr->data, data, len);
         ostr->data[len] = '\0';
     }
@@ -285,12 +286,13 @@ Octstr *octstr_copy_real(Octstr *ostr, long from, long len)
 
 
 
-Octstr *octstr_duplicate_real(const Octstr *ostr)
+Octstr *octstr_duplicate_real(const Octstr *ostr, const char *file, long line,
+                              const char *func)
 {
     if (ostr == NULL)
         return NULL;
     seems_valid(ostr);
-    return octstr_create_from_data(ostr->data, ostr->len);
+    return octstr_create_from_data_trace(ostr->data, ostr->len, file, line, func);
 }
 
 
