@@ -377,7 +377,8 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 			 Octstr *from, Octstr *to, Octstr *udh, 
 			 int mclass, int mwi, int coding, int compress,
 			 int validity, int deferred,
-			 Octstr *dlr_url, int dlr_mask, int pid, int alt_dcs)
+			 Octstr *dlr_url, int dlr_mask, int pid, int alt_dcs,
+			 Octstr *smsc)
 {    
     msg->sms.msgdata = replytext;
     msg->sms.time = time(NULL);
@@ -390,6 +391,17 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 	    warning(0, "Tried to change dlr_url to '%s', denied.",
 		    octstr_get_cstr(dlr_url));
 	    octstr_destroy(dlr_url);
+	}
+    }
+
+    if (smsc != NULL) {
+	if (urltrans_accept_x_kannel_headers(trans)) {
+	    octstr_destroy(msg->sms.smsc_id);
+	    msg->sms.smsc_id = smsc;
+	} else {
+	    warning(0, "Tried to change SMSC to '%s', denied.",
+		    octstr_get_cstr(smsc));
+	    octstr_destroy(smsc);
 	}
     }
 
@@ -505,6 +517,7 @@ static void url_result_thread(void *arg)
     Octstr *udh, *from, *to;
     Octstr *dlr_url;
     Octstr *account;
+    Octstr *smsc;
     int dlr_mask;
     int octets;
     int mclass, mwi, coding, compress, pid, alt_dcs;
@@ -525,7 +538,7 @@ static void url_result_thread(void *arg)
     	
     	get_receiver(id, &msg, &trans);
 
-    	from = to = udh = NULL;
+    	from = to = udh = smsc = NULL;
 	octets = mclass = mwi = coding = compress = pid = alt_dcs = 0;
 	validity = deferred = 0;
 	account = NULL;
@@ -540,7 +553,7 @@ static void url_result_thread(void *arg)
 		replytext = html_to_sms(reply_body);
 		octstr_strip_blanks(replytext);
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
-					  NULL, NULL, NULL, &mclass, &mwi, 
+					  NULL, NULL, &smsc, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_url, 
 					  &account, &pid, &alt_dcs);
@@ -549,7 +562,7 @@ static void url_result_thread(void *arg)
 		reply_body = NULL;
 		octstr_strip_blanks(replytext);
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
-					  NULL, NULL, NULL, &mclass, &mwi, 
+					  NULL, NULL, &smsc, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_url, 
 					  &account, &pid, &alt_dcs);
@@ -558,7 +571,7 @@ static void url_result_thread(void *arg)
 		octets = 1;
 		reply_body = NULL;
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
-					  NULL, NULL, NULL, &mclass, &mwi, 
+					  NULL, NULL, &smsc, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_url, 
 					  &account, &pid, &alt_dcs);
@@ -576,7 +589,7 @@ static void url_result_thread(void *arg)
 
 	fill_message(msg, trans, replytext, octets, from, to, udh, mclass,
 			mwi, coding, compress, validity, deferred, dlr_url, 
-			dlr_mask, pid, alt_dcs);
+			dlr_mask, pid, alt_dcs, smsc);
 
     	if (final_url == NULL)
 	    final_url = octstr_imm("");

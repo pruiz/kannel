@@ -1,3 +1,6 @@
+2002-03-28  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsbox.c: Added X-Kannel-SMSC on smsbox->application. It was missing
+
 2002-03-28  Stipe Tolj  <tolj@wapme-systems.de>
     * Re-Making release 1.1.6.
 
