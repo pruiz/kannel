@@ -1,4 +1,10 @@
 2003-07-20  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * userguide.xml: removed chapter "Setting up wap&sms gateway" because it
+      is redundant (and didn't say almost nothing at all), added note in 
+      "Using the gateway"; pulled sms-centers to sect1 to enable smsc sections
+      to be available on TOC
+
+2003-07-20  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * configure{,.in}: --with-defaults default value is "speed"
     * userguide.xml: changed some strings, added others, added some 
       features, fixed duplicate software requirements, fixed ./configure

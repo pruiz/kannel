@@ -909,13 +909,6 @@
 </chapter>
 
 
-
-
-
-
-
-
-
 <chapter>
 <title>Using the gateway</title>
 
@@ -926,9 +919,13 @@
 	the gateway.</para>
 
         <para>After this chapter there is distinct chapter for each
-        kind of gateway use: WAP gateway, SMS gateway and combined
-        gateway. These chapters explain the configuration and other
+        kind of gateway use: WAP gateway, SMS gateway and WAP Push
+        proxy. These chapters explain the configuration and other
         aspects of gateway of that type.</para>
+	
+	<para>You can configure your Kannel to be only a WAP or a SMS
+	gateway, or to be both at the same time. You just need to read
+	each chapter and combine all configurations.</para>
 
 	<para>There is only one configuration file for all parts of
 	Kannel, although when Kannel is distributed to several hosts
@@ -1751,7 +1748,7 @@ commands never arrive nor can you restart it via WAP anymore.</para>
   a look at that when setting up a WAP Kannel.</para>
 
 <sect2>
-<title>Wapbox configuration</title>
+<title>Wapbox group</title>
 
   <para>If you have set <literal>wapbox-port</literal> variable in the
   'core' configuration group, you <emphasis>MUST</emphasis> supply
@@ -2096,8 +2093,9 @@ secret-radius = radius
   <para> A sample configuration file <literal>smskannel.conf</literal> 
   is supplied with the standard distribution. You may want to take
   a look at that when setting up an SMS Kannel.</para>
+</sect1>
 
-<sect2>
+<sect1>
 <title>SMS centers</title>
 
     <para>To set up the SMS center at Kannel, you have to add a 'smsc'
@@ -2291,7 +2289,7 @@ secret-radius = radius
    patience.</emphasis></para>
 
 
-<sect3>
+<sect2>
 <title>Nokia CIMD 1.37 and 2.0</title>
 
 <para>Support for CIMD 1.37 is quite old and will be removed in a
@@ -2398,9 +2396,9 @@ my-number = "12345"
 
    </tbody></tgroup></informaltable>
    
-</sect3>
+</sect2>
 
-<sect3>
+<sect2>
 <title>CMG UCP/EMI 4.0 and 3.5</title>
 
   <warning><para>See <xref linkend="upgrading-notes"> for changes.</para></warning>
@@ -2665,9 +2663,9 @@ smsc-password = bar
 
    
 
-</sect3>
+</sect2>
 
-<sect3>
+<sect2>
 <title>SMPP 3.4</title>
 
    <para>This implements Short Message Peer to Peer (SMPP) Protocol
@@ -2893,9 +2891,9 @@ address-range = ""
 
    </tbody></tgroup></informaltable>
 
-</sect3>
+</sect2>
 
-<sect3>
+<sect2>
 <title>Sema Group SMS2000 OIS 4.0 and 5.0</title>
  
    <para>The 4.0 implementation is over Radio PAD (X.28). Following
@@ -2988,10 +2986,10 @@ ois-debug-level = 0
      </entry></row>
 
    </tbody></tgroup></informaltable>
-</sect3>
+</sect2>
 
 
-<sect3>
+<sect2>
 <title>SM/ASI (for CriticalPath InVoke SMS Center 4.x)</title>
 
    <para>This implements Short Message/Advanced Service Interface 
@@ -3087,10 +3085,10 @@ smsc-password = foo
      </entry></row>
 
    </tbody></tgroup></informaltable>
-</sect3>
+</sect2>
 
 
-<sect3>
+<sect2>
 <title>GSM modem</title>
 
   <warning><para>See <xref linkend="upgrading-notes"> for changes.</para></warning>
@@ -3335,10 +3333,10 @@ pin = 2345
    finally your GSM network provider may not support delivery reports to mobile 
    units.</para>
 
-</sect3>
+</sect2>
 
 
-<sect3>
+<sect2>
 <title>Fake SMSC</title>
 
   <para>Fake SMSC is a simple protocol to test out Kannel. It is not
@@ -3381,10 +3379,10 @@ connect-allow-ip = 127.0.0.1
 
    </tbody></tgroup></informaltable>
 
-</sect3>
+</sect2>
 
 
-<sect3>
+<sect2>
 <title>HTTP-based relay and content gateways</title>
  
    <para>This special "SMSC" is used for HTTP based connections with
@@ -3474,9 +3472,9 @@ send-url = "http://localhost:20022"
    <para>This module can be easily addopted to other HTTP-based interfaces.
    </para>
  
-</sect3>
+</sect2>
 
-<sect3>
+<sect2>
 <title>MT to MO direction switching</title>
 
     <para>In case you want to route MT messages coming from 
@@ -3507,9 +3505,9 @@ send-url = "http://localhost:14000/cgi-bin/sendsms"
 	 <para>This can be used to generate cycles or allow to connect smsbox users
 	 that pass messages and make them look like they orginated from an SMSC.
 	 </para>
-</sect3>
+</sect2>
 
-<sect3>
+<sect2>
 <title>Using multiple SMS centers</title>
 
     <para>If you have several SMS center connections (multiple
@@ -3525,9 +3523,9 @@ send-url = "http://localhost:14000/cgi-bin/sendsms"
     <literal>preferred-smsc-id</literal> and
     <literal>denied-smsc-id</literal> to set up the routing to your
     taste. See also SMS PUSH settings ('sendsms-user' groups), below.</para>
-</sect3>
+</sect2>
 
-<sect3>
+<sect2>
 <title>Feature checklist</title>
 
 <para>Not all of Kannel's SMSC drivers support the same set of features.
@@ -4063,15 +4061,16 @@ marked as "not tested" because the table is still new.</para>
  </tgroup>
 </informaltable>
 
-</sect3>
 </sect2>
+</sect1>
 
 
 
-
+<sect1>
+<title>SMSBox configuration</title>
 
 <sect2>
-<title>Smsbox configuration</title>
+<title>Smsbox group</title>
 
   <para>You must define an 'smsbox' group into the configuration file to be
   able to use SMS Kannel. The simplest working 'smsbox' group looks 
@@ -6364,33 +6363,6 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
 
 
-<chapter id="smswap-gateway">
-<title>Setting up a SMS&amp;WAP gateway</title>
-
-    <para>This chapter tells you how to set Kannel up as a combined WAP
-    and SMS gateway.</para>
-
-<sect1>
-<title>SMS&amp;WAP gateway configuration</title>
-
-   <para>Configuration is done as explained in previous chapters, you
-   simply have to include all the data from both chapters into the
-   configuration file.</para>
-
-</sect1>
-
-<sect1>
-<title>Running SMS&amp;WAP gateway</title>
-
-   <para>There are no special tricks to this, just launch both the smsbox
-   and the wapbox in addition to the bearerbox, using multiple hosts if
-   needed.</para>
-
-</sect1>
-
-</chapter>
-
-
 <chapter id="ppg">
 <title>Setting up Push Proxy Gateway</title>
       <para>This chapter explains how to set up a push proxy gateway (PPG). 
@@ -6978,7 +6950,7 @@ ssl-server-key-file = "/etc/kannel/key1.pem"
 </chapter>
 
 <chapter id="delivery-reports">
-<title>Delivery Reports</title>
+<title>SMS Delivery Reports</title>
 
 	<para>This chapter explains how to set up Kannel to deliver delivery reports.
 	</para>
