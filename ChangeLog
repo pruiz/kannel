@@ -1,4 +1,15 @@
 2002-12-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * config.h.in, configure[.in]: added iconv support and detection
+    * gwlib/charset.[ch]: added charset_convert() routine as wrapper
+      for iconv calls to convert from a known charset encoding to
+      an other.
+    * gw/smsc_smpp.c: uses iconv library to convert character encodings.
+      Orginal patch from Alan. Adds 'alt-charset' directive for the smpp
+      smsc group. Use iconv's type representation to define which charset
+      is used by a specific smsc.
+    * doc/userguide/userguide.xml: added 'alt-charset' documentation.
+
+2002-12-07  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/conn.c: fixed reentrant bugs in conn_shutdown_ssl() and
       server_shutdown_ssl(). Thanks to Paul for pointing this out.
     * test/wapproxy.c: fixed a couple of compiler warnings.
