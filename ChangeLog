@@ -1,4 +1,10 @@
 2002-03-25  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/octstr.c: added support for Linux on PowerPC and S390
+      architectures, patch submitted by "Jacob Vennervald Madsen" 
+      <jvm@gopinocchio.com>
+      [Msg-ID: <EB0B5D39043C344BA53B0F4AB15AE6330299B4@gop-server.GOP-server.local>]
+
+2002-03-25  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/dlr.c: fixed kannel-nag compile warning in dlr_find_mysql()
 
 2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
