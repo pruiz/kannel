@@ -504,12 +504,12 @@ static void normalize_numbers(RQueueItem *msg, SMSCenter *from)
     sr = rr = 0;
     if (from != NULL) {
 	p = smsc_dial_prefix(from);
-		if(msg_type(msg->msg) == smart_sms) {
-			sr = normalize_number(p, &(msg->msg->smart_sms.sender));
-			rr = normalize_number(p, &(msg->msg->smart_sms.receiver));
-		}
+	if(msg_type(msg->msg) == smart_sms) {
+		sr = normalize_number(p, &(msg->msg->smart_sms.sender));
+		rr = normalize_number(p, &(msg->msg->smart_sms.receiver));
 	}
     }
+
 
 	if(msg_type(msg->msg) == smart_sms) {
 		if (sr == 0) sr = normalize_number(bbox->global_prefix, &(msg->msg->smart_sms.sender));
