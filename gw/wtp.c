@@ -271,9 +271,7 @@ void wtp_event_dump(WTPEvent *event) {
  */
 void wtp_machine_mark_unused(WTPMachine *machine){
 
-     list_lock(machines);
      machine->in_use = 0;
-     list_unlock(machines);
 }
 
 /* 
@@ -283,27 +281,16 @@ void wtp_machine_mark_unused(WTPMachine *machine){
  */
 void wtp_machines_list_clear(void){
 #if 0
-     WTPMachine *this_machine = NULL,
-                *previous = NULL; 
+        long remove_pat;
 
-     if (mutex_try_lock(machines.lock) == -1)
-        return;
+        remove_pat = 0;
 
-     else {
-        if (machines.list == NULL){
-           info(0, "WTP: wtp_machines_list_clear: list is empty");
+        if (list_len(machines) == 0){
+           info(0, "WTP: machines_list_clear: list is empty");
            return;
         }
 
-        this_machine = previous = machines.first;
-
-        while (this_machine != NULL){
-              if (this_machine->in_use == 0)
-                  destroy_machine(this_machine, previous);
-              this_machine = previous->next;
-              previous = this_machine;
-        }
-     }
+        list_delete_all(machines, remove_pat, machine_not_in_use);
 #endif
 } 
 
@@ -312,8 +299,6 @@ void wtp_machines_list_clear(void){
  * wapitlib.c.
  */
 void wtp_machine_dump(WTPMachine *machine){
-
-       list_lock(machines);
  
        if (machine != NULL){
 
@@ -349,8 +334,6 @@ void wtp_machine_dump(WTPMachine *machine){
 	} else {
            debug("wap.wtp", 0, "WTP: dump: machine does not exist");
         }
-
-        list_unlock(machines);
 }
 
 
@@ -431,10 +414,11 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
  * Transfers data from fields of a message to fields of WTP event. User data has
  * the host byte order. Updates the log and sends protocol error messages. Reassembles 
  * segmented messages, too.
- *
- * This function deallocates memory for segmentation lists data structure (segments), 
- * allocated by main function in the module wapbox.c. For result, an wtp event is created,
- * if appropiate. The memory for this data structure is deallocated by wtp_handle_event.
+ * First empty instance of segment_lists is created by wapbox.c. This function allocates 
+ * and deallocates memory for its member lists. After deallocation a new instance of an 
+ * empty segments data structure is creted. For result, an wtp event is created, if 
+ * appropiate. The memory for this data structure is deallocated either by this module, if 
+ * its data is added to a message to be reassembled, or by wtp_handle_event.
  *
  * Return event, when we have a single message or have reassembled whole the message; NULL,  * when we have a segment inside of a segmented message.
  */
@@ -493,7 +477,8 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                                            fourth_octet);
 
                      if (first_segment(event)) {
-                        segments->event = event;
+                        segments->event = duplicate_event(event);
+                        wtp_event_destroy(event);
                         mutex_unlock(segments->lock);
                         return NULL;
 
@@ -537,6 +522,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                        event = duplicate_event(segments->event);
                        mutex_unlock(segments->lock);
                        segment_lists_destroy(segments);
+                       segments = segment_lists_create_empty();
                        return event;
 
                     } else {
@@ -703,9 +689,7 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
 	pat.destination_port = destination_port;
 	pat.tid = tid;
 	
-        list_lock(machines);
 	m = list_search(machines, &pat, is_wanted_machine);
-        list_unlock(machines);
 	debug("wap.wtp", 0, "WTP: wtp_machine_find: %p", (void *) m);
 	return m;
 }
@@ -730,9 +714,7 @@ static WTPMachine *wtp_machine_create_empty(void){
 	#define LIST(name) machine->name = list_create()
         #include "wtp_machine-decl.h"
 
-        list_lock(machines);
 	list_append(machines, machine);
-        list_unlock(machines);
 
         return machine;
 }
@@ -751,16 +733,12 @@ WTPMachine *wtp_machine_create(Octstr *source_address,
            machine = wtp_machine_create_empty();
            debug("wap.wtp", 0, "empty machine created");
 
-           list_lock(machines);
-
            machine->source_address = octstr_duplicate(source_address);
            machine->source_port = source_port;
            machine->destination_address = octstr_duplicate(destination_address);
            machine->destination_port = destination_port;
            machine->tid = tid;
            machine->tcl = tcl;
-
-           list_unlock(machines);
 
            return machine;
 } 
@@ -1107,7 +1085,6 @@ static WTPEvent *tell_about_error(int type, WTPEvent *event, Msg *msg, long tid)
  */
              case illegal_header:
                   error(0, "WTP: Illegal header structure");
-                  wtp_event_dump(event);
                   gw_free(event);
                   event = wtp_event_create(RcvErrorPDU);
                   event->RcvErrorPDU.tid = tid;
@@ -1115,7 +1092,6 @@ static WTPEvent *tell_about_error(int type, WTPEvent *event, Msg *msg, long tid)
 
              case pdu_too_short_error:
                   error(0, "WTP: PDU too short");
-                  wtp_event_dump(event);
                   gw_free(event);
                   event = wtp_event_create(RcvErrorPDU);
                   event->RcvErrorPDU.tid = tid;
@@ -1123,7 +1099,6 @@ static WTPEvent *tell_about_error(int type, WTPEvent *event, Msg *msg, long tid)
 
              case no_datagram: 
                   error(0, "WTP: No datagram received");
-                  wtp_event_dump(event);
                   gw_free(event);
                   event = wtp_event_create(RcvErrorPDU);
                   event->RcvErrorPDU.tid = tid;
@@ -1132,7 +1107,6 @@ static WTPEvent *tell_about_error(int type, WTPEvent *event, Msg *msg, long tid)
              case no_concatenation:
                   wtp_do_not_start(PROVIDER, UNKNOWN, address, tid);
                   error(0, "WTP: No connectionless mode nor concatenation supported");
-                  wtp_event_dump(event);
                   gw_free(event);
              return NULL;
      }
@@ -1436,17 +1410,20 @@ static WTPEvent *duplicate_event(WTPEvent *original){
        return copy;
 }
 
+static int machine_not_in_use(void *a, void *b){
+
+	WTPMachine *machine;
+        long remove_pat;
+	
+	machine = a;
+        remove_pat = b;
+        return machine.in_use == remove_pat.in_use;
+}
+
 /*
  * Really removes a WTP state machine. Used only by the garbage collection. 
  */
-#if 0
 static void destroy_machine(WTPMachine *machine, WTPMachine *previous){
-
-     if (machine == previous) {
-        machines.first = machine->next;
-     } else {
-        previous->next = machine->next;
-     }
 
      #define INTEGER(name)
      #define ENUM(name)  
@@ -1465,5 +1442,5 @@ static void destroy_machine(WTPMachine *machine, WTPMachine *previous){
 
      return;
 }
-#endif
+
 /**********************************************************************************/
